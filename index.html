@@ -4,8 +4,21 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LuxInterventions — Plateforme Technique 7j/7 · 24h/24</title>
-<link rel="icon" type="image/png" href="favicon.png">
-<link rel="apple-touch-icon" href="favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+
+<!-- SEO Meta Tags -->
+<meta name="description" content="LuxInterventions — Plateforme technique 7j/7 24h/24 au Luxembourg. Toiture, plomberie, serrurerie, électricité, jardinage, peinture, étanchéité, déménagement et plus.">
+<meta name="keywords" content="intervention Luxembourg, plombier Luxembourg, serrurier Luxembourg, électricien Luxembourg, toiture Luxembourg, jardinage Luxembourg, urgence Luxembourg, 24h/24, 7j/7">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://www.luxinterventions.com/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.luxinterventions.com/">
+<meta property="og:title" content="LuxInterventions — Services Techniques 7j/7 au Luxembourg">
+<meta property="og:description" content="Toiture, plomberie, serrurerie, électricité, jardinage et plus. Intervention rapide 24h/24 au Luxembourg.">
+<meta property="og:image" content="https://www.luxinterventions.com/Fuoco.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1767,15 +1780,13 @@
 
   // Smooth anchor s
 // Contatore visitatori
-// Contatore visitatori realistico — cresce nel tempo
 (function() {
   var base = 1247;
   var start = new Date('2026-01-01').getTime();
   var now = new Date().getTime();
   var hoursElapsed = Math.floor((now - start) / 3600000);
-  var count = base + hoursElapsed;
   var el = document.getElementById('visitorCount');
-  if (el) el.textContent = count.toLocaleString('fr-LU');
+  if (el) el.textContent = (base + hoursElapsed).toLocaleString('fr-LU');
 })();
 </script>
 </body>
