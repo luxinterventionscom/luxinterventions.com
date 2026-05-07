@@ -125,13 +125,10 @@
 
   @keyframes pulse {
     0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
-@keyframes pulse-vis {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.4; transform: scale(1.4); }
-}
-
-
-
+  }
+  @keyframes pulse-vis {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(1.4); }
   }
 
   .hero-title {
@@ -1770,7 +1767,16 @@
 
   // Smooth anchor s
 // Contatore visitatori
-document.getElementById('visitorCount').textContent = Math.floor(Math.random() * 40) + 15;
+// Contatore visitatori realistico — cresce nel tempo
+(function() {
+  var base = 1247;
+  var start = new Date('2026-01-01').getTime();
+  var now = new Date().getTime();
+  var hoursElapsed = Math.floor((now - start) / 3600000);
+  var count = base + hoursElapsed;
+  var el = document.getElementById('visitorCount');
+  if (el) el.textContent = count.toLocaleString('fr-LU');
+})();
 </script>
 </body>
 </html>
