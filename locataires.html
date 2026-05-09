@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion Locataires — Luxembourg</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f0f0f;--bg2:#181818;--bg3:#222;--border:#333;--border2:#444;
+  --text:#f0ede8;--text2:#999;--text3:#666;
+  --green:#4ade80;--green-bg:rgba(74,222,128,0.1);
+  --red:#f87171;--red-bg:rgba(248,113,113,0.1);
+  --amber:#fbbf24;--amber-bg:rgba(251,191,36,0.1);
+  --purple:#a78bfa;--purple-bg:rgba(167,139,250,0.1);
+  --radius:8px;--radius-lg:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;font-size:13px;min-height:100vh}
+h1,h2,h3{font-family:'Fraunces',serif;font-weight:300}
+h1{font-size:28px;letter-spacing:-0.5px}
+h2{font-size:20px;margin-bottom:1rem}
+h3{font-size:16px;margin-bottom:8px}
+input,select,textarea{background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:8px 12px;width:100%;outline:none;transition:border-color 0.2s}
+input:focus,select:focus{border-color:var(--purple)}
+select option{background:var(--bg3)}
+button{background:transparent;border:0.5px solid var(--border2);border-radius:var(--radius);color:var(--text);cursor:pointer;font-family:'DM Mono',monospace;font-size:12px;padding:8px 16px;transition:all 0.15s;white-space:nowrap}
+button:hover{background:var(--bg3);border-color:var(--border)}
+button.primary{border-color:var(--purple);color:var(--purple)}
+button.primary:hover{background:var(--purple-bg)}
+button.danger{border-color:var(--border3);color:var(--red)}
+button.danger:hover{background:var(--red-bg)}
+button.success{border-color:var(--border3);color:var(--green)}
+.screen{display:none}
+.screen.active{display:flex;flex-direction:column;min-height:100vh}
+
+/* LOGIN */
+.login-wrap{align-items:center;justify-content:center;flex:1}
+.login-card{border:0.5px solid var(--border2);border-radius:var(--radius-lg);padding:2.5rem;width:340px;display:flex;flex-direction:column;gap:1rem;background:var(--bg2)}
+.login-title{text-align:center;margin-bottom:8px}
+.login-title h1{font-size:24px;margin-bottom:4px}
+.login-title p{color:var(--text2);font-size:11px}
+
+/* LAYOUT */
+.app-header{border-bottom:0.5px solid var(--border);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:10}
+.app-title{display:flex;align-items:center;gap:12px}
+.app-title h1{font-size:20px}
+.nav{display:flex;gap:4px;flex-wrap:wrap}
+.nav button{font-size:11px;padding:6px 12px;border-radius:20px}
+.nav button.active{background:var(--purple-bg);border-color:var(--purple);color:var(--purple)}
+.header-actions{display:flex;gap:8px}
+.content{padding:1.5rem;flex:1;max-width:1200px;width:100%;margin:0 auto}
+
+/* CARDS */
+.card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem}
+.imm-accent{border-left:2px solid var(--purple);padding-left:12px}
+
+/* METRICS */
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1.5rem}
+.metric{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem}
+.metric .label{font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em}
+.metric .val{font-family:'Fraunces',serif;font-size:26px;font-weight:300}
+.metric .val.green{color:var(--green)}
+.metric .val.red{color:var(--red)}
+.metric .val.purple{color:var(--purple)}
+
+/* BADGES */
+.badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;letter-spacing:0.04em}
+.badge-ok{background:var(--green-bg);color:var(--green);border:0.5px solid rgba(74,222,128,0.3)}
+.badge-no{background:var(--red-bg);color:var(--red);border:0.5px solid rgba(248,113,113,0.3)}
+.badge-warn{background:var(--amber-bg);color:var(--amber);border:0.5px solid rgba(251,191,36,0.3)}
+.badge-purple{background:var(--purple-bg);color:var(--purple);border:0.5px solid rgba(167,139,250,0.3)}
+
+/* TABLE */
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;font-weight:500;color:var(--text2);padding:8px 6px;border-bottom:0.5px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.06em}
+td{padding:7px 6px;border-bottom:0.5px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+
+/* MONTH CELLS */
+.month-cell{display:inline-flex;align-items:center;justify-content:center;width:28px;height:24px;border-radius:4px;cursor:pointer;font-size:11px;border:0.5px solid var(--border);transition:all 0.15s;font-weight:500}
+.month-cell.paid{background:var(--green-bg);color:var(--green);border-color:rgba(74,222,128,0.3)}
+.month-cell.paid:hover{background:rgba(248,113,113,0.15)}
+.month-cell.unpaid{background:var(--red-bg);color:var(--red);border-color:rgba(248,113,113,0.3)}
+.month-cell.unpaid:hover{background:rgba(74,222,128,0.15)}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:12px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em}
+
+/* PROGRESS BAR */
+.progress{background:var(--border);border-radius:2px;height:4px;margin:8px 0;overflow:hidden}
+.progress-bar{height:100%;border-radius:2px;background:var(--green);transition:width 0.5s}
+
+/* TOTAL BAR */
+.total-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg3);border-radius:var(--radius);margin-top:12px;font-size:12px;flex-wrap:wrap;gap:8px}
+.total-bar strong{font-family:'Fraunces',serif;font-weight:300;font-size:15px}
+
+/* LOCATAIRE ROW */
+.loc-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border);flex-wrap:wrap}
+.loc-row:last-child{border-bottom:none}
+.loc-info{flex:1;min-width:180px}
+.loc-name{font-weight:500;margin-bottom:2px}
+.loc-meta{font-size:11px;color:var(--text2)}
+
+/* SECTION TITLE */
+.section-title{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:12px}
+
+/* PRINT */
+@media print{
+  body{background:#fff;color:#000}
+  .app-header,.nav,.header-actions,button,.form-grid{display:none!important}
+  .card{border:1px solid #ccc;page-break-inside:avoid}
+  .month-cell.paid{background:#d1fae5;color:#065f46}
+  .month-cell.unpaid{background:#fee2e2;color:#991b1b}
+  .screen{display:flex!important}
+  .tab{display:block!important}
+}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen" class="screen active login-wrap">
+  <div class="login-card">
+    <div class="login-title">
+      <h1>Ares Invest</h1>
+      <p>Gestion locataires · Luxembourg</p>
+    </div>
+    <div class="form-group">
+      <label>Mot de passe</label>
+      <input type="password" id="pwInput" placeholder="••••••••"/>
+    </div>
+    <button class="primary" onclick="doLogin()">Se connecter</button>
+    <p id="loginErr" style="font-size:11px;color:var(--red);text-align:center;display:none">Mot de passe incorrect</p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="mainScreen" class="screen">
+  <div class="app-header">
+    <div class="app-title">
+      <h1>Ares Invest</h1>
+      <span style="color:var(--text3);font-size:11px">gestion locataires</span>
+    </div>
+    <div class="nav">
+      <button onclick="showTab('dashboard')" id="tab-dashboard" class="active">Dashboard</button>
+      <button onclick="showTab('immeubles')" id="tab-immeubles">Immeubles</button>
+      <button onclick="showTab('locataires')" id="tab-locataires">Locataires</button>
+      <button onclick="showTab('paiements')" id="tab-paiements">Paiements</button>
+      <button onclick="showTab('stats')" id="tab-stats">Statistiques</button>
+    </div>
+    <div class="header-actions">
+      <button onclick="exportData()" title="Exporter JSON">↓ Export</button>
+      <button onclick="document.getElementById('importFile').click()" title="Importer JSON">↑ Import</button>
+      <button onclick="window.print()" title="Imprimer">⎙ Print</button>
+      <button class="danger" onclick="doLogout()">Quitter</button>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)"/>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div id="tab-dashboard" class="tab">
+      <h2>Tableau de bord</h2>
+      <div class="metrics-grid" id="metricsBar"></div>
+      <div id="dashImmeubles"></div>
+    </div>
+
+    <!-- IMMEUBLES -->
+    <div id="tab-immeubles" class="tab" style="display:none">
+      <h2>Immeubles</h2>
+      <div class="card">
+        <div class="section-title">Ajouter un immeuble</div>
+        <div class="form-grid">
+          <div class="form-group" style="grid-column:span 2">
+            <label>Adresse complète</label>
+            <input id="newImm" placeholder="ex: 34, rue Josy Haendel"/>
+          </div>
+          <div class="form-group">
+            <label>Loyer base €</label>
+            <input id="newLoyerBase" type="number" placeholder="0"/>
+          </div>
+          <div class="form-group">
+            <label>Charges €</label>
+            <input id="newCharges" type="number" placeholder="0"/>
+          </div>
+        </div>
+        <button class="primary" onclick="addImmeuble()">+ Ajouter immeuble</button>
+      </div>
+      <div id="listImmeubles"></div>
+    </div>
+
+    <!-- LOCATAIRES -->
+    <div id="tab-locataires" class="tab" style="display:none">
+      <h2>Locataires</h2>
+      <div class="card">
+        <div class="section-title">Ajouter un locataire</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nom</label>
+            <input id="lNom" placeholder="Nom"/>
+          </div>
+          <div class="form-group">
+            <label>Prénom</label>
+            <input id="lPrenom" placeholder="Prénom"/>
+          </div>
+          <div class="form-group">
+            <label>Immeuble</label>
+            <select id="lImm"><option value="">-- Choisir --</option></select>
+          </div>
+          <div class="form-group">
+            <label>Loyer mensuel €</label>
+            <input id="lLoyer" type="number" placeholder="0"/>
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select id="lType">
+              <option value="principal">Principal</option>
+              <option value="sous">Sous-locataire</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Téléphone</label>
+            <input id="lTel" placeholder="+352 ..."/>
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input id="lMail" placeholder="email@..."/>
+          </div>
+          <div class="form-group">
+            <label>Caution €</label>
+            <input id="lCaution" type="number" placeholder="0"/>
+          </div>
+          <div class="form-group">
+            <label>Note caution</label>
+            <input id="lCautionNote" placeholder="ex: No cauzione porta"/>
+          </div>
+        </div>
+        <button class="primary" onclick="addLocataire()">+ Ajouter locataire</button>
+      </div>
+      <div id="listLocataires"></div>
+    </div>
+
+    <!-- PAIEMENTS -->
+    <div id="tab-paiements" class="tab" style="display:none">
+      <h2>Paiements <span id="anneeLabel" style="color:var(--purple)"></span></h2>
+      <div style="display:flex;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center">
+        <div class="form-group" style="width:auto">
+          <label>Année</label>
+          <select id="anneeSelect" onchange="renderPaiements()" style="width:100px"></select>
+        </div>
+        <div class="form-group" style="width:auto">
+          <label>Immeuble</label>
+          <select id="filtreImm" onchange="renderPaiements()" style="width:280px"><option value="">Tous les immeubles</option></select>
+        </div>
+      </div>
+      <div id="paiementsContent"></div>
+    </div>
+
+    <!-- STATS -->
+    <div id="tab-stats" class="tab" style="display:none">
+      <h2>Statistiques</h2>
+      <div class="metrics-grid" id="statsMetrics"></div>
+      <div id="statsDetail"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const PWD = 'lux2024';
+const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const MONTHS_FULL = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+function loadData(){
+  try{return JSON.parse(localStorage.getItem('aresLocData')||'{"immeubles":[],"locataires":[],"paiements":{}}');}
+  catch(e){return{immeubles:[],locataires:[],paiements:{}};}
+}
+function saveData(d){localStorage.setItem('aresLocData',JSON.stringify(d));}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+
+function doLogin(){
+  if(document.getElementById('pwInput').value===PWD){
+    document.getElementById('loginScreen').classList.remove('active');
+    document.getElementById('mainScreen').classList.add('active');
+    initApp();
+  } else {
+    document.getElementById('loginErr').style.display='block';
+  }
+}
+document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+
+function doLogout(){
+  document.getElementById('mainScreen').classList.remove('active');
+  document.getElementById('loginScreen').classList.add('active');
+  document.getElementById('pwInput').value='';
+}
+
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.style.display='none');
+  document.querySelectorAll('.nav button[id^="tab-"]').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).style.display='block';
+  const btn=document.getElementById('tab-'+name);
+  if(btn)btn.classList.add('active');
+  if(name==='dashboard')renderDashboard();
+  if(name==='immeubles')renderImmeubles();
+  if(name==='locataires')renderLocataires();
+  if(name==='paiements')renderPaiements();
+  if(name==='stats')renderStats();
+}
+
+function initApp(){
+  const now=new Date();
+  const sel=document.getElementById('anneeSelect');
+  sel.innerHTML='';
+  for(let y=now.getFullYear()-2;y<=now.getFullYear()+1;y++){
+    const o=document.createElement('option');
+    o.value=y;o.textContent=y;
+    if(y===now.getFullYear())o.selected=true;
+    sel.appendChild(o);
+  }
+  populateImmSelect();
+  renderDashboard();
+}
+
+function populateImmSelect(){
+  const d=loadData();
+  ['lImm','filtreImm'].forEach(id=>{
+    const s=document.getElementById(id);
+    if(!s)return;
+    const val=s.value;
+    s.innerHTML=id==='filtreImm'?'<option value="">Tous les immeubles</option>':'<option value="">-- Choisir --</option>';
+    d.immeubles.forEach(im=>{
+      const o=document.createElement('option');
+      o.value=im.id;o.textContent=im.adresse;
+      s.appendChild(o);
+    });
+    s.value=val;
+  });
+}
+
+function addImmeuble(){
+  const adr=document.getElementById('newImm').value.trim();
+  const loyer=parseFloat(document.getElementById('newLoyerBase').value)||0;
+  const charges=parseFloat(document.getElementById('newCharges').value)||0;
+  if(!adr)return alert('Adresse obligatoire');
+  const d=loadData();
+  d.immeubles.push({id:uid(),adresse:adr,loyer,charges});
+  saveData(d);
+  document.getElementById('newImm').value='';
+  document.getElementById('newLoyerBase').value='';
+  document.getElementById('newCharges').value='';
+  renderImmeubles();populateImmSelect();
+}
+
+function deleteImmeuble(id){
+  if(!confirm('Supprimer cet immeuble et tous ses locataires ?'))return;
+  const d=loadData();
+  d.immeubles=d.immeubles.filter(i=>i.id!==id);
+  d.locataires=d.locataires.filter(l=>l.immId!==id);
+  saveData(d);renderImmeubles();populateImmSelect();
+}
+
+function renderImmeubles(){
+  const d=loadData();
+  const el=document.getElementById('listImmeubles');
+  if(!d.immeubles.length){el.innerHTML='<p style="color:var(--text2);font-size:12px">Aucun immeuble enregistré.</p>';return;}
+  el.innerHTML=d.immeubles.map(im=>{
+    const locs=d.locataires.filter(l=>l.immId===im.id);
+    const total=im.loyer+im.charges;
+    return `<div class="card">
+      <div class="card-header">
+        <div class="imm-accent">
+          <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:300">${im.adresse}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:4px">Loyer ${im.loyer.toLocaleString('fr-LU')}€ + charges ${im.charges.toLocaleString('fr-LU')}€ = <strong>${total.toLocaleString('fr-LU')}€</strong>/mois · ${locs.length} locataire(s)</div>
+        </div>
+        <button class="danger" onclick="deleteImmeuble('${im.id}')">✕ Supprimer</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function addLocataire(){
+  const nom=document.getElementById('lNom').value.trim();
+  const prenom=document.getElementById('lPrenom').value.trim();
+  const immId=document.getElementById('lImm').value;
+  const loyer=parseFloat(document.getElementById('lLoyer').value)||0;
+  const type=document.getElementById('lType').value;
+  const tel=document.getElementById('lTel').value.trim();
+  const mail=document.getElementById('lMail').value.trim();
+  const caution=parseFloat(document.getElementById('lCaution').value)||0;
+  const cautionNote=document.getElementById('lCautionNote').value.trim();
+  if(!nom||!immId)return alert('Nom et immeuble obligatoires');
+  const d=loadData();
+  d.locataires.push({id:uid(),nom,prenom,immId,loyer,type,tel,mail,caution,cautionNote});
+  saveData(d);
+  ['lNom','lPrenom','lLoyer','lTel','lMail','lCaution','lCautionNote'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('lImm').value='';
+  renderLocataires();
+}
+
+function deleteLocataire(id){
+  if(!confirm('Supprimer ce locataire ?'))return;
+  const d=loadData();
+  d.locataires=d.locataires.filter(l=>l.id!==id);
+  saveData(d);renderLocataires();
+}
+
+function renderLocataires(){
+  const d=loadData();
+  const el=document.getElementById('listLocataires');
+  if(!d.locataires.length){el.innerHTML='<p style="color:var(--text2);font-size:12px">Aucun locataire enregistré.</p>';return;}
+  const byImm={};
+  d.immeubles.forEach(im=>{byImm[im.id]={im,locs:[]};});
+  d.locataires.forEach(l=>{if(byImm[l.immId])byImm[l.immId].locs.push(l);});
+  el.innerHTML=Object.values(byImm).filter(x=>x.locs.length).map(({im,locs})=>`
+    <div class="card">
+      <div class="section-title imm-accent" style="margin-bottom:12px">${im.adresse}</div>
+      ${locs.map(l=>`<div class="loc-row">
+        <div class="loc-info">
+          <div class="loc-name">${l.nom} ${l.prenom} <span class="badge ${l.type==='sous'?'badge-warn':'badge-purple'}">${l.type==='sous'?'sous-loc':'principal'}</span></div>
+          <div class="loc-meta">${l.tel||'—'} ${l.mail?'· '+l.mail:''}</div>
+          ${l.caution?`<div class="loc-meta" style="color:var(--amber)">Caution: ${l.caution.toLocaleString('fr-LU')}€${l.cautionNote?' — '+l.cautionNote:''}</div>`:''}
+        </div>
+        <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:300;color:var(--green)">${l.loyer.toLocaleString('fr-LU')}€<span style="font-size:11px;color:var(--text2)">/mois</span></div>
+        <button class="danger" onclick="deleteLocataire('${l.id}')">✕</button>
+      </div>`).join('')}
+      <div class="total-bar">
+        <span style="color:var(--text2)">Total immeuble</span>
+        <strong>${locs.reduce((a,l)=>a+l.loyer,0).toLocaleString('fr-LU')}€/mois</strong>
+      </div>
+    </div>
+  `).join('');
+}
+
+function pKey(locId,annee,mois){return `${locId}-${annee}-${mois}`;}
+
+function togglePaiement(locId,annee,mois){
+  const d=loadData();
+  const k=pKey(locId,annee,mois);
+  if(d.paiements[k]){delete d.paiements[k];}
+  else{d.paiements[k]={date:new Date().toISOString().slice(0,10)};}
+  saveData(d);renderPaiements();
+}
+
+function renderPaiements(){
+  const d=loadData();
+  const annee=parseInt(document.getElementById('anneeSelect').value);
+  const filtreImm=document.getElementById('filtreImm').value;
+  document.getElementById('anneeLabel').textContent=annee;
+  populateImmSelect();
+  let immeubles=d.immeubles;
+  if(filtreImm)immeubles=immeubles.filter(im=>im.id===filtreImm);
+  let html='';let grandTotal=0;let grandPaye=0;
+
+  immeubles.forEach(im=>{
+    const locs=d.locataires.filter(l=>l.immId===im.id);
+    if(!locs.length)return;
+    let immPaye=0;
+    const immTotal=locs.reduce((a,l)=>a+l.loyer,0)*12;
+
+    html+=`<div class="card"><div class="imm-accent" style="margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid var(--border)">
+      <span style="font-family:'Fraunces',serif;font-size:16px;font-weight:300">${im.adresse}</span>
+    </div>
+    <div style="overflow-x:auto"><table>
+    <thead><tr>
+      <th style="min-width:160px">Locataire</th>
+      <th>Loyer</th>
+      ${MONTHS.map(m=>`<th style="text-align:center;width:36px">${m}</th>`).join('')}
+      <th style="text-align:right">Payé</th>
+      <th style="text-align:right">Reste</th>
+    </tr></thead><tbody>`;
+
+    locs.forEach(l=>{
+      let payeAnnee=0;
+      let cells='';
+      MONTHS.forEach((_,mi)=>{
+        const k=pKey(l.id,annee,mi+1);
+        const paid=!!d.paiements[k];
+        if(paid)payeAnnee+=l.loyer;
+        cells+=`<td style="text-align:center"><span class="month-cell ${paid?'paid':'unpaid'}" onclick="togglePaiement('${l.id}',${annee},${mi+1})" title="${paid?'Payé — cliquer pour annuler':'Non payé — cliquer pour valider'}">${paid?'✓':'✗'}</span></td>`;
+      });
+      const reste=l.loyer*12-payeAnnee;
+      immPaye+=payeAnnee;
+      html+=`<tr>
+        <td>${l.nom} ${l.prenom} <span class="badge ${l.type==='sous'?'badge-warn':'badge-purple'}">${l.type==='sous'?'S':'P'}</span></td>
+        <td>${l.loyer.toLocaleString('fr-LU')}€</td>
+        ${cells}
+        <td style="text-align:right;color:var(--green)">${payeAnnee.toLocaleString('fr-LU')}€</td>
+        <td style="text-align:right;color:${reste>0?'var(--red)':'var(--green)'}">${reste.toLocaleString('fr-LU')}€</td>
+      </tr>`;
+    });
+
+    grandTotal+=immTotal;grandPaye+=immPaye;
+    html+=`</tbody></table></div>
+    <div class="total-bar">
+      <span style="color:var(--text2)">${im.adresse}</span>
+      <span>Attendu: <strong>${immTotal.toLocaleString('fr-LU')}€</strong> &nbsp;·&nbsp; Reçu: <strong style="color:var(--green)">${immPaye.toLocaleString('fr-LU')}€</strong> &nbsp;·&nbsp; Reste: <strong style="color:${immTotal-immPaye>0?'var(--red)':'var(--green)'}">${(immTotal-immPaye).toLocaleString('fr-LU')}€</strong></span>
+    </div></div>`;
+  });
+
+  if(!html)html='<p style="color:var(--text2);font-size:12px">Aucun locataire trouvé.</p>';
+  else html+=`<div class="total-bar" style="font-size:14px;background:var(--bg3);border:0.5px solid var(--purple);margin-top:4px">
+    <span style="font-family:'Fraunces',serif;font-size:16px">Total général ${annee}</span>
+    <span>Attendu: <strong style="font-family:'Fraunces',serif">${grandTotal.toLocaleString('fr-LU')}€</strong> &nbsp;·&nbsp; Reçu: <strong style="color:var(--green);font-family:'Fraunces',serif">${grandPaye.toLocaleString('fr-LU')}€</strong> &nbsp;·&nbsp; Reste: <strong style="color:${grandTotal-grandPaye>0?'var(--red)':'var(--green)'};font-family:'Fraunces',serif">${(grandTotal-grandPaye).toLocaleString('fr-LU')}€</strong></span>
+  </div>`;
+
+  document.getElementById('paiementsContent').innerHTML=html;
+}
+
+function renderDashboard(){
+  const d=loadData();
+  const annee=new Date().getFullYear();
+  const mois=new Date().getMonth();
+  const totalMensuel=d.locataires.reduce((a,l)=>a+l.loyer,0);
+  let payeMois=0;
+  d.locataires.forEach(l=>{if(d.paiements[pKey(l.id,annee,mois+1)])payeMois+=l.loyer;});
+  const tauxMois=totalMensuel?Math.round(payeMois/totalMensuel*100):0;
+
+  document.getElementById('metricsBar').innerHTML=`
+    <div class="metric"><div class="label">Immeubles</div><div class="val purple">${d.immeubles.length}</div></div>
+    <div class="metric"><div class="label">Locataires</div><div class="val">${d.locataires.length}</div></div>
+    <div class="metric"><div class="label">Revenu mensuel</div><div class="val">${totalMensuel.toLocaleString('fr-LU')}€</div></div>
+    <div class="metric"><div class="label">Revenu annuel</div><div class="val">${(totalMensuel*12).toLocaleString('fr-LU')}€</div></div>
+    <div class="metric"><div class="label">Payé ${MONTHS_FULL[mois]}</div><div class="val ${tauxMois>=80?'green':tauxMois>=50?'':'red'}">${tauxMois}%</div></div>
+  `;
+
+  const byImm={};
+  d.immeubles.forEach(im=>{byImm[im.id]={im,locs:[]};});
+  d.locataires.forEach(l=>{if(byImm[l.immId])byImm[l.immId].locs.push(l);});
+
+  document.getElementById('dashImmeubles').innerHTML=Object.values(byImm).filter(x=>x.locs.length).map(({im,locs})=>{
+    const total=locs.reduce((a,l)=>a+l.loyer,0);
+    const paye=locs.filter(l=>d.paiements[pKey(l.id,annee,mois+1)]).reduce((a,l)=>a+l.loyer,0);
+    const pct=total?Math.round(paye/total*100):0;
+    return `<div class="card">
+      <div class="card-header" style="margin-bottom:8px">
+        <span style="font-family:'Fraunces',serif;font-size:15px;font-weight:300">${im.adresse}</span>
+        <span style="font-size:12px;color:var(--text2)">${paye.toLocaleString('fr-LU')}€ / ${total.toLocaleString('fr-LU')}€ · ${pct}%</span>
+      </div>
+      <div class="progress"><div class="progress-bar" style="width:${pct}%;background:${pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)'}"></div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
+        ${locs.map(l=>{const paid=!!d.paiements[pKey(l.id,annee,mois+1)];return`<span class="badge ${paid?'badge-ok':'badge-no'}">${l.nom} ${paid?'✓':'✗'}</span>`;}).join('')}
+      </div>
+    </div>`;
+  }).join('')||'<p style="color:var(--text2);font-size:12px">Ajoutez des immeubles et locataires pour commencer.</p>';
+}
+
+function renderStats(){
+  const d=loadData();
+  const annee=new Date().getFullYear();
+  const mensuel=d.locataires.reduce((a,l)=>a+l.loyer,0);
+  const totalAnnuel=mensuel*12;
+  let payeAnnuel=0;
+  d.locataires.forEach(l=>{
+    for(let m=1;m<=12;m++){if(d.paiements[pKey(l.id,annee,m)])payeAnnuel+=l.loyer;}
+  });
+  const taux=totalAnnuel?Math.round(payeAnnuel/totalAnnuel*100):0;
+
+  document.getElementById('statsMetrics').innerHTML=`
+    <div class="metric"><div class="label">Revenu annuel attendu</div><div class="val">${totalAnnuel.toLocaleString('fr-LU')}€</div></div>
+    <div class="metric"><div class="label">Encaissé ${annee}</div><div class="val green">${payeAnnuel.toLocaleString('fr-LU')}€</div></div>
+    <div class="metric"><div class="label">Manquant</div><div class="val red">${(totalAnnuel-payeAnnuel).toLocaleString('fr-LU')}€</div></div>
+    <div class="metric"><div class="label">Taux encaissement</div><div class="val ${taux>=80?'green':taux>=50?'':'red'}">${taux}%</div></div>
+  `;
+
+  let html='<div class="card"><div class="section-title">Encaissement par mois — '+annee+'</div><div style="overflow-x:auto"><table><thead><tr><th>Mois</th><th>Attendu</th><th>Encaissé</th><th>Manquant</th><th>Taux</th></tr></thead><tbody>';
+  MONTHS_FULL.forEach((mf,mi)=>{
+    let paye=0;
+    d.locataires.forEach(l=>{if(d.paiements[pKey(l.id,annee,mi+1)])paye+=l.loyer;});
+    const t=mensuel?Math.round(paye/mensuel*100):0;
+    html+=`<tr>
+      <td>${mf}</td>
+      <td>${mensuel.toLocaleString('fr-LU')}€</td>
+      <td style="color:var(--green)">${paye.toLocaleString('fr-LU')}€</td>
+      <td style="color:${mensuel-paye>0?'var(--red)':'var(--green)'}">${(mensuel-paye).toLocaleString('fr-LU')}€</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="progress" style="width:80px;margin:0"><div class="progress-bar" style="width:${t}%;background:${t>=80?'var(--green)':t>=50?'var(--amber)':'var(--red)'}"></div></div>
+          <span style="color:${t>=80?'var(--green)':t>=50?'var(--amber)':'var(--red)'}">${t}%</span>
+        </div>
+      </td>
+    </tr>`;
+  });
+  html+='</tbody></table></div></div>';
+
+  html+='<div class="card"><div class="section-title">Encaissement par immeuble — '+annee+'</div><table><thead><tr><th>Immeuble</th><th>Locataires</th><th>Attendu/an</th><th>Encaissé</th><th>Taux</th></tr></thead><tbody>';
+  d.immeubles.forEach(im=>{
+    const locs=d.locataires.filter(l=>l.immId===im.id);
+    if(!locs.length)return;
+    const att=locs.reduce((a,l)=>a+l.loyer,0)*12;
+    let enc=0;
+    locs.forEach(l=>{for(let m=1;m<=12;m++){if(d.paiements[pKey(l.id,annee,m)])enc+=l.loyer;}});
+    const t=att?Math.round(enc/att*100):0;
+    html+=`<tr><td>${im.adresse}</td><td>${locs.length}</td><td>${att.toLocaleString('fr-LU')}€</td><td style="color:var(--green)">${enc.toLocaleString('fr-LU')}€</td><td style="color:${t>=80?'var(--green)':t>=50?'var(--amber)':'var(--red)'}">${t}%</td></tr>`;
+  });
+  html+='</tbody></table></div>';
+
+  document.getElementById('statsDetail').innerHTML=html;
+}
+
+function exportData(){
+  const d=loadData();
+  const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='locataires_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+
+function importData(event){
+  const file=event.target.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const d=JSON.parse(e.target.result);
+      if(!confirm('Remplacer toutes les données actuelles par ce fichier ?'))return;
+      saveData(d);
+      renderDashboard();populateImmSelect();
+      alert('Import réussi !');
+    }catch(err){alert('Fichier JSON invalide');}
+  };
+  reader.readAsText(file);
+}
+</script>
+</body>
+</html>
