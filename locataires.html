@@ -332,6 +332,34 @@ function initApp(){
   }
   populateImmSelect();
   renderDashboard();
+  checkBackupReminder();
+}
+
+function checkBackupReminder(){
+  var last = localStorage.getItem('aresLastBackup');
+  var now = new Date();
+  if(!last){
+    showBackupBanner();
+    return;
+  }
+  var diff = (now - new Date(last)) / (1000*60*60*24);
+  if(diff >= 7) showBackupBanner();
+}
+
+function showBackupBanner(){
+  var banner = document.getElementById('backupBanner');
+  if(banner) banner.style.display='flex';
+}
+
+function dismissBanner(){
+  var banner = document.getElementById('backupBanner');
+  if(banner) banner.style.display='none';
+}
+
+function exportAndDismiss(){
+  localStorage.setItem('aresLastBackup', new Date().toISOString());
+  dismissBanner();
+  exportData();
 }
 
 function populateImmSelect(){
