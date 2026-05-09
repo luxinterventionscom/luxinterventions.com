@@ -170,14 +170,14 @@ tr:last-child td{border-bottom:none}
   <div class="content">
 
     <!-- DASHBOARD -->
-    <div id="tab-dashboard" class="tab">
+    <div id="page-dashboard" class="tab">
       <h2>Tableau de bord</h2>
       <div class="metrics-grid" id="metricsBar"></div>
       <div id="dashImmeubles"></div>
     </div>
 
     <!-- IMMEUBLES -->
-    <div id="tab-immeubles" class="tab" style="display:none">
+    <div id="page-immeubles" class="tab" style="display:none">
       <h2>Immeubles</h2>
       <div class="card">
         <div class="section-title">Ajouter un immeuble</div>
@@ -201,7 +201,7 @@ tr:last-child td{border-bottom:none}
     </div>
 
     <!-- LOCATAIRES -->
-    <div id="tab-locataires" class="tab" style="display:none">
+    <div id="page-locataires" class="tab" style="display:none">
       <h2>Locataires</h2>
       <div class="card">
         <div class="section-title">Ajouter un locataire</div>
@@ -252,7 +252,7 @@ tr:last-child td{border-bottom:none}
     </div>
 
     <!-- PAIEMENTS -->
-    <div id="tab-paiements" class="tab" style="display:none">
+    <div id="page-paiements" class="tab" style="display:none">
       <h2>Paiements <span id="anneeLabel" style="color:var(--purple)"></span></h2>
       <div style="display:flex;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center">
         <div class="form-group" style="width:auto">
@@ -268,7 +268,7 @@ tr:last-child td{border-bottom:none}
     </div>
 
     <!-- STATS -->
-    <div id="tab-stats" class="tab" style="display:none">
+    <div id="page-stats" class="tab" style="display:none">
       <h2>Statistiques</h2>
       <div class="metrics-grid" id="statsMetrics"></div>
       <div id="statsDetail"></div>
@@ -308,10 +308,11 @@ function doLogout(){
 
 function showTab(name){
   document.querySelectorAll('.tab').forEach(t=>t.style.display='none');
-  document.querySelectorAll('.nav button[id^="tab-"]').forEach(b=>b.classList.remove('active'));
-  document.getElementById('tab-'+name).style.display='block';
-  const btn=document.getElementById('tab-'+name);
-  if(btn)btn.classList.add('active');
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
+  var tabEl = document.getElementById('page-'+name);
+  if(tabEl) tabEl.style.display='block';
+  var btnEl = document.getElementById('tab-'+name);
+  if(btnEl) btnEl.classList.add('active');
   if(name==='dashboard')renderDashboard();
   if(name==='immeubles')renderImmeubles();
   if(name==='locataires')renderLocataires();
