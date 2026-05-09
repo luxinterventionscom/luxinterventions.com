@@ -139,6 +139,10 @@ tr:last-child td{border-bottom:none}
       <label>Mot de passe</label>
       <input type="password" id="pwInput" placeholder="••••••••"/>
     </div>
+    <div class="form-group">
+      <label>GitHub Token (pour sauvegarde)</label>
+      <input type="password" id="ghTokenInput" placeholder="ghp_..."/>
+    </div>
     <button class="primary" onclick="doLogin()">Se connecter</button>
     <p id="loginErr" style="font-size:11px;color:var(--red);text-align:center;display:none">Mot de passe incorrect</p>
   </div>
@@ -159,6 +163,8 @@ tr:last-child td{border-bottom:none}
       <button onclick="showTab('stats')" id="tab-stats">Statistiques</button>
     </div>
     <div class="header-actions">
+      <span id="ghStatus" style="font-size:11px;color:var(--green);min-width:180px;text-align:right"></span>
+      <button onclick="loadFromGitHub().then(d=>{if(d){initApp();}})" title="Charger depuis GitHub">↓ GitHub</button>
       <button onclick="exportData()" title="Exporter JSON">↓ Export</button>
       <button onclick="document.getElementById('importFile').click()" title="Importer JSON">↑ Import</button>
       <button onclick="window.print()" title="Imprimer">⎙ Print</button>
@@ -279,6 +285,10 @@ tr:last-child td{border-bottom:none}
 
 <script>
 const PWD = 'lux2024';
+var GH_TOKEN = '';
+const GH_USER = 'luxinterventionscom';
+const GH_REPO = 'ares-locataires-db';
+const GH_FILE = 'locataires.json';
 const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
 const MONTHS_FULL = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
@@ -286,11 +296,68 @@ function loadData(){
   try{return JSON.parse(localStorage.getItem('aresLocData')||'{"immeubles":[],"locataires":[],"paiements":{}}');}
   catch(e){return{immeubles:[],locataires:[],paiements:{}};}
 }
-function saveData(d){localStorage.setItem('aresLocData',JSON.stringify(d));}
+function saveData(d){
+  localStorage.setItem('aresLocData',JSON.stringify(d));
+  saveToGitHub(d);
+}
+
+async function saveToGitHub(d){
+  try{
+    var content = btoa(unescape(encodeURIComponent(JSON.stringify(d,null,2))));
+    var sha = await getFileSha();
+    var body = {message:'Backup auto '+new Date().toISOString().slice(0,16),content:content};
+    if(sha) body.sha = sha;
+    var resp = await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{
+      method:'PUT',
+      headers:{'Authorization':'token '+GH_TOKEN,'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    if(resp.ok){
+      localStorage.setItem('aresLastBackup',new Date().toISOString());
+      showGHStatus('✓ Sauvegardé sur GitHub','var(--green)');
+    } else {
+      showGHStatus('⚠ Erreur GitHub','var(--red)');
+    }
+  }catch(e){
+    showGHStatus('⚠ Pas de connexion','var(--amber)');
+  }
+}
+
+async function getFileSha(){
+  try{
+    var resp = await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{
+      headers:{'Authorization':'token '+GH_TOKEN}
+    });
+    if(resp.ok){var data=await resp.json();return data.sha;}
+  }catch(e){}
+  return null;
+}
+
+async function loadFromGitHub(){
+  try{
+    var resp = await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{
+      headers:{'Authorization':'token '+GH_TOKEN}
+    });
+    if(resp.ok){
+      var data=await resp.json();
+      var decoded=JSON.parse(decodeURIComponent(escape(atob(data.content))));
+      localStorage.setItem('aresLocData',JSON.stringify(decoded));
+      showGHStatus('✓ Données chargées depuis GitHub','var(--green)');
+      return decoded;
+    }
+  }catch(e){}
+  return null;
+}
+
+function showGHStatus(msg,color){
+  var el=document.getElementById('ghStatus');
+  if(el){el.textContent=msg;el.style.color=color;setTimeout(()=>{el.textContent='';},4000);}
+}
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
 
 function doLogin(){
   if(document.getElementById('pwInput').value===PWD){
+    GH_TOKEN = document.getElementById('ghTokenInput').value.trim();
     document.getElementById('loginScreen').classList.remove('active');
     document.getElementById('mainScreen').classList.add('active');
     initApp();
