@@ -616,9 +616,12 @@ function renderStats(){
     html+='<tr><td>'+im.adresse+'</td><td>'+locs.length+'</td><td>'+att.toLocaleString('fr-LU')+'€</td><td style="color:var(--green)">'+enc.toLocaleString('fr-LU')+'€</td><td style="color:var(--red)">-'+deps.toLocaleString('fr-LU')+'€</td><td style="color:var(--purple)">'+net.toLocaleString('fr-LU')+'€</td><td style="color:'+(t>=80?'var(--green)':t>=50?'var(--amber)':'var(--red)')+'">'+t+'%</td></tr>';
   });
   html+='</tbody></table></div>';
-  const hist=(d.historique||[]).slice(0,30);
-  if(hist.length){html+='<div class="card"><div class="section-title">Historique des modifications (30 dernières)</div>'+hist.map(h=>'<div class="hist-entry"><strong>'+h.action+'</strong> — '+h.detail+' <span style="float:right;color:var(--text3)">'+new Date(h.date).toLocaleString('fr-LU')+'</span></div>').join('')+'</div>';}
+  const allHist=(d.historique||[]);
+  if(allHist.length){
+    html+='<div class="card" id="histCard"><div class="section-title">Historique des modifications — <span id="histCount">'+Math.min(12,allHist.length)+'</span> / '+allHist.length+'</div><div id="histList">'+allHist.slice(0,12).map(h=>'<div class="hist-entry"><strong>'+h.action+'</strong> — '+h.detail+' <span style="float:right;color:var(--text3)">'+new Date(h.date).toLocaleString('fr-LU')+'</span></div>').join('')+'</div>'+(allHist.length>12?'<div style="text-align:center;margin-top:12px"><button class="primary" id="histMoreBtn" onclick="loadMoreHist(12)">Voir 12 de plus</button></div>':'')+'</div>';
+  }
   document.getElementById('statsDetail').innerHTML=html;
+  window._histOffset=12;
 }
 
 function openDepenses(immId){
@@ -734,6 +737,17 @@ function importData(event){
   const reader=new FileReader();
   reader.onload=e=>{try{const d=JSON.parse(e.target.result);if(!confirm('Remplacer toutes les données actuelles ?'))return;saveData(d);initApp();alert('Import réussi !');}catch(err){alert('Fichier JSON invalide');}};
   reader.readAsText(file);
+}
+
+function loadMoreHist(step){
+  const d=loadData();const hist=d.historique||[];
+  const offset=window._histOffset||12;const newOffset=offset+step;
+  const el=document.getElementById('histList');const btn=document.getElementById('histMoreBtn');const cnt=document.getElementById('histCount');
+  if(!el)return;
+  el.innerHTML+=hist.slice(offset,newOffset).map(h=>'<div class="hist-entry"><strong>'+h.action+'</strong> — '+h.detail+' <span style="float:right;color:var(--text3)">'+new Date(h.date).toLocaleString('fr-LU')+'</span></div>').join('');
+  window._histOffset=newOffset;
+  if(cnt)cnt.textContent=Math.min(newOffset,hist.length);
+  if(btn){if(newOffset>=hist.length)btn.style.display='none';else btn.textContent='Voir 12 de plus';}
 }
 
 document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('active');});});
