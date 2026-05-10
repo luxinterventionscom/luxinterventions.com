@@ -821,6 +821,76 @@ function importData(event){
   };
   reader.readAsText(file);
 }
+
+function openModal(id){document.getElementById(id).classList.add('active');}
+function closeModal(id){document.getElementById(id).classList.remove('active');}
+
+function editImmeuble(id){
+  const d=loadData();
+  const im=d.immeubles.find(i=>i.id===id);
+  if(!im)return;
+  document.getElementById('editImmId').value=im.id;
+  document.getElementById('editImmAdr').value=im.adresse;
+  document.getElementById('editImmLoyer').value=im.loyer;
+  document.getElementById('editImmCharges').value=im.charges;
+  openModal('modalImm');
+}
+
+function saveEditImm(){
+  const id=document.getElementById('editImmId').value;
+  const d=loadData();
+  const im=d.immeubles.find(i=>i.id===id);
+  if(!im)return;
+  im.adresse=document.getElementById('editImmAdr').value.trim();
+  im.loyer=parseFloat(document.getElementById('editImmLoyer').value)||0;
+  im.charges=parseFloat(document.getElementById('editImmCharges').value)||0;
+  saveData(d);
+  closeModal('modalImm');
+  renderImmeubles();populateImmSelect();
+}
+
+function editLocataire(id){
+  const d=loadData();
+  const l=d.locataires.find(x=>x.id===id);
+  if(!l)return;
+  document.getElementById('editLocId').value=l.id;
+  document.getElementById('editLocNom').value=l.nom;
+  document.getElementById('editLocPrenom').value=l.prenom||'';
+  document.getElementById('editLocLoyer').value=l.loyer;
+  document.getElementById('editLocType').value=l.type;
+  document.getElementById('editLocTel').value=l.tel||'';
+  document.getElementById('editLocMail').value=l.mail||'';
+  document.getElementById('editLocCaution').value=l.caution||'';
+  document.getElementById('editLocCautionNote').value=l.cautionNote||'';
+  const sel=document.getElementById('editLocImm');
+  sel.innerHTML='';
+  d.immeubles.forEach(im=>{
+    const o=document.createElement('option');
+    o.value=im.id;o.textContent=im.adresse;
+    if(im.id===l.immId)o.selected=true;
+    sel.appendChild(o);
+  });
+  openModal('modalLoc');
+}
+
+function saveEditLoc(){
+  const id=document.getElementById('editLocId').value;
+  const d=loadData();
+  const l=d.locataires.find(x=>x.id===id);
+  if(!l)return;
+  l.nom=document.getElementById('editLocNom').value.trim();
+  l.prenom=document.getElementById('editLocPrenom').value.trim();
+  l.immId=document.getElementById('editLocImm').value;
+  l.loyer=parseFloat(document.getElementById('editLocLoyer').value)||0;
+  l.type=document.getElementById('editLocType').value;
+  l.tel=document.getElementById('editLocTel').value.trim();
+  l.mail=document.getElementById('editLocMail').value.trim();
+  l.caution=parseFloat(document.getElementById('editLocCaution').value)||0;
+  l.cautionNote=document.getElementById('editLocCautionNote').value.trim();
+  saveData(d);
+  closeModal('modalLoc');
+  renderLocataires();
+}
 </script>
 </body>
 </html>
