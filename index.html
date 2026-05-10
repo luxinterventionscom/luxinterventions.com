@@ -4,21 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>LuxInterventions — Plateforme Technique 7j/7 · 24h/24</title>
-<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<link rel="icon" type="image/x-icon" href="favicon.ico">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
-<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
-
-<!-- SEO Meta Tags -->
-<meta name="description" content="LuxInterventions — Plateforme technique 7j/7 24h/24 au Luxembourg. Toiture, plomberie, serrurerie, électricité, jardinage, peinture, étanchéité, déménagement et plus.">
-<meta name="keywords" content="intervention Luxembourg, plombier Luxembourg, serrurier Luxembourg, électricien Luxembourg, toiture Luxembourg, jardinage Luxembourg, urgence Luxembourg, 24h/24, 7j/7">
-<meta name="robots" content="index, follow">
-<link rel="canonical" href="https://www.luxinterventions.com/">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://www.luxinterventions.com/">
-<meta property="og:title" content="LuxInterventions — Services Techniques 7j/7 au Luxembourg">
-<meta property="og:description" content="Toiture, plomberie, serrurerie, électricité, jardinage et plus. Intervention rapide 24h/24 au Luxembourg.">
-<meta property="og:image" content="https://www.luxinterventions.com/Fuoco.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="favicon.png">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -138,10 +125,13 @@
 
   @keyframes pulse {
     0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
-  }
-  @keyframes pulse-vis {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(1.4); }
+@keyframes pulse-vis {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.4); }
+}
+
+
+
   }
 
   .hero-title {
@@ -1381,7 +1371,7 @@
           <div style="font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:0.3rem">Accès Portail Syndic</div>
           <div style="font-size:1rem;color:var(--white);font-weight:600">Ce portail est en cours de développement — Accès prévu Q2 2026</div>
         </div>
-        <a href="#contact" class="portail-btn primary">Demander l'accès anticipé →</a>
+        <a href="https://luxinterventions.com/locataires.html" class="portail-btn primary" target="_blank">Accès privé ARES S.A. →</a>
       </div>
     </div>
 
@@ -1780,14 +1770,7 @@
 
   // Smooth anchor s
 // Contatore visitatori
-(function() {
-  var base = 1247;
-  var start = new Date('2026-01-01').getTime();
-  var now = new Date().getTime();
-  var hoursElapsed = Math.floor((now - start) / 3600000);
-  var el = document.getElementById('visitorCount');
-  if (el) el.textContent = (base + hoursElapsed).toLocaleString('fr-LU');
-})();
+document.getElementById('visitorCount').textContent = Math.floor(Math.random() * 40) + 15;
 </script>
 </body>
 </html>
