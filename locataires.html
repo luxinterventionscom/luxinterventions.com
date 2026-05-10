@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestion Locataires — Luxembourg</title>
+<title>Gestion Locataires — Ares Invest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;1,9..144,300&display=swap" rel="stylesheet">
 <style>
@@ -14,6 +14,7 @@
   --red:#f87171;--red-bg:rgba(248,113,113,0.1);
   --amber:#fbbf24;--amber-bg:rgba(251,191,36,0.1);
   --purple:#a78bfa;--purple-bg:rgba(167,139,250,0.1);
+  --blue:#60a5fa;--blue-bg:rgba(96,165,250,0.1);
   --radius:8px;--radius-lg:12px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
@@ -23,112 +24,96 @@ h1{font-size:28px;letter-spacing:-0.5px}
 h2{font-size:20px;margin-bottom:1rem}
 h3{font-size:16px;margin-bottom:8px}
 input,select,textarea{background:var(--bg3);border:0.5px solid var(--border2);border-radius:var(--radius);color:var(--text);font-family:'DM Mono',monospace;font-size:12px;padding:8px 12px;width:100%;outline:none;transition:border-color 0.2s}
-input:focus,select:focus{border-color:var(--purple)}
+input:focus,select:focus,textarea:focus{border-color:var(--purple)}
 select option{background:var(--bg3)}
+textarea{resize:vertical;min-height:80px}
 button{background:transparent;border:0.5px solid var(--border2);border-radius:var(--radius);color:var(--text);cursor:pointer;font-family:'DM Mono',monospace;font-size:12px;padding:8px 16px;transition:all 0.15s;white-space:nowrap}
 button:hover{background:var(--bg3);border-color:var(--border)}
 button.primary{border-color:var(--purple);color:var(--purple)}
 button.primary:hover{background:var(--purple-bg)}
-button.danger{border-color:var(--border3);color:var(--red)}
+button.danger{color:var(--red);border-color:transparent}
 button.danger:hover{background:var(--red-bg)}
-button.success{border-color:var(--border3);color:var(--green)}
+button.blue{border-color:var(--blue);color:var(--blue)}
+button.blue:hover{background:var(--blue-bg)}
 .screen{display:none}
 .screen.active{display:flex;flex-direction:column;min-height:100vh}
-
-/* LOGIN */
 .login-wrap{align-items:center;justify-content:center;flex:1}
 .login-card{border:0.5px solid var(--border2);border-radius:var(--radius-lg);padding:2.5rem;width:340px;display:flex;flex-direction:column;gap:1rem;background:var(--bg2)}
 .login-title{text-align:center;margin-bottom:8px}
 .login-title h1{font-size:24px;margin-bottom:4px}
 .login-title p{color:var(--text2);font-size:11px}
-
-/* LAYOUT */
-.app-header{border-bottom:0.5px solid var(--border);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:10}
-.app-title{display:flex;align-items:center;gap:12px}
-.app-title h1{font-size:20px}
+.app-header{border-bottom:0.5px solid var(--border);padding:0.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;background:var(--bg);z-index:10;flex-wrap:wrap;gap:8px}
+.app-title h1{font-size:18px}
 .nav{display:flex;gap:4px;flex-wrap:wrap}
-.nav button{font-size:11px;padding:6px 12px;border-radius:20px}
+.nav button{font-size:11px;padding:5px 12px;border-radius:20px}
 .nav button.active{background:var(--purple-bg);border-color:var(--purple);color:var(--purple)}
-.header-actions{display:flex;gap:8px}
-.content{padding:1.5rem;flex:1;max-width:1200px;width:100%;margin:0 auto}
-
-/* CARDS */
+.header-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.content{padding:1.5rem;flex:1;max-width:1300px;width:100%;margin:0 auto}
 .card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1.25rem;margin-bottom:1rem}
 .card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1rem}
 .imm-accent{border-left:2px solid var(--purple);padding-left:12px}
-
-/* METRICS */
-.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1.5rem}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.5rem}
 .metric{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:1rem 1.25rem}
 .metric .label{font-size:11px;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em}
-.metric .val{font-family:'Fraunces',serif;font-size:26px;font-weight:300}
-.metric .val.green{color:var(--green)}
-.metric .val.red{color:var(--red)}
-.metric .val.purple{color:var(--purple)}
-
-/* BADGES */
+.metric .val{font-family:'Fraunces',serif;font-size:24px;font-weight:300}
+.metric .val.green{color:var(--green)}.metric .val.red{color:var(--red)}.metric .val.purple{color:var(--purple)}.metric .val.amber{color:var(--amber)}
 .badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;letter-spacing:0.04em}
 .badge-ok{background:var(--green-bg);color:var(--green);border:0.5px solid rgba(74,222,128,0.3)}
 .badge-no{background:var(--red-bg);color:var(--red);border:0.5px solid rgba(248,113,113,0.3)}
 .badge-warn{background:var(--amber-bg);color:var(--amber);border:0.5px solid rgba(251,191,36,0.3)}
 .badge-purple{background:var(--purple-bg);color:var(--purple);border:0.5px solid rgba(167,139,250,0.3)}
-
-/* TABLE */
+.badge-blue{background:var(--blue-bg);color:var(--blue);border:0.5px solid rgba(96,165,250,0.3)}
+.badge-alert{background:var(--red-bg);color:var(--red);border:0.5px solid rgba(248,113,113,0.5);animation:pulse-badge 2s infinite}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:0.5}}
 table{width:100%;border-collapse:collapse;font-size:12px}
 th{text-align:left;font-weight:500;color:var(--text2);padding:8px 6px;border-bottom:0.5px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:0.06em}
 td{padding:7px 6px;border-bottom:0.5px solid var(--border);vertical-align:middle}
 tr:last-child td{border-bottom:none}
-
-/* MONTH CELLS */
+tr.late-row{background:rgba(248,113,113,0.05)}
 .month-cell{display:inline-flex;align-items:center;justify-content:center;width:28px;height:24px;border-radius:4px;cursor:pointer;font-size:11px;border:0.5px solid var(--border);transition:all 0.15s;font-weight:500}
 .month-cell.paid{background:var(--green-bg);color:var(--green);border-color:rgba(74,222,128,0.3)}
 .month-cell.paid:hover{background:rgba(248,113,113,0.15)}
 .month-cell.unpaid{background:var(--red-bg);color:var(--red);border-color:rgba(248,113,113,0.3)}
 .month-cell.unpaid:hover{background:rgba(74,222,128,0.15)}
-
-/* FORM */
 .form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin-bottom:12px}
 .form-group{display:flex;flex-direction:column;gap:4px}
 .form-group label{font-size:11px;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em}
-
-/* PROGRESS BAR */
 .progress{background:var(--border);border-radius:2px;height:4px;margin:8px 0;overflow:hidden}
 .progress-bar{height:100%;border-radius:2px;background:var(--green);transition:width 0.5s}
-
-/* TOTAL BAR */
 .total-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:var(--bg3);border-radius:var(--radius);margin-top:12px;font-size:12px;flex-wrap:wrap;gap:8px}
 .total-bar strong{font-family:'Fraunces',serif;font-weight:300;font-size:15px}
-
-/* LOCATAIRE ROW */
 .loc-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:0.5px solid var(--border);flex-wrap:wrap}
 .loc-row:last-child{border-bottom:none}
 .loc-info{flex:1;min-width:180px}
 .loc-name{font-weight:500;margin-bottom:2px}
 .loc-meta{font-size:11px;color:var(--text2)}
-
-/* SECTION TITLE */
 .section-title{font-size:10px;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:12px}
-
-
-/* MODAL EDIT */
-.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:100;display:none;align-items:center;justify-content:center}
+.alert-banner{background:var(--red-bg);border:0.5px solid rgba(248,113,113,0.4);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--red)}
+.expiry-banner{background:var(--amber-bg);border:0.5px solid rgba(251,191,36,0.4);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--amber)}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:100;display:none;align-items:center;justify-content:center}
 .modal-overlay.active{display:flex}
-.modal{background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-lg);padding:2rem;width:500px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal{background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-lg);padding:2rem;width:580px;max-width:96vw;max-height:92vh;overflow-y:auto}
 .modal h3{margin-bottom:1.5rem;font-family:'Fraunces',serif;font-weight:300;font-size:20px}
-.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem}
-
-/* PRINT */
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem;padding-top:1rem;border-top:0.5px solid var(--border)}
+.modal-tabs{display:flex;gap:4px;margin-bottom:1.5rem;border-bottom:0.5px solid var(--border);padding-bottom:8px;flex-wrap:wrap}
+.modal-tab{font-size:11px;padding:4px 12px;border-radius:20px;cursor:pointer;border:0.5px solid transparent;color:var(--text2)}
+.modal-tab:hover{color:var(--text)}
+.modal-tab.active{background:var(--purple-bg);border-color:var(--purple);color:var(--purple)}
+.hist-entry{padding:6px 0;border-bottom:0.5px solid var(--border);font-size:11px;color:var(--text2)}
+.hist-entry:last-child{border-bottom:none}
+.hist-entry strong{color:var(--text)}
+.note-box{background:var(--bg3);border:0.5px solid var(--border);border-radius:var(--radius);padding:10px;font-size:12px;color:var(--text2);white-space:pre-wrap;min-height:40px}
+.depense-row{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:0.5px solid var(--border);font-size:12px;flex-wrap:wrap}
+.depense-row:last-child{border-bottom:none}
 @media print{
-  body{background:#fff;color:#000}
-  .app-header,.nav,.header-actions,button,.form-grid{display:none!important}
-  .card{border:1px solid #ccc;page-break-inside:avoid}
-  .month-cell.paid{background:#d1fae5;color:#065f46}
-  .month-cell.unpaid{background:#fee2e2;color:#991b1b}
-  .screen{display:flex!important}
-  .tab{display:block!important}
+  body{background:#fff;color:#000;font-size:11px}
+  .app-header,.nav,.header-actions,button,.form-grid,.modal-overlay,.alert-banner,.expiry-banner,#backupBanner{display:none!important}
+  .card{border:1px solid #ccc;page-break-inside:avoid;margin-bottom:8px;padding:8px}
+  .month-cell.paid{background:#d1fae5!important;color:#065f46!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .month-cell.unpaid{background:#fee2e2!important;color:#991b1b!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .screen{display:flex!important}.tab{display:block!important}
+  .total-bar{background:#f5f5f5!important;color:#000!important}
 }
-
-/* SCROLLBAR */
 ::-webkit-scrollbar{width:4px;height:4px}
 ::-webkit-scrollbar-track{background:var(--bg)}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
@@ -136,27 +121,17 @@ tr:last-child td{border-bottom:none}
 </head>
 <body>
 
-<!-- LOGIN -->
-
-<!-- MODAL EDIT IMMEUBLE -->
+<!-- MODAL IMMEUBLE -->
 <div id="modalImm" class="modal-overlay">
   <div class="modal">
     <h3>Modifier l'immeuble</h3>
     <input type="hidden" id="editImmId"/>
     <div class="form-grid">
-      <div class="form-group" style="grid-column:span 2">
-        <label>Adresse</label>
-        <input id="editImmAdr" placeholder="Adresse"/>
-      </div>
-      <div class="form-group">
-        <label>Loyer base €</label>
-        <input id="editImmLoyer" type="number"/>
-      </div>
-      <div class="form-group">
-        <label>Charges €</label>
-        <input id="editImmCharges" type="number"/>
-      </div>
+      <div class="form-group" style="grid-column:span 2"><label>Adresse</label><input id="editImmAdr"/></div>
+      <div class="form-group"><label>Loyer base €</label><input id="editImmLoyer" type="number"/></div>
+      <div class="form-group"><label>Charges €</label><input id="editImmCharges" type="number"/></div>
     </div>
+    <div class="form-group" style="margin-bottom:12px"><label>Notes immeuble</label><textarea id="editImmNote" placeholder="Informations, travaux, assurance..."></textarea></div>
     <div class="modal-footer">
       <button onclick="closeModal('modalImm')">Annuler</button>
       <button class="primary" onclick="saveEditImm()">✓ Enregistrer</button>
@@ -164,85 +139,106 @@ tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-<!-- MODAL EDIT LOCATAIRE -->
+<!-- MODAL LOCATAIRE -->
 <div id="modalLoc" class="modal-overlay">
   <div class="modal">
     <h3>Modifier le locataire</h3>
     <input type="hidden" id="editLocId"/>
-    <div class="form-grid">
-      <div class="form-group">
-        <label>Nom</label>
-        <input id="editLocNom"/>
-      </div>
-      <div class="form-group">
-        <label>Prénom</label>
-        <input id="editLocPrenom"/>
-      </div>
-      <div class="form-group">
-        <label>Immeuble</label>
-        <select id="editLocImm"></select>
-      </div>
-      <div class="form-group">
-        <label>Loyer €</label>
-        <input id="editLocLoyer" type="number"/>
-      </div>
-      <div class="form-group">
-        <label>Type</label>
-        <select id="editLocType">
-          <option value="principal">Principal</option>
-          <option value="sous">Sous-locataire</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Téléphone</label>
-        <input id="editLocTel"/>
-      </div>
-      <div class="form-group" style="grid-column:span 2">
-        <label>Email</label>
-        <input id="editLocMail"/>
-      </div>
-      <div class="form-group">
-        <label>Caution €</label>
-        <input id="editLocCaution" type="number"/>
-      </div>
-      <div class="form-group">
-        <label>Note caution</label>
-        <input id="editLocCautionNote"/>
+    <div class="modal-tabs">
+      <span class="modal-tab active" onclick="switchLocTab('Infos',this)">Informations</span>
+      <span class="modal-tab" onclick="switchLocTab('Notes',this)">Notes</span>
+      <span class="modal-tab" onclick="switchLocTab('Docs',this)">Documents PDF</span>
+      <span class="modal-tab" onclick="switchLocTab('Hist',this)">Historique</span>
+    </div>
+    <div id="locTabInfos">
+      <div class="form-grid">
+        <div class="form-group"><label>Nom</label><input id="editLocNom"/></div>
+        <div class="form-group"><label>Prénom</label><input id="editLocPrenom"/></div>
+        <div class="form-group"><label>Immeuble</label><select id="editLocImm"></select></div>
+        <div class="form-group"><label>Loyer €</label><input id="editLocLoyer" type="number"/></div>
+        <div class="form-group"><label>Type</label>
+          <select id="editLocType"><option value="principal">Principal</option><option value="sous">Sous-locataire</option></select>
+        </div>
+        <div class="form-group"><label>Téléphone</label><input id="editLocTel"/></div>
+        <div class="form-group" style="grid-column:span 2"><label>Email</label><input id="editLocMail"/></div>
+        <div class="form-group"><label>Caution €</label><input id="editLocCaution" type="number"/></div>
+        <div class="form-group"><label>Note caution</label><input id="editLocCautionNote"/></div>
+        <div class="form-group"><label>Début contrat</label><input id="editLocDebut" type="date"/></div>
+        <div class="form-group"><label>Fin contrat</label><input id="editLocFin" type="date"/></div>
       </div>
     </div>
+    <div id="locTabNotes" style="display:none">
+      <div class="form-group"><label>Notes libres</label>
+        <textarea id="editLocNotes" placeholder="Problèmes signalés, communications, réparations demandées..." style="min-height:150px"></textarea>
+      </div>
+    </div>
+    <div id="locTabDocs" style="display:none">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px">Joindre un PDF (contrat, pièce d'identité...) — maximum 1 Mo par fichier.</p>
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <input type="text" id="docLabel" placeholder="Nom du document" style="flex:1;min-width:120px"/>
+        <input type="file" id="docFile" accept=".pdf" style="flex:1;min-width:120px"/>
+        <button class="primary" onclick="attachDoc()">+ Joindre</button>
+      </div>
+      <div id="docList"></div>
+    </div>
+    <div id="locTabHist" style="display:none">
+      <div id="locHistList"></div>
+    </div>
     <div class="modal-footer">
-      <button onclick="closeModal('modalLoc')">Annuler</button>
+      <button onclick="closeModal('modalLoc')">Fermer</button>
       <button class="primary" onclick="saveEditLoc()">✓ Enregistrer</button>
     </div>
   </div>
 </div>
 
+<!-- MODAL DÉPENSES -->
+<div id="modalDepenses" class="modal-overlay">
+  <div class="modal">
+    <h3 id="modalDepTitle">Dépenses</h3>
+    <input type="hidden" id="depImmId"/>
+    <div class="form-grid" style="margin-bottom:12px">
+      <div class="form-group"><label>Description</label><input id="depDesc" placeholder="ex: Réparation toiture"/></div>
+      <div class="form-group"><label>Montant €</label><input id="depMontant" type="number" placeholder="0"/></div>
+      <div class="form-group"><label>Date</label><input id="depDate" type="date"/></div>
+      <div class="form-group"><label>Catégorie</label>
+        <select id="depCat">
+          <option value="reparation">🔧 Réparation</option>
+          <option value="assurance">🛡 Assurance</option>
+          <option value="taxe">🏛 Taxe / Impôt</option>
+          <option value="entretien">🧹 Entretien</option>
+          <option value="autre">📦 Autre</option>
+        </select>
+      </div>
+    </div>
+    <button class="primary" onclick="addDepense()" style="margin-bottom:16px">+ Ajouter dépense</button>
+    <div id="depList"></div>
+    <div id="depTotal" class="total-bar" style="margin-top:12px"></div>
+    <div class="modal-footer"><button onclick="closeModal('modalDepenses')">Fermer</button></div>
+  </div>
+</div>
+
+<!-- LOGIN -->
 <div id="loginScreen" class="screen active login-wrap">
   <div class="login-card">
-    <div class="login-title">
-      <h1>Ares Invest</h1>
-      <p>Gestion locataires · Luxembourg</p>
-    </div>
-    <div class="form-group">
-      <label>Mot de passe</label>
-      <input type="password" id="pwInput" placeholder="••••••••"/>
-    </div>
-    <div class="form-group">
-      <label>GitHub Token (pour sauvegarde)</label>
-      <input type="password" id="ghTokenInput" placeholder="ghp_..."/>
-    </div>
+    <div class="login-title"><h1>Ares Invest</h1><p>Gestion locataires · Luxembourg</p></div>
+    <div class="form-group"><label>Mot de passe</label><input type="password" id="pwInput" placeholder="••••••••"/></div>
+    <div class="form-group"><label>GitHub Token (sauvegarde)</label><input type="password" id="ghTokenInput" placeholder="ghp_..."/></div>
     <button class="primary" onclick="doLogin()">Se connecter</button>
     <p id="loginErr" style="font-size:11px;color:var(--red);text-align:center;display:none">Mot de passe incorrect</p>
   </div>
 </div>
 
-<!-- MAIN APP -->
+<!-- MAIN -->
 <div id="mainScreen" class="screen">
-  <div class="app-header">
-    <div class="app-title">
-      <h1>Ares Invest</h1>
-      <span style="color:var(--text3);font-size:11px">gestion locataires</span>
+  <div id="backupBanner" style="display:none;background:var(--amber-bg);border-bottom:0.5px solid var(--amber);padding:8px 1.5rem;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+    <span style="font-size:12px;color:var(--amber)">⚠ Pensez à sauvegarder vos données régulièrement.</span>
+    <div style="display:flex;gap:8px">
+      <button onclick="exportAndDismiss()" style="border-color:var(--amber);color:var(--amber);font-size:11px;padding:5px 12px">↓ Exporter maintenant</button>
+      <button onclick="dismissBanner()" style="font-size:11px;padding:5px 12px;color:var(--text2)">Plus tard</button>
     </div>
+  </div>
+  <div class="app-header">
+    <div class="app-title"><h1>Ares Invest</h1><span style="color:var(--text3);font-size:11px;margin-left:8px">locataires</span></div>
     <div class="nav">
       <button onclick="showTab('dashboard')" id="tab-dashboard" class="active">Dashboard</button>
       <button onclick="showTab('immeubles')" id="tab-immeubles">Immeubles</button>
@@ -251,223 +247,145 @@ tr:last-child td{border-bottom:none}
       <button onclick="showTab('stats')" id="tab-stats">Statistiques</button>
     </div>
     <div class="header-actions">
-      <span id="ghStatus" style="font-size:11px;color:var(--green);min-width:180px;text-align:right"></span>
-      <button onclick="loadFromGitHub().then(d=>{if(d){initApp();}})" title="Charger depuis GitHub">↓ GitHub</button>
-      <button onclick="exportData()" title="Exporter JSON">↓ Export</button>
-      <button onclick="document.getElementById('importFile').click()" title="Importer JSON">↑ Import</button>
-      <button onclick="window.print()" title="Imprimer">⎙ Print</button>
+      <span id="ghStatus" style="font-size:11px;color:var(--green);min-width:160px;text-align:right"></span>
+      <button onclick="loadFromGitHub().then(d=>{if(d)initApp();})" title="Charger depuis GitHub">↓ GitHub</button>
+      <button onclick="exportData()">↓ Export</button>
+      <button onclick="document.getElementById('importFile').click()">↑ Import</button>
+      <button onclick="window.print()">⎙ Print</button>
       <button class="danger" onclick="doLogout()">Quitter</button>
       <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)"/>
     </div>
   </div>
-
   <div class="content">
-
-    <!-- DASHBOARD -->
     <div id="page-dashboard" class="tab">
       <h2>Tableau de bord</h2>
+      <div id="alertsZone"></div>
       <div class="metrics-grid" id="metricsBar"></div>
       <div id="dashImmeubles"></div>
     </div>
-
-    <!-- IMMEUBLES -->
     <div id="page-immeubles" class="tab" style="display:none">
       <h2>Immeubles</h2>
       <div class="card">
         <div class="section-title">Ajouter un immeuble</div>
         <div class="form-grid">
-          <div class="form-group" style="grid-column:span 2">
-            <label>Adresse complète</label>
-            <input id="newImm" placeholder="ex: 34, rue Josy Haendel"/>
-          </div>
-          <div class="form-group">
-            <label>Loyer base €</label>
-            <input id="newLoyerBase" type="number" placeholder="0"/>
-          </div>
-          <div class="form-group">
-            <label>Charges €</label>
-            <input id="newCharges" type="number" placeholder="0"/>
-          </div>
+          <div class="form-group" style="grid-column:span 2"><label>Adresse complète</label><input id="newImm" placeholder="ex: 34, rue Josy Haendel"/></div>
+          <div class="form-group"><label>Loyer base €</label><input id="newLoyerBase" type="number" placeholder="0"/></div>
+          <div class="form-group"><label>Charges €</label><input id="newCharges" type="number" placeholder="0"/></div>
         </div>
         <button class="primary" onclick="addImmeuble()">+ Ajouter immeuble</button>
       </div>
       <div id="listImmeubles"></div>
     </div>
-
-    <!-- LOCATAIRES -->
     <div id="page-locataires" class="tab" style="display:none">
       <h2>Locataires</h2>
       <div class="card">
         <div class="section-title">Ajouter un locataire</div>
         <div class="form-grid">
-          <div class="form-group">
-            <label>Nom</label>
-            <input id="lNom" placeholder="Nom"/>
-          </div>
-          <div class="form-group">
-            <label>Prénom</label>
-            <input id="lPrenom" placeholder="Prénom"/>
-          </div>
-          <div class="form-group">
-            <label>Immeuble</label>
-            <select id="lImm"><option value="">-- Choisir --</option></select>
-          </div>
-          <div class="form-group">
-            <label>Loyer mensuel €</label>
-            <input id="lLoyer" type="number" placeholder="0"/>
-          </div>
-          <div class="form-group">
-            <label>Type</label>
-            <select id="lType">
-              <option value="principal">Principal</option>
-              <option value="sous">Sous-locataire</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Téléphone</label>
-            <input id="lTel" placeholder="+352 ..."/>
-          </div>
-          <div class="form-group">
-            <label>Email</label>
-            <input id="lMail" placeholder="email@..."/>
-          </div>
-          <div class="form-group">
-            <label>Caution €</label>
-            <input id="lCaution" type="number" placeholder="0"/>
-          </div>
-          <div class="form-group">
-            <label>Note caution</label>
-            <input id="lCautionNote" placeholder="ex: No cauzione porta"/>
-          </div>
+          <div class="form-group"><label>Nom</label><input id="lNom" placeholder="Nom"/></div>
+          <div class="form-group"><label>Prénom</label><input id="lPrenom" placeholder="Prénom"/></div>
+          <div class="form-group"><label>Immeuble</label><select id="lImm"><option value="">-- Choisir --</option></select></div>
+          <div class="form-group"><label>Loyer mensuel €</label><input id="lLoyer" type="number" placeholder="0"/></div>
+          <div class="form-group"><label>Type</label><select id="lType"><option value="principal">Principal</option><option value="sous">Sous-locataire</option></select></div>
+          <div class="form-group"><label>Téléphone</label><input id="lTel" placeholder="+352 ..."/></div>
+          <div class="form-group"><label>Email</label><input id="lMail" placeholder="email@..."/></div>
+          <div class="form-group"><label>Caution €</label><input id="lCaution" type="number" placeholder="0"/></div>
+          <div class="form-group"><label>Note caution</label><input id="lCautionNote" placeholder="ex: No cauzione porta"/></div>
+          <div class="form-group"><label>Début contrat</label><input id="lDebut" type="date"/></div>
+          <div class="form-group"><label>Fin contrat</label><input id="lFin" type="date"/></div>
         </div>
         <button class="primary" onclick="addLocataire()">+ Ajouter locataire</button>
       </div>
       <div id="listLocataires"></div>
     </div>
-
-    <!-- PAIEMENTS -->
     <div id="page-paiements" class="tab" style="display:none">
       <h2>Paiements <span id="anneeLabel" style="color:var(--purple)"></span></h2>
       <div style="display:flex;gap:12px;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center">
-        <div class="form-group" style="width:auto">
-          <label>Année</label>
-          <select id="anneeSelect" onchange="renderPaiements()" style="width:100px"></select>
-        </div>
-        <div class="form-group" style="width:auto">
-          <label>Immeuble</label>
-          <select id="filtreImm" onchange="renderPaiements()" style="width:280px"><option value="">Tous les immeubles</option></select>
-        </div>
+        <div class="form-group" style="width:auto"><label>Année</label><select id="anneeSelect" onchange="renderPaiements()" style="width:100px"></select></div>
+        <div class="form-group" style="width:auto"><label>Immeuble</label><select id="filtreImm" onchange="renderPaiements()" style="width:280px"><option value="">Tous les immeubles</option></select></div>
       </div>
       <div id="paiementsContent"></div>
     </div>
-
-    <!-- STATS -->
     <div id="page-stats" class="tab" style="display:none">
       <h2>Statistiques</h2>
       <div class="metrics-grid" id="statsMetrics"></div>
       <div id="statsDetail"></div>
     </div>
-
   </div>
 </div>
 
 <script>
-const PWD = 'lux2024';
-var GH_TOKEN = '';
-const GH_USER = 'luxinterventionscom';
-const GH_REPO = 'ares-locataires-db';
-const GH_FILE = 'locataires.json';
-const MONTHS = ['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
-const MONTHS_FULL = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const PWD='lux2024';
+var GH_TOKEN='';
+const GH_USER='luxinterventionscom';
+const GH_REPO='ares-locataires-db';
+const GH_FILE='locataires.json';
+const MONTHS=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const MONTHS_FULL=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
 function loadData(){
-  try{return JSON.parse(localStorage.getItem('aresLocData')||'{"immeubles":[],"locataires":[],"paiements":{}}');}
-  catch(e){return{immeubles:[],locataires:[],paiements:{}};}
+  try{return JSON.parse(localStorage.getItem('aresLocData')||'{"immeubles":[],"locataires":[],"paiements":{},"depenses":{},"historique":[]}');}
+  catch(e){return{immeubles:[],locataires:[],paiements:{},depenses:{},historique:[]};}
 }
 function saveData(d){
+  if(!d.depenses)d.depenses={};
+  if(!d.historique)d.historique=[];
   localStorage.setItem('aresLocData',JSON.stringify(d));
   saveToGitHub(d);
 }
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function addHist(d,action,detail){
+  if(!d.historique)d.historique=[];
+  d.historique.unshift({date:new Date().toISOString(),action,detail});
+  if(d.historique.length>200)d.historique=d.historique.slice(0,200);
+}
 
 async function saveToGitHub(d){
+  if(!GH_TOKEN)return;
   try{
-    var content = btoa(unescape(encodeURIComponent(JSON.stringify(d,null,2))));
-    var sha = await getFileSha();
-    var body = {message:'Backup auto '+new Date().toISOString().slice(0,16),content:content};
-    if(sha) body.sha = sha;
-    var resp = await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{
-      method:'PUT',
-      headers:{'Authorization':'token '+GH_TOKEN,'Content-Type':'application/json'},
-      body:JSON.stringify(body)
-    });
-    if(resp.ok){
-      localStorage.setItem('aresLastBackup',new Date().toISOString());
-      showGHStatus('✓ Sauvegardé sur GitHub','var(--green)');
-    } else {
-      showGHStatus('⚠ Erreur GitHub','var(--red)');
-    }
-  }catch(e){
-    showGHStatus('⚠ Pas de connexion','var(--amber)');
-  }
+    var content=btoa(unescape(encodeURIComponent(JSON.stringify(d,null,2))));
+    var sha=await getFileSha();
+    var body={message:'Backup '+new Date().toISOString().slice(0,16),content};
+    if(sha)body.sha=sha;
+    var r=await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{method:'PUT',headers:{'Authorization':'token '+GH_TOKEN,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(r.ok){localStorage.setItem('aresLastBackup',new Date().toISOString());showGHStatus('✓ Sauvegardé sur GitHub','var(--green)');}
+    else showGHStatus('⚠ Erreur GitHub '+r.status,'var(--red)');
+  }catch(e){showGHStatus('⚠ Hors ligne','var(--amber)');}
 }
-
 async function getFileSha(){
-  try{
-    var resp = await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{
-      headers:{'Authorization':'token '+GH_TOKEN}
-    });
-    if(resp.ok){var data=await resp.json();return data.sha;}
-  }catch(e){}
-  return null;
+  try{var r=await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{headers:{'Authorization':'token '+GH_TOKEN}});if(r.ok){var d=await r.json();return d.sha;}}catch(e){}return null;
 }
-
 async function loadFromGitHub(){
+  if(!GH_TOKEN){alert('Token GitHub non saisi au login.');return null;}
   try{
-    var resp = await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{
-      headers:{'Authorization':'token '+GH_TOKEN}
-    });
-    if(resp.ok){
-      var data=await resp.json();
-      var decoded=JSON.parse(decodeURIComponent(escape(atob(data.content))));
-      localStorage.setItem('aresLocData',JSON.stringify(decoded));
-      showGHStatus('✓ Données chargées depuis GitHub','var(--green)');
-      return decoded;
-    }
-  }catch(e){}
-  return null;
+    var r=await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{headers:{'Authorization':'token '+GH_TOKEN}});
+    if(r.ok){var d=await r.json();var dec=JSON.parse(decodeURIComponent(escape(atob(d.content))));localStorage.setItem('aresLocData',JSON.stringify(dec));showGHStatus('✓ Chargé depuis GitHub','var(--green)');return dec;}
+  }catch(e){}return null;
 }
-
-function showGHStatus(msg,color){
-  var el=document.getElementById('ghStatus');
-  if(el){el.textContent=msg;el.style.color=color;setTimeout(()=>{el.textContent='';},4000);}
-}
-function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2);}
+function showGHStatus(msg,color){var el=document.getElementById('ghStatus');if(el){el.textContent=msg;el.style.color=color;setTimeout(()=>{el.textContent='';},5000);}}
 
 function doLogin(){
   if(document.getElementById('pwInput').value===PWD){
-    GH_TOKEN = document.getElementById('ghTokenInput').value.trim();
+    GH_TOKEN=document.getElementById('ghTokenInput').value.trim();
     document.getElementById('loginScreen').classList.remove('active');
     document.getElementById('mainScreen').classList.add('active');
     initApp();
-  } else {
-    document.getElementById('loginErr').style.display='block';
-  }
+  }else{document.getElementById('loginErr').style.display='block';}
 }
 document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+function doLogout(){document.getElementById('mainScreen').classList.remove('active');document.getElementById('loginScreen').classList.add('active');document.getElementById('pwInput').value='';GH_TOKEN='';}
 
-function doLogout(){
-  document.getElementById('mainScreen').classList.remove('active');
-  document.getElementById('loginScreen').classList.add('active');
-  document.getElementById('pwInput').value='';
+function initApp(){
+  const now=new Date();const sel=document.getElementById('anneeSelect');sel.innerHTML='';
+  for(let y=now.getFullYear()-2;y<=now.getFullYear()+1;y++){const o=document.createElement('option');o.value=y;o.textContent=y;if(y===now.getFullYear())o.selected=true;sel.appendChild(o);}
+  document.getElementById('depDate').value=new Date().toISOString().slice(0,10);
+  populateImmSelect();renderDashboard();checkBackupReminder();
 }
 
 function showTab(name){
   document.querySelectorAll('.tab').forEach(t=>t.style.display='none');
   document.querySelectorAll('.nav button').forEach(b=>b.classList.remove('active'));
-  var tabEl = document.getElementById('page-'+name);
-  if(tabEl) tabEl.style.display='block';
-  var btnEl = document.getElementById('tab-'+name);
-  if(btnEl) btnEl.classList.add('active');
+  var p=document.getElementById('page-'+name);if(p)p.style.display='block';
+  var b=document.getElementById('tab-'+name);if(b)b.classList.add('active');
   if(name==='dashboard')renderDashboard();
   if(name==='immeubles')renderImmeubles();
   if(name==='locataires')renderLocataires();
@@ -475,62 +393,38 @@ function showTab(name){
   if(name==='stats')renderStats();
 }
 
-function initApp(){
-  const now=new Date();
-  const sel=document.getElementById('anneeSelect');
-  sel.innerHTML='';
-  for(let y=now.getFullYear()-2;y<=now.getFullYear()+1;y++){
-    const o=document.createElement('option');
-    o.value=y;o.textContent=y;
-    if(y===now.getFullYear())o.selected=true;
-    sel.appendChild(o);
-  }
-  populateImmSelect();
-  renderDashboard();
-  checkBackupReminder();
-}
-
-function checkBackupReminder(){
-  var last = localStorage.getItem('aresLastBackup');
-  var now = new Date();
-  if(!last){
-    showBackupBanner();
-    return;
-  }
-  var diff = (now - new Date(last)) / (1000*60*60*24);
-  if(diff >= 7) showBackupBanner();
-}
-
-function showBackupBanner(){
-  var banner = document.getElementById('backupBanner');
-  if(banner) banner.style.display='flex';
-}
-
-function dismissBanner(){
-  var banner = document.getElementById('backupBanner');
-  if(banner) banner.style.display='none';
-}
-
-function exportAndDismiss(){
-  localStorage.setItem('aresLastBackup', new Date().toISOString());
-  dismissBanner();
-  exportData();
-}
+function checkBackupReminder(){var last=localStorage.getItem('aresLastBackup');if(!last||(new Date()-new Date(last))/(1000*60*60*24)>=7)showBackupBanner();}
+function showBackupBanner(){document.getElementById('backupBanner').style.display='flex';}
+function dismissBanner(){document.getElementById('backupBanner').style.display='none';}
+function exportAndDismiss(){localStorage.setItem('aresLastBackup',new Date().toISOString());dismissBanner();exportData();}
 
 function populateImmSelect(){
   const d=loadData();
-  ['lImm','filtreImm'].forEach(id=>{
-    const s=document.getElementById(id);
-    if(!s)return;
+  ['lImm','filtreImm','editLocImm'].forEach(id=>{
+    const s=document.getElementById(id);if(!s)return;
     const val=s.value;
     s.innerHTML=id==='filtreImm'?'<option value="">Tous les immeubles</option>':'<option value="">-- Choisir --</option>';
-    d.immeubles.forEach(im=>{
-      const o=document.createElement('option');
-      o.value=im.id;o.textContent=im.adresse;
-      s.appendChild(o);
-    });
+    d.immeubles.forEach(im=>{const o=document.createElement('option');o.value=im.id;o.textContent=im.adresse;s.appendChild(o);});
     s.value=val;
   });
+}
+
+function pKey(locId,annee,mois){return locId+'-'+annee+'-'+mois;}
+
+function getRetard(d,locId,annee){
+  const mc=new Date().getMonth()+1;let r=0;
+  for(let m=1;m<mc;m++){if(!d.paiements[pKey(locId,annee,m)])r++;}
+  return r;
+}
+
+function checkAlerts(){
+  const d=loadData();const annee=new Date().getFullYear();
+  const alerts=[];const expiries=[];
+  d.locataires.forEach(l=>{
+    const r=getRetard(d,l.id,annee);if(r>=2)alerts.push({nom:l.nom+' '+l.prenom,retard:r});
+    if(l.fin){const diff=(new Date(l.fin)-new Date())/(1000*60*60*24);if(diff>=0&&diff<=60)expiries.push({nom:l.nom+' '+l.prenom,fin:l.fin,jours:Math.round(diff)});}
+  });
+  return{alerts,expiries};
 }
 
 function addImmeuble(){
@@ -538,359 +432,311 @@ function addImmeuble(){
   const loyer=parseFloat(document.getElementById('newLoyerBase').value)||0;
   const charges=parseFloat(document.getElementById('newCharges').value)||0;
   if(!adr)return alert('Adresse obligatoire');
-  const d=loadData();
-  d.immeubles.push({id:uid(),adresse:adr,loyer,charges});
-  saveData(d);
-  document.getElementById('newImm').value='';
-  document.getElementById('newLoyerBase').value='';
-  document.getElementById('newCharges').value='';
+  const d=loadData();d.immeubles.push({id:uid(),adresse:adr,loyer,charges,note:''});
+  addHist(d,'Immeuble ajouté',adr);saveData(d);
+  document.getElementById('newImm').value='';document.getElementById('newLoyerBase').value='';document.getElementById('newCharges').value='';
   renderImmeubles();populateImmSelect();
 }
 
 function deleteImmeuble(id){
-  if(!confirm('Supprimer cet immeuble et tous ses locataires ?'))return;
-  const d=loadData();
-  d.immeubles=d.immeubles.filter(i=>i.id!==id);
-  d.locataires=d.locataires.filter(l=>l.immId!==id);
-  saveData(d);renderImmeubles();populateImmSelect();
+  const d=loadData();const im=d.immeubles.find(i=>i.id===id);
+  if(!confirm('Supprimer "'+(im?im.adresse:'')+'" et tous ses locataires ?'))return;
+  addHist(d,'Immeuble supprimé',im?im.adresse:'');
+  d.immeubles=d.immeubles.filter(i=>i.id!==id);d.locataires=d.locataires.filter(l=>l.immId!==id);
+  saveData(d);renderImmeubles();populateImmSelect();renderDashboard();
 }
 
 function renderImmeubles(){
-  const d=loadData();
-  const el=document.getElementById('listImmeubles');
+  const d=loadData();const el=document.getElementById('listImmeubles');
   if(!d.immeubles.length){el.innerHTML='<p style="color:var(--text2);font-size:12px">Aucun immeuble enregistré.</p>';return;}
+  const annee=new Date().getFullYear();
   el.innerHTML=d.immeubles.map(im=>{
     const locs=d.locataires.filter(l=>l.immId===im.id);
     const total=im.loyer+im.charges;
-    return `<div class="card">
-      <div class="card-header">
-        <div class="imm-accent">
-          <div style="font-family:'Fraunces',serif;font-size:16px;font-weight:300">${im.adresse}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:4px">Loyer ${im.loyer.toLocaleString('fr-LU')}€ + charges ${im.charges.toLocaleString('fr-LU')}€ = <strong>${total.toLocaleString('fr-LU')}€</strong>/mois · ${locs.length} locataire(s)</div>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button class="primary" onclick="editImmeuble('${im.id}')">✎ Modifier</button>
-          <button class="danger" onclick="deleteImmeuble('${im.id}')">✕ Supprimer</button>
-        </div>
-      </div>
-    </div>`;
+    const deps=((d.depenses&&d.depenses[im.id])||[]).reduce((a,x)=>a+x.montant,0);
+    let payGrid='';
+    if(locs.length){
+      let rows='';let totalPaye=0;const totalAttendu=locs.reduce((a,l)=>a+l.loyer*12,0);
+      locs.forEach(l=>{
+        let payeAnnee=0;let cells='';
+        MONTHS.forEach((_,mi)=>{
+          const k=pKey(l.id,annee,mi+1);const paid=!!d.paiements[k];if(paid)payeAnnee+=l.loyer;
+          cells+='<td style="text-align:center"><span class="month-cell '+(paid?'paid':'unpaid')+'" onclick="togglePI(\''+l.id+'\','+annee+','+(mi+1)+')">'+(paid?'✓':'✗')+'</span></td>';
+        });
+        totalPaye+=payeAnnee;const reste=l.loyer*12-payeAnnee;const ret=getRetard(d,l.id,annee);
+        rows+='<tr class="'+(ret>=2?'late-row':'')+'"><td>'+l.nom+' '+l.prenom+' <span class="badge '+(l.type==='sous'?'badge-warn':'badge-purple')+'">'+(l.type==='sous'?'S':'P')+'</span>'+(ret>=2?' <span class="badge badge-alert">'+ret+' mois</span>':'')+' </td><td>'+l.loyer.toLocaleString('fr-LU')+'€</td>'+cells+'<td style="text-align:right;color:var(--green)">'+payeAnnee.toLocaleString('fr-LU')+'€</td><td style="text-align:right;color:'+(reste>0?'var(--red)':'var(--green)')+'">'+reste.toLocaleString('fr-LU')+'€</td></tr>';
+      });
+      const net=totalPaye-deps;
+      payGrid='<div style="margin-top:14px"><div class="section-title">Paiements '+annee+'</div><div style="overflow-x:auto"><table><thead><tr><th style="min-width:140px">Locataire</th><th>Loyer</th>'+MONTHS.map(m=>'<th style="text-align:center;width:34px">'+m+'</th>').join('')+'<th style="text-align:right">Payé</th><th style="text-align:right">Reste</th></tr></thead><tbody>'+rows+'</tbody></table></div><div class="total-bar"><span style="color:var(--text2)">Total '+annee+'</span><span>Attendu: <strong>'+totalAttendu.toLocaleString('fr-LU')+'€</strong> · Reçu: <strong style="color:var(--green)">'+totalPaye.toLocaleString('fr-LU')+'€</strong> · Reste: <strong style="color:'+(totalAttendu-totalPaye>0?'var(--red)':'var(--green)')+'">'+(totalAttendu-totalPaye).toLocaleString('fr-LU')+'€</strong>'+(deps?' · Dépenses: <strong style="color:var(--red)">-'+deps.toLocaleString('fr-LU')+'€</strong> · Net: <strong style="color:var(--purple)">'+net.toLocaleString('fr-LU')+'€</strong>':'')+' </span></div></div>';
+    }
+    return '<div class="card"><div class="card-header"><div class="imm-accent"><div style="font-family:\'Fraunces\',serif;font-size:16px;font-weight:300">'+im.adresse+'</div><div style="font-size:11px;color:var(--text2);margin-top:4px">Loyer '+im.loyer.toLocaleString('fr-LU')+'€ + charges '+im.charges.toLocaleString('fr-LU')+'€ = <strong>'+total.toLocaleString('fr-LU')+'€</strong>/mois · '+locs.length+' locataire(s)'+(im.note?'<br><span style="color:var(--text3);font-size:11px">'+im.note+'</span>':'')+' </div></div><div style="display:flex;gap:6px;flex-wrap:wrap"><button class="blue" onclick="openDepenses(\''+im.id+'\')">💶 Dépenses</button><button class="primary" onclick="editImmeuble(\''+im.id+'\')">✎ Modifier</button><button class="danger" onclick="deleteImmeuble(\''+im.id+'\')">✕</button></div></div>'+payGrid+'</div>';
   }).join('');
 }
 
+function togglePI(locId,annee,mois){
+  const d=loadData();const k=pKey(locId,annee,mois);const l=d.locataires.find(x=>x.id===locId);
+  if(d.paiements[k]){delete d.paiements[k];if(l)addHist(d,'Paiement annulé',l.nom+' '+l.prenom+' '+MONTHS[mois-1]+' '+annee);}
+  else{d.paiements[k]={date:new Date().toISOString().slice(0,10)};if(l)addHist(d,'Paiement enregistré',l.nom+' '+l.prenom+' '+MONTHS[mois-1]+' '+annee);}
+  saveData(d);renderImmeubles();renderDashboard();
+}
+
 function addLocataire(){
-  const nom=document.getElementById('lNom').value.trim();
-  const prenom=document.getElementById('lPrenom').value.trim();
-  const immId=document.getElementById('lImm').value;
-  const loyer=parseFloat(document.getElementById('lLoyer').value)||0;
-  const type=document.getElementById('lType').value;
-  const tel=document.getElementById('lTel').value.trim();
-  const mail=document.getElementById('lMail').value.trim();
-  const caution=parseFloat(document.getElementById('lCaution').value)||0;
-  const cautionNote=document.getElementById('lCautionNote').value.trim();
+  const nom=document.getElementById('lNom').value.trim();const prenom=document.getElementById('lPrenom').value.trim();
+  const immId=document.getElementById('lImm').value;const loyer=parseFloat(document.getElementById('lLoyer').value)||0;
+  const type=document.getElementById('lType').value;const tel=document.getElementById('lTel').value.trim();
+  const mail=document.getElementById('lMail').value.trim();const caution=parseFloat(document.getElementById('lCaution').value)||0;
+  const cautionNote=document.getElementById('lCautionNote').value.trim();const debut=document.getElementById('lDebut').value;const fin=document.getElementById('lFin').value;
   if(!nom||!immId)return alert('Nom et immeuble obligatoires');
-  const d=loadData();
-  d.locataires.push({id:uid(),nom,prenom,immId,loyer,type,tel,mail,caution,cautionNote});
-  saveData(d);
-  ['lNom','lPrenom','lLoyer','lTel','lMail','lCaution','lCautionNote'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('lImm').value='';
-  renderLocataires();
+  const d=loadData();d.locataires.push({id:uid(),nom,prenom,immId,loyer,type,tel,mail,caution,cautionNote,debut,fin,notes:'',docs:[]});
+  addHist(d,'Locataire ajouté',nom+' '+prenom);saveData(d);
+  ['lNom','lPrenom','lLoyer','lTel','lMail','lCaution','lCautionNote','lDebut','lFin'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('lImm').value='';renderLocataires();renderDashboard();
 }
 
 function deleteLocataire(id){
-  if(!confirm('Supprimer ce locataire ?'))return;
-  const d=loadData();
-  d.locataires=d.locataires.filter(l=>l.id!==id);
-  saveData(d);renderLocataires();
+  const d=loadData();const l=d.locataires.find(x=>x.id===id);
+  if(!confirm('Supprimer "'+(l?l.nom+' '+l.prenom:'')+'" ?'))return;
+  addHist(d,'Locataire supprimé',l?l.nom+' '+l.prenom:'');d.locataires=d.locataires.filter(x=>x.id!==id);
+  saveData(d);renderLocataires();renderDashboard();
 }
 
 function renderLocataires(){
-  const d=loadData();
-  const el=document.getElementById('listLocataires');
+  const d=loadData();const el=document.getElementById('listLocataires');
   if(!d.locataires.length){el.innerHTML='<p style="color:var(--text2);font-size:12px">Aucun locataire enregistré.</p>';return;}
-  const byImm={};
-  d.immeubles.forEach(im=>{byImm[im.id]={im,locs:[]};});
+  const annee=new Date().getFullYear();
+  const byImm={};d.immeubles.forEach(im=>{byImm[im.id]={im,locs:[]};});
   d.locataires.forEach(l=>{if(byImm[l.immId])byImm[l.immId].locs.push(l);});
   el.innerHTML=Object.values(byImm).filter(x=>x.locs.length).map(({im,locs})=>`
     <div class="card">
       <div class="section-title imm-accent" style="margin-bottom:12px">${im.adresse}</div>
-      ${locs.map(l=>`<div class="loc-row">
-        <div class="loc-info">
-          <div class="loc-name">${l.nom} ${l.prenom} <span class="badge ${l.type==='sous'?'badge-warn':'badge-purple'}">${l.type==='sous'?'sous-loc':'principal'}</span></div>
-          <div class="loc-meta">${l.tel||'—'} ${l.mail?'· '+l.mail:''}</div>
-          ${l.caution?`<div class="loc-meta" style="color:var(--amber)">Caution: ${l.caution.toLocaleString('fr-LU')}€${l.cautionNote?' — '+l.cautionNote:''}</div>`:''}
-        </div>
-        <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:300;color:var(--green)">${l.loyer.toLocaleString('fr-LU')}€<span style="font-size:11px;color:var(--text2)">/mois</span></div>
-        <button class="primary" onclick="editLocataire('${l.id}')">✎</button>
-        <button class="danger" onclick="deleteLocataire('${l.id}')">✕</button>
-      </div>`).join('')}
-      <div class="total-bar">
-        <span style="color:var(--text2)">Total immeuble</span>
-        <strong>${locs.reduce((a,l)=>a+l.loyer,0).toLocaleString('fr-LU')}€/mois</strong>
-      </div>
+      ${locs.map(l=>{
+        const ret=getRetard(d,l.id,annee);
+        const exp=l.fin&&((new Date(l.fin)-new Date())/(1000*60*60*24))<=60&&((new Date(l.fin)-new Date())/(1000*60*60*24))>=0;
+        return `<div class="loc-row">
+          <div class="loc-info">
+            <div class="loc-name">${l.nom} ${l.prenom}
+              <span class="badge ${l.type==='sous'?'badge-warn':'badge-purple'}">${l.type==='sous'?'sous-loc':'principal'}</span>
+              ${ret>=2?`<span class="badge badge-alert">${ret} mois retard</span>`:''}
+              ${exp?`<span class="badge badge-warn">Fin ${l.fin}</span>`:''}
+            </div>
+            <div class="loc-meta">${l.tel||'—'} ${l.mail?'· '+l.mail:''}</div>
+            ${l.caution?`<div class="loc-meta" style="color:var(--amber)">Caution: ${l.caution.toLocaleString('fr-LU')}€${l.cautionNote?' — '+l.cautionNote:''}</div>`:''}
+            ${l.debut||l.fin?`<div class="loc-meta">Contrat: ${l.debut||'?'} → ${l.fin||'∞'}</div>`:''}
+            ${l.notes?`<div class="note-box" style="margin-top:6px;max-height:60px;overflow:hidden">${l.notes.slice(0,120)}${l.notes.length>120?'…':''}</div>`:''}
+          </div>
+          <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:300;color:var(--green)">${l.loyer.toLocaleString('fr-LU')}€<span style="font-size:11px;color:var(--text2)">/mois</span></div>
+          <button class="primary" onclick="editLocataire('${l.id}')">✎</button>
+          <button class="danger" onclick="deleteLocataire('${l.id}')">✕</button>
+        </div>`;
+      }).join('')}
+      <div class="total-bar"><span style="color:var(--text2)">Total immeuble</span><strong>${locs.reduce((a,l)=>a+l.loyer,0).toLocaleString('fr-LU')}€/mois</strong></div>
     </div>
   `).join('');
 }
 
-function pKey(locId,annee,mois){return `${locId}-${annee}-${mois}`;}
-
 function togglePaiement(locId,annee,mois){
-  const d=loadData();
-  const k=pKey(locId,annee,mois);
-  if(d.paiements[k]){delete d.paiements[k];}
-  else{d.paiements[k]={date:new Date().toISOString().slice(0,10)};}
-  saveData(d);renderPaiements();
+  const d=loadData();const k=pKey(locId,annee,mois);const l=d.locataires.find(x=>x.id===locId);
+  if(d.paiements[k]){delete d.paiements[k];if(l)addHist(d,'Paiement annulé',l.nom+' '+l.prenom+' '+MONTHS[mois-1]+' '+annee);}
+  else{d.paiements[k]={date:new Date().toISOString().slice(0,10)};if(l)addHist(d,'Paiement enregistré',l.nom+' '+l.prenom+' '+MONTHS[mois-1]+' '+annee);}
+  saveData(d);renderPaiements();renderDashboard();
 }
 
 function renderPaiements(){
-  const d=loadData();
-  const annee=parseInt(document.getElementById('anneeSelect').value);
-  const filtreImm=document.getElementById('filtreImm').value;
-  document.getElementById('anneeLabel').textContent=annee;
-  populateImmSelect();
-  let immeubles=d.immeubles;
-  if(filtreImm)immeubles=immeubles.filter(im=>im.id===filtreImm);
-  let html='';let grandTotal=0;let grandPaye=0;
-
-  immeubles.forEach(im=>{
-    const locs=d.locataires.filter(l=>l.immId===im.id);
-    if(!locs.length)return;
-    let immPaye=0;
-    const immTotal=locs.reduce((a,l)=>a+l.loyer,0)*12;
-
-    html+=`<div class="card"><div class="imm-accent" style="margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid var(--border)">
-      <span style="font-family:'Fraunces',serif;font-size:16px;font-weight:300">${im.adresse}</span>
-    </div>
-    <div style="overflow-x:auto"><table>
-    <thead><tr>
-      <th style="min-width:160px">Locataire</th>
-      <th>Loyer</th>
-      ${MONTHS.map(m=>`<th style="text-align:center;width:36px">${m}</th>`).join('')}
-      <th style="text-align:right">Payé</th>
-      <th style="text-align:right">Reste</th>
-    </tr></thead><tbody>`;
-
+  const d=loadData();const annee=parseInt(document.getElementById('anneeSelect').value);const filtreImm=document.getElementById('filtreImm').value;
+  document.getElementById('anneeLabel').textContent=annee;populateImmSelect();
+  let imms=d.immeubles;if(filtreImm)imms=imms.filter(im=>im.id===filtreImm);
+  let html='';let gTotal=0;let gPaye=0;
+  imms.forEach(im=>{
+    const locs=d.locataires.filter(l=>l.immId===im.id);if(!locs.length)return;
+    let immPaye=0;const immTotal=locs.reduce((a,l)=>a+l.loyer,0)*12;
+    html+='<div class="card"><div class="imm-accent" style="margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid var(--border)"><span style="font-family:\'Fraunces\',serif;font-size:16px;font-weight:300">'+im.adresse+'</span></div><div style="overflow-x:auto"><table><thead><tr><th style="min-width:160px">Locataire</th><th>Loyer</th>'+MONTHS.map(m=>'<th style="text-align:center;width:36px">'+m+'</th>').join('')+'<th style="text-align:right">Payé</th><th style="text-align:right">Reste</th></tr></thead><tbody>';
     locs.forEach(l=>{
-      let payeAnnee=0;
-      let cells='';
-      MONTHS.forEach((_,mi)=>{
-        const k=pKey(l.id,annee,mi+1);
-        const paid=!!d.paiements[k];
-        if(paid)payeAnnee+=l.loyer;
-        cells+=`<td style="text-align:center"><span class="month-cell ${paid?'paid':'unpaid'}" onclick="togglePaiement('${l.id}',${annee},${mi+1})" title="${paid?'Payé — cliquer pour annuler':'Non payé — cliquer pour valider'}">${paid?'✓':'✗'}</span></td>`;
-      });
-      const reste=l.loyer*12-payeAnnee;
-      immPaye+=payeAnnee;
-      html+=`<tr>
-        <td>${l.nom} ${l.prenom} <span class="badge ${l.type==='sous'?'badge-warn':'badge-purple'}">${l.type==='sous'?'S':'P'}</span></td>
-        <td>${l.loyer.toLocaleString('fr-LU')}€</td>
-        ${cells}
-        <td style="text-align:right;color:var(--green)">${payeAnnee.toLocaleString('fr-LU')}€</td>
-        <td style="text-align:right;color:${reste>0?'var(--red)':'var(--green)'}">${reste.toLocaleString('fr-LU')}€</td>
-      </tr>`;
+      let payeAnnee=0;let cells='';
+      MONTHS.forEach((_,mi)=>{const k=pKey(l.id,annee,mi+1);const paid=!!d.paiements[k];if(paid)payeAnnee+=l.loyer;cells+='<td style="text-align:center"><span class="month-cell '+(paid?'paid':'unpaid')+'" onclick="togglePaiement(\''+l.id+'\','+annee+','+(mi+1)+')">'+(paid?'✓':'✗')+'</span></td>';});
+      const ret=getRetard(d,l.id,annee);const reste=l.loyer*12-payeAnnee;immPaye+=payeAnnee;
+      html+='<tr class="'+(ret>=2?'late-row':'')+'"><td>'+l.nom+' '+l.prenom+' <span class="badge '+(l.type==='sous'?'badge-warn':'badge-purple')+'">'+(l.type==='sous'?'S':'P')+'</span>'+(ret>=2?' <span class="badge badge-alert">'+ret+' mois</span>':'')+' </td><td>'+l.loyer.toLocaleString('fr-LU')+'€</td>'+cells+'<td style="text-align:right;color:var(--green)">'+payeAnnee.toLocaleString('fr-LU')+'€</td><td style="text-align:right;color:'+(reste>0?'var(--red)':'var(--green)')+'">'+reste.toLocaleString('fr-LU')+'€</td></tr>';
     });
-
-    grandTotal+=immTotal;grandPaye+=immPaye;
-    html+=`</tbody></table></div>
-    <div class="total-bar">
-      <span style="color:var(--text2)">${im.adresse}</span>
-      <span>Attendu: <strong>${immTotal.toLocaleString('fr-LU')}€</strong> &nbsp;·&nbsp; Reçu: <strong style="color:var(--green)">${immPaye.toLocaleString('fr-LU')}€</strong> &nbsp;·&nbsp; Reste: <strong style="color:${immTotal-immPaye>0?'var(--red)':'var(--green)'}">${(immTotal-immPaye).toLocaleString('fr-LU')}€</strong></span>
-    </div></div>`;
+    gTotal+=immTotal;gPaye+=immPaye;
+    html+='</tbody></table></div><div class="total-bar"><span style="color:var(--text2)">'+im.adresse+'</span><span>Attendu: <strong>'+immTotal.toLocaleString('fr-LU')+'€</strong> · Reçu: <strong style="color:var(--green)">'+immPaye.toLocaleString('fr-LU')+'€</strong> · Reste: <strong style="color:'+(immTotal-immPaye>0?'var(--red)':'var(--green)')+'">'+(immTotal-immPaye).toLocaleString('fr-LU')+'€</strong></span></div></div>';
   });
-
   if(!html)html='<p style="color:var(--text2);font-size:12px">Aucun locataire trouvé.</p>';
-  else html+=`<div class="total-bar" style="font-size:14px;background:var(--bg3);border:0.5px solid var(--purple);margin-top:4px">
-    <span style="font-family:'Fraunces',serif;font-size:16px">Total général ${annee}</span>
-    <span>Attendu: <strong style="font-family:'Fraunces',serif">${grandTotal.toLocaleString('fr-LU')}€</strong> &nbsp;·&nbsp; Reçu: <strong style="color:var(--green);font-family:'Fraunces',serif">${grandPaye.toLocaleString('fr-LU')}€</strong> &nbsp;·&nbsp; Reste: <strong style="color:${grandTotal-grandPaye>0?'var(--red)':'var(--green)'};font-family:'Fraunces',serif">${(grandTotal-grandPaye).toLocaleString('fr-LU')}€</strong></span>
-  </div>`;
-
+  else html+='<div class="total-bar" style="font-size:14px;border:0.5px solid var(--purple);margin-top:4px"><span style="font-family:\'Fraunces\',serif;font-size:16px">Total général '+annee+'</span><span>Attendu: <strong style="font-family:\'Fraunces\',serif">'+gTotal.toLocaleString('fr-LU')+'€</strong> · Reçu: <strong style="color:var(--green);font-family:\'Fraunces\',serif">'+gPaye.toLocaleString('fr-LU')+'€</strong> · Reste: <strong style="color:'+(gTotal-gPaye>0?'var(--red)':'var(--green)')+';font-family:\'Fraunces\',serif">'+(gTotal-gPaye).toLocaleString('fr-LU')+'€</strong></span></div>';
   document.getElementById('paiementsContent').innerHTML=html;
 }
 
 function renderDashboard(){
-  const d=loadData();
-  const annee=new Date().getFullYear();
-  const mois=new Date().getMonth();
-  const totalMensuel=d.locataires.reduce((a,l)=>a+l.loyer,0);
-  let payeMois=0;
+  const d=loadData();const annee=new Date().getFullYear();const mois=new Date().getMonth();
+  const totalMensuel=d.locataires.reduce((a,l)=>a+l.loyer,0);let payeMois=0;
   d.locataires.forEach(l=>{if(d.paiements[pKey(l.id,annee,mois+1)])payeMois+=l.loyer;});
   const tauxMois=totalMensuel?Math.round(payeMois/totalMensuel*100):0;
-
+  const {alerts,expiries}=checkAlerts();
+  let alertHtml='';
+  if(alerts.length)alertHtml+='<div class="alert-banner">⚠ Retards 2+ mois: '+alerts.map(a=>'<strong>'+a.nom+'</strong> ('+a.retard+' mois)').join(', ')+'</div>';
+  if(expiries.length)alertHtml+='<div class="expiry-banner">📅 Contrats expirant bientôt: '+expiries.map(a=>'<strong>'+a.nom+'</strong> dans '+a.jours+' jours').join(', ')+'</div>';
+  document.getElementById('alertsZone').innerHTML=alertHtml;
   document.getElementById('metricsBar').innerHTML=`
     <div class="metric"><div class="label">Immeubles</div><div class="val purple">${d.immeubles.length}</div></div>
     <div class="metric"><div class="label">Locataires</div><div class="val">${d.locataires.length}</div></div>
     <div class="metric"><div class="label">Revenu mensuel</div><div class="val">${totalMensuel.toLocaleString('fr-LU')}€</div></div>
     <div class="metric"><div class="label">Revenu annuel</div><div class="val">${(totalMensuel*12).toLocaleString('fr-LU')}€</div></div>
-    <div class="metric"><div class="label">Payé ${MONTHS_FULL[mois]}</div><div class="val ${tauxMois>=80?'green':tauxMois>=50?'':'red'}">${tauxMois}%</div></div>
+    <div class="metric"><div class="label">Payé ${MONTHS[mois]}</div><div class="val ${tauxMois>=80?'green':tauxMois>=50?'amber':'red'}">${tauxMois}%</div></div>
+    <div class="metric"><div class="label">Alertes retard</div><div class="val ${alerts.length?'red':'green'}">${alerts.length}</div></div>
   `;
-
-  const byImm={};
-  d.immeubles.forEach(im=>{byImm[im.id]={im,locs:[]};});
+  const byImm={};d.immeubles.forEach(im=>{byImm[im.id]={im,locs:[]};});
   d.locataires.forEach(l=>{if(byImm[l.immId])byImm[l.immId].locs.push(l);});
-
   document.getElementById('dashImmeubles').innerHTML=Object.values(byImm).filter(x=>x.locs.length).map(({im,locs})=>{
-    const total=locs.reduce((a,l)=>a+l.loyer,0);
-    const paye=locs.filter(l=>d.paiements[pKey(l.id,annee,mois+1)]).reduce((a,l)=>a+l.loyer,0);
+    const total=locs.reduce((a,l)=>a+l.loyer,0);const paye=locs.filter(l=>d.paiements[pKey(l.id,annee,mois+1)]).reduce((a,l)=>a+l.loyer,0);
     const pct=total?Math.round(paye/total*100):0;
-    return `<div class="card">
-      <div class="card-header" style="margin-bottom:8px">
-        <span style="font-family:'Fraunces',serif;font-size:15px;font-weight:300">${im.adresse}</span>
-        <span style="font-size:12px;color:var(--text2)">${paye.toLocaleString('fr-LU')}€ / ${total.toLocaleString('fr-LU')}€ · ${pct}%</span>
-      </div>
-      <div class="progress"><div class="progress-bar" style="width:${pct}%;background:${pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)'}"></div></div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">
-        ${locs.map(l=>{const paid=!!d.paiements[pKey(l.id,annee,mois+1)];return`<span class="badge ${paid?'badge-ok':'badge-no'}">${l.nom} ${paid?'✓':'✗'}</span>`;}).join('')}
-      </div>
-    </div>`;
+    return `<div class="card"><div class="card-header" style="margin-bottom:8px"><span style="font-family:'Fraunces',serif;font-size:15px;font-weight:300">${im.adresse}</span><span style="font-size:12px;color:var(--text2)">${paye.toLocaleString('fr-LU')}€ / ${total.toLocaleString('fr-LU')}€ · ${pct}%</span></div><div class="progress"><div class="progress-bar" style="width:${pct}%;background:${pct>=80?'var(--green)':pct>=50?'var(--amber)':'var(--red)'}"></div></div><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">${locs.map(l=>{const paid=!!d.paiements[pKey(l.id,annee,mois+1)];const ret=getRetard(d,l.id,annee);return`<span class="badge ${paid?'badge-ok':ret>=2?'badge-alert':'badge-no'}">${l.nom} ${paid?'✓':'✗'}</span>`;}).join('')}</div></div>`;
   }).join('')||'<p style="color:var(--text2);font-size:12px">Ajoutez des immeubles et locataires pour commencer.</p>';
 }
 
 function renderStats(){
-  const d=loadData();
-  const annee=new Date().getFullYear();
-  const mensuel=d.locataires.reduce((a,l)=>a+l.loyer,0);
-  const totalAnnuel=mensuel*12;
-  let payeAnnuel=0;
-  d.locataires.forEach(l=>{
-    for(let m=1;m<=12;m++){if(d.paiements[pKey(l.id,annee,m)])payeAnnuel+=l.loyer;}
-  });
+  const d=loadData();const annee=new Date().getFullYear();
+  const mensuel=d.locataires.reduce((a,l)=>a+l.loyer,0);const totalAnnuel=mensuel*12;let payeAnnuel=0;
+  d.locataires.forEach(l=>{for(let m=1;m<=12;m++){if(d.paiements[pKey(l.id,annee,m)])payeAnnuel+=l.loyer;}});
+  const totalDeps=Object.values(d.depenses||{}).flat().reduce((a,x)=>a+x.montant,0);
   const taux=totalAnnuel?Math.round(payeAnnuel/totalAnnuel*100):0;
-
   document.getElementById('statsMetrics').innerHTML=`
-    <div class="metric"><div class="label">Revenu annuel attendu</div><div class="val">${totalAnnuel.toLocaleString('fr-LU')}€</div></div>
+    <div class="metric"><div class="label">Attendu ${annee}</div><div class="val">${totalAnnuel.toLocaleString('fr-LU')}€</div></div>
     <div class="metric"><div class="label">Encaissé ${annee}</div><div class="val green">${payeAnnuel.toLocaleString('fr-LU')}€</div></div>
     <div class="metric"><div class="label">Manquant</div><div class="val red">${(totalAnnuel-payeAnnuel).toLocaleString('fr-LU')}€</div></div>
-    <div class="metric"><div class="label">Taux encaissement</div><div class="val ${taux>=80?'green':taux>=50?'':'red'}">${taux}%</div></div>
+    <div class="metric"><div class="label">Dépenses totales</div><div class="val red">-${totalDeps.toLocaleString('fr-LU')}€</div></div>
+    <div class="metric"><div class="label">Revenu net estimé</div><div class="val purple">${(payeAnnuel-totalDeps).toLocaleString('fr-LU')}€</div></div>
+    <div class="metric"><div class="label">Taux encaissement</div><div class="val ${taux>=80?'green':taux>=50?'amber':'red'}">${taux}%</div></div>
   `;
-
   let html='<div class="card"><div class="section-title">Encaissement par mois — '+annee+'</div><div style="overflow-x:auto"><table><thead><tr><th>Mois</th><th>Attendu</th><th>Encaissé</th><th>Manquant</th><th>Taux</th></tr></thead><tbody>';
-  MONTHS_FULL.forEach((mf,mi)=>{
-    let paye=0;
-    d.locataires.forEach(l=>{if(d.paiements[pKey(l.id,annee,mi+1)])paye+=l.loyer;});
-    const t=mensuel?Math.round(paye/mensuel*100):0;
-    html+=`<tr>
-      <td>${mf}</td>
-      <td>${mensuel.toLocaleString('fr-LU')}€</td>
-      <td style="color:var(--green)">${paye.toLocaleString('fr-LU')}€</td>
-      <td style="color:${mensuel-paye>0?'var(--red)':'var(--green)'}">${(mensuel-paye).toLocaleString('fr-LU')}€</td>
-      <td>
-        <div style="display:flex;align-items:center;gap:8px">
-          <div class="progress" style="width:80px;margin:0"><div class="progress-bar" style="width:${t}%;background:${t>=80?'var(--green)':t>=50?'var(--amber)':'var(--red)'}"></div></div>
-          <span style="color:${t>=80?'var(--green)':t>=50?'var(--amber)':'var(--red)'}">${t}%</span>
-        </div>
-      </td>
-    </tr>`;
-  });
+  MONTHS_FULL.forEach((mf,mi)=>{let paye=0;d.locataires.forEach(l=>{if(d.paiements[pKey(l.id,annee,mi+1)])paye+=l.loyer;});const t=mensuel?Math.round(paye/mensuel*100):0;html+='<tr><td>'+mf+'</td><td>'+mensuel.toLocaleString('fr-LU')+'€</td><td style="color:var(--green)">'+paye.toLocaleString('fr-LU')+'€</td><td style="color:'+(mensuel-paye>0?'var(--red)':'var(--green)')+'">'+(mensuel-paye).toLocaleString('fr-LU')+'€</td><td><div style="display:flex;align-items:center;gap:8px"><div class="progress" style="width:80px;margin:0"><div class="progress-bar" style="width:'+t+'%;background:'+(t>=80?'var(--green)':t>=50?'var(--amber)':'var(--red)')+'"></div></div><span style="color:'+(t>=80?'var(--green)':t>=50?'var(--amber)':'var(--red)')+'">'+t+'%</span></div></td></tr>';});
   html+='</tbody></table></div></div>';
-
-  html+='<div class="card"><div class="section-title">Encaissement par immeuble — '+annee+'</div><table><thead><tr><th>Immeuble</th><th>Locataires</th><th>Attendu/an</th><th>Encaissé</th><th>Taux</th></tr></thead><tbody>';
+  html+='<div class="card"><div class="section-title">Par immeuble — '+annee+'</div><table><thead><tr><th>Immeuble</th><th>Locataires</th><th>Attendu</th><th>Encaissé</th><th>Dépenses</th><th>Net</th><th>Taux</th></tr></thead><tbody>';
   d.immeubles.forEach(im=>{
-    const locs=d.locataires.filter(l=>l.immId===im.id);
-    if(!locs.length)return;
-    const att=locs.reduce((a,l)=>a+l.loyer,0)*12;
-    let enc=0;
-    locs.forEach(l=>{for(let m=1;m<=12;m++){if(d.paiements[pKey(l.id,annee,m)])enc+=l.loyer;}});
-    const t=att?Math.round(enc/att*100):0;
-    html+=`<tr><td>${im.adresse}</td><td>${locs.length}</td><td>${att.toLocaleString('fr-LU')}€</td><td style="color:var(--green)">${enc.toLocaleString('fr-LU')}€</td><td style="color:${t>=80?'var(--green)':t>=50?'var(--amber)':'var(--red)'}">${t}%</td></tr>`;
+    const locs=d.locataires.filter(l=>l.immId===im.id);if(!locs.length)return;
+    const att=locs.reduce((a,l)=>a+l.loyer,0)*12;let enc=0;locs.forEach(l=>{for(let m=1;m<=12;m++){if(d.paiements[pKey(l.id,annee,m)])enc+=l.loyer;}});
+    const deps=((d.depenses&&d.depenses[im.id])||[]).reduce((a,x)=>a+x.montant,0);const net=enc-deps;const t=att?Math.round(enc/att*100):0;
+    html+='<tr><td>'+im.adresse+'</td><td>'+locs.length+'</td><td>'+att.toLocaleString('fr-LU')+'€</td><td style="color:var(--green)">'+enc.toLocaleString('fr-LU')+'€</td><td style="color:var(--red)">-'+deps.toLocaleString('fr-LU')+'€</td><td style="color:var(--purple)">'+net.toLocaleString('fr-LU')+'€</td><td style="color:'+(t>=80?'var(--green)':t>=50?'var(--amber)':'var(--red)')+'">'+t+'%</td></tr>';
   });
   html+='</tbody></table></div>';
-
+  const hist=(d.historique||[]).slice(0,30);
+  if(hist.length){html+='<div class="card"><div class="section-title">Historique des modifications (30 dernières)</div>'+hist.map(h=>'<div class="hist-entry"><strong>'+h.action+'</strong> — '+h.detail+' <span style="float:right;color:var(--text3)">'+new Date(h.date).toLocaleString('fr-LU')+'</span></div>').join('')+'</div>';}
   document.getElementById('statsDetail').innerHTML=html;
 }
 
-function exportData(){
-  const d=loadData();
-  const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
-  const a=document.createElement('a');
-  a.href=URL.createObjectURL(blob);
-  a.download='locataires_'+new Date().toISOString().slice(0,10)+'.json';
-  a.click();
+function openDepenses(immId){
+  document.getElementById('depImmId').value=immId;
+  const d=loadData();const im=d.immeubles.find(i=>i.id===immId);
+  document.getElementById('modalDepTitle').textContent='Dépenses — '+(im?im.adresse:'');
+  renderDepList(immId);openModal('modalDepenses');
+}
+function addDepense(){
+  const immId=document.getElementById('depImmId').value;
+  const desc=document.getElementById('depDesc').value.trim();const montant=parseFloat(document.getElementById('depMontant').value)||0;
+  const date=document.getElementById('depDate').value;const cat=document.getElementById('depCat').value;
+  if(!desc||!montant)return alert('Description et montant obligatoires');
+  const d=loadData();if(!d.depenses)d.depenses={};if(!d.depenses[immId])d.depenses[immId]=[];
+  d.depenses[immId].push({id:uid(),desc,montant,date,cat});addHist(d,'Dépense ajoutée',desc+' '+montant+'€');saveData(d);
+  document.getElementById('depDesc').value='';document.getElementById('depMontant').value='';renderDepList(immId);
+}
+function deleteDepense(immId,depId){
+  if(!confirm('Supprimer cette dépense ?'))return;
+  const d=loadData();if(d.depenses&&d.depenses[immId])d.depenses[immId]=d.depenses[immId].filter(x=>x.id!==depId);
+  saveData(d);renderDepList(immId);
+}
+function renderDepList(immId){
+  const d=loadData();const deps=(d.depenses&&d.depenses[immId])||[];const el=document.getElementById('depList');
+  if(!deps.length){el.innerHTML='<p style="color:var(--text2);font-size:12px">Aucune dépense.</p>';document.getElementById('depTotal').innerHTML='';return;}
+  const cats={reparation:'🔧',assurance:'🛡',taxe:'🏛',entretien:'🧹',autre:'📦'};
+  el.innerHTML=deps.sort((a,b)=>b.date.localeCompare(a.date)).map(dep=>'<div class="depense-row"><span style="color:var(--text2);min-width:90px;font-size:11px">'+dep.date+'</span><span>'+cats[dep.cat]+'</span><span style="flex:1">'+dep.desc+'</span><span style="color:var(--red);font-weight:500">-'+dep.montant.toLocaleString('fr-LU')+'€</span><button class="danger" onclick="deleteDepense(\''+immId+'\',\''+dep.id+'\')">✕</button></div>').join('');
+  const total=deps.reduce((a,x)=>a+x.montant,0);document.getElementById('depTotal').innerHTML='<span style="color:var(--text2)">Total dépenses</span><strong style="color:var(--red)">-'+total.toLocaleString('fr-LU')+'€</strong>';
 }
 
-function importData(event){
-  const file=event.target.files[0];
-  if(!file)return;
+function attachDoc(){
+  const label=document.getElementById('docLabel').value.trim();const fileInput=document.getElementById('docFile');const file=fileInput.files[0];const locId=document.getElementById('editLocId').value;
+  if(!file||!label)return alert('Nom et fichier obligatoires');
+  const MAX=1024*1024;
+  if(file.size>MAX){alert('⚠ Fichier trop lourd!\n\nMaximum autorisé: 1 Mo\nCe fichier: '+(file.size/1024/1024).toFixed(2)+' Mo\n\nVeuillez compresser le PDF avant de le joindre.');return;}
   const reader=new FileReader();
   reader.onload=e=>{
-    try{
-      const d=JSON.parse(e.target.result);
-      if(!confirm('Remplacer toutes les données actuelles par ce fichier ?'))return;
-      saveData(d);
-      renderDashboard();populateImmSelect();
-      alert('Import réussi !');
-    }catch(err){alert('Fichier JSON invalide');}
+    const d=loadData();const l=d.locataires.find(x=>x.id===locId);if(!l)return;
+    if(!l.docs)l.docs=[];l.docs.push({id:uid(),label,data:e.target.result,date:new Date().toISOString().slice(0,10),size:file.size});
+    addHist(d,'Document ajouté',label+' → '+l.nom+' '+l.prenom);saveData(d);renderDocList(locId);
+    document.getElementById('docLabel').value='';fileInput.value='';
   };
-  reader.readAsText(file);
+  reader.readAsDataURL(file);
+}
+function deleteDoc(locId,docId){
+  if(!confirm('Supprimer ce document ?'))return;
+  const d=loadData();const l=d.locataires.find(x=>x.id===locId);if(l&&l.docs)l.docs=l.docs.filter(x=>x.id!==docId);
+  saveData(d);renderDocList(locId);
+}
+function renderDocList(locId){
+  const d=loadData();const l=d.locataires.find(x=>x.id===locId);const el=document.getElementById('docList');
+  const docs=(l&&l.docs)||[];
+  if(!docs.length){el.innerHTML='<p style="color:var(--text2);font-size:12px">Aucun document.</p>';return;}
+  el.innerHTML=docs.map(doc=>'<div class="depense-row"><span style="flex:1">📄 '+doc.label+'</span><span style="color:var(--text2);font-size:11px">'+doc.date+' · '+(doc.size/1024).toFixed(0)+' Ko</span><a href="'+doc.data+'" download="'+doc.label+'.pdf" style="color:var(--blue);font-size:12px;text-decoration:none;padding:4px 8px">↓</a><button class="danger" onclick="deleteDoc(\''+locId+'\',\''+doc.id+'\')">✕</button></div>').join('');
+}
+
+function switchLocTab(tab,el){
+  ['Infos','Notes','Docs','Hist'].forEach(t=>{const p=document.getElementById('locTab'+t);if(p)p.style.display=t===tab?'block':'none';});
+  document.querySelectorAll('.modal-tab').forEach(b=>b.classList.remove('active'));if(el)el.classList.add('active');
+  if(tab==='Docs')renderDocList(document.getElementById('editLocId').value);
+  if(tab==='Hist')renderLocHist(document.getElementById('editLocId').value);
+}
+function renderLocHist(locId){
+  const d=loadData();const annee=new Date().getFullYear();const el=document.getElementById('locHistList');
+  let html='<div class="section-title">Paiements enregistrés</div>';let found=false;
+  for(let y=annee;y>=annee-2;y--){for(let m=12;m>=1;m--){const k=pKey(locId,y,m);if(d.paiements[k]){found=true;html+='<div class="hist-entry">✓ '+MONTHS_FULL[m-1]+' '+y+(d.paiements[k].date?' <span style="color:var(--text3)">— '+d.paiements[k].date+'</span>':'')+'</div>';}}}
+  if(!found)html+='<p style="color:var(--text2);font-size:12px">Aucun paiement enregistré.</p>';
+  el.innerHTML=html;
 }
 
 function openModal(id){document.getElementById(id).classList.add('active');}
 function closeModal(id){document.getElementById(id).classList.remove('active');}
 
 function editImmeuble(id){
-  const d=loadData();
-  const im=d.immeubles.find(i=>i.id===id);
-  if(!im)return;
-  document.getElementById('editImmId').value=im.id;
-  document.getElementById('editImmAdr').value=im.adresse;
-  document.getElementById('editImmLoyer').value=im.loyer;
-  document.getElementById('editImmCharges').value=im.charges;
-  openModal('modalImm');
+  const d=loadData();const im=d.immeubles.find(i=>i.id===id);if(!im)return;
+  document.getElementById('editImmId').value=im.id;document.getElementById('editImmAdr').value=im.adresse;
+  document.getElementById('editImmLoyer').value=im.loyer;document.getElementById('editImmCharges').value=im.charges;
+  document.getElementById('editImmNote').value=im.note||'';openModal('modalImm');
 }
-
 function saveEditImm(){
-  const id=document.getElementById('editImmId').value;
-  const d=loadData();
-  const im=d.immeubles.find(i=>i.id===id);
-  if(!im)return;
-  im.adresse=document.getElementById('editImmAdr').value.trim();
-  im.loyer=parseFloat(document.getElementById('editImmLoyer').value)||0;
-  im.charges=parseFloat(document.getElementById('editImmCharges').value)||0;
-  saveData(d);
-  closeModal('modalImm');
-  renderImmeubles();populateImmSelect();
+  const id=document.getElementById('editImmId').value;const d=loadData();const im=d.immeubles.find(i=>i.id===id);if(!im)return;
+  im.adresse=document.getElementById('editImmAdr').value.trim();im.loyer=parseFloat(document.getElementById('editImmLoyer').value)||0;
+  im.charges=parseFloat(document.getElementById('editImmCharges').value)||0;im.note=document.getElementById('editImmNote').value.trim();
+  addHist(d,'Immeuble modifié',im.adresse);saveData(d);closeModal('modalImm');renderImmeubles();populateImmSelect();
 }
 
 function editLocataire(id){
-  const d=loadData();
-  const l=d.locataires.find(x=>x.id===id);
-  if(!l)return;
-  document.getElementById('editLocId').value=l.id;
-  document.getElementById('editLocNom').value=l.nom;
-  document.getElementById('editLocPrenom').value=l.prenom||'';
-  document.getElementById('editLocLoyer').value=l.loyer;
-  document.getElementById('editLocType').value=l.type;
-  document.getElementById('editLocTel').value=l.tel||'';
-  document.getElementById('editLocMail').value=l.mail||'';
-  document.getElementById('editLocCaution').value=l.caution||'';
-  document.getElementById('editLocCautionNote').value=l.cautionNote||'';
-  const sel=document.getElementById('editLocImm');
-  sel.innerHTML='';
-  d.immeubles.forEach(im=>{
-    const o=document.createElement('option');
-    o.value=im.id;o.textContent=im.adresse;
-    if(im.id===l.immId)o.selected=true;
-    sel.appendChild(o);
-  });
-  openModal('modalLoc');
+  const d=loadData();const l=d.locataires.find(x=>x.id===id);if(!l)return;
+  document.getElementById('editLocId').value=l.id;document.getElementById('editLocNom').value=l.nom;document.getElementById('editLocPrenom').value=l.prenom||'';
+  document.getElementById('editLocLoyer').value=l.loyer;document.getElementById('editLocType').value=l.type;document.getElementById('editLocTel').value=l.tel||'';
+  document.getElementById('editLocMail').value=l.mail||'';document.getElementById('editLocCaution').value=l.caution||'';document.getElementById('editLocCautionNote').value=l.cautionNote||'';
+  document.getElementById('editLocDebut').value=l.debut||'';document.getElementById('editLocFin').value=l.fin||'';document.getElementById('editLocNotes').value=l.notes||'';
+  const sel=document.getElementById('editLocImm');sel.innerHTML='';
+  d.immeubles.forEach(im=>{const o=document.createElement('option');o.value=im.id;o.textContent=im.adresse;if(im.id===l.immId)o.selected=true;sel.appendChild(o);});
+  switchLocTab('Infos',document.querySelector('.modal-tab'));openModal('modalLoc');
+}
+function saveEditLoc(){
+  const id=document.getElementById('editLocId').value;const d=loadData();const l=d.locataires.find(x=>x.id===id);if(!l)return;
+  l.nom=document.getElementById('editLocNom').value.trim();l.prenom=document.getElementById('editLocPrenom').value.trim();
+  l.immId=document.getElementById('editLocImm').value;l.loyer=parseFloat(document.getElementById('editLocLoyer').value)||0;
+  l.type=document.getElementById('editLocType').value;l.tel=document.getElementById('editLocTel').value.trim();l.mail=document.getElementById('editLocMail').value.trim();
+  l.caution=parseFloat(document.getElementById('editLocCaution').value)||0;l.cautionNote=document.getElementById('editLocCautionNote').value.trim();
+  l.debut=document.getElementById('editLocDebut').value;l.fin=document.getElementById('editLocFin').value;l.notes=document.getElementById('editLocNotes').value;
+  addHist(d,'Locataire modifié',l.nom+' '+l.prenom);saveData(d);closeModal('modalLoc');renderLocataires();renderDashboard();
 }
 
-function saveEditLoc(){
-  const id=document.getElementById('editLocId').value;
-  const d=loadData();
-  const l=d.locataires.find(x=>x.id===id);
-  if(!l)return;
-  l.nom=document.getElementById('editLocNom').value.trim();
-  l.prenom=document.getElementById('editLocPrenom').value.trim();
-  l.immId=document.getElementById('editLocImm').value;
-  l.loyer=parseFloat(document.getElementById('editLocLoyer').value)||0;
-  l.type=document.getElementById('editLocType').value;
-  l.tel=document.getElementById('editLocTel').value.trim();
-  l.mail=document.getElementById('editLocMail').value.trim();
-  l.caution=parseFloat(document.getElementById('editLocCaution').value)||0;
-  l.cautionNote=document.getElementById('editLocCautionNote').value.trim();
-  saveData(d);
-  closeModal('modalLoc');
-  renderLocataires();
+function exportData(){
+  const d=loadData();const blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='ares_locataires_'+new Date().toISOString().slice(0,10)+'.json';a.click();
 }
+function importData(event){
+  const file=event.target.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{try{const d=JSON.parse(e.target.result);if(!confirm('Remplacer toutes les données actuelles ?'))return;saveData(d);initApp();alert('Import réussi !');}catch(err){alert('Fichier JSON invalide');}};
+  reader.readAsText(file);
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o=>{o.addEventListener('click',e=>{if(e.target===o)o.classList.remove('active');});});
 </script>
 </body>
 </html>
