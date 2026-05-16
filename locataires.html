@@ -346,19 +346,22 @@ async function saveToGitHub(d){
     var sha=await getFileSha();
     var body={message:'Backup '+new Date().toISOString().slice(0,16),content};
     if(sha)body.sha=sha;
-    var r=await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{method:'PUT',headers:{'Authorization':'token '+GH_TOKEN,'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var authH=GH_TOKEN.startsWith('github_pat_')?'Bearer '+GH_TOKEN:'token '+GH_TOKEN;
+    var r=await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{method:'PUT',headers:{'Authorization':authH,'Content-Type':'application/json'},body:JSON.stringify(body)});
     if(r.ok){localStorage.setItem('aresLastBackup',new Date().toISOString());showGHStatus('✓ Sauvegardé sur GitHub','var(--green)');}
     else showGHStatus('⚠ Erreur GitHub '+r.status,'var(--red)');
   }catch(e){showGHStatus('⚠ Hors ligne','var(--amber)');}
 }
 async function getFileSha(){
-  try{var r=await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{headers:{'Authorization':'token '+GH_TOKEN}});if(r.ok){var d=await r.json();return d.sha;}}catch(e){}return null;
+  try{var ah=GH_TOKEN.startsWith('github_pat_')?'Bearer '+GH_TOKEN:'token '+GH_TOKEN;
+    var r=await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{headers:{'Authorization':ah}});if(r.ok){var d=await r.json();return d.sha;}}catch(e){}return null;
 }
 async function loadFromGitHub(){
   if(!GH_TOKEN){alert('Token GitHub non saisi au login.');return null;}
   showGHStatus('⏳ Chargement...','var(--amber)');
   try{
-    var r=await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{headers:{'Authorization':'token '+GH_TOKEN}});
+    var authHeader=GH_TOKEN.startsWith('github_pat_')?'Bearer '+GH_TOKEN:'token '+GH_TOKEN;
+    var r=await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{headers:{'Authorization':authHeader}});
     if(r.ok){
       var d=await r.json();
       var dec=JSON.parse(decodeURIComponent(escape(atob(d.content))));
