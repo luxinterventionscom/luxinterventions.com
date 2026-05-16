@@ -356,10 +356,25 @@ async function getFileSha(){
 }
 async function loadFromGitHub(){
   if(!GH_TOKEN){alert('Token GitHub non saisi au login.');return null;}
+  showGHStatus('⏳ Chargement...','var(--amber)');
   try{
     var r=await fetch('https://api.github.com/repos/'+GH_USER+'/'+GH_REPO+'/contents/'+GH_FILE,{headers:{'Authorization':'token '+GH_TOKEN}});
-    if(r.ok){var d=await r.json();var dec=JSON.parse(decodeURIComponent(escape(atob(d.content))));localStorage.setItem('aresLocData',JSON.stringify(dec));showGHStatus('✓ Chargé depuis GitHub','var(--green)');return dec;}
-  }catch(e){}return null;
+    if(r.ok){
+      var d=await r.json();
+      var dec=JSON.parse(decodeURIComponent(escape(atob(d.content))));
+      localStorage.setItem('aresLocData',JSON.stringify(dec));
+      showGHStatus('✓ Chargé depuis GitHub','var(--green)');
+      return dec;
+    } else {
+      var err=await r.json();
+      showGHStatus('⚠ Erreur '+r.status+': '+(err.message||''),'var(--red)');
+      alert('Erreur GitHub '+r.status+': '+(err.message||'Vérifiez le token.'));
+    }
+  }catch(e){
+    showGHStatus('⚠ Erreur réseau','var(--red)');
+    alert('Erreur réseau: '+e.message);
+  }
+  return null;
 }
 function showGHStatus(msg,color){var el=document.getElementById('ghStatus');if(el){el.textContent=msg;el.style.color=color;setTimeout(()=>{el.textContent='';},5000);}}
 
