@@ -887,7 +887,7 @@
   <div style="display:inline-flex;align-items:center;gap:0.45rem;border-left:1px solid #D0CCC7;padding-left:1rem;">
     <div style="width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse-vis 2.2s infinite;flex-shrink:0;"></div>
     <span style="font-family:'Times New Roman',Times,serif;font-size:0.78rem;font-style:italic;color:var(--grey-600);white-space:nowrap;">
-      <strong id="visitorCount" style="font-style:normal;font-weight:700;color:var(--black);font-family:'Times New Roman',Times,serif;margin:0 0.15em;">—</strong> visiteurs aujourd'hui
+      <strong id="visitorCount" style="font-style:normal;font-weight:700;color:var(--black);font-family:'Times New Roman',Times,serif;margin:0 0.15em;">—</strong> visiteurs au total
     </span>
   </div>
 </div>
@@ -1780,8 +1780,17 @@
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
   // Smooth anchor s
-// Contatore visitatori
-document.getElementById('visitorCount').textContent = Math.floor(Math.random() * 40) + 15;
+// Contatore visitatori — conteggio reale, cumulativo, via Cloudflare Worker
+fetch('https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev/api/hits')
+  .then(r => r.ok ? r.json() : Promise.reject())
+  .then(data => {
+    document.getElementById('visitorCount').textContent = data.count;
+  })
+  .catch(() => {
+    // Contatore non disponibile: nasconde il blocco invece di mostrare un numero falso
+    const el = document.getElementById('visitorCount');
+    if (el) el.closest('div').style.display = 'none';
+  });
 </script>
 </body>
 </html>
