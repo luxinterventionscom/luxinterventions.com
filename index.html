@@ -816,7 +816,7 @@
   /* ── CTA "Rapport d'expert" — bandeau pleine largeur ── */
   .report-cta-btn {
     display: flex; align-items: center; justify-content: center; gap: 0.75rem;
-    width: 100%; margin-top: 2.5rem;
+    width: 100%; margin-bottom: 2.5rem;
     padding: 1.15rem 1.5rem; border-radius: 16px; border: none;
     background: var(--navy); color: var(--white);
     font-family: var(--font-body); font-size: 1rem; font-weight: 700;
@@ -1024,17 +1024,16 @@
       <p style="margin-bottom: 12px;">
         LuxInterventions agit en tant que centre de coordination stratégique, pilotant un réseau de sociétés et de professionnels hautement qualifiés. En centralisant l'expertise technique et opérationnelle, nous garantissons une disponibilité immédiate <strong>7j/7 et 24h/24</strong> ainsi qu'une résolution rapide. Notre rigueur de sélection et notre supervision technique font de nous l'unique garant de votre sécurité et de vos résultats.
       </p>
-      <p style="margin-bottom: 12px; font-weight: 600;">
-        DETECTION – INSPECTION – CONTROLE<br>
-        <span style="font-weight: 400; font-size: 0.95em;">
-          Fuite d'eau • Humidité • Désordre du bâtiment • Thermographie Infrarouge • Assainissement • Inspection vidéo, traçage et localisation de conduite
-        </span>
-      </p>
       <p style="font-style: italic; margin-bottom: 0;">
         Cliquez sur un service ci-dessous pour soumettre votre demande directement (toiture, jardinage, serrurerie et bien plus).
       </p>
     </div>
   </div>
+
+  <button type="button" class="report-cta-btn" onclick="openReportModal()">
+    <span class="report-cta-icon">📊</span>
+    DEMANDER UN RAPPORT D'EXPERT
+  </button>
 
   <div class="services-grid">
 
@@ -1120,10 +1119,6 @@
 
   </div>
 
-  <button type="button" class="report-cta-btn" onclick="openReportModal()">
-    <span class="report-cta-icon">📊</span>
-    DEMANDER UN RAPPORT D'EXPERT
-  </button>
 </section>
 
 <!-- MODAL FORMULAIRE -->
