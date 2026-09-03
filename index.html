@@ -813,23 +813,6 @@
      réutilisées par tous les styles .modal-* ci-dessus */
   #reportModal .modal-box { --accent: var(--navy); --accent-light: var(--navy-light); --accent-dark: var(--navy-dark); }
 
-  /* ── CTA "Rapport d'expert" — bandeau pleine largeur ── */
-  .report-cta-btn {
-    display: flex; align-items: center; justify-content: center; gap: 0.75rem;
-    width: 100%; margin-bottom: 2.5rem;
-    padding: 1.15rem 1.5rem; border-radius: 16px; border: none;
-    background: var(--navy); color: var(--white);
-    font-family: var(--font-body); font-size: 1rem; font-weight: 700;
-    letter-spacing: 0.02em; cursor: pointer;
-    box-shadow: 0 4px 20px rgba(27,46,75,0.25);
-    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-  }
-  .report-cta-btn:hover {
-    background: #2C4770; transform: translateY(-1px);
-    box-shadow: 0 8px 28px rgba(27,46,75,0.38);
-  }
-  .report-cta-btn .report-cta-icon { font-size: 1.3rem; }
-
   /* Upload photos */
   .photo-upload-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
   .photo-slot {
@@ -995,7 +978,7 @@
 <div class="numbers-strip">
   <div class="numbers-grid">
     <div class="number-item reveal">
-      <div class="number-value">10</div>
+      <div class="number-value">12</div>
       <div class="number-label">Catégories de services</div>
     </div>
     <div class="number-item reveal" style="transition-delay:0.1s">
@@ -1018,7 +1001,7 @@
   <div class="services-header" style="display: flex; align-items: center; justify-content: space-between; gap: 40px;">
     <div>
       <div class="section-eyebrow">Nos Services</div>
-      <h2 class="section-title">11 expertises,<br>une seule plateforme</h2>
+      <h2 class="section-title">12 expertises,<br>une seule plateforme</h2>
     </div>
     <div class="section-sub" style="max-width: 600px;">
       <p style="margin-bottom: 12px;">
@@ -1030,12 +1013,15 @@
     </div>
   </div>
 
-  <button type="button" class="report-cta-btn" onclick="openReportModal()">
-    <span class="report-cta-icon">📊</span>
-    DEMANDER UN RAPPORT D'EXPERT
-  </button>
-
   <div class="services-grid">
+
+    <div class="service-card" onclick="openReportModal()">
+      <div class="service-icon" style="background:var(--navy-light)">📊</div>
+      <div class="service-name">Rapport d'expert</div>
+      <div class="service-desc">Détection de fuites, humidité, thermographie infrarouge, inspection vidéo et traçage de conduites.</div>
+      <span class="service-tag" style="background:var(--navy-light);color:var(--navy)">Diagnostic</span>
+      <div class="service-click-hint">▶ Faire une demande</div>
+    </div>
 
     <div class="service-card" onclick="openModal('Toiture','🏗️','#EBF3FB')">
       <div class="service-icon" style="background:#EBF3FB">🏗️</div>
@@ -1048,8 +1034,8 @@
     <div class="service-card" onclick="openModal('Jardinage','🌿','#EBF5EF')">
       <div class="service-icon" style="background:#EBF5EF">🌿</div>
       <div class="service-name">Jardinage</div>
-      <div class="service-desc">Entretien des espaces verts, taille, tonte, nettoyage. Service mars à novembre.</div>
-      <span class="service-tag" style="background:#EBF5EF;color:#2E7D52">Mars–Nov</span>
+      <div class="service-desc">Entretien des espaces verts, taille, tonte, nettoyage, déneigement et salage.</div>
+      <span class="service-tag" style="background:#EBF5EF;color:#2E7D52">7/7</span>
       <div class="service-click-hint">▶ Faire une demande</div>
     </div>
 
@@ -1114,6 +1100,14 @@
       <div class="service-name">Bricolage &amp; Améliorations</div>
       <div class="service-desc">Petits travaux, montage de meubles, fixations, remplacement de vitrages, réparations diverses. Rapide et fiable.</div>
       <span class="service-tag" style="background:#F0FBF0;color:#2E7D52">Rapide</span>
+      <div class="service-click-hint">▶ Faire une demande</div>
+    </div>
+
+    <div class="service-card" onclick="openModal('Nettoyage des résidences','🧹','#E6F7F5')">
+      <div class="service-icon" style="background:#E6F7F5">🧹</div>
+      <div class="service-name">Nettoyage des résidences</div>
+      <div class="service-desc">Entretien et nettoyage des parties communes.</div>
+      <span class="service-tag" style="background:#E6F7F5;color:#1F8A7A">Régulier</span>
       <div class="service-click-hint">▶ Faire une demande</div>
     </div>
 
