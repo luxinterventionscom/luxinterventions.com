@@ -302,8 +302,8 @@
   .services-section { background: var(--off-white); overflow: visible; }
 
   .services-header {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 4rem; align-items: end;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 2.5rem;
     margin-bottom: 4rem;
   }
 
@@ -361,7 +361,7 @@
   }
 
   /* Bloc vidéo — occupe l'espace des cards manquantes en fin de grille */
-  .video-card { padding: 0; cursor: default; min-height: 240px; }
+  .video-card { grid-column: span 3; padding: 0; cursor: default; min-height: 240px; }
   .video-card:hover { background: var(--white); transform: none; }
   .video-card::after { display: none; }
   .video-card-media {
@@ -649,7 +649,7 @@
   }
 
   .footer-links {
-    display: flex; gap: 2rem; list-style: none;
+    display: flex; gap: 2rem; list-style: none; flex-wrap: wrap;
   }
   .footer-links a {
     font-size: 0.8rem; color: rgba(255,255,255,0.4); text-decoration: none;
@@ -866,7 +866,8 @@
     .hero-card { display: none; }
     .numbers-grid { grid-template-columns: 1fr 1fr; }
     .services-grid { grid-template-columns: repeat(2, 1fr); }
-    .services-header { grid-template-columns: 1fr; gap: 1rem; }
+    .video-card { grid-column: 1 / -1; }
+    .services-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
     .why-grid { grid-template-columns: 1fr; gap: 3rem; }
     .about-grid { grid-template-columns: 1fr; gap: 3rem; }
     .contact-grid { grid-template-columns: 1fr; gap: 3rem; }
@@ -1016,7 +1017,7 @@
 
 <!-- SERVICES -->
 <section class="services-section" id="services">
-  <div class="services-header" style="display: flex; align-items: center; justify-content: space-between; gap: 40px;">
+  <div class="services-header">
     <div>
       <div class="section-eyebrow">Nos Services</div>
       <h2 class="section-title">12 expertises,<br>une seule plateforme</h2>
@@ -1129,7 +1130,7 @@
       <div class="service-click-hint">▶ Faire une demande</div>
     </div>
 
-    <div class="service-card video-card" style="grid-column: span 3">
+    <div class="service-card video-card">
       <video class="video-card-media" autoplay muted loop playsinline preload="metadata" poster="assets/relax-video-poster.jpg">
         <source src="assets/relax-video.mp4" type="video/mp4">
       </video>
