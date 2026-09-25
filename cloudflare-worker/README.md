@@ -49,6 +49,32 @@ https://luxinterventions-hitcounter.<tuo-account>.workers.dev
 Nessuna azione da fare su questi ultimi due — li richiama automaticamente
 il modulo del sito una volta collegato.
 
+## 5. Archivio cifrato "Ares — Gestion locataires" (nuovo)
+
+`locataires.html` salva i dati **cifrati nel browser** (AES-256-GCM) su questo
+stesso Worker. Usa i binding già esistenti (`PHOTOS` per i dati, `HITS` per il
+blocco dei tentativi): **non serve creare nulla di nuovo**, solo:
+
+1. Aggiorna il codice del Worker: **Edit code** → incolla per intero il nuovo
+   `hit-counter.js` → **Deploy**.
+2. Sul Worker → **Settings** → **Variables and Secrets** → **Add**:
+   - Type: **Secret**
+   - Name: `ARES_SETUP_CODE`
+   - Value: un codice lungo a tua scelta (serve **una sola volta**, per la
+     prima configurazione) → **Deploy**.
+3. Apri `https://luxinterventions.com/locataires.html`: la prima volta chiede
+   il codice del punto 2 e ti fa scegliere la **chiave di accesso**.
+   Da quel momento basta la chiave, su qualsiasi telefono o computer.
+
+Importante:
+- La chiave di accesso **non è recuperabile**: se la perdi, i dati restano
+  illeggibili. Conservala in un posto sicuro (es. gestore di password).
+- Dopo la prima configurazione il codice `ARES_SETUP_CODE` non serve più
+  (la configurazione non può essere rifatta sopra dati esistenti).
+- Dopo 10 tentativi errati lo stesso indirizzo IP viene bloccato per 15 minuti.
+- File su R2: `ares/meta.json`, `ares/data.bin`, `ares/files/<id>` — tutti
+  illeggibili senza la chiave.
+
 ## Note
 
 - Il Worker accetta chiamate solo dall'origine `https://luxinterventions.com`
