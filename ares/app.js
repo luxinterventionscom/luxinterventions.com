@@ -2,7 +2,7 @@
 import { Vault, payKey, isLegacy, ApiError, uid } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.1.0';
+const VERSION = '2.2.0';
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
 const $ = (s, r = document) => r.querySelector(s);
@@ -788,6 +788,7 @@ dashboard() {
           <select data-input="lockmin" style="width:auto">${[5, 15, 30, 60].map((n) => html`<option value="${n}" ${lockMinutes() === n ? new Raw('selected') : ''}>${n} min</option>`)}</select></div>
         <button class="row" data-action="change-key">${icon('key')}<span class="grow"><span class="title" style="display:block">Changer la clé d'accès</span><span class="meta">Les autres appareils devront utiliser la nouvelle clé</span></span></button>
         <button class="row" data-action="lock">${icon('lock')}<span class="grow title">Verrouiller maintenant</span></button>
+        <button class="row" data-action="wipe-all">${icon('trash')}<span class="grow"><span class="title red" style="display:block">Effacer toutes les données</span><span class="meta">Immeubles, locataires, paiements, documents — sur tous les appareils</span></span></button>
         <button class="row" data-action="forget">${icon('trash')}<span class="grow"><span class="title red" style="display:block">Oublier cet appareil</span><span class="meta">Efface la copie chiffrée locale (les données restent sur le serveur)</span></span></button>
       </div>
 
@@ -1382,6 +1383,15 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.remove('documents', d.id), 'Document supprimé', doc.label, doc.locId);
     await vault.deleteFile(d.id);
   },
+  async 'wipe-all'() {
+    const k = await promptKey('Effacer toutes les données ?', 'Tout sera supprimé sur tous les appareils : immeubles, logements, locataires, paiements, dépenses et documents. Faites d’abord une sauvegarde chiffrée si besoin. Saisissez votre clé d’accès pour confirmer.');
+    if (!k) return;
+    if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
+    if (!(await confirmBox('Dernière confirmation', { ok: 'Tout effacer', danger: true, detail: 'Cette action est irréversible.' }))) return;
+    await vault.wipeAll();
+    ui.immFilter = '';
+    toast('Toutes les données ont été effacées');
+  },
   async forget() {
     if (!(await confirmBox('Oublier cet appareil ?', { ok: 'Oublier', danger: true, detail: vault.dirty ? 'Attention : des modifications ne sont pas encore synchronisées et seront perdues.' : 'La copie locale chiffrée sera effacée. Vos données restent sur le serveur.' }))) return;
     await vault.forgetDevice();
@@ -1554,7 +1564,7 @@ async function importFile(file) {
       await vault.importLegacy(obj);
     } else if (obj && obj.v === 2 && obj.locataires) {
       if (!(await confirmBox('Importer cet export ?', { ok: 'Importer', detail: 'Fusion avec les données actuelles : les éléments les plus récents sont conservés.' }))) return;
-      await vault.mergeIn(obj);
+      await vault.importState(obj);
     } else return toast('Format non reconnu', { bad: true });
     toast('Import terminé');
   } catch (e) {
