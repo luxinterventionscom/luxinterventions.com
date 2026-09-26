@@ -1,8 +1,8 @@
 // Ares Invest — Gestion locataires (interface)
-import { Vault, payKey, isLegacy, ApiError, uid } from './store.js';
+import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.3.0';
+const VERSION = '2.4.0';
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
 const $ = (s, r = document) => r.querySelector(s);
@@ -379,11 +379,33 @@ function setBusy(form, busy, label) {
   else { b.disabled = false; b.textContent = b.dataset.label || b.textContent; }
 }
 
+// Un seul appareil connecté : si un autre est actif, proposer de prendre la main.
+async function claimOrAsk() {
+  try {
+    await vault.claimSession(false);
+    return true;
+  } catch (e) {
+    if (!(e instanceof ApiError)) return true; // réseau coupé : on continue hors ligne
+    if (e.status !== 409) throw e;
+    const i = e.info || {};
+    const ago = i.lastSeen ? Math.max(0, Math.round((Date.now() - i.lastSeen) / 1000)) : null;
+    const choice = await choiceBox(
+      'Ares est ouvert sur un autre appareil',
+      `${i.device || 'Un autre appareil'} est connecté${i.since ? ' depuis ' + fmtDateTime(i.since) : ''}${ago != null ? ` (actif il y a ${ago} s)` : ''}. Un seul appareil peut être connecté à la fois : si vous continuez, l'autre sera déconnecté immédiatement.`,
+      [{ value: 'take', label: 'Prendre la main', cls: 'primary' }]
+    );
+    if (!choice) return false;
+    await vault.claimSession(true);
+    return true;
+  }
+}
+
 async function onRecover(fd, form) {
   setBusy(form, true, 'Vérification…');
   try {
     const r = await vault.unlockWithRecovery(fd.get('code'));
     if (r.setup) return renderLock('setup');
+    if (!(await claimOrAsk())) { vault.lock(); return renderLock('unlock', 'Connexion annulée.'); }
     renderLock('newkey');
   } catch (e) {
     setBusy(form, false);
@@ -412,6 +434,10 @@ async function onUnlock(fd, form) {
   try {
     const r = await vault.unlock(fd.get('pass'));
     if (r.setup) return renderLock('setup');
+    if (!(await claimOrAsk())) {
+      vault.lock();
+      return renderLock('unlock', 'Connexion annulée : Ares reste ouvert sur l’autre appareil.');
+    }
     startSession();
   } catch (e) {
     setBusy(form, false);
@@ -428,6 +454,7 @@ async function onSetup(fd, form) {
   setBusy(form, true, 'Création…');
   try {
     await vault.setup(fd.get('code'), pass);
+    await claimOrAsk();
   } catch (e) {
     setBusy(form, false);
     err.textContent = e.message || 'Erreur';
@@ -487,6 +514,7 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 addEventListener('online', () => vault.unlocked && vault.sync());
+addEventListener('pagehide', () => vault.unlocked && vault.releaseSession());
 addEventListener('offline', () => vault.unlocked && vault.setStatus('offline'));
 
 vault.on((kind) => {
@@ -494,6 +522,7 @@ vault.on((kind) => {
   if (kind === 'status') renderSync();
   if (kind === 'data') { renderView(); renderSheet(); }
   if (kind === 'auth-lost') lockNow("La clé d'accès a été changée sur un autre appareil.");
+  if (kind === 'session-lost') lockNow(`Ares a été ouvert sur ${vault.sessionLostBy || 'un autre appareil'} : cet appareil a été déconnecté.`);
 });
 
 // ───────────────────────── Coquille ─────────────────────────
@@ -851,6 +880,7 @@ dashboard() {
       <div class="list settings">
         <div class="row">${icon('lock')}<span class="grow title">Verrouillage automatique</span>
           <select data-input="lockmin" style="width:auto">${[5, 15, 30, 60].map((n) => html`<option value="${n}" ${lockMinutes() === n ? new Raw('selected') : ''}>${n} min</option>`)}</select></div>
+        <div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Un seul appareil connecté à la fois</span><span class="meta">Cet appareil : ${deviceLabel()}. Une connexion ailleurs déconnecte celui-ci.</span></span></div>
         <button class="row" data-action="make-recovery">${icon('shield')}<span class="grow"><span class="title" style="display:block">Clé de secours ${vault.hasRecovery ? html`<span class="badge ok">active</span>` : vault.hasRecovery === false ? html`<span class="badge warn">à créer</span>` : ''}</span><span class="meta">Pour retrouver l'accès si la clé d'accès est oubliée</span></span></button>
         <button class="row" data-action="change-key">${icon('key')}<span class="grow"><span class="title" style="display:block">Changer la clé d'accès</span><span class="meta">Les autres appareils devront utiliser la nouvelle clé</span></span></button>
         <button class="row" data-action="lock">${icon('lock')}<span class="grow title">Verrouiller maintenant</span></button>
@@ -1287,9 +1317,9 @@ const SHEETS = {
         <div class="actions" style="margin-top:14px">
           <button class="btn" data-action="copy-recovery">${icon('file')} Copier</button>
           <button class="btn" data-action="print-recovery">${icon('download')} Imprimer</button>
-          <a class="btn" href="mailto:?subject=${encodeURIComponent('Ares Invest — clé de secours')}&body=${body}">${icon('mail')} Email</a>
+          <a class="btn" href="mailto:info@luxinterventions.com?subject=${encodeURIComponent('Ares Invest — clé de secours')}&body=${body}">${icon('mail')} Email</a>
         </div>
-        <p class="tiny muted">Email : pratique, mais toute personne qui accède à votre messagerie pourrait ouvrir le coffre. Le papier est plus sûr.</p>`,
+        <p class="tiny muted">Le bouton Email prépare un message vers info@luxinterventions.com. Pratique, mais toute personne qui accède à cette messagerie pourrait ouvrir le coffre : le papier reste plus sûr.</p>`,
       foot: html`<button class="btn primary" data-action="close-sheet">J'ai noté ma clé de secours</button>`,
     };
   },

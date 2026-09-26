@@ -35,7 +35,7 @@ function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGIN,
     "Access-Control-Allow-Methods": "GET, PUT, POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, If-Match, If-None-Match",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, If-Match, If-None-Match, X-Ares-Session, X-Ares-Device",
     "Access-Control-Expose-Headers": "ETag",
     "Access-Control-Max-Age": "86400",
     "Cache-Control": "no-store",
@@ -142,6 +142,12 @@ export default {
  *   GET    /api/ares/data          database cifrato + ETag             [auth]
  *   PUT    /api/ares/data          If-Match / If-None-Match: *         [auth]
  *   GET|PUT|DELETE /api/ares/files/<id>                               [auth]
+ *   POST   /api/ares/session       apre la sessione esclusiva (force: prende la mano) [auth]
+ *   DELETE /api/ares/session       chiude la sessione                  [auth]
+ *
+ * Sessione esclusiva: un solo dispositivo connesso alla volta. Ogni richiesta
+ * porta l'header X-Ares-Session; se un altro dispositivo è attivo (ultima
+ * richiesta da meno di 2 minuti) la risposta è 409 e l'app si blocca.
  * ════════════════════════════════════════════════════════════════════════ */
 
 const ARES_META = "ares/meta.json";
@@ -151,6 +157,9 @@ const ARES_MAX_DATA = 20 * 1024 * 1024;
 const ARES_MAX_FILE = 12 * 1024 * 1024;
 const ARES_MAX_FAILS = 10;
 const ARES_LOCK_SECONDS = 900;
+const ARES_SESSION = "ares/session.json";
+const ARES_LEASE_MS = 120 * 1000; // un dispositivo inattivo da 2 minuti non è più considerato connesso
+const ARES_RENEW_MS = 20 * 1000;
 
 function aresJson(obj, status, headers, extra = {}) {
   return new Response(JSON.stringify(obj), {
@@ -255,6 +264,37 @@ async function handleAres(request, env, url, headers) {
   if (path === "key" && method === "GET") {
     return aresJson({ wrappedKey: slot === "main" ? meta.wrappedKey : meta.recovery.wrappedKey, slot }, 200, headers);
   }
+
+  // ── Sessione esclusiva (un solo dispositivo connesso) ──
+  const sid = request.headers.get("X-Ares-Session") || "";
+  if (!/^[a-zA-Z0-9-]{16,64}$/.test(sid)) return aresJson({ error: "Session manquante" }, 400, headers);
+  const leaseObj = await env.PHOTOS.get(ARES_SESSION);
+  const lease = leaseObj ? await leaseObj.json() : null;
+  const now = Date.now();
+  const otherActive = lease && lease.sid !== sid && now - lease.lastSeen < ARES_LEASE_MS;
+  const device = String(request.headers.get("X-Ares-Device") || "").slice(0, 80);
+  const writeLease = () => env.PHOTOS.put(ARES_SESSION, JSON.stringify({
+    sid, device: device || (lease && lease.sid === sid ? lease.device : ""), since: lease && lease.sid === sid ? lease.since : now, lastSeen: now,
+  }));
+
+  if (path === "session" && method === "POST") {
+    let body;
+    try { body = await request.json(); } catch { body = {}; }
+    if (otherActive && !body.force) {
+      return aresJson({ error: "session-busy", device: lease.device, since: lease.since, lastSeen: lease.lastSeen }, 409, headers);
+    }
+    await writeLease();
+    return aresJson({ ok: true, replaced: otherActive ? lease.device : null }, 200, headers);
+  }
+  if (path === "session" && method === "DELETE") {
+    if (lease && lease.sid === sid) await env.PHOTOS.delete(ARES_SESSION);
+    return aresJson({ ok: true }, 200, headers);
+  }
+  if (otherActive) {
+    return aresJson({ error: "session-taken", device: lease.device }, 409, headers);
+  }
+  // Rinnova la sessione (al massimo ogni 20 s, per limitare le scritture)
+  if (!lease || lease.sid !== sid || now - lease.lastSeen > ARES_RENEW_MS) await writeLease();
 
   // Crea o sostituisce la chiave di secours (solo con la chiave di accesso principale)
   if (path === "recovery" && method === "POST") {
