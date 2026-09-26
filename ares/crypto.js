@@ -127,3 +127,12 @@ export function passphraseStrength(p) {
   if (p.length >= 20 && (classes >= 2 || words >= 4)) score++;
   return Math.min(score, 4);
 }
+
+// Clé de secours : 24 caractères aléatoires (~120 bits), sans caractères ambigus, par groupes de 4.
+const RC_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export function newRecoveryCode() {
+  const bytes = randomBytes(24);
+  const chars = [...bytes].map((b) => RC_ALPHABET[b % 32]).join('');
+  return chars.match(/.{4}/g).join('-');
+}
+export const normalizeRecoveryCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/O/g, '0').replace(/I/g, '1');
