@@ -361,6 +361,7 @@ button.row:hover { background: var(--surface-2); }
 .mcell:active { transform: scale(0.94); }
 .mcell small { font-size: 11px; font-weight: 600; }
 .mcell.paid { background: var(--green-soft); border-color: transparent; color: var(--green); }
+.mcell.part { background: var(--amber-soft); border-color: transparent; color: var(--amber); }
 .mcell.late { background: var(--red-soft); border-color: transparent; color: var(--red-strong); }
 .mcell.now { box-shadow: inset 0 0 0 2px var(--accent); }
 .mcell.off { opacity: 0.35; }
