@@ -1,0 +1,16 @@
+{
+  "name": "Ares Invest — Gestion locataires",
+  "short_name": "Ares",
+  "description": "Gestion des immeubles, locataires et loyers — données chiffrées de bout en bout.",
+  "lang": "fr",
+  "start_url": "/locataires.html",
+  "scope": "/locataires",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f4f0",
+  "theme_color": "#f5f4f0",
+  "icons": [
+    { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
