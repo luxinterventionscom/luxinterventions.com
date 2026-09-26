@@ -1,8 +1,8 @@
 // Ares Invest — Gestion locataires (interface)
-import { Vault, payKey, isLegacy, ApiError } from './store.js';
+import { Vault, payKey, isLegacy, ApiError, uid } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.0.0';
+const VERSION = '2.1.0';
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
 const $ = (s, r = document) => r.querySelector(s);
@@ -59,27 +59,50 @@ const money = (n) => eurFmt.format(n || 0);
 const num = (v) => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0; };
 const fmtDate = (s) => (s ? new Date(s + (s.length === 10 ? 'T00:00:00' : '')).toLocaleDateString('fr-LU', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 const fmtDateTime = (t) => new Date(t).toLocaleString('fr-LU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-const today = () => new Date().toISOString().slice(0, 10);
+const isoDate = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+const today = () => isoDate(new Date());
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
 const level = (p) => (p >= 80 ? '' : p >= 50 ? 'warn' : 'bad');
 
 // ───────────────────────── Règles métier ─────────────────────────
+// Immeuble ─┬─ Logement (appartement, studio, chambre…) ── Locataires successifs (jamais effacés : `sortie` = date de départ)
+//           ├─ Versements au propriétaire principal (loyer du bail principal, mois par mois)
+//           └─ Dépenses (réparations…), rattachées à l'immeuble ou à un logement précis
 const fullName = (l) => [l.prenom, l.nom].filter(Boolean).join(' ') || 'Sans nom';
 const initials = (l) => (((l.prenom || '')[0] || '') + ((l.nom || '')[0] || '')).toUpperCase() || '?';
 const immName = (id) => (vault.get('immeubles', id) || {}).adresse || 'Sans immeuble';
+const LOG_TYPES = { appartement: 'Appartement', studio: 'Studio', chambre: 'Chambre', autre: 'Autre' };
+const logName = (id) => (vault.get('logements', id) || {}).nom || '';
+const whereOf = (l) => [logName(l.logId), immName(l.immId)].filter(Boolean).join(' · ');
 const byName = (a, b) => fullName(a).localeCompare(fullName(b), 'fr');
 const byAddr = (a, b) => (a.adresse || '').localeCompare(b.adresse || '', 'fr');
+const byLogName = (a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr', { numeric: true });
+const byDebut = (a, b) => (a.debut || '').localeCompare(b.debut || '');
 const ym = (y, m) => y * 12 + (m - 1);
-const ymOf = (s) => { const d = new Date(s); return d.getFullYear() * 12 + d.getMonth(); };
+const ymOf = (s) => { const [y, m] = String(s).split('-'); return +y * 12 + (+m - 1); };
+const addDays = (s, n) => { const d = new Date(s + 'T00:00:00'); d.setDate(d.getDate() + n); return isoDate(d); };
+const nowYm = () => { const d = new Date(); return d.getFullYear() * 12 + d.getMonth(); };
+const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
+const duree = (months) => (months >= 12 ? `${Math.floor(months / 12)} an${months >= 24 ? 's' : ''}${months % 12 ? ' ' + (months % 12) + ' mois' : ''}` : `${months} mois`);
+
+// Statut d'un locataire dans le temps
+// (sans paramètre par défaut : ces fonctions sont passées directement à Array.filter)
+const isGone = (l) => !!l.sortie && l.sortie < today();
+const isFuture = (l) => !!l.debut && l.debut > today();
+const isCurrent = (l) => !isGone(l);
+const currentLocs = () => vault.list('locataires').filter(isCurrent);
 
 function isDue(l, y, m) {
   const k = ym(y, m);
   if (l.debut && k < ymOf(l.debut)) return false;
   if (l.fin && k > ymOf(l.fin)) return false;
+  if (l.sortie && k > ymOf(l.sortie)) return false;
   return true;
 }
 const payment = (locId, y, m) => vault.get('paiements', payKey(locId, y, m));
 const paidAmount = (p, l) => (p.montant != null ? p.montant : l.loyer) || 0;
+const paysOf = (locId) => vault.list('paiements').filter((p) => p.locId === locId);
+const totalPaid = (l) => paysOf(l.id).reduce((a, p) => a + paidAmount(p, l), 0);
 
 function lateMonths(l, ref = new Date()) {
   const y = ref.getFullYear();
@@ -87,10 +110,11 @@ function lateMonths(l, ref = new Date()) {
   for (let m = 1; m < ref.getMonth() + 1; m++) if (isDue(l, y, m) && !payment(l.id, y, m)) out.push(m);
   return out;
 }
-function daysToEnd(l) {
-  if (!l.fin) return null;
-  return Math.round((new Date(l.fin + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000);
+function daysUntil(date) {
+  if (!date) return null;
+  return Math.round((new Date(date + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000);
 }
+const daysToEnd = (l) => daysUntil(l.fin);
 function yearStats(l, y) {
   let due = 0, paid = 0;
   for (let m = 1; m <= 12; m++) {
@@ -100,7 +124,62 @@ function yearStats(l, y) {
   }
   return { due, paid };
 }
-const depensesOf = (immId, y) => vault.list('depenses').filter((d) => (!immId || d.immId === immId) && (!y || (d.date || '').startsWith(String(y))));
+const inYear = (date, y) => !y || String(date || '').startsWith(String(y));
+const depensesOf = (immId, y, logId) => vault.list('depenses').filter((d) => (!immId || d.immId === immId) && (!logId || d.logId === logId) && inYear(d.date, y));
+const sum = (arr, f) => arr.reduce((a, x) => a + (f(x) || 0), 0);
+
+// Logements & occupation
+const logsOf = (immId) => vault.list('logements').filter((g) => g.immId === immId).sort(byLogName);
+const tenantsOfLog = (logId) => vault.list('locataires').filter((l) => l.logId === logId).sort(byDebut);
+const tenantsOfImm = (immId) => vault.list('locataires').filter((l) => l.immId === immId);
+const occupantsNow = (logId) => tenantsOfLog(logId).filter((l) => !isGone(l) && !isFuture(l));
+function occupancy(logId) {
+  const ls = tenantsOfLog(logId).filter((l) => l.debut);
+  if (!ls.length) return null;
+  const start = Math.min(...ls.map((l) => ymOf(l.debut)));
+  const end = nowYm();
+  const months = new Set();
+  for (const l of ls) {
+    const to = Math.min(end, l.sortie ? ymOf(l.sortie) : end);
+    for (let k = ymOf(l.debut); k <= to; k++) months.add(k);
+  }
+  const total = Math.max(1, end - start + 1);
+  return { occupied: Math.min(months.size, total), total, vacant: Math.max(0, total - months.size) };
+}
+// Durée du séjour en mois (prévue jusqu'à la sortie si elle est connue)
+const stayMonths = (l) => (l.debut && !isFuture(l) ? Math.max(1, (l.sortie ? ymOf(l.sortie) : nowYm()) - ymOf(l.debut) + 1) : null);
+
+// Bail principal : loyer versé au propriétaire
+const ownerRent = (im) => (im.loyer || 0) + (im.charges || 0);
+function isOwnerDue(im, y, m) {
+  if (!ownerRent(im)) return false;
+  const k = ym(y, m);
+  if (im.bailDebut && k < ymOf(im.bailDebut)) return false;
+  if (im.bailFin && k > ymOf(im.bailFin)) return false;
+  return true;
+}
+const versement = (immId, y, m) => vault.get('versements', payKey(immId, y, m));
+const versementsOf = (immId, y) => vault.list('versements').filter((v) => v.immId === immId && (!y || v.y === y));
+
+// Bilan d'un immeuble (ou d'un logement) — une année, ou depuis l'origine si y est vide
+function bilan({ immId, logId, y }) {
+  const ls = logId ? tenantsOfLog(logId) : tenantsOfImm(immId);
+  const encaisse = sum(ls, (l) => sum(paysOf(l.id).filter((p) => !y || p.y === y), (p) => paidAmount(p, l)));
+  const depenses = sum(logId ? depensesOf(null, y, logId) : depensesOf(immId, y), (d) => d.montant);
+  const verse = logId ? 0 : sum(versementsOf(immId, y), (v) => v.montant);
+  return { encaisse, depenses, verse, net: encaisse - depenses - verse, occupants: ls.length };
+}
+function dataYears() {
+  const cy = new Date().getFullYear();
+  let min = cy;
+  for (const p of vault.list('paiements')) min = Math.min(min, p.y || cy);
+  for (const v of vault.list('versements')) min = Math.min(min, v.y || cy);
+  for (const d of vault.list('depenses')) if (d.date) min = Math.min(min, +d.date.slice(0, 4));
+  for (const l of vault.list('locataires')) if (l.debut) min = Math.min(min, +l.debut.slice(0, 4));
+  const out = [];
+  for (let y = Math.max(min, cy - 30); y <= cy + 1; y++) out.push(y);
+  return out;
+}
 
 // ───────────────────────── État de l'interface ─────────────────────────
 const ui = {
@@ -108,6 +187,7 @@ const ui = {
   year: new Date().getFullYear(),
   immFilter: '',
   search: '',
+  locSeg: 'actuels',
   histShown: 20,
   sheet: null, // { kind, id, tab }
 };
@@ -133,23 +213,27 @@ function toast(msg, opts = {}) {
   setTimeout(() => el.remove(), opts.undo ? 6000 : 3200);
 }
 
-function confirmBox(message, { ok = 'Confirmer', danger = false, detail = '' } = {}) {
+// Boîte de choix : choices = [{ value, label, cls }] ; renvoie la valeur choisie ou null.
+function choiceBox(message, detail, choices) {
   const dlg = $('#confirm');
   setHtml(dlg, html`
     <div class="sheet-body">
       <h2 style="font-size:18px;margin-bottom:8px">${message}</h2>
       ${detail ? html`<p class="muted small">${detail}</p>` : ''}
     </div>
-    <div class="sheet-foot">
-      <button class="btn" value="no" type="button">Annuler</button>
-      <button class="btn ${danger ? 'danger solid' : 'primary'}" value="yes" type="button">${ok}</button>
+    <div class="sheet-foot" style="flex-wrap:wrap">
+      <button class="btn" data-v="" type="button">Annuler</button>
+      ${choices.map((c) => html`<button class="btn ${c.cls || ''}" data-v="${c.value}" type="button">${c.label}</button>`)}
     </div>`);
   return new Promise((resolve) => {
-    dlg.querySelectorAll('button').forEach((b) => (b.onclick = () => { dlg.close(); resolve(b.value === 'yes'); }));
-    dlg.onclose = () => resolve(false);
+    dlg.querySelectorAll('button').forEach((b) => (b.onclick = () => { dlg.close(); resolve(b.dataset.v || null); }));
+    dlg.onclose = () => resolve(null);
     dlg.showModal();
   });
 }
+
+const confirmBox = async (message, { ok = 'Confirmer', danger = false, detail = '' } = {}) =>
+  (await choiceBox(message, detail, [{ value: 'yes', label: ok, cls: danger ? 'danger solid' : 'primary' }])) === 'yes';
 
 function promptKey(title, detail) {
   const dlg = $('#confirm');
@@ -409,70 +493,86 @@ function renderView() {
 }
 
 const pageHead = (title, sub, actions = '') => html`<div class="page-head"><div><h1>${title}</h1>${sub ? html`<p>${sub}</p>` : ''}</div>${actions}</div>`;
+const yearSelect = (y) => html`<select data-input="year" style="width:auto;min-width:100px" aria-label="Année">${dataYears().map((yy) => html`<option value="${yy}" ${yy === y ? new Raw('selected') : ''}>${yy}</option>`)}</select>`;
 const empty = (ic, text, action) => html`<div class="empty card">${icon(ic)}<p>${text}</p>${action ? html`<div style="margin-top:14px">${action}</div>` : ''}</div>`;
 
 // ───────────────────────── Vues ─────────────────────────
 const VIEWS = {
-  dashboard() {
+dashboard() {
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
-    const locs = vault.list('locataires').sort(byName);
+    const locs = currentLocs().sort(byName);
     const due = locs.filter((l) => isDue(l, y, m));
-    const expected = due.reduce((a, l) => a + (l.loyer || 0), 0);
-    const received = locs.reduce((a, l) => { const p = payment(l.id, y, m); return a + (p ? paidAmount(p, l) : 0); }, 0);
+    const expected = sum(due, (l) => l.loyer);
+    const received = sum(vault.list('locataires'), (l) => { const p = payment(l.id, y, m); return p ? paidAmount(p, l) : 0; });
     const todo = due.filter((l) => !payment(l.id, y, m));
     const late = locs.map((l) => ({ l, months: lateMonths(l, now) })).filter((x) => x.months.length >= 1).sort((a, b) => b.months.length - a.months.length);
-    const expiring = locs.map((l) => ({ l, d: daysToEnd(l) })).filter((x) => x.d != null && x.d >= 0 && x.d <= 60).sort((a, b) => a.d - b.d);
+    const expiring = locs.map((l) => ({ l, d: daysToEnd(l) })).filter((x) => x.d != null && x.d >= 0 && x.d <= 60 && !x.l.sortie).sort((a, b) => a.d - b.d);
+    const leaving = locs.filter((l) => l.sortie && daysUntil(l.sortie) >= 0 && daysUntil(l.sortie) <= 60).sort((a, b) => a.sortie.localeCompare(b.sortie));
+    const arriving = locs.filter((l) => isFuture(l)).sort(byDebut);
     const imms = vault.list('immeubles').sort(byAddr);
+    const logs = vault.list('logements');
+    const vacants = logs.filter((g) => !occupantsNow(g.id).length);
+    const ownerTodo = imms.filter((im) => isOwnerDue(im, y, m) && !versement(im.id, y, m));
     const p = pct(received, expected);
+    const alertBtn = (cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`;
 
     if (!imms.length && !locs.length) {
-      return html`${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses locataires.')}
+      return html`${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Ajouter un immeuble</button>`)}`;
     }
 
     return html`
-      ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${locs.length} locataire${locs.length > 1 ? 's' : ''} · ${imms.length} immeuble${imms.length > 1 ? 's' : ''}`)}
+      ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
       <div class="metrics">
         <div class="metric hero">
           <div class="lbl">Encaissé ce mois</div>
           <div class="val">${money(received)} <span class="muted" style="font-size:16px;font-weight:550">/ ${money(expected)}</span></div>
           <div class="progress ${level(p)}" style="margin-top:10px"><i style="width:${Math.min(p, 100)}%"></i></div>
-          <div class="sub">${p}% · ${todo.length} loyer${todo.length > 1 ? 's' : ''} à encaisser</div>
+          <div class="sub">${p}% · ${plural(todo.length, 'loyer')} à encaisser</div>
         </div>
         <div class="metric"><div class="lbl">Retards</div><div class="val ${late.length ? 'red' : 'green'}">${late.length}</div><div class="sub">locataires</div></div>
-        <div class="metric"><div class="lbl">Fins de contrat</div><div class="val ${expiring.length ? 'amber' : ''}">${expiring.length}</div><div class="sub">sous 60 jours</div></div>
-        <div class="metric"><div class="lbl">Revenu mensuel</div><div class="val">${money(due.reduce((a, l) => a + (l.loyer || 0), 0))}</div><div class="sub">loyers en cours</div></div>
-        <div class="metric"><div class="lbl">Dépenses ${y}</div><div class="val">${money(depensesOf('', y).reduce((a, d) => a + d.montant, 0))}</div><div class="sub">tous immeubles</div></div>
+        <div class="metric"><div class="lbl">Logements vacants</div><div class="val ${vacants.length ? 'amber' : 'green'}">${vacants.length}</div><div class="sub">sur ${logs.length}</div></div>
+        <div class="metric"><div class="lbl">Loyers perçus / mois</div><div class="val">${money(expected)}</div><div class="sub">baux en cours</div></div>
+        <div class="metric"><div class="lbl">Propriétaires / mois</div><div class="val">${money(sum(imms.filter((im) => isOwnerDue(im, y, m)), ownerRent))}</div><div class="sub">bail principal</div></div>
       </div>
 
-      ${late.length || expiring.length ? html`<div class="section-label">À surveiller</div><div class="stack">
-        ${late.slice(0, 6).map(({ l, months }) => html`<button class="alert ${months.length >= 2 ? 'bad' : 'warn'}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="open-loc" data-id="${l.id}">
-          ${icon('alert')}<div><b>${fullName(l)}</b> — ${months.length} mois impayé${months.length > 1 ? 's' : ''} (${months.map((x) => MONTHS[x - 1]).join(', ')})</div></button>`)}
-        ${expiring.map(({ l, d }) => html`<button class="alert warn" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="open-loc" data-id="${l.id}">
-          ${icon('calendar')}<div><b>${fullName(l)}</b> — fin de contrat ${d === 0 ? "aujourd'hui" : `dans ${d} jour${d > 1 ? 's' : ''}`} (${fmtDate(l.fin)})</div></button>`)}
+      ${late.length || expiring.length || leaving.length || arriving.length || vacants.length ? html`<div class="section-label">À surveiller</div><div class="stack">
+        ${late.slice(0, 6).map(({ l, months }) => alertBtn(months.length >= 2 ? 'bad' : 'warn', 'alert', 'open-loc', l.id, html`<b>${fullName(l)}</b> — ${months.length} mois impayé${months.length > 1 ? 's' : ''} (${months.map((x) => MONTHS[x - 1]).join(', ')})`))}
+        ${leaving.map((l) => alertBtn('warn', 'calendar', 'open-loc', l.id, html`<b>${fullName(l)}</b> quitte ${logName(l.logId) || 'le logement'} le ${fmtDate(l.sortie)}`))}
+        ${arriving.map((l) => alertBtn('info', 'users', 'open-loc', l.id, html`<b>${fullName(l)}</b> arrive dans ${logName(l.logId) || immName(l.immId)} le ${fmtDate(l.debut)}`))}
+        ${expiring.map(({ l, d }) => alertBtn('warn', 'calendar', 'open-loc', l.id, html`<b>${fullName(l)}</b> — fin de contrat ${d === 0 ? "aujourd'hui" : `dans ${plural(d, 'jour')}`} (${fmtDate(l.fin)})`))}
+        ${vacants.slice(0, 6).map((g) => alertBtn('info', 'home', 'open-log', g.id, html`<b>${g.nom}</b> (${immName(g.immId)}) est vacant`))}
       </div>` : ''}
 
       <div class="section-label">À encaisser — ${MONTHS_FULL[m - 1]}</div>
       ${todo.length ? html`<div class="list">${todo.map((l) => html`
         <div class="row">
           <button class="avatar" style="border:0;cursor:pointer" data-action="open-loc" data-id="${l.id}">${initials(l)}</button>
-          <div class="grow"><div class="title">${fullName(l)}</div><div class="meta">${immName(l.immId)}</div></div>
+          <div class="grow"><div class="title">${fullName(l)}</div><div class="meta">${whereOf(l)}</div></div>
           <div class="amount">${money(l.loyer)}</div>
           <button class="btn sm primary" data-action="pay" data-loc="${l.id}" data-y="${y}" data-m="${m}">${icon('check')} Payé</button>
-        </div>`)}</div>` : html`<div class="alert info" style="background:var(--green-soft);color:var(--green)">${icon('check')}<div>Tous les loyers de ${MONTHS_FULL[m - 1].toLowerCase()} sont encaissés.</div></div>`}
+        </div>`)}</div>` : html`<div class="alert" style="background:var(--green-soft);color:var(--green)">${icon('check')}<div>Tous les loyers de ${MONTHS_FULL[m - 1].toLowerCase()} sont encaissés.</div></div>`}
+
+      ${ownerTodo.length ? html`<div class="section-label">À verser aux propriétaires — ${MONTHS_FULL[m - 1]}</div>
+      <div class="list">${ownerTodo.map((im) => html`<div class="row">
+        <span class="avatar" style="background:var(--amber-soft);color:var(--amber)">${icon('key')}</span>
+        <div class="grow"><div class="title">${im.adresse}</div><div class="meta">${im.proprietaire || 'Propriétaire'}</div></div>
+        <div class="amount">${money(ownerRent(im))}</div>
+        <button class="btn sm" data-action="toggle-vers" data-imm="${im.id}" data-y="${y}" data-m="${m}">${icon('check')} Versé</button>
+      </div>`)}</div>` : ''}
 
       <div class="section-label">Immeubles</div>
       <div class="grid cols-auto">${imms.map((im) => {
         const ls = locs.filter((l) => l.immId === im.id);
-        const exp = ls.filter((l) => isDue(l, y, m)).reduce((a, l) => a + (l.loyer || 0), 0);
-        const rec = ls.reduce((a, l) => { const pp = payment(l.id, y, m); return a + (pp ? paidAmount(pp, l) : 0); }, 0);
+        const exp = sum(ls.filter((l) => isDue(l, y, m)), (l) => l.loyer);
+        const rec = sum(tenantsOfImm(im.id), (l) => { const pp = payment(l.id, y, m); return pp ? paidAmount(pp, l) : 0; });
         const pp = pct(rec, exp);
-        return html`<button class="card" style="text-align:left;font:inherit;color:inherit;cursor:pointer;width:100%" data-action="imm-pay" data-id="${im.id}">
+        return html`<button class="card" style="text-align:left;font:inherit;color:inherit;cursor:pointer;width:100%" data-action="open-imm" data-id="${im.id}">
           <div class="card-title"><h3>${im.adresse}</h3><span class="badge ${pp >= 100 ? 'ok' : pp >= 50 ? 'warn' : 'bad'}">${pp}%</span></div>
           <div class="progress ${level(pp)}"><i style="width:${Math.min(pp, 100)}%"></i></div>
-          <div class="pay-foot"><span>${ls.length} locataire${ls.length > 1 ? 's' : ''}</span><span class="num">${money(rec)} / ${money(exp)}</span></div>
+          <div class="pay-foot"><span>${plural(ls.length, 'locataire')}</span><span class="num">${money(rec)} / ${money(exp)}</span></div>
         </button>`;
       })}</div>`;
   },
@@ -481,43 +581,50 @@ const VIEWS = {
     const y = new Date().getFullYear();
     const imms = vault.list('immeubles').sort(byAddr);
     return html`
-      ${pageHead('Immeubles', imms.length + ' immeuble' + (imms.length > 1 ? 's' : ''), html`<button class="btn primary desk-only" data-action="new-imm">${icon('plus')} Ajouter</button>`)}
+      ${pageHead('Immeubles', plural(imms.length, 'immeuble'), html`<button class="btn primary desk-only" data-action="new-imm">${icon('plus')} Ajouter</button>`)}
       ${imms.length ? html`<div class="grid cols-auto">${imms.map((im) => {
-        const ls = vault.list('locataires').filter((l) => l.immId === im.id);
-        const deps = depensesOf(im.id, y).reduce((a, d) => a + d.montant, 0);
-        const st = ls.reduce((a, l) => { const s = yearStats(l, y); a.due += s.due; a.paid += s.paid; return a; }, { due: 0, paid: 0 });
+        const logs = logsOf(im.id);
+        const occ = logs.filter((g) => occupantsNow(g.id).length).length;
+        const b = bilan({ immId: im.id, y });
         return html`<div class="card">
           <div class="card-title"><h3>${im.adresse}</h3><button class="btn icon ghost sm" data-action="edit-imm" data-id="${im.id}" aria-label="Modifier">${icon('edit')}</button></div>
           <dl class="kv small">
-            <dt>Loyer de base</dt><dd class="num">${money(im.loyer)}</dd>
-            <dt>Charges</dt><dd class="num">${money(im.charges)}</dd>
-            <dt>Locataires</dt><dd>${ls.length}</dd>
-            <dt>Encaissé ${y}</dt><dd class="num green">${money(st.paid)} <span class="muted">/ ${money(st.due)}</span></dd>
-            <dt>Dépenses ${y}</dt><dd class="num ${deps ? 'red' : ''}">${deps ? '−' + money(deps) : money(0)}</dd>
-            <dt>Net ${y}</dt><dd class="num accent">${money(st.paid - deps)}</dd>
+            <dt>Logements</dt><dd>${logs.length ? html`${occ} occupé${occ > 1 ? 's' : ''} / ${logs.length}` : '—'}</dd>
+            <dt>Locataires actuels</dt><dd>${tenantsOfImm(im.id).filter(isCurrent).length}</dd>
+            ${ownerRent(im) ? html`<dt>Bail principal</dt><dd class="num">${money(ownerRent(im))} / mois</dd>` : ''}
+            <dt>Encaissé ${y}</dt><dd class="num green">${money(b.encaisse)}</dd>
+            ${b.verse ? html`<dt>Versé propriétaire</dt><dd class="num">−${money(b.verse)}</dd>` : ''}
+            <dt>Dépenses ${y}</dt><dd class="num ${b.depenses ? 'red' : ''}">${b.depenses ? '−' + money(b.depenses) : money(0)}</dd>
+            <dt>Gain net ${y}</dt><dd class="num ${b.net < 0 ? 'red' : 'accent'}">${money(b.net)}</dd>
           </dl>
-          ${im.note ? html`<div class="note" style="margin-top:12px">${im.note}</div>` : ''}
           <div class="actions" style="margin:14px 0 0">
-            <button class="btn sm" data-action="imm-locs" data-id="${im.id}">${icon('users')} Locataires</button>
-            <button class="btn sm" data-action="open-deps" data-id="${im.id}">${icon('receipt')} Dépenses</button>
+            <button class="btn sm primary" data-action="open-imm" data-id="${im.id}">${icon('building')} Logements & bilan</button>
+            <button class="btn sm" data-action="open-imm" data-id="${im.id}" data-tab="deps">${icon('receipt')} Dépenses</button>
           </div>
         </div>`;
       })}</div>` : empty('building', 'Aucun immeuble enregistré.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Ajouter un immeuble</button>`)}`;
   },
 
   locataires() {
-    const y = new Date().getFullYear();
     const q = ui.search.trim().toLowerCase();
     const imms = vault.list('immeubles').sort(byAddr);
-    let locs = vault.list('locataires').sort(byName);
+    const all = vault.list('locataires');
+    const anciens = ui.locSeg === 'anciens';
+    let locs = all.filter((l) => (anciens ? isGone(l) : isCurrent(l))).sort(byName);
     if (ui.immFilter) locs = locs.filter((l) => l.immId === ui.immFilter);
-    if (q) locs = locs.filter((l) => [l.nom, l.prenom, l.tel, l.mail, immName(l.immId)].join(' ').toLowerCase().includes(q));
+    if (q) locs = locs.filter((l) => [l.nom, l.prenom, l.tel, l.mail, immName(l.immId), logName(l.logId)].join(' ').toLowerCase().includes(q));
+    if (anciens) locs.sort((a, b) => (b.sortie || '').localeCompare(a.sortie || ''));
     const groups = imms.map((im) => ({ im, ls: locs.filter((l) => l.immId === im.id) })).filter((g) => g.ls.length);
     const orphans = locs.filter((l) => !vault.get('immeubles', l.immId));
     if (orphans.length) groups.push({ im: { adresse: 'Sans immeuble' }, ls: orphans });
+    const nGone = all.filter(isGone).length;
     return html`
-      ${pageHead('Locataires', vault.list('locataires').length + ' au total', html`<button class="btn primary desk-only" data-action="new-loc">${icon('plus')} Ajouter</button>`)}
-      <div class="search">${icon('search')}<input type="search" name="search" placeholder="Rechercher un nom, un téléphone…" value="${ui.search}" data-input="search" autocomplete="off"></div>
+      ${pageHead('Locataires', `${all.length - nGone} actuels · ${nGone} anciens`, html`<button class="btn primary desk-only" data-action="new-loc">${icon('plus')} Ajouter</button>`)}
+      <div class="tabs" role="tablist" style="max-width:360px">
+        <button class="tab" role="tab" aria-selected="${!anciens}" data-action="loc-seg" data-id="actuels">Actuels</button>
+        <button class="tab" role="tab" aria-selected="${anciens}" data-action="loc-seg" data-id="anciens">Anciens (${nGone})</button>
+      </div>
+      <div class="search">${icon('search')}<input type="search" name="search" placeholder="Rechercher un nom, un logement, un téléphone…" value="${ui.search}" data-input="search" autocomplete="off"></div>
       ${imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
         <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!ui.immFilter}">Tous</button>
         ${imms.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${ui.immFilter === im.id}">${im.adresse}</button>`)}
@@ -525,23 +632,26 @@ const VIEWS = {
       ${groups.length ? groups.map(({ im, ls }) => html`
         <div class="section-label">${im.adresse}</div>
         <div class="list">${ls.map((l) => {
-          const late = lateMonths(l).length;
+          const late = anciens ? 0 : lateMonths(l).length;
           const d = daysToEnd(l);
+          const badges = [];
+          if (l.type === 'sous') badges.push(html`<span class="badge">Sous-loc.</span>`);
+          if (anciens) badges.push(html`<span class="badge">${fmtDate(l.debut) || '?'} → ${fmtDate(l.sortie)}</span>`);
+          else {
+            if (isFuture(l)) badges.push(html`<span class="badge acc">Arrive le ${fmtDate(l.debut)}</span>`);
+            if (l.sortie) badges.push(html`<span class="badge warn">Départ ${fmtDate(l.sortie)}</span>`);
+            if (late) badges.push(html`<span class="badge ${late >= 2 ? 'bad' : 'warn'}">${late} mois de retard</span>`);
+            if (d != null && d >= 0 && d <= 60 && !l.sortie) badges.push(html`<span class="badge warn">Fin ${fmtDate(l.fin)}</span>`);
+          }
           return html`<button class="row" data-action="open-loc" data-id="${l.id}">
-            <span class="avatar">${initials(l)}</span>
+            <span class="avatar" ${anciens ? new Raw('style="background:var(--surface-2);color:var(--text-3)"') : ''}>${initials(l)}</span>
             <span class="grow">
               <span class="title" style="display:block">${fullName(l)}</span>
-              <span class="meta" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-                ${l.type === 'sous' ? html`<span class="badge">Sous-loc.</span>` : ''}
-                ${late ? html`<span class="badge ${late >= 2 ? 'bad' : 'warn'}">${late} mois de retard</span>` : ''}
-                ${d != null && d >= 0 && d <= 60 ? html`<span class="badge warn">Fin ${fmtDate(l.fin)}</span>` : ''}
-                ${d != null && d < 0 ? html`<span class="badge">Contrat terminé</span>` : ''}
-                ${!late && !(d != null && d <= 60) && l.tel ? l.tel : ''}
-              </span>
+              <span class="meta" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${l.logId ? html`<span>${logName(l.logId)}</span>` : ''}${badges}</span>
             </span>
-            <span class="amount">${money(l.loyer)}</span>
+            <span class="amount ${anciens ? 'muted' : ''}">${money(l.loyer)}</span>
           </button>`;
-        })}</div>`) : empty('users', q || ui.immFilter ? 'Aucun résultat.' : 'Aucun locataire enregistré.', !q && !ui.immFilter ? html`<button class="btn primary" data-action="new-loc">${icon('plus')} Ajouter un locataire</button>` : '')}`;
+        })}</div>`) : empty('users', q || ui.immFilter ? 'Aucun résultat.' : anciens ? 'Aucun ancien locataire pour le moment.' : 'Aucun locataire enregistré.', !q && !ui.immFilter && !anciens ? html`<button class="btn primary" data-action="new-loc">${icon('plus')} Ajouter un locataire</button>` : '')}`;
   },
 
   paiements() {
@@ -552,15 +662,18 @@ const VIEWS = {
     const all = imms;
     if (ui.immFilter) imms = imms.filter((im) => im.id === ui.immFilter);
     let gDue = 0, gPaid = 0;
+    const activeIn = (l) => MONTHS.some((_, i) => isDue(l, y, i + 1) || payment(l.id, y, i + 1));
     const cards = imms.map((im) => {
-      const ls = vault.list('locataires').filter((l) => l.immId === im.id).sort(byName);
+      const ls = tenantsOfImm(im.id).filter(activeIn).sort((a, b) => byLogName({ nom: logName(a.logId) }, { nom: logName(b.logId) }) || byDebut(a, b));
       if (!ls.length) return '';
       let due = 0, paid = 0;
       const rows = ls.map((l) => {
         const s = yearStats(l, y);
         due += s.due; paid += s.paid;
         return html`<div class="pay-tenant">
-          <div class="pay-head"><button class="name" style="background:none;border:0;font:inherit;font-weight:650;color:inherit;cursor:pointer;padding:0" data-action="open-loc" data-id="${l.id}">${fullName(l)}</button><span class="muted small num">${money(l.loyer)}/mois</span>${l.type === 'sous' ? html`<span class="badge">Sous-loc.</span>` : ''}</div>
+          <div class="pay-head"><button class="name" style="background:none;border:0;font:inherit;font-weight:650;color:inherit;cursor:pointer;padding:0" data-action="open-loc" data-id="${l.id}">${fullName(l)}</button>
+            ${l.logId ? html`<span class="badge">${logName(l.logId)}</span>` : ''}<span class="muted small num">${money(l.loyer)}/mois</span>
+            ${isGone(l) ? html`<span class="badge">parti le ${fmtDate(l.sortie)}</span>` : l.sortie ? html`<span class="badge warn">départ ${fmtDate(l.sortie)}</span>` : ''}</div>
           <div class="months">${MONTHS.map((mn, i) => {
             const m = i + 1;
             const p = payment(l.id, y, m);
@@ -579,7 +692,7 @@ const VIEWS = {
     return html`
       ${pageHead('Paiements', 'Touchez un mois pour enregistrer ou annuler un paiement.')}
       <div class="toolbar">
-        <select data-input="year" aria-label="Année">${[cy - 3, cy - 2, cy - 1, cy, cy + 1].map((yy) => html`<option value="${yy}" ${yy === y ? new Raw('selected') : ''}>${yy}</option>`)}</select>
+        ${yearSelect(y)}
         ${all.length > 1 ? html`<div class="chips" style="flex:1;min-width:0">
           <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!ui.immFilter}">Tous</button>
           ${all.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${ui.immFilter === im.id}">${im.adresse}</button>`)}
@@ -588,12 +701,11 @@ const VIEWS = {
       ${cards.length ? html`<div class="stack">${cards}</div>
         <div class="card" style="margin-top:12px;border-color:var(--accent)"><div class="card-title" style="margin:0"><h3>Total ${y}</h3></div>
         <div class="totals" style="background:none;padding:8px 0 0;margin:0"><span>Attendu <b>${money(gDue)}</b></span><span>Reçu <b class="green">${money(gPaid)}</b></span><span>Reste <b class="${gDue - gPaid > 0 ? 'red' : 'green'}">${money(Math.max(gDue - gPaid, 0))}</b></span><span>Taux <b>${pct(gPaid, gDue)}%</b></span></div></div>`
-        : empty('wallet', 'Aucun locataire à afficher.')}`;
+        : empty('wallet', 'Aucun locataire à afficher pour ' + y + '.')}`;
   },
 
   stats() {
     const y = ui.year;
-    const cy = new Date().getFullYear();
     const locs = vault.list('locataires');
     const imms = vault.list('immeubles').sort(byAddr);
     const monthly = MONTHS.map((_, i) => {
@@ -606,39 +718,45 @@ const VIEWS = {
       }
       return { due, paid };
     });
-    const due = monthly.reduce((a, x) => a + x.due, 0);
-    const paid = monthly.reduce((a, x) => a + x.paid, 0);
+    const due = sum(monthly, (x) => x.due);
+    const paid = sum(monthly, (x) => x.paid);
     const deps = depensesOf('', y);
-    const depTotal = deps.reduce((a, d) => a + d.montant, 0);
+    const depTotal = sum(deps, (d) => d.montant);
+    const verse = sum(vault.list('versements').filter((v) => v.y === y), (v) => v.montant);
     const max = Math.max(1, ...monthly.map((x) => Math.max(x.due, x.paid)));
     const cats = { reparation: 'Réparations', assurance: 'Assurance', taxe: 'Taxes / impôts', entretien: 'Entretien', autre: 'Autre' };
-    const byCat = Object.entries(cats).map(([k, label]) => ({ label, total: deps.filter((d) => d.cat === k).reduce((a, d) => a + d.montant, 0) })).filter((x) => x.total);
+    const byCat = Object.entries(cats).map(([k, label]) => ({ label, total: sum(deps.filter((d) => d.cat === k), (d) => d.montant) })).filter((x) => x.total);
     const hist = Object.values(vault.state.historique).filter((h) => !h.del).sort((a, b) => b.t - a.t);
+    const origin = imms.map((im) => ({ im, b: bilan({ immId: im.id }) }));
+    const tot = { encaisse: sum(origin, (x) => x.b.encaisse), verse: sum(origin, (x) => x.b.verse), depenses: sum(origin, (x) => x.b.depenses), net: sum(origin, (x) => x.b.net), occupants: sum(origin, (x) => x.b.occupants) };
     return html`
-      ${pageHead('Statistiques', 'Vue financière annuelle', html`<select data-input="year" style="width:auto" aria-label="Année">${[cy - 3, cy - 2, cy - 1, cy, cy + 1].map((yy) => html`<option value="${yy}" ${yy === y ? new Raw('selected') : ''}>${yy}</option>`)}</select>`)}
+      ${pageHead('Statistiques', 'Vue financière annuelle et depuis l’origine', yearSelect(y))}
       <div class="metrics">
-        <div class="metric"><div class="lbl">Attendu</div><div class="val">${money(due)}</div></div>
-        <div class="metric"><div class="lbl">Encaissé</div><div class="val green">${money(paid)}</div><div class="sub">${pct(paid, due)}% du total</div></div>
+        <div class="metric"><div class="lbl">Loyers encaissés</div><div class="val green">${money(paid)}</div><div class="sub">${pct(paid, due)}% de ${money(due)}</div></div>
         <div class="metric"><div class="lbl">Manquant</div><div class="val ${due - paid > 0 ? 'red' : ''}">${money(Math.max(due - paid, 0))}</div></div>
-        <div class="metric"><div class="lbl">Dépenses</div><div class="val">${money(depTotal)}</div></div>
-        <div class="metric hero"><div class="lbl">Revenu net ${y}</div><div class="val accent">${money(paid - depTotal)}</div><div class="sub">encaissé − dépenses</div></div>
+        <div class="metric"><div class="lbl">Versé propriétaires</div><div class="val">${money(verse)}</div></div>
+        <div class="metric"><div class="lbl">Réparations & frais</div><div class="val">${money(depTotal)}</div></div>
+        <div class="metric hero"><div class="lbl">Gain net ${y}</div><div class="val ${paid - depTotal - verse < 0 ? 'red' : 'accent'}">${money(paid - depTotal - verse)}</div><div class="sub">encaissé − propriétaires − dépenses</div></div>
       </div>
-      <div class="section-label">Encaissement mensuel</div>
+      <div class="section-label">Encaissement mensuel ${y}</div>
       <div class="card">
         <div class="bars">${monthly.map((x, i) => html`<div class="bar" title="${MONTHS_FULL[i]} : ${money(x.paid)} / ${money(x.due)}">
           <div class="track"><div class="fill ${x.due && x.paid >= x.due ? 'full' : ''}" style="height:${(x.paid / max) * 100}%"></div></div><small>${MONTHS[i][0]}</small></div>`)}</div>
       </div>
-      <div class="section-label">Par immeuble</div>
-      <div class="card scroll-x" style="padding:6px 6px">
-        <table class="tbl"><thead><tr><th>Immeuble</th><th class="r">Encaissé</th><th class="r">Dépenses</th><th class="r">Net</th><th class="r">Taux</th></tr></thead><tbody>
-        ${imms.map((im) => {
-          const ls = locs.filter((l) => l.immId === im.id);
-          const st = ls.reduce((a, l) => { const s = yearStats(l, y); a.due += s.due; a.paid += s.paid; return a; }, { due: 0, paid: 0 });
-          const dp = depensesOf(im.id, y).reduce((a, d) => a + d.montant, 0);
-          return html`<tr><td>${im.adresse}</td><td class="r green">${money(st.paid)}</td><td class="r">${dp ? '−' + money(dp) : '—'}</td><td class="r accent">${money(st.paid - dp)}</td><td class="r">${pct(st.paid, st.due)}%</td></tr>`;
-        })}</tbody></table>
+      <div class="section-label">Par immeuble — ${y}</div>
+      <div class="card scroll-x" style="padding:6px">
+        <table class="tbl"><thead><tr><th>Immeuble</th><th class="r">Encaissé</th><th class="r">Propriét.</th><th class="r">Dépenses</th><th class="r">Net</th></tr></thead><tbody>
+        ${imms.map((im) => { const b = bilan({ immId: im.id, y }); return html`<tr data-action="open-imm" data-id="${im.id}" data-tab="bilan" style="cursor:pointer"><td>${im.adresse}</td><td class="r green">${money(b.encaisse)}</td><td class="r">${b.verse ? '−' + money(b.verse) : '—'}</td><td class="r">${b.depenses ? '−' + money(b.depenses) : '—'}</td><td class="r ${b.net < 0 ? 'red' : 'accent'}">${money(b.net)}</td></tr>`; })}
+        </tbody></table>
       </div>
-      ${byCat.length ? html`<div class="section-label">Dépenses par catégorie</div><div class="list">${byCat.map((c) => html`<div class="row"><span class="grow">${c.label}</span><span class="amount">${money(c.total)}</span></div>`)}</div>` : ''}
+      <div class="section-label">Depuis l’origine</div>
+      <div class="card scroll-x" style="padding:6px">
+        <table class="tbl"><thead><tr><th>Immeuble</th><th class="r">Occupants</th><th class="r">Encaissé</th><th class="r">Propriét.</th><th class="r">Dépenses</th><th class="r">Gain net</th></tr></thead><tbody>
+        ${origin.map(({ im, b }) => html`<tr data-action="open-imm" data-id="${im.id}" data-tab="bilan" style="cursor:pointer"><td>${im.adresse}</td><td class="r">${b.occupants}</td><td class="r green">${money(b.encaisse)}</td><td class="r">${b.verse ? '−' + money(b.verse) : '—'}</td><td class="r">${b.depenses ? '−' + money(b.depenses) : '—'}</td><td class="r ${b.net < 0 ? 'red' : 'accent'}"><b>${money(b.net)}</b></td></tr>`)}
+        <tr><td><b>Total</b></td><td class="r"><b>${tot.occupants}</b></td><td class="r green"><b>${money(tot.encaisse)}</b></td><td class="r"><b>${tot.verse ? '−' + money(tot.verse) : '—'}</b></td><td class="r"><b>${tot.depenses ? '−' + money(tot.depenses) : '—'}</b></td><td class="r accent"><b>${money(tot.net)}</b></td></tr>
+        </tbody></table>
+      </div>
+      ${byCat.length ? html`<div class="section-label">Dépenses par catégorie — ${y}</div><div class="list">${byCat.map((c) => html`<div class="row"><span class="grow">${c.label}</span><span class="amount">${money(c.total)}</span></div>`)}</div>` : ''}
       <div class="section-label">Historique des modifications</div>
       ${hist.length ? html`<div class="list">${hist.slice(0, ui.histShown).map((h) => html`<div class="row"><span class="grow"><span class="title" style="display:block;white-space:normal">${h.action}</span><span class="meta" style="white-space:normal">${h.detail}</span></span><span class="tiny muted" style="white-space:nowrap">${fmtDateTime(h.t)}</span></div>`)}</div>
         ${hist.length > ui.histShown ? html`<button class="btn block" style="margin-top:10px" data-action="more-hist">Afficher plus (${hist.length - ui.histShown})</button>` : ''}` : html`<p class="muted small">Aucune modification enregistrée.</p>`}`;
@@ -694,8 +812,8 @@ const VIEWS = {
 
 // ───────────────────────── Feuilles (détails & formulaires) ─────────────────────────
 const sheetEl = $('#sheet');
-function openSheet(kind, id, tab) {
-  ui.sheet = { kind, id, tab: tab || null };
+function openSheet(kind, id, tab, preset) {
+  ui.sheet = { kind, id, tab: tab || null, preset };
   renderSheet();
   if (!sheetEl.open) sheetEl.showModal();
 }
@@ -724,6 +842,72 @@ function renderSheet() {
 
 const field = (label, name, value, opts = {}) => html`<label class="field ${opts.full ? 'full' : ''}">${label}
   <input name="${name}" type="${opts.type || 'text'}" value="${value ?? ''}" ${opts.required ? new Raw('required') : ''} ${opts.attrs ? new Raw(opts.attrs) : ''} placeholder="${opts.placeholder || ''}"></label>`;
+const money$ = 'inputmode="decimal" step="0.01" min="0"';
+const tabsBar = (tabs, cur) => html`<div class="tabs" role="tablist">${tabs.map(([k, label]) => html`<button class="tab" role="tab" aria-selected="${cur === k}" data-action="sheet-tab" data-id="${k}">${label}</button>`)}</div>`;
+const kvRow = (k, v) => html`<dt>${k}</dt><dd>${v}</dd>`;
+const DEP_CATS = { reparation: '🔧 Réparation', assurance: '🛡️ Assurance', taxe: '🏛️ Taxe / impôt', entretien: '🧹 Entretien', autre: '📦 Autre' };
+
+function tenantFields(l, prefix = '') {
+  return html`
+    ${field('Prénom', prefix + 'prenom', l.prenom, { attrs: 'autocomplete="off"' })}
+    ${field('Nom', prefix + 'nom', l.nom, { required: true, attrs: 'autocomplete="off"' })}
+    ${field('Loyer mensuel (€)', prefix + 'loyer', l.loyer, { type: 'number', required: true, attrs: money$ })}
+    <label class="field">Type<select name="${prefix}type"><option value="principal">Principal</option><option value="sous" ${l.type === 'sous' ? new Raw('selected') : ''}>Sous-locataire</option></select></label>
+    ${field('Téléphone', prefix + 'tel', l.tel, { type: 'tel', placeholder: '+352 …', attrs: 'autocomplete="off"' })}
+    ${field('Email', prefix + 'mail', l.mail, { type: 'email', attrs: 'autocomplete="off"' })}
+    ${field('Caution (€)', prefix + 'caution', l.caution, { type: 'number', attrs: money$ })}
+    ${field('Note caution', prefix + 'cautionNote', l.cautionNote)}
+    ${field("Début du contrat (entrée)", prefix + 'debut', l.debut, { type: 'date', required: !!prefix })}
+    ${field('Fin du contrat', prefix + 'fin', l.fin, { type: 'date' })}`;
+}
+
+function logementSelect(selLog, selImm) {
+  const imms = vault.list('immeubles').sort(byAddr);
+  return html`<label class="field full">Logement
+    <select name="place" data-input="place" required>
+      <option value="">— Choisir —</option>
+      ${imms.map((im) => html`<optgroup label="${im.adresse}">
+        ${logsOf(im.id).map((g) => {
+          const occ = occupantsNow(g.id);
+          return html`<option value="log:${g.id}" ${g.id === selLog ? new Raw('selected') : ''}>${g.nom}${occ.length ? ' — occupé (' + occ.map(fullName).join(', ') + ')' : ' — vacant'}</option>`;
+        })}
+        <option value="new:${im.id}">➕ Nouveau logement dans cet immeuble…</option>
+        <option value="imm:${im.id}" ${!selLog && selImm === im.id ? new Raw('selected') : ''}>Immeuble sans logement précis</option>
+      </optgroup>`)}
+    </select></label>
+    <div class="fields full" id="newLogWrap" hidden>
+      ${field('Nom du nouveau logement', 'newLogNom', '', { placeholder: 'ex. Appartement 2B, Chambre 3' })}
+      <label class="field">Type<select name="newLogType">${Object.entries(LOG_TYPES).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
+    </div>`;
+}
+
+function monthGrid(y, cells) {
+  return html`<div class="months" style="grid-template-columns:repeat(6,1fr);margin-bottom:12px">${cells}</div>`;
+}
+
+function depensesPanel(immId) {
+  const deps = depensesOf(immId).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+  const logs = logsOf(immId);
+  return html`<form data-form="dep" class="fields" style="margin-bottom:16px">
+      <input type="hidden" name="immId" value="${immId}">
+      ${field('Description', 'desc', '', { full: true, required: true, placeholder: 'ex. Réparation toiture' })}
+      ${field('Montant (€)', 'montant', '', { type: 'number', required: true, attrs: 'inputmode="decimal" step="0.01" min="0.01"' })}
+      ${field('Date', 'date', today(), { type: 'date', required: true })}
+      <label class="field">Catégorie<select name="cat">${Object.entries(DEP_CATS).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
+      <label class="field">Concerne<select name="logId"><option value="">Tout l'immeuble</option>${logs.map((g) => html`<option value="${g.id}">${g.nom}</option>`)}</select></label>
+      <button class="btn primary full" type="submit">${icon('plus')} Ajouter la dépense</button>
+    </form>
+    ${deps.length ? html`<div class="list">${deps.map((d) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${d.desc}</span><span class="meta">${fmtDate(d.date)} · ${DEP_CATS[d.cat] || d.cat}${d.logId ? ' · ' + logName(d.logId) : ''}</span></span>
+      <span class="amount red">−${money(d.montant)}</span><button class="btn icon sm ghost danger" data-action="del-dep" data-id="${d.id}" aria-label="Supprimer">${icon('trash')}</button></div>`)}</div>
+      <div class="totals"><span>Total depuis l'origine</span><b class="red">−${money(sum(deps, (d) => d.montant))}</b></div>` : html`<p class="muted small">Aucune dépense.</p>`}`;
+}
+
+function bilanTable(rows) {
+  return html`<div class="scroll-x"><table class="tbl"><thead><tr><th>Année</th><th class="r">Encaissé</th>${rows.some((r) => r.verse) ? html`<th class="r">Propriét.</th>` : ''}<th class="r">Dépenses</th><th class="r">Net</th></tr></thead><tbody>
+    ${rows.map((r) => html`<tr><td>${r.y}</td><td class="r green">${money(r.encaisse)}</td>${rows.some((x) => x.verse) ? html`<td class="r">${r.verse ? '−' + money(r.verse) : '—'}</td>` : ''}<td class="r">${r.depenses ? '−' + money(r.depenses) : '—'}</td><td class="r ${r.net < 0 ? 'red' : 'accent'}">${money(r.net)}</td></tr>`)}
+  </tbody></table></div>`;
+}
+const yearsWithData = (f) => dataYears().filter((y) => y <= new Date().getFullYear()).map((y) => ({ y, ...f(y) })).filter((r) => r.encaisse || r.depenses || r.verse).reverse();
 
 const SHEETS = {
   'imm-form'({ id }) {
@@ -734,37 +918,216 @@ const SHEETS = {
       body: html`<form id="f" data-form="imm" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
         ${field('Adresse complète', 'adresse', im.adresse, { full: true, required: true, placeholder: 'ex. 34, rue Josy Haendel' })}
-        ${field('Loyer de base (€)', 'loyer', im.loyer, { type: 'number', attrs: 'inputmode="decimal" step="0.01" min="0"' })}
-        ${field('Charges (€)', 'charges', im.charges, { type: 'number', attrs: 'inputmode="decimal" step="0.01" min="0"' })}
+        <div class="section-label full" style="margin:6px 0 0">Bail principal (ce que vous payez au propriétaire)</div>
+        ${field('Propriétaire', 'proprietaire', im.proprietaire, { full: true, placeholder: 'Nom du propriétaire (laisser vide si vous êtes propriétaire)' })}
+        ${field('Loyer au propriétaire (€ / mois)', 'loyer', im.loyer, { type: 'number', attrs: money$ })}
+        ${field('Charges (€ / mois)', 'charges', im.charges, { type: 'number', attrs: money$ })}
+        ${field('Début du bail principal', 'bailDebut', im.bailDebut, { type: 'date' })}
+        ${field('Fin du bail principal', 'bailFin', im.bailFin, { type: 'date' })}
         <label class="field full">Notes<textarea name="note" placeholder="Travaux, assurance, syndic…">${im.note || ''}</textarea></label>
       </form>`,
-      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-imm" data-id="${id}">${icon('trash')}</button>` : ''}
+      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-imm" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+
+  imm({ id, tab }) {
+    const im = vault.get('immeubles', id);
+    if (!im) return null;
+    tab = tab || 'logs';
+    const y = new Date().getFullYear();
+    let body;
+    if (tab === 'logs') {
+      const logs = logsOf(id);
+      const unassigned = tenantsOfImm(id).filter((l) => isCurrent(l) && !vault.get('logements', l.logId));
+      body = html`
+        ${unassigned.length ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${plural(unassigned.length, 'locataire')} sans logement attribué. Attribuez-leur un logement pour suivre les changements d'occupants.</div></div>
+          <div class="list" style="margin-bottom:16px">${unassigned.map((l) => html`<div class="row"><span class="avatar">${initials(l)}</span><span class="grow title">${fullName(l)}</span><button class="btn sm" data-action="edit-loc" data-id="${l.id}">Attribuer</button></div>`)}</div>` : ''}
+        ${logs.length ? html`<div class="list">${logs.map((g) => {
+          const occ = occupantsNow(g.id);
+          const next = tenantsOfLog(g.id).filter((l) => isFuture(l));
+          const leaving = occ.filter((l) => l.sortie);
+          return html`<button class="row" data-action="open-log" data-id="${g.id}">
+            <span class="avatar" style="${occ.length ? '' : 'background:var(--amber-soft);color:var(--amber)'}">${icon(g.type === 'chambre' ? 'key' : 'home')}</span>
+            <span class="grow"><span class="title" style="display:block">${g.nom} <span class="muted small">${LOG_TYPES[g.type] || ''}</span></span>
+              <span class="meta" style="display:flex;gap:6px;flex-wrap:wrap">${occ.length ? occ.map(fullName).join(', ') : html`<span class="badge warn">Vacant</span>`}
+              ${leaving.map((l) => html`<span class="badge warn">départ ${fmtDate(l.sortie)}</span>`)}${next.map((l) => html`<span class="badge acc">arrivée ${fmtDate(l.debut)}</span>`)}</span></span>
+            <span class="tiny muted">${plural(tenantsOfLog(g.id).length, 'occupant')}</span>
+          </button>`;
+        })}</div>` : html`<p class="muted small">Aucun logement. Ajoutez les appartements ou chambres de cet immeuble pour suivre leurs occupants successifs.</p>`}
+        <button class="btn block" style="margin-top:12px" data-action="new-log" data-imm="${id}">${icon('plus')} Ajouter un logement</button>`;
+    } else if (tab === 'proprio') {
+      const rent = ownerRent(im);
+      const cy = y, cm = new Date().getMonth() + 1;
+      body = html`
+        <dl class="kv" style="margin-bottom:16px">
+          ${kvRow('Propriétaire', im.proprietaire || '—')}
+          ${kvRow('Loyer + charges', rent ? money(rent) + ' / mois' : '—')}
+          ${kvRow('Bail principal', html`${im.bailDebut ? fmtDate(im.bailDebut) : '?'} → ${im.bailFin ? fmtDate(im.bailFin) : 'indéterminé'}`)}
+          ${kvRow('Total versé', html`<span class="num">${money(sum(versementsOf(id), (v) => v.montant))}</span>`)}
+        </dl>
+        ${rent ? [cy, cy - 1].map((yy) => html`<div class="section-label" style="margin-top:4px">${yy} · versé ${money(sum(versementsOf(id, yy), (v) => v.montant))}</div>
+          ${monthGrid(yy, MONTHS.map((mn, i) => {
+            const m = i + 1;
+            const v = versement(id, yy, m);
+            const dueM = isOwnerDue(im, yy, m);
+            const past = ym(yy, m) < ym(cy, cm);
+            return html`<button class="mcell ${v ? 'paid' : !dueM ? 'off' : past ? 'late' : ''}" data-action="toggle-vers" data-imm="${id}" data-y="${yy}" data-m="${m}">${mn}<small>${v ? '✓' : dueM ? (past ? '!' : '·') : '–'}</small></button>`;
+          }))}`) : html`<div class="alert info">${icon('key')}<div>Aucun loyer au propriétaire renseigné. Si vous louez cet immeuble à un propriétaire principal, indiquez le montant dans « Modifier ».</div></div>`}
+        <p class="tiny muted">Touchez un mois pour enregistrer le versement au propriétaire.</p>`;
+    } else if (tab === 'deps') {
+      body = depensesPanel(id);
+    } else {
+      const b = bilan({ immId: id });
+      const logs = logsOf(id);
+      body = html`
+        <div class="metrics" style="margin-bottom:16px">
+          <div class="metric hero"><div class="lbl">Gain net depuis l'origine</div><div class="val ${b.net < 0 ? 'red' : 'accent'}">${money(b.net)}</div><div class="sub">loyers encaissés − propriétaire − dépenses</div></div>
+          <div class="metric"><div class="lbl">Loyers encaissés</div><div class="val green">${money(b.encaisse)}</div></div>
+          <div class="metric"><div class="lbl">Versé propriétaire</div><div class="val">${money(b.verse)}</div></div>
+          <div class="metric"><div class="lbl">Réparations & frais</div><div class="val">${money(b.depenses)}</div></div>
+          <div class="metric"><div class="lbl">Occupants</div><div class="val">${b.occupants}</div><div class="sub">depuis l'origine</div></div>
+        </div>
+        <div class="section-label">Par année</div>
+        ${bilanTable(yearsWithData((yy) => bilan({ immId: id, y: yy })))}
+        ${logs.length ? html`<div class="section-label">Par logement</div>
+        <div class="list">${logs.map((g) => {
+          const bb = bilan({ logId: g.id });
+          const occ = occupancy(g.id);
+          return html`<button class="row" data-action="open-log" data-id="${g.id}" data-tab="bilan"><span class="grow"><span class="title" style="display:block">${g.nom}</span>
+            <span class="meta">${plural(bb.occupants, 'occupant')}${occ ? ` · occupé ${pct(occ.occupied, occ.total)}% du temps` : ''}${bb.depenses ? ' · dépenses ' + money(bb.depenses) : ''}</span></span>
+            <span class="amount green">${money(bb.encaisse)}</span></button>`;
+        })}</div>` : ''}`;
+    }
+    return {
+      title: im.adresse,
+      body: html`${tabsBar([['logs', 'Logements'], ['proprio', 'Propriétaire'], ['deps', 'Dépenses'], ['bilan', 'Bilan']], tab)}${body}`,
+      foot: html`<button class="btn" data-action="edit-imm" data-id="${id}">${icon('edit')} Modifier l'immeuble</button>`,
+    };
+  },
+
+  'log-form'({ id, preset }) {
+    const g = id ? vault.get('logements', id) : { immId: preset, type: 'appartement' };
+    if (id && !g) return null;
+    return {
+      title: id ? 'Modifier le logement' : 'Nouveau logement',
+      narrow: true,
+      body: html`<form id="f" data-form="log" class="fields">
+        <input type="hidden" name="id" value="${id || ''}">
+        ${field('Nom', 'nom', g.nom, { full: true, required: true, placeholder: 'ex. Appartement 2B, Chambre 3, Studio RDC' })}
+        <label class="field full">Immeuble<select name="immId" required>${vault.list('immeubles').sort(byAddr).map((im) => html`<option value="${im.id}" ${im.id === g.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
+        <label class="field">Type<select name="type">${Object.entries(LOG_TYPES).map(([k, v]) => html`<option value="${k}" ${g.type === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field('Surface (m²)', 'surface', g.surface, { type: 'number', attrs: 'inputmode="decimal" min="0" step="0.1"' })}
+        ${field('Étage', 'etage', g.etage)}
+        ${field('Loyer indicatif (€)', 'loyer', g.loyer, { type: 'number', attrs: money$ })}
+        <label class="field full">Notes<textarea name="note" placeholder="Équipements, compteurs, état…">${g.note || ''}</textarea></label>
+      </form>`,
+      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-log" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
+        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+
+  log({ id, tab }) {
+    const g = vault.get('logements', id);
+    if (!g) return null;
+    tab = tab || 'now';
+    const all = tenantsOfLog(id);
+    const occ = occupantsNow(id);
+    const future = all.filter((l) => isFuture(l));
+    let body;
+    if (tab === 'now') {
+      const last = all.filter((l) => isGone(l)).sort((a, b) => (b.sortie || '').localeCompare(a.sortie || ''))[0];
+      body = html`
+        <dl class="kv small" style="margin-bottom:16px">
+          ${kvRow('Immeuble', immName(g.immId))}
+          ${kvRow('Type', LOG_TYPES[g.type] || '—')}
+          ${g.surface ? kvRow('Surface', g.surface + ' m²') : ''}
+          ${g.etage ? kvRow('Étage', g.etage) : ''}
+          ${g.loyer ? kvRow('Loyer indicatif', money(g.loyer)) : ''}
+        </dl>
+        ${g.note ? html`<div class="note" style="margin-bottom:16px">${g.note}</div>` : ''}
+        <div class="section-label" style="margin-top:0">Occupant${occ.length > 1 ? 's' : ''} actuel${occ.length > 1 ? 's' : ''}</div>
+        ${occ.length ? html`<div class="list" style="margin-bottom:12px">${occ.map((l) => html`<div class="row">
+          <button class="avatar" style="border:0;cursor:pointer" data-action="open-loc" data-id="${l.id}">${initials(l)}</button>
+          <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="open-loc" data-id="${l.id}"><span class="title" style="display:block">${fullName(l)}</span><span class="meta">depuis ${fmtDate(l.debut) || '?'}${l.sortie ? ' · départ le ' + fmtDate(l.sortie) : ''}</span></button>
+          <button class="btn sm" data-action="replace" data-id="${l.id}">${icon('sync')} Changer</button>
+        </div>`)}</div>` : html`<div class="alert warn" style="margin-bottom:12px">${icon('home')}<div><b>Logement vacant</b>${last ? html` depuis le départ de ${fullName(last)} (${fmtDate(last.sortie)})` : ''}.</div></div>`}
+        ${future.length ? html`<div class="section-label">Arrivée prévue</div><div class="list" style="margin-bottom:12px">${future.map((l) => html`<button class="row" data-action="open-loc" data-id="${l.id}"><span class="avatar">${initials(l)}</span><span class="grow"><span class="title" style="display:block">${fullName(l)}</span><span class="meta">le ${fmtDate(l.debut)}</span></span></button>`)}</div>` : ''}
+        <button class="btn block ${occ.length ? '' : 'primary'}" data-action="new-loc" data-log="${id}">${icon('plus')} ${occ.length ? 'Ajouter un colocataire' : 'Ajouter un locataire'}</button>`;
+    } else if (tab === 'hist') {
+      body = all.length ? html`<div class="list">${[...all].reverse().map((l) => {
+        const months = stayMonths(l);
+        return html`<button class="row" data-action="open-loc" data-id="${l.id}">
+          <span class="avatar" style="${isGone(l) ? 'background:var(--surface-2);color:var(--text-3)' : ''}">${initials(l)}</span>
+          <span class="grow"><span class="title" style="display:block">${fullName(l)} ${!isGone(l) && !isFuture(l) ? html`<span class="badge ok">actuel</span>` : isFuture(l) ? html`<span class="badge acc">à venir</span>` : ''}</span>
+            <span class="meta">${isFuture(l) ? `arrivée prévue le ${fmtDate(l.debut)}` : html`${fmtDate(l.debut) || '?'} → ${l.sortie ? (isGone(l) ? fmtDate(l.sortie) : 'départ prévu le ' + fmtDate(l.sortie)) : "aujourd'hui"}${months ? ' · ' + duree(months) : ''}`}</span></span>
+          <span class="amount green">${money(totalPaid(l))}</span>
+        </button>`;
+      })}</div><p class="tiny muted" style="margin-top:8px">Montant = total des loyers encaissés pendant le séjour.</p>` : html`<p class="muted small">Aucun occupant enregistré.</p>`;
+    } else {
+      const b = bilan({ logId: id });
+      const occu = occupancy(id);
+      const stays = all.map(stayMonths).filter(Boolean);
+      body = html`
+        <div class="metrics" style="margin-bottom:16px">
+          <div class="metric hero"><div class="lbl">Loyers encaissés depuis l'origine</div><div class="val green">${money(b.encaisse)}</div><div class="sub">${b.depenses ? 'net après dépenses : ' + money(b.encaisse - b.depenses) : 'aucune dépense rattachée'}</div></div>
+          <div class="metric"><div class="lbl">Occupants</div><div class="val">${b.occupants}</div></div>
+          <div class="metric"><div class="lbl">Dépenses</div><div class="val">${money(b.depenses)}</div></div>
+          <div class="metric"><div class="lbl">Taux d'occupation</div><div class="val">${occu ? pct(occu.occupied, occu.total) + '%' : '—'}</div><div class="sub">${occu ? duree(occu.vacant) + ' de vacance' : ''}</div></div>
+          <div class="metric"><div class="lbl">Séjour moyen</div><div class="val">${stays.length ? duree(Math.round(sum(stays, (x) => x) / stays.length)) : '—'}</div></div>
+        </div>
+        <div class="section-label">Par année</div>
+        ${bilanTable(yearsWithData((yy) => bilan({ logId: id, y: yy })))}
+        ${depensesOf(null, null, id).length ? html`<div class="section-label">Dépenses de ce logement</div><div class="list">${depensesOf(null, null, id).sort((a, b) => (b.date || '').localeCompare(a.date || '')).map((d) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${d.desc}</span><span class="meta">${fmtDate(d.date)}</span></span><span class="amount red">−${money(d.montant)}</span></div>`)}</div>` : ''}`;
+    }
+    return {
+      title: g.nom,
+      body: html`${tabsBar([['now', 'Actuel'], ['hist', `Occupants (${all.length})`], ['bilan', 'Bilan']], tab)}${body}`,
+      foot: html`<button class="btn" data-action="open-imm" data-id="${g.immId}">${icon('building')} Immeuble</button><button class="btn" data-action="edit-log" data-id="${id}">${icon('edit')} Modifier</button>`,
     };
   },
 
   'loc-form'({ id, preset }) {
     const l = id ? vault.get('locataires', id) : { immId: ui.immFilter || '', type: 'principal', debut: today() };
     if (id && !l) return null;
-    const imms = vault.list('immeubles').sort(byAddr);
-    if (!imms.length) return { title: 'Nouveau locataire', body: empty('building', "Ajoutez d'abord un immeuble.", html`<button class="btn primary" data-action="new-imm">${icon('plus')} Ajouter un immeuble</button>`) };
+    if (!id && preset) {
+      const g = vault.get('logements', preset);
+      if (g) Object.assign(l, { logId: g.id, immId: g.immId, loyer: g.loyer || '' });
+    }
+    if (!vault.list('immeubles').length) return { title: 'Nouveau locataire', body: empty('building', "Ajoutez d'abord un immeuble.", html`<button class="btn primary" data-action="new-imm">${icon('plus')} Ajouter un immeuble</button>`) };
     return {
       title: id ? 'Modifier le locataire' : 'Nouveau locataire',
       body: html`<form id="f" data-form="loc" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        ${field('Prénom', 'prenom', l.prenom, { attrs: 'autocomplete="off"' })}
-        ${field('Nom', 'nom', l.nom, { required: true, attrs: 'autocomplete="off"' })}
-        <label class="field full">Immeuble<select name="immId" required><option value="">— Choisir —</option>${imms.map((im) => html`<option value="${im.id}" ${im.id === l.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
-        ${field('Loyer mensuel (€)', 'loyer', l.loyer, { type: 'number', required: true, attrs: 'inputmode="decimal" step="0.01" min="0"' })}
-        <label class="field">Type<select name="type"><option value="principal">Principal</option><option value="sous" ${l.type === 'sous' ? new Raw('selected') : ''}>Sous-locataire</option></select></label>
-        ${field('Téléphone', 'tel', l.tel, { type: 'tel', placeholder: '+352 …', attrs: 'autocomplete="off"' })}
-        ${field('Email', 'mail', l.mail, { type: 'email', attrs: 'autocomplete="off"' })}
-        ${field('Caution (€)', 'caution', l.caution, { type: 'number', attrs: 'inputmode="decimal" step="0.01" min="0"' })}
-        ${field('Note caution', 'cautionNote', l.cautionNote)}
-        ${field('Début du contrat', 'debut', l.debut, { type: 'date' })}
-        ${field('Fin du contrat', 'fin', l.fin, { type: 'date' })}
+        ${logementSelect(l.logId, l.immId)}
+        ${tenantFields(l)}
+        ${id ? html`${field('Date de sortie', 'sortie', l.sortie, { type: 'date' })}${field('Caution rendue (€)', 'cautionRendue', l.cautionRendue, { type: 'number', attrs: money$ })}` : ''}
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+
+  'replace-form'({ id }) {
+    const old = vault.get('locataires', id);
+    if (!old) return null;
+    const where = logName(old.logId) || immName(old.immId);
+    const sortie = old.sortie || today();
+    return {
+      title: 'Changer de locataire',
+      body: html`<form id="f" data-form="replace" class="fields">
+        <input type="hidden" name="id" value="${id}">
+        <div class="alert warn full">${icon('alert')}<div>Vous allez changer le locataire de <b>${where}</b>. <b>${fullName(old)}</b> sera archivé comme ancien locataire : ses paiements, documents et son historique sont conservés pour les statistiques.</div></div>
+        <div class="section-label full" style="margin:8px 0 0">Départ de ${fullName(old)}</div>
+        ${field('Date de sortie', 'sortie', sortie, { type: 'date', required: true })}
+        ${field('Caution rendue (€)', 'cautionRendue', old.cautionRendue ?? old.caution, { type: 'number', attrs: money$ })}
+        <label class="field full">Remarques de sortie<textarea name="sortieNote" style="min-height:70px" placeholder="État des lieux, retenues, nouvelle adresse…">${old.sortieNote || ''}</textarea></label>
+        <label class="full" style="display:flex;gap:10px;align-items:center;font-size:15px;margin-top:4px"><input type="checkbox" name="vacant" data-input="vacant" style="width:22px;min-height:22px"> Pas encore de nouveau locataire (le logement devient vacant)</label>
+        <fieldset id="newTenant" class="fields full" style="border:0">
+          <div class="section-label full" style="margin:8px 0 0">Nouveau locataire</div>
+          ${tenantFields({ loyer: old.loyer, type: old.type, debut: addDays(sortie, 1) }, 'n_')}
+        </fieldset>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Confirmer le changement</button>`,
     };
   },
 
@@ -773,40 +1136,47 @@ const SHEETS = {
     if (!l) return null;
     tab = tab || 'infos';
     const y = new Date().getFullYear();
-    const tabs = [['infos', 'Infos'], ['pay', 'Loyers'], ['docs', 'Docs'], ['notes', 'Notes'], ['hist', 'Journal']];
     const docs = vault.list('documents').filter((d) => d.locId === id).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    const late = lateMonths(l);
+    const gone = isGone(l);
+    const late = gone ? [] : lateMonths(l);
     const d = daysToEnd(l);
     let body;
     if (tab === 'infos') {
       const tel = (l.tel || '').replace(/[^\d+]/g, '');
       body = html`
+        ${gone ? html`<div class="alert info" style="margin-bottom:14px">${icon('history')}<div><b>Ancien locataire</b> — parti le ${fmtDate(l.sortie)}${stayMonths(l) ? ' après ' + duree(stayMonths(l)) : ''}.</div></div>` : ''}
+        ${!gone && l.sortie ? html`<div class="alert warn" style="margin-bottom:14px">${icon('calendar')}<div>Départ prévu le <b>${fmtDate(l.sortie)}</b>.</div></div>` : ''}
         <div class="actions">
           ${tel ? html`<a class="btn" href="tel:${tel}">${icon('phone')} Appeler</a><a class="btn" href="sms:${tel}">${icon('msg')} SMS</a>` : ''}
           ${l.mail ? html`<a class="btn" href="mailto:${l.mail}">${icon('mail')} Email</a>` : ''}
         </div>
         ${late.length ? html`<div class="alert ${late.length >= 2 ? 'bad' : 'warn'}" style="margin-bottom:14px">${icon('alert')}<div>${late.length} mois impayé${late.length > 1 ? 's' : ''} : ${late.map((m) => MONTHS_FULL[m - 1]).join(', ')}</div></div>` : ''}
         <dl class="kv">
-          <dt>Immeuble</dt><dd>${immName(l.immId)}</dd>
-          <dt>Loyer</dt><dd class="num">${money(l.loyer)} / mois</dd>
-          <dt>Type</dt><dd>${l.type === 'sous' ? 'Sous-locataire' : 'Principal'}</dd>
-          <dt>Téléphone</dt><dd>${l.tel || '—'}</dd>
-          <dt>Email</dt><dd>${l.mail || '—'}</dd>
-          <dt>Caution</dt><dd class="num">${l.caution ? money(l.caution) : '—'}${l.cautionNote ? html`<div class="tiny muted">${l.cautionNote}</div>` : ''}</dd>
-          <dt>Contrat</dt><dd>${l.debut ? fmtDate(l.debut) : '?'} → ${l.fin ? fmtDate(l.fin) : 'indéterminé'}${d != null && d >= 0 && d <= 60 ? html`<div class="tiny amber">fin dans ${d} jours</div>` : ''}</dd>
-          <dt>Encaissé ${y}</dt><dd class="num green">${money(yearStats(l, y).paid)}</dd>
-        </dl>`;
+          ${kvRow('Immeuble', immName(l.immId))}
+          ${kvRow('Logement', l.logId ? html`<a href="#" data-action="open-log" data-id="${l.logId}">${logName(l.logId)}</a>` : '—')}
+          ${kvRow('Loyer', html`<span class="num">${money(l.loyer)} / mois</span>`)}
+          ${kvRow('Type', l.type === 'sous' ? 'Sous-locataire' : 'Principal')}
+          ${kvRow('Téléphone', l.tel || '—')}
+          ${kvRow('Email', l.mail || '—')}
+          ${kvRow('Caution', html`<span class="num">${l.caution ? money(l.caution) : '—'}</span>${l.cautionNote ? html`<div class="tiny muted">${l.cautionNote}</div>` : ''}${l.cautionRendue != null && l.sortie ? html`<div class="tiny muted">rendue : ${money(l.cautionRendue)}</div>` : ''}`)}
+          ${kvRow('Entrée', l.debut ? fmtDate(l.debut) : '?')}
+          ${kvRow('Fin du contrat', html`${l.fin ? fmtDate(l.fin) : 'indéterminée'}${d != null && d >= 0 && d <= 60 && !gone ? html`<div class="tiny amber">dans ${plural(d, 'jour')}</div>` : ''}`)}
+          ${l.sortie ? kvRow('Sortie', fmtDate(l.sortie)) : ''}
+          ${kvRow('Total encaissé', html`<span class="num green">${money(totalPaid(l))}</span>`)}
+        </dl>
+        ${l.sortieNote ? html`<div class="section-label">Remarques de sortie</div><div class="note">${l.sortieNote}</div>` : ''}`;
     } else if (tab === 'pay') {
-      body = html`${[y, y - 1].map((yy) => {
+      const years = [...new Set([y, y - 1, ...paysOf(id).map((p) => p.y)])].filter((yy) => yy === y || MONTHS.some((_, i) => isDue(l, yy, i + 1) || payment(id, yy, i + 1))).sort((a, b) => b - a);
+      body = html`${years.map((yy) => {
         const s = yearStats(l, yy);
         return html`<div class="section-label" style="margin-top:4px">${yy} · <span class="green">${money(s.paid)}</span> / ${money(s.due)}</div>
-          <div class="months" style="grid-template-columns:repeat(6,1fr);margin-bottom:12px">${MONTHS.map((mn, i) => {
+          ${monthGrid(yy, MONTHS.map((mn, i) => {
             const m = i + 1;
             const p = payment(l.id, yy, m);
             const dueM = isDue(l, yy, m);
             const past = ym(yy, m) < ym(y, new Date().getMonth() + 1);
             return html`<button class="mcell ${p ? 'paid' : !dueM ? 'off' : past ? 'late' : ''}" data-action="toggle-pay" data-loc="${l.id}" data-y="${yy}" data-m="${m}">${mn}<small>${p ? (p.date ? fmtDate(p.date).replace(/ \d{4}$/, '') : '✓') : dueM ? (past ? '!' : '·') : '–'}</small></button>`;
-          })}</div>`;
+          }))}`;
       })}<p class="tiny muted">Touchez un mois pour enregistrer ou annuler le paiement.</p>`;
     } else if (tab === 'docs') {
       body = html`
@@ -833,30 +1203,10 @@ const SHEETS = {
     }
     return {
       title: fullName(l),
-      body: html`<div class="tabs" role="tablist">${tabs.map(([k, label]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="loc-tab" data-id="${k}">${label}</button>`)}</div>${body}`,
-      foot: tab === 'infos' ? html`<button class="btn ghost danger" data-action="del-loc" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button><button class="btn primary" data-action="edit-loc" data-id="${id}">${icon('edit')} Modifier</button>` : null,
-    };
-  },
-
-  deps({ id }) {
-    const im = vault.get('immeubles', id);
-    if (!im) return null;
-    const cats = { reparation: '🔧 Réparation', assurance: '🛡️ Assurance', taxe: '🏛️ Taxe / impôt', entretien: '🧹 Entretien', autre: '📦 Autre' };
-    const deps = depensesOf(id).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    const total = deps.reduce((a, d) => a + d.montant, 0);
-    return {
-      title: 'Dépenses — ' + im.adresse,
-      body: html`<form data-form="dep" class="fields" style="margin-bottom:16px">
-          <input type="hidden" name="immId" value="${id}">
-          ${field('Description', 'desc', '', { full: true, required: true, placeholder: 'ex. Réparation toiture' })}
-          ${field('Montant (€)', 'montant', '', { type: 'number', required: true, attrs: 'inputmode="decimal" step="0.01" min="0.01"' })}
-          ${field('Date', 'date', today(), { type: 'date', required: true })}
-          <label class="field full">Catégorie<select name="cat">${Object.entries(cats).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
-          <button class="btn primary full" type="submit">${icon('plus')} Ajouter la dépense</button>
-        </form>
-        ${deps.length ? html`<div class="list">${deps.map((d) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${d.desc}</span><span class="meta">${fmtDate(d.date)} · ${cats[d.cat] || d.cat}</span></span>
-          <span class="amount red">−${money(d.montant)}</span><button class="btn icon sm ghost danger" data-action="del-dep" data-id="${d.id}" aria-label="Supprimer">${icon('trash')}</button></div>`)}</div>
-          <div class="totals"><span>Total</span><b class="red">−${money(total)}</b></div>` : html`<p class="muted small">Aucune dépense.</p>`}`,
+      body: html`${tabsBar([['infos', 'Infos'], ['pay', 'Loyers'], ['docs', 'Docs'], ['notes', 'Notes'], ['hist', 'Journal']], tab)}${body}`,
+      foot: tab === 'infos' ? html`<button class="btn ghost danger" data-action="del-loc" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>
+        ${!gone ? html`<button class="btn" data-action="replace" data-id="${id}">${icon('sync')} Départ</button>` : ''}
+        <button class="btn primary" data-action="edit-loc" data-id="${id}">${icon('edit')} Modifier</button>` : null,
     };
   },
 
@@ -901,6 +1251,35 @@ async function togglePay(locId, y, m) {
   }
 }
 
+async function toggleVers(immId, y, m) {
+  const im = vault.get('immeubles', immId);
+  if (!im) return;
+  const k = payKey(immId, y, m);
+  const label = `${im.adresse} — ${MONTHS_FULL[m - 1]} ${y}`;
+  const prev = vault.get('versements', k);
+  if (prev) {
+    await vault.mutate((tx) => tx.remove('versements', k), 'Versement propriétaire annulé', label, immId);
+    toast('Versement annulé · ' + MONTHS_FULL[m - 1], { undo: () => vault.mutate((tx) => tx.put('versements', { ...prev, id: k }), 'Versement propriétaire rétabli', label, immId) });
+  } else {
+    const montant = ownerRent(im);
+    await vault.mutate((tx) => tx.put('versements', { id: k, immId, y, m, date: today(), montant }), 'Versement au propriétaire', label + ' · ' + money(montant), immId);
+    toast('Versé au propriétaire · ' + money(montant), { undo: () => vault.mutate((tx) => tx.remove('versements', k), 'Versement propriétaire annulé', label, immId) });
+  }
+}
+
+// Lit le champ « Logement » : logement existant, nouveau logement, ou immeuble seul.
+function readPlace(fd) {
+  const [kind, ref] = String(fd.get('place') || '').split(':');
+  if (kind === 'log') { const g = vault.get('logements', ref); return { logId: ref, immId: g ? g.immId : '' }; }
+  if (kind === 'new') return { newLog: { immId: ref, nom: String(fd.get('newLogNom') || '').trim() || 'Nouveau logement', type: fd.get('newLogType') || 'appartement' }, immId: ref };
+  return { logId: '', immId: ref || '' };
+}
+const tenantFromForm = (fd, p = '') => ({
+  nom: fd.get(p + 'nom').trim(), prenom: fd.get(p + 'prenom').trim(), loyer: num(fd.get(p + 'loyer')), type: fd.get(p + 'type'),
+  tel: fd.get(p + 'tel').trim(), mail: fd.get(p + 'mail').trim(), caution: num(fd.get(p + 'caution')), cautionNote: fd.get(p + 'cautionNote').trim(),
+  debut: fd.get(p + 'debut'), fin: fd.get(p + 'fin'),
+});
+
 let installPrompt = null;
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; if (ui.route === 'reglages') renderView(); });
 
@@ -916,11 +1295,17 @@ const ACTIONS = {
   fab: () => (ui.route === 'immeubles' ? openSheet('imm-form') : openSheet('loc-form')),
   'new-imm': () => openSheet('imm-form'),
   'edit-imm': (d) => openSheet('imm-form', d.id),
-  'new-loc': () => openSheet('loc-form'),
+  'new-loc': (d) => openSheet('loc-form', null, null, d.log),
   'edit-loc': (d) => openSheet('loc-form', d.id),
   'open-loc': (d) => openSheet('loc', d.id),
-  'loc-tab': (d) => { ui.sheet.tab = d.id; ui.sheet.rendered = false; renderSheet(); sheetEl.querySelector('.sheet-body').scrollTop = 0; },
-  'open-deps': (d) => openSheet('deps', d.id),
+  'sheet-tab': (d) => { ui.sheet.tab = d.id; ui.sheet.rendered = false; renderSheet(); sheetEl.querySelector('.sheet-body').scrollTop = 0; },
+  'open-imm': (d) => openSheet('imm', d.id, d.tab),
+  'open-log': (d) => openSheet('log', d.id, d.tab),
+  'new-log': (d) => openSheet('log-form', null, null, d.imm),
+  'edit-log': (d) => openSheet('log-form', d.id),
+  replace: (d) => openSheet('replace-form', d.id),
+  'toggle-vers': (d) => toggleVers(d.imm, +d.y, +d.m),
+  'loc-seg': (d) => { ui.locSeg = d.id; renderView(); },
   'close-sheet': () => closeSheet(),
   'imm-filter': (d) => { ui.immFilter = d.id; renderView(); },
   'imm-locs': (d) => { ui.immFilter = d.id; go('locataires'); },
@@ -936,13 +1321,15 @@ const ACTIONS = {
   async 'del-imm'(d) {
     const im = vault.get('immeubles', d.id);
     const ls = vault.list('locataires').filter((l) => l.immId === d.id);
-    if (!(await confirmBox(`Supprimer « ${im.adresse} » ?`, { ok: 'Supprimer', danger: true, detail: ls.length ? `Ses ${ls.length} locataire(s), leurs paiements et documents seront aussi supprimés.` : '' }))) return;
+    if (!(await confirmBox(`Supprimer « ${im.adresse} » ?`, { ok: 'Supprimer', danger: true, detail: `Tout sera effacé définitivement, y compris l'historique : ${plural(ls.length, 'locataire')}, logements, paiements, versements, dépenses et documents. Les statistiques de cet immeuble seront perdues.` }))) return;
     const docs = vault.list('documents').filter((doc) => ls.some((l) => l.id === doc.locId));
     await vault.mutate((tx) => {
       tx.remove('immeubles', d.id);
       for (const l of ls) tx.remove('locataires', l.id);
       for (const p of vault.list('paiements')) if (ls.some((l) => l.id === p.locId)) tx.remove('paiements', p.id);
       for (const x of depensesOf(d.id)) tx.remove('depenses', x.id);
+      for (const g of logsOf(d.id)) tx.remove('logements', g.id);
+      for (const v of versementsOf(d.id)) tx.remove('versements', v.id);
       for (const doc of docs) tx.remove('documents', doc.id);
     }, 'Immeuble supprimé', im.adresse, d.id);
     for (const doc of docs) await vault.deleteFile(doc.id);
@@ -951,7 +1338,7 @@ const ACTIONS = {
   },
   async 'del-loc'(d) {
     const l = vault.get('locataires', d.id);
-    if (!(await confirmBox(`Supprimer ${fullName(l)} ?`, { ok: 'Supprimer', danger: true, detail: 'Ses paiements et documents seront aussi supprimés.' }))) return;
+    if (!(await confirmBox(`Supprimer définitivement ${fullName(l)} ?`, { ok: 'Supprimer', danger: true, detail: isCurrent(l) ? 'Si le locataire part, utilisez plutôt « Départ » : il sera archivé et ses loyers resteront dans les statistiques. La suppression efface aussi ses paiements et documents.' : 'Ses paiements et documents seront effacés et disparaîtront des statistiques.' }))) return;
     const docs = vault.list('documents').filter((doc) => doc.locId === d.id);
     await vault.mutate((tx) => {
       tx.remove('locataires', d.id);
@@ -961,6 +1348,14 @@ const ACTIONS = {
     for (const doc of docs) await vault.deleteFile(doc.id);
     closeSheet();
     toast('Locataire supprimé');
+  },
+  async 'del-log'(d) {
+    const g = vault.get('logements', d.id);
+    const ls = tenantsOfLog(d.id);
+    if (ls.length) return toast(`Impossible : ${plural(ls.length, 'occupant')} enregistré${ls.length > 1 ? 's' : ''} dans ce logement (historique).`, { bad: true });
+    if (!(await confirmBox(`Supprimer « ${g.nom} » ?`, { ok: 'Supprimer', danger: true }))) return;
+    await vault.mutate((tx) => tx.remove('logements', d.id), 'Logement supprimé', g.nom, g.immId);
+    openSheet('imm', g.immId);
   },
   async 'del-dep'(d) {
     const dep = vault.get('depenses', d.id);
@@ -1020,24 +1415,80 @@ const FORMS = {
   setup: onSetup,
   async imm(fd) {
     const id = fd.get('id');
-    const rec = { adresse: fd.get('adresse').trim(), loyer: num(fd.get('loyer')), charges: num(fd.get('charges')), note: fd.get('note').trim() };
+    const rec = {
+      adresse: fd.get('adresse').trim(), proprietaire: fd.get('proprietaire').trim(), loyer: num(fd.get('loyer')), charges: num(fd.get('charges')),
+      bailDebut: fd.get('bailDebut'), bailFin: fd.get('bailFin'), note: fd.get('note').trim(),
+    };
     if (id) rec.id = id;
     const saved = await vault.mutate((tx) => tx.put('immeubles', rec), id ? 'Immeuble modifié' : 'Immeuble ajouté', rec.adresse);
-    closeSheet();
     toast(id ? 'Immeuble enregistré' : 'Immeuble ajouté');
-    return saved;
+    openSheet('imm', saved.id);
+  },
+  async log(fd) {
+    const id = fd.get('id');
+    const rec = {
+      nom: fd.get('nom').trim(), immId: fd.get('immId'), type: fd.get('type'), surface: fd.get('surface') ? num(fd.get('surface')) : '',
+      etage: fd.get('etage').trim(), loyer: num(fd.get('loyer')), note: fd.get('note').trim(),
+    };
+    if (id) rec.id = id;
+    const saved = await vault.mutate((tx) => {
+      const g = tx.put('logements', rec);
+      for (const l of tenantsOfLog(g.id)) if (l.immId !== g.immId) tx.put('locataires', { id: l.id, immId: g.immId });
+      return g;
+    }, id ? 'Logement modifié' : 'Logement ajouté', `${rec.nom} (${immName(rec.immId)})`, rec.immId);
+    toast(id ? 'Logement enregistré' : 'Logement ajouté');
+    openSheet('log', saved.id);
   },
   async loc(fd) {
     const id = fd.get('id');
-    const rec = {
-      nom: fd.get('nom').trim(), prenom: fd.get('prenom').trim(), immId: fd.get('immId'), loyer: num(fd.get('loyer')), type: fd.get('type'),
-      tel: fd.get('tel').trim(), mail: fd.get('mail').trim(), caution: num(fd.get('caution')), cautionNote: fd.get('cautionNote').trim(),
-      debut: fd.get('debut'), fin: fd.get('fin'),
-    };
-    if (id) rec.id = id;
-    const saved = await vault.mutate((tx) => tx.put('locataires', rec), id ? 'Locataire modifié' : 'Locataire ajouté', [rec.nom, rec.prenom].join(' '), id);
-    toast(id ? 'Locataire enregistré' : 'Locataire ajouté');
+    const prev = id ? vault.get('locataires', id) : null;
+    const place = readPlace(fd);
+    if (!place.immId) return toast('Choisissez un logement ou un immeuble', { bad: true });
+    const rec = { ...tenantFromForm(fd), id: id || uid(), immId: place.immId, logId: place.logId || '' };
+    if (id) {
+      rec.sortie = fd.get('sortie') || '';
+      rec.cautionRendue = fd.get('cautionRendue') === '' ? null : num(fd.get('cautionRendue'));
+    }
+    // Nouveau locataire dans un logement déjà occupé → avertir et proposer le remplacement.
+    let replaced = [];
+    if (place.logId && (!prev || prev.logId !== place.logId) && !(rec.sortie && rec.sortie < today())) {
+      const from = rec.debut || today();
+      const occ = tenantsOfLog(place.logId).filter((o) => o.id !== rec.id && (!o.sortie || o.sortie >= from));
+      if (occ.length) {
+        const names = occ.map(fullName).join(', ');
+        const choice = await choiceBox(
+          `${logName(place.logId)} est déjà occupé`,
+          `${names} occupe${occ.length > 1 ? 'nt' : ''} ce logement. Remplacer : ${names} sera archivé avec une sortie au ${fmtDate(addDays(from, -1))}, ses loyers restent dans les statistiques. Colocation : les deux restent en place.`,
+          [{ value: 'coloc', label: 'Colocation' }, { value: 'replace', label: 'Remplacer', cls: 'primary' }]
+        );
+        if (!choice) return;
+        if (choice === 'replace') replaced = occ;
+      }
+    }
+    const where = place.newLog ? place.newLog.nom : logName(place.logId) || immName(place.immId);
+    const saved = await vault.mutate((tx) => {
+      if (place.newLog) rec.logId = tx.put('logements', place.newLog).id;
+      for (const o of replaced) tx.put('locataires', { id: o.id, sortie: addDays(rec.debut || today(), -1) });
+      return tx.put('locataires', rec);
+    }, replaced.length ? 'Locataire remplacé' : id ? 'Locataire modifié' : 'Locataire ajouté',
+    replaced.length ? `${replaced.map(fullName).join(', ')} → ${fullName(rec)} (${where})` : `${fullName(rec)} (${where})`, rec.id);
+    toast(replaced.length ? 'Locataire remplacé, ancien locataire archivé' : id ? 'Locataire enregistré' : 'Locataire ajouté');
     openSheet('loc', saved.id);
+  },
+  async replace(fd) {
+    const old = vault.get('locataires', fd.get('id'));
+    if (!old) return;
+    const sortie = fd.get('sortie');
+    const where = logName(old.logId) || immName(old.immId);
+    const upd = { id: old.id, sortie, cautionRendue: fd.get('cautionRendue') === '' ? null : num(fd.get('cautionRendue')), sortieNote: fd.get('sortieNote').trim() };
+    const nu = fd.get('vacant') ? null : { ...tenantFromForm(fd, 'n_'), id: uid(), immId: old.immId, logId: old.logId || '' };
+    if (nu && nu.debut && nu.debut <= sortie && !(await confirmBox('Dates qui se chevauchent', { ok: 'Continuer', detail: `Le nouveau locataire entre le ${fmtDate(nu.debut)}, avant ou le jour de la sortie de ${fullName(old)} (${fmtDate(sortie)}).` }))) return;
+    await vault.mutate((tx) => {
+      tx.put('locataires', upd);
+      if (nu) tx.put('locataires', nu);
+    }, nu ? 'Locataire remplacé' : 'Départ enregistré', nu ? `${fullName(old)} → ${fullName(nu)} (${where}), sortie le ${fmtDate(sortie)}` : `${fullName(old)} quitte ${where} le ${fmtDate(sortie)}`, old.id);
+    toast(nu ? `${fullName(nu)} enregistré · ${fullName(old)} archivé` : 'Départ enregistré · logement vacant');
+    if (old.logId) openSheet('log', old.logId); else openSheet('loc', nu ? nu.id : old.id);
   },
   async notes(fd) {
     const l = vault.get('locataires', fd.get('id'));
@@ -1045,7 +1496,7 @@ const FORMS = {
     toast('Notes enregistrées');
   },
   async dep(fd, form) {
-    const rec = { immId: fd.get('immId'), desc: fd.get('desc').trim(), montant: num(fd.get('montant')), date: fd.get('date'), cat: fd.get('cat') };
+    const rec = { immId: fd.get('immId'), logId: fd.get('logId') || '', desc: fd.get('desc').trim(), montant: num(fd.get('montant')), date: fd.get('date'), cat: fd.get('cat') };
     if (!rec.desc || !rec.montant) return;
     await vault.mutate((tx) => tx.put('depenses', rec), 'Dépense ajoutée', `${rec.desc} ${money(rec.montant)}`, rec.immId);
     form.reset();
@@ -1131,6 +1582,18 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', (e) => {
   const k = e.target.dataset.input;
   if (k === 'year') { ui.year = +e.target.value; renderView(); }
+  if (k === 'place') {
+    const isNew = e.target.value.startsWith('new:');
+    $('#newLogWrap').hidden = !isNew;
+    $('#newLogWrap [name=newLogNom]').required = isNew;
+    const g = e.target.value.startsWith('log:') && vault.get('logements', e.target.value.slice(4));
+    const loyer = e.target.form.loyer;
+    if (g && g.loyer && loyer && !loyer.value) loyer.value = g.loyer;
+  }
+  if (k === 'vacant') $('#newTenant').disabled = e.target.checked;
+  // Formulaire de changement : l'entrée du nouveau locataire suit par défaut la date de sortie.
+  const f = e.target.form;
+  if (f && f.dataset.form === 'replace' && e.target.name === 'sortie' && e.target.value && f.n_debut) f.n_debut.value = addDays(e.target.value, 1);
   if (k === 'lockmin') { localStorage.setItem('aresLockMin', e.target.value); toast('Verrouillage après ' + e.target.value + ' min'); }
   if (e.target.id === 'importFile' && e.target.files[0]) { importFile(e.target.files[0]); e.target.value = ''; }
 });
