@@ -531,6 +531,26 @@ export class Vault {
     return C.decryptJson(dek, C.b64.decode(backup.data), DATA_LABEL);
   }
 
+  // Import d'un export v2, avec documents optionnels : files = { idDocument: 'data:application/pdf;base64,…' }
+  async importState(obj) {
+    const { files, ...state } = obj;
+    const now = Date.now();
+    for (const c of COLLECTIONS) for (const r of Object.values(state[c] || {})) r.u = now;
+    for (const [id, url] of Object.entries(files || {})) {
+      if (typeof url === 'string' && url.startsWith('data:')) await this.saveFile(id, dataUrlToBytes(url));
+    }
+    await this.mergeIn(state);
+  }
+
+  // Efface tout (enregistrements marqués supprimés pour que les autres appareils suivent, documents effacés du serveur).
+  async wipeAll() {
+    const docs = this.list('documents').map((d) => d.id);
+    await this.mutate((tx) => {
+      for (const c of COLLECTIONS) for (const r of Object.values(this.state[c])) if (!r.del) tx.remove(c, r.id);
+    }, 'Toutes les données effacées', '');
+    for (const id of docs) await this.deleteFile(id);
+  }
+
   async forgetDevice() {
     this.lock();
     await idb.clear();
