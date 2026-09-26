@@ -131,6 +131,10 @@ class Api {
   async req(path, opts = {}) {
     const headers = { ...(opts.headers || {}) };
     if (this.token) headers.Authorization = 'Bearer ' + this.token;
+    if (this.sid) {
+      headers['X-Ares-Session'] = this.sid;
+      headers['X-Ares-Device'] = deviceLabel();
+    }
     const r = await fetch(this.base + path, { ...opts, headers, cache: 'no-store' });
     return r;
   }
@@ -144,10 +148,19 @@ class Api {
 }
 
 export class ApiError extends Error {
-  constructor(status, message) {
+  constructor(status, message, info) {
     super(message);
     this.status = status;
+    this.info = info || {};
   }
+}
+
+// Nom lisible de l'appareil, affiché à l'autre appareil quand il est déconnecté.
+export function deviceLabel() {
+  const ua = navigator.userAgent;
+  const os = /iPhone/.test(ua) ? 'iPhone' : /iPad/.test(ua) ? 'iPad' : /Android/.test(ua) ? 'Android' : /Macintosh/.test(ua) ? 'Mac' : /Windows/.test(ua) ? 'Windows' : /Linux/.test(ua) ? 'Linux' : 'Appareil';
+  const br = /Edg\//.test(ua) ? 'Edge' : /CriOS|Chrome\//.test(ua) ? 'Chrome' : /FxiOS|Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'navigateur';
+  return `${os} · ${br}`;
 }
 
 // ───────────────────────── Coffre (Vault) ─────────────────────────
@@ -193,6 +206,7 @@ export class Vault {
     const { kek, authToken, authHash } = await C.deriveFromPassphrase(passphrase, salt, iter);
     const dek = await C.newDataKey();
     const wrappedKey = await C.wrapDataKey(dek, kek);
+    this.newSession();
     const r = await this.api.req('setup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -210,7 +224,29 @@ export class Vault {
     await this.persist();
   }
 
+  newSession() {
+    this.api.sid = crypto.randomUUID();
+  }
+
+  // Un seul appareil connecté à la fois : 409 si un autre est actif (sauf force = prendre la main).
+  async claimSession(force = false) {
+    if (!navigator.onLine) return { offline: true };
+    const r = await this.api.req('session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ force }) });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 409) throw new ApiError(409, 'session-busy', j);
+    if (!r.ok) throw new ApiError(r.status, j.error || 'Erreur ' + r.status);
+    return j;
+  }
+
+  releaseSession() {
+    if (!this.api.token || !this.api.sid) return;
+    try {
+      fetch(this.api.base + 'session', { method: 'DELETE', keepalive: true, headers: { Authorization: 'Bearer ' + this.api.token, 'X-Ares-Session': this.api.sid } });
+    } catch {}
+  }
+
   async unlock(passphrase) {
+    this.newSession();
     let meta = null;
     let online = navigator.onLine;
     if (online) {
@@ -300,6 +336,7 @@ export class Vault {
 
   // Ouvre le coffre avec la clé de secours ; l'interface demande ensuite une nouvelle clé d'accès.
   async unlockWithRecovery(code) {
+    this.newSession();
     if (!navigator.onLine) throw new ApiError(0, 'Connexion requise pour utiliser la clé de secours.');
     const meta = await this.remoteMeta();
     if (!meta.configured) return { setup: true };
@@ -338,6 +375,7 @@ export class Vault {
   }
 
   lock() {
+    this.releaseSession();
     this.dek = null;
     this.api.token = null;
     this._kekForRewrap = null;
@@ -454,6 +492,7 @@ export class Vault {
         const headers = this.etag && !this.dirty ? { 'If-None-Match': this.etag } : {};
         const r = await this.api.req('data', { headers });
         if (r.status === 401) throw new ApiError(401, "Clé d'accès changée sur un autre appareil. Reconnectez-vous.");
+        if (r.status === 409) throw new ApiError(409, 'session-taken', await r.json().catch(() => ({})));
         if (r.status === 304) break; // rien de neuf, rien à envoyer
         let remote = null;
         let etag = null;
@@ -479,6 +518,7 @@ export class Vault {
           body,
         });
         if (put.status === 412) continue; // un autre appareil a écrit entre-temps : on refusionne
+        if (put.status === 409) throw new ApiError(409, 'session-taken', await put.json().catch(() => ({})));
         if (!put.ok) throw new ApiError(put.status, await Api.err(put));
         this.etag = put.headers.get('ETag') || (await put.json().catch(() => ({}))).etag || null;
         this.dirty = false;
@@ -493,6 +533,7 @@ export class Vault {
       if (e instanceof ApiError) {
         this.setStatus('error', e.message);
         if (e.status === 401) this.emit('auth-lost');
+        if (e.status === 409) { this.sessionLostBy = (e.info && e.info.device) || ''; this.emit('session-lost'); }
       } else if (!navigator.onLine || e instanceof TypeError) {
         this.setStatus('offline');
       } else {
@@ -527,6 +568,7 @@ export class Vault {
       const blob = await idb.get('file:' + id);
       if (blob) {
         const r = await this.api.req('files/' + id, { method: 'PUT', body: blob });
+        if (r.status === 409) throw new ApiError(409, 'session-taken', await r.json().catch(() => ({})));
         if (!r.ok) throw new ApiError(r.status, await Api.err(r));
       }
       pending.splice(pending.indexOf(id), 1);
