@@ -450,3 +450,24 @@ dialog.sheet::backdrop { background: rgba(10, 10, 12, 0.5); backdrop-filter: blu
   .main { padding: 0; max-width: none; }
   .card, .list, .metric { box-shadow: none; break-inside: avoid; }
 }
+
+/* ── Rapports imprimables ── */
+#print { display: none; }
+@media print {
+  @page { margin: 14mm 12mm; }
+  body.printing > *:not(#print) { display: none !important; }
+  body.printing #print { display: block !important; color: #111; font-size: 10.5px; line-height: 1.35; }
+  #print .pr-head { display: flex; justify-content: space-between; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 14px; font-size: 10px; }
+  #print h1 { font-size: 18px; margin: 0 0 2px; }
+  #print h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin: 16px 0 6px; color: #444; }
+  #print .pr-sub { color: #555; margin-bottom: 6px; }
+  #print .pr-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  #print .pr-page { break-before: page; }
+  #print table.tbl { width: 100%; border-collapse: collapse; font-size: 10px; break-inside: auto; }
+  #print .tbl th, #print .tbl td { border: 1px solid #bbb; padding: 3px 5px; color: #111; }
+  #print .tbl th { background: #f0f0f0; font-size: 9px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  #print .tbl tr { break-inside: avoid; }
+  #print .pr-grid td.c, #print .pr-grid th { text-align: center; padding: 3px 2px; }
+  #print .r { text-align: right; }
+  #print .green { color: #0a6b2e; } #print .red { color: #b91c1c; } #print .accent { color: #111; }
+}

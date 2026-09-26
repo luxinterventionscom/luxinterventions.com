@@ -2,7 +2,7 @@
 import { Vault, payKey, isLegacy, ApiError, uid } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.2.0';
+const VERSION = '2.3.0';
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
 const $ = (s, r = document) => r.querySelector(s);
@@ -277,6 +277,17 @@ function pwField(name, placeholder, autocomplete) {
   </div>`;
 }
 
+const METER_HINT = 'Conseil : une phrase de 4 ou 5 mots est à la fois forte et facile à retenir.';
+function attachMeter(root) {
+  root.querySelector('[name=pass]').addEventListener('input', (e) => {
+    const s = passphraseStrength(e.target.value);
+    const colors = ['var(--red-strong)', 'var(--red-strong)', 'var(--amber)', 'var(--green)', 'var(--green)'];
+    const labels = ['Trop courte', 'Faible', 'Correcte', 'Forte', 'Excellente'];
+    Object.assign(root.querySelector('#meter').style, { width: (s + 1) * 20 + '%', background: colors[s] });
+    root.querySelector('#meterTxt').textContent = e.target.value ? labels[s] : METER_HINT;
+  });
+}
+
 function renderLock(mode, error = '') {
   appEl.hidden = true;
   lockEl.hidden = false;
@@ -299,20 +310,43 @@ function renderLock(mode, error = '') {
       </label>
       <label class="field">Nouvelle clé d'accès ${pwField('pass', 'Au moins 12 caractères', 'new-password')}</label>
       <div class="meter"><i id="meter"></i></div>
-      <div class="tiny muted" id="meterTxt">Conseil : une phrase de 4 ou 5 mots est à la fois forte et facile à retenir.</div>
+      <div class="tiny muted" id="meterTxt">${METER_HINT}</div>
       <label class="field">Confirmer la clé ${pwField('pass2', 'Retapez la clé', 'new-password')}</label>
       ${legacy ? html`<label class="row" style="padding:0;min-height:0;gap:10px;border:0"><input type="checkbox" name="legacy" checked style="width:20px;min-height:20px"> <span class="small">Importer les données de l'ancienne version trouvées sur cet appareil (${legacy.immeubles.length} immeubles, ${legacy.locataires.length} locataires)</span></label>` : ''}
       <div class="lock-err" role="alert">${error}</div>
       <button class="btn primary block" type="submit">Créer le coffre sécurisé</button>
       ${foot}
     </form>`);
-    lockEl.querySelector('[name=pass]').addEventListener('input', (e) => {
-      const s = passphraseStrength(e.target.value);
-      const colors = ['var(--red-strong)', 'var(--red-strong)', 'var(--amber)', 'var(--green)', 'var(--green)'];
-      const labels = ['Trop courte', 'Faible', 'Correcte', 'Forte', 'Excellente'];
-      Object.assign($('#meter').style, { width: (s + 1) * 20 + '%', background: colors[s] });
-      $('#meterTxt').textContent = e.target.value ? labels[s] : 'Conseil : une phrase de 4 ou 5 mots est à la fois forte et facile à retenir.';
-    });
+    attachMeter(lockEl);
+    return;
+  }
+  if (mode === 'recover') {
+    setHtml(lockEl, html`<form class="lock-card" data-form="recover" autocomplete="off">
+      ${head}
+      <div class="alert info">${icon('key')}<div><b>Clé d'accès oubliée ?</b> Saisissez la <b>clé de secours</b> (24 caractères, ex. ABCD-EFGH-…) créée dans Réglages. Vous choisirez ensuite une nouvelle clé d'accès.</div></div>
+      <label class="field">Clé de secours <input name="code" required placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono);letter-spacing:.05em"></label>
+      <div class="lock-err" role="alert">${error}</div>
+      <button class="btn primary block" type="submit">Ouvrir avec la clé de secours</button>
+      <button class="btn ghost block" type="button" data-action="lock-mode" data-id="unlock">Retour</button>
+      <p class="tiny muted">Sans clé de secours, les données ne peuvent pas être récupérées : elles sont chiffrées et personne d'autre ne possède la clé.</p>
+      ${foot}
+    </form>`);
+    setTimeout(() => lockEl.querySelector('[name=code]')?.focus(), 50);
+    return;
+  }
+  if (mode === 'newkey') {
+    setHtml(lockEl, html`<form class="lock-card" data-form="newkey" autocomplete="off">
+      ${head}
+      <div class="alert info" style="background:var(--green-soft);color:var(--green)">${icon('check')}<div><b>Coffre ouvert.</b> Choisissez maintenant votre nouvelle clé d'accès.</div></div>
+      <label class="field">Nouvelle clé d'accès ${pwField('pass', 'Au moins 12 caractères', 'new-password')}</label>
+      <div class="meter"><i id="meter"></i></div>
+      <div class="tiny muted" id="meterTxt">${METER_HINT}</div>
+      <label class="field">Confirmer la clé ${pwField('pass2', 'Retapez la clé', 'new-password')}</label>
+      <div class="lock-err" role="alert">${error}</div>
+      <button class="btn primary block" type="submit">Enregistrer la nouvelle clé</button>
+      ${foot}
+    </form>`);
+    attachMeter(lockEl);
     return;
   }
   setHtml(lockEl, html`<form class="lock-card" data-form="unlock">
@@ -321,6 +355,7 @@ function renderLock(mode, error = '') {
     <label class="field">Clé d'accès ${pwField('pass', '••••••••••••', 'current-password')}</label>
     <div class="lock-err" role="alert">${error}</div>
     <button class="btn primary block" type="submit">Déverrouiller</button>
+    <button class="btn ghost block" type="button" data-action="lock-mode" data-id="recover">Clé d'accès oubliée ?</button>
     ${!navigator.onLine ? html`<p class="tiny muted" style="text-align:center">Hors ligne : ouverture avec la copie chiffrée de cet appareil.</p>` : ''}
     ${foot}
   </form>`);
@@ -342,6 +377,34 @@ function setBusy(form, busy, label) {
   if (!b) return;
   if (busy) { b.dataset.label = b.textContent; b.disabled = true; setHtml(b, html`<span class="spinner"></span> ${label}`); }
   else { b.disabled = false; b.textContent = b.dataset.label || b.textContent; }
+}
+
+async function onRecover(fd, form) {
+  setBusy(form, true, 'Vérification…');
+  try {
+    const r = await vault.unlockWithRecovery(fd.get('code'));
+    if (r.setup) return renderLock('setup');
+    renderLock('newkey');
+  } catch (e) {
+    setBusy(form, false);
+    form.querySelector('.lock-err').textContent = e.message || 'Erreur';
+  }
+}
+
+async function onNewKey(fd, form) {
+  const pass = fd.get('pass');
+  const err = form.querySelector('.lock-err');
+  if (pass.length < 12 || passphraseStrength(pass) < 2) return (err.textContent = 'Clé trop faible : au moins 12 caractères, idéalement une phrase de plusieurs mots.');
+  if (pass !== fd.get('pass2')) return (err.textContent = 'Les deux clés ne correspondent pas.');
+  setBusy(form, true, 'Enregistrement…');
+  try {
+    await vault.changePassphrase(pass);
+    startSession();
+    toast("Nouvelle clé d'accès enregistrée");
+  } catch (e) {
+    setBusy(form, false);
+    err.textContent = e.message || 'Erreur';
+  }
 }
 
 async function onUnlock(fd, form) {
@@ -523,7 +586,9 @@ dashboard() {
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Ajouter un immeuble</button>`)}`;
     }
 
+    const nudge = vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
     return html`
+      ${nudge}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
       <div class="metrics">
         <div class="metric hero">
@@ -730,7 +795,7 @@ dashboard() {
     const origin = imms.map((im) => ({ im, b: bilan({ immId: im.id }) }));
     const tot = { encaisse: sum(origin, (x) => x.b.encaisse), verse: sum(origin, (x) => x.b.verse), depenses: sum(origin, (x) => x.b.depenses), net: sum(origin, (x) => x.b.net), occupants: sum(origin, (x) => x.b.occupants) };
     return html`
-      ${pageHead('Statistiques', 'Vue financière annuelle et depuis l’origine', yearSelect(y))}
+      ${pageHead('Statistiques', 'Vue financière annuelle et depuis l’origine', html`<div style="display:flex;gap:8px">${yearSelect(y)}<button class="btn" data-action="print-global">${icon('download')} Imprimer</button></div>`)}
       <div class="metrics">
         <div class="metric"><div class="lbl">Loyers encaissés</div><div class="val green">${money(paid)}</div><div class="sub">${pct(paid, due)}% de ${money(due)}</div></div>
         <div class="metric"><div class="lbl">Manquant</div><div class="val ${due - paid > 0 ? 'red' : ''}">${money(Math.max(due - paid, 0))}</div></div>
@@ -786,6 +851,7 @@ dashboard() {
       <div class="list settings">
         <div class="row">${icon('lock')}<span class="grow title">Verrouillage automatique</span>
           <select data-input="lockmin" style="width:auto">${[5, 15, 30, 60].map((n) => html`<option value="${n}" ${lockMinutes() === n ? new Raw('selected') : ''}>${n} min</option>`)}</select></div>
+        <button class="row" data-action="make-recovery">${icon('shield')}<span class="grow"><span class="title" style="display:block">Clé de secours ${vault.hasRecovery ? html`<span class="badge ok">active</span>` : vault.hasRecovery === false ? html`<span class="badge warn">à créer</span>` : ''}</span><span class="meta">Pour retrouver l'accès si la clé d'accès est oubliée</span></span></button>
         <button class="row" data-action="change-key">${icon('key')}<span class="grow"><span class="title" style="display:block">Changer la clé d'accès</span><span class="meta">Les autres appareils devront utiliser la nouvelle clé</span></span></button>
         <button class="row" data-action="lock">${icon('lock')}<span class="grow title">Verrouiller maintenant</span></button>
         <button class="row" data-action="wipe-all">${icon('trash')}<span class="grow"><span class="title red" style="display:block">Effacer toutes les données</span><span class="meta">Immeubles, locataires, paiements, documents — sur tous les appareils</span></span></button>
@@ -799,7 +865,6 @@ dashboard() {
         <button class="row" data-action="import">${icon('upload')}<span class="grow"><span class="title" style="display:block">Importer</span><span class="meta">Sauvegarde .ares ou export JSON (ancienne version incluse)</span></span></button>
         <button class="row" data-action="print">${icon('file')}<span class="grow title">Imprimer la page Paiements</span></button>
       </div>
-      <input type="file" id="importFile" accept=".json,.ares,application/json" hidden>
 
       ${legacy ? html`<div class="section-label">Ancienne version</div>
       <div class="alert warn" style="margin-bottom:10px">${icon('alert')}<div>Une copie <b>non chiffrée</b> de l'ancienne version est encore présente dans ce navigateur (${legacy.immeubles.length} immeubles, ${legacy.locataires.length} locataires).</div></div>
@@ -1003,7 +1068,7 @@ const SHEETS = {
     return {
       title: im.adresse,
       body: html`${tabsBar([['logs', 'Logements'], ['proprio', 'Propriétaire'], ['deps', 'Dépenses'], ['bilan', 'Bilan']], tab)}${body}`,
-      foot: html`<button class="btn" data-action="edit-imm" data-id="${id}">${icon('edit')} Modifier l'immeuble</button>`,
+      foot: html`<button class="btn" data-action="print-imm" data-id="${id}">${icon('download')} Imprimer</button><button class="btn" data-action="edit-imm" data-id="${id}">${icon('edit')} Modifier</button>`,
     };
   },
 
@@ -1084,7 +1149,7 @@ const SHEETS = {
     return {
       title: g.nom,
       body: html`${tabsBar([['now', 'Actuel'], ['hist', `Occupants (${all.length})`], ['bilan', 'Bilan']], tab)}${body}`,
-      foot: html`<button class="btn" data-action="open-imm" data-id="${g.immId}">${icon('building')} Immeuble</button><button class="btn" data-action="edit-log" data-id="${id}">${icon('edit')} Modifier</button>`,
+      foot: html`<button class="btn icon" data-action="print-log" data-id="${id}" aria-label="Imprimer">${icon('download')}</button><button class="btn" data-action="open-imm" data-id="${g.immId}">${icon('building')} Immeuble</button><button class="btn" data-action="edit-log" data-id="${id}">${icon('edit')} Modifier</button>`,
     };
   },
 
@@ -1211,6 +1276,24 @@ const SHEETS = {
     };
   },
 
+  recovery({ preset: code }) {
+    const body = encodeURIComponent(`Clé de secours Ares Invest :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : https://luxinterventions.com/locataires.html → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
+    return {
+      title: 'Votre clé de secours',
+      narrow: true,
+      body: html`
+        <div class="alert warn" style="margin-bottom:16px">${icon('alert')}<div><b>Notez-la maintenant :</b> elle ne sera plus jamais affichée. Avec elle, on peut ouvrir le coffre et choisir une nouvelle clé d'accès. Gardez-la hors ligne (papier dans un coffre, gestionnaire de mots de passe).</div></div>
+        <div style="font-family:var(--mono);font-size:22px;font-weight:700;letter-spacing:.06em;text-align:center;padding:18px 8px;background:var(--surface-2);border-radius:var(--radius);word-break:break-all" id="rcode">${code}</div>
+        <div class="actions" style="margin-top:14px">
+          <button class="btn" data-action="copy-recovery">${icon('file')} Copier</button>
+          <button class="btn" data-action="print-recovery">${icon('download')} Imprimer</button>
+          <a class="btn" href="mailto:?subject=${encodeURIComponent('Ares Invest — clé de secours')}&body=${body}">${icon('mail')} Email</a>
+        </div>
+        <p class="tiny muted">Email : pratique, mais toute personne qui accède à votre messagerie pourrait ouvrir le coffre. Le papier est plus sûr.</p>`,
+      foot: html`<button class="btn primary" data-action="close-sheet">J'ai noté ma clé de secours</button>`,
+    };
+  },
+
   'key-form'() {
     return {
       title: "Changer la clé d'accès",
@@ -1281,6 +1364,86 @@ const tenantFromForm = (fd, p = '') => ({
   debut: fd.get(p + 'debut'), fin: fd.get(p + 'fin'),
 });
 
+// ───────────────────────── Rapports imprimables ─────────────────────────
+function printDoc(title, body) {
+  const el = $('#print');
+  setHtml(el, html`<div class="pr-head"><div><b>Ares Invest</b> · ${title}</div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
+  document.body.classList.add('printing');
+  const done = () => { document.body.classList.remove('printing'); setHtml(el, ''); removeEventListener('afterprint', done); };
+  addEventListener('afterprint', done);
+  setTimeout(() => print(), 60);
+}
+const prBilan = (b, withOcc) => html`<table class="tbl"><tbody>
+  <tr><td>Loyers encaissés</td><td class="r green">${money(b.encaisse)}</td></tr>
+  ${b.verse != null ? html`<tr><td>Versé au propriétaire</td><td class="r">${neg(b.verse)}</td></tr>` : ''}
+  <tr><td>Réparations & frais</td><td class="r">${neg(b.depenses)}</td></tr>
+  <tr><td><b>Gain net</b></td><td class="r"><b>${money(b.net ?? b.encaisse - b.depenses)}</b></td></tr>
+  ${withOcc ? html`<tr><td>Occupants</td><td class="r">${b.occupants}</td></tr>` : ''}
+</tbody></table>`;
+const neg = (v) => (v ? '−' + money(v) : '—');
+const mark = (ok, due) => (ok ? '✓' : due ? '✗' : '–');
+
+function occupantsTable(ls) {
+  return html`<table class="tbl"><thead><tr><th>Locataire</th><th>Logement</th><th>Entrée</th><th>Sortie</th><th>Durée</th><th class="r">Loyer</th><th class="r">Total payé</th></tr></thead><tbody>
+    ${ls.map((l) => html`<tr><td>${fullName(l)}</td><td>${logName(l.logId) || '—'}</td><td>${fmtDate(l.debut) || '?'}</td><td>${l.sortie ? fmtDate(l.sortie) : 'en cours'}</td><td>${stayMonths(l) ? duree(stayMonths(l)) : '—'}</td><td class="r">${money(l.loyer)}</td><td class="r">${money(totalPaid(l))}</td></tr>`)}
+  </tbody></table>`;
+}
+
+function reportImmeuble(immId, y) {
+  const im = vault.get('immeubles', immId);
+  const logs = logsOf(immId);
+  const ls = tenantsOfImm(immId);
+  const active = ls.filter((l) => MONTHS.some((_, i) => isDue(l, y, i + 1) || payment(l.id, y, i + 1))).sort((a, b) => byLogName({ nom: logName(a.logId) }, { nom: logName(b.logId) }));
+  const deps = depensesOf(immId, y).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+  const years = yearsWithData((yy) => bilan({ immId, y: yy }));
+  return html`
+    <h1>${im.adresse}</h1>
+    <p class="pr-sub">${im.proprietaire ? 'Propriétaire : ' + im.proprietaire + ' · ' : ''}${ownerRent(im) ? 'Bail principal : ' + money(ownerRent(im)) + ' / mois' : ''}${im.bailDebut ? ' · depuis le ' + fmtDate(im.bailDebut) : ''}</p>
+    <div class="pr-cols"><div><h2>Bilan ${y}</h2>${prBilan(bilan({ immId, y }))}</div><div><h2>Depuis l'origine</h2>${prBilan(bilan({ immId }), true)}</div></div>
+    ${years.length > 1 ? html`<h2>Par année</h2>${bilanTable(years)}` : ''}
+    ${logs.length ? html`<h2>Logements</h2><table class="tbl"><thead><tr><th>Logement</th><th>Type</th><th>Occupant actuel</th><th class="r">Occupants</th><th class="r">Occupation</th><th class="r">Encaissé total</th></tr></thead><tbody>
+      ${logs.map((g) => { const o = occupancy(g.id); const bb = bilan({ logId: g.id }); return html`<tr><td>${g.nom}</td><td>${LOG_TYPES[g.type] || ''}</td><td>${occupantsNow(g.id).map(fullName).join(', ') || 'Vacant'}</td><td class="r">${bb.occupants}</td><td class="r">${o ? pct(o.occupied, o.total) + '%' : '—'}</td><td class="r">${money(bb.encaisse)}</td></tr>`; })}
+    </tbody></table>` : ''}
+    ${active.length ? html`<h2>Loyers ${y}</h2><table class="tbl pr-grid"><thead><tr><th>Locataire</th><th>Logement</th><th class="r">Loyer</th>${MONTHS.map((m) => html`<th>${m}</th>`)}<th class="r">Payé</th><th class="r">Reste</th></tr></thead><tbody>
+      ${active.map((l) => { const st = yearStats(l, y); return html`<tr><td>${fullName(l)}</td><td>${logName(l.logId)}</td><td class="r">${money(l.loyer)}</td>${MONTHS.map((_, i) => html`<td class="c">${mark(payment(l.id, y, i + 1), isDue(l, y, i + 1))}</td>`)}<td class="r">${money(st.paid)}</td><td class="r">${money(Math.max(st.due - st.paid, 0))}</td></tr>`; })}
+    </tbody></table>` : ''}
+    ${ownerRent(im) ? html`<h2>Versements au propriétaire ${y}</h2><table class="tbl pr-grid"><thead><tr>${MONTHS.map((m) => html`<th>${m}</th>`)}<th class="r">Total versé</th></tr></thead><tbody><tr>${MONTHS.map((_, i) => html`<td class="c">${mark(versement(immId, y, i + 1), isOwnerDue(im, y, i + 1))}</td>`)}<td class="r">${money(sum(versementsOf(immId, y), (v) => v.montant))}</td></tr></tbody></table>` : ''}
+    ${deps.length ? html`<h2>Dépenses ${y}</h2><table class="tbl"><thead><tr><th>Date</th><th>Description</th><th>Concerne</th><th class="r">Montant</th></tr></thead><tbody>${deps.map((d) => html`<tr><td>${fmtDate(d.date)}</td><td>${d.desc}</td><td>${logName(d.logId) || 'Immeuble'}</td><td class="r">${money(d.montant)}</td></tr>`)}</tbody></table>` : ''}
+    ${ls.length ? html`<h2>Historique des occupants</h2>${occupantsTable([...ls].sort(byDebut))}` : ''}`;
+}
+
+function reportLogement(logId) {
+  const g = vault.get('logements', logId);
+  const b = bilan({ logId });
+  const o = occupancy(logId);
+  return html`
+    <h1>${g.nom} — ${immName(g.immId)}</h1>
+    <p class="pr-sub">${LOG_TYPES[g.type] || ''}${g.surface ? ' · ' + g.surface + ' m²' : ''}${o ? ` · occupé ${pct(o.occupied, o.total)}% du temps, ${duree(o.vacant)} de vacance` : ''}</p>
+    <h2>Bilan depuis l'origine</h2>${prBilan({ ...b, verse: null, net: b.encaisse - b.depenses }, true)}
+    <h2>Par année</h2>${bilanTable(yearsWithData((yy) => bilan({ logId, y: yy })))}
+    <h2>Occupants successifs</h2>${occupantsTable(tenantsOfLog(logId))}`;
+}
+
+function reportGlobal(y, details) {
+  const imms = vault.list('immeubles').sort(byAddr);
+  const rows = imms.map((im) => ({ im, a: bilan({ immId: im.id, y }), o: bilan({ immId: im.id }) }));
+  const T = (k, f) => sum(rows, (r) => r[k][f]);
+  return html`
+    <h1>Rapport ${y}</h1>
+    <p class="pr-sub">${plural(imms.length, 'immeuble')} · ${plural(vault.list('logements').length, 'logement')} · ${plural(currentLocs().length, 'locataire')} actuels</p>
+    <h2>Année ${y}</h2>
+    <table class="tbl"><thead><tr><th>Immeuble</th><th class="r">Encaissé</th><th class="r">Propriétaire</th><th class="r">Dépenses</th><th class="r">Gain net</th></tr></thead><tbody>
+      ${rows.map(({ im, a }) => html`<tr><td>${im.adresse}</td><td class="r">${money(a.encaisse)}</td><td class="r">${neg(a.verse)}</td><td class="r">${neg(a.depenses)}</td><td class="r">${money(a.net)}</td></tr>`)}
+      <tr><td><b>Total</b></td><td class="r"><b>${money(T('a', 'encaisse'))}</b></td><td class="r"><b>${neg(T('a', 'verse'))}</b></td><td class="r"><b>${neg(T('a', 'depenses'))}</b></td><td class="r"><b>${money(T('a', 'net'))}</b></td></tr>
+    </tbody></table>
+    <h2>Depuis l'origine</h2>
+    <table class="tbl"><thead><tr><th>Immeuble</th><th class="r">Occupants</th><th class="r">Encaissé</th><th class="r">Propriétaire</th><th class="r">Dépenses</th><th class="r">Gain net</th></tr></thead><tbody>
+      ${rows.map(({ im, o }) => html`<tr><td>${im.adresse}</td><td class="r">${o.occupants}</td><td class="r">${money(o.encaisse)}</td><td class="r">${neg(o.verse)}</td><td class="r">${neg(o.depenses)}</td><td class="r">${money(o.net)}</td></tr>`)}
+      <tr><td><b>Total</b></td><td class="r"><b>${T('o', 'occupants')}</b></td><td class="r"><b>${money(T('o', 'encaisse'))}</b></td><td class="r"><b>${neg(T('o', 'verse'))}</b></td><td class="r"><b>${neg(T('o', 'depenses'))}</b></td><td class="r"><b>${money(T('o', 'net'))}</b></td></tr>
+    </tbody></table>
+    ${details ? imms.map((im) => html`<section class="pr-page">${reportImmeuble(im.id, y)}</section>`) : ''}`;
+}
+
 let installPrompt = null;
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; if (ui.route === 'reglages') renderView(); });
 
@@ -1308,6 +1471,30 @@ const ACTIONS = {
   'toggle-vers': (d) => toggleVers(d.imm, +d.y, +d.m),
   'loc-seg': (d) => { ui.locSeg = d.id; renderView(); },
   'close-sheet': () => closeSheet(),
+  'lock-mode': (d) => renderLock(d.id),
+  async 'make-recovery'() {
+    if (!navigator.onLine) return toast('Connexion requise', { bad: true });
+    const k = await promptKey('Clé de secours', (vault.hasRecovery ? 'Une nouvelle clé de secours remplacera l’ancienne, qui ne fonctionnera plus. ' : '') + 'Saisissez votre clé d’accès actuelle pour continuer.');
+    if (!k) return;
+    if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
+    try {
+      const code = await vault.createRecovery();
+      openSheet('recovery', null, null, code);
+      if (ui.route === 'reglages' || ui.route === 'dashboard') renderView();
+    } catch (e) {
+      toast(e.message || 'Erreur', { bad: true });
+    }
+  },
+  'copy-recovery': async () => {
+    try { await navigator.clipboard.writeText($('#rcode').textContent.trim()); toast('Clé copiée'); } catch { toast('Copie impossible : notez-la à la main', { bad: true }); }
+  },
+  'print-recovery': () => printDoc('Clé de secours', html`<h1>Clé de secours</h1><p class="pr-sub">À conserver en lieu sûr. En cas d'oubli de la clé d'accès : luxinterventions.com/locataires.html → « Clé d'accès oubliée ? »</p><div style="font:700 26px/1.4 monospace;letter-spacing:.08em;border:2px solid #000;padding:24px;text-align:center;margin-top:24px">${ui.sheet && ui.sheet.preset}</div>`),
+  'print-imm': (d) => printDoc('Rapport immeuble', reportImmeuble(d.id, ui.year)),
+  'print-log': (d) => printDoc('Rapport logement', reportLogement(d.id)),
+  async 'print-global'() {
+    const c = await choiceBox('Imprimer le rapport ' + ui.year, 'Le résumé tient sur une page. Le rapport complet ajoute le détail de chaque immeuble (loyers mois par mois, dépenses, occupants).', [{ value: 'short', label: 'Résumé' }, { value: 'full', label: 'Complet', cls: 'primary' }]);
+    if (c) printDoc('Rapport ' + ui.year, reportGlobal(ui.year, c === 'full'));
+  },
   'imm-filter': (d) => { ui.immFilter = d.id; renderView(); },
   'imm-locs': (d) => { ui.immFilter = d.id; go('locataires'); },
   'imm-pay': (d) => { ui.immFilter = d.id; ui.year = new Date().getFullYear(); go('paiements'); },
@@ -1423,6 +1610,8 @@ const ACTIONS = {
 const FORMS = {
   unlock: onUnlock,
   setup: onSetup,
+  recover: onRecover,
+  newkey: onNewKey,
   async imm(fd) {
     const id = fd.get('id');
     const rec = {

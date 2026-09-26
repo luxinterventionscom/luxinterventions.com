@@ -136,6 +136,9 @@ export default {
  *   POST   /api/ares/setup         prima configurazione (richiede ARES_SETUP_CODE)
  *   GET    /api/ares/key           chiave dati cifrata                 [auth]
  *   POST   /api/ares/rekey         cambio della chiave di accesso      [auth]
+ *   POST   /api/ares/recovery      crea la chiave di secours           [auth principale]
+ *   (la chiave di secours apre il coffre come la chiave di accesso e permette
+ *    di sceglierne una nuova se è stata dimenticata)
  *   GET    /api/ares/data          database cifrato + ETag             [auth]
  *   PUT    /api/ares/data          If-Match / If-None-Match: *         [auth]
  *   GET|PUT|DELETE /api/ares/files/<id>                               [auth]
@@ -210,7 +213,8 @@ async function handleAres(request, env, url, headers) {
   if (path === "meta" && method === "GET") {
     const meta = await aresMeta(env);
     if (!meta) return aresJson({ configured: false }, 404, headers);
-    return aresJson({ configured: true, salt: meta.salt, iter: meta.iter }, 200, headers);
+    const recovery = meta.recovery ? { salt: meta.recovery.salt, iter: meta.recovery.iter } : null;
+    return aresJson({ configured: true, salt: meta.salt, iter: meta.iter, recovery }, 200, headers);
   }
 
   if ((await aresFails(env, ip)) >= ARES_MAX_FAILS) {
@@ -239,13 +243,28 @@ async function handleAres(request, env, url, headers) {
   if (!meta) return aresJson({ error: "Non configuré" }, 404, headers);
   const auth = request.headers.get("Authorization") || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  if (!isHex64(token) || !safeEqual(await sha256Hex(token), meta.authHash)) {
+  // Due "serrature" possibili: la chiave di accesso (main) o la chiave di secours (recovery).
+  const tokenHash = isHex64(token) ? await sha256Hex(token) : "";
+  const slot = safeEqual(tokenHash, meta.authHash) ? "main"
+    : meta.recovery && safeEqual(tokenHash, meta.recovery.authHash) ? "recovery" : null;
+  if (!slot) {
     await aresRecordFail(env, ip);
     return aresJson({ error: "Clé d'accès incorrecte" }, 401, headers);
   }
 
   if (path === "key" && method === "GET") {
-    return aresJson({ wrappedKey: meta.wrappedKey }, 200, headers);
+    return aresJson({ wrappedKey: slot === "main" ? meta.wrappedKey : meta.recovery.wrappedKey, slot }, 200, headers);
+  }
+
+  // Crea o sostituisce la chiave di secours (solo con la chiave di accesso principale)
+  if (path === "recovery" && method === "POST") {
+    if (slot !== "main") return aresJson({ error: "Clé d'accès principale requise" }, 403, headers);
+    let body;
+    try { body = await request.json(); } catch { body = null; }
+    if (!validKeyMaterial(body)) return aresJson({ error: "Données invalides" }, 400, headers);
+    const next = { ...meta, recovery: { salt: body.salt, iter: body.iter, wrappedKey: body.wrappedKey, authHash: body.authHash, createdAt: new Date().toISOString() } };
+    await env.PHOTOS.put(ARES_META, JSON.stringify(next));
+    return aresJson({ ok: true }, 200, headers);
   }
 
   if (path === "rekey" && method === "POST") {

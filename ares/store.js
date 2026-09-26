@@ -202,6 +202,7 @@ export class Vault {
     await idb.clear();
     await idb.set('meta', { salt, iter, wrappedKey });
     this.api.token = authToken;
+    this.hasRecovery = false;
     this.dek = await C.unwrapDataKey(wrappedKey, kek);
     this.state = emptyState();
     this.etag = null;
@@ -216,6 +217,7 @@ export class Vault {
       try {
         meta = await this.remoteMeta();
         if (!meta.configured) return { setup: true };
+        this.hasRecovery = !!meta.recovery;
       } catch (e) {
         if (e instanceof ApiError) throw e;
         online = false;
@@ -254,7 +256,7 @@ export class Vault {
 
   async changePassphrase(newPassphrase) {
     // La clé de données ne change pas : on la ré-enveloppe avec la nouvelle clé d'accès.
-    const meta = await idb.get('meta');
+    const meta = this._rewrapMeta || (await idb.get('meta'));
     const salt = C.b64.encode(C.randomBytes(16));
     const iter = C.PBKDF2_ITER;
     const next = await C.deriveFromPassphrase(newPassphrase, salt, iter);
@@ -271,7 +273,56 @@ export class Vault {
     if (!r.ok) throw new ApiError(r.status, await Api.err(r));
     this.api.token = next.authToken;
     this._kekForRewrap = next.kek;
+    this._rewrapMeta = null;
     await idb.set('meta', { salt, iter, wrappedKey });
+  }
+
+  // ── Clé de secours ──
+  // Deuxième enveloppe de la même clé de données, ouverte par un code aléatoire à conserver hors ligne.
+  async createRecovery() {
+    const meta = await idb.get('meta');
+    if (!this._kekForRewrap) throw new Error('Confirmez d’abord votre clé d’accès.');
+    const code = C.newRecoveryCode();
+    const salt = C.b64.encode(C.randomBytes(16));
+    const iter = C.PBKDF2_ITER;
+    const rec = await C.deriveFromPassphrase(C.normalizeRecoveryCode(code), salt, iter);
+    const dekX = await C.unwrapDataKey(meta.wrappedKey, this._kekForRewrap, true);
+    const wrappedKey = await C.wrapDataKey(dekX, rec.kek);
+    const r = await this.api.req('recovery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ salt, iter, wrappedKey, authHash: rec.authHash }),
+    });
+    if (!r.ok) throw new ApiError(r.status, await Api.err(r));
+    this.hasRecovery = true;
+    return code;
+  }
+
+  // Ouvre le coffre avec la clé de secours ; l'interface demande ensuite une nouvelle clé d'accès.
+  async unlockWithRecovery(code) {
+    if (!navigator.onLine) throw new ApiError(0, 'Connexion requise pour utiliser la clé de secours.');
+    const meta = await this.remoteMeta();
+    if (!meta.configured) return { setup: true };
+    if (!meta.recovery) throw new ApiError(0, "Aucune clé de secours n'a été créée pour ce coffre.");
+    const { kek, authToken } = await C.deriveFromPassphrase(C.normalizeRecoveryCode(code), meta.recovery.salt, meta.recovery.iter);
+    this.api.token = authToken;
+    const r = await this.api.req('key');
+    if (!r.ok) {
+      this.api.token = null;
+      throw new ApiError(r.status, r.status === 401 ? 'Clé de secours incorrecte' : await Api.err(r));
+    }
+    const { wrappedKey } = await r.json();
+    try {
+      this.dek = await C.unwrapDataKey(wrappedKey, kek);
+    } catch {
+      this.api.token = null;
+      throw new ApiError(401, 'Clé de secours incorrecte');
+    }
+    this._kekForRewrap = kek;
+    this._rewrapMeta = { salt: meta.recovery.salt, iter: meta.recovery.iter, wrappedKey };
+    this.hasRecovery = true;
+    await this.loadLocal();
+    return { ok: true };
   }
 
   async verifyPassphrase(passphrase) {
@@ -290,6 +341,7 @@ export class Vault {
     this.dek = null;
     this.api.token = null;
     this._kekForRewrap = null;
+    this._rewrapMeta = null;
     this.state = emptyState();
     clearTimeout(this._timer);
     this.emit('locked');
