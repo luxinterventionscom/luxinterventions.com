@@ -707,6 +707,14 @@
   .roadmap-title { font-size: 1.05rem; font-weight: 700; color: var(--black); margin-bottom: 0.5rem; }
   .roadmap-desc { font-size: 0.875rem; color: var(--grey-600); line-height: 1.6; font-weight: 300; }
   .roadmap-features { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1rem; }
+  .roadmap-live { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.9rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--grey-200); }
+  .roadmap-live-pill { font-size: 0.72rem; font-weight: 700; padding: 0.3rem 0.8rem; border-radius: 50px; background: #E8F5EC; color: #1E7B3C; border: 1px solid #BFE3CB; white-space: nowrap; }
+  .roadmap-live-txt { font-size: 0.8rem; color: var(--grey-600); line-height: 1.5; }
+  .roadmap-live-txt a { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .roadmap-live-txt a:hover { text-decoration: underline; }
+  .app-feedback { margin-top: 1.5rem; font-size: 0.9rem; color: rgba(255,255,255,0.55); line-height: 1.6; }
+  .app-feedback a { color: var(--accent); font-weight: 600; text-decoration: none; }
+  .app-feedback a:hover { text-decoration: underline; }
   .roadmap-feature { font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 50px; background: var(--white); color: var(--grey-600); border: 1px solid var(--grey-200); }
   @media (max-width: 900px) { .portail-grid { grid-template-columns: 1fr; } }
 
@@ -1827,6 +1835,7 @@
           <span class="roadmap-feature">Tickets en ligne</span>
           <span class="roadmap-feature">Rapports mensuels</span>
         </div>
+        <div class="roadmap-live"><span class="roadmap-live-pill">● En service — phase de test en conditions réelles</span><span class="roadmap-live-txt">Une remarque, une contestation ou une idée ? Écrivez-nous : <a href="mailto:info@luxinterventions.com?subject=Portail%20LuxInterventions%20%E2%80%94%20avis%20%2F%20suggestion">info@luxinterventions.com</a></span></div>
       </div>
     </div>
 
@@ -1835,14 +1844,15 @@
       <div class="roadmap-content">
         <div class="roadmap-phase">Phase 3 — Septembre 2026 · Moyen terme</div>
         <div class="roadmap-title">Application Mobile LuxInterventions</div>
-        <div class="roadmap-desc">iOS &amp; Android. Notifications push pour urgences, suivi d'intervention en temps réel, signature électronique des rapports, messagerie directe. L'engagement "Coming Soon 2026" tenu.</div>
+        <div class="roadmap-desc">Disponible dès maintenant : installable sur iPhone et Android directement depuis le navigateur, sans passer par un store. Notifications push pour les urgences, suivi d'intervention en temps réel, messages et photos dans chaque demande. L'engagement "Coming Soon 2026" tenu.</div>
         <div class="roadmap-features">
           <span class="roadmap-feature">iOS &amp; Android</span>
           <span class="roadmap-feature">Notifications push</span>
           <span class="roadmap-feature">Suivi temps réel</span>
-          <span class="roadmap-feature">Signature électronique</span>
-          <span class="roadmap-feature">Chat intégré</span>
+          <span class="roadmap-feature">Messages &amp; photos</span>
+          <span class="roadmap-feature">Signature électronique · à venir</span>
         </div>
+        <div class="roadmap-live"><span class="roadmap-live-pill">● En service — phase de test en conditions réelles</span><span class="roadmap-live-txt">Une remarque, une contestation ou une idée ? Écrivez-nous : <a href="mailto:info@luxinterventions.com?subject=Portail%20LuxInterventions%20%E2%80%94%20avis%20%2F%20suggestion">info@luxinterventions.com</a></span></div>
       </div>
     </div>
 
@@ -1865,9 +1875,9 @@
   </div>
 </section>
 
-<!-- APP COMING SOON -->
+<!-- APP — EN SERVICE (PHASE DE TEST) -->
 <section class="app-section">
-  <div class="section-eyebrow">Bientôt disponible</div>
+  <div class="section-eyebrow">Disponible · Phase de test</div>
   <h2 class="app-title">L'application<br><em>LuxInterventions</em></h2>
   <p class="app-sub">Gérez vos demandes d'intervention, suivez vos rapports en temps réel et accédez à votre historique directement depuis votre téléphone.</p>
 
@@ -1881,10 +1891,11 @@
 
   <div class="app-badge">
     <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-      <path stroke-linecap="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
     </svg>
-    Application en cours de développement — Coming Soon 2026
+    Application en service — phase de test en conditions réelles
   </div>
+  <p class="app-feedback">Vous avez une remarque, une contestation ou une suggestion ?<br>Écrivez-nous à <a href="mailto:info@luxinterventions.com?subject=Portail%20LuxInterventions%20%E2%80%94%20avis%20%2F%20suggestion">info@luxinterventions.com</a> — chaque retour nous aide à améliorer l'application.</p>
 </section>
 
 <!-- CONTACT -->
