@@ -1,0 +1,69 @@
+/* Portail Gérance — couleurs LuxInterventions par-dessus la base commune (ares/app.css) */
+:root {
+  --accent: #d9622b;
+  --accent-soft: rgba(232, 114, 58, 0.12);
+  --accent-text: #ffffff;
+  --navy: #1b2e4b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { --accent: #f08a55; --accent-soft: rgba(240, 138, 85, 0.16); --accent-text: #111; }
+}
+.lock { background: radial-gradient(1200px 500px at 50% -10%, rgba(27, 46, 75, 0.18), transparent 70%), var(--bg); }
+.lock-logo { width: 88px; height: 88px; border-radius: 22px; display: block; margin: -6px auto 4px; box-shadow: 0 6px 24px rgba(15, 27, 45, 0.25); }
+.brand-mark { width: 36px; height: 36px; border-radius: 10px; flex: none; }
+.navbtn { position: relative; }
+.navbadge { position: absolute; top: 6px; left: calc(50% + 6px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--red-strong); color: #fff; font: 700 11px/18px var(--font); font-style: normal; text-align: center; }
+@media (min-width: 960px) { .navbadge { position: static; margin-left: auto; } }
+@media (max-width: 480px) { .hide-xs { display: none; } }
+
+.big-cta {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  padding: 18px 20px; border: 0; border-radius: var(--radius-lg);
+  background: var(--accent); color: var(--accent-text); text-align: left;
+  font: inherit; cursor: pointer; box-shadow: 0 8px 24px rgba(217, 98, 43, 0.28);
+}
+.big-cta .ic { width: 30px; height: 30px; stroke-width: 2.2; }
+.big-cta b { display: block; font-size: 17px; }
+.big-cta small { display: block; opacity: 0.85; font-size: 13px; margin-top: 2px; }
+
+.ticket-row .title { white-space: normal; }
+.ticket-row.is-urgent { background: var(--red-soft); }
+.urg-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.urg-urgent { background: #dc2626; box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.18); }
+.urg-24h { background: #f59e0b; }
+.urg-planifie { background: #16a34a; }
+.meta .ic { width: 14px; height: 14px; vertical-align: -2px; margin-right: 2px; }
+
+.urg-choices { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+@media (max-width: 420px) { .urg-choices { grid-template-columns: 1fr; } }
+.urg-choice { position: relative; }
+.urg-choice input { position: absolute; opacity: 0; inset: 0; margin: 0; min-height: 0; cursor: pointer; }
+.urg-choice span { display: block; padding: 12px; border: 2px solid var(--border); border-radius: 12px; background: var(--surface); font-size: 15px; }
+.urg-choice small { display: block; color: var(--text-2); font-size: 12px; margin-top: 2px; }
+.urg-choice input:checked + span { border-color: var(--accent); background: var(--accent-soft); }
+.urg-choice.urg-urgent input:checked + span { border-color: #dc2626; background: rgba(220, 38, 38, 0.08); }
+.urg-choice input:focus-visible + span { box-shadow: 0 0 0 3px var(--accent-soft); }
+
+.ticket-head { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.stepper { list-style: none; display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin: 0 0 14px; }
+.stepper li { display: flex; flex-direction: column; gap: 6px; font-size: 11px; font-weight: 600; color: var(--text-3); }
+.stepper i { height: 6px; border-radius: 3px; background: var(--surface-3); }
+.stepper li.done i { background: var(--green); }
+.stepper li.now i { background: var(--accent); }
+.stepper li.now, .stepper li.done { color: var(--text); }
+@media (max-width: 420px) { .stepper span { font-size: 10px; } }
+
+.photos { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; margin-top: 10px; }
+.photos a { display: block; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--surface-2); }
+.photos img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.timeline { border-left: 2px solid var(--border); margin-left: 6px; padding-left: 14px; }
+.tl { position: relative; padding: 0 0 14px; }
+.tl::before { content: ''; position: absolute; left: -21px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface-3); border: 2px solid var(--surface); }
+.tl.status::before { background: var(--accent); }
+.tl.create::before { background: var(--text-3); }
+.tl.staff.comment::before { background: var(--navy); }
+.tl-head { font-size: 13px; }
+.tl-text { white-space: pre-wrap; background: var(--surface-2); border-radius: 10px; padding: 8px 10px; margin-top: 6px; font-size: 14px; }
+.tl.staff .tl-text { background: var(--accent-soft); }
+.comment-box { margin-top: 8px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }

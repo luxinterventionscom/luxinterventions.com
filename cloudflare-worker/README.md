@@ -75,6 +75,22 @@ Importante:
 - File su R2: `ares/meta.json`, `ares/data.bin`, `ares/files/<id>` — tutti
   illeggibili senza la chiave.
 
+## 6. Portail Gérance / Syndic (portail.html)
+
+Database D1 per gli account, le residenze e le richieste d'intervento:
+
+1. **Storage & databases** → **D1 SQL database** → **Create** →
+   nome `luxinterventions-geranceportail`.
+2. Worker → **Bindings** → **Add binding** → **D1 database**:
+   - Variable name: `DB`
+   - Database: `luxinterventions-geranceportail`
+3. Worker → **Variables and Secrets** → Key `PORTAIL_SETUP_CODE`,
+   Value a scelta, ✅ **Secret** → serve una sola volta per creare il primo
+   amministratore su `https://luxinterventions.com/portail.html`.
+
+Le tabelle si creano da sole al primo utilizzo. Le foto vanno in R2
+(`portail/photos/…`), le chiavi per le notifiche push si generano da sole.
+
 ## Note
 
 - Il Worker accetta chiamate solo dall'origine `https://luxinterventions.com`
