@@ -234,6 +234,7 @@ export class Vault {
     const r = await this.api.req('session', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ force }) });
     const j = await r.json().catch(() => ({}));
     if (r.status === 409) throw new ApiError(409, 'session-busy', j);
+    if (r.status === 404) throw new ApiError(404, 'Le serveur (Worker Cloudflare) n’est pas à jour : collez la dernière version de hit-counter.js puis « Deploy ».');
     if (!r.ok) throw new ApiError(r.status, j.error || 'Erreur ' + r.status);
     return j;
   }
