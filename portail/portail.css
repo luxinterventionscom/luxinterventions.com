@@ -67,3 +67,14 @@
 .tl-text { white-space: pre-wrap; background: var(--surface-2); border-radius: 10px; padding: 8px 10px; margin-top: 6px; font-size: 14px; }
 .tl.staff .tl-text { background: var(--accent-soft); }
 .comment-box { margin-top: 8px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+
+.demo-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 16px; background: #fff7e6; color: #92400e; border-bottom: 1px solid #f5d9a8; font-size: 14px; }
+.demo-bar .grow { flex: 1; min-width: 180px; }
+.demo-switch { display: flex; gap: 6px; }
+.demo-switch .chip { font-size: 13px; padding: 5px 10px; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .demo-bar { background: #2a2113; color: #fbbf24; border-color: #4a3a1c; } }
+.guide-step { display: flex; align-items: center; gap: 10px; padding: 7px 0; font-size: 14px; }
+.guide-step + .guide-step { border-top: 1px solid var(--border); }
+.guide-num { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--surface-2); color: var(--text-2); flex: none; }
+.guide-step.ok { color: var(--text-3); }
+.guide-step.ok .guide-num { background: var(--green-soft); color: var(--green); }
