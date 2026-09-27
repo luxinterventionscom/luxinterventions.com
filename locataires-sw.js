@@ -1,7 +1,7 @@
 // Service worker Ares : met l'application en cache pour l'ouvrir hors ligne.
 // Les données ne passent jamais par ce cache (elles sont chiffrées dans IndexedDB
 // et les appels à l'API ne sont pas interceptés).
-const CACHE = 'ares-shell-v2.5.1';
+const CACHE = 'ares-shell-v2.6.0';
 const SHELL = [
   '/locataires.html',
   '/ares/app.css',
@@ -9,9 +9,10 @@ const SHELL = [
   '/ares/store.js',
   '/ares/crypto.js',
   '/locataires.webmanifest',
-  '/favicon-32x32.png',
-  '/apple-touch-icon.png',
-  '/android-chrome-192x192.png',
+  '/ares/icons/favicon-32.png',
+  '/ares/icons/ares-96.png',
+  '/ares/icons/ares-192.png',
+  '/ares/icons/apple-touch-icon.png',
 ];
 
 self.addEventListener('install', (e) => {

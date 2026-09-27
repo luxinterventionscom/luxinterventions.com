@@ -170,12 +170,10 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
   display: flex; flex-direction: column; gap: 16px;
 }
 .lock-logo {
-  width: 56px; height: 56px; border-radius: 16px;
-  display: grid; place-items: center;
-  background: var(--accent); color: var(--accent-text);
-  margin: 0 auto 4px;
+  width: 96px; height: 96px; border-radius: 50%;
+  display: block; margin: -8px auto 4px;
+  box-shadow: 0 6px 24px rgba(15, 27, 45, 0.28);
 }
-.lock-logo .ic { width: 28px; height: 28px; stroke-width: 2; }
 .lock-head { text-align: center; }
 .lock-head p { color: var(--text-2); font-size: 14px; margin-top: 6px; }
 .lock-err { color: var(--red-strong); font-size: 14px; text-align: center; min-height: 1.2em; }
@@ -205,8 +203,7 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
   border-bottom: 1px solid var(--border);
 }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; margin-right: auto; }
-.brand-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--accent); color: var(--accent-text); display: grid; place-items: center; }
-.brand-mark .ic { width: 18px; height: 18px; stroke-width: 2.2; }
+.brand-mark { width: 36px; height: 36px; border-radius: 50%; flex: none; }
 .brand small { display: block; font-size: 11px; font-weight: 500; color: var(--text-3); letter-spacing: 0.02em; }
 .sync {
   display: inline-flex; align-items: center; gap: 7px;

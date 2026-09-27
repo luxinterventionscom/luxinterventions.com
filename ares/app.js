@@ -2,7 +2,7 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.5.1';
+const VERSION = '2.6.0';
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
 const $ = (s, r = document) => r.querySelector(s);
@@ -321,7 +321,7 @@ function renderLock(mode, error = '') {
   lockEl.hidden = false;
   const legacy = legacyLocal();
   const head = html`
-    <div class="lock-logo">${icon('lock')}</div>
+    <img class="lock-logo" src="/ares/icons/ares-192.png" alt="Ares Invest" width="96" height="96">
     <div class="lock-head"><h1>Ares Invest</h1><p>Gestion locataires · Luxembourg</p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>`;
 
@@ -558,14 +558,14 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><span class="brand-mark">${icon('building')}</span><span>Ares Invest<small>Gestion locataires</small></span></div>
+      <div class="brand"><img class="brand-mark" src="/ares/icons/ares-96.png" alt="" width="36" height="36"><span>Ares Invest<small>Gestion locataires</small></span></div>
       ${NAV.map(navBtn)}
       <div class="spacer"></div>
       <button class="navbtn" data-action="lock">${icon('lock')}<span>Verrouiller</span></button>
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><span class="brand-mark">${icon('building')}</span><span>Ares Invest</span></div>
+        <div class="brand"><img class="brand-mark" src="/ares/icons/ares-96.png" alt="" width="36" height="36"><span>Ares Invest</span></div>
         <button class="sync" id="sync" data-action="sync-now" data-s="idle"><i></i><span>…</span></button>
         <button class="btn icon ghost" data-action="lock" aria-label="Verrouiller" title="Verrouiller">${icon('lock')}</button>
       </header>
