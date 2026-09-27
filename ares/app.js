@@ -3,6 +3,7 @@ import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js'
 import { passphraseStrength } from './crypto.js';
 
 const VERSION = '2.6.0';
+const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
 const $ = (s, r = document) => r.querySelector(s);
@@ -1426,9 +1427,9 @@ const SHEETS = {
         <div class="actions" style="margin-top:14px">
           <button class="btn" data-action="copy-recovery">${icon('file')} Copier</button>
           <button class="btn" data-action="print-recovery">${icon('download')} Imprimer</button>
-          <a class="btn" href="mailto:info@luxinterventions.com?subject=${encodeURIComponent('Ares Invest — clé de secours')}&body=${body}">${icon('mail')} Email</a>
+          <a class="btn" href="mailto:${MAIL}?subject=${encodeURIComponent('Ares Invest — clé de secours')}&body=${body}">${icon('mail')} Email</a>
         </div>
-        <p class="tiny muted">Le bouton Email prépare un message vers info@luxinterventions.com. Pratique, mais toute personne qui accède à cette messagerie pourrait ouvrir le coffre : le papier reste plus sûr.</p>`,
+        <p class="tiny muted">Le bouton Email prépare un message vers ${MAIL}. Pratique, mais toute personne qui accède à cette messagerie pourrait ouvrir le coffre : le papier reste plus sûr.</p>`,
       foot: html`<button class="btn primary" data-action="close-sheet">J'ai noté ma clé de secours</button>`,
     };
   },

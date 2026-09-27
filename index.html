@@ -1644,7 +1644,7 @@
       </div>
       <div class="info-row">
         <span class="info-key">Email</span>
-        <span class="info-val" style="font-size:0.82rem"><a href="#contact" data-m="moc.snoitnevretnixul@ofni"><span class="m-addr">info (at) luxinterventions.com</span></a></span>
+        <span class="info-val" style="font-size:0.82rem"><a href="#contact" data-m><span class="m-addr">📧 Afficher l’email</span></a></span>
       </div>
     </div>
   </div>
@@ -1799,7 +1799,7 @@
           <span class="roadmap-feature">Tickets en ligne</span>
           <span class="roadmap-feature">Rapports mensuels</span>
         </div>
-        <div class="roadmap-live"><span class="roadmap-live-pill">● En service — phase de test en conditions réelles</span><span class="roadmap-live-txt">Une remarque, une contestation ou une idée ? Écrivez-nous : <a href="#contact" data-m="moc.snoitnevretnixul@ofni" data-s="Portail%20LuxInterventions%20%E2%80%94%20avis%20%2F%20suggestion"><span class="m-addr">info (at) luxinterventions.com</span></a></span></div>
+        <div class="roadmap-live"><span class="roadmap-live-pill">● En service — phase de test en conditions réelles</span><span class="roadmap-live-txt">Une remarque, une contestation ou une idée ? Écrivez-nous : <a href="#contact" data-m data-s="Portail%20LuxInterventions%20%E2%80%94%20avis%20%2F%20suggestion"><span class="m-addr">📧 Afficher l’email</span></a></span></div>
       </div>
     </div>
 
@@ -1816,7 +1816,7 @@
           <span class="roadmap-feature">Messages &amp; photos</span>
           <span class="roadmap-feature">Signature électronique · à venir</span>
         </div>
-        <div class="roadmap-live"><span class="roadmap-live-pill">● En service — phase de test en conditions réelles</span><span class="roadmap-live-txt">Une remarque, une contestation ou une idée ? Écrivez-nous : <a href="#contact" data-m="moc.snoitnevretnixul@ofni" data-s="Portail%20LuxInterventions%20%E2%80%94%20avis%20%2F%20suggestion"><span class="m-addr">info (at) luxinterventions.com</span></a></span></div>
+        <div class="roadmap-live"><span class="roadmap-live-pill">● En service — phase de test en conditions réelles</span><span class="roadmap-live-txt">Une remarque, une contestation ou une idée ? Écrivez-nous : <a href="#contact" data-m data-s="Portail%20LuxInterventions%20%E2%80%94%20avis%20%2F%20suggestion"><span class="m-addr">📧 Afficher l’email</span></a></span></div>
       </div>
     </div>
 
@@ -1859,7 +1859,7 @@
     </svg>
     Application en service — phase de test en conditions réelles
   </div>
-  <p class="app-feedback">Vous avez une remarque, une contestation ou une suggestion ?<br>Écrivez-nous à <a href="#contact" data-m="moc.snoitnevretnixul@ofni" data-s="Portail%20LuxInterventions%20%E2%80%94%20avis%20%2F%20suggestion"><span class="m-addr">info (at) luxinterventions.com</span></a> — chaque retour nous aide à améliorer l'application.</p>
+  <p class="app-feedback">Vous avez une remarque, une contestation ou une suggestion ?<br>Écrivez-nous à <a href="#contact" data-m data-s="Portail%20LuxInterventions%20%E2%80%94%20avis%20%2F%20suggestion"><span class="m-addr">📧 Afficher l’email</span></a> — chaque retour nous aide à améliorer l'application.</p>
 </section>
 
 <!-- CONTACT -->
@@ -1878,11 +1878,11 @@
         </div>
       </a>
 
-      <a href="#contact" data-m="moc.snoitnevretnixul@ofni" class="contact-card">
+      <a href="#contact" data-m class="contact-card">
         <div class="contact-card-icon" style="background:#EBF3FB; font-size:1.4rem">✉️</div>
         <div>
           <div class="contact-card-title">Email</div>
-          <div class="contact-card-value"><span class="m-addr">info (at) luxinterventions.com</span></div>
+          <div class="contact-card-value"><span class="m-addr">📧 Afficher l’email</span></div>
         </div>
       </a>
 
@@ -2049,7 +2049,7 @@
     );
 
     // Open mailto (will be replaced by backend API in production)
-    window.location.href = 'mailto:' + ['info', 'luxinterventions.com'].join('@') + '?subject=' + subject + '&body=' + body;
+    window.luxMailto('?subject=' + subject + '&body=' + body);
 
     // Show success after short delay
     setTimeout(() => {
@@ -2266,7 +2266,7 @@
       '=== Envoyé depuis luxinterventions.com ==='
     );
 
-    window.location.href = 'mailto:' + ['info', 'luxinterventions.com'].join('@') + '?subject=' + subject + '&body=' + body;
+    window.luxMailto('?subject=' + subject + '&body=' + body);
 
     setTimeout(() => {
       document.getElementById('reportForm').style.display = 'none';
