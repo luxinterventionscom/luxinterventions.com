@@ -855,6 +855,11 @@
   .photo-slot.filled .photo-slot-icon { display: none; }
   .photo-slot-status { font-size: 0.68rem; color: var(--grey-400); margin-top: 0.2rem; }
 
+  .mail-go { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+  .mail-go:hover { text-decoration: underline; }
+  #email { scroll-margin-top: 120px; }
+  #email:target { box-shadow: 0 0 0 3px var(--accent); animation: mailPulse 1.2s ease 2; }
+  @keyframes mailPulse { 50% { box-shadow: 0 0 0 7px rgba(232,114,58,0.25); } }
   .modal-privacy { font-size: 0.75rem; color: var(--grey-400); margin: 0.75rem 0 0; text-align: center; }
   .modal-privacy a, .modal-checkbox-consent a { color: var(--accent); }
   .modal-checkbox-consent {
@@ -1644,7 +1649,7 @@
       </div>
       <div class="info-row">
         <span class="info-key">Email</span>
-        <span class="info-val" style="font-size:0.82rem"><a href="#contact" data-m><span class="m-addr">📧 Afficher l’email</span></a></span>
+        <span class="info-val" style="font-size:0.82rem"><a href="#email" class="mail-go">📧 Nous écrire</a></span>
       </div>
     </div>
   </div>
@@ -1799,7 +1804,7 @@
           <span class="roadmap-feature">Tickets en ligne</span>
           <span class="roadmap-feature">Rapports mensuels</span>
         </div>
-        <div class="roadmap-live"><span class="roadmap-live-pill">● En service — phase de test en conditions réelles</span><span class="roadmap-live-txt">Une remarque, une contestation ou une idée ? Écrivez-nous : <a href="#contact" data-m data-s="Portail%20LuxInterventions%20%E2%80%94%20avis%20%2F%20suggestion"><span class="m-addr">📧 Afficher l’email</span></a></span></div>
+        <div class="roadmap-live"><span class="roadmap-live-pill">● En service — phase de test en conditions réelles</span><span class="roadmap-live-txt">Une remarque, une contestation ou une idée ? Écrivez-nous : <a href="#email" class="mail-go">📧 Nous écrire</a></span></div>
       </div>
     </div>
 
@@ -1816,7 +1821,7 @@
           <span class="roadmap-feature">Messages &amp; photos</span>
           <span class="roadmap-feature">Signature électronique · à venir</span>
         </div>
-        <div class="roadmap-live"><span class="roadmap-live-pill">● En service — phase de test en conditions réelles</span><span class="roadmap-live-txt">Une remarque, une contestation ou une idée ? Écrivez-nous : <a href="#contact" data-m data-s="Portail%20LuxInterventions%20%E2%80%94%20avis%20%2F%20suggestion"><span class="m-addr">📧 Afficher l’email</span></a></span></div>
+        <div class="roadmap-live"><span class="roadmap-live-pill">● En service — phase de test en conditions réelles</span><span class="roadmap-live-txt">Une remarque, une contestation ou une idée ? Écrivez-nous : <a href="#email" class="mail-go">📧 Nous écrire</a></span></div>
       </div>
     </div>
 
@@ -1859,7 +1864,7 @@
     </svg>
     Application en service — phase de test en conditions réelles
   </div>
-  <p class="app-feedback">Vous avez une remarque, une contestation ou une suggestion ?<br>Écrivez-nous à <a href="#contact" data-m data-s="Portail%20LuxInterventions%20%E2%80%94%20avis%20%2F%20suggestion"><span class="m-addr">📧 Afficher l’email</span></a> — chaque retour nous aide à améliorer l'application.</p>
+  <p class="app-feedback">Vous avez une remarque, une contestation ou une suggestion ?<br>Écrivez-nous à <a href="#email" class="mail-go">📧 Nous écrire</a> — chaque retour nous aide à améliorer l'application.</p>
 </section>
 
 <!-- CONTACT -->
@@ -1878,7 +1883,7 @@
         </div>
       </a>
 
-      <a href="#contact" data-m class="contact-card">
+      <a href="#email" id="email" data-m data-s="Contact%20LuxInterventions" class="contact-card">
         <div class="contact-card-icon" style="background:#EBF3FB; font-size:1.4rem">✉️</div>
         <div>
           <div class="contact-card-title">Email</div>
