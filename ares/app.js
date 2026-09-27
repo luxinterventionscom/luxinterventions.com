@@ -2,7 +2,7 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.5.0';
+const VERSION = '2.5.1';
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
 const $ = (s, r = document) => r.querySelector(s);
