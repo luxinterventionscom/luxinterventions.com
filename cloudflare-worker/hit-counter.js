@@ -548,9 +548,12 @@ async function handlePortail(request, env, url, headers, ctx) {
       return json({ configured: n.n > 0, iter: PTL_ITER });
     }
 
-    if ((await ptlFailures(env, ip)) >= PTL_MAX_FAILS) fail(429, "Trop de tentatives. Réessayez dans 15 minutes.");
+    // Limite des tentatives : seulement sur les routes sans session (connexion, invitation, configuration),
+    // pour ne pas bloquer les collègues déjà connectés derrière la même adresse IP.
+    const guard = async () => { if ((await ptlFailures(env, ip)) >= PTL_MAX_FAILS) fail(429, "Trop de tentatives. Réessayez dans 15 minutes."); };
 
     if (path === "setup" && method === "POST") {
+      await guard();
       const b = await body();
       if (!env.PORTAIL_SETUP_CODE) fail(503, "PORTAIL_SETUP_CODE manquant dans le Worker");
       if (clean(b.setupCode) !== env.PORTAIL_SETUP_CODE) { await ptlRecordFailure(env, ip); fail(403, "Code de configuration incorrect"); }
@@ -570,6 +573,7 @@ async function handlePortail(request, env, url, headers, ctx) {
     }
 
     if (path === "login" && method === "POST") {
+      await guard();
       const b = await body();
       const email = clean(b.email, 200).toLowerCase();
       if ((await ptlFailures(env, "mail:" + email)) >= PTL_MAX_FAILS) fail(429, "Compte temporairement bloqué. Réessayez dans 15 minutes.");
@@ -591,6 +595,7 @@ async function handlePortail(request, env, url, headers, ctx) {
 
     const inviteMatch = path.match(/^invite\/([0-9a-f]{64})$/);
     if (inviteMatch) {
+      await guard();
       const u = await env.DB.prepare("SELECT u.*, o.name AS org_name FROM users u LEFT JOIN orgs o ON o.id = u.org_id WHERE invite_hash = ?").bind(await sha256Hex(inviteMatch[1])).first();
       if (!u || u.invite_expires < now) { await ptlRecordFailure(env, ip); fail(404, "Lien d'invitation invalide ou expiré. Demandez un nouveau lien."); }
       if (method === "GET") return json({ name: u.name, email: u.email, org: u.org_name || "LuxInterventions", iter: PTL_ITER });
