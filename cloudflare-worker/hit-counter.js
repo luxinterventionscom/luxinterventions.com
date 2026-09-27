@@ -33,6 +33,8 @@ const ALLOWED_ORIGIN = "https://luxinterventions.com";
 const ALLOWED_ORIGINS = [ALLOWED_ORIGIN, "https://www.luxinterventions.com"];
 const KV_KEY = "total_views";
 const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8MB — il browser comprime prima di inviare
+const UPLOAD_TYPES = /^image\/(jpeg|png|webp|heic|heif)$/; // niente SVG/HTML: non devono poter eseguire codice
+const UPLOAD_MAX_PER_HOUR = 30; // upload pubblici per indirizzo IP e per ora
 
 function corsHeaders(origin) {
   return {
@@ -70,7 +72,8 @@ export default {
     if (url.pathname === "/api/hits" && request.method === "GET") {
       const current = parseInt((await env.HITS.get(KV_KEY)) || "0", 10);
       const next = current + 1;
-      await env.HITS.put(KV_KEY, String(next));
+      // Se la quota giornaliera di scritture KV è esaurita il contatore resta fermo, senza errore
+      try { await env.HITS.put(KV_KEY, String(next)); } catch { /* quota KV */ }
       return new Response(JSON.stringify({ count: next }), {
         headers: { "Content-Type": "application/json", ...headers },
       });
@@ -80,8 +83,8 @@ export default {
     const uploadMatch = url.pathname.match(/^\/api\/upload\/([a-zA-Z0-9-]{8,64})\/([1-3])$/);
     if (uploadMatch && request.method === "PUT") {
       const [, requestId, index] = uploadMatch;
-      const contentType = request.headers.get("Content-Type") || "";
-      if (!contentType.startsWith("image/")) {
+      const contentType = (request.headers.get("Content-Type") || "").toLowerCase();
+      if (!UPLOAD_TYPES.test(contentType)) {
         return new Response(JSON.stringify({ error: "Type de fichier non autorisé" }), {
           status: 415,
           headers: { "Content-Type": "application/json", ...headers },
@@ -94,9 +97,26 @@ export default {
           headers: { "Content-Type": "application/json", ...headers },
         });
       }
-      const ext = (contentType.split("/")[1] || "jpg").replace("jpeg", "jpg");
+      // Limite per IP: evita che qualcuno usi il Worker come deposito di file
+      const rlKey = "up-rl:" + clientIp(request);
+      const used = parseInt((await env.HITS.get(rlKey)) || "0", 10);
+      if (used >= UPLOAD_MAX_PER_HOUR) {
+        return new Response(JSON.stringify({ error: "Trop d'envois. Réessayez plus tard." }), {
+          status: 429,
+          headers: { "Content-Type": "application/json", ...headers },
+        });
+      }
+      try { await env.HITS.put(rlKey, String(used + 1), { expirationTtl: 3600 }); } catch { /* quota KV */ }
+      const ext = contentType.split("/")[1].replace("jpeg", "jpg");
       const key = `reports/${requestId}/${index}.${ext}`;
-      await env.PHOTOS.put(key, body, { httpMetadata: { contentType } });
+      // Una foto già caricata non può essere sostituita da altri
+      const stored = await env.PHOTOS.put(key, body, { httpMetadata: { contentType }, onlyIf: { etagDoesNotMatch: "*" } });
+      if (!stored) {
+        return new Response(JSON.stringify({ error: "Photo déjà envoyée" }), {
+          status: 409,
+          headers: { "Content-Type": "application/json", ...headers },
+        });
+      }
       const photoUrl = `${url.origin}/photos/${requestId}/${index}.${ext}`;
       return new Response(JSON.stringify({ url: photoUrl }), {
         headers: { "Content-Type": "application/json", ...headers },
@@ -112,8 +132,10 @@ export default {
       return new Response(object.body, {
         headers: {
           "Content-Type": object.httpMetadata?.contentType || "application/octet-stream",
-          "Cache-Control": "public, max-age=31536000, immutable",
           ...headers,
+          "Cache-Control": "public, max-age=31536000, immutable",
+          "X-Content-Type-Options": "nosniff",
+          "Content-Security-Policy": "default-src 'none'; img-src 'self'; sandbox",
         },
       });
     }
@@ -198,7 +220,7 @@ async function aresFails(env, ip) {
 
 async function aresRecordFail(env, ip) {
   const n = (await aresFails(env, ip)) + 1;
-  await env.HITS.put("ares-rl:" + ip, String(n), { expirationTtl: ARES_LOCK_SECONDS });
+  try { await env.HITS.put("ares-rl:" + ip, String(n), { expirationTtl: ARES_LOCK_SECONDS }); } catch { /* quota KV */ }
 }
 
 async function aresMeta(env) {
@@ -440,7 +462,7 @@ const fail = (status, message) => { throw new PtlError(status, message); };
 
 async function ptlFailures(env, key) { return parseInt((await env.HITS.get("ptl-rl:" + key)) || "0", 10); }
 async function ptlRecordFailure(env, key) {
-  await env.HITS.put("ptl-rl:" + key, String((await ptlFailures(env, key)) + 1), { expirationTtl: 900 });
+  try { await env.HITS.put("ptl-rl:" + key, String((await ptlFailures(env, key)) + 1), { expirationTtl: 900 }); } catch { /* quota KV */ }
 }
 
 // Sale fittizio e stabile per le email sconosciute (non rivela quali account esistono)
@@ -508,6 +530,15 @@ async function vapidAuth(env, endpoint) {
   return `vapid t=${unsigned}.${b64url(sig)}, k=${keys.publicKey}`;
 }
 
+// Solo i servizi push dei browser (Chrome/Android, Firefox, Safari/iPhone, Edge): il Worker non invia nulla altrove
+const PTL_PUSH_HOSTS = [/^fcm\.googleapis\.com$/, /^android\.googleapis\.com$/, /(^|\.)push\.services\.mozilla\.com$/, /(^|\.)push\.apple\.com$/, /(^|\.)notify\.windows\.com$/];
+function ptlPushHostOk(endpoint) {
+  try {
+    const u = new URL(String(endpoint || ""));
+    return u.protocol === "https:" && !u.port && PTL_PUSH_HOSTS.some((re) => re.test(u.hostname));
+  } catch { return false; }
+}
+
 // Invia una notifica agli utenti scelti (where: clausola SQL su users "u")
 async function ptlNotify(env, where, binds, message, urgent) {
   const subs = await env.DB.prepare(
@@ -515,6 +546,7 @@ async function ptlNotify(env, where, binds, message, urgent) {
   ).bind(...binds).all();
   const payload = JSON.stringify(message);
   await Promise.all((subs.results || []).map(async (s) => {
+    if (!ptlPushHostOk(s.endpoint)) return;
     try {
       const body = await encryptPush(payload, s.p256dh, s.auth);
       const r = await fetch(s.endpoint, {
@@ -556,7 +588,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       await guard();
       const b = await body();
       if (!env.PORTAIL_SETUP_CODE) fail(503, "PORTAIL_SETUP_CODE manquant dans le Worker");
-      if (clean(b.setupCode) !== env.PORTAIL_SETUP_CODE) { await ptlRecordFailure(env, ip); fail(403, "Code de configuration incorrect"); }
+      if (!safeEqual(await sha256Hex(clean(b.setupCode)), await sha256Hex(env.PORTAIL_SETUP_CODE))) { await ptlRecordFailure(env, ip); fail(403, "Code de configuration incorrect"); }
       const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
       if (n.n > 0) fail(409, "Déjà configuré");
       const email = clean(b.email, 200).toLowerCase();
@@ -647,7 +679,7 @@ async function handlePortail(request, env, url, headers, ctx) {
     // ── Notifiche push ──
     if (path === "push" && method === "POST") {
       const b = await body();
-      if (!/^https:\/\//.test(b.endpoint || "") || !b.keys || !b.keys.p256dh || !b.keys.auth) fail(400, "Abonnement invalide");
+      if (!ptlPushHostOk(b.endpoint) || !b.keys || !b.keys.p256dh || !b.keys.auth) fail(400, "Abonnement invalide");
       await env.DB.prepare("INSERT OR REPLACE INTO push_subs (endpoint, user_id, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?)")
         .bind(clean(b.endpoint, 1000), me.id, clean(b.keys.p256dh, 200), clean(b.keys.auth, 100), now).run();
       return json({ ok: true });

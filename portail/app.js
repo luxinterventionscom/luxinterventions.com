@@ -239,7 +239,8 @@ function renderLock(mode, data = {}) {
       <label class="field">Mot de passe ${pwField('pass', 'Au moins 10 caractères', 'new-password')}</label>
       <label class="field">Confirmer ${pwField('pass2', 'Retapez le mot de passe', 'new-password')}</label>
       <div class="lock-err" role="alert"></div>
-      <button class="btn primary block" type="submit">Activer mon accès</button></form>`);
+      <button class="btn primary block" type="submit">Activer mon accès</button>
+      <p class="tiny muted" style="text-align:center">En activant votre accès, vous confirmez avoir pris connaissance de la <a href="/confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a>.</p></form>`);
     return;
   }
   if (mode === 'invalid-invite') {
@@ -254,6 +255,7 @@ function renderLock(mode, data = {}) {
     <button class="btn primary block" type="submit">Se connecter</button>
     <p class="tiny muted" style="text-align:center">Première fois ? Ouvrez le <b>lien personnel</b> reçu par email ou WhatsApp : vous y choisirez votre mot de passe.<br>Mot de passe oublié ? Demandez un nouveau lien à votre responsable ou à LuxInterventions.</p>
     <button class="btn ghost block" type="button" data-action="demo-start">${icon('eye')} Découvrir le portail en mode démo</button>
+    <p class="tiny muted" style="text-align:center"><a href="/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> · <a href="/mentions-legales.html" target="_blank" rel="noopener">Mentions légales</a></p>
   </form>`);
   setTimeout(() => lockEl.querySelector('[name=email]')?.focus(), 50);
 }

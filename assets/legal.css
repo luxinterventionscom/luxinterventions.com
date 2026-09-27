@@ -1,0 +1,55 @@
+/* Pages légales (mentions légales, confidentialité) — même palette que le site */
+:root {
+  --navy: #1B2E4B;
+  --accent: #E8723A;
+  --ink: #1A1A1A;
+  --grey-600: #5C5852;
+  --grey-200: #E4E1DC;
+  --bg: #F7F6F3;
+  --white: #FFFFFF;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.65;
+}
+a { color: var(--accent); }
+.top {
+  background: var(--white);
+  border-bottom: 1px solid var(--grey-200);
+  padding: 1rem 16px;
+}
+.top-inner { max-width: 860px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.logo { font-family: 'DM Serif Display', Georgia, serif; font-size: 1.35rem; color: var(--navy); text-decoration: none; }
+.logo span { color: var(--accent); }
+.back { font-size: 0.9rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
+main { max-width: 860px; margin: 0 auto; padding: 2.5rem 16px 4rem; }
+.eyebrow { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent); }
+h1 { font-family: 'DM Serif Display', Georgia, serif; font-weight: 400; font-size: clamp(2rem, 6vw, 2.8rem); line-height: 1.1; margin: 0.4rem 0 0.6rem; color: var(--navy); }
+.updated { color: var(--grey-600); font-size: 0.9rem; margin: 0 0 2rem; }
+.card { background: var(--white); border-radius: 16px; padding: 1.5rem clamp(1.1rem, 4vw, 2rem); margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+h2 { font-size: 1.15rem; margin: 0 0 0.75rem; color: var(--navy); }
+h3 { font-size: 1rem; margin: 1.25rem 0 0.4rem; }
+p, li { color: #3A3733; }
+p { margin: 0 0 0.75rem; }
+ul { margin: 0 0 0.75rem; padding-left: 1.2rem; }
+li { margin-bottom: 0.35rem; }
+dl { display: grid; grid-template-columns: minmax(120px, 190px) 1fr; gap: 0.45rem 1rem; margin: 0; }
+dt { color: var(--grey-600); font-weight: 600; font-size: 0.9rem; }
+dd { margin: 0; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 560px; }
+th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.5rem; border-bottom: 1px solid var(--grey-200); }
+th { color: var(--navy); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.note { background: #FFF6EF; border-left: 3px solid var(--accent); padding: 0.9rem 1rem; border-radius: 8px; font-size: 0.93rem; }
+footer { text-align: center; color: var(--grey-600); font-size: 0.85rem; padding: 0 16px 2.5rem; }
+footer a { color: var(--grey-600); }
+@media (max-width: 560px) {
+  dl { grid-template-columns: 1fr; gap: 0.1rem; }
+  dd { margin-bottom: 0.6rem; }
+}

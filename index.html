@@ -8,7 +8,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<link href="/assets/fonts/fonts.css" rel="stylesheet">
 <style>
   :root {
     --white: #FFFFFF;
@@ -855,6 +855,8 @@
   .photo-slot.filled .photo-slot-icon { display: none; }
   .photo-slot-status { font-size: 0.68rem; color: var(--grey-400); margin-top: 0.2rem; }
 
+  .modal-privacy { font-size: 0.75rem; color: var(--grey-400); margin: 0.75rem 0 0; text-align: center; }
+  .modal-privacy a, .modal-checkbox-consent a { color: var(--accent); }
   .modal-checkbox-consent {
     display: flex; align-items: flex-start; gap: 0.6rem;
     margin-top: 1.25rem; font-size: 0.8rem; color: var(--grey-600); line-height: 1.4;
@@ -986,8 +988,8 @@
         <div class="stat-label">Croissance 2025</div>
       </div>
       <div class="stat-item">
-        <div class="stat-value">+400</div>
-        <div class="stat-label">Appartements / 250 résidences</div>
+        <div class="stat-value">+4 000</div>
+        <div class="stat-label">Appartements / 1 000 immeubles</div>
       </div>
       <div class="stat-item navy">
         <div class="stat-value">2018</div>
@@ -1009,8 +1011,8 @@
       <div class="number-label">Catégories de services</div>
     </div>
     <div class="number-item reveal" style="transition-delay:0.1s">
-      <div class="number-value"><span>+400</span></div>
-      <div class="number-label">Appartements / 250 résidences</div>
+      <div class="number-value"><span>+4 000</span></div>
+      <div class="number-label">Appartements / 1 000 immeubles</div>
     </div>
     <div class="number-item reveal" style="transition-delay:0.2s">
       <div class="number-value"><span>↗</span></div>
@@ -1249,6 +1251,7 @@
           </div>
         </div>
 
+        <p class="modal-privacy">Vos données servent uniquement à traiter votre demande. <a href="/confidentialite.html" target="_blank" rel="noopener">Politique de confidentialité</a></p>
         <button class="modal-submit" id="modalSubmitBtn" onclick="submitForm()">
           <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 7V5z"/></svg>
           Envoyer la demande a la centrale
@@ -1495,7 +1498,7 @@
 
         <label class="modal-checkbox-consent">
           <input type="checkbox" id="rep_f_consent">
-          J'accepte d'être contacté(e) par LuxInterventions concernant ma demande de rapport d'expert.
+          J'accepte d'être contacté(e) par LuxInterventions concernant ma demande de rapport d'expert (<a href="/confidentialite.html" target="_blank" rel="noopener">politique de confidentialité</a>).
         </label>
 
         <button class="modal-submit" id="reportSubmitBtn" onclick="submitReportForm()" style="background:var(--navy);box-shadow:0 4px 20px rgba(27,46,75,0.35)">
@@ -1567,7 +1570,7 @@
 
       <div class="proof-item">
         <div class="proof-dot"></div>
-        <div class="proof-text"><strong>Plus de 400 appartements gérés</strong> — près de 250 résidences</div>
+        <div class="proof-text"><strong>Plus de 4 000 appartements suivis</strong> — 1 000 immeubles, 4 gérances partenaires</div>
       </div>
       <div class="proof-item">
         <div class="proof-dot"></div>
@@ -1600,7 +1603,7 @@
         Fondée en <strong>2018 au Luxembourg</strong>, Ares Invest SA opère sous la marque <strong>LuxInterventions</strong> comme plateforme d'intervention technique pour gérances, syndics et particuliers.
       </p>
       <p class="about-body">
-        Notre modèle repose sur un principe simple : <strong>un interlocuteur unique, une disponibilité totale, une responsabilité documentée.</strong> Nous coordonnons un réseau d'artisans certifiés couvrant 8 catégories de services — toiture, jardinage, étanchéité, peinture, serrurerie, plomberie, électricité et collecte de déchets.
+        Notre modèle repose sur un principe simple : <strong>un interlocuteur unique, une disponibilité totale, une responsabilité documentée.</strong> Nous coordonnons un réseau d'artisans certifiés couvrant 12 catégories de services — rapport d'expert, toiture, jardinage, étanchéité, peinture, serrurerie, plomberie, électricité, collecte de déchets, déménagement, bricolage et nettoyage des résidences.
       </p>
       <p class="about-body">
         En pleine expansion, LuxInterventions s'impose comme le partenaire de référence pour la gestion technique des résidences au Luxembourg — une croissance soutenue, des perspectives solides et une ambition claire : devenir l'acteur incontournable du secteur.
@@ -1641,7 +1644,7 @@
       </div>
       <div class="info-row">
         <span class="info-key">Email</span>
-        <span class="info-val" style="font-size:0.82rem"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c0a1b2a5b3a9aeb6a5b3b4eeb3a180a7ada1a9aceea3afad">[email&#160;protected]</a></span>
+        <span class="info-val" style="font-size:0.82rem"><a href="mailto:aresinvest.sa@gmail.com">aresinvest.sa@gmail.com</a></span>
       </div>
     </div>
   </div>
@@ -1651,14 +1654,13 @@
 <!-- PORTAIL ESPACE CLIENT -->
 <section class="portail-section" id="portail">
   <div class="section-eyebrow">Espace Digital</div>
-  <h2 class="section-title">Portail Client &amp;<br><em style="color:var(--accent)">Syndic / Gérance</em></h2>
+  <h2 class="section-title">Portail<br><em style="color:var(--accent)">Syndic / Gérance</em></h2>
   <p class="section-sub">Accédez à votre tableau de bord, suivez vos interventions en temps réel et téléchargez vos rapports — 24h/24, depuis n'importe quel appareil.</p>
 
   <div style="margin-top:3rem">
     <div class="portail-tabs">
       <button class="portail-tab active" onclick="switchTab('syndic')">🏢 Syndic / Gérance</button>
-      <button class="portail-tab" onclick="switchTab('client')">👤 Client Privé</button>
-      <button class="portail-tab" onclick="switchTab('bonus')">🎁 Bonus &amp; Referral</button>
+      <button class="portail-tab" onclick="switchTab('bonus')">🎁 Bonus Partenaires</button>
     </div>
 
     <!-- SYNDIC PANEL -->
@@ -1718,80 +1720,42 @@
       </div>
     </div>
 
-    <!-- CLIENT PANEL -->
-    <div class="portail-panel" id="panel-client">
-      <div class="portail-grid">
-        <div class="portail-card reveal">
-          <div class="portail-card-header">
-            <div class="portail-card-icon" style="background:var(--green-light)">👤</div>
-            <div>
-              <div class="portail-card-title">Mon Espace Client</div>
-              <div class="portail-card-sub">Suivi de vos interventions personnelles</div>
-            </div>
-          </div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Mes interventions (2026)</span><span class="portail-stat-val blue">4</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Dernière intervention</span><span class="portail-stat-val">Plomberie — 12 mars</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Satisfaction</span><span class="portail-stat-val green">★★★★★</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Mes factures</span><span class="portail-stat-val"><span class="portail-badge blue">📄 3 disponibles</span></span></div>
-          <div style="margin-top:1.5rem;display:flex;gap:0.75rem;flex-wrap:wrap">
-            <a href="tel:+352691423943" class="portail-btn primary">📞 Demander une intervention</a>
-            <a href="#contact" class="portail-btn secondary">✉️ Contacter par email</a>
-          </div>
-        </div>
-
-        <div class="portail-card reveal" style="transition-delay:0.1s">
-          <div class="portail-card-header">
-            <div class="portail-card-icon" style="background:var(--accent-light)">⭐</div>
-            <div>
-              <div class="portail-card-title">Mes avantages fidélité</div>
-              <div class="portail-card-sub">Programme client LuxInterventions</div>
-            </div>
-          </div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Mon niveau</span><span class="portail-stat-val orange">🥈 Silver</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Interventions cumulées</span><span class="portail-stat-val">4 / 10 pour Gold</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Crédit fidélité</span><span class="portail-stat-val green">+50€</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Priorité urgences</span><span class="portail-stat-val"><span class="portail-badge green">✓ Activée</span></span></div>
-          <div style="margin-top:1.5rem">
-            <a href="#contact" class="portail-btn primary" style="width:100%;justify-content:center">Voir mes avantages complets →</a>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <!-- BONUS PANEL -->
     <div class="portail-panel" id="panel-bonus">
       <div class="portail-grid">
         <div class="portail-card reveal">
           <div class="portail-card-header">
-            <div class="portail-card-icon" style="background:#FFF8E1">🎁</div>
+            <div class="portail-card-icon" style="background:#FFF8E1">🏆</div>
             <div>
-              <div class="portail-card-title">Programme Referral</div>
-              <div class="portail-card-sub">Recommandez — Gagnez ensemble</div>
+              <div class="portail-card-title">Paliers partenaires</div>
+              <div class="portail-card-sub">Selon le chiffre d'affaires annuel confié à LuxInterventions</div>
             </div>
           </div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Vous recommandez un syndic</span><span class="portail-stat-val green">1 mois prioritaire offert</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Vous recommandez un client</span><span class="portail-stat-val orange">100€ crédit</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Nouveau contrat résidence</span><span class="portail-stat-val blue">200€ crédit</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Partenaire certifié +2 ans</span><span class="portail-stat-val"><span class="portail-badge blue">🏅 Badge Gold</span></span></div>
+          <div class="portail-stat-row"><span class="portail-stat-label">🥉 Bronze</span><span class="portail-stat-val">Avantages de bienvenue</span></div>
+          <div class="portail-stat-row"><span class="portail-stat-label">🥈 Silver</span><span class="portail-stat-val blue">Remise sur les interventions</span></div>
+          <div class="portail-stat-row"><span class="portail-stat-label">🥇 Gold</span><span class="portail-stat-val green">Remise renforcée + cadeaux</span></div>
+          <div class="portail-stat-row"><span class="portail-stat-label">🏅 Partenaire Premium</span><span class="portail-stat-val orange">Conditions sur mesure</span></div>
+          <div style="margin-top:1rem;font-size:0.8rem;color:var(--grey-600);line-height:1.55">Plus le chiffre d'affaires confié par votre syndic / gérance est élevé, plus les remises et cadeaux proposés par LuxInterventions sont importants. Seuils et avantages communiqués à chaque partenaire.</div>
           <div style="margin-top:1.5rem">
-            <a href="#contact" class="portail-btn primary" style="width:100%;justify-content:center">🔗 Obtenir mon lien referral →</a>
+            <a href="#contact" class="portail-btn primary" style="width:100%;justify-content:center">Connaître mes conditions →</a>
           </div>
         </div>
 
         <div class="portail-card reveal" style="transition-delay:0.1s">
           <div class="portail-card-header">
-            <div class="portail-card-icon" style="background:var(--green-light)">🏆</div>
+            <div class="portail-card-icon" style="background:var(--green-light)">📊</div>
             <div>
-              <div class="portail-card-title">Niveaux de fidélité</div>
-              <div class="portail-card-sub">Plus vous utilisez, plus vous gagnez</div>
+              <div class="portail-card-title">Tableau de bord bonus</div>
+              <div class="portail-card-sub">Bientôt dans votre portail</div>
             </div>
           </div>
-          <div class="portail-stat-row"><span class="portail-stat-label">🥉 Bronze</span><span class="portail-stat-val">1–3 interventions/an</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">🥈 Silver</span><span class="portail-stat-val">4–9 interventions — Priorité urgences</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">🥇 Gold</span><span class="portail-stat-val green">10+ — Remise 5% + SLA renforcé</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">🏅 Partenaire</span><span class="portail-stat-val orange">Syndics &gt;2 ans — Avantages exclusifs</span></div>
+          <div class="portail-stat-row"><span class="portail-stat-label">Chiffre d'affaires de l'année</span><span class="portail-stat-val blue">Suivi en temps réel</span></div>
+          <div class="portail-stat-row"><span class="portail-stat-label">Palier actuel</span><span class="portail-stat-val">Bronze → Premium</span></div>
+          <div class="portail-stat-row"><span class="portail-stat-label">Prochain palier</span><span class="portail-stat-val orange">Montant restant affiché</span></div>
+          <div class="portail-stat-row"><span class="portail-stat-label">Remises &amp; cadeaux obtenus</span><span class="portail-stat-val green">🎁 Historique complet</span></div>
+          <div class="portail-stat-row"><span class="portail-stat-label">Vous recommandez une gérance</span><span class="portail-stat-val"><span class="portail-badge green">Bonus parrainage</span></span></div>
           <div style="margin-top:1.5rem">
-            <a href="#contact" class="portail-btn secondary" style="width:100%;justify-content:center">En savoir plus →</a>
+            <a href="/portail.html" class="portail-btn secondary" style="width:100%;justify-content:center">Accéder au portail →</a>
           </div>
         </div>
       </div>
@@ -1860,14 +1824,14 @@
       <div class="roadmap-dot" style="background:#FFF8E1">🎁</div>
       <div class="roadmap-content">
         <div class="roadmap-phase">Phase 4 — Décembre 2026 · Long terme</div>
-        <div class="roadmap-title">Système Bonus &amp; Referral</div>
-        <div class="roadmap-desc">Programme de fidélité Bronze / Silver / Gold, referral actif pour syndics et clients privés, badges partenaires certifiés. Transformation de chaque client satisfait en ambassadeur actif.</div>
+        <div class="roadmap-title">Bonus Partenaires Syndic / Gérance</div>
+        <div class="roadmap-desc">Programme partenaires lié au chiffre d'affaires confié par chaque syndic / gérance : paliers Bronze / Silver / Gold / Premium, remises et cadeaux offerts par LuxInterventions, parrainage entre gérances. Tableau de bord bonus intégré au portail.</div>
         <div class="roadmap-features">
-          <span class="roadmap-feature">Programme fidélité</span>
-          <span class="roadmap-feature">Referral syndic</span>
-          <span class="roadmap-feature">Crédits intervention</span>
-          <span class="roadmap-feature">Badges partenaires</span>
-          <span class="roadmap-feature">Croissance organique</span>
+          <span class="roadmap-feature">Paliers selon CA</span>
+          <span class="roadmap-feature">Remises</span>
+          <span class="roadmap-feature">Cadeaux partenaires</span>
+          <span class="roadmap-feature">Parrainage gérance</span>
+          <span class="roadmap-feature">Dashboard bonus</span>
         </div>
       </div>
     </div>
@@ -1914,11 +1878,11 @@
         </div>
       </a>
 
-      <a href="/cdn-cgi/l/email-protection#a5c4d7c0d6cccbd3c0d6d18bd6c4e5c2c8c4ccc98bc6cac8" class="contact-card">
+      <a href="mailto:aresinvest.sa@gmail.com" class="contact-card">
         <div class="contact-card-icon" style="background:#EBF3FB; font-size:1.4rem">✉️</div>
         <div>
           <div class="contact-card-title">Email</div>
-          <div class="contact-card-value"><span class="__cf_email__" data-cfemail="b1d0c3d4c2d8dfc7d4c2c59fc2d0f1d6dcd0d8dd9fd2dedc">[email&#160;protected]</span></div>
+          <div class="contact-card-value">aresinvest.sa@gmail.com</div>
         </div>
       </a>
 
@@ -1934,7 +1898,7 @@
         <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
           <path stroke-linecap="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 7V5z"/>
         </svg>
-        Appeler: "+352 691423943"
+        Appeler : +352 691 423 943
       </a>
     </div>
 
@@ -1969,7 +1933,7 @@
           <div class="map-item-icon">🤝</div>
           <div>
             <div class="map-item-title">Pour les gérances & syndics</div>
-            <div class="map-item-val">Phase pilote disponible — 200 à 400 logements</div>
+            <div class="map-item-val">Portail en service (phase de test) — accès sur invitation</div>
           </div>
         </div>
       </div>
@@ -1987,16 +1951,18 @@
     <li><a href="#contact">Contact</a></li>
     <li><a href="#portail">Espace Client</a></li>
     <li><a href="#roadmap">Roadmap</a></li>
+    <li><a href="/mentions-legales.html">Mentions légales</a></li>
+    <li><a href="/confidentialite.html">Confidentialité</a></li>
   </ul>
   <div class="footer-copy">© 2026 Ares Invest SA · TVA LU30440727 · RCS B225245</div>
 </footer>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 
   // Tab switcher portail
   window.switchTab = function switchTab(tab) {
     document.querySelectorAll('.portail-tab').forEach((btn, i) => {
-      const tabs = ['syndic','client','bonus'];
+      const tabs = ['syndic','bonus'];
       btn.classList.toggle('active', tabs[i] === tab);
     });
     document.querySelectorAll('.portail-panel').forEach(p => p.classList.remove('active'));
