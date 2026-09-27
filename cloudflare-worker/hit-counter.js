@@ -20,6 +20,9 @@
  * Nessun dato personale è coinvolto oltre alle foto stesse, caricate
  * volontariamente dal cliente per la sua richiesta.
  *
+ * 4) Portail Gérance / Syndic (portail.html) — database D1 (binding "DB"):
+ *    account personali, residenze, richieste d'intervento, foto, notifiche push.
+ *
  * 3) Archivio cifrato "Ares Invest — Gestion locataires" (locataires.html)
  *    /api/ares/*  — vedi la sezione ARES più sotto. Il Worker conserva solo
  *    dati già cifrati nel browser (AES-256-GCM): senza la chiave di accesso
@@ -44,7 +47,7 @@ function corsHeaders(origin) {
 }
 
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin") || "";
     const headers = corsHeaders(origin);
@@ -56,6 +59,11 @@ export default {
     // ── Archivio cifrato Ares (gestion locataires) ──
     if (url.pathname.startsWith("/api/ares/")) {
       return handleAres(request, env, url, headers);
+    }
+
+    // ── Portail Gérance / Syndic (vedi la sezione PORTAIL più sotto) ──
+    if (url.pathname.startsWith("/api/portail/")) {
+      return handlePortail(request, env, url, headers, ctx);
     }
 
     // ── Contatore aperture pagina ──
@@ -365,4 +373,553 @@ async function handleAres(request, env, url, headers) {
   }
 
   return aresJson({ error: "Not found" }, 404, headers);
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+ * PORTAIL GÉRANCE / SYNDIC — portail.html
+ *
+ * Più utenti, più gérance: ognuno vede solo i dati della propria gérance,
+ * lo staff LuxInterventions (ruolo "admin") vede tutto.
+ *
+ * Binding: D1 "DB" (database luxinterventions-geranceportail), R2 "PHOTOS"
+ *          (foto in portail/photos/…), KV "HITS" (limite tentativi).
+ * Secret:  PORTAIL_SETUP_CODE — serve solo per creare il primo amministratore.
+ *
+ * Password: il browser calcola PBKDF2 (sale personale) e invia solo il
+ * risultato; il Worker ne conserva l'hash SHA-256 (nessuna password in chiaro,
+ * calcolo leggero per il Worker).
+ * Sessioni: token casuale (header Authorization: Bearer), hash in D1, 30 giorni.
+ * Notifiche: Web Push (VAPID, chiavi generate e salvate in D1 al primo uso).
+ * ════════════════════════════════════════════════════════════════════════ */
+
+const PTL_ITER = 310000;
+const PTL_SESSION_MS = 30 * 24 * 3600 * 1000;
+const PTL_INVITE_MS = 14 * 24 * 3600 * 1000;
+const PTL_MAX_PHOTO = 6 * 1024 * 1024;
+const PTL_MAX_FAILS = 10;
+const PTL_STATUSES = ["recue", "prise", "planifiee", "encours", "terminee", "annulee"];
+const PTL_OPEN = ["recue", "prise", "planifiee", "encours"];
+const PTL_URGENCES = ["urgent", "24h", "planifie"];
+const PTL_ROLES = ["admin", "gerance_admin", "gerance_user"];
+
+const PTL_SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS orgs (id TEXT PRIMARY KEY, name TEXT NOT NULL, phone TEXT, email TEXT, created_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, org_id TEXT, role TEXT NOT NULL, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, phone TEXT,
+     salt TEXT, iter INTEGER, auth_hash TEXT, invite_hash TEXT, invite_expires INTEGER, active INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL, last_login INTEGER)`,
+  `CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires INTEGER NOT NULL, created_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS residences (id TEXT PRIMARY KEY, org_id TEXT NOT NULL, name TEXT NOT NULL, address TEXT, access TEXT, keys_info TEXT,
+     contact_name TEXT, contact_phone TEXT, notes TEXT, apartments INTEGER, active INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS tickets (id TEXT PRIMARY KEY, ref INTEGER NOT NULL, org_id TEXT NOT NULL, residence_id TEXT NOT NULL, lieu TEXT, categorie TEXT,
+     urgence TEXT NOT NULL, description TEXT NOT NULL, contact_name TEXT, contact_phone TEXT, acces TEXT, dispo TEXT, status TEXT NOT NULL,
+     planned_at TEXT, technicien TEXT, rapport TEXT, created_by TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
+     taken_at INTEGER, done_at INTEGER)`,
+  `CREATE INDEX IF NOT EXISTS idx_tickets_org ON tickets(org_id, updated_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)`,
+  `CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, ticket_id TEXT NOT NULL, user_id TEXT, kind TEXT NOT NULL, status TEXT, text TEXT, created_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS idx_events_ticket ON events(ticket_id, created_at)`,
+  `CREATE TABLE IF NOT EXISTS photos (id TEXT PRIMARY KEY, ticket_id TEXT NOT NULL, event_id TEXT, r2_key TEXT NOT NULL, mime TEXT, size INTEGER, created_by TEXT, created_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS idx_photos_ticket ON photos(ticket_id)`,
+  `CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, user_id TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
+];
+let ptlSchemaReady = false;
+
+// ── Utilità ──
+const te = new TextEncoder();
+const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const fromB64url = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
+const randHex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, "0")).join("");
+const ptlId = () => Date.now().toString(36) + randHex(6);
+const clean = (v, max = 2000) => (v == null ? "" : String(v).trim().slice(0, max));
+const concatBytes = (...arrs) => { const out = new Uint8Array(arrs.reduce((a, x) => a + x.length, 0)); let o = 0; for (const x of arrs) { out.set(x, o); o += x.length; } return out; };
+
+class PtlError extends Error {
+  constructor(status, message) { super(message); this.status = status; }
+}
+const fail = (status, message) => { throw new PtlError(status, message); };
+
+async function ptlFailures(env, key) { return parseInt((await env.HITS.get("ptl-rl:" + key)) || "0", 10); }
+async function ptlRecordFailure(env, key) {
+  await env.HITS.put("ptl-rl:" + key, String((await ptlFailures(env, key)) + 1), { expirationTtl: 900 });
+}
+
+// Sale fittizio e stabile per le email sconosciute (non rivela quali account esistono)
+async function fakeSalt(env, email) {
+  const k = await crypto.subtle.importKey("raw", te.encode(env.PORTAIL_SETUP_CODE || "ptl"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const sig = new Uint8Array(await crypto.subtle.sign("HMAC", k, te.encode("salt:" + email)));
+  return btoa(String.fromCharCode(...sig.slice(0, 16)));
+}
+
+// ── Accesso ai dati secondo il ruolo ──
+const isAdmin = (u) => u.role === "admin";
+function orgScope(u, requestedOrg) {
+  if (isAdmin(u)) return requestedOrg || null; // null = tutte le gérance
+  return u.org_id;
+}
+async function loadTicketFor(env, u, id) {
+  const t = await env.DB.prepare("SELECT * FROM tickets WHERE id = ?").bind(id).first();
+  if (!t || (!isAdmin(u) && t.org_id !== u.org_id)) fail(404, "Demande introuvable");
+  return t;
+}
+
+// ── Web Push (RFC 8291 aes128gcm + VAPID RFC 8292) ──
+async function vapidKeys(env) {
+  const row = await env.DB.prepare("SELECT v FROM kv WHERE k = 'vapid'").first();
+  if (row) return JSON.parse(row.v);
+  const kp = await crypto.subtle.generateKey({ name: "ECDSA", namedCurve: "P-256" }, true, ["sign", "verify"]);
+  const keys = { privateJwk: await crypto.subtle.exportKey("jwk", kp.privateKey), publicKey: b64url(await crypto.subtle.exportKey("raw", kp.publicKey)) };
+  await env.DB.prepare("INSERT OR IGNORE INTO kv (k, v) VALUES ('vapid', ?)").bind(JSON.stringify(keys)).run();
+  const again = await env.DB.prepare("SELECT v FROM kv WHERE k = 'vapid'").first();
+  return JSON.parse(again.v);
+}
+
+async function hkdf(salt, ikm, info, len) {
+  const key = await crypto.subtle.importKey("raw", ikm, "HKDF", false, ["deriveBits"]);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: "HKDF", hash: "SHA-256", salt, info }, key, len * 8));
+}
+
+async function encryptPush(payload, p256dh, authSecret) {
+  const uaPublic = fromB64url(p256dh);
+  const auth = fromB64url(authSecret);
+  const eph = await crypto.subtle.generateKey({ name: "ECDH", namedCurve: "P-256" }, true, ["deriveBits"]);
+  const asPublic = new Uint8Array(await crypto.subtle.exportKey("raw", eph.publicKey));
+  const uaKey = await crypto.subtle.importKey("raw", uaPublic, { name: "ECDH", namedCurve: "P-256" }, false, []);
+  const shared = new Uint8Array(await crypto.subtle.deriveBits({ name: "ECDH", public: uaKey }, eph.privateKey, 256));
+  const ikm = await hkdf(auth, shared, concatBytes(te.encode("WebPush: info\0"), uaPublic, asPublic), 32);
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const cek = await hkdf(salt, ikm, te.encode("Content-Encoding: aes128gcm\0"), 16);
+  const nonce = await hkdf(salt, ikm, te.encode("Content-Encoding: nonce\0"), 12);
+  const key = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]);
+  const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv: nonce }, key, concatBytes(te.encode(payload), new Uint8Array([2]))));
+  const header = new Uint8Array(21);
+  header.set(salt, 0);
+  new DataView(header.buffer).setUint32(16, 4096);
+  header[20] = 65;
+  return concatBytes(header, asPublic, ct);
+}
+
+async function vapidAuth(env, endpoint) {
+  const keys = await vapidKeys(env);
+  const aud = new URL(endpoint).origin;
+  const enc = (o) => b64url(te.encode(JSON.stringify(o)));
+  const unsigned = enc({ typ: "JWT", alg: "ES256" }) + "." + enc({ aud, exp: Math.floor(Date.now() / 1000) + 12 * 3600, sub: "mailto:info@luxinterventions.com" });
+  const pk = await crypto.subtle.importKey("jwk", keys.privateJwk, { name: "ECDSA", namedCurve: "P-256" }, false, ["sign"]);
+  const sig = await crypto.subtle.sign({ name: "ECDSA", hash: "SHA-256" }, pk, te.encode(unsigned));
+  return `vapid t=${unsigned}.${b64url(sig)}, k=${keys.publicKey}`;
+}
+
+// Invia una notifica agli utenti scelti (where: clausola SQL su users "u")
+async function ptlNotify(env, where, binds, message, urgent) {
+  const subs = await env.DB.prepare(
+    `SELECT s.endpoint, s.p256dh, s.auth FROM push_subs s JOIN users u ON u.id = s.user_id WHERE u.active = 1 AND (${where})`
+  ).bind(...binds).all();
+  const payload = JSON.stringify(message);
+  await Promise.all((subs.results || []).map(async (s) => {
+    try {
+      const body = await encryptPush(payload, s.p256dh, s.auth);
+      const r = await fetch(s.endpoint, {
+        method: "POST",
+        headers: { Authorization: await vapidAuth(env, s.endpoint), "Content-Encoding": "aes128gcm", "Content-Type": "application/octet-stream", TTL: "86400", Urgency: urgent ? "high" : "normal" },
+        body,
+      });
+      if (r.status === 404 || r.status === 410) await env.DB.prepare("DELETE FROM push_subs WHERE endpoint = ?").bind(s.endpoint).run();
+    } catch { /* un abbonamento difettoso non blocca gli altri */ }
+  }));
+}
+
+const URG_LABEL = { urgent: "🔴 URGENT", "24h": "🟠 Sous 24 h", planifie: "🟢 Planifié" };
+const STATUS_LABEL = { recue: "Reçue", prise: "Prise en charge", planifiee: "Planifiée", encours: "En cours", terminee: "Terminée", annulee: "Annulée" };
+
+// ── Router ──
+async function handlePortail(request, env, url, headers, ctx) {
+  const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json", ...headers } });
+  try {
+    if (!env.DB) fail(503, "Base de données non reliée (binding DB manquant)");
+    if (!ptlSchemaReady) { await env.DB.batch(PTL_SCHEMA.map((q) => env.DB.prepare(q))); ptlSchemaReady = true; }
+    const path = url.pathname.slice("/api/portail/".length).replace(/\/$/, "");
+    const method = request.method;
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
+    const body = async () => { try { return await request.json(); } catch { return {}; } };
+    const now = Date.now();
+
+    // ── Rotte pubbliche ──
+    if (path === "status" && method === "GET") {
+      const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
+      return json({ configured: n.n > 0, iter: PTL_ITER });
+    }
+
+    if ((await ptlFailures(env, ip)) >= PTL_MAX_FAILS) fail(429, "Trop de tentatives. Réessayez dans 15 minutes.");
+
+    if (path === "setup" && method === "POST") {
+      const b = await body();
+      if (!env.PORTAIL_SETUP_CODE) fail(503, "PORTAIL_SETUP_CODE manquant dans le Worker");
+      if (clean(b.setupCode) !== env.PORTAIL_SETUP_CODE) { await ptlRecordFailure(env, ip); fail(403, "Code de configuration incorrect"); }
+      const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
+      if (n.n > 0) fail(409, "Déjà configuré");
+      const email = clean(b.email, 200).toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !clean(b.name) || !/^[0-9a-f]{64}$/.test(b.authHash || "") || !b.salt) fail(400, "Données invalides");
+      await env.DB.prepare("INSERT INTO users (id, org_id, role, name, email, salt, iter, auth_hash, created_at) VALUES (?, NULL, 'admin', ?, ?, ?, ?, ?, ?)")
+        .bind(ptlId(), clean(b.name, 120), email, clean(b.salt, 64), PTL_ITER, b.authHash, now).run();
+      return json({ ok: true });
+    }
+
+    if (path === "prelogin" && method === "POST") {
+      const email = clean((await body()).email, 200).toLowerCase();
+      const u = await env.DB.prepare("SELECT salt, iter FROM users WHERE email = ? AND auth_hash IS NOT NULL").bind(email).first();
+      return json(u ? { salt: u.salt, iter: u.iter } : { salt: await fakeSalt(env, email), iter: PTL_ITER });
+    }
+
+    if (path === "login" && method === "POST") {
+      const b = await body();
+      const email = clean(b.email, 200).toLowerCase();
+      if ((await ptlFailures(env, "mail:" + email)) >= PTL_MAX_FAILS) fail(429, "Compte temporairement bloqué. Réessayez dans 15 minutes.");
+      const u = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
+      const ok = u && u.auth_hash && u.active && typeof b.authKey === "string" && safeEqual(await sha256Hex(b.authKey), u.auth_hash);
+      if (!ok) {
+        await ptlRecordFailure(env, ip);
+        await ptlRecordFailure(env, "mail:" + email);
+        fail(401, u && !u.active ? "Compte désactivé" : "Email ou mot de passe incorrect");
+      }
+      const token = randHex(32);
+      await env.DB.batch([
+        env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires, created_at) VALUES (?, ?, ?, ?)").bind(await sha256Hex(token), u.id, now + PTL_SESSION_MS, now),
+        env.DB.prepare("UPDATE users SET last_login = ? WHERE id = ?").bind(now, u.id),
+        env.DB.prepare("DELETE FROM sessions WHERE expires < ?").bind(now),
+      ]);
+      return json({ token });
+    }
+
+    const inviteMatch = path.match(/^invite\/([0-9a-f]{64})$/);
+    if (inviteMatch) {
+      const u = await env.DB.prepare("SELECT u.*, o.name AS org_name FROM users u LEFT JOIN orgs o ON o.id = u.org_id WHERE invite_hash = ?").bind(await sha256Hex(inviteMatch[1])).first();
+      if (!u || u.invite_expires < now) { await ptlRecordFailure(env, ip); fail(404, "Lien d'invitation invalide ou expiré. Demandez un nouveau lien."); }
+      if (method === "GET") return json({ name: u.name, email: u.email, org: u.org_name || "LuxInterventions", iter: PTL_ITER });
+      if (method === "POST") {
+        const b = await body();
+        if (!/^[0-9a-f]{64}$/.test(b.authHash || "") || !b.salt) fail(400, "Données invalides");
+        const token = randHex(32);
+        await env.DB.batch([
+          env.DB.prepare("UPDATE users SET salt = ?, iter = ?, auth_hash = ?, invite_hash = NULL, invite_expires = NULL, active = 1, last_login = ? WHERE id = ?")
+            .bind(clean(b.salt, 64), PTL_ITER, b.authHash, now, u.id),
+          env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(u.id),
+          env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires, created_at) VALUES (?, ?, ?, ?)").bind(await sha256Hex(token), u.id, now + PTL_SESSION_MS, now),
+        ]);
+        return json({ token });
+      }
+    }
+
+    // ── Da qui serve una sessione ──
+    const auth = request.headers.get("Authorization") || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+    if (!/^[0-9a-f]{64}$/.test(token)) fail(401, "Session expirée");
+    const tokenHash = await sha256Hex(token);
+    const me = await env.DB.prepare(
+      "SELECT u.*, o.name AS org_name FROM sessions s JOIN users u ON u.id = s.user_id LEFT JOIN orgs o ON o.id = u.org_id WHERE s.token_hash = ? AND s.expires > ? AND u.active = 1"
+    ).bind(tokenHash, now).first();
+    if (!me) fail(401, "Session expirée");
+    const publicUser = (u) => ({ id: u.id, org_id: u.org_id, org_name: u.org_name || null, role: u.role, name: u.name, email: u.email, phone: u.phone || "" });
+
+    if (path === "logout" && method === "POST") {
+      await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(tokenHash).run();
+      return json({ ok: true });
+    }
+
+    if (path === "me" && method === "GET") {
+      return json({ user: publicUser(me), vapidKey: (await vapidKeys(env)).publicKey });
+    }
+
+    if (path === "me/password" && method === "POST") {
+      const b = await body();
+      if (!safeEqual(await sha256Hex(clean(b.oldKey, 64)), me.auth_hash || "")) fail(403, "Mot de passe actuel incorrect");
+      if (!/^[0-9a-f]{64}$/.test(b.authHash || "") || !b.salt) fail(400, "Données invalides");
+      await env.DB.batch([
+        env.DB.prepare("UPDATE users SET salt = ?, auth_hash = ? WHERE id = ?").bind(clean(b.salt, 64), b.authHash, me.id),
+        env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token_hash != ?").bind(me.id, tokenHash),
+      ]);
+      return json({ ok: true });
+    }
+
+    // ── Notifiche push ──
+    if (path === "push" && method === "POST") {
+      const b = await body();
+      if (!/^https:\/\//.test(b.endpoint || "") || !b.keys || !b.keys.p256dh || !b.keys.auth) fail(400, "Abonnement invalide");
+      await env.DB.prepare("INSERT OR REPLACE INTO push_subs (endpoint, user_id, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?)")
+        .bind(clean(b.endpoint, 1000), me.id, clean(b.keys.p256dh, 200), clean(b.keys.auth, 100), now).run();
+      return json({ ok: true });
+    }
+    if (path === "push" && method === "DELETE") {
+      const b = await body();
+      await env.DB.prepare("DELETE FROM push_subs WHERE endpoint = ? AND user_id = ?").bind(clean(b.endpoint, 1000), me.id).run();
+      return json({ ok: true });
+    }
+    if (path === "push/test" && method === "POST") {
+      ctx && ctx.waitUntil(ptlNotify(env, "u.id = ?", [me.id], { title: "LuxInterventions", body: "Les notifications fonctionnent ✓", url: "/portail.html" }, false));
+      return json({ ok: true });
+    }
+
+    // ── Gérance (organizzazioni) ──
+    if (path === "orgs" && method === "GET") {
+      const rows = isAdmin(me)
+        ? await env.DB.prepare(`SELECT o.*, (SELECT COUNT(*) FROM residences r WHERE r.org_id = o.id AND r.active = 1) AS residences,
+            (SELECT COUNT(*) FROM users u WHERE u.org_id = o.id AND u.active = 1) AS users,
+            (SELECT COUNT(*) FROM tickets t WHERE t.org_id = o.id AND t.status IN ('recue','prise','planifiee','encours')) AS open
+            FROM orgs o ORDER BY o.name`).all()
+        : await env.DB.prepare("SELECT * FROM orgs WHERE id = ?").bind(me.org_id).all();
+      return json({ orgs: rows.results || [] });
+    }
+    if (path === "orgs" && method === "POST") {
+      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      const b = await body();
+      if (!clean(b.name)) fail(400, "Nom obligatoire");
+      const id = ptlId();
+      await env.DB.prepare("INSERT INTO orgs (id, name, phone, email, created_at) VALUES (?, ?, ?, ?, ?)").bind(id, clean(b.name, 120), clean(b.phone, 40), clean(b.email, 200), now).run();
+      return json({ id });
+    }
+    const orgMatch = path.match(/^orgs\/([a-z0-9]+)$/);
+    if (orgMatch && method === "PATCH") {
+      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      const b = await body();
+      await env.DB.prepare("UPDATE orgs SET name = COALESCE(?, name), phone = COALESCE(?, phone), email = COALESCE(?, email) WHERE id = ?")
+        .bind(b.name != null ? clean(b.name, 120) : null, b.phone != null ? clean(b.phone, 40) : null, b.email != null ? clean(b.email, 200) : null, orgMatch[1]).run();
+      return json({ ok: true });
+    }
+
+    // ── Utenti ──
+    if (path === "users" && method === "GET") {
+      if (me.role === "gerance_user") fail(403, "Réservé aux responsables");
+      const org = orgScope(me, url.searchParams.get("org"));
+      const q = org
+        ? env.DB.prepare("SELECT id, org_id, role, name, email, phone, active, last_login, invite_expires, auth_hash IS NOT NULL AS has_password FROM users WHERE org_id = ? ORDER BY name").bind(org)
+        : env.DB.prepare("SELECT id, org_id, role, name, email, phone, active, last_login, invite_expires, auth_hash IS NOT NULL AS has_password FROM users ORDER BY role, name");
+      return json({ users: (await q.all()).results || [] });
+    }
+    const inviteFor = async (userId) => {
+      const tok = randHex(32);
+      await env.DB.prepare("UPDATE users SET invite_hash = ?, invite_expires = ? WHERE id = ?").bind(await sha256Hex(tok), now + PTL_INVITE_MS, userId).run();
+      return tok;
+    };
+    if (path === "users" && method === "POST") {
+      if (me.role === "gerance_user") fail(403, "Réservé aux responsables");
+      const b = await body();
+      const role = PTL_ROLES.includes(b.role) ? b.role : "gerance_user";
+      if (role === "admin" && !isAdmin(me)) fail(403, "Rôle non autorisé");
+      const org = role === "admin" ? null : isAdmin(me) ? clean(b.org_id, 40) : me.org_id;
+      if (role !== "admin" && !(await env.DB.prepare("SELECT id FROM orgs WHERE id = ?").bind(org).first())) fail(400, "Gérance inconnue");
+      const email = clean(b.email, 200).toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !clean(b.name)) fail(400, "Nom et email valides obligatoires");
+      if (await env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first()) fail(409, "Cet email a déjà un compte");
+      const id = ptlId();
+      await env.DB.prepare("INSERT INTO users (id, org_id, role, name, email, phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
+        .bind(id, org, role, clean(b.name, 120), email, clean(b.phone, 40), now).run();
+      return json({ id, invite: await inviteFor(id) });
+    }
+    const userMatch = path.match(/^users\/([a-z0-9]+)(\/invite)?$/);
+    if (userMatch) {
+      const target = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(userMatch[1]).first();
+      if (!target || (!isAdmin(me) && (me.role !== "gerance_admin" || target.org_id !== me.org_id))) fail(404, "Utilisateur introuvable");
+      if (target.role === "admin" && !isAdmin(me)) fail(403, "Non autorisé");
+      if (userMatch[2] && method === "POST") return json({ invite: await inviteFor(target.id) });
+      if (!userMatch[2] && method === "PATCH") {
+        const b = await body();
+        if (target.id === me.id && b.active === false) fail(400, "Vous ne pouvez pas désactiver votre propre compte");
+        const role = b.role && PTL_ROLES.includes(b.role) && (isAdmin(me) || b.role !== "admin") ? b.role : target.role;
+        const ops = [env.DB.prepare("UPDATE users SET name = ?, phone = ?, role = ?, active = ? WHERE id = ?")
+          .bind(b.name != null ? clean(b.name, 120) : target.name, b.phone != null ? clean(b.phone, 40) : target.phone, role, b.active === false ? 0 : b.active === true ? 1 : target.active, target.id)];
+        if (b.active === false) ops.push(env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(target.id), env.DB.prepare("DELETE FROM push_subs WHERE user_id = ?").bind(target.id));
+        await env.DB.batch(ops);
+        return json({ ok: true });
+      }
+    }
+
+    // ── Residenze ──
+    if (path === "residences" && method === "GET") {
+      const org = orgScope(me, url.searchParams.get("org"));
+      const sql = `SELECT r.*, o.name AS org_name,
+          (SELECT COUNT(*) FROM tickets t WHERE t.residence_id = r.id) AS tickets,
+          (SELECT COUNT(*) FROM tickets t WHERE t.residence_id = r.id AND t.status IN ('recue','prise','planifiee','encours')) AS open
+        FROM residences r JOIN orgs o ON o.id = r.org_id WHERE r.active = 1 ${org ? "AND r.org_id = ?" : ""} ORDER BY r.name`;
+      const rows = await (org ? env.DB.prepare(sql).bind(org) : env.DB.prepare(sql)).all();
+      return json({ residences: rows.results || [] });
+    }
+    const resFields = (b) => [clean(b.name, 160), clean(b.address, 300), clean(b.access, 500), clean(b.keys_info, 500), clean(b.contact_name, 120), clean(b.contact_phone, 40), clean(b.notes, 2000), parseInt(b.apartments, 10) || null];
+    if (path === "residences" && method === "POST") {
+      const b = await body();
+      const org = isAdmin(me) ? clean(b.org_id, 40) : me.org_id;
+      if (!(await env.DB.prepare("SELECT id FROM orgs WHERE id = ?").bind(org).first())) fail(400, "Gérance inconnue");
+      if (!clean(b.name)) fail(400, "Nom de la résidence obligatoire");
+      const id = ptlId();
+      await env.DB.prepare("INSERT INTO residences (id, org_id, name, address, access, keys_info, contact_name, contact_phone, notes, apartments, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+        .bind(id, org, ...resFields(b), now).run();
+      return json({ id });
+    }
+    const resMatch = path.match(/^residences\/([a-z0-9]+)$/);
+    if (resMatch && method === "PATCH") {
+      const r = await env.DB.prepare("SELECT * FROM residences WHERE id = ?").bind(resMatch[1]).first();
+      if (!r || (!isAdmin(me) && r.org_id !== me.org_id)) fail(404, "Résidence introuvable");
+      const b = await body();
+      if (b.active === false) {
+        await env.DB.prepare("UPDATE residences SET active = 0 WHERE id = ?").bind(r.id).run();
+      } else {
+        if (!clean(b.name)) fail(400, "Nom de la résidence obligatoire");
+        await env.DB.prepare("UPDATE residences SET name = ?, address = ?, access = ?, keys_info = ?, contact_name = ?, contact_phone = ?, notes = ?, apartments = ? WHERE id = ?")
+          .bind(...resFields(b), r.id).run();
+      }
+      return json({ ok: true });
+    }
+
+    // ── Richieste d'intervento ──
+    if (path === "tickets" && method === "GET") {
+      const org = orgScope(me, url.searchParams.get("org"));
+      const scope = url.searchParams.get("scope") || "active";
+      const where = [];
+      const binds = [];
+      if (org) { where.push("t.org_id = ?"); binds.push(org); }
+      if (scope === "active") where.push("t.status IN ('recue','prise','planifiee','encours')");
+      if (scope === "done") where.push("t.status IN ('terminee','annulee')");
+      const res = url.searchParams.get("residence");
+      if (res) { where.push("t.residence_id = ?"); binds.push(res); }
+      const month = url.searchParams.get("month"); // AAAA-MM
+      if (/^\d{4}-\d{2}$/.test(month || "")) {
+        const [y, m] = month.split("-").map(Number);
+        where.push("t.created_at >= ? AND t.created_at < ?");
+        binds.push(Date.UTC(y, m - 1, 1), Date.UTC(y, m, 1));
+      }
+      const sql = `SELECT t.id, t.ref, t.org_id, t.residence_id, t.lieu, t.categorie, t.urgence, t.description, t.status, t.planned_at, t.technicien,
+          t.created_at, t.updated_at, t.taken_at, t.done_at, r.name AS residence_name, r.address AS residence_address, o.name AS org_name, u.name AS created_by_name,
+          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos
+        FROM tickets t JOIN residences r ON r.id = t.residence_id JOIN orgs o ON o.id = t.org_id LEFT JOIN users u ON u.id = t.created_by
+        ${where.length ? "WHERE " + where.join(" AND ") : ""}
+        ORDER BY CASE t.status WHEN 'recue' THEN 0 ELSE 1 END, CASE t.urgence WHEN 'urgent' THEN 0 WHEN '24h' THEN 1 ELSE 2 END, t.updated_at DESC
+        LIMIT ${scope === "active" ? 500 : 300}`;
+      return json({ tickets: (await env.DB.prepare(sql).bind(...binds).all()).results || [] });
+    }
+
+    if (path === "tickets" && method === "POST") {
+      const b = await body();
+      const r = await env.DB.prepare("SELECT * FROM residences WHERE id = ? AND active = 1").bind(clean(b.residence_id, 40)).first();
+      if (!r || (!isAdmin(me) && r.org_id !== me.org_id)) fail(400, "Résidence inconnue");
+      if (!PTL_URGENCES.includes(b.urgence)) fail(400, "Urgence obligatoire");
+      if (!clean(b.description)) fail(400, "Description obligatoire");
+      const id = ptlId();
+      const refRow = await env.DB.prepare("SELECT COALESCE(MAX(ref), 1000) + 1 AS ref FROM tickets").first();
+      await env.DB.batch([
+        env.DB.prepare(`INSERT INTO tickets (id, ref, org_id, residence_id, lieu, categorie, urgence, description, contact_name, contact_phone, acces, dispo, status, created_by, created_at, updated_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'recue', ?, ?, ?)`)
+          .bind(id, refRow.ref, r.org_id, r.id, clean(b.lieu, 200), clean(b.categorie, 60), b.urgence, clean(b.description, 4000), clean(b.contact_name, 120),
+            clean(b.contact_phone, 40), clean(b.acces, 500), clean(b.dispo, 300), me.id, now, now),
+        env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'create', 'recue', NULL, ?)").bind(ptlId(), id, me.id, now),
+      ]);
+      const msg = { title: `${URG_LABEL[b.urgence]} · #${refRow.ref} ${r.name}`, body: `${clean(b.categorie, 60) || "Intervention"}${b.lieu ? " — " + clean(b.lieu, 80) : ""} : ${clean(b.description, 140)}`, url: `/portail.html#/t/${id}`, tag: id };
+      ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin' AND u.id != ?", [me.id], msg, b.urgence === "urgent"));
+      return json({ id, ref: refRow.ref });
+    }
+
+    const tMatch = path.match(/^tickets\/([a-z0-9]+)(?:\/(status|comments|photos))?$/);
+    if (tMatch) {
+      const t = await loadTicketFor(env, me, tMatch[1]);
+      const sub = tMatch[2];
+      if (!sub && method === "GET") {
+        const [ev, ph, res] = await Promise.all([
+          env.DB.prepare("SELECT e.*, u.name AS user_name, u.role AS user_role FROM events e LEFT JOIN users u ON u.id = e.user_id WHERE e.ticket_id = ? ORDER BY e.created_at").bind(t.id).all(),
+          env.DB.prepare("SELECT id, event_id, mime, size, created_at, created_by FROM photos WHERE ticket_id = ? ORDER BY created_at").bind(t.id).all(),
+          env.DB.prepare("SELECT r.*, o.name AS org_name FROM residences r JOIN orgs o ON o.id = r.org_id WHERE r.id = ?").bind(t.residence_id).first(),
+        ]);
+        return json({ ticket: t, events: ev.results || [], photos: ph.results || [], residence: res });
+      }
+      const notifyOther = (msg, urgent) => {
+        // Messaggio dello staff → la gérance; messaggio della gérance → lo staff
+        if (isAdmin(me)) return ptlNotify(env, "u.org_id = ? AND u.id != ?", [t.org_id, me.id], msg, urgent);
+        return ptlNotify(env, "u.role = 'admin'", [], msg, urgent);
+      };
+      if (sub === "status" && method === "POST") {
+        const b = await body();
+        if (!PTL_STATUSES.includes(b.status)) fail(400, "Statut invalide");
+        if (!isAdmin(me) && !(b.status === "annulee" && t.status === "recue")) fail(403, "Seul LuxInterventions peut changer le statut (vous pouvez annuler une demande pas encore prise en charge)");
+        const upd = {
+          planned_at: b.planned_at != null ? clean(b.planned_at, 40) : t.planned_at,
+          technicien: b.technicien != null ? clean(b.technicien, 120) : t.technicien,
+          rapport: b.rapport != null ? clean(b.rapport, 4000) : t.rapport,
+          taken_at: t.taken_at || (b.status !== "recue" && b.status !== "annulee" ? now : null),
+          done_at: b.status === "terminee" ? now : b.status === "annulee" ? t.done_at : null,
+        };
+        const evId = ptlId();
+        await env.DB.batch([
+          env.DB.prepare("UPDATE tickets SET status = ?, planned_at = ?, technicien = ?, rapport = ?, taken_at = ?, done_at = ?, updated_at = ? WHERE id = ?")
+            .bind(b.status, upd.planned_at, upd.technicien, upd.rapport, upd.taken_at, upd.done_at, now, t.id),
+          env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'status', ?, ?, ?)")
+            .bind(evId, t.id, me.id, b.status, clean(b.text || (b.status === "terminee" ? b.rapport : ""), 4000) || null, now),
+        ]);
+        const extra = b.status === "planifiee" && upd.planned_at ? ` — ${upd.planned_at.replace("T", " ")}` : "";
+        ctx && ctx.waitUntil(notifyOther({ title: `#${t.ref} · ${STATUS_LABEL[b.status]}${extra}`, body: clean(b.text || t.description, 140), url: `/portail.html#/t/${t.id}`, tag: t.id }, false));
+        return json({ ok: true, event_id: evId });
+      }
+      if (sub === "comments" && method === "POST") {
+        const b = await body();
+        const text = clean(b.text, 4000);
+        if (!text && !b.photoOnly) fail(400, "Message vide");
+        const evId = ptlId();
+        await env.DB.batch([
+          env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'comment', NULL, ?, ?)").bind(evId, t.id, me.id, text || null, now),
+          env.DB.prepare("UPDATE tickets SET updated_at = ? WHERE id = ?").bind(now, t.id),
+        ]);
+        if (text) ctx && ctx.waitUntil(notifyOther({ title: `#${t.ref} · Message de ${me.name}`, body: text.slice(0, 140), url: `/portail.html#/t/${t.id}`, tag: t.id }, false));
+        return json({ ok: true, event_id: evId });
+      }
+      if (sub === "photos" && method === "PUT") {
+        const type = request.headers.get("Content-Type") || "";
+        if (!/^image\/(jpeg|png|webp|heic|heif)$/.test(type)) fail(415, "Format d'image non accepté");
+        const data = await request.arrayBuffer();
+        if (!data.byteLength || data.byteLength > PTL_MAX_PHOTO) fail(413, "Photo vide ou trop lourde (6 Mo max)");
+        const count = await env.DB.prepare("SELECT COUNT(*) AS n FROM photos WHERE ticket_id = ?").bind(t.id).first();
+        if (count.n >= 30) fail(400, "Trop de photos pour cette demande");
+        const id = ptlId();
+        const key = `portail/photos/${t.id}/${id}`;
+        await env.PHOTOS.put(key, data, { httpMetadata: { contentType: type } });
+        const eventId = clean(request.headers.get("X-Event-Id"), 40) || null;
+        await env.DB.prepare("INSERT INTO photos (id, ticket_id, event_id, r2_key, mime, size, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+          .bind(id, t.id, eventId, key, type, data.byteLength, me.id, now).run();
+        return json({ id });
+      }
+    }
+
+    const photoMatch = path.match(/^photos\/([a-z0-9]+)$/);
+    if (photoMatch && method === "GET") {
+      const p = await env.DB.prepare("SELECT p.*, t.org_id FROM photos p JOIN tickets t ON t.id = p.ticket_id WHERE p.id = ?").bind(photoMatch[1]).first();
+      if (!p || (!isAdmin(me) && p.org_id !== me.org_id)) fail(404, "Photo introuvable");
+      const obj = await env.PHOTOS.get(p.r2_key);
+      if (!obj) fail(404, "Photo introuvable");
+      return new Response(obj.body, { headers: { "Content-Type": p.mime || "image/jpeg", "Cache-Control": "private, max-age=86400", ...headers } });
+    }
+
+    // ── Statistiche ──
+    if (path === "stats" && method === "GET") {
+      const org = orgScope(me, url.searchParams.get("org"));
+      const f = org ? "AND org_id = ?" : "";
+      const b = org ? [org] : [];
+      const d = new Date();
+      const monthStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
+      const since = now - 90 * 24 * 3600 * 1000;
+      const [open, urgent, recue, doneMonth, created, delays, residences] = await Promise.all([
+        env.DB.prepare(`SELECT COUNT(*) AS n FROM tickets WHERE status IN ('recue','prise','planifiee','encours') ${f}`).bind(...b).first(),
+        env.DB.prepare(`SELECT COUNT(*) AS n FROM tickets WHERE status IN ('recue','prise','planifiee','encours') AND urgence = 'urgent' ${f}`).bind(...b).first(),
+        env.DB.prepare(`SELECT COUNT(*) AS n FROM tickets WHERE status = 'recue' ${f}`).bind(...b).first(),
+        env.DB.prepare(`SELECT COUNT(*) AS n FROM tickets WHERE status = 'terminee' AND done_at >= ? ${f}`).bind(monthStart, ...b).first(),
+        env.DB.prepare(`SELECT COUNT(*) AS n FROM tickets WHERE created_at >= ? ${f}`).bind(monthStart, ...b).first(),
+        env.DB.prepare(`SELECT AVG(taken_at - created_at) AS take, AVG(CASE WHEN done_at IS NOT NULL AND status = 'terminee' THEN done_at - created_at END) AS done,
+            AVG(CASE WHEN urgence = 'urgent' THEN taken_at - created_at END) AS take_urgent
+          FROM tickets WHERE created_at >= ? AND taken_at IS NOT NULL ${f}`).bind(since, ...b).first(),
+        env.DB.prepare(`SELECT COUNT(*) AS n, COALESCE(SUM(apartments), 0) AS apartments FROM residences WHERE active = 1 ${f}`).bind(...b).first(),
+      ]);
+      return json({
+        open: open.n, urgent: urgent.n, recue: recue.n, doneMonth: doneMonth.n, createdMonth: created.n,
+        avgTakeMs: delays.take, avgDoneMs: delays.done, avgTakeUrgentMs: delays.take_urgent,
+        residences: residences.n, apartments: residences.apartments,
+      });
+    }
+
+    fail(404, "Not found");
+  } catch (e) {
+    const status = e instanceof PtlError ? e.status : 500;
+    return json({ error: e instanceof PtlError ? e.message : "Erreur serveur" }, status);
+  }
 }
