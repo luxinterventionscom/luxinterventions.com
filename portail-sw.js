@@ -1,6 +1,6 @@
 // Service worker du portail : application disponible hors ligne + notifications push.
-const CACHE = 'portail-shell-v1.0.0';
-const SHELL = ['/portail.html', '/portail/app.js', '/portail/portail.css', '/ares/app.css', '/portail.webmanifest', '/android-chrome-192x192.png', '/favicon-32x32.png', '/apple-touch-icon.png'];
+const CACHE = 'portail-shell-v1.1.0';
+const SHELL = ['/portail.html', '/portail/app.js', '/portail/demo.js', '/portail/portail.css', '/ares/app.css', '/portail.webmanifest', '/android-chrome-192x192.png', '/favicon-32x32.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

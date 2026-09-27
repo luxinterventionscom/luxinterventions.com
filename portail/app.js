@@ -120,6 +120,12 @@ class ApiError extends Error {
   constructor(status, message) { super(message); this.status = status; }
 }
 async function api(path, opts = {}) {
+  if (state.demo) {
+    const r = await state.demo.api(path, opts);
+    const notes = state.demo.takeNotices();
+    notes.forEach((n, i) => setTimeout(() => toast(n), 900 + i * 400));
+    return r;
+  }
   const headers = { ...(opts.headers || {}) };
   if (state.token) headers.Authorization = 'Bearer ' + state.token;
   let body = opts.body;
@@ -227,7 +233,7 @@ function renderLock(mode, data = {}) {
   }
   if (mode === 'invite') {
     setHtml(lockEl, html`<form class="lock-card" data-form="invite" autocomplete="off">${brandHead()}
-      <div class="alert info">${icon('users')}<div>Bienvenue <b>${data.name}</b> — ${data.org}.<br>Choisissez votre mot de passe pour activer votre accès.</div></div>
+      <div class="alert info">${icon('users')}<div>Bienvenue <b>${data.name}</b> — ${data.org}.<br>Choisissez votre mot de passe <b>une seule fois</b> : ensuite vous vous connecterez avec votre email et ce mot de passe.</div></div>
       <input type="hidden" name="token" value="${data.token}">
       <input type="text" name="username" value="${data.email}" autocomplete="username" readonly class="muted">
       <label class="field">Mot de passe ${pwField('pass', 'Au moins 10 caractères', 'new-password')}</label>
@@ -246,13 +252,24 @@ function renderLock(mode, data = {}) {
     <label class="field">Mot de passe ${pwField('pass', '••••••••••', 'current-password')}</label>
     <div class="lock-err" role="alert">${data.message || ''}</div>
     <button class="btn primary block" type="submit">Se connecter</button>
-    <p class="tiny muted" style="text-align:center">Mot de passe oublié ? Demandez un nouveau lien d'accès à votre responsable ou à LuxInterventions.</p>
+    <p class="tiny muted" style="text-align:center">Première fois ? Ouvrez le <b>lien personnel</b> reçu par email ou WhatsApp : vous y choisirez votre mot de passe.<br>Mot de passe oublié ? Demandez un nouveau lien à votre responsable ou à LuxInterventions.</p>
+    <button class="btn ghost block" type="button" data-action="demo-start">${icon('eye')} Découvrir le portail en mode démo</button>
   </form>`);
   setTimeout(() => lockEl.querySelector('[name=email]')?.focus(), 50);
 }
 
+async function startDemo(role) {
+  const { createDemo } = await import('./demo.js');
+  state.demo = createDemo();
+  if (role) state.demo.switchTo(role);
+  state.token = null;
+  history.replaceState(null, '', location.pathname + '#demo');
+  await startSession();
+}
+
 async function boot() {
   renderLock('checking');
+  if (location.hash === '#demo') return startDemo();
   const inv = location.hash.match(/invite=([0-9a-f]{64})/);
   if (inv) {
     try {
@@ -301,7 +318,7 @@ async function startSession() {
   setHtml(lockEl, '');
   appEl.hidden = false;
   renderShell();
-  const h = location.hash.slice(2);
+  const h = state.demo ? '' : location.hash.slice(2);
   const t = h.match(/^t\/([a-z0-9]+)/);
   go(t ? 'demandes' : h || 'home', true);
   if (t) openTicket(t[1]);
@@ -311,6 +328,7 @@ async function startSession() {
 }
 
 async function logout(message) {
+  if (state.demo) { location.href = location.pathname; return; }
   if (state.token && !message) { try { await api('logout', { method: 'POST' }); } catch {} }
   state.token = null;
   state.me = null;
@@ -366,6 +384,9 @@ function renderShell() {
         <div class="brand"><img class="brand-mark" src="/android-chrome-192x192.png" alt="" width="36" height="36"><span>${isAdmin() ? 'LuxInterventions' : state.me.org_name || 'Portail'}</span></div>
         <button class="btn sm primary" data-action="new-ticket">${icon('plus')} <span class="hide-xs">Nouvelle demande</span></button>
       </header>
+      ${state.demo ? html`<div class="demo-bar">${icon('eye')}<span class="grow"><b>Mode démo</b> — données d’exemple, rien n’est enregistré.</span>
+        <span class="demo-switch"><button class="chip" data-action="demo-switch" data-id="gerance" aria-pressed="${!isAdmin()}">Vue gérance</button><button class="chip" data-action="demo-switch" data-id="admin" aria-pressed="${isAdmin()}">Vue LuxInterventions</button></span>
+        <button class="btn sm ghost" data-action="logout">Quitter</button></div>` : ''}
       <main class="main" id="view"></main>
     </div>
     <nav class="bottomnav" style="grid-template-columns:repeat(${navItems().length},1fr)" aria-label="Navigation">${navItems().map(nb)}</nav>`);
@@ -470,6 +491,37 @@ function ticketRow(t) {
   </button>`;
 }
 
+// Guide « Premiers pas » : les étapes se cochent toutes seules
+function guideCard(stats) {
+  let hidden = state.guideHidden;
+  try { hidden = hidden || (!state.demo && localStorage.getItem('ptlGuideHidden') === '1'); } catch {}
+  if (hidden) return '';
+  const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+  const push = pushState() === 'on' || pushState() === 'demo';
+  const orgs = state.cache.orgs || [];
+  const steps = isAdmin()
+    ? [
+        [orgs.length > 0, 'Créez les gérances partenaires', 'go', 'gerances'],
+        [orgs.some((o) => o.users > 0), 'Invitez leurs responsables (lien personnel par email ou WhatsApp)', 'go', 'gerances'],
+        [push, 'Activez les notifications pour être alerté des urgences', 'push-on', ''],
+        [standalone, 'Installez l’app sur votre téléphone', 'go', 'plus'],
+      ]
+    : [
+        [(stats.residences || 0) > 0, 'Ajoutez vos résidences (une seule fois : accès, clés, contact)', 'new-residence', ''],
+        [(stats.createdMonth || 0) + (stats.open || 0) > 0, 'Envoyez votre première demande d’intervention', 'new-ticket', ''],
+        [push, 'Activez les notifications pour suivre vos demandes', 'push-on', ''],
+        [standalone, 'Installez l’app sur votre téléphone', 'go', 'plus'],
+      ];
+  const done = steps.filter((x) => x[0]).length;
+  if (done === steps.length && !state.demo) return '';
+  return html`<div class="card guide" style="margin-bottom:14px">
+    <div class="card-title" style="margin-bottom:8px"><h3>Premiers pas · ${done}/${steps.length}</h3><button class="btn sm ghost" data-action="guide-hide">Masquer</button></div>
+    <div class="progress" style="margin-bottom:10px"><i style="width:${(done / steps.length) * 100}%"></i></div>
+    ${steps.map(([ok, label, action, to], i) => html`<div class="guide-step ${ok ? 'ok' : ''}"><span class="guide-num">${ok ? '✓' : i + 1}</span><span class="grow">${label}</span>${ok ? '' : html`<button class="btn sm" data-action="${action}" data-to="${to}">Faire</button>`}</div>`)}
+    <p class="tiny muted" style="margin-top:10px">🔑 Le mot de passe se choisit <b>une seule fois</b>, avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Demandez un nouveau lien.</p>
+  </div>`;
+}
+
 // ───────────────────────── Vues ─────────────────────────
 const VIEWS = {
   home() {
@@ -479,10 +531,11 @@ const VIEWS = {
     const today = new Date().toISOString().slice(0, 10);
     const planToday = tickets.filter((t) => t.status === 'planifiee' && (t.planned_at || '').startsWith(today));
     const hello = html`Bonjour ${state.me.name.split(' ')[0]}`;
-    const pushCard = pushState() !== 'on' ? html`<div class="alert ${isAdmin() ? 'warn' : 'info'}" style="margin-bottom:14px;align-items:center">${icon('bell')}<div style="flex:1">${isAdmin()
+    const pushCard = !['on', 'demo'].includes(pushState()) ? html`<div class="alert ${isAdmin() ? 'warn' : 'info'}" style="margin-bottom:14px;align-items:center">${icon('bell')}<div style="flex:1">${isAdmin()
       ? html`<b>Activez les notifications</b> pour être alerté immédiatement des nouvelles demandes urgentes.` : html`<b>Activez les notifications</b> pour suivre l'avancement de vos demandes.`}</div><button class="btn sm" data-action="push-on">Activer</button></div>` : '';
     if (isAdmin()) {
       return html`${pushCard}
+        ${guideCard(stats)}
         ${pageHead(hello, 'Espace équipe LuxInterventions')}
         ${orgFilter()}
         <div class="metrics">
@@ -497,6 +550,7 @@ const VIEWS = {
         ${others.length ? html`<div class="list">${others.map(ticketRow)}</div>` : html`<p class="muted small">Aucune intervention en cours.</p>`}`;
     }
     return html`${pushCard}
+      ${guideCard(stats)}
       ${pageHead(hello, state.me.org_name || '')}
       <button class="big-cta" data-action="new-ticket">${icon('plus')}<span><b>Nouvelle demande d'intervention</b><small>Urgence, photos, accès — en 30 secondes</small></span></button>
       <div class="metrics" style="margin-top:14px">
@@ -585,7 +639,7 @@ const VIEWS = {
       <div class="section-label">Notifications</div>
       <div class="list settings">
         <div class="row">${icon('bell')}<span class="grow"><span class="title" style="display:block">Notifications sur cet appareil</span>
-          <span class="meta" style="white-space:normal">${ps === 'on' ? 'Activées ✓' : ps === 'denied' ? 'Bloquées dans les réglages du navigateur' : ps === 'unsupported' ? (isIOS && !standalone ? 'Sur iPhone : installez d’abord l’app (Partager → « Sur l’écran d’accueil »), puis ouvrez-la depuis l’icône.' : 'Non disponibles sur ce navigateur') : 'Désactivées'}</span></span>
+          <span class="meta" style="white-space:normal">${ps === 'demo' ? 'En démo, les notifications sont simulées par des messages à l’écran.' : ps === 'on' ? 'Activées ✓' : ps === 'denied' ? 'Bloquées dans les réglages du navigateur' : ps === 'unsupported' ? (isIOS && !standalone ? 'Sur iPhone : installez d’abord l’app (Partager → « Sur l’écran d’accueil »), puis ouvrez-la depuis l’icône.' : 'Non disponibles sur ce navigateur') : 'Désactivées'}</span></span>
           ${ps === 'on' ? html`<button class="btn sm" data-action="push-test">Tester</button><button class="btn sm ghost" data-action="push-off">Désactiver</button>` : ps === 'off' ? html`<button class="btn sm primary" data-action="push-on">Activer</button>` : ''}</div>
       </div>
       ${!standalone ? html`<div class="section-label">Application</div><div class="list settings"><div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Installer sur ce téléphone</span>
@@ -913,7 +967,7 @@ const SHEETS = {
     return {
       title: 'Lien d’accès prêt',
       narrow: true,
-      body: html`<p class="small" style="margin-bottom:10px">Envoyez ce lien à <b>${data.name}</b> (${data.email}). Il est personnel : ne le partagez pas avec d’autres personnes.</p>
+      body: html`${state.demo ? html`<div class="alert info" style="margin-bottom:10px">${icon('eye')}<div>Démo : ce lien est fictif. En réel, la personne l’ouvre et choisit son mot de passe.</div></div>` : ''}<p class="small" style="margin-bottom:10px">Envoyez ce lien à <b>${data.name}</b> (${data.email}). Il est personnel : ne le partagez pas avec d’autres personnes.</p>
         <div class="note" style="word-break:break-all;font-family:var(--mono);font-size:12px" id="invLink">${link}</div>
         <div class="actions" style="margin-top:12px">
           <button class="btn" data-action="copy" data-text="${link}">${icon('file')} Copier</button>
@@ -942,12 +996,13 @@ const SHEETS = {
 let pushSub = null;
 let pushPerm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
 function pushState() {
+  if (state.demo) return 'demo';
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || typeof Notification === 'undefined') return 'unsupported';
   if (pushPerm === 'denied') return 'denied';
   return pushSub ? 'on' : 'off';
 }
 async function initPush() {
-  if (pushState() === 'unsupported') return;
+  if (pushState() === 'unsupported' || pushState() === 'demo') return;
   try {
     const reg = await navigator.serviceWorker.getRegistration('/portail');
     pushSub = reg ? await reg.pushManager.getSubscription() : null;
@@ -1028,6 +1083,18 @@ const ACTIONS = {
     setHtml(el, icon(inp.type === 'password' ? 'eye' : 'eyeOff'));
   },
   'close-sheet': () => closeSheet(),
+  'demo-start': () => startDemo(),
+  'demo-switch': async (d) => {
+    state.demo.switchTo(d.id);
+    state.me = { ...state.demo.me };
+    state.cache = {};
+    state.filters.org = '';
+    if (state.sheet) closeSheet();
+    renderShell();
+    await go('home', true);
+    toast(d.id === 'admin' ? 'Vous voyez maintenant le portail comme l’équipe LuxInterventions' : 'Vous voyez maintenant le portail comme une gérance');
+  },
+  'guide-hide': () => { try { localStorage.setItem('ptlGuideHidden', '1'); } catch {} state.guideHidden = true; renderView(); },
   'open-ticket': (d) => openTicket(d.id),
   'back-ticket': (d) => openTicket(d.id),
   async 'new-ticket'(d) {
