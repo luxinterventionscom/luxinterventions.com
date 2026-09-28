@@ -2,7 +2,7 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.9.2';
+const VERSION = '2.9.3';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -131,13 +131,28 @@ function recurDates(start, recur, from, to, end) {
 // Jours de collecte d'une règle de déchets
 function collecteDates(c, from, to) {
   if (c.mode === 'dates') return (c.dates || []).filter((d) => d >= from && d <= to);
-  if (c.mode === 'hebdo' || c.mode === '2sem') {
+  if (c.mode === 'hebdo') {
+    // Chaque semaine : toute la période, quel que soit le jour d'enregistrement
+    let start = from;
+    while (weekday(start) !== +c.jour) start = addDays(start, 1);
+    return recurDates(start, 'hebdo', from, to);
+  }
+  if (c.mode === '2sem') {
+    // Une semaine sur deux : on recule le repère pour couvrir aussi les dates avant le premier passage saisi
     let start = c.debut || from;
-    if (c.mode === 'hebdo') { const w = +c.jour; while (weekday(start) !== w) start = addDays(start, 1); }
-    return recurDates(start, c.mode, from, to);
+    if (start > from) start = addDays(start, -14 * Math.ceil((new Date(start + 'T00:00:00') - new Date(from + 'T00:00:00')) / (14 * 864e5)));
+    return recurDates(start, '2sem', from, to);
   }
   return [];
 }
+// Quand sortir les poubelles : la veille au soir (par défaut) ou le jour même, tôt le matin
+const SORTIES = { veille: 'La veille au soir', jour: 'Le jour même, tôt le matin' };
+const sortieDay = (c, d) => (c.sortie === 'jour' ? d : addDays(d, -1));
+const shortDay = (s) => new Date(s + 'T00:00:00').toLocaleDateString('fr-LU', { weekday: 'long', day: 'numeric', month: 'short' });
+const sortieText = (c, d) => c.sortie === 'jour'
+  ? `à sortir le jour même${c.heure ? ' ' + c.heure : ' tôt le matin'}`
+  : `à sortir la veille au soir${d ? ' (' + shortDay(addDays(d, -1)) + ')' : ''}${c.heure ? ' ' + c.heure : ''}`;
+const sortieRule = (c) => (c.sortie === 'jour' ? `Le jour du passage, ${c.heure || 'tôt le matin'}` : `La veille au soir${c.heure ? ', ' + c.heure : ''}`);
 const collecteRule = (c) => (c.mode === 'hebdo' ? `chaque ${JOURS[+c.jour]}` : c.mode === '2sem' ? `un ${JOURS[weekday(c.debut)]} sur deux (à partir du ${fmtDate(c.debut)})` : plural((c.dates || []).length, 'date'));
 // Lecture souple de dates : 07/01/2026, 7.1.2026, 07/01 (année par défaut), 2026-01-07
 function parseDates(text, year) {
@@ -791,10 +806,14 @@ function mtCard() {
   const items = agenda(t0, t1);
   const lateN = tacheToDo().filter((t) => t.date && t.date < t0).length;
   if (!items.length && !lateN) return '';
-  const tomorrowBins = items.filter((x) => x.d === t1 && x.kind === 'collecte');
+  // « À sortir » selon la règle de chaque collecte : ce soir (passage demain) ou ce matin (passage aujourd'hui)
+  const tonight = items.filter((x) => x.kind === 'collecte' && x.d === t1 && x.c.sortie !== 'jour');
+  const thisMorning = items.filter((x) => x.kind === 'collecte' && x.d === t0 && x.c.sortie === 'jour');
+  const binList = (arr) => arr.map((x) => DECHETS[x.c.cat].short + ' (' + immName(x.c.immId) + (x.c.heure ? ', ' + x.c.heure : '') + ')').join(', ');
   return html`<div class="card" style="margin-top:10px">
     <div class="card-title" style="margin-bottom:8px"><h3>Maintenance</h3><button class="btn sm ghost" data-action="go" data-to="maintenance">${icon('tool')} Ouvrir</button></div>
-    ${tomorrowBins.length ? html`<div class="alert warn" style="margin-bottom:8px">${icon('alert')}<div><b>Ce soir : sortir les poubelles</b> — ${tomorrowBins.map((x) => DECHETS[x.c.cat].short + ' (' + immName(x.c.immId) + ')').join(', ')}</div></div>` : ''}
+    ${thisMorning.length ? html`<div class="alert warn" style="margin-bottom:8px">${icon('alert')}<div><b>Ce matin : sortir les poubelles</b> (passage aujourd'hui) — ${binList(thisMorning)}</div></div>` : ''}
+    ${tonight.length ? html`<div class="alert warn" style="margin-bottom:8px">${icon('alert')}<div><b>Ce soir : sortir les poubelles</b> (passage demain) — ${binList(tonight)}</div></div>` : ''}
     ${lateN ? html`<div class="alert bad" style="margin-bottom:8px">${icon('alert')}<div>${plural(lateN, 'intervention')} en retard</div></div>` : ''}
     ${items.length ? html`<div class="list">${items.map((x) => html`${agendaRow(x)}`)}</div>` : ''}
   </div>`;
@@ -803,7 +822,7 @@ function agendaRow(x) {
   if (x.kind === 'collecte') {
     const c = x.c, k = DECHETS[c.cat];
     return html`<button class="row" data-action="edit-collecte" data-id="${c.id}"><span class="dot" style="background:${k.color}"></span>
-      <span class="grow"><span class="title" style="display:block;white-space:normal">🗑️ ${k.short} — ${immName(c.immId)}</span><span class="meta" style="white-space:normal">${LIEUX[c.lieu] || ''}${c.note ? ' · ' + c.note : ''}</span></span></button>`;
+      <span class="grow"><span class="title" style="display:block;white-space:normal">🗑️ ${k.short} — ${immName(c.immId)}</span><span class="meta" style="white-space:normal"><b>Passage ce jour</b> · ${sortieText(c, x.d)} · ${LIEUX[c.lieu] || ''}${c.note ? ' · ' + c.note : ''}</span></span></button>`;
   }
   return tacheRow(x.t, x);
 }
@@ -823,9 +842,9 @@ function reportCollectes(immId, y) {
   const cs = vault.list('collectes').filter((c) => c.immId === immId).sort((a, b) => Object.keys(DECHETS).indexOf(a.cat) - Object.keys(DECHETS).indexOf(b.cat));
   const from = `${y}-01-01`, to = `${y}-12-31`;
   return html`<h1>Calendrier des collectes ${y}</h1>
-    <p class="pr-sub">${im.adresse} — merci de sortir les poubelles la veille au soir et de les rentrer après le passage.</p>
-    <table class="tbl"><thead><tr><th>Collecte</th><th>Quand</th><th>Où déposer</th></tr></thead><tbody>
-      ${cs.map((c) => html`<tr><td><b>${DECHETS[c.cat].label}</b></td><td>${c.mode === 'dates' ? plural(collecteDates(c, from, to).length, 'passage') + ' (voir ci-dessous)' : collecteRule(c)}</td><td>${LIEUX[c.lieu] || ''}${c.note ? html`<br><span class="pr-sub">${c.note}</span>` : ''}</td></tr>`)}
+    <p class="pr-sub">${im.adresse} — les dates ci-dessous sont les jours de <b>passage</b> du camion. Sortez les poubelles comme indiqué dans « Quand sortir » et rentrez-les après le passage.</p>
+    <table class="tbl"><thead><tr><th>Collecte</th><th>Jour de passage</th><th>Quand sortir</th><th>Où déposer</th></tr></thead><tbody>
+      ${cs.map((c) => html`<tr><td><b>${DECHETS[c.cat].label}</b></td><td>${c.mode === 'dates' ? plural(collecteDates(c, from, to).length, 'passage') + ' (voir ci-dessous)' : collecteRule(c)}</td><td><b>${sortieRule(c)}</b></td><td>${LIEUX[c.lieu] || ''}${c.note ? html`<br><span class="pr-sub">${c.note}</span>` : ''}</td></tr>`)}
     </tbody></table>
     <h2>Dates ${y}</h2>
     <table class="tbl pr-grid"><thead><tr><th>Mois</th>${cs.map((c) => html`<th>${DECHETS[c.cat].short}</th>`)}</tr></thead><tbody>
@@ -897,7 +916,7 @@ const VIEWS = {
             ${next ? html`<p class="small" style="margin:0 0 8px">Prochaine : <b>${DECHETS[next.c.cat].short}</b> — ${fmtDay(next.d)}</p>` : ''}
             ${cs.length ? html`<div class="list">${cs.map((c) => html`<button class="row" data-action="edit-collecte" data-id="${c.id}">
               <span class="dot" style="background:${DECHETS[c.cat].color}"></span>
-              <span class="grow"><span class="title" style="display:block;white-space:normal">${DECHETS[c.cat].label}</span><span class="meta" style="white-space:normal">${collecteRule(c)} · ${LIEUX[c.lieu] || ''}${c.note ? ' · ' + c.note : ''}</span></span>
+              <span class="grow"><span class="title" style="display:block;white-space:normal">${DECHETS[c.cat].label}</span><span class="meta" style="white-space:normal">passage ${collecteRule(c)} · sortir ${sortieRule(c).toLowerCase()} · ${LIEUX[c.lieu] || ''}${c.note ? ' · ' + c.note : ''}</span></span>
               ${c.mode === 'dates' && c.icsUrl ? (c.icsErr ? html`<span class="badge bad">lien en erreur</span>` : html`<span class="badge ok">🔗 auto</span>`) : c.mode === 'dates' && !(c.dates || []).some((d) => d >= today()) ? html`<span class="badge warn">à mettre à jour</span>` : ''}
             </button>`)}</div>` : html`<p class="muted small">Aucune collecte enregistrée.</p>`}
           </div>`;
@@ -1532,6 +1551,9 @@ const SHEETS = {
           <label class="field full">Dates de passage<textarea name="dates" style="min-height:110px" placeholder="ex. 07/01, 21/01, 04/02 … (année ${y} par défaut) — ou collez le contenu d'un calendrier .ics">${(c.dates || []).map((d) => d.split('-').reverse().join('/')).join(', ')}</textarea></label>
           <label class="btn sm full" style="justify-self:start">${icon('upload')} Importer un fichier .ics<input type="file" accept=".ics,text/calendar" hidden data-input="col-ics"></label>
           <p class="tiny muted full" style="margin:0">Chaque année : remplacez les dates par celles du nouveau calendrier de la commune.</p></div>
+        <label class="field">Quand sortir<select name="sortie">${Object.entries(SORTIES).map(([k, v]) => html`<option value="${k}" ${(c.sortie || 'veille') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field('Heure (facultatif)', 'heure', c.heure, { placeholder: 'ex. après 18 h, avant 6 h' })}
+        <p class="tiny muted full" style="margin:0">Les dates ci-dessus sont les jours de <b>passage</b> du camion (comme sur le calendrier de la commune). Ares calcule quand sortir les poubelles.</p>
         <label class="field full">Où sortir les poubelles<select name="lieu">${Object.entries(LIEUX).map(([k, v]) => html`<option value="${k}" ${c.lieu === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Remarque', 'note', c.note, { full: true, placeholder: 'ex. sortir la veille après 18 h, conteneur au garage n°2' })}
       </form>`,
@@ -2530,7 +2552,7 @@ const FORMS = {
   async collecte(fd) {
     const id = fd.get('id');
     const mode = fd.get('mode');
-    const rec = { immId: fd.get('immId'), cat: fd.get('cat'), mode, jour: +fd.get('jour'), debut: fd.get('debut') || '', lieu: fd.get('lieu'), note: fd.get('note').trim() };
+    const rec = { immId: fd.get('immId'), cat: fd.get('cat'), mode, jour: +fd.get('jour'), debut: fd.get('debut') || '', lieu: fd.get('lieu'), sortie: fd.get('sortie') || 'veille', heure: String(fd.get('heure') || '').trim(), note: fd.get('note').trim() };
     if (mode === 'dates') {
       rec.icsUrl = String(fd.get('icsUrl') || '').trim().replace(/^webcals?:\/\//i, 'https://');
       if (rec.icsUrl && !/^https:\/\/\S+$/i.test(rec.icsUrl)) return toast('Le lien doit commencer par https:// ou webcal://', { bad: true });
