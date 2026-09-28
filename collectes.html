@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta name="pub-api" content="https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev">
+<title>Collectes des déchets</title>
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="stylesheet" href="/assets/fonts/fonts.css">
+<style>
+  :root { --bg: #f5f4f0; --card: #fff; --text: #1a1a1a; --muted: #6b675f; --line: #e6e3dc; --accent: #4f46e5; --warn: #b45309; --warn-bg: #fff4e5; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: 'DM Sans', system-ui, sans-serif; font-size: 16px; line-height: 1.5; }
+  main { max-width: 640px; margin: 0 auto; padding: 18px 16px 40px; }
+  .langs { display: flex; gap: 6px; justify-content: flex-end; margin-bottom: 10px; }
+  .langs button { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 5px 12px; font: inherit; font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; }
+  .langs button[aria-pressed="true"] { background: var(--text); color: #fff; border-color: var(--text); }
+  h1 { font-size: 24px; margin: 0; line-height: 1.2; }
+  .sub { color: var(--muted); margin: 4px 0 16px; }
+  .card { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+  .now { background: var(--warn-bg); border: 1px solid #f5d0a0; }
+  .now b { color: var(--warn); }
+  h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .row { display: flex; gap: 12px; align-items: flex-start; padding: 10px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; }
+  .dot { width: 14px; height: 14px; border-radius: 50%; flex: 0 0 14px; margin-top: 5px; }
+  .when { font-weight: 700; }
+  .meta { color: var(--muted); font-size: 14px; }
+  .btns { display: grid; gap: 8px; }
+  .btn { display: block; text-align: center; text-decoration: none; background: var(--accent); color: #fff; font-weight: 700; padding: 12px; border-radius: 12px; }
+  .btn.sec { background: var(--card); color: var(--text); border: 1px solid var(--line); }
+  .foot { text-align: center; color: var(--muted); font-size: 13px; margin-top: 18px; }
+  .err { text-align: center; color: var(--muted); padding: 40px 10px; }
+</style>
+</head>
+<body>
+<main id="app"><p class="err">…</p></main>
+<script type="module" src="/collectes.js"></script>
+</body>
+</html>
