@@ -1,14 +1,21 @@
 // Espace locataire : page personnelle, en lecture seule (+ signaler un problème).
 // Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
-import { openJson, openBytes, sealForOwner } from '/ares/espace-crypto.js';
+import { openJson, openBytes, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
 
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
-const [id, key] = (location.hash.slice(1).match(/^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/) || []).slice(1);
+// Accès : lien direct (#id.clé) ou code personnel saisi une fois ; mémorisé sur ce téléphone
+const ACC = 'espAccess';
+let [id, key] = (location.hash.slice(1).match(/^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/) || []).slice(1);
+if (id) { try { localStorage.setItem(ACC, id + '.' + key); } catch {} history.replaceState(null, '', location.pathname); }
+else { try { [id, key] = ((localStorage.getItem(ACC) || '').match(/^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/) || []).slice(1); } catch {} }
+let installEvt = null;
+addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; if (!data) render(); });
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/espace-sw.js', { scope: '/espace' }).catch(() => {});
 const app = document.getElementById('app');
 
 const L = {
   fr: {
-    loc: 'fr-LU', title: 'Mon espace locataire', hello: 'Bonjour', avis: 'Avis de l’immeuble', pay: 'Mes loyers', restNow: 'Impayé à ce jour', upcoming: 'à venir', allPaid: 'Tout est payé à ce jour ✓',
+    loc: 'fr-LU', app: 'App des locataires ARES S.A.', welcome: 'Vos loyers, quittances, documents et collectes — et signaler un problème, depuis votre téléphone.', code: 'Votre code d’accès personnel', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrer', noCode: 'Pas de code ? Demandez-le à votre gestionnaire.', badCode: 'Code inconnu. Vérifiez-le ou demandez un nouveau code.', install: 'Installer l’app sur mon téléphone', iosHow: 'iPhone : touchez Partager puis « Sur l’écran d’accueil ».', andHow: 'Android : menu ⋮ puis « Installer l’application ».', logout: 'Se déconnecter de ce téléphone', title: 'Mon espace locataire', hello: 'Bonjour', avis: 'Avis de l’immeuble', pay: 'Mes loyers', restNow: 'Impayé à ce jour', upcoming: 'à venir', allPaid: 'Tout est payé à ce jour ✓',
     iban: 'Pour payer', ref: 'Communication', quit: 'Mes quittances', quitBtn: 'Quittance', partial: 'Reçu partiel', contrat: 'Mon contrat', entry: 'Entrée', end: 'Fin du contrat', rent: 'Loyer', revision: 'Prochaine révision', caution: 'Garantie',
     docs: 'Mes documents', coll: 'Collectes des déchets', putOut: 'sortir', truck: 'passage du camion le', calAdd: '📅 Ajouter les collectes à mon calendrier', signal: 'Signaler un problème', what: 'Quel problème ?', whatPh: 'ex. Fuite sous l’évier de la cuisine depuis ce matin', type: 'Type', types: { rep: '🔧 Réparation / panne', menage: '🧹 Propreté / nettoyage', autre: '📌 Autre' },
     photos: 'Photos (3 maximum)', tel: 'Téléphone pour vous joindre (facultatif)', dispo: 'Quand êtes-vous disponible ? (facultatif)', send: 'Envoyer', sent: 'Merci, votre message a été envoyé. Vous verrez ici quand il sera pris en charge.', mine: 'Mes signalements',
@@ -21,7 +28,7 @@ const L = {
     quitText: (s, n, a, m, y) => `Je soussigné(e), ${s}, locataire principal et bailleur, déclare avoir reçu de ${n} la somme de ${a} au titre du loyer de ${m} ${y}, et lui en donne quittance.`, print: 'Imprimer / enregistrer en PDF', close: 'Fermer',
   },
   de: {
-    loc: 'de-LU', title: 'Mein Mieterbereich', hello: 'Guten Tag', avis: 'Mitteilungen zum Haus', pay: 'Meine Mieten', restNow: 'Heute offen', upcoming: 'noch fällig', allPaid: 'Bis heute alles bezahlt ✓',
+    loc: 'de-LU', app: 'Mieter-App ARES S.A.', welcome: 'Ihre Mieten, Quittungen, Dokumente und Abfuhrtermine — und Probleme melden, auf Ihrem Telefon.', code: 'Ihr persönlicher Zugangscode', codePh: 'z. B. K7PM2-QXA4H', enter: 'Anmelden', noCode: 'Kein Code? Fragen Sie Ihre Verwaltung.', badCode: 'Unbekannter Code. Bitte prüfen oder einen neuen Code anfordern.', install: 'App auf meinem Telefon installieren', iosHow: 'iPhone: Teilen tippen, dann „Zum Home-Bildschirm“.', andHow: 'Android: Menü ⋮, dann „App installieren“.', logout: 'Auf diesem Telefon abmelden', title: 'Mein Mieterbereich', hello: 'Guten Tag', avis: 'Mitteilungen zum Haus', pay: 'Meine Mieten', restNow: 'Heute offen', upcoming: 'noch fällig', allPaid: 'Bis heute alles bezahlt ✓',
     iban: 'Zahlung', ref: 'Verwendungszweck', quit: 'Meine Quittungen', quitBtn: 'Quittung', partial: 'Teilzahlung', contrat: 'Mein Vertrag', entry: 'Einzug', end: 'Vertragsende', rent: 'Miete', revision: 'Nächste Anpassung', caution: 'Kaution',
     docs: 'Meine Dokumente', coll: 'Müllabfuhr', putOut: 'rausstellen', truck: 'Abholung am', calAdd: '📅 Abfuhrtermine in meinen Kalender', signal: 'Ein Problem melden', what: 'Welches Problem?', whatPh: 'z. B. Wasser tropft seit heute Morgen unter der Küchenspüle', type: 'Art', types: { rep: '🔧 Reparatur / Defekt', menage: '🧹 Sauberkeit / Reinigung', autre: '📌 Sonstiges' },
     photos: 'Fotos (max. 3)', tel: 'Telefon für Rückfragen (optional)', dispo: 'Wann sind Sie erreichbar? (optional)', send: 'Senden', sent: 'Danke, Ihre Meldung wurde gesendet. Hier sehen Sie, wenn sie bearbeitet wird.', mine: 'Meine Meldungen',
@@ -34,7 +41,7 @@ const L = {
     quitText: (s, n, a, m, y) => `Ich, ${s}, Hauptmieter und Vermieter, bestätige, von ${n} den Betrag von ${a} als Miete für ${m} ${y} erhalten zu haben.`, print: 'Drucken / als PDF speichern', close: 'Schließen',
   },
   pt: {
-    loc: 'pt-PT', title: 'O meu espaço de inquilino', hello: 'Olá', avis: 'Avisos do prédio', pay: 'As minhas rendas', restNow: 'Em falta hoje', upcoming: 'por vencer', allPaid: 'Tudo pago até hoje ✓',
+    loc: 'pt-PT', app: 'App dos inquilinos ARES S.A.', welcome: 'As suas rendas, recibos, documentos e recolhas — e comunicar um problema, no seu telemóvel.', code: 'O seu código de acesso pessoal', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrar', noCode: 'Não tem código? Peça-o ao seu gestor.', badCode: 'Código desconhecido. Verifique-o ou peça um novo código.', install: 'Instalar a app no meu telemóvel', iosHow: 'iPhone: toque em Partilhar e depois « Adicionar ao ecrã principal ».', andHow: 'Android: menu ⋮ e depois « Instalar aplicação ».', logout: 'Terminar sessão neste telemóvel', title: 'O meu espaço de inquilino', hello: 'Olá', avis: 'Avisos do prédio', pay: 'As minhas rendas', restNow: 'Em falta hoje', upcoming: 'por vencer', allPaid: 'Tudo pago até hoje ✓',
     iban: 'Para pagar', ref: 'Referência', quit: 'Os meus recibos', quitBtn: 'Recibo', partial: 'Recibo parcial', contrat: 'O meu contrato', entry: 'Entrada', end: 'Fim do contrato', rent: 'Renda', revision: 'Próxima revisão', caution: 'Caução',
     docs: 'Os meus documentos', coll: 'Recolha do lixo', putOut: 'pôr fora', truck: 'recolha no dia', calAdd: '📅 Adicionar as recolhas ao meu calendário', signal: 'Comunicar um problema', what: 'Qual é o problema?', whatPh: 'ex. Fuga de água debaixo do lava-loiça desde esta manhã', type: 'Tipo', types: { rep: '🔧 Reparação / avaria', menage: '🧹 Limpeza', autre: '📌 Outro' },
     photos: 'Fotos (máximo 3)', tel: 'Telefone para o contactar (opcional)', dispo: 'Quando está disponível? (opcional)', send: 'Enviar', sent: 'Obrigado, a sua mensagem foi enviada. Verá aqui quando for tratada.', mine: 'As minhas comunicações',
@@ -47,7 +54,7 @@ const L = {
     quitText: (s, n, a, m, y) => `Eu, ${s}, arrendatário principal e senhorio, declaro ter recebido de ${n} a quantia de ${a} referente à renda de ${m} ${y}.`, print: 'Imprimir / guardar em PDF', close: 'Fechar',
   },
   en: {
-    loc: 'en-GB', title: 'My tenant space', hello: 'Hello', avis: 'Building notices', pay: 'My rent', restNow: 'Unpaid to date', upcoming: 'upcoming', allPaid: 'All paid to date ✓',
+    loc: 'en-GB', app: 'ARES S.A. tenant app', welcome: 'Your rent, receipts, documents and waste collections — and report a problem, on your phone.', code: 'Your personal access code', codePh: 'e.g. K7PM2-QXA4H', enter: 'Enter', noCode: 'No code? Ask your property manager.', badCode: 'Unknown code. Check it or ask for a new code.', install: 'Install the app on my phone', iosHow: 'iPhone: tap Share, then “Add to Home Screen”.', andHow: 'Android: menu ⋮, then “Install app”.', logout: 'Sign out on this phone', title: 'My tenant space', hello: 'Hello', avis: 'Building notices', pay: 'My rent', restNow: 'Unpaid to date', upcoming: 'upcoming', allPaid: 'All paid to date ✓',
     iban: 'How to pay', ref: 'Reference', quit: 'My rent receipts', quitBtn: 'Receipt', partial: 'Partial receipt', contrat: 'My lease', entry: 'Move-in', end: 'Lease end', rent: 'Rent', revision: 'Next rent review', caution: 'Deposit',
     docs: 'My documents', coll: 'Waste collection', putOut: 'put out', truck: 'truck comes on', calAdd: '📅 Add collections to my calendar', signal: 'Report a problem', what: 'What is the problem?', whatPh: 'e.g. Water leaking under the kitchen sink since this morning', type: 'Type', types: { rep: '🔧 Repair / breakdown', menage: '🧹 Cleanliness', autre: '📌 Other' },
     photos: 'Photos (up to 3)', tel: 'Phone to reach you (optional)', dispo: 'When are you available? (optional)', send: 'Send', sent: 'Thank you, your message has been sent. You will see here when it is handled.', mine: 'My reports',
@@ -82,7 +89,20 @@ function render() {
   const t = T();
   document.documentElement.lang = lang;
   const langs = `<div class="langs">${Object.keys(L).map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
-  if (!data) { app.innerHTML = `<div class="top"><span></span>${langs}</div><p class="err">${esc(id ? t.off : t.bad)}</p>`; return; }
+  if (!data) {
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    app.innerHTML = `<div class="top"><b>ARES S.A.</b>${langs}</div>
+      <div style="text-align:center;margin:18px 0"><img src="/ares/icons/ares-192.png" alt="" width="84" height="84" style="border-radius:20px"></div>
+      <h1 style="text-align:center">${esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
+      ${loadErr ? `<div class="card avis"><p style="margin:0">${esc(loadErr)}</p></div>` : ''}
+      <div class="card"><form id="codeForm"><label>${esc(t.code)}</label>
+        <input type="text" name="code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="${esc(t.codePh)}" style="font-size:22px;letter-spacing:.08em;text-align:center" required>
+        <button class="btn block" style="margin-top:12px" type="submit">${esc(t.enter)}</button></form>
+        <p class="meta" style="text-align:center;margin:10px 0 0">${esc(t.noCode)}</p></div>
+      ${standalone ? '' : `<div class="card"><h2>📱 ${esc(t.install)}</h2>${installEvt ? `<button class="btn block" data-install="1">${esc(t.install)}</button>` : `<p style="margin:0">${esc(ios ? t.iosHow : t.andHow)}</p>`}</div>`}`;
+    return;
+  }
   const d = data, s = d.show || {};
   document.title = `${t.title} — ${d.societe.nom}`;
   const out = [];
@@ -131,7 +151,7 @@ function render() {
       ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div></div></div>`).join('')}` : ''}</div>`);
   }
   if (s.coll || s.signal) out.push(`<div class="card meta"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow"></span> ${esc(t.lights[1])} · <span class="light l-red"></span> ${esc(t.lights[2])}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</div>`);
-  out.push(`<div class="card notice"><details><summary>🔒 ${esc(t.rgpdT)}</summary><p>${esc(t.rgpd(d.societe))}</p></details><p style="margin:8px 0 0">${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
+  out.push(`<div class="card notice"><details><summary>🔒 ${esc(t.rgpdT)}</summary><p>${esc(t.rgpd(d.societe))}</p></details><p style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
   app.innerHTML = out.join('');
 }
 
@@ -168,6 +188,8 @@ async function compress(file) {
 }
 
 app.addEventListener('click', async (e) => {
+  if (e.target.closest('[data-install]') && installEvt) { installEvt.prompt(); installEvt = null; return; }
+  if (e.target.closest('[data-logout]')) { e.preventDefault(); try { localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; return render(); }
   const lb = e.target.closest('[data-lang]');
   if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('espLang', lang); } catch {} return render(); }
   const qb = e.target.closest('[data-quit]');
@@ -185,6 +207,21 @@ app.addEventListener('click', async (e) => {
   }
 });
 app.addEventListener('submit', async (e) => {
+  if (e.target.id === 'codeForm') {
+    e.preventDefault();
+    const btn = e.target.querySelector('button'); btn.disabled = true; btn.textContent = '…';
+    try {
+      const code = e.target.code.value;
+      const r = await fetch(`${API}/api/esp-code`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ h: await codeHash(code) }) });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(r.status === 404 ? T().badCode : j.error || r.status);
+      id = j.id; key = await unwrapWithCode(code, j.salt, j.wk);
+      try { localStorage.setItem(ACC, id + '.' + key); } catch {}
+      loadErr = '';
+      await load();
+    } catch (err) { loadErr = err.message || String(err); render(); }
+    return;
+  }
   if (e.target.id !== 'sig') return;
   e.preventDefault();
   const f = e.target, btn = f.querySelector('button[type=submit]');
@@ -206,13 +243,18 @@ app.addEventListener('submit', async (e) => {
   }
 });
 
-(async () => {
+let loadErr = '';
+async function load() {
+  data = null;
   if (id && key) {
     try {
       const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' });
       if (r.ok) data = await openJson(key, await r.arrayBuffer());
-    } catch {}
+      else if (r.status === 404) { try { localStorage.removeItem(ACC); } catch {} id = key = ''; loadErr = T().off; }
+    } catch { loadErr = '⚠ offline'; }
   }
-  lang = pick(data);
+  if (!localStorage.getItem('espLang')) lang = pick(data);
   render();
-})();
+}
+lang = pick(null);
+load();

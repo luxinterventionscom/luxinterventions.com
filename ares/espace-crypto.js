@@ -26,6 +26,23 @@ export async function openBytes(key, data) {
 export const sealJson = (key, obj) => sealBytes(key, te.encode(JSON.stringify(obj)));
 export const openJson = async (key, data) => JSON.parse(td.decode(await openBytes(key, data)));
 
+// Code d'accès court (ex. K7PM2-QXA4H) donné par le gestionnaire : l'app installée n'a pas le lien.
+// Le serveur ne connaît que l'empreinte du code ; la clé de l'espace est enveloppée par une clé
+// dérivée du code (PBKDF2), donc illisible sans le code (et les essais sont limités).
+const ALPHA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+export const newAccessCode = () => { const r = crypto.getRandomValues(new Uint8Array(10)); const s = [...r].map((b) => ALPHA[b % 32]).join(''); return s.slice(0, 5) + '-' + s.slice(5); };
+export const normCode = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+export async function codeHash(code) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', te.encode('ares-esp:' + normCode(code))))].map((b) => b.toString(16).padStart(2, '0')).join(''); }
+async function codeKey(code, salt) {
+  const base = await crypto.subtle.importKey('raw', te.encode(normCode(code)), 'PBKDF2', false, ['deriveBits']);
+  return new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: 150000 }, base, 256));
+}
+export async function wrapWithCode(code, espaceKey) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  return { salt: b64u(salt), wk: b64u(await sealBytes(await codeKey(code, salt), te.encode(espaceKey))) };
+}
+export async function unwrapWithCode(code, salt, wk) { return td.decode(await openBytes(await codeKey(code, unb64u(salt)), unb64u(wk))); }
+
 // Clés du gestionnaire pour les signalements
 export async function newOwnerKeys() {
   const kp = await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);

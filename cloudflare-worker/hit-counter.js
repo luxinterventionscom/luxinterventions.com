@@ -65,6 +65,9 @@ export default {
 
     // ── Calendrier public des collectes (locataires) : /api/pub/<token>.json | .ics ──
     // ── Espace locataire (public, contenu chiffré de bout en bout) ──
+    // Code d'accès saisi dans l'app des locataires (empreinte du code seulement ; essais limités)
+    if (url.pathname === "/api/esp-code" && request.method === "POST") return espaceCode(request, env, headers);
+
     const esp = url.pathname.match(/^\/api\/esp\/([0-9a-f]{32})(?:\/(f\/[a-z0-9]{1,40}|signal))?$/);
     if (esp) return espacePublic(request, env, esp[1], esp[2] || "", headers);
 
@@ -198,7 +201,8 @@ const ARES_LOCK_SECONDS = 900;
 const ARES_SESSION = "ares/session.json";
 const ARES_PUBLIC = "ares/public/";
 const ARES_ESPACE = "ares/espace/"; // espaces locataires : données chiffrées avec une clé que seul le lien du locataire contient
-const ARES_INBOX = "ares/inbox/"; // signalements des locataires, chiffrés pour le gestionnaire (clé publique)
+const ARES_INBOX = "ares/inbox/";
+const ARES_ESPCODE = "ares/espcode/"; // code d'accès court → clé de l'espace enveloppée (illisible sans le code) // signalements des locataires, chiffrés pour le gestionnaire (clé publique)
 const ARES_LEASE_MS = 120 * 1000; // un dispositivo inattivo da 2 minuti non è più considerato connesso
 const ARES_RENEW_MS = 20 * 1000;
 
@@ -244,6 +248,23 @@ async function publicCollectes(env, token, fmt, url, headers) {
   // Lignes de 75 octets max (RFC 5545) : on replie les longues lignes
   const folded = lines.map((l) => { let out = "", s = l; while (new TextEncoder().encode(s).length > 73) { let n = 73; while (new TextEncoder().encode(s.slice(0, n)).length > 73) n--; out += s.slice(0, n) + "\r\n "; s = s.slice(n); } return out + s; });
   return new Response(folded.join("\r\n") + "\r\n", { headers: { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `inline; filename="collectes.ics"`, ...headers, ...cache } });
+}
+
+const isB64u = (v, max) => typeof v === "string" && v.length > 0 && v.length <= max && /^[A-Za-z0-9_-]+$/.test(v);
+async function espaceCode(request, env, headers) {
+  const ip = clientIp(request);
+  const k = "espc-rl:" + ip;
+  const fails = parseInt((await env.HITS.get(k)) || "0", 10);
+  if (fails >= 10) return aresJson({ error: "Trop d'essais. Réessayez dans 15 minutes." }, 429, headers);
+  let b;
+  try { b = await request.json(); } catch { b = {}; }
+  const obj = /^[0-9a-f]{64}$/.test(b.h || "") ? await env.PHOTOS.get(ARES_ESPCODE + b.h + ".json") : null;
+  const data = obj ? await obj.json() : null;
+  if (!data || !(await env.PHOTOS.head(ARES_ESPACE + data.id + ".bin"))) {
+    try { await env.HITS.put(k, String(fails + 1), { expirationTtl: 900 }); } catch { /* quota KV */ }
+    return aresJson({ error: "Code inconnu" }, 404, headers);
+  }
+  return aresJson(data, 200, headers);
 }
 
 // ── Espace locataire public : lecture du contenu chiffré, documents partagés, envoi d'un signalement ──
@@ -473,6 +494,18 @@ async function handleAres(request, env, url, headers) {
     const body = await request.arrayBuffer();
     if (!body.byteLength || body.byteLength > (espMatch[2] ? ARES_MAX_FILE : 2 * 1024 * 1024)) return aresJson({ error: "Taille invalide" }, 413, headers);
     await env.PHOTOS.put(key, body, { httpMetadata: { contentType: "application/octet-stream" } });
+    return aresJson({ ok: true }, 200, headers);
+  }
+  const codeMatch = path.match(/^espcode\/([0-9a-f]{64})$/);
+  if (codeMatch && method === "PUT") {
+    let b;
+    try { b = await request.json(); } catch { b = null; }
+    if (!b || !/^[0-9a-f]{32}$/.test(b.id || "") || !isB64u(b.salt, 40) || !isB64u(b.wk, 200)) return aresJson({ error: "Données invalides" }, 400, headers);
+    await env.PHOTOS.put(ARES_ESPCODE + codeMatch[1] + ".json", JSON.stringify({ id: b.id, salt: b.salt, wk: b.wk }), { httpMetadata: { contentType: "application/json" } });
+    return aresJson({ ok: true }, 200, headers);
+  }
+  if (codeMatch && method === "DELETE") {
+    await env.PHOTOS.delete(ARES_ESPCODE + codeMatch[1] + ".json");
     return aresJson({ ok: true }, 200, headers);
   }
   // Boîte de réception des signalements (chiffrés) : liste, lecture, suppression après import
