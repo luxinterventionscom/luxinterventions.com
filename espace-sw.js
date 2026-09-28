@@ -1,5 +1,5 @@
 // App des locataires ARES S.A. : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'espace-shell-v1.1.0';
+const CACHE = 'espace-shell-v1.2.0';
 const SHELL = ['/espace.html', '/espace.js', '/ares/espace-crypto.js', '/espace.webmanifest', '/ares/icons/ares-192.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

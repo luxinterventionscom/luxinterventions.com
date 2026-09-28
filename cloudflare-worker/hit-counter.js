@@ -209,6 +209,7 @@ const ARES_RENEW_MS = 20 * 1000;
 // ── Calendrier public des collectes : JSON pour la page locataires, .ics pour les agendas des téléphones ──
 const PUB_I18N = {
   fr: { put: "Sortir", truck: "Passage du camion", cal: "Collectes", cats: { residuel: "Déchets résiduels", organique: "Biodéchets", papier: "Papier / carton", verre: "Verre", valorlux: "Valorlux (sacs bleus)", encombrants: "Encombrants", autre: "Autre collecte" }, lieux: { rue: "Sur le trottoir", soussol: "Au sous-sol (local poubelles)", garage: "Au garage" } },
+  it: { put: "Mettere fuori", truck: "Raccolta", cal: "Raccolta rifiuti", cats: { residuel: "Indifferenziato", organique: "Organico / umido", papier: "Carta / cartone", verre: "Vetro", valorlux: "Valorlux (sacchi blu)", encombrants: "Ingombranti", autre: "Altra raccolta" }, lieux: { rue: "Sul marciapiede", soussol: "In cantina (locale rifiuti)", garage: "In garage" } },
   de: { put: "Rausstellen", truck: "Abholung", cal: "Müllabfuhr", cats: { residuel: "Restmüll", organique: "Biomüll", papier: "Papier & Karton", verre: "Glas", valorlux: "Valorlux (blaue Säcke)", encombrants: "Sperrmüll", autre: "Sonstige Abfuhr" }, lieux: { rue: "Auf dem Bürgersteig", soussol: "Im Keller (Müllraum)", garage: "In der Garage" } },
   pt: { put: "Pôr fora", truck: "Recolha", cal: "Recolha do lixo", cats: { residuel: "Lixo indiferenciado", organique: "Resíduos orgânicos", papier: "Papel / cartão", verre: "Vidro", valorlux: "Valorlux (sacos azuis)", encombrants: "Monstros", autre: "Outra recolha" }, lieux: { rue: "No passeio", soussol: "Na cave (local do lixo)", garage: "Na garagem" } },
   en: { put: "Put out", truck: "Collection", cal: "Waste collection", cats: { residuel: "Residual waste", organique: "Organic waste", papier: "Paper / cardboard", verre: "Glass", valorlux: "Valorlux (blue bags)", encombrants: "Bulky waste", autre: "Other collection" }, lieux: { rue: "On the pavement", soussol: "In the basement (bin room)", garage: "In the garage" } },
@@ -219,7 +220,7 @@ const icsDay = (d, delta) => { const t = new Date(d + "T12:00:00Z"); t.setUTCDat
 function putOutTime(item) {
   const m = String(item.heure || "").match(/(\d{1,2})(?:\s*[h:.]\s*(\d{2}))?/);
   let h = m ? Math.min(23, +m[1]) : item.sortie === "jour" ? 6 : 18;
-  if (/avant|vor|antes|before/i.test(item.heure || "") || (!m && item.sortie === "jour")) h = Math.max(0, h - 1);
+  if (/avant|vor|antes|before|prima/i.test(item.heure || "") || (!m && item.sortie === "jour")) h = Math.max(0, h - 1);
   return String(h).padStart(2, "0") + (m && m[2] ? m[2] : "00") + "00";
 }
 async function publicCollectes(env, token, fmt, url, headers) {
