@@ -2,7 +2,7 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.9.0';
+const VERSION = '2.9.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -644,6 +644,36 @@ function startSession() {
   renderShell();
   go(location.hash.slice(2) || 'dashboard', true);
   vault.sync();
+  setTimeout(() => refreshIcs(false), 4000);
+}
+
+// Collectes liées au calendrier en ligne de la commune : mise à jour automatique (une fois par jour et par appareil)
+async function refreshIcs(force, onlyId) {
+  const key = 'aresIcsDay';
+  let day = '';
+  try { day = localStorage.getItem(key) || ''; } catch {}
+  if (!force && day === today()) return 0;
+  const list = vault.list('collectes').filter((c) => c.mode === 'dates' && c.icsUrl && (!onlyId || c.id === onlyId));
+  if (!list.length || !vault.unlocked) return 0;
+  let changed = 0;
+  const byUrl = new Map();
+  for (const c of list) {
+    try {
+      if (!byUrl.has(c.icsUrl)) byUrl.set(c.icsUrl, parseDates(await vault.fetchIcs(c.icsUrl), new Date().getFullYear()));
+      const ds = byUrl.get(c.icsUrl);
+      if (!ds.length) throw new Error('aucune date dans le calendrier');
+      const upd = { id: c.id, icsErr: '' };
+      if (ds.join() !== (c.dates || []).join()) { upd.dates = ds; upd.icsAt = today(); changed++; }
+      // On n'écrit que si quelque chose change (pas d'entrée dans l'historique à chaque vérification)
+      if (upd.dates || c.icsErr) await vault.mutate((tx) => tx.put('collectes', upd), upd.dates ? 'Calendrier mis à jour' : 'Calendrier à nouveau disponible', `${DECHETS[c.cat].short} — ${immName(c.immId)}${upd.dates ? ' · ' + plural(ds.length, 'date') : ''}`, c.immId);
+    } catch (e) {
+      if (force) toast(`${DECHETS[c.cat].short} : ${e.message || 'calendrier indisponible'}`, { bad: true });
+      if (c.icsErr !== (e.message || 'erreur')) await vault.mutate((tx) => tx.put('collectes', { id: c.id, icsErr: e.message || 'erreur' }), 'Calendrier indisponible', `${DECHETS[c.cat].short} — ${immName(c.immId)}`, c.immId);
+    }
+  }
+  try { localStorage.setItem(key, today()); } catch {}
+  if (changed && !force) toast(`Calendrier des collectes mis à jour (${plural(changed, 'collecte')})`);
+  return changed;
 }
 
 function lockNow(msg = '') {
@@ -868,7 +898,7 @@ const VIEWS = {
             ${cs.length ? html`<div class="list">${cs.map((c) => html`<button class="row" data-action="edit-collecte" data-id="${c.id}">
               <span class="dot" style="background:${DECHETS[c.cat].color}"></span>
               <span class="grow"><span class="title" style="display:block;white-space:normal">${DECHETS[c.cat].label}</span><span class="meta" style="white-space:normal">${collecteRule(c)} · ${LIEUX[c.lieu] || ''}${c.note ? ' · ' + c.note : ''}</span></span>
-              ${c.mode === 'dates' && !(c.dates || []).some((d) => d >= today()) ? html`<span class="badge warn">à mettre à jour</span>` : ''}
+              ${c.mode === 'dates' && c.icsUrl ? (c.icsErr ? html`<span class="badge bad">lien en erreur</span>` : html`<span class="badge ok">🔗 auto</span>`) : c.mode === 'dates' && !(c.dates || []).some((d) => d >= today()) ? html`<span class="badge warn">à mettre à jour</span>` : ''}
             </button>`)}</div>` : html`<p class="muted small">Aucune collecte enregistrée.</p>`}
           </div>`;
         })}`;
@@ -1497,6 +1527,8 @@ const SHEETS = {
         <div class="fields full" data-mode="2sem" ${c.mode === '2sem' ? '' : new Raw('hidden')}>
           ${field('Premier passage', 'debut', c.debut || today(), { type: 'date' })}</div>
         <div class="fields full" data-mode="dates" ${c.mode === 'dates' ? '' : new Raw('hidden')}>
+          ${field('Lien du calendrier de la commune (mise à jour automatique)', 'icsUrl', c.icsUrl, { full: true, type: 'url', placeholder: 'https://… ou webcal://… (lien .ics copié du site ou de l’app de la commune)' })}
+          ${c.icsUrl ? html`<p class="tiny muted full" style="margin:0">${c.icsErr ? html`<span class="red">⚠ Dernier essai : ${c.icsErr}</span>` : c.icsAt ? `✓ Dates reprises du calendrier en ligne le ${fmtDate(c.icsAt)} — vérification automatique chaque jour.` : 'Vérification automatique chaque jour.'} <a href="#" data-action="ics-now" data-id="${c.id}">Mettre à jour maintenant</a></p>` : ''}
           <label class="field full">Dates de passage<textarea name="dates" style="min-height:110px" placeholder="ex. 07/01, 21/01, 04/02 … (année ${y} par défaut) — ou collez le contenu d'un calendrier .ics">${(c.dates || []).map((d) => d.split('-').reverse().join('/')).join(', ')}</textarea></label>
           <label class="btn sm full" style="justify-self:start">${icon('upload')} Importer un fichier .ics<input type="file" accept=".ics,text/calendar" hidden data-input="col-ics"></label>
           <p class="tiny muted full" style="margin:0">Chaque année : remplacez les dates par celles du nouveau calendrier de la commune.</p></div>
@@ -2190,6 +2222,13 @@ const ACTIONS = {
   'edit-tache': (d) => openOver('tache-form', d.id),
   'new-collecte': (d) => openOver('collecte-form', null, null, d.imm || ui.immFilter || ''),
   'edit-collecte': (d) => openOver('collecte-form', d.id),
+  async 'ics-now'(d) {
+    toast('Lecture du calendrier de la commune…');
+    const n = await refreshIcs(true, d.id);
+    const c = vault.get('collectes', d.id);
+    if (c && !c.icsErr) toast(n ? 'Nouvelles dates enregistrées' : 'Déjà à jour');
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  },
   'print-collectes': (d) => printDoc('Collectes des déchets', reportCollectes(d.id, +d.y || new Date().getFullYear())),
   async 'tache-done'(d) {
     const t = vault.get('taches', d.id);
@@ -2493,9 +2532,18 @@ const FORMS = {
     const mode = fd.get('mode');
     const rec = { immId: fd.get('immId'), cat: fd.get('cat'), mode, jour: +fd.get('jour'), debut: fd.get('debut') || '', lieu: fd.get('lieu'), note: fd.get('note').trim() };
     if (mode === 'dates') {
+      rec.icsUrl = String(fd.get('icsUrl') || '').trim().replace(/^webcals?:\/\//i, 'https://');
+      if (rec.icsUrl && !/^https:\/\/\S+$/i.test(rec.icsUrl)) return toast('Le lien doit commencer par https:// ou webcal://', { bad: true });
       rec.dates = parseDates(fd.get('dates'), new Date().getFullYear());
+      if (rec.icsUrl && !rec.dates.length) {
+        try {
+          toast('Lecture du calendrier de la commune…');
+          rec.dates = parseDates(await vault.fetchIcs(rec.icsUrl), new Date().getFullYear());
+          rec.icsAt = today(); rec.icsErr = '';
+        } catch (e) { return toast(e.message || 'Calendrier indisponible', { bad: true }); }
+      }
       if (!rec.dates.length) return toast('Aucune date reconnue (ex. 07/01, 21/01…)', { bad: true });
-    }
+    } else rec.icsUrl = '';
     if (mode === '2sem' && !rec.debut) return toast('Indiquez le premier passage', { bad: true });
     if (id) rec.id = id;
     await vault.mutate((tx) => tx.put('collectes', rec), id ? 'Collecte modifiée' : 'Collecte ajoutée', `${DECHETS[rec.cat].short} — ${immName(rec.immId)}`, rec.immId);
