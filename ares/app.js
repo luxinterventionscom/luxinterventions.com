@@ -2,7 +2,7 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.8.1';
+const VERSION = '2.9.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -49,6 +49,7 @@ const ICONS = {
   phoneApp: '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
+  tool: '<path d="M14.7 6.3a4 4 0 0 0 5 5l-8.5 8.5a2.1 2.1 0 0 1-3-3l8.5-8.5z"/><path d="M14.7 6.3 17 4a4 4 0 0 1 3 3l-2.3 2.3"/>',
 };
 const icon = (n) => new Raw(`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`);
 
@@ -82,6 +83,99 @@ const immGone = (im) => !!(im && im.finGestion) && im.finGestion <= today();
 // Photos d'état des lieux : attachées au logement (pas au locataire), elles restent d'un occupant à l'autre
 const EDL_MAX = 10;
 const edlOf = (logId) => vault.list('documents').filter((d) => d.kind === 'edl' && d.logId === logId).sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.u || 0) - (b.u || 0));
+
+// ───────────────────────── Maintenance : intervenants, interventions, collectes des déchets ─────────────────────────
+const METIERS = { menage: 'Femme de ménage / nettoyage', menuisier: 'Menuisier', electricien: 'Électricien', plombier: 'Plombier / sanitaire', chauffagiste: 'Chauffagiste', macon: 'Maçon', peintre: 'Peintre', serrurier: 'Serrurier', jardinier: 'Jardinier', autre: 'Autre' };
+const TACHE_TYPES = { nettoyage: '🧹 Nettoyage', reparation: '🔧 Réparation', entretien: '🛠️ Entretien / contrôle', autre: '📌 Autre' };
+const RECURS = { '': 'Une seule fois', hebdo: 'Chaque semaine', '2sem': 'Toutes les 2 semaines', mois: 'Chaque mois' };
+const STATUTS = { afaire: 'À faire', planifie: 'Planifiée', fait: 'Terminée' };
+const DECHETS = {
+  residuel: { label: 'Déchets résiduels (poubelle grise)', short: 'Résiduels', color: '#6b7280' },
+  organique: { label: 'Biodéchets / organique (umido)', short: 'Organique', color: '#92400e' },
+  papier: { label: 'Papier / carton', short: 'Papier', color: '#2563eb' },
+  verre: { label: 'Verre', short: 'Verre', color: '#15803d' },
+  valorlux: { label: 'Valorlux (sacs bleus PMC)', short: 'Valorlux', color: '#0891b2' },
+  encombrants: { label: 'Encombrants (grandes)', short: 'Encombrants', color: '#7c3aed' },
+  autre: { label: 'Autre collecte', short: 'Autre', color: '#9a958a' },
+};
+const LIEUX = { rue: 'Sur le trottoir (devant l’immeuble)', soussol: 'Au sous-sol / local poubelles', garage: 'Au garage', autre: 'Autre (voir remarque)' };
+const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+const weekday = (s) => new Date(s + 'T00:00:00').getDay();
+const fmtDay = (s) => new Date(s + 'T00:00:00').toLocaleDateString('fr-LU', { weekday: 'long', day: 'numeric', month: 'long' });
+
+// Dates d'une règle récurrente entre from et to (inclus). start = première date de la série.
+function recurDates(start, recur, from, to, end) {
+  if (!start) return [];
+  const stop = end && end < to ? end : to;
+  if (!recur) return start >= from && start <= stop ? [start] : [];
+  const out = [];
+  if (recur === 'mois') {
+    const [y, m, day] = start.split('-').map(Number);
+    for (let n = 0; n < 600; n++) {
+      const last = new Date(y, m + n, 0).getDate();
+      const d = isoDate(new Date(y, m - 1 + n, Math.min(day, last)));
+      if (d > stop) break;
+      if (d >= from) out.push(d);
+    }
+    return out;
+  }
+  const step = recur === 'hebdo' ? 7 : 14;
+  let d = start;
+  if (d < from) {
+    const gap = Math.round((new Date(from + 'T00:00:00') - new Date(d + 'T00:00:00')) / 864e5);
+    d = addDays(d, Math.floor(gap / step) * step);
+  }
+  for (let i = 0; d <= stop && i < 800; i++, d = addDays(d, step)) if (d >= from) out.push(d);
+  return out;
+}
+// Jours de collecte d'une règle de déchets
+function collecteDates(c, from, to) {
+  if (c.mode === 'dates') return (c.dates || []).filter((d) => d >= from && d <= to);
+  if (c.mode === 'hebdo' || c.mode === '2sem') {
+    let start = c.debut || from;
+    if (c.mode === 'hebdo') { const w = +c.jour; while (weekday(start) !== w) start = addDays(start, 1); }
+    return recurDates(start, c.mode, from, to);
+  }
+  return [];
+}
+const collecteRule = (c) => (c.mode === 'hebdo' ? `chaque ${JOURS[+c.jour]}` : c.mode === '2sem' ? `un ${JOURS[weekday(c.debut)]} sur deux (à partir du ${fmtDate(c.debut)})` : plural((c.dates || []).length, 'date'));
+// Lecture souple de dates : 07/01/2026, 7.1.2026, 07/01 (année par défaut), 2026-01-07
+function parseDates(text, year) {
+  const out = new Set();
+  // Calendrier .ics (exporté par la commune) : on garde les dates DTSTART
+  for (const m of String(text || '').matchAll(/DTSTART[^:\n]*:(\d{4})(\d{2})(\d{2})/g)) out.add(`${m[1]}-${m[2]}-${m[3]}`);
+  if (out.size) return [...out].sort();
+  for (const tok of String(text || '').split(/[\s,;]+/).filter(Boolean)) {
+    let m = tok.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    let d, mo, y;
+    if (m) [, y, mo, d] = m;
+    else if ((m = tok.match(/^(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?$/))) { [, d, mo, y] = m; y = y ? (y.length === 2 ? '20' + y : y) : year; }
+    else continue;
+    const dt = new Date(+y, +mo - 1, +d);
+    if (dt.getMonth() === +mo - 1 && dt.getDate() === +d) out.add(isoDate(dt));
+  }
+  return [...out].sort();
+}
+const intervName = (id) => { const i = vault.get('intervenants', id); return i ? i.nom : ''; };
+const placeName = (t) => [t.logId ? logName(t.logId) : 'Parties communes', immName(t.immId)].join(' · ');
+
+// Agenda : tout ce qui se passe entre from et to (interventions + collectes), trié par jour
+function agenda(from, to, immId) {
+  const items = [];
+  for (const t of vault.list('taches')) {
+    if (immId && t.immId !== immId) continue;
+    if (immGone(vault.get('immeubles', t.immId))) continue;
+    if (t.recur) { for (const d of recurDates(t.date, t.recur, from, to, t.fin)) items.push({ d, kind: 'tache', t }); }
+    else if (t.statut !== 'fait' && t.date) items.push({ d: t.date < from ? from : t.date, late: t.date < today(), kind: 'tache', t });
+  }
+  for (const c of vault.list('collectes')) {
+    if (immId && c.immId !== immId) continue;
+    if (immGone(vault.get('immeubles', c.immId))) continue;
+    for (const d of collecteDates(c, from, to)) items.push({ d, kind: 'collecte', c });
+  }
+  return items.filter((x) => x.d <= to).sort((a, b) => a.d.localeCompare(b.d) || (a.kind === 'collecte' ? -1 : 1));
+}
+const tacheToDo = () => vault.list('taches').filter((t) => !t.recur && t.statut !== 'fait');
 const byAddr = (a, b) => (a.adresse || '').localeCompare(b.adresse || '', 'fr');
 const byLogName = (a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr', { numeric: true });
 const byDebut = (a, b) => (a.debut || '').localeCompare(b.debut || '');
@@ -253,6 +347,7 @@ const NAV = [
   ['immeubles', 'Immeubles', 'building'],
   ['locataires', 'Locataires', 'users'],
   ['paiements', 'Paiements', 'wallet'],
+  ['maintenance', 'Maintenance', 'tool'],
   ['stats', 'Statistiques', 'chart'],
   ['reglages', 'Réglages', 'more'],
 ];
@@ -659,8 +754,139 @@ function payCell(l, y, m, withDate) {
   return html`<button class="mcell ${cls} ${y === cy && m === cm ? 'now' : ''}" data-action="toggle-pay" data-loc="${l.id}" data-y="${y}" data-m="${m}" aria-label="${MONTHS_FULL[m - 1]} ${y} : ${label}">${MONTHS[m - 1]}<small>${small}</small></button>`;
 }
 
+// Lignes d'agenda et d'interventions (Maintenance)
+// Carte de l'accueil : aujourd'hui et demain (poubelles à sortir la veille), interventions en retard
+function mtCard() {
+  const t0 = today(), t1 = addDays(t0, 1);
+  const items = agenda(t0, t1);
+  const lateN = tacheToDo().filter((t) => t.date && t.date < t0).length;
+  if (!items.length && !lateN) return '';
+  const tomorrowBins = items.filter((x) => x.d === t1 && x.kind === 'collecte');
+  return html`<div class="card" style="margin-top:10px">
+    <div class="card-title" style="margin-bottom:8px"><h3>Maintenance</h3><button class="btn sm ghost" data-action="go" data-to="maintenance">${icon('tool')} Ouvrir</button></div>
+    ${tomorrowBins.length ? html`<div class="alert warn" style="margin-bottom:8px">${icon('alert')}<div><b>Ce soir : sortir les poubelles</b> — ${tomorrowBins.map((x) => DECHETS[x.c.cat].short + ' (' + immName(x.c.immId) + ')').join(', ')}</div></div>` : ''}
+    ${lateN ? html`<div class="alert bad" style="margin-bottom:8px">${icon('alert')}<div>${plural(lateN, 'intervention')} en retard</div></div>` : ''}
+    ${items.length ? html`<div class="list">${items.map((x) => html`${agendaRow(x)}`)}</div>` : ''}
+  </div>`;
+}
+function agendaRow(x) {
+  if (x.kind === 'collecte') {
+    const c = x.c, k = DECHETS[c.cat];
+    return html`<button class="row" data-action="edit-collecte" data-id="${c.id}"><span class="dot" style="background:${k.color}"></span>
+      <span class="grow"><span class="title" style="display:block;white-space:normal">🗑️ ${k.short} — ${immName(c.immId)}</span><span class="meta" style="white-space:normal">${LIEUX[c.lieu] || ''}${c.note ? ' · ' + c.note : ''}</span></span></button>`;
+  }
+  return tacheRow(x.t, x);
+}
+function tacheRow(t, x = {}) {
+  const who = intervName(t.intervenantId);
+  const when = t.recur ? `${RECURS[t.recur].toLowerCase()} depuis le ${fmtDate(t.date)}` : t.statut === 'fait' ? `terminée le ${fmtDate(t.doneDate)}` : t.date ? (x.late || t.date < today() ? `prévue le ${fmtDate(t.date)} — en retard` : `prévue le ${fmtDate(t.date)}`) : 'date à fixer';
+  return html`<div class="row">
+    <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="edit-tache" data-id="${t.id}">
+      <span class="title" style="display:block">${(TACHE_TYPES[t.type] || '').split(' ')[0]} ${t.titre}</span>
+      <span class="meta" style="white-space:normal">${placeName(t)}${who ? ' · ' + who : ' · intervenant à choisir'} · ${when}${t.cout ? ' · ' + money(t.cout) : ''}</span>
+    </button>
+    ${!t.recur && t.statut !== 'fait' ? html`<button class="btn sm" data-action="tache-done" data-id="${t.id}">${icon('check')} Fait</button>` : t.statut === 'fait' ? html`<span class="badge ok">✓</span>` : ''}
+  </div>`;
+}
+function reportCollectes(immId, y) {
+  const im = vault.get('immeubles', immId);
+  const cs = vault.list('collectes').filter((c) => c.immId === immId).sort((a, b) => Object.keys(DECHETS).indexOf(a.cat) - Object.keys(DECHETS).indexOf(b.cat));
+  const from = `${y}-01-01`, to = `${y}-12-31`;
+  return html`<h1>Calendrier des collectes ${y}</h1>
+    <p class="pr-sub">${im.adresse} — merci de sortir les poubelles la veille au soir et de les rentrer après le passage.</p>
+    <table class="tbl"><thead><tr><th>Collecte</th><th>Quand</th><th>Où déposer</th></tr></thead><tbody>
+      ${cs.map((c) => html`<tr><td><b>${DECHETS[c.cat].label}</b></td><td>${c.mode === 'dates' ? plural(collecteDates(c, from, to).length, 'passage') + ' (voir ci-dessous)' : collecteRule(c)}</td><td>${LIEUX[c.lieu] || ''}${c.note ? html`<br><span class="pr-sub">${c.note}</span>` : ''}</td></tr>`)}
+    </tbody></table>
+    <h2>Dates ${y}</h2>
+    <table class="tbl pr-grid"><thead><tr><th>Mois</th>${cs.map((c) => html`<th>${DECHETS[c.cat].short}</th>`)}</tr></thead><tbody>
+      ${MONTHS_FULL.map((mn, i) => {
+        const a = `${y}-${String(i + 1).padStart(2, '0')}-01`, b = lastDay(y, i + 1);
+        return html`<tr><td>${mn}</td>${cs.map((c) => html`<td>${collecteDates(c, a, b).map((d) => +d.slice(8)).join(', ')}</td>`)}</tr>`;
+      })}
+    </tbody></table>
+    <p class="pr-sub" style="margin-top:14px">Une question ? ${societe().nom || 'Ares Invest'}${societe().tel ? ' · ' + societe().tel : ''}</p>`;
+}
+const logOptions = (immId, sel) => html`<option value="">Parties communes / tout l'immeuble</option>${logsOf(immId).map((g) => html`<option value="${g.id}" ${g.id === sel ? new Raw('selected') : ''}>${g.nom}</option>`)}`;
+// Intervention terminée avec un coût : proposer de l'ajouter aux dépenses de l'immeuble (une seule fois)
+async function offerDepense(t) {
+  if (!t || !t.cout || t.depId) return;
+  if (!(await confirmBox('Ajouter le coût aux dépenses ?', { ok: 'Ajouter', detail: `${money(t.cout)} — ${t.titre} (${placeName(t)}). Il comptera dans le bilan de l'immeuble.` }))) return;
+  const cat = t.type === 'nettoyage' || t.type === 'entretien' ? 'entretien' : t.type === 'reparation' ? 'reparation' : 'autre';
+  const who = intervName(t.intervenantId);
+  await vault.mutate((tx) => {
+    const dep = tx.put('depenses', { immId: t.immId, logId: t.logId || '', desc: t.titre + (who ? ' — ' + who : ''), montant: t.cout, date: t.doneDate || today(), cat });
+    tx.put('taches', { id: t.id, depId: dep.id });
+  }, 'Dépense ajoutée', `${t.titre} ${money(t.cout)}`, t.immId);
+  toast('Ajouté aux dépenses');
+}
+
 // ───────────────────────── Vues ─────────────────────────
 const VIEWS = {
+  maintenance() {
+    const tab = ui.mtTab || 'planning';
+    const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
+    const f = ui.immFilter && imms.some((im) => im.id === ui.immFilter) ? ui.immFilter : '';
+    const chips = imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
+      <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!f}">Tous</button>
+      ${imms.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${f === im.id}">${im.adresse}</button>`)}</div>` : '';
+    const add = tab === 'intervenants' ? html`<button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button>`
+      : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
+      : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
+    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', `Travaux (${tacheToDo().length})`], ['dechets', 'Déchets'], ['intervenants', 'Équipe']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
+    let body;
+    if (tab === 'planning') {
+      const from = today(), to = addDays(from, 13);
+      const items = agenda(from, to, f);
+      const days = [...new Set(items.map((x) => x.d))];
+      body = days.length ? days.map((d) => html`<div class="section-label">${d === from ? "Aujourd'hui" : d === addDays(from, 1) ? 'Demain' : ''} ${fmtDay(d)}</div>
+        <div class="list" style="margin-bottom:10px">${items.filter((x) => x.d === d).map(agendaRow)}</div>`)
+        : empty('calendar', 'Rien de prévu dans les 14 prochains jours.', html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Planifier une intervention</button>`);
+      body = html`<p class="small muted" style="margin:0 0 6px">Les 14 prochains jours : nettoyages, réparations et jours de collecte des déchets.</p>${body}`;
+    } else if (tab === 'taches') {
+      const all = vault.list('taches').filter((t) => (!f || t.immId === f) && !immGone(vault.get('immeubles', t.immId)));
+      const open = all.filter((t) => !t.recur && t.statut !== 'fait').sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
+      const recur = all.filter((t) => t.recur).sort((a, b) => immName(a.immId).localeCompare(immName(b.immId)));
+      const done = all.filter((t) => !t.recur && t.statut === 'fait').sort((a, b) => (b.doneDate || '').localeCompare(a.doneDate || '')).slice(0, 30);
+      const list = (arr) => html`<div class="list" style="margin-bottom:14px">${arr.map(tacheRow)}</div>`;
+      body = all.length ? html`
+        <div class="section-label">À faire (${open.length})</div>${open.length ? list(open) : html`<p class="muted small">Rien à faire. 👍</p>`}
+        ${recur.length ? html`<div class="section-label">Récurrentes (${recur.length})</div>${list(recur)}` : ''}
+        ${done.length ? html`<div class="section-label">Terminées récemment</div>${list(done)}` : ''}`
+        : empty('tool', 'Aucune intervention.', html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Nouvelle intervention</button>`);
+    } else if (tab === 'dechets') {
+      const shown = f ? imms.filter((im) => im.id === f) : imms;
+      const y = new Date().getFullYear();
+      body = html`<p class="small muted" style="margin:0 0 10px">Jours de collecte de chaque immeuble (à mettre à jour chaque année avec le calendrier de la commune). Imprimez l'affiche pour les locataires.</p>
+        ${shown.map((im) => {
+          const cs = vault.list('collectes').filter((c) => c.immId === im.id).sort((a, b) => Object.keys(DECHETS).indexOf(a.cat) - Object.keys(DECHETS).indexOf(b.cat));
+          const next = agenda(today(), addDays(today(), 30), im.id).filter((x) => x.kind === 'collecte')[0];
+          return html`<div class="card" style="margin-bottom:12px">
+            <div class="card-title"><h3>${im.adresse}</h3><div style="display:flex;gap:6px">
+              ${cs.length ? html`<button class="btn sm" data-action="print-collectes" data-id="${im.id}" data-y="${y}">${icon('download')} Affiche ${y}</button>` : ''}
+              <button class="btn sm" data-action="new-collecte" data-imm="${im.id}">${icon('plus')}</button></div></div>
+            ${next ? html`<p class="small" style="margin:0 0 8px">Prochaine : <b>${DECHETS[next.c.cat].short}</b> — ${fmtDay(next.d)}</p>` : ''}
+            ${cs.length ? html`<div class="list">${cs.map((c) => html`<button class="row" data-action="edit-collecte" data-id="${c.id}">
+              <span class="dot" style="background:${DECHETS[c.cat].color}"></span>
+              <span class="grow"><span class="title" style="display:block;white-space:normal">${DECHETS[c.cat].label}</span><span class="meta" style="white-space:normal">${collecteRule(c)} · ${LIEUX[c.lieu] || ''}${c.note ? ' · ' + c.note : ''}</span></span>
+              ${c.mode === 'dates' && !(c.dates || []).some((d) => d >= today()) ? html`<span class="badge warn">à mettre à jour</span>` : ''}
+            </button>`)}</div>` : html`<p class="muted small">Aucune collecte enregistrée.</p>`}
+          </div>`;
+        })}`;
+      if (!shown.length) body = empty('building', 'Ajoutez d’abord un immeuble.');
+    } else {
+      const ints = vault.list('intervenants').sort((a, b) => Object.keys(METIERS).indexOf(a.metier) - Object.keys(METIERS).indexOf(b.metier) || a.nom.localeCompare(b.nom));
+      body = ints.length ? html`<div class="list">${ints.map((i) => {
+        const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length;
+        const tel = (i.tel || '').replace(/[^\d+]/g, '');
+        return html`<div class="row"><span class="avatar">${i.nom.slice(0, 2).toUpperCase()}</span>
+          <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="edit-interv" data-id="${i.id}"><span class="title" style="display:block">${i.nom}</span><span class="meta">${METIERS[i.metier] || i.metier}${i.tarif ? ' · ' + i.tarif : ''}${n ? ' · ' + plural(n, 'intervention') + ' en cours' : ''}</span></button>
+          ${tel ? html`<a class="btn icon sm" href="tel:${tel}" aria-label="Appeler">${icon('phone')}</a>` : ''}
+        </div>`;
+      })}</div>` : empty('users', 'Aucun intervenant. Ajoutez la femme de ménage et les artisans (menuisier, électricien, plombier, chauffagiste, maçon…).', html`<button class="btn primary" data-action="new-interv">${icon('plus')} Ajouter un intervenant</button>`);
+    }
+    return html`${pageHead('Maintenance', 'Nettoyage, réparations et collecte des déchets', add)}${tabs}${tab !== 'intervenants' ? chips : ''}${body}`;
+  },
+
 dashboard() {
     const now = new Date();
     const y = now.getFullYear();
@@ -725,6 +951,7 @@ dashboard() {
         ${!parts.length ? html`<p class="tiny muted" style="margin-top:8px"><a href="#" data-action="open-societe">Ajouter les associés</a> pour voir la part de chacun.</p>` : ''}
       </div>
 
+      ${mtCard()}
       ${late.length || expiring.length || leaving.length || arriving.length || vacants.length || revisions.length || outside.length ? html`<div class="section-label">À surveiller</div><div class="stack">
         ${outside.map((l) => alertBtn('warn', 'calendar', 'fix-dates', l.id, html`<b>${fullName(l)}</b> — ${plural(outsidePays(l).length, 'loyer')} payé${outsidePays(l).length > 1 ? 's' : ''} hors des dates du contrat : touchez pour corriger`))}
         ${late.slice(0, 6).map(({ l, months }) => alertBtn(months.length >= 2 ? 'bad' : 'warn', 'alert', 'open-loc', l.id, html`<b>${fullName(l)}</b> — ${months.length} mois impayé${months.length > 1 ? 's' : ''} (${months.map((x) => MONTHS[x - 1]).join(', ')})`))}
@@ -975,6 +1202,7 @@ dashboard() {
       <div class="list settings">
         <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
           <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
+        <button class="row" data-action="go" data-to="maintenance">${icon('tool')}<span class="grow title">Maintenance — nettoyage, réparations, déchets</span></button>
         <button class="row" data-action="go" data-to="stats">${icon('chart')}<span class="grow title">Statistiques et historique</span></button>
       </div>
 
@@ -1199,6 +1427,87 @@ function relanceText(l, lang) {
 }
 
 const SHEETS = {
+  'interv-form'({ id }) {
+    const i = id ? vault.get('intervenants', id) : { metier: 'menage' };
+    if (id && !i) return null;
+    return {
+      title: id ? "Modifier l'intervenant" : 'Nouvel intervenant',
+      narrow: true,
+      body: html`<form id="f" data-form="interv" class="fields">
+        <input type="hidden" name="id" value="${id || ''}">
+        ${field('Nom (personne ou entreprise)', 'nom', i.nom, { full: true, required: true, placeholder: 'ex. Maria, Électricité Schmit…' })}
+        <label class="field full">Métier<select name="metier">${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${i.metier === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field('Téléphone', 'tel', i.tel, { type: 'tel', placeholder: '+352 …' })}
+        ${field('Email', 'mail', i.mail, { type: 'email' })}
+        ${field('Tarif', 'tarif', i.tarif, { full: true, placeholder: 'ex. 25 €/h, forfait 80 €…' })}
+        <label class="field full">Notes<textarea name="note" placeholder="Disponibilités, clés confiées, n° TVA…">${i.note || ''}</textarea></label>
+      </form>`,
+      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-interv" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
+        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+
+  'tache-form'({ id, preset }) {
+    const t = id ? vault.get('taches', id) : { type: 'reparation', immId: preset || '', statut: 'afaire', date: today(), recur: '' };
+    if (id && !t) return null;
+    const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === t.immId).sort(byAddr);
+    if (!imms.length) return { title: 'Nouvelle intervention', body: empty('building', "Ajoutez d'abord un immeuble.") };
+    const ints = vault.list('intervenants').sort((a, b) => a.nom.localeCompare(b.nom));
+    return {
+      title: id ? "Modifier l'intervention" : 'Nouvelle intervention',
+      body: html`<form id="f" data-form="tache" class="fields">
+        <input type="hidden" name="id" value="${id || ''}">
+        <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${t.type === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}
+        <label class="field">Immeuble<select name="immId" data-input="tache-imm" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === t.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
+        <label class="field">Où ?<select name="logId" id="tacheLog">${logOptions(t.immId || imms[0].id, t.logId)}</select></label>
+        <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${ints.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${i.nom} — ${METIERS[i.metier] || ''}</option>`)}</select></label>
+        ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
+        ${field('Date', 'date', t.date, { type: 'date' })}
+        <label class="field">Répétition<select name="recur">${Object.entries(RECURS).map(([k, v]) => html`<option value="${k}" ${(t.recur || '') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field("Jusqu'au (si répétition)", 'fin', t.fin, { type: 'date' })}
+        ${field('Coût (€)', 'cout', t.cout, { type: 'number', attrs: money$ })}
+        ${!t.recur ? html`<label class="field">Statut<select name="statut">${Object.entries(STATUTS).map(([k, v]) => html`<option value="${k}" ${t.statut === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>` : ''}
+        <label class="field full">Notes<textarea name="note" placeholder="Accès, clés, pièces à acheter, ce qui a été fait…">${t.note || ''}</textarea></label>
+        ${t.depId ? html`<p class="tiny muted full" style="margin:0">✓ Coût enregistré dans les dépenses de l'immeuble.</p>` : ''}
+      </form>`,
+      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
+        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+
+  'collecte-form'({ id, preset }) {
+    const c = id ? vault.get('collectes', id) : { immId: preset || '', cat: 'residuel', mode: 'hebdo', jour: 2, lieu: 'rue', debut: today() };
+    if (id && !c) return null;
+    const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === c.immId).sort(byAddr);
+    if (!imms.length) return { title: 'Nouvelle collecte', body: empty('building', "Ajoutez d'abord un immeuble.") };
+    const y = new Date().getFullYear();
+    return {
+      title: id ? 'Modifier la collecte' : 'Nouvelle collecte',
+      body: html`<form id="f" data-form="collecte" class="fields">
+        <input type="hidden" name="id" value="${id || ''}">
+        <label class="field full">Immeuble<select name="immId" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === c.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
+        <label class="field full">Déchets<select name="cat">${Object.entries(DECHETS).map(([k, v]) => html`<option value="${k}" ${c.cat === k ? new Raw('selected') : ''}>${v.label}</option>`)}</select></label>
+        <label class="field full">Passage<select name="mode" data-input="col-mode">
+          <option value="hebdo" ${c.mode === 'hebdo' ? new Raw('selected') : ''}>Chaque semaine, le même jour</option>
+          <option value="2sem" ${c.mode === '2sem' ? new Raw('selected') : ''}>Toutes les 2 semaines</option>
+          <option value="dates" ${c.mode === 'dates' ? new Raw('selected') : ''}>Dates précises (calendrier de la commune)</option></select></label>
+        <div class="fields full" data-mode="hebdo" ${c.mode === 'hebdo' ? '' : new Raw('hidden')}>
+          <label class="field">Jour<select name="jour">${[1, 2, 3, 4, 5, 6, 0].map((d) => html`<option value="${d}" ${+c.jour === d ? new Raw('selected') : ''}>${JOURS[d]}</option>`)}</select></label></div>
+        <div class="fields full" data-mode="2sem" ${c.mode === '2sem' ? '' : new Raw('hidden')}>
+          ${field('Premier passage', 'debut', c.debut || today(), { type: 'date' })}</div>
+        <div class="fields full" data-mode="dates" ${c.mode === 'dates' ? '' : new Raw('hidden')}>
+          <label class="field full">Dates de passage<textarea name="dates" style="min-height:110px" placeholder="ex. 07/01, 21/01, 04/02 … (année ${y} par défaut) — ou collez le contenu d'un calendrier .ics">${(c.dates || []).map((d) => d.split('-').reverse().join('/')).join(', ')}</textarea></label>
+          <label class="btn sm full" style="justify-self:start">${icon('upload')} Importer un fichier .ics<input type="file" accept=".ics,text/calendar" hidden data-input="col-ics"></label>
+          <p class="tiny muted full" style="margin:0">Chaque année : remplacez les dates par celles du nouveau calendrier de la commune.</p></div>
+        <label class="field full">Où sortir les poubelles<select name="lieu">${Object.entries(LIEUX).map(([k, v]) => html`<option value="${k}" ${c.lieu === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field('Remarque', 'note', c.note, { full: true, placeholder: 'ex. sortir la veille après 18 h, conteneur au garage n°2' })}
+      </form>`,
+      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-collecte" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
+        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+
   'imm-form'({ id }) {
     const im = id ? vault.get('immeubles', id) : {};
     if (id && !im) return null;
@@ -1874,6 +2183,40 @@ let installPrompt = null;
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; if (ui.route === 'reglages') renderView(); });
 
 const ACTIONS = {
+  'mt-tab': (d) => { ui.mtTab = d.id; renderView(); },
+  'new-interv': () => openOver('interv-form'),
+  'edit-interv': (d) => openOver('interv-form', d.id),
+  'new-tache': (d) => openOver('tache-form', null, null, d.imm || ui.immFilter || ''),
+  'edit-tache': (d) => openOver('tache-form', d.id),
+  'new-collecte': (d) => openOver('collecte-form', null, null, d.imm || ui.immFilter || ''),
+  'edit-collecte': (d) => openOver('collecte-form', d.id),
+  'print-collectes': (d) => printDoc('Collectes des déchets', reportCollectes(d.id, +d.y || new Date().getFullYear())),
+  async 'tache-done'(d) {
+    const t = vault.get('taches', d.id);
+    if (!t) return;
+    const saved = await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: today() }), 'Intervention terminée', `${t.titre} — ${placeName(t)}`, t.immId);
+    toast('Intervention terminée');
+    await offerDepense(saved);
+  },
+  async 'del-interv'(d) {
+    const i = vault.get('intervenants', d.id);
+    const n = vault.list('taches').filter((t) => t.intervenantId === d.id).length;
+    if (!i || !(await confirmBox(`Supprimer ${i.nom} ?`, { ok: 'Supprimer', danger: true, detail: n ? `${plural(n, 'intervention')} restent enregistrées, sans intervenant.` : '' }))) return;
+    await vault.mutate((tx) => tx.remove('intervenants', d.id), 'Intervenant supprimé', i.nom);
+    goBack();
+  },
+  async 'del-tache'(d) {
+    const t = vault.get('taches', d.id);
+    if (!t || !(await confirmBox(`Supprimer « ${t.titre} » ?`, { ok: 'Supprimer', danger: true, detail: t.depId ? 'La dépense déjà enregistrée reste dans les dépenses de l’immeuble.' : '' }))) return;
+    await vault.mutate((tx) => tx.remove('taches', d.id), 'Intervention supprimée', t.titre, t.immId);
+    goBack();
+  },
+  async 'del-collecte'(d) {
+    const c = vault.get('collectes', d.id);
+    if (!c || !(await confirmBox(`Supprimer la collecte « ${DECHETS[c.cat].short} » ?`, { ok: 'Supprimer', danger: true, detail: immName(c.immId) }))) return;
+    await vault.mutate((tx) => tx.remove('collectes', d.id), 'Collecte supprimée', `${DECHETS[c.cat].short} — ${immName(c.immId)}`, c.immId);
+    goBack();
+  },
   go: (d) => { closeSheet(); go(d.to); },
   lock: () => lockNow(),
   'sync-now': () => vault.sync().then(() => vault.status === 'synced' && toast('Synchronisé')),
@@ -2118,6 +2461,47 @@ const ACTIONS = {
 };
 
 const FORMS = {
+  async interv(fd) {
+    const id = fd.get('id');
+    const rec = { nom: fd.get('nom').trim(), metier: fd.get('metier'), tel: fd.get('tel').trim(), mail: fd.get('mail').trim(), tarif: fd.get('tarif').trim(), note: fd.get('note').trim() };
+    if (!rec.nom) return;
+    if (id) rec.id = id;
+    await vault.mutate((tx) => tx.put('intervenants', rec), id ? 'Intervenant modifié' : 'Intervenant ajouté', `${rec.nom} (${METIERS[rec.metier]})`);
+    toast(id ? 'Intervenant enregistré' : 'Intervenant ajouté');
+    goBack();
+  },
+  async tache(fd) {
+    const id = fd.get('id');
+    const prev = id ? vault.get('taches', id) : null;
+    const recur = fd.get('recur') || '';
+    const rec = {
+      type: fd.get('type'), titre: fd.get('titre').trim(), immId: fd.get('immId'), logId: fd.get('logId') || '', intervenantId: fd.get('intervenantId') || '',
+      date: fd.get('date'), recur, fin: fd.get('fin') || '', cout: fd.get('cout') === '' ? null : num(fd.get('cout')), note: fd.get('note').trim(),
+      statut: recur ? 'planifie' : fd.get('statut') || 'afaire',
+    };
+    if (!rec.titre || !rec.immId) return;
+    if (recur && !rec.date) return toast('Indiquez la date de la première fois', { bad: true });
+    if (id) rec.id = id;
+    if (!recur && rec.statut === 'fait' && !(prev && prev.statut === 'fait')) rec.doneDate = today();
+    const saved = await vault.mutate((tx) => tx.put('taches', rec), id ? 'Intervention modifiée' : 'Intervention ajoutée', `${rec.titre} — ${placeName(rec)}`, rec.immId);
+    toast(id ? 'Intervention enregistrée' : 'Intervention ajoutée');
+    if (!recur && rec.statut === 'fait') await offerDepense(saved);
+    goBack();
+  },
+  async collecte(fd) {
+    const id = fd.get('id');
+    const mode = fd.get('mode');
+    const rec = { immId: fd.get('immId'), cat: fd.get('cat'), mode, jour: +fd.get('jour'), debut: fd.get('debut') || '', lieu: fd.get('lieu'), note: fd.get('note').trim() };
+    if (mode === 'dates') {
+      rec.dates = parseDates(fd.get('dates'), new Date().getFullYear());
+      if (!rec.dates.length) return toast('Aucune date reconnue (ex. 07/01, 21/01…)', { bad: true });
+    }
+    if (mode === '2sem' && !rec.debut) return toast('Indiquez le premier passage', { bad: true });
+    if (id) rec.id = id;
+    await vault.mutate((tx) => tx.put('collectes', rec), id ? 'Collecte modifiée' : 'Collecte ajoutée', `${DECHETS[rec.cat].short} — ${immName(rec.immId)}`, rec.immId);
+    toast(mode === 'dates' ? `${plural(rec.dates.length, 'date')} enregistrée${rec.dates.length > 1 ? 's' : ''}` : 'Collecte enregistrée');
+    goBack();
+  },
   unlock: onUnlock,
   setup: onSetup,
   recover: onRecover,
@@ -2376,6 +2760,17 @@ document.addEventListener('change', (e) => {
   if (f && f.dataset.form === 'replace' && e.target.name === 'sortie' && e.target.value && f.n_debut) f.n_debut.value = addDays(e.target.value, 1);
   if (k === 'lockmin') { localStorage.setItem('aresLockMin', e.target.value); toast('Verrouillage après ' + e.target.value + ' min'); }
   if (e.target.id === 'importFile' && e.target.files[0]) { importFile(e.target.files[0]); e.target.value = ''; }
+  if (k === 'tache-imm') $('#tacheLog').innerHTML = val(logOptions(e.target.value, ''));
+  if (k === 'col-mode') sheetEl.querySelectorAll('[data-mode]').forEach((el) => { el.hidden = el.dataset.mode !== e.target.value; });
+  if (k === 'col-ics' && e.target.files[0]) {
+    e.target.files[0].text().then((txt) => {
+      const ds = parseDates(txt, new Date().getFullYear());
+      if (!ds.length) return toast('Aucune date trouvée dans ce fichier', { bad: true });
+      sheetEl.querySelector('[name=dates]').value = ds.map((d) => d.split('-').reverse().join('/')).join(', ');
+      toast(`${plural(ds.length, 'date')} importée${ds.length > 1 ? 's' : ''} — vérifiez puis Enregistrer`);
+    });
+    e.target.value = '';
+  }
   if (k === 'edl-add' && e.target.files.length) { const files = [...e.target.files]; e.target.value = ''; addEdlPhotos(e.target.dataset.log, files); }
 });
 
