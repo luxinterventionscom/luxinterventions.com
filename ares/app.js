@@ -2,9 +2,9 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
-import { newEspaceId, newEspaceKey, sealJson, sealBytes, newOwnerKeys, openFromTenant, unb64u } from './espace-crypto.js';
+import { newEspaceId, newEspaceKey, sealJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.13.0';
+const VERSION = '2.14.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -280,6 +280,17 @@ async function ownerKeys() {
   }
   return k;
 }
+// Code d'accès court pour l'app installée (le serveur ne garde que son empreinte + la clé enveloppée)
+async function setAccessCode(l) {
+  const e = l.espace;
+  if (e.codeHash) await vault.espCodeDel(e.codeHash).catch(() => {});
+  const code = newAccessCode();
+  const h = await codeHash(code);
+  await vault.espCodePut(h, { id: e.id, ...(await wrapWithCode(code, e.key)) });
+  await vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: { ...e, code, codeHash: h } }), 'Code d’accès locataire créé', fullName(l), l.id);
+  return code;
+}
+const appUrl = () => `${location.origin}/espace.html`;
 // Ce que le locataire voit — uniquement les rubriques cochées, uniquement ses propres données
 function espaceData(l) {
   const e = l.espace, show = { ...ESP_ALL, ...(e.show || {}) };
@@ -1462,6 +1473,7 @@ dashboard() {
       <div class="list settings">
         <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
           <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
+        <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
         <button class="row" data-action="go" data-to="maintenance">${icon('tool')}<span class="grow title">Maintenance — nettoyage, réparations, déchets</span></button>
         <button class="row" data-action="go" data-to="stats">${icon('chart')}<span class="grow title">Statistiques et historique</span></button>
       </div>
@@ -1761,6 +1773,19 @@ const SHEETS = {
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+
+  'esp-list'() {
+    const ls = currentLocs().sort((a, b) => immName(a.immId).localeCompare(immName(b.immId)) || byName(a, b));
+    const on = ls.filter((l) => l.espace && l.espace.on).length;
+    return {
+      title: 'App des locataires',
+      body: html`<p style="margin-top:0">Les locataires téléchargent l'app depuis <b>luxinterventions.com</b> (« Télécharger l'app des locataires ARES S.A. ») et entrent avec le <b>code personnel</b> que vous leur donnez ici. Sans code, personne n'entre.</p>
+        <p class="small muted">${plural(on, 'accès actif')} sur ${plural(ls.length, 'locataire')}.</p>
+        <div class="list">${ls.map((l) => html`<button class="row" data-action="esp-open" data-id="${l.id}">
+          <span class="grow"><span class="title" style="display:block">${fullName(l)}</span><span class="meta">${[logName(l.logId), immName(l.immId)].filter(Boolean).join(' · ')}</span></span>
+          ${l.espace && l.espace.on ? html`<span class="badge ok">✓ ${l.espace.code || 'actif'}</span>` : html`<span class="badge">Pas d'accès</span>`}</button>`)}</div>`,
     };
   },
 
@@ -2180,8 +2205,11 @@ const SHEETS = {
       } else {
         const url = espUrl(l);
         const tel = (l.tel || '').replace(/[^\d+]/g, '');
-        const msg = encodeURIComponent(`Bonjour ${l.prenom || ''}, voici votre espace locataire personnel (paiements, quittances, documents, collectes, signaler un problème) : ${url}\nCe lien est personnel, ne le partagez pas.`);
-        body = html`<p style="margin-top:0">Espace actif. Envoyez ce lien à <b>${fullName(l)}</b> — il est <b>personnel</b> (il contient sa clé).</p>
+        const msg = encodeURIComponent(`Bonjour ${l.prenom || ''}, voici votre app des locataires ARES S.A. (loyers, quittances, documents, collectes, signaler un problème).\n1) Ouvrez : ${appUrl()}\n2) Ajoutez-la à votre écran d'accueil\n3) Votre code d'accès personnel : ${e.code || '(à créer)'}\nOu ouvrez directement : ${url}\nCe code est personnel, ne le partagez pas.`);
+        body = html`<p style="margin-top:0">Espace actif. Donnez à <b>${fullName(l)}</b> son <b>code d'accès</b> (pour l'app installée depuis luxinterventions.com) ou envoyez-lui le lien direct.</p>
+          <div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d'accès personnel</div>
+            <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
+            <button class="btn sm" data-action="esp-code" data-id="${id}">${e.code ? 'Nouveau code' : 'Créer le code'}</button></div>
           <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(url, 5)}</div>
           <div class="actions" style="flex-direction:column">
             ${tel ? html`<a class="btn" href="https://wa.me/${tel.replace(/^\+/, '')}?text=${msg}" target="_blank" rel="noopener">${icon('msg')} Envoyer par WhatsApp</a><a class="btn" href="sms:${tel}?&body=${msg}">${icon('msg')} Envoyer par SMS</a>` : ''}
@@ -2590,17 +2618,25 @@ const ACTIONS = {
     await ownerKeys();
     await vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: { on: true, id: newEspaceId(), key: newEspaceKey(), show, lang: '', docs: [], since: today() } }), 'Espace locataire créé', fullName(l), l.id);
     toast('Création de l’espace…');
-    if (await espaceSync(l.id, true)) toast('Espace locataire prêt');
+    if (await espaceSync(l.id, true)) {
+      try { await setAccessCode(vault.get('locataires', l.id)); toast('Espace locataire prêt'); } catch (e) { toast(e.message || 'Code impossible (connexion ?)', { bad: true }); }
+    }
     ui.sheet.rendered = false; renderSheet();
   },
   async 'esp-off'(d) {
     const l = vault.get('locataires', d.id);
     if (!l || !l.espace || !(await confirmBox('Désactiver l’espace locataire ?', { ok: 'Désactiver', danger: true, detail: 'Son lien ne fonctionnera plus. Vous pourrez créer un nouvel espace (nouveau lien) plus tard.' }))) return;
-    try { await vault.espaceDel(l.espace.id); } catch (e) { return toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
+    try { await vault.espaceDel(l.espace.id); if (l.espace.codeHash) await vault.espCodeDel(l.espace.codeHash); } catch (e) { return toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
     try { localStorage.removeItem('aresEsp:' + l.espace.id); } catch {}
     espHashes.delete(l.id);
     await vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: { on: false, show: l.espace.show } }), 'Espace locataire désactivé', fullName(l), l.id);
     toast('Espace désactivé');
+  },
+  async 'esp-code'(d) {
+    const l = vault.get('locataires', d.id);
+    if (!l || !l.espace || !l.espace.on) return;
+    if (l.espace.code && !(await confirmBox('Nouveau code d’accès ?', { ok: 'Nouveau code', detail: 'L’ancien code ne fonctionnera plus pour une nouvelle installation (les téléphones déjà connectés restent connectés).' }))) return;
+    try { await setAccessCode(l); toast('Nouveau code créé'); } catch (e) { toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
   },
   async 'esp-copy'(d) {
     const l = vault.get('locataires', d.id);
@@ -2620,6 +2656,8 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.remove('avis', d.id), 'Avis supprimé', a.texte.slice(0, 60), a.immId);
     goBack();
   },
+  'esp-list': () => openOver('esp-list'),
+  'esp-open': (d) => openOver('loc', d.id, 'espace'),
   'share-coll': (d) => openOver('share-coll', d.id),
   async 'share-on'(d) {
     const im = vault.get('immeubles', d.id);
