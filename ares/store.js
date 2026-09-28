@@ -584,6 +584,14 @@ export class Vault {
     }
   }
 
+  // Calendrier .ics d'un site externe (commune), téléchargé par le Worker
+  async fetchIcs(link) {
+    const r = await this.api.req('ics?url=' + encodeURIComponent(link));
+    if (r.status === 409) throw new ApiError(409, 'session-taken', await r.json().catch(() => ({})));
+    if (!r.ok) throw new ApiError(r.status, await Api.err(r));
+    return r.text();
+  }
+
   async readFile(id) {
     let blob = await idb.get('file:' + id);
     if (!blob) {

@@ -372,6 +372,28 @@ async function handleAres(request, env, url, headers) {
     return aresJson({ ok: true }, 200, headers, { ETag: res.httpEtag });
   }
 
+  // Calendrier des collectes de la commune (.ics) : le navigateur ne peut pas le lire directement
+  // (sites d'autres domaines) ; le Worker le télécharge pour l'app, uniquement avec la clé d'accès.
+  if (path === "ics" && method === "GET") {
+    let target;
+    try { target = new URL((url.searchParams.get("url") || "").replace(/^webcals?:\/\//i, "https://")); } catch { target = null; }
+    if (!target || target.protocol !== "https:" || target.port || target.username || target.password) {
+      return aresJson({ error: "Lien invalide (https uniquement)" }, 400, headers);
+    }
+    let r;
+    try {
+      r = await fetch(target.toString(), { headers: { Accept: "text/calendar, text/plain, */*", "User-Agent": "AresInvest-Calendrier/1.0" }, redirect: "follow", cf: { cacheTtl: 3600 } });
+    } catch {
+      return aresJson({ error: "Site de la commune injoignable" }, 502, headers);
+    }
+    if (!r.ok) return aresJson({ error: `Le site de la commune répond ${r.status}` }, 502, headers);
+    const buf = await r.arrayBuffer();
+    if (buf.byteLength > 2 * 1024 * 1024) return aresJson({ error: "Fichier trop gros" }, 413, headers);
+    const text = new TextDecoder().decode(buf);
+    if (!/BEGIN:VCALENDAR/i.test(text)) return aresJson({ error: "Ce lien ne donne pas un calendrier (.ics)" }, 422, headers);
+    return new Response(text, { headers: { "Content-Type": "text/calendar; charset=utf-8", ...headers } });
+  }
+
   const fileMatch = path.match(/^files\/([a-zA-Z0-9_-]{1,64})$/);
   if (fileMatch) {
     const key = ARES_FILES + fileMatch[1];
