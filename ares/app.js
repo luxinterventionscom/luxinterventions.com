@@ -2,7 +2,7 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.6.0';
+const VERSION = '2.7.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -67,7 +67,7 @@ const level = (p) => (p >= 80 ? '' : p >= 50 ? 'warn' : 'bad');
 
 // ───────────────────────── Règles métier ─────────────────────────
 // Immeuble ─┬─ Logement (appartement, studio, chambre…) ── Locataires successifs (jamais effacés : `sortie` = date de départ)
-//           ├─ Versements au propriétaire principal (loyer du bail principal, mois par mois)
+//           ├─ Versements au bailleur (loyer du bail principal, mois par mois)
 //           └─ Dépenses (réparations…), rattachées à l'immeuble ou à un logement précis
 const fullName = (l) => [l.prenom, l.nom].filter(Boolean).join(' ') || 'Sans nom';
 const initials = (l) => (((l.prenom || '')[0] || '') + ((l.nom || '')[0] || '')).toUpperCase() || '?';
@@ -77,6 +77,8 @@ const logName = (id) => (vault.get('logements', id) || {}).nom || '';
 const whereOf = (l) => [logName(l.logId), immName(l.immId)].filter(Boolean).join(' · ');
 const byName = (a, b) => fullName(a).localeCompare(fullName(b), 'fr');
 const imms0 = () => vault.list('immeubles');
+// Immeuble qui n'est plus en gestion (vendu, bail principal terminé…) : archivé, jamais effacé
+const immGone = (im) => !!(im && im.finGestion) && im.finGestion <= today();
 const byAddr = (a, b) => (a.adresse || '').localeCompare(b.adresse || '', 'fr');
 const byLogName = (a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr', { numeric: true });
 const byDebut = (a, b) => (a.debut || '').localeCompare(b.debut || '');
@@ -170,7 +172,7 @@ function occupancy(logId) {
 // Durée du séjour en mois (prévue jusqu'à la sortie si elle est connue)
 const stayMonths = (l) => (l.debut && !isFuture(l) ? Math.max(1, (l.sortie ? ymOf(l.sortie) : nowYm()) - ymOf(l.debut) + 1) : null);
 
-// Bail principal : loyer versé au propriétaire
+// Bail principal : loyer versé au bailleur
 const ownerRent = (im) => (im.loyer || 0) + (im.charges || 0);
 function isOwnerDue(im, y, m) {
   if (!ownerRent(im)) return false;
@@ -217,6 +219,7 @@ const ui = {
   immFilter: '',
   search: '',
   locSeg: 'actuels',
+  immSeg: 'actuels',
   histShown: 20,
   sheet: null, // { kind, id, tab }
 };
@@ -653,8 +656,8 @@ dashboard() {
     const expiring = locs.map((l) => ({ l, d: daysToEnd(l) })).filter((x) => x.d != null && x.d >= 0 && x.d <= 60 && !x.l.sortie).sort((a, b) => a.d - b.d);
     const leaving = locs.filter((l) => l.sortie && daysUntil(l.sortie) >= 0 && daysUntil(l.sortie) <= 60).sort((a, b) => a.sortie.localeCompare(b.sortie));
     const arriving = locs.filter((l) => isFuture(l)).sort(byDebut);
-    const imms = vault.list('immeubles').sort(byAddr);
-    const logs = vault.list('logements');
+    const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
+    const logs = vault.list('logements').filter((g) => !immGone(vault.get('immeubles', g.immId)));
     const vacants = logs.filter((g) => !occupantsNow(g.id).length);
     const ownerTodo = imms.filter((im) => isOwnerDue(im, y, m) && !versement(im.id, y, m));
     const p = pct(received, expected);
@@ -679,14 +682,14 @@ dashboard() {
         <div class="metric"><div class="lbl">Retards</div><div class="val ${late.length ? 'red' : 'green'}">${late.length}</div><div class="sub">locataires</div></div>
         <div class="metric"><div class="lbl">Logements vacants</div><div class="val ${vacants.length ? 'amber' : 'green'}">${vacants.length}</div><div class="sub">sur ${logs.length}</div></div>
         <div class="metric"><div class="lbl">Loyers perçus / mois</div><div class="val">${money(expected)}</div><div class="sub">baux en cours</div></div>
-        <div class="metric"><div class="lbl">Propriétaires / mois</div><div class="val">${money(ownerDueMonth)}</div><div class="sub">bail principal</div></div>
+        <div class="metric"><div class="lbl">Bailleurs / mois</div><div class="val">${money(ownerDueMonth)}</div><div class="sub">bail principal</div></div>
       </div>
 
       <div class="card" style="margin-top:10px">
         <div class="card-title" style="margin-bottom:8px"><h3>Résultat de ${MONTHS_FULL[m - 1].toLowerCase()}</h3><button class="btn sm ghost" data-action="open-frais">${icon('edit')} Frais fixes</button></div>
         <dl class="kv small">
           <dt>Loyers attendus</dt><dd class="num">${money(expected)}</dd>
-          <dt>Propriétaires</dt><dd class="num">${ownerDueMonth ? '−' + money(ownerDueMonth) : '—'}</dd>
+          <dt>Bailleurs</dt><dd class="num">${ownerDueMonth ? '−' + money(ownerDueMonth) : '—'}</dd>
           <dt>Frais fixes (salaires, bureau…)</dt><dd class="num">${fraisMois ? '−' + money(fraisMois) : html`<a href="#" data-action="open-frais">à saisir</a>`}</dd>
           <dt><b>Net prévu</b></dt><dd class="num"><b class="${prevu < 0 ? 'red' : 'accent'}">${money(prevu)}</b></dd>
           <dt>Net réalisé à ce jour</dt><dd class="num ${realise < 0 ? 'red' : ''}">${money(realise)}</dd>
@@ -714,10 +717,10 @@ dashboard() {
           <button class="btn sm primary" data-action="pay" data-loc="${l.id}" data-y="${y}" data-m="${m}">${icon('check')} Payé</button>
         </div>`)}</div>` : html`<div class="alert" style="background:var(--green-soft);color:var(--green)">${icon('check')}<div>Tous les loyers de ${MONTHS_FULL[m - 1].toLowerCase()} sont encaissés.</div></div>`}
 
-      ${ownerTodo.length ? html`<div class="section-label">À verser aux propriétaires — ${MONTHS_FULL[m - 1]}</div>
+      ${ownerTodo.length ? html`<div class="section-label">À verser aux bailleurs — ${MONTHS_FULL[m - 1]}</div>
       <div class="list">${ownerTodo.map((im) => html`<div class="row">
         <span class="avatar" style="background:var(--amber-soft);color:var(--amber)">${icon('key')}</span>
-        <div class="grow"><div class="title">${im.adresse}</div><div class="meta">${im.proprietaire || 'Propriétaire'}</div></div>
+        <div class="grow"><div class="title">${im.adresse}</div><div class="meta">${im.proprietaire || 'Bailleur'}</div></div>
         <div class="amount">${money(ownerRent(im))}</div>
         <button class="btn sm" data-action="toggle-vers" data-imm="${im.id}" data-y="${y}" data-m="${m}">${icon('check')} Versé</button>
       </div>`)}</div>` : ''}
@@ -738,9 +741,16 @@ dashboard() {
 
   immeubles() {
     const y = new Date().getFullYear();
-    const imms = vault.list('immeubles').sort(byAddr);
+    const every = vault.list('immeubles').sort(byAddr);
+    const nGone = every.filter(immGone).length;
+    const anciens = ui.immSeg === 'anciens' && nGone > 0;
+    const imms = every.filter((im) => immGone(im) === anciens);
     return html`
-      ${pageHead('Immeubles', plural(imms.length, 'immeuble'), html`<button class="btn primary desk-only" data-action="new-imm">${icon('plus')} Ajouter</button>`)}
+      ${pageHead('Immeubles', `${plural(every.length - nGone, 'immeuble')} en gestion${nGone ? ' · ' + nGone + ' archivé' + (nGone > 1 ? 's' : '') : ''}`, html`<button class="btn primary desk-only" data-action="new-imm">${icon('plus')} Ajouter</button>`)}
+      ${nGone ? html`<div class="tabs" role="tablist" style="max-width:380px">
+        <button class="tab" role="tab" aria-selected="${!anciens}" data-action="imm-seg" data-id="actuels">En gestion</button>
+        <button class="tab" role="tab" aria-selected="${anciens}" data-action="imm-seg" data-id="anciens">Plus en gestion (${nGone})</button>
+      </div>` : ''}
       ${imms.length ? html`<div class="grid cols-auto">${imms.map((im) => {
         const logs = logsOf(im.id);
         const occ = logs.filter((g) => occupantsNow(g.id).length).length;
@@ -748,11 +758,12 @@ dashboard() {
         return html`<div class="card">
           <div class="card-title"><h3>${im.adresse}</h3><button class="btn icon ghost sm" data-action="edit-imm" data-id="${im.id}" aria-label="Modifier">${icon('edit')}</button></div>
           <dl class="kv small">
+            ${immGone(im) ? html`<dt>Fin de gestion</dt><dd>${fmtDate(im.finGestion)}</dd>` : ''}
             <dt>Logements</dt><dd>${logs.length ? html`${occ} occupé${occ > 1 ? 's' : ''} / ${logs.length}` : '—'}</dd>
             <dt>Locataires actuels</dt><dd>${tenantsOfImm(im.id).filter(isCurrent).length}</dd>
             ${ownerRent(im) ? html`<dt>Bail principal</dt><dd class="num">${money(ownerRent(im))} / mois</dd>` : ''}
             <dt>Encaissé ${y}</dt><dd class="num green">${money(b.encaisse)}</dd>
-            ${b.verse ? html`<dt>Versé propriétaire</dt><dd class="num">−${money(b.verse)}</dd>` : ''}
+            ${b.verse ? html`<dt>Versé bailleur</dt><dd class="num">−${money(b.verse)}</dd>` : ''}
             <dt>Dépenses ${y}</dt><dd class="num ${b.depenses ? 'red' : ''}">${b.depenses ? '−' + money(b.depenses) : money(0)}</dd>
             <dt>Gain net ${y}</dt><dd class="num ${b.net < 0 ? 'red' : 'accent'}">${money(b.net)}</dd>
           </dl>
@@ -794,7 +805,6 @@ dashboard() {
           const late = anciens ? 0 : lateMonths(l).length;
           const d = daysToEnd(l);
           const badges = [];
-          if (l.type === 'sous') badges.push(html`<span class="badge">Sous-loc.</span>`);
           if (anciens) badges.push(html`<span class="badge">${fmtDate(l.debut) || '?'} → ${fmtDate(l.sortie)}</span>`);
           else {
             if (isFuture(l)) badges.push(html`<span class="badge acc">Arrive le ${fmtDate(l.debut)}</span>`);
@@ -889,11 +899,11 @@ dashboard() {
       <div class="metrics">
         <div class="metric"><div class="lbl">Loyers encaissés</div><div class="val green">${money(paid)}</div><div class="sub">${pct(paid, due)}% de ${money(due)}</div></div>
         <div class="metric"><div class="lbl">Manquant</div><div class="val ${due - paid > 0 ? 'red' : ''}">${money(Math.max(due - paid, 0))}</div></div>
-        <div class="metric"><div class="lbl">Versé propriétaires</div><div class="val">${money(verse)}</div></div>
+        <div class="metric"><div class="lbl">Versé bailleurs</div><div class="val">${money(verse)}</div></div>
         <div class="metric"><div class="lbl">Réparations & frais</div><div class="val">${money(depTotal)}</div></div>
         <div class="metric"><div class="lbl">Frais fixes</div><div class="val">${money(frais)}</div><div class="sub">${monthsElapsed(y)} mois</div></div>
         <div class="metric"><div class="lbl">Gain des immeubles</div><div class="val">${money(paid - depTotal - verse)}</div><div class="sub">avant frais fixes</div></div>
-        <div class="metric hero"><div class="lbl">Résultat net ${y}</div><div class="val ${netReel < 0 ? 'red' : 'accent'}">${money(netReel)}</div><div class="sub">encaissé − propriétaires − dépenses − frais fixes</div></div>
+        <div class="metric hero"><div class="lbl">Résultat net ${y}</div><div class="val ${netReel < 0 ? 'red' : 'accent'}">${money(netReel)}</div><div class="sub">encaissé − bailleurs − dépenses − frais fixes</div></div>
       </div>
       ${parts.length ? html`<div class="section-label">Répartition entre associés — ${y}</div>
       <div class="list">${parts.map((a) => html`<div class="row"><span class="avatar">${a.nom.slice(0, 2).toUpperCase()}</span><span class="grow"><span class="title" style="display:block">${a.nom}</span><span class="meta">${a.part} % · ${money((netReel * a.part) / 100 / Math.max(1, monthsElapsed(y)))} / mois en moyenne</span></span><span class="amount ${netReel < 0 ? 'red' : 'accent'}">${money((netReel * a.part) / 100)}</span></div>`)}</div>` : html`<p class="small muted" style="margin-top:10px"><a href="#" data-action="open-societe">Ajouter les associés</a> pour calculer la part de chacun.</p>`}
@@ -938,7 +948,7 @@ dashboard() {
 
       <div class="section-label">Gestion</div>
       <div class="list settings">
-        <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${societe().nom || 'Nom du bailleur pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
+        <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
         <button class="row" data-action="open-frais">${icon('receipt')}<span class="grow"><span class="title" style="display:block">Frais fixes mensuels</span><span class="meta">Salaires, provisions… · ${money(fraisOfMonth(new Date().getFullYear(), new Date().getMonth() + 1))} / mois</span></span></button>
       </div>
 
@@ -1030,7 +1040,6 @@ function tenantFields(l, prefix = '') {
     ${field('Prénom', prefix + 'prenom', l.prenom, { attrs: 'autocomplete="off"' })}
     ${field('Nom', prefix + 'nom', l.nom, { required: true, attrs: 'autocomplete="off"' })}
     ${field('Loyer mensuel (€)', prefix + 'loyer', l.loyer, { type: 'number', required: true, attrs: money$ })}
-    <label class="field">Type<select name="${prefix}type"><option value="principal">Principal</option><option value="sous" ${l.type === 'sous' ? new Raw('selected') : ''}>Sous-locataire</option></select></label>
     ${field('Téléphone', prefix + 'tel', l.tel, { type: 'tel', placeholder: '+352 …', attrs: 'autocomplete="off"' })}
     ${field('Email', prefix + 'mail', l.mail, { type: 'email', attrs: 'autocomplete="off"' })}
     ${field('Caution (€)', prefix + 'caution', l.caution, { type: 'number', attrs: money$ })}
@@ -1041,7 +1050,7 @@ function tenantFields(l, prefix = '') {
 }
 
 function logementSelect(selLog, selImm) {
-  const imms = vault.list('immeubles').sort(byAddr);
+  const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === selImm || logsOf(im.id).some((g) => g.id === selLog)).sort(byAddr);
   return html`<label class="field full">Logement
     <select name="place" data-input="place" required>
       <option value="">— Choisir —</option>
@@ -1124,9 +1133,9 @@ const SHEETS = {
       body: html`<form id="f" data-form="imm" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
         ${field('Adresse complète', 'adresse', im.adresse, { full: true, required: true, placeholder: 'ex. 34, rue Josy Haendel' })}
-        <div class="section-label full" style="margin:6px 0 0">Bail principal (ce que vous payez au propriétaire)</div>
-        ${field('Propriétaire', 'proprietaire', im.proprietaire, { full: true, placeholder: 'Nom du propriétaire (laisser vide si vous êtes propriétaire)' })}
-        ${field('Loyer au propriétaire (€ / mois)', 'loyer', im.loyer, { type: 'number', attrs: money$ })}
+        <div class="section-label full" style="margin:6px 0 0">Bail principal — vous êtes locataire principal, le bailleur est le propriétaire</div>
+        ${field('Bailleur (propriétaire)', 'proprietaire', im.proprietaire, { full: true, placeholder: 'Nom du bailleur / propriétaire (vide si l’immeuble vous appartient)' })}
+        ${field('Loyer au bailleur (€ / mois)', 'loyer', im.loyer, { type: 'number', attrs: money$ })}
         ${field('Charges (€ / mois)', 'charges', im.charges, { type: 'number', attrs: money$ })}
         ${field('Début du bail principal', 'bailDebut', im.bailDebut, { type: 'date' })}
         ${field('Fin du bail principal', 'bailFin', im.bailFin, { type: 'date' })}
@@ -1167,7 +1176,8 @@ const SHEETS = {
       const cy = y, cm = new Date().getMonth() + 1;
       body = html`
         <dl class="kv" style="margin-bottom:16px">
-          ${kvRow('Propriétaire', im.proprietaire || '—')}
+          ${kvRow('Bailleur (propriétaire)', im.proprietaire || '—')}
+          ${kvRow('Locataire principal', html`${societe().nom || 'Ares Invest'} (vous)`)}
           ${kvRow('Loyer + charges', rent ? money(rent) + ' / mois' : '—')}
           ${kvRow('Bail principal', html`${im.bailDebut ? fmtDate(im.bailDebut) : '?'} → ${im.bailFin ? fmtDate(im.bailFin) : 'indéterminé'}`)}
           ${kvRow('Total versé', html`<span class="num">${money(sum(versementsOf(id), (v) => v.montant))}</span>`)}
@@ -1179,8 +1189,8 @@ const SHEETS = {
             const dueM = isOwnerDue(im, yy, m);
             const past = ym(yy, m) < ym(cy, cm);
             return html`<button class="mcell ${v ? 'paid' : !dueM ? 'off' : past ? 'late' : ''}" data-action="toggle-vers" data-imm="${id}" data-y="${yy}" data-m="${m}">${mn}<small>${v ? '✓' : dueM ? (past ? '!' : '·') : '–'}</small></button>`;
-          }))}`) : html`<div class="alert info">${icon('key')}<div>Aucun loyer au propriétaire renseigné. Si vous louez cet immeuble à un propriétaire principal, indiquez le montant dans « Modifier ».</div></div>`}
-        <p class="tiny muted">Touchez un mois pour enregistrer le versement au propriétaire.</p>`;
+          }))}`) : html`<div class="alert info">${icon('key')}<div>Aucun loyer au bailleur renseigné. Si vous louez cet immeuble à un bailleur, indiquez le montant dans « Modifier ».</div></div>`}
+        <p class="tiny muted">Touchez un mois pour enregistrer le versement au bailleur.</p>`;
     } else if (tab === 'deps') {
       body = depensesPanel(id);
     } else {
@@ -1188,9 +1198,9 @@ const SHEETS = {
       const logs = logsOf(id);
       body = html`
         <div class="metrics" style="margin-bottom:16px">
-          <div class="metric hero"><div class="lbl">Gain net depuis l'origine</div><div class="val ${b.net < 0 ? 'red' : 'accent'}">${money(b.net)}</div><div class="sub">loyers encaissés − propriétaire − dépenses</div></div>
+          <div class="metric hero"><div class="lbl">Gain net depuis l'origine</div><div class="val ${b.net < 0 ? 'red' : 'accent'}">${money(b.net)}</div><div class="sub">loyers encaissés − bailleur − dépenses</div></div>
           <div class="metric"><div class="lbl">Loyers encaissés</div><div class="val green">${money(b.encaisse)}</div></div>
-          <div class="metric"><div class="lbl">Versé propriétaire</div><div class="val">${money(b.verse)}</div></div>
+          <div class="metric"><div class="lbl">Versé bailleur</div><div class="val">${money(b.verse)}</div></div>
           <div class="metric"><div class="lbl">Réparations & frais</div><div class="val">${money(b.depenses)}</div></div>
           <div class="metric"><div class="lbl">Occupants</div><div class="val">${b.occupants}</div><div class="sub">depuis l'origine</div></div>
         </div>
@@ -1207,8 +1217,26 @@ const SHEETS = {
     }
     return {
       title: im.adresse,
-      body: html`${tabsBar([['logs', 'Logements'], ['proprio', 'Propriétaire'], ['deps', 'Dépenses'], ['bilan', 'Bilan']], tab)}${body}`,
-      foot: html`<button class="btn" data-action="print-imm" data-id="${id}">${icon('download')} Imprimer</button><button class="btn" data-action="edit-imm" data-id="${id}">${icon('edit')} Modifier</button>`,
+      body: html`${immGone(im) ? html`<div class="alert info" style="margin-bottom:12px">${icon('history')}<div><b>Plus en gestion</b> depuis le ${fmtDate(im.finGestion)}${im.finNote ? ' — ' + im.finNote : ''}. Tout l'historique reste consultable et compte dans les statistiques.</div></div>` : ''}${tabsBar([['logs', 'Logements'], ['proprio', 'Bailleur'], ['deps', 'Dépenses'], ['bilan', 'Bilan']], tab)}${body}`,
+      foot: html`${immGone(im) ? html`<button class="btn" data-action="reopen-imm" data-id="${id}">${icon('sync')} Réactiver</button>` : html`<button class="btn" data-action="end-imm" data-id="${id}">${icon('history')} Fin de gestion</button>`}<button class="btn icon" data-action="print-imm" data-id="${id}" aria-label="Imprimer">${icon('download')}</button><button class="btn" data-action="edit-imm" data-id="${id}">${icon('edit')} Modifier</button>`,
+    };
+  },
+
+  'endimm-form'({ id }) {
+    const im = vault.get('immeubles', id);
+    if (!im) return null;
+    const cur = tenantsOfImm(id).filter((l) => isCurrent(l) && !isFuture(l));
+    return {
+      title: 'Fin de gestion',
+      narrow: true,
+      body: html`<form id="f" data-form="endimm" class="fields">
+        <input type="hidden" name="id" value="${id}">
+        <div class="alert info full">${icon('history')}<div><b>${im.adresse}</b> n'est plus en votre possession ou en gestion ? L'immeuble passe dans « Plus en gestion ». <b>Rien n'est effacé</b> : logements, anciens locataires, loyers, versements et dépenses restent dans l'historique et les statistiques.</div></div>
+        ${field('Date de fin de gestion', 'fin', today(), { type: 'date', required: true, full: true })}
+        ${cur.length ? html`<div class="alert warn full">${icon('users')}<div>${plural(cur.length, 'locataire')} encore en place (${cur.map(fullName).join(', ')}) : leur sortie sera enregistrée à cette date et ils passeront dans les anciens locataires.</div></div>` : ''}
+        <label class="field full">Remarque<textarea name="note" style="min-height:70px" placeholder="Vendu, bail principal résilié, rendu au bailleur…"></textarea></label>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Confirmer la fin de gestion</button>`,
     };
   },
 
@@ -1221,7 +1249,7 @@ const SHEETS = {
       body: html`<form id="f" data-form="log" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
         ${field('Nom', 'nom', g.nom, { full: true, required: true, placeholder: 'ex. Appartement 2B, Chambre 3, Studio RDC' })}
-        <label class="field full">Immeuble<select name="immId" required>${vault.list('immeubles').sort(byAddr).map((im) => html`<option value="${im.id}" ${im.id === g.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
+        <label class="field full">Immeuble<select name="immId" required>${vault.list('immeubles').filter((im) => !immGone(im) || im.id === g.immId).sort(byAddr).map((im) => html`<option value="${im.id}" ${im.id === g.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         <label class="field">Type<select name="type">${Object.entries(LOG_TYPES).map(([k, v]) => html`<option value="${k}" ${g.type === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Surface (m²)', 'surface', g.surface, { type: 'number', attrs: 'inputmode="decimal" min="0" step="0.1"' })}
         ${field('Étage', 'etage', g.etage)}
@@ -1294,7 +1322,7 @@ const SHEETS = {
   },
 
   'loc-form'({ id, preset }) {
-    const l = id ? vault.get('locataires', id) : { immId: ui.immFilter || '', type: 'principal', debut: today() };
+    const l = id ? vault.get('locataires', id) : { immId: ui.immFilter || '', debut: today() };
     if (id && !l) return null;
     if (!id && preset) {
       const g = vault.get('logements', preset);
@@ -1305,6 +1333,7 @@ const SHEETS = {
       title: id ? 'Modifier le locataire' : 'Nouveau locataire',
       body: html`<form id="f" data-form="loc" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
+        ${id ? '' : html`<p class="tiny muted full" style="margin:0">Bailleur (propriétaire) → <b>${societe().nom || 'Ares Invest'}</b> (locataire principal) → <b>sous-locataire</b> que vous ajoutez ici.</p>`}
         ${logementSelect(l.logId, l.immId)}
         ${tenantFields(l)}
         ${id ? html`${field('Date de sortie', 'sortie', l.sortie, { type: 'date' })}${field('Caution rendue (€)', 'cautionRendue', l.cautionRendue, { type: 'number', attrs: money$ })}` : ''}
@@ -1363,11 +1392,11 @@ const SHEETS = {
         </div>` : ''}
         ${late.length ? html`<div class="alert ${late.length >= 2 ? 'bad' : 'warn'}" style="margin-bottom:14px">${icon('alert')}<div>${late.length} mois impayé${late.length > 1 ? 's' : ''} : ${late.map((m) => MONTHS_FULL[m - 1]).join(', ')}</div></div>` : ''}
         <dl class="kv">
+          ${kvRow('Statut', 'Sous-locataire')}
           ${kvRow('Immeuble', immName(l.immId))}
           ${kvRow('Logement', l.logId ? html`<a href="#" data-action="open-log" data-id="${l.logId}">${logName(l.logId)}</a>` : '—')}
           ${kvRow('Loyer', html`<span class="num">${money(l.loyer)} / mois</span>${(l.loyerHist || []).length ? html`<div class="tiny muted">révisé le ${fmtDate([...l.loyerHist].sort((a, b) => b.from.localeCompare(a.from))[0].from)}</div>` : ''}`)}
           ${l.revision ? kvRow('Prochaine révision', fmtDate(l.revision)) : ''}
-          ${kvRow('Type', l.type === 'sous' ? 'Sous-locataire' : 'Principal')}
           ${kvRow('Téléphone', l.tel || '—')}
           ${kvRow('Email', l.mail || '—')}
           ${kvRow('Caution', html`<span class="num">${l.caution ? money(l.caution) : '—'}</span>${l.cautionNote ? html`<div class="tiny muted">${l.cautionNote}</div>` : ''}${l.cautionRendue != null && l.sortie ? html`<div class="tiny muted">rendue : ${money(l.cautionRendue)}</div>` : ''}`)}
@@ -1487,7 +1516,7 @@ const SHEETS = {
     return {
       title: 'Société & associés',
       body: html`<form id="f" data-form="societe" class="fields">
-        <div class="section-label full" style="margin:0">Bailleur (apparaît sur les quittances et les relances)</div>
+        <div class="section-label full" style="margin:0">Votre société — locataire principal (apparaît sur les quittances et les relances)</div>
         ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: 'ex. Ares Invest SA' })}
         ${field('Adresse', 'adresse', st.adresse, { full: true })}
         ${field('Code postal et ville', 'ville', st.ville, { placeholder: 'L-1234 Luxembourg' })}
@@ -1615,12 +1644,12 @@ async function toggleVers(immId, y, m) {
   const label = `${im.adresse} — ${MONTHS_FULL[m - 1]} ${y}`;
   const prev = vault.get('versements', k);
   if (prev) {
-    await vault.mutate((tx) => tx.remove('versements', k), 'Versement propriétaire annulé', label, immId);
-    toast('Versement annulé · ' + MONTHS_FULL[m - 1], { undo: () => vault.mutate((tx) => tx.put('versements', { ...prev, id: k }), 'Versement propriétaire rétabli', label, immId) });
+    await vault.mutate((tx) => tx.remove('versements', k), 'Versement bailleur annulé', label, immId);
+    toast('Versement annulé · ' + MONTHS_FULL[m - 1], { undo: () => vault.mutate((tx) => tx.put('versements', { ...prev, id: k }), 'Versement bailleur rétabli', label, immId) });
   } else {
     const montant = ownerRent(im);
-    await vault.mutate((tx) => tx.put('versements', { id: k, immId, y, m, date: today(), montant }), 'Versement au propriétaire', label + ' · ' + money(montant), immId);
-    toast('Versé au propriétaire · ' + money(montant), { undo: () => vault.mutate((tx) => tx.remove('versements', k), 'Versement propriétaire annulé', label, immId) });
+    await vault.mutate((tx) => tx.put('versements', { id: k, immId, y, m, date: today(), montant }), 'Versement au bailleur', label + ' · ' + money(montant), immId);
+    toast('Versé au bailleur · ' + money(montant), { undo: () => vault.mutate((tx) => tx.remove('versements', k), 'Versement bailleur annulé', label, immId) });
   }
 }
 
@@ -1632,7 +1661,7 @@ function readPlace(fd) {
   return { logId: '', immId: ref || '' };
 }
 const tenantFromForm = (fd, p = '') => ({
-  nom: fd.get(p + 'nom').trim(), prenom: fd.get(p + 'prenom').trim(), loyer: num(fd.get(p + 'loyer')), type: fd.get(p + 'type'),
+  nom: fd.get(p + 'nom').trim(), prenom: fd.get(p + 'prenom').trim(), loyer: num(fd.get(p + 'loyer')),
   tel: fd.get(p + 'tel').trim(), mail: fd.get(p + 'mail').trim(), caution: num(fd.get(p + 'caution')), cautionNote: fd.get(p + 'cautionNote').trim(),
   debut: fd.get(p + 'debut'), fin: fd.get(p + 'fin'), revision: fd.get(p + 'revision') || '',
 });
@@ -1658,8 +1687,8 @@ function printQuittance(locId, y, m) {
   if (!soc.nom) toast('Astuce : renseignez la société dans Réglages → Société & associés', {});
   printDoc(full ? 'Quittance de loyer' : 'Reçu de paiement partiel', html`
     <div class="pr-cols" style="margin-bottom:22px">
-      <div><h2>Bailleur</h2><div><b>${soc.nom || '—'}</b></div><div>${soc.adresse || ''}</div><div>${soc.ville || ''}</div><div>${soc.tel || ''}${soc.tel && soc.email ? ' · ' : ''}${soc.email || ''}</div></div>
-      <div><h2>Locataire</h2><div><b>${fullName(l)}</b></div><div>${logName(l.logId) || ''}</div><div>${im.adresse || ''}</div></div>
+      <div><h2>Locataire principal (bailleur)</h2><div><b>${soc.nom || '—'}</b></div><div>${soc.adresse || ''}</div><div>${soc.ville || ''}</div><div>${soc.tel || ''}${soc.tel && soc.email ? ' · ' : ''}${soc.email || ''}</div></div>
+      <div><h2>Sous-locataire</h2><div><b>${fullName(l)}</b></div><div>${logName(l.logId) || ''}</div><div>${im.adresse || ''}</div></div>
     </div>
     <h1 style="text-align:center;margin:10px 0 4px">${full ? 'Quittance de loyer' : 'Reçu de paiement partiel'}</h1>
     <p style="text-align:center" class="pr-sub">Période du 1er au ${last} ${MONTHS_FULL[m - 1].toLowerCase()} ${y}</p>
@@ -1669,15 +1698,15 @@ function printQuittance(locId, y, m) {
       ${!full ? html`<tr><td>Reste dû</td><td class="r">${money(st.rest)}</td></tr>` : ''}
     </tbody></table>
     <p style="font-size:12px;line-height:1.6">${full
-      ? `Je soussigné(e), ${soc.nom || '……………………'}, bailleur, déclare avoir reçu de ${fullName(l)} la somme de ${money(st.paid)} au titre du loyer et des charges du logement ${[logName(l.logId), im.adresse].filter(Boolean).join(', ')}, pour la période du 1er au ${last} ${MONTHS_FULL[m - 1].toLowerCase()} ${y}, et lui en donne quittance, sous réserve de tous mes droits.`
-      : `Je soussigné(e), ${soc.nom || '……………………'}, bailleur, déclare avoir reçu de ${fullName(l)} la somme de ${money(st.paid)} à titre d'acompte sur le loyer et les charges du logement ${[logName(l.logId), im.adresse].filter(Boolean).join(', ')} pour ${MONTHS_FULL[m - 1].toLowerCase()} ${y}. Il reste dû ${money(st.rest)}. Ce reçu ne vaut pas quittance.`}</p>
+      ? `Je soussigné(e), ${soc.nom || '……………………'}, locataire principal et bailleur, déclare avoir reçu de ${fullName(l)} la somme de ${money(st.paid)} au titre du loyer et des charges du logement ${[logName(l.logId), im.adresse].filter(Boolean).join(', ')}, pour la période du 1er au ${last} ${MONTHS_FULL[m - 1].toLowerCase()} ${y}, et lui en donne quittance, sous réserve de tous mes droits.`
+      : `Je soussigné(e), ${soc.nom || '……………………'}, locataire principal et bailleur, déclare avoir reçu de ${fullName(l)} la somme de ${money(st.paid)} à titre d'acompte sur le loyer et les charges du logement ${[logName(l.logId), im.adresse].filter(Boolean).join(', ')} pour ${MONTHS_FULL[m - 1].toLowerCase()} ${y}. Il reste dû ${money(st.rest)}. Ce reçu ne vaut pas quittance.`}</p>
     <div style="margin-top:36px;display:flex;justify-content:space-between"><div>Fait à Luxembourg, le ${fmtDate(today())}</div><div style="text-align:center;min-width:200px">Signature<div style="border-bottom:1px solid #999;height:60px"></div></div></div>`);
   vault.mutate(() => {}, full ? 'Quittance imprimée' : 'Reçu imprimé', `${fullName(l)} — ${MONTHS_FULL[m - 1]} ${y}`, l.id);
 }
 
 const prBilan = (b, withOcc) => html`<table class="tbl"><tbody>
   <tr><td>Loyers encaissés</td><td class="r green">${money(b.encaisse)}</td></tr>
-  ${b.verse != null ? html`<tr><td>Versé au propriétaire</td><td class="r">${neg(b.verse)}</td></tr>` : ''}
+  ${b.verse != null ? html`<tr><td>Versé au bailleur</td><td class="r">${neg(b.verse)}</td></tr>` : ''}
   <tr><td>Réparations & frais</td><td class="r">${neg(b.depenses)}</td></tr>
   <tr><td><b>Gain net</b></td><td class="r"><b>${money(b.net ?? b.encaisse - b.depenses)}</b></td></tr>
   ${withOcc ? html`<tr><td>Occupants</td><td class="r">${b.occupants}</td></tr>` : ''}
@@ -1701,7 +1730,7 @@ function reportImmeuble(immId, y) {
   const years = yearsWithData((yy) => bilan({ immId, y: yy }));
   return html`
     <h1>${im.adresse}</h1>
-    <p class="pr-sub">${im.proprietaire ? 'Propriétaire : ' + im.proprietaire + ' · ' : ''}${ownerRent(im) ? 'Bail principal : ' + money(ownerRent(im)) + ' / mois' : ''}${im.bailDebut ? ' · depuis le ' + fmtDate(im.bailDebut) : ''}</p>
+    <p class="pr-sub">${im.proprietaire ? 'Bailleur : ' + im.proprietaire + ' · ' : ''}${ownerRent(im) ? 'Bail principal : ' + money(ownerRent(im)) + ' / mois' : ''}${im.bailDebut ? ' · depuis le ' + fmtDate(im.bailDebut) : ''}</p>
     <div class="pr-cols"><div><h2>Bilan ${y}</h2>${prBilan(bilan({ immId, y }))}</div><div><h2>Depuis l'origine</h2>${prBilan(bilan({ immId }), true)}</div></div>
     ${years.length > 1 ? html`<h2>Par année</h2>${bilanTable(years)}` : ''}
     ${logs.length ? html`<h2>Logements</h2><table class="tbl"><thead><tr><th>Logement</th><th>Type</th><th>Occupant actuel</th><th class="r">Occupants</th><th class="r">Occupation</th><th class="r">Encaissé total</th></tr></thead><tbody>
@@ -1710,7 +1739,7 @@ function reportImmeuble(immId, y) {
     ${active.length ? html`<h2>Loyers ${y}</h2><table class="tbl pr-grid"><thead><tr><th>Locataire</th><th>Logement</th><th class="r">Loyer</th>${MONTHS.map((m) => html`<th>${m}</th>`)}<th class="r">Payé</th><th class="r">Reste</th></tr></thead><tbody>
       ${active.map((l) => { const st = yearStats(l, y); return html`<tr><td>${fullName(l)}</td><td>${logName(l.logId)}</td><td class="r">${money(l.loyer)}</td>${MONTHS.map((_, i) => html`<td class="c">${markPay(l, y, i + 1)}</td>`)}<td class="r">${money(st.paid)}</td><td class="r">${money(Math.max(st.due - st.paid, 0))}</td></tr>`; })}
     </tbody></table>` : ''}
-    ${ownerRent(im) ? html`<h2>Versements au propriétaire ${y}</h2><table class="tbl pr-grid"><thead><tr>${MONTHS.map((m) => html`<th>${m}</th>`)}<th class="r">Total versé</th></tr></thead><tbody><tr>${MONTHS.map((_, i) => html`<td class="c">${mark(versement(immId, y, i + 1), isOwnerDue(im, y, i + 1))}</td>`)}<td class="r">${money(sum(versementsOf(immId, y), (v) => v.montant))}</td></tr></tbody></table>` : ''}
+    ${ownerRent(im) ? html`<h2>Versements au bailleur ${y}</h2><table class="tbl pr-grid"><thead><tr>${MONTHS.map((m) => html`<th>${m}</th>`)}<th class="r">Total versé</th></tr></thead><tbody><tr>${MONTHS.map((_, i) => html`<td class="c">${mark(versement(immId, y, i + 1), isOwnerDue(im, y, i + 1))}</td>`)}<td class="r">${money(sum(versementsOf(immId, y), (v) => v.montant))}</td></tr></tbody></table>` : ''}
     ${deps.length ? html`<h2>Dépenses ${y}</h2><table class="tbl"><thead><tr><th>Date</th><th>Description</th><th>Concerne</th><th class="r">Montant</th></tr></thead><tbody>${deps.map((d) => html`<tr><td>${fmtDate(d.date)}</td><td>${d.desc}</td><td>${logName(d.logId) || 'Immeuble'}</td><td class="r">${money(d.montant)}</td></tr>`)}</tbody></table>` : ''}
     ${ls.length ? html`<h2>Historique des occupants</h2>${occupantsTable([...ls].sort(byDebut))}` : ''}`;
 }
@@ -1735,12 +1764,12 @@ function reportGlobal(y, details) {
     <h1>Rapport ${y}</h1>
     <p class="pr-sub">${plural(imms.length, 'immeuble')} · ${plural(vault.list('logements').length, 'logement')} · ${plural(currentLocs().length, 'locataire')} actuels</p>
     <h2>Année ${y}</h2>
-    <table class="tbl"><thead><tr><th>Immeuble</th><th class="r">Encaissé</th><th class="r">Propriétaire</th><th class="r">Dépenses</th><th class="r">Gain net</th></tr></thead><tbody>
+    <table class="tbl"><thead><tr><th>Immeuble</th><th class="r">Encaissé</th><th class="r">Bailleur</th><th class="r">Dépenses</th><th class="r">Gain net</th></tr></thead><tbody>
       ${rows.map(({ im, a }) => html`<tr><td>${im.adresse}</td><td class="r">${money(a.encaisse)}</td><td class="r">${neg(a.verse)}</td><td class="r">${neg(a.depenses)}</td><td class="r">${money(a.net)}</td></tr>`)}
       <tr><td><b>Total</b></td><td class="r"><b>${money(T('a', 'encaisse'))}</b></td><td class="r"><b>${neg(T('a', 'verse'))}</b></td><td class="r"><b>${neg(T('a', 'depenses'))}</b></td><td class="r"><b>${money(T('a', 'net'))}</b></td></tr>
     </tbody></table>
     <h2>Depuis l'origine</h2>
-    <table class="tbl"><thead><tr><th>Immeuble</th><th class="r">Occupants</th><th class="r">Encaissé</th><th class="r">Propriétaire</th><th class="r">Dépenses</th><th class="r">Gain net</th></tr></thead><tbody>
+    <table class="tbl"><thead><tr><th>Immeuble</th><th class="r">Occupants</th><th class="r">Encaissé</th><th class="r">Bailleur</th><th class="r">Dépenses</th><th class="r">Gain net</th></tr></thead><tbody>
       ${rows.map(({ im, o }) => html`<tr><td>${im.adresse}</td><td class="r">${o.occupants}</td><td class="r">${money(o.encaisse)}</td><td class="r">${neg(o.verse)}</td><td class="r">${neg(o.depenses)}</td><td class="r">${money(o.net)}</td></tr>`)}
       <tr><td><b>Total</b></td><td class="r"><b>${T('o', 'occupants')}</b></td><td class="r"><b>${money(T('o', 'encaisse'))}</b></td><td class="r"><b>${neg(T('o', 'verse'))}</b></td><td class="r"><b>${neg(T('o', 'depenses'))}</b></td><td class="r"><b>${money(T('o', 'net'))}</b></td></tr>
     </tbody></table>
@@ -1780,6 +1809,8 @@ const ACTIONS = {
   replace: (d) => openSheet('replace-form', d.id),
   'toggle-vers': (d) => toggleVers(d.imm, +d.y, +d.m),
   'loc-seg': (d) => { ui.locSeg = d.id; renderView(); },
+  'imm-seg': (d) => { ui.immSeg = d.id; renderView(); },
+  'end-imm': (d) => openSheet('endimm-form', d.id),
   'close-sheet': () => goBack(),
   pay: (d) => payFull(d.loc, +d.y, +d.m),
   'toggle-pay': (d) => {
@@ -1853,10 +1884,17 @@ const ACTIONS = {
   print: () => { go('paiements'); setTimeout(() => print(), 300); },
   install: async () => { if (!installPrompt) return; installPrompt.prompt(); await installPrompt.userChoice; installPrompt = null; renderView(); },
 
+  async 'reopen-imm'(d) {
+    const im = vault.get('immeubles', d.id);
+    if (!im || !(await confirmBox(`Réactiver « ${im.adresse} » ?`, { ok: 'Réactiver', detail: "L'immeuble revient dans « En gestion ». Les anciens locataires restent archivés. Vérifiez la fin du bail principal avec « Modifier »." }))) return;
+    await vault.mutate((tx) => tx.put('immeubles', { id: im.id, finGestion: '', finNote: '' }), 'Immeuble réactivé', im.adresse, im.id);
+    toast('Immeuble réactivé');
+    openSheet('imm', im.id);
+  },
   async 'del-imm'(d) {
     const im = vault.get('immeubles', d.id);
     const ls = vault.list('locataires').filter((l) => l.immId === d.id);
-    if (!(await confirmBox(`Supprimer « ${im.adresse} » ?`, { ok: 'Supprimer', danger: true, detail: `Tout sera effacé définitivement, y compris l'historique : ${plural(ls.length, 'locataire')}, logements, paiements, versements, dépenses et documents. Les statistiques de cet immeuble seront perdues.` }))) return;
+    if (!(await confirmBox(`Supprimer « ${im.adresse} » ?`, { ok: 'Supprimer', danger: true, detail: `Si l'immeuble n'est simplement plus à vous, utilisez plutôt « Fin de gestion » : il sera archivé et son historique restera dans les statistiques. Ici, tout sera effacé définitivement, y compris l'historique : ${plural(ls.length, 'locataire')}, logements, paiements, versements, dépenses et documents. Les statistiques de cet immeuble seront perdues.` }))) return;
     const docs = vault.list('documents').filter((doc) => ls.some((l) => l.id === doc.locId));
     await vault.mutate((tx) => {
       tx.remove('immeubles', d.id);
@@ -2020,6 +2058,19 @@ const FORMS = {
     replaced.length ? `${replaced.map(fullName).join(', ')} → ${fullName(rec)} (${where})` : `${fullName(rec)} (${where})`, rec.id);
     toast(replaced.length ? 'Locataire remplacé, ancien locataire archivé' : id ? 'Locataire enregistré' : 'Locataire ajouté');
     openSheet('loc', saved.id);
+  },
+  async endimm(fd) {
+    const im = vault.get('immeubles', fd.get('id'));
+    if (!im) return;
+    const fin = fd.get('fin');
+    const note = fd.get('note').trim();
+    const cur = tenantsOfImm(im.id).filter((l) => (!l.sortie || l.sortie > fin) && (!l.debut || l.debut <= fin));
+    await vault.mutate((tx) => {
+      tx.put('immeubles', { id: im.id, finGestion: fin, finNote: note, bailFin: im.bailFin && im.bailFin < fin ? im.bailFin : fin });
+      for (const l of cur) tx.put('locataires', { id: l.id, sortie: fin, sortieNote: [l.sortieNote, "Fin de gestion de l'immeuble"].filter(Boolean).join(' · ') });
+    }, 'Fin de gestion', `${im.adresse} — ${fmtDate(fin)}${cur.length ? ' · ' + plural(cur.length, 'locataire') + ' archivé' + (cur.length > 1 ? 's' : '') : ''}${note ? ' · ' + note : ''}`, im.id);
+    toast('Immeuble archivé · historique conservé');
+    openSheet('imm', im.id);
   },
   async replace(fd) {
     const old = vault.get('locataires', fd.get('id'));
