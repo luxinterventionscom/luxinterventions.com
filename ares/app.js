@@ -3,7 +3,7 @@ import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js'
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 
-const VERSION = '2.11.0';
+const VERSION = '2.12.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -87,7 +87,15 @@ const edlOf = (logId) => vault.list('documents').filter((d) => d.kind === 'edl' 
 
 // ───────────────────────── Maintenance : intervenants, interventions, collectes des déchets ─────────────────────────
 const METIERS = { menage: 'Femme de ménage / nettoyage', menuisier: 'Menuisier', electricien: 'Électricien', plombier: 'Plombier / sanitaire', chauffagiste: 'Chauffagiste', macon: 'Maçon', peintre: 'Peintre', serrurier: 'Serrurier', jardinier: 'Jardinier', autre: 'Autre' };
-const TACHE_TYPES = { nettoyage: '🧹 Nettoyage', reparation: '🔧 Réparation', entretien: '🛠️ Entretien / contrôle', autre: '📌 Autre' };
+const TACHE_TYPES = { nettoyage: '🧹 Nettoyage (ménage)', reparation: '🔧 Maintenance courante / réparation', gros: '🚚 Gros travaux (chaudière, toiture…)', autre: '📌 Autre' };
+const tacheIcon = (type) => (type === 'entretien' ? '🔧' : (TACHE_TYPES[type] || '📌').split(' ')[0]);
+// Feu tricolore : rouge = aujourd'hui ou en retard, jaune = demain / après-demain, vert = il y a le temps
+const LIGHTS = { red: 'Urgent : aujourd’hui ou en retard', yellow: 'Attention : demain ou après-demain', green: 'Il y a le temps' };
+function light(d) {
+  if (!d) return '';
+  const lvl = d <= today() ? 'red' : d <= addDays(today(), 2) ? 'yellow' : 'green';
+  return new Raw(`<span class="light light-${lvl}" title="${LIGHTS[lvl]}" aria-label="${LIGHTS[lvl]}"></span>`);
+}
 const RECURS = { '': 'Une seule fois', hebdo: 'Chaque semaine', '2sem': 'Toutes les 2 semaines', mois: 'Chaque mois' };
 const STATUTS = { afaire: 'À faire', planifie: 'Planifiée', fait: 'Terminée' };
 const DECHETS = {
@@ -883,20 +891,26 @@ function mtCard() {
     ${items.length ? html`<div class="list">${items.map((x) => html`${agendaRow(x)}`)}</div>` : ''}
   </div>`;
 }
+// Légende sous le planning et les travaux : feu tricolore + icônes des types
+const mtLegend = () => html`<div class="card legend" style="margin-top:14px">
+  <div class="legend-row">${['green', 'yellow', 'red'].map((k) => html`<span class="lg"><span class="light light-${k}"></span>${LIGHTS[k]}</span>`)}</div>
+  <div class="legend-row">${Object.values(TACHE_TYPES).map((t) => html`<span>${t}</span>`)}<span>🗑️ Collecte des déchets</span></div>
+</div>`;
 function agendaRow(x) {
   if (x.kind === 'collecte') {
     const c = x.c, k = DECHETS[c.cat];
-    return html`<button class="row" data-action="edit-collecte" data-id="${c.id}"><span class="dot" style="background:${k.color}"></span>
-      <span class="grow"><span class="title" style="display:block;white-space:normal">🗑️ ${k.short} — ${immName(c.immId)}</span><span class="meta" style="white-space:normal"><b>Passage ce jour</b> · ${sortieText(c, x.d)} · ${LIEUX[c.lieu] || ''}${c.note ? ' · ' + c.note : ''}</span></span></button>`;
+    return html`<button class="row" data-action="edit-collecte" data-id="${c.id}">${light(sortieDay(c, x.d))}
+      <span class="grow"><span class="title" style="display:block;white-space:normal">🗑️ <span class="dot inline" style="background:${k.color}"></span> ${k.short} — ${immName(c.immId)}</span><span class="meta" style="white-space:normal"><b>Passage ce jour</b> · ${sortieText(c, x.d)} · ${LIEUX[c.lieu] || ''}${c.note ? ' · ' + c.note : ''}</span></span></button>`;
   }
   return tacheRow(x.t, x);
 }
 function tacheRow(t, x = {}) {
   const who = intervName(t.intervenantId);
   const when = t.recur ? `${RECURS[t.recur].toLowerCase()} depuis le ${fmtDate(t.date)}` : t.statut === 'fait' ? `terminée le ${fmtDate(t.doneDate)}` : t.date ? (x.late || t.date < today() ? `prévue le ${fmtDate(t.date)} — en retard` : `prévue le ${fmtDate(t.date)}`) : 'date à fixer';
-  return html`<div class="row">
+  const due = t.statut === 'fait' ? '' : x.d || (t.recur ? recurDates(t.date, t.recur, today(), addDays(today(), 62), t.fin)[0] : t.date);
+  return html`<div class="row">${t.statut === 'fait' ? '' : light(due)}
     <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="edit-tache" data-id="${t.id}">
-      <span class="title" style="display:block">${(TACHE_TYPES[t.type] || '').split(' ')[0]} ${t.titre}</span>
+      <span class="title" style="display:block">${tacheIcon(t.type)} ${t.titre}</span>
       <span class="meta" style="white-space:normal">${placeName(t)}${who ? ' · ' + who : ' · intervenant à choisir'} · ${when}${t.cout ? ' · ' + money(t.cout) : ''}</span>
     </button>
     ${!t.recur && t.statut !== 'fait' ? html`<button class="btn sm" data-action="tache-done" data-id="${t.id}">${icon('check')} Fait</button>` : t.statut === 'fait' ? html`<span class="badge ok">✓</span>` : ''}
@@ -928,7 +942,7 @@ const logOptions = (immId, sel) => html`<option value="">Parties communes / tout
 async function offerDepense(t) {
   if (!t || !t.cout || t.depId) return;
   if (!(await confirmBox('Ajouter le coût aux dépenses ?', { ok: 'Ajouter', detail: `${money(t.cout)} — ${t.titre} (${placeName(t)}). Il comptera dans le bilan de l'immeuble.` }))) return;
-  const cat = t.type === 'nettoyage' || t.type === 'entretien' ? 'entretien' : t.type === 'reparation' ? 'reparation' : 'autre';
+  const cat = t.type === 'nettoyage' || t.type === 'entretien' ? 'entretien' : t.type === 'reparation' || t.type === 'gros' ? 'reparation' : 'autre';
   const who = intervName(t.intervenantId);
   await vault.mutate((tx) => {
     const dep = tx.put('depenses', { immId: t.immId, logId: t.logId || '', desc: t.titre + (who ? ' — ' + who : ''), montant: t.cout, date: t.doneDate || today(), cat });
@@ -958,7 +972,7 @@ const VIEWS = {
       body = days.length ? days.map((d) => html`<div class="section-label">${d === from ? "Aujourd'hui" : d === addDays(from, 1) ? 'Demain' : ''} ${fmtDay(d)}</div>
         <div class="list" style="margin-bottom:10px">${items.filter((x) => x.d === d).map(agendaRow)}</div>`)
         : empty('calendar', 'Rien de prévu dans les 14 prochains jours.', html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Planifier une intervention</button>`);
-      body = html`<p class="small muted" style="margin:0 0 6px">Les 14 prochains jours : nettoyages, réparations et jours de collecte des déchets.</p>${body}`;
+      body = html`<p class="small muted" style="margin:0 0 6px">Les 14 prochains jours : nettoyages, réparations et jours de collecte des déchets.</p>${body}${mtLegend()}`;
     } else if (tab === 'taches') {
       const all = vault.list('taches').filter((t) => (!f || t.immId === f) && !immGone(vault.get('immeubles', t.immId)));
       const open = all.filter((t) => !t.recur && t.statut !== 'fait').sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
@@ -968,7 +982,7 @@ const VIEWS = {
       body = all.length ? html`
         <div class="section-label">À faire (${open.length})</div>${open.length ? list(open) : html`<p class="muted small">Rien à faire. 👍</p>`}
         ${recur.length ? html`<div class="section-label">Récurrentes (${recur.length})</div>${list(recur)}` : ''}
-        ${done.length ? html`<div class="section-label">Terminées récemment</div>${list(done)}` : ''}`
+        ${done.length ? html`<div class="section-label">Terminées récemment</div>${list(done)}` : ''}${mtLegend()}`
         : empty('tool', 'Aucune intervention.', html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Nouvelle intervention</button>`);
     } else if (tab === 'dechets') {
       const shown = f ? imms.filter((im) => im.id === f) : imms;
@@ -1603,7 +1617,7 @@ const SHEETS = {
       title: id ? "Modifier l'intervention" : 'Nouvelle intervention',
       body: html`<form id="f" data-form="tache" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${t.type === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${(t.type === 'entretien' ? 'reparation' : t.type) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}
         <label class="field">Immeuble<select name="immId" data-input="tache-imm" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === t.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         <label class="field">Où ?<select name="logId" id="tacheLog">${logOptions(t.immId || imms[0].id, t.logId)}</select></label>
