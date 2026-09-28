@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.15.1';
+const VERSION = '2.16.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -75,7 +75,28 @@ const level = (p) => (p >= 80 ? '' : p >= 50 ? 'warn' : 'bad');
 const fullName = (l) => [l.prenom, l.nom].filter(Boolean).join(' ') || 'Sans nom';
 const initials = (l) => (((l.prenom || '')[0] || '') + ((l.nom || '')[0] || '')).toUpperCase() || '?';
 const immName = (id) => (vault.get('immeubles', id) || {}).adresse || 'Sans immeuble';
-const LOG_TYPES = { appartement: 'Appartement', studio: 'Studio', chambre: 'Chambre', autre: 'Autre' };
+// Type de structure (immeuble) et type d'unité louée (logement / local)
+const IMM_TYPES = {
+  immeuble: 'Immeuble à plusieurs étages', maison: 'Maison / propriété avec chambres', local: 'Ancien café / local transformé en chambres',
+  residence: 'Résidence / foyer / colocation', commercial: 'Bâtiment commercial / bureaux', mixte: 'Mixte (habitation + commerce)', parking: 'Parking / garages', autre: 'Autre structure',
+};
+const LOG_GROUPS = [
+  ['Habitation', { appartement: 'Appartement', studio: 'Studio', chambre: 'Chambre', duplex: 'Duplex / penthouse', maison: 'Maison' }],
+  ['Professionnel', { bureau: 'Bureau', commercial: 'Local commercial / magasin', restauration: 'Local de restauration (café, restaurant)', cabinet: 'Cabinet (médical, profession libérale)', atelier: 'Atelier / entrepôt' }],
+  ['Annexes', { garage: 'Garage / box', parking: 'Emplacement de parking', cave: 'Cave / débarras', autre: 'Autre' }],
+];
+const LOG_TYPES = Object.assign({}, ...LOG_GROUPS.map(([, t]) => t));
+const logTypeSelect = (name, cur) => html`<label class="field">Type<select name="${name}">${LOG_GROUPS.map(([g, t]) => html`<optgroup label="${g}">${Object.entries(t).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</optgroup>`)}</select></label>`;
+const logIcon = (t) => (t === 'chambre' ? 'key' : LOG_GROUPS[1][1][t] ? 'building' : 'home');
+// Où se trouve l'unité : « étage 1er · ancien bar »
+const logWhere = (g) => [g.etage ? 'étage ' + g.etage : '', g.partie].filter(Boolean).join(' · ');
+// Documents du locataire (dossier d'entrée, caution…)
+const DOC_TYPES = {
+  bail: 'Contrat de bail', identite: "Pièce d'identité (carte d'identité / passeport)", cns: 'Carte CNS (assurance maladie)', caution: 'Preuve de la caution (reçu, virement, message)',
+  assurance: 'Attestation assurance habitation', revenus: 'Fiches de salaire / revenus', titre: 'Titre de séjour', autre: 'Autre document',
+};
+const DOSSIER = [['bail', 'Contrat'], ['identite', 'Identité'], ['cns', 'CNS'], ['caution', 'Caution']];
+const CAUTION_MODES = { especes: 'En main propre (espèces)', virement: 'Virement bancaire', cheque: 'Chèque', garantie: 'Garantie bancaire', autre: 'Autre' };
 const logName = (id) => (vault.get('logements', id) || {}).nom || '';
 const whereOf = (l) => [logName(l.logId), immName(l.immId)].filter(Boolean).join(' · ');
 const byName = (a, b) => fullName(a).localeCompare(fullName(b), 'fr');
@@ -1262,7 +1283,7 @@ dashboard() {
         return html`<button class="card" style="text-align:left;font:inherit;color:inherit;cursor:pointer;width:100%" data-action="open-imm" data-id="${im.id}">
           <div class="card-title"><h3>${im.adresse}</h3><span class="badge ${pp >= 100 ? 'ok' : pp >= 50 ? 'warn' : 'bad'}">${pp}%</span></div>
           <div class="progress ${level(pp)}"><i style="width:${Math.min(pp, 100)}%"></i></div>
-          <div class="pay-foot"><span>${plural(ls.length, 'locataire')}</span><span class="num">${money(rec)} / ${money(exp)}</span></div>
+          <div class="pay-foot"><span>${im.type && im.type !== 'immeuble' ? (IMM_TYPES[im.type] || '') + ' · ' : ''}${plural(ls.length, 'locataire')}</span><span class="num">${money(rec)} / ${money(exp)}</span></div>
         </button>`;
       })}</div>`;
   },
@@ -1618,8 +1639,10 @@ function tenantFields(l, prefix = '') {
     ${field('Loyer mensuel (€)', prefix + 'loyer', l.loyer, { type: 'number', required: true, attrs: money$ })}
     ${field('Téléphone', prefix + 'tel', l.tel, { type: 'tel', placeholder: '+352 …', attrs: 'autocomplete="off"' })}
     ${field('Email', prefix + 'mail', l.mail, { type: 'email', attrs: 'autocomplete="off"' })}
-    ${field('Caution (€)', prefix + 'caution', l.caution, { type: 'number', attrs: money$ })}
-    ${field('Note caution', prefix + 'cautionNote', l.cautionNote)}
+    ${field('Caution reçue (€)', prefix + 'caution', l.caution, { type: 'number', attrs: money$ })}
+    ${field('Caution reçue le', prefix + 'cautionDate', l.cautionDate, { type: 'date' })}
+    <label class="field">Caution reçue par<select name="${prefix}cautionMode"><option value="">—</option>${Object.entries(CAUTION_MODES).map(([k, v]) => html`<option value="${k}" ${l.cautionMode === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+    ${field('Note caution', prefix + 'cautionNote', l.cautionNote, { placeholder: 'ex. banque, n° de garantie…' })}
     ${field("Début du contrat (entrée)", prefix + 'debut', l.debut, { type: 'date', required: !!prefix })}
     ${field('Fin du contrat', prefix + 'fin', l.fin, { type: 'date' })}
     ${field('Prochaine révision du loyer', prefix + 'revision', l.revision, { type: 'date' })}`;
@@ -1627,21 +1650,23 @@ function tenantFields(l, prefix = '') {
 
 function logementSelect(selLog, selImm) {
   const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === selImm || logsOf(im.id).some((g) => g.id === selLog)).sort(byAddr);
-  return html`<label class="field full">Logement
+  return html`<label class="field full">Logement / local (appartement, n° de chambre, garage…)
     <select name="place" data-input="place" required>
       <option value="">— Choisir —</option>
       ${imms.map((im) => html`<optgroup label="${im.adresse}">
         ${logsOf(im.id).map((g) => {
           const occ = occupantsNow(g.id);
-          return html`<option value="log:${g.id}" ${g.id === selLog ? new Raw('selected') : ''}>${g.nom}${occ.length ? ' — occupé (' + occ.map(fullName).join(', ') + ')' : ' — vacant'}</option>`;
+          return html`<option value="log:${g.id}" ${g.id === selLog ? new Raw('selected') : ''}>${g.nom}${logWhere(g) ? ' (' + logWhere(g) + ')' : ''}${occ.length ? ' — occupé (' + occ.map(fullName).join(', ') + ')' : ' — vacant'}</option>`;
         })}
-        <option value="new:${im.id}">➕ Nouveau logement dans cet immeuble…</option>
-        <option value="imm:${im.id}" ${!selLog && selImm === im.id ? new Raw('selected') : ''}>Immeuble sans logement précis</option>
+        <option value="new:${im.id}">➕ Nouveau logement / local ici (chambre, appartement, garage…)</option>
+        <option value="imm:${im.id}" ${!selLog && selImm === im.id ? new Raw('selected') : ''}>Toute la structure (pas de chambre / logement précis)</option>
       </optgroup>`)}
     </select></label>
     <div class="fields full" id="newLogWrap" hidden>
-      ${field('Nom du nouveau logement', 'newLogNom', '', { placeholder: 'ex. Appartement 2B, Chambre 3' })}
-      <label class="field">Type<select name="newLogType">${Object.entries(LOG_TYPES).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
+      ${field('Nom / numéro', 'newLogNom', '', { placeholder: 'ex. Chambre 3, Appartement 2B, Garage 12' })}
+      ${logTypeSelect('newLogType', 'chambre')}
+      ${field('Étage', 'newLogEtage', '', { placeholder: 'ex. RDC, 1er' })}
+      ${field('Situé dans (facultatif)', 'newLogPartie', '', { placeholder: 'ex. ancien bar, appartement du 1er' })}
     </div>`;
 }
 
@@ -1914,6 +1939,7 @@ const SHEETS = {
       body: html`<form id="f" data-form="imm" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
         ${field('Adresse complète', 'adresse', im.adresse, { full: true, required: true, placeholder: 'ex. 34, rue Josy Haendel' })}
+        <label class="field full">Type de structure<select name="type">${Object.entries(IMM_TYPES).map(([k, v]) => html`<option value="${k}" ${(im.type || 'immeuble') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <div class="section-label full" style="margin:6px 0 0">Bail principal — vous êtes locataire principal, le bailleur est le propriétaire</div>
         ${field('Bailleur (propriétaire)', 'proprietaire', im.proprietaire, { full: true, placeholder: 'Nom du bailleur / propriétaire (vide si l’immeuble vous appartient)' })}
         ${field('Loyer au bailleur (€ / mois)', 'loyer', im.loyer, { type: 'number', attrs: money$ })}
@@ -1944,19 +1970,20 @@ const SHEETS = {
           const next = tenantsOfLog(g.id).filter((l) => isFuture(l));
           const leaving = occ.filter((l) => l.sortie);
           return html`<button class="row" data-action="open-log" data-id="${g.id}">
-            <span class="avatar" style="${occ.length ? '' : 'background:var(--amber-soft);color:var(--amber)'}">${icon(g.type === 'chambre' ? 'key' : 'home')}</span>
-            <span class="grow"><span class="title" style="display:block">${g.nom} <span class="muted small">${LOG_TYPES[g.type] || ''}</span></span>
+            <span class="avatar" style="${occ.length ? '' : 'background:var(--amber-soft);color:var(--amber)'}">${icon(logIcon(g.type))}</span>
+            <span class="grow"><span class="title" style="display:block">${g.nom} <span class="muted small">${[LOG_TYPES[g.type], logWhere(g)].filter(Boolean).join(' · ')}</span></span>
               <span class="meta" style="display:flex;gap:6px;flex-wrap:wrap">${occ.length ? occ.map(fullName).join(', ') : html`<span class="badge warn">Vacant</span>`}
               ${leaving.map((l) => html`<span class="badge warn">départ ${fmtDate(l.sortie)}</span>`)}${next.map((l) => html`<span class="badge acc">arrivée ${fmtDate(l.debut)}</span>`)}</span></span>
             <span class="tiny muted">${plural(tenantsOfLog(g.id).length, 'occupant')}</span>
           </button>`;
-        })}</div>` : html`<p class="muted small">Aucun logement. Ajoutez les appartements ou chambres de cet immeuble pour suivre leurs occupants successifs.</p>`}
-        <button class="btn block" style="margin-top:12px" data-action="new-log" data-imm="${id}">${icon('plus')} Ajouter un logement</button>`;
+        })}</div>` : html`<p class="muted small">Aucun logement. Ajoutez les appartements, chambres, garages, bureaux ou locaux de cette structure pour suivre leurs occupants successifs.</p>`}
+        <button class="btn block" style="margin-top:12px" data-action="new-log" data-imm="${id}">${icon('plus')} Ajouter un logement / local</button>`;
     } else if (tab === 'proprio') {
       const rent = ownerRent(im);
       const cy = y, cm = new Date().getMonth() + 1;
       body = html`
         <dl class="kv" style="margin-bottom:16px">
+          ${kvRow('Structure', IMM_TYPES[im.type] || IMM_TYPES.immeuble)}
           ${kvRow('Bailleur (propriétaire)', im.proprietaire || '—')}
           ${kvRow('Locataire principal', html`${societe().nom || 'Ares Invest'} (vous)`)}
           ${kvRow('Loyer + charges', rent ? money(rent) + ' / mois' : '—')}
@@ -2029,11 +2056,12 @@ const SHEETS = {
       narrow: true,
       body: html`<form id="f" data-form="log" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        ${field('Nom', 'nom', g.nom, { full: true, required: true, placeholder: 'ex. Appartement 2B, Chambre 3, Studio RDC' })}
+        ${field('Nom / numéro', 'nom', g.nom, { full: true, required: true, placeholder: 'ex. Appartement 2B, Chambre 3, Garage 12, Bureau 1' })}
         <label class="field full">Immeuble<select name="immId" required>${vault.list('immeubles').filter((im) => !immGone(im) || im.id === g.immId).sort(byAddr).map((im) => html`<option value="${im.id}" ${im.id === g.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
-        <label class="field">Type<select name="type">${Object.entries(LOG_TYPES).map(([k, v]) => html`<option value="${k}" ${g.type === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${logTypeSelect('type', g.type)}
         ${field('Surface (m²)', 'surface', g.surface, { type: 'number', attrs: 'inputmode="decimal" min="0" step="0.1"' })}
-        ${field('Étage', 'etage', g.etage)}
+        ${field('Étage', 'etage', g.etage, { placeholder: 'ex. RDC, 1er, sous-sol' })}
+        ${field('Situé dans (facultatif)', 'partie', g.partie, { full: true, placeholder: 'ex. appartement du 1er, ancien bar, aile gauche, cour arrière' })}
         ${field('Loyer indicatif (€)', 'loyer', g.loyer, { type: 'number', attrs: money$ })}
         <label class="field full">Notes<textarea name="note" placeholder="Équipements, compteurs, état…">${g.note || ''}</textarea></label>
       </form>`,
@@ -2058,6 +2086,7 @@ const SHEETS = {
           ${kvRow('Type', LOG_TYPES[g.type] || '—')}
           ${g.surface ? kvRow('Surface', g.surface + ' m²') : ''}
           ${g.etage ? kvRow('Étage', g.etage) : ''}
+          ${g.partie ? kvRow('Situé dans', g.partie) : ''}
           ${g.loyer ? kvRow('Loyer indicatif', money(g.loyer)) : ''}
         </dl>
         ${g.note ? html`<div class="note" style="margin-bottom:16px">${g.note}</div>` : ''}
@@ -2140,7 +2169,7 @@ const SHEETS = {
         ${id ? '' : html`<p class="tiny muted full" style="margin:0">Bailleur (propriétaire) → <b>${societe().nom || 'Ares Invest'}</b> (locataire principal) → <b>sous-locataire</b> que vous ajoutez ici.</p>`}
         ${logementSelect(l.logId, l.immId)}
         ${tenantFields(l)}
-        ${id ? html`${field('Date de sortie', 'sortie', l.sortie, { type: 'date' })}${field('Caution rendue (€)', 'cautionRendue', l.cautionRendue, { type: 'number', attrs: money$ })}` : ''}
+        ${id ? field('Date de sortie', 'sortie', l.sortie, { type: 'date' }) : ''}
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -2158,9 +2187,8 @@ const SHEETS = {
         <div class="alert warn full">${icon('alert')}<div>Vous allez changer le locataire de <b>${where}</b>. <b>${fullName(old)}</b> sera archivé comme ancien locataire : ses paiements, documents et son historique sont conservés pour les statistiques.</div></div>
         <div class="section-label full" style="margin:8px 0 0">Départ de ${fullName(old)}</div>
         ${field('Date de sortie', 'sortie', sortie, { type: 'date', required: true })}
-        ${field('Caution rendue (€)', 'cautionRendue', old.cautionRendue ?? old.caution, { type: 'number', attrs: money$ })}
         ${old.logId ? html`<p class="tiny muted full" style="margin:0">📷 Pensez à mettre à jour les photos d'état des lieux du logement (onglet « Photos »).</p>` : ''}
-        <label class="field full">Remarques de sortie<textarea name="sortieNote" style="min-height:70px" placeholder="État des lieux, retenues, nouvelle adresse…">${old.sortieNote || ''}</textarea></label>
+        <label class="field full">Remarques de sortie<textarea name="sortieNote" style="min-height:70px" placeholder="État des lieux, retenues éventuelles sur la caution, nouvelle adresse…">${old.sortieNote || ''}</textarea></label>
         <label class="full" style="display:flex;gap:10px;align-items:center;font-size:15px;margin-top:4px"><input type="checkbox" name="vacant" data-input="vacant" style="width:22px;min-height:22px"> Pas encore de nouveau locataire (le logement devient vacant)</label>
         <fieldset id="newTenant" class="fields full" style="border:0">
           <div class="section-label full" style="margin:8px 0 0">Nouveau locataire</div>
@@ -2171,12 +2199,13 @@ const SHEETS = {
     };
   },
 
-  loc({ id, tab }) {
+  loc({ id, tab, preset }) {
     const l = vault.get('locataires', id);
     if (!l) return null;
     tab = tab || 'infos';
     const y = new Date().getFullYear();
     const docs = vault.list('documents').filter((d) => d.locId === id).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const hasDoc = (k) => docs.some((d) => d.dtype === k);
     const gone = isGone(l);
     const late = gone ? [] : lateMonths(l);
     const d = daysToEnd(l);
@@ -2204,7 +2233,9 @@ const SHEETS = {
           ${l.revision ? kvRow('Prochaine révision', fmtDate(l.revision)) : ''}
           ${kvRow('Téléphone', l.tel || '—')}
           ${kvRow('Email', l.mail || '—')}
-          ${kvRow('Caution', html`<span class="num">${l.caution ? money(l.caution) : '—'}</span>${l.cautionNote ? html`<div class="tiny muted">${l.cautionNote}</div>` : ''}${l.cautionRendue != null && l.sortie ? html`<div class="tiny muted">rendue : ${money(l.cautionRendue)}</div>` : ''}`)}
+          ${kvRow('Caution', html`<span class="num">${l.caution ? money(l.caution) : '—'}</span>${l.cautionDate || l.cautionMode ? html`<div class="tiny muted">reçue${l.cautionDate ? ' le ' + fmtDate(l.cautionDate) : ''}${l.cautionMode ? ' · ' + (CAUTION_MODES[l.cautionMode] || l.cautionMode).toLowerCase() : ''}</div>` : ''}${l.cautionNote ? html`<div class="tiny muted">${l.cautionNote}</div>` : ''}
+            ${l.caution ? html`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" data-action="caution-recu" data-id="${id}">${icon('receipt')} Reçu de caution</button><button class="btn sm ${hasDoc('caution') ? '' : 'primary'}" data-action="doc-type" data-id="${id}" data-k="caution">${hasDoc('caution') ? '✓ Preuve jointe' : '📎 Joindre la preuve'}</button></div>` : ''}`)}
+          ${kvRow('Dossier', dossierChips(id, hasDoc))}
           ${kvRow('Entrée', l.debut ? fmtDate(l.debut) : '?')}
           ${kvRow('Fin du contrat', html`${l.fin ? fmtDate(l.fin) : 'indéterminée'}${d != null && d >= 0 && d <= 60 && !gone ? html`<div class="tiny amber">dans ${plural(d, 'jour')}</div>` : ''}`)}
           ${l.sortie ? kvRow('Sortie', fmtDate(l.sortie)) : ''}
@@ -2222,13 +2253,15 @@ const SHEETS = {
       body = html`
         <form data-form="doc" class="stack" style="margin-bottom:16px">
           <input type="hidden" name="locId" value="${id}">
-          <input name="label" placeholder="Nom du document (ex. Contrat de bail)" required>
+          <div class="small">Dossier : ${dossierChips(id, hasDoc)}</div>
+          <select name="dtype" aria-label="Type de document">${Object.entries(DOC_TYPES).map(([k, v]) => html`<option value="${k}" ${(preset || 'bail') === k ? new Raw('selected') : ''}>${v}</option>`)}</select>
+          <input name="label" placeholder="Précision (facultatif, ex. recto-verso, WhatsApp du 12/09)">
           <input name="file" type="file" accept="application/pdf,image/*" required>
           <button class="btn primary block" type="submit">${icon('upload')} Ajouter le document</button>
-          <p class="tiny muted">PDF ou photo · 10 Mo maximum · chiffré avant l'envoi.</p>
+          <p class="tiny muted">PDF ou photo · 10 Mo maximum · chiffré avant l'envoi. Reçu par WhatsApp ou par mail ? Enregistrez la photo ou le PDF sur le téléphone / l'ordinateur, puis choisissez-le ici.</p>
         </form>
         ${docs.length ? html`<div class="list">${docs.map((doc) => html`<div class="row">${icon('file')}
-          <span class="grow"><span class="title" style="display:block">${doc.label}</span><span class="meta">${fmtDate(doc.date)} · ${Math.max(1, Math.round((doc.size || 0) / 1024))} Ko</span></span>
+          <span class="grow"><span class="title" style="display:block">${doc.label}</span><span class="meta">${doc.dtype && doc.dtype !== 'autre' && DOC_TYPES[doc.dtype] !== doc.label ? DOC_TYPES[doc.dtype] + ' · ' : ''}${fmtDate(doc.date)} · ${Math.max(1, Math.round((doc.size || 0) / 1024))} Ko</span></span>
           ${l.espace && l.espace.on ? html`<button class="btn sm ${doc.shared ? 'primary' : ''}" data-action="doc-share" data-id="${doc.id}" title="Visible dans l'espace du locataire">👁 ${doc.shared ? 'Visible' : 'Privé'}</button>` : ''}
           <button class="btn icon sm" data-action="open-doc" data-id="${doc.id}" aria-label="Ouvrir">${icon('eye')}</button>
           <button class="btn icon sm ghost danger" data-action="del-doc" data-id="${doc.id}" aria-label="Supprimer">${icon('trash')}</button></div>`)}</div>` : html`<p class="muted small">Aucun document.</p>`}`;
@@ -2493,12 +2526,13 @@ async function toggleVers(immId, y, m) {
 function readPlace(fd) {
   const [kind, ref] = String(fd.get('place') || '').split(':');
   if (kind === 'log') { const g = vault.get('logements', ref); return { logId: ref, immId: g ? g.immId : '' }; }
-  if (kind === 'new') return { newLog: { immId: ref, nom: String(fd.get('newLogNom') || '').trim() || 'Nouveau logement', type: fd.get('newLogType') || 'appartement' }, immId: ref };
+  if (kind === 'new') return { newLog: { immId: ref, nom: String(fd.get('newLogNom') || '').trim() || 'Nouveau logement', type: fd.get('newLogType') || 'appartement', etage: String(fd.get('newLogEtage') || '').trim(), partie: String(fd.get('newLogPartie') || '').trim() }, immId: ref };
   return { logId: '', immId: ref || '' };
 }
 const tenantFromForm = (fd, p = '') => ({
   nom: fd.get(p + 'nom').trim(), prenom: fd.get(p + 'prenom').trim(), loyer: num(fd.get(p + 'loyer')),
   tel: fd.get(p + 'tel').trim(), mail: fd.get(p + 'mail').trim(), caution: num(fd.get(p + 'caution')), cautionNote: fd.get(p + 'cautionNote').trim(),
+  cautionDate: fd.get(p + 'cautionDate') || '', cautionMode: fd.get(p + 'cautionMode') || '',
   debut: fd.get(p + 'debut'), fin: fd.get(p + 'fin'), revision: fd.get(p + 'revision') || '',
 });
 
@@ -2539,6 +2573,37 @@ function printQuittance(locId, y, m) {
     <div style="margin-top:36px;display:flex;justify-content:space-between"><div>Fait à Luxembourg, le ${fmtDate(today())}</div><div style="text-align:center;min-width:200px">Signature<div style="border-bottom:1px solid #999;height:60px"></div></div></div>`);
   vault.mutate(() => {}, full ? 'Quittance imprimée' : 'Reçu imprimé', `${fullName(l)} — ${MONTHS_FULL[m - 1]} ${y}`, l.id);
 }
+
+function printCaution(locId) {
+  const l = vault.get('locataires', locId);
+  if (!l || !l.caution) return toast('Indiquez d’abord le montant de la caution', { bad: true });
+  const soc = societe();
+  const im = vault.get('immeubles', l.immId) || {};
+  const where = [logName(l.logId), im.adresse].filter(Boolean).join(', ');
+  const mode = CAUTION_MODES[l.cautionMode] ? CAUTION_MODES[l.cautionMode].toLowerCase() : '';
+  if (!soc.nom) toast('Astuce : renseignez la société dans Réglages → Société & associés', {});
+  printDoc('Reçu de caution', html`
+    <div class="pr-cols" style="margin-bottom:22px">
+      <div><h2>Locataire principal (bailleur)</h2><div><b>${soc.nom || '—'}</b></div><div>${soc.adresse || ''}</div><div>${soc.ville || ''}</div><div>${soc.tel || ''}${soc.tel && soc.email ? ' · ' : ''}${soc.email || ''}</div></div>
+      <div><h2>Sous-locataire</h2><div><b>${fullName(l)}</b></div><div>${logName(l.logId) || ''}</div><div>${im.adresse || ''}</div></div>
+    </div>
+    <h1 style="text-align:center;margin:10px 0 4px">Reçu de caution</h1>
+    <p style="text-align:center" class="pr-sub">Garantie locative</p>
+    <table class="tbl" style="margin:18px 0"><tbody>
+      <tr><td>Logement / local</td><td class="r">${where || '—'}</td></tr>
+      <tr><td>Entrée dans les lieux</td><td class="r">${l.debut ? fmtDate(l.debut) : '—'}</td></tr>
+      <tr><td><b>Caution reçue</b>${l.cautionDate ? ` le ${fmtDate(l.cautionDate)}` : ''}${mode ? ` (${mode})` : ''}</td><td class="r"><b>${money(l.caution)}</b></td></tr>
+    </tbody></table>
+    <p style="font-size:12px;line-height:1.6">Je soussigné(e), ${soc.nom || '……………………'}, locataire principal et bailleur, déclare avoir reçu de ${fullName(l)} la somme de ${money(l.caution)} à titre de garantie locative (caution) pour ${where || 'le logement loué'}${l.cautionDate ? ', le ' + fmtDate(l.cautionDate) : ''}${mode ? ', ' + mode : ''}. Cette somme sera restituée à la fin du contrat, après l'état des lieux de sortie, déduction faite des sommes éventuellement dues (loyers, charges, dégâts constatés).</p>
+    <div style="margin-top:36px;display:flex;justify-content:space-between;gap:24px"><div>Fait à Luxembourg, le ${fmtDate(today())}</div></div>
+    <div style="margin-top:18px;display:flex;justify-content:space-between;gap:24px">
+      <div style="text-align:center;min-width:200px">Le bailleur<div style="border-bottom:1px solid #999;height:60px"></div></div>
+      <div style="text-align:center;min-width:200px">Le sous-locataire<div style="border-bottom:1px solid #999;height:60px"></div></div>
+    </div>`);
+  vault.mutate(() => {}, 'Reçu de caution imprimé', `${fullName(l)} — ${money(l.caution)}`, l.id);
+}
+// Pièces du dossier d'entrée : ✓ présente / ✗ manquante (cliquable pour l'ajouter)
+const dossierChips = (locId, hasDoc) => html`<span style="display:inline-flex;gap:6px;flex-wrap:wrap">${DOSSIER.map(([k, v]) => html`<button type="button" class="badge ${hasDoc(k) ? 'ok' : 'warn'}" style="border:0;cursor:pointer;font:inherit;font-size:12px" data-action="doc-type" data-id="${locId}" data-k="${k}" title="${DOC_TYPES[k]}">${hasDoc(k) ? '✓' : '✗'} ${v}</button>`)}</span>`;
 
 const prBilan = (b, withOcc) => html`<table class="tbl"><tbody>
   <tr><td>Loyers encaissés</td><td class="r green">${money(b.encaisse)}</td></tr>
@@ -2816,6 +2881,8 @@ const ACTIONS = {
     goBack();
   },
   quittance: (d) => printQuittance(d.loc, +d.y, +d.m),
+  'caution-recu': (d) => printCaution(d.id),
+  'doc-type': (d) => { ui.sheet.tab = 'docs'; ui.sheet.preset = d.k; ui.sheet.rendered = false; renderSheet(); },
   relance: (d) => openOver('relance', d.id),
   'rel-lang': (d) => { ui.relLang = d.id; ui.sheet.rendered = false; renderSheet(); },
   async 'send-relance'(d) {
@@ -3090,7 +3157,7 @@ const FORMS = {
   async imm(fd) {
     const id = fd.get('id');
     const rec = {
-      adresse: fd.get('adresse').trim(), proprietaire: fd.get('proprietaire').trim(), loyer: num(fd.get('loyer')), charges: num(fd.get('charges')),
+      adresse: fd.get('adresse').trim(), type: fd.get('type') || 'immeuble', proprietaire: fd.get('proprietaire').trim(), loyer: num(fd.get('loyer')), charges: num(fd.get('charges')),
       bailDebut: fd.get('bailDebut'), bailFin: fd.get('bailFin'), note: fd.get('note').trim(),
     };
     if (id) rec.id = id;
@@ -3103,7 +3170,7 @@ const FORMS = {
     const id = fd.get('id');
     const rec = {
       nom: fd.get('nom').trim(), immId: fd.get('immId'), type: fd.get('type'), surface: fd.get('surface') ? num(fd.get('surface')) : '',
-      etage: fd.get('etage').trim(), loyer: num(fd.get('loyer')), note: fd.get('note').trim(),
+      etage: fd.get('etage').trim(), partie: fd.get('partie').trim(), loyer: num(fd.get('loyer')), note: fd.get('note').trim(),
     };
     if (id) rec.id = id;
     const saved = await vault.mutate((tx) => {
@@ -3122,7 +3189,6 @@ const FORMS = {
     const rec = { ...tenantFromForm(fd), id: id || uid(), immId: place.immId, logId: place.logId || '' };
     if (id) {
       rec.sortie = fd.get('sortie') || '';
-      rec.cautionRendue = fd.get('cautionRendue') === '' ? null : num(fd.get('cautionRendue'));
     }
     // Nouveau locataire dans un logement déjà occupé → avertir et proposer le remplacement.
     let replaced = [];
@@ -3168,7 +3234,7 @@ const FORMS = {
     if (!old) return;
     const sortie = fd.get('sortie');
     const where = logName(old.logId) || immName(old.immId);
-    const upd = { id: old.id, sortie, cautionRendue: fd.get('cautionRendue') === '' ? null : num(fd.get('cautionRendue')), sortieNote: fd.get('sortieNote').trim() };
+    const upd = { id: old.id, sortie, sortieNote: fd.get('sortieNote').trim() };
     const nu = fd.get('vacant') ? null : { ...tenantFromForm(fd, 'n_'), id: uid(), immId: old.immId, logId: old.logId || '' };
     if (nu && nu.debut && nu.debut <= sortie && !(await confirmBox('Dates qui se chevauchent', { ok: 'Continuer', detail: `Le nouveau locataire entre le ${fmtDate(nu.debut)}, avant ou le jour de la sortie de ${fullName(old)} (${fmtDate(sortie)}).` }))) return;
     await vault.mutate((tx) => {
@@ -3251,7 +3317,9 @@ const FORMS = {
     try {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const l = vault.get('locataires', locId);
-      const doc = await vault.mutate((tx) => tx.put('documents', { locId, label: fd.get('label').trim(), date: today(), size: file.size, mime: file.type || 'application/octet-stream' }), 'Document ajouté', `${fd.get('label')} → ${fullName(l)}`, locId);
+      const dtype = fd.get('dtype') || 'autre';
+      const label = String(fd.get('label') || '').trim() || (DOC_TYPES[dtype] || 'Document').replace(/ \(.*\)$/, '');
+      const doc = await vault.mutate((tx) => tx.put('documents', { locId, dtype, label, date: today(), size: file.size, mime: file.type || 'application/octet-stream' }), 'Document ajouté', `${label} → ${fullName(l)}`, locId);
       await vault.saveFile(doc.id, bytes);
       toast('Document ajouté');
     } catch (e) {
