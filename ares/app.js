@@ -2,7 +2,7 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.8.0';
+const VERSION = '2.8.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -141,14 +141,35 @@ function daysUntil(date) {
   return Math.round((new Date(date + 'T00:00:00') - new Date(today() + 'T00:00:00')) / 86400000);
 }
 const daysToEnd = (l) => daysUntil(l.fin);
+// Bilan annuel d'un locataire.
+//   due      = loyers de toute l'année (contrat)      dueNow = loyers échus à ce jour (jusqu'au mois en cours)
+//   paid     = tout ce qui a été encaissé             rest   = impayés à ce jour (mois échus non ou mal payés)
+//   upcoming = loyers des mois à venir pas encore payés
+// Un paiement en avance ou hors contrat ne compense jamais un mois impayé.
 function yearStats(l, y) {
-  let due = 0, paid = 0;
+  const elapsed = monthsElapsed(y);
+  let due = 0, dueNow = 0, paid = 0, rest = 0, upcoming = 0;
   for (let m = 1; m <= 12; m++) {
-    due += dueAmount(l, y, m);
-    const p = payment(l.id, y, m);
-    if (p) paid += paidAmount(p, l);
+    const st = payState(l, y, m);
+    due += st.due;
+    paid += st.paid;
+    if (m <= elapsed) { dueNow += st.due; rest += st.rest; } else upcoming += st.rest;
   }
-  return { due, paid };
+  return { due, dueNow, paid, rest, upcoming, collected: dueNow - rest };
+}
+// Paiements enregistrés sur des mois hors des dates du contrat (avant l'entrée, après la fin ou la sortie)
+const outsidePays = (l) => paysOf(l.id).filter((p) => !isDue(l, p.y, p.m)).sort((a, b) => ym(a.y, a.m) - ym(b.y, b.m));
+const firstDay = (y, m) => `${y}-${String(m).padStart(2, '0')}-01`;
+const lastDay = (y, m) => `${y}-${String(m).padStart(2, '0')}-${String(new Date(y, m, 0).getDate()).padStart(2, '0')}`;
+// Corrections de dates qui rendraient ces paiements conformes au contrat
+function datesFix(l, pays = outsidePays(l)) {
+  const fix = {};
+  const before = pays.filter((p) => l.debut && ym(p.y, p.m) < ymOf(l.debut));
+  if (before.length) fix.debut = firstDay(before[0].y, before[0].m);
+  const after = pays.filter((p) => l.fin && ym(p.y, p.m) > ymOf(l.fin) && !(l.sortie && ym(p.y, p.m) > ymOf(l.sortie)));
+  if (after.length) fix.fin = lastDay(after[after.length - 1].y, after[after.length - 1].m);
+  const afterExit = pays.filter((p) => l.sortie && ym(p.y, p.m) > ymOf(l.sortie));
+  return { fix, afterExit };
 }
 const inYear = (date, y) => !y || String(date || '').startsWith(String(y));
 const depensesOf = (immId, y, logId) => vault.list('depenses').filter((d) => (!immId || d.immId === immId) && (!logId || d.logId === logId) && inYear(d.date, y));
@@ -661,6 +682,7 @@ dashboard() {
     const expiring = locs.map((l) => ({ l, d: daysToEnd(l) })).filter((x) => x.d != null && x.d >= 0 && x.d <= 60 && !x.l.sortie).sort((a, b) => a.d - b.d);
     const leaving = locs.filter((l) => l.sortie && daysUntil(l.sortie) >= 0 && daysUntil(l.sortie) <= 60).sort((a, b) => a.sortie.localeCompare(b.sortie));
     const arriving = locs.filter((l) => isFuture(l)).sort(byDebut);
+    const outside = vault.list('locataires').filter((l) => outsidePays(l).length).sort(byName);
     const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
     const logs = vault.list('logements').filter((g) => !immGone(vault.get('immeubles', g.immId)));
     const vacants = logs.filter((g) => !occupantsNow(g.id).length);
@@ -703,7 +725,8 @@ dashboard() {
         ${!parts.length ? html`<p class="tiny muted" style="margin-top:8px"><a href="#" data-action="open-societe">Ajouter les associés</a> pour voir la part de chacun.</p>` : ''}
       </div>
 
-      ${late.length || expiring.length || leaving.length || arriving.length || vacants.length || revisions.length ? html`<div class="section-label">À surveiller</div><div class="stack">
+      ${late.length || expiring.length || leaving.length || arriving.length || vacants.length || revisions.length || outside.length ? html`<div class="section-label">À surveiller</div><div class="stack">
+        ${outside.map((l) => alertBtn('warn', 'calendar', 'fix-dates', l.id, html`<b>${fullName(l)}</b> — ${plural(outsidePays(l).length, 'loyer')} payé${outsidePays(l).length > 1 ? 's' : ''} hors des dates du contrat : touchez pour corriger`))}
         ${late.slice(0, 6).map(({ l, months }) => alertBtn(months.length >= 2 ? 'bad' : 'warn', 'alert', 'open-loc', l.id, html`<b>${fullName(l)}</b> — ${months.length} mois impayé${months.length > 1 ? 's' : ''} (${months.map((x) => MONTHS[x - 1]).join(', ')})`))}
         ${leaving.map((l) => alertBtn('warn', 'calendar', 'open-loc', l.id, html`<b>${fullName(l)}</b> quitte ${logName(l.logId) || 'le logement'} le ${fmtDate(l.sortie)}`))}
         ${arriving.map((l) => alertBtn('info', 'users', 'open-loc', l.id, html`<b>${fullName(l)}</b> arrive dans ${logName(l.logId) || immName(l.immId)} le ${fmtDate(l.debut)}`))}
@@ -835,26 +858,27 @@ dashboard() {
     let imms = vault.list('immeubles').sort(byAddr);
     const all = imms;
     if (ui.immFilter) imms = imms.filter((im) => im.id === ui.immFilter);
-    let gDue = 0, gPaid = 0;
+    let gDue = 0, gPaid = 0, gRest = 0, gColl = 0;
     const activeIn = (l) => MONTHS.some((_, i) => isDue(l, y, i + 1) || payment(l.id, y, i + 1));
     const cards = imms.map((im) => {
       const ls = tenantsOfImm(im.id).filter(activeIn).sort((a, b) => byLogName({ nom: logName(a.logId) }, { nom: logName(b.logId) }) || byDebut(a, b));
       if (!ls.length) return '';
-      let due = 0, paid = 0;
+      let due = 0, paid = 0, rest = 0, collected = 0;
       const rows = ls.map((l) => {
         const s = yearStats(l, y);
-        due += s.due; paid += s.paid;
+        due += s.dueNow; paid += s.paid; rest += s.rest; collected += s.collected;
         return html`<div class="pay-tenant">
           <div class="pay-head"><button class="name" style="background:none;border:0;font:inherit;font-weight:650;color:inherit;cursor:pointer;padding:0" data-action="open-loc" data-id="${l.id}">${fullName(l)}</button>
             ${l.logId ? html`<span class="badge">${logName(l.logId)}</span>` : ''}<span class="muted small num">${money(l.loyer)}/mois</span>
             ${isGone(l) ? html`<span class="badge">parti le ${fmtDate(l.sortie)}</span>` : l.sortie ? html`<span class="badge warn">départ ${fmtDate(l.sortie)}</span>` : ''}</div>
           <div class="months">${MONTHS.map((_, i) => payCell(l, y, i + 1))}</div>
-          <div class="pay-foot"><span>Payé <b class="green num">${money(s.paid)}</b></span><span>Reste <b class="num ${s.due - s.paid > 0 ? 'red' : 'green'}">${money(Math.max(s.due - s.paid, 0))}</b></span></div>
+          <div class="pay-foot"><span>Payé <b class="green num">${money(s.paid)}</b></span><span>Impayé à ce jour <b class="num ${s.rest > 0.009 ? 'red' : 'green'}">${money(s.rest)}</b>${s.upcoming > 0.009 ? html` · <span class="muted">à venir ${money(s.upcoming)}</span>` : ''}</span></div>
+          ${outsidePays(l).some((p) => p.y === y) ? html`<button class="alert warn" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer;margin-top:6px" data-action="fix-dates" data-id="${l.id}">${icon('alert')}<div>Loyer(s) payé(s) hors des dates du contrat — touchez pour corriger les dates.</div></button>` : ''}
         </div>`;
       });
-      gDue += due; gPaid += paid;
-      return html`<div class="card"><div class="card-title"><h3>${im.adresse}</h3><span class="badge ${level(pct(paid, due)) || 'ok'}">${pct(paid, due)}%</span></div>${rows}
-        <div class="totals"><span>Attendu <b>${money(due)}</b></span><span>Reçu <b class="green">${money(paid)}</b></span><span>Reste <b class="${due - paid > 0 ? 'red' : 'green'}">${money(Math.max(due - paid, 0))}</b></span></div></div>`;
+      gDue += due; gPaid += paid; gRest += rest; gColl += collected;
+      return html`<div class="card"><div class="card-title"><h3>${im.adresse}</h3><span class="badge ${level(pct(collected, due)) || 'ok'}">${pct(collected, due)}%</span></div>${rows}
+        <div class="totals"><span>Échu à ce jour <b>${money(due)}</b></span><span>Reçu <b class="green">${money(paid)}</b></span><span>Impayé <b class="${rest > 0.009 ? 'red' : 'green'}">${money(rest)}</b></span></div></div>`;
     }).filter(Boolean);
     return html`
       ${pageHead('Paiements', 'Touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.')}
@@ -867,7 +891,7 @@ dashboard() {
       </div>
       ${cards.length ? html`<div class="stack">${cards}</div>
         <div class="card" style="margin-top:12px;border-color:var(--accent)"><div class="card-title" style="margin:0"><h3>Total ${y}</h3></div>
-        <div class="totals" style="background:none;padding:8px 0 0;margin:0"><span>Attendu <b>${money(gDue)}</b></span><span>Reçu <b class="green">${money(gPaid)}</b></span><span>Reste <b class="${gDue - gPaid > 0 ? 'red' : 'green'}">${money(Math.max(gDue - gPaid, 0))}</b></span><span>Taux <b>${pct(gPaid, gDue)}%</b></span></div></div>`
+        <div class="totals" style="background:none;padding:8px 0 0;margin:0"><span>Échu à ce jour <b>${money(gDue)}</b></span><span>Reçu <b class="green">${money(gPaid)}</b></span><span>Impayé <b class="${gRest > 0.009 ? 'red' : 'green'}">${money(gRest)}</b></span><span>Taux <b>${pct(gColl, gDue)}%</b></span></div></div>`
         : empty('wallet', 'Aucun locataire à afficher pour ' + y + '.')}`;
   },
 
@@ -885,8 +909,11 @@ dashboard() {
       }
       return { due, paid };
     });
-    const due = sum(monthly, (x) => x.due);
     const paid = sum(monthly, (x) => x.paid);
+    const ys = locs.map((l) => yearStats(l, y));
+    const due = sum(ys, (x) => x.dueNow);
+    const manquant = sum(ys, (x) => x.rest);
+    const collected = sum(ys, (x) => x.collected);
     const deps = depensesOf('', y);
     const depTotal = sum(deps, (d) => d.montant);
     const verse = sum(vault.list('versements').filter((v) => v.y === y), (v) => v.montant);
@@ -902,8 +929,8 @@ dashboard() {
     return html`
       ${pageHead('Statistiques', 'Vue financière annuelle et depuis l’origine', html`<div style="display:flex;gap:8px">${yearSelect(y)}<button class="btn" data-action="print-global">${icon('download')} Imprimer</button></div>`)}
       <div class="metrics">
-        <div class="metric"><div class="lbl">Loyers encaissés</div><div class="val green">${money(paid)}</div><div class="sub">${pct(paid, due)}% de ${money(due)}</div></div>
-        <div class="metric"><div class="lbl">Manquant</div><div class="val ${due - paid > 0 ? 'red' : ''}">${money(Math.max(due - paid, 0))}</div></div>
+        <div class="metric"><div class="lbl">Loyers encaissés</div><div class="val green">${money(paid)}</div><div class="sub">${pct(collected, due)}% des ${money(due)} échus</div></div>
+        <div class="metric"><div class="lbl">Impayés à ce jour</div><div class="val ${manquant > 0.009 ? 'red' : ''}">${money(manquant)}</div></div>
         <div class="metric"><div class="lbl">Versé bailleurs</div><div class="val">${money(verse)}</div></div>
         <div class="metric"><div class="lbl">Réparations & frais</div><div class="val">${money(depTotal)}</div></div>
         <div class="metric"><div class="lbl">Frais fixes</div><div class="val">${money(frais)}</div><div class="sub">${monthsElapsed(y)} mois</div></div>
@@ -1470,7 +1497,7 @@ const SHEETS = {
       const years = [...new Set([y, y - 1, ...paysOf(id).map((p) => p.y)])].filter((yy) => yy === y || MONTHS.some((_, i) => isDue(l, yy, i + 1) || payment(id, yy, i + 1))).sort((a, b) => b - a);
       body = html`${years.map((yy) => {
         const s = yearStats(l, yy);
-        return html`<div class="section-label" style="margin-top:4px">${yy} · <span class="green">${money(s.paid)}</span> / ${money(s.due)}</div>
+        return html`<div class="section-label" style="margin-top:4px">${yy} · payé <span class="green">${money(s.paid)}</span>${s.rest > 0.009 ? html` · impayé <span class="red">${money(s.rest)}</span>` : ''}${s.upcoming > 0.009 ? ` · à venir ${money(s.upcoming)}` : ''}</div>
           ${monthGrid(yy, MONTHS.map((_, i) => payCell(l, yy, i + 1, true)))}`;
       })}<p class="tiny muted">Touchez un mois vide pour l'enregistrer payé. Touchez un mois payé pour modifier le montant (paiement partiel), imprimer la quittance ou annuler.</p>`;
     } else if (tab === 'docs') {
@@ -1796,8 +1823,8 @@ function reportImmeuble(immId, y) {
     ${logs.length ? html`<h2>Logements</h2><table class="tbl"><thead><tr><th>Logement</th><th>Type</th><th>Occupant actuel</th><th class="r">Occupants</th><th class="r">Occupation</th><th class="r">Encaissé total</th></tr></thead><tbody>
       ${logs.map((g) => { const o = occupancy(g.id); const bb = bilan({ logId: g.id }); return html`<tr><td>${g.nom}</td><td>${LOG_TYPES[g.type] || ''}</td><td>${occupantsNow(g.id).map(fullName).join(', ') || 'Vacant'}</td><td class="r">${bb.occupants}</td><td class="r">${o ? pct(o.occupied, o.total) + '%' : '—'}</td><td class="r">${money(bb.encaisse)}</td></tr>`; })}
     </tbody></table>` : ''}
-    ${active.length ? html`<h2>Loyers ${y}</h2><table class="tbl pr-grid"><thead><tr><th>Locataire</th><th>Logement</th><th class="r">Loyer</th>${MONTHS.map((m) => html`<th>${m}</th>`)}<th class="r">Payé</th><th class="r">Reste</th></tr></thead><tbody>
-      ${active.map((l) => { const st = yearStats(l, y); return html`<tr><td>${fullName(l)}</td><td>${logName(l.logId)}</td><td class="r">${money(l.loyer)}</td>${MONTHS.map((_, i) => html`<td class="c">${markPay(l, y, i + 1)}</td>`)}<td class="r">${money(st.paid)}</td><td class="r">${money(Math.max(st.due - st.paid, 0))}</td></tr>`; })}
+    ${active.length ? html`<h2>Loyers ${y}</h2><table class="tbl pr-grid"><thead><tr><th>Locataire</th><th>Logement</th><th class="r">Loyer</th>${MONTHS.map((m) => html`<th>${m}</th>`)}<th class="r">Payé</th><th class="r">Impayé</th></tr></thead><tbody>
+      ${active.map((l) => { const st = yearStats(l, y); return html`<tr><td>${fullName(l)}</td><td>${logName(l.logId)}</td><td class="r">${money(l.loyer)}</td>${MONTHS.map((_, i) => html`<td class="c">${markPay(l, y, i + 1)}</td>`)}<td class="r">${money(st.paid)}</td><td class="r">${money(st.rest)}</td></tr>`; })}
     </tbody></table>` : ''}
     ${ownerRent(im) ? html`<h2>Versements au bailleur ${y}</h2><table class="tbl pr-grid"><thead><tr>${MONTHS.map((m) => html`<th>${m}</th>`)}<th class="r">Total versé</th></tr></thead><tbody><tr>${MONTHS.map((_, i) => html`<td class="c">${mark(versement(immId, y, i + 1), isOwnerDue(im, y, i + 1))}</td>`)}<td class="r">${money(sum(versementsOf(immId, y), (v) => v.montant))}</td></tr></tbody></table>` : ''}
     ${deps.length ? html`<h2>Dépenses ${y}</h2><table class="tbl"><thead><tr><th>Date</th><th>Description</th><th>Concerne</th><th class="r">Montant</th></tr></thead><tbody>${deps.map((d) => html`<tr><td>${fmtDate(d.date)}</td><td>${d.desc}</td><td>${logName(d.logId) || 'Immeuble'}</td><td class="r">${money(d.montant)}</td></tr>`)}</tbody></table>` : ''}
@@ -1873,10 +1900,37 @@ const ACTIONS = {
   'end-imm': (d) => openSheet('endimm-form', d.id),
   'close-sheet': () => goBack(),
   pay: (d) => payFull(d.loc, +d.y, +d.m),
-  'toggle-pay': (d) => {
+  async 'toggle-pay'(d) {
     const l = vault.get('locataires', d.loc);
-    if (l && payment(l.id, +d.y, +d.m)) openOver('pay-form', null, null, { locId: d.loc, y: +d.y, m: +d.m });
-    else payFull(d.loc, +d.y, +d.m);
+    const y = +d.y, m = +d.m;
+    if (!l) return;
+    if (payment(l.id, y, m)) return openOver('pay-form', null, null, { locId: d.loc, y, m });
+    if (!isDue(l, y, m)) {
+      // Mois hors contrat : on corrige d'abord les dates, sinon le paiement fausserait les totaux
+      const { fix, afterExit } = datesFix(l, [{ y, m }]);
+      if (afterExit.length) return toast(`${fullName(l)} est parti le ${fmtDate(l.sortie)} : ce mois n'est plus dû.`, { bad: true });
+      const what = fix.debut ? `avancer l'entrée au ${fmtDate(fix.debut)}` : `prolonger le contrat jusqu'au ${fmtDate(fix.fin)}`;
+      if (!(await confirmBox(`${MONTHS_FULL[m - 1]} ${y} est hors du contrat`, { ok: fix.debut ? "Avancer l'entrée et payer" : 'Prolonger et payer', detail: `Le contrat de ${fullName(l)} ${fix.debut ? 'commence le ' + fmtDate(l.debut) : 'finit le ' + fmtDate(l.fin)}. Pour que les totaux restent justes, Ares va ${what}, puis enregistrer le paiement.` }))) return;
+      await vault.mutate((tx) => tx.put('locataires', { id: l.id, ...fix }), 'Dates du contrat corrigées', `${fullName(l)} — ${what}`, l.id);
+    }
+    payFull(d.loc, y, m);
+  },
+  async 'fix-dates'(d) {
+    const l = vault.get('locataires', d.id);
+    if (!l) return;
+    const pays = outsidePays(l);
+    const { fix, afterExit } = datesFix(l, pays);
+    const lines = [];
+    if (fix.debut) lines.push(`Entrée : ${fmtDate(l.debut)} → ${fmtDate(fix.debut)}`);
+    if (fix.fin) lines.push(`Fin du contrat : ${fmtDate(l.fin)} → ${fmtDate(fix.fin)}`);
+    const list = pays.map((p) => `${MONTHS_FULL[p.m - 1].toLowerCase()} ${p.y}`).join(', ');
+    if (!lines.length) {
+      await confirmBox(`${fullName(l)} : paiements après la sortie`, { ok: 'Voir les loyers', detail: `Payé(s) après la sortie du ${fmtDate(l.sortie)} : ${afterExit.map((p) => MONTHS_FULL[p.m - 1].toLowerCase() + ' ' + p.y).join(', ')}. Vérifiez la date de sortie (Modifier) ou annulez ces paiements.` });
+      return openSheet('loc', l.id, 'pay');
+    }
+    if (!(await confirmBox(`Corriger les dates de ${fullName(l)} ?`, { ok: 'Corriger', detail: `Loyers payés hors des dates du contrat : ${list}. ${lines.join(' · ')}.${afterExit.length ? ' (Les mois après la sortie restent à vérifier.)' : ''}` }))) return;
+    await vault.mutate((tx) => tx.put('locataires', { id: l.id, ...fix }), 'Dates du contrat corrigées', `${fullName(l)} — ${lines.join(', ')}`, l.id);
+    toast('Dates corrigées · totaux recalculés');
   },
   async 'del-pay'(d) {
     const l = vault.get('locataires', d.loc);
