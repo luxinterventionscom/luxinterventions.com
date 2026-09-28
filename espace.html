@@ -57,6 +57,15 @@
     body.printing main { display: none; }
     body.printing #quit { display: block; padding: 10mm; font-size: 12pt; }
   }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 10px; }
+.chip { border: 0; border-radius: 999px; padding: 6px 12px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.chip.ok { background: #dcfce7; color: #166534; }
+.chip.no { background: #fef3c7; color: #92400e; }
+.pv { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.88); display: flex; flex-direction: column; }
+.pv-bar { display: flex; gap: 8px; align-items: center; padding: 10px 12px; padding-top: max(10px, env(safe-area-inset-top)); background: #fff; color: #1d1b16; }
+.pv-bar b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+.pv iframe { flex: 1; border: 0; width: 100%; background: #fff; }
 </style>
 </head>
 <body>

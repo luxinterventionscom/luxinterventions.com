@@ -17,7 +17,7 @@ const L = {
   fr: {
     loc: 'fr-LU', door: 'Code de ma porte', since: 'depuis le', app: 'App des locataires ARES S.A.', welcome: 'Vos loyers, quittances, documents et collectes — et signaler un problème, depuis votre téléphone.', code: 'Votre code d’accès personnel', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrer', noCode: 'Pas de code ? Demandez-le à votre gestionnaire.', badCode: 'Code inconnu. Vérifiez-le ou demandez un nouveau code.', install: 'Installer l’app sur mon téléphone', iosHow: 'iPhone : touchez Partager puis « Sur l’écran d’accueil ».', andHow: 'Android : menu ⋮ puis « Installer l’application ».', logout: 'Se déconnecter de ce téléphone', title: 'Mon espace locataire', hello: 'Bonjour', avis: 'Avis de l’immeuble', pay: 'Mes loyers', restNow: 'Impayé à ce jour', upcoming: 'à venir', allPaid: 'Tout est payé à ce jour ✓',
     iban: 'Pour payer', ref: 'Communication', quit: 'Mes quittances', quitBtn: 'Quittance', partial: 'Reçu partiel', contrat: 'Mon contrat', entry: 'Entrée', end: 'Fin du contrat', rent: 'Loyer', revision: 'Prochaine révision', caution: 'Garantie',
-    docs: 'Mes documents', coll: 'Collectes des déchets', putOut: 'sortir', truck: 'passage du camion le', calAdd: '📅 Ajouter les collectes à mon calendrier', signal: 'Signaler un problème', what: 'Quel problème ?', whatPh: 'ex. Fuite sous l’évier de la cuisine depuis ce matin', type: 'Type', types: { rep: '🔧 Réparation / panne', menage: '🧹 Propreté / nettoyage', autre: '📌 Autre' },
+    docs: 'Mon dossier', dossierHint: 'Documents et preuves que nous avons enregistrés pour vous (touchez 👁 pour voir). Une erreur ou un document manquant ? Dites-le-nous.', errBtn: '⚠️ Signaler une erreur', recv: 'reçue le', proof: 'Preuve', modes: { especes: 'en main propre', virement: 'par virement', cheque: 'par chèque', garantie: 'garantie bancaire', autre: '' }, dt: { bail: 'Contrat de bail', identite: 'Pièce d’identité', cns: 'Carte CNS', caution: 'Preuve de la caution', loyer: 'Preuve de paiement du loyer', assurance: 'Assurance habitation', revenus: 'Revenus', titre: 'Titre de séjour', autre: 'Document' }, coll: 'Collectes des déchets', putOut: 'sortir', truck: 'passage du camion le', calAdd: '📅 Ajouter les collectes à mon calendrier', signal: 'Signaler un problème', what: 'Quel problème ?', whatPh: 'ex. Fuite sous l’évier de la cuisine depuis ce matin', type: 'Type', types: { rep: '🔧 Réparation / panne', menage: '🧹 Propreté / nettoyage', dossier: '📄 Erreur dans mon dossier / mes paiements', autre: '📌 Autre' },
     photos: 'Photos (3 maximum)', tel: 'Téléphone pour vous joindre (facultatif)', dispo: 'Quand êtes-vous disponible ? (facultatif)', send: 'Envoyer', sent: 'Merci, votre message a été envoyé. Vous verrez ici quand il sera pris en charge.', mine: 'Mes signalements',
     st: { afaire: 'Reçu', planifie: 'Planifié', fait: 'Terminé' }, lights: ['Il y a le temps', 'Attention : demain ou après-demain', 'Aujourd’hui'], legend: 'Légende',
     months: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'], monthsFull: ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'],
@@ -30,7 +30,7 @@ const L = {
   it: {
     loc: 'it-IT', door: 'Codice della mia porta', since: 'dal', app: 'App degli inquilini ARES S.A.', welcome: 'I tuoi affitti, ricevute, documenti e raccolte dei rifiuti — e segnalare un problema, dal telefono.', code: 'Il tuo codice d’accesso personale', codePh: 'es. K7PM2-QXA4H', enter: 'Entra', noCode: 'Non hai il codice? Chiedilo al tuo gestore.', badCode: 'Codice sconosciuto. Controllalo o chiedi un nuovo codice.', install: 'Installa l’app sul mio telefono', iosHow: 'iPhone: tocca Condividi e poi « Aggiungi alla schermata Home ».', andHow: 'Android: menu ⋮ e poi « Installa app ».', logout: 'Esci da questo telefono', title: 'Il mio spazio inquilino', hello: 'Ciao', avis: 'Avvisi del palazzo', pay: 'I miei affitti', restNow: 'Da pagare a oggi', upcoming: 'in scadenza', allPaid: 'Tutto pagato a oggi ✓',
     iban: 'Per pagare', ref: 'Causale', quit: 'Le mie ricevute', quitBtn: 'Ricevuta', partial: 'Ricevuta parziale', contrat: 'Il mio contratto', entry: 'Entrata', end: 'Fine del contratto', rent: 'Affitto', revision: 'Prossima revisione', caution: 'Cauzione',
-    docs: 'I miei documenti', coll: 'Raccolta rifiuti', putOut: 'mettere fuori', truck: 'passaggio del camion il', calAdd: '📅 Aggiungi le raccolte al mio calendario', signal: 'Segnala un problema', what: 'Quale problema?', whatPh: 'es. Perdita d’acqua sotto il lavello della cucina da stamattina', type: 'Tipo', types: { rep: '🔧 Riparazione / guasto', menage: '🧹 Pulizia', autre: '📌 Altro' },
+    docs: 'La mia pratica', dossierHint: 'Documenti e prove che abbiamo registrato per te (tocca 👁 per vederli). Un errore o un documento mancante? Diccelo.', errBtn: '⚠️ Segnala un errore', recv: 'ricevuta il', proof: 'Prova', modes: { especes: 'a mano (contanti)', virement: 'con bonifico', cheque: 'con assegno', garantie: 'garanzia bancaria', autre: '' }, dt: { bail: 'Contratto di locazione', identite: 'Documento d’identità', cns: 'Tessera sanitaria (CNS)', caution: 'Prova della cauzione', loyer: 'Prova di pagamento dell’affitto', assurance: 'Assicurazione casa', revenus: 'Redditi', titre: 'Permesso di soggiorno', autre: 'Documento' }, coll: 'Raccolta rifiuti', putOut: 'mettere fuori', truck: 'passaggio del camion il', calAdd: '📅 Aggiungi le raccolte al mio calendario', signal: 'Segnala un problema', what: 'Quale problema?', whatPh: 'es. Perdita d’acqua sotto il lavello della cucina da stamattina', type: 'Tipo', types: { rep: '🔧 Riparazione / guasto', menage: '🧹 Pulizia', dossier: '📄 Errore nella mia pratica / nei pagamenti', autre: '📌 Altro' },
     photos: 'Foto (massimo 3)', tel: 'Telefono per contattarti (facoltativo)', dispo: 'Quando sei disponibile? (facoltativo)', send: 'Invia', sent: 'Grazie, il tuo messaggio è stato inviato. Qui vedrai quando verrà preso in carico.', mine: 'Le mie segnalazioni',
     st: { afaire: 'Ricevuta', planifie: 'Pianificata', fait: 'Conclusa' }, lights: ['C’è tempo', 'Attenzione: domani o dopodomani', 'Oggi'], legend: 'Legenda',
     months: ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'], monthsFull: ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'],
@@ -43,7 +43,7 @@ const L = {
   de: {
     loc: 'de-LU', door: 'Mein Türcode', since: 'seit', app: 'Mieter-App ARES S.A.', welcome: 'Ihre Mieten, Quittungen, Dokumente und Abfuhrtermine — und Probleme melden, auf Ihrem Telefon.', code: 'Ihr persönlicher Zugangscode', codePh: 'z. B. K7PM2-QXA4H', enter: 'Anmelden', noCode: 'Kein Code? Fragen Sie Ihre Verwaltung.', badCode: 'Unbekannter Code. Bitte prüfen oder einen neuen Code anfordern.', install: 'App auf meinem Telefon installieren', iosHow: 'iPhone: Teilen tippen, dann „Zum Home-Bildschirm“.', andHow: 'Android: Menü ⋮, dann „App installieren“.', logout: 'Auf diesem Telefon abmelden', title: 'Mein Mieterbereich', hello: 'Guten Tag', avis: 'Mitteilungen zum Haus', pay: 'Meine Mieten', restNow: 'Heute offen', upcoming: 'noch fällig', allPaid: 'Bis heute alles bezahlt ✓',
     iban: 'Zahlung', ref: 'Verwendungszweck', quit: 'Meine Quittungen', quitBtn: 'Quittung', partial: 'Teilzahlung', contrat: 'Mein Vertrag', entry: 'Einzug', end: 'Vertragsende', rent: 'Miete', revision: 'Nächste Anpassung', caution: 'Kaution',
-    docs: 'Meine Dokumente', coll: 'Müllabfuhr', putOut: 'rausstellen', truck: 'Abholung am', calAdd: '📅 Abfuhrtermine in meinen Kalender', signal: 'Ein Problem melden', what: 'Welches Problem?', whatPh: 'z. B. Wasser tropft seit heute Morgen unter der Küchenspüle', type: 'Art', types: { rep: '🔧 Reparatur / Defekt', menage: '🧹 Sauberkeit / Reinigung', autre: '📌 Sonstiges' },
+    docs: 'Meine Unterlagen', dossierHint: 'Dokumente und Nachweise, die wir für Sie erfasst haben (👁 zum Ansehen). Ein Fehler oder fehlt etwas? Sagen Sie es uns.', errBtn: '⚠️ Einen Fehler melden', recv: 'erhalten am', proof: 'Nachweis', modes: { especes: 'bar', virement: 'per Überweisung', cheque: 'per Scheck', garantie: 'Bankgarantie', autre: '' }, dt: { bail: 'Mietvertrag', identite: 'Ausweis', cns: 'Krankenversicherungskarte (CNS)', caution: 'Kautionsnachweis', loyer: 'Zahlungsnachweis Miete', assurance: 'Hausratversicherung', revenus: 'Einkommen', titre: 'Aufenthaltstitel', autre: 'Dokument' }, coll: 'Müllabfuhr', putOut: 'rausstellen', truck: 'Abholung am', calAdd: '📅 Abfuhrtermine in meinen Kalender', signal: 'Ein Problem melden', what: 'Welches Problem?', whatPh: 'z. B. Wasser tropft seit heute Morgen unter der Küchenspüle', type: 'Art', types: { rep: '🔧 Reparatur / Defekt', menage: '🧹 Sauberkeit / Reinigung', dossier: '📄 Fehler in meinen Unterlagen / Zahlungen', autre: '📌 Sonstiges' },
     photos: 'Fotos (max. 3)', tel: 'Telefon für Rückfragen (optional)', dispo: 'Wann sind Sie erreichbar? (optional)', send: 'Senden', sent: 'Danke, Ihre Meldung wurde gesendet. Hier sehen Sie, wenn sie bearbeitet wird.', mine: 'Meine Meldungen',
     st: { afaire: 'Eingegangen', planifie: 'Geplant', fait: 'Erledigt' }, lights: ['Noch Zeit', 'Achtung: morgen oder übermorgen', 'Heute'], legend: 'Legende',
     months: ['Jan', 'Feb', 'Mär', 'Apr', 'Mai', 'Jun', 'Jul', 'Aug', 'Sep', 'Okt', 'Nov', 'Dez'], monthsFull: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'],
@@ -56,7 +56,7 @@ const L = {
   pt: {
     loc: 'pt-PT', door: 'Código da minha porta', since: 'desde', app: 'App dos inquilinos ARES S.A.', welcome: 'As suas rendas, recibos, documentos e recolhas — e comunicar um problema, no seu telemóvel.', code: 'O seu código de acesso pessoal', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrar', noCode: 'Não tem código? Peça-o ao seu gestor.', badCode: 'Código desconhecido. Verifique-o ou peça um novo código.', install: 'Instalar a app no meu telemóvel', iosHow: 'iPhone: toque em Partilhar e depois « Adicionar ao ecrã principal ».', andHow: 'Android: menu ⋮ e depois « Instalar aplicação ».', logout: 'Terminar sessão neste telemóvel', title: 'O meu espaço de inquilino', hello: 'Olá', avis: 'Avisos do prédio', pay: 'As minhas rendas', restNow: 'Em falta hoje', upcoming: 'por vencer', allPaid: 'Tudo pago até hoje ✓',
     iban: 'Para pagar', ref: 'Referência', quit: 'Os meus recibos', quitBtn: 'Recibo', partial: 'Recibo parcial', contrat: 'O meu contrato', entry: 'Entrada', end: 'Fim do contrato', rent: 'Renda', revision: 'Próxima revisão', caution: 'Caução',
-    docs: 'Os meus documentos', coll: 'Recolha do lixo', putOut: 'pôr fora', truck: 'recolha no dia', calAdd: '📅 Adicionar as recolhas ao meu calendário', signal: 'Comunicar um problema', what: 'Qual é o problema?', whatPh: 'ex. Fuga de água debaixo do lava-loiça desde esta manhã', type: 'Tipo', types: { rep: '🔧 Reparação / avaria', menage: '🧹 Limpeza', autre: '📌 Outro' },
+    docs: 'O meu processo', dossierHint: 'Documentos e comprovativos que registámos para si (toque em 👁 para ver). Um erro ou falta algum documento? Diga-nos.', errBtn: '⚠️ Comunicar um erro', recv: 'recebida em', proof: 'Comprovativo', modes: { especes: 'em mão (dinheiro)', virement: 'por transferência', cheque: 'por cheque', garantie: 'garantia bancária', autre: '' }, dt: { bail: 'Contrato de arrendamento', identite: 'Documento de identificação', cns: 'Cartão da CNS (seguro de saúde)', caution: 'Comprovativo da caução', loyer: 'Comprovativo de pagamento da renda', assurance: 'Seguro da habitação', revenus: 'Rendimentos', titre: 'Autorização de residência', autre: 'Documento' }, coll: 'Recolha do lixo', putOut: 'pôr fora', truck: 'recolha no dia', calAdd: '📅 Adicionar as recolhas ao meu calendário', signal: 'Comunicar um problema', what: 'Qual é o problema?', whatPh: 'ex. Fuga de água debaixo do lava-loiça desde esta manhã', type: 'Tipo', types: { rep: '🔧 Reparação / avaria', menage: '🧹 Limpeza', dossier: '📄 Erro no meu processo / pagamentos', autre: '📌 Outro' },
     photos: 'Fotos (máximo 3)', tel: 'Telefone para o contactar (opcional)', dispo: 'Quando está disponível? (opcional)', send: 'Enviar', sent: 'Obrigado, a sua mensagem foi enviada. Verá aqui quando for tratada.', mine: 'As minhas comunicações',
     st: { afaire: 'Recebido', planifie: 'Planeado', fait: 'Concluído' }, lights: ['Há tempo', 'Atenção: amanhã ou depois de amanhã', 'Hoje'], legend: 'Legenda',
     months: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], monthsFull: ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'],
@@ -69,7 +69,7 @@ const L = {
   en: {
     loc: 'en-GB', door: 'My door code', since: 'since', app: 'ARES S.A. tenant app', welcome: 'Your rent, receipts, documents and waste collections — and report a problem, on your phone.', code: 'Your personal access code', codePh: 'e.g. K7PM2-QXA4H', enter: 'Enter', noCode: 'No code? Ask your property manager.', badCode: 'Unknown code. Check it or ask for a new code.', install: 'Install the app on my phone', iosHow: 'iPhone: tap Share, then “Add to Home Screen”.', andHow: 'Android: menu ⋮, then “Install app”.', logout: 'Sign out on this phone', title: 'My tenant space', hello: 'Hello', avis: 'Building notices', pay: 'My rent', restNow: 'Unpaid to date', upcoming: 'upcoming', allPaid: 'All paid to date ✓',
     iban: 'How to pay', ref: 'Reference', quit: 'My rent receipts', quitBtn: 'Receipt', partial: 'Partial receipt', contrat: 'My lease', entry: 'Move-in', end: 'Lease end', rent: 'Rent', revision: 'Next rent review', caution: 'Deposit',
-    docs: 'My documents', coll: 'Waste collection', putOut: 'put out', truck: 'truck comes on', calAdd: '📅 Add collections to my calendar', signal: 'Report a problem', what: 'What is the problem?', whatPh: 'e.g. Water leaking under the kitchen sink since this morning', type: 'Type', types: { rep: '🔧 Repair / breakdown', menage: '🧹 Cleanliness', autre: '📌 Other' },
+    docs: 'My file', dossierHint: 'Documents and proofs we have recorded for you (tap 👁 to view). A mistake or a missing document? Let us know.', errBtn: '⚠️ Report a mistake', recv: 'received on', proof: 'Proof', modes: { especes: 'in cash', virement: 'by bank transfer', cheque: 'by cheque', garantie: 'bank guarantee', autre: '' }, dt: { bail: 'Lease', identite: 'ID document', cns: 'Health insurance card (CNS)', caution: 'Deposit proof', loyer: 'Rent payment proof', assurance: 'Home insurance', revenus: 'Income', titre: 'Residence permit', autre: 'Document' }, coll: 'Waste collection', putOut: 'put out', truck: 'truck comes on', calAdd: '📅 Add collections to my calendar', signal: 'Report a problem', what: 'What is the problem?', whatPh: 'e.g. Water leaking under the kitchen sink since this morning', type: 'Type', types: { rep: '🔧 Repair / breakdown', menage: '🧹 Cleanliness', dossier: '📄 Mistake in my file / payments', autre: '📌 Other' },
     photos: 'Photos (up to 3)', tel: 'Phone to reach you (optional)', dispo: 'When are you available? (optional)', send: 'Send', sent: 'Thank you, your message has been sent. You will see here when it is handled.', mine: 'My reports',
     st: { afaire: 'Received', planifie: 'Scheduled', fait: 'Done' }, lights: ['Plenty of time', 'Attention: tomorrow or the day after', 'Today'], legend: 'Legend',
     months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], monthsFull: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
@@ -99,6 +99,23 @@ const CATS = {
   en: { residuel: 'Residual waste', organique: 'Organic waste', papier: 'Paper / cardboard', verre: 'Glass', valorlux: 'Valorlux', encombrants: 'Bulky waste', autre: 'Other' },
 };
 
+// Dossier : documents enregistrés par le gestionnaire (libellé traduit selon le type) + aperçu
+const FR_DEF = new Set(['Contrat de bail', "Pièce d'identité", 'Carte CNS', 'Preuve de la caution', 'Preuve de paiement du loyer', 'Attestation assurance habitation', 'Fiches de salaire / revenus', 'Titre de séjour', 'Autre document']);
+const proofOf = (k, pay) => ((data && data.docs) || []).find((x) => x.dtype === k && (!pay || x.pay === pay));
+function docSub(x) {
+  const t = T(), parts = [];
+  if (x.pay) { const [y, m] = x.pay.split('-').map(Number); parts.push(t.monthsFull[m - 1] + ' ' + y); } else if (t.dt[x.dtype] && x.label && !FR_DEF.has(x.label)) parts.push(x.label);
+  parts.push(fmt(x.date));
+  return parts.join(' · ');
+}
+function preview(doc, url) {
+  const t = T();
+  const el = document.createElement('div');
+  el.className = 'pv';
+  el.innerHTML = `<div class="pv-bar"><b>${esc(t.dt[doc.dtype] || doc.label)}</b><a class="btn sm sec" href="${url}" download="${esc(doc.label || 'document')}">⬇</a><button class="btn sm" data-pv-close="1">✕ ${esc(t.close)}</button></div>${/^image\//.test(doc.mime || '') ? `<img src="${url}" alt="">` : `<iframe src="${url}" title="${esc(doc.label)}"></iframe>`}`;
+  el.addEventListener('click', (e) => { if (e.target.closest('[data-pv-close]')) { el.remove(); URL.revokeObjectURL(url); } });
+  document.body.append(el);
+}
 function render() {
   const t = T();
   document.documentElement.lang = lang;
@@ -140,13 +157,14 @@ function render() {
     const rows = [];
     for (const y of d.years) y.months.forEach(([due, paid, date], i) => { if (paid > 0) rows.push({ y: y.y, m: i, due, paid, date }); });
     rows.sort((a, b) => b.y - a.y || b.m - a.m);
-    if (rows.length) out.push(`<div class="card"><h2>🧾 ${esc(t.quit)}</h2>${rows.slice(0, 24).map((r) => `<div class="row"><div class="grow"><b>${esc(t.monthsFull[r.m])} ${r.y}</b><div class="meta">${esc(money(r.paid))}${r.paid < r.due - 0.009 ? ' · ' + esc(t.partial) : ''}</div></div><button class="btn sm sec" data-quit="${r.y}-${r.m}">${esc(t.quitBtn)}</button></div>`).join('')}</div>`);
+    if (rows.length) out.push(`<div class="card"><h2>🧾 ${esc(t.quit)}</h2>${rows.slice(0, 24).map((r) => `<div class="row"><div class="grow"><b>${esc(t.monthsFull[r.m])} ${r.y}</b><div class="meta">${esc(money(r.paid))}${r.paid < r.due - 0.009 ? ' · ' + esc(t.partial) : ''}</div></div>${proofOf('loyer', r.y + '-' + (r.m + 1)) ? `<button class="btn sm sec" data-doc="${esc(proofOf('loyer', r.y + '-' + (r.m + 1)).id)}" title="${esc(t.proof)}">📎</button> ` : ''}<button class="btn sm sec" data-quit="${r.y}-${r.m}">${esc(t.quitBtn)}</button></div>`).join('')}</div>`);
   }
   if (s.contrat && d.contrat) {
     const c = d.contrat;
-    out.push(`<div class="card"><h2>📄 ${esc(t.contrat)}</h2>${[[t.entry, fmt(c.debut)], [t.end, c.fin ? fmt(c.fin) : '—'], [t.rent, money(d.loyer)], [t.revision, c.revision ? fmt(c.revision) : ''], [t.caution, c.caution ? money(c.caution) : '']].filter(([, v]) => v).map(([k, v]) => `<div class="row"><div class="grow meta">${esc(k)}</div><b>${esc(v)}</b></div>`).join('')}</div>`);
+    out.push(`<div class="card"><h2>📄 ${esc(t.contrat)}</h2>${[[t.entry, fmt(c.debut)], [t.end, c.fin ? fmt(c.fin) : '—'], [t.rent, money(d.loyer)], [t.revision, c.revision ? fmt(c.revision) : ''], [t.caution, c.caution ? [money(c.caution), c.cautionDate ? t.recv + ' ' + fmt(c.cautionDate) : '', t.modes[c.cautionMode] || ''].filter(Boolean).join(' · ') + (proofOf('caution') ? ' ✓' : '') : '']].filter(([, v]) => v).map(([k, v]) => `<div class="row"><div class="grow meta">${esc(k)}</div><b>${esc(v)}</b></div>`).join('')}</div>`);
   }
-  if (s.docs && (d.docs || []).length) out.push(`<div class="card"><h2>📁 ${esc(t.docs)}</h2>${d.docs.map((x) => `<div class="row"><div class="grow"><b>${esc(x.label)}</b><div class="meta">${esc(fmt(x.date))}</div></div><button class="btn sm sec" data-doc="${esc(x.id)}">👁</button></div>`).join('')}</div>`);
+  if (s.docs && (d.docs || []).length) out.push(`<div class="card"><h2>📁 ${esc(t.docs)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.dossierHint)}</p><div class="chips">${['bail', 'identite', 'cns', 'caution'].map((k) => { const x = proofOf(k); return x ? `<button class="chip ok" data-doc="${esc(x.id)}">✓ ${esc(t.dt[k])} 👁</button>` : `<button class="chip no"${s.signal && d.signalKey ? ' data-err="1"' : ''}>✗ ${esc(t.dt[k])}</button>`; }).join('')}</div>${d.docs.map((x) => `<div class="row"><div class="grow"><b>${esc(t.dt[x.dtype] || x.label)}</b><div class="meta">${esc(docSub(x))}</div></div><button class="btn sm sec" data-doc="${esc(x.id)}" aria-label="👁">👁</button></div>`).join('')}
+    ${s.signal && d.signalKey ? `<button class="btn sec block" style="margin-top:10px" data-err="1">${esc(t.errBtn)}</button>` : ''}</div>`);
   if (s.coll && (d.coll || []).length) {
     const ev = [];
     for (const it of d.coll) for (const dd of it.dates || []) { const p = it.sortie === 'jour' ? dd : addDays(dd, -1); if (p >= today) ev.push({ it, dd, p }); }
@@ -212,13 +230,19 @@ app.addEventListener('click', async (e) => {
   const db = e.target.closest('[data-doc]');
   if (db) {
     const doc = data.docs.find((x) => x.id === db.dataset.doc);
-    const w = window.open('', '_blank');
+    db.disabled = true;
     try {
       const r = await fetch(`${API}/api/esp/${id}/f/${doc.id}`, { cache: 'no-store' });
+      if (!r.ok) throw new Error(r.status);
       const bytes = await openBytes(key, await r.arrayBuffer());
-      const url = URL.createObjectURL(new Blob([bytes], { type: doc.mime || 'application/pdf' }));
-      if (w) w.location = url; else location.href = url;
-    } catch { if (w) w.close(); alert('⚠'); }
+      preview(doc, URL.createObjectURL(new Blob([bytes], { type: doc.mime || 'application/pdf' })));
+    } catch { alert('⚠'); }
+    db.disabled = false;
+    return;
+  }
+  if (e.target.closest('[data-err]')) {
+    const f = document.getElementById('sig');
+    if (f) { f.type.value = 'dossier'; f.scrollIntoView({ behavior: 'smooth', block: 'start' }); f.texte.focus({ preventScroll: true }); }
   }
 });
 app.addEventListener('submit', async (e) => {

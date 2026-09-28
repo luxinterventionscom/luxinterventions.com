@@ -499,3 +499,12 @@ dialog.sheet::backdrop { background: rgba(10, 10, 12, 0.5); backdrop-filter: blu
 .legend-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
 .legend-row .light { width: 12px; height: 12px; flex-basis: 12px; }
 .legend .lg { display: inline-flex; align-items: center; gap: 6px; }
+
+/* Aperçu d'un document (photo / PDF) */
+dialog.pv { width: 100vw; height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; background: rgba(0, 0, 0, .88); }
+dialog.pv[open] { display: flex; flex-direction: column; }
+dialog.pv::backdrop { background: rgba(0, 0, 0, .5); }
+.pv-bar { display: flex; gap: 8px; align-items: center; padding: 10px 12px; padding-top: max(10px, env(safe-area-inset-top)); background: var(--surface, #fff); color: var(--text, #1d1b16); }
+.pv-bar b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+dialog.pv img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
+dialog.pv iframe { flex: 1; border: 0; width: 100%; background: #fff; }

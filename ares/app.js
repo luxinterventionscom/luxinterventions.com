@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.16.0';
+const VERSION = '2.17.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -93,7 +93,7 @@ const logWhere = (g) => [g.etage ? 'étage ' + g.etage : '', g.partie].filter(Bo
 // Documents du locataire (dossier d'entrée, caution…)
 const DOC_TYPES = {
   bail: 'Contrat de bail', identite: "Pièce d'identité (carte d'identité / passeport)", cns: 'Carte CNS (assurance maladie)', caution: 'Preuve de la caution (reçu, virement, message)',
-  assurance: 'Attestation assurance habitation', revenus: 'Fiches de salaire / revenus', titre: 'Titre de séjour', autre: 'Autre document',
+  loyer: 'Preuve de paiement du loyer', assurance: 'Attestation assurance habitation', revenus: 'Fiches de salaire / revenus', titre: 'Titre de séjour', autre: 'Autre document',
 };
 const DOSSIER = [['bail', 'Contrat'], ['identite', 'Identité'], ['cns', 'CNS'], ['caution', 'Caution']];
 const CAUTION_MODES = { especes: 'En main propre (espèces)', virement: 'Virement bancaire', cheque: 'Chèque', garantie: 'Garantie bancaire', autre: 'Autre' };
@@ -284,7 +284,7 @@ const ESP_SHOW = {
   pay: 'Paiements (mois payés / à payer, IBAN)',
   quit: 'Quittances à télécharger',
   contrat: 'Contrat (entrée, fin, loyer, révision)',
-  docs: 'Documents que vous marquez « visibles »',
+  docs: 'Son dossier : documents enregistrés (identité, CNS, caution, preuves de paiement…) avec aperçu — 👁 Privé pour en cacher un',
   coll: 'Collectes des déchets de l’immeuble',
   avis: 'Avis de l’immeuble (travaux, coupures…)',
   signal: 'Signaler un problème (avec photos)',
@@ -332,15 +332,16 @@ function espaceData(l) {
     });
   }
   if (show.porte && g && g.porte && g.porte.code) out.porte = { code: g.porte.code, depuis: g.porte.maj || '', info: g.porte.info || '' };
-  if (show.contrat) out.contrat = { debut: l.debut || '', fin: l.fin || '', revision: l.revision || '', caution: l.caution || 0 };
-  if (show.docs) out.docs = vault.list('documents').filter((d) => d.locId === l.id && d.shared).map((d) => ({ id: d.id, label: d.label, date: d.date, mime: d.mime, size: d.size }));
+  if (show.contrat) out.contrat = { debut: l.debut || '', fin: l.fin || '', revision: l.revision || '', caution: l.caution || 0, cautionDate: l.cautionDate || '', cautionMode: l.cautionMode || '' };
+  if (show.docs) out.docs = vault.list('documents').filter((d) => d.locId === l.id && d.shared).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+    .map((d) => ({ id: d.id, label: d.label, dtype: d.dtype || '', pay: d.pay || '', date: d.date, mime: d.mime, size: d.size }));
   if (show.coll && im) { out.coll = pubData(im).items; if (im.pubToken) out.collLink = pubUrl(im); }
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
   if (show.signal) {
     const k = vault.get('reglages', 'signal');
     out.signalKey = k ? k.pub : '';
     out.signals = vault.list('taches').filter((t) => t.locId === l.id).sort((a, b) => (b.sentAt || b.date || '').localeCompare(a.sentAt || a.date || '')).slice(0, 20)
-      .map((t) => ({ titre: t.titre.replace(/^Signalement : /, ''), sent: t.sentAt || '', date: t.date || '', statut: t.statut, done: t.doneDate || '' }));
+      .map((t) => ({ titre: t.titre.replace(/^(Signalement|Erreur signalée \(dossier \/ paiements\)) : /, ''), sent: t.sentAt || '', date: t.date || '', statut: t.statut, done: t.doneDate || '' }));
   }
   return out;
 }
@@ -388,7 +389,7 @@ async function inboxSync() {
       const titre = String(msg.titre || msg.texte || 'Problème').slice(0, 80);
       await vault.mutate((tx) => {
         const t = tx.put('taches', {
-          type: msg.type === 'menage' ? 'nettoyage' : 'reparation', titre: 'Signalement : ' + titre, immId: l.immId, logId: l.logId || '', locId: l.id, intervenantId: '',
+          type: msg.type === 'menage' ? 'nettoyage' : msg.type === 'dossier' || msg.type === 'autre' ? 'autre' : 'reparation', titre: (msg.type === 'dossier' ? 'Erreur signalée (dossier / paiements) : ' : 'Signalement : ') + titre, immId: l.immId, logId: l.logId || '', locId: l.id, intervenantId: '',
           date: today(), recur: '', statut: 'afaire', sentAt: msg.t || new Date().toISOString(),
           note: `${String(msg.texte || '').slice(0, 3000)}\n\n— Envoyé par ${fullName(l)} le ${fmtDateTime(msg.t || Date.now())}${msg.tel ? ' · tél. ' + String(msg.tel).slice(0, 30) : ''}${msg.dispo ? '\nDisponibilités : ' + String(msg.dispo).slice(0, 200) : ''}`,
         });
@@ -402,9 +403,12 @@ async function inboxSync() {
     }
   } catch { /* hors ligne : on réessaiera */ }
   inboxBusy = false;
-  if (n) toast(`${plural(n, 'signalement')} de locataire reçu${n > 1 ? 's' : ''} → Maintenance`);
+  if (n) toast(`📩 ${plural(n, 'message')} de locataire reçu${n > 1 ? 's' : ''} — voir l'accueil`);
 }
 
+// Messages envoyés par les locataires depuis leur app, pas encore ouverts dans Ares
+const newSignals = () => vault.list('taches').filter((t) => t.sentAt && !t.vu).sort((a, b) => (b.sentAt || '').localeCompare(a.sentAt || ''));
+const signalPhotos = (t) => vault.list('documents').filter((x) => x.tacheId === t.id).length;
 const tacheToDo = () => vault.list('taches').filter((t) => !t.recur && t.statut !== 'fait');
 const byAddr = (a, b) => (a.adresse || '').localeCompare(b.adresse || '', 'fr');
 const byLogName = (a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr', { numeric: true });
@@ -1216,8 +1220,14 @@ dashboard() {
     }
 
     const nudge = vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
+    const sig = newSignals();
+    const sigBox = sig.length ? html`<div class="card" style="margin-bottom:14px;border:2px solid var(--red)">
+        <div class="card-title" style="margin-bottom:8px"><h3>📩 ${sig.length > 1 ? sig.length + " nouveaux messages" : "1 nouveau message"} de locataire${sig.length > 1 ? 's' : ''}</h3></div>
+        <div class="stack">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}; const n = signalPhotos(t); return alertBtn('bad', 'msg', 'open-signal', t.id, html`<b>${fullName(l)}</b> · ${logName(l.logId) || immName(t.immId)} — ${t.titre.replace(/^Signalement : /, '')}<div class="tiny">${fmtDateTime(t.sentAt)}${n ? ` · 📷 ${n} photo${n > 1 ? 's' : ''}` : ''} · touchez pour lire</div>`); })}</div>
+      </div>` : '';
     return html`
       ${nudge}
+      ${sigBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
       <div class="metrics">
         <div class="metric hero">
@@ -2205,7 +2215,9 @@ const SHEETS = {
     tab = tab || 'infos';
     const y = new Date().getFullYear();
     const docs = vault.list('documents').filter((d) => d.locId === id).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-    const hasDoc = (k) => docs.some((d) => d.dtype === k);
+    const docOf = (k) => docs.find((d) => d.dtype === k);
+    const hasDoc = (k) => !!docOf(k);
+    const msgs = vault.list('taches').filter((t) => t.locId === id && t.sentAt).sort((a, b) => (b.sentAt || '').localeCompare(a.sentAt || ''));
     const gone = isGone(l);
     const late = gone ? [] : lateMonths(l);
     const d = daysToEnd(l);
@@ -2234,14 +2246,15 @@ const SHEETS = {
           ${kvRow('Téléphone', l.tel || '—')}
           ${kvRow('Email', l.mail || '—')}
           ${kvRow('Caution', html`<span class="num">${l.caution ? money(l.caution) : '—'}</span>${l.cautionDate || l.cautionMode ? html`<div class="tiny muted">reçue${l.cautionDate ? ' le ' + fmtDate(l.cautionDate) : ''}${l.cautionMode ? ' · ' + (CAUTION_MODES[l.cautionMode] || l.cautionMode).toLowerCase() : ''}</div>` : ''}${l.cautionNote ? html`<div class="tiny muted">${l.cautionNote}</div>` : ''}
-            ${l.caution ? html`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" data-action="caution-recu" data-id="${id}">${icon('receipt')} Reçu de caution</button><button class="btn sm ${hasDoc('caution') ? '' : 'primary'}" data-action="doc-type" data-id="${id}" data-k="caution">${hasDoc('caution') ? '✓ Preuve jointe' : '📎 Joindre la preuve'}</button></div>` : ''}`)}
-          ${kvRow('Dossier', dossierChips(id, hasDoc))}
+            ${l.caution ? html`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" data-action="caution-recu" data-id="${id}">${icon('receipt')} Reçu de caution</button>${hasDoc('caution') ? html`<button class="btn sm" data-action="open-doc" data-id="${docOf('caution').id}">✓ Preuve jointe 👁</button>` : html`<button class="btn sm primary" data-action="doc-type" data-id="${id}" data-k="caution">📎 Joindre la preuve</button>`}</div>` : ''}`)}
+          ${kvRow('Dossier', dossierChips(id, docOf))}
           ${kvRow('Entrée', l.debut ? fmtDate(l.debut) : '?')}
           ${kvRow('Fin du contrat', html`${l.fin ? fmtDate(l.fin) : 'indéterminée'}${d != null && d >= 0 && d <= 60 && !gone ? html`<div class="tiny amber">dans ${plural(d, 'jour')}</div>` : ''}`)}
           ${l.sortie ? kvRow('Sortie', fmtDate(l.sortie)) : ''}
           ${kvRow('Total encaissé', html`<span class="num green">${money(totalPaid(l))}</span>`)}
         </dl>
-        ${l.sortieNote ? html`<div class="section-label">Remarques de sortie</div><div class="note">${l.sortieNote}</div>` : ''}`;
+        ${l.sortieNote ? html`<div class="section-label">Remarques de sortie</div><div class="note">${l.sortieNote}</div>` : ''}
+        ${msgs.length ? html`<div class="section-label">Messages envoyés depuis son app</div><div class="list">${msgs.map((t) => html`<button class="row" data-action="open-signal" data-id="${t.id}"><span class="light light-${t.statut === 'fait' ? 'green' : t.statut === 'planifie' ? 'yellow' : 'red'}"></span><span class="grow"><span class="title" style="display:block">${t.vu ? '' : '🆕 '}${t.titre.replace(/^Signalement : /, '')}</span><span class="meta">${fmtDateTime(t.sentAt)}${signalPhotos(t) ? ' · 📷 ' + signalPhotos(t) : ''}</span></span></button>`)}</div>` : ''}`;
     } else if (tab === 'pay') {
       const years = [...new Set([y, y - 1, ...paysOf(id).map((p) => p.y)])].filter((yy) => yy === y || MONTHS.some((_, i) => isDue(l, yy, i + 1) || payment(id, yy, i + 1))).sort((a, b) => b - a);
       body = html`${years.map((yy) => {
@@ -2253,15 +2266,16 @@ const SHEETS = {
       body = html`
         <form data-form="doc" class="stack" style="margin-bottom:16px">
           <input type="hidden" name="locId" value="${id}">
-          <div class="small">Dossier : ${dossierChips(id, hasDoc)}</div>
-          <select name="dtype" aria-label="Type de document">${Object.entries(DOC_TYPES).map(([k, v]) => html`<option value="${k}" ${(preset || 'bail') === k ? new Raw('selected') : ''}>${v}</option>`)}</select>
-          <input name="label" placeholder="Précision (facultatif, ex. recto-verso, WhatsApp du 12/09)">
+          <div class="small">Dossier : ${dossierChips(id, docOf)}</div>
+          <select name="dtype" aria-label="Type de document">${Object.entries(DOC_TYPES).map(([k, v]) => html`<option value="${k}" ${(String(preset || '').split('|')[0] || 'bail') === k ? new Raw('selected') : ''}>${v}</option>`)}</select>
+          <input type="hidden" name="pay" value="${String(preset || '').split('|')[1] || ''}">
+          <input name="label" value="${payLabel(preset)}" placeholder="Précision (facultatif, ex. recto-verso, WhatsApp du 12/09)">
           <input name="file" type="file" accept="application/pdf,image/*" required>
           <button class="btn primary block" type="submit">${icon('upload')} Ajouter le document</button>
           <p class="tiny muted">PDF ou photo · 10 Mo maximum · chiffré avant l'envoi. Reçu par WhatsApp ou par mail ? Enregistrez la photo ou le PDF sur le téléphone / l'ordinateur, puis choisissez-le ici.</p>
         </form>
         ${docs.length ? html`<div class="list">${docs.map((doc) => html`<div class="row">${icon('file')}
-          <span class="grow"><span class="title" style="display:block">${doc.label}</span><span class="meta">${doc.dtype && doc.dtype !== 'autre' && DOC_TYPES[doc.dtype] !== doc.label ? DOC_TYPES[doc.dtype] + ' · ' : ''}${fmtDate(doc.date)} · ${Math.max(1, Math.round((doc.size || 0) / 1024))} Ko</span></span>
+          <span class="grow"><span class="title" style="display:block">${doc.label}</span><span class="meta">${doc.dtype && doc.dtype !== 'autre' && !doc.label.startsWith(DOC_TYPES[doc.dtype].replace(/ \(.*\)$/, '')) ? DOC_TYPES[doc.dtype] + ' · ' : ''}${fmtDate(doc.date)} · ${Math.max(1, Math.round((doc.size || 0) / 1024))} Ko</span></span>
           ${l.espace && l.espace.on ? html`<button class="btn sm ${doc.shared ? 'primary' : ''}" data-action="doc-share" data-id="${doc.id}" title="Visible dans l'espace du locataire">👁 ${doc.shared ? 'Visible' : 'Privé'}</button>` : ''}
           <button class="btn icon sm" data-action="open-doc" data-id="${doc.id}" aria-label="Ouvrir">${icon('eye')}</button>
           <button class="btn icon sm ghost danger" data-action="del-doc" data-id="${doc.id}" aria-label="Supprimer">${icon('trash')}</button></div>`)}</div>` : html`<p class="muted small">Aucun document.</p>`}`;
@@ -2292,7 +2306,7 @@ const SHEETS = {
           </div>
           <div class="section-label">Ce qu'il voit</div>${boxes}
           <label class="field">Langue par défaut de son espace<select data-input="esp-lang" data-loc="${id}">${[['', 'Celle de son téléphone'], ['fr', 'Français'], ['it', 'Italiano'], ['de', 'Deutsch'], ['pt', 'Português'], ['en', 'English']].map(([k, v2]) => html`<option value="${k}" ${(e.lang || '') === k ? new Raw('selected') : ''}>${v2}</option>`)}</select></label>
-          <p class="tiny muted">Documents : dans l'onglet Docs, touchez 👁 pour rendre un document visible dans son espace. Les signalements qu'il envoie arrivent dans Maintenance → Travaux.</p>
+          <p class="tiny muted">Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.</p>
           <button class="btn ghost danger block" data-action="esp-off" data-id="${id}">Désactiver l'espace</button>`;
       }
     } else if (tab === 'notes') {
@@ -2352,7 +2366,8 @@ const SHEETS = {
         <p class="tiny muted full">Un montant inférieur au loyer est enregistré comme paiement partiel (case orange) et le reste reste dû.</p>
       </form>`,
       foot: html`${st.p ? html`<button class="btn ghost danger" data-action="del-pay" data-loc="${locId}" data-y="${y}" data-m="${m}" aria-label="Annuler le paiement">${icon('trash')}</button>
-        <button class="btn" data-action="quittance" data-loc="${locId}" data-y="${y}" data-m="${m}">${icon('receipt')} Quittance</button>` : ''}
+        <button class="btn" data-action="quittance" data-loc="${locId}" data-y="${y}" data-m="${m}">${icon('receipt')} Quittance</button>
+        <button class="btn" type="button" data-action="pay-proof" data-loc="${locId}" data-y="${y}" data-m="${m}">📎 Preuve${vault.list('documents').some((x) => x.locId === locId && x.pay === y + '-' + m) ? ' ✓' : ''}</button>` : ''}
         <button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
@@ -2603,7 +2618,10 @@ function printCaution(locId) {
   vault.mutate(() => {}, 'Reçu de caution imprimé', `${fullName(l)} — ${money(l.caution)}`, l.id);
 }
 // Pièces du dossier d'entrée : ✓ présente / ✗ manquante (cliquable pour l'ajouter)
-const dossierChips = (locId, hasDoc) => html`<span style="display:inline-flex;gap:6px;flex-wrap:wrap">${DOSSIER.map(([k, v]) => html`<button type="button" class="badge ${hasDoc(k) ? 'ok' : 'warn'}" style="border:0;cursor:pointer;font:inherit;font-size:12px" data-action="doc-type" data-id="${locId}" data-k="${k}" title="${DOC_TYPES[k]}">${hasDoc(k) ? '✓' : '✗'} ${v}</button>`)}</span>`;
+const payLabel = (preset) => { const [k, ym] = String(preset || '').split('|'); if (k !== 'loyer' || !ym) return ''; const [y, m] = ym.split('-').map(Number); return `Preuve de paiement — ${MONTHS_FULL[m - 1]} ${y}`; };
+const dossierChips = (locId, docOf) => html`<span style="display:inline-flex;gap:6px;flex-wrap:wrap">${DOSSIER.map(([k, v]) => { const d = docOf(k); return d
+  ? html`<button type="button" class="badge ok" style="border:0;cursor:pointer;font:inherit;font-size:12px" data-action="open-doc" data-id="${d.id}" title="Voir : ${d.label}">✓ ${v} 👁</button>`
+  : html`<button type="button" class="badge warn" style="border:0;cursor:pointer;font:inherit;font-size:12px" data-action="doc-type" data-id="${locId}" data-k="${k}" title="Ajouter : ${DOC_TYPES[k]}">✗ ${v}</button>`; })}</span>`;
 
 const prBilan = (b, withOcc) => html`<table class="tbl"><tbody>
   <tr><td>Loyers encaissés</td><td class="r green">${money(b.encaisse)}</td></tr>
@@ -2693,6 +2711,7 @@ const ACTIONS = {
   'edit-interv': (d) => openOver('interv-form', d.id),
   'new-tache': (d) => openOver('tache-form', null, null, d.imm || ui.immFilter || ''),
   'edit-tache': (d) => openOver('tache-form', d.id),
+  'open-signal': (d) => { const t = vault.get('taches', d.id); if (t && !t.vu) vault.mutate((tx) => tx.put('taches', { id: t.id, vu: true }), 'Message du locataire lu', t.titre, t.locId); openOver('tache-form', d.id); },
   'ics-all': (d) => { ui.icsAll = null; openOver('ics-all', d.id); },
   async 'ics-analyze'() {
     const st = ui.icsAll;
@@ -2882,6 +2901,7 @@ const ACTIONS = {
   },
   quittance: (d) => printQuittance(d.loc, +d.y, +d.m),
   'caution-recu': (d) => printCaution(d.id),
+  'pay-proof': (d) => openSheet('loc', d.loc, 'docs', `loyer|${d.y}-${d.m}`),
   'doc-type': (d) => { ui.sheet.tab = 'docs'; ui.sheet.preset = d.k; ui.sheet.rendered = false; renderSheet(); },
   relance: (d) => openOver('relance', d.id),
   'rel-lang': (d) => { ui.relLang = d.id; ui.sheet.rendered = false; renderSheet(); },
@@ -2997,13 +3017,20 @@ const ACTIONS = {
   async 'open-doc'(d) {
     const doc = vault.get('documents', d.id);
     try {
-      toast('Déchiffrement…');
       const bytes = await vault.readFile(d.id);
-      const blob = new Blob([bytes], { type: doc.mime || 'application/pdf' });
-      const url = URL.createObjectURL(blob);
-      const w = open(url, '_blank');
-      if (!w) download(doc.label + (doc.mime === 'application/pdf' ? '.pdf' : ''), bytes, doc.mime);
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      const url = URL.createObjectURL(new Blob([bytes], { type: doc.mime || 'application/pdf' }));
+      const dlg = document.createElement('dialog');
+      dlg.className = 'pv';
+      const img = /^image\//.test(doc.mime || '');
+      setHtml(dlg, html`<div class="pv-bar"><b>${doc.label}</b><span class="tiny">${fmtDate(doc.date)}</span>
+        <a class="btn sm" href="${url}" download="${doc.label + (doc.mime === 'application/pdf' ? '.pdf' : '')}">${icon('download')}</a>
+        <button class="btn sm" type="button" data-pv-close="1">${icon('x')} Fermer</button></div>
+        ${img ? html`<img src="${url}" alt="">` : html`<iframe src="${url}" title="${doc.label}"></iframe>`}`);
+      const done = () => { dlg.remove(); URL.revokeObjectURL(url); };
+      dlg.addEventListener('click', (e) => { if (e.target.closest('[data-pv-close]')) dlg.close(); });
+      dlg.addEventListener('close', done);
+      document.body.append(dlg);
+      dlg.showModal();
     } catch (e) {
       toast(e.message || 'Document indisponible', { bad: true });
     }
@@ -3319,7 +3346,7 @@ const FORMS = {
       const l = vault.get('locataires', locId);
       const dtype = fd.get('dtype') || 'autre';
       const label = String(fd.get('label') || '').trim() || (DOC_TYPES[dtype] || 'Document').replace(/ \(.*\)$/, '');
-      const doc = await vault.mutate((tx) => tx.put('documents', { locId, dtype, label, date: today(), size: file.size, mime: file.type || 'application/octet-stream' }), 'Document ajouté', `${label} → ${fullName(l)}`, locId);
+      const doc = await vault.mutate((tx) => tx.put('documents', { locId, dtype, label, pay: fd.get('pay') || '', shared: true, date: today(), size: file.size, mime: file.type || 'application/octet-stream' }), 'Document ajouté', `${label} → ${fullName(l)}`, locId);
       await vault.saveFile(doc.id, bytes);
       toast('Document ajouté');
     } catch (e) {
