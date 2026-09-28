@@ -17,6 +17,17 @@ const L = {
     cats: { residuel: 'Déchets résiduels (poubelle grise)', organique: 'Biodéchets', papier: 'Papier / carton', verre: 'Verre', valorlux: 'Valorlux (sacs bleus)', encombrants: 'Encombrants', autre: 'Autre collecte' },
     lieux: { rue: 'sur le trottoir', soussol: 'au sous-sol (local poubelles)', garage: 'au garage', autre: 'voir la remarque' },
   },
+  it: {
+    locale: 'it-IT', title: 'Raccolta rifiuti', sub: 'Calendario del tuo palazzo',
+    tonight: 'Stasera', today: 'Oggi', tomorrow: 'Domani', putOut: 'metti fuori', nothing: 'Niente da mettere fuori oggi né domani.',
+    next: 'Prossime raccolte', rules: 'Regole del tuo palazzo', truck: 'passaggio del camion il', where: 'dove',
+    eve: 'La sera prima', day: 'Il giorno stesso, di mattina presto', after: (h) => `dopo le ${h}`, before: (h) => `prima delle ${h}`,
+    addCal: 'Aggiungi al mio calendario (iPhone, Mac, Outlook)', google: 'Aggiungi a Google Calendar (Android)', download: 'Scarica il calendario (.ics)',
+    calInfo: 'Il tuo telefono ti avviserà al momento giusto. Il calendario si aggiorna da solo.',
+    question: 'Una domanda?', off: 'Questo link non è più attivo. Chiedi il nuovo link al tuo amministratore.', updated: 'Aggiornato il',
+    cats: { residuel: 'Indifferenziato (bidone grigio)', organique: 'Organico / umido', papier: 'Carta / cartone', verre: 'Vetro', valorlux: 'Valorlux (sacchi blu)', encombrants: 'Ingombranti', autre: 'Altra raccolta' },
+    lieux: { rue: 'sul marciapiede', soussol: 'in cantina (locale rifiuti)', garage: 'in garage', autre: 'vedi la nota' },
+  },
   de: {
     locale: 'de-LU', title: 'Müllabfuhr', sub: 'Abfuhrkalender Ihres Hauses',
     tonight: 'Heute Abend', today: 'Heute', tomorrow: 'Morgen', putOut: 'rausstellen', nothing: 'Heute und morgen nichts rausstellen.',
@@ -65,7 +76,7 @@ function hourText(it) {
   const t = L[lang];
   const m = String(it.heure || '').match(/(\d{1,2})/);
   if (!m) return it.heure || '';
-  return /avant|vor|antes|before/i.test(it.heure) ? t.before(m[1]) : t.after(m[1]);
+  return /avant|vor|antes|before|prima/i.test(it.heure) ? t.before(m[1]) : t.after(m[1]);
 }
 const whenRule = (it) => [it.sortie === 'jour' ? L[lang].day : L[lang].eve, hourText(it)].filter(Boolean).join(', ');
 const putDay = (it, d) => (it.sortie === 'jour' ? d : addDays(d, -1));
