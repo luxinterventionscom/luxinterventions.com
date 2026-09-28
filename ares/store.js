@@ -7,7 +7,7 @@
 
 import * as C from './crypto.js';
 
-export const COLLECTIONS = ['immeubles', 'logements', 'locataires', 'paiements', 'versements', 'depenses', 'frais', 'reglages', 'documents', 'historique', 'intervenants', 'taches', 'collectes'];
+export const COLLECTIONS = ['immeubles', 'logements', 'locataires', 'paiements', 'versements', 'depenses', 'frais', 'reglages', 'documents', 'historique', 'intervenants', 'taches', 'collectes', 'avis'];
 const HIST_MAX = 1000;
 const DATA_LABEL = 'ares-data-v2';
 const fileLabel = (id) => 'ares-file:' + id;
@@ -583,6 +583,19 @@ export class Vault {
       await idb.set('pendingDeletes', dels);
     }
   }
+
+  // Appel authentifié générique (espaces locataires, boîte des signalements)
+  async call(path, opts = {}) {
+    const r = await this.api.req(path, opts);
+    if (r.status === 409) throw new ApiError(409, 'session-taken', await r.json().catch(() => ({})));
+    if (!r.ok) throw new ApiError(r.status, await Api.err(r));
+    return r;
+  }
+  espacePut(id, bytes, docId) { return this.call('espace/' + id + (docId ? '/f/' + docId : ''), { method: 'PUT', body: bytes }); }
+  espaceDel(id, docId) { return this.call('espace/' + id + (docId ? '/f/' + docId : ''), { method: 'DELETE' }); }
+  async inboxList() { return (await (await this.call('inbox')).json()).items || []; }
+  async inboxGet(name) { return new Uint8Array(await (await this.call('inbox/' + name)).arrayBuffer()); }
+  inboxDel(name) { return this.call('inbox/' + name, { method: 'DELETE' }); }
 
   // Page publique des collectes d'un immeuble (copie non chiffrée : adresse + dates uniquement)
   async publishPublic(token, data) {

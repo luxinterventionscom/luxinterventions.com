@@ -64,6 +64,10 @@ export default {
     }
 
     // ── Calendrier public des collectes (locataires) : /api/pub/<token>.json | .ics ──
+    // ── Espace locataire (public, contenu chiffré de bout en bout) ──
+    const esp = url.pathname.match(/^\/api\/esp\/([0-9a-f]{32})(?:\/(f\/[a-z0-9]{1,40}|signal))?$/);
+    if (esp) return espacePublic(request, env, esp[1], esp[2] || "", headers);
+
     const pub = url.pathname.match(/^\/api\/pub\/([0-9a-f]{32})\.(json|ics)$/);
     if (pub && request.method === "GET") return publicCollectes(env, pub[1], pub[2], url, headers);
 
@@ -193,6 +197,8 @@ const ARES_MAX_FAILS = 10;
 const ARES_LOCK_SECONDS = 900;
 const ARES_SESSION = "ares/session.json";
 const ARES_PUBLIC = "ares/public/";
+const ARES_ESPACE = "ares/espace/"; // espaces locataires : données chiffrées avec une clé que seul le lien du locataire contient
+const ARES_INBOX = "ares/inbox/"; // signalements des locataires, chiffrés pour le gestionnaire (clé publique)
 const ARES_LEASE_MS = 120 * 1000; // un dispositivo inattivo da 2 minuti non è più considerato connesso
 const ARES_RENEW_MS = 20 * 1000;
 
@@ -238,6 +244,35 @@ async function publicCollectes(env, token, fmt, url, headers) {
   // Lignes de 75 octets max (RFC 5545) : on replie les longues lignes
   const folded = lines.map((l) => { let out = "", s = l; while (new TextEncoder().encode(s).length > 73) { let n = 73; while (new TextEncoder().encode(s.slice(0, n)).length > 73) n--; out += s.slice(0, n) + "\r\n "; s = s.slice(n); } return out + s; });
   return new Response(folded.join("\r\n") + "\r\n", { headers: { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `inline; filename="collectes.ics"`, ...headers, ...cache } });
+}
+
+// ── Espace locataire public : lecture du contenu chiffré, documents partagés, envoi d'un signalement ──
+async function espacePublic(request, env, id, sub, headers) {
+  const bin = (obj) => new Response(obj.body, { headers: { "Content-Type": "application/octet-stream", "Cache-Control": "no-store", ...headers } });
+  const exists = await env.PHOTOS.head(ARES_ESPACE + id + ".bin");
+  if (!exists) return aresJson({ error: "Espace désactivé" }, 404, headers);
+  if (request.method === "GET" && !sub) return bin(await env.PHOTOS.get(ARES_ESPACE + id + ".bin"));
+  if (request.method === "GET" && sub.startsWith("f/")) {
+    const obj = await env.PHOTOS.get(ARES_ESPACE + id + "/" + sub);
+    return obj ? bin(obj) : aresJson({ error: "Introuvable" }, 404, headers);
+  }
+  if (request.method === "POST" && sub === "signal") {
+    // Limites : 10 envois / heure par adresse IP, 20 / jour par espace
+    const ip = clientIp(request);
+    const kIp = "sig-rl:" + ip, kId = "sig-id:" + id;
+    const nIp = parseInt((await env.HITS.get(kIp)) || "0", 10), nId = parseInt((await env.HITS.get(kId)) || "0", 10);
+    if (nIp >= 10 || nId >= 20) return aresJson({ error: "Trop d'envois, réessayez plus tard" }, 429, headers);
+    const body = await request.arrayBuffer();
+    if (body.byteLength < 100 || body.byteLength > 5 * 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
+    const name = `${Date.now().toString(36)}-${id.slice(0, 12)}-${crypto.getRandomValues(new Uint32Array(1))[0].toString(36)}`;
+    await env.PHOTOS.put(ARES_INBOX + name, body, { httpMetadata: { contentType: "application/octet-stream" } });
+    try {
+      await env.HITS.put(kIp, String(nIp + 1), { expirationTtl: 3600 });
+      await env.HITS.put(kId, String(nId + 1), { expirationTtl: 86400 });
+    } catch { /* quota KV */ }
+    return aresJson({ ok: true }, 200, headers);
+  }
+  return aresJson({ error: "Not found" }, 404, headers);
 }
 
 function aresJson(obj, status, headers, extra = {}) {
@@ -423,6 +458,39 @@ async function handleAres(request, env, url, headers) {
 
   // Page publique « collectes » d'un immeuble pour les locataires : l'app publie ici une copie NON
   // chiffrée contenant seulement l'adresse et les dates de collecte (aucun nom, aucune donnée personnelle).
+  // Espace locataire : le gestionnaire publie le contenu chiffré et les documents partagés
+  const espMatch = path.match(/^espace\/([0-9a-f]{32})(?:\/f\/([a-z0-9]{1,40}))?$/);
+  if (espMatch && (method === "PUT" || method === "DELETE")) {
+    const key = ARES_ESPACE + espMatch[1] + (espMatch[2] ? "/f/" + espMatch[2] : ".bin");
+    if (method === "DELETE") {
+      if (!espMatch[2]) {
+        const listed = await env.PHOTOS.list({ prefix: ARES_ESPACE + espMatch[1] + "/" });
+        await Promise.all(listed.objects.map((o) => env.PHOTOS.delete(o.key)));
+      }
+      await env.PHOTOS.delete(key);
+      return aresJson({ ok: true }, 200, headers);
+    }
+    const body = await request.arrayBuffer();
+    if (!body.byteLength || body.byteLength > (espMatch[2] ? ARES_MAX_FILE : 2 * 1024 * 1024)) return aresJson({ error: "Taille invalide" }, 413, headers);
+    await env.PHOTOS.put(key, body, { httpMetadata: { contentType: "application/octet-stream" } });
+    return aresJson({ ok: true }, 200, headers);
+  }
+  // Boîte de réception des signalements (chiffrés) : liste, lecture, suppression après import
+  if (path === "inbox" && method === "GET") {
+    const listed = await env.PHOTOS.list({ prefix: ARES_INBOX, limit: 100 });
+    return aresJson({ items: listed.objects.map((o) => ({ name: o.key.slice(ARES_INBOX.length), size: o.size })) }, 200, headers);
+  }
+  const inboxMatch = path.match(/^inbox\/([a-z0-9-]{10,80})$/);
+  if (inboxMatch && method === "GET") {
+    const obj = await env.PHOTOS.get(ARES_INBOX + inboxMatch[1]);
+    if (!obj) return aresJson({ error: "Introuvable" }, 404, headers);
+    return new Response(obj.body, { headers: { "Content-Type": "application/octet-stream", ...headers } });
+  }
+  if (inboxMatch && method === "DELETE") {
+    await env.PHOTOS.delete(ARES_INBOX + inboxMatch[1]);
+    return aresJson({ ok: true }, 200, headers);
+  }
+
   const pubMatch = path.match(/^public\/([0-9a-f]{32})$/);
   if (pubMatch && method === "PUT") {
     const body = await request.text();

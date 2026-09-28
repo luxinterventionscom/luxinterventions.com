@@ -2,8 +2,9 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
+import { newEspaceId, newEspaceKey, sealJson, sealBytes, newOwnerKeys, openFromTenant, unb64u } from './espace-crypto.js';
 
-const VERSION = '2.12.0';
+const VERSION = '2.13.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -256,6 +257,120 @@ async function publishPub(immId, loud) {
   }
   return true;
 }
+
+// ───────────────────────── Espace locataire (lien personnel, contenu choisi, chiffré) ─────────────────────────
+const ESP_SHOW = {
+  pay: 'Paiements (mois payés / à payer, IBAN)',
+  quit: 'Quittances à télécharger',
+  contrat: 'Contrat (entrée, fin, loyer, révision)',
+  docs: 'Documents que vous marquez « visibles »',
+  coll: 'Collectes des déchets de l’immeuble',
+  avis: 'Avis de l’immeuble (travaux, coupures…)',
+  signal: 'Signaler un problème (avec photos)',
+};
+const ESP_ALL = Object.fromEntries(Object.keys(ESP_SHOW).map((k) => [k, true]));
+const espUrl = (l) => `${location.origin}/espace.html#${l.espace.id}.${l.espace.key}`;
+const avisActifs = (immId) => vault.list('avis').filter((a) => (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
+  .sort((a, b) => (a.debut || '').localeCompare(b.debut || ''));
+async function ownerKeys() {
+  let k = vault.get('reglages', 'signal');
+  if (!k || !k.pub) {
+    const n = await newOwnerKeys();
+    k = await vault.mutate((tx) => tx.put('reglages', { id: 'signal', ...n }), 'Clés des signalements créées', '');
+  }
+  return k;
+}
+// Ce que le locataire voit — uniquement les rubriques cochées, uniquement ses propres données
+function espaceData(l) {
+  const e = l.espace, show = { ...ESP_ALL, ...(e.show || {}) };
+  const g = vault.get('logements', l.logId), im = vault.get('immeubles', l.immId);
+  const soc = societe();
+  const out = {
+    v: 1, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? g.nom : '', adresse: im ? im.adresse : '', show,
+    societe: { nom: soc.nom || 'Ares Invest', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '' },
+    loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '',
+  };
+  if (show.pay || show.quit) {
+    const cy = new Date().getFullYear();
+    out.iban = show.pay ? soc.iban || '' : '';
+    out.years = [cy, cy - 1].filter((y) => MONTHS.some((_, i) => isDue(l, y, i + 1) || payment(l.id, y, i + 1))).map((y) => {
+      const s = yearStats(l, y);
+      return { y, rest: s.rest, upcoming: s.upcoming, paid: s.paid, months: MONTHS.map((_, i) => { const st = payState(l, y, i + 1); return [st.due, st.paid, st.p ? st.p.date || '' : '']; }) };
+    });
+  }
+  if (show.contrat) out.contrat = { debut: l.debut || '', fin: l.fin || '', revision: l.revision || '', caution: l.caution || 0 };
+  if (show.docs) out.docs = vault.list('documents').filter((d) => d.locId === l.id && d.shared).map((d) => ({ id: d.id, label: d.label, date: d.date, mime: d.mime, size: d.size }));
+  if (show.coll && im) { out.coll = pubData(im).items; if (im.pubToken) out.collLink = pubUrl(im); }
+  if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
+  if (show.signal) {
+    const k = vault.get('reglages', 'signal');
+    out.signalKey = k ? k.pub : '';
+    out.signals = vault.list('taches').filter((t) => t.locId === l.id).sort((a, b) => (b.sentAt || b.date || '').localeCompare(a.sentAt || a.date || '')).slice(0, 20)
+      .map((t) => ({ titre: t.titre.replace(/^Signalement : /, ''), sent: t.sentAt || '', date: t.date || '', statut: t.statut, done: t.doneDate || '' }));
+  }
+  return out;
+}
+const espHashes = new Map();
+let espTimer = null;
+const scheduleEspaceSync = () => { clearTimeout(espTimer); espTimer = setTimeout(() => espaceSync(), 2500); };
+async function sha256Hex(s) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, '0')).join(''); }
+// Publie (chiffré) l'espace de chaque locataire dont le contenu a changé, avec ses documents partagés
+async function espaceSync(onlyId, loud) {
+  if (!vault.unlocked) return true;
+  for (const l of vault.list('locataires').filter((x) => x.espace && x.espace.on && x.espace.id && (!onlyId || x.id === onlyId))) {
+    try {
+      const data = espaceData(l);
+      const h = await sha256Hex(JSON.stringify(data));
+      let stored = espHashes.get(l.id);
+      try { stored = stored || localStorage.getItem('aresEsp:' + l.espace.id); } catch {}
+      if (h === stored && !loud) continue;
+      const up = new Set(l.espace.docs || []);
+      let docsChanged = false;
+      for (const d of data.docs || []) if (!up.has(d.id)) { await vault.espacePut(l.espace.id, await sealBytes(l.espace.key, await vault.readFile(d.id)), d.id); up.add(d.id); docsChanged = true; }
+      for (const id of [...up]) if (!(data.docs || []).some((d) => d.id === id)) { await vault.espaceDel(l.espace.id, id).catch(() => {}); up.delete(id); docsChanged = true; }
+      await vault.espacePut(l.espace.id, await sealJson(l.espace.key, data));
+      espHashes.set(l.id, h);
+      try { localStorage.setItem('aresEsp:' + l.espace.id, h); } catch {}
+      if (docsChanged) await vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: { ...l.espace, docs: [...up] } }), 'Espace locataire : documents', fullName(l), l.id);
+    } catch (e) {
+      if (loud) { toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
+    }
+  }
+  return true;
+}
+// Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
+let inboxBusy = false;
+async function inboxSync() {
+  const keys = vault.get('reglages', 'signal');
+  if (!keys || !keys.priv || inboxBusy || !vault.unlocked) return;
+  inboxBusy = true;
+  let n = 0;
+  try {
+    for (const it of await vault.inboxList()) {
+      let msg;
+      try { msg = await openFromTenant(keys.priv, await vault.inboxGet(it.name)); } catch { continue; }
+      const l = vault.list('locataires').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
+      if (!l || !l.espace.on) { await vault.inboxDel(it.name); continue; }
+      const titre = String(msg.titre || msg.texte || 'Problème').slice(0, 80);
+      await vault.mutate((tx) => {
+        const t = tx.put('taches', {
+          type: msg.type === 'menage' ? 'nettoyage' : 'reparation', titre: 'Signalement : ' + titre, immId: l.immId, logId: l.logId || '', locId: l.id, intervenantId: '',
+          date: today(), recur: '', statut: 'afaire', sentAt: msg.t || new Date().toISOString(),
+          note: `${String(msg.texte || '').slice(0, 3000)}\n\n— Envoyé par ${fullName(l)} le ${fmtDateTime(msg.t || Date.now())}${msg.tel ? ' · tél. ' + String(msg.tel).slice(0, 30) : ''}${msg.dispo ? '\nDisponibilités : ' + String(msg.dispo).slice(0, 200) : ''}`,
+        });
+        (msg.photos || []).slice(0, 3).forEach((_, i) => tx.put('documents', { id: t.id + 'p' + i, locId: l.id, tacheId: t.id, kind: 'signal', label: `Signalement — photo ${i + 1}`, date: today(), mime: 'image/jpeg', size: Math.round(String(msg.photos[i]).length * 0.75) }));
+        return t;
+      }, 'Signalement reçu', `${fullName(l)} — ${titre}`, l.id).then(async (t) => {
+        for (let i = 0; i < Math.min(3, (msg.photos || []).length); i++) await vault.saveFile(t.id + 'p' + i, unb64u(msg.photos[i]));
+      });
+      await vault.inboxDel(it.name);
+      n++;
+    }
+  } catch { /* hors ligne : on réessaiera */ }
+  inboxBusy = false;
+  if (n) toast(`${plural(n, 'signalement')} de locataire reçu${n > 1 ? 's' : ''} → Maintenance`);
+}
+
 const tacheToDo = () => vault.list('taches').filter((t) => !t.recur && t.statut !== 'fait');
 const byAddr = (a, b) => (a.adresse || '').localeCompare(b.adresse || '', 'fr');
 const byLogName = (a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr', { numeric: true });
@@ -711,6 +826,7 @@ let lastActive = Date.now();
 let hiddenAt = null;
 const lockMinutes = () => parseInt(localStorage.getItem('aresLockMin') || '15', 10);
 
+let lastInbox = 0;
 function startSession() {
   lockEl.hidden = true;
   setHtml(lockEl, '');
@@ -720,7 +836,7 @@ function startSession() {
   idleTimer = setInterval(() => {
     if (!vault.unlocked) return;
     if (Date.now() - lastActive > lockMinutes() * 60000) lockNow('Verrouillé après inactivité.');
-    else if (document.visibilityState === 'visible') vault.sync();
+    else if (document.visibilityState === 'visible') { vault.sync(); if (Date.now() - lastInbox > 180000) { lastInbox = Date.now(); inboxSync(); } }
   }, 30000);
   renderShell();
   go(location.hash.slice(2) || 'dashboard', true);
@@ -731,6 +847,8 @@ function startSession() {
     let d = '';
     try { d = localStorage.getItem('aresPubDay') || ''; } catch {}
     if (d !== today() && (await publishPub())) try { localStorage.setItem('aresPubDay', today()); } catch {}
+    await espaceSync();
+    await inboxSync();
   }, 4000);
 }
 
@@ -791,7 +909,7 @@ addEventListener('offline', () => vault.unlocked && vault.setStatus('offline'));
 vault.on((kind) => {
   if (!vault.unlocked) return;
   if (kind === 'status') renderSync();
-  if (kind === 'data') { renderView(); renderSheet(); }
+  if (kind === 'data') { renderView(); renderSheet(); scheduleEspaceSync(); }
   if (kind === 'auth-lost') lockNow("La clé d'accès a été changée sur un autre appareil.");
   if (kind === 'session-lost') lockNow(`Ares a été ouvert sur ${vault.sessionLostBy || 'un autre appareil'} : cet appareil a été déconnecté.`);
 });
@@ -960,10 +1078,10 @@ const VIEWS = {
     const chips = imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
       <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!f}">Tous</button>
       ${imms.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${f === im.id}">${im.adresse}</button>`)}</div>` : '';
-    const add = tab === 'intervenants' ? html`<button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button>`
+    const add = tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button>`
       : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
       : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
-    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', `Travaux (${tacheToDo().length})`], ['dechets', 'Déchets'], ['intervenants', 'Équipe']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
+    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', `Travaux (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['intervenants', 'Équipe']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
     let body;
     if (tab === 'planning') {
       const from = today(), to = addDays(from, 13);
@@ -984,6 +1102,14 @@ const VIEWS = {
         ${recur.length ? html`<div class="section-label">Récurrentes (${recur.length})</div>${list(recur)}` : ''}
         ${done.length ? html`<div class="section-label">Terminées récemment</div>${list(done)}` : ''}${mtLegend()}`
         : empty('tool', 'Aucune intervention.', html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Nouvelle intervention</button>`);
+    } else if (tab === 'avis') {
+      const all = vault.list('avis').filter((a) => !f || !a.immId || a.immId === f).sort((a, b) => (b.debut || '').localeCompare(a.debut || ''));
+      const actifs = all.filter((a) => !a.fin || a.fin >= today()), passes = all.filter((a) => a.fin && a.fin < today()).slice(0, 10);
+      const row = (a) => html`<button class="row" data-action="edit-avis" data-id="${a.id}"><span class="grow"><span class="title" style="display:block;white-space:normal">📢 ${a.texte.slice(0, 140)}</span>
+        <span class="meta">${a.immId ? immName(a.immId) : 'Tous les immeubles'} · ${a.debut ? 'du ' + fmtDate(a.debut) : ''}${a.fin ? ' au ' + fmtDate(a.fin) : ''}</span></span></button>`;
+      body = html`<p class="small muted" style="margin:0 0 10px">Messages affichés dans l'espace des locataires (coupure d'eau, travaux, nettoyage de la cave…).</p>
+        ${actifs.length ? html`<div class="list" style="margin-bottom:14px">${actifs.map(row)}</div>` : empty('msg', 'Aucun avis en cours.', html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Nouvel avis</button>`)}
+        ${passes.length ? html`<div class="section-label">Terminés</div><div class="list">${passes.map(row)}</div>` : ''}`;
     } else if (tab === 'dechets') {
       const shown = f ? imms.filter((im) => im.id === f) : imms;
       const y = new Date().getFullYear();
@@ -1630,8 +1756,30 @@ const SHEETS = {
         ${!t.recur ? html`<label class="field">Statut<select name="statut">${Object.entries(STATUTS).map(([k, v]) => html`<option value="${k}" ${t.statut === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>` : ''}
         <label class="field full">Notes<textarea name="note" placeholder="Accès, clés, pièces à acheter, ce qui a été fait…">${t.note || ''}</textarea></label>
         ${t.depId ? html`<p class="tiny muted full" style="margin:0">✓ Coût enregistré dans les dépenses de l'immeuble.</p>` : ''}
+        ${t.locId ? html`<p class="tiny full" style="margin:0">📨 Signalé par <a href="#" data-action="open-loc" data-id="${t.locId}">${fullName(vault.get('locataires', t.locId) || { nom: '?' })}</a> — il voit l'avancement dans son espace.</p>` : ''}
+        ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
+        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+
+  'avis-form'({ id, preset }) {
+    const a = id ? vault.get('avis', id) : { immId: preset || '', debut: today() };
+    if (id && !a) return null;
+    const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === a.immId).sort(byAddr);
+    return {
+      title: id ? "Modifier l'avis" : 'Nouvel avis aux locataires',
+      narrow: true,
+      body: html`<form id="f" data-form="avis" class="fields">
+        <input type="hidden" name="id" value="${id || ''}">
+        <label class="field full">Pour<select name="immId"><option value="">Tous les immeubles</option>${imms.map((im) => html`<option value="${im.id}" ${im.id === a.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
+        <label class="field full">Message<textarea name="texte" required style="min-height:110px" placeholder="ex. Mardi 6 octobre de 9 h à 12 h : coupure d'eau pour travaux. Merci de votre compréhension.">${a.texte || ''}</textarea></label>
+        ${field('Visible à partir du', 'debut', a.debut, { type: 'date' })}
+        ${field("Jusqu'au (facultatif)", 'fin', a.fin, { type: 'date' })}
+        <p class="tiny muted full" style="margin:0">L'avis apparaît dans l'espace des locataires qui ont un espace actif. Écrivez-le en français ; ajoutez une autre langue dans le même message si besoin.</p>
+      </form>`,
+      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-avis" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
@@ -2016,8 +2164,36 @@ const SHEETS = {
         </form>
         ${docs.length ? html`<div class="list">${docs.map((doc) => html`<div class="row">${icon('file')}
           <span class="grow"><span class="title" style="display:block">${doc.label}</span><span class="meta">${fmtDate(doc.date)} · ${Math.max(1, Math.round((doc.size || 0) / 1024))} Ko</span></span>
+          ${l.espace && l.espace.on ? html`<button class="btn sm ${doc.shared ? 'primary' : ''}" data-action="doc-share" data-id="${doc.id}" title="Visible dans l'espace du locataire">👁 ${doc.shared ? 'Visible' : 'Privé'}</button>` : ''}
           <button class="btn icon sm" data-action="open-doc" data-id="${doc.id}" aria-label="Ouvrir">${icon('eye')}</button>
           <button class="btn icon sm ghost danger" data-action="del-doc" data-id="${doc.id}" aria-label="Supprimer">${icon('trash')}</button></div>`)}</div>` : html`<p class="muted small">Aucun document.</p>`}`;
+    } else if (tab === 'espace') {
+      const e = l.espace || {};
+      const show = { ...ESP_ALL, ...(e.show || {}) };
+      const boxes = html`<div class="list" style="margin-bottom:12px">${Object.entries(ESP_SHOW).map(([k, v]) => html`<label class="row" style="cursor:pointer">
+        <input type="checkbox" data-input="esp-show" data-loc="${id}" data-k="${k}" ${show[k] ? new Raw('checked') : ''} style="width:22px;min-height:22px"><span class="grow">${v}</span></label>`)}</div>`;
+      if (!e.on) {
+        body = html`<p style="margin-top:0">Donnez à <b>${fullName(l)}</b> un <b>espace personnel</b> (lien ou QR code, sans mot de passe à retenir) où il voit <b>seulement</b> ce que vous cochez :</p>
+          ${boxes}
+          <div class="alert info">${icon('shield')}<div>Ses données sont chiffrées : seule la clé contenue dans son lien peut les ouvrir. Il ne voit jamais les autres locataires, les bailleurs, vos dépenses ni vos notes. Vous pouvez désactiver le lien à tout moment.</div></div>
+          <button class="btn primary block" data-action="esp-on" data-id="${id}">${icon('users')} Créer l'espace locataire</button>`;
+      } else {
+        const url = espUrl(l);
+        const tel = (l.tel || '').replace(/[^\d+]/g, '');
+        const msg = encodeURIComponent(`Bonjour ${l.prenom || ''}, voici votre espace locataire personnel (paiements, quittances, documents, collectes, signaler un problème) : ${url}\nCe lien est personnel, ne le partagez pas.`);
+        body = html`<p style="margin-top:0">Espace actif. Envoyez ce lien à <b>${fullName(l)}</b> — il est <b>personnel</b> (il contient sa clé).</p>
+          <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(url, 5)}</div>
+          <div class="actions" style="flex-direction:column">
+            ${tel ? html`<a class="btn" href="https://wa.me/${tel.replace(/^\+/, '')}?text=${msg}" target="_blank" rel="noopener">${icon('msg')} Envoyer par WhatsApp</a><a class="btn" href="sms:${tel}?&body=${msg}">${icon('msg')} Envoyer par SMS</a>` : ''}
+            ${l.mail ? html`<a class="btn" href="mailto:${l.mail}?subject=${encodeURIComponent('Votre espace locataire')}&body=${msg}">${icon('mail')} Envoyer par email</a>` : ''}
+            <button class="btn" data-action="esp-copy" data-id="${id}">${icon('file')} Copier le lien</button>
+            <a class="btn" href="${url}" target="_blank" rel="noopener">${icon('eye')} Voir son espace</a>
+          </div>
+          <div class="section-label">Ce qu'il voit</div>${boxes}
+          <label class="field">Langue par défaut de son espace<select data-input="esp-lang" data-loc="${id}">${[['', 'Celle de son téléphone'], ['fr', 'Français'], ['de', 'Deutsch'], ['pt', 'Português'], ['en', 'English']].map(([k, v2]) => html`<option value="${k}" ${(e.lang || '') === k ? new Raw('selected') : ''}>${v2}</option>`)}</select></label>
+          <p class="tiny muted">Documents : dans l'onglet Docs, touchez 👁 pour rendre un document visible dans son espace. Les signalements qu'il envoie arrivent dans Maintenance → Travaux.</p>
+          <button class="btn ghost danger block" data-action="esp-off" data-id="${id}">Désactiver l'espace</button>`;
+      }
     } else if (tab === 'notes') {
       body = html`<form data-form="notes" class="stack"><input type="hidden" name="id" value="${id}">
         <textarea name="notes" style="min-height:220px" placeholder="Problèmes signalés, échanges, réparations demandées…">${l.notes || ''}</textarea>
@@ -2030,7 +2206,7 @@ const SHEETS = {
     }
     return {
       title: fullName(l),
-      body: html`${tabsBar([['infos', 'Infos'], ['pay', 'Loyers'], ['docs', 'Docs'], ['notes', 'Notes'], ['hist', 'Journal']], tab)}${body}`,
+      body: html`${tabsBar([['infos', 'Infos'], ['pay', 'Loyers'], ['docs', 'Docs'], ['espace', l.espace && l.espace.on ? 'Espace ✓' : 'Espace'], ['notes', 'Notes'], ['hist', 'Journal']], tab)}${body}`,
       foot: tab === 'infos' ? html`<button class="btn ghost danger" data-action="del-loc" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>
         ${!gone ? html`<button class="btn" data-action="replace" data-id="${id}">${icon('sync')} Départ</button>` : ''}
         <button class="btn primary" data-action="edit-loc" data-id="${id}">${icon('edit')} Modifier</button>` : null,
@@ -2406,6 +2582,44 @@ const ACTIONS = {
     if (c && !c.icsErr) toast(n ? 'Nouvelles dates enregistrées' : 'Déjà à jour');
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+  async 'esp-on'(d) {
+    const l = vault.get('locataires', d.id);
+    if (!l) return;
+    const show = { ...ESP_ALL };
+    sheetEl.querySelectorAll('[data-input=esp-show]').forEach((c) => { show[c.dataset.k] = c.checked; });
+    await ownerKeys();
+    await vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: { on: true, id: newEspaceId(), key: newEspaceKey(), show, lang: '', docs: [], since: today() } }), 'Espace locataire créé', fullName(l), l.id);
+    toast('Création de l’espace…');
+    if (await espaceSync(l.id, true)) toast('Espace locataire prêt');
+    ui.sheet.rendered = false; renderSheet();
+  },
+  async 'esp-off'(d) {
+    const l = vault.get('locataires', d.id);
+    if (!l || !l.espace || !(await confirmBox('Désactiver l’espace locataire ?', { ok: 'Désactiver', danger: true, detail: 'Son lien ne fonctionnera plus. Vous pourrez créer un nouvel espace (nouveau lien) plus tard.' }))) return;
+    try { await vault.espaceDel(l.espace.id); } catch (e) { return toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
+    try { localStorage.removeItem('aresEsp:' + l.espace.id); } catch {}
+    espHashes.delete(l.id);
+    await vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: { on: false, show: l.espace.show } }), 'Espace locataire désactivé', fullName(l), l.id);
+    toast('Espace désactivé');
+  },
+  async 'esp-copy'(d) {
+    const l = vault.get('locataires', d.id);
+    try { await navigator.clipboard.writeText(espUrl(l)); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); }
+  },
+  async 'doc-share'(d) {
+    const doc = vault.get('documents', d.id);
+    if (!doc) return;
+    await vault.mutate((tx) => tx.put('documents', { id: doc.id, shared: !doc.shared }), doc.shared ? 'Document retiré de l’espace locataire' : 'Document visible par le locataire', doc.label, doc.locId);
+    toast(doc.shared ? 'Document privé' : 'Visible dans l’espace du locataire');
+  },
+  'new-avis': (d) => openOver('avis-form', null, null, d.imm || ui.immFilter || ''),
+  'edit-avis': (d) => openOver('avis-form', d.id),
+  async 'del-avis'(d) {
+    const a = vault.get('avis', d.id);
+    if (!a || !(await confirmBox('Supprimer cet avis ?', { ok: 'Supprimer', danger: true, detail: a.texte.slice(0, 120) }))) return;
+    await vault.mutate((tx) => tx.remove('avis', d.id), 'Avis supprimé', a.texte.slice(0, 60), a.immId);
+    goBack();
+  },
   'share-coll': (d) => openOver('share-coll', d.id),
   async 'share-on'(d) {
     const im = vault.get('immeubles', d.id);
@@ -2726,6 +2940,15 @@ const FORMS = {
     if (!recur && rec.statut === 'fait') await offerDepense(saved);
     goBack();
   },
+  async avis(fd) {
+    const id = fd.get('id');
+    const rec = { immId: fd.get('immId') || '', texte: fd.get('texte').trim(), debut: fd.get('debut') || '', fin: fd.get('fin') || '' };
+    if (!rec.texte) return;
+    if (id) rec.id = id;
+    await vault.mutate((tx) => tx.put('avis', rec), id ? 'Avis modifié' : 'Avis publié', `${rec.immId ? immName(rec.immId) : 'Tous les immeubles'} — ${rec.texte.slice(0, 60)}`, rec.immId);
+    toast('Avis enregistré');
+    goBack();
+  },
   async icsall(fd) {
     const st = ui.icsAll;
     if (!st || !st.groups) return;
@@ -3030,6 +3253,13 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'importFile' && e.target.files[0]) { importFile(e.target.files[0]); e.target.value = ''; }
   if (k === 'tache-imm') $('#tacheLog').innerHTML = val(logOptions(e.target.value, ''));
   if (k === 'col-mode') sheetEl.querySelectorAll('[data-mode]').forEach((el) => { el.hidden = el.dataset.mode !== e.target.value; });
+  if (k === 'esp-show' || k === 'esp-lang') {
+    const l = vault.get('locataires', e.target.dataset.loc);
+    if (l && l.espace && l.espace.on) {
+      const upd = k === 'esp-lang' ? { ...l.espace, lang: e.target.value } : { ...l.espace, show: { ...ESP_ALL, ...(l.espace.show || {}), [e.target.dataset.k]: e.target.checked } };
+      vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: upd }), 'Espace locataire modifié', fullName(l), l.id);
+    }
+  }
   if (k === 'icsall-file' && e.target.files[0]) {
     e.target.files[0].text().then((txt) => {
       const st = ui.icsAll;
