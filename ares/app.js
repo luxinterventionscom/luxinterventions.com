@@ -3,7 +3,7 @@ import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js'
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 
-const VERSION = '2.10.1';
+const VERSION = '2.10.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -178,7 +178,9 @@ function parseDates(text, year, cat) {
       return d ? { d: `${d[1]}-${d[2]}-${d[3]}`, txt } : null;
     }).filter(Boolean);
     const typed = evs.some((e) => Object.values(DECHET_KEYS).some((re) => re.test(e.txt)));
-    const keep = cat && typed && DECHET_KEYS[cat] ? evs.filter((e) => DECHET_KEYS[cat].test(e.txt)) : evs;
+    // On garde les événements de ce type, et ceux sans type reconnu (titre vide ou générique)
+    const anyType = (t) => Object.values(DECHET_KEYS).some((re) => re.test(t));
+    const keep = cat && typed && DECHET_KEYS[cat] ? evs.filter((e) => DECHET_KEYS[cat].test(e.txt) || !anyType(e.txt)) : evs;
     return [...new Set(keep.map((e) => e.d))].sort();
   }
   for (const m of src.matchAll(/DTSTART[^:\n]*:(\d{4})(\d{2})(\d{2})/g)) out.add(`${m[1]}-${m[2]}-${m[3]}`);
