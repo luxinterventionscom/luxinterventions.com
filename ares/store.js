@@ -584,6 +584,13 @@ export class Vault {
     }
   }
 
+  // Page publique des collectes d'un immeuble (copie non chiffrée : adresse + dates uniquement)
+  async publishPublic(token, data) {
+    const r = await this.api.req('public/' + token, { method: data ? 'PUT' : 'DELETE', headers: data ? { 'Content-Type': 'application/json' } : {}, body: data ? JSON.stringify(data) : undefined });
+    if (r.status === 409) throw new ApiError(409, 'session-taken', await r.json().catch(() => ({})));
+    if (!r.ok) throw new ApiError(r.status, await Api.err(r));
+  }
+
   // Calendrier .ics d'un site externe (commune), téléchargé par le Worker
   async fetchIcs(link) {
     const r = await this.api.req('ics?url=' + encodeURIComponent(link));

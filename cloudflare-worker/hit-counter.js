@@ -63,6 +63,10 @@ export default {
       return handleAres(request, env, url, headers);
     }
 
+    // ── Calendrier public des collectes (locataires) : /api/pub/<token>.json | .ics ──
+    const pub = url.pathname.match(/^\/api\/pub\/([0-9a-f]{32})\.(json|ics)$/);
+    if (pub && request.method === "GET") return publicCollectes(env, pub[1], pub[2], url, headers);
+
     // ── Portail Gérance / Syndic (vedi la sezione PORTAIL più sotto) ──
     if (url.pathname.startsWith("/api/portail/")) {
       return handlePortail(request, env, url, headers, ctx);
@@ -188,8 +192,53 @@ const ARES_MAX_FILE = 12 * 1024 * 1024;
 const ARES_MAX_FAILS = 10;
 const ARES_LOCK_SECONDS = 900;
 const ARES_SESSION = "ares/session.json";
+const ARES_PUBLIC = "ares/public/";
 const ARES_LEASE_MS = 120 * 1000; // un dispositivo inattivo da 2 minuti non è più considerato connesso
 const ARES_RENEW_MS = 20 * 1000;
+
+// ── Calendrier public des collectes : JSON pour la page locataires, .ics pour les agendas des téléphones ──
+const PUB_I18N = {
+  fr: { put: "Sortir", truck: "Passage du camion", cal: "Collectes", cats: { residuel: "Déchets résiduels", organique: "Biodéchets", papier: "Papier / carton", verre: "Verre", valorlux: "Valorlux (sacs bleus)", encombrants: "Encombrants", autre: "Autre collecte" }, lieux: { rue: "Sur le trottoir", soussol: "Au sous-sol (local poubelles)", garage: "Au garage" } },
+  de: { put: "Rausstellen", truck: "Abholung", cal: "Müllabfuhr", cats: { residuel: "Restmüll", organique: "Biomüll", papier: "Papier & Karton", verre: "Glas", valorlux: "Valorlux (blaue Säcke)", encombrants: "Sperrmüll", autre: "Sonstige Abfuhr" }, lieux: { rue: "Auf dem Bürgersteig", soussol: "Im Keller (Müllraum)", garage: "In der Garage" } },
+  pt: { put: "Pôr fora", truck: "Recolha", cal: "Recolha do lixo", cats: { residuel: "Lixo indiferenciado", organique: "Resíduos orgânicos", papier: "Papel / cartão", verre: "Vidro", valorlux: "Valorlux (sacos azuis)", encombrants: "Monstros", autre: "Outra recolha" }, lieux: { rue: "No passeio", soussol: "Na cave (local do lixo)", garage: "Na garagem" } },
+  en: { put: "Put out", truck: "Collection", cal: "Waste collection", cats: { residuel: "Residual waste", organique: "Organic waste", papier: "Paper / cardboard", verre: "Glass", valorlux: "Valorlux (blue bags)", encombrants: "Bulky waste", autre: "Other collection" }, lieux: { rue: "On the pavement", soussol: "In the basement (bin room)", garage: "In the garage" } },
+};
+const icsEsc = (s) => String(s || "").replace(/\\/g, "\\\\").replace(/[,;]/g, (c) => "\\" + c).replace(/\r?\n/g, "\\n");
+const icsDay = (d, delta) => { const t = new Date(d + "T12:00:00Z"); t.setUTCDate(t.getUTCDate() + delta); return t.toISOString().slice(0, 10).replace(/-/g, ""); };
+// Heure à laquelle sortir les poubelles : « après 18 h » → 18:00 ; « avant 6 h » → 05:00 ; défaut veille 18:00, jour même 05:00
+function putOutTime(item) {
+  const m = String(item.heure || "").match(/(\d{1,2})(?:\s*[h:.]\s*(\d{2}))?/);
+  let h = m ? Math.min(23, +m[1]) : item.sortie === "jour" ? 6 : 18;
+  if (/avant|vor|antes|before/i.test(item.heure || "") || (!m && item.sortie === "jour")) h = Math.max(0, h - 1);
+  return String(h).padStart(2, "0") + (m && m[2] ? m[2] : "00") + "00";
+}
+async function publicCollectes(env, token, fmt, url, headers) {
+  const obj = await env.PHOTOS.get(ARES_PUBLIC + token + ".json");
+  if (!obj) return new Response(JSON.stringify({ error: "Lien désactivé" }), { status: 404, headers: { "Content-Type": "application/json", ...headers } });
+  const data = await obj.json();
+  const cache = { "Cache-Control": "public, max-age=900" };
+  if (fmt === "json") return new Response(JSON.stringify(data), { headers: { "Content-Type": "application/json", ...headers, ...cache } });
+  const T = PUB_I18N[url.searchParams.get("lang")] || PUB_I18N.fr;
+  const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\.\d+Z$/, "Z");
+  const lines = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Ares Invest//Collectes//FR", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+    `X-WR-CALNAME:${icsEsc(T.cal + " — " + data.adresse)}`, "X-WR-TIMEZONE:Europe/Luxembourg", "REFRESH-INTERVAL;VALUE=DURATION:PT12H", "X-PUBLISHED-TTL:PT12H"];
+  for (const it of data.items || []) {
+    const name = T.cats[it.cat] || it.cat;
+    for (const d of it.dates || []) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
+      const day = icsDay(d, it.sortie === "jour" ? 0 : -1);
+      const tm = putOutTime(it);
+      lines.push("BEGIN:VEVENT", `UID:${token}-${it.cat}-${d}@luxinterventions.com`, `DTSTAMP:${stamp}`,
+        `DTSTART:${day}T${tm}`, "DURATION:PT30M", `SUMMARY:${icsEsc("🗑️ " + T.put + " : " + name)}`,
+        `DESCRIPTION:${icsEsc(`${T.truck} : ${d.split("-").reverse().join("/")}${T.lieux[it.lieu] ? "\n" + T.lieux[it.lieu] : ""}${it.note ? "\n" + it.note : ""}`)}`,
+        `LOCATION:${icsEsc(data.adresse)}`, "BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${icsEsc(T.put + " : " + name)}`, "TRIGGER:PT0M", "END:VALARM", "END:VEVENT");
+    }
+  }
+  lines.push("END:VCALENDAR");
+  // Lignes de 75 octets max (RFC 5545) : on replie les longues lignes
+  const folded = lines.map((l) => { let out = "", s = l; while (new TextEncoder().encode(s).length > 73) { let n = 73; while (new TextEncoder().encode(s.slice(0, n)).length > 73) n--; out += s.slice(0, n) + "\r\n "; s = s.slice(n); } return out + s; });
+  return new Response(folded.join("\r\n") + "\r\n", { headers: { "Content-Type": "text/calendar; charset=utf-8", "Content-Disposition": `inline; filename="collectes.ics"`, ...headers, ...cache } });
+}
 
 function aresJson(obj, status, headers, extra = {}) {
   return new Response(JSON.stringify(obj), {
@@ -370,6 +419,23 @@ async function handleAres(request, env, url, headers) {
     const res = await env.PHOTOS.put(ARES_DATA, body, { onlyIf, httpMetadata: { contentType: "application/octet-stream" } });
     if (!res) return aresJson({ error: "Conflit de version" }, 412, headers);
     return aresJson({ ok: true }, 200, headers, { ETag: res.httpEtag });
+  }
+
+  // Page publique « collectes » d'un immeuble pour les locataires : l'app publie ici une copie NON
+  // chiffrée contenant seulement l'adresse et les dates de collecte (aucun nom, aucune donnée personnelle).
+  const pubMatch = path.match(/^public\/([0-9a-f]{32})$/);
+  if (pubMatch && method === "PUT") {
+    const body = await request.text();
+    if (body.length > 200000) return aresJson({ error: "Trop volumineux" }, 413, headers);
+    let data;
+    try { data = JSON.parse(body); } catch { return aresJson({ error: "Données invalides" }, 400, headers); }
+    if (!data || typeof data.adresse !== "string" || !Array.isArray(data.items)) return aresJson({ error: "Données invalides" }, 400, headers);
+    await env.PHOTOS.put(ARES_PUBLIC + pubMatch[1] + ".json", JSON.stringify({ ...data, updated: new Date().toISOString() }), { httpMetadata: { contentType: "application/json" } });
+    return aresJson({ ok: true }, 200, headers);
+  }
+  if (pubMatch && method === "DELETE") {
+    await env.PHOTOS.delete(ARES_PUBLIC + pubMatch[1] + ".json");
+    return aresJson({ ok: true }, 200, headers);
   }
 
   // Calendrier des collectes de la commune (.ics) : le navigateur ne peut pas le lire directement

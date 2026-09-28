@@ -1,8 +1,9 @@
 // Ares Invest — Gestion locataires (interface)
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
+import qrcode from './qrcode.js';
 
-const VERSION = '2.9.4';
+const VERSION = '2.10.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -189,6 +190,23 @@ function agenda(from, to, immId) {
     for (const d of collecteDates(c, from, to)) items.push({ d, kind: 'collecte', c });
   }
   return items.filter((x) => x.d <= to).sort((a, b) => a.d.localeCompare(b.d) || (a.kind === 'collecte' ? -1 : 1));
+}
+// ── Lien public « collectes » pour les locataires (adresse + dates, rien d'autre) ──
+const pubUrl = (im) => `${location.origin}/collectes.html#${im.pubToken}`;
+const qrSvg = (text, cell = 5) => { const q = qrcode(0, 'M'); q.addData(text); q.make(); return new Raw(q.createSvgTag(cell, 2)); };
+function pubData(im) {
+  const from = addDays(today(), -7), to = addDays(today(), 400);
+  const items = vault.list('collectes').filter((c) => c.immId === im.id).sort((a, b) => Object.keys(DECHETS).indexOf(a.cat) - Object.keys(DECHETS).indexOf(b.cat))
+    .map((c) => ({ cat: c.cat, sortie: c.sortie || 'veille', heure: c.heure || '', lieu: c.lieu, note: c.note || '', dates: collecteDates(c, from, to) }));
+  return { adresse: im.adresse, societe: societe().nom || '', tel: societe().tel || '', items };
+}
+// Republie la page publique d'un immeuble (ou de tous) après un changement ; silencieux hors ligne
+async function publishPub(immId, loud) {
+  const ims = vault.list('immeubles').filter((im) => im.pubToken && (!immId || im.id === immId));
+  for (const im of ims) {
+    try { await vault.publishPublic(im.pubToken, pubData(im)); } catch (e) { if (loud) toast(e.message || 'Publication impossible', { bad: true }); return false; }
+  }
+  return true;
 }
 const tacheToDo = () => vault.list('taches').filter((t) => !t.recur && t.statut !== 'fait');
 const byAddr = (a, b) => (a.adresse || '').localeCompare(b.adresse || '', 'fr');
@@ -659,7 +677,13 @@ function startSession() {
   renderShell();
   go(location.hash.slice(2) || 'dashboard', true);
   vault.sync();
-  setTimeout(() => refreshIcs(false), 4000);
+  setTimeout(async () => {
+    await refreshIcs(false);
+    // Une fois par jour : republier les pages locataires (dates glissantes sur 13 mois)
+    let d = '';
+    try { d = localStorage.getItem('aresPubDay') || ''; } catch {}
+    if (d !== today() && (await publishPub())) try { localStorage.setItem('aresPubDay', today()); } catch {}
+  }, 4000);
 }
 
 // Collectes liées au calendrier en ligne de la commune : mise à jour automatique (une fois par jour et par appareil)
@@ -687,6 +711,7 @@ async function refreshIcs(force, onlyId) {
     }
   }
   try { localStorage.setItem(key, today()); } catch {}
+  if (changed) for (const id of new Set(list.map((c) => c.immId))) await publishPub(id);
   if (changed && !force) toast(`Calendrier des collectes mis à jour (${plural(changed, 'collecte')})`);
   return changed;
 }
@@ -853,6 +878,9 @@ function reportCollectes(immId, y) {
         return html`<tr><td>${mn}</td>${cs.map((c) => html`<td>${collecteDates(c, a, b).map((d) => +d.slice(8)).join(', ')}</td>`)}</tr>`;
       })}
     </tbody></table>
+    ${im.pubToken ? html`<div style="display:flex;gap:16px;align-items:center;margin-top:16px;border:1px solid #ccc;border-radius:10px;padding:10px 14px">
+      <div class="qr" style="width:120px;flex:0 0 120px">${qrSvg(pubUrl(im), 4)}</div>
+      <div><b>📱 Scannez : calendrier sur votre téléphone, rappel la veille.</b><br>Scannen: Kalender auf Ihrem Handy, Erinnerung am Vorabend.<br>Digitalize: calendário no telemóvel, aviso na véspera.<br>Scan: calendar on your phone, reminder the evening before.</div></div>` : ''}
     <p class="pr-sub" style="margin-top:14px">Une question ? ${societe().nom || 'Ares Invest'}${societe().tel ? ' · ' + societe().tel : ''}</p>`;
 }
 const logOptions = (immId, sel) => html`<option value="">Parties communes / tout l'immeuble</option>${logsOf(immId).map((g) => html`<option value="${g.id}" ${g.id === sel ? new Raw('selected') : ''}>${g.nom}</option>`)}`;
@@ -910,9 +938,10 @@ const VIEWS = {
           const cs = vault.list('collectes').filter((c) => c.immId === im.id).sort((a, b) => Object.keys(DECHETS).indexOf(a.cat) - Object.keys(DECHETS).indexOf(b.cat));
           const next = agenda(today(), addDays(today(), 30), im.id).filter((x) => x.kind === 'collecte')[0];
           return html`<div class="card" style="margin-bottom:12px">
-            <div class="card-title"><h3>${im.adresse}</h3><div style="display:flex;gap:6px">
-              ${cs.length ? html`<button class="btn sm" data-action="print-collectes" data-id="${im.id}" data-y="${y}">${icon('download')} Affiche ${y}</button>` : ''}
-              <button class="btn sm" data-action="new-collecte" data-imm="${im.id}">${icon('plus')}</button></div></div>
+            <div class="card-title"><h3>${im.adresse}</h3><button class="btn sm" data-action="new-collecte" data-imm="${im.id}" aria-label="Ajouter une collecte">${icon('plus')}</button></div>
+            ${cs.length ? html`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 10px">
+              <button class="btn sm" data-action="print-collectes" data-id="${im.id}" data-y="${y}">${icon('download')} Affiche ${y}</button>
+              <button class="btn sm ${im.pubToken ? '' : 'primary'}" data-action="share-coll" data-id="${im.id}">${icon('users')} Locataires${im.pubToken ? ' ✓' : ''}</button></div>` : ''}
             ${next ? html`<p class="small" style="margin:0 0 8px">Prochaine : <b>${DECHETS[next.c.cat].short}</b> — ${fmtDay(next.d)}</p>` : ''}
             ${cs.length ? html`<div class="list">${cs.map((c) => html`<button class="row" data-action="edit-collecte" data-id="${c.id}">
               <span class="dot" style="background:${DECHETS[c.cat].color}"></span>
@@ -1476,6 +1505,32 @@ function relanceText(l, lang) {
 }
 
 const SHEETS = {
+  'share-coll'({ id }) {
+    const im = vault.get('immeubles', id);
+    if (!im) return null;
+    if (!im.pubToken) return {
+      title: 'Partager avec les locataires',
+      narrow: true,
+      body: html`<p style="margin-top:0">Créez une page <b>en lecture seule</b> pour les locataires de <b>${im.adresse}</b> : prochaines collectes, « ce soir, sortez le verre », et un bouton pour ajouter le calendrier à leur téléphone (rappel la veille). En français, allemand, portugais et anglais.</p>
+        <div class="alert info">${icon('shield')}<div>La page contient seulement l'adresse de l'immeuble et les dates de collecte : <b>aucun nom, aucune donnée des locataires</b>. Le lien est secret (impossible à deviner) et peut être désactivé à tout moment.</div></div>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" data-action="share-on" data-id="${id}">Créer le lien</button>`,
+    };
+    const url = pubUrl(im);
+    return {
+      title: 'Page des locataires',
+      narrow: true,
+      body: html`<p style="margin-top:0">Donnez ce lien ou ce QR code aux locataires de <b>${im.adresse}</b>. La page se met à jour toute seule quand vous changez les collectes.</p>
+        <div class="qr" style="max-width:220px;margin:0 auto 12px">${qrSvg(url, 6)}</div>
+        <input readonly value="${url}" style="font-size:13px;width:100%;min-width:0">
+        <div class="actions" style="margin-top:10px;flex-direction:column">
+          <button class="btn" data-action="share-copy" data-id="${id}">${icon('file')} Copier le lien</button>
+          <a class="btn" href="${url}" target="_blank" rel="noopener">${icon('eye')} Voir la page</a>
+          <button class="btn" data-action="print-collectes" data-id="${id}" data-y="${new Date().getFullYear()}">${icon('download')} Affiche avec QR</button>
+        </div>
+        <p class="tiny muted">Astuce : envoyez le lien par WhatsApp ou SMS, ou affichez l'affiche dans l'entrée.</p>`,
+      foot: html`<button class="btn ghost danger" data-action="share-off" data-id="${id}">Désactiver le lien</button><button class="btn primary" data-action="close-sheet">OK</button>`,
+    };
+  },
   'interv-form'({ id }) {
     const i = id ? vault.get('intervenants', id) : { metier: 'menage' };
     if (id && !i) return null;
@@ -2251,6 +2306,27 @@ const ACTIONS = {
     if (c && !c.icsErr) toast(n ? 'Nouvelles dates enregistrées' : 'Déjà à jour');
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+  'share-coll': (d) => openOver('share-coll', d.id),
+  async 'share-on'(d) {
+    const im = vault.get('immeubles', d.id);
+    const token = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
+    try { await vault.publishPublic(token, pubData({ ...im, pubToken: token })); } catch (e) { return toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); }
+    await vault.mutate((tx) => tx.put('immeubles', { id: im.id, pubToken: token }), 'Page locataires créée', im.adresse, im.id);
+    toast('Lien créé');
+    ui.sheet.rendered = false; renderSheet();
+  },
+  async 'share-off'(d) {
+    const im = vault.get('immeubles', d.id);
+    if (!im || !(await confirmBox('Désactiver le lien ?', { ok: 'Désactiver', danger: true, detail: 'La page et le calendrier des locataires ne fonctionneront plus. Vous pourrez créer un nouveau lien (différent) plus tard.' }))) return;
+    try { await vault.publishPublic(im.pubToken, null); } catch (e) { return toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
+    await vault.mutate((tx) => tx.put('immeubles', { id: im.id, pubToken: '' }), 'Page locataires désactivée', im.adresse, im.id);
+    toast('Lien désactivé');
+    goBack();
+  },
+  async 'share-copy'(d) {
+    const im = vault.get('immeubles', d.id);
+    try { await navigator.clipboard.writeText(pubUrl(im)); toast('Lien copié'); } catch { toast('Copie impossible : sélectionnez le lien', { bad: true }); }
+  },
   'print-collectes': (d) => printDoc('Collectes des déchets', reportCollectes(d.id, +d.y || new Date().getFullYear())),
   async 'tache-done'(d) {
     const t = vault.get('taches', d.id);
@@ -2276,6 +2352,7 @@ const ACTIONS = {
     const c = vault.get('collectes', d.id);
     if (!c || !(await confirmBox(`Supprimer la collecte « ${DECHETS[c.cat].short} » ?`, { ok: 'Supprimer', danger: true, detail: immName(c.immId) }))) return;
     await vault.mutate((tx) => tx.remove('collectes', d.id), 'Collecte supprimée', `${DECHETS[c.cat].short} — ${immName(c.immId)}`, c.immId);
+    publishPub(c.immId);
     goBack();
   },
   go: (d) => { closeSheet(); go(d.to); },
@@ -2570,6 +2647,7 @@ const FORMS = {
     if (id) rec.id = id;
     await vault.mutate((tx) => tx.put('collectes', rec), id ? 'Collecte modifiée' : 'Collecte ajoutée', `${DECHETS[rec.cat].short} — ${immName(rec.immId)}`, rec.immId);
     toast(mode === 'dates' ? `${plural(rec.dates.length, 'date')} enregistrée${rec.dates.length > 1 ? 's' : ''}` : 'Collecte enregistrée');
+    publishPub(rec.immId);
     goBack();
   },
   unlock: onUnlock,
@@ -2585,6 +2663,7 @@ const FORMS = {
     if (id) rec.id = id;
     const saved = await vault.mutate((tx) => tx.put('immeubles', rec), id ? 'Immeuble modifié' : 'Immeuble ajouté', rec.adresse);
     toast(id ? 'Immeuble enregistré' : 'Immeuble ajouté');
+    if (saved.pubToken) publishPub(saved.id);
     openSheet('imm', saved.id);
   },
   async log(fd) {
