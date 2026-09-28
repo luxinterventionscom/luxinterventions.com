@@ -3,7 +3,7 @@ import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js'
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 
-const VERSION = '2.10.2';
+const VERSION = '2.11.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -156,31 +156,47 @@ const sortieText = (c, d) => c.sortie === 'jour'
 const sortieRule = (c) => (c.sortie === 'jour' ? `Le jour du passage, ${c.heure || 'tôt le matin'}` : `La veille au soir${c.heure ? ', ' + c.heure : ''}`);
 const collecteRule = (c) => (c.mode === 'hebdo' ? `chaque ${JOURS[+c.jour]}` : c.mode === '2sem' ? `un ${JOURS[weekday(c.debut)]} sur deux (à partir du ${fmtDate(c.debut)})` : plural((c.dates || []).length, 'date'));
 // Lecture souple de dates : 07/01/2026, 7.1.2026, 07/01 (année par défaut), 2026-01-07
-// Mots-clés des types de déchets dans les calendriers des communes (français, allemand, luxembourgeois)
+// Mots-clés des types de déchets dans les calendriers des communes (français, allemand, luxembourgeois).
+// Ordre = priorité : « encombrants ménagers » est un encombrant, pas un résiduel.
 const DECHET_KEYS = {
-  residuel: /r[ée]siduel|m[ée]nag|restm[üu]ll|rest ?offall|hausm[üu]ll|poubelle grise|graue/i,
-  organique: /organ|bio|kompost|compost|gr[üu]ngut|d[ée]chets? verts/i,
-  papier: /papier|carton|karton|pabeier/i,
-  verre: /verre|glas|gl[äa]ser/i,
-  valorlux: /valorlux|pmc|sacs? bleus?|blo s[äa]ck|blaue s[äa]cke/i,
   encombrants: /encombr|sperr|grouss/i,
+  valorlux: /valorlux|pmc|sacs? bleus?|blo s[äa]ck|blaue s[äa]cke/i,
+  verre: /verre|glas|gl[äa]ser/i,
+  papier: /papier|carton|karton|pabeier/i,
+  organique: /organ|bio|kompost|compost|gr[üu]ngut|d[ée]chets? verts/i,
+  residuel: /r[ée]siduel|m[ée]nag|restm[üu]ll|rest ?offall|hausm[üu]ll|poubelle grise|graue/i,
 };
+// Événements d'un calendrier .ics : date + titre (+ catégories / description en secours)
+function icsEvents(text) {
+  return String(text || '').split(/BEGIN:VEVENT/i).slice(1).map((e) => {
+    const u = e.replace(/\r?\n[ \t]/g, '');
+    const d = u.match(/DTSTART[^:\n]*:(\d{4})(\d{2})(\d{2})/);
+    const f = (k) => ((u.match(new RegExp('^' + k + '[^:\\n]*:(.*)$', 'im')) || [])[1] || '').replace(/\\([,;])/g, '$1').trim();
+    return d ? { d: `${d[1]}-${d[2]}-${d[3]}`, name: f('SUMMARY'), cats: f('CATEGORIES'), desc: f('DESCRIPTION') } : null;
+  }).filter(Boolean);
+}
+const classifyText = (t) => Object.keys(DECHET_KEYS).find((k) => DECHET_KEYS[k].test(t)) || null;
+const classifyEvent = (e) => classifyText(e.name) || classifyText(e.cats) || classifyText(e.desc);
+// Regroupe un calendrier complet de la commune par type de déchets
+function icsGroups(text) {
+  const g = {};
+  for (const e of icsEvents(text)) {
+    const cat = classifyEvent(e) || 'autre';
+    const x = g[cat] || (g[cat] = { dates: new Set(), names: new Set() });
+    x.dates.add(e.d);
+    if (e.name) x.names.add(e.name.slice(0, 60));
+  }
+  return Object.keys(DECHETS).filter((k) => g[k]).map((cat) => ({ cat, dates: [...g[cat].dates].sort(), names: [...g[cat].names].slice(0, 3) }));
+}
 function parseDates(text, year, cat) {
   const out = new Set();
   const src = String(text || '');
-  // Calendrier .ics (exporté par la commune) : dates DTSTART ; si le calendrier mélange plusieurs
-  // types de déchets, on ne garde que ceux de la collecte (mot-clé dans le titre de l'événement)
+  // Calendrier .ics : si les événements portent un type de déchets, on ne garde que ceux de la collecte
+  // (et ceux sans type reconnu) ; sinon toutes les dates
   if (/BEGIN:VEVENT/i.test(src)) {
-    const evs = src.split(/BEGIN:VEVENT/i).slice(1).map((e) => {
-      const unfolded = e.replace(/\r?\n[ \t]/g, '');
-      const d = unfolded.match(/DTSTART[^:\n]*:(\d{4})(\d{2})(\d{2})/);
-      const txt = (unfolded.match(/^(SUMMARY|DESCRIPTION|CATEGORIES)[^:\n]*:.*$/gim) || []).join(' ');
-      return d ? { d: `${d[1]}-${d[2]}-${d[3]}`, txt } : null;
-    }).filter(Boolean);
-    const typed = evs.some((e) => Object.values(DECHET_KEYS).some((re) => re.test(e.txt)));
-    // On garde les événements de ce type, et ceux sans type reconnu (titre vide ou générique)
-    const anyType = (t) => Object.values(DECHET_KEYS).some((re) => re.test(t));
-    const keep = cat && typed && DECHET_KEYS[cat] ? evs.filter((e) => DECHET_KEYS[cat].test(e.txt) || !anyType(e.txt)) : evs;
+    const evs = icsEvents(src);
+    const typed = evs.some((e) => classifyEvent(e));
+    const keep = cat && typed && DECHET_KEYS[cat] ? evs.filter((e) => { const c = classifyEvent(e); return c === cat || !c; }) : evs;
     return [...new Set(keep.map((e) => e.d))].sort();
   }
   for (const m of src.matchAll(/DTSTART[^:\n]*:(\d{4})(\d{2})(\d{2})/g)) out.add(`${m[1]}-${m[2]}-${m[3]}`);
@@ -963,9 +979,11 @@ const VIEWS = {
           const next = agenda(today(), addDays(today(), 30), im.id).filter((x) => x.kind === 'collecte')[0];
           return html`<div class="card" style="margin-bottom:12px">
             <div class="card-title"><h3>${im.adresse}</h3><button class="btn sm" data-action="new-collecte" data-imm="${im.id}" aria-label="Ajouter une collecte">${icon('plus')}</button></div>
-            ${cs.length ? html`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 10px">
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 10px">
+              <button class="btn sm ${cs.length ? '' : 'primary'}" data-action="ics-all" data-id="${im.id}">${icon('upload')} Calendrier de la commune</button>
+            ${cs.length ? html`
               <button class="btn sm" data-action="print-collectes" data-id="${im.id}" data-y="${y}">${icon('download')} Affiche ${y}</button>
-              <button class="btn sm ${im.pubToken ? '' : 'primary'}" data-action="share-coll" data-id="${im.id}">${icon('users')} Locataires${im.pubToken ? ' ✓' : ''}</button></div>` : ''}
+              <button class="btn sm ${im.pubToken ? '' : 'primary'}" data-action="share-coll" data-id="${im.id}">${icon('users')} Locataires${im.pubToken ? ' ✓' : ''}</button>` : ''}</div>
             ${next ? html`<p class="small" style="margin:0 0 8px">Prochaine : <b>${DECHETS[next.c.cat].short}</b> — ${fmtDay(next.d)}</p>` : ''}
             ${cs.length ? html`<div class="list">${cs.map((c) => html`<button class="row" data-action="edit-collecte" data-id="${c.id}">
               <span class="dot" style="background:${DECHETS[c.cat].color}"></span>
@@ -1601,6 +1619,37 @@ const SHEETS = {
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+
+  'ics-all'({ id }) {
+    const im = vault.get('immeubles', id);
+    if (!im) return null;
+    const st = ui.icsAll && ui.icsAll.immId === id ? ui.icsAll : (ui.icsAll = { immId: id, url: '', groups: null });
+    const existing = vault.list('collectes').filter((c) => c.immId === id);
+    return {
+      title: 'Calendrier de la commune',
+      body: html`<form id="f" data-form="icsall" class="fields">
+        <p class="small full" style="margin:0">Importez le calendrier <b>complet</b> de la commune pour <b>${im.adresse}</b> : Ares le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.</p>
+        ${field('Lien du calendrier (.ics / webcal) — se met à jour tout seul', 'url', st.url, { full: true, type: 'url', placeholder: 'https://… .ics ou webcal://…' })}
+        <div class="full" style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn sm" type="button" data-action="ics-analyze">${icon('sync')} Lire le lien</button>
+          <label class="btn sm">${icon('upload')} ou choisir le fichier .ics téléchargé<input type="file" accept=".ics,text/calendar" hidden data-input="icsall-file"></label>
+        </div>
+        ${st.err ? html`<div class="alert bad full">${icon('alert')}<div>${st.err}</div></div>` : ''}
+        ${st.groups ? (st.groups.length ? html`<div class="section-label full" style="margin:6px 0 0">Trouvé dans le calendrier${st.url ? '' : ' (fichier)'}</div>
+          <div class="list full">${st.groups.map((g) => html`<label class="row" style="cursor:pointer">
+            <input type="checkbox" name="use_${g.cat}" ${g.cat !== 'autre' ? new Raw('checked') : ''} style="width:22px;min-height:22px">
+            <span class="dot" style="background:${DECHETS[g.cat].color}"></span>
+            <span class="grow"><span class="title" style="display:block;white-space:normal">${DECHETS[g.cat].label} — ${plural(g.dates.length, 'passage')}</span>
+              <span class="meta" style="white-space:normal">du ${fmtDate(g.dates[0])} au ${fmtDate(g.dates[g.dates.length - 1])}${g.names.length ? ' · « ' + g.names.join(' », « ') + ' »' : ''}${existing.some((c) => c.cat === g.cat) ? ' · remplace la collecte actuelle' : ''}</span></span>
+          </label>`)}</div>
+          <label class="field">Quand sortir<select name="sortie">${Object.entries(SORTIES).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
+          ${field('Heure', 'heure', 'après 18 h')}
+          <label class="field full">Où sortir les poubelles<select name="lieu">${Object.entries(LIEUX).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>`
+          : html`<div class="alert warn full">${icon('alert')}<div>Aucune date trouvée dans ce calendrier.</div></div>`) : ''}
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button>${st.groups && st.groups.length ? html`<button class="btn primary" type="submit" form="f">Créer les collectes</button>` : ''}`,
     };
   },
 
@@ -2321,6 +2370,19 @@ const ACTIONS = {
   'edit-interv': (d) => openOver('interv-form', d.id),
   'new-tache': (d) => openOver('tache-form', null, null, d.imm || ui.immFilter || ''),
   'edit-tache': (d) => openOver('tache-form', d.id),
+  'ics-all': (d) => { ui.icsAll = null; openOver('ics-all', d.id); },
+  async 'ics-analyze'() {
+    const st = ui.icsAll;
+    const input = sheetEl.querySelector('[name=url]');
+    const url = (input ? input.value : '').trim();
+    if (!/^(https|webcals?):\/\//i.test(url)) { st.err = 'Collez d’abord le lien du calendrier (il commence par https:// ou webcal://).'; st.groups = null; }
+    else {
+      toast('Lecture du calendrier de la commune…');
+      try { st.url = url; st.groups = icsGroups(await vault.fetchIcs(url.replace(/^webcals?:\/\//i, 'https://'))); st.err = ''; }
+      catch (e) { st.err = (e.message || 'Calendrier indisponible') + (/gros|volumineux|calendrier \(\.ics\)/i.test(e.message || '') ? ' — ce lien est sans doute la page web de la commune, pas le calendrier : utilisez le fichier .ics téléchargé.' : ''); st.groups = null; }
+    }
+    ui.sheet.rendered = false; renderSheet();
+  },
   'new-collecte': (d) => openOver('collecte-form', null, null, d.imm || ui.immFilter || ''),
   'edit-collecte': (d) => openOver('collecte-form', d.id),
   async 'ics-now'(d) {
@@ -2650,6 +2712,25 @@ const FORMS = {
     if (!recur && rec.statut === 'fait') await offerDepense(saved);
     goBack();
   },
+  async icsall(fd) {
+    const st = ui.icsAll;
+    if (!st || !st.groups) return;
+    const im = vault.get('immeubles', st.immId);
+    const chosen = st.groups.filter((g) => fd.get('use_' + g.cat));
+    if (!chosen.length) return toast('Cochez au moins un type de déchets', { bad: true });
+    const common = { sortie: fd.get('sortie') || 'veille', heure: String(fd.get('heure') || '').trim(), lieu: fd.get('lieu') };
+    const url = String(st.url || '').replace(/^webcals?:\/\//i, 'https://');
+    await vault.mutate((tx) => {
+      for (const g of chosen) {
+        const old = vault.list('collectes').find((c) => c.immId === im.id && c.cat === g.cat);
+        tx.put('collectes', { ...(old ? { id: old.id, note: old.note } : { note: '' }), immId: im.id, cat: g.cat, mode: 'dates', dates: g.dates, icsUrl: url, icsAt: today(), icsErr: '', ...common });
+      }
+    }, 'Calendrier de la commune importé', `${im.adresse} — ${chosen.map((g) => DECHETS[g.cat].short + ' (' + g.dates.length + ')').join(', ')}`, im.id);
+    ui.icsAll = null;
+    toast(`${plural(chosen.length, 'collecte')} enregistrée${chosen.length > 1 ? 's' : ''}${url ? ' · mise à jour automatique' : ''}`);
+    publishPub(im.id);
+    goBack();
+  },
   async collecte(fd) {
     const id = fd.get('id');
     const mode = fd.get('mode');
@@ -2935,6 +3016,14 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'importFile' && e.target.files[0]) { importFile(e.target.files[0]); e.target.value = ''; }
   if (k === 'tache-imm') $('#tacheLog').innerHTML = val(logOptions(e.target.value, ''));
   if (k === 'col-mode') sheetEl.querySelectorAll('[data-mode]').forEach((el) => { el.hidden = el.dataset.mode !== e.target.value; });
+  if (k === 'icsall-file' && e.target.files[0]) {
+    e.target.files[0].text().then((txt) => {
+      const st = ui.icsAll;
+      st.url = ''; st.groups = icsGroups(txt); st.err = st.groups.length ? '' : 'Ce fichier ne contient aucune date.';
+      ui.sheet.rendered = false; renderSheet();
+    });
+    e.target.value = '';
+  }
   if (k === 'col-ics' && e.target.files[0]) {
     e.target.files[0].text().then((txt) => {
       const ds = parseDates(txt, new Date().getFullYear(), sheetEl.querySelector('[name=cat]')?.value);
