@@ -2,7 +2,7 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.9.3';
+const VERSION = '2.9.4';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -1526,7 +1526,7 @@ const SHEETS = {
   },
 
   'collecte-form'({ id, preset }) {
-    const c = id ? vault.get('collectes', id) : { immId: preset || '', cat: 'residuel', mode: 'hebdo', jour: 2, lieu: 'rue', debut: today() };
+    const c = id ? vault.get('collectes', id) : { immId: preset || '', cat: 'residuel', mode: 'hebdo', jour: 2, lieu: 'rue', debut: today(), sortie: 'veille', heure: 'après 18 h' };
     if (id && !c) return null;
     const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === c.immId).sort(byAddr);
     if (!imms.length) return { title: 'Nouvelle collecte', body: empty('building', "Ajoutez d'abord un immeuble.") };
