@@ -2,7 +2,7 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 
-const VERSION = '2.9.1';
+const VERSION = '2.9.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -1141,7 +1141,7 @@ dashboard() {
       ${pageHead('Paiements', 'Touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.')}
       <div class="toolbar">
         ${yearSelect(y)}
-        ${all.length > 1 ? html`<div class="chips" style="flex:1;min-width:0">
+        ${all.length > 1 ? html`<div class="chips pay-chips">
           <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!ui.immFilter}">Tous</button>
           ${all.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${ui.immFilter === im.id}">${im.adresse}</button>`)}
         </div>` : ''}

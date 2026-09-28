@@ -343,6 +343,7 @@ button.row:hover { background: var(--surface-2); }
   .chips { flex-wrap: wrap; overflow-x: visible; }
   .toolbar .chips { flex: 1 1 100%; }
 }
+.pay-chips { flex: 1; min-width: 0; }
 .chip { border: 1px solid var(--border); background: var(--surface); color: var(--text-2); font: inherit; font-size: 14px; font-weight: 550; padding: 7px 14px; border-radius: 999px; cursor: pointer; white-space: nowrap; }
 .chip[aria-pressed='true'] { background: var(--text); color: var(--bg); border-color: var(--text); }
 
