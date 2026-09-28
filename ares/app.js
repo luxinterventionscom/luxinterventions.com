@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.14.0';
+const VERSION = '2.14.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -1782,8 +1782,13 @@ const SHEETS = {
     return {
       title: 'App des locataires',
       body: html`<p style="margin-top:0">Les locataires téléchargent l'app depuis <b>luxinterventions.com</b> (« Télécharger l'app des locataires ARES S.A. ») et entrent avec le <b>code personnel</b> que vous leur donnez ici. Sans code, personne n'entre.</p>
-        <p class="small muted">${plural(on, 'accès actif')} sur ${plural(ls.length, 'locataire')}.</p>
-        <div class="list">${ls.map((l) => html`<button class="row" data-action="esp-open" data-id="${l.id}">
+        <div class="search" style="margin-bottom:8px">${icon('search')}<input type="search" data-input="esp-search" placeholder="Rechercher un nom, un logement, un immeuble, un code…" autocomplete="off"></div>
+        <div class="chips" style="margin-bottom:10px">
+          <button class="chip" data-action="esp-filter" data-id="" aria-pressed="true">Tous (${ls.length})</button>
+          <button class="chip" data-action="esp-filter" data-id="on" aria-pressed="false">Avec accès (${on})</button>
+          <button class="chip" data-action="esp-filter" data-id="off" aria-pressed="false">Sans accès (${ls.length - on})</button></div>
+        <p class="small muted" id="espCount" style="margin:0 0 6px"></p>
+        <div class="list">${ls.map((l) => html`<button class="row" data-action="esp-open" data-id="${l.id}" data-on="${l.espace && l.espace.on ? 'on' : 'off'}" data-q="${[fullName(l), logName(l.logId), immName(l.immId), l.espace && l.espace.code ? l.espace.code : ''].join(' ').toLowerCase()}">
           <span class="grow"><span class="title" style="display:block">${fullName(l)}</span><span class="meta">${[logName(l.logId), immName(l.immId)].filter(Boolean).join(' · ')}</span></span>
           ${l.espace && l.espace.on ? html`<span class="badge ok">✓ ${l.espace.code || 'actif'}</span>` : html`<span class="badge">Pas d'accès</span>`}</button>`)}</div>`,
     };
@@ -2657,6 +2662,7 @@ const ACTIONS = {
     goBack();
   },
   'esp-list': () => openOver('esp-list'),
+  'esp-filter': (d, el) => { sheetEl.querySelectorAll('[data-action=esp-filter]').forEach((b) => b.setAttribute('aria-pressed', b === el)); filterEspList(); },
   'esp-open': (d) => openOver('loc', d.id, 'espace'),
   'share-coll': (d) => openOver('share-coll', d.id),
   async 'share-on'(d) {
@@ -3262,8 +3268,18 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   FORMS[f.dataset.form](new FormData(f), f);
 });
+// Filtre de la liste « App des locataires » : recherche + avec / sans accès, sans recharger la fenêtre
+function filterEspList() {
+  const q = (sheetEl.querySelector('[data-input=esp-search]')?.value || '').toLowerCase().trim();
+  const f = sheetEl.querySelector('[data-action=esp-filter][aria-pressed=true]')?.dataset.id || '';
+  let n = 0;
+  sheetEl.querySelectorAll('[data-q]').forEach((r) => { const ok = (!q || q.split(/\s+/).every((w) => r.dataset.q.includes(w))) && (!f || r.dataset.on === f); r.hidden = !ok; if (ok) n++; });
+  const c = sheetEl.querySelector('#espCount');
+  if (c) c.textContent = q || f ? `${n} résultat${n > 1 ? 's' : ''}` : '';
+}
 document.addEventListener('input', (e) => {
   const k = e.target.dataset.input;
+  if (k === 'esp-search') filterEspList();
   if (k === 'search') { ui.search = e.target.value; renderView(); }
   if (k === 'idx-pct' || k === 'idx-amount') {
     const f = e.target.form;
