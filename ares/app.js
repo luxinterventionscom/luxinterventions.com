@@ -3,7 +3,7 @@ import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js'
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 
-const VERSION = '2.10.0';
+const VERSION = '2.10.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -156,10 +156,32 @@ const sortieText = (c, d) => c.sortie === 'jour'
 const sortieRule = (c) => (c.sortie === 'jour' ? `Le jour du passage, ${c.heure || 'tôt le matin'}` : `La veille au soir${c.heure ? ', ' + c.heure : ''}`);
 const collecteRule = (c) => (c.mode === 'hebdo' ? `chaque ${JOURS[+c.jour]}` : c.mode === '2sem' ? `un ${JOURS[weekday(c.debut)]} sur deux (à partir du ${fmtDate(c.debut)})` : plural((c.dates || []).length, 'date'));
 // Lecture souple de dates : 07/01/2026, 7.1.2026, 07/01 (année par défaut), 2026-01-07
-function parseDates(text, year) {
+// Mots-clés des types de déchets dans les calendriers des communes (français, allemand, luxembourgeois)
+const DECHET_KEYS = {
+  residuel: /r[ée]siduel|m[ée]nag|restm[üu]ll|rest ?offall|hausm[üu]ll|poubelle grise|graue/i,
+  organique: /organ|bio|kompost|compost|gr[üu]ngut|d[ée]chets? verts/i,
+  papier: /papier|carton|karton|pabeier/i,
+  verre: /verre|glas|gl[äa]ser/i,
+  valorlux: /valorlux|pmc|sacs? bleus?|blo s[äa]ck|blaue s[äa]cke/i,
+  encombrants: /encombr|sperr|grouss/i,
+};
+function parseDates(text, year, cat) {
   const out = new Set();
-  // Calendrier .ics (exporté par la commune) : on garde les dates DTSTART
-  for (const m of String(text || '').matchAll(/DTSTART[^:\n]*:(\d{4})(\d{2})(\d{2})/g)) out.add(`${m[1]}-${m[2]}-${m[3]}`);
+  const src = String(text || '');
+  // Calendrier .ics (exporté par la commune) : dates DTSTART ; si le calendrier mélange plusieurs
+  // types de déchets, on ne garde que ceux de la collecte (mot-clé dans le titre de l'événement)
+  if (/BEGIN:VEVENT/i.test(src)) {
+    const evs = src.split(/BEGIN:VEVENT/i).slice(1).map((e) => {
+      const unfolded = e.replace(/\r?\n[ \t]/g, '');
+      const d = unfolded.match(/DTSTART[^:\n]*:(\d{4})(\d{2})(\d{2})/);
+      const txt = (unfolded.match(/^(SUMMARY|DESCRIPTION|CATEGORIES)[^:\n]*:.*$/gim) || []).join(' ');
+      return d ? { d: `${d[1]}-${d[2]}-${d[3]}`, txt } : null;
+    }).filter(Boolean);
+    const typed = evs.some((e) => Object.values(DECHET_KEYS).some((re) => re.test(e.txt)));
+    const keep = cat && typed && DECHET_KEYS[cat] ? evs.filter((e) => DECHET_KEYS[cat].test(e.txt)) : evs;
+    return [...new Set(keep.map((e) => e.d))].sort();
+  }
+  for (const m of src.matchAll(/DTSTART[^:\n]*:(\d{4})(\d{2})(\d{2})/g)) out.add(`${m[1]}-${m[2]}-${m[3]}`);
   if (out.size) return [...out].sort();
   for (const tok of String(text || '').split(/[\s,;]+/).filter(Boolean)) {
     let m = tok.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
@@ -698,8 +720,8 @@ async function refreshIcs(force, onlyId) {
   const byUrl = new Map();
   for (const c of list) {
     try {
-      if (!byUrl.has(c.icsUrl)) byUrl.set(c.icsUrl, parseDates(await vault.fetchIcs(c.icsUrl), new Date().getFullYear()));
-      const ds = byUrl.get(c.icsUrl);
+      if (!byUrl.has(c.icsUrl)) byUrl.set(c.icsUrl, await vault.fetchIcs(c.icsUrl));
+      const ds = parseDates(byUrl.get(c.icsUrl), new Date().getFullYear(), c.cat);
       if (!ds.length) throw new Error('aucune date dans le calendrier');
       const upd = { id: c.id, icsErr: '' };
       if (ds.join() !== (c.dates || []).join()) { upd.dates = ds; upd.icsAt = today(); changed++; }
@@ -2637,11 +2659,11 @@ const FORMS = {
       if (rec.icsUrl && !rec.dates.length) {
         try {
           toast('Lecture du calendrier de la commune…');
-          rec.dates = parseDates(await vault.fetchIcs(rec.icsUrl), new Date().getFullYear());
+          rec.dates = parseDates(await vault.fetchIcs(rec.icsUrl), new Date().getFullYear(), rec.cat);
           rec.icsAt = today(); rec.icsErr = '';
         } catch (e) { return toast(e.message || 'Calendrier indisponible', { bad: true }); }
       }
-      if (!rec.dates.length) return toast('Aucune date reconnue (ex. 07/01, 21/01…)', { bad: true });
+      if (!rec.dates.length) return toast(rec.icsUrl ? `Le calendrier de la commune ne contient aucune date pour « ${DECHETS[rec.cat].short} »` : 'Aucune date reconnue (ex. 07/01, 21/01…)', { bad: true });
     } else rec.icsUrl = '';
     if (mode === '2sem' && !rec.debut) return toast('Indiquez le premier passage', { bad: true });
     if (id) rec.id = id;
@@ -2913,7 +2935,7 @@ document.addEventListener('change', (e) => {
   if (k === 'col-mode') sheetEl.querySelectorAll('[data-mode]').forEach((el) => { el.hidden = el.dataset.mode !== e.target.value; });
   if (k === 'col-ics' && e.target.files[0]) {
     e.target.files[0].text().then((txt) => {
-      const ds = parseDates(txt, new Date().getFullYear());
+      const ds = parseDates(txt, new Date().getFullYear(), sheetEl.querySelector('[name=cat]')?.value);
       if (!ds.length) return toast('Aucune date trouvée dans ce fichier', { bad: true });
       sheetEl.querySelector('[name=dates]').value = ds.map((d) => d.split('-').reverse().join('/')).join(', ');
       toast(`${plural(ds.length, 'date')} importée${ds.length > 1 ? 's' : ''} — vérifiez puis Enregistrer`);
