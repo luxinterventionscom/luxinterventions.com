@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.14.1';
+const VERSION = '2.15.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -267,8 +267,9 @@ const ESP_SHOW = {
   coll: 'Collectes des déchets de l’immeuble',
   avis: 'Avis de l’immeuble (travaux, coupures…)',
   signal: 'Signaler un problème (avec photos)',
+  porte: 'Code de la porte (serrure à code / connectée)',
 };
-const ESP_ALL = Object.fromEntries(Object.keys(ESP_SHOW).map((k) => [k, true]));
+const ESP_ALL = Object.fromEntries(Object.keys(ESP_SHOW).map((k) => [k, k !== 'porte']));
 const espUrl = (l) => `${location.origin}/espace.html#${l.espace.id}.${l.espace.key}`;
 const avisActifs = (immId) => vault.list('avis').filter((a) => (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
   .sort((a, b) => (a.debut || '').localeCompare(b.debut || ''));
@@ -309,6 +310,7 @@ function espaceData(l) {
       return { y, rest: s.rest, upcoming: s.upcoming, paid: s.paid, months: MONTHS.map((_, i) => { const st = payState(l, y, i + 1); return [st.due, st.paid, st.p ? st.p.date || '' : '']; }) };
     });
   }
+  if (show.porte && g && g.porte && g.porte.code) out.porte = { code: g.porte.code, depuis: g.porte.maj || '', info: g.porte.info || '' };
   if (show.contrat) out.contrat = { debut: l.debut || '', fin: l.fin || '', revision: l.revision || '', caution: l.caution || 0 };
   if (show.docs) out.docs = vault.list('documents').filter((d) => d.locId === l.id && d.shared).map((d) => ({ id: d.id, label: d.label, date: d.date, mime: d.mime, size: d.size }));
   if (show.coll && im) { out.coll = pubData(im).items; if (im.pubToken) out.collLink = pubUrl(im); }
@@ -1794,6 +1796,28 @@ const SHEETS = {
     };
   },
 
+  'door-form'({ id }) {
+    const g = vault.get('logements', id);
+    if (!g) return null;
+    const pt = g.porte || {};
+    const rnd = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
+    return {
+      title: 'Code de la porte — ' + g.nom,
+      narrow: true,
+      body: html`<form id="f" data-form="door" class="fields">
+        <input type="hidden" name="id" value="${id}">
+        ${field('Nouveau code', 'code', rnd, { full: true, required: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
+        <p class="tiny muted full" style="margin:0">Code proposé au hasard — vous pouvez le changer. Programmez-le d'abord dans la serrure (app du fabricant), puis enregistrez-le ici.</p>
+        <label class="field full">Raison<select name="raison" data-input="door-reason">${['Nouvel occupant', 'Code oublié', 'Sécurité (code diffusé)', 'Fin de séjour / départ', 'Impayé', 'Autre'].map((r) => html`<option>${r}</option>`)}</select></label>
+        <div class="alert warn full" id="doorWarn" hidden>${icon('alert')}<div><b>Attention :</b> pour un <b>bail d'habitation</b>, bloquer l'accès d'un locataire parce qu'il n'a pas payé est en principe interdit au Luxembourg (seul un juge peut ordonner l'expulsion). Réservé aux séjours courts / chambres d'hôtel selon vos conditions — vérifiez avec votre avocat.</div></div>
+        ${field('Serrure (marque / modèle)', 'serrure', pt.serrure, { full: true, placeholder: 'ex. Nuki, TTLock, igloohome…' })}
+        ${field("Info pour l'occupant (facultatif)", 'info', pt.info, { full: true, placeholder: 'ex. Tapez le code puis ✓ ; porte d’entrée de l’immeuble : 2580' })}
+        ${field('Note (visible seulement par vous)', 'note', '', { full: true })}
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer le code</button>`,
+    };
+  },
+
   'avis-form'({ id, preset }) {
     const a = id ? vault.get('avis', id) : { immId: preset || '', debut: today() };
     if (id && !a) return null;
@@ -2045,6 +2069,17 @@ const SHEETS = {
         </div>`)}</div>` : html`<div class="alert warn" style="margin-bottom:12px">${icon('home')}<div><b>Logement vacant</b>${last ? html` depuis le départ de ${fullName(last)} (${fmtDate(last.sortie)})` : ''}.</div></div>`}
         ${future.length ? html`<div class="section-label">Arrivée prévue</div><div class="list" style="margin-bottom:12px">${future.map((l) => html`<button class="row" data-action="open-loc" data-id="${l.id}"><span class="avatar">${initials(l)}</span><span class="grow"><span class="title" style="display:block">${fullName(l)}</span><span class="meta">le ${fmtDate(l.debut)}</span></span></button>`)}</div>` : ''}
         <button class="btn block ${occ.length ? '' : 'primary'}" data-action="new-loc" data-log="${id}">${icon('plus')} ${occ.length ? 'Ajouter un colocataire' : 'Ajouter un locataire'}</button>`;
+    } else if (tab === 'porte') {
+      const pt = g.porte || {};
+      const shownTo = occ.filter((l) => l.espace && l.espace.on && (l.espace.show || {}).porte);
+      body = html`
+        <div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code actuel de la porte</div>
+          <div style="font-family:var(--mono);font-size:30px;font-weight:800;letter-spacing:.12em">${pt.code ? (ui.showDoor === id ? pt.code : '•'.repeat(pt.code.length)) : '—'}</div>
+          ${pt.code ? html`<button class="btn sm ghost" data-action="door-show" data-id="${id}">${icon('eye')} ${ui.showDoor === id ? 'Masquer' : 'Afficher'}</button>` : ''}
+          <div class="tiny muted">${pt.maj ? 'depuis le ' + fmtDate(pt.maj) : ''}${pt.serrure ? ' · ' + pt.serrure : ''}</div></div>
+        <button class="btn primary block" data-action="door-change" data-id="${id}">${icon('key')} ${pt.code ? 'Changer le code' : 'Enregistrer le code de la porte'}</button>
+        <p class="tiny muted">${shownTo.length ? `Visible dans l'espace de ${shownTo.map(fullName).join(', ')} : il voit le nouveau code dès que vous le changez.` : "Pour que l'occupant voie le code dans son app : fiche locataire → Espace → cochez « Code de la porte »."}</p>
+        ${(pt.hist || []).length ? html`<div class="section-label">Historique des codes</div><div class="list">${[...pt.hist].reverse().map((h) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${fmtDate(h.d)} — ${h.raison}</span><span class="meta">${'•'.repeat(Math.max(0, (h.code || '').length - 2))}${(h.code || '').slice(-2)}${h.note ? ' · ' + h.note : ''}</span></span></div>`)}</div>` : ''}`;
     } else if (tab === 'edl') {
       const photos = edlOf(id);
       const full = photos.length >= EDL_MAX;
@@ -2085,7 +2120,7 @@ const SHEETS = {
     }
     return {
       title: g.nom,
-      body: html`${tabsBar([['now', 'Actuel'], ['hist', `Occupants (${all.length})`], ['edl', `Photos (${edlOf(id).length})`], ['bilan', 'Bilan']], tab)}${body}`,
+      body: html`${tabsBar([['now', 'Actuel'], ['hist', `Occupants (${all.length})`], ['edl', `Photos (${edlOf(id).length})`], ['porte', g.porte && g.porte.code ? '🔑 Porte' : 'Porte'], ['bilan', 'Bilan']], tab)}${body}`,
       foot: html`<button class="btn icon" data-action="print-log" data-id="${id}" aria-label="Imprimer">${icon('download')}</button><button class="btn" data-action="open-imm" data-id="${g.immId}">${icon('building')} Immeuble</button><button class="btn" data-action="edit-log" data-id="${id}">${icon('edit')} Modifier</button>`,
     };
   },
@@ -2662,6 +2697,8 @@ const ACTIONS = {
     goBack();
   },
   'esp-list': () => openOver('esp-list'),
+  'door-change': (d) => openOver('door-form', d.id),
+  'door-show': (d) => { ui.showDoor = ui.showDoor === d.id ? '' : d.id; ui.sheet.rendered = false; renderSheet(); },
   'esp-filter': (d, el) => { sheetEl.querySelectorAll('[data-action=esp-filter]').forEach((b) => b.setAttribute('aria-pressed', b === el)); filterEspList(); },
   'esp-open': (d) => openOver('loc', d.id, 'espace'),
   'share-coll': (d) => openOver('share-coll', d.id),
@@ -2982,6 +3019,16 @@ const FORMS = {
     const saved = await vault.mutate((tx) => tx.put('taches', rec), id ? 'Intervention modifiée' : 'Intervention ajoutée', `${rec.titre} — ${placeName(rec)}`, rec.immId);
     toast(id ? 'Intervention enregistrée' : 'Intervention ajoutée');
     if (!recur && rec.statut === 'fait') await offerDepense(saved);
+    goBack();
+  },
+  async door(fd) {
+    const g = vault.get('logements', fd.get('id'));
+    const code = String(fd.get('code') || '').trim();
+    if (!g || !/^[0-9A-Za-z#*]{3,16}$/.test(code)) return toast('Code invalide (3 à 16 chiffres ou lettres)', { bad: true });
+    const pt = g.porte || {};
+    const h = { d: today(), code, raison: fd.get('raison'), note: String(fd.get('note') || '').trim() };
+    await vault.mutate((tx) => tx.put('logements', { id: g.id, porte: { code, maj: today(), serrure: String(fd.get('serrure') || '').trim(), info: String(fd.get('info') || '').trim(), hist: [...(pt.hist || []), h].slice(-30) } }), 'Code de porte changé', `${g.nom} (${immName(g.immId)}) — ${h.raison}`, g.immId);
+    toast('Code enregistré');
     goBack();
   },
   async avis(fd) {
@@ -3307,6 +3354,7 @@ document.addEventListener('change', (e) => {
   if (e.target.id === 'importFile' && e.target.files[0]) { importFile(e.target.files[0]); e.target.value = ''; }
   if (k === 'tache-imm') $('#tacheLog').innerHTML = val(logOptions(e.target.value, ''));
   if (k === 'col-mode') sheetEl.querySelectorAll('[data-mode]').forEach((el) => { el.hidden = el.dataset.mode !== e.target.value; });
+  if (k === 'door-reason') { const w = $('#doorWarn'); if (w) w.hidden = e.target.value !== 'Impayé'; }
   if (k === 'esp-show' || k === 'esp-lang') {
     const l = vault.get('locataires', e.target.dataset.loc);
     if (l && l.espace && l.espace.on) {
