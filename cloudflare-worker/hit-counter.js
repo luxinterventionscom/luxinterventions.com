@@ -71,6 +71,9 @@ export default {
     const esp = url.pathname.match(/^\/api\/esp\/([0-9a-f]{32})(?:\/(f\/[a-z0-9]{1,40}|signal))?$/);
     if (esp) return espacePublic(request, env, esp[1], esp[2] || "", headers);
 
+    const board = url.pathname.match(/^\/api\/board\/([0-9a-f]{32})$/);
+    if (board) return boardPublic(request, env, board[1], headers);
+
     const pub = url.pathname.match(/^\/api\/pub\/([0-9a-f]{32})\.(json|ics)$/);
     if (pub && request.method === "GET") return publicCollectes(env, pub[1], pub[2], url, headers);
 
@@ -202,6 +205,9 @@ const ARES_SESSION = "ares/session.json";
 const ARES_PUBLIC = "ares/public/";
 const ARES_ESPACE = "ares/espace/"; // espaces locataires : données chiffrées avec une clé que seul le lien du locataire contient
 const ARES_INBOX = "ares/inbox/";
+const ARES_BOARD = "ares/board/"; // mini-chat de chaque logement : messages chiffrés avec une clé que seuls les habitants et le gestionnaire ont
+const BOARD_TTL_MS = 90 * 24 * 3600 * 1000; // messages effacés après 90 jours
+const BOARD_MAX = 150;
 const ARES_ESPCODE = "ares/espcode/"; // code d'accès court → clé de l'espace enveloppée (illisible sans le code) // signalements des locataires, chiffrés pour le gestionnaire (clé publique)
 const ARES_LEASE_MS = 120 * 1000; // un dispositivo inattivo da 2 minuti non è più considerato connesso
 const ARES_RENEW_MS = 20 * 1000;
@@ -293,6 +299,54 @@ async function espacePublic(request, env, id, sub, headers) {
       await env.HITS.put(kId, String(nId + 1), { expirationTtl: 86400 });
     } catch { /* quota KV */ }
     return aresJson({ ok: true }, 200, headers);
+  }
+  return aresJson({ error: "Not found" }, 404, headers);
+}
+
+// ── Mini-chat du logement : lecture (messages chiffrés, les plus récents) et envoi ──
+// Le serveur ne voit que des octets illisibles ; il efface les messages de plus de 90 jours.
+async function boardList(env, id) {
+  const listed = await env.PHOTOS.list({ prefix: ARES_BOARD + id + "/m/" });
+  const now = Date.now(), keep = [];
+  for (const o of listed.objects) {
+    const ts = parseInt(o.key.slice((ARES_BOARD + id + "/m/").length).split("-")[0], 36);
+    if (!ts || now - ts > BOARD_TTL_MS) await env.PHOTOS.delete(o.key); else keep.push(o.key);
+  }
+  keep.sort();
+  const last = keep.slice(-BOARD_MAX);
+  const items = await Promise.all(last.map(async (k) => {
+    const obj = await env.PHOTOS.get(k);
+    if (!obj) return null;
+    const u = new Uint8Array(await obj.arrayBuffer());
+    let bin = "";
+    for (let i = 0; i < u.length; i++) bin += String.fromCharCode(u[i]);
+    return { n: k.slice((ARES_BOARD + id + "/m/").length), d: btoa(bin) };
+  }));
+  return items.filter(Boolean);
+}
+async function boardSave(env, id, request) {
+  const body = await request.arrayBuffer();
+  if (body.byteLength < 30 || body.byteLength > 8 * 1024) return null;
+  const name = Date.now().toString(36) + "-" + crypto.getRandomValues(new Uint32Array(1))[0].toString(36);
+  await env.PHOTOS.put(ARES_BOARD + id + "/m/" + name, body, { httpMetadata: { contentType: "application/octet-stream" } });
+  return name;
+}
+async function boardPublic(request, env, id, headers) {
+  if (!(await env.PHOTOS.head(ARES_BOARD + id + "/on"))) return aresJson({ error: "Messagerie désactivée" }, 404, headers);
+  if (request.method === "GET") return aresJson({ items: await boardList(env, id) }, 200, headers, { "Cache-Control": "no-store" });
+  if (request.method === "POST") {
+    // Limites : 30 messages / heure par adresse IP, 200 / jour par logement
+    const ip = clientIp(request);
+    const kIp = "brd-rl:" + ip, kId = "brd-id:" + id;
+    const nIp = parseInt((await env.HITS.get(kIp)) || "0", 10), nId = parseInt((await env.HITS.get(kId)) || "0", 10);
+    if (nIp >= 30 || nId >= 200) return aresJson({ error: "Trop de messages, réessayez plus tard" }, 429, headers);
+    const name = await boardSave(env, id, request);
+    if (!name) return aresJson({ error: "Taille invalide" }, 413, headers);
+    try {
+      await env.HITS.put(kIp, String(nIp + 1), { expirationTtl: 3600 });
+      await env.HITS.put(kId, String(nId + 1), { expirationTtl: 86400 });
+    } catch { /* quota KV */ }
+    return aresJson({ ok: true, n: name }, 200, headers);
   }
   return aresJson({ error: "Not found" }, 404, headers);
 }
@@ -508,6 +562,20 @@ async function handleAres(request, env, url, headers) {
   if (codeMatch && method === "DELETE") {
     await env.PHOTOS.delete(ARES_ESPCODE + codeMatch[1] + ".json");
     return aresJson({ ok: true }, 200, headers);
+  }
+  // Mini-chat d'un logement (gestionnaire) : activer, lire, écrire, modérer, supprimer
+  const brdMatch = path.match(/^board\/([0-9a-f]{32})(?:\/([a-z0-9-]{3,40}))?$/);
+  if (brdMatch) {
+    const base = ARES_BOARD + brdMatch[1];
+    if (!brdMatch[2] && method === "PUT") { await env.PHOTOS.put(base + "/on", "1"); return aresJson({ ok: true }, 200, headers); }
+    if (!brdMatch[2] && method === "GET") return aresJson({ items: await boardList(env, brdMatch[1]) }, 200, headers);
+    if (!brdMatch[2] && method === "POST") { const n = await boardSave(env, brdMatch[1], request); return n ? aresJson({ ok: true, n }, 200, headers) : aresJson({ error: "Taille invalide" }, 413, headers); }
+    if (!brdMatch[2] && method === "DELETE") {
+      const listed = await env.PHOTOS.list({ prefix: base + "/" });
+      await Promise.all(listed.objects.map((o) => env.PHOTOS.delete(o.key)));
+      return aresJson({ ok: true }, 200, headers);
+    }
+    if (brdMatch[2] && method === "DELETE") { await env.PHOTOS.delete(base + "/m/" + brdMatch[2]); return aresJson({ ok: true }, 200, headers); }
   }
   // Boîte de réception des signalements (chiffrés) : liste, lecture, suppression après import
   if (path === "inbox" && method === "GET") {

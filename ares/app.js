@@ -2,9 +2,9 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
-import { newEspaceId, newEspaceKey, sealJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
+import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.17.1';
+const VERSION = '2.18.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -289,6 +289,8 @@ const ESP_SHOW = {
   avis: 'Avis de l’immeuble (travaux, coupures…)',
   signal: 'Signaler un problème (avec photos)',
   porte: 'Code de la porte (serrure à code / connectée)',
+  regles: 'Règlement de la maison (à lire, avec « J’ai lu et j’accepte »)',
+  chat: 'Messages de la maison (mini-chat entre habitants, lu par vous)',
 };
 const ESP_ALL = Object.fromEntries(Object.keys(ESP_SHOW).map((k) => [k, k !== 'porte']));
 const espUrl = (l) => `${location.origin}/espace.html#${l.espace.id}.${l.espace.key}`;
@@ -337,6 +339,11 @@ function espaceData(l) {
     .map((d) => ({ id: d.id, label: d.label, dtype: d.dtype || '', pay: d.pay || '', date: d.date, mime: d.mime, size: d.size }));
   if (show.coll && im) { out.coll = pubData(im).items; if (im.pubToken) out.collLink = pubUrl(im); }
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
+  if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '' };
+  if (show.chat && im && im.chat && im.chat.on && isCurrent(l)) {
+    const g = (im.chats || {})[chatGroupKey(im, l)];
+    if (g && g.members.includes(l.id)) out.chat = { id: g.id, key: g.key, me: shortName(l), mid: l.id };
+  }
   if (show.signal) {
     const k = vault.get('reglages', 'signal');
     out.signalKey = k ? k.pub : '';
@@ -345,6 +352,101 @@ function espaceData(l) {
   }
   return out;
 }
+// ───── Messages de la maison : mini-chat des habitants d'un logement (lu et modéré par le gestionnaire) ─────
+// Chaque fil a sa propre clé, donnée seulement aux habitants actuels (dans leur espace chiffré) ; quand quelqu'un
+// part, on change de clé et on recopie l'historique : l'ancien habitant ne peut plus rien lire.
+const CHAT_SCOPES = {
+  logement: 'Par logement (les colocataires d’un même appartement / d’une même chambre)',
+  partie: 'Par « Situé dans » (même appartement, même aile, ancien bar…)',
+  structure: 'Toute la structure (tous les habitants ensemble)',
+};
+const chatScope = (im) => (im.chat && im.chat.scope) || (['maison', 'local', 'residence'].includes(im.type) ? 'structure' : 'logement');
+function chatGroupKey(im, l) {
+  const sc = chatScope(im), g = vault.get('logements', l.logId);
+  if (sc === 'structure' || !l.logId) return 'all';
+  if (sc === 'partie' && g && g.partie) return 'p:' + g.partie.trim().toLowerCase();
+  return 'l:' + l.logId;
+}
+const chatLabel = (gk) => (gk === 'all' ? 'Toute la structure' : gk.startsWith('p:') ? gk.slice(2) : logName(gk.slice(2)) || 'Logement');
+const shortName = (l) => (l.prenom ? l.prenom + (l.nom ? ' ' + l.nom[0].toUpperCase() + '.' : '') : l.nom || 'Locataire');
+const b64d = (x) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
+async function chatRead(g) {
+  const out = [];
+  for (const it of await vault.boardList(g.id)) { try { out.push({ ...(await openJson(g.key, b64d(it.d))), n: it.n }); } catch { /* illisible */ } }
+  return out.sort((a, b) => (a.t || '').localeCompare(b.t || ''));
+}
+const chatSeenKey = (gid) => 'aresChatSeen:' + gid;
+const setSeen = (gid, n) => { try { if (n) localStorage.setItem(chatSeenKey(gid), n); } catch {} };
+let chatBusy = false;
+async function chatSync() {
+  if (!vault.unlocked || chatBusy) return;
+  chatBusy = true;
+  try {
+    for (const im of vault.list('immeubles')) {
+      const cur = im.chats || {};
+      const groups = {};
+      if (im.chat && im.chat.on && !immGone(im)) for (const l of tenantsOfImm(im.id).filter(isCurrent)) (groups[chatGroupKey(im, l)] ||= []).push(l.id);
+      const next = {};
+      let changed = false;
+      for (const [gk, members] of Object.entries(groups)) {
+        members.sort();
+        const old = cur[gk];
+        if (old && old.members.every((m) => members.includes(m))) {
+          next[gk] = old.members.join() === members.join() ? old : { ...old, members };
+          if (next[gk] !== old) changed = true;
+          continue;
+        }
+        const g = { id: newEspaceId(), key: newEspaceKey(), members };
+        await vault.boardOn(g.id);
+        if (old) {
+          let last = '';
+          for (const m of await chatRead(old).catch(() => [])) { const { n, ...msg } = m; last = (await (await vault.boardPost(g.id, await sealJson(g.key, msg))).json()).n || last; }
+          setSeen(g.id, last);
+          await vault.boardDel(old.id).catch(() => {});
+        }
+        next[gk] = g;
+        changed = true;
+      }
+      for (const [gk, g] of Object.entries(cur)) if (!next[gk]) { await vault.boardDel(g.id).catch(() => {}); changed = true; }
+      if (changed) await vault.mutate((tx) => tx.put('immeubles', { id: im.id, chats: next }), 'Messages de la maison : habitants mis à jour', im.adresse, im.id);
+    }
+  } catch { /* hors ligne : on réessaiera */ }
+  chatBusy = false;
+}
+// Nouveaux messages non lus (pour l'accueil)
+async function chatPoll() {
+  if (!vault.unlocked) return;
+  const res = {};
+  for (const im of vault.list('immeubles')) for (const g of Object.values(im.chats || {})) {
+    try {
+      let seen = '';
+      try { seen = localStorage.getItem(chatSeenKey(g.id)) || ''; } catch {}
+      const n = (await vault.boardList(g.id)).filter((it) => it.n > seen).length;
+      if (n) res[im.id] = (res[im.id] || 0) + n;
+    } catch { /* hors ligne */ }
+  }
+  ui.chatNew = res;
+  if (ui.route === 'dashboard') renderView();
+}
+async function chatLoad(imId, force) {
+  const im = vault.get('immeubles', imId);
+  if (!im) return;
+  ui.chatAt = ui.chatAt || {};
+  ui.chatCache = ui.chatCache || {};
+  if (!force && ui.chatAt[imId] && Date.now() - ui.chatAt[imId] < 15000) return;
+  ui.chatAt[imId] = Date.now();
+  for (const g of Object.values(im.chats || {})) {
+    try { ui.chatCache[g.id] = await chatRead(g); } catch { ui.chatCache[g.id] = ui.chatCache[g.id] || []; }
+    const c = ui.chatCache[g.id];
+    if (c.length) setSeen(g.id, c[c.length - 1].n);
+  }
+  if (ui.chatNew) delete ui.chatNew[imId];
+  if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.id === imId && ui.sheet.tab === 'chat') { ui.sheet.rendered = false; renderSheet(); }
+}
+const chatBubbles = (list, gid) => (list == null ? html`<p class="muted small">Chargement…</p>` : !list.length ? html`<p class="muted small">Aucun message pour le moment.</p>`
+  : html`${list.map((m) => html`<div class="bub ${m.m === 'mgr' ? 'mgr' : ''}"><div class="bub-h"><b>${m.m === 'mgr' ? '🛡️ Gestionnaire' : m.a}</b><span>${fmtDateTime(m.t)}</span>
+    <button class="bub-del" data-action="chat-del" data-id="${gid}" data-n="${m.n}" aria-label="Supprimer ce message">${icon('trash')}</button></div><div class="bub-x">${m.x}</div></div>`)}`);
+
 const espHashes = new Map();
 let espTimer = null;
 const scheduleEspaceSync = () => { clearTimeout(espTimer); espTimer = setTimeout(() => espaceSync(), 2500); };
@@ -352,6 +454,7 @@ async function sha256Hex(s) { return [...new Uint8Array(await crypto.subtle.dige
 // Publie (chiffré) l'espace de chaque locataire dont le contenu a changé, avec ses documents partagés
 async function espaceSync(onlyId, loud) {
   if (!vault.unlocked) return true;
+  await chatSync();
   for (const l of vault.list('locataires').filter((x) => x.espace && x.espace.on && x.espace.id && (!onlyId || x.id === onlyId))) {
     try {
       const data = espaceData(l);
@@ -386,6 +489,11 @@ async function inboxSync() {
       try { msg = await openFromTenant(keys.priv, await vault.inboxGet(it.name)); } catch { continue; }
       const l = vault.list('locataires').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
       if (!l || !l.espace.on) { await vault.inboxDel(it.name); continue; }
+      if (msg.type === 'regles') {
+        await vault.mutate((tx) => tx.put('locataires', { id: l.id, reglesLu: String(msg.t || '').slice(0, 10) || today() }), 'Règlement de la maison accepté', fullName(l), l.id);
+        await vault.inboxDel(it.name);
+        continue;
+      }
       const titre = String(msg.titre || msg.texte || 'Problème').slice(0, 80);
       await vault.mutate((tx) => {
         const t = tx.put('taches', {
@@ -874,7 +982,7 @@ function startSession() {
   idleTimer = setInterval(() => {
     if (!vault.unlocked) return;
     if (Date.now() - lastActive > lockMinutes() * 60000) lockNow('Verrouillé après inactivité.');
-    else if (document.visibilityState === 'visible') { vault.sync(); if (Date.now() - lastInbox > 180000) { lastInbox = Date.now(); inboxSync(); } }
+    else if (document.visibilityState === 'visible') { vault.sync(); if (Date.now() - lastInbox > 180000) { lastInbox = Date.now(); inboxSync(); chatPoll(); } }
   }, 30000);
   renderShell();
   go(location.hash.slice(2) || 'dashboard', true);
@@ -887,6 +995,7 @@ function startSession() {
     if (d !== today() && (await publishPub())) try { localStorage.setItem('aresPubDay', today()); } catch {}
     await espaceSync();
     await inboxSync();
+    await chatPoll();
   }, 4000);
 }
 
@@ -1225,9 +1334,12 @@ dashboard() {
         <div class="card-title" style="margin-bottom:8px"><h3>📩 ${sig.length > 1 ? sig.length + " nouveaux messages" : "1 nouveau message"} de locataire${sig.length > 1 ? 's' : ''}</h3></div>
         <div class="stack">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}; const n = signalPhotos(t); return alertBtn('bad', 'msg', 'open-signal', t.id, html`<b>${fullName(l)}</b> · ${logName(l.logId) || immName(t.immId)} — ${t.titre.replace(/^Signalement : /, '')}<div class="tiny">${fmtDateTime(t.sentAt)}${n ? ` · 📷 ${n} photo${n > 1 ? 's' : ''}` : ''} · touchez pour lire</div>`); })}</div>
       </div>` : '';
+    const chatNew = Object.entries(ui.chatNew || {}).filter(([imId, n]) => n && vault.get('immeubles', imId));
+    const chatBox = chatNew.length ? html`<div class="stack" style="margin-bottom:14px">${chatNew.map(([imId, n]) => alertBtn('info', 'msg', 'open-chat', imId, html`💬 <b>${n} nouveau${n > 1 ? 'x' : ''} message${n > 1 ? 's' : ''}</b> entre les habitants — ${immName(imId)}<div class="tiny">touchez pour lire</div>`))}</div>` : '';
     return html`
       ${nudge}
       ${sigBox}
+      ${chatBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
       <div class="metrics">
         <div class="metric hero">
@@ -1988,6 +2100,25 @@ const SHEETS = {
           </button>`;
         })}</div>` : html`<p class="muted small">Aucun logement. Ajoutez les appartements, chambres, garages, bureaux ou locaux de cette structure pour suivre leurs occupants successifs.</p>`}
         <button class="btn block" style="margin-top:12px" data-action="new-log" data-imm="${id}">${icon('plus')} Ajouter un logement / local</button>`;
+    } else if (tab === 'chat') {
+      const on = !!(im.chat && im.chat.on);
+      const groups = Object.entries(im.chats || {});
+      if (on) setTimeout(() => chatLoad(id), 0); // relit le fil s'il date de plus de 15 s
+      body = html`
+        <label class="row" style="cursor:pointer;margin-bottom:10px"><input type="checkbox" data-input="chat-on" data-id="${id}" ${on ? new Raw('checked') : ''} style="width:22px;min-height:22px">
+          <span class="grow"><b>Messages de la maison</b><span class="meta" style="display:block">Mini-chat entre les habitants, dans leur app. Vous lisez tout, vous pouvez répondre et supprimer un message.</span></span></label>
+        ${on ? html`<label class="field" style="margin-bottom:6px">Qui discute ensemble ?<select data-input="chat-scope" data-id="${id}">${Object.entries(CHAT_SCOPES).map(([k, v]) => html`<option value="${k}" ${chatScope(im) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+          ${groups.length ? groups.map(([gk, g]) => html`<div class="section-label">💬 ${chatLabel(gk)} <span class="muted small">· ${g.members.map((m) => shortName(vault.get('locataires', m) || {})).join(', ')}</span></div>
+            <div class="chat">${chatBubbles((ui.chatCache || {})[g.id], g.id)}</div>
+            <form data-form="chatpost" class="chat-form"><input type="hidden" name="imm" value="${id}"><input type="hidden" name="gk" value="${gk}">
+              <textarea name="x" required maxlength="1500" placeholder="Écrire aux habitants (en tant que gestionnaire)…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>`)
+          : html`<p class="muted small">Aucun habitant pour le moment : le fil se crée tout seul dès qu'un locataire est présent.</p>`}
+          <button class="btn sm" style="margin-top:8px" data-action="chat-refresh" data-id="${id}">${icon('sync')} Actualiser</button>` : ''}
+        <div class="section-label">📜 Règles propres à cet immeuble</div>
+        <form data-form="regles" class="stack"><input type="hidden" name="id" value="${id}">
+          <textarea name="regles" style="min-height:90px" placeholder="ex. Machine à laver jusqu'à 21 h. Vélos dans la cour, pas dans le couloir.">${im.regles || ''}</textarea>
+          <button class="btn" type="submit">Enregistrer les règles</button></form>
+        <p class="tiny muted">Elles s'ajoutent au règlement général (calme, propreté, évacuations, déchets, tabac, visiteurs, sécurité, énergie, respect) affiché dans l'app de chaque locataire, dans sa langue. Chaque locataire touche « J'ai lu et j'accepte » : la date apparaît dans sa fiche.</p>`;
     } else if (tab === 'proprio') {
       const rent = ownerRent(im);
       const cy = y, cm = new Date().getMonth() + 1;
@@ -2035,7 +2166,7 @@ const SHEETS = {
     }
     return {
       title: im.adresse,
-      body: html`${immGone(im) ? html`<div class="alert info" style="margin-bottom:12px">${icon('history')}<div><b>Plus en gestion</b> depuis le ${fmtDate(im.finGestion)}${im.finNote ? ' — ' + im.finNote : ''}. Tout l'historique reste consultable et compte dans les statistiques.</div></div>` : ''}${tabsBar([['logs', 'Logements'], ['proprio', 'Bailleur'], ['deps', 'Dépenses'], ['bilan', 'Bilan']], tab)}${body}`,
+      body: html`${immGone(im) ? html`<div class="alert info" style="margin-bottom:12px">${icon('history')}<div><b>Plus en gestion</b> depuis le ${fmtDate(im.finGestion)}${im.finNote ? ' — ' + im.finNote : ''}. Tout l'historique reste consultable et compte dans les statistiques.</div></div>` : ''}${tabsBar([['logs', 'Logements'], ['chat', `💬 Messages${(ui.chatNew || {})[id] ? ' (' + ui.chatNew[id] + ')' : ''}`], ['proprio', 'Bailleur'], ['deps', 'Dépenses'], ['bilan', 'Bilan']], tab)}${body}`,
       foot: html`${immGone(im) ? html`<button class="btn" data-action="reopen-imm" data-id="${id}">${icon('sync')} Réactiver</button>` : html`<button class="btn" data-action="end-imm" data-id="${id}">${icon('history')} Fin de gestion</button>`}<button class="btn icon" data-action="print-imm" data-id="${id}" aria-label="Imprimer">${icon('download')}</button><button class="btn" data-action="edit-imm" data-id="${id}">${icon('edit')} Modifier</button>`,
     };
   },
@@ -2248,6 +2379,7 @@ const SHEETS = {
           ${kvRow('Caution', html`<span class="num">${l.caution ? money(l.caution) : '—'}</span>${l.cautionDate || l.cautionMode ? html`<div class="tiny muted">reçue${l.cautionDate ? ' le ' + fmtDate(l.cautionDate) : ''}${l.cautionMode ? ' · ' + (CAUTION_MODES[l.cautionMode] || l.cautionMode).toLowerCase() : ''}</div>` : ''}${l.cautionNote ? html`<div class="tiny muted">${l.cautionNote}</div>` : ''}
             ${l.caution ? html`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" data-action="caution-recu" data-id="${id}">${icon('receipt')} Reçu de caution</button>${hasDoc('caution') ? html`<button class="btn sm" data-action="open-doc" data-id="${docOf('caution').id}">✓ Preuve jointe 👁</button>` : html`<button class="btn sm primary" data-action="doc-type" data-id="${id}" data-k="caution">📎 Joindre la preuve</button>`}</div>` : ''}`)}
           ${kvRow('Dossier', dossierChips(id, docOf))}
+          ${l.espace && l.espace.on ? kvRow('Règlement', l.reglesLu ? html`<span class="green">✓ accepté le ${fmtDate(l.reglesLu)}</span>` : html`<span class="amber">pas encore accepté</span>`) : ''}
           ${kvRow('Entrée', l.debut ? fmtDate(l.debut) : '?')}
           ${kvRow('Fin du contrat', html`${l.fin ? fmtDate(l.fin) : 'indéterminée'}${d != null && d >= 0 && d <= 60 && !gone ? html`<div class="tiny amber">dans ${plural(d, 'jour')}</div>` : ''}`)}
           ${l.sortie ? kvRow('Sortie', fmtDate(l.sortie)) : ''}
@@ -2723,7 +2855,7 @@ const ACTIONS = {
       try { st.url = url; st.groups = icsGroups(await vault.fetchIcs(url.replace(/^webcals?:\/\//i, 'https://'))); st.err = ''; }
       catch (e) { st.err = (e.message || 'Calendrier indisponible') + (/gros|volumineux|calendrier \(\.ics\)/i.test(e.message || '') ? ' — ce lien est sans doute la page web de la commune, pas le calendrier : utilisez le fichier .ics téléchargé.' : ''); st.groups = null; }
     }
-    ui.sheet.rendered = false; renderSheet();
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
   'new-collecte': (d) => openOver('collecte-form', null, null, d.imm || ui.immFilter || ''),
   'edit-collecte': (d) => openOver('collecte-form', d.id),
@@ -2745,7 +2877,7 @@ const ACTIONS = {
     if (await espaceSync(l.id, true)) {
       try { await setAccessCode(vault.get('locataires', l.id)); toast('Espace locataire prêt'); } catch (e) { toast(e.message || 'Code impossible (connexion ?)', { bad: true }); }
     }
-    ui.sheet.rendered = false; renderSheet();
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
   async 'esp-off'(d) {
     const l = vault.get('locataires', d.id);
@@ -2792,7 +2924,7 @@ const ACTIONS = {
     try { await vault.publishPublic(token, pubData({ ...im, pubToken: token })); } catch (e) { return toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); }
     await vault.mutate((tx) => tx.put('immeubles', { id: im.id, pubToken: token }), 'Page locataires créée', im.adresse, im.id);
     toast('Lien créé');
-    ui.sheet.rendered = false; renderSheet();
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
   async 'share-off'(d) {
     const im = vault.get('immeubles', d.id);
@@ -2901,6 +3033,16 @@ const ACTIONS = {
   },
   quittance: (d) => printQuittance(d.loc, +d.y, +d.m),
   'caution-recu': (d) => printCaution(d.id),
+  'open-chat': (d) => { openSheet('imm', d.id, 'chat'); chatLoad(d.id, true); },
+  'chat-refresh': (d) => chatLoad(d.id, true),
+  async 'chat-del'(d) {
+    if (!(await confirmBox('Supprimer ce message ?', { ok: 'Supprimer', danger: true, detail: 'Il disparaît pour tous les habitants.' }))) return;
+    const im = vault.list('immeubles').find((x) => Object.values(x.chats || {}).some((g) => g.id === d.id));
+    try { await vault.boardDelMsg(d.id, d.n); } catch (e) { return toast(e.message || 'Suppression impossible', { bad: true }); }
+    vault.mutate(() => {}, 'Message supprimé (modération)', im ? im.adresse : '', im ? im.id : '');
+    toast('Message supprimé');
+    if (im) chatLoad(im.id, true);
+  },
   'pay-proof': (d) => openSheet('loc', d.loc, 'docs', `loyer|${d.y}-${d.m}`),
   'doc-type': (d) => { ui.sheet.tab = 'docs'; ui.sheet.preset = d.k; ui.sheet.rendered = false; renderSheet(); },
   relance: (d) => openOver('relance', d.id),
@@ -3335,6 +3477,25 @@ const FORMS = {
     form.reset();
     toast('Dépense ajoutée');
   },
+  async chatpost(fd, form) {
+    const im = vault.get('immeubles', fd.get('imm'));
+    const g = im && (im.chats || {})[fd.get('gk')];
+    const x = String(fd.get('x') || '').trim().slice(0, 1500);
+    if (!g || !x) return;
+    setBusy(form, true, 'Envoi…');
+    try {
+      await vault.boardPost(g.id, await sealJson(g.key, { a: societe().nom || 'Gestionnaire', m: 'mgr', x, t: new Date().toISOString() }));
+      await chatLoad(im.id, true);
+    } catch (e) {
+      setBusy(form, false);
+      toast(e.message || 'Envoi impossible', { bad: true });
+    }
+  },
+  async regles(fd) {
+    const id = fd.get('id');
+    await vault.mutate((tx) => tx.put('immeubles', { id, regles: String(fd.get('regles') || '').trim().slice(0, 4000) }), 'Règles de l’immeuble modifiées', immName(id), id);
+    toast('Règles enregistrées · visibles dans l’app des locataires');
+  },
   async doc(fd, form) {
     const file = fd.get('file');
     const locId = fd.get('locId');
@@ -3450,6 +3611,14 @@ document.addEventListener('change', (e) => {
   if (k === 'tache-imm') $('#tacheLog').innerHTML = val(logOptions(e.target.value, ''));
   if (k === 'col-mode') sheetEl.querySelectorAll('[data-mode]').forEach((el) => { el.hidden = el.dataset.mode !== e.target.value; });
   if (k === 'door-reason') { const w = $('#doorWarn'); if (w) w.hidden = e.target.value !== 'Impayé'; }
+  if (k === 'chat-on' || k === 'chat-scope') {
+    const im = vault.get('immeubles', e.target.dataset.id);
+    if (im) {
+      const chat = { scope: chatScope(im), ...(im.chat || {}), ...(k === 'chat-on' ? { on: e.target.checked } : { scope: e.target.value }) };
+      vault.mutate((tx) => tx.put('immeubles', { id: im.id, chat }), k === 'chat-scope' ? 'Messages de la maison : groupes modifiés' : chat.on ? 'Messages de la maison activés' : 'Messages de la maison désactivés', im.adresse, im.id)
+        .then(() => chatSync()).then(() => chatLoad(im.id, true));
+    }
+  }
   if (k === 'esp-show' || k === 'esp-lang') {
     const l = vault.get('locataires', e.target.dataset.loc);
     if (l && l.espace && l.espace.on) {
@@ -3461,7 +3630,7 @@ document.addEventListener('change', (e) => {
     e.target.files[0].text().then((txt) => {
       const st = ui.icsAll;
       st.url = ''; st.groups = icsGroups(txt); st.err = st.groups.length ? '' : 'Ce fichier ne contient aucune date.';
-      ui.sheet.rendered = false; renderSheet();
+      if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
     });
     e.target.value = '';
   }

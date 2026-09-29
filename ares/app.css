@@ -508,3 +508,15 @@ dialog.pv::backdrop { background: rgba(0, 0, 0, .5); }
 .pv-bar b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 dialog.pv img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
 dialog.pv iframe { flex: 1; border: 0; width: 100%; background: #fff; }
+
+/* Messages de la maison (mini-chat des habitants) */
+.chat { display: flex; flex-direction: column; gap: 8px; max-height: 420px; overflow: auto; padding: 10px; background: var(--surface-2); border-radius: 14px; margin-bottom: 8px; }
+.bub { max-width: 88%; align-self: flex-start; background: var(--surface, #fff); border-radius: 14px 14px 14px 4px; padding: 8px 10px; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+.bub.mgr { align-self: flex-end; border-radius: 14px 14px 4px 14px; background: var(--accent-soft); }
+.bub-h { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--text-2); }
+.bub-h b { color: var(--text); }
+.bub-del { margin-left: auto; border: 0; background: none; color: var(--red); cursor: pointer; padding: 2px; }
+.bub-del .ic { width: 15px; height: 15px; }
+.bub-x { white-space: pre-wrap; word-break: break-word; margin-top: 2px; }
+.chat-form { display: flex; gap: 8px; align-items: flex-end; }
+.chat-form textarea { flex: 1; min-height: 44px; }
