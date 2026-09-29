@@ -1,7 +1,7 @@
 {
-  "name": "ARES S.A. — App des locataires",
-  "short_name": "ARES Locataires",
-  "description": "Loyers, quittances, documents, collectes des déchets et signalements pour les locataires ARES S.A.",
+  "name": "NOBIS s.a.r.l. — App des locataires",
+  "short_name": "NOBIS Locataires",
+  "description": "Loyers, quittances, documents, collectes des déchets et signalements pour les locataires NOBIS s.a.r.l.",
   "lang": "fr",
   "start_url": "/espace.html",
   "scope": "/espace",

@@ -1,10 +1,10 @@
-// Ares Invest S.A. — Gestion locataires (interface)
+// NOBIS s.a.r.l. — Gestion locataires (interface)
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.21.0';
+const VERSION = '2.22.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -346,7 +346,7 @@ function espaceData(l) {
   const soc = societe();
   const out = {
     v: 1, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? g.nom : '', adresse: im ? im.adresse : '', show,
-    societe: { nom: soc.nom || 'Ares Invest S.A.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '' },
+    societe: { nom: soc.nom || 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '' },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
   };
   if (show.pay || show.quit) {
@@ -606,7 +606,7 @@ const TOOL_KINDS = { don: '🎁 Don', pret: '🤝 Prêt gratuit', loc: '💶 Loc
 const TOOL_UNITS = { h: '/ heure', j: '/ jour', we: '/ week-end', s: '/ semaine', u: '(prix unique)' };
 const toolPrice = (it) => (it.kind === 'loc' ? money(it.price) + ' ' + (TOOL_UNITS[it.unit] || '') : it.kind === 'don' ? 'gratuit (don)' : 'gratuit (prêt)');
 function toolOwner(it) {
-  if (it.owner === 'mgr') return societe().nom || 'ARES S.A.';
+  if (it.owner === 'mgr') return societe().nom || 'NOBIS s.a.r.l.';
   const l = vault.list('locataires').find((x) => x.espace && 'e:' + x.espace.id === it.owner);
   return l ? fullName(l) + ' · ' + (logName(l.logId) || immName(l.immId)) : 'Locataire (espace fermé)';
 }
@@ -967,8 +967,8 @@ function renderLock(mode, error = '') {
   lockEl.hidden = false;
   const legacy = legacyLocal();
   const head = html`
-    <img class="lock-logo" src="/ares/icons/ares-192.png" alt="Ares Invest S.A." width="96" height="96">
-    <div class="lock-head"><h1>Ares Invest S.A.</h1><p>Gestion locataires · Luxembourg</p></div>`;
+    <img class="lock-logo" src="/ares/icons/ares-192.png" alt="NOBIS s.a.r.l." width="96" height="96">
+    <div class="lock-head"><h1>NOBIS s.a.r.l.</h1><p>Gestion locataires · Luxembourg</p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>`;
 
   if (mode === 'checking') {
@@ -1251,14 +1251,14 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="/ares/icons/ares-96.png" alt="" width="36" height="36"><span>Ares Invest S.A.<small>Gestion locataires</small></span></div>
+      <div class="brand"><img class="brand-mark" src="/ares/icons/ares-96.png" alt="" width="36" height="36"><span>NOBIS s.a.r.l.<small>Gestion locataires</small></span></div>
       ${NAV.map(navBtn)}
       <div class="spacer"></div>
       <button class="navbtn" data-action="lock">${icon('lock')}<span>Verrouiller</span></button>
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="/ares/icons/ares-96.png" alt="" width="36" height="36"><span>Ares Invest S.A.</span></div>
+        <div class="brand"><img class="brand-mark" src="/ares/icons/ares-96.png" alt="" width="36" height="36"><span>NOBIS s.a.r.l.</span></div>
         <button class="sync" id="sync" data-action="sync-now" data-s="idle"><i></i><span>…</span></button>
         <button class="btn icon ghost" data-action="lock" aria-label="Verrouiller" title="Verrouiller">${icon('lock')}</button>
       </header>
@@ -1385,7 +1385,7 @@ function reportCollectes(immId, y) {
     ${im.pubToken ? html`<div style="display:flex;gap:16px;align-items:center;margin-top:16px;border:1px solid #ccc;border-radius:10px;padding:10px 14px">
       <div class="qr" style="width:120px;flex:0 0 120px">${qrSvg(pubUrl(im), 4)}</div>
       <div><b>📱 Scannez : calendrier sur votre téléphone, rappel la veille.</b><br>Scansiona: calendario sul telefono, promemoria la sera prima.<br>Scannen: Kalender auf Ihrem Handy, Erinnerung am Vorabend.<br>Digitalize: calendário no telemóvel, aviso na véspera.<br>Scan: calendar on your phone, reminder the evening before.</div></div>` : ''}
-    <p class="pr-sub" style="margin-top:14px">Une question ? ${societe().nom || 'Ares Invest S.A.'}${societe().tel ? ' · ' + societe().tel : ''}</p>`;
+    <p class="pr-sub" style="margin-top:14px">Une question ? ${societe().nom || 'NOBIS s.a.r.l.'}${societe().tel ? ' · ' + societe().tel : ''}</p>`;
 }
 const logOptions = (immId, sel) => html`<option value="">Parties communes / tout l'immeuble</option>${logsOf(immId).map((g) => html`<option value="${g.id}" ${g.id === sel ? new Raw('selected') : ''}>${g.nom}</option>`)}`;
 // Intervention terminée avec un coût : proposer de l'ajouter aux dépenses de l'immeuble (une seule fois)
@@ -1918,7 +1918,7 @@ dashboard() {
 
       <div class="section-label">Apparence</div>
       <div class="chips">${[['auto', 'Automatique'], ['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => html`<button class="chip" data-action="theme" data-id="${k}" aria-pressed="${theme === k}">${l}</button>`)}</div>
-      <p class="tiny muted" style="margin-top:28px;text-align:center">Ares Invest S.A. · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
+      <p class="tiny muted" style="margin-top:28px;text-align:center">NOBIS s.a.r.l. · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
   },
 };
 
@@ -2094,7 +2094,7 @@ function relanceText(l, lang) {
   };
   const list = months.map((x) => `${NAMES[lang][x.m - 1]} ${x.y} (${money(payState(l, x.y, x.m).rest)})`).join(', ') || '—';
   const where = [logName(l.logId), immName(l.immId)].filter(Boolean).join(', ');
-  const sign = st.nom || 'Ares Invest S.A.';
+  const sign = st.nom || 'NOBIS s.a.r.l.';
   const iban = st.iban ? { fr: `\nIBAN : ${st.iban}`, it: `\nIBAN: ${st.iban}`, en: `\nIBAN: ${st.iban}`, pt: `\nIBAN: ${st.iban}` }[lang] : '';
   const T = {
     fr: `Bonjour ${fullName(l)},\n\nSauf erreur de notre part, nous n'avons pas encore reçu le loyer de ${list} pour ${where}, soit ${money(total)} au total.\n\nMerci de procéder au règlement dès que possible, ou de nous contacter si le paiement a déjà été effectué.${iban}\n\nCordialement,\n${sign}`,
@@ -2189,7 +2189,7 @@ const SHEETS = {
     const on = ls.filter((l) => l.espace && l.espace.on).length;
     return {
       title: 'App des locataires',
-      body: html`<p style="margin-top:0">Les locataires téléchargent l'app depuis <b>luxinterventions.com</b> (« Télécharger l'app des locataires ARES S.A. ») et entrent avec le <b>code personnel</b> que vous leur donnez ici. Sans code, personne n'entre.</p>
+      body: html`<p style="margin-top:0">Les locataires téléchargent l'app depuis <b>luxinterventions.com</b> (« Télécharger l'app des locataires NOBIS s.a.r.l. ») et entrent avec le <b>code personnel</b> que vous leur donnez ici. Sans code, personne n'entre.</p>
         <div class="search" style="margin-bottom:8px">${icon('search')}<input type="search" data-input="esp-search" placeholder="Rechercher un nom, un logement, un immeuble, un code…" autocomplete="off"></div>
         <div class="chips" style="margin-bottom:10px">
           <button class="chip" data-action="esp-filter" data-id="" aria-pressed="true">Tous (${ls.length})</button>
@@ -2388,7 +2388,7 @@ const SHEETS = {
         <dl class="kv" style="margin-bottom:16px">
           ${kvRow('Structure', IMM_TYPES[im.type] || IMM_TYPES.immeuble)}
           ${kvRow('Bailleur (propriétaire)', im.proprietaire || '—')}
-          ${kvRow('Locataire principal', html`${societe().nom || 'Ares Invest S.A.'} (vous)`)}
+          ${kvRow('Locataire principal', html`${societe().nom || 'NOBIS s.a.r.l.'} (vous)`)}
           ${kvRow('Loyer + charges', rent ? money(rent) + ' / mois' : '—')}
           ${kvRow('Bail principal', html`${im.bailDebut ? fmtDate(im.bailDebut) : '?'} → ${im.bailFin ? fmtDate(im.bailFin) : 'indéterminé'}`)}
           ${kvRow('Total versé', html`<span class="num">${money(sum(versementsOf(id), (v) => v.montant))}</span>`)}
@@ -2458,13 +2458,13 @@ const SHEETS = {
           <div class="section-label">À approuver (${pend.length})</div>${pend.length ? html`<div class="list">${pend.map(card)}</div>` : html`<p class="muted small">Aucune annonce en attente.</p>`}
           <div class="section-label">En ligne (${live.length})</div>${live.length ? html`<div class="list">${live.map(card)}</div>` : html`<p class="muted small">Aucune annonce en ligne.</p>`}
           ${old.length ? html`<div class="section-label">Expirées (${old.length})</div><div class="list">${old.map(card)}</div>` : ''}`}`,
-      foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" data-action="tool-new">${icon('plus')} Publier un objet (ARES)</button>`,
+      foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" data-action="tool-new">${icon('plus')} Publier un objet (NOBIS)</button>`,
     };
   },
 
   'tool-form'() {
     return {
-      title: 'Publier un objet (ARES)',
+      title: 'Publier un objet (NOBIS)',
       narrow: true,
       body: html`<form id="f" data-form="tool" class="fields">
         <label class="field full">Photos (1 à 3)<input type="file" name="photos" accept="image/*" multiple required></label>
@@ -2617,7 +2617,7 @@ const SHEETS = {
       title: id ? 'Modifier le locataire' : 'Nouveau locataire',
       body: html`<form id="f" data-form="loc" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        ${id ? '' : html`<p class="tiny muted full" style="margin:0">Bailleur (propriétaire) → <b>${societe().nom || 'Ares Invest S.A.'}</b> (locataire principal) → <b>sous-locataire</b> que vous ajoutez ici.</p>`}
+        ${id ? '' : html`<p class="tiny muted full" style="margin:0">Bailleur (propriétaire) → <b>${societe().nom || 'NOBIS s.a.r.l.'}</b> (locataire principal) → <b>sous-locataire</b> que vous ajoutez ici.</p>`}
         ${logementSelect(l.logId, l.immId)}
         ${tenantFields(l)}
         ${id ? field('Date de sortie', 'sortie', l.sortie, { type: 'date' }) : ''}
@@ -2734,7 +2734,7 @@ const SHEETS = {
       } else {
         const url = espUrl(l);
         const tel = (l.tel || '').replace(/[^\d+]/g, '');
-        const msg = encodeURIComponent(`Bonjour ${l.prenom || ''}, voici votre app des locataires ARES S.A. (loyers, quittances, documents, collectes, signaler un problème).\n1) Ouvrez : ${appUrl()}\n2) Ajoutez-la à votre écran d'accueil\n3) Votre code d'accès personnel : ${e.code || '(à créer)'}\nOu ouvrez directement : ${url}\nCe code est personnel, ne le partagez pas.`);
+        const msg = encodeURIComponent(`Bonjour ${l.prenom || ''}, voici votre app des locataires NOBIS s.a.r.l. (loyers, quittances, documents, collectes, signaler un problème).\n1) Ouvrez : ${appUrl()}\n2) Ajoutez-la à votre écran d'accueil\n3) Votre code d'accès personnel : ${e.code || '(à créer)'}\nOu ouvrez directement : ${url}\nCe code est personnel, ne le partagez pas.`);
         body = html`<p style="margin-top:0">Espace actif. Donnez à <b>${fullName(l)}</b> son <b>code d'accès</b> (pour l'app installée depuis luxinterventions.com) ou envoyez-lui le lien direct.</p>
           <div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d'accès personnel</div>
             <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
@@ -2771,7 +2771,7 @@ const SHEETS = {
   },
 
   recovery({ preset: code }) {
-    const body = encodeURIComponent(`Clé de secours Ares Invest S.A. :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : https://luxinterventions.com/locataires.html → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
+    const body = encodeURIComponent(`Clé de secours NOBIS s.a.r.l. :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : https://luxinterventions.com/locataires.html → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
     return {
       title: 'Votre clé de secours',
       narrow: true,
@@ -2781,7 +2781,7 @@ const SHEETS = {
         <div class="actions" style="margin-top:14px">
           <button class="btn" data-action="copy-recovery">${icon('file')} Copier</button>
           <button class="btn" data-action="print-recovery">${icon('download')} Imprimer</button>
-          <a class="btn" href="mailto:${MAIL}?subject=${encodeURIComponent('Ares Invest S.A. — clé de secours')}&body=${body}">${icon('mail')} Email</a>
+          <a class="btn" href="mailto:${MAIL}?subject=${encodeURIComponent('NOBIS s.a.r.l. — clé de secours')}&body=${body}">${icon('mail')} Email</a>
         </div>
         <p class="tiny muted">Le bouton Email prépare un message vers ${MAIL}. Pratique, mais toute personne qui accède à cette messagerie pourrait ouvrir le coffre : le papier reste plus sûr.</p>`,
       foot: html`<button class="btn primary" data-action="close-sheet">J'ai noté ma clé de secours</button>`,
@@ -2843,7 +2843,7 @@ const SHEETS = {
       title: 'Société & associés',
       body: html`<form id="f" data-form="societe" class="fields">
         <div class="section-label full" style="margin:0">Votre société — locataire principal (apparaît sur les quittances et les relances)</div>
-        ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: 'ex. Ares Invest S.A.' })}
+        ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: 'ex. NOBIS s.a.r.l.' })}
         ${field('Adresse', 'adresse', st.adresse, { full: true })}
         ${field('Code postal et ville', 'ville', st.ville, { placeholder: 'L-1234 Luxembourg' })}
         ${field('Téléphone', 'tel', st.tel, { type: 'tel' })}
@@ -2996,7 +2996,7 @@ const tenantFromForm = (fd, p = '') => ({
 // ───────────────────────── Rapports imprimables ─────────────────────────
 function printDoc(title, body) {
   const el = $('#print');
-  setHtml(el, html`<div class="pr-head"><div><b>Ares Invest S.A.</b> · ${title}</div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
+  setHtml(el, html`<div class="pr-head"><div><b>NOBIS s.a.r.l.</b> · ${title}</div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
   document.body.classList.add('printing');
   const done = () => { document.body.classList.remove('printing'); setHtml(el, ''); removeEventListener('afterprint', done); };
   addEventListener('afterprint', done);
@@ -3832,8 +3832,8 @@ const FORMS = {
     try {
       const photos = [];
       for (const f of files) photos.push(b64u(await compressPhoto(f)));
-      await vault.toolsCreate({ kind: fd.get('kind'), title: fd.get('title'), price: num(fd.get('price')), unit: fd.get('unit'), lieu: fd.get('lieu'), mail: fd.get('mail'), name: societe().nom || 'ARES S.A.', desc: fd.get('desc'), rules: fd.get('rules'), photos });
-      vault.mutate(() => {}, 'Annonce publiée (ARES)', fd.get('title'), '');
+      await vault.toolsCreate({ kind: fd.get('kind'), title: fd.get('title'), price: num(fd.get('price')), unit: fd.get('unit'), lieu: fd.get('lieu'), mail: fd.get('mail'), name: societe().nom || 'NOBIS s.a.r.l.', desc: fd.get('desc'), rules: fd.get('rules'), photos });
+      vault.mutate(() => {}, 'Annonce publiée (NOBIS)', fd.get('title'), '');
       toast('Annonce publiée sur le site');
       await toolsLoad(true);
       goBack();
