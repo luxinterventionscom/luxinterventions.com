@@ -404,7 +404,7 @@ function render() {
   document.documentElement.lang = lang;
   const langs = `<div class="langs">${Object.keys(L).map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
   if (!data) {
-    app.innerHTML = `<div class="top"><b>NOBIS s.a.r.l.</b>${langs}</div>
+    app.innerHTML = `<div class="top"><span class="brandx"><img class="top-logo" src="/ares/icons/nobis-logo.png" alt="NOBIS s.a.r.l." width="76" height="32"><b>NOBIS s.a.r.l.</b></span>${langs}</div>
       <div style="text-align:center;margin:18px 0"><img src="/ares/icons/ares-192.png" alt="" width="84" height="84" style="border-radius:20px"></div>
       <h1 style="text-align:center">${esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
       ${loadErr ? `<div class="card avis"><p style="margin:0">${esc(loadErr)}</p></div>` : ''}
@@ -419,7 +419,7 @@ function render() {
   document.title = `${t.title} — ${d.societe.nom}`;
   if (d.regles && !rulesDate(d)) {
     const changed = d.regles.lu && d.regles.lv !== d.regles.v;
-    app.innerHTML = `<div class="top"><b>${esc(d.societe.nom)}</b>${langs}</div><h1>${esc(t.hello)} ${esc(d.prenom || d.nom)}</h1>
+    app.innerHTML = `<div class="top"><span class="brandx"><img class="top-logo" src="/ares/icons/nobis-logo.png" alt="NOBIS s.a.r.l." width="76" height="32"><b>${esc(d.societe.nom)}</b></span>${langs}</div><h1>${esc(t.hello)} ${esc(d.prenom || d.nom)}</h1>
       <div class="card" id="rules"><h2>📜 ${esc(t.hr.rulesT)}</h2><p class="${changed ? 'ok' : 'meta'}" style="margin:0 0 10px">${esc(changed ? t.hr.changed : t.hr.gate)}</p>
         <ol class="steps">${t.hr.R.map((r) => `<li>${esc(r)}</li>`).join('')}</ol>
         ${d.regles.extra ? `<p style="margin:8px 0 4px"><b>${esc(t.hr.rulesExtra)}</b></p><p class="pre" style="margin:0">${esc(d.regles.extra)}</p>` : ''}
@@ -429,7 +429,7 @@ function render() {
     return;
   }
   const out = [];
-  out.push(`<div class="top"><b>${esc(d.societe.nom)}</b>${langs}</div><h1>${esc(t.hello)} ${esc(d.prenom || d.nom)}</h1><p class="sub">${esc([d.logement, d.adresse].filter(Boolean).join(' · '))}</p>`);
+  out.push(`<div class="top"><span class="brandx"><img class="top-logo" src="/ares/icons/nobis-logo.png" alt="NOBIS s.a.r.l." width="76" height="32"><b>${esc(d.societe.nom)}</b></span>${langs}</div><h1>${esc(t.hello)} ${esc(d.prenom || d.nom)}</h1><p class="sub">${esc([d.logement, d.adresse].filter(Boolean).join(' · '))}</p>`);
   if (d.bins && d.chat) out.push(`<div id="binBox">${binHtml()}</div>`);
   if (s.avis && (d.avis || []).length) out.push(`<div class="card avis"><h2>📢 ${esc(t.avis)}</h2>${d.avis.map((a) => `<p style="margin:6px 0;white-space:pre-wrap">${esc(a.texte)}${a.debut || a.fin ? `<br><span class="meta">${esc([fmt(a.debut), fmt(a.fin)].filter(Boolean).join(' → '))}</span>` : ''}</p>`).join('')}</div>`);
   if (s.porte && d.porte) out.push(`<div class="card" style="text-align:center"><h2>🔑 ${esc(t.door)}</h2><div style="font-size:34px;font-weight:800;letter-spacing:.14em;font-family:ui-monospace,Menlo,monospace">${esc(d.porte.code)}</div>${d.porte.depuis ? `<div class="meta">${esc(t.since)} ${esc(fmt(d.porte.depuis))}</div>` : ''}${d.porte.info ? `<p class="meta" style="margin:6px 0 0">${esc(d.porte.info)}</p>` : ''}</div>`);
