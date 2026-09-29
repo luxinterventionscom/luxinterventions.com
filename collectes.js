@@ -84,6 +84,8 @@ function hourText(it) {
   return /avant|vor|antes|before|prima/i.test(it.heure) ? t.before(m[1]) : t.after(m[1]);
 }
 const whenRule = (it) => [it.sortie === 'jour' ? L[lang].day : L[lang].eve, hourText(it)].filter(Boolean).join(', ');
+// Nom de la collecte : traduit, ou nom exact du calendrier de la commune si le type n'est pas reconnu
+const catName = (x) => ((x.it.cat === 'autre' || !L[lang].cats[x.it.cat]) && x.it.names && x.it.names[x.d]) || L[lang].cats[x.it.cat] || x.it.cat;
 const putDay = (it, d) => (it.sortie === 'jour' ? d : addDays(d, -1));
 
 function render() {
@@ -98,9 +100,9 @@ function render() {
   ev.sort((a, b) => a.p.localeCompare(b.p));
   const soon = ev.filter((x) => x.p === today || x.p === tom);
   const label = (x) => (x.p === today ? (x.it.sortie === 'jour' ? t.today : t.tonight) : t.tomorrow);
-  const nowCard = `<div class="card ${soon.length ? 'now' : ''}">${soon.length ? soon.map((x) => `<p style="margin:4px 0"><b>${esc(label(x))}</b> — ${esc(t.putOut)} : <b>${esc(t.cats[x.it.cat] || x.it.cat)}</b>${hourText(x.it) ? ' · ' + esc(hourText(x.it)) : ''}<br><span class="meta">${esc(t.where)} : ${esc(t.lieux[x.it.lieu] || '')}${x.it.note ? ' · ' + esc(x.it.note) : ''}</span></p>`).join('') : `<p style="margin:0">✓ ${esc(t.nothing)}</p>`}</div>`;
+  const nowCard = `<div class="card ${soon.length ? 'now' : ''}">${soon.length ? soon.map((x) => `<p style="margin:4px 0"><b>${esc(label(x))}</b> — ${esc(t.putOut)} : <b>${esc(catName(x))}</b>${hourText(x.it) ? ' · ' + esc(hourText(x.it)) : ''}<br><span class="meta">${esc(t.where)} : ${esc(t.lieux[x.it.lieu] || '')}${x.it.note ? ' · ' + esc(x.it.note) : ''}</span></p>`).join('') : `<p style="margin:0">✓ ${esc(t.nothing)}</p>`}</div>`;
   const upcoming = ev.filter((x) => x.p >= today).slice(0, 24);
-  const row = (x) => `<div class="row"><span class="dot" style="background:${COLORS[x.it.cat] || '#999'}"></span><div><div class="when">${esc(long(x.p))} — ${esc(t.putOut)} ${esc(t.cats[x.it.cat] || x.it.cat)}</div><div class="meta">${esc(t.truck)} ${esc(long(x.d))} · ${esc(t.lieux[x.it.lieu] || '')}</div></div></div>`;
+  const row = (x) => `<div class="row"><span class="dot" style="background:${COLORS[x.it.cat] || '#999'}"></span><div><div class="when">${esc(long(x.p))} — ${esc(t.putOut)} ${esc(catName(x))}</div><div class="meta">${esc(t.truck)} ${esc(long(x.d))} · ${esc(t.lieux[x.it.lieu] || '')}</div></div></div>`;
   const list = `<div class="card"><h2>${esc(t.next)}</h2>${upcoming.slice(0, 3).map(row).join('')}${upcoming.length > 3 ? `<details class="more"><summary>${esc(t.more(upcoming.length - 3))}</summary>${upcoming.slice(3).map(row).join('')}</details>` : ''}</div>`;
   const rules = `<div class="card"><h2>${esc(t.rules)}</h2>${data.items.map((it) => `<div class="row"><span class="dot" style="background:${COLORS[it.cat] || '#999'}"></span><div><div class="when">${esc(t.cats[it.cat] || it.cat)}</div><div class="meta">${esc(whenRule(it))} · ${esc(t.lieux[it.lieu] || '')}${it.note ? ' · ' + esc(it.note) : ''}</div></div></div>`).join('')}</div>`;
   const ics = `${API}/api/pub/${token}.ics?lang=${lang}`;

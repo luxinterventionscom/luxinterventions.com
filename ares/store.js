@@ -604,6 +604,11 @@ export class Vault {
   boardPost(id, bytes) { return this.call('board/' + id, { method: 'POST', body: bytes }); }
   boardDelMsg(id, name) { return this.call('board/' + id + '/' + name, { method: 'DELETE' }); }
   boardDel(id) { return this.call('board/' + id, { method: 'DELETE' }); }
+  // Annonces « Don · prêt · location » des locataires (approbation, publication, retrait)
+  async toolsList() { return (await (await this.call('tools')).json()).items || []; }
+  toolsCreate(obj) { return this.call('tools', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) }); }
+  toolsUpdate(id, obj) { return this.call('tools/' + id, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(obj) }); }
+  toolsDel(id) { return this.call('tools/' + id, { method: 'DELETE' }); }
 
   // Page publique des collectes d'un immeuble (copie non chiffrée : adresse + dates uniquement)
   async publishPublic(token, data) {

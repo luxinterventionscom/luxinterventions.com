@@ -68,7 +68,10 @@ export default {
     // Code d'accès saisi dans l'app des locataires (empreinte du code seulement ; essais limités)
     if (url.pathname === "/api/esp-code" && request.method === "POST") return espaceCode(request, env, headers);
 
-    const esp = url.pathname.match(/^\/api\/esp\/([0-9a-f]{32})(?:\/(f\/[a-z0-9]{1,40}|signal))?$/);
+    const tl = url.pathname.match(/^\/api\/tools(?:\/([0-9a-f]{16})(?:\/(p[0-2]\.jpg|contact))?)?$/);
+    if (tl) return toolsPublic(request, env, tl[1], tl[2], headers);
+
+    const esp = url.pathname.match(/^\/api\/esp\/([0-9a-f]{32})(?:\/(f\/[a-z0-9]{1,40}|signal|tools(?:\/[0-9a-f]{16})?))?$/);
     if (esp) return espacePublic(request, env, esp[1], esp[2] || "", headers);
 
     const board = url.pathname.match(/^\/api\/board\/([0-9a-f]{32})$/);
@@ -208,6 +211,11 @@ const ARES_INBOX = "ares/inbox/";
 const ARES_BOARD = "ares/board/"; // mini-chat de chaque logement : messages chiffrés avec une clé que seuls les habitants et le gestionnaire ont
 const BOARD_TTL_MS = 90 * 24 * 3600 * 1000; // messages effacés après 90 jours
 const BOARD_MAX = 150;
+// Annonces « Don · prêt · location » publiées par les locataires (approuvées par le gestionnaire)
+const TOOLS = "tools/items/";
+const TOOL_DAYS = 90;
+const TOOL_KINDS = ["don", "pret", "loc"];
+const TOOL_UNITS = ["h", "j", "we", "s", "u"];
 const ARES_ESPCODE = "ares/espcode/"; // code d'accès court → clé de l'espace enveloppée (illisible sans le code) // signalements des locataires, chiffrés pour le gestionnaire (clé publique)
 const ARES_LEASE_MS = 120 * 1000; // un dispositivo inattivo da 2 minuti non è più considerato connesso
 const ARES_RENEW_MS = 20 * 1000;
@@ -244,11 +252,12 @@ async function publicCollectes(env, token, fmt, url, headers) {
     for (const d of it.dates || []) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) continue;
       const day = icsDay(d, it.sortie === "jour" ? 0 : -1);
+      const nm = (it.cat === "autre" || !T.cats[it.cat]) && it.names && it.names[d] ? it.names[d] : name;
       const tm = putOutTime(it);
       lines.push("BEGIN:VEVENT", `UID:${token}-${it.cat}-${d}@luxinterventions.com`, `DTSTAMP:${stamp}`,
-        `DTSTART:${day}T${tm}`, "DURATION:PT30M", `SUMMARY:${icsEsc("🗑️ " + T.put + " : " + name)}`,
+        `DTSTART:${day}T${tm}`, "DURATION:PT30M", `SUMMARY:${icsEsc("🗑️ " + T.put + " : " + nm)}`,
         `DESCRIPTION:${icsEsc(`${T.truck} : ${d.split("-").reverse().join("/")}${T.lieux[it.lieu] ? "\n" + T.lieux[it.lieu] : ""}${it.note ? "\n" + it.note : ""}`)}`,
-        `LOCATION:${icsEsc(data.adresse)}`, "BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${icsEsc(T.put + " : " + name)}`, "TRIGGER:PT0M", "END:VALARM", "END:VEVENT");
+        `LOCATION:${icsEsc(data.adresse)}`, "BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${icsEsc(T.put + " : " + nm)}`, "TRIGGER:PT0M", "END:VALARM", "END:VEVENT");
     }
   }
   lines.push("END:VCALENDAR");
@@ -283,6 +292,29 @@ async function espacePublic(request, env, id, sub, headers) {
   if (request.method === "GET" && sub.startsWith("f/")) {
     const obj = await env.PHOTOS.get(ARES_ESPACE + id + "/" + sub);
     return obj ? bin(obj) : aresJson({ error: "Introuvable" }, 404, headers);
+  }
+  if (sub === "tools" || sub.startsWith("tools/")) {
+    const owner = "e:" + id;
+    if (request.method === "GET" && sub === "tools") {
+      const mine = (await toolList(env)).filter((it) => it.owner === owner);
+      return aresJson({ items: mine.map((it) => ({ ...toolPublic(it), status: it.status, clicks: it.clicks || 0, mail: it.mail })) }, 200, headers, { "Cache-Control": "no-store" });
+    }
+    if (request.method === "POST" && sub === "tools") {
+      const mine = (await toolList(env)).filter((it) => it.owner === owner && it.exp > Date.now());
+      if (mine.length >= 10) return aresJson({ error: "10 annonces maximum" }, 429, headers);
+      const len = parseInt(request.headers.get("content-length") || "0", 10);
+      if (len > 3 * 1024 * 1024) return aresJson({ error: "Photos trop lourdes" }, 413, headers);
+      let b;
+      try { b = await request.json(); } catch { b = null; }
+      const it = await toolCreate(env, b, owner, "pending");
+      return it ? aresJson({ ok: true, id: it.id }, 200, headers) : aresJson({ error: "Annonce incomplète" }, 400, headers);
+    }
+    if (request.method === "DELETE" && sub.startsWith("tools/")) {
+      const it = await toolGet(env, sub.slice(6));
+      if (!it || it.owner !== owner) return aresJson({ error: "Introuvable" }, 404, headers);
+      await toolDel(env, it.id);
+      return aresJson({ ok: true }, 200, headers);
+    }
   }
   if (request.method === "POST" && sub === "signal") {
     // Limites : 10 envois / heure par adresse IP, 20 / jour par espace
@@ -347,6 +379,75 @@ async function boardPublic(request, env, id, headers) {
       await env.HITS.put(kId, String(nId + 1), { expirationTtl: 86400 });
     } catch { /* quota KV */ }
     return aresJson({ ok: true, n: name }, 200, headers);
+  }
+  return aresJson({ error: "Not found" }, 404, headers);
+}
+
+// ── Annonces : stockage, liste publique, contact (email révélé seulement au clic, essais limités) ──
+const toolPublic = (it) => ({ id: it.id, kind: it.kind, title: it.title, desc: it.desc, price: it.price, unit: it.unit, rules: it.rules, lieu: it.lieu, photos: it.photos, created: it.created, exp: it.exp });
+async function toolGet(env, id) { const o = await env.PHOTOS.get(TOOLS + id + ".json"); return o ? o.json() : null; }
+async function toolPut(env, it) { await env.PHOTOS.put(TOOLS + it.id + ".json", JSON.stringify(it), { httpMetadata: { contentType: "application/json" } }); }
+async function toolDel(env, id) {
+  const l = await env.PHOTOS.list({ prefix: TOOLS + id });
+  await Promise.all(l.objects.map((o) => env.PHOTOS.delete(o.key)));
+}
+async function toolList(env) {
+  const listed = await env.PHOTOS.list({ prefix: TOOLS });
+  const items = [];
+  for (const o of listed.objects) {
+    if (!o.key.endsWith(".json")) continue;
+    const obj = await env.PHOTOS.get(o.key);
+    if (!obj) continue;
+    const it = await obj.json();
+    if (it.exp < Date.now() - 30 * 86400000) { await toolDel(env, it.id); continue; } // expirée depuis 30 jours : effacée
+    items.push(it);
+  }
+  return items.sort((a, b) => b.created - a.created);
+}
+const str = (v, max) => String(v == null ? "" : v).trim().slice(0, max);
+async function toolCreate(env, b, owner, status) {
+  if (!b || !TOOL_KINDS.includes(b.kind)) return null;
+  const title = str(b.title, 80), mail = str(b.mail, 120);
+  if (title.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return null;
+  const photos = Array.isArray(b.photos) ? b.photos.filter((x) => typeof x === "string" && x.length < 900000).slice(0, 3) : [];
+  if (!photos.length) return null;
+  const price = b.kind === "loc" ? Math.max(0, Math.min(100000, Number(b.price) || 0)) : 0;
+  const id = [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, "0")).join("");
+  for (let i = 0; i < photos.length; i++) {
+    const bin = atob(photos[i].replace(/-/g, "+").replace(/_/g, "/"));
+    const u = new Uint8Array(bin.length);
+    for (let j = 0; j < bin.length; j++) u[j] = bin.charCodeAt(j);
+    await env.PHOTOS.put(TOOLS + id + "/p" + i + ".jpg", u, { httpMetadata: { contentType: "image/jpeg" } });
+  }
+  const it = {
+    id, owner, status, kind: b.kind, title, desc: str(b.desc, 800), rules: str(b.rules, 400), lieu: str(b.lieu, 60),
+    price, unit: TOOL_UNITS.includes(b.unit) ? b.unit : "j", mail, name: str(b.name, 40), photos: photos.length,
+    created: Date.now(), exp: Date.now() + TOOL_DAYS * 86400000, clicks: 0,
+  };
+  await toolPut(env, it);
+  return it;
+}
+async function toolsPublic(request, env, id, sub, headers) {
+  if (!id && request.method === "GET") {
+    const items = (await toolList(env)).filter((it) => it.status === "ok" && it.exp > Date.now()).map(toolPublic);
+    return aresJson({ items }, 200, headers, { "Cache-Control": "public, max-age=60" });
+  }
+  if (id && sub && sub.endsWith(".jpg") && request.method === "GET") {
+    const obj = await env.PHOTOS.get(TOOLS + id + "/" + sub);
+    if (!obj) return aresJson({ error: "Introuvable" }, 404, headers);
+    return new Response(obj.body, { headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400", ...headers } });
+  }
+  if (id && sub === "contact" && request.method === "POST") {
+    const ip = clientIp(request);
+    const k = "tool-rl:" + ip;
+    const n = parseInt((await env.HITS.get(k)) || "0", 10);
+    if (n >= 20) return aresJson({ error: "Trop de demandes, réessayez plus tard" }, 429, headers);
+    const it = await toolGet(env, id);
+    if (!it || it.status !== "ok" || it.exp < Date.now()) return aresJson({ error: "Annonce indisponible" }, 404, headers);
+    it.clicks = (it.clicks || 0) + 1;
+    await toolPut(env, it);
+    try { await env.HITS.put(k, String(n + 1), { expirationTtl: 3600 }); } catch { /* quota KV */ }
+    return aresJson({ mail: it.mail, name: it.name }, 200, headers);
   }
   return aresJson({ error: "Not found" }, 404, headers);
 }
@@ -563,6 +664,26 @@ async function handleAres(request, env, url, headers) {
     await env.PHOTOS.delete(ARES_ESPCODE + codeMatch[1] + ".json");
     return aresJson({ ok: true }, 200, headers);
   }
+  // Annonces « Don · prêt · location » (gestionnaire) : tout voir, approuver, publier les siennes, retirer
+  if (path === "tools" && method === "GET") return aresJson({ items: await toolList(env) }, 200, headers);
+  if (path === "tools" && method === "POST") {
+    let b;
+    try { b = await request.json(); } catch { b = null; }
+    const it = await toolCreate(env, b, "mgr", "ok");
+    return it ? aresJson({ ok: true, id: it.id }, 200, headers) : aresJson({ error: "Annonce incomplète" }, 400, headers);
+  }
+  const toolMatch = path.match(/^tools\/([0-9a-f]{16})$/);
+  if (toolMatch && method === "PUT") {
+    const it = await toolGet(env, toolMatch[1]);
+    if (!it) return aresJson({ error: "Introuvable" }, 404, headers);
+    let b;
+    try { b = await request.json(); } catch { b = {}; }
+    if (b.status === "ok") it.status = "ok";
+    if (b.renew) it.exp = Date.now() + TOOL_DAYS * 86400000;
+    await toolPut(env, it);
+    return aresJson({ ok: true }, 200, headers);
+  }
+  if (toolMatch && method === "DELETE") { await toolDel(env, toolMatch[1]); return aresJson({ ok: true }, 200, headers); }
   // Mini-chat d'un logement (gestionnaire) : activer, lire, écrire, modérer, supprimer
   const brdMatch = path.match(/^board\/([0-9a-f]{32})(?:\/([a-z0-9-]{3,40}))?$/);
   if (brdMatch) {
