@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.19.1';
+const VERSION = '2.19.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -363,7 +363,7 @@ function espaceData(l) {
   if (show.coll && im) { out.coll = pubData(im).items; if (im.pubToken) out.collLink = pubUrl(im); }
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
   if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '', lv: l.reglesV || '', v: rulesVersion(im) };
-  if (show.chat && im && im.chat && im.chat.on && isCurrent(l)) {
+  if (show.chat && chatOn(im) && isCurrent(l)) {
     const g = (im.chats || {})[chatGroupKey(im, l)];
     if (g && g.members.includes(l.id)) out.chat = { id: g.id, key: g.key, me: shortName(l), mid: l.id };
   }
@@ -377,12 +377,15 @@ function espaceData(l) {
 // ───── Messages de la maison : mini-chat des habitants d'un logement (lu et modéré par le gestionnaire) ─────
 // Chaque fil a sa propre clé, donnée seulement aux habitants actuels (dans leur espace chiffré) ; quand quelqu'un
 // part, on change de clé et on recopie l'historique : l'ancien habitant ne peut plus rien lire.
+// Par défaut : seulement les habitants d'un même appartement (même logement, ou même « Situé dans » pour les chambres
+// d'un appartement). Mettre en relation des appartements différents, c'est au gestionnaire de le choisir.
 const CHAT_SCOPES = {
-  logement: 'Par logement (les colocataires d’un même appartement / d’une même chambre)',
-  partie: 'Par « Situé dans » (même appartement, même aile, ancien bar…)',
-  structure: 'Toute la structure (tous les habitants ensemble)',
+  partie: 'Même appartement (par défaut) : colocataires du même logement, ou des chambres d’un même « Situé dans »',
+  logement: 'Même logement uniquement',
+  structure: 'Toute la structure : tous les habitants ensemble (appartements différents)',
 };
-const chatScope = (im) => (im.chat && im.chat.scope) || (['maison', 'local', 'residence'].includes(im.type) ? 'structure' : 'logement');
+const chatScope = (im) => (im.chat && im.chat.scope) || 'partie';
+const chatOn = (im) => !!im && !(im.chat && im.chat.on === false) && !immGone(im);
 function chatGroupKey(im, l) {
   const sc = chatScope(im), g = vault.get('logements', l.logId);
   if (sc === 'structure' || !l.logId) return 'all';
@@ -407,7 +410,8 @@ async function chatSync() {
     for (const im of vault.list('immeubles')) {
       const cur = im.chats || {};
       const groups = {};
-      if (im.chat && im.chat.on && !immGone(im)) for (const l of tenantsOfImm(im.id).filter(isCurrent)) (groups[chatGroupKey(im, l)] ||= []).push(l.id);
+      if (chatOn(im)) for (const l of tenantsOfImm(im.id).filter(isCurrent)) (groups[chatGroupKey(im, l)] ||= []).push(l.id);
+      for (const gk of Object.keys(groups)) if (groups[gk].length < 2) delete groups[gk]; // seul dans son appartement : pas de fil
       const next = {};
       let changed = false;
       for (const [gk, members] of Object.entries(groups)) {
@@ -2156,18 +2160,18 @@ const SHEETS = {
         })}</div>` : html`<p class="muted small">Aucun logement. Ajoutez les appartements, chambres, garages, bureaux ou locaux de cette structure pour suivre leurs occupants successifs.</p>`}
         <button class="btn block" style="margin-top:12px" data-action="new-log" data-imm="${id}">${icon('plus')} Ajouter un logement / local</button>`;
     } else if (tab === 'chat') {
-      const on = !!(im.chat && im.chat.on);
+      const on = chatOn(im);
       const groups = Object.entries(im.chats || {});
       if (on) setTimeout(() => chatLoad(id), 0); // relit le fil s'il date de plus de 15 s
       body = html`
         <label class="row" style="cursor:pointer;margin-bottom:10px"><input type="checkbox" data-input="chat-on" data-id="${id}" ${on ? new Raw('checked') : ''} style="width:22px;min-height:22px">
-          <span class="grow"><b>Messages de la maison</b><span class="meta" style="display:block">Mini-chat entre les habitants, dans leur app. Vous lisez tout, vous pouvez répondre et supprimer un message.</span></span></label>
+          <span class="grow"><b>Messages de la maison</b><span class="meta" style="display:block">Mini-chat entre les habitants, dans leur app — actif par défaut entre colocataires d’un même appartement. Vous lisez tout, vous pouvez répondre et supprimer un message.</span></span></label>
         ${on ? html`<label class="field" style="margin-bottom:6px">Qui discute ensemble ?<select data-input="chat-scope" data-id="${id}">${Object.entries(CHAT_SCOPES).map(([k, v]) => html`<option value="${k}" ${chatScope(im) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
           ${groups.length ? groups.map(([gk, g]) => html`<div class="section-label">💬 ${chatLabel(gk)} <span class="muted small">· ${g.members.map((m) => shortName(vault.get('locataires', m) || {})).join(', ')}</span></div>
             <div class="chat">${chatBubbles((ui.chatCache || {})[g.id], g.id)}</div>
             <form data-form="chatpost" class="chat-form"><input type="hidden" name="imm" value="${id}"><input type="hidden" name="gk" value="${gk}">
               <textarea name="x" required maxlength="1500" placeholder="Écrire aux habitants (en tant que gestionnaire)…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>`)
-          : html`<p class="muted small">Aucun habitant pour le moment : le fil se crée tout seul dès qu'un locataire est présent.</p>`}
+          : html`<p class="muted small">Aucun fil pour le moment : un fil se crée tout seul dès que 2 personnes habitent le même appartement (ou le même groupe choisi ci-dessus).</p>`}
           <button class="btn sm" style="margin-top:8px" data-action="chat-refresh" data-id="${id}">${icon('sync')} Actualiser</button>` : ''}
         <div class="section-label">📜 Règles propres à cet immeuble</div>
         <form data-form="regles" class="stack"><input type="hidden" name="id" value="${id}">
