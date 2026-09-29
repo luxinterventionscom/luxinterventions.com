@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.18.0';
+const VERSION = '2.18.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -1921,7 +1921,8 @@ const SHEETS = {
         ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
-        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+        ${id && t.locId && !t.recur && t.statut !== 'fait' ? html`<button class="btn" style="background:var(--green-soft);color:var(--green)" data-action="tache-done" data-id="${id}">${icon('check')} Réparé</button>` : html`<button class="btn" data-action="close-sheet">Annuler</button>`}
+        <button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
 
@@ -2955,8 +2956,18 @@ const ACTIONS = {
   },
   async 'del-tache'(d) {
     const t = vault.get('taches', d.id);
-    if (!t || !(await confirmBox(`Supprimer « ${t.titre} » ?`, { ok: 'Supprimer', danger: true, detail: t.depId ? 'La dépense déjà enregistrée reste dans les dépenses de l’immeuble.' : '' }))) return;
-    await vault.mutate((tx) => tx.remove('taches', d.id), 'Intervention supprimée', t.titre, t.immId);
+    const photos = t ? vault.list('documents').filter((x) => x.tacheId === t.id) : [];
+    const detail = [t && t.locId ? 'Le signalement disparaît aussi de l’app du locataire' + (photos.length ? ', avec ses photos' : '') + '. Pour garder une trace, touchez plutôt « Réparé ».' : '', t && t.depId ? 'La dépense déjà enregistrée reste dans les dépenses de l’immeuble.' : ''].filter(Boolean).join(' ');
+    if (!t || !(await confirmBox(`Supprimer « ${t.titre} » ?`, { ok: 'Supprimer', danger: true, detail }))) return;
+    await vault.mutate((tx) => { tx.remove('taches', d.id); for (const ph of photos) tx.remove('documents', ph.id); }, 'Intervention supprimée', t.titre, t.immId);
+    for (const ph of photos) await vault.deleteFile(ph.id).catch(() => {});
+    goBack();
+  },
+  async 'tache-done'(d) {
+    const t = vault.get('taches', d.id);
+    if (!t) return;
+    await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: today(), vu: true }), 'Intervention terminée', t.titre, t.immId);
+    toast('✓ Réparé · le locataire voit « Terminé » dans son app');
     goBack();
   },
   async 'del-collecte'(d) {
