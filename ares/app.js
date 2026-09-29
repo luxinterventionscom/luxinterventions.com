@@ -1,10 +1,10 @@
-// Ares Invest — Gestion locataires (interface)
+// Ares Invest S.A. — Gestion locataires (interface)
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.19.2';
+const VERSION = '2.20.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -345,7 +345,7 @@ function espaceData(l) {
   const soc = societe();
   const out = {
     v: 1, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? g.nom : '', adresse: im ? im.adresse : '', show,
-    societe: { nom: soc.nom || 'Ares Invest', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '' },
+    societe: { nom: soc.nom || 'Ares Invest S.A.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '' },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
   };
   if (show.pay || show.quit) {
@@ -365,7 +365,11 @@ function espaceData(l) {
   if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '', lv: l.reglesV || '', v: rulesVersion(im) };
   if (show.chat && chatOn(im) && isCurrent(l)) {
     const g = (im.chats || {})[chatGroupKey(im, l)];
-    if (g && g.members.includes(l.id)) out.chat = { id: g.id, key: g.key, me: shortName(l), mid: l.id };
+    if (g && g.members.includes(l.id)) {
+      out.chat = { id: g.id, key: g.key, me: shortName(l), mid: l.id };
+      const ev = binRota(im, g, addDays(today(), -1), addDays(today(), 120));
+      if (ev.length) out.bins = { names: Object.fromEntries(g.members.map((m) => [m, shortName(vault.get('locataires', m) || {})])), ev: ev.map((e) => ({ p: e.p, cats: e.cats, who: e.who })) };
+    }
   }
   if (show.signal || show.regles) { const k = vault.get('reglages', 'signal'); out.signalKey = k ? k.pub : ''; }
   if (show.signal) {
@@ -402,6 +406,43 @@ async function chatRead(g) {
 }
 const chatSeenKey = (gid) => 'aresChatSeen:' + gid;
 const setSeen = (gid, n) => { try { if (n) localStorage.setItem(chatSeenKey(gid), n); } catch {} };
+// ───── Tour des poubelles : à tour de rôle entre les habitants d'un même fil ─────
+// L'ordre suit les habitants ; quand quelqu'un part, sa place reste libre et le prochain qui arrive la prend.
+function binOrder(prev, members) {
+  const o = (prev || []).map((id) => (id && members.includes(id) ? id : null));
+  for (const m of members) if (!o.includes(m)) { const i = o.indexOf(null); if (i >= 0) o[i] = m; else o.push(m); }
+  return o;
+}
+const binsOn = (im) => !!im && im.bins !== false;
+// Soirs (ou matins) de sortie de l'immeuble, plusieurs collectes le même soir = un seul tour
+function binEvents(im, from, to) {
+  const by = {};
+  for (const c of vault.list('collectes').filter((x) => x.immId === im.id)) {
+    for (const d of collecteDates(c, addDays(from, -1), addDays(to, 1))) {
+      const p = (c.sortie || 'veille') === 'jour' ? d : addDays(d, -1);
+      if (p < from || p > to) continue;
+      (by[p] ||= new Set()).add(c.cat);
+    }
+  }
+  return Object.keys(by).sort().map((p) => ({ p, cats: [...by[p]] }));
+}
+function binRota(im, g, from, to) {
+  const order = (g.order || g.members).filter((id) => id && g.members.includes(id));
+  if (order.length < 2 || !binsOn(im)) return [];
+  const since = g.since || '2026-09-01';
+  return binEvents(im, since, to).map((e, k) => ({ ...e, who: order[k % order.length] })).filter((e) => e.p >= from);
+}
+// État d'un tour d'après les messages du fil (fait, « je ne peux pas », « je le fais »)
+function binState(msgs, e) {
+  let who = e.who, done = '', cant = '';
+  for (const m of (msgs || []).filter((x) => x.k === 'bin' && x.d === e.p)) {
+    if (m.act === 'take') { who = m.m; cant = ''; }
+    if (m.act === 'cant') cant = m.m;
+    if (m.act === 'done') done = m.m;
+  }
+  return { who, done, cant };
+}
+
 let chatBusy = false;
 async function chatSync() {
   if (!vault.unlocked || chatBusy) return;
@@ -418,11 +459,11 @@ async function chatSync() {
         members.sort();
         const old = cur[gk];
         if (old && old.members.every((m) => members.includes(m))) {
-          next[gk] = old.members.join() === members.join() ? old : { ...old, members };
+          next[gk] = old.members.join() === members.join() && old.order && old.since ? old : { ...old, members, order: binOrder(old.order || old.members, members), since: old.since || today() };
           if (next[gk] !== old) changed = true;
           continue;
         }
-        const g = { id: newEspaceId(), key: newEspaceKey(), members };
+        const g = { id: newEspaceId(), key: newEspaceKey(), members, order: binOrder(old ? old.order || old.members : [], members), since: (old && old.since) || today() };
         await vault.boardOn(g.id);
         if (old) {
           let last = '';
@@ -468,6 +509,18 @@ async function chatLoad(imId, force) {
   }
   if (ui.chatNew) delete ui.chatNew[imId];
   if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.id === imId && ui.sheet.tab === 'chat') { ui.sheet.rendered = false; renderSheet(); }
+}
+// Prochains tours des poubelles d'un fil, avec qui et si c'est fait
+function binsTable(im, g) {
+  const ev = binRota(im, g, addDays(today(), -3), addDays(today(), 21)).slice(0, 6);
+  if (!ev.length) return '';
+  const msgs = (ui.chatCache || {})[g.id];
+  const nm = (id) => shortName(vault.get('locataires', id) || {});
+  return html`<div class="list small" style="margin-bottom:8px">${ev.map((e) => {
+    const st = binState(msgs, e);
+    return html`<div class="row"><span class="grow"><b>${fmtDay(e.p)}</b> — ${e.cats.map((c) => (DECHETS[c] || DECHETS.autre).short).join(' + ')}<span class="meta" style="display:block">tour de ${nm(st.who)}${st.cant && !st.done ? ' · 🔁 ' + nm(st.cant) + ' ne peut pas' : ''}</span></span>
+      ${st.done ? html`<span class="badge ok">✅ ${nm(st.done)}</span>` : e.p < today() ? html`<span class="badge bad">❌ pas fait</span>` : html`<span class="badge">à venir</span>`}</div>`;
+  })}</div>`;
 }
 const chatBubbles = (list, gid) => (list == null ? html`<p class="muted small">Chargement…</p>` : !list.length ? html`<p class="muted small">Aucun message pour le moment.</p>`
   : html`${list.map((m) => html`<div class="bub ${m.m === 'mgr' ? 'mgr' : ''}"><div class="bub-h"><b>${m.m === 'mgr' ? '🛡️ Gestionnaire' : m.a}</b><span>${fmtDateTime(m.t)}</span>
@@ -838,8 +891,8 @@ function renderLock(mode, error = '') {
   lockEl.hidden = false;
   const legacy = legacyLocal();
   const head = html`
-    <img class="lock-logo" src="/ares/icons/ares-192.png" alt="Ares Invest" width="96" height="96">
-    <div class="lock-head"><h1>Ares Invest</h1><p>Gestion locataires · Luxembourg</p></div>`;
+    <img class="lock-logo" src="/ares/icons/ares-192.png" alt="Ares Invest S.A." width="96" height="96">
+    <div class="lock-head"><h1>Ares Invest S.A.</h1><p>Gestion locataires · Luxembourg</p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>`;
 
   if (mode === 'checking') {
@@ -1121,14 +1174,14 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="/ares/icons/ares-96.png" alt="" width="36" height="36"><span>Ares Invest<small>Gestion locataires</small></span></div>
+      <div class="brand"><img class="brand-mark" src="/ares/icons/ares-96.png" alt="" width="36" height="36"><span>Ares Invest S.A.<small>Gestion locataires</small></span></div>
       ${NAV.map(navBtn)}
       <div class="spacer"></div>
       <button class="navbtn" data-action="lock">${icon('lock')}<span>Verrouiller</span></button>
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="/ares/icons/ares-96.png" alt="" width="36" height="36"><span>Ares Invest</span></div>
+        <div class="brand"><img class="brand-mark" src="/ares/icons/ares-96.png" alt="" width="36" height="36"><span>Ares Invest S.A.</span></div>
         <button class="sync" id="sync" data-action="sync-now" data-s="idle"><i></i><span>…</span></button>
         <button class="btn icon ghost" data-action="lock" aria-label="Verrouiller" title="Verrouiller">${icon('lock')}</button>
       </header>
@@ -1255,7 +1308,7 @@ function reportCollectes(immId, y) {
     ${im.pubToken ? html`<div style="display:flex;gap:16px;align-items:center;margin-top:16px;border:1px solid #ccc;border-radius:10px;padding:10px 14px">
       <div class="qr" style="width:120px;flex:0 0 120px">${qrSvg(pubUrl(im), 4)}</div>
       <div><b>📱 Scannez : calendrier sur votre téléphone, rappel la veille.</b><br>Scansiona: calendario sul telefono, promemoria la sera prima.<br>Scannen: Kalender auf Ihrem Handy, Erinnerung am Vorabend.<br>Digitalize: calendário no telemóvel, aviso na véspera.<br>Scan: calendar on your phone, reminder the evening before.</div></div>` : ''}
-    <p class="pr-sub" style="margin-top:14px">Une question ? ${societe().nom || 'Ares Invest'}${societe().tel ? ' · ' + societe().tel : ''}</p>`;
+    <p class="pr-sub" style="margin-top:14px">Une question ? ${societe().nom || 'Ares Invest S.A.'}${societe().tel ? ' · ' + societe().tel : ''}</p>`;
 }
 const logOptions = (immId, sel) => html`<option value="">Parties communes / tout l'immeuble</option>${logsOf(immId).map((g) => html`<option value="${g.id}" ${g.id === sel ? new Raw('selected') : ''}>${g.nom}</option>`)}`;
 // Intervention terminée avec un coût : proposer de l'ajouter aux dépenses de l'immeuble (une seule fois)
@@ -1718,7 +1771,7 @@ dashboard() {
 
       <div class="section-label">Apparence</div>
       <div class="chips">${[['auto', 'Automatique'], ['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => html`<button class="chip" data-action="theme" data-id="${k}" aria-pressed="${theme === k}">${l}</button>`)}</div>
-      <p class="tiny muted" style="margin-top:28px;text-align:center">Ares Invest · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
+      <p class="tiny muted" style="margin-top:28px;text-align:center">Ares Invest S.A. · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
   },
 };
 
@@ -1894,7 +1947,7 @@ function relanceText(l, lang) {
   };
   const list = months.map((x) => `${NAMES[lang][x.m - 1]} ${x.y} (${money(payState(l, x.y, x.m).rest)})`).join(', ') || '—';
   const where = [logName(l.logId), immName(l.immId)].filter(Boolean).join(', ');
-  const sign = st.nom || 'Ares Invest';
+  const sign = st.nom || 'Ares Invest S.A.';
   const iban = st.iban ? { fr: `\nIBAN : ${st.iban}`, it: `\nIBAN: ${st.iban}`, en: `\nIBAN: ${st.iban}`, pt: `\nIBAN: ${st.iban}` }[lang] : '';
   const T = {
     fr: `Bonjour ${fullName(l)},\n\nSauf erreur de notre part, nous n'avons pas encore reçu le loyer de ${list} pour ${where}, soit ${money(total)} au total.\n\nMerci de procéder au règlement dès que possible, ou de nous contacter si le paiement a déjà été effectué.${iban}\n\nCordialement,\n${sign}`,
@@ -2167,7 +2220,10 @@ const SHEETS = {
         <label class="row" style="cursor:pointer;margin-bottom:10px"><input type="checkbox" data-input="chat-on" data-id="${id}" ${on ? new Raw('checked') : ''} style="width:22px;min-height:22px">
           <span class="grow"><b>Messages de la maison</b><span class="meta" style="display:block">Mini-chat entre les habitants, dans leur app — actif par défaut entre colocataires d’un même appartement. Vous lisez tout, vous pouvez répondre et supprimer un message.</span></span></label>
         ${on ? html`<label class="field" style="margin-bottom:6px">Qui discute ensemble ?<select data-input="chat-scope" data-id="${id}">${Object.entries(CHAT_SCOPES).map(([k, v]) => html`<option value="${k}" ${chatScope(im) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+          <label class="row" style="cursor:pointer;margin:6px 0"><input type="checkbox" data-input="bins-on" data-id="${id}" ${binsOn(im) ? new Raw('checked') : ''} style="width:22px;min-height:22px">
+            <span class="grow"><b>🗑️ Tour des poubelles</b><span class="meta" style="display:block">À tour de rôle entre les habitants de chaque fil, automatiquement (le nouveau locataire prend la place de celui qui part). Dans leur app : « Ce soir c’est ton tour », ✅ Fait, 🔁 Je ne peux pas.</span></span></label>
           ${groups.length ? groups.map(([gk, g]) => html`<div class="section-label">💬 ${chatLabel(gk)} <span class="muted small">· ${g.members.map((m) => shortName(vault.get('locataires', m) || {})).join(', ')}</span></div>
+            ${binsTable(im, g)}
             <div class="chat">${chatBubbles((ui.chatCache || {})[g.id], g.id)}</div>
             <form data-form="chatpost" class="chat-form"><input type="hidden" name="imm" value="${id}"><input type="hidden" name="gk" value="${gk}">
               <textarea name="x" required maxlength="1500" placeholder="Écrire aux habitants (en tant que gestionnaire)…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>`)
@@ -2185,7 +2241,7 @@ const SHEETS = {
         <dl class="kv" style="margin-bottom:16px">
           ${kvRow('Structure', IMM_TYPES[im.type] || IMM_TYPES.immeuble)}
           ${kvRow('Bailleur (propriétaire)', im.proprietaire || '—')}
-          ${kvRow('Locataire principal', html`${societe().nom || 'Ares Invest'} (vous)`)}
+          ${kvRow('Locataire principal', html`${societe().nom || 'Ares Invest S.A.'} (vous)`)}
           ${kvRow('Loyer + charges', rent ? money(rent) + ' / mois' : '—')}
           ${kvRow('Bail principal', html`${im.bailDebut ? fmtDate(im.bailDebut) : '?'} → ${im.bailFin ? fmtDate(im.bailFin) : 'indéterminé'}`)}
           ${kvRow('Total versé', html`<span class="num">${money(sum(versementsOf(id), (v) => v.montant))}</span>`)}
@@ -2414,7 +2470,7 @@ const SHEETS = {
       title: id ? 'Modifier le locataire' : 'Nouveau locataire',
       body: html`<form id="f" data-form="loc" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        ${id ? '' : html`<p class="tiny muted full" style="margin:0">Bailleur (propriétaire) → <b>${societe().nom || 'Ares Invest'}</b> (locataire principal) → <b>sous-locataire</b> que vous ajoutez ici.</p>`}
+        ${id ? '' : html`<p class="tiny muted full" style="margin:0">Bailleur (propriétaire) → <b>${societe().nom || 'Ares Invest S.A.'}</b> (locataire principal) → <b>sous-locataire</b> que vous ajoutez ici.</p>`}
         ${logementSelect(l.logId, l.immId)}
         ${tenantFields(l)}
         ${id ? field('Date de sortie', 'sortie', l.sortie, { type: 'date' }) : ''}
@@ -2568,7 +2624,7 @@ const SHEETS = {
   },
 
   recovery({ preset: code }) {
-    const body = encodeURIComponent(`Clé de secours Ares Invest :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : https://luxinterventions.com/locataires.html → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
+    const body = encodeURIComponent(`Clé de secours Ares Invest S.A. :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : https://luxinterventions.com/locataires.html → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
     return {
       title: 'Votre clé de secours',
       narrow: true,
@@ -2578,7 +2634,7 @@ const SHEETS = {
         <div class="actions" style="margin-top:14px">
           <button class="btn" data-action="copy-recovery">${icon('file')} Copier</button>
           <button class="btn" data-action="print-recovery">${icon('download')} Imprimer</button>
-          <a class="btn" href="mailto:${MAIL}?subject=${encodeURIComponent('Ares Invest — clé de secours')}&body=${body}">${icon('mail')} Email</a>
+          <a class="btn" href="mailto:${MAIL}?subject=${encodeURIComponent('Ares Invest S.A. — clé de secours')}&body=${body}">${icon('mail')} Email</a>
         </div>
         <p class="tiny muted">Le bouton Email prépare un message vers ${MAIL}. Pratique, mais toute personne qui accède à cette messagerie pourrait ouvrir le coffre : le papier reste plus sûr.</p>`,
       foot: html`<button class="btn primary" data-action="close-sheet">J'ai noté ma clé de secours</button>`,
@@ -2640,7 +2696,7 @@ const SHEETS = {
       title: 'Société & associés',
       body: html`<form id="f" data-form="societe" class="fields">
         <div class="section-label full" style="margin:0">Votre société — locataire principal (apparaît sur les quittances et les relances)</div>
-        ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: 'ex. Ares Invest SA' })}
+        ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: 'ex. Ares Invest S.A.' })}
         ${field('Adresse', 'adresse', st.adresse, { full: true })}
         ${field('Code postal et ville', 'ville', st.ville, { placeholder: 'L-1234 Luxembourg' })}
         ${field('Téléphone', 'tel', st.tel, { type: 'tel' })}
@@ -2793,7 +2849,7 @@ const tenantFromForm = (fd, p = '') => ({
 // ───────────────────────── Rapports imprimables ─────────────────────────
 function printDoc(title, body) {
   const el = $('#print');
-  setHtml(el, html`<div class="pr-head"><div><b>Ares Invest</b> · ${title}</div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
+  setHtml(el, html`<div class="pr-head"><div><b>Ares Invest S.A.</b> · ${title}</div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
   document.body.classList.add('printing');
   const done = () => { document.body.classList.remove('printing'); setHtml(el, ''); removeEventListener('afterprint', done); };
   addEventListener('afterprint', done);
@@ -3757,6 +3813,10 @@ document.addEventListener('change', (e) => {
   if (k === 'tache-imm') $('#tacheLog').innerHTML = val(logOptions(e.target.value, ''));
   if (k === 'col-mode') sheetEl.querySelectorAll('[data-mode]').forEach((el) => { el.hidden = el.dataset.mode !== e.target.value; });
   if (k === 'door-reason') { const w = $('#doorWarn'); if (w) w.hidden = e.target.value !== 'Impayé'; }
+  if (k === 'bins-on') {
+    const im = vault.get('immeubles', e.target.dataset.id);
+    if (im) vault.mutate((tx) => tx.put('immeubles', { id: im.id, bins: e.target.checked }), e.target.checked ? 'Tour des poubelles activé' : 'Tour des poubelles désactivé', im.adresse, im.id);
+  }
   if (k === 'chat-on' || k === 'chat-scope') {
     const im = vault.get('immeubles', e.target.dataset.id);
     if (im) {
