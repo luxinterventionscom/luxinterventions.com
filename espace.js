@@ -23,7 +23,7 @@ const L = {
       text: (s, n, a, f, to) => `Je soussigné(e), ${s}, locataire principal et bailleur, déclare avoir reçu de ${n} les sommes détaillées ci-dessus, soit un total de ${a}, au titre des loyers de ${f} à ${to}, et lui en donne quittance.` },
     more: (n) => `Voir les ${n} suivantes`,
     tl: {"title": "Don · prêt · location d’objets", "hint": "Donnez, prêtez ou louez vos objets (outils, électroménager, meubles…). Les intéressés vous écrivent par email ; l’argent s’échange entre vous, en espèces à la remise.", "see": "🌐 Voir toutes les annonces", "mine": "Mes annonces", "add": "➕ Publier un objet", "photos": "Photos (1 à 3)", "t": "Titre (ex. Perceuse Bosch)", "kind": "Type", "kinds": {"don": "🎁 Don (gratuit)", "pret": "🤝 Prêt gratuit", "loc": "💶 Location"}, "price": "Prix (€)", "unit": "Par", "units": {"h": "heure", "j": "jour", "we": "week-end", "s": "semaine", "u": "prix unique"}, "desc": "Description (état, marque, accessoires…)", "rules": "Vos conditions (caution, retour…)", "lieu": "Lieu de remise (ex. Luxembourg-Gare)", "mail": "Votre email (donné seulement à ceux qui touchent « Je suis intéressé »)", "ok": "J’accepte les règles d’utilisation : mon annonce et mes photos sont publiées sur luxinterventions.com (sans mon nom ni mon adresse) ; mon prénom et mon email sont donnés aux personnes intéressées.", "send": "Envoyer pour approbation", "sent": "Merci ! Votre annonce sera en ligne dès que le gestionnaire l’aura approuvée.", "st": {"pending": "⏳ En attente d’approbation", "ok": "✅ En ligne", "exp": "⌛ Expirée"}, "del": "Retirer", "delQ": "Retirer cette annonce ?", "rulesLink": "Règles d’utilisation", "need": "Ajoutez au moins une photo.", "inter": (n) => `📩 ${n} personne${n > 1 ? 's' : ''} intéressée${n > 1 ? 's' : ''} — regardez vos emails`},
-    bn: { you: 'C’est ton tour', tonight: 'Ce soir', morning: 'Ce matin', done: '✅ Fait', cant: '🔁 Je ne peux pas', take: '🙋 Je le fais', me: 'toi', turn: 'tour de', doneBy: 'fait par',
+    bn: { forgotMsg: (n, c) => `⚠️ Tour oublié : ${n} (${c})`, insteadMsg: (n, w, c) => `🙋 ${n} l’a fait à la place de ${w} : ${c}`, instead: '🙋 Je l’ai fait à sa place', catch: 'rattrapage', board: '🏆 Classement de l’année', owe: (n) => `🔁 ${n} à rattraper`, you: 'C’est ton tour', tonight: 'Ce soir', morning: 'Ce matin', done: '✅ Fait', cant: '🔁 Je ne peux pas', take: '🙋 Je le fais', me: 'toi', turn: 'tour de', doneBy: 'fait par',
       doneMsg: (n, c) => `✅ ${n} a sorti : ${c}`, cantMsg: (n, c) => `🔁 ${n} ne peut pas sortir : ${c} — qui le fait ?`, takeMsg: (n, c) => `🙋 ${n} s’en occupe : ${c}`, ask: (n, c) => `${n} ne peut pas (${c}). Tu peux le faire ?` },
     loc: 'fr-LU', door: 'Code de ma porte', since: 'depuis le', app: 'App des locataires ARES S.A.', welcome: 'Vos loyers, quittances, documents et collectes — et signaler un problème, depuis votre téléphone.', code: 'Votre code d’accès personnel', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrer', noCode: 'Pas de code ? Demandez-le à votre gestionnaire.', badCode: 'Code inconnu. Vérifiez-le ou demandez un nouveau code.', install: "Installer l’icône sur mon téléphone", iosHow: 'iPhone : touchez Partager puis « Sur l’écran d’accueil ».', andHow: 'Android : menu ⋮ puis « Installer l’application ».', logout: 'Se déconnecter de ce téléphone', title: 'Mon espace locataire', hello: 'Bonjour', avis: 'Avis de l’immeuble', pay: 'Mes loyers', restNow: 'Impayé à ce jour', upcoming: 'à venir', allPaid: 'Tout est payé à ce jour ✓',
     iban: 'Pour payer', ref: 'Communication', quit: 'Mes quittances', quitBtn: 'Quittance', partial: 'Reçu partiel', contrat: 'Mon contrat', entry: 'Entrée', end: 'Fin du contrat', rent: 'Loyer', revision: 'Prochaine révision', caution: 'Garantie',
@@ -46,7 +46,7 @@ const L = {
       text: (s, n, a, f, to) => `Il/la sottoscritto/a, ${s}, locatario principale e locatore, dichiara di aver ricevuto da ${n} le somme dettagliate sopra, per un totale di ${a}, a titolo di affitto da ${f} a ${to}, e ne rilascia quietanza.` },
     more: (n) => `Vedi le altre ${n}`,
     tl: {"title": "Regalo · prestito · noleggio di oggetti", "hint": "Regala, presta o noleggia i tuoi oggetti (attrezzi, elettrodomestici, mobili…). Gli interessati ti scrivono per email; i soldi si scambiano tra voi, in contanti alla consegna.", "see": "🌐 Vedi tutti gli annunci", "mine": "I miei annunci", "add": "➕ Pubblica un oggetto", "photos": "Foto (da 1 a 3)", "t": "Titolo (es. Trapano Bosch)", "kind": "Tipo", "kinds": {"don": "🎁 Regalo (gratis)", "pret": "🤝 Prestito gratuito", "loc": "💶 Noleggio"}, "price": "Prezzo (€)", "unit": "Per", "units": {"h": "ora", "j": "giorno", "we": "weekend", "s": "settimana", "u": "prezzo unico"}, "desc": "Descrizione (stato, marca, accessori…)", "rules": "Le tue condizioni (cauzione, restituzione…)", "lieu": "Luogo di consegna (es. Luxembourg-Gare)", "mail": "La tua email (data solo a chi tocca « Sono interessato »)", "ok": "Accetto le regole d’uso: il mio annuncio e le mie foto sono pubblicati su luxinterventions.com (senza nome né indirizzo); il mio nome e la mia email sono dati alle persone interessate.", "send": "Invia per l’approvazione", "sent": "Grazie! Il tuo annuncio sarà online appena il gestore l’avrà approvato.", "st": {"pending": "⏳ In attesa di approvazione", "ok": "✅ Online", "exp": "⌛ Scaduto"}, "del": "Ritira", "delQ": "Ritirare questo annuncio?", "rulesLink": "Regole d’uso", "need": "Aggiungi almeno una foto.", "inter": (n) => `📩 ${n} person${n > 1 ? 'e interessate' : 'a interessata'} — guarda la tua email`},
-    bn: { you: 'Tocca a te', tonight: 'Stasera', morning: 'Stamattina', done: '✅ Fatto', cant: '🔁 Non posso', take: '🙋 Lo faccio io', me: 'tu', turn: 'turno di', doneBy: 'fatto da',
+    bn: { forgotMsg: (n, c) => `⚠️ Turno dimenticato: ${n} (${c})`, insteadMsg: (n, w, c) => `🙋 ${n} l’ha fatto al posto di ${w}: ${c}`, instead: '🙋 L’ho fatto io al suo posto', catch: 'recupero', board: '🏆 Classifica dell’anno', owe: (n) => `🔁 ${n} da recuperare`, you: 'Tocca a te', tonight: 'Stasera', morning: 'Stamattina', done: '✅ Fatto', cant: '🔁 Non posso', take: '🙋 Lo faccio io', me: 'tu', turn: 'turno di', doneBy: 'fatto da',
       doneMsg: (n, c) => `✅ ${n} ha messo fuori: ${c}`, cantMsg: (n, c) => `🔁 ${n} non può mettere fuori: ${c} — chi lo fa?`, takeMsg: (n, c) => `🙋 ${n} se ne occupa: ${c}`, ask: (n, c) => `${n} non può (${c}). Puoi farlo tu?` },
     loc: 'it-IT', door: 'Codice della mia porta', since: 'dal', app: 'App degli inquilini ARES S.A.', welcome: 'I tuoi affitti, ricevute, documenti e raccolte dei rifiuti — e segnalare un problema, dal telefono.', code: 'Il tuo codice d’accesso personale', codePh: 'es. K7PM2-QXA4H', enter: 'Entra', noCode: 'Non hai il codice? Chiedilo al tuo gestore.', badCode: 'Codice sconosciuto. Controllalo o chiedi un nuovo codice.', install: "Installa l’icona sul mio telefono", iosHow: 'iPhone: tocca Condividi e poi « Aggiungi alla schermata Home ».', andHow: 'Android: menu ⋮ e poi « Installa app ».', logout: 'Esci da questo telefono', title: 'Il mio spazio inquilino', hello: 'Ciao', avis: 'Avvisi del palazzo', pay: 'I miei affitti', restNow: 'Da pagare a oggi', upcoming: 'in scadenza', allPaid: 'Tutto pagato a oggi ✓',
     iban: 'Per pagare', ref: 'Causale', quit: 'Le mie ricevute', quitBtn: 'Ricevuta', partial: 'Ricevuta parziale', contrat: 'Il mio contratto', entry: 'Entrata', end: 'Fine del contratto', rent: 'Affitto', revision: 'Prossima revisione', caution: 'Cauzione',
@@ -69,7 +69,7 @@ const L = {
       text: (s, n, a, f, to) => `Der/die Unterzeichnende, ${s}, Hauptmieter und Vermieter, bestätigt, von ${n} die oben aufgeführten Beträge, insgesamt ${a}, als Miete von ${f} bis ${to} erhalten zu haben, und erteilt hierüber Quittung.` },
     more: (n) => `Die nächsten ${n} anzeigen`,
     tl: {"title": "Verschenken · verleihen · vermieten", "hint": "Verschenken, verleihen oder vermieten Sie Ihre Sachen (Werkzeug, Haushaltsgeräte, Möbel…). Interessenten schreiben Ihnen per E-Mail; bezahlt wird unter Ihnen, bar bei der Übergabe.", "see": "🌐 Alle Anzeigen ansehen", "mine": "Meine Anzeigen", "add": "➕ Gegenstand anbieten", "photos": "Fotos (1 bis 3)", "t": "Titel (z. B. Bohrmaschine Bosch)", "kind": "Art", "kinds": {"don": "🎁 Geschenkt", "pret": "🤝 Kostenlos leihen", "loc": "💶 Vermietung"}, "price": "Preis (€)", "unit": "Pro", "units": {"h": "Stunde", "j": "Tag", "we": "Wochenende", "s": "Woche", "u": "Festpreis"}, "desc": "Beschreibung (Zustand, Marke, Zubehör…)", "rules": "Ihre Bedingungen (Kaution, Rückgabe…)", "lieu": "Übergabeort (z. B. Luxembourg-Gare)", "mail": "Ihre E-Mail (nur für Personen, die „Ich bin interessiert“ tippen)", "ok": "Ich akzeptiere die Nutzungsregeln: Meine Anzeige und Fotos werden auf luxinterventions.com veröffentlicht (ohne Namen und Adresse); mein Vorname und meine E-Mail werden an Interessenten weitergegeben.", "send": "Zur Freigabe senden", "sent": "Danke! Ihre Anzeige ist online, sobald die Verwaltung sie freigegeben hat.", "st": {"pending": "⏳ Wartet auf Freigabe", "ok": "✅ Online", "exp": "⌛ Abgelaufen"}, "del": "Zurückziehen", "delQ": "Diese Anzeige zurückziehen?", "rulesLink": "Nutzungsregeln", "need": "Bitte mindestens ein Foto hinzufügen.", "inter": (n) => `📩 ${n} Interessent${n > 1 ? 'en' : ''} — sehen Sie in Ihre E-Mails`},
-    bn: { you: 'Du bist dran', tonight: 'Heute Abend', morning: 'Heute Morgen', done: '✅ Erledigt', cant: '🔁 Ich kann nicht', take: '🙋 Ich mache es', me: 'du', turn: 'dran:', doneBy: 'erledigt von',
+    bn: { forgotMsg: (n, c) => `⚠️ Vergessen: ${n} (${c})`, insteadMsg: (n, w, c) => `🙋 ${n} hat es statt ${w} gemacht: ${c}`, instead: '🙋 Ich habe es stattdessen gemacht', catch: 'Nachholen', board: '🏆 Rangliste des Jahres', owe: (n) => `🔁 ${n} nachzuholen`, you: 'Du bist dran', tonight: 'Heute Abend', morning: 'Heute Morgen', done: '✅ Erledigt', cant: '🔁 Ich kann nicht', take: '🙋 Ich mache es', me: 'du', turn: 'dran:', doneBy: 'erledigt von',
       doneMsg: (n, c) => `✅ ${n} hat rausgestellt: ${c}`, cantMsg: (n, c) => `🔁 ${n} kann nicht rausstellen: ${c} — wer übernimmt?`, takeMsg: (n, c) => `🙋 ${n} übernimmt: ${c}`, ask: (n, c) => `${n} kann nicht (${c}). Kannst du es machen?` },
     loc: 'de-LU', door: 'Mein Türcode', since: 'seit', app: 'Mieter-App ARES S.A.', welcome: 'Ihre Mieten, Quittungen, Dokumente und Abfuhrtermine — und Probleme melden, auf Ihrem Telefon.', code: 'Ihr persönlicher Zugangscode', codePh: 'z. B. K7PM2-QXA4H', enter: 'Anmelden', noCode: 'Kein Code? Fragen Sie Ihre Verwaltung.', badCode: 'Unbekannter Code. Bitte prüfen oder einen neuen Code anfordern.', install: "Symbol auf meinem Handy installieren", iosHow: 'iPhone: Teilen tippen, dann „Zum Home-Bildschirm“.', andHow: 'Android: Menü ⋮, dann „App installieren“.', logout: 'Auf diesem Telefon abmelden', title: 'Mein Mieterbereich', hello: 'Guten Tag', avis: 'Mitteilungen zum Haus', pay: 'Meine Mieten', restNow: 'Heute offen', upcoming: 'noch fällig', allPaid: 'Bis heute alles bezahlt ✓',
     iban: 'Zahlung', ref: 'Verwendungszweck', quit: 'Meine Quittungen', quitBtn: 'Quittung', partial: 'Teilzahlung', contrat: 'Mein Vertrag', entry: 'Einzug', end: 'Vertragsende', rent: 'Miete', revision: 'Nächste Anpassung', caution: 'Kaution',
@@ -92,7 +92,7 @@ const L = {
       text: (s, n, a, f, to) => `O/A abaixo assinado/a, ${s}, arrendatário principal e senhorio, declara ter recebido de ${n} as quantias detalhadas acima, num total de ${a}, a título de renda de ${f} a ${to}, e dá a respetiva quitação.` },
     more: (n) => `Ver as próximas ${n}`,
     tl: {"title": "Doar · emprestar · alugar objetos", "hint": "Doe, empreste ou alugue os seus objetos (ferramentas, eletrodomésticos, móveis…). Os interessados escrevem-lhe por email; o dinheiro troca-se entre vocês, em numerário na entrega.", "see": "🌐 Ver todos os anúncios", "mine": "Os meus anúncios", "add": "➕ Publicar um objeto", "photos": "Fotos (1 a 3)", "t": "Título (ex. Berbequim Bosch)", "kind": "Tipo", "kinds": {"don": "🎁 Doação (grátis)", "pret": "🤝 Empréstimo grátis", "loc": "💶 Aluguer"}, "price": "Preço (€)", "unit": "Por", "units": {"h": "hora", "j": "dia", "we": "fim de semana", "s": "semana", "u": "preço único"}, "desc": "Descrição (estado, marca, acessórios…)", "rules": "As suas condições (caução, devolução…)", "lieu": "Local de entrega (ex. Luxembourg-Gare)", "mail": "O seu email (dado só a quem tocar « Estou interessado »)", "ok": "Aceito as regras de utilização: o meu anúncio e as minhas fotos são publicados em luxinterventions.com (sem nome nem morada); o meu nome próprio e o meu email são dados às pessoas interessadas.", "send": "Enviar para aprovação", "sent": "Obrigado! O seu anúncio fica online assim que o gestor o aprovar.", "st": {"pending": "⏳ À espera de aprovação", "ok": "✅ Online", "exp": "⌛ Expirado"}, "del": "Retirar", "delQ": "Retirar este anúncio?", "rulesLink": "Regras de utilização", "need": "Adicione pelo menos uma foto.", "inter": (n) => `📩 ${n} pessoa${n > 1 ? 's interessadas' : ' interessada'} — veja o seu email`},
-    bn: { you: 'É a tua vez', tonight: 'Esta noite', morning: 'Esta manhã', done: '✅ Feito', cant: '🔁 Não posso', take: '🙋 Eu faço', me: 'tu', turn: 'vez de', doneBy: 'feito por',
+    bn: { forgotMsg: (n, c) => `⚠️ Vez esquecida: ${n} (${c})`, insteadMsg: (n, w, c) => `🙋 ${n} fez no lugar de ${w}: ${c}`, instead: '🙋 Fiz eu no lugar', catch: 'recuperação', board: '🏆 Classificação do ano', owe: (n) => `🔁 ${n} por recuperar`, you: 'É a tua vez', tonight: 'Esta noite', morning: 'Esta manhã', done: '✅ Feito', cant: '🔁 Não posso', take: '🙋 Eu faço', me: 'tu', turn: 'vez de', doneBy: 'feito por',
       doneMsg: (n, c) => `✅ ${n} pôs fora: ${c}`, cantMsg: (n, c) => `🔁 ${n} não pode pôr fora: ${c} — quem faz?`, takeMsg: (n, c) => `🙋 ${n} trata disso: ${c}`, ask: (n, c) => `${n} não pode (${c}). Podes fazer tu?` },
     loc: 'pt-PT', door: 'Código da minha porta', since: 'desde', app: 'App dos inquilinos ARES S.A.', welcome: 'As suas rendas, recibos, documentos e recolhas — e comunicar um problema, no seu telemóvel.', code: 'O seu código de acesso pessoal', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrar', noCode: 'Não tem código? Peça-o ao seu gestor.', badCode: 'Código desconhecido. Verifique-o ou peça um novo código.', install: "Instalar o ícone no meu telemóvel", iosHow: 'iPhone: toque em Partilhar e depois « Adicionar ao ecrã principal ».', andHow: 'Android: menu ⋮ e depois « Instalar aplicação ».', logout: 'Terminar sessão neste telemóvel', title: 'O meu espaço de inquilino', hello: 'Olá', avis: 'Avisos do prédio', pay: 'As minhas rendas', restNow: 'Em falta hoje', upcoming: 'por vencer', allPaid: 'Tudo pago até hoje ✓',
     iban: 'Para pagar', ref: 'Referência', quit: 'Os meus recibos', quitBtn: 'Recibo', partial: 'Recibo parcial', contrat: 'O meu contrato', entry: 'Entrada', end: 'Fim do contrato', rent: 'Renda', revision: 'Próxima revisão', caution: 'Caução',
@@ -115,7 +115,7 @@ const L = {
       text: (s, n, a, f, to) => `I, the undersigned, ${s}, head tenant and landlord, confirm that I have received from ${n} the amounts detailed above, a total of ${a}, as rent from ${f} to ${to}, and hereby give receipt for them.` },
     more: (n) => `Show the next ${n}`,
     tl: {"title": "Give · lend · rent items", "hint": "Give away, lend or rent out your things (tools, appliances, furniture…). Interested people email you; money changes hands between you, in cash on handover.", "see": "🌐 See all listings", "mine": "My listings", "add": "➕ Post an item", "photos": "Photos (1 to 3)", "t": "Title (e.g. Bosch drill)", "kind": "Type", "kinds": {"don": "🎁 Free (gift)", "pret": "🤝 Free loan", "loc": "💶 Rental"}, "price": "Price (€)", "unit": "Per", "units": {"h": "hour", "j": "day", "we": "weekend", "s": "week", "u": "one-off price"}, "desc": "Description (condition, brand, accessories…)", "rules": "Your conditions (deposit, return…)", "lieu": "Handover place (e.g. Luxembourg-Gare)", "mail": "Your email (only given to people who tap “I’m interested”)", "ok": "I accept the terms of use: my listing and photos are published on luxinterventions.com (without my name or address); my first name and email are given to interested people.", "send": "Send for approval", "sent": "Thanks! Your listing will be online as soon as the manager approves it.", "st": {"pending": "⏳ Waiting for approval", "ok": "✅ Online", "exp": "⌛ Expired"}, "del": "Remove", "delQ": "Remove this listing?", "rulesLink": "Terms of use", "need": "Please add at least one photo.", "inter": (n) => `📩 ${n} interested — check your email`},
-    bn: { you: 'It’s your turn', tonight: 'Tonight', morning: 'This morning', done: '✅ Done', cant: '🔁 I can’t', take: '🙋 I’ll do it', me: 'you', turn: 'turn:', doneBy: 'done by',
+    bn: { forgotMsg: (n, c) => `⚠️ Turn forgotten: ${n} (${c})`, insteadMsg: (n, w, c) => `🙋 ${n} did it instead of ${w}: ${c}`, instead: '🙋 I did it instead', catch: 'make-up', board: '🏆 This year’s ranking', owe: (n) => `🔁 ${n} to make up`, you: 'It’s your turn', tonight: 'Tonight', morning: 'This morning', done: '✅ Done', cant: '🔁 I can’t', take: '🙋 I’ll do it', me: 'you', turn: 'turn:', doneBy: 'done by',
       doneMsg: (n, c) => `✅ ${n} put out: ${c}`, cantMsg: (n, c) => `🔁 ${n} can’t put out: ${c} — who can?`, takeMsg: (n, c) => `🙋 ${n} is on it: ${c}`, ask: (n, c) => `${n} can’t (${c}). Can you do it?` },
     loc: 'en-GB', door: 'My door code', since: 'since', app: 'ARES S.A. tenant app', welcome: 'Your rent, receipts, documents and waste collections — and report a problem, on your phone.', code: 'Your personal access code', codePh: 'e.g. K7PM2-QXA4H', enter: 'Enter', noCode: 'No code? Ask your property manager.', badCode: 'Unknown code. Check it or ask for a new code.', install: "Install the icon on my phone", iosHow: 'iPhone: tap Share, then “Add to Home Screen”.', andHow: 'Android: menu ⋮, then “Install app”.', logout: 'Sign out on this phone', title: 'My tenant space', hello: 'Hello', avis: 'Building notices', pay: 'My rent', restNow: 'Unpaid to date', upcoming: 'upcoming', allPaid: 'All paid to date ✓',
     iban: 'How to pay', ref: 'Reference', quit: 'My rent receipts', quitBtn: 'Receipt', partial: 'Partial receipt', contrat: 'My lease', entry: 'Move-in', end: 'Lease end', rent: 'Rent', revision: 'Next rent review', caution: 'Deposit',
@@ -138,7 +138,7 @@ const L = {
       text: (s, n, a, f, to) => `El/la abajo firmante, ${s}, arrendatario principal y arrendador, declara haber recibido de ${n} las cantidades detalladas arriba, por un total de ${a}, en concepto de alquiler de ${f} a ${to}, y otorga el presente recibo.` },
     more: (n) => `Ver las ${n} siguientes`,
     tl: {"title": "Regalar · prestar · alquilar objetos", "hint": "Regala, presta o alquila tus cosas (herramientas, electrodomésticos, muebles…). Los interesados te escriben por email; el dinero se intercambia entre vosotros, en efectivo en la entrega.", "see": "🌐 Ver todos los anuncios", "mine": "Mis anuncios", "add": "➕ Publicar un objeto", "photos": "Fotos (de 1 a 3)", "t": "Título (ej. Taladro Bosch)", "kind": "Tipo", "kinds": {"don": "🎁 Regalo (gratis)", "pret": "🤝 Préstamo gratis", "loc": "💶 Alquiler"}, "price": "Precio (€)", "unit": "Por", "units": {"h": "hora", "j": "día", "we": "fin de semana", "s": "semana", "u": "precio único"}, "desc": "Descripción (estado, marca, accesorios…)", "rules": "Tus condiciones (fianza, devolución…)", "lieu": "Lugar de entrega (ej. Luxembourg-Gare)", "mail": "Tu email (solo se da a quien toque « Me interesa »)", "ok": "Acepto las normas de uso: mi anuncio y mis fotos se publican en luxinterventions.com (sin mi nombre ni mi dirección); mi nombre de pila y mi email se dan a las personas interesadas.", "send": "Enviar para aprobación", "sent": "¡Gracias! Tu anuncio estará en línea en cuanto el administrador lo apruebe.", "st": {"pending": "⏳ Pendiente de aprobación", "ok": "✅ En línea", "exp": "⌛ Caducado"}, "del": "Retirar", "delQ": "¿Retirar este anuncio?", "rulesLink": "Normas de uso", "need": "Añade al menos una foto.", "inter": (n) => `📩 ${n} persona${n > 1 ? 's interesadas' : ' interesada'} — mira tu email`},
-    bn: { you: 'Te toca a ti', tonight: 'Esta noche', morning: 'Esta mañana', done: '✅ Hecho', cant: '🔁 No puedo', take: '🙋 Lo hago yo', me: 'tú', turn: 'turno de', doneBy: 'hecho por',
+    bn: { forgotMsg: (n, c) => `⚠️ Turno olvidado: ${n} (${c})`, insteadMsg: (n, w, c) => `🙋 ${n} lo hizo en lugar de ${w}: ${c}`, instead: '🙋 Lo hice yo en su lugar', catch: 'recuperación', board: '🏆 Clasificación del año', owe: (n) => `🔁 ${n} por recuperar`, you: 'Te toca a ti', tonight: 'Esta noche', morning: 'Esta mañana', done: '✅ Hecho', cant: '🔁 No puedo', take: '🙋 Lo hago yo', me: 'tú', turn: 'turno de', doneBy: 'hecho por',
       doneMsg: (n, c) => `✅ ${n} ha sacado: ${c}`, cantMsg: (n, c) => `🔁 ${n} no puede sacar: ${c} — ¿quién lo hace?`, takeMsg: (n, c) => `🙋 ${n} se encarga: ${c}`, ask: (n, c) => `${n} no puede (${c}). ¿Puedes hacerlo?` },
     loc: 'es-ES', door: 'Código de mi puerta', since: 'desde el', app: 'App de inquilinos ARES S.A.', welcome: 'Tus alquileres, recibos, documentos y recogida de basura — y avisar de un problema, desde tu móvil.', code: 'Tu código de acceso personal', codePh: 'ej. K7PM2-QXA4H', enter: 'Entrar', noCode: '¿No tienes código? Pídeselo a tu administrador.', badCode: 'Código desconocido. Compruébalo o pide un código nuevo.', install: 'Instalar el icono en mi móvil', iosHow: 'iPhone: toca Compartir y luego « Añadir a pantalla de inicio ».', andHow: 'Android: menú ⋮ y luego « Instalar aplicación ».', logout: 'Cerrar sesión en este móvil', title: 'Mi espacio de inquilino', hello: 'Hola', avis: 'Avisos del edificio', pay: 'Mis alquileres', restNow: 'Pendiente a día de hoy', upcoming: 'por vencer', allPaid: 'Todo pagado a día de hoy ✓',
     iban: 'Para pagar', ref: 'Concepto', quit: 'Mis recibos', quitBtn: 'Recibo', partial: 'Recibo parcial', contrat: 'Mi contrato', entry: 'Entrada', end: 'Fin del contrato', rent: 'Alquiler', revision: 'Próxima revisión', caution: 'Fianza',
@@ -246,36 +246,73 @@ function renderGuide() {
 // ── Tour des poubelles (à tour de rôle entre les habitants du fil ; actions publiées dans le fil) ──
 const binCats = (e) => e.cats.map((c) => CATS[lang][c] || c).join(' + ');
 const binName = (id) => (data.chat && id === data.chat.mid ? T().bn.me : (data.bins.names || {})[id] || '?');
-function binState(e) {
-  let who = e.who, done = '', cant = '';
-  for (const m of (chatMsgs || []).filter((x) => x.k === 'bin' && x.d === e.p)) {
-    if (m.act === 'take') { who = m.m; cant = ''; }
-    if (m.act === 'cant') cant = m.m;
-    if (m.act === 'done') done = m.m;
+// Même calcul que dans Ares (app.js → binPlan) : oubli → tour de rattrapage ; fait par un autre → service rendu
+function binPlan(order, events, msgs, log, evalFrom, now) {
+  const n = order.length, pen = [], owed = {}, out = [];
+  let shift = 0;
+  for (const e of events) {
+    let who, extra = false;
+    if (pen.length) { who = pen.shift(); extra = true; shift++; } else {
+      who = order[(((e.k - shift) % n) + n) % n];
+      const o = owed[who];
+      if (o && o.length) who = o.shift();
+    }
+    let done = '', cant = '', forgot = false;
+    const lg = log && log[e.p];
+    if (lg) { who = lg.w || who; done = lg.d || ''; forgot = !!lg.f; } else {
+      for (const m of (msgs || []).filter((x) => x.k === 'bin' && x.d === e.p)) {
+        if (m.act === 'take') { who = m.m; cant = ''; }
+        if (m.act === 'cant') cant = m.m;
+        if (m.act === 'done' || m.act === 'instead') done = m.m;
+      }
+      forgot = !done && e.d < now && msgs != null && e.p >= evalFrom;
+    }
+    if (forgot) pen.push(who);
+    if (done && done !== who) (owed[done] ||= []).push(who);
+    out.push({ ...e, who, extra, done, cant, forgot });
   }
-  return { who, done, cant };
+  return out;
 }
+const binPlanNow = () => binPlan(data.bins.order || [], data.bins.ev || [], chatMsgs, data.bins.log || {}, addDays(today, -60), today);
+const binState = (e) => binPlanNow().find((x) => x.p === e.p) || { who: e.who, done: '', cant: '' };
 // Carte « Ce soir c'est ton tour » (ou demande d'aide d'un colocataire), seulement pour le jour même
 function binHtml() {
   const d = data;
   if (!d || !d.bins || !d.chat) return '';
-  const t = T(), b = t.bn, e = d.bins.ev.find((x) => x.p === today);
-  if (!e) return '';
-  const st = binState(e), mine = st.who === d.chat.mid;
+  const t = T(), b = t.bn, plan = binPlanNow();
+  const board = binBoard(plan);
+  const e = plan.find((x) => x.p === today);
+  if (!e) return board;
+  const st = e, mine = st.who === d.chat.mid;
+  const tag = e.extra ? ` (${b.catch})` : '';
   const when = (d.coll || []).some((it) => (it.sortie || 'veille') === 'jour' && (it.dates || []).includes(e.p)) ? b.morning : b.tonight;
-  if (st.done) return `<div class="card bin ok"><b>🗑️ ${esc(when)} · ${esc(binCats(e))}</b><div class="meta">✅ ${esc(b.doneBy)} ${esc(binName(st.done))}</div></div>`;
-  if (mine && !st.cant) return `<div class="card bin now"><b>🗑️ ${esc(when)} — ${esc(b.you)} : ${esc(binCats(e))}</b>
-    <div class="bin-btns"><button class="btn" data-bin="done" data-d="${e.p}">${esc(b.done)}</button><button class="btn sec" data-bin="cant" data-d="${e.p}">${esc(b.cant)}</button></div></div>`;
+  if (st.done) return `<div class="card bin ok"><b>🗑️ ${esc(when)} · ${esc(binCats(e))}</b><div class="meta">✅ ${esc(b.doneBy)} ${esc(binName(st.done))}</div></div>` + board;
+  if (mine && !st.cant) return `<div class="card bin now"><b>🗑️ ${esc(when)} — ${esc(b.you)}${esc(tag)} : ${esc(binCats(e))}</b>
+    <div class="bin-btns"><button class="btn" data-bin="done" data-d="${e.p}">${esc(b.done)}</button><button class="btn sec" data-bin="cant" data-d="${e.p}">${esc(b.cant)}</button></div></div>` + board;
   if (st.cant && st.cant !== d.chat.mid) return `<div class="card bin help"><b>🗑️ ${esc(when)} · ${esc(binCats(e))}</b><p style="margin:4px 0 8px">${esc(b.ask(binName(st.cant), binCats(e)))}</p>
-    <div class="bin-btns"><button class="btn" data-bin="take" data-d="${e.p}">${esc(b.take)}</button></div></div>`;
-  return `<div class="card bin"><b>🗑️ ${esc(when)} · ${esc(binCats(e))}</b><div class="meta">${esc(b.turn)} ${esc(binName(st.who))}${st.cant ? ' · 🔁' : ''}</div></div>`;
+    <div class="bin-btns"><button class="btn" data-bin="take" data-d="${e.p}">${esc(b.take)}</button></div></div>` + board;
+  return `<div class="card bin"><b>🗑️ ${esc(when)} · ${esc(binCats(e))}</b><div class="meta">${esc(b.turn)} ${esc(binName(st.who))}${esc(tag)}${st.cant ? ' · 🔁' : ''}</div>
+    <div class="bin-btns"><button class="btn sec" data-bin="instead" data-d="${e.p}">${esc(b.instead)}</button></div></div>` + board;
+}
+// Classement de l'année : 🏆🥈🥉 pour ceux qui sortent le plus les poubelles ; un simple « à rattraper » pour les oublis
+function binBoard(plan) {
+  const b = T().bn, y = today.slice(0, 4), sc = {};
+  for (const e of plan.filter((x) => x.p.startsWith(y + '-'))) {
+    if (e.done) (sc[e.done] ||= { done: 0, forgot: 0 }).done++;
+    if (e.forgot) (sc[e.who] ||= { done: 0, forgot: 0 }).forgot++;
+  }
+  const rows = Object.entries(sc).filter(([id]) => (data.bins.names || {})[id]).sort((a, c) => c[1].done - a[1].done || a[1].forgot - c[1].forgot);
+  if (!rows.length) return '';
+  const medal = ['🏆', '🥈', '🥉'];
+  return `<div class="card board"><h2>${esc(b.board)} ${y}</h2>${rows.map(([id, v], i) => `<div class="row"><span style="width:26px">${v.done ? medal[i] || '·' : '·'}</span><div class="grow"><b>${esc(binName(id))}</b>${v.forgot ? ` <span class="meta">${esc(b.owe(v.forgot))}</span>` : ''}</div><b>${v.done} ✅</b></div>`).join('')}</div>`;
 }
 async function binAct(act, dte) {
   const e = data.bins.ev.find((x) => x.p === dte);
   if (!e) return;
   const fr = L.fr.bn, cats = e.cats.map((c) => CATS.fr[c] || c).join(' + ');
-  const x = act === 'done' ? fr.doneMsg(data.chat.me, cats) : act === 'cant' ? fr.cantMsg(data.chat.me, cats) : fr.takeMsg(data.chat.me, cats);
-  await fetch(`${API}/api/board/${data.chat.id}`, { method: 'POST', body: await sealJson(data.chat.key, { a: data.chat.me, m: data.chat.mid, x, t: new Date().toISOString(), k: 'bin', act, d: dte, cats: e.cats }) });
+  const w = act === 'instead' ? (binPlanNow().find((z) => z.p === dte) || {}).who || '' : '';
+  const x = act === 'done' ? fr.doneMsg(data.chat.me, cats) : act === 'cant' ? fr.cantMsg(data.chat.me, cats) : act === 'instead' ? fr.insteadMsg(data.chat.me, (data.bins.names || {})[w] || '?', cats) : fr.takeMsg(data.chat.me, cats);
+  await fetch(`${API}/api/board/${data.chat.id}`, { method: 'POST', body: await sealJson(data.chat.key, { a: data.chat.me, m: data.chat.mid, x, t: new Date().toISOString(), k: 'bin', act, d: dte, cats: e.cats, ...(w ? { w } : {}) }) });
   await chatFetch();
 }
 
@@ -285,10 +322,13 @@ const b64d = (x) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
 function chatHtml() {
   const t = T();
   if (chatMsgs == null) return '<p class="meta" style="margin:0">…</p>';
-  if (!chatMsgs.length) return `<p class="meta" style="margin:0">${esc(t.hr.boardEmpty)}</p>`;
-  return chatMsgs.map((m) => {
+  const forgot = data.bins ? binPlanNow().filter((e) => e.forgot && e.p >= addDays(today, -60)).map((e) => ({ k: 'bin', act: 'forgot', m: e.who, a: data.bins.names[e.who] || '?', d: e.p, cats: e.cats, t: e.d + 'T23:59:00' })) : [];
+  if (!chatMsgs.length && !forgot.length) return `<p class="meta" style="margin:0">${esc(t.hr.boardEmpty)}</p>`;
+  return [...chatMsgs, ...forgot].sort((a, b) => (a.t || '').localeCompare(b.t || '')).map((m) => {
     if (m.k === 'bin') {
       const c = (m.cats || []).map((k) => CATS[lang][k] || k).join(' + '), n = m.m === data.chat.mid ? t.bn.me : m.a;
+      if (m.act === 'instead') return `<div class="bub sys">${esc(t.bn.insteadMsg(n, m.w === data.chat.mid ? t.bn.me : (data.bins && data.bins.names[m.w]) || '?', c))}</div>`;
+      if (m.act === 'forgot') return `<div class="bub sys">${esc(t.bn.forgotMsg(n, c))}</div>`;
       return `<div class="bub sys">${esc((m.act === 'done' ? t.bn.doneMsg : m.act === 'cant' ? t.bn.cantMsg : t.bn.takeMsg)(n, c))}</div>`;
     }
     const mine = m.m === data.chat.mid, mgr = m.m === 'mgr';
