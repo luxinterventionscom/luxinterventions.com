@@ -3038,8 +3038,10 @@ const ACTIONS = {
   async 'tache-done'(d) {
     const t = vault.get('taches', d.id);
     if (!t) return;
-    const saved = await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: today() }), 'Intervention terminée', `${t.titre} — ${placeName(t)}`, t.immId);
-    toast('Intervention terminée');
+    const fromSheet = ui.sheet && ui.sheet.kind === 'tache-form';
+    const saved = await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: today(), vu: true }), 'Intervention terminée', `${t.titre} — ${placeName(t)}`, t.immId);
+    toast(t.locId ? '✓ Réparé · le locataire voit « Terminé » dans son app' : 'Intervention terminée');
+    if (fromSheet) goBack();
     await offerDepense(saved);
   },
   async 'del-interv'(d) {
@@ -3056,13 +3058,6 @@ const ACTIONS = {
     if (!t || !(await confirmBox(`Supprimer « ${t.titre} » ?`, { ok: 'Supprimer', danger: true, detail }))) return;
     await vault.mutate((tx) => { tx.remove('taches', d.id); for (const ph of photos) tx.remove('documents', ph.id); }, 'Intervention supprimée', t.titre, t.immId);
     for (const ph of photos) await vault.deleteFile(ph.id).catch(() => {});
-    goBack();
-  },
-  async 'tache-done'(d) {
-    const t = vault.get('taches', d.id);
-    if (!t) return;
-    await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: today(), vu: true }), 'Intervention terminée', t.titre, t.immId);
-    toast('✓ Réparé · le locataire voit « Terminé » dans son app');
     goBack();
   },
   async 'del-collecte'(d) {
