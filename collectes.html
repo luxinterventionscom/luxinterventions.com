@@ -34,6 +34,10 @@
   .btn.sec { background: var(--card); color: var(--text); border: 1px solid var(--line); }
   .foot { text-align: center; color: var(--muted); font-size: 13px; margin-top: 18px; }
   .err { text-align: center; color: var(--muted); padding: 40px 10px; }
+details.more { margin-top: 6px; }
+details.more > summary { cursor: pointer; font-weight: 600; color: #4f46e5; padding: 10px 0; list-style: none; }
+details.more > summary::before { content: '▸ '; }
+details.more[open] > summary::before { content: '▾ '; }
 </style>
 </head>
 <body>
