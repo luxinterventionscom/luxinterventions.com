@@ -116,6 +116,10 @@
 .pv-bar b { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .pv img { flex: 1; min-height: 0; width: 100%; object-fit: contain; }
 .pv iframe { flex: 1; border: 0; width: 100%; background: #fff; }
+details.more { margin-top: 6px; }
+details.more > summary { cursor: pointer; font-weight: 600; color: #4f46e5; padding: 10px 0; list-style: none; }
+details.more > summary::before { content: '▸ '; }
+details.more[open] > summary::before { content: '▾ '; }
 </style>
 </head>
 <body>
