@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.20.1';
+const VERSION = '2.21.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -51,6 +51,7 @@ const ICONS = {
   phoneApp: '<rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
+  trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3a3 3 0 0 1-3 4M7 5H4a3 3 0 0 0 3 4"/>',
   tool: '<path d="M14.7 6.3a4 4 0 0 0 5 5l-8.5 8.5a2.1 2.1 0 0 1-3-3l8.5-8.5z"/><path d="M14.7 6.3 17 4a4 4 0 0 1 3 3l-2.3 2.3"/>',
 };
 const icon = (n) => new Raw(`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`);
@@ -869,6 +870,7 @@ const NAV = [
   ['locataires', 'Locataires', 'users'],
   ['paiements', 'Paiements', 'wallet'],
   ['maintenance', 'Maintenance', 'tool'],
+  ['champions', 'Locataire de l’année', 'trophy'],
   ['stats', 'Statistiques', 'chart'],
   ['reglages', 'Réglages', 'more'],
 ];
@@ -1400,7 +1402,76 @@ async function offerDepense(t) {
 }
 
 // ───────────────────────── Vues ─────────────────────────
+// ───── Locataire de l'année : tours des poubelles faits, tous immeubles confondus ─────
+async function champLoad(force) {
+  if (!vault.unlocked || (ui.champBusy && !force)) return;
+  if (!force && ui.champAt && Date.now() - ui.champAt < 60000) return;
+  ui.champBusy = true;
+  ui.chatCache = ui.chatCache || {};
+  for (const im of vault.list('immeubles').filter(binsOn)) {
+    for (const [gk, g] of Object.entries(im.chats || {})) {
+      try { ui.chatCache[g.id] = await chatRead(g); await binRecord(vault.get('immeubles', im.id), gk, g, ui.chatCache[g.id]); } catch { /* hors ligne */ }
+    }
+  }
+  ui.champAt = Date.now();
+  ui.champBusy = false;
+  if (ui.route === 'champions') renderView();
+}
+function champScores(year) {
+  const sc = {};
+  const add = (id, k, imId) => { const x = sc[id] || (sc[id] = { done: 0, forgot: 0, imId }); x[k]++; };
+  for (const im of vault.list('immeubles')) {
+    const logs = im.binLog || {};
+    const seen = new Set();
+    for (const [gk, g] of Object.entries(im.chats || {})) {
+      seen.add(gk);
+      for (const e of binGroupPlan(im, gk, g, (ui.chatCache || {})[g.id], year + '-12-31').filter((x) => x.p.startsWith(year + '-'))) {
+        if (e.done) add(e.done, 'done', im.id);
+        if (e.forgot) add(e.who, 'forgot', im.id);
+      }
+    }
+    // fils disparus (habitants partis, groupes changés) : leur journal compte encore
+    for (const [gk, log] of Object.entries(logs)) {
+      if (seen.has(gk)) continue;
+      for (const [pDate, x] of Object.entries(log)) if (pDate.startsWith(year + '-')) { if (x.d) add(x.d, 'done', im.id); if (x.f) add(x.w, 'forgot', im.id); }
+    }
+  }
+  return Object.entries(sc).filter(([id]) => vault.get('locataires', id)).sort((a, b) => b[1].done - a[1].done || a[1].forgot - b[1].forgot);
+}
+
 const VIEWS = {
+  champions() {
+    setTimeout(() => champLoad(), 0);
+    const cy = new Date().getFullYear();
+    const y = ui.champYear || cy;
+    const rows = champScores(y);
+    const prizes = (vault.get('reglages', 'champions') || {}).prizes || {};
+    const medal = ['🥇', '🥈', '🥉'];
+    const who = (id) => vault.get('locataires', id) || {};
+    const place = (id, imId) => [logName(who(id).logId), immName(who(id).immId || imId)].filter(Boolean).join(' · ');
+    const podium = rows.filter(([, v]) => v.done > 0).slice(0, 3);
+    return html`
+      ${pageHead('🏆 Locataire de l’année', 'Classement des tours des poubelles faits, dans tous les immeubles. Les 3 premiers gagnent… une pizza 🍕')}
+      <div class="chips" style="margin-bottom:14px">${[cy, cy - 1].map((yy) => html`<button class="chip" data-action="champ-year" data-id="${yy}" aria-pressed="${yy === y}">${yy}</button>`)}
+        <button class="chip" data-action="champ-refresh">${icon('sync')} Actualiser</button></div>
+      ${podium.length ? html`<div class="metrics" style="margin-bottom:14px">${podium.map(([id, v], i) => {
+        const pz = (prizes[y] || {})[id];
+        return html`<div class="metric" style="text-align:center;border:2px solid ${['#d4a017', '#9ca3af', '#b45309'][i]}">
+          <div style="font-size:40px;line-height:1.1">${medal[i]}</div>
+          <div class="val" style="font-size:20px">${fullName(who(id))}</div>
+          <div class="sub">${place(id, v.imId)}${isGone(who(id)) ? ' · parti' : ''}</div>
+          <div style="margin:8px 0;font-size:18px;font-weight:700">${v.done} ✅</div>
+          ${pz ? html`<button class="btn sm" data-action="champ-pizza" data-id="${id}">🍕 Offerte le ${fmtDate(pz)}</button>` : html`<button class="btn sm primary" data-action="champ-pizza" data-id="${id}">🍕 Pizza offerte</button>`}
+        </div>`;
+      })}</div>` : html`<div class="alert info" style="margin-bottom:14px">${icon('trophy')}<div>Pas encore de tours faits en ${y}. Le classement se remplit tout seul quand les locataires touchent « ✅ Fait » dans leur app (tour des poubelles, dans chaque immeuble → 💬 Messages).</div></div>`}
+      ${rows.length ? html`<div class="section-label">Classement ${y}</div>
+        <div class="list">${rows.map(([id, v], i) => html`<button class="row" data-action="open-loc" data-id="${id}">
+          <span class="avatar">${v.done > 0 && i < 3 ? medal[i] : i + 1}</span>
+          <span class="grow"><span class="title" style="display:block">${fullName(who(id))}</span><span class="meta">${place(id, v.imId)}${isGone(who(id)) ? ' · parti' : ''}</span></span>
+          <span style="text-align:right"><b>${v.done} ✅</b>${v.forgot ? html`<span class="tiny muted" style="display:block">${v.forgot} oubli${v.forgot > 1 ? 's' : ''}</span>` : ''}</span></button>`)}</div>` : ''}
+      <p class="tiny muted" style="margin-top:12px">1 tour fait = 1 point (« ✅ Fait » ou « 🙋 Je l’ai fait à sa place »). À égalité, celui qui a le moins d’oublis passe devant. Le classement repart de zéro chaque 1er janvier ; l’année précédente reste consultable.</p>`;
+  },
+
   maintenance() {
     const tab = ui.mtTab || 'planning';
     const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
@@ -1803,6 +1874,7 @@ dashboard() {
       <div class="list settings">
         <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
           <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
+        <button class="row" data-action="go" data-to="champions"><span class="avatar">🏆</span><span class="grow"><span class="title" style="display:block">Locataire de l’année</span><span class="meta">Classement des tours des poubelles · podium · pizza 🍕</span></span></button>
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
         <button class="row" data-action="go" data-to="maintenance">${icon('tool')}<span class="grow title">Maintenance — nettoyage, réparations, déchets</span></button>
         <button class="row" data-action="go" data-to="stats">${icon('chart')}<span class="grow title">Statistiques et historique</span></button>
@@ -3290,6 +3362,22 @@ const ACTIONS = {
     try { await vault.toolsDel(d.id); toast('Annonce retirée'); } catch (e) { return toast(e.message || 'Impossible', { bad: true }); }
     vault.mutate(() => {}, 'Annonce retirée', it ? it.title : '', '');
     toolsLoad(true);
+  },
+  'champ-year': (d) => { ui.champYear = +d.id; renderView(); },
+  'champ-refresh': () => champLoad(true),
+  async 'champ-pizza'(d) {
+    const y = ui.champYear || new Date().getFullYear();
+    const cur = vault.get('reglages', 'champions') || {};
+    const prizes = { ...(cur.prizes || {}) };
+    const yp = { ...(prizes[y] || {}) };
+    const l = vault.get('locataires', d.id) || {};
+    if (yp[d.id]) {
+      if (!(await confirmBox('Annuler « pizza offerte » ?', { ok: 'Annuler la pizza', detail: fullName(l) }))) return;
+      delete yp[d.id];
+    } else yp[d.id] = today();
+    prizes[y] = yp;
+    await vault.mutate((tx) => tx.put('reglages', { id: 'champions', prizes }), yp[d.id] ? 'Pizza offerte 🍕' : 'Pizza annulée', `${fullName(l)} — locataire de l’année ${y}`, d.id);
+    if (yp[d.id]) toast('🍕 Bon appétit, ' + (l.prenom || fullName(l)) + ' !');
   },
   'open-chat': (d) => { openSheet('imm', d.id, 'chat'); chatLoad(d.id, true); },
   'chat-refresh': (d) => chatLoad(d.id, true),
