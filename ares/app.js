@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.22.1';
+const VERSION = '2.23.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -967,7 +967,7 @@ function renderLock(mode, error = '') {
   lockEl.hidden = false;
   const legacy = legacyLocal();
   const head = html`
-    <img class="lock-logo" src="/ares/icons/ares-192.png" alt="NOBIS s.a.r.l." width="96" height="96">
+    <img class="lock-logo" src="/ares/icons/nobis-logo.png" alt="NOBIS s.a.r.l." width="200" height="84">
     <div class="lock-head"><h1>NOBIS s.a.r.l.</h1><p>Gestion locataires · Luxembourg</p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>`;
 
@@ -1251,14 +1251,14 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="/ares/icons/ares-96.png" alt="" width="36" height="36"><span>NOBIS s.a.r.l.<small>Gestion locataires</small></span></div>
+      <div class="brand"><img class="brand-mark" src="/ares/icons/nobis-logo.png" alt="" width="86" height="36"><span>NOBIS s.a.r.l.<small>Gestion locataires</small></span></div>
       ${NAV.map(navBtn)}
       <div class="spacer"></div>
       <button class="navbtn" data-action="lock">${icon('lock')}<span>Verrouiller</span></button>
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="/ares/icons/ares-96.png" alt="" width="36" height="36"><span>NOBIS s.a.r.l.</span></div>
+        <div class="brand"><img class="brand-mark" src="/ares/icons/nobis-logo.png" alt="" width="86" height="36"><span>NOBIS s.a.r.l.</span></div>
         <button class="sync" id="sync" data-action="sync-now" data-s="idle"><i></i><span>…</span></button>
         <button class="btn icon ghost" data-action="lock" aria-label="Verrouiller" title="Verrouiller">${icon('lock')}</button>
       </header>
