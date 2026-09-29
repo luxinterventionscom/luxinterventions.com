@@ -288,6 +288,14 @@ async function toolsFetch() {
   const box = document.getElementById('myTools');
   if (box) box.innerHTML = toolsHtml();
 }
+// Cartes repliables : fermées au départ, on les ouvre d'un toucher ; celles qui sont ouvertes brillent doucement
+let openFolds = new Set();
+try { openFolds = new Set(JSON.parse(localStorage.getItem('espFolds') || '[]')); } catch { /* stockage indisponible */ }
+function foldCard(h, key, sum) {
+  const m = h.match(/^<div class="card"([^>]*)><h2>([\s\S]*?)<\/h2>([\s\S]*)<\/div>$/);
+  if (!m) return h;
+  return `<details class="card fold"${m[1]} data-fold="${key}"${openFolds.has(key) ? ' open' : ''}><summary><h2>${m[2]}</h2>${sum ? `<span class="sum">${sum}</span>` : ''}</summary><div class="fold-body">${m[3]}</div></details>`;
+}
 const rulesKey = () => 'espRules:' + id;
 const rulesLocal = () => { try { return JSON.parse(localStorage.getItem(rulesKey()) || 'null') || {}; } catch { return {}; } };
 // Date d'acceptation du règlement EN VIGUEUR (vide si jamais accepté ou si le règlement a changé depuis)
@@ -334,14 +342,14 @@ function render() {
     const cur = d.years[0];
     const rest = d.years.reduce((n, y) => n + y.rest, 0);
     const cm = new Date().getMonth(), cy = new Date().getFullYear();
-    out.push(`<div class="card"><h2>💶 ${esc(t.pay)}</h2>
+    out.push(foldCard(`<div class="card"><h2>💶 ${esc(t.pay)}</h2>
       <p style="margin:0">${rest > 0.009 ? `<span class="big bad">${esc(money(rest))}</span> <span class="meta">${esc(t.restNow)}</span>` : `<span class="big ok">${esc(t.allPaid)}</span>`}${cur.upcoming > 0.009 ? ` <span class="meta">· ${esc(t.upcoming)} ${esc(money(cur.upcoming))}</span>` : ''}</p>
       ${d.years.map((y) => `<div class="meta" style="margin-top:10px;font-weight:700">${y.y}</div><div class="months">${y.months.map(([due, paid], i) => {
         const past = y.y < cy || (y.y === cy && i < cm), now = y.y === cy && i === cm;
         const cls = paid >= due - 0.009 && paid > 0 ? 'paid' : paid > 0 ? 'part' : !due ? 'off' : past ? 'late' : '';
         return `<div class="m ${cls}" ${now ? 'style="outline:2px solid var(--accent)"' : ''}>${esc(t.months[i])}<small>${paid > 0 && paid < due - 0.009 ? esc(Math.round(paid) + '€') : cls === 'paid' ? '✓' : cls === 'late' ? '!' : due ? '·' : '–'}</small></div>`;
       }).join('')}</div>`).join('')}
-      ${d.iban ? `<div class="meta" style="margin-top:8px"><b>${esc(t.iban)} :</b> ${esc(d.societe.nom)} · IBAN <b style="color:var(--text)">${esc(d.iban)}</b><br>${esc(t.ref)} : ${esc(t.rent)} ${esc(t.monthsFull[cm])} ${cy} — ${esc(d.nom)}</div>` : ''}</div>`);
+      ${d.iban ? `<div class="meta" style="margin-top:8px"><b>${esc(t.iban)} :</b> ${esc(d.societe.nom)} · IBAN <b style="color:var(--text)">${esc(d.iban)}</b><br>${esc(t.ref)} : ${esc(t.rent)} ${esc(t.monthsFull[cm])} ${cy} — ${esc(d.nom)}</div>` : ''}</div>`, 'pay', rest > 0.009 ? `<span class="bad">${esc(money(rest))}</span> ${esc(t.restNow)}` : `<span class="ok">${esc(t.allPaid)}</span>`));
   }
   if (s.quit && (d.years || []).length) {
     const rows = [];
@@ -349,16 +357,16 @@ function render() {
     rows.sort((a, b) => b.y - a.y || b.m - a.m);
     if (rows.length) {
       const tot = rows.reduce((x, r) => x + r.paid, 0), first = rows[rows.length - 1], last = rows[0];
-      out.push(`<div class="card"><h2>🧾 ${esc(t.quit)}</h2><div class="row"><div class="grow"><b>${esc(t.rc.paidN(rows.length))}</b><div class="meta">${esc(t.monthsFull[first.m])} ${first.y} → ${esc(t.monthsFull[last.m])} ${last.y}</div></div><b>${esc(money(tot))}</b></div>
-        <button class="btn block" style="margin-top:10px" data-recap="1">${esc(t.rc.btn)}</button></div>`);
+      out.push(foldCard(`<div class="card"><h2>🧾 ${esc(t.quit)}</h2><div class="row"><div class="grow"><b>${esc(t.rc.paidN(rows.length))}</b><div class="meta">${esc(t.monthsFull[first.m])} ${first.y} → ${esc(t.monthsFull[last.m])} ${last.y}</div></div><b>${esc(money(tot))}</b></div>
+        <button class="btn block" style="margin-top:10px" data-recap="1">${esc(t.rc.btn)}</button></div>`, 'quit', esc(t.rc.paidN(rows.length) + ' · ' + money(tot))));
     }
   }
   if (s.contrat && d.contrat) {
     const c = d.contrat;
-    out.push(`<div class="card"><h2>📄 ${esc(t.contrat)}</h2>${[[t.entry, fmt(c.debut)], [t.end, c.fin ? fmt(c.fin) : '—'], [t.rent, money(d.loyer)], [t.revision, c.revision ? fmt(c.revision) : ''], [t.caution, c.caution ? [money(c.caution), c.cautionDate ? t.recv + ' ' + fmt(c.cautionDate) : '', t.modes[c.cautionMode] || ''].filter(Boolean).join(' · ') + (proofOf('caution') ? ' ✓' : '') : '']].filter(([, v]) => v).map(([k, v]) => `<div class="row"><div class="grow meta">${esc(k)}</div><b>${esc(v)}</b></div>`).join('')}</div>`);
+    out.push(foldCard(`<div class="card"><h2>📄 ${esc(t.contrat)}</h2>${[[t.entry, fmt(c.debut)], [t.end, c.fin ? fmt(c.fin) : '—'], [t.rent, money(d.loyer)], [t.revision, c.revision ? fmt(c.revision) : ''], [t.caution, c.caution ? [money(c.caution), c.cautionDate ? t.recv + ' ' + fmt(c.cautionDate) : '', t.modes[c.cautionMode] || ''].filter(Boolean).join(' · ') + (proofOf('caution') ? ' ✓' : '') : '']].filter(([, v]) => v).map(([k, v]) => `<div class="row"><div class="grow meta">${esc(k)}</div><b>${esc(v)}</b></div>`).join('')}</div>`, 'contrat', esc(t.rent + ' ' + money(d.loyer) + (c.fin ? ' · ' + t.end + ' ' + fmt(c.fin) : ''))));
   }
-  if (s.docs && (d.docs || []).length) out.push(`<div class="card"><h2>📁 ${esc(t.docs)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.dossierHint)}</p><div class="chips">${['bail', 'identite', 'cns', 'caution'].map((k) => { const x = proofOf(k); return x ? `<button class="chip ok" data-doc="${esc(x.id)}">✓ ${esc(t.dt[k])} 👁</button>` : `<button class="chip no"${s.signal && d.signalKey ? ' data-err="1"' : ''}>✗ ${esc(t.dt[k])}</button>`; }).join('')}</div>${d.docs.map((x) => `<div class="row"><div class="grow"><b>${esc(t.dt[x.dtype] || x.label)}</b><div class="meta">${esc(docSub(x))}</div></div><button class="btn sm sec" data-doc="${esc(x.id)}" aria-label="👁">👁</button></div>`).join('')}
-    ${s.signal && d.signalKey ? `<button class="btn sec block" style="margin-top:10px" data-err="1">${esc(t.errBtn)}</button>` : ''}</div>`);
+  if (s.docs && (d.docs || []).length) out.push(foldCard(`<div class="card"><h2>📁 ${esc(t.docs)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.dossierHint)}</p><div class="chips">${['bail', 'identite', 'cns', 'caution'].map((k) => { const x = proofOf(k); return x ? `<button class="chip ok" data-doc="${esc(x.id)}">✓ ${esc(t.dt[k])} 👁</button>` : `<button class="chip no"${s.signal && d.signalKey ? ' data-err="1"' : ''}>✗ ${esc(t.dt[k])}</button>`; }).join('')}</div>${d.docs.map((x) => `<div class="row"><div class="grow"><b>${esc(t.dt[x.dtype] || x.label)}</b><div class="meta">${esc(docSub(x))}</div></div><button class="btn sm sec" data-doc="${esc(x.id)}" aria-label="👁">👁</button></div>`).join('')}
+    ${s.signal && d.signalKey ? `<button class="btn sec block" style="margin-top:10px" data-err="1">${esc(t.errBtn)}</button>` : ''}</div>`, 'docs', esc(['bail', 'identite', 'cns', 'caution'].map((k) => (proofOf(k) ? '✓ ' : '✗ ') + t.dt[k].split(' (')[0]).join(' · '))));
   if (d.chat) {
     const can = !d.regles || rulesDate(d);
     out.push(`<div class="card" id="chatCard"><h2>💬 ${esc(t.hr.board)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.hr.boardHint)}</p>
@@ -369,7 +377,7 @@ function render() {
   }
   if (s.tools) {
     const tl = t.tl;
-    out.push(`<div class="card" id="toolsCard"><h2>🧰 ${esc(tl.title)}</h2><p class="meta" style="margin:0 0 8px">${esc(tl.hint)}</p>
+    out.push(foldCard(`<div class="card" id="toolsCard"><h2>🧰 ${esc(tl.title)}</h2><p class="meta" style="margin:0 0 8px">${esc(tl.hint)}</p>
       <a class="btn sec block" href="/outils.html" target="_blank" rel="noopener">${esc(tl.see)}</a>
       ${toolMsg ? `<p class="ok" style="margin:10px 0 0"><b>${esc(toolMsg)}</b></p>` : ''}
       <div id="myTools">${toolsHtml()}</div>
@@ -384,7 +392,7 @@ function render() {
         <label>${esc(tl.lieu)}</label><input name="lieu" maxlength="60">
         <label>${esc(tl.mail)}</label><input name="mail" type="email" required maxlength="120" value="${esc(d.mail || '')}">
         <label class="chk"><input type="checkbox" name="ok" required> <span>${esc(tl.ok)} <a href="/outils.html#regles" target="_blank" rel="noopener">${esc(tl.rulesLink)}</a></span></label>
-        <button class="btn block" type="submit" style="margin-top:12px">${esc(tl.send)}</button></form></details></div>`);
+        <button class="btn block" type="submit" style="margin-top:12px">${esc(tl.send)}</button></form></details></div>`, 'tools', myTools && myTools.length ? esc(tl.mine + ' : ' + myTools.length) : ''));
   }
   if (s.coll && (d.coll || []).length) {
     const ev = [];
@@ -399,14 +407,14 @@ function render() {
       ${d.collLink ? `<a class="btn sec block" style="margin-top:10px" href="${esc(d.collLink)}">${esc(t.calAdd)}</a>` : ''}</div>`);
   }
   if (s.signal && d.signalKey) {
-    out.push(`<div class="card"><h2>🛠️ ${esc(t.signal)}</h2>${sentOk ? `<p class="ok" style="margin:0 0 8px"><b>${esc(t.sent)}</b></p>` : ''}
+    out.push(foldCard(`<div class="card"><h2>🛠️ ${esc(t.signal)}</h2>${sentOk ? `<p class="ok" style="margin:0 0 8px"><b>${esc(t.sent)}</b></p>` : ''}
       <form id="sig"><label>${esc(t.type)}</label><select name="type">${Object.entries(t.types).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select>
       <label>${esc(t.what)}</label><textarea name="texte" required maxlength="3000" placeholder="${esc(t.whatPh)}"></textarea>
       <label>${esc(t.photos)}</label><input type="file" name="photos" accept="image/*" multiple>
       <label>${esc(t.tel)}</label><input type="tel" name="tel" maxlength="30">
       <label>${esc(t.dispo)}</label><input type="text" name="dispo" maxlength="200">
       <button class="btn block" style="margin-top:12px" type="submit">${esc(t.send)}</button></form>
-      ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div></div></div>`).join('')}` : ''}</div>`);
+      ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div></div></div>`).join('')}` : ''}</div>`, 'signal', (d.signals || []).length ? esc(t.mine + ' : ' + d.signals.length) : ''));
   }
   if (s.coll || s.signal) out.push(`<div class="card meta"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow"></span> ${esc(t.lights[1])} · <span class="light l-red"></span> ${esc(t.lights[2])}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</div>`);
   if (d.regles) {
@@ -504,9 +512,15 @@ app.addEventListener('click', async (e) => {
   }
   if (e.target.closest('[data-err]')) {
     const f = document.getElementById('sig');
-    if (f) { f.type.value = 'dossier'; f.scrollIntoView({ behavior: 'smooth', block: 'start' }); f.texte.focus({ preventScroll: true }); }
+    if (f) { const fd = f.closest('details'); if (fd) fd.open = true; f.type.value = 'dossier'; f.scrollIntoView({ behavior: 'smooth', block: 'start' }); f.texte.focus({ preventScroll: true }); }
   }
 });
+app.addEventListener('toggle', (e) => {
+  const k = e.target.dataset && e.target.dataset.fold;
+  if (!k) return;
+  if (e.target.open) openFolds.add(k); else openFolds.delete(k);
+  try { localStorage.setItem('espFolds', JSON.stringify([...openFolds])); } catch { /* stockage indisponible */ }
+}, true);
 app.addEventListener('change', (e) => {
   if (e.target.name === 'kind' && e.target.form && e.target.form.id === 'toolf') document.getElementById('toolPrice').hidden = e.target.value !== 'loc';
 });
