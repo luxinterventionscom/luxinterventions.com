@@ -361,7 +361,7 @@
   }
 
   /* Bloc vidéo — occupe l'espace des cards manquantes en fin de grille */
-  .video-card { grid-column: span 3; padding: 0; cursor: default; min-height: 240px; }
+  .video-card { grid-column: span 2; padding: 0; cursor: default; min-height: 240px; }
   .video-card:hover { background: var(--white); transform: none; }
   .video-card::after { display: none; }
   .video-card-media {
@@ -882,6 +882,7 @@
     .numbers-grid { grid-template-columns: 1fr 1fr; }
     .services-grid { grid-template-columns: repeat(2, 1fr); }
     .video-card { grid-column: 1 / -1; }
+    .services-grid > .tools-card { grid-column: 1 / -1; }
     .services-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
     .why-grid { grid-template-columns: 1fr; gap: 3rem; }
     .about-grid { grid-template-columns: 1fr; gap: 3rem; }
@@ -1144,6 +1145,14 @@
       <span class="service-tag" style="background:#E6F7F5;color:#1F8A7A">Régulier</span>
       <div class="service-click-hint">▶ Faire une demande</div>
     </div>
+
+    <a class="service-card tools-card" href="/outils.html" style="text-decoration:none;color:inherit;display:block">
+      <div class="service-icon" style="background:#FFF4E0">🧰</div>
+      <div class="service-name">Donation / Location tools</div>
+      <div class="service-desc">Outils, électroménager, meubles… donnés, prêtés ou loués entre particuliers. Photos, prix, contact par email.</div>
+      <span class="service-tag" style="background:#FFF4E0;color:#A8651F">Don · prêt · location</span>
+      <div class="service-click-hint">▶ Voir les annonces</div>
+    </a>
 
     <div class="service-card video-card">
       <video class="video-card-media" autoplay muted loop playsinline preload="metadata" poster="assets/relax-video-poster.jpg">
