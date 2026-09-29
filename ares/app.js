@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.19.0';
+const VERSION = '2.19.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -329,6 +329,14 @@ async function setAccessCode(l) {
   await vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: { ...e, code, codeHash: h } }), 'Code d’accès locataire créé', fullName(l), l.id);
   return code;
 }
+// Version du règlement (règlement général + règles propres à l'immeuble) : s'il change, chaque locataire doit l'accepter à nouveau
+const RULES_V = 'r1';
+function rulesVersion(im) {
+  let h = 5381;
+  for (const c of String((im && im.regles) || '')) h = ((h * 33) ^ c.charCodeAt(0)) >>> 0;
+  return RULES_V + '-' + h.toString(36);
+}
+const rulesAccepted = (l) => !!(l.reglesLu && l.reglesV === rulesVersion(vault.get('immeubles', l.immId)));
 const appUrl = () => `${location.origin}/espace.html`;
 // Ce que le locataire voit — uniquement les rubriques cochées, uniquement ses propres données
 function espaceData(l) {
@@ -354,14 +362,13 @@ function espaceData(l) {
     .map((d) => ({ id: d.id, label: d.label, dtype: d.dtype || '', pay: d.pay || '', date: d.date, mime: d.mime, size: d.size }));
   if (show.coll && im) { out.coll = pubData(im).items; if (im.pubToken) out.collLink = pubUrl(im); }
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
-  if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '' };
+  if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '', lv: l.reglesV || '', v: rulesVersion(im) };
   if (show.chat && im && im.chat && im.chat.on && isCurrent(l)) {
     const g = (im.chats || {})[chatGroupKey(im, l)];
     if (g && g.members.includes(l.id)) out.chat = { id: g.id, key: g.key, me: shortName(l), mid: l.id };
   }
+  if (show.signal || show.regles) { const k = vault.get('reglages', 'signal'); out.signalKey = k ? k.pub : ''; }
   if (show.signal) {
-    const k = vault.get('reglages', 'signal');
-    out.signalKey = k ? k.pub : '';
     out.signals = vault.list('taches').filter((t) => t.locId === l.id).sort((a, b) => (b.sentAt || b.date || '').localeCompare(a.sentAt || a.date || '')).slice(0, 20)
       .map((t) => ({ titre: t.titre.replace(/^(Signalement|Erreur signalée \(dossier \/ paiements\)) : /, ''), sent: t.sentAt || '', date: t.date || '', statut: t.statut, done: t.doneDate || '' }));
   }
@@ -531,7 +538,7 @@ async function inboxSync() {
       const l = vault.list('locataires').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
       if (!l || !l.espace.on) { await vault.inboxDel(it.name); continue; }
       if (msg.type === 'regles') {
-        await vault.mutate((tx) => tx.put('locataires', { id: l.id, reglesLu: String(msg.t || '').slice(0, 10) || today() }), 'Règlement de la maison accepté', fullName(l), l.id);
+        await vault.mutate((tx) => tx.put('locataires', { id: l.id, reglesLu: String(msg.t || '').slice(0, 10) || today(), reglesV: String(msg.v || '').slice(0, 40) }), 'Règlement de la maison accepté', fullName(l), l.id);
         await vault.inboxDel(it.name);
         continue;
       }
@@ -2166,7 +2173,7 @@ const SHEETS = {
         <form data-form="regles" class="stack"><input type="hidden" name="id" value="${id}">
           <textarea name="regles" style="min-height:90px" placeholder="ex. Machine à laver jusqu'à 21 h. Vélos dans la cour, pas dans le couloir.">${im.regles || ''}</textarea>
           <button class="btn" type="submit">Enregistrer les règles</button></form>
-        <p class="tiny muted">Elles s'ajoutent au règlement général (calme, propreté, évacuations, déchets, tabac, visiteurs, sécurité, énergie, respect) affiché dans l'app de chaque locataire, dans sa langue. Chaque locataire touche « J'ai lu et j'accepte » : la date apparaît dans sa fiche.</p>`;
+        <p class="tiny muted">Elles s'ajoutent au règlement général (calme, propreté, évacuations, déchets, tabac, visiteurs, sécurité, énergie, respect) affiché dans l'app de chaque locataire, dans sa langue. À sa première ouverture de l'app, chaque locataire doit toucher « J'ai lu et j'accepte » avant de voir le reste ; la date apparaît dans sa fiche. Si vous modifiez ces règles, tous les locataires de l'immeuble doivent les accepter à nouveau.</p>`;
     } else if (tab === 'proprio') {
       const rent = ownerRent(im);
       const cy = y, cm = new Date().getMonth() + 1;
@@ -2475,7 +2482,7 @@ const SHEETS = {
           ${kvRow('Caution', html`<span class="num">${l.caution ? money(l.caution) : '—'}</span>${l.cautionDate || l.cautionMode ? html`<div class="tiny muted">reçue${l.cautionDate ? ' le ' + fmtDate(l.cautionDate) : ''}${l.cautionMode ? ' · ' + (CAUTION_MODES[l.cautionMode] || l.cautionMode).toLowerCase() : ''}</div>` : ''}${l.cautionNote ? html`<div class="tiny muted">${l.cautionNote}</div>` : ''}
             ${l.caution ? html`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" data-action="caution-recu" data-id="${id}">${icon('receipt')} Reçu de caution</button>${hasDoc('caution') ? html`<button class="btn sm" data-action="open-doc" data-id="${docOf('caution').id}">✓ Preuve jointe 👁</button>` : html`<button class="btn sm primary" data-action="doc-type" data-id="${id}" data-k="caution">📎 Joindre la preuve</button>`}</div>` : ''}`)}
           ${kvRow('Dossier', dossierChips(id, docOf))}
-          ${l.espace && l.espace.on ? kvRow('Règlement', l.reglesLu ? html`<span class="green">✓ accepté le ${fmtDate(l.reglesLu)}</span>` : html`<span class="amber">pas encore accepté</span>`) : ''}
+          ${l.espace && l.espace.on ? kvRow('Règlement', rulesAccepted(l) ? html`<span class="green">✓ accepté le ${fmtDate(l.reglesLu)}</span>` : l.reglesLu ? html`<span class="amber">à accepter de nouveau (règlement modifié)</span>` : html`<span class="amber">pas encore accepté</span>`) : ''}
           ${kvRow('Entrée', l.debut ? fmtDate(l.debut) : '?')}
           ${kvRow('Fin du contrat', html`${l.fin ? fmtDate(l.fin) : 'indéterminée'}${d != null && d >= 0 && d <= 60 && !gone ? html`<div class="tiny amber">dans ${plural(d, 'jour')}</div>` : ''}`)}
           ${l.sortie ? kvRow('Sortie', fmtDate(l.sortie)) : ''}
