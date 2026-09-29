@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.22.0';
+const VERSION = '2.22.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -1064,7 +1064,7 @@ async function claimOrAsk() {
     const i = e.info || {};
     const ago = i.lastSeen ? Math.max(0, Math.round((Date.now() - i.lastSeen) / 1000)) : null;
     const choice = await choiceBox(
-      'Ares est ouvert sur un autre appareil',
+      'NOBIS est ouvert sur un autre appareil',
       `${i.device || 'Un autre appareil'} est connecté${i.since ? ' depuis ' + fmtDateTime(i.since) : ''}${ago != null ? ` (actif il y a ${ago} s)` : ''}. Un seul appareil peut être connecté à la fois : si vous continuez, l'autre sera déconnecté immédiatement.`,
       [{ value: 'take', label: 'Prendre la main', cls: 'primary' }]
     );
@@ -1110,7 +1110,7 @@ async function onUnlock(fd, form) {
     if (r.setup) return renderLock('setup');
     if (!(await claimOrAsk())) {
       vault.lock();
-      return renderLock('unlock', 'Connexion annulée : Ares reste ouvert sur l’autre appareil.');
+      return renderLock('unlock', 'Connexion annulée : NOBIS reste ouvert sur l’autre appareil.');
     }
     startSession();
   } catch (e) {
@@ -1243,7 +1243,7 @@ vault.on((kind) => {
   if (kind === 'status') renderSync();
   if (kind === 'data') { renderView(); renderSheet(); scheduleEspaceSync(); }
   if (kind === 'auth-lost') lockNow("La clé d'accès a été changée sur un autre appareil.");
-  if (kind === 'session-lost') lockNow(`Ares a été ouvert sur ${vault.sessionLostBy || 'un autre appareil'} : cet appareil a été déconnecté.`);
+  if (kind === 'session-lost') lockNow(`NOBIS a été ouvert sur ${vault.sessionLostBy || 'un autre appareil'} : cet appareil a été déconnecté.`);
 });
 
 // ───────────────────────── Coquille ─────────────────────────
@@ -1889,7 +1889,7 @@ dashboard() {
 
       ${!standalone ? html`<div class="section-label">Application</div>
       <div class="list settings"><div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Installer sur ce téléphone</span>
-        <span class="meta" style="white-space:normal">${isIOS ? 'Safari : bouton Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône Ares sur l’écran d’accueil, fonctionne hors ligne.'}</span></span>
+        <span class="meta" style="white-space:normal">${isIOS ? 'Safari : bouton Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône NOBIS sur l’écran d’accueil, fonctionne hors ligne.'}</span></span>
         ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}</div></div>` : ''}
 
       <div class="section-label">Sécurité</div>
@@ -2252,7 +2252,7 @@ const SHEETS = {
     return {
       title: 'Calendrier de la commune',
       body: html`<form id="f" data-form="icsall" class="fields">
-        <p class="small full" style="margin:0">Importez le calendrier <b>complet</b> de la commune pour <b>${im.adresse}</b> : Ares le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.</p>
+        <p class="small full" style="margin:0">Importez le calendrier <b>complet</b> de la commune pour <b>${im.adresse}</b> : NOBIS le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.</p>
         ${field('Lien du calendrier (.ics / webcal) — se met à jour tout seul', 'url', st.url, { full: true, type: 'url', placeholder: 'https://… .ics ou webcal://…' })}
         <div class="full" style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn sm" type="button" data-action="ics-analyze">${icon('sync')} Lire le lien</button>
@@ -2303,7 +2303,7 @@ const SHEETS = {
           <p class="tiny muted full" style="margin:0">Chaque année : remplacez les dates par celles du nouveau calendrier de la commune.</p></div>
         <label class="field">Quand sortir<select name="sortie">${Object.entries(SORTIES).map(([k, v]) => html`<option value="${k}" ${(c.sortie || 'veille') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Heure (facultatif)', 'heure', c.heure, { placeholder: 'ex. après 18 h, avant 6 h' })}
-        <p class="tiny muted full" style="margin:0">Les dates ci-dessus sont les jours de <b>passage</b> du camion (comme sur le calendrier de la commune). Ares calcule quand sortir les poubelles.</p>
+        <p class="tiny muted full" style="margin:0">Les dates ci-dessus sont les jours de <b>passage</b> du camion (comme sur le calendrier de la commune). NOBIS calcule quand sortir les poubelles.</p>
         <label class="field full">Où sortir les poubelles<select name="lieu">${Object.entries(LIEUX).map(([k, v]) => html`<option value="${k}" ${c.lieu === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Remarque', 'note', c.note, { full: true, placeholder: 'ex. sortir la veille après 18 h, conteneur au garage n°2' })}
       </form>`,
@@ -3317,7 +3317,7 @@ const ACTIONS = {
       const { fix, afterExit } = datesFix(l, [{ y, m }]);
       if (afterExit.length) return toast(`${fullName(l)} est parti le ${fmtDate(l.sortie)} : ce mois n'est plus dû.`, { bad: true });
       const what = fix.debut ? `avancer l'entrée au ${fmtDate(fix.debut)}` : `prolonger le contrat jusqu'au ${fmtDate(fix.fin)}`;
-      if (!(await confirmBox(`${MONTHS_FULL[m - 1]} ${y} est hors du contrat`, { ok: fix.debut ? "Avancer l'entrée et payer" : 'Prolonger et payer', detail: `Le contrat de ${fullName(l)} ${fix.debut ? 'commence le ' + fmtDate(l.debut) : 'finit le ' + fmtDate(l.fin)}. Pour que les totaux restent justes, Ares va ${what}, puis enregistrer le paiement.` }))) return;
+      if (!(await confirmBox(`${MONTHS_FULL[m - 1]} ${y} est hors du contrat`, { ok: fix.debut ? "Avancer l'entrée et payer" : 'Prolonger et payer', detail: `Le contrat de ${fullName(l)} ${fix.debut ? 'commence le ' + fmtDate(l.debut) : 'finit le ' + fmtDate(l.fin)}. Pour que les totaux restent justes, NOBIS va ${what}, puis enregistrer le paiement.` }))) return;
       await vault.mutate((tx) => tx.put('locataires', { id: l.id, ...fix }), 'Dates du contrat corrigées', `${fullName(l)} — ${what}`, l.id);
     }
     payFull(d.loc, y, m);
