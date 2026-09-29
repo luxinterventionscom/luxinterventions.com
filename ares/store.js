@@ -598,6 +598,12 @@ export class Vault {
   async inboxList() { return (await (await this.call('inbox')).json()).items || []; }
   async inboxGet(name) { return new Uint8Array(await (await this.call('inbox/' + name)).arrayBuffer()); }
   inboxDel(name) { return this.call('inbox/' + name, { method: 'DELETE' }); }
+  // Mini-chat d'un logement (messages chiffrés avec la clé du logement)
+  boardOn(id) { return this.call('board/' + id, { method: 'PUT' }); }
+  async boardList(id) { return (await (await this.call('board/' + id)).json()).items || []; }
+  boardPost(id, bytes) { return this.call('board/' + id, { method: 'POST', body: bytes }); }
+  boardDelMsg(id, name) { return this.call('board/' + id + '/' + name, { method: 'DELETE' }); }
+  boardDel(id) { return this.call('board/' + id, { method: 'DELETE' }); }
 
   // Page publique des collectes d'un immeuble (copie non chiffrée : adresse + dates uniquement)
   async publishPublic(token, data) {
