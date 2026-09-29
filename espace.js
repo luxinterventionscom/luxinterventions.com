@@ -22,6 +22,7 @@ const L = {
     rc: { btn: '📄 Récapitulatif de tous mes loyers payés', title: 'Récapitulatif des loyers payés', cols: ['Mois', 'Loyer', 'Payé', 'Date du paiement'], total: 'Total', partial: 'paiement partiel', paidN: (n) => `${n} mois payé${n > 1 ? 's' : ''}`,
       text: (s, n, a, f, to) => `Je soussigné(e), ${s}, locataire principal et bailleur, déclare avoir reçu de ${n} les sommes détaillées ci-dessus, soit un total de ${a}, au titre des loyers de ${f} à ${to}, et lui en donne quittance.` },
     more: (n) => `Voir les ${n} suivantes`,
+    tl: {"title": "Don · prêt · location d’objets", "hint": "Donnez, prêtez ou louez vos objets (outils, électroménager, meubles…). Les intéressés vous écrivent par email ; l’argent s’échange entre vous, en espèces à la remise.", "see": "🌐 Voir toutes les annonces", "mine": "Mes annonces", "add": "➕ Publier un objet", "photos": "Photos (1 à 3)", "t": "Titre (ex. Perceuse Bosch)", "kind": "Type", "kinds": {"don": "🎁 Don (gratuit)", "pret": "🤝 Prêt gratuit", "loc": "💶 Location"}, "price": "Prix (€)", "unit": "Par", "units": {"h": "heure", "j": "jour", "we": "week-end", "s": "semaine", "u": "prix unique"}, "desc": "Description (état, marque, accessoires…)", "rules": "Vos conditions (caution, retour…)", "lieu": "Lieu de remise (ex. Luxembourg-Gare)", "mail": "Votre email (donné seulement à ceux qui touchent « Je suis intéressé »)", "ok": "J’accepte les règles d’utilisation : mon annonce et mes photos sont publiées sur luxinterventions.com (sans mon nom ni mon adresse) ; mon prénom et mon email sont donnés aux personnes intéressées.", "send": "Envoyer pour approbation", "sent": "Merci ! Votre annonce sera en ligne dès que le gestionnaire l’aura approuvée.", "st": {"pending": "⏳ En attente d’approbation", "ok": "✅ En ligne", "exp": "⌛ Expirée"}, "del": "Retirer", "delQ": "Retirer cette annonce ?", "rulesLink": "Règles d’utilisation", "need": "Ajoutez au moins une photo.", "inter": (n) => `📩 ${n} personne${n > 1 ? 's' : ''} intéressée${n > 1 ? 's' : ''} — regardez vos emails`},
     loc: 'fr-LU', door: 'Code de ma porte', since: 'depuis le', app: 'App des locataires ARES S.A.', welcome: 'Vos loyers, quittances, documents et collectes — et signaler un problème, depuis votre téléphone.', code: 'Votre code d’accès personnel', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrer', noCode: 'Pas de code ? Demandez-le à votre gestionnaire.', badCode: 'Code inconnu. Vérifiez-le ou demandez un nouveau code.', install: "Installer l’icône sur mon téléphone", iosHow: 'iPhone : touchez Partager puis « Sur l’écran d’accueil ».', andHow: 'Android : menu ⋮ puis « Installer l’application ».', logout: 'Se déconnecter de ce téléphone', title: 'Mon espace locataire', hello: 'Bonjour', avis: 'Avis de l’immeuble', pay: 'Mes loyers', restNow: 'Impayé à ce jour', upcoming: 'à venir', allPaid: 'Tout est payé à ce jour ✓',
     iban: 'Pour payer', ref: 'Communication', quit: 'Mes quittances', quitBtn: 'Quittance', partial: 'Reçu partiel', contrat: 'Mon contrat', entry: 'Entrée', end: 'Fin du contrat', rent: 'Loyer', revision: 'Prochaine révision', caution: 'Garantie',
     docs: 'Mon dossier', dossierHint: 'Documents et preuves que nous avons enregistrés pour vous (touchez 👁 pour voir). Une erreur ou un document manquant ? Dites-le-nous.', errBtn: '⚠️ Signaler une erreur', recv: 'reçue le', proof: 'Preuve', modes: { especes: 'en main propre', virement: 'par virement', cheque: 'par chèque', garantie: 'garantie bancaire', autre: '' }, dt: { bail: 'Contrat de bail', identite: 'Pièce d’identité', cns: 'Carte CNS', caution: 'Preuve de la caution', loyer: 'Preuve de paiement du loyer', assurance: 'Assurance habitation', revenus: 'Revenus', titre: 'Titre de séjour', autre: 'Document' }, coll: 'Collectes des déchets', putOut: 'sortir', truck: 'passage du camion le', calAdd: '📅 Ajouter les collectes à mon calendrier', signal: 'Signaler un problème', what: 'Quel problème ?', whatPh: 'ex. Fuite sous l’évier de la cuisine depuis ce matin', type: 'Type', types: { rep: '🔧 Réparation / panne', menage: '🧹 Propreté / nettoyage', dossier: '📄 Erreur dans mon dossier / mes paiements', autre: '📌 Autre' },
@@ -42,6 +43,7 @@ const L = {
     rc: { btn: '📄 Riepilogo di tutti i miei affitti pagati', title: 'Riepilogo degli affitti pagati', cols: ['Mese', 'Affitto', 'Pagato', 'Data del pagamento'], total: 'Totale', partial: 'pagamento parziale', paidN: (n) => `${n} mes${n > 1 ? 'i' : 'e'} pagat${n > 1 ? 'i' : 'o'}`,
       text: (s, n, a, f, to) => `Il/la sottoscritto/a, ${s}, locatario principale e locatore, dichiara di aver ricevuto da ${n} le somme dettagliate sopra, per un totale di ${a}, a titolo di affitto da ${f} a ${to}, e ne rilascia quietanza.` },
     more: (n) => `Vedi le altre ${n}`,
+    tl: {"title": "Regalo · prestito · noleggio di oggetti", "hint": "Regala, presta o noleggia i tuoi oggetti (attrezzi, elettrodomestici, mobili…). Gli interessati ti scrivono per email; i soldi si scambiano tra voi, in contanti alla consegna.", "see": "🌐 Vedi tutti gli annunci", "mine": "I miei annunci", "add": "➕ Pubblica un oggetto", "photos": "Foto (da 1 a 3)", "t": "Titolo (es. Trapano Bosch)", "kind": "Tipo", "kinds": {"don": "🎁 Regalo (gratis)", "pret": "🤝 Prestito gratuito", "loc": "💶 Noleggio"}, "price": "Prezzo (€)", "unit": "Per", "units": {"h": "ora", "j": "giorno", "we": "weekend", "s": "settimana", "u": "prezzo unico"}, "desc": "Descrizione (stato, marca, accessori…)", "rules": "Le tue condizioni (cauzione, restituzione…)", "lieu": "Luogo di consegna (es. Luxembourg-Gare)", "mail": "La tua email (data solo a chi tocca « Sono interessato »)", "ok": "Accetto le regole d’uso: il mio annuncio e le mie foto sono pubblicati su luxinterventions.com (senza nome né indirizzo); il mio nome e la mia email sono dati alle persone interessate.", "send": "Invia per l’approvazione", "sent": "Grazie! Il tuo annuncio sarà online appena il gestore l’avrà approvato.", "st": {"pending": "⏳ In attesa di approvazione", "ok": "✅ Online", "exp": "⌛ Scaduto"}, "del": "Ritira", "delQ": "Ritirare questo annuncio?", "rulesLink": "Regole d’uso", "need": "Aggiungi almeno una foto.", "inter": (n) => `📩 ${n} person${n > 1 ? 'e interessate' : 'a interessata'} — guarda la tua email`},
     loc: 'it-IT', door: 'Codice della mia porta', since: 'dal', app: 'App degli inquilini ARES S.A.', welcome: 'I tuoi affitti, ricevute, documenti e raccolte dei rifiuti — e segnalare un problema, dal telefono.', code: 'Il tuo codice d’accesso personale', codePh: 'es. K7PM2-QXA4H', enter: 'Entra', noCode: 'Non hai il codice? Chiedilo al tuo gestore.', badCode: 'Codice sconosciuto. Controllalo o chiedi un nuovo codice.', install: "Installa l’icona sul mio telefono", iosHow: 'iPhone: tocca Condividi e poi « Aggiungi alla schermata Home ».', andHow: 'Android: menu ⋮ e poi « Installa app ».', logout: 'Esci da questo telefono', title: 'Il mio spazio inquilino', hello: 'Ciao', avis: 'Avvisi del palazzo', pay: 'I miei affitti', restNow: 'Da pagare a oggi', upcoming: 'in scadenza', allPaid: 'Tutto pagato a oggi ✓',
     iban: 'Per pagare', ref: 'Causale', quit: 'Le mie ricevute', quitBtn: 'Ricevuta', partial: 'Ricevuta parziale', contrat: 'Il mio contratto', entry: 'Entrata', end: 'Fine del contratto', rent: 'Affitto', revision: 'Prossima revisione', caution: 'Cauzione',
     docs: 'La mia pratica', dossierHint: 'Documenti e prove che abbiamo registrato per te (tocca 👁 per vederli). Un errore o un documento mancante? Diccelo.', errBtn: '⚠️ Segnala un errore', recv: 'ricevuta il', proof: 'Prova', modes: { especes: 'a mano (contanti)', virement: 'con bonifico', cheque: 'con assegno', garantie: 'garanzia bancaria', autre: '' }, dt: { bail: 'Contratto di locazione', identite: 'Documento d’identità', cns: 'Tessera sanitaria (CNS)', caution: 'Prova della cauzione', loyer: 'Prova di pagamento dell’affitto', assurance: 'Assicurazione casa', revenus: 'Redditi', titre: 'Permesso di soggiorno', autre: 'Documento' }, coll: 'Raccolta rifiuti', putOut: 'mettere fuori', truck: 'passaggio del camion il', calAdd: '📅 Aggiungi le raccolte al mio calendario', signal: 'Segnala un problema', what: 'Quale problema?', whatPh: 'es. Perdita d’acqua sotto il lavello della cucina da stamattina', type: 'Tipo', types: { rep: '🔧 Riparazione / guasto', menage: '🧹 Pulizia', dossier: '📄 Errore nella mia pratica / nei pagamenti', autre: '📌 Altro' },
@@ -62,6 +64,7 @@ const L = {
     rc: { btn: '📄 Übersicht aller bezahlten Mieten', title: 'Übersicht der bezahlten Mieten', cols: ['Monat', 'Miete', 'Bezahlt', 'Zahlungsdatum'], total: 'Summe', partial: 'Teilzahlung', paidN: (n) => `${n} Monat${n > 1 ? 'e' : ''} bezahlt`,
       text: (s, n, a, f, to) => `Der/die Unterzeichnende, ${s}, Hauptmieter und Vermieter, bestätigt, von ${n} die oben aufgeführten Beträge, insgesamt ${a}, als Miete von ${f} bis ${to} erhalten zu haben, und erteilt hierüber Quittung.` },
     more: (n) => `Die nächsten ${n} anzeigen`,
+    tl: {"title": "Verschenken · verleihen · vermieten", "hint": "Verschenken, verleihen oder vermieten Sie Ihre Sachen (Werkzeug, Haushaltsgeräte, Möbel…). Interessenten schreiben Ihnen per E-Mail; bezahlt wird unter Ihnen, bar bei der Übergabe.", "see": "🌐 Alle Anzeigen ansehen", "mine": "Meine Anzeigen", "add": "➕ Gegenstand anbieten", "photos": "Fotos (1 bis 3)", "t": "Titel (z. B. Bohrmaschine Bosch)", "kind": "Art", "kinds": {"don": "🎁 Geschenkt", "pret": "🤝 Kostenlos leihen", "loc": "💶 Vermietung"}, "price": "Preis (€)", "unit": "Pro", "units": {"h": "Stunde", "j": "Tag", "we": "Wochenende", "s": "Woche", "u": "Festpreis"}, "desc": "Beschreibung (Zustand, Marke, Zubehör…)", "rules": "Ihre Bedingungen (Kaution, Rückgabe…)", "lieu": "Übergabeort (z. B. Luxembourg-Gare)", "mail": "Ihre E-Mail (nur für Personen, die „Ich bin interessiert“ tippen)", "ok": "Ich akzeptiere die Nutzungsregeln: Meine Anzeige und Fotos werden auf luxinterventions.com veröffentlicht (ohne Namen und Adresse); mein Vorname und meine E-Mail werden an Interessenten weitergegeben.", "send": "Zur Freigabe senden", "sent": "Danke! Ihre Anzeige ist online, sobald die Verwaltung sie freigegeben hat.", "st": {"pending": "⏳ Wartet auf Freigabe", "ok": "✅ Online", "exp": "⌛ Abgelaufen"}, "del": "Zurückziehen", "delQ": "Diese Anzeige zurückziehen?", "rulesLink": "Nutzungsregeln", "need": "Bitte mindestens ein Foto hinzufügen.", "inter": (n) => `📩 ${n} Interessent${n > 1 ? 'en' : ''} — sehen Sie in Ihre E-Mails`},
     loc: 'de-LU', door: 'Mein Türcode', since: 'seit', app: 'Mieter-App ARES S.A.', welcome: 'Ihre Mieten, Quittungen, Dokumente und Abfuhrtermine — und Probleme melden, auf Ihrem Telefon.', code: 'Ihr persönlicher Zugangscode', codePh: 'z. B. K7PM2-QXA4H', enter: 'Anmelden', noCode: 'Kein Code? Fragen Sie Ihre Verwaltung.', badCode: 'Unbekannter Code. Bitte prüfen oder einen neuen Code anfordern.', install: "Symbol auf meinem Handy installieren", iosHow: 'iPhone: Teilen tippen, dann „Zum Home-Bildschirm“.', andHow: 'Android: Menü ⋮, dann „App installieren“.', logout: 'Auf diesem Telefon abmelden', title: 'Mein Mieterbereich', hello: 'Guten Tag', avis: 'Mitteilungen zum Haus', pay: 'Meine Mieten', restNow: 'Heute offen', upcoming: 'noch fällig', allPaid: 'Bis heute alles bezahlt ✓',
     iban: 'Zahlung', ref: 'Verwendungszweck', quit: 'Meine Quittungen', quitBtn: 'Quittung', partial: 'Teilzahlung', contrat: 'Mein Vertrag', entry: 'Einzug', end: 'Vertragsende', rent: 'Miete', revision: 'Nächste Anpassung', caution: 'Kaution',
     docs: 'Meine Unterlagen', dossierHint: 'Dokumente und Nachweise, die wir für Sie erfasst haben (👁 zum Ansehen). Ein Fehler oder fehlt etwas? Sagen Sie es uns.', errBtn: '⚠️ Einen Fehler melden', recv: 'erhalten am', proof: 'Nachweis', modes: { especes: 'bar', virement: 'per Überweisung', cheque: 'per Scheck', garantie: 'Bankgarantie', autre: '' }, dt: { bail: 'Mietvertrag', identite: 'Ausweis', cns: 'Krankenversicherungskarte (CNS)', caution: 'Kautionsnachweis', loyer: 'Zahlungsnachweis Miete', assurance: 'Hausratversicherung', revenus: 'Einkommen', titre: 'Aufenthaltstitel', autre: 'Dokument' }, coll: 'Müllabfuhr', putOut: 'rausstellen', truck: 'Abholung am', calAdd: '📅 Abfuhrtermine in meinen Kalender', signal: 'Ein Problem melden', what: 'Welches Problem?', whatPh: 'z. B. Wasser tropft seit heute Morgen unter der Küchenspüle', type: 'Art', types: { rep: '🔧 Reparatur / Defekt', menage: '🧹 Sauberkeit / Reinigung', dossier: '📄 Fehler in meinen Unterlagen / Zahlungen', autre: '📌 Sonstiges' },
@@ -82,6 +85,7 @@ const L = {
     rc: { btn: '📄 Resumo de todas as rendas pagas', title: 'Resumo das rendas pagas', cols: ['Mês', 'Renda', 'Pago', 'Data do pagamento'], total: 'Total', partial: 'pagamento parcial', paidN: (n) => `${n} ${n > 1 ? 'meses pagos' : 'mês pago'}`,
       text: (s, n, a, f, to) => `O/A abaixo assinado/a, ${s}, arrendatário principal e senhorio, declara ter recebido de ${n} as quantias detalhadas acima, num total de ${a}, a título de renda de ${f} a ${to}, e dá a respetiva quitação.` },
     more: (n) => `Ver as próximas ${n}`,
+    tl: {"title": "Doar · emprestar · alugar objetos", "hint": "Doe, empreste ou alugue os seus objetos (ferramentas, eletrodomésticos, móveis…). Os interessados escrevem-lhe por email; o dinheiro troca-se entre vocês, em numerário na entrega.", "see": "🌐 Ver todos os anúncios", "mine": "Os meus anúncios", "add": "➕ Publicar um objeto", "photos": "Fotos (1 a 3)", "t": "Título (ex. Berbequim Bosch)", "kind": "Tipo", "kinds": {"don": "🎁 Doação (grátis)", "pret": "🤝 Empréstimo grátis", "loc": "💶 Aluguer"}, "price": "Preço (€)", "unit": "Por", "units": {"h": "hora", "j": "dia", "we": "fim de semana", "s": "semana", "u": "preço único"}, "desc": "Descrição (estado, marca, acessórios…)", "rules": "As suas condições (caução, devolução…)", "lieu": "Local de entrega (ex. Luxembourg-Gare)", "mail": "O seu email (dado só a quem tocar « Estou interessado »)", "ok": "Aceito as regras de utilização: o meu anúncio e as minhas fotos são publicados em luxinterventions.com (sem nome nem morada); o meu nome próprio e o meu email são dados às pessoas interessadas.", "send": "Enviar para aprovação", "sent": "Obrigado! O seu anúncio fica online assim que o gestor o aprovar.", "st": {"pending": "⏳ À espera de aprovação", "ok": "✅ Online", "exp": "⌛ Expirado"}, "del": "Retirar", "delQ": "Retirar este anúncio?", "rulesLink": "Regras de utilização", "need": "Adicione pelo menos uma foto.", "inter": (n) => `📩 ${n} pessoa${n > 1 ? 's interessadas' : ' interessada'} — veja o seu email`},
     loc: 'pt-PT', door: 'Código da minha porta', since: 'desde', app: 'App dos inquilinos ARES S.A.', welcome: 'As suas rendas, recibos, documentos e recolhas — e comunicar um problema, no seu telemóvel.', code: 'O seu código de acesso pessoal', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrar', noCode: 'Não tem código? Peça-o ao seu gestor.', badCode: 'Código desconhecido. Verifique-o ou peça um novo código.', install: "Instalar o ícone no meu telemóvel", iosHow: 'iPhone: toque em Partilhar e depois « Adicionar ao ecrã principal ».', andHow: 'Android: menu ⋮ e depois « Instalar aplicação ».', logout: 'Terminar sessão neste telemóvel', title: 'O meu espaço de inquilino', hello: 'Olá', avis: 'Avisos do prédio', pay: 'As minhas rendas', restNow: 'Em falta hoje', upcoming: 'por vencer', allPaid: 'Tudo pago até hoje ✓',
     iban: 'Para pagar', ref: 'Referência', quit: 'Os meus recibos', quitBtn: 'Recibo', partial: 'Recibo parcial', contrat: 'O meu contrato', entry: 'Entrada', end: 'Fim do contrato', rent: 'Renda', revision: 'Próxima revisão', caution: 'Caução',
     docs: 'O meu processo', dossierHint: 'Documentos e comprovativos que registámos para si (toque em 👁 para ver). Um erro ou falta algum documento? Diga-nos.', errBtn: '⚠️ Comunicar um erro', recv: 'recebida em', proof: 'Comprovativo', modes: { especes: 'em mão (dinheiro)', virement: 'por transferência', cheque: 'por cheque', garantie: 'garantia bancária', autre: '' }, dt: { bail: 'Contrato de arrendamento', identite: 'Documento de identificação', cns: 'Cartão da CNS (seguro de saúde)', caution: 'Comprovativo da caução', loyer: 'Comprovativo de pagamento da renda', assurance: 'Seguro da habitação', revenus: 'Rendimentos', titre: 'Autorização de residência', autre: 'Documento' }, coll: 'Recolha do lixo', putOut: 'pôr fora', truck: 'recolha no dia', calAdd: '📅 Adicionar as recolhas ao meu calendário', signal: 'Comunicar um problema', what: 'Qual é o problema?', whatPh: 'ex. Fuga de água debaixo do lava-loiça desde esta manhã', type: 'Tipo', types: { rep: '🔧 Reparação / avaria', menage: '🧹 Limpeza', dossier: '📄 Erro no meu processo / pagamentos', autre: '📌 Outro' },
@@ -102,6 +106,7 @@ const L = {
     rc: { btn: '📄 Summary of all my paid rent', title: 'Summary of rent paid', cols: ['Month', 'Rent', 'Paid', 'Payment date'], total: 'Total', partial: 'partial payment', paidN: (n) => `${n} month${n > 1 ? 's' : ''} paid`,
       text: (s, n, a, f, to) => `I, the undersigned, ${s}, head tenant and landlord, confirm that I have received from ${n} the amounts detailed above, a total of ${a}, as rent from ${f} to ${to}, and hereby give receipt for them.` },
     more: (n) => `Show the next ${n}`,
+    tl: {"title": "Give · lend · rent items", "hint": "Give away, lend or rent out your things (tools, appliances, furniture…). Interested people email you; money changes hands between you, in cash on handover.", "see": "🌐 See all listings", "mine": "My listings", "add": "➕ Post an item", "photos": "Photos (1 to 3)", "t": "Title (e.g. Bosch drill)", "kind": "Type", "kinds": {"don": "🎁 Free (gift)", "pret": "🤝 Free loan", "loc": "💶 Rental"}, "price": "Price (€)", "unit": "Per", "units": {"h": "hour", "j": "day", "we": "weekend", "s": "week", "u": "one-off price"}, "desc": "Description (condition, brand, accessories…)", "rules": "Your conditions (deposit, return…)", "lieu": "Handover place (e.g. Luxembourg-Gare)", "mail": "Your email (only given to people who tap “I’m interested”)", "ok": "I accept the terms of use: my listing and photos are published on luxinterventions.com (without my name or address); my first name and email are given to interested people.", "send": "Send for approval", "sent": "Thanks! Your listing will be online as soon as the manager approves it.", "st": {"pending": "⏳ Waiting for approval", "ok": "✅ Online", "exp": "⌛ Expired"}, "del": "Remove", "delQ": "Remove this listing?", "rulesLink": "Terms of use", "need": "Please add at least one photo.", "inter": (n) => `📩 ${n} interested — check your email`},
     loc: 'en-GB', door: 'My door code', since: 'since', app: 'ARES S.A. tenant app', welcome: 'Your rent, receipts, documents and waste collections — and report a problem, on your phone.', code: 'Your personal access code', codePh: 'e.g. K7PM2-QXA4H', enter: 'Enter', noCode: 'No code? Ask your property manager.', badCode: 'Unknown code. Check it or ask for a new code.', install: "Install the icon on my phone", iosHow: 'iPhone: tap Share, then “Add to Home Screen”.', andHow: 'Android: menu ⋮, then “Install app”.', logout: 'Sign out on this phone', title: 'My tenant space', hello: 'Hello', avis: 'Building notices', pay: 'My rent', restNow: 'Unpaid to date', upcoming: 'upcoming', allPaid: 'All paid to date ✓',
     iban: 'How to pay', ref: 'Reference', quit: 'My rent receipts', quitBtn: 'Receipt', partial: 'Partial receipt', contrat: 'My lease', entry: 'Move-in', end: 'Lease end', rent: 'Rent', revision: 'Next rent review', caution: 'Deposit',
     docs: 'My file', dossierHint: 'Documents and proofs we have recorded for you (tap 👁 to view). A mistake or a missing document? Let us know.', errBtn: '⚠️ Report a mistake', recv: 'received on', proof: 'Proof', modes: { especes: 'in cash', virement: 'by bank transfer', cheque: 'by cheque', garantie: 'bank guarantee', autre: '' }, dt: { bail: 'Lease', identite: 'ID document', cns: 'Health insurance card (CNS)', caution: 'Deposit proof', loyer: 'Rent payment proof', assurance: 'Home insurance', revenus: 'Income', titre: 'Residence permit', autre: 'Document' }, coll: 'Waste collection', putOut: 'put out', truck: 'truck comes on', calAdd: '📅 Add collections to my calendar', signal: 'Report a problem', what: 'What is the problem?', whatPh: 'e.g. Water leaking under the kitchen sink since this morning', type: 'Type', types: { rep: '🔧 Repair / breakdown', menage: '🧹 Cleanliness', dossier: '📄 Mistake in my file / payments', autre: '📌 Other' },
@@ -122,6 +127,7 @@ const L = {
     rc: { btn: '📄 Resumen de todos mis alquileres pagados', title: 'Resumen de alquileres pagados', cols: ['Mes', 'Alquiler', 'Pagado', 'Fecha de pago'], total: 'Total', partial: 'pago parcial', paidN: (n) => `${n} ${n > 1 ? 'meses pagados' : 'mes pagado'}`,
       text: (s, n, a, f, to) => `El/la abajo firmante, ${s}, arrendatario principal y arrendador, declara haber recibido de ${n} las cantidades detalladas arriba, por un total de ${a}, en concepto de alquiler de ${f} a ${to}, y otorga el presente recibo.` },
     more: (n) => `Ver las ${n} siguientes`,
+    tl: {"title": "Regalar · prestar · alquilar objetos", "hint": "Regala, presta o alquila tus cosas (herramientas, electrodomésticos, muebles…). Los interesados te escriben por email; el dinero se intercambia entre vosotros, en efectivo en la entrega.", "see": "🌐 Ver todos los anuncios", "mine": "Mis anuncios", "add": "➕ Publicar un objeto", "photos": "Fotos (de 1 a 3)", "t": "Título (ej. Taladro Bosch)", "kind": "Tipo", "kinds": {"don": "🎁 Regalo (gratis)", "pret": "🤝 Préstamo gratis", "loc": "💶 Alquiler"}, "price": "Precio (€)", "unit": "Por", "units": {"h": "hora", "j": "día", "we": "fin de semana", "s": "semana", "u": "precio único"}, "desc": "Descripción (estado, marca, accesorios…)", "rules": "Tus condiciones (fianza, devolución…)", "lieu": "Lugar de entrega (ej. Luxembourg-Gare)", "mail": "Tu email (solo se da a quien toque « Me interesa »)", "ok": "Acepto las normas de uso: mi anuncio y mis fotos se publican en luxinterventions.com (sin mi nombre ni mi dirección); mi nombre de pila y mi email se dan a las personas interesadas.", "send": "Enviar para aprobación", "sent": "¡Gracias! Tu anuncio estará en línea en cuanto el administrador lo apruebe.", "st": {"pending": "⏳ Pendiente de aprobación", "ok": "✅ En línea", "exp": "⌛ Caducado"}, "del": "Retirar", "delQ": "¿Retirar este anuncio?", "rulesLink": "Normas de uso", "need": "Añade al menos una foto.", "inter": (n) => `📩 ${n} persona${n > 1 ? 's interesadas' : ' interesada'} — mira tu email`},
     loc: 'es-ES', door: 'Código de mi puerta', since: 'desde el', app: 'App de inquilinos ARES S.A.', welcome: 'Tus alquileres, recibos, documentos y recogida de basura — y avisar de un problema, desde tu móvil.', code: 'Tu código de acceso personal', codePh: 'ej. K7PM2-QXA4H', enter: 'Entrar', noCode: '¿No tienes código? Pídeselo a tu administrador.', badCode: 'Código desconocido. Compruébalo o pide un código nuevo.', install: 'Instalar el icono en mi móvil', iosHow: 'iPhone: toca Compartir y luego « Añadir a pantalla de inicio ».', andHow: 'Android: menú ⋮ y luego « Instalar aplicación ».', logout: 'Cerrar sesión en este móvil', title: 'Mi espacio de inquilino', hello: 'Hola', avis: 'Avisos del edificio', pay: 'Mis alquileres', restNow: 'Pendiente a día de hoy', upcoming: 'por vencer', allPaid: 'Todo pagado a día de hoy ✓',
     iban: 'Para pagar', ref: 'Concepto', quit: 'Mis recibos', quitBtn: 'Recibo', partial: 'Recibo parcial', contrat: 'Mi contrato', entry: 'Entrada', end: 'Fin del contrato', rent: 'Alquiler', revision: 'Próxima revisión', caution: 'Fianza',
     docs: 'Mi expediente', dossierHint: 'Documentos y justificantes que hemos registrado para ti (toca 👁 para verlos). ¿Un error o falta un documento? Dínoslo.', errBtn: '⚠️ Avisar de un error', recv: 'recibida el', proof: 'Justificante', modes: { especes: 'en mano (efectivo)', virement: 'por transferencia', cheque: 'con cheque', garantie: 'aval bancario', autre: '' }, dt: { bail: 'Contrato de alquiler', identite: 'Documento de identidad', cns: 'Tarjeta sanitaria (CNS)', caution: 'Justificante de la fianza', loyer: 'Justificante de pago del alquiler', assurance: 'Seguro de hogar', revenus: 'Ingresos', titre: 'Permiso de residencia', autre: 'Documento' }, coll: 'Recogida de basura', putOut: 'sacar', truck: 'pasa el camión el', calAdd: '📅 Añadir las recogidas a mi calendario', signal: 'Avisar de un problema', what: '¿Qué problema hay?', whatPh: 'ej. Fuga de agua bajo el fregadero de la cocina desde esta mañana', type: 'Tipo', types: { rep: '🔧 Reparación / avería', menage: '🧹 Limpieza', dossier: '📄 Error en mi expediente / mis pagos', autre: '📌 Otro' },
@@ -146,6 +152,7 @@ const fmt = (s) => (s ? new Date(s.slice(0, 10) + 'T00:00:00').toLocaleDateStrin
 const day = (s) => new Date(s + 'T00:00:00').toLocaleDateString(T().loc, { weekday: 'long', day: 'numeric', month: 'long' });
 const money = (n) => new Intl.NumberFormat(T().loc, { style: 'currency', currency: 'EUR' }).format(n || 0);
 const lightOf = (d) => (d <= today ? 'red' : d <= addDays(today, 2) ? 'yellow' : 'green');
+const BIN_COLORS = { residuel: '#6b7280', organique: '#92400e', papier: '#2563eb', verre: '#15803d', valorlux: '#0891b2', encombrants: '#7c3aed', autre: '#9a958a' };
 const CATS = {
   fr: { residuel: 'Déchets résiduels', organique: 'Biodéchets', papier: 'Papier / carton', verre: 'Verre', valorlux: 'Valorlux', encombrants: 'Encombrants', autre: 'Autre' },
   it: { residuel: 'Indifferenziato', organique: 'Organico / umido', papier: 'Carta / cartone', verre: 'Vetro', valorlux: 'Valorlux', encombrants: 'Ingombranti', autre: 'Altro' },
@@ -258,6 +265,29 @@ function chatStart() {
   chatFetch();
   chatTimer = setInterval(() => { if (document.visibilityState === 'visible') chatFetch(); }, 20000);
 }
+// ── Mes annonces « Don · prêt · location » ──
+let myTools = null, toolMsg = '';
+const toolSeen = (tid) => { try { return +localStorage.getItem('espToolSeen:' + tid) || 0; } catch { return 0; } };
+function toolsHtml() {
+  const tl = T().tl;
+  if (!myTools || !myTools.length) return '';
+  return `<p style="margin:12px 0 4px"><b>${esc(tl.mine)}</b></p>` + myTools.map((it) => {
+    const st = it.exp < Date.now() ? tl.st.exp : tl.st[it.status] || it.status;
+    const n = it.clicks || 0, fresh = n > toolSeen(it.id);
+    return `<div class="row"><img src="${API}/api/tools/${esc(it.id)}/p0.jpg" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:10px;flex:0 0 52px">
+      <div class="grow"><b>${esc(it.title)}</b><div class="meta">${esc(st)}</div>${n ? `<button class="pill${fresh ? ' new' : ''}" data-tool-seen="${esc(it.id)}" data-n="${n}">${esc(tl.inter(n))}</button>` : ''}</div>
+      <button class="btn sm sec" data-tool-del="${esc(it.id)}">${esc(tl.del)}</button></div>`;
+  }).join('');
+}
+async function toolsFetch() {
+  try {
+    const r = await fetch(`${API}/api/esp/${id}/tools`, { cache: 'no-store' });
+    if (r.ok) myTools = (await r.json()).items || [];
+  } catch { /* hors ligne */ }
+  myTools = myTools || [];
+  const box = document.getElementById('myTools');
+  if (box) box.innerHTML = toolsHtml();
+}
 const rulesKey = () => 'espRules:' + id;
 const rulesAck = () => { try { return localStorage.getItem(rulesKey()) || ''; } catch { return ''; } };
 function render() {
@@ -319,12 +349,33 @@ function render() {
         : `<p class="meta"><a href="#rules" data-goto-rules="1">${esc(t.hr.boardFirst)}</a></p>`}
       <button class="btn sm sec" style="margin-top:8px" data-chat-refresh="1">${esc(t.hr.refresh)}</button></div>`);
   }
+  if (s.tools) {
+    const tl = t.tl;
+    out.push(`<div class="card" id="toolsCard"><h2>🧰 ${esc(tl.title)}</h2><p class="meta" style="margin:0 0 8px">${esc(tl.hint)}</p>
+      <a class="btn sec block" href="/outils.html" target="_blank" rel="noopener">${esc(tl.see)}</a>
+      ${toolMsg ? `<p class="ok" style="margin:10px 0 0"><b>${esc(toolMsg)}</b></p>` : ''}
+      <div id="myTools">${toolsHtml()}</div>
+      <details class="more"><summary>${esc(tl.add)}</summary><form id="toolf">
+        <label>${esc(tl.photos)}</label><input type="file" name="photos" accept="image/*" multiple required>
+        <label>${esc(tl.t)}</label><input name="title" required maxlength="80">
+        <label>${esc(tl.kind)}</label><select name="kind">${Object.entries(tl.kinds).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select>
+        <div id="toolPrice" hidden><label>${esc(tl.price)}</label><input name="price" type="number" inputmode="decimal" min="0" step="0.5">
+          <label>${esc(tl.unit)}</label><select name="unit">${Object.entries(tl.units).map(([k, v]) => `<option value="${k}"${k === 'j' ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></div>
+        <label>${esc(tl.desc)}</label><textarea name="desc" maxlength="800"></textarea>
+        <label>${esc(tl.rules)}</label><textarea name="rules" maxlength="400"></textarea>
+        <label>${esc(tl.lieu)}</label><input name="lieu" maxlength="60">
+        <label>${esc(tl.mail)}</label><input name="mail" type="email" required maxlength="120" value="${esc(d.mail || '')}">
+        <label class="chk"><input type="checkbox" name="ok" required> <span>${esc(tl.ok)} <a href="/outils.html#regles" target="_blank" rel="noopener">${esc(tl.rulesLink)}</a></span></label>
+        <button class="btn block" type="submit" style="margin-top:12px">${esc(tl.send)}</button></form></details></div>`);
+  }
   if (s.coll && (d.coll || []).length) {
     const ev = [];
     for (const it of d.coll) for (const dd of it.dates || []) { const p = it.sortie === 'jour' ? dd : addDays(dd, -1); if (p >= today) ev.push({ it, dd, p }); }
     ev.sort((a, b) => a.p.localeCompare(b.p));
     const cats = CATS[lang];
-    const row = (x) => `<div class="row"><span class="light l-${lightOf(x.p)}" style="margin-top:6px"></span><div class="grow"><b>${esc(day(x.p))} — ${esc(t.putOut)} ${esc(cats[x.it.cat] || x.it.cat)}</b><div class="meta">${esc(t.truck)} ${esc(day(x.dd))}${x.it.heure ? ' · ' + esc(x.it.heure) : ''}</div></div></div>`;
+    // Type de déchets : nom traduit, ou nom exact du calendrier de la commune si le type n'est pas reconnu
+    const what = (x) => ((x.it.cat === 'autre' || !cats[x.it.cat]) && x.it.names && x.it.names[x.dd]) || cats[x.it.cat] || x.it.cat;
+    const row = (x) => `<div class="row"><span class="light l-${lightOf(x.p)}" style="margin-top:6px"></span><div class="grow"><b>${esc(day(x.p))} — ${esc(t.putOut)} <span class="bin" style="--c:${BIN_COLORS[x.it.cat] || '#9a958a'}">${esc(what(x))}</span></b><div class="meta">${esc(t.truck)} ${esc(day(x.dd))}${x.it.heure ? ' · ' + esc(x.it.heure) : ''}</div></div></div>`;
     const rest = ev.slice(3, 24);
     out.push(`<div class="card"><h2>🗑️ ${esc(t.coll)}</h2>${ev.slice(0, 3).map(row).join('')}${rest.length ? `<details class="more"><summary>${esc(t.more(rest.length))}</summary>${rest.map(row).join('')}</details>` : ''}
       ${d.collLink ? `<a class="btn sec block" style="margin-top:10px" href="${esc(d.collLink)}">${esc(t.calAdd)}</a>` : ''}</div>`);
@@ -350,6 +401,7 @@ function render() {
   out.push(installCard(t));
   out.push(`<div class="card notice"><details><summary>🔒 ${esc(t.rgpdT)}</summary><p>${esc(t.rgpd(d.societe))}</p>${d.chat || d.regles ? `<p>${esc(t.hr.rgpd2)}</p>` : ''}</details><p style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
   app.innerHTML = out.join('');
+  if (s.tools && myTools == null) toolsFetch();
   if (d.chat) { const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight; if (!chatTimer) chatStart(); }
 }
 
@@ -392,6 +444,15 @@ async function compress(file) {
 
 app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-chat-refresh]')) return chatFetch();
+  const ts = e.target.closest('[data-tool-seen]');
+  if (ts) { try { localStorage.setItem('espToolSeen:' + ts.dataset.toolSeen, ts.dataset.n); } catch {} ts.classList.remove('new'); return; }
+  const td = e.target.closest('[data-tool-del]');
+  if (td) {
+    if (!confirm(T().tl.delQ)) return;
+    td.disabled = true;
+    try { await fetch(`${API}/api/esp/${id}/tools/${td.dataset.toolDel}`, { method: 'DELETE' }); } catch { /* hors ligne */ }
+    return toolsFetch();
+  }
   if (e.target.closest('[data-goto-rules]')) { e.preventDefault(); const r = document.getElementById('rules'); if (r) { r.querySelector('details').open = true; r.scrollIntoView({ behavior: 'smooth' }); } return; }
   const ro = e.target.closest('[data-rules-ok]');
   if (ro) {
@@ -427,7 +488,32 @@ app.addEventListener('click', async (e) => {
     if (f) { f.type.value = 'dossier'; f.scrollIntoView({ behavior: 'smooth', block: 'start' }); f.texte.focus({ preventScroll: true }); }
   }
 });
+app.addEventListener('change', (e) => {
+  if (e.target.name === 'kind' && e.target.form && e.target.form.id === 'toolf') document.getElementById('toolPrice').hidden = e.target.value !== 'loc';
+});
 app.addEventListener('submit', async (e) => {
+  if (e.target.id === 'toolf') {
+    e.preventDefault();
+    const f = e.target.elements, tl = T().tl;
+    const files = [...f.photos.files].slice(0, 3);
+    if (!files.length) return alert(tl.need);
+    const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = '…';
+    try {
+      const photos = [];
+      for (const file of files) photos.push(await compress(file));
+      const body = { kind: f.kind.value, title: f.title.value, price: f.price.value, unit: f.unit.value, desc: f.desc.value, rules: f.rules.value, lieu: f.lieu.value, mail: f.mail.value, name: data.prenom || data.nom || '', photos };
+      const r = await fetch(`${API}/api/esp/${id}/tools`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
+      toolMsg = tl.sent;
+      myTools = null;
+      render();
+      document.getElementById('toolsCard')?.scrollIntoView({ block: 'start' });
+    } catch (err) {
+      btn.disabled = false; btn.textContent = tl.send;
+      alert('⚠ ' + (err.message || err));
+    }
+    return;
+  }
   if (e.target.id === 'chatf') {
     e.preventDefault();
     const f = e.target, x = f.x.value.trim().slice(0, 1500);

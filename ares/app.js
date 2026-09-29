@@ -2,9 +2,9 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
-import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
+import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.18.1';
+const VERSION = '2.19.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -212,11 +212,21 @@ function icsGroups(text) {
   const g = {};
   for (const e of icsEvents(text)) {
     const cat = classifyEvent(e) || 'autre';
-    const x = g[cat] || (g[cat] = { dates: new Set(), names: new Set() });
+    const x = g[cat] || (g[cat] = { dates: new Set(), names: new Set(), by: {} });
     x.dates.add(e.d);
-    if (e.name) x.names.add(e.name.slice(0, 60));
+    if (e.name) {
+      const nm = e.name.slice(0, 60);
+      x.names.add(nm);
+      // Nom exact de la collecte ce jour-là (ex. « Objets encombrants »), montré aux locataires si le type n'est pas reconnu
+      x.by[e.d] = x.by[e.d] && !x.by[e.d].includes(nm) ? x.by[e.d] + ' + ' + nm : x.by[e.d] || nm;
+    }
   }
-  return Object.keys(DECHETS).filter((k) => g[k]).map((cat) => ({ cat, dates: [...g[cat].dates].sort(), names: [...g[cat].names].slice(0, 3) }));
+  return Object.keys(DECHETS).filter((k) => g[k]).map((cat) => ({ cat, dates: [...g[cat].dates].sort(), names: [...g[cat].names].slice(0, 3), dnames: g[cat].by }));
+}
+// Noms par date pour une collecte liée à un calendrier (son type + les événements sans type reconnu)
+function icsNames(text, cat) {
+  const gs = icsGroups(text);
+  return { ...((gs.find((x) => x.cat === 'autre') || {}).dnames || {}), ...((gs.find((x) => x.cat === cat) || {}).dnames || {}) };
 }
 function parseDates(text, year, cat) {
   const out = new Set();
@@ -267,7 +277,11 @@ const qrSvg = (text, cell = 5) => { const q = qrcode(0, 'M'); q.addData(text); q
 function pubData(im) {
   const from = addDays(today(), -7), to = addDays(today(), 400);
   const items = vault.list('collectes').filter((c) => c.immId === im.id).sort((a, b) => Object.keys(DECHETS).indexOf(a.cat) - Object.keys(DECHETS).indexOf(b.cat))
-    .map((c) => ({ cat: c.cat, sortie: c.sortie || 'veille', heure: c.heure || '', lieu: c.lieu, note: c.note || '', dates: collecteDates(c, from, to) }));
+    .map((c) => {
+      const dates = collecteDates(c, from, to);
+      const names = c.dnames ? Object.fromEntries(dates.filter((d) => c.dnames[d]).map((d) => [d, c.dnames[d]])) : {};
+      return { cat: c.cat, sortie: c.sortie || 'veille', heure: c.heure || '', lieu: c.lieu, note: c.note || '', dates, ...(Object.keys(names).length ? { names } : {}) };
+    });
   return { adresse: im.adresse, societe: societe().nom || '', tel: societe().tel || '', items };
 }
 // Republie la page publique d'un immeuble (ou de tous) après un changement ; silencieux hors ligne
@@ -291,6 +305,7 @@ const ESP_SHOW = {
   porte: 'Code de la porte (serrure à code / connectée)',
   regles: 'Règlement de la maison (à lire, avec « J’ai lu et j’accepte »)',
   chat: 'Messages de la maison (mini-chat entre habitants, lu par vous)',
+  tools: 'Don · prêt · location (publier ses objets sur le site, après votre approbation)',
 };
 const ESP_ALL = Object.fromEntries(Object.keys(ESP_SHOW).map((k) => [k, k !== 'porte']));
 const espUrl = (l) => `${location.origin}/espace.html#${l.espace.id}.${l.espace.key}`;
@@ -323,7 +338,7 @@ function espaceData(l) {
   const out = {
     v: 1, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? g.nom : '', adresse: im ? im.adresse : '', show,
     societe: { nom: soc.nom || 'Ares Invest', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '' },
-    loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '',
+    loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
   };
   if (show.pay || show.quit) {
     const cy = new Date().getFullYear();
@@ -446,6 +461,32 @@ async function chatLoad(imId, force) {
 const chatBubbles = (list, gid) => (list == null ? html`<p class="muted small">Chargement…</p>` : !list.length ? html`<p class="muted small">Aucun message pour le moment.</p>`
   : html`${list.map((m) => html`<div class="bub ${m.m === 'mgr' ? 'mgr' : ''}"><div class="bub-h"><b>${m.m === 'mgr' ? '🛡️ Gestionnaire' : m.a}</b><span>${fmtDateTime(m.t)}</span>
     <button class="bub-del" data-action="chat-del" data-id="${gid}" data-n="${m.n}" aria-label="Supprimer ce message">${icon('trash')}</button></div><div class="bub-x">${m.x}</div></div>`)}`);
+
+// ───── Annonces « Don · prêt · location » publiées par les locataires (site public, après approbation) ─────
+const TOOL_KINDS = { don: '🎁 Don', pret: '🤝 Prêt gratuit', loc: '💶 Location' };
+const TOOL_UNITS = { h: '/ heure', j: '/ jour', we: '/ week-end', s: '/ semaine', u: '(prix unique)' };
+const toolPrice = (it) => (it.kind === 'loc' ? money(it.price) + ' ' + (TOOL_UNITS[it.unit] || '') : it.kind === 'don' ? 'gratuit (don)' : 'gratuit (prêt)');
+function toolOwner(it) {
+  if (it.owner === 'mgr') return societe().nom || 'ARES S.A.';
+  const l = vault.list('locataires').find((x) => x.espace && 'e:' + x.espace.id === it.owner);
+  return l ? fullName(l) + ' · ' + (logName(l.logId) || immName(l.immId)) : 'Locataire (espace fermé)';
+}
+async function toolsLoad(force) {
+  if (!vault.unlocked) return;
+  if (!force && ui.toolsAt && Date.now() - ui.toolsAt < 15000) return;
+  ui.toolsAt = Date.now();
+  try { ui.tools = await vault.toolsList(); } catch { ui.tools = ui.tools || []; }
+  ui.toolsPending = ui.tools.filter((it) => it.status === 'pending').length;
+  ui.toolImg = ui.toolImg || {};
+  const redraw = () => { if (ui.sheet && ui.sheet.kind === 'tools') { ui.sheet.rendered = false; renderSheet(); } };
+  for (const it of ui.tools) {
+    if (ui.toolImg[it.id]) continue;
+    ui.toolImg[it.id] = 'loading';
+    fetch(`${API}/api/tools/${it.id}/p0.jpg`).then((r) => (r.ok ? r.blob() : null)).then((b) => { ui.toolImg[it.id] = b ? URL.createObjectURL(b) : ''; redraw(); }).catch(() => {});
+  }
+  redraw();
+  if (ui.route === 'dashboard') renderView();
+}
 
 const espHashes = new Map();
 let espTimer = null;
@@ -982,7 +1023,7 @@ function startSession() {
   idleTimer = setInterval(() => {
     if (!vault.unlocked) return;
     if (Date.now() - lastActive > lockMinutes() * 60000) lockNow('Verrouillé après inactivité.');
-    else if (document.visibilityState === 'visible') { vault.sync(); if (Date.now() - lastInbox > 180000) { lastInbox = Date.now(); inboxSync(); chatPoll(); } }
+    else if (document.visibilityState === 'visible') { vault.sync(); if (Date.now() - lastInbox > 180000) { lastInbox = Date.now(); inboxSync(); chatPoll(); toolsLoad(true); } }
   }, 30000);
   renderShell();
   go(location.hash.slice(2) || 'dashboard', true);
@@ -996,6 +1037,7 @@ function startSession() {
     await espaceSync();
     await inboxSync();
     await chatPoll();
+    await toolsLoad(true);
   }, 4000);
 }
 
@@ -1016,6 +1058,8 @@ async function refreshIcs(force, onlyId) {
       if (!ds.length) throw new Error('aucune date dans le calendrier');
       const upd = { id: c.id, icsErr: '' };
       if (ds.join() !== (c.dates || []).join()) { upd.dates = ds; upd.icsAt = today(); changed++; }
+      const dn = icsNames(byUrl.get(c.icsUrl), c.cat);
+      if (JSON.stringify(dn) !== JSON.stringify(c.dnames || {})) { upd.dnames = dn; if (!upd.dates) { upd.dates = ds; changed++; } }
       // On n'écrit que si quelque chose change (pas d'entrée dans l'historique à chaque vérification)
       if (upd.dates || c.icsErr) await vault.mutate((tx) => tx.put('collectes', upd), upd.dates ? 'Calendrier mis à jour' : 'Calendrier à nouveau disponible', `${DECHETS[c.cat].short} — ${immName(c.immId)}${upd.dates ? ' · ' + plural(ds.length, 'date') : ''}`, c.immId);
     } catch (e) {
@@ -1336,10 +1380,12 @@ dashboard() {
       </div>` : '';
     const chatNew = Object.entries(ui.chatNew || {}).filter(([imId, n]) => n && vault.get('immeubles', imId));
     const chatBox = chatNew.length ? html`<div class="stack" style="margin-bottom:14px">${chatNew.map(([imId, n]) => alertBtn('info', 'msg', 'open-chat', imId, html`💬 <b>${n} nouveau${n > 1 ? 'x' : ''} message${n > 1 ? 's' : ''}</b> entre les habitants — ${immName(imId)}<div class="tiny">touchez pour lire</div>`))}</div>` : '';
+    const toolsBox = ui.toolsPending ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('warn', 'check', 'open-tools', '', html`🧰 <b>${ui.toolsPending} annonce${ui.toolsPending > 1 ? 's' : ''} à approuver</b> (don · prêt · location)<div class="tiny">touchez pour voir et approuver</div>`)}</div>` : '';
     return html`
       ${nudge}
       ${sigBox}
       ${chatBox}
+      ${toolsBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
       <div class="metrics">
         <div class="metric hero">
@@ -1625,6 +1671,7 @@ dashboard() {
 
       <div class="section-label">Gestion</div>
       <div class="list settings">
+        <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
         <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
         <button class="row" data-action="open-frais">${icon('receipt')}<span class="grow"><span class="title" style="display:block">Frais fixes mensuels</span><span class="meta">Salaires, provisions… · ${money(fraisOfMonth(new Date().getFullYear(), new Date().getMonth() + 1))} / mois</span></span></button>
       </div>
@@ -2003,7 +2050,7 @@ const SHEETS = {
         ${st.err ? html`<div class="alert bad full">${icon('alert')}<div>${st.err}</div></div>` : ''}
         ${st.groups ? (st.groups.length ? html`<div class="section-label full" style="margin:6px 0 0">Trouvé dans le calendrier${st.url ? '' : ' (fichier)'}</div>
           <div class="list full">${st.groups.map((g) => html`<label class="row" style="cursor:pointer">
-            <input type="checkbox" name="use_${g.cat}" ${g.cat !== 'autre' ? new Raw('checked') : ''} style="width:22px;min-height:22px">
+            <input type="checkbox" name="use_${g.cat}" checked style="width:22px;min-height:22px">
             <span class="dot" style="background:${DECHETS[g.cat].color}"></span>
             <span class="grow"><span class="title" style="display:block;white-space:normal">${DECHETS[g.cat].label} — ${plural(g.dates.length, 'passage')}</span>
               <span class="meta" style="white-space:normal">du ${fmtDate(g.dates[0])} au ${fmtDate(g.dates[g.dates.length - 1])}${g.names.length ? ' · « ' + g.names.join(' », « ') + ' »' : ''}${existing.some((c) => c.cat === g.cat) ? ' · remplace la collecte actuelle' : ''}</span></span>
@@ -2169,6 +2216,54 @@ const SHEETS = {
       title: im.adresse,
       body: html`${immGone(im) ? html`<div class="alert info" style="margin-bottom:12px">${icon('history')}<div><b>Plus en gestion</b> depuis le ${fmtDate(im.finGestion)}${im.finNote ? ' — ' + im.finNote : ''}. Tout l'historique reste consultable et compte dans les statistiques.</div></div>` : ''}${tabsBar([['logs', 'Logements'], ['chat', `💬 Messages${(ui.chatNew || {})[id] ? ' (' + ui.chatNew[id] + ')' : ''}`], ['proprio', 'Bailleur'], ['deps', 'Dépenses'], ['bilan', 'Bilan']], tab)}${body}`,
       foot: html`${immGone(im) ? html`<button class="btn" data-action="reopen-imm" data-id="${id}">${icon('sync')} Réactiver</button>` : html`<button class="btn" data-action="end-imm" data-id="${id}">${icon('history')} Fin de gestion</button>`}<button class="btn icon" data-action="print-imm" data-id="${id}" aria-label="Imprimer">${icon('download')}</button><button class="btn" data-action="edit-imm" data-id="${id}">${icon('edit')} Modifier</button>`,
+    };
+  },
+
+  tools() {
+    setTimeout(() => toolsLoad(), 0);
+    const all = ui.tools, now = Date.now();
+    const img = (it) => (ui.toolImg || {})[it.id];
+    const card = (it) => html`<div class="row" style="align-items:flex-start">
+      ${img(it) && img(it) !== 'loading' ? html`<img src="${img(it)}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;flex:0 0 64px">` : html`<span class="avatar">🧰</span>`}
+      <span class="grow" style="min-width:0"><span class="title" style="display:block">${it.title}</span>
+        <span class="meta" style="display:block">${TOOL_KINDS[it.kind] || it.kind} · ${toolPrice(it)}${it.lieu ? ' · ' + it.lieu : ''}</span>
+        <span class="meta" style="display:block">${toolOwner(it)} · ${it.mail}</span>
+        <span class="tiny muted" style="display:block">publiée le ${fmtDate(isoDate(new Date(it.created)))} · ${it.exp < now ? 'expirée' : 'en ligne jusqu’au ' + fmtDate(isoDate(new Date(it.exp)))} · 📩 ${it.clicks || 0} intéressé${(it.clicks || 0) > 1 ? 's' : ''}</span>
+        ${it.desc ? html`<span class="small" style="display:block;margin-top:4px">${it.desc}</span>` : ''}
+        ${it.rules ? html`<span class="tiny muted" style="display:block;margin-top:2px">Conditions : ${it.rules}</span>` : ''}
+        <span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
+          ${it.status === 'pending' ? html`<button class="btn sm primary" data-action="tool-ok" data-id="${it.id}">${icon('check')} Approuver</button>` : ''}
+          <button class="btn sm ghost danger" data-action="tool-del" data-id="${it.id}">${icon('trash')} Retirer</button></span></span></div>`;
+    const list = all || [];
+    const pend = list.filter((it) => it.status === 'pending'), live = list.filter((it) => it.status === 'ok' && it.exp > now), old = list.filter((it) => it.status === 'ok' && it.exp <= now);
+    return {
+      title: '🧰 Don · prêt · location',
+      body: html`<p class="small muted" style="margin-top:0">Annonces publiées par les locataires depuis leur app : elles apparaissent sur le site après votre approbation. Les intéressés écrivent directement à l’email de l’annonceur et l’argent s’échange entre eux, en espèces à la remise : vous n’intervenez pas. Retirez tout objet illicite ou compromettant.</p>
+        <a class="btn sm" href="/outils.html" target="_blank" rel="noopener">${icon('eye')} Voir la page publique</a>
+        ${all == null ? html`<p class="muted">Chargement…</p>` : html`
+          <div class="section-label">À approuver (${pend.length})</div>${pend.length ? html`<div class="list">${pend.map(card)}</div>` : html`<p class="muted small">Aucune annonce en attente.</p>`}
+          <div class="section-label">En ligne (${live.length})</div>${live.length ? html`<div class="list">${live.map(card)}</div>` : html`<p class="muted small">Aucune annonce en ligne.</p>`}
+          ${old.length ? html`<div class="section-label">Expirées (${old.length})</div><div class="list">${old.map(card)}</div>` : ''}`}`,
+      foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" data-action="tool-new">${icon('plus')} Publier un objet (ARES)</button>`,
+    };
+  },
+
+  'tool-form'() {
+    return {
+      title: 'Publier un objet (ARES)',
+      narrow: true,
+      body: html`<form id="f" data-form="tool" class="fields">
+        <label class="field full">Photos (1 à 3)<input type="file" name="photos" accept="image/*" multiple required></label>
+        ${field('Titre', 'title', '', { full: true, required: true, placeholder: 'ex. Nettoyeur haute pression Kärcher' })}
+        <label class="field">Type<select name="kind">${Object.entries(TOOL_KINDS).map(([k, v]) => html`<option value="${k}" ${k === 'loc' ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field('Prix (€)', 'price', '', { type: 'number', attrs: money$ })}
+        <label class="field">Par<select name="unit">${Object.entries(TOOL_UNITS).map(([k, v]) => html`<option value="${k}" ${k === 'j' ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field('Lieu de remise', 'lieu', '', { placeholder: 'ex. Luxembourg-Gare' })}
+        ${field('Email de contact', 'mail', societe().email || '', { type: 'email', required: true, full: true })}
+        <label class="field full">Description<textarea name="desc" maxlength="800" placeholder="État, marque, accessoires…"></textarea></label>
+        <label class="field full">Conditions<textarea name="rules" maxlength="400" placeholder="Caution, retour, paiement en espèces à la remise…"></textarea></label>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Publier</button>`,
     };
   },
 
@@ -2943,8 +3038,10 @@ const ACTIONS = {
   async 'tache-done'(d) {
     const t = vault.get('taches', d.id);
     if (!t) return;
-    const saved = await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: today() }), 'Intervention terminée', `${t.titre} — ${placeName(t)}`, t.immId);
-    toast('Intervention terminée');
+    const fromSheet = ui.sheet && ui.sheet.kind === 'tache-form';
+    const saved = await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: today(), vu: true }), 'Intervention terminée', `${t.titre} — ${placeName(t)}`, t.immId);
+    toast(t.locId ? '✓ Réparé · le locataire voit « Terminé » dans son app' : 'Intervention terminée');
+    if (fromSheet) goBack();
     await offerDepense(saved);
   },
   async 'del-interv'(d) {
@@ -2961,13 +3058,6 @@ const ACTIONS = {
     if (!t || !(await confirmBox(`Supprimer « ${t.titre} » ?`, { ok: 'Supprimer', danger: true, detail }))) return;
     await vault.mutate((tx) => { tx.remove('taches', d.id); for (const ph of photos) tx.remove('documents', ph.id); }, 'Intervention supprimée', t.titre, t.immId);
     for (const ph of photos) await vault.deleteFile(ph.id).catch(() => {});
-    goBack();
-  },
-  async 'tache-done'(d) {
-    const t = vault.get('taches', d.id);
-    if (!t) return;
-    await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: today(), vu: true }), 'Intervention terminée', t.titre, t.immId);
-    toast('✓ Réparé · le locataire voit « Terminé » dans son app');
     goBack();
   },
   async 'del-collecte'(d) {
@@ -3044,6 +3134,21 @@ const ACTIONS = {
   },
   quittance: (d) => printQuittance(d.loc, +d.y, +d.m),
   'caution-recu': (d) => printCaution(d.id),
+  'open-tools': () => { openSheet('tools'); toolsLoad(true); },
+  'tool-new': () => openOver('tool-form'),
+  async 'tool-ok'(d) {
+    const it = (ui.tools || []).find((x) => x.id === d.id);
+    try { await vault.toolsUpdate(d.id, { status: 'ok' }); toast('Annonce approuvée · en ligne sur le site'); } catch (e) { return toast(e.message || 'Impossible', { bad: true }); }
+    vault.mutate(() => {}, 'Annonce approuvée', it ? it.title : '', '');
+    toolsLoad(true);
+  },
+  async 'tool-del'(d) {
+    const it = (ui.tools || []).find((x) => x.id === d.id);
+    if (!(await confirmBox(`Retirer « ${it ? it.title : 'cette annonce'} » ?`, { ok: 'Retirer', danger: true, detail: 'L’annonce et ses photos disparaissent du site et de l’app du locataire.' }))) return;
+    try { await vault.toolsDel(d.id); toast('Annonce retirée'); } catch (e) { return toast(e.message || 'Impossible', { bad: true }); }
+    vault.mutate(() => {}, 'Annonce retirée', it ? it.title : '', '');
+    toolsLoad(true);
+  },
   'open-chat': (d) => { openSheet('imm', d.id, 'chat'); chatLoad(d.id, true); },
   'chat-refresh': (d) => chatLoad(d.id, true),
   async 'chat-del'(d) {
@@ -3298,7 +3403,7 @@ const FORMS = {
     await vault.mutate((tx) => {
       for (const g of chosen) {
         const old = vault.list('collectes').find((c) => c.immId === im.id && c.cat === g.cat);
-        tx.put('collectes', { ...(old ? { id: old.id, note: old.note } : { note: '' }), immId: im.id, cat: g.cat, mode: 'dates', dates: g.dates, icsUrl: url, icsAt: today(), icsErr: '', ...common });
+        tx.put('collectes', { ...(old ? { id: old.id, note: old.note } : { note: '' }), immId: im.id, cat: g.cat, mode: 'dates', dates: g.dates, dnames: g.dnames || {}, icsUrl: url, icsAt: today(), icsErr: '', ...common });
       }
     }, 'Calendrier de la commune importé', `${im.adresse} — ${chosen.map((g) => DECHETS[g.cat].short + ' (' + g.dates.length + ')').join(', ')}`, im.id);
     ui.icsAll = null;
@@ -3317,7 +3422,9 @@ const FORMS = {
       if (rec.icsUrl && !rec.dates.length) {
         try {
           toast('Lecture du calendrier de la commune…');
-          rec.dates = parseDates(await vault.fetchIcs(rec.icsUrl), new Date().getFullYear(), rec.cat);
+          const txt = await vault.fetchIcs(rec.icsUrl);
+          rec.dates = parseDates(txt, new Date().getFullYear(), rec.cat);
+          rec.dnames = icsNames(txt, rec.cat);
           rec.icsAt = today(); rec.icsErr = '';
         } catch (e) { return toast(e.message || 'Calendrier indisponible', { bad: true }); }
       }
@@ -3487,6 +3594,23 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('depenses', rec), 'Dépense ajoutée', `${rec.desc} ${money(rec.montant)}`, rec.immId);
     form.reset();
     toast('Dépense ajoutée');
+  },
+  async tool(fd, form) {
+    const files = [...form.querySelector('[name=photos]').files].slice(0, 3);
+    if (!files.length) return toast('Ajoutez au moins une photo', { bad: true });
+    setBusy(form, true, 'Publication…');
+    try {
+      const photos = [];
+      for (const f of files) photos.push(b64u(await compressPhoto(f)));
+      await vault.toolsCreate({ kind: fd.get('kind'), title: fd.get('title'), price: num(fd.get('price')), unit: fd.get('unit'), lieu: fd.get('lieu'), mail: fd.get('mail'), name: societe().nom || 'ARES S.A.', desc: fd.get('desc'), rules: fd.get('rules'), photos });
+      vault.mutate(() => {}, 'Annonce publiée (ARES)', fd.get('title'), '');
+      toast('Annonce publiée sur le site');
+      await toolsLoad(true);
+      goBack();
+    } catch (e) {
+      setBusy(form, false);
+      toast(e.message || 'Publication impossible', { bad: true });
+    }
   },
   async chatpost(fd, form) {
     const im = vault.get('immeubles', fd.get('imm'));
