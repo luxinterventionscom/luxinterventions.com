@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.20.0';
+const VERSION = '2.20.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -367,8 +367,13 @@ function espaceData(l) {
     const g = (im.chats || {})[chatGroupKey(im, l)];
     if (g && g.members.includes(l.id)) {
       out.chat = { id: g.id, key: g.key, me: shortName(l), mid: l.id };
-      const ev = binRota(im, g, addDays(today(), -1), addDays(today(), 120));
-      if (ev.length) out.bins = { names: Object.fromEntries(g.members.map((m) => [m, shortName(vault.get('locataires', m) || {})])), ev: ev.map((e) => ({ p: e.p, cats: e.cats, who: e.who })) };
+      const ev = binRota(im, g, g.since || '2026-09-01', addDays(today(), 120));
+      const gk = chatGroupKey(im, l);
+      if (ev.length) out.bins = {
+        names: Object.fromEntries(g.members.map((m) => [m, shortName(vault.get('locataires', m) || {})])),
+        order: (g.order || g.members).filter((id) => id && g.members.includes(id)),
+        ev: ev.map((e) => ({ p: e.p, d: e.d, k: e.k, cats: e.cats })), log: ((im.binLog || {})[gk]) || {},
+      };
     }
   }
   if (show.signal || show.regles) { const k = vault.get('reglages', 'signal'); out.signalKey = k ? k.pub : ''; }
@@ -421,16 +426,83 @@ function binEvents(im, from, to) {
     for (const d of collecteDates(c, addDays(from, -1), addDays(to, 1))) {
       const p = (c.sortie || 'veille') === 'jour' ? d : addDays(d, -1);
       if (p < from || p > to) continue;
-      (by[p] ||= new Set()).add(c.cat);
+      const x = by[p] || (by[p] = { cats: new Set(), d });
+      x.cats.add(c.cat);
+      if (d > x.d) x.d = d; // jour du passage du camion
     }
   }
-  return Object.keys(by).sort().map((p) => ({ p, cats: [...by[p]] }));
+  return Object.keys(by).sort().map((p) => ({ p, d: by[p].d, cats: [...by[p].cats] }));
 }
 function binRota(im, g, from, to) {
   const order = (g.order || g.members).filter((id) => id && g.members.includes(id));
   if (order.length < 2 || !binsOn(im)) return [];
   const since = g.since || '2026-09-01';
-  return binEvents(im, since, to).map((e, k) => ({ ...e, who: order[k % order.length] })).filter((e) => e.p >= from);
+  return binEvents(im, since, to).map((e, k) => ({ ...e, k, who: order[k % order.length] })).filter((e) => e.p >= from);
+}
+// Tours réels : oubli (personne n'a touché « Fait » avant le passage du camion) → l'oublieux fait aussi le tour suivant ;
+// fait par un autre (« Je l'ai fait à sa place ») → l'autre lui rendra ce service au prochain tour de celui qui a aidé.
+// Même calcul dans l'app des locataires (espace.js).
+function binPlan(order, events, msgs, log, evalFrom, now) {
+  const n = order.length, pen = [], owed = {}, out = [];
+  let shift = 0;
+  for (const e of events) {
+    let who, extra = false;
+    if (pen.length) { who = pen.shift(); extra = true; shift++; } else {
+      who = order[(((e.k - shift) % n) + n) % n];
+      const o = owed[who];
+      if (o && o.length) who = o.shift();
+    }
+    let done = '', cant = '', forgot = false;
+    const lg = log && log[e.p];
+    if (lg) { who = lg.w || who; done = lg.d || ''; forgot = !!lg.f; } else {
+      for (const m of (msgs || []).filter((x) => x.k === 'bin' && x.d === e.p)) {
+        if (m.act === 'take') { who = m.m; cant = ''; }
+        if (m.act === 'cant') cant = m.m;
+        if (m.act === 'done' || m.act === 'instead') done = m.m;
+      }
+      forgot = !done && e.d < now && msgs != null && e.p >= evalFrom;
+    }
+    if (forgot) pen.push(who);
+    if (done && done !== who) (owed[done] ||= []).push(who);
+    out.push({ ...e, who, extra, done, cant, forgot });
+  }
+  return out;
+}
+const binGroupPlan = (im, gk, g, msgs, to) => {
+  const order = (g.order || g.members).filter((id) => id && g.members.includes(id));
+  return binPlan(order, binRota(im, g, g.since || '2026-09-01', to || addDays(today(), 30)), msgs, ((im.binLog || {})[gk]) || {}, addDays(today(), -60), today());
+};
+// Mémorise chaque tour passé (fait / par qui / oublié) : les messages du fil s'effacent après 90 jours, le classement est annuel
+async function binRecord(im, gk, g, msgs) {
+  if (!binsOn(im) || msgs == null) return;
+  const log = { ...(((im.binLog || {})[gk]) || {}) };
+  let changed = false;
+  for (const e of binGroupPlan(im, gk, g, msgs, today())) {
+    if (e.d >= today() || log[e.p] || !(e.done || e.forgot)) continue;
+    log[e.p] = { w: e.who, d: e.done || '', f: e.forgot ? 1 : 0 };
+    changed = true;
+  }
+  const keepFrom = (new Date().getFullYear() - 1) + '-01-01';
+  for (const k of Object.keys(log)) if (k < keepFrom) { delete log[k]; changed = true; }
+  if (changed) await vault.mutate((tx) => tx.put('immeubles', { id: im.id, binLog: { ...(vault.get('immeubles', im.id).binLog || {}), [gk]: log } }), 'Tours des poubelles enregistrés', im.adresse, im.id);
+}
+async function binDaily() {
+  let d = '';
+  try { d = localStorage.getItem('aresBinDay') || ''; } catch {}
+  if (d === today() || !vault.unlocked) return;
+  for (const im of vault.list('immeubles').filter(binsOn)) {
+    for (const [gk, g] of Object.entries(im.chats || {})) { try { await binRecord(vault.get('immeubles', im.id), gk, g, await chatRead(g)); } catch { /* hors ligne */ } }
+  }
+  try { localStorage.setItem('aresBinDay', today()); } catch {}
+}
+// Classement de l'année : tours faits par personne, tours à rattraper
+function binScores(plan, year) {
+  const sc = {};
+  for (const e of plan.filter((x) => x.p.startsWith(year + '-'))) {
+    if (e.done) (sc[e.done] ||= { done: 0, forgot: 0 }).done++;
+    if (e.forgot) (sc[e.who] ||= { done: 0, forgot: 0 }).forgot++;
+  }
+  return Object.entries(sc).sort((a, b) => b[1].done - a[1].done || a[1].forgot - b[1].forgot);
 }
 // État d'un tour d'après les messages du fil (fait, « je ne peux pas », « je le fais »)
 function binState(msgs, e) {
@@ -503,7 +575,7 @@ async function chatLoad(imId, force) {
   if (!force && ui.chatAt[imId] && Date.now() - ui.chatAt[imId] < 15000) return;
   ui.chatAt[imId] = Date.now();
   for (const g of Object.values(im.chats || {})) {
-    try { ui.chatCache[g.id] = await chatRead(g); } catch { ui.chatCache[g.id] = ui.chatCache[g.id] || []; }
+    try { ui.chatCache[g.id] = await chatRead(g); binRecord(vault.get('immeubles', imId), Object.entries(im.chats || {}).find(([, x]) => x.id === g.id)?.[0], g, ui.chatCache[g.id]).catch(() => {}); } catch { ui.chatCache[g.id] = ui.chatCache[g.id] || []; }
     const c = ui.chatCache[g.id];
     if (c.length) setSeen(g.id, c[c.length - 1].n);
   }
@@ -512,15 +584,17 @@ async function chatLoad(imId, force) {
 }
 // Prochains tours des poubelles d'un fil, avec qui et si c'est fait
 function binsTable(im, g) {
-  const ev = binRota(im, g, addDays(today(), -3), addDays(today(), 21)).slice(0, 6);
-  if (!ev.length) return '';
+  const gk = Object.entries(im.chats || {}).find(([, x]) => x.id === g.id)?.[0];
   const msgs = (ui.chatCache || {})[g.id];
+  const plan = binGroupPlan(im, gk, g, msgs, addDays(today(), 21));
+  const ev = plan.filter((e) => e.p >= addDays(today(), -3)).slice(0, 6);
+  if (!ev.length) return '';
   const nm = (id) => shortName(vault.get('locataires', id) || {});
-  return html`<div class="list small" style="margin-bottom:8px">${ev.map((e) => {
-    const st = binState(msgs, e);
-    return html`<div class="row"><span class="grow"><b>${fmtDay(e.p)}</b> — ${e.cats.map((c) => (DECHETS[c] || DECHETS.autre).short).join(' + ')}<span class="meta" style="display:block">tour de ${nm(st.who)}${st.cant && !st.done ? ' · 🔁 ' + nm(st.cant) + ' ne peut pas' : ''}</span></span>
-      ${st.done ? html`<span class="badge ok">✅ ${nm(st.done)}</span>` : e.p < today() ? html`<span class="badge bad">❌ pas fait</span>` : html`<span class="badge">à venir</span>`}</div>`;
-  })}</div>`;
+  const y = new Date().getFullYear();
+  const sc = binScores(plan, y);
+  return html`<div class="list small" style="margin-bottom:6px">${ev.map((e) => html`<div class="row"><span class="grow"><b>${fmtDay(e.p)}</b> — ${e.cats.map((c) => (DECHETS[c] || DECHETS.autre).short).join(' + ')}<span class="meta" style="display:block">tour de ${nm(e.who)}${e.extra ? ' (rattrapage)' : ''}${e.cant && !e.done ? ' · 🔁 ' + nm(e.cant) + ' ne peut pas' : ''}</span></span>
+      ${e.done ? html`<span class="badge ok">✅ ${nm(e.done)}</span>` : e.forgot ? html`<span class="badge bad">❌ oublié</span>` : e.d < today() ? html`<span class="badge">…</span>` : html`<span class="badge">à venir</span>`}</div>`)}</div>
+    ${sc.length ? html`<p class="tiny muted" style="margin:0 0 10px">🏆 ${y} : ${sc.map(([id, v]) => `${nm(id)} ${v.done} ✅${v.forgot ? ` · ${v.forgot} oubli${v.forgot > 1 ? 's' : ''}` : ''}`).join(' — ')}</p>` : ''}`;
 }
 const chatBubbles = (list, gid) => (list == null ? html`<p class="muted small">Chargement…</p>` : !list.length ? html`<p class="muted small">Aucun message pour le moment.</p>`
   : html`${list.map((m) => html`<div class="bub ${m.m === 'mgr' ? 'mgr' : ''}"><div class="bub-h"><b>${m.m === 'mgr' ? '🛡️ Gestionnaire' : m.a}</b><span>${fmtDateTime(m.t)}</span>
@@ -1102,6 +1176,7 @@ function startSession() {
     await inboxSync();
     await chatPoll();
     await toolsLoad(true);
+    await binDaily();
   }, 4000);
 }
 
