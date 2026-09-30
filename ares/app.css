@@ -520,3 +520,9 @@ dialog.pv iframe { flex: 1; border: 0; width: 100%; background: #fff; }
 .bub-x { white-space: pre-wrap; word-break: break-word; margin-top: 2px; }
 .chat-form { display: flex; gap: 8px; align-items: flex-end; }
 .chat-form textarea { flex: 1; min-height: 44px; }
+
+/* Horaire habituel d'une personne (fiche équipe) */
+.hor-grid { display: grid; grid-template-columns: 80px 1fr 1fr 1.4fr; gap: 6px 8px; align-items: center; }
+.hor-grid input, .hor-grid select { min-width: 0; width: 100%; font: inherit; font-size: 14px; padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: inherit; }
+.hor-day { font-size: 13px; font-weight: 600; }
+@media (max-width: 480px) { .hor-grid { grid-template-columns: 70px 1fr 1fr; } .hor-grid select { grid-column: 2 / 4; } }

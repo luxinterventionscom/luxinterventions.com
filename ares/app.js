@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.25.0';
+const VERSION = '2.26.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -253,7 +253,31 @@ function parseDates(text, year, cat) {
   }
   return [...out].sort();
 }
-const intervName = (id) => { const i = vault.get('intervenants', id); return i ? i.nom : ''; };
+const intervFull = (i) => [i.prenom, i.nom].filter(Boolean).join(' ');
+const intervName = (id) => { const i = vault.get('intervenants', id); return i ? intervFull(i) : ''; };
+const INT_GENRES = { interne: 'Ouvrier interne (salarié)', societe: 'Société externe', prive: 'Privé (travail occasionnel)' };
+const INT_CATS = { quotidien: 'Gestion quotidienne (ménage, petits travaux)', specialise: 'Professionnel spécialisé' };
+const ABS_TYPES = { maladie: '🤒 Maladie', conges: '🏖️ Congé', autre: '📌 Autre absence' };
+const SEMAINE = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+const hm = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? +m[1] + +m[2] / 60 : null; };
+// Heures prévues par jour de la semaine (0 = lundi)
+const dayHours = (i, dow) => (i.horaires || []).filter((h) => h.j === dow).reduce((n, h) => { const a = hm(h.de), b = hm(h.a); return n + (a != null && b != null && b > a ? b - a : 0); }, 0);
+const absOn = (i, d) => (i.absences || []).find((a) => a.debut <= d && (!a.fin || a.fin >= d));
+// Heures du mois : prévues selon l'horaire, moins les jours d'absence (par type)
+function intervMonth(i, y, m) {
+  const out = { prevu: 0, maladie: 0, conges: 0, autre: 0, jm: 0, jc: 0, ja: 0 };
+  const n = new Date(y, m, 0).getDate();
+  for (let d = 1; d <= n; d++) {
+    const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const h = dayHours(i, (new Date(y, m - 1, d).getDay() + 6) % 7);
+    out.prevu += h;
+    const a = absOn(i, iso);
+    if (a && h) { out[a.type in out ? a.type : 'autre'] += h; out[{ maladie: 'jm', conges: 'jc' }[a.type] || 'ja']++; }
+  }
+  out.net = out.prevu - out.maladie - out.conges - out.autre;
+  return out;
+}
+const fmtH = (h) => { const r = Math.round(h * 60); return `${Math.floor(r / 60)} h${r % 60 ? String(r % 60).padStart(2, '0') : ''}`; };
 const placeName = (t) => [t.logId ? logName(t.logId) : 'Parties communes', immName(t.immId)].join(' · ');
 
 // Agenda : tout ce qui se passe entre from et to (interventions + collectes), trié par jour
@@ -1549,12 +1573,13 @@ const VIEWS = {
         })}`;
       if (!shown.length) body = empty('building', 'Ajoutez d’abord un immeuble.');
     } else {
-      const ints = vault.list('intervenants').sort((a, b) => Object.keys(METIERS).indexOf(a.metier) - Object.keys(METIERS).indexOf(b.metier) || a.nom.localeCompare(b.nom));
+      const ints = vault.list('intervenants').sort((a, b) => (a.cat === 'specialise') - (b.cat === 'specialise') || Object.keys(METIERS).indexOf(a.metier) - Object.keys(METIERS).indexOf(b.metier) || intervFull(a).localeCompare(intervFull(b)));
       body = ints.length ? html`<div class="list">${ints.map((i) => {
         const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length;
         const tel = (i.tel || '').replace(/[^\d+]/g, '');
-        return html`<div class="row"><span class="avatar">${i.nom.slice(0, 2).toUpperCase()}</span>
-          <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="edit-interv" data-id="${i.id}"><span class="title" style="display:block">${i.nom}</span><span class="meta">${METIERS[i.metier] || i.metier}${i.tarif ? ' · ' + i.tarif : ''}${n ? ' · ' + plural(n, 'intervention') + ' en cours' : ''}</span></button>
+        const ab = absOn(i, today());
+        return html`<div class="row"><span class="avatar">${(i.prenom || i.nom).slice(0, 2).toUpperCase()}</span>
+          <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="open-interv" data-id="${i.id}"><span class="title" style="display:block">${intervFull(i)}${ab ? html` <span class="badge ${ab.type === 'maladie' ? 'bad' : 'warn'}">${ABS_TYPES[ab.type]}${ab.fin ? ' → ' + fmtDate(ab.fin) : ''}</span>` : ''}</span><span class="meta">${METIERS[i.metier] || i.metier} · ${{ interne: 'interne', societe: 'société', prive: 'privé' }[i.genre || 'interne']} · ${(i.cat || 'quotidien') === 'specialise' ? 'spécialisé' : 'quotidien'}${i.tarif ? ' · ' + i.tarif : ''}${n ? ' · ' + plural(n, 'intervention') + ' en cours' : ''}</span></button>
           ${tel ? html`<a class="btn icon sm" href="tel:${tel}" aria-label="Appeler">${icon('phone')}</a>` : ''}
         </div>`;
       })}</div>` : empty('users', 'Aucun intervenant. Ajoutez la femme de ménage et les artisans (menuisier, électricien, plombier, chauffagiste, maçon…).', html`<button class="btn primary" data-action="new-interv">${icon('plus')} Ajouter un intervenant</button>`);
@@ -1606,12 +1631,17 @@ dashboard() {
     const chatBox = chatNew.length ? html`<div class="stack" style="margin-bottom:14px">${chatNew.map(([imId, n]) => alertBtn('info', 'msg', 'open-chat', imId, html`💬 <b>${n} nouveau${n > 1 ? 'x' : ''} message${n > 1 ? 's' : ''}</b> entre les habitants — ${immName(imId)}<div class="tiny">touchez pour lire</div>`))}</div>` : '';
     const virs = vault.list('locataires').filter((l) => l.virSignal && !l.virSignal.vu);
     const virBox = virs.length ? html`<div class="stack" style="margin-bottom:14px">${virs.map((l) => alertBtn('info', 'wallet', 'open-vir', l.id, html`💳 <b>${fullName(l)}</b> dit avoir payé${l.virSignal.montant ? html` <b>${money(l.virSignal.montant)}</b>` : ''} par ${PAY_VIA[l.virSignal.via || 'vir']} — ${l.virSignal.ref}<div class="tiny">${fmtDateTime(l.virSignal.t)} · vérifiez la réception, puis cochez le mois payé</div>`))}</div>` : '';
+    const absNow = vault.list('intervenants').map((i) => [i, absOn(i, today())]).filter(([, a]) => a);
+    const absSoon = vault.list('intervenants').map((i) => [i, (i.absences || []).find((a) => a.debut > today() && a.debut <= addDays(today(), 7))]).filter(([, a]) => a);
+    const absBox = absNow.length || absSoon.length ? html`<div class="stack" style="margin-bottom:14px">${absNow.map(([i, a]) => { const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length; return alertBtn(a.type === 'maladie' ? 'bad' : 'warn', 'calendar', 'open-interv', i.id, html`${ABS_TYPES[a.type]} : <b>${intervFull(i)}</b> absent${a.fin ? ' jusqu’au ' + fmtDate(a.fin) : ' (fin non connue)'}${n ? html` — <b>${plural(n, 'intervention')}</b> à vérifier` : ''}<div class="tiny">touchez pour la fiche</div>`); })}
+      ${absSoon.map(([i, a]) => alertBtn('info', 'calendar', 'open-interv', i.id, html`${ABS_TYPES[a.type]} prévu : <b>${intervFull(i)}</b> du ${fmtDate(a.debut)}${a.fin ? ' au ' + fmtDate(a.fin) : ''}`))}</div>` : '';
     const toolsBox = ui.toolsPending ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('warn', 'check', 'open-tools', '', html`🧰 <b>${ui.toolsPending} annonce${ui.toolsPending > 1 ? 's' : ''} à approuver</b> (don · prêt · location)<div class="tiny">touchez pour voir et approuver</div>`)}</div>` : '';
     return html`
       ${nudge}
       ${sigBox}
       ${chatBox}
       ${virBox}
+      ${absBox}
       ${toolsBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
       <div class="metrics">
@@ -2163,22 +2193,91 @@ const SHEETS = {
     };
   },
   'interv-form'({ id }) {
-    const i = id ? vault.get('intervenants', id) : { metier: 'menage' };
+    const i = id ? vault.get('intervenants', id) : { metier: 'menage', genre: 'interne', cat: 'quotidien' };
     if (id && !i) return null;
+    const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
+    const hOf = (j, k) => ((i.horaires || []).find((h) => h.j === j) || {})[k] || '';
+    const sel = (name, opts, cur) => html`<select name="${name}">${Object.entries(opts).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</select>`;
     return {
-      title: id ? "Modifier l'intervenant" : 'Nouvel intervenant',
-      narrow: true,
+      title: id ? 'Modifier la fiche' : 'Nouvelle personne',
       body: html`<form id="f" data-form="interv" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        ${field('Nom (personne ou entreprise)', 'nom', i.nom, { full: true, required: true, placeholder: 'ex. Maria, Électricité Schmit…' })}
-        <label class="field full">Métier<select name="metier">${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${i.metier === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        <label class="field">Type${sel('genre', INT_GENRES, i.genre || 'interne')}</label>
+        <label class="field">Catégorie${sel('cat', INT_CATS, i.cat || 'quotidien')}</label>
+        ${field('Prénom', 'prenom', i.prenom, { attrs: 'autocomplete="off"' })}
+        ${field('Nom (ou nom de la société)', 'nom', i.nom, { required: true, placeholder: 'ex. Rossi, Électricité Schmit…', attrs: 'autocomplete="off"' })}
+        <label class="field">Métier / mansion${sel('metier', METIERS, i.metier)}</label>
+        ${field('Tarif', 'tarif', i.tarif, { placeholder: 'ex. 25 €/h, forfait 80 €…' })}
+        ${field('Adresse', 'adresse', i.adresse, { full: true, attrs: 'autocomplete="off"' })}
+        ${field('Code postal et ville', 'ville', i.ville, { placeholder: 'L-1234 Luxembourg' })}
         ${field('Téléphone', 'tel', i.tel, { type: 'tel', placeholder: '+352 …' })}
-        ${field('Email', 'mail', i.mail, { type: 'email' })}
-        ${field('Tarif', 'tarif', i.tarif, { full: true, placeholder: 'ex. 25 €/h, forfait 80 €…' })}
-        <label class="field full">Notes<textarea name="note" placeholder="Disponibilités, clés confiées, n° TVA…">${i.note || ''}</textarea></label>
+        ${field('Email', 'mail', i.mail, { type: 'email', full: true })}
+        ${field('RCS (société)', 'rcs', i.rcs, { placeholder: 'ex. B123456' })}
+        ${field('N° TVA (société)', 'tva', i.tva, { placeholder: 'ex. LU12345678' })}
+        <div class="section-label full" style="margin:10px 0 0">Horaire habituel (laisser vide les jours sans travail)</div>
+        <div class="full hor-grid">${SEMAINE.map((jn, j) => html`<span class="hor-day">${jn}</span>
+          <input name="h${j}d" type="time" value="${hOf(j, 'de')}" aria-label="${jn} de">
+          <input name="h${j}a" type="time" value="${hOf(j, 'a')}" aria-label="${jn} à">
+          <select name="h${j}i" aria-label="${jn} lieu"><option value="">— lieu —</option>${imms.map((im) => html`<option value="${im.id}" ${hOf(j, 'immId') === im.id ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select>`)}</div>
+        <label class="field full">Notes<textarea name="note" placeholder="Clés confiées, disponibilités…">${i.note || ''}</textarea></label>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-interv" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  // Fiche d'une personne : infos · horaire et heures du mois · absences (maladie avec certificat, congés…)
+  interv({ id, tab }) {
+    const i = vault.get('intervenants', id);
+    if (!i) return null;
+    tab = tab || 'fiche';
+    const t0 = today();
+    const cur = absOn(i, t0);
+    const tel = (i.tel || '').replace(/[^\d+]/g, '');
+    let body;
+    if (tab === 'fiche') {
+      const tasks = vault.list('taches').filter((t) => t.intervenantId === id && (t.recur || t.statut !== 'fait'));
+      body = html`${cur ? html`<div class="alert ${cur.type === 'maladie' ? 'bad' : 'warn'}" style="margin-bottom:12px">${icon('calendar')}<div><b>${ABS_TYPES[cur.type]}</b> ${cur.fin ? 'jusqu’au ' + fmtDate(cur.fin) : '(fin non connue)'}${tasks.length ? html` · <b>${plural(tasks.length, 'intervention')}</b> à réassigner si besoin` : ''}</div></div>` : ''}
+        <dl class="kv">
+          ${kvRow('Type', INT_GENRES[i.genre || 'interne'])}
+          ${kvRow('Catégorie', INT_CATS[i.cat || 'quotidien'])}
+          ${kvRow('Métier', METIERS[i.metier] || i.metier || '—')}
+          ${i.tarif ? kvRow('Tarif', i.tarif) : ''}
+          ${i.adresse || i.ville ? kvRow('Adresse', [i.adresse, i.ville].filter(Boolean).join(', ')) : ''}
+          ${i.tel ? kvRow('Téléphone', html`<a href="tel:${tel}">${i.tel}</a>`) : ''}
+          ${i.mail ? kvRow('Email', html`<a href="mailto:${i.mail}">${i.mail}</a>`) : ''}
+          ${i.rcs ? kvRow('RCS', i.rcs) : ''}${i.tva ? kvRow('N° TVA', i.tva) : ''}
+        </dl>
+        ${i.note ? html`<p class="small" style="white-space:pre-wrap">${i.note}</p>` : ''}
+        ${tasks.length ? html`<div class="section-label">Interventions en cours</div><div class="list small">${tasks.map((t) => html`<button class="row" data-action="edit-tache" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.titre}</span><span class="meta">${placeName(t)} · ${t.recur ? 'récurrent' : fmtDate(t.date)}</span></span></button>`)}</div>` : ''}`;
+    } else if (tab === 'heures') {
+      const d = new Date();
+      const months = [0, 1, 2].map((k) => { const x = new Date(d.getFullYear(), d.getMonth() - k, 1); return [x.getFullYear(), x.getMonth() + 1]; });
+      const hs = (i.horaires || []).slice().sort((a, b) => a.j - b.j);
+      body = html`<div class="section-label" style="margin-top:0">Horaire habituel</div>
+        ${hs.length ? html`<div class="list small">${hs.map((h) => html`<div class="row"><span class="grow"><b>${SEMAINE[h.j]}</b> ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : ''}</span><span class="meta">${fmtH(dayHours({ horaires: [h] }, h.j))}</span></div>`)}</div>
+          <p class="tiny muted">Total par semaine : <b>${fmtH([0, 1, 2, 3, 4, 5, 6].reduce((n, j) => n + dayHours(i, j), 0))}</b></p>` : html`<p class="small muted">Pas d’horaire enregistré. Touchez « Modifier » pour l’ajouter.</p>`}
+        <div class="section-label">Heures par mois (horaire − absences)</div>
+        <div class="list small">${months.map(([yy, mm]) => { const r = intervMonth(i, yy, mm); return html`<div class="row"><span class="grow"><b>${MONTHS_FULL[mm - 1]} ${yy}</b><span class="meta" style="display:block">prévu ${fmtH(r.prevu)}${r.jm ? ` · 🤒 ${r.jm} j (−${fmtH(r.maladie)})` : ''}${r.jc ? ` · 🏖️ ${r.jc} j (−${fmtH(r.conges)})` : ''}${r.ja ? ` · 📌 ${r.ja} j (−${fmtH(r.autre)})` : ''}</span></span><b>${fmtH(r.net)}</b></div>`; })}</div>
+        <p class="tiny muted">Calcul sur l’horaire habituel : pour les heures en plus ou en moins, ajoutez une note.</p>`;
+    } else {
+      const abs = (i.absences || []).slice().sort((a, b) => b.debut.localeCompare(a.debut));
+      body = html`<form data-form="absence" class="fields" style="margin-bottom:14px">
+          <input type="hidden" name="id" value="${id}">
+          <label class="field">Type<select name="type">${Object.entries(ABS_TYPES).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
+          ${field('Du', 'debut', t0, { type: 'date', required: true })}
+          ${field('Au (inclus)', 'fin', '', { type: 'date' })}
+          ${field('Note', 'note', '', { placeholder: 'ex. certificat reçu par WhatsApp' })}
+          <label class="field full">Certificat / justificatif (photo ou PDF)<input type="file" name="file" accept="image/*,application/pdf"></label>
+          <button class="btn primary full" type="submit">${icon('plus')} Ajouter l’absence</button>
+        </form>
+        ${abs.length ? html`<div class="list small">${abs.map((a) => html`<div class="row"><span class="grow"><b>${ABS_TYPES[a.type] || a.type}</b> — ${fmtDate(a.debut)}${a.fin ? ' → ' + fmtDate(a.fin) : ' → ?'}${a.note ? html`<span class="meta" style="display:block">${a.note}</span>` : ''}</span>
+          ${a.docId && vault.get('documents', a.docId) ? html`<button class="btn sm" data-action="open-doc" data-id="${a.docId}">👁 Certificat</button>` : ''}
+          <button class="btn icon sm ghost" data-action="del-absence" data-id="${id}" data-aid="${a.id}" aria-label="Supprimer">${icon('trash')}</button></div>`)}</div>` : html`<p class="small muted">Aucune absence enregistrée.</p>`}`;
+    }
+    return {
+      title: intervFull(i),
+      body: html`<p class="small muted" style="margin:0 0 10px">${METIERS[i.metier] || ''} · ${INT_GENRES[i.genre || 'interne']}</p>${tabsBar([['fiche', 'Fiche'], ['heures', 'Horaires & heures'], ['abs', `Absences${cur ? ' 🔴' : ''}`]], tab)}${body}`,
+      foot: html`${tel ? html`<a class="btn" href="tel:${tel}">${icon('phone')} Appeler</a>` : ''}<button class="btn primary" data-action="edit-interv" data-id="${id}">Modifier</button>`,
     };
   },
 
@@ -3189,6 +3288,14 @@ const ACTIONS = {
   'mt-tab': (d) => { ui.mtTab = d.id; renderView(); },
   'new-interv': () => openOver('interv-form'),
   'edit-interv': (d) => openOver('interv-form', d.id),
+  'open-interv': (d) => openSheet('interv', d.id),
+  async 'del-absence'(d) {
+    const i = vault.get('intervenants', d.id);
+    const a = (i.absences || []).find((x) => x.id === d.aid);
+    if (!a || !(await confirmBox('Supprimer cette absence ?', { ok: 'Supprimer', danger: true, detail: `${ABS_TYPES[a.type]} — ${fmtDate(a.debut)}${a.fin ? ' → ' + fmtDate(a.fin) : ''}` }))) return;
+    await vault.mutate((tx) => { tx.put('intervenants', { id: i.id, absences: (i.absences || []).filter((x) => x.id !== a.id) }); if (a.docId) tx.remove('documents', a.docId); }, 'Absence supprimée', intervFull(i), i.id);
+    if (a.docId) vault.deleteFile(a.docId).catch(() => {});
+  },
   'new-tache': (d) => openOver('tache-form', null, null, d.imm || ui.immFilter || ''),
   'edit-tache': (d) => openOver('tache-form', d.id),
   'open-signal': (d) => { const t = vault.get('taches', d.id); if (t && !t.vu) vault.mutate((tx) => tx.put('taches', { id: t.id, vu: true }), 'Message du locataire lu', t.titre, t.locId); openOver('tache-form', d.id); },
@@ -3299,8 +3406,8 @@ const ACTIONS = {
   async 'del-interv'(d) {
     const i = vault.get('intervenants', d.id);
     const n = vault.list('taches').filter((t) => t.intervenantId === d.id).length;
-    if (!i || !(await confirmBox(`Supprimer ${i.nom} ?`, { ok: 'Supprimer', danger: true, detail: n ? `${plural(n, 'intervention')} restent enregistrées, sans intervenant.` : '' }))) return;
-    await vault.mutate((tx) => tx.remove('intervenants', d.id), 'Intervenant supprimé', i.nom);
+    if (!i || !(await confirmBox(`Supprimer ${intervFull(i)} ?`, { ok: 'Supprimer', danger: true, detail: n ? `${plural(n, 'intervention')} restent enregistrées, sans intervenant.` : '' }))) return;
+    await vault.mutate((tx) => tx.remove('intervenants', d.id), 'Intervenant supprimé', intervFull(i));
     goBack();
   },
   async 'del-tache'(d) {
@@ -3621,10 +3728,13 @@ const ACTIONS = {
 const FORMS = {
   async interv(fd) {
     const id = fd.get('id');
-    const rec = { nom: fd.get('nom').trim(), metier: fd.get('metier'), tel: fd.get('tel').trim(), mail: fd.get('mail').trim(), tarif: fd.get('tarif').trim(), note: fd.get('note').trim() };
+    const g = (k) => String(fd.get(k) || '').trim();
+    const horaires = [];
+    for (let j = 0; j < 7; j++) { const de = g(`h${j}d`), a = g(`h${j}a`); if (de && a) horaires.push({ j, de, a, immId: g(`h${j}i`) }); }
+    const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), horaires, note: g('note') };
     if (!rec.nom) return;
     if (id) rec.id = id;
-    await vault.mutate((tx) => tx.put('intervenants', rec), id ? 'Intervenant modifié' : 'Intervenant ajouté', `${rec.nom} (${METIERS[rec.metier]})`);
+    await vault.mutate((tx) => tx.put('intervenants', rec), id ? 'Intervenant modifié' : 'Intervenant ajouté', `${intervFull(rec)} (${METIERS[rec.metier]})`);
     toast(id ? 'Intervenant enregistré' : 'Intervenant ajouté');
     goBack();
   },
@@ -3904,6 +4014,29 @@ const FORMS = {
     } catch (e) {
       setBusy(form, false);
       toast(e.message || 'Envoi impossible', { bad: true });
+    }
+  },
+  async absence(fd, form) {
+    const id = fd.get('id');
+    const i = vault.get('intervenants', id);
+    const rec = { id: 'a' + Date.now().toString(36), type: fd.get('type'), debut: fd.get('debut'), fin: fd.get('fin') || '', note: String(fd.get('note') || '').trim() };
+    if (!i || !rec.debut) return;
+    if (rec.fin && rec.fin < rec.debut) return toast('La date de fin est avant le début', { bad: true });
+    const file = fd.get('file');
+    if (file && file.size > 10 * 1024 * 1024) return toast('Fichier trop lourd (10 Mo maximum)', { bad: true });
+    setBusy(form, true, 'Enregistrement…');
+    try {
+      let bytes = null;
+      if (file && file.size) bytes = /^image\//.test(file.type) ? await compressPhoto(file) : new Uint8Array(await file.arrayBuffer());
+      await vault.mutate((tx) => {
+        if (bytes) rec.docId = tx.put('documents', { intervId: id, kind: 'absence', label: `${ABS_TYPES[rec.type].replace(/^\S+ /, '')} — ${intervFull(i)}`, date: rec.debut, size: bytes.length, mime: /^image\//.test(file.type) ? 'image/jpeg' : file.type || 'application/pdf' }).id;
+        tx.put('intervenants', { id, absences: [...(i.absences || []), rec] });
+      }, 'Absence ajoutée', `${intervFull(i)} — ${ABS_TYPES[rec.type]} ${fmtDate(rec.debut)}${rec.fin ? ' → ' + fmtDate(rec.fin) : ''}`, id);
+      if (bytes) await vault.saveFile(rec.docId, bytes);
+      toast('Absence enregistrée');
+    } catch (e) {
+      setBusy(form, false);
+      toast(e.message || 'Erreur', { bad: true });
     }
   },
   async regles(fd) {
