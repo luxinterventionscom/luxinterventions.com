@@ -78,3 +78,7 @@
 .guide-num { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--surface-2); color: var(--text-2); flex: none; }
 .guide-step.ok { color: var(--text-3); }
 .guide-step.ok .guide-num { background: var(--green-soft); color: var(--green); }
+
+/* Choix de la langue (écran d'accès et « Plus ») */
+.ptl-lang { flex-wrap: wrap; margin: 2px 0 6px; }
+.lock .ptl-lang { justify-content: center; }

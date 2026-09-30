@@ -1,0 +1,1515 @@
+// Traduction du portail gérance (source : français). Généré — une ligne par phrase.
+export default [
+[
+"({0}). Il est personnel : ne le partagez pas avec d’autres personnes.",
+"({0}). Es personal: no lo compartas con otras personas."
+],
+[
+", avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Demandez un nouveau lien.",
+", con el enlace de invitación. Después: email + contraseña, en cualquier dispositivo. ¿La has olvidado? Pide un enlace nuevo."
+],
+[
+"6 photos maximum : les premières seront envoyées",
+"Máximo 6 fotos: se enviarán las primeras"
+],
+[
+": ensuite vous vous connecterez avec votre email et ce mot de passe.",
+": después entrarás con tu email y esta contraseña."
+],
+[
+"Accueil",
+"Inicio"
+],
+[
+"Accès",
+"Acceso"
+],
+[
+"Accès désactivé",
+"Acceso desactivado"
+],
+[
+"Accès réactivé",
+"Acceso reactivado"
+],
+[
+"Activation…",
+"Activando…"
+],
+[
+"Activer",
+"Activar"
+],
+[
+"Activer mon accès",
+"Activar mi acceso"
+],
+[
+"Activez les notifications",
+"Activa las notificaciones"
+],
+[
+"Activez les notifications pour suivre vos demandes",
+"Activa las notificaciones para seguir tus solicitudes"
+],
+[
+"Activez les notifications pour être alerté des urgences",
+"Activa las notificaciones para recibir avisos de urgencias"
+],
+[
+"Activées ✓",
+"Activadas ✓"
+],
+[
+"Adresse",
+"Dirección"
+],
+[
+"Afficher",
+"Mostrar"
+],
+[
+"Ajoute l’icône LuxInterventions sur l’écran d’accueil.",
+"Añade el icono de LuxInterventions a la pantalla de inicio."
+],
+[
+"Ajouter",
+"Añadir"
+],
+[
+"Ajouter une résidence",
+"Añadir una comunidad"
+],
+[
+"Ajoutez d’abord la résidence concernée : ses informations (accès, clés, contact) seront reprises automatiquement.",
+"Añade primero la comunidad afectada: sus datos (acceso, llaves, contacto) se rellenarán automáticamente."
+],
+[
+"Ajoutez vos résidences (une seule fois : accès, clés, contact)",
+"Añade tus comunidades (una sola vez: acceso, llaves, contacto)"
+],
+[
+"Aller à la connexion",
+"Ir al inicio de sesión"
+],
+[
+"Annuler",
+"Cancelar"
+],
+[
+"Annuler cette demande ?",
+"¿Cancelar esta solicitud?"
+],
+[
+"Annuler la demande",
+"Cancelar la solicitud"
+],
+[
+"Annulée",
+"Cancelada"
+],
+[
+"Août",
+"Agosto"
+],
+[
+"App. 3B, cuisine",
+"Piso 3B, cocina"
+],
+[
+"Appartements",
+"Pisos"
+],
+[
+"Application",
+"App"
+],
+[
+"Ascenseur",
+"Ascensor"
+],
+[
+"Au moins 10 caractères",
+"Al menos 10 caracteres"
+],
+[
+"Aucun résultat.",
+"Ningún resultado."
+],
+[
+"Aucun utilisateur. Invitez le responsable de la gérance.",
+"Ningún usuario. Invita al responsable de la administración."
+],
+[
+"Aucune demande ce mois-ci.",
+"Ninguna solicitud este mes."
+],
+[
+"Aucune demande en cours.",
+"Ninguna solicitud en curso."
+],
+[
+"Aucune demande pour cette résidence.",
+"Ninguna solicitud para esta comunidad."
+],
+[
+"Aucune demande.",
+"Ninguna solicitud."
+],
+[
+"Aucune gérance. Créez la première, puis invitez ses utilisateurs.",
+"Ninguna administración. Crea la primera y luego invita a sus usuarios."
+],
+[
+"Aucune intervention en cours.",
+"Ninguna intervención en curso."
+],
+[
+"Aucune nouvelle demande en attente.",
+"Ninguna solicitud nueva en espera."
+],
+[
+"Aucune résidence enregistrée. Ajoutez vos résidences une seule fois : elles seront proposées à chaque demande.",
+"Ninguna comunidad guardada. Añade tus comunidades una sola vez: se propondrán en cada solicitud."
+],
+[
+"Autre",
+"Otro"
+],
+[
+"Avril",
+"Abril"
+],
+[
+"Badge chez le gardien",
+"Tarjeta en la portería"
+],
+[
+"Bienvenue",
+"Bienvenido"
+],
+[
+"Bienvenue ! Votre accès est activé.",
+"¡Bienvenido! Tu acceso está activado."
+],
+[
+"Bloquées dans les réglages du navigateur",
+"Bloqueadas en los ajustes del navegador"
+],
+[
+"Bonjour",
+"Hola"
+],
+[
+"Bonjour {0}",
+"Hola {0}"
+],
+[
+"Boîte à clés à gauche de l’entrée, code 1990",
+"Caja de llaves a la izquierda de la entrada, código 1990"
+],
+[
+"Changer",
+"Cambiar"
+],
+[
+"Changer mon mot de passe",
+"Cambiar mi contraseña"
+],
+[
+"Chaque personne a son propre accès : on sait toujours qui a fait quelle demande. Un compte désactivé ne peut plus se connecter.",
+"Cada persona tiene su propio acceso: siempre se sabe quién hizo cada solicitud. Una cuenta desactivada ya no puede entrar."
+],
+[
+"Chauffage / sanitaire",
+"Calefacción / sanitarios"
+],
+[
+"Chaufferie",
+"Sala de calderas"
+],
+[
+"Choisissez votre mot de passe",
+"Elige tu contraseña"
+],
+[
+"Clés",
+"Llaves"
+],
+[
+"Code de configuration",
+"Código de configuración"
+],
+[
+"Code porte 2580",
+"Código de la puerta 2580"
+],
+[
+"Code porte, badge, interphone…",
+"Código de la puerta, tarjeta, portero automático…"
+],
+[
+"Code porte, clé chez le concierge… (sinon : infos de la résidence)",
+"Código de la puerta, llave en portería… (si no: datos de la comunidad)"
+],
+[
+"Compte",
+"Cuenta"
+],
+[
+"Compte administrateur créé",
+"Cuenta de administrador creada"
+],
+[
+"Compteurs, local technique, particularités…",
+"Contadores, cuarto técnico, particularidades…"
+],
+[
+"Concierge, président du conseil…",
+"Conserje, presidente de la comunidad…"
+],
+[
+"Confidentialité",
+"Privacidad"
+],
+[
+"Confirmer",
+"Confirmar"
+],
+[
+"Connexion…",
+"Entrando…"
+],
+[
+"Contact",
+"Contacto"
+],
+[
+"Contact sur place",
+"Contacto en el lugar"
+],
+[
+"Copie impossible",
+"No se puede copiar"
+],
+[
+"Copier",
+"Copiar"
+],
+[
+"Copié",
+"Copiado"
+],
+[
+"Création…",
+"Creando…"
+],
+[
+"Créer le compte",
+"Crear la cuenta"
+],
+[
+"Créer le lien",
+"Crear el enlace"
+],
+[
+"Créez le compte administrateur LuxInterventions.",
+"Crea la cuenta de administrador de LuxInterventions."
+],
+[
+"Créez les gérances partenaires",
+"Crea las administraciones asociadas"
+],
+[
+"Cylindre remplacé, 3 clés remises au concierge.",
+"Bombín cambiado, 3 llaves entregadas al conserje."
+],
+[
+"Dans la journée",
+"En el día"
+],
+[
+"Date",
+"Fecha"
+],
+[
+"Date et heure",
+"Fecha y hora"
+],
+[
+"Demande #{0} envoyée — LuxInterventions est prévenu",
+"Solicitud #{0} enviada — LuxInterventions ha sido avisado"
+],
+[
+"Demande annulée",
+"Solicitud cancelada"
+],
+[
+"Demande créée",
+"Solicitud creada"
+],
+[
+"Demande introuvable",
+"Solicitud no encontrada"
+],
+[
+"Demande prise en charge — la gérance est prévenue",
+"Solicitud asumida — la administración ha sido avisada"
+],
+[
+"Demandes",
+"Solicitudes"
+],
+[
+"Demandes en cours",
+"Solicitudes en curso"
+],
+[
+"Demandes reçues",
+"Solicitudes recibidas"
+],
+[
+"Demandée",
+"Solicitada"
+],
+[
+"Description",
+"Descripción"
+],
+[
+"Description du problème",
+"Descripción del problema"
+],
+[
+"Disponibilités",
+"Disponibilidad"
+],
+[
+"Dont urgentes",
+"De ellas urgentes"
+],
+[
+"Décembre",
+"Diciembre"
+],
+[
+"Déconnexion",
+"Cerrar sesión"
+],
+[
+"Découvrir le portail en mode démo",
+"Descubrir el portal en modo demo"
+],
+[
+"Délai de prise en charge",
+"Tiempo de respuesta"
+],
+[
+"Délai moyen de prise en charge",
+"Tiempo medio de respuesta"
+],
+[
+"Démarrer",
+"Empezar"
+],
+[
+"Démo : ce lien est fictif. En réel, la personne l’ouvre et choisit son mot de passe.",
+"Demo: este enlace es ficticio. En la realidad, la persona lo abre y elige su contraseña."
+],
+[
+"Désactiver",
+"Desactivar"
+],
+[
+"Désactiver cet accès ?",
+"¿Desactivar este acceso?"
+],
+[
+"Désactivées",
+"Desactivadas"
+],
+[
+"Détail des demandes",
+"Detalle de las solicitudes"
+],
+[
+"Elle ne sera plus proposée pour les nouvelles demandes. L’historique des interventions est conservé.",
+"Ya no se propondrá para nuevas solicitudes. El historial de intervenciones se conserva."
+],
+[
+"En activant votre accès, vous confirmez avoir pris connaissance de la",
+"Al activar tu acceso, confirmas haber leído la"
+],
+[
+"En cours",
+"En curso"
+],
+[
+"En démo, les notifications sont simulées par des messages à l’écran.",
+"En la demo, las notificaciones se simulan con mensajes en pantalla."
+],
+[
+"Enregistrer",
+"Guardar"
+],
+[
+"Envoi…",
+"Enviando…"
+],
+[
+"Envoyer",
+"Enviar"
+],
+[
+"Envoyer la demande",
+"Enviar la solicitud"
+],
+[
+"Envoyez ce lien à",
+"Envía este enlace a"
+],
+[
+"Envoyez votre première demande d’intervention",
+"Envía tu primera solicitud de intervención"
+],
+[
+"Erreur",
+"Error"
+],
+[
+"Espace équipe",
+"Área del equipo"
+],
+[
+"Espace équipe LuxInterventions",
+"Área del equipo LuxInterventions"
+],
+[
+"Espaces verts",
+"Zonas verdes"
+],
+[
+"Faire",
+"Hacer"
+],
+[
+"Fermer",
+"Cerrar"
+],
+[
+"Fuite sous l’évier, l’eau coule dans l’appartement du dessous.",
+"Fuga bajo el fregadero, el agua cae al piso de abajo."
+],
+[
+"Février",
+"Febrero"
+],
+[
+"Gérance",
+"Administración"
+],
+[
+"Gérance Démo",
+"Administración Demo"
+],
+[
+"Gérance enregistrée",
+"Administración guardada"
+],
+[
+"Gérances",
+"Administraciones"
+],
+[
+"Gérances & accès",
+"Administraciones y accesos"
+],
+[
+"Hall d’entrée",
+"Portal de entrada"
+],
+[
+"Historique des interventions",
+"Historial de intervenciones"
+],
+[
+"Impossible d’activer les notifications",
+"No se pueden activar las notificaciones"
+],
+[
+"Imprimé le {0}",
+"Impreso el {0}"
+],
+[
+"Installer",
+"Instalar"
+],
+[
+"Installer sur ce téléphone",
+"Instalar en este móvil"
+],
+[
+"Installez l’app sur votre téléphone",
+"Instala la app en tu móvil"
+],
+[
+"Interphone « Syndic »",
+"Portero « Syndic »"
+],
+[
+"Intervention en cours",
+"Intervención en curso"
+],
+[
+"Intervention planifiée — la gérance est prévenue",
+"Intervención planificada — la administración ha sido avisada"
+],
+[
+"Intervention prévue",
+"Intervención prevista"
+],
+[
+"Intervention sous 2 h",
+"Intervención en 2 h"
+],
+[
+"Intervention terminée",
+"Intervención terminada"
+],
+[
+"Inviter",
+"Invitar"
+],
+[
+"Inviter un membre de l'équipe",
+"Invitar a un miembro del equipo"
+],
+[
+"Inviter un membre de l’équipe",
+"Invitar a un miembro del equipo"
+],
+[
+"Inviter un utilisateur",
+"Invitar a un usuario"
+],
+[
+"Invitez leurs responsables (lien personnel par email ou WhatsApp)",
+"Invita a sus responsables (enlace personal por email o WhatsApp)"
+],
+[
+"Janvier",
+"Enero"
+],
+[
+"Juillet",
+"Julio"
+],
+[
+"Juin",
+"Junio"
+],
+[
+"La personne est déconnectée immédiatement et ne peut plus se connecter. Ses demandes restent dans l’historique.",
+"La persona se desconecta de inmediato y ya no puede entrar. Sus solicitudes se quedan en el historial."
+],
+[
+"La serrure de la cave commune est dure, il faut forcer.",
+"La cerradura del trastero común está dura, hay que forzarla."
+],
+[
+"Langue",
+"Idioma"
+],
+[
+"Les clés sont chez M. Weber.",
+"Las llaves las tiene el Sr. Weber."
+],
+[
+"Les deux mots de passe ne correspondent pas.",
+"Las dos contraseñas no coinciden."
+],
+[
+"Lien",
+"Enlace"
+],
+[
+"Lien d’accès prêt",
+"Enlace de acceso listo"
+],
+[
+"Lieu",
+"Lugar"
+],
+[
+"Lieu précis",
+"Lugar exacto"
+],
+[
+"Local technique au sous-sol, compteurs derrière la porte grise.",
+"Cuarto técnico en el sótano, contadores detrás de la puerta gris."
+],
+[
+"Luca passe cet après-midi, merci de prévenir le concierge.",
+"Luca pasa esta tarde, por favor avisad al conserje."
+],
+[
+"LuxInterventions · Interventions techniques 7j/7",
+"LuxInterventions · Intervenciones técnicas 7/7"
+],
+[
+"LuxInterventions · Portail gérance v{0}",
+"LuxInterventions · Portal de administración v{0}"
+],
+[
+"M. Weber (concierge)",
+"Sr. Weber (conserje)"
+],
+[
+"Mai",
+"Mayo"
+],
+[
+"Marc (démo)",
+"Marc (demo)"
+],
+[
+"Mars",
+"Marzo"
+],
+[
+"Masquer",
+"Ocultar"
+],
+[
+"Mentions légales",
+"Aviso legal"
+],
+[
+"Menuiserie",
+"Carpintería"
+],
+[
+"Mes demandes en cours",
+"Mis solicitudes en curso"
+],
+[
+"Message",
+"Mensaje"
+],
+[
+"Message à LuxInterventions…",
+"Mensaje a LuxInterventions…"
+],
+[
+"Message à la gérance (facultatif)",
+"Mensaje a la administración (opcional)"
+],
+[
+"Message à la gérance…",
+"Mensaje a la administración…"
+],
+[
+"Mme Klein",
+"Sra. Klein"
+],
+[
+"Mme Rossi (locataire)",
+"Sra. Rossi (inquilina)"
+],
+[
+"Mode démo",
+"Modo demo"
+],
+[
+"Modifier",
+"Editar"
+],
+[
+"Modifier la gérance",
+"Editar la administración"
+],
+[
+"Modifier la résidence",
+"Editar la comunidad"
+],
+[
+"Mois",
+"Mes"
+],
+[
+"Mot de passe",
+"Contraseña"
+],
+[
+"Mot de passe actuel",
+"Contraseña actual"
+],
+[
+"Mot de passe changé",
+"Contraseña cambiada"
+],
+[
+"Mot de passe oublié ? Demandez un nouveau lien à votre responsable ou à LuxInterventions.",
+"¿Has olvidado la contraseña? Pide un enlace nuevo a tu responsable o a LuxInterventions."
+],
+[
+"Mot de passe trop court (10 caractères minimum).",
+"Contraseña demasiado corta (mínimo 10 caracteres)."
+],
+[
+"Navigation",
+"Navegación"
+],
+[
+"Nettoyage",
+"Limpieza"
+],
+[
+"Nom",
+"Nombre"
+],
+[
+"Nom (locataire, concierge…)",
+"Nombre (inquilino, conserje…)"
+],
+[
+"Nom de la résidence",
+"Nombre de la comunidad"
+],
+[
+"Nom de la résidence obligatoire",
+"Nombre de la comunidad obligatorio"
+],
+[
+"Nom du technicien",
+"Nombre del técnico"
+],
+[
+"Nom et prénom",
+"Nombre y apellido"
+],
+[
+"Nombre d'appartements",
+"Número de pisos"
+],
+[
+"Non disponible en démo",
+"No disponible en la demo"
+],
+[
+"Non disponibles sur ce navigateur",
+"No disponibles en este navegador"
+],
+[
+"Notes",
+"Notas"
+],
+[
+"Notification de test envoyée",
+"Notificación de prueba enviada"
+],
+[
+"Notifications",
+"Notificaciones"
+],
+[
+"Notifications activées",
+"Notificaciones activadas"
+],
+[
+"Notifications non disponibles ici. Sur iPhone : installez l’app puis ouvrez-la depuis l’icône.",
+"Notificaciones no disponibles aquí. En iPhone: instala la app y ábrela desde el icono."
+],
+[
+"Notifications refusées",
+"Notificaciones rechazadas"
+],
+[
+"Notifications sur cet appareil",
+"Notificaciones en este dispositivo"
+],
+[
+"Nouveau lien d'accès",
+"Nuevo enlace de acceso"
+],
+[
+"Nouveau lien pour {0} ?",
+"¿Nuevo enlace para {0}?"
+],
+[
+"Nouveau mot de passe",
+"Nueva contraseña"
+],
+[
+"Nouvelle demande",
+"Nueva solicitud"
+],
+[
+"Nouvelle demande d'intervention",
+"Nueva solicitud de intervención"
+],
+[
+"Nouvelle demande pour cette résidence",
+"Nueva solicitud para esta comunidad"
+],
+[
+"Nouvelle gérance",
+"Nueva administración"
+],
+[
+"Nouvelle résidence",
+"Nueva comunidad"
+],
+[
+"Novembre",
+"Noviembre"
+],
+[
+"Octobre",
+"Octubre"
+],
+[
+"Où trouver les clés (local, boîte à clés…)",
+"Dónde están las llaves (cuarto, caja de llaves…)"
+],
+[
+"Par type",
+"Por tipo"
+],
+[
+"Pas de connexion internet",
+"Sin conexión a internet"
+],
+[
+"Peinture",
+"Pintura"
+],
+[
+"Photo",
+"Foto"
+],
+[
+"Photo indisponible",
+"Foto no disponible"
+],
+[
+"Photo introuvable",
+"Foto no encontrada"
+],
+[
+"Photos (jusqu'à 6)",
+"Fotos (hasta 6)"
+],
+[
+"Photos 0/{0}…",
+"Fotos 0/{0}…"
+],
+[
+"Photos après intervention",
+"Fotos después de la intervención"
+],
+[
+"Planifier",
+"Planificar"
+],
+[
+"Planifier #{0}",
+"Planificar #{0}"
+],
+[
+"Planifié",
+"Planificado"
+],
+[
+"Planifiée",
+"Planificada"
+],
+[
+"Plomberie",
+"Fontanería"
+],
+[
+"Plus",
+"Más"
+],
+[
+"Plus d’eau chaude dans tout l’immeuble.",
+"No hay agua caliente en todo el edificio."
+],
+[
+"Plusieurs spots du hall ne fonctionnent plus.",
+"Varios focos del portal ya no funcionan."
+],
+[
+"Portail",
+"Portal"
+],
+[
+"Portail Gérance",
+"Portal de administración"
+],
+[
+"Portail Gérance — LuxInterventions",
+"Portal de administración — LuxInterventions"
+],
+[
+"Portail gérance",
+"Portal de administración"
+],
+[
+"Porte de la cave",
+"Puerta del trastero"
+],
+[
+"Premiers pas · {0}/{1}",
+"Primeros pasos · {0}/{1}"
+],
+[
+"Première configuration.",
+"Primera configuración."
+],
+[
+"Première fois ? Ouvrez le",
+"¿Primera vez? Abre el"
+],
+[
+"Prendre en charge",
+"Asumir"
+],
+[
+"Prise en charge",
+"Asumida"
+],
+[
+"Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
+"¿Qué pasa? ¿Desde cuándo? ¿Riesgo de daños?"
+],
+[
+"Quitter",
+"Salir"
+],
+[
+"Rapport d'intervention",
+"Informe de intervención"
+],
+[
+"Rapport d'interventions — {0} {1}",
+"Informe de intervenciones — {0} {1}"
+],
+[
+"Rapport mensuel",
+"Informe mensual"
+],
+[
+"Rapports",
+"Informes"
+],
+[
+"Rechercher : n°, résidence, lieu…",
+"Buscar: n.º, comunidad, lugar…"
+],
+[
+"Rechercher une résidence, une adresse…",
+"Buscar una comunidad, una dirección…"
+],
+[
+"Replanifier",
+"Replanificar"
+],
+[
+"Responsable (peut inviter des collègues)",
+"Responsable (puede invitar a compañeros)"
+],
+[
+"Responsable gérance",
+"Responsable de administración"
+],
+[
+"Retapez le mot de passe",
+"Repite la contraseña"
+],
+[
+"Retirer",
+"Quitar"
+],
+[
+"Retirer cette résidence ?",
+"¿Quitar esta comunidad?"
+],
+[
+"Retour",
+"Volver"
+],
+[
+"Reçue",
+"Recibida"
+],
+[
+"Rue, numéro, code postal, ville",
+"Calle, número, código postal, ciudad"
+],
+[
+"Réactiver",
+"Reactivar"
+],
+[
+"Réessayer",
+"Reintentar"
+],
+[
+"Réinit.",
+"Restabl."
+],
+[
+"Résidence",
+"Comunidad"
+],
+[
+"Résidence enregistrée",
+"Comunidad guardada"
+],
+[
+"Résidence inconnue",
+"Comunidad desconocida"
+],
+[
+"Résidences",
+"Comunidades"
+],
+[
+"Rôle",
+"Rol"
+],
+[
+"Safari : Partager → « Sur l’écran d’accueil ».",
+"Safari: Compartir → « Añadir a pantalla de inicio »."
+],
+[
+"Se connecter",
+"Entrar"
+],
+[
+"Se déconnecter",
+"Cerrar sesión"
+],
+[
+"Se déconnecter ?",
+"¿Cerrar sesión?"
+],
+[
+"Septembre",
+"Septiembre"
+],
+[
+"Serrurerie",
+"Cerrajería"
+],
+[
+"Session expirée",
+"Sesión caducada"
+],
+[
+"Seul LuxInterventions peut changer le statut",
+"Solo LuxInterventions puede cambiar el estado"
+],
+[
+"Son mot de passe actuel restera valable jusqu’à ce qu’il en choisisse un nouveau avec le lien.",
+"Su contraseña actual sigue siendo válida hasta que elija una nueva con el enlace."
+],
+[
+"Sophie (démo)",
+"Sophie (demo)"
+],
+[
+"Sous 24 h",
+"En 24 h"
+],
+[
+"Statut",
+"Estado"
+],
+[
+"Suivi",
+"Seguimiento"
+],
+[
+"Sur iPhone : installez d’abord l’app (Partager → « Sur l’écran d’accueil »), puis ouvrez-la depuis l’icône.",
+"En iPhone: instala primero la app (Compartir → « Añadir a pantalla de inicio ») y luego ábrela desde el icono."
+],
+[
+"Syndic Exemple",
+"Administrador Ejemplo"
+],
+[
+"Technicien",
+"Técnico"
+],
+[
+"Technicien sur place.",
+"Técnico en el lugar."
+],
+[
+"Terminer",
+"Terminar"
+],
+[
+"Terminer #{0}",
+"Terminar #{0}"
+],
+[
+"Terminer l’intervention",
+"Terminar la intervención"
+],
+[
+"Terminé",
+"Terminado"
+],
+[
+"Terminée",
+"Terminada"
+],
+[
+"Terminées",
+"Terminadas"
+],
+[
+"Terminées ce mois",
+"Terminadas este mes"
+],
+[
+"Tester",
+"Probar"
+],
+[
+"Toiture / façade",
+"Tejado / fachada"
+],
+[
+"Toutes",
+"Todas"
+],
+[
+"Toutes les gérances",
+"Todas las administraciones"
+],
+[
+"Toutes les résidences",
+"Todas las comunidades"
+],
+[
+"Toutes urgences",
+"Todas las urgencias"
+],
+[
+"Travaux effectués, pièces remplacées, recommandations…",
+"Trabajos realizados, piezas cambiadas, recomendaciones…"
+],
+[
+"Type",
+"Tipo"
+],
+[
+"Type d'intervention",
+"Tipo de intervención"
+],
+[
+"Téléphone",
+"Teléfono"
+],
+[
+"Téléphone du contact",
+"Teléfono del contacto"
+],
+[
+"Un lien personnel sera créé : la personne l’ouvre et choisit son mot de passe. Valable 14 jours.",
+"Se creará un enlace personal: la persona lo abre y elige su contraseña. Válido 14 días."
+],
+[
+"Urgence",
+"Urgencia"
+],
+[
+"Urgence obligatoire",
+"Urgencia obligatoria"
+],
+[
+"Urgence, photos, accès — en 30 secondes",
+"Urgencia, fotos, acceso — en 30 segundos"
+],
+[
+"Urgences ouvertes",
+"Urgencias abiertas"
+],
+[
+"Urgent",
+"Urgente"
+],
+[
+"Utilisateur (fait et suit les demandes)",
+"Usuario (hace y sigue las solicitudes)"
+],
+[
+"Utilisateur gérance",
+"Usuario de administración"
+],
+[
+"Utilisateurs",
+"Usuarios"
+],
+[
+"Vitrerie",
+"Cristalería"
+],
+[
+"Votre accès au portail LuxInterventions",
+"Tu acceso al portal LuxInterventions"
+],
+[
+"Votre nom",
+"Tu nombre"
+],
+[
+"Votre session a expiré. Reconnectez-vous.",
+"Tu sesión ha caducado. Vuelve a entrar."
+],
+[
+"Vous voyez maintenant le portail comme l’équipe LuxInterventions",
+"Ahora ves el portal como el equipo de LuxInterventions"
+],
+[
+"Vous voyez maintenant le portail comme une gérance",
+"Ahora ves el portal como una administración"
+],
+[
+"Vue LuxInterventions",
+"Vista LuxInterventions"
+],
+[
+"Vue gérance",
+"Vista administración"
+],
+[
+"demandes ouvertes",
+"solicitudes abiertas"
+],
+[
+"délai moyen",
+"tiempo medio"
+],
+[
+"ex. App. 4B, hall, cave, toiture",
+"p. ej. Piso 4B, portal, trastero, tejado"
+],
+[
+"ex. Gérance Dupont SA",
+"p. ej. Administración Dupont SA"
+],
+[
+"ex. Merci de prévenir le locataire",
+"p. ej. Por favor avisad al inquilino"
+],
+[
+"ex. Résidence Val St André 37",
+"p. ej. Résidence Val St André 37"
+],
+[
+"ex. en semaine après 17 h",
+"p. ej. entre semana después de las 17 h"
+],
+[
+"il y a {0} h",
+"hace {0} h"
+],
+[
+"il y a {0} j",
+"hace {0} d"
+],
+[
+"il y a {0} min",
+"hace {0} min"
+],
+[
+"lien personnel",
+"enlace personal"
+],
+[
+"nouvelles demandes",
+"solicitudes nuevas"
+],
+[
+"politique de confidentialité",
+"política de privacidad"
+],
+[
+"pour suivre l'avancement de vos demandes.",
+"para seguir el avance de tus solicitudes."
+],
+[
+"pour être alerté immédiatement des nouvelles demandes urgentes.",
+"para recibir aviso inmediato de nuevas solicitudes urgentes."
+],
+[
+"reçu par email ou WhatsApp : vous y choisirez votre mot de passe.",
+"recibido por email o WhatsApp: allí elegirás tu contraseña."
+],
+[
+"une seule fois",
+"una sola vez"
+],
+[
+"urgences : {0} · 90 jours",
+"urgencias: {0} · 90 días"
+],
+[
+"vous",
+"tú"
+],
+[
+"vu il y a {0} h",
+"visto hace {0} h"
+],
+[
+"vu il y a {0} j",
+"visto hace {0} d"
+],
+[
+"vu il y a {0} min",
+"visto hace {0} min"
+],
+[
+"vu à l'instant",
+"visto ahora mismo"
+],
+[
+"{0} appartements",
+"{0} pisos"
+],
+[
+"{0} demande{1}",
+"{0} solicitud(es)"
+],
+[
+"{0} demandée(s)",
+"{0} solicitada(s)"
+],
+[
+"{0} en cours",
+"{0} en curso"
+],
+[
+"{0} gérance{1} · {2} utilisateurs actifs",
+"{0} administración(es) · {2} usuarios activos"
+],
+[
+"{0} jours",
+"{0} días"
+],
+[
+"{0} photo{1}",
+"{0} foto(s)"
+],
+[
+"{0} planifiée(s) aujourd'hui",
+"{0} planificada(s) hoy"
+],
+[
+"{0} résidence{1}",
+"{0} comunidad(es)"
+],
+[
+"{0} utilisateur{1}",
+"{0} usuario(s)"
+],
+[
+"· désactivé",
+"· desactivado"
+],
+[
+"· il y a {0} h",
+"· hace {0} h"
+],
+[
+"· il y a {0} j",
+"· hace {0} d"
+],
+[
+"· il y a {0} min",
+"· hace {0} min"
+],
+[
+"· invitation en attente",
+"· invitación pendiente"
+],
+[
+"· vu",
+"· visto"
+],
+[
+"· à l'instant",
+"· ahora mismo"
+],
+[
+"À convenir",
+"A convenir"
+],
+[
+"À traiter",
+"Por tratar"
+],
+[
+"À traiter maintenant",
+"Tratar ahora"
+],
+[
+"Électricité",
+"Electricidad"
+],
+[
+"Équipe",
+"Equipo"
+],
+[
+"Équipe LuxInterventions",
+"Equipo LuxInterventions"
+],
+[
+"à l'instant",
+"ahora mismo"
+],
+[
+"— Choisir —",
+"— Elegir —"
+],
+[
+"— données d’exemple, rien n’est enregistré.",
+"— datos de ejemplo, no se guarda nada."
+],
+[
+"— technicien :",
+"— técnico:"
+],
+[
+"📲 En réel, LuxInterventions est prévenu de votre message.",
+"📲 En la realidad, LuxInterventions recibe aviso de tu mensaje."
+],
+[
+"📲 En réel, la gérance est prévenue de votre message.",
+"📲 En la realidad, la administración recibe aviso de tu mensaje."
+],
+[
+"📲 En réel, la gérance reçoit maintenant une notification : «",
+"📲 En la realidad, la administración recibe ahora una notificación: «"
+],
+[
+"📲 En réel, l’équipe LuxInterventions reçoit maintenant une alerte URGENTE sur son téléphone.",
+"📲 En la realidad, el equipo de LuxInterventions recibe ahora una alerta URGENTE en el móvil."
+],
+[
+"📲 En réel, l’équipe LuxInterventions reçoit maintenant une notification.",
+"📲 En la realidad, el equipo de LuxInterventions recibe ahora una notificación."
+],
+[
+"🔑 Le mot de passe se choisit",
+"🔑 La contraseña se elige"
+]
+];

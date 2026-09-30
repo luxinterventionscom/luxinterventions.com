@@ -2,7 +2,18 @@
 // Plusieurs utilisateurs et plusieurs gérances : chacun voit uniquement ses résidences et ses demandes,
 // l'équipe LuxInterventions (rôle « admin ») voit tout et traite les demandes.
 
-const VERSION = '1.0.0';
+import { startI18n, LOCALES } from '/ares/i18n.js';
+
+const VERSION = '1.1.0';
+// Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
+const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', pt: 'Português', es: 'Español' };
+const LANG = (() => {
+  try { const l = localStorage.getItem('ptlLang'); if (PTL_LANGS[l]) return l; } catch {}
+  const n = (navigator.language || '').slice(0, 2).toLowerCase();
+  return PTL_LANGS[n] ? n : 'fr';
+})();
+const LOC = LOCALES[LANG] || 'fr-LU';
+await startI18n(LANG, (l) => import(`./i18n/${l}.js`));
 const API = document.querySelector('meta[name="ptl-api"]').content.replace(/\/$/, '') + '/api/portail/';
 const $ = (s, r = document) => r.querySelector(s);
 
@@ -78,9 +89,9 @@ const CATEGORIES = ['Plomberie', 'Électricité', 'Serrurerie', 'Chauffage / san
 const ROLES = { admin: 'LuxInterventions', gerance_admin: 'Responsable gérance', gerance_user: 'Utilisateur gérance' };
 const MONTHS_FULL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
-const fmtDateTime = (t) => (t ? new Date(t).toLocaleString('fr-LU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
-const fmtDate = (t) => (t ? new Date(t).toLocaleDateString('fr-LU', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
-const fmtPlanned = (s) => (s ? new Date(s).toLocaleString('fr-LU', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
+const fmtDateTime = (t) => (t ? new Date(t).toLocaleString(LOC, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
+const fmtDate = (t) => (t ? new Date(t).toLocaleDateString(LOC, { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+const fmtPlanned = (s) => (s ? new Date(s).toLocaleString(LOC, { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
 function ago(t) {
   const m = Math.round((Date.now() - t) / 60000);
   if (m < 1) return "à l'instant";
@@ -207,7 +218,9 @@ const lockEl = $('#lock');
 const appEl = $('#app');
 const brandHead = () => html`
   <img class="lock-logo" src="/android-chrome-192x192.png" alt="LuxInterventions" width="88" height="88">
-  <div class="lock-head"><h1>Portail Gérance</h1><p>LuxInterventions · Interventions techniques 7j/7</p></div>`;
+  <div class="lock-head"><h1>Portail Gérance</h1><p>LuxInterventions · Interventions techniques 7j/7</p></div>
+  ${langChips()}`;
+const langChips = () => html`<div class="chips ptl-lang" data-notr="1" role="group" aria-label="Langue">${Object.entries(PTL_LANGS).map(([k, l]) => html`<button class="chip" type="button" data-action="set-lang" data-id="${k}" aria-pressed="${LANG === k}">${l}</button>`)}</div>`;
 const pwField = (name, placeholder, autocomplete) => html`<div class="pw-wrap">
   <input type="password" name="${name}" placeholder="${placeholder}" autocomplete="${autocomplete}" required autocapitalize="off" autocorrect="off" spellcheck="false">
   <button class="btn icon" type="button" data-action="toggle-pw" aria-label="Afficher">${icon('eye')}</button></div>`;
@@ -532,7 +545,7 @@ const VIEWS = {
     const others = tickets.filter((t) => t.status !== 'recue');
     const today = new Date().toISOString().slice(0, 10);
     const planToday = tickets.filter((t) => t.status === 'planifiee' && (t.planned_at || '').startsWith(today));
-    const hello = html`Bonjour ${state.me.name.split(' ')[0]}`;
+    const hello = html`Bonjour <span>${state.me.name.split(' ')[0]}</span>`;
     const pushCard = !['on', 'demo'].includes(pushState()) ? html`<div class="alert ${isAdmin() ? 'warn' : 'info'}" style="margin-bottom:14px;align-items:center">${icon('bell')}<div style="flex:1">${isAdmin()
       ? html`<b>Activez les notifications</b> pour être alerté immédiatement des nouvelles demandes urgentes.` : html`<b>Activez les notifications</b> pour suivre l'avancement de vos demandes.`}</div><button class="btn sm" data-action="push-on">Activer</button></div>` : '';
     if (isAdmin()) {
@@ -653,6 +666,8 @@ const VIEWS = {
         ${isAdmin() ? html`<label class="field" style="flex:1;min-width:160px">Gérance<select name="org"><option value="">Toutes</option>${(state.cache.orgs || []).map((o) => html`<option value="${o.id}">${o.name}</option>`)}</select></label>` : ''}
         <button class="btn primary" type="submit">${icon('download')} Rapport mensuel</button>
       </form>
+      <div class="section-label">Langue · Sprache · Language · Língua · Idioma</div>
+      ${langChips()}
       <div class="section-label">Compte</div>
       <div class="list settings">
         <button class="row" data-action="change-password">${icon('key')}<span class="grow title">Changer mon mot de passe</span></button>
@@ -1079,6 +1094,7 @@ const ACTIONS = {
   retry: () => go(state.route, true),
   logout: async () => { if (await confirmBox('Se déconnecter ?', { ok: 'Déconnexion' })) logout(); },
   'to-login': () => renderLock('login'),
+  'set-lang': (d) => { if (d.id === LANG) return; try { localStorage.setItem('ptlLang', d.id); } catch {} location.reload(); },
   'toggle-pw': (_, el) => {
     const inp = el.parentElement.querySelector('input');
     inp.type = inp.type === 'password' ? 'text' : 'password';

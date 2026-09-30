@@ -671,6 +671,9 @@
     border: none; background: transparent; color: var(--grey-600);
   }
   .portail-tab.active { background: var(--white); color: var(--navy); box-shadow: var(--shadow-sm); }
+  .ptl-langs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 1.25rem; }
+  .ptl-langs button { font: inherit; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; padding: 0.35rem 0.8rem; border-radius: 50px; border: 1.5px solid var(--grey-200); background: var(--white); color: var(--navy); cursor: pointer; }
+  .ptl-langs button[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: var(--white); }
   .portail-panel { display: none; }
   .portail-panel.active { display: block; }
   .portail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem; }
@@ -1670,6 +1673,9 @@
   <div class="section-eyebrow">Espace Digital</div>
   <h2 class="section-title">Portail<br><em style="color:var(--accent)">Syndic / Gérance</em></h2>
   <p class="section-sub">Accédez à votre tableau de bord, suivez vos interventions en temps réel et téléchargez vos rapports — 24h/24, depuis n'importe quel appareil.</p>
+  <div class="ptl-langs" role="group" aria-label="Langue · Sprache · Language">
+    <button type="button" data-lang="fr">FR</button><button type="button" data-lang="de">DE</button><button type="button" data-lang="en">EN</button><button type="button" data-lang="pt">PT</button><button type="button" data-lang="es">ES</button>
+  </div>
 
   <div style="margin-top:3rem">
     <div class="portail-tabs">
@@ -2346,5 +2352,6 @@ fetch('https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev/api/h
   });
 </script>
 <script src="/assets/mail.js" defer></script>
+<script src="/assets/portail-i18n.js" defer></script>
 </body>
 </html>
