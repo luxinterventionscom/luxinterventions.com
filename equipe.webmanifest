@@ -1,0 +1,17 @@
+{
+  "name": "NOBIS s.a.r.l. — App de l'équipe",
+  "short_name": "NOBIS Équipe",
+  "description": "Planning, interventions et absences pour l'équipe NOBIS s.a.r.l.",
+  "lang": "fr",
+  "start_url": "/equipe.html",
+  "scope": "/equipe",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f5f4",
+  "theme_color": "#0f766e",
+  "icons": [
+    { "src": "/ares/icons/ares-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/ares/icons/ares-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/ares/icons/ares-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

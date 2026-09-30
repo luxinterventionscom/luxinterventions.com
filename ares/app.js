@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.26.0';
+const VERSION = '2.27.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -316,6 +316,150 @@ async function publishPub(immId, loud) {
     try { await vault.publishPublic(im.pubToken, pubData(im)); } catch (e) { if (loud) toast(e.message || 'Publication impossible', { bad: true }); return false; }
   }
   return true;
+}
+
+// ───────────────────────── App de l'équipe (lien / code personnel, chiffré) ─────────────────────────
+// Chaque personne voit seulement SON planning (lieu, jour, consignes), son horaire et ses absences ;
+// elle renvoie « commencé / fini / pas fini » avec note et photos, ses coordonnées, ses arrêts maladie.
+const eqUrl = (i) => `${location.origin}/equipe.html#${i.espace.id}.${i.espace.key}`;
+const eqAppUrl = () => `${location.origin}/equipe.html`;
+const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini' };
+// Dernier état donné par l'équipe pour une intervention un jour donné
+const eqState = (t, d) => { const j = (t.journal || []).filter((x) => x.d === d); return j.length ? j[j.length - 1] : null; };
+function equipeData(i) {
+  const soc = societe();
+  const from = addDays(today(), -7), to = addDays(today(), 21);
+  const tasks = {}, items = [];
+  const out1 = (t) => {
+    const l = t.locId ? vault.get('locataires', t.locId) : null;
+    return {
+      titre: t.titre, type: t.type, recur: t.recur ? RECURS[t.recur] : '', note: t.note || '',
+      adresse: immName(t.immId), lieu: t.logId ? logName(t.logId) : '', statut: t.statut,
+      contact: l ? { nom: l.prenom || fullName(l), tel: l.tel || '' } : null,
+      journal: (t.journal || []).slice(-20).map((x) => ({ d: x.d, st: x.st, note: x.note || '', at: x.at })),
+    };
+  };
+  for (const x of agenda(from, to).filter((x) => x.kind === 'tache' && x.t.intervenantId === i.id)) {
+    tasks[x.t.id] ||= out1(x.t);
+    items.push({ d: x.d, tid: x.t.id, late: !!x.late });
+  }
+  for (const t of vault.list('taches').filter((t) => t.intervenantId === i.id && !t.recur && t.statut === 'fait' && (t.doneDate || '') >= from)) {
+    tasks[t.id] ||= out1(t);
+    if (!items.some((x) => x.tid === t.id)) items.push({ d: t.doneDate, tid: t.id });
+  }
+  const k = vault.get('reglages', 'signal');
+  return {
+    v: 1, kind: 'equipe', lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '',
+    societe: { nom: soc.nom || 'NOBIS s.a.r.l.', tel: soc.tel || '' },
+    me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '' },
+    horaires: (i.horaires || []).map((h) => ({ j: h.j, de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })),
+    absences: (i.absences || []).filter((a) => !a.fin || a.fin >= addDays(today(), -30)).map((a) => ({ type: a.type, debut: a.debut, fin: a.fin || '' })),
+    tasks, items: items.sort((a, b) => a.d.localeCompare(b.d)), signalKey: k ? k.pub : '',
+  };
+}
+const eqHashes = new Map();
+async function equipeSync(onlyId, loud) {
+  if (!vault.unlocked) return true;
+  for (const i of vault.list('intervenants').filter((x) => x.espace && x.espace.on && x.espace.id && (!onlyId || x.id === onlyId))) {
+    try {
+      const data = equipeData(i);
+      const h = await sha256Hex(JSON.stringify(data));
+      let stored = eqHashes.get(i.id);
+      try { stored = stored || localStorage.getItem('aresEq:' + i.espace.id); } catch {}
+      if (h === stored && !loud) continue;
+      await vault.espacePut(i.espace.id, await sealJson(i.espace.key, data));
+      eqHashes.set(i.id, h);
+      try { localStorage.setItem('aresEq:' + i.espace.id, h); } catch {}
+    } catch (e) {
+      if (loud) { toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
+    }
+  }
+  return true;
+}
+async function eqSetCode(i) {
+  const e = i.espace;
+  if (e.codeHash) await vault.espCodeDel(e.codeHash).catch(() => {});
+  const code = newAccessCode();
+  const h = await codeHash(code);
+  await vault.espCodePut(h, { id: e.id, ...(await wrapWithCode(code, e.key)) });
+  await vault.mutate((tx) => tx.put('intervenants', { id: i.id, espace: { ...e, code, codeHash: h } }), 'Code d’accès équipe créé', intervFull(i), i.id);
+  return code;
+}
+// Messages de l'équipe → suivi des interventions (journal + photos), coordonnées, absences
+async function equipeInbox(w, msg) {
+  const files = [];
+  const at0 = String(msg.t || new Date().toISOString()).slice(0, 30);
+  await vault.mutate((tx) => {
+    let cur = vault.get('intervenants', w.id);
+    const feed = [...(cur.feed || [])];
+    let fresh = 0;
+    for (const it of (Array.isArray(msg.items) ? msg.items : []).slice(0, 30)) {
+      const at = String(it.at || at0).slice(0, 30);
+      const note = String(it.note || '').slice(0, 1000);
+      const photos = (Array.isArray(it.photos) ? it.photos : []).slice(0, 3);
+      if (it.k === 'task') {
+        const t = vault.get('taches', String(it.tid || ''));
+        if (!t || t.intervenantId !== w.id || !EQ_ST[it.st]) continue;
+        const d = /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10);
+        const ph = photos.map((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'equipe', label: `${intervFull(w)} — ${t.titre} (${n + 1})`, date: d, mime: 'image/jpeg', size: Math.round(String(b).length * 0.75) }); files.push([doc.id, b]); return doc.id; });
+        const entry = { d, st: it.st, note, at, by: w.id, ph };
+        const upd = { id: t.id, journal: [...(t.journal || []), entry].slice(-80) };
+        if (!t.recur && it.st === 'fait') Object.assign(upd, { statut: 'fait', doneDate: d });
+        tx.put('taches', upd);
+        feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note, ph: ph.length });
+        fresh++;
+      } else if (it.k === 'info') {
+        const clean = (v, n) => String(v || '').trim().slice(0, n);
+        const upd = { id: w.id };
+        for (const [f, n] of [['tel', 40], ['mail', 120], ['adresse', 160], ['ville', 80]]) if (clean(it[f], n)) upd[f] = clean(it[f], n);
+        tx.put('intervenants', upd);
+        feed.push({ at, k: 'info', note: 'Coordonnées mises à jour' });
+        fresh++;
+      } else if (it.k === 'abs') {
+        const debut = /^\d{4}-\d{2}-\d{2}$/.test(it.debut || '') ? it.debut : at.slice(0, 10);
+        const fin = /^\d{4}-\d{2}-\d{2}$/.test(it.fin || '') && it.fin >= debut ? it.fin : '';
+        const type = ABS_TYPES[it.type] ? it.type : 'maladie';
+        const a = { id: 'a' + Date.now().toString(36) + fresh, type, debut, fin, note: note || 'Envoyé depuis l’app', fromApp: true };
+        if (photos[0]) { const doc = tx.put('documents', { intervId: w.id, kind: 'absence', label: `${ABS_TYPES[type].replace(/^\S+ /, '')} — ${intervFull(w)}`, date: debut, mime: 'image/jpeg', size: Math.round(String(photos[0]).length * 0.75) }); files.push([doc.id, photos[0]]); a.docId = doc.id; }
+        cur = vault.get('intervenants', w.id);
+        tx.put('intervenants', { id: w.id, absences: [...(cur.absences || []), a] });
+        feed.push({ at, k: 'abs', note: `${ABS_TYPES[type]} du ${fmtDate(debut)}${fin ? ' au ' + fmtDate(fin) : ''}${note ? ' — ' + note : ''}`, ph: photos[0] ? 1 : 0 });
+        fresh++;
+      }
+    }
+    tx.put('intervenants', { id: w.id, feed: feed.slice(-200), feedNew: (cur.feedNew || 0) + fresh });
+  }, 'Nouvelles de l’équipe', intervFull(w), w.id);
+  for (const [id, b] of files) await vault.saveFile(id, unb64u(b));
+}
+// Journal de l'équipe (toutes les personnes, ou une seule), le plus récent d'abord
+function eqFeedHtml(onlyId, max = 80) {
+  const rows = [];
+  for (const i of vault.list('intervenants')) if (!onlyId || i.id === onlyId) for (const f of i.feed || []) rows.push([i, f]);
+  rows.sort((a, b) => (b[1].at || '').localeCompare(a[1].at || ''));
+  if (!rows.length) return html`<p class="small muted">Rien pour le moment. Ce que l’équipe envoie depuis son app (commencé, fini, pas fini, notes, photos, maladie) arrive ici.</p>`;
+  return html`<div class="list small">${rows.slice(0, max).map(([i, f]) => {
+    const t = f.tid ? vault.get('taches', f.tid) : null;
+    const what = f.k === 'task' ? html`<b>${EQ_ST[f.st] || f.st}</b> · ${t ? t.titre : '(intervention supprimée)'}${t ? html`<span class="meta" style="display:block">📍 ${placeName(t)} · ${fmtDate(f.d)}</span>` : ''}` : f.k === 'abs' ? html`<b>${f.note}</b>` : html`<b>✏️ ${f.note}</b>`;
+    return html`<button class="row" ${t ? html`data-action="edit-tache" data-id="${t.id}"` : html`data-action="open-interv" data-id="${i.id}"`} style="text-align:left">
+      <span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDateTime(f.at)} · ${intervFull(i)}</span>${what}${f.k === 'task' && f.note ? html`<span class="small" style="display:block;margin-top:2px">📝 ${f.note}</span>` : ''}</span>
+      ${f.ph ? html`<span class="badge">📷 ${f.ph}</span>` : ''}</button>`;
+  })}</div>`;
+}
+// Aujourd'hui : qui fait quoi, où, et où il en est
+function eqTodayHtml() {
+  const d0 = today();
+  const its = agenda(d0, d0).filter((x) => x.kind === 'tache' && x.t.intervenantId);
+  // terminées aujourd'hui (elles ne sont plus dans l'agenda) : on les garde, avec ✅
+  for (const t of vault.list('taches')) if (t.intervenantId && !t.recur && t.statut === 'fait' && t.doneDate === d0 && !its.some((x) => x.t.id === t.id)) its.push({ d: d0, kind: 'tache', t });
+  const absent = vault.list('intervenants').filter((i) => absOn(i, d0));
+  if (!its.length && !absent.length) return '';
+  return html`<div class="card" style="margin-bottom:14px"><div class="card-title" style="margin-bottom:6px"><h3>👷 Aujourd’hui</h3></div>
+    <div class="list small">${its.map((x) => {
+      const t = x.t, i = vault.get('intervenants', t.intervenantId) || {}, st = eqState(t, x.d);
+      return html`<button class="row" data-action="edit-tache" data-id="${t.id}" style="text-align:left"><span class="grow" style="white-space:normal"><b>${intervFull(i)}</b> — ${tacheIcon(t.type)} ${t.titre}<span class="meta" style="display:block">📍 ${placeName(t)}${st && st.note ? ' · 📝 ' + st.note : ''}</span></span>
+        <span class="badge ${st ? (st.st === 'fait' ? 'ok' : st.st === 'incomplet' ? 'bad' : 'warn') : ''}">${st ? EQ_ST[st.st] + ' ' + (st.at || '').slice(11, 16) : absOn(i, d0) ? '🤒 absent' : '⏳ pas encore'}</span></button>`;
+    })}
+    ${absent.filter((i) => !its.some((x) => x.t.intervenantId === i.id)).map((i) => html`<div class="row"><span class="grow"><b>${intervFull(i)}</b> — ${ABS_TYPES[absOn(i, d0).type]}</span></div>`)}</div></div>`;
 }
 
 // ───────────────────────── Espace locataire (lien personnel, contenu choisi, chiffré) ─────────────────────────
@@ -685,6 +829,7 @@ async function espaceSync(onlyId, loud) {
       if (loud) { toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
     }
   }
+  if (!onlyId) await equipeSync();
   return true;
 }
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
@@ -698,6 +843,12 @@ async function inboxSync() {
     for (const it of await vault.inboxList()) {
       let msg;
       try { msg = await openFromTenant(keys.priv, await vault.inboxGet(it.name)); } catch { continue; }
+      const w = vault.list('intervenants').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
+      if (w) {
+        if (w.espace.on && msg.type === 'equipe') { await equipeInbox(w, msg); n++; }
+        await vault.inboxDel(it.name);
+        continue;
+      }
       const l = vault.list('locataires').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
       if (!l || !l.espace.on) { await vault.inboxDel(it.name); continue; }
       if (msg.type === 'paye') {
@@ -1574,12 +1725,13 @@ const VIEWS = {
       if (!shown.length) body = empty('building', 'Ajoutez d’abord un immeuble.');
     } else {
       const ints = vault.list('intervenants').sort((a, b) => (a.cat === 'specialise') - (b.cat === 'specialise') || Object.keys(METIERS).indexOf(a.metier) - Object.keys(METIERS).indexOf(b.metier) || intervFull(a).localeCompare(intervFull(b)));
-      body = ints.length ? html`<div class="list">${ints.map((i) => {
+      const nNew = sum(ints, (i) => i.feedNew || 0);
+      body = ints.length ? html`${eqTodayHtml()}<button class="btn block" style="margin-bottom:12px" data-action="eq-feed">📋 Activité de l’équipe${nNew ? html` <span class="badge bad">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}</button><div class="list">${ints.map((i) => {
         const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length;
         const tel = (i.tel || '').replace(/[^\d+]/g, '');
         const ab = absOn(i, today());
         return html`<div class="row"><span class="avatar">${(i.prenom || i.nom).slice(0, 2).toUpperCase()}</span>
-          <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="open-interv" data-id="${i.id}"><span class="title" style="display:block">${intervFull(i)}${ab ? html` <span class="badge ${ab.type === 'maladie' ? 'bad' : 'warn'}">${ABS_TYPES[ab.type]}${ab.fin ? ' → ' + fmtDate(ab.fin) : ''}</span>` : ''}</span><span class="meta">${METIERS[i.metier] || i.metier} · ${{ interne: 'interne', societe: 'société', prive: 'privé' }[i.genre || 'interne']} · ${(i.cat || 'quotidien') === 'specialise' ? 'spécialisé' : 'quotidien'}${i.tarif ? ' · ' + i.tarif : ''}${n ? ' · ' + plural(n, 'intervention') + ' en cours' : ''}</span></button>
+          <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="open-interv" data-id="${i.id}"><span class="title" style="display:block">${intervFull(i)}${i.espace && i.espace.on ? ' 📱' : ''}${ab ? html` <span class="badge ${ab.type === 'maladie' ? 'bad' : 'warn'}">${ABS_TYPES[ab.type]}${ab.fin ? ' → ' + fmtDate(ab.fin) : ''}</span>` : ''}</span><span class="meta">${METIERS[i.metier] || i.metier} · ${{ interne: 'interne', societe: 'société', prive: 'privé' }[i.genre || 'interne']} · ${(i.cat || 'quotidien') === 'specialise' ? 'spécialisé' : 'quotidien'}${i.tarif ? ' · ' + i.tarif : ''}${n ? ' · ' + plural(n, 'intervention') + ' en cours' : ''}</span></button>
           ${tel ? html`<a class="btn icon sm" href="tel:${tel}" aria-label="Appeler">${icon('phone')}</a>` : ''}
         </div>`;
       })}</div>` : empty('users', 'Aucun intervenant. Ajoutez la femme de ménage et les artisans (menuisier, électricien, plombier, chauffagiste, maçon…).', html`<button class="btn primary" data-action="new-interv">${icon('plus')} Ajouter un intervenant</button>`);
@@ -1631,6 +1783,8 @@ dashboard() {
     const chatBox = chatNew.length ? html`<div class="stack" style="margin-bottom:14px">${chatNew.map(([imId, n]) => alertBtn('info', 'msg', 'open-chat', imId, html`💬 <b>${n} nouveau${n > 1 ? 'x' : ''} message${n > 1 ? 's' : ''}</b> entre les habitants — ${immName(imId)}<div class="tiny">touchez pour lire</div>`))}</div>` : '';
     const virs = vault.list('locataires').filter((l) => l.virSignal && !l.virSignal.vu);
     const virBox = virs.length ? html`<div class="stack" style="margin-bottom:14px">${virs.map((l) => alertBtn('info', 'wallet', 'open-vir', l.id, html`💳 <b>${fullName(l)}</b> dit avoir payé${l.virSignal.montant ? html` <b>${money(l.virSignal.montant)}</b>` : ''} par ${PAY_VIA[l.virSignal.via || 'vir']} — ${l.virSignal.ref}<div class="tiny">${fmtDateTime(l.virSignal.t)} · vérifiez la réception, puis cochez le mois payé</div>`))}</div>` : '';
+    const eqNew = sum(vault.list('intervenants'), (i) => i.feedNew || 0);
+    const eqBox = eqNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'eq-feed', '', html`👷 <b>${eqNew} nouvelle${eqNew > 1 ? 's' : ''} de l’équipe</b> (commencé, fini, pas fini, notes, photos…)<div class="tiny">touchez pour voir qui fait quoi, où et quand</div>`)}</div>` : '';
     const absNow = vault.list('intervenants').map((i) => [i, absOn(i, today())]).filter(([, a]) => a);
     const absSoon = vault.list('intervenants').map((i) => [i, (i.absences || []).find((a) => a.debut > today() && a.debut <= addDays(today(), 7))]).filter(([, a]) => a);
     const absBox = absNow.length || absSoon.length ? html`<div class="stack" style="margin-bottom:14px">${absNow.map(([i, a]) => { const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length; return alertBtn(a.type === 'maladie' ? 'bad' : 'warn', 'calendar', 'open-interv', i.id, html`${ABS_TYPES[a.type]} : <b>${intervFull(i)}</b> absent${a.fin ? ' jusqu’au ' + fmtDate(a.fin) : ' (fin non connue)'}${n ? html` — <b>${plural(n, 'intervention')}</b> à vérifier` : ''}<div class="tiny">touchez pour la fiche</div>`); })}
@@ -1641,6 +1795,7 @@ dashboard() {
       ${sigBox}
       ${chatBox}
       ${virBox}
+      ${eqBox}
       ${absBox}
       ${toolsBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
@@ -2225,6 +2380,9 @@ const SHEETS = {
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
+  'eq-feed'() {
+    return { title: 'Activité de l’équipe', body: html`${eqTodayHtml()}${eqFeedHtml('', 150)}`, foot: html`<button class="btn primary" data-action="close-sheet">OK</button>` };
+  },
   // Fiche d'une personne : infos · horaire et heures du mois · absences (maladie avec certificat, congés…)
   interv({ id, tab }) {
     const i = vault.get('intervenants', id);
@@ -2259,6 +2417,38 @@ const SHEETS = {
         <div class="section-label">Heures par mois (horaire − absences)</div>
         <div class="list small">${months.map(([yy, mm]) => { const r = intervMonth(i, yy, mm); return html`<div class="row"><span class="grow"><b>${MONTHS_FULL[mm - 1]} ${yy}</b><span class="meta" style="display:block">prévu ${fmtH(r.prevu)}${r.jm ? ` · 🤒 ${r.jm} j (−${fmtH(r.maladie)})` : ''}${r.jc ? ` · 🏖️ ${r.jc} j (−${fmtH(r.conges)})` : ''}${r.ja ? ` · 📌 ${r.ja} j (−${fmtH(r.autre)})` : ''}</span></span><b>${fmtH(r.net)}</b></div>`; })}</div>
         <p class="tiny muted">Calcul sur l’horaire habituel : pour les heures en plus ou en moins, ajoutez une note.</p>`;
+    } else if (tab === 'act') {
+      if (i.feedNew) setTimeout(() => vault.mutate((tx) => tx.put('intervenants', { id: i.id, feedNew: 0 }), 'Activité lue', intervFull(i), i.id), 0);
+      body = eqFeedHtml(id, 120);
+    } else if (tab === 'app') {
+      const e = i.espace || {};
+      if (!e.on) {
+        body = html`<p style="margin-top:0">Donnez à <b>${intervFull(i)}</b> son <b>app de l’équipe</b> avec un code personnel (comme pour les locataires). Il/elle y voit <b>seulement</b> :</p>
+          <ul class="small" style="margin:0 0 12px;padding-left:20px"><li>son planning : quoi, où, quand (3 semaines), avec vos consignes</li><li>son horaire et ses absences</li></ul>
+          <p class="small" style="margin:0 0 12px">Et il/elle peut vous envoyer : <b>▶️ commencé · ✅ fini · ⚠️ pas fini</b> (avec la raison et des photos), ses coordonnées, un <b>arrêt maladie</b> avec le certificat. Tout arrive ici (Activité) et sur l’Accueil.</p>
+          <div class="alert info" style="margin-bottom:12px">${icon('shield')}<div>Données chiffrées : il/elle ne voit ni les loyers, ni les locataires (sauf le prénom et le téléphone de celui qui a signalé une panne), ni vos comptes.</div></div>
+          <button class="btn primary block" data-action="eq-on" data-id="${id}">📱 Créer l’accès à l’app</button>`;
+      } else {
+        const url = eqUrl(i);
+        const msgTxt = encodeURIComponent(`Bonjour ${i.prenom || ''}, voici votre app de travail ${societe().nom || 'NOBIS s.a.r.l.'} (planning, interventions, absences).
+1) Ouvrez : ${eqAppUrl()}
+2) Ajoutez-la à votre écran d'accueil
+3) Votre code personnel : ${e.code || '(à créer)'}
+Ou ouvrez directement : ${url}`);
+        body = html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code personnel</div>
+            <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
+            <button class="btn sm" data-action="eq-code" data-id="${id}">${e.code ? 'Nouveau code' : 'Créer le code'}</button></div>
+          <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(url, 5)}</div>
+          <div class="actions" style="flex-direction:column">
+            ${tel ? html`<a class="btn" href="https://wa.me/${tel.replace(/^\+/, '')}?text=${msgTxt}" target="_blank" rel="noopener">${icon('msg')} Envoyer par WhatsApp</a><a class="btn" href="sms:${tel}?&body=${msgTxt}">${icon('msg')} Envoyer par SMS</a>` : ''}
+            ${i.mail ? html`<a class="btn" href="mailto:${i.mail}?subject=${encodeURIComponent('Votre app de travail')}&body=${msgTxt}">${icon('mail')} Envoyer par email</a>` : ''}
+            <button class="btn" data-action="eq-copy" data-id="${id}">${icon('file')} Copier le lien</button>
+            <a class="btn" href="${url}" target="_blank" rel="noopener">${icon('eye')} Voir son app</a>
+          </div>
+          <label class="field" style="margin-top:12px">Langue de son app<select data-input="eq-lang" data-id="${id}">${[['', 'Celle de son téléphone'], ['fr', 'Français'], ['it', 'Italiano'], ['pt', 'Português'], ['de', 'Deutsch'], ['en', 'English'], ['es', 'Español']].map(([k, v2]) => html`<option value="${k}" ${(e.lang || '') === k ? new Raw('selected') : ''}>${v2}</option>`)}</select></label>
+          <p class="tiny muted">L’app se met à jour toute seule quand vous changez son planning ou ses interventions.</p>
+          <button class="btn ghost danger block" data-action="eq-off" data-id="${id}">Désactiver l’accès</button>`;
+      }
     } else {
       const abs = (i.absences || []).slice().sort((a, b) => b.debut.localeCompare(a.debut));
       body = html`<form data-form="absence" class="fields" style="margin-bottom:14px">
@@ -2276,7 +2466,7 @@ const SHEETS = {
     }
     return {
       title: intervFull(i),
-      body: html`<p class="small muted" style="margin:0 0 10px">${METIERS[i.metier] || ''} · ${INT_GENRES[i.genre || 'interne']}</p>${tabsBar([['fiche', 'Fiche'], ['heures', 'Horaires & heures'], ['abs', `Absences${cur ? ' 🔴' : ''}`]], tab)}${body}`,
+      body: html`<p class="small muted" style="margin:0 0 10px">${METIERS[i.metier] || ''} · ${INT_GENRES[i.genre || 'interne']}${i.espace && i.espace.on ? ' · 📱 app active' : ''}</p>${tabsBar([['fiche', 'Fiche'], ['heures', 'Horaires'], ['abs', `Absences${cur ? ' 🔴' : ''}`], ['act', `Activité${i.feedNew ? ' (' + i.feedNew + ')' : ''}`], ['app', '📱 App']], tab)}${body}`,
       foot: html`${tel ? html`<a class="btn" href="tel:${tel}">${icon('phone')} Appeler</a>` : ''}<button class="btn primary" data-action="edit-interv" data-id="${id}">Modifier</button>`,
     };
   },
@@ -2286,7 +2476,7 @@ const SHEETS = {
     if (id && !t) return null;
     const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === t.immId).sort(byAddr);
     if (!imms.length) return { title: 'Nouvelle intervention', body: empty('building', "Ajoutez d'abord un immeuble.") };
-    const ints = vault.list('intervenants').sort((a, b) => a.nom.localeCompare(b.nom));
+    const ints = vault.list('intervenants').sort((a, b) => intervFull(a).localeCompare(intervFull(b)));
     return {
       title: id ? "Modifier l'intervention" : 'Nouvelle intervention',
       body: html`<form id="f" data-form="tache" class="fields">
@@ -2295,7 +2485,7 @@ const SHEETS = {
         ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}
         <label class="field">Immeuble<select name="immId" data-input="tache-imm" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === t.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         <label class="field">Où ?<select name="logId" id="tacheLog">${logOptions(t.immId || imms[0].id, t.logId)}</select></label>
-        <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${ints.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${i.nom} — ${METIERS[i.metier] || ''}</option>`)}</select></label>
+        <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${ints.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${intervFull(i)} — ${METIERS[i.metier] || ''}${absOn(i, t.date || today()) ? ' (absent)' : ''}</option>`)}</select></label>
         ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
         ${field('Date', 'date', t.date, { type: 'date' })}
         <label class="field">Répétition<select name="recur">${Object.entries(RECURS).map(([k, v]) => html`<option value="${k}" ${(t.recur || '') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
@@ -2304,6 +2494,7 @@ const SHEETS = {
         ${!t.recur ? html`<label class="field">Statut<select name="statut">${Object.entries(STATUTS).map(([k, v]) => html`<option value="${k}" ${t.statut === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>` : ''}
         <label class="field full">Notes<textarea name="note" placeholder="Accès, clés, pièces à acheter, ce qui a été fait…">${t.note || ''}</textarea></label>
         ${t.depId ? html`<p class="tiny muted full" style="margin:0">✓ Coût enregistré dans les dépenses de l'immeuble.</p>` : ''}
+        ${(t.journal || []).length ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">👷 Suivi de l’équipe</div><div class="list small">${t.journal.slice().reverse().slice(0, 30).map((x) => html`<div class="row"><span class="grow" style="white-space:normal"><b>${EQ_ST[x.st] || x.st}</b> · ${fmtDate(x.d)}${x.by ? ' · ' + intervName(x.by) : ''}<span class="meta" style="display:block">${fmtDateTime(x.at)}</span>${x.note ? html`<span class="small" style="display:block">📝 ${x.note}</span>` : ''}</span>${(x.ph || []).filter((pid) => vault.get('documents', pid)).map((pid) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${pid}">📷</button>`)}</div>`)}</div></div>` : ''}
         ${t.locId ? html`<p class="tiny full" style="margin:0">📨 Signalé par <a href="#" data-action="open-loc" data-id="${t.locId}">${fullName(vault.get('locataires', t.locId) || { nom: '?' })}</a> — il voit l'avancement dans son espace.</p>` : ''}
         ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
       </form>`,
@@ -3289,6 +3480,41 @@ const ACTIONS = {
   'new-interv': () => openOver('interv-form'),
   'edit-interv': (d) => openOver('interv-form', d.id),
   'open-interv': (d) => openSheet('interv', d.id),
+  'eq-feed': async () => {
+    openSheet('eq-feed');
+    const fresh = vault.list('intervenants').filter((i) => i.feedNew);
+    if (fresh.length) await vault.mutate((tx) => fresh.forEach((i) => tx.put('intervenants', { id: i.id, feedNew: 0 })), 'Activité de l’équipe lue', '');
+  },
+  async 'eq-on'(d) {
+    const i = vault.get('intervenants', d.id);
+    if (!i) return;
+    await ownerKeys();
+    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, espace: { on: true, id: newEspaceId(), key: newEspaceKey(), lang: '', since: today() } }), 'App de l’équipe : accès créé', intervFull(i), i.id);
+    toast('Création de l’accès…');
+    if (await equipeSync(i.id, true)) {
+      try { await eqSetCode(vault.get('intervenants', i.id)); toast('App de l’équipe prête'); } catch (e) { toast(e.message || 'Code impossible (connexion ?)', { bad: true }); }
+    }
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  },
+  async 'eq-off'(d) {
+    const i = vault.get('intervenants', d.id);
+    if (!i || !i.espace || !(await confirmBox('Désactiver l’app de ' + intervFull(i) + ' ?', { ok: 'Désactiver', danger: true, detail: 'Son code et son lien ne fonctionneront plus. Vous pourrez créer un nouvel accès plus tard.' }))) return;
+    try { await vault.espaceDel(i.espace.id); if (i.espace.codeHash) await vault.espCodeDel(i.espace.codeHash); } catch (e) { return toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
+    try { localStorage.removeItem('aresEq:' + i.espace.id); } catch {}
+    eqHashes.delete(i.id);
+    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, espace: { on: false } }), 'App de l’équipe désactivée', intervFull(i), i.id);
+    toast('Accès désactivé');
+  },
+  async 'eq-code'(d) {
+    const i = vault.get('intervenants', d.id);
+    if (!i || !i.espace || !i.espace.on) return;
+    if (i.espace.code && !(await confirmBox('Nouveau code ?', { ok: 'Nouveau code', detail: 'L’ancien code ne fonctionnera plus pour une nouvelle installation.' }))) return;
+    try { await eqSetCode(i); toast('Nouveau code créé'); } catch (e) { toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
+  },
+  async 'eq-copy'(d) {
+    const i = vault.get('intervenants', d.id);
+    try { await navigator.clipboard.writeText(eqUrl(i)); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); }
+  },
   async 'del-absence'(d) {
     const i = vault.get('intervenants', d.id);
     const a = (i.absences || []).find((x) => x.id === d.aid);
@@ -4170,6 +4396,10 @@ document.addEventListener('change', (e) => {
       vault.mutate((tx) => tx.put('immeubles', { id: im.id, chat }), k === 'chat-scope' ? 'Messages de la maison : groupes modifiés' : chat.on ? 'Messages de la maison activés' : 'Messages de la maison désactivés', im.adresse, im.id)
         .then(() => chatSync()).then(() => chatLoad(im.id, true));
     }
+  }
+  if (k === 'eq-lang') {
+    const i = vault.get('intervenants', e.target.dataset.id);
+    if (i && i.espace && i.espace.on) vault.mutate((tx) => tx.put('intervenants', { id: i.id, espace: { ...i.espace, lang: e.target.value } }), 'App de l’équipe : langue', intervFull(i), i.id);
   }
   if (k === 'esp-show' || k === 'esp-lang') {
     const l = vault.get('locataires', e.target.dataset.loc);
