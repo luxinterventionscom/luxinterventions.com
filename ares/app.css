@@ -526,3 +526,16 @@ dialog.pv iframe { flex: 1; border: 0; width: 100%; background: #fff; }
 .hor-grid input, .hor-grid select { min-width: 0; width: 100%; font: inherit; font-size: 14px; padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: inherit; }
 .hor-day { font-size: 13px; font-weight: 600; }
 @media (max-width: 480px) { .hor-grid { grid-template-columns: 70px 1fr 1fr; } .hor-grid select { grid-column: 2 / 4; } }
+
+/* Cartes repliables de l'accueil : un clic ouvre / ferme ; ouvertes, lumière chaude et douce qui respire */
+details.dfold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 10px; padding-right: 28px; position: relative; }
+details.dfold > summary::-webkit-details-marker { display: none; }
+details.dfold > summary::after { content: '›'; position: absolute; right: 4px; top: -4px; font-size: 26px; color: var(--text-3); transition: transform .25s; }
+details.dfold[open] > summary::after { transform: rotate(90deg); }
+details.dfold > summary h3 { font-size: 16px; margin: 0; }
+details.dfold > summary .sum { flex-basis: 100%; font-size: 14px; color: var(--text-2); }
+details.dfold[open] > summary .sum { display: none; }
+details.dfold .dfold-body { margin-top: 12px; }
+details.dfold[open] { animation: aresWarm 2.8s ease-in-out infinite; box-shadow: 0 0 0 1.5px rgba(245, 158, 11, .45), 0 0 16px 2px rgba(251, 191, 36, .28); }
+@keyframes aresWarm { 0%, 100% { box-shadow: 0 0 0 1.5px rgba(245, 158, 11, .40), 0 0 12px 1px rgba(251, 191, 36, .22); } 50% { box-shadow: 0 0 0 2px rgba(245, 158, 11, .60), 0 0 24px 5px rgba(251, 191, 36, .38); } }
+@media (prefers-reduced-motion: reduce) { details.dfold[open] { animation: none; } }
