@@ -5591,5 +5591,37 @@ export default [
 [
 "N° TVA invalide (ex. LU30599412).",
 "Ungültige USt-IdNr. (z. B. LU30599412)."
+],
+[
+"{0} éléments",
+"{0} Einträge"
+],
+[
+"{0} élément",
+"{0} Eintrag"
+],
+[
+"Voir sur la carte",
+"Auf der Karte ansehen"
+],
+[
+"Ouvrir dans Google Maps",
+"In Google Maps öffnen"
+],
+[
+"Log. & Bilan",
+"Whg. & Bilanz"
+],
+[
+"Banque",
+"Bank"
+],
+[
+"IBAN invalide : vérifiez-le (ex. LU28 0099 7800 0139 1929). Un n° de TVA n’est pas un IBAN.",
+"Ungültige IBAN: bitte prüfen (z. B. LU28 0099 7800 0139 1929). Eine USt-IdNr. ist keine IBAN."
+],
+[
+"BIC invalide (ex. CCRALULLXXX).",
+"Ungültiger BIC (z. B. CCRALULLXXX)."
 ]
 ];

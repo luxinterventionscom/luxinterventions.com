@@ -420,11 +420,12 @@ function payHtml() {
   if (via === 'vir') {
     const iban = d.iban.replace(/\s+/g, '').toUpperCase();
     // QR « virement SEPA » (norme EPC) : lu par la plupart des apps bancaires
-    const epc = ['BCD', '002', '1', 'SCT', '', d.societe.nom.slice(0, 70), iban, amt > 0 ? 'EUR' + amt.toFixed(2) : '', '', '', ref].join('\n');
+    const epc = ['BCD', '002', '1', 'SCT', (d.bic || '').replace(/\s/g, ''), d.societe.nom.slice(0, 70), iban, amt > 0 ? 'EUR' + amt.toFixed(2) : '', '', '', ref].join('\n');
     const qr = qrSvg(epc);
     body = `<h2 style="margin:0 0 6px">${esc(pv.title)}</h2>
     ${row(pv.who, d.societe.nom, d.societe.nom)}
     ${row('IBAN', d.iban, iban)}
+    ${d.bic ? row('BIC / SWIFT' + (d.banque ? ' · ' + d.banque : ''), d.bic, d.bic) : ''}
     ${amt > 0 ? row(pv.amt, amtTxt, amt.toFixed(2)) : ''}
     ${row(t.ref, ref, ref)}
     <p class="meta" style="margin:10px 0 6px">${esc(pv.how)}</p>
@@ -691,6 +692,15 @@ app.addEventListener('click', async (e) => {
     if (f) { const fd = f.closest('details'); if (fd) fd.open = true; f.type.value = 'dossier'; f.scrollIntoView({ behavior: 'smooth', block: 'start' }); f.texte.focus({ preventScroll: true }); }
   }
 });
+// on mémorise tout de suite au toucher (l'événement « toggle » arrive un peu après)
+app.addEventListener('click', (e) => {
+  const sm = e.target.closest('details.fold > summary');
+  if (!sm) return;
+  const d = sm.parentElement, k = d.dataset.fold;
+  if (!k) return;
+  if (!d.open) openFolds.add(k); else openFolds.delete(k);
+  try { localStorage.setItem('espFolds', JSON.stringify([...openFolds])); } catch { /* stockage indisponible */ }
+}, true);
 app.addEventListener('toggle', (e) => {
   const k = e.target.dataset && e.target.dataset.fold;
   if (!k) return;

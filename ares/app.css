@@ -553,3 +553,8 @@ details.dfold[open] { animation: aresWarm 2.8s ease-in-out infinite; box-shadow:
 @media (max-width: 600px) {
   .tbl.cp-tbl th:nth-child(3), .tbl.cp-tbl td:nth-child(3), .tbl.cp-tbl th:nth-child(4), .tbl.cp-tbl td:nth-child(4) { display: none; }
 }
+
+/* Sections repliables partout (même lumière que l'accueil) */
+details.gfold { margin-bottom: 12px; }
+details.gfold > .dfold-body > .card { box-shadow: none; }
+details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; margin-bottom: 8px; }
