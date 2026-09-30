@@ -24,7 +24,8 @@ function build(rows) {
     let re = '^', key = '';
     const order = [];
     for (let i = 0; i < parts.length; i++) {
-      if (i % 2 === 0) { re += escRe(parts[i]); if (parts[i].trim().length > key.length) key = parts[i].trim(); } else { re += '(.+?)'; order.push(+parts[i]); }
+      // collé à un mot (ex. « demande{1} » pour le pluriel) : la partie variable peut être vide
+      if (i % 2 === 0) { re += escRe(parts[i]); if (parts[i].trim().length > key.length) key = parts[i].trim(); } else { re += /[A-Za-zÀ-ÿ)]$/.test(parts[i - 1]) ? '(.*?)' : '(.+?)'; order.push(+parts[i]); }
     }
     // modèle court (ex. « {0} mois ») : la partie variable doit contenir un chiffre, sinon on ne traduit pas
     pats.push({ re: new RegExp(re + '$'), order, tr, key, num: key.length < 14 });
@@ -41,7 +42,7 @@ function tr1(s) {
     if (!m) continue;
     if (p.num && !m.slice(1).some((v) => /\d/.test(v))) continue;
     const vals = {};
-    p.order.forEach((ph, i) => { const v = m[i + 1]; vals[ph] = exact.get(v.trim()) ?? v; });
+    p.order.forEach((ph, i) => { const v = m[i + 1]; vals[ph] = (v.trim() && exact.get(v.trim())) ?? v; });
     return p.tr.replace(/\{(\d+)\}/g, (_, k) => vals[k] ?? '');
   }
   return null;
@@ -51,6 +52,9 @@ function trText(s, depth = 0) {
   const r = tr1(s);
   if (r != null) return r;
   if (depth > 3) return null;
+  // symboles autour de la phrase (« 🔴 Urgent », « — Hall d’entrée », « Mme Rossi · »)
+  const m = /^([^A-Za-zÀ-ÿ0-9]*)(.*?)([^A-Za-zÀ-ÿ0-9.…?!)]*)$/.exec(s);
+  if (m && (m[1] || m[3]) && m[2]) { const t = trText(m[2], depth + 1); if (t != null) return m[1] + t + m[3]; }
   for (const sep of SEPS) {
     if (!s.includes(sep)) continue;
     const parts = s.split(sep);
@@ -82,7 +86,8 @@ function doText(n) {
   done.set(n, n.nodeValue);
 }
 function doEl(el) {
-  if (el.closest(SKIP)) return;
+  // les attributs d'un champ texte (placeholder…) se traduisent, pas son contenu
+  if (el.closest('#print, script, style, [data-notr]')) return;
   for (const a of ATTRS) {
     const v = el.getAttribute(a);
     if (!v) continue;
@@ -92,16 +97,18 @@ function doEl(el) {
 }
 function walk(root) {
   if (root.nodeType === 3) return doText(root);
-  if (root.nodeType !== 1 || root.closest(SKIP)) return;
+  if (root.nodeType !== 1) return;
   doEl(root);
+  if (root.closest(SKIP)) return;
   const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT);
   let n;
   while ((n = w.nextNode())) { if (n.nodeType === 3) doText(n); else doEl(n); }
 }
-export async function startI18n(lang) {
+// load : autre dictionnaire que celui de l'app de gestion (ex. le portail gérance)
+export async function startI18n(lang, load) {
   document.documentElement.lang = lang;
   if (lang === 'fr') return;
-  try { build((await import(`./i18n/${lang}.js`)).default); } catch { return; }
+  try { build((await (load ? load(lang) : import(`./i18n/${lang}.js`))).default); } catch { return; }
   walk(document.body);
   new MutationObserver((ms) => {
     for (const m of ms) {

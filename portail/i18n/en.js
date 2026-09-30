@@ -1,0 +1,1475 @@
+// Traduction du portail gérance (source : français). Généré — une ligne par phrase.
+export default [
+[
+"({0}). Il est personnel : ne le partagez pas avec d’autres personnes.",
+"({0}). It is personal: do not share it with anyone else."
+],
+[
+", avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Demandez un nouveau lien.",
+", with the invitation link. After that: email + password, on any device. Forgotten? Ask for a new link."
+],
+[
+"6 photos maximum : les premières seront envoyées",
+"6 photos maximum: the first ones will be sent"
+],
+[
+": ensuite vous vous connecterez avec votre email et ce mot de passe.",
+": after that you will sign in with your email and this password."
+],
+[
+"Accueil",
+"Home"
+],
+[
+"Accès",
+"Access"
+],
+[
+"Accès désactivé",
+"Access disabled"
+],
+[
+"Accès réactivé",
+"Access re-enabled"
+],
+[
+"Activation…",
+"Activating…"
+],
+[
+"Activer",
+"Enable"
+],
+[
+"Activer mon accès",
+"Activate my access"
+],
+[
+"Activez les notifications",
+"Turn on notifications"
+],
+[
+"Activez les notifications pour suivre vos demandes",
+"Turn on notifications to follow your requests"
+],
+[
+"Activez les notifications pour être alerté des urgences",
+"Turn on notifications to be alerted to emergencies"
+],
+[
+"Activées ✓",
+"On ✓"
+],
+[
+"Adresse",
+"Address"
+],
+[
+"Afficher",
+"Show"
+],
+[
+"Ajoute l’icône LuxInterventions sur l’écran d’accueil.",
+"Adds the LuxInterventions icon to the home screen."
+],
+[
+"Ajouter",
+"Add"
+],
+[
+"Ajouter une résidence",
+"Add a residence"
+],
+[
+"Ajoutez d’abord la résidence concernée : ses informations (accès, clés, contact) seront reprises automatiquement.",
+"First add the residence concerned: its details (access, keys, contact) will be filled in automatically."
+],
+[
+"Ajoutez vos résidences (une seule fois : accès, clés, contact)",
+"Add your residences (only once: access, keys, contact)"
+],
+[
+"Aller à la connexion",
+"Go to sign-in"
+],
+[
+"Annuler",
+"Cancel"
+],
+[
+"Annuler cette demande ?",
+"Cancel this request?"
+],
+[
+"Annuler la demande",
+"Cancel the request"
+],
+[
+"Annulée",
+"Cancelled"
+],
+[
+"Août",
+"August"
+],
+[
+"App. 3B, cuisine",
+"Flat 3B, kitchen"
+],
+[
+"Appartements",
+"Flats"
+],
+[
+"Application",
+"App"
+],
+[
+"Ascenseur",
+"Lift"
+],
+[
+"Au moins 10 caractères",
+"At least 10 characters"
+],
+[
+"Aucun résultat.",
+"No results."
+],
+[
+"Aucun utilisateur. Invitez le responsable de la gérance.",
+"No users. Invite the property manager’s lead contact."
+],
+[
+"Aucune demande ce mois-ci.",
+"No requests this month."
+],
+[
+"Aucune demande en cours.",
+"No open requests."
+],
+[
+"Aucune demande pour cette résidence.",
+"No requests for this residence."
+],
+[
+"Aucune demande.",
+"No requests."
+],
+[
+"Aucune gérance. Créez la première, puis invitez ses utilisateurs.",
+"No property managers. Create the first one, then invite its users."
+],
+[
+"Aucune intervention en cours.",
+"No job in progress."
+],
+[
+"Aucune nouvelle demande en attente.",
+"No new requests waiting."
+],
+[
+"Aucune résidence enregistrée. Ajoutez vos résidences une seule fois : elles seront proposées à chaque demande.",
+"No residence saved. Add your residences once: they will be offered with every request."
+],
+[
+"Autre",
+"Other"
+],
+[
+"Avril",
+"April"
+],
+[
+"Badge chez le gardien",
+"Badge with the caretaker"
+],
+[
+"Bienvenue",
+"Welcome"
+],
+[
+"Bienvenue ! Votre accès est activé.",
+"Welcome! Your access is active."
+],
+[
+"Bloquées dans les réglages du navigateur",
+"Blocked in the browser settings"
+],
+[
+"Bonjour",
+"Hello"
+],
+[
+"Bonjour {0}",
+"Hello {0}"
+],
+[
+"Boîte à clés à gauche de l’entrée, code 1990",
+"Key box left of the entrance, code 1990"
+],
+[
+"Changer",
+"Change"
+],
+[
+"Changer mon mot de passe",
+"Change my password"
+],
+[
+"Chaque personne a son propre accès : on sait toujours qui a fait quelle demande. Un compte désactivé ne peut plus se connecter.",
+"Each person has their own access: you always know who made which request. A disabled account can no longer sign in."
+],
+[
+"Chauffage / sanitaire",
+"Heating / plumbing fixtures"
+],
+[
+"Chaufferie",
+"Boiler room"
+],
+[
+"Choisissez votre mot de passe",
+"Choose your password"
+],
+[
+"Clés",
+"Keys"
+],
+[
+"Code de configuration",
+"Setup code"
+],
+[
+"Code porte 2580",
+"Door code 2580"
+],
+[
+"Code porte, badge, interphone…",
+"Door code, badge, intercom…"
+],
+[
+"Code porte, clé chez le concierge… (sinon : infos de la résidence)",
+"Door code, key with the caretaker… (otherwise: residence details)"
+],
+[
+"Compte",
+"Account"
+],
+[
+"Compte administrateur créé",
+"Administrator account created"
+],
+[
+"Compteurs, local technique, particularités…",
+"Meters, plant room, special features…"
+],
+[
+"Concierge, président du conseil…",
+"Caretaker, council chair…"
+],
+[
+"Confidentialité",
+"Privacy"
+],
+[
+"Confirmer",
+"Confirm"
+],
+[
+"Connexion…",
+"Signing in…"
+],
+[
+"Contact sur place",
+"On-site contact"
+],
+[
+"Copie impossible",
+"Copy failed"
+],
+[
+"Copier",
+"Copy"
+],
+[
+"Copié",
+"Copied"
+],
+[
+"Création…",
+"Creating…"
+],
+[
+"Créer le compte",
+"Create the account"
+],
+[
+"Créer le lien",
+"Create the link"
+],
+[
+"Créez le compte administrateur LuxInterventions.",
+"Create the LuxInterventions administrator account."
+],
+[
+"Créez les gérances partenaires",
+"Create the partner property managers"
+],
+[
+"Cylindre remplacé, 3 clés remises au concierge.",
+"Cylinder replaced, 3 keys handed to the caretaker."
+],
+[
+"Dans la journée",
+"During the day"
+],
+[
+"Date et heure",
+"Date and time"
+],
+[
+"Demande #{0} envoyée — LuxInterventions est prévenu",
+"Request #{0} sent — LuxInterventions has been notified"
+],
+[
+"Demande annulée",
+"Request cancelled"
+],
+[
+"Demande créée",
+"Request created"
+],
+[
+"Demande introuvable",
+"Request not found"
+],
+[
+"Demande prise en charge — la gérance est prévenue",
+"Request taken on — the property manager has been notified"
+],
+[
+"Demandes",
+"Requests"
+],
+[
+"Demandes en cours",
+"Open requests"
+],
+[
+"Demandes reçues",
+"Requests received"
+],
+[
+"Demandée",
+"Requested"
+],
+[
+"Description du problème",
+"Description of the problem"
+],
+[
+"Disponibilités",
+"Availability"
+],
+[
+"Dont urgentes",
+"Of which urgent"
+],
+[
+"Décembre",
+"December"
+],
+[
+"Déconnexion",
+"Sign out"
+],
+[
+"Découvrir le portail en mode démo",
+"Explore the portal in demo mode"
+],
+[
+"Délai de prise en charge",
+"Response time"
+],
+[
+"Délai moyen de prise en charge",
+"Average response time"
+],
+[
+"Démarrer",
+"Start"
+],
+[
+"Démo : ce lien est fictif. En réel, la personne l’ouvre et choisit son mot de passe.",
+"Demo: this link is fictitious. In real use, the person opens it and chooses their password."
+],
+[
+"Désactiver",
+"Disable"
+],
+[
+"Désactiver cet accès ?",
+"Disable this access?"
+],
+[
+"Désactivées",
+"Off"
+],
+[
+"Détail des demandes",
+"Request details"
+],
+[
+"Elle ne sera plus proposée pour les nouvelles demandes. L’historique des interventions est conservé.",
+"It will no longer be offered for new requests. The job history is kept."
+],
+[
+"En activant votre accès, vous confirmez avoir pris connaissance de la",
+"By activating your access, you confirm you have read the"
+],
+[
+"En cours",
+"In progress"
+],
+[
+"En démo, les notifications sont simulées par des messages à l’écran.",
+"In the demo, notifications are simulated by on-screen messages."
+],
+[
+"Enregistrer",
+"Save"
+],
+[
+"Envoi…",
+"Sending…"
+],
+[
+"Envoyer",
+"Send"
+],
+[
+"Envoyer la demande",
+"Send the request"
+],
+[
+"Envoyez ce lien à",
+"Send this link to"
+],
+[
+"Envoyez votre première demande d’intervention",
+"Send your first job request"
+],
+[
+"Erreur",
+"Error"
+],
+[
+"Espace équipe",
+"Team area"
+],
+[
+"Espace équipe LuxInterventions",
+"LuxInterventions team area"
+],
+[
+"Espaces verts",
+"Green spaces"
+],
+[
+"Faire",
+"Do it"
+],
+[
+"Fermer",
+"Close"
+],
+[
+"Fuite sous l’évier, l’eau coule dans l’appartement du dessous.",
+"Leak under the sink, water is running into the flat below."
+],
+[
+"Février",
+"February"
+],
+[
+"Gérance",
+"Property manager"
+],
+[
+"Gérance Démo",
+"Demo property manager"
+],
+[
+"Gérance enregistrée",
+"Property manager saved"
+],
+[
+"Gérances",
+"Property managers"
+],
+[
+"Gérances & accès",
+"Managers & access"
+],
+[
+"Hall d’entrée",
+"Entrance hall"
+],
+[
+"Historique des interventions",
+"Job history"
+],
+[
+"Impossible d’activer les notifications",
+"Could not turn on notifications"
+],
+[
+"Imprimé le {0}",
+"Printed on {0}"
+],
+[
+"Installer",
+"Install"
+],
+[
+"Installer sur ce téléphone",
+"Install on this phone"
+],
+[
+"Installez l’app sur votre téléphone",
+"Install the app on your phone"
+],
+[
+"Interphone « Syndic »",
+"Intercom « Syndic »"
+],
+[
+"Intervention en cours",
+"Job in progress"
+],
+[
+"Intervention planifiée — la gérance est prévenue",
+"Job scheduled — the property manager has been notified"
+],
+[
+"Intervention prévue",
+"Job scheduled"
+],
+[
+"Intervention sous 2 h",
+"Job within 2 h"
+],
+[
+"Intervention terminée",
+"Job finished"
+],
+[
+"Inviter",
+"Invite"
+],
+[
+"Inviter un membre de l'équipe",
+"Invite a team member"
+],
+[
+"Inviter un membre de l’équipe",
+"Invite a team member"
+],
+[
+"Inviter un utilisateur",
+"Invite a user"
+],
+[
+"Invitez leurs responsables (lien personnel par email ou WhatsApp)",
+"Invite their lead contacts (personal link by email or WhatsApp)"
+],
+[
+"Janvier",
+"January"
+],
+[
+"Juillet",
+"July"
+],
+[
+"Juin",
+"June"
+],
+[
+"La personne est déconnectée immédiatement et ne peut plus se connecter. Ses demandes restent dans l’historique.",
+"The person is signed out immediately and can no longer sign in. Their requests stay in the history."
+],
+[
+"La serrure de la cave commune est dure, il faut forcer.",
+"The lock of the shared cellar is stiff, you have to force it."
+],
+[
+"Langue",
+"Language"
+],
+[
+"Les clés sont chez M. Weber.",
+"The keys are with Mr Weber."
+],
+[
+"Les deux mots de passe ne correspondent pas.",
+"The two passwords do not match."
+],
+[
+"Lien",
+"Link"
+],
+[
+"Lien d’accès prêt",
+"Access link ready"
+],
+[
+"Lieu",
+"Location"
+],
+[
+"Lieu précis",
+"Exact location"
+],
+[
+"Local technique au sous-sol, compteurs derrière la porte grise.",
+"Plant room in the basement, meters behind the grey door."
+],
+[
+"Luca passe cet après-midi, merci de prévenir le concierge.",
+"Luca is coming this afternoon, please let the caretaker know."
+],
+[
+"LuxInterventions · Interventions techniques 7j/7",
+"LuxInterventions · Technical call-outs 7 days a week"
+],
+[
+"LuxInterventions · Portail gérance v{0}",
+"LuxInterventions · Property manager portal v{0}"
+],
+[
+"M. Weber (concierge)",
+"Mr Weber (caretaker)"
+],
+[
+"Mai",
+"May"
+],
+[
+"Marc (démo)",
+"Marc (demo)"
+],
+[
+"Mars",
+"March"
+],
+[
+"Masquer",
+"Hide"
+],
+[
+"Mentions légales",
+"Legal notice"
+],
+[
+"Menuiserie",
+"Joinery"
+],
+[
+"Mes demandes en cours",
+"My open requests"
+],
+[
+"Message à LuxInterventions…",
+"Message to LuxInterventions…"
+],
+[
+"Message à la gérance (facultatif)",
+"Message to the property manager (optional)"
+],
+[
+"Message à la gérance…",
+"Message to the property manager…"
+],
+[
+"Mme Klein",
+"Mrs Klein"
+],
+[
+"Mme Rossi (locataire)",
+"Mrs Rossi (tenant)"
+],
+[
+"Mode démo",
+"Demo mode"
+],
+[
+"Modifier",
+"Edit"
+],
+[
+"Modifier la gérance",
+"Edit the property manager"
+],
+[
+"Modifier la résidence",
+"Edit the residence"
+],
+[
+"Mois",
+"Month"
+],
+[
+"Mot de passe",
+"Password"
+],
+[
+"Mot de passe actuel",
+"Current password"
+],
+[
+"Mot de passe changé",
+"Password changed"
+],
+[
+"Mot de passe oublié ? Demandez un nouveau lien à votre responsable ou à LuxInterventions.",
+"Forgot your password? Ask your lead contact or LuxInterventions for a new link."
+],
+[
+"Mot de passe trop court (10 caractères minimum).",
+"Password too short (10 characters minimum)."
+],
+[
+"Nettoyage",
+"Cleaning"
+],
+[
+"Nom",
+"Name"
+],
+[
+"Nom (locataire, concierge…)",
+"Name (tenant, caretaker…)"
+],
+[
+"Nom de la résidence",
+"Residence name"
+],
+[
+"Nom de la résidence obligatoire",
+"Residence name required"
+],
+[
+"Nom du technicien",
+"Technician’s name"
+],
+[
+"Nom et prénom",
+"Full name"
+],
+[
+"Nombre d'appartements",
+"Number of flats"
+],
+[
+"Non disponible en démo",
+"Not available in the demo"
+],
+[
+"Non disponibles sur ce navigateur",
+"Not available in this browser"
+],
+[
+"Notification de test envoyée",
+"Test notification sent"
+],
+[
+"Notifications activées",
+"Notifications on"
+],
+[
+"Notifications non disponibles ici. Sur iPhone : installez l’app puis ouvrez-la depuis l’icône.",
+"Notifications not available here. On iPhone: install the app, then open it from the icon."
+],
+[
+"Notifications refusées",
+"Notifications refused"
+],
+[
+"Notifications sur cet appareil",
+"Notifications on this device"
+],
+[
+"Nouveau lien d'accès",
+"New access link"
+],
+[
+"Nouveau lien pour {0} ?",
+"New link for {0}?"
+],
+[
+"Nouveau mot de passe",
+"New password"
+],
+[
+"Nouvelle demande",
+"New request"
+],
+[
+"Nouvelle demande d'intervention",
+"New job request"
+],
+[
+"Nouvelle demande pour cette résidence",
+"New request for this residence"
+],
+[
+"Nouvelle gérance",
+"New property manager"
+],
+[
+"Nouvelle résidence",
+"New residence"
+],
+[
+"Novembre",
+"November"
+],
+[
+"Octobre",
+"October"
+],
+[
+"Où trouver les clés (local, boîte à clés…)",
+"Where to find the keys (room, key box…)"
+],
+[
+"Par type",
+"By type"
+],
+[
+"Pas de connexion internet",
+"No internet connection"
+],
+[
+"Peinture",
+"Painting"
+],
+[
+"Photo indisponible",
+"Photo unavailable"
+],
+[
+"Photo introuvable",
+"Photo not found"
+],
+[
+"Photos (jusqu'à 6)",
+"Photos (up to 6)"
+],
+[
+"Photos après intervention",
+"Photos after the job"
+],
+[
+"Planifier",
+"Schedule"
+],
+[
+"Planifier #{0}",
+"Schedule #{0}"
+],
+[
+"Planifié",
+"Scheduled"
+],
+[
+"Planifiée",
+"Scheduled"
+],
+[
+"Plomberie",
+"Plumbing"
+],
+[
+"Plus",
+"More"
+],
+[
+"Plus d’eau chaude dans tout l’immeuble.",
+"No more hot water in the whole building."
+],
+[
+"Plusieurs spots du hall ne fonctionnent plus.",
+"Several spotlights in the hall no longer work."
+],
+[
+"Portail",
+"Portal"
+],
+[
+"Portail Gérance",
+"Property manager portal"
+],
+[
+"Portail Gérance — LuxInterventions",
+"Property manager portal — LuxInterventions"
+],
+[
+"Portail gérance",
+"Property manager portal"
+],
+[
+"Porte de la cave",
+"Cellar door"
+],
+[
+"Premiers pas · {0}/{1}",
+"Getting started · {0}/{1}"
+],
+[
+"Première configuration.",
+"First-time setup."
+],
+[
+"Première fois ? Ouvrez le",
+"First time? Open the"
+],
+[
+"Prendre en charge",
+"Take on"
+],
+[
+"Prise en charge",
+"Taken on"
+],
+[
+"Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
+"What is happening? Since when? Risk of damage?"
+],
+[
+"Quitter",
+"Exit"
+],
+[
+"Rapport d'intervention",
+"Job report"
+],
+[
+"Rapport d'interventions — {0} {1}",
+"Job report — {0} {1}"
+],
+[
+"Rapport mensuel",
+"Monthly report"
+],
+[
+"Rapports",
+"Reports"
+],
+[
+"Rechercher : n°, résidence, lieu…",
+"Search: no., residence, location…"
+],
+[
+"Rechercher une résidence, une adresse…",
+"Search a residence, an address…"
+],
+[
+"Replanifier",
+"Reschedule"
+],
+[
+"Responsable (peut inviter des collègues)",
+"Lead contact (can invite colleagues)"
+],
+[
+"Responsable gérance",
+"Property manager lead"
+],
+[
+"Retapez le mot de passe",
+"Type the password again"
+],
+[
+"Retirer",
+"Remove"
+],
+[
+"Retirer cette résidence ?",
+"Remove this residence?"
+],
+[
+"Retour",
+"Back"
+],
+[
+"Reçue",
+"Received"
+],
+[
+"Rue, numéro, code postal, ville",
+"Street, number, postcode, town"
+],
+[
+"Réactiver",
+"Re-enable"
+],
+[
+"Réessayer",
+"Try again"
+],
+[
+"Réinit.",
+"Reset"
+],
+[
+"Résidence",
+"Residence"
+],
+[
+"Résidence enregistrée",
+"Residence saved"
+],
+[
+"Résidence inconnue",
+"Unknown residence"
+],
+[
+"Résidences",
+"Residences"
+],
+[
+"Rôle",
+"Role"
+],
+[
+"Safari : Partager → « Sur l’écran d’accueil ».",
+"Safari: Share → « Add to Home Screen »."
+],
+[
+"Se connecter",
+"Sign in"
+],
+[
+"Se déconnecter",
+"Sign out"
+],
+[
+"Se déconnecter ?",
+"Sign out?"
+],
+[
+"Septembre",
+"September"
+],
+[
+"Serrurerie",
+"Locksmith"
+],
+[
+"Session expirée",
+"Session expired"
+],
+[
+"Seul LuxInterventions peut changer le statut",
+"Only LuxInterventions can change the status"
+],
+[
+"Son mot de passe actuel restera valable jusqu’à ce qu’il en choisisse un nouveau avec le lien.",
+"Their current password stays valid until they choose a new one with the link."
+],
+[
+"Sophie (démo)",
+"Sophie (demo)"
+],
+[
+"Sous 24 h",
+"Within 24 h"
+],
+[
+"Statut",
+"Status"
+],
+[
+"Suivi",
+"Follow-up"
+],
+[
+"Sur iPhone : installez d’abord l’app (Partager → « Sur l’écran d’accueil »), puis ouvrez-la depuis l’icône.",
+"On iPhone: first install the app (Share → « Add to Home Screen »), then open it from the icon."
+],
+[
+"Syndic Exemple",
+"Example building manager"
+],
+[
+"Technicien",
+"Technician"
+],
+[
+"Technicien sur place.",
+"Technician on site."
+],
+[
+"Terminer",
+"Finish"
+],
+[
+"Terminer #{0}",
+"Finish #{0}"
+],
+[
+"Terminer l’intervention",
+"Finish the job"
+],
+[
+"Terminé",
+"Finished"
+],
+[
+"Terminée",
+"Finished"
+],
+[
+"Terminées",
+"Finished"
+],
+[
+"Terminées ce mois",
+"Finished this month"
+],
+[
+"Tester",
+"Test"
+],
+[
+"Toiture / façade",
+"Roof / façade"
+],
+[
+"Toutes",
+"All"
+],
+[
+"Toutes les gérances",
+"All property managers"
+],
+[
+"Toutes les résidences",
+"All residences"
+],
+[
+"Toutes urgences",
+"All urgency levels"
+],
+[
+"Travaux effectués, pièces remplacées, recommandations…",
+"Work done, parts replaced, recommendations…"
+],
+[
+"Type d'intervention",
+"Type of job"
+],
+[
+"Téléphone",
+"Phone"
+],
+[
+"Téléphone du contact",
+"Contact’s phone"
+],
+[
+"Un lien personnel sera créé : la personne l’ouvre et choisit son mot de passe. Valable 14 jours.",
+"A personal link will be created: the person opens it and chooses their password. Valid for 14 days."
+],
+[
+"Urgence",
+"Urgency"
+],
+[
+"Urgence obligatoire",
+"Urgency required"
+],
+[
+"Urgence, photos, accès — en 30 secondes",
+"Urgency, photos, access — in 30 seconds"
+],
+[
+"Urgences ouvertes",
+"Open emergencies"
+],
+[
+"Utilisateur (fait et suit les demandes)",
+"User (makes and follows requests)"
+],
+[
+"Utilisateur gérance",
+"Property manager user"
+],
+[
+"Utilisateurs",
+"Users"
+],
+[
+"Vitrerie",
+"Glazing"
+],
+[
+"Votre accès au portail LuxInterventions",
+"Your access to the LuxInterventions portal"
+],
+[
+"Votre nom",
+"Your name"
+],
+[
+"Votre session a expiré. Reconnectez-vous.",
+"Your session has expired. Please sign in again."
+],
+[
+"Vous voyez maintenant le portail comme l’équipe LuxInterventions",
+"You now see the portal as the LuxInterventions team"
+],
+[
+"Vous voyez maintenant le portail comme une gérance",
+"You now see the portal as a property manager"
+],
+[
+"Vue LuxInterventions",
+"LuxInterventions view"
+],
+[
+"Vue gérance",
+"Property manager view"
+],
+[
+"demandes ouvertes",
+"open requests"
+],
+[
+"délai moyen",
+"average time"
+],
+[
+"ex. App. 4B, hall, cave, toiture",
+"e.g. Flat 4B, hall, cellar, roof"
+],
+[
+"ex. Gérance Dupont SA",
+"e.g. Dupont Management SA"
+],
+[
+"ex. Merci de prévenir le locataire",
+"e.g. Please let the tenant know"
+],
+[
+"ex. Résidence Val St André 37",
+"e.g. Résidence Val St André 37"
+],
+[
+"ex. en semaine après 17 h",
+"e.g. weekdays after 5 pm"
+],
+[
+"il y a {0} h",
+"{0} h ago"
+],
+[
+"il y a {0} j",
+"{0} d ago"
+],
+[
+"il y a {0} min",
+"{0} min ago"
+],
+[
+"lien personnel",
+"personal link"
+],
+[
+"nouvelles demandes",
+"new requests"
+],
+[
+"politique de confidentialité",
+"privacy policy"
+],
+[
+"pour suivre l'avancement de vos demandes.",
+"to follow the progress of your requests."
+],
+[
+"pour être alerté immédiatement des nouvelles demandes urgentes.",
+"to be alerted immediately to new urgent requests."
+],
+[
+"reçu par email ou WhatsApp : vous y choisirez votre mot de passe.",
+"you received by email or WhatsApp: there you will choose your password."
+],
+[
+"une seule fois",
+"only once"
+],
+[
+"urgences : {0} · 90 jours",
+"emergencies: {0} · 90 days"
+],
+[
+"vous",
+"you"
+],
+[
+"vu il y a {0} h",
+"seen {0} h ago"
+],
+[
+"vu il y a {0} j",
+"seen {0} d ago"
+],
+[
+"vu il y a {0} min",
+"seen {0} min ago"
+],
+[
+"vu à l'instant",
+"seen just now"
+],
+[
+"{0} appartements",
+"{0} flats"
+],
+[
+"{0} demande{1}",
+"{0} request(s)"
+],
+[
+"{0} demandée(s)",
+"{0} requested"
+],
+[
+"{0} en cours",
+"{0} in progress"
+],
+[
+"{0} gérance{1} · {2} utilisateurs actifs",
+"{0} property manager(s) · {2} active users"
+],
+[
+"{0} jours",
+"{0} days"
+],
+[
+"{0} photo{1}",
+"{0} photo(s)"
+],
+[
+"{0} planifiée(s) aujourd'hui",
+"{0} scheduled today"
+],
+[
+"{0} résidence{1}",
+"{0} residence(s)"
+],
+[
+"{0} urgente(s)",
+"{0} urgent"
+],
+[
+"{0} utilisateur{1}",
+"{0} user(s)"
+],
+[
+"· désactivé",
+"· disabled"
+],
+[
+"· il y a {0} h",
+"· {0} h ago"
+],
+[
+"· il y a {0} j",
+"· {0} d ago"
+],
+[
+"· il y a {0} min",
+"· {0} min ago"
+],
+[
+"· invitation en attente",
+"· invitation pending"
+],
+[
+"· vu",
+"· seen"
+],
+[
+"· à l'instant",
+"· just now"
+],
+[
+"À convenir",
+"To be agreed"
+],
+[
+"À traiter",
+"To handle"
+],
+[
+"À traiter maintenant",
+"Handle now"
+],
+[
+"Électricité",
+"Electrical"
+],
+[
+"Équipe",
+"Team"
+],
+[
+"Équipe LuxInterventions",
+"LuxInterventions team"
+],
+[
+"à l'instant",
+"just now"
+],
+[
+"— Choisir —",
+"— Choose —"
+],
+[
+"— données d’exemple, rien n’est enregistré.",
+"— sample data, nothing is saved."
+],
+[
+"— technicien :",
+"— technician:"
+],
+[
+"📲 En réel, LuxInterventions est prévenu de votre message.",
+"📲 In real use, LuxInterventions is notified of your message."
+],
+[
+"📲 En réel, la gérance est prévenue de votre message.",
+"📲 In real use, the property manager is notified of your message."
+],
+[
+"📲 En réel, la gérance reçoit maintenant une notification : «",
+"📲 In real use, the property manager now gets a notification: «"
+],
+[
+"📲 En réel, l’équipe LuxInterventions reçoit maintenant une alerte URGENTE sur son téléphone.",
+"📲 In real use, the LuxInterventions team now gets an URGENT alert on its phone."
+],
+[
+"📲 En réel, l’équipe LuxInterventions reçoit maintenant une notification.",
+"📲 In real use, the LuxInterventions team now gets a notification."
+],
+[
+"🔑 Le mot de passe se choisit",
+"🔑 The password is chosen"
+]
+];
