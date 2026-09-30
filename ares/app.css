@@ -558,3 +558,6 @@ details.dfold[open] { animation: aresWarm 2.8s ease-in-out infinite; box-shadow:
 details.gfold { margin-bottom: 12px; }
 details.gfold > .dfold-body > .card { box-shadow: none; }
 details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-content: flex-end; margin-bottom: 8px; }
+/* Grilles (ex. Immeubles sur ordinateur) : une carte fermée garde la hauteur de son titre, sans grand vide blanc */
+.grid:has(> details.gfold) { align-items: start; }
+.grid > details.gfold:not([open]) { align-self: start; }
