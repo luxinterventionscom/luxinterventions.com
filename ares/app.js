@@ -5,7 +5,7 @@ import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.31.0';
+const VERSION = '2.33.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -520,12 +520,13 @@ function espaceData(l) {
   const soc = societe();
   const out = {
     v: 1, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? g.nom : '', adresse: im ? im.adresse : '', show,
-    societe: { nom: soc.nom || 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '' },
+    societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '' },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
   };
   if (show.pay || show.quit) {
     const cy = new Date().getFullYear();
-    out.iban = show.pay ? soc.iban || '' : '';
+    out.iban = show.pay && ibanOk(soc.iban) && !WRONG_ID.test(soc.iban) ? soc.iban : '';
+    if (out.iban) { out.bic = soc.bic || ''; out.banque = soc.banque || ''; }
     if (show.pay) {
       const x = {};
       if (soc.paypal) x.paypal = soc.paypal;
@@ -1043,11 +1044,22 @@ const r2 = (x) => Math.round(x * 100) / 100;
 // Logo et nom partout dans l'app (et sur l'écran de verrouillage, mémorisés sur cet appareil)
 // Identité légale de l'éditeur des apps : NOBIS s.a.r.l. (37, Val Saint André, L-1128 Luxembourg · RCS B225665 · TVA LU30599412).
 // Correction unique : si la fiche Société contient encore Ares Invest S.A. / RCS B225245, on la remplace.
-const NOBIS_ID = { nom: 'NOBIS s.a.r.l.', adresse: '37, Val Saint André', ville: 'L-1128 Luxembourg', rcs: 'B225665', tvaNum: 'LU30599412', pays: 'LU' };
+const NOBIS_ID = { nom: 'NOBIS s.a.r.l.', adresse: '37, Val Saint André', ville: 'L-1128 Luxembourg', rcs: 'B225665', tvaNum: 'LU30599412', pays: 'LU',
+  iban: 'LU28 0099 7800 0139 1929', bic: 'CCRALULLXXX', banque: 'Banque Raiffeisen' };
+// IBAN valide (contrôle officiel modulo 97)
+function ibanOk(v) {
+  const s = String(v || '').replace(/\s+/g, '').toUpperCase();
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(s)) return false;
+  const r = (s.slice(4) + s.slice(0, 4)).replace(/[A-Z]/g, (c) => String(c.charCodeAt(0) - 55));
+  let m = 0;
+  for (const ch of r) m = (m * 10 + +ch) % 97;
+  return m === 1;
+}
 const WRONG_ID = /\bares\b|arest|invenst|ares invest|B\s*225\s*245|LU\s*30440727/i;
 async function fixIdentity() {
   const so = societe();
-  if (![so.nom, so.rcs, so.tvaNum].some((v) => WRONG_ID.test(v || ''))) return;
+  const badIban = so.iban && (WRONG_ID.test(so.iban) || !ibanOk(so.iban));
+  if (![so.nom, so.rcs, so.tvaNum].some((v) => WRONG_ID.test(v || '')) && !badIban) return;
   await vault.mutate((tx) => tx.put('reglages', { id: 'main', ...NOBIS_ID }), 'Société corrigée : NOBIS s.a.r.l.', `${so.nom || ''} → NOBIS s.a.r.l. · RCS B225665`);
   applyBrand();
   toast('Société corrigée : NOBIS s.a.r.l. · RCS B225665 · TVA LU30599412');
@@ -1563,12 +1575,75 @@ function go(route, replace) {
 }
 addEventListener('popstate', () => vault.unlocked && go(location.hash.slice(2) || 'dashboard', true));
 
+// ── Toutes les sections de l'app : un clic ouvre / ferme, ouvertes elles brillent (lumière chaude) ──
+// Un titre de section (.section-label) + son bloc, ou une carte avec titre (.card-title), deviennent repliables.
+// Les longues listes démarrent fermées (avec le nombre de lignes) ; le choix est mémorisé sur cet appareil.
+const foldPref = (() => { try { return JSON.parse(localStorage.getItem('aresFolds2') || '{}'); } catch { return {}; } })();
+let foldScope = '', foldAllOpen = false;
+const foldKey = (label) => (foldScope || ui.route) + '|' + label.replace(/[\d.,€%]+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 60);
+document.addEventListener('toggle', (e) => {
+  const d = e.target;
+  if (!d.matches || !d.matches('details.gfold')) return;
+  foldPref[d.dataset.gk] = d.open;
+  try { localStorage.setItem('aresFolds2', JSON.stringify(foldPref)); } catch {}
+}, true);
+function makeFold(label, bodyEls, extraClass, before, cls) {
+  const lines = bodyEls.reduce((n, el) => n + el.querySelectorAll('.row, tbody tr, .card:not(.metric)').length, 0);
+  const key = foldKey(label);
+  const searching = !!document.querySelector('#view input[type=search]')?.value;
+  const open = searching || (key in foldPref ? foldPref[key] : foldAllOpen || lines <= 8);
+  const d = document.createElement('details');
+  d.className = 'card dfold gfold ' + (extraClass || '');
+  d.dataset.gk = key;
+  if (open) d.open = true;
+  const sm = document.createElement('summary');
+  const h = document.createElement('h3'); h.textContent = label;
+  sm.appendChild(h);
+  if (lines) { const sp = document.createElement('span'); sp.className = 'sum'; sp.textContent = lines + (lines > 1 ? ' éléments' : ' élément'); sm.appendChild(sp); }
+  d.appendChild(sm);
+  const body = document.createElement('div'); body.className = 'dfold-body';
+  bodyEls.forEach((el) => body.appendChild(el));
+  d.appendChild(body);
+  before.replaceWith(d);
+  if (cls) d.style.cssText = cls;
+  return d;
+}
+function enhanceFolds(root, scope = '', allOpen = false) {
+  foldScope = scope; foldAllOpen = allOpen;
+  // 1) titres de section suivis d'une liste, d'une grille, d'un tableau…
+  for (const lab of [...root.querySelectorAll('.section-label')]) {
+    if (lab.closest('details, form, dialog') || lab.dataset.nofold != null) continue;
+    const body = lab.nextElementSibling;
+    if (!body || !body.matches('.list, .grid, .stack, .card, .metrics, .months, table, .tbl')) continue;
+    const label = lab.textContent.trim();
+    if (!label) continue;
+    makeFold(label, [body], '', lab, 'margin-top:14px');
+  }
+  // 2) cartes avec un titre (h3)
+  for (const card of [...root.querySelectorAll('.card')]) {
+    if (card.matches('details, button, a, .metric, .empty, [data-action]') || card.closest('details, dialog, form')) continue;
+    const t = card.querySelector(':scope > .card-title');
+    const h = t && t.querySelector('h3');
+    if (!h) continue;
+    const label = h.textContent.trim();
+    const acts = [...t.children].filter((c) => c !== h);
+    const rest = [...card.children].filter((c) => c !== t);
+    const bar = document.createElement('div');
+    bar.className = 'fold-acts';
+    acts.forEach((a) => bar.appendChild(a));
+    const kids = acts.length ? [bar, ...rest] : rest;
+    const style = card.getAttribute('style') || '';
+    const extra = [...card.classList].filter((c) => c !== 'card').join(' ');
+    makeFold(label, kids, extra, card, style);
+  }
+}
 function renderView() {
   const view = $('#view');
   if (!view || !vault.unlocked) return;
   const active = document.activeElement;
   const keepSearch = active && active.name === 'search' ? active.selectionStart : null;
   setHtml(view, VIEWS[ui.route]());
+  enhanceFolds(view, '', false);
   if (keepSearch != null) {
     const s = view.querySelector('[name=search]');
     if (s) { s.focus(); s.setSelectionRange(keepSearch, keepSearch); }
@@ -2009,12 +2084,15 @@ dashboard() {
         <button class="tab" role="tab" aria-selected="${!anciens}" data-action="imm-seg" data-id="actuels">En gestion</button>
         <button class="tab" role="tab" aria-selected="${anciens}" data-action="imm-seg" data-id="anciens">Plus en gestion (${nGone})</button>
       </div>` : ''}
+      ${ui.mapImm && vault.get('immeubles', ui.mapImm) ? (() => { const mi = vault.get('immeubles', ui.mapImm); const qq = encodeURIComponent(mi.adresse + ', Luxembourg'); return html`<div class="card map-card" style="margin-bottom:14px;padding:0;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px"><b style="flex:1">📍 ${mi.adresse}</b><a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${qq}" target="_blank" rel="noopener">Ouvrir dans Google Maps</a><button class="btn sm ghost" data-action="imm-map" data-id="">✕</button></div>
+        <iframe src="https://maps.google.com/maps?q=${qq}&z=16&output=embed" title="Plan" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:260px;border:0;display:block"></iframe></div>`; })() : ''}
       ${imms.length ? html`<div class="grid cols-auto">${imms.map((im) => {
         const logs = logsOf(im.id);
         const occ = logs.filter((g) => occupantsNow(g.id).length).length;
         const b = bilan({ immId: im.id, y });
         return html`<div class="card">
-          <div class="card-title"><h3>${im.adresse}</h3><button class="btn icon ghost sm" data-action="edit-imm" data-id="${im.id}" aria-label="Modifier">${icon('edit')}</button></div>
+          <div class="card-title"><h3>${im.adresse}</h3><button class="btn icon ghost sm" data-action="imm-map" data-id="${im.id}" aria-label="Voir sur la carte" title="Voir sur la carte">📍</button><button class="btn icon ghost sm" data-action="edit-imm" data-id="${im.id}" aria-label="Modifier">${icon('edit')}</button></div>
           <dl class="kv small">
             ${immGone(im) ? html`<dt>Fin de gestion</dt><dd>${fmtDate(im.finGestion)}</dd>` : ''}
             <dt>Logements</dt><dd>${logs.length ? html`${occ} occupé${occ > 1 ? 's' : ''} / ${logs.length}` : '—'}</dd>
@@ -2026,7 +2104,7 @@ dashboard() {
             <dt>Gain net ${y}</dt><dd class="num ${b.net < 0 ? 'red' : 'accent'}">${money(b.net)}</dd>
           </dl>
           <div class="actions" style="margin:14px 0 0">
-            <button class="btn sm primary" data-action="open-imm" data-id="${im.id}">${icon('building')} Logements & bilan</button>
+            <button class="btn sm primary" data-action="open-imm" data-id="${im.id}">${icon('building')} Log. & Bilan</button>
             <button class="btn sm" data-action="open-imm" data-id="${im.id}" data-tab="deps">${icon('receipt')} Dépenses</button>
           </div>
         </div>`;
@@ -2372,6 +2450,8 @@ function renderSheet() {
     <div class="sheet-body">${r.body}</div>
     ${r.foot ? html`<div class="sheet-foot">${r.foot}</div>` : ''}`);
   s.rendered = true;
+  // dans les fiches : mêmes sections repliables, ouvertes par défaut
+  enhanceFolds(sheetEl.querySelector('.sheet-body'), 'sheet:' + s.kind + ':' + (s.tab || ''), true);
   hydrateEdl();
 }
 
@@ -3391,7 +3471,9 @@ Ou ouvrez directement : ${url}`);
         ${field('Site web', 'web', st.web, { placeholder: 'ex. www.nobis.lu' })}
         ${field('RCS', 'rcs', st.rcs, { placeholder: 'ex. B225665' })}
         ${field('N° TVA', 'tvaNum', st.tvaNum, { placeholder: 'ex. LU30599412' })}
-        ${field('IBAN (relances + app des locataires)', 'iban', st.iban, { placeholder: 'LU..' })}
+        ${field('IBAN (relances + app des locataires)', 'iban', st.iban, { placeholder: 'LU28 0099 7800 0139 1929' })}
+        ${field('BIC / SWIFT', 'bic', st.bic, { placeholder: 'CCRALULLXXX' })}
+        ${field('Banque', 'banque', st.banque, { placeholder: 'Banque Raiffeisen' })}
         <div class="section-label full" style="margin:10px 0 0">Comptabilité et TVA</div>
         <label class="field">Assujetti à la TVA<select name="assujetti"><option value="1" ${st.assujetti !== false ? new Raw('selected') : ''}>Oui</option><option value="0" ${st.assujetti === false ? new Raw('selected') : ''}>Non</option></select></label>
         <label class="field">Déclaration de TVA<select name="periode">${[['m', 'Mensuelle'], ['t', 'Trimestrielle'], ['a', 'Annuelle']].map(([k, v]) => html`<option value="${k}" ${(st.periode || 't') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
@@ -3708,6 +3790,7 @@ const ACTIONS = {
   'new-interv': () => openOver('interv-form'),
   'edit-interv': (d) => openOver('interv-form', d.id),
   'open-interv': (d) => openSheet('interv', d.id),
+  'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
   'cp-tab': (d) => { ui.cpTab = d.id; renderView(); },
   'cp-more': () => { ui.cpMonths = (ui.cpMonths || 1) + 1; renderView(); },
   'cp-clear': () => { ui.cpQ = ''; ui.cpFrom = ''; ui.cpTo = ''; ui.cpMonths = 1; renderView(); },
@@ -4428,7 +4511,9 @@ const FORMS = {
     const idErr = WRONG_ID.test([nomS, g('rcs'), g('tvaNum')].join(' ')) ? 'Ces apps appartiennent à NOBIS s.a.r.l. (RCS B225665, TVA LU30599412) : Ares Invest S.A. / B225245 ne peut pas être mis ici.'
       : /\b(RCS|TVA|B\d{5,6}|LU\d{8})\b/i.test(nomS) ? 'Le nom de la société ne doit contenir que le nom (ex. NOBIS s.a.r.l.) : mettez le RCS et le n° TVA dans leurs cases.'
       : g('rcs') && !/^[A-Z]\s?\d{3,7}$/i.test(g('rcs')) ? 'RCS invalide (ex. B225665).'
-      : g('tvaNum') && !/^[A-Z]{2}[0-9A-Z]{8,12}$/i.test(g('tvaNum').replace(/\s/g, '')) ? 'N° TVA invalide (ex. LU30599412).' : '';
+      : g('tvaNum') && !/^[A-Z]{2}[0-9A-Z]{8,12}$/i.test(g('tvaNum').replace(/\s/g, '')) ? 'N° TVA invalide (ex. LU30599412).'
+      : g('iban') && (WRONG_ID.test(g('iban')) || !ibanOk(g('iban'))) ? 'IBAN invalide : vérifiez-le (ex. LU28 0099 7800 0139 1929). Un n° de TVA n’est pas un IBAN.'
+      : g('bic') && !/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/i.test(g('bic').replace(/\s/g, '')) ? 'BIC invalide (ex. CCRALULLXXX).' : '';
     if (idErr) return (form.querySelector('.lock-err').textContent = idErr);
     const err = (pay.paypal && !/^[A-Za-z0-9]{1,30}$/.test(pay.paypal) ? 'PayPal.me : seulement le nom (lettres et chiffres)' : '')
       || (pay.cardLink && !/^https:\/\/\S+$/.test(pay.cardLink) ? 'Le lien de paiement par carte doit commencer par https://' : '')
@@ -4436,6 +4521,7 @@ const FORMS = {
       || [['btc', 'BTC'], ['eth', 'ETH'], ['usdt', 'USDT'], ['usdc', 'USDC']].map(([k, n]) => { const m = badAddr(k, pay[k], pay[k + 'Net']); return m ? `${n} : ${m}` : ''; }).find(Boolean) || '';
     if (err) return (form.querySelector('.lock-err').textContent = err);
     const rec = { id: 'main', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), ville: fd.get('ville').trim(), tel: fd.get('tel').trim(), email: fd.get('email').trim(), iban: fd.get('iban').trim(), ...pay, associes,
+      bic: g('bic').replace(/\s/g, '').toUpperCase(), banque: g('banque'),
       pays: g('pays') || 'LU', web: g('web'), rcs: g('rcs'), tvaNum: g('tvaNum'), assujetti: g('assujetti') !== '0', periode: g('periode') || 't', taux: g('taux') };
     await vault.mutate((tx) => tx.put('reglages', rec), 'Société & associés modifiés', rec.nom);
     applyBrand();

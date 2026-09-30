@@ -5603,5 +5603,37 @@ export default [
 [
 "N° TVA invalide (ex. LU30599412).",
 "NIF no válido (p. ej. LU30599412)."
+],
+[
+"{0} éléments",
+"{0} elementos"
+],
+[
+"{0} élément",
+"{0} elemento"
+],
+[
+"Voir sur la carte",
+"Ver en el mapa"
+],
+[
+"Ouvrir dans Google Maps",
+"Abrir en Google Maps"
+],
+[
+"Log. & Bilan",
+"Viv. y balance"
+],
+[
+"Banque",
+"Banco"
+],
+[
+"IBAN invalide : vérifiez-le (ex. LU28 0099 7800 0139 1929). Un n° de TVA n’est pas un IBAN.",
+"IBAN no válido: compruébalo (p. ej. LU28 0099 7800 0139 1929). Un NIF no es un IBAN."
+],
+[
+"BIC invalide (ex. CCRALULLXXX).",
+"BIC no válido (p. ej. CCRALULLXXX)."
 ]
 ];
