@@ -5,7 +5,7 @@ import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.30.0';
+const VERSION = '2.30.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -1041,11 +1041,22 @@ const socLogo = () => societe().logo || '/ares/icons/nobis-logo.png';
 const htOf = (ttc, r) => (r ? ttc / (1 + r / 100) : ttc);
 const r2 = (x) => Math.round(x * 100) / 100;
 // Logo et nom partout dans l'app (et sur l'écran de verrouillage, mémorisés sur cet appareil)
+// Identité légale de l'éditeur des apps : NOBIS s.a.r.l. (37, Val Saint André, L-1128 Luxembourg · RCS B225665 · TVA LU30599412).
+// Correction unique : si la fiche Société contient encore Ares Invest S.A. / RCS B225245, on la remplace.
+const NOBIS_ID = { nom: 'NOBIS s.a.r.l.', adresse: '37, Val Saint André', ville: 'L-1128 Luxembourg', rcs: 'B225665', tvaNum: 'LU30599412', pays: 'LU' };
+const WRONG_ID = /\bares\b|arest|invenst|ares invest|B\s*225\s*245|LU\s*30440727/i;
+async function fixIdentity() {
+  const so = societe();
+  if (![so.nom, so.rcs, so.tvaNum].some((v) => WRONG_ID.test(v || ''))) return;
+  await vault.mutate((tx) => tx.put('reglages', { id: 'main', ...NOBIS_ID }), 'Société corrigée : NOBIS s.a.r.l.', `${so.nom || ''} → NOBIS s.a.r.l. · RCS B225665`);
+  applyBrand();
+  toast('Société corrigée : NOBIS s.a.r.l. · RCS B225665 · TVA LU30599412');
+}
 function applyBrand() {
   const logo = socLogo(), nom = socName();
   document.querySelectorAll('.brand-mark').forEach((img) => { img.src = logo; });
   document.querySelectorAll('.brand > span').forEach((sp) => { const sm = sp.querySelector('small'); sp.textContent = nom; if (sm) sp.appendChild(sm); });
-  try { localStorage.setItem('aresBrand', JSON.stringify({ logo: societe().logo || '', nom })); } catch {}
+  try { localStorage.setItem('aresBrand', JSON.stringify({ logo: societe().logo || '', nom, rcs: societe().rcs || '' })); } catch {}
 }
 const brandCache = () => { try { return JSON.parse(localStorage.getItem('aresBrand') || '{}'); } catch { return {}; } };
 const associes = () => (societe().associes || []).filter((a) => a.nom && a.part > 0);
@@ -1225,7 +1236,7 @@ function renderLock(mode, error = '') {
   const legacy = legacyLocal();
   const head = html`
     <img class="lock-logo" src="${brandCache().logo || '/ares/icons/nobis-logo.png'}" alt="" width="200" height="84">
-    <div class="lock-head"><h1>${brandCache().nom || 'NOBIS s.a.r.l.'}</h1><p>Gestion locataires · Luxembourg</p></div>`;
+    <div class="lock-head"><h1>${WRONG_ID.test(brandCache().nom || '') ? 'NOBIS s.a.r.l.' : brandCache().nom || 'NOBIS s.a.r.l.'}</h1><p>Gestion locataires · Luxembourg${brandCache().rcs && !WRONG_ID.test(brandCache().rcs) ? ' · RCS ' + brandCache().rcs : ''}</p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>`;
 
   if (mode === 'checking') {
@@ -1282,7 +1293,7 @@ function renderLock(mode, error = '') {
   }
   setHtml(lockEl, html`<form class="lock-card" data-form="unlock">
     ${head}
-    <input type="text" name="username" value="Ares Invest" autocomplete="username" hidden>
+    <input type="text" name="username" value="NOBIS s.a.r.l." autocomplete="username" hidden>
     <label class="field">Clé d'accès ${pwField('pass', '••••••••••••', 'current-password')}</label>
     <div class="lock-err" role="alert">${error}</div>
     <button class="btn primary block" type="submit">Déverrouiller</button>
@@ -1424,6 +1435,7 @@ function startSession() {
   }, 30000);
   renderShell();
   applyBrand();
+  fixIdentity().catch(() => {});
   go(location.hash.slice(2) || 'dashboard', true);
   vault.sync();
   setTimeout(async () => {
@@ -4382,6 +4394,12 @@ const FORMS = {
     if (associes.length && Math.abs(total - 100) > 0.01) return (form.querySelector('.lock-err').textContent = `Le total des parts fait ${total} % au lieu de 100 %.`);
     const g = (k) => String(fd.get(k) || '').trim();
     const pay = { paypal: g('paypal').replace(/^(https?:\/\/)?(www\.)?paypal\.(me|com\/paypalme)\//i, '').replace(/\/.*$/, ''), cardLink: g('cardLink'), btc: g('btc'), eth: g('eth'), usdt: g('usdt'), usdtNet: g('usdtNet') || 'erc20', usdc: g('usdc'), usdcNet: g('usdcNet') || 'erc20' };
+    const nomS = g('nom');
+    const idErr = WRONG_ID.test([nomS, g('rcs'), g('tvaNum')].join(' ')) ? 'Ces apps appartiennent à NOBIS s.a.r.l. (RCS B225665, TVA LU30599412) : Ares Invest S.A. / B225245 ne peut pas être mis ici.'
+      : /\b(RCS|TVA|B\d{5,6}|LU\d{8})\b/i.test(nomS) ? 'Le nom de la société ne doit contenir que le nom (ex. NOBIS s.a.r.l.) : mettez le RCS et le n° TVA dans leurs cases.'
+      : g('rcs') && !/^[A-Z]\s?\d{3,7}$/i.test(g('rcs')) ? 'RCS invalide (ex. B225665).'
+      : g('tvaNum') && !/^[A-Z]{2}[0-9A-Z]{8,12}$/i.test(g('tvaNum').replace(/\s/g, '')) ? 'N° TVA invalide (ex. LU30599412).' : '';
+    if (idErr) return (form.querySelector('.lock-err').textContent = idErr);
     const err = (pay.paypal && !/^[A-Za-z0-9]{1,30}$/.test(pay.paypal) ? 'PayPal.me : seulement le nom (lettres et chiffres)' : '')
       || (pay.cardLink && !/^https:\/\/\S+$/.test(pay.cardLink) ? 'Le lien de paiement par carte doit commencer par https://' : '')
       || (/^[a-z]+( [a-z]+){11,23}$/i.test([pay.btc, pay.eth, pay.usdt, pay.usdc].join(' ').trim()) ? 'Ceci ressemble à des mots de récupération : ne les mettez JAMAIS ici !' : '')
