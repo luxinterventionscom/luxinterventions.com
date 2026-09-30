@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.23.0';
+const VERSION = '2.24.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -669,6 +669,13 @@ async function inboxSync() {
       try { msg = await openFromTenant(keys.priv, await vault.inboxGet(it.name)); } catch { continue; }
       const l = vault.list('locataires').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
       if (!l || !l.espace.on) { await vault.inboxDel(it.name); continue; }
+      if (msg.type === 'paye') {
+        const vir = { t: String(msg.t || new Date().toISOString()).slice(0, 30), montant: Math.max(0, +msg.montant || 0), ref: String(msg.ref || '').slice(0, 140) };
+        await vault.mutate((tx) => tx.put('locataires', { id: l.id, virSignal: vir }), 'Virement signalé par le locataire', `${fullName(l)} — ${money(vir.montant)}`, l.id);
+        await vault.inboxDel(it.name);
+        n++;
+        continue;
+      }
       if (msg.type === 'regles') {
         await vault.mutate((tx) => tx.put('locataires', { id: l.id, reglesLu: String(msg.t || '').slice(0, 10) || today(), reglesV: String(msg.v || '').slice(0, 40) }), 'Règlement de la maison accepté', fullName(l), l.id);
         await vault.inboxDel(it.name);
@@ -1590,11 +1597,14 @@ dashboard() {
       </div>` : '';
     const chatNew = Object.entries(ui.chatNew || {}).filter(([imId, n]) => n && vault.get('immeubles', imId));
     const chatBox = chatNew.length ? html`<div class="stack" style="margin-bottom:14px">${chatNew.map(([imId, n]) => alertBtn('info', 'msg', 'open-chat', imId, html`💬 <b>${n} nouveau${n > 1 ? 'x' : ''} message${n > 1 ? 's' : ''}</b> entre les habitants — ${immName(imId)}<div class="tiny">touchez pour lire</div>`))}</div>` : '';
+    const virs = vault.list('locataires').filter((l) => l.virSignal && !l.virSignal.vu);
+    const virBox = virs.length ? html`<div class="stack" style="margin-bottom:14px">${virs.map((l) => alertBtn('info', 'wallet', 'open-vir', l.id, html`💳 <b>${fullName(l)}</b> dit avoir fait un virement${l.virSignal.montant ? html` de <b>${money(l.virSignal.montant)}</b>` : ''} — ${l.virSignal.ref}<div class="tiny">${fmtDateTime(l.virSignal.t)} · vérifiez sur le compte, puis cochez le mois payé</div>`))}</div>` : '';
     const toolsBox = ui.toolsPending ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('warn', 'check', 'open-tools', '', html`🧰 <b>${ui.toolsPending} annonce${ui.toolsPending > 1 ? 's' : ''} à approuver</b> (don · prêt · location)<div class="tiny">touchez pour voir et approuver</div>`)}</div>` : '';
     return html`
       ${nudge}
       ${sigBox}
       ${chatBox}
+      ${virBox}
       ${toolsBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
       <div class="metrics">
@@ -3295,6 +3305,11 @@ const ACTIONS = {
   'new-loc': (d) => openSheet('loc-form', null, null, d.log),
   'edit-loc': (d) => openSheet('loc-form', d.id),
   'open-loc': (d) => openSheet('loc', d.id),
+  async 'open-vir'(d) {
+    const l = vault.get('locataires', d.id);
+    if (l && l.virSignal) await vault.mutate((tx) => tx.put('locataires', { id: l.id, virSignal: { ...l.virSignal, vu: true } }), 'Virement signalé : vu', fullName(l), l.id);
+    openSheet('loc', d.id);
+  },
   'sheet-tab': (d) => { ui.sheet.tab = d.id; ui.sheet.rendered = false; renderSheet(); sheetEl.querySelector('.sheet-body').scrollTop = 0; },
   'open-imm': (d) => openSheet('imm', d.id, d.tab),
   'open-log': (d) => openSheet('log', d.id, d.tab),
