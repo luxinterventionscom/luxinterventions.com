@@ -159,7 +159,7 @@ function render() {
   const t = T();
   document.documentElement.lang = lang;
   const langs = `<div class="langs">${Object.keys(L).map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
-  const top = (name) => `<div class="top"><span class="brandx"><img class="top-logo" src="/ares/icons/nobis-logo.png" alt="" width="76" height="32"><b>${esc(name)}</b></span>${langs}</div>`;
+  const top = (name, logo) => `<div class="top"><span class="brandx"><img class="top-logo" src="${esc(logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(name)}</b></span>${langs}</div>`;
   if (!data) {
     app.innerHTML = `${top('NOBIS s.a.r.l.')}
       <h1 style="text-align:center;margin-top:18px">👷 ${esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
@@ -173,7 +173,7 @@ function render() {
   }
   const d = data, out = [];
   document.title = `${t.app} — ${d.societe.nom}`;
-  out.push(`${top(d.societe.nom)}<h1>${esc(t.hello)} ${esc(d.prenom || d.nom)} 👋</h1><p class="sub">${esc([d.metier, d.societe.nom].filter(Boolean).join(' · '))}</p>`);
+  out.push(`${top(d.societe.nom, d.societe.logo)}<h1>${esc(t.hello)} ${esc(d.prenom || d.nom)} 👋</h1><p class="sub">${esc([d.metier, d.societe.nom].filter(Boolean).join(' · '))}</p>`);
   const q = getJ(QK());
   if (q.length) out.push(`<div class="card warnc"><p style="margin:0 0 8px">${esc(t.pending(q.length))}</p><button class="btn sec sm" data-retry="1">${esc(t.retry)}</button></div>`);
   if (flash) out.push(`<div class="card okc"><p style="margin:0">${esc(flash)}</p></div>`);
