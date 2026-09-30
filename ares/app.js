@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.28.0';
+const VERSION = '2.29.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -350,7 +350,7 @@ function equipeData(i) {
   const k = vault.get('reglages', 'signal');
   return {
     v: 1, kind: 'equipe', lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '',
-    societe: { nom: soc.nom || 'NOBIS s.a.r.l.', tel: soc.tel || '' },
+    societe: { nom: soc.nom || 'NOBIS s.a.r.l.', tel: soc.tel || '', logo: soc.logo || '' },
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '' },
     horaires: (i.horaires || []).map((h) => ({ j: h.j, de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })),
     absences: (i.absences || []).filter((a) => !a.fin || a.fin >= addDays(today(), -30)).map((a) => ({ type: a.type, debut: a.debut, fin: a.fin || '' })),
@@ -515,7 +515,7 @@ function espaceData(l) {
   const soc = societe();
   const out = {
     v: 1, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? g.nom : '', adresse: im ? im.adresse : '', show,
-    societe: { nom: soc.nom || 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '' },
+    societe: { nom: soc.nom || 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '' },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
   };
   if (show.pay || show.quit) {
@@ -1028,6 +1028,21 @@ const fraisOfMonth = (y, m) => sum(vault.list('frais').filter((f) => (!f.debut |
 const monthsElapsed = (y) => { const d = new Date(); return y < d.getFullYear() ? 12 : y > d.getFullYear() ? 0 : d.getMonth() + 1; };
 const fraisOfYear = (y) => { let t = 0; for (let m = 1; m <= monthsElapsed(y); m++) t += fraisOfMonth(y, m); return t; };
 const societe = () => vault.get('reglages', 'main') || {};
+// Pays et taux de TVA (modifiables dans Réglages → Société) — aide à la comptabilité, pas un conseil fiscal
+const PAYS = { LU: ['Luxembourg', [17, 14, 8, 3]], FR: ['France', [20, 10, 5.5, 2.1]], BE: ['Belgique', [21, 12, 6]], DE: ['Deutschland', [19, 7]], IT: ['Italia', [22, 10, 5, 4]], PT: ['Portugal', [23, 13, 6]], ES: ['España', [21, 10, 4]], NL: ['Nederland', [21, 9]], AT: ['Österreich', [20, 13, 10]], CH: ['Suisse', [8.1, 3.8, 2.6]] };
+const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '').split(/[;, ]+/).map((x) => parseFloat(x.replace(',', '.'))).filter((x) => x > 0 && x < 100); return own.length ? own : (PAYS[s0.pays || 'LU'] || PAYS.LU)[1]; };
+const socName = () => societe().nom || 'NOBIS s.a.r.l.';
+const socLogo = () => societe().logo || '/ares/icons/nobis-logo.png';
+const htOf = (ttc, r) => (r ? ttc / (1 + r / 100) : ttc);
+const r2 = (x) => Math.round(x * 100) / 100;
+// Logo et nom partout dans l'app (et sur l'écran de verrouillage, mémorisés sur cet appareil)
+function applyBrand() {
+  const logo = socLogo(), nom = socName();
+  document.querySelectorAll('.brand-mark').forEach((img) => { img.src = logo; });
+  document.querySelectorAll('.brand > span').forEach((sp) => { const sm = sp.querySelector('small'); sp.textContent = nom; if (sm) sp.appendChild(sm); });
+  try { localStorage.setItem('aresBrand', JSON.stringify({ logo: societe().logo || '', nom })); } catch {}
+}
+const brandCache = () => { try { return JSON.parse(localStorage.getItem('aresBrand') || '{}'); } catch { return {}; } };
 const associes = () => (societe().associes || []).filter((a) => a.nom && a.part > 0);
 
 function dataYears() {
@@ -1061,10 +1076,57 @@ const NAV = [
   ['paiements', 'Paiements', 'wallet'],
   ['maintenance', 'Maintenance', 'tool'],
   ['champions', 'Locataire de l’année', 'trophy'],
-  ['stats', 'Statistiques', 'chart'],
+  ['compta', 'Comptabilité', 'chart'],
   ['reglages', 'Réglages', 'more'],
 ];
 const MOBILE_NAV = ['dashboard', 'immeubles', 'locataires', 'paiements', 'reglages'];
+// Période choisie dans Comptabilité : année, trimestre (q1..q4) ou mois (m1..m12)
+function cpRange(y, per) {
+  const pad = (n) => String(n).padStart(2, '0');
+  if (/^q[1-4]$/.test(per)) { const q = +per[1]; return [`${y}-${pad(q * 3 - 2)}-01`, `${y}-${pad(q * 3)}-${new Date(y, q * 3, 0).getDate()}`]; }
+  if (/^m\d+$/.test(per)) { const m = +per.slice(1); return [`${y}-${pad(m)}-01`, `${y}-${pad(m)}-${new Date(y, m, 0).getDate()}`]; }
+  return [`${y}-01-01`, `${y}-12-31`];
+}
+const cpLabel = (y, per) => (/^q/.test(per) ? `T${per[1]} ${y}` : /^m/.test(per) ? `${MONTHS_FULL[+per.slice(1) - 1]} ${y}` : `Année ${y}`);
+// Journal : recettes (loyers encaissés), dépenses, versements aux bailleurs, frais fixes — avec HT / TVA / TTC
+function journal(from, to) {
+  const rows = [];
+  const inR = (d) => d && d >= from && d <= to;
+  const pad = (n) => String(n).padStart(2, '0');
+  for (const p of vault.list('paiements')) {
+    const l = vault.get('locataires', p.locId);
+    if (!l) continue;
+    const d = p.date || `${p.y}-${pad(p.m)}-01`;
+    if (!inR(d)) continue;
+    const im = vault.get('immeubles', l.immId) || {};
+    const ttc = paidAmount(p, l), r = im.tvaLoyer || 0;
+    rows.push({ d, sens: 'R', cat: 'Loyer', lib: `Loyer ${MONTHS_FULL[p.m - 1].toLowerCase()} ${p.y} — ${fullName(l)}`, imm: im.adresse || '', ttc, tva: r2(ttc - htOf(ttc, r)), taux: r, piece: '' });
+  }
+  for (const x of vault.list('depenses')) {
+    if (!inR(x.date)) continue;
+    rows.push({ d: x.date, sens: 'D', cat: DEP_CATS[x.cat] || 'Dépense', lib: x.desc + (x.fournisseur ? ' — ' + x.fournisseur : '') + (x.numFacture ? ' (n° ' + x.numFacture + ')' : ''), imm: immName(x.immId), ttc: x.montant, tva: r2(x.montant - htOf(x.montant, x.tva || 0)), taux: x.tva || 0, piece: x.docId && vault.get('documents', x.docId) ? x.docId : '', depId: x.id });
+  }
+  for (const v of vault.list('versements')) {
+    const d = v.date || `${v.y}-${pad(v.m)}-01`;
+    if (!inR(d)) continue;
+    rows.push({ d, sens: 'D', cat: 'Bailleur', lib: `Loyer principal ${MONTHS_FULL[v.m - 1].toLowerCase()} ${v.y}`, imm: immName(v.immId), ttc: v.montant, tva: 0, taux: 0, piece: '' });
+  }
+  const [y0, m0] = from.split('-').map(Number), [y1, m1] = to.split('-').map(Number);
+  for (let k = y0 * 12 + m0 - 1; k <= y1 * 12 + m1 - 1; k++) {
+    const y = Math.floor(k / 12), m = (k % 12) + 1;
+    if (`${y}-${pad(m)}-01` > today()) break;
+    const f = fraisOfMonth(y, m);
+    if (f) rows.push({ d: `${y}-${pad(m)}-01`, sens: 'D', cat: 'Frais fixes', lib: `Frais fixes ${MONTHS_FULL[m - 1].toLowerCase()} ${y}`, imm: '', ttc: f, tva: 0, taux: 0, piece: '' });
+  }
+  return rows.sort((a, b) => a.d.localeCompare(b.d) || a.sens.localeCompare(b.sens));
+}
+function journalCsv(rows) {
+  const n = (x) => String(r2(x)).replace('.', ',');
+  const q = (x) => '"' + String(x ?? '').replace(/"/g, '""') + '"';
+  const head = ['Date', 'Sens', 'Catégorie', 'Libellé', 'Immeuble', 'HT', 'Taux TVA %', 'TVA', 'TTC', 'Pièce jointe'];
+  const lines = rows.map((r) => [r.d, r.sens === 'R' ? 'Recette' : 'Dépense', r.cat, r.lib, r.imm, n(r.ttc - r.tva), n(r.taux), n(r.tva), n(r.ttc), r.piece ? 'oui' : ''].map(q).join(';'));
+  return '\ufeff' + [head.map(q).join(';'), ...lines].join('\r\n');
+}
 
 // ───────────────────────── Toasts & confirmations ─────────────────────────
 function toast(msg, opts = {}) {
@@ -1157,8 +1219,8 @@ function renderLock(mode, error = '') {
   lockEl.hidden = false;
   const legacy = legacyLocal();
   const head = html`
-    <img class="lock-logo" src="/ares/icons/nobis-logo.png" alt="NOBIS s.a.r.l." width="200" height="84">
-    <div class="lock-head"><h1>NOBIS s.a.r.l.</h1><p>Gestion locataires · Luxembourg</p></div>`;
+    <img class="lock-logo" src="${brandCache().logo || '/ares/icons/nobis-logo.png'}" alt="" width="200" height="84">
+    <div class="lock-head"><h1>${brandCache().nom || 'NOBIS s.a.r.l.'}</h1><p>Gestion locataires · Luxembourg</p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>`;
 
   if (mode === 'checking') {
@@ -1356,6 +1418,7 @@ function startSession() {
     else if (document.visibilityState === 'visible') { vault.sync(); if (Date.now() - lastInbox > 180000) { lastInbox = Date.now(); inboxSync(); chatPoll(); toolsLoad(true); } }
   }, 30000);
   renderShell();
+  applyBrand();
   go(location.hash.slice(2) || 'dashboard', true);
   vault.sync();
   setTimeout(async () => {
@@ -1599,6 +1662,7 @@ async function syncDepense(t, quiet) {
   const want = t.statut === 'fait' && t.cout > 0;
   const who = intervName(t.intervenantId);
   const rec = { immId: t.immId, logId: t.logId || '', desc: t.titre + (who ? ' — ' + who : ''), montant: t.cout, date: t.doneDate || today(), cat: depCat(t), tacheId: t.id };
+  if (want && !dep && t.depSkip) return;
   if (want && !dep) {
     await vault.mutate((tx) => { const d = tx.put('depenses', rec); tx.put('taches', { id: t.id, depId: d.id }); }, 'Dépense ajoutée', `${t.titre} ${money(t.cout)}`, t.immId);
     if (!quiet) toast(`Coût ${money(t.cout)} ajouté aux dépenses — ${placeName(t)}`);
@@ -1611,8 +1675,32 @@ async function syncDepense(t, quiet) {
   }
 }
 const offerDepense = (t) => syncDepense(t);
+// Facture jointe à une dépense (chiffrée, comme les autres documents)
+// Logo de la société : réduit (400 px max), gardé dans le coffre chiffré
+async function setLogo(file) {
+  try {
+    const bmp = await createImageBitmap(file);
+    const k = Math.min(1, 400 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const url = c.toDataURL('image/png');
+    const logo = url.length < 180000 ? url : c.toDataURL('image/jpeg', 0.85);
+    await vault.mutate((tx) => tx.put('reglages', { id: 'main', logo }), 'Logo de la société', socName());
+    applyBrand();
+    toast('Logo enregistré');
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  } catch { toast('Image illisible', { bad: true }); }
+}
+async function attachFacture(dep, file) {
+  if (file.size > 10 * 1024 * 1024) return toast('Fichier trop lourd (10 Mo maximum)', { bad: true });
+  const img = /^image\//.test(file.type);
+  const bytes = img ? await compressPhoto(file) : new Uint8Array(await file.arrayBuffer());
+  const doc = await vault.mutate((tx) => { const x = tx.put('documents', { depId: dep.id, kind: 'facture', label: `Facture — ${dep.fournisseur || dep.desc}`, date: dep.date, size: bytes.length, mime: img ? 'image/jpeg' : file.type || 'application/pdf' }); tx.put('depenses', { id: dep.id, docId: x.id }); return x; }, 'Facture jointe', dep.desc, dep.immId);
+  await vault.saveFile(doc.id, bytes);
+  toast('Facture jointe');
+}
 // Interventions terminées avant ce changement, avec un coût jamais compté
-const depMissing = () => vault.list('taches').filter((t) => !t.recur && t.statut === 'fait' && t.cout > 0 && !(t.depId && vault.get('depenses', t.depId)));
+const depMissing = () => vault.list('taches').filter((t) => !t.recur && !t.depSkip && t.statut === 'fait' && t.cout > 0 && !(t.depId && vault.get('depenses', t.depId)));
 
 // ───────────────────────── Vues ─────────────────────────
 // ───── Locataire de l'année : tours des poubelles faits, tous immeubles confondus ─────
@@ -2020,6 +2108,55 @@ dashboard() {
         : empty('wallet', 'Aucun locataire à afficher pour ' + y + '.')}`;
   },
 
+  compta() {
+    const y = ui.year, tab = ui.cpTab || 'journal';
+    const per = ui.cpPer || (ui.cpPer = 'q' + (Math.floor(new Date().getMonth() / 3) + 1));
+    const soc = societe();
+    const tabs = html`<div class="tabs" role="tablist" style="max-width:620px">${[['journal', 'Journal'], ['tva', 'TVA'], ['stats', 'Statistiques'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
+    if (tab === 'stats') return html`${pageHead('Comptabilité', 'Journal, TVA, statistiques et export pour le comptable')}${tabs}${VIEWS.stats()}`;
+    const perSel = html`<select data-input="cp-per" style="width:auto" aria-label="Période"><option value="y" ${per === 'y' ? new Raw('selected') : ''}>Toute l’année</option>${[1, 2, 3, 4].map((q) => html`<option value="q${q}" ${per === 'q' + q ? new Raw('selected') : ''}>Trimestre ${q}</option>`)}${MONTHS_FULL.map((mn, i) => html`<option value="m${i + 1}" ${per === 'm' + (i + 1) ? new Raw('selected') : ''}>${mn}</option>`)}</select>`;
+    const [from, to] = cpRange(y, per);
+    const rows = journal(from, to);
+    const R = rows.filter((r) => r.sens === 'R'), D = rows.filter((r) => r.sens === 'D');
+    const tR = sum(R, (r) => r.ttc), tD = sum(D, (r) => r.ttc);
+    const tvaC = sum(R, (r) => r.tva), tvaD = sum(D, (r) => r.tva);
+    const tools = html`<div class="toolbar">${yearSelect(y)}${perSel}</div>`;
+    let body;
+    if (tab === 'journal') {
+      const noPiece = D.filter((r) => r.depId && !r.piece).length;
+      body = html`<div class="metrics" style="margin-bottom:14px">
+          <div class="metric"><div class="lbl">Recettes</div><div class="val green">${money(tR)}</div><div class="sub">${plural(R.length, 'écriture')}</div></div>
+          <div class="metric"><div class="lbl">Dépenses</div><div class="val">${money(tD)}</div><div class="sub">${plural(D.length, 'écriture')}</div></div>
+          <div class="metric hero"><div class="lbl">Résultat ${cpLabel(y, per)}</div><div class="val ${tR - tD < 0 ? 'red' : 'accent'}">${money(tR - tD)}</div><div class="sub">recettes − dépenses (TTC)</div></div>
+        </div>
+        ${noPiece ? html`<div class="alert warn" style="margin-bottom:12px">${icon('file')}<div><b>${plural(noPiece, 'dépense')} sans facture jointe</b> — ajoutez-la avec 📎+ dans Immeuble → Dépenses.</div></div>` : ''}
+        ${rows.length ? html`<div class="card" style="padding:0;overflow:auto"><table class="tbl"><thead><tr><th>Date</th><th>Libellé</th><th class="r">HT</th><th class="r">TVA</th><th class="r">TTC</th><th></th></tr></thead><tbody>
+          ${rows.map((r) => html`<tr><td class="nowrap">${fmtDate(r.d)}</td><td><b>${r.cat}</b> · ${r.lib}${r.imm ? html`<div class="tiny muted">${r.imm}</div>` : ''}</td>
+            <td class="r">${money(r.ttc - r.tva)}</td><td class="r">${r.tva ? money(r.tva) : '—'}</td><td class="r ${r.sens === 'R' ? 'green' : 'red'}">${r.sens === 'R' ? '' : '−'}${money(r.ttc)}</td>
+            <td>${r.piece ? html`<button class="btn sm" data-action="open-doc" data-id="${r.piece}">📎</button>` : ''}</td></tr>`)}
+        </tbody></table></div>` : empty('file', 'Aucune écriture sur cette période.')}`;
+    } else if (tab === 'tva') {
+      const perT = soc.periode || 't';
+      const periods = perT === 'm' ? MONTHS_FULL.map((_, i) => 'm' + (i + 1)) : perT === 'a' ? ['y'] : ['q1', 'q2', 'q3', 'q4'];
+      const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
+      body = html`${soc.assujetti === false ? html`<div class="alert info" style="margin-bottom:12px">${icon('alert')}<div>Votre société est indiquée comme <b>non assujettie</b> à la TVA (Réglages → Société). Les montants ci-dessous sont seulement indicatifs.</div></div>` : ''}
+        <div class="card" style="padding:0;overflow:auto;margin-bottom:14px"><table class="tbl"><thead><tr><th>Période</th><th class="r">Collectée<br><small>loyers</small></th><th class="r">Déductible<br><small>factures</small></th><th class="r">Solde</th></tr></thead><tbody>
+          ${periods.map((pp) => { const [a, b] = cpRange(y, pp); const rr = journal(a, b); const c = sum(rr.filter((r) => r.sens === 'R'), (r) => r.tva), dd = sum(rr.filter((r) => r.sens === 'D'), (r) => r.tva); return html`<tr><td>${cpLabel(y, pp)}</td><td class="r">${money(c)}</td><td class="r">${money(dd)}</td><td class="r"><b class="${c - dd < 0 ? 'green' : ''}">${c - dd < 0 ? '+' + money(dd - c) : money(c - dd)}</b><div class="tiny muted">${c - dd < 0 ? 'à récupérer' : c - dd > 0 ? 'à payer' : ''}</div></td></tr>`; })}
+        </tbody></table></div>
+        <div class="section-label">TVA sur les loyers, par structure</div>
+        <p class="small muted" style="margin-top:0">Au Luxembourg, la location d’habitation est en principe <b>exonérée</b> de TVA ; les locaux commerciaux, bureaux ou garages peuvent y être soumis (option). Votre comptable vous confirme le bon taux.</p>
+        <div class="list">${imms.map((im) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${im.adresse}</span><span class="meta">${IMM_TYPES[im.type] || IMM_TYPES.immeuble}</span></span>
+          <select data-input="tva-loyer" data-id="${im.id}" style="width:auto"><option value="0">Exonéré (0 %)</option>${tvaRates().map((r) => html`<option value="${r}" ${(im.tvaLoyer || 0) === r ? new Raw('selected') : ''}>${String(r).replace('.', ',')} %</option>`)}</select></div>`)}</div>
+        <p class="tiny muted" style="margin-top:10px">Taux de ${(PAYS[soc.pays || 'LU'] || PAYS.LU)[0]} : ${tvaRates().map((r) => String(r).replace('.', ',') + ' %').join(' · ')} — modifiables dans Réglages → Société & associés. Aide à la préparation, à faire vérifier par votre comptable.</p>`;
+    } else {
+      body = html`<div class="card"><p style="margin-top:0">Téléchargez le <b>journal ${cpLabel(y, per)}</b> (recettes, dépenses, bailleurs, frais fixes, avec HT / TVA / TTC) pour votre comptable. Le fichier s’ouvre dans Excel, Numbers ou LibreOffice.</p>
+        <button class="btn primary" data-action="cp-csv">${icon('download')} Télécharger le journal (Excel / CSV)</button>
+        <button class="btn" data-action="cp-print">${icon('file')} Imprimer / PDF</button>
+        <p class="tiny muted" style="margin-bottom:0">Les factures restent dans l’app (chiffrées) : ouvrez-les avec 📎 dans le Journal pour les télécharger une par une.</p></div>`;
+    }
+    return html`${pageHead('Comptabilité', 'Journal, TVA, statistiques et export pour le comptable')}${tabs}${tools}${body}`;
+  },
+
   stats() {
     const y = ui.year;
     const locs = vault.list('locataires');
@@ -2103,7 +2240,7 @@ dashboard() {
         <button class="row" data-action="go" data-to="champions"><span class="avatar">🏆</span><span class="grow"><span class="title" style="display:block">Locataire de l’année</span><span class="meta">Classement des tours des poubelles · podium · pizza 🍕</span></span></button>
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
         <button class="row" data-action="go" data-to="maintenance">${icon('tool')}<span class="grow title">Maintenance — nettoyage, réparations, déchets</span></button>
-        <button class="row" data-action="go" data-to="stats">${icon('chart')}<span class="grow title">Statistiques et historique</span></button>
+        <button class="row" data-action="go" data-to="compta">${icon('chart')}<span class="grow title">Comptabilité — journal, TVA, statistiques, export</span></button>
       </div>
 
       <div class="section-label">Gestion</div>
@@ -2299,13 +2436,18 @@ function depensesPanel(immId) {
   return html`<form data-form="dep" class="fields" style="margin-bottom:16px">
       <input type="hidden" name="immId" value="${immId}">
       ${field('Description', 'desc', '', { full: true, required: true, placeholder: 'ex. Réparation toiture' })}
-      ${field('Montant (€)', 'montant', '', { type: 'number', required: true, attrs: 'inputmode="decimal" step="0.01" min="0.01"' })}
+      ${field('Montant TTC (€)', 'montant', '', { type: 'number', required: true, attrs: 'inputmode="decimal" step="0.01" min="0.01"' })}
+      <label class="field">TVA<select name="tva"><option value="0">Sans TVA / non déductible</option>${tvaRates().map((r) => html`<option value="${r}">${String(r).replace('.', ',')} %</option>`)}</select></label>
       ${field('Date', 'date', today(), { type: 'date', required: true })}
+      ${field('Fournisseur', 'fournisseur', '', { placeholder: 'ex. Électricité Schmit' })}
+      ${field('N° de facture', 'numFacture', '', { placeholder: 'ex. F-2026-118' })}
+      <label class="field full">Facture (photo ou PDF)<input type="file" name="file" accept="image/*,application/pdf"></label>
       <label class="field">Catégorie<select name="cat">${Object.entries(DEP_CATS).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
       <label class="field">Concerne<select name="logId"><option value="">Tout l'immeuble</option>${logs.map((g) => html`<option value="${g.id}">${g.nom}</option>`)}</select></label>
       <button class="btn primary full" type="submit">${icon('plus')} Ajouter la dépense</button>
     </form>
-    ${deps.length ? html`<div class="list">${deps.map((d) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${d.desc}</span><span class="meta">${fmtDate(d.date)} · ${DEP_CATS[d.cat] || d.cat}${d.logId ? ' · ' + logName(d.logId) : ''}</span></span>
+    ${deps.length ? html`<div class="list">${deps.map((d) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${d.desc}</span><span class="meta">${d.fournisseur ? d.fournisseur + ' · ' : ''}${d.numFacture ? 'n° ' + d.numFacture + ' · ' : ''}${d.tva ? 'TVA ' + String(d.tva).replace('.', ',') + ' % (' + money(d.montant - htOf(d.montant, d.tva)) + ') · ' : ''}${fmtDate(d.date)} · ${DEP_CATS[d.cat] || d.cat}${d.logId ? ' · ' + logName(d.logId) : ''}</span></span>
+      ${d.docId && vault.get('documents', d.docId) ? html`<button class="btn sm" data-action="open-doc" data-id="${d.docId}" title="Voir la facture">📎</button>` : html`<label class="btn sm ghost" title="Joindre la facture" style="cursor:pointer">📎+<input type="file" accept="image/*,application/pdf" data-input="dep-file" data-id="${d.id}" hidden></label>`}
       <span class="amount red">−${money(d.montant)}</span><button class="btn icon sm ghost danger" data-action="del-dep" data-id="${d.id}" aria-label="Supprimer">${icon('trash')}</button></div>`)}</div>
       <div class="totals"><span>Total depuis l'origine</span><b class="red">−${money(sum(deps, (d) => d.montant))}</b></div>` : html`<p class="muted small">Aucune dépense.</p>`}`;
 }
@@ -3182,17 +3324,30 @@ Ou ouvrez directement : ${url}`);
 
   'societe-form'() {
     const st = societe();
+    const pays = st.pays || 'LU';
     const rows = [...(st.associes || []), {}, {}, {}, {}].slice(0, Math.max(4, (st.associes || []).length + 1));
     return {
       title: 'Société & associés',
       body: html`<form id="f" data-form="societe" class="fields">
         <div class="section-label full" style="margin:0">Votre société — locataire principal (apparaît sur les quittances et les relances)</div>
+        <div class="full" style="display:flex;align-items:center;gap:12px"><img src="${socLogo()}" alt="" style="height:48px;max-width:140px;object-fit:contain;background:#fff;border-radius:8px;padding:4px;border:1px solid var(--border)">
+          <label class="btn sm" style="cursor:pointer">🖼️ ${st.logo ? 'Changer le logo' : 'Mettre votre logo'}<input type="file" accept="image/*" data-input="soc-logo" hidden></label>
+          ${st.logo ? html`<button class="btn sm ghost" type="button" data-action="soc-logo-del">Retirer</button>` : ''}</div>
+        <p class="tiny muted full" style="margin:0">Le logo apparaît dans l’app, les apps des locataires et de l’équipe, les quittances et les impressions.</p>
         ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: 'ex. NOBIS s.a.r.l.' })}
         ${field('Adresse', 'adresse', st.adresse, { full: true })}
         ${field('Code postal et ville', 'ville', st.ville, { placeholder: 'L-1234 Luxembourg' })}
         ${field('Téléphone', 'tel', st.tel, { type: 'tel' })}
         ${field('Email', 'email', st.email, { type: 'email' })}
+        <label class="field">Pays<select name="pays">${Object.entries(PAYS).map(([k, v]) => html`<option value="${k}" ${pays === k ? new Raw('selected') : ''}>${v[0]}</option>`)}</select></label>
+        ${field('Site web', 'web', st.web, { placeholder: 'ex. www.nobis.lu' })}
+        ${field('RCS', 'rcs', st.rcs, { placeholder: 'ex. B225665' })}
+        ${field('N° TVA', 'tvaNum', st.tvaNum, { placeholder: 'ex. LU30599412' })}
         ${field('IBAN (relances + app des locataires)', 'iban', st.iban, { placeholder: 'LU..' })}
+        <div class="section-label full" style="margin:10px 0 0">Comptabilité et TVA</div>
+        <label class="field">Assujetti à la TVA<select name="assujetti"><option value="1" ${st.assujetti !== false ? new Raw('selected') : ''}>Oui</option><option value="0" ${st.assujetti === false ? new Raw('selected') : ''}>Non</option></select></label>
+        <label class="field">Déclaration de TVA<select name="periode">${[['m', 'Mensuelle'], ['t', 'Trimestrielle'], ['a', 'Annuelle']].map(([k, v]) => html`<option value="${k}" ${(st.periode || 't') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field('Taux de TVA (%)', 'taux', st.taux || '', { full: true, placeholder: (PAYS[pays] || PAYS.LU)[1].join(', ') + ' (taux du pays si vide)' })}
         <div class="section-label full" style="margin:10px 0 0">Autres moyens de paiement (bouton « Payer maintenant » des locataires)</div>
         ${field('PayPal.me (votre nom PayPal.me)', 'paypal', st.paypal, { placeholder: 'ex. NobisSarl' })}
         ${field('Lien de paiement par carte (Stripe, SumUp…)', 'cardLink', st.cardLink, { type: 'url', placeholder: 'https://…' })}
@@ -3348,7 +3503,8 @@ const tenantFromForm = (fd, p = '') => ({
 // ───────────────────────── Rapports imprimables ─────────────────────────
 function printDoc(title, body) {
   const el = $('#print');
-  setHtml(el, html`<div class="pr-head"><div><b>NOBIS s.a.r.l.</b> · ${title}</div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
+  const so = societe();
+  setHtml(el, html`<div class="pr-head"><div style="display:flex;align-items:center;gap:10px"><img src="${socLogo()}" alt="" style="height:34px;max-width:120px;object-fit:contain"><span><b>${socName()}</b> · ${title}${so.rcs || so.tvaNum ? html`<br><small>${[so.rcs ? 'RCS ' + so.rcs : '', so.tvaNum ? 'TVA ' + so.tvaNum : ''].filter(Boolean).join(' · ')}</small>` : ''}</span></div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
   document.body.classList.add('printing');
   const done = () => { document.body.classList.remove('printing'); setHtml(el, ''); removeEventListener('afterprint', done); };
   addEventListener('afterprint', done);
@@ -3504,6 +3660,26 @@ const ACTIONS = {
   'new-interv': () => openOver('interv-form'),
   'edit-interv': (d) => openOver('interv-form', d.id),
   'open-interv': (d) => openSheet('interv', d.id),
+  'cp-tab': (d) => { ui.cpTab = d.id; renderView(); },
+  'soc-logo-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', logo: '' }), 'Logo retiré', socName()); applyBrand(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
+  'cp-csv': () => {
+    const y = ui.year, per = ui.cpPer || 'y';
+    const [from, to] = cpRange(y, per);
+    const url = URL.createObjectURL(new Blob([journalCsv(journal(from, to))], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = `journal-${cpLabel(y, per).toLowerCase().replace(/\s+/g, '-')}.csv`; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    toast('Journal téléchargé');
+  },
+  'cp-print': () => {
+    const y = ui.year, per = ui.cpPer || 'y';
+    const [from, to] = cpRange(y, per);
+    const rows = journal(from, to);
+    const R = rows.filter((r) => r.sens === 'R'), D = rows.filter((r) => r.sens === 'D');
+    printDoc('Journal ' + cpLabel(y, per), html`<table class="pr-tbl"><thead><tr><th>Date</th><th>Libellé</th><th>Immeuble</th><th style="text-align:right">HT</th><th style="text-align:right">TVA</th><th style="text-align:right">TTC</th></tr></thead><tbody>
+      ${rows.map((r) => html`<tr><td>${fmtDate(r.d)}</td><td>${r.cat} · ${r.lib}</td><td>${r.imm}</td><td style="text-align:right">${money(r.ttc - r.tva)}</td><td style="text-align:right">${r.tva ? money(r.tva) : ''}</td><td style="text-align:right">${r.sens === 'R' ? '' : '−'}${money(r.ttc)}</td></tr>`)}
+      </tbody></table>
+      <p><b>Recettes :</b> ${money(sum(R, (r) => r.ttc))} · <b>Dépenses :</b> ${money(sum(D, (r) => r.ttc))} · <b>Résultat :</b> ${money(sum(R, (r) => r.ttc) - sum(D, (r) => r.ttc))} · <b>TVA collectée :</b> ${money(sum(R, (r) => r.tva))} · <b>TVA déductible :</b> ${money(sum(D, (r) => r.tva))}</p>`);
+  },
   async 'dep-catchup'() {
     const list = depMissing();
     if (!list.length) return;
@@ -3907,7 +4083,9 @@ const ACTIONS = {
   async 'del-dep'(d) {
     const dep = vault.get('depenses', d.id);
     if (!(await confirmBox('Supprimer cette dépense ?', { ok: 'Supprimer', danger: true, detail: `${dep.desc} — ${money(dep.montant)}` }))) return;
-    await vault.mutate((tx) => tx.remove('depenses', d.id), 'Dépense supprimée', `${dep.desc} ${money(dep.montant)}`, dep.immId);
+    const t = dep.tacheId ? vault.get('taches', dep.tacheId) : null;
+    await vault.mutate((tx) => { tx.remove('depenses', d.id); if (dep.docId) tx.remove('documents', dep.docId); if (t) tx.put('taches', { id: t.id, depId: '', depSkip: true }); }, 'Dépense supprimée', `${dep.desc} ${money(dep.montant)}`, dep.immId);
+    if (dep.docId) vault.deleteFile(dep.docId).catch(() => {});
   },
   async 'open-doc'(d) {
     const doc = vault.get('documents', d.id);
@@ -4200,8 +4378,10 @@ const FORMS = {
       || (/^[a-z]+( [a-z]+){11,23}$/i.test([pay.btc, pay.eth, pay.usdt, pay.usdc].join(' ').trim()) ? 'Ceci ressemble à des mots de récupération : ne les mettez JAMAIS ici !' : '')
       || [['btc', 'BTC'], ['eth', 'ETH'], ['usdt', 'USDT'], ['usdc', 'USDC']].map(([k, n]) => { const m = badAddr(k, pay[k], pay[k + 'Net']); return m ? `${n} : ${m}` : ''; }).find(Boolean) || '';
     if (err) return (form.querySelector('.lock-err').textContent = err);
-    const rec = { id: 'main', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), ville: fd.get('ville').trim(), tel: fd.get('tel').trim(), email: fd.get('email').trim(), iban: fd.get('iban').trim(), ...pay, associes };
+    const rec = { id: 'main', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), ville: fd.get('ville').trim(), tel: fd.get('tel').trim(), email: fd.get('email').trim(), iban: fd.get('iban').trim(), ...pay, associes,
+      pays: g('pays') || 'LU', web: g('web'), rcs: g('rcs'), tvaNum: g('tvaNum'), assujetti: g('assujetti') !== '0', periode: g('periode') || 't', taux: g('taux') };
     await vault.mutate((tx) => tx.put('reglages', rec), 'Société & associés modifiés', rec.nom);
+    applyBrand();
     toast('Enregistré');
     closeSheet();
   },
@@ -4236,9 +4416,12 @@ const FORMS = {
     toast('Notes enregistrées');
   },
   async dep(fd, form) {
-    const rec = { immId: fd.get('immId'), logId: fd.get('logId') || '', desc: fd.get('desc').trim(), montant: num(fd.get('montant')), date: fd.get('date'), cat: fd.get('cat') };
+    const rec = { immId: fd.get('immId'), logId: fd.get('logId') || '', desc: fd.get('desc').trim(), montant: num(fd.get('montant')), date: fd.get('date'), cat: fd.get('cat'),
+      tva: parseFloat(fd.get('tva')) || 0, fournisseur: String(fd.get('fournisseur') || '').trim(), numFacture: String(fd.get('numFacture') || '').trim() };
     if (!rec.desc || !rec.montant) return;
-    await vault.mutate((tx) => tx.put('depenses', rec), 'Dépense ajoutée', `${rec.desc} ${money(rec.montant)}`, rec.immId);
+    const file = fd.get('file');
+    const d = await vault.mutate((tx) => tx.put('depenses', rec), 'Dépense ajoutée', `${rec.desc} ${money(rec.montant)}`, rec.immId);
+    if (file && file.size) await attachFacture(d, file);
     form.reset();
     toast('Dépense ajoutée');
   },
@@ -4399,6 +4582,10 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', (e) => {
   const k = e.target.dataset.input;
   if (k === 'year') { ui.year = +e.target.value; renderView(); }
+  if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
+  if (k === 'soc-logo' && e.target.files[0]) setLogo(e.target.files[0]);
+  if (k === 'cp-per') { ui.cpPer = e.target.value; renderView(); }
+  if (k === 'tva-loyer') { const im = vault.get('immeubles', e.target.dataset.id); if (im) vault.mutate((tx) => tx.put('immeubles', { id: im.id, tvaLoyer: parseFloat(e.target.value) || 0 }), 'TVA sur les loyers', `${im.adresse} : ${e.target.value || 0} %`, im.id); }
   if (k === 'place') {
     const isNew = e.target.value.startsWith('new:');
     $('#newLogWrap').hidden = !isNew;
