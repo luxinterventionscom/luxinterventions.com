@@ -5427,5 +5427,61 @@ export default [
 [
 "Langue",
 "Language"
+],
+[
+"Rechercher : nom, libellé, immeuble, montant, date…",
+"Search: name, description, building, amount, date…"
+],
+[
+"⬇ Afficher le mois précédent ({0})",
+"⬇ Show the previous month ({0})"
+],
+[
+"{0} mois affiché sur {1}",
+"{0} month shown of {1}"
+],
+[
+"{0} mois affichés sur {1}",
+"{0} months shown of {1}"
+],
+[
+"Tous les mois sont affichés ({0}).",
+"All months are shown ({0})."
+],
+[
+"Rien trouvé.",
+"Nothing found."
+],
+[
+"recettes {0}",
+"income {0}"
+],
+[
+"dépenses {0}",
+"expenses {0}"
+],
+[
+"✕ Effacer",
+"✕ Clear"
+],
+[
+"Société corrigée : NOBIS s.a.r.l. · RCS B225665 · TVA LU30599412",
+"Company corrected: NOBIS s.a.r.l. · RCS B225665 · VAT LU30599412"
+],
+[
+"Ces apps appartiennent à NOBIS s.a.r.l. (RCS B225665, TVA LU30599412) : Ares Invest S.A. / B225245 ne peut pas être mis ici.",
+"These apps belong to NOBIS s.a.r.l. (RCS B225665, VAT LU30599412): Ares Invest S.A. / B225245 cannot be entered here."
+],
+[
+"Le nom de la société ne doit contenir que le nom (ex. NOBIS s.a.r.l.) : mettez le RCS et le n° TVA dans leurs cases.",
+"The company name must only contain the name (e.g. NOBIS s.a.r.l.): put the RCS and VAT no. in their own boxes."
+],
+[
+"RCS invalide (ex. B225665).",
+"Invalid RCS (e.g. B225665)."
+],
+[
+"N° TVA invalide (ex. LU30599412).",
+"Invalid VAT no. (e.g. LU30599412)."
 ]
 ];

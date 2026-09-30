@@ -5,7 +5,7 @@ import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.30.1';
+const VERSION = '2.31.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -2127,13 +2127,17 @@ dashboard() {
 
   compta() {
     const y = ui.year, tab = ui.cpTab || 'journal';
-    const per = ui.cpPer || (ui.cpPer = 'q' + (Math.floor(new Date().getMonth() / 3) + 1));
+    const per = ui.cpPer || (ui.cpPer = 'y');
     const soc = societe();
     const tabs = html`<div class="tabs" role="tablist" style="max-width:620px">${[['journal', 'Journal'], ['tva', 'TVA'], ['stats', 'Statistiques'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
     if (tab === 'stats') return html`${pageHead('Comptabilité', 'Journal, TVA, statistiques et export pour le comptable')}${tabs}${VIEWS.stats()}`;
     const perSel = html`<select data-input="cp-per" style="width:auto" aria-label="Période"><option value="y" ${per === 'y' ? new Raw('selected') : ''}>Toute l’année</option>${[1, 2, 3, 4].map((q) => html`<option value="q${q}" ${per === 'q' + q ? new Raw('selected') : ''}>Trimestre ${q}</option>`)}${MONTHS_FULL.map((mn, i) => html`<option value="m${i + 1}" ${per === 'm' + (i + 1) ? new Raw('selected') : ''}>${mn}</option>`)}</select>`;
     const [from, to] = cpRange(y, per);
-    const rows = journal(from, to);
+    const all = journal(from, to);
+    // Recherche (nom, libellé, immeuble, montant, date) et dates du / au
+    const q = (ui.cpQ || '').trim().toLowerCase();
+    const rows = all.filter((r) => (!ui.cpFrom || r.d >= ui.cpFrom) && (!ui.cpTo || r.d <= ui.cpTo)
+      && (!q || [r.lib, r.cat, r.imm, r.d, fmtDate(r.d), money(r.ttc), String(r2(r.ttc))].join(' ').toLowerCase().includes(q)));
     const R = rows.filter((r) => r.sens === 'R'), D = rows.filter((r) => r.sens === 'D');
     const tR = sum(R, (r) => r.ttc), tD = sum(D, (r) => r.ttc);
     const tvaC = sum(R, (r) => r.tva), tvaD = sum(D, (r) => r.tva);
@@ -2147,11 +2151,35 @@ dashboard() {
           <div class="metric hero"><div class="lbl">Résultat ${cpLabel(y, per)}</div><div class="val ${tR - tD < 0 ? 'red' : 'accent'}">${money(tR - tD)}</div><div class="sub">recettes − dépenses (TTC)</div></div>
         </div>
         ${noPiece ? html`<div class="alert warn" style="margin-bottom:12px">${icon('file')}<div><b>${plural(noPiece, 'dépense')} sans facture jointe</b> — ajoutez-la avec 📎+ dans Immeuble → Dépenses.</div></div>` : ''}
-        ${rows.length ? html`<div class="card" style="padding:0;overflow:auto"><table class="tbl"><thead><tr><th>Date</th><th>Libellé</th><th class="r">HT</th><th class="r">TVA</th><th class="r">TTC</th><th></th></tr></thead><tbody>
-          ${rows.map((r) => html`<tr><td class="nowrap">${fmtDate(r.d)}</td><td><b>${r.cat}</b> · ${r.lib}${r.imm ? html`<div class="tiny muted">${r.imm}</div>` : ''}</td>
+        <div class="cp-filter">
+          <div class="search" style="flex:1 1 220px">${icon('search')}<input type="search" name="search" data-input="cp-q" value="${ui.cpQ || ''}" placeholder="Rechercher : nom, libellé, immeuble, montant, date…" autocomplete="off"></div>
+          <label class="field" style="margin:0">Du<input type="date" data-input="cp-from" value="${ui.cpFrom || ''}"></label>
+          <label class="field" style="margin:0">Au<input type="date" data-input="cp-to" value="${ui.cpTo || ''}"></label>
+          ${q || ui.cpFrom || ui.cpTo ? html`<button class="btn sm ghost" data-action="cp-clear">✕ Effacer</button>` : ''}
+        </div>
+        ${q || ui.cpFrom || ui.cpTo ? html`<p class="small muted" style="margin:0 0 8px">${plural(rows.length, 'résultat')}</p>` : ''}
+        ${(() => {
+          if (!rows.length) return empty('file', q || ui.cpFrom || ui.cpTo ? 'Rien trouvé.' : 'Aucune écriture sur cette période.');
+          // mois par mois, le plus récent d'abord ; « mois précédent » ajoute un mois à chaque fois
+          const sorted = rows.slice().sort((a, b) => b.d.localeCompare(a.d) || a.sens.localeCompare(b.sens));
+          const months = [...new Set(sorted.map((r) => r.d.slice(0, 7)))];
+          // on part du mois en cours (les éventuels mois futurs restent visibles au-dessus)
+          const cur = today().slice(0, 7);
+          const start = Math.max(0, months.findIndex((k) => k <= cur));
+          const n = (months.findIndex((k) => k <= cur) < 0 ? 0 : start) + Math.max(1, ui.cpMonths || 1);
+          // en recherche (ou avec des dates) : tous les résultats d'un coup
+          const all2 = q || ui.cpFrom || ui.cpTo;
+          const shown = all2 ? months : months.slice(0, n);
+          const next = all2 ? null : months[n];
+          const mLabel = (k) => `${MONTHS_FULL[+k.slice(5, 7) - 1]} ${k.slice(0, 4)}`;
+          return html`<div class="card" style="padding:0;overflow:auto"><table class="tbl cp-tbl"><thead><tr><th>Date</th><th>Libellé</th><th class="r">HT</th><th class="r">TVA</th><th class="r">TTC</th><th></th></tr></thead><tbody>
+          ${shown.map((mk) => { const mr = sorted.filter((r) => r.d.startsWith(mk)); const rr = sum(mr.filter((r) => r.sens === 'R'), (r) => r.ttc), dd = sum(mr.filter((r) => r.sens === 'D'), (r) => r.ttc); return html`<tr class="cp-month"><td colspan="6"><b>${mLabel(mk)}</b> <span class="tiny muted">· recettes ${money(rr)} · dépenses ${money(dd)} · ${plural(mr.length, 'écriture')}</span></td></tr>
+            ${mr.map((r) => html`<tr><td class="nowrap">${fmtDate(r.d)}</td><td><b>${r.cat}</b> · ${r.lib}${r.imm ? html`<div class="tiny muted">${r.imm}</div>` : ''}</td>
             <td class="r">${money(r.ttc - r.tva)}</td><td class="r">${r.tva ? money(r.tva) : '—'}</td><td class="r ${r.sens === 'R' ? 'green' : 'red'}">${r.sens === 'R' ? '' : '−'}${money(r.ttc)}</td>
-            <td>${r.piece ? html`<button class="btn sm" data-action="open-doc" data-id="${r.piece}">📎</button>` : ''}</td></tr>`)}
-        </tbody></table></div>` : empty('file', 'Aucune écriture sur cette période.')}`;
+            <td>${r.piece ? html`<button class="btn sm" data-action="open-doc" data-id="${r.piece}">📎</button>` : ''}</td></tr>`)}`; })}
+          </tbody></table></div>
+          ${next ? html`<button class="btn block" style="margin-top:12px" data-action="cp-more">⬇ Afficher le mois précédent (${mLabel(next)})</button><p class="tiny muted" style="text-align:center;margin:6px 0 0">${plural(shown.length, 'mois affiché')} sur ${months.length}</p>` : months.length > 1 ? html`<p class="tiny muted" style="text-align:center;margin:10px 0 0">Tous les mois sont affichés (${months.length}).</p>` : ''}`;
+        })()}`;
     } else if (tab === 'tva') {
       const perT = soc.periode || 't';
       const periods = perT === 'm' ? MONTHS_FULL.map((_, i) => 'm' + (i + 1)) : perT === 'a' ? ['y'] : ['q1', 'q2', 'q3', 'q4'];
@@ -3681,6 +3709,8 @@ const ACTIONS = {
   'edit-interv': (d) => openOver('interv-form', d.id),
   'open-interv': (d) => openSheet('interv', d.id),
   'cp-tab': (d) => { ui.cpTab = d.id; renderView(); },
+  'cp-more': () => { ui.cpMonths = (ui.cpMonths || 1) + 1; renderView(); },
+  'cp-clear': () => { ui.cpQ = ''; ui.cpFrom = ''; ui.cpTo = ''; ui.cpMonths = 1; renderView(); },
   'soc-logo-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', logo: '' }), 'Logo retiré', socName()); applyBrand(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
   'cp-csv': () => {
     const y = ui.year, per = ui.cpPer || 'y';
@@ -4599,6 +4629,7 @@ document.addEventListener('input', (e) => {
   const k = e.target.dataset.input;
   if (k === 'esp-search') filterEspList();
   if (k === 'search') { ui.search = e.target.value; renderView(); }
+  if (k === 'cp-q') { ui.cpQ = e.target.value; ui.cpMonths = 1; clearTimeout(ui.cpT); ui.cpT = setTimeout(renderView, 200); }
   if (k === 'idx-pct' || k === 'idx-amount') {
     const f = e.target.form;
     const l = vault.get('locataires', f.querySelector('[name=id]').value);
@@ -4611,7 +4642,8 @@ document.addEventListener('change', (e) => {
   if (k === 'year') { ui.year = +e.target.value; renderView(); }
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
   if (k === 'soc-logo' && e.target.files[0]) setLogo(e.target.files[0]);
-  if (k === 'cp-per') { ui.cpPer = e.target.value; renderView(); }
+  if (k === 'cp-per') { ui.cpPer = e.target.value; ui.cpMonths = 1; renderView(); }
+  if (k === 'cp-from' || k === 'cp-to') { ui[k === 'cp-from' ? 'cpFrom' : 'cpTo'] = e.target.value; ui.cpMonths = 1; renderView(); }
   if (k === 'tva-loyer') { const im = vault.get('immeubles', e.target.dataset.id); if (im) vault.mutate((tx) => tx.put('immeubles', { id: im.id, tvaLoyer: parseFloat(e.target.value) || 0 }), 'TVA sur les loyers', `${im.adresse} : ${e.target.value || 0} %`, im.id); }
   if (k === 'place') {
     const isNew = e.target.value.startsWith('new:');

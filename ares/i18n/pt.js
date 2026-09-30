@@ -5523,5 +5523,61 @@ export default [
 [
 "Langue",
 "Língua"
+],
+[
+"Rechercher : nom, libellé, immeuble, montant, date…",
+"Procurar: nome, descrição, imóvel, valor, data…"
+],
+[
+"⬇ Afficher le mois précédent ({0})",
+"⬇ Mostrar o mês anterior ({0})"
+],
+[
+"{0} mois affiché sur {1}",
+"{0} mês mostrado de {1}"
+],
+[
+"{0} mois affichés sur {1}",
+"{0} meses mostrados de {1}"
+],
+[
+"Tous les mois sont affichés ({0}).",
+"Todos os meses estão visíveis ({0})."
+],
+[
+"Rien trouvé.",
+"Nada encontrado."
+],
+[
+"recettes {0}",
+"receitas {0}"
+],
+[
+"dépenses {0}",
+"despesas {0}"
+],
+[
+"✕ Effacer",
+"✕ Limpar"
+],
+[
+"Société corrigée : NOBIS s.a.r.l. · RCS B225665 · TVA LU30599412",
+"Sociedade corrigida: NOBIS s.a.r.l. · RCS B225665 · IVA LU30599412"
+],
+[
+"Ces apps appartiennent à NOBIS s.a.r.l. (RCS B225665, TVA LU30599412) : Ares Invest S.A. / B225245 ne peut pas être mis ici.",
+"Estas apps pertencem à NOBIS s.a.r.l. (RCS B225665, IVA LU30599412): Ares Invest S.A. / B225245 não pode ser colocado aqui."
+],
+[
+"Le nom de la société ne doit contenir que le nom (ex. NOBIS s.a.r.l.) : mettez le RCS et le n° TVA dans leurs cases.",
+"O nome da sociedade deve ter só o nome (ex. NOBIS s.a.r.l.): coloque o RCS e o NIF nos seus campos."
+],
+[
+"RCS invalide (ex. B225665).",
+"RCS inválido (ex. B225665)."
+],
+[
+"N° TVA invalide (ex. LU30599412).",
+"NIF inválido (ex. LU30599412)."
 ]
 ];
