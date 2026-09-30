@@ -2,9 +2,10 @@
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
+import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.29.0';
+const VERSION = '2.30.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -57,13 +58,17 @@ const ICONS = {
 const icon = (n) => new Raw(`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`);
 
 // ───────────────────────── Formats ─────────────────────────
-const MONTHS = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'];
-const MONTHS_FULL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-const eurFmt = new Intl.NumberFormat('fr-LU', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 2 });
+// Langue de l'interface (Réglages → Apparence) : le français est la langue source, les autres sont traduites à l'affichage
+const LANG = getLang(), LOC = LOCALES[LANG];
+await startI18n(LANG);
+const cap1 = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+const MONTHS = LANG === 'fr' ? ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'] : Array.from({ length: 12 }, (_, i) => cap1(new Date(2026, i, 15).toLocaleDateString(LOC, { month: 'short' }).replace('.', '')));
+const MONTHS_FULL = LANG === 'fr' ? ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] : Array.from({ length: 12 }, (_, i) => cap1(new Date(2026, i, 15).toLocaleDateString(LOC, { month: 'long' })));
+const eurFmt = new Intl.NumberFormat(LOC, { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 2 });
 const money = (n) => eurFmt.format(n || 0);
 const num = (v) => { const n = parseFloat(String(v ?? '').replace(',', '.')); return isFinite(n) ? n : 0; };
-const fmtDate = (s) => (s ? new Date(s + (s.length === 10 ? 'T00:00:00' : '')).toLocaleDateString('fr-LU', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
-const fmtDateTime = (t) => new Date(t).toLocaleString('fr-LU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+const fmtDate = (s) => (s ? new Date(s + (s.length === 10 ? 'T00:00:00' : '')).toLocaleDateString(LOC, { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+const fmtDateTime = (t) => new Date(t).toLocaleString(LOC, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 const isoDate = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 const today = () => isoDate(new Date());
 const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
@@ -133,7 +138,7 @@ const DECHETS = {
 const LIEUX = { rue: 'Sur le trottoir (devant l’immeuble)', soussol: 'Au sous-sol / local poubelles', garage: 'Au garage', autre: 'Autre (voir remarque)' };
 const JOURS = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
 const weekday = (s) => new Date(s + 'T00:00:00').getDay();
-const fmtDay = (s) => new Date(s + 'T00:00:00').toLocaleDateString('fr-LU', { weekday: 'long', day: 'numeric', month: 'long' });
+const fmtDay = (s) => new Date(s + 'T00:00:00').toLocaleDateString(LOC, { weekday: 'long', day: 'numeric', month: 'long' });
 
 // Dates d'une règle récurrente entre from et to (inclus). start = première date de la série.
 function recurDates(start, recur, from, to, end) {
@@ -180,7 +185,7 @@ function collecteDates(c, from, to) {
 // Quand sortir les poubelles : la veille au soir (par défaut) ou le jour même, tôt le matin
 const SORTIES = { veille: 'La veille au soir', jour: 'Le jour même, tôt le matin' };
 const sortieDay = (c, d) => (c.sortie === 'jour' ? d : addDays(d, -1));
-const shortDay = (s) => new Date(s + 'T00:00:00').toLocaleDateString('fr-LU', { weekday: 'long', day: 'numeric', month: 'short' });
+const shortDay = (s) => new Date(s + 'T00:00:00').toLocaleDateString(LOC, { weekday: 'long', day: 'numeric', month: 'short' });
 const sortieText = (c, d) => c.sortie === 'jour'
   ? `à sortir le jour même${c.heure ? ' ' + c.heure : ' tôt le matin'}`
   : `à sortir la veille au soir${d ? ' (' + shortDay(addDays(d, -1)) + ')' : ''}${c.heure ? ' ' + c.heure : ''}`;
@@ -2281,6 +2286,9 @@ dashboard() {
 
       <div class="section-label">Apparence</div>
       <div class="chips">${[['auto', 'Automatique'], ['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => html`<button class="chip" data-action="theme" data-id="${k}" aria-pressed="${theme === k}">${l}</button>`)}</div>
+      <div class="section-label">Langue · Lingua · Sprache · Língua · Language · Idioma</div>
+      <div class="chips" data-notr="1">${Object.entries(LANGS).map(([k, l]) => html`<button class="chip" data-action="set-lang" data-id="${k}" aria-pressed="${LANG === k}">${l}</button>`)}</div>
+      <p class="tiny muted" style="margin-top:4px">Les quittances, reçus et relances aux locataires restent en français (documents officiels).</p>
       <p class="tiny muted" style="margin-top:28px;text-align:center">NOBIS s.a.r.l. · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
   },
 };
@@ -4027,6 +4035,7 @@ const ACTIONS = {
   'imm-locs': (d) => { ui.immFilter = d.id; go('locataires'); },
   'imm-pay': (d) => { ui.immFilter = d.id; ui.year = new Date().getFullYear(); go('paiements'); },
   'more-hist': () => { ui.histShown += 30; renderView(); },
+  'set-lang': (d) => { if (d.id === LANG) return; setLang(d.id); location.reload(); },
   theme: (d) => { localStorage.setItem('aresTheme', d.id); applyTheme(); renderView(); },
   'change-key': () => openSheet('key-form'),
   print: () => { go('paiements'); setTimeout(() => print(), 300); },

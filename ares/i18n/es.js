@@ -1,0 +1,5551 @@
+// Traduction de l’interface de gestion (source : français). Généré — une ligne par phrase.
+export default [
+[
+"(avec la raison et des photos), ses coordonnées, un",
+"(con el motivo y fotos), sus datos, una"
+],
+[
+"(commencé, fini, pas fini, notes, photos…)",
+"(empezado, terminado, no terminado, notas, fotos…)"
+],
+[
+"(lien ou QR code, sans mot de passe à retenir) où il voit",
+"(enlace o código QR, sin contraseña) donde ve"
+],
+[
+"(locataire principal) →",
+"(inquilino principal) →"
+],
+[
+"(passage aujourd'hui)",
+"(recogida hoy)"
+],
+[
+"(passage aujourd'hui) — Papier ({0})",
+"(recogida hoy) — Papel ({0})"
+],
+[
+"(passage demain)",
+"(recogida mañana)"
+],
+[
+"(passage demain) — Verre ({0}, après {1} h), Résiduels ({2}, après {3} h)",
+"(recogida mañana) — Vidrio ({0}, después de las {1} h), Resto ({2}, después de las {3} h)"
+],
+[
+"(pour l'app installée depuis luxinterventions.com) ou envoyez-lui le lien direct.",
+"(para la app instalada desde luxinterventions.com) o envíale el enlace directo."
+],
+[
+"(prix unique)",
+"(precio único)"
+],
+[
+"(publique) de votre wallet.",
+"(pública) de tu monedero."
+],
+[
+"(recettes, dépenses, bailleurs, frais fixes, avec HT / TVA / TTC) pour votre comptable. Le fichier s’ouvre dans Excel, Numbers ou LibreOffice.",
+"(ingresos, gastos, propietarios, gastos fijos, con base / IVA / total) para tu gestor. El archivo se abre en Excel, Numbers o LibreOffice."
+],
+[
+"({0} caractères, ex. {1}-…) créée dans Réglages. Vous choisirez ensuite une nouvelle clé d'accès.",
+"({0} caracteres, p. ej. {1}-…) creada en Ajustes. Después elegirás una nueva clave de acceso."
+],
+[
+"({0}) est vacant",
+"({0}) está libre"
+],
+[
+"(« Télécharger l'app des locataires {0} ») et entrent avec le",
+"(« Descargar la app de inquilinos {0} ») y entran con el"
+],
+[
+"+ {0} an",
+"+ {0} año"
+],
+[
+"+ {0} ans",
+"+ {0} años"
+],
+[
+", bloquer l'accès d'un locataire parce qu'il n'a pas payé est en principe interdit au Luxembourg (seul un juge peut ordonner l'expulsion). Réservé aux séjours courts / chambres d'hôtel selon vos conditions",
+", bloquear el acceso a un inquilino por no pagar está en principio prohibido en Luxemburgo (solo un juez puede ordenar el desahucio). Reservado a estancias cortas / habitaciones de hotel según tus condiciones"
+],
+[
+", bloquer l'accès d'un locataire parce qu'il n'a pas payé est en principe interdit au Luxembourg (seul un juge peut ordonner l'expulsion). Réservé aux séjours courts / chambres d'hôtel selon vos conditions — vérifiez avec votre avocat.",
+", bloquear el acceso a un inquilino por no pagar está en principio prohibido en Luxemburgo (solo un juez puede ordenar el desahucio). Reservado a estancias cortas / habitaciones de hotel según tus condiciones — consúltalo con tu abogado."
+],
+[
+". La page se met à jour toute seule quand vous changez les collectes.",
+". La página se actualiza sola cuando cambias las recogidas."
+],
+[
+". Le lien est secret (impossible à deviner) et peut être désactivé à tout moment.",
+". El enlace es secreto (imposible de adivinar) y se puede desactivar en cualquier momento."
+],
+[
+"/ heure",
+"/ hora"
+],
+[
+"/ jour",
+"/ día"
+],
+[
+"/ semaine",
+"/ semana"
+],
+[
+"/ week-end",
+"/ fin de semana"
+],
+[
+"0x… ou T…",
+"0x… o T…"
+],
+[
+": NOBIS le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.",
+": NOBIS lo separa solo por tipo de residuo (vidrio, papel, resto…) y crea una recogida para cada uno."
+],
+[
+": logements, anciens locataires, loyers, versements et dépenses restent dans l'historique et les statistiques.",
+": viviendas, antiguos inquilinos, alquileres, pagos y gastos quedan en el historial y las estadísticas."
+],
+[
+": prochaines collectes, « ce soir, sortez le verre », et un bouton pour ajouter le calendrier à leur téléphone (rappel la veille). En français, allemand, portugais et anglais.",
+": próximas recogidas, « esta noche saca el vidrio », y un botón para añadir el calendario al móvil (aviso la víspera). En francés, alemán, portugués e inglés."
+],
+[
+"? → indéterminé",
+"? → indefinido"
+],
+[
+"Absence enregistrée",
+"Ausencia registrada"
+],
+[
+"Absences",
+"Ausencias"
+],
+[
+"Absences 🔴",
+"Ausencias 🔴"
+],
+[
+"Accueil",
+"Inicio"
+],
+[
+"Accès, clés, pièces à acheter, ce qui a été fait…",
+"Acceso, llaves, piezas que comprar, lo que se hizo…"
+],
+[
+"Activité",
+"Actividad"
+],
+[
+"Activité de l’équipe",
+"Actividad del equipo"
+],
+[
+"Actualiser",
+"Actualizar"
+],
+[
+"Actuel",
+"Actual"
+],
+[
+"Actuels",
+"Actuales"
+],
+[
+"Adresse",
+"Dirección"
+],
+[
+"Adresse Bitcoin (BTC)",
+"Dirección Bitcoin (BTC)"
+],
+[
+"Adresse Ethereum (ETH)",
+"Dirección Ethereum (ETH)"
+],
+[
+"Adresse USDC",
+"Dirección USDC"
+],
+[
+"Adresse USDT",
+"Dirección USDT"
+],
+[
+"Adresse complète",
+"Dirección completa"
+],
+[
+"Affiche avec QR",
+"Cartel con QR"
+],
+[
+"Affiche {0}",
+"Cartel {0}"
+],
+[
+"Afficher",
+"Mostrar"
+],
+[
+"Agrandir",
+"Ampliar"
+],
+[
+"Ajoute l’icône NOBIS sur l’écran d’accueil, fonctionne hors ligne.",
+"Pone el icono NOBIS en la pantalla de inicio, funciona sin conexión."
+],
+[
+"Ajouter",
+"Añadir"
+],
+[
+"Ajouter : Carte CNS (assurance maladie)",
+"Añadir: Tarjeta CNS (seguro médico)"
+],
+[
+"Ajouter : Pièce d'identité (carte d'identité / passeport)",
+"Añadir: Documento de identidad (DNI / pasaporte)"
+],
+[
+"Ajouter : Preuve de la caution (reçu, virement, message)",
+"Añadir: Justificante de la fianza (recibo, transferencia, mensaje)"
+],
+[
+"Ajouter : {0}",
+"Añadir: {0}"
+],
+[
+"Ajouter des photos",
+"Añadir fotos"
+],
+[
+"Ajouter la dépense",
+"Añadir el gasto"
+],
+[
+"Ajouter le document",
+"Añadir el documento"
+],
+[
+"Ajouter les associés",
+"Añadir los socios"
+],
+[
+"Ajouter l’absence",
+"Añadir la ausencia"
+],
+[
+"Ajouter un colocataire",
+"Añadir un compañero de piso"
+],
+[
+"Ajouter un immeuble",
+"Añadir un edificio"
+],
+[
+"Ajouter un intervenant",
+"Añadir una persona"
+],
+[
+"Ajouter un locataire",
+"Añadir un inquilino"
+],
+[
+"Ajouter un logement / local",
+"Añadir una vivienda / local"
+],
+[
+"Ajouter une collecte",
+"Añadir una recogida"
+],
+[
+"Ajoutez vos intervenants dans Maintenance → Intervenants.",
+"Añade personas en Mantenimiento → Equipo."
+],
+[
+"Ancien café / local transformé en chambres",
+"Antiguo bar / local convertido en habitaciones"
+],
+[
+"Ancienne copie effacée",
+"Copia antigua borrada"
+],
+[
+"Ancienne version",
+"Versión antigua"
+],
+[
+"Anciens ({0})",
+"Antiguos ({0})"
+],
+[
+"Annonce approuvée",
+"Anuncio aprobado"
+],
+[
+"Annonce approuvée · en ligne sur le site",
+"Anuncio aprobado · publicado en la web"
+],
+[
+"Annonce publiée sur le site",
+"Anuncio publicado en la web"
+],
+[
+"Annonce retirée",
+"Anuncio retirado"
+],
+[
+"Annonces des locataires sur le site",
+"Anuncios de los inquilinos en la web"
+],
+[
+"Annonces publiées par les locataires depuis leur app : elles apparaissent sur le site après votre approbation. Les intéressés écrivent directement à l’email de l’annonceur et l’argent s’échange entre eux, en espèces à la remise : vous n’intervenez pas. Retirez tout objet illicite ou compromettant.",
+"Anuncios publicados por los inquilinos desde su app: aparecen en la web tras tu aprobación. Los interesados escriben directamente al email del anunciante y el dinero se intercambia entre ellos, en efectivo a la entrega: tú no intervienes. Retira cualquier objeto ilícito o comprometido."
+],
+[
+"Annuelle",
+"Anual"
+],
+[
+"Annuler",
+"Cancelar"
+],
+[
+"Annuler le paiement",
+"Anular el pago"
+],
+[
+"Année",
+"Año"
+],
+[
+"App de l’équipe prête",
+"App del equipo lista"
+],
+[
+"App des locataires",
+"App de inquilinos"
+],
+[
+"Apparence",
+"Apariencia"
+],
+[
+"Appartement",
+"Apartamento"
+],
+[
+"Appeler",
+"Llamar"
+],
+[
+"Application",
+"Aplicación"
+],
+[
+"Appliquer",
+"Aplicar"
+],
+[
+"Approuver",
+"Aprobar"
+],
+[
+"Apt {0}",
+"Apto. {0}"
+],
+[
+"Arrive le {0}",
+"Llega el {0}"
+],
+[
+"Arrivée prévue",
+"Llegada prevista"
+],
+[
+"Associé {0}",
+"Socio {0}"
+],
+[
+"Associés",
+"Socios"
+],
+[
+"Associés — partage du résultat net",
+"Socios — reparto del resultado neto"
+],
+[
+"Assujetti à la TVA",
+"Sujeto a IVA"
+],
+[
+"Astuce : envoyez le lien par WhatsApp ou SMS, ou affichez l'affiche dans l'entrée.",
+"Consejo: envía el enlace por WhatsApp o SMS, o pon el cartel en la entrada."
+],
+[
+"Astuce : renseignez la société dans Réglages → Société & associés",
+"Consejo: rellena la sociedad en Ajustes → Sociedad y socios"
+],
+[
+"Atelier / entrepôt",
+"Taller / almacén"
+],
+[
+"Attention :",
+"Atención:"
+],
+[
+"Attention : demain ou après-demain",
+"Atención: mañana o pasado mañana"
+],
+[
+"Attestation assurance habitation",
+"Certificado de seguro del hogar"
+],
+[
+"Attribuer",
+"Asignar"
+],
+[
+"Au (inclus)",
+"Hasta (incluido)"
+],
+[
+"Au Luxembourg, la location d’habitation est en principe",
+"En Luxemburgo, el alquiler de vivienda está en principio"
+],
+[
+"Au garage",
+"En el garaje"
+],
+[
+"Au moins {0} caractères",
+"Al menos {0} caracteres"
+],
+[
+"Au sous-sol / local poubelles",
+"En el sótano / cuarto de basuras"
+],
+[
+"Aucun avis en cours.",
+"Ningún aviso en curso."
+],
+[
+"Aucun document.",
+"Ningún documento."
+],
+[
+"Aucun fil pour le moment : un fil se crée tout seul dès que {0} personnes habitent le même appartement (ou le même groupe choisi ci-dessus).",
+"Aún no hay conversación: se crea sola en cuanto {0} personas viven en el mismo piso (o en el mismo grupo elegido arriba)."
+],
+[
+"Aucun frais fixe.",
+"Ningún gasto fijo."
+],
+[
+"Aucun immeuble enregistré.",
+"Ningún edificio registrado."
+],
+[
+"Aucun immeuble pour le moment.",
+"Aún no hay edificios."
+],
+[
+"Aucun intervenant. Ajoutez la femme de ménage et les artisans (menuisier, électricien, plombier, chauffagiste, maçon…).",
+"Nadie todavía. Añade la limpiadora y los profesionales (carpintero, electricista, fontanero, calefactor, albañil…)."
+],
+[
+"Aucun locataire enregistré.",
+"Ningún inquilino registrado."
+],
+[
+"Aucun locataire à afficher pour {0}.",
+"Ningún inquilino que mostrar para {0}."
+],
+[
+"Aucun logement. Ajoutez les appartements, chambres, garages, bureaux ou locaux de cette structure pour suivre leurs occupants successifs.",
+"Ninguna vivienda. Añade los pisos, habitaciones, garajes, oficinas o locales de este edificio para seguir a sus ocupantes."
+],
+[
+"Aucun loyer au bailleur renseigné. Si vous louez cet immeuble à un bailleur, indiquez le montant dans « Modifier ».",
+"Ningún alquiler al propietario indicado. Si alquilas este edificio a un propietario, indica el importe en « Modificar »."
+],
+[
+"Aucun message pour le moment.",
+"Aún no hay mensajes."
+],
+[
+"Aucune absence enregistrée.",
+"Ninguna ausencia registrada."
+],
+[
+"Aucune annonce en attente.",
+"Ningún anuncio pendiente."
+],
+[
+"Aucune annonce en ligne.",
+"Ningún anuncio publicado."
+],
+[
+"Aucune collecte enregistrée.",
+"Ninguna recogida registrada."
+],
+[
+"Aucune dépense.",
+"Ningún gasto."
+],
+[
+"Aucune intervention.",
+"Ninguna intervención."
+],
+[
+"Aucune photo pour le moment.",
+"Aún no hay fotos."
+],
+[
+"Aujourd'hui {0}",
+"Hoy {0}"
+],
+[
+"Automatique",
+"Automático"
+],
+[
+"Autre",
+"Otro"
+],
+[
+"Autre (voir remarque)",
+"Otro (ver nota)"
+],
+[
+"Autre collecte",
+"Otra recogida"
+],
+[
+"Autre collecte — {0} passages",
+"Otra recogida — {0} pasos"
+],
+[
+"Autre document",
+"Otro documento"
+],
+[
+"Autre structure",
+"Otro edificio"
+],
+[
+"Autres moyens de paiement (bouton « Payer maintenant » des locataires)",
+"Otros medios de pago (botón « Pagar ahora » de los inquilinos)"
+],
+[
+"Avancer l'entrée et payer",
+"Adelantar la entrada y pagar"
+],
+[
+"Avec accès ({0})",
+"Con acceso ({0})"
+],
+[
+"Avis",
+"Avisos"
+],
+[
+"Avis de l’immeuble (travaux, coupures…)",
+"Avisos del edificio (obras, cortes…)"
+],
+[
+"Avis enregistré",
+"Aviso guardado"
+],
+[
+"Bail principal",
+"Contrato principal"
+],
+[
+"Bail principal — vous êtes locataire principal, le bailleur est le propriétaire",
+"Contrato principal — tú eres el inquilino principal, el arrendador es el propietario"
+],
+[
+"Bailleur",
+"Propietario"
+],
+[
+"Bailleur (propriétaire)",
+"Arrendador (propietario)"
+],
+[
+"Bailleur (propriétaire) →",
+"Arrendador (propietario) →"
+],
+[
+"Bailleurs",
+"Propietarios"
+],
+[
+"Bailleurs / mois",
+"Propietarios / mes"
+],
+[
+"Belgique",
+"Bélgica"
+],
+[
+"Bienvenue",
+"Bienvenido"
+],
+[
+"Bilan",
+"Balance"
+],
+[
+"Biodéchets / organique (umido)",
+"Orgánico"
+],
+[
+"Biodéchets / organique (umido) — {0} passages",
+"Orgánico — {0} pasos"
+],
+[
+"Bureau",
+"Oficina"
+],
+[
+"Bâtiment commercial / bureaux",
+"Edificio comercial / oficinas"
+],
+[
+"Cabinet (médical, profession libérale)",
+"Consulta (médica, profesión liberal)"
+],
+[
+"Calcul sur l’horaire habituel : pour les heures en plus ou en moins, ajoutez une note.",
+"Cálculo sobre el horario habitual: para horas de más o de menos, añade una nota."
+],
+[
+"Calendrier de la commune",
+"Calendario del ayuntamiento"
+],
+[
+"Carte CNS",
+"Tarjeta CNS"
+],
+[
+"Carte CNS (assurance maladie)",
+"Tarjeta CNS (seguro médico)"
+],
+[
+"Catégorie",
+"Categoría"
+],
+[
+"Caution",
+"Fianza"
+],
+[
+"Caution reçue (€)",
+"Fianza recibida (€)"
+],
+[
+"Caution reçue le",
+"Fianza recibida el"
+],
+[
+"Caution reçue par",
+"Fianza recibida por"
+],
+[
+"Caution, retour, paiement en espèces à la remise…",
+"Fianza, devolución, pago en efectivo a la entrega…"
+],
+[
+"Cave / débarras",
+"Trastero / despensa"
+],
+[
+"Ce matin : sortir les poubelles",
+"Esta mañana: sacar la basura"
+],
+[
+"Ce mois-ci",
+"Este mes"
+],
+[
+"Ce qu'il voit",
+"Lo que ve"
+],
+[
+"Ce soir : sortir les poubelles",
+"Esta noche: sacar la basura"
+],
+[
+"Ceci ressemble à des mots de récupération : ne les mettez {0} ici !",
+"Parecen palabras de recuperación: ¡NUNCA las pongas aquí!"
+],
+[
+"Celle de son téléphone",
+"La de su teléfono"
+],
+[
+"Certificat / justificatif (photo ou PDF)",
+"Certificado / justificante (foto o PDF)"
+],
+[
+"Cet appareil : {0}. Une connexion ailleurs déconnecte celui-ci.",
+"Este dispositivo: {0}. Una conexión en otro sitio desconecta este."
+],
+[
+"Cette action est irréversible.",
+"Esta acción es irreversible."
+],
+[
+"Chambre",
+"Habitación"
+],
+[
+"Changer",
+"Cambiar"
+],
+[
+"Changer de locataire",
+"Cambiar de inquilino"
+],
+[
+"Changer la clé",
+"Cambiar la clave"
+],
+[
+"Changer la clé d'accès",
+"Cambiar la clave de acceso"
+],
+[
+"Changer le code",
+"Cambiar el código"
+],
+[
+"Chaque année : remplacez les dates par celles du nouveau calendrier de la commune.",
+"Cada año: sustituye las fechas por las del nuevo calendario del ayuntamiento."
+],
+[
+"Chaque mois",
+"Cada mes"
+],
+[
+"Chaque semaine",
+"Cada semana"
+],
+[
+"Chaque semaine, le même jour",
+"Cada semana, el mismo día"
+],
+[
+"Chargement…",
+"Cargando…"
+],
+[
+"Charges (€ / mois)",
+"Gastos (€ / mes)"
+],
+[
+"Chauffagiste",
+"Calefactor"
+],
+[
+"Chiffrement de bout en bout",
+"Cifrado de extremo a extremo"
+],
+[
+"Chiffrement de bout en bout · {0}",
+"Cifrado de extremo a extremo · {0}"
+],
+[
+"Chiffrement des photos…",
+"Cifrando las fotos…"
+],
+[
+"Chiffrement…",
+"Cifrando…"
+],
+[
+"Choisissez la clé d'accès : elle chiffre toutes les données et ne peut pas être récupérée si elle est perdue.",
+"Elige la clave de acceso: cifra todos los datos y no se puede recuperar si la pierdes."
+],
+[
+"Choisissez maintenant votre nouvelle clé d'accès.",
+"Elige ahora tu nueva clave de acceso."
+],
+[
+"Chrome : cet appareil a été déconnecté.",
+"Chrome: este dispositivo ha sido desconectado."
+],
+[
+"Chrome est connecté depuis {0} (actif il y a {1} s). Un seul appareil peut être connecté à la fois : si vous continuez, l'autre sera déconnecté immédiatement.",
+"Chrome está conectado desde {0} (activo hace {1} s). Solo puede haber un dispositivo conectado a la vez: si continúas, el otro se desconectará al instante."
+],
+[
+"Chrome. Une connexion ailleurs déconnecte celui-ci.",
+"Chrome. Una conexión en otro sitio desconecta este."
+],
+[
+"Chèque",
+"Cheque"
+],
+[
+"Clair",
+"Claro"
+],
+[
+"Classement des tours des poubelles",
+"Clasificación de los turnos de basura"
+],
+[
+"Classement des tours des poubelles faits, dans tous les immeubles. Les {0} premiers gagnent… une pizza 🍕",
+"Clasificación de turnos de basura hechos, en todos los edificios. Los {0} primeros ganan… una pizza 🍕"
+],
+[
+"Classement des tours des poubelles · podium · pizza 🍕",
+"Clasificación de los turnos de basura · podio · pizza 🍕"
+],
+[
+"Classement {0}",
+"Clasificación {0}"
+],
+[
+"Clé actuelle",
+"Clave actual"
+],
+[
+"Clé copiée",
+"Clave copiada"
+],
+[
+"Clé d'accès",
+"Clave de acceso"
+],
+[
+"Clé d'accès changée",
+"Clave de acceso cambiada"
+],
+[
+"Clé d'accès incorrecte",
+"Clave de acceso incorrecta"
+],
+[
+"Clé d'accès oubliée ?",
+"¿Olvidaste la clave de acceso?"
+],
+[
+"Clé de secours",
+"Clave de emergencia"
+],
+[
+"Clé de secours incorrecte",
+"Clave de emergencia incorrecta"
+],
+[
+"Clés confiées, disponibilités…",
+"Llaves confiadas, disponibilidad…"
+],
+[
+"Code actuel de la porte",
+"Código actual de la puerta"
+],
+[
+"Code d'accès personnel",
+"Código de acceso personal"
+],
+[
+"Code de configuration",
+"Código de configuración"
+],
+[
+"Code de configuration incorrect",
+"Código de configuración incorrecto"
+],
+[
+"Code de la porte",
+"Código de la puerta"
+],
+[
+"Code de la porte (serrure à code / connectée)",
+"Código de la puerta (cerradura con código / inteligente)"
+],
+[
+"Code de la porte — {0}",
+"Código de la puerta — {0}"
+],
+[
+"Code enregistré",
+"Código guardado"
+],
+[
+"Code oublié",
+"Código olvidado"
+],
+[
+"Code personnel",
+"Código personal"
+],
+[
+"Code postal et ville",
+"Código postal y ciudad"
+],
+[
+"Code proposé au hasard",
+"Código propuesto al azar"
+],
+[
+"Code proposé au hasard — vous pouvez le changer. Programmez-le d'abord dans la serrure (app du fabricant), puis enregistrez-le ici.",
+"Código propuesto al azar — puedes cambiarlo. Prográmalo primero en la cerradura (app del fabricante) y luego guárdalo aquí."
+],
+[
+"Coffre ouvert.",
+"Caja fuerte abierta."
+],
+[
+"Collecte",
+"Recogida"
+],
+[
+"Collecte enregistrée",
+"Recogida guardada"
+],
+[
+"Collectes des déchets de l’immeuble",
+"Recogidas de basura del edificio"
+],
+[
+"Collectée",
+"Repercutido"
+],
+[
+"Colocation",
+"Piso compartido"
+],
+[
+"Commencez par ajouter un immeuble, puis ses logements et locataires.",
+"Empieza añadiendo un edificio, luego sus viviendas e inquilinos."
+],
+[
+"Complet",
+"Completo"
+],
+[
+"Comptabilité",
+"Contabilidad"
+],
+[
+"Comptabilité et TVA",
+"Contabilidad e IVA"
+],
+[
+"Comptabilité — journal, TVA, statistiques, export",
+"Contabilidad — diario, IVA, estadísticas, exportación"
+],
+[
+"Concerne",
+"Afecta a"
+],
+[
+"Conditions",
+"Condiciones"
+],
+[
+"Conditions : {0}",
+"Condiciones: {0}"
+],
+[
+"Confirmer",
+"Confirmar"
+],
+[
+"Confirmer la clé",
+"Confirmar la clave"
+],
+[
+"Confirmer la fin de gestion",
+"Confirmar el fin de la gestión"
+],
+[
+"Confirmer le changement",
+"Confirmar el cambio"
+],
+[
+"Connexion annulée : NOBIS reste ouvert sur l’autre appareil.",
+"Conexión cancelada: NOBIS sigue abierto en el otro dispositivo."
+],
+[
+"Conseil : une phrase de {0} ou {1} mots est à la fois forte et facile à retenir.",
+"Consejo: una frase de {0} o {1} palabras es a la vez fuerte y fácil de recordar."
+],
+[
+"Contrat",
+"Contrato"
+],
+[
+"Contrat (entrée, fin, loyer, révision)",
+"Contrato (entrada, fin, alquiler, revisión)"
+],
+[
+"Contrat prolongé",
+"Contrato prorrogado"
+],
+[
+"Copier",
+"Copiar"
+],
+[
+"Copier le lien",
+"Copiar el enlace"
+],
+[
+"Copier le texte",
+"Copiar el texto"
+],
+[
+"Corriger",
+"Corregir"
+],
+[
+"Corriger les dates de {0} ?",
+"¿Corregir las fechas de {0}?"
+],
+[
+"Coût (€)",
+"Coste (€)"
+],
+[
+"Coût {0} ajouté aux dépenses",
+"Coste {0} añadido a los gastos"
+],
+[
+"Coût {0} ajouté aux dépenses — {1}",
+"Coste {0} añadido a los gastos — {1}"
+],
+[
+"Coût {0} ajouté aux dépenses — {1} · {2}",
+"Coste {0} añadido a los gastos — {1} · {2}"
+],
+[
+"Coûts de gestion qui ne dépendent pas d'un immeuble (salaires, provisions…). Le loyer du bureau peut aussi être suivi comme « immeuble » sans locataires. Ils sont déduits du résultat net et de la part des associés.",
+"Gastos de gestión que no dependen de un edificio (sueldos, provisiones…). El alquiler de la oficina también se puede seguir como « edificio » sin inquilinos. Se restan del resultado neto y de la parte de los socios."
+],
+[
+"Création de l’accès…",
+"Creando el acceso…"
+],
+[
+"Création de l’espace…",
+"Creando el espacio…"
+],
+[
+"Création…",
+"Creando…"
+],
+[
+"Créer",
+"Crear"
+],
+[
+"Créer l'espace locataire",
+"Crear el espacio del inquilino"
+],
+[
+"Créer le code",
+"Crear el código"
+],
+[
+"Créer le coffre sécurisé",
+"Crear la caja fuerte segura"
+],
+[
+"Créer le lien",
+"Crear el enlace"
+],
+[
+"Créer les collectes",
+"Crear las recogidas"
+],
+[
+"Créez une page",
+"Crea una página"
+],
+[
+"Date",
+"Fecha"
+],
+[
+"Date de fin de gestion",
+"Fecha de fin de gestión"
+],
+[
+"Date de sortie",
+"Fecha de salida"
+],
+[
+"Date du paiement",
+"Fecha del pago"
+],
+[
+"Dates corrigées",
+"Fechas corregidas"
+],
+[
+"Dates corrigées · totaux recalculés",
+"Fechas corregidas · totales recalculados"
+],
+[
+"Dates de passage",
+"Fechas de recogida"
+],
+[
+"Dates du contrat corrigées",
+"Fechas del contrato corregidas"
+],
+[
+"Dates précises (calendrier de la commune)",
+"Fechas precisas (calendario del ayuntamiento)"
+],
+[
+"Demain {0}",
+"Mañana {0}"
+],
+[
+"Depuis",
+"Desde"
+],
+[
+"Depuis l’origine",
+"Desde el inicio"
+],
+[
+"Dernière confirmation",
+"Última confirmación"
+],
+[
+"Dernière synchro : {0}",
+"Última sincronización: {0}"
+],
+[
+"Description",
+"Descripción"
+],
+[
+"Deutschland",
+"Alemania"
+],
+[
+"Dimanche",
+"Domingo"
+],
+[
+"Dimanche de",
+"Domingo de"
+],
+[
+"Dimanche lieu",
+"Domingo lugar"
+],
+[
+"Dimanche à",
+"Domingo a"
+],
+[
+"Document ajouté",
+"Documento añadido"
+],
+[
+"Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements",
+"Documentos: todo lo que añades en Docs se ve en su app (con vista previa), para que compruebe que recibiste sus papeles y sus pagos"
+],
+[
+"Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.",
+"Documentos: todo lo que añades en Docs se ve en su app (con vista previa), para que compruebe que recibiste sus papeles y sus pagos — toca « 👁 Visible » para hacerlo privado. Sus mensajes y fotos llegan al Inicio (📩) y a Mantenimiento → Trabajos."
+],
+[
+"Don",
+"Donación"
+],
+[
+"Don · prêt · location",
+"Donación · préstamo · alquiler"
+],
+[
+"Don · prêt · location (publier ses objets sur le site, après votre approbation)",
+"Donación · préstamo · alquiler (publicar sus objetos en la web, tras tu aprobación)"
+],
+[
+"Donnez ce lien ou ce QR code aux locataires de",
+"Da este enlace o código QR a los inquilinos de"
+],
+[
+"Donnez à",
+"Da a"
+],
+[
+"Données",
+"Datos"
+],
+[
+"Données chiffrées : il/elle ne voit ni les loyers, ni les locataires (sauf le prénom et le téléphone de celui qui a signalé une panne), ni vos comptes.",
+"Datos cifrados: no ve ni los alquileres, ni los inquilinos (salvo el nombre y el teléfono de quien avisó de una avería), ni tus cuentas."
+],
+[
+"Dossier",
+"Expediente"
+],
+[
+"Dossier :",
+"Expediente:"
+],
+[
+"Du",
+"Desde"
+],
+[
+"Duplex / penthouse",
+"Dúplex / ático"
+],
+[
+"Début du bail principal",
+"Inicio del contrato principal"
+],
+[
+"Début du contrat (entrée)",
+"Inicio del contrato (entrada)"
+],
+[
+"Déchets",
+"Basura"
+],
+[
+"Déchets résiduels (poubelle grise)",
+"Resto (cubo gris)"
+],
+[
+"Déchets résiduels (poubelle grise) — {0} passages",
+"Resto (cubo gris) — {0} pasos"
+],
+[
+"Déclaration de TVA",
+"Declaración de IVA"
+],
+[
+"Déductible",
+"Soportado"
+],
+[
+"Départ",
+"Salida"
+],
+[
+"Départ de {0}",
+"Salida de {0}"
+],
+[
+"Départ enregistré",
+"Salida registrada"
+],
+[
+"Départ enregistré · logement vacant",
+"Salida registrada · vivienda libre"
+],
+[
+"Départ {0}",
+"Salida {0}"
+],
+[
+"Dépense ajoutée",
+"Gasto añadido"
+],
+[
+"Dépense corrigée",
+"Gasto corregido"
+],
+[
+"Dépenses",
+"Gastos"
+],
+[
+"Dépenses de ce logement",
+"Gastos de esta vivienda"
+],
+[
+"Dépenses par catégorie",
+"Gastos por categoría"
+],
+[
+"Dépenses par catégorie — {0}",
+"Gastos por categoría — {0}"
+],
+[
+"Dépenses {0}",
+"Gastos {0}"
+],
+[
+"Désactiver",
+"Desactivar"
+],
+[
+"Désactiver l'espace",
+"Desactivar el espacio"
+],
+[
+"Désactiver le lien",
+"Desactivar el enlace"
+],
+[
+"Désactiver le lien ?",
+"¿Desactivar el enlace?"
+],
+[
+"Désactiver l’accès",
+"Desactivar el acceso"
+],
+[
+"Désactiver l’espace locataire ?",
+"¿Desactivar el espacio del inquilino?"
+],
+[
+"Déverrouiller",
+"Desbloquear"
+],
+[
+"Efface la copie chiffrée locale (les données restent sur le serveur)",
+"Borra la copia cifrada local (los datos quedan en el servidor)"
+],
+[
+"Effacer",
+"Borrar"
+],
+[
+"Effacer l'ancienne copie non chiffrée ?",
+"¿Borrar la copia antigua sin cifrar?"
+],
+[
+"Effacer la copie",
+"Borrar la copia"
+],
+[
+"Effacer toutes les données",
+"Borrar todos los datos"
+],
+[
+"Effacer toutes les données ?",
+"¿Borrar todos los datos?"
+],
+[
+"Email de contact",
+"Email de contacto"
+],
+[
+"Emplacement de parking",
+"Plaza de aparcamiento"
+],
+[
+"En gestion",
+"En gestión"
+],
+[
+"En ligne ({0})",
+"Publicados ({0})"
+],
+[
+"En main propre (espèces)",
+"En mano (efectivo)"
+],
+[
+"Encaissement mensuel {0}",
+"Cobro mensual {0}"
+],
+[
+"Encaissé",
+"Cobrado"
+],
+[
+"Encaissé ce mois",
+"Cobrado este mes"
+],
+[
+"Encaissé {0}",
+"Cobrado {0}"
+],
+[
+"Encombrants (grandes)",
+"Voluminosos"
+],
+[
+"Encombrants (grandes) — {0} passage",
+"Voluminosos — {0} paso"
+],
+[
+"Enregistrement…",
+"Guardando…"
+],
+[
+"Enregistrer",
+"Guardar"
+],
+[
+"Enregistrer la nouvelle clé",
+"Guardar la nueva clave"
+],
+[
+"Enregistrer le code",
+"Guardar el código"
+],
+[
+"Enregistrer le code de la porte",
+"Guardar el código de la puerta"
+],
+[
+"Enregistrer les règles",
+"Guardar las normas"
+],
+[
+"Enregistré",
+"Guardado"
+],
+[
+"Entrée",
+"Entrada"
+],
+[
+"Entrée : {0} → {1}",
+"Entrada: {0} → {1}"
+],
+[
+"Envoi…",
+"Enviando…"
+],
+[
+"Envoyer",
+"Enviar"
+],
+[
+"Envoyer par SMS",
+"Enviar por SMS"
+],
+[
+"Envoyer par WhatsApp",
+"Enviar por WhatsApp"
+],
+[
+"Envoyé depuis l’app",
+"Enviado desde la app"
+],
+[
+"Erreur : session-taken",
+"Error: sesión tomada por otro dispositivo"
+],
+[
+"Erreur de synchro",
+"Error de sincronización"
+],
+[
+"Espace",
+"Espacio"
+],
+[
+"Espace actif. Donnez à",
+"Espacio activo. Da a"
+],
+[
+"Espace désactivé",
+"Espacio desactivado"
+],
+[
+"Espace locataire prêt",
+"Espacio del inquilino listo"
+],
+[
+"Espace ✓",
+"Espacio ✓"
+],
+[
+"Espèces",
+"Efectivo"
+],
+[
+"Et il/elle peut vous envoyer :",
+"Y puede enviarte:"
+],
+[
+"Excellente",
+"Excelente"
+],
+[
+"Exonéré ({0})",
+"Exento ({0})"
+],
+[
+"Export",
+"Exportación"
+],
+[
+"Export lisible (JSON)",
+"Exportación legible (JSON)"
+],
+[
+"Facture (photo ou PDF)",
+"Factura (foto o PDF)"
+],
+[
+"Facture jointe",
+"Factura adjunta"
+],
+[
+"Fait",
+"Hecho"
+],
+[
+"Femme de ménage / nettoyage",
+"Limpiadora / limpieza"
+],
+[
+"Femme de ménage / nettoyage (absent)",
+"Limpiadora / limpieza (ausente)"
+],
+[
+"Fermer",
+"Cerrar"
+],
+[
+"Fiche",
+"Ficha"
+],
+[
+"Fiches de salaire / revenus",
+"Nóminas / ingresos"
+],
+[
+"Fichier .ares, lisible uniquement avec la clé",
+"Archivo .ares, legible solo con la clave"
+],
+[
+"Fin actuelle :",
+"Fin actual:"
+],
+[
+"Fin de gestion",
+"Fin de la gestión"
+],
+[
+"Fin de séjour / départ",
+"Fin de estancia / salida"
+],
+[
+"Fin du bail principal",
+"Fin del contrato principal"
+],
+[
+"Fin du contrat",
+"Fin del contrato"
+],
+[
+"Fournisseur",
+"Proveedor"
+],
+[
+"Frais ajouté",
+"Gasto añadido"
+],
+[
+"Frais fixe ajouté",
+"Gasto fijo añadido"
+],
+[
+"Frais fixes",
+"Gastos fijos"
+],
+[
+"Frais fixes (salaires, bureau…)",
+"Gastos fijos (sueldos, oficina…)"
+],
+[
+"Frais fixes mensuels",
+"Gastos fijos mensuales"
+],
+[
+"France",
+"Francia"
+],
+[
+"Fusion avec les données actuelles : les éléments les plus récents sont conservés.",
+"Fusión con los datos actuales: se conservan los elementos más recientes."
+],
+[
+"Gain des immeubles",
+"Beneficio de los edificios"
+],
+[
+"Gain net",
+"Beneficio neto"
+],
+[
+"Gain net depuis l'origine",
+"Beneficio neto desde el inicio"
+],
+[
+"Gain net {0}",
+"Beneficio neto {0}"
+],
+[
+"Garage / box",
+"Garaje / trastero"
+],
+[
+"Garantie bancaire",
+"Aval bancario"
+],
+[
+"Gestion",
+"Gestión"
+],
+[
+"Gestion locataires",
+"Gestión de inquilinos"
+],
+[
+"Gestion locataires · Luxembourg",
+"Gestión de inquilinos · Luxemburgo"
+],
+[
+"Gestion quotidienne (ménage, petits travaux)",
+"Gestión diaria (limpieza, pequeños trabajos)"
+],
+[
+"HT",
+"Base"
+],
+[
+"Hausse (%)",
+"Subida (%)"
+],
+[
+"Heure",
+"Hora"
+],
+[
+"Heure (facultatif)",
+"Hora (opcional)"
+],
+[
+"Heures par mois (horaire − absences)",
+"Horas al mes (horario − ausencias)"
+],
+[
+"Historique des codes",
+"Historial de códigos"
+],
+[
+"Historique des modifications",
+"Historial de cambios"
+],
+[
+"Horaire habituel",
+"Horario habitual"
+],
+[
+"Horaire habituel (laisser vide les jours sans travail)",
+"Horario habitual (deja vacíos los días sin trabajo)"
+],
+[
+"Horaires",
+"Horarios"
+],
+[
+"Hors ligne",
+"Sin conexión"
+],
+[
+"IBAN (relances + app des locataires)",
+"IBAN (recordatorios + app de inquilinos)"
+],
+[
+"Il disparaît pour tous les habitants.",
+"Desaparece para todos los vecinos."
+],
+[
+"Il y a le temps",
+"Hay tiempo"
+],
+[
+"Immeuble",
+"Edificio"
+],
+[
+"Immeuble ajouté",
+"Edificio añadido"
+],
+[
+"Immeuble archivé",
+"Edificio archivado"
+],
+[
+"Immeuble archivé · historique conservé",
+"Edificio archivado · historial conservado"
+],
+[
+"Immeuble réactivé",
+"Edificio reactivado"
+],
+[
+"Immeuble à plusieurs étages",
+"Edificio de varias plantas"
+],
+[
+"Immeubles",
+"Edificios"
+],
+[
+"Immeubles, locataires, paiements, documents",
+"Edificios, inquilinos, pagos, documentos"
+],
+[
+"Immeubles, locataires, paiements, documents — sur tous les appareils",
+"Edificios, inquilinos, pagos, documentos — en todos los dispositivos"
+],
+[
+"Impayé",
+"Impagado"
+],
+[
+"Impayé à ce jour",
+"Impagado a día de hoy"
+],
+[
+"Impayés à ce jour",
+"Impagados a día de hoy"
+],
+[
+"Import",
+"Importar"
+],
+[
+"Import : {0} immeubles, {1} locataires",
+"Importación: {0} edificios, {1} inquilinos"
+],
+[
+"Import terminé",
+"Importación terminada"
+],
+[
+"Importer",
+"Importar"
+],
+[
+"Importer cet export ?",
+"¿Importar esta exportación?"
+],
+[
+"Importer les données de l'ancienne version trouvées sur cet appareil ({0} immeubles, {1} locataires)",
+"Importar los datos de la versión antigua encontrados en este dispositivo ({0} edificios, {1} inquilinos)"
+],
+[
+"Importer un fichier .ics",
+"Importar un archivo .ics"
+],
+[
+"Importez le calendrier",
+"Importa el calendario"
+],
+[
+"Importez-la avant si ce n’est pas déjà fait. Cette action ne touche pas aux données chiffrées.",
+"Impórtala antes si no lo has hecho. Esta acción no toca los datos cifrados."
+],
+[
+"Imprimer",
+"Imprimir"
+],
+[
+"Imprimer / PDF",
+"Imprimir / PDF"
+],
+[
+"Imprimer la page Paiements",
+"Imprimir la página Pagos"
+],
+[
+"Imprimer le rapport {0}",
+"Imprimir el informe {0}"
+],
+[
+"Info pour l'occupant (facultatif)",
+"Info para el ocupante (opcional)"
+],
+[
+"Infos",
+"Info"
+],
+[
+"Installer sur ce téléphone",
+"Instalar en este teléfono"
+],
+[
+"Intervenant",
+"Persona"
+],
+[
+"Intervenant ajouté",
+"Persona añadida"
+],
+[
+"Intervention",
+"Intervención"
+],
+[
+"Intervention ajoutée",
+"Intervención añadida"
+],
+[
+"Intervention enregistrée",
+"Intervención guardada"
+],
+[
+"Intervention terminée",
+"Intervención terminada"
+],
+[
+"Interventions en cours",
+"Intervenciones en curso"
+],
+[
+"J'ai noté ma clé de secours",
+"He anotado mi clave de emergencia"
+],
+[
+"Jamais",
+"Nunca"
+],
+[
+"Jardinier",
+"Jardinero"
+],
+[
+"Jeudi",
+"Jueves"
+],
+[
+"Jeudi de",
+"Jueves de"
+],
+[
+"Jeudi lieu",
+"Jueves lugar"
+],
+[
+"Jeudi à",
+"Jueves a"
+],
+[
+"Joindre la facture",
+"Adjuntar la factura"
+],
+[
+"Jour",
+"Día"
+],
+[
+"Journal",
+"Diario"
+],
+[
+"Journal téléchargé",
+"Diario descargado"
+],
+[
+"Journal, TVA, statistiques et export pour le comptable",
+"Diario, IVA, estadísticas y exportación para el gestor"
+],
+[
+"Jours de collecte de chaque immeuble (à mettre à jour chaque année avec le calendrier de la commune). Imprimez l'affiche pour les locataires.",
+"Días de recogida de cada edificio (actualizar cada año con el calendario del ayuntamiento). Imprime el cartel para los inquilinos."
+],
+[
+"Jusqu'au (facultatif)",
+"Hasta (opcional)"
+],
+[
+"Jusqu'au (si répétition)",
+"Hasta (si se repite)"
+],
+[
+"Jusqu'à (facultatif)",
+"Hasta (opcional)"
+],
+[
+"L'avis apparaît dans l'espace des locataires qui ont un espace actif. Écrivez-le en français ; ajoutez une autre langue dans le même message si besoin.",
+"El aviso aparece en el espacio de los inquilinos con espacio activo. Escríbelo en francés; si hace falta, añade otro idioma en el mismo mensaje."
+],
+[
+"L'immeuble revient dans « En gestion ». Les anciens locataires restent archivés. Vérifiez la fin du bail principal avec « Modifier ».",
+"El edificio vuelve a « En gestión ». Los antiguos inquilinos quedan archivados. Comprueba el fin del contrato principal con « Modificar »."
+],
+[
+"La page contient seulement l'adresse de l'immeuble et les dates de collecte :",
+"La página solo contiene la dirección del edificio y las fechas de recogida:"
+],
+[
+"La page et le calendrier des locataires ne fonctionneront plus. Vous pourrez créer un nouveau lien (différent) plus tard.",
+"La página y el calendario de los inquilinos dejarán de funcionar. Podrás crear un nuevo enlace (distinto) más tarde."
+],
+[
+"La veille au soir",
+"La víspera por la noche"
+],
+[
+"Laissez vide pour un contrat à durée indéterminée. Pour un départ, utilisez plutôt « Départ » dans la fiche du locataire.",
+"Déjalo vacío para un contrato indefinido. Para una salida, usa mejor « Salida » en la ficha del inquilino."
+],
+[
+"Langue de son app",
+"Idioma de su app"
+],
+[
+"Langue par défaut de son espace",
+"Idioma predeterminado de su espacio"
+],
+[
+"Le bouton Email prépare un message vers {0}. Pratique, mais toute personne qui accède à cette messagerie pourrait ouvrir le coffre : le papier reste plus sûr.",
+"El botón Email prepara un mensaje a {0}. Práctico, pero cualquiera con acceso a ese correo podría abrir la caja fuerte: el papel sigue siendo más seguro."
+],
+[
+"Le contrat de {0} commence le {1}. Pour que les totaux restent justes, NOBIS va avancer l'entrée au {2}, puis enregistrer le paiement.",
+"El contrato de {0} empieza el {1}. Para que los totales cuadren, NOBIS adelanta la entrada al {2} y luego registra el pago."
+],
+[
+"Le jour même, tôt le matin",
+"El mismo día, temprano por la mañana"
+],
+[
+"Le logo apparaît dans l’app, les apps des locataires et de l’équipe, les quittances et les impressions.",
+"El logo aparece en la app, en las apps de inquilinos y del equipo, en los recibos y en las impresiones."
+],
+[
+"Le résumé tient sur une page. Le rapport complet ajoute le détail de chaque immeuble (loyers mois par mois, dépenses, occupants).",
+"El resumen cabe en una página. El informe completo añade el detalle de cada edificio (alquileres mes a mes, gastos, ocupantes)."
+],
+[
+"Le site de la commune répond {0}",
+"La web del ayuntamiento responde {0}"
+],
+[
+"Le total des parts doit faire {0}. Laissez vide les lignes inutiles.",
+"El total de las partes debe sumar {0}. Deja vacías las filas que no uses."
+],
+[
+"Le total des parts fait {0} au lieu de {1}.",
+"El total de las partes suma {0} en lugar de {1}."
+],
+[
+"Lecture du calendrier de la commune…",
+"Leyendo el calendario del ayuntamiento…"
+],
+[
+"Les autres appareils devront utiliser la nouvelle clé",
+"Los demás dispositivos tendrán que usar la nueva clave"
+],
+[
+"Les dates ci-dessus sont les jours de",
+"Las fechas de arriba son los días de"
+],
+[
+"Les factures restent dans l’app (chiffrées) : ouvrez-les avec 📎 dans le Journal pour les télécharger une par une.",
+"Las facturas quedan en la app (cifradas): ábrelas con 📎 en el Diario para descargarlas una a una."
+],
+[
+"Les locataires téléchargent l'app depuis",
+"Los inquilinos descargan la app desde"
+],
+[
+"Les mois précédents gardent l'ancien loyer dans les statistiques. Vérifiez les règles légales applicables avant toute hausse.",
+"Los meses anteriores conservan el alquiler antiguo en las estadísticas. Comprueba las normas legales antes de cualquier subida."
+],
+[
+"Les {0} prochains jours : nettoyages, réparations et jours de collecte des déchets.",
+"Los próximos {0} días: limpiezas, reparaciones y días de recogida de basura."
+],
+[
+"Libellé",
+"Concepto"
+],
+[
+"Lien créé",
+"Enlace creado"
+],
+[
+"Lien de paiement par carte (Stripe, SumUp…)",
+"Enlace de pago con tarjeta (Stripe, SumUp…)"
+],
+[
+"Lien du calendrier (.ics / webcal)",
+"Enlace del calendario (.ics / webcal)"
+],
+[
+"Lien du calendrier (.ics / webcal) — se met à jour tout seul",
+"Enlace del calendario (.ics / webcal) — se actualiza solo"
+],
+[
+"Lien du calendrier de la commune (mise à jour automatique)",
+"Enlace del calendario del ayuntamiento (actualización automática)"
+],
+[
+"Lien désactivé",
+"Enlace desactivado"
+],
+[
+"Lieu de remise",
+"Lugar de entrega"
+],
+[
+"Lire le lien",
+"Leer el enlace"
+],
+[
+"Liste locataires (feuille scannée)",
+"Lista de inquilinos (hoja escaneada)"
+],
+[
+"Liste locataires (feuille scannée) — {0} adresses, {1} locataires, loyers {2}–{3}",
+"Lista de inquilinos (hoja escaneada) — {0} direcciones, {1} inquilinos, alquileres {2}–{3}"
+],
+[
+"Local commercial / magasin",
+"Local comercial / tienda"
+],
+[
+"Local de restauration (café, restaurant)",
+"Local de hostelería (bar, restaurante)"
+],
+[
+"Locataire ajouté",
+"Inquilino añadido"
+],
+[
+"Locataire de l’année",
+"Inquilino del año"
+],
+[
+"Locataire enregistré",
+"Inquilino guardado"
+],
+[
+"Locataire modifié",
+"Inquilino modificado"
+],
+[
+"Locataire principal",
+"Inquilino principal"
+],
+[
+"Locataire remplacé",
+"Inquilino sustituido"
+],
+[
+"Locataire remplacé, ancien locataire archivé",
+"Inquilino sustituido, antiguo inquilino archivado"
+],
+[
+"Locataires",
+"Inquilinos"
+],
+[
+"Locataires actuels",
+"Inquilinos actuales"
+],
+[
+"Locataires ✓",
+"Inquilinos ✓"
+],
+[
+"Logement",
+"Vivienda"
+],
+[
+"Logement / local (appartement, n° de chambre, garage…)",
+"Vivienda / local (piso, n.º de habitación, garaje…)"
+],
+[
+"Logement ajouté",
+"Vivienda añadida"
+],
+[
+"Logement vacant",
+"Vivienda libre"
+],
+[
+"Logements",
+"Viviendas"
+],
+[
+"Logements & bilan",
+"Viviendas y balance"
+],
+[
+"Logements vacants",
+"Viviendas libres"
+],
+[
+"Logo de la société",
+"Logo de la sociedad"
+],
+[
+"Logo enregistré",
+"Logo guardado"
+],
+[
+"Loyer",
+"Alquiler"
+],
+[
+"Loyer + charges",
+"Alquiler + gastos"
+],
+[
+"Loyer actuel :",
+"Alquiler actual:"
+],
+[
+"Loyer au bailleur (€ / mois)",
+"Alquiler al propietario (€ / mes)"
+],
+[
+"Loyer dû :",
+"Alquiler debido:"
+],
+[
+"Loyer indicatif",
+"Alquiler orientativo"
+],
+[
+"Loyer indicatif (€)",
+"Alquiler orientativo (€)"
+],
+[
+"Loyer mensuel (€)",
+"Alquiler mensual (€)"
+],
+[
+"Loyer révisé",
+"Alquiler revisado"
+],
+[
+"Loyer(s) payé(s) hors des dates du contrat",
+"Alquileres pagados fuera de las fechas del contrato"
+],
+[
+"Loyer(s) payé(s) hors des dates du contrat — touchez pour corriger les dates.",
+"Alquileres pagados fuera de las fechas del contrato — toca para corregir las fechas."
+],
+[
+"Loyers",
+"Alquileres"
+],
+[
+"Loyers attendus",
+"Alquileres previstos"
+],
+[
+"Loyers encaissés",
+"Alquileres cobrados"
+],
+[
+"Loyers encaissés depuis l'origine",
+"Alquileres cobrados desde el inicio"
+],
+[
+"Loyers payés hors des dates du contrat : {0}. Entrée : {1} → {2}.",
+"Alquileres pagados fuera de las fechas del contrato: {0}. Entrada: {1} → {2}."
+],
+[
+"Loyers perçus / mois",
+"Alquileres cobrados / mes"
+],
+[
+"Lundi",
+"Lunes"
+],
+[
+"Lundi de",
+"Lunes de"
+],
+[
+"Lundi lieu",
+"Lunes lugar"
+],
+[
+"Lundi à",
+"Lunes a"
+],
+[
+"Luxembourg",
+"Luxemburgo"
+],
+[
+"L’annonce et ses photos disparaissent du site et de l’app du locataire.",
+"El anuncio y sus fotos desaparecen de la web y de la app del inquilino."
+],
+[
+"L’app se met à jour toute seule quand vous changez son planning ou ses interventions.",
+"La app se actualiza sola cuando cambias su planificación o sus intervenciones."
+],
+[
+"Maintenance",
+"Mantenimiento"
+],
+[
+"Maintenance — nettoyage, réparations, déchets",
+"Mantenimiento — limpieza, reparaciones, basura"
+],
+[
+"Maison",
+"Casa"
+],
+[
+"Maison / propriété avec chambres",
+"Casa / propiedad con habitaciones"
+],
+[
+"Maladie",
+"Enfermedad"
+],
+[
+"Maladie — {0}",
+"Enfermedad — {0}"
+],
+[
+"Mardi",
+"Martes"
+],
+[
+"Mardi de",
+"Martes de"
+],
+[
+"Mardi lieu",
+"Martes lugar"
+],
+[
+"Mardi à",
+"Martes a"
+],
+[
+"Masquer",
+"Ocultar"
+],
+[
+"Maçon",
+"Albañil"
+],
+[
+"Mensuelle",
+"Mensual"
+],
+[
+"Menuisier",
+"Carpintero"
+],
+[
+"Mercredi",
+"Miércoles"
+],
+[
+"Mercredi de",
+"Miércoles de"
+],
+[
+"Mercredi lieu",
+"Miércoles lugar"
+],
+[
+"Mercredi à",
+"Miércoles a"
+],
+[
+"Message",
+"Mensaje"
+],
+[
+"Message supprimé",
+"Mensaje borrado"
+],
+[
+"Messages affichés dans l'espace des locataires (coupure d'eau, travaux, nettoyage de la cave…).",
+"Mensajes mostrados en el espacio de los inquilinos (corte de agua, obras, limpieza del sótano…)."
+],
+[
+"Messages de la maison",
+"Mensajes de la casa"
+],
+[
+"Messages de la maison (mini-chat entre habitants, lu par vous)",
+"Mensajes de la casa (mini-chat entre vecinos, leído por ti)"
+],
+[
+"Messages de la maison : habitants mis à jour",
+"Mensajes de la casa: vecinos actualizados"
+],
+[
+"Messages envoyés depuis son app",
+"Mensajes enviados desde su app"
+],
+[
+"Mettre à jour maintenant",
+"Actualizar ahora"
+],
+[
+"Mini-chat entre les habitants, dans leur app",
+"Mini-chat entre los vecinos, en su app"
+],
+[
+"Mini-chat entre les habitants, dans leur app — actif par défaut entre colocataires d’un même appartement. Vous lisez tout, vous pouvez répondre et supprimer un message.",
+"Mini-chat entre los vecinos, en su app — activo por defecto entre compañeros del mismo piso. Lo lees todo, puedes responder y borrar un mensaje."
+],
+[
+"Mixte (habitation + commerce)",
+"Mixto (vivienda + comercio)"
+],
+[
+"Mode",
+"Modo"
+],
+[
+"Modifications en cours d’envoi…",
+"Enviando los cambios…"
+],
+[
+"Modifier",
+"Modificar"
+],
+[
+"Modifier l'intervention",
+"Modificar la intervención"
+],
+[
+"Modifier la collecte",
+"Modificar la recogida"
+],
+[
+"Modifier le locataire",
+"Modificar el inquilino"
+],
+[
+"Montant = total des loyers encaissés pendant le séjour.",
+"Importe = total de alquileres cobrados durante la estancia."
+],
+[
+"Montant TTC (€)",
+"Importe IVA incluido (€)"
+],
+[
+"Montant par mois (€)",
+"Importe al mes (€)"
+],
+[
+"Montant reçu (€)",
+"Importe recibido (€)"
+],
+[
+"Métier",
+"Oficio"
+],
+[
+"Métier / mansion",
+"Oficio / función"
+],
+[
+"Même appartement (par défaut) : colocataires du même logement, ou des chambres d’un même « Situé dans »",
+"Mismo piso (por defecto): compañeros de la misma vivienda, o de las habitaciones de un mismo « Situado en »"
+],
+[
+"Même logement uniquement",
+"Solo la misma vivienda"
+],
+[
+"NOBIS a été ouvert sur {0} : cet appareil a été déconnecté.",
+"NOBIS se abrió en {0}: este dispositivo ha sido desconectado."
+],
+[
+"NOBIS est ouvert sur un autre appareil",
+"NOBIS está abierto en otro dispositivo"
+],
+[
+"Navigation",
+"Navegación"
+],
+[
+"Nederland",
+"Países Bajos"
+],
+[
+"Net",
+"Neto"
+],
+[
+"Net prévu",
+"Neto previsto"
+],
+[
+"Net réalisé à ce jour",
+"Neto realizado a día de hoy"
+],
+[
+"Nettoyage, réparations et collecte des déchets",
+"Limpieza, reparaciones y recogida de basura"
+],
+[
+"Nom",
+"Apellido"
+],
+[
+"Nom (ou nom de la société)",
+"Apellido (o nombre de la sociedad)"
+],
+[
+"Nom / numéro",
+"Nombre / número"
+],
+[
+"Nom / société",
+"Nombre / sociedad"
+],
+[
+"Nom de la société pour les quittances",
+"Nombre de la sociedad para los recibos"
+],
+[
+"Nom de la société pour les quittances · aucun associé",
+"Nombre de la sociedad para los recibos · ningún socio"
+],
+[
+"Nom du bailleur / propriétaire (vide si l’immeuble vous appartient)",
+"Nombre del arrendador / propietario (vacío si el edificio es tuyo)"
+],
+[
+"Non",
+"No"
+],
+[
+"Non chiffré",
+"Sin cifrar"
+],
+[
+"Non chiffré — à conserver en lieu sûr",
+"Sin cifrar — guárdalo en un lugar seguro"
+],
+[
+"Note",
+"Nota"
+],
+[
+"Note (visible seulement par vous)",
+"Nota (solo visible para ti)"
+],
+[
+"Note caution",
+"Nota de la fianza"
+],
+[
+"Notes",
+"Notas"
+],
+[
+"Notez-la maintenant :",
+"Anótala ahora:"
+],
+[
+"Nouveau code",
+"Nuevo código"
+],
+[
+"Nouveau locataire",
+"Nuevo inquilino"
+],
+[
+"Nouveau logement",
+"Nueva vivienda"
+],
+[
+"Nouveau loyer (€)",
+"Nuevo alquiler (€)"
+],
+[
+"Nouvel avis",
+"Nuevo aviso"
+],
+[
+"Nouvel avis aux locataires",
+"Nuevo aviso a los inquilinos"
+],
+[
+"Nouvel immeuble",
+"Nuevo edificio"
+],
+[
+"Nouvel occupant",
+"Nuevo ocupante"
+],
+[
+"Nouvelle clé",
+"Nueva clave"
+],
+[
+"Nouvelle clé d'accès",
+"Nueva clave de acceso"
+],
+[
+"Nouvelle clé d'accès enregistrée",
+"Nueva clave de acceso guardada"
+],
+[
+"Nouvelle collecte",
+"Nueva recogida"
+],
+[
+"Nouvelle fin du contrat",
+"Nuevo fin del contrato"
+],
+[
+"Nouvelle intervention",
+"Nueva intervención"
+],
+[
+"Nouvelle personne",
+"Nueva persona"
+],
+[
+"Nouvelles dates enregistrées",
+"Nuevas fechas guardadas"
+],
+[
+"N° TVA",
+"NIF / IVA"
+],
+[
+"N° TVA (société)",
+"NIF / IVA (sociedad)"
+],
+[
+"N° de facture",
+"N.º de factura"
+],
+[
+"Occupant actuel",
+"Ocupante actual"
+],
+[
+"Occupants",
+"Ocupantes"
+],
+[
+"Occupants ({0})",
+"Ocupantes ({0})"
+],
+[
+"Oublier cet appareil",
+"Olvidar este dispositivo"
+],
+[
+"Oui",
+"Sí"
+],
+[
+"Ouvrier interne (salarié)",
+"Operario interno (asalariado)"
+],
+[
+"Ouvrir",
+"Abrir"
+],
+[
+"Ouvrir avec la clé de secours",
+"Abrir con la clave de emergencia"
+],
+[
+"Ouvrir la maintenance",
+"Abrir el mantenimiento"
+],
+[
+"Où ?",
+"¿Dónde?"
+],
+[
+"Où sortir les poubelles",
+"Dónde sacar la basura"
+],
+[
+"PDF ou photo",
+"PDF o foto"
+],
+[
+"PDF ou photo · {0} Mo maximum · chiffré avant l'envoi. Reçu par WhatsApp ou par mail ? Enregistrez la photo ou le PDF sur le téléphone / l'ordinateur, puis choisissez-le ici.",
+"PDF o foto · {0} MB máximo · cifrado antes del envío. ¿Recibido por WhatsApp o email? Guarda la foto o el PDF en el móvil / ordenador y elígelo aquí."
+],
+[
+"Page des locataires",
+"Página de los inquilinos"
+],
+[
+"Paiement complété",
+"Pago completado"
+],
+[
+"Paiement enregistré",
+"Pago registrado"
+],
+[
+"Paiement partiel",
+"Pago parcial"
+],
+[
+"Paiement partiel · reste {0}",
+"Pago parcial · quedan {0}"
+],
+[
+"Paiements",
+"Pagos"
+],
+[
+"Paiements (mois payés / à payer, IBAN)",
+"Pagos (meses pagados / por pagar, IBAN)"
+],
+[
+"Papier",
+"Papel"
+],
+[
+"Papier ({0})",
+"Papel ({0})"
+],
+[
+"Papier / carton",
+"Papel / cartón"
+],
+[
+"Papier / carton — {0} passage",
+"Papel / cartón — {0} paso"
+],
+[
+"Papier / carton — {0} passages",
+"Papel / cartón — {0} pasos"
+],
+[
+"Papier : Le site de la commune répond {0}",
+"Papel: la web del ayuntamiento responde {0}"
+],
+[
+"Papier — {0}",
+"Papel — {0}"
+],
+[
+"Par",
+"Por"
+],
+[
+"Par année",
+"Por año"
+],
+[
+"Par immeuble",
+"Por edificio"
+],
+[
+"Par immeuble — {0}",
+"Por edificio — {0}"
+],
+[
+"Par logement",
+"Por vivienda"
+],
+[
+"Parking / garages",
+"Aparcamiento / garajes"
+],
+[
+"Part (%)",
+"Parte (%)"
+],
+[
+"Part de {0} ({1})",
+"Parte de {0} ({1})"
+],
+[
+"Partager avec les locataires",
+"Compartir con los inquilinos"
+],
+[
+"Parties communes",
+"Zonas comunes"
+],
+[
+"Parties communes / tout l'immeuble",
+"Zonas comunes / todo el edificio"
+],
+[
+"Parties communes · {0} · {1}",
+"Zonas comunes · {0} · {1}"
+],
+[
+"Parties communes · {0} · {1} · chaque semaine depuis le {2}",
+"Zonas comunes · {0} · {1} · cada semana desde el {2}"
+],
+[
+"Parties communes · {0} · {1} · prévue le {2}",
+"Zonas comunes · {0} · {1} · prevista el {2}"
+],
+[
+"Pas d'accès",
+"Sin acceso"
+],
+[
+"Pas de caution",
+"Sin fianza"
+],
+[
+"Pas de téléphone ni d’email enregistré : ajoutez-le dans « Modifier ». Vous pouvez aussi copier le texte.",
+"Ningún teléfono ni email guardado: añádelo en « Modificar ». También puedes copiar el texto."
+],
+[
+"Pas encore de clé de secours.",
+"Aún no hay clave de emergencia."
+],
+[
+"Pas encore de nouveau locataire (le logement devient vacant)",
+"Aún no hay nuevo inquilino (la vivienda queda libre)"
+],
+[
+"Pas encore de tours faits en {0}. Le classement se remplit tout seul quand les locataires touchent « ✅ Fait » dans leur app (tour des poubelles, dans chaque immeuble → 💬 Messages).",
+"Aún no hay turnos hechos en {0}. La clasificación se llena sola cuando los inquilinos tocan « ✅ Hecho » en su app (turno de basura, en cada edificio → 💬 Mensajes)."
+],
+[
+"Passage",
+"Recogida"
+],
+[
+"Passage ce jour",
+"Recogida hoy"
+],
+[
+"PayPal.me (votre nom PayPal.me)",
+"PayPal.me (tu nombre PayPal.me)"
+],
+[
+"Pays",
+"País"
+],
+[
+"Payé",
+"Pagado"
+],
+[
+"Payé · {0} · {1}",
+"Pagado · {0} · {1}"
+],
+[
+"Peintre",
+"Pintor"
+],
+[
+"Photo du {0}",
+"Foto del {0}"
+],
+[
+"Photo du {0} — par exemple un dégât réparé.",
+"Foto del {0} — por ejemplo un daño reparado."
+],
+[
+"Photos ({0} à {1})",
+"Fotos ({0} a {1})"
+],
+[
+"Photos ({0})",
+"Fotos ({0})"
+],
+[
+"Photos de l'état des lieux de ce logement. Elles restent d'un locataire à l'autre : retirez celles des dégâts réparés, ajoutez les nouvelles.",
+"Fotos del estado de esta vivienda. Se quedan de un inquilino a otro: quita las de daños reparados, añade las nuevas."
+],
+[
+"Pièce d'identité",
+"Documento de identidad"
+],
+[
+"Pièce d'identité (carte d'identité / passeport)",
+"Documento de identidad (DNI / pasaporte)"
+],
+[
+"Planifier une intervention",
+"Programar una intervención"
+],
+[
+"Planifiée",
+"Programada"
+],
+[
+"Planning",
+"Planificación"
+],
+[
+"Plombier / sanitaire",
+"Fontanero / sanitarios"
+],
+[
+"Plus",
+"Más"
+],
+[
+"Plus en gestion",
+"Ya no en gestión"
+],
+[
+"Plus en gestion ({0})",
+"Ya no en gestión ({0})"
+],
+[
+"Porte",
+"Puerta"
+],
+[
+"Pour",
+"Para"
+],
+[
+"Pour que l'occupant voie le code dans son app : fiche locataire → Espace → cochez « Code de la porte ».",
+"Para que el ocupante vea el código en su app: ficha del inquilino → Espacio → marca « Código de la puerta »."
+],
+[
+"Pour retrouver l'accès si la clé d'accès est oubliée",
+"Para recuperar el acceso si olvidas la clave de acceso"
+],
+[
+"Premier passage",
+"Primera recogida"
+],
+[
+"Première configuration.",
+"Primera configuración."
+],
+[
+"Prendre la main",
+"Tomar el control"
+],
+[
+"Preuve de la caution",
+"Justificante de la fianza"
+],
+[
+"Preuve de la caution (reçu, virement, message)",
+"Justificante de la fianza (recibo, transferencia, mensaje)"
+],
+[
+"Preuve de paiement",
+"Justificante de pago"
+],
+[
+"Preuve de paiement du loyer",
+"Justificante de pago del alquiler"
+],
+[
+"Preuve de paiement du loyer · {0} · {1} Ko",
+"Justificante de pago del alquiler · {0} · {1} KB"
+],
+[
+"Preuve de paiement — {0}",
+"Justificante de pago — {0}"
+],
+[
+"Privé (travail occasionnel)",
+"Particular (trabajo ocasional)"
+],
+[
+"Prix (€)",
+"Precio (€)"
+],
+[
+"Prochaine :",
+"Próxima:"
+],
+[
+"Prochaine révision",
+"Próxima revisión"
+],
+[
+"Prochaine révision du loyer",
+"Próxima revisión del alquiler"
+],
+[
+"Professionnel spécialisé",
+"Profesional especializado"
+],
+[
+"Prolonger",
+"Prorrogar"
+],
+[
+"Prolonger le contrat",
+"Prorrogar el contrato"
+],
+[
+"Propriét.",
+"Propiet."
+],
+[
+"Précision (facultatif, ex. recto-verso, WhatsApp du {0}/{1})",
+"Precisión (opcional, p. ej. anverso y reverso, WhatsApp del {0}/{1})"
+],
+[
+"Prénom",
+"Nombre"
+],
+[
+"Publier",
+"Publicar"
+],
+[
+"Publier un objet (NOBIS)",
+"Publicar un objeto (NOBIS)"
+],
+[
+"Période",
+"Periodo"
+],
+[
+"Quand sortir",
+"Cuándo sacar"
+],
+[
+"Qui ?",
+"¿Quién?"
+],
+[
+"Qui discute ensemble ?",
+"¿Quién chatea junto?"
+],
+[
+"Quittance",
+"Recibo"
+],
+[
+"Quittance imprimée",
+"Recibo impreso"
+],
+[
+"Quittances à télécharger",
+"Recibos para descargar"
+],
+[
+"Quoi ?",
+"¿Qué?"
+],
+[
+"RCS",
+"Registro mercantil"
+],
+[
+"RCS (société)",
+"Registro mercantil (sociedad)"
+],
+[
+"Raison",
+"Motivo"
+],
+[
+"Recettes",
+"Ingresos"
+],
+[
+"Rechercher un nom, un logement, un immeuble, un code…",
+"Buscar un nombre, una vivienda, un edificio, un código…"
+],
+[
+"Rechercher un nom, un logement, un téléphone…",
+"Buscar un nombre, una vivienda, un teléfono…"
+],
+[
+"Relancer",
+"Recordar"
+],
+[
+"Relancer {0}",
+"Recordar a {0}"
+],
+[
+"Remarque",
+"Observación"
+],
+[
+"Remarques de sortie",
+"Observaciones de salida"
+],
+[
+"Remplacer",
+"Sustituir"
+],
+[
+"Retapez la clé",
+"Repite la clave"
+],
+[
+"Retapez la nouvelle clé",
+"Repite la nueva clave"
+],
+[
+"Retards",
+"Retrasos"
+],
+[
+"Retirer",
+"Quitar"
+],
+[
+"Retirer cette photo ?",
+"¿Quitar esta foto?"
+],
+[
+"Retirer la photo",
+"Quitar la foto"
+],
+[
+"Retirer « {0} » ?",
+"¿Quitar « {0} »?"
+],
+[
+"Retour",
+"Volver"
+],
+[
+"Reçu",
+"Recibido"
+],
+[
+"Reçu de caution",
+"Recibo de la fianza"
+],
+[
+"Reçu imprimé",
+"Recibo impreso"
+],
+[
+"Rien de prévu dans les {0} prochains jours.",
+"Nada previsto en los próximos {0} días."
+],
+[
+"Rien n'est effacé",
+"No se borra nada"
+],
+[
+"Rien à faire. 👍",
+"Nada que hacer. 👍"
+],
+[
+"Règlement",
+"Normas"
+],
+[
+"Règlement de la maison (à lire, avec « J’ai lu et j’accepte »)",
+"Normas de la casa (para leer, con « He leído y acepto »)"
+],
+[
+"Règles enregistrées",
+"Normas guardadas"
+],
+[
+"Règles enregistrées · visibles dans l’app des locataires",
+"Normas guardadas · visibles en la app de inquilinos"
+],
+[
+"Réactiver",
+"Reactivar"
+],
+[
+"Réactiver « {0} » ?",
+"¿Reactivar « {0} »?"
+],
+[
+"Récurrentes ({0})",
+"Recurrentes ({0})"
+],
+[
+"Réglages",
+"Ajustes"
+],
+[
+"Réparations",
+"Reparaciones"
+],
+[
+"Réparations & frais",
+"Reparaciones y gastos"
+],
+[
+"Répartition entre associés",
+"Reparto entre socios"
+],
+[
+"Répartition entre associés — {0}",
+"Reparto entre socios — {0}"
+],
+[
+"Réparé",
+"Reparado"
+],
+[
+"Répétition",
+"Repetición"
+],
+[
+"Réseau",
+"Red"
+],
+[
+"Résidence / foyer / colocation",
+"Residencia / hogar / piso compartido"
+],
+[
+"Résiduels",
+"Resto"
+],
+[
+"Résiduels — {0}",
+"Resto — {0}"
+],
+[
+"Résultat T3 {0}",
+"Resultado T3 {0}"
+],
+[
+"Résultat de {0}",
+"Resultado de {0}"
+],
+[
+"Résultat net {0}",
+"Resultado neto {0}"
+],
+[
+"Résumé",
+"Resumen"
+],
+[
+"Réviser le loyer",
+"Revisar el alquiler"
+],
+[
+"Safari : bouton Partager → « Sur l’écran d’accueil ».",
+"Safari: botón Compartir → « Añadir a pantalla de inicio »."
+],
+[
+"Safari : cet appareil a été déconnecté.",
+"Safari: este dispositivo ha sido desconectado."
+],
+[
+"Safari est connecté depuis {0} (actif il y a {1} s). Un seul appareil peut être connecté à la fois : si vous continuez, l'autre sera déconnecté immédiatement.",
+"Safari está conectado desde {0} (activo hace {1} s). Solo puede haber un dispositivo conectado a la vez: si continúas, el otro se desconectará al instante."
+],
+[
+"Safari. Une connexion ailleurs déconnecte celui-ci.",
+"Safari. Una conexión en otro sitio desconecta este."
+],
+[
+"Saisissez la",
+"Introduce la"
+],
+[
+"Saisissez votre clé d’accès actuelle pour continuer.",
+"Introduce tu clave de acceso actual para continuar."
+],
+[
+"Salaires & cotisations",
+"Sueldos y cotizaciones"
+],
+[
+"Salaires & cotisations · depuis {0}",
+"Sueldos y cotizaciones · desde {0}"
+],
+[
+"Salaires, provisions…",
+"Sueldos, provisiones…"
+],
+[
+"Salaires, provisions… · {0}",
+"Sueldos, provisiones… · {0}"
+],
+[
+"Samedi",
+"Sábado"
+],
+[
+"Samedi de",
+"Sábado de"
+],
+[
+"Samedi lieu",
+"Sábado lugar"
+],
+[
+"Samedi à",
+"Sábado a"
+],
+[
+"Sans TVA / non déductible",
+"Sin IVA / no deducible"
+],
+[
+"Sans accès ({0})",
+"Sin acceso ({0})"
+],
+[
+"Sans clé de secours, les données ne peuvent pas être récupérées : elles sont chiffrées et personne d'autre ne possède la clé.",
+"Sin clave de emergencia, los datos no se pueden recuperar: están cifrados y nadie más tiene la clave."
+],
+[
+"Sans elle, une clé d'accès oubliée rend les données irrécupérables.",
+"Sin ella, una clave de acceso olvidada hace que los datos sean irrecuperables."
+],
+[
+"Sauvegarde .ares ou export JSON (ancienne version incluse)",
+"Copia .ares o exportación JSON (versión antigua incluida)"
+],
+[
+"Sauvegarde chiffrée",
+"Copia de seguridad cifrada"
+],
+[
+"Sauvegarde chiffrée téléchargée",
+"Copia cifrada descargada"
+],
+[
+"Serrure (marque / modèle)",
+"Cerradura (marca / modelo)"
+],
+[
+"Serrurier",
+"Cerrajero"
+],
+[
+"Ses données sont chiffrées : seule la clé contenue dans son lien peut les ouvrir. Il ne voit jamais les autres locataires, les bailleurs, vos dépenses ni vos notes. Vous pouvez désactiver le lien à tout moment.",
+"Sus datos están cifrados: solo la clave de su enlace puede abrirlos. Nunca ve a los demás inquilinos, los propietarios, tus gastos ni tus notas. Puedes desactivar el enlace en cualquier momento."
+],
+[
+"Signaler un problème (avec photos)",
+"Avisar de un problema (con fotos)"
+],
+[
+"Site web",
+"Sitio web"
+],
+[
+"Situé dans",
+"Situado en"
+],
+[
+"Situé dans (facultatif)",
+"Situado en (opcional)"
+],
+[
+"Société & associés",
+"Sociedad y socios"
+],
+[
+"Société & associés modifiés",
+"Sociedad y socios modificados"
+],
+[
+"Société externe",
+"Empresa externa"
+],
+[
+"Solde",
+"Saldo"
+],
+[
+"Sombre",
+"Oscuro"
+],
+[
+"Son dossier : documents enregistrés (identité, CNS, caution, preuves de paiement…) avec aperçu",
+"Su expediente: documentos registrados (identidad, CNS, fianza, justificantes de pago…) con vista previa"
+],
+[
+"Son dossier : documents enregistrés (identité, CNS, caution, preuves de paiement…) avec aperçu — 👁 Privé pour en cacher un",
+"Su expediente: documentos registrados (identidad, CNS, fianza, justificantes de pago…) con vista previa — 👁 Privé para ocultar uno"
+],
+[
+"Son lien ne fonctionnera plus. Vous pourrez créer un nouvel espace (nouveau lien) plus tard.",
+"Su enlace dejará de funcionar. Podrás crear un nuevo espacio (nuevo enlace) más tarde."
+],
+[
+"Sous-locataire",
+"Subarrendatario"
+],
+[
+"Statistiques",
+"Estadísticas"
+],
+[
+"Statut",
+"Estado"
+],
+[
+"Structure",
+"Estructura"
+],
+[
+"Studio",
+"Estudio"
+],
+[
+"Suisse",
+"Suiza"
+],
+[
+"Supprimer",
+"Eliminar"
+],
+[
+"Supprimer ce message",
+"Eliminar este mensaje"
+],
+[
+"Supprimer ce message ?",
+"¿Eliminar este mensaje?"
+],
+[
+"Sur le trottoir (devant l’immeuble)",
+"En la acera (delante del edificio)"
+],
+[
+"Surface (m²)",
+"Superficie (m²)"
+],
+[
+"Synchronisation",
+"Sincronización"
+],
+[
+"Synchronisation en cours…",
+"Sincronizando…"
+],
+[
+"Synchronisation…",
+"Sincronización…"
+],
+[
+"Synchroniser",
+"Sincronizar"
+],
+[
+"Synchronisé",
+"Sincronizado"
+],
+[
+"Sécurité",
+"Seguridad"
+],
+[
+"Sécurité (code diffusé)",
+"Seguridad (código difundido)"
+],
+[
+"Sécurité, synchronisation et données",
+"Seguridad, sincronización y datos"
+],
+[
+"Séjour moyen",
+"Estancia media"
+],
+[
+"TTC",
+"Total"
+],
+[
+"TVA",
+"IVA"
+],
+[
+"TVA sur les loyers",
+"IVA sobre los alquileres"
+],
+[
+"TVA sur les loyers, par structure",
+"IVA sobre los alquileres, por edificio"
+],
+[
+"TVA {0} ({1})",
+"IVA {0} ({1})"
+],
+[
+"Tarif",
+"Tarifa"
+],
+[
+"Taux",
+"Tipo"
+],
+[
+"Taux d'occupation",
+"Tasa de ocupación"
+],
+[
+"Taux de Luxembourg : {0}",
+"Tipos de Luxemburgo: {0}"
+],
+[
+"Taux de Luxembourg : {0} · {1} · {2} · {3}",
+"Tipos de Luxemburgo: {0} · {1} · {2} · {3}"
+],
+[
+"Taux de Luxembourg : {0} · {1} · {2} · {3} — modifiables dans Réglages → Société & associés. Aide à la préparation, à faire vérifier par votre comptable.",
+"Tipos de Luxemburgo: {0} · {1} · {2} · {3} — modificables en Ajustes → Sociedad y socios. Ayuda para preparar, a verificar por tu gestor."
+],
+[
+"Taux de TVA (%)",
+"Tipos de IVA (%)"
+],
+[
+"Terminée",
+"Terminada"
+],
+[
+"Terminées récemment",
+"Terminadas recientemente"
+],
+[
+"Texte copié",
+"Texto copiado"
+],
+[
+"Titre",
+"Título"
+],
+[
+"Titre de séjour",
+"Permiso de residencia"
+],
+[
+"Total depuis l'origine",
+"Total desde el inicio"
+],
+[
+"Total encaissé",
+"Total cobrado"
+],
+[
+"Total par semaine :",
+"Total por semana:"
+],
+[
+"Total versé",
+"Total pagado"
+],
+[
+"Touchez un mois pour enregistrer le versement au bailleur.",
+"Toca un mes para registrar el pago al propietario."
+],
+[
+"Touchez un mois vide pour l'enregistrer payé. Touchez un mois payé pour modifier le montant (paiement partiel), imprimer la quittance ou annuler.",
+"Toca un mes vacío para marcarlo pagado. Toca un mes pagado para cambiar el importe (pago parcial), imprimir el recibo o anular."
+],
+[
+"Touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
+"Toca un mes vacío para marcarlo pagado; toca un mes pagado para el importe, el recibo o la anulación."
+],
+[
+"Tous",
+"Todos"
+],
+[
+"Tous ({0})",
+"Todos ({0})"
+],
+[
+"Tous les appareils devront utiliser la nouvelle clé. Les anciennes sauvegardes .ares restent lisibles avec l'ancienne clé.",
+"Todos los dispositivos tendrán que usar la nueva clave. Las copias .ares antiguas siguen legibles con la clave antigua."
+],
+[
+"Tous les immeubles",
+"Todos los edificios"
+],
+[
+"Tous les immeubles · du {0}",
+"Todos los edificios · desde {0}"
+],
+[
+"Tout effacer",
+"Borrar todo"
+],
+[
+"Tout est synchronisé",
+"Todo está sincronizado"
+],
+[
+"Tout l'immeuble",
+"Todo el edificio"
+],
+[
+"Tout sera supprimé sur tous les appareils : immeubles, logements, locataires, paiements, dépenses et documents. Faites d’abord une sauvegarde chiffrée si besoin. Saisissez votre clé d’accès pour confirmer.",
+"Se eliminará todo en todos los dispositivos: edificios, viviendas, inquilinos, pagos, gastos y documentos. Si hace falta, haz antes una copia cifrada. Introduce tu clave de acceso para confirmar."
+],
+[
+"Toute la structure (pas de chambre / logement précis)",
+"Toda la estructura (ninguna habitación / vivienda concreta)"
+],
+[
+"Toute la structure : tous les habitants ensemble (appartements différents)",
+"Toda la estructura: todos los vecinos juntos (pisos distintos)"
+],
+[
+"Toute l’année",
+"Todo el año"
+],
+[
+"Toutes les données ont été effacées",
+"Se han borrado todos los datos"
+],
+[
+"Toutes les {0} semaines",
+"Cada {0} semanas"
+],
+[
+"Travaux ({0})",
+"Trabajos ({0})"
+],
+[
+"Travaux, assurance, syndic…",
+"Obras, seguro, administrador…"
+],
+[
+"Trimestrielle",
+"Trimestral"
+],
+[
+"Trouvé dans le calendrier",
+"Encontrado en el calendario"
+],
+[
+"Trouvé dans le calendrier (fichier)",
+"Encontrado en el calendario (archivo)"
+],
+[
+"Type",
+"Tipo"
+],
+[
+"Type de document",
+"Tipo de documento"
+],
+[
+"Type de structure",
+"Tipo de estructura"
+],
+[
+"Télécharger le journal (Excel / CSV)",
+"Descargar el diario (Excel / CSV)"
+],
+[
+"Téléchargez le",
+"Descarga el"
+],
+[
+"Téléphone",
+"Teléfono"
+],
+[
+"USDT : adresse invalide (0x + {0} caractères)",
+"USDT: dirección no válida (0x + {0} caracteres)"
+],
+[
+"Un montant inférieur au loyer est enregistré comme paiement partiel (case orange) et le reste reste dû.",
+"Un importe inferior al alquiler se registra como pago parcial (casilla naranja) y el resto sigue debido."
+],
+[
+"Un seul appareil connecté à la fois",
+"Un solo dispositivo conectado a la vez"
+],
+[
+"Une copie",
+"Una copia"
+],
+[
+"Une seule fois",
+"Una sola vez"
+],
+[
+"Urgent : aujourd’hui ou en retard",
+"Urgente: hoy o con retraso"
+],
+[
+"Vacant",
+"Libre"
+],
+[
+"Valider",
+"Validar"
+],
+[
+"Valorlux (sacs bleus {0})",
+"Valorlux (bolsas azules {0})"
+],
+[
+"Valorlux (sacs bleus {0}) — {1} passages",
+"Valorlux (bolsas azules {0}) — {1} pasos"
+],
+[
+"Vendredi",
+"Viernes"
+],
+[
+"Vendredi de",
+"Viernes de"
+],
+[
+"Vendredi lieu",
+"Viernes lugar"
+],
+[
+"Vendredi à",
+"Viernes a"
+],
+[
+"Verre",
+"Vidrio"
+],
+[
+"Verre ({0}, après {1} h), Résiduels ({2}, après {3} h)",
+"Vidrio ({0}, después de las {1} h), Resto ({2}, después de las {3} h)"
+],
+[
+"Verre — {0}",
+"Vidrio — {0}"
+],
+[
+"Verre — {0} passage",
+"Vidrio — {0} paso"
+],
+[
+"Verre — {0} passages",
+"Vidrio — {0} pasos"
+],
+[
+"Verrouillage automatique",
+"Bloqueo automático"
+],
+[
+"Verrouiller",
+"Bloquear"
+],
+[
+"Verrouiller maintenant",
+"Bloquear ahora"
+],
+[
+"Versement au bailleur",
+"Pago al propietario"
+],
+[
+"Versé",
+"Pagado"
+],
+[
+"Versé au bailleur",
+"Pagado al propietario"
+],
+[
+"Versé au bailleur · {0}",
+"Pagado al propietario · {0}"
+],
+[
+"Versé bailleur",
+"Pagado al propietario"
+],
+[
+"Versé bailleurs",
+"Pagado a propietarios"
+],
+[
+"Virement",
+"Transferencia"
+],
+[
+"Virement bancaire",
+"Transferencia bancaria"
+],
+[
+"Visible dans l'espace de {0} : il voit le nouveau code dès que vous le changez.",
+"Visible en el espacio de {0}: ve el nuevo código en cuanto lo cambias."
+],
+[
+"Visible dans l'espace du locataire",
+"Visible en el espacio del inquilino"
+],
+[
+"Visible à partir du",
+"Visible a partir del"
+],
+[
+"Voir : Carte CNS",
+"Ver: Tarjeta CNS"
+],
+[
+"Voir : Pièce d'identité",
+"Ver: Documento de identidad"
+],
+[
+"Voir : Preuve de la caution",
+"Ver: Justificante de la fianza"
+],
+[
+"Voir : {0}",
+"Ver: {0}"
+],
+[
+"Voir la facture",
+"Ver la factura"
+],
+[
+"Voir la fiche",
+"Ver la ficha"
+],
+[
+"Voir la page",
+"Ver la página"
+],
+[
+"Voir la page publique",
+"Ver la página pública"
+],
+[
+"Voir son app",
+"Ver su app"
+],
+[
+"Voir son espace",
+"Ver su espacio"
+],
+[
+"Votre clé de secours",
+"Tu clave de emergencia"
+],
+[
+"Votre société",
+"Tu sociedad"
+],
+[
+"Votre société — locataire principal (apparaît sur les quittances et les relances)",
+"Tu sociedad — inquilino principal (aparece en recibos y recordatorios)"
+],
+[
+"Vous allez changer le locataire de",
+"Vas a cambiar el inquilino de"
+],
+[
+"Vue financière annuelle et depuis l’origine",
+"Visión financiera anual y desde el inicio"
+],
+[
+"Vérification…",
+"Comprobando…"
+],
+[
+"absent jusqu’au {0}",
+"ausente hasta el {0}"
+],
+[
+"absent jusqu’au {0} —",
+"ausente hasta el {0} —"
+],
+[
+"actif par défaut entre colocataires d’un même appartement. Vous lisez tout, vous pouvez répondre et supprimer un message.",
+"activo por defecto entre compañeros del mismo piso. Lo lees todo, puedes responder y borrar un mensaje."
+],
+[
+"actuel",
+"actual"
+],
+[
+"adresse de réception",
+"dirección de recepción"
+],
+[
+"app de l’équipe",
+"app del equipo"
+],
+[
+"appareil photo ou galerie",
+"cámara o galería"
+],
+[
+"arrive dans {0} le {1}",
+"llega a {0} el {1}"
+],
+[
+"arrivée prévue le {0}",
+"llegada prevista el {0}"
+],
+[
+"arrivée {0}",
+"llegada {0}"
+],
+[
+"arrêt maladie",
+"baja médica"
+],
+[
+"aucun associé",
+"ningún socio"
+],
+[
+"aucun nom, aucune donnée des locataires",
+"ningún nombre, ningún dato de los inquilinos"
+],
+[
+"aucune dépense rattachée",
+"ningún gasto asociado"
+],
+[
+"avancer l'entrée au {0}",
+"adelantar la entrada al {0}"
+],
+[
+"avant frais fixes",
+"antes de gastos fijos"
+],
+[
+"avec le certificat. Tout arrive ici (Activité) et sur l’Accueil.",
+"con el certificado. Todo llega aquí (Actividad) y al Inicio."
+],
+[
+"avec un code personnel (comme pour les locataires). Il/elle y voit",
+"con un código personal (como los inquilinos). Allí ve"
+],
+[
+"bail d'habitation",
+"contrato de vivienda"
+],
+[
+"bail principal",
+"contrato principal"
+],
+[
+"baux en cours",
+"contratos en curso"
+],
+[
+"ce que vous cochez :",
+"lo que marques:"
+],
+[
+"chaque semaine depuis le {0}",
+"cada semana desde el {0}"
+],
+[
+"chiffré avant l'envoi. Reçu par WhatsApp ou par mail ? Enregistrez la photo ou le PDF sur le téléphone / l'ordinateur, puis choisissez-le ici.",
+"cifrado antes del envío. ¿Recibido por WhatsApp o email? Guarda la foto o el PDF en el móvil / ordenador y elígelo aquí."
+],
+[
+"chiffrées avant l'envoi",
+"cifradas antes del envío"
+],
+[
+"clé de secours",
+"clave de emergencia"
+],
+[
+"code d'accès",
+"código de acceso"
+],
+[
+"code personnel",
+"código personal"
+],
+[
+"complet",
+"completo"
+],
+[
+"de TVA ; les locaux commerciaux, bureaux ou garages peuvent y être soumis (option). Votre comptable vous confirme le bon taux.",
+"de IVA; los locales comerciales, oficinas o garajes pueden estar sujetos (opción). Tu gestor te confirma el tipo correcto."
+],
+[
+"de l'ancienne version est encore présente dans ce navigateur ({0} immeubles, {1} locataires).",
+"de la versión antigua sigue en este navegador ({0} edificios, {1} inquilinos)."
+],
+[
+"de la commune pour",
+"del ayuntamiento para"
+],
+[
+"depuis l'origine",
+"desde el inicio"
+],
+[
+"depuis le départ de {0} ({1}).",
+"desde la salida de {0} ({1})."
+],
+[
+"depuis le {0}",
+"desde el {0}"
+],
+[
+"depuis le {0} · {1}",
+"desde el {0} · {1}"
+],
+[
+"depuis le {0} — {1}. Tout l'historique reste consultable et compte dans les statistiques.",
+"desde el {0} — {1}. Todo el historial sigue consultable y cuenta en las estadísticas."
+],
+[
+"depuis {0}",
+"desde {0}"
+],
+[
+"depuis {0} · départ le {1}",
+"desde {0} · salida el {1}"
+],
+[
+"dimanche",
+"domingo"
+],
+[
+"dit avoir payé par crypto",
+"dice que ha pagado con cripto"
+],
+[
+"donner ou retirer l'accès",
+"dar o quitar el acceso"
+],
+[
+"données chiffrées {0}-{1} de bout en bout",
+"datos cifrados {0}-{1} de extremo a extremo"
+],
+[
+"du camion (comme sur le calendrier de la commune). NOBIS calcule quand sortir les poubelles.",
+"del camión (como en el calendario del ayuntamiento). NOBIS calcula cuándo sacar la basura."
+],
+[
+"du {0}",
+"del {0}"
+],
+[
+"du {0} au {1}",
+"del {0} al {1}"
+],
+[
+"départ le {0}",
+"salida el {0}"
+],
+[
+"départ {0}",
+"salida {0}"
+],
+[
+"elle ne sera plus jamais affichée. Avec elle, on peut ouvrir le coffre et choisir une nouvelle clé d'accès. Gardez-la hors ligne (papier dans un coffre, gestionnaire de mots de passe).",
+"no se volverá a mostrar. Con ella se puede abrir la caja fuerte y elegir una nueva clave de acceso. Guárdala sin conexión (papel en una caja fuerte, gestor de contraseñas)."
+],
+[
+"en lecture seule",
+"solo lectura"
+],
+[
+"en ligne jusqu’au {0}",
+"publicado hasta el {0}"
+],
+[
+"en ligne sur le site",
+"publicado en la web"
+],
+[
+"en main propre (espèces)",
+"en mano (efectivo)"
+],
+[
+"encaissé",
+"cobrado"
+],
+[
+"encaissé − bailleurs − dépenses − frais fixes",
+"cobrado − propietarios − gastos − gastos fijos"
+],
+[
+"entre les habitants",
+"entre los vecinos"
+],
+[
+"entre les habitants — {0}",
+"entre los vecinos — {0}"
+],
+[
+"espace personnel",
+"espacio personal"
+],
+[
+"ex. B123456",
+"p. ej. B123456"
+],
+[
+"ex. LU{0}",
+"p. ej. LU{0}"
+],
+[
+"ex. Mardi {0} de {1} h à {2} h : coupure d'eau pour travaux. Merci de votre compréhension.",
+"p. ej. Martes {0} de {1} a {2} h: corte de agua por obras. Gracias por tu comprensión."
+],
+[
+"ex. NobisSarl",
+"p. ej. NobisSarl"
+],
+[
+"ex. Rossi, Électricité {0}…",
+"p. ej. Rossi, Electricidad {0}…"
+],
+[
+"ex. Réparation toiture",
+"p. ej. Reparación del tejado"
+],
+[
+"ex. acompte, reste en fin de mois",
+"p. ej. anticipo, el resto a fin de mes"
+],
+[
+"ex. appartement du 1er, {0}, aile gauche, cour arrière",
+"p. ej. piso del 1.º, {0}, ala izquierda, patio trasero"
+],
+[
+"ex. après {0} h, {1}",
+"p. ej. después de las {0} h, {1}"
+],
+[
+"ex. banque, n° de garantie…",
+"p. ej. banco, n.º de aval…"
+],
+[
+"ex. www.nobis.lu",
+"p. ej. www.nobis.lu"
+],
+[
+"ex. {0}",
+"p. ej. {0}"
+],
+[
+"ex. {0} ; porte d’entrée de l’immeuble : {1}",
+"p. ej. {0}; puerta de entrada del edificio: {1}"
+],
+[
+"ex. {0}, 1er",
+"p. ej. {0}, 1.º"
+],
+[
+"ex. {0}, 1er, sous-sol",
+"p. ej. {0}, 1.º, sótano"
+],
+[
+"ex. {0}, Garage {1}",
+"p. ej. {0}, Garaje {1}"
+],
+[
+"ex. {0}, Garage {1}, Bureau {2}",
+"p. ej. {0}, Garaje {1}, Oficina {2}"
+],
+[
+"ex. {0}, appartement du 1er",
+"p. ej. {0}, piso del 1.º"
+],
+[
+"ex. {0}, conteneur au garage n°{1}",
+"p. ej. {0}, contenedor en el garaje n.º{1}"
+],
+[
+"ex. {0}, nettoyage des communs",
+"p. ej. {0}, limpieza de zonas comunes"
+],
+[
+"ex. {0}/h, forfait {1}…",
+"p. ej. {0}/h, tarifa fija {1}…"
+],
+[
+"ex. {0}/{1}/{2}/{3} … (année {4} par défaut)",
+"p. ej. {0}/{1}/{2}/{3} … (año {4} por defecto)"
+],
+[
+"ex. {0}/{1}/{2}/{3} … (année {4} par défaut) — ou collez le contenu d'un calendrier .ics",
+"p. ej. {0}/{1}/{2}/{3} … (año {4} por defecto) — o pega el contenido de un calendario .ics"
+],
+[
+"ex. Électricité {0}",
+"p. ej. Electricidad {0}"
+],
+[
+"exonérée",
+"exenta"
+],
+[
+"factures",
+"facturas"
+],
+[
+"gratuit (prêt)",
+"gratis (préstamo)"
+],
+[
+"historique conservé",
+"historial conservado"
+],
+[
+"https://… .ics ou webcal://…",
+"https://… .ics o webcal://…"
+],
+[
+"https://… ou webcal://… (lien .ics copié du site ou de l’app de la commune)",
+"https://… o webcal://… (enlace .ics copiado de la web o la app del ayuntamiento)"
+],
+[
+"indéterminée",
+"indefinido"
+],
+[
+"interne",
+"interno"
+],
+[
+"intervenant à choisir",
+"persona por elegir"
+],
+[
+"jeudi",
+"jueves"
+],
+[
+"journal T3 {0}",
+"diario T3 {0}"
+],
+[
+"journal, TVA, statistiques, export",
+"diario, IVA, estadísticas, exportación"
+],
+[
+"jusqu’au {0} ·",
+"hasta el {0} ·"
+],
+[
+"la clé privée ni les {0}/{1} mots de récupération. Laissez vide ce que vous n’utilisez pas : le bouton n’apparaît pas.",
+"la clave privada ni las {0}/{1} palabras de recuperación. Deja vacío lo que no uses: el botón no aparece."
+],
+[
+"le locataire voit « Terminé » dans son app",
+"el inquilino ve « Terminado » en su app"
+],
+[
+"le {0}",
+"el {0}"
+],
+[
+"locataire principal (apparaît sur les quittances et les relances)",
+"inquilino principal (aparece en recibos y recordatorios)"
+],
+[
+"locataires",
+"inquilinos"
+],
+[
+"location",
+"alquiler"
+],
+[
+"location (publier ses objets sur le site, après votre approbation)",
+"alquiler (publicar sus objetos en la web, tras tu aprobación)"
+],
+[
+"logement vacant",
+"vivienda libre"
+],
+[
+"loyers",
+"alquileres"
+],
+[
+"loyers encaissés − bailleur − dépenses",
+"alquileres cobrados − propietario − gastos"
+],
+[
+"lundi",
+"lunes"
+],
+[
+"mardi",
+"martes"
+],
+[
+"mercredi",
+"miércoles"
+],
+[
+"mise à jour automatique",
+"actualización automática"
+],
+[
+"modifiables dans Réglages → Société & associés. Aide à la préparation, à faire vérifier par votre comptable.",
+"modificables en Ajustes → Sociedad y socios. Ayuda para preparar, a verificar por tu gestor."
+],
+[
+"n'est plus en votre possession ou en gestion ? L'immeuble passe dans « Plus en gestion ».",
+"¿ya no es tuyo o en gestión? El edificio pasa a « Ya no en gestión »."
+],
+[
+"net après dépenses : {0}",
+"neto tras gastos: {0}"
+],
+[
+"nettoyage, réparations, déchets",
+"limpieza, reparaciones, basura"
+],
+[
+"non chiffrée",
+"sin cifrar"
+],
+[
+"occupé ({0})",
+"ocupado ({0})"
+],
+[
+"occupé {0} du temps",
+"ocupado el {0} del tiempo"
+],
+[
+"ou choisir le fichier .ics téléchargé",
+"o elegir el archivo .ics descargado"
+],
+[
+"ou collez le contenu d'un calendrier .ics",
+"o pega el contenido de un calendario .ics"
+],
+[
+"par exemple un dégât réparé.",
+"por ejemplo un daño reparado."
+],
+[
+"partage du résultat net",
+"reparto del resultado neto"
+],
+[
+"passage",
+"recogida"
+],
+[
+"passage chaque jeudi",
+"recogida cada jueves"
+],
+[
+"passage chaque mercredi",
+"recogida cada miércoles"
+],
+[
+"passage {0} date",
+"recogida {0} fecha"
+],
+[
+"passage {0} dates",
+"recogida {0} fechas"
+],
+[
+"payé",
+"pagado"
+],
+[
+"payé {0}",
+"pagado {0}"
+],
+[
+"payé {0} · reste",
+"pagado {0} · queda"
+],
+[
+"podium",
+"podio"
+],
+[
+"pour calculer la part de chacun.",
+"para calcular la parte de cada uno."
+],
+[
+"pour les locataires de",
+"para los inquilinos de"
+],
+[
+"pour un",
+"para un"
+],
+[
+"pour voir la part de chacun.",
+"para ver la parte de cada uno."
+],
+[
+"privé",
+"particular"
+],
+[
+"prévu {0} h",
+"previsto {0} h"
+],
+[
+"prévu {0} h · 🤒 {1} j (−{2} h)",
+"previsto {0} h · 🤒 {1} d (−{2} h)"
+],
+[
+"prévue le {0}",
+"prevista el {0}"
+],
+[
+"prêt",
+"préstamo"
+],
+[
+"publiée le {0}",
+"publicado el {0}"
+],
+[
+"publiée le {0} · en ligne jusqu’au {1} · 📩 {2} intéressé",
+"publicado el {0} · publicado hasta el {1} · 📩 {2} interesado"
+],
+[
+"que vous ajoutez ici.",
+"que añades aquí."
+],
+[
+"que vous leur donnez ici. Sans code, personne n'entre.",
+"que les das aquí. Sin código no entra nadie."
+],
+[
+"qui le fait ?",
+"¿quién lo hace?"
+],
+[
+"quotidien",
+"diario"
+],
+[
+"recettes − dépenses (TTC)",
+"ingresos − gastos (IVA incl.)"
+],
+[
+"remplace la collecte actuelle",
+"sustituye la recogida actual"
+],
+[
+"reste",
+"queda"
+],
+[
+"reste {0}",
+"quedan {0}"
+],
+[
+"retirez-en une",
+"quita una"
+],
+[
+"reçue le {0}",
+"recibida el {0}"
+],
+[
+"reçue le {0} · en main propre (espèces)",
+"recibida el {0} · en mano (efectivo)"
+],
+[
+"révisé le {0}",
+"revisado el {0}"
+],
+[
+"samedi",
+"sábado"
+],
+[
+"se met à jour tout seul",
+"se actualiza solo"
+],
+[
+"sera archivé comme ancien locataire : ses paiements, documents et son historique sont conservés pour les statistiques.",
+"se archivará como antiguo inquilino: sus pagos, documentos e historial se conservan para las estadísticas."
+],
+[
+"seulement",
+"solo"
+],
+[
+"son",
+"su"
+],
+[
+"son horaire et ses absences",
+"su horario y sus ausencias"
+],
+[
+"son planning : quoi, où, quand ({0} semaines), avec vos consignes",
+"su planificación: qué, dónde, cuándo ({0} semanas), con tus instrucciones"
+],
+[
+"sortir la veille au soir, après {0} h",
+"sacar la víspera por la noche, después de las {0} h"
+],
+[
+"sortir le jour du passage, {0}",
+"sacar el día de la recogida, {0}"
+],
+[
+"sous-locataire",
+"subarrendatario"
+],
+[
+"sur tous les appareils",
+"en todos los dispositivos"
+],
+[
+"sur {0}",
+"de {0}"
+],
+[
+"terminée le {0}",
+"terminada el {0}"
+],
+[
+"totaux recalculés",
+"totales recalculados"
+],
+[
+"touchez pour corriger les dates.",
+"toca para corregir las fechas."
+],
+[
+"touchez pour la fiche",
+"toca para la ficha"
+],
+[
+"touchez pour lire",
+"toca para leer"
+],
+[
+"touchez pour voir qui fait quoi, où et quand",
+"toca para ver quién hace qué, dónde y cuándo"
+],
+[
+"touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.",
+"toca « 👁 Visible » para hacerlo privado. Sus mensajes y fotos llegan al Inicio (📩) y a Mantenimiento → Trabajos."
+],
+[
+"tour de {0}",
+"turno de {0}"
+],
+[
+"vacant",
+"libre"
+],
+[
+"vendredi",
+"viernes"
+],
+[
+"versé {0}",
+"pagado {0}"
+],
+[
+"visibles dans l’app des locataires",
+"visibles en la app de inquilinos"
+],
+[
+"voir l'accueil",
+"ver el Inicio"
+],
+[
+"vous pouvez le changer. Programmez-le d'abord dans la serrure (app du fabricant), puis enregistrez-le ici.",
+"puedes cambiarlo. Prográmalo primero en la cerradura (app del fabricante) y luego guárdalo aquí."
+],
+[
+"vous êtes locataire principal, le bailleur est le propriétaire",
+"tú eres el inquilino principal, el arrendador es el propietario"
+],
+[
+"vérification automatique chaque jour.",
+"comprobación automática cada día."
+],
+[
+"vérifiez avec votre avocat.",
+"consúltalo con tu abogado."
+],
+[
+"vérifiez la réception, puis cochez le mois payé",
+"comprueba que ha llegado y marca el mes pagado"
+],
+[
+"vérifiez puis Enregistrer",
+"comprueba y luego Guardar"
+],
+[
+"{0} (taux du pays si vide)",
+"{0} (tipos del país si está vacío)"
+],
+[
+"{0} (vous)",
+"{0} (tú)"
+],
+[
+"{0} (étage {1}",
+"{0} (planta {1}"
+],
+[
+"{0} (étage {1} · {2})",
+"{0} (planta {1} · {2})"
+],
+[
+"{0} (étage {1} · {2}) — vacant",
+"{0} (planta {1} · {2}) — libre"
+],
+[
+"{0} / jour",
+"{0} / día"
+],
+[
+"{0} / {1} · appareil photo ou galerie · chiffrées avant l'envoi",
+"{0} / {1} · cámara o galería · cifradas antes del envío"
+],
+[
+"{0} : fin le {1}",
+"{0}: fin el {1}"
+],
+[
+"{0} : non payé",
+"{0}: impagado"
+],
+[
+"{0} : payé",
+"{0}: pagado"
+],
+[
+"{0} : payé {1} sur {2}",
+"{0}: pagado {1} de {2}"
+],
+[
+"{0} : {1} → {2} à partir du {3}",
+"{0}: {1} → {2} a partir del {3}"
+],
+[
+"{0} Ko",
+"{0} KB"
+],
+[
+"{0} Mo maximum",
+"{0} MB máximo"
+],
+[
+"{0} accès actifs",
+"{0} accesos activos"
+],
+[
+"{0} accès actifs — donner ou retirer l'accès",
+"{0} accesos activos — dar o quitar el acceso"
+],
+[
+"{0} actuels",
+"{0} actuales"
+],
+[
+"{0} actuels · {1} anciens",
+"{0} actuales · {1} antiguos"
+],
+[
+"{0} adresses, {1} locataires, loyers {2}–{3}",
+"{0} direcciones, {1} inquilinos, alquileres {2}–{3}"
+],
+[
+"{0} an {1} mois",
+"{0} año {1} meses"
+],
+[
+"{0} anciens",
+"{0} antiguos"
+],
+[
+"{0} ans {1} mois",
+"{0} años {1} meses"
+],
+[
+"{0} archivé",
+"{0} archivado"
+],
+[
+"{0} collectes enregistrées",
+"{0} recogidas guardadas"
+],
+[
+"{0} collectes enregistrées · mise à jour automatique",
+"{0} recogidas guardadas · actualización automática"
+],
+[
+"{0} dates enregistrées",
+"{0} fechas guardadas"
+],
+[
+"{0} dates importées",
+"{0} fechas importadas"
+],
+[
+"{0} dates importées — vérifiez puis Enregistrer",
+"{0} fechas importadas — comprueba y luego Guardar"
+],
+[
+"{0} des {1} échus",
+"{0} de los {1} vencidos"
+],
+[
+"{0} en moyenne",
+"{0} de media"
+],
+[
+"{0} enregistré",
+"{0} guardado"
+],
+[
+"{0} enregistré · {1} archivé",
+"{0} guardado · {1} archivado"
+],
+[
+"{0} est connecté depuis {1} (actif il y a {2} s). Un seul appareil peut être connecté à la fois : si vous continuez, l'autre sera déconnecté immédiatement.",
+"{0} está conectado desde {1} (activo hace {2} s). Solo puede haber un dispositivo conectado a la vez: si continúas, el otro se desconectará al instante."
+],
+[
+"{0} est déjà occupé",
+"{0} ya está ocupado"
+],
+[
+"{0} est hors du contrat",
+"{0} está fuera del contrato"
+],
+[
+"{0} immeuble",
+"{0} edificio"
+],
+[
+"{0} immeuble en gestion",
+"{0} edificio en gestión"
+],
+[
+"{0} immeuble · encaissé",
+"{0} edificio · cobrado"
+],
+[
+"{0} immeubles",
+"{0} edificios"
+],
+[
+"{0} immeubles en gestion",
+"{0} edificios en gestión"
+],
+[
+"{0} immeubles en gestion · {1} archivé",
+"{0} edificios en gestión · {1} archivado"
+],
+[
+"{0} immeubles · encaissé",
+"{0} edificios · cobrado"
+],
+[
+"{0} intervention (aujourd’hui / demain)",
+"{0} intervención (hoy / mañana)"
+],
+[
+"{0} interventions",
+"{0} intervenciones"
+],
+[
+"{0} interventions (aujourd’hui / demain)",
+"{0} intervenciones (hoy / mañana)"
+],
+[
+"{0} interventions (aujourd’hui / demain) · 🗑️ poubelles ce matin",
+"{0} intervenciones (hoy / mañana) · 🗑️ basura esta mañana"
+],
+[
+"{0} interventions en cours",
+"{0} intervenciones en curso"
+],
+[
+"{0} locataire",
+"{0} inquilino"
+],
+[
+"{0} locataire sans logement attribué. Attribuez-leur un logement pour suivre les changements d'occupants.",
+"{0} inquilino sin vivienda asignada. Asígnale una vivienda para seguir los cambios de ocupantes."
+],
+[
+"{0} locataire · {1} immeuble",
+"{0} inquilino · {1} edificio"
+],
+[
+"{0} locataires",
+"{0} inquilinos"
+],
+[
+"{0} locataires archivés",
+"{0} inquilinos archivados"
+],
+[
+"{0} locataires encore en place ({1}) : leur sortie sera enregistrée à cette date et ils passeront dans les anciens locataires.",
+"{0} inquilinos todavía presentes ({1}): su salida se registrará en esta fecha y pasarán a antiguos inquilinos."
+],
+[
+"{0} locataires · {1} immeuble · {2} logements",
+"{0} inquilinos · {1} edificio · {2} viviendas"
+],
+[
+"{0} locataires · {1} immeubles",
+"{0} inquilinos · {1} edificios"
+],
+[
+"{0} locataires · {1} immeubles · {2} logements",
+"{0} inquilinos · {1} edificios · {2} viviendas"
+],
+[
+"{0} logements",
+"{0} viviendas"
+],
+[
+"{0} loyer à encaisser",
+"{0} alquiler por cobrar"
+],
+[
+"{0} loyers à encaisser",
+"{0} alquileres por cobrar"
+],
+[
+"{0} mois",
+"{0} meses"
+],
+[
+"{0} mois de retard",
+"{0} meses de retraso"
+],
+[
+"{0} mois de vacance",
+"{0} meses libre"
+],
+[
+"{0} mois impayé : {1}",
+"{0} mes impagado: {1}"
+],
+[
+"{0} mois impayés : {1}",
+"{0} meses impagados: {1}"
+],
+[
+"{0} nouveau",
+"{0} nuevo"
+],
+[
+"{0} nouveaux",
+"{0} nuevos"
+],
+[
+"{0} nouveaux messages",
+"{0} mensajes nuevos"
+],
+[
+"{0} nouvelles de l’équipe",
+"{0} novedades del equipo"
+],
+[
+"{0} occupant",
+"{0} ocupante"
+],
+[
+"{0} occupant · occupé {1} du temps",
+"{0} ocupante · ocupado el {1} del tiempo"
+],
+[
+"{0} occupants",
+"{0} ocupantes"
+],
+[
+"{0} occupants · occupé {1} du temps",
+"{0} ocupantes · ocupado el {1} del tiempo"
+],
+[
+"{0} occupé / {1}",
+"{0} ocupado / {1}"
+],
+[
+"{0} occupés / {1}",
+"{0} ocupados / {1}"
+],
+[
+"{0} passage",
+"{0} paso"
+],
+[
+"{0} passages",
+"{0} pasos"
+],
+[
+"{0} photos ajoutées ({1} maximum)",
+"{0} fotos añadidas ({1} máximo)"
+],
+[
+"{0} photos maximum",
+"{0} fotos máximo"
+],
+[
+"{0} photos maximum — retirez-en une",
+"{0} fotos máximo — quita una"
+],
+[
+"{0} quitte {1} le {2}",
+"{0} deja {1} el {2}"
+],
+[
+"{0} résultat",
+"{0} resultado"
+],
+[
+"{0} résultats",
+"{0} resultados"
+],
+[
+"{0} sur {1}",
+"{0} de {1}"
+],
+[
+"{0} tour fait = {1} point (« ✅ Fait » ou « 🙋 Je l’ai fait à sa place »). À égalité, celui qui a le moins d’oublis passe devant. Le classement repart de zéro chaque 1er {2} ; l’année précédente reste consultable.",
+"{0} turno hecho = {1} punto (« ✅ Hecho » o « 🙋 Lo hice yo en su lugar »). En caso de empate, pasa delante quien menos olvidos tiene. La clasificación vuelve a cero cada 1 de enero; el año anterior sigue consultable."
+],
+[
+"{0} · aucun associé",
+"{0} · ningún socio"
+],
+[
+"{0} · depuis {1}",
+"{0} · desde {1}"
+],
+[
+"{0} · payé",
+"{0} · pagado"
+],
+[
+"{0} · v2.{1}.{2} · données chiffrées {3}-{4} de bout en bout",
+"{0} · v2.{1}.{2} · datos cifrados {3}-{4} de extremo a extremo"
+],
+[
+"{0} · versé {1}",
+"{0} · pagado {1}"
+],
+[
+"{0} · vérifiez la réception, puis cochez le mois payé",
+"{0} · comprueba que ha llegado y marca el mes pagado"
+],
+[
+"{0} · {1} Ko",
+"{0} · {1} KB"
+],
+[
+"{0} · {1} en moyenne",
+"{0} · {1} de media"
+],
+[
+"{0} · {1} locataires archivés · {2}",
+"{0} · {1} inquilinos archivados · {2}"
+],
+[
+"{0} · {1} loyer à encaisser",
+"{0} · {1} alquiler por cobrar"
+],
+[
+"{0} · {1} loyers à encaisser",
+"{0} · {1} alquileres por cobrar"
+],
+[
+"{0} · {1} sur {2}",
+"{0} · {1} de {2}"
+],
+[
+"{0} · {1} · intervenant à choisir · prévue le {2}",
+"{0} · {1} · persona por elegir · prevista el {2}"
+],
+[
+"{0} · {1} · intervenant à choisir · terminée le {2}",
+"{0} · {1} · persona por elegir · terminada el {2}"
+],
+[
+"{0} · {1} · {2} Ko",
+"{0} · {1} · {2} KB"
+],
+[
+"{0} · 📷 {1} photo · touchez pour lire",
+"{0} · 📷 {1} foto · toca para leer"
+],
+[
+"{0} écriture",
+"{0} asiento"
+],
+[
+"{0} écritures",
+"{0} asientos"
+],
+[
+"{0} — Code oublié",
+"{0} — Código olvidado"
+],
+[
+"{0} — Entrée : {1} → {2}",
+"{0} — Entrada: {1} → {2}"
+],
+[
+"{0} — Nouvel occupant",
+"{0} — Nuevo ocupante"
+],
+[
+"{0} — avancer l'entrée au {1}",
+"{0} — adelantar la entrada al {1}"
+],
+[
+"{0} — modifiables dans Réglages → Société & associés. Aide à la préparation, à faire vérifier par votre comptable.",
+"{0} — modificables en Ajustes → Sociedad y socios. Ayuda para preparar, a verificar por tu gestor."
+],
+[
+"{0} — occupé ({1})",
+"{0} — ocupado ({1})"
+],
+[
+"{0} — vacant",
+"{0} — libre"
+],
+[
+"{0} — {1} · {2} locataires archivés · {3}",
+"{0} — {1} · {2} inquilinos archivados · {3}"
+],
+[
+"{0} — {1} · {2} sur {3}",
+"{0} — {1} · {2} de {3}"
+],
+[
+"{0} → départ prévu le {1}",
+"{0} → salida prevista el {1}"
+],
+[
+"{0} → départ prévu le {1} · {2} mois",
+"{0} → salida prevista el {1} · {2} meses"
+],
+[
+"{0} → {1} ({2}), sortie le {3}",
+"{0} → {1} ({2}), salida el {3}"
+],
+[
+"{0} → {1} · {2} ans {3} mois",
+"{0} → {1} · {2} años {3} meses"
+],
+[
+"{0}) — vacant",
+"{0}) — libre"
+],
+[
+"{0}, bail principal résilié, rendu au bailleur…",
+"{0}, contrato principal rescindido, devuelto al propietario…"
+],
+[
+"{0}. Tout l'historique reste consultable et compte dans les statistiques.",
+"{0}. Todo el historial sigue consultable y cuenta en las estadísticas."
+],
+[
+"· Loyer {0}",
+"· Alquiler {0}"
+],
+[
+"· Loyer {0} — {1}",
+"· Alquiler {0} — {1}"
+],
+[
+"· impayé",
+"· impagado"
+],
+[
+"· réalisé",
+"· realizado"
+],
+[
+"· à sortir la veille au soir ({0}) après {1} h",
+"· sacar la víspera por la noche ({0}) después de las {1} h"
+],
+[
+"· à sortir la veille au soir ({0}) après {1} h · Au sous-sol / local poubelles · {2}",
+"· sacar la víspera por la noche ({0}) después de las {1} h · En el sótano / cuarto de basuras · {2}"
+],
+[
+"· à sortir la veille au soir ({0}) après {1} h · Sur le trottoir (devant l’immeuble)",
+"· sacar la víspera por la noche ({0}) después de las {1} h · En la acera (delante del edificio)"
+],
+[
+"· à sortir le jour même {0}",
+"· sacar el mismo día {0}"
+],
+[
+"· à sortir le jour même {0} · Sur le trottoir (devant l’immeuble)",
+"· sacar el mismo día {0} · En la acera (delante del edificio)"
+],
+[
+"· à venir {0}",
+"· próximo {0}"
+],
+[
+"À approuver ({0})",
+"Por aprobar ({0})"
+],
+[
+"À encaisser",
+"Por cobrar"
+],
+[
+"À encaisser — {0}",
+"Por cobrar — {0}"
+],
+[
+"À faire",
+"Por hacer"
+],
+[
+"À faire ({0})",
+"Por hacer ({0})"
+],
+[
+"À partir du",
+"A partir del"
+],
+[
+"À surveiller",
+"A vigilar"
+],
+[
+"À tour de rôle entre les habitants de chaque fil, automatiquement (le nouveau locataire prend la place de celui qui part). Dans leur app : « Ce soir c’est ton tour », ✅ Fait, 🔁 Je ne peux pas.",
+"Por turnos entre los vecinos de cada conversación, automáticamente (el nuevo inquilino ocupa el lugar del que se va). En su app: « Esta noche te toca », ✅ Hecho, 🔁 No puedo."
+],
+[
+"À verser aux bailleurs",
+"Por pagar a los propietarios"
+],
+[
+"À verser aux bailleurs — {0}",
+"Por pagar a los propietarios — {0}"
+],
+[
+"Échu à ce jour",
+"Vencido a día de hoy"
+],
+[
+"Écrire aux habitants (en tant que gestionnaire)…",
+"Escribir a los vecinos (como gestor)…"
+],
+[
+"Électricien",
+"Electricista"
+],
+[
+"Équipe",
+"Equipo"
+],
+[
+"Équipements, compteurs, état…",
+"Equipamiento, contadores, estado…"
+],
+[
+"Étage",
+"Planta"
+],
+[
+"État des lieux, retenues éventuelles sur la caution, nouvelle adresse…",
+"Estado de la vivienda, posibles retenciones de la fianza, nueva dirección…"
+],
+[
+"État, marque, accessoires…",
+"Estado, marca, accesorios…"
+],
+[
+"Österreich",
+"Austria"
+],
+[
+"à conserver en lieu sûr",
+"guárdalo en un lugar seguro"
+],
+[
+"à créer",
+"por crear"
+],
+[
+"à mettre à jour",
+"por actualizar"
+],
+[
+"à payer",
+"a pagar"
+],
+[
+"à réassigner si besoin",
+"para reasignar si hace falta"
+],
+[
+"à récupérer",
+"a recuperar"
+],
+[
+"à saisir",
+"por rellenar"
+],
+[
+"à venir",
+"próximo"
+],
+[
+"à venir {0}",
+"próximo {0}"
+],
+[
+"à vérifier",
+"por comprobar"
+],
+[
+"— Choisir —",
+"— Elegir —"
+],
+[
+"— Papier",
+"— Papel"
+],
+[
+"— Verre",
+"— Vidrio"
+],
+[
+"— fin de contrat dans {0} jours ({1}). Toucher pour prolonger.",
+"— fin del contrato en {0} días ({1}). Toca para prorrogar."
+],
+[
+"— il voit l'avancement dans son espace.",
+"— ve el avance en su espacio."
+],
+[
+"— lieu —",
+"— lugar —"
+],
+[
+"— {0} loyers payés hors des dates du contrat : touchez pour corriger",
+"— {0} alquileres pagados fuera de las fechas del contrato: toca para corregir"
+],
+[
+"— {0} mois impayé ({1})",
+"— {0} mes impagado ({1})"
+],
+[
+"— {0} mois impayés ({1})",
+"— {0} meses impagados ({1})"
+],
+[
+"— à choisir —",
+"— por elegir —"
+],
+[
+"— 🤒 Maladie",
+"— 🤒 Enfermedad"
+],
+[
+"⏳ pas encore",
+"⏳ todavía no"
+],
+[
+"▶️ Commencé",
+"▶️ Empezado"
+],
+[
+"▶️ Commencé {0}",
+"▶️ Empezado {0}"
+],
+[
+"▶️ commencé",
+"▶️ empezado"
+],
+[
+"▶️ commencé · ✅ fini · ⚠️ pas fini",
+"▶️ empezado · ✅ terminado · ⚠️ no terminado"
+],
+[
+"⚠️ Pas fini",
+"⚠️ No terminado"
+],
+[
+"⚠️ Pas fini {0}",
+"⚠️ No terminado {0}"
+],
+[
+"⚠️ pas fini",
+"⚠️ no terminado"
+],
+[
+"✅ Fini",
+"✅ Terminado"
+],
+[
+"✅ Fini {0}",
+"✅ Terminado {0}"
+],
+[
+"✅ fini",
+"✅ terminado"
+],
+[
+"✏️ Coordonnées mises à jour",
+"✏️ Datos actualizados"
+],
+[
+"✓ Caution 👁",
+"✓ Fianza 👁"
+],
+[
+"✓ Contrat 👁",
+"✓ Contrato 👁"
+],
+[
+"✓ Coût enregistré dans les dépenses de l'immeuble.",
+"✓ Coste registrado en los gastos del edificio."
+],
+[
+"✓ Dates reprises du calendrier en ligne le {0}",
+"✓ Fechas tomadas del calendario en línea el {0}"
+],
+[
+"✓ Dates reprises du calendrier en ligne le {0} — vérification automatique chaque jour.",
+"✓ Fechas tomadas del calendario en línea el {0} — comprobación automática cada día."
+],
+[
+"✓ Identité 👁",
+"✓ Identidad 👁"
+],
+[
+"✓ Preuve jointe 👁",
+"✓ Justificante adjunto 👁"
+],
+[
+"✓ Réparé",
+"✓ Reparado"
+],
+[
+"✓ Réparé · le locataire voit « Terminé » dans son app",
+"✓ Reparado · el inquilino ve « Terminado » en su app"
+],
+[
+"✓ accepté le {0}",
+"✓ aceptado el {0}"
+],
+[
+"✗ Caution",
+"✗ Fianza"
+],
+[
+"✗ Contrat",
+"✗ Contrato"
+],
+[
+"✗ Identité",
+"✗ Identidad"
+],
+[
+"➕ Nouveau logement / local ici (chambre, appartement, garage…)",
+"➕ Nueva vivienda / local aquí (habitación, piso, garaje…)"
+],
+[
+"🍕 Pizza offerte",
+"🍕 Pizza regalada"
+],
+[
+"🎁 Don",
+"🎁 Donación"
+],
+[
+"🏆 Locataire de l’année",
+"🏆 Inquilino del año"
+],
+[
+"🏖️ Congé",
+"🏖️ Vacaciones"
+],
+[
+"🏛️ Taxe / impôt",
+"🏛️ Tasa / impuesto"
+],
+[
+"👁 Certificat",
+"👁 Certificado"
+],
+[
+"👁 Privé pour en cacher un",
+"👁 Privé para ocultar uno"
+],
+[
+"👷 Aujourd’hui",
+"👷 Hoy"
+],
+[
+"👷 Suivi de l’équipe",
+"👷 Seguimiento del equipo"
+],
+[
+"💬 Messages",
+"💬 Mensajes"
+],
+[
+"💬 Messages ({0})",
+"💬 Mensajes ({0})"
+],
+[
+"💬 Toute la structure",
+"💬 Toda la estructura"
+],
+[
+"💶 Location",
+"💶 Alquiler"
+],
+[
+"💶 Location · {0} / jour · {1}",
+"💶 Alquiler · {0} / día · {1}"
+],
+[
+"📋 Activité de l’équipe",
+"📋 Actividad del equipo"
+],
+[
+"📌 Autre",
+"📌 Otro"
+],
+[
+"📌 Autre absence",
+"📌 Otra ausencia"
+],
+[
+"📍 Parties communes",
+"📍 Zonas comunes"
+],
+[
+"📍 Parties communes · {0}",
+"📍 Zonas comunes · {0}"
+],
+[
+"📍 Parties communes · {0} · {1}",
+"📍 Zonas comunes · {0} · {1}"
+],
+[
+"📍 Parties communes · {0} · 📝 {1}",
+"📍 Zonas comunes · {0} · 📝 {1}"
+],
+[
+"📎 Joindre la preuve",
+"📎 Adjuntar el justificante"
+],
+[
+"📎 Preuve",
+"📎 Justificante"
+],
+[
+"📜 Règles propres à cet immeuble",
+"📜 Normas propias de este edificio"
+],
+[
+"📦 Autre",
+"📦 Otro"
+],
+[
+"📨 Signalé par",
+"📨 Avisado por"
+],
+[
+"📩 {0} intéressé",
+"📩 {0} interesado"
+],
+[
+"📩 {0} message de locataire reçu",
+"📩 {0} mensaje de inquilino recibido"
+],
+[
+"📩 {0} message de locataire reçu — voir l'accueil",
+"📩 {0} mensaje de inquilino recibido — ver el Inicio"
+],
+[
+"📩 {0} messages de locataire reçus",
+"📩 {0} mensajes de inquilinos recibidos"
+],
+[
+"📩 {0} messages de locataire reçus — voir l'accueil",
+"📩 {0} mensajes de inquilinos recibidos — ver el Inicio"
+],
+[
+"📩 {0} nouveau message de locataire",
+"📩 {0} nuevo mensaje de inquilino"
+],
+[
+"📱 Créer l’accès à l’app",
+"📱 Crear el acceso a la app"
+],
+[
+"📱 app active",
+"📱 app activa"
+],
+[
+"📷 Pensez à mettre à jour les photos d'état des lieux du logement (onglet « Photos »).",
+"📷 Recuerda actualizar las fotos del estado de la vivienda (pestaña « Fotos »)."
+],
+[
+"📷 photo {0}",
+"📷 foto {0}"
+],
+[
+"📷 {0} photo",
+"📷 {0} foto"
+],
+[
+"🔐 Mettez seulement l’",
+"🔐 Pon solo la"
+],
+[
+"🔑 Porte",
+"🔑 Puerta"
+],
+[
+"🔧 Maintenance courante / réparation",
+"🔧 Mantenimiento corriente / reparación"
+],
+[
+"🔧 Réparation",
+"🔧 Reparación"
+],
+[
+"🔧 Signalement : {0}",
+"🔧 Aviso: {0}"
+],
+[
+"🖼️ Changer le logo",
+"🖼️ Cambiar el logo"
+],
+[
+"🖼️ Mettre votre logo",
+"🖼️ Poner tu logo"
+],
+[
+"🗑️ Collecte des déchets",
+"🗑️ Recogida de basura"
+],
+[
+"🗑️ Tour des poubelles",
+"🗑️ Turno de la basura"
+],
+[
+"🗑️ poubelles ce matin",
+"🗑️ basura esta mañana"
+],
+[
+"🚚 Gros travaux (chaudière, toiture…)",
+"🚚 Grandes obras (caldera, tejado…)"
+],
+[
+"🛡️ Assurance",
+"🛡️ Seguro"
+],
+[
+"🛡️ Gestionnaire",
+"🛡️ Gestor"
+],
+[
+"🤒 Maladie",
+"🤒 Enfermedad"
+],
+[
+"🤒 Maladie :",
+"🤒 Enfermedad:"
+],
+[
+"🤒 Maladie du {0} au {1}",
+"🤒 Enfermedad del {0} al {1}"
+],
+[
+"🤒 Maladie → {0}",
+"🤒 Enfermedad → {0}"
+],
+[
+"🤝 Prêt gratuit",
+"🤝 Préstamo gratis"
+],
+[
+"🤝 Prêt gratuit · gratuit (prêt)",
+"🤝 Préstamo gratis · gratis (préstamo)"
+],
+[
+"🧰 Don",
+"🧰 Donación"
+],
+[
+"🧰 Don · prêt · location",
+"🧰 Donación · préstamo · alquiler"
+],
+[
+"🧹 Entretien",
+"🧹 Mantenimiento"
+],
+[
+"🧹 Nettoyage (ménage)",
+"🧹 Limpieza (hogar)"
+],
+[
+"Résultat {0}",
+"Resultado {0}"
+],
+[
+"Année {0}",
+"Año {0}"
+],
+[
+"Les quittances, reçus et relances aux locataires restent en français (documents officiels).",
+"Los recibos y recordatorios a los inquilinos siguen en francés (documentos oficiales)."
+],
+[
+"Réparation",
+"Reparación"
+],
+[
+"Entretien",
+"Mantenimiento"
+],
+[
+"Assurance",
+"Seguro"
+],
+[
+"Taxe / impôt",
+"Tasa / impuesto"
+],
+[
+"Dépense",
+"Gasto"
+],
+[
+"Aujourd'hui",
+"Hoy"
+],
+[
+"Demain",
+"Mañana"
+],
+[
+"Langue",
+"Idioma"
+]
+];
