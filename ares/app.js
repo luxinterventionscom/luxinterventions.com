@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.27.0';
+const VERSION = '2.28.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -430,6 +430,7 @@ async function equipeInbox(w, msg) {
     tx.put('intervenants', { id: w.id, feed: feed.slice(-200), feedNew: (cur.feedNew || 0) + fresh });
   }, 'Nouvelles de l’équipe', intervFull(w), w.id);
   for (const [id, b] of files) await vault.saveFile(id, unb64u(b));
+  for (const it of (Array.isArray(msg.items) ? msg.items : [])) if (it.k === 'task' && it.st === 'fait') await syncDepense({ id: String(it.tid || '') }, true);
 }
 // Journal de l'équipe (toutes les personnes, ou une seule), le plus récent d'abord
 function eqFeedHtml(onlyId, max = 80) {
@@ -1513,6 +1514,15 @@ function payCell(l, y, m, withDate) {
 
 // Lignes d'agenda et d'interventions (Maintenance)
 // Carte de l'accueil : aujourd'hui et demain (poubelles à sortir la veille), interventions en retard
+// Carte repliable : un clic ouvre / ferme ; ouverte, elle brille d'une lumière chaude et douce
+const foldOpen = (() => { try { return new Set(JSON.parse(localStorage.getItem('aresFolds') || '[]')); } catch { return new Set(); } })();
+document.addEventListener('toggle', (e) => {
+  const d = e.target;
+  if (!d.matches || !d.matches('details.dfold')) return;
+  if (d.open) foldOpen.add(d.dataset.dfold); else foldOpen.delete(d.dataset.dfold);
+  try { localStorage.setItem('aresFolds', JSON.stringify([...foldOpen])); } catch {}
+}, true);
+const dfold = (key, title, sumTxt, body, style = '') => html`<details class="card dfold" data-dfold="${key}" style="${style}" ${foldOpen.has(key) ? new Raw('open') : ''}><summary><h3>${title}</h3><span class="sum">${sumTxt}</span></summary><div class="dfold-body">${body}</div></details>`;
 function mtCard() {
   const t0 = today(), t1 = addDays(t0, 1);
   const items = agenda(t0, t1);
@@ -1522,13 +1532,14 @@ function mtCard() {
   const tonight = items.filter((x) => x.kind === 'collecte' && x.d === t1 && x.c.sortie !== 'jour');
   const thisMorning = items.filter((x) => x.kind === 'collecte' && x.d === t0 && x.c.sortie === 'jour');
   const binList = (arr) => arr.map((x) => DECHETS[x.c.cat].short + ' (' + immName(x.c.immId) + (x.c.heure ? ', ' + x.c.heure : '') + ')').join(', ');
-  return html`<div class="card" style="margin-top:10px">
-    <div class="card-title" style="margin-bottom:8px"><h3>Maintenance</h3><button class="btn sm ghost" data-action="go" data-to="maintenance">${icon('tool')} Ouvrir</button></div>
+  const nT = items.filter((x) => x.kind === 'tache').length;
+  const sumTxt = [nT ? plural(nT, 'intervention') + ' (aujourd’hui / demain)' : '', lateN ? `${lateN} en retard` : '', thisMorning.length ? '🗑️ poubelles ce matin' : tonight.length ? '🗑️ poubelles ce soir' : ''].filter(Boolean).join(' · ') || 'rien de prévu';
+  return dfold('mt', 'Maintenance', sumTxt, html`
     ${thisMorning.length ? html`<div class="alert warn" style="margin-bottom:8px">${icon('alert')}<div><b>Ce matin : sortir les poubelles</b> (passage aujourd'hui) — ${binList(thisMorning)}</div></div>` : ''}
     ${tonight.length ? html`<div class="alert warn" style="margin-bottom:8px">${icon('alert')}<div><b>Ce soir : sortir les poubelles</b> (passage demain) — ${binList(tonight)}</div></div>` : ''}
     ${lateN ? html`<div class="alert bad" style="margin-bottom:8px">${icon('alert')}<div>${plural(lateN, 'intervention')} en retard</div></div>` : ''}
     ${items.length ? html`<div class="list">${items.map((x) => html`${agendaRow(x)}`)}</div>` : ''}
-  </div>`;
+    <button class="btn sm ghost" style="margin-top:8px" data-action="go" data-to="maintenance">${icon('tool')} Ouvrir la maintenance</button>`, 'margin-top:10px');
 }
 // Légende sous le planning et les travaux : feu tricolore + icônes des types
 const mtLegend = () => html`<div class="card legend" style="margin-top:14px">
@@ -1578,17 +1589,30 @@ function reportCollectes(immId, y) {
 }
 const logOptions = (immId, sel) => html`<option value="">Parties communes / tout l'immeuble</option>${logsOf(immId).map((g) => html`<option value="${g.id}" ${g.id === sel ? new Raw('selected') : ''}>${g.nom}</option>`)}`;
 // Intervention terminée avec un coût : proposer de l'ajouter aux dépenses de l'immeuble (une seule fois)
-async function offerDepense(t) {
-  if (!t || !t.cout || t.depId) return;
-  if (!(await confirmBox('Ajouter le coût aux dépenses ?', { ok: 'Ajouter', detail: `${money(t.cout)} — ${t.titre} (${placeName(t)}). Il comptera dans le bilan de l'immeuble.` }))) return;
-  const cat = t.type === 'nettoyage' || t.type === 'entretien' ? 'entretien' : t.type === 'reparation' || t.type === 'gros' ? 'reparation' : 'autre';
+// Coût d'une intervention terminée → dépense de l'appartement (ou des parties communes), automatiquement.
+// Coût changé → dépense corrigée ; coût effacé ou intervention ré-ouverte → dépense retirée.
+const depCat = (t) => (t.type === 'nettoyage' || t.type === 'entretien' ? 'entretien' : t.type === 'reparation' || t.type === 'gros' ? 'reparation' : 'autre');
+async function syncDepense(t, quiet) {
+  t = t && vault.get('taches', t.id);
+  if (!t || t.recur) return;
+  const dep = t.depId ? vault.get('depenses', t.depId) : null;
+  const want = t.statut === 'fait' && t.cout > 0;
   const who = intervName(t.intervenantId);
-  await vault.mutate((tx) => {
-    const dep = tx.put('depenses', { immId: t.immId, logId: t.logId || '', desc: t.titre + (who ? ' — ' + who : ''), montant: t.cout, date: t.doneDate || today(), cat });
-    tx.put('taches', { id: t.id, depId: dep.id });
-  }, 'Dépense ajoutée', `${t.titre} ${money(t.cout)}`, t.immId);
-  toast('Ajouté aux dépenses');
+  const rec = { immId: t.immId, logId: t.logId || '', desc: t.titre + (who ? ' — ' + who : ''), montant: t.cout, date: t.doneDate || today(), cat: depCat(t), tacheId: t.id };
+  if (want && !dep) {
+    await vault.mutate((tx) => { const d = tx.put('depenses', rec); tx.put('taches', { id: t.id, depId: d.id }); }, 'Dépense ajoutée', `${t.titre} ${money(t.cout)}`, t.immId);
+    if (!quiet) toast(`Coût ${money(t.cout)} ajouté aux dépenses — ${placeName(t)}`);
+  } else if (want && dep && (dep.montant !== t.cout || dep.logId !== rec.logId || dep.immId !== rec.immId)) {
+    await vault.mutate((tx) => tx.put('depenses', { id: dep.id, montant: t.cout, logId: rec.logId, immId: rec.immId, desc: rec.desc }), 'Dépense corrigée', `${t.titre} ${money(t.cout)}`, t.immId);
+    if (!quiet) toast('Dépense corrigée');
+  } else if (!want && t.depId) {
+    await vault.mutate((tx) => { if (dep) tx.remove('depenses', dep.id); tx.put('taches', { id: t.id, depId: '' }); }, 'Dépense retirée', t.titre, t.immId);
+    if (!quiet) toast('Dépense retirée (intervention non terminée ou sans coût)');
+  }
 }
+const offerDepense = (t) => syncDepense(t);
+// Interventions terminées avant ce changement, avec un coût jamais compté
+const depMissing = () => vault.list('taches').filter((t) => !t.recur && t.statut === 'fait' && t.cout > 0 && !(t.depId && vault.get('depenses', t.depId)));
 
 // ───────────────────────── Vues ─────────────────────────
 // ───── Locataire de l'année : tours des poubelles faits, tous immeubles confondus ─────
@@ -1812,8 +1836,7 @@ dashboard() {
         <div class="metric"><div class="lbl">Bailleurs / mois</div><div class="val">${money(ownerDueMonth)}</div><div class="sub">bail principal</div></div>
       </div>
 
-      <div class="card" style="margin-top:10px">
-        <div class="card-title" style="margin-bottom:8px"><h3>Résultat de ${MONTHS_FULL[m - 1].toLowerCase()}</h3><button class="btn sm ghost" data-action="open-frais">${icon('edit')} Frais fixes</button></div>
+      ${dfold('res', `Résultat de ${MONTHS_FULL[m - 1].toLowerCase()}`, html`Net prévu <b class="${prevu < 0 ? 'red' : 'accent'}">${money(prevu)}</b> · réalisé <b class="${realise < 0 ? 'red' : ''}">${money(realise)}</b>`, html`
         <dl class="kv small">
           <dt>Loyers attendus</dt><dd class="num">${money(expected)}</dd>
           <dt>Bailleurs</dt><dd class="num">${ownerDueMonth ? '−' + money(ownerDueMonth) : '—'}</dd>
@@ -1823,10 +1846,11 @@ dashboard() {
           ${parts.map((a) => html`<dt>Part de ${a.nom} (${a.part}%)</dt><dd class="num">${money((prevu * a.part) / 100)}</dd>`)}
         </dl>
         ${!parts.length ? html`<p class="tiny muted" style="margin-top:8px"><a href="#" data-action="open-societe">Ajouter les associés</a> pour voir la part de chacun.</p>` : ''}
-      </div>
+        <button class="btn sm ghost" style="margin-top:8px" data-action="open-frais">${icon('edit')} Frais fixes</button>`, 'margin-top:10px')}
 
       ${mtCard()}
-      ${late.length || expiring.length || leaving.length || arriving.length || vacants.length || revisions.length || outside.length ? html`<div class="section-label">À surveiller</div><div class="stack">
+      ${late.length || expiring.length || leaving.length || arriving.length || vacants.length || revisions.length || outside.length || depMissing().length ? html`<div class="section-label">À surveiller</div><div class="stack">
+        ${depMissing().length ? alertBtn('warn', 'wallet', 'dep-catchup', '', html`<b>${plural(depMissing().length, 'intervention')} terminée${depMissing().length > 1 ? 's' : ''} avec un coût</b> pas encore dans les dépenses (${money(sum(depMissing(), (t) => t.cout))}) — touchez pour vérifier et ajouter`) : ''}
         ${outside.map((l) => alertBtn('warn', 'calendar', 'fix-dates', l.id, html`<b>${fullName(l)}</b> — ${plural(outsidePays(l).length, 'loyer')} payé${outsidePays(l).length > 1 ? 's' : ''} hors des dates du contrat : touchez pour corriger`))}
         ${late.slice(0, 6).map(({ l, months }) => alertBtn(months.length >= 2 ? 'bad' : 'warn', 'alert', 'open-loc', l.id, html`<b>${fullName(l)}</b> — ${months.length} mois impayé${months.length > 1 ? 's' : ''} (${months.map((x) => MONTHS[x - 1]).join(', ')})`))}
         ${leaving.map((l) => alertBtn('warn', 'calendar', 'open-loc', l.id, html`<b>${fullName(l)}</b> quitte ${logName(l.logId) || 'le logement'} le ${fmtDate(l.sortie)}`))}
@@ -1846,15 +1870,15 @@ dashboard() {
           <button class="btn sm primary" data-action="pay" data-loc="${l.id}" data-y="${y}" data-m="${m}">${icon('check')} Payé</button>
         </div>`)}</div>` : html`<div class="alert" style="background:var(--green-soft);color:var(--green)">${icon('check')}<div>Tous les loyers de ${MONTHS_FULL[m - 1].toLowerCase()} sont encaissés.</div></div>`}
 
-      ${ownerTodo.length ? html`<div class="section-label">À verser aux bailleurs — ${MONTHS_FULL[m - 1]}</div>
+      ${ownerTodo.length ? dfold('vers', `À verser aux bailleurs — ${MONTHS_FULL[m - 1]}`, html`${plural(ownerTodo.length, 'bailleur')} · <b>${money(sum(ownerTodo, ownerRent))}</b>`, html`
       <div class="list">${ownerTodo.map((im) => html`<div class="row">
         <span class="avatar" style="background:var(--amber-soft);color:var(--amber)">${icon('key')}</span>
         <div class="grow"><div class="title">${im.adresse}</div><div class="meta">${im.proprietaire || 'Bailleur'}</div></div>
         <div class="amount">${money(ownerRent(im))}</div>
         <button class="btn sm" data-action="toggle-vers" data-imm="${im.id}" data-y="${y}" data-m="${m}">${icon('check')} Versé</button>
-      </div>`)}</div>` : ''}
+      </div>`)}</div>`, 'margin-top:14px') : ''}
 
-      <div class="section-label">Immeubles</div>
+      ${dfold('imms', 'Immeubles', (() => { const e = sum(imms, (im) => sum(locs.filter((l) => l.immId === im.id), (l) => dueAmount(l, y, m))); const r = sum(imms, (im) => sum(tenantsOfImm(im.id), (l) => { const pp = payment(l.id, y, m); return pp ? paidAmount(pp, l) : 0; })); return html`${plural(imms.length, 'immeuble')} · encaissé <b>${pct(r, e)} %</b> (${money(r)} / ${money(e)})`; })(), html`
       <div class="grid cols-auto">${imms.map((im) => {
         const ls = locs.filter((l) => l.immId === im.id);
         const exp = sum(ls, (l) => dueAmount(l, y, m));
@@ -1865,7 +1889,7 @@ dashboard() {
           <div class="progress ${level(pp)}"><i style="width:${Math.min(pp, 100)}%"></i></div>
           <div class="pay-foot"><span>${im.type && im.type !== 'immeuble' ? (IMM_TYPES[im.type] || '') + ' · ' : ''}${plural(ls.length, 'locataire')}</span><span class="num">${money(rec)} / ${money(exp)}</span></div>
         </button>`;
-      })}</div>`;
+      })}</div>`, 'margin-top:14px')}`;
   },
 
   immeubles() {
@@ -3480,6 +3504,13 @@ const ACTIONS = {
   'new-interv': () => openOver('interv-form'),
   'edit-interv': (d) => openOver('interv-form', d.id),
   'open-interv': (d) => openSheet('interv', d.id),
+  async 'dep-catchup'() {
+    const list = depMissing();
+    if (!list.length) return;
+    if (!(await confirmBox(`Ajouter ${plural(list.length, 'coût')} aux dépenses ?`, { ok: 'Ajouter', detail: list.slice(0, 8).map((t) => `${fmtDate(t.doneDate)} · ${t.titre} (${placeName(t)}) : ${money(t.cout)}`).join('\n') + (list.length > 8 ? '\n…' : '') + '\n\nSi vous les avez déjà saisis à la main dans Dépenses, annulez pour ne pas les compter deux fois.' }))) return;
+    for (const t of list) await syncDepense(t, true);
+    toast(`${plural(list.length, 'dépense')} ajoutée${list.length > 1 ? 's' : ''}`);
+  },
   'eq-feed': async () => {
     openSheet('eq-feed');
     const fresh = vault.list('intervenants').filter((i) => i.feedNew);
@@ -3979,7 +4010,7 @@ const FORMS = {
     if (!recur && rec.statut === 'fait' && !(prev && prev.statut === 'fait')) rec.doneDate = today();
     const saved = await vault.mutate((tx) => tx.put('taches', rec), id ? 'Intervention modifiée' : 'Intervention ajoutée', `${rec.titre} — ${placeName(rec)}`, rec.immId);
     toast(id ? 'Intervention enregistrée' : 'Intervention ajoutée');
-    if (!recur && rec.statut === 'fait') await offerDepense(saved);
+    if (!recur) await syncDepense(saved);
     goBack();
   },
   async door(fd) {
