@@ -470,8 +470,7 @@ function render() {
   const langs = `<div class="langs">${Object.keys(L).map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
   if (!data) {
     app.innerHTML = `<div class="top"><span class="brandx"><img class="top-logo" src="/ares/icons/nobis-logo.png" alt="NOBIS s.a.r.l." width="76" height="32"><b>NOBIS s.a.r.l.</b></span>${langs}</div>
-      <div style="text-align:center;margin:18px 0"><img src="/ares/icons/ares-192.png" alt="" width="84" height="84" style="border-radius:20px"></div>
-      <h1 style="text-align:center">${esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
+      <h1 style="text-align:center;margin-top:18px">${esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
       ${loadErr ? `<div class="card avis"><p style="margin:0">${esc(loadErr)}</p></div>` : ''}
       ${installCard(t)}
       <div class="card"><form id="codeForm"><label>${esc(t.code)}</label>
