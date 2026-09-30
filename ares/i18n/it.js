@@ -5555,5 +5555,61 @@ export default [
 [
 "Langue",
 "Lingua"
+],
+[
+"Rechercher : nom, libellé, immeuble, montant, date…",
+"Cerca: nome, voce, struttura, importo, data…"
+],
+[
+"⬇ Afficher le mois précédent ({0})",
+"⬇ Mostra il mese precedente ({0})"
+],
+[
+"{0} mois affiché sur {1}",
+"{0} mese mostrato su {1}"
+],
+[
+"{0} mois affichés sur {1}",
+"{0} mesi mostrati su {1}"
+],
+[
+"Tous les mois sont affichés ({0}).",
+"Tutti i mesi sono mostrati ({0})."
+],
+[
+"Rien trouvé.",
+"Nessun risultato."
+],
+[
+"recettes {0}",
+"entrate {0}"
+],
+[
+"dépenses {0}",
+"spese {0}"
+],
+[
+"✕ Effacer",
+"✕ Cancella"
+],
+[
+"Société corrigée : NOBIS s.a.r.l. · RCS B225665 · TVA LU30599412",
+"Società corretta: NOBIS s.a.r.l. · RCS B225665 · IVA LU30599412"
+],
+[
+"Ces apps appartiennent à NOBIS s.a.r.l. (RCS B225665, TVA LU30599412) : Ares Invest S.A. / B225245 ne peut pas être mis ici.",
+"Queste app appartengono a NOBIS s.a.r.l. (RCS B225665, IVA LU30599412): Ares Invest S.A. / B225245 non può essere messo qui."
+],
+[
+"Le nom de la société ne doit contenir que le nom (ex. NOBIS s.a.r.l.) : mettez le RCS et le n° TVA dans leurs cases.",
+"Il nome della società deve contenere solo il nome (es. NOBIS s.a.r.l.): metti RCS e P. IVA nelle loro caselle."
+],
+[
+"RCS invalide (ex. B225665).",
+"RCS non valido (es. B225665)."
+],
+[
+"N° TVA invalide (ex. LU30599412).",
+"P. IVA non valida (es. LU30599412)."
 ]
 ];

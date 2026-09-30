@@ -545,3 +545,11 @@ details.dfold[open] { animation: aresWarm 2.8s ease-in-out infinite; box-shadow:
 .tbl td { vertical-align: top; }
 .pr-tbl { width: 100%; border-collapse: collapse; font-size: 10pt; }
 .pr-tbl th, .pr-tbl td { border-bottom: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+
+/* Comptabilité : filtre et mois */
+.cp-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-bottom: 10px; }
+.cp-filter .field input { width: auto; }
+.tbl tr.cp-month td { background: var(--surface-2); position: sticky; top: 0; }
+@media (max-width: 600px) {
+  .tbl.cp-tbl th:nth-child(3), .tbl.cp-tbl td:nth-child(3), .tbl.cp-tbl th:nth-child(4), .tbl.cp-tbl td:nth-child(4) { display: none; }
+}

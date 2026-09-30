@@ -5535,5 +5535,61 @@ export default [
 [
 "Langue",
 "Sprache"
+],
+[
+"Rechercher : nom, libellé, immeuble, montant, date…",
+"Suchen: Name, Bezeichnung, Gebäude, Betrag, Datum…"
+],
+[
+"⬇ Afficher le mois précédent ({0})",
+"⬇ Vorherigen Monat anzeigen ({0})"
+],
+[
+"{0} mois affiché sur {1}",
+"{0} Monat angezeigt von {1}"
+],
+[
+"{0} mois affichés sur {1}",
+"{0} Monate angezeigt von {1}"
+],
+[
+"Tous les mois sont affichés ({0}).",
+"Alle Monate werden angezeigt ({0})."
+],
+[
+"Rien trouvé.",
+"Nichts gefunden."
+],
+[
+"recettes {0}",
+"Einnahmen {0}"
+],
+[
+"dépenses {0}",
+"Ausgaben {0}"
+],
+[
+"✕ Effacer",
+"✕ Löschen"
+],
+[
+"Société corrigée : NOBIS s.a.r.l. · RCS B225665 · TVA LU30599412",
+"Firma korrigiert: NOBIS s.a.r.l. · RCS B225665 · USt LU30599412"
+],
+[
+"Ces apps appartiennent à NOBIS s.a.r.l. (RCS B225665, TVA LU30599412) : Ares Invest S.A. / B225245 ne peut pas être mis ici.",
+"Diese Apps gehören NOBIS s.a.r.l. (RCS B225665, USt LU30599412): Ares Invest S.A. / B225245 darf hier nicht stehen."
+],
+[
+"Le nom de la société ne doit contenir que le nom (ex. NOBIS s.a.r.l.) : mettez le RCS et le n° TVA dans leurs cases.",
+"Der Firmenname darf nur den Namen enthalten (z. B. NOBIS s.a.r.l.): RCS und USt-IdNr. in ihre Felder eintragen."
+],
+[
+"RCS invalide (ex. B225665).",
+"Ungültige RCS-Nr. (z. B. B225665)."
+],
+[
+"N° TVA invalide (ex. LU30599412).",
+"Ungültige USt-IdNr. (z. B. LU30599412)."
 ]
 ];
