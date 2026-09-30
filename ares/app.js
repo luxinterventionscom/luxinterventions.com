@@ -4,7 +4,7 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.24.0';
+const VERSION = '2.25.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -352,6 +352,13 @@ function espaceData(l) {
   if (show.pay || show.quit) {
     const cy = new Date().getFullYear();
     out.iban = show.pay ? soc.iban || '' : '';
+    if (show.pay) {
+      const x = {};
+      if (soc.paypal) x.paypal = soc.paypal;
+      if (soc.cardLink) x.card = soc.cardLink;
+      for (const c of ['btc', 'eth', 'usdt', 'usdc']) if (soc[c]) x[c] = { a: soc[c], n: soc[c + 'Net'] || '' };
+      if (Object.keys(x).length) out.payx = x;
+    }
     out.years = [cy, cy - 1].filter((y) => MONTHS.some((_, i) => isDue(l, y, i + 1) || payment(l.id, y, i + 1))).map((y) => {
       const s = yearStats(l, y);
       return { y, rest: s.rest, upcoming: s.upcoming, paid: s.paid, months: MONTHS.map((_, i) => { const st = payState(l, y, i + 1); return [st.due, st.paid, st.p ? st.p.date || '' : '']; }) };
@@ -670,7 +677,7 @@ async function inboxSync() {
       const l = vault.list('locataires').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
       if (!l || !l.espace.on) { await vault.inboxDel(it.name); continue; }
       if (msg.type === 'paye') {
-        const vir = { t: String(msg.t || new Date().toISOString()).slice(0, 30), montant: Math.max(0, +msg.montant || 0), ref: String(msg.ref || '').slice(0, 140) };
+        const vir = { t: String(msg.t || new Date().toISOString()).slice(0, 30), montant: Math.max(0, +msg.montant || 0), ref: String(msg.ref || '').slice(0, 140), via: PAY_VIA[msg.via] ? msg.via : 'vir' };
         await vault.mutate((tx) => tx.put('locataires', { id: l.id, virSignal: vir }), 'Virement signalé par le locataire', `${fullName(l)} — ${money(vir.montant)}`, l.id);
         await vault.inboxDel(it.name);
         n++;
@@ -1598,7 +1605,7 @@ dashboard() {
     const chatNew = Object.entries(ui.chatNew || {}).filter(([imId, n]) => n && vault.get('immeubles', imId));
     const chatBox = chatNew.length ? html`<div class="stack" style="margin-bottom:14px">${chatNew.map(([imId, n]) => alertBtn('info', 'msg', 'open-chat', imId, html`💬 <b>${n} nouveau${n > 1 ? 'x' : ''} message${n > 1 ? 's' : ''}</b> entre les habitants — ${immName(imId)}<div class="tiny">touchez pour lire</div>`))}</div>` : '';
     const virs = vault.list('locataires').filter((l) => l.virSignal && !l.virSignal.vu);
-    const virBox = virs.length ? html`<div class="stack" style="margin-bottom:14px">${virs.map((l) => alertBtn('info', 'wallet', 'open-vir', l.id, html`💳 <b>${fullName(l)}</b> dit avoir fait un virement${l.virSignal.montant ? html` de <b>${money(l.virSignal.montant)}</b>` : ''} — ${l.virSignal.ref}<div class="tiny">${fmtDateTime(l.virSignal.t)} · vérifiez sur le compte, puis cochez le mois payé</div>`))}</div>` : '';
+    const virBox = virs.length ? html`<div class="stack" style="margin-bottom:14px">${virs.map((l) => alertBtn('info', 'wallet', 'open-vir', l.id, html`💳 <b>${fullName(l)}</b> dit avoir payé${l.virSignal.montant ? html` <b>${money(l.virSignal.montant)}</b>` : ''} par ${PAY_VIA[l.virSignal.via || 'vir']} — ${l.virSignal.ref}<div class="tiny">${fmtDateTime(l.virSignal.t)} · vérifiez la réception, puis cochez le mois payé</div>`))}</div>` : '';
     const toolsBox = ui.toolsPending ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('warn', 'check', 'open-tools', '', html`🧰 <b>${ui.toolsPending} annonce${ui.toolsPending > 1 ? 's' : ''} à approuver</b> (don · prêt · location)<div class="tiny">touchez pour voir et approuver</div>`)}</div>` : '';
     return html`
       ${nudge}
@@ -2015,6 +2022,19 @@ async function addEdlPhotos(logId, files) {
   renderSheet();
 }
 
+const PAY_NETS = { erc20: 'Ethereum (ERC-20)', trc20: 'Tron (TRC-20)', polygon: 'Polygon', bep20: 'BNB Chain (BEP-20)', sol: 'Solana' };
+const netSelect = (name, cur) => html`<label class="field">Réseau<select name="${name}">${Object.entries(PAY_NETS).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>`;
+const PAY_VIA = { vir: 'virement', pp: 'PayPal', card: 'carte', crypto: 'crypto' };
+// Adresses de réception : format selon le réseau (jamais de clé privée !)
+function badAddr(kind, a, net) {
+  if (!a) return '';
+  if (/\s/.test(a) || a.split(' ').length > 1) return 'une adresse ne contient pas d’espaces';
+  if (kind === 'btc') return /^(bc1[a-z0-9]{20,90}|[13][a-km-zA-HJ-NP-Z1-9]{25,34})$/.test(a) ? '' : 'adresse Bitcoin invalide (commence par bc1, 1 ou 3)';
+  if (kind === 'eth' || ['erc20', 'polygon', 'bep20'].includes(net)) return /^0x[0-9a-fA-F]{40}$/.test(a) ? '' : 'adresse invalide (0x + 40 caractères)';
+  if (net === 'trc20') return /^T[1-9A-HJ-NP-Za-km-z]{33}$/.test(a) ? '' : 'adresse Tron invalide (commence par T)';
+  if (net === 'sol') return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a) ? '' : 'adresse Solana invalide';
+  return '';
+}
 const field = (label, name, value, opts = {}) => html`<label class="field ${opts.full ? 'full' : ''}">${label}
   <input name="${name}" type="${opts.type || 'text'}" value="${value ?? ''}" ${opts.required ? new Raw('required') : ''} ${opts.attrs ? new Raw(opts.attrs) : ''} placeholder="${opts.placeholder || ''}"></label>`;
 const money$ = 'inputmode="decimal" step="0.01" min="0"';
@@ -2858,7 +2878,15 @@ const SHEETS = {
         ${field('Code postal et ville', 'ville', st.ville, { placeholder: 'L-1234 Luxembourg' })}
         ${field('Téléphone', 'tel', st.tel, { type: 'tel' })}
         ${field('Email', 'email', st.email, { type: 'email' })}
-        ${field('IBAN (pour les relances)', 'iban', st.iban, { placeholder: 'LU..' })}
+        ${field('IBAN (relances + app des locataires)', 'iban', st.iban, { placeholder: 'LU..' })}
+        <div class="section-label full" style="margin:10px 0 0">Autres moyens de paiement (bouton « Payer maintenant » des locataires)</div>
+        ${field('PayPal.me (votre nom PayPal.me)', 'paypal', st.paypal, { placeholder: 'ex. NobisSarl' })}
+        ${field('Lien de paiement par carte (Stripe, SumUp…)', 'cardLink', st.cardLink, { type: 'url', placeholder: 'https://…' })}
+        ${field('Adresse Bitcoin (BTC)', 'btc', st.btc, { full: true, placeholder: 'bc1…', attrs: 'autocomplete="off" spellcheck="false"' })}
+        ${field('Adresse Ethereum (ETH)', 'eth', st.eth, { full: true, placeholder: '0x…', attrs: 'autocomplete="off" spellcheck="false"' })}
+        ${field('Adresse USDT', 'usdt', st.usdt, { placeholder: '0x… ou T…', attrs: 'autocomplete="off" spellcheck="false"' })}${netSelect('usdtNet', st.usdtNet)}
+        ${field('Adresse USDC', 'usdc', st.usdc, { placeholder: '0x…', attrs: 'autocomplete="off" spellcheck="false"' })}${netSelect('usdcNet', st.usdcNet)}
+        <p class="tiny muted full" style="margin:0">🔐 Mettez seulement l’<b>adresse de réception</b> (publique) de votre wallet. <b>Jamais</b> la clé privée ni les 12/24 mots de récupération. Laissez vide ce que vous n’utilisez pas : le bouton n’apparaît pas.</p>
         <div class="section-label full" style="margin:10px 0 0">Associés — partage du résultat net</div>
         ${rows.map((a, i) => html`${field('Associé ' + (i + 1), 'an' + i, a.nom)}${field('Part (%)', 'ap' + i, a.part, { type: 'number', attrs: 'inputmode="decimal" min="0" max="100" step="0.01"' })}`)}
         <p class="tiny muted full">Le total des parts doit faire 100 %. Laissez vide les lignes inutiles.</p>
@@ -3798,7 +3826,14 @@ const FORMS = {
     }
     const total = sum(associes, (a) => a.part);
     if (associes.length && Math.abs(total - 100) > 0.01) return (form.querySelector('.lock-err').textContent = `Le total des parts fait ${total} % au lieu de 100 %.`);
-    const rec = { id: 'main', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), ville: fd.get('ville').trim(), tel: fd.get('tel').trim(), email: fd.get('email').trim(), iban: fd.get('iban').trim(), associes };
+    const g = (k) => String(fd.get(k) || '').trim();
+    const pay = { paypal: g('paypal').replace(/^(https?:\/\/)?(www\.)?paypal\.(me|com\/paypalme)\//i, '').replace(/\/.*$/, ''), cardLink: g('cardLink'), btc: g('btc'), eth: g('eth'), usdt: g('usdt'), usdtNet: g('usdtNet') || 'erc20', usdc: g('usdc'), usdcNet: g('usdcNet') || 'erc20' };
+    const err = (pay.paypal && !/^[A-Za-z0-9]{1,30}$/.test(pay.paypal) ? 'PayPal.me : seulement le nom (lettres et chiffres)' : '')
+      || (pay.cardLink && !/^https:\/\/\S+$/.test(pay.cardLink) ? 'Le lien de paiement par carte doit commencer par https://' : '')
+      || (/^[a-z]+( [a-z]+){11,23}$/i.test([pay.btc, pay.eth, pay.usdt, pay.usdc].join(' ').trim()) ? 'Ceci ressemble à des mots de récupération : ne les mettez JAMAIS ici !' : '')
+      || [['btc', 'BTC'], ['eth', 'ETH'], ['usdt', 'USDT'], ['usdc', 'USDC']].map(([k, n]) => { const m = badAddr(k, pay[k], pay[k + 'Net']); return m ? `${n} : ${m}` : ''; }).find(Boolean) || '';
+    if (err) return (form.querySelector('.lock-err').textContent = err);
+    const rec = { id: 'main', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), ville: fd.get('ville').trim(), tel: fd.get('tel').trim(), email: fd.get('email').trim(), iban: fd.get('iban').trim(), ...pay, associes };
     await vault.mutate((tx) => tx.put('reglages', rec), 'Société & associés modifiés', rec.nom);
     toast('Enregistré');
     closeSheet();
