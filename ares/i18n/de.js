@@ -7627,5 +7627,9 @@ export default [
 [
 "Résultat de décembre",
 "Ergebnis Dezember"
+],
+[
+"Le message d’invitation part dans cette langue (en français si « Celle de son téléphone »).",
+"Die Einladung wird in dieser Sprache gesendet (auf Französisch bei « Die seines Handys »)."
 ]
 ];
