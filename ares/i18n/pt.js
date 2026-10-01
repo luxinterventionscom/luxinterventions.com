@@ -7955,5 +7955,33 @@ export default [
 [
 "{0} jours",
 "{0} dias"
+],
+[
+"Problème signalé par {0} : {1}",
+"Problema comunicado por {0}: {1}"
+],
+[
+"Problème — photo {0}",
+"Problema — foto {0}"
+],
+[
+"Arrivée {0}",
+"Chegada {0}"
+],
+[
+"Arrivée",
+"Chegada"
+],
+[
+"1 nouveau message",
+"1 nova mensagem"
+],
+[
+"1 nouveau message de locataire",
+"1 nova mensagem de inquilino"
+],
+[
+"{0} nouveaux messages de locataires",
+"{0} novas mensagens de inquilinos"
 ]
 ];

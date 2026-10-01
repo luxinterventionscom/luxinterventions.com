@@ -1222,7 +1222,7 @@ export default [
 ],
 [
 "Départ",
-"Move-out"
+"Departure"
 ],
 [
 "Départ de {0}",
@@ -1238,7 +1238,7 @@ export default [
 ],
 [
 "Départ {0}",
-"Move-out {0}"
+"Departure {0}"
 ],
 [
 "Dépense ajoutée",
@@ -7807,5 +7807,33 @@ export default [
 [
 "{0} jours",
 "{0} days"
+],
+[
+"Problème signalé par {0} : {1}",
+"Problem reported by {0}: {1}"
+],
+[
+"Problème — photo {0}",
+"Problem — photo {0}"
+],
+[
+"Arrivée {0}",
+"Arrival {0}"
+],
+[
+"Arrivée",
+"Arrival"
+],
+[
+"1 nouveau message",
+"1 new message"
+],
+[
+"1 nouveau message de locataire",
+"1 new message from a tenant"
+],
+[
+"{0} nouveaux messages de locataires",
+"{0} new messages from tenants"
 ]
 ];
