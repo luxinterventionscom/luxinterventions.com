@@ -40,7 +40,7 @@ function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGIN,
     "Access-Control-Allow-Methods": "GET, PUT, POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, If-Match, If-None-Match, X-Ares-Session, X-Ares-Device",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, If-Match, If-None-Match, X-Ares-Session, X-Ares-Device, X-Esp",
     "Access-Control-Expose-Headers": "ETag",
     "Access-Control-Max-Age": "86400",
     "Cache-Control": "no-store",
@@ -71,7 +71,13 @@ export default {
     const tl = url.pathname.match(/^\/api\/tools(?:\/([0-9a-f]{16})(?:\/(p[0-2]\.jpg|contact))?)?$/);
     if (tl) return toolsPublic(request, env, tl[1], tl[2], headers);
 
-    const esp = url.pathname.match(/^\/api\/esp\/([0-9a-f]{32})(?:\/(f\/[a-z0-9]{1,40}|signal|tools(?:\/[0-9a-f]{16})?))?$/);
+    // Clé publique des notifications (badge sur l'icône) des apps locataires / équipe / gestion
+    if (url.pathname === "/api/esp-push/key" && request.method === "GET") {
+      if (!(await espPushInit(env))) return aresJson({ error: "Notifications indisponibles" }, 503, headers);
+      return aresJson({ key: (await vapidKeys(env)).publicKey }, 200, headers);
+    }
+
+    const esp = url.pathname.match(/^\/api\/esp\/([0-9a-f]{32})(?:\/(f\/[a-z0-9]{1,40}|signal|push|tools(?:\/[0-9a-f]{16})?))?$/);
     if (esp) return espacePublic(request, env, esp[1], esp[2] || "", headers);
 
     const board = url.pathname.match(/^\/api\/board\/([0-9a-f]{32})$/);
@@ -316,12 +322,22 @@ async function espacePublic(request, env, id, sub, headers) {
       return aresJson({ ok: true }, 200, headers);
     }
   }
+  if (sub === "push" && (request.method === "POST" || request.method === "DELETE")) {
+    if (!(await espPushInit(env))) return aresJson({ error: "Notifications indisponibles" }, 503, headers);
+    let b;
+    try { b = await request.json(); } catch { b = null; }
+    if (request.method === "DELETE") {
+      if (b && b.endpoint) await env.DB.prepare("DELETE FROM esp_push WHERE endpoint = ? AND target = ?").bind(String(b.endpoint).slice(0, 1000), id).run();
+      return aresJson({ ok: true }, 200, headers);
+    }
+    return (await espPushSave(env, id, b)) ? aresJson({ ok: true }, 200, headers) : aresJson({ error: "Abonnement invalide" }, 400, headers);
+  }
   if (request.method === "POST" && sub === "signal") {
-    // Limites : 10 envois / heure par adresse IP, 20 / jour par espace
+    // Limites : 30 envois / heure par adresse IP, 80 / jour par espace (l'équipe envoie arrivée, départ, photos…)
     const ip = clientIp(request);
     const kIp = "sig-rl:" + ip, kId = "sig-id:" + id;
     const nIp = parseInt((await env.HITS.get(kIp)) || "0", 10), nId = parseInt((await env.HITS.get(kId)) || "0", 10);
-    if (nIp >= 10 || nId >= 20) return aresJson({ error: "Trop d'envois, réessayez plus tard" }, 429, headers);
+    if (nIp >= 30 || nId >= 80) return aresJson({ error: "Trop d'envois, réessayez plus tard" }, 429, headers);
     const body = await request.arrayBuffer();
     if (body.byteLength < 100 || body.byteLength > 5 * 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
     const name = `${Date.now().toString(36)}-${id.slice(0, 12)}-${crypto.getRandomValues(new Uint32Array(1))[0].toString(36)}`;
@@ -330,6 +346,8 @@ async function espacePublic(request, env, id, sub, headers) {
       await env.HITS.put(kIp, String(nIp + 1), { expirationTtl: 3600 });
       await env.HITS.put(kId, String(nId + 1), { expirationTtl: 86400 });
     } catch { /* quota KV */ }
+    // le gestionnaire voit le numéro sur l'icône de son app (le contenu reste chiffré, la notification ne dit rien)
+    await espPushSend(env, "owner", "inbox");
     return aresJson({ ok: true }, 200, headers);
   }
   return aresJson({ error: "Not found" }, 404, headers);
@@ -378,6 +396,8 @@ async function boardPublic(request, env, id, headers) {
       await env.HITS.put(kIp, String(nIp + 1), { expirationTtl: 3600 });
       await env.HITS.put(kId, String(nId + 1), { expirationTtl: 86400 });
     } catch { /* quota KV */ }
+    const from = String(request.headers.get("X-Esp") || "");
+    await espPushSend(env, "board:" + id, "msg", /^[0-9a-f]{32}$/.test(from) ? from : "");
     return aresJson({ ok: true, n: name }, 200, headers);
   }
   return aresJson({ error: "Not found" }, 404, headers);
@@ -664,6 +684,22 @@ async function handleAres(request, env, url, headers) {
     await env.PHOTOS.delete(ARES_ESPCODE + codeMatch[1] + ".json");
     return aresJson({ ok: true }, 200, headers);
   }
+  // Notifications de l'app de gestion (badge sur l'icône) et des apps locataires / équipe
+  if (path === "push" && (method === "POST" || method === "DELETE")) {
+    if (!(await espPushInit(env))) return aresJson({ error: "Notifications indisponibles" }, 503, headers);
+    let b;
+    try { b = await request.json(); } catch { b = null; }
+    if (method === "DELETE") {
+      if (b && b.endpoint) await env.DB.prepare("DELETE FROM esp_push WHERE endpoint = ? AND target = 'owner'").bind(String(b.endpoint).slice(0, 1000)).run();
+      return aresJson({ ok: true }, 200, headers);
+    }
+    return (await espPushSave(env, "owner", b)) ? aresJson({ ok: true }, 200, headers) : aresJson({ error: "Abonnement invalide" }, 400, headers);
+  }
+  const notifMatch = path.match(/^espace\/([0-9a-f]{32})\/notify$/);
+  if (notifMatch && method === "POST") {
+    await espPushSend(env, notifMatch[1], "news");
+    return aresJson({ ok: true }, 200, headers);
+  }
   // Annonces « Don · prêt · location » (gestionnaire) : tout voir, approuver, publier les siennes, retirer
   if (path === "tools" && method === "GET") return aresJson({ items: await toolList(env) }, 200, headers);
   if (path === "tools" && method === "POST") {
@@ -690,7 +726,7 @@ async function handleAres(request, env, url, headers) {
     const base = ARES_BOARD + brdMatch[1];
     if (!brdMatch[2] && method === "PUT") { await env.PHOTOS.put(base + "/on", "1"); return aresJson({ ok: true }, 200, headers); }
     if (!brdMatch[2] && method === "GET") return aresJson({ items: await boardList(env, brdMatch[1]) }, 200, headers);
-    if (!brdMatch[2] && method === "POST") { const n = await boardSave(env, brdMatch[1], request); return n ? aresJson({ ok: true, n }, 200, headers) : aresJson({ error: "Taille invalide" }, 413, headers); }
+    if (!brdMatch[2] && method === "POST") { const n = await boardSave(env, brdMatch[1], request); if (n) await espPushSend(env, "board:" + brdMatch[1], "msg"); return n ? aresJson({ ok: true, n }, 200, headers) : aresJson({ error: "Taille invalide" }, 413, headers); }
     if (!brdMatch[2] && method === "DELETE") {
       const listed = await env.PHOTOS.list({ prefix: base + "/" });
       await Promise.all(listed.objects.map((o) => env.PHOTOS.delete(o.key)));
@@ -936,6 +972,61 @@ async function ptlNotify(env, where, binds, message, urgent) {
       if (r.status === 404 || r.status === 410) await env.DB.prepare("DELETE FROM push_subs WHERE endpoint = ?").bind(s.endpoint).run();
     } catch { /* un abbonamento difettoso non blocca gli altri */ }
   }));
+}
+
+// ── Notifications des apps locataires / équipe / gestion : seulement « il y a du nouveau » ──
+// (le serveur ne lit rien : les données restent chiffrées ; la notification fait monter le numéro sur l'icône)
+const ESP_PUSH_SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS esp_push (endpoint TEXT PRIMARY KEY, target TEXT NOT NULL, boards TEXT NOT NULL DEFAULT '', app TEXT NOT NULL DEFAULT 'esp', lang TEXT NOT NULL DEFAULT 'fr', p256dh TEXT NOT NULL, auth TEXT NOT NULL, created_at INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS esp_push_target ON esp_push (target)`,
+];
+let espPushReady = false;
+async function espPushInit(env) {
+  if (!env.DB) return false;
+  if (!espPushReady) { await env.DB.batch(ESP_PUSH_SCHEMA.map((q) => env.DB.prepare(q))); espPushReady = true; }
+  return true;
+}
+const PUSH_LANGS = ["fr", "it", "de", "pt", "en", "es"];
+const PUSH_TXT = {
+  inbox: { fr: "Nouveau message à lire", it: "Nuovo messaggio da leggere", de: "Neue Nachricht", pt: "Nova mensagem", en: "New message to read", es: "Nuevo mensaje" },
+  msg: { fr: "Nouveau message de la maison", it: "Nuovo messaggio della casa", de: "Neue Nachricht im Haus", pt: "Nova mensagem da casa", en: "New house message", es: "Nuevo mensaje de la casa" },
+  news: { fr: "Du nouveau dans votre app", it: "Novità nella tua app", de: "Neues in Ihrer App", pt: "Novidades na sua app", en: "Something new in your app", es: "Novedades en tu app" },
+};
+async function espPushSave(env, target, b) {
+  if (!b || !ptlPushHostOk(b.endpoint) || !isB64u(b.p256dh, 120) || !isB64u(b.auth, 40)) return false;
+  const boards = (Array.isArray(b.boards) ? b.boards : []).filter((x) => /^[0-9a-f]{32}$/.test(x)).slice(0, 5).join(",");
+  const app = target === "owner" ? "ares" : b.app === "eq" ? "eq" : "esp";
+  const lang = PUSH_LANGS.includes(b.lang) ? b.lang : "fr";
+  if (target !== "owner") {
+    const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM esp_push WHERE target = ?").bind(target).first();
+    if (n && n.n >= 10) await env.DB.prepare("DELETE FROM esp_push WHERE endpoint IN (SELECT endpoint FROM esp_push WHERE target = ? ORDER BY created_at LIMIT 1)").bind(target).run();
+  }
+  await env.DB.prepare("INSERT OR REPLACE INTO esp_push (endpoint, target, boards, app, lang, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+    .bind(String(b.endpoint), target, boards, app, lang, b.p256dh, b.auth, Date.now()).run();
+  return true;
+}
+// target : "owner", un identifiant d'espace, ou "board:<id>" (habitants inscrits à ce fil, sauf l'expéditeur)
+async function espPushSend(env, target, kind, except = "") {
+  try {
+    if (!(await espPushInit(env))) return;
+    const subs = target.startsWith("board:")
+      ? await env.DB.prepare("SELECT * FROM esp_push WHERE instr(boards, ?) > 0 AND target != ?").bind(target.slice(6), except || "-").all()
+      : await env.DB.prepare("SELECT * FROM esp_push WHERE target = ?").bind(target).all();
+    await Promise.all((subs.results || []).map(async (s) => {
+      if (!ptlPushHostOk(s.endpoint)) return;
+      const url = s.app === "ares" ? "/locataires.html" : s.app === "eq" ? "/equipe.html" : "/espace.html";
+      const msg = { title: s.app === "ares" ? "LuxInterventions" : "NOBIS s.a.r.l.", body: (PUSH_TXT[kind] || PUSH_TXT.news)[s.lang] || PUSH_TXT.news.fr, url, tag: kind };
+      try {
+        const r = await fetch(s.endpoint, {
+          method: "POST",
+          headers: { Authorization: await vapidAuth(env, s.endpoint), "Content-Encoding": "aes128gcm", "Content-Type": "application/octet-stream", TTL: "86400", Urgency: "normal" },
+          body: await encryptPush(JSON.stringify(msg), s.p256dh, s.auth),
+        });
+        if (r.status === 404 || r.status === 410) await env.DB.prepare("DELETE FROM esp_push WHERE endpoint = ?").bind(s.endpoint).run();
+      } catch { /* un abonnement défectueux ne bloque pas les autres */ }
+    }));
+  } catch { /* notifications indisponibles : l'envoi principal a réussi quand même */ }
 }
 
 const URG_LABEL = { urgent: "🔴 URGENT", "24h": "🟠 Sous 24 h", planifie: "🟢 Planifié" };

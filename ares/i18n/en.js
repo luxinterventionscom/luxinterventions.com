@@ -7835,5 +7835,37 @@ export default [
 [
 "{0} nouveaux messages de locataires",
 "{0} new messages from tenants"
+],
+[
+"Un avis et le numéro sur l’icône quand un locataire ou l’équipe vous écrit (signalement, virement, photos, problème…). Le serveur ne lit rien : il dit seulement « nouveau message ».",
+"An alert and the number on the icon when a tenant or the team writes to you (report, transfer, photos, problem…). The server reads nothing: it only says “new message”."
+],
+[
+"🔔 Activer les notifications sur ce téléphone",
+"🔔 Turn on notifications on this phone"
+],
+[
+"✓ Activées sur ce téléphone : le numéro sur l’icône indique ce qui attend une action.",
+"✓ On for this phone: the number on the icon shows what is waiting for action."
+],
+[
+"Bloquées : réactivez-les dans les réglages du téléphone (Notifications → cette app).",
+"Blocked: turn them back on in the phone settings (Notifications → this app)."
+],
+[
+"iPhone : installez d’abord l’app sur l’écran d’accueil, ouvrez-la depuis l’icône, puis activez-les ici.",
+"iPhone: first add the app to the Home Screen, open it from the icon, then turn them on here."
+],
+[
+"Non disponibles dans ce navigateur.",
+"Not available in this browser."
+],
+[
+"🔔 Notifications activées",
+"🔔 Notifications on"
+],
+[
+"Notifications impossibles sur ce téléphone",
+"Notifications not possible on this phone"
 ]
 ];

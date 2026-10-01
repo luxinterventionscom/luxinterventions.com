@@ -4,9 +4,10 @@ import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js'
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
+import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.38.0';
+const VERSION = '2.39.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -386,6 +387,7 @@ async function equipeSync(onlyId, loud) {
       if (h === stored && !loud) continue;
       await vault.espacePut(i.espace.id, await sealJson(i.espace.key, data));
       eqHashes.set(i.id, h);
+      await notifyNews(i.espace.id, data.items.filter((x) => x.d >= today()).map((x) => 'i:' + x.tid + ':' + x.d));
       try { localStorage.setItem('aresEq:' + i.espace.id, h); } catch {}
     } catch (e) {
       if (loud) { toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
@@ -873,6 +875,19 @@ async function toolsLoad(force) {
   if (ui.route === 'dashboard') renderView();
 }
 
+// « Du nouveau » pour un locataire ou l'équipe (avis, document, réponse à un signalement, nouveau travail…) :
+// on compare avec la dernière publication et on envoie une notification (sans contenu) si quelque chose s'ajoute
+const espNews = (d) => [
+  ...(d.avis || []).map((a) => 'a:' + a.texte.slice(0, 40)), ...(d.docs || []).map((x) => 'd:' + x.id), ...(d.edl || []).map((x) => 'e:' + x.id),
+  ...(d.signals || []).map((x) => 's:' + x.titre.slice(0, 30) + ':' + x.statut), ...(d.pubs || []).map((x) => 'p:' + x.id), ...(d.porte ? ['k:' + d.porte.code] : []),
+];
+async function notifyNews(espId, keys) {
+  const k = 'aresNews:' + espId;
+  let prev = null;
+  try { prev = JSON.parse(localStorage.getItem(k) || 'null'); } catch { /* stockage indisponible */ }
+  try { localStorage.setItem(k, JSON.stringify(keys)); } catch { /* stockage plein */ }
+  if (Array.isArray(prev) && keys.some((x) => !prev.includes(x))) await vault.espNotify(espId).catch(() => {});
+}
 const espHashes = new Map();
 let espTimer = null;
 const scheduleEspaceSync = () => { clearTimeout(espTimer); espTimer = setTimeout(() => espaceSync(), 2500); };
@@ -895,6 +910,7 @@ async function espaceSync(onlyId, loud) {
       for (const id of [...up]) if (!files.some((d) => d.id === id)) { await vault.espaceDel(l.espace.id, id).catch(() => {}); up.delete(id); docsChanged = true; }
       await vault.espacePut(l.espace.id, await sealJson(l.espace.key, data));
       espHashes.set(l.id, h);
+      await notifyNews(l.espace.id, espNews(data));
       try { localStorage.setItem('aresEsp:' + l.espace.id, h); } catch {}
       if (docsChanged) await vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: { ...l.espace, docs: [...up] } }), 'Espace locataire : documents', fullName(l), l.id);
     } catch (e) {
@@ -1562,6 +1578,7 @@ function startSession() {
     if (d !== today() && (await publishPub())) try { localStorage.setItem('aresPubDay', today()); } catch {}
     await espaceSync();
     await inboxSync();
+    pushInit();
     await chatPoll();
     await toolsLoad(true);
     await binDaily();
@@ -1748,12 +1765,30 @@ function renderView() {
   const keepSearch = active && active.name === 'search' ? active.selectionStart : null;
   setHtml(view, VIEWS[ui.route]());
   enhanceFolds(view, '', false);
+  updateBadge();
   if (keepSearch != null) {
     const s = view.querySelector('[name=search]');
     if (s) { s.focus(); s.setSelectionRange(keepSearch, keepSearch); }
   }
 }
 
+// Numéro sur l'icône de l'app : tout ce qui attend une action (messages, virements signalés, photos de sortie, équipe, annonces…)
+function pendingCount() {
+  const chat = Object.entries(ui.chatNew || {}).filter(([imId, n]) => n && vault.get('immeubles', imId)).reduce((a, [, n]) => a + n, 0);
+  return newSignals().length + vault.list('locataires').filter((l) => l.virSignal && !l.virSignal.vu).length + new Set(edlOutNew().map((d) => d.logId)).size
+    + sum(vault.list('intervenants'), (i) => i.feedNew || 0) + chat + (ui.toolsPending || 0);
+}
+let badgeLast = -1;
+function updateBadge() {
+  if (!vault.unlocked) return;
+  const n = pendingCount();
+  if (n !== badgeLast) { badgeLast = n; setBadge(n, '/locataires'); }
+}
+// Notifications de l'app de gestion sur ce téléphone
+let pushSt = '';
+const pushPost = (b) => vault.pushSub({ ...b, lang: getLang() });
+async function pushInit() { pushSt = await pushStatus('/locataires'); if (pushSt === 'on') pushRefresh('/locataires', pushPost); if (ui.route === 'reglages') renderView(); }
+const PUSH_MSG = { off: '', on: '✓ Activées sur ce téléphone : le numéro sur l’icône indique ce qui attend une action.', denied: 'Bloquées : réactivez-les dans les réglages du téléphone (Notifications → cette app).', install: 'iPhone : installez d’abord l’app sur l’écran d’accueil, ouvrez-la depuis l’icône, puis activez-les ici.', unsupported: 'Non disponibles dans ce navigateur.' };
 const pageHead = (title, sub, actions = '') => html`<div class="page-head"><div><h1>${title}</h1>${sub ? html`<p>${sub}</p>` : ''}</div>${actions}</div>`;
 const yearSelect = (y) => html`<select data-input="year" style="width:auto;min-width:100px" aria-label="Année">${dataYears().map((yy) => html`<option value="${yy}" ${yy === y ? new Raw('selected') : ''}>${yy}</option>`)}</select>`;
 const empty = (ic, text, action) => html`<div class="empty card">${icon(ic)}<p>${text}</p>${action ? html`<div style="margin-top:14px">${action}</div>` : ''}</div>`;
@@ -2519,6 +2554,10 @@ dashboard() {
       ${legacy ? html`<div class="section-label">Ancienne version</div>
       <div class="alert warn" style="margin-bottom:10px">${icon('alert')}<div>Une copie <b>non chiffrée</b> de l'ancienne version est encore présente dans ce navigateur (${legacy.immeubles.length} immeubles, ${legacy.locataires.length} locataires).</div></div>
       <div class="actions"><button class="btn" data-action="legacy-import">Importer</button><button class="btn danger" data-action="legacy-wipe">Effacer la copie</button></div>` : ''}
+
+      <div class="section-label">Notifications</div>
+      <p class="small muted" style="margin:0 0 8px">Un avis et le numéro sur l’icône quand un locataire ou l’équipe vous écrit (signalement, virement, photos, problème…). Le serveur ne lit rien : il dit seulement « nouveau message ».</p>
+      ${pushSt === 'off' || !pushSt ? html`<button class="btn" data-action="push-on">🔔 Activer les notifications sur ce téléphone</button>` : html`<p class="small" style="margin:0">${PUSH_MSG[pushSt] || ''}</p>`}
 
       <div class="section-label">Apparence</div>
       <div class="chips">${[['auto', 'Automatique'], ['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => html`<button class="chip" data-action="theme" data-id="${k}" aria-pressed="${theme === k}">${l}</button>`)}</div>
@@ -4092,6 +4131,12 @@ const ACTIONS = {
     goBack();
   },
   'esp-list': () => openOver('esp-list'),
+  async 'push-on'() {
+    try {
+      if (await pushEnable({ api: API.replace(/\/$/, ''), swUrl: '/locataires-sw.js', scope: '/locataires', post: pushPost })) { pushSt = 'on'; toast('🔔 Notifications activées'); } else pushSt = await pushStatus('/locataires');
+    } catch { toast('Notifications impossibles sur ce téléphone', { bad: true }); }
+    renderView();
+  },
   'door-change': (d) => openOver('door-form', d.id),
   'door-show': (d) => { ui.showDoor = ui.showDoor === d.id ? '' : d.id; ui.sheet.rendered = false; renderSheet(); },
   'esp-filter': (d, el) => { sheetEl.querySelectorAll('[data-action=esp-filter]').forEach((b) => b.setAttribute('aria-pressed', b === el)); filterEspList(); },
