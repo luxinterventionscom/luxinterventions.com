@@ -6,7 +6,7 @@ import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.36.0';
+const VERSION = '2.36.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -92,7 +92,7 @@ const IMM_TYPES = {
 const LOG_GROUPS = [
   ['Habitation', { appartement: 'Appartement', studio: 'Studio', chambre: 'Chambre', duplex: 'Duplex / penthouse', maison: 'Maison' }],
   ['Professionnel', { bureau: 'Bureau', commercial: 'Local commercial / magasin', restauration: 'Local de restauration (café, restaurant)', cabinet: 'Cabinet (médical, profession libérale)', atelier: 'Atelier / entrepôt' }],
-  ['Annexes', { garage: 'Garage / box', parking: 'Emplacement de parking', cave: 'Cave / débarras', autre: 'Autre' }],
+  ['Annexes', { box: 'Espace box', garage: 'Garage / box', parking: 'Emplacement de parking', cave: 'Cave / débarras', autre: 'Autre' }],
 ];
 const LOG_TYPES = Object.assign({}, ...LOG_GROUPS.map(([, t]) => t));
 const logTypeSelect = (name, cur) => html`<label class="field">Type<select name="${name}">${LOG_GROUPS.map(([g, t]) => html`<optgroup label="${g}">${Object.entries(t).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</optgroup>`)}</select></label>`;

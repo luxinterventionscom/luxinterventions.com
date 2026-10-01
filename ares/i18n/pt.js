@@ -7803,5 +7803,9 @@ export default [
 [
 "Photos de sortie vues",
 "Fotos de saída vistas"
+],
+[
+"Espace box",
+"Espaço box"
 ]
 ];
