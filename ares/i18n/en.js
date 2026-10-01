@@ -5515,5 +5515,1957 @@ export default [
 [
 "BIC invalide (ex. CCRALULLXXX).",
 "Invalid BIC (e.g. CCRALULLXXX)."
+],
+[
+") : leur sortie sera enregistrée à cette date et ils passeront dans les anciens locataires.",
+"): their move-out will be recorded on that date and they will move to former tenants."
+],
+[
+"+ {0} an{1}",
+"+ {0} year(s)"
+],
+[
+", avec ses photos",
+", with its photos"
+],
+[
+", le",
+", on"
+],
+[
+"Absence ajoutée",
+"Absence added"
+],
+[
+"Absence supprimée",
+"Absence deleted"
+],
+[
+"Accès désactivé",
+"Access disabled"
+],
+[
+"Activité de l’équipe lue",
+"Team activity read"
+],
+[
+"Activité lue",
+"Activity read"
+],
+[
+"Activité{0}",
+"Activity{0}"
+],
+[
+"Afficher plus ({0})",
+"Show more ({0})"
+],
+[
+"Ajouter {0} aux dépenses ?",
+"Add {0} to the expenses?"
+],
+[
+"Ajoutez au moins une photo",
+"Add at least one photo"
+],
+[
+"Ajoutez d'abord un immeuble.",
+"Add a building first."
+],
+[
+"Ajoutez d’abord un immeuble.",
+"Add a building first."
+],
+[
+"Ancien locataire",
+"Former tenant"
+],
+[
+"Annonce publiée (NOBIS)",
+"Listing published (NOBIS)"
+],
+[
+"Annuler la pizza",
+"Cancel the pizza"
+],
+[
+"Annuler « pizza offerte » ?",
+"Cancel « pizza treat »?"
+],
+[
+"Aoû",
+"Aug"
+],
+[
+"Août",
+"August"
+],
+[
+"App de l’équipe : accès créé",
+"Team app: access created"
+],
+[
+"App de l’équipe : langue",
+"Team app: language"
+],
+[
+"App de l’équipe désactivée",
+"Team app disabled"
+],
+[
+"Associé",
+"Partner"
+],
+[
+"Attention : des modifications ne sont pas encore synchronisées et seront perdues.",
+"Warning: some changes are not synced yet and will be lost."
+],
+[
+"Au",
+"To"
+],
+[
+"Aucun ancien locataire pour le moment.",
+"No former tenants yet."
+],
+[
+"Aucun historique.",
+"No history."
+],
+[
+"Aucun impayé pour ce locataire : le message reste modifiable.",
+"No unpaid rent for this tenant: the message can still be edited."
+],
+[
+"Aucun locataire à afficher pour",
+"No tenants to show for"
+],
+[
+"Aucun occupant enregistré.",
+"No occupants recorded."
+],
+[
+"Aucun paiement pour ce mois",
+"No payment for this month"
+],
+[
+"Aucun résultat.",
+"No results."
+],
+[
+"Aucune date reconnue (ex. 07/01, 21/01…)",
+"No date recognised (e.g. 07/01, 21/01…)"
+],
+[
+"Aucune date trouvée dans ce calendrier.",
+"No dates found in this calendar."
+],
+[
+"Aucune date trouvée dans ce fichier",
+"No dates found in this file"
+],
+[
+"Aucune modification enregistrée.",
+"No changes recorded."
+],
+[
+"Aucune écriture sur cette période.",
+"No entries in this period."
+],
+[
+"Avis modifié",
+"Notice updated"
+],
+[
+"Avis publié",
+"Notice published"
+],
+[
+"Avis supprimé",
+"Notice deleted"
+],
+[
+"Avr",
+"Apr"
+],
+[
+"Avril",
+"April"
+],
+[
+"Bilan depuis l'origine",
+"Balance since the start"
+],
+[
+"Bilan {0}",
+"Balance {0}"
+],
+[
+"Calendrier de la commune importé",
+"Municipal calendar imported"
+],
+[
+"Calendrier des collectes mis à jour ({0})",
+"Collection calendar updated ({0})"
+],
+[
+"Calendrier des collectes {0}",
+"Collection calendar {0}"
+],
+[
+"Calendrier indisponible",
+"Calendar unavailable"
+],
+[
+"Calendrier mis à jour",
+"Calendar updated"
+],
+[
+"Calendrier à nouveau disponible",
+"Calendar available again"
+],
+[
+"Catégorie{0}",
+"Category{0}"
+],
+[
+"Caution reçue",
+"Deposit received"
+],
+[
+"Ce fichier contient toutes les données personnelles des locataires sans chiffrement. Conservez-le en lieu sûr.",
+"This file contains all tenants’ personal data unencrypted. Keep it somewhere safe."
+],
+[
+"Ce fichier ne contient aucune date.",
+"This file contains no dates."
+],
+[
+"Changer le logo",
+"Change the logo"
+],
+[
+"Choisissez des photos",
+"Choose photos"
+],
+[
+"Choisissez un logement ou un immeuble",
+"Choose a unit or a building"
+],
+[
+"Clé actuelle incorrecte.",
+"Current key incorrect."
+],
+[
+"Clé de la sauvegarde",
+"Backup key"
+],
+[
+"Clé trop faible : au moins 12 caractères, idéalement une phrase de plusieurs mots.",
+"Key too weak: at least 12 characters, ideally a phrase of several words."
+],
+[
+"Clés des signalements créées",
+"Report keys created"
+],
+[
+"Cochez au moins un type de déchets",
+"Tick at least one type of waste"
+],
+[
+"Code de porte changé",
+"Door code changed"
+],
+[
+"Code d’accès locataire créé",
+"Tenant access code created"
+],
+[
+"Code d’accès équipe créé",
+"Team access code created"
+],
+[
+"Code impossible (connexion ?)",
+"Code failed (connection?)"
+],
+[
+"Code invalide (3 à 16 chiffres ou lettres)",
+"Invalid code (3 to 16 digits or letters)"
+],
+[
+"Collecte ajoutée",
+"Collection added"
+],
+[
+"Collecte modifiée",
+"Collection updated"
+],
+[
+"Collecte supprimée",
+"Collection deleted"
+],
+[
+"Collectes des déchets",
+"Waste collections"
+],
+[
+"Collez d’abord le lien du calendrier (il commence par https:// ou webcal://).",
+"First paste the calendar link (it starts with https:// or webcal://)."
+],
+[
+"Connexion annulée.",
+"Sign-in cancelled."
+],
+[
+"Connexion requise",
+"Connection required"
+],
+[
+"Connexion requise.",
+"Connection required."
+],
+[
+"Continuer",
+"Continue"
+],
+[
+"Contrat de bail",
+"Lease"
+],
+[
+"Coordonnées mises à jour",
+"Details updated"
+],
+[
+"Copie impossible",
+"Copy failed"
+],
+[
+"Copie impossible : notez-la à la main",
+"Copy failed: write it down by hand"
+],
+[
+"Copie impossible : sélectionnez le lien",
+"Copy failed: select the link"
+],
+[
+"Correcte",
+"Fair"
+],
+[
+"Dates qui se chevauchent",
+"Overlapping dates"
+],
+[
+"Depuis l'origine",
+"Since the start"
+],
+[
+"Dernière synchro :",
+"Last sync:"
+],
+[
+"Disponibilités :",
+"Availability:"
+],
+[
+"Document indisponible",
+"Document unavailable"
+],
+[
+"Document privé",
+"Private document"
+],
+[
+"Document retiré de l’espace locataire",
+"Document removed from the tenant space"
+],
+[
+"Document supprimé",
+"Document deleted"
+],
+[
+"Document visible par le locataire",
+"Document visible to the tenant"
+],
+[
+"Durée",
+"Duration"
+],
+[
+"Déc",
+"Dec"
+],
+[
+"Décembre",
+"December"
+],
+[
+"Déjà à jour",
+"Already up to date"
+],
+[
+"Départ prévu le",
+"Move-out planned on"
+],
+[
+"Dépense retirée",
+"Expense removed"
+],
+[
+"Dépense retirée (intervention non terminée ou sans coût)",
+"Expense removed (job not finished or without cost)"
+],
+[
+"Dépense supprimée",
+"Expense deleted"
+],
+[
+"Désactiver l’app de",
+"Disable the app of"
+],
+[
+"En attente",
+"Pending"
+],
+[
+"Encaissé total",
+"Total collected"
+],
+[
+"Encombrants",
+"Bulky waste"
+],
+[
+"Enregistrer les notes",
+"Save the notes"
+],
+[
+"Entrée dans les lieux",
+"Move-in"
+],
+[
+"Envoi impossible",
+"Sending failed"
+],
+[
+"Envoyer par email",
+"Send by email"
+],
+[
+"Erreur",
+"Error"
+],
+[
+"Erreur :",
+"Error:"
+],
+[
+"Erreur signalée (dossier / paiements) :",
+"Error reported (file / payments):"
+],
+[
+"Espace locataire : documents",
+"Tenant space: documents"
+],
+[
+"Espace locataire créé",
+"Tenant space created"
+],
+[
+"Espace locataire désactivé",
+"Tenant space disabled"
+],
+[
+"Espace locataire modifié",
+"Tenant space updated"
+],
+[
+"Expirées ({0})",
+"Expired ({0})"
+],
+[
+"Exporter",
+"Export"
+],
+[
+"Exporter en clair ?",
+"Export unencrypted?"
+],
+[
+"Facture — {0}",
+"Invoice — {0}"
+],
+[
+"Faible",
+"Weak"
+],
+[
+"Fichier illisible",
+"File unreadable"
+],
+[
+"Fichier trop lourd (10 Mo maximum)",
+"File too large (10 MB maximum)"
+],
+[
+"Fin de gestion de l'immeuble",
+"End of management of the building"
+],
+[
+"Format non reconnu",
+"Format not recognised"
+],
+[
+"Forte",
+"Strong"
+],
+[
+"Frais fixe supprimé",
+"Fixed cost deleted"
+],
+[
+"Frais fixes ({0} mois)",
+"Fixed costs ({0} months)"
+],
+[
+"Frais fixes {0} {1}",
+"Fixed costs {0} {1}"
+],
+[
+"Fusionner",
+"Merge"
+],
+[
+"Fusionner cette sauvegarde ?",
+"Merge this backup?"
+],
+[
+"Fév",
+"Feb"
+],
+[
+"Février",
+"February"
+],
+[
+"Garantie locative",
+"Rental deposit"
+],
+[
+"Gestionnaire",
+"Manager"
+],
+[
+"Habitation",
+"Housing"
+],
+[
+"Historique",
+"History"
+],
+[
+"Historique des occupants",
+"Occupant history"
+],
+[
+"IBAN : {0}",
+"IBAN: {0}"
+],
+[
+"Identité",
+"ID"
+],
+[
+"Image illisible",
+"Image unreadable"
+],
+[
+"Immeuble enregistré",
+"Building saved"
+],
+[
+"Immeuble modifié",
+"Building updated"
+],
+[
+"Immeuble supprimé",
+"Building deleted"
+],
+[
+"Import de l'ancienne version impossible :",
+"Import of the old version failed:"
+],
+[
+"Import impossible",
+"Import failed"
+],
+[
+"Importer ces données ?",
+"Import this data?"
+],
+[
+"Impossible",
+"Not possible"
+],
+[
+"Impossible (connexion ?)",
+"Failed (connection?)"
+],
+[
+"Impossible : {0} enregistré{1} dans ce logement (historique).",
+"Not possible: {0} recorded in this unit (history)."
+],
+[
+"Imprimer le rapport",
+"Print the report"
+],
+[
+"Imprimé le {0}",
+"Printed on {0}"
+],
+[
+"Indiquez d’abord le montant de la caution",
+"First enter the deposit amount"
+],
+[
+"Indiquez la date de la première fois",
+"Enter the date of the first time"
+],
+[
+"Indiquez le premier passage",
+"Enter the first collection"
+],
+[
+"Indiquez un nouveau loyer différent",
+"Enter a different new rent"
+],
+[
+"Installer",
+"Install"
+],
+[
+"Intervenant enregistré",
+"Team member saved"
+],
+[
+"Intervenant modifié",
+"Team member updated"
+],
+[
+"Intervenant supprimé",
+"Team member deleted"
+],
+[
+"Intervention modifiée",
+"Job updated"
+],
+[
+"Intervention supprimée",
+"Job deleted"
+],
+[
+"Janvier",
+"January"
+],
+[
+"Jour de passage",
+"Collection day"
+],
+[
+"Juil",
+"Jul"
+],
+[
+"Juillet",
+"July"
+],
+[
+"Juin",
+"June"
+],
+[
+"La clé d'accès a été changée sur un autre appareil.",
+"The access key was changed on another device."
+],
+[
+"La copie locale chiffrée sera effacée. Vos données restent sur le serveur.",
+"The encrypted local copy will be erased. Your data stays on the server."
+],
+[
+"La date de fin est avant le début",
+"The end date is before the start"
+],
+[
+"La dépense déjà enregistrée reste dans les dépenses de l’immeuble.",
+"The expense already recorded stays in the building’s expenses."
+],
+[
+"La veille au soir{0}",
+"The evening before{0}"
+],
+[
+"Le bailleur",
+"The landlord"
+],
+[
+"Le calendrier de la commune ne contient aucune date pour « {0} »",
+"The municipal calendar has no dates for « {0} »"
+],
+[
+"Le contrat de {0} {1}. Pour que les totaux restent justes, NOBIS va {2}, puis enregistrer le paiement.",
+"{0}’s contract {1}. To keep the totals right, NOBIS will {2}, then record the payment."
+],
+[
+"Le jour du passage, {0}",
+"On collection day, {0}"
+],
+[
+"Le lien de paiement par carte doit commencer par https://",
+"The card payment link must start with https://"
+],
+[
+"Le lien doit commencer par https:// ou webcal://",
+"The link must start with https:// or webcal://"
+],
+[
+"Le nouveau locataire entre le {0}, avant ou le jour de la sortie de {1} ({2}).",
+"The new tenant moves in on {0}, before or on the day {1} moves out ({2})."
+],
+[
+"Le signalement disparaît aussi de l’app du locataire",
+"The report also disappears from the tenant’s app"
+],
+[
+"Le sous-locataire",
+"The subtenant"
+],
+[
+"Les deux clés ne correspondent pas.",
+"The two keys do not match."
+],
+[
+"Les deux nouvelles clés ne correspondent pas.",
+"The two new keys do not match."
+],
+[
+"Les éléments les plus récents sont conservés, rien n’est supprimé.",
+"The most recent items are kept, nothing is deleted."
+],
+[
+"Lien copié",
+"Link copied"
+],
+[
+"Locataire",
+"Tenant"
+],
+[
+"Locataire (espace fermé)",
+"Tenant (space closed)"
+],
+[
+"Locataire principal (bailleur)",
+"Head tenant (landlord)"
+],
+[
+"Locataire supprimé",
+"Tenant deleted"
+],
+[
+"Locataires{0}",
+"Tenants{0}"
+],
+[
+"Logement / local",
+"Unit / premises"
+],
+[
+"Logement enregistré",
+"Unit saved"
+],
+[
+"Logement modifié",
+"Unit updated"
+],
+[
+"Logement supprimé",
+"Unit deleted"
+],
+[
+"Logo retiré",
+"Logo removed"
+],
+[
+"Loyer et charges du mois",
+"Rent and charges for the month"
+],
+[
+"Loyer principal {0} {1}",
+"Head lease rent {0} {1}"
+],
+[
+"Loyer {0} {1} — {2}",
+"Rent {0} {1} — {2}"
+],
+[
+"Loyers payés hors des dates du contrat : {0}. {1}.{2}",
+"Rent paid outside the contract dates: {0}. {1}.{2}"
+],
+[
+"Loyers {0}",
+"Rents {0}"
+],
+[
+"L’ancien code ne fonctionnera plus pour une nouvelle installation (les téléphones déjà connectés restent connectés).",
+"The old code will no longer work for a new installation (phones already connected stay connected)."
+],
+[
+"L’ancien code ne fonctionnera plus pour une nouvelle installation.",
+"The old code will no longer work for a new installation."
+],
+[
+"Mai",
+"May"
+],
+[
+"Mars",
+"March"
+],
+[
+"Message du locataire lu",
+"Tenant message read"
+],
+[
+"Message supprimé (modération)",
+"Message deleted (moderation)"
+],
+[
+"Messages de la maison activés",
+"House messages on"
+],
+[
+"Messages de la maison désactivés",
+"House messages off"
+],
+[
+"Mettre votre logo",
+"Add your logo"
+],
+[
+"Modifier l'avis",
+"Edit the notice"
+],
+[
+"Modifier l'immeuble",
+"Edit the building"
+],
+[
+"Modifier la fiche",
+"Edit the file"
+],
+[
+"Modifier le logement",
+"Edit the unit"
+],
+[
+"Mois",
+"Month"
+],
+[
+"Montant",
+"Amount"
+],
+[
+"Montant reçu",
+"Amount received"
+],
+[
+"Métier / mansion{0}",
+"Trade / job{0}"
+],
+[
+"Notes enregistrées",
+"Notes saved"
+],
+[
+"Notes modifiées",
+"Notes updated"
+],
+[
+"Nouveau code ?",
+"New code?"
+],
+[
+"Nouveau code créé",
+"New code created"
+],
+[
+"Nouveau code d’accès ?",
+"New access code?"
+],
+[
+"Nouvelle clé trop faible (12 caractères minimum).",
+"New key too weak (12 characters minimum)."
+],
+[
+"Nouvelles de l’équipe",
+"News from the team"
+],
+[
+"Novembre",
+"November"
+],
+[
+"Occupants successifs",
+"Successive occupants"
+],
+[
+"Occupant{0} actuel{1}",
+"Current occupant(s)"
+],
+[
+"Occupation",
+"Occupancy"
+],
+[
+"Octobre",
+"October"
+],
+[
+"Organique",
+"Organic"
+],
+[
+"Oublier",
+"Forget"
+],
+[
+"Oublier cet appareil ?",
+"Forget this device?"
+],
+[
+"Où déposer",
+"Where to put it"
+],
+[
+"Page locataires créée",
+"Tenants page created"
+],
+[
+"Page locataires désactivée",
+"Tenants page disabled"
+],
+[
+"Paiement annulé",
+"Payment cancelled"
+],
+[
+"Paiement modifié",
+"Payment updated"
+],
+[
+"Pas de téléphone",
+"No phone"
+],
+[
+"Pas d’email",
+"No email"
+],
+[
+"Pas d’horaire enregistré. Touchez « Modifier » pour l’ajouter.",
+"No schedule recorded. Tap « Edit » to add it."
+],
+[
+"Pas encore synchronisé",
+"Not synced yet"
+],
+[
+"PayPal.me : seulement le nom (lettres et chiffres)",
+"PayPal.me: just the name (letters and digits)"
+],
+[
+"Payé(s) après la sortie du {0} :",
+"Paid after the move-out on {0}:"
+],
+[
+"Photo état des lieux ajoutée",
+"Inventory photo added"
+],
+[
+"Photo état des lieux retirée",
+"Inventory photo removed"
+],
+[
+"Pizza annulée",
+"Pizza cancelled"
+],
+[
+"Pizza offerte 🍕",
+"Pizza treat 🍕"
+],
+[
+"Pièce jointe",
+"Attachment"
+],
+[
+"Plan",
+"Map"
+],
+[
+"Pour un frais qui s’arrête, préférez une date de fin en le recréant : les mois passés restent alors comptés.",
+"For a cost that stops, better set an end date by recreating it: past months then stay counted."
+],
+[
+"Privé",
+"Private"
+],
+[
+"Problème",
+"Problem"
+],
+[
+"Problèmes signalés, échanges, réparations demandées…",
+"Reported problems, exchanges, requested repairs…"
+],
+[
+"Professionnel",
+"Business"
+],
+[
+"Prolonger et payer",
+"Extend and pay"
+],
+[
+"Provision charges",
+"Service charge advance"
+],
+[
+"Publication impossible",
+"Publishing failed"
+],
+[
+"Publication impossible (connexion ?)",
+"Publishing failed (connection?)"
+],
+[
+"Publication…",
+"Publishing…"
+],
+[
+"Quittance de loyer",
+"Rent receipt"
+],
+[
+"Rappel de loyer",
+"Rent reminder"
+],
+[
+"Rapport",
+"Report"
+],
+[
+"Rapport immeuble",
+"Building report"
+],
+[
+"Rapport logement",
+"Unit report"
+],
+[
+"Rapport {0}",
+"Report {0}"
+],
+[
+"Recette",
+"Income"
+],
+[
+"Relance envoyée",
+"Reminder sent"
+],
+[
+"Reste dû",
+"Balance due"
+],
+[
+"Reçu de caution imprimé",
+"Deposit receipt printed"
+],
+[
+"Reçu de paiement partiel",
+"Part-payment receipt"
+],
+[
+"Rien pour le moment. Ce que l’équipe envoie depuis son app (commencé, fini, pas fini, notes, photos, maladie) arrive ici.",
+"Nothing yet. What the team sends from its app (started, done, not done, notes, photos, sickness) arrives here."
+],
+[
+"Règlement de la maison accepté",
+"House rules accepted"
+],
+[
+"Règles de l’immeuble modifiées",
+"Building rules updated"
+],
+[
+"Résultat :",
+"Result:"
+],
+[
+"Résultat net",
+"Net result"
+],
+[
+"Saisissez la clé d’accès utilisée au moment de la sauvegarde.",
+"Enter the access key used when the backup was made."
+],
+[
+"Sans immeuble",
+"No building"
+],
+[
+"Sans nom",
+"No name"
+],
+[
+"Sens",
+"Direction"
+],
+[
+"Septembre",
+"September"
+],
+[
+"Ses paiements et documents seront effacés et disparaîtront des statistiques.",
+"Their payments and documents will be deleted and disappear from the statistics."
+],
+[
+"Si l'immeuble n'est simplement plus à vous, utilisez plutôt « Fin de gestion » : il sera archivé et son historique restera dans les statistiques. Ici, tout sera effacé définitivement, y compris l'historique : {0}, logements, paiements, versements, dépenses et documents. Les statistiques de cet immeuble seront perdues.",
+"If the building is simply no longer yours, use « End of management » instead: it will be archived and its history will stay in the statistics. Here everything will be deleted for good, history included: {0}, units, payments, transfers, expenses and documents. This building’s statistics will be lost."
+],
+[
+"Si le locataire part, utilisez plutôt « Départ » : il sera archivé et ses loyers resteront dans les statistiques. La suppression efface aussi ses paiements et documents.",
+"If the tenant leaves, use « Move-out » instead: they will be archived and their rent will stay in the statistics. Deleting also erases their payments and documents."
+],
+[
+"Si vous les avez déjà saisis à la main dans Dépenses, annulez pour ne pas les compter deux fois.",
+"If you already entered them by hand in Expenses, cancel so they are not counted twice."
+],
+[
+"Signalement :",
+"Report:"
+],
+[
+"Signalement reçu",
+"Report received"
+],
+[
+"Signalement —",
+"Report —"
+],
+[
+"Signalement — photo {0}",
+"Report — photo {0}"
+],
+[
+"Société corrigée : NOBIS s.a.r.l.",
+"Company corrected: NOBIS s.a.r.l."
+],
+[
+"Son code et son lien ne fonctionneront plus. Vous pourrez créer un nouvel accès plus tard.",
+"Their code and link will stop working. You can create new access later."
+],
+[
+"Sortie",
+"Move-out"
+],
+[
+"Suppression impossible",
+"Deletion failed"
+],
+[
+"Supprimer cet avis ?",
+"Delete this notice?"
+],
+[
+"Supprimer cette absence ?",
+"Delete this absence?"
+],
+[
+"Supprimer cette dépense ?",
+"Delete this expense?"
+],
+[
+"Supprimer définitivement {0} ?",
+"Delete {0} for good?"
+],
+[
+"Supprimer la collecte « {0} » ?",
+"Delete the collection « {0} »?"
+],
+[
+"Supprimer {0} ?",
+"Delete {0}?"
+],
+[
+"Supprimer « {0} » ?",
+"Delete « {0} »?"
+],
+[
+"Surface",
+"Area"
+],
+[
+"TVA collectée :",
+"VAT collected:"
+],
+[
+"TVA déductible :",
+"Deductible VAT:"
+],
+[
+"Taux TVA %",
+"VAT rate %"
+],
+[
+"Taux de {0} :",
+"{0} rates:"
+],
+[
+"Taxes / impôts",
+"Taxes"
+],
+[
+"Terminés",
+"Finished"
+],
+[
+"Total payé",
+"Total paid"
+],
+[
+"Tour des poubelles activé",
+"Bin duty on"
+],
+[
+"Tour des poubelles désactivé",
+"Bin duty off"
+],
+[
+"Tours des poubelles enregistrés",
+"Bin duties saved"
+],
+[
+"Tous les loyers de {0} sont encaissés.",
+"All rent for {0} has been collected."
+],
+[
+"Toute la structure",
+"The whole property"
+],
+[
+"Trop courte",
+"Too short"
+],
+[
+"Trouvé dans le calendrier{0}",
+"Found in the calendar{0}"
+],
+[
+"Un autre appareil",
+"Another device"
+],
+[
+"Une nouvelle clé de secours remplacera l’ancienne, qui ne fonctionnera plus.",
+"A new recovery key will replace the old one, which will stop working."
+],
+[
+"Une question ? {0}{1}",
+"A question? {0}{1}"
+],
+[
+"Verrouillage après",
+"Lock after"
+],
+[
+"Verrouillé après inactivité.",
+"Locked after inactivity."
+],
+[
+"Versement annulé ·",
+"Payment cancelled ·"
+],
+[
+"Versement bailleur annulé",
+"Landlord payment cancelled"
+],
+[
+"Versement bailleur rétabli",
+"Landlord payment restored"
+],
+[
+"Versements au bailleur {0}",
+"Payments to the landlord {0}"
+],
+[
+"Virement signalé : vu",
+"Reported transfer: seen"
+],
+[
+"Virement signalé par le locataire",
+"Transfer reported by the tenant"
+],
+[
+"Visible dans l'espace de",
+"Visible in the space of"
+],
+[
+"Visible dans l’espace du locataire",
+"Visible in the tenant space"
+],
+[
+"Voir les loyers",
+"See the rents"
+],
+[
+"Votre app de travail",
+"Your work app"
+],
+[
+"Votre espace locataire",
+"Your tenant space"
+],
+[
+"Votre société est indiquée comme",
+"Your company is set as"
+],
+[
+"Vérification automatique chaque jour.",
+"Automatic check every day."
+],
+[
+"adresse Bitcoin invalide (commence par bc1, 1 ou 3)",
+"invalid Bitcoin address (starts with bc1, 1 or 3)"
+],
+[
+"adresse Tron invalide (commence par T)",
+"invalid Tron address (starts with T)"
+],
+[
+"adresse invalide (0x + 40 caractères)",
+"invalid address (0x + 40 characters)"
+],
+[
+"août",
+"August"
+],
+[
+"après",
+"after"
+],
+[
+"après 18 h",
+"after 6 pm"
+],
+[
+"archivé",
+"archived"
+],
+[
+"aujourd'hui",
+"today"
+],
+[
+"chaque {0}",
+"every {0}"
+],
+[
+"chèque",
+"cheque"
+],
+[
+"coût",
+"cost"
+],
+[
+"dans {0}",
+"in {0}"
+],
+[
+"date à fixer",
+"date to be set"
+],
+[
+"dit avoir payé",
+"says they have paid"
+],
+[
+"du camion. Sortez les poubelles comme indiqué dans « Quand sortir » et rentrez-les après le passage.",
+"of the truck. Put the bins out as shown in « When to put out » and bring them back in after collection."
+],
+[
+"décembre",
+"December"
+],
+[
+"départ prévu le",
+"move-out planned on"
+],
+[
+"dépense",
+"expense"
+],
+[
+"d’email",
+"email"
+],
+[
+"en ligne jusqu’au",
+"online until"
+],
+[
+"espèces",
+"cash"
+],
+[
+"ex. Luxembourg-Gare",
+"e.g. Luxembourg-Gare"
+],
+[
+"ex. NOBIS s.a.r.l.",
+"e.g. NOBIS s.a.r.l."
+],
+[
+"ex. Nettoyeur haute pression Kärcher",
+"e.g. Kärcher pressure washer"
+],
+[
+"ex. Nuki, TTLock, igloohome…",
+"e.g. Nuki, TTLock, igloohome…"
+],
+[
+"ex. Salaires + cotisations",
+"e.g. Salaries + contributions"
+],
+[
+"ex. certificat reçu par WhatsApp",
+"e.g. certificate received by WhatsApp"
+],
+[
+"expirée",
+"expired"
+],
+[
+"février",
+"February"
+],
+[
+"gratuit (don)",
+"free (gift)"
+],
+[
+"indéterminé",
+"open-ended"
+],
+[
+"jusqu’au",
+"until"
+],
+[
+"le logement loué",
+"the rented unit"
+],
+[
+"mois affiché",
+"month shown"
+],
+[
+"net après dépenses :",
+"net after expenses:"
+],
+[
+"non payé",
+"not paid"
+],
+[
+"par {0} — {1}",
+"by {0} — {1}"
+],
+[
+"parti le {0}",
+"left on {0}"
+],
+[
+"pas encore accepté",
+"not accepted yet"
+],
+[
+"pas encore dans les dépenses ({0}) — touchez pour vérifier et ajouter",
+"not in expenses yet ({0}) — tap to check and add"
+],
+[
+"passage {0} · sortir {1} · {2}{3}",
+"collection {0} · put out {1} · {2}{3}"
+],
+[
+"prolonger le contrat jusqu'au {0}",
+"extend the contract until {0}"
+],
+[
+"prévu {0}{1}{2}{3}",
+"planned {0}{1}{2}{3}"
+],
+[
+"prévue depuis le",
+"planned since"
+],
+[
+"prévue le",
+"planned on"
+],
+[
+"{0} bailleur{1}",
+"{0} landlord(s)"
+],
+[
+"{0} collecte{1}",
+"{0} collection(s)"
+],
+[
+"{0} coût{1}",
+"{0} cost(s)"
+],
+[
+"{0} date{1}",
+"{0} date(s)"
+],
+[
+"{0} dépense{1}",
+"{0} expense(s)"
+],
+[
+"{0} intervention{1}",
+"{0} job(s)"
+],
+[
+"{0} jour{1}",
+"{0} day(s)"
+],
+[
+"{0} logement{1}",
+"{0} unit(s)"
+],
+[
+"{0} loyer{1}",
+"{0} rent(s)"
+],
+[
+"{0} message{1}",
+"{0} message(s)"
+],
+[
+"{0} mois affiché{1}",
+"{0} month(s) shown"
+],
+[
+"{0} photo{1}",
+"{0} photo(s)"
+],
+[
+"{0} écriture{1}",
+"{0} entry/entries"
+],
+[
+"{0} résultat{1}",
+"{0} result(s)"
+],
+[
+"{0} immeuble{1}",
+"{0} building(s)"
+],
+[
+"{0} locataire{1}",
+"{0} tenant(s)"
+],
+[
+"{0} occupant{1}",
+"{0} occupant(s)"
+],
+[
+"{0} passage{1}",
+"{0} collection(s)"
+],
+[
+"quitte {0} le {1}",
+"leaves {0} on {1}"
+],
+[
+"reçue{0}{1}",
+"received{0}{1}"
+],
+[
+"rien de prévu",
+"nothing planned"
+],
+[
+"récurrent",
+"recurring"
+],
+[
+"réessai automatique",
+"automatic retry"
+],
+[
+"résultat",
+"result"
+],
+[
+"société",
+"company"
+],
+[
+"spécialisé",
+"specialist"
+],
+[
+"tôt le matin",
+"early in the morning"
+],
+[
+"une adresse ne contient pas d’espaces",
+"an address contains no spaces"
+],
+[
+"{0} : fin {1}",
+"{0}: ends {1}"
+],
+[
+"{0} : paiements après la sortie",
+"{0}: payments after move-out"
+],
+[
+"{0} photo{1} ajoutée{2}",
+"{0} photo(s) added"
+],
+[
+"{0} photo{1} ajoutée{2} ({3} maximum)",
+"{0} photo(s) added ({3} maximum)"
+],
+[
+"{0} dépense{1} ajoutée{2}",
+"{0} expense(s) added"
+],
+[
+"{0} collecte{1} enregistrée{2}",
+"{0} collection(s) saved"
+],
+[
+"{0} collecte{1} enregistrée{2} · mise à jour automatique",
+"{0} collection(s) saved · automatic update"
+],
+[
+"{0} date{1} enregistrée{2}",
+"{0} date(s) saved"
+],
+[
+"{0} annonce{1} à approuver",
+"{0} listing(s) to approve"
+],
+[
+"{0} an{1}{2}",
+"{0} year(s){2}"
+],
+[
+"{0} depuis le {1}",
+"{0} since {1}"
+],
+[
+"{0} en gestion{1}",
+"{0} under management{1}"
+],
+[
+"{0} en retard",
+"{0} late"
+],
+[
+"{0} enregistrée{1}",
+"{0} saved"
+],
+[
+"{0} est connecté{1}{2}. Un seul appareil peut être connecté à la fois : si vous continuez, l'autre sera déconnecté immédiatement.",
+"{0} is connected{2}. Only one device can be connected at a time: if you continue, the other will be disconnected immediately."
+],
+[
+"{0} est parti le {1} : ce mois n'est plus dû.",
+"{0} left on {1}: this month is no longer due."
+],
+[
+"{0} immeubles, {1} locataires (ancienne version). Fusion avec les données actuelles.",
+"{0} buildings, {1} tenants (old version). Merged with the current data."
+],
+[
+"{0} lieu",
+"{0} location"
+],
+[
+"{0} mois impayé{1} :",
+"{0} unpaid month(s):"
+],
+[
+"{0} nouveau{1}",
+"{0} new"
+],
+[
+"{0} nouveau{1} message{2}",
+"{0} new message(s)"
+],
+[
+"{0} nouvelle{1} de l’équipe",
+"{0} update(s) from the team"
+],
+[
+"{0} occupe{1} ce logement. Remplacer : {2} sera archivé avec une sortie au {3}, ses loyers restent dans les statistiques. Colocation : les deux restent en place.",
+"{0} occupies this unit. Replace: {2} will be archived with a move-out on {3}, their rent stays in the statistics. Flat-share: both stay."
+],
+[
+"{0} occupé{1} / {2}",
+"{0} occupied / {2}"
+],
+[
+"{0} oubli{1}",
+"{0} forgotten"
+],
+[
+"{0} prévu :",
+"{0} planned:"
+],
+[
+"{0} restent enregistrées, sans intervenant.",
+"{0} stay saved, with no one assigned."
+],
+[
+"{0} sans facture jointe",
+"{0} without an attached invoice"
+],
+[
+"{0} sans logement attribué. Attribuez-leur un logement pour suivre les changements d'occupants.",
+"{0} with no unit assigned. Assign them a unit to follow changes of occupants."
+],
+[
+"{0} terminée{1} avec un coût",
+"{0} finished with a cost"
+],
+[
+"{0} {1}/mois",
+"{0} {1}/month"
+],
+[
+"{0} — Envoyé par {1} le {2}{3}{4}",
+"{0} — Sent by {1} on {2}{3}{4}"
+],
+[
+"{0} — les dates ci-dessous sont les jours de",
+"{0} — the dates below are the days of"
+],
+[
+"{0} — locataire de l’année {1}",
+"{0} — tenant of the year {1}"
+],
+[
+"{0}% · {1} à encaisser",
+"{0}% · {1} to collect"
+],
+[
+"· depuis le",
+"· since"
+],
+[
+"· départ le",
+"· leaving on"
+],
+[
+"· dépenses",
+"· expenses"
+],
+[
+"· occupé {0}% du temps, {1} de vacance",
+"· occupied {0}% of the time, {1} vacant"
+],
+[
+"· parti",
+"· left"
+],
+[
+"· tél.",
+"· tel."
+],
+[
+"· {0} oubli{1}",
+"· {0} forgotten"
+],
+[
+"· {0} à approuver",
+"· {0} to approve"
+],
+[
+"· 📷 {0} photo{1}",
+"· 📷 {0} photo(s)"
+],
+[
+"État des lieux",
+"Inventory"
+],
+[
+"à accepter de nouveau (règlement modifié)",
+"to accept again (rules changed)"
+],
+[
+"à la TVA (Réglages → Société). Les montants ci-dessous sont seulement indicatifs.",
+"to VAT (Settings → Company). The amounts below are only indicative."
+],
+[
+"à sortir la veille au soir{0}{1}",
+"put out the evening before{0}{1}"
+],
+[
+"à sortir le jour même{0}",
+"put out the same day{0}"
+],
+[
+"écriture",
+"entry"
+],
+[
+"élément",
+"item"
+],
+[
+"éléments",
+"items"
+],
+[
+"étage",
+"floor"
+],
+[
+"— ajoutez-la avec 📎+ dans Immeuble → Dépenses.",
+"— add it with 📎+ in Building → Expenses."
+],
+[
+"— ce lien est sans doute la page web de la commune, pas le calendrier : utilisez le fichier .ics téléchargé.",
+"— this link is probably the municipality’s web page, not the calendar: use the downloaded .ics file."
+],
+[
+"— fin de contrat {0} ({1}). Toucher pour prolonger.",
+"— contract ends {0} ({1}). Tap to extend."
+],
+[
+"— occupé (",
+"— occupied ("
+],
+[
+"— parti le {0}{1}.",
+"— left on {0}{1}."
+],
+[
+"— révision du loyer {0} {1} ({2}). Toucher pour réviser.",
+"— rent review {0} {1} ({2}). Tap to review."
+],
+[
+"— {0} mois impayé{1} (",
+"— {0} unpaid month(s) ("
+],
+[
+"— {0} payé{1} hors des dates du contrat : touchez pour corriger",
+"— {0} paid outside the contract dates: tap to correct"
+],
+[
+"⚠ Dernier essai : {0}",
+"⚠ Last attempt: {0}"
+],
+[
+"❌ oublié",
+"❌ forgotten"
+],
+[
+"🍕 Bon appétit,",
+"🍕 Enjoy your meal,"
+],
+[
+"🍕 Offerte le {0}",
+"🍕 Treated on {0}"
+],
+[
+"📎 Preuve{0}",
+"📎 Proof{0}"
+],
+[
+"📩 {0} de locataire{1}",
+"📩 {0} from tenants"
+],
+[
+"📱 Scannez : calendrier sur votre téléphone, rappel la veille.",
+"📱 Scan: calendar on your phone, reminder the evening before."
+],
+[
+"🗑️ poubelles ce soir",
+"🗑️ bins tonight"
+],
+[
+"Disponibilités",
+"Availability"
+],
+[
+"Prévu",
+"Planned"
+],
+[
+"Résultat de janvier",
+"Result for January"
+],
+[
+"Résultat de février",
+"Result for February"
+],
+[
+"Résultat de mars",
+"Result for March"
+],
+[
+"Résultat de avril",
+"Result for April"
+],
+[
+"Résultat de mai",
+"Result for May"
+],
+[
+"Résultat de juin",
+"Result for June"
+],
+[
+"Résultat de juillet",
+"Result for July"
+],
+[
+"Résultat de août",
+"Result for August"
+],
+[
+"Résultat de septembre",
+"Result for September"
+],
+[
+"Résultat de octobre",
+"Result for October"
+],
+[
+"Résultat de novembre",
+"Result for November"
+],
+[
+"Résultat de décembre",
+"Result for December"
 ]
 ];

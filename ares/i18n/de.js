@@ -3406,7 +3406,7 @@ export default [
 ],
 [
 "Total",
-"Summe"
+"Gesamt"
 ],
 [
 "Total depuis l'origine",
@@ -5623,5 +5623,2009 @@ export default [
 [
 "BIC invalide (ex. CCRALULLXXX).",
 "Ungültiger BIC (z. B. CCRALULLXXX)."
+],
+[
+") : leur sortie sera enregistrée à cette date et ils passeront dans les anciens locataires.",
+"): Ihr Auszug wird zu diesem Datum eingetragen und sie wechseln zu den früheren Mietern."
+],
+[
+"+ {0} an{1}",
+"+ {0} Jahr(e)"
+],
+[
+", avec ses photos",
+", mit den Fotos"
+],
+[
+", le",
+", am"
+],
+[
+"Absence ajoutée",
+"Abwesenheit hinzugefügt"
+],
+[
+"Absence supprimée",
+"Abwesenheit gelöscht"
+],
+[
+"Absences{0}",
+"Abwesenheiten{0}"
+],
+[
+"Accès désactivé",
+"Zugang deaktiviert"
+],
+[
+"Activité de l’équipe lue",
+"Team-Aktivität gelesen"
+],
+[
+"Activité lue",
+"Aktivität gelesen"
+],
+[
+"Activité{0}",
+"Aktivität{0}"
+],
+[
+"Afficher plus ({0})",
+"Mehr anzeigen ({0})"
+],
+[
+"Ajouter {0} aux dépenses ?",
+"{0} zu den Ausgaben hinzufügen?"
+],
+[
+"Ajoutez au moins une photo",
+"Fügen Sie mindestens ein Foto hinzu"
+],
+[
+"Ajoutez d'abord un immeuble.",
+"Fügen Sie zuerst ein Gebäude hinzu."
+],
+[
+"Ajoutez d’abord un immeuble.",
+"Fügen Sie zuerst ein Gebäude hinzu."
+],
+[
+"Ancien locataire",
+"Früherer Mieter"
+],
+[
+"Annexes",
+"Nebenräume"
+],
+[
+"Annonce publiée (NOBIS)",
+"Anzeige veröffentlicht (NOBIS)"
+],
+[
+"Annuler la pizza",
+"Pizza rückgängig machen"
+],
+[
+"Annuler « pizza offerte » ?",
+"« Pizza spendiert » rückgängig machen?"
+],
+[
+"Aoû",
+"Aug"
+],
+[
+"Août",
+"August"
+],
+[
+"App de l’équipe : accès créé",
+"Team-App: Zugang erstellt"
+],
+[
+"App de l’équipe : langue",
+"Team-App: Sprache"
+],
+[
+"App de l’équipe désactivée",
+"Team-App deaktiviert"
+],
+[
+"Associé",
+"Gesellschafter"
+],
+[
+"Attention : des modifications ne sont pas encore synchronisées et seront perdues.",
+"Achtung: Einige Änderungen sind noch nicht synchronisiert und gehen verloren."
+],
+[
+"Au",
+"Bis"
+],
+[
+"Aucun ancien locataire pour le moment.",
+"Noch keine früheren Mieter."
+],
+[
+"Aucun historique.",
+"Kein Verlauf."
+],
+[
+"Aucun impayé pour ce locataire : le message reste modifiable.",
+"Keine Rückstände bei diesem Mieter: Die Nachricht bleibt bearbeitbar."
+],
+[
+"Aucun locataire à afficher pour",
+"Keine Mieter anzuzeigen für"
+],
+[
+"Aucun occupant enregistré.",
+"Keine Bewohner eingetragen."
+],
+[
+"Aucun paiement pour ce mois",
+"Keine Zahlung für diesen Monat"
+],
+[
+"Aucun résultat.",
+"Kein Ergebnis."
+],
+[
+"Aucune date reconnue (ex. 07/01, 21/01…)",
+"Kein Datum erkannt (z. B. 07/01, 21/01…)"
+],
+[
+"Aucune date trouvée dans ce calendrier.",
+"Keine Daten in diesem Kalender gefunden."
+],
+[
+"Aucune date trouvée dans ce fichier",
+"Keine Daten in dieser Datei gefunden"
+],
+[
+"Aucune modification enregistrée.",
+"Keine Änderung gespeichert."
+],
+[
+"Aucune écriture sur cette période.",
+"Keine Buchungen in diesem Zeitraum."
+],
+[
+"Avis modifié",
+"Mitteilung geändert"
+],
+[
+"Avis publié",
+"Mitteilung veröffentlicht"
+],
+[
+"Avis supprimé",
+"Mitteilung gelöscht"
+],
+[
+"Avr",
+"Apr"
+],
+[
+"Avril",
+"April"
+],
+[
+"Bilan depuis l'origine",
+"Bilanz seit Beginn"
+],
+[
+"Bilan {0}",
+"Bilanz {0}"
+],
+[
+"Calendrier de la commune importé",
+"Gemeindekalender importiert"
+],
+[
+"Calendrier des collectes mis à jour ({0})",
+"Abfuhrkalender aktualisiert ({0})"
+],
+[
+"Calendrier des collectes {0}",
+"Abfuhrkalender {0}"
+],
+[
+"Calendrier indisponible",
+"Kalender nicht verfügbar"
+],
+[
+"Calendrier mis à jour",
+"Kalender aktualisiert"
+],
+[
+"Calendrier à nouveau disponible",
+"Kalender wieder verfügbar"
+],
+[
+"Catégorie{0}",
+"Kategorie{0}"
+],
+[
+"Caution reçue",
+"Kaution erhalten"
+],
+[
+"Ce fichier contient toutes les données personnelles des locataires sans chiffrement. Conservez-le en lieu sûr.",
+"Diese Datei enthält alle persönlichen Daten der Mieter unverschlüsselt. Bewahren Sie sie sicher auf."
+],
+[
+"Ce fichier ne contient aucune date.",
+"Diese Datei enthält kein Datum."
+],
+[
+"Changer le logo",
+"Logo ändern"
+],
+[
+"Choisissez des photos",
+"Wählen Sie Fotos"
+],
+[
+"Choisissez un logement ou un immeuble",
+"Wählen Sie eine Wohnung oder ein Gebäude"
+],
+[
+"Clé actuelle incorrecte.",
+"Aktueller Schlüssel falsch."
+],
+[
+"Clé de la sauvegarde",
+"Schlüssel der Sicherung"
+],
+[
+"Clé trop faible : au moins 12 caractères, idéalement une phrase de plusieurs mots.",
+"Schlüssel zu schwach: mindestens 12 Zeichen, am besten ein Satz aus mehreren Wörtern."
+],
+[
+"Clés des signalements créées",
+"Schlüssel für Meldungen erstellt"
+],
+[
+"Cochez au moins un type de déchets",
+"Haken Sie mindestens eine Abfallart an"
+],
+[
+"Code de porte changé",
+"Türcode geändert"
+],
+[
+"Code d’accès locataire créé",
+"Mieter-Zugangscode erstellt"
+],
+[
+"Code d’accès équipe créé",
+"Team-Zugangscode erstellt"
+],
+[
+"Code impossible (connexion ?)",
+"Code nicht möglich (Verbindung?)"
+],
+[
+"Code invalide (3 à 16 chiffres ou lettres)",
+"Ungültiger Code (3 bis 16 Ziffern oder Buchstaben)"
+],
+[
+"Collecte ajoutée",
+"Abholung hinzugefügt"
+],
+[
+"Collecte modifiée",
+"Abholung geändert"
+],
+[
+"Collecte supprimée",
+"Abholung gelöscht"
+],
+[
+"Collectes des déchets",
+"Müllabfuhr"
+],
+[
+"Collez d’abord le lien du calendrier (il commence par https:// ou webcal://).",
+"Fügen Sie zuerst den Kalenderlink ein (er beginnt mit https:// oder webcal://)."
+],
+[
+"Connexion annulée.",
+"Anmeldung abgebrochen."
+],
+[
+"Connexion requise",
+"Verbindung erforderlich"
+],
+[
+"Connexion requise.",
+"Verbindung erforderlich."
+],
+[
+"Continuer",
+"Weiter"
+],
+[
+"Contrat de bail",
+"Mietvertrag"
+],
+[
+"Coordonnées mises à jour",
+"Kontaktdaten aktualisiert"
+],
+[
+"Copie impossible",
+"Kopieren nicht möglich"
+],
+[
+"Copie impossible : notez-la à la main",
+"Kopieren nicht möglich: Bitte von Hand notieren"
+],
+[
+"Copie impossible : sélectionnez le lien",
+"Kopieren nicht möglich: Link markieren"
+],
+[
+"Correcte",
+"Mittel"
+],
+[
+"Dates qui se chevauchent",
+"Überschneidende Daten"
+],
+[
+"Dates {0}",
+"Daten {0}"
+],
+[
+"Depuis l'origine",
+"Seit Beginn"
+],
+[
+"Dernière synchro :",
+"Letzte Synchronisierung:"
+],
+[
+"Disponibilités :",
+"Verfügbarkeit:"
+],
+[
+"Document",
+"Dokument"
+],
+[
+"Document indisponible",
+"Dokument nicht verfügbar"
+],
+[
+"Document privé",
+"Dokument privat"
+],
+[
+"Document retiré de l’espace locataire",
+"Dokument aus dem Mieterbereich entfernt"
+],
+[
+"Document supprimé",
+"Dokument gelöscht"
+],
+[
+"Document visible par le locataire",
+"Dokument für den Mieter sichtbar"
+],
+[
+"Durée",
+"Dauer"
+],
+[
+"Déc",
+"Dez"
+],
+[
+"Décembre",
+"Dezember"
+],
+[
+"Déjà à jour",
+"Bereits aktuell"
+],
+[
+"Départ prévu le",
+"Auszug geplant am"
+],
+[
+"Dépense retirée",
+"Ausgabe entfernt"
+],
+[
+"Dépense retirée (intervention non terminée ou sans coût)",
+"Ausgabe entfernt (Einsatz nicht abgeschlossen oder ohne Kosten)"
+],
+[
+"Dépense supprimée",
+"Ausgabe gelöscht"
+],
+[
+"Désactiver l’app de",
+"App deaktivieren von"
+],
+[
+"En attente",
+"Ausstehend"
+],
+[
+"Encaissé total",
+"Gesamt eingenommen"
+],
+[
+"Encombrants",
+"Sperrmüll"
+],
+[
+"Enregistrer les notes",
+"Notizen speichern"
+],
+[
+"Entrée dans les lieux",
+"Einzug"
+],
+[
+"Envoi impossible",
+"Senden nicht möglich"
+],
+[
+"Envoyer par email",
+"Per E-Mail senden"
+],
+[
+"Erreur",
+"Fehler"
+],
+[
+"Erreur :",
+"Fehler:"
+],
+[
+"Erreur signalée (dossier / paiements) :",
+"Gemeldeter Fehler (Akte / Zahlungen):"
+],
+[
+"Espace locataire : documents",
+"Mieterbereich: Dokumente"
+],
+[
+"Espace locataire créé",
+"Mieterbereich erstellt"
+],
+[
+"Espace locataire désactivé",
+"Mieterbereich deaktiviert"
+],
+[
+"Espace locataire modifié",
+"Mieterbereich geändert"
+],
+[
+"Expirées ({0})",
+"Abgelaufen ({0})"
+],
+[
+"Exporter",
+"Exportieren"
+],
+[
+"Exporter en clair ?",
+"Unverschlüsselt exportieren?"
+],
+[
+"Facture — {0}",
+"Rechnung — {0}"
+],
+[
+"Faible",
+"Schwach"
+],
+[
+"Fichier illisible",
+"Datei nicht lesbar"
+],
+[
+"Fichier trop lourd (10 Mo maximum)",
+"Datei zu groß (maximal 10 MB)"
+],
+[
+"Fin de gestion de l'immeuble",
+"Ende der Verwaltung des Gebäudes"
+],
+[
+"Format non reconnu",
+"Format nicht erkannt"
+],
+[
+"Forte",
+"Stark"
+],
+[
+"Frais fixe supprimé",
+"Fixkosten gelöscht"
+],
+[
+"Frais fixes ({0} mois)",
+"Fixkosten ({0} Monate)"
+],
+[
+"Frais fixes {0} {1}",
+"Fixkosten {0} {1}"
+],
+[
+"Fusionner",
+"Zusammenführen"
+],
+[
+"Fusionner cette sauvegarde ?",
+"Diese Sicherung zusammenführen?"
+],
+[
+"Fév",
+"Feb"
+],
+[
+"Février",
+"Februar"
+],
+[
+"Garantie locative",
+"Mietkaution"
+],
+[
+"Gestionnaire",
+"Verwalter"
+],
+[
+"Habitation",
+"Wohnen"
+],
+[
+"Historique",
+"Verlauf"
+],
+[
+"Historique des occupants",
+"Bewohnerverlauf"
+],
+[
+"IBAN : {0}",
+"IBAN: {0}"
+],
+[
+"Identité",
+"Ausweis"
+],
+[
+"Image illisible",
+"Bild nicht lesbar"
+],
+[
+"Immeuble enregistré",
+"Gebäude gespeichert"
+],
+[
+"Immeuble modifié",
+"Gebäude geändert"
+],
+[
+"Immeuble supprimé",
+"Gebäude gelöscht"
+],
+[
+"Import de l'ancienne version impossible :",
+"Import der alten Version nicht möglich:"
+],
+[
+"Import impossible",
+"Import nicht möglich"
+],
+[
+"Importer ces données ?",
+"Diese Daten importieren?"
+],
+[
+"Impossible",
+"Nicht möglich"
+],
+[
+"Impossible (connexion ?)",
+"Nicht möglich (Verbindung?)"
+],
+[
+"Impossible : {0} enregistré{1} dans ce logement (historique).",
+"Nicht möglich: {0} in dieser Wohnung eingetragen (Verlauf)."
+],
+[
+"Imprimer le rapport",
+"Bericht drucken"
+],
+[
+"Imprimé le {0}",
+"Gedruckt am {0}"
+],
+[
+"Indiquez d’abord le montant de la caution",
+"Geben Sie zuerst den Kautionsbetrag an"
+],
+[
+"Indiquez la date de la première fois",
+"Geben Sie das Datum des ersten Mals an"
+],
+[
+"Indiquez le premier passage",
+"Geben Sie die erste Abholung an"
+],
+[
+"Indiquez un nouveau loyer différent",
+"Geben Sie eine andere neue Miete an"
+],
+[
+"Installer",
+"Installieren"
+],
+[
+"Intervenant enregistré",
+"Person gespeichert"
+],
+[
+"Intervenant modifié",
+"Person geändert"
+],
+[
+"Intervenant supprimé",
+"Person gelöscht"
+],
+[
+"Intervention modifiée",
+"Einsatz geändert"
+],
+[
+"Intervention supprimée",
+"Einsatz gelöscht"
+],
+[
+"Janvier",
+"Januar"
+],
+[
+"Jour de passage",
+"Abholtag"
+],
+[
+"Juil",
+"Jul"
+],
+[
+"Juillet",
+"Juli"
+],
+[
+"Juin",
+"Juni"
+],
+[
+"La clé d'accès a été changée sur un autre appareil.",
+"Der Zugangsschlüssel wurde auf einem anderen Gerät geändert."
+],
+[
+"La copie locale chiffrée sera effacée. Vos données restent sur le serveur.",
+"Die verschlüsselte lokale Kopie wird gelöscht. Ihre Daten bleiben auf dem Server."
+],
+[
+"La date de fin est avant le début",
+"Das Enddatum liegt vor dem Beginn"
+],
+[
+"La dépense déjà enregistrée reste dans les dépenses de l’immeuble.",
+"Die bereits eingetragene Ausgabe bleibt bei den Ausgaben des Gebäudes."
+],
+[
+"La veille au soir{0}",
+"Am Vorabend{0}"
+],
+[
+"Le bailleur",
+"Der Vermieter"
+],
+[
+"Le calendrier de la commune ne contient aucune date pour « {0} »",
+"Der Gemeindekalender enthält kein Datum für « {0} »"
+],
+[
+"Le contrat de {0} {1}. Pour que les totaux restent justes, NOBIS va {2}, puis enregistrer le paiement.",
+"Der Vertrag von {0} {1}. Damit die Summen stimmen, wird NOBIS {2} und dann die Zahlung eintragen."
+],
+[
+"Le jour du passage, {0}",
+"Am Abholtag, {0}"
+],
+[
+"Le lien de paiement par carte doit commencer par https://",
+"Der Kartenzahlungslink muss mit https:// beginnen"
+],
+[
+"Le lien doit commencer par https:// ou webcal://",
+"Der Link muss mit https:// oder webcal:// beginnen"
+],
+[
+"Le nouveau locataire entre le {0}, avant ou le jour de la sortie de {1} ({2}).",
+"Der neue Mieter zieht am {0} ein, vor oder am Tag des Auszugs von {1} ({2})."
+],
+[
+"Le signalement disparaît aussi de l’app du locataire",
+"Die Meldung verschwindet auch aus der App des Mieters"
+],
+[
+"Le sous-locataire",
+"Der Untermieter"
+],
+[
+"Les deux clés ne correspondent pas.",
+"Die beiden Schlüssel stimmen nicht überein."
+],
+[
+"Les deux nouvelles clés ne correspondent pas.",
+"Die beiden neuen Schlüssel stimmen nicht überein."
+],
+[
+"Les éléments les plus récents sont conservés, rien n’est supprimé.",
+"Die neuesten Einträge werden behalten, nichts wird gelöscht."
+],
+[
+"Lien copié",
+"Link kopiert"
+],
+[
+"Locataire",
+"Mieter"
+],
+[
+"Locataire (espace fermé)",
+"Mieter (Bereich geschlossen)"
+],
+[
+"Locataire principal (bailleur)",
+"Hauptmieter (Vermieter)"
+],
+[
+"Locataire supprimé",
+"Mieter gelöscht"
+],
+[
+"Locataires{0}",
+"Mieter{0}"
+],
+[
+"Logement / local",
+"Wohnung / Raum"
+],
+[
+"Logement enregistré",
+"Wohnung gespeichert"
+],
+[
+"Logement modifié",
+"Wohnung geändert"
+],
+[
+"Logement supprimé",
+"Wohnung gelöscht"
+],
+[
+"Logo retiré",
+"Logo entfernt"
+],
+[
+"Loyer et charges du mois",
+"Miete und Nebenkosten des Monats"
+],
+[
+"Loyer principal {0} {1}",
+"Hauptmiete {0} {1}"
+],
+[
+"Loyer {0} {1} — {2}",
+"Miete {0} {1} — {2}"
+],
+[
+"Loyers payés hors des dates du contrat : {0}. {1}.{2}",
+"Mieten außerhalb der Vertragsdaten bezahlt: {0}. {1}.{2}"
+],
+[
+"Loyers {0}",
+"Mieten {0}"
+],
+[
+"L’ancien code ne fonctionnera plus pour une nouvelle installation (les téléphones déjà connectés restent connectés).",
+"Der alte Code funktioniert für eine neue Installation nicht mehr (bereits verbundene Handys bleiben verbunden)."
+],
+[
+"L’ancien code ne fonctionnera plus pour une nouvelle installation.",
+"Der alte Code funktioniert für eine neue Installation nicht mehr."
+],
+[
+"Mar",
+"Mär"
+],
+[
+"Mars",
+"März"
+],
+[
+"Message du locataire lu",
+"Mieternachricht gelesen"
+],
+[
+"Message supprimé (modération)",
+"Nachricht gelöscht (Moderation)"
+],
+[
+"Messages de la maison activés",
+"Hauschat aktiviert"
+],
+[
+"Messages de la maison désactivés",
+"Hauschat deaktiviert"
+],
+[
+"Mettre votre logo",
+"Ihr Logo einfügen"
+],
+[
+"Modifier l'avis",
+"Mitteilung bearbeiten"
+],
+[
+"Modifier l'immeuble",
+"Gebäude bearbeiten"
+],
+[
+"Modifier la fiche",
+"Karte bearbeiten"
+],
+[
+"Modifier le logement",
+"Wohnung bearbeiten"
+],
+[
+"Mois",
+"Monat"
+],
+[
+"Montant",
+"Betrag"
+],
+[
+"Montant reçu",
+"Erhaltener Betrag"
+],
+[
+"Métier / mansion{0}",
+"Beruf / Tätigkeit{0}"
+],
+[
+"Notes enregistrées",
+"Notizen gespeichert"
+],
+[
+"Notes modifiées",
+"Notizen geändert"
+],
+[
+"Nouveau code ?",
+"Neuer Code?"
+],
+[
+"Nouveau code créé",
+"Neuer Code erstellt"
+],
+[
+"Nouveau code d’accès ?",
+"Neuer Zugangscode?"
+],
+[
+"Nouvelle clé trop faible (12 caractères minimum).",
+"Neuer Schlüssel zu schwach (mindestens 12 Zeichen)."
+],
+[
+"Nouvelles de l’équipe",
+"Neues vom Team"
+],
+[
+"Novembre",
+"November"
+],
+[
+"Occupants successifs",
+"Bisherige Bewohner"
+],
+[
+"Occupant{0} actuel{1}",
+"Aktuelle(r) Bewohner"
+],
+[
+"Occupation",
+"Belegung"
+],
+[
+"Oct",
+"Okt"
+],
+[
+"Octobre",
+"Oktober"
+],
+[
+"Organique",
+"Bio"
+],
+[
+"Oublier",
+"Vergessen"
+],
+[
+"Oublier cet appareil ?",
+"Dieses Gerät vergessen?"
+],
+[
+"Où déposer",
+"Wo abstellen"
+],
+[
+"Page locataires créée",
+"Mieterseite erstellt"
+],
+[
+"Page locataires désactivée",
+"Mieterseite deaktiviert"
+],
+[
+"Paiement annulé",
+"Zahlung storniert"
+],
+[
+"Paiement modifié",
+"Zahlung geändert"
+],
+[
+"Pas de téléphone",
+"Kein Telefon"
+],
+[
+"Pas d’email",
+"Keine E-Mail"
+],
+[
+"Pas d’horaire enregistré. Touchez « Modifier » pour l’ajouter.",
+"Keine Arbeitszeiten eingetragen. Tippen Sie auf « Bearbeiten », um sie hinzuzufügen."
+],
+[
+"Pas encore synchronisé",
+"Noch nicht synchronisiert"
+],
+[
+"PayPal.me : seulement le nom (lettres et chiffres)",
+"PayPal.me: nur der Name (Buchstaben und Ziffern)"
+],
+[
+"Payé(s) après la sortie du {0} :",
+"Bezahlt nach dem Auszug am {0}:"
+],
+[
+"Photo état des lieux ajoutée",
+"Foto des Übergabeprotokolls hinzugefügt"
+],
+[
+"Photo état des lieux retirée",
+"Foto des Übergabeprotokolls entfernt"
+],
+[
+"Pizza annulée",
+"Pizza rückgängig gemacht"
+],
+[
+"Pizza offerte 🍕",
+"Pizza spendiert 🍕"
+],
+[
+"Pièce jointe",
+"Anhang"
+],
+[
+"Plan",
+"Karte"
+],
+[
+"Pour un frais qui s’arrête, préférez une date de fin en le recréant : les mois passés restent alors comptés.",
+"Für Kosten, die enden, besser ein Enddatum setzen, indem Sie sie neu anlegen: So bleiben die vergangenen Monate gezählt."
+],
+[
+"Privé",
+"Privat"
+],
+[
+"Problème",
+"Problem"
+],
+[
+"Problèmes signalés, échanges, réparations demandées…",
+"Gemeldete Probleme, Austausch, angefragte Reparaturen…"
+],
+[
+"Professionnel",
+"Gewerblich"
+],
+[
+"Prolonger et payer",
+"Verlängern und bezahlen"
+],
+[
+"Provision charges",
+"Nebenkostenvorauszahlung"
+],
+[
+"Publication impossible",
+"Veröffentlichung nicht möglich"
+],
+[
+"Publication impossible (connexion ?)",
+"Veröffentlichung nicht möglich (Verbindung?)"
+],
+[
+"Publication…",
+"Wird veröffentlicht…"
+],
+[
+"Quittance de loyer",
+"Mietquittung"
+],
+[
+"Rappel de loyer",
+"Mieterinnerung"
+],
+[
+"Rapport",
+"Bericht"
+],
+[
+"Rapport immeuble",
+"Gebäudebericht"
+],
+[
+"Rapport logement",
+"Wohnungsbericht"
+],
+[
+"Rapport {0}",
+"Bericht {0}"
+],
+[
+"Recette",
+"Einnahme"
+],
+[
+"Relance envoyée",
+"Erinnerung gesendet"
+],
+[
+"Reste dû",
+"Restbetrag"
+],
+[
+"Reçu de caution imprimé",
+"Kautionsquittung gedruckt"
+],
+[
+"Reçu de paiement partiel",
+"Quittung über Teilzahlung"
+],
+[
+"Rien pour le moment. Ce que l’équipe envoie depuis son app (commencé, fini, pas fini, notes, photos, maladie) arrive ici.",
+"Noch nichts. Was das Team aus seiner App schickt (begonnen, fertig, nicht fertig, Notizen, Fotos, Krankheit), kommt hier an."
+],
+[
+"Règlement de la maison accepté",
+"Hausordnung akzeptiert"
+],
+[
+"Règles de l’immeuble modifiées",
+"Regeln des Gebäudes geändert"
+],
+[
+"Résultat :",
+"Ergebnis:"
+],
+[
+"Résultat net",
+"Nettoergebnis"
+],
+[
+"Saisissez la clé d’accès utilisée au moment de la sauvegarde.",
+"Geben Sie den Zugangsschlüssel ein, der bei der Sicherung verwendet wurde."
+],
+[
+"Sans immeuble",
+"Ohne Gebäude"
+],
+[
+"Sans nom",
+"Ohne Namen"
+],
+[
+"Sens",
+"Richtung"
+],
+[
+"Septembre",
+"September"
+],
+[
+"Ses paiements et documents seront effacés et disparaîtront des statistiques.",
+"Seine Zahlungen und Dokumente werden gelöscht und verschwinden aus den Statistiken."
+],
+[
+"Si l'immeuble n'est simplement plus à vous, utilisez plutôt « Fin de gestion » : il sera archivé et son historique restera dans les statistiques. Ici, tout sera effacé définitivement, y compris l'historique : {0}, logements, paiements, versements, dépenses et documents. Les statistiques de cet immeuble seront perdues.",
+"Wenn das Gebäude einfach nicht mehr Ihnen gehört, verwenden Sie besser « Ende der Verwaltung »: Es wird archiviert und sein Verlauf bleibt in den Statistiken. Hier wird alles endgültig gelöscht, auch der Verlauf: {0}, Wohnungen, Zahlungen, Überweisungen, Ausgaben und Dokumente. Die Statistiken dieses Gebäudes gehen verloren."
+],
+[
+"Si le locataire part, utilisez plutôt « Départ » : il sera archivé et ses loyers resteront dans les statistiques. La suppression efface aussi ses paiements et documents.",
+"Wenn der Mieter auszieht, verwenden Sie besser « Auszug »: Er wird archiviert und seine Mieten bleiben in den Statistiken. Das Löschen entfernt auch seine Zahlungen und Dokumente."
+],
+[
+"Si vous les avez déjà saisis à la main dans Dépenses, annulez pour ne pas les compter deux fois.",
+"Wenn Sie sie schon von Hand bei den Ausgaben eingetragen haben, brechen Sie ab, damit sie nicht doppelt zählen."
+],
+[
+"Signalement :",
+"Meldung:"
+],
+[
+"Signalement reçu",
+"Meldung erhalten"
+],
+[
+"Signalement —",
+"Meldung —"
+],
+[
+"Signalement — photo {0}",
+"Meldung — Foto {0}"
+],
+[
+"Signature",
+"Unterschrift"
+],
+[
+"Société corrigée : NOBIS s.a.r.l.",
+"Firma korrigiert: NOBIS s.a.r.l."
+],
+[
+"Son code et son lien ne fonctionneront plus. Vous pourrez créer un nouvel accès plus tard.",
+"Code und Link funktionieren nicht mehr. Sie können später einen neuen Zugang erstellen."
+],
+[
+"Sortie",
+"Auszug"
+],
+[
+"Suppression impossible",
+"Löschen nicht möglich"
+],
+[
+"Supprimer cet avis ?",
+"Diese Mitteilung löschen?"
+],
+[
+"Supprimer cette absence ?",
+"Diese Abwesenheit löschen?"
+],
+[
+"Supprimer cette dépense ?",
+"Diese Ausgabe löschen?"
+],
+[
+"Supprimer définitivement {0} ?",
+"{0} endgültig löschen?"
+],
+[
+"Supprimer la collecte « {0} » ?",
+"Abholung « {0} » löschen?"
+],
+[
+"Supprimer {0} ?",
+"{0} löschen?"
+],
+[
+"Supprimer « {0} » ?",
+"« {0} » löschen?"
+],
+[
+"Surface",
+"Fläche"
+],
+[
+"TVA collectée :",
+"Vereinnahmte MwSt.:"
+],
+[
+"TVA déductible :",
+"Abziehbare MwSt.:"
+],
+[
+"Taux TVA %",
+"MwSt.-Satz %"
+],
+[
+"Taux de {0} :",
+"Sätze {0}:"
+],
+[
+"Taxes / impôts",
+"Steuern / Abgaben"
+],
+[
+"Terminés",
+"Erledigt"
+],
+[
+"Total payé",
+"Insgesamt bezahlt"
+],
+[
+"Tour des poubelles activé",
+"Mülldienst aktiviert"
+],
+[
+"Tour des poubelles désactivé",
+"Mülldienst deaktiviert"
+],
+[
+"Tours des poubelles enregistrés",
+"Mülldienste gespeichert"
+],
+[
+"Tous les loyers de {0} sont encaissés.",
+"Alle Mieten für {0} sind eingegangen."
+],
+[
+"Toute la structure",
+"Das ganze Objekt"
+],
+[
+"Trop courte",
+"Zu kurz"
+],
+[
+"Trouvé dans le calendrier{0}",
+"Im Kalender gefunden{0}"
+],
+[
+"Type{0}",
+"Art{0}"
+],
+[
+"Un autre appareil",
+"Ein anderes Gerät"
+],
+[
+"Une nouvelle clé de secours remplacera l’ancienne, qui ne fonctionnera plus.",
+"Ein neuer Notfallschlüssel ersetzt den alten, der dann nicht mehr funktioniert."
+],
+[
+"Une question ? {0}{1}",
+"Eine Frage? {0}{1}"
+],
+[
+"Verrouillage après",
+"Sperren nach"
+],
+[
+"Verrouillé après inactivité.",
+"Nach Inaktivität gesperrt."
+],
+[
+"Versement annulé ·",
+"Zahlung storniert ·"
+],
+[
+"Versement bailleur annulé",
+"Zahlung an den Vermieter storniert"
+],
+[
+"Versement bailleur rétabli",
+"Zahlung an den Vermieter wiederhergestellt"
+],
+[
+"Versements au bailleur {0}",
+"Zahlungen an den Vermieter {0}"
+],
+[
+"Virement signalé : vu",
+"Gemeldete Überweisung: gesehen"
+],
+[
+"Virement signalé par le locataire",
+"Vom Mieter gemeldete Überweisung"
+],
+[
+"Visible",
+"Sichtbar"
+],
+[
+"Visible dans l'espace de",
+"Sichtbar im Bereich von"
+],
+[
+"Visible dans l’espace du locataire",
+"Sichtbar im Mieterbereich"
+],
+[
+"Voir les loyers",
+"Mieten ansehen"
+],
+[
+"Votre app de travail",
+"Ihre Arbeits-App"
+],
+[
+"Votre espace locataire",
+"Ihr Mieterbereich"
+],
+[
+"Votre société est indiquée comme",
+"Ihre Firma ist angegeben als"
+],
+[
+"Vérification automatique chaque jour.",
+"Automatische Prüfung jeden Tag."
+],
+[
+"absent{0}",
+"abwesend{0}"
+],
+[
+"adresse Bitcoin invalide (commence par bc1, 1 ou 3)",
+"ungültige Bitcoin-Adresse (beginnt mit bc1, 1 oder 3)"
+],
+[
+"adresse Tron invalide (commence par T)",
+"ungültige Tron-Adresse (beginnt mit T)"
+],
+[
+"adresse invalide (0x + 40 caractères)",
+"ungültige Adresse (0x + 40 Zeichen)"
+],
+[
+"août",
+"August"
+],
+[
+"après",
+"nach"
+],
+[
+"après 18 h",
+"nach 18 Uhr"
+],
+[
+"archivé",
+"archiviert"
+],
+[
+"aujourd'hui",
+"heute"
+],
+[
+"chaque {0}",
+"jeden {0}"
+],
+[
+"chèque",
+"Scheck"
+],
+[
+"coût",
+"Kosten"
+],
+[
+"dans {0}",
+"in {0}"
+],
+[
+"date à fixer",
+"Datum offen"
+],
+[
+"dit avoir payé",
+"sagt, bezahlt zu haben"
+],
+[
+"du camion. Sortez les poubelles comme indiqué dans « Quand sortir » et rentrez-les après le passage.",
+"des Müllwagens. Stellen Sie die Tonnen wie unter « Wann hinausstellen » angegeben hinaus und holen Sie sie nach der Abholung wieder herein."
+],
+[
+"décembre",
+"Dezember"
+],
+[
+"départ prévu le",
+"Auszug geplant am"
+],
+[
+"dépense",
+"Ausgabe"
+],
+[
+"d’email",
+"E-Mail"
+],
+[
+"en ligne jusqu’au",
+"online bis"
+],
+[
+"espèces",
+"bar"
+],
+[
+"ex. Luxembourg-Gare",
+"z. B. Luxembourg-Gare"
+],
+[
+"ex. NOBIS s.a.r.l.",
+"z. B. NOBIS s.a.r.l."
+],
+[
+"ex. Nettoyeur haute pression Kärcher",
+"z. B. Kärcher-Hochdruckreiniger"
+],
+[
+"ex. Nuki, TTLock, igloohome…",
+"z. B. Nuki, TTLock, igloohome…"
+],
+[
+"ex. Salaires + cotisations",
+"z. B. Löhne + Abgaben"
+],
+[
+"ex. certificat reçu par WhatsApp",
+"z. B. Attest per WhatsApp erhalten"
+],
+[
+"expirée",
+"abgelaufen"
+],
+[
+"février",
+"Februar"
+],
+[
+"gratuit (don)",
+"kostenlos (Geschenk)"
+],
+[
+"indéterminé",
+"unbefristet"
+],
+[
+"journal {0}",
+"Journal {0}"
+],
+[
+"jusqu’au",
+"bis"
+],
+[
+"le logement loué",
+"die vermietete Wohnung"
+],
+[
+"mois affiché",
+"Monat angezeigt"
+],
+[
+"net après dépenses :",
+"netto nach Ausgaben:"
+],
+[
+"non payé",
+"nicht bezahlt"
+],
+[
+"par {0} — {1}",
+"von {0} — {1}"
+],
+[
+"parti le {0}",
+"ausgezogen am {0}"
+],
+[
+"pas encore accepté",
+"noch nicht akzeptiert"
+],
+[
+"pas encore dans les dépenses ({0}) — touchez pour vérifier et ajouter",
+"noch nicht bei den Ausgaben ({0}) — antippen zum Prüfen und Hinzufügen"
+],
+[
+"passage {0} · sortir {1} · {2}{3}",
+"Abholung {0} · hinausstellen {1} · {2}{3}"
+],
+[
+"prolonger le contrat jusqu'au {0}",
+"den Vertrag bis {0} verlängern"
+],
+[
+"prévu {0}{1}{2}{3}",
+"geplant {0}{1}{2}{3}"
+],
+[
+"prévue depuis le",
+"geplant seit"
+],
+[
+"prévue le",
+"geplant am"
+],
+[
+"{0} bailleur{1}",
+"{0} Vermieter"
+],
+[
+"{0} collecte{1}",
+"{0} Abholung(en)"
+],
+[
+"{0} coût{1}",
+"{0} Kosten"
+],
+[
+"{0} date{1}",
+"{0} Datum/Daten"
+],
+[
+"{0} dépense{1}",
+"{0} Ausgabe(n)"
+],
+[
+"{0} intervention{1}",
+"{0} Einsatz/Einsätze"
+],
+[
+"{0} jour{1}",
+"{0} Tag(e)"
+],
+[
+"{0} logement{1}",
+"{0} Wohnung(en)"
+],
+[
+"{0} loyer{1}",
+"{0} Miete(n)"
+],
+[
+"{0} message{1}",
+"{0} Nachricht(en)"
+],
+[
+"{0} mois affiché{1}",
+"{0} Monat(e) angezeigt"
+],
+[
+"{0} photo{1}",
+"{0} Foto(s)"
+],
+[
+"{0} écriture{1}",
+"{0} Buchung(en)"
+],
+[
+"{0} résultat{1}",
+"{0} Ergebnis(se)"
+],
+[
+"{0} immeuble{1}",
+"{0} Gebäude"
+],
+[
+"{0} locataire{1}",
+"{0} Mieter"
+],
+[
+"{0} occupant{1}",
+"{0} Bewohner"
+],
+[
+"{0} passage{1}",
+"{0} Abholung(en)"
+],
+[
+"quitte {0} le {1}",
+"verlässt {0} am {1}"
+],
+[
+"reçue{0}{1}",
+"erhalten{0}{1}"
+],
+[
+"rien de prévu",
+"nichts geplant"
+],
+[
+"récurrent",
+"wiederkehrend"
+],
+[
+"réessai automatique",
+"automatischer neuer Versuch"
+],
+[
+"résultat",
+"Ergebnis"
+],
+[
+"société",
+"Firma"
+],
+[
+"spécialisé",
+"Fachkraft"
+],
+[
+"tôt le matin",
+"früh am Morgen"
+],
+[
+"une adresse ne contient pas d’espaces",
+"eine Adresse enthält keine Leerzeichen"
+],
+[
+"{0} : fin {1}",
+"{0}: Ende {1}"
+],
+[
+"{0} : paiements après la sortie",
+"{0}: Zahlungen nach dem Auszug"
+],
+[
+"{0} photo{1} ajoutée{2}",
+"{0} Foto(s) hinzugefügt"
+],
+[
+"{0} photo{1} ajoutée{2} ({3} maximum)",
+"{0} Foto(s) hinzugefügt (maximal {3})"
+],
+[
+"{0} dépense{1} ajoutée{2}",
+"{0} Ausgabe(n) hinzugefügt"
+],
+[
+"{0} collecte{1} enregistrée{2}",
+"{0} Abholung(en) gespeichert"
+],
+[
+"{0} collecte{1} enregistrée{2} · mise à jour automatique",
+"{0} Abholung(en) gespeichert · automatische Aktualisierung"
+],
+[
+"{0} date{1} enregistrée{2}",
+"{0} Datum/Daten gespeichert"
+],
+[
+"{0} annonce{1} à approuver",
+"{0} Anzeige(n) freizugeben"
+],
+[
+"{0} an{1}{2}",
+"{0} Jahr(e){2}"
+],
+[
+"{0} depuis le {1}",
+"{0} seit {1}"
+],
+[
+"{0} en gestion{1}",
+"{0} in Verwaltung{1}"
+],
+[
+"{0} en retard",
+"{0} im Rückstand"
+],
+[
+"{0} enregistrée{1}",
+"{0} gespeichert"
+],
+[
+"{0} est connecté{1}{2}. Un seul appareil peut être connecté à la fois : si vous continuez, l'autre sera déconnecté immédiatement.",
+"{0} ist verbunden{2}. Es kann nur ein Gerät gleichzeitig verbunden sein: Wenn Sie fortfahren, wird das andere sofort getrennt."
+],
+[
+"{0} est parti le {1} : ce mois n'est plus dû.",
+"{0} ist am {1} ausgezogen: Dieser Monat ist nicht mehr fällig."
+],
+[
+"{0} immeubles, {1} locataires (ancienne version). Fusion avec les données actuelles.",
+"{0} Gebäude, {1} Mieter (alte Version). Zusammenführung mit den aktuellen Daten."
+],
+[
+"{0} lieu",
+"{0} Ort"
+],
+[
+"{0} mois impayé{1} :",
+"{0} unbezahlte(r) Monat(e):"
+],
+[
+"{0} nouveau{1}",
+"{0} neu"
+],
+[
+"{0} nouveau{1} message{2}",
+"{0} neue Nachricht(en)"
+],
+[
+"{0} nouvelle{1} de l’équipe",
+"{0} Neuigkeit(en) vom Team"
+],
+[
+"{0} occupe{1} ce logement. Remplacer : {2} sera archivé avec une sortie au {3}, ses loyers restent dans les statistiques. Colocation : les deux restent en place.",
+"{0} bewohnt/bewohnen diese Wohnung. Ersetzen: {2} wird mit Auszug am {3} archiviert, die Mieten bleiben in den Statistiken. WG: beide bleiben."
+],
+[
+"{0} occupé{1} / {2}",
+"{0} belegt / {2}"
+],
+[
+"{0} oubli{1}",
+"{0} vergessen"
+],
+[
+"{0} prévu :",
+"{0} geplant:"
+],
+[
+"{0} restent enregistrées, sans intervenant.",
+"{0} bleiben gespeichert, ohne zugewiesene Person."
+],
+[
+"{0} sans facture jointe",
+"{0} ohne angehängte Rechnung"
+],
+[
+"{0} sans logement attribué. Attribuez-leur un logement pour suivre les changements d'occupants.",
+"{0} ohne zugewiesene Wohnung. Weisen Sie eine Wohnung zu, um Bewohnerwechsel zu verfolgen."
+],
+[
+"{0} terminée{1} avec un coût",
+"{0} abgeschlossen mit Kosten"
+],
+[
+"{0} {1}/mois",
+"{0} {1}/Monat"
+],
+[
+"{0} — Envoyé par {1} le {2}{3}{4}",
+"{0} — Gesendet von {1} am {2}{3}{4}"
+],
+[
+"{0} — les dates ci-dessous sont les jours de",
+"{0} — die Daten unten sind die Tage der"
+],
+[
+"{0} — locataire de l’année {1}",
+"{0} — Mieter des Jahres {1}"
+],
+[
+"{0}% · {1} à encaisser",
+"{0} % · {1} offen"
+],
+[
+"· depuis le",
+"· seit"
+],
+[
+"· départ le",
+"· Auszug am"
+],
+[
+"· dépenses",
+"· Ausgaben"
+],
+[
+"· occupé {0}% du temps, {1} de vacance",
+"· {0} % der Zeit belegt, {1} Leerstand"
+],
+[
+"· parti",
+"· ausgezogen"
+],
+[
+"· tél.",
+"· Tel."
+],
+[
+"· {0} oubli{1}",
+"· {0} vergessen"
+],
+[
+"· {0} à approuver",
+"· {0} freizugeben"
+],
+[
+"· 📱 app active",
+"· 📱 App aktiv"
+],
+[
+"· 📷 {0} photo{1}",
+"· 📷 {0} Foto(s)"
+],
+[
+"État des lieux",
+"Übergabeprotokoll"
+],
+[
+"à accepter de nouveau (règlement modifié)",
+"erneut zu akzeptieren (Hausordnung geändert)"
+],
+[
+"à la TVA (Réglages → Société). Les montants ci-dessous sont seulement indicatifs.",
+"der MwSt. (Einstellungen → Firma). Die Beträge unten sind nur Richtwerte."
+],
+[
+"à sortir la veille au soir{0}{1}",
+"am Vorabend hinausstellen{0}{1}"
+],
+[
+"à sortir le jour même{0}",
+"am selben Tag hinausstellen{0}"
+],
+[
+"écriture",
+"Buchung"
+],
+[
+"élément",
+"Eintrag"
+],
+[
+"éléments",
+"Einträge"
+],
+[
+"étage",
+"Etage"
+],
+[
+"— ajoutez-la avec 📎+ dans Immeuble → Dépenses.",
+"— fügen Sie sie mit 📎+ unter Gebäude → Ausgaben hinzu."
+],
+[
+"— ce lien est sans doute la page web de la commune, pas le calendrier : utilisez le fichier .ics téléchargé.",
+"— dieser Link ist wohl die Webseite der Gemeinde, nicht der Kalender: Verwenden Sie die heruntergeladene .ics-Datei."
+],
+[
+"— fin de contrat {0} ({1}). Toucher pour prolonger.",
+"— Vertragsende {0} ({1}). Antippen zum Verlängern."
+],
+[
+"— occupé (",
+"— belegt ("
+],
+[
+"— parti le {0}{1}.",
+"— ausgezogen am {0}{1}."
+],
+[
+"— révision du loyer {0} {1} ({2}). Toucher pour réviser.",
+"— Mietanpassung {0} {1} ({2}). Antippen zum Anpassen."
+],
+[
+"— {0} mois impayé{1} (",
+"— {0} unbezahlte(r) Monat(e) ("
+],
+[
+"— {0} payé{1} hors des dates du contrat : touchez pour corriger",
+"— {0} außerhalb der Vertragsdaten bezahlt: antippen zum Korrigieren"
+],
+[
+"⚠ Dernier essai : {0}",
+"⚠ Letzter Versuch: {0}"
+],
+[
+"❌ oublié",
+"❌ vergessen"
+],
+[
+"🍕 Bon appétit,",
+"🍕 Guten Appetit,"
+],
+[
+"🍕 Offerte le {0}",
+"🍕 Spendiert am {0}"
+],
+[
+"💬 Messages{0}",
+"💬 Nachrichten{0}"
+],
+[
+"📎 Preuve{0}",
+"📎 Nachweis{0}"
+],
+[
+"📩 {0} de locataire{1}",
+"📩 {0} von Mietern"
+],
+[
+"📱 Scannez : calendrier sur votre téléphone, rappel la veille.",
+"📱 Scannen: Kalender auf dem Handy, Erinnerung am Vorabend."
+],
+[
+"🗑️ poubelles ce soir",
+"🗑️ Müll heute Abend"
+],
+[
+"🤒 absent",
+"🤒 abwesend"
+],
+[
+"Disponibilités",
+"Verfügbarkeit"
+],
+[
+"Prévu",
+"Geplant"
+],
+[
+"Résultat de janvier",
+"Ergebnis Januar"
+],
+[
+"Résultat de février",
+"Ergebnis Februar"
+],
+[
+"Résultat de mars",
+"Ergebnis März"
+],
+[
+"Résultat de avril",
+"Ergebnis April"
+],
+[
+"Résultat de mai",
+"Ergebnis Mai"
+],
+[
+"Résultat de juin",
+"Ergebnis Juni"
+],
+[
+"Résultat de juillet",
+"Ergebnis Juli"
+],
+[
+"Résultat de août",
+"Ergebnis August"
+],
+[
+"Résultat de septembre",
+"Ergebnis September"
+],
+[
+"Résultat de octobre",
+"Ergebnis Oktober"
+],
+[
+"Résultat de novembre",
+"Ergebnis November"
+],
+[
+"Résultat de décembre",
+"Ergebnis Dezember"
 ]
 ];
