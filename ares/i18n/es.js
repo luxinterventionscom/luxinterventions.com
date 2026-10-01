@@ -7831,5 +7831,161 @@ export default [
 [
 "Espace box",
 "Espacio box"
+],
+[
+"Adresse (pour la carte)",
+"Dirección (para el mapa)"
+],
+[
+"Annonce",
+"Anuncio"
+],
+[
+"Annonce publiée jusqu'au {0}",
+"Anuncio publicado hasta el {0}"
+],
+[
+"Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.",
+"Anuncios de socios (pizzerías, bares / pubs, bricolaje, muebles…) en la app de inquilinos, con el mapa bajo « Hola ». Cada anuncio desaparece solo al final de su duración."
+],
+[
+"Aucune annonce en cours.",
+"Ningún anuncio en curso."
+],
+[
+"Bons plans du quartier (publicité des partenaires, avec carte)",
+"Ofertas del barrio (publicidad de socios, con mapa)"
+],
+[
+"Durée (TTL)",
+"Duración (TTL)"
+],
+[
+"Message / offre",
+"Mensaje / oferta"
+],
+[
+"Nom du commerce",
+"Nombre del comercio"
+],
+[
+"Nouvelle annonce",
+"Nuevo anuncio"
+],
+[
+"Nouvelle annonce (publicité)",
+"Nuevo anuncio (publicidad)"
+],
+[
+"Publier à partir du",
+"Publicar a partir del"
+],
+[
+"Retirée automatiquement de l'app des locataires à la fin de la durée.",
+"Retirado automáticamente de la app de inquilinos al final de la duración."
+],
+[
+"Visible jusqu'au {0} inclus, puis retirée automatiquement de l'app des locataires.",
+"Visible hasta el {0} incluido, luego retirado automáticamente de la app de inquilinos."
+],
+[
+"Expirée le {0} : enregistrez pour la republier.",
+"Caducado el {0}: guarde para volver a publicarlo."
+],
+[
+"Café / snack (Horeca)",
+"Cafetería / snack (Horeca)"
+],
+[
+"Pizzeria / restaurant",
+"Pizzería / restaurante"
+],
+[
+"Publicité",
+"Publicidad"
+],
+[
+"Meubles / décoration",
+"Muebles / decoración"
+],
+[
+"Supermarché / commerce",
+"Supermercado / tienda"
+],
+[
+"Bricolage / jardinage",
+"Bricolaje / jardín"
+],
+[
+"Services",
+"Servicios"
+],
+[
+"encore {0} jours",
+"quedan {0} días"
+],
+[
+"encore {0} jour",
+"queda {0} día"
+],
+[
+"Expirées (touchez pour republier)",
+"Caducados (toca para volver a publicar)"
+],
+[
+"sans fin",
+"sin fin"
+],
+[
+"à partir du {0}",
+"a partir del {0}"
+],
+[
+"dernier jour",
+"último día"
+],
+[
+"Republier",
+"Volver a publicar"
+],
+[
+"Modifier l'annonce",
+"Modificar el anuncio"
+],
+[
+"Supprimer cette annonce ?",
+"¿Eliminar este anuncio?"
+],
+[
+"Annonce supprimée",
+"Anuncio eliminado"
+],
+[
+"Annonce modifiée",
+"Anuncio modificado"
+],
+[
+"Annonce publiée",
+"Anuncio publicado"
+],
+[
+"Expirées",
+"Caducados"
+],
+[
+"ex. Pizzeria Da Mario",
+"ej. Pizzería Da Mario"
+],
+[
+"ex. 12, rue de Hollerich, Luxembourg",
+"ej. 12, rue de Hollerich, Luxembourg"
+],
+[
+"ex. −10 % pour les locataires sur présentation de l'app",
+"ej. −10 % para los inquilinos mostrando la app"
+],
+[
+"{0} jours",
+"{0} días"
 ]
 ];

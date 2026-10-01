@@ -7659,5 +7659,153 @@ export default [
 [
 "Espace box",
 "Box space"
+],
+[
+"Adresse (pour la carte)",
+"Address (for the map)"
+],
+[
+"Annonce",
+"Ad"
+],
+[
+"Annonce publiée jusqu'au {0}",
+"Ad published until {0}"
+],
+[
+"Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.",
+"Partner ads (pizzerias, bars / pubs, DIY, furniture…) in the tenants app, with the map under “Hello”. Each ad disappears by itself at the end of its duration."
+],
+[
+"Aucune annonce en cours.",
+"No current ads."
+],
+[
+"Bons plans du quartier (publicité des partenaires, avec carte)",
+"Local deals (partner ads, with map)"
+],
+[
+"Durée (TTL)",
+"Duration (TTL)"
+],
+[
+"Message / offre",
+"Message / offer"
+],
+[
+"Nom du commerce",
+"Business name"
+],
+[
+"Nouvelle annonce",
+"New ad"
+],
+[
+"Nouvelle annonce (publicité)",
+"New ad (advertising)"
+],
+[
+"Publier à partir du",
+"Publish from"
+],
+[
+"Retirée automatiquement de l'app des locataires à la fin de la durée.",
+"Automatically removed from the tenants app at the end of the duration."
+],
+[
+"Visible jusqu'au {0} inclus, puis retirée automatiquement de l'app des locataires.",
+"Visible until {0} inclusive, then automatically removed from the tenants app."
+],
+[
+"Expirée le {0} : enregistrez pour la republier.",
+"Expired on {0}: save to republish it."
+],
+[
+"Café / snack (Horeca)",
+"Café / snack bar (Horeca)"
+],
+[
+"Publicité",
+"Advertising"
+],
+[
+"Meubles / décoration",
+"Furniture / decor"
+],
+[
+"Supermarché / commerce",
+"Supermarket / shop"
+],
+[
+"Bricolage / jardinage",
+"DIY / garden"
+],
+[
+"encore {0} jours",
+"{0} days left"
+],
+[
+"encore {0} jour",
+"{0} day left"
+],
+[
+"Expirées (touchez pour republier)",
+"Expired (tap to republish)"
+],
+[
+"sans fin",
+"no end"
+],
+[
+"à partir du {0}",
+"from {0}"
+],
+[
+"dernier jour",
+"last day"
+],
+[
+"Republier",
+"Republish"
+],
+[
+"Modifier l'annonce",
+"Edit the ad"
+],
+[
+"Supprimer cette annonce ?",
+"Delete this ad?"
+],
+[
+"Annonce supprimée",
+"Ad deleted"
+],
+[
+"Annonce modifiée",
+"Ad edited"
+],
+[
+"Annonce publiée",
+"Ad published"
+],
+[
+"Expirées",
+"Expired"
+],
+[
+"ex. Pizzeria Da Mario",
+"e.g. Pizzeria Da Mario"
+],
+[
+"ex. 12, rue de Hollerich, Luxembourg",
+"e.g. 12, rue de Hollerich, Luxembourg"
+],
+[
+"ex. −10 % pour les locataires sur présentation de l'app",
+"e.g. −10 % for tenants who show the app"
+],
+[
+"{0} jours",
+"{0} days"
 ]
 ];
