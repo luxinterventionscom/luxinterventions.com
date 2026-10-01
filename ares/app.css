@@ -271,6 +271,8 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
   box-shadow: var(--shadow);
 }
 .card + .card, .stack > * + * { margin-top: 12px; }
+/* dans une grille, l'espace vient du gap : sinon la 1re carte est plus haute que ses voisines */
+.grid > .card + .card { margin-top: 0; }
 .card-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .card-title h3 { font-size: 16px; }
 .section-label { font-size: 12px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); margin: 24px 0 10px; }

@@ -6,7 +6,7 @@ import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.35.0';
+const VERSION = '2.35.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
