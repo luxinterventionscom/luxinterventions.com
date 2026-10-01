@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev; connect-src https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev; frame-src blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev; connect-src https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev; frame-src blob: https://maps.google.com https://www.google.com; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <meta name="esp-api" content="https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev">
@@ -28,6 +28,16 @@
   .pay-tabs .chip[aria-pressed="true"] { background: var(--accent); color: #fff; border-color: var(--accent); }
   .pay-coin { padding: 10px 0; border-top: 1px solid var(--line); }
   .pay-coin:first-of-type { border-top: 0; }
+  .map { border-radius: 12px; overflow: hidden; background: var(--bg); height: 220px; }
+  .map iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .edl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
+  .edl { margin: 0; background: var(--bg); border-radius: 10px; overflow: hidden; font-size: 13px; }
+  .edl-img { display: block; width: 100%; aspect-ratio: 4 / 3; padding: 0; border: 0; background: #ece9e2; cursor: zoom-in; }
+  .edl-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .edl-img.none { display: grid; place-items: center; cursor: default; color: var(--muted); font-size: 12px; text-align: center; padding: 6px; }
+  .edl figcaption { padding: 4px 8px; font-weight: 600; }
+  .edl-btns { display: flex; gap: 4px; padding: 0 6px 6px; }
+  .edl-btns .btn { flex: 1; justify-content: center; text-align: center; padding: 6px 4px; font-size: 13px; }
   .pay-ok { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: #e8f7ee; color: var(--green); font-weight: 600; }
   .pay-row b { overflow-wrap: anywhere; }
   .pay-qr { display: flex; justify-content: center; margin-top: 6px; }

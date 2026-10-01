@@ -486,6 +486,15 @@ dialog.sheet::backdrop { background: rgba(10, 10, 12, 0.5); backdrop-filter: blu
 .edl-img img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .edl figcaption { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 4px 4px 4px 10px; font-size: 12px; color: var(--text-2); }
 .edl.missing .edl-img::after { content: 'Photo indisponible hors ligne'; display: grid; place-items: center; height: 100%; font-size: 12px; color: var(--text-3); }
+.edl-rooms { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 10px; }
+.edl-room { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 8px; }
+.edl-room-h { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 6px; font-size: 14px; }
+.edl-acts { display: flex; gap: 4px; }
+.edl-pair { display: grid; gap: 6px; }
+.edl-pair.two { grid-template-columns: 1fr 1fr; }
+.edl-grid.sm { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 6px; }
+.edl.empty .edl-img { display: grid; place-items: center; cursor: default; font-size: 12px; color: var(--text-3); text-align: center; padding: 6px; }
+.edl.out { outline: 2px solid var(--amber); }
 
 /* Maintenance */
 .dot { width: 12px; height: 12px; border-radius: 50%; flex: 0 0 12px; }
