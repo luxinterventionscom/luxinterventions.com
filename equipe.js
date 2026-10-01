@@ -11,6 +11,7 @@ else { try { [id, key] = ((localStorage.getItem(ACC) || '').match(RX) || []).sli
 
 const L = {
   fr: {
+    x: {"places": "Mes lieux de travail", "placesHint": "Touchez une adresse : la carte s’affiche en haut.", "route": "🗺️ Itinéraire Google Maps", "phT": "Photos avant / après", "phHint": "Avant de commencer et une fois fini : jusqu’à 6 photos chacune.", "av": "Avant", "ap": "Après", "cam": "📷 Photo", "gal": "🖼️ Galerie", "full": "6 photos maximum", "infoRO": "Ces données sont enregistrées par votre responsable. Une erreur ? Appelez-le."},
     loc: 'fr-LU', app: 'App de l’équipe', welcome: 'Votre planning, vos interventions et vos absences, sur votre téléphone.', code: 'Votre code personnel', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrer', noCode: 'Pas de code ? Demandez-le à votre responsable.', badCode: 'Code inconnu. Vérifiez-le ou demandez un nouveau code.', off: 'Cet accès a été désactivé. Demandez un nouveau code à votre responsable.', mismatch: 'Ce code est pour l’app des locataires.',
     hello: 'Bonjour', today: 'Aujourd’hui', next: 'Prochains jours', none: 'Rien de prévu aujourd’hui.', noneNext: 'Rien de prévu.', late: 'en retard', start: '▶️ Je commence', done: '✅ Fini', inc: '⚠️ Pas fini', why: 'Pourquoi ce n’est pas fini ? (obligatoire)', whyPh: 'ex. il manque une pièce, locataire absent…', note: 'Note (facultatif)', notePh: 'ex. robinet changé, escalier lavé', photos: 'Photos (max. 3)', send: 'Envoyer', cancel: 'Annuler',
     st: { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini' }, at: 'à', consignes: 'Consignes', contact: 'Contact sur place', call: 'Appeler', commons: 'Parties communes',
@@ -21,6 +22,7 @@ const L = {
     install: 'Ajoutez l’app à l’écran d’accueil : iPhone → Partager → « Sur l’écran d’accueil » ; Android → ⋮ → « Installer l’application ».', logout: 'Se déconnecter de ce téléphone', personal: 'Ce lien est personnel.', rgpd: 'Vos données sont chiffrées. Votre responsable voit ce que vous envoyez (statuts, notes, photos, absences, coordonnées).', need: 'Écrivez pourquoi ce n’est pas fini.',
   },
   it: {
+    x: {"places": "I miei luoghi di lavoro", "placesHint": "Tocca un indirizzo: la mappa appare in alto.", "route": "🗺️ Percorso Google Maps", "phT": "Foto prima / dopo", "phHint": "Prima di iniziare e a lavoro finito: fino a 6 foto ciascuna.", "av": "Prima", "ap": "Dopo", "cam": "📷 Foto", "gal": "🖼️ Galleria", "full": "6 foto al massimo", "infoRO": "Questi dati sono registrati dal tuo responsabile. Un errore? Chiamalo."},
     loc: 'it-IT', app: 'App della squadra', welcome: 'Il tuo planning, i tuoi interventi e le tue assenze, sul telefono.', code: 'Il tuo codice personale', codePh: 'es. K7PM2-QXA4H', enter: 'Entra', noCode: 'Non hai il codice? Chiedilo al tuo responsabile.', badCode: 'Codice sconosciuto. Controllalo o chiedi un nuovo codice.', off: 'Questo accesso è stato disattivato. Chiedi un nuovo codice al responsabile.', mismatch: 'Questo codice è per l’app degli inquilini.',
     hello: 'Ciao', today: 'Oggi', next: 'Prossimi giorni', none: 'Niente in programma oggi.', noneNext: 'Niente in programma.', late: 'in ritardo', start: '▶️ Inizio', done: '✅ Finito', inc: '⚠️ Non finito', why: 'Perché non è finito? (obbligatorio)', whyPh: 'es. manca un pezzo, inquilino assente…', note: 'Nota (facoltativa)', notePh: 'es. rubinetto cambiato, scale lavate', photos: 'Foto (max. 3)', send: 'Invia', cancel: 'Annulla',
     st: { encours: '▶️ Iniziato', fait: '✅ Finito', incomplet: '⚠️ Non finito' }, at: 'alle', consignes: 'Istruzioni', contact: 'Contatto sul posto', call: 'Chiama', commons: 'Parti comuni',
@@ -31,6 +33,7 @@ const L = {
     install: 'Aggiungi l’app alla schermata Home: iPhone → Condividi → « Aggiungi alla schermata Home »; Android → ⋮ → « Installa app ».', logout: 'Esci da questo telefono', personal: 'Questo link è personale.', rgpd: 'I tuoi dati sono cifrati. Il tuo responsabile vede ciò che invii (stati, note, foto, assenze, dati).', need: 'Scrivi perché non è finito.',
   },
   pt: {
+    x: {"places": "Os meus locais de trabalho", "placesHint": "Toque num endereço: o mapa aparece em cima.", "route": "🗺️ Itinerário Google Maps", "phT": "Fotos antes / depois", "phHint": "Antes de começar e depois de terminar: até 6 fotos cada.", "av": "Antes", "ap": "Depois", "cam": "📷 Foto", "gal": "🖼️ Galeria", "full": "6 fotos no máximo", "infoRO": "Estes dados são registados pelo seu responsável. Um erro? Ligue-lhe."},
     loc: 'pt-PT', app: 'App da equipa', welcome: 'O seu planeamento, as suas intervenções e ausências, no telemóvel.', code: 'O seu código pessoal', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrar', noCode: 'Não tem código? Peça-o ao seu responsável.', badCode: 'Código desconhecido. Verifique-o ou peça um novo código.', off: 'Este acesso foi desativado. Peça um novo código ao responsável.', mismatch: 'Este código é para a app dos inquilinos.',
     hello: 'Olá', today: 'Hoje', next: 'Próximos dias', none: 'Nada previsto para hoje.', noneNext: 'Nada previsto.', late: 'em atraso', start: '▶️ Começo', done: '✅ Terminado', inc: '⚠️ Não terminado', why: 'Porque não está terminado? (obrigatório)', whyPh: 'ex. falta uma peça, inquilino ausente…', note: 'Nota (opcional)', notePh: 'ex. torneira trocada, escada lavada', photos: 'Fotos (máx. 3)', send: 'Enviar', cancel: 'Cancelar',
     st: { encours: '▶️ Começado', fait: '✅ Terminado', incomplet: '⚠️ Não terminado' }, at: 'às', consignes: 'Instruções', contact: 'Contacto no local', call: 'Ligar', commons: 'Partes comuns',
@@ -41,6 +44,7 @@ const L = {
     install: 'Adicione a app ao ecrã inicial: iPhone → Partilhar → « Adicionar ao ecrã principal »; Android → ⋮ → « Instalar app ».', logout: 'Sair deste telemóvel', personal: 'Este link é pessoal.', rgpd: 'Os seus dados estão cifrados. O seu responsável vê o que envia (estados, notas, fotos, ausências, dados).', need: 'Escreva porque não está terminado.',
   },
   de: {
+    x: {"places": "Meine Arbeitsorte", "placesHint": "Tippen Sie auf eine Adresse: Die Karte erscheint oben.", "route": "🗺️ Route in Google Maps", "phT": "Fotos vorher / nachher", "phHint": "Vor Beginn und nach Abschluss: je bis zu 6 Fotos.", "av": "Vorher", "ap": "Nachher", "cam": "📷 Foto", "gal": "🖼️ Galerie", "full": "Höchstens 6 Fotos", "infoRO": "Diese Daten werden von Ihrem Verantwortlichen erfasst. Ein Fehler? Rufen Sie ihn an."},
     loc: 'de-LU', app: 'Team-App', welcome: 'Ihr Plan, Ihre Einsätze und Abwesenheiten, auf dem Telefon.', code: 'Ihr persönlicher Code', codePh: 'z. B. K7PM2-QXA4H', enter: 'Anmelden', noCode: 'Kein Code? Fragen Sie Ihren Verantwortlichen.', badCode: 'Unbekannter Code. Prüfen Sie ihn oder fragen Sie nach einem neuen.', off: 'Dieser Zugang wurde deaktiviert. Fragen Sie nach einem neuen Code.', mismatch: 'Dieser Code ist für die Mieter-App.',
     hello: 'Hallo', today: 'Heute', next: 'Nächste Tage', none: 'Heute nichts geplant.', noneNext: 'Nichts geplant.', late: 'verspätet', start: '▶️ Ich fange an', done: '✅ Fertig', inc: '⚠️ Nicht fertig', why: 'Warum nicht fertig? (Pflicht)', whyPh: 'z. B. Teil fehlt, Mieter nicht da…', note: 'Notiz (optional)', notePh: 'z. B. Hahn gewechselt, Treppe geputzt', photos: 'Fotos (max. 3)', send: 'Senden', cancel: 'Abbrechen',
     st: { encours: '▶️ Begonnen', fait: '✅ Fertig', incomplet: '⚠️ Nicht fertig' }, at: 'um', consignes: 'Anweisungen', contact: 'Kontakt vor Ort', call: 'Anrufen', commons: 'Gemeinschaftsbereiche',
@@ -51,6 +55,7 @@ const L = {
     install: 'App zum Startbildschirm hinzufügen: iPhone → Teilen → „Zum Home-Bildschirm“; Android → ⋮ → „App installieren“.', logout: 'Von diesem Telefon abmelden', personal: 'Dieser Link ist persönlich.', rgpd: 'Ihre Daten sind verschlüsselt. Ihr Verantwortlicher sieht, was Sie senden (Status, Notizen, Fotos, Abwesenheiten, Kontaktdaten).', need: 'Schreiben Sie, warum es nicht fertig ist.',
   },
   en: {
+    x: {"places": "My workplaces", "placesHint": "Tap an address: the map appears at the top.", "route": "🗺️ Directions in Google Maps", "phT": "Before / after photos", "phHint": "Before you start and once finished: up to 6 photos each.", "av": "Before", "ap": "After", "cam": "📷 Photo", "gal": "🖼️ Gallery", "full": "6 photos maximum", "infoRO": "These details are recorded by your manager. A mistake? Call them."},
     loc: 'en-GB', app: 'Team app', welcome: 'Your schedule, your jobs and your absences, on your phone.', code: 'Your personal code', codePh: 'e.g. K7PM2-QXA4H', enter: 'Enter', noCode: 'No code? Ask your manager.', badCode: 'Unknown code. Check it or ask for a new one.', off: 'This access has been disabled. Ask your manager for a new code.', mismatch: 'This code is for the tenants app.',
     hello: 'Hello', today: 'Today', next: 'Next days', none: 'Nothing planned today.', noneNext: 'Nothing planned.', late: 'late', start: '▶️ I’m starting', done: '✅ Done', inc: '⚠️ Not finished', why: 'Why is it not finished? (required)', whyPh: 'e.g. a part is missing, tenant not home…', note: 'Note (optional)', notePh: 'e.g. tap replaced, stairs cleaned', photos: 'Photos (max. 3)', send: 'Send', cancel: 'Cancel',
     st: { encours: '▶️ Started', fait: '✅ Done', incomplet: '⚠️ Not finished' }, at: 'at', consignes: 'Instructions', contact: 'Contact on site', call: 'Call', commons: 'Common areas',
@@ -61,6 +66,7 @@ const L = {
     install: 'Add the app to your home screen: iPhone → Share → “Add to Home Screen”; Android → ⋮ → “Install app”.', logout: 'Log out of this phone', personal: 'This link is personal.', rgpd: 'Your data is encrypted. Your manager sees what you send (statuses, notes, photos, absences, details).', need: 'Write why it is not finished.',
   },
   es: {
+    x: {"places": "Mis lugares de trabajo", "placesHint": "Toca una dirección: el mapa aparece arriba.", "route": "🗺️ Ruta en Google Maps", "phT": "Fotos antes / después", "phHint": "Antes de empezar y al terminar: hasta 6 fotos cada una.", "av": "Antes", "ap": "Después", "cam": "📷 Foto", "gal": "🖼️ Galería", "full": "6 fotos como máximo", "infoRO": "Estos datos los registra tu responsable. ¿Un error? Llámale."},
     loc: 'es-ES', app: 'App del equipo', welcome: 'Tu planificación, tus intervenciones y tus ausencias, en el móvil.', code: 'Tu código personal', codePh: 'ej. K7PM2-QXA4H', enter: 'Entrar', noCode: '¿No tienes código? Pídeselo a tu responsable.', badCode: 'Código desconocido. Compruébalo o pide uno nuevo.', off: 'Este acceso ha sido desactivado. Pide un nuevo código a tu responsable.', mismatch: 'Este código es para la app de inquilinos.',
     hello: 'Hola', today: 'Hoy', next: 'Próximos días', none: 'Nada previsto hoy.', noneNext: 'Nada previsto.', late: 'con retraso', start: '▶️ Empiezo', done: '✅ Terminado', inc: '⚠️ No terminado', why: '¿Por qué no está terminado? (obligatorio)', whyPh: 'ej. falta una pieza, inquilino ausente…', note: 'Nota (opcional)', notePh: 'ej. grifo cambiado, escalera limpia', photos: 'Fotos (máx. 3)', send: 'Enviar', cancel: 'Cancelar',
     st: { encours: '▶️ Empezado', fait: '✅ Terminado', incomplet: '⚠️ No terminado' }, at: 'a las', consignes: 'Instrucciones', contact: 'Contacto en el lugar', call: 'Llamar', commons: 'Zonas comunes',
@@ -105,12 +111,12 @@ async function flush() {
   }
   render();
 }
-function queue(item) {
+function queue(item, later) {
   const q = getJ(QK());
   q.push(item);
   setJ(QK(), q);
   if (item.k === 'task') { const loc = getJ(LK()).filter((x) => x.at > new Date(Date.now() - 30 * 864e5).toISOString()); loc.push({ tid: item.tid, d: item.d, st: item.st, note: item.note, at: item.at }); setJ(LK(), loc); }
-  return flush();
+  return later ? Promise.resolve() : flush();
 }
 // Dernier état connu d'une intervention un jour donné (serveur + ce téléphone)
 function stateOf(tid, d) {
@@ -144,15 +150,34 @@ function taskCard(it, withBtns) {
       <button class="btn warn" data-act="incomplet" data-tid="${it.tid}" data-d="${it.d}">${esc(t.inc)}</button></div>` : '';
   const fh = f ? `<form class="act" data-tid="${it.tid}" data-d="${it.d}" data-st="${f.st}"><b>${esc(t.st[f.st])}</b>
       <label>${esc(f.st === 'incomplet' ? t.why : t.note)}</label><textarea name="note" placeholder="${esc(f.st === 'incomplet' ? t.whyPh : t.notePh)}" ${f.st === 'incomplet' ? 'required' : ''}></textarea>
-      <label>${esc(t.photos)}</label><input type="file" name="photos" accept="image/*" multiple>
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>` : '';
   return `<div class="task ${done ? 'done' : ''}">
     <div class="tt">${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${it.late ? ` <span class="tag bad">${esc(t.late)}</span>` : ''}</div>
-    <div class="meta">📍 ${esc(x.adresse)} · ${esc(x.lieu || t.commons)}${x.recur ? ' · 🔁 ' + esc(x.recur) : ''}</div>
+    <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}${x.recur ? ' · 🔁 ' + esc(x.recur) : ''}</div>
     ${x.note ? `<div class="cons"><b>${esc(t.consignes)} :</b> ${esc(x.note)}</div>` : ''}
     ${x.contact ? `<div class="meta">👤 ${esc(t.contact)} : ${esc(x.contact.nom)}${tel ? ` · <a href="tel:${esc(tel)}">📞 ${esc(t.call)}</a>` : ''}</div>` : ''}
     ${st ? `<div class="stline ${st.st}">${esc(t.st[st.st])} · ${esc(fmt(st.at))} ${esc(t.at)} ${esc((st.at || '').slice(11, 16))}${st.note ? ' — ' + esc(st.note) : ''}</div>` : ''}
-    ${btns}${fh}</div>`;
+    ${btns}${fh}${withBtns ? phBlock(it, x) : ''}</div>`;
+}
+// Photos avant / après une intervention : 6 + 6, avec l'appareil photo ou la galerie
+const PK = () => 'eqPh:' + id;
+const phCount = (tid, phase) => { let n = 0; try { n = (JSON.parse(localStorage.getItem(PK()) || '{}')[tid] || {})[phase] || 0; } catch { /* stockage indisponible */ } return Math.max(n, ((data.tasks[tid] || {}).ph || {})[phase] || 0); };
+function phBlock(it, x) {
+  const t = T(), xx = t.x;
+  return `<div class="phb"><b>📷 ${esc(xx.phT)}</b><div class="meta">${esc(xx.phHint)}</div><div class="phrow">${['av', 'ap'].map((ph) => {
+    const n = phCount(it.tid, ph), full = n >= 6;
+    return `<div class="phcol"><div class="phh">${esc(xx[ph])} <span class="meta">${n} / 6</span></div>${full ? `<div class="meta">${esc(xx.full)}</div>` : `<div class="btns"><label class="btn sm">${esc(xx.cam)}<input type="file" accept="image/*" capture="environment" hidden data-ph="${ph}" data-tid="${it.tid}" data-d="${it.d}"></label><label class="btn sm sec">${esc(xx.gal)}<input type="file" accept="image/*" multiple hidden data-ph="${ph}" data-tid="${it.tid}" data-d="${it.d}"></label></div>`}</div>`;
+  }).join('')}</div></div>`;
+}
+// Lieux de travail (adresses du planning et de l'horaire) ; la carte du lieu choisi s'affiche sous « Bonjour »
+let place = '';
+const mapQ = (a) => (/luxemb|lëtzebuerg|deutschland|germany|france|belgi|portugal|espa|ital/i.test(a) ? a : a + ', Luxembourg');
+function placesOf(d) {
+  const seen = new Set(), outp = [];
+  const add = (a) => { const k = (a || '').trim(); if (k && k !== 'Sans immeuble' && !seen.has(k.toLowerCase())) { seen.add(k.toLowerCase()); outp.push(k); } };
+  for (const x of d.items.filter((z) => z.d >= today || z.late)) add((d.tasks[x.tid] || {}).adresse);
+  for (const h of d.horaires || []) add(h.lieu);
+  return outp;
 }
 
 function render() {
@@ -174,6 +199,10 @@ function render() {
   const d = data, out = [];
   document.title = `${t.app} — ${d.societe.nom}`;
   out.push(`${top(d.societe.nom, d.societe.logo)}<h1>${esc(t.hello)} ${esc(d.prenom || d.nom)} 👋</h1><p class="sub">${esc([d.metier, d.societe.nom].filter(Boolean).join(' · '))}</p>`);
+  const pls = placesOf(d);
+  if (place && !pls.includes(place)) place = '';
+  if (place) out.push(`<div class="card"><div id="mapBox" class="map" data-q="${esc(mapQ(place))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQ(place))}" target="_blank" rel="noopener">${esc(t.x.route)}</a></div>`);
+  if (pls.length) out.push(`<div class="card"><h2>📍 ${esc(t.x.places)}</h2><div class="places">${pls.map((a) => `<button class="place" data-place="${esc(a)}" aria-pressed="${a === place}">📍 ${esc(a)}</button>`).join('')}</div><p class="meta" style="margin:8px 0 0">${esc(t.x.placesHint)}</p></div>`);
   const q = getJ(QK());
   if (q.length) out.push(`<div class="card warnc"><p style="margin:0 0 8px">${esc(t.pending(q.length))}</p><button class="btn sec sm" data-retry="1">${esc(t.retry)}</button></div>`);
   if (flash) out.push(`<div class="card okc"><p style="margin:0">${esc(flash)}</p></div>`);
@@ -196,15 +225,19 @@ function render() {
       <label>${esc(t.note)}</label><textarea name="note" style="min-height:70px"></textarea>
       <label>${esc(t.cert)}</label><input type="file" name="photo" accept="image/*">
       <button class="btn block" style="margin-top:12px" type="submit">${esc(t.send)}</button></form></details></div>`);
-  out.push(`<div class="card"><details class="more"><summary>✏️ ${esc(t.info)}</summary><form id="infoForm">
-      <label>${esc(t.tel)}</label><input type="tel" name="tel" value="${esc(d.me.tel)}">
-      <label>${esc(t.mail)}</label><input type="email" name="mail" value="${esc(d.me.mail)}">
-      <label>${esc(t.adr)}</label><input type="text" name="adresse" value="${esc(d.me.adresse)}">
-      <label>${esc(t.ville)}</label><input type="text" name="ville" value="${esc(d.me.ville)}">
-      <button class="btn block" style="margin-top:12px" type="submit">${esc(t.save)}</button></form></details></div>`);
+  out.push(`<div class="card"><details class="more"><summary>👤 ${esc(t.info)}</summary>
+      ${[[t.tel, d.me.tel], [t.mail, d.me.mail], [t.adr, d.me.adresse], [t.ville, d.me.ville]].map(([k, v]) => `<div class="row"><span class="meta" style="width:130px">${esc(k)}</span><b class="grow">${esc(v || '—')}</b></div>`).join('')}
+      <p class="meta" style="margin:8px 0 0">${esc(t.x.infoRO)}</p></details></div>`);
   out.push(`<p class="meta" style="text-align:center">${esc(t.install)}</p>
     <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(t.rgpd)}</p><p class="meta" style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
+  const keepMap = document.querySelector('#mapBox iframe');
   app.innerHTML = out.join('');
+  const mb = document.getElementById('mapBox');
+  if (mb) {
+    const src = `https://maps.google.com/maps?q=${encodeURIComponent(mb.dataset.q)}&hl=${lang}&z=16&output=embed`;
+    if (keepMap && keepMap.dataset.src === src) mb.append(keepMap);
+    else { const f = document.createElement('iframe'); f.src = src; f.dataset.src = src; f.title = 'Google Maps'; f.loading = 'lazy'; f.referrerPolicy = 'no-referrer-when-downgrade'; mb.append(f); }
+  }
 }
 
 app.addEventListener('click', async (e) => {
@@ -212,6 +245,8 @@ app.addEventListener('click', async (e) => {
   if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('eqLang', lang); } catch {} return render(); }
   if (e.target.closest('[data-logout]')) { e.preventDefault(); try { localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; return render(); }
   if (e.target.closest('[data-retry]')) return flush();
+  const pb = e.target.closest('[data-place]');
+  if (pb) { place = place === pb.dataset.place ? '' : pb.dataset.place; render(); if (place) scrollTo({ top: 0, behavior: 'smooth' }); return; }
   if (e.target.closest('[data-cancel]')) { form = null; return render(); }
   const ab = e.target.closest('[data-act]');
   if (ab) {
@@ -245,10 +280,8 @@ app.addEventListener('submit', async (e) => {
     if (f.classList.contains('act')) {
       const note = f.note.value.trim();
       if (f.dataset.st === 'incomplet' && !note) { alert(t.need); btn.disabled = false; btn.textContent = t.send; return; }
-      const photos = [];
-      for (const file of [...f.photos.files].slice(0, 3)) photos.push(await compress(file));
       form = null;
-      await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: f.dataset.st, note, photos, at: new Date().toISOString() });
+      await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: f.dataset.st, note, photos: [], at: new Date().toISOString() });
       flash = t.sent;
     } else if (f.id === 'absForm') {
       const photos = f.photo.files[0] ? [await compress(f.photo.files[0])] : [];
@@ -261,6 +294,27 @@ app.addEventListener('submit', async (e) => {
   } catch (err) { alert('⚠ ' + (err.message || err)); }
   render();
   scrollTo(0, 0);
+});
+
+app.addEventListener('change', async (e) => {
+  const inp = e.target.closest('input[data-ph]');
+  if (!inp || !inp.files.length) return;
+  const { ph, tid, d } = inp.dataset, files = [...inp.files];
+  inp.value = '';
+  const room = 6 - phCount(tid, ph);
+  if (room <= 0) return alert(T().x.full);
+  flash = '';
+  try {
+    let n = 0;
+    for (const file of files.slice(0, room)) { await queue({ k: 'ph', tid, d, phase: ph, photos: [await compress(file)], at: new Date().toISOString() }, true); n++; }
+    let m = {}; try { m = JSON.parse(localStorage.getItem(PK()) || '{}'); } catch { /* stockage indisponible */ }
+    m[tid] = { ...(m[tid] || {}), [ph]: phCount(tid, ph) + n };
+    try { localStorage.setItem(PK(), JSON.stringify(m)); } catch { /* stockage plein */ }
+    flash = T().sent;
+    if (files.length > room) alert(T().x.full);
+  } catch (err) { alert('⚠ ' + (err.message || err)); }
+  await flush();
+  render();
 });
 
 async function load() {

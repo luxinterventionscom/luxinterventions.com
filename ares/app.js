@@ -6,7 +6,7 @@ import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.35.2';
+const VERSION = '2.36.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -42,6 +42,8 @@ const ICONS = {
   file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5Z"/><path d="M14 3v5h5"/>',
   download: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
   upload: '<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+  image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-9 9"/>',
   trash: '<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
   edit: '<path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4Z"/><path d="m13.5 6.5 4 4"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
@@ -111,8 +113,12 @@ const imms0 = () => vault.list('immeubles');
 // Immeuble qui n'est plus en gestion (vendu, bail principal terminé…) : archivé, jamais effacé
 const immGone = (im) => !!(im && im.finGestion) && im.finGestion <= today();
 // Photos d'état des lieux : attachées au logement (pas au locataire), elles restent d'un occupant à l'autre
-const EDL_MAX = 10;
-const edlOf = (logId) => vault.list('documents').filter((d) => d.kind === 'edl' && d.logId === logId).sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.u || 0) - (b.u || 0));
+// État des lieux : une photo par pièce (posée par nous) ; à son départ, le locataire envoie les siennes (« sortie »)
+const EDL_ROOMS = [['sdb', '🛁 Salle de bain'], ['cuisine', '🍳 Cuisine'], ['chambre', '🛏️ Chambre'], ['cave', '📦 Cave'], ['buanderie', '🧺 Buanderie'], ['parking', '🚗 Parking']];
+const EDL_ROOM = Object.fromEntries(EDL_ROOMS);
+const edlOf = (logId, kind = 'edl') => vault.list('documents').filter((d) => d.kind === kind && d.logId === logId).sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.u || 0) - (b.u || 0));
+const edlIn = (logId, room) => edlOf(logId).filter((d) => d.room === room).pop();
+const edlOutNew = () => vault.list('documents').filter((d) => d.kind === 'edl-out' && !d.seen);
 
 // ───────────────────────── Maintenance : intervenants, interventions, collectes des déchets ─────────────────────────
 const METIERS = { menage: 'Femme de ménage / nettoyage', menuisier: 'Menuisier', electricien: 'Électricien', plombier: 'Plombier / sanitaire', chauffagiste: 'Chauffagiste', macon: 'Maçon', peintre: 'Peintre', serrurier: 'Serrurier', jardinier: 'Jardinier', autre: 'Autre' };
@@ -331,6 +337,9 @@ const eqUrl = (i) => `${location.origin}/equipe.html#${i.espace.id}.${i.espace.k
 const eqAppUrl = () => `${location.origin}/equipe.html`;
 const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini' };
 // Dernier état donné par l'équipe pour une intervention un jour donné
+// Photos « avant » / « après » envoyées par l'équipe pour une intervention (6 + 6 maximum)
+const EQ_PH = { av: 'Avant', ap: 'Après' }, EQ_PH_MAX = 6;
+const eqPhotos = (tid, phase) => vault.list('documents').filter((x) => x.tacheId === tid && x.phase === phase).sort((a, b) => (a.u || 0) - (b.u || 0));
 const eqState = (t, d) => { const j = (t.journal || []).filter((x) => x.d === d); return j.length ? j[j.length - 1] : null; };
 function equipeData(i) {
   const soc = societe();
@@ -343,6 +352,7 @@ function equipeData(i) {
       adresse: immName(t.immId), lieu: t.logId ? logName(t.logId) : '', statut: t.statut,
       contact: l ? { nom: l.prenom || fullName(l), tel: l.tel || '' } : null,
       journal: (t.journal || []).slice(-20).map((x) => ({ d: x.d, st: x.st, note: x.note || '', at: x.at })),
+      ph: { av: eqPhotos(t.id, 'av').length, ap: eqPhotos(t.id, 'ap').length },
     };
   };
   for (const x of agenda(from, to).filter((x) => x.kind === 'tache' && x.t.intervenantId === i.id)) {
@@ -414,6 +424,18 @@ async function equipeInbox(w, msg) {
         tx.put('taches', upd);
         feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note, ph: ph.length });
         fresh++;
+      } else if (it.k === 'ph') {
+        const t = vault.get('taches', String(it.tid || ''));
+        const b = photos[0] || (typeof it.photo === 'string' ? it.photo : '');
+        if (!t || t.intervenantId !== w.id || !EQ_PH[it.phase] || !b) continue;
+        const nb = eqPhotos(t.id, it.phase).length;
+        if (nb >= EQ_PH_MAX) continue;
+        const d = /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10);
+        const doc = tx.put('documents', { tacheId: t.id, kind: 'equipe', phase: it.phase, label: `${EQ_PH[it.phase]} ${nb + 1} — ${t.titre} (${intervFull(w)})`, date: d, mime: 'image/jpeg', size: Math.round(b.length * 0.75) });
+        files.push([doc.id, b]);
+        const last = feed[feed.length - 1];
+        if (last && last.k === 'ph' && last.tid === t.id && last.phase === it.phase && last.d === d) { last.ph = (last.ph || 0) + 1; last.at = at; } else feed.push({ at, k: 'ph', tid: t.id, d, phase: it.phase, ph: 1 });
+        fresh++;
       } else if (it.k === 'info') {
         const clean = (v, n) => String(v || '').trim().slice(0, n);
         const upd = { id: w.id };
@@ -446,7 +468,7 @@ function eqFeedHtml(onlyId, max = 80) {
   if (!rows.length) return html`<p class="small muted">Rien pour le moment. Ce que l’équipe envoie depuis son app (commencé, fini, pas fini, notes, photos, maladie) arrive ici.</p>`;
   return html`<div class="list small">${rows.slice(0, max).map(([i, f]) => {
     const t = f.tid ? vault.get('taches', f.tid) : null;
-    const what = f.k === 'task' ? html`<b>${EQ_ST[f.st] || f.st}</b> · ${t ? t.titre : '(intervention supprimée)'}${t ? html`<span class="meta" style="display:block">📍 ${placeName(t)} · ${fmtDate(f.d)}</span>` : ''}` : f.k === 'abs' ? html`<b>${f.note}</b>` : html`<b>✏️ ${f.note}</b>`;
+    const what = f.k === 'task' || f.k === 'ph' ? html`<b>${f.k === 'ph' ? '📷 ' + EQ_PH[f.phase] : EQ_ST[f.st] || f.st}</b> · ${t ? t.titre : '(intervention supprimée)'}${t ? html`<span class="meta" style="display:block">📍 ${placeName(t)} · ${fmtDate(f.d)}</span>` : ''}` : f.k === 'abs' ? html`<b>${f.note}</b>` : html`<b>✏️ ${f.note}</b>`;
     return html`<button class="row" ${t ? html`data-action="edit-tache" data-id="${t.id}"` : html`data-action="open-interv" data-id="${i.id}"`} style="text-align:left">
       <span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDateTime(f.at)} · ${intervFull(i)}</span>${what}${f.k === 'task' && f.note ? html`<span class="small" style="display:block;margin-top:2px">📝 ${f.note}</span>` : ''}</span>
       ${f.ph ? html`<span class="badge">📷 ${f.ph}</span>` : ''}</button>`;
@@ -478,6 +500,7 @@ const ESP_SHOW = {
   coll: 'Collectes des déchets de l’immeuble',
   avis: 'Avis de l’immeuble (travaux, coupures…)',
   signal: 'Signaler un problème (avec photos)',
+  edl: 'État des lieux : vos 6 photos (salle de bain, cuisine, chambre, cave, buanderie, parking) + ses photos de sortie à son départ',
   porte: 'Code de la porte (serrure à code / connectée)',
   regles: 'Règlement de la maison (à lire, avec « J’ai lu et j’accepte »)',
   chat: 'Messages de la maison (mini-chat entre habitants, lu par vous)',
@@ -544,6 +567,10 @@ function espaceData(l) {
   if (show.contrat) out.contrat = { debut: l.debut || '', fin: l.fin || '', revision: l.revision || '', caution: l.caution || 0, cautionDate: l.cautionDate || '', cautionMode: l.cautionMode || '' };
   if (show.docs) out.docs = vault.list('documents').filter((d) => d.locId === l.id && d.shared).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
     .map((d) => ({ id: d.id, label: d.label, dtype: d.dtype || '', pay: d.pay || '', date: d.date, mime: d.mime, size: d.size }));
+  if (show.edl && g) {
+    out.edl = EDL_ROOMS.map(([k]) => edlIn(g.id, k)).filter(Boolean).map((d) => ({ id: d.id, room: d.room, date: d.date }));
+    out.edlOut = edlOf(g.id, 'edl-out').filter((d) => d.locId === l.id).map((d) => ({ room: d.room, date: d.date }));
+  }
   if (show.coll && im) { out.coll = pubData(im).items; if (im.pubToken) out.collLink = pubUrl(im); }
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
   if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '', lv: l.reglesV || '', v: rulesVersion(im) };
@@ -560,7 +587,7 @@ function espaceData(l) {
       };
     }
   }
-  if (show.signal || show.regles) { const k = vault.get('reglages', 'signal'); out.signalKey = k ? k.pub : ''; }
+  if (show.signal || show.regles || show.edl) { const k = vault.get('reglages', 'signal'); out.signalKey = k ? k.pub : ''; }
   if (show.signal) {
     out.signals = vault.list('taches').filter((t) => t.locId === l.id).sort((a, b) => (b.sentAt || b.date || '').localeCompare(a.sentAt || a.date || '')).slice(0, 20)
       .map((t) => ({ titre: t.titre.replace(/^(Signalement|Erreur signalée \(dossier \/ paiements\)) : /, ''), sent: t.sentAt || '', date: t.date || '', statut: t.statut, done: t.doneDate || '' }));
@@ -827,8 +854,9 @@ async function espaceSync(onlyId, loud) {
       if (h === stored && !loud) continue;
       const up = new Set(l.espace.docs || []);
       let docsChanged = false;
-      for (const d of data.docs || []) if (!up.has(d.id)) { await vault.espacePut(l.espace.id, await sealBytes(l.espace.key, await vault.readFile(d.id)), d.id); up.add(d.id); docsChanged = true; }
-      for (const id of [...up]) if (!(data.docs || []).some((d) => d.id === id)) { await vault.espaceDel(l.espace.id, id).catch(() => {}); up.delete(id); docsChanged = true; }
+      const files = [...(data.docs || []), ...(data.edl || [])];
+      for (const d of files) if (!up.has(d.id)) { await vault.espacePut(l.espace.id, await sealBytes(l.espace.key, await vault.readFile(d.id)), d.id); up.add(d.id); docsChanged = true; }
+      for (const id of [...up]) if (!files.some((d) => d.id === id)) { await vault.espaceDel(l.espace.id, id).catch(() => {}); up.delete(id); docsChanged = true; }
       await vault.espacePut(l.espace.id, await sealJson(l.espace.key, data));
       espHashes.set(l.id, h);
       try { localStorage.setItem('aresEsp:' + l.espace.id, h); } catch {}
@@ -868,6 +896,24 @@ async function inboxSync() {
       }
       if (msg.type === 'regles') {
         await vault.mutate((tx) => tx.put('locataires', { id: l.id, reglesLu: String(msg.t || '').slice(0, 10) || today(), reglesV: String(msg.v || '').slice(0, 40) }), 'Règlement de la maison accepté', fullName(l), l.id);
+        await vault.inboxDel(it.name);
+        continue;
+      }
+      if (msg.type === 'edl-out') {
+        // Photos de sortie du locataire (une par pièce ; une nouvelle remplace la précédente de la même pièce)
+        const g = vault.get('logements', l.logId);
+        const ph = (Array.isArray(msg.photos) ? msg.photos : []).filter((x) => x && EDL_ROOM[x.room] && typeof x.b === 'string' && x.b.length < 4e6).slice(0, EDL_ROOMS.length);
+        if (g && ph.length) {
+          const olds = edlOf(g.id, 'edl-out').filter((d) => ph.some((x) => x.room === d.room));
+          const files = [];
+          await vault.mutate((tx) => {
+            for (const d of olds) tx.remove('documents', d.id);
+            for (const x of ph) { const doc = tx.put('documents', { logId: g.id, locId: l.id, room: x.room, kind: 'edl-out', label: `Sortie — ${EDL_ROOM[x.room].replace(/^\S+ /, '')} (${fullName(l)})`, date: String(msg.t || '').slice(0, 10) || today(), mime: 'image/jpeg', size: Math.round(x.b.length * 0.75) }); files.push([doc.id, x.b]); }
+          }, 'Photos de sortie reçues', `${fullName(l)} — ${plural(ph.length, 'photo')}`, l.id);
+          for (const [id, b] of files) await vault.saveFile(id, unb64u(b));
+          for (const d of olds) { await vault.deleteFile(d.id).catch(() => {}); dropEdlUrl(d.id); }
+          n++;
+        }
         await vault.inboxDel(it.name);
         continue;
       }
@@ -2008,6 +2054,8 @@ dashboard() {
     const chatNew = Object.entries(ui.chatNew || {}).filter(([imId, n]) => n && vault.get('immeubles', imId));
     const chatBox = chatNew.length ? html`<div class="stack" style="margin-bottom:14px">${chatNew.map(([imId, n]) => alertBtn('info', 'msg', 'open-chat', imId, html`💬 <b>${n} nouveau${n > 1 ? 'x' : ''} message${n > 1 ? 's' : ''}</b> entre les habitants — ${immName(imId)}<div class="tiny">touchez pour lire</div>`))}</div>` : '';
     const virs = vault.list('locataires').filter((l) => l.virSignal && !l.virSignal.vu);
+    const edlNew = [...new Set(edlOutNew().map((d) => d.logId))].filter((id) => vault.get('logements', id));
+    const edlBox = edlNew.length ? html`<div class="stack" style="margin-bottom:14px">${edlNew.map((id) => { const ph = edlOutNew().filter((d) => d.logId === id), w = vault.get('locataires', ph[0].locId); return alertBtn('info', 'camera', 'open-edl-out', id, html`📷 <b>${plural(ph.length, 'photo')} de sortie</b> à contrôler — ${logName(id)}${w ? ' · ' + fullName(w) : ''}<div class="tiny">touchez pour comparer avec vos photos d’entrée</div>`); })}</div>` : '';
     const virBox = virs.length ? html`<div class="stack" style="margin-bottom:14px">${virs.map((l) => alertBtn('info', 'wallet', 'open-vir', l.id, html`💳 <b>${fullName(l)}</b> dit avoir payé${l.virSignal.montant ? html` <b>${money(l.virSignal.montant)}</b>` : ''} par ${PAY_VIA[l.virSignal.via || 'vir']} — ${l.virSignal.ref}<div class="tiny">${fmtDateTime(l.virSignal.t)} · vérifiez la réception, puis cochez le mois payé</div>`))}</div>` : '';
     const eqNew = sum(vault.list('intervenants'), (i) => i.feedNew || 0);
     const eqBox = eqNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'eq-feed', '', html`👷 <b>${eqNew} nouvelle${eqNew > 1 ? 's' : ''} de l’équipe</b> (commencé, fini, pas fini, notes, photos…)<div class="tiny">touchez pour voir qui fait quoi, où et quand</div>`)}</div>` : '';
@@ -2021,6 +2069,7 @@ dashboard() {
       ${sigBox}
       ${chatBox}
       ${virBox}
+      ${edlBox}
       ${eqBox}
       ${absBox}
       ${toolsBox}
@@ -2503,20 +2552,18 @@ async function compressPhoto(file) {
   return new Uint8Array(await blob.arrayBuffer());
 }
 
-async function addEdlPhotos(logId, files) {
-  const g = vault.get('logements', logId);
-  const room = EDL_MAX - edlOf(logId).length;
-  const list = [...files].filter((f) => f.type.startsWith('image/')).slice(0, Math.max(0, room));
-  if (!list.length) return toast(room <= 0 ? `${EDL_MAX} photos maximum : retirez-en une d'abord` : 'Choisissez des photos', { bad: true });
-  toast('Chiffrement des photos…');
-  for (const f of list) {
-    const bytes = await compressPhoto(f);
-    const doc = await vault.mutate((tx) => tx.put('documents', { logId, kind: 'edl', label: 'État des lieux', date: today(), size: bytes.length, mime: 'image/jpeg' }), 'Photo état des lieux ajoutée', g ? g.nom + ' · ' + immName(g.immId) : '', logId);
-    await vault.saveFile(doc.id, bytes);
-  }
-  toast(list.length < files.length ? `${plural(list.length, 'photo')} ajoutée${list.length > 1 ? 's' : ''} (${EDL_MAX} maximum)` : `${plural(list.length, 'photo')} ajoutée${list.length > 1 ? 's' : ''}`);
+async function setEdlPhoto(logId, room, file) {
+  if (!EDL_ROOM[room] || !file || !file.type.startsWith('image/')) return toast('Choisissez une photo', { bad: true });
+  const g = vault.get('logements', logId), old = edlIn(logId, room);
+  toast('Chiffrement de la photo…');
+  const bytes = await compressPhoto(file);
+  const doc = await vault.mutate((tx) => { if (old) tx.remove('documents', old.id); return tx.put('documents', { logId, room, kind: 'edl', label: `État des lieux — ${EDL_ROOM[room].replace(/^\S+ /, '')}`, date: today(), size: bytes.length, mime: 'image/jpeg' }); }, 'Photo état des lieux', `${EDL_ROOM[room]} · ${g ? g.nom + ' · ' + immName(g.immId) : ''}`, logId);
+  await vault.saveFile(doc.id, bytes);
+  if (old) { await vault.deleteFile(old.id).catch(() => {}); dropEdlUrl(old.id); }
+  toast(`${EDL_ROOM[room]} : photo enregistrée`);
   renderSheet();
 }
+const dropEdlUrl = (id) => { if (edlUrls.has(id)) { URL.revokeObjectURL(edlUrls.get(id)); edlUrls.delete(id); } };
 
 const PAY_NETS = { erc20: 'Ethereum (ERC-20)', trc20: 'Tron (TRC-20)', polygon: 'Polygon', bep20: 'BNB Chain (BEP-20)', sol: 'Solana' };
 const netSelect = (name, cur) => html`<label class="field">Réseau<select name="${name}">${Object.entries(PAY_NETS).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>`;
@@ -2810,7 +2857,8 @@ const SHEETS = {
         ${t.depId ? html`<p class="tiny muted full" style="margin:0">✓ Coût enregistré dans les dépenses de l'immeuble.</p>` : ''}
         ${(t.journal || []).length ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">👷 Suivi de l’équipe</div><div class="list small">${t.journal.slice().reverse().slice(0, 30).map((x) => html`<div class="row"><span class="grow" style="white-space:normal"><b>${EQ_ST[x.st] || x.st}</b> · ${fmtDate(x.d)}${x.by ? ' · ' + intervName(x.by) : ''}<span class="meta" style="display:block">${fmtDateTime(x.at)}</span>${x.note ? html`<span class="small" style="display:block">📝 ${x.note}</span>` : ''}</span>${(x.ph || []).filter((pid) => vault.get('documents', pid)).map((pid) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${pid}">📷</button>`)}</div>`)}</div></div>` : ''}
         ${t.locId ? html`<p class="tiny full" style="margin:0">📨 Signalé par <a href="#" data-action="open-loc" data-id="${t.locId}">${fullName(vault.get('locataires', t.locId) || { nom: '?' })}</a> — il voit l'avancement dans son espace.</p>` : ''}
-        ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
+        ${t.id && (eqPhotos(t.id, 'av').length || eqPhotos(t.id, 'ap').length) ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">📷 Avant / après les travaux</div><div class="edl-pair two">${Object.entries(EQ_PH).map(([ph, lb]) => html`<div><div class="tiny muted" style="margin-bottom:4px"><b>${lb}</b> · ${eqPhotos(t.id, ph).length} / ${EQ_PH_MAX}</div><div class="edl-grid sm">${eqPhotos(t.id, ph).map((x) => html`<figure class="edl"><button type="button" class="edl-img" data-action="open-doc" data-id="${x.id}" aria-label="Agrandir"><img alt="" data-edl="${x.id}"></button><figcaption><span>${fmtDate(x.date)}</span><button type="button" class="btn icon sm ghost danger" data-action="del-edl" data-id="${x.id}" aria-label="Retirer la photo">${icon('trash')}</button></figcaption></figure>`)}</div></div>`)}</div></div>` : ''}
+        ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id && !x.phase).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id && !x.phase).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         ${id && t.locId && !t.recur && t.statut !== 'fait' ? html`<button class="btn" style="background:var(--green-soft);color:var(--green)" data-action="tache-done" data-id="${id}">${icon('check')} Réparé</button>` : html`<button class="btn" data-action="close-sheet">Annuler</button>`}
@@ -3195,17 +3243,25 @@ const SHEETS = {
         <p class="tiny muted">${shownTo.length ? `Visible dans l'espace de ${shownTo.map(fullName).join(', ')} : il voit le nouveau code dès que vous le changez.` : "Pour que l'occupant voie le code dans son app : fiche locataire → Espace → cochez « Code de la porte »."}</p>
         ${(pt.hist || []).length ? html`<div class="section-label">Historique des codes</div><div class="list">${[...pt.hist].reverse().map((h) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${fmtDate(h.d)} — ${h.raison}</span><span class="meta">${'•'.repeat(Math.max(0, (h.code || '').length - 2))}${(h.code || '').slice(-2)}${h.note ? ' · ' + h.note : ''}</span></span></div>`)}</div>` : ''}`;
     } else if (tab === 'edl') {
-      const photos = edlOf(id);
-      const full = photos.length >= EDL_MAX;
-      body = html`
-        <p class="small muted" style="margin:0 0 12px">Photos de l'état des lieux de ce logement. Elles restent d'un locataire à l'autre : retirez celles des dégâts réparés, ajoutez les nouvelles.</p>
-        <label class="btn block ${full ? '' : 'primary'}" style="${full ? 'opacity:.55;pointer-events:none' : ''}">${icon('upload')} ${full ? `${EDL_MAX} photos maximum — retirez-en une` : 'Ajouter des photos'}
-          <input type="file" accept="image/*" multiple hidden data-input="edl-add" data-log="${id}" ${full ? new Raw('disabled') : ''}></label>
-        <p class="tiny muted" style="margin:6px 0 14px;text-align:center">${photos.length} / ${EDL_MAX} · appareil photo ou galerie · chiffrées avant l'envoi</p>
-        ${photos.length ? html`<div class="edl-grid">${photos.map((ph) => html`<figure class="edl">
+      const outs = edlOf(id, 'edl-out'), old = edlOf(id).filter((d) => !EDL_ROOM[d.room]);
+      const who = outs.length ? vault.get('locataires', outs[outs.length - 1].locId) : null;
+      const fig = (ph, cls, cap) => ph ? html`<figure class="edl ${cls}">
           <button class="edl-img" data-action="open-doc" data-id="${ph.id}" aria-label="Agrandir"><img alt="" data-edl="${ph.id}"></button>
-          <figcaption><span>${fmtDate(ph.date)}</span><button class="btn icon sm ghost danger" data-action="del-edl" data-id="${ph.id}" aria-label="Retirer la photo">${icon('trash')}</button></figcaption>
-        </figure>`)}</div>` : html`<p class="muted small" style="text-align:center">Aucune photo pour le moment.</p>`}`;
+          <figcaption><span>${cap} · ${fmtDate(ph.date)}</span><button class="btn icon sm ghost danger" data-action="del-edl" data-id="${ph.id}" aria-label="Retirer la photo">${icon('trash')}</button></figcaption>
+        </figure>` : html`<figure class="edl empty ${cls}"><div class="edl-img">${cls === 'out' ? 'pas de photo de sortie' : 'pas encore de photo'}</div><figcaption><span>${cap}</span></figcaption></figure>`;
+      body = html`
+        <p class="small muted" style="margin:0 0 12px">Une photo par pièce, prise par vous : le locataire la voit dans son app. À son départ, il envoie ses photos de sortie : elles apparaissent ici à côté des vôtres (12 photos). Effacez-les après contrôle ou remise à neuf.</p>
+        ${outs.length ? html`<div class="alert info" style="margin-bottom:12px">${icon('camera')}<div>📷 <b>${plural(outs.length, 'photo')} de sortie</b>${who ? html` envoyée${outs.length > 1 ? 's' : ''} par <b>${fullName(who)}</b>` : ''} — le ${fmtDate(outs[outs.length - 1].date)}
+          <div style="margin-top:8px"><button class="btn sm" data-action="edl-out-clear" data-id="${id}">${icon('check')} Contrôlées — effacer les photos de sortie</button></div></div></div>` : ''}
+        <div class="edl-rooms">${EDL_ROOMS.map(([k, label]) => {
+          const ph = edlIn(id, k), out = outs.filter((d) => d.room === k).pop();
+          return html`<div class="edl-room"><div class="edl-room-h"><b>${label}</b>
+            <span class="edl-acts"><label class="btn sm ${ph ? '' : 'primary'}" title="Prendre une photo">${icon('camera')}<input type="file" accept="image/*" capture="environment" hidden data-input="edl-slot" data-log="${id}" data-room="${k}"></label>
+            <label class="btn sm" title="Choisir dans la galerie">${icon('image')}<input type="file" accept="image/*" hidden data-input="edl-slot" data-log="${id}" data-room="${k}"></label></span></div>
+            <div class="edl-pair ${outs.length ? 'two' : ''}">${fig(ph, 'in', 'Entrée')}${outs.length ? fig(out, 'out', 'Sortie') : ''}</div></div>`;
+        })}</div>
+        <p class="tiny muted" style="margin:8px 0 0;text-align:center"><b>${edlOf(id).filter((d) => EDL_ROOM[d.room]).length} / ${EDL_ROOMS.length}</b> · <span>📷 appareil photo ou 🖼️ galerie</span> · <span>chiffrées avant l'envoi</span> · <span>une nouvelle photo remplace l'ancienne</span></p>
+        ${old.length ? html`<div class="section-label">Anciennes photos (sans pièce)</div><div class="edl-grid">${old.map((ph) => fig(ph, 'in', ''))}</div>` : ''}`;
     } else if (tab === 'hist') {
       body = all.length ? html`<div class="list">${[...all].reverse().map((l) => {
         const months = stayMonths(l);
@@ -3234,7 +3290,7 @@ const SHEETS = {
     }
     return {
       title: g.nom,
-      body: html`${tabsBar([['now', 'Actuel'], ['hist', `Occupants (${all.length})`], ['edl', `Photos (${edlOf(id).length})`], ['porte', g.porte && g.porte.code ? '🔑 Porte' : 'Porte'], ['bilan', 'Bilan']], tab)}${body}`,
+      body: html`${tabsBar([['now', 'Actuel'], ['hist', `Occupants (${all.length})`], ['edl', `État des lieux${edlOf(id, 'edl-out').length ? ' 📷' : ''}`], ['porte', g.porte && g.porte.code ? '🔑 Porte' : 'Porte'], ['bilan', 'Bilan']], tab)}${body}`,
       foot: html`<button class="btn icon" data-action="print-log" data-id="${id}" aria-label="Imprimer">${icon('download')}</button><button class="btn" data-action="open-imm" data-id="${g.immId}">${icon('building')} Immeuble</button><button class="btn" data-action="edit-log" data-id="${id}">${icon('edit')} Modifier</button>`,
     };
   },
@@ -4231,7 +4287,7 @@ const ACTIONS = {
     const ls = tenantsOfLog(d.id);
     if (ls.length) return toast(`Impossible : ${plural(ls.length, 'occupant')} enregistré${ls.length > 1 ? 's' : ''} dans ce logement (historique).`, { bad: true });
     if (!(await confirmBox(`Supprimer « ${g.nom} » ?`, { ok: 'Supprimer', danger: true }))) return;
-    const photos = edlOf(d.id);
+    const photos = [...edlOf(d.id), ...edlOf(d.id, 'edl-out')];
     await vault.mutate((tx) => { tx.remove('logements', d.id); for (const ph of photos) tx.remove('documents', ph.id); }, 'Logement supprimé', g.nom, g.immId);
     for (const ph of photos) await vault.deleteFile(ph.id);
     openSheet('imm', g.immId);
@@ -4266,12 +4322,24 @@ const ACTIONS = {
   },
   async 'del-edl'(d) {
     const doc = vault.get('documents', d.id);
-    if (!doc || !(await confirmBox('Retirer cette photo ?', { ok: 'Retirer', danger: true, detail: `Photo du ${fmtDate(doc.date)} — par exemple un dégât réparé.` }))) return;
+    if (!doc || !(await confirmBox('Retirer cette photo ?', { ok: 'Retirer', danger: true, detail: `${EDL_ROOM[doc.room] ? EDL_ROOM[doc.room] + ' · ' : ''}photo du ${fmtDate(doc.date)}` }))) return;
     const g = vault.get('logements', doc.logId);
     await vault.mutate((tx) => tx.remove('documents', d.id), 'Photo état des lieux retirée', g ? g.nom + ' · ' + immName(g.immId) : '', doc.logId);
     await vault.deleteFile(d.id);
-    if (edlUrls.has(d.id)) { URL.revokeObjectURL(edlUrls.get(d.id)); edlUrls.delete(d.id); }
+    dropEdlUrl(d.id);
     renderSheet();
+  },
+  async 'edl-out-clear'(d) {
+    const outs = edlOf(d.id, 'edl-out'), g = vault.get('logements', d.id);
+    if (!outs.length || !(await confirmBox(`Effacer les ${plural(outs.length, 'photo')} de sortie ?`, { ok: 'Effacer', danger: true, detail: 'Après contrôle ou remise à neuf. Vos photos d’entrée restent.' }))) return;
+    await vault.mutate((tx) => { for (const ph of outs) tx.remove('documents', ph.id); }, 'Photos de sortie effacées', g ? g.nom + ' · ' + immName(g.immId) : '', d.id);
+    for (const ph of outs) { await vault.deleteFile(ph.id).catch(() => {}); dropEdlUrl(ph.id); }
+    renderSheet();
+  },
+  async 'open-edl-out'(d) {
+    const outs = edlOf(d.id, 'edl-out').filter((x) => !x.seen);
+    if (outs.length) await vault.mutate((tx) => { for (const ph of outs) tx.put('documents', { id: ph.id, seen: true }); }, 'Photos de sortie vues', logName(d.id), d.id);
+    openSheet('log', d.id, 'edl');
   },
   async 'del-doc'(d) {
     const doc = vault.get('documents', d.id);
@@ -4815,7 +4883,7 @@ document.addEventListener('change', (e) => {
     });
     e.target.value = '';
   }
-  if (k === 'edl-add' && e.target.files.length) { const files = [...e.target.files]; e.target.value = ''; addEdlPhotos(e.target.dataset.log, files); }
+  if (k === 'edl-slot' && e.target.files.length) { const f = e.target.files[0]; e.target.value = ''; setEdlPhoto(e.target.dataset.log, e.target.dataset.room, f); }
 });
 
 function applyTheme() {

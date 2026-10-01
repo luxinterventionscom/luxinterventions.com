@@ -7679,5 +7679,145 @@ export default [
 [
 "Gestion locative · Luxembourg",
 "Mietverwaltung · Luxemburg"
+],
+[
+"Salle de bain",
+"Badezimmer"
+],
+[
+"Cuisine",
+"Küche"
+],
+[
+"Cave",
+"Keller"
+],
+[
+"Buanderie",
+"Waschküche"
+],
+[
+"Parking",
+"Parkplatz"
+],
+[
+"Une photo par pièce, prise par vous : le locataire la voit dans son app. À son départ, il envoie ses photos de sortie : elles apparaissent ici à côté des vôtres (12 photos). Effacez-les après contrôle ou remise à neuf.",
+"Ein Foto pro Raum, von Ihnen aufgenommen: Der Mieter sieht es in seiner App. Bei seinem Auszug sendet er seine Auszugsfotos: Sie erscheinen hier neben Ihren (12 Fotos). Löschen Sie sie nach der Kontrolle oder Renovierung."
+],
+[
+"{0} photos de sortie",
+"{0} Auszugsfotos"
+],
+[
+"{0} photo de sortie",
+"{0} Auszugsfoto"
+],
+[
+"envoyées par",
+"gesendet von"
+],
+[
+"envoyée par",
+"gesendet von"
+],
+[
+"Contrôlées — effacer les photos de sortie",
+"Geprüft — Auszugsfotos löschen"
+],
+[
+"pas encore de photo",
+"noch kein Foto"
+],
+[
+"pas de photo de sortie",
+"kein Auszugsfoto"
+],
+[
+"Prendre une photo",
+"Foto aufnehmen"
+],
+[
+"Choisir dans la galerie",
+"Aus der Galerie wählen"
+],
+[
+"appareil photo ou 🖼️ galerie",
+"Kamera oder 🖼️ Galerie"
+],
+[
+"une nouvelle photo remplace l'ancienne",
+"ein neues Foto ersetzt das alte"
+],
+[
+"Anciennes photos (sans pièce)",
+"Alte Fotos (ohne Raum)"
+],
+[
+"à contrôler",
+"zu prüfen"
+],
+[
+"touchez pour comparer avec vos photos d’entrée",
+"antippen, um sie mit Ihren Einzugsfotos zu vergleichen"
+],
+[
+"Effacer les {0} photos de sortie ?",
+"Die {0} Auszugsfotos löschen?"
+],
+[
+"Effacer les {0} photo de sortie ?",
+"Das Auszugsfoto löschen?"
+],
+[
+"Après contrôle ou remise à neuf. Vos photos d’entrée restent.",
+"Nach Kontrolle oder Renovierung. Ihre Einzugsfotos bleiben."
+],
+[
+"Chiffrement de la photo…",
+"Foto wird verschlüsselt…"
+],
+[
+"photo enregistrée",
+"Foto gespeichert"
+],
+[
+"Choisissez une photo",
+"Wählen Sie ein Foto"
+],
+[
+"photo du {0}",
+"Foto vom {0}"
+],
+[
+"État des lieux : vos 6 photos (salle de bain, cuisine, chambre, cave, buanderie, parking) + ses photos de sortie à son départ",
+"Wohnungszustand: Ihre 6 Fotos (Bad, Küche, Zimmer, Keller, Waschküche, Parkplatz) + seine Auszugsfotos beim Auszug"
+],
+[
+"Avant / après les travaux",
+"Vorher / nachher"
+],
+[
+"Avant",
+"Vorher"
+],
+[
+"Après",
+"Nachher"
+],
+[
+"Photo état des lieux",
+"Foto Wohnungszustand"
+],
+[
+"Photos de sortie reçues",
+"Auszugsfotos erhalten"
+],
+[
+"Photos de sortie effacées",
+"Auszugsfotos gelöscht"
+],
+[
+"Photos de sortie vues",
+"Auszugsfotos angesehen"
 ]
 ];

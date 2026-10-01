@@ -7699,5 +7699,145 @@ export default [
 [
 "Gestion locative · Luxembourg",
 "Gestione affitti · Lussemburgo"
+],
+[
+"Salle de bain",
+"Bagno"
+],
+[
+"Cuisine",
+"Cucina"
+],
+[
+"Cave",
+"Cantina"
+],
+[
+"Buanderie",
+"Lavanderia"
+],
+[
+"Parking",
+"Parcheggio"
+],
+[
+"Une photo par pièce, prise par vous : le locataire la voit dans son app. À son départ, il envoie ses photos de sortie : elles apparaissent ici à côté des vôtres (12 photos). Effacez-les après contrôle ou remise à neuf.",
+"Una foto per stanza, scattata da voi: l'inquilino la vede nella sua app. Alla partenza invia le sue foto di uscita: appaiono qui accanto alle vostre (12 foto). Cancellatele dopo il controllo o il ripristino."
+],
+[
+"{0} photos de sortie",
+"{0} foto di uscita"
+],
+[
+"{0} photo de sortie",
+"{0} foto di uscita"
+],
+[
+"envoyées par",
+"inviate da"
+],
+[
+"envoyée par",
+"inviata da"
+],
+[
+"Contrôlées — effacer les photos de sortie",
+"Controllate — cancella le foto di uscita"
+],
+[
+"pas encore de photo",
+"ancora nessuna foto"
+],
+[
+"pas de photo de sortie",
+"nessuna foto di uscita"
+],
+[
+"Prendre une photo",
+"Scatta una foto"
+],
+[
+"Choisir dans la galerie",
+"Scegli dalla galleria"
+],
+[
+"appareil photo ou 🖼️ galerie",
+"fotocamera o 🖼️ galleria"
+],
+[
+"une nouvelle photo remplace l'ancienne",
+"una nuova foto sostituisce la precedente"
+],
+[
+"Anciennes photos (sans pièce)",
+"Vecchie foto (senza stanza)"
+],
+[
+"à contrôler",
+"da controllare"
+],
+[
+"touchez pour comparer avec vos photos d’entrée",
+"tocca per confrontarle con le tue foto di entrata"
+],
+[
+"Effacer les {0} photos de sortie ?",
+"Cancellare le {0} foto di uscita?"
+],
+[
+"Effacer les {0} photo de sortie ?",
+"Cancellare la foto di uscita?"
+],
+[
+"Après contrôle ou remise à neuf. Vos photos d’entrée restent.",
+"Dopo il controllo o il ripristino. Le tue foto di entrata restano."
+],
+[
+"Chiffrement de la photo…",
+"Cifratura della foto…"
+],
+[
+"photo enregistrée",
+"foto salvata"
+],
+[
+"Choisissez une photo",
+"Scegli una foto"
+],
+[
+"photo du {0}",
+"foto del {0}"
+],
+[
+"État des lieux : vos 6 photos (salle de bain, cuisine, chambre, cave, buanderie, parking) + ses photos de sortie à son départ",
+"Stato dei luoghi: le vostre 6 foto (bagno, cucina, camera, cantina, lavanderia, parcheggio) + le sue foto di uscita alla partenza"
+],
+[
+"Avant / après les travaux",
+"Prima / dopo i lavori"
+],
+[
+"Avant",
+"Prima"
+],
+[
+"Après",
+"Dopo"
+],
+[
+"Photo état des lieux",
+"Foto stato dei luoghi"
+],
+[
+"Photos de sortie reçues",
+"Foto di uscita ricevute"
+],
+[
+"Photos de sortie effacées",
+"Foto di uscita cancellate"
+],
+[
+"Photos de sortie vues",
+"Foto di uscita viste"
 ]
 ];

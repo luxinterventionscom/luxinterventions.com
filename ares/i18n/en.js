@@ -7519,5 +7519,141 @@ export default [
 [
 "Gestion locative · Luxembourg",
 "Rental management · Luxembourg"
+],
+[
+"Salle de bain",
+"Bathroom"
+],
+[
+"Cuisine",
+"Kitchen"
+],
+[
+"Cave",
+"Cellar"
+],
+[
+"Buanderie",
+"Laundry room"
+],
+[
+"Une photo par pièce, prise par vous : le locataire la voit dans son app. À son départ, il envoie ses photos de sortie : elles apparaissent ici à côté des vôtres (12 photos). Effacez-les après contrôle ou remise à neuf.",
+"One photo per room, taken by you: the tenant sees it in their app. When they leave, they send their check-out photos: they appear here next to yours (12 photos). Delete them after checking or refurbishing."
+],
+[
+"{0} photos de sortie",
+"{0} check-out photos"
+],
+[
+"{0} photo de sortie",
+"{0} check-out photo"
+],
+[
+"envoyées par",
+"sent by"
+],
+[
+"envoyée par",
+"sent by"
+],
+[
+"Contrôlées — effacer les photos de sortie",
+"Checked — delete the check-out photos"
+],
+[
+"pas encore de photo",
+"no photo yet"
+],
+[
+"pas de photo de sortie",
+"no check-out photo"
+],
+[
+"Prendre une photo",
+"Take a photo"
+],
+[
+"Choisir dans la galerie",
+"Choose from gallery"
+],
+[
+"appareil photo ou 🖼️ galerie",
+"camera or 🖼️ gallery"
+],
+[
+"une nouvelle photo remplace l'ancienne",
+"a new photo replaces the old one"
+],
+[
+"Anciennes photos (sans pièce)",
+"Old photos (no room)"
+],
+[
+"à contrôler",
+"to check"
+],
+[
+"touchez pour comparer avec vos photos d’entrée",
+"tap to compare with your check-in photos"
+],
+[
+"Effacer les {0} photos de sortie ?",
+"Delete the {0} check-out photos?"
+],
+[
+"Effacer les {0} photo de sortie ?",
+"Delete the check-out photo?"
+],
+[
+"Après contrôle ou remise à neuf. Vos photos d’entrée restent.",
+"After checking or refurbishing. Your check-in photos stay."
+],
+[
+"Chiffrement de la photo…",
+"Encrypting the photo…"
+],
+[
+"photo enregistrée",
+"photo saved"
+],
+[
+"Choisissez une photo",
+"Choose a photo"
+],
+[
+"photo du {0}",
+"photo of {0}"
+],
+[
+"État des lieux : vos 6 photos (salle de bain, cuisine, chambre, cave, buanderie, parking) + ses photos de sortie à son départ",
+"Check-in photos: your 6 photos (bathroom, kitchen, bedroom, cellar, laundry, parking) + their check-out photos when they leave"
+],
+[
+"Avant / après les travaux",
+"Before / after the work"
+],
+[
+"Avant",
+"Before"
+],
+[
+"Après",
+"After"
+],
+[
+"Photo état des lieux",
+"Check-in photo"
+],
+[
+"Photos de sortie reçues",
+"Check-out photos received"
+],
+[
+"Photos de sortie effacées",
+"Check-out photos deleted"
+],
+[
+"Photos de sortie vues",
+"Check-out photos viewed"
 ]
 ];

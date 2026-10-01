@@ -7667,5 +7667,141 @@ export default [
 [
 "Gestion locative · Luxembourg",
 "Gestão de arrendamento · Luxemburgo"
+],
+[
+"Salle de bain",
+"Casa de banho"
+],
+[
+"Cuisine",
+"Cozinha"
+],
+[
+"Buanderie",
+"Lavandaria"
+],
+[
+"Parking",
+"Estacionamento"
+],
+[
+"Une photo par pièce, prise par vous : le locataire la voit dans son app. À son départ, il envoie ses photos de sortie : elles apparaissent ici à côté des vôtres (12 photos). Effacez-les après contrôle ou remise à neuf.",
+"Uma foto por divisão, tirada por si: o inquilino vê-a na sua app. À saída, ele envia as suas fotos de saída: aparecem aqui ao lado das suas (12 fotos). Apague-as após o controlo ou a renovação."
+],
+[
+"{0} photos de sortie",
+"{0} fotos de saída"
+],
+[
+"{0} photo de sortie",
+"{0} foto de saída"
+],
+[
+"envoyées par",
+"enviadas por"
+],
+[
+"envoyée par",
+"enviada por"
+],
+[
+"Contrôlées — effacer les photos de sortie",
+"Verificadas — apagar as fotos de saída"
+],
+[
+"pas encore de photo",
+"ainda sem foto"
+],
+[
+"pas de photo de sortie",
+"sem foto de saída"
+],
+[
+"Prendre une photo",
+"Tirar uma foto"
+],
+[
+"Choisir dans la galerie",
+"Escolher na galeria"
+],
+[
+"appareil photo ou 🖼️ galerie",
+"câmara ou 🖼️ galeria"
+],
+[
+"une nouvelle photo remplace l'ancienne",
+"uma nova foto substitui a anterior"
+],
+[
+"Anciennes photos (sans pièce)",
+"Fotos antigas (sem divisão)"
+],
+[
+"à contrôler",
+"a verificar"
+],
+[
+"touchez pour comparer avec vos photos d’entrée",
+"toque para comparar com as suas fotos de entrada"
+],
+[
+"Effacer les {0} photos de sortie ?",
+"Apagar as {0} fotos de saída?"
+],
+[
+"Effacer les {0} photo de sortie ?",
+"Apagar a foto de saída?"
+],
+[
+"Après contrôle ou remise à neuf. Vos photos d’entrée restent.",
+"Após o controlo ou a renovação. As suas fotos de entrada ficam."
+],
+[
+"Chiffrement de la photo…",
+"A cifrar a foto…"
+],
+[
+"photo enregistrée",
+"foto guardada"
+],
+[
+"Choisissez une photo",
+"Escolha uma foto"
+],
+[
+"photo du {0}",
+"foto de {0}"
+],
+[
+"État des lieux : vos 6 photos (salle de bain, cuisine, chambre, cave, buanderie, parking) + ses photos de sortie à son départ",
+"Estado do alojamento: as suas 6 fotos (casa de banho, cozinha, quarto, cave, lavandaria, estacionamento) + as fotos de saída dele"
+],
+[
+"Avant / après les travaux",
+"Antes / depois dos trabalhos"
+],
+[
+"Avant",
+"Antes"
+],
+[
+"Après",
+"Depois"
+],
+[
+"Photo état des lieux",
+"Foto do estado do alojamento"
+],
+[
+"Photos de sortie reçues",
+"Fotos de saída recebidas"
+],
+[
+"Photos de sortie effacées",
+"Fotos de saída apagadas"
+],
+[
+"Photos de sortie vues",
+"Fotos de saída vistas"
 ]
 ];
