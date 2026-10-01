@@ -5,7 +5,7 @@ import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.33.3';
+const VERSION = '2.34.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -901,6 +901,27 @@ const ym = (y, m) => y * 12 + (m - 1);
 const ymOf = (s) => { const [y, m] = String(s).split('-'); return +y * 12 + (+m - 1); };
 const addDays = (s, n) => { const d = new Date(s + 'T00:00:00'); d.setDate(d.getDate() + n); return isoDate(d); };
 const nowYm = () => { const d = new Date(); return d.getFullYear() * 12 + d.getMonth(); };
+// Message d'invitation (WhatsApp / SMS / email) dans la langue choisie pour la personne (français par défaut)
+const INVITE = {
+  loc: {
+    fr: { subj: 'Votre espace locataire', txt: (p, app, code, url, soc) => `Bonjour ${p}, voici votre app des locataires ${soc} (loyers, quittances, documents, collectes, signaler un problème).\n1) Ouvrez : ${app}\n2) Ajoutez-la à votre écran d'accueil\n3) Votre code d'accès personnel : ${code}\nOu ouvrez directement : ${url}\nCe code est personnel, ne le partagez pas.` },
+    it: { subj: 'Il tuo spazio inquilino', txt: (p, app, code, url, soc) => `Buongiorno ${p}, ecco la tua app degli inquilini ${soc} (affitti, ricevute, documenti, raccolta rifiuti, segnalare un problema).\n1) Apri: ${app}\n2) Aggiungila alla schermata Home\n3) Il tuo codice d'accesso personale: ${code}\nOppure apri direttamente: ${url}\nQuesto codice è personale, non condividerlo.` },
+    de: { subj: 'Ihr Mieterbereich', txt: (p, app, code, url, soc) => `Hallo ${p}, hier ist Ihre Mieter-App von ${soc} (Mieten, Quittungen, Dokumente, Müllabfuhr, Problem melden).\n1) Öffnen Sie: ${app}\n2) Legen Sie sie auf Ihren Startbildschirm\n3) Ihr persönlicher Zugangscode: ${code}\nOder direkt öffnen: ${url}\nDieser Code ist persönlich, bitte nicht weitergeben.` },
+    pt: { subj: 'O seu espaço de inquilino', txt: (p, app, code, url, soc) => `Olá ${p}, aqui está a sua app dos inquilinos ${soc} (rendas, recibos, documentos, recolhas do lixo, comunicar um problema).\n1) Abra: ${app}\n2) Adicione-a ao ecrã principal\n3) O seu código de acesso pessoal: ${code}\nOu abra diretamente: ${url}\nEste código é pessoal, não o partilhe.` },
+    en: { subj: 'Your tenant space', txt: (p, app, code, url, soc) => `Hello ${p}, here is your ${soc} tenants app (rent, receipts, documents, waste collection, report a problem).\n1) Open: ${app}\n2) Add it to your home screen\n3) Your personal access code: ${code}\nOr open directly: ${url}\nThis code is personal, do not share it.` },
+    es: { subj: 'Tu espacio de inquilino', txt: (p, app, code, url, soc) => `Hola ${p}, aquí tienes tu app de inquilinos de ${soc} (alquileres, recibos, documentos, recogida de basura, avisar de un problema).\n1) Abre: ${app}\n2) Añádela a tu pantalla de inicio\n3) Tu código de acceso personal: ${code}\nO abre directamente: ${url}\nEste código es personal, no lo compartas.` },
+  },
+  eq: {
+    fr: { subj: 'Votre app de travail', txt: (p, app, code, url, soc) => `Bonjour ${p}, voici votre app de travail ${soc} (planning, interventions, absences).\n1) Ouvrez : ${app}\n2) Ajoutez-la à votre écran d'accueil\n3) Votre code personnel : ${code}\nOu ouvrez directement : ${url}` },
+    it: { subj: 'La tua app di lavoro', txt: (p, app, code, url, soc) => `Buongiorno ${p}, ecco la tua app di lavoro ${soc} (planning, interventi, assenze).\n1) Apri: ${app}\n2) Aggiungila alla schermata Home\n3) Il tuo codice personale: ${code}\nOppure apri direttamente: ${url}` },
+    de: { subj: 'Ihre Arbeits-App', txt: (p, app, code, url, soc) => `Hallo ${p}, hier ist Ihre Arbeits-App von ${soc} (Planung, Einsätze, Abwesenheiten).\n1) Öffnen Sie: ${app}\n2) Legen Sie sie auf Ihren Startbildschirm\n3) Ihr persönlicher Code: ${code}\nOder direkt öffnen: ${url}` },
+    pt: { subj: 'A sua app de trabalho', txt: (p, app, code, url, soc) => `Olá ${p}, aqui está a sua app de trabalho ${soc} (planeamento, intervenções, ausências).\n1) Abra: ${app}\n2) Adicione-a ao ecrã principal\n3) O seu código pessoal: ${code}\nOu abra diretamente: ${url}` },
+    en: { subj: 'Your work app', txt: (p, app, code, url, soc) => `Hello ${p}, here is your ${soc} work app (schedule, jobs, absences).\n1) Open: ${app}\n2) Add it to your home screen\n3) Your personal code: ${code}\nOr open directly: ${url}` },
+    es: { subj: 'Tu app de trabajo', txt: (p, app, code, url, soc) => `Hola ${p}, aquí tienes tu app de trabajo de ${soc} (planificación, intervenciones, ausencias).\n1) Abre: ${app}\n2) Añádela a tu pantalla de inicio\n3) Tu código personal: ${code}\nO abre directamente: ${url}` },
+  },
+};
+const inviteMsg = (kind, lang, ...a) => { const t = INVITE[kind][lang] || INVITE[kind].fr; return { subj: t.subj, txt: t.txt(...a) }; };
+
 const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
 const duree = (months) => (months >= 12 ? `${Math.floor(months / 12)} an${months >= 24 ? 's' : ''}${months % 12 ? ' ' + (months % 12) + ' mois' : ''}` : `${months} mois`);
 
@@ -2724,22 +2745,20 @@ const SHEETS = {
           <button class="btn primary block" data-action="eq-on" data-id="${id}">📱 Créer l’accès à l’app</button>`;
       } else {
         const url = eqUrl(i);
-        const msgTxt = encodeURIComponent(`Bonjour ${i.prenom || ''}, voici votre app de travail ${societe().nom || 'NOBIS s.a.r.l.'} (planning, interventions, absences).
-1) Ouvrez : ${eqAppUrl()}
-2) Ajoutez-la à votre écran d'accueil
-3) Votre code personnel : ${e.code || '(à créer)'}
-Ou ouvrez directement : ${url}`);
+        const inv = inviteMsg('eq', e.lang, i.prenom || '', eqAppUrl(), e.code || '—', url, societe().nom || 'NOBIS s.a.r.l.');
+        const msgTxt = encodeURIComponent(inv.txt);
         body = html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code personnel</div>
             <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
             <button class="btn sm" data-action="eq-code" data-id="${id}">${e.code ? 'Nouveau code' : 'Créer le code'}</button></div>
           <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(url, 5)}</div>
+          <label class="field" style="margin:0 0 4px">Langue de son app<select data-input="eq-lang" data-id="${id}">${[['', 'Celle de son téléphone'], ['fr', 'Français'], ['it', 'Italiano'], ['pt', 'Português'], ['de', 'Deutsch'], ['en', 'English'], ['es', 'Español']].map(([k, v2]) => html`<option value="${k}" ${(e.lang || '') === k ? new Raw('selected') : ''}>${v2}</option>`)}</select></label>
+          <p class="tiny muted" style="margin:0 0 10px">Le message d’invitation part dans cette langue (en français si « Celle de son téléphone »).</p>
           <div class="actions" style="flex-direction:column">
             ${tel ? html`<a class="btn" href="https://wa.me/${tel.replace(/^\+/, '')}?text=${msgTxt}" target="_blank" rel="noopener">${icon('msg')} Envoyer par WhatsApp</a><a class="btn" href="sms:${tel}?&body=${msgTxt}">${icon('msg')} Envoyer par SMS</a>` : ''}
-            ${i.mail ? html`<a class="btn" href="mailto:${i.mail}?subject=${encodeURIComponent('Votre app de travail')}&body=${msgTxt}">${icon('mail')} Envoyer par email</a>` : ''}
+            ${i.mail ? html`<a class="btn" href="mailto:${i.mail}?subject=${encodeURIComponent(inv.subj)}&body=${msgTxt}">${icon('mail')} Envoyer par email</a>` : ''}
             <button class="btn" data-action="eq-copy" data-id="${id}">${icon('file')} Copier le lien</button>
             <a class="btn" href="${url}" target="_blank" rel="noopener">${icon('eye')} Voir son app</a>
           </div>
-          <label class="field" style="margin-top:12px">Langue de son app<select data-input="eq-lang" data-id="${id}">${[['', 'Celle de son téléphone'], ['fr', 'Français'], ['it', 'Italiano'], ['pt', 'Português'], ['de', 'Deutsch'], ['en', 'English'], ['es', 'Español']].map(([k, v2]) => html`<option value="${k}" ${(e.lang || '') === k ? new Raw('selected') : ''}>${v2}</option>`)}</select></label>
           <p class="tiny muted">L’app se met à jour toute seule quand vous changez son planning ou ses interventions.</p>
           <button class="btn ghost danger block" data-action="eq-off" data-id="${id}">Désactiver l’accès</button>`;
       }
@@ -3348,20 +3367,22 @@ Ou ouvrez directement : ${url}`);
       } else {
         const url = espUrl(l);
         const tel = (l.tel || '').replace(/[^\d+]/g, '');
-        const msg = encodeURIComponent(`Bonjour ${l.prenom || ''}, voici votre app des locataires NOBIS s.a.r.l. (loyers, quittances, documents, collectes, signaler un problème).\n1) Ouvrez : ${appUrl()}\n2) Ajoutez-la à votre écran d'accueil\n3) Votre code d'accès personnel : ${e.code || '(à créer)'}\nOu ouvrez directement : ${url}\nCe code est personnel, ne le partagez pas.`);
+        const inv = inviteMsg('loc', e.lang, l.prenom || '', appUrl(), e.code || '—', url, 'NOBIS s.a.r.l.');
+        const msg = encodeURIComponent(inv.txt);
         body = html`<p style="margin-top:0">Espace actif. Donnez à <b>${fullName(l)}</b> son <b>code d'accès</b> (pour l'app installée depuis luxinterventions.com) ou envoyez-lui le lien direct.</p>
           <div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d'accès personnel</div>
             <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
             <button class="btn sm" data-action="esp-code" data-id="${id}">${e.code ? 'Nouveau code' : 'Créer le code'}</button></div>
           <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(url, 5)}</div>
+          <label class="field" style="margin:0 0 4px">Langue par défaut de son espace<select data-input="esp-lang" data-loc="${id}">${[['', 'Celle de son téléphone'], ['fr', 'Français'], ['it', 'Italiano'], ['de', 'Deutsch'], ['pt', 'Português'], ['en', 'English'], ['es', 'Español']].map(([k, v2]) => html`<option value="${k}" ${(e.lang || '') === k ? new Raw('selected') : ''}>${v2}</option>`)}</select></label>
+          <p class="tiny muted" style="margin:0 0 10px">Le message d’invitation part dans cette langue (en français si « Celle de son téléphone »).</p>
           <div class="actions" style="flex-direction:column">
             ${tel ? html`<a class="btn" href="https://wa.me/${tel.replace(/^\+/, '')}?text=${msg}" target="_blank" rel="noopener">${icon('msg')} Envoyer par WhatsApp</a><a class="btn" href="sms:${tel}?&body=${msg}">${icon('msg')} Envoyer par SMS</a>` : ''}
-            ${l.mail ? html`<a class="btn" href="mailto:${l.mail}?subject=${encodeURIComponent('Votre espace locataire')}&body=${msg}">${icon('mail')} Envoyer par email</a>` : ''}
+            ${l.mail ? html`<a class="btn" href="mailto:${l.mail}?subject=${encodeURIComponent(inv.subj)}&body=${msg}">${icon('mail')} Envoyer par email</a>` : ''}
             <button class="btn" data-action="esp-copy" data-id="${id}">${icon('file')} Copier le lien</button>
             <a class="btn" href="${url}" target="_blank" rel="noopener">${icon('eye')} Voir son espace</a>
           </div>
           <div class="section-label">Ce qu'il voit</div>${boxes}
-          <label class="field">Langue par défaut de son espace<select data-input="esp-lang" data-loc="${id}">${[['', 'Celle de son téléphone'], ['fr', 'Français'], ['it', 'Italiano'], ['de', 'Deutsch'], ['pt', 'Português'], ['en', 'English'], ['es', 'Español']].map(([k, v2]) => html`<option value="${k}" ${(e.lang || '') === k ? new Raw('selected') : ''}>${v2}</option>`)}</select></label>
           <p class="tiny muted">Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.</p>
           <button class="btn ghost danger block" data-action="esp-off" data-id="${id}">Désactiver l'espace</button>`;
       }
@@ -4762,13 +4783,18 @@ document.addEventListener('change', (e) => {
   }
   if (k === 'eq-lang') {
     const i = vault.get('intervenants', e.target.dataset.id);
-    if (i && i.espace && i.espace.on) vault.mutate((tx) => tx.put('intervenants', { id: i.id, espace: { ...i.espace, lang: e.target.value } }), 'App de l’équipe : langue', intervFull(i), i.id);
+    if (i && i.espace && i.espace.on) {
+      // le message d'invitation suit la nouvelle langue
+      Promise.resolve(vault.mutate((tx) => tx.put('intervenants', { id: i.id, espace: { ...i.espace, lang: e.target.value } }), 'App de l’équipe : langue', intervFull(i), i.id))
+        .then(() => { if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } });
+    }
   }
   if (k === 'esp-show' || k === 'esp-lang') {
     const l = vault.get('locataires', e.target.dataset.loc);
     if (l && l.espace && l.espace.on) {
       const upd = k === 'esp-lang' ? { ...l.espace, lang: e.target.value } : { ...l.espace, show: { ...ESP_ALL, ...(l.espace.show || {}), [e.target.dataset.k]: e.target.checked } };
-      vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: upd }), 'Espace locataire modifié', fullName(l), l.id);
+      Promise.resolve(vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: upd }), 'Espace locataire modifié', fullName(l), l.id))
+        .then(() => { if (k === 'esp-lang' && ui.sheet) { ui.sheet.rendered = false; renderSheet(); } });
     }
   }
   if (k === 'icsall-file' && e.target.files[0]) {
