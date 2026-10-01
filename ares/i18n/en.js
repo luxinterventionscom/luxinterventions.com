@@ -7471,5 +7471,53 @@ export default [
 [
 "Le message d’invitation part dans cette langue (en français si « Celle de son téléphone »).",
 "The invitation message is sent in this language (in French if « Their phone’s language »)."
+],
+[
+": LuxInterventions le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.",
+": LuxInterventions splits it by itself by type of waste (glass, paper, general waste…) and creates a collection for each."
+],
+[
+"Ajoute l’icône LuxInterventions sur l’écran d’accueil, fonctionne hors ligne.",
+"Adds the LuxInterventions icon to the home screen, works offline."
+],
+[
+"Connexion annulée : LuxInterventions reste ouvert sur l’autre appareil.",
+"Login cancelled: LuxInterventions stays open on the other device."
+],
+[
+"Le contrat de {0} commence le {1}. Pour que les totaux restent justes, LuxInterventions va avancer l'entrée au {2}, puis enregistrer le paiement.",
+"{0}’s lease starts on {1}. To keep the totals right, LuxInterventions will move the start to {2}, then record the payment."
+],
+[
+"LuxInterventions a été ouvert sur {0} : cet appareil a été déconnecté.",
+"LuxInterventions was opened on {0}: this device has been logged out."
+],
+[
+"LuxInterventions est ouvert sur un autre appareil",
+"LuxInterventions is open on another device"
+],
+[
+"Publier un objet (LuxInterventions)",
+"Post an item (LuxInterventions)"
+],
+[
+"du camion (comme sur le calendrier de la commune). LuxInterventions calcule quand sortir les poubelles.",
+"of the truck (as on the municipal calendar). LuxInterventions works out when to put the bins out."
+],
+[
+"Annonce publiée (LuxInterventions)",
+"Listing published (LuxInterventions)"
+],
+[
+"Le contrat de {0} {1}. Pour que les totaux restent justes, LuxInterventions va {2}, puis enregistrer le paiement.",
+"{0}’s contract {1}. To keep the totals right, LuxInterventions will {2}, then record the payment."
+],
+[
+"Gestion locative",
+"Rental management"
+],
+[
+"Gestion locative · Luxembourg",
+"Rental management · Luxembourg"
 ]
 ];
