@@ -91,6 +91,16 @@ Database D1 per gli account, le residenze e le richieste d'intervento:
 Le tabelle si creano da sole al primo utilizzo. Le foto vanno in R2
 (`portail/photos/…`), le chiavi per le notifiche push si generano da sole.
 
+## Notifiche delle app (numerino sull'icona)
+
+App di gestione, app dei locatari e app della squadra ricevono una notifica
+(e il numerino sull'icona) quando c'è del nuovo. Usa lo **stesso database D1**
+del portale (binding `DB`): la tabella `esp_push` si crea da sola al primo uso,
+le chiavi VAPID sono le stesse del portale. Basta ricaricare `hit-counter.js`
+→ **Deploy**. Il server conserva solo l'indirizzo di abbonamento del telefono e
+la lingua; le notifiche dicono soltanto « nuovo messaggio » / « novità »
+(i contenuti restano cifrati).
+
 ## Note
 
 - Il Worker accetta chiamate solo dall'origine `https://luxinterventions.com`

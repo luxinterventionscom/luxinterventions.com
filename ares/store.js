@@ -595,6 +595,8 @@ export class Vault {
   espaceDel(id, docId) { return this.call('espace/' + id + (docId ? '/f/' + docId : ''), { method: 'DELETE' }); }
   espCodePut(hash, body) { return this.call('espcode/' + hash, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   espCodeDel(hash) { return this.call('espcode/' + hash, { method: 'DELETE' }); }
+  pushSub(body) { return this.call('push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
+  espNotify(id) { return this.call('espace/' + id + '/notify', { method: 'POST' }); }
   async inboxList() { return (await (await this.call('inbox')).json()).items || []; }
   async inboxGet(name) { return new Uint8Array(await (await this.call('inbox/' + name)).arrayBuffer()); }
   inboxDel(name) { return this.call('inbox/' + name, { method: 'DELETE' }); }

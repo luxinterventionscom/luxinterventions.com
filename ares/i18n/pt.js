@@ -7983,5 +7983,41 @@ export default [
 [
 "{0} nouveaux messages de locataires",
 "{0} novas mensagens de inquilinos"
+],
+[
+"Notifications",
+"Notificações"
+],
+[
+"Un avis et le numéro sur l’icône quand un locataire ou l’équipe vous écrit (signalement, virement, photos, problème…). Le serveur ne lit rien : il dit seulement « nouveau message ».",
+"Um aviso e o número no ícone quando um inquilino ou a equipa lhe escreve (aviso, transferência, fotos, problema…). O servidor não lê nada: diz apenas « nova mensagem »."
+],
+[
+"🔔 Activer les notifications sur ce téléphone",
+"🔔 Ativar as notificações neste telemóvel"
+],
+[
+"✓ Activées sur ce téléphone : le numéro sur l’icône indique ce qui attend une action.",
+"✓ Ativas neste telemóvel: o número no ícone indica o que aguarda uma ação."
+],
+[
+"Bloquées : réactivez-les dans les réglages du téléphone (Notifications → cette app).",
+"Bloqueadas: reative-as nas definições do telemóvel (Notificações → esta app)."
+],
+[
+"iPhone : installez d’abord l’app sur l’écran d’accueil, ouvrez-la depuis l’icône, puis activez-les ici.",
+"iPhone: instale primeiro a app no ecrã principal, abra-a pelo ícone e depois ative-as aqui."
+],
+[
+"Non disponibles dans ce navigateur.",
+"Não disponíveis neste navegador."
+],
+[
+"🔔 Notifications activées",
+"🔔 Notificações ativadas"
+],
+[
+"Notifications impossibles sur ce téléphone",
+"Notificações impossíveis neste telemóvel"
 ]
 ];
