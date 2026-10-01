@@ -177,6 +177,10 @@ export default [
 "Altro"
 ],
 [
+"Avis global",
+"Giudizio complessivo"
+],
+[
 "Avril",
 "Aprile"
 ],
@@ -195,6 +199,10 @@ export default [
 [
 "Bloquées dans les réglages du navigateur",
 "Bloccate nelle impostazioni del browser"
+],
+[
+"Bon",
+"Buono"
 ],
 [
 "Bonjour",
@@ -229,12 +237,24 @@ export default [
 "Locale caldaia"
 ],
 [
+"Choisissez une note pour chaque critère et l’avis global.",
+"Scegliete un voto per ogni criterio e il giudizio complessivo."
+],
+[
 "Choisissez votre mot de passe",
 "Scegliete la vostra password"
 ],
 [
+"Client / résidence",
+"Cliente / condominio"
+],
+[
 "Clés",
 "Chiavi"
+],
+[
+"Cochez la confirmation.",
+"Spuntate la conferma."
 ],
 [
 "Code de configuration",
@@ -263,6 +283,10 @@ export default [
 [
 "Compteurs, local technique, particularités…",
 "Contatori, locale tecnico, particolarità…"
+],
+[
+"Compétence technique",
+"Competenza tecnica"
 ],
 [
 "Concierge, président du conseil…",
@@ -299,6 +323,10 @@ export default [
 [
 "Copié",
 "Copiato"
+],
+[
+"Courtoisie & disponibilité",
+"Cortesia e disponibilità"
 ],
 [
 "Création…",
@@ -409,6 +437,10 @@ export default [
 "Tempo medio di presa in carico"
 ],
 [
+"Délais de réponse et d’arrivée",
+"Tempi di risposta e di arrivo"
+],
+[
 "Démarrer",
 "Inizia"
 ],
@@ -489,12 +521,24 @@ export default [
 "Aree verdi"
 ],
 [
+"Excellent",
+"Eccellente"
+],
+[
+"Facultatif",
+"Facoltativo"
+],
+[
 "Faire",
 "Fai"
 ],
 [
 "Fermer",
 "Chiudi"
+],
+[
+"Fiche d’évaluation de l’intervention",
+"Scheda di valutazione dell’intervento"
 ],
 [
 "Fuite sous l’évier, l’eau coule dans l’appartement du dessous.",
@@ -541,6 +585,10 @@ export default [
 "Stampato il {0}"
 ],
 [
+"Indiquez votre nom.",
+"Indicate il vostro nome."
+],
+[
 "Installer",
 "Installa"
 ],
@@ -553,12 +601,20 @@ export default [
 "Installate l’app sul telefono"
 ],
 [
+"Insuffisant",
+"Scarso"
+],
+[
 "Interphone « Syndic »",
 "Citofono « Syndic »"
 ],
 [
 "Intervention en cours",
 "Intervento in corso"
+],
+[
+"Intervention n°",
+"Intervento n°"
 ],
 [
 "Intervention planifiée — la gérance est prévenue",
@@ -599,6 +655,10 @@ export default [
 [
 "Janvier",
 "Gennaio"
+],
+[
+"Je confirme cette évaluation (vaut signature).",
+"Confermo questa valutazione (vale come firma)."
 ],
 [
 "Juillet",
@@ -687,6 +747,10 @@ export default [
 [
 "Menuiserie",
 "Falegnameria"
+],
+[
+"Merci ! Évaluation envoyée à LuxInterventions",
+"Grazie! Valutazione inviata a LuxInterventions"
 ],
 [
 "Mes demandes en cours",
@@ -789,6 +853,10 @@ export default [
 "Nome e cognome"
 ],
 [
+"Nom et prénom de la personne qui remplit",
+"Nome e cognome di chi compila"
+],
+[
 "Nombre d'appartements",
 "Numero di appartamenti"
 ],
@@ -801,8 +869,16 @@ export default [
 "Non disponibili su questo browser"
 ],
 [
+"Non satisfait",
+"Non soddisfatto"
+],
+[
 "Notes",
 "Note"
+],
+[
+"Notes ou suggestions",
+"Note o suggerimenti"
 ],
 [
 "Notification de test envoyée",
@@ -871,6 +947,10 @@ export default [
 [
 "Par type",
 "Per tipo"
+],
+[
+"Partiellement satisfait",
+"Parzialmente soddisfatto"
 ],
 [
 "Pas de connexion internet",
@@ -977,12 +1057,20 @@ export default [
 "Presa in carico"
 ],
 [
+"Propreté & ordre",
+"Pulizia e ordine"
+],
+[
 "Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
 "Cosa succede? Da quando? Rischio di danni?"
 ],
 [
 "Quitter",
 "Esci"
+],
+[
+"Rapidité & ponctualité",
+"Rapidità e puntualità"
 ],
 [
 "Rapport d'intervention",
@@ -1007,6 +1095,14 @@ export default [
 [
 "Rechercher une résidence, une adresse…",
 "Cerca un condominio, un indirizzo…"
+],
+[
+"Relation avec le personnel",
+"Rapporto con il personale"
+],
+[
+"Rempli et confirmé par",
+"Compilato e confermato da"
 ],
 [
 "Replanifier",
@@ -1073,12 +1169,20 @@ export default [
 "Condomini"
 ],
 [
+"Résolution efficace de la panne",
+"Risoluzione efficace del guasto"
+],
+[
 "Rôle",
 "Ruolo"
 ],
 [
 "Safari : Partager → « Sur l’écran d’accueil ».",
 "Safari: Condividi → « Aggiungi alla schermata Home »."
+],
+[
+"Satisfait",
+"Soddisfatto"
 ],
 [
 "Se connecter",
@@ -1109,6 +1213,10 @@ export default [
 "Solo LuxInterventions può cambiare lo stato"
 ],
 [
+"Soin des lieux en fin de travaux",
+"Cura degli ambienti a fine lavoro"
+],
+[
 "Son mot de passe actuel restera valable jusqu’à ce qu’il en choisisse un nouveau avec le lien.",
 "La sua password attuale resta valida finché non ne sceglie una nuova con il link."
 ],
@@ -1123,6 +1231,10 @@ export default [
 [
 "Statut",
 "Stato"
+],
+[
+"Suffisant",
+"Sufficiente"
 ],
 [
 "Suivi",
@@ -1259,6 +1371,14 @@ export default [
 [
 "Votre accès au portail LuxInterventions",
 "Il vostro accesso al portale LuxInterventions"
+],
+[
+"Votre avis compte",
+"La vostra opinione conta"
+],
+[
+"Votre avis est essentiel pour améliorer notre service.",
+"La vostra opinione è fondamentale per migliorare il nostro servizio."
 ],
 [
 "Votre nom",
@@ -1473,6 +1593,18 @@ export default [
 "Squadra LuxInterventions"
 ],
 [
+"Évaluation",
+"Valutazione"
+],
+[
+"Évaluation de l’intervention",
+"Valutazione dell’intervento"
+],
+[
+"Évaluez cette intervention en 30 secondes : rapidité, compétence, courtoisie, propreté.",
+"Valutate questo intervento in 30 secondi: rapidità, competenza, cortesia, pulizia."
+],
+[
 "à l'instant",
 "proprio ora"
 ],
@@ -1487,6 +1619,18 @@ export default [
 [
 "— technicien :",
 "— tecnico:"
+],
+[
+"⭐ Envoyer l’évaluation",
+"⭐ Invia la valutazione"
+],
+[
+"⭐ Évaluation",
+"⭐ Valutazione"
+],
+[
+"⭐ Évaluer l’intervention",
+"⭐ Valuta l’intervento"
 ],
 [
 "📲 En réel, LuxInterventions est prévenu de votre message.",

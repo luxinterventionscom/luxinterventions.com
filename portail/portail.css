@@ -82,3 +82,30 @@
 /* Choix de la langue (écran d'accès et « Plus ») */
 .ptl-lang { flex-wrap: wrap; margin: 2px 0 6px; }
 .lock .ptl-lang { justify-content: center; }
+
+/* Fiche d'évaluation d'une intervention */
+.eval-cta { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; border: 1.5px solid var(--accent); }
+.eval-grid { display: flex; flex-direction: column; gap: 8px; }
+.eval-head, .eval-line { display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr)); gap: 6px; align-items: center; }
+.eval-head span { text-align: center; font-size: 20px; line-height: 1.1; }
+.eval-head small, .eval-opt small { display: block; font-size: 10.5px; color: var(--text-3); }
+.eval-line { border: 1px solid var(--border); border-radius: 12px; padding: 8px; margin: 0; }
+.eval-crit { font-size: 13.5px; line-height: 1.25; }
+.eval-crit small { display: block; color: var(--text-3); font-size: 11.5px; }
+.eval-opt { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 2px; border-radius: 10px; cursor: pointer; text-align: center; }
+.eval-opt { position: relative; }
+.eval-opt input { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+.eval-opt span { font-size: 22px; filter: grayscale(1); opacity: .45; transition: .15s; }
+.eval-opt small { display: none; }
+.eval-opt:has(input:checked) { background: var(--accent-soft); outline: 2px solid var(--accent); }
+.eval-opt:has(input:checked) span { filter: none; opacity: 1; }
+.eval-opt:has(input:focus-visible) { outline: 2px solid var(--accent); }
+.eval-global { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.eval-gopt { position: relative; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 44px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 12px; cursor: pointer; font-size: 13.5px; font-weight: 600; line-height: 1.2; }
+.eval-gopt input { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+.eval-gopt:has(input:checked) { background: var(--accent-soft); outline: 2px solid var(--accent); }
+.eval-sum .eval-title { font-weight: 700; margin-bottom: 8px; }
+.eval-rows { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.eval-row { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px dashed var(--border); padding: 3px 0; }
+.eval-row b span { font-weight: 500; color: var(--text-2); }
+@media (max-width: 420px) { .eval-head, .eval-line { grid-template-columns: repeat(4, minmax(0, 1fr)); } .eval-head > span:first-child { display: none; } .eval-crit { grid-column: 1 / -1; margin-bottom: 2px; } }

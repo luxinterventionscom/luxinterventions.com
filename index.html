@@ -365,7 +365,7 @@
   }
 
   /* Bloc vidéo — occupe l'espace des cards manquantes en fin de grille */
-  .video-card { grid-column: span 2; padding: 0; cursor: default; min-height: 240px; }
+  .video-card { grid-column: span 3; padding: 0; cursor: default; min-height: 240px; }
   .video-card:hover { background: var(--white); transform: none; }
   .video-card::after { display: none; }
   .video-card-media {
@@ -675,9 +675,6 @@
     border: none; background: transparent; color: var(--grey-600);
   }
   .portail-tab.active { background: var(--white); color: var(--navy); box-shadow: var(--shadow-sm); }
-  .ptl-langs { display: flex; gap: 0.4rem; flex-wrap: wrap; margin-top: 1.25rem; }
-  .ptl-langs button { font: inherit; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; padding: 0.35rem 0.8rem; border-radius: 50px; border: 1.5px solid var(--grey-200); background: var(--white); color: var(--navy); cursor: pointer; }
-  .ptl-langs button[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: var(--white); }
   .portail-panel { display: none; }
   .portail-panel.active { display: block; }
   .portail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem; }
@@ -889,7 +886,6 @@
     .numbers-grid { grid-template-columns: 1fr 1fr; }
     .services-grid { grid-template-columns: repeat(2, 1fr); }
     .video-card { grid-column: 1 / -1; }
-    .services-grid > .tools-card { grid-column: 1 / -1; }
     .services-header { flex-direction: column; align-items: flex-start; gap: 1rem; }
     .why-grid { grid-template-columns: 1fr; gap: 3rem; }
     .about-grid { grid-template-columns: 1fr; gap: 3rem; }
@@ -1152,14 +1148,6 @@
       <span class="service-tag" style="background:#E6F7F5;color:#1F8A7A">Régulier</span>
       <div class="service-click-hint">▶ Faire une demande</div>
     </div>
-
-    <a class="service-card tools-card" href="/locataires-nobis.html" style="text-decoration:none;color:inherit;display:block">
-      <div class="service-icon" style="background:#FFF4E0">🧰</div>
-      <div class="service-name">Donation / Location tools</div>
-      <div class="service-desc">Outils, électroménager, meubles… donnés, prêtés ou loués entre particuliers. Photos, prix, contact par email. Et l’app des locataires NOBIS s.a.r.l.</div>
-      <span class="service-tag" style="background:#FFF4E0;color:#A8651F">Don · prêt · location</span>
-      <div class="service-click-hint">▶ Ouvrir</div>
-    </a>
 
     <div class="service-card video-card">
       <video class="video-card-media" autoplay muted loop playsinline preload="metadata" poster="assets/relax-video-poster.jpg">
@@ -1677,9 +1665,6 @@
   <div class="section-eyebrow">Espace Digital</div>
   <h2 class="section-title">Portail<br><em style="color:var(--accent)">Syndic / Gérance</em></h2>
   <p class="section-sub">Accédez à votre tableau de bord, suivez vos interventions en temps réel et téléchargez vos rapports — 24h/24, depuis n'importe quel appareil.</p>
-  <div class="ptl-langs" role="group" aria-label="Langue · Sprache · Language">
-    <button type="button" data-lang="fr">FR</button><button type="button" data-lang="de">DE</button><button type="button" data-lang="en">EN</button><button type="button" data-lang="pt">PT</button><button type="button" data-lang="es">ES</button><button type="button" data-lang="it">IT</button>
-  </div>
 
   <div style="margin-top:3rem">
     <div class="portail-tabs">
