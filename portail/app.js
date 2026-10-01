@@ -6,7 +6,7 @@ import { startI18n, LOCALES } from '/ares/i18n.js';
 
 const VERSION = '1.1.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
-const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', pt: 'Português', es: 'Español' };
+const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
   try { const l = localStorage.getItem('ptlLang'); if (PTL_LANGS[l]) return l; } catch {}
   const n = (navigator.language || '').slice(0, 2).toLowerCase();
@@ -14,6 +14,18 @@ const LANG = (() => {
 })();
 const LOC = LOCALES[LANG] || 'fr-LU';
 await startI18n(LANG, (l) => import(`./i18n/${l}.js`));
+// le service worker traduit les notifications push dans cette langue
+try { caches.open('ptl-pref').then((c) => c.put('/__ptl-lang', new Response(LANG))).catch(() => {}); } catch {}
+
+// Message d'invitation (email / WhatsApp) dans la langue du portail
+const INVITE = {
+  fr: { subject: 'Votre accès au portail LuxInterventions', text: (n, l) => `Bonjour ${n},\n\nVoici votre accès personnel au portail LuxInterventions pour vos demandes d'intervention :\n${l}\n\nOuvrez le lien et choisissez votre mot de passe (lien valable 14 jours).\n\nLuxInterventions` },
+  de: { subject: 'Ihr Zugang zum LuxInterventions-Portal', text: (n, l) => `Hallo ${n},\n\nhier ist Ihr persönlicher Zugang zum LuxInterventions-Portal für Ihre Einsatzanfragen:\n${l}\n\nÖffnen Sie den Link und wählen Sie Ihr Passwort (Link 14 Tage gültig).\n\nLuxInterventions` },
+  en: { subject: 'Your access to the LuxInterventions portal', text: (n, l) => `Hello ${n},\n\nHere is your personal access to the LuxInterventions portal for your job requests:\n${l}\n\nOpen the link and choose your password (link valid for 14 days).\n\nLuxInterventions` },
+  it: { subject: 'Il vostro accesso al portale LuxInterventions', text: (n, l) => `Buongiorno ${n},\n\necco il vostro accesso personale al portale LuxInterventions per le richieste di intervento:\n${l}\n\nAprite il link e scegliete la vostra password (link valido 14 giorni).\n\nLuxInterventions` },
+  pt: { subject: 'O seu acesso ao portal LuxInterventions', text: (n, l) => `Olá ${n},\n\naqui está o seu acesso pessoal ao portal LuxInterventions para os seus pedidos de intervenção:\n${l}\n\nAbra o link e escolha a sua palavra-passe (link válido 14 dias).\n\nLuxInterventions` },
+  es: { subject: 'Tu acceso al portal LuxInterventions', text: (n, l) => `Hola ${n}:\n\naquí tienes tu acceso personal al portal LuxInterventions para tus solicitudes de intervención:\n${l}\n\nAbre el enlace y elige tu contraseña (enlace válido 14 días).\n\nLuxInterventions` },
+};
 const API = document.querySelector('meta[name="ptl-api"]').content.replace(/\/$/, '') + '/api/portail/';
 const $ = (s, r = document) => r.querySelector(s);
 
@@ -666,7 +678,7 @@ const VIEWS = {
         ${isAdmin() ? html`<label class="field" style="flex:1;min-width:160px">Gérance<select name="org"><option value="">Toutes</option>${(state.cache.orgs || []).map((o) => html`<option value="${o.id}">${o.name}</option>`)}</select></label>` : ''}
         <button class="btn primary" type="submit">${icon('download')} Rapport mensuel</button>
       </form>
-      <div class="section-label">Langue · Sprache · Language · Língua · Idioma</div>
+      <div class="section-label" data-notr="1">Langue · Sprache · Language · Lingua · Língua · Idioma</div>
       ${langChips()}
       <div class="section-label">Compte</div>
       <div class="list settings">
@@ -857,7 +869,7 @@ const SHEETS = {
           ${res.map((r) => html`<option value="${r.id}" ${data.residence_id === r.id ? new Raw('selected') : ''}>${r.name}${r.address ? ' — ' + r.address : ''}${isAdmin() ? ' (' + r.org_name + ')' : ''}</option>`)}</select></label>
         <div class="full"><div class="small" style="font-weight:600;color:var(--text-2);margin-bottom:6px">Urgence</div>
           <div class="urg-choices">${Object.entries(URG).map(([k, u]) => html`<label class="urg-choice urg-${k}"><input type="radio" name="urgence" value="${k}" required ${k === (data.urgence || '') ? new Raw('checked') : ''}><span>${u.dot} <b>${u.label}</b><small>${u.sub}</small></span></label>`)}</div></div>
-        <label class="field">Type d'intervention<select name="categorie">${CATEGORIES.map((c) => html`<option>${c}</option>`)}</select></label>
+        <label class="field">Type d'intervention<select name="categorie">${CATEGORIES.map((c) => html`<option value="${c}">${c}</option>`)}</select></label>
         ${field('Lieu précis', 'lieu', '', { placeholder: 'ex. App. 4B, hall, cave, toiture' })}
         <label class="field full">Description du problème<textarea name="description" required placeholder="Que se passe-t-il ? Depuis quand ? Risque de dégâts ?"></textarea></label>
         <label class="field full">Photos (jusqu'à 6)<input type="file" name="photos" accept="image/*" multiple data-input="preview-files"></label>
@@ -979,7 +991,8 @@ const SHEETS = {
 
   'invite-link'({ data }) {
     const link = `${location.origin}/portail.html#invite=${data.token}`;
-    const msg = `Bonjour ${data.name},\n\nVoici votre accès personnel au portail LuxInterventions pour vos demandes d'intervention :\n${link}\n\nOuvrez le lien et choisissez votre mot de passe (lien valable 14 jours).\n\nLuxInterventions`;
+    const inv = INVITE[LANG] || INVITE.fr;
+    const msg = inv.text(data.name, link);
     const tel = (data.phone || '').replace(/[^\d]/g, '').replace(/^00/, '');
     return {
       title: 'Lien d’accès prêt',
@@ -988,7 +1001,7 @@ const SHEETS = {
         <div class="note" style="word-break:break-all;font-family:var(--mono);font-size:12px" id="invLink">${link}</div>
         <div class="actions" style="margin-top:12px">
           <button class="btn" data-action="copy" data-text="${link}">${icon('file')} Copier</button>
-          <a class="btn" href="mailto:${data.email}?subject=${encodeURIComponent('Votre accès au portail LuxInterventions')}&body=${encodeURIComponent(msg)}">${icon('mail')} Email</a>
+          <a class="btn" href="mailto:${data.email}?subject=${encodeURIComponent(inv.subject)}&body=${encodeURIComponent(msg)}">${icon('mail')} Email</a>
           <a class="btn" target="_blank" rel="noopener" href="https://wa.me/${tel}?text=${encodeURIComponent(msg)}">${icon('msg')} WhatsApp</a>
         </div>`,
       foot: html`<button class="btn primary" data-action="close-sheet">Terminé</button>`,

@@ -5,7 +5,7 @@ import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.33.1';
+const VERSION = '2.33.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -2828,7 +2828,7 @@ Ou ouvrez directement : ${url}`);
         <input type="hidden" name="id" value="${id}">
         ${field('Nouveau code', 'code', rnd, { full: true, required: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
         <p class="tiny muted full" style="margin:0">Code proposé au hasard — vous pouvez le changer. Programmez-le d'abord dans la serrure (app du fabricant), puis enregistrez-le ici.</p>
-        <label class="field full">Raison<select name="raison" data-input="door-reason">${['Nouvel occupant', 'Code oublié', 'Sécurité (code diffusé)', 'Fin de séjour / départ', 'Impayé', 'Autre'].map((r) => html`<option>${r}</option>`)}</select></label>
+        <label class="field full">Raison<select name="raison" data-input="door-reason">${['Nouvel occupant', 'Code oublié', 'Sécurité (code diffusé)', 'Fin de séjour / départ', 'Impayé', 'Autre'].map((r) => html`<option value="${r}">${r}</option>`)}</select></label>
         <div class="alert warn full" id="doorWarn" hidden>${icon('alert')}<div><b>Attention :</b> pour un <b>bail d'habitation</b>, bloquer l'accès d'un locataire parce qu'il n'a pas payé est en principe interdit au Luxembourg (seul un juge peut ordonner l'expulsion). Réservé aux séjours courts / chambres d'hôtel selon vos conditions — vérifiez avec votre avocat.</div></div>
         ${field('Serrure (marque / modèle)', 'serrure', pt.serrure, { full: true, placeholder: 'ex. Nuki, TTLock, igloohome…' })}
         ${field("Info pour l'occupant (facultatif)", 'info', pt.info, { full: true, placeholder: 'ex. Tapez le code puis ✓ ; porte d’entrée de l’immeuble : 2580' })}
