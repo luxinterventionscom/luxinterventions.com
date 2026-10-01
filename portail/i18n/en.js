@@ -177,6 +177,10 @@ export default [
 "Other"
 ],
 [
+"Avis global",
+"Overall opinion"
+],
+[
 "Avril",
 "April"
 ],
@@ -195,6 +199,10 @@ export default [
 [
 "Bloquées dans les réglages du navigateur",
 "Blocked in the browser settings"
+],
+[
+"Bon",
+"Good"
 ],
 [
 "Bonjour",
@@ -229,12 +237,24 @@ export default [
 "Boiler room"
 ],
 [
+"Choisissez une note pour chaque critère et l’avis global.",
+"Choose a score for each criterion and the overall opinion."
+],
+[
 "Choisissez votre mot de passe",
 "Choose your password"
 ],
 [
+"Client / résidence",
+"Client / residence"
+],
+[
 "Clés",
 "Keys"
+],
+[
+"Cochez la confirmation.",
+"Tick the confirmation."
 ],
 [
 "Code de configuration",
@@ -263,6 +283,10 @@ export default [
 [
 "Compteurs, local technique, particularités…",
 "Meters, plant room, special features…"
+],
+[
+"Compétence technique",
+"Technical skill"
 ],
 [
 "Concierge, président du conseil…",
@@ -295,6 +319,10 @@ export default [
 [
 "Copié",
 "Copied"
+],
+[
+"Courtoisie & disponibilité",
+"Courtesy & availability"
 ],
 [
 "Création…",
@@ -397,6 +425,10 @@ export default [
 "Average response time"
 ],
 [
+"Délais de réponse et d’arrivée",
+"Response and arrival times"
+],
+[
 "Démarrer",
 "Start"
 ],
@@ -477,12 +509,20 @@ export default [
 "Green spaces"
 ],
 [
+"Facultatif",
+"Optional"
+],
+[
 "Faire",
 "Do it"
 ],
 [
 "Fermer",
 "Close"
+],
+[
+"Fiche d’évaluation de l’intervention",
+"Job rating form"
 ],
 [
 "Fuite sous l’évier, l’eau coule dans l’appartement du dessous.",
@@ -529,6 +569,10 @@ export default [
 "Printed on {0}"
 ],
 [
+"Indiquez votre nom.",
+"Enter your name."
+],
+[
 "Installer",
 "Install"
 ],
@@ -541,12 +585,20 @@ export default [
 "Install the app on your phone"
 ],
 [
+"Insuffisant",
+"Poor"
+],
+[
 "Interphone « Syndic »",
 "Intercom « Syndic »"
 ],
 [
 "Intervention en cours",
 "Job in progress"
+],
+[
+"Intervention n°",
+"Job no."
 ],
 [
 "Intervention planifiée — la gérance est prévenue",
@@ -587,6 +639,10 @@ export default [
 [
 "Janvier",
 "January"
+],
+[
+"Je confirme cette évaluation (vaut signature).",
+"I confirm this rating (counts as signature)."
 ],
 [
 "Juillet",
@@ -675,6 +731,10 @@ export default [
 [
 "Menuiserie",
 "Joinery"
+],
+[
+"Merci ! Évaluation envoyée à LuxInterventions",
+"Thank you! Rating sent to LuxInterventions"
 ],
 [
 "Mes demandes en cours",
@@ -769,6 +829,10 @@ export default [
 "Full name"
 ],
 [
+"Nom et prénom de la personne qui remplit",
+"Full name of the person filling in"
+],
+[
 "Nombre d'appartements",
 "Number of flats"
 ],
@@ -779,6 +843,14 @@ export default [
 [
 "Non disponibles sur ce navigateur",
 "Not available in this browser"
+],
+[
+"Non satisfait",
+"Not satisfied"
+],
+[
+"Notes ou suggestions",
+"Notes or suggestions"
 ],
 [
 "Notification de test envoyée",
@@ -847,6 +919,10 @@ export default [
 [
 "Par type",
 "By type"
+],
+[
+"Partiellement satisfait",
+"Partly satisfied"
 ],
 [
 "Pas de connexion internet",
@@ -945,12 +1021,20 @@ export default [
 "Taken on"
 ],
 [
+"Propreté & ordre",
+"Cleanliness & tidiness"
+],
+[
 "Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
 "What is happening? Since when? Risk of damage?"
 ],
 [
 "Quitter",
 "Exit"
+],
+[
+"Rapidité & ponctualité",
+"Speed & punctuality"
 ],
 [
 "Rapport d'intervention",
@@ -975,6 +1059,14 @@ export default [
 [
 "Rechercher une résidence, une adresse…",
 "Search a residence, an address…"
+],
+[
+"Relation avec le personnel",
+"Relationship with the staff"
+],
+[
+"Rempli et confirmé par",
+"Filled in and confirmed by"
 ],
 [
 "Replanifier",
@@ -1041,12 +1133,20 @@ export default [
 "Residences"
 ],
 [
+"Résolution efficace de la panne",
+"Effective fix of the problem"
+],
+[
 "Rôle",
 "Role"
 ],
 [
 "Safari : Partager → « Sur l’écran d’accueil ».",
 "Safari: Share → « Add to Home Screen »."
+],
+[
+"Satisfait",
+"Satisfied"
 ],
 [
 "Se connecter",
@@ -1077,6 +1177,10 @@ export default [
 "Only LuxInterventions can change the status"
 ],
 [
+"Soin des lieux en fin de travaux",
+"Care of the premises after the work"
+],
+[
 "Son mot de passe actuel restera valable jusqu’à ce qu’il en choisisse un nouveau avec le lien.",
 "Their current password stays valid until they choose a new one with the link."
 ],
@@ -1091,6 +1195,10 @@ export default [
 [
 "Statut",
 "Status"
+],
+[
+"Suffisant",
+"Fair"
 ],
 [
 "Suivi",
@@ -1219,6 +1327,14 @@ export default [
 [
 "Votre accès au portail LuxInterventions",
 "Your access to the LuxInterventions portal"
+],
+[
+"Votre avis compte",
+"Your opinion counts"
+],
+[
+"Votre avis est essentiel pour améliorer notre service.",
+"Your opinion is essential to improve our service."
 ],
 [
 "Votre nom",
@@ -1433,6 +1549,18 @@ export default [
 "LuxInterventions team"
 ],
 [
+"Évaluation",
+"Rating"
+],
+[
+"Évaluation de l’intervention",
+"Job rating"
+],
+[
+"Évaluez cette intervention en 30 secondes : rapidité, compétence, courtoisie, propreté.",
+"Rate this job in 30 seconds: speed, skill, courtesy, cleanliness."
+],
+[
 "à l'instant",
 "just now"
 ],
@@ -1447,6 +1575,18 @@ export default [
 [
 "— technicien :",
 "— technician:"
+],
+[
+"⭐ Envoyer l’évaluation",
+"⭐ Send the rating"
+],
+[
+"⭐ Évaluation",
+"⭐ Rating"
+],
+[
+"⭐ Évaluer l’intervention",
+"⭐ Rate the job"
 ],
 [
 "📲 En réel, LuxInterventions est prévenu de votre message.",

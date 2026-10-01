@@ -4,7 +4,7 @@
 
 import { startI18n, LOCALES } from '/ares/i18n.js';
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -99,6 +99,46 @@ const URG = {
 };
 const CATEGORIES = ['Plomberie', 'Électricité', 'Serrurerie', 'Chauffage / sanitaire', 'Toiture / façade', 'Vitrerie', 'Menuiserie', 'Peinture', 'Nettoyage', 'Espaces verts', 'Ascenseur', 'Autre'];
 const ROLES = { admin: 'LuxInterventions', gerance_admin: 'Responsable gérance', gerance_user: 'Utilisateur gérance' };
+// Fiche d'évaluation d'une intervention terminée (remplie par la gérance, enregistrée comme message du suivi)
+const EVAL_CRIT = [
+  ['rapidite', 'Rapidité & ponctualité', 'Délais de réponse et d’arrivée'],
+  ['competence', 'Compétence technique', 'Résolution efficace de la panne'],
+  ['courtoisie', 'Courtoisie & disponibilité', 'Relation avec le personnel'],
+  ['proprete', 'Propreté & ordre', 'Soin des lieux en fin de travaux'],
+];
+const EVAL_LVL = [['1', '😞', 'Insuffisant'], ['2', '😐', 'Suffisant'], ['3', '🙂', 'Bon'], ['4', '⭐', 'Excellent']];
+const EVAL_GLOBAL = [['ok', 'Satisfait'], ['part', 'Partiellement satisfait'], ['ko', 'Non satisfait']];
+const EVAL_HEAD = '⭐ Évaluation de l’intervention';
+// le texte enregistré est en français (lisible tel quel par l'équipe) ; on le relit pour l'afficher dans la langue de chacun
+function evalText(ref, v) {
+  const lvl = (k) => { const l = EVAL_LVL.find((x) => x[0] === k); return l ? l[1] + ' ' + l[2] : '—'; };
+  return [`${EVAL_HEAD} #${ref}`, ...EVAL_CRIT.map(([k, l]) => `${l} : ${lvl(v[k])}`), `Avis global : ${(EVAL_GLOBAL.find((g) => g[0] === v.global) || ['', '—'])[1]}`,
+    v.notes ? `Notes : ${v.notes}` : '', `Rempli et confirmé par : ${v.nom}`].filter(Boolean).join('\n');
+}
+function evalParse(text) {
+  if (!text || !text.startsWith(EVAL_HEAD)) return null;
+  const v = {};
+  for (const line of text.split('\n').slice(1)) {
+    const i = line.indexOf(' : '); if (i < 0) continue;
+    const k = line.slice(0, i), val = line.slice(i + 3);
+    const c = EVAL_CRIT.find((x) => x[1] === k);
+    if (c) v[c[0]] = (EVAL_LVL.find((l) => val === l[1] + ' ' + l[2]) || [])[0];
+    else if (k === 'Avis global') v.global = (EVAL_GLOBAL.find((g) => g[1] === val) || [])[0];
+    else if (k === 'Notes') v.notes = val;
+    else if (k === 'Rempli et confirmé par') v.nom = val;
+  }
+  return v;
+}
+function evalCard(v, e) {
+  const lvl = (k) => EVAL_LVL.find((l) => l[0] === k);
+  return html`<div class="card eval-sum" style="margin-bottom:12px">
+    <div class="eval-title">⭐ <span>Évaluation de l’intervention</span></div>
+    <div class="eval-rows">${EVAL_CRIT.map(([k, l]) => { const x = lvl(v[k]); return html`<div class="eval-row"><span>${l}</span><b>${x ? html`${x[1]} <span>${x[2]}</span>` : '—'}</b></div>`; })}
+      <div class="eval-row"><span>Avis global</span><b>${(EVAL_GLOBAL.find((g) => g[0] === v.global) || ['', '—'])[1]}</b></div></div>
+    ${v.notes ? html`<div class="tl-text">${v.notes}</div>` : ''}
+    <div class="tiny muted" style="margin-top:8px">✍️ <span>Rempli et confirmé par</span> <b>${v.nom || '—'}</b>${e ? ' · ' + fmtDateTime(e.created_at) : ''}</div></div>`;
+}
+
 const MONTHS_FULL = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 
 const fmtDateTime = (t) => (t ? new Date(t).toLocaleString(LOC, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
@@ -812,7 +852,8 @@ const SHEETS = {
     } else if (!isAdmin() && t.status === 'recue') {
       actions = html`<div class="actions"><button class="btn ghost danger" data-action="t-cancel" data-id="${t.id}">Annuler la demande</button></div>`;
     }
-    const evLabel = (e) => (e.kind === 'create' ? 'Demande créée' : e.kind === 'status' ? STATUS[e.status].label : 'Message');
+    const evalEv = d.events.find((e) => e.kind === 'comment' && evalParse(e.text));
+    const evLabel = (e) => (e.kind === 'create' ? 'Demande créée' : e.kind === 'status' ? STATUS[e.status].label : e === evalEv ? '⭐ Évaluation' : 'Message');
     return {
       title: `#${t.ref} · ${res.name || ''}`,
       body: html`
@@ -838,10 +879,13 @@ const SHEETS = {
           ${kv('Terminée', t.done_at && t.status === 'terminee' ? fmtDateTime(t.done_at) : '')}
         </dl>
         ${t.rapport ? html`<div class="section-label">Rapport d'intervention</div><div class="note">${t.rapport}</div>` : ''}
+        ${evalEv ? html`<div class="section-label">Évaluation</div>${evalCard(evalParse(evalEv.text), evalEv)}`
+          : t.status === 'terminee' && !isAdmin() ? html`<div class="card eval-cta" style="margin-bottom:12px"><div><b>Votre avis compte</b><div class="small muted">Évaluez cette intervention en 30 secondes : rapidité, compétence, courtoisie, propreté.</div></div>
+            <button class="btn primary" data-action="t-eval" data-id="${t.id}">⭐ Évaluer l’intervention</button></div>` : ''}
         <div class="section-label">Suivi</div>
         <div class="timeline">${d.events.map((e) => html`<div class="tl ${e.kind} ${e.user_role === 'admin' ? 'staff' : ''}">
           <div class="tl-head"><b>${evLabel(e)}</b> <span class="muted">· ${e.user_name || '—'}${e.user_role === 'admin' ? ' (LuxInterventions)' : ''} · ${fmtDateTime(e.created_at)}</span></div>
-          ${e.text && e.kind !== 'create' ? html`<div class="tl-text">${e.text}</div>` : ''}
+          ${e.text && e.kind !== 'create' && e !== evalEv ? html`<div class="tl-text">${e.text}</div>` : ''}
           ${e !== firstEvent ? gallery(byEvent[e.id]) : ''}
         </div>`)}</div>
         <form data-form="comment" class="comment-box">
@@ -854,6 +898,32 @@ const SHEETS = {
           </div>
         </form>`,
       after: () => sheetEl.querySelectorAll('img[data-photo]').forEach(loadPhotoInto),
+    };
+  },
+
+  'eval-form'({ id, data }) {
+    const t = data.ticket, res = data.residence || {};
+    return {
+      title: 'Fiche d’évaluation de l’intervention',
+      body: html`<form id="f" data-form="eval" class="eval-form">
+        <input type="hidden" name="id" value="${id}"><input type="hidden" name="ref" value="${t.ref}">
+        <p class="small" style="margin:0 0 10px">Votre avis est essentiel pour améliorer notre service.</p>
+        <dl class="kv small" style="margin-bottom:12px">
+          ${kv('Intervention n°', '#' + t.ref)}${kv('Date', fmtDate(t.done_at || t.updated_at))}${kv('Client / résidence', res.name + (res.org_name ? ' · ' + res.org_name : ''))}
+        </dl>
+        <div class="eval-grid">
+          <div class="eval-head"><span></span>${EVAL_LVL.map(([, em, l]) => html`<span>${em}<small>${l}</small></span>`)}</div>
+          ${EVAL_CRIT.map(([k, l, sub]) => html`<div class="eval-line" role="radiogroup" aria-label="${l}"><div class="eval-crit"><b>${l}</b><small>${sub}</small></div>
+            ${EVAL_LVL.map(([v, em, lab]) => html`<label class="eval-opt" title="${lab}"><input type="radio" name="${k}" value="${v}" required><span>${em}</span><small>${lab}</small></label>`)}</div>`)}
+        </div>
+        <div class="section-label">Avis global</div>
+        <div class="eval-global" role="radiogroup">${EVAL_GLOBAL.map(([v, l]) => html`<label class="eval-gopt"><input type="radio" name="global" value="${v}" required><span>${l}</span></label>`)}</div>
+        <label class="field" style="margin-top:12px">Notes ou suggestions<textarea name="notes" maxlength="1500" placeholder="Facultatif"></textarea></label>
+        <label class="field">Nom et prénom de la personne qui remplit<input name="nom" required value="${(state.me && state.me.name) || ''}" autocomplete="name"></label>
+        <label class="row" style="gap:8px;align-items:flex-start;cursor:pointer"><input type="checkbox" name="ok" required style="width:20px;min-height:20px;margin-top:2px"><span class="small">Je confirme cette évaluation (vaut signature).</span></label>
+        <div class="lock-err" role="alert"></div>
+      </form>`,
+      foot: html`<button class="btn" data-action="t-eval-back" data-id="${id}">Retour</button><button class="btn primary" type="submit" form="f">⭐ Envoyer l’évaluation</button>`,
     };
   },
 
@@ -1136,6 +1206,8 @@ const ACTIONS = {
   async 't-take'(d) { await setStatus(d.id, 'prise'); toast('Demande prise en charge — la gérance est prévenue'); },
   async 't-start'(d) { await setStatus(d.id, 'encours'); toast('Intervention en cours'); },
   't-plan': (d) => openSheet('status-form', d.id, { ticket: state.sheet.data.ticket, kind: 'plan' }),
+  't-eval': (d) => openSheet('eval-form', d.id, { ticket: state.sheet.data.ticket, residence: state.sheet.data.residence }),
+  't-eval-back': (d) => openTicket(d.id),
   't-finish': (d) => openSheet('status-form', d.id, { ticket: state.sheet.data.ticket, kind: 'finish' }),
   async 't-cancel'(d) {
     if (!(await confirmBox('Annuler cette demande ?', { ok: 'Annuler la demande', danger: true }))) return;
@@ -1256,6 +1328,24 @@ const FORMS = {
       toast(`Demande #${ref} envoyée — LuxInterventions est prévenu`);
       await refresh(true);
       await openTicket(id);
+    } catch (e) {
+      setBusy(btn, false);
+      toast(e.message, { bad: true });
+    }
+  },
+  async eval(fd, form) {
+    const v = { nom: String(fd.get('nom') || '').trim(), notes: String(fd.get('notes') || '').trim().replace(/\s*\n\s*/g, ' '), global: fd.get('global') };
+    for (const [k] of EVAL_CRIT) v[k] = fd.get(k);
+    const err = form.querySelector('.lock-err');
+    if (EVAL_CRIT.some(([k]) => !v[k]) || !v.global) return (err.textContent = 'Choisissez une note pour chaque critère et l’avis global.');
+    if (!v.nom) return (err.textContent = 'Indiquez votre nom.');
+    if (!fd.get('ok')) return (err.textContent = 'Cochez la confirmation.');
+    const btn = $('#sheet button[type=submit]');
+    setBusy(btn, true);
+    try {
+      await api(`tickets/${fd.get('id')}/comments`, { method: 'POST', body: { text: evalText(fd.get('ref'), v) } });
+      toast('Merci ! Évaluation envoyée à LuxInterventions');
+      await openTicket(fd.get('id'));
     } catch (e) {
       setBusy(btn, false);
       toast(e.message, { bad: true });
