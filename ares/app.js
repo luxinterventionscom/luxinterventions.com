@@ -6,7 +6,7 @@ import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.37.0';
+const VERSION = '2.38.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -351,7 +351,7 @@ function equipeData(i) {
       titre: t.titre, type: t.type, recur: t.recur ? RECURS[t.recur] : '', note: t.note || '',
       adresse: immName(t.immId), lieu: t.logId ? logName(t.logId) : '', statut: t.statut,
       contact: l ? { nom: l.prenom || fullName(l), tel: l.tel || '' } : null,
-      journal: (t.journal || []).slice(-20).map((x) => ({ d: x.d, st: x.st, note: x.note || '', at: x.at })),
+      journal: (t.journal || []).slice(-20).map((x) => ({ d: x.d, st: x.st, note: x.note || '', at: x.at, h: x.h || '' })),
       ph: { av: eqPhotos(t.id, 'av').length, ap: eqPhotos(t.id, 'ap').length },
     };
   };
@@ -370,6 +370,7 @@ function equipeData(i) {
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '' },
     horaires: (i.horaires || []).map((h) => ({ j: h.j, de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })),
     absences: (i.absences || []).filter((a) => !a.fin || a.fin >= addDays(today(), -30)).map((a) => ({ type: a.type, debut: a.debut, fin: a.fin || '' })),
+    pres: Object.fromEntries(Object.entries(i.pres || {}).filter(([d]) => d >= addDays(today(), -7))),
     tasks, items: items.sort((a, b) => a.d.localeCompare(b.d)), signalKey: k ? k.pub : '',
   };
 }
@@ -419,10 +420,11 @@ async function equipeInbox(w, msg) {
         const d = /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10);
         const ph = photos.map((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'equipe', label: `${intervFull(w)} — ${t.titre} (${n + 1})`, date: d, mime: 'image/jpeg', size: Math.round(String(b).length * 0.75) }); files.push([doc.id, b]); return doc.id; });
         const entry = { d, st: it.st, note, at, by: w.id, ph };
+        if (/^\d{2}:\d{2}$/.test(it.h || '')) entry.h = it.h;
         const upd = { id: t.id, journal: [...(t.journal || []), entry].slice(-80) };
         if (!t.recur && it.st === 'fait') Object.assign(upd, { statut: 'fait', doneDate: d });
         tx.put('taches', upd);
-        feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note, ph: ph.length });
+        feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note, ph: ph.length, h: entry.h || '' });
         fresh++;
       } else if (it.k === 'ph') {
         const t = vault.get('taches', String(it.tid || ''));
@@ -435,6 +437,30 @@ async function equipeInbox(w, msg) {
         files.push([doc.id, b]);
         const last = feed[feed.length - 1];
         if (last && last.k === 'ph' && last.tid === t.id && last.phase === it.phase && last.d === d) { last.ph = (last.ph || 0) + 1; last.at = at; } else feed.push({ at, k: 'ph', tid: t.id, d, phase: it.phase, ph: 1 });
+        fresh++;
+      } else if (it.k === 'pres') {
+        // pointage : heure d'arrivée / de départ écrite par la personne
+        const d = /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10);
+        const hm = (v) => (/^\d{2}:\d{2}$/.test(v || '') ? v : '');
+        const arr = hm(it.arr), dep = hm(it.dep);
+        if (!arr && !dep) continue;
+        cur = vault.get('intervenants', w.id);
+        const pres = { ...(cur.pres || {}) };
+        pres[d] = { ...(pres[d] || {}), ...(arr ? { arr } : {}), ...(dep ? { dep } : {}) };
+        for (const k of Object.keys(pres).sort().slice(0, -60)) delete pres[k];
+        tx.put('intervenants', { id: w.id, pres });
+        feed.push({ at, k: 'pres', d, note: arr ? `🟢 Arrivée ${arr}` : `🔴 Départ ${dep}` });
+        fresh++;
+      } else if (it.k === 'pb') {
+        // « Quelque chose ne va pas » : devient une intervention à faire, avec les photos
+        const ph = (Array.isArray(it.photos) ? it.photos : []).filter((b) => typeof b === 'string').slice(0, 6);
+        const d = /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10);
+        const lieu = String(it.lieu || '').trim().toLowerCase();
+        const im = lieu ? vault.list('immeubles').find((x) => (x.adresse || '').trim().toLowerCase() === lieu) : null;
+        const titre = (note.split('\n')[0] || 'Problème').slice(0, 80);
+        const t = tx.put('taches', { type: 'reparation', titre: `Problème signalé par ${intervFull(w)} : ${titre}`, immId: im ? im.id : '', logId: '', locId: '', intervenantId: '', byInterv: w.id, date: d, recur: '', statut: 'afaire', sentAt: at, note: `${note}\n\n— Envoyé par ${intervFull(w)} (équipe) le ${fmtDateTime(at)}${it.lieu ? ' · lieu : ' + String(it.lieu).slice(0, 120) : ''}` });
+        ph.forEach((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'signal', label: `Problème — photo ${n + 1}`, date: d, mime: 'image/jpeg', size: Math.round(b.length * 0.75) }); files.push([doc.id, b]); });
+        feed.push({ at, k: 'pb', tid: t.id, d, note: '⚠️ ' + titre, ph: ph.length });
         fresh++;
       } else if (it.k === 'info') {
         const clean = (v, n) => String(v || '').trim().slice(0, n);
@@ -468,7 +494,7 @@ function eqFeedHtml(onlyId, max = 80) {
   if (!rows.length) return html`<p class="small muted">Rien pour le moment. Ce que l’équipe envoie depuis son app (commencé, fini, pas fini, notes, photos, maladie) arrive ici.</p>`;
   return html`<div class="list small">${rows.slice(0, max).map(([i, f]) => {
     const t = f.tid ? vault.get('taches', f.tid) : null;
-    const what = f.k === 'task' || f.k === 'ph' ? html`<b>${f.k === 'ph' ? '📷 ' + EQ_PH[f.phase] : EQ_ST[f.st] || f.st}</b> · ${t ? t.titre : '(intervention supprimée)'}${t ? html`<span class="meta" style="display:block">📍 ${placeName(t)} · ${fmtDate(f.d)}</span>` : ''}` : f.k === 'abs' ? html`<b>${f.note}</b>` : html`<b>✏️ ${f.note}</b>`;
+    const what = f.k === 'pres' ? html`<b>${f.note}</b>` : f.k === 'pb' ? html`<b>${f.note}</b>` : f.k === 'task' || f.k === 'ph' ? html`<b>${f.k === 'ph' ? '📷 ' + EQ_PH[f.phase] : EQ_ST[f.st] || f.st}${f.h ? ' 🕒 ' + f.h : ''}</b> · ${t ? t.titre : '(intervention supprimée)'}${t ? html`<span class="meta" style="display:block">📍 ${placeName(t)} · ${fmtDate(f.d)}</span>` : ''}` : f.k === 'abs' ? html`<b>${f.note}</b>` : html`<b>✏️ ${f.note}</b>`;
     return html`<button class="row" ${t ? html`data-action="edit-tache" data-id="${t.id}"` : html`data-action="open-interv" data-id="${i.id}"`} style="text-align:left">
       <span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDateTime(f.at)} · ${intervFull(i)}</span>${what}${f.k === 'task' && f.note ? html`<span class="small" style="display:block;margin-top:2px">📝 ${f.note}</span>` : ''}</span>
       ${f.ph ? html`<span class="badge">📷 ${f.ph}</span>` : ''}</button>`;
@@ -481,13 +507,15 @@ function eqTodayHtml() {
   // terminées aujourd'hui (elles ne sont plus dans l'agenda) : on les garde, avec ✅
   for (const t of vault.list('taches')) if (t.intervenantId && !t.recur && t.statut === 'fait' && t.doneDate === d0 && !its.some((x) => x.t.id === t.id)) its.push({ d: d0, kind: 'tache', t });
   const absent = vault.list('intervenants').filter((i) => absOn(i, d0));
-  if (!its.length && !absent.length) return '';
+  const pointes = vault.list('intervenants').filter((i) => (i.pres || {})[d0]);
+  if (!its.length && !absent.length && !pointes.length) return '';
   return html`<div class="card" style="margin-bottom:14px"><div class="card-title" style="margin-bottom:6px"><h3>👷 Aujourd’hui</h3></div>
     <div class="list small">${its.map((x) => {
       const t = x.t, i = vault.get('intervenants', t.intervenantId) || {}, st = eqState(t, x.d);
       return html`<button class="row" data-action="edit-tache" data-id="${t.id}" style="text-align:left"><span class="grow" style="white-space:normal"><b>${intervFull(i)}</b> — ${tacheIcon(t.type)} ${t.titre}<span class="meta" style="display:block">📍 ${placeName(t)}${st && st.note ? ' · 📝 ' + st.note : ''}</span></span>
-        <span class="badge ${st ? (st.st === 'fait' ? 'ok' : st.st === 'incomplet' ? 'bad' : 'warn') : ''}">${st ? EQ_ST[st.st] + ' ' + (st.at || '').slice(11, 16) : absOn(i, d0) ? '🤒 absent' : '⏳ pas encore'}</span></button>`;
+        <span class="badge ${st ? (st.st === 'fait' ? 'ok' : st.st === 'incomplet' ? 'bad' : 'warn') : ''}">${st ? EQ_ST[st.st] + ' ' + (st.h || (st.at || '').slice(11, 16)) : absOn(i, d0) ? '🤒 absent' : '⏳ pas encore'}</span></button>`;
     })}
+    ${pointes.map((i) => { const p = i.pres[d0]; return html`<div class="row"><span class="grow"><b>${intervFull(i)}</b> — 🕒 <span>Arrivée</span> <b>${p.arr || '—'}</b> · <span>Départ</span> <b>${p.dep || '—'}</b></span></div>`; })}
     ${absent.filter((i) => !its.some((x) => x.t.intervenantId === i.id)).map((i) => html`<div class="row"><span class="grow"><b>${intervFull(i)}</b> — ${ABS_TYPES[absOn(i, d0).type]}</span></div>`)}</div></div>`;
 }
 
@@ -2067,8 +2095,8 @@ dashboard() {
     const nudge = vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
     const sig = newSignals();
     const sigBox = sig.length ? html`<div class="card" style="margin-bottom:14px;border:2px solid var(--red)">
-        <div class="card-title" style="margin-bottom:8px"><h3>📩 ${sig.length > 1 ? sig.length + " nouveaux messages" : "1 nouveau message"} de locataire${sig.length > 1 ? 's' : ''}</h3></div>
-        <div class="stack">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}; const n = signalPhotos(t); return alertBtn('bad', 'msg', 'open-signal', t.id, html`<b>${fullName(l)}</b> · ${logName(l.logId) || immName(t.immId)} — ${t.titre.replace(/^Signalement : /, '')}<div class="tiny">${fmtDateTime(t.sentAt)}${n ? ` · 📷 ${n} photo${n > 1 ? 's' : ''}` : ''} · touchez pour lire</div>`); })}</div>
+        <div class="card-title" style="margin-bottom:8px"><h3>📩 <span>${sig.length > 1 ? sig.length + " nouveaux messages" : "1 nouveau message"}${sig.every((t) => !t.byInterv) ? (sig.length > 1 ? ' de locataires' : ' de locataire') : ''}</span></h3></div>
+        <div class="stack">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = t.byInterv ? vault.get('intervenants', t.byInterv) : null; const n = signalPhotos(t); return alertBtn('bad', 'msg', 'open-signal', t.id, html`<b>${w ? '👷 ' + intervFull(w) : fullName(l)}</b> · ${logName(l.logId) || immName(t.immId)} — ${t.titre.replace(/^Signalement : /, '').replace(/^Problème signalé par [^:]+ : /, '⚠️ ')}<div class="tiny">${fmtDateTime(t.sentAt)}${n ? ` · 📷 ${n} photo${n > 1 ? 's' : ''}` : ''} · touchez pour lire</div>`); })}</div>
       </div>` : '';
     const chatNew = Object.entries(ui.chatNew || {}).filter(([imId, n]) => n && vault.get('immeubles', imId));
     const chatBox = chatNew.length ? html`<div class="stack" style="margin-bottom:14px">${chatNew.map(([imId, n]) => alertBtn('info', 'msg', 'open-chat', imId, html`💬 <b>${n} nouveau${n > 1 ? 'x' : ''} message${n > 1 ? 's' : ''}</b> entre les habitants — ${immName(imId)}<div class="tiny">touchez pour lire</div>`))}</div>` : '';
@@ -2874,7 +2902,7 @@ const SHEETS = {
         ${!t.recur ? html`<label class="field">Statut<select name="statut">${Object.entries(STATUTS).map(([k, v]) => html`<option value="${k}" ${t.statut === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>` : ''}
         <label class="field full">Notes<textarea name="note" placeholder="Accès, clés, pièces à acheter, ce qui a été fait…">${t.note || ''}</textarea></label>
         ${t.depId ? html`<p class="tiny muted full" style="margin:0">✓ Coût enregistré dans les dépenses de l'immeuble.</p>` : ''}
-        ${(t.journal || []).length ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">👷 Suivi de l’équipe</div><div class="list small">${t.journal.slice().reverse().slice(0, 30).map((x) => html`<div class="row"><span class="grow" style="white-space:normal"><b>${EQ_ST[x.st] || x.st}</b> · ${fmtDate(x.d)}${x.by ? ' · ' + intervName(x.by) : ''}<span class="meta" style="display:block">${fmtDateTime(x.at)}</span>${x.note ? html`<span class="small" style="display:block">📝 ${x.note}</span>` : ''}</span>${(x.ph || []).filter((pid) => vault.get('documents', pid)).map((pid) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${pid}">📷</button>`)}</div>`)}</div></div>` : ''}
+        ${(t.journal || []).length ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">👷 Suivi de l’équipe</div><div class="list small">${t.journal.slice().reverse().slice(0, 30).map((x) => html`<div class="row"><span class="grow" style="white-space:normal"><b>${EQ_ST[x.st] || x.st}${x.h ? ' 🕒 ' + x.h : ''}</b> · ${fmtDate(x.d)}${x.by ? ' · ' + intervName(x.by) : ''}<span class="meta" style="display:block">${fmtDateTime(x.at)}</span>${x.note ? html`<span class="small" style="display:block">📝 ${x.note}</span>` : ''}</span>${(x.ph || []).filter((pid) => vault.get('documents', pid)).map((pid) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${pid}">📷</button>`)}</div>`)}</div></div>` : ''}
         ${t.locId ? html`<p class="tiny full" style="margin:0">📨 Signalé par <a href="#" data-action="open-loc" data-id="${t.locId}">${fullName(vault.get('locataires', t.locId) || { nom: '?' })}</a> — il voit l'avancement dans son espace.</p>` : ''}
         ${t.id && (eqPhotos(t.id, 'av').length || eqPhotos(t.id, 'ap').length) ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">📷 Avant / après les travaux</div><div class="edl-pair two">${Object.entries(EQ_PH).map(([ph, lb]) => html`<div><div class="tiny muted" style="margin-bottom:4px"><b>${lb}</b> · ${eqPhotos(t.id, ph).length} / ${EQ_PH_MAX}</div><div class="edl-grid sm">${eqPhotos(t.id, ph).map((x) => html`<figure class="edl"><button type="button" class="edl-img" data-action="open-doc" data-id="${x.id}" aria-label="Agrandir"><img alt="" data-edl="${x.id}"></button><figcaption><span>${fmtDate(x.date)}</span><button type="button" class="btn icon sm ghost danger" data-action="del-edl" data-id="${x.id}" aria-label="Retirer la photo">${icon('trash')}</button></figcaption></figure>`)}</div></div>`)}</div></div>` : ''}
         ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id && !x.phase).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id && !x.phase).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
