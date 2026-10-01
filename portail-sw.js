@@ -1,5 +1,5 @@
 // Service worker du portail : application disponible hors ligne + notifications push.
-const CACHE = 'portail-shell-v1.4.0';
+const CACHE = 'portail-shell-v1.4.1';
 const SHELL = ['/portail.html', '/portail/app.js', '/portail/demo.js', '/portail/portail.css', '/ares/app.css', '/ares/i18n.js', '/portail/i18n/de.js', '/portail/i18n/en.js', '/portail/i18n/pt.js', '/portail/i18n/es.js', '/portail/i18n/it.js', '/portail.webmanifest', '/android-chrome-192x192.png', '/favicon-32x32.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
@@ -12,7 +12,8 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin || !SHELL.includes(url.pathname)) return;
   e.respondWith(
-    fetch(e.request)
+    // toujours redemander au serveur (sinon le navigateur garde l'ancienne version jusqu'à 10 min)
+    fetch(e.request, { cache: 'no-cache' })
       .then((res) => { if (res.ok) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put(e.request, copy)); } return res; })
       .catch(() => caches.match(e.request, { ignoreSearch: true }))
   );
