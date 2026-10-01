@@ -7655,5 +7655,9 @@ export default [
 [
 "Photos de sortie vues",
 "Check-out photos viewed"
+],
+[
+"Espace box",
+"Box space"
 ]
 ];
