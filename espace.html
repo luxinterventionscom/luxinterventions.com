@@ -30,6 +30,12 @@
   .pay-coin:first-of-type { border-top: 0; }
   .map { border-radius: 12px; overflow: hidden; background: var(--bg); height: 220px; }
   .map iframe { width: 100%; height: 100%; border: 0; display: block; }
+  .btn-row { display: flex; gap: 8px; margin-top: 8px; } .btn-row .btn { flex: 1; text-align: center; }
+  .pub { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin-top: 8px; }
+  .pub.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .pub-main { display: flex; flex-direction: column; gap: 2px; width: 100%; border: 0; background: none; padding: 0; font: inherit; color: inherit; text-align: left; cursor: pointer; }
+  .pub-txt { font-size: 15px; }
+  .pub-acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
   .edl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; }
   .edl { margin: 0; background: var(--bg); border-radius: 10px; overflow: hidden; font-size: 13px; }
   .edl-img { display: block; width: 100%; aspect-ratio: 4 / 3; padding: 0; border: 0; background: #ece9e2; cursor: zoom-in; }

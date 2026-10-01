@@ -6,7 +6,7 @@ import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.36.1';
+const VERSION = '2.37.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -499,6 +499,7 @@ const ESP_SHOW = {
   docs: 'Son dossier : documents enregistrés (identité, CNS, caution, preuves de paiement…) avec aperçu — 👁 Privé pour en cacher un',
   coll: 'Collectes des déchets de l’immeuble',
   avis: 'Avis de l’immeuble (travaux, coupures…)',
+  pub: 'Bons plans du quartier (publicité des partenaires, avec carte)',
   signal: 'Signaler un problème (avec photos)',
   edl: 'État des lieux : vos 6 photos (salle de bain, cuisine, chambre, cave, buanderie, parking) + ses photos de sortie à son départ',
   porte: 'Code de la porte (serrure à code / connectée)',
@@ -508,7 +509,13 @@ const ESP_SHOW = {
 };
 const ESP_ALL = Object.fromEntries(Object.keys(ESP_SHOW).map((k) => [k, k !== 'porte']));
 const espUrl = (l) => `${location.origin}/espace.html#${l.espace.id}.${l.espace.key}`;
-const avisActifs = (immId) => vault.list('avis').filter((a) => (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
+// Publicité des partenaires du quartier (pizzerias, bars, bricolage, meubles…) : rangée avec les avis (kind « pub »),
+// visible dans l'app des locataires jusqu'à sa date de fin (durée choisie à la publication)
+const PUB_CATS = { resto: '🍕 Pizzeria / restaurant', bar: '🍺 Bar / pub', horeca: '☕ Café / snack (Horeca)', bricolage: '🔨 Bricolage / jardinage', meubles: '🛋️ Meubles / décoration', courses: '🛒 Supermarché / commerce', services: '🧰 Services', autre: '📌 Autre' };
+const PUB_TTL = [7, 14, 30, 60, 90, 180, 365];
+const isPub = (a) => a.kind === 'pub';
+const pubsActives = (immId) => vault.list('avis').filter((a) => isPub(a) && (!immId || !a.immId || a.immId === immId) && (!a.debut || a.debut <= today()) && (!a.fin || a.fin >= today()));
+const avisActifs = (immId) => vault.list('avis').filter((a) => !isPub(a) && (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
   .sort((a, b) => (a.debut || '').localeCompare(b.debut || ''));
 async function ownerKeys() {
   let k = vault.get('reglages', 'signal');
@@ -572,6 +579,7 @@ function espaceData(l) {
     out.edlOut = edlOf(g.id, 'edl-out').filter((d) => d.locId === l.id).map((d) => ({ room: d.room, date: d.date }));
   }
   if (show.coll && im) { out.coll = pubData(im).items; if (im.pubToken) out.collLink = pubUrl(im); }
+  if (show.pub) out.pubs = pubsActives(l.immId).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map((a) => ({ id: a.id, cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', fin: a.fin || '' }));
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
   if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '', lv: l.reglesV || '', v: rulesVersion(im) };
   if (show.chat && chatOn(im) && isCurrent(l)) {
@@ -1940,10 +1948,10 @@ const VIEWS = {
     const chips = imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
       <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!f}">Tous</button>
       ${imms.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${f === im.id}">${im.adresse}</button>`)}</div>` : '';
-    const add = tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button>`
+    const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button>`
       : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
       : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
-    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', `Travaux (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['intervenants', 'Équipe']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
+    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', `Travaux (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['pub', '📣 Publicité'], ['intervenants', 'Équipe']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
     let body;
     if (tab === 'planning') {
       const from = today(), to = addDays(from, 13);
@@ -1965,13 +1973,24 @@ const VIEWS = {
         ${done.length ? html`<div class="section-label">Terminées récemment</div>${list(done)}` : ''}${mtLegend()}`
         : empty('tool', 'Aucune intervention.', html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Nouvelle intervention</button>`);
     } else if (tab === 'avis') {
-      const all = vault.list('avis').filter((a) => !f || !a.immId || a.immId === f).sort((a, b) => (b.debut || '').localeCompare(a.debut || ''));
+      const all = vault.list('avis').filter((a) => !isPub(a) && (!f || !a.immId || a.immId === f)).sort((a, b) => (b.debut || '').localeCompare(a.debut || ''));
       const actifs = all.filter((a) => !a.fin || a.fin >= today()), passes = all.filter((a) => a.fin && a.fin < today()).slice(0, 10);
       const row = (a) => html`<button class="row" data-action="edit-avis" data-id="${a.id}"><span class="grow"><span class="title" style="display:block;white-space:normal">📢 ${a.texte.slice(0, 140)}</span>
         <span class="meta">${a.immId ? immName(a.immId) : 'Tous les immeubles'} · ${a.debut ? 'du ' + fmtDate(a.debut) : ''}${a.fin ? ' au ' + fmtDate(a.fin) : ''}</span></span></button>`;
       body = html`<p class="small muted" style="margin:0 0 10px">Messages affichés dans l'espace des locataires (coupure d'eau, travaux, nettoyage de la cave…).</p>
         ${actifs.length ? html`<div class="list" style="margin-bottom:14px">${actifs.map(row)}</div>` : empty('msg', 'Aucun avis en cours.', html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Nouvel avis</button>`)}
         ${passes.length ? html`<div class="section-label">Terminés</div><div class="list">${passes.map(row)}</div>` : ''}`;
+    } else if (tab === 'pub') {
+      const all = vault.list('avis').filter((a) => isPub(a) && (!f || !a.immId || a.immId === f)).sort((a, b) => (b.debut || '').localeCompare(a.debut || ''));
+      const on = all.filter((a) => !a.fin || a.fin >= today()), off = all.filter((a) => a.fin && a.fin < today()).slice(0, 20);
+      const left = (a) => { if (!a.fin) return 'sans fin'; const n = Math.round((new Date(a.fin + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 864e5); return a.debut > today() ? `à partir du ${fmtDate(a.debut)}` : n <= 0 ? 'dernier jour' : `encore ${plural(n, 'jour')}`; };
+      const row = (a) => html`<button class="row" data-action="edit-pub" data-id="${a.id}"><span class="grow"><span class="title" style="display:block;white-space:normal">${(PUB_CATS[a.cat] || PUB_CATS.autre).split(' ')[0]} <b>${a.nom}</b></span>
+        <span class="meta" style="display:block;white-space:normal">📍 ${a.adresse}${a.texte ? ' · ' + a.texte.slice(0, 90) : ''}</span>
+        <span class="meta"><span>${a.immId ? immName(a.immId) : 'Tous les immeubles'}</span>${a.fin ? html` · <span>${fmtDate(a.debut)} → ${fmtDate(a.fin)}</span>` : ''}</span></span>
+        <span class="badge ${a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
+      body = html`<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
+        ${on.length ? html`<div class="list" style="margin-bottom:14px">${on.map(row)}</div>` : empty('msg', 'Aucune annonce en cours.', html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Nouvelle annonce</button>`)}
+        ${off.length ? html`<div class="section-label">Expirées (touchez pour republier)</div><div class="list">${off.map(row)}</div>` : ''}`;
     } else if (tab === 'dechets') {
       const shown = f ? imms.filter((im) => im.id === f) : imms;
       const y = new Date().getFullYear();
@@ -2906,6 +2925,31 @@ const SHEETS = {
     };
   },
 
+  'pub-form'({ id, preset }) {
+    const a = id ? vault.get('avis', id) : { immId: preset || '', debut: today(), ttl: 30, cat: 'resto' };
+    if (id && !a) return null;
+    const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === a.immId).sort(byAddr);
+    const exp = a.fin && a.fin < today();
+    return {
+      title: id ? "Modifier l'annonce" : 'Nouvelle annonce (publicité)',
+      narrow: true,
+      body: html`<form id="f" data-form="pub" class="fields">
+        <input type="hidden" name="id" value="${id || ''}">
+        <label class="field full">Catégorie<select name="cat">${Object.entries(PUB_CATS).map(([k, v]) => html`<option value="${k}" ${a.cat === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field('Nom du commerce', 'nom', a.nom, { full: true, required: true, placeholder: 'ex. Pizzeria Da Mario' })}
+        ${field('Adresse (pour la carte)', 'adresse', a.adresse, { full: true, required: true, placeholder: 'ex. 12, rue de Hollerich, Luxembourg' })}
+        <label class="field full">Message / offre<textarea name="texte" style="min-height:80px" placeholder="ex. −10 % pour les locataires sur présentation de l'app">${a.texte || ''}</textarea></label>
+        ${field('Téléphone', 'tel', a.tel, { type: 'tel' })}
+        ${field('Site web', 'web', a.web, { type: 'url', placeholder: 'https://…' })}
+        <label class="field full">Pour<select name="immId"><option value="">Tous les immeubles</option>${imms.map((im) => html`<option value="${im.id}" ${im.id === a.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
+        ${field('Publier à partir du', 'debut', exp ? today() : a.debut, { type: 'date', required: true })}
+        <label class="field">Durée (TTL)<select name="ttl">${PUB_TTL.map((n) => html`<option value="${n}" ${+(a.ttl || 30) === n ? new Raw('selected') : ''}>${n} jours</option>`)}</select></label>
+        <p class="tiny muted full" style="margin:0">${exp ? `Expirée le ${fmtDate(a.fin)} : enregistrez pour la republier.` : a.fin ? `Visible jusqu'au ${fmtDate(a.fin)} inclus, puis retirée automatiquement de l'app des locataires.` : "Retirée automatiquement de l'app des locataires à la fin de la durée."}</p>
+      </form>`,
+      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-pub" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
+        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${exp ? 'Republier' : 'Publier'}</button>`,
+    };
+  },
   'avis-form'({ id, preset }) {
     const a = id ? vault.get('avis', id) : { immId: preset || '', debut: today() };
     if (id && !a) return null;
@@ -4003,6 +4047,14 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('documents', { id: doc.id, shared: !doc.shared }), doc.shared ? 'Document retiré de l’espace locataire' : 'Document visible par le locataire', doc.label, doc.locId);
     toast(doc.shared ? 'Document privé' : 'Visible dans l’espace du locataire');
   },
+  'new-pub': (d) => openOver('pub-form', null, null, d.imm || ui.immFilter || ''),
+  'edit-pub': (d) => openOver('pub-form', d.id),
+  async 'del-pub'(d) {
+    const a = vault.get('avis', d.id);
+    if (!a || !(await confirmBox('Supprimer cette annonce ?', { ok: 'Supprimer', danger: true, detail: a.nom }))) return;
+    await vault.mutate((tx) => tx.remove('avis', d.id), 'Annonce supprimée', a.nom, a.immId);
+    goBack();
+  },
   'new-avis': (d) => openOver('avis-form', null, null, d.imm || ui.immFilter || ''),
   'edit-avis': (d) => openOver('avis-form', d.id),
   async 'del-avis'(d) {
@@ -4423,6 +4475,17 @@ const FORMS = {
     const h = { d: today(), code, raison: fd.get('raison'), note: String(fd.get('note') || '').trim() };
     await vault.mutate((tx) => tx.put('logements', { id: g.id, porte: { code, maj: today(), serrure: String(fd.get('serrure') || '').trim(), info: String(fd.get('info') || '').trim(), hist: [...(pt.hist || []), h].slice(-30) } }), 'Code de porte changé', `${g.nom} (${immName(g.immId)}) — ${h.raison}`, g.immId);
     toast('Code enregistré');
+    goBack();
+  },
+  async pub(fd) {
+    const id = fd.get('id');
+    const ttl = PUB_TTL.includes(+fd.get('ttl')) ? +fd.get('ttl') : 30;
+    const debut = fd.get('debut') || today();
+    const rec = { kind: 'pub', cat: PUB_CATS[fd.get('cat')] ? fd.get('cat') : 'autre', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), texte: fd.get('texte').trim(), tel: fd.get('tel').trim(), web: /^https?:\/\//.test(fd.get('web').trim()) ? fd.get('web').trim() : '', immId: fd.get('immId') || '', debut, ttl, fin: addDays(debut, ttl - 1) };
+    if (!rec.nom || !rec.adresse) return;
+    if (id) rec.id = id;
+    await vault.mutate((tx) => tx.put('avis', rec), id ? 'Annonce modifiée' : 'Annonce publiée', `${rec.nom} — jusqu'au ${fmtDate(rec.fin)}`, rec.immId);
+    toast(`Annonce publiée jusqu'au ${fmtDate(rec.fin)}`);
     goBack();
   },
   async avis(fd) {

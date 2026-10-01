@@ -12,6 +12,7 @@ else { try { [id, key] = ((localStorage.getItem(ACC) || '').match(RX) || []).sli
 const L = {
   fr: {
     x: {"places": "Mes lieux de travail", "placesHint": "Touchez une adresse : la carte s’affiche en haut.", "route": "🗺️ Itinéraire Google Maps", "phT": "Photos avant / après", "phHint": "Avant de commencer et une fois fini : jusqu’à 6 photos chacune.", "av": "Avant", "ap": "Après", "cam": "📷 Photo", "gal": "🖼️ Galerie", "full": "6 photos maximum", "infoRO": "Ces données sont enregistrées par votre responsable. Une erreur ? Appelez-le."},
+    w: {"today": "Planning du jour", "arr": "Arrivée", "dep": "Départ", "mine": "Mon horaire aujourd’hui"},
     loc: 'fr-LU', app: 'App de l’équipe', welcome: 'Votre planning, vos interventions et vos absences, sur votre téléphone.', code: 'Votre code personnel', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrer', noCode: 'Pas de code ? Demandez-le à votre responsable.', badCode: 'Code inconnu. Vérifiez-le ou demandez un nouveau code.', off: 'Cet accès a été désactivé. Demandez un nouveau code à votre responsable.', mismatch: 'Ce code est pour l’app des locataires.',
     hello: 'Bonjour', today: 'Aujourd’hui', next: 'Prochains jours', none: 'Rien de prévu aujourd’hui.', noneNext: 'Rien de prévu.', late: 'en retard', start: '▶️ Je commence', done: '✅ Fini', inc: '⚠️ Pas fini', why: 'Pourquoi ce n’est pas fini ? (obligatoire)', whyPh: 'ex. il manque une pièce, locataire absent…', note: 'Note (facultatif)', notePh: 'ex. robinet changé, escalier lavé', photos: 'Photos (max. 3)', send: 'Envoyer', cancel: 'Annuler',
     st: { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini' }, at: 'à', consignes: 'Consignes', contact: 'Contact sur place', call: 'Appeler', commons: 'Parties communes',
@@ -23,6 +24,7 @@ const L = {
   },
   it: {
     x: {"places": "I miei luoghi di lavoro", "placesHint": "Tocca un indirizzo: la mappa appare in alto.", "route": "🗺️ Percorso Google Maps", "phT": "Foto prima / dopo", "phHint": "Prima di iniziare e a lavoro finito: fino a 6 foto ciascuna.", "av": "Prima", "ap": "Dopo", "cam": "📷 Foto", "gal": "🖼️ Galleria", "full": "6 foto al massimo", "infoRO": "Questi dati sono registrati dal tuo responsabile. Un errore? Chiamalo."},
+    w: {"today": "Planning di oggi", "arr": "Arrivo", "dep": "Partenza", "mine": "Il mio orario di oggi"},
     loc: 'it-IT', app: 'App della squadra', welcome: 'Il tuo planning, i tuoi interventi e le tue assenze, sul telefono.', code: 'Il tuo codice personale', codePh: 'es. K7PM2-QXA4H', enter: 'Entra', noCode: 'Non hai il codice? Chiedilo al tuo responsabile.', badCode: 'Codice sconosciuto. Controllalo o chiedi un nuovo codice.', off: 'Questo accesso è stato disattivato. Chiedi un nuovo codice al responsabile.', mismatch: 'Questo codice è per l’app degli inquilini.',
     hello: 'Ciao', today: 'Oggi', next: 'Prossimi giorni', none: 'Niente in programma oggi.', noneNext: 'Niente in programma.', late: 'in ritardo', start: '▶️ Inizio', done: '✅ Finito', inc: '⚠️ Non finito', why: 'Perché non è finito? (obbligatorio)', whyPh: 'es. manca un pezzo, inquilino assente…', note: 'Nota (facoltativa)', notePh: 'es. rubinetto cambiato, scale lavate', photos: 'Foto (max. 3)', send: 'Invia', cancel: 'Annulla',
     st: { encours: '▶️ Iniziato', fait: '✅ Finito', incomplet: '⚠️ Non finito' }, at: 'alle', consignes: 'Istruzioni', contact: 'Contatto sul posto', call: 'Chiama', commons: 'Parti comuni',
@@ -34,6 +36,7 @@ const L = {
   },
   pt: {
     x: {"places": "Os meus locais de trabalho", "placesHint": "Toque num endereço: o mapa aparece em cima.", "route": "🗺️ Itinerário Google Maps", "phT": "Fotos antes / depois", "phHint": "Antes de começar e depois de terminar: até 6 fotos cada.", "av": "Antes", "ap": "Depois", "cam": "📷 Foto", "gal": "🖼️ Galeria", "full": "6 fotos no máximo", "infoRO": "Estes dados são registados pelo seu responsável. Um erro? Ligue-lhe."},
+    w: {"today": "Planeamento de hoje", "arr": "Chegada", "dep": "Saída", "mine": "O meu horário de hoje"},
     loc: 'pt-PT', app: 'App da equipa', welcome: 'O seu planeamento, as suas intervenções e ausências, no telemóvel.', code: 'O seu código pessoal', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrar', noCode: 'Não tem código? Peça-o ao seu responsável.', badCode: 'Código desconhecido. Verifique-o ou peça um novo código.', off: 'Este acesso foi desativado. Peça um novo código ao responsável.', mismatch: 'Este código é para a app dos inquilinos.',
     hello: 'Olá', today: 'Hoje', next: 'Próximos dias', none: 'Nada previsto para hoje.', noneNext: 'Nada previsto.', late: 'em atraso', start: '▶️ Começo', done: '✅ Terminado', inc: '⚠️ Não terminado', why: 'Porque não está terminado? (obrigatório)', whyPh: 'ex. falta uma peça, inquilino ausente…', note: 'Nota (opcional)', notePh: 'ex. torneira trocada, escada lavada', photos: 'Fotos (máx. 3)', send: 'Enviar', cancel: 'Cancelar',
     st: { encours: '▶️ Começado', fait: '✅ Terminado', incomplet: '⚠️ Não terminado' }, at: 'às', consignes: 'Instruções', contact: 'Contacto no local', call: 'Ligar', commons: 'Partes comuns',
@@ -45,6 +48,7 @@ const L = {
   },
   de: {
     x: {"places": "Meine Arbeitsorte", "placesHint": "Tippen Sie auf eine Adresse: Die Karte erscheint oben.", "route": "🗺️ Route in Google Maps", "phT": "Fotos vorher / nachher", "phHint": "Vor Beginn und nach Abschluss: je bis zu 6 Fotos.", "av": "Vorher", "ap": "Nachher", "cam": "📷 Foto", "gal": "🖼️ Galerie", "full": "Höchstens 6 Fotos", "infoRO": "Diese Daten werden von Ihrem Verantwortlichen erfasst. Ein Fehler? Rufen Sie ihn an."},
+    w: {"today": "Heutiger Plan", "arr": "Ankunft", "dep": "Ende", "mine": "Meine Zeiten heute"},
     loc: 'de-LU', app: 'Team-App', welcome: 'Ihr Plan, Ihre Einsätze und Abwesenheiten, auf dem Telefon.', code: 'Ihr persönlicher Code', codePh: 'z. B. K7PM2-QXA4H', enter: 'Anmelden', noCode: 'Kein Code? Fragen Sie Ihren Verantwortlichen.', badCode: 'Unbekannter Code. Prüfen Sie ihn oder fragen Sie nach einem neuen.', off: 'Dieser Zugang wurde deaktiviert. Fragen Sie nach einem neuen Code.', mismatch: 'Dieser Code ist für die Mieter-App.',
     hello: 'Hallo', today: 'Heute', next: 'Nächste Tage', none: 'Heute nichts geplant.', noneNext: 'Nichts geplant.', late: 'verspätet', start: '▶️ Ich fange an', done: '✅ Fertig', inc: '⚠️ Nicht fertig', why: 'Warum nicht fertig? (Pflicht)', whyPh: 'z. B. Teil fehlt, Mieter nicht da…', note: 'Notiz (optional)', notePh: 'z. B. Hahn gewechselt, Treppe geputzt', photos: 'Fotos (max. 3)', send: 'Senden', cancel: 'Abbrechen',
     st: { encours: '▶️ Begonnen', fait: '✅ Fertig', incomplet: '⚠️ Nicht fertig' }, at: 'um', consignes: 'Anweisungen', contact: 'Kontakt vor Ort', call: 'Anrufen', commons: 'Gemeinschaftsbereiche',
@@ -56,6 +60,7 @@ const L = {
   },
   en: {
     x: {"places": "My workplaces", "placesHint": "Tap an address: the map appears at the top.", "route": "🗺️ Directions in Google Maps", "phT": "Before / after photos", "phHint": "Before you start and once finished: up to 6 photos each.", "av": "Before", "ap": "After", "cam": "📷 Photo", "gal": "🖼️ Gallery", "full": "6 photos maximum", "infoRO": "These details are recorded by your manager. A mistake? Call them."},
+    w: {"today": "Today’s schedule", "arr": "Arrival", "dep": "Departure", "mine": "My hours today"},
     loc: 'en-GB', app: 'Team app', welcome: 'Your schedule, your jobs and your absences, on your phone.', code: 'Your personal code', codePh: 'e.g. K7PM2-QXA4H', enter: 'Enter', noCode: 'No code? Ask your manager.', badCode: 'Unknown code. Check it or ask for a new one.', off: 'This access has been disabled. Ask your manager for a new code.', mismatch: 'This code is for the tenants app.',
     hello: 'Hello', today: 'Today', next: 'Next days', none: 'Nothing planned today.', noneNext: 'Nothing planned.', late: 'late', start: '▶️ I’m starting', done: '✅ Done', inc: '⚠️ Not finished', why: 'Why is it not finished? (required)', whyPh: 'e.g. a part is missing, tenant not home…', note: 'Note (optional)', notePh: 'e.g. tap replaced, stairs cleaned', photos: 'Photos (max. 3)', send: 'Send', cancel: 'Cancel',
     st: { encours: '▶️ Started', fait: '✅ Done', incomplet: '⚠️ Not finished' }, at: 'at', consignes: 'Instructions', contact: 'Contact on site', call: 'Call', commons: 'Common areas',
@@ -67,6 +72,7 @@ const L = {
   },
   es: {
     x: {"places": "Mis lugares de trabajo", "placesHint": "Toca una dirección: el mapa aparece arriba.", "route": "🗺️ Ruta en Google Maps", "phT": "Fotos antes / después", "phHint": "Antes de empezar y al terminar: hasta 6 fotos cada una.", "av": "Antes", "ap": "Después", "cam": "📷 Foto", "gal": "🖼️ Galería", "full": "6 fotos como máximo", "infoRO": "Estos datos los registra tu responsable. ¿Un error? Llámale."},
+    w: {"today": "Planificación de hoy", "arr": "Llegada", "dep": "Salida", "mine": "Mi horario de hoy"},
     loc: 'es-ES', app: 'App del equipo', welcome: 'Tu planificación, tus intervenciones y tus ausencias, en el móvil.', code: 'Tu código personal', codePh: 'ej. K7PM2-QXA4H', enter: 'Entrar', noCode: '¿No tienes código? Pídeselo a tu responsable.', badCode: 'Código desconocido. Compruébalo o pide uno nuevo.', off: 'Este acceso ha sido desactivado. Pide un nuevo código a tu responsable.', mismatch: 'Este código es para la app de inquilinos.',
     hello: 'Hola', today: 'Hoy', next: 'Próximos días', none: 'Nada previsto hoy.', noneNext: 'Nada previsto.', late: 'con retraso', start: '▶️ Empiezo', done: '✅ Terminado', inc: '⚠️ No terminado', why: '¿Por qué no está terminado? (obligatorio)', whyPh: 'ej. falta una pieza, inquilino ausente…', note: 'Nota (opcional)', notePh: 'ej. grifo cambiado, escalera limpia', photos: 'Fotos (máx. 3)', send: 'Enviar', cancel: 'Cancelar',
     st: { encours: '▶️ Empezado', fait: '✅ Terminado', incomplet: '⚠️ No terminado' }, at: 'a las', consignes: 'Instrucciones', contact: 'Contacto en el lugar', call: 'Llamar', commons: 'Zonas comunes',
@@ -202,20 +208,22 @@ function render() {
   const pls = placesOf(d);
   if (place && !pls.includes(place)) place = '';
   if (place) out.push(`<div class="card"><div id="mapBox" class="map" data-q="${esc(mapQ(place))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQ(place))}" target="_blank" rel="noopener">${esc(t.x.route)}</a></div>`);
-  if (pls.length) out.push(`<div class="card"><h2>📍 ${esc(t.x.places)}</h2><div class="places">${pls.map((a) => `<button class="place" data-place="${esc(a)}" aria-pressed="${a === place}">📍 ${esc(a)}</button>`).join('')}</div><p class="meta" style="margin:8px 0 0">${esc(t.x.placesHint)}</p></div>`);
   const q = getJ(QK());
   if (q.length) out.push(`<div class="card warnc"><p style="margin:0 0 8px">${esc(t.pending(q.length))}</p><button class="btn sec sm" data-retry="1">${esc(t.retry)}</button></div>`);
   if (flash) out.push(`<div class="card okc"><p style="margin:0">${esc(flash)}</p></div>`);
   const absNow = (d.absences || []).find((a) => a.debut <= today && (!a.fin || a.fin >= today));
   if (absNow) out.push(`<div class="card warnc"><p style="margin:0"><b>${esc(t.absNow(t.types[absNow.type] || absNow.type, fmt(absNow.fin)))}</b></p></div>`);
   const todays = d.items.filter((x) => x.d <= today && (x.d === today || x.late));
-  out.push(`<div class="card"><h2>📅 ${esc(t.today)} · ${esc(fmtDay(today))}</h2>${todays.length ? todays.map((x) => taskCard(x, true)).join('') : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}</div>`);
+  const dow = (new Date().getDay() + 6) % 7;
+  const hsToday = (d.horaires || []).filter((h) => h.j === dow).sort((a, b) => (a.de || '').localeCompare(b.de || ''));
+  const hrow = (h) => `<div class="hday"><b>${esc(t.days[h.j])}</b><span class="hh">🕒 ${esc(t.w.arr)} <b>${esc(h.de)}</b> · ${esc(t.w.dep)} <b>${esc(h.a)}</b></span>${h.lieu ? `<button class="place" data-place="${esc(h.lieu)}" aria-pressed="${h.lieu === place}">📍 ${esc(h.lieu)}</button>` : ''}</div>`;
+  out.push(`<div class="card"><h2>📅 ${esc(t.w.today)} · ${esc(fmtDay(today))}</h2>${hsToday.map(hrow).join('')}${todays.length ? todays.map((x) => taskCard(x, true)).join('') : hsToday.length ? '' : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}${hsToday.some((h) => h.lieu) || todays.length ? `<p class="meta" style="margin:8px 0 0">${esc(t.x.placesHint)}</p>` : ''}</div>`);
   const nexts = d.items.filter((x) => x.d > today);
   const byDay = {};
   for (const x of nexts) (byDay[x.d] ||= []).push(x);
   out.push(`<div class="card"><h2>🗓️ ${esc(t.next)}</h2>${nexts.length ? Object.keys(byDay).sort().map((dd) => `<div class="day">${esc(fmtDay(dd))}</div>${byDay[dd].map((x) => taskCard(x, false)).join('')}`).join('') : `<p class="meta" style="margin:0">${esc(t.noneNext)}</p>`}</div>`);
   const hs = (d.horaires || []).slice().sort((a, b) => a.j - b.j);
-  out.push(`<div class="card"><h2>🕒 ${esc(t.sched)}</h2>${hs.length ? hs.map((h) => `<div class="row"><b style="width:110px">${esc(t.days[h.j])}</b><span class="grow">${esc(h.de)}–${esc(h.a)}${h.lieu ? `<br><span class="meta">📍 ${esc(h.lieu)}</span>` : ''}</span></div>`).join('') : `<p class="meta" style="margin:0">${esc(t.noSched)}</p>`}</div>`);
+  out.push(`<div class="card"><h2>🕒 ${esc(t.sched)}</h2>${hs.length ? hs.map((h) => `<div class="row"><b style="width:110px">${esc(t.days[h.j])}</b><span class="grow">${esc(t.w.arr)} <b>${esc(h.de)}</b> · ${esc(t.w.dep)} <b>${esc(h.a)}</b>${h.lieu ? `<br><span class="meta">📍 ${esc(h.lieu)}</span>` : ''}</span></div>`).join('') : `<p class="meta" style="margin:0">${esc(t.noSched)}</p>`}</div>`);
   const absList = (d.absences || []).filter((a) => !a.fin || a.fin >= today);
   out.push(`<div class="card"><h2>🤒 ${esc(t.abs)}</h2>${absList.map((a) => `<div class="row"><span class="grow">${esc(t.types[a.type] || a.type)} · ${esc(fmt(a.debut))}${a.fin ? ' → ' + esc(fmt(a.fin)) : ''}</span></div>`).join('')}
     <details class="more"><summary>${esc(t.sick)}</summary><form id="absForm">
