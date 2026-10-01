@@ -7639,5 +7639,53 @@ export default [
 [
 "Le message d’invitation part dans cette langue (en français si « Celle de son téléphone »).",
 "El mensaje de invitación sale en este idioma (en francés si « El de su móvil »)."
+],
+[
+": LuxInterventions le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.",
+": LuxInterventions lo separa solo por tipo de residuo (vidrio, papel, resto…) y crea una recogida para cada uno."
+],
+[
+"Ajoute l’icône LuxInterventions sur l’écran d’accueil, fonctionne hors ligne.",
+"Pone el icono LuxInterventions en la pantalla de inicio, funciona sin conexión."
+],
+[
+"Connexion annulée : LuxInterventions reste ouvert sur l’autre appareil.",
+"Conexión cancelada: LuxInterventions sigue abierto en el otro dispositivo."
+],
+[
+"Le contrat de {0} commence le {1}. Pour que les totaux restent justes, LuxInterventions va avancer l'entrée au {2}, puis enregistrer le paiement.",
+"El contrato de {0} empieza el {1}. Para que los totales cuadren, LuxInterventions adelanta la entrada al {2} y luego registra el pago."
+],
+[
+"LuxInterventions a été ouvert sur {0} : cet appareil a été déconnecté.",
+"LuxInterventions se abrió en {0}: este dispositivo ha sido desconectado."
+],
+[
+"LuxInterventions est ouvert sur un autre appareil",
+"LuxInterventions está abierto en otro dispositivo"
+],
+[
+"Publier un objet (LuxInterventions)",
+"Publicar un objeto (LuxInterventions)"
+],
+[
+"du camion (comme sur le calendrier de la commune). LuxInterventions calcule quand sortir les poubelles.",
+"del camión (como en el calendario del ayuntamiento). LuxInterventions calcula cuándo sacar la basura."
+],
+[
+"Annonce publiée (LuxInterventions)",
+"Anuncio publicado (LuxInterventions)"
+],
+[
+"Le contrat de {0} {1}. Pour que les totaux restent justes, LuxInterventions va {2}, puis enregistrer le paiement.",
+"El contrato de {0} {1}. Para que los totales sean correctos, LuxInterventions va a {2} y luego registrar el pago."
+],
+[
+"Gestion locative",
+"Gestión de alquileres"
+],
+[
+"Gestion locative · Luxembourg",
+"Gestión de alquileres · Luxemburgo"
 ]
 ];

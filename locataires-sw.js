@@ -1,7 +1,7 @@
 // Service worker Ares : met l'application en cache pour l'ouvrir hors ligne.
 // Les données ne passent jamais par ce cache (elles sont chiffrées dans IndexedDB
 // et les appels à l'API ne sont pas interceptés).
-const CACHE = 'ares-shell-v2.34.0';
+const CACHE = 'ares-shell-v2.35.0';
 const SHELL = [
   '/locataires.html',
   '/ares/app.css',
@@ -20,7 +20,7 @@ const SHELL = [
   '/ares/icons/favicon-32.png',
   '/ares/icons/ares-96.png',
   '/ares/icons/nobis-logo.png',
-  '/ares/icons/ares-192.png',
+  '/ares/icons/lux-192.png', '/assets/luxinterventions-logo.png',
   '/ares/icons/apple-touch-icon.png',
 ];
 

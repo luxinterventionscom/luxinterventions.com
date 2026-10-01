@@ -69,6 +69,10 @@
     letter-spacing: -0.02em;
   }
   .nav-logo span { color: var(--accent); }
+  .nav-logo { display: inline-flex; align-items: center; gap: 0.5rem; }
+  .nav-logo img, .footer-logo img { width: 40px; height: 40px; border-radius: 50%; flex: none; }
+  .footer-logo { display: inline-flex; align-items: center; gap: 0.5rem; }
+  .logo-txt { font-weight: inherit; }
 
   .nav-links {
     display: flex; gap: 2rem; list-style: none;
@@ -927,7 +931,7 @@
 
 <!-- NAV -->
 <nav id="mainNav">
-  <a href="#home" class="nav-logo">Lux<span>Interventions</span></a>
+  <a href="#home" class="nav-logo"><img src="/assets/luxinterventions-logo.png" alt="" width="40" height="40"><b class="logo-txt">Lux<span>Interventions</span></b></a>
   <ul class="nav-links">
     <li><a href="#services">Services</a></li>
     <li><a href="#why">Pourquoi nous</a></li>
@@ -1983,7 +1987,7 @@
 
 <!-- FOOTER -->
 <footer>
-  <div class="footer-logo">Lux<span>Intervention</span></div>
+  <div class="footer-logo"><img src="/assets/luxinterventions-logo.png" alt="" width="40" height="40"><b class="logo-txt">Lux<span>Intervention</span></b></div>
   <ul class="footer-links">
     <li><a href="#services">Services</a></li>
     <li><a href="#why">Pourquoi nous</a></li>

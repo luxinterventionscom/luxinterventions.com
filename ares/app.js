@@ -1,11 +1,12 @@
-// NOBIS s.a.r.l. — Gestion locataires (interface)
+// LuxInterventions — Gestion locative (interface). L'app est à LuxInterventions (Ares Invest S.A.) ;
+// les données de la société cliente (Réglages → Société, ici NOBIS s.a.r.l.) servent aux quittances et aux apps des locataires.
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.34.0';
+const VERSION = '2.35.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -1058,6 +1059,8 @@ const societe = () => vault.get('reglages', 'main') || {};
 // Pays et taux de TVA (modifiables dans Réglages → Société) — aide à la comptabilité, pas un conseil fiscal
 const PAYS = { LU: ['Luxembourg', [17, 14, 8, 3]], FR: ['France', [20, 10, 5.5, 2.1]], BE: ['Belgique', [21, 12, 6]], DE: ['Deutschland', [19, 7]], IT: ['Italia', [22, 10, 5, 4]], PT: ['Portugal', [23, 13, 6]], ES: ['España', [21, 10, 4]], NL: ['Nederland', [21, 9]], AT: ['Österreich', [20, 13, 10]], CH: ['Suisse', [8.1, 3.8, 2.6]] };
 const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '').split(/[;, ]+/).map((x) => parseFloat(x.replace(',', '.'))).filter((x) => x > 0 && x < 100); return own.length ? own : (PAYS[s0.pays || 'LU'] || PAYS.LU)[1]; };
+// Marque de l'app de gestion (fixe, indépendante de la société cliente)
+const APP_BRAND = { nom: 'LuxInterventions', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
 const socName = () => societe().nom || 'NOBIS s.a.r.l.';
 const socLogo = () => societe().logo || '/ares/icons/nobis-logo.png';
 const htOf = (ttc, r) => (r ? ttc / (1 + r / 100) : ttc);
@@ -1085,11 +1088,9 @@ async function fixIdentity() {
   applyBrand();
   toast('Société corrigée : NOBIS s.a.r.l. · RCS B225665 · TVA LU30599412');
 }
+// L'en-tête de l'app montre la marque LuxInterventions ; le logo de la société (Réglages) sert aux quittances et à l'app des locataires
 function applyBrand() {
-  const logo = socLogo(), nom = socName();
-  document.querySelectorAll('.brand-mark').forEach((img) => { img.src = logo; });
-  document.querySelectorAll('.brand > span').forEach((sp) => { const sm = sp.querySelector('small'); sp.textContent = nom; if (sm) sp.appendChild(sm); });
-  try { localStorage.setItem('aresBrand', JSON.stringify({ logo: societe().logo || '', nom, rcs: societe().rcs || '' })); } catch {}
+  document.querySelectorAll('.brand-mark').forEach((img) => { img.src = APP_BRAND.logo; });
 }
 const brandCache = () => { try { return JSON.parse(localStorage.getItem('aresBrand') || '{}'); } catch { return {}; } };
 const associes = () => (societe().associes || []).filter((a) => a.nom && a.part > 0);
@@ -1268,8 +1269,8 @@ function renderLock(mode, error = '') {
   lockEl.hidden = false;
   const legacy = legacyLocal();
   const head = html`
-    <img class="lock-logo" src="${brandCache().logo || '/ares/icons/nobis-logo.png'}" alt="" width="200" height="84">
-    <div class="lock-head"><h1>${WRONG_ID.test(brandCache().nom || '') ? 'NOBIS s.a.r.l.' : brandCache().nom || 'NOBIS s.a.r.l.'}</h1><p>Gestion locataires · Luxembourg${brandCache().rcs && !WRONG_ID.test(brandCache().rcs) ? ' · RCS ' + brandCache().rcs : ''}</p></div>`;
+    <img class="lock-logo" src="${APP_BRAND.logo}" alt="" width="96" height="96">
+    <div class="lock-head"><h1>${APP_BRAND.nom}</h1><p>Gestion locative · Luxembourg</p><p class="tiny" data-notr="1">${APP_BRAND.legal}</p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>`;
 
   if (mode === 'checking') {
@@ -1326,7 +1327,7 @@ function renderLock(mode, error = '') {
   }
   setHtml(lockEl, html`<form class="lock-card" data-form="unlock">
     ${head}
-    <input type="text" name="username" value="NOBIS s.a.r.l." autocomplete="username" hidden>
+    <input type="text" name="username" value="LuxInterventions" autocomplete="username" hidden>
     <label class="field">Clé d'accès ${pwField('pass', '••••••••••••', 'current-password')}</label>
     <div class="lock-err" role="alert">${error}</div>
     <button class="btn primary block" type="submit">Déverrouiller</button>
@@ -1365,7 +1366,7 @@ async function claimOrAsk() {
     const i = e.info || {};
     const ago = i.lastSeen ? Math.max(0, Math.round((Date.now() - i.lastSeen) / 1000)) : null;
     const choice = await choiceBox(
-      'NOBIS est ouvert sur un autre appareil',
+      'LuxInterventions est ouvert sur un autre appareil',
       `${i.device || 'Un autre appareil'} est connecté${i.since ? ' depuis ' + fmtDateTime(i.since) : ''}${ago != null ? ` (actif il y a ${ago} s)` : ''}. Un seul appareil peut être connecté à la fois : si vous continuez, l'autre sera déconnecté immédiatement.`,
       [{ value: 'take', label: 'Prendre la main', cls: 'primary' }]
     );
@@ -1411,7 +1412,7 @@ async function onUnlock(fd, form) {
     if (r.setup) return renderLock('setup');
     if (!(await claimOrAsk())) {
       vault.lock();
-      return renderLock('unlock', 'Connexion annulée : NOBIS reste ouvert sur l’autre appareil.');
+      return renderLock('unlock', 'Connexion annulée : LuxInterventions reste ouvert sur l’autre appareil.');
     }
     startSession();
   } catch (e) {
@@ -1546,7 +1547,7 @@ vault.on((kind) => {
   if (kind === 'status') renderSync();
   if (kind === 'data') { renderView(); renderSheet(); scheduleEspaceSync(); }
   if (kind === 'auth-lost') lockNow("La clé d'accès a été changée sur un autre appareil.");
-  if (kind === 'session-lost') lockNow(`NOBIS a été ouvert sur ${vault.sessionLostBy || 'un autre appareil'} : cet appareil a été déconnecté.`);
+  if (kind === 'session-lost') lockNow(`LuxInterventions a été ouvert sur ${vault.sessionLostBy || 'un autre appareil'} : cet appareil a été déconnecté.`);
 });
 
 // ───────────────────────── Coquille ─────────────────────────
@@ -1554,14 +1555,14 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="/ares/icons/nobis-logo.png" alt="" width="86" height="36"><span>NOBIS s.a.r.l.<small>Gestion locataires</small></span></div>
+      <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>LuxInterventions<small>Gestion locative</small></span></div>
       ${NAV.map(navBtn)}
       <div class="spacer"></div>
       <button class="navbtn" data-action="lock">${icon('lock')}<span>Verrouiller</span></button>
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="/ares/icons/nobis-logo.png" alt="" width="86" height="36"><span>NOBIS s.a.r.l.</span></div>
+        <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>LuxInterventions</span></div>
         <button class="sync" id="sync" data-action="sync-now" data-s="idle"><i></i><span>…</span></button>
         <button class="btn icon ghost" data-action="lock" aria-label="Verrouiller" title="Verrouiller">${icon('lock')}</button>
       </header>
@@ -2396,7 +2397,7 @@ dashboard() {
 
       ${!standalone ? html`<div class="section-label">Application</div>
       <div class="list settings"><div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Installer sur ce téléphone</span>
-        <span class="meta" style="white-space:normal">${isIOS ? 'Safari : bouton Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône NOBIS sur l’écran d’accueil, fonctionne hors ligne.'}</span></span>
+        <span class="meta" style="white-space:normal">${isIOS ? 'Safari : bouton Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône LuxInterventions sur l’écran d’accueil, fonctionne hors ligne.'}</span></span>
         ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}</div></div>` : ''}
 
       <div class="section-label">Sécurité</div>
@@ -2428,7 +2429,7 @@ dashboard() {
       <div class="section-label">Langue · Lingua · Sprache · Língua · Language · Idioma</div>
       <div class="chips" data-notr="1">${Object.entries(LANGS).map(([k, l]) => html`<button class="chip" data-action="set-lang" data-id="${k}" aria-pressed="${LANG === k}">${l}</button>`)}</div>
       <p class="tiny muted" style="margin-top:4px">Les quittances, reçus et relances aux locataires restent en français (documents officiels).</p>
-      <p class="tiny muted" style="margin-top:28px;text-align:center">NOBIS s.a.r.l. · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
+      <p class="tiny muted" style="margin-top:28px;text-align:center"><span data-notr="1">LuxInterventions · ${APP_BRAND.legal}</span> · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
   },
 };
 
@@ -2885,7 +2886,7 @@ const SHEETS = {
     return {
       title: 'Calendrier de la commune',
       body: html`<form id="f" data-form="icsall" class="fields">
-        <p class="small full" style="margin:0">Importez le calendrier <b>complet</b> de la commune pour <b>${im.adresse}</b> : NOBIS le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.</p>
+        <p class="small full" style="margin:0">Importez le calendrier <b>complet</b> de la commune pour <b>${im.adresse}</b> : LuxInterventions le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.</p>
         ${field('Lien du calendrier (.ics / webcal) — se met à jour tout seul', 'url', st.url, { full: true, type: 'url', placeholder: 'https://… .ics ou webcal://…' })}
         <div class="full" style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn sm" type="button" data-action="ics-analyze">${icon('sync')} Lire le lien</button>
@@ -2936,7 +2937,7 @@ const SHEETS = {
           <p class="tiny muted full" style="margin:0">Chaque année : remplacez les dates par celles du nouveau calendrier de la commune.</p></div>
         <label class="field">Quand sortir<select name="sortie">${Object.entries(SORTIES).map(([k, v]) => html`<option value="${k}" ${(c.sortie || 'veille') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Heure (facultatif)', 'heure', c.heure, { placeholder: 'ex. après 18 h, avant 6 h' })}
-        <p class="tiny muted full" style="margin:0">Les dates ci-dessus sont les jours de <b>passage</b> du camion (comme sur le calendrier de la commune). NOBIS calcule quand sortir les poubelles.</p>
+        <p class="tiny muted full" style="margin:0">Les dates ci-dessus sont les jours de <b>passage</b> du camion (comme sur le calendrier de la commune). LuxInterventions calcule quand sortir les poubelles.</p>
         <label class="field full">Où sortir les poubelles<select name="lieu">${Object.entries(LIEUX).map(([k, v]) => html`<option value="${k}" ${c.lieu === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Remarque', 'note', c.note, { full: true, placeholder: 'ex. sortir la veille après 18 h, conteneur au garage n°2' })}
       </form>`,
@@ -3406,7 +3407,7 @@ const SHEETS = {
   },
 
   recovery({ preset: code }) {
-    const body = encodeURIComponent(`Clé de secours NOBIS s.a.r.l. :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : https://luxinterventions.com/locataires.html → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
+    const body = encodeURIComponent(`Clé de secours LuxInterventions :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : https://luxinterventions.com/locataires.html → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
     return {
       title: 'Votre clé de secours',
       narrow: true,
@@ -3416,7 +3417,7 @@ const SHEETS = {
         <div class="actions" style="margin-top:14px">
           <button class="btn" data-action="copy-recovery">${icon('file')} Copier</button>
           <button class="btn" data-action="print-recovery">${icon('download')} Imprimer</button>
-          <a class="btn" href="mailto:${MAIL}?subject=${encodeURIComponent('NOBIS s.a.r.l. — clé de secours')}&body=${body}">${icon('mail')} Email</a>
+          <a class="btn" href="mailto:${MAIL}?subject=${encodeURIComponent('LuxInterventions — clé de secours')}&body=${body}">${icon('mail')} Email</a>
         </div>
         <p class="tiny muted">Le bouton Email prépare un message vers ${MAIL}. Pratique, mais toute personne qui accède à cette messagerie pourrait ouvrir le coffre : le papier reste plus sûr.</p>`,
       foot: html`<button class="btn primary" data-action="close-sheet">J'ai noté ma clé de secours</button>`,
@@ -4054,7 +4055,7 @@ const ACTIONS = {
       const { fix, afterExit } = datesFix(l, [{ y, m }]);
       if (afterExit.length) return toast(`${fullName(l)} est parti le ${fmtDate(l.sortie)} : ce mois n'est plus dû.`, { bad: true });
       const what = fix.debut ? `avancer l'entrée au ${fmtDate(fix.debut)}` : `prolonger le contrat jusqu'au ${fmtDate(fix.fin)}`;
-      if (!(await confirmBox(`${MONTHS_FULL[m - 1]} ${y} est hors du contrat`, { ok: fix.debut ? "Avancer l'entrée et payer" : 'Prolonger et payer', detail: `Le contrat de ${fullName(l)} ${fix.debut ? 'commence le ' + fmtDate(l.debut) : 'finit le ' + fmtDate(l.fin)}. Pour que les totaux restent justes, NOBIS va ${what}, puis enregistrer le paiement.` }))) return;
+      if (!(await confirmBox(`${MONTHS_FULL[m - 1]} ${y} est hors du contrat`, { ok: fix.debut ? "Avancer l'entrée et payer" : 'Prolonger et payer', detail: `Le contrat de ${fullName(l)} ${fix.debut ? 'commence le ' + fmtDate(l.debut) : 'finit le ' + fmtDate(l.fin)}. Pour que les totaux restent justes, LuxInterventions va ${what}, puis enregistrer le paiement.` }))) return;
       await vault.mutate((tx) => tx.put('locataires', { id: l.id, ...fix }), 'Dates du contrat corrigées', `${fullName(l)} — ${what}`, l.id);
     }
     payFull(d.loc, y, m);

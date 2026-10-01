@@ -1,6 +1,6 @@
 {
-  "name": "NOBIS s.a.r.l. — Gestion locataires",
-  "short_name": "NOBIS",
+  "name": "LuxInterventions — Gestion locative",
+  "short_name": "LuxInterventions",
   "description": "Gestion des immeubles, locataires et loyers — données chiffrées de bout en bout.",
   "lang": "fr",
   "start_url": "/locataires.html",
@@ -11,19 +11,19 @@
   "theme_color": "#f5f4f0",
   "icons": [
     {
-      "src": "/ares/icons/ares-192.png",
+      "src": "/ares/icons/lux-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/ares/icons/ares-512.png",
+      "src": "/ares/icons/lux-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/ares/icons/ares-maskable-512.png",
+      "src": "/ares/icons/lux-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
