@@ -1,7 +1,7 @@
 // Service worker Ares : met l'application en cache pour l'ouvrir hors ligne.
 // Les données ne passent jamais par ce cache (elles sont chiffrées dans IndexedDB
 // et les appels à l'API ne sont pas interceptés).
-const CACHE = 'ares-shell-v2.35.1';
+const CACHE = 'ares-shell-v2.35.2';
 const SHELL = [
   '/locataires.html',
   '/ares/app.css',
@@ -42,7 +42,8 @@ self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
   if (!SHELL.includes(url.pathname) && url.pathname !== '/locataires') return;
   e.respondWith(
-    fetch(e.request)
+    // toujours redemander au serveur (sinon le navigateur garde l'ancienne version jusqu'à 10 min)
+    fetch(e.request, { cache: 'no-cache' })
       .then((res) => {
         if (res.ok) {
           const copy = res.clone();
