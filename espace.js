@@ -566,6 +566,13 @@ function notifCard(t) {
   const n = t.nt;
   return `<div class="card notif"><h2>${esc(n.t)}</h2><p class="meta" style="margin:0 0 8px">${esc(n.hint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0"><b>${esc(n.ok)}</b></p>` : pushSt === 'install' ? `<p class="meta" style="margin:0">📱 ${esc(n.install)}</p>` : pushSt === 'denied' ? `<p class="meta" style="margin:0">⚠️ ${esc(n.denied)}</p>` : `<button class="btn block" data-push-on="1">${esc(n.on)}</button>`}</div>`;
 }
+const TICKER_BASE = API;
+// la barra crypto (servie par le Worker) annonce sa hauteur réelle : le cadre s'adapte (PC, téléphone)
+addEventListener('message', (e) => {
+  if (e.origin !== new URL(TICKER_BASE).origin || !e.data || typeof e.data.tickerH !== 'number') return;
+  const h = Math.max(30, Math.min(160, Math.round(e.data.tickerH)));
+  document.querySelectorAll('.ticker').forEach((t) => { t.style.height = h + 'px'; });
+});
 function render() {
   const t = T();
   document.documentElement.lang = lang;

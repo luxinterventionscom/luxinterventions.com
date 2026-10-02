@@ -6,7 +6,7 @@ import { startI18n, LOCALES } from '/ares/i18n.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.5.0';
+const VERSION = '1.5.1';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -597,6 +597,13 @@ function guideCard(stats) {
 const PUB_ICON = { resto: '🍕', bar: '🍺', horeca: '☕', bricolage: '🔨', meubles: '🛋️', courses: '🛒', services: '🧰', autre: '📌' };
 pubStatInit(API.replace(/\/api\/portail\/$/, ''), 'ptl', () => LANG);
 document.addEventListener('click', (e) => { if (!state.demo) pubTap(e); }, true);
+const TICKER_BASE = API.replace(/\/api\/portail\/$/, '');
+// la barra crypto (servie par le Worker) annonce sa hauteur réelle : le cadre s'adapte (PC, téléphone)
+addEventListener('message', (e) => {
+  if (e.origin !== new URL(TICKER_BASE).origin || !e.data || typeof e.data.tickerH !== 'number') return;
+  const h = Math.max(30, Math.min(160, Math.round(e.data.tickerH)));
+  document.querySelectorAll('.ticker').forEach((t) => { t.style.height = h + 'px'; });
+});
 let pubTurn = 0;
 try { pubTurn = (+localStorage.getItem('ptlPubTurn') || 0) + 1; localStorage.setItem('ptlPubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
 // une annonce par emplacement (haut sous « Bonjour », milieu, bas au-dessus de la barre crypto) ; plusieurs → une autre à chaque ouverture
