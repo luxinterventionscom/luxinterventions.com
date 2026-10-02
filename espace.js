@@ -318,19 +318,18 @@ function binHtml() {
   const d = data;
   if (!d || !d.bins || !d.chat) return '';
   const t = T(), b = t.bn, plan = binPlanNow();
-  const board = binBoard(plan);
   const e = plan.find((x) => x.p === today);
-  if (!e) return board;
+  if (!e) return '';
   const st = e, mine = st.who === d.chat.mid;
   const tag = e.extra ? ` (${b.catch})` : '';
   const when = (d.coll || []).some((it) => (it.sortie || 'veille') === 'jour' && (it.dates || []).includes(e.p)) ? b.morning : b.tonight;
-  if (st.done) return `<div class="card bin ok"><b><span class="light l-green"></span> 🗑️ ${esc(when)} · ${esc(binCats(e))}</b><div class="meta">✅ ${esc(b.doneBy)} ${esc(binObj(st.done))}</div></div>` + board;
+  if (st.done) return `<div class="card bin ok"><b><span class="light l-green"></span> 🗑️ ${esc(when)} · ${esc(binCats(e))}</b><div class="meta">✅ ${esc(b.doneBy)} ${esc(binObj(st.done))}</div></div>`;
   if (mine && !st.cant) return `<div class="card bin now"><b><span class="light l-red blink"></span> 🗑️ ${esc(when)} — ${esc(b.you)}${esc(tag)} : ${esc(binCats(e))}</b>
-    <div class="bin-btns"><button class="btn" data-bin="done" data-d="${e.p}">${esc(b.done)}</button><button class="btn sec" data-bin="cant" data-d="${e.p}">${esc(b.cant)}</button></div></div>` + board;
+    <div class="bin-btns"><button class="btn" data-bin="done" data-d="${e.p}">${esc(b.done)}</button><button class="btn sec" data-bin="cant" data-d="${e.p}">${esc(b.cant)}</button></div></div>`;
   if (st.cant && st.cant !== d.chat.mid) return `<div class="card bin help"><b>🗑️ ${esc(when)} · ${esc(binCats(e))}</b><p style="margin:4px 0 8px">${esc(b.ask(binName(st.cant), binCats(e)))}</p>
-    <div class="bin-btns"><button class="btn" data-bin="take" data-d="${e.p}">${esc(b.take)}</button></div></div>` + board;
+    <div class="bin-btns"><button class="btn" data-bin="take" data-d="${e.p}">${esc(b.take)}</button></div></div>`;
   return `<div class="card bin"><b>🗑️ ${esc(when)} · ${esc(binCats(e))}</b><div class="meta">${st.who === d.chat.mid ? esc(b.you) : esc(b.turn) + ' ' + esc(binName(st.who))}${esc(tag)}${st.cant ? ' · 🔁' : ''}</div>
-    <div class="bin-btns"><button class="btn sec" data-bin="instead" data-d="${e.p}">${esc(b.instead)}</button></div></div>` + board;
+    <div class="bin-btns"><button class="btn sec" data-bin="instead" data-d="${e.p}">${esc(b.instead)}</button></div></div>`;
 }
 // Classement de l'année : 🏆🥈🥉 pour ceux qui sortent le plus les poubelles ; un simple « à rattraper » pour les oublis
 function binBoard(plan) {
@@ -342,7 +341,7 @@ function binBoard(plan) {
   const rows = Object.entries(sc).filter(([id]) => (data.bins.names || {})[id]).sort((a, c) => c[1].done - a[1].done || a[1].forgot - c[1].forgot);
   if (!rows.length) return '';
   const medal = ['🏆', '🥈', '🥉'];
-  return `<div class="card board"><h2>${esc(b.board)} ${y}</h2>${rows.map(([id, v], i) => `<div class="row"><span style="width:26px">${v.done ? medal[i] || '·' : '·'}</span><div class="grow"><b>${esc(binName(id))}</b>${v.forgot ? ` <span class="meta">${esc(b.owe(v.forgot))}</span>` : ''}</div><b>${v.done} ✅</b></div>`).join('')}</div>`;
+  return `<div class="coll-board"><p class="coll-board-t"><b>${esc(b.board)} ${y}</b></p>${rows.map(([id, v], i) => `<div class="row"><span style="width:26px">${v.done ? medal[i] || '·' : '·'}</span><div class="grow"><b>${esc(binName(id))}</b>${v.forgot ? ` <span class="meta">${esc(b.owe(v.forgot))}</span>` : ''}</div><b>${v.done} ✅</b></div>`).join('')}</div>`;
 }
 async function binAct(act, dte) {
   const e = data.bins.ev.find((x) => x.p === dte);
@@ -385,6 +384,8 @@ async function chatFetch() {
       chatMsgs = out.sort((a, b) => (a.t || '').localeCompare(b.t || ''));
       const bb = document.getElementById('binBox');
       if (bb) bb.innerHTML = binHtml();
+      const bd = document.getElementById('binBoardBox');
+      if (bd) bd.innerHTML = binBoard(binPlanNow());
       const box = document.getElementById('chat');
       if (box) { const atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 30; box.innerHTML = chatHtml(); if (atEnd || box.dataset.first !== '1') { box.scrollTop = box.scrollHeight; box.dataset.first = '1'; } }
     }
@@ -710,7 +711,7 @@ function render() {
     const rest = ev.slice(1, 400), cr = t.cr;
     const hourTxt = (it) => { const m = String(it.heure || '').match(/(\d{1,2})/); return m ? (/avant|vor|antes|before|prima/i.test(it.heure) ? cr.before : cr.after).replace('{h}', m[1]) : it.heure || ''; };
     const rules = `<div class="coll-rules"><b>📋 ${esc(cr.t)}</b>${d.coll.map((it) => `<div class="row"><span class="bin" style="--c:${BIN_COLORS[it.cat] || '#9a958a'}">${esc(cats[it.cat] || it.cat)}</span><div class="grow meta">${esc([it.sortie === 'jour' ? cr.day : cr.eve, hourTxt(it)].filter(Boolean).join(', '))}${cr.lieux[it.lieu] ? ' · ' + esc(cr.lieux[it.lieu]) : ''}${it.note ? ' · ' + esc(it.note) : ''}</div></div>`).join('')}</div>`;
-    out.push(`<div class="card"><h2>🗑️ ${esc(t.coll)}</h2>${ev.slice(0, 1).map(row).join('')}${rest.length ? `<details class="more"><summary>${esc(t.more(rest.length))}</summary>${rules}${rest.map(row).join('')}</details>` : rules}</div>`);
+    out.push(`<div class="card"><h2>🗑️ ${esc(t.coll)}</h2>${d.bins && d.chat ? `<div id="binBoardBox">${binBoard(binPlanNow())}</div>` : ''}${ev.slice(0, 1).map(row).join('')}${rest.length ? `<details class="more"><summary>${esc(t.more(rest.length))}</summary>${rules}${rest.map(row).join('')}</details>` : rules}</div>`);
   }
   if (s.edl && ((d.edl || []).length || d.signalKey)) {
     const ed = t.ed, sentL = edlSent(), done = Object.keys(sentL).length;
