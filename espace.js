@@ -719,7 +719,7 @@ function recap() {
     ${rows.map((r) => `<tr><td style="padding:5px;border-bottom:1px solid #ddd">${esc(per(r))}${r.paid < r.due - 0.009 ? ` <i>(${esc(t.rc.partial)})</i>` : ''}</td><td style="text-align:right;padding:5px;border-bottom:1px solid #ddd">${esc(money(r.due))}</td><td style="text-align:right;padding:5px;border-bottom:1px solid #ddd">${esc(money(r.paid))}</td><td style="text-align:right;padding:5px;border-bottom:1px solid #ddd">${esc(r.date ? fmt(r.date) : '—')}</td></tr>`).join('')}
     <tr><td style="padding:6px"><b>${esc(t.rc.total)}</b></td><td></td><td style="text-align:right;padding:6px"><b>${esc(money(tot))}</b></td><td></td></tr></tbody></table>
     <p style="margin-top:18px">${esc(t.rc.text(s.nom, name, money(tot), per(rows[0]), per(rows[rows.length - 1])))}</p>
-    <p style="margin-top:30px">${esc(fmt(today))}</p>${s.sign ? `<img src="${esc(s.sign)}" alt="" style="display:block;max-height:120px;max-width:280px;margin:6px 0">` : ''}<p><i>${esc(s.nom)}</i></p></div>`;
+    <p style="margin-top:30px">${esc(fmt(today))}</p>${s.sign ? `<img src="${esc(s.sign)}" alt="" style="display:block;width:${[6, 8, 10, 12].includes(+s.signW) ? +s.signW : 8}cm;max-width:100%;height:auto;margin:4mm 0 2mm">` : ''}<p><i>${esc(s.nom)}</i></p></div>`;
   document.body.classList.add('printing');
   const done = () => { document.body.classList.remove('printing'); removeEventListener('afterprint', done); };
   addEventListener('afterprint', done);

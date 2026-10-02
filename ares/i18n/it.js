@@ -8121,11 +8121,23 @@ export default [
 "Passaggio della donna delle pulizie (oggi, ora prevista) + sua valutazione 😞 → ⭐"
 ],
 [
-"Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement. Le timbre doit être celui de la société indiquée ci-dessous.",
-"Foto della firma con il timbro della società (sfondo bianco): appare sul riepilogo degli affitti pagati che l’inquilino scarica nella sua app. PNG, JPG o foto del telefono: lo sfondo diventa trasparente e i margini vengono tagliati automaticamente. Il timbro deve essere quello della società indicata qui sotto."
+"Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement ; choisissez sa largeur sur la feuille A4 (6 à 12 cm). Le timbre doit être celui de la société indiquée ci-dessous.",
+"Foto della firma con il timbro della società (sfondo bianco): appare sul riepilogo degli affitti pagati che l’inquilino scarica nella sua app. PNG, JPG o foto del telefono: lo sfondo diventa trasparente e i margini vengono tagliati automaticamente ; scegliete la sua larghezza sul foglio A4 (da 6 a 12 cm). Il timbro deve essere quello della società indicata qui sotto."
 ],
 [
 "Image illisible : envoyez une photo ou un PNG / JPG de la signature sur fond blanc",
 "Immagine illeggibile: inviate una foto o un PNG / JPG della firma su sfondo bianco"
+],
+[
+"Signature enregistrée, mais l’image est petite ({0} px de large) : sur papier elle sera floue. Prenez une photo plus grande (1000 px ou plus).",
+"Firma salvata, ma l’immagine è piccola ({0} px di larghezza): sulla carta sarà sfocata. Fate una foto più grande (1000 px o più)."
+],
+[
+"Largeur sur le papier",
+"Larghezza sulla carta"
+],
+[
+"Taille de la signature",
+"Dimensione della firma"
 ]
 ];
