@@ -6,7 +6,7 @@ import { startI18n, LOCALES } from '/ares/i18n.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.5.1';
+const VERSION = '1.6.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -594,7 +594,7 @@ function guideCard(stats) {
 
 // ───────────────────────── Vues ─────────────────────────
 // Annonces des partenaires (publiées depuis l'app de gestion) : petit lecteur vidéo, itinéraire, appel, site
-const PUB_ICON = { resto: '🍕', bar: '🍺', horeca: '☕', bricolage: '🔨', meubles: '🛋️', courses: '🛒', services: '🧰', autre: '📌' };
+const PUB_ICON = { musique: '🎵', resto: '🍕', bar: '🍺', horeca: '☕', bricolage: '🔨', meubles: '🛋️', courses: '🛒', services: '🧰', autre: '📌' };
 pubStatInit(API.replace(/\/api\/portail\/$/, ''), 'ptl', () => LANG);
 document.addEventListener('click', (e) => { if (!state.demo) pubTap(e); }, true);
 const TICKER_BASE = API.replace(/\/api\/portail\/$/, '');
@@ -612,7 +612,7 @@ function pubSlot(k) {
   if (!list.length) return '';
   const a = list[pubTurn % list.length], v = videoEmbed(a.video);
   return html`<div class="card ptl-pub" style="margin:12px 0" data-pid="${a.id}"><div class="small muted"><b class="pub-lbl">📣 Publicité</b> · ${PUB_ICON[a.cat] || '📌'}</div><b style="font-size:17px">${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
-      ${v ? html`<div class="vid${v.tall ? ' tall' : ''}"><iframe src="${v.src}" loading="lazy" title="Vidéo" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
+      ${v ? html`<div class="vid${v.tall ? ' tall' : ''}${v.audio ? ' audio' : ''}" style="${v.audio ? `height:${v.audio}px` : ''}"><iframe src="${v.src}" loading="lazy" title="Vidéo" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
       <div class="small muted" style="margin-top:6px">📍 ${a.adresse}</div>
       <div class="actions" style="margin-top:8px;flex-wrap:wrap">
         <a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener" data-pev="map">🧭 Itinéraire</a>
