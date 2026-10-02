@@ -7,7 +7,7 @@ import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.41.0';
+const VERSION = '2.42.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -1962,17 +1962,47 @@ async function cleanSignature(file) {
   const w = x1 - x0, h = y1 - y0, k = Math.min(1, 1400 / w, 800 / h);
   const o = document.createElement('canvas'); o.width = Math.round(w * k); o.height = Math.round(h * k);
   o.getContext('2d').drawImage(c, x0, y0, w, h, 0, 0, o.width, o.height);
-  return { url: o.toDataURL('image/png'), w: Math.round(w / k0) };
+  return { url: o.toDataURL('image/png'), w: Math.round(w / k0), px: o.width };
+}
+// Aperçu de la signature sur une feuille A4 + qualité à l'impression (points par pouce réels à la largeur choisie)
+const SIGN_W = [6, 8, 10, 12];
+// met à jour seulement le bloc signature (les champs déjà tapés dans le formulaire Société restent)
+const signRefresh = () => { const w = document.getElementById('signWrap'); if (w) setHtml(w, signBlock(societe())); };
+const signDpi = (px, cm) => Math.round(px / (cm / 2.54));
+function signBlock(st) {
+  const steps = html`<ol class="small" style="margin:6px 0 0;padding-left:20px">
+    <li>Signez et tamponnez sur une feuille blanche.</li>
+    <li>Scannez-la à 300 ppp (600 ppp pour une impression plus grande), ou prenez une photo bien droite, avec une bonne lumière, sans ombre.</li>
+    <li>Chargez le fichier ici (PNG ou JPG) : le fond devient transparent et les marges sont coupées automatiquement.</li>
+    <li>Choisissez la largeur : regardez l’aperçu de la feuille et l’indicateur de qualité. Le timbre doit apparaître à peu près à sa taille réelle (mesurez-le avec une règle).</li></ol>`;
+  const btn = html`<label class="btn sm ${st.signature ? '' : 'primary'}" style="cursor:pointer">✍️ ${st.signature ? 'Changer signature + timbre' : 'Charger signature + timbre'}<input type="file" accept="image/*" data-input="soc-sign" hidden></label>`;
+  if (!st.signature) return html`<div class="full">${steps}<div style="margin-top:10px">${btn}</div>
+    <p class="tiny muted" style="margin:6px 0 0">Le timbre doit être celui de la société indiquée ci-dessous.</p></div>`;
+  const cm = SIGN_W.includes(+st.signW) ? +st.signW : 8, px = +st.signPx || 0, dpi = px ? signDpi(px, cm) : 0;
+  const q = !px ? ['', '—', 'Rechargez l’image pour mesurer sa qualité.'] : dpi >= 250 ? ['ok', '✅ Nette à l’impression', ''] : dpi >= 150 ? ['warn', '🟡 Correcte', 'Pour un résultat plus net : scannez à 600 ppp, ou choisissez une largeur plus petite.'] : ['bad', '🔴 Floue à l’impression', 'Scannez la feuille à 300 ou 600 ppp (ou une photo plus grande), ou choisissez une largeur plus petite.'];
+  const maxCm = px ? Math.floor((px / 250) * 2.54) : 0;
+  return html`<div class="full sign-box">
+    <div class="sign-a4" aria-label="Aperçu sur une feuille A4"><i style="width:60%"></i><i style="width:85%"></i><i style="width:85%"></i><i style="width:45%;margin-top:14px"></i>
+      <img src="${st.signature}" alt="Signature + timbre" style="width:${cm * 10}px"><i style="width:30%"></i><span>A4 · 21 cm</span></div>
+    <div class="sign-ctl">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">${btn}<button class="btn sm ghost" type="button" data-action="soc-sign-del">Retirer</button></div>
+      <label class="field" style="margin-top:10px">Largeur sur la feuille<select data-input="soc-sign-w">${SIGN_W.map((n) => html`<option value="${n}" ${cm === n ? new Raw('selected') : ''}>${n} cm${px ? ` — ${signDpi(px, n)} ppp` : ''}</option>`)}</select></label>
+      <p style="margin:8px 0 0"><span class="badge ${q[0]}">${q[1]}</span>${dpi ? html` <span class="tiny muted">${dpi} ppp · image ${px} px</span>` : ''}</p>
+      ${q[2] ? html`<p class="tiny" style="margin:6px 0 0">${q[2]}</p>` : ''}
+      ${px && maxCm >= 6 && dpi < 250 ? html`<p class="tiny muted" style="margin:4px 0 0">Avec cette image, nette jusqu’à ${maxCm} cm de large.</p>` : ''}
+      <details style="margin-top:8px"><summary class="small">Comment faire ?</summary>${steps}</details>
+      <p class="tiny muted" style="margin:6px 0 0">Le timbre doit être celui de la société indiquée ci-dessous.</p>
+    </div></div>`;
 }
 async function setLogo(file, field = 'logo') {
   if (field === 'signature') {
     try {
       const sign = await cleanSignature(file);
-      await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: sign.url }), 'Signature + timbre de la société', socName());
+      await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: sign.url, signPx: sign.px }), 'Signature + timbre de la société', socName());
       // ≈ 300 points par pouce pour une impression nette : 700 px pour 6 cm, 950 px pour 8 cm
       if (sign.w < 700) toast(`Signature enregistrée, mais l’image est petite (${sign.w} px de large) : sur papier elle sera floue. Prenez une photo plus grande (1000 px ou plus).`, { bad: true });
       else toast('Signature + timbre enregistrés');
-      if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+      signRefresh();
     } catch { toast('Image illisible : envoyez une photo ou un PNG / JPG de la signature sur fond blanc', { bad: true }); }
     return;
   }
@@ -3719,11 +3749,8 @@ const SHEETS = {
           <label class="btn sm" style="cursor:pointer">🖼️ ${st.logo ? 'Changer le logo' : 'Mettre votre logo'}<input type="file" accept="image/*" data-input="soc-logo" hidden></label>
           ${st.logo ? html`<button class="btn sm ghost" type="button" data-action="soc-logo-del">Retirer</button>` : ''}</div>
         <p class="tiny muted full" style="margin:0">Le logo apparaît dans l’app, les apps des locataires et de l’équipe, les quittances et les impressions.</p>
-        <div class="full" style="display:flex;align-items:center;gap:12px">${st.signature ? html`<img src="${st.signature}" alt="Signature + timbre" style="height:80px;max-width:200px;object-fit:contain;background:#fff;border-radius:8px;padding:6px;border:1px solid var(--border)">` : ''}
-          <label class="btn sm" style="cursor:pointer">✍️ ${st.signature ? 'Changer signature + timbre' : 'Signature + timbre (image)'}<input type="file" accept="image/*" data-input="soc-sign" hidden></label>
-          ${st.signature ? html`<button class="btn sm ghost" type="button" data-action="soc-sign-del">Retirer</button>
-          <select data-input="soc-sign-w" aria-label="Largeur sur le papier" style="width:auto">${[6, 8, 10, 12].map((n) => html`<option value="${n}" ${+(st.signW || 8) === n ? new Raw('selected') : ''}>${n} cm</option>`)}</select>` : ''}</div>
-        <p class="tiny muted full" style="margin:0">Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement ; choisissez sa largeur sur la feuille A4 (6 à 12 cm). Le timbre doit être celui de la société indiquée ci-dessous.</p>
+        <div class="section-label full" style="margin:8px 0 0">✍️ Signature + timbre (récapitulatif des loyers des locataires)</div>
+        <div class="full" id="signWrap">${signBlock(st)}</div>
         ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: 'ex. NOBIS s.a.r.l.' })}
         ${field('Adresse', 'adresse', st.adresse, { full: true })}
         ${field('Code postal et ville', 'ville', st.ville, { placeholder: 'L-1234 Luxembourg' })}
@@ -4056,7 +4083,7 @@ const ACTIONS = {
   'cp-tab': (d) => { ui.cpTab = d.id; renderView(); },
   'cp-more': () => { ui.cpMonths = (ui.cpMonths || 1) + 1; renderView(); },
   'cp-clear': () => { ui.cpQ = ''; ui.cpFrom = ''; ui.cpTo = ''; ui.cpMonths = 1; renderView(); },
-  'soc-sign-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: '' }), 'Signature retirée', socName()); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
+  'soc-sign-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: '', signPx: 0 }), 'Signature retirée', socName()); signRefresh(); },
   'soc-logo-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', logo: '' }), 'Logo retiré', socName()); applyBrand(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
   'cp-csv': () => {
     const y = ui.year, per = ui.cpPer || 'y';
@@ -5029,7 +5056,7 @@ document.addEventListener('change', (e) => {
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
   if (k === 'soc-logo' && e.target.files[0]) setLogo(e.target.files[0]);
   if (k === 'soc-sign' && e.target.files[0]) setLogo(e.target.files[0], 'signature');
-  if (k === 'soc-sign-w') vault.mutate((tx) => tx.put('reglages', { id: 'main', signW: [6, 8, 10, 12].includes(+e.target.value) ? +e.target.value : 8 }), 'Taille de la signature', `${e.target.value} cm`);
+  if (k === 'soc-sign-w') vault.mutate((tx) => tx.put('reglages', { id: 'main', signW: [6, 8, 10, 12].includes(+e.target.value) ? +e.target.value : 8 }), 'Taille de la signature', `${e.target.value} cm`).then(signRefresh);
   if (k === 'cp-per') { ui.cpPer = e.target.value; ui.cpMonths = 1; renderView(); }
   if (k === 'cp-from' || k === 'cp-to') { ui[k === 'cp-from' ? 'cpFrom' : 'cpTo'] = e.target.value; ui.cpMonths = 1; renderView(); }
   if (k === 'tva-loyer') { const im = vault.get('immeubles', e.target.dataset.id); if (im) vault.mutate((tx) => tx.put('immeubles', { id: im.id, tvaLoyer: parseFloat(e.target.value) || 0 }), 'TVA sur les loyers', `${im.adresse} : ${e.target.value || 0} %`, im.id); }

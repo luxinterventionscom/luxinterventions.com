@@ -8139,5 +8139,69 @@ export default [
 [
 "Taille de la signature",
 "Dimensione della firma"
+],
+[
+"✍️ Signature + timbre (récapitulatif des loyers des locataires)",
+"✍️ Firma + timbro (riepilogo affitti degli inquilini)"
+],
+[
+"Signez et tamponnez sur une feuille blanche.",
+"Firmate e timbrate su un foglio bianco."
+],
+[
+"Scannez-la à 300 ppp (600 ppp pour une impression plus grande), ou prenez une photo bien droite, avec une bonne lumière, sans ombre.",
+"Scansionatelo a 300 ppp (600 ppp per una stampa più grande), oppure fate una foto ben dritta, con buona luce e senza ombre."
+],
+[
+"Chargez le fichier ici (PNG ou JPG) : le fond devient transparent et les marges sont coupées automatiquement.",
+"Caricate qui il file (PNG o JPG): lo sfondo diventa trasparente e i margini vengono tagliati automaticamente."
+],
+[
+"Choisissez la largeur : regardez l’aperçu de la feuille et l’indicateur de qualité. Le timbre doit apparaître à peu près à sa taille réelle (mesurez-le avec une règle).",
+"Scegliete la larghezza: guardate l’anteprima del foglio e l’indicatore di qualità. Il timbro deve apparire più o meno nella sua misura reale (misuratelo con un righello)."
+],
+[
+"Charger signature + timbre",
+"Carica firma + timbro"
+],
+[
+"Le timbre doit être celui de la société indiquée ci-dessous.",
+"Il timbro deve essere quello della società indicata qui sotto."
+],
+[
+"Largeur sur la feuille",
+"Larghezza sul foglio"
+],
+[
+"{0} ppp · image {1} px",
+"{0} ppp · immagine {1} px"
+],
+[
+"Nette à l’impression",
+"Nitida in stampa"
+],
+[
+"Floue à l’impression",
+"Sfocata in stampa"
+],
+[
+"Pour un résultat plus net : scannez à 600 ppp, ou choisissez une largeur plus petite.",
+"Per un risultato più nitido: scansionate a 600 ppp, oppure scegliete una larghezza più piccola."
+],
+[
+"Scannez la feuille à 300 ou 600 ppp (ou une photo plus grande), ou choisissez une largeur plus petite.",
+"Scansionate il foglio a 300 o 600 ppp (o una foto più grande), oppure scegliete una larghezza più piccola."
+],
+[
+"Avec cette image, nette jusqu’à {0} cm de large.",
+"Con questa immagine, nitida fino a {0} cm di larghezza."
+],
+[
+"Rechargez l’image pour mesurer sa qualité.",
+"Ricaricate l’immagine per misurarne la qualità."
+],
+[
+"Comment faire ?",
+"Come fare?"
 ]
 ];

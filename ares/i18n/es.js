@@ -8127,5 +8127,69 @@ export default [
 [
 "Taille de la signature",
 "Tamaño de la firma"
+],
+[
+"✍️ Signature + timbre (récapitulatif des loyers des locataires)",
+"✍️ Firma + sello (resumen de alquileres de los inquilinos)"
+],
+[
+"Signez et tamponnez sur une feuille blanche.",
+"Firme y selle en una hoja blanca."
+],
+[
+"Scannez-la à 300 ppp (600 ppp pour une impression plus grande), ou prenez une photo bien droite, avec une bonne lumière, sans ombre.",
+"Escanéela a 300 ppp (600 ppp para una impresión más grande), o haga una foto bien recta, con buena luz y sin sombras."
+],
+[
+"Chargez le fichier ici (PNG ou JPG) : le fond devient transparent et les marges sont coupées automatiquement.",
+"Cargue aquí el archivo (PNG o JPG): el fondo se vuelve transparente y los márgenes se recortan automáticamente."
+],
+[
+"Choisissez la largeur : regardez l’aperçu de la feuille et l’indicateur de qualité. Le timbre doit apparaître à peu près à sa taille réelle (mesurez-le avec une règle).",
+"Elija la anchura: mire la vista previa de la hoja y el indicador de calidad. El sello debe aparecer más o menos a su tamaño real (mídalo con una regla)."
+],
+[
+"Charger signature + timbre",
+"Cargar firma + sello"
+],
+[
+"Le timbre doit être celui de la société indiquée ci-dessous.",
+"El sello debe ser el de la empresa indicada abajo."
+],
+[
+"Largeur sur la feuille",
+"Anchura en la hoja"
+],
+[
+"{0} ppp · image {1} px",
+"{0} ppp · imagen {1} px"
+],
+[
+"Nette à l’impression",
+"Nítida al imprimir"
+],
+[
+"Floue à l’impression",
+"Borrosa al imprimir"
+],
+[
+"Pour un résultat plus net : scannez à 600 ppp, ou choisissez une largeur plus petite.",
+"Para un resultado más nítido: escanee a 600 ppp o elija una anchura menor."
+],
+[
+"Scannez la feuille à 300 ou 600 ppp (ou une photo plus grande), ou choisissez une largeur plus petite.",
+"Escanee la hoja a 300 o 600 ppp (o una foto más grande), o elija una anchura menor."
+],
+[
+"Avec cette image, nette jusqu’à {0} cm de large.",
+"Con esta imagen, nítida hasta {0} cm de ancho."
+],
+[
+"Rechargez l’image pour mesurer sa qualité.",
+"Vuelva a cargar la imagen para medir su calidad."
+],
+[
+"Comment faire ?",
+"¿Cómo hacerlo?"
 ]
 ];

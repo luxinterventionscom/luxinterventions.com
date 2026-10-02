@@ -8123,5 +8123,73 @@ export default [
 [
 "Taille de la signature",
 "Größe der Unterschrift"
+],
+[
+"✍️ Signature + timbre (récapitulatif des loyers des locataires)",
+"✍️ Unterschrift + Stempel (Mietübersicht der Mieter)"
+],
+[
+"Signez et tamponnez sur une feuille blanche.",
+"Unterschreiben und stempeln Sie auf einem weißen Blatt."
+],
+[
+"Scannez-la à 300 ppp (600 ppp pour une impression plus grande), ou prenez une photo bien droite, avec une bonne lumière, sans ombre.",
+"Scannen Sie es mit 300 dpi (600 dpi für einen größeren Druck) oder machen Sie ein gerades Foto bei gutem Licht, ohne Schatten."
+],
+[
+"Chargez le fichier ici (PNG ou JPG) : le fond devient transparent et les marges sont coupées automatiquement.",
+"Laden Sie die Datei hier hoch (PNG oder JPG): Der Hintergrund wird transparent und die Ränder werden automatisch abgeschnitten."
+],
+[
+"Choisissez la largeur : regardez l’aperçu de la feuille et l’indicateur de qualité. Le timbre doit apparaître à peu près à sa taille réelle (mesurez-le avec une règle).",
+"Wählen Sie die Breite: Sehen Sie sich die Blattvorschau und die Qualitätsanzeige an. Der Stempel sollte etwa in seiner echten Größe erscheinen (mit einem Lineal messen)."
+],
+[
+"Charger signature + timbre",
+"Unterschrift + Stempel hochladen"
+],
+[
+"Le timbre doit être celui de la société indiquée ci-dessous.",
+"Der Stempel muss der unten angegebenen Firma gehören."
+],
+[
+"Largeur sur la feuille",
+"Breite auf dem Blatt"
+],
+[
+"{0} cm — {1} ppp",
+"{0} cm — {1} dpi"
+],
+[
+"{0} ppp · image {1} px",
+"{0} dpi · Bild {1} px"
+],
+[
+"Nette à l’impression",
+"Scharf im Druck"
+],
+[
+"Floue à l’impression",
+"Unscharf im Druck"
+],
+[
+"Pour un résultat plus net : scannez à 600 ppp, ou choisissez une largeur plus petite.",
+"Für ein schärferes Ergebnis: mit 600 dpi scannen oder eine kleinere Breite wählen."
+],
+[
+"Scannez la feuille à 300 ou 600 ppp (ou une photo plus grande), ou choisissez une largeur plus petite.",
+"Scannen Sie das Blatt mit 300 oder 600 dpi (oder ein größeres Foto) oder wählen Sie eine kleinere Breite."
+],
+[
+"Avec cette image, nette jusqu’à {0} cm de large.",
+"Mit diesem Bild scharf bis {0} cm Breite."
+],
+[
+"Rechargez l’image pour mesurer sa qualité.",
+"Laden Sie das Bild erneut hoch, um die Qualität zu messen."
+],
+[
+"Comment faire ?",
+"Wie geht das?"
 ]
 ];
