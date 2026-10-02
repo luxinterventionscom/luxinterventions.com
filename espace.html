@@ -41,6 +41,10 @@
   .pub-lbl { color: #dc2626; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
   .pub-top { background: linear-gradient(135deg, #fff 0%, #fff8ec 100%); }
   .pub-name { display: block; font-size: 18px; margin-top: 2px; }
+  details.pub-box > summary { list-style: none; cursor: pointer; padding-right: 26px; position: relative; }
+  details.pub-box > summary::-webkit-details-marker { display: none; }
+  details.pub-box > summary::after { content: "›"; position: absolute; right: 2px; top: 4px; font-size: 24px; color: var(--muted); transition: transform .25s; }
+  details.pub-box[open] > summary::after { transform: rotate(90deg); }
   .ticker { position: relative; height: 78px; margin: 4px 0 0; border-radius: 10px; overflow: hidden; background: #fff; }
   .ticker iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
   .vid { position: relative; width: 100%; aspect-ratio: 16 / 9; margin-top: 8px; border-radius: 10px; overflow: hidden; background: #000; }
@@ -104,6 +108,8 @@
   .coll-board .row { align-items: center; }
   .coll-board-t { margin: 0 0 4px; }
   .coll-rules { margin: 8px 0 10px; padding: 10px 12px; border-radius: 12px; background: var(--bg); }
+  .ctr-quit { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line, #e5e2da); }
+  .ctr-quit h3 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
   .coll-rules .row { align-items: center; }
   .bin-red { background: #fef2f2; border-color: #fecaca; }
   .men h2 .light { margin-right: 4px; }
