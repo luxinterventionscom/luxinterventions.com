@@ -1073,6 +1073,10 @@ export default [
 "Pulizia e ordine"
 ],
 [
+"Publicité",
+"Pubblicità"
+],
+[
 "Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
 "Cosa succede? Da quando? Rischio di danni?"
 ],

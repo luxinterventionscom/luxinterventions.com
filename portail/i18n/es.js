@@ -1077,6 +1077,10 @@ export default [
 "Limpieza y orden"
 ],
 [
+"Publicité",
+"Publicidad"
+],
+[
 "Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
 "¿Qué pasa? ¿Desde cuándo? ¿Riesgo de daños?"
 ],

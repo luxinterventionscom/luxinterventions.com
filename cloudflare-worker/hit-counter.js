@@ -62,6 +62,9 @@ export default {
     // pour que le script de TradingView ne puisse rien lire des apps (données chiffrées, clés) ──
     if (url.pathname === "/ticker" && request.method === "GET") return tickerPage();
 
+    // Statistiques anonymes des annonces (vues / clics) envoyées par les apps : aucun nom, aucune donnée personnelle
+    if (url.pathname === "/api/pubstat" && request.method === "POST") return pubStatPost(request, env, headers);
+
     // ── Archivio cifrato Ares (gestion locataires) ──
     if (url.pathname.startsWith("/api/ares/")) {
       return handleAres(request, env, url, headers);
@@ -712,6 +715,14 @@ async function handleAres(request, env, url, headers) {
     await env.PHOTOS.put(ARES_PUBS, JSON.stringify({ items, at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
     return aresJson({ ok: true, n: items.length }, 200, headers);
   }
+  if (path === "pubstats" && method === "GET") {
+    if (!(await pubStatInit(env))) return aresJson({ rows: [] }, 200, headers);
+    const days = Math.min(400, Math.max(1, parseInt(url.searchParams.get("days") || "90", 10) || 90));
+    const from = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+    await env.DB.prepare("DELETE FROM pub_stats WHERE day < ?").bind(new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10)).run();
+    const r = await env.DB.prepare("SELECT day, ad, app, lang, ev, n FROM pub_stats WHERE day >= ?").bind(from).all();
+    return aresJson({ rows: r.results || [] }, 200, headers);
+  }
   const notifMatch = path.match(/^espace\/([0-9a-f]{32})\/notify$/);
   if (notifMatch && method === "POST") {
     await espPushSend(env, notifMatch[1], "news");
@@ -989,6 +1000,41 @@ async function ptlNotify(env, where, binds, message, urgent) {
       if (r.status === 404 || r.status === 410) await env.DB.prepare("DELETE FROM push_subs WHERE endpoint = ?").bind(s.endpoint).run();
     } catch { /* un abbonamento difettoso non blocca gli altri */ }
   }));
+}
+
+// ── Statistiques des annonces : compteurs par jour, annonce, app, langue et type (vue, carte, appel, site, vidéo) ──
+const PUBSTAT_SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS pub_stats (day TEXT NOT NULL, ad TEXT NOT NULL, app TEXT NOT NULL, lang TEXT NOT NULL, ev TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, ad, app, lang, ev))`,
+  `CREATE TABLE IF NOT EXISTS pub_rl (k TEXT PRIMARY KEY, n INTEGER NOT NULL DEFAULT 0)`,
+];
+let pubStatReady = false;
+async function pubStatInit(env) {
+  if (!env.DB) return false;
+  if (!pubStatReady) { await env.DB.batch(PUBSTAT_SCHEMA.map((q) => env.DB.prepare(q))); pubStatReady = true; }
+  return true;
+}
+const PUBSTAT_EV = ["v", "map", "call", "web", "video"];
+async function pubStatPost(request, env, headers) {
+  try {
+    if (!(await pubStatInit(env))) return new Response(null, { status: 204, headers });
+    const len = parseInt(request.headers.get("content-length") || "0", 10);
+    if (len > 4000) return new Response(null, { status: 413, headers });
+    let b;
+    try { b = JSON.parse(await request.text()); } catch { b = null; }
+    const app = ["loc", "eq", "ptl"].includes(b && b.app) ? b.app : "";
+    const lang = ["fr", "it", "de", "pt", "en", "es"].includes(b && b.lang) ? b.lang : "fr";
+    const items = (b && Array.isArray(b.items) ? b.items : []).filter((x) => x && /^[a-z0-9]{6,40}$/i.test(x.id || "") && PUBSTAT_EV.includes(x.ev)).slice(0, 10);
+    if (!app || !items.length) return new Response(null, { status: 204, headers });
+    // limite anti-abus : 300 compteurs par heure et par adresse IP
+    const hour = new Date().toISOString().slice(0, 13);
+    const rlKey = hour + ":" + (await sha256Hex("pubrl:" + clientIp(request))).slice(0, 24);
+    const rl = await env.DB.prepare("INSERT INTO pub_rl (k, n) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET n = n + excluded.n RETURNING n").bind(rlKey, items.length).first();
+    if (rl && rl.n > 300) return new Response(null, { status: 429, headers });
+    const day = new Date().toISOString().slice(0, 10);
+    await env.DB.batch(items.map((x) => env.DB.prepare("INSERT INTO pub_stats (day, ad, app, lang, ev, n) VALUES (?, ?, ?, ?, ?, 1) ON CONFLICT(day, ad, app, lang, ev) DO UPDATE SET n = n + 1").bind(day, x.id, app, lang, x.ev)));
+    if (Math.random() < 0.02) await env.DB.prepare("DELETE FROM pub_rl WHERE k < ?").bind(hour).run().catch(() => {}); // heures passées
+    return new Response(null, { status: 204, headers });
+  } catch { return new Response(null, { status: 204, headers }); }
 }
 
 const TICKER_SYMBOLS = "BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,BINANCE:USDTUSD,BINANCE:BNBUSD,BINANCE:SOLUSD,BITSTAMP:XRPUSD,BINANCE:USDCUSD,BINANCE:ADAUSD,BINANCE:AVAXUSD,BINANCE:DOGEUSD,BINANCE:TRXUSD,BINANCE:DOTUSD,BINANCE:LINKUSD,BINANCE:SUIUSD,BINANCE:NEARUSD,BINANCE:LTCUSD,BINANCE:BCHUSD,BINANCE:PEPEUSD,BINANCE:UNIUSD,BINANCE:APTUSD";

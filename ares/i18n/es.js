@@ -8255,5 +8255,49 @@ export default [
 [
 "🔽 Bas",
 "🔽 Abajo"
+],
+[
+"vues",
+"vistas"
+],
+[
+"Vues",
+"Vistas"
+],
+[
+"Statistiques (anonymes)",
+"Estadísticas (anónimas)"
+],
+[
+"taux de clic {0} %",
+"tasa de clics {0} %"
+],
+[
+"Carte / itinéraire",
+"Mapa / ruta"
+],
+[
+"Appels",
+"Llamadas"
+],
+[
+"Vues par jour — 30 derniers jours",
+"Vistas por día — últimos 30 días"
+],
+[
+"statistiques indisponibles (connexion ?)",
+"estadísticas no disponibles (¿conexión?)"
+],
+[
+"📄 Rapport pour l’annonceur (A4)",
+"📄 Informe para el anunciante (A4)"
+],
+[
+"Statistiques anonymes : vues (une fois par jour et par téléphone) et clics.",
+"Estadísticas anónimas: vistas (una vez al día por móvil) y clics."
+],
+[
+"↻ Actualiser les statistiques",
+"↻ Actualizar las estadísticas"
 ]
 ];
