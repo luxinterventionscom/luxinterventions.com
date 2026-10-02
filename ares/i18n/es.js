@@ -8107,5 +8107,13 @@ export default [
 [
 "Passage de la femme de ménage (aujourd’hui, heure prévue) + son avis 😞 → ⭐",
 "Paso de la señora de la limpieza (hoy, hora prevista) + valoración 😞 → ⭐"
+],
+[
+"Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement. Le timbre doit être celui de la société indiquée ci-dessous.",
+"Foto de la firma con el sello de la empresa (fondo blanco): aparece en el resumen de alquileres pagados que el inquilino descarga en su app. PNG, JPG o foto del móvil: el fondo se vuelve transparente y los márgenes se recortan automáticamente. El sello debe ser el de la empresa indicada abajo."
+],
+[
+"Image illisible : envoyez une photo ou un PNG / JPG de la signature sur fond blanc",
+"Imagen ilegible: envíe una foto o un PNG / JPG de la firma sobre fondo blanco"
 ]
 ];
