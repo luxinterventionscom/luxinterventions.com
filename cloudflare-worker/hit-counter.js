@@ -214,6 +214,7 @@ const ARES_SESSION = "ares/session.json";
 const ARES_PUBLIC = "ares/public/";
 const ARES_ESPACE = "ares/espace/"; // espaces locataires : données chiffrées avec une clé que seul le lien du locataire contient
 const ARES_INBOX = "ares/inbox/";
+const ARES_PUBS = "ares/pubs-portail.json"; // annonces des partenaires pour le portail gérance (publicité, en clair)
 const ARES_BOARD = "ares/board/"; // mini-chat de chaque logement : messages chiffrés avec une clé que seuls les habitants et le gestionnaire ont
 const BOARD_TTL_MS = 90 * 24 * 3600 * 1000; // messages effacés après 90 jours
 const BOARD_MAX = 150;
@@ -695,6 +696,18 @@ async function handleAres(request, env, url, headers) {
     }
     return (await espPushSave(env, "owner", b)) ? aresJson({ ok: true }, 200, headers) : aresJson({ error: "Abonnement invalide" }, 400, headers);
   }
+  if (path === "pubs" && method === "PUT") {
+    let b;
+    try { b = await request.json(); } catch { b = null; }
+    const s = (v, n) => String(v || "").slice(0, n);
+    const url = (v) => (/^https?:\/\//.test(String(v || "")) ? s(v, 500) : "");
+    const items = (b && Array.isArray(b.items) ? b.items : []).slice(0, 50).map((a) => ({
+      id: s(a.id, 40), cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
+      tel: s(a.tel, 40), web: url(a.web), video: url(a.video), fin: /^\d{4}-\d{2}-\d{2}$/.test(a.fin || "") ? a.fin : "",
+    })).filter((a) => a.nom);
+    await env.PHOTOS.put(ARES_PUBS, JSON.stringify({ items, at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
+    return aresJson({ ok: true, n: items.length }, 200, headers);
+  }
   const notifMatch = path.match(/^espace\/([0-9a-f]{32})\/notify$/);
   if (notifMatch && method === "POST") {
     await espPushSend(env, notifMatch[1], "news");
@@ -1133,6 +1146,14 @@ async function handlePortail(request, env, url, headers, ctx) {
 
     if (path === "me" && method === "GET") {
       return json({ user: publicUser(me), vapidKey: (await vapidKeys(env)).publicKey });
+    }
+
+    // Annonces des partenaires (publiées par l'app de gestion), seulement celles encore en cours
+    if (path === "pubs" && method === "GET") {
+      const obj = await env.PHOTOS.get(ARES_PUBS);
+      const day = new Date().toISOString().slice(0, 10);
+      const items = obj ? ((await obj.json()).items || []).filter((a) => !a.fin || a.fin >= day) : [];
+      return json({ items });
     }
 
     if (path === "me/password" && method === "POST") {

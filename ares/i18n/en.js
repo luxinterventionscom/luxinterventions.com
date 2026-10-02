@@ -8031,5 +8031,17 @@ export default [
 [
 "vidéo",
 "video"
+],
+[
+"Visible pour",
+"Visible to"
+],
+[
+"Portail gérance",
+"Management portal"
+],
+[
+"Immeuble (locataires et équipe)",
+"Building (tenants and team)"
 ]
 ];
