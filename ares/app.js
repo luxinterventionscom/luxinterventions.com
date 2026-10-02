@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.43.0';
+const VERSION = '2.43.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -403,7 +403,8 @@ async function eqSetCode(i) {
   const code = newAccessCode();
   const h = await codeHash(code);
   await vault.espCodePut(h, { id: e.id, ...(await wrapWithCode(code, e.key)) });
-  await vault.mutate((tx) => tx.put('intervenants', { id: i.id, espace: { ...e, code, codeHash: h } }), 'Code d’accès équipe créé', intervFull(i), i.id);
+  // fiche actuelle (la langue ou les rubriques ont pu changer pendant l'envoi du code)
+  await vault.mutate((tx) => { const cur = vault.get('intervenants', i.id); tx.put('intervenants', { id: i.id, espace: { ...((cur && cur.espace) || e), code, codeHash: h } }); }, 'Code d’accès équipe créé', intervFull(i), i.id);
   return code;
 }
 // Messages de l'équipe → suivi des interventions (journal + photos), coordonnées, absences
@@ -565,7 +566,8 @@ async function setAccessCode(l) {
   const code = newAccessCode();
   const h = await codeHash(code);
   await vault.espCodePut(h, { id: e.id, ...(await wrapWithCode(code, e.key)) });
-  await vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: { ...e, code, codeHash: h } }), 'Code d’accès locataire créé', fullName(l), l.id);
+  // fiche actuelle (la langue ou les rubriques ont pu changer pendant l'envoi du code)
+  await vault.mutate((tx) => { const cur = vault.get('locataires', l.id); tx.put('locataires', { id: l.id, espace: { ...((cur && cur.espace) || e), code, codeHash: h } }); }, 'Code d’accès locataire créé', fullName(l), l.id);
   return code;
 }
 // Version du règlement (règlement général + règles propres à l'immeuble) : s'il change, chaque locataire doit l'accepter à nouveau
@@ -931,7 +933,8 @@ async function espaceSync(onlyId, loud) {
       espHashes.set(l.id, h);
       await notifyNews(l.espace.id, espNews(data));
       try { localStorage.setItem('aresEsp:' + l.espace.id, h); } catch {}
-      if (docsChanged) await vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: { ...l.espace, docs: [...up] } }), 'Espace locataire : documents', fullName(l), l.id);
+      // on repart de la fiche actuelle : la langue, le code ou les rubriques ont pu changer pendant la publication
+      if (docsChanged) await vault.mutate((tx) => { const cur = vault.get('locataires', l.id); if (cur && cur.espace) tx.put('locataires', { id: l.id, espace: { ...cur.espace, docs: [...up] } }); }, 'Espace locataire : documents', fullName(l), l.id);
     } catch (e) {
       if (loud) { toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
     }
