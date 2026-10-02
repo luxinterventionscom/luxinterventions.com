@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.45.0';
+const VERSION = '2.46.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -557,6 +557,68 @@ const PUB_AUD = { loc: '🏠 Locataires', eq: '👷 Équipe', ptl: '🏢 Portail
 const PUB_SLOTS = { haut: '🔝 Haut — sous « Bonjour », visible à l’ouverture (prix élevé)', milieu: '⏺ Milieu — au centre de l’app (prix moyen)', bas: '🔽 Bas — en fin de page, au-dessus de la barre crypto (prix bas)' };
 const pubSlot = (a) => (PUB_SLOTS[a.slot] ? a.slot : 'milieu');
 const pubAud = (a) => (Array.isArray(a.aud) && a.aud.length ? a.aud : ['loc']);
+// Statistiques anonymes des annonces (vues : une fois par jour et par téléphone ; clics : carte, appel, site, vidéo)
+const PUB_EV = { map: '🗺️ Carte / itinéraire', call: '📞 Appels', web: '🌐 Site web', video: '▶ Vidéo' };
+const PUB_LANGS = { fr: 'Français', it: 'Italiano', de: 'Deutsch', pt: 'Português', en: 'English', es: 'Español' };
+function pubStatsBlock(a) {
+  const st = pubStatsFor(a.id, a.debut || '0000'), last = pubStatsFor(a.id, addDays(today(), -29));
+  const days = Array.from({ length: 30 }, (_, i) => addDays(today(), i - 29)), max = Math.max(1, ...days.map((d) => (last.day[d] || {}).v || 0));
+  return html`<div class="full pub-stats"><div class="section-label" style="margin:6px 0">📊 Statistiques (anonymes)</div>
+    <div class="metrics">
+      <div class="metric"><div class="lbl">Vues</div><div class="val">${st.v}</div><div class="sub">depuis le ${fmtDate(a.debut)}</div></div>
+      <div class="metric"><div class="lbl">Clics</div><div class="val">${st.taps}</div><div class="sub">taux de clic ${String(st.ctr).replace('.', ',')} %</div></div>
+    </div>
+    <p class="small" style="margin:8px 0 0">${Object.entries(PUB_EV).map(([k, v]) => html`<span>${v}</span> <b>${st.ev[k] || 0}</b>`).reduce((x, y) => html`${x} · ${y}`)}</p>
+    <p class="small muted" style="margin:4px 0 0">${Object.entries(PUB_AUD).filter(([k]) => st.app[k]).map(([k, v]) => html`<span>${v}</span> ${st.app[k].v}/${st.app[k].t}`).reduce((x, y) => html`${x} · ${y}`, '')}</p>
+    <div class="pub-bars" title="Vues par jour (30 jours)">${days.map((d) => html`<i style="height:${Math.round((((last.day[d] || {}).v || 0) / max) * 100)}%" title="${fmtDate(d)} : ${(last.day[d] || {}).v || 0}"></i>`)}</div>
+    <p class="tiny muted" style="margin:2px 0 0">Vues par jour — 30 derniers jours${ui.pubStats && ui.pubStats.err ? ' · ⚠ statistiques indisponibles (connexion ?)' : ''}</p>
+    <button class="btn sm" type="button" data-action="pub-report" data-id="${a.id}" style="margin-top:8px">📄 Rapport pour l’annonceur (A4)</button>
+  </div>`;
+}
+// Rapport A4 à remettre à l'annonceur (diffusion, clics, publics) — en français, comme les autres documents officiels
+function pubReport(id) {
+  const a = vault.get('avis', id);
+  if (!a) return;
+  const to = a.fin && a.fin < today() ? a.fin : today();
+  const st = pubStatsFor(id, a.debut || '0000', to);
+  const weeks = {};
+  for (const [d, x] of Object.entries(st.day)) { const w = addDays(d, -((new Date(d + 'T12:00:00').getDay() + 6) % 7)); (weeks[w] ||= { v: 0, t: 0 }); weeks[w].v += x.v; weeks[w].t += x.t; }
+  const pct = (n, tot) => (tot ? Math.round((n / tot) * 100) + ' %' : '—');
+  const totLang = Object.values(st.lang).reduce((x, y) => x + y, 0);
+  printDoc('Rapport de diffusion publicitaire', html`
+    <h1 style="margin:6px 0 2px">${a.nom}</h1>
+    <p style="margin:0 0 10px">${PUB_CATS[a.cat] || PUB_CATS.autre} · 📍 ${a.adresse}</p>
+    <table class="pr-table"><tr><td>Emplacement</td><td><b>${PUB_SLOTS[pubSlot(a)]}</b></td></tr>
+      <tr><td>Visible pour</td><td>${pubAud(a).map((k) => PUB_AUD[k]).join(' · ')}</td></tr>
+      <tr><td>Période</td><td>du ${fmtDate(a.debut)} au ${fmtDate(to)}${a.fin && a.fin > today() ? ` (diffusion jusqu’au ${fmtDate(a.fin)})` : ''}</td></tr></table>
+    <h3>Résultats</h3>
+    <table class="pr-table"><tr><td>Vues (téléphones, une fois par jour)</td><td><b>${st.v}</b></td></tr>
+      <tr><td>Clics au total</td><td><b>${st.taps}</b> — taux de clic ${String(st.ctr).replace('.', ',')} %</td></tr>
+      ${Object.entries(PUB_EV).map(([k, v]) => html`<tr><td>${v}</td><td>${st.ev[k] || 0}</td></tr>`)}</table>
+    ${Object.keys(st.app).length ? html`<h3>Par public</h3><table class="pr-table"><tr><th>Public</th><th>Vues</th><th>Clics</th></tr>${Object.entries(PUB_AUD).filter(([k]) => st.app[k]).map(([k, v]) => html`<tr><td>${v}</td><td>${st.app[k].v}</td><td>${st.app[k].t}</td></tr>`)}</table>` : ''}
+    ${totLang ? html`<h3>Langue des personnes touchées</h3><table class="pr-table">${Object.entries(st.lang).sort((x, y) => y[1] - x[1]).map(([k, n]) => html`<tr><td>${PUB_LANGS[k] || k}</td><td>${pct(n, totLang)}</td></tr>`)}</table>` : ''}
+    ${Object.keys(weeks).length ? html`<h3>Semaine par semaine</h3><table class="pr-table"><tr><th>Semaine du</th><th>Vues</th><th>Clics</th></tr>${Object.keys(weeks).sort().map((w) => html`<tr><td>${fmtDate(w)}</td><td>${weeks[w].v}</td><td>${weeks[w].t}</td></tr>`)}</table>` : ''}
+    <p style="font-size:10pt;color:#555;margin-top:14px">Vues : nombre de téléphones qui ont affiché l’annonce, comptés une seule fois par jour. Clics : touchers sur les boutons de l’annonce (carte / itinéraire, appel, site web, vidéo). Statistiques entièrement anonymes : aucune donnée personnelle n’est collectée ni transmise (RGPD).</p>`);
+}
+async function pubStatsLoad(force) {
+  const st = ui.pubStats;
+  if (!force && st && (st.loading || Date.now() - st.at < 15000)) return;
+  ui.pubStats = { ...(st || { rows: [] }), loading: true, at: Date.now() };
+  try { ui.pubStats = { rows: await vault.pubStats(400), at: Date.now() }; } catch { ui.pubStats = { rows: (st && st.rows) || [], at: Date.now(), err: true }; }
+  if (ui.route === 'maintenance') renderView();
+  if (ui.sheet && ui.sheet.kind === 'pub-form') { ui.sheet.rendered = false; renderSheet(); }
+}
+function pubStatsFor(id, from = '0000', to = '9999') {
+  const r = { v: 0, taps: 0, ev: {}, app: {}, lang: {}, day: {} };
+  for (const x of (ui.pubStats && ui.pubStats.rows) || []) {
+    if (x.ad !== id || x.day < from || x.day > to) continue;
+    const d = (r.day[x.day] ||= { v: 0, t: 0 });
+    if (x.ev === 'v') { r.v += x.n; d.v += x.n; (r.app[x.app] ||= { v: 0, t: 0 }).v += x.n; r.lang[x.lang] = (r.lang[x.lang] || 0) + x.n; }
+    else { r.taps += x.n; d.t += x.n; r.ev[x.ev] = (r.ev[x.ev] || 0) + x.n; (r.app[x.app] ||= { v: 0, t: 0 }).t += x.n; }
+  }
+  r.ctr = r.v ? Math.round((r.taps / r.v) * 1000) / 10 : 0;
+  return r;
+}
 const pubOut = (a) => ({ id: a.id, slot: pubSlot(a), cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '' });
 const pubsActives = (immId, aud = 'loc') => vault.list('avis').filter((a) => isPub(a) && pubAud(a).includes(aud) && (aud === 'ptl' || !immId || !a.immId || (Array.isArray(immId) ? immId.includes(a.immId) : a.immId === immId)) && (!a.debut || a.debut <= today()) && (!a.fin || a.fin >= today()));
 const avisActifs = (immId) => vault.list('avis').filter((a) => !isPub(a) && (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
@@ -2164,15 +2226,18 @@ const VIEWS = {
         ${actifs.length ? html`<div class="list" style="margin-bottom:14px">${actifs.map(row)}</div>` : empty('msg', 'Aucun avis en cours.', html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Nouvel avis</button>`)}
         ${passes.length ? html`<div class="section-label">Terminés</div><div class="list">${passes.map(row)}</div>` : ''}`;
     } else if (tab === 'pub') {
+      pubStatsLoad();
       const all = vault.list('avis').filter((a) => isPub(a) && (!f || !a.immId || a.immId === f)).sort((a, b) => (b.debut || '').localeCompare(a.debut || ''));
       const on = all.filter((a) => !a.fin || a.fin >= today()), off = all.filter((a) => a.fin && a.fin < today()).slice(0, 20);
       const left = (a) => { if (!a.fin) return 'sans fin'; const n = Math.round((new Date(a.fin + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 864e5); return a.debut > today() ? `à partir du ${fmtDate(a.debut)}` : n <= 0 ? 'dernier jour' : `encore ${plural(n, 'jour')}`; };
       const row = (a) => html`<button class="row" data-action="edit-pub" data-id="${a.id}"><span class="grow"><span class="title" style="display:block;white-space:normal">${(PUB_CATS[a.cat] || PUB_CATS.autre).split(' ')[0]} <b>${a.nom}</b></span>
         <span class="meta" style="display:block;white-space:normal">📍 ${a.adresse}${a.texte ? ' · ' + a.texte.slice(0, 90) : ''}${a.video ? ' · ▶ ' + (videoEmbed(a.video) ? videoEmbed(a.video).name : 'vidéo') : ''}</span>
         <span class="meta" style="display:block"><b>${PUB_SLOTS[pubSlot(a)].split(' — ')[0]}</b> · ${pubAud(a).map((k) => html`<span>${PUB_AUD[k]}</span>`).reduce((x, y) => html`${x} · ${y}`)}</span>
-        <span class="meta"><span>${a.immId ? immName(a.immId) : 'Tous les immeubles'}</span>${a.fin ? html` · <span>${fmtDate(a.debut)} → ${fmtDate(a.fin)}</span>` : ''}</span></span>
+        <span class="meta"><span>${a.immId ? immName(a.immId) : 'Tous les immeubles'}</span>${a.fin ? html` · <span>${fmtDate(a.debut)} → ${fmtDate(a.fin)}</span>` : ''}</span>
+        ${(() => { const st = pubStatsFor(a.id, a.debut || '0000'); return st.v || st.taps ? html`<span class="meta" style="display:block">📊 <b>${st.v}</b> <span>vues</span> · <b>${st.taps}</b> <span>clics</span>${st.v ? html` · <span>${String(st.ctr).replace('.', ',')} %</span>` : ''}</span>` : ''; })()}</span>
         <span class="badge ${a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
       body = html`<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
+        ${all.length ? html`<p class="tiny muted" style="margin:-4px 0 8px">📊 Statistiques anonymes : vues (une fois par jour et par téléphone) et clics. <a href="#" data-action="pub-stats-refresh">↻ Actualiser les statistiques</a></p>` : ''}
         ${on.length ? html`<div class="list" style="margin-bottom:14px">${on.map(row)}</div>` : empty('msg', 'Aucune annonce en cours.', html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Nouvelle annonce</button>`)}
         ${off.length ? html`<div class="section-label">Expirées (touchez pour republier)</div><div class="list">${off.map(row)}</div>` : ''}`;
     } else if (tab === 'dechets') {
@@ -3115,6 +3180,7 @@ const SHEETS = {
   },
 
   'pub-form'({ id, preset }) {
+    if (id) pubStatsLoad();
     const a = id ? vault.get('avis', id) : { immId: preset || '', debut: today(), ttl: 30, cat: 'resto' };
     if (id && !a) return null;
     const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === a.immId).sort(byAddr);
@@ -3137,6 +3203,7 @@ const SHEETS = {
         <label class="field full">Immeuble (locataires et équipe)<select name="immId"><option value="">Tous les immeubles</option>${imms.map((im) => html`<option value="${im.id}" ${im.id === a.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         ${field('Publier à partir du', 'debut', exp ? today() : a.debut, { type: 'date', required: true })}
         <label class="field">Durée (TTL)<select name="ttl">${PUB_TTL.map((n) => html`<option value="${n}" ${+(a.ttl || 30) === n ? new Raw('selected') : ''}>${n} jours</option>`)}</select></label>
+        ${id ? pubStatsBlock(a) : ''}
         <p class="tiny muted full" style="margin:0">${exp ? `Expirée le ${fmtDate(a.fin)} : enregistrez pour la republier.` : a.fin ? `Visible jusqu'au ${fmtDate(a.fin)} inclus, puis retirée automatiquement de l'app des locataires.` : "Retirée automatiquement de l'app des locataires à la fin de la durée."}</p>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-pub" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
@@ -4243,6 +4310,8 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('documents', { id: doc.id, shared: !doc.shared }), doc.shared ? 'Document retiré de l’espace locataire' : 'Document visible par le locataire', doc.label, doc.locId);
     toast(doc.shared ? 'Document privé' : 'Visible dans l’espace du locataire');
   },
+  'pub-report': (d) => pubReport(d.id),
+  'pub-stats-refresh': () => pubStatsLoad(true),
   'new-pub': (d) => openOver('pub-form', null, null, d.imm || ui.immFilter || ''),
   'edit-pub': (d) => openOver('pub-form', d.id),
   async 'del-pub'(d) {

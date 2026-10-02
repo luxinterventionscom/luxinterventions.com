@@ -466,6 +466,10 @@ dialog.sheet::backdrop { background: rgba(10, 10, 12, 0.5); backdrop-filter: blu
   body.printing #print { display: block !important; color: #111; font-size: 10.5px; line-height: 1.35; }
   #print .pr-head { display: flex; justify-content: space-between; border-bottom: 2px solid #111; padding-bottom: 6px; margin-bottom: 14px; font-size: 10px; }
   #print h1 { font-size: 18px; margin: 0 0 2px; }
+  #print .pr-table { width: 100%; border-collapse: collapse; margin: 6px 0 10px; font-size: 10.5px; }
+  #print .pr-table td, #print .pr-table th { border: 1px solid #ccc; padding: 4px 6px; text-align: left; }
+  #print .pr-table th { background: #f2f2f2; }
+  #print h3 { font-size: 12px; margin: 12px 0 4px; }
   #print h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin: 16px 0 6px; color: #444; }
   #print .pr-sub { color: #555; margin-bottom: 6px; }
   #print .pr-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
@@ -580,3 +584,7 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 .sign-a4 img { display: block; height: auto; max-width: none; margin: 6px 0 2px; }
 .sign-a4 span { position: absolute; right: 6px; bottom: 4px; font-size: 10px; color: #999; }
 .sign-ctl { flex: 1 1 200px; min-width: 0; }
+
+/* Statistiques des annonces : mini-histogramme des vues */
+.pub-bars { display: flex; align-items: flex-end; gap: 2px; height: 46px; margin-top: 10px; padding: 2px; border-bottom: 1px solid var(--border); }
+.pub-bars i { flex: 1; min-height: 1px; background: var(--accent); border-radius: 2px 2px 0 0; opacity: .8; }

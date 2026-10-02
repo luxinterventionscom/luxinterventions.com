@@ -1,6 +1,6 @@
 // App des locataires NOBIS s.a.r.l. : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'espace-shell-v1.28.0';
-const SHELL = ['/espace.html', '/espace.js', '/ares/espace-crypto.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/qrcode.js', '/espace.webmanifest', '/ares/icons/ares-192.png', '/ares/icons/nobis-logo.png', '/assets/fonts/fonts.css'];
+const CACHE = 'espace-shell-v1.29.0';
+const SHELL = ['/espace.html', '/espace.js', '/ares/espace-crypto.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/pubstat.js', '/ares/qrcode.js', '/espace.webmanifest', '/ares/icons/ares-192.png', '/ares/icons/nobis-logo.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });

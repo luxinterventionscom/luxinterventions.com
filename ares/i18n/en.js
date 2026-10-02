@@ -8071,5 +8071,57 @@ export default [
 [
 "🔽 Bas",
 "🔽 Bottom"
+],
+[
+"vues",
+"views"
+],
+[
+"clics",
+"clicks"
+],
+[
+"Vues",
+"Views"
+],
+[
+"Clics",
+"Clicks"
+],
+[
+"Statistiques (anonymes)",
+"Statistics (anonymous)"
+],
+[
+"taux de clic {0} %",
+"click rate {0} %"
+],
+[
+"Carte / itinéraire",
+"Map / directions"
+],
+[
+"Appels",
+"Calls"
+],
+[
+"Vues par jour — 30 derniers jours",
+"Views per day — last 30 days"
+],
+[
+"statistiques indisponibles (connexion ?)",
+"statistics unavailable (connection?)"
+],
+[
+"📄 Rapport pour l’annonceur (A4)",
+"📄 Report for the advertiser (A4)"
+],
+[
+"Statistiques anonymes : vues (une fois par jour et par téléphone) et clics.",
+"Anonymous statistics: views (once a day per phone) and clicks."
+],
+[
+"↻ Actualiser les statistiques",
+"↻ Refresh statistics"
 ]
 ];

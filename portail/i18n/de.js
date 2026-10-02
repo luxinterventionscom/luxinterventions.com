@@ -1069,6 +1069,10 @@ export default [
 "Sauberkeit & Ordnung"
 ],
 [
+"Publicité",
+"Werbung"
+],
+[
 "Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
 "Was ist los? Seit wann? Gefahr von Schäden?"
 ],

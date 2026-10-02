@@ -4,8 +4,9 @@
 
 import { startI18n, LOCALES } from '/ares/i18n.js';
 import { videoEmbed } from '/ares/video-embed.js';
+import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -530,6 +531,7 @@ function renderView() {
   const a = document.activeElement;
   const keep = a && a.dataset && a.dataset.input === 'q' ? a.selectionStart : null;
   setHtml(view, VIEWS[state.route]());
+  if (!state.demo) pubSeen(view);
   if (keep != null) { const s = view.querySelector('[data-input=q]'); if (s) { s.focus(); s.setSelectionRange(keep, keep); } }
 }
 
@@ -593,6 +595,8 @@ function guideCard(stats) {
 // ───────────────────────── Vues ─────────────────────────
 // Annonces des partenaires (publiées depuis l'app de gestion) : petit lecteur vidéo, itinéraire, appel, site
 const PUB_ICON = { resto: '🍕', bar: '🍺', horeca: '☕', bricolage: '🔨', meubles: '🛋️', courses: '🛒', services: '🧰', autre: '📌' };
+pubStatInit(API.replace(/\/api\/portail\/$/, ''), 'ptl', () => LANG);
+document.addEventListener('click', (e) => { if (!state.demo) pubTap(e); }, true);
 let pubTurn = 0;
 try { pubTurn = (+localStorage.getItem('ptlPubTurn') || 0) + 1; localStorage.setItem('ptlPubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
 // une annonce par emplacement (haut sous « Bonjour », milieu, bas au-dessus de la barre crypto) ; plusieurs → une autre à chaque ouverture
@@ -600,14 +604,14 @@ function pubSlot(k) {
   const list = ((state.cache.home && state.cache.home.pubs) || []).filter((a) => (a.slot || 'milieu') === k);
   if (!list.length) return '';
   const a = list[pubTurn % list.length], v = videoEmbed(a.video);
-  return html`<div class="card ptl-pub" style="margin:12px 0"><div class="small muted">📣 ${PUB_ICON[a.cat] || '📌'}</div><b style="font-size:17px">${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
+  return html`<div class="card ptl-pub" style="margin:12px 0" data-pid="${a.id}"><div class="small muted"><b class="pub-lbl">📣 Publicité</b> · ${PUB_ICON[a.cat] || '📌'}</div><b style="font-size:17px">${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
       ${v ? html`<div class="vid${v.tall ? ' tall' : ''}"><iframe src="${v.src}" loading="lazy" title="Vidéo" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
       <div class="small muted" style="margin-top:6px">📍 ${a.adresse}</div>
       <div class="actions" style="margin-top:8px;flex-wrap:wrap">
-        <a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener">🧭 Itinéraire</a>
-        ${a.tel ? html`<a class="btn sm" href="tel:${a.tel.replace(/[^\d+]/g, '')}">📞 Appeler</a>` : ''}
-        ${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener">🌐 Site web</a>` : ''}
-        ${a.video && !v ? html`<a class="btn sm" href="${a.video}" target="_blank" rel="noopener">▶ Vidéo</a>` : ''}</div></div>`;
+        <a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener" data-pev="map">🧭 Itinéraire</a>
+        ${a.tel ? html`<a class="btn sm" href="tel:${a.tel.replace(/[^\d+]/g, '')}" data-pev="call">📞 Appeler</a>` : ''}
+        ${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener" data-pev="web">🌐 Site web</a>` : ''}
+        ${a.video && !v ? html`<a class="btn sm" href="${a.video}" target="_blank" rel="noopener" data-pev="video">▶ Vidéo</a>` : ''}</div></div>`;
 }
 // barre des cours crypto (TradingView) : servie par le Worker sur un autre domaine, isolée du portail
 const tickerBar = () => html`<div class="ticker"><iframe src="${API.replace(/api\/portail\/$/, '')}ticker" title="Crypto" loading="lazy" referrerpolicy="no-referrer" scrolling="no"></iframe></div>`;

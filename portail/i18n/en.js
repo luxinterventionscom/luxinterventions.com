@@ -1037,6 +1037,10 @@ export default [
 "Cleanliness & tidiness"
 ],
 [
+"Publicité",
+"Advertising"
+],
+[
 "Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
 "What is happening? Since when? Risk of damage?"
 ],
