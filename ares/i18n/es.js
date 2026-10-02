@@ -8051,5 +8051,61 @@ export default [
 [
 "Notifications impossibles sur ce téléphone",
 "Notificaciones imposibles en este móvil"
+],
+[
+"Avis des locataires",
+"Valoración de los inquilinos"
+],
+[
+"Insuffisant",
+"Deficiente"
+],
+[
+"Suffisant",
+"Suficiente"
+],
+[
+"Bien",
+"Bueno"
+],
+[
+"Excellent",
+"Excelente"
+],
+[
+"{0} — avis de {1}",
+"{0} — valoración de {1}"
+],
+[
+"Signature + timbre (image)",
+"Firma + sello (imagen)"
+],
+[
+"Changer signature + timbre",
+"Cambiar firma + sello"
+],
+[
+"Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app.",
+"Foto de la firma con el sello de la empresa (fondo blanco): aparece en el resumen de alquileres pagados que el inquilino descarga en su app."
+],
+[
+"Signature + timbre enregistrés",
+"Firma + sello guardados"
+],
+[
+"Signature retirée",
+"Firma eliminada"
+],
+[
+"Signature + timbre de la société",
+"Firma + sello de la empresa"
+],
+[
+"Avis sur le ménage",
+"Valoración de la limpieza"
+],
+[
+"Passage de la femme de ménage (aujourd’hui, heure prévue) + son avis 😞 → ⭐",
+"Paso de la señora de la limpieza (hoy, hora prevista) + valoración 😞 → ⭐"
 ]
 ];

@@ -7,7 +7,7 @@ import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.39.0';
+const VERSION = '2.40.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -336,6 +336,7 @@ async function publishPub(immId, loud) {
 // elle renvoie « commencé / fini / pas fini » avec note et photos, ses coordonnées, ses arrêts maladie.
 const eqUrl = (i) => `${location.origin}/equipe.html#${i.espace.id}.${i.espace.key}`;
 const eqAppUrl = () => `${location.origin}/equipe.html`;
+const MEN_EVAL = { 1: '😞 Insuffisant', 2: '😐 Suffisant', 3: '🙂 Bien', 4: '⭐ Excellent' };
 const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini' };
 // Dernier état donné par l'équipe pour une intervention un jour donné
 // Photos « avant » / « après » envoyées par l'équipe pour une intervention (6 + 6 maximum)
@@ -496,7 +497,7 @@ function eqFeedHtml(onlyId, max = 80) {
   if (!rows.length) return html`<p class="small muted">Rien pour le moment. Ce que l’équipe envoie depuis son app (commencé, fini, pas fini, notes, photos, maladie) arrive ici.</p>`;
   return html`<div class="list small">${rows.slice(0, max).map(([i, f]) => {
     const t = f.tid ? vault.get('taches', f.tid) : null;
-    const what = f.k === 'pres' ? html`<b>${f.note}</b>` : f.k === 'pb' ? html`<b>${f.note}</b>` : f.k === 'task' || f.k === 'ph' ? html`<b>${f.k === 'ph' ? '📷 ' + EQ_PH[f.phase] : EQ_ST[f.st] || f.st}${f.h ? ' 🕒 ' + f.h : ''}</b> · ${t ? t.titre : '(intervention supprimée)'}${t ? html`<span class="meta" style="display:block">📍 ${placeName(t)} · ${fmtDate(f.d)}</span>` : ''}` : f.k === 'abs' ? html`<b>${f.note}</b>` : html`<b>✏️ ${f.note}</b>`;
+    const what = f.k === 'eval' ? html`<b>${f.note}</b>` : f.k === 'pres' ? html`<b>${f.note}</b>` : f.k === 'pb' ? html`<b>${f.note}</b>` : f.k === 'task' || f.k === 'ph' ? html`<b>${f.k === 'ph' ? '📷 ' + EQ_PH[f.phase] : EQ_ST[f.st] || f.st}${f.h ? ' 🕒 ' + f.h : ''}</b> · ${t ? t.titre : '(intervention supprimée)'}${t ? html`<span class="meta" style="display:block">📍 ${placeName(t)} · ${fmtDate(f.d)}</span>` : ''}` : f.k === 'abs' ? html`<b>${f.note}</b>` : html`<b>✏️ ${f.note}</b>`;
     return html`<button class="row" ${t ? html`data-action="edit-tache" data-id="${t.id}"` : html`data-action="open-interv" data-id="${i.id}"`} style="text-align:left">
       <span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDateTime(f.at)} · ${intervFull(i)}</span>${what}${f.k === 'task' && f.note ? html`<span class="small" style="display:block;margin-top:2px">📝 ${f.note}</span>` : ''}</span>
       ${f.ph ? html`<span class="badge">📷 ${f.ph}</span>` : ''}</button>`;
@@ -530,6 +531,7 @@ const ESP_SHOW = {
   coll: 'Collectes des déchets de l’immeuble',
   avis: 'Avis de l’immeuble (travaux, coupures…)',
   pub: 'Bons plans du quartier (publicité des partenaires, avec carte)',
+  menage: 'Passage de la femme de ménage (aujourd’hui, heure prévue) + son avis 😞 → ⭐',
   signal: 'Signaler un problème (avec photos)',
   edl: 'État des lieux : vos 6 photos (salle de bain, cuisine, chambre, cave, buanderie, parking) + ses photos de sortie à son départ',
   porte: 'Code de la porte (serrure à code / connectée)',
@@ -581,7 +583,7 @@ function espaceData(l) {
   const soc = societe();
   const out = {
     v: 1, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? g.nom : '', adresse: im ? im.adresse : '', show,
-    societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '' },
+    societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: soc.signature || '' },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
   };
   if (show.pay || show.quit) {
@@ -609,6 +611,22 @@ function espaceData(l) {
     out.edlOut = edlOf(g.id, 'edl-out').filter((d) => d.locId === l.id).map((d) => ({ room: d.room, date: d.date }));
   }
   if (show.coll && im) { out.coll = pubData(im).items; if (im.pubToken) out.collLink = pubUrl(im); }
+  if (show.menage) {
+    // horaires réguliers des femmes de ménage dans cet immeuble + nettoyages datés (14 jours) ; l'app du locataire affiche celui du jour
+    const men = vault.list('intervenants').filter((i) => i.metier === 'menage' && !i.archive);
+    const week = [], dates = [];
+    for (const i of men) {
+      const off = (i.absences || []).filter((a) => !a.fin || a.fin >= today()).map((a) => [a.debut, a.fin || '9999-12-31']);
+      for (const h of i.horaires || []) if (h.immId === l.immId) week.push({ w: i.id, nom: i.prenom || '', j: h.j, de: h.de, a: h.a, off });
+    }
+    for (const x of agenda(today(), addDays(today(), 14)).filter((x) => x.kind === 'tache' && x.t.type === 'nettoyage' && x.t.intervenantId && x.t.immId === l.immId && (!x.t.logId || x.t.logId === l.logId))) {
+      const i = vault.get('intervenants', x.t.intervenantId);
+      if (!i || absOn(i, x.d)) continue;
+      const h = (i.horaires || []).find((hh) => hh.immId === l.immId && hh.j === (new Date(x.d + 'T12:00:00').getDay() + 6) % 7);
+      dates.push({ w: i.id, nom: i.prenom || '', d: x.d, de: h ? h.de : '', a: h ? h.a : '' });
+    }
+    out.menage = { week, dates };
+  }
   if (show.pub) out.pubs = pubsActives(l.immId).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map((a) => ({ id: a.id, cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', fin: a.fin || '' }));
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
   if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '', lv: l.reglesV || '', v: rulesVersion(im) };
@@ -948,6 +966,20 @@ async function inboxSync() {
       }
       if (msg.type === 'regles') {
         await vault.mutate((tx) => tx.put('locataires', { id: l.id, reglesLu: String(msg.t || '').slice(0, 10) || today(), reglesV: String(msg.v || '').slice(0, 40) }), 'Règlement de la maison accepté', fullName(l), l.id);
+        await vault.inboxDel(it.name);
+        continue;
+      }
+      if (msg.type === 'menage-eval') {
+        // avis du locataire sur le passage de la femme de ménage (1 = 😞 … 4 = ⭐)
+        const w = vault.get('intervenants', String(msg.w || ''));
+        const v = Math.round(+msg.v), d = /^\d{4}-\d{2}-\d{2}$/.test(msg.d || '') ? msg.d : today();
+        if (w && v >= 1 && v <= 4) {
+          const evals = (w.evals || []).filter((e) => !(e.locId === l.id && e.d === d));
+          evals.push({ d, v, locId: l.id, at: String(msg.t || new Date().toISOString()).slice(0, 30) });
+          const feed = [...(w.feed || []), { at: String(msg.t || new Date().toISOString()).slice(0, 30), k: 'eval', note: `${MEN_EVAL[v]} — avis de ${fullName(l)} (${fmtDate(d)})` }];
+          await vault.mutate((tx) => tx.put('intervenants', { id: w.id, evals: evals.slice(-300), feed: feed.slice(-200), feedNew: (w.feedNew || 0) + 1 }), 'Avis sur le ménage', `${intervFull(w)} — ${MEN_EVAL[v]}`, w.id);
+          n++;
+        }
         await vault.inboxDel(it.name);
         continue;
       }
@@ -1908,17 +1940,17 @@ async function syncDepense(t, quiet) {
 const offerDepense = (t) => syncDepense(t);
 // Facture jointe à une dépense (chiffrée, comme les autres documents)
 // Logo de la société : réduit (400 px max), gardé dans le coffre chiffré
-async function setLogo(file) {
+async function setLogo(file, field = 'logo') {
   try {
     const bmp = await createImageBitmap(file);
-    const k = Math.min(1, 400 / Math.max(bmp.width, bmp.height));
+    const k = Math.min(1, (field === 'logo' ? 400 : 600) / Math.max(bmp.width, bmp.height));
     const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
     c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
     const url = c.toDataURL('image/png');
     const logo = url.length < 180000 ? url : c.toDataURL('image/jpeg', 0.85);
-    await vault.mutate((tx) => tx.put('reglages', { id: 'main', logo }), 'Logo de la société', socName());
+    await vault.mutate((tx) => tx.put('reglages', { id: 'main', [field]: logo }), field === 'logo' ? 'Logo de la société' : 'Signature + timbre de la société', socName());
     applyBrand();
-    toast('Logo enregistré');
+    toast(field === 'logo' ? 'Logo enregistré' : 'Signature + timbre enregistrés');
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   } catch { toast('Image illisible', { bad: true }); }
 }
@@ -2848,6 +2880,7 @@ const SHEETS = {
           ${kvRow('Type', INT_GENRES[i.genre || 'interne'])}
           ${kvRow('Catégorie', INT_CATS[i.cat || 'quotidien'])}
           ${kvRow('Métier', METIERS[i.metier] || i.metier || '—')}
+          ${(i.evals || []).length ? kvRow('Avis des locataires', `${MEN_EVAL[Math.round(sum(i.evals, (e) => e.v) / i.evals.length)]} · ${(sum(i.evals, (e) => e.v) / i.evals.length).toFixed(1).replace('.', ',')} / 4 (${plural(i.evals.length, 'avis')})`) : ''}
           ${i.tarif ? kvRow('Tarif', i.tarif) : ''}
           ${i.adresse || i.ville ? kvRow('Adresse', [i.adresse, i.ville].filter(Boolean).join(', ')) : ''}
           ${i.tel ? kvRow('Téléphone', html`<a href="tel:${tel}">${i.tel}</a>`) : ''}
@@ -3651,6 +3684,10 @@ const SHEETS = {
           <label class="btn sm" style="cursor:pointer">🖼️ ${st.logo ? 'Changer le logo' : 'Mettre votre logo'}<input type="file" accept="image/*" data-input="soc-logo" hidden></label>
           ${st.logo ? html`<button class="btn sm ghost" type="button" data-action="soc-logo-del">Retirer</button>` : ''}</div>
         <p class="tiny muted full" style="margin:0">Le logo apparaît dans l’app, les apps des locataires et de l’équipe, les quittances et les impressions.</p>
+        <div class="full" style="display:flex;align-items:center;gap:12px">${st.signature ? html`<img src="${st.signature}" alt="" style="height:60px;max-width:160px;object-fit:contain;background:#fff;border-radius:8px;padding:4px;border:1px solid var(--border)">` : ''}
+          <label class="btn sm" style="cursor:pointer">✍️ ${st.signature ? 'Changer signature + timbre' : 'Signature + timbre (image)'}<input type="file" accept="image/*" data-input="soc-sign" hidden></label>
+          ${st.signature ? html`<button class="btn sm ghost" type="button" data-action="soc-sign-del">Retirer</button>` : ''}</div>
+        <p class="tiny muted full" style="margin:0">Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app.</p>
         ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: 'ex. NOBIS s.a.r.l.' })}
         ${field('Adresse', 'adresse', st.adresse, { full: true })}
         ${field('Code postal et ville', 'ville', st.ville, { placeholder: 'L-1234 Luxembourg' })}
@@ -3983,6 +4020,7 @@ const ACTIONS = {
   'cp-tab': (d) => { ui.cpTab = d.id; renderView(); },
   'cp-more': () => { ui.cpMonths = (ui.cpMonths || 1) + 1; renderView(); },
   'cp-clear': () => { ui.cpQ = ''; ui.cpFrom = ''; ui.cpTo = ''; ui.cpMonths = 1; renderView(); },
+  'soc-sign-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: '' }), 'Signature retirée', socName()); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
   'soc-logo-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', logo: '' }), 'Logo retiré', socName()); applyBrand(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
   'cp-csv': () => {
     const y = ui.year, per = ui.cpPer || 'y';
@@ -4954,6 +4992,7 @@ document.addEventListener('change', (e) => {
   if (k === 'year') { ui.year = +e.target.value; renderView(); }
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
   if (k === 'soc-logo' && e.target.files[0]) setLogo(e.target.files[0]);
+  if (k === 'soc-sign' && e.target.files[0]) setLogo(e.target.files[0], 'signature');
   if (k === 'cp-per') { ui.cpPer = e.target.value; ui.cpMonths = 1; renderView(); }
   if (k === 'cp-from' || k === 'cp-to') { ui[k === 'cp-from' ? 'cpFrom' : 'cpTo'] = e.target.value; ui.cpMonths = 1; renderView(); }
   if (k === 'tva-loyer') { const im = vault.get('immeubles', e.target.dataset.id); if (im) vault.mutate((tx) => tx.put('immeubles', { id: im.id, tvaLoyer: parseFloat(e.target.value) || 0 }), 'TVA sur les loyers', `${im.adresse} : ${e.target.value || 0} %`, im.id); }

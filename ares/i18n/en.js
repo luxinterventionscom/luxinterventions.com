@@ -7867,5 +7867,57 @@ export default [
 [
 "Notifications impossibles sur ce téléphone",
 "Notifications not possible on this phone"
+],
+[
+"Avis des locataires",
+"Tenant ratings"
+],
+[
+"Insuffisant",
+"Poor"
+],
+[
+"Suffisant",
+"Fair"
+],
+[
+"Bien",
+"Good"
+],
+[
+"{0} — avis de {1}",
+"{0} — rating by {1}"
+],
+[
+"Signature + timbre (image)",
+"Signature + stamp (image)"
+],
+[
+"Changer signature + timbre",
+"Change signature + stamp"
+],
+[
+"Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app.",
+"Photo of the signature with the company stamp (white background): it appears on the summary of paid rent that the tenant downloads in their app."
+],
+[
+"Signature + timbre enregistrés",
+"Signature + stamp saved"
+],
+[
+"Signature retirée",
+"Signature removed"
+],
+[
+"Signature + timbre de la société",
+"Company signature + stamp"
+],
+[
+"Avis sur le ménage",
+"Cleaning rating"
+],
+[
+"Passage de la femme de ménage (aujourd’hui, heure prévue) + son avis 😞 → ⭐",
+"Cleaner’s visit (today, expected time) + rating 😞 → ⭐"
 ]
 ];
