@@ -8109,11 +8109,23 @@ export default [
 "Paso de la señora de la limpieza (hoy, hora prevista) + valoración 😞 → ⭐"
 ],
 [
-"Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement. Le timbre doit être celui de la société indiquée ci-dessous.",
-"Foto de la firma con el sello de la empresa (fondo blanco): aparece en el resumen de alquileres pagados que el inquilino descarga en su app. PNG, JPG o foto del móvil: el fondo se vuelve transparente y los márgenes se recortan automáticamente. El sello debe ser el de la empresa indicada abajo."
+"Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement ; choisissez sa largeur sur la feuille A4 (6 à 12 cm). Le timbre doit être celui de la société indiquée ci-dessous.",
+"Foto de la firma con el sello de la empresa (fondo blanco): aparece en el resumen de alquileres pagados que el inquilino descarga en su app. PNG, JPG o foto del móvil: el fondo se vuelve transparente y los márgenes se recortan automáticamente ; elija su anchura en la hoja A4 (de 6 a 12 cm). El sello debe ser el de la empresa indicada abajo."
 ],
 [
 "Image illisible : envoyez une photo ou un PNG / JPG de la signature sur fond blanc",
 "Imagen ilegible: envíe una foto o un PNG / JPG de la firma sobre fondo blanco"
+],
+[
+"Signature enregistrée, mais l’image est petite ({0} px de large) : sur papier elle sera floue. Prenez une photo plus grande (1000 px ou plus).",
+"Firma guardada, pero la imagen es pequeña ({0} px de ancho): en papel quedará borrosa. Haga una foto más grande (1000 px o más)."
+],
+[
+"Largeur sur le papier",
+"Anchura en el papel"
+],
+[
+"Taille de la signature",
+"Tamaño de la firma"
 ]
 ];

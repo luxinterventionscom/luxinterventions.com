@@ -7,7 +7,7 @@ import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.40.1';
+const VERSION = '2.41.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -583,7 +583,7 @@ function espaceData(l) {
   const soc = societe();
   const out = {
     v: 1, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? g.nom : '', adresse: im ? im.adresse : '', show,
-    societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: soc.signature || '' },
+    societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: soc.signature || '', signW: soc.signW || 8 },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
   };
   if (show.pay || show.quit) {
@@ -1941,7 +1941,7 @@ const offerDepense = (t) => syncDepense(t);
 // Facture jointe à une dépense (chiffrée, comme les autres documents)
 // Logo de la société : réduit (400 px max), gardé dans le coffre chiffré
 // Signature + timbre : PNG transparent, quel que soit le fichier (PNG, JPG, photo du téléphone) — le blanc du papier
-// devient transparent (l'encre garde ses bords doux), les marges vides sont coupées, 900 px de large au plus
+// devient transparent (l'encre garde ses bords doux), les marges vides sont coupées, 1400 px de large au plus (≈ 300 dpi sur 12 cm)
 async function cleanSignature(file) {
   const bmp = await createImageBitmap(file);
   const k0 = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
@@ -1959,17 +1959,19 @@ async function cleanSignature(file) {
   if (x1 < 0) throw new Error('vide');
   x.putImageData(d, 0, 0);
   const m = 10; x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m); x1 = Math.min(c.width, x1 + m); y1 = Math.min(c.height, y1 + m);
-  const w = x1 - x0, h = y1 - y0, k = Math.min(1, 900 / w, 500 / h);
+  const w = x1 - x0, h = y1 - y0, k = Math.min(1, 1400 / w, 800 / h);
   const o = document.createElement('canvas'); o.width = Math.round(w * k); o.height = Math.round(h * k);
   o.getContext('2d').drawImage(c, x0, y0, w, h, 0, 0, o.width, o.height);
-  return o.toDataURL('image/png');
+  return { url: o.toDataURL('image/png'), w: Math.round(w / k0) };
 }
 async function setLogo(file, field = 'logo') {
   if (field === 'signature') {
     try {
       const sign = await cleanSignature(file);
-      await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: sign }), 'Signature + timbre de la société', socName());
-      toast('Signature + timbre enregistrés');
+      await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: sign.url }), 'Signature + timbre de la société', socName());
+      // ≈ 300 points par pouce pour une impression nette : 700 px pour 6 cm, 950 px pour 8 cm
+      if (sign.w < 700) toast(`Signature enregistrée, mais l’image est petite (${sign.w} px de large) : sur papier elle sera floue. Prenez une photo plus grande (1000 px ou plus).`, { bad: true });
+      else toast('Signature + timbre enregistrés');
       if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
     } catch { toast('Image illisible : envoyez une photo ou un PNG / JPG de la signature sur fond blanc', { bad: true }); }
     return;
@@ -3719,8 +3721,9 @@ const SHEETS = {
         <p class="tiny muted full" style="margin:0">Le logo apparaît dans l’app, les apps des locataires et de l’équipe, les quittances et les impressions.</p>
         <div class="full" style="display:flex;align-items:center;gap:12px">${st.signature ? html`<img src="${st.signature}" alt="Signature + timbre" style="height:80px;max-width:200px;object-fit:contain;background:#fff;border-radius:8px;padding:6px;border:1px solid var(--border)">` : ''}
           <label class="btn sm" style="cursor:pointer">✍️ ${st.signature ? 'Changer signature + timbre' : 'Signature + timbre (image)'}<input type="file" accept="image/*" data-input="soc-sign" hidden></label>
-          ${st.signature ? html`<button class="btn sm ghost" type="button" data-action="soc-sign-del">Retirer</button>` : ''}</div>
-        <p class="tiny muted full" style="margin:0">Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement. Le timbre doit être celui de la société indiquée ci-dessous.</p>
+          ${st.signature ? html`<button class="btn sm ghost" type="button" data-action="soc-sign-del">Retirer</button>
+          <select data-input="soc-sign-w" aria-label="Largeur sur le papier" style="width:auto">${[6, 8, 10, 12].map((n) => html`<option value="${n}" ${+(st.signW || 8) === n ? new Raw('selected') : ''}>${n} cm</option>`)}</select>` : ''}</div>
+        <p class="tiny muted full" style="margin:0">Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement ; choisissez sa largeur sur la feuille A4 (6 à 12 cm). Le timbre doit être celui de la société indiquée ci-dessous.</p>
         ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: 'ex. NOBIS s.a.r.l.' })}
         ${field('Adresse', 'adresse', st.adresse, { full: true })}
         ${field('Code postal et ville', 'ville', st.ville, { placeholder: 'L-1234 Luxembourg' })}
@@ -5026,6 +5029,7 @@ document.addEventListener('change', (e) => {
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
   if (k === 'soc-logo' && e.target.files[0]) setLogo(e.target.files[0]);
   if (k === 'soc-sign' && e.target.files[0]) setLogo(e.target.files[0], 'signature');
+  if (k === 'soc-sign-w') vault.mutate((tx) => tx.put('reglages', { id: 'main', signW: [6, 8, 10, 12].includes(+e.target.value) ? +e.target.value : 8 }), 'Taille de la signature', `${e.target.value} cm`);
   if (k === 'cp-per') { ui.cpPer = e.target.value; ui.cpMonths = 1; renderView(); }
   if (k === 'cp-from' || k === 'cp-to') { ui[k === 'cp-from' ? 'cpFrom' : 'cpTo'] = e.target.value; ui.cpMonths = 1; renderView(); }
   if (k === 'tva-loyer') { const im = vault.get('immeubles', e.target.dataset.id); if (im) vault.mutate((tx) => tx.put('immeubles', { id: im.id, tvaLoyer: parseFloat(e.target.value) || 0 }), 'TVA sur les loyers', `${im.adresse} : ${e.target.value || 0} %`, im.id); }

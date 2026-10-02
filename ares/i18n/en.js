@@ -7921,11 +7921,23 @@ export default [
 "Cleaner’s visit (today, expected time) + rating 😞 → ⭐"
 ],
 [
-"Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement. Le timbre doit être celui de la société indiquée ci-dessous.",
-"Photo of the signature with the company stamp (white background): it appears on the summary of paid rent that the tenant downloads in their app. PNG, JPG or phone photo: the background becomes transparent and the margins are trimmed automatically. The stamp must belong to the company named below."
+"Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement ; choisissez sa largeur sur la feuille A4 (6 à 12 cm). Le timbre doit être celui de la société indiquée ci-dessous.",
+"Photo of the signature with the company stamp (white background): it appears on the summary of paid rent that the tenant downloads in their app. PNG, JPG or phone photo: the background becomes transparent and the margins are trimmed automatically ; choose its width on the A4 sheet (6 to 12 cm). The stamp must belong to the company named below."
 ],
 [
 "Image illisible : envoyez une photo ou un PNG / JPG de la signature sur fond blanc",
 "Unreadable image: send a photo or a PNG / JPG of the signature on a white background"
+],
+[
+"Signature enregistrée, mais l’image est petite ({0} px de large) : sur papier elle sera floue. Prenez une photo plus grande (1000 px ou plus).",
+"Signature saved, but the image is small ({0} px wide): it will be blurry on paper. Take a bigger photo (1000 px or more)."
+],
+[
+"Largeur sur le papier",
+"Width on paper"
+],
+[
+"Taille de la signature",
+"Signature size"
 ]
 ];

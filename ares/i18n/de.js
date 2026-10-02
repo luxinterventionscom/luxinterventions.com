@@ -8105,11 +8105,23 @@ export default [
 "Besuch der Reinigungskraft (heute, geplante Uhrzeit) + Bewertung 😞 → ⭐"
 ],
 [
-"Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement. Le timbre doit être celui de la société indiquée ci-dessous.",
-"Foto der Unterschrift mit dem Firmenstempel (weißer Hintergrund): Sie erscheint auf der Übersicht der bezahlten Mieten, die der Mieter in seiner App herunterlädt. PNG, JPG oder Handyfoto: Der Hintergrund wird transparent und die Ränder werden automatisch abgeschnitten. Der Stempel muss der unten angegebenen Firma gehören."
+"Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement ; choisissez sa largeur sur la feuille A4 (6 à 12 cm). Le timbre doit être celui de la société indiquée ci-dessous.",
+"Foto der Unterschrift mit dem Firmenstempel (weißer Hintergrund): Sie erscheint auf der Übersicht der bezahlten Mieten, die der Mieter in seiner App herunterlädt. PNG, JPG oder Handyfoto: Der Hintergrund wird transparent und die Ränder werden automatisch abgeschnitten ; wählen Sie die Breite auf dem A4-Blatt (6 bis 12 cm). Der Stempel muss der unten angegebenen Firma gehören."
 ],
 [
 "Image illisible : envoyez une photo ou un PNG / JPG de la signature sur fond blanc",
 "Bild unlesbar: Senden Sie ein Foto oder PNG / JPG der Unterschrift auf weißem Hintergrund"
+],
+[
+"Signature enregistrée, mais l’image est petite ({0} px de large) : sur papier elle sera floue. Prenez une photo plus grande (1000 px ou plus).",
+"Unterschrift gespeichert, aber das Bild ist klein ({0} px breit): Auf Papier wird es unscharf. Machen Sie ein größeres Foto (1000 px oder mehr)."
+],
+[
+"Largeur sur le papier",
+"Breite auf dem Papier"
+],
+[
+"Taille de la signature",
+"Größe der Unterschrift"
 ]
 ];
