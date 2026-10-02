@@ -109,8 +109,7 @@ function render() {
   const webcal = ics.replace(/^https:/, 'webcal:');
   const cal = `<div class="card"><div class="btns">
     <a class="btn" href="${esc(webcal)}">📅 ${esc(t.addCal)}</a>
-    <a class="btn sec" href="https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}" target="_blank" rel="noopener">${esc(t.google)}</a>
-    <a class="btn sec" href="${esc(ics)}" download="collectes.ics">${esc(t.download)}</a></div>
+</div>
     <p class="meta" style="margin:10px 0 0;text-align:center">${esc(t.calInfo)}</p></div>`;
   const foot = `<p class="foot">${data.societe ? esc(t.question) + ' ' + esc(data.societe) + (data.tel ? ` · <a href="tel:${esc(data.tel.replace(/[^\d+]/g, ''))}">${esc(data.tel)}</a>` : '') + '<br>' : ''}${esc(t.updated)} ${esc(fmt(data.updated.slice(0, 10), { day: 'numeric', month: 'long', year: 'numeric' }))}</p>`;
   app.innerHTML = `${langs}<h1>${esc(t.title)}</h1><p class="sub">${esc(data.adresse)} · ${esc(t.sub)}</p>${nowCard}${list}${rules}${cal}${foot}`;

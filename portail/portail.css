@@ -123,3 +123,5 @@
 @keyframes pubglow { 0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); border-color: #fecaca; } 50% { box-shadow: 0 0 0 5px rgba(220, 38, 38, .16); border-color: #f87171; } }
 @media (prefers-reduced-motion: reduce) { .ptl-pub { animation: none; border-color: #f87171; } }
 .pub-lbl { color: #dc2626; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+
+.ptl-pub .vid.audio { aspect-ratio: auto; background: transparent; }

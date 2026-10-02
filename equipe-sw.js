@@ -1,5 +1,5 @@
 // App de l'équipe NOBIS s.a.r.l. : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'equipe-shell-v1.9.0';
+const CACHE = 'equipe-shell-v1.10.0';
 const SHELL = ['/equipe.html', '/equipe.js', '/ares/espace-crypto.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/pubstat.js', '/equipe.webmanifest', '/ares/icons/ares-192.png', '/ares/icons/nobis-logo.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

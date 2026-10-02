@@ -8275,5 +8275,17 @@ export default [
 [
 "↻ Actualiser les statistiques",
 "↻ Atualizar as estatísticas"
+],
+[
+"🎵 Musique (nouveautés, clips)",
+"🎵 Música (novidades, clips)"
+],
+[
+"Vidéo ou musique (YouTube, TikTok, Instagram, Facebook, Vimeo, Spotify, Deezer, Apple Music, SoundCloud)",
+"Vídeo ou música (YouTube, TikTok, Instagram, Facebook, Vimeo, Spotify, Deezer, Apple Music, SoundCloud)"
+],
+[
+"Collez le lien de la vidéo ou du morceau : il s’affiche dans l’annonce comme un petit écran ou un petit lecteur audio, on le regarde ou l’écoute sans quitter l’app.",
+"Cole o link do vídeo ou da música: aparece no anúncio como um pequeno ecrã ou leitor de áudio, vê-se ou ouve-se sem sair da app."
 ]
 ];
