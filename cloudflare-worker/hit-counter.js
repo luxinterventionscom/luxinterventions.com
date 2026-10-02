@@ -1040,13 +1040,13 @@ async function pubStatPost(request, env, headers) {
 const TICKER_SYMBOLS = "BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,BINANCE:USDTUSD,BINANCE:BNBUSD,BINANCE:SOLUSD,BITSTAMP:XRPUSD,BINANCE:USDCUSD,BINANCE:ADAUSD,BINANCE:AVAXUSD,BINANCE:DOGEUSD,BINANCE:TRXUSD,BINANCE:DOTUSD,BINANCE:LINKUSD,BINANCE:SUIUSD,BINANCE:NEARUSD,BINANCE:LTCUSD,BINANCE:BCHUSD,BINANCE:PEPEUSD,BINANCE:UNIUSD,BINANCE:APTUSD";
 function tickerPage() {
   const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ticker</title>
-<style>html,body{margin:0;padding:0;background:transparent;overflow:hidden}</style>
+<style>html,body{margin:0;padding:0;background:transparent;overflow-x:hidden}</style>
 <script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"></script></head>
-<body><tv-ticker-tape symbols="${TICKER_SYMBOLS}"></tv-ticker-tape></body></html>`;
+<body><tv-ticker-tape symbols="${TICKER_SYMBOLS}"></tv-ticker-tape><script>new ResizeObserver(function(){var h=Math.ceil(document.body.scrollHeight);if(h>10)parent.postMessage({tickerH:h},'*')}).observe(document.body);</script></body></html>`;
   return new Response(page, { headers: {
     "Content-Type": "text/html; charset=utf-8",
     "Cache-Control": "public, max-age=3600",
-    "Content-Security-Policy": "default-src 'none'; script-src https://widgets.tradingview-widget.com https://*.tradingview.com; style-src 'unsafe-inline' https:; img-src https: data:; font-src https: data:; connect-src https: wss:; frame-src https://*.tradingview.com https://*.tradingview-widget.com; frame-ancestors https://luxinterventions.com https://www.luxinterventions.com http://localhost:8787",
+    "Content-Security-Policy": "default-src 'none'; script-src 'sha256-H1G/HBRVuISVA+5/HKLwS5uyBCV0PqrzMXSdlPsxjTQ=' https://widgets.tradingview-widget.com https://*.tradingview.com; style-src 'unsafe-inline' https:; img-src https: data:; font-src https: data:; connect-src https: wss:; frame-src https://*.tradingview.com https://*.tradingview-widget.com; frame-ancestors https://luxinterventions.com https://www.luxinterventions.com http://localhost:8787",
     "Referrer-Policy": "no-referrer",
   } });
 }
