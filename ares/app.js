@@ -7,7 +7,7 @@ import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.40.0';
+const VERSION = '2.40.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -1940,7 +1940,40 @@ async function syncDepense(t, quiet) {
 const offerDepense = (t) => syncDepense(t);
 // Facture jointe à une dépense (chiffrée, comme les autres documents)
 // Logo de la société : réduit (400 px max), gardé dans le coffre chiffré
+// Signature + timbre : PNG transparent, quel que soit le fichier (PNG, JPG, photo du téléphone) — le blanc du papier
+// devient transparent (l'encre garde ses bords doux), les marges vides sont coupées, 900 px de large au plus
+async function cleanSignature(file) {
+  const bmp = await createImageBitmap(file);
+  const k0 = Math.min(1, 2000 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k0); c.height = Math.round(bmp.height * k0);
+  const x = c.getContext('2d', { willReadFrequently: true });
+  x.drawImage(bmp, 0, 0, c.width, c.height);
+  const d = x.getImageData(0, 0, c.width, c.height), a = d.data;
+  let x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+  for (let i = 0; i < a.length; i += 4) {
+    const l = a[i + 3] < 128 ? 255 : (a[i] + a[i + 1] + a[i + 2]) / 3;
+    const al = Math.max(0, Math.min(255, Math.round(((235 - l) * 255) / 120)));
+    a[i + 3] = Math.min(a[i + 3], al);
+    if (al > 60) { const px = (i / 4) % c.width, py = Math.floor(i / 4 / c.width); if (px < x0) x0 = px; if (px > x1) x1 = px; if (py < y0) y0 = py; if (py > y1) y1 = py; }
+  }
+  if (x1 < 0) throw new Error('vide');
+  x.putImageData(d, 0, 0);
+  const m = 10; x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m); x1 = Math.min(c.width, x1 + m); y1 = Math.min(c.height, y1 + m);
+  const w = x1 - x0, h = y1 - y0, k = Math.min(1, 900 / w, 500 / h);
+  const o = document.createElement('canvas'); o.width = Math.round(w * k); o.height = Math.round(h * k);
+  o.getContext('2d').drawImage(c, x0, y0, w, h, 0, 0, o.width, o.height);
+  return o.toDataURL('image/png');
+}
 async function setLogo(file, field = 'logo') {
+  if (field === 'signature') {
+    try {
+      const sign = await cleanSignature(file);
+      await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: sign }), 'Signature + timbre de la société', socName());
+      toast('Signature + timbre enregistrés');
+      if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+    } catch { toast('Image illisible : envoyez une photo ou un PNG / JPG de la signature sur fond blanc', { bad: true }); }
+    return;
+  }
   try {
     const bmp = await createImageBitmap(file);
     const k = Math.min(1, (field === 'logo' ? 400 : 600) / Math.max(bmp.width, bmp.height));
@@ -3684,10 +3717,10 @@ const SHEETS = {
           <label class="btn sm" style="cursor:pointer">🖼️ ${st.logo ? 'Changer le logo' : 'Mettre votre logo'}<input type="file" accept="image/*" data-input="soc-logo" hidden></label>
           ${st.logo ? html`<button class="btn sm ghost" type="button" data-action="soc-logo-del">Retirer</button>` : ''}</div>
         <p class="tiny muted full" style="margin:0">Le logo apparaît dans l’app, les apps des locataires et de l’équipe, les quittances et les impressions.</p>
-        <div class="full" style="display:flex;align-items:center;gap:12px">${st.signature ? html`<img src="${st.signature}" alt="" style="height:60px;max-width:160px;object-fit:contain;background:#fff;border-radius:8px;padding:4px;border:1px solid var(--border)">` : ''}
+        <div class="full" style="display:flex;align-items:center;gap:12px">${st.signature ? html`<img src="${st.signature}" alt="Signature + timbre" style="height:80px;max-width:200px;object-fit:contain;background:#fff;border-radius:8px;padding:6px;border:1px solid var(--border)">` : ''}
           <label class="btn sm" style="cursor:pointer">✍️ ${st.signature ? 'Changer signature + timbre' : 'Signature + timbre (image)'}<input type="file" accept="image/*" data-input="soc-sign" hidden></label>
           ${st.signature ? html`<button class="btn sm ghost" type="button" data-action="soc-sign-del">Retirer</button>` : ''}</div>
-        <p class="tiny muted full" style="margin:0">Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app.</p>
+        <p class="tiny muted full" style="margin:0">Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement. Le timbre doit être celui de la société indiquée ci-dessous.</p>
         ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: 'ex. NOBIS s.a.r.l.' })}
         ${field('Adresse', 'adresse', st.adresse, { full: true })}
         ${field('Code postal et ville', 'ville', st.ville, { placeholder: 'L-1234 Luxembourg' })}

@@ -7919,5 +7919,13 @@ export default [
 [
 "Passage de la femme de ménage (aujourd’hui, heure prévue) + son avis 😞 → ⭐",
 "Cleaner’s visit (today, expected time) + rating 😞 → ⭐"
+],
+[
+"Photo de la signature avec le timbre de la société (fond blanc) : elle apparaît sur le récapitulatif des loyers payés que le locataire télécharge dans son app. PNG, JPG ou photo du téléphone : le fond devient transparent et les marges sont coupées automatiquement. Le timbre doit être celui de la société indiquée ci-dessous.",
+"Photo of the signature with the company stamp (white background): it appears on the summary of paid rent that the tenant downloads in their app. PNG, JPG or phone photo: the background becomes transparent and the margins are trimmed automatically. The stamp must belong to the company named below."
+],
+[
+"Image illisible : envoyez une photo ou un PNG / JPG de la signature sur fond blanc",
+"Unreadable image: send a photo or a PNG / JPG of the signature on a white background"
 ]
 ];
