@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.44.0';
+const VERSION = '2.44.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -631,9 +631,9 @@ function espaceData(l) {
     }
     for (const x of agenda(today(), addDays(today(), 14)).filter((x) => x.kind === 'tache' && x.t.type === 'nettoyage' && x.t.intervenantId && x.t.immId === l.immId && (!x.t.logId || x.t.logId === l.logId))) {
       const i = vault.get('intervenants', x.t.intervenantId);
-      if (!i || absOn(i, x.d)) continue;
+      if (!i) continue;
       const h = (i.horaires || []).find((hh) => hh.immId === l.immId && hh.j === (new Date(x.d + 'T12:00:00').getDay() + 6) % 7);
-      dates.push({ w: i.id, nom: i.prenom || '', d: x.d, de: h ? h.de : '', a: h ? h.a : '' });
+      dates.push({ w: i.id, nom: i.prenom || '', d: x.d, de: h ? h.de : '', a: h ? h.a : '', off: !!absOn(i, x.d) });
     }
     out.menage = { week, dates };
   }
