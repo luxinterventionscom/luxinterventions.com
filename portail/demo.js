@@ -78,6 +78,8 @@ export function createDemo() {
     if (p === 'me') return { user: { ...me }, vapidKey: null };
     if (['logout', 'push', 'push/test', 'me/password'].includes(p)) return { ok: true };
 
+    // annonce d'exemple (dans le vrai portail, elles viennent de l'app de gestion)
+    if (p === 'pubs') return { items: [{ id: 'demo1', cat: 'resto', nom: 'Pizzeria Da Mario', adresse: '12, rue de Hollerich, Luxembourg', texte: '−10 % pour les gérances et leurs résidents', tel: '+352 22 33 44', web: '', video: '', fin: '' }] };
     if (p === 'stats') {
       const ts = tickets.filter(visible).filter((t) => !scopeOrg || t.org_id === scopeOrg);
       const open = ts.filter((t) => ['recue', 'prise', 'planifiee', 'encours'].includes(t.status));

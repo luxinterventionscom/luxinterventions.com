@@ -3,8 +3,9 @@
 // l'équipe LuxInterventions (rôle « admin ») voit tout et traite les demandes.
 
 import { startI18n, LOCALES } from '/ares/i18n.js';
+import { videoEmbed } from '/ares/video-embed.js';
 
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -489,8 +490,8 @@ async function loadRoute(route) {
   const f = state.filters;
   const org = isAdmin() && f.org ? '&org=' + f.org : '';
   if (route === 'home') {
-    const [stats, tickets] = await Promise.all([api('stats' + (org ? '?' + org.slice(1) : '')), api('tickets?scope=active' + org)]);
-    state.cache.home = { stats, tickets: tickets.tickets };
+    const [stats, tickets, pubs] = await Promise.all([api('stats' + (org ? '?' + org.slice(1) : '')), api('tickets?scope=active' + org), api('pubs').catch(() => ({ items: [] }))]);
+    state.cache.home = { stats, tickets: tickets.tickets, pubs: pubs.items || [] };
   } else if (route === 'demandes') {
     const [tickets, residences] = await Promise.all([
       api(`tickets?scope=${f.scope}${org}${f.residence ? '&residence=' + f.residence : ''}`),
@@ -590,6 +591,24 @@ function guideCard(stats) {
 }
 
 // ───────────────────────── Vues ─────────────────────────
+// Annonces des partenaires (publiées depuis l'app de gestion) : petit lecteur vidéo, itinéraire, appel, site
+const PUB_ICON = { resto: '🍕', bar: '🍺', horeca: '☕', bricolage: '🔨', meubles: '🛋️', courses: '🛒', services: '🧰', autre: '📌' };
+function pubsCard() {
+  const items = (state.cache.home && state.cache.home.pubs) || [];
+  if (!items.length) return '';
+  return html`<div class="section-label">📣 Bons plans de nos partenaires</div><div class="ptl-pubs">${items.map((a) => {
+    const v = videoEmbed(a.video);
+    return html`<div class="card ptl-pub"><b>${PUB_ICON[a.cat] || '📌'} ${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
+      <div class="small muted" style="margin-top:4px">📍 ${a.adresse}</div>
+      ${v ? html`<div class="vid${v.tall ? ' tall' : ''}"><iframe src="${v.src}" loading="lazy" title="Vidéo" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
+      <div class="actions" style="margin-top:8px;flex-wrap:wrap">
+        <a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener">🧭 Itinéraire</a>
+        ${a.tel ? html`<a class="btn sm" href="tel:${a.tel.replace(/[^\d+]/g, '')}">📞 Appeler</a>` : ''}
+        ${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener">🌐 Site web</a>` : ''}
+        ${a.video && !v ? html`<a class="btn sm" href="${a.video}" target="_blank" rel="noopener">▶ Vidéo</a>` : ''}</div></div>`;
+  })}</div>`;
+}
+
 const VIEWS = {
   home() {
     const { stats, tickets } = state.cache.home || { stats: {}, tickets: [] };
@@ -614,7 +633,8 @@ const VIEWS = {
         <div class="section-label">À traiter maintenant</div>
         ${recue.length ? html`<div class="list">${recue.map(ticketRow)}</div>` : html`<div class="alert" style="background:var(--green-soft);color:var(--green)">${icon('check')}<div>Aucune nouvelle demande en attente.</div></div>`}
         <div class="section-label">En cours</div>
-        ${others.length ? html`<div class="list">${others.map(ticketRow)}</div>` : html`<p class="muted small">Aucune intervention en cours.</p>`}`;
+        ${others.length ? html`<div class="list">${others.map(ticketRow)}</div>` : html`<p class="muted small">Aucune intervention en cours.</p>`}
+        ${pubsCard()}`;
     }
     return html`${pushCard}
       ${guideCard(stats)}
@@ -627,7 +647,8 @@ const VIEWS = {
         <div class="metric"><div class="lbl">Résidences</div><div class="val">${stats.residences || 0}</div><div class="sub">${stats.apartments ? stats.apartments + ' appartements' : ''}</div></div>
       </div>
       <div class="section-label">Mes demandes en cours</div>
-      ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande</button>`)}`;
+      ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande</button>`)}
+      ${pubsCard()}`;
   },
 
   demandes() {

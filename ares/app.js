@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.43.1';
+const VERSION = '2.44.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -358,7 +358,9 @@ function equipeData(i) {
       ph: { av: eqPhotos(t.id, 'av').length, ap: eqPhotos(t.id, 'ap').length },
     };
   };
+  const imIds = new Set((i.horaires || []).map((h) => h.immId).filter(Boolean));
   for (const x of agenda(from, to).filter((x) => x.kind === 'tache' && x.t.intervenantId === i.id)) {
+    if (x.t.immId) imIds.add(x.t.immId);
     tasks[x.t.id] ||= out1(x.t);
     items.push({ d: x.d, tid: x.t.id, late: !!x.late });
   }
@@ -374,6 +376,7 @@ function equipeData(i) {
     horaires: (i.horaires || []).map((h) => ({ j: h.j, de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })),
     absences: (i.absences || []).filter((a) => !a.fin || a.fin >= addDays(today(), -30)).map((a) => ({ type: a.type, debut: a.debut, fin: a.fin || '' })),
     pres: Object.fromEntries(Object.entries(i.pres || {}).filter(([d]) => d >= addDays(today(), -7))),
+    pubs: pubsActives([...imIds], 'eq').map(pubOut),
     tasks, items: items.sort((a, b) => a.d.localeCompare(b.d)), signalKey: k ? k.pub : '',
   };
 }
@@ -548,7 +551,11 @@ const espUrl = (l) => `${location.origin}/espace.html#${l.espace.id}.${l.espace.
 const PUB_CATS = { resto: '🍕 Pizzeria / restaurant', bar: '🍺 Bar / pub', horeca: '☕ Café / snack (Horeca)', bricolage: '🔨 Bricolage / jardinage', meubles: '🛋️ Meubles / décoration', courses: '🛒 Supermarché / commerce', services: '🧰 Services', autre: '📌 Autre' };
 const PUB_TTL = [7, 14, 30, 60, 90, 180, 365];
 const isPub = (a) => a.kind === 'pub';
-const pubsActives = (immId) => vault.list('avis').filter((a) => isPub(a) && (!immId || !a.immId || a.immId === immId) && (!a.debut || a.debut <= today()) && (!a.fin || a.fin >= today()));
+// À qui s'adresse l'annonce : locataires (par défaut), équipe, portail gérance
+const PUB_AUD = { loc: '🏠 Locataires', eq: '👷 Équipe', ptl: '🏢 Portail gérance' };
+const pubAud = (a) => (Array.isArray(a.aud) && a.aud.length ? a.aud : ['loc']);
+const pubOut = (a) => ({ id: a.id, cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '' });
+const pubsActives = (immId, aud = 'loc') => vault.list('avis').filter((a) => isPub(a) && pubAud(a).includes(aud) && (aud === 'ptl' || !immId || !a.immId || (Array.isArray(immId) ? immId.includes(a.immId) : a.immId === immId)) && (!a.debut || a.debut <= today()) && (!a.fin || a.fin >= today()));
 const avisActifs = (immId) => vault.list('avis').filter((a) => !isPub(a) && (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
   .sort((a, b) => (a.debut || '').localeCompare(b.debut || ''));
 async function ownerKeys() {
@@ -630,7 +637,7 @@ function espaceData(l) {
     }
     out.menage = { week, dates };
   }
-  if (show.pub) out.pubs = pubsActives(l.immId).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map((a) => ({ id: a.id, cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '' }));
+  if (show.pub) out.pubs = pubsActives(l.immId).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut);
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
   if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '', lv: l.reglesV || '', v: rulesVersion(im) };
   if (show.chat && chatOn(im) && isCurrent(l)) {
@@ -939,8 +946,17 @@ async function espaceSync(onlyId, loud) {
       if (loud) { toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
     }
   }
-  if (!onlyId) await equipeSync();
+  if (!onlyId) { await equipeSync(); await portailPubsSync(); }
   return true;
+}
+// Annonces pour le portail gérance : publiées en clair (publicité, aucune donnée personnelle), relues par le portail
+async function portailPubsSync() {
+  const list = pubsActives('', 'ptl').map(pubOut);
+  const h = await sha256Hex(JSON.stringify(list));
+  let prev = '';
+  try { prev = localStorage.getItem('aresPubPtl') || ''; } catch { /* stockage indisponible */ }
+  if (h === prev) return;
+  try { await vault.pubsPortail(list); localStorage.setItem('aresPubPtl', h); } catch { /* Worker pas encore à jour ou hors ligne : on réessaiera */ }
 }
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
@@ -2150,6 +2166,7 @@ const VIEWS = {
       const left = (a) => { if (!a.fin) return 'sans fin'; const n = Math.round((new Date(a.fin + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 864e5); return a.debut > today() ? `à partir du ${fmtDate(a.debut)}` : n <= 0 ? 'dernier jour' : `encore ${plural(n, 'jour')}`; };
       const row = (a) => html`<button class="row" data-action="edit-pub" data-id="${a.id}"><span class="grow"><span class="title" style="display:block;white-space:normal">${(PUB_CATS[a.cat] || PUB_CATS.autre).split(' ')[0]} <b>${a.nom}</b></span>
         <span class="meta" style="display:block;white-space:normal">📍 ${a.adresse}${a.texte ? ' · ' + a.texte.slice(0, 90) : ''}${a.video ? ' · ▶ ' + (videoEmbed(a.video) ? videoEmbed(a.video).name : 'vidéo') : ''}</span>
+        <span class="meta" style="display:block">${pubAud(a).map((k) => html`<span>${PUB_AUD[k]}</span>`).reduce((x, y) => html`${x} · ${y}`)}</span>
         <span class="meta"><span>${a.immId ? immName(a.immId) : 'Tous les immeubles'}</span>${a.fin ? html` · <span>${fmtDate(a.debut)} → ${fmtDate(a.fin)}</span>` : ''}</span></span>
         <span class="badge ${a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
       body = html`<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
@@ -3112,7 +3129,8 @@ const SHEETS = {
         ${field('Site web', 'web', a.web, { type: 'url', placeholder: 'https://…' })}
         ${field('Vidéo (lien YouTube, TikTok, Instagram, Facebook, Vimeo)', 'video', a.video, { full: true, type: 'url', placeholder: 'https://www.youtube.com/watch?v=… · https://www.tiktok.com/@…/video/…' })}
         <p class="tiny muted full" style="margin:0">Collez le lien de la vidéo : elle s’affiche dans l’annonce comme un petit écran, le locataire la regarde sans quitter l’app.${a.video ? (videoEmbed(a.video) ? ` ✓ ${videoEmbed(a.video).name} reconnu.` : ' ⚠ Lien non reconnu : il s’affiche comme un bouton (copiez le lien complet de la vidéo, pas un lien raccourci).') : ''}</p>
-        <label class="field full">Pour<select name="immId"><option value="">Tous les immeubles</option>${imms.map((im) => html`<option value="${im.id}" ${im.id === a.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
+        <div class="field full">Visible pour<div class="chips" style="margin-top:6px">${Object.entries(PUB_AUD).map(([k, v]) => html`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="aud_${k}" ${pubAud(a).includes(k) ? new Raw('checked') : ''} style="width:18px;min-height:18px;margin:0">${v}</label>`)}</div></div>
+        <label class="field full">Immeuble (locataires et équipe)<select name="immId"><option value="">Tous les immeubles</option>${imms.map((im) => html`<option value="${im.id}" ${im.id === a.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         ${field('Publier à partir du', 'debut', exp ? today() : a.debut, { type: 'date', required: true })}
         <label class="field">Durée (TTL)<select name="ttl">${PUB_TTL.map((n) => html`<option value="${n}" ${+(a.ttl || 30) === n ? new Raw('selected') : ''}>${n} jours</option>`)}</select></label>
         <p class="tiny muted full" style="margin:0">${exp ? `Expirée le ${fmtDate(a.fin)} : enregistrez pour la republier.` : a.fin ? `Visible jusqu'au ${fmtDate(a.fin)} inclus, puis retirée automatiquement de l'app des locataires.` : "Retirée automatiquement de l'app des locataires à la fin de la durée."}</p>
@@ -4661,8 +4679,9 @@ const FORMS = {
     const id = fd.get('id');
     const ttl = PUB_TTL.includes(+fd.get('ttl')) ? +fd.get('ttl') : 30;
     const debut = fd.get('debut') || today();
-    const rec = { kind: 'pub', cat: PUB_CATS[fd.get('cat')] ? fd.get('cat') : 'autre', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), texte: fd.get('texte').trim(), tel: fd.get('tel').trim(), web: /^https?:\/\//.test(fd.get('web').trim()) ? fd.get('web').trim() : '', video: /^https?:\/\//.test(String(fd.get('video') || '').trim()) ? String(fd.get('video')).trim().slice(0, 500) : '', immId: fd.get('immId') || '', debut, ttl, fin: addDays(debut, ttl - 1) };
+    const rec = { kind: 'pub', cat: PUB_CATS[fd.get('cat')] ? fd.get('cat') : 'autre', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), texte: fd.get('texte').trim(), tel: fd.get('tel').trim(), web: /^https?:\/\//.test(fd.get('web').trim()) ? fd.get('web').trim() : '', video: /^https?:\/\//.test(String(fd.get('video') || '').trim()) ? String(fd.get('video')).trim().slice(0, 500) : '', aud: Object.keys(PUB_AUD).filter((k) => fd.get('aud_' + k)), immId: fd.get('immId') || '', debut, ttl, fin: addDays(debut, ttl - 1) };
     if (!rec.nom || !rec.adresse) return;
+    if (!rec.aud.length) rec.aud = ['loc'];
     if (id) rec.id = id;
     await vault.mutate((tx) => tx.put('avis', rec), id ? 'Annonce modifiée' : 'Annonce publiée', `${rec.nom} — jusqu'au ${fmtDate(rec.fin)}`, rec.immId);
     toast(rec.video && !videoEmbed(rec.video) ? 'Annonce publiée — lien vidéo non reconnu : il s’affiche comme un bouton' : `Annonce publiée jusqu'au ${fmtDate(rec.fin)}`, rec.video && !videoEmbed(rec.video) ? { bad: true } : undefined);

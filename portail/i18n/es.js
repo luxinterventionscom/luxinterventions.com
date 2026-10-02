@@ -121,6 +121,10 @@ export default [
 "Pisos"
 ],
 [
+"Appeler",
+"Llamar"
+],
+[
 "Application",
 "App"
 ],
@@ -211,6 +215,10 @@ export default [
 [
 "Bonjour {0}",
 "Hola {0}"
+],
+[
+"Bons plans de nos partenaires",
+"Ofertas de nuestros socios"
 ],
 [
 "Boîte à clés à gauche de l’entrée, code 1990",
@@ -651,6 +659,10 @@ export default [
 [
 "Invitez leurs responsables (lien personnel par email ou WhatsApp)",
 "Invita a sus responsables (enlace personal por email o WhatsApp)"
+],
+[
+"Itinéraire",
+"Ruta"
 ],
 [
 "Janvier",
@@ -1217,6 +1229,10 @@ export default [
 "Solo LuxInterventions puede cambiar el estado"
 ],
 [
+"Site web",
+"Sitio web"
+],
+[
 "Soin des lieux en fin de travaux",
 "Cuidado del lugar al terminar"
 ],
@@ -1367,6 +1383,10 @@ export default [
 [
 "Utilisateurs",
 "Usuarios"
+],
+[
+"Vidéo",
+"Vídeo"
 ],
 [
 "Vitrerie",

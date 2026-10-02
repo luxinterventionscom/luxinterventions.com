@@ -8227,5 +8227,17 @@ export default [
 [
 "vidéo",
 "video"
+],
+[
+"Visible pour",
+"Visibile per"
+],
+[
+"Portail gérance",
+"Portale gerance"
+],
+[
+"Immeuble (locataires et équipe)",
+"Immobile (inquilini e squadra)"
 ]
 ];
