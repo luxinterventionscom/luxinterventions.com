@@ -8,9 +8,10 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.46.0';
+const VERSION = '2.46.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
+let firstOpen = true;
 const vault = new Vault(API);
 const $ = (s, r = document) => r.querySelector(s);
 
@@ -1685,7 +1686,9 @@ function startSession() {
   renderShell();
   applyBrand();
   fixIdentity().catch(() => {});
-  go(location.hash.slice(2) || 'dashboard', true);
+  // à l'ouverture de l'app : toujours l'Accueil ; après un verrouillage automatique : la page où l'on était
+  go(firstOpen ? 'dashboard' : location.hash.slice(2) || 'dashboard', true);
+  firstOpen = false;
   vault.sync();
   setTimeout(async () => {
     await refreshIcs(false);
