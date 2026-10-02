@@ -8095,5 +8095,69 @@ export default [
 [
 "Taille de la signature",
 "Tamanho da assinatura"
+],
+[
+"✍️ Signature + timbre (récapitulatif des loyers des locataires)",
+"✍️ Assinatura + carimbo (resumo das rendas dos inquilinos)"
+],
+[
+"Signez et tamponnez sur une feuille blanche.",
+"Assine e carimbe numa folha branca."
+],
+[
+"Scannez-la à 300 ppp (600 ppp pour une impression plus grande), ou prenez une photo bien droite, avec une bonne lumière, sans ombre.",
+"Digitalize-a a 300 ppp (600 ppp para uma impressão maior), ou tire uma foto bem direita, com boa luz e sem sombras."
+],
+[
+"Chargez le fichier ici (PNG ou JPG) : le fond devient transparent et les marges sont coupées automatiquement.",
+"Carregue aqui o ficheiro (PNG ou JPG): o fundo fica transparente e as margens são cortadas automaticamente."
+],
+[
+"Choisissez la largeur : regardez l’aperçu de la feuille et l’indicateur de qualité. Le timbre doit apparaître à peu près à sa taille réelle (mesurez-le avec une règle).",
+"Escolha a largura: veja a pré-visualização da folha e o indicador de qualidade. O carimbo deve aparecer mais ou menos no seu tamanho real (meça-o com uma régua)."
+],
+[
+"Charger signature + timbre",
+"Carregar assinatura + carimbo"
+],
+[
+"Le timbre doit être celui de la société indiquée ci-dessous.",
+"O carimbo deve ser o da empresa indicada abaixo."
+],
+[
+"Largeur sur la feuille",
+"Largura na folha"
+],
+[
+"{0} ppp · image {1} px",
+"{0} ppp · imagem {1} px"
+],
+[
+"Nette à l’impression",
+"Nítida na impressão"
+],
+[
+"Floue à l’impression",
+"Desfocada na impressão"
+],
+[
+"Pour un résultat plus net : scannez à 600 ppp, ou choisissez une largeur plus petite.",
+"Para um resultado mais nítido: digitalize a 600 ppp ou escolha uma largura menor."
+],
+[
+"Scannez la feuille à 300 ou 600 ppp (ou une photo plus grande), ou choisissez une largeur plus petite.",
+"Digitalize a folha a 300 ou 600 ppp (ou uma foto maior), ou escolha uma largura menor."
+],
+[
+"Avec cette image, nette jusqu’à {0} cm de large.",
+"Com esta imagem, nítida até {0} cm de largura."
+],
+[
+"Rechargez l’image pour mesurer sa qualité.",
+"Volte a carregar a imagem para medir a qualidade."
+],
+[
+"Comment faire ?",
+"Como fazer?"
 ]
 ];

@@ -7939,5 +7939,73 @@ export default [
 [
 "Taille de la signature",
 "Signature size"
+],
+[
+"✍️ Signature + timbre (récapitulatif des loyers des locataires)",
+"✍️ Signature + stamp (tenants’ rent summary)"
+],
+[
+"Signez et tamponnez sur une feuille blanche.",
+"Sign and stamp a white sheet of paper."
+],
+[
+"Scannez-la à 300 ppp (600 ppp pour une impression plus grande), ou prenez une photo bien droite, avec une bonne lumière, sans ombre.",
+"Scan it at 300 dpi (600 dpi for a larger print), or take a straight photo in good light, without shadows."
+],
+[
+"Chargez le fichier ici (PNG ou JPG) : le fond devient transparent et les marges sont coupées automatiquement.",
+"Upload the file here (PNG or JPG): the background becomes transparent and the margins are trimmed automatically."
+],
+[
+"Choisissez la largeur : regardez l’aperçu de la feuille et l’indicateur de qualité. Le timbre doit apparaître à peu près à sa taille réelle (mesurez-le avec une règle).",
+"Choose the width: look at the sheet preview and the quality indicator. The stamp should appear at about its real size (measure it with a ruler)."
+],
+[
+"Charger signature + timbre",
+"Upload signature + stamp"
+],
+[
+"Le timbre doit être celui de la société indiquée ci-dessous.",
+"The stamp must belong to the company named below."
+],
+[
+"Largeur sur la feuille",
+"Width on the sheet"
+],
+[
+"{0} cm — {1} ppp",
+"{0} cm — {1} dpi"
+],
+[
+"{0} ppp · image {1} px",
+"{0} dpi · image {1} px"
+],
+[
+"Nette à l’impression",
+"Sharp when printed"
+],
+[
+"Floue à l’impression",
+"Blurry when printed"
+],
+[
+"Pour un résultat plus net : scannez à 600 ppp, ou choisissez une largeur plus petite.",
+"For a sharper result: scan at 600 dpi, or choose a smaller width."
+],
+[
+"Scannez la feuille à 300 ou 600 ppp (ou une photo plus grande), ou choisissez une largeur plus petite.",
+"Scan the sheet at 300 or 600 dpi (or a bigger photo), or choose a smaller width."
+],
+[
+"Avec cette image, nette jusqu’à {0} cm de large.",
+"With this image, sharp up to {0} cm wide."
+],
+[
+"Rechargez l’image pour mesurer sa qualité.",
+"Upload the image again to measure its quality."
+],
+[
+"Comment faire ?",
+"How to do it?"
 ]
 ];

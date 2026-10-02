@@ -572,3 +572,11 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 /* Grilles (ex. Immeubles sur ordinateur) : une carte fermée garde la hauteur de son titre, sans grand vide blanc */
 .grid:has(> details.gfold) { align-items: start; }
 .grid > details.gfold:not([open]) { align-self: start; }
+
+/* Signature + timbre : aperçu sur une feuille A4 (1 px = 1 mm) */
+.sign-box { display: flex; flex-wrap: wrap; gap: 14px; align-items: flex-start; }
+.sign-a4 { position: relative; flex: none; width: 210px; height: 297px; background: #fff; border: 1px solid var(--border); box-shadow: var(--shadow); padding: 18px 16px; display: flex; flex-direction: column; gap: 7px; overflow: hidden; }
+.sign-a4 i { display: block; height: 5px; border-radius: 3px; background: #d9d6cf; }
+.sign-a4 img { display: block; height: auto; max-width: none; margin: 6px 0 2px; }
+.sign-a4 span { position: absolute; right: 6px; bottom: 4px; font-size: 10px; color: #999; }
+.sign-ctl { flex: 1 1 200px; min-width: 0; }
