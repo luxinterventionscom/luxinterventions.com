@@ -514,6 +514,18 @@ function menState(d) {
 }
 const menKey = () => 'espMen:' + id;
 const menVote = () => { try { return (JSON.parse(localStorage.getItem(menKey()) || '{}'))[today] || 0; } catch { return 0; } };
+// Annonces : une par emplacement ; s'il y en a plusieurs au même endroit, une autre à chaque ouverture de l'app
+let homeMap = false, pubTurn = 0;
+try { pubTurn = (+localStorage.getItem('espPubTurn') || 0) + 1; localStorage.setItem('espPubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
+const pickPub = (list) => (list.length ? list[pubTurn % list.length] : null);
+function adBox(x, t, d, top) {
+  const v = x.video ? videoEmbed(x.video) : null;
+  return `<div class="card pub-box${top ? ' pub-top' : ''}"><div class="meta">📣 ${esc(t.ad.cats[x.cat] || t.ad.cats.autre)}</div><b class="pub-name">${esc(x.nom)}</b>${x.texte ? `<div class="pub-txt">${esc(x.texte)}</div>` : ''}
+    ${v ? `<div class="vid${v.tall ? ' tall' : ''}" data-vsrc="${esc(v.src)}"></div>` : ''}<div class="meta" style="margin-top:6px">📍 ${esc(x.adresse)}</div>
+    <div class="pub-acts"><button class="btn sm" data-ad="${esc(x.id)}">${esc(t.ad.see)}</button>${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(x.web)}" target="_blank" rel="noopener">${esc(t.ad.web)}</a>` : ''}${x.video && !v ? `<a class="btn sm sec" href="${esc(x.video)}" target="_blank" rel="noopener">▶ Video</a>` : ''}${top && d.adresse ? `<button class="btn sm sec" data-home="1">${esc(t.ad.home)}</button>` : ''}</div></div>`;
+}
+// Barre des cours crypto (TradingView), servie par le Worker sur un autre domaine : elle ne voit rien de l'app
+const TICKER = `<div class="ticker" data-vsrc="${API}/ticker"></div>`;
 // Adresse pour Google Maps (on ajoute le pays s'il manque)
 const mapQ = (a) => (/luxemb|lëtzebuerg|deutschland|germany|france|belgi|portugal|espa|ital/i.test(a) ? a : a + ', Luxembourg');
 // État des lieux : photos d'entrée (déchiffrées à l'affichage) et photos de sortie choisies par le locataire
@@ -586,8 +598,12 @@ function render() {
   const pubs = s.pub ? (d.pubs || []).filter((x) => !x.fin || x.fin >= today) : [];
   const ad = pubs.find((x) => x.id === adSel);
   if (!ad) adSel = '';
-  if (ad) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>${esc((t.ad.cats[ad.cat] || t.ad.cats.autre).split(' ')[0])} ${esc(ad.nom)}</b><br><span class="meta">📍 ${esc(ad.adresse)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(ad.adresse))}"></div>
-    <div class="btn-row"><a class="btn" href="https://www.google.com/maps/dir/?api=1${d.adresse ? '&origin=' + encodeURIComponent(mapQ(d.adresse)) : ''}&destination=${encodeURIComponent(mapQ(ad.adresse))}" target="_blank" rel="noopener">${esc(t.ad.route)}</a>${d.adresse ? `<button class="btn sec" data-ad="">${esc(t.ad.home)}</button>` : ''}</div></div>`);
+  // trois emplacements payants : haut (à la place de la carte, à l'ouverture), milieu, bas (au-dessus de la barre crypto)
+  const slot = (k) => pickPub(pubs.filter((x) => (x.slot || 'milieu') === k));
+  const topAd = !ad && !homeMap ? slot('haut') : null;
+  if (topAd) out.push(adBox(topAd, t, d, true));
+  else if (ad) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>${esc((t.ad.cats[ad.cat] || t.ad.cats.autre).split(' ')[0])} ${esc(ad.nom)}</b><br><span class="meta">📍 ${esc(ad.adresse)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(ad.adresse))}"></div>
+    <div class="btn-row"><a class="btn" href="https://www.google.com/maps/dir/?api=1${d.adresse ? '&origin=' + encodeURIComponent(mapQ(d.adresse)) : ''}&destination=${encodeURIComponent(mapQ(ad.adresse))}" target="_blank" rel="noopener">${esc(t.ad.route)}</a>${d.adresse ? `<button class="btn sec" data-home="1">${esc(t.ad.home)}</button>` : ''}</div></div>`);
   else if (d.adresse) out.push(`<div class="card mapcard"><div id="mapBox" class="map" data-q="${esc(mapQ(d.adresse))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQ(d.adresse))}" target="_blank" rel="noopener">${esc(t.ed.map)}</a><p class="meta" style="margin:6px 0 0;text-align:center">${esc(t.ed.mapHint)}</p></div>`);
   if (d.bins && d.chat) out.push(`<div id="binBox">${binHtml()}</div>`);
   const mt = s.menage ? menState(d) : null;
@@ -627,6 +643,7 @@ function render() {
     const c = d.contrat;
     out.push(foldCard(`<div class="card"><h2>📄 ${esc(t.contrat)}</h2>${[[t.entry, fmt(c.debut)], [t.end, c.fin ? fmt(c.fin) : '—'], [t.rent, money(d.loyer)], [t.revision, c.revision ? fmt(c.revision) : ''], [t.caution, c.caution ? [money(c.caution), c.cautionDate ? t.recv + ' ' + fmt(c.cautionDate) : '', t.modes[c.cautionMode] || ''].filter(Boolean).join(' · ') + (proofOf('caution') ? ' ✓' : '') : '']].filter(([, v]) => v).map(([k, v]) => `<div class="row"><div class="grow meta">${esc(k)}</div><b>${esc(v)}</b></div>`).join('')}${(d.docs || []).filter((x) => x.dtype === 'bail').map((x) => `<button class="btn block" style="margin-top:10px" data-docdl="${esc(x.id)}">${esc(t.men.dl)}${x.date ? ' · ' + esc(fmt(x.date)) : ''}</button>`).join('')}</div>`, 'contrat', esc(t.rent + ' ' + money(d.loyer) + (c.fin ? ' · ' + t.end + ' ' + fmt(c.fin) : ''))));
   }
+  { const mid = slot('milieu'); if (mid) out.push(adBox(mid, t, d)); }
   if (s.docs && (d.docs || []).length) out.push(foldCard(`<div class="card"><h2>📁 ${esc(t.docs)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.dossierHint)}</p><div class="chips">${['bail', 'identite', 'cns', 'caution'].map((k) => { const x = proofOf(k); return x ? `<button class="chip ok" data-doc="${esc(x.id)}">✓ ${esc(t.dt[k])} 👁</button>` : `<button class="chip no"${s.signal && d.signalKey ? ' data-err="1"' : ''}>✗ ${esc(t.dt[k])}</button>`; }).join('')}</div>${d.docs.map((x) => `<div class="row"><div class="grow"><b>${esc(t.dt[x.dtype] || x.label)}</b><div class="meta">${esc(docSub(x))}</div></div><button class="btn sm sec" data-doc="${esc(x.id)}" aria-label="👁">👁</button></div>`).join('')}
     ${s.signal && d.signalKey ? `<button class="btn sec block" style="margin-top:10px" data-err="1">${esc(t.errBtn)}</button>` : ''}</div>`, 'docs', esc(['bail', 'identite', 'cns', 'caution'].map((k) => (proofOf(k) ? '✓ ' : '✗ ') + t.dt[k].split(' (')[0]).join(' · '))));
   if (d.chat) {
@@ -689,8 +706,6 @@ function render() {
       ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div></div></div>`).join('')}` : ''}</div>`, 'signal', (d.signals || []).length ? esc(t.mine + ' : ' + d.signals.length) : ''));
   }
   if (s.coll || s.signal) out.push(`<div class="card meta"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow blink"></span> ${esc(t.lights[1])} · <span class="light l-red blink"></span> ${esc(t.lights[2])}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</div>`);
-  if (pubs.length) out.push(`<div class="card" id="pubCard"><h2>📣 ${esc(t.ad.t)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.ad.hint)}</p>${pubs.map((x) => `<div class="pub${x.id === adSel ? ' on' : ''}"><button class="pub-main" data-ad="${esc(x.id)}" aria-pressed="${x.id === adSel}"><span class="meta">${esc(t.ad.cats[x.cat] || t.ad.cats.autre)}</span><b>${esc(x.nom)}</b>${x.texte ? `<span class="pub-txt">${esc(x.texte)}</span>` : ''}<span class="meta">📍 ${esc(x.adresse)}</span></button>${x.video && videoEmbed(x.video) ? `<div class="vid${videoEmbed(x.video).tall ? ' tall' : ''}" data-vsrc="${esc(videoEmbed(x.video).src)}"></div>` : ''}
-    <div class="pub-acts"><button class="btn sm${x.id === adSel ? '' : ' sec'}" data-ad="${esc(x.id)}">${esc(t.ad.see)}</button>${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(x.web)}" target="_blank" rel="noopener">${esc(t.ad.web)}</a>` : ''}${x.video && !videoEmbed(x.video) ? `<a class="btn sm sec" href="${esc(x.video)}" target="_blank" rel="noopener">▶ Video</a>` : ''}</div></div>`).join('')}</div>`);
   if (d.regles) {
     const lu = rulesDate(d);
     out.push(`<div class="card" id="rules"><details${lu ? '' : ' open'}><summary><h2 style="display:inline">📜 ${esc(t.hr.rulesT)}</h2>${lu ? ` <span class="meta">✓ ${esc(fmt(lu))}</span>` : ''}</summary>
@@ -701,11 +716,13 @@ function render() {
   out.push(notifCard(t));
   out.push(installCard(t));
   out.push(`<div class="card notice"><details><summary>🔒 ${esc(t.rgpdT)}</summary><p>${esc(t.rgpd(d.societe))}</p>${d.chat || d.regles ? `<p>${esc(t.hr.rgpd2)}</p>` : ''}</details><p style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
+  { const low = slot('bas'); if (low) out.push(adBox(low, t, d)); }
+  out.push(TICKER);
   const keepMap = document.querySelector('#mapBox iframe');
-  const keepVid = new Map([...document.querySelectorAll('.vid iframe')].map((f) => [f.dataset.src, f]));
+  const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');
   // lecteurs vidéo des annonces : gardés d'un affichage à l'autre (la vidéo ne recommence pas)
-  document.querySelectorAll('.vid[data-vsrc]').forEach((v) => {
+  document.querySelectorAll('.vid[data-vsrc], .ticker[data-vsrc]').forEach((v) => {
     const src = v.dataset.vsrc, old = keepVid.get(src);
     if (old) return v.append(old);
     const f = document.createElement('iframe');
@@ -800,7 +817,8 @@ app.addEventListener('click', async (e) => {
     return;
   }
   const adb = e.target.closest('[data-ad]');
-  if (adb) { adSel = adb.dataset.ad && adSel !== adb.dataset.ad ? adb.dataset.ad : ''; render(); scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  if (adb) { adSel = adb.dataset.ad; homeMap = false; render(); scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  if (e.target.closest('[data-home]')) { adSel = ''; homeMap = true; render(); scrollTo({ top: 0, behavior: 'smooth' }); return; }
   const ev = e.target.closest('[data-edl-view]');
   if (ev) {
     const ph = data.edl.find((x) => x.id === ev.dataset.edlView);

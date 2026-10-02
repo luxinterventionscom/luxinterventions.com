@@ -8043,5 +8043,33 @@ export default [
 [
 "Immeuble (locataires et équipe)",
 "Building (tenants and team)"
+],
+[
+"Emplacement",
+"Placement"
+],
+[
+"🔝 Haut — sous « Bonjour », visible à l’ouverture (prix élevé)",
+"🔝 Top — under “Hello”, visible on opening (high price)"
+],
+[
+"⏺ Milieu — au centre de l’app (prix moyen)",
+"⏺ Middle — in the middle of the app (medium price)"
+],
+[
+"🔽 Bas — en fin de page, au-dessus de la barre crypto (prix bas)",
+"🔽 Bottom — at the end of the page, above the crypto bar (low price)"
+],
+[
+"🔝 Haut",
+"🔝 Top"
+],
+[
+"⏺ Milieu",
+"⏺ Middle"
+],
+[
+"🔽 Bas",
+"🔽 Bottom"
 ]
 ];
