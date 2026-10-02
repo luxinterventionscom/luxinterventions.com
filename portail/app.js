@@ -5,7 +5,7 @@
 import { startI18n, LOCALES } from '/ares/i18n.js';
 import { videoEmbed } from '/ares/video-embed.js';
 
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -593,21 +593,24 @@ function guideCard(stats) {
 // ───────────────────────── Vues ─────────────────────────
 // Annonces des partenaires (publiées depuis l'app de gestion) : petit lecteur vidéo, itinéraire, appel, site
 const PUB_ICON = { resto: '🍕', bar: '🍺', horeca: '☕', bricolage: '🔨', meubles: '🛋️', courses: '🛒', services: '🧰', autre: '📌' };
-function pubsCard() {
-  const items = (state.cache.home && state.cache.home.pubs) || [];
-  if (!items.length) return '';
-  return html`<div class="section-label">📣 Bons plans de nos partenaires</div><div class="ptl-pubs">${items.map((a) => {
-    const v = videoEmbed(a.video);
-    return html`<div class="card ptl-pub"><b>${PUB_ICON[a.cat] || '📌'} ${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
-      <div class="small muted" style="margin-top:4px">📍 ${a.adresse}</div>
+let pubTurn = 0;
+try { pubTurn = (+localStorage.getItem('ptlPubTurn') || 0) + 1; localStorage.setItem('ptlPubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
+// une annonce par emplacement (haut sous « Bonjour », milieu, bas au-dessus de la barre crypto) ; plusieurs → une autre à chaque ouverture
+function pubSlot(k) {
+  const list = ((state.cache.home && state.cache.home.pubs) || []).filter((a) => (a.slot || 'milieu') === k);
+  if (!list.length) return '';
+  const a = list[pubTurn % list.length], v = videoEmbed(a.video);
+  return html`<div class="card ptl-pub" style="margin:12px 0"><div class="small muted">📣 ${PUB_ICON[a.cat] || '📌'}</div><b style="font-size:17px">${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
       ${v ? html`<div class="vid${v.tall ? ' tall' : ''}"><iframe src="${v.src}" loading="lazy" title="Vidéo" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
+      <div class="small muted" style="margin-top:6px">📍 ${a.adresse}</div>
       <div class="actions" style="margin-top:8px;flex-wrap:wrap">
         <a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener">🧭 Itinéraire</a>
         ${a.tel ? html`<a class="btn sm" href="tel:${a.tel.replace(/[^\d+]/g, '')}">📞 Appeler</a>` : ''}
         ${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener">🌐 Site web</a>` : ''}
         ${a.video && !v ? html`<a class="btn sm" href="${a.video}" target="_blank" rel="noopener">▶ Vidéo</a>` : ''}</div></div>`;
-  })}</div>`;
 }
+// barre des cours crypto (TradingView) : servie par le Worker sur un autre domaine, isolée du portail
+const tickerBar = () => html`<div class="ticker"><iframe src="${API.replace(/api\/portail\/$/, '')}ticker" title="Crypto" loading="lazy" referrerpolicy="no-referrer" scrolling="no"></iframe></div>`;
 
 const VIEWS = {
   home() {
@@ -623,6 +626,7 @@ const VIEWS = {
       return html`${pushCard}
         ${guideCard(stats)}
         ${pageHead(hello, 'Espace équipe LuxInterventions')}
+        ${pubSlot('haut')}
         ${orgFilter()}
         <div class="metrics">
           <div class="metric"><div class="lbl">À traiter</div><div class="val ${recue.length ? 'red' : 'green'}">${recue.length}</div><div class="sub">nouvelles demandes</div></div>
@@ -630,15 +634,17 @@ const VIEWS = {
           <div class="metric"><div class="lbl">En cours</div><div class="val">${stats.open || 0}</div><div class="sub">${planToday.length} planifiée(s) aujourd'hui</div></div>
           <div class="metric"><div class="lbl">Délai de prise en charge</div><div class="val">${duration(stats.avgTakeMs)}</div><div class="sub">urgences : ${duration(stats.avgTakeUrgentMs)} · 90 jours</div></div>
         </div>
+        ${pubSlot('milieu')}
         <div class="section-label">À traiter maintenant</div>
         ${recue.length ? html`<div class="list">${recue.map(ticketRow)}</div>` : html`<div class="alert" style="background:var(--green-soft);color:var(--green)">${icon('check')}<div>Aucune nouvelle demande en attente.</div></div>`}
         <div class="section-label">En cours</div>
         ${others.length ? html`<div class="list">${others.map(ticketRow)}</div>` : html`<p class="muted small">Aucune intervention en cours.</p>`}
-        ${pubsCard()}`;
+        ${pubSlot('bas')}${tickerBar()}`;
     }
     return html`${pushCard}
       ${guideCard(stats)}
       ${pageHead(hello, state.me.org_name || '')}
+      ${pubSlot('haut')}
       <button class="big-cta" data-action="new-ticket">${icon('plus')}<span><b>Nouvelle demande d'intervention</b><small>Urgence, photos, accès — en 30 secondes</small></span></button>
       <div class="metrics" style="margin-top:14px">
         <div class="metric"><div class="lbl">En cours</div><div class="val">${stats.open || 0}</div><div class="sub">${stats.urgent ? html`<span class="red">${stats.urgent} urgente(s)</span>` : 'demandes ouvertes'}</div></div>
@@ -646,9 +652,10 @@ const VIEWS = {
         <div class="metric"><div class="lbl">Prise en charge</div><div class="val">${duration(stats.avgTakeMs)}</div><div class="sub">délai moyen</div></div>
         <div class="metric"><div class="lbl">Résidences</div><div class="val">${stats.residences || 0}</div><div class="sub">${stats.apartments ? stats.apartments + ' appartements' : ''}</div></div>
       </div>
+      ${pubSlot('milieu')}
       <div class="section-label">Mes demandes en cours</div>
       ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande</button>`)}
-      ${pubsCard()}`;
+      ${pubSlot('bas')}${tickerBar()}`;
   },
 
   demandes() {

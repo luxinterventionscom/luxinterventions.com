@@ -8227,5 +8227,33 @@ export default [
 [
 "Immeuble (locataires et équipe)",
 "Edificio (inquilinos y equipo)"
+],
+[
+"Emplacement",
+"Ubicación"
+],
+[
+"🔝 Haut — sous « Bonjour », visible à l’ouverture (prix élevé)",
+"🔝 Arriba — bajo « Hola », visible al abrir (precio alto)"
+],
+[
+"⏺ Milieu — au centre de l’app (prix moyen)",
+"⏺ Centro — en medio de la app (precio medio)"
+],
+[
+"🔽 Bas — en fin de page, au-dessus de la barre crypto (prix bas)",
+"🔽 Abajo — al final de la página, encima de la barra cripto (precio bajo)"
+],
+[
+"🔝 Haut",
+"🔝 Arriba"
+],
+[
+"⏺ Milieu",
+"⏺ Centro"
+],
+[
+"🔽 Bas",
+"🔽 Abajo"
 ]
 ];

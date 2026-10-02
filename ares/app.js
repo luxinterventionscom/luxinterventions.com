@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.44.1';
+const VERSION = '2.45.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 const vault = new Vault(API);
@@ -553,8 +553,11 @@ const PUB_TTL = [7, 14, 30, 60, 90, 180, 365];
 const isPub = (a) => a.kind === 'pub';
 // À qui s'adresse l'annonce : locataires (par défaut), équipe, portail gérance
 const PUB_AUD = { loc: '🏠 Locataires', eq: '👷 Équipe', ptl: '🏢 Portail gérance' };
+// Trois emplacements payants dans les apps (locataires, équipe, portail) — du plus cher au moins cher
+const PUB_SLOTS = { haut: '🔝 Haut — sous « Bonjour », visible à l’ouverture (prix élevé)', milieu: '⏺ Milieu — au centre de l’app (prix moyen)', bas: '🔽 Bas — en fin de page, au-dessus de la barre crypto (prix bas)' };
+const pubSlot = (a) => (PUB_SLOTS[a.slot] ? a.slot : 'milieu');
 const pubAud = (a) => (Array.isArray(a.aud) && a.aud.length ? a.aud : ['loc']);
-const pubOut = (a) => ({ id: a.id, cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '' });
+const pubOut = (a) => ({ id: a.id, slot: pubSlot(a), cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '' });
 const pubsActives = (immId, aud = 'loc') => vault.list('avis').filter((a) => isPub(a) && pubAud(a).includes(aud) && (aud === 'ptl' || !immId || !a.immId || (Array.isArray(immId) ? immId.includes(a.immId) : a.immId === immId)) && (!a.debut || a.debut <= today()) && (!a.fin || a.fin >= today()));
 const avisActifs = (immId) => vault.list('avis').filter((a) => !isPub(a) && (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
   .sort((a, b) => (a.debut || '').localeCompare(b.debut || ''));
@@ -2166,7 +2169,7 @@ const VIEWS = {
       const left = (a) => { if (!a.fin) return 'sans fin'; const n = Math.round((new Date(a.fin + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 864e5); return a.debut > today() ? `à partir du ${fmtDate(a.debut)}` : n <= 0 ? 'dernier jour' : `encore ${plural(n, 'jour')}`; };
       const row = (a) => html`<button class="row" data-action="edit-pub" data-id="${a.id}"><span class="grow"><span class="title" style="display:block;white-space:normal">${(PUB_CATS[a.cat] || PUB_CATS.autre).split(' ')[0]} <b>${a.nom}</b></span>
         <span class="meta" style="display:block;white-space:normal">📍 ${a.adresse}${a.texte ? ' · ' + a.texte.slice(0, 90) : ''}${a.video ? ' · ▶ ' + (videoEmbed(a.video) ? videoEmbed(a.video).name : 'vidéo') : ''}</span>
-        <span class="meta" style="display:block">${pubAud(a).map((k) => html`<span>${PUB_AUD[k]}</span>`).reduce((x, y) => html`${x} · ${y}`)}</span>
+        <span class="meta" style="display:block"><b>${PUB_SLOTS[pubSlot(a)].split(' — ')[0]}</b> · ${pubAud(a).map((k) => html`<span>${PUB_AUD[k]}</span>`).reduce((x, y) => html`${x} · ${y}`)}</span>
         <span class="meta"><span>${a.immId ? immName(a.immId) : 'Tous les immeubles'}</span>${a.fin ? html` · <span>${fmtDate(a.debut)} → ${fmtDate(a.fin)}</span>` : ''}</span></span>
         <span class="badge ${a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
       body = html`<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
@@ -3129,6 +3132,7 @@ const SHEETS = {
         ${field('Site web', 'web', a.web, { type: 'url', placeholder: 'https://…' })}
         ${field('Vidéo (lien YouTube, TikTok, Instagram, Facebook, Vimeo)', 'video', a.video, { full: true, type: 'url', placeholder: 'https://www.youtube.com/watch?v=… · https://www.tiktok.com/@…/video/…' })}
         <p class="tiny muted full" style="margin:0">Collez le lien de la vidéo : elle s’affiche dans l’annonce comme un petit écran, le locataire la regarde sans quitter l’app.${a.video ? (videoEmbed(a.video) ? ` ✓ ${videoEmbed(a.video).name} reconnu.` : ' ⚠ Lien non reconnu : il s’affiche comme un bouton (copiez le lien complet de la vidéo, pas un lien raccourci).') : ''}</p>
+        <label class="field full">Emplacement<select name="slot">${Object.entries(PUB_SLOTS).map(([k, v]) => html`<option value="${k}" ${(a.slot ? pubSlot(a) : 'haut') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <div class="field full">Visible pour<div class="chips" style="margin-top:6px">${Object.entries(PUB_AUD).map(([k, v]) => html`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="aud_${k}" ${pubAud(a).includes(k) ? new Raw('checked') : ''} style="width:18px;min-height:18px;margin:0">${v}</label>`)}</div></div>
         <label class="field full">Immeuble (locataires et équipe)<select name="immId"><option value="">Tous les immeubles</option>${imms.map((im) => html`<option value="${im.id}" ${im.id === a.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         ${field('Publier à partir du', 'debut', exp ? today() : a.debut, { type: 'date', required: true })}
@@ -4679,7 +4683,7 @@ const FORMS = {
     const id = fd.get('id');
     const ttl = PUB_TTL.includes(+fd.get('ttl')) ? +fd.get('ttl') : 30;
     const debut = fd.get('debut') || today();
-    const rec = { kind: 'pub', cat: PUB_CATS[fd.get('cat')] ? fd.get('cat') : 'autre', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), texte: fd.get('texte').trim(), tel: fd.get('tel').trim(), web: /^https?:\/\//.test(fd.get('web').trim()) ? fd.get('web').trim() : '', video: /^https?:\/\//.test(String(fd.get('video') || '').trim()) ? String(fd.get('video')).trim().slice(0, 500) : '', aud: Object.keys(PUB_AUD).filter((k) => fd.get('aud_' + k)), immId: fd.get('immId') || '', debut, ttl, fin: addDays(debut, ttl - 1) };
+    const rec = { kind: 'pub', cat: PUB_CATS[fd.get('cat')] ? fd.get('cat') : 'autre', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), texte: fd.get('texte').trim(), tel: fd.get('tel').trim(), web: /^https?:\/\//.test(fd.get('web').trim()) ? fd.get('web').trim() : '', video: /^https?:\/\//.test(String(fd.get('video') || '').trim()) ? String(fd.get('video')).trim().slice(0, 500) : '', aud: Object.keys(PUB_AUD).filter((k) => fd.get('aud_' + k)), slot: PUB_SLOTS[fd.get('slot')] ? fd.get('slot') : 'haut', immId: fd.get('immId') || '', debut, ttl, fin: addDays(debut, ttl - 1) };
     if (!rec.nom || !rec.adresse) return;
     if (!rec.aud.length) rec.aud = ['loc'];
     if (id) rec.id = id;

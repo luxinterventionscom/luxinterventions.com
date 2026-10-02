@@ -58,6 +58,10 @@ export default {
       return new Response(null, { headers });
     }
 
+    // ── Barre des cours crypto (TradingView) pour le bas des apps : servie ici, sur un autre domaine que le site,
+    // pour que le script de TradingView ne puisse rien lire des apps (données chiffrées, clés) ──
+    if (url.pathname === "/ticker" && request.method === "GET") return tickerPage();
+
     // ── Archivio cifrato Ares (gestion locataires) ──
     if (url.pathname.startsWith("/api/ares/")) {
       return handleAres(request, env, url, headers);
@@ -702,7 +706,7 @@ async function handleAres(request, env, url, headers) {
     const s = (v, n) => String(v || "").slice(0, n);
     const url = (v) => (/^https?:\/\//.test(String(v || "")) ? s(v, 500) : "");
     const items = (b && Array.isArray(b.items) ? b.items : []).slice(0, 50).map((a) => ({
-      id: s(a.id, 40), cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
+      id: s(a.id, 40), slot: ["haut", "milieu", "bas"].includes(a.slot) ? a.slot : "milieu", cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
       tel: s(a.tel, 40), web: url(a.web), video: url(a.video), fin: /^\d{4}-\d{2}-\d{2}$/.test(a.fin || "") ? a.fin : "",
     })).filter((a) => a.nom);
     await env.PHOTOS.put(ARES_PUBS, JSON.stringify({ items, at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
@@ -985,6 +989,20 @@ async function ptlNotify(env, where, binds, message, urgent) {
       if (r.status === 404 || r.status === 410) await env.DB.prepare("DELETE FROM push_subs WHERE endpoint = ?").bind(s.endpoint).run();
     } catch { /* un abbonamento difettoso non blocca gli altri */ }
   }));
+}
+
+const TICKER_SYMBOLS = "BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,BINANCE:USDTUSD,BINANCE:BNBUSD,BINANCE:SOLUSD,BITSTAMP:XRPUSD,BINANCE:USDCUSD,BINANCE:ADAUSD,BINANCE:AVAXUSD,BINANCE:DOGEUSD,BINANCE:TRXUSD,BINANCE:DOTUSD,BINANCE:LINKUSD,BINANCE:SUIUSD,BINANCE:NEARUSD,BINANCE:LTCUSD,BINANCE:BCHUSD,BINANCE:PEPEUSD,BINANCE:UNIUSD,BINANCE:APTUSD";
+function tickerPage() {
+  const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ticker</title>
+<style>html,body{margin:0;padding:0;background:transparent;overflow:hidden}</style>
+<script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"></script></head>
+<body><tv-ticker-tape symbols="${TICKER_SYMBOLS}"></tv-ticker-tape></body></html>`;
+  return new Response(page, { headers: {
+    "Content-Type": "text/html; charset=utf-8",
+    "Cache-Control": "public, max-age=3600",
+    "Content-Security-Policy": "default-src 'none'; script-src https://widgets.tradingview-widget.com https://*.tradingview.com; style-src 'unsafe-inline' https:; img-src https: data:; font-src https: data:; connect-src https: wss:; frame-src https://*.tradingview.com https://*.tradingview-widget.com; frame-ancestors https://luxinterventions.com https://www.luxinterventions.com http://localhost:8787",
+    "Referrer-Policy": "no-referrer",
+  } });
 }
 
 // ── Notifications des apps locataires / équipe / gestion : seulement « il y a du nouveau » ──

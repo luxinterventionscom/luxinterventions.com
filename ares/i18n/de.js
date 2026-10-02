@@ -8227,5 +8227,33 @@ export default [
 [
 "Immeuble (locataires et équipe)",
 "Gebäude (Mieter und Team)"
+],
+[
+"Emplacement",
+"Platzierung"
+],
+[
+"🔝 Haut — sous « Bonjour », visible à l’ouverture (prix élevé)",
+"🔝 Oben — unter „Hallo“, beim Öffnen sichtbar (hoher Preis)"
+],
+[
+"⏺ Milieu — au centre de l’app (prix moyen)",
+"⏺ Mitte — in der Mitte der App (mittlerer Preis)"
+],
+[
+"🔽 Bas — en fin de page, au-dessus de la barre crypto (prix bas)",
+"🔽 Unten — am Seitenende, über der Krypto-Leiste (niedriger Preis)"
+],
+[
+"🔝 Haut",
+"🔝 Oben"
+],
+[
+"⏺ Milieu",
+"⏺ Mitte"
+],
+[
+"🔽 Bas",
+"🔽 Unten"
 ]
 ];
