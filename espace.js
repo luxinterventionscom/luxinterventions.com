@@ -3,6 +3,7 @@
 import qrcode from '/ares/qrcode.js';
 import { openJson, sealJson, openBytes, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
 
+import { videoEmbed } from '/ares/video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 // Accès : lien direct (#id.clé) ou code personnel saisi une fois ; mémorisé sur ce téléphone
@@ -676,8 +677,8 @@ function render() {
       ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div></div></div>`).join('')}` : ''}</div>`, 'signal', (d.signals || []).length ? esc(t.mine + ' : ' + d.signals.length) : ''));
   }
   if (s.coll || s.signal) out.push(`<div class="card meta"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow"></span> ${esc(t.lights[1])} · <span class="light l-red"></span> ${esc(t.lights[2])}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</div>`);
-  if (pubs.length) out.push(`<div class="card" id="pubCard"><h2>📣 ${esc(t.ad.t)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.ad.hint)}</p>${pubs.map((x) => `<div class="pub${x.id === adSel ? ' on' : ''}"><button class="pub-main" data-ad="${esc(x.id)}" aria-pressed="${x.id === adSel}"><span class="meta">${esc(t.ad.cats[x.cat] || t.ad.cats.autre)}</span><b>${esc(x.nom)}</b>${x.texte ? `<span class="pub-txt">${esc(x.texte)}</span>` : ''}<span class="meta">📍 ${esc(x.adresse)}</span></button>
-    <div class="pub-acts"><button class="btn sm${x.id === adSel ? '' : ' sec'}" data-ad="${esc(x.id)}">${esc(t.ad.see)}</button>${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(x.web)}" target="_blank" rel="noopener">${esc(t.ad.web)}</a>` : ''}</div></div>`).join('')}</div>`);
+  if (pubs.length) out.push(`<div class="card" id="pubCard"><h2>📣 ${esc(t.ad.t)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.ad.hint)}</p>${pubs.map((x) => `<div class="pub${x.id === adSel ? ' on' : ''}"><button class="pub-main" data-ad="${esc(x.id)}" aria-pressed="${x.id === adSel}"><span class="meta">${esc(t.ad.cats[x.cat] || t.ad.cats.autre)}</span><b>${esc(x.nom)}</b>${x.texte ? `<span class="pub-txt">${esc(x.texte)}</span>` : ''}<span class="meta">📍 ${esc(x.adresse)}</span></button>${x.video && videoEmbed(x.video) ? `<div class="vid${videoEmbed(x.video).tall ? ' tall' : ''}" data-vsrc="${esc(videoEmbed(x.video).src)}"></div>` : ''}
+    <div class="pub-acts"><button class="btn sm${x.id === adSel ? '' : ' sec'}" data-ad="${esc(x.id)}">${esc(t.ad.see)}</button>${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(x.web)}" target="_blank" rel="noopener">${esc(t.ad.web)}</a>` : ''}${x.video && !videoEmbed(x.video) ? `<a class="btn sm sec" href="${esc(x.video)}" target="_blank" rel="noopener">▶ Video</a>` : ''}</div></div>`).join('')}</div>`);
   if (d.regles) {
     const lu = rulesDate(d);
     out.push(`<div class="card" id="rules"><details${lu ? '' : ' open'}><summary><h2 style="display:inline">📜 ${esc(t.hr.rulesT)}</h2>${lu ? ` <span class="meta">✓ ${esc(fmt(lu))}</span>` : ''}</summary>
@@ -689,7 +690,17 @@ function render() {
   out.push(installCard(t));
   out.push(`<div class="card notice"><details><summary>🔒 ${esc(t.rgpdT)}</summary><p>${esc(t.rgpd(d.societe))}</p>${d.chat || d.regles ? `<p>${esc(t.hr.rgpd2)}</p>` : ''}</details><p style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
   const keepMap = document.querySelector('#mapBox iframe');
+  const keepVid = new Map([...document.querySelectorAll('.vid iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');
+  // lecteurs vidéo des annonces : gardés d'un affichage à l'autre (la vidéo ne recommence pas)
+  document.querySelectorAll('.vid[data-vsrc]').forEach((v) => {
+    const src = v.dataset.vsrc, old = keepVid.get(src);
+    if (old) return v.append(old);
+    const f = document.createElement('iframe');
+    f.src = src; f.dataset.src = src; f.loading = 'lazy'; f.title = 'Video';
+    f.allow = 'encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true; f.referrerPolicy = 'strict-origin-when-cross-origin';
+    v.append(f);
+  });
   const mb = document.getElementById('mapBox');
   if (mb) {
     const src = `https://maps.google.com/maps?q=${encodeURIComponent(mb.dataset.q)}&hl=${lang}&z=16&output=embed`;

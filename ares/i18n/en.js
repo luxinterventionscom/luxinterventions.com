@@ -8007,5 +8007,29 @@ export default [
 [
 "Comment faire ?",
 "How to do it?"
+],
+[
+"Vidéo (lien YouTube, TikTok, Instagram, Facebook, Vimeo)",
+"Video (YouTube, TikTok, Instagram, Facebook, Vimeo link)"
+],
+[
+"Collez le lien de la vidéo : elle s’affiche dans l’annonce comme un petit écran, le locataire la regarde sans quitter l’app.",
+"Paste the video link: it shows in the ad as a small screen, the tenant watches it without leaving the app."
+],
+[
+"{0} reconnu.",
+"{0} recognised."
+],
+[
+"Lien non reconnu : il s’affiche comme un bouton (copiez le lien complet de la vidéo, pas un lien raccourci).",
+"Link not recognised: it shows as a button (copy the full video link, not a short link)."
+],
+[
+"Annonce publiée — lien vidéo non reconnu : il s’affiche comme un bouton",
+"Ad published — video link not recognised: it shows as a button"
+],
+[
+"vidéo",
+"video"
 ]
 ];

@@ -8203,5 +8203,29 @@ export default [
 [
 "Comment faire ?",
 "Come fare?"
+],
+[
+"Vidéo (lien YouTube, TikTok, Instagram, Facebook, Vimeo)",
+"Video (link YouTube, TikTok, Instagram, Facebook, Vimeo)"
+],
+[
+"Collez le lien de la vidéo : elle s’affiche dans l’annonce comme un petit écran, le locataire la regarde sans quitter l’app.",
+"Incollate il link del video: appare nell’annuncio come un piccolo schermo, l’inquilino lo guarda senza uscire dall’app."
+],
+[
+"{0} reconnu.",
+"{0} riconosciuto."
+],
+[
+"Lien non reconnu : il s’affiche comme un bouton (copiez le lien complet de la vidéo, pas un lien raccourci).",
+"Link non riconosciuto: appare come un pulsante (copiate il link completo del video, non un link abbreviato)."
+],
+[
+"Annonce publiée — lien vidéo non reconnu : il s’affiche comme un bouton",
+"Annuncio pubblicato — link video non riconosciuto: appare come un pulsante"
+],
+[
+"vidéo",
+"video"
 ]
 ];
