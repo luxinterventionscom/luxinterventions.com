@@ -270,7 +270,7 @@ function setBusy(btn, busy, label) {
 const lockEl = $('#lock');
 const appEl = $('#app');
 const brandHead = () => html`
-  <img class="lock-logo" src="/android-chrome-192x192.png" alt="LuxInterventions" width="88" height="88">
+  <img class="lock-banner" src="/portail/icons/ptl-banner.webp" alt="Terre · Eau · Feu · Air — LuxInterventions" width="1100" height="283">
   <div class="lock-head"><h1>Portail Gérance</h1><p>LuxInterventions · Interventions techniques 7j/7</p></div>
   ${langMini()}`;
 // écran d'accès : initiales seules « FR | DE | EN … »
@@ -444,14 +444,14 @@ function renderShell() {
   const nb = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span><i class="navbadge" data-badge="${id}" hidden></i></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="/android-chrome-192x192.png" alt="" width="36" height="36"><span>LuxInterventions<small>${isAdmin() ? 'Espace équipe' : state.me.org_name || 'Portail gérance'}</small></span></div>
+      <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span>LuxInterventions<small>${isAdmin() ? 'Espace équipe' : state.me.org_name || 'Portail gérance'}</small></span></div>
       ${navItems().map(nb)}
       <div class="spacer"></div>
       <button class="navbtn" data-action="logout">${icon('logout')}<span>Déconnexion</span></button>
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="/android-chrome-192x192.png" alt="" width="36" height="36"><span>${isAdmin() ? 'LuxInterventions' : state.me.org_name || 'Portail'}</span></div>
+        <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span>${isAdmin() ? 'LuxInterventions' : state.me.org_name || 'Portail'}</span></div>
         <button class="btn sm primary" data-action="new-ticket">${icon('plus')} <span class="hide-xs">Nouvelle demande</span></button>
       </header>
       ${state.demo ? html`<div class="demo-bar">${icon('eye')}<span class="grow"><b>Mode démo</b> — données d’exemple, rien n’est enregistré.</span>

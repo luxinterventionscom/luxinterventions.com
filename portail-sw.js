@@ -1,6 +1,6 @@
 // Service worker du portail : application disponible hors ligne + notifications push.
-const CACHE = 'portail-shell-v1.14.0';
-const SHELL = ['/portail.html', '/portail/app.js', '/portail/demo.js', '/portail/portail.css', '/ares/app.css', '/ares/i18n.js', '/ares/video-embed.js', '/ares/pubstat.js', '/ares/ptl-invite.js', '/portail/i18n/de.js', '/portail/i18n/en.js', '/portail/i18n/pt.js', '/portail/i18n/es.js', '/portail/i18n/it.js', '/portail.webmanifest', '/android-chrome-192x192.png', '/favicon-32x32.png', '/apple-touch-icon.png'];
+const CACHE = 'portail-shell-v1.15.0';
+const SHELL = ['/portail.html', '/portail/app.js', '/portail/demo.js', '/portail/portail.css', '/ares/app.css', '/ares/i18n.js', '/ares/video-embed.js', '/ares/pubstat.js', '/ares/ptl-invite.js', '/portail/i18n/de.js', '/portail/i18n/en.js', '/portail/i18n/pt.js', '/portail/i18n/es.js', '/portail/i18n/it.js', '/portail.webmanifest', '/portail/icons/ptl-192.png', '/portail/icons/ptl-180.png', '/portail/icons/ptl-32.png', '/portail/icons/ptl-banner.webp', '/favicon-32x32.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -77,7 +77,7 @@ self.addEventListener('push', (e) => {
     body: d.body || '',
     tag: d.tag,
     renotify: !!d.tag,
-    icon: '/android-chrome-192x192.png',
+    icon: '/portail/icons/ptl-192.png',
     badge: '/favicon-32x32.png',
     data: { url: d.url || '/portail.html' },
     requireInteraction: /URGENT/.test(d0.title || ''),
