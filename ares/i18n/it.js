@@ -8423,5 +8423,45 @@ export default [
 [
 "Aucune personne dans l’équipe.",
 "Nessuna persona nella squadra."
+],
+[
+"Réclamations",
+"Lamentele"
+],
+[
+"À faire + travaux",
+"Da fare + lavori"
+],
+[
+"Ce que les locataires signalent depuis leur app (pannes, défauts, propreté, avertissements…) et les travaux à faire dans les logements et les parties communes.",
+"Ciò che gli inquilini segnalano dalla loro app (guasti, difetti, pulizia, avvertimenti…) e i lavori da fare negli alloggi e nelle parti comuni."
+],
+[
+"Commentaires des locataires",
+"Commenti degli inquilini"
+],
+[
+"⏰ À l’heure",
+"⏰ In orario"
+],
+[
+"⏰ En retard",
+"⏰ In ritardo"
+],
+[
+"😊 Aimable",
+"😊 Gentile"
+],
+[
+"😠 Désagréable",
+"😠 Scortese"
+],
+[
+"✨ Bien nettoyé",
+"✨ Pulito bene"
+],
+[
+"🧹 Oublis / mal nettoyé",
+"🧹 Dimenticanze / pulito male"
 ]
 ];

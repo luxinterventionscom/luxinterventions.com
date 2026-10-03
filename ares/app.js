@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.53.0';
+const VERSION = '2.54.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -344,6 +344,7 @@ async function publishPub(immId, loud) {
 // elle renvoie « commencé / fini / pas fini » avec note et photos, ses coordonnées, ses arrêts maladie.
 const eqUrl = (i) => `${location.origin}/equipe.html#${i.espace.id}.${i.espace.key}`;
 const eqAppUrl = () => `${location.origin}/equipe.html`;
+const MEN_TAGS = { ok: '⏰ À l’heure', late: '⏰ En retard', nice: '😊 Aimable', rude: '😠 Désagréable', clean: '✨ Bien nettoyé', dirty: '🧹 Oublis / mal nettoyé' };
 const MEN_EVAL = { 1: '😞 Insuffisant', 2: '😐 Suffisant', 3: '🙂 Bien', 4: '⭐ Excellent' };
 const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini' };
 // Dernier état donné par l'équipe pour une intervention un jour donné
@@ -1106,9 +1107,14 @@ async function inboxSync() {
         const w = vault.get('intervenants', String(msg.w || ''));
         const v = Math.round(+msg.v), d = /^\d{4}-\d{2}-\d{2}$/.test(msg.d || '') ? msg.d : today();
         if (w && v >= 1 && v <= 4) {
+          // cases rapides (à l'heure, aimable…) + commentaire libre, s'il y en a
+          const tags = (Array.isArray(msg.tags) ? msg.tags : []).filter((k) => MEN_TAGS[k]).slice(0, 6);
+          const note = String(msg.note || '').trim().slice(0, 500);
+          const prevE = (w.evals || []).find((e) => e.locId === l.id && e.d === d);
           const evals = (w.evals || []).filter((e) => !(e.locId === l.id && e.d === d));
-          evals.push({ d, v, locId: l.id, at: String(msg.t || new Date().toISOString()).slice(0, 30) });
-          const feed = [...(w.feed || []), { at: String(msg.t || new Date().toISOString()).slice(0, 30), k: 'eval', note: `${MEN_EVAL[v]} — avis de ${fullName(l)} (${fmtDate(d)})` }];
+          evals.push({ d, v, locId: l.id, at: String(msg.t || new Date().toISOString()).slice(0, 30), ...(tags.length || note ? { tags, note } : prevE && (prevE.tags || prevE.note) ? { tags: prevE.tags || [], note: prevE.note || '' } : {}) });
+          const extra = [tags.map((k) => MEN_TAGS[k]).join(' · '), note ? `« ${note} »` : ''].filter(Boolean).join(' — ');
+          const feed = [...(w.feed || []), { at: String(msg.t || new Date().toISOString()).slice(0, 30), k: 'eval', note: `${MEN_EVAL[v]} — avis de ${fullName(l)} (${fmtDate(d)})${extra ? ' — ' + extra : ''}` }];
           await vault.mutate((tx) => tx.put('intervenants', { id: w.id, evals: evals.slice(-300), feed: feed.slice(-200), feedNew: (w.feedNew || 0) + 1 }), 'Avis sur le ménage', `${intervFull(w)} — ${MEN_EVAL[v]}`, w.id);
           n++;
         }
@@ -2245,7 +2251,7 @@ const VIEWS = {
     const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button>`
       : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
       : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
-    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', `Travaux (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['pub', '📣 Publicité'], ['intervenants', 'Équipe']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
+    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', html`<span>Réclamations</span> (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['pub', '📣 Publicité'], ['intervenants', 'Équipe']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
     let body;
     if (tab === 'planning') {
       const from = today(), to = addDays(from, 13);
@@ -2262,10 +2268,11 @@ const VIEWS = {
       const done = all.filter((t) => !t.recur && t.statut === 'fait').sort((a, b) => (b.doneDate || '').localeCompare(a.doneDate || '')).slice(0, 30);
       const list = (arr) => html`<div class="list" style="margin-bottom:14px">${arr.map(tacheRow)}</div>`;
       body = all.length ? html`
-        <div class="section-label">À faire (${open.length})</div>${open.length ? list(open) : html`<p class="muted small">Rien à faire. 👍</p>`}
+        <div class="section-label"><span>À faire + travaux</span> (${open.length})</div>${open.length ? list(open) : html`<p class="muted small">Rien à faire. 👍</p>`}
         ${recur.length ? html`<div class="section-label">Récurrentes (${recur.length})</div>${list(recur)}` : ''}
         ${done.length ? html`<div class="section-label">Terminées récemment</div>${list(done)}` : ''}${mtLegend()}`
         : empty('tool', 'Aucune intervention.', html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Nouvelle intervention</button>`);
+      body = html`<p class="small muted" style="margin:0 0 10px">Ce que les locataires signalent depuis leur app (pannes, défauts, propreté, avertissements…) et les travaux à faire dans les logements et les parties communes.</p>${body}`;
     } else if (tab === 'avis') {
       const all = vault.list('avis').filter((a) => !isPub(a) && (!f || !a.immId || a.immId === f)).sort((a, b) => (b.debut || '').localeCompare(a.debut || ''));
       const actifs = all.filter((a) => !a.fin || a.fin >= today()), passes = all.filter((a) => a.fin && a.fin < today()).slice(0, 10);
@@ -3106,6 +3113,7 @@ const SHEETS = {
           ${i.mail ? kvRow('Email', html`<a href="mailto:${i.mail}">${i.mail}</a>`) : ''}
           ${i.rcs ? kvRow('RCS', i.rcs) : ''}${i.tva ? kvRow('N° TVA', i.tva) : ''}
         </dl>
+        ${(() => { const cm = (i.evals || []).filter((e) => (e.tags || []).length || e.note).slice(-8).reverse(); return cm.length ? html`<div class="section-label">Commentaires des locataires</div><div class="list small">${cm.map((e) => html`<div class="row"><span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDate(e.d)} · ${(vault.get('locataires', e.locId) && fullName(vault.get('locataires', e.locId))) || '—'}</span><b>${MEN_EVAL[e.v] || ''}</b>${(e.tags || []).map((k) => html` · <span>${MEN_TAGS[k] || k}</span>`)}${e.note ? html`<span style="display:block">« ${e.note} »</span>` : ''}</span></div>`)}</div>` : ''; })()}
         ${i.note ? html`<p class="small" style="white-space:pre-wrap">${i.note}</p>` : ''}
         ${tasks.length ? html`<div class="section-label">Interventions en cours</div><div class="list small">${tasks.map((t) => html`<button class="row" data-action="edit-tache" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.titre}</span><span class="meta">${placeName(t)} · ${t.recur ? 'récurrent' : fmtDate(t.date)}</span></span></button>`)}</div>` : ''}`;
     } else if (tab === 'heures') {
