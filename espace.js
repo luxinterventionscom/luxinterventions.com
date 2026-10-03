@@ -671,9 +671,9 @@ function render() {
     if (soon.length) out.push(`<div class="card avis men vis-soon">${soon.map((v) => visLine(v, t, true)).join('')}</div>`);
     const menToday = vis.find((v) => v.m === 'menage' && v.d === today && !v.off);
     const mv = menVote();
-    mtCard = `<div class="card" id="mtCard"><h2>🛠️ ${esc(t.mt.t)}</h2>${vis.length ? vis.map((v) => visLine(v, t)).join('') : `<p class="meta" style="margin:0">${esc(t.mt.none)}</p>`}
+    mtCard = `${vis.length ? vis.map((v) => visLine(v, t)).join('') : `<p class="meta" style="margin:0">${esc(t.mt.none)}</p>`}
       ${menToday ? `<div class="men-rate"><p style="margin:0 0 6px"><b>🧹 ${esc(t.mt.rate)}</b> — <span class="meta">${esc(t.men.q)}</span></p><div class="men-opts" role="radiogroup" aria-label="${esc(t.men.crit)}">${t.men.opts.map((o, i) => `<button role="radio" aria-checked="${mv === i + 1}" data-men="${i + 1}" data-w="${esc(menToday.w)}">${esc(o)}</button>`).join('')}</div>
-      ${mv ? `<p class="ok" style="margin:8px 0 0"><b>✓ ${esc(t.men.thanks)}</b></p>` : ''}</div>` : ''}</div>`;
+      ${mv ? `<p class="ok" style="margin:8px 0 0"><b>✓ ${esc(t.men.thanks)}</b></p>` : ''}</div>` : ''}`;
   }
   const mt = s.menage && !vis ? menState(d) : null;
   if (mt && mt.c !== 'green') out.push(`<div class="card avis men men-${mt.c}"><h2><span class="light l-${mt.c} blink"></span> 🧹 ${esc(mt.c === 'red' ? (mt.when === 'today' ? t.men.noToday : t.men.noTomorrow) : t.men.tomorrow)}${mt.nom && mt.c !== 'red' ? ' (' + esc(mt.nom) + ')' : ''}</h2>${mt.c === 'red' ? `<p class="meta" style="margin:0">${esc(t.men.noWhy)}</p>` : mt.de ? `<p style="margin:0"><b>${esc(t.men.at)} ${esc(mt.de)}</b>${mt.a ? ` – ${esc(mt.a)}` : ''}</p>` : ''}</div>`);
@@ -758,7 +758,9 @@ function render() {
         <label class="chk"><input type="checkbox" name="ok" required> <span>${esc(tl.ok)} <a href="/outils.html#regles" target="_blank" rel="noopener">${esc(tl.rulesLink)}</a></span></label>
         <button class="btn block" type="submit" style="margin-top:12px">${esc(tl.send)}</button></form></details></div>`, 'tools', myTools && myTools.length ? esc(tl.mine + ' : ' + myTools.length) : ''));
   }
-  if (mtCard) out.push(mtCard);
+  // la carte « Maintenance » est complétée plus bas (signaler un problème + légende), à cette place
+  const mtAt = out.length;
+  out.push('');
   if (s.coll && (d.coll || []).length) {
     const ev = [];
     for (const it of d.coll) for (const dd of it.dates || []) { const p = it.sortie === 'jour' ? dd : addDays(dd, -1); if (p >= today) ev.push({ it, dd, p }); }
@@ -783,17 +785,20 @@ function render() {
           <div class="edl-btns"><label class="btn sm">${esc(ed.cam)}<input type="file" accept="image/*" capture="environment" hidden data-edl-pick="${r}"></label><label class="btn sm sec">${esc(ed.gal)}<input type="file" accept="image/*" hidden data-edl-pick="${r}"></label></div></figure>`).join('')}</div>
         <button class="btn block" style="margin-top:12px" data-edl-send="1"${Object.keys(edlPick).length ? '' : ' disabled'}>${esc(ed.send)} (${Object.keys(edlPick).length})</button></details>` : ''}</div>`, 'edl', esc(`${(d.edl || []).length} / 6${done ? ' · 🚪 ' + done + ' / 6' : ''}`)));
   }
+  let sigHtml = '';
   if (s.signal && d.signalKey) {
-    out.push(foldCard(`<div class="card"><h2>🛠️ ${esc(t.signal)}</h2>${sentOk ? `<p class="ok" style="margin:0 0 8px"><b>${esc(t.sent)}</b></p>` : ''}
+    const sum = (d.signals || []).length ? ` <span class="sum">${esc(t.mine + ' : ' + d.signals.length)}</span>` : '';
+    sigHtml = `<details class="more mt-sec" data-fold="signal"${openFolds.has('signal') || sentOk ? ' open' : ''}><summary><b>🛠️ ${esc(t.signal)}</b>${sum}</summary>${sentOk ? `<p class="ok" style="margin:0 0 8px"><b>${esc(t.sent)}</b></p>` : ''}
       <form id="sig"><label>${esc(t.type)}</label><select name="type">${Object.entries(t.types).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select>
       <label>${esc(t.what)}</label><textarea name="texte" required maxlength="3000" placeholder="${esc(t.whatPh)}"></textarea>
       <label>${esc(t.photos)}</label><input type="file" name="photos" accept="image/*" multiple>
       <label>${esc(t.tel)}</label><input type="tel" name="tel" maxlength="30">
       <label>${esc(t.dispo)}</label><input type="text" name="dispo" maxlength="200">
       <button class="btn block" style="margin-top:12px" type="submit">${esc(t.send)}</button></form>
-      ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div></div></div>`).join('')}` : ''}</div>`, 'signal', (d.signals || []).length ? esc(t.mine + ' : ' + d.signals.length) : ''));
+      ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div></div></div>`).join('')}` : ''}</details>`;
   }
-  if (s.coll || s.signal) out.push(`<div class="card meta"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow"></span> ${esc(t.lights[1])} · <span class="light l-red"></span> ${esc(t.lights[2])}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</div>`);
+  const legHtml = s.coll || s.signal ? `<p class="meta mt-leg"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow"></span> ${esc(t.lights[1])} · <span class="light l-red"></span> ${esc(t.lights[2])}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</p>` : '';
+  if (mtCard || sigHtml || legHtml) out[mtAt] = `<div class="card" id="mtCard"><h2>🛠️ ${esc(t.mt.t)}</h2>${mtCard}${sigHtml}${legHtml}</div>`;
   if (d.regles) {
     const lu = rulesDate(d);
     out.push(`<div class="card" id="rules"><details${lu ? '' : ' open'}><summary><h2 style="display:inline">📜 ${esc(t.hr.rulesT)}</h2>${lu ? ` <span class="meta">✓ ${esc(fmt(lu))}</span>` : ''}</summary>
