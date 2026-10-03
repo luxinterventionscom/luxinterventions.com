@@ -81,6 +81,10 @@
   .pub-box { border: 1.5px solid #fca5a5; animation: pubglow 2.6s ease-in-out infinite; }
   @keyframes pubglow { 0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); border-color: #fecaca; } 50% { box-shadow: 0 0 0 5px rgba(220, 38, 38, .16); border-color: #f87171; } }
   @media (prefers-reduced-motion: reduce) { .pub-box { animation: none; border-color: #f87171; } }
+  details.pub-box > summary { list-style: none; cursor: pointer; padding-right: 26px; position: relative; }
+  details.pub-box > summary::-webkit-details-marker { display: none; }
+  details.pub-box > summary::after { content: "›"; position: absolute; right: 2px; top: 4px; font-size: 24px; color: var(--muted); transition: transform .25s; }
+  details.pub-box[open] > summary::after { transform: rotate(90deg); }
   .pub-lbl { color: #dc2626; text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
   .ticker { position: relative; height: 78px; border-radius: 10px; overflow: hidden; background: #fff; }
   .ticker iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
