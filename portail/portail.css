@@ -4,11 +4,18 @@
   --accent-soft: rgba(232, 114, 58, 0.12);
   --accent-text: #ffffff;
   --navy: #1b2e4b;
+  /* fond orange pâle, avec une lueur de « lever de soleil » en haut (couleur du Portail) */
+  --bg: #fdf3ea;
+  --surface-2: #fbeadb;
+  --border: #f0dcc8;
+  --glow: radial-gradient(900px 420px at 85% -120px, rgba(232, 114, 58, 0.20), transparent 70%), radial-gradient(700px 360px at -10% -80px, rgba(251, 191, 36, 0.16), transparent 70%);
 }
+:root[data-theme='dark'] { --glow: none; }
+body { background: var(--glow, none), var(--bg); background-attachment: fixed; }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) { --accent: #f08a55; --accent-soft: rgba(240, 138, 85, 0.16); --accent-text: #111; }
+  :root:not([data-theme='light']) { --accent: #f08a55; --accent-soft: rgba(240, 138, 85, 0.16); --accent-text: #111; --glow: none; }
 }
-.lock { background: radial-gradient(1200px 500px at 50% -10%, rgba(27, 46, 75, 0.18), transparent 70%), var(--bg); }
+.lock { background: var(--glow, none), radial-gradient(1200px 500px at 50% -10%, rgba(232, 114, 58, 0.14), transparent 70%), var(--bg); }
 .lock-logo { width: 88px; height: 88px; border-radius: 22px; display: block; margin: -6px auto 4px; box-shadow: 0 6px 24px rgba(15, 27, 45, 0.25); }
 .brand-mark { width: 36px; height: 36px; border-radius: 10px; flex: none; }
 .navbtn { position: relative; }
