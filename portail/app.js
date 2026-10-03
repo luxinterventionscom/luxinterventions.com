@@ -280,8 +280,7 @@ const brandHead = () => html`
   <div class="lock-head"><h1>Portail Gérance</h1><p>LuxInterventions · Interventions techniques 7j/7</p></div>
   ${langMini()}`;
 // écran d'accès : initiales seules « FR | DE | EN … »
-const langMini = () => html`<div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${Object.keys(PTL_LANGS).map((k, i) => html`${i ? html`<span class="lm-sep" aria-hidden="true">|</span>` : ''}<button type="button" data-action="set-lang" data-id="${k}" title="${PTL_LANGS[k]}" aria-pressed="${LANG === k}">${k.toUpperCase()}</button>`)}</div>`;
-const langChips = () => html`<div class="chips ptl-lang" data-notr="1" role="group" aria-label="Langue">${Object.entries(PTL_LANGS).map(([k, l]) => html`<button class="chip" type="button" data-action="set-lang" data-id="${k}" aria-pressed="${LANG === k}">${l}</button>`)}</div>`;
+const langMini = () => html`<div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => html`<button type="button" data-action="set-lang" data-id="${k}" title="${PTL_LANGS[k]}" aria-pressed="${LANG === k}">${k.toUpperCase()}</button>`)}</div>`;
 const pwField = (name, placeholder, autocomplete) => html`<div class="pw-wrap">
   <input type="password" name="${name}" placeholder="${placeholder}" autocomplete="${autocomplete}" required autocapitalize="off" autocorrect="off" spellcheck="false">
   <button class="btn icon" type="button" data-action="toggle-pw" aria-label="Afficher">${icon('eye')}</button></div>`;
@@ -839,8 +838,8 @@ const VIEWS = {
         ${isAdmin() ? html`<label class="field" style="flex:1;min-width:160px">Gérance<select name="org"><option value="">Toutes</option>${(state.cache.orgs || []).map((o) => html`<option value="${o.id}">${o.name}</option>`)}</select></label>` : ''}
         <button class="btn primary" type="submit">${icon('download')} Rapport mensuel</button>
       </form>
-      <div class="section-label" data-notr="1">Langue · Sprache · Language · Lingua · Língua · Idioma</div>
-      ${langChips()}
+      <div class="section-label">Langue</div>
+      <div style="text-align:left">${langMini()}</div>
       <div class="section-label">Compte</div>
       <div class="list settings">
         <button class="row" data-action="change-password">${icon('key')}<span class="grow title">Changer mon mot de passe</span></button>

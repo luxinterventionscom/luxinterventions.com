@@ -293,7 +293,7 @@ addEventListener('message', (e) => {
 function render() {
   const t = T();
   document.documentElement.lang = lang;
-  const langs = `<div class="langs">${Object.keys(L).map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
+  const langs = `<div class="langs">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
   const top = (name, logo) => `<div class="top"><span class="brandx"><img class="top-logo" src="${esc(logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(name)}</b></span>${langs}</div>`;
   if (!data) {
     app.innerHTML = `${top('NOBIS s.a.r.l.')}
