@@ -1173,8 +1173,8 @@ export default [
 "Documenti: tutto quello che aggiungi in Docs è visibile nella sua app (con anteprima), così verifica che avete ricevuto i suoi documenti e i suoi pagamenti"
 ],
 [
-"Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.",
-"Documenti: tutto quello che aggiungi in Docs è visibile nella sua app (con anteprima), così verifica che avete ricevuto i suoi documenti e i suoi pagamenti — tocca « 👁 Visible » per renderlo privato. I suoi messaggi e le foto arrivano sulla Home (📩) e in Maintenance → Travaux."
+"Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.",
+"Documenti: tutto quello che aggiungi in Docs è visibile nella sua app (con anteprima), così verifica che avete ricevuto i suoi documenti e i suoi pagamenti — tocca « 👁 Visible » per renderlo privato. I suoi messaggi e le foto arrivano sulla Home (📩) e in Manutenzione → Lamentele."
 ],
 [
 "Don",
@@ -4445,8 +4445,8 @@ export default [
 "tocca per vedere chi fa cosa, dove e quando"
 ],
 [
-"touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.",
-"tocca « 👁 Visible » per renderlo privato. I suoi messaggi e le foto arrivano sulla Home (📩) e in Maintenance → Travaux."
+"touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.",
+"tocca « 👁 Visible » per renderlo privato. I suoi messaggi e le foto arrivano sulla Home (📩) e in Manutenzione → Lamentele."
 ],
 [
 "tour de {0}",
@@ -8463,5 +8463,9 @@ export default [
 [
 "🧹 Oublis / mal nettoyé",
 "🧹 Dimenticanze / pulito male"
+],
+[
+"Pas affichés chez ce locataire",
+"Non mostrati a questo inquilino"
 ]
 ];
