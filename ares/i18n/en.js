@@ -8271,5 +8271,41 @@ export default [
 [
 "Pas affichés chez ce locataire",
 "Not shown to this tenant"
+],
+[
+"Valable jusqu’au (facultatif)",
+"Valid until (optional)"
+],
+[
+"Après cette date, le code disparaît de l’app de l’occupant (il voit le compte à rebours avant). Vide = sans fin.",
+"After this date the code disappears from the occupant’s app (they see the countdown before). Empty = no end."
+],
+[
+"Désactivé",
+"Disabled"
+],
+[
+"Expiré le",
+"Expired on"
+],
+[
+"Actif",
+"Active"
+],
+[
+"▶️ Réactiver le code",
+"▶️ Re-enable the code"
+],
+[
+"⏸️ Désactiver le code",
+"⏸️ Disable the code"
+],
+[
+"Code désactivé : il n’apparaît plus chez l’occupant",
+"Code disabled: no longer shown to the occupant"
+],
+[
+"Code réactivé",
+"Code re-enabled"
 ]
 ];

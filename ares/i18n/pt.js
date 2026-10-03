@@ -8423,5 +8423,41 @@ export default [
 [
 "Pas affichés chez ce locataire",
 "Não mostrados a este inquilino"
+],
+[
+"Valable jusqu’au (facultatif)",
+"Válido até (opcional)"
+],
+[
+"Après cette date, le code disparaît de l’app de l’occupant (il voit le compte à rebours avant). Vide = sans fin.",
+"Depois desta data o código desaparece da app do ocupante (antes vê a contagem decrescente). Vazio = sem fim."
+],
+[
+"Désactivé",
+"Desativado"
+],
+[
+"Expiré le",
+"Expirado em"
+],
+[
+"Actif",
+"Ativo"
+],
+[
+"▶️ Réactiver le code",
+"▶️ Reativar o código"
+],
+[
+"⏸️ Désactiver le code",
+"⏸️ Desativar o código"
+],
+[
+"Code désactivé : il n’apparaît plus chez l’occupant",
+"Código desativado: já não aparece ao ocupante"
+],
+[
+"Code réactivé",
+"Código reativado"
 ]
 ];
