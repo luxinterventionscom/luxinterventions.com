@@ -5,10 +5,11 @@ import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { videoEmbed } from './video-embed.js';
+import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.59.0';
+const VERSION = '2.60.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -59,6 +60,7 @@ const ICONS = {
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
   trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3a3 3 0 0 1-3 4M7 5H4a3 3 0 0 0 3 4"/>',
+  briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18M10 13v2h4v-2"/>',
   tool: '<path d="M14.7 6.3a4 4 0 0 0 5 5l-8.5 8.5a2.1 2.1 0 0 1-3-3l8.5-8.5z"/><path d="M14.7 6.3 17 4a4 4 0 0 1 3 3l-2.3 2.3"/>',
 };
 const icon = (n) => new Raw(`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`);
@@ -1343,6 +1345,72 @@ const fraisOfMonth = (y, m) => sum(vault.list('frais').filter((f) => (!f.debut |
 const monthsElapsed = (y) => { const d = new Date(); return y < d.getFullYear() ? 12 : y > d.getFullYear() ? 0 : d.getMonth() + 1; };
 const fraisOfYear = (y) => { let t = 0; for (let m = 1; m <= monthsElapsed(y); m++) t += fraisOfMonth(y, m); return t; };
 const societe = () => vault.get('reglages', 'main') || {};
+
+// ───────────────────────── Branche « gérances » : le Portail gérance piloté depuis l'app de gestion ─────────────────────────
+// Les gérances (sociétés externes) utilisent le Portail gérance ; ici, LuxInterventions les crée, invite leurs responsables,
+// gère leurs résidences et peut les supprimer. La session du portail (compte LuxInterventions) est gardée dans le coffre chiffré.
+const PTL_API = API.replace(/\/$/, '') + '/api/portail/';
+const PTL_ROLES = { gerance_admin: 'Responsable', gerance_user: 'Collaborateur' };
+const ptlConf = () => { const c = vault.get('reglages', 'portail'); return c && c.token ? c : null; };
+class PtlError extends Error { constructor(status, message) { super(message); this.status = status; } }
+async function ptlApi(path, opts = {}) {
+  const c = ptlConf();
+  const headers = {};
+  if (c && !opts.anon) headers.Authorization = 'Bearer ' + c.token;
+  if (opts.body) headers['Content-Type'] = 'application/json';
+  let r;
+  try { r = await fetch(PTL_API + path, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined, cache: 'no-store' }); } catch { throw new PtlError(0, 'Pas de connexion internet'); }
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401 && c && !opts.anon) {
+    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token: '' }), 'Portail gérance : session expirée', c.email || '');
+    ui.ptl.data = null;
+    throw new PtlError(401, 'Session du portail expirée : reconnectez-vous.');
+  }
+  if (!r.ok) throw new PtlError(r.status, j.error || 'Erreur ' + r.status);
+  return j;
+}
+async function ptlLoad() {
+  if (ui.ptl.loading || !ptlConf()) return;
+  ui.ptl.loading = true; ui.ptl.err = '';
+  try {
+    const [o, u, r] = await Promise.all([ptlApi('orgs'), ptlApi('users'), ptlApi('residences')]);
+    ui.ptl.data = { orgs: o.orgs || [], users: u.users || [], residences: r.residences || [], at: Date.now() };
+  } catch (e) { ui.ptl.err = e.message; }
+  ui.ptl.loading = false;
+  if (ui.route === 'gerances') renderView();
+  const typing = sheetEl.contains(document.activeElement) && document.activeElement.matches('input, textarea, select') && document.activeElement.value;
+  if (ui.sheet && ui.sheet.kind.startsWith('ger') && !typing) { ui.sheet.rendered = false; renderSheet(); }
+}
+const ptlOrg = (id) => ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => o.id === id);
+const ptlInviteUrl = (tok) => `${location.origin}/portail.html#invite=${tok}`;
+// mot de passe → clé dérivée sur l'appareil (comme dans le portail) : le serveur ne voit jamais le mot de passe
+async function ptlDerive(password, saltB64, iter) {
+  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password.normalize('NFC')), 'PBKDF2', false, ['deriveBits']);
+  const salt = Uint8Array.from(atob(saltB64), (c) => c.charCodeAt(0));
+  return [...new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, base, 256))].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+// Petite boîte de saisie (texte) : renvoie la valeur ou null
+function promptText(title, detail, placeholder) {
+  const dlg = $('#confirm');
+  setHtml(dlg, html`
+    <form class="sheet-body stack" method="dialog">
+      <h2 style="font-size:18px">${title}</h2>
+      ${detail ? html`<p class="muted small">${detail}</p>` : ''}
+      <input name="t" autocomplete="off" required placeholder="${placeholder || ''}">
+      <div class="sheet-foot" style="padding:0;border:0;margin-top:16px">
+        <button class="btn" value="no" type="button">Annuler</button>
+        <button class="btn danger solid" type="submit">Confirmer</button>
+      </div>
+    </form>`);
+  return new Promise((resolve) => {
+    const f = dlg.querySelector('form');
+    dlg.querySelector('button[value=no]').onclick = () => { dlg.close(); resolve(null); };
+    f.onsubmit = (e) => { e.preventDefault(); const v = f.t.value; dlg.close(); resolve(v); };
+    dlg.onclose = () => resolve(null);
+    dlg.showModal();
+    f.t.focus();
+  });
+}
 // Pays et taux de TVA (modifiables dans Réglages → Société) — aide à la comptabilité, pas un conseil fiscal
 const PAYS = { LU: ['Luxembourg', [17, 14, 8, 3]], FR: ['France', [20, 10, 5.5, 2.1]], BE: ['Belgique', [21, 12, 6]], DE: ['Deutschland', [19, 7]], IT: ['Italia', [22, 10, 5, 4]], PT: ['Portugal', [23, 13, 6]], ES: ['España', [21, 10, 4]], NL: ['Nederland', [21, 9]], AT: ['Österreich', [20, 13, 10]], CH: ['Suisse', [8.1, 3.8, 2.6]] };
 const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '').split(/[;, ]+/).map((x) => parseFloat(x.replace(',', '.'))).filter((x) => x > 0 && x < 100); return own.length ? own : (PAYS[s0.pays || 'LU'] || PAYS.LU)[1]; };
@@ -1404,11 +1472,13 @@ const ui = {
   immSeg: 'actuels',
   histShown: 20,
   sheet: null, // { kind, id, tab }
+  ptl: { data: null, loading: false, err: '', inv: {} }, // branche gérances (Portail gérance)
 };
 
 const NAV = [
   ['dashboard', 'Accueil', 'home'],
   ['immeubles', 'Immeubles', 'building'],
+  ['gerances', 'Gérances', 'briefcase'],
   ['locataires', 'Locataires', 'users'],
   ['paiements', 'Paiements', 'wallet'],
   ['maintenance', 'Maintenance', 'tool'],
@@ -2493,7 +2563,7 @@ dashboard() {
     const anciens = ui.immSeg === 'anciens' && nGone > 0;
     const imms = every.filter((im) => immGone(im) === anciens);
     return html`
-      ${pageHead('Immeubles', `${plural(every.length - nGone, 'immeuble')} en gestion${nGone ? ' · ' + nGone + ' archivé' + (nGone > 1 ? 's' : '') : ''}`, html`<button class="btn primary desk-only" data-action="new-imm">${icon('plus')} Ajouter</button>`)}
+      ${pageHead('Immeubles', `${plural(every.length - nGone, 'immeuble')} en gestion${nGone ? ' · ' + nGone + ' archivé' + (nGone > 1 ? 's' : '') : ''}`, html`<div class="actions" style="margin:0"><button class="btn" data-action="go" data-to="gerances">${icon('briefcase')} Gérances</button><button class="btn primary desk-only" data-action="new-imm">${icon('plus')} Ajouter</button></div>`)}
       ${nGone ? html`<div class="tabs" role="tablist" style="max-width:380px">
         <button class="tab" role="tab" aria-selected="${!anciens}" data-action="imm-seg" data-id="actuels">En gestion</button>
         <button class="tab" role="tab" aria-selected="${anciens}" data-action="imm-seg" data-id="anciens">Plus en gestion (${nGone})</button>
@@ -2523,6 +2593,52 @@ dashboard() {
           </div>
         </div>`;
       })}</div>` : empty('building', 'Aucun immeuble enregistré.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Ajouter un immeuble</button>`)}`;
+  },
+
+  gerances() {
+    const c = ptlConf();
+    const portal = html`<a class="btn sm" href="/portail.html" target="_blank" rel="noopener">${icon('eye')} Ouvrir le portail</a>`;
+    if (!c) {
+      return html`${pageHead('Gérances', 'Le Portail gérance, piloté d’ici')}
+        <div class="card" style="max-width:560px">
+          <p style="margin-top:0">Les <b>gérances</b> sont les sociétés externes qui vous confient leurs réparations. Elles utilisent leur app, le <b>Portail gérance</b> : demandes avec photos, suivi, chat, photos avant / après, satisfaction, statistiques.</p>
+          <p class="small">Ici vous créez les gérances, invitez leurs responsables, gérez leurs résidences et pouvez les supprimer — comme pour l’app de l’équipe.</p>
+          <div class="alert info" style="margin:12px 0">${icon('shield')}<div>Connectez une seule fois cette app au portail avec votre <b>compte LuxInterventions du portail</b>. Le mot de passe ne quitte pas l’appareil ; la session est gardée dans vos données chiffrées.</div></div>
+          ${ui.ptl.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${ui.ptl.err}</div></div>` : ''}
+          <form data-form="ptl-login" class="fields">
+            <label class="field full">Email du compte LuxInterventions<input type="email" name="email" autocomplete="username" required value="${ui.ptl.email || (vault.get('reglages', 'portail') || {}).email || ''}"></label>
+            <label class="field full">Mot de passe du portail<input type="password" name="pass" autocomplete="current-password" required></label>
+            <button class="btn primary full" type="submit">${icon('key')} Connecter au portail</button>
+          </form>
+          <p class="tiny muted" style="margin-bottom:0"><span>Pas encore de compte ? Ouvrez le portail : la « Première configuration » crée le compte LuxInterventions.</span> ${portal}</p>
+        </div>`;
+    }
+    const d = ui.ptl.data;
+    if (!d && !ui.ptl.loading && !ui.ptl.err) setTimeout(ptlLoad, 0);
+    const head = pageHead('Gérances', d ? `${plural(d.orgs.length, 'gérance')} · Portail gérance` : 'Portail gérance', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Ajouter</button>`);
+    const foot = html`<p class="tiny muted" style="margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">Connecté au portail : <b>${c.email || ''}</b> ${portal}
+      <button class="btn sm ghost" data-action="ger-reload">${icon('sync')} Actualiser</button><button class="btn sm ghost danger" data-action="ptl-logout">Déconnecter</button></p>`;
+    if (!d) return html`${head}${ui.ptl.err ? html`<div class="alert warn">${icon('alert')}<div>${ui.ptl.err} <button class="btn sm" data-action="ger-reload">Réessayer</button></div></div>` : html`<p class="muted">Chargement…</p>`}${foot}`;
+    return html`${head}
+      ${d.orgs.length ? html`<div class="grid cols-auto">${d.orgs.map((o) => {
+        const us = d.users.filter((u) => u.org_id === o.id);
+        const wait = us.filter((u) => u.active && !u.has_password).length;
+        return html`<div class="card">
+          <div class="card-title"><h3>🏢 ${o.name}</h3><button class="btn icon ghost sm" data-action="ger-edit" data-id="${o.id}" aria-label="Modifier">${icon('edit')}</button></div>
+          <dl class="kv small">
+            <dt>Accès</dt><dd>${us.filter((u) => u.active).length}${wait ? html` · <span class="amber">${wait} invitation(s) en attente</span>` : ''}</dd>
+            <dt>Résidences</dt><dd>${o.residences || 0}</dd>
+            <dt>Demandes en cours</dt><dd class="${o.open ? 'accent' : ''}">${o.open || 0}</dd>
+            ${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}
+            ${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}
+          </dl>
+          <div class="actions" style="margin:14px 0 0">
+            <button class="btn sm primary" data-action="ger-open" data-id="${o.id}">${icon('users')} Accès</button>
+            <button class="btn sm" data-action="ger-open" data-id="${o.id}" data-tab="res">${icon('building')} Résidences</button>
+          </div>
+        </div>`;
+      })}</div>` : empty('briefcase', 'Aucune gérance pour l’instant.', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Ajouter une gérance</button>`)}
+      ${foot}`;
   },
 
   locataires() {
@@ -2777,6 +2893,7 @@ dashboard() {
         <button class="row" data-action="go" data-to="champions"><span class="avatar">🏆</span><span class="grow"><span class="title" style="display:block">Locataire de l’année</span><span class="meta">Classement des tours des poubelles · podium · pizza 🍕</span></span></button>
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
         <button class="row" data-action="go" data-to="maintenance">${icon('tool')}<span class="grow title">Maintenance — nettoyage, réparations, déchets</span></button>
+        <button class="row" data-action="go" data-to="gerances">${icon('briefcase')}<span class="grow"><span class="title" style="display:block">Gérances — Portail gérance</span><span class="meta">Gérances externes : accès, résidences, demandes d’intervention</span></span></button>
         <button class="row" data-action="go" data-to="compta">${icon('chart')}<span class="grow title">Comptabilité — journal, TVA, statistiques, export</span></button>
       </div>
 
@@ -3034,6 +3151,88 @@ function relanceText(l, lang) {
 }
 
 const SHEETS = {
+  'ger-form'({ id }) {
+    const o = id ? ptlOrg(id) : {};
+    if (id && !o) return null;
+    return {
+      title: id ? 'Modifier la gérance' : 'Nouvelle gérance',
+      narrow: true,
+      body: html`<form id="gerForm" data-form="ger" class="fields">
+        <input type="hidden" name="id" value="${id || ''}">
+        <label class="field full">Nom de la gérance<input name="name" required value="${o.name || ''}" placeholder="ex. Gérance du Centre S.A."></label>
+        <label class="field">Email<input type="email" name="email" value="${o.email || ''}"></label>
+        <label class="field">Téléphone<input type="tel" name="phone" value="${o.phone || ''}"></label>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="gerForm">${id ? 'Enregistrer' : 'Créer la gérance'}</button>`,
+    };
+  },
+  ger({ id, tab }) {
+    const d = ui.ptl.data, o = ptlOrg(id);
+    if (!d || !o) return null;
+    tab = tab || 'acces';
+    const tabs = html`<div class="tabs" role="tablist" style="margin-bottom:12px">
+      <button class="tab" role="tab" aria-selected="${tab === 'acces'}" data-action="ger-open" data-id="${id}" data-tab="acces">${icon('users')} Accès</button>
+      <button class="tab" role="tab" aria-selected="${tab === 'res'}" data-action="ger-open" data-id="${id}" data-tab="res">${icon('building')} Résidences</button></div>`;
+    let body;
+    if (tab === 'res') {
+      const rs = d.residences.filter((r) => r.org_id === id);
+      body = html`${rs.length ? html`<div class="list" style="margin-bottom:14px">${rs.map((r) => html`<div class="row"><span class="avatar">🏠</span>
+          <span class="grow"><span class="title" style="display:block">${r.name}</span><span class="meta" style="white-space:normal">${r.address || ''}${r.apartments ? html` · <span>${r.apartments} appartements</span>` : ''}${r.open ? html` · <span>${r.open} demande(s) en cours</span>` : ''}</span></span>
+          <button class="btn sm ghost danger" data-action="ger-res-off" data-id="${r.id}" data-org="${id}">Retirer</button></div>`)}</div>` : html`<p class="muted small">Aucune résidence. La gérance peut aussi les ajouter elle-même dans son portail.</p>`}
+        <div class="section-label">Ajouter une résidence</div>
+        <form data-form="ger-res" class="fields">
+          <input type="hidden" name="org" value="${id}">
+          <label class="field full">Nom de la résidence<input name="name" required placeholder="ex. Résidence Les Tilleuls"></label>
+          <label class="field full">Adresse<input name="address" required placeholder="rue, n°, code postal, localité"></label>
+          <label class="field">Appartements<input type="number" name="apartments" min="0" inputmode="numeric"></label>
+          <label class="field">Contact sur place<input name="contact_name" placeholder="concierge…"></label>
+          <button class="btn primary full" type="submit">${icon('plus')} Ajouter la résidence</button>
+        </form>`;
+    } else {
+      const us = d.users.filter((u) => u.org_id === id);
+      body = html`${us.length ? html`<div class="list" style="margin-bottom:14px">${us.map((u) => html`<div class="row">
+          <span class="avatar">${(u.name || '?').split(/\s+/).map((x) => x[0]).join('').slice(0, 2).toUpperCase()}</span>
+          <span class="grow"><span class="title" style="display:block">${u.name} <span class="badge">${PTL_ROLES[u.role] || u.role}</span></span>
+            <span class="meta" style="white-space:normal">${u.email}${!u.active ? html` · <span>désactivé</span>` : !u.has_password ? html` · <span>invitation envoyée, pas encore ouverte</span>` : u.last_login ? html` · <span>dernière connexion</span> ${fmtDateTime(u.last_login)}` : ''}</span></span>
+          ${u.active ? html`<button class="btn sm" data-action="ger-inv" data-id="${u.id}" data-org="${id}">🔗 ${u.has_password ? 'Nouveau lien' : 'Lien d’invitation'}</button>` : ''}
+          <button class="btn sm ghost ${u.active ? 'danger' : ''}" data-action="ger-user-toggle" data-id="${u.id}" data-org="${id}" data-on="${u.active ? 1 : 0}">${u.active ? 'Désactiver' : 'Réactiver'}</button></div>`)}</div>` : html`<p class="muted small">Personne n’a encore accès. Ajoutez le responsable de la gérance : il reçoit un lien personnel et choisit son mot de passe.</p>`}
+        <div class="section-label">Donner l’accès à une personne</div>
+        <form data-form="ger-user" class="fields">
+          <input type="hidden" name="org" value="${id}">
+          <label class="field">Prénom et nom<input name="name" required></label>
+          <label class="field">Email<input type="email" name="email" required></label>
+          <label class="field">Téléphone (WhatsApp)<input type="tel" name="phone" placeholder="+352…"></label>
+          <label class="field">Rôle<select name="role"><option value="gerance_admin">Responsable (peut inviter des collègues)</option><option value="gerance_user">Collaborateur (fait et suit les demandes)</option></select></label>
+          <button class="btn primary full" type="submit">${icon('plus')} Créer l’accès et le lien</button>
+        </form>`;
+    }
+    return {
+      title: '🏢 ' + o.name,
+      body: html`${tabs}${body}`,
+      foot: html`<button class="btn ghost danger" data-action="ger-del" data-id="${id}">${icon('trash')} Supprimer la gérance</button><button class="btn primary" data-action="close-sheet">Fermer</button>`,
+    };
+  },
+  'ger-invite'({ id, preset }) {
+    const d = ui.ptl.data, u = d && d.users.find((x) => x.id === id), link = ui.ptl.inv[id];
+    if (!u || !link) return null;
+    const lang = preset && preset.lang || 'fr';
+    const t = PTL_INVITE[lang] || PTL_INVITE.fr, msg = t.text(u.name.split(' ')[0], link), enc = encodeURIComponent(msg);
+    const tel = (u.phone || '').replace(/[^\d+]/g, '').replace(/^00/, '+');
+    return {
+      title: 'Invitation au Portail gérance',
+      narrow: true,
+      body: html`<p style="margin-top:0">Lien personnel pour <b>${u.name}</b> (${u.email}) : il/elle ouvre le lien et choisit son mot de passe. <b>Valable 14 jours</b>, une seule fois.</p>
+        <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(link, 5)}</div>
+        <div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => html`<button type="button" data-action="ger-inv-lang" data-id="${id}" data-l="${k}" aria-pressed="${lang === k}">${k.toUpperCase()}</button>`)}</div>
+        <p class="tiny muted" style="margin:0 0 10px">Langue du message d’invitation.</p>
+        <div class="actions" style="flex-direction:column">
+          ${tel ? html`<a class="btn" href="https://wa.me/${tel.replace(/^\+/, '')}?text=${enc}" target="_blank" rel="noopener">${icon('msg')} Envoyer par WhatsApp</a><a class="btn" href="sms:${tel}?&body=${enc}">${icon('msg')} Envoyer par SMS</a>` : ''}
+          <a class="btn" href="mailto:${u.email}?subject=${encodeURIComponent(t.subject)}&body=${enc}">${icon('mail')} Envoyer par email</a>
+          <button class="btn" data-action="ger-inv-copy" data-id="${id}">${icon('file')} Copier le lien</button>
+        </div>`,
+      foot: html`<button class="btn primary" data-action="ger-open" data-id="${u.org_id}">OK</button>`,
+    };
+  },
   'share-coll'({ id }) {
     const im = vault.get('immeubles', id);
     if (!im) return null;
@@ -4267,6 +4466,45 @@ let installPrompt = null;
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; if (ui.route === 'reglages') renderView(); });
 
 const ACTIONS = {
+  'ger-new': () => openSheet('ger-form'),
+  'ger-edit': (d) => openSheet('ger-form', d.id),
+  'ger-open': (d) => { openSheet('ger', d.id, d.tab); ptlLoad(); }, // les données du portail sont rafraîchies à chaque ouverture
+  'ger-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; renderView(); },
+  async 'ptl-logout'() {
+    if (!(await confirmBox('Déconnecter l’app du portail ?', { ok: 'Déconnecter', detail: 'Les gérances restent dans le portail ; vous pourrez vous reconnecter.' }))) return;
+    try { await ptlApi('logout', { method: 'POST' }); } catch { /* déjà expirée */ }
+    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token: '' }), 'Portail gérance déconnecté', '');
+    ui.ptl.data = null; renderView();
+  },
+  async 'ger-del'(d) {
+    const o = ptlOrg(d.id);
+    if (!o) return;
+    const v = await promptText(`Supprimer « ${o.name} » ?`, 'Ses accès, ses résidences, ses demandes et leurs photos sont supprimés du portail. Irréversible. Tapez le nom de la gérance pour confirmer.', o.name);
+    if (v == null) return;
+    if (v.trim() !== o.name) return toast('Nom différent : rien n’a été supprimé.', { bad: true });
+    try { await ptlApi('orgs/' + o.id, { method: 'DELETE', body: { confirm: v.trim() } }); } catch (e) { return toast(e.message, { bad: true }); }
+    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', lastDel: o.name }), 'Gérance supprimée du portail', o.name);
+    closeSheet(); toast('Gérance supprimée'); ui.ptl.data = null; renderView();
+  },
+  async 'ger-inv'(d) {
+    try { const r = await ptlApi(`users/${d.id}/invite`, { method: 'POST' }); ui.ptl.inv[d.id] = ptlInviteUrl(r.invite); } catch (e) { return toast(e.message, { bad: true }); }
+    openSheet('ger-invite', d.id);
+  },
+  'ger-inv-lang': (d) => { ui.sheet = null; openSheet('ger-invite', d.id, null, { lang: d.l }); },
+  async 'ger-inv-copy'(d) {
+    try { await navigator.clipboard.writeText(ui.ptl.inv[d.id]); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); }
+  },
+  async 'ger-user-toggle'(d) {
+    const on = d.on === '1';
+    if (on && !(await confirmBox('Désactiver cet accès ?', { ok: 'Désactiver', danger: true, detail: 'La personne est déconnectée tout de suite. Vous pourrez réactiver l’accès.' }))) return;
+    try { await ptlApi('users/' + d.id, { method: 'PATCH', body: { active: !on } }); } catch (e) { return toast(e.message, { bad: true }); }
+    toast(on ? 'Accès désactivé' : 'Accès réactivé'); await ptlLoad();
+  },
+  async 'ger-res-off'(d) {
+    if (!(await confirmBox('Retirer cette résidence ?', { ok: 'Retirer', danger: true, detail: 'Elle disparaît des choix de la gérance ; l’historique des demandes est gardé.' }))) return;
+    try { await ptlApi('residences/' + d.id, { method: 'PATCH', body: { active: false } }); } catch (e) { return toast(e.message, { bad: true }); }
+    toast('Résidence retirée'); await ptlLoad();
+  },
   'mt-tab': (d) => { ui.mtTab = d.id; renderView(); },
   'new-interv': () => openOver('interv-form'),
   // « + » : ajoute une ligne « Supplément » (dépannage, nettoyage en plus) à ce jour
@@ -4825,6 +5063,48 @@ const ACTIONS = {
 };
 
 const FORMS = {
+  async 'ptl-login'(fd, f) {
+    const email = String(fd.get('email') || '').trim().toLowerCase(), pass = String(fd.get('pass') || '');
+    const btn = f.querySelector('[type=submit]'); btn.disabled = true;
+    ui.ptl.email = email;
+    try {
+      const pre = await ptlApi('prelogin', { method: 'POST', body: { email }, anon: true });
+      const authKey = await ptlDerive(pass, pre.salt, pre.iter);
+      const { token } = await ptlApi('login', { method: 'POST', body: { email, authKey }, anon: true });
+      const me = await fetch(PTL_API + 'me', { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' }).then((r) => r.json());
+      if (!me.user || me.user.role !== 'admin') {
+        fetch(PTL_API + 'logout', { method: 'POST', headers: { Authorization: 'Bearer ' + token } }).catch(() => {});
+        throw new PtlError(403, 'Ce compte est celui d’une gérance : connectez le compte LuxInterventions.');
+      }
+      await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token, email, name: me.user.name || '' }), 'Portail gérance connecté', email);
+      ui.ptl = { data: null, loading: false, err: '', inv: {} };
+      toast('Connecté au Portail gérance'); renderView();
+    } catch (e) { ui.ptl.err = e.message; btn.disabled = false; renderView(); }
+  },
+  async ger(fd) {
+    const id = fd.get('id'), b = { name: String(fd.get('name') || '').trim(), email: String(fd.get('email') || '').trim(), phone: String(fd.get('phone') || '').trim() };
+    if (!b.name) return;
+    let nid = id;
+    try { if (id) await ptlApi('orgs/' + id, { method: 'PATCH', body: b }); else nid = (await ptlApi('orgs', { method: 'POST', body: b })).id; } catch (e) { return toast(e.message, { bad: true }); }
+    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', lastOrg: b.name }), id ? 'Gérance modifiée' : 'Gérance créée', b.name);
+    toast(id ? 'Gérance enregistrée' : 'Gérance créée');
+    await ptlLoad();
+    openSheet('ger', nid, id ? null : 'acces');
+  },
+  async 'ger-user'(fd, f) {
+    const org = fd.get('org'), b = { org_id: org, name: String(fd.get('name') || '').trim(), email: String(fd.get('email') || '').trim(), phone: String(fd.get('phone') || '').trim(), role: fd.get('role') };
+    let r;
+    try { r = await ptlApi('users', { method: 'POST', body: b }); } catch (e) { return toast(e.message, { bad: true }); }
+    f.reset();
+    ui.ptl.inv[r.id] = ptlInviteUrl(r.invite);
+    await ptlLoad();
+    openSheet('ger-invite', r.id);
+  },
+  async 'ger-res'(fd, f) {
+    const b = { org_id: fd.get('org'), name: String(fd.get('name') || '').trim(), address: String(fd.get('address') || '').trim(), apartments: fd.get('apartments'), contact_name: String(fd.get('contact_name') || '').trim() };
+    try { await ptlApi('residences', { method: 'POST', body: b }); } catch (e) { return toast(e.message, { bad: true }); }
+    f.reset(); toast('Résidence ajoutée'); await ptlLoad();
+  },
   async interv(fd) {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();

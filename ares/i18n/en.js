@@ -8307,5 +8307,357 @@ export default [
 [
 "Code réactivé",
 "Code re-enabled"
+],
+[
+"({0}) : il/elle ouvre le lien et choisit son mot de passe.",
+"({0}): opens the link and chooses a password."
+],
+[
+", une seule fois.",
+", once only."
+],
+[
+". Le mot de passe ne quitte pas l’appareil ; la session est gardée dans vos données chiffrées.",
+". The password never leaves the device; the session is kept in your encrypted data."
+],
+[
+": demandes avec photos, suivi, chat, photos avant / après, satisfaction, statistiques.",
+": requests with photos, tracking, chat, before / after photos, satisfaction, statistics."
+],
+[
+"Accès",
+"Access"
+],
+[
+"Accès réactivé",
+"Access re-enabled"
+],
+[
+"Ajouter la résidence",
+"Add the residence"
+],
+[
+"Ajouter une gérance",
+"Add a management company"
+],
+[
+"Ajouter une résidence",
+"Add a residence"
+],
+[
+"Appartements",
+"Flats"
+],
+[
+"{0} appartements",
+"{0} flats"
+],
+[
+"{0} demande(s) en cours",
+"{0} open request(s)"
+],
+[
+"Aucune gérance pour l’instant.",
+"No management company yet."
+],
+[
+"Aucune résidence. La gérance peut aussi les ajouter elle-même dans son portail.",
+"No residence. The management company can also add them in its portal."
+],
+[
+"Ce compte est celui d’une gérance : connectez le compte LuxInterventions.",
+"This account belongs to a management company: connect the LuxInterventions account."
+],
+[
+"Collaborateur",
+"Staff member"
+],
+[
+"Collaborateur (fait et suit les demandes)",
+"Staff member (makes and follows requests)"
+],
+[
+"Connecter au portail",
+"Connect to the portal"
+],
+[
+"Connectez une seule fois cette app au portail avec votre",
+"Connect this app to the portal once with your"
+],
+[
+"compte LuxInterventions du portail",
+"LuxInterventions portal account"
+],
+[
+"Connecté au Portail gérance",
+"Connected to the management portal"
+],
+[
+"Connecté au portail :",
+"Connected to the portal:"
+],
+[
+"Contact sur place",
+"On-site contact"
+],
+[
+"Créer la gérance",
+"Create the management company"
+],
+[
+"Créer l’accès et le lien",
+"Create access and link"
+],
+[
+"Demandes en cours",
+"Open requests"
+],
+[
+"Donner l’accès à une personne",
+"Give a person access"
+],
+[
+"Déconnecter",
+"Disconnect"
+],
+[
+"Déconnecter l’app du portail ?",
+"Disconnect the app from the portal?"
+],
+[
+"Désactiver cet accès ?",
+"Disable this access?"
+],
+[
+"Elle disparaît des choix de la gérance ; l’historique des demandes est gardé.",
+"It disappears from the management company's choices; the request history is kept."
+],
+[
+"Email du compte LuxInterventions",
+"LuxInterventions account email"
+],
+[
+"Gérance créée",
+"Management company created"
+],
+[
+"Gérance enregistrée",
+"Management company saved"
+],
+[
+"Gérance modifiée",
+"Management company changed"
+],
+[
+"Gérance supprimée",
+"Management company deleted"
+],
+[
+"Gérance supprimée du portail",
+"Management company deleted from the portal"
+],
+[
+"Gérances",
+"Management companies"
+],
+[
+"Gérances — Portail gérance",
+"Management companies — management portal"
+],
+[
+"Gérances externes : accès, résidences, demandes d’intervention",
+"External management companies: access, residences, job requests"
+],
+[
+"Ici vous créez les gérances, invitez leurs responsables, gérez leurs résidences et pouvez les supprimer — comme pour l’app de l’équipe.",
+"Here you create the management companies, invite their managers, handle their residences and can delete them — like the team app."
+],
+[
+"Invitation au Portail gérance",
+"Invitation to the management portal"
+],
+[
+"La personne est déconnectée tout de suite. Vous pourrez réactiver l’accès.",
+"The person is logged out immediately. You can re-enable access later."
+],
+[
+"Langue du message d’invitation.",
+"Language of the invitation message."
+],
+[
+"Le Portail gérance, piloté d’ici",
+"The management portal, run from here"
+],
+[
+"Les",
+"The"
+],
+[
+"gérances",
+"management companies"
+],
+[
+"sont les sociétés externes qui vous confient leurs réparations. Elles utilisent leur app, le",
+"are the external companies that entrust you with their repairs. They use their app, the"
+],
+[
+"Les gérances restent dans le portail ; vous pourrez vous reconnecter.",
+"The management companies stay in the portal; you can reconnect."
+],
+[
+"Lien d’invitation",
+"Invitation link"
+],
+[
+"Lien personnel pour",
+"Personal link for"
+],
+[
+"Modifier la gérance",
+"Edit the management company"
+],
+[
+"Mot de passe du portail",
+"Portal password"
+],
+[
+"Nom de la gérance",
+"Company name"
+],
+[
+"Nom différent : rien n’a été supprimé.",
+"Name does not match: nothing was deleted."
+],
+[
+"Nouveau lien",
+"New link"
+],
+[
+"Nouvelle gérance",
+"New management company"
+],
+[
+"Ouvrir le portail",
+"Open the portal"
+],
+[
+"Pas de connexion internet",
+"No internet connection"
+],
+[
+"Pas encore de compte ? Ouvrez le portail : la « Première configuration » crée le compte LuxInterventions.",
+"No account yet? Open the portal: the “First setup” creates the LuxInterventions account."
+],
+[
+"Personne n’a encore accès. Ajoutez le responsable de la gérance : il reçoit un lien personnel et choisit son mot de passe.",
+"Nobody has access yet. Add the company's manager: they get a personal link and choose a password."
+],
+[
+"Portail gérance connecté",
+"Management portal connected"
+],
+[
+"Portail gérance déconnecté",
+"Management portal disconnected"
+],
+[
+"Portail gérance : session expirée",
+"Management portal: session expired"
+],
+[
+"Responsable",
+"Manager"
+],
+[
+"Responsable (peut inviter des collègues)",
+"Manager (can invite colleagues)"
+],
+[
+"Retirer cette résidence ?",
+"Remove this residence?"
+],
+[
+"Réessayer",
+"Try again"
+],
+[
+"Résidence ajoutée",
+"Residence added"
+],
+[
+"Résidence retirée",
+"Residence removed"
+],
+[
+"Résidences",
+"Residences"
+],
+[
+"Rôle",
+"Role"
+],
+[
+"Ses accès, ses résidences, ses demandes et leurs photos sont supprimés du portail. Irréversible. Tapez le nom de la gérance pour confirmer.",
+"Its access, residences, requests and their photos are deleted from the portal. Irreversible. Type the company name to confirm."
+],
+[
+"Session du portail expirée : reconnectez-vous.",
+"Portal session expired: reconnect."
+],
+[
+"Supprimer la gérance",
+"Delete the management company"
+],
+[
+"Téléphone (WhatsApp)",
+"Phone (WhatsApp)"
+],
+[
+"concierge…",
+"caretaker…"
+],
+[
+"ex. Gérance du Centre S.A.",
+"e.g. Gérance du Centre S.A."
+],
+[
+"ex. Résidence Les Tilleuls",
+"e.g. Résidence Les Tilleuls"
+],
+[
+"rue, n°, code postal, localité",
+"street, no., postcode, town"
+],
+[
+"{0} invitation(s) en attente",
+"{0} pending invitation(s)"
+],
+[
+"désactivé",
+"disabled"
+],
+[
+"invitation envoyée, pas encore ouverte",
+"invitation sent, not opened yet"
+],
+[
+"dernière connexion",
+"last login"
+],
+[
+"Valable 14 jours",
+"Valid for 14 days"
+],
+[
+"il/elle ouvre le lien et choisit son mot de passe.",
+"opens the link and chooses a password."
+],
+[
+"Nom de la résidence",
+"Residence name"
+],
+[
+"Prénom et nom",
+"First and last name"
 ]
 ];

@@ -8483,5 +8483,353 @@ export default [
 [
 "Code réactivé",
 "Código reactivado"
+],
+[
+"({0}) : il/elle ouvre le lien et choisit son mot de passe.",
+"({0}): abre el enlace y elige su contraseña."
+],
+[
+", une seule fois.",
+", una sola vez."
+],
+[
+". Le mot de passe ne quitte pas l’appareil ; la session est gardée dans vos données chiffrées.",
+". La contraseña no sale del dispositivo; la sesión se guarda en tus datos cifrados."
+],
+[
+": demandes avec photos, suivi, chat, photos avant / après, satisfaction, statistiques.",
+": solicitudes con fotos, seguimiento, chat, fotos antes / después, satisfacción, estadísticas."
+],
+[
+"Accès",
+"Accesos"
+],
+[
+"Accès réactivé",
+"Acceso reactivado"
+],
+[
+"Ajouter la résidence",
+"Añadir la residencia"
+],
+[
+"Ajouter une gérance",
+"Añadir una administración"
+],
+[
+"Ajouter une résidence",
+"Añadir una residencia"
+],
+[
+"Appartements",
+"Pisos"
+],
+[
+"{0} appartements",
+"{0} pisos"
+],
+[
+"{0} demande(s) en cours",
+"{0} solicitud(es) en curso"
+],
+[
+"Aucune gérance pour l’instant.",
+"Todavía ninguna administración."
+],
+[
+"Aucune résidence. La gérance peut aussi les ajouter elle-même dans son portail.",
+"Ninguna residencia. La administración también puede añadirlas en su portal."
+],
+[
+"Ce compte est celui d’une gérance : connectez le compte LuxInterventions.",
+"Esta cuenta es de una administración: conecta la cuenta LuxInterventions."
+],
+[
+"Collaborateur",
+"Colaborador"
+],
+[
+"Collaborateur (fait et suit les demandes)",
+"Colaborador (hace y sigue las solicitudes)"
+],
+[
+"Connecter au portail",
+"Conectar al portal"
+],
+[
+"Connectez une seule fois cette app au portail avec votre",
+"Conecta esta app al portal una sola vez con tu"
+],
+[
+"compte LuxInterventions du portail",
+"cuenta LuxInterventions del portal"
+],
+[
+"Connecté au Portail gérance",
+"Conectado al Portal de administración"
+],
+[
+"Connecté au portail :",
+"Conectado al portal:"
+],
+[
+"Contact sur place",
+"Contacto en el lugar"
+],
+[
+"Créer la gérance",
+"Crear la administración"
+],
+[
+"Créer l’accès et le lien",
+"Crear el acceso y el enlace"
+],
+[
+"Demandes en cours",
+"Solicitudes en curso"
+],
+[
+"Donner l’accès à une personne",
+"Dar acceso a una persona"
+],
+[
+"Déconnecter",
+"Desconectar"
+],
+[
+"Déconnecter l’app du portail ?",
+"¿Desconectar la app del portal?"
+],
+[
+"Désactiver cet accès ?",
+"¿Desactivar este acceso?"
+],
+[
+"Elle disparaît des choix de la gérance ; l’historique des demandes est gardé.",
+"Desaparece de las opciones de la administración; el historial de solicitudes se conserva."
+],
+[
+"Email du compte LuxInterventions",
+"Email de la cuenta LuxInterventions"
+],
+[
+"Gérance créée",
+"Administración creada"
+],
+[
+"Gérance enregistrée",
+"Administración guardada"
+],
+[
+"Gérance modifiée",
+"Administración modificada"
+],
+[
+"Gérance supprimée",
+"Administración eliminada"
+],
+[
+"Gérance supprimée du portail",
+"Administración eliminada del portal"
+],
+[
+"Gérances",
+"Administraciones"
+],
+[
+"Gérances — Portail gérance",
+"Administraciones — Portal de administración"
+],
+[
+"Gérances externes : accès, résidences, demandes d’intervention",
+"Administraciones externas: accesos, residencias, solicitudes de intervención"
+],
+[
+"Ici vous créez les gérances, invitez leurs responsables, gérez leurs résidences et pouvez les supprimer — comme pour l’app de l’équipe.",
+"Aquí creas las administraciones, invitas a sus responsables, gestionas sus residencias y puedes eliminarlas — como en la app del equipo."
+],
+[
+"Invitation au Portail gérance",
+"Invitación al Portal de administración"
+],
+[
+"La personne est déconnectée tout de suite. Vous pourrez réactiver l’accès.",
+"La persona se desconecta enseguida. Podrás reactivar el acceso."
+],
+[
+"Langue du message d’invitation.",
+"Idioma del mensaje de invitación."
+],
+[
+"Le Portail gérance, piloté d’ici",
+"El Portal de administración, gestionado desde aquí"
+],
+[
+"Les",
+"Las"
+],
+[
+"gérances",
+"administraciones"
+],
+[
+"sont les sociétés externes qui vous confient leurs réparations. Elles utilisent leur app, le",
+"son las empresas externas que te confían sus reparaciones. Usan su app, el"
+],
+[
+"Les gérances restent dans le portail ; vous pourrez vous reconnecter.",
+"Las administraciones se quedan en el portal; podrás volver a conectarte."
+],
+[
+"Lien d’invitation",
+"Enlace de invitación"
+],
+[
+"Lien personnel pour",
+"Enlace personal para"
+],
+[
+"Modifier la gérance",
+"Editar la administración"
+],
+[
+"Mot de passe du portail",
+"Contraseña del portal"
+],
+[
+"Nom de la gérance",
+"Nombre de la administración"
+],
+[
+"Nom différent : rien n’a été supprimé.",
+"Nombre diferente: no se ha eliminado nada."
+],
+[
+"Nouveau lien",
+"Nuevo enlace"
+],
+[
+"Nouvelle gérance",
+"Nueva administración"
+],
+[
+"Ouvrir le portail",
+"Abrir el portal"
+],
+[
+"Pas de connexion internet",
+"Sin conexión a internet"
+],
+[
+"Pas encore de compte ? Ouvrez le portail : la « Première configuration » crée le compte LuxInterventions.",
+"¿Aún sin cuenta? Abre el portal: la «Primera configuración» crea la cuenta LuxInterventions."
+],
+[
+"Personne n’a encore accès. Ajoutez le responsable de la gérance : il reçoit un lien personnel et choisit son mot de passe.",
+"Nadie tiene acceso todavía. Añade al responsable de la administración: recibe un enlace personal y elige su contraseña."
+],
+[
+"Portail gérance connecté",
+"Portal de administración conectado"
+],
+[
+"Portail gérance déconnecté",
+"Portal de administración desconectado"
+],
+[
+"Portail gérance : session expirée",
+"Portal de administración: sesión caducada"
+],
+[
+"Responsable (peut inviter des collègues)",
+"Responsable (puede invitar a compañeros)"
+],
+[
+"Retirer cette résidence ?",
+"¿Quitar esta residencia?"
+],
+[
+"Réessayer",
+"Reintentar"
+],
+[
+"Résidence ajoutée",
+"Residencia añadida"
+],
+[
+"Résidence retirée",
+"Residencia quitada"
+],
+[
+"Résidences",
+"Residencias"
+],
+[
+"Rôle",
+"Rol"
+],
+[
+"Ses accès, ses résidences, ses demandes et leurs photos sont supprimés du portail. Irréversible. Tapez le nom de la gérance pour confirmer.",
+"Sus accesos, residencias, solicitudes y sus fotos se eliminan del portal. Irreversible. Escribe el nombre de la administración para confirmar."
+],
+[
+"Session du portail expirée : reconnectez-vous.",
+"Sesión del portal caducada: vuelve a conectarte."
+],
+[
+"Supprimer la gérance",
+"Eliminar la administración"
+],
+[
+"Téléphone (WhatsApp)",
+"Teléfono (WhatsApp)"
+],
+[
+"concierge…",
+"conserje…"
+],
+[
+"ex. Gérance du Centre S.A.",
+"p. ej. Gérance du Centre S.A."
+],
+[
+"ex. Résidence Les Tilleuls",
+"p. ej. Résidence Les Tilleuls"
+],
+[
+"rue, n°, code postal, localité",
+"calle, n.º, código postal, localidad"
+],
+[
+"{0} invitation(s) en attente",
+"{0} invitación(es) pendiente(s)"
+],
+[
+"désactivé",
+"desactivado"
+],
+[
+"invitation envoyée, pas encore ouverte",
+"invitación enviada, aún no abierta"
+],
+[
+"dernière connexion",
+"último acceso"
+],
+[
+"Valable 14 jours",
+"Válido 14 días"
+],
+[
+"il/elle ouvre le lien et choisit son mot de passe.",
+"abre el enlace y elige su contraseña."
+],
+[
+"Nom de la résidence",
+"Nombre de la residencia"
+],
+[
+"Prénom et nom",
+"Nombre y apellidos"
 ]
 ];
