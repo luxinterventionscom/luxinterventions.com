@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.55.0';
+const VERSION = '2.56.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -673,6 +673,9 @@ function mtPreview(l) {
     const other = [...new Set(hs.filter((h) => h.immId && h.immId !== l.immId).map((h) => immName(h.immId)))];
     if (noPlace) r.push(`${noPlace} créneau(x) d’horaire sans lieu`);
     if (other.length) r.push(`horaire à ${other.join(', ')}`);
+    // même adresse mais autre fiche immeuble (doublon) : la cause la plus difficile à voir
+    const norm = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+    if (hs.some((h) => h.immId && h.immId !== l.immId && norm(immName(h.immId)) === norm(im))) r.push('⚠️ son horaire pointe vers une AUTRE fiche immeuble qui a la même adresse (doublon dans Immeubles) : choisissez le bon immeuble dans son horaire');
     const ts = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait'));
     const here = ts.filter((t) => t.immId === l.immId);
     for (const t of here) {
