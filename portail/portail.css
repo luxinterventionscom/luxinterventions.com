@@ -172,3 +172,16 @@ body { background: var(--glow, none), var(--bg); background-attachment: fixed; }
 .vb small { font-size: 10px; color: var(--text-2); }
 .legend-row { display: flex; gap: 14px; margin-top: 8px; color: var(--text-2); }
 .lg { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: -1px; }
+
+/* Langues de l'écran d'accès : initiales « FR | DE | EN … » */
+.lang-mini { display: flex; justify-content: center; align-items: center; gap: 2px; margin: 4px 0 10px; font-size: 13px; letter-spacing: .06em; }
+.lang-mini button { border: 0; background: none; padding: 4px 6px; border-radius: 6px; color: var(--text-3); font: inherit; font-weight: 600; cursor: pointer; }
+.lang-mini button:hover { color: var(--text); }
+.lang-mini button[aria-pressed="true"] { color: var(--accent, #d9622b); text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; }
+.lang-mini .lm-sep { color: var(--border-strong, #e2c7ad); font-weight: 300; }
+/* Bannières repliables au toucher (annonces, Premiers pas) */
+details.fold > summary { list-style: none; cursor: pointer; padding-right: 28px; position: relative; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold > summary::after { content: "›"; position: absolute; right: 2px; top: 50%; margin-top: -15px; font-size: 24px; line-height: 30px; color: var(--text-3); transition: transform .25s; }
+details.fold[open] > summary::after { transform: rotate(90deg); }
+details.guide.fold:not([open]) > summary { margin-bottom: 0 !important; }

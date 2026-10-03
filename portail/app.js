@@ -278,7 +278,9 @@ const appEl = $('#app');
 const brandHead = () => html`
   <img class="lock-logo" src="/android-chrome-192x192.png" alt="LuxInterventions" width="88" height="88">
   <div class="lock-head"><h1>Portail Gérance</h1><p>LuxInterventions · Interventions techniques 7j/7</p></div>
-  ${langChips()}`;
+  ${langMini()}`;
+// écran d'accès : initiales seules « FR | DE | EN … »
+const langMini = () => html`<div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${Object.keys(PTL_LANGS).map((k, i) => html`${i ? html`<span class="lm-sep" aria-hidden="true">|</span>` : ''}<button type="button" data-action="set-lang" data-id="${k}" title="${PTL_LANGS[k]}" aria-pressed="${LANG === k}">${k.toUpperCase()}</button>`)}</div>`;
 const langChips = () => html`<div class="chips ptl-lang" data-notr="1" role="group" aria-label="Langue">${Object.entries(PTL_LANGS).map(([k, l]) => html`<button class="chip" type="button" data-action="set-lang" data-id="${k}" aria-pressed="${LANG === k}">${l}</button>`)}</div>`;
 const pwField = (name, placeholder, autocomplete) => html`<div class="pw-wrap">
   <input type="password" name="${name}" placeholder="${placeholder}" autocomplete="${autocomplete}" required autocapitalize="off" autocorrect="off" spellcheck="false">
@@ -593,12 +595,15 @@ function guideCard(stats) {
       ];
   const done = steps.filter((x) => x[0]).length;
   if (done === steps.length && !state.demo) return '';
-  return html`<div class="card guide" style="margin-bottom:14px">
-    <div class="card-title" style="margin-bottom:8px"><h3>Premiers pas · ${done}/${steps.length}</h3><button class="btn sm ghost" data-action="guide-hide">Masquer</button></div>
+  let shut = false;
+  try { shut = localStorage.getItem('ptlGuideShut') === '1'; } catch {}
+  return html`<details class="card guide fold" style="margin-bottom:14px"${shut ? '' : ' open'}>
+    <summary class="card-title" style="margin-bottom:8px"><h3>Premiers pas · ${done}/${steps.length}</h3></summary>
     <div class="progress" style="margin-bottom:10px"><i style="width:${(done / steps.length) * 100}%"></i></div>
     ${steps.map(([ok, label, action, to], i) => html`<div class="guide-step ${ok ? 'ok' : ''}"><span class="guide-num">${ok ? '✓' : i + 1}</span><span class="grow">${label}</span>${ok ? '' : html`<button class="btn sm" data-action="${action}" data-to="${to}">Faire</button>`}</div>`)}
     <p class="tiny muted" style="margin-top:10px">🔑 Le mot de passe se choisit <b>une seule fois</b>, avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Demandez un nouveau lien.</p>
-  </div>`;
+    <div style="text-align:right;margin-top:6px"><button class="btn sm ghost" data-action="guide-hide">Masquer</button></div>
+  </details>`;
 }
 
 // ───────────────────────── Vues ─────────────────────────
@@ -615,19 +620,31 @@ addEventListener('message', (e) => {
 });
 let pubTurn = 0;
 try { pubTurn = (+localStorage.getItem('ptlPubTurn') || 0) + 1; localStorage.setItem('ptlPubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
+const pubShut = new Set((() => { try { return JSON.parse(localStorage.getItem('ptlPubShut') || '[]'); } catch { return []; } })());
+// replier / déplier une annonce ou le guide : on s'en souvient sur cet appareil
+document.addEventListener('toggle', (e) => {
+  const el = e.target;
+  if (!el.classList || !el.classList.contains('fold')) return;
+  if (el.dataset.pid) {
+    if (el.open) pubShut.delete(el.dataset.pid); else pubShut.add(el.dataset.pid);
+    try { localStorage.setItem('ptlPubShut', JSON.stringify([...pubShut].slice(-50))); } catch { /* stockage indisponible */ }
+  } else if (el.classList.contains('guide')) {
+    try { localStorage.setItem('ptlGuideShut', el.open ? '0' : '1'); } catch { /* stockage indisponible */ }
+  }
+}, true);
 // une annonce par emplacement (haut sous « Bonjour », milieu, bas au-dessus de la barre crypto) ; plusieurs → une autre à chaque ouverture
 function pubSlot(k) {
   const list = ((state.cache.home && state.cache.home.pubs) || []).filter((a) => (a.slot || 'milieu') === k);
   if (!list.length) return '';
   const a = list[pubTurn % list.length], v = videoEmbed(a.video);
-  return html`<div class="card ptl-pub" style="margin:12px 0" data-pid="${a.id}"><div class="small muted"><b class="pub-lbl">📣 Publicité</b> · ${PUB_ICON[a.cat] || '📌'}</div><b style="font-size:17px">${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
+  return html`<details class="card ptl-pub fold" style="margin:12px 0" data-pid="${a.id}"${pubShut.has(a.id) ? '' : ' open'}><summary><div class="small muted"><b class="pub-lbl">📣 Publicité</b> · ${PUB_ICON[a.cat] || '📌'}</div><b style="font-size:17px">${a.nom}</b></summary>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
       ${v ? html`<div class="vid${v.tall ? ' tall' : ''}${v.audio ? ' audio' : ''}" style="${v.audio ? `height:${v.audio}px` : ''}"><iframe src="${v.src}" loading="lazy" title="Vidéo" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
       <div class="small muted" style="margin-top:6px">📍 ${a.adresse}</div>
       <div class="actions" style="margin-top:8px;flex-wrap:wrap">
         <a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener" data-pev="map">🧭 Itinéraire</a>
         ${a.tel ? html`<a class="btn sm" href="tel:${a.tel.replace(/[^\d+]/g, '')}" data-pev="call">📞 Appeler</a>` : ''}
         ${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener" data-pev="web">🌐 Site web</a>` : ''}
-        ${a.video && !v ? html`<a class="btn sm" href="${a.video}" target="_blank" rel="noopener" data-pev="video">▶ Vidéo</a>` : ''}</div></div>`;
+        ${a.video && !v ? html`<a class="btn sm" href="${a.video}" target="_blank" rel="noopener" data-pev="video">▶ Vidéo</a>` : ''}</div></details>`;
 }
 // barre des cours crypto (TradingView) : servie par le Worker sur un autre domaine, isolée du portail
 const tickerBar = () => html`<div class="ticker"><iframe src="${API.replace(/api\/portail\/$/, '')}ticker" title="Crypto" loading="lazy" referrerpolicy="no-referrer" scrolling="no"></iframe></div>`;
