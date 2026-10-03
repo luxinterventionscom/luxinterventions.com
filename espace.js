@@ -528,9 +528,21 @@ function menState(d) {
 }
 // Passages des 7 prochains jours (femme de ménage + ouvriers) ; plusieurs créneaux le même jour = une ligne
 function visitsOf(d) {
-  if (!Array.isArray(d.visits)) return null;
+  let list = d.visits;
+  // données publiées par une app de gestion pas encore à jour : on reprend le passage du ménage (horaire + dates)
+  if (!Array.isArray(list)) {
+    const m = d.menage;
+    if (!m) return null;
+    list = [];
+    for (let i = 0; i <= 7; i++) {
+      const dd = addDays(today, i), dow = (new Date(dd + 'T12:00:00').getDay() + 6) % 7;
+      for (const h of m.week || []) if (h.j === dow) list.push({ d: dd, w: h.w, nom: h.nom, m: 'menage', de: h.de, a: h.a, off: (h.off || []).some(([x, y]) => x <= dd && dd <= y) });
+      for (const z of (m.dates || []).filter((z) => z.d === dd)) list.push({ ...z, m: 'menage' });
+    }
+    list.sort((a, b) => a.d.localeCompare(b.d) || (a.de || '99').localeCompare(b.de || '99'));
+  }
   const out = [];
-  for (const v of d.visits) {
+  for (const v of list) {
     if (v.d < today) continue;
     const same = out.find((x) => x.w === v.w && x.d === v.d);
     const hr = v.de ? v.de + (v.a ? '–' + v.a : '') : '';
