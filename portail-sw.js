@@ -1,6 +1,6 @@
 // Service worker du portail : application disponible hors ligne + notifications push.
-const CACHE = 'portail-shell-v1.13.0';
-const SHELL = ['/portail.html', '/portail/app.js', '/portail/demo.js', '/portail/portail.css', '/ares/app.css', '/ares/i18n.js', '/ares/video-embed.js', '/ares/pubstat.js', '/portail/i18n/de.js', '/portail/i18n/en.js', '/portail/i18n/pt.js', '/portail/i18n/es.js', '/portail/i18n/it.js', '/portail.webmanifest', '/android-chrome-192x192.png', '/favicon-32x32.png', '/apple-touch-icon.png'];
+const CACHE = 'portail-shell-v1.14.0';
+const SHELL = ['/portail.html', '/portail/app.js', '/portail/demo.js', '/portail/portail.css', '/ares/app.css', '/ares/i18n.js', '/ares/video-embed.js', '/ares/pubstat.js', '/ares/ptl-invite.js', '/portail/i18n/de.js', '/portail/i18n/en.js', '/portail/i18n/pt.js', '/portail/i18n/es.js', '/portail/i18n/it.js', '/portail.webmanifest', '/android-chrome-192x192.png', '/favicon-32x32.png', '/apple-touch-icon.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

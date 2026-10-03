@@ -1,0 +1,9 @@
+// Message d'invitation au Portail gérance (email / WhatsApp), partagé par le portail et l'app de gestion
+export const PTL_INVITE = {
+  fr: { subject: 'Votre accès au portail LuxInterventions', text: (n, l) => `Bonjour ${n},\n\nVoici votre accès personnel au portail LuxInterventions pour vos demandes d'intervention :\n${l}\n\nOuvrez le lien et choisissez votre mot de passe (lien valable 14 jours).\n\nLuxInterventions` },
+  de: { subject: 'Ihr Zugang zum LuxInterventions-Portal', text: (n, l) => `Hallo ${n},\n\nhier ist Ihr persönlicher Zugang zum LuxInterventions-Portal für Ihre Einsatzanfragen:\n${l}\n\nÖffnen Sie den Link und wählen Sie Ihr Passwort (Link 14 Tage gültig).\n\nLuxInterventions` },
+  en: { subject: 'Your access to the LuxInterventions portal', text: (n, l) => `Hello ${n},\n\nHere is your personal access to the LuxInterventions portal for your job requests:\n${l}\n\nOpen the link and choose your password (link valid for 14 days).\n\nLuxInterventions` },
+  it: { subject: 'Il vostro accesso al portale LuxInterventions', text: (n, l) => `Buongiorno ${n},\n\necco il vostro accesso personale al portale LuxInterventions per le richieste di intervento:\n${l}\n\nAprite il link e scegliete la vostra password (link valido 14 giorni).\n\nLuxInterventions` },
+  pt: { subject: 'O seu acesso ao portal LuxInterventions', text: (n, l) => `Olá ${n},\n\naqui está o seu acesso pessoal ao portal LuxInterventions para os seus pedidos de intervenção:\n${l}\n\nAbra o link e escolha a sua palavra-passe (link válido 14 dias).\n\nLuxInterventions` },
+  es: { subject: 'Tu acceso al portal LuxInterventions', text: (n, l) => `Hola ${n}:\n\naquí tienes tu acceso personal al portal LuxInterventions para tus solicitudes de intervención:\n${l}\n\nAbre el enlace y elige tu contraseña (enlace válido 14 días).\n\nLuxInterventions` },
+};
