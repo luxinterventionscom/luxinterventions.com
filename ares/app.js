@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.51.0';
+const VERSION = '2.52.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -353,7 +353,8 @@ const eqPhotos = (tid, phase) => vault.list('documents').filter((x) => x.tacheId
 const eqState = (t, d) => { const j = (t.journal || []).filter((x) => x.d === d); return j.length ? j[j.length - 1] : null; };
 function equipeData(i) {
   const soc = societe();
-  const from = addDays(today(), -7), to = addDays(today(), 21);
+  // jusqu'à la fin du mois suivant au plus tard : l'app de l'équipe montre le planning du mois, semaine par semaine
+  const from = addDays(today(), -7), to = addDays(today(), 45);
   const tasks = {}, items = [];
   const out1 = (t) => {
     const l = t.locId ? vault.get('locataires', t.locId) : null;

@@ -107,6 +107,12 @@
   .phh { font-weight: 700; }
   .phcol .btns { margin-top: 4px; gap: 6px; }
   .phcol .btns .btn { flex: 1 1 45%; padding: 8px 6px; }
+  .pres-in { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); }
+  details.wk { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; margin-top: 8px; }
+  details.wk > summary { cursor: pointer; display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+  details.wk.cur { border-color: #f59e0b; animation: warm 2.8s ease-in-out infinite; }
+  @keyframes warm { 0%, 100% { box-shadow: 0 0 0 1.5px rgba(245, 158, 11, .40), 0 0 12px 1px rgba(251, 191, 36, .22); } 50% { box-shadow: 0 0 0 2px rgba(245, 158, 11, .60), 0 0 24px 5px rgba(251, 191, 36, .38); } }
+  @media (prefers-reduced-motion: reduce) { details.wk.cur { animation: none; } }
   details.more summary { cursor: pointer; font-weight: 700; color: var(--accent); padding: 8px 0; }
   .notice { font-size: 13px; }
   .err { text-align: center; color: var(--muted); padding: 40px 10px; }
