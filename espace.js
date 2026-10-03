@@ -837,6 +837,8 @@ function render() {
   out.push(installCard(t));
   out.push(`<div class="card notice"><details><summary>🔒 ${esc(t.rgpdT)}</summary><p>${esc(t.rgpd(d.societe))}</p>${d.chat || d.regles ? `<p>${esc(t.hr.rgpd2)}</p>` : ''}</details><p style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
   { const low = slot('bas'); if (low) out.push(adBox(low, t, d)); }
+  // version de l'app de gestion qui a publié ces données (aide au dépannage)
+  out.push(`<p class="meta" style="text-align:center;font-size:11px;margin:8px 0 0">NOBIS · ${esc(d.gv ? 'v' + d.gv : 'v < 2.57')}</p>`);
   out.push(TICKER);
   const keepMap = document.querySelector('#mapBox iframe');
   const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
