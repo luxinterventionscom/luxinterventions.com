@@ -8383,5 +8383,25 @@ export default [
 [
 "Maintenance : passages de la femme de ménage et des ouvriers (aujourd’hui, demain, heure prévue) + avis sur le ménage 😞 → ⭐",
 "Mantenimiento: visitas de la limpiadora y de los operarios (hoy, mañana, hora prevista) + valoración de la limpieza 😞 → ⭐"
+],
+[
+"🛠️ Maintenance — ce que voit le locataire (7 jours)",
+"🛠️ Mantenimiento — lo que ve el inquilino (7 días)"
+],
+[
+"« Maintenance » est décoché : le locataire ne voit pas les passages.",
+"«Mantenimiento» no está marcado: el inquilino no ve las visitas."
+],
+[
+"🛠️ Maintenance : aucun passage prévu dans les 7 prochains jours pour cet immeuble.",
+"🛠️ Mantenimiento: ninguna visita prevista en los próximos 7 días para este edificio."
+],
+[
+"Pour qu’une personne de l’équipe apparaisse ici, son horaire doit avoir comme lieu l’adresse de cet immeuble (Maintenance → Équipe → la personne → Modifier → le jour → « — lieu — »).",
+"Para que una persona del equipo aparezca aquí, su horario debe tener como lugar la dirección de este edificio (Mantenimiento → Equipo → la persona → Editar → el día → «— lugar —»)."
+],
+[
+"Aucune personne dans l’équipe.",
+"Nadie en el equipo."
 ]
 ];
