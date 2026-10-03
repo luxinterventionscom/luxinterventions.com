@@ -113,6 +113,12 @@
   .coll-board .row { align-items: center; }
   .coll-board-t { margin: 0 0 4px; }
   .coll-rules { margin: 8px 0 10px; padding: 10px 12px; border-radius: 12px; background: var(--bg); }
+  .door-sec { margin-top: 16px; padding: 14px; border-radius: 14px; border: 2px solid #16a34a; text-align: center; animation: doorglow 2.6s ease-in-out infinite; }
+  .door-sec h3 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 6px; }
+  .door-code { font-size: 34px; font-weight: 800; letter-spacing: .14em; font-family: ui-monospace, Menlo, monospace; }
+  .door-sec .warn { color: var(--amber); }
+  @keyframes doorglow { 0%, 100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); } 50% { box-shadow: 0 0 0 5px rgba(22, 163, 74, .18); } }
+  @media (prefers-reduced-motion: reduce) { .door-sec { animation: none; } }
   .ctr-quit { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line, #e5e2da); }
   .ctr-quit h3 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 8px; }
   .coll-rules .row { align-items: center; }

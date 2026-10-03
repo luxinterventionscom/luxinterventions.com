@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.57.0';
+const VERSION = '2.58.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -98,6 +98,8 @@ const LOG_GROUPS = [
   ['Annexes', { box: 'Espace box', garage: 'Garage / box', parking: 'Emplacement de parking', cave: 'Cave / débarras', autre: 'Autre' }],
 ];
 const LOG_TYPES = Object.assign({}, ...LOG_GROUPS.map(([, t]) => t));
+// nom court (« 2 », « 2B ») complété par le type : « Chambre 2 » — pour que l'occupant retrouve sa porte
+const logLabel = (g) => { const n = String((g && g.nom) || '').trim(), t = g && LOG_TYPES[g.type]; return t && g.type !== 'autre' && /^[0-9][0-9A-Za-z.-]{0,3}$/.test(n) ? `${t.split(' ')[0]} ${n}` : n; };
 const logTypeSelect = (name, cur) => html`<label class="field">Type<select name="${name}">${LOG_GROUPS.map(([g, t]) => html`<optgroup label="${g}">${Object.entries(t).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</optgroup>`)}</select></label>`;
 const logIcon = (t) => (t === 'chambre' ? 'key' : LOG_GROUPS[1][1][t] ? 'building' : 'home');
 // Où se trouve l'unité : « étage 1er · ancien bar »
@@ -702,7 +704,7 @@ function espaceData(l) {
   const g = vault.get('logements', l.logId), im = vault.get('immeubles', l.immId);
   const soc = societe();
   const out = {
-    v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? g.nom : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
+    v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
     societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: soc.signature || '', signW: soc.signW || 8 },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
   };
@@ -722,7 +724,8 @@ function espaceData(l) {
       return { y, rest: s.rest, upcoming: s.upcoming, paid: s.paid, months: MONTHS.map((_, i) => { const st = payState(l, y, i + 1); return [st.due, st.paid, st.p ? st.p.date || '' : '']; }) };
     });
   }
-  if (show.porte && g && g.porte && g.porte.code) out.porte = { code: g.porte.code, depuis: g.porte.maj || '', info: g.porte.info || '' };
+  // code de la porte : seulement s'il est actif et pas expiré (date de fin choisie dans l'app de gestion)
+  if (show.porte && g && g.porte && g.porte.code && !g.porte.off && (!g.porte.fin || g.porte.fin >= today())) out.porte = { code: g.porte.code, depuis: g.porte.maj || '', info: g.porte.info || '', fin: g.porte.fin || '' };
   if (show.contrat) out.contrat = { debut: l.debut || '', fin: l.fin || '', revision: l.revision || '', caution: l.caution || 0, cautionDate: l.cautionDate || '', cautionMode: l.cautionMode || '' };
   if (show.docs) out.docs = vault.list('documents').filter((d) => d.locId === l.id && d.shared).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
     .map((d) => ({ id: d.id, label: d.label, dtype: d.dtype || '', pay: d.pay || '', date: d.date, mime: d.mime, size: d.size }));
@@ -3262,6 +3265,8 @@ const SHEETS = {
         <div class="alert warn full" id="doorWarn" hidden>${icon('alert')}<div><b>Attention :</b> pour un <b>bail d'habitation</b>, bloquer l'accès d'un locataire parce qu'il n'a pas payé est en principe interdit au Luxembourg (seul un juge peut ordonner l'expulsion). Réservé aux séjours courts / chambres d'hôtel selon vos conditions — vérifiez avec votre avocat.</div></div>
         ${field('Serrure (marque / modèle)', 'serrure', pt.serrure, { full: true, placeholder: 'ex. Nuki, TTLock, igloohome…' })}
         ${field("Info pour l'occupant (facultatif)", 'info', pt.info, { full: true, placeholder: 'ex. Tapez le code puis ✓ ; porte d’entrée de l’immeuble : 2580' })}
+        ${field('Valable jusqu’au (facultatif)', 'fin', pt.fin && pt.fin >= today() ? pt.fin : '', { type: 'date', full: true })}
+        <p class="tiny muted full" style="margin:0">Après cette date, le code disparaît de l’app de l’occupant (il voit le compte à rebours avant). Vide = sans fin.</p>
         ${field('Note (visible seulement par vous)', 'note', '', { full: true })}
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer le code</button>`,
@@ -3632,7 +3637,9 @@ const SHEETS = {
         <div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code actuel de la porte</div>
           <div style="font-family:var(--mono);font-size:30px;font-weight:800;letter-spacing:.12em">${pt.code ? (ui.showDoor === id ? pt.code : '•'.repeat(pt.code.length)) : '—'}</div>
           ${pt.code ? html`<button class="btn sm ghost" data-action="door-show" data-id="${id}">${icon('eye')} ${ui.showDoor === id ? 'Masquer' : 'Afficher'}</button>` : ''}
-          <div class="tiny muted">${pt.maj ? 'depuis le ' + fmtDate(pt.maj) : ''}${pt.serrure ? ' · ' + pt.serrure : ''}</div></div>
+          <div class="tiny muted">${pt.maj ? 'depuis le ' + fmtDate(pt.maj) : ''}${pt.serrure ? ' · ' + pt.serrure : ''}</div>
+          ${pt.code ? html`<div style="margin-top:8px">${pt.off ? html`<span class="badge bad">⏸️ <span>Désactivé</span></span>` : pt.fin && pt.fin < today() ? html`<span class="badge bad">⌛ <span>Expiré le</span> ${fmtDate(pt.fin)}</span>` : html`<span class="badge ok">🟢 <span>Actif</span>${pt.fin ? html` · <span>jusqu’au</span> ${fmtDate(pt.fin)}` : ''}</span>`}</div>
+            <button class="btn sm" style="margin-top:8px" data-action="door-toggle" data-id="${id}">${pt.off ? '▶️ Réactiver le code' : '⏸️ Désactiver le code'}</button>` : ''}</div>
         <button class="btn primary block" data-action="door-change" data-id="${id}">${icon('key')} ${pt.code ? 'Changer le code' : 'Enregistrer le code de la porte'}</button>
         <p class="tiny muted">${shownTo.length ? `Visible dans l'espace de ${shownTo.map(fullName).join(', ')} : il voit le nouveau code dès que vous le changez.` : "Pour que l'occupant voie le code dans son app : fiche locataire → Espace → cochez « Code de la porte »."}</p>
         ${(pt.hist || []).length ? html`<div class="section-label">Historique des codes</div><div class="list">${[...pt.hist].reverse().map((h) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${fmtDate(h.d)} — ${h.raison}</span><span class="meta">${'•'.repeat(Math.max(0, (h.code || '').length - 2))}${(h.code || '').slice(-2)}${h.note ? ' · ' + h.note : ''}</span></span></div>`)}</div>` : ''}`;
@@ -4438,6 +4445,14 @@ const ACTIONS = {
     renderView();
   },
   'door-change': (d) => openOver('door-form', d.id),
+  // désactiver / réactiver le code sans le changer (il disparaît / revient dans l'app de l'occupant)
+  'door-toggle': async (d) => {
+    const g = vault.get('logements', d.id);
+    if (!g || !g.porte) return;
+    const off = !g.porte.off;
+    await vault.mutate((tx) => tx.put('logements', { id: g.id, porte: { ...g.porte, off } }), off ? 'Code de porte désactivé' : 'Code de porte réactivé', `${g.nom} (${immName(g.immId)})`, g.id);
+    toast(off ? 'Code désactivé : il n’apparaît plus chez l’occupant' : 'Code réactivé');
+  },
   'door-show': (d) => { ui.showDoor = ui.showDoor === d.id ? '' : d.id; ui.sheet.rendered = false; renderSheet(); },
   'esp-filter': (d, el) => { sheetEl.querySelectorAll('[data-action=esp-filter]').forEach((b) => b.setAttribute('aria-pressed', b === el)); filterEspList(); },
   'esp-open': (d) => openOver('loc', d.id, 'espace'),
@@ -4851,7 +4866,7 @@ const FORMS = {
     if (!g || !/^[0-9A-Za-z#*]{3,16}$/.test(code)) return toast('Code invalide (3 à 16 chiffres ou lettres)', { bad: true });
     const pt = g.porte || {};
     const h = { d: today(), code, raison: fd.get('raison'), note: String(fd.get('note') || '').trim() };
-    await vault.mutate((tx) => tx.put('logements', { id: g.id, porte: { code, maj: today(), serrure: String(fd.get('serrure') || '').trim(), info: String(fd.get('info') || '').trim(), hist: [...(pt.hist || []), h].slice(-30) } }), 'Code de porte changé', `${g.nom} (${immName(g.immId)}) — ${h.raison}`, g.immId);
+    await vault.mutate((tx) => tx.put('logements', { id: g.id, porte: { code, maj: today(), off: false, fin: /^\d{4}-\d{2}-\d{2}$/.test(fd.get('fin') || '') ? fd.get('fin') : '', serrure: String(fd.get('serrure') || '').trim(), info: String(fd.get('info') || '').trim(), hist: [...(pt.hist || []), h].slice(-30) } }), 'Code de porte changé', `${g.nom} (${immName(g.immId)}) — ${h.raison}`, g.immId);
     toast('Code enregistré');
     goBack();
   },
