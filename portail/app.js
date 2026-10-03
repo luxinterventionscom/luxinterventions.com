@@ -2,7 +2,7 @@
 // Plusieurs utilisateurs et plusieurs gérances : chacun voit uniquement ses résidences et ses demandes,
 // l'équipe LuxInterventions (rôle « admin ») voit tout et traite les demandes.
 
-import { startI18n, LOCALES } from '/ares/i18n.js';
+import { startI18n, LOCALES, translate as T } from '/ares/i18n.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
@@ -99,7 +99,12 @@ const URG = {
   '24h': { label: 'Sous 24 h', sub: 'Dans la journée', dot: '🟠', cls: 'warn' },
   planifie: { label: 'Planifié', sub: 'À convenir', dot: '🟢', cls: 'ok' },
 };
-const CATEGORIES = ['Plomberie', 'Électricité', 'Serrurerie', 'Chauffage / sanitaire', 'Toiture / façade', 'Vitrerie', 'Menuiserie', 'Peinture', 'Nettoyage', 'Espaces verts', 'Ascenseur', 'Autre'];
+const CATEGORIES = ['Plomberie', 'Électricité', 'Chauffage', 'Chaudière', 'Radiateurs', 'Sanitaire', 'Maçonnerie', 'Carrelage', 'Pose de panneaux', 'Peinture', 'Panneaux solaires', 'Serrurerie', 'Toiture / façade', 'Vitrerie', 'Menuiserie', 'Nettoyage', 'Espaces verts', 'Ascenseur', 'Autre'];
+// Ce qu'il faut faire et où (enregistré en clair dans « categorie » et « lieu », séparé par « · »)
+const NATURES = ['Réparer', 'Nettoyer', 'Refaire', 'Remplacer', 'Installer / poser', 'Contrôler'];
+const ZONES = ['Appartement', 'Chambre', 'Box / garage', 'Cave', 'Jardin commun', 'Parties communes / hall', 'Cage d’escalier', 'Toiture / façade', 'Chaufferie / local technique', 'Parking / extérieur', 'Autre'];
+// Morceaux « A · B · C » : chacun dans son <span> pour être traduit séparément ; « Étage 2 » → « Étage » + 2
+const partsHtml = (s) => String(s || '').split(' · ').filter(Boolean).map((x, i) => { const m = /^(Étage|Date souhaitée :) (.+)$/.exec(x); return html`${i ? ' · ' : ''}${m ? html`<span>${m[1]}</span> ${m[2]}` : html`<span>${x}</span>`}`; });
 const ROLES = { admin: 'LuxInterventions', gerance_admin: 'Responsable gérance', gerance_user: 'Utilisateur gérance' };
 // Fiche d'évaluation d'une intervention terminée (remplie par la gérance, enregistrée comme message du suivi)
 const EVAL_CRIT = [
@@ -436,6 +441,7 @@ function navItems() {
   const items = [['home', 'Accueil', 'home'], ['demandes', 'Demandes', 'wrench'], ['residences', 'Résidences', 'building']];
   if (isAdmin()) items.push(['gerances', 'Gérances', 'users']);
   else if (isManager()) items.push(['equipe', 'Équipe', 'users']);
+  items.push(['stats', 'Statistiques', 'chart']);
   items.push(['plus', 'Plus', 'more']);
   return items;
 }
@@ -458,7 +464,7 @@ function renderShell() {
         <button class="btn sm ghost" data-action="logout">Quitter</button></div>` : ''}
       <main class="main" id="view"></main>
     </div>
-    <nav class="bottomnav" style="grid-template-columns:repeat(${navItems().length},1fr)" aria-label="Navigation">${navItems().map(nb)}</nav>`);
+    <nav class="bottomnav" style="grid-template-columns:repeat(${navItems().length - 1},1fr)" aria-label="Navigation">${navItems().filter((x) => x[0] !== 'stats').map(nb)}</nav>`);
 }
 
 async function go(route, replace) {
@@ -510,6 +516,9 @@ async function loadRoute(route) {
     state.cache.orgs = orgs.orgs;
   } else if (route === 'equipe') {
     state.cache.equipe = (await api('users')).users;
+  } else if (route === 'stats') {
+    const [all, ev] = await Promise.all([api('tickets?scope=all' + org), api('evals' + (org ? '?' + org.slice(1) : '')).catch(() => null)]);
+    state.cache.stats = { tickets: all.tickets, evals: ev ? ev.evals : null };
   }
   if (isAdmin() && !state.cache.orgs) state.cache.orgs = (await api('orgs')).orgs;
   updateBadges();
@@ -548,10 +557,10 @@ function ticketRow(t) {
   return html`<button class="row ticket-row ${t.status === 'recue' && t.urgence === 'urgent' ? 'is-urgent' : ''}" data-action="open-ticket" data-id="${t.id}">
     <span class="urg-dot urg-${t.urgence}" title="${u.label}"></span>
     <span class="grow">
-      <span class="title" style="display:block">#${t.ref} · ${t.residence_name}${t.lieu ? html` <span class="muted">— ${t.lieu}</span>` : ''}</span>
+      <span class="title" style="display:block">#${t.ref} · ${t.residence_name}${t.lieu ? html` <span class="muted">— ${partsHtml(t.lieu)}</span>` : ''}</span>
       <span class="meta" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
         <span class="badge ${st.cls}">${st.label}</span>
-        ${t.categorie ? html`<span>${t.categorie}</span>` : ''}
+        ${t.categorie ? html`<span>${partsHtml(t.categorie)}</span>` : ''}
         ${isAdmin() ? html`<span>· ${t.org_name}</span>` : ''}
         ${t.status === 'planifiee' && t.planned_at ? html`<span>· ${fmtPlanned(t.planned_at)}</span>` : html`<span>· ${ago(t.status === 'recue' ? t.created_at : t.updated_at)}</span>`}
         ${t.photos ? html`<span>· ${icon('camera')}${t.photos}</span>` : ''}
@@ -631,12 +640,17 @@ const VIEWS = {
     const today = new Date().toISOString().slice(0, 10);
     const planToday = tickets.filter((t) => t.status === 'planifiee' && (t.planned_at || '').startsWith(today));
     const hello = html`Bonjour <span>${state.me.name.split(' ')[0]}</span>`;
+    // l'équipe arrive : en route / sur place (clignote) ; prévue aujourd'hui
+    const coming = tickets.filter((t) => t.status === 'encours');
+    const arrive = coming.length || planToday.length ? html`<div class="arrive">${coming.map((t) => html`<button class="arrive-b go" data-action="open-ticket" data-id="${t.id}"><span class="arr-dot"></span><span class="grow">🚚 <b>LuxInterventions est en route / sur place</b><span class="meta" style="display:block">#${t.ref} · ${t.residence_name}${t.technicien ? html` · <span>technicien</span> ${t.technicien}` : ''}</span></span></button>`)}
+      ${planToday.map((t) => html`<button class="arrive-b today" data-action="open-ticket" data-id="${t.id}"><span class="arr-dot"></span><span class="grow">📅 <b>Aujourd'hui</b> ${new Date(t.planned_at).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })}<span class="meta" style="display:block">#${t.ref} · ${t.residence_name}${t.technicien ? html` · <span>technicien</span> ${t.technicien}` : ''}</span></span></button>`)}</div>` : '';
     const pushCard = !['on', 'demo'].includes(pushState()) ? html`<div class="alert ${isAdmin() ? 'warn' : 'info'}" style="margin-bottom:14px;align-items:center">${icon('bell')}<div style="flex:1">${isAdmin()
       ? html`<b>Activez les notifications</b> pour être alerté immédiatement des nouvelles demandes urgentes.` : html`<b>Activez les notifications</b> pour suivre l'avancement de vos demandes.`}</div><button class="btn sm" data-action="push-on">Activer</button></div>` : '';
     if (isAdmin()) {
       return html`${pushCard}
         ${guideCard(stats)}
         ${pageHead(hello, 'Espace équipe LuxInterventions')}
+        ${arrive}
         ${pubSlot('haut')}
         ${orgFilter()}
         <div class="metrics">
@@ -655,6 +669,7 @@ const VIEWS = {
     return html`${pushCard}
       ${guideCard(stats)}
       ${pageHead(hello, state.me.org_name || '')}
+      ${arrive}
       ${pubSlot('haut')}
       <button class="big-cta" data-action="new-ticket">${icon('plus')}<span><b>Nouvelle demande d'intervention</b><small>Urgence, photos, accès — en 30 secondes</small></span></button>
       <div class="metrics" style="margin-top:14px">
@@ -664,9 +679,59 @@ const VIEWS = {
         <div class="metric"><div class="lbl">Résidences</div><div class="val">${stats.residences || 0}</div><div class="sub">${stats.apartments ? stats.apartments + ' appartements' : ''}</div></div>
       </div>
       ${pubSlot('milieu')}
+      <button class="btn block" style="margin-top:12px" data-action="go" data-to="stats">${icon('chart')} Statistiques de nos interventions</button>
       <div class="section-label">Mes demandes en cours</div>
       ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande</button>`)}
       ${pubSlot('bas')}${tickerBar()}`;
+  },
+
+  stats() {
+    const { tickets, evals } = state.cache.stats || { tickets: [], evals: [] };
+    const now = new Date(), Y = 365 * 864e5;
+    const ts = tickets.filter((t) => t.created_at >= Date.now() - Y && t.status !== 'annulee');
+    const done = ts.filter((t) => t.status === 'terminee' && t.done_at);
+    const taken = ts.filter((t) => t.taken_at);
+    const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
+    const avgTake = avg(taken.map((t) => t.taken_at - t.created_at)), avgDone = avg(done.map((t) => t.done_at - t.created_at));
+    // 12 derniers mois : demandées / terminées
+    const months = Array.from({ length: 12 }, (_, i) => { const d = new Date(now.getFullYear(), now.getMonth() - 11 + i, 1); return { y: d.getFullYear(), m: d.getMonth(), lbl: d.toLocaleDateString(LOC, { month: 'short' }), c: 0, f: 0 }; });
+    const mi = (t) => months.findIndex((x) => { const d = new Date(t); return d.getFullYear() === x.y && d.getMonth() === x.m; });
+    for (const t of ts) { const i = mi(t.created_at); if (i >= 0) months[i].c++; }
+    for (const t of done) { const i = mi(t.done_at); if (i >= 0) months[i].f++; }
+    const maxM = Math.max(1, ...months.map((x) => Math.max(x.c, x.f)));
+    const count = (key) => { const o = {}; for (const t of ts) { const k = key(t); if (k) o[k] = (o[k] || 0) + 1; } return Object.entries(o).sort((a, b) => b[1] - a[1]); };
+    const byType = count((t) => (t.categorie || 'Autre').split(' · ')[0]).slice(0, 10);
+    const byUrg = Object.keys(URG).map((k) => [k, ts.filter((t) => t.urgence === k).length]);
+    const byRes = count((t) => t.residence_name).slice(0, 8);
+    const bars = (rows, total, fmt = (k) => html`<span>${k}</span>`) => html`<div class="hbars">${rows.map(([k, n]) => html`<div class="hbar"><span class="hb-l">${fmt(k)}</span><span class="hb-t"><i style="width:${Math.round((n / Math.max(1, total)) * 100)}%"></i></span><b>${n}</b></div>`)}</div>`;
+    // satisfaction (fiches d'évaluation)
+    const ev = (evals || []).map((e) => evalParse(e.text)).filter(Boolean);
+    const glob = EVAL_GLOBAL.map(([k, l]) => [l, ev.filter((v) => v.global === k).length]);
+    const crit = EVAL_CRIT.map(([k, l]) => { const xs = ev.map((v) => +v[k]).filter(Boolean); return [l, xs.length ? avg(xs) : null]; });
+    const pct = ev.length ? Math.round((ev.filter((v) => v.global === 'ok').length / ev.length) * 100) : null;
+    return html`
+      ${pageHead('Statistiques', isAdmin() ? 'Toutes les gérances — 12 derniers mois' : html`${state.me.org_name || ''} — <span>12 derniers mois</span>`)}
+      ${orgFilter()}
+      <div class="metrics">
+        <div class="metric"><div class="lbl">Demandes</div><div class="val">${ts.length}</div><div class="sub">12 derniers mois</div></div>
+        <div class="metric"><div class="lbl">Terminées</div><div class="val green">${done.length}</div><div class="sub">${ts.length ? Math.round((done.length / ts.length) * 100) + ' %' : ''}</div></div>
+        <div class="metric"><div class="lbl">Prise en charge</div><div class="val">${duration(avgTake)}</div><div class="sub">délai moyen</div></div>
+        <div class="metric"><div class="lbl">Résolution</div><div class="val">${duration(avgDone)}</div><div class="sub">de la demande à la fin</div></div>
+        <div class="metric"><div class="lbl">Satisfaction</div><div class="val ${pct == null ? '' : pct >= 80 ? 'green' : pct >= 50 ? '' : 'red'}">${pct == null ? '—' : pct + ' %'}</div><div class="sub">${ev.length} <span>évaluations</span></div></div>
+      </div>
+      <div class="card stat-card"><div class="section-label" style="margin-top:0">Demandes et interventions terminées par mois</div>
+        <div class="vbars">${months.map((x) => html`<div class="vb"><div class="vb-bars"><i class="c" style="height:${Math.round((x.c / maxM) * 100)}%" title="${x.c}"></i><i class="f" style="height:${Math.round((x.f / maxM) * 100)}%" title="${x.f}"></i></div><small>${x.lbl}</small></div>`)}</div>
+        <div class="legend-row tiny"><span><i class="lg c"></i> <span>Demandées</span></span><span><i class="lg f"></i> <span>Terminées</span></span></div></div>
+      <div class="stat-grid">
+        <div class="card stat-card"><div class="section-label" style="margin-top:0">Par type de travaux</div>${byType.length ? bars(byType, ts.length) : html`<p class="muted small">—</p>`}</div>
+        <div class="card stat-card"><div class="section-label" style="margin-top:0">Par urgence</div>${bars(byUrg, ts.length, (k) => html`${URG[k].dot} <span>${URG[k].label}</span>`)}
+          <div class="section-label">Par résidence</div>${byRes.length ? bars(byRes, ts.length) : html`<p class="muted small">—</p>`}</div>
+      </div>
+      <div class="card stat-card"><div class="section-label" style="margin-top:0">⭐ Satisfaction</div>
+        ${evals == null ? html`<p class="muted small">Disponible après la mise à jour du serveur.</p>` : ev.length ? html`<div class="stat-grid">
+          <div>${bars(glob, ev.length)}</div>
+          <div class="hbars">${crit.map(([l, a]) => html`<div class="hbar"><span class="hb-l"><span>${l}</span></span><span class="hb-t"><i class="sat" style="width:${a ? Math.round((a / 4) * 100) : 0}%"></i></span><b>${a ? EVAL_LVL[Math.round(a) - 1][1] + ' ' + a.toFixed(1).replace('.', ',') : '—'}</b></div>`)}</div>
+        </div>` : html`<p class="muted small">Pas encore d’évaluation. Après chaque intervention terminée, la gérance peut remplir la fiche « ⭐ Évaluer l’intervention ».</p>`}</div>`;
   },
 
   demandes() {
@@ -882,7 +947,7 @@ const SHEETS = {
     const open = !['terminee', 'annulee'].includes(t.status);
     let actions = '';
     if (isAdmin() && open) {
-      const next = { recue: ['take', 'Prendre en charge'], prise: ['plan', 'Planifier'], planifiee: ['start', 'Démarrer'], encours: ['finish', 'Terminer'] }[t.status];
+      const next = { recue: ['take', 'Prendre en charge'], prise: ['plan', 'Planifier'], planifiee: ['start', '🚚 En route'], encours: ['finish', 'Terminer'] }[t.status];
       actions = html`<div class="actions">
         <button class="btn primary" data-action="t-${next[0]}" data-id="${t.id}">${next[1]}</button>
         ${t.status === 'planifiee' ? html`<button class="btn" data-action="t-plan" data-id="${t.id}">Replanifier</button>` : ''}
@@ -899,20 +964,29 @@ const SHEETS = {
         <div class="ticket-head">
           <span class="badge ${u.cls}">${u.dot} ${u.label}</span>
           <span class="badge ${st.cls}">${st.label}</span>
-          ${t.categorie ? html`<span class="badge">${t.categorie}</span>` : ''}
+          ${t.categorie ? html`<span class="badge">${partsHtml(t.categorie)}</span>` : ''}
         </div>
         ${t.status !== 'annulee' ? html`<ol class="stepper">${STEPS.map((k, i) => html`<li class="${i < st.step ? 'done' : i === st.step ? 'now' : ''}"><i></i><span>${STATUS[k].label}</span></li>`)}</ol>` : ''}
         ${t.status === 'planifiee' || t.planned_at ? html`<div class="alert info" style="margin-bottom:12px">${icon('calendar')}<div>Intervention prévue <b>${fmtPlanned(t.planned_at)}</b>${t.technicien ? html` — technicien : <b>${t.technicien}</b>` : ''}</div></div>` : ''}
         ${actions}
-        <div class="card" style="margin-bottom:12px"><div class="small muted" style="margin-bottom:6px">Description</div><div style="white-space:pre-wrap">${t.description}</div>${gallery(rootPhotos)}</div>
+        <div class="card" style="margin-bottom:12px"><div class="small muted" style="margin-bottom:6px">Description</div><div style="white-space:pre-wrap">${t.description}</div></div>
+        ${(() => {
+          // photos du dégât (gérance, à la demande) | photos après réparation (équipe LuxInterventions)
+          const after = d.events.filter((e) => e !== firstEvent && e.user_role === 'admin').flatMap((e) => byEvent[e.id] || []);
+          if (!rootPhotos.length && !after.length) return '';
+          return html`<div class="card ba" style="margin-bottom:12px"><div class="ba-grid">
+            <div><div class="ba-h">📷 <span>Avant</span> <span class="tiny muted">— <span>photos du dégât</span></span></div>${rootPhotos.length ? gallery(rootPhotos) : html`<p class="tiny muted">—</p>`}</div>
+            <div><div class="ba-h ok">✅ <span>Après</span> <span class="tiny muted">— <span>travail terminé</span></span></div>${after.length ? gallery(after) : html`<p class="tiny muted">${t.status === 'terminee' ? '—' : 'Les photos de la réparation apparaîtront ici.'}</p>`}</div>
+          </div></div>`;
+        })()}
         <dl class="kv small">
           ${kv('Résidence', html`${res.name}<div class="tiny muted">${res.address || ''}</div>`)}
-          ${kv('Lieu', t.lieu)}
+          ${kv('Lieu', t.lieu ? partsHtml(t.lieu) : '')}
           ${isAdmin() ? kv('Gérance', res.org_name) : ''}
           ${kv('Contact sur place', t.contact_name || res.contact_name ? html`${t.contact_name || res.contact_name}${tel ? html` · <a href="tel:${tel}">${t.contact_phone || res.contact_phone}</a>` : ''}` : '')}
           ${kv('Accès', t.acces || res.access)}
           ${kv('Clés', res.keys_info)}
-          ${kv('Disponibilités', t.dispo)}
+          ${kv('Disponibilités', t.dispo ? partsHtml(t.dispo) : '')}
           ${kv('Demandée', fmtDateTime(t.created_at))}
           ${kv('Prise en charge', t.taken_at ? fmtDateTime(t.taken_at) + ' (' + duration(t.taken_at - t.created_at) + ')' : '')}
           ${kv('Terminée', t.done_at && t.status === 'terminee' ? fmtDateTime(t.done_at) : '')}
@@ -978,8 +1052,12 @@ const SHEETS = {
           ${res.map((r) => html`<option value="${r.id}" ${data.residence_id === r.id ? new Raw('selected') : ''}>${r.name}${r.address ? ' — ' + r.address : ''}${isAdmin() ? ' (' + r.org_name + ')' : ''}</option>`)}</select></label>
         <div class="full"><div class="small" style="font-weight:600;color:var(--text-2);margin-bottom:6px">Urgence</div>
           <div class="urg-choices">${Object.entries(URG).map(([k, u]) => html`<label class="urg-choice urg-${k}"><input type="radio" name="urgence" value="${k}" required ${k === (data.urgence || '') ? new Raw('checked') : ''}><span>${u.dot} <b>${u.label}</b><small>${u.sub}</small></span></label>`)}</div></div>
-        <label class="field">Type d'intervention<select name="categorie">${CATEGORIES.map((c) => html`<option value="${c}">${c}</option>`)}</select></label>
-        ${field('Lieu précis', 'lieu', '', { placeholder: 'ex. App. 4B, hall, cave, toiture' })}
+        <label class="field">Type de travaux<select name="categorie">${CATEGORIES.map((c) => html`<option value="${c}">${c}</option>`)}</select></label>
+        <label class="field">Travail demandé<select name="nature"><option value="">—</option>${NATURES.map((c) => html`<option value="${c}">${c}</option>`)}</select></label>
+        <label class="field">Où ?<select name="zone"><option value="">—</option>${ZONES.map((c) => html`<option value="${c}">${c}</option>`)}</select></label>
+        ${field('Étage', 'etage', '', { placeholder: 'ex. RDC, 2, sous-sol' })}
+        ${field('N° / précision', 'lieu', '', { full: true, placeholder: 'ex. App. 4B, box 12, chambre 3, cuisine' })}
+        ${field('Date souhaitée', 'date_souhaitee', '', { type: 'date' })}
         <label class="field full">Description du problème<textarea name="description" required placeholder="Que se passe-t-il ? Depuis quand ? Risque de dégâts ?"></textarea></label>
         <label class="field full">Photos (jusqu'à 6)<input type="file" name="photos" accept="image/*" multiple data-input="preview-files"></label>
         <div class="full photos" id="preview"></div>
@@ -1067,7 +1145,7 @@ const SHEETS = {
           <button class="btn" data-action="org-residences" data-id="${id}">${icon('building')} Résidences</button>
           <button class="btn" data-action="org-tickets" data-id="${id}">${icon('wrench')} Demandes</button>
         </div>`,
-      foot: html`<button class="btn" data-action="edit-org" data-id="${id}">${icon('edit')} Modifier</button>`,
+      foot: html`<button class="btn ghost danger" data-action="del-org" data-id="${id}">${icon('trash')} Supprimer la gérance</button><button class="btn" data-action="edit-org" data-id="${id}">${icon('edit')} Modifier</button>`,
     };
   },
 
@@ -1276,6 +1354,20 @@ const ACTIONS = {
     go('residences', true);
   },
   'new-org': () => openSheet('org-form'),
+  // supprimer une gérance : tout ce qui la concerne (utilisateurs, résidences, demandes, photos) — on tape son nom pour confirmer
+  async 'del-org'(d) {
+    const o = (state.cache.orgs || []).find((x) => x.id === d.id);
+    if (!o) return;
+    const typed = prompt(`${T('Supprimer définitivement la gérance, ses utilisateurs, ses résidences, ses demandes et leurs photos ?')}\n\n${T('Tapez son nom pour confirmer :')} ${o.name}`);
+    if (typed == null) return;
+    if (typed.trim() !== o.name) return toast(T('Nom différent : rien n’a été supprimé.'), { bad: true });
+    try {
+      await api('orgs/' + o.id, { method: 'DELETE', body: { confirm: typed.trim() } });
+      toast(T('Gérance supprimée'));
+      closeSheet(true);
+      await refresh(true);
+    } catch (e) { toast(e.message, { bad: true }); }
+  },
   'edit-org': (d) => openSheet('org-form', d.id),
   'open-org': (d) => openSheet('org', d.id),
   'org-residences': (d) => { state.filters.org = d.id; closeSheet(); go('residences'); },
@@ -1362,6 +1454,12 @@ const FORMS = {
     setBusy(btn, true, 'Envoi…');
     try {
       const body = fd2obj(fd);
+      // type + travail demandé, zone + étage + précision, date souhaitée + disponibilités
+      body.categorie = [body.categorie, body.nature].filter(Boolean).join(' · ').slice(0, 60);
+      body.lieu = [body.zone, body.etage ? 'Étage ' + body.etage : '', body.lieu].filter(Boolean).join(' · ').slice(0, 200);
+      const ds = /^\d{4}-\d{2}-\d{2}$/.test(body.date_souhaitee || '') ? body.date_souhaitee.split('-').reverse().join('/') : '';
+      body.dispo = [ds ? 'Date souhaitée : ' + ds : '', body.dispo].filter(Boolean).join(' · ');
+      for (const k of ['nature', 'zone', 'etage', 'date_souhaitee']) delete body[k];
       const { id, ref } = await api('tickets', { method: 'POST', body });
       if (files.length) { setBusy(btn, true, `Photos 0/${files.length}…`); await uploadPhotos(id, files); }
       toast(`Demande #${ref} envoyée — LuxInterventions est prévenu`);

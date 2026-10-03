@@ -1294,6 +1294,28 @@ async function handlePortail(request, env, url, headers, ctx) {
       return json({ ok: true });
     }
 
+    // Supprimer une gérance (réservé à LuxInterventions) : utilisateurs, résidences, demandes, suivi et photos — irréversible
+    if (orgMatch && method === "DELETE") {
+      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      const o = await env.DB.prepare("SELECT * FROM orgs WHERE id = ?").bind(orgMatch[1]).first();
+      if (!o) fail(404, "Gérance introuvable");
+      const b = await body();
+      if (clean(b.confirm, 120) !== o.name) fail(400, "Tapez exactement le nom de la gérance pour confirmer");
+      const ph = (await env.DB.prepare("SELECT p.r2_key FROM photos p JOIN tickets t ON t.id = p.ticket_id WHERE t.org_id = ?").bind(o.id).all()).results || [];
+      for (let i = 0; i < ph.length; i += 500) await env.PHOTOS.delete(ph.slice(i, i + 500).map((x) => x.r2_key));
+      await env.DB.batch([
+        env.DB.prepare("DELETE FROM photos WHERE ticket_id IN (SELECT id FROM tickets WHERE org_id = ?)").bind(o.id),
+        env.DB.prepare("DELETE FROM events WHERE ticket_id IN (SELECT id FROM tickets WHERE org_id = ?)").bind(o.id),
+        env.DB.prepare("DELETE FROM tickets WHERE org_id = ?").bind(o.id),
+        env.DB.prepare("DELETE FROM residences WHERE org_id = ?").bind(o.id),
+        env.DB.prepare("DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE org_id = ?)").bind(o.id),
+        env.DB.prepare("DELETE FROM push_subs WHERE user_id IN (SELECT id FROM users WHERE org_id = ?)").bind(o.id),
+        env.DB.prepare("DELETE FROM users WHERE org_id = ?").bind(o.id),
+        env.DB.prepare("DELETE FROM orgs WHERE id = ?").bind(o.id),
+      ]);
+      return json({ ok: true, photos: ph.length });
+    }
+
     // ── Utenti ──
     if (path === "users" && method === "GET") {
       if (me.role === "gerance_user") fail(403, "Réservé aux responsables");
@@ -1502,6 +1524,14 @@ async function handlePortail(request, env, url, headers, ctx) {
     }
 
     // ── Statistiche ──
+    // Évaluations des interventions (12 derniers mois) pour les statistiques de satisfaction
+    if (path === "evals" && method === "GET") {
+      const org = orgScope(me, url.searchParams.get("org"));
+      const rows = await env.DB.prepare(`SELECT e.text, e.created_at, t.categorie, t.residence_id FROM events e JOIN tickets t ON t.id = e.ticket_id
+          WHERE e.kind = 'comment' AND e.text LIKE '⭐ %' AND e.created_at >= ? ${org ? "AND t.org_id = ?" : ""} ORDER BY e.created_at DESC LIMIT 1000`)
+        .bind(now - 365 * 24 * 3600 * 1000, ...(org ? [org] : [])).all();
+      return json({ evals: rows.results || [] });
+    }
     if (path === "stats" && method === "GET") {
       const org = orgScope(me, url.searchParams.get("org"));
       const f = org ? "AND org_id = ?" : "";

@@ -9,6 +9,10 @@ export default [
 ", with the invitation link. After that: email + password, on any device. Forgotten? Ask for a new link."
 ],
 [
+"12 derniers mois",
+"Last 12 months"
+],
+[
 "6 photos maximum : les premières seront envoyées",
 "6 photos maximum: the first ones will be sent"
 ],
@@ -117,6 +121,10 @@ export default [
 "Flat 3B, kitchen"
 ],
 [
+"Appartement",
+"Flat"
+],
+[
 "Appartements",
 "Flats"
 ],
@@ -127,6 +135,10 @@ export default [
 [
 "Application",
 "App"
+],
+[
+"Après",
+"After"
 ],
 [
 "Ascenseur",
@@ -177,8 +189,16 @@ export default [
 "No residence saved. Add your residences once: they will be offered with every request."
 ],
 [
+"Aujourd'hui",
+"Today"
+],
+[
 "Autre",
 "Other"
+],
+[
+"Avant",
+"Before"
 ],
 [
 "Avis global",
@@ -221,8 +241,28 @@ export default [
 "Deals from our partners"
 ],
 [
+"Box / garage",
+"Lock-up / garage"
+],
+[
 "Boîte à clés à gauche de l’entrée, code 1990",
 "Key box left of the entrance, code 1990"
+],
+[
+"Cage d’escalier",
+"Stairwell"
+],
+[
+"Carrelage",
+"Tiling"
+],
+[
+"Cave",
+"Cellar"
+],
+[
+"Chambre",
+"Room"
 ],
 [
 "Changer",
@@ -237,12 +277,24 @@ export default [
 "Each person has their own access: you always know who made which request. A disabled account can no longer sign in."
 ],
 [
+"Chaudière",
+"Boiler"
+],
+[
+"Chauffage",
+"Heating"
+],
+[
 "Chauffage / sanitaire",
 "Heating / plumbing fixtures"
 ],
 [
 "Chaufferie",
 "Boiler room"
+],
+[
+"Chaufferie / local technique",
+"Boiler room / plant room"
 ],
 [
 "Choisissez une note pour chaque critère et l’avis global.",
@@ -317,6 +369,10 @@ export default [
 "On-site contact"
 ],
 [
+"Contrôler",
+"Inspect"
+],
+[
 "Copie impossible",
 "Copy failed"
 ],
@@ -365,6 +421,14 @@ export default [
 "Date and time"
 ],
 [
+"Date souhaitée",
+"Preferred date"
+],
+[
+"Date souhaitée :",
+"Preferred date:"
+],
+[
 "Demande #{0} envoyée — LuxInterventions est prévenu",
 "Request #{0} sent — LuxInterventions has been notified"
 ],
@@ -393,11 +457,19 @@ export default [
 "Open requests"
 ],
 [
+"Demandes et interventions terminées par mois",
+"Requests and completed jobs per month"
+],
+[
 "Demandes reçues",
 "Requests received"
 ],
 [
 "Demandée",
+"Requested"
+],
+[
+"Demandées",
 "Requested"
 ],
 [
@@ -407,6 +479,10 @@ export default [
 [
 "Disponibilités",
 "Availability"
+],
+[
+"Disponible après la mise à jour du serveur.",
+"Available after the server update."
 ],
 [
 "Dont urgentes",
@@ -553,6 +629,10 @@ export default [
 "Property manager saved"
 ],
 [
+"Gérance supprimée",
+"Management company deleted"
+],
+[
 "Gérances",
 "Property managers"
 ],
@@ -583,6 +663,10 @@ export default [
 [
 "Installer",
 "Install"
+],
+[
+"Installer / poser",
+"Install / fit"
 ],
 [
 "Installer sur ce téléphone",
@@ -653,6 +737,10 @@ export default [
 "January"
 ],
 [
+"Jardin commun",
+"Shared garden"
+],
+[
 "Je confirme cette évaluation (vaut signature).",
 "I confirm this rating (counts as signature)."
 ],
@@ -685,6 +773,10 @@ export default [
 "The two passwords do not match."
 ],
 [
+"Les photos de la réparation apparaîtront ici.",
+"Photos of the repair will appear here."
+],
+[
 "Lien",
 "Link"
 ],
@@ -707,6 +799,10 @@ export default [
 [
 "Luca passe cet après-midi, merci de prévenir le concierge.",
 "Luca is coming this afternoon, please let the caretaker know."
+],
+[
+"LuxInterventions est en route / sur place",
+"LuxInterventions is on the way / on site"
 ],
 [
 "LuxInterventions · Interventions techniques 7j/7",
@@ -735,6 +831,10 @@ export default [
 [
 "Masquer",
 "Hide"
+],
+[
+"Maçonnerie",
+"Masonry"
 ],
 [
 "Mentions légales",
@@ -817,6 +917,10 @@ export default [
 "Cleaning"
 ],
 [
+"Nettoyer",
+"Clean"
+],
+[
 "Nom",
 "Name"
 ],
@@ -831,6 +935,10 @@ export default [
 [
 "Nom de la résidence obligatoire",
 "Residence name required"
+],
+[
+"Nom différent : rien n’a été supprimé.",
+"Name does not match: nothing was deleted."
 ],
 [
 "Nom du technicien",
@@ -921,24 +1029,60 @@ export default [
 "November"
 ],
 [
+"N° / précision",
+"No. / details"
+],
+[
 "Octobre",
 "October"
+],
+[
+"Où ?",
+"Where?"
 ],
 [
 "Où trouver les clés (local, boîte à clés…)",
 "Where to find the keys (room, key box…)"
 ],
 [
+"Panneaux solaires",
+"Solar panels"
+],
+[
+"Par résidence",
+"By residence"
+],
+[
 "Par type",
 "By type"
+],
+[
+"Par type de travaux",
+"By type of work"
+],
+[
+"Par urgence",
+"By urgency"
+],
+[
+"Parking / extérieur",
+"Car park / outside"
 ],
 [
 "Partiellement satisfait",
 "Partly satisfied"
 ],
 [
+"Parties communes / hall",
+"Common areas / hall"
+],
+[
 "Pas de connexion internet",
 "No internet connection"
+],
+[
+"Pas encore d’évaluation. Après chaque intervention terminée, la gérance peut remplir la fiche « ⭐ Évaluer l’intervention ».",
+"No ratings yet. After each completed job, the management company can fill in the “⭐ Rate the job” form."
 ],
 [
 "Peinture",
@@ -1013,6 +1157,10 @@ export default [
 "Cellar door"
 ],
 [
+"Pose de panneaux",
+"Panel fitting"
+],
+[
 "Premiers pas · {0}/{1}",
 "Getting started · {0}/{1}"
 ],
@@ -1049,6 +1197,10 @@ export default [
 "Exit"
 ],
 [
+"Radiateurs",
+"Radiators"
+],
+[
 "Rapidité & ponctualité",
 "Speed & punctuality"
 ],
@@ -1077,8 +1229,16 @@ export default [
 "Search a residence, an address…"
 ],
 [
+"Refaire",
+"Redo"
+],
+[
 "Relation avec le personnel",
 "Relationship with the staff"
+],
+[
+"Remplacer",
+"Replace"
 ],
 [
 "Rempli et confirmé par",
@@ -1133,6 +1293,10 @@ export default [
 "Reset"
 ],
 [
+"Réparer",
+"Repair"
+],
+[
 "Résidence",
 "Residence"
 ],
@@ -1149,6 +1313,10 @@ export default [
 "Residences"
 ],
 [
+"Résolution",
+"Resolution"
+],
+[
 "Résolution efficace de la panne",
 "Effective fix of the problem"
 ],
@@ -1159,6 +1327,10 @@ export default [
 [
 "Safari : Partager → « Sur l’écran d’accueil ».",
 "Safari: Share → « Add to Home Screen »."
+],
+[
+"Sanitaire",
+"Sanitary"
 ],
 [
 "Satisfait",
@@ -1213,6 +1385,14 @@ export default [
 "Within 24 h"
 ],
 [
+"Statistiques",
+"Statistics"
+],
+[
+"Statistiques de nos interventions",
+"Statistics of our jobs"
+],
+[
 "Statut",
 "Status"
 ],
@@ -1225,12 +1405,24 @@ export default [
 "Follow-up"
 ],
 [
+"Supprimer définitivement la gérance, ses utilisateurs, ses résidences, ses demandes et leurs photos ?",
+"Permanently delete the management company, its users, residences, requests and their photos?"
+],
+[
+"Supprimer la gérance",
+"Delete the management company"
+],
+[
 "Sur iPhone : installez d’abord l’app (Partager → « Sur l’écran d’accueil »), puis ouvrez-la depuis l’icône.",
 "On iPhone: first install the app (Share → « Add to Home Screen »), then open it from the icon."
 ],
 [
 "Syndic Exemple",
 "Example building manager"
+],
+[
+"Tapez son nom pour confirmer :",
+"Type its name to confirm:"
 ],
 [
 "Technicien",
@@ -1285,6 +1477,10 @@ export default [
 "All property managers"
 ],
 [
+"Toutes les gérances — 12 derniers mois",
+"All management companies — last 12 months"
+],
+[
 "Toutes les résidences",
 "All residences"
 ],
@@ -1293,12 +1489,20 @@ export default [
 "All urgency levels"
 ],
 [
+"Travail demandé",
+"Work requested"
+],
+[
 "Travaux effectués, pièces remplacées, recommandations…",
 "Work done, parts replaced, recommendations…"
 ],
 [
 "Type d'intervention",
 "Type of job"
+],
+[
+"Type de travaux",
+"Type of work"
 ],
 [
 "Téléphone",
@@ -1385,12 +1589,20 @@ export default [
 "Property manager view"
 ],
 [
+"de la demande à la fin",
+"from request to completion"
+],
+[
 "demandes ouvertes",
 "open requests"
 ],
 [
 "délai moyen",
 "average time"
+],
+[
+"ex. App. 4B, box 12, chambre 3, cuisine",
+"e.g. Flat 4B, lock-up 12, room 3, kitchen"
 ],
 [
 "ex. App. 4B, hall, cave, toiture",
@@ -1403,6 +1615,10 @@ export default [
 [
 "ex. Merci de prévenir le locataire",
 "e.g. Please let the tenant know"
+],
+[
+"ex. RDC, 2, sous-sol",
+"e.g. ground, 2, basement"
 ],
 [
 "ex. Résidence Val St André 37",
@@ -1433,6 +1649,10 @@ export default [
 "new requests"
 ],
 [
+"photos du dégât",
+"photos of the damage"
+],
+[
 "politique de confidentialité",
 "privacy policy"
 ],
@@ -1447,6 +1667,10 @@ export default [
 [
 "reçu par email ou WhatsApp : vous y choisirez votre mot de passe.",
 "you received by email or WhatsApp: there you will choose your password."
+],
+[
+"travail terminé",
+"work done"
 ],
 [
 "une seule fois",
@@ -1573,6 +1797,10 @@ export default [
 "LuxInterventions team"
 ],
 [
+"Étage",
+"Floor"
+],
+[
 "Évaluation",
 "Rating"
 ],
@@ -1587,6 +1815,14 @@ export default [
 [
 "à l'instant",
 "just now"
+],
+[
+"évaluations",
+"ratings"
+],
+[
+"— 12 derniers mois",
+"— last 12 months"
 ],
 [
 "— Choisir —",
@@ -1635,5 +1871,9 @@ export default [
 [
 "🔑 Le mot de passe se choisit",
 "🔑 The password is chosen"
+],
+[
+"🚚 En route",
+"🚚 On the way"
 ]
 ];

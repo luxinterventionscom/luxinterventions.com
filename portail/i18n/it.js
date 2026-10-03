@@ -9,6 +9,10 @@ export default [
 ", con il link d’invito. Poi: email + password, su qualsiasi dispositivo. Dimenticata? Chiedete un nuovo link."
 ],
 [
+"12 derniers mois",
+"Ultimi 12 mesi"
+],
+[
 "6 photos maximum : les premières seront envoyées",
 "Massimo 6 foto: verranno inviate le prime"
 ],
@@ -117,6 +121,10 @@ export default [
 "App. 3B, cucina"
 ],
 [
+"Appartement",
+"Appartamento"
+],
+[
 "Appartements",
 "Appartamenti"
 ],
@@ -127,6 +135,10 @@ export default [
 [
 "Application",
 "App"
+],
+[
+"Après",
+"Dopo"
 ],
 [
 "Ascenseur",
@@ -177,8 +189,16 @@ export default [
 "Nessun condominio registrato. Aggiungete i vostri condomini una sola volta: saranno proposti a ogni richiesta."
 ],
 [
+"Aujourd'hui",
+"Oggi"
+],
+[
 "Autre",
 "Altro"
+],
+[
+"Avant",
+"Prima"
 ],
 [
 "Avis global",
@@ -225,6 +245,22 @@ export default [
 "Cassetta chiavi a sinistra dell’ingresso, codice 1990"
 ],
 [
+"Cage d’escalier",
+"Vano scale"
+],
+[
+"Carrelage",
+"Piastrelle"
+],
+[
+"Cave",
+"Cantina"
+],
+[
+"Chambre",
+"Camera"
+],
+[
 "Changer",
 "Cambia"
 ],
@@ -237,12 +273,24 @@ export default [
 "Ogni persona ha il suo accesso: si sa sempre chi ha fatto quale richiesta. Un account disattivato non può più entrare."
 ],
 [
+"Chaudière",
+"Caldaia"
+],
+[
+"Chauffage",
+"Riscaldamento"
+],
+[
 "Chauffage / sanitaire",
 "Riscaldamento / sanitari"
 ],
 [
 "Chaufferie",
 "Locale caldaia"
+],
+[
+"Chaufferie / local technique",
+"Locale caldaia / locale tecnico"
 ],
 [
 "Choisissez une note pour chaque critère et l’avis global.",
@@ -321,6 +369,10 @@ export default [
 "Contatto sul posto"
 ],
 [
+"Contrôler",
+"Controllare"
+],
+[
 "Copie impossible",
 "Copia non riuscita"
 ],
@@ -373,6 +425,14 @@ export default [
 "Data e ora"
 ],
 [
+"Date souhaitée",
+"Data desiderata"
+],
+[
+"Date souhaitée :",
+"Data desiderata:"
+],
+[
 "Demande #{0} envoyée — LuxInterventions est prévenu",
 "Richiesta #{0} inviata — LuxInterventions è avvisata"
 ],
@@ -401,12 +461,20 @@ export default [
 "Richieste in corso"
 ],
 [
+"Demandes et interventions terminées par mois",
+"Richieste e interventi terminati al mese"
+],
+[
 "Demandes reçues",
 "Richieste ricevute"
 ],
 [
 "Demandée",
 "Richiesta"
+],
+[
+"Demandées",
+"Richieste"
 ],
 [
 "Description",
@@ -419,6 +487,10 @@ export default [
 [
 "Disponibilités",
 "Disponibilità"
+],
+[
+"Disponible après la mise à jour du serveur.",
+"Disponibile dopo l’aggiornamento del server."
 ],
 [
 "Dont urgentes",
@@ -569,6 +641,10 @@ export default [
 "Amministrazione salvata"
 ],
 [
+"Gérance supprimée",
+"Gérance eliminata"
+],
+[
 "Gérances",
 "Amministrazioni"
 ],
@@ -599,6 +675,10 @@ export default [
 [
 "Installer",
 "Installa"
+],
+[
+"Installer / poser",
+"Installare / posare"
 ],
 [
 "Installer sur ce téléphone",
@@ -669,6 +749,10 @@ export default [
 "Gennaio"
 ],
 [
+"Jardin commun",
+"Giardino condominiale"
+],
+[
 "Je confirme cette évaluation (vaut signature).",
 "Confermo questa valutazione (vale come firma)."
 ],
@@ -701,6 +785,10 @@ export default [
 "Le due password non coincidono."
 ],
 [
+"Les photos de la réparation apparaîtront ici.",
+"Le foto della riparazione appariranno qui."
+],
+[
 "Lien",
 "Link"
 ],
@@ -723,6 +811,10 @@ export default [
 [
 "Luca passe cet après-midi, merci de prévenir le concierge.",
 "Luca passa oggi pomeriggio, per favore avvisate il portiere."
+],
+[
+"LuxInterventions est en route / sur place",
+"LuxInterventions sta arrivando / è sul posto"
 ],
 [
 "LuxInterventions · Interventions techniques 7j/7",
@@ -751,6 +843,10 @@ export default [
 [
 "Masquer",
 "Nascondi"
+],
+[
+"Maçonnerie",
+"Muratura"
 ],
 [
 "Mentions légales",
@@ -841,6 +937,10 @@ export default [
 "Pulizia"
 ],
 [
+"Nettoyer",
+"Pulire"
+],
+[
 "Nom",
 "Nome"
 ],
@@ -855,6 +955,10 @@ export default [
 [
 "Nom de la résidence obligatoire",
 "Nome del condominio obbligatorio"
+],
+[
+"Nom différent : rien n’a été supprimé.",
+"Nome diverso: non è stato eliminato nulla."
 ],
 [
 "Nom du technicien",
@@ -949,24 +1053,60 @@ export default [
 "Nuovo condominio"
 ],
 [
+"N° / précision",
+"N° / dettaglio"
+],
+[
 "Octobre",
 "Ottobre"
+],
+[
+"Où ?",
+"Dove?"
 ],
 [
 "Où trouver les clés (local, boîte à clés…)",
 "Dove trovare le chiavi (locale, cassetta chiavi…)"
 ],
 [
+"Panneaux solaires",
+"Pannelli solari"
+],
+[
+"Par résidence",
+"Per residenza"
+],
+[
 "Par type",
 "Per tipo"
+],
+[
+"Par type de travaux",
+"Per tipo di lavoro"
+],
+[
+"Par urgence",
+"Per urgenza"
+],
+[
+"Parking / extérieur",
+"Parcheggio / esterno"
 ],
 [
 "Partiellement satisfait",
 "Parzialmente soddisfatto"
 ],
 [
+"Parties communes / hall",
+"Parti comuni / atrio"
+],
+[
 "Pas de connexion internet",
 "Nessuna connessione internet"
+],
+[
+"Pas encore d’évaluation. Après chaque intervention terminée, la gérance peut remplir la fiche « ⭐ Évaluer l’intervention ».",
+"Ancora nessuna valutazione. Dopo ogni intervento terminato, la gérance può compilare la scheda «⭐ Valuta l’intervento»."
 ],
 [
 "Peinture",
@@ -1049,6 +1189,10 @@ export default [
 "Porta della cantina"
 ],
 [
+"Pose de panneaux",
+"Posa pannelli"
+],
+[
 "Premiers pas · {0}/{1}",
 "Primi passi · {0}/{1}"
 ],
@@ -1085,6 +1229,10 @@ export default [
 "Esci"
 ],
 [
+"Radiateurs",
+"Termosifoni"
+],
+[
 "Rapidité & ponctualité",
 "Rapidità e puntualità"
 ],
@@ -1113,8 +1261,16 @@ export default [
 "Cerca un condominio, un indirizzo…"
 ],
 [
+"Refaire",
+"Rifare"
+],
+[
 "Relation avec le personnel",
 "Rapporto con il personale"
+],
+[
+"Remplacer",
+"Sostituire"
 ],
 [
 "Rempli et confirmé par",
@@ -1169,6 +1325,10 @@ export default [
 "Reimp."
 ],
 [
+"Réparer",
+"Riparare"
+],
+[
 "Résidence",
 "Condominio"
 ],
@@ -1185,6 +1345,10 @@ export default [
 "Condomini"
 ],
 [
+"Résolution",
+"Risoluzione"
+],
+[
 "Résolution efficace de la panne",
 "Risoluzione efficace del guasto"
 ],
@@ -1195,6 +1359,14 @@ export default [
 [
 "Safari : Partager → « Sur l’écran d’accueil ».",
 "Safari: Condividi → « Aggiungi alla schermata Home »."
+],
+[
+"Sanitaire",
+"Sanitari"
+],
+[
+"Satisfaction",
+"Soddisfazione"
 ],
 [
 "Satisfait",
@@ -1249,6 +1421,14 @@ export default [
 "Entro 24 ore"
 ],
 [
+"Statistiques",
+"Statistiche"
+],
+[
+"Statistiques de nos interventions",
+"Statistiche dei nostri interventi"
+],
+[
 "Statut",
 "Stato"
 ],
@@ -1261,12 +1441,24 @@ export default [
 "Andamento"
 ],
 [
+"Supprimer définitivement la gérance, ses utilisateurs, ses résidences, ses demandes et leurs photos ?",
+"Eliminare definitivamente la gérance, i suoi utenti, le residenze, le richieste e le loro foto?"
+],
+[
+"Supprimer la gérance",
+"Elimina la gérance"
+],
+[
 "Sur iPhone : installez d’abord l’app (Partager → « Sur l’écran d’accueil »), puis ouvrez-la depuis l’icône.",
 "Su iPhone: installate prima l’app (Condividi → « Aggiungi alla schermata Home »), poi apritela dall’icona."
 ],
 [
 "Syndic Exemple",
 "Condominio Esempio"
+],
+[
+"Tapez son nom pour confirmer :",
+"Scrivete il suo nome per confermare:"
 ],
 [
 "Technicien",
@@ -1321,12 +1513,20 @@ export default [
 "Tutte le amministrazioni"
 ],
 [
+"Toutes les gérances — 12 derniers mois",
+"Tutte le gérance — ultimi 12 mesi"
+],
+[
 "Toutes les résidences",
 "Tutti i condomini"
 ],
 [
 "Toutes urgences",
 "Tutte le urgenze"
+],
+[
+"Travail demandé",
+"Lavoro richiesto"
 ],
 [
 "Travaux effectués, pièces remplacées, recommandations…",
@@ -1339,6 +1539,10 @@ export default [
 [
 "Type d'intervention",
 "Tipo di intervento"
+],
+[
+"Type de travaux",
+"Tipo di lavoro"
 ],
 [
 "Téléphone",
@@ -1429,12 +1633,20 @@ export default [
 "Vista amministrazione"
 ],
 [
+"de la demande à la fin",
+"dalla richiesta alla fine"
+],
+[
 "demandes ouvertes",
 "richieste aperte"
 ],
 [
 "délai moyen",
 "tempo medio"
+],
+[
+"ex. App. 4B, box 12, chambre 3, cuisine",
+"es. App. 4B, box 12, camera 3, cucina"
 ],
 [
 "ex. App. 4B, hall, cave, toiture",
@@ -1447,6 +1659,10 @@ export default [
 [
 "ex. Merci de prévenir le locataire",
 "es. Per favore avvisate l’inquilino"
+],
+[
+"ex. RDC, 2, sous-sol",
+"es. PT, 2, seminterrato"
 ],
 [
 "ex. Résidence Val St André 37",
@@ -1477,6 +1693,10 @@ export default [
 "nuove richieste"
 ],
 [
+"photos du dégât",
+"foto del danno"
+],
+[
 "politique de confidentialité",
 "informativa sulla privacy"
 ],
@@ -1491,6 +1711,10 @@ export default [
 [
 "reçu par email ou WhatsApp : vous y choisirez votre mot de passe.",
 "ricevuto via email o WhatsApp: lì sceglierete la password."
+],
+[
+"travail terminé",
+"lavoro terminato"
 ],
 [
 "une seule fois",
@@ -1617,6 +1841,10 @@ export default [
 "Squadra LuxInterventions"
 ],
 [
+"Étage",
+"Piano"
+],
+[
 "Évaluation",
 "Valutazione"
 ],
@@ -1633,6 +1861,14 @@ export default [
 "proprio ora"
 ],
 [
+"évaluations",
+"valutazioni"
+],
+[
+"— 12 derniers mois",
+"— ultimi 12 mesi"
+],
+[
 "— Choisir —",
 "— Scegli —"
 ],
@@ -1647,6 +1883,10 @@ export default [
 [
 "⭐ Envoyer l’évaluation",
 "⭐ Invia la valutazione"
+],
+[
+"⭐ Satisfaction",
+"⭐ Soddisfazione"
 ],
 [
 "⭐ Évaluation",
@@ -1679,5 +1919,9 @@ export default [
 [
 "🔑 Le mot de passe se choisit",
 "🔑 La password si sceglie"
+],
+[
+"🚚 En route",
+"🚚 In arrivo"
 ]
 ];
