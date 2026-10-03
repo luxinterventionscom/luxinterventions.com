@@ -9,7 +9,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.60.0';
+const VERSION = '2.61.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2601,6 +2601,7 @@ dashboard() {
     if (!c) {
       return html`${pageHead('Gérances', 'Le Portail gérance, piloté d’ici')}
         <div class="card" style="max-width:560px">
+          <img src="/portail/icons/ptl-banner.webp" alt="" width="1100" height="283" style="display:block;width:100%;max-width:320px;height:auto;margin:0 auto 12px">
           <p style="margin-top:0">Les <b>gérances</b> sont les sociétés externes qui vous confient leurs réparations. Elles utilisent leur app, le <b>Portail gérance</b> : demandes avec photos, suivi, chat, photos avant / après, satisfaction, statistiques.</p>
           <p class="small">Ici vous créez les gérances, invitez leurs responsables, gérez leurs résidences et pouvez les supprimer — comme pour l’app de l’équipe.</p>
           <div class="alert info" style="margin:12px 0">${icon('shield')}<div>Connectez une seule fois cette app au portail avec votre <b>compte LuxInterventions du portail</b>. Le mot de passe ne quitte pas l’appareil ; la session est gardée dans vos données chiffrées.</div></div>
@@ -2624,7 +2625,7 @@ dashboard() {
         const us = d.users.filter((u) => u.org_id === o.id);
         const wait = us.filter((u) => u.active && !u.has_password).length;
         return html`<div class="card">
-          <div class="card-title"><h3>🏢 ${o.name}</h3><button class="btn icon ghost sm" data-action="ger-edit" data-id="${o.id}" aria-label="Modifier">${icon('edit')}</button></div>
+          <div class="card-title"><h3><img src="/portail/icons/ptl-32.png" alt="" width="22" height="22" style="vertical-align:-4px;margin-right:6px;border-radius:5px">${o.name}</h3><button class="btn icon ghost sm" data-action="ger-edit" data-id="${o.id}" aria-label="Modifier">${icon('edit')}</button></div>
           <dl class="kv small">
             <dt>Accès</dt><dd>${us.filter((u) => u.active).length}${wait ? html` · <span class="amber">${wait} invitation(s) en attente</span>` : ''}</dd>
             <dt>Résidences</dt><dd>${o.residences || 0}</dd>

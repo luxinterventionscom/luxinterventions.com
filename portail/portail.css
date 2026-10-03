@@ -16,6 +16,7 @@ body { background: var(--glow, none), var(--bg); background-attachment: fixed; }
   :root:not([data-theme='light']) { --accent: #f08a55; --accent-soft: rgba(240, 138, 85, 0.16); --accent-text: #111; --glow: none; }
 }
 .lock { background: var(--glow, none), radial-gradient(1200px 500px at 50% -10%, rgba(232, 114, 58, 0.14), transparent 70%), var(--bg); }
+.lock-banner { display: block; width: 100%; max-width: 340px; height: auto; margin: -4px auto 6px; }
 .lock-logo { width: 88px; height: 88px; border-radius: 22px; display: block; margin: -6px auto 4px; box-shadow: 0 6px 24px rgba(15, 27, 45, 0.25); }
 .brand-mark { width: 36px; height: 36px; border-radius: 10px; flex: none; }
 .navbtn { position: relative; }
