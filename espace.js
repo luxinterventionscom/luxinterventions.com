@@ -762,6 +762,7 @@ function render() {
   // la carte « Maintenance » est complétée plus bas (signaler un problème + légende), à cette place
   const mtAt = out.length;
   out.push('');
+  let collHtml = '';
   if (s.coll && (d.coll || []).length) {
     const ev = [];
     for (const it of d.coll) for (const dd of it.dates || []) { const p = it.sortie === 'jour' ? dd : addDays(dd, -1); if (p >= today) ev.push({ it, dd, p }); }
@@ -775,7 +776,7 @@ function render() {
     const rest = ev.slice(1, 400), cr = t.cr;
     const hourTxt = (it) => { const m = String(it.heure || '').match(/(\d{1,2})/); return m ? (/avant|vor|antes|before|prima/i.test(it.heure) ? cr.before : cr.after).replace('{h}', m[1]) : it.heure || ''; };
     const rules = `<div class="coll-rules"><b>📋 ${esc(cr.t)}</b>${d.coll.map((it) => `<div class="row"><span class="bin" style="--c:${BIN_COLORS[it.cat] || '#9a958a'}">${esc(cats[it.cat] || it.cat)}</span><div class="grow meta">${esc([it.sortie === 'jour' ? cr.day : cr.eve, hourTxt(it)].filter(Boolean).join(', '))}${cr.lieux[it.lieu] ? ' · ' + esc(cr.lieux[it.lieu]) : ''}${it.note ? ' · ' + esc(it.note) : ''}</div></div>`).join('')}</div>`;
-    out.push(`<div class="card"><h2>🗑️ ${esc(t.coll)}</h2>${d.bins && d.chat ? `<div id="binBoardBox">${binBoard(binPlanNow())}</div>` : ''}${ev.slice(0, 1).map(row).join('')}${rest.length ? `<details class="more"><summary>${esc(t.more(rest.length))}</summary>${rules}${rest.map(row).join('')}</details>` : rules}</div>`);
+    collHtml = (`<div class="mt-sec mt-coll"><h2>🗑️ ${esc(t.coll)}</h2>${d.bins && d.chat ? `<div id="binBoardBox">${binBoard(binPlanNow())}</div>` : ''}${ev.slice(0, 1).map(row).join('')}${rest.length ? `<details class="more"><summary>${esc(t.more(rest.length))}</summary>${rules}${rest.map(row).join('')}</details>` : rules}</div>`);
   }
   if (s.edl && ((d.edl || []).length || d.signalKey)) {
     const ed = t.ed, sentL = edlSent(), done = Object.keys(sentL).length;
@@ -799,7 +800,7 @@ function render() {
       ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div></div></div>`).join('')}` : ''}</details>`;
   }
   const legHtml = s.coll || s.signal ? `<p class="meta mt-leg"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow"></span> ${esc(t.lights[1])} · <span class="light l-red"></span> ${esc(t.lights[2])}${vis ? ` · <span class="light l-grey"></span> ${esc(t.mt.offL)}` : ''}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</p>` : '';
-  if (mtCard || sigHtml || legHtml) out[mtAt] = `<div class="card" id="mtCard"><h2>🛠️ ${esc(t.mt.t)}</h2>${mtCard}${sigHtml}${legHtml}</div>`;
+  if (mtCard || collHtml || sigHtml || legHtml) out[mtAt] = `<div class="card" id="mtCard"><h2>🛠️ ${esc(t.mt.t)}</h2>${mtCard}${collHtml}${sigHtml}${legHtml}</div>`;
   if (d.regles) {
     const lu = rulesDate(d);
     out.push(`<div class="card" id="rules"><details${lu ? '' : ' open'}><summary><h2 style="display:inline">📜 ${esc(t.hr.rulesT)}</h2>${lu ? ` <span class="meta">✓ ${esc(fmt(lu))}</span>` : ''}</summary>
