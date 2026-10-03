@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.58.0';
+const VERSION = '2.59.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2822,8 +2822,8 @@ dashboard() {
 
       <div class="section-label">Apparence</div>
       <div class="chips">${[['auto', 'Automatique'], ['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => html`<button class="chip" data-action="theme" data-id="${k}" aria-pressed="${theme === k}">${l}</button>`)}</div>
-      <div class="section-label">Langue · Lingua · Sprache · Língua · Language · Idioma</div>
-      <div class="chips" data-notr="1">${Object.entries(LANGS).map(([k, l]) => html`<button class="chip" data-action="set-lang" data-id="${k}" aria-pressed="${LANG === k}">${l}</button>`)}</div>
+      <div class="section-label">Langue</div>
+      <div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].filter((k) => LANGS[k]).map((k) => html`<button type="button" data-action="set-lang" data-id="${k}" title="${LANGS[k]}" aria-pressed="${LANG === k}">${k.toUpperCase()}</button>`)}</div>
       <p class="tiny muted" style="margin-top:4px">Les quittances, reçus et relances aux locataires restent en français (documents officiels).</p>
       <p class="tiny muted" style="margin-top:28px;text-align:center"><span data-notr="1">LuxInterventions · ${APP_BRAND.legal}</span> · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
   },

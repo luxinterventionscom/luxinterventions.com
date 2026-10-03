@@ -288,7 +288,7 @@ function renderGuide() {
     ? [[g.i1, MK.bar()], [g.i2, MK.menu(['⬆  ' + u.share, '☆  ' + u.fav, '＋  ' + u.newTab], 0)], [g.i3, MK.menu(['☆  ' + u.fav, '🔍  ' + u.find, '⊕  ' + u.a2hs], 2)], [g.i4, MK.dlg(u)], [g.done, MK.home()]]
     : [[g.a1, MK.chrome()], [g.a2, MK.menu(['＋  ' + u.newTab, '🕘  ' + u.hist, '📲  ' + u.ainstall], 2)], [g.a3, MK.adlg(u)], [g.done, MK.home()]];
   el.innerHTML = `<div class="g-head"><b>📱 ${esc(t.install)}</b><button class="btn sm sec" data-gclose="1">✕ ${esc(t.close)}</button></div>
-    <div class="langs g-langs">${Object.keys(L).map((k) => `<button data-glang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>
+    <div class="langs g-langs">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => `<button data-glang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>
     <div class="g-tabs"><button data-gtab="ios" aria-pressed="${guideTab === 'ios'}">🍎 iPhone</button><button data-gtab="and" aria-pressed="${guideTab === 'and'}">🤖 Android</button></div>
     ${IN_APP ? `<div class="card avis"><p style="margin:0">${esc(t.ins.app)}</p><button class="btn sec block" style="margin-top:10px" data-copylink="1">${esc(t.ins.copy)}</button></div>` : ''}
     ${guideTab === 'ios' ? `<p class="meta" style="margin:0 0 10px">${esc(g.safari)}</p>` : ''}
@@ -640,7 +640,7 @@ addEventListener('message', (e) => {
 function render() {
   const t = T();
   document.documentElement.lang = lang;
-  const langs = `<div class="langs">${Object.keys(L).map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
+  const langs = `<div class="langs">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
   if (!data) {
     app.innerHTML = `<div class="top"><span class="brandx"><img class="top-logo" src="/ares/icons/nobis-logo.png" alt="NOBIS s.a.r.l." width="76" height="32"><b>NOBIS s.a.r.l.</b></span>${langs}</div>
       <h1 style="text-align:center;margin-top:18px">${esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
