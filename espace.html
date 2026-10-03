@@ -78,6 +78,11 @@
   .langs button[aria-pressed="true"] { background: var(--text); color: #fff; border-color: var(--text); }
   h1 { font-size: 24px; margin: 6px 0 0; line-height: 1.2; }
   .sub { color: var(--muted); margin: 2px 0 16px; }
+  .marq { display: block; overflow: hidden; white-space: nowrap; }
+  .marq > span { display: inline-block; }
+  .marq.run > span { animation: marq var(--dur, 8s) ease-in-out infinite alternate; }
+  @keyframes marq { 0%, 15% { transform: translateX(0); } 85%, 100% { transform: translateX(var(--dx)); } }
+  @media (prefers-reduced-motion: reduce) { .marq { white-space: normal; } .marq.run > span { animation: none; } }
   .card { background: var(--card); border-radius: 16px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
   h2 { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
   .row { display: flex; gap: 12px; align-items: flex-start; padding: 9px 0; border-top: 1px solid var(--line); }

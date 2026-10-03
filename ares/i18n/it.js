@@ -8331,5 +8331,37 @@ export default [
 [
 "Collez le lien de la vidéo ou du morceau : il s’affiche dans l’annonce comme un petit écran ou un petit lecteur audio, on le regarde ou l’écoute sans quitter l’app.",
 "Incollate il link del video o del brano: appare nell’annuncio come un piccolo schermo o un piccolo lettore audio, si guarda o si ascolta senza uscire dall’app."
+],
+[
+"Code postal et localité",
+"Codice postale e località"
+],
+[
+"ex. L-1840 Luxembourg",
+"es. L-1840 Lussemburgo"
+],
+[
+"🌅 Matin",
+"🌅 Mattina"
+],
+[
+"☀️ Après-midi",
+"☀️ Pomeriggio"
+],
+[
+"🌙 Soir",
+"🌙 Sera"
+],
+[
+"➕ Supplément",
+"➕ Supplemento"
+],
+[
+"Dépannage / supplément",
+"Intervento urgente / supplemento"
+],
+[
+"Horaire habituel : matin, après-midi, soir (laisser vide ce qui n’est pas travaillé)",
+"Orario abituale: mattina, pomeriggio, sera (lasciare vuoto ciò che non è lavorato)"
 ]
 ];

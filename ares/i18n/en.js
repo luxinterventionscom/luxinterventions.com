@@ -8135,5 +8135,37 @@ export default [
 [
 "Collez le lien de la vidéo ou du morceau : il s’affiche dans l’annonce comme un petit écran ou un petit lecteur audio, on le regarde ou l’écoute sans quitter l’app.",
 "Paste the link of the video or track: it shows in the ad as a small screen or audio player, watched or listened to without leaving the app."
+],
+[
+"Code postal et localité",
+"Postcode and town"
+],
+[
+"ex. L-1840 Luxembourg",
+"e.g. L-1840 Luxembourg"
+],
+[
+"🌅 Matin",
+"🌅 Morning"
+],
+[
+"☀️ Après-midi",
+"☀️ Afternoon"
+],
+[
+"🌙 Soir",
+"🌙 Evening"
+],
+[
+"➕ Supplément",
+"➕ Extra"
+],
+[
+"Dépannage / supplément",
+"Call-out / extra"
+],
+[
+"Horaire habituel : matin, après-midi, soir (laisser vide ce qui n’est pas travaillé)",
+"Usual hours: morning, afternoon, evening (leave empty what is not worked)"
 ]
 ];

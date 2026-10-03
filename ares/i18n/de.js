@@ -8319,5 +8319,37 @@ export default [
 [
 "Collez le lien de la vidéo ou du morceau : il s’affiche dans l’annonce comme un petit écran ou un petit lecteur audio, on le regarde ou l’écoute sans quitter l’app.",
 "Fügen Sie den Link des Videos oder Titels ein: Er erscheint in der Anzeige als kleiner Bildschirm oder Audioplayer, man sieht oder hört ihn, ohne die App zu verlassen."
+],
+[
+"Code postal et localité",
+"Postleitzahl und Ort"
+],
+[
+"ex. L-1840 Luxembourg",
+"z. B. L-1840 Luxemburg"
+],
+[
+"🌅 Matin",
+"🌅 Morgen"
+],
+[
+"☀️ Après-midi",
+"☀️ Nachmittag"
+],
+[
+"🌙 Soir",
+"🌙 Abend"
+],
+[
+"➕ Supplément",
+"➕ Zusätzlich"
+],
+[
+"Dépannage / supplément",
+"Notdienst / Zusatzeinsatz"
+],
+[
+"Horaire habituel : matin, après-midi, soir (laisser vide ce qui n’est pas travaillé)",
+"Übliche Arbeitszeit: Morgen, Nachmittag, Abend (leer lassen, was nicht gearbeitet wird)"
 ]
 ];
