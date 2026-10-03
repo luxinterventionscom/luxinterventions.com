@@ -1169,8 +1169,8 @@ export default [
 "Documentos: todo lo que añades en Docs se ve en su app (con vista previa), para que compruebe que recibiste sus papeles y sus pagos"
 ],
 [
-"Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.",
-"Documentos: todo lo que añades en Docs se ve en su app (con vista previa), para que compruebe que recibiste sus papeles y sus pagos — toca « 👁 Visible » para hacerlo privado. Sus mensajes y fotos llegan al Inicio (📩) y a Mantenimiento → Trabajos."
+"Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.",
+"Documentos: todo lo que añades en Docs se ve en su app (con vista previa), para que compruebe que recibiste sus papeles y sus pagos — toca « 👁 Visible » para hacerlo privado. Sus mensajes y fotos llegan al Inicio (📩) y a Mantenimiento → Reclamaciones."
 ],
 [
 "Don",
@@ -4437,8 +4437,8 @@ export default [
 "toca para ver quién hace qué, dónde y cuándo"
 ],
 [
-"touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.",
-"toca « 👁 Visible » para hacerlo privado. Sus mensajes y fotos llegan al Inicio (📩) y a Mantenimiento → Trabajos."
+"touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.",
+"toca « 👁 Visible » para hacerlo privado. Sus mensajes y fotos llegan al Inicio (📩) y a Mantenimiento → Reclamaciones."
 ],
 [
 "tour de {0}",
@@ -8443,5 +8443,9 @@ export default [
 [
 "🧹 Oublis / mal nettoyé",
 "🧹 Olvidos / mal limpio"
+],
+[
+"Pas affichés chez ce locataire",
+"No mostrados a este inquilino"
 ]
 ];

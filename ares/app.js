@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.54.0';
+const VERSION = '2.55.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -664,20 +664,33 @@ function mtPreview(l) {
   const show = { ...ESP_ALL, ...((l.espace || {}).show || {}) };
   if (!show.menage) return html`<div class="alert warn" style="margin:0 0 12px">${icon('alert')}<div>« Maintenance » est décoché : le locataire ne voit pas les passages.</div></div>`;
   const vis = espaceData(l).visits || [];
-  const im = immName(l.immId);
-  if (vis.length) return html`<div class="card" style="margin:0 0 12px;padding:12px"><b>🛠️ Maintenance — ce que voit le locataire (7 jours)</b>
-    <div class="list small" style="margin-top:6px">${vis.map((v) => html`<div class="row"><span class="grow">${v.off ? '⚫' : v.d === today() ? '🔴' : v.d === addDays(today(), 1) ? '🟡' : '🟢'} <b>${fmtDate(v.d)}</b> · ${METIERS[v.m] || v.m} ${v.nom ? '(' + v.nom + ')' : ''}</span><span class="meta">${v.de}${v.a ? '–' + v.a : ''}${v.off ? ' · absent' : ''}</span></div>`)}</div></div>`;
-  const team = vault.list('intervenants').filter((i) => !i.archive);
-  const why = team.map((i) => {
+  const im = immName(l.immId), d0 = today(), dN = addDays(d0, 7);
+  // pour chaque personne de l'équipe absente de la liste : pourquoi
+  const why = vault.list('intervenants').filter((i) => !i.archive && !vis.some((v) => v.w === i.id)).map((i) => {
+    const r = [];
     const hs = i.horaires || [];
-    if (!hs.length) return `${intervFull(i)} : aucun horaire`;
-    const here = hs.filter((h) => h.immId === l.immId);
-    if (here.length) return null;
     const noPlace = hs.filter((h) => !h.immId).length;
-    const other = [...new Set(hs.filter((h) => h.immId).map((h) => immName(h.immId)))];
-    return `${intervFull(i)} : ${noPlace ? `${noPlace} créneau(x) sans lieu` : ''}${noPlace && other.length ? ' · ' : ''}${other.length ? 'travaille à ' + other.join(', ') : ''}`;
-  }).filter(Boolean);
-  return html`<div class="alert warn" style="margin:0 0 12px">${icon('alert')}<div><b>🛠️ Maintenance : aucun passage prévu dans les 7 prochains jours pour cet immeuble.</b> <span data-notr="1">(${im})</span><br><span>Pour qu’une personne de l’équipe apparaisse ici, son horaire doit avoir comme lieu l’adresse de cet immeuble (Maintenance → Équipe → la personne → Modifier → le jour → « — lieu — »).</span>${why.length ? html`<ul style="margin:6px 0 0;padding-left:18px">${why.map((w) => html`<li>${w}</li>`)}</ul>` : team.length ? '' : html`<br>Aucune personne dans l’équipe.`}</div></div>`;
+    const other = [...new Set(hs.filter((h) => h.immId && h.immId !== l.immId).map((h) => immName(h.immId)))];
+    if (noPlace) r.push(`${noPlace} créneau(x) d’horaire sans lieu`);
+    if (other.length) r.push(`horaire à ${other.join(', ')}`);
+    const ts = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait'));
+    const here = ts.filter((t) => t.immId === l.immId);
+    for (const t of here) {
+      const nx = agenda(d0, addDays(d0, 400)).find((x) => x.kind === 'tache' && x.t.id === t.id);
+      if (t.logId && t.logId !== l.logId) r.push(`« ${t.titre} » : dans un autre logement (${logName(t.logId)}), seul son locataire le voit`);
+      else if (!nx) r.push(`« ${t.titre} » : pas de date prévue`);
+      else if (nx.d > dN) r.push(`« ${t.titre} » : prévu le ${fmtDate(nx.d)} (au-delà de 7 jours)`);
+    }
+    const elsewhere = [...new Set(ts.filter((t) => t.immId !== l.immId).map((t) => immName(t.immId)))];
+    if (elsewhere.length) r.push(`interventions à ${elsewhere.join(', ')}`);
+    if (!hs.length && !ts.length) r.push('aucun horaire ni intervention');
+    return `${intervFull(i)} — ${r.join(' · ') || 'rien de prévu ici'}`;
+  });
+  const list = vis.length ? html`<div class="list small" style="margin-top:6px">${vis.map((v) => html`<div class="row"><span class="grow">${v.off ? '⚫' : v.d === d0 ? '🔴' : v.d === addDays(d0, 1) ? '🟡' : '🟢'} <b>${fmtDate(v.d)}</b> · ${METIERS[v.m] || v.m} ${v.nom ? '(' + v.nom + ')' : ''}${v.t ? ' · ' + v.t : ''}</span><span class="meta">${v.de}${v.a ? '–' + v.a : ''}${v.off ? ' · absent' : ''}</span></div>`)}</div>`
+    : html`<p class="small" style="margin:6px 0 0"><b>🛠️ Maintenance : aucun passage prévu dans les 7 prochains jours pour cet immeuble.</b> <span data-notr="1">(${im})</span></p>`;
+  return html`<div class="card" style="margin:0 0 12px;padding:12px"><b>🛠️ Maintenance — ce que voit le locataire (7 jours)</b>${list}
+    ${why.length ? html`<div class="section-label" style="margin-top:10px">Pas affichés chez ce locataire</div><ul class="small" style="margin:4px 0 0;padding-left:18px">${why.map((w) => html`<li>${w}</li>`)}</ul>
+    <p class="tiny muted" style="margin:6px 0 0">Pour qu’une personne de l’équipe apparaisse ici, son horaire doit avoir comme lieu l’adresse de cet immeuble (Maintenance → Équipe → la personne → Modifier → le jour → « — lieu — »).</p>` : ''}</div>`;
 }
 const appUrl = () => `${location.origin}/espace.html`;
 // Ce que le locataire voit — uniquement les rubriques cochées, uniquement ses propres données
@@ -731,7 +744,7 @@ function espaceData(l) {
     }
     out.menage = { week, dates };
     // Maintenance : passages des 7 prochains jours dans cet immeuble — femme de ménage ET ouvriers (horaire habituel + interventions datées)
-    // le titre d'une intervention n'est donné que si elle concerne son propre logement (rien sur les voisins)
+    // le titre d'une intervention : parties communes ou son propre logement (rien sur les logements des voisins)
     const visits = [], d0 = today(), dN = addDays(d0, 7);
     for (const i of vault.list('intervenants').filter((x) => !x.archive)) {
       for (const h of i.horaires || []) {
@@ -742,7 +755,7 @@ function espaceData(l) {
     for (const x of agenda(d0, dN).filter((x) => x.kind === 'tache' && x.t.intervenantId && x.t.immId === l.immId && (!x.t.logId || x.t.logId === l.logId) && x.t.statut !== 'fait')) {
       const i = vault.get('intervenants', x.t.intervenantId);
       if (!i || i.archive) continue;
-      const own = x.t.logId === l.logId ? x.t.titre : '';
+      const own = !x.t.logId || x.t.logId === l.logId ? x.t.titre : '';
       const same = visits.find((v) => v.w === i.id && v.d === x.d);
       if (same) { if (own) same.t = own; same.ty = x.t.type || ''; continue; }
       const h = (i.horaires || []).find((hh) => hh.immId === l.immId && hh.j === (new Date(x.d + 'T12:00:00').getDay() + 6) % 7);
@@ -3818,7 +3831,7 @@ const SHEETS = {
             <a class="btn" href="${url}" target="_blank" rel="noopener">${icon('eye')} Voir son espace</a>
           </div>
           <div class="section-label">Ce qu'il voit</div>${boxes}${mtPreview(l)}
-          <p class="tiny muted">Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.</p>
+          <p class="tiny muted">Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.</p>
           <button class="btn ghost danger block" data-action="esp-off" data-id="${id}">Désactiver l'espace</button>`;
       }
     } else if (tab === 'notes') {

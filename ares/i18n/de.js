@@ -1165,8 +1165,8 @@ export default [
 "Dokumente: Alles, was Sie unter Docs hinzufügen, ist in seiner App sichtbar (mit Vorschau), damit er prüfen kann, dass Sie seine Unterlagen und Zahlungen erhalten haben"
 ],
 [
-"Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.",
-"Dokumente: Alles, was Sie unter Docs hinzufügen, ist in seiner App sichtbar (mit Vorschau), damit er prüfen kann, dass Sie seine Unterlagen und Zahlungen erhalten haben — tippen Sie auf „👁 Visible“, um es privat zu machen. Seine Nachrichten und Fotos erscheinen auf der Startseite (📩) und unter Wartung → Arbeiten."
+"Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.",
+"Dokumente: Alles, was Sie unter Docs hinzufügen, ist in seiner App sichtbar (mit Vorschau), damit er prüfen kann, dass Sie seine Unterlagen und Zahlungen erhalten haben — tippen Sie auf „👁 Visible“, um es privat zu machen. Seine Nachrichten und Fotos erscheinen auf der Startseite (📩) und unter Wartung → Beschwerden."
 ],
 [
 "Don",
@@ -4425,8 +4425,8 @@ export default [
 "tippen, um zu sehen, wer was wo und wann macht"
 ],
 [
-"touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.",
-"tippen Sie auf „👁 Visible“, um es privat zu machen. Seine Nachrichten und Fotos erscheinen auf der Startseite (📩) und unter Wartung → Arbeiten."
+"touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.",
+"tippen Sie auf „👁 Visible“, um es privat zu machen. Seine Nachrichten und Fotos erscheinen auf der Startseite (📩) und unter Wartung → Beschwerden."
 ],
 [
 "tour de {0}",
@@ -8451,5 +8451,9 @@ export default [
 [
 "🧹 Oublis / mal nettoyé",
 "🧹 Vergessen / schlecht gereinigt"
+],
+[
+"Pas affichés chez ce locataire",
+"Bei diesem Mieter nicht angezeigt"
 ]
 ];

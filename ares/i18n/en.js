@@ -1149,8 +1149,8 @@ export default [
 "Documents: everything you add in Docs is visible in their app (with preview), so they can check you received their papers and payments"
 ],
 [
-"Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.",
-"Documents: everything you add in Docs is visible in their app (with preview), so they can check you received their papers and payments — tap “👁 Visible” to make it private. Their messages and photos arrive on Home (📩) and in Maintenance → Jobs."
+"Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.",
+"Documents: everything you add in Docs is visible in their app (with preview), so they can check you received their papers and payments — tap “👁 Visible” to make it private. Their messages and photos arrive on Home (📩) and in Maintenance → Complaints."
 ],
 [
 "Don",
@@ -4353,8 +4353,8 @@ export default [
 "tap to see who does what, where and when"
 ],
 [
-"touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.",
-"tap “👁 Visible” to make it private. Their messages and photos arrive on Home (📩) and in Maintenance → Jobs."
+"touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.",
+"tap “👁 Visible” to make it private. Their messages and photos arrive on Home (📩) and in Maintenance → Complaints."
 ],
 [
 "tour de {0}",
@@ -8267,5 +8267,9 @@ export default [
 [
 "🧹 Oublis / mal nettoyé",
 "🧹 Missed spots / poorly cleaned"
+],
+[
+"Pas affichés chez ce locataire",
+"Not shown to this tenant"
 ]
 ];

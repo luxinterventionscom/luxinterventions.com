@@ -1165,8 +1165,8 @@ export default [
 "Documentos: tudo o que adicionar em Docs fica visível na app dele (com pré-visualização), para verificar que recebeu os documentos e os pagamentos"
 ],
 [
-"Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.",
-"Documentos: tudo o que adicionar em Docs fica visível na app dele (com pré-visualização), para verificar que recebeu os documentos e os pagamentos — toque em « 👁 Visible » para o tornar privado. As mensagens e fotos dele chegam ao Início (📩) e a Manutenção → Trabalhos."
+"Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.",
+"Documentos: tudo o que adicionar em Docs fica visível na app dele (com pré-visualização), para verificar que recebeu os documentos e os pagamentos — toque em « 👁 Visible » para o tornar privado. As mensagens e fotos dele chegam ao Início (📩) e a Manutenção → Reclamações."
 ],
 [
 "Don",
@@ -4413,8 +4413,8 @@ export default [
 "toque para ver quem faz o quê, onde e quando"
 ],
 [
-"touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.",
-"toque em « 👁 Visible » para o tornar privado. As mensagens e fotos dele chegam ao Início (📩) e a Manutenção → Trabalhos."
+"touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.",
+"toque em « 👁 Visible » para o tornar privado. As mensagens e fotos dele chegam ao Início (📩) e a Manutenção → Reclamações."
 ],
 [
 "tour de {0}",
@@ -8419,5 +8419,9 @@ export default [
 [
 "🧹 Oublis / mal nettoyé",
 "🧹 Esquecimentos / mal limpo"
+],
+[
+"Pas affichés chez ce locataire",
+"Não mostrados a este inquilino"
 ]
 ];
