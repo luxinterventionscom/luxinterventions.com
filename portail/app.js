@@ -594,7 +594,7 @@ function guideCard(stats) {
 
 // ───────────────────────── Vues ─────────────────────────
 // Annonces des partenaires (publiées depuis l'app de gestion) : petit lecteur vidéo, itinéraire, appel, site
-const PUB_ICON = { musique: '🎵', resto: '🍕', bar: '🍺', horeca: '☕', bricolage: '🔨', meubles: '🛋️', courses: '🛒', services: '🧰', autre: '📌' };
+const PUB_ICON = { musique: '🎵', resto: '🍕', bar: '🍺', horeca: '☕', bricolage: '🔨', meubles: '🛋️', courses: '🛒', proxi: '🏪', bureau: '🏢', social: '📱', services: '🧰', autre: '📌' };
 pubStatInit(API.replace(/\/api\/portail\/$/, ''), 'ptl', () => LANG);
 document.addEventListener('click', (e) => { if (!state.demo) pubTap(e); }, true);
 const TICKER_BASE = API.replace(/\/api\/portail\/$/, '');

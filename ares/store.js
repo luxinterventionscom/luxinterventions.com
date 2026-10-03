@@ -596,6 +596,7 @@ export class Vault {
   espCodePut(hash, body) { return this.call('espcode/' + hash, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   espCodeDel(hash) { return this.call('espcode/' + hash, { method: 'DELETE' }); }
   pushSub(body) { return this.call('push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
+  async videoLink(u) { try { return (await (await this.call('video-link?u=' + encodeURIComponent(u))).json()).url || ''; } catch { return ''; } }
   async pubStats(days) { return (await (await this.call('pubstats?days=' + days)).json()).rows || []; }
   pubsPortail(items) { return this.call('pubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items }) }); }
   espNotify(id) { return this.call('espace/' + id + '/notify', { method: 'POST' }); }

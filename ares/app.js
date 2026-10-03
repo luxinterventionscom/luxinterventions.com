@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.48.0';
+const VERSION = '2.49.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -552,7 +552,7 @@ const ESP_ALL = Object.fromEntries(Object.keys(ESP_SHOW).map((k) => [k, k !== 'p
 const espUrl = (l) => `${location.origin}/espace.html#${l.espace.id}.${l.espace.key}`;
 // Publicité des partenaires du quartier (pizzerias, bars, bricolage, meubles…) : rangée avec les avis (kind « pub »),
 // visible dans l'app des locataires jusqu'à sa date de fin (durée choisie à la publication)
-const PUB_CATS = { musique: '🎵 Musique (nouveautés, clips)', resto: '🍕 Pizzeria / restaurant', bar: '🍺 Bar / pub', horeca: '☕ Café / snack (Horeca)', bricolage: '🔨 Bricolage / jardinage', meubles: '🛋️ Meubles / décoration', courses: '🛒 Supermarché / commerce', services: '🧰 Services', autre: '📌 Autre' };
+const PUB_CATS = { social: '📱 Annonce réseaux sociaux (TikTok, Instagram, Facebook…)', musique: '🎵 Musique (nouveautés, clips)', resto: '🍕 Pizzeria / restaurant', bar: '🍺 Bar / pub', horeca: '☕ Café / snack (Horeca)', courses: '🛒 Supermarché', proxi: '🏪 Commerce de proximité (boulangerie, épicerie, pharmacie…)', bricolage: '🔨 Bricolage / jardinage', meubles: '🛋️ Meubles / décoration', bureau: '🏢 Bureaux (agence, cabinet, fiduciaire…)', services: '🧰 Services', autre: '📌 Autre' };
 const PUB_TTL = [7, 14, 30, 60, 90, 180, 365];
 const isPub = (a) => a.kind === 'pub';
 // À qui s'adresse l'annonce : locataires (par défaut), équipe, portail gérance
@@ -2856,6 +2856,9 @@ function badAddr(kind, a, net) {
   if (net === 'sol') return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a) ? '' : 'adresse Solana invalide';
   return '';
 }
+// Lien vidéo de l'annonce : ce que verront les locataires (vérifié pendant la saisie)
+const ttShort = (v) => /^https:\/\/((vm|vt)\.tiktok\.com\/|(www\.)?tiktok\.com\/t\/)[\w-]{4,30}\/?/.test(String(v || '').trim());
+const vidHint = (v) => { v = String(v || '').trim(); if (!v) return ''; const e = videoEmbed(v); return e ? (e.audio ? '✓ Lien reconnu : petit lecteur audio dans l’annonce.' : '✓ Lien reconnu : mini écran dans l’annonce.') : ttShort(v) ? '🔗 Lien court TikTok : il sera converti en lien complet à l’enregistrement (mini écran).' : '⚠ Lien non reconnu : il s’affichera comme un simple bouton « ▶ Vidéo ».'; };
 const field = (label, name, value, opts = {}) => html`<label class="field ${opts.full ? 'full' : ''}">${label}
   <input name="${name}" type="${opts.type || 'text'}" value="${value ?? ''}" ${opts.required ? new Raw('required') : ''} ${opts.attrs ? new Raw(opts.attrs) : ''} placeholder="${opts.placeholder || ''}"></label>`;
 const money$ = 'inputmode="decimal" step="0.01" min="0"';
@@ -3214,8 +3217,8 @@ const SHEETS = {
         <label class="field full">Message / offre<textarea name="texte" style="min-height:80px" placeholder="ex. −10 % pour les locataires sur présentation de l'app">${a.texte || ''}</textarea></label>
         ${field('Téléphone', 'tel', a.tel, { type: 'tel' })}
         ${field('Site web', 'web', a.web, { type: 'url', placeholder: 'https://…' })}
-        ${field('Vidéo ou musique (YouTube, TikTok, Instagram, Facebook, Vimeo, Spotify, Deezer, Apple Music, SoundCloud)', 'video', a.video, { full: true, type: 'url', placeholder: 'https://www.youtube.com/watch?v=… · https://www.tiktok.com/@…/video/…' })}
-        <p class="tiny muted full" style="margin:0">Collez le lien de la vidéo ou du morceau : il s’affiche dans l’annonce comme un petit écran ou un petit lecteur audio, on le regarde ou l’écoute sans quitter l’app.${a.video ? (videoEmbed(a.video) ? ` ✓ ${videoEmbed(a.video).name} reconnu.` : ' ⚠ Lien non reconnu : il s’affiche comme un bouton (copiez le lien complet de la vidéo, pas un lien raccourci).') : ''}</p>
+        ${field('Vidéo ou musique (YouTube, TikTok, Instagram, Facebook, Vimeo, Spotify, Deezer, Apple Music, SoundCloud)', 'video', a.video, { full: true, type: 'url', placeholder: 'https://www.youtube.com/watch?v=… · https://www.tiktok.com/@…/video/…', attrs: 'data-input="vid-link"' })}
+        <p class="tiny muted full" style="margin:0">Collez le lien de la vidéo ou du morceau : il s’affiche dans l’annonce comme un petit écran ou un petit lecteur audio, on le regarde ou l’écoute sans quitter l’app. <b id="vidHint">${vidHint(a.video)}</b></p>
         <label class="field full">Emplacement<select name="slot">${Object.entries(PUB_SLOTS).map(([k, v]) => html`<option value="${k}" ${(a.slot ? pubSlot(a) : 'haut') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <div class="field full">Visible pour<div class="chips" style="margin-top:6px">${Object.entries(PUB_AUD).map(([k, v]) => html`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="aud_${k}" ${pubAud(a).includes(k) ? new Raw('checked') : ''} style="width:18px;min-height:18px;margin:0">${v}</label>`)}</div></div>
         <label class="field full">Immeuble (locataires et équipe)<select name="immId"><option value="">Tous les immeubles</option>${imms.map((im) => html`<option value="${im.id}" ${im.id === a.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
@@ -4788,8 +4791,10 @@ const FORMS = {
     if (!rec.nom || !rec.adresse) return;
     if (!rec.aud.length) rec.aud = ['loc'];
     if (id) rec.id = id;
+    // lien court TikTok (bouton « Partager » du téléphone) → lien complet, sinon pas de mini écran
+    if (rec.video && !videoEmbed(rec.video) && ttShort(rec.video)) { const full = await vault.videoLink(rec.video.trim()); if (full) rec.video = full; }
     await vault.mutate((tx) => tx.put('avis', rec), id ? 'Annonce modifiée' : 'Annonce publiée', `${rec.nom} — jusqu'au ${fmtDate(rec.fin)}`, rec.immId);
-    toast(rec.video && !videoEmbed(rec.video) ? 'Annonce publiée — lien vidéo non reconnu : il s’affiche comme un bouton' : `Annonce publiée jusqu'au ${fmtDate(rec.fin)}`, rec.video && !videoEmbed(rec.video) ? { bad: true } : undefined);
+    toast(rec.video && !videoEmbed(rec.video) ? (ttShort(rec.video) ? 'Annonce publiée — lien court TikTok non converti (hors ligne ?) : ouvrez la vidéo dans le navigateur et copiez le lien complet' : 'Annonce publiée — lien vidéo non reconnu : il s’affiche comme un bouton') : `Annonce publiée jusqu'au ${fmtDate(rec.fin)}`, rec.video && !videoEmbed(rec.video) ? { bad: true } : undefined);
     goBack();
   },
   async avis(fd) {
@@ -5171,6 +5176,7 @@ function filterEspList() {
 document.addEventListener('input', (e) => {
   const k = e.target.dataset.input;
   if (k === 'esp-search') filterEspList();
+  if (k === 'vid-link') { const h = document.getElementById('vidHint'); if (h) h.textContent = vidHint(e.target.value); }
   if (k === 'search') { ui.search = e.target.value; renderView(); }
   if (k === 'cp-q') { ui.cpQ = e.target.value; ui.cpMonths = 1; clearTimeout(ui.cpT); ui.cpT = setTimeout(renderView, 200); }
   if (k === 'idx-pct' || k === 'idx-amount') {

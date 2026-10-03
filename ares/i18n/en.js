@@ -8167,5 +8167,41 @@ export default [
 [
 "Horaire habituel : matin, après-midi, soir (laisser vide ce qui n’est pas travaillé)",
 "Usual hours: morning, afternoon, evening (leave empty what is not worked)"
+],
+[
+"📱 Annonce réseaux sociaux (TikTok, Instagram, Facebook…)",
+"📱 Social media ad (TikTok, Instagram, Facebook…)"
+],
+[
+"🛒 Supermarché",
+"🛒 Supermarket"
+],
+[
+"🏪 Commerce de proximité (boulangerie, épicerie, pharmacie…)",
+"🏪 Local shop (bakery, grocery, pharmacy…)"
+],
+[
+"🏢 Bureaux (agence, cabinet, fiduciaire…)",
+"🏢 Offices (agency, firm, accountant…)"
+],
+[
+"🔗 Lien court TikTok : il sera converti en lien complet à l’enregistrement (mini écran).",
+"🔗 Short TikTok link: it will be converted to the full link when saving (mini screen)."
+],
+[
+"⚠ Lien non reconnu : il s’affichera comme un simple bouton « ▶ Vidéo ».",
+"⚠ Link not recognised: it will show as a plain “▶ Video” button."
+],
+[
+"Annonce publiée — lien court TikTok non converti (hors ligne ?) : ouvrez la vidéo dans le navigateur et copiez le lien complet",
+"Ad published — short TikTok link not converted (offline?): open the video in the browser and copy the full link"
+],
+[
+"✓ Lien reconnu : petit lecteur audio dans l’annonce.",
+"✓ Link recognised: small audio player in the ad."
+],
+[
+"✓ Lien reconnu : mini écran dans l’annonce.",
+"✓ Link recognised: mini screen in the ad."
 ]
 ];

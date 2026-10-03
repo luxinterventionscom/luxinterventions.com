@@ -8363,5 +8363,41 @@ export default [
 [
 "Horaire habituel : matin, après-midi, soir (laisser vide ce qui n’est pas travaillé)",
 "Orario abituale: mattina, pomeriggio, sera (lasciare vuoto ciò che non è lavorato)"
+],
+[
+"📱 Annonce réseaux sociaux (TikTok, Instagram, Facebook…)",
+"📱 Annuncio social media (TikTok, Instagram, Facebook…)"
+],
+[
+"🛒 Supermarché",
+"🛒 Supermercato"
+],
+[
+"🏪 Commerce de proximité (boulangerie, épicerie, pharmacie…)",
+"🏪 Negozio di prossimità (panetteria, alimentari, farmacia…)"
+],
+[
+"🏢 Bureaux (agence, cabinet, fiduciaire…)",
+"🏢 Uffici (agenzia, studio, fiduciaria…)"
+],
+[
+"🔗 Lien court TikTok : il sera converti en lien complet à l’enregistrement (mini écran).",
+"🔗 Link breve TikTok: sarà convertito nel link completo al salvataggio (mini schermo)."
+],
+[
+"⚠ Lien non reconnu : il s’affichera comme un simple bouton « ▶ Vidéo ».",
+"⚠ Link non riconosciuto: apparirà come un semplice pulsante «▶ Video»."
+],
+[
+"Annonce publiée — lien court TikTok non converti (hors ligne ?) : ouvrez la vidéo dans le navigateur et copiez le lien complet",
+"Annuncio pubblicato — link breve TikTok non convertito (offline?): apri il video nel browser e copia il link completo"
+],
+[
+"✓ Lien reconnu : petit lecteur audio dans l’annonce.",
+"✓ Link riconosciuto: piccolo lettore audio nell’annuncio."
+],
+[
+"✓ Lien reconnu : mini écran dans l’annonce.",
+"✓ Link riconosciuto: mini schermo nell’annuncio."
 ]
 ];

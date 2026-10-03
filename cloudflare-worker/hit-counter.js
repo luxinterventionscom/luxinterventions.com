@@ -715,6 +715,24 @@ async function handleAres(request, env, url, headers) {
     await env.PHOTOS.put(ARES_PUBS, JSON.stringify({ items, at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
     return aresJson({ ok: true, n: items.length }, 200, headers);
   }
+  // Lien court TikTok (vm.tiktok.com/…, tiktok.com/t/…) → lien complet de la vidéo (pour le mini lecteur des annonces)
+  if (path === "video-link" && method === "GET") {
+    let u;
+    try { u = new URL(url.searchParams.get("u") || ""); } catch { return aresJson({ error: "bad url" }, 400, headers); }
+    const short = u.protocol === "https:" && (/^(vm|vt)\.tiktok\.com$/.test(u.hostname) || (/^(www\.)?tiktok\.com$/.test(u.hostname) && /^\/t\/[\w-]{4,30}\/?$/.test(u.pathname)));
+    if (!short) return aresJson({ error: "not a short link" }, 400, headers);
+    let next = u.href;
+    for (let i = 0; i < 4; i++) {
+      const r = await fetch(next, { method: "GET", redirect: "manual", headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148" } });
+      const loc = r.headers.get("Location");
+      if (!loc) break;
+      next = new URL(loc, next).href;
+      const m = next.match(/^https:\/\/(?:www\.|m\.)?tiktok\.com\/(@[\w.-]{1,40})\/video\/(\d{8,25})/);
+      if (m) return aresJson({ url: `https://www.tiktok.com/${m[1]}/video/${m[2]}` }, 200, headers);
+      if (!/^https:\/\/([\w-]+\.)?tiktok\.com\//.test(next)) break;
+    }
+    return aresJson({ error: "not found" }, 404, headers);
+  }
   if (path === "pubstats" && method === "GET") {
     if (!(await pubStatInit(env))) return aresJson({ rows: [] }, 200, headers);
     const days = Math.min(400, Math.max(1, parseInt(url.searchParams.get("days") || "90", 10) || 90));
