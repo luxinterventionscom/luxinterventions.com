@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.52.0';
+const VERSION = '2.53.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -658,6 +658,26 @@ function rulesVersion(im) {
   return RULES_V + '-' + h.toString(36);
 }
 const rulesAccepted = (l) => !!(l.reglesLu && l.reglesV === rulesVersion(vault.get('immeubles', l.immId)));
+// Contrôle « Maintenance » : ce que le locataire reçoit (7 jours), et sinon pourquoi rien n'apparaît
+function mtPreview(l) {
+  const show = { ...ESP_ALL, ...((l.espace || {}).show || {}) };
+  if (!show.menage) return html`<div class="alert warn" style="margin:0 0 12px">${icon('alert')}<div>« Maintenance » est décoché : le locataire ne voit pas les passages.</div></div>`;
+  const vis = espaceData(l).visits || [];
+  const im = immName(l.immId);
+  if (vis.length) return html`<div class="card" style="margin:0 0 12px;padding:12px"><b>🛠️ Maintenance — ce que voit le locataire (7 jours)</b>
+    <div class="list small" style="margin-top:6px">${vis.map((v) => html`<div class="row"><span class="grow">${v.off ? '⚫' : v.d === today() ? '🔴' : v.d === addDays(today(), 1) ? '🟡' : '🟢'} <b>${fmtDate(v.d)}</b> · ${METIERS[v.m] || v.m} ${v.nom ? '(' + v.nom + ')' : ''}</span><span class="meta">${v.de}${v.a ? '–' + v.a : ''}${v.off ? ' · absent' : ''}</span></div>`)}</div></div>`;
+  const team = vault.list('intervenants').filter((i) => !i.archive);
+  const why = team.map((i) => {
+    const hs = i.horaires || [];
+    if (!hs.length) return `${intervFull(i)} : aucun horaire`;
+    const here = hs.filter((h) => h.immId === l.immId);
+    if (here.length) return null;
+    const noPlace = hs.filter((h) => !h.immId).length;
+    const other = [...new Set(hs.filter((h) => h.immId).map((h) => immName(h.immId)))];
+    return `${intervFull(i)} : ${noPlace ? `${noPlace} créneau(x) sans lieu` : ''}${noPlace && other.length ? ' · ' : ''}${other.length ? 'travaille à ' + other.join(', ') : ''}`;
+  }).filter(Boolean);
+  return html`<div class="alert warn" style="margin:0 0 12px">${icon('alert')}<div><b>🛠️ Maintenance : aucun passage prévu dans les 7 prochains jours pour cet immeuble.</b> <span data-notr="1">(${im})</span><br><span>Pour qu’une personne de l’équipe apparaisse ici, son horaire doit avoir comme lieu l’adresse de cet immeuble (Maintenance → Équipe → la personne → Modifier → le jour → « — lieu — »).</span>${why.length ? html`<ul style="margin:6px 0 0;padding-left:18px">${why.map((w) => html`<li>${w}</li>`)}</ul>` : team.length ? '' : html`<br>Aucune personne dans l’équipe.`}</div></div>`;
+}
 const appUrl = () => `${location.origin}/espace.html`;
 // Ce que le locataire voit — uniquement les rubriques cochées, uniquement ses propres données
 function espaceData(l) {
@@ -3789,7 +3809,7 @@ const SHEETS = {
             <button class="btn" data-action="esp-copy" data-id="${id}">${icon('file')} Copier le lien</button>
             <a class="btn" href="${url}" target="_blank" rel="noopener">${icon('eye')} Voir son espace</a>
           </div>
-          <div class="section-label">Ce qu'il voit</div>${boxes}
+          <div class="section-label">Ce qu'il voit</div>${boxes}${mtPreview(l)}
           <p class="tiny muted">Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Travaux.</p>
           <button class="btn ghost danger block" data-action="esp-off" data-id="${id}">Désactiver l'espace</button>`;
       }

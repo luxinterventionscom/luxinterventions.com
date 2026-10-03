@@ -8207,5 +8207,25 @@ export default [
 [
 "Maintenance : passages de la femme de ménage et des ouvriers (aujourd’hui, demain, heure prévue) + avis sur le ménage 😞 → ⭐",
 "Maintenance: visits of the cleaner and workers (today, tomorrow, planned time) + cleaning rating 😞 → ⭐"
+],
+[
+"🛠️ Maintenance — ce que voit le locataire (7 jours)",
+"🛠️ Maintenance — what the tenant sees (7 days)"
+],
+[
+"« Maintenance » est décoché : le locataire ne voit pas les passages.",
+"“Maintenance” is unticked: the tenant does not see the visits."
+],
+[
+"🛠️ Maintenance : aucun passage prévu dans les 7 prochains jours pour cet immeuble.",
+"🛠️ Maintenance: no visits planned in the next 7 days for this building."
+],
+[
+"Pour qu’une personne de l’équipe apparaisse ici, son horaire doit avoir comme lieu l’adresse de cet immeuble (Maintenance → Équipe → la personne → Modifier → le jour → « — lieu — »).",
+"For a team member to appear here, their schedule must have this building’s address as place (Maintenance → Team → the person → Edit → the day → “— place —”)."
+],
+[
+"Aucune personne dans l’équipe.",
+"No one in the team."
 ]
 ];
