@@ -52,6 +52,24 @@ export function createDemo() {
   seed({ residence_id: 'r4', org_id: 'demo-org2', urgence: 'urgent', categorie: 'Chauffage / sanitaire', lieu: 'Chaufferie', description: 'Plus d’eau chaude dans tout l’immeuble.', status: 'encours', created_by: 'demo-lux', created_at: now - 3 * H, taken_at: now - 2.8 * H, updated_at: now - H,
     history: [{ user_id: 'demo-lux', kind: 'status', status: 'encours', text: 'Technicien sur place.', created_at: now - H }] });
 
+  // historique d'exemple (12 mois) pour les statistiques : interventions terminées, avec des fiches d'évaluation
+  const CRIT = ['Rapidité & ponctualité', 'Compétence technique', 'Courtoisie & disponibilité', 'Propreté & ordre'];
+  const LVL = ['😞 Insuffisant', '😐 Suffisant', '🙂 Bon', '⭐ Excellent'];
+  const HIST = [['Plomberie · Réparer', 'Appartement · Étage 2 · App. 2A'], ['Électricité · Remplacer', 'Parties communes / hall'], ['Peinture · Refaire', 'Cage d’escalier · Étage 1'], ['Nettoyage · Nettoyer', 'Cave'],
+    ['Chaudière · Remplacer', 'Chaufferie / local technique'], ['Carrelage · Réparer', 'Appartement · Étage 3 · cuisine'], ['Maçonnerie · Refaire', 'Jardin commun'], ['Radiateurs · Contrôler', 'Chambre · Étage 1 · chambre 3'],
+    ['Panneaux solaires · Installer / poser', 'Toiture / façade'], ['Serrurerie · Réparer', 'Box / garage · box 12'], ['Chauffage · Contrôler', 'Appartement · Étage 4'], ['Espaces verts · Nettoyer', 'Jardin commun']];
+  for (let i = 0; i < 26; i++) {
+    const [cat, lieu] = HIST[i % HIST.length], c = now - (330 - i * 12.5) * 24 * H, take = (0.5 + (i % 5)) * H, dur = (6 + (i % 7) * 9) * H;
+    const t = seed({ residence_id: ['r1', 'r2', 'r3'][i % 3], org_id: 'demo-org', urgence: ['planifie', '24h', 'urgent'][i % 3], categorie: cat, lieu, description: 'Intervention d’exemple (historique).', status: 'terminee',
+      created_by: 'demo-sophie', created_at: c, taken_at: c + take, done_at: c + dur, updated_at: c + dur, technicien: ['Luca', 'Marco', 'Teddy'][i % 3], rapport: 'Travail terminé.',
+      history: [{ user_id: 'demo-lux', kind: 'status', status: 'prise', created_at: c + take }, { user_id: 'demo-lux', kind: 'status', status: 'terminee', text: 'Travail terminé.', created_at: c + dur }] });
+    if (i % 4 !== 3) {
+      const n = [3, 3, 2, 3, 1, 3][i % 6];
+      events.push({ id: id() + events.length, ticket_id: t.id, user_id: 'demo-sophie', kind: 'comment', status: null, created_at: c + dur + 20 * H,
+        text: [`⭐ Évaluation de l’intervention #${t.ref}`, ...CRIT.map((k, j) => `${k} : ${LVL[Math.max(0, n - (j === 0 && i % 5 === 0 ? 1 : 0))]}`), `Avis global : ${n >= 3 ? 'Satisfait' : n === 2 ? 'Partiellement satisfait' : 'Non satisfait'}`, 'Rempli et confirmé par : Sophie (démo)'].join('\n') });
+    }
+  }
+
   let me = users.sophie;
   const notices = [];
   const isAdmin = () => me.role === 'admin';
@@ -83,15 +101,20 @@ export function createDemo() {
     if (p === 'stats') {
       const ts = tickets.filter(visible).filter((t) => !scopeOrg || t.org_id === scopeOrg);
       const open = ts.filter((t) => ['recue', 'prise', 'planifiee', 'encours'].includes(t.status));
-      const took = ts.filter((t) => t.taken_at);
+      const took = ts.filter((t) => t.taken_at && t.created_at > now - 90 * 24 * H);
       const rs = residences.filter((r) => r.active && (!scopeOrg || r.org_id === scopeOrg) && (isAdmin() || r.org_id === me.org_id));
       const avg = (a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : null);
       return { open: open.length, urgent: open.filter((t) => t.urgence === 'urgent').length, recue: ts.filter((t) => t.status === 'recue').length,
-        doneMonth: ts.filter((t) => t.status === 'terminee').length, createdMonth: ts.length,
+        doneMonth: ts.filter((t) => t.status === 'terminee' && t.done_at >= new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime()).length,
+        createdMonth: ts.filter((t) => t.created_at >= new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime()).length,
         avgTakeMs: avg(took.map((t) => t.taken_at - t.created_at)), avgTakeUrgentMs: avg(took.filter((t) => t.urgence === 'urgent').map((t) => t.taken_at - t.created_at)),
         residences: rs.length, apartments: rs.reduce((a, r) => a + (r.apartments || 0), 0) };
     }
 
+    if (p === 'evals') {
+      const ids = new Set(tickets.filter(visible).filter((t) => !scopeOrg || t.org_id === scopeOrg).map((t) => t.id));
+      return { evals: events.filter((e) => e.kind === 'comment' && ids.has(e.ticket_id) && (e.text || '').startsWith('⭐ ')).map((e) => ({ text: e.text, created_at: e.created_at })) };
+    }
     if (p === 'tickets' && method === 'GET') {
       const scope = q.get('scope') || 'active';
       let ts = tickets.filter(visible).filter((t) => !scopeOrg || t.org_id === scopeOrg);
@@ -175,6 +198,15 @@ export function createDemo() {
     }
     if (p === 'orgs' && method === 'POST') { const o = { id: id(), name: b.name, phone: b.phone, email: b.email, created_at: Date.now() }; orgs.push(o); return { id: o.id }; }
     const om = p.match(/^orgs\/(.+)$/);
+    if (om && method === 'DELETE') {
+      const o = orgs.find((x) => x.id === om[1]);
+      if (!o || b.confirm !== o.name) fail(400, 'Tapez exactement le nom de la gérance pour confirmer');
+      orgs.splice(orgs.indexOf(o), 1);
+      for (let i = residences.length - 1; i >= 0; i--) if (residences[i].org_id === o.id) residences.splice(i, 1);
+      for (let i = tickets.length - 1; i >= 0; i--) if (tickets[i].org_id === o.id) tickets.splice(i, 1);
+      for (const [k, u] of Object.entries(users)) if (u.org_id === o.id && u !== me) delete users[k];
+      return { ok: true };
+    }
     if (om) { Object.assign(orgs.find((o) => o.id === om[1]), { name: b.name, phone: b.phone, email: b.email }); return { ok: true }; }
 
     if (p === 'users' && method === 'GET') {
