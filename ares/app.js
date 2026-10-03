@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.49.0';
+const VERSION = '2.50.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -275,7 +275,10 @@ const INT_CATS = { quotidien: 'Gestion quotidienne (ménage, petits travaux)', s
 const ABS_TYPES = { maladie: '🤒 Maladie', conges: '🏖️ Congé', autre: '📌 Autre absence' };
 // Créneaux d'une journée de travail : matin, après-midi, soir (+ suppléments / dépannages ajoutés avec « + »)
 const HOR_P = { matin: '🌅 Matin', aprem: '☀️ Après-midi', soir: '🌙 Soir', extra: '➕ Supplément' };
-const horP = (h) => (HOR_P[h.p] ? h.p : (hm(h.de) || 0) < 12 * 60 ? 'matin' : (hm(h.de) || 0) < 17 * 60 ? 'aprem' : 'soir');
+const HOR_MIN = { matin: 3, aprem: 3, soir: 1 };
+// heure proposée quand on touche une case vide : début du créneau, ou la fin de la maison précédente
+const HOR_START = { matin: '08:00', aprem: '14:00', soir: '18:00', extra: '08:00' };
+const horP = (h) => (HOR_P[h.p] ? h.p : (hm(h.de) || 0) < 12 ? 'matin' : (hm(h.de) || 0) < 17 ? 'aprem' : 'soir');
 const SEMAINE = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 const hm = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? +m[1] + +m[2] / 60 : null; };
 // Heures prévues par jour de la semaine (0 = lundi)
@@ -2995,18 +2998,19 @@ const SHEETS = {
     const i = id ? vault.get('intervenants', id) : { metier: 'menage', genre: 'interne', cat: 'quotidien' };
     if (id && !i) return null;
     const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
-    // par jour : les trois créneaux habituels, puis les suppléments
+    // par jour : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute
     const dayRows = (j) => {
       const hs = (i.horaires || []).filter((h) => h.j === j).sort((a, b) => (a.de || '').localeCompare(b.de || ''));
-      const rows = { matin: null, aprem: null, soir: null }, extra = [];
-      for (const h of hs) { const p = horP(h); if (p !== 'extra' && !rows[p]) rows[p] = h; else extra.push(h); }
-      return [...Object.entries(rows).map(([p, h]) => ({ p, h: h || {} })), ...extra.map((h) => ({ p: 'extra', h }))];
+      const g = { matin: [], aprem: [], soir: [], extra: [] };
+      for (const h of hs) g[horP(h)].push(h);
+      for (const [p, n] of Object.entries(HOR_MIN)) while (g[p].length < n) g[p].push({});
+      return Object.entries(g).flatMap(([p, arr]) => arr.map((h, n) => ({ p, h, n: n + 1 })));
     };
     const imOpts = (cur) => imms.map((im) => html`<option value="${im.id}" ${cur === im.id ? new Raw('selected') : ''}>${im.adresse}</option>`);
-    const horRow = (j, k, p, h) => html`<span class="hor-p">${HOR_P[p]}</span><input type="hidden" name="h${j}_${k}p" value="${p}">
+    const horRow = (j, k, p, h, n) => html`<div class="hor-row" data-p="${p}"><span class="hor-p">${HOR_P[p]}${p !== 'extra' && p !== 'soir' ? html`<span class="hor-n"> ${n}</span>` : ''}</span><input type="hidden" name="h${j}_${k}p" value="${p}">
           <input name="h${j}_${k}d" type="time" value="${h.de || ''}" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} de">
           <input name="h${j}_${k}a" type="time" value="${h.a || ''}" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} à">
-          <select name="h${j}_${k}i" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} lieu"><option value="">— lieu —</option>${imOpts(h.immId)}</select>`;
+          <select name="h${j}_${k}i" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} lieu"><option value="">— lieu —</option>${imOpts(h.immId)}</select></div>`;
     const sel = (name, opts, cur) => html`<select name="${name}">${Object.entries(opts).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</select>`;
     return {
       title: id ? 'Modifier la fiche' : 'Nouvelle personne',
@@ -3027,9 +3031,9 @@ const SHEETS = {
         <div class="section-label full" style="margin:10px 0 0">Horaire habituel : matin, après-midi, soir (laisser vide ce qui n’est pas travaillé)</div>
         <div class="full hor-week">${SEMAINE.map((jn, j) => { const rows = dayRows(j), used = rows.filter((r) => r.h.de); return html`<details class="hor-blk" ${used.length ? new Raw('open') : ''}>
           <summary><b>${jn}</b> <span class="meta">${used.length ? used.map((r) => `${r.h.de}–${r.h.a}${r.h.immId ? ' · ' + immName(r.h.immId) : ''}`).join(' / ') : '—'}</span></summary>
-          <div class="hor-grid" data-n="${rows.length}">${rows.map((r, k) => horRow(j, k, r.p, r.h))}</div>
-          <button type="button" class="btn sm" data-action="hor-add" data-j="${j}">${icon('plus')} Dépannage / supplément</button></details>`; })}</div>
-        <template id="horTpl">${horRow('__J__', '__K__', 'extra', {})}</template>
+          <div class="hor-grid" data-n="${rows.length}">${rows.map((r, k) => horRow(j, k, r.p, r.h, r.n))}</div>
+          <div class="hor-adds"><button type="button" class="btn sm" data-action="hor-add" data-j="${j}" data-p="matin">${icon('plus')} <span>🌅 Matin</span></button><button type="button" class="btn sm" data-action="hor-add" data-j="${j}" data-p="aprem">${icon('plus')} <span>☀️ Après-midi</span></button><button type="button" class="btn sm" data-action="hor-add" data-j="${j}" data-p="extra">${icon('plus')} <span>Dépannage / supplément</span></button></div></details>`; })}</div>
+        ${Object.keys(HOR_P).map((p) => html`<template data-hor-tpl="${p}">${horRow('__J__', '__K__', p, {}, '__N__')}</template>`)}
         <label class="field full">Notes<textarea name="note" placeholder="Clés confiées, disponibilités…">${i.note || ''}</textarea></label>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-interv" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
@@ -4196,10 +4200,14 @@ const ACTIONS = {
   'new-interv': () => openOver('interv-form'),
   // « + » : ajoute une ligne « Supplément » (dépannage, nettoyage en plus) à ce jour
   'hor-add': (d, el) => {
-    const grid = el.closest('.hor-blk').querySelector('.hor-grid'), tpl = document.getElementById('horTpl');
-    const k = +grid.dataset.n || 0;
+    const grid = el.closest('.hor-blk').querySelector('.hor-grid'), p = HOR_P[d.p] ? d.p : 'extra';
+    const tpl = document.querySelector(`template[data-hor-tpl="${p}"]`);
+    const k = +grid.dataset.n || 0, same = grid.querySelectorAll(`.hor-row[data-p="${p}"]`);
     grid.dataset.n = k + 1;
-    grid.insertAdjacentHTML('beforeend', tpl.innerHTML.replaceAll('__J__', d.j).replaceAll('__K__', k));
+    const row = tpl.innerHTML.replaceAll('__J__', d.j).replaceAll('__K__', k).replaceAll('__N__', same.length + 1);
+    // la nouvelle ligne se place à la suite de son créneau (matin sous le matin…), les suppléments à la fin
+    if (same.length && p !== 'extra') same[same.length - 1].insertAdjacentHTML('afterend', row);
+    else grid.insertAdjacentHTML('beforeend', row);
     grid.querySelector(`[name="h${d.j}_${k}d"]`).focus();
   },
   'edit-interv': (d) => openOver('interv-form', d.id),
@@ -5173,6 +5181,16 @@ function filterEspList() {
   const c = sheetEl.querySelector('#espCount');
   if (c) c.textContent = q || f ? `${n} résultat${n > 1 ? 's' : ''}` : '';
 }
+document.addEventListener('pointerdown', (e) => {
+  const inp = e.target.closest && e.target.closest('.hor-row input[type=time]');
+  if (!inp || inp.value) return;
+  const row = inp.closest('.hor-row'), p = row.dataset.p, isEnd = /a$/.test(inp.name);
+  const plus1 = (t) => { const m = Math.min(23 * 60 + 59, Math.round(((hm(t) || 0) + 1) * 60)); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+  if (isEnd) { const de = row.querySelector('input[name$="d"]').value; inp.value = plus1(de || HOR_START[p]); return; }
+  let prev = row.previousElementSibling;
+  while (prev && !(prev.dataset.p === p && prev.querySelector('input[name$="a"]').value)) prev = prev.dataset.p === p ? prev.previousElementSibling : null;
+  inp.value = prev ? prev.querySelector('input[name$="a"]').value : HOR_START[p];
+}, true);
 document.addEventListener('input', (e) => {
   const k = e.target.dataset.input;
   if (k === 'esp-search') filterEspList();
