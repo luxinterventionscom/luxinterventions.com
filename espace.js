@@ -611,7 +611,9 @@ function render() {
     return;
   }
   const out = [];
-  out.push(`<div class="top"><span class="brandx"><img class="top-logo" src="${esc(d.societe.logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(d.societe.nom)}</b></span>${langs}</div><h1>${esc(t.hello)} ${esc(d.prenom || d.nom)}</h1><p class="sub">${esc([d.logement, d.adresse].filter(Boolean).join(' · '))}</p>`);
+  // adresse complète : rue + code postal et localité (si renseignés dans l'app de gestion)
+  const addrFull = [d.adresse, d.ville].filter(Boolean).join(', ');
+  out.push(`<div class="top"><span class="brandx"><img class="top-logo" src="${esc(d.societe.logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(d.societe.nom)}</b></span>${langs}</div><h1>${esc(t.hello)} ${esc(d.prenom || d.nom)}</h1><p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);
   const pubs = s.pub ? (d.pubs || []).filter((x) => !x.fin || x.fin >= today) : [];
   const ad = pubs.find((x) => x.id === adSel);
   if (!ad) adSel = '';
@@ -621,8 +623,8 @@ function render() {
   topPubId = (slot('haut') || {}).id || '';
   if (topAd) out.push(adBox(topAd, t, d, true));
   else if (ad) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)} · ${esc((t.ad.cats[ad.cat] || t.ad.cats.autre).split(' ')[0])} ${esc(ad.nom)}</b><br><span class="meta">📍 ${esc(ad.adresse)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(ad.adresse))}"></div>
-    <div class="btn-row"><a class="btn" href="https://www.google.com/maps/dir/?api=1${d.adresse ? '&origin=' + encodeURIComponent(mapQ(d.adresse)) : ''}&destination=${encodeURIComponent(mapQ(ad.adresse))}" target="_blank" rel="noopener">${esc(t.ad.route)}</a>${d.adresse ? `<button class="btn sec" data-home="1">${esc(t.ad.home)}</button>` : ''}${slot('haut') ? `<button class="btn sec" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div></div>`);
-  else if (d.adresse) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">🏠 ${esc(d.adresse)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(d.adresse))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQ(d.adresse))}" target="_blank" rel="noopener">${esc(t.ed.map)}</a><p class="meta" style="margin:6px 0 0;text-align:center">${esc(t.ed.mapHint)}</p>${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
+    <div class="btn-row"><a class="btn" href="https://www.google.com/maps/dir/?api=1${d.adresse ? '&origin=' + encodeURIComponent(mapQ(addrFull)) : ''}&destination=${encodeURIComponent(mapQ(ad.adresse))}" target="_blank" rel="noopener">${esc(t.ad.route)}</a>${d.adresse ? `<button class="btn sec" data-home="1">${esc(t.ad.home)}</button>` : ''}${slot('haut') ? `<button class="btn sec" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div></div>`);
+  else if (d.adresse) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">🏠 ${esc(addrFull)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(addrFull))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQ(addrFull))}" target="_blank" rel="noopener">${esc(t.ed.map)}</a><p class="meta" style="margin:6px 0 0;text-align:center">${esc(t.ed.mapHint)}</p>${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
   if (d.bins && d.chat) out.push(`<div id="binBox">${binHtml()}</div>`);
   if (s.coll && (d.coll || []).length) {
     const soon = [];
@@ -755,6 +757,11 @@ function render() {
   const keepMap = document.querySelector('#mapBox iframe');
   const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');
+  // adresse trop longue pour l'écran : elle défile doucement (aller-retour)
+  for (const m of app.querySelectorAll('.marq')) {
+    const dx = m.firstElementChild.scrollWidth - m.clientWidth;
+    if (dx > 4) { m.style.setProperty('--dx', -dx + 'px'); m.style.setProperty('--dur', Math.max(6, dx / 25 + 4) + 's'); m.classList.add('run'); }
+  }
   // lecteurs vidéo des annonces : gardés d'un affichage à l'autre (la vidéo ne recommence pas)
   document.querySelectorAll('.vid[data-vsrc], .ticker[data-vsrc]').forEach((v) => {
     const src = v.dataset.vsrc, old = keepVid.get(src);

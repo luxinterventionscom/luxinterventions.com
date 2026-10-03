@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.47.0';
+const VERSION = '2.48.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -273,6 +273,9 @@ const intervName = (id) => { const i = vault.get('intervenants', id); return i ?
 const INT_GENRES = { interne: 'Ouvrier interne (salarié)', societe: 'Société externe', prive: 'Privé (travail occasionnel)' };
 const INT_CATS = { quotidien: 'Gestion quotidienne (ménage, petits travaux)', specialise: 'Professionnel spécialisé' };
 const ABS_TYPES = { maladie: '🤒 Maladie', conges: '🏖️ Congé', autre: '📌 Autre absence' };
+// Créneaux d'une journée de travail : matin, après-midi, soir (+ suppléments / dépannages ajoutés avec « + »)
+const HOR_P = { matin: '🌅 Matin', aprem: '☀️ Après-midi', soir: '🌙 Soir', extra: '➕ Supplément' };
+const horP = (h) => (HOR_P[h.p] ? h.p : (hm(h.de) || 0) < 12 * 60 ? 'matin' : (hm(h.de) || 0) < 17 * 60 ? 'aprem' : 'soir');
 const SEMAINE = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 const hm = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? +m[1] + +m[2] / 60 : null; };
 // Heures prévues par jour de la semaine (0 = lundi)
@@ -658,7 +661,7 @@ function espaceData(l) {
   const g = vault.get('logements', l.logId), im = vault.get('immeubles', l.immId);
   const soc = societe();
   const out = {
-    v: 1, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? g.nom : '', adresse: im ? im.adresse : '', show,
+    v: 1, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? g.nom : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
     societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: soc.signature || '', signW: soc.signW || 8 },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
   };
@@ -2989,7 +2992,18 @@ const SHEETS = {
     const i = id ? vault.get('intervenants', id) : { metier: 'menage', genre: 'interne', cat: 'quotidien' };
     if (id && !i) return null;
     const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
-    const hOf = (j, k) => ((i.horaires || []).find((h) => h.j === j) || {})[k] || '';
+    // par jour : les trois créneaux habituels, puis les suppléments
+    const dayRows = (j) => {
+      const hs = (i.horaires || []).filter((h) => h.j === j).sort((a, b) => (a.de || '').localeCompare(b.de || ''));
+      const rows = { matin: null, aprem: null, soir: null }, extra = [];
+      for (const h of hs) { const p = horP(h); if (p !== 'extra' && !rows[p]) rows[p] = h; else extra.push(h); }
+      return [...Object.entries(rows).map(([p, h]) => ({ p, h: h || {} })), ...extra.map((h) => ({ p: 'extra', h }))];
+    };
+    const imOpts = (cur) => imms.map((im) => html`<option value="${im.id}" ${cur === im.id ? new Raw('selected') : ''}>${im.adresse}</option>`);
+    const horRow = (j, k, p, h) => html`<span class="hor-p">${HOR_P[p]}</span><input type="hidden" name="h${j}_${k}p" value="${p}">
+          <input name="h${j}_${k}d" type="time" value="${h.de || ''}" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} de">
+          <input name="h${j}_${k}a" type="time" value="${h.a || ''}" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} à">
+          <select name="h${j}_${k}i" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} lieu"><option value="">— lieu —</option>${imOpts(h.immId)}</select>`;
     const sel = (name, opts, cur) => html`<select name="${name}">${Object.entries(opts).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</select>`;
     return {
       title: id ? 'Modifier la fiche' : 'Nouvelle personne',
@@ -3007,11 +3021,12 @@ const SHEETS = {
         ${field('Email', 'mail', i.mail, { type: 'email', full: true })}
         ${field('RCS (société)', 'rcs', i.rcs, { placeholder: 'ex. B123456' })}
         ${field('N° TVA (société)', 'tva', i.tva, { placeholder: 'ex. LU12345678' })}
-        <div class="section-label full" style="margin:10px 0 0">Horaire habituel (laisser vide les jours sans travail)</div>
-        <div class="full hor-grid">${SEMAINE.map((jn, j) => html`<span class="hor-day">${jn}</span>
-          <input name="h${j}d" type="time" value="${hOf(j, 'de')}" aria-label="${jn} de">
-          <input name="h${j}a" type="time" value="${hOf(j, 'a')}" aria-label="${jn} à">
-          <select name="h${j}i" aria-label="${jn} lieu"><option value="">— lieu —</option>${imms.map((im) => html`<option value="${im.id}" ${hOf(j, 'immId') === im.id ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select>`)}</div>
+        <div class="section-label full" style="margin:10px 0 0">Horaire habituel : matin, après-midi, soir (laisser vide ce qui n’est pas travaillé)</div>
+        <div class="full hor-week">${SEMAINE.map((jn, j) => { const rows = dayRows(j), used = rows.filter((r) => r.h.de); return html`<details class="hor-blk" ${used.length ? new Raw('open') : ''}>
+          <summary><b>${jn}</b> <span class="meta">${used.length ? used.map((r) => `${r.h.de}–${r.h.a}${r.h.immId ? ' · ' + immName(r.h.immId) : ''}`).join(' / ') : '—'}</span></summary>
+          <div class="hor-grid" data-n="${rows.length}">${rows.map((r, k) => horRow(j, k, r.p, r.h))}</div>
+          <button type="button" class="btn sm" data-action="hor-add" data-j="${j}">${icon('plus')} Dépannage / supplément</button></details>`; })}</div>
+        <template id="horTpl">${horRow('__J__', '__K__', 'extra', {})}</template>
         <label class="field full">Notes<textarea name="note" placeholder="Clés confiées, disponibilités…">${i.note || ''}</textarea></label>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-interv" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
@@ -3049,9 +3064,9 @@ const SHEETS = {
     } else if (tab === 'heures') {
       const d = new Date();
       const months = [0, 1, 2].map((k) => { const x = new Date(d.getFullYear(), d.getMonth() - k, 1); return [x.getFullYear(), x.getMonth() + 1]; });
-      const hs = (i.horaires || []).slice().sort((a, b) => a.j - b.j);
+      const hs = (i.horaires || []).slice().sort((a, b) => a.j - b.j || (a.de || '').localeCompare(b.de || ''));
       body = html`<div class="section-label" style="margin-top:0">Horaire habituel</div>
-        ${hs.length ? html`<div class="list small">${hs.map((h) => html`<div class="row"><span class="grow"><b>${SEMAINE[h.j]}</b> ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : ''}</span><span class="meta">${fmtH(dayHours({ horaires: [h] }, h.j))}</span></div>`)}</div>
+        ${hs.length ? html`<div class="list small">${hs.map((h) => html`<div class="row"><span class="grow"><b>${SEMAINE[h.j]}</b> <span>${HOR_P[horP(h)]}</span> ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : ''}</span><span class="meta">${fmtH(dayHours({ horaires: [h] }, h.j))}</span></div>`)}</div>
           <p class="tiny muted">Total par semaine : <b>${fmtH([0, 1, 2, 3, 4, 5, 6].reduce((n, j) => n + dayHours(i, j), 0))}</b></p>` : html`<p class="small muted">Pas d’horaire enregistré. Touchez « Modifier » pour l’ajouter.</p>`}
         <div class="section-label">Heures par mois (horaire − absences)</div>
         <div class="list small">${months.map(([yy, mm]) => { const r = intervMonth(i, yy, mm); return html`<div class="row"><span class="grow"><b>${MONTHS_FULL[mm - 1]} ${yy}</b><span class="meta" style="display:block">prévu ${fmtH(r.prevu)}${r.jm ? ` · 🤒 ${r.jm} j (−${fmtH(r.maladie)})` : ''}${r.jc ? ` · 🏖️ ${r.jc} j (−${fmtH(r.conges)})` : ''}${r.ja ? ` · 📌 ${r.ja} j (−${fmtH(r.autre)})` : ''}</span></span><b>${fmtH(r.net)}</b></div>`; })}</div>
@@ -3309,6 +3324,7 @@ const SHEETS = {
       body: html`<form id="f" data-form="imm" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
         ${field('Adresse complète', 'adresse', im.adresse, { full: true, required: true, placeholder: 'ex. 34, rue Josy Haendel' })}
+        ${field('Code postal et localité', 'ville', im.ville, { full: true, placeholder: 'ex. L-1840 Luxembourg' })}
         <label class="field full">Type de structure<select name="type">${Object.entries(IMM_TYPES).map(([k, v]) => html`<option value="${k}" ${(im.type || 'immeuble') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <div class="section-label full" style="margin:6px 0 0">Bail principal — vous êtes locataire principal, le bailleur est le propriétaire</div>
         ${field('Bailleur (propriétaire)', 'proprietaire', im.proprietaire, { full: true, placeholder: 'Nom du bailleur / propriétaire (vide si l’immeuble vous appartient)' })}
@@ -4175,6 +4191,14 @@ addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installProm
 const ACTIONS = {
   'mt-tab': (d) => { ui.mtTab = d.id; renderView(); },
   'new-interv': () => openOver('interv-form'),
+  // « + » : ajoute une ligne « Supplément » (dépannage, nettoyage en plus) à ce jour
+  'hor-add': (d, el) => {
+    const grid = el.closest('.hor-blk').querySelector('.hor-grid'), tpl = document.getElementById('horTpl');
+    const k = +grid.dataset.n || 0;
+    grid.dataset.n = k + 1;
+    grid.insertAdjacentHTML('beforeend', tpl.innerHTML.replaceAll('__J__', d.j).replaceAll('__K__', k));
+    grid.querySelector(`[name="h${d.j}_${k}d"]`).focus();
+  },
   'edit-interv': (d) => openOver('interv-form', d.id),
   'open-interv': (d) => openSheet('interv', d.id),
   'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
@@ -4715,7 +4739,12 @@ const FORMS = {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
     const horaires = [];
-    for (let j = 0; j < 7; j++) { const de = g(`h${j}d`), a = g(`h${j}a`); if (de && a) horaires.push({ j, de, a, immId: g(`h${j}i`) }); }
+    for (let j = 0; j < 7; j++) for (let k = 0; k < 60; k++) {
+      if (!fd.has(`h${j}_${k}d`)) continue;
+      const de = g(`h${j}_${k}d`), a = g(`h${j}_${k}a`), p = g(`h${j}_${k}p`);
+      if (de && a) horaires.push({ j, de, a, immId: g(`h${j}_${k}i`), p: HOR_P[p] ? p : '' });
+    }
+    horaires.sort((x, y) => x.j - y.j || x.de.localeCompare(y.de));
     const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), horaires, note: g('note') };
     if (!rec.nom) return;
     if (id) rec.id = id;
@@ -4824,7 +4853,7 @@ const FORMS = {
   async imm(fd) {
     const id = fd.get('id');
     const rec = {
-      adresse: fd.get('adresse').trim(), type: fd.get('type') || 'immeuble', proprietaire: fd.get('proprietaire').trim(), loyer: num(fd.get('loyer')), charges: num(fd.get('charges')),
+      adresse: fd.get('adresse').trim(), ville: String(fd.get('ville') || '').trim(), type: fd.get('type') || 'immeuble', proprietaire: fd.get('proprietaire').trim(), loyer: num(fd.get('loyer')), charges: num(fd.get('charges')),
       bailDebut: fd.get('bailDebut'), bailFin: fd.get('bailFin'), note: fd.get('note').trim(),
     };
     if (id) rec.id = id;
