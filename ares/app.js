@@ -8,7 +8,7 @@ import { videoEmbed } from './video-embed.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.50.0';
+const VERSION = '2.51.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -543,7 +543,7 @@ const ESP_SHOW = {
   coll: 'Collectes des déchets de l’immeuble',
   avis: 'Avis de l’immeuble (travaux, coupures…)',
   pub: 'Bons plans du quartier (publicité des partenaires, avec carte)',
-  menage: 'Passage de la femme de ménage (aujourd’hui, heure prévue) + son avis 😞 → ⭐',
+  menage: 'Maintenance : passages de la femme de ménage et des ouvriers (aujourd’hui, demain, heure prévue) + avis sur le ménage 😞 → ⭐',
   signal: 'Signaler un problème (avec photos)',
   edl: 'État des lieux : vos 6 photos (salle de bain, cuisine, chambre, cave, buanderie, parking) + ses photos de sortie à son départ',
   porte: 'Code de la porte (serrure à code / connectée)',
@@ -708,6 +708,25 @@ function espaceData(l) {
       dates.push({ w: i.id, nom: i.prenom || '', d: x.d, de: h ? h.de : '', a: h ? h.a : '', off: !!absOn(i, x.d) });
     }
     out.menage = { week, dates };
+    // Maintenance : passages des 7 prochains jours dans cet immeuble — femme de ménage ET ouvriers (horaire habituel + interventions datées)
+    // le titre d'une intervention n'est donné que si elle concerne son propre logement (rien sur les voisins)
+    const visits = [], d0 = today(), dN = addDays(d0, 7);
+    for (const i of vault.list('intervenants').filter((x) => !x.archive)) {
+      for (const h of i.horaires || []) {
+        if (h.immId !== l.immId || !h.de) continue;
+        for (let d = d0; d <= dN; d = addDays(d, 1)) if ((new Date(d + 'T12:00:00').getDay() + 6) % 7 === h.j) visits.push({ d, w: i.id, nom: i.prenom || '', m: i.metier || 'autre', de: h.de, a: h.a || '', off: !!absOn(i, d) });
+      }
+    }
+    for (const x of agenda(d0, dN).filter((x) => x.kind === 'tache' && x.t.intervenantId && x.t.immId === l.immId && (!x.t.logId || x.t.logId === l.logId) && x.t.statut !== 'fait')) {
+      const i = vault.get('intervenants', x.t.intervenantId);
+      if (!i || i.archive) continue;
+      const own = x.t.logId === l.logId ? x.t.titre : '';
+      const same = visits.find((v) => v.w === i.id && v.d === x.d);
+      if (same) { if (own) same.t = own; same.ty = x.t.type || ''; continue; }
+      const h = (i.horaires || []).find((hh) => hh.immId === l.immId && hh.j === (new Date(x.d + 'T12:00:00').getDay() + 6) % 7);
+      visits.push({ d: x.d, w: i.id, nom: i.prenom || '', m: i.metier || 'autre', de: h ? h.de : '', a: h ? h.a : '', off: !!absOn(i, x.d), ty: x.t.type || '', t: own });
+    }
+    out.visits = visits.sort((a, b) => a.d.localeCompare(b.d) || (a.de || '99').localeCompare(b.de || '99'));
   }
   if (show.pub) out.pubs = pubsActives(l.immId).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut);
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));

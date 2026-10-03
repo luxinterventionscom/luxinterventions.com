@@ -8379,5 +8379,9 @@ export default [
 [
 "✓ Lien reconnu : mini écran dans l’annonce.",
 "✓ Enlace reconocido: mini pantalla en el anuncio."
+],
+[
+"Maintenance : passages de la femme de ménage et des ouvriers (aujourd’hui, demain, heure prévue) + avis sur le ménage 😞 → ⭐",
+"Mantenimiento: visitas de la limpiadora y de los operarios (hoy, mañana, hora prevista) + valoración de la limpieza 😞 → ⭐"
 ]
 ];
