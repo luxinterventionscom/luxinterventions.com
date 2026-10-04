@@ -19,13 +19,75 @@ const app = document.getElementById('app');
 
 // Annexes comprises avec le logement, type de maison, fil avec le gestionnaire (personne seule)
 const AX = {
-  fr: { newMsg: (n) => n > 1 ? n + ' nouveaux messages' : '1 nouveau message', surf: 'Surface', inc: 'Compris', house: 'Maison', cave: '🍷 Cave', mans: { hab: '🏠 Mansarde habitable', non: '🏠 Grenier (rangement)' }, garage: { semi: '🚗 Garage au sous-sol', ext: '🚗 Garage extérieur', box: '🚗 Box' }, parking: '🅿️ Place de parking', jardin: '🌿 Jardin', balcon: '🌇 Balcon / terrasse', maison: { isolee: 'individuelle', jumelee: 'jumelée', rangee: 'mitoyenne' }, solo: 'Messages avec votre gestionnaire', soloHint: 'Écrivez ici à votre gestionnaire : il vous répond dans l’app.' },
-  it: { newMsg: (n) => n > 1 ? n + ' messaggi nuovi' : '1 messaggio nuovo', surf: 'Superficie', inc: 'Compreso', house: 'Casa', cave: '🍷 Cantina', mans: { hab: '🏠 Mansarda abitabile', non: '🏠 Soffitta (deposito)' }, garage: { semi: '🚗 Garage nel seminterrato', ext: '🚗 Garage esterno', box: '🚗 Box' }, parking: '🅿️ Posto auto', jardin: '🌿 Giardino', balcon: '🌇 Balcone / terrazza', maison: { isolee: 'indipendente', jumelee: 'bifamiliare', rangee: 'a schiera' }, solo: 'Messaggi con il tuo gestore', soloHint: 'Scrivi qui al tuo gestore: ti risponde nell’app.' },
-  de: { newMsg: (n) => n > 1 ? n + ' neue Nachrichten' : '1 neue Nachricht', surf: 'Fläche', inc: 'Inklusive', house: 'Haus', cave: '🍷 Keller', mans: { hab: '🏠 Bewohnbares Dachzimmer', non: '🏠 Dachboden (Abstellraum)' }, garage: { semi: '🚗 Garage im Untergeschoss', ext: '🚗 Außengarage', box: '🚗 Box' }, parking: '🅿️ Stellplatz', jardin: '🌿 Garten', balcon: '🌇 Balkon / Terrasse', maison: { isolee: 'freistehend', jumelee: 'Doppelhaushälfte', rangee: 'Reihenhaus' }, solo: 'Nachrichten mit Ihrer Verwaltung', soloHint: 'Schreiben Sie hier Ihrer Verwaltung: Sie antwortet in der App.' },
-  pt: { newMsg: (n) => n > 1 ? n + ' mensagens novas' : '1 mensagem nova', surf: 'Área', inc: 'Incluído', house: 'Casa', cave: '🍷 Arrecadação / cave', mans: { hab: '🏠 Águas-furtadas habitáveis', non: '🏠 Sótão (arrumação)' }, garage: { semi: '🚗 Garagem na cave', ext: '🚗 Garagem exterior', box: '🚗 Box' }, parking: '🅿️ Lugar de estacionamento', jardin: '🌿 Jardim', balcon: '🌇 Varanda / terraço', maison: { isolee: 'isolada', jumelee: 'geminada', rangee: 'em banda' }, solo: 'Mensagens com o seu gestor', soloHint: 'Escreva aqui ao seu gestor: ele responde na app.' },
-  en: { newMsg: (n) => n > 1 ? n + ' new messages' : '1 new message', surf: 'Floor area', inc: 'Included', house: 'House', cave: '🍷 Cellar', mans: { hab: '🏠 Habitable attic room', non: '🏠 Loft (storage)' }, garage: { semi: '🚗 Basement garage', ext: '🚗 Outdoor garage', box: '🚗 Lock-up' }, parking: '🅿️ Parking space', jardin: '🌿 Garden', balcon: '🌇 Balcony / terrace', maison: { isolee: 'detached', jumelee: 'semi-detached', rangee: 'terraced' }, solo: 'Messages with your manager', soloHint: 'Write to your manager here: they reply in the app.' },
-  es: { newMsg: (n) => n > 1 ? n + ' mensajes nuevos' : '1 mensaje nuevo', surf: 'Superficie', inc: 'Incluido', house: 'Casa', cave: '🍷 Trastero', mans: { hab: '🏠 Buhardilla habitable', non: '🏠 Desván (almacén)' }, garage: { semi: '🚗 Garaje en el sótano', ext: '🚗 Garaje exterior', box: '🚗 Box' }, parking: '🅿️ Plaza de aparcamiento', jardin: '🌿 Jardín', balcon: '🌇 Balcón / terraza', maison: { isolee: 'independiente', jumelee: 'pareada', rangee: 'adosada' }, solo: 'Mensajes con tu administrador', soloHint: 'Escribe aquí a tu administrador: te responde en la app.' },
+  fr: { wx: { pl: 'lecteur officiel', t: 'Météo', r: 'Radio', now: 'Maintenant', change: 'Changer de radio', ph: 'Collez le lien de votre radio (site ou flux audio)', save: 'Enregistrer', back: 'Revenir à', on: 'en écoute', site: 'Ouvrir le site de la radio', none: 'Météo indisponible pour le moment.', ext: 'Cette radio s’ouvre sur son site.' }, newMsg: (n) => n > 1 ? n + ' nouveaux messages' : '1 nouveau message', surf: 'Surface', inc: 'Compris', house: 'Maison', cave: '🍷 Cave', mans: { hab: '🏠 Mansarde habitable', non: '🏠 Grenier (rangement)' }, garage: { semi: '🚗 Garage au sous-sol', ext: '🚗 Garage extérieur', box: '🚗 Box' }, parking: '🅿️ Place de parking', jardin: '🌿 Jardin', balcon: '🌇 Balcon / terrasse', maison: { isolee: 'individuelle', jumelee: 'jumelée', rangee: 'mitoyenne' }, solo: 'Messages avec votre gestionnaire', soloHint: 'Écrivez ici à votre gestionnaire : il vous répond dans l’app.' },
+  it: { wx: { pl: 'lettore ufficiale', t: 'Meteo', r: 'Radio', now: 'Adesso', change: 'Cambia radio', ph: 'Incolla il link della tua radio (sito o flusso audio)', save: 'Salva', back: 'Torna a', on: 'in ascolto', site: 'Apri il sito della radio', none: 'Meteo non disponibile al momento.', ext: 'Questa radio si apre sul suo sito.' }, newMsg: (n) => n > 1 ? n + ' messaggi nuovi' : '1 messaggio nuovo', surf: 'Superficie', inc: 'Compreso', house: 'Casa', cave: '🍷 Cantina', mans: { hab: '🏠 Mansarda abitabile', non: '🏠 Soffitta (deposito)' }, garage: { semi: '🚗 Garage nel seminterrato', ext: '🚗 Garage esterno', box: '🚗 Box' }, parking: '🅿️ Posto auto', jardin: '🌿 Giardino', balcon: '🌇 Balcone / terrazza', maison: { isolee: 'indipendente', jumelee: 'bifamiliare', rangee: 'a schiera' }, solo: 'Messaggi con il tuo gestore', soloHint: 'Scrivi qui al tuo gestore: ti risponde nell’app.' },
+  de: { wx: { pl: 'offizieller Player', t: 'Wetter', r: 'Radio', now: 'Jetzt', change: 'Radio wechseln', ph: 'Link Ihres Radios einfügen (Website oder Audiostream)', save: 'Speichern', back: 'Zurück zu', on: 'läuft', site: 'Website des Radios öffnen', none: 'Wetter derzeit nicht verfügbar.', ext: 'Dieses Radio öffnet sich auf seiner Website.' }, newMsg: (n) => n > 1 ? n + ' neue Nachrichten' : '1 neue Nachricht', surf: 'Fläche', inc: 'Inklusive', house: 'Haus', cave: '🍷 Keller', mans: { hab: '🏠 Bewohnbares Dachzimmer', non: '🏠 Dachboden (Abstellraum)' }, garage: { semi: '🚗 Garage im Untergeschoss', ext: '🚗 Außengarage', box: '🚗 Box' }, parking: '🅿️ Stellplatz', jardin: '🌿 Garten', balcon: '🌇 Balkon / Terrasse', maison: { isolee: 'freistehend', jumelee: 'Doppelhaushälfte', rangee: 'Reihenhaus' }, solo: 'Nachrichten mit Ihrer Verwaltung', soloHint: 'Schreiben Sie hier Ihrer Verwaltung: Sie antwortet in der App.' },
+  pt: { wx: { pl: 'leitor oficial', t: 'Meteorologia', r: 'Rádio', now: 'Agora', change: 'Mudar de rádio', ph: 'Cole o link da sua rádio (site ou fluxo áudio)', save: 'Guardar', back: 'Voltar a', on: 'a tocar', site: 'Abrir o site da rádio', none: 'Meteorologia indisponível de momento.', ext: 'Esta rádio abre no seu site.' }, newMsg: (n) => n > 1 ? n + ' mensagens novas' : '1 mensagem nova', surf: 'Área', inc: 'Incluído', house: 'Casa', cave: '🍷 Arrecadação / cave', mans: { hab: '🏠 Águas-furtadas habitáveis', non: '🏠 Sótão (arrumação)' }, garage: { semi: '🚗 Garagem na cave', ext: '🚗 Garagem exterior', box: '🚗 Box' }, parking: '🅿️ Lugar de estacionamento', jardin: '🌿 Jardim', balcon: '🌇 Varanda / terraço', maison: { isolee: 'isolada', jumelee: 'geminada', rangee: 'em banda' }, solo: 'Mensagens com o seu gestor', soloHint: 'Escreva aqui ao seu gestor: ele responde na app.' },
+  en: { wx: { pl: 'official player', t: 'Weather', r: 'Radio', now: 'Now', change: 'Change radio', ph: 'Paste your radio link (website or audio stream)', save: 'Save', back: 'Back to', on: 'playing', site: 'Open the radio website', none: 'Weather not available right now.', ext: 'This radio opens on its website.' }, newMsg: (n) => n > 1 ? n + ' new messages' : '1 new message', surf: 'Floor area', inc: 'Included', house: 'House', cave: '🍷 Cellar', mans: { hab: '🏠 Habitable attic room', non: '🏠 Loft (storage)' }, garage: { semi: '🚗 Basement garage', ext: '🚗 Outdoor garage', box: '🚗 Lock-up' }, parking: '🅿️ Parking space', jardin: '🌿 Garden', balcon: '🌇 Balcony / terrace', maison: { isolee: 'detached', jumelee: 'semi-detached', rangee: 'terraced' }, solo: 'Messages with your manager', soloHint: 'Write to your manager here: they reply in the app.' },
+  es: { wx: { pl: 'reproductor oficial', t: 'Tiempo', r: 'Radio', now: 'Ahora', change: 'Cambiar de radio', ph: 'Pega el enlace de tu radio (web o flujo de audio)', save: 'Guardar', back: 'Volver a', on: 'sonando', site: 'Abrir la web de la radio', none: 'Tiempo no disponible por ahora.', ext: 'Esta radio se abre en su web.' }, newMsg: (n) => n > 1 ? n + ' mensajes nuevos' : '1 mensaje nuevo', surf: 'Superficie', inc: 'Incluido', house: 'Casa', cave: '🍷 Trastero', mans: { hab: '🏠 Buhardilla habitable', non: '🏠 Desván (almacén)' }, garage: { semi: '🚗 Garaje en el sótano', ext: '🚗 Garaje exterior', box: '🚗 Box' }, parking: '🅿️ Plaza de aparcamiento', jardin: '🌿 Jardín', balcon: '🌇 Balcón / terraza', maison: { isolee: 'independiente', jumelee: 'pareada', rangee: 'adosada' }, solo: 'Mensajes con tu administrador', soloHint: 'Escribe aquí a tu administrador: te responde en la app.' },
 };
+// ── Météo (7 jours, Open-Meteo : gratuit, sans clé, sans cookie) et radio ──
+const WX_ICON = (c) => (c === 0 ? '☀️' : c <= 2 ? '🌤️' : c === 3 ? '☁️' : c <= 48 ? '🌫️' : c <= 57 ? '🌦️' : c <= 67 ? '🌧️' : c <= 77 ? '❄️' : c <= 82 ? '🌧️' : c <= 86 ? '🌨️' : '⛈️');
+let wx = null, wxLoading = false;
+const wxPlace = (d) => String(d.ville || '').replace(/^\s*(L-)?\d{4,5}\s*/i, '').trim() || 'Luxembourg';
+async function wxLoad(d) {
+  if (wxLoading) return;
+  const place = wxPlace(d), k = 'espWx:' + place;
+  try { const c = JSON.parse(localStorage.getItem(k) || 'null'); if (c && Date.now() - c.at < 3600e3) { wx = c; return wxPaint(); } } catch { /* stockage indisponible */ }
+  wxLoading = true;
+  try {
+    const g = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=fr&name=' + encodeURIComponent(place))).json();
+    const p = (g.results || [])[0] || { latitude: 49.61, longitude: 6.13, name: 'Luxembourg' };
+    const f = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.latitude}&longitude=${p.longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=7&timezone=auto`)).json();
+    wx = { at: Date.now(), name: p.name, now: f.current, days: f.daily };
+    try { localStorage.setItem(k, JSON.stringify(wx)); } catch { /* stockage plein */ }
+  } catch { wx = { err: 1 }; }
+  wxLoading = false;
+  wxPaint();
+}
+function wxHtml() {
+  const w = (AX[lang] || AX.fr).wx;
+  if (!wx) return '<p class="meta" style="margin:0">…</p>';
+  if (wx.err || !wx.days) return `<p class="meta" style="margin:0">${esc(w.none)}</p>`;
+  const dd = wx.days;
+  return `<div class="wx-now"><span class="wx-big">${WX_ICON(wx.now.weather_code)} ${Math.round(wx.now.temperature_2m)}°</span> <span class="meta">${esc(w.now)} · ${esc(wx.name)}</span></div>
+    <div class="wx-days">${dd.time.map((t, i) => `<div class="wx-d${i === 0 ? ' today' : ''}"><small>${esc(new Date(t + 'T12:00:00').toLocaleDateString(T().loc, { weekday: 'short' }))}</small><span>${WX_ICON(dd.weather_code[i])}</span><b>${Math.round(dd.temperature_2m_max[i])}°</b><small>${Math.round(dd.temperature_2m_min[i])}°</small>${dd.precipitation_probability_max && dd.precipitation_probability_max[i] >= 40 ? `<small class="wx-rain">💧${dd.precipitation_probability_max[i]}%</small>` : ''}</div>`).join('')}</div>`;
+}
+function wxPaint() {
+  const b = document.getElementById('wxBox'); if (b) b.innerHTML = wxHtml();
+  const sm = document.getElementById('wxSum'); if (sm) sm.innerHTML = wxSumHtml();
+}
+// radio : celle du gestionnaire par défaut ; le locataire peut coller la sienne (gardée sur son téléphone)
+const RADIO_DEF = { nom: 'Seven Radio', url: 'https://sevenradio.lu/?proradio-popup=1' };
+const radioDef = () => (data && data.radio && data.radio.url ? data.radio : RADIO_DEF);
+const radioMine = () => { try { return JSON.parse(localStorage.getItem('espRadio') || 'null'); } catch { return null; } };
+const radioNow = () => radioMine() || radioDef();
+const radioHost = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
+const isStream = (u) => /\.(mp3|aac|ogg|opus|m4a)(\?|$)|\/(stream|live|listen|radio)[^/]*$|;stream|icecast|shoutcast|radioking|infomaniak|zeno\.fm|streamtheworld|ice\d*\./i.test(u);
+let radioEl = null;
+function radioPlaying() { return radioEl && !radioEl.paused && radioEl.dataset.u === radioNow().url; }
+function radioToggle() {
+  const r = radioNow();
+  // lien d'un site / lecteur web (ex. lecteur « popup » de la radio) : petite fenêtre du lecteur officiel
+  if (!isStream(r.url)) { window.open(r.url, 'radio', /popup/i.test(r.url) ? 'popup,width=420,height=640' : ''); return; }
+  if (!radioEl) { radioEl = document.createElement('audio'); radioEl.preload = 'none'; document.body.appendChild(radioEl); radioEl.addEventListener('play', radioPaint); radioEl.addEventListener('pause', radioPaint); radioEl.addEventListener('error', () => { radioPaint(); window.open(radioNow().url, '_blank', 'noopener'); }); }
+  if (radioPlaying()) { radioEl.pause(); return; }
+  if (radioEl.dataset.u !== r.url) { radioEl.src = r.url; radioEl.dataset.u = r.url; }
+  radioEl.play().catch(() => {});
+}
+function radioHtml() {
+  const w = (AX[lang] || AX.fr).wx, r = radioNow(), mine = radioMine(), def = radioDef(), on = radioPlaying();
+  return `<div class="radio-row"><button class="radio-play${on ? ' on' : ''}" data-radio-play="1" aria-label="▶">${on ? '⏸' : '▶'}</button>
+      <span class="grow"><b>📻 ${esc(r.nom || radioHost(r.url))}</b><br><span class="meta">${esc(radioHost(r.url))}${on ? ' · <span class="ok">● ' + esc(w.on) + '</span>' : isStream(r.url) ? '' : ' · ' + esc(/popup/i.test(r.url) ? w.pl : w.ext)}</span></span></div>
+    <details class="more"><summary>${esc(w.change)}</summary>
+      <div class="radio-form"><input id="radioUrl" type="url" inputmode="url" placeholder="${esc(w.ph)}" value="${esc(mine ? mine.url : '')}"><button class="btn sm" data-radio-save="1">${esc(w.save)}</button></div>
+      ${mine ? `<button class="btn sm sec" style="margin-top:8px" data-radio-reset="1">📻 ${esc(w.back)} ${esc(def.nom || radioHost(def.url))}</button>` : ''}</details>`;
+}
+function radioPaint() {
+  const b = document.getElementById('radioBox'); if (b) { const op = b.querySelector('details.more[open]'); b.innerHTML = radioHtml(); if (op) b.querySelector('details.more').open = true; }
+  const sm = document.getElementById('wxSum'); if (sm) sm.innerHTML = wxSumHtml();
+}
+const wxSumHtml = () => `${wx && wx.now ? `${WX_ICON(wx.now.weather_code)} ${Math.round(wx.now.temperature_2m)}° · ` : ''}📻 ${esc(radioNow().nom || radioHost(radioNow().url))}${radioPlaying() ? ' ▶' : ''}`;
 const axList = (d, a) => Object.entries(d.annex || {}).filter(([, v]) => v).map(([k, v]) => { const n = typeof a[k] === 'object' ? a[k][v] || '' : a[k] || ''; const m = (d.annexM2 || {})[k]; return n && m ? `${n} ${m} m²` : n; }).filter(Boolean);
 const L = {
   fr: {
@@ -531,7 +593,7 @@ function payHtml() {
     <p class="meta" style="margin:8px 0 0">${esc(pv.note(d.societe.nom))}</p></div>${thanks}`;
 }
 try { openFolds = new Set(JSON.parse(localStorage.getItem('espFolds') || '[]')); } catch { /* stockage indisponible */ }
-const DEF_OPEN = new Set(['mt', 'chat']);
+const DEF_OPEN = new Set(['mt', 'chat', 'meteo']);
 const foldIsOpen = (k) => (DEF_OPEN.has(k) ? !openFolds.has('-' + k) : openFolds.has(k));
 function foldSet(k, open) {
   if (DEF_OPEN.has(k)) { if (open) openFolds.delete('-' + k); else openFolds.add('-' + k); } else if (open) openFolds.add(k); else openFolds.delete(k);
@@ -711,6 +773,8 @@ function render() {
   else if (ad) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)} · ${esc((t.ad.cats[ad.cat] || t.ad.cats.autre).split(' ')[0])} ${esc(ad.nom)}</b><br><span class="meta">📍 ${esc(ad.adresse)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(ad.adresse))}"></div>
     <div class="btn-row"><a class="btn" href="https://www.google.com/maps/dir/?api=1${d.adresse ? '&origin=' + encodeURIComponent(mapQ(addrFull)) : ''}&destination=${encodeURIComponent(mapQ(ad.adresse))}" target="_blank" rel="noopener">${esc(t.ad.route)}</a>${d.adresse ? `<button class="btn sec" data-home="1">${esc(t.ad.home)}</button>` : ''}${slot('haut') ? `<button class="btn sec" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div></div>`);
   else if (d.adresse) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">🏠 ${esc(addrFull)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(addrFull))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQ(addrFull))}" target="_blank" rel="noopener">${esc(t.ed.map)}</a><p class="meta" style="margin:6px 0 0;text-align:center">${esc(t.ed.mapHint)}</p>${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
+  // Météo de la semaine + radio (carte pliable, ouverte par défaut)
+  { const w = (AX[lang] || AX.fr).wx; out.push(foldCard(`<div class="card" id="wxCard"><h2>🌤️ ${esc(w.t)} · 📻 ${esc(w.r)}</h2><div id="wxBox">${wxHtml()}</div><div id="radioBox">${radioHtml()}</div></div>`, 'meteo', `<span id="wxSum">${wxSumHtml()}</span>`)); setTimeout(() => wxLoad(d), 0); }
   if (d.bins && d.chat) out.push(`<div id="binBox">${binHtml()}</div>`);
   if (s.coll && (d.coll || []).length) {
     const soon = [];
@@ -959,6 +1023,16 @@ pubStatInit(API, 'loc', () => lang);
 app.addEventListener('click', pubTap, true);
 app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-chat-refresh]')) return chatFetch();
+  if (e.target.closest('[data-radio-play]')) return radioToggle();
+  if (e.target.closest('[data-radio-save]')) {
+    const v = (document.getElementById('radioUrl') || {}).value || '';
+    let u = v.trim(); if (u && !/^https?:\/\//i.test(u)) u = 'https://' + u;
+    try { new URL(u); } catch { return; }
+    try { localStorage.setItem('espRadio', JSON.stringify({ nom: radioHost(u), url: u })); } catch { /* stockage indisponible */ }
+    if (radioEl) radioEl.pause();
+    return radioPaint();
+  }
+  if (e.target.closest('[data-radio-reset]')) { try { localStorage.removeItem('espRadio'); } catch {} if (radioEl) radioEl.pause(); return radioPaint(); }
   const pon = e.target.closest('[data-push-on]');
   if (pon) {
     pon.disabled = true;

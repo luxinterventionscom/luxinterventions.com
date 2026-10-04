@@ -9079,5 +9079,17 @@ export default [
 [
 "Ajouter une 2ᵉ personne dans ce logement (couple, colocataire)",
 "2. Person in dieser Wohnung hinzufügen (Paar, Mitbewohner)"
+],
+[
+"📻 Radio de l’app des locataires",
+"📻 Radio der Mieter-App"
+],
+[
+"Lien (site ou flux audio)",
+"Link (Website oder Audiostream)"
+],
+[
+"Radio enregistrée",
+"Radio gespeichert"
 ]
 ];
