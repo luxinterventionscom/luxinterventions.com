@@ -9091,5 +9091,149 @@ export default [
 [
 "Radio enregistrée",
 "Radio gespeichert"
+],
+[
+"Reçue",
+"Eingegangen"
+],
+[
+"Prise en charge",
+"Übernommen"
+],
+[
+"En cours",
+"In Arbeit"
+],
+[
+"Annulée",
+"Storniert"
+],
+[
+"Urgent",
+"Dringend"
+],
+[
+"Sous 24 h",
+"Innerhalb 24 Std."
+],
+[
+"Planifiable",
+"Planbar"
+],
+[
+"Suivi",
+"Verlauf"
+],
+[
+"Toutes les gérances",
+"Alle Verwaltungen"
+],
+[
+"✅ Prendre en charge",
+"✅ Übernehmen"
+],
+[
+"🚚 En route",
+"🚚 Unterwegs"
+],
+[
+"📷 Photos",
+"📷 Fotos"
+],
+[
+"Voir les terminées",
+"Erledigte anzeigen"
+],
+[
+"Voir les demandes en cours",
+"Laufende Anfragen anzeigen"
+],
+[
+"Aucune demande en cours.",
+"Keine laufende Anfrage."
+],
+[
+"Aucune demande terminée.",
+"Keine erledigte Anfrage."
+],
+[
+"Envoyer en Maintenance (choisir l’ouvrier)",
+"An die Wartung senden (Handwerker wählen)"
+],
+[
+"Ajouter un ouvrier (Maintenance)",
+"Handwerker hinzufügen (Wartung)"
+],
+[
+"Annuler la demande",
+"Anfrage stornieren"
+],
+[
+"Annuler cette demande ?",
+"Diese Anfrage stornieren?"
+],
+[
+"Message envoyé à la gérance",
+"Nachricht an die Verwaltung gesendet"
+],
+[
+"Portail gérance mis à jour : {0}",
+"Verwalterportal aktualisiert: {0}"
+],
+[
+"Demandée",
+"Angefragt"
+],
+[
+"Codes de la résidence",
+"Codes der Wohnanlage"
+],
+[
+"Intérieur",
+"Innen"
+],
+[
+"Étage(s)",
+"Etage(n)"
+],
+[
+"Technicien",
+"Techniker"
+],
+[
+"Accès / codes",
+"Zugang / Codes"
+],
+[
+"📥 Demandes d’intervention",
+"📥 Einsatzanfragen"
+],
+[
+"{0} nouvelle(s)",
+"{0} neu"
+],
+[
+"Résidence",
+"Wohnanlage"
+],
+[
+"Demande",
+"Anfrage"
+],
+[
+"Ouvrir dans le portail",
+"Im Portal öffnen"
+],
+[
+"📥 Nouvelle demande d'intervention : {0}",
+"📥 Neue Einsatzanfrage: {0}"
+],
+[
+"📥 {0} nouvelles demandes d'intervention : {1}",
+"📥 {0} neue Einsatzanfragen: {1}"
+],
+[
+"🏢 Fiches des gérances ({0})",
+"🏢 Verwaltungen ({0})"
 ]
 ];

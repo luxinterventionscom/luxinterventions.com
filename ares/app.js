@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.70.0';
+const VERSION = '2.71.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -315,7 +315,7 @@ function intervMonth(i, y, m) {
   return out;
 }
 const fmtH = (h) => { const r = Math.round(h * 60); return `${Math.floor(r / 60)} h${r % 60 ? String(r % 60).padStart(2, '0') : ''}`; };
-const placeName = (t) => [t.logId ? logName(t.logId) : 'Parties communes', immName(t.immId)].join(' · ');
+const placeName = (t) => (t.ptl ? `🏢 ${t.ptl.res}${t.ptl.adr ? ' — ' + t.ptl.adr : ''}` : [t.logId ? logName(t.logId) : 'Parties communes', immName(t.immId)].join(' · '));
 
 // Agenda : tout ce qui se passe entre from et to (interventions + collectes), trié par jour
 function agenda(from, to, immId) {
@@ -377,8 +377,10 @@ function equipeData(i) {
     const l = t.locId ? vault.get('locataires', t.locId) : null;
     return {
       titre: t.titre, type: t.type, recur: t.recur ? RECURS[t.recur] : '', note: t.note || '',
-      adresse: immName(t.immId), lieu: t.logId ? logName(t.logId) : '', statut: t.statut,
-      contact: l ? { nom: l.prenom || fullName(l), tel: l.tel || '' } : null,
+      adresse: t.ptl ? [t.ptl.res, t.ptl.adr].filter(Boolean).join(' — ') : immName(t.immId), lieu: t.ptl ? [t.ptl.lieu, t.ptl.interior].filter(Boolean).join(' · ') : t.logId ? logName(t.logId) : '', statut: t.statut,
+      contact: l ? { nom: l.prenom || fullName(l), tel: l.tel || '' } : t.ptl && (t.ptl.contact || t.ptl.tel) ? { nom: t.ptl.contact || '', tel: t.ptl.tel || '' } : null,
+      // demande d'une gérance : codes, disponibilités, heure, gérance
+      ...(t.ptl ? { ger: { org: t.ptl.org, ref: t.ptl.ref, acces: t.ptl.acces || t.ptl.codes || '', dispo: t.ptl.dispo || '', heure: t.heure || '' } } : {}),
       journal: (t.journal || []).slice(-20).map((x) => ({ d: x.d, st: x.st, note: x.note || '', at: x.at, h: x.h || '' })),
       ph: { av: eqPhotos(t.id, 'av').length, ap: eqPhotos(t.id, 'ap').length },
     };
@@ -518,7 +520,32 @@ async function equipeInbox(w, msg) {
     tx.put('intervenants', { id: w.id, feed: feed.slice(-200), feedNew: (cur.feedNew || 0) + fresh });
   }, 'Nouvelles de l’équipe', intervFull(w), w.id);
   for (const [id, b] of files) await vault.saveFile(id, unb64u(b));
-  for (const it of (Array.isArray(msg.items) ? msg.items : [])) if (it.k === 'task' && it.st === 'fait') await syncDepense({ id: String(it.tid || '') }, true);
+  for (const it of (Array.isArray(msg.items) ? msg.items : [])) if (it.k === 'task' && it.st === 'fait' && !(vault.get('taches', String(it.tid || '')) || {}).ptl) await syncDepense({ id: String(it.tid || '') }, true);
+  await ptlFromTeam(w, msg).catch(() => { /* portail injoignable : la gérance verra au prochain changement */ });
+}
+// Ouvrier sur une demande de gérance : ▶️ commencé → « en cours », ✅ fini → « terminée » (+ photos après), ⚠️ pas fini → message
+async function ptlFromTeam(w, msg) {
+  if (!ptlConf()) return;
+  const items = Array.isArray(msg.items) ? msg.items : [];
+  const after = {};
+  for (const it of items) {
+    const t = vault.get('taches', String(it.tid || ''));
+    if (!t || !t.ptl) continue;
+    if (it.k === 'ph' && it.phase === 'ap') { const b = (Array.isArray(it.photos) ? it.photos[0] : '') || it.photo; if (b) (after[t.id] ||= { t, ph: [] }).ph.push(b); }
+    if (it.k !== 'task') continue;
+    const who = intervFull(w), note = String(it.note || '').slice(0, 1000);
+    if (it.st === 'encours') await ptlApi(`tickets/${t.ptl.tid}/status`, { method: 'POST', body: { status: 'encours', technicien: who, text: `🚚 ${who} est sur place${note ? ' — ' + note : ''}` } });
+    else if (it.st === 'fait') await ptlApi(`tickets/${t.ptl.tid}/status`, { method: 'POST', body: { status: 'terminee', technicien: who, rapport: note || 'Intervention terminée', text: `✅ ${who} : ${note || 'intervention terminée'}` } });
+    else if (it.st === 'incomplet') await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `⚠️ ${who} : pas terminé${note ? ' — ' + note : ''}` } });
+  }
+  // photos « après » de l'ouvrier → visibles par la gérance (avant / après)
+  for (const { t, ph } of Object.values(after)) {
+    const ev = await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `📷 Photos après les travaux (${intervFull(w)})` } });
+    for (const b of ph.slice(0, 6)) {
+      try { await fetch(PTL_API + `tickets/${t.ptl.tid}/photos`, { method: 'PUT', headers: { Authorization: 'Bearer ' + ptlConf().token, 'Content-Type': 'image/jpeg', ...(ev.event_id ? { 'X-Event-Id': ev.event_id } : {}) }, body: new Blob([unb64u(b)], { type: 'image/jpeg' }) }); } catch { /* hors ligne */ }
+    }
+  }
+  if (ui.ptl) ui.ptl.data = null;
 }
 // Journal de l'équipe (toutes les personnes, ou une seule), le plus récent d'abord
 function eqFeedHtml(onlyId, max = 80) {
@@ -1410,14 +1437,70 @@ async function ptlLoad() {
   if (ui.ptl.loading || !ptlConf()) return;
   ui.ptl.loading = true; ui.ptl.err = '';
   try {
-    const [o, u, r] = await Promise.all([ptlApi('orgs'), ptlApi('users'), ptlApi('residences')]);
-    ui.ptl.data = { orgs: o.orgs || [], users: u.users || [], residences: r.residences || [], at: Date.now() };
+    const [o, u, r, t] = await Promise.all([ptlApi('orgs'), ptlApi('users'), ptlApi('residences'), ptlApi('tickets?scope=' + (ui.ptl.done ? 'done' : 'active'))]);
+    ui.ptl.data = { orgs: o.orgs || [], users: u.users || [], residences: r.residences || [], tickets: t.tickets || [], at: Date.now() };
+    if (!ui.ptl.done) ptlBadge(ui.ptl.data.tickets);
   } catch (e) { ui.ptl.err = e.message; }
   ui.ptl.loading = false;
   if (ui.route === 'gerances') renderView();
   const typing = sheetEl.contains(document.activeElement) && document.activeElement.matches('input, textarea, select') && document.activeElement.value;
   if (ui.sheet && ui.sheet.kind.startsWith('ger') && !typing) { ui.sheet.rendered = false; renderSheet(); }
 }
+// Veille 24 h/24 : les nouvelles demandes s'affichent sur le bouton « Gérances » (pastille) et en message
+function ptlBadge(tickets) {
+  const fresh = tickets.filter((t) => t.status === 'recue');
+  const seen = ui.ptl.seen;
+  ui.ptl.nNew = fresh.length;
+  ui.ptl.seen = new Set(fresh.map((t) => t.id));
+  if (seen) {
+    const nw = fresh.filter((t) => !seen.has(t.id));
+    if (nw.length) {
+      const urg = nw.some((t) => t.urgence === 'urgent');
+      toast(`📥 ${nw.length > 1 ? nw.length + ' nouvelles demandes' : 'Nouvelle demande'} d'intervention : ${nw.map((t) => '#' + t.ref).join(', ')}${urg ? ' · 🔴 URGENT' : ''}`, { bad: urg });
+      try { navigator.vibrate && navigator.vibrate(urg ? [300, 150, 300] : 200); } catch {}
+    }
+  }
+  document.querySelectorAll('.navbtn[data-to="gerances"], .bottomnav .navbtn[data-to="reglages"]').forEach((b) => {
+    let n = b.querySelector('.nav-n');
+    if (!fresh.length) return n && n.remove();
+    if (!n) { n = document.createElement('i'); n.className = 'nav-n'; b.appendChild(n); }
+    n.textContent = fresh.length;
+    n.classList.toggle('u-urgent', fresh.some((t) => t.urgence === 'urgent'));
+  });
+}
+async function ptlWatch() {
+  if (!ptlConf() || ui.ptl.loading) return;
+  const typing = sheetEl.contains(document.activeElement) && document.activeElement.matches('input, textarea, select');
+  if (ui.route === 'gerances' && !typing) return ptlLoad();
+  try { const t = await ptlApi('tickets?scope=active'); ptlBadge(t.tickets || []); } catch { /* hors ligne : on réessaiera */ }
+}
+// Demandes d'intervention des gérances (Portail gérance) — affichage dans l'app de gestion
+const PTL_URG = { urgent: ['🔴', 'Urgent', 'red'], '24h': ['🟠', 'Sous 24 h', 'amber'], planifie: ['🟢', 'Planifiable', 'green'] };
+const PTL_ST = { recue: 'Reçue', prise: 'Prise en charge', planifiee: 'Planifiée', encours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
+const ptlTime = (ms) => (ms ? fmtDateTime(ms) : '');
+async function ptlTicketOpen(id) {
+  try { ui.ptl.cur = await ptlApi('tickets/' + id); } catch (e) { return toast(e.message, { bad: true }); }
+  if (ui.sheet && ui.sheet.kind === 'ger-ticket' && ui.sheet.id === id) { ui.sheet.rendered = false; renderSheet(); } else openSheet('ger-ticket', id);
+  ptlPhotos();
+}
+// photos du portail : lues avec la session, affichées en local
+async function ptlPhotos() {
+  ui.ptl.blobs ||= {};
+  for (const img of sheetEl.querySelectorAll('img[data-ptl-photo]')) {
+    const pid = img.dataset.ptlPhoto;
+    if (!ui.ptl.blobs[pid]) {
+      try { const r = await fetch(PTL_API + 'photos/' + pid, { headers: { Authorization: 'Bearer ' + ptlConf().token } }); if (r.ok) ui.ptl.blobs[pid] = URL.createObjectURL(await r.blob()); } catch { /* hors ligne */ }
+    }
+    if (ui.ptl.blobs[pid]) { img.src = ui.ptl.blobs[pid]; img.closest('a') && (img.closest('a').href = ui.ptl.blobs[pid]); }
+  }
+}
+async function ptlStatus(id, status, extra = {}) {
+  await ptlApi(`tickets/${id}/status`, { method: 'POST', body: { status, ...extra } });
+  ui.ptl.data = null; ptlLoad();
+  if (ui.sheet && ui.sheet.kind === 'ger-ticket') ptlTicketOpen(id);
+}
+// lien demande ↔ intervention : infos utiles à l'ouvrier (adresse, lieu, codes, disponibilités, contact)
+const ptlLink = (d) => { const t = d.ticket, r = d.residence || {}; return { tid: t.id, ref: t.ref, org: r.org_name || '', res: r.name || '', adr: r.address || '', lieu: t.lieu || '', acces: t.acces || '', dispo: t.dispo || '', contact: t.contact_name || r.contact_name || '', tel: t.contact_phone || r.contact_phone || '', interior: r.interior || '', floors: r.floors || '', codes: [r.access ? 'Porte : ' + r.access : '', r.alarm ? 'Alarme : ' + r.alarm : '', r.code_other ? 'Panneaux : ' + r.code_other : ''].filter(Boolean).join(' · ') }; };
 const ptlOrg = (id) => ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => o.id === id);
 const ptlInviteUrl = (tok) => `${location.origin}/portail.html#invite=${tok}`;
 // mot de passe → clé dérivée sur l'appareil (comme dans le portail) : le serveur ne voit jamais le mot de passe
@@ -1864,7 +1947,7 @@ function startSession() {
   idleTimer = setInterval(() => {
     if (!vault.unlocked) return;
     if (Date.now() - lastActive > lockMinutes() * 60000) lockNow('Verrouillé après inactivité.');
-    else if (document.visibilityState === 'visible') { vault.sync(); if (Date.now() - lastInbox > 180000) { lastInbox = Date.now(); inboxSync(); chatPoll(); toolsLoad(true); } }
+    else if (document.visibilityState === 'visible') { vault.sync(); ptlWatch(); if (Date.now() - lastInbox > 180000) { lastInbox = Date.now(); inboxSync(); chatPoll(); toolsLoad(true); } }
   }, 30000);
   renderShell();
   applyBrand();
@@ -1873,6 +1956,7 @@ function startSession() {
   go(firstOpen ? 'dashboard' : location.hash.slice(2) || 'dashboard', true);
   firstOpen = false;
   vault.sync();
+  setTimeout(ptlWatch, 1500);
   setTimeout(async () => {
     await refreshIcs(false);
     // Une fois par jour : republier les pages locataires (dates glissantes sur 13 mois)
@@ -1996,6 +2080,7 @@ function go(route, replace) {
   if (fab) fab.hidden = !['immeubles', 'locataires'].includes(route);
   renderView();
   scrollTo(0, 0);
+  if (route === 'gerances' && ui.ptl.data) setTimeout(ptlLoad, 0); // toujours les demandes du moment
 }
 addEventListener('popstate', () => vault.unlocked && go(location.hash.slice(2) || 'dashboard', true));
 
@@ -2662,12 +2747,30 @@ dashboard() {
         </div>`;
     }
     const d = ui.ptl.data;
-    if (!d && !ui.ptl.loading && !ui.ptl.err) setTimeout(ptlLoad, 0);
+    if ((!d && !ui.ptl.err) || (d && Date.now() - d.at > 60000)) !ui.ptl.loading && setTimeout(ptlLoad, 0);
     const head = pageHead('Gérances', d ? `${plural(d.orgs.length, 'gérance')} · Portail gérance` : 'Portail gérance', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Ajouter</button>`);
     const foot = html`<p class="tiny muted" style="margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">Connecté au portail : <b>${c.email || ''}</b> ${portal}
       <button class="btn sm ghost" data-action="ger-reload">${icon('sync')} Actualiser</button><button class="btn sm ghost danger" data-action="ptl-logout">Déconnecter</button></p>`;
     if (!d) return html`${head}${ui.ptl.err ? html`<div class="alert warn">${icon('alert')}<div>${ui.ptl.err} <button class="btn sm" data-action="ger-reload">Réessayer</button></div></div>` : html`<p class="muted">Chargement…</p>`}${foot}`;
+    const of = ui.ptl.org || '', oSel = of && ptlOrg(of);
+    const tks = d.tickets.filter((t) => !of || t.org_id === of);
+    const nRecue = d.tickets.filter((t) => t.status === 'recue').length;
+    const chips = html`<div class="chips ger-chips" style="margin-bottom:10px">
+      <button class="chip" data-action="ger-filter" data-id="" aria-pressed="${!of}">Toutes les gérances</button>
+      ${d.orgs.map((o) => html`<button class="chip" data-action="ger-filter" data-id="${o.id}" aria-pressed="${of === o.id}">🏢 ${o.name}${o.open ? html` <b class="ger-n">${o.open}</b>` : ''}</button>`)}</div>
+      ${oSel ? html`<div class="actions" style="margin:0 0 12px"><button class="btn sm" data-action="ger-open" data-id="${of}">${icon('users')} Accès</button><button class="btn sm" data-action="ger-open" data-id="${of}" data-tab="res">${icon('building')} Résidences</button><button class="btn sm ghost" data-action="ger-edit" data-id="${of}">${icon('edit')} Modifier</button></div>` : ''}`;
+    const row = (t) => { const u = PTL_URG[t.urgence] || PTL_URG.planifie; return html`<button class="row ger-req ${t.status === 'recue' ? 'is-new' : ''} u-${t.urgence}" data-action="ger-ticket" data-id="${t.id}">
+        <span class="avatar" style="background:var(--${u[2]}-soft, var(--surface-2))">${u[0]}</span>
+        <span class="grow"><span class="title" style="display:block;white-space:normal">#${t.ref} · ${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted small">— ${t.lieu}</span>` : ''}</span>
+          <span class="meta" style="white-space:normal">🏢 ${t.org_name} · ${t.residence_name}${t.residence_address ? ' — ' + t.residence_address : ''}</span>
+          <span class="meta" style="display:block;white-space:normal">${t.technicien ? html`👷 ${t.technicien} · ` : ''}${t.planned_at ? html`📅 ${String(t.planned_at).replace('T', ' ')} · ` : ''}${ptlTime(t.created_at)}${t.photos ? html` · 📷 ${t.photos}` : ''}</span></span>
+        <span class="badge ${t.status === 'recue' ? 'warn' : ''}">${PTL_ST[t.status] || t.status}</span></button>`; };
     return html`${head}
+      ${chips}
+      <div class="section-label">📥 Demandes d’intervention ${nRecue ? html`<span class="badge warn">${nRecue} nouvelle(s)</span>` : ''}</div>
+      <p style="margin:0 0 8px;text-align:right"><button class="btn sm ghost" data-action="ger-done" aria-pressed="${!!ui.ptl.done}">${ui.ptl.done ? 'Voir les demandes en cours' : 'Voir les terminées'}</button></p>
+      ${tks.length ? html`<div class="list" style="margin-bottom:18px">${tks.map(row)}</div>` : html`<p class="muted small" style="margin-bottom:18px">${ui.ptl.done ? 'Aucune demande terminée.' : 'Aucune demande en cours.'}</p>`}
+      <details class="ger-orgs"${d.orgs.length ? '' : ' open'}><summary class="section-label" style="cursor:pointer">🏢 Fiches des gérances (${d.orgs.length})</summary>
       ${d.orgs.length ? html`<div class="grid cols-auto">${d.orgs.map((o) => {
         const us = d.users.filter((u) => u.org_id === o.id);
         const wait = us.filter((u) => u.active && !u.has_password).length;
@@ -2686,6 +2789,7 @@ dashboard() {
           </div>
         </div>`;
       })}</div>` : empty('briefcase', 'Aucune gérance pour l’instant.', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Ajouter une gérance</button>`)}
+      </details>
       ${foot}`;
   },
 
@@ -2941,7 +3045,7 @@ dashboard() {
         <button class="row" data-action="go" data-to="champions"><span class="avatar">🏆</span><span class="grow"><span class="title" style="display:block">Locataire de l’année</span><span class="meta">Classement des tours des poubelles · podium · pizza 🍕</span></span></button>
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
         <button class="row" data-action="go" data-to="maintenance">${icon('tool')}<span class="grow title">Maintenance — nettoyage, réparations, déchets</span></button>
-        <button class="row" data-action="go" data-to="gerances">${icon('briefcase')}<span class="grow"><span class="title" style="display:block">Gérances — Portail gérance</span><span class="meta">Gérances externes : accès, résidences, demandes d’intervention</span></span></button>
+        <button class="row" data-action="go" data-to="gerances">${icon('briefcase')}<span class="grow"><span class="title" style="display:block">Gérances — Portail gérance${ui.ptl.nNew ? html` <span class="badge warn">📥 ${ui.ptl.nNew}</span>` : ''}</span><span class="meta">Gérances externes : accès, résidences, demandes d’intervention</span></span></button>
         <button class="row" data-action="go" data-to="compta">${icon('chart')}<span class="grow title">Comptabilité — journal, TVA, statistiques, export</span></button>
       </div>
 
@@ -3042,6 +3146,7 @@ function renderSheet() {
   s.rendered = true;
   // dans les fiches : mêmes sections repliables, ouvertes par défaut
   enhanceFolds(sheetEl.querySelector('.sheet-body'), 'sheet:' + s.kind + ':' + (s.tab || ''), true);
+  if (s.kind === 'ger-ticket') setTimeout(ptlPhotos, 0);
   hydrateEdl();
 }
 
@@ -3207,6 +3312,42 @@ function relanceText(l, lang) {
 }
 
 const SHEETS = {
+  'ger-ticket'({ id }) {
+    const d = ui.ptl.cur;
+    if (!d || !d.ticket || d.ticket.id !== id) return { title: 'Demande', body: html`<p class="muted">Chargement…</p>` };
+    const t = d.ticket, r = d.residence || {}, u = PTL_URG[t.urgence] || PTL_URG.planifie, open = !['terminee', 'annulee'].includes(t.status);
+    const parts = (x) => String(x || '').split(' · ').filter(Boolean);
+    const linked = vault.list('taches').filter((x) => x.ptl && x.ptl.tid === t.id);
+    const tel = (t.contact_phone || r.contact_phone || '').replace(/[^\d+]/g, '');
+    const evLbl = (e) => (e.kind === 'create' ? 'Demande créée' : e.kind === 'edit' ? '✏️ Demande modifiée' : e.kind === 'status' ? PTL_ST[e.status] || e.status : 'Message');
+    return {
+      title: `#${t.ref} · ${r.name || ''}`,
+      body: html`<div class="chips" style="margin-bottom:10px"><span class="badge ${u[2] === 'red' ? 'danger' : u[2] === 'amber' ? 'warn' : ''}">${u[0]} ${u[1]}</span><span class="badge">${PTL_ST[t.status]}</span><span class="badge">🏢 ${r.org_name || ''}</span></div>
+        <div class="note" style="margin-bottom:12px;white-space:pre-wrap"><b>${t.categorie || 'Intervention'}</b>\n${t.description}</div>
+        <dl class="kv small" style="margin-bottom:12px">
+          ${kvRow('Résidence', `${r.name || ''}${r.address ? ' — ' + r.address : ''}`)}
+          ${t.lieu ? kvRow('Où', t.lieu) : ''}${r.interior ? kvRow('Intérieur', r.interior) : ''}${r.floors ? kvRow('Étage(s)', r.floors) : ''}
+          ${t.acces ? html`<dt>Accès / codes</dt><dd>${parts(t.acces).map((x) => html`<div>${x}</div>`)}</dd>` : ''}
+          ${!/(Porte|Alarme|Panneaux) : /.test(t.acces || '') && (r.access || r.alarm || r.code_other) ? kvRow('Codes de la résidence', [r.access ? 'Porte ' + r.access : '', r.alarm ? 'Alarme ' + r.alarm : '', r.code_other ? 'Panneaux ' + r.code_other : ''].filter(Boolean).join(' · ')) : ''}
+          ${t.dispo ? html`<dt>Disponibilités</dt><dd>${parts(t.dispo).map((x) => html`<div>${x}</div>`)}</dd>` : ''}
+          ${t.contact_name || r.contact_name ? html`<dt>Contact sur place</dt><dd>${t.contact_name || r.contact_name}${tel ? html` · <a href="tel:${tel}">${t.contact_phone || r.contact_phone}</a>` : ''}</dd>` : ''}
+          ${t.technicien ? kvRow('Technicien', t.technicien) : ''}${t.planned_at ? kvRow('Planifiée', String(t.planned_at).replace('T', ' ')) : ''}
+          ${kvRow('Demandée', ptlTime(t.created_at))}
+        </dl>
+        ${d.photos.length ? html`<div class="section-label">📷 Photos</div><div class="photos" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${d.photos.map((p) => html`<a target="_blank" rel="noopener"><img data-ptl-photo="${p.id}" alt="Photo" style="width:96px;height:96px;object-fit:cover;border-radius:10px;background:var(--surface-2)"></a>`)}</div>` : ''}
+        ${linked.length ? html`<div class="alert info" style="margin-bottom:12px">${icon('tool')}<div>Dans Maintenance : ${linked.map((x) => html`<a href="#" data-action="edit-tache" data-id="${x.id}">${x.titre}${x.intervenantId ? ' — 👷 ' + intervFull(vault.get('intervenants', x.intervenantId) || {}) : ''}${x.date ? ' · ' + fmtDate(x.date) : ''}</a> `)}</div></div>` : ''}
+        ${open ? html`<div class="actions" style="flex-wrap:wrap;margin-bottom:14px">
+          <button class="btn primary" data-action="ger-to-mt" data-id="${t.id}">${icon('tool')} ${linked.length ? 'Ajouter un ouvrier (Maintenance)' : 'Envoyer en Maintenance (choisir l’ouvrier)'}</button>
+          ${t.status === 'recue' ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="prise">✅ Prendre en charge</button>` : ''}
+          ${t.status === 'planifiee' ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="encours">🚚 En route</button>` : ''}
+          ${['prise', 'planifiee', 'encours'].includes(t.status) ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="terminee">${icon('check')} Terminée</button>` : ''}
+          <button class="btn ghost danger" data-action="ger-st" data-id="${t.id}" data-st="annulee">Annuler</button></div>` : ''}
+        <div class="section-label">Suivi</div>
+        <div class="list small" style="margin-bottom:10px">${d.events.map((e) => html`<div class="row" style="display:block"><b>${evLbl(e)}</b> <span class="muted">· ${e.user_name || ''} · ${ptlTime(e.created_at)}</span>${e.text && e.kind !== 'create' ? html`<div style="white-space:pre-wrap;margin-top:4px">${e.text}</div>` : ''}</div>`)}</div>
+        <form data-form="ger-msg" class="chat-form"><input type="hidden" name="id" value="${t.id}"><textarea name="x" required maxlength="2000" placeholder="Message à la gérance…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>`,
+      foot: html`<a class="btn" href="/portail.html#/t/${t.id}" target="_blank" rel="noopener">${icon('eye')} Ouvrir dans le portail</a><button class="btn primary" data-action="close-sheet">Fermer</button>`,
+    };
+  },
   'ger-form'({ id }) {
     const o = id ? ptlOrg(id) : {};
     if (id && !o) return null;
@@ -3453,10 +3594,12 @@ const SHEETS = {
   },
 
   'tache-form'({ id, preset }) {
-    const t = id ? vault.get('taches', id) : { type: 'reparation', immId: preset || '', statut: 'afaire', date: today(), recur: '' };
+    // preset : immeuble (texte) ou demande d'une gérance ({ ptl, titre, note })
+    const pz = preset && typeof preset === 'object' ? preset : null;
+    const t = id ? vault.get('taches', id) : { type: 'reparation', immId: pz ? '' : preset || '', statut: 'afaire', date: today(), recur: '', ...(pz || {}) };
     if (id && !t) return null;
     const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === t.immId).sort(byAddr);
-    if (!imms.length) return { title: 'Nouvelle intervention', body: empty('building', "Ajoutez d'abord un immeuble.") };
+    if (!imms.length && !t.ptl) return { title: 'Nouvelle intervention', body: empty('building', "Ajoutez d'abord un immeuble.") };
     const ints = vault.list('intervenants').sort((a, b) => intervFull(a).localeCompare(intervFull(b)));
     return {
       title: id ? "Modifier l'intervention" : 'Nouvelle intervention',
@@ -3464,11 +3607,14 @@ const SHEETS = {
         <input type="hidden" name="id" value="${id || ''}">
         <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${(t.type === 'entretien' ? 'reparation' : t.type) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}
-        <label class="field">Immeuble<select name="immId" data-input="tache-imm" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === t.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
-        <label class="field">Où ?<select name="logId" id="tacheLog">${logOptions(t.immId || imms[0].id, t.logId)}</select></label>
+        ${t.ptl ? html`<div class="full ptl-box"><b>🏢 ${t.ptl.org} · Demande #${t.ptl.ref}</b><br>${t.ptl.res}${t.ptl.adr ? ' — ' + t.ptl.adr : ''}${t.ptl.lieu ? html`<br><span class="small">📍 ${t.ptl.lieu}</span>` : ''}${t.ptl.acces || t.ptl.codes ? html`<br><span class="small">🔐 ${t.ptl.acces || t.ptl.codes}</span>` : ''}${t.ptl.dispo ? html`<br><span class="small">📅 ${t.ptl.dispo}</span>` : ''}
+            <input type="hidden" name="ptl" value="${JSON.stringify(t.ptl)}"><input type="hidden" name="immId" value=""></div>`
+          : html`<label class="field">Immeuble<select name="immId" data-input="tache-imm" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === t.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
+        <label class="field">Où ?<select name="logId" id="tacheLog">${logOptions(t.immId || imms[0].id, t.logId)}</select></label>`}
         <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${ints.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${intervFull(i)} — ${METIERS[i.metier] || ''}${absOn(i, t.date || today()) ? ' (absent)' : ''}</option>`)}</select></label>
         ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
         ${field('Date', 'date', t.date, { type: 'date' })}
+        ${t.ptl ? field('Heure', 'heure', t.heure || '', { type: 'time' }) : ''}
         <label class="field">Répétition<select name="recur">${Object.entries(RECURS).map(([k, v]) => html`<option value="${k}" ${(t.recur || '') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field("Jusqu'au (si répétition)", 'fin', t.fin, { type: 'date' })}
         ${field('Coût (€)', 'cout', t.cout, { type: 'number', attrs: money$ })}
@@ -4575,6 +4721,18 @@ addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installProm
 
 const ACTIONS = {
   'ger-new': () => openSheet('ger-form'),
+  'ger-filter': (d) => { ui.ptl.org = d.id; renderView(); },
+  'ger-done': () => { ui.ptl.done = !ui.ptl.done; ui.ptl.data = null; renderView(); },
+  'ger-ticket': (d) => ptlTicketOpen(d.id),
+  async 'ger-st'(d) {
+    if (d.st === 'annulee' && !(await confirmBox('Annuler cette demande ?', { ok: 'Annuler la demande', danger: true }))) return;
+    try { await ptlStatus(d.id, d.st, d.st === 'terminee' ? { rapport: 'Intervention terminée' } : {}); toast(PTL_ST[d.st] + ' — la gérance est prévenue'); } catch (e) { toast(e.message, { bad: true }); }
+  },
+  'ger-to-mt'() {
+    const d = ui.ptl.cur; if (!d) return;
+    const L = ptlLink(d);
+    openOver('tache-form', null, null, { ptl: L, titre: `#${L.ref} ${d.ticket.categorie || 'Intervention'}`.slice(0, 80), note: d.ticket.description || '' });
+  },
   'ger-edit': (d) => openSheet('ger-form', d.id),
   'ger-open': (d) => { openSheet('ger', d.id, d.tab); ptlLoad(); }, // les données du portail sont rafraîchies à chaque ouverture
   'ger-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; renderView(); },
@@ -5182,6 +5340,11 @@ const ACTIONS = {
 };
 
 const FORMS = {
+  async 'ger-msg'(fd, f) {
+    const id = fd.get('id'), x = String(fd.get('x') || '').trim(); if (!x) return;
+    try { await ptlApi(`tickets/${id}/comments`, { method: 'POST', body: { text: x } }); } catch (e) { return toast(e.message, { bad: true }); }
+    f.reset(); toast('Message envoyé à la gérance'); ptlTicketOpen(id);
+  },
   async radio(fd) {
     let url = String(fd.get('url') || '').trim(); if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
     await vault.mutate((tx) => tx.put('reglages', { id: 'radio', nom: String(fd.get('nom') || '').trim().slice(0, 60), url: url.slice(0, 500) }), 'Radio de l’app des locataires', url);
@@ -5255,13 +5418,26 @@ const FORMS = {
       date: fd.get('date'), recur, fin: fd.get('fin') || '', cout: fd.get('cout') === '' ? null : num(fd.get('cout')), note: fd.get('note').trim(),
       statut: recur ? 'planifie' : fd.get('statut') || 'afaire',
     };
-    if (!rec.titre || !rec.immId) return;
+    try { const pj = fd.get('ptl'); if (pj) rec.ptl = JSON.parse(pj); } catch { /* lien illisible */ }
+    if (prev && prev.ptl && !rec.ptl) rec.ptl = prev.ptl;
+    if (rec.ptl) { rec.heure = /^\d\d:\d\d$/.test(fd.get('heure') || '') ? fd.get('heure') : ''; rec.recur = ''; }
+    if (!rec.titre || (!rec.immId && !rec.ptl)) return;
     if (recur && !rec.date) return toast('Indiquez la date de la première fois', { bad: true });
     if (id) rec.id = id;
     if (!recur && rec.statut === 'fait' && !(prev && prev.statut === 'fait')) rec.doneDate = today();
     const saved = await vault.mutate((tx) => tx.put('taches', rec), id ? 'Intervention modifiée' : 'Intervention ajoutée', `${rec.titre} — ${placeName(rec)}`, rec.immId);
     toast(id ? 'Intervention enregistrée' : 'Intervention ajoutée');
-    if (!recur) await syncDepense(saved);
+    // demande d'une gérance : le portail suit (planifiée avec l'ouvrier, ou terminée)
+    if (saved.ptl && ptlConf()) {
+      const w = vault.get('intervenants', saved.intervenantId), key = [saved.intervenantId, saved.date, saved.heure, saved.statut].join('|');
+      const was = prev ? [prev.intervenantId, prev.date, prev.heure, prev.statut].join('|') : '';
+      if (key !== was) {
+        const st = saved.statut === 'fait' ? 'terminee' : w && saved.date ? 'planifiee' : 'prise';
+        ptlStatus(saved.ptl.tid, st, { technicien: w ? intervFull(w) : '', planned_at: saved.date ? `${saved.date}T${saved.heure || '08:00'}` : '', text: w ? `👷 ${intervFull(w)}${saved.date ? ' — ' + fmtDate(saved.date) + (saved.heure ? ' ' + saved.heure : '') : ''}` : '', ...(st === 'terminee' ? { rapport: saved.note || 'Intervention terminée' } : {}) })
+          .then(() => toast('Portail gérance mis à jour : ' + PTL_ST[st])).catch((e) => toast('Portail gérance : ' + e.message, { bad: true }));
+      }
+    }
+    if (!recur && !saved.ptl) await syncDepense(saved);
     goBack();
   },
   async door(fd) {

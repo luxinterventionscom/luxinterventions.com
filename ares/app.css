@@ -609,3 +609,15 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 .lang-mini button + button::before { content: ""; position: absolute; left: 0; top: 30%; height: 40%; width: 1px; background: var(--border); }
 .lang-mini button[aria-pressed="true"] { color: var(--accent); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .lock .lang-mini { display: flex; width: max-content; margin: 4px auto 12px; }
+
+/* Gérances : demandes d'intervention */
+.ptl-box { padding: 10px 12px; border-radius: 12px; background: var(--amber-soft, #fff7ed); border: 1px solid var(--border); font-size: 14px; line-height: 1.5; }
+.ger-req.is-new { box-shadow: inset 4px 0 0 var(--amber, #d97706); }
+.ger-req.is-new.u-urgent { box-shadow: inset 4px 0 0 #dc2626; animation: gerurg 1.6s ease-in-out infinite; }
+@keyframes gerurg { 50% { background: rgba(220, 38, 38, 0.07); } }
+.ger-n { display: inline-block; min-width: 18px; padding: 0 5px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11px; line-height: 18px; text-align: center; }
+@media (prefers-reduced-motion: reduce) { .ger-req.is-new.u-urgent { animation: none; } }
+/* pastille des nouvelles demandes des gérances */
+.navbtn { position: relative; }
+.nav-n { position: absolute; top: 4px; left: 26px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #2563eb; color: #fff; font: 700 11px/18px system-ui, sans-serif; font-style: normal; text-align: center; box-shadow: 0 0 0 2px var(--bg, #fff); }
+.nav-n.u-urgent { background: #dc2626; }

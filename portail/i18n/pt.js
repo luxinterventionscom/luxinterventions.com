@@ -1201,6 +1201,10 @@ export default [
 "Onde encontrar as chaves (sala, caixa de chaves…)"
 ],
 [
+"PORTAIL GÉRANCES",
+"PORTAL DA ADMINISTRAÇÃO"
+],
+[
 "Panneaux solaires",
 "Painéis solares"
 ],
@@ -1319,6 +1323,10 @@ export default [
 [
 "Portail Gérance — LuxInterventions",
 "Portal da administração — LuxInterventions"
+],
+[
+"Portail Gérances",
+"Portal da administração"
 ],
 [
 "Portail gérance",
