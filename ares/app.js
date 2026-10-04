@@ -9,7 +9,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.63.0';
+const VERSION = '2.64.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -968,7 +968,19 @@ async function chatSync() {
         next[gk] = g;
         changed = true;
       }
-      for (const [gk, g] of Object.entries(cur)) if (!next[gk]) { await vault.boardDel(g.id).catch(() => {}); changed = true; }
+      for (const [gk, g] of Object.entries(cur)) {
+        if (next[gk]) continue;
+        const msgs = await chatRead(g).catch(() => null);
+        // les tours de poubelles faits restent au classement « Locataire de l'année »
+        if (msgs) await binRecord(vault.get('immeubles', im.id), gk, g, msgs).catch(() => {});
+        // les habitants changent de groupe (ex. attribués à des chambres) : la conversation les suit
+        const dest = Object.values(next).map((n) => ({ n, k: n.members.filter((m) => g.members.includes(m)).length })).sort((a, b) => b.k - a.k)[0];
+        if (msgs && msgs.length && dest && dest.k >= 2) {
+          for (const m of msgs) { const { n, ...msg } = m; await vault.boardPost(dest.n.id, await sealJson(dest.n.key, msg)).catch(() => {}); }
+        }
+        await vault.boardDel(g.id).catch(() => {});
+        changed = true;
+      }
       if (changed) await vault.mutate((tx) => tx.put('immeubles', { id: im.id, chats: next }), 'Messages de la maison : habitants mis à jour', im.adresse, im.id);
     }
   } catch { /* hors ligne : on réessaiera */ }
@@ -2294,10 +2306,14 @@ function champScores(year) {
     const seen = new Set();
     for (const [gk, g] of Object.entries(im.chats || {})) {
       seen.add(gk);
+      const days = new Set();
       for (const e of binGroupPlan(im, gk, g, (ui.chatCache || {})[g.id], year + '-12-31').filter((x) => x.p.startsWith(year + '-'))) {
+        days.add(e.p);
         if (e.done) add(e.done, 'done', im.id);
         if (e.forgot) add(e.who, 'forgot', im.id);
       }
+      // tours du même groupe enregistrés avant ce fil (fil recréé quand les habitants ont changé)
+      for (const [pDate, x] of Object.entries(logs[gk] || {})) if (pDate.startsWith(year + '-') && !days.has(pDate)) { if (x.d) add(x.d, 'done', im.id); if (x.f) add(x.w, 'forgot', im.id); }
     }
     // fils disparus (habitants partis, groupes changés) : leur journal compte encore
     for (const [gk, log] of Object.entries(logs)) {
