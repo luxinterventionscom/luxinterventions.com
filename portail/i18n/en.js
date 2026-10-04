@@ -9,6 +9,10 @@ export default [
 ", with the invitation link. After that: email + password, on any device. Forgotten? Ask for a new link."
 ],
 [
+"0 (RDC)",
+"0 (ground floor)"
+],
+[
 "12 derniers mois",
 "Last 12 months"
 ],
@@ -195,6 +199,10 @@ export default [
 [
 "Autre",
 "Other"
+],
+[
+"Autre (préciser dans la description)",
+"Other (explain in the description)"
 ],
 [
 "Autre précision (facultatif)",
@@ -1801,6 +1809,10 @@ export default [
 "seen just now"
 ],
 [
+"{0} (sous-sol)",
+"{0} (basement)"
+],
+[
 "{0} appartements",
 "{0} flats"
 ],
@@ -1907,6 +1919,10 @@ export default [
 [
 "Étage",
 "Floor"
+],
+[
+"Étage : autre",
+"Floor: other"
 ],
 [
 "Étage(s)",
