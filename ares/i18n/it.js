@@ -9091,5 +9091,17 @@ export default [
 [
 "Ajouter une 2ᵉ personne dans ce logement (couple, colocataire)",
 "Aggiungi una 2ª persona in questo alloggio (coppia, coinquilino)"
+],
+[
+"📻 Radio de l’app des locataires",
+"📻 Radio dell’app degli inquilini"
+],
+[
+"Lien (site ou flux audio)",
+"Link (sito o flusso audio)"
+],
+[
+"Radio enregistrée",
+"Radio salvata"
 ]
 ];

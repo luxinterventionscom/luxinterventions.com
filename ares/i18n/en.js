@@ -8891,5 +8891,17 @@ export default [
 [
 "Ajouter une 2ᵉ personne dans ce logement (couple, colocataire)",
 "Add a 2nd person to this home (couple, flatmate)"
+],
+[
+"📻 Radio de l’app des locataires",
+"📻 Tenants’ app radio"
+],
+[
+"Lien (site ou flux audio)",
+"Link (website or audio stream)"
+],
+[
+"Radio enregistrée",
+"Radio saved"
 ]
 ];

@@ -9,7 +9,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.67.0';
+const VERSION = '2.68.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -720,6 +720,7 @@ function espaceData(l) {
     v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
     societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: soc.signature || '', signW: soc.signW || 8 },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
+    radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : { nom: 'Seven Radio', url: 'https://sevenradio.lu/?proradio-popup=1' }; })(),
     annex: g ? annexOf(g) : {}, annexM2: (g && g.annexM2) || {}, surface: (g && g.surface) || '', maison: g && g.type === 'maison' ? g.maison || '' : '', unit: g ? g.type : '',
   };
   if (show.pay || show.quit) {
@@ -2977,6 +2978,13 @@ dashboard() {
       <p class="small muted" style="margin:0 0 8px">Un avis et le numéro sur l’icône quand un locataire ou l’équipe vous écrit (signalement, virement, photos, problème…). Le serveur ne lit rien : il dit seulement « nouveau message ».</p>
       ${pushSt === 'off' || !pushSt ? html`<button class="btn" data-action="push-on">🔔 Activer les notifications sur ce téléphone</button>` : html`<p class="small" style="margin:0">${PUSH_MSG[pushSt] || ''}</p>`}
 
+      <div class="section-label">📻 Radio de l’app des locataires</div>
+      ${(() => { const r = vault.get('reglages', 'radio') || {}; return html`<form data-form="radio" class="fields card" style="margin:0 0 6px">
+        <label class="field">Nom<input name="nom" value="${r.nom || 'Seven Radio'}" placeholder="ex. Seven Radio"></label>
+        <label class="field">Lien (site ou flux audio)<input name="url" type="url" value="${r.url || 'https://sevenradio.lu/?proradio-popup=1'}" placeholder="https://…"></label>
+        <button class="btn primary full" type="submit">Enregistrer</button>
+        <p class="tiny muted full" style="margin:0">Proposée à tous les locataires sous la météo (bouton ▶). Avec le lien du <b>flux audio</b> (demandé à la radio), elle joue directement dans l’app ; avec le lien du site, l’app ouvre le site. Chaque locataire peut coller sa propre radio.</p>
+      </form>`; })()}
       <div class="section-label">Apparence</div>
       <div class="chips">${[['auto', 'Automatique'], ['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => html`<button class="chip" data-action="theme" data-id="${k}" aria-pressed="${theme === k}">${l}</button>`)}</div>
       <div class="section-label">Langue</div>
@@ -5167,6 +5175,11 @@ const ACTIONS = {
 };
 
 const FORMS = {
+  async radio(fd) {
+    let url = String(fd.get('url') || '').trim(); if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
+    await vault.mutate((tx) => tx.put('reglages', { id: 'radio', nom: String(fd.get('nom') || '').trim().slice(0, 60), url: url.slice(0, 500) }), 'Radio de l’app des locataires', url);
+    toast('Radio enregistrée'); scheduleEspaceSync();
+  },
   async 'ptl-login'(fd, f) {
     const email = String(fd.get('email') || '').trim().toLowerCase(), pass = String(fd.get('pass') || '');
     const btn = f.querySelector('[type=submit]'); btn.disabled = true;
