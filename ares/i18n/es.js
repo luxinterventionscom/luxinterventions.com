@@ -8923,5 +8923,41 @@ export default [
 [
 "ℹ️ {0} chambres sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).",
 "ℹ️ {0} habitaciones sin piso indicado: sus habitantes chatean juntos. Si hay varios pisos, indícalo en cada habitación («Forma parte del piso»)."
+],
+[
+"Appartements en colocation (2 à 10 chambres)",
+"Pisos compartidos (de 2 a 10 habitaciones)"
+],
+[
+"Immeuble de studios",
+"Edificio de estudios"
+],
+[
+"Caves / débarras",
+"Trasteros / sótanos"
+],
+[
+"Studio (lit, kitchenette, salle d’eau / WC indépendants)",
+"Estudio (cama, cocina americana, baño / WC independientes)"
+],
+[
+"Cave / débarras (à louer ou usage propre)",
+"Trastero / sótano (para alquilar o uso propio)"
+],
+[
+"Chambres (appartement, maison)",
+"Habitaciones (piso, casa)"
+],
+[
+"Avec mansarde",
+"Con buhardilla"
+],
+[
+"+ une mansarde (chambre sous les toits)",
+"+ una buhardilla (habitación bajo el tejado)"
+],
+[
+"Mansarde",
+"Buhardilla"
 ]
 ];

@@ -8935,5 +8935,41 @@ export default [
 [
 "ℹ️ {0} chambres sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).",
 "ℹ️ {0} Zimmer ohne angegebene Wohnung: Ihre Bewohner chatten zusammen. Gibt es mehrere Wohnungen, geben Sie sie in jedem Zimmer an („Gehört zur Wohnung“)."
+],
+[
+"Appartements en colocation (2 à 10 chambres)",
+"WG-Wohnungen (2 bis 10 Zimmer)"
+],
+[
+"Immeuble de studios",
+"Gebäude mit Studios"
+],
+[
+"Caves / débarras",
+"Keller / Abstellräume"
+],
+[
+"Studio (lit, kitchenette, salle d’eau / WC indépendants)",
+"Studio (Bett, Kochnische, eigenes Bad / WC)"
+],
+[
+"Cave / débarras (à louer ou usage propre)",
+"Keller / Abstellraum (zu vermieten oder Eigennutzung)"
+],
+[
+"Chambres (appartement, maison)",
+"Zimmer (Wohnung, Haus)"
+],
+[
+"Avec mansarde",
+"Mit Dachzimmer"
+],
+[
+"+ une mansarde (chambre sous les toits)",
+"+ ein Dachzimmer (unter dem Dach)"
+],
+[
+"Mansarde",
+"Dachzimmer"
 ]
 ];

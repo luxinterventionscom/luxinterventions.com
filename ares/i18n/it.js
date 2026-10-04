@@ -8947,5 +8947,41 @@ export default [
 [
 "ℹ️ {0} chambres sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).",
 "ℹ️ {0} camere senza appartamento indicato: i loro abitanti chattano insieme. Se ci sono più appartamenti, indicatelo in ogni camera («Fa parte dell’appartamento»)."
+],
+[
+"Appartements en colocation (2 à 10 chambres)",
+"Appartamenti in coabitazione (da 2 a 10 camere)"
+],
+[
+"Immeuble de studios",
+"Stabile di monolocali"
+],
+[
+"Caves / débarras",
+"Cantine / ripostigli"
+],
+[
+"Studio (lit, kitchenette, salle d’eau / WC indépendants)",
+"Monolocale (letto, angolo cottura, bagno / WC indipendenti)"
+],
+[
+"Cave / débarras (à louer ou usage propre)",
+"Cantina / ripostiglio (da affittare o uso proprio)"
+],
+[
+"Chambres (appartement, maison)",
+"Camere (appartamento, casa)"
+],
+[
+"Avec mansarde",
+"Con mansarda"
+],
+[
+"+ une mansarde (chambre sous les toits)",
+"+ una mansarda (camera sotto il tetto)"
+],
+[
+"Mansarde",
+"Mansarda"
 ]
 ];
