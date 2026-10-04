@@ -439,7 +439,7 @@ function navItems() {
   if (isAdmin()) items.push(['gerances', 'Gérances', 'users']);
   else if (isManager()) items.push(['equipe', 'Équipe', 'users']);
   items.push(['stats', 'Statistiques', 'chart']);
-  items.push(['plus', 'Plus', 'more']);
+  items.push(['plus', 'Réglages', 'more']);
   return items;
 }
 function renderShell() {
@@ -816,11 +816,13 @@ const VIEWS = {
     const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     const now = new Date();
     return html`
-      ${pageHead('Plus', '')}
+      ${pageHead('Réglages', 'Langue, notifications, rapports, compte')}
       <div class="card" style="display:flex;gap:14px;align-items:center">
         <span class="avatar" style="width:48px;height:48px">${initials(state.me.name)}</span>
         <div class="grow"><div class="title">${state.me.name}</div><div class="meta small muted">${state.me.email} · ${ROLES[state.me.role]}${state.me.org_name ? ' · ' + state.me.org_name : ''}</div></div>
       </div>
+      <div class="section-label">🌐 Langue · Language</div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><span class="grow small muted" data-notr="1">${PTL_LANGS[LANG]}</span>${langMini()}</div>
       <div class="section-label">Notifications</div>
       <div class="list settings">
         <div class="row">${icon('bell')}<span class="grow"><span class="title" style="display:block">Notifications sur cet appareil</span>
@@ -836,8 +838,6 @@ const VIEWS = {
         ${isAdmin() ? html`<label class="field" style="flex:1;min-width:160px">Gérance<select name="org"><option value="">Toutes</option>${(state.cache.orgs || []).map((o) => html`<option value="${o.id}">${o.name}</option>`)}</select></label>` : ''}
         <button class="btn primary" type="submit">${icon('download')} Rapport mensuel</button>
       </form>
-      <div class="section-label">Langue</div>
-      <div style="text-align:left">${langMini()}</div>
       <div class="section-label">Compte</div>
       <div class="list settings">
         <button class="row" data-action="change-password">${icon('key')}<span class="grow title">Changer mon mot de passe</span></button>
