@@ -694,10 +694,11 @@ function render() {
   // Maintenance : avec les nouvelles données (femme de ménage + ouvriers), alerte en haut pour aujourd'hui / demain
   // et la carte « Maintenance » au-dessus des collectes ; sinon (ancienne app de gestion) l'ancien encadré du ménage
   const vis = s.menage ? visitsOf(d) : null;
-  let mtCard = '';
+  let mtCard = '', mtLight = '';
   if (vis) {
+    // pastille dans le titre « Maintenance » : verte = passage aujourd'hui, jaune = demain, rouge = ne passe pas
     const soon = vis.filter((v) => v.d <= addDays(today, 1));
-    if (soon.length) out.push(`<div class="card avis men vis-soon">${soon.map((v) => visLine(v, t, true)).join('')}</div>`);
+    mtLight = !soon.length ? '' : soon.some((v) => v.off) ? 'red' : soon.some((v) => v.d === today) ? 'green' : 'yellow';
     const menToday = vis.find((v) => v.m === 'menage' && v.d === today && !v.off);
     const mv = menVote();
     mtCard = `${vis.length ? vis.map((v) => visLine(v, t)).join('') : `<p class="meta" style="margin:0">${esc(t.mt.none)}</p>`}
@@ -731,7 +732,7 @@ function render() {
     const cm = new Date().getMonth(), cy = new Date().getFullYear();
     // « Mes loyers » : une seule carte avec, en dessous, « Mon contrat » et « Mes quittances » (complétée plus bas)
     payAt = out.length;
-    payH = `<div class="card"><h2>💶 ${esc(t.pay)}</h2>
+    payH = `<div class="card"${rest > 0.009 ? ' data-due="1"' : ''}><h2>${rest > 0.009 ? '<span class="light l-red blink"></span> ' : ''}💶 ${esc(t.pay)}</h2>
       <p style="margin:0">${rest > 0.009 ? `<span class="big bad">${esc(money(rest))}</span> <span class="meta">${esc(t.restNow)}</span>` : `<span class="big ok">${esc(t.allPaid)}</span>`}${cur.upcoming > 0.009 ? ` <span class="meta">· ${esc(t.upcoming)} ${esc(money(cur.upcoming))}</span>` : ''}</p>
       ${d.years.map((y) => `<div class="meta" style="margin-top:10px;font-weight:700">${y.y}</div><div class="months">${y.months.map(([due, paid], i) => {
         const past = y.y < cy || (y.y === cy && i < cm), now = y.y === cy && i === cm;
@@ -840,7 +841,7 @@ function render() {
       ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div></div></div>`).join('')}` : ''}</details>`;
   }
   const legHtml = s.coll || s.signal ? `<p class="meta mt-leg"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow"></span> ${esc(t.lights[1])} · <span class="light l-red"></span> ${esc(t.lights[2])}${vis ? ` · <span class="light l-grey"></span> ${esc(t.mt.offL)}` : ''}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</p>` : '';
-  if (mtCard || collHtml || sigHtml || legHtml) out[mtAt] = `<div class="card" id="mtCard"><h2>🛠️ ${esc(t.mt.t)}</h2>${mtCard}${collHtml}${sigHtml}${legHtml}</div>`;
+  if (mtCard || collHtml || sigHtml || legHtml) out[mtAt] = `<div class="card" id="mtCard"><h2>${mtLight ? `<span class="light l-${mtLight} blink"></span> ` : ''}🛠️ ${esc(t.mt.t)}</h2>${mtCard}${collHtml}${sigHtml}${legHtml}</div>`;
   if (d.regles) {
     const lu = rulesDate(d);
     out.push(`<div class="card" id="rules"><details${lu ? '' : ' open'}><summary><h2 style="display:inline">📜 ${esc(t.hr.rulesT)}</h2>${lu ? ` <span class="meta">✓ ${esc(fmt(lu))}</span>` : ''}</summary>
