@@ -93,6 +93,10 @@ export default [
 "Aggiungi"
 ],
 [
+"Ajouter des photos",
+"Aggiungi foto"
+],
+[
 "Ajouter une résidence",
 "Aggiungi un condominio"
 ],
@@ -191,6 +195,10 @@ export default [
 [
 "Aucune intervention en cours.",
 "Nessun intervento in corso."
+],
+[
+"Aucune modification",
+"Nessuna modifica"
 ],
 [
 "Aucune nouvelle demande en attente.",
@@ -525,6 +533,10 @@ export default [
 "Richiesta non trovata"
 ],
 [
+"Demande prise en charge : pour corriger quelque chose, écrivez-le dans un message ci-dessous.",
+"Richiesta presa in carico: per correggere qualcosa, scrivetelo in un messaggio qui sotto."
+],
+[
 "Demande prise en charge — la gérance est prévenue",
 "Richiesta presa in carico — l’amministrazione è avvisata"
 ],
@@ -643,6 +655,10 @@ export default [
 [
 "Enregistrer",
 "Salva"
+],
+[
+"Enregistrer les modifications",
+"Salva le modifiche"
 ],
 [
 "Envoi…",
@@ -1241,8 +1257,16 @@ export default [
 "Foto (fino a 6)"
 ],
 [
+"Photos (jusqu’à 6)",
+"Foto (fino a 6)"
+],
+[
 "Photos 0/{0}…",
 "Foto 0/{0}…"
+],
+[
+"Photos ajoutées",
+"Foto aggiunte"
 ],
 [
 "Photos après intervention",
@@ -2041,6 +2065,22 @@ export default [
 "⚡ Quadri"
 ],
 [
+"✏️ Demande modifiée",
+"✏️ Richiesta modificata"
+],
+[
+"✏️ Modifier",
+"✏️ Modifica"
+],
+[
+"✏️ Modifier la demande",
+"✏️ Modifica la richiesta"
+],
+[
+"✏️ Modifier la demande #{0}",
+"✏️ Modifica la richiesta #{0}"
+],
+[
 "⭐ Envoyer l’évaluation",
 "⭐ Invia la valutazione"
 ],
@@ -2083,6 +2123,10 @@ export default [
 [
 "📲 En réel, l’équipe LuxInterventions reçoit maintenant une notification.",
 "📲 Nella realtà la squadra LuxInterventions riceve ora una notifica."
+],
+[
+"🔐 Codes",
+"🔐 Codici"
 ],
 [
 "🔐 Codes (repris de la résidence, modifiables)",

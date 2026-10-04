@@ -89,6 +89,10 @@ export default [
 "Hinzufügen"
 ],
 [
+"Ajouter des photos",
+"Fotos hinzufügen"
+],
+[
 "Ajouter une résidence",
 "Wohnanlage hinzufügen"
 ],
@@ -187,6 +191,10 @@ export default [
 [
 "Aucune intervention en cours.",
 "Kein laufender Einsatz."
+],
+[
+"Aucune modification",
+"Keine Änderung"
 ],
 [
 "Aucune nouvelle demande en attente.",
@@ -525,6 +533,10 @@ export default [
 "Anfrage nicht gefunden"
 ],
 [
+"Demande prise en charge : pour corriger quelque chose, écrivez-le dans un message ci-dessous.",
+"Anfrage in Bearbeitung: Um etwas zu korrigieren, schreiben Sie es unten in eine Nachricht."
+],
+[
 "Demande prise en charge — la gérance est prévenue",
 "Anfrage übernommen — die Verwaltung ist informiert"
 ],
@@ -647,6 +659,10 @@ export default [
 [
 "Enregistrer",
 "Speichern"
+],
+[
+"Enregistrer les modifications",
+"Änderungen speichern"
 ],
 [
 "Envoi…",
@@ -1241,8 +1257,16 @@ export default [
 "Fotos (bis zu 6)"
 ],
 [
+"Photos (jusqu’à 6)",
+"Fotos (bis zu 6)"
+],
+[
 "Photos 0/{0}…",
 "Fotos 0/{0}…"
+],
+[
+"Photos ajoutées",
+"Fotos hinzugefügt"
 ],
 [
 "Photos après intervention",
@@ -2047,6 +2071,22 @@ export default [
 [
 "⚡ Panneaux",
 "⚡ Schalttafeln"
+],
+[
+"✏️ Demande modifiée",
+"✏️ Anfrage geändert"
+],
+[
+"✏️ Modifier",
+"✏️ Bearbeiten"
+],
+[
+"✏️ Modifier la demande",
+"✏️ Anfrage bearbeiten"
+],
+[
+"✏️ Modifier la demande #{0}",
+"✏️ Anfrage #{0} bearbeiten"
 ],
 [
 "⭐ Envoyer l’évaluation",

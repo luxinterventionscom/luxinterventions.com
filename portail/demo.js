@@ -137,6 +137,15 @@ export function createDemo() {
     if (tm) {
       const t = tickets.find((x) => x.id === tm[1]);
       if (!t || !visible(t)) fail(404, 'Demande introuvable');
+      if (!tm[2] && method === 'PATCH') {
+        if (['terminee', 'annulee'].includes(t.status)) fail(400, 'Demande terminée ou annulée : elle ne peut plus être modifiée');
+        if (!isAdmin() && t.status !== 'recue') fail(403, 'Demande déjà prise en charge : écrivez la correction dans un message');
+        const LBL = { residence_id: 'Résidence', lieu: 'Lieu', categorie: 'Type de travaux', urgence: 'Urgence', description: 'Description', contact_name: 'Contact', contact_phone: 'Téléphone', acces: 'Accès / codes', dispo: 'Disponibilités' };
+        const changed = Object.keys(LBL).filter((k) => b[k] != null && String(b[k]) !== String(t[k] ?? ''));
+        for (const k of changed) t[k] = b[k];
+        if (changed.length) events.push({ id: id(), ticket_id: t.id, user_id: me.id, kind: 'edit', status: null, text: changed.map((k) => LBL[k]).join(', '), created_at: Date.now() });
+        return { ok: true, changed: changed.map((k) => LBL[k]) };
+      }
       if (!tm[2]) {
         const r = residences.find((x) => x.id === t.residence_id);
         return { ticket: { ...t }, residence: { ...r, org_name: orgs.find((o) => o.id === r.org_id).name },
