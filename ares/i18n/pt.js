@@ -2214,7 +2214,7 @@ export default [
 ],
 [
 "Maison",
-"Moradia"
+"Casa"
 ],
 [
 "Maison / propriété avec chambres",
@@ -8931,5 +8931,93 @@ export default [
 [
 "Mansarde",
 "Águas-furtadas"
+],
+[
+"Type de maison",
+"Tipo de casa"
+],
+[
+"Maison individuelle (4 façades libres)",
+"Moradia isolada (4 frentes livres)"
+],
+[
+"Maison jumelée (un mur commun)",
+"Moradia geminada (uma parede comum)"
+],
+[
+"Maison mitoyenne / en rangée (entre deux maisons)",
+"Moradia em banda (entre duas casas)"
+],
+[
+"Compris avec le logement",
+"Incluído com o alojamento"
+],
+[
+"🍷 Cave",
+"🍷 Arrecadação / cave"
+],
+[
+"🏠 Mansarde / grenier",
+"🏠 Águas-furtadas / sótão"
+],
+[
+"🚗 Garage",
+"🚗 Garagem"
+],
+[
+"🅿️ Place de parking",
+"🅿️ Lugar de estacionamento"
+],
+[
+"🌿 Jardin",
+"🌿 Jardim"
+],
+[
+"🌇 Balcon / terrasse",
+"🌇 Varanda / terraço"
+],
+[
+"habitable",
+"habitável"
+],
+[
+"non habitable (rangement)",
+"não habitável (arrumação)"
+],
+[
+"au sous-sol / semi-enterré",
+"na cave / semienterrada"
+],
+[
+"extérieur",
+"exterior"
+],
+[
+"Compris dans le loyer. Une cave ou un garage loué à part (ou gardé pour vous) : créez-le comme logement « Cave » ou « Garage » — son locataire a son app, ses loyers, son état des lieux et écrit au gestionnaire.",
+"Incluído na renda. Uma cave ou garagem arrendada à parte (ou para uso próprio): crie-a como alojamento «Cave» ou «Garagem» — o inquilino tem a sua app, rendas, vistoria e escreve ao gestor."
+],
+[
+"Compris",
+"Incluído"
+],
+[
+"🍷 Cave commune",
+"🍷 Cave comum"
+],
+[
+"✉️ seul·e — écrit au gestionnaire",
+"✉️ sozinho/a — escreve ao gestor"
+],
+[
+"Jardin / terrain",
+"Jardim / terreno"
+],
+[
+"Surface d’une chambre (m²)",
+"Área de um quarto (m²)"
+],
+[
+"Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez ensuite les renommer et corriger la surface de chacune. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.",
+"Os quartos são criados «Chambre 1», «Chambre 2»…: depois pode mudar o nome e corrigir a área de cada um. Mais um quarto? Botão «+ Quarto» no apartamento."
 ]
 ];

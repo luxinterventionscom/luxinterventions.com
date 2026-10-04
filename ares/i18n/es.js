@@ -8959,5 +8959,89 @@ export default [
 [
 "Mansarde",
 "Buhardilla"
+],
+[
+"Type de maison",
+"Tipo de casa"
+],
+[
+"Maison individuelle (4 façades libres)",
+"Casa independiente (4 fachadas libres)"
+],
+[
+"Maison jumelée (un mur commun)",
+"Casa pareada (una pared común)"
+],
+[
+"Maison mitoyenne / en rangée (entre deux maisons)",
+"Casa adosada (entre dos casas)"
+],
+[
+"Compris avec le logement",
+"Incluido con la vivienda"
+],
+[
+"🍷 Cave",
+"🍷 Trastero"
+],
+[
+"🏠 Mansarde / grenier",
+"🏠 Buhardilla / desván"
+],
+[
+"🚗 Garage",
+"🚗 Garaje"
+],
+[
+"🅿️ Place de parking",
+"🅿️ Plaza de aparcamiento"
+],
+[
+"🌿 Jardin",
+"🌿 Jardín"
+],
+[
+"🌇 Balcon / terrasse",
+"🌇 Balcón / terraza"
+],
+[
+"non habitable (rangement)",
+"no habitable (almacén)"
+],
+[
+"au sous-sol / semi-enterré",
+"en el sótano / semisótano"
+],
+[
+"extérieur",
+"exterior"
+],
+[
+"Compris dans le loyer. Une cave ou un garage loué à part (ou gardé pour vous) : créez-le comme logement « Cave » ou « Garage » — son locataire a son app, ses loyers, son état des lieux et écrit au gestionnaire.",
+"Incluido en el alquiler. Un trastero o garaje alquilado aparte (o para uso propio): créalo como vivienda «Trastero» o «Garaje» — su inquilino tiene su app, alquileres, inventario y escribe al administrador."
+],
+[
+"Compris",
+"Incluido"
+],
+[
+"🍷 Cave commune",
+"🍷 Trastero común"
+],
+[
+"✉️ seul·e — écrit au gestionnaire",
+"✉️ solo/a — escribe al administrador"
+],
+[
+"Jardin / terrain",
+"Jardín / terreno"
+],
+[
+"Surface d’une chambre (m²)",
+"Superficie de una habitación (m²)"
+],
+[
+"Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez ensuite les renommer et corriger la surface de chacune. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.",
+"Las habitaciones se crean «Chambre 1», «Chambre 2»…: después puedes renombrarlas y corregir la superficie de cada una. ¿Una habitación más? Botón «+ Habitación» en el piso."
 ]
 ];
