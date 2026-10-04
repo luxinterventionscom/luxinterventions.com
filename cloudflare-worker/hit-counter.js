@@ -39,8 +39,8 @@ const UPLOAD_MAX_PER_HOUR = 30; // upload pubblici per indirizzo IP e per ora
 function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGIN,
-    "Access-Control-Allow-Methods": "GET, PUT, POST, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, If-Match, If-None-Match, X-Ares-Session, X-Ares-Device, X-Esp",
+    "Access-Control-Allow-Methods": "GET, PUT, POST, PATCH, DELETE, OPTIONS",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, If-Match, If-None-Match, X-Ares-Session, X-Ares-Device, X-Esp, X-Event-Id",
     "Access-Control-Expose-Headers": "ETag",
     "Access-Control-Max-Age": "86400",
     "Cache-Control": "no-store",
