@@ -107,9 +107,9 @@ const code6 = (label, name, value) => { const v = isCode(value) ? String(value |
   <span class="code6" data-code6="${name}"><input type="hidden" name="${name}" value="${v}">${[0, 1, 2, 3, 4, 5].map((i) => html`<input class="c6" inputmode="numeric" autocomplete="off" aria-label="${label} ${i + 1}" value="${v[i] || ''}">`)}</span></label>`; };
 const codeShow = (v) => (v && isCode(v) ? html`<span class="code6-show">${String(v).split('').map((c) => html`<b>${c}</b>`)}</span>` : v || '');
 const partsHtml = (s) => String(s || '').split(' · ').filter(Boolean).map((x, i) => {
-  const h = /^De (\d\d:\d\d) à (\d\d:\d\d)$/.exec(x), f = /^(À partir de|Jusqu’à) (\d\d:\d\d)$/.exec(x), m = /^(Étage|Date souhaitée :) (.+)$/.exec(x), c = /^(Porte|Alarme|Panneaux) : (\d{1,6})$/.exec(x);
+  const h = /^De (\d\d:\d\d) à (\d\d:\d\d)( \(lendemain\))?$/.exec(x), f = /^(À partir de|Jusqu’à) (\d\d:\d\d)$/.exec(x), m = /^(Étage|Date souhaitée :) (.+)$/.exec(x), c = /^(Porte|Alarme|Panneaux) : (\d{1,6})$/.exec(x);
   if (c) return html`${i ? ' · ' : ''}<span>${{ Porte: '🚪 Porte', Alarme: '🚨 Alarme', Panneaux: '⚡ Panneaux' }[c[1]]}</span> ${codeShow(c[2])}`;
-  return html`${i ? ' · ' : ''}${h ? html`🕒 <span>De</span> ${h[1]} <span>à</span> ${h[2]}` : f ? html`🕒 <span>${f[1]}</span> ${f[2]}` : m ? html`<span>${m[1]}</span> ${m[2]}` : html`<span>${x}</span>`}`;
+  return html`${i ? ' · ' : ''}${h ? html`${h[3] ? '🌙' : '🕒'} <span>De</span> ${h[1]} <span>à</span> ${h[2]}${h[3] ? html` <span>(lendemain)</span>` : ''}` : f ? html`🕒 <span>${f[1]}</span> ${f[2]}` : m ? html`<span>${m[1]}</span> ${m[2]}` : html`<span>${x}</span>`}`;
 });
 const ROLES = { admin: 'LuxInterventions', gerance_admin: 'Responsable gérance', gerance_user: 'Utilisateur gérance' };
 // Fiche d'évaluation d'une intervention terminée (remplie par la gérance, enregistrée comme message du suivi)
@@ -1117,8 +1117,8 @@ const SHEETS = {
         <fieldset class="full dispo-set"><legend>📅 Disponibilités</legend>
           <div class="dispo-row">
             <label class="field">Date souhaitée<input type="date" name="date_souhaitee" min="${new Date().toISOString().slice(0, 10)}"></label>
-            <label class="field">De<input type="time" name="h_de" step="900" value="08:00"></label>
-            <label class="field">À<input type="time" name="h_a" step="900" value="18:00"></label>
+            <label class="field">De<input type="time" name="h_de" value="08:00"></label>
+            <label class="field">À<input type="time" name="h_a" value="18:00"></label>
           </div>
           <label class="field">Autre précision (facultatif)<input name="dispo" placeholder="ex. sonner chez le concierge, pas le mercredi"></label>
         </fieldset>
@@ -1528,8 +1528,8 @@ const FORMS = {
       const ds = /^\d{4}-\d{2}-\d{2}$/.test(body.date_souhaitee || '') ? body.date_souhaitee.split('-').reverse().join('/') : '';
       const hm = (x) => (/^\d{2}:\d{2}$/.test(x || '') ? x : '');
       const de = hm(body.h_de), a = hm(body.h_a);
-      if (de && a && a <= de) { setBusy(btn, false); return toast('L’heure de fin doit être après l’heure de début.', { bad: true }); }
-      const plage = de && a ? `De ${de} à ${a}` : de ? `À partir de ${de}` : a ? `Jusqu’à ${a}` : '';
+      // fin avant le début (ex. 22:00 → 06:00) : plage de nuit, jusqu'au lendemain (concierge, urgence)
+      const plage = de && a ? `De ${de} à ${a}${a <= de ? ' (lendemain)' : ''}` : de ? `À partir de ${de}` : a ? `Jusqu’à ${a}` : '';
       body.dispo = [ds ? 'Date souhaitée : ' + ds : '', plage, body.dispo].filter(Boolean).join(' · ');
       body.acces = [body.c_porte ? 'Porte : ' + body.c_porte : '', body.c_alarme ? 'Alarme : ' + body.c_alarme : '', body.c_panneaux ? 'Panneaux : ' + body.c_panneaux : '', body.acces].filter(Boolean).join(' · ').slice(0, 500);
       for (const k of ['nature', 'zone', 'etage', 'date_souhaitee', 'h_de', 'h_a', 'c_porte', 'c_alarme', 'c_panneaux']) delete body[k];

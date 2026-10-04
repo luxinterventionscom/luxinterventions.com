@@ -1,6 +1,10 @@
 // Traduction du portail gérance (source : français). Généré — une ligne par phrase.
 export default [
 [
+"(lendemain)",
+"(día siguiente)"
+],
+[
 "({0}). Il est personnel : ne le partagez pas avec d’autres personnes.",
 "({0}). Es personal: no lo compartas con otras personas."
 ],
