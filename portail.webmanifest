@@ -1,6 +1,6 @@
 {
-  "name": "LuxInterventions — Portail Gérance",
-  "short_name": "LuxInterventions",
+  "name": "Portail Gérances",
+  "short_name": "Portail Gérances",
   "description": "Demandes d'intervention, suivi en temps réel et rapports pour syndics et gérances.",
   "lang": "fr",
   "start_url": "/portail.html",

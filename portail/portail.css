@@ -201,3 +201,6 @@ details.guide.fold:not([open]) > summary { margin-bottom: 0 !important; }
 
 .acc-lines { display: grid; gap: 6px; justify-items: end; }
 .acc-lines > div { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+/* nom de l'app + nom de la gérance connectée en dessous */
+.ptl-name { letter-spacing: .06em; font-size: 15px; line-height: 1.2; }
+.ptl-name small { letter-spacing: .02em; text-transform: none; font-size: 12px; font-weight: 600; }

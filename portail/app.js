@@ -9,7 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.6.0';
+const VERSION = '1.7.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -103,7 +103,7 @@ const ZONES = ['Appartement', 'Chambre', 'Bureau', 'Box / garage', 'Cave', 'Jard
 // Morceaux « A · B · C » : chacun dans son <span> pour être traduit séparément ; « Étage 2 » → « Étage » + 2
 // Codes à 6 chiffres (accès, alarme, panneaux…) : 6 cases, un chiffre par case
 const isCode = (v) => /^\d{0,6}$/.test(String(v || ''));
-const code6 = (label, name, value) => { const v = isCode(value) ? String(value || '') : ''; return html`<label class="field">${label}
+const code6 = (label, name, value) => { const v = isCode(value) ? String(value || '') : ''; return html`<label class="field full code6-field">${label}
   <span class="code6" data-code6="${name}"><input type="hidden" name="${name}" value="${v}">${[0, 1, 2, 3, 4, 5].map((i) => html`<input class="c6" inputmode="numeric" autocomplete="off" aria-label="${label} ${i + 1}" value="${v[i] || ''}">`)}</span></label>`; };
 const codeShow = (v) => (v && isCode(v) ? html`<span class="code6-show">${String(v).split('').map((c) => html`<b>${c}</b>`)}</span>` : v || '');
 const partsHtml = (s) => String(s || '').split(' · ').filter(Boolean).map((x, i) => {
@@ -288,7 +288,7 @@ const lockEl = $('#lock');
 const appEl = $('#app');
 const brandHead = () => html`
   <img class="lock-banner" src="/portail/icons/ptl-banner.webp" alt="Terre · Eau · Feu · Air — LuxInterventions" width="1100" height="283">
-  <div class="lock-head"><h1>Portail Gérance</h1><p>LuxInterventions · Interventions techniques 7j/7</p></div>
+  <div class="lock-head"><h1>Portail Gérances</h1><p>LuxInterventions · Interventions techniques 7j/7</p></div>
   ${langMini()}`;
 // écran d'accès : initiales seules « FR | DE | EN … »
 const langMini = () => html`<div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => html`<button type="button" data-action="set-lang" data-id="${k}" title="${PTL_LANGS[k]}" aria-pressed="${LANG === k}">${k.toUpperCase()}</button>`)}</div>`;
@@ -461,14 +461,14 @@ function renderShell() {
   const nb = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span><i class="navbadge" data-badge="${id}" hidden></i></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span>LuxInterventions<small>${isAdmin() ? 'Espace équipe' : state.me.org_name || 'Portail gérance'}</small></span></div>
+      <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">PORTAIL GÉRANCES<small>${isAdmin() ? 'Espace équipe LuxInterventions' : state.me.org_name || ''}</small></span></div>
       ${navItems().map(nb)}
       <div class="spacer"></div>
       <button class="navbtn" data-action="logout">${icon('logout')}<span>Déconnexion</span></button>
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span>${isAdmin() ? 'LuxInterventions' : state.me.org_name || 'Portail'}</span></div>
+        <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">PORTAIL GÉRANCES<small>${isAdmin() ? 'Espace équipe LuxInterventions' : state.me.org_name || ''}</small></span></div>
         <button class="btn sm primary" data-action="new-ticket">${icon('plus')} <span class="show-xs">Dépannage</span><span class="hide-xs">Demande de dépannage</span></button>
       </header>
       ${state.demo ? html`<div class="demo-bar">${icon('eye')}<span class="grow"><b>Mode démo</b> — données d’exemple, rien n’est enregistré.</span>
@@ -543,7 +543,7 @@ function updateBadges() {
     b.hidden = !(n && b.dataset.badge === 'home');
     b.textContent = n;
   });
-  document.title = (n ? `(${n}) ` : '') + 'Portail Gérance — LuxInterventions';
+  document.title = (n ? `(${n}) ` : '') + 'Portail Gérances';
 }
 
 function renderView() {

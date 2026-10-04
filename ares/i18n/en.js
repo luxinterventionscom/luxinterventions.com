@@ -8903,5 +8903,141 @@ export default [
 [
 "Radio enregistrée",
 "Radio saved"
+],
+[
+"Reçue",
+"Received"
+],
+[
+"Prise en charge",
+"Taken on"
+],
+[
+"En cours",
+"In progress"
+],
+[
+"Annulée",
+"Cancelled"
+],
+[
+"Sous 24 h",
+"Within 24 h"
+],
+[
+"Planifiable",
+"Can be scheduled"
+],
+[
+"Suivi",
+"Tracking"
+],
+[
+"Toutes les gérances",
+"All agencies"
+],
+[
+"✅ Prendre en charge",
+"✅ Take on"
+],
+[
+"🚚 En route",
+"🚚 On the way"
+],
+[
+"Voir les terminées",
+"Show completed"
+],
+[
+"Voir les demandes en cours",
+"Show open requests"
+],
+[
+"Aucune demande en cours.",
+"No open requests."
+],
+[
+"Aucune demande terminée.",
+"No completed requests."
+],
+[
+"Envoyer en Maintenance (choisir l’ouvrier)",
+"Send to Maintenance (choose the worker)"
+],
+[
+"Ajouter un ouvrier (Maintenance)",
+"Add a worker (Maintenance)"
+],
+[
+"Annuler la demande",
+"Cancel the request"
+],
+[
+"Annuler cette demande ?",
+"Cancel this request?"
+],
+[
+"Message envoyé à la gérance",
+"Message sent to the agency"
+],
+[
+"Portail gérance mis à jour : {0}",
+"Agency portal updated: {0}"
+],
+[
+"Demandée",
+"Requested"
+],
+[
+"Codes de la résidence",
+"Residence codes"
+],
+[
+"Intérieur",
+"Inside"
+],
+[
+"Étage(s)",
+"Floor(s)"
+],
+[
+"Technicien",
+"Technician"
+],
+[
+"Accès / codes",
+"Access / codes"
+],
+[
+"📥 Demandes d’intervention",
+"📥 Intervention requests"
+],
+[
+"{0} nouvelle(s)",
+"{0} new"
+],
+[
+"Résidence",
+"Residence"
+],
+[
+"Demande",
+"Request"
+],
+[
+"Ouvrir dans le portail",
+"Open in the portal"
+],
+[
+"📥 Nouvelle demande d'intervention : {0}",
+"📥 New intervention request: {0}"
+],
+[
+"📥 {0} nouvelles demandes d'intervention : {1}",
+"📥 {0} new intervention requests: {1}"
+],
+[
+"🏢 Fiches des gérances ({0})",
+"🏢 Agency records ({0})"
 ]
 ];

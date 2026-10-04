@@ -1197,6 +1197,10 @@ export default [
 "Wo die Schlüssel sind (Raum, Schlüsselkasten…)"
 ],
 [
+"PORTAIL GÉRANCES",
+"VERWALTUNGSPORTAL"
+],
+[
 "Panneaux solaires",
 "Solarmodule"
 ],
@@ -1315,6 +1319,10 @@ export default [
 [
 "Portail Gérance — LuxInterventions",
 "Verwaltungsportal — LuxInterventions"
+],
+[
+"Portail Gérances",
+"Verwaltungsportal"
 ],
 [
 "Portail gérance",

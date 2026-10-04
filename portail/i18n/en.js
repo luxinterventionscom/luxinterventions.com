@@ -1173,6 +1173,10 @@ export default [
 "Where to find the keys (room, key box…)"
 ],
 [
+"PORTAIL GÉRANCES",
+"PROPERTY MANAGER PORTAL"
+],
+[
 "Panneaux solaires",
 "Solar panels"
 ],
@@ -1283,6 +1287,10 @@ export default [
 [
 "Portail Gérance — LuxInterventions",
 "Property manager portal — LuxInterventions"
+],
+[
+"Portail Gérances",
+"Property manager portal"
 ],
 [
 "Portail gérance",

@@ -9083,5 +9083,149 @@ export default [
 [
 "Radio enregistrée",
 "Radio guardada"
+],
+[
+"Reçue",
+"Recibida"
+],
+[
+"Prise en charge",
+"En curso de gestión"
+],
+[
+"En cours",
+"En curso"
+],
+[
+"Annulée",
+"Cancelada"
+],
+[
+"Urgent",
+"Urgente"
+],
+[
+"Sous 24 h",
+"En 24 h"
+],
+[
+"Planifiable",
+"Planificable"
+],
+[
+"Suivi",
+"Seguimiento"
+],
+[
+"Toutes les gérances",
+"Todas las administraciones"
+],
+[
+"✅ Prendre en charge",
+"✅ Hacerse cargo"
+],
+[
+"🚚 En route",
+"🚚 En camino"
+],
+[
+"📷 Photos",
+"📷 Fotos"
+],
+[
+"Voir les terminées",
+"Ver las terminadas"
+],
+[
+"Voir les demandes en cours",
+"Ver las solicitudes en curso"
+],
+[
+"Aucune demande en cours.",
+"Ninguna solicitud en curso."
+],
+[
+"Aucune demande terminée.",
+"Ninguna solicitud terminada."
+],
+[
+"Envoyer en Maintenance (choisir l’ouvrier)",
+"Enviar a Mantenimiento (elegir el operario)"
+],
+[
+"Ajouter un ouvrier (Maintenance)",
+"Añadir un operario (Mantenimiento)"
+],
+[
+"Annuler la demande",
+"Cancelar la solicitud"
+],
+[
+"Annuler cette demande ?",
+"¿Cancelar esta solicitud?"
+],
+[
+"Message envoyé à la gérance",
+"Mensaje enviado a la administración"
+],
+[
+"Portail gérance mis à jour : {0}",
+"Portal de administraciones actualizado: {0}"
+],
+[
+"Demandée",
+"Solicitada"
+],
+[
+"Codes de la résidence",
+"Códigos de la residencia"
+],
+[
+"Intérieur",
+"Interior"
+],
+[
+"Étage(s)",
+"Planta(s)"
+],
+[
+"Technicien",
+"Técnico"
+],
+[
+"Accès / codes",
+"Acceso / códigos"
+],
+[
+"📥 Demandes d’intervention",
+"📥 Solicitudes de intervención"
+],
+[
+"{0} nouvelle(s)",
+"{0} nueva(s)"
+],
+[
+"Résidence",
+"Residencia"
+],
+[
+"Demande",
+"Solicitud"
+],
+[
+"Ouvrir dans le portail",
+"Abrir en el portal"
+],
+[
+"📥 Nouvelle demande d'intervention : {0}",
+"📥 Nueva solicitud de intervención: {0}"
+],
+[
+"📥 {0} nouvelles demandes d'intervention : {1}",
+"📥 {0} nuevas solicitudes de intervención: {1}"
+],
+[
+"🏢 Fiches des gérances ({0})",
+"🏢 Fichas de las administraciones ({0})"
 ]
 ];
