@@ -905,6 +905,8 @@ const PTL_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, user_id TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created_at INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
 ];
+// Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
+const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT"];
 let ptlSchemaReady = false;
 
 // ── Utilità ──
@@ -1132,7 +1134,11 @@ async function handlePortail(request, env, url, headers, ctx) {
   const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json", ...headers } });
   try {
     if (!env.DB) fail(503, "Base de données non reliée (binding DB manquant)");
-    if (!ptlSchemaReady) { await env.DB.batch(PTL_SCHEMA.map((q) => env.DB.prepare(q))); ptlSchemaReady = true; }
+    if (!ptlSchemaReady) {
+      await env.DB.batch(PTL_SCHEMA.map((q) => env.DB.prepare(q)));
+      for (const q of PTL_ALTER) { try { await env.DB.prepare(q).run(); } catch { /* colonne déjà présente */ } }
+      ptlSchemaReady = true;
+    }
     const path = url.pathname.slice("/api/portail/".length).replace(/\/$/, "");
     const method = request.method;
     const ip = request.headers.get("CF-Connecting-IP") || "unknown";
@@ -1373,14 +1379,16 @@ async function handlePortail(request, env, url, headers, ctx) {
       const rows = await (org ? env.DB.prepare(sql).bind(org) : env.DB.prepare(sql)).all();
       return json({ residences: rows.results || [] });
     }
-    const resFields = (b) => [clean(b.name, 160), clean(b.address, 300), clean(b.access, 500), clean(b.keys_info, 500), clean(b.contact_name, 120), clean(b.contact_phone, 40), clean(b.notes, 2000), parseInt(b.apartments, 10) || null];
+    const code6 = (v) => String(v ?? "").replace(/\D/g, "").slice(0, 6);
+    const resFields = (b) => [clean(b.name, 160), clean(b.address, 300), clean(b.access, 500), clean(b.keys_info, 500), clean(b.contact_name, 120), clean(b.contact_phone, 40), clean(b.notes, 2000), parseInt(b.apartments, 10) || null,
+      code6(b.alarm), code6(b.code_other), clean(b.interior, 120), clean(b.floors, 120)];
     if (path === "residences" && method === "POST") {
       const b = await body();
       const org = isAdmin(me) ? clean(b.org_id, 40) : me.org_id;
       if (!(await env.DB.prepare("SELECT id FROM orgs WHERE id = ?").bind(org).first())) fail(400, "Gérance inconnue");
       if (!clean(b.name)) fail(400, "Nom de la résidence obligatoire");
       const id = ptlId();
-      await env.DB.prepare("INSERT INTO residences (id, org_id, name, address, access, keys_info, contact_name, contact_phone, notes, apartments, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      await env.DB.prepare("INSERT INTO residences (id, org_id, name, address, access, keys_info, contact_name, contact_phone, notes, apartments, alarm, code_other, interior, floors, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(id, org, ...resFields(b), now).run();
       return json({ id });
     }
@@ -1393,7 +1401,7 @@ async function handlePortail(request, env, url, headers, ctx) {
         await env.DB.prepare("UPDATE residences SET active = 0 WHERE id = ?").bind(r.id).run();
       } else {
         if (!clean(b.name)) fail(400, "Nom de la résidence obligatoire");
-        await env.DB.prepare("UPDATE residences SET name = ?, address = ?, access = ?, keys_info = ?, contact_name = ?, contact_phone = ?, notes = ?, apartments = ? WHERE id = ?")
+        await env.DB.prepare("UPDATE residences SET name = ?, address = ?, access = ?, keys_info = ?, contact_name = ?, contact_phone = ?, notes = ?, apartments = ?, alarm = ?, code_other = ?, interior = ?, floors = ? WHERE id = ?")
           .bind(...resFields(b), r.id).run();
       }
       return json({ ok: true });

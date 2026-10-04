@@ -213,6 +213,10 @@ export default [
 "Badge with the caretaker"
 ],
 [
+"Badge, interphone, clés, compteurs, local technique, particularités…",
+"Badge, intercom, keys, meters, plant room, special points…"
+],
+[
 "Bienvenue",
 "Welcome"
 ],
@@ -317,8 +321,24 @@ export default [
 "Tick the confirmation."
 ],
 [
+"Code alarme",
+"Alarm code"
+],
+[
 "Code de configuration",
 "Setup code"
+],
+[
+"Code d’accès",
+"Access code"
+],
+[
+"Code panneaux / autre",
+"Panel / other code"
+],
+[
+"Code panneaux ou autre",
+"Panel or other code"
 ],
 [
 "Code porte 2580",
@@ -359,6 +379,10 @@ export default [
 [
 "Confirmer",
 "Confirm"
+],
+[
+"Connexion au serveur impossible : vérifiez internet et réessayez.",
+"Cannot reach the server: check your internet connection and try again."
 ],
 [
 "Connexion…",
@@ -707,6 +731,14 @@ export default [
 [
 "Intervention terminée",
 "Job finished"
+],
+[
+"Intérieur",
+"Inside"
+],
+[
+"Intérieur (dans l’immeuble)",
+"Inside (in the building)"
 ],
 [
 "Inviter",
@@ -1609,6 +1641,10 @@ export default [
 "average time"
 ],
 [
+"ex. 2e, ou RDC à 4e",
+"e.g. 2nd, or ground to 4th"
+],
+[
 "ex. App. 4B, box 12, chambre 3, cuisine",
 "e.g. Flat 4B, lock-up 12, room 3, kitchen"
 ],
@@ -1631,6 +1667,10 @@ export default [
 [
 "ex. Résidence Val St André 37",
 "e.g. Résidence Val St André 37"
+],
+[
+"ex. bâtiment B, app. 12, aile gauche",
+"e.g. building B, flat 12, left wing"
 ],
 [
 "ex. en semaine après 17 h",
@@ -1807,6 +1847,14 @@ export default [
 [
 "Étage",
 "Floor"
+],
+[
+"Étage(s)",
+"Floor(s)"
+],
+[
+"Étage(s) de l’appartement / des appartements",
+"Floor(s) of the flat(s)"
 ],
 [
 "Évaluation",

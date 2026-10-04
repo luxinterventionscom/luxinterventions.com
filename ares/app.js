@@ -1,5 +1,6 @@
 // LuxInterventions — Gestion locative (interface). L'app est à LuxInterventions (Ares Invest S.A.) ;
 // les données de la société cliente (Réglages → Société, ici NOBIS s.a.r.l.) servent aux quittances et aux apps des locataires.
+import './reqmark.js';
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 import qrcode from './qrcode.js';
@@ -9,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.69.0';
+const VERSION = '2.70.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1578,9 +1579,14 @@ function toast(msg, opts = {}) {
   el.setAttribute('role', 'status');
   setHtml(el, html`<span>${msg}</span>${opts.undo ? html`<button type="button">Annuler</button>` : ''}`);
   if (opts.undo) el.querySelector('button').onclick = () => { el.remove(); opts.undo(); };
-  $('#toasts').append(el);
-  setTimeout(() => el.remove(), opts.undo ? 6000 : 3200);
+  // au-dessus de tout, même d'une fiche ouverte (couche « popover ») ; un toucher le ferme
+  const host = $('#toasts');
+  host.append(el);
+  el.addEventListener('click', (e) => { if (!e.target.closest('button')) { el.remove(); toastHide(); } });
+  try { if (host.showPopover) { if (host.matches(':popover-open')) host.hidePopover(); host.showPopover(); } } catch { /* navigateur ancien */ }
+  setTimeout(() => { el.remove(); toastHide(); }, opts.undo || opts.bad ? 8000 : 5000);
 }
+function toastHide() { const h = $('#toasts'); try { if (!h.children.length && h.matches(':popover-open')) h.hidePopover(); } catch { /* navigateur ancien */ } }
 
 // Boîte de choix : choices = [{ value, label, cls }] ; renvoie la valeur choisie ou null.
 function choiceBox(message, detail, choices) {

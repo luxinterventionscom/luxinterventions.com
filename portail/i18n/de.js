@@ -209,6 +209,10 @@ export default [
 "Badge beim Hausmeister"
 ],
 [
+"Badge, interphone, clés, compteurs, local technique, particularités…",
+"Badge, Gegensprechanlage, Schlüssel, Zähler, Technikraum, Besonderheiten…"
+],
+[
 "Bienvenue",
 "Willkommen"
 ],
@@ -313,8 +317,24 @@ export default [
 "Haken Sie die Bestätigung an."
 ],
 [
+"Code alarme",
+"Alarmcode"
+],
+[
 "Code de configuration",
 "Einrichtungscode"
+],
+[
+"Code d’accès",
+"Zugangscode"
+],
+[
+"Code panneaux / autre",
+"Code Tafeln / Sonstiges"
+],
+[
+"Code panneaux ou autre",
+"Code Tafeln oder Sonstiges"
 ],
 [
 "Code porte 2580",
@@ -355,6 +375,10 @@ export default [
 [
 "Confirmer",
 "Bestätigen"
+],
+[
+"Connexion au serveur impossible : vérifiez internet et réessayez.",
+"Keine Verbindung zum Server: Prüfen Sie das Internet und versuchen Sie es erneut."
 ],
 [
 "Connexion…",
@@ -723,6 +747,14 @@ export default [
 [
 "Intervention terminée",
 "Einsatz abgeschlossen"
+],
+[
+"Intérieur",
+"Innen"
+],
+[
+"Intérieur (dans l’immeuble)",
+"Innen (im Gebäude)"
 ],
 [
 "Inviter",
@@ -1653,6 +1685,10 @@ export default [
 "durchschnittliche Zeit"
 ],
 [
+"ex. 2e, ou RDC à 4e",
+"z. B. 2. OG, oder EG bis 4. OG"
+],
+[
 "ex. App. 4B, box 12, chambre 3, cuisine",
 "z. B. Whg. 4B, Box 12, Zimmer 3, Küche"
 ],
@@ -1675,6 +1711,10 @@ export default [
 [
 "ex. Résidence Val St André 37",
 "z. B. Résidence Val St André 37"
+],
+[
+"ex. bâtiment B, app. 12, aile gauche",
+"z. B. Gebäude B, Whg. 12, linker Flügel"
 ],
 [
 "ex. en semaine après 17 h",
@@ -1859,6 +1899,14 @@ export default [
 [
 "Étage",
 "Etage"
+],
+[
+"Étage(s)",
+"Etage(n)"
+],
+[
+"Étage(s) de l’appartement / des appartements",
+"Etage(n) der Wohnung(en)"
 ],
 [
 "Évaluation",

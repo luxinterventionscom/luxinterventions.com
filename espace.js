@@ -1,5 +1,6 @@
 // Espace locataire : page personnelle, en lecture seule (+ signaler un problème).
 // Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
+import '/ares/reqmark.js';
 import qrcode from '/ares/qrcode.js';
 import { openJson, sealJson, openBytes, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
 
