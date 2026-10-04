@@ -781,6 +781,10 @@ export default [
 "Sprache"
 ],
 [
+"Langue, notifications, rapports, compte",
+"Sprache, Benachrichtigungen, Berichte, Konto"
+],
+[
 "Les clés sont chez M. Weber.",
 "Die Schlüssel sind bei Herrn Weber."
 ],
@@ -1319,6 +1323,10 @@ export default [
 [
 "Réessayer",
 "Erneut versuchen"
+],
+[
+"Réglages",
+"Einstellungen"
 ],
 [
 "Réinit.",
@@ -1903,6 +1911,10 @@ export default [
 [
 "⭐ Évaluer l’intervention",
 "⭐ Einsatz bewerten"
+],
+[
+"🌐 Langue · Language",
+"🌐 Sprache · Language"
 ],
 [
 "📲 En réel, LuxInterventions est prévenu de votre message.",
