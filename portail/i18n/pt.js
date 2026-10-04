@@ -33,6 +33,10 @@ export default [
 "Acesso"
 ],
 [
+"Accès (autre)",
+"Acesso (outro)"
+],
+[
 "Accès désactivé",
 "Acesso desativado"
 ],
@@ -225,6 +229,10 @@ export default [
 "Cartão com o porteiro"
 ],
 [
+"Badge, clé chez le concierge, interphone…",
+"Cartão, chave com o porteiro, intercomunicador…"
+],
+[
 "Badge, interphone, clés, compteurs, local technique, particularités…",
 "Cartão, intercomunicador, chaves, contadores, sala técnica, particularidades…"
 ],
@@ -357,8 +365,16 @@ export default [
 "Código painéis ou outro"
 ],
 [
+"Code panneaux électriques / machines",
+"Código quadros elétricos / máquinas"
+],
+[
 "Code porte 2580",
 "Código da porta 2580"
+],
+[
+"Code porte électronique",
+"Código da porta eletrónica"
 ],
 [
 "Code porte, badge, interphone…",
@@ -2017,6 +2033,10 @@ export default [
 "— técnico:"
 ],
 [
+"⚡ Panneaux",
+"⚡ Quadros"
+],
+[
 "⭐ Envoyer l’évaluation",
 "⭐ Enviar a avaliação"
 ],
@@ -2061,11 +2081,19 @@ export default [
 "📲 Na realidade, a equipa LuxInterventions recebe agora uma notificação."
 ],
 [
+"🔐 Codes (repris de la résidence, modifiables)",
+"🔐 Códigos (da residência, editáveis)"
+],
+[
 "🔑 Le mot de passe se choisit",
 "🔑 A palavra-passe escolhe-se"
 ],
 [
 "🚚 En route",
 "🚚 A caminho"
+],
+[
+"🚪 Porte",
+"🚪 Porta"
 ]
 ];
