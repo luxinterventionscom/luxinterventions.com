@@ -9,7 +9,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.61.0';
+const VERSION = '2.62.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -800,7 +800,7 @@ function espaceData(l) {
 // Par défaut : seulement les habitants d'un même appartement (même logement, ou même « Situé dans » pour les chambres
 // d'un appartement). Mettre en relation des appartements différents, c'est au gestionnaire de le choisir.
 const CHAT_SCOPES = {
-  partie: 'Même appartement (par défaut) : colocataires du même logement, ou des chambres d’un même « Situé dans »',
+  partie: 'Même appartement (par défaut) : les chambres d’un même appartement en colocation discutent ensemble',
   logement: 'Même logement uniquement',
   structure: 'Toute la structure : tous les habitants ensemble (appartements différents)',
 };
@@ -810,9 +810,17 @@ function chatGroupKey(im, l) {
   const sc = chatScope(im), g = vault.get('logements', l.logId);
   if (sc === 'structure' || !l.logId) return 'all';
   if (sc === 'partie' && g && g.partie) return 'p:' + g.partie.trim().toLowerCase();
+  // une chambre sans appartement indiqué : avec les autres chambres de la structure et les habitants sans logement précis
+  if (sc === 'partie' && g && g.type === 'chambre') return 'all';
   return 'l:' + l.logId;
 }
-const chatLabel = (gk) => (gk === 'all' ? 'Toute la structure' : gk.startsWith('p:') ? gk.slice(2) : logName(gk.slice(2)) || 'Logement');
+const chatLabel = (gk) => (gk === 'all' ? 'Toute la structure' : gk.startsWith('p:') ? (vault.list('logements').find((g) => (g.partie || '').trim().toLowerCase() === gk.slice(2)) || {}).partie || gk.slice(2) : logName(gk.slice(2)) || 'Logement');
+// Appartements en colocation d'une structure : les chambres qui ont le même « Appartement » (champ partie)
+function colocsOf(immId) {
+  const m = new Map();
+  for (const g of logsOf(immId)) { const k = (g.partie || '').trim(); if (k) { const key = k.toLowerCase(); if (!m.has(key)) m.set(key, { nom: k, logs: [] }); m.get(key).logs.push(g); } }
+  return [...m.values()].sort((a, b) => a.nom.localeCompare(b.nom, 'fr', { numeric: true }));
+}
 const shortName = (l) => (l.prenom ? l.prenom + (l.nom ? ' ' + l.nom[0].toUpperCase() + '.' : '') : l.nom || 'Locataire');
 const b64d = (x) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
 async function chatRead(g) {
@@ -3087,7 +3095,8 @@ function logementSelect(selLog, selImm) {
       ${field('Nom / numéro', 'newLogNom', '', { placeholder: 'ex. Chambre 3, Appartement 2B, Garage 12' })}
       ${logTypeSelect('newLogType', 'chambre')}
       ${field('Étage', 'newLogEtage', '', { placeholder: 'ex. RDC, 1er' })}
-      ${field('Situé dans (facultatif)', 'newLogPartie', '', { placeholder: 'ex. ancien bar, appartement du 1er' })}
+      <label class="field">Fait partie de l’appartement (colocation)<input name="newLogPartie" list="colocListAll" autocomplete="off" placeholder="ex. Appartement 1er étage">
+        <datalist id="colocListAll">${[...new Set(vault.list('logements').map((g) => (g.partie || '').trim()).filter(Boolean))].map((x) => html`<option value="${x}">`)}</datalist></label>
     </div>`;
 }
 
@@ -3627,19 +3636,35 @@ const SHEETS = {
       body = html`
         ${unassigned.length ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${plural(unassigned.length, 'locataire')} sans logement attribué. Attribuez-leur un logement pour suivre les changements d'occupants.</div></div>
           <div class="list" style="margin-bottom:16px">${unassigned.map((l) => html`<div class="row"><span class="avatar">${initials(l)}</span><span class="grow title">${fullName(l)}</span><button class="btn sm" data-action="edit-loc" data-id="${l.id}">Attribuer</button></div>`)}</div>` : ''}
-        ${logs.length ? html`<div class="list">${logs.map((g) => {
+        ${logs.length ? html`${(() => {
+          const row = (g, inside) => {
           const occ = occupantsNow(g.id);
           const next = tenantsOfLog(g.id).filter((l) => isFuture(l));
           const leaving = occ.filter((l) => l.sortie);
           return html`<button class="row" data-action="open-log" data-id="${g.id}">
             <span class="avatar" style="${occ.length ? '' : 'background:var(--amber-soft);color:var(--amber)'}">${icon(logIcon(g.type))}</span>
-            <span class="grow"><span class="title" style="display:block">${g.nom} <span class="muted small">${[LOG_TYPES[g.type], logWhere(g)].filter(Boolean).join(' · ')}</span></span>
+            <span class="grow"><span class="title" style="display:block">${g.nom} <span class="muted small">${inside ? '' : [LOG_TYPES[g.type], logWhere(g)].filter(Boolean).join(' · ')}</span></span>
               <span class="meta" style="display:flex;gap:6px;flex-wrap:wrap">${occ.length ? occ.map(fullName).join(', ') : html`<span class="badge warn">Vacant</span>`}
               ${leaving.map((l) => html`<span class="badge warn">départ ${fmtDate(l.sortie)}</span>`)}${next.map((l) => html`<span class="badge acc">arrivée ${fmtDate(l.debut)}</span>`)}</span></span>
             <span class="tiny muted">${plural(tenantsOfLog(g.id).length, 'occupant')}</span>
           </button>`;
-        })}</div>` : html`<p class="muted small">Aucun logement. Ajoutez les appartements, chambres, garages, bureaux ou locaux de cette structure pour suivre leurs occupants successifs.</p>`}
-        <button class="btn block" style="margin-top:12px" data-action="new-log" data-imm="${id}">${icon('plus')} Ajouter un logement / local</button>`;
+          };
+          const colocs = colocsOf(id), inColoc = new Set(colocs.flatMap((c) => c.logs.map((g) => g.id)));
+          const alone = logs.filter((g) => !inColoc.has(g.id)), orphanRooms = alone.filter((g) => g.type === 'chambre');
+          return html`${colocs.map((c) => {
+            const busy = c.logs.filter((g) => occupantsNow(g.id).length).length;
+            return html`<div class="coloc card" style="padding:10px 12px;margin-bottom:12px">
+              <b style="display:block;font-size:16px">🏠 ${c.nom}</b>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:4px 0 8px"><span class="badge">${plural(c.logs.length, 'chambre')} · ${busy} occupée${busy > 1 ? 's' : ''}</span>${c.logs[0].etage ? html`<span class="tiny muted">étage ${c.logs[0].etage}</span>` : ''}
+                <span style="flex:1"></span><button class="btn sm" data-action="coloc-add" data-imm="${id}" data-p="${c.nom}">${icon('plus')} Chambre</button></div>
+              <div class="list">${c.logs.map((g) => row(g, true))}</div></div>`;
+          })}
+          ${alone.length ? html`<div class="list">${alone.map(row)}</div>` : ''}
+          ${orphanRooms.length > 1 ? html`<p class="tiny muted" style="margin:6px 2px 0">ℹ️ ${plural(orphanRooms.length, 'chambre')} sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).</p>` : ''}`;
+        })()}` : html`<p class="muted small">Aucun logement. Ajoutez les appartements, chambres, garages, bureaux ou locaux de cette structure pour suivre leurs occupants successifs.</p>`}
+        <div class="actions" style="margin-top:12px;flex-direction:column">
+          <button class="btn primary block" data-action="coloc-new" data-imm="${id}">🏠 Ajouter un appartement en colocation (2 à 10 chambres)</button>
+          <button class="btn block" data-action="new-log" data-imm="${id}">${icon('plus')} Ajouter un logement / local</button></div>`;
     } else if (tab === 'chat') {
       const on = chatOn(im);
       const groups = Object.entries(im.chats || {});
@@ -3780,6 +3805,24 @@ const SHEETS = {
     };
   },
 
+  'coloc-form'({ preset }) {
+    const im = vault.get('immeubles', preset);
+    if (!im) return null;
+    return {
+      title: 'Appartement en colocation',
+      narrow: true,
+      body: html`<p class="small" style="margin-top:0">Un appartement avec plusieurs chambres louées séparément : chaque chambre a son locataire, ses loyers et ses quittances ; les habitants de l’appartement ont leur chat ensemble.</p>
+        <form id="fColoc" data-form="coloc" class="fields">
+          <input type="hidden" name="immId" value="${im.id}">
+          ${field('Nom de l’appartement', 'nom', '', { full: true, required: true, placeholder: 'ex. Appartement 1er étage, Appartement A' })}
+          ${field('Étage', 'etage', '', { placeholder: 'ex. RDC, 1er' })}
+          <label class="field">Nombre de chambres<select name="n">${[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => html`<option value="${n}" ${n === 4 ? new Raw('selected') : ''}>${n}</option>`)}</select></label>
+          ${field('Loyer indicatif par chambre (€)', 'loyer', '', { full: true, type: 'number', attrs: money$ })}
+        </form>
+        <p class="tiny muted">Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez les renommer ensuite. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.</p>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="fColoc">Créer l’appartement et ses chambres</button>`,
+    };
+  },
   'log-form'({ id, preset }) {
     const g = id ? vault.get('logements', id) : { immId: preset, type: 'appartement' };
     if (id && !g) return null;
@@ -3793,7 +3836,9 @@ const SHEETS = {
         ${logTypeSelect('type', g.type)}
         ${field('Surface (m²)', 'surface', g.surface, { type: 'number', attrs: 'inputmode="decimal" min="0" step="0.1"' })}
         ${field('Étage', 'etage', g.etage, { placeholder: 'ex. RDC, 1er, sous-sol' })}
-        ${field('Situé dans (facultatif)', 'partie', g.partie, { full: true, placeholder: 'ex. appartement du 1er, ancien bar, aile gauche, cour arrière' })}
+        <label class="field full">Fait partie de l’appartement (colocation)<input name="partie" value="${g.partie || ''}" list="colocList" autocomplete="off" placeholder="ex. Appartement 1er étage — vide si logement indépendant">
+          <datalist id="colocList">${colocsOf(g.immId).map((c) => html`<option value="${c.nom}">`)}</datalist>
+          <span class="tiny muted">Pour une chambre : l’appartement où elle se trouve. Les habitants des chambres d’un même appartement ont leur chat ensemble.</span></label>
         ${field('Loyer indicatif (€)', 'loyer', g.loyer, { type: 'number', attrs: money$ })}
         <label class="field full">Notes<textarea name="note" placeholder="Équipements, compteurs, état…">${g.note || ''}</textarea></label>
       </form>`,
@@ -4772,6 +4817,17 @@ const ACTIONS = {
   'open-imm': (d) => openSheet('imm', d.id, d.tab),
   'open-log': (d) => openSheet('log', d.id, d.tab),
   'new-log': (d) => openSheet('log-form', null, null, d.imm),
+  'coloc-new': (d) => openOver('coloc-form', null, null, d.imm),
+  async 'coloc-add'(d) {
+    const rooms = logsOf(d.imm).filter((g) => (g.partie || '').trim().toLowerCase() === d.p.trim().toLowerCase());
+    if (rooms.length >= 30) return;
+    let n = rooms.length + 1;
+    while (rooms.some((g) => g.nom === 'Chambre ' + n)) n++;
+    const first = rooms[0] || {};
+    await vault.mutate((tx) => tx.put('logements', { nom: 'Chambre ' + n, immId: d.imm, type: 'chambre', etage: first.etage || '', partie: d.p, loyer: first.loyer || '', surface: '', note: '' }), 'Chambre ajoutée', `Chambre ${n} — ${d.p} (${immName(d.imm)})`, d.imm);
+    toast(`Chambre ${n} ajoutée`);
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  },
   'edit-log': (d) => openSheet('log-form', d.id),
   replace: (d) => openSheet('replace-form', d.id),
   'toggle-vers': (d) => toggleVers(d.imm, +d.y, +d.m),
@@ -5234,6 +5290,15 @@ const FORMS = {
     toast(id ? 'Immeuble enregistré' : 'Immeuble ajouté');
     if (saved.pubToken) publishPub(saved.id);
     openSheet('imm', saved.id);
+  },
+  async coloc(fd) {
+    const immId = fd.get('immId'), nom = String(fd.get('nom') || '').trim(), n = Math.max(2, Math.min(10, +fd.get('n') || 2));
+    if (!nom) return;
+    if (colocsOf(immId).some((c) => c.nom.toLowerCase() === nom.toLowerCase())) return toast('Cet appartement existe déjà dans cette structure', { bad: true });
+    const etage = String(fd.get('etage') || '').trim(), loyer = num(fd.get('loyer'));
+    await vault.mutate((tx) => { for (let i = 1; i <= n; i++) tx.put('logements', { nom: 'Chambre ' + i, immId, type: 'chambre', etage, partie: nom, loyer, surface: '', note: '' }); }, 'Appartement en colocation ajouté', `${nom} · ${n} chambres (${immName(immId)})`, immId);
+    toast(`${nom} : ${n} chambres créées`);
+    goBack();
   },
   async log(fd) {
     const id = fd.get('id');

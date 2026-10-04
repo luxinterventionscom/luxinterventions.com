@@ -8843,5 +8843,97 @@ export default [
 [
 "Prénom et nom",
 "Vor- und Nachname"
+],
+[
+"Même appartement (par défaut) : les chambres d’un même appartement en colocation discutent ensemble",
+"Gleiche Wohnung (Standard): Die Zimmer derselben WG-Wohnung chatten zusammen"
+],
+[
+"Fait partie de l’appartement (colocation)",
+"Gehört zur Wohnung (WG)"
+],
+[
+"Pour une chambre : l’appartement où elle se trouve. Les habitants des chambres d’un même appartement ont leur chat ensemble.",
+"Für ein Zimmer: die Wohnung, in der es liegt. Die Bewohner der Zimmer derselben Wohnung haben einen gemeinsamen Chat."
+],
+[
+"ex. Appartement 1er étage — vide si logement indépendant",
+"z. B. Wohnung 1. OG — leer bei eigenständiger Wohnung"
+],
+[
+"ex. Appartement 1er étage",
+"z. B. Wohnung 1. OG"
+],
+[
+"🏠 Ajouter un appartement en colocation (2 à 10 chambres)",
+"🏠 WG-Wohnung hinzufügen (2 bis 10 Zimmer)"
+],
+[
+"Appartement en colocation",
+"WG-Wohnung"
+],
+[
+"Un appartement avec plusieurs chambres louées séparément : chaque chambre a son locataire, ses loyers et ses quittances ; les habitants de l’appartement ont leur chat ensemble.",
+"Eine Wohnung mit mehreren einzeln vermieteten Zimmern: Jedes Zimmer hat seinen Mieter, seine Mieten und Quittungen; die Bewohner der Wohnung haben einen gemeinsamen Chat."
+],
+[
+"Nom de l’appartement",
+"Name der Wohnung"
+],
+[
+"ex. Appartement 1er étage, Appartement A",
+"z. B. Wohnung 1. OG, Wohnung A"
+],
+[
+"Nombre de chambres",
+"Anzahl Zimmer"
+],
+[
+"Loyer indicatif par chambre (€)",
+"Richtmiete pro Zimmer (€)"
+],
+[
+"Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez les renommer ensuite. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.",
+"Die Zimmer werden „Chambre 1“, „Chambre 2“… angelegt: Sie können sie danach umbenennen. Ein Zimmer mehr? Schaltfläche „+ Zimmer“ an der Wohnung."
+],
+[
+"Créer l’appartement et ses chambres",
+"Wohnung und Zimmer anlegen"
+],
+[
+"Cet appartement existe déjà dans cette structure",
+"Diese Wohnung gibt es in diesem Gebäude schon"
+],
+[
+"Appartement en colocation ajouté",
+"WG-Wohnung hinzugefügt"
+],
+[
+"Chambre ajoutée",
+"Zimmer hinzugefügt"
+],
+[
+"{0} : {1} chambres créées",
+"{0}: {1} Zimmer angelegt"
+],
+[
+"Chambre {0} ajoutée",
+"Zimmer {0} hinzugefügt"
+],
+[
+"{0} chambres · {1} occupées",
+"{0} Zimmer · {1} belegt"
+],
+[
+"{0} chambres · {1} occupée",
+"{0} Zimmer · {1} belegt"
+],
+[
+"étage {0}",
+"Etage {0}"
+],
+[
+"ℹ️ {0} chambres sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).",
+"ℹ️ {0} Zimmer ohne angegebene Wohnung: Ihre Bewohner chatten zusammen. Gibt es mehrere Wohnungen, geben Sie sie in jedem Zimmer an („Gehört zur Wohnung“)."
 ]
 ];

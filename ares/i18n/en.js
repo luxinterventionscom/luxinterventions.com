@@ -8659,5 +8659,97 @@ export default [
 [
 "Prénom et nom",
 "First and last name"
+],
+[
+"Même appartement (par défaut) : les chambres d’un même appartement en colocation discutent ensemble",
+"Same flat (default): the rooms of the same shared flat chat together"
+],
+[
+"Fait partie de l’appartement (colocation)",
+"Part of the flat (shared)"
+],
+[
+"Pour une chambre : l’appartement où elle se trouve. Les habitants des chambres d’un même appartement ont leur chat ensemble.",
+"For a room: the flat it is in. People in the rooms of the same flat share a chat."
+],
+[
+"ex. Appartement 1er étage — vide si logement indépendant",
+"e.g. Flat 1st floor — empty if self-contained"
+],
+[
+"ex. Appartement 1er étage",
+"e.g. Flat 1st floor"
+],
+[
+"🏠 Ajouter un appartement en colocation (2 à 10 chambres)",
+"🏠 Add a shared flat (2 to 10 rooms)"
+],
+[
+"Appartement en colocation",
+"Shared flat"
+],
+[
+"Un appartement avec plusieurs chambres louées séparément : chaque chambre a son locataire, ses loyers et ses quittances ; les habitants de l’appartement ont leur chat ensemble.",
+"A flat with several rooms let separately: each room has its own tenant, rent and receipts; the people in the flat share a chat."
+],
+[
+"Nom de l’appartement",
+"Flat name"
+],
+[
+"ex. Appartement 1er étage, Appartement A",
+"e.g. Flat 1st floor, Flat A"
+],
+[
+"Nombre de chambres",
+"Number of rooms"
+],
+[
+"Loyer indicatif par chambre (€)",
+"Guide rent per room (€)"
+],
+[
+"Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez les renommer ensuite. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.",
+"Rooms are created as “Chambre 1”, “Chambre 2”…: you can rename them later. One more room? “+ Room” button on the flat."
+],
+[
+"Créer l’appartement et ses chambres",
+"Create the flat and its rooms"
+],
+[
+"Cet appartement existe déjà dans cette structure",
+"This flat already exists in this building"
+],
+[
+"Appartement en colocation ajouté",
+"Shared flat added"
+],
+[
+"Chambre ajoutée",
+"Room added"
+],
+[
+"{0} : {1} chambres créées",
+"{0}: {1} rooms created"
+],
+[
+"Chambre {0} ajoutée",
+"Room {0} added"
+],
+[
+"{0} chambres · {1} occupées",
+"{0} rooms · {1} occupied"
+],
+[
+"{0} chambres · {1} occupée",
+"{0} rooms · {1} occupied"
+],
+[
+"étage {0}",
+"floor {0}"
+],
+[
+"ℹ️ {0} chambres sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).",
+"ℹ️ {0} rooms with no flat given: their tenants chat together. If there are several flats, set it in each room (“Part of the flat”)."
 ]
 ];

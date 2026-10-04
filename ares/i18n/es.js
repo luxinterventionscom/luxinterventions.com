@@ -8831,5 +8831,97 @@ export default [
 [
 "Prénom et nom",
 "Nombre y apellidos"
+],
+[
+"Même appartement (par défaut) : les chambres d’un même appartement en colocation discutent ensemble",
+"Mismo piso (predeterminado): las habitaciones del mismo piso compartido chatean juntas"
+],
+[
+"Fait partie de l’appartement (colocation)",
+"Forma parte del piso (compartido)"
+],
+[
+"Pour une chambre : l’appartement où elle se trouve. Les habitants des chambres d’un même appartement ont leur chat ensemble.",
+"Para una habitación: el piso donde está. Los habitantes de las habitaciones del mismo piso tienen el chat juntos."
+],
+[
+"ex. Appartement 1er étage — vide si logement indépendant",
+"p. ej. Piso 1.ª planta — vacío si es independiente"
+],
+[
+"ex. Appartement 1er étage",
+"p. ej. Piso 1.ª planta"
+],
+[
+"🏠 Ajouter un appartement en colocation (2 à 10 chambres)",
+"🏠 Añadir un piso compartido (de 2 a 10 habitaciones)"
+],
+[
+"Appartement en colocation",
+"Piso compartido"
+],
+[
+"Un appartement avec plusieurs chambres louées séparément : chaque chambre a son locataire, ses loyers et ses quittances ; les habitants de l’appartement ont leur chat ensemble.",
+"Un piso con varias habitaciones alquiladas por separado: cada habitación tiene su inquilino, sus alquileres y recibos; los habitantes del piso tienen el chat juntos."
+],
+[
+"Nom de l’appartement",
+"Nombre del piso"
+],
+[
+"ex. Appartement 1er étage, Appartement A",
+"p. ej. Piso 1.ª planta, Piso A"
+],
+[
+"Nombre de chambres",
+"Número de habitaciones"
+],
+[
+"Loyer indicatif par chambre (€)",
+"Alquiler orientativo por habitación (€)"
+],
+[
+"Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez les renommer ensuite. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.",
+"Las habitaciones se crean «Chambre 1», «Chambre 2»…: puedes renombrarlas después. ¿Una habitación más? Botón «+ Habitación» en el piso."
+],
+[
+"Créer l’appartement et ses chambres",
+"Crear el piso y sus habitaciones"
+],
+[
+"Cet appartement existe déjà dans cette structure",
+"Este piso ya existe en este edificio"
+],
+[
+"Appartement en colocation ajouté",
+"Piso compartido añadido"
+],
+[
+"Chambre ajoutée",
+"Habitación añadida"
+],
+[
+"{0} : {1} chambres créées",
+"{0}: {1} habitaciones creadas"
+],
+[
+"Chambre {0} ajoutée",
+"Habitación {0} añadida"
+],
+[
+"{0} chambres · {1} occupées",
+"{0} habitaciones · {1} ocupadas"
+],
+[
+"{0} chambres · {1} occupée",
+"{0} habitaciones · {1} ocupada"
+],
+[
+"étage {0}",
+"planta {0}"
+],
+[
+"ℹ️ {0} chambres sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).",
+"ℹ️ {0} habitaciones sin piso indicado: sus habitantes chatean juntos. Si hay varios pisos, indícalo en cada habitación («Forma parte del piso»)."
 ]
 ];
