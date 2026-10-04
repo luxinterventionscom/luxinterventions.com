@@ -269,6 +269,10 @@ export default [
 "Sótano"
 ],
 [
+"Ce navigateur n’a pas pu activer les notifications (navigation privée, ou iPhone : installez d’abord l’app sur l’écran d’accueil et ouvrez-la depuis l’icône).",
+"Este navegador no pudo activar las notificaciones (navegación privada, o iPhone: instala primero la app en la pantalla de inicio y ábrela desde el icono)."
+],
+[
 "Chambre",
 "Habitación"
 ],
@@ -825,6 +829,10 @@ export default [
 "Idioma, notificaciones, informes, cuenta"
 ],
 [
+"Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.",
+"El servidor aún no está listo para las notificaciones: inténtalo de nuevo en un momento."
+],
+[
 "Les clés sont chez M. Weber.",
 "Las llaves las tiene el Sr. Weber."
 ],
@@ -1059,6 +1067,10 @@ export default [
 [
 "Notifications activées",
 "Notificaciones activadas"
+],
+[
+"Notifications bloquées par le navigateur : autorisez-les pour ce site (icône du cadenas à côté de l’adresse, ou Réglages du téléphone), puis réessayez.",
+"Notificaciones bloqueadas por el navegador: permítelas para este sitio (icono del candado junto a la dirección, o Ajustes del teléfono) y vuelve a intentarlo."
 ],
 [
 "Notifications non disponibles ici. Sur iPhone : installez l’app puis ouvrez-la depuis l’icône.",

@@ -269,6 +269,10 @@ export default [
 "Cellar"
 ],
 [
+"Ce navigateur n’a pas pu activer les notifications (navigation privée, ou iPhone : installez d’abord l’app sur l’écran d’accueil et ouvrez-la depuis l’icône).",
+"This browser could not turn on notifications (private browsing, or iPhone: first install the app on the home screen and open it from the icon)."
+],
+[
 "Chambre",
 "Room"
 ],
@@ -813,6 +817,10 @@ export default [
 "Language, notifications, reports, account"
 ],
 [
+"Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.",
+"The server is not ready for notifications yet: try again in a moment."
+],
+[
 "Les clés sont chez M. Weber.",
 "The keys are with Mr Weber."
 ],
@@ -1031,6 +1039,10 @@ export default [
 [
 "Notifications activées",
 "Notifications on"
+],
+[
+"Notifications bloquées par le navigateur : autorisez-les pour ce site (icône du cadenas à côté de l’adresse, ou Réglages du téléphone), puis réessayez.",
+"Notifications blocked by the browser: allow them for this site (padlock icon next to the address, or phone Settings), then try again."
 ],
 [
 "Notifications non disponibles ici. Sur iPhone : installez l’app puis ouvrez-la depuis l’icône.",

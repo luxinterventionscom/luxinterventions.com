@@ -265,6 +265,10 @@ export default [
 "Azulejos"
 ],
 [
+"Ce navigateur n’a pas pu activer les notifications (navigation privée, ou iPhone : installez d’abord l’app sur l’écran d’accueil et ouvrez-la depuis l’icône).",
+"Este navegador não conseguiu ativar as notificações (navegação privada, ou iPhone: instale primeiro a app no ecrã principal e abra-a pelo ícone)."
+],
+[
 "Chambre",
 "Quarto"
 ],
@@ -825,6 +829,10 @@ export default [
 "Língua, notificações, relatórios, conta"
 ],
 [
+"Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.",
+"O servidor ainda não está pronto para notificações: tente de novo daqui a pouco."
+],
+[
 "Les clés sont chez M. Weber.",
 "As chaves estão com o Sr. Weber."
 ],
@@ -1059,6 +1067,10 @@ export default [
 [
 "Notifications activées",
 "Notificações ativadas"
+],
+[
+"Notifications bloquées par le navigateur : autorisez-les pour ce site (icône du cadenas à côté de l’adresse, ou Réglages du téléphone), puis réessayez.",
+"Notificações bloqueadas pelo navegador: autorize-as para este site (ícone do cadeado junto ao endereço, ou Definições do telemóvel) e tente de novo."
 ],
 [
 "Notifications non disponibles ici. Sur iPhone : installez l’app puis ouvrez-la depuis l’icône.",

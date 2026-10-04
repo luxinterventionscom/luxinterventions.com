@@ -265,6 +265,10 @@ export default [
 "Cantina"
 ],
 [
+"Ce navigateur n’a pas pu activer les notifications (navigation privée, ou iPhone : installez d’abord l’app sur l’écran d’accueil et ouvrez-la depuis l’icône).",
+"Questo browser non è riuscito ad attivare le notifiche (navigazione privata, oppure iPhone: installate prima l’app sulla schermata Home e apritela dall’icona)."
+],
+[
 "Chambre",
 "Camera"
 ],
@@ -825,6 +829,10 @@ export default [
 "Lingua, notifiche, rapporti, account"
 ],
 [
+"Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.",
+"Il server non è ancora pronto per le notifiche: riprovate tra un istante."
+],
+[
 "Les clés sont chez M. Weber.",
 "Le chiavi sono dal sig. Weber."
 ],
@@ -1059,6 +1067,10 @@ export default [
 [
 "Notifications activées",
 "Notifiche attivate"
+],
+[
+"Notifications bloquées par le navigateur : autorisez-les pour ce site (icône du cadenas à côté de l’adresse, ou Réglages du téléphone), puis réessayez.",
+"Notifiche bloccate dal browser: autorizzatele per questo sito (icona del lucchetto accanto all’indirizzo, o Impostazioni del telefono), poi riprovate."
 ],
 [
 "Notifications non disponibles ici. Sur iPhone : installez l’app puis ouvrez-la depuis l’icône.",

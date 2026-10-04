@@ -1285,11 +1285,18 @@ async function initPush() {
 async function enablePush() {
   if (pushState() === 'unsupported') return toast('Notifications non disponibles ici. Sur iPhone : installez l’app puis ouvrez-la depuis l’icône.', { bad: true });
   pushPerm = await Notification.requestPermission();
-  if (pushPerm !== 'granted') { renderView(); return toast('Notifications refusées', { bad: true }); }
-  const reg = await navigator.serviceWorker.register('/portail-sw.js', { scope: '/portail' });
-  await navigator.serviceWorker.ready;
-  const key = Uint8Array.from(atob(state.vapidKey.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((state.vapidKey.length + 3) % 4)), (c) => c.charCodeAt(0));
-  pushSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+  // messages clairs selon la cause (le navigateur donne des erreurs techniques en anglais)
+  if (pushPerm !== 'granted') { renderView(); return toast('Notifications bloquées par le navigateur : autorisez-les pour ce site (icône du cadenas à côté de l’adresse, ou Réglages du téléphone), puis réessayez.', { bad: true }); }
+  if (!state.vapidKey) return toast('Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.', { bad: true });
+  let reg;
+  try {
+    reg = await navigator.serviceWorker.register('/portail-sw.js', { scope: '/portail' });
+    await navigator.serviceWorker.ready;
+    const key = Uint8Array.from(atob(state.vapidKey.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((state.vapidKey.length + 3) % 4)), (c) => c.charCodeAt(0));
+    pushSub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+  } catch {
+    return toast('Ce navigateur n’a pas pu activer les notifications (navigation privée, ou iPhone : installez d’abord l’app sur l’écran d’accueil et ouvrez-la depuis l’icône).', { bad: true });
+  }
   await api('push', { method: 'POST', body: pushSub.toJSON() });
   renderView();
   toast('Notifications activées');
