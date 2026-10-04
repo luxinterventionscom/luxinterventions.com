@@ -265,6 +265,10 @@ export default [
 "Keller"
 ],
 [
+"Ce navigateur n’a pas pu activer les notifications (navigation privée, ou iPhone : installez d’abord l’app sur l’écran d’accueil et ouvrez-la depuis l’icône).",
+"Dieser Browser konnte die Benachrichtigungen nicht aktivieren (privates Surfen, oder iPhone: installieren Sie zuerst die App auf dem Home-Bildschirm und öffnen Sie sie über das Symbol)."
+],
+[
 "Chambre",
 "Zimmer"
 ],
@@ -829,6 +833,10 @@ export default [
 "Sprache, Benachrichtigungen, Berichte, Konto"
 ],
 [
+"Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.",
+"Der Server ist noch nicht bereit für Benachrichtigungen: Versuchen Sie es gleich noch einmal."
+],
+[
 "Les clés sont chez M. Weber.",
 "Die Schlüssel sind bei Herrn Weber."
 ],
@@ -1055,6 +1063,10 @@ export default [
 [
 "Notifications activées",
 "Benachrichtigungen aktiviert"
+],
+[
+"Notifications bloquées par le navigateur : autorisez-les pour ce site (icône du cadenas à côté de l’adresse, ou Réglages du téléphone), puis réessayez.",
+"Benachrichtigungen vom Browser blockiert: Erlauben Sie sie für diese Website (Schloss-Symbol neben der Adresse oder Einstellungen des Telefons) und versuchen Sie es erneut."
 ],
 [
 "Notifications non disponibles ici. Sur iPhone : installez l’app puis ouvrez-la depuis l’icône.",
