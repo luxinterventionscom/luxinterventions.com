@@ -8887,5 +8887,9 @@ export default [
 [
 "Bureau {0}",
 "Office {0}"
+],
+[
+"Ajouter une 2ᵉ personne dans ce logement (couple, colocataire)",
+"Add a 2nd person to this home (couple, flatmate)"
 ]
 ];

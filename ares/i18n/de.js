@@ -9075,5 +9075,9 @@ export default [
 [
 "Bureau {0}",
 "Büro {0}"
+],
+[
+"Ajouter une 2ᵉ personne dans ce logement (couple, colocataire)",
+"2. Person in dieser Wohnung hinzufügen (Paar, Mitbewohner)"
 ]
 ];
