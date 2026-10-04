@@ -19,12 +19,12 @@ const app = document.getElementById('app');
 
 // Annexes comprises avec le logement, type de maison, fil avec le gestionnaire (personne seule)
 const AX = {
-  fr: { surf: 'Surface', inc: 'Compris', house: 'Maison', cave: '🍷 Cave', mans: { hab: '🏠 Mansarde habitable', non: '🏠 Grenier (rangement)' }, garage: { semi: '🚗 Garage au sous-sol', ext: '🚗 Garage extérieur', box: '🚗 Box' }, parking: '🅿️ Place de parking', jardin: '🌿 Jardin', balcon: '🌇 Balcon / terrasse', maison: { isolee: 'individuelle', jumelee: 'jumelée', rangee: 'mitoyenne' }, solo: 'Messages avec votre gestionnaire', soloHint: 'Écrivez ici à votre gestionnaire : il vous répond dans l’app.' },
-  it: { surf: 'Superficie', inc: 'Compreso', house: 'Casa', cave: '🍷 Cantina', mans: { hab: '🏠 Mansarda abitabile', non: '🏠 Soffitta (deposito)' }, garage: { semi: '🚗 Garage nel seminterrato', ext: '🚗 Garage esterno', box: '🚗 Box' }, parking: '🅿️ Posto auto', jardin: '🌿 Giardino', balcon: '🌇 Balcone / terrazza', maison: { isolee: 'indipendente', jumelee: 'bifamiliare', rangee: 'a schiera' }, solo: 'Messaggi con il tuo gestore', soloHint: 'Scrivi qui al tuo gestore: ti risponde nell’app.' },
-  de: { surf: 'Fläche', inc: 'Inklusive', house: 'Haus', cave: '🍷 Keller', mans: { hab: '🏠 Bewohnbares Dachzimmer', non: '🏠 Dachboden (Abstellraum)' }, garage: { semi: '🚗 Garage im Untergeschoss', ext: '🚗 Außengarage', box: '🚗 Box' }, parking: '🅿️ Stellplatz', jardin: '🌿 Garten', balcon: '🌇 Balkon / Terrasse', maison: { isolee: 'freistehend', jumelee: 'Doppelhaushälfte', rangee: 'Reihenhaus' }, solo: 'Nachrichten mit Ihrer Verwaltung', soloHint: 'Schreiben Sie hier Ihrer Verwaltung: Sie antwortet in der App.' },
-  pt: { surf: 'Área', inc: 'Incluído', house: 'Casa', cave: '🍷 Arrecadação / cave', mans: { hab: '🏠 Águas-furtadas habitáveis', non: '🏠 Sótão (arrumação)' }, garage: { semi: '🚗 Garagem na cave', ext: '🚗 Garagem exterior', box: '🚗 Box' }, parking: '🅿️ Lugar de estacionamento', jardin: '🌿 Jardim', balcon: '🌇 Varanda / terraço', maison: { isolee: 'isolada', jumelee: 'geminada', rangee: 'em banda' }, solo: 'Mensagens com o seu gestor', soloHint: 'Escreva aqui ao seu gestor: ele responde na app.' },
-  en: { surf: 'Floor area', inc: 'Included', house: 'House', cave: '🍷 Cellar', mans: { hab: '🏠 Habitable attic room', non: '🏠 Loft (storage)' }, garage: { semi: '🚗 Basement garage', ext: '🚗 Outdoor garage', box: '🚗 Lock-up' }, parking: '🅿️ Parking space', jardin: '🌿 Garden', balcon: '🌇 Balcony / terrace', maison: { isolee: 'detached', jumelee: 'semi-detached', rangee: 'terraced' }, solo: 'Messages with your manager', soloHint: 'Write to your manager here: they reply in the app.' },
-  es: { surf: 'Superficie', inc: 'Incluido', house: 'Casa', cave: '🍷 Trastero', mans: { hab: '🏠 Buhardilla habitable', non: '🏠 Desván (almacén)' }, garage: { semi: '🚗 Garaje en el sótano', ext: '🚗 Garaje exterior', box: '🚗 Box' }, parking: '🅿️ Plaza de aparcamiento', jardin: '🌿 Jardín', balcon: '🌇 Balcón / terraza', maison: { isolee: 'independiente', jumelee: 'pareada', rangee: 'adosada' }, solo: 'Mensajes con tu administrador', soloHint: 'Escribe aquí a tu administrador: te responde en la app.' },
+  fr: { newMsg: (n) => n > 1 ? n + ' nouveaux messages' : '1 nouveau message', surf: 'Surface', inc: 'Compris', house: 'Maison', cave: '🍷 Cave', mans: { hab: '🏠 Mansarde habitable', non: '🏠 Grenier (rangement)' }, garage: { semi: '🚗 Garage au sous-sol', ext: '🚗 Garage extérieur', box: '🚗 Box' }, parking: '🅿️ Place de parking', jardin: '🌿 Jardin', balcon: '🌇 Balcon / terrasse', maison: { isolee: 'individuelle', jumelee: 'jumelée', rangee: 'mitoyenne' }, solo: 'Messages avec votre gestionnaire', soloHint: 'Écrivez ici à votre gestionnaire : il vous répond dans l’app.' },
+  it: { newMsg: (n) => n > 1 ? n + ' messaggi nuovi' : '1 messaggio nuovo', surf: 'Superficie', inc: 'Compreso', house: 'Casa', cave: '🍷 Cantina', mans: { hab: '🏠 Mansarda abitabile', non: '🏠 Soffitta (deposito)' }, garage: { semi: '🚗 Garage nel seminterrato', ext: '🚗 Garage esterno', box: '🚗 Box' }, parking: '🅿️ Posto auto', jardin: '🌿 Giardino', balcon: '🌇 Balcone / terrazza', maison: { isolee: 'indipendente', jumelee: 'bifamiliare', rangee: 'a schiera' }, solo: 'Messaggi con il tuo gestore', soloHint: 'Scrivi qui al tuo gestore: ti risponde nell’app.' },
+  de: { newMsg: (n) => n > 1 ? n + ' neue Nachrichten' : '1 neue Nachricht', surf: 'Fläche', inc: 'Inklusive', house: 'Haus', cave: '🍷 Keller', mans: { hab: '🏠 Bewohnbares Dachzimmer', non: '🏠 Dachboden (Abstellraum)' }, garage: { semi: '🚗 Garage im Untergeschoss', ext: '🚗 Außengarage', box: '🚗 Box' }, parking: '🅿️ Stellplatz', jardin: '🌿 Garten', balcon: '🌇 Balkon / Terrasse', maison: { isolee: 'freistehend', jumelee: 'Doppelhaushälfte', rangee: 'Reihenhaus' }, solo: 'Nachrichten mit Ihrer Verwaltung', soloHint: 'Schreiben Sie hier Ihrer Verwaltung: Sie antwortet in der App.' },
+  pt: { newMsg: (n) => n > 1 ? n + ' mensagens novas' : '1 mensagem nova', surf: 'Área', inc: 'Incluído', house: 'Casa', cave: '🍷 Arrecadação / cave', mans: { hab: '🏠 Águas-furtadas habitáveis', non: '🏠 Sótão (arrumação)' }, garage: { semi: '🚗 Garagem na cave', ext: '🚗 Garagem exterior', box: '🚗 Box' }, parking: '🅿️ Lugar de estacionamento', jardin: '🌿 Jardim', balcon: '🌇 Varanda / terraço', maison: { isolee: 'isolada', jumelee: 'geminada', rangee: 'em banda' }, solo: 'Mensagens com o seu gestor', soloHint: 'Escreva aqui ao seu gestor: ele responde na app.' },
+  en: { newMsg: (n) => n > 1 ? n + ' new messages' : '1 new message', surf: 'Floor area', inc: 'Included', house: 'House', cave: '🍷 Cellar', mans: { hab: '🏠 Habitable attic room', non: '🏠 Loft (storage)' }, garage: { semi: '🚗 Basement garage', ext: '🚗 Outdoor garage', box: '🚗 Lock-up' }, parking: '🅿️ Parking space', jardin: '🌿 Garden', balcon: '🌇 Balcony / terrace', maison: { isolee: 'detached', jumelee: 'semi-detached', rangee: 'terraced' }, solo: 'Messages with your manager', soloHint: 'Write to your manager here: they reply in the app.' },
+  es: { newMsg: (n) => n > 1 ? n + ' mensajes nuevos' : '1 mensaje nuevo', surf: 'Superficie', inc: 'Incluido', house: 'Casa', cave: '🍷 Trastero', mans: { hab: '🏠 Buhardilla habitable', non: '🏠 Desván (almacén)' }, garage: { semi: '🚗 Garaje en el sótano', ext: '🚗 Garaje exterior', box: '🚗 Box' }, parking: '🅿️ Plaza de aparcamiento', jardin: '🌿 Jardín', balcon: '🌇 Balcón / terraza', maison: { isolee: 'independiente', jumelee: 'pareada', rangee: 'adosada' }, solo: 'Mensajes con tu administrador', soloHint: 'Escribe aquí a tu administrador: te responde en la app.' },
 };
 const axList = (d, a) => Object.entries(d.annex || {}).filter(([, v]) => v).map(([k, v]) => { const n = typeof a[k] === 'object' ? a[k][v] || '' : a[k] || ''; const m = (d.annexM2 || {})[k]; return n && m ? `${n} ${m} m²` : n; }).filter(Boolean);
 const L = {
@@ -401,6 +401,20 @@ function chatHtml() {
     return `<div class="bub${mine ? ' me' : ''}${mgr ? ' mgr' : ''}"><div class="bub-h"><b>${esc(mgr ? '🛡️ ' + t.hr.mgr : m.a)}</b> ${esc(when)}</div><div class="bub-x">${esc(m.x)}</div></div>`;
   }).join('');
 }
+const seenKey = () => 'espChatSeen:' + id;
+const chatUnread = () => { let seen = ''; try { seen = localStorage.getItem(seenKey()) || ''; } catch {} return (chatMsgs || []).filter((m) => m.t > seen && m.m !== data.chat.mid && m.k !== 'bin').length; };
+function chatSeen() {
+  const c = document.querySelector('details[data-fold=chat]');
+  if (!c || !c.open || document.visibilityState !== 'visible' || !chatMsgs || !chatMsgs.length) return chatBadge();
+  try { localStorage.setItem(seenKey(), chatMsgs[chatMsgs.length - 1].t || ''); } catch { /* stockage indisponible */ }
+  chatBadge();
+}
+function chatBadge() {
+  const el = document.getElementById('chatNew');
+  if (!el) return;
+  const n = chatUnread(), ax = AX[lang] || AX.fr;
+  el.innerHTML = n ? `<span class="light l-red blink"></span> <b class="bad">${esc(ax.newMsg(n))}</b>` : '';
+}
 async function chatFetch() {
   if (!data || !data.chat || chatLoading) return;
   chatLoading = true;
@@ -416,6 +430,7 @@ async function chatFetch() {
       if (bd) bd.innerHTML = binBoard(binPlanNow());
       const box = document.getElementById('chat');
       if (box) { const atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 30; box.innerHTML = chatHtml(); if (atEnd || box.dataset.first !== '1') { box.scrollTop = box.scrollHeight; box.dataset.first = '1'; } }
+      chatSeen();
     }
   } catch { /* hors ligne */ }
   chatLoading = false;
@@ -516,10 +531,16 @@ function payHtml() {
     <p class="meta" style="margin:8px 0 0">${esc(pv.note(d.societe.nom))}</p></div>${thanks}`;
 }
 try { openFolds = new Set(JSON.parse(localStorage.getItem('espFolds') || '[]')); } catch { /* stockage indisponible */ }
+const DEF_OPEN = new Set(['mt', 'chat']);
+const foldIsOpen = (k) => (DEF_OPEN.has(k) ? !openFolds.has('-' + k) : openFolds.has(k));
+function foldSet(k, open) {
+  if (DEF_OPEN.has(k)) { if (open) openFolds.delete('-' + k); else openFolds.add('-' + k); } else if (open) openFolds.add(k); else openFolds.delete(k);
+  try { localStorage.setItem('espFolds', JSON.stringify([...openFolds])); } catch { /* stockage indisponible */ }
+}
 function foldCard(h, key, sum) {
   const m = h.match(/^<div class="card"([^>]*)><h2>([\s\S]*?)<\/h2>([\s\S]*)<\/div>$/);
   if (!m) return h;
-  return `<details class="card fold"${m[1]} data-fold="${key}"${openFolds.has(key) ? ' open' : ''}><summary><h2>${m[2]}</h2>${sum ? `<span class="sum">${sum}</span>` : ''}</summary><div class="fold-body">${m[3]}</div></details>`;
+  return `<details class="card fold"${m[1]} data-fold="${key}"${foldIsOpen(key) ? ' open' : ''}><summary><h2>${m[2]}</h2>${sum ? `<span class="sum">${sum}</span>` : ''}</summary><div class="fold-body">${m[3]}</div></details>`;
 }
 const rulesKey = () => 'espRules:' + id;
 const rulesLocal = () => { try { return JSON.parse(localStorage.getItem(rulesKey()) || 'null') || {}; } catch { return {}; } };
@@ -634,7 +655,7 @@ async function pushInit() {
   setBadge(0, '/espace');
   render();
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) setBadge(0, '/espace'); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) { setBadge(0, '/espace'); if (data.chat) chatSeen(); } });
 function notifCard(t) {
   if (!pushSt || pushSt === 'unsupported' || (pushSt === 'on' && !pushJust)) return '';
   const n = t.nt;
@@ -787,11 +808,11 @@ function render() {
   if (d.chat) {
     const can = !d.regles || rulesDate(d);
     const solo = d.chat.solo, ax = AX[lang] || AX.fr;
-    out.push(`<div class="card" id="chatCard"><h2>${solo ? '✉️' : '💬'} ${esc(solo ? ax.solo : t.hr.board)}</h2><p class="meta" style="margin:0 0 8px">${esc(solo ? ax.soloHint : t.hr.boardHint)}</p>
+    out.push(foldCard(`<div class="card" id="chatCard"><h2>${solo ? '✉️' : '💬'} ${esc(solo ? ax.solo : t.hr.board)}</h2><p class="meta" style="margin:0 0 8px">${esc(solo ? ax.soloHint : t.hr.boardHint)}</p>
       <div class="chat" id="chat">${chatHtml()}</div>
       ${can ? `<form id="chatf" class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(t.hr.boardPh)}"></textarea><button class="btn" type="submit">➤</button></form>`
         : `<p class="meta"><a href="#rules" data-goto-rules="1">${esc(t.hr.boardFirst)}</a></p>`}
-      <button class="btn sm sec" style="margin-top:8px" data-chat-refresh="1">${esc(t.hr.refresh)}</button></div>`);
+      <button class="btn sm sec" style="margin-top:8px" data-chat-refresh="1">${esc(t.hr.refresh)}</button></div>`, 'chat', '<span id="chatNew"></span>'));
   }
   if (s.tools) {
     const tl = t.tl;
@@ -853,7 +874,7 @@ function render() {
       ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div></div></div>`).join('')}` : ''}</details>`;
   }
   const legHtml = s.coll || s.signal ? `<p class="meta mt-leg"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow"></span> ${esc(t.lights[1])} · <span class="light l-red"></span> ${esc(t.lights[2])}${vis ? ` · <span class="light l-grey"></span> ${esc(t.mt.offL)}` : ''}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</p>` : '';
-  if (mtCard || collHtml || sigHtml || legHtml) out[mtAt] = `<div class="card" id="mtCard"><h2>${mtLight ? `<span class="light l-${mtLight} blink"></span> ` : ''}🛠️ ${esc(t.mt.t)}</h2>${mtCard}${collHtml}${sigHtml}${legHtml}</div>`;
+  if (mtCard || collHtml || sigHtml || legHtml) out[mtAt] = foldCard(`<div class="card" id="mtCard"><h2>${mtLight ? `<span class="light l-${mtLight} blink"></span> ` : ''}🛠️ ${esc(t.mt.t)}</h2>${mtCard}${collHtml}${sigHtml}${legHtml}</div>`, 'mt', '');
   if (d.regles) {
     const lu = rulesDate(d);
     out.push(`<div class="card" id="rules"><details${lu ? '' : ' open'}><summary><h2 style="display:inline">📜 ${esc(t.hr.rulesT)}</h2>${lu ? ` <span class="meta">✓ ${esc(fmt(lu))}</span>` : ''}</summary>
@@ -894,7 +915,7 @@ function render() {
   hydrateEdl();
   pubSeen(app);
   if (s.tools && myTools == null) toolsFetch();
-  if (d.chat) { const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight; if (!chatTimer) chatStart(); }
+  if (d.chat) { const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight; if (!chatTimer) chatStart(); chatSeen(); }
 }
 
 // Récapitulatif imprimable de tous les loyers payés (un seul document au lieu d'une quittance par mois)
@@ -1095,8 +1116,8 @@ app.addEventListener('click', (e) => {
   if (!sm) return;
   const d = sm.parentElement, k = d.dataset.fold;
   if (!k) return;
-  if (!d.open) openFolds.add(k); else openFolds.delete(k);
-  try { localStorage.setItem('espFolds', JSON.stringify([...openFolds])); } catch { /* stockage indisponible */ }
+  foldSet(k, !d.open);
+  if (k === 'chat' && !d.open) setTimeout(chatSeen, 50);
 }, true);
 app.addEventListener('toggle', (e) => {
   const pid = e.target.classList && e.target.classList.contains('pub-box') && e.target.dataset.pid;
@@ -1107,8 +1128,8 @@ app.addEventListener('toggle', (e) => {
   }
   const k = e.target.dataset && e.target.dataset.fold;
   if (!k) return;
-  if (e.target.open) openFolds.add(k); else openFolds.delete(k);
-  try { localStorage.setItem('espFolds', JSON.stringify([...openFolds])); } catch { /* stockage indisponible */ }
+  foldSet(k, e.target.open);
+  if (k === 'chat' && e.target.open) { chatSeen(); const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight; }
 }, true);
 app.addEventListener('change', async (e) => {
   const pk = e.target.dataset && e.target.dataset.edlPick;
