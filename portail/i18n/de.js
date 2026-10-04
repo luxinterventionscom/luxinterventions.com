@@ -253,6 +253,10 @@ export default [
 "Schlüsselkasten links vom Eingang, Code 1990"
 ],
 [
+"Bureau",
+"Büro"
+],
+[
 "Cage d’escalier",
 "Treppenhaus"
 ],

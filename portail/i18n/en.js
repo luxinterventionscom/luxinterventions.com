@@ -257,6 +257,10 @@ export default [
 "Key box left of the entrance, code 1990"
 ],
 [
+"Bureau",
+"Office"
+],
+[
 "Cage d’escalier",
 "Stairwell"
 ],

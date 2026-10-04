@@ -253,6 +253,10 @@ export default [
 "Cassetta chiavi a sinistra dell’ingresso, codice 1990"
 ],
 [
+"Bureau",
+"Ufficio"
+],
+[
 "Cage d’escalier",
 "Vano scale"
 ],

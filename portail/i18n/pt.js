@@ -257,6 +257,10 @@ export default [
 "Caixa de chaves à esquerda da entrada, código 1990"
 ],
 [
+"Bureau",
+"Escritório"
+],
+[
 "Cage d’escalier",
 "Caixa de escadas"
 ],
