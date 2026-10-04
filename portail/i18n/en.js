@@ -477,6 +477,14 @@ export default [
 "Request created"
 ],
 [
+"Demande de dépannage",
+"Repair request"
+],
+[
+"Demande de dépannage pour cette résidence",
+"Repair request for this residence"
+],
+[
 "Demande introuvable",
 "Request not found"
 ],
@@ -555,6 +563,10 @@ export default [
 [
 "Démo : ce lien est fictif. En réel, la personne l’ouvre et choisit son mot de passe.",
 "Demo: this link is fictitious. In real use, the person opens it and chooses their password."
+],
+[
+"Dépannage",
+"Repair"
 ],
 [
 "Désactiver",
@@ -1075,6 +1087,10 @@ export default [
 [
 "Nouvelle demande d'intervention",
 "New job request"
+],
+[
+"Nouvelle demande de dépannage",
+"New repair request"
 ],
 [
 "Nouvelle demande pour cette résidence",

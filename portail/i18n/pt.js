@@ -82,7 +82,7 @@ export default [
 ],
 [
 "Ajouter une résidence",
-"Adicionar um condomínio"
+"Adicionar uma residência"
 ],
 [
 "Ajoutez d’abord la résidence concernée : ses informations (accès, clés, contact) seront reprises automatiquement.",
@@ -481,6 +481,14 @@ export default [
 "Pedido criado"
 ],
 [
+"Demande de dépannage",
+"Pedido de reparação"
+],
+[
+"Demande de dépannage pour cette résidence",
+"Pedido de reparação para esta residência"
+],
+[
 "Demande introuvable",
 "Pedido não encontrado"
 ],
@@ -563,6 +571,10 @@ export default [
 [
 "Démo : ce lien est fictif. En réel, la personne l’ouvre et choisit son mot de passe.",
 "Demo: este link é fictício. Na realidade, a pessoa abre-o e escolhe a sua palavra-passe."
+],
+[
+"Dépannage",
+"Reparação"
 ],
 [
 "Désactiver",
@@ -1105,6 +1117,10 @@ export default [
 "Novo pedido de intervenção"
 ],
 [
+"Nouvelle demande de dépannage",
+"Novo pedido de reparação"
+],
+[
 "Nouvelle demande pour cette résidence",
 "Novo pedido para este condomínio"
 ],
@@ -1402,7 +1418,7 @@ export default [
 ],
 [
 "Résidence",
-"Condomínio"
+"Residência"
 ],
 [
 "Résidence enregistrée",

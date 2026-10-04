@@ -481,6 +481,14 @@ export default [
 "Anfrage erstellt"
 ],
 [
+"Demande de dépannage",
+"Reparaturanfrage"
+],
+[
+"Demande de dépannage pour cette résidence",
+"Reparaturanfrage für diese Wohnanlage"
+],
+[
 "Demande introuvable",
 "Anfrage nicht gefunden"
 ],
@@ -563,6 +571,10 @@ export default [
 [
 "Démo : ce lien est fictif. En réel, la personne l’ouvre et choisit son mot de passe.",
 "Demo: Dieser Link ist fiktiv. In Wirklichkeit öffnet die Person ihn und wählt ihr Passwort."
+],
+[
+"Dépannage",
+"Reparatur"
 ],
 [
 "Désactiver",
@@ -1099,6 +1111,10 @@ export default [
 [
 "Nouvelle demande d'intervention",
 "Neue Einsatzanfrage"
+],
+[
+"Nouvelle demande de dépannage",
+"Neue Reparaturanfrage"
 ],
 [
 "Nouvelle demande pour cette résidence",
