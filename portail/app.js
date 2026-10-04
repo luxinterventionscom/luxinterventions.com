@@ -106,7 +106,10 @@ const isCode = (v) => /^\d{0,6}$/.test(String(v || ''));
 const code6 = (label, name, value) => { const v = isCode(value) ? String(value || '') : ''; return html`<label class="field">${label}
   <span class="code6" data-code6="${name}"><input type="hidden" name="${name}" value="${v}">${[0, 1, 2, 3, 4, 5].map((i) => html`<input class="c6" inputmode="numeric" autocomplete="off" aria-label="${label} ${i + 1}" value="${v[i] || ''}">`)}</span></label>`; };
 const codeShow = (v) => (v && isCode(v) ? html`<span class="code6-show">${String(v).split('').map((c) => html`<b>${c}</b>`)}</span>` : v || '');
-const partsHtml = (s) => String(s || '').split(' · ').filter(Boolean).map((x, i) => { const m = /^(Étage|Date souhaitée :) (.+)$/.exec(x); return html`${i ? ' · ' : ''}${m ? html`<span>${m[1]}</span> ${m[2]}` : html`<span>${x}</span>`}`; });
+const partsHtml = (s) => String(s || '').split(' · ').filter(Boolean).map((x, i) => {
+  const h = /^De (\d\d:\d\d) à (\d\d:\d\d)$/.exec(x), f = /^(À partir de|Jusqu’à) (\d\d:\d\d)$/.exec(x), m = /^(Étage|Date souhaitée :) (.+)$/.exec(x);
+  return html`${i ? ' · ' : ''}${h ? html`🕒 <span>De</span> ${h[1]} <span>à</span> ${h[2]}` : f ? html`🕒 <span>${f[1]}</span> ${f[2]}` : m ? html`<span>${m[1]}</span> ${m[2]}` : html`<span>${x}</span>`}`;
+});
 const ROLES = { admin: 'LuxInterventions', gerance_admin: 'Responsable gérance', gerance_user: 'Utilisateur gérance' };
 // Fiche d'évaluation d'une intervention terminée (remplie par la gérance, enregistrée comme message du suivi)
 const EVAL_CRIT = [
@@ -1099,14 +1102,20 @@ const SHEETS = {
         <label class="field">Où ?<select name="zone"><option value="">—</option>${ZONES.map((c) => html`<option value="${c}">${c}</option>`)}</select></label>
         ${field('Étage', 'etage', '', { placeholder: 'ex. RDC, 2, sous-sol' })}
         ${field('N° / précision', 'lieu', '', { full: true, placeholder: 'ex. App. 4B, box 12, chambre 3, cuisine' })}
-        ${field('Date souhaitée', 'date_souhaitee', '', { type: 'date' })}
         <label class="field full">Description du problème<textarea name="description" required placeholder="Que se passe-t-il ? Depuis quand ? Risque de dégâts ?"></textarea></label>
         <label class="field full">Photos (jusqu'à 6)<input type="file" name="photos" accept="image/*" multiple data-input="preview-files"></label>
         <div class="full photos" id="preview"></div>
         ${field('Contact sur place', 'contact_name', '', { placeholder: 'Nom (locataire, concierge…)' })}
         ${field('Téléphone du contact', 'contact_phone', '', { type: 'tel', placeholder: '+352 …' })}
         ${field('Accès', 'acces', '', { full: true, placeholder: 'Code porte, clé chez le concierge… (sinon : infos de la résidence)' })}
-        ${field('Disponibilités', 'dispo', '', { full: true, placeholder: 'ex. en semaine après 17 h' })}
+        <fieldset class="full dispo-set"><legend>📅 Disponibilités</legend>
+          <div class="dispo-row">
+            <label class="field">Date souhaitée<input type="date" name="date_souhaitee" min="${new Date().toISOString().slice(0, 10)}"></label>
+            <label class="field">De<input type="time" name="h_de" step="900"></label>
+            <label class="field">À<input type="time" name="h_a" step="900"></label>
+          </div>
+          <label class="field">Autre précision (facultatif)<input name="dispo" placeholder="ex. sonner chez le concierge, pas le mercredi"></label>
+        </fieldset>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${icon('send')} Envoyer la demande</button>`,
     };
@@ -1504,8 +1513,12 @@ const FORMS = {
       body.categorie = [body.categorie, body.nature].filter(Boolean).join(' · ').slice(0, 60);
       body.lieu = [body.zone, body.etage ? 'Étage ' + body.etage : '', body.lieu].filter(Boolean).join(' · ').slice(0, 200);
       const ds = /^\d{4}-\d{2}-\d{2}$/.test(body.date_souhaitee || '') ? body.date_souhaitee.split('-').reverse().join('/') : '';
-      body.dispo = [ds ? 'Date souhaitée : ' + ds : '', body.dispo].filter(Boolean).join(' · ');
-      for (const k of ['nature', 'zone', 'etage', 'date_souhaitee']) delete body[k];
+      const hm = (x) => (/^\d{2}:\d{2}$/.test(x || '') ? x : '');
+      const de = hm(body.h_de), a = hm(body.h_a);
+      if (de && a && a <= de) { setBusy(btn, false); return toast('L’heure de fin doit être après l’heure de début.', { bad: true }); }
+      const plage = de && a ? `De ${de} à ${a}` : de ? `À partir de ${de}` : a ? `Jusqu’à ${a}` : '';
+      body.dispo = [ds ? 'Date souhaitée : ' + ds : '', plage, body.dispo].filter(Boolean).join(' · ');
+      for (const k of ['nature', 'zone', 'etage', 'date_souhaitee', 'h_de', 'h_a']) delete body[k];
       const { id, ref } = await api('tickets', { method: 'POST', body });
       if (files.length) { setBusy(btn, true, `Photos 0/${files.length}…`); await uploadPhotos(id, files); }
       toast(`Demande #${ref} envoyée — LuxInterventions est prévenu`);

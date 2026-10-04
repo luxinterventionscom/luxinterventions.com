@@ -186,3 +186,9 @@ details.guide.fold:not([open]) > summary { margin-bottom: 0 !important; }
 .code6 .c6 { width: 2.4em; height: 2.8em; text-align: center; font: 700 18px/1 var(--mono, ui-monospace, monospace); padding: 0; border-radius: 10px; }
 .code6-show { display: inline-flex; gap: 3px; }
 .code6-show b { display: inline-grid; place-items: center; width: 1.6em; height: 1.9em; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); font-family: var(--mono, ui-monospace, monospace); }
+
+/* Disponibilités : calendrier + plage horaire */
+.dispo-set { border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px 12px; margin: 0; display: grid; gap: 10px; }
+.dispo-set legend { padding: 0 6px; font-weight: 700; font-size: 14px; }
+.dispo-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 8px; }
+@media (max-width: 420px) { .dispo-row { grid-template-columns: 1fr 1fr; } .dispo-row > :first-child { grid-column: 1 / -1; } }
