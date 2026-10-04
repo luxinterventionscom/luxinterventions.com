@@ -30,13 +30,17 @@ const AX = {
 const WX_ICON = (c) => (c === 0 ? '☀️' : c <= 2 ? '🌤️' : c === 3 ? '☁️' : c <= 48 ? '🌫️' : c <= 57 ? '🌦️' : c <= 67 ? '🌧️' : c <= 77 ? '❄️' : c <= 82 ? '🌧️' : c <= 86 ? '🌨️' : '⛈️');
 let wx = null, wxLoading = false;
 const wxPlace = (d) => String(d.ville || '').replace(/^\s*(L-)?\d{4,5}\s*/i, '').trim() || 'Luxembourg';
+// capitales des langues de l'app (le locataire choisit ; sinon la commune de son logement)
+const WX_CITIES = { lu: ['🇱🇺', 'Luxembourg', 49.61, 6.13], fr: ['🇫🇷', 'Paris', 48.86, 2.35], de: ['🇩🇪', 'Berlin', 52.52, 13.41], gb: ['🇬🇧', 'London', 51.51, -0.13], it: ['🇮🇹', 'Roma', 41.9, 12.5], pt: ['🇵🇹', 'Lisboa', 38.72, -9.14], es: ['🇪🇸', 'Madrid', 40.42, -3.7] };
+const wxCity = () => { try { const c = localStorage.getItem('espWxCity'); return WX_CITIES[c] ? c : ''; } catch { return ''; } };
 async function wxLoad(d) {
   if (wxLoading) return;
-  const place = wxPlace(d), k = 'espWx:' + place;
+  const city = WX_CITIES[wxCity()];
+  const place = city ? city[1] : wxPlace(d), k = 'espWx:' + (city ? 'c:' : '') + place;
   try { const c = JSON.parse(localStorage.getItem(k) || 'null'); if (c && Date.now() - c.at < 3600e3) { wx = c; return wxPaint(); } } catch { /* stockage indisponible */ }
   wxLoading = true;
   try {
-    const g = await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=fr&name=' + encodeURIComponent(place))).json();
+    const g = city ? { results: [{ name: city[1], latitude: city[2], longitude: city[3] }] } : await (await fetch('https://geocoding-api.open-meteo.com/v1/search?count=1&language=fr&name=' + encodeURIComponent(place))).json();
     const p = (g.results || [])[0] || { latitude: 49.61, longitude: 6.13, name: 'Luxembourg' };
     const f = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${p.latitude}&longitude=${p.longitude}&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=7&timezone=auto`)).json();
     wx = { at: Date.now(), name: p.name, now: f.current, days: f.daily };
@@ -50,7 +54,9 @@ function wxHtml() {
   if (!wx) return '<p class="meta" style="margin:0">…</p>';
   if (wx.err || !wx.days) return `<p class="meta" style="margin:0">${esc(w.none)}</p>`;
   const dd = wx.days;
-  return `<div class="wx-now"><span class="wx-big">${WX_ICON(wx.now.weather_code)} ${Math.round(wx.now.temperature_2m)}°</span> <span class="meta">${esc(w.now)} · ${esc(wx.name)}</span></div>
+  const cur = wxCity(), home = data ? wxPlace(data) : 'Luxembourg';
+  const sel = `<select class="wx-city" data-wx-city="1" aria-label="${esc(w.t)}"><option value="">🏠 ${esc(home)}</option>${Object.entries(WX_CITIES).filter(([k, c]) => !(k === 'lu' && /^luxembourg$/i.test(home)) || cur === k).map(([k, c]) => `<option value="${k}"${cur === k ? ' selected' : ''}>${c[0]} ${esc(c[1])}</option>`).join('')}</select>`;
+  return `<div class="wx-now"><span class="wx-big" title="${esc(w.now)}">${WX_ICON(wx.now.weather_code)} ${Math.round(wx.now.temperature_2m)}°</span>${sel}</div>
     <div class="wx-days">${dd.time.map((t, i) => `<div class="wx-d${i === 0 ? ' today' : ''}"><small>${esc(new Date(t + 'T12:00:00').toLocaleDateString(T().loc, { weekday: 'short' }))}</small><span>${WX_ICON(dd.weather_code[i])}</span><b>${Math.round(dd.temperature_2m_max[i])}°</b><small>${Math.round(dd.temperature_2m_min[i])}°</small>${dd.precipitation_probability_max && dd.precipitation_probability_max[i] >= 40 ? `<small class="wx-rain">💧${dd.precipitation_probability_max[i]}%</small>` : ''}</div>`).join('')}</div>`;
 }
 function wxPaint() {
@@ -1206,6 +1212,10 @@ app.addEventListener('toggle', (e) => {
   if (k === 'chat' && e.target.open) { chatSeen(); const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight; }
 }, true);
 app.addEventListener('change', async (e) => {
+  if (e.target.dataset && e.target.dataset.wxCity) {
+    try { if (e.target.value) localStorage.setItem('espWxCity', e.target.value); else localStorage.removeItem('espWxCity'); } catch { /* stockage indisponible */ }
+    wx = null; wxPaint(); return wxLoad(data);
+  }
   const pk = e.target.dataset && e.target.dataset.edlPick;
   if (pk && e.target.files.length) {
     const file = e.target.files[0];
