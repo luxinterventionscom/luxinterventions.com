@@ -197,6 +197,10 @@ export default [
 "Otro"
 ],
 [
+"Autre précision (facultatif)",
+"Otro detalle (opcional)"
+],
+[
 "Avant",
 "Antes"
 ],
@@ -801,6 +805,10 @@ export default [
 "Junio"
 ],
 [
+"Jusqu’à",
+"Hasta las"
+],
+[
 "La personne est déconnectée immédiatement et ne peut plus se connecter. Ses demandes restent dans l’historique.",
 "La persona se desconecta de inmediato y ya no puede entrar. Sus solicitudes se quedan en el historial."
 ],
@@ -863,6 +871,10 @@ export default [
 [
 "LuxInterventions · Portail gérance v{0}",
 "LuxInterventions · Portal de administración v{0}"
+],
+[
+"L’heure de fin doit être après l’heure de début.",
+"La hora de fin debe ser posterior a la de inicio."
 ],
 [
 "M. Weber (concierge)",
@@ -1729,6 +1741,10 @@ export default [
 "p. ej. entre semana después de las 17 h"
 ],
 [
+"ex. sonner chez le concierge, pas le mercredi",
+"p. ej. llamar al conserje, no los miércoles"
+],
+[
 "il y a {0} h",
 "hace {0} h"
 ],
@@ -1869,8 +1885,16 @@ export default [
 "· ahora mismo"
 ],
 [
+"À",
+"A"
+],
+[
 "À convenir",
 "A convenir"
+],
+[
+"À partir de",
+"A partir de las"
 ],
 [
 "À traiter",
@@ -1917,6 +1941,10 @@ export default [
 "Valora esta intervención en 30 segundos: rapidez, competencia, cortesía, limpieza."
 ],
 [
+"à",
+"a"
+],
+[
 "à l'instant",
 "ahora mismo"
 ],
@@ -1959,6 +1987,10 @@ export default [
 [
 "🌐 Langue · Language",
 "🌐 Idioma · Language"
+],
+[
+"📅 Disponibilités",
+"📅 Disponibilidad"
 ],
 [
 "📲 En réel, LuxInterventions est prévenu de votre message.",

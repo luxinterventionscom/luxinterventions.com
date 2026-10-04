@@ -197,6 +197,10 @@ export default [
 "Other"
 ],
 [
+"Autre précision (facultatif)",
+"Other detail (optional)"
+],
+[
 "Avant",
 "Before"
 ],
@@ -451,6 +455,10 @@ export default [
 [
 "Date souhaitée :",
 "Preferred date:"
+],
+[
+"De",
+"From"
 ],
 [
 "Demande #{0} envoyée — LuxInterventions est prévenu",
@@ -785,6 +793,10 @@ export default [
 "June"
 ],
 [
+"Jusqu’à",
+"Until"
+],
+[
 "La personne est déconnectée immédiatement et ne peut plus se connecter. Ses demandes restent dans l’historique.",
 "The person is signed out immediately and can no longer sign in. Their requests stay in the history."
 ],
@@ -847,6 +859,10 @@ export default [
 [
 "LuxInterventions · Portail gérance v{0}",
 "LuxInterventions · Property manager portal v{0}"
+],
+[
+"L’heure de fin doit être après l’heure de début.",
+"The end time must be after the start time."
 ],
 [
 "M. Weber (concierge)",
@@ -1677,6 +1693,10 @@ export default [
 "e.g. weekdays after 5 pm"
 ],
 [
+"ex. sonner chez le concierge, pas le mercredi",
+"e.g. ring the caretaker, not on Wednesdays"
+],
+[
 "il y a {0} h",
 "{0} h ago"
 ],
@@ -1821,8 +1841,16 @@ export default [
 "· just now"
 ],
 [
+"À",
+"To"
+],
+[
 "À convenir",
 "To be agreed"
+],
+[
+"À partir de",
+"From"
 ],
 [
 "À traiter",
@@ -1869,6 +1897,10 @@ export default [
 "Rate this job in 30 seconds: speed, skill, courtesy, cleanliness."
 ],
 [
+"à",
+"to"
+],
+[
 "à l'instant",
 "just now"
 ],
@@ -1907,6 +1939,10 @@ export default [
 [
 "🌐 Langue · Language",
 "🌐 Language"
+],
+[
+"📅 Disponibilités",
+"📅 Availability"
 ],
 [
 "📲 En réel, LuxInterventions est prévenu de votre message.",

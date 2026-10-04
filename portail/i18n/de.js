@@ -193,6 +193,10 @@ export default [
 "Sonstiges"
 ],
 [
+"Autre précision (facultatif)",
+"Weitere Angabe (optional)"
+],
+[
 "Avant",
 "Vorher"
 ],
@@ -455,6 +459,10 @@ export default [
 [
 "Date souhaitée :",
 "Gewünschtes Datum:"
+],
+[
+"De",
+"Von"
 ],
 [
 "Demande #{0} envoyée — LuxInterventions est prévenu",
@@ -801,6 +809,10 @@ export default [
 "Juni"
 ],
 [
+"Jusqu’à",
+"Bis"
+],
+[
 "La personne est déconnectée immédiatement et ne peut plus se connecter. Ses demandes restent dans l’historique.",
 "Die Person wird sofort abgemeldet und kann sich nicht mehr anmelden. Ihre Anfragen bleiben im Verlauf."
 ],
@@ -863,6 +875,10 @@ export default [
 [
 "LuxInterventions · Portail gérance v{0}",
 "LuxInterventions · Verwaltungsportal v{0}"
+],
+[
+"L’heure de fin doit être après l’heure de début.",
+"Die Endzeit muss nach der Startzeit liegen."
 ],
 [
 "M. Weber (concierge)",
@@ -1721,6 +1737,10 @@ export default [
 "z. B. werktags nach 17 Uhr"
 ],
 [
+"ex. sonner chez le concierge, pas le mercredi",
+"z. B. beim Hausmeister klingeln, nicht mittwochs"
+],
+[
 "il y a {0} h",
 "vor {0} Std."
 ],
@@ -1873,8 +1893,16 @@ export default [
 "· gerade eben"
 ],
 [
+"À",
+"Bis"
+],
+[
 "À convenir",
 "Nach Vereinbarung"
+],
+[
+"À partir de",
+"Ab"
 ],
 [
 "À traiter",
@@ -1921,6 +1949,10 @@ export default [
 "Bewerten Sie diesen Einsatz in 30 Sekunden: Schnelligkeit, Kompetenz, Freundlichkeit, Sauberkeit."
 ],
 [
+"à",
+"bis"
+],
+[
 "à l'instant",
 "gerade eben"
 ],
@@ -1963,6 +1995,10 @@ export default [
 [
 "🌐 Langue · Language",
 "🌐 Sprache · Language"
+],
+[
+"📅 Disponibilités",
+"📅 Verfügbarkeit"
 ],
 [
 "📲 En réel, LuxInterventions est prévenu de votre message.",
