@@ -996,12 +996,15 @@ const SHEETS = {
         <button class="btn primary" data-action="t-${next[0]}" data-id="${t.id}">${next[1]}</button>
         ${t.status === 'planifiee' ? html`<button class="btn" data-action="t-plan" data-id="${t.id}">Replanifier</button>` : ''}
         ${t.status !== 'encours' && t.status !== 'recue' ? html`<button class="btn" data-action="t-finish" data-id="${t.id}">Terminer</button>` : ''}
+        <button class="btn" data-action="t-edit" data-id="${t.id}">✏️ Modifier</button>
         <button class="btn ghost danger" data-action="t-cancel" data-id="${t.id}">Annuler</button></div>`;
     } else if (!isAdmin() && t.status === 'recue') {
-      actions = html`<div class="actions"><button class="btn ghost danger" data-action="t-cancel" data-id="${t.id}">Annuler la demande</button></div>`;
+      actions = html`<div class="actions"><button class="btn" data-action="t-edit" data-id="${t.id}">✏️ Modifier la demande</button><button class="btn ghost danger" data-action="t-cancel" data-id="${t.id}">Annuler la demande</button></div>`;
+    } else if (!isAdmin() && open) {
+      actions = html`<p class="tiny muted" style="margin:0 0 10px">Demande prise en charge : pour corriger quelque chose, écrivez-le dans un message ci-dessous.</p>`;
     }
     const evalEv = d.events.find((e) => e.kind === 'comment' && evalParse(e.text));
-    const evLabel = (e) => (e.kind === 'create' ? 'Demande créée' : e.kind === 'status' ? STATUS[e.status].label : e === evalEv ? '⭐ Évaluation' : 'Message');
+    const evLabel = (e) => (e.kind === 'create' ? 'Demande créée' : e.kind === 'edit' ? '✏️ Demande modifiée' : e.kind === 'status' ? STATUS[e.status].label : e === evalEv ? '⭐ Évaluation' : 'Message');
     return {
       title: `#${t.ref} · ${res.name || ''}`,
       body: html`
@@ -1091,39 +1094,42 @@ const SHEETS = {
     if (!res.length) {
       return { title: 'Nouvelle demande de dépannage', narrow: true, body: empty('building', 'Ajoutez d’abord la résidence concernée : ses informations (accès, clés, contact) seront reprises automatiquement.', html`<button class="btn primary" data-action="new-residence">${icon('plus')} Ajouter une résidence</button>`) };
     }
+    const ed = !!data.edit, v = (k, d = '') => (data[k] != null ? data[k] : d);
     return {
-      title: 'Nouvelle demande de dépannage',
+      title: ed ? `✏️ Modifier la demande #${data.ref || ''}` : 'Nouvelle demande de dépannage',
       body: html`<form id="f" data-form="ticket" class="fields">
+        ${ed ? html`<input type="hidden" name="edit" value="${data.edit}">` : ''}
         <label class="field full">Résidence<select name="residence_id" required><option value="">— Choisir —</option>
           ${res.map((r) => html`<option value="${r.id}" ${data.residence_id === r.id ? new Raw('selected') : ''}>${r.name}${r.address ? ' — ' + r.address : ''}${isAdmin() ? ' (' + r.org_name + ')' : ''}</option>`)}</select></label>
         <div class="full"><div class="small" style="font-weight:600;color:var(--text-2);margin-bottom:6px">Urgence</div>
           <div class="urg-choices">${Object.entries(URG).map(([k, u]) => html`<label class="urg-choice urg-${k}"><input type="radio" name="urgence" value="${k}" required ${k === (data.urgence || '') ? new Raw('checked') : ''}><span>${u.dot} <b>${u.label}</b><small>${u.sub}</small></span></label>`)}</div></div>
-        <label class="field">Type de travaux<select name="categorie">${CATEGORIES.map((c) => html`<option value="${c}">${c}</option>`)}</select></label>
-        <label class="field">Travail demandé<select name="nature"><option value="">—</option>${NATURES.map((c) => html`<option value="${c}">${c}</option>`)}</select></label>
-        <label class="field">Où ?<select name="zone"><option value="">—</option>${ZONES.map((c) => html`<option value="${c}">${c}</option>`)}</select></label>
-        <label class="field">Étage<select name="etage"><option value="">—</option>${[-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => html`<option value="${n === 0 ? 'RDC' : n}">${n < 0 ? `${n} (sous-sol)` : n === 0 ? '0 (RDC)' : '+' + n}</option>`)}<option value="autre">Autre (préciser dans la description)</option></select></label>
-        ${field('N° / précision', 'lieu', '', { full: true, placeholder: 'ex. App. 4B, box 12, chambre 3, cuisine' })}
-        <label class="field full">Description du problème<textarea name="description" required placeholder="Que se passe-t-il ? Depuis quand ? Risque de dégâts ?"></textarea></label>
-        <label class="field full">Photos (jusqu'à 6)<input type="file" name="photos" accept="image/*" multiple data-input="preview-files"></label>
+        <label class="field">Type de travaux<select name="categorie">${CATEGORIES.map((c) => html`<option value="${c}" ${v('categorie') === c ? new Raw('selected') : ''}>${c}</option>`)}</select></label>
+        <label class="field">Travail demandé<select name="nature"><option value="">—</option>${NATURES.map((c) => html`<option value="${c}" ${v('nature') === c ? new Raw('selected') : ''}>${c}</option>`)}</select></label>
+        <label class="field">Où ?<select name="zone"><option value="">—</option>${ZONES.map((c) => html`<option value="${c}" ${v('zone') === c ? new Raw('selected') : ''}>${c}</option>`)}</select></label>
+        <label class="field">Étage<select name="etage"><option value="">—</option>${[-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => { const val = n === 0 ? 'RDC' : String(n); return html`<option value="${val}" ${v('etage') === val ? new Raw('selected') : ''}>${n < 0 ? `${n} (sous-sol)` : n === 0 ? '0 (RDC)' : '+' + n}</option>`; })}<option value="autre" ${v('etage') === 'autre' ? new Raw('selected') : ''}>Autre (préciser dans la description)</option></select></label>
+        ${field('N° / précision', 'lieu', v('lieu'), { full: true, placeholder: 'ex. App. 4B, box 12, chambre 3, cuisine' })}
+        <label class="field full">Description du problème<textarea name="description" required placeholder="Que se passe-t-il ? Depuis quand ? Risque de dégâts ?">${v('description')}</textarea></label>
+        <label class="field full">${ed ? 'Ajouter des photos' : 'Photos (jusqu’à 6)'}<input type="file" name="photos" accept="image/*" multiple data-input="preview-files"></label>
         <div class="full photos" id="preview"></div>
-        ${field('Contact sur place', 'contact_name', '', { placeholder: 'Nom (locataire, concierge…)' })}
-        ${field('Téléphone du contact', 'contact_phone', '', { type: 'tel', placeholder: '+352 …' })}
+        ${field('Contact sur place', 'contact_name', v('contact_name'), { placeholder: 'Nom (locataire, concierge…)' })}
+        ${field('Téléphone du contact', 'contact_phone', v('contact_phone'), { type: 'tel', placeholder: '+352 …' })}
         ${(() => { const r0 = res.find((r) => r.id === data.residence_id) || (res.length === 1 ? res[0] : {}); return html`
-        <div class="full small muted" style="margin-bottom:-4px">🔐 Codes (repris de la résidence, modifiables)</div>
-        ${code6('Code porte électronique', 'c_porte', r0.access)}
-        ${code6('Code alarme', 'c_alarme', r0.alarm)}
-        ${code6('Code panneaux électriques / machines', 'c_panneaux', r0.code_other)}`; })()}
-        ${field('Accès (autre)', 'acces', '', { full: true, placeholder: 'Badge, clé chez le concierge, interphone…' })}
+        <div class="full small muted" style="margin-bottom:-4px">🔐 Codes${ed ? '' : ' (repris de la résidence, modifiables)'}</div>
+        ${code6('Code porte électronique', 'c_porte', v('c_porte', r0.access))}
+        ${code6('Code alarme', 'c_alarme', v('c_alarme', r0.alarm))}
+        ${code6('Code panneaux électriques / machines', 'c_panneaux', v('c_panneaux', r0.code_other))}`; })()}
+        ${field('Accès (autre)', 'acces', v('acces'), { full: true, placeholder: 'Badge, clé chez le concierge, interphone…' })}
         <fieldset class="full dispo-set"><legend>📅 Disponibilités</legend>
           <div class="dispo-row">
-            <label class="field">Date souhaitée<input type="date" name="date_souhaitee" min="${new Date().toISOString().slice(0, 10)}"></label>
-            <label class="field">De<input type="time" name="h_de" value="08:00"></label>
-            <label class="field">À<input type="time" name="h_a" value="18:00"></label>
+            <label class="field">Date souhaitée<input type="date" name="date_souhaitee" value="${v('date_souhaitee')}" min="${ed ? '' : new Date().toISOString().slice(0, 10)}"></label>
+            <label class="field">De<input type="time" name="h_de" value="${v('h_de', '08:00')}"></label>
+            <label class="field">À<input type="time" name="h_a" value="${v('h_a', '18:00')}"></label>
           </div>
-          <label class="field">Autre précision (facultatif)<input name="dispo" placeholder="ex. sonner chez le concierge, pas le mercredi"></label>
+          <label class="field">Autre précision (facultatif)<input name="dispo" value="${v('dispo')}" placeholder="ex. sonner chez le concierge, pas le mercredi"></label>
         </fieldset>
       </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${icon('send')} Envoyer la demande</button>`,
+      foot: ed ? html`<button class="btn" data-action="back-ticket" data-id="${data.edit}">Retour</button><button class="btn primary" type="submit" form="f">${icon('check')} Enregistrer les modifications</button>`
+        : html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${icon('send')} Envoyer la demande</button>`,
     };
   },
 
@@ -1388,6 +1394,12 @@ const ACTIONS = {
     if (isAdmin() && !state.cache.orgs) state.cache.orgs = (await api('orgs')).orgs;
     openSheet('ticket-form', null, { residence_id: d.residence || '' });
   },
+  async 't-edit'(d) {
+    if (!state.cache.residencesList) state.cache.residencesList = (await api('residences')).residences;
+    const cur = state.sheet && state.sheet.kind === 'ticket' && state.sheet.data;
+    const t = cur && cur.ticket && cur.ticket.id === d.id ? cur.ticket : (await api('tickets/' + d.id)).ticket;
+    openSheet('ticket-form', null, { ...ticketParse(t), ref: t.ref });
+  },
   async 't-take'(d) { await setStatus(d.id, 'prise'); toast('Demande prise en charge — la gérance est prévenue'); },
   async 't-start'(d) { await setStatus(d.id, 'encours'); toast('Intervention en cours'); },
   't-plan': (d) => openSheet('status-form', d.id, { ticket: state.sheet.data.ticket, kind: 'plan' }),
@@ -1533,6 +1545,14 @@ const FORMS = {
       body.dispo = [ds ? 'Date souhaitée : ' + ds : '', plage, body.dispo].filter(Boolean).join(' · ');
       body.acces = [body.c_porte ? 'Porte : ' + body.c_porte : '', body.c_alarme ? 'Alarme : ' + body.c_alarme : '', body.c_panneaux ? 'Panneaux : ' + body.c_panneaux : '', body.acces].filter(Boolean).join(' · ').slice(0, 500);
       for (const k of ['nature', 'zone', 'etage', 'date_souhaitee', 'h_de', 'h_a', 'c_porte', 'c_alarme', 'c_panneaux']) delete body[k];
+      if (body.edit) {
+        const id = body.edit; delete body.edit;
+        const r = await api('tickets/' + id, { method: 'PATCH', body });
+        if (files.length) { setBusy(btn, true, `Photos 0/${files.length}…`); await uploadPhotos(id, files); }
+        toast(r.changed && r.changed.length ? 'Demande modifiée — ' + r.changed.join(', ') : files.length ? 'Photos ajoutées' : 'Aucune modification');
+        await refresh(true);
+        return openTicket(id);
+      }
       const { id, ref } = await api('tickets', { method: 'POST', body });
       if (files.length) { setBusy(btn, true, `Photos 0/${files.length}…`); await uploadPhotos(id, files); }
       toast(`Demande #${ref} envoyée — LuxInterventions est prévenu`);
@@ -1663,6 +1683,27 @@ document.addEventListener('input', (e) => {
   if (k === 'q') { state.filters.q = e.target.value; renderView(); }
   if (k === 'rq') { state.filters.rq = e.target.value; renderView(); }
 });
+// Relit une demande (champs composés « · ») pour la rouvrir dans le formulaire
+function ticketParse(t) {
+  const parts = (x) => String(x || '').split(' · ').filter(Boolean);
+  const o = { edit: t.id, residence_id: t.residence_id, urgence: t.urgence, description: t.description || '', contact_name: t.contact_name || '', contact_phone: t.contact_phone || '', c_porte: '', c_alarme: '', c_panneaux: '' };
+  const cat = parts(t.categorie);
+  o.categorie = CATEGORIES.includes(cat[0]) ? cat[0] : ''; o.nature = NATURES.includes(cat[1]) ? cat[1] : '';
+  const lieu = [];
+  for (const x of parts(t.lieu)) { const e = /^Étage (.+)$/.exec(x); if (ZONES.includes(x) && !o.zone) o.zone = x; else if (x === 'Étage : autre') o.etage = 'autre'; else if (e && !o.etage) o.etage = e[1]; else lieu.push(x); }
+  o.lieu = lieu.join(' · ');
+  const dispo = [];
+  for (const x of parts(t.dispo)) {
+    let m;
+    if ((m = /^Date souhaitée : (\d\d)\/(\d\d)\/(\d{4})$/.exec(x))) o.date_souhaitee = `${m[3]}-${m[2]}-${m[1]}`;
+    else if ((m = /^De (\d\d:\d\d) à (\d\d:\d\d)/.exec(x))) { o.h_de = m[1]; o.h_a = m[2]; } else if ((m = /^À partir de (\d\d:\d\d)$/.exec(x))) { o.h_de = m[1]; o.h_a = ''; } else if ((m = /^Jusqu’à (\d\d:\d\d)$/.exec(x))) { o.h_de = ''; o.h_a = m[1]; } else dispo.push(x);
+  }
+  o.dispo = dispo.join(' · ');
+  const acc = [];
+  for (const x of parts(t.acces)) { const m = /^(Porte|Alarme|Panneaux) : (\d{1,6})$/.exec(x); if (m) o[{ Porte: 'c_porte', Alarme: 'c_alarme', Panneaux: 'c_panneaux' }[m[1]]] = m[2]; else acc.push(x); }
+  o.acces = acc.join(' · ');
+  return o;
+}
 // cases de codes : écrire une valeur dans les 6 cases
 function setCode6(form, name, v) {
   const c = form.querySelector(`.code6[data-code6="${name}"]`); if (!c) return;

@@ -1466,6 +1466,33 @@ async function handlePortail(request, env, url, headers, ctx) {
         ]);
         return json({ ticket: t, events: ev.results || [], photos: ph.results || [], residence: res });
       }
+      // Modifier la demande : la gérance tant qu'elle n'est pas prise en charge, LuxInterventions toujours (sauf terminée / annulée)
+      if (!sub && method === "PATCH") {
+        if (["terminee", "annulee"].includes(t.status)) fail(400, "Demande terminée ou annulée : elle ne peut plus être modifiée");
+        if (!isAdmin(me) && t.status !== "recue") fail(403, "Demande déjà prise en charge : écrivez la correction dans un message");
+        const b = await body();
+        let resId = t.residence_id;
+        if (b.residence_id && b.residence_id !== t.residence_id) {
+          const r = await env.DB.prepare("SELECT * FROM residences WHERE id = ? AND active = 1").bind(clean(b.residence_id, 40)).first();
+          if (!r || r.org_id !== t.org_id) fail(400, "Résidence inconnue");
+          resId = r.id;
+        }
+        if (b.urgence && !PTL_URGENCES.includes(b.urgence)) fail(400, "Urgence invalide");
+        const next = { residence_id: resId, lieu: clean(b.lieu, 200), categorie: clean(b.categorie, 60), urgence: b.urgence || t.urgence, description: clean(b.description, 4000) || t.description,
+          contact_name: clean(b.contact_name, 120), contact_phone: clean(b.contact_phone, 40), acces: clean(b.acces, 500), dispo: clean(b.dispo, 300) };
+        const LBL = { residence_id: "Résidence", lieu: "Lieu", categorie: "Type de travaux", urgence: "Urgence", description: "Description", contact_name: "Contact", contact_phone: "Téléphone", acces: "Accès / codes", dispo: "Disponibilités" };
+        const changed = Object.keys(next).filter((k) => String(next[k] ?? "") !== String(t[k] ?? ""));
+        if (!changed.length) return json({ ok: true, changed: [] });
+        await env.DB.batch([
+          env.DB.prepare("UPDATE tickets SET residence_id = ?, lieu = ?, categorie = ?, urgence = ?, description = ?, contact_name = ?, contact_phone = ?, acces = ?, dispo = ?, updated_at = ? WHERE id = ?")
+            .bind(next.residence_id, next.lieu, next.categorie, next.urgence, next.description, next.contact_name, next.contact_phone, next.acces, next.dispo, now, t.id),
+          env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'edit', NULL, ?, ?)")
+            .bind(ptlId(), t.id, me.id, changed.map((k) => LBL[k]).join(", "), now),
+        ]);
+        const msg = { title: `#${t.ref} · Demande modifiée`, body: changed.map((k) => LBL[k]).join(", "), url: `/portail.html#/t/${t.id}`, tag: t.id };
+        ctx && ctx.waitUntil(isAdmin(me) ? ptlNotify(env, "u.org_id = ?", [t.org_id], msg, false) : ptlNotify(env, "u.role = 'admin'", [], msg, next.urgence === "urgent"));
+        return json({ ok: true, changed });
+      }
       const notifyOther = (msg, urgent) => {
         // Messaggio dello staff → la gérance; messaggio della gérance → lo staff
         if (isAdmin(me)) return ptlNotify(env, "u.org_id = ? AND u.id != ?", [t.org_id, me.id], msg, urgent);

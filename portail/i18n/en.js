@@ -93,6 +93,10 @@ export default [
 "Add"
 ],
 [
+"Ajouter des photos",
+"Add photos"
+],
+[
 "Ajouter une résidence",
 "Add a residence"
 ],
@@ -191,6 +195,10 @@ export default [
 [
 "Aucune intervention en cours.",
 "No job in progress."
+],
+[
+"Aucune modification",
+"No change"
 ],
 [
 "Aucune nouvelle demande en attente.",
@@ -521,6 +529,10 @@ export default [
 "Request not found"
 ],
 [
+"Demande prise en charge : pour corriger quelque chose, écrivez-le dans un message ci-dessous.",
+"Request taken in hand: to correct something, write it in a message below."
+],
+[
 "Demande prise en charge — la gérance est prévenue",
 "Request taken on — the property manager has been notified"
 ],
@@ -635,6 +647,10 @@ export default [
 [
 "Enregistrer",
 "Save"
+],
+[
+"Enregistrer les modifications",
+"Save changes"
 ],
 [
 "Envoi…",
@@ -1211,6 +1227,14 @@ export default [
 [
 "Photos (jusqu'à 6)",
 "Photos (up to 6)"
+],
+[
+"Photos (jusqu’à 6)",
+"Photos (up to 6)"
+],
+[
+"Photos ajoutées",
+"Photos added"
 ],
 [
 "Photos après intervention",
@@ -1995,6 +2019,22 @@ export default [
 [
 "⚡ Panneaux",
 "⚡ Panels"
+],
+[
+"✏️ Demande modifiée",
+"✏️ Request edited"
+],
+[
+"✏️ Modifier",
+"✏️ Edit"
+],
+[
+"✏️ Modifier la demande",
+"✏️ Edit the request"
+],
+[
+"✏️ Modifier la demande #{0}",
+"✏️ Edit request #{0}"
 ],
 [
 "⭐ Envoyer l’évaluation",
