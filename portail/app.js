@@ -2,6 +2,7 @@
 // Plusieurs utilisateurs et plusieurs gérances : chacun voit uniquement ses résidences et ses demandes,
 // l'équipe LuxInterventions (rôle « admin ») voit tout et traite les demandes.
 
+import '/ares/reqmark.js';
 import { startI18n, LOCALES, translate as T } from '/ares/i18n.js';
 import { PTL_INVITE } from '/ares/ptl-invite.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
@@ -100,6 +101,11 @@ const CATEGORIES = ['Plomberie', 'Électricité', 'Chauffage', 'Chaudière', 'Ra
 const NATURES = ['Réparer', 'Nettoyer', 'Refaire', 'Remplacer', 'Installer / poser', 'Contrôler'];
 const ZONES = ['Appartement', 'Chambre', 'Box / garage', 'Cave', 'Jardin commun', 'Parties communes / hall', 'Cage d’escalier', 'Toiture / façade', 'Chaufferie / local technique', 'Parking / extérieur', 'Autre'];
 // Morceaux « A · B · C » : chacun dans son <span> pour être traduit séparément ; « Étage 2 » → « Étage » + 2
+// Codes à 6 chiffres (accès, alarme, panneaux…) : 6 cases, un chiffre par case
+const isCode = (v) => /^\d{0,6}$/.test(String(v || ''));
+const code6 = (label, name, value) => { const v = isCode(value) ? String(value || '') : ''; return html`<label class="field">${label}
+  <span class="code6" data-code6="${name}"><input type="hidden" name="${name}" value="${v}">${[0, 1, 2, 3, 4, 5].map((i) => html`<input class="c6" inputmode="numeric" autocomplete="off" aria-label="${label} ${i + 1}" value="${v[i] || ''}">`)}</span></label>`; };
+const codeShow = (v) => (v && isCode(v) ? html`<span class="code6-show">${String(v).split('').map((c) => html`<b>${c}</b>`)}</span>` : v || '');
 const partsHtml = (s) => String(s || '').split(' · ').filter(Boolean).map((x, i) => { const m = /^(Étage|Date souhaitée :) (.+)$/.exec(x); return html`${i ? ' · ' : ''}${m ? html`<span>${m[1]}</span> ${m[2]}` : html`<span>${x}</span>`}`; });
 const ROLES = { admin: 'LuxInterventions', gerance_admin: 'Responsable gérance', gerance_user: 'Utilisateur gérance' };
 // Fiche d'évaluation d'une intervention terminée (remplie par la gérance, enregistrée comme message du suivi)
@@ -203,7 +209,7 @@ async function api(path, opts = {}) {
   try {
     r = await fetch(API + path, { method: opts.method || 'GET', headers, body, cache: 'no-store' });
   } catch {
-    throw new ApiError(0, 'Pas de connexion internet');
+    throw new ApiError(0, 'Connexion au serveur impossible : vérifiez internet et réessayez.');
   }
   if (r.status === 401 && state.me) {
     logout('Votre session a expiré. Reconnectez-vous.');
@@ -239,9 +245,14 @@ function toast(msg, opts = {}) {
   el.className = 'toast' + (opts.bad ? ' bad' : '');
   el.setAttribute('role', 'status');
   setHtml(el, html`<span>${msg}</span>`);
-  $('#toasts').append(el);
-  setTimeout(() => el.remove(), 3500);
+  // au-dessus de tout, même d'une fiche ouverte (couche « popover ») ; un toucher le ferme
+  const host = $('#toasts');
+  host.append(el);
+  el.addEventListener('click', (e) => { if (!e.target.closest('button')) { el.remove(); toastHide(); } });
+  try { if (host.showPopover) { if (host.matches(':popover-open')) host.hidePopover(); host.showPopover(); } } catch { /* navigateur ancien */ }
+  setTimeout(() => { el.remove(); toastHide(); }, opts.bad ? 8000 : 5000);
 }
+function toastHide() { const h = $('#toasts'); try { if (!h.children.length && h.matches(':popover-open')) h.hidePopover(); } catch { /* navigateur ancien */ } }
 function choiceBox(message, detail, choices) {
   const dlg = $('#confirm');
   setHtml(dlg, html`
@@ -644,6 +655,21 @@ function pubSlot(k) {
 // barre des cours crypto (TradingView) : servie par le Worker sur un autre domaine, isolée du portail
 const tickerBar = () => html`<div class="ticker"><iframe src="${API.replace(/api\/portail\/$/, '')}ticker" title="Crypto" loading="lazy" referrerpolicy="no-referrer" scrolling="no"></iframe></div>`;
 
+// cases des codes : un chiffre par case, on passe à la suivante, coller « 123456 » remplit tout
+document.addEventListener('input', (e) => {
+  const c = e.target.closest && e.target.closest('.code6');
+  if (!c || !e.target.classList.contains('c6')) return;
+  const boxes = [...c.querySelectorAll('.c6')];
+  const digits = e.target.value.replace(/\D/g, '');
+  if (digits.length > 1) { const i0 = boxes.indexOf(e.target); digits.split('').slice(0, 6 - i0).forEach((d, k) => { boxes[i0 + k].value = d; }); boxes[Math.min(5, i0 + digits.length - 1)].focus(); }
+  else { e.target.value = digits; if (digits) { const n = boxes[boxes.indexOf(e.target) + 1]; if (n) n.focus(); } }
+  c.querySelector('input[type=hidden]').value = boxes.map((b) => b.value).join('');
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Backspace' || !e.target.classList || !e.target.classList.contains('c6') || e.target.value) return;
+  const boxes = [...e.target.closest('.code6').querySelectorAll('.c6')], p = boxes[boxes.indexOf(e.target) - 1];
+  if (p) { p.value = ''; p.focus(); e.target.closest('.code6').querySelector('input[type=hidden]').value = boxes.map((b) => b.value).join(''); e.preventDefault(); }
+});
 const VIEWS = {
   home() {
     const { stats, tickets } = state.cache.home || { stats: {}, tickets: [] };
@@ -998,7 +1024,9 @@ const SHEETS = {
           ${kv('Lieu', t.lieu ? partsHtml(t.lieu) : '')}
           ${isAdmin() ? kv('Gérance', res.org_name) : ''}
           ${kv('Contact sur place', t.contact_name || res.contact_name ? html`${t.contact_name || res.contact_name}${tel ? html` · <a href="tel:${tel}">${t.contact_phone || res.contact_phone}</a>` : ''}` : '')}
-          ${kv('Accès', t.acces || res.access)}
+          ${kv('Accès', t.acces && !isCode(t.acces) ? t.acces : '')}
+          ${kv('Code d’accès', codeShow(res.access))}${kv('Code alarme', codeShow(res.alarm))}${kv('Code panneaux / autre', codeShow(res.code_other))}
+          ${kv('Intérieur', res.interior)}${kv('Étage(s)', res.floors)}
           ${kv('Clés', res.keys_info)}
           ${kv('Disponibilités', t.dispo ? partsHtml(t.dispo) : '')}
           ${kv('Demandée', fmtDateTime(t.created_at))}
@@ -1093,7 +1121,8 @@ const SHEETS = {
       body: html`
         <dl class="kv small" style="margin-bottom:14px">
           ${kv('Adresse', r.address)}${isAdmin() ? kv('Gérance', r.org_name) : ''}${kv('Appartements', r.apartments)}
-          ${kv('Accès', r.access)}${kv('Clés', r.keys_info)}${kv('Contact', [r.contact_name, r.contact_phone].filter(Boolean).join(' · '))}
+          ${kv('Intérieur', r.interior)}${kv('Étage(s)', r.floors)}
+          ${kv('Code d’accès', codeShow(r.access))}${kv('Code alarme', codeShow(r.alarm))}${kv('Code panneaux / autre', codeShow(r.code_other))}${kv('Clés', r.keys_info)}${kv('Contact', [r.contact_name, r.contact_phone].filter(Boolean).join(' · '))}
         </dl>
         ${r.notes ? html`<div class="note" style="margin-bottom:14px">${r.notes}</div>` : ''}
         <button class="btn primary block" data-action="new-ticket" data-residence="${r.id}">${icon('plus')} Nouvelle demande pour cette résidence</button>
@@ -1115,9 +1144,12 @@ const SHEETS = {
         ${field("Nombre d'appartements", 'apartments', r.apartments, { type: 'number', attrs: 'min="0" inputmode="numeric"' })}
         ${field('Contact sur place', 'contact_name', r.contact_name, { placeholder: 'Concierge, président du conseil…' })}
         ${field('Téléphone du contact', 'contact_phone', r.contact_phone, { type: 'tel' })}
-        ${field('Accès', 'access', r.access, { full: true, placeholder: 'Code porte, badge, interphone…' })}
-        ${field('Clés', 'keys_info', r.keys_info, { full: true, placeholder: 'Où trouver les clés (local, boîte à clés…)' })}
-        <label class="field full">Notes<textarea name="notes" placeholder="Compteurs, local technique, particularités…">${r.notes || ''}</textarea></label>
+        ${field('Intérieur (dans l’immeuble)', 'interior', r.interior, { placeholder: 'ex. bâtiment B, app. 12, aile gauche' })}
+        ${field('Étage(s) de l’appartement / des appartements', 'floors', r.floors, { placeholder: 'ex. 2e, ou RDC à 4e' })}
+        ${code6('Code d’accès', 'access', r.access)}
+        ${code6('Code alarme', 'alarm', r.alarm)}
+        ${code6('Code panneaux ou autre', 'code_other', r.code_other)}
+        <label class="field full">Notes<textarea name="notes" placeholder="Badge, interphone, clés, compteurs, local technique, particularités…">${[r.notes, r.access && !isCode(r.access) ? 'Accès : ' + r.access : '', r.keys_info ? 'Clés : ' + r.keys_info : ''].filter(Boolean).join('\n')}</textarea></label>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };

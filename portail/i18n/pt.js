@@ -213,6 +213,10 @@ export default [
 "Cartão com o porteiro"
 ],
 [
+"Badge, interphone, clés, compteurs, local technique, particularités…",
+"Cartão, intercomunicador, chaves, contadores, sala técnica, particularidades…"
+],
+[
 "Bienvenue",
 "Bem-vindo"
 ],
@@ -313,8 +317,24 @@ export default [
 "Marque a confirmação."
 ],
 [
+"Code alarme",
+"Código do alarme"
+],
+[
 "Code de configuration",
 "Código de configuração"
+],
+[
+"Code d’accès",
+"Código de acesso"
+],
+[
+"Code panneaux / autre",
+"Código painéis / outro"
+],
+[
+"Code panneaux ou autre",
+"Código painéis ou outro"
 ],
 [
 "Code porte 2580",
@@ -355,6 +375,10 @@ export default [
 [
 "Confirmer",
 "Confirmar"
+],
+[
+"Connexion au serveur impossible : vérifiez internet et réessayez.",
+"Não foi possível ligar ao servidor: verifique a internet e tente de novo."
 ],
 [
 "Connexion…",
@@ -719,6 +743,14 @@ export default [
 [
 "Intervention terminée",
 "Intervenção concluída"
+],
+[
+"Intérieur",
+"Interior"
+],
+[
+"Intérieur (dans l’immeuble)",
+"Interior (no prédio)"
 ],
 [
 "Inviter",
@@ -1657,6 +1689,10 @@ export default [
 "tempo médio"
 ],
 [
+"ex. 2e, ou RDC à 4e",
+"ex. 2.º, ou R/C a 4.º"
+],
+[
 "ex. App. 4B, box 12, chambre 3, cuisine",
 "ex. Apt. 4B, box 12, quarto 3, cozinha"
 ],
@@ -1679,6 +1715,10 @@ export default [
 [
 "ex. Résidence Val St André 37",
 "p. ex. Résidence Val St André 37"
+],
+[
+"ex. bâtiment B, app. 12, aile gauche",
+"ex. edifício B, apt. 12, ala esquerda"
 ],
 [
 "ex. en semaine après 17 h",
@@ -1851,6 +1891,14 @@ export default [
 [
 "Étage",
 "Piso"
+],
+[
+"Étage(s)",
+"Andar(es)"
+],
+[
+"Étage(s) de l’appartement / des appartements",
+"Andar(es) do(s) apartamento(s)"
 ],
 [
 "Évaluation",
