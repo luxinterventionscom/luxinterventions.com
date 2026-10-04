@@ -1100,7 +1100,7 @@ const SHEETS = {
         <label class="field">Type de travaux<select name="categorie">${CATEGORIES.map((c) => html`<option value="${c}">${c}</option>`)}</select></label>
         <label class="field">Travail demandé<select name="nature"><option value="">—</option>${NATURES.map((c) => html`<option value="${c}">${c}</option>`)}</select></label>
         <label class="field">Où ?<select name="zone"><option value="">—</option>${ZONES.map((c) => html`<option value="${c}">${c}</option>`)}</select></label>
-        ${field('Étage', 'etage', '', { placeholder: 'ex. RDC, 2, sous-sol' })}
+        <label class="field">Étage<select name="etage"><option value="">—</option>${[-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => html`<option value="${n === 0 ? 'RDC' : n}">${n < 0 ? `${n} (sous-sol)` : n === 0 ? '0 (RDC)' : '+' + n}</option>`)}<option value="autre">Autre (préciser dans la description)</option></select></label>
         ${field('N° / précision', 'lieu', '', { full: true, placeholder: 'ex. App. 4B, box 12, chambre 3, cuisine' })}
         <label class="field full">Description du problème<textarea name="description" required placeholder="Que se passe-t-il ? Depuis quand ? Risque de dégâts ?"></textarea></label>
         <label class="field full">Photos (jusqu'à 6)<input type="file" name="photos" accept="image/*" multiple data-input="preview-files"></label>
@@ -1518,7 +1518,7 @@ const FORMS = {
       const body = fd2obj(fd);
       // type + travail demandé, zone + étage + précision, date souhaitée + disponibilités
       body.categorie = [body.categorie, body.nature].filter(Boolean).join(' · ').slice(0, 60);
-      body.lieu = [body.zone, body.etage ? 'Étage ' + body.etage : '', body.lieu].filter(Boolean).join(' · ').slice(0, 200);
+      body.lieu = [body.zone, body.etage === 'autre' ? 'Étage : autre' : body.etage ? 'Étage ' + body.etage : '', body.lieu].filter(Boolean).join(' · ').slice(0, 200);
       const ds = /^\d{4}-\d{2}-\d{2}$/.test(body.date_souhaitee || '') ? body.date_souhaitee.split('-').reverse().join('/') : '';
       const hm = (x) => (/^\d{2}:\d{2}$/.test(x || '') ? x : '');
       const de = hm(body.h_de), a = hm(body.h_a);

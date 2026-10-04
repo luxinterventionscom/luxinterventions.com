@@ -9,6 +9,10 @@ export default [
 ", mit dem Einladungslink. Danach: E-Mail + Passwort, auf jedem Gerät. Vergessen? Fordern Sie einen neuen Link an."
 ],
 [
+"0 (RDC)",
+"0 (EG)"
+],
+[
 "12 derniers mois",
 "Letzte 12 Monate"
 ],
@@ -191,6 +195,10 @@ export default [
 [
 "Autre",
 "Sonstiges"
+],
+[
+"Autre (préciser dans la description)",
+"Andere (in der Beschreibung angeben)"
 ],
 [
 "Autre précision (facultatif)",
@@ -1845,6 +1853,10 @@ export default [
 "gerade eben gesehen"
 ],
 [
+"{0} (sous-sol)",
+"{0} (Untergeschoss)"
+],
+[
 "{0} appartements",
 "{0} Wohnungen"
 ],
@@ -1959,6 +1971,10 @@ export default [
 [
 "Étage",
 "Etage"
+],
+[
+"Étage : autre",
+"Etage: andere"
 ],
 [
 "Étage(s)",

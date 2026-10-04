@@ -9,6 +9,10 @@ export default [
 ", com o link de convite. Depois: email + palavra-passe, em qualquer dispositivo. Esqueceu-se? Peça um novo link."
 ],
 [
+"0 (RDC)",
+"0 (R/C)"
+],
+[
 "12 derniers mois",
 "Últimos 12 meses"
 ],
@@ -195,6 +199,10 @@ export default [
 [
 "Autre",
 "Outro"
+],
+[
+"Autre (préciser dans la description)",
+"Outro (indicar na descrição)"
 ],
 [
 "Autre précision (facultatif)",
@@ -1849,6 +1857,10 @@ export default [
 "visto agora mesmo"
 ],
 [
+"{0} (sous-sol)",
+"{0} (cave)"
+],
+[
 "{0} appartements",
 "{0} apartamentos"
 ],
@@ -1951,6 +1963,10 @@ export default [
 [
 "Étage",
 "Piso"
+],
+[
+"Étage : autre",
+"Andar: outro"
 ],
 [
 "Étage(s)",
