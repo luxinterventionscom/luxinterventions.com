@@ -9,7 +9,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.62.0';
+const VERSION = '2.63.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -92,17 +92,20 @@ const immName = (id) => (vault.get('immeubles', id) || {}).adresse || 'Sans imme
 // Type de structure (immeuble) et type d'unité louée (logement / local)
 const IMM_TYPES = {
   immeuble: 'Immeuble à plusieurs étages', maison: 'Maison / propriété avec chambres', local: 'Ancien café / local transformé en chambres',
-  residence: 'Résidence / foyer / colocation', commercial: 'Bâtiment commercial / bureaux', mixte: 'Mixte (habitation + commerce)', parking: 'Parking / garages', autre: 'Autre structure',
+  residence: 'Résidence / foyer / colocation', colocation: 'Appartements en colocation (2 à 10 chambres)', studios: 'Immeuble de studios',
+  commercial: 'Bâtiment commercial / bureaux', mixte: 'Mixte (habitation + commerce)', parking: 'Parking / garages', caves: 'Caves / débarras', autre: 'Autre structure',
 };
 const LOG_GROUPS = [
-  ['Habitation', { appartement: 'Appartement', studio: 'Studio', chambre: 'Chambre', duplex: 'Duplex / penthouse', maison: 'Maison' }],
+  ['Habitation', { appartement: 'Appartement', studio: 'Studio (lit, kitchenette, salle d’eau / WC indépendants)', chambre: 'Chambre', duplex: 'Duplex / penthouse', maison: 'Maison' }],
   ['Professionnel', { bureau: 'Bureau', commercial: 'Local commercial / magasin', restauration: 'Local de restauration (café, restaurant)', cabinet: 'Cabinet (médical, profession libérale)', atelier: 'Atelier / entrepôt' }],
-  ['Annexes', { box: 'Espace box', garage: 'Garage / box', parking: 'Emplacement de parking', cave: 'Cave / débarras', autre: 'Autre' }],
+  ['Annexes', { box: 'Espace box', garage: 'Garage / box', parking: 'Emplacement de parking', cave: 'Cave / débarras (à louer ou usage propre)', autre: 'Autre' }],
 ];
 const LOG_TYPES = Object.assign({}, ...LOG_GROUPS.map(([, t]) => t));
 // nom court (« 2 », « 2B ») complété par le type : « Chambre 2 » — pour que l'occupant retrouve sa porte
 const logLabel = (g) => { const n = String((g && g.nom) || '').trim(), t = g && LOG_TYPES[g.type]; return t && g.type !== 'autre' && /^[0-9][0-9A-Za-z.-]{0,3}$/.test(n) ? `${t.split(' ')[0]} ${n}` : n; };
 const logTypeSelect = (name, cur) => html`<label class="field">Type<select name="${name}">${LOG_GROUPS.map(([g, t]) => html`<optgroup label="${g}">${Object.entries(t).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</optgroup>`)}</select></label>`;
+const LOG_ROOMS = ['appartement', 'duplex', 'maison'];
+const logKind = (g) => { const t = (LOG_TYPES[g.type] || '').split(' (')[0]; return LOG_ROOMS.includes(g.type) && (g.ch || g.mans) ? `${t} · ${g.ch ? g.ch + ' ch.' : ''}${g.mans ? (g.ch ? ' + ' : '') + 'mansarde' : ''}` : t; };
 const logIcon = (t) => (t === 'chambre' ? 'key' : LOG_GROUPS[1][1][t] ? 'building' : 'home');
 // Où se trouve l'unité : « étage 1er · ancien bar »
 const logWhere = (g) => [g.etage ? 'étage ' + g.etage : '', g.partie].filter(Boolean).join(' · ');
@@ -3643,7 +3646,7 @@ const SHEETS = {
           const leaving = occ.filter((l) => l.sortie);
           return html`<button class="row" data-action="open-log" data-id="${g.id}">
             <span class="avatar" style="${occ.length ? '' : 'background:var(--amber-soft);color:var(--amber)'}">${icon(logIcon(g.type))}</span>
-            <span class="grow"><span class="title" style="display:block">${g.nom} <span class="muted small">${inside ? '' : [LOG_TYPES[g.type], logWhere(g)].filter(Boolean).join(' · ')}</span></span>
+            <span class="grow"><span class="title" style="display:block">${g.nom} <span class="muted small">${inside ? '' : [logKind(g), logWhere(g)].filter(Boolean).join(' · ')}</span></span>
               <span class="meta" style="display:flex;gap:6px;flex-wrap:wrap">${occ.length ? occ.map(fullName).join(', ') : html`<span class="badge warn">Vacant</span>`}
               ${leaving.map((l) => html`<span class="badge warn">départ ${fmtDate(l.sortie)}</span>`)}${next.map((l) => html`<span class="badge acc">arrivée ${fmtDate(l.debut)}</span>`)}</span></span>
             <span class="tiny muted">${plural(tenantsOfLog(g.id).length, 'occupant')}</span>
@@ -3816,6 +3819,7 @@ const SHEETS = {
           <input type="hidden" name="immId" value="${im.id}">
           ${field('Nom de l’appartement', 'nom', '', { full: true, required: true, placeholder: 'ex. Appartement 1er étage, Appartement A' })}
           ${field('Étage', 'etage', '', { placeholder: 'ex. RDC, 1er' })}
+          <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="mans" style="width:22px;min-height:22px"> + une mansarde (chambre sous les toits)</label>
           <label class="field">Nombre de chambres<select name="n">${[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => html`<option value="${n}" ${n === 4 ? new Raw('selected') : ''}>${n}</option>`)}</select></label>
           ${field('Loyer indicatif par chambre (€)', 'loyer', '', { full: true, type: 'number', attrs: money$ })}
         </form>
@@ -3834,6 +3838,8 @@ const SHEETS = {
         ${field('Nom / numéro', 'nom', g.nom, { full: true, required: true, placeholder: 'ex. Appartement 2B, Chambre 3, Garage 12, Bureau 1' })}
         <label class="field full">Immeuble<select name="immId" required>${vault.list('immeubles').filter((im) => !immGone(im) || im.id === g.immId).sort(byAddr).map((im) => html`<option value="${im.id}" ${im.id === g.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         ${logTypeSelect('type', g.type)}
+        <label class="field">Chambres (appartement, maison)<select name="ch"><option value="">—</option>${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => html`<option value="${n}" ${+g.ch === n ? new Raw('selected') : ''}>${n}</option>`)}</select></label>
+        <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="mans" ${g.mans ? new Raw('checked') : ''} style="width:22px;min-height:22px"> Avec mansarde</label>
         ${field('Surface (m²)', 'surface', g.surface, { type: 'number', attrs: 'inputmode="decimal" min="0" step="0.1"' })}
         ${field('Étage', 'etage', g.etage, { placeholder: 'ex. RDC, 1er, sous-sol' })}
         <label class="field full">Fait partie de l’appartement (colocation)<input name="partie" value="${g.partie || ''}" list="colocList" autocomplete="off" placeholder="ex. Appartement 1er étage — vide si logement indépendant">
@@ -3860,7 +3866,7 @@ const SHEETS = {
       body = html`
         <dl class="kv small" style="margin-bottom:16px">
           ${kvRow('Immeuble', immName(g.immId))}
-          ${kvRow('Type', LOG_TYPES[g.type] || '—')}
+          ${kvRow('Type', logKind(g) || '—')}
           ${g.surface ? kvRow('Surface', g.surface + ' m²') : ''}
           ${g.etage ? kvRow('Étage', g.etage) : ''}
           ${g.partie ? kvRow('Situé dans', g.partie) : ''}
@@ -4459,7 +4465,7 @@ function reportImmeuble(immId, y) {
     <div class="pr-cols"><div><h2>Bilan ${y}</h2>${prBilan(bilan({ immId, y }))}</div><div><h2>Depuis l'origine</h2>${prBilan(bilan({ immId }), true)}</div></div>
     ${years.length > 1 ? html`<h2>Par année</h2>${bilanTable(years)}` : ''}
     ${logs.length ? html`<h2>Logements</h2><table class="tbl"><thead><tr><th>Logement</th><th>Type</th><th>Occupant actuel</th><th class="r">Occupants</th><th class="r">Occupation</th><th class="r">Encaissé total</th></tr></thead><tbody>
-      ${logs.map((g) => { const o = occupancy(g.id); const bb = bilan({ logId: g.id }); return html`<tr><td>${g.nom}</td><td>${LOG_TYPES[g.type] || ''}</td><td>${occupantsNow(g.id).map(fullName).join(', ') || 'Vacant'}</td><td class="r">${bb.occupants}</td><td class="r">${o ? pct(o.occupied, o.total) + '%' : '—'}</td><td class="r">${money(bb.encaisse)}</td></tr>`; })}
+      ${logs.map((g) => { const o = occupancy(g.id); const bb = bilan({ logId: g.id }); return html`<tr><td>${g.nom}</td><td>${logKind(g)}</td><td>${occupantsNow(g.id).map(fullName).join(', ') || 'Vacant'}</td><td class="r">${bb.occupants}</td><td class="r">${o ? pct(o.occupied, o.total) + '%' : '—'}</td><td class="r">${money(bb.encaisse)}</td></tr>`; })}
     </tbody></table>` : ''}
     ${active.length ? html`<h2>Loyers ${y}</h2><table class="tbl pr-grid"><thead><tr><th>Locataire</th><th>Logement</th><th class="r">Loyer</th>${MONTHS.map((m) => html`<th>${m}</th>`)}<th class="r">Payé</th><th class="r">Impayé</th></tr></thead><tbody>
       ${active.map((l) => { const st = yearStats(l, y); return html`<tr><td>${fullName(l)}</td><td>${logName(l.logId)}</td><td class="r">${money(l.loyer)}</td>${MONTHS.map((_, i) => html`<td class="c">${markPay(l, y, i + 1)}</td>`)}<td class="r">${money(st.paid)}</td><td class="r">${money(st.rest)}</td></tr>`; })}
@@ -4475,7 +4481,7 @@ function reportLogement(logId) {
   const o = occupancy(logId);
   return html`
     <h1>${g.nom} — ${immName(g.immId)}</h1>
-    <p class="pr-sub">${LOG_TYPES[g.type] || ''}${g.surface ? ' · ' + g.surface + ' m²' : ''}${o ? ` · occupé ${pct(o.occupied, o.total)}% du temps, ${duree(o.vacant)} de vacance` : ''}</p>
+    <p class="pr-sub">${logKind(g)}${g.surface ? ' · ' + g.surface + ' m²' : ''}${o ? ` · occupé ${pct(o.occupied, o.total)}% du temps, ${duree(o.vacant)} de vacance` : ''}</p>
     <h2>Bilan depuis l'origine</h2>${prBilan({ ...b, verse: null, net: b.encaisse - b.depenses }, true)}
     <h2>Par année</h2>${bilanTable(yearsWithData((yy) => bilan({ logId, y: yy })))}
     <h2>Occupants successifs</h2>${occupantsTable(tenantsOfLog(logId))}`;
@@ -5296,8 +5302,12 @@ const FORMS = {
     if (!nom) return;
     if (colocsOf(immId).some((c) => c.nom.toLowerCase() === nom.toLowerCase())) return toast('Cet appartement existe déjà dans cette structure', { bad: true });
     const etage = String(fd.get('etage') || '').trim(), loyer = num(fd.get('loyer'));
-    await vault.mutate((tx) => { for (let i = 1; i <= n; i++) tx.put('logements', { nom: 'Chambre ' + i, immId, type: 'chambre', etage, partie: nom, loyer, surface: '', note: '' }); }, 'Appartement en colocation ajouté', `${nom} · ${n} chambres (${immName(immId)})`, immId);
-    toast(`${nom} : ${n} chambres créées`);
+    const mans = fd.get('mans') === 'on';
+    await vault.mutate((tx) => {
+      for (let i = 1; i <= n; i++) tx.put('logements', { nom: 'Chambre ' + i, immId, type: 'chambre', etage, partie: nom, loyer, surface: '', note: '' });
+      if (mans) tx.put('logements', { nom: 'Mansarde', immId, type: 'chambre', etage: 'combles', partie: nom, loyer, surface: '', note: '' });
+    }, 'Appartement en colocation ajouté', `${nom} · ${n} chambres${mans ? ' + mansarde' : ''} (${immName(immId)})`, immId);
+    toast(`${nom} : ${n + (mans ? 1 : 0)} chambres créées`);
     goBack();
   },
   async log(fd) {
@@ -5305,6 +5315,7 @@ const FORMS = {
     const rec = {
       nom: fd.get('nom').trim(), immId: fd.get('immId'), type: fd.get('type'), surface: fd.get('surface') ? num(fd.get('surface')) : '',
       etage: fd.get('etage').trim(), partie: fd.get('partie').trim(), loyer: num(fd.get('loyer')), note: fd.get('note').trim(),
+      ch: LOG_ROOMS.includes(fd.get('type')) ? +fd.get('ch') || '' : '', mans: LOG_ROOMS.includes(fd.get('type')) && fd.get('mans') === 'on',
     };
     if (id) rec.id = id;
     const saved = await vault.mutate((tx) => {

@@ -8751,5 +8751,41 @@ export default [
 [
 "ℹ️ {0} chambres sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).",
 "ℹ️ {0} rooms with no flat given: their tenants chat together. If there are several flats, set it in each room (“Part of the flat”)."
+],
+[
+"Appartements en colocation (2 à 10 chambres)",
+"Shared flats (2 to 10 rooms)"
+],
+[
+"Immeuble de studios",
+"Building of studios"
+],
+[
+"Caves / débarras",
+"Cellars / storerooms"
+],
+[
+"Studio (lit, kitchenette, salle d’eau / WC indépendants)",
+"Studio (bed, kitchenette, own shower room / WC)"
+],
+[
+"Cave / débarras (à louer ou usage propre)",
+"Cellar / storeroom (to let or own use)"
+],
+[
+"Chambres (appartement, maison)",
+"Bedrooms (flat, house)"
+],
+[
+"Avec mansarde",
+"With attic room"
+],
+[
+"+ une mansarde (chambre sous les toits)",
+"+ an attic room (under the roof)"
+],
+[
+"Mansarde",
+"Attic room"
 ]
 ];

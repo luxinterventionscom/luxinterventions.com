@@ -8895,5 +8895,41 @@ export default [
 [
 "ℹ️ {0} chambres sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).",
 "ℹ️ {0} quartos sem apartamento indicado: os moradores conversam juntos. Se houver vários apartamentos, indique-o em cada quarto («Faz parte do apartamento»)."
+],
+[
+"Appartements en colocation (2 à 10 chambres)",
+"Apartamentos partilhados (2 a 10 quartos)"
+],
+[
+"Immeuble de studios",
+"Prédio de estúdios"
+],
+[
+"Caves / débarras",
+"Arrecadações / caves"
+],
+[
+"Studio (lit, kitchenette, salle d’eau / WC indépendants)",
+"Estúdio (cama, kitchenette, casa de banho / WC independentes)"
+],
+[
+"Cave / débarras (à louer ou usage propre)",
+"Arrecadação / cave (para arrendar ou uso próprio)"
+],
+[
+"Chambres (appartement, maison)",
+"Quartos (apartamento, casa)"
+],
+[
+"Avec mansarde",
+"Com águas-furtadas"
+],
+[
+"+ une mansarde (chambre sous les toits)",
+"+ águas-furtadas (quarto no sótão)"
+],
+[
+"Mansarde",
+"Águas-furtadas"
 ]
 ];
