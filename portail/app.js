@@ -99,7 +99,7 @@ const URG = {
 const CATEGORIES = ['Plomberie', 'Électricité', 'Chauffage', 'Chaudière', 'Radiateurs', 'Sanitaire', 'Maçonnerie', 'Carrelage', 'Pose de panneaux', 'Peinture', 'Panneaux solaires', 'Serrurerie', 'Toiture / façade', 'Vitrerie', 'Menuiserie', 'Nettoyage', 'Espaces verts', 'Ascenseur', 'Autre'];
 // Ce qu'il faut faire et où (enregistré en clair dans « categorie » et « lieu », séparé par « · »)
 const NATURES = ['Réparer', 'Nettoyer', 'Refaire', 'Remplacer', 'Installer / poser', 'Contrôler'];
-const ZONES = ['Appartement', 'Chambre', 'Box / garage', 'Cave', 'Jardin commun', 'Parties communes / hall', 'Cage d’escalier', 'Toiture / façade', 'Chaufferie / local technique', 'Parking / extérieur', 'Autre'];
+const ZONES = ['Appartement', 'Chambre', 'Bureau', 'Box / garage', 'Cave', 'Jardin commun', 'Parties communes / hall', 'Cage d’escalier', 'Toiture / façade', 'Chaufferie / local technique', 'Parking / extérieur', 'Autre'];
 // Morceaux « A · B · C » : chacun dans son <span> pour être traduit séparément ; « Étage 2 » → « Étage » + 2
 // Codes à 6 chiffres (accès, alarme, panneaux…) : 6 cases, un chiffre par case
 const isCode = (v) => /^\d{0,6}$/.test(String(v || ''));
