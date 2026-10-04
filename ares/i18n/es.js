@@ -9043,5 +9043,29 @@ export default [
 [
 "Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez ensuite les renommer et corriger la surface de chacune. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.",
 "Las habitaciones se crean «Chambre 1», «Chambre 2»…: después puedes renombrarlas y corregir la superficie de cada una. ¿Una habitación más? Botón «+ Habitación» en el piso."
+],
+[
+"Chambre {0}",
+"Habitación {0}"
+],
+[
+"Appartement {0}",
+"Piso {0}"
+],
+[
+"Studio {0}",
+"Estudio {0}"
+],
+[
+"Garage {0}",
+"Garaje {0}"
+],
+[
+"Cave {0}",
+"Trastero {0}"
+],
+[
+"Bureau {0}",
+"Oficina {0}"
 ]
 ];
