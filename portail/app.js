@@ -107,7 +107,8 @@ const code6 = (label, name, value) => { const v = isCode(value) ? String(value |
   <span class="code6" data-code6="${name}"><input type="hidden" name="${name}" value="${v}">${[0, 1, 2, 3, 4, 5].map((i) => html`<input class="c6" inputmode="numeric" autocomplete="off" aria-label="${label} ${i + 1}" value="${v[i] || ''}">`)}</span></label>`; };
 const codeShow = (v) => (v && isCode(v) ? html`<span class="code6-show">${String(v).split('').map((c) => html`<b>${c}</b>`)}</span>` : v || '');
 const partsHtml = (s) => String(s || '').split(' · ').filter(Boolean).map((x, i) => {
-  const h = /^De (\d\d:\d\d) à (\d\d:\d\d)$/.exec(x), f = /^(À partir de|Jusqu’à) (\d\d:\d\d)$/.exec(x), m = /^(Étage|Date souhaitée :) (.+)$/.exec(x);
+  const h = /^De (\d\d:\d\d) à (\d\d:\d\d)$/.exec(x), f = /^(À partir de|Jusqu’à) (\d\d:\d\d)$/.exec(x), m = /^(Étage|Date souhaitée :) (.+)$/.exec(x), c = /^(Porte|Alarme|Panneaux) : (\d{1,6})$/.exec(x);
+  if (c) return html`${i ? ' · ' : ''}<span>${{ Porte: '🚪 Porte', Alarme: '🚨 Alarme', Panneaux: '⚡ Panneaux' }[c[1]]}</span> ${codeShow(c[2])}`;
   return html`${i ? ' · ' : ''}${h ? html`🕒 <span>De</span> ${h[1]} <span>à</span> ${h[2]}` : f ? html`🕒 <span>${f[1]}</span> ${f[2]}` : m ? html`<span>${m[1]}</span> ${m[2]}` : html`<span>${x}</span>`}`;
 });
 const ROLES = { admin: 'LuxInterventions', gerance_admin: 'Responsable gérance', gerance_user: 'Utilisateur gérance' };
@@ -1027,8 +1028,8 @@ const SHEETS = {
           ${kv('Lieu', t.lieu ? partsHtml(t.lieu) : '')}
           ${isAdmin() ? kv('Gérance', res.org_name) : ''}
           ${kv('Contact sur place', t.contact_name || res.contact_name ? html`${t.contact_name || res.contact_name}${tel ? html` · <a href="tel:${tel}">${t.contact_phone || res.contact_phone}</a>` : ''}` : '')}
-          ${kv('Accès', t.acces && !isCode(t.acces) ? t.acces : '')}
-          ${kv('Code d’accès', codeShow(res.access))}${kv('Code alarme', codeShow(res.alarm))}${kv('Code panneaux / autre', codeShow(res.code_other))}
+          ${kv('Accès', t.acces ? (isCode(t.acces) ? codeShow(t.acces) : html`<div class="acc-lines">${String(t.acces).split(' · ').filter(Boolean).map((x) => html`<div>${partsHtml(x)}</div>`)}</div>`) : '')}
+          ${/(Porte|Alarme|Panneaux) : /.test(t.acces || '') ? '' : html`${kv('Code d’accès', codeShow(res.access))}${kv('Code alarme', codeShow(res.alarm))}${kv('Code panneaux / autre', codeShow(res.code_other))}`}
           ${kv('Intérieur', res.interior)}${kv('Étage(s)', res.floors)}
           ${kv('Clés', res.keys_info)}
           ${kv('Disponibilités', t.dispo ? partsHtml(t.dispo) : '')}
@@ -1107,7 +1108,12 @@ const SHEETS = {
         <div class="full photos" id="preview"></div>
         ${field('Contact sur place', 'contact_name', '', { placeholder: 'Nom (locataire, concierge…)' })}
         ${field('Téléphone du contact', 'contact_phone', '', { type: 'tel', placeholder: '+352 …' })}
-        ${field('Accès', 'acces', '', { full: true, placeholder: 'Code porte, clé chez le concierge… (sinon : infos de la résidence)' })}
+        ${(() => { const r0 = res.find((r) => r.id === data.residence_id) || (res.length === 1 ? res[0] : {}); return html`
+        <div class="full small muted" style="margin-bottom:-4px">🔐 Codes (repris de la résidence, modifiables)</div>
+        ${code6('Code porte électronique', 'c_porte', r0.access)}
+        ${code6('Code alarme', 'c_alarme', r0.alarm)}
+        ${code6('Code panneaux électriques / machines', 'c_panneaux', r0.code_other)}`; })()}
+        ${field('Accès (autre)', 'acces', '', { full: true, placeholder: 'Badge, clé chez le concierge, interphone…' })}
         <fieldset class="full dispo-set"><legend>📅 Disponibilités</legend>
           <div class="dispo-row">
             <label class="field">Date souhaitée<input type="date" name="date_souhaitee" min="${new Date().toISOString().slice(0, 10)}"></label>
@@ -1525,7 +1531,8 @@ const FORMS = {
       if (de && a && a <= de) { setBusy(btn, false); return toast('L’heure de fin doit être après l’heure de début.', { bad: true }); }
       const plage = de && a ? `De ${de} à ${a}` : de ? `À partir de ${de}` : a ? `Jusqu’à ${a}` : '';
       body.dispo = [ds ? 'Date souhaitée : ' + ds : '', plage, body.dispo].filter(Boolean).join(' · ');
-      for (const k of ['nature', 'zone', 'etage', 'date_souhaitee', 'h_de', 'h_a']) delete body[k];
+      body.acces = [body.c_porte ? 'Porte : ' + body.c_porte : '', body.c_alarme ? 'Alarme : ' + body.c_alarme : '', body.c_panneaux ? 'Panneaux : ' + body.c_panneaux : '', body.acces].filter(Boolean).join(' · ').slice(0, 500);
+      for (const k of ['nature', 'zone', 'etage', 'date_souhaitee', 'h_de', 'h_a', 'c_porte', 'c_alarme', 'c_panneaux']) delete body[k];
       const { id, ref } = await api('tickets', { method: 'POST', body });
       if (files.length) { setBusy(btn, true, `Photos 0/${files.length}…`); await uploadPhotos(id, files); }
       toast(`Demande #${ref} envoyée — LuxInterventions est prévenu`);
@@ -1656,7 +1663,18 @@ document.addEventListener('input', (e) => {
   if (k === 'q') { state.filters.q = e.target.value; renderView(); }
   if (k === 'rq') { state.filters.rq = e.target.value; renderView(); }
 });
+// cases de codes : écrire une valeur dans les 6 cases
+function setCode6(form, name, v) {
+  const c = form.querySelector(`.code6[data-code6="${name}"]`); if (!c) return;
+  v = isCode(v) ? String(v || '') : '';
+  c.querySelector('input[type=hidden]').value = v;
+  c.querySelectorAll('.c6').forEach((b, i) => { b.value = v[i] || ''; });
+}
 document.addEventListener('change', (e) => {
+  if (e.target.name === 'residence_id' && e.target.closest('form[data-form=ticket]')) {
+    const r = (state.cache.residencesList || []).find((x) => x.id === e.target.value) || {}, f = e.target.form;
+    setCode6(f, 'c_porte', r.access); setCode6(f, 'c_alarme', r.alarm); setCode6(f, 'c_panneaux', r.code_other);
+  }
   const k = e.target.dataset.input;
   if (k === 'residence') { state.filters.residence = e.target.value; go('demandes', true); }
   if (k === 'preview-files') {

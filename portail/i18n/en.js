@@ -33,6 +33,10 @@ export default [
 "Access"
 ],
 [
+"Accès (autre)",
+"Access (other)"
+],
+[
 "Accès désactivé",
 "Access disabled"
 ],
@@ -225,6 +229,10 @@ export default [
 "Badge with the caretaker"
 ],
 [
+"Badge, clé chez le concierge, interphone…",
+"Badge, key with the caretaker, intercom…"
+],
+[
 "Badge, interphone, clés, compteurs, local technique, particularités…",
 "Badge, intercom, keys, meters, plant room, special points…"
 ],
@@ -361,8 +369,16 @@ export default [
 "Panel or other code"
 ],
 [
+"Code panneaux électriques / machines",
+"Electrical panels / machines code"
+],
+[
 "Code porte 2580",
 "Door code 2580"
+],
+[
+"Code porte électronique",
+"Electronic door code"
 ],
 [
 "Code porte, badge, interphone…",
@@ -1973,6 +1989,10 @@ export default [
 "— technician:"
 ],
 [
+"⚡ Panneaux",
+"⚡ Panels"
+],
+[
 "⭐ Envoyer l’évaluation",
 "⭐ Send the rating"
 ],
@@ -2013,11 +2033,23 @@ export default [
 "📲 In real use, the LuxInterventions team now gets a notification."
 ],
 [
+"🔐 Codes (repris de la résidence, modifiables)",
+"🔐 Codes (taken from the residence, editable)"
+],
+[
 "🔑 Le mot de passe se choisit",
 "🔑 The password is chosen"
 ],
 [
 "🚚 En route",
 "🚚 On the way"
+],
+[
+"🚨 Alarme",
+"🚨 Alarm"
+],
+[
+"🚪 Porte",
+"🚪 Door"
 ]
 ];
