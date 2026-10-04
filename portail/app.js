@@ -1111,8 +1111,8 @@ const SHEETS = {
         <fieldset class="full dispo-set"><legend>📅 Disponibilités</legend>
           <div class="dispo-row">
             <label class="field">Date souhaitée<input type="date" name="date_souhaitee" min="${new Date().toISOString().slice(0, 10)}"></label>
-            <label class="field">De<input type="time" name="h_de" step="900"></label>
-            <label class="field">À<input type="time" name="h_a" step="900"></label>
+            <label class="field">De<input type="time" name="h_de" step="900" value="08:00"></label>
+            <label class="field">À<input type="time" name="h_a" step="900" value="18:00"></label>
           </div>
           <label class="field">Autre précision (facultatif)<input name="dispo" placeholder="ex. sonner chez le concierge, pas le mercredi"></label>
         </fieldset>
