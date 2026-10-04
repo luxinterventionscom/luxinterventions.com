@@ -9067,5 +9067,25 @@ export default [
 [
 "Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez ensuite les renommer et corriger la surface de chacune. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.",
 "Le camere vengono create «Chambre 1», «Chambre 2»…: potete poi rinominarle e correggere la superficie di ognuna. Una camera in più? Pulsante «+ Camera» sull’appartamento."
+],
+[
+"Chambre {0}",
+"Camera {0}"
+],
+[
+"Appartement {0}",
+"Appartamento {0}"
+],
+[
+"Studio {0}",
+"Monolocale {0}"
+],
+[
+"Cave {0}",
+"Cantina {0}"
+],
+[
+"Bureau {0}",
+"Ufficio {0}"
 ]
 ];

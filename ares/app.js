@@ -9,7 +9,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.65.0';
+const VERSION = '2.66.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -124,7 +124,7 @@ const DOC_TYPES = {
 };
 const DOSSIER = [['bail', 'Contrat'], ['identite', 'Identité'], ['cns', 'CNS'], ['caution', 'Caution']];
 const CAUTION_MODES = { especes: 'En main propre (espèces)', virement: 'Virement bancaire', cheque: 'Chèque', garantie: 'Garantie bancaire', autre: 'Autre' };
-const logName = (id) => (vault.get('logements', id) || {}).nom || '';
+const logName = (id) => logLabel(vault.get('logements', id)) || '';
 const whereOf = (l) => [logName(l.logId), immName(l.immId)].filter(Boolean).join(' · ');
 const byName = (a, b) => fullName(a).localeCompare(fullName(b), 'fr');
 const imms0 = () => vault.list('immeubles');
@@ -2176,7 +2176,7 @@ function reportCollectes(immId, y) {
       <div><b>📱 Scannez : calendrier sur votre téléphone, rappel la veille.</b><br>Scansiona: calendario sul telefono, promemoria la sera prima.<br>Scannen: Kalender auf Ihrem Handy, Erinnerung am Vorabend.<br>Digitalize: calendário no telemóvel, aviso na véspera.<br>Scan: calendar on your phone, reminder the evening before.</div></div>` : ''}
     <p class="pr-sub" style="margin-top:14px">Une question ? ${societe().nom || 'NOBIS s.a.r.l.'}${societe().tel ? ' · ' + societe().tel : ''}</p>`;
 }
-const logOptions = (immId, sel) => html`<option value="">Parties communes / tout l'immeuble</option>${logsOf(immId).map((g) => html`<option value="${g.id}" ${g.id === sel ? new Raw('selected') : ''}>${g.nom}</option>`)}`;
+const logOptions = (immId, sel) => html`<option value="">Parties communes / tout l'immeuble</option>${logsOf(immId).map((g) => html`<option value="${g.id}" ${g.id === sel ? new Raw('selected') : ''}>${logLabel(g)}</option>`)}`;
 // Intervention terminée avec un coût : proposer de l'ajouter aux dépenses de l'immeuble (une seule fois)
 // Coût d'une intervention terminée → dépense de l'appartement (ou des parties communes), automatiquement.
 // Coût changé → dépense corrigée ; coût effacé ou intervention ré-ouverte → dépense retirée.
@@ -2560,7 +2560,7 @@ dashboard() {
         ${arriving.map((l) => alertBtn('info', 'users', 'open-loc', l.id, html`<b>${fullName(l)}</b> arrive dans ${logName(l.logId) || immName(l.immId)} le ${fmtDate(l.debut)}`))}
         ${expiring.map(({ l, d }) => alertBtn('warn', 'calendar', 'renew', l.id, html`<b>${fullName(l)}</b> — fin de contrat ${d === 0 ? "aujourd'hui" : `dans ${plural(d, 'jour')}`} (${fmtDate(l.fin)}). Toucher pour prolonger.`))}
         ${revisions.map((l) => alertBtn('info', 'chart', 'index', l.id, html`<b>${fullName(l)}</b> — révision du loyer ${daysUntil(l.revision) < 0 ? 'prévue depuis le' : 'prévue le'} ${fmtDate(l.revision)} (${money(l.loyer)}). Toucher pour réviser.`))}
-        ${vacants.slice(0, 6).map((g) => alertBtn('info', 'home', 'open-log', g.id, html`<b>${g.nom}</b> (${immName(g.immId)}) est vacant`))}
+        ${vacants.slice(0, 6).map((g) => alertBtn('info', 'home', 'open-log', g.id, html`<b>${logLabel(g)}</b> (${immName(g.immId)}) est vacant`))}
       </div>` : ''}
 
       <div class="section-label">À encaisser — ${MONTHS_FULL[m - 1]}</div>
@@ -3116,7 +3116,7 @@ function logementSelect(selLog, selImm) {
       ${imms.map((im) => html`<optgroup label="${im.adresse}">
         ${logsOf(im.id).map((g) => {
           const occ = occupantsNow(g.id);
-          return html`<option value="log:${g.id}" ${g.id === selLog ? new Raw('selected') : ''}>${g.nom}${logWhere(g) ? ' (' + logWhere(g) + ')' : ''}${occ.length ? ' — occupé (' + occ.map(fullName).join(', ') + ')' : ' — vacant'}</option>`;
+          return html`<option value="log:${g.id}" ${g.id === selLog ? new Raw('selected') : ''}>${logLabel(g)}${logWhere(g) ? ' (' + logWhere(g) + ')' : ''}${occ.length ? ' — occupé (' + occ.map(fullName).join(', ') + ')' : ' — vacant'}</option>`;
         })}
         <option value="new:${im.id}">➕ Nouveau logement / local ici (chambre, appartement, garage…)</option>
         <option value="imm:${im.id}" ${!selLog && selImm === im.id ? new Raw('selected') : ''}>Toute la structure (pas de chambre / logement précis)</option>
@@ -3148,7 +3148,7 @@ function depensesPanel(immId) {
       ${field('N° de facture', 'numFacture', '', { placeholder: 'ex. F-2026-118' })}
       <label class="field full">Facture (photo ou PDF)<input type="file" name="file" accept="image/*,application/pdf"></label>
       <label class="field">Catégorie<select name="cat">${Object.entries(DEP_CATS).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
-      <label class="field">Concerne<select name="logId"><option value="">Tout l'immeuble</option>${logs.map((g) => html`<option value="${g.id}">${g.nom}</option>`)}</select></label>
+      <label class="field">Concerne<select name="logId"><option value="">Tout l'immeuble</option>${logs.map((g) => html`<option value="${g.id}">${logLabel(g)}</option>`)}</select></label>
       <button class="btn primary full" type="submit">${icon('plus')} Ajouter la dépense</button>
     </form>
     ${deps.length ? html`<div class="list">${deps.map((d) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${d.desc}</span><span class="meta">${d.fournisseur ? d.fournisseur + ' · ' : ''}${d.numFacture ? 'n° ' + d.numFacture + ' · ' : ''}${d.tva ? 'TVA ' + String(d.tva).replace('.', ',') + ' % (' + money(d.montant - htOf(d.montant, d.tva)) + ') · ' : ''}${fmtDate(d.date)} · ${DEP_CATS[d.cat] || d.cat}${d.logId ? ' · ' + logName(d.logId) : ''}</span></span>
@@ -3495,7 +3495,7 @@ const SHEETS = {
     const pt = g.porte || {};
     const rnd = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
     return {
-      title: 'Code de la porte — ' + g.nom,
+      title: 'Code de la porte — ' + logLabel(g),
       narrow: true,
       body: html`<form id="f" data-form="door" class="fields">
         <input type="hidden" name="id" value="${id}">
@@ -3674,7 +3674,7 @@ const SHEETS = {
           const leaving = occ.filter((l) => l.sortie);
           return html`<button class="row" data-action="open-log" data-id="${g.id}">
             <span class="avatar" style="${occ.length ? '' : 'background:var(--amber-soft);color:var(--amber)'}">${icon(logIcon(g.type))}</span>
-            <span class="grow"><span class="title" style="display:block">${g.nom} <span class="muted small">${inside ? '' : [logKind(g), logWhere(g)].filter(Boolean).join(' · ')}</span></span>
+            <span class="grow"><span class="title" style="display:block">${logLabel(g)} <span class="muted small">${inside ? '' : [logKind(g), logWhere(g)].filter(Boolean).join(' · ')}</span></span>
               <span class="meta" style="display:flex;gap:6px;flex-wrap:wrap">${occ.length ? occ.map(fullName).join(', ') : html`<span class="badge warn">Vacant</span>`}
               ${leaving.map((l) => html`<span class="badge warn">départ ${fmtDate(l.sortie)}</span>`)}${next.map((l) => html`<span class="badge acc">arrivée ${fmtDate(l.debut)}</span>`)}</span></span>
             <span class="tiny muted">${plural(tenantsOfLog(g.id).length, 'occupant')}</span>
@@ -3758,7 +3758,7 @@ const SHEETS = {
         <div class="list">${logs.map((g) => {
           const bb = bilan({ logId: g.id });
           const occ = occupancy(g.id);
-          return html`<button class="row" data-action="open-log" data-id="${g.id}" data-tab="bilan"><span class="grow"><span class="title" style="display:block">${g.nom}</span>
+          return html`<button class="row" data-action="open-log" data-id="${g.id}" data-tab="bilan"><span class="grow"><span class="title" style="display:block">${logLabel(g)}</span>
             <span class="meta">${plural(bb.occupants, 'occupant')}${occ ? ` · occupé ${pct(occ.occupied, occ.total)}% du temps` : ''}${bb.depenses ? ' · dépenses ' + money(bb.depenses) : ''}</span></span>
             <span class="amount green">${money(bb.encaisse)}</span></button>`;
         })}</div>` : ''}`;
@@ -3982,7 +3982,7 @@ const SHEETS = {
         ${depensesOf(null, null, id).length ? html`<div class="section-label">Dépenses de ce logement</div><div class="list">${depensesOf(null, null, id).sort((a, b) => (b.date || '').localeCompare(a.date || '')).map((d) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${d.desc}</span><span class="meta">${fmtDate(d.date)}</span></span><span class="amount red">−${money(d.montant)}</span></div>`)}</div>` : ''}`;
     }
     return {
-      title: g.nom,
+      title: logLabel(g),
       body: html`${tabsBar([['now', 'Actuel'], ['hist', `Occupants (${all.length})`], ['edl', `État des lieux${edlOf(id, 'edl-out').length ? ' 📷' : ''}`], ['porte', g.porte && g.porte.code ? '🔑 Porte' : 'Porte'], ['bilan', 'Bilan']], tab)}${body}`,
       foot: html`<button class="btn icon" data-action="print-log" data-id="${id}" aria-label="Imprimer">${icon('download')}</button><button class="btn" data-action="open-imm" data-id="${g.immId}">${icon('building')} Immeuble</button><button class="btn" data-action="edit-log" data-id="${id}">${icon('edit')} Modifier</button>`,
     };
@@ -4506,7 +4506,7 @@ function reportImmeuble(immId, y) {
     <div class="pr-cols"><div><h2>Bilan ${y}</h2>${prBilan(bilan({ immId, y }))}</div><div><h2>Depuis l'origine</h2>${prBilan(bilan({ immId }), true)}</div></div>
     ${years.length > 1 ? html`<h2>Par année</h2>${bilanTable(years)}` : ''}
     ${logs.length ? html`<h2>Logements</h2><table class="tbl"><thead><tr><th>Logement</th><th>Type</th><th>Occupant actuel</th><th class="r">Occupants</th><th class="r">Occupation</th><th class="r">Encaissé total</th></tr></thead><tbody>
-      ${logs.map((g) => { const o = occupancy(g.id); const bb = bilan({ logId: g.id }); return html`<tr><td>${g.nom}</td><td>${logKind(g)}</td><td>${occupantsNow(g.id).map(fullName).join(', ') || 'Vacant'}</td><td class="r">${bb.occupants}</td><td class="r">${o ? pct(o.occupied, o.total) + '%' : '—'}</td><td class="r">${money(bb.encaisse)}</td></tr>`; })}
+      ${logs.map((g) => { const o = occupancy(g.id); const bb = bilan({ logId: g.id }); return html`<tr><td>${logLabel(g)}</td><td>${logKind(g)}</td><td>${occupantsNow(g.id).map(fullName).join(', ') || 'Vacant'}</td><td class="r">${bb.occupants}</td><td class="r">${o ? pct(o.occupied, o.total) + '%' : '—'}</td><td class="r">${money(bb.encaisse)}</td></tr>`; })}
     </tbody></table>` : ''}
     ${active.length ? html`<h2>Loyers ${y}</h2><table class="tbl pr-grid"><thead><tr><th>Locataire</th><th>Logement</th><th class="r">Loyer</th>${MONTHS.map((m) => html`<th>${m}</th>`)}<th class="r">Payé</th><th class="r">Impayé</th></tr></thead><tbody>
       ${active.map((l) => { const st = yearStats(l, y); return html`<tr><td>${fullName(l)}</td><td>${logName(l.logId)}</td><td class="r">${money(l.loyer)}</td>${MONTHS.map((_, i) => html`<td class="c">${markPay(l, y, i + 1)}</td>`)}<td class="r">${money(st.paid)}</td><td class="r">${money(st.rest)}</td></tr>`; })}
@@ -4521,7 +4521,7 @@ function reportLogement(logId) {
   const b = bilan({ logId });
   const o = occupancy(logId);
   return html`
-    <h1>${g.nom} — ${immName(g.immId)}</h1>
+    <h1>${logLabel(g)} — ${immName(g.immId)}</h1>
     <p class="pr-sub">${logKind(g)}${g.surface ? ' · ' + g.surface + ' m²' : ''}${o ? ` · occupé ${pct(o.occupied, o.total)}% du temps, ${duree(o.vacant)} de vacance` : ''}</p>
     <h2>Bilan depuis l'origine</h2>${prBilan({ ...b, verse: null, net: b.encaisse - b.depenses }, true)}
     <h2>Par année</h2>${bilanTable(yearsWithData((yy) => bilan({ logId, y: yy })))}
@@ -5068,7 +5068,7 @@ const ACTIONS = {
     const g = vault.get('logements', d.id);
     const ls = tenantsOfLog(d.id);
     if (ls.length) return toast(`Impossible : ${plural(ls.length, 'occupant')} enregistré${ls.length > 1 ? 's' : ''} dans ce logement (historique).`, { bad: true });
-    if (!(await confirmBox(`Supprimer « ${g.nom} » ?`, { ok: 'Supprimer', danger: true }))) return;
+    if (!(await confirmBox(`Supprimer « ${logLabel(g)} » ?`, { ok: 'Supprimer', danger: true }))) return;
     const photos = [...edlOf(d.id), ...edlOf(d.id, 'edl-out')];
     await vault.mutate((tx) => { tx.remove('logements', d.id); for (const ph of photos) tx.remove('documents', ph.id); }, 'Logement supprimé', g.nom, g.immId);
     for (const ph of photos) await vault.deleteFile(ph.id);
