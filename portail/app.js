@@ -4,6 +4,7 @@
 
 import { startI18n, LOCALES, translate as T } from '/ares/i18n.js';
 import { PTL_INVITE } from '/ares/ptl-invite.js';
+import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
@@ -22,6 +23,7 @@ try { caches.open('ptl-pref').then((c) => c.put('/__ptl-lang', new Response(LANG
 
 // Message d'invitation (email / WhatsApp) dans la langue du portail
 const INVITE = PTL_INVITE;
+wxRadioInit({ app: 'ptl', lang: () => LANG, home: () => 'Luxembourg' });
 const API = document.querySelector('meta[name="ptl-api"]').content.replace(/\/$/, '') + '/api/portail/';
 const $ = (s, r = document) => r.querySelector(s);
 
@@ -662,6 +664,7 @@ const VIEWS = {
         ${pageHead(hello, 'Espace équipe LuxInterventions')}
         ${arrive}
         ${pubSlot('haut')}
+        ${new Raw(wxRadioCard())}
         ${orgFilter()}
         <div class="metrics">
           <div class="metric"><div class="lbl">À traiter</div><div class="val ${recue.length ? 'red' : 'green'}">${recue.length}</div><div class="sub">nouvelles demandes</div></div>
@@ -681,6 +684,7 @@ const VIEWS = {
       ${pageHead(hello, state.me.org_name || '')}
       ${arrive}
       ${pubSlot('haut')}
+        ${new Raw(wxRadioCard())}
       <button class="big-cta" data-action="new-ticket">${icon('plus')}<span><b>Nouvelle demande d'intervention</b><small>Urgence, photos, accès — en 30 secondes</small></span></button>
       <div class="metrics" style="margin-top:14px">
         <div class="metric"><div class="lbl">En cours</div><div class="val">${stats.open || 0}</div><div class="sub">${stats.urgent ? html`<span class="red">${stats.urgent} urgente(s)</span>` : 'demandes ouvertes'}</div></div>
