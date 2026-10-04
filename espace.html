@@ -127,6 +127,11 @@
   .bin-red { background: #fef2f2; border-color: #fecaca; }
   .men h2 .light { margin-right: 4px; }
   .vis-soon .row { padding: 4px 0; border: 0; }
+  /* loyer impayé : contour rouge qui pulse + pastille rouge (fermée ou ouverte) */
+  [data-due] { border: 1.5px solid #fca5a5; animation: duepulse 2s ease-in-out infinite; }
+  @keyframes duepulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0); border-color: #fecaca; } 50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, .18); border-color: #ef4444; } }
+  @media (prefers-reduced-motion: reduce) { [data-due] { animation: none; border-color: #ef4444; } }
+  h2 .light { margin-right: 2px; vertical-align: 2px; }
   .mt-sec { margin-top: 14px; padding-top: 10px; border-top: 1px solid var(--line); }
   .mt-sec > summary { cursor: pointer; }
   .mt-coll h2 { margin-top: 0; }
