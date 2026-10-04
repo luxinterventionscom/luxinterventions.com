@@ -468,7 +468,7 @@ function renderShell() {
     <div>
       <header class="topbar">
         <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span>${isAdmin() ? 'LuxInterventions' : state.me.org_name || 'Portail'}</span></div>
-        <button class="btn sm primary" data-action="new-ticket">${icon('plus')} <span class="hide-xs">Nouvelle demande</span></button>
+        <button class="btn sm primary" data-action="new-ticket">${icon('plus')} <span class="show-xs">Dépannage</span><span class="hide-xs">Demande de dépannage</span></button>
       </header>
       ${state.demo ? html`<div class="demo-bar">${icon('eye')}<span class="grow"><b>Mode démo</b> — données d’exemple, rien n’est enregistré.</span>
         <span class="demo-switch"><button class="chip" data-action="demo-switch" data-id="gerance" aria-pressed="${!isAdmin()}">Vue gérance</button><button class="chip" data-action="demo-switch" data-id="admin" aria-pressed="${isAdmin()}">Vue LuxInterventions</button></span>
@@ -714,7 +714,7 @@ const VIEWS = {
       ${arrive}
       ${pubSlot('haut')}
         ${new Raw(wxRadioCard())}
-      <button class="big-cta" data-action="new-ticket">${icon('plus')}<span><b>Nouvelle demande d'intervention</b><small>Urgence, photos, accès — en 30 secondes</small></span></button>
+      <button class="big-cta" data-action="new-ticket">${icon('plus')}<span><b>Nouvelle demande de dépannage</b><small>Urgence, photos, accès — en 30 secondes</small></span></button>
       <div class="metrics" style="margin-top:14px">
         <div class="metric"><div class="lbl">En cours</div><div class="val">${stats.open || 0}</div><div class="sub">${stats.urgent ? html`<span class="red">${stats.urgent} urgente(s)</span>` : 'demandes ouvertes'}</div></div>
         <div class="metric"><div class="lbl">Terminées ce mois</div><div class="val green">${stats.doneMonth || 0}</div><div class="sub">${stats.createdMonth || 0} demandée(s)</div></div>
@@ -724,7 +724,7 @@ const VIEWS = {
       ${pubSlot('milieu')}
       <button class="btn block" style="margin-top:12px" data-action="go" data-to="stats">${icon('chart')} Statistiques de nos interventions</button>
       <div class="section-label">Mes demandes en cours</div>
-      ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande</button>`)}
+      ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande de dépannage</button>`)}
       ${pubSlot('bas')}${tickerBar()}`;
   },
 
@@ -785,7 +785,7 @@ const VIEWS = {
     if (q) list = list.filter((t) => [t.ref, t.residence_name, t.residence_address, t.lieu, t.categorie, t.description, t.org_name, t.technicien].join(' ').toLowerCase().includes(q));
     const resList = (state.cache.residencesList || []).filter((r) => !f.org || r.org_id === f.org);
     return html`
-      ${pageHead('Demandes', `${list.length} demande${list.length > 1 ? 's' : ''}`, html`<button class="btn primary desk-only" data-action="new-ticket">${icon('plus')} Nouvelle demande</button>`)}
+      ${pageHead('Demandes', `${list.length} demande${list.length > 1 ? 's' : ''}`, html`<button class="btn primary desk-only" data-action="new-ticket">${icon('plus')} Nouvelle demande de dépannage</button>`)}
       <div class="tabs" role="tablist" style="max-width:420px">
         ${[['active', 'En cours'], ['done', 'Terminées'], ['all', 'Toutes']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${f.scope === k}" data-action="scope" data-id="${k}">${l}</button>`)}
       </div>
@@ -798,7 +798,7 @@ const VIEWS = {
         <button class="chip" data-action="urg-filter" data-id="" aria-pressed="${!f.urg}">Toutes urgences</button>
         ${Object.entries(URG).map(([k, u]) => html`<button class="chip" data-action="urg-filter" data-id="${k}" aria-pressed="${f.urg === k}">${u.dot} ${u.label}</button>`)}
       </div>
-      ${list.length ? html`<div class="list">${list.map(ticketRow)}</div>` : empty('wrench', 'Aucune demande.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande</button>`)}`;
+      ${list.length ? html`<div class="list">${list.map(ticketRow)}</div>` : empty('wrench', 'Aucune demande.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande de dépannage</button>`)}`;
   },
 
   residences() {
@@ -807,7 +807,7 @@ const VIEWS = {
     if (q) list = list.filter((r) => [r.name, r.address, r.org_name].join(' ').toLowerCase().includes(q));
     const apts = list.reduce((a, r) => a + (r.apartments || 0), 0);
     return html`
-      ${pageHead('Résidences', `${list.length} résidence${list.length > 1 ? 's' : ''}${apts ? ' · ' + apts + ' appartements' : ''}`, html`<button class="btn primary" data-action="new-residence">${icon('plus')} Ajouter</button>`)}
+      ${pageHead('Résidences', `${list.length} résidence${list.length > 1 ? 's' : ''}${apts ? ' · ' + apts + ' appartements' : ''}`, html`<button class="btn primary" data-action="new-residence">${icon('plus')} Ajouter une résidence</button>`)}
       ${orgFilter()}
       <div class="search">${icon('search')}<input type="search" data-input="rq" placeholder="Rechercher une résidence, une adresse…" value="${state.filters.rq || ''}" autocomplete="off"></div>
       ${list.length ? html`<div class="list">${list.map((r) => html`<button class="row" data-action="open-residence" data-id="${r.id}">
@@ -1088,10 +1088,10 @@ const SHEETS = {
   'ticket-form'({ data = {} }) {
     const res = (state.cache.residencesList || []).filter((r) => !isAdmin() || !state.filters.org || r.org_id === state.filters.org);
     if (!res.length) {
-      return { title: 'Nouvelle demande', narrow: true, body: empty('building', 'Ajoutez d’abord la résidence concernée : ses informations (accès, clés, contact) seront reprises automatiquement.', html`<button class="btn primary" data-action="new-residence">${icon('plus')} Ajouter une résidence</button>`) };
+      return { title: 'Nouvelle demande de dépannage', narrow: true, body: empty('building', 'Ajoutez d’abord la résidence concernée : ses informations (accès, clés, contact) seront reprises automatiquement.', html`<button class="btn primary" data-action="new-residence">${icon('plus')} Ajouter une résidence</button>`) };
     }
     return {
-      title: 'Nouvelle demande',
+      title: 'Nouvelle demande de dépannage',
       body: html`<form id="f" data-form="ticket" class="fields">
         <label class="field full">Résidence<select name="residence_id" required><option value="">— Choisir —</option>
           ${res.map((r) => html`<option value="${r.id}" ${data.residence_id === r.id ? new Raw('selected') : ''}>${r.name}${r.address ? ' — ' + r.address : ''}${isAdmin() ? ' (' + r.org_name + ')' : ''}</option>`)}</select></label>
@@ -1134,7 +1134,7 @@ const SHEETS = {
           ${kv('Code d’accès', codeShow(r.access))}${kv('Code alarme', codeShow(r.alarm))}${kv('Code panneaux / autre', codeShow(r.code_other))}${kv('Clés', r.keys_info)}${kv('Contact', [r.contact_name, r.contact_phone].filter(Boolean).join(' · '))}
         </dl>
         ${r.notes ? html`<div class="note" style="margin-bottom:14px">${r.notes}</div>` : ''}
-        <button class="btn primary block" data-action="new-ticket" data-residence="${r.id}">${icon('plus')} Nouvelle demande pour cette résidence</button>
+        <button class="btn primary block" data-action="new-ticket" data-residence="${r.id}">${icon('plus')} Demande de dépannage pour cette résidence</button>
         <div class="section-label">Historique des interventions</div>
         ${hist ? (hist.length ? html`<div class="list">${hist.map(ticketRow)}</div>` : html`<p class="muted small">Aucune demande pour cette résidence.</p>`) : html`<div class="spinner accent"></div>`}`,
       foot: html`<button class="btn ghost danger" data-action="residence-archive" data-id="${r.id}">${icon('trash')}</button><button class="btn" data-action="edit-residence" data-id="${r.id}">${icon('edit')} Modifier</button>`,

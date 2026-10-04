@@ -192,3 +192,9 @@ details.guide.fold:not([open]) > summary { margin-bottom: 0 !important; }
 .dispo-set legend { padding: 0 6px; font-weight: 700; font-size: 14px; }
 .dispo-row { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 8px; }
 @media (max-width: 420px) { .dispo-row { grid-template-columns: 1fr 1fr; } .dispo-row > :first-child { grid-column: 1 / -1; } }
+
+/* boutons côte à côte dans l'en-tête (Résidences : ajouter / dépannage) */
+.head-btns { display: flex; gap: 8px; flex-wrap: nowrap; justify-content: flex-end; }
+.show-xs { display: none; }
+@media (max-width: 480px) { .show-xs { display: inline; } }
+@media (max-width: 520px) { .page-head:has(.head-btns) { flex-direction: column; align-items: stretch; } .head-btns { justify-content: stretch; } .head-btns .btn { flex: 1; } }
