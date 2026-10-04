@@ -8787,5 +8787,89 @@ export default [
 [
 "Mansarde",
 "Attic room"
+],
+[
+"Type de maison",
+"House type"
+],
+[
+"Maison individuelle (4 façades libres)",
+"Detached house (4 free sides)"
+],
+[
+"Maison jumelée (un mur commun)",
+"Semi-detached house (one shared wall)"
+],
+[
+"Maison mitoyenne / en rangée (entre deux maisons)",
+"Terraced house (between two houses)"
+],
+[
+"Compris avec le logement",
+"Included with the home"
+],
+[
+"🍷 Cave",
+"🍷 Cellar"
+],
+[
+"🏠 Mansarde / grenier",
+"🏠 Attic room / loft"
+],
+[
+"🅿️ Place de parking",
+"🅿️ Parking space"
+],
+[
+"🌿 Jardin",
+"🌿 Garden"
+],
+[
+"🌇 Balcon / terrasse",
+"🌇 Balcony / terrace"
+],
+[
+"non habitable (rangement)",
+"not habitable (storage)"
+],
+[
+"au sous-sol / semi-enterré",
+"in the basement / semi-basement"
+],
+[
+"extérieur",
+"outdoor"
+],
+[
+"box",
+"lock-up"
+],
+[
+"Compris dans le loyer. Une cave ou un garage loué à part (ou gardé pour vous) : créez-le comme logement « Cave » ou « Garage » — son locataire a son app, ses loyers, son état des lieux et écrit au gestionnaire.",
+"Included in the rent. A cellar or garage let separately (or kept for yourself): create it as a “Cellar” or “Garage” unit — its tenant has the app, rent, inventory and writes to the manager."
+],
+[
+"Compris",
+"Included"
+],
+[
+"🍷 Cave commune",
+"🍷 Shared cellar"
+],
+[
+"✉️ seul·e — écrit au gestionnaire",
+"✉️ alone — writes to the manager"
+],
+[
+"Jardin / terrain",
+"Garden / land"
+],
+[
+"Surface d’une chambre (m²)",
+"Room floor area (m²)"
+],
+[
+"Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez ensuite les renommer et corriger la surface de chacune. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.",
+"Rooms are created as “Chambre 1”, “Chambre 2”…: you can then rename them and correct each one’s floor area. One more room? “+ Room” button on the flat."
 ]
 ];

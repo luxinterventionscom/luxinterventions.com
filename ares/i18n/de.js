@@ -8971,5 +8971,93 @@ export default [
 [
 "Mansarde",
 "Dachzimmer"
+],
+[
+"Type de maison",
+"Haustyp"
+],
+[
+"Maison individuelle (4 façades libres)",
+"Freistehendes Haus (4 freie Seiten)"
+],
+[
+"Maison jumelée (un mur commun)",
+"Doppelhaushälfte (eine gemeinsame Wand)"
+],
+[
+"Maison mitoyenne / en rangée (entre deux maisons)",
+"Reihenhaus (zwischen zwei Häusern)"
+],
+[
+"Compris avec le logement",
+"Inklusive zur Wohnung"
+],
+[
+"🍷 Cave",
+"🍷 Keller"
+],
+[
+"🏠 Mansarde / grenier",
+"🏠 Dachzimmer / Dachboden"
+],
+[
+"🅿️ Place de parking",
+"🅿️ Stellplatz"
+],
+[
+"🌿 Jardin",
+"🌿 Garten"
+],
+[
+"🌇 Balcon / terrasse",
+"🌇 Balkon / Terrasse"
+],
+[
+"habitable",
+"bewohnbar"
+],
+[
+"non habitable (rangement)",
+"nicht bewohnbar (Abstellraum)"
+],
+[
+"au sous-sol / semi-enterré",
+"im Untergeschoss / Souterrain"
+],
+[
+"extérieur",
+"außen"
+],
+[
+"box",
+"Box"
+],
+[
+"Compris dans le loyer. Une cave ou un garage loué à part (ou gardé pour vous) : créez-le comme logement « Cave » ou « Garage » — son locataire a son app, ses loyers, son état des lieux et écrit au gestionnaire.",
+"Im Mietpreis enthalten. Ein separat vermieteter (oder selbst genutzter) Keller oder eine Garage: als Einheit „Keller“ oder „Garage“ anlegen — der Mieter hat seine App, Mieten, Übergabeprotokoll und schreibt der Verwaltung."
+],
+[
+"Compris",
+"Inklusive"
+],
+[
+"🍷 Cave commune",
+"🍷 Gemeinschaftskeller"
+],
+[
+"✉️ seul·e — écrit au gestionnaire",
+"✉️ allein — schreibt der Verwaltung"
+],
+[
+"Jardin / terrain",
+"Garten / Grundstück"
+],
+[
+"Surface d’une chambre (m²)",
+"Fläche eines Zimmers (m²)"
+],
+[
+"Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez ensuite les renommer et corriger la surface de chacune. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.",
+"Die Zimmer werden „Chambre 1“, „Chambre 2“… angelegt: Sie können sie danach umbenennen und die Fläche jedes Zimmers korrigieren. Ein Zimmer mehr? Schaltfläche „+ Zimmer“ an der Wohnung."
 ]
 ];

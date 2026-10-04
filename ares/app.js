@@ -9,7 +9,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.64.0';
+const VERSION = '2.65.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -98,14 +98,22 @@ const IMM_TYPES = {
 const LOG_GROUPS = [
   ['Habitation', { appartement: 'Appartement', studio: 'Studio (lit, kitchenette, salle d’eau / WC indépendants)', chambre: 'Chambre', duplex: 'Duplex / penthouse', maison: 'Maison' }],
   ['Professionnel', { bureau: 'Bureau', commercial: 'Local commercial / magasin', restauration: 'Local de restauration (café, restaurant)', cabinet: 'Cabinet (médical, profession libérale)', atelier: 'Atelier / entrepôt' }],
-  ['Annexes', { box: 'Espace box', garage: 'Garage / box', parking: 'Emplacement de parking', cave: 'Cave / débarras (à louer ou usage propre)', autre: 'Autre' }],
+  ['Annexes', { box: 'Espace box', garage: 'Garage / box', parking: 'Emplacement de parking', cave: 'Cave / débarras (à louer ou usage propre)', jardin: 'Jardin / terrain', autre: 'Autre' }],
 ];
 const LOG_TYPES = Object.assign({}, ...LOG_GROUPS.map(([, t]) => t));
 // nom court (« 2 », « 2B ») complété par le type : « Chambre 2 » — pour que l'occupant retrouve sa porte
 const logLabel = (g) => { const n = String((g && g.nom) || '').trim(), t = g && LOG_TYPES[g.type]; return t && g.type !== 'autre' && /^[0-9][0-9A-Za-z.-]{0,3}$/.test(n) ? `${t.split(' ')[0]} ${n}` : n; };
 const logTypeSelect = (name, cur) => html`<label class="field">Type<select name="${name}">${LOG_GROUPS.map(([g, t]) => html`<optgroup label="${g}">${Object.entries(t).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</optgroup>`)}</select></label>`;
 const LOG_ROOMS = ['appartement', 'duplex', 'maison'];
-const logKind = (g) => { const t = (LOG_TYPES[g.type] || '').split(' (')[0]; return LOG_ROOMS.includes(g.type) && (g.ch || g.mans) ? `${t} · ${g.ch ? g.ch + ' ch.' : ''}${g.mans ? (g.ch ? ' + ' : '') + 'mansarde' : ''}` : t; };
+// Annexes comprises avec le logement (cave, mansarde, garage…) et type de maison
+const ANNEX = { cave: '🍷 Cave', mans: '🏠 Mansarde / grenier', garage: '🚗 Garage', parking: '🅿️ Place de parking', jardin: '🌿 Jardin', balcon: '🌇 Balcon / terrasse' };
+const ANNEX_OPT = { mans: { hab: 'habitable', non: 'non habitable (rangement)' }, garage: { semi: 'au sous-sol / semi-enterré', ext: 'extérieur', box: 'box' } };
+const MAISON_T = { isolee: 'Maison individuelle (4 façades libres)', jumelee: 'Maison jumelée (un mur commun)', rangee: 'Maison mitoyenne / en rangée (entre deux maisons)' };
+// unités qui ne sont pas des logements : chacune a son propre fil avec le gestionnaire, pas de tour de poubelles
+const NOT_HOME = ['cave', 'garage', 'box', 'parking', 'atelier', 'jardin'];
+const annexOf = (g) => { const a = { ...((g && g.annex) || {}) }; if (g && g.mans && !a.mans) a.mans = 'hab'; return a; };
+const annexText = (g) => Object.entries(annexOf(g)).filter(([k, v]) => v && ANNEX[k]).map(([k, v]) => ANNEX[k] + (ANNEX_OPT[k] && ANNEX_OPT[k][v] ? ' (' + ANNEX_OPT[k][v] + ')' : '') + ((g.annexM2 || {})[k] ? ' ' + (g.annexM2 || {})[k] + ' m²' : '')).join(' · ');
+const logKind = (g) => { const t = (LOG_TYPES[g.type] || '').split(' (')[0], a = annexOf(g); return (LOG_ROOMS.includes(g.type) && (g.ch || a.mans) ? `${t} · ${g.ch ? g.ch + ' ch.' : ''}${a.mans ? (g.ch ? ' + ' : '') + 'mansarde' : ''}` : t) + (g.surface ? ` · ${g.surface} m²` : ''); };
 const logIcon = (t) => (t === 'chambre' ? 'key' : LOG_GROUPS[1][1][t] ? 'building' : 'home');
 // Où se trouve l'unité : « étage 1er · ancien bar »
 const logWhere = (g) => [g.etage ? 'étage ' + g.etage : '', g.partie].filter(Boolean).join(' · ');
@@ -712,6 +720,7 @@ function espaceData(l) {
     v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
     societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: soc.signature || '', signW: soc.signW || 8 },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
+    annex: g ? annexOf(g) : {}, annexM2: (g && g.annexM2) || {}, surface: (g && g.surface) || '', maison: g && g.type === 'maison' ? g.maison || '' : '', unit: g ? g.type : '',
   };
   if (show.pay || show.quit) {
     const cy = new Date().getFullYear();
@@ -780,10 +789,10 @@ function espaceData(l) {
   if (show.chat && chatOn(im) && isCurrent(l)) {
     const g = (im.chats || {})[chatGroupKey(im, l)];
     if (g && g.members.includes(l.id)) {
-      out.chat = { id: g.id, key: g.key, me: shortName(l), mid: l.id };
+      out.chat = { id: g.id, key: g.key, me: shortName(l), mid: l.id, solo: g.members.length < 2 };
       const ev = binRota(im, g, g.since || '2026-09-01', addDays(today(), 120));
       const gk = chatGroupKey(im, l);
-      if (ev.length) out.bins = {
+      if (ev.length && g.members.length > 1) out.bins = {
         names: Object.fromEntries(g.members.map((m) => [m, shortName(vault.get('locataires', m) || {})])),
         order: (g.order || g.members).filter((id) => id && g.members.includes(id)),
         ev: ev.map((e) => ({ p: e.p, d: e.d, k: e.k, cats: e.cats })), log: ((im.binLog || {})[gk]) || {},
@@ -811,6 +820,7 @@ const chatScope = (im) => (im.chat && im.chat.scope) || 'partie';
 const chatOn = (im) => !!im && !(im.chat && im.chat.on === false) && !immGone(im);
 function chatGroupKey(im, l) {
   const sc = chatScope(im), g = vault.get('logements', l.logId);
+  if (g && NOT_HOME.includes(g.type)) return 'l:' + l.logId;
   if (sc === 'structure' || !l.logId) return 'all';
   if (sc === 'partie' && g && g.partie) return 'p:' + g.partie.trim().toLowerCase();
   // une chambre sans appartement indiqué : avec les autres chambres de la structure et les habitants sans logement précis
@@ -896,7 +906,7 @@ const binGroupPlan = (im, gk, g, msgs, to) => {
 };
 // Mémorise chaque tour passé (fait / par qui / oublié) : les messages du fil s'effacent après 90 jours, le classement est annuel
 async function binRecord(im, gk, g, msgs) {
-  if (!binsOn(im) || msgs == null) return;
+  if (!binsOn(im) || msgs == null || !g || g.members.length < 2) return;
   const log = { ...(((im.binLog || {})[gk]) || {}) };
   let changed = false;
   for (const e of binGroupPlan(im, gk, g, msgs, today())) {
@@ -946,7 +956,7 @@ async function chatSync() {
       const cur = im.chats || {};
       const groups = {};
       if (chatOn(im)) for (const l of tenantsOfImm(im.id).filter(isCurrent)) (groups[chatGroupKey(im, l)] ||= []).push(l.id);
-      for (const gk of Object.keys(groups)) if (groups[gk].length < 2) delete groups[gk]; // seul dans son appartement : pas de fil
+      // seul dans son logement (studio, garage, cave…) : le fil existe quand même, pour écrire au gestionnaire
       const next = {};
       let changed = false;
       for (const [gk, members] of Object.entries(groups)) {
@@ -1018,6 +1028,7 @@ async function chatLoad(imId, force) {
 }
 // Prochains tours des poubelles d'un fil, avec qui et si c'est fait
 function binsTable(im, g) {
+  if (g.members.length < 2) return ''; // une seule personne : pas de tour de poubelles
   const gk = Object.entries(im.chats || {}).find(([, x]) => x.id === g.id)?.[0];
   const msgs = (ui.chatCache || {})[g.id];
   const plan = binGroupPlan(im, gk, g, msgs, addDays(today(), 21));
@@ -2306,6 +2317,7 @@ function champScores(year) {
     const seen = new Set();
     for (const [gk, g] of Object.entries(im.chats || {})) {
       seen.add(gk);
+      if (g.members.length < 2) continue; // fil d'une seule personne : pas de tour de poubelles
       const days = new Set();
       for (const e of binGroupPlan(im, gk, g, (ui.chatCache || {})[g.id], year + '-12-31').filter((x) => x.p.startsWith(year + '-'))) {
         days.add(e.p);
@@ -3694,7 +3706,7 @@ const SHEETS = {
         ${on ? html`<label class="field" style="margin-bottom:6px">Qui discute ensemble ?<select data-input="chat-scope" data-id="${id}">${Object.entries(CHAT_SCOPES).map(([k, v]) => html`<option value="${k}" ${chatScope(im) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
           <label class="row" style="cursor:pointer;margin:6px 0"><input type="checkbox" data-input="bins-on" data-id="${id}" ${binsOn(im) ? new Raw('checked') : ''} style="width:22px;min-height:22px">
             <span class="grow"><b>🗑️ Tour des poubelles</b><span class="meta" style="display:block">À tour de rôle entre les habitants de chaque fil, automatiquement (le nouveau locataire prend la place de celui qui part). Dans leur app : « Ce soir c’est ton tour », ✅ Fait, 🔁 Je ne peux pas.</span></span></label>
-          ${groups.length ? groups.map(([gk, g]) => html`<div class="section-label">💬 ${chatLabel(gk)} <span class="muted small">· ${g.members.map((m) => shortName(vault.get('locataires', m) || {})).join(', ')}</span></div>
+          ${groups.length ? groups.map(([gk, g]) => html`<div class="section-label">💬 ${chatLabel(gk)}${g.members.length < 2 ? html` <span class="badge">✉️ seul·e — écrit au gestionnaire</span>` : ''} <span class="muted small">· ${g.members.map((m) => shortName(vault.get('locataires', m) || {})).join(', ')}</span></div>
             ${binsTable(im, g)}
             <div class="chat">${chatBubbles((ui.chatCache || {})[g.id], g.id)}</div>
             <form data-form="chatpost" class="chat-form"><input type="hidden" name="imm" value="${id}"><input type="hidden" name="gk" value="${gk}">
@@ -3836,10 +3848,13 @@ const SHEETS = {
           ${field('Nom de l’appartement', 'nom', '', { full: true, required: true, placeholder: 'ex. Appartement 1er étage, Appartement A' })}
           ${field('Étage', 'etage', '', { placeholder: 'ex. RDC, 1er' })}
           <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="mans" style="width:22px;min-height:22px"> + une mansarde (chambre sous les toits)</label>
+          <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="cave" style="width:22px;min-height:22px"> 🍷 Cave commune</label>
+          <label class="field">🚗 Garage<select name="garage"><option value="">—</option>${Object.entries(ANNEX_OPT.garage).map(([o, v]) => html`<option value="${o}">${v}</option>`)}</select></label>
           <label class="field">Nombre de chambres<select name="n">${[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => html`<option value="${n}" ${n === 4 ? new Raw('selected') : ''}>${n}</option>`)}</select></label>
-          ${field('Loyer indicatif par chambre (€)', 'loyer', '', { full: true, type: 'number', attrs: money$ })}
+          ${field('Loyer indicatif par chambre (€)', 'loyer', '', { type: 'number', attrs: money$ })}
+          ${field('Surface d’une chambre (m²)', 'surface', '', { type: 'number', attrs: 'inputmode="decimal" min="0" step="0.5"' })}
         </form>
-        <p class="tiny muted">Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez les renommer ensuite. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.</p>`,
+        <p class="tiny muted">Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez ensuite les renommer et corriger la surface de chacune. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.</p>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="fColoc">Créer l’appartement et ses chambres</button>`,
     };
   },
@@ -3855,7 +3870,15 @@ const SHEETS = {
         <label class="field full">Immeuble<select name="immId" required>${vault.list('immeubles').filter((im) => !immGone(im) || im.id === g.immId).sort(byAddr).map((im) => html`<option value="${im.id}" ${im.id === g.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         ${logTypeSelect('type', g.type)}
         <label class="field">Chambres (appartement, maison)<select name="ch"><option value="">—</option>${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => html`<option value="${n}" ${+g.ch === n ? new Raw('selected') : ''}>${n}</option>`)}</select></label>
-        <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="mans" ${g.mans ? new Raw('checked') : ''} style="width:22px;min-height:22px"> Avec mansarde</label>
+        <label class="field">Type de maison<select name="maison"><option value="">—</option>${Object.entries(MAISON_T).map(([k, v]) => html`<option value="${k}" ${g.maison === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        <fieldset class="field full annex-set" style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:0">
+          <legend class="small" style="padding:0 6px;font-weight:700">Compris avec le logement</legend>
+          ${(() => { const a = annexOf(g), m2 = g.annexM2 || {};
+            const sq = (k) => html`<input type="number" name="m2_${k}" value="${m2[k] || ''}" min="0" step="0.5" inputmode="decimal" placeholder="m²" aria-label="m²" style="width:76px;min-height:36px;padding:4px 8px">`;
+            return html`<div style="display:grid;gap:8px">${['cave', 'parking', 'jardin', 'balcon'].map((k) => html`<div style="display:flex;align-items:center;gap:8px"><label style="display:flex;align-items:center;gap:6px;flex:1"><input type="checkbox" name="ax_${k}" ${a[k] ? new Raw('checked') : ''} style="width:20px;min-height:20px"> ${ANNEX[k]}</label>${sq(k)}<span class="tiny muted">m²</span></div>`)}
+            ${['mans', 'garage'].map((k) => html`<div style="display:flex;align-items:flex-end;gap:8px"><label class="small" style="flex:1">${ANNEX[k]}<select name="ax_${k}"><option value="">—</option>${Object.entries(ANNEX_OPT[k]).map(([o, v]) => html`<option value="${o}" ${a[k] === o ? new Raw('selected') : ''}>${v}</option>`)}</select></label>${sq(k)}<span class="tiny muted" style="padding-bottom:10px">m²</span></div>`)}</div>`; })()}
+          <p class="tiny muted" style="margin:8px 0 0">Compris dans le loyer. Une cave ou un garage loué à part (ou gardé pour vous) : créez-le comme logement « Cave » ou « Garage » — son locataire a son app, ses loyers, son état des lieux et écrit au gestionnaire.</p>
+        </fieldset>
         ${field('Surface (m²)', 'surface', g.surface, { type: 'number', attrs: 'inputmode="decimal" min="0" step="0.1"' })}
         ${field('Étage', 'etage', g.etage, { placeholder: 'ex. RDC, 1er, sous-sol' })}
         <label class="field full">Fait partie de l’appartement (colocation)<input name="partie" value="${g.partie || ''}" list="colocList" autocomplete="off" placeholder="ex. Appartement 1er étage — vide si logement indépendant">
@@ -3883,6 +3906,8 @@ const SHEETS = {
         <dl class="kv small" style="margin-bottom:16px">
           ${kvRow('Immeuble', immName(g.immId))}
           ${kvRow('Type', logKind(g) || '—')}
+          ${g.type === 'maison' && g.maison ? kvRow('Maison', MAISON_T[g.maison]) : ''}
+          ${annexText(g) ? kvRow('Compris', annexText(g)) : ''}
           ${g.surface ? kvRow('Surface', g.surface + ' m²') : ''}
           ${g.etage ? kvRow('Étage', g.etage) : ''}
           ${g.partie ? kvRow('Situé dans', g.partie) : ''}
@@ -5319,9 +5344,11 @@ const FORMS = {
     if (colocsOf(immId).some((c) => c.nom.toLowerCase() === nom.toLowerCase())) return toast('Cet appartement existe déjà dans cette structure', { bad: true });
     const etage = String(fd.get('etage') || '').trim(), loyer = num(fd.get('loyer'));
     const mans = fd.get('mans') === 'on';
+    const annex = Object.fromEntries([['cave', fd.get('cave') === 'on' ? 1 : ''], ['garage', fd.get('garage') || '']].filter(([, v]) => v));
     await vault.mutate((tx) => {
-      for (let i = 1; i <= n; i++) tx.put('logements', { nom: 'Chambre ' + i, immId, type: 'chambre', etage, partie: nom, loyer, surface: '', note: '' });
-      if (mans) tx.put('logements', { nom: 'Mansarde', immId, type: 'chambre', etage: 'combles', partie: nom, loyer, surface: '', note: '' });
+      const surface = num(fd.get('surface')) || '';
+      for (let i = 1; i <= n; i++) tx.put('logements', { nom: 'Chambre ' + i, immId, type: 'chambre', etage, partie: nom, loyer, surface, note: '', annex });
+      if (mans) tx.put('logements', { nom: 'Mansarde', immId, type: 'chambre', etage: 'combles', partie: nom, loyer, surface: '', note: '', annex });
     }, 'Appartement en colocation ajouté', `${nom} · ${n} chambres${mans ? ' + mansarde' : ''} (${immName(immId)})`, immId);
     toast(`${nom} : ${n + (mans ? 1 : 0)} chambres créées`);
     goBack();
@@ -5331,8 +5358,10 @@ const FORMS = {
     const rec = {
       nom: fd.get('nom').trim(), immId: fd.get('immId'), type: fd.get('type'), surface: fd.get('surface') ? num(fd.get('surface')) : '',
       etage: fd.get('etage').trim(), partie: fd.get('partie').trim(), loyer: num(fd.get('loyer')), note: fd.get('note').trim(),
-      ch: LOG_ROOMS.includes(fd.get('type')) ? +fd.get('ch') || '' : '', mans: LOG_ROOMS.includes(fd.get('type')) && fd.get('mans') === 'on',
+      ch: LOG_ROOMS.includes(fd.get('type')) ? +fd.get('ch') || '' : '', mans: false, maison: fd.get('type') === 'maison' ? fd.get('maison') || '' : '',
+      annex: Object.fromEntries(Object.keys(ANNEX).map((k) => [k, ANNEX_OPT[k] ? fd.get('ax_' + k) || '' : fd.get('ax_' + k) === 'on' ? 1 : '']).filter(([, v]) => v)),
     };
+    rec.annexM2 = Object.fromEntries(Object.keys(rec.annex).map((k) => [k, num(fd.get('m2_' + k))]).filter(([, v]) => v > 0));
     if (id) rec.id = id;
     const saved = await vault.mutate((tx) => {
       const g = tx.put('logements', rec);

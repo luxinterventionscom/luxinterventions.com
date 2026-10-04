@@ -8983,5 +8983,89 @@ export default [
 [
 "Mansarde",
 "Mansarda"
+],
+[
+"Type de maison",
+"Tipo di casa"
+],
+[
+"Maison individuelle (4 façades libres)",
+"Casa indipendente (libera sui 4 lati)"
+],
+[
+"Maison jumelée (un mur commun)",
+"Casa bifamiliare (un muro in comune)"
+],
+[
+"Maison mitoyenne / en rangée (entre deux maisons)",
+"Casa a schiera (tra due case)"
+],
+[
+"Compris avec le logement",
+"Compreso con l’alloggio"
+],
+[
+"🍷 Cave",
+"🍷 Cantina"
+],
+[
+"🏠 Mansarde / grenier",
+"🏠 Mansarda / soffitta"
+],
+[
+"🅿️ Place de parking",
+"🅿️ Posto auto"
+],
+[
+"🌿 Jardin",
+"🌿 Giardino"
+],
+[
+"🌇 Balcon / terrasse",
+"🌇 Balcone / terrazza"
+],
+[
+"habitable",
+"abitabile"
+],
+[
+"non habitable (rangement)",
+"non abitabile (deposito)"
+],
+[
+"au sous-sol / semi-enterré",
+"nel seminterrato"
+],
+[
+"extérieur",
+"esterno"
+],
+[
+"Compris dans le loyer. Une cave ou un garage loué à part (ou gardé pour vous) : créez-le comme logement « Cave » ou « Garage » — son locataire a son app, ses loyers, son état des lieux et écrit au gestionnaire.",
+"Compreso nell’affitto. Una cantina o un garage affittato a parte (o tenuto per voi): createlo come alloggio «Cantina» o «Garage» — il suo inquilino ha la sua app, gli affitti, lo stato dei luoghi e scrive al gestore."
+],
+[
+"Compris",
+"Compreso"
+],
+[
+"🍷 Cave commune",
+"🍷 Cantina comune"
+],
+[
+"✉️ seul·e — écrit au gestionnaire",
+"✉️ da solo/a — scrive al gestore"
+],
+[
+"Jardin / terrain",
+"Giardino / terreno"
+],
+[
+"Surface d’une chambre (m²)",
+"Superficie di una camera (m²)"
+],
+[
+"Les chambres sont créées « Chambre 1 », « Chambre 2 »… : vous pouvez ensuite les renommer et corriger la surface de chacune. Une chambre de plus ? Bouton « + Chambre » sur l’appartement.",
+"Le camere vengono create «Chambre 1», «Chambre 2»…: potete poi rinominarle e correggere la superficie di ognuna. Una camera in più? Pulsante «+ Camera» sull’appartamento."
 ]
 ];
