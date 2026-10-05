@@ -1088,6 +1088,8 @@ const PUSH_LANGS = ["fr", "it", "de", "pt", "en", "es"];
 const PUSH_TXT = {
   inbox: { fr: "Nouveau message à lire", it: "Nuovo messaggio da leggere", de: "Neue Nachricht", pt: "Nova mensagem", en: "New message to read", es: "Nuevo mensaje" },
   msg: { fr: "Nouveau message de la maison", it: "Nuovo messaggio della casa", de: "Neue Nachricht im Haus", pt: "Nova mensagem da casa", en: "New house message", es: "Nuevo mensaje de la casa" },
+  ptl: { fr: "🏢 Nouvelle demande d'intervention", it: "🏢 Nuova richiesta di intervento", de: "🏢 Neue Einsatzanfrage", pt: "🏢 Novo pedido de intervenção", en: "🏢 New intervention request", es: "🏢 Nueva solicitud de intervención" },
+  ptlmsg: { fr: "🏢 Nouveau message d'une gérance", it: "🏢 Nuovo messaggio da un'agenzia", de: "🏢 Neue Nachricht einer Verwaltung", pt: "🏢 Nova mensagem de uma gestora", en: "🏢 New message from an agency", es: "🏢 Nuevo mensaje de una administración" },
   news: { fr: "Du nouveau dans votre app", it: "Novità nella tua app", de: "Neues in Ihrer App", pt: "Novidades na sua app", en: "Something new in your app", es: "Novedades en tu app" },
 };
 async function espPushSave(env, target, b) {
@@ -1426,7 +1428,9 @@ async function handlePortail(request, env, url, headers, ctx) {
       }
       const sql = `SELECT t.id, t.ref, t.org_id, t.residence_id, t.lieu, t.categorie, t.urgence, t.description, t.status, t.planned_at, t.technicien,
           t.created_at, t.updated_at, t.taken_at, t.done_at, r.name AS residence_name, r.address AS residence_address, o.name AS org_name, u.name AS created_by_name,
-          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos
+          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos,
+          (SELECT COUNT(*) FROM events e WHERE e.ticket_id = t.id AND e.kind = 'comment') AS msgs,
+          (SELECT COUNT(*) FROM events e JOIN users ue ON ue.id = e.user_id WHERE e.ticket_id = t.id AND e.kind = 'comment' AND ue.role != 'admin') AS msgs_ger
         FROM tickets t JOIN residences r ON r.id = t.residence_id JOIN orgs o ON o.id = t.org_id LEFT JOIN users u ON u.id = t.created_by
         ${where.length ? "WHERE " + where.join(" AND ") : ""}
         ORDER BY CASE t.status WHEN 'recue' THEN 0 ELSE 1 END, CASE t.urgence WHEN 'urgent' THEN 0 WHEN '24h' THEN 1 ELSE 2 END, t.updated_at DESC
@@ -1451,6 +1455,8 @@ async function handlePortail(request, env, url, headers, ctx) {
       ]);
       const msg = { title: `${URG_LABEL[b.urgence]} · #${refRow.ref} ${r.name}`, body: `${clean(b.categorie, 60) || "Intervention"}${b.lieu ? " — " + clean(b.lieu, 80) : ""} : ${clean(b.description, 140)}`, url: `/portail.html#/t/${id}`, tag: id };
       ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin' AND u.id != ?", [me.id], msg, b.urgence === "urgent"));
+      // l'app de gestion (LuxInterventions) : pastille sur l'icône + notification
+      if (!isAdmin(me)) ctx && ctx.waitUntil(espPushSend(env, "owner", "ptl"));
       return json({ id, ref: refRow.ref });
     }
 
@@ -1530,6 +1536,7 @@ async function handlePortail(request, env, url, headers, ctx) {
           env.DB.prepare("UPDATE tickets SET updated_at = ? WHERE id = ?").bind(now, t.id),
         ]);
         if (text) ctx && ctx.waitUntil(notifyOther({ title: `#${t.ref} · Message de ${me.name}`, body: text.slice(0, 140), url: `/portail.html#/t/${t.id}`, tag: t.id }, false));
+        if (!isAdmin(me)) ctx && ctx.waitUntil(espPushSend(env, "owner", "ptlmsg"));
         return json({ ok: true, event_id: evId });
       }
       if (sub === "photos" && method === "PUT") {

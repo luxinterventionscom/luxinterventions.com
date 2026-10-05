@@ -9187,5 +9187,25 @@ export default [
 [
 "travail fini",
 "work done"
+],
+[
+"Actualiser les messages",
+"Refresh messages"
+],
+[
+"💬 Nouveau message de la gérance : {0}",
+"💬 New message from the agency: {0}"
+],
+[
+"{0} messages non lus",
+"{0} unread messages"
+],
+[
+"1 message non lu",
+"1 unread message"
+],
+[
+"des gérances",
+"from agencies"
 ]
 ];

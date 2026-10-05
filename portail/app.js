@@ -1058,7 +1058,8 @@ const SHEETS = {
             <span class="tiny muted" data-files></span>
             <button class="btn sm primary" type="submit" style="margin-left:auto">${icon('send')} Envoyer</button>
           </div>
-        </form>`,
+        </form>
+        <button class="btn sm" style="margin-top:8px" data-action="open-ticket" data-id="${t.id}">🔄 Actualiser les messages</button>`,
       after: () => sheetEl.querySelectorAll('img[data-photo]').forEach(loadPhotoInto),
     };
   },

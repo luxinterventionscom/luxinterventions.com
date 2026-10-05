@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.76.0';
+const VERSION = '2.77.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1459,8 +1459,23 @@ async function ptlLoad() {
   const typing = sheetEl.contains(document.activeElement) && document.activeElement.matches('input, textarea, select') && document.activeElement.value;
   if (ui.sheet && ui.sheet.kind.startsWith('ger') && !typing) { ui.sheet.rendered = false; renderSheet(); }
 }
+// messages des gérances déjà lus, par demande (sur cet appareil)
+const ptlSeenGet = () => { try { return JSON.parse(localStorage.getItem('aresPtlSeen') || 'null'); } catch { return null; } };
+const ptlSeenPut = (o) => { try { localStorage.setItem('aresPtlSeen', JSON.stringify(o)); } catch { /* stockage indisponible */ } };
+const ptlUnread = (t) => Math.max(0, (t.msgs_ger || 0) - ((ptlSeenGet() || {})[t.id] || 0));
 // Veille 24 h/24 : les nouvelles demandes s'affichent sur le bouton « Gérances » (pastille) et en message
 function ptlBadge(tickets) {
+  ui.ptl.lastTickets = tickets;
+  // première fois sur cet appareil : les anciens messages comptent comme lus
+  if (!ptlSeenGet()) ptlSeenPut(Object.fromEntries(tickets.map((t) => [t.id, t.msgs_ger || 0])));
+  const unread = tickets.filter((t) => ptlUnread(t) > 0), nMsg = unread.reduce((n, t) => n + ptlUnread(t), 0);
+  const prevMsg = ui.ptl.msgSeen;
+  ui.ptl.msgSeen = Object.fromEntries(tickets.map((t) => [t.id, t.msgs_ger || 0]));
+  if (prevMsg) {
+    const nw = tickets.filter((t) => (t.msgs_ger || 0) > (prevMsg[t.id] || 0) && prevMsg[t.id] != null);
+    if (nw.length) toast(`💬 Nouveau message de la gérance : ${nw.map((t) => '#' + t.ref).join(', ')}`);
+  }
+  ui.ptl.nMsg = nMsg;
   const fresh = tickets.filter((t) => t.status === 'recue');
   const seen = ui.ptl.seen;
   ui.ptl.nNew = fresh.length;
@@ -1475,10 +1490,11 @@ function ptlBadge(tickets) {
   }
   document.querySelectorAll('.navbtn[data-to="gerances"], .bottomnav .navbtn[data-to="reglages"]').forEach((b) => {
     let n = b.querySelector('.nav-n');
-    if (!fresh.length) return n && n.remove();
+    const tot = fresh.length + nMsg;
+    if (!tot) return n && n.remove();
     if (!n) { n = document.createElement('i'); n.className = 'nav-n'; b.appendChild(n); }
-    n.textContent = fresh.length;
-    n.title = fresh.length + ' nouvelle(s) demande(s) des gérances';
+    n.textContent = tot;
+    n.title = `${fresh.length} nouvelle(s) demande(s) · ${nMsg} message(s) non lu(s) des gérances`;
     n.classList.toggle('u-urgent', fresh.some((t) => t.urgence === 'urgent'));
   });
 }
@@ -1496,6 +1512,9 @@ async function ptlTicketOpen(id) {
   try { ui.ptl.cur = await ptlApi('tickets/' + id); } catch (e) { return toast(e.message, { bad: true }); }
   if (ui.sheet && ui.sheet.kind === 'ger-ticket' && ui.sheet.id === id) { ui.sheet.rendered = false; renderSheet(); } else openSheet('ger-ticket', id);
   ptlPhotos();
+  const nIn = (ui.ptl.cur.events || []).filter((e) => e.kind === 'comment' && e.user_role !== 'admin').length;
+  const seen = ptlSeenGet() || {};
+  if ((seen[id] || 0) !== nIn) { seen[id] = nIn; ptlSeenPut(seen); if (ui.ptl.lastTickets) ptlBadge(ui.ptl.lastTickets); if (ui.route === 'gerances') renderView(); }
 }
 // photos du portail : lues avec la session, affichées en local
 async function ptlPhotos() {
@@ -2843,7 +2862,8 @@ dashboard() {
         <span class="grow"><span class="title" style="display:block;white-space:normal">#${t.ref} · ${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted small">— ${t.lieu}</span>` : ''}</span>
           <span class="meta" style="white-space:normal">🏢 ${t.org_name} · ${t.residence_name}${t.residence_address ? ' — ' + t.residence_address : ''}</span>
           <span class="meta" style="display:block;white-space:normal">${t.technicien ? html`👷 ${t.technicien} · ` : ''}${t.planned_at ? html`📅 ${String(t.planned_at).replace('T', ' ')} · ` : ''}${ptlTime(t.created_at)}${t.photos ? html` · 📷 ${t.photos}` : ''}</span></span>
-        <span class="badge ${t.status === 'recue' ? 'warn' : ''}">${PTL_ST[t.status] || t.status}</span></button>`; };
+        <span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="badge ${t.status === 'recue' ? 'warn' : ''}">${PTL_ST[t.status] || t.status}</span>
+          ${t.msgs ? html`<span class="tiny ${ptlUnread(t) ? 'ger-unread' : 'muted'}">💬 ${t.msgs} message${t.msgs > 1 ? 's' : ''}${ptlUnread(t) ? html` · <b>${ptlUnread(t)} nouveau${ptlUnread(t) > 1 ? 'x' : ''}</b>` : ''}</span>` : ''}</span></button>`; };
     return html`${head}
       ${chips}
       <div class="section-label">📥 Demandes d’intervention ${nRecue ? html`<span class="badge warn">${nRecue} nouvelle(s)</span>` : ''}</div>
@@ -3117,6 +3137,7 @@ dashboard() {
     const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     return html`
       ${pageHead('Réglages', 'Sécurité, synchronisation et données')}
+      ${ui.ptl.nMsg ? html`<button class="alert info" data-action="go" data-to="gerances" style="width:100%;text-align:left;cursor:pointer;margin-bottom:10px">💬<div><b>${ui.ptl.nMsg > 1 ? ui.ptl.nMsg + ' messages non lus' : '1 message non lu'}</b> des gérances<br><span class="small">Toucher pour les voir →</span></div></button>` : ''}
       ${ui.ptl.nNew ? html`<button class="alert warn ger-alert" data-action="go" data-to="gerances" style="width:100%;text-align:left;cursor:pointer;margin-bottom:14px">📥<div><b>${ui.ptl.nNew > 1 ? ui.ptl.nNew + ' nouvelles demandes d’intervention' : '1 nouvelle demande d’intervention'}</b> des gérances, pas encore prises en charge<br><span class="small">Toucher pour les voir →</span></div></button>` : ''}
       <div class="section-label">Synchronisation</div>
       <div class="list settings">
@@ -3424,7 +3445,8 @@ const SHEETS = {
           <button class="btn ghost danger" data-action="ger-st" data-id="${t.id}" data-st="annulee">Annuler la demande</button></div>` : ''}
         <div class="section-label">Suivi</div>
         <div class="list small" style="margin-bottom:10px">${d.events.map((e) => html`<div class="row" style="display:block"><b>${evLbl(e)}</b> <span class="muted">· ${e.user_name || ''} · ${ptlTime(e.created_at)}</span>${e.text && e.kind !== 'create' ? html`<div style="white-space:pre-wrap;margin-top:4px">${e.text}</div>` : ''}</div>`)}</div>
-        <form data-form="ger-msg" class="chat-form"><input type="hidden" name="id" value="${t.id}"><textarea name="x" required maxlength="2000" placeholder="Message à la gérance…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>`,
+        <form data-form="ger-msg" class="chat-form"><input type="hidden" name="id" value="${t.id}"><textarea name="x" required maxlength="2000" placeholder="Message à la gérance…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>
+        <button class="btn sm" style="margin-top:8px" data-action="ger-ticket" data-id="${t.id}">${icon('sync')} Actualiser les messages</button>`,
       foot: html`<a class="btn" href="/portail.html#/t/${t.id}" target="_blank" rel="noopener">${icon('eye')} Ouvrir dans le portail</a><button class="btn primary" data-action="close-sheet">Fermer</button>`,
     };
   },
@@ -3964,7 +3986,8 @@ const SHEETS = {
             ${binsTable(im, g)}
             <div class="chat">${chatBubbles((ui.chatCache || {})[g.id], g.id)}</div>
             <form data-form="chatpost" class="chat-form"><input type="hidden" name="imm" value="${id}"><input type="hidden" name="gk" value="${gk}">
-              <textarea name="x" required maxlength="1500" placeholder="Écrire aux habitants (en tant que gestionnaire)…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>`)
+              <textarea name="x" required maxlength="1500" placeholder="Écrire aux habitants (en tant que gestionnaire)…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>
+            <button class="btn sm" style="margin:6px 0 4px" data-action="chat-refresh" data-id="${id}">${icon('sync')} Actualiser</button>`)
           : html`<p class="muted small">Aucun fil pour le moment : un fil se crée tout seul dès que 2 personnes habitent le même appartement (ou le même groupe choisi ci-dessus).</p>`}
           <button class="btn sm" style="margin-top:8px" data-action="chat-refresh" data-id="${id}">${icon('sync')} Actualiser</button>` : ''}
         <div class="section-label">📜 Règles propres à cet immeuble</div>

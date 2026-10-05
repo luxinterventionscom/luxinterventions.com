@@ -2133,6 +2133,10 @@ export default [
 "📲 En la realidad, el equipo de LuxInterventions recibe ahora una notificación."
 ],
 [
+"🔄 Actualiser les messages",
+"🔄 Actualizar mensajes"
+],
+[
 "🔐 Codes",
 "🔐 Códigos"
 ],

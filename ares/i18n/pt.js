@@ -4722,11 +4722,11 @@ export default [
 ],
 [
 "{0} nouveau",
-"{0} novo"
+"{0} nova"
 ],
 [
 "{0} nouveaux",
-"{0} novos"
+"{0} novas"
 ],
 [
 "{0} nouveaux messages",
@@ -9351,5 +9351,25 @@ export default [
 [
 "travail fini",
 "trabalho concluído"
+],
+[
+"Actualiser les messages",
+"Atualizar mensagens"
+],
+[
+"💬 Nouveau message de la gérance : {0}",
+"💬 Nova mensagem da gestora: {0}"
+],
+[
+"{0} messages non lus",
+"{0} mensagens não lidas"
+],
+[
+"1 message non lu",
+"1 mensagem não lida"
+],
+[
+"des gérances",
+"das gestoras"
 ]
 ];
