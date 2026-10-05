@@ -9351,5 +9351,9 @@ export default [
 [
 "Ajouter gérance",
 "Añadir administración"
+],
+[
+"👷 Envoyer un ouvrier",
+"👷 Enviar un operario"
 ]
 ];

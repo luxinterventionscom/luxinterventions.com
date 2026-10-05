@@ -9327,5 +9327,9 @@ export default [
 [
 "Ajouter gérance",
 "Adicionar gestora"
+],
+[
+"👷 Envoyer un ouvrier",
+"👷 Enviar um técnico"
 ]
 ];

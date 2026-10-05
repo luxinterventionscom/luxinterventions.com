@@ -9375,5 +9375,9 @@ export default [
 [
 "Ajouter gérance",
 "Aggiungi agenzia"
+],
+[
+"👷 Envoyer un ouvrier",
+"👷 Invia un operaio"
 ]
 ];

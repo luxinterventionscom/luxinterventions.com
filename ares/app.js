@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.75.0';
+const VERSION = '2.75.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3416,7 +3416,7 @@ const SHEETS = {
         ${d.photos.length ? html`<div class="section-label">📷 Photos</div><div class="photos" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${d.photos.map((p) => html`<a target="_blank" rel="noopener"><img data-ptl-photo="${p.id}" alt="Photo" style="width:96px;height:96px;object-fit:cover;border-radius:10px;background:var(--surface-2)"></a>`)}</div>` : ''}
         ${linked.length ? html`<div class="alert info" style="margin-bottom:12px">${icon('tool')}<div>Dans Maintenance : ${linked.map((x) => html`<a href="#" data-action="edit-tache" data-id="${x.id}">${x.titre}${x.intervenantId ? ' — 👷 ' + intervFull(vault.get('intervenants', x.intervenantId) || {}) : ''}${x.date ? ' · ' + fmtDate(x.date) : ''}</a> `)}</div></div>` : ''}
         ${open ? html`<div class="actions" style="flex-wrap:wrap;margin-bottom:14px">
-          <button class="btn primary" style="flex:1 1 100%;white-space:normal" data-action="ger-to-mt" data-id="${t.id}">👷 ${linked.length ? 'Envoyer un autre ouvrier' : 'Envoyer un ouvrier (qui, quand)'}</button>
+          <button class="btn primary" style="flex:1 1 100%;white-space:normal" data-action="ger-to-mt" data-id="${t.id}">👷 ${linked.length ? 'Envoyer un autre ouvrier' : 'Envoyer un ouvrier'}</button>
           ${t.status === 'recue' ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="prise">✅ Prendre en charge</button>` : ''}
           ${t.status === 'planifiee' ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="encours">🚚 En route</button>` : ''}
           ${['prise', 'planifiee', 'encours'].includes(t.status) ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="terminee">${icon('check')} Terminée</button>` : ''}
