@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.78.0';
+const VERSION = '2.79.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2859,7 +2859,7 @@ dashboard() {
     if ((!d && !ui.ptl.err) || (d && Date.now() - d.at > 60000)) !ui.ptl.loading && setTimeout(ptlLoad, 0);
     const head = pageHead('Gérances', d ? `${plural(d.orgs.length, 'gérance')} · Portail gérance` : 'Portail gérance', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Ajouter gérance</button>`);
     const foot = html`<p class="tiny muted" style="margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">Connecté au portail : <b>${c.email || ''}</b> ${portal}
-      <button class="btn sm ghost" data-action="ger-reload">${icon('sync')} Actualiser</button><button class="btn sm ghost danger" data-action="ptl-logout">Déconnecter</button></p>`;
+      <button class="btn sm ghost" data-action="ger-reload">${icon('sync')} Actualiser</button><button class="btn sm ghost" data-action="ptl-self-reset">🔑 Nouveau mot de passe du portail</button><button class="btn sm ghost danger" data-action="ptl-logout">Déconnecter</button></p>`;
     if (!d) return html`${head}${ui.ptl.err ? html`<div class="alert warn">${icon('alert')}<div>${ui.ptl.err} <button class="btn sm" data-action="ger-reload">Réessayer</button></div></div>` : html`<p class="muted">Chargement…</p>`}${foot}`;
     const of = ui.ptl.org || '', oSel = of && ptlOrg(of);
     const tks = d.tickets.filter((t) => !of || t.org_id === of);
@@ -4879,6 +4879,17 @@ const ACTIONS = {
     try { await ptlApi('orgs/' + o.id, { method: 'DELETE', body: { confirm: v.trim() } }); } catch (e) { return toast(e.message, { bad: true }); }
     await vault.mutate((tx) => tx.put('reglages', { id: 'portail', lastDel: o.name }), 'Gérance supprimée du portail', o.name);
     closeSheet(); toast('Gérance supprimée'); ui.ptl.data = null; renderView();
+  },
+  // mot de passe du portail oublié : l'app de gestion (encore connectée) crée un lien pour en choisir un nouveau
+  async 'ptl-self-reset'() {
+    if (!(await confirmBox('Choisir un nouveau mot de passe du portail ?', { ok: 'Créer le lien', detail: `Compte ${(ptlConf() || {}).email || ''} : le portail s’ouvre et vous choisissez un nouveau mot de passe (l’ancien reste valable tant que vous ne l’avez pas changé).` }))) return;
+    const win = window.open('', '_blank');
+    try {
+      const me = await ptlApi('me');
+      const r = await ptlApi(`users/${me.user.id}/invite`, { method: 'POST' });
+      const url = ptlInviteUrl(r.invite);
+      if (win) win.location.href = url; else location.href = url;
+    } catch (e) { if (win) win.close(); toast(e.message, { bad: true }); }
   },
   async 'ger-inv'(d) {
     try { const r = await ptlApi(`users/${d.id}/invite`, { method: 'POST' }); ui.ptl.inv[d.id] = ptlInviteUrl(r.invite); } catch (e) { return toast(e.message, { bad: true }); }
