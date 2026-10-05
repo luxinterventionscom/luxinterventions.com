@@ -9459,5 +9459,13 @@ export default [
 [
 "Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement en bas de la fenêtre.",
 "Lo que escribió aún no está guardado. Para conservarlo: «Cancelar» y luego el botón de guardar abajo."
+],
+[
+"Mot de passe oublié",
+"Contraseña olvidada"
+],
+[
+"🔗 Envoyer un nouveau lien",
+"🔗 Enviar un nuevo enlace"
 ]
 ];

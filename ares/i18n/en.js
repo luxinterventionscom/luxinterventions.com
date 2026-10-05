@@ -9271,5 +9271,13 @@ export default [
 [
 "Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement en bas de la fenêtre.",
 "What you typed is not saved yet. To keep it: “Cancel”, then the save button at the bottom."
+],
+[
+"Mot de passe oublié",
+"Forgotten password"
+],
+[
+"🔗 Envoyer un nouveau lien",
+"🔗 Send a new link"
 ]
 ];

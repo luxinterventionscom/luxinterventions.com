@@ -9471,5 +9471,13 @@ export default [
 [
 "Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement en bas de la fenêtre.",
 "Ihre Eingabe ist noch nicht gespeichert. Zum Behalten: „Abbrechen“, dann die Speichern-Schaltfläche unten."
+],
+[
+"Mot de passe oublié",
+"Passwort vergessen"
+],
+[
+"🔗 Envoyer un nouveau lien",
+"🔗 Neuen Link senden"
 ]
 ];
