@@ -9235,5 +9235,65 @@ export default [
 [
 "🏢 Fiches des gérances ({0})",
 "🏢 Verwaltungen ({0})"
+],
+[
+"de",
+"von"
+],
+[
+"à",
+"bis"
+],
+[
+"📅 Donner du travail (jour, heure, lieu)",
+"📅 Arbeit geben (Tag, Uhrzeit, Ort)"
+],
+[
+"📅 Travail prévu (avec date)",
+"📅 Geplante Arbeit (mit Datum)"
+],
+[
+"Rien de prévu en plus de l’horaire habituel.",
+"Nichts zusätzlich zum üblichen Arbeitsplan."
+],
+[
+"Horaire habituel (chaque semaine)",
+"Üblicher Arbeitsplan (jede Woche)"
+],
+[
+"🔴 Urgent",
+"🔴 Dringend"
+],
+[
+"— clignote en rouge dans l’app de la personne",
+"— blinkt rot in der App der Person"
+],
+[
+"📷 Photos du problème (envoyées dans l’app de la personne)",
+"📷 Fotos des Problems (werden in die App der Person gesendet)"
+],
+[
+"✓ {0} photo(s) déjà jointe(s)",
+"✓ {0} Foto(s) bereits angehängt"
+],
+[
+" (photos de la gérance)",
+" (Fotos der Verwaltung)"
+],
+[
+"{0} nouvelles demandes d’intervention",
+"{0} neue Einsatzanfragen"
+],
+[
+"1 nouvelle demande d’intervention",
+"1 neue Einsatzanfrage"
+],
+[
+"des gérances, pas encore prises en charge",
+"von Verwaltungen, noch nicht übernommen"
+],
+[
+"Toucher pour les voir →",
+"Tippen zum Ansehen →"
 ]
 ];

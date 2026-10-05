@@ -9227,5 +9227,61 @@ export default [
 [
 "🏢 Fiches des gérances ({0})",
 "🏢 Fichas de las administraciones ({0})"
+],
+[
+"à",
+"a"
+],
+[
+"📅 Donner du travail (jour, heure, lieu)",
+"📅 Dar trabajo (día, hora, lugar)"
+],
+[
+"📅 Travail prévu (avec date)",
+"📅 Trabajo previsto (con fecha)"
+],
+[
+"Rien de prévu en plus de l’horaire habituel.",
+"Nada previsto aparte del horario habitual."
+],
+[
+"Horaire habituel (chaque semaine)",
+"Horario habitual (cada semana)"
+],
+[
+"🔴 Urgent",
+"🔴 Urgente"
+],
+[
+"— clignote en rouge dans l’app de la personne",
+"— parpadea en rojo en la app de la persona"
+],
+[
+"📷 Photos du problème (envoyées dans l’app de la personne)",
+"📷 Fotos del problema (enviadas a la app de la persona)"
+],
+[
+"✓ {0} photo(s) déjà jointe(s)",
+"✓ {0} foto(s) ya adjunta(s)"
+],
+[
+" (photos de la gérance)",
+" (fotos de la administración)"
+],
+[
+"{0} nouvelles demandes d’intervention",
+"{0} nuevas solicitudes de intervención"
+],
+[
+"1 nouvelle demande d’intervention",
+"1 nueva solicitud de intervención"
+],
+[
+"des gérances, pas encore prises en charge",
+"de las administraciones, aún sin atender"
+],
+[
+"Toucher pour les voir →",
+"Toca para verlas →"
 ]
 ];

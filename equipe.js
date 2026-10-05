@@ -1,7 +1,7 @@
 // App de l'équipe : planning personnel (quoi, où, quand), « commencé / fini / pas fini » avec note et photos,
 // horaire, absences, coordonnées. Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
 import '/ares/reqmark.js';
-import { openJson, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
+import { openJson, openBytes, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
 
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
@@ -24,7 +24,7 @@ const L = {
     nt: {"t": "🔔 Notifications", "hint": "Recevez un avis et le numéro sur l’icône quand il y a un message ou du nouveau.", "on": "🔔 Activer les notifications", "ok": "✓ Notifications activées sur ce téléphone", "install": "iPhone : installez d’abord l’app sur l’écran d’accueil, ouvrez-la depuis l’icône, puis activez ici les notifications.", "denied": "Les notifications sont bloquées : réactivez-les dans les réglages du téléphone (Notifications → cette app).", "err": "Impossible d’activer les notifications sur ce téléphone."},
     ad: {"back": "📣 Publicité", "t": "Bons plans du quartier", "route": "🧭 Itinéraire", "call": "📞 Appeler", "web": "🌐 Site web", "cats": {"musique": "🎵 Musique", "resto": "🍕 Pizzeria / restaurant", "bar": "🍺 Bar / pub", "horeca": "☕ Café / snack", "bricolage": "🔨 Bricolage / jardinage", "meubles": "🛋️ Meubles / décoration", "courses": "🛒 Supermarché", "proxi": "🏪 Commerce de proximité", "bureau": "🏢 Bureaux", "social": "📱 Réseaux sociaux", "services": "🧰 Services", "autre": "📌 Autre"}, "see": "🗺️ Voir sur la carte", "lbl": "Publicité", "mapT": "Carte"},
     loc: 'fr-LU', app: 'App de l’équipe', welcome: 'Votre planning, vos interventions et vos absences, sur votre téléphone.', code: 'Votre code personnel', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrer', noCode: 'Pas de code ? Demandez-le à votre responsable.', badCode: 'Code inconnu. Vérifiez-le ou demandez un nouveau code.', off: 'Cet accès a été désactivé. Demandez un nouveau code à votre responsable.', mismatch: 'Ce code est pour l’app des locataires.',
-    hello: 'Bonjour', today: 'Aujourd’hui', next: 'Prochains jours', none: 'Rien de prévu aujourd’hui.', noneNext: 'Rien de prévu.', late: 'en retard', start: '▶️ Je commence', done: '✅ Fini', inc: '⚠️ Pas fini', why: 'Pourquoi ce n’est pas fini ? (obligatoire)', whyPh: 'ex. il manque une pièce, locataire absent…', note: 'Note (facultatif)', notePh: 'ex. robinet changé, escalier lavé', photos: 'Photos (max. 3)', send: 'Envoyer', cancel: 'Annuler',
+    hello: 'Bonjour', pbPh: '📷 Photos du problème', urg: 'URGENT', today: 'Aujourd’hui', next: 'Prochains jours', none: 'Rien de prévu aujourd’hui.', noneNext: 'Rien de prévu.', late: 'en retard', start: '▶️ Je commence', done: '✅ Fini', inc: '⚠️ Pas fini', why: 'Pourquoi ce n’est pas fini ? (obligatoire)', whyPh: 'ex. il manque une pièce, locataire absent…', note: 'Note (facultatif)', notePh: 'ex. robinet changé, escalier lavé', photos: 'Photos (max. 3)', send: 'Envoyer', cancel: 'Annuler',
     st: { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini' }, at: 'à', consignes: 'Consignes', contact: 'Contact sur place', call: 'Appeler', commons: 'Parties communes',
     sched: 'Mon horaire', days: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'], noSched: 'Pas d’horaire enregistré.',
     abs: 'Mes absences', absNow: (t, f) => `${t}${f ? ' jusqu’au ' + f : ''}`, sick: 'Je suis malade / absent', types: { maladie: '🤒 Maladie', conges: '🏖️ Demande de congé', autre: '📌 Autre absence' }, from: 'Du', to: 'Au (inclus)', cert: 'Certificat médical (photo)', sickOk: 'Envoyé ✓ Votre responsable est prévenu.',
@@ -41,7 +41,7 @@ const L = {
     nt: {"t": "🔔 Notifiche", "hint": "Ricevi un avviso e il numerino sull’icona quando c’è un messaggio o una novità.", "on": "🔔 Attiva le notifiche", "ok": "✓ Notifiche attive su questo telefono", "install": "iPhone: prima installa l’app sulla schermata Home, aprila dall’icona, poi attiva qui le notifiche.", "denied": "Le notifiche sono bloccate: riattivale nelle impostazioni del telefono (Notifiche → questa app).", "err": "Impossibile attivare le notifiche su questo telefono."},
     ad: {"back": "📣 Pubblicità", "t": "Offerte del quartiere", "route": "🧭 Itinerario", "call": "📞 Chiama", "web": "🌐 Sito web", "cats": {"musique": "🎵 Musica", "resto": "🍕 Pizzeria / ristorante", "bar": "🍺 Bar / pub", "horeca": "☕ Caffè / snack", "bricolage": "🔨 Fai da te / giardinaggio", "meubles": "🛋️ Mobili / arredamento", "courses": "🛒 Supermercato", "proxi": "🏪 Negozio di prossimità", "bureau": "🏢 Uffici", "social": "📱 Social media", "services": "🧰 Servizi", "autre": "📌 Altro"}, "see": "🗺️ Vedi sulla mappa", "lbl": "Pubblicità", "mapT": "Mappa"},
     loc: 'it-IT', app: 'App della squadra', welcome: 'Il tuo planning, i tuoi interventi e le tue assenze, sul telefono.', code: 'Il tuo codice personale', codePh: 'es. K7PM2-QXA4H', enter: 'Entra', noCode: 'Non hai il codice? Chiedilo al tuo responsabile.', badCode: 'Codice sconosciuto. Controllalo o chiedi un nuovo codice.', off: 'Questo accesso è stato disattivato. Chiedi un nuovo codice al responsabile.', mismatch: 'Questo codice è per l’app degli inquilini.',
-    hello: 'Ciao', today: 'Oggi', next: 'Prossimi giorni', none: 'Niente in programma oggi.', noneNext: 'Niente in programma.', late: 'in ritardo', start: '▶️ Inizio', done: '✅ Finito', inc: '⚠️ Non finito', why: 'Perché non è finito? (obbligatorio)', whyPh: 'es. manca un pezzo, inquilino assente…', note: 'Nota (facoltativa)', notePh: 'es. rubinetto cambiato, scale lavate', photos: 'Foto (max. 3)', send: 'Invia', cancel: 'Annulla',
+    hello: 'Ciao', pbPh: '📷 Foto del problema', urg: 'URGENTE', today: 'Oggi', next: 'Prossimi giorni', none: 'Niente in programma oggi.', noneNext: 'Niente in programma.', late: 'in ritardo', start: '▶️ Inizio', done: '✅ Finito', inc: '⚠️ Non finito', why: 'Perché non è finito? (obbligatorio)', whyPh: 'es. manca un pezzo, inquilino assente…', note: 'Nota (facoltativa)', notePh: 'es. rubinetto cambiato, scale lavate', photos: 'Foto (max. 3)', send: 'Invia', cancel: 'Annulla',
     st: { encours: '▶️ Iniziato', fait: '✅ Finito', incomplet: '⚠️ Non finito' }, at: 'alle', consignes: 'Istruzioni', contact: 'Contatto sul posto', call: 'Chiama', commons: 'Parti comuni',
     sched: 'Il mio orario', days: ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato', 'Domenica'], noSched: 'Nessun orario registrato.',
     abs: 'Le mie assenze', absNow: (t, f) => `${t}${f ? ' fino al ' + f : ''}`, sick: 'Sono malato / assente', types: { maladie: '🤒 Malattia', conges: '🏖️ Richiesta di ferie', autre: '📌 Altra assenza' }, from: 'Dal', to: 'Al (incluso)', cert: 'Certificato medico (foto)', sickOk: 'Inviato ✓ Il tuo responsabile è avvisato.',
@@ -58,7 +58,7 @@ const L = {
     nt: {"t": "🔔 Notificações", "hint": "Receba um aviso e o número no ícone quando houver uma mensagem ou novidade.", "on": "🔔 Ativar as notificações", "ok": "✓ Notificações ativas neste telemóvel", "install": "iPhone: instale primeiro a app no ecrã principal, abra-a pelo ícone e depois ative aqui as notificações.", "denied": "As notificações estão bloqueadas: reative-as nas definições do telemóvel (Notificações → esta app).", "err": "Não é possível ativar as notificações neste telemóvel."},
     ad: {"back": "📣 Publicidade", "t": "Boas ofertas do bairro", "route": "🧭 Itinerário", "call": "📞 Ligar", "web": "🌐 Site", "cats": {"musique": "🎵 Música", "resto": "🍕 Pizzaria / restaurante", "bar": "🍺 Bar / pub", "horeca": "☕ Café / snack", "bricolage": "🔨 Bricolage / jardinagem", "meubles": "🛋️ Móveis / decoração", "courses": "🛒 Supermercado", "proxi": "🏪 Comércio de proximidade", "bureau": "🏢 Escritórios", "social": "📱 Redes sociais", "services": "🧰 Serviços", "autre": "📌 Outro"}, "see": "🗺️ Ver no mapa", "lbl": "Publicidade", "mapT": "Mapa"},
     loc: 'pt-PT', app: 'App da equipa', welcome: 'O seu planeamento, as suas intervenções e ausências, no telemóvel.', code: 'O seu código pessoal', codePh: 'ex. K7PM2-QXA4H', enter: 'Entrar', noCode: 'Não tem código? Peça-o ao seu responsável.', badCode: 'Código desconhecido. Verifique-o ou peça um novo código.', off: 'Este acesso foi desativado. Peça um novo código ao responsável.', mismatch: 'Este código é para a app dos inquilinos.',
-    hello: 'Olá', today: 'Hoje', next: 'Próximos dias', none: 'Nada previsto para hoje.', noneNext: 'Nada previsto.', late: 'em atraso', start: '▶️ Começo', done: '✅ Terminado', inc: '⚠️ Não terminado', why: 'Porque não está terminado? (obrigatório)', whyPh: 'ex. falta uma peça, inquilino ausente…', note: 'Nota (opcional)', notePh: 'ex. torneira trocada, escada lavada', photos: 'Fotos (máx. 3)', send: 'Enviar', cancel: 'Cancelar',
+    hello: 'Olá', pbPh: '📷 Fotos do problema', urg: 'URGENTE', today: 'Hoje', next: 'Próximos dias', none: 'Nada previsto para hoje.', noneNext: 'Nada previsto.', late: 'em atraso', start: '▶️ Começo', done: '✅ Terminado', inc: '⚠️ Não terminado', why: 'Porque não está terminado? (obrigatório)', whyPh: 'ex. falta uma peça, inquilino ausente…', note: 'Nota (opcional)', notePh: 'ex. torneira trocada, escada lavada', photos: 'Fotos (máx. 3)', send: 'Enviar', cancel: 'Cancelar',
     st: { encours: '▶️ Começado', fait: '✅ Terminado', incomplet: '⚠️ Não terminado' }, at: 'às', consignes: 'Instruções', contact: 'Contacto no local', call: 'Ligar', commons: 'Partes comuns',
     sched: 'O meu horário', days: ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'], noSched: 'Sem horário registado.',
     abs: 'As minhas ausências', absNow: (t, f) => `${t}${f ? ' até ' + f : ''}`, sick: 'Estou doente / ausente', types: { maladie: '🤒 Doença', conges: '🏖️ Pedido de férias', autre: '📌 Outra ausência' }, from: 'De', to: 'Até (inclusive)', cert: 'Atestado médico (foto)', sickOk: 'Enviado ✓ O seu responsável foi avisado.',
@@ -75,7 +75,7 @@ const L = {
     nt: {"t": "🔔 Benachrichtigungen", "hint": "Erhalten Sie einen Hinweis und die Zahl auf dem Symbol, wenn es eine Nachricht oder Neues gibt.", "on": "🔔 Benachrichtigungen aktivieren", "ok": "✓ Benachrichtigungen auf diesem Telefon aktiv", "install": "iPhone: Installieren Sie die App zuerst auf dem Home-Bildschirm, öffnen Sie sie über das Symbol und aktivieren Sie dann hier die Benachrichtigungen.", "denied": "Benachrichtigungen sind blockiert: Aktivieren Sie sie in den Telefoneinstellungen (Mitteilungen → diese App).", "err": "Benachrichtigungen können auf diesem Telefon nicht aktiviert werden."},
     ad: {"back": "📣 Werbung", "t": "Tipps aus der Nachbarschaft", "route": "🧭 Route", "call": "📞 Anrufen", "web": "🌐 Webseite", "cats": {"musique": "🎵 Musik", "resto": "🍕 Pizzeria / Restaurant", "bar": "🍺 Bar / Pub", "horeca": "☕ Café / Imbiss", "bricolage": "🔨 Baumarkt / Garten", "meubles": "🛋️ Möbel / Deko", "courses": "🛒 Supermarkt", "proxi": "🏪 Laden in der Nähe", "bureau": "🏢 Büros", "social": "📱 Soziale Medien", "services": "🧰 Dienstleistungen", "autre": "📌 Sonstiges"}, "see": "🗺️ Auf der Karte zeigen", "lbl": "Werbung", "mapT": "Karte"},
     loc: 'de-LU', app: 'Team-App', welcome: 'Ihr Plan, Ihre Einsätze und Abwesenheiten, auf dem Telefon.', code: 'Ihr persönlicher Code', codePh: 'z. B. K7PM2-QXA4H', enter: 'Anmelden', noCode: 'Kein Code? Fragen Sie Ihren Verantwortlichen.', badCode: 'Unbekannter Code. Prüfen Sie ihn oder fragen Sie nach einem neuen.', off: 'Dieser Zugang wurde deaktiviert. Fragen Sie nach einem neuen Code.', mismatch: 'Dieser Code ist für die Mieter-App.',
-    hello: 'Hallo', today: 'Heute', next: 'Nächste Tage', none: 'Heute nichts geplant.', noneNext: 'Nichts geplant.', late: 'verspätet', start: '▶️ Ich fange an', done: '✅ Fertig', inc: '⚠️ Nicht fertig', why: 'Warum nicht fertig? (Pflicht)', whyPh: 'z. B. Teil fehlt, Mieter nicht da…', note: 'Notiz (optional)', notePh: 'z. B. Hahn gewechselt, Treppe geputzt', photos: 'Fotos (max. 3)', send: 'Senden', cancel: 'Abbrechen',
+    hello: 'Hallo', pbPh: '📷 Fotos des Problems', urg: 'DRINGEND', today: 'Heute', next: 'Nächste Tage', none: 'Heute nichts geplant.', noneNext: 'Nichts geplant.', late: 'verspätet', start: '▶️ Ich fange an', done: '✅ Fertig', inc: '⚠️ Nicht fertig', why: 'Warum nicht fertig? (Pflicht)', whyPh: 'z. B. Teil fehlt, Mieter nicht da…', note: 'Notiz (optional)', notePh: 'z. B. Hahn gewechselt, Treppe geputzt', photos: 'Fotos (max. 3)', send: 'Senden', cancel: 'Abbrechen',
     st: { encours: '▶️ Begonnen', fait: '✅ Fertig', incomplet: '⚠️ Nicht fertig' }, at: 'um', consignes: 'Anweisungen', contact: 'Kontakt vor Ort', call: 'Anrufen', commons: 'Gemeinschaftsbereiche',
     sched: 'Meine Arbeitszeiten', days: ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'], noSched: 'Keine Arbeitszeiten erfasst.',
     abs: 'Meine Abwesenheiten', absNow: (t, f) => `${t}${f ? ' bis ' + f : ''}`, sick: 'Ich bin krank / abwesend', types: { maladie: '🤒 Krankheit', conges: '🏖️ Urlaubsantrag', autre: '📌 Andere Abwesenheit' }, from: 'Von', to: 'Bis (einschl.)', cert: 'Ärztliches Attest (Foto)', sickOk: 'Gesendet ✓ Ihr Verantwortlicher ist informiert.',
@@ -92,7 +92,7 @@ const L = {
     nt: {"t": "🔔 Notifications", "hint": "Get an alert and the number on the icon when there is a message or something new.", "on": "🔔 Turn on notifications", "ok": "✓ Notifications on for this phone", "install": "iPhone: first add the app to your Home Screen, open it from the icon, then turn on notifications here.", "denied": "Notifications are blocked: turn them back on in your phone settings (Notifications → this app).", "err": "Notifications cannot be turned on on this phone."},
     ad: {"back": "📣 Ad", "t": "Local deals", "route": "🧭 Directions", "call": "📞 Call", "web": "🌐 Website", "cats": {"musique": "🎵 Music", "resto": "🍕 Pizzeria / restaurant", "bar": "🍺 Bar / pub", "horeca": "☕ Café / snack bar", "bricolage": "🔨 DIY / garden", "meubles": "🛋️ Furniture / decor", "courses": "🛒 Supermarket", "proxi": "🏪 Local shop", "bureau": "🏢 Offices", "social": "📱 Social media", "services": "🧰 Services", "autre": "📌 Other"}, "see": "🗺️ Show on map", "lbl": "Advertising", "mapT": "Map"},
     loc: 'en-GB', app: 'Team app', welcome: 'Your schedule, your jobs and your absences, on your phone.', code: 'Your personal code', codePh: 'e.g. K7PM2-QXA4H', enter: 'Enter', noCode: 'No code? Ask your manager.', badCode: 'Unknown code. Check it or ask for a new one.', off: 'This access has been disabled. Ask your manager for a new code.', mismatch: 'This code is for the tenants app.',
-    hello: 'Hello', today: 'Today', next: 'Next days', none: 'Nothing planned today.', noneNext: 'Nothing planned.', late: 'late', start: '▶️ I’m starting', done: '✅ Done', inc: '⚠️ Not finished', why: 'Why is it not finished? (required)', whyPh: 'e.g. a part is missing, tenant not home…', note: 'Note (optional)', notePh: 'e.g. tap replaced, stairs cleaned', photos: 'Photos (max. 3)', send: 'Send', cancel: 'Cancel',
+    hello: 'Hello', pbPh: '📷 Photos of the problem', urg: 'URGENT', today: 'Today', next: 'Next days', none: 'Nothing planned today.', noneNext: 'Nothing planned.', late: 'late', start: '▶️ I’m starting', done: '✅ Done', inc: '⚠️ Not finished', why: 'Why is it not finished? (required)', whyPh: 'e.g. a part is missing, tenant not home…', note: 'Note (optional)', notePh: 'e.g. tap replaced, stairs cleaned', photos: 'Photos (max. 3)', send: 'Send', cancel: 'Cancel',
     st: { encours: '▶️ Started', fait: '✅ Done', incomplet: '⚠️ Not finished' }, at: 'at', consignes: 'Instructions', contact: 'Contact on site', call: 'Call', commons: 'Common areas',
     sched: 'My hours', days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'], noSched: 'No hours recorded.',
     abs: 'My absences', absNow: (t, f) => `${t}${f ? ' until ' + f : ''}`, sick: 'I’m sick / absent', types: { maladie: '🤒 Sick leave', conges: '🏖️ Holiday request', autre: '📌 Other absence' }, from: 'From', to: 'To (included)', cert: 'Medical certificate (photo)', sickOk: 'Sent ✓ Your manager has been told.',
@@ -109,7 +109,7 @@ const L = {
     nt: {"t": "🔔 Notificaciones", "hint": "Recibe un aviso y el número en el icono cuando haya un mensaje o una novedad.", "on": "🔔 Activar las notificaciones", "ok": "✓ Notificaciones activas en este móvil", "install": "iPhone: primero añade la app a la pantalla de inicio, ábrela desde el icono y activa aquí las notificaciones.", "denied": "Las notificaciones están bloqueadas: vuelve a activarlas en los ajustes del móvil (Notificaciones → esta app).", "err": "No se pueden activar las notificaciones en este móvil."},
     ad: {"back": "📣 Publicidad", "t": "Ofertas del barrio", "route": "🧭 Ruta", "call": "📞 Llamar", "web": "🌐 Web", "cats": {"musique": "🎵 Música", "resto": "🍕 Pizzería / restaurante", "bar": "🍺 Bar / pub", "horeca": "☕ Cafetería / snack", "bricolage": "🔨 Bricolaje / jardín", "meubles": "🛋️ Muebles / decoración", "courses": "🛒 Supermercado", "proxi": "🏪 Comercio de proximidad", "bureau": "🏢 Oficinas", "social": "📱 Redes sociales", "services": "🧰 Servicios", "autre": "📌 Otro"}, "see": "🗺️ Ver en el mapa", "lbl": "Publicidad", "mapT": "Mapa"},
     loc: 'es-ES', app: 'App del equipo', welcome: 'Tu planificación, tus intervenciones y tus ausencias, en el móvil.', code: 'Tu código personal', codePh: 'ej. K7PM2-QXA4H', enter: 'Entrar', noCode: '¿No tienes código? Pídeselo a tu responsable.', badCode: 'Código desconocido. Compruébalo o pide uno nuevo.', off: 'Este acceso ha sido desactivado. Pide un nuevo código a tu responsable.', mismatch: 'Este código es para la app de inquilinos.',
-    hello: 'Hola', today: 'Hoy', next: 'Próximos días', none: 'Nada previsto hoy.', noneNext: 'Nada previsto.', late: 'con retraso', start: '▶️ Empiezo', done: '✅ Terminado', inc: '⚠️ No terminado', why: '¿Por qué no está terminado? (obligatorio)', whyPh: 'ej. falta una pieza, inquilino ausente…', note: 'Nota (opcional)', notePh: 'ej. grifo cambiado, escalera limpia', photos: 'Fotos (máx. 3)', send: 'Enviar', cancel: 'Cancelar',
+    hello: 'Hola', pbPh: '📷 Fotos del problema', urg: 'URGENTE', today: 'Hoy', next: 'Próximos días', none: 'Nada previsto hoy.', noneNext: 'Nada previsto.', late: 'con retraso', start: '▶️ Empiezo', done: '✅ Terminado', inc: '⚠️ No terminado', why: '¿Por qué no está terminado? (obligatorio)', whyPh: 'ej. falta una pieza, inquilino ausente…', note: 'Nota (opcional)', notePh: 'ej. grifo cambiado, escalera limpia', photos: 'Fotos (máx. 3)', send: 'Enviar', cancel: 'Cancelar',
     st: { encours: '▶️ Empezado', fait: '✅ Terminado', incomplet: '⚠️ No terminado' }, at: 'a las', consignes: 'Instrucciones', contact: 'Contacto en el lugar', call: 'Llamar', commons: 'Zonas comunes',
     sched: 'Mi horario', days: ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'], noSched: 'Sin horario registrado.',
     abs: 'Mis ausencias', absNow: (t, f) => `${t}${f ? ' hasta el ' + f : ''}`, sick: 'Estoy enfermo / ausente', types: { maladie: '🤒 Enfermedad', conges: '🏖️ Solicitud de vacaciones', autre: '📌 Otra ausencia' }, from: 'Desde', to: 'Hasta (incluido)', cert: 'Certificado médico (foto)', sickOk: 'Enviado ✓ Tu responsable está avisado.',
@@ -181,6 +181,22 @@ async function compress(file) {
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+// photos du problème jointes par le responsable (chiffrées, lues avec la clé de cette app)
+const pbUrls = new Map();
+const pbHtml = (x) => ((x.pb || []).length ? `<div class="pbph"><b>${esc(T().pbPh)}</b><div>${x.pb.map((p) => `<a href="#" data-pb="${esc(p)}"><img data-pb-img="${esc(p)}" alt=""></a>`).join('')}</div></div>` : '');
+async function pbUrl(docId) {
+  if (!pbUrls.has(docId)) {
+    const r = await fetch(`${API}/api/esp/${id}/f/${docId}`, { cache: 'no-store' });
+    if (!r.ok) throw new Error(r.status);
+    pbUrls.set(docId, URL.createObjectURL(new Blob([await openBytes(key, await r.arrayBuffer())], { type: 'image/jpeg' })));
+  }
+  return pbUrls.get(docId);
+}
+const hydratePb = () => document.querySelectorAll('img[data-pb-img]').forEach((img) => { pbUrl(img.dataset.pbImg).then((u) => { img.src = u; }).catch(() => {}); });
+document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('[data-pb]'); if (!a) return; e.preventDefault(); pbUrl(a.dataset.pb).then((u) => window.open(u, '_blank')).catch(() => {}); });
+// heure prévue (de → à) et urgence, mises par le responsable
+const whenTag = (x) => `${x.urgent ? ` <span class="tag urg">🔴 ${esc(T().urg)}</span>` : ''}${x.heure ? ` <span class="tag hr">🕒 ${esc(x.heure)}${x.heureFin ? '–' + esc(x.heureFin) : ''}</span>` : ''}`;
+const byHour = (a, b) => (a.d + ((data.tasks[a.tid] || {}).heure || '99')).localeCompare(b.d + ((data.tasks[b.tid] || {}).heure || '99'));
 function taskCard(it, withBtns) {
   const t = T(), x = data.tasks[it.tid];
   if (!x) return '';
@@ -194,11 +210,11 @@ function taskCard(it, withBtns) {
   const fh = f ? `<form class="act" data-tid="${it.tid}" data-d="${it.d}" data-st="${f.st}"><b>${esc(t.st[f.st])}</b>
       <label>${esc(f.st === 'incomplet' ? t.why : t.note)}</label><textarea name="note" placeholder="${esc(f.st === 'incomplet' ? t.whyPh : t.notePh)}" ${f.st === 'incomplet' ? 'required' : ''}></textarea>
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>` : '';
-  return `<div class="task ${done ? 'done' : ''}">
-    <div class="tt">${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${it.late ? ` <span class="tag bad">${esc(t.late)}</span>` : ''}</div>
+  return `<div class="task ${done ? 'done' : ''}${x.urgent && !done ? ' urgent' : ''}">
+    <div class="tt">${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${it.late ? ` <span class="tag bad">${esc(t.late)}</span>` : ''}</div>
     <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}${x.recur ? ' · 🔁 ' + esc(x.recur) : ''}</div>
     ${x.ger ? `<div class="ger-box"><b>🏢 ${esc(x.ger.org)} · #${esc(x.ger.ref)}</b>${x.ger.heure ? ` · 🕒 ${esc(x.ger.heure)}` : ''}${x.ger.acces ? `<div>🔐 ${x.ger.acces.split(' · ').map(esc).join('<br>')}</div>` : ''}${x.ger.dispo ? `<div>📅 ${esc(x.ger.dispo)}</div>` : ''}</div>` : ''}
-    ${x.note ? `<div class="cons"><b>${esc(t.consignes)} :</b> ${esc(x.note)}</div>` : ''}
+    ${x.note ? `<div class="cons"><b>${esc(t.consignes)} :</b> ${esc(x.note)}</div>` : ''}${pbHtml(x)}
     ${x.contact ? `<div class="meta">👤 ${esc(t.contact)} : ${esc(x.contact.nom)}${tel ? ` · <a href="tel:${esc(tel)}">📞 ${esc(t.call)}</a>` : ''}</div>` : ''}
     ${st ? `<div class="stline ${st.st}">${esc(t.st[st.st])} · ${esc(fmt(st.at))} ${esc(t.at)} ${esc(st.h || (st.at || '').slice(11, 16))}${st.note ? ' — ' + esc(st.note) : ''}</div>` : ''}
     ${btns}${fh}${withBtns ? phBlock(it, x) : ''}</div>`;
@@ -224,10 +240,10 @@ function stopCard(it, cur) {
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>`
       : `<form class="pres" data-stop="fait" data-tid="${it.tid}" data-d="${it.d}"><input type="time" name="h" value="${nowHM()}" required><button class="btn sm ok" type="submit">${esc(t.s.depBtn)}</button></form>
       <button class="btn sm warn" style="margin-top:6px" data-act="incomplet" data-tid="${it.tid}" data-d="${it.d}">${esc(t.inc)}</button>`}`;
-  return `<div class="stop${cur ? ' cur' : ''}${ended ? ' done' : ''}">
-    <div class="tt">${cur ? '<span class="live" aria-hidden="true"></span>' : ''}${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${cur ? ` <span class="tag now">${esc(tm.arr ? t.s.now : t.s.next)}</span>` : ''}</div>
+  return `<div class="stop${cur ? ' cur' : ''}${ended ? ' done' : ''}${x.urgent && !ended ? ' urgent' : ''}">
+    <div class="tt">${cur ? '<span class="live" aria-hidden="true"></span>' : ''}${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${cur ? ` <span class="tag now">${esc(tm.arr ? t.s.now : t.s.next)}</span>` : ''}</div>
     <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}</div>
-    <div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
+    ${ended ? '' : pbHtml(x)}<div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
     ${act}</div>`;
 }
 // Photos avant / après une intervention : 6 + 6, avec l'appareil photo ou la galerie
@@ -326,14 +342,14 @@ function render() {
   if (flash) out.push(`<div class="card okc"><p style="margin:0">${esc(flash)}</p></div>`);
   const absNow = (d.absences || []).find((a) => a.debut <= today && (!a.fin || a.fin >= today));
   if (absNow) out.push(`<div class="card warnc"><p style="margin:0"><b>${esc(t.absNow(t.types[absNow.type] || absNow.type, fmt(absNow.fin)))}</b></p></div>`);
-  const todays = d.items.filter((x) => x.d <= today && (x.d === today || x.late));
+  const todays = d.items.filter((x) => x.d <= today && (x.d === today || x.late)).sort(byHour);
   const dow = (new Date().getDay() + 6) % 7;
   const hsToday = (d.horaires || []).filter((h) => h.j === dow).sort((a, b) => (a.de || '').localeCompare(b.de || ''));
   const hrow = (h) => `<div class="hday"><b>${esc(t.days[h.j])}</b><span class="hh">🕒 ${esc(t.w.arr)} <b>${esc(h.de)}</b> · ${esc(t.w.dep)} <b>${esc(h.a)}</b></span>${h.lieu ? `<button class="place" data-place="${esc(h.lieu)}" aria-pressed="${h.lieu === place}">📍 ${esc(h.lieu)}</button>` : ''}</div>`;
   const todayAt = out.length;
   out.push(`<div class="card" id="todayCard"><h2>📅 ${esc(t.w.today)} · ${esc(fmtDay(today))}</h2>${hsToday.map(hrow).join('')}${todays.length ? todays.map((x) => taskCard(x, false)).join('') : hsToday.length ? '' : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}${hsToday.some((h) => h.lieu) || todays.length ? `<p class="meta" style="margin:8px 0 0">${esc(t.x.placesHint)}</p>` : ''}</div>`);
   { const mid = slot('milieu'); if (mid) out.push(adBox(mid, t)); }
-  const nexts = d.items.filter((x) => x.d > today);
+  const nexts = d.items.filter((x) => x.d > today).sort(byHour);
   const byDay = {};
   for (const x of nexts) (byDay[x.d] ||= []).push(x);
   const hOf = (dd) => (d.horaires || []).filter((h) => h.j === (new Date(dd + 'T12:00:00').getDay() + 6) % 7).sort((a, b) => (a.de || '').localeCompare(b.de || ''));
@@ -386,6 +402,7 @@ function render() {
   const keepMap = document.querySelector('#mapBox iframe');
   const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');
+  hydratePb();
   document.querySelectorAll('.vid[data-vsrc], .ticker[data-vsrc]').forEach((v) => {
     const src = v.dataset.vsrc, old = keepVid.get(src);
     if (old) return v.append(old);
