@@ -9247,5 +9247,65 @@ export default [
 [
 "🏢 Fiches des gérances ({0})",
 "🏢 Schede delle agenzie ({0})"
+],
+[
+"de",
+"dalle"
+],
+[
+"à",
+"alle"
+],
+[
+"📅 Donner du travail (jour, heure, lieu)",
+"📅 Dare lavoro (giorno, ora, luogo)"
+],
+[
+"📅 Travail prévu (avec date)",
+"📅 Lavoro previsto (con data)"
+],
+[
+"Rien de prévu en plus de l’horaire habituel.",
+"Niente in più rispetto all’orario abituale."
+],
+[
+"Horaire habituel (chaque semaine)",
+"Orario abituale (ogni settimana)"
+],
+[
+"🔴 Urgent",
+"🔴 Urgente"
+],
+[
+"— clignote en rouge dans l’app de la personne",
+"— lampeggia in rosso nell’app della persona"
+],
+[
+"📷 Photos du problème (envoyées dans l’app de la personne)",
+"📷 Foto del problema (inviate nell’app della persona)"
+],
+[
+"✓ {0} photo(s) déjà jointe(s)",
+"✓ {0} foto già allegata/e"
+],
+[
+" (photos de la gérance)",
+" (foto dell’agenzia)"
+],
+[
+"{0} nouvelles demandes d’intervention",
+"{0} nuove richieste di intervento"
+],
+[
+"1 nouvelle demande d’intervention",
+"1 nuova richiesta di intervento"
+],
+[
+"des gérances, pas encore prises en charge",
+"dalle agenzie, non ancora prese in carico"
+],
+[
+"Toucher pour les voir →",
+"Tocca per vederle →"
 ]
 ];

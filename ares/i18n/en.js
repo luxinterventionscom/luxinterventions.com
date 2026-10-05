@@ -9039,5 +9039,61 @@ export default [
 [
 "🏢 Fiches des gérances ({0})",
 "🏢 Agency records ({0})"
+],
+[
+"de",
+"from"
+],
+[
+"à",
+"to"
+],
+[
+"📅 Donner du travail (jour, heure, lieu)",
+"📅 Give work (day, time, place)"
+],
+[
+"📅 Travail prévu (avec date)",
+"📅 Planned work (with date)"
+],
+[
+"Rien de prévu en plus de l’horaire habituel.",
+"Nothing planned besides the usual schedule."
+],
+[
+"Horaire habituel (chaque semaine)",
+"Usual schedule (every week)"
+],
+[
+"— clignote en rouge dans l’app de la personne",
+"— blinks red in the person’s app"
+],
+[
+"📷 Photos du problème (envoyées dans l’app de la personne)",
+"📷 Photos of the problem (sent to the person’s app)"
+],
+[
+"✓ {0} photo(s) déjà jointe(s)",
+"✓ {0} photo(s) already attached"
+],
+[
+" (photos de la gérance)",
+" (agency photos)"
+],
+[
+"{0} nouvelles demandes d’intervention",
+"{0} new intervention requests"
+],
+[
+"1 nouvelle demande d’intervention",
+"1 new intervention request"
+],
+[
+"des gérances, pas encore prises en charge",
+"from agencies, not yet taken on"
+],
+[
+"Toucher pour les voir →",
+"Tap to see them →"
 ]
 ];
