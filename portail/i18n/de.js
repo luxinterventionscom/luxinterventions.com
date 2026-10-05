@@ -2141,6 +2141,10 @@ export default [
 "📲 In Wirklichkeit erhält das LuxInterventions-Team jetzt eine Benachrichtigung."
 ],
 [
+"🔄 Actualiser les messages",
+"🔄 Nachrichten aktualisieren"
+],
+[
 "🔐 Codes (repris de la résidence, modifiables)",
 "🔐 Codes (aus der Wohnanlage übernommen, änderbar)"
 ],

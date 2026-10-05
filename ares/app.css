@@ -650,3 +650,4 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 .st-afaire input:checked + span { border-color: #dc2626; background: rgba(220, 38, 38, .1); }
 .st-planifie input:checked + span { border-color: #d97706; background: rgba(217, 119, 6, .12); }
 .st-fait input:checked + span { border-color: #16a34a; background: rgba(22, 163, 74, .12); }
+.ger-unread { color: #dc2626; } .ger-unread b { color: #dc2626; }

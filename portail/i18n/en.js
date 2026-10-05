@@ -2085,6 +2085,10 @@ export default [
 "📲 In real use, the LuxInterventions team now gets a notification."
 ],
 [
+"🔄 Actualiser les messages",
+"🔄 Refresh messages"
+],
+[
 "🔐 Codes (repris de la résidence, modifiables)",
 "🔐 Codes (taken from the residence, editable)"
 ],

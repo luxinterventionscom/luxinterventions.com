@@ -9375,5 +9375,25 @@ export default [
 [
 "travail fini",
 "trabajo terminado"
+],
+[
+"Actualiser les messages",
+"Actualizar mensajes"
+],
+[
+"💬 Nouveau message de la gérance : {0}",
+"💬 Nuevo mensaje de la administración: {0}"
+],
+[
+"{0} messages non lus",
+"{0} mensajes no leídos"
+],
+[
+"1 message non lu",
+"1 mensaje no leído"
+],
+[
+"des gérances",
+"de las administraciones"
 ]
 ];

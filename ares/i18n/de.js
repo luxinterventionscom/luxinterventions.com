@@ -4742,7 +4742,7 @@ export default [
 ],
 [
 "{0} nouveaux",
-"{0} neue"
+"{0} neu"
 ],
 [
 "{0} nouveaux messages",
@@ -9387,5 +9387,25 @@ export default [
 [
 "travail fini",
 "Arbeit erledigt"
+],
+[
+"Actualiser les messages",
+"Nachrichten aktualisieren"
+],
+[
+"💬 Nouveau message de la gérance : {0}",
+"💬 Neue Nachricht der Verwaltung: {0}"
+],
+[
+"{0} messages non lus",
+"{0} ungelesene Nachrichten"
+],
+[
+"1 message non lu",
+"1 ungelesene Nachricht"
+],
+[
+"des gérances",
+"von Verwaltungen"
 ]
 ];
