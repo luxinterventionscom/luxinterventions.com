@@ -197,6 +197,19 @@ document.addEventListener('click', (e) => { const a = e.target.closest && e.targ
 // heure prévue (de → à) et urgence, mises par le responsable
 const whenTag = (x) => `${x.urgent ? ` <span class="tag urg">🔴 ${esc(T().urg)}</span>` : ''}${x.heure ? ` <span class="tag hr">🕒 ${esc(x.heure)}${x.heureFin ? '–' + esc(x.heureFin) : ''}</span>` : ''}`;
 const byHour = (a, b) => (a.d + ((data.tasks[a.tid] || {}).heure || '99')).localeCompare(b.d + ((data.tasks[b.tid] || {}).heure || '99'));
+function infoHtml(x, t) {
+  const tel = x.contact && x.contact.tel ? x.contact.tel.replace(/[^\d+]/g, '') : '';
+  return `${x.ger ? `<div class="ger-box"><b>🏢 ${esc(x.ger.org)} · #${esc(x.ger.ref)}</b>${x.ger.heure ? ` · 🕒 ${esc(x.ger.heure)}` : ''}${x.ger.acces ? `<div>🔐 ${x.ger.acces.split(' · ').map(esc).join('<br>')}</div>` : ''}${x.ger.dispo ? `<div>📅 ${esc(x.ger.dispo)}</div>` : ''}</div>` : ''}
+    ${x.note ? `<div class="cons"><b>${esc(t.consignes)} :</b> ${esc(x.note)}</div>` : ''}${pbHtml(x)}
+    ${x.contact ? `<div class="meta">👤 ${esc(t.contact)} : ${esc(x.contact.nom)}${tel ? ` · <a href="tel:${esc(tel)}">📞 ${esc(t.call)}</a>` : ''}</div>` : ''}`;
+}
+// ligne courte (planning du jour) : le détail et les boutons sont dans « Mon horaire »
+function taskLine(it) {
+  const x = data.tasks[it.tid];
+  if (!x) return '';
+  const done = stopTimes(it.tid, it.d).end;
+  return `<div class="tline${x.urgent && !done ? ' urgent' : ''}">${done ? '✅' : ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}<div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button></div></div>`;
+}
 function taskCard(it, withBtns) {
   const t = T(), x = data.tasks[it.tid];
   if (!x) return '';
@@ -213,9 +226,7 @@ function taskCard(it, withBtns) {
   return `<div class="task ${done ? 'done' : ''}${x.urgent && !done ? ' urgent' : ''}">
     <div class="tt">${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${it.late ? ` <span class="tag bad">${esc(t.late)}</span>` : ''}</div>
     <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}${x.recur ? ' · 🔁 ' + esc(x.recur) : ''}</div>
-    ${x.ger ? `<div class="ger-box"><b>🏢 ${esc(x.ger.org)} · #${esc(x.ger.ref)}</b>${x.ger.heure ? ` · 🕒 ${esc(x.ger.heure)}` : ''}${x.ger.acces ? `<div>🔐 ${x.ger.acces.split(' · ').map(esc).join('<br>')}</div>` : ''}${x.ger.dispo ? `<div>📅 ${esc(x.ger.dispo)}</div>` : ''}</div>` : ''}
-    ${x.note ? `<div class="cons"><b>${esc(t.consignes)} :</b> ${esc(x.note)}</div>` : ''}${pbHtml(x)}
-    ${x.contact ? `<div class="meta">👤 ${esc(t.contact)} : ${esc(x.contact.nom)}${tel ? ` · <a href="tel:${esc(tel)}">📞 ${esc(t.call)}</a>` : ''}</div>` : ''}
+    ${infoHtml(x, t)}
     ${st ? `<div class="stline ${st.st}">${esc(t.st[st.st])} · ${esc(fmt(st.at))} ${esc(t.at)} ${esc(st.h || (st.at || '').slice(11, 16))}${st.note ? ' — ' + esc(st.note) : ''}</div>` : ''}
     ${btns}${fh}${withBtns ? phBlock(it, x) : ''}</div>`;
 }
@@ -243,7 +254,7 @@ function stopCard(it, cur) {
   return `<div class="stop${cur ? ' cur' : ''}${ended ? ' done' : ''}${x.urgent && !ended ? ' urgent' : ''}">
     <div class="tt">${cur ? '<span class="live" aria-hidden="true"></span>' : ''}${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${cur ? ` <span class="tag now">${esc(tm.arr ? t.s.now : t.s.next)}</span>` : ''}</div>
     <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}</div>
-    ${ended ? '' : pbHtml(x)}<div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
+    ${ended ? '' : infoHtml(x, T())}<div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
     ${act}</div>`;
 }
 // Photos avant / après une intervention : 6 + 6, avec l'appareil photo ou la galerie
@@ -348,7 +359,7 @@ function render() {
   const hsToday = (d.horaires || []).filter((h) => h.j === dow).sort((a, b) => (a.de || '').localeCompare(b.de || ''));
   const hrow = (h) => `<div class="hday"><b>${esc(t.days[h.j])}</b><span class="hh">🕒 ${esc(t.w.arr)} <b>${esc(h.de)}</b> · ${esc(t.w.dep)} <b>${esc(h.a)}</b></span>${h.lieu ? `<button class="place" data-place="${esc(h.lieu)}" aria-pressed="${h.lieu === place}">📍 ${esc(h.lieu)}</button>` : ''}</div>`;
   const todayAt = out.length;
-  out.push(`<div class="card" id="todayCard"><h2>📅 ${esc(t.w.today)} · ${esc(fmtDay(today))}</h2>${hsToday.map(hrow).join('')}${todays.length ? todays.map((x) => taskCard(x, false)).join('') : hsToday.length ? '' : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}${hsToday.some((h) => h.lieu) || todays.length ? `<p class="meta" style="margin:8px 0 0">${esc(t.x.placesHint)}</p>` : ''}</div>`);
+  out.push(`<div class="card" id="todayCard"><h2>📅 ${esc(t.w.today)} · ${esc(fmtDay(today))}</h2>${hsToday.map(hrow).join('')}${todays.length ? todays.map(taskLine).join('') : hsToday.length ? '' : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}${hsToday.some((h) => h.lieu) || todays.length ? `<p class="meta" style="margin:8px 0 0">${esc(t.x.placesHint)}</p>` : ''}</div>`);
   { const mid = slot('milieu'); if (mid) out.push(adBox(mid, t)); }
   const nexts = d.items.filter((x) => x.d > today).sort(byHour);
   const byDay = {};
