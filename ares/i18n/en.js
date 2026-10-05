@@ -9095,5 +9095,45 @@ export default [
 [
 "Toucher pour les voir →",
 "Tap to see them →"
+],
+[
+"Ouvrier de l’année",
+"Worker of the year"
+],
+[
+"👷 Ouvrier de l’année",
+"👷 Worker of the year"
+],
+[
+"Classement de l’équipe : travail fini, photos après, urgences, avis des locataires. Les 3 premiers sont récompensés 🎁",
+"Team ranking: finished work, photos after, urgent jobs, tenants’ reviews. The top 3 are rewarded 🎁"
+],
+[
+"🎁 Récompense remise",
+"🎁 Reward given"
+],
+[
+"🎁 Remise le {0}",
+"🎁 Given on {0}"
+],
+[
+"Classement de l’équipe · podium · récompense 🎁",
+"Team ranking · podium · reward 🎁"
+],
+[
+"🏆 Classement",
+"🏆 Ranking"
+],
+[
+"Pas encore de points en {0}. Le classement se remplit tout seul : travail fini dans l’app de l’équipe, photos après, avis des locataires.",
+"No points yet in {0}. The ranking fills itself: work finished in the team app, photos after, tenants’ reviews."
+],
+[
+"Annuler « récompense remise » ?",
+"Undo “reward given”?"
+],
+[
+"Bravo, {0} !",
+"Well done, {0}!"
 ]
 ];

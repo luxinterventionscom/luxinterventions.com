@@ -9295,5 +9295,45 @@ export default [
 [
 "Toucher pour les voir →",
 "Tippen zum Ansehen →"
+],
+[
+"Ouvrier de l’année",
+"Mitarbeiter des Jahres"
+],
+[
+"👷 Ouvrier de l’année",
+"👷 Mitarbeiter des Jahres"
+],
+[
+"Classement de l’équipe : travail fini, photos après, urgences, avis des locataires. Les 3 premiers sont récompensés 🎁",
+"Rangliste des Teams: erledigte Arbeit, Fotos danach, Notfälle, Bewertungen der Mieter. Die ersten 3 werden belohnt 🎁"
+],
+[
+"🎁 Récompense remise",
+"🎁 Belohnung übergeben"
+],
+[
+"🎁 Remise le {0}",
+"🎁 Übergeben am {0}"
+],
+[
+"Classement de l’équipe · podium · récompense 🎁",
+"Rangliste des Teams · Podium · Belohnung 🎁"
+],
+[
+"🏆 Classement",
+"🏆 Rangliste"
+],
+[
+"Pas encore de points en {0}. Le classement se remplit tout seul : travail fini dans l’app de l’équipe, photos après, avis des locataires.",
+"Noch keine Punkte in {0}. Die Rangliste füllt sich von selbst: erledigte Arbeit in der Team-App, Fotos danach, Bewertungen der Mieter."
+],
+[
+"Annuler « récompense remise » ?",
+"„Belohnung übergeben“ rückgängig machen?"
+],
+[
+"Bravo, {0} !",
+"Bravo, {0}!"
 ]
 ];
