@@ -9359,5 +9359,21 @@ export default [
 [
 "⭐ = métier conseillé pour cette demande : {0}",
 "⭐ = mestiere consigliato per questa richiesta: {0}"
+],
+[
+"Classements",
+"Classifiche"
+],
+[
+"Classements de l’année",
+"Classifiche dell’anno"
+],
+[
+"Locataire de l’année (poubelles · pizza 🍕) · Ouvrier de l’année (équipe · récompense 🎁)",
+"Inquilino dell’anno (rifiuti · pizza 🍕) · Operaio dell’anno (squadra · premio 🎁)"
+],
+[
+"Ajouter gérance",
+"Aggiungi agenzia"
 ]
 ];

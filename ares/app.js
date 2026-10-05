@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.74.0';
+const VERSION = '2.75.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1620,8 +1620,7 @@ const NAV = [
   ['locataires', 'Locataires', 'users'],
   ['paiements', 'Paiements', 'wallet'],
   ['maintenance', 'Maintenance', 'tool'],
-  ['champions', 'Locataire de l’année', 'trophy'],
-  ['champeq', 'Ouvrier de l’année', 'trophy'],
+  ['champions', 'Classements', 'trophy'],
   ['compta', 'Comptabilité', 'chart'],
   ['reglages', 'Réglages', 'more'],
 ];
@@ -2094,7 +2093,8 @@ function go(route, replace) {
   ui.route = route;
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
-  document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === route ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
+  const navRoute = route === 'champeq' ? 'champions' : route;
+  document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   const fab = $('#fab');
   if (fab) fab.hidden = !['immeubles', 'locataires'].includes(route);
   renderView();
@@ -2478,6 +2478,7 @@ function eqScores(year) {
   return Object.entries(sc).filter(([id]) => { const i = vault.get('intervenants', id); return i && !i.archive; }).sort((a, b) => b[1].pts - a[1].pts || a[1].bad - b[1].bad || b[1].fait - a[1].fait);
 }
 
+const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
 const VIEWS = {
   champeq() {
     const cy = new Date().getFullYear();
@@ -2489,9 +2490,9 @@ const VIEWS = {
     const detail = (v) => [v.fait ? `✅ ${v.fait}` : '', v.ph ? `📷 ${v.ph}` : '', v.urg ? `🔴 ${v.urg}` : '', v.good ? `⭐ ${v.good}` : '', v.inc ? `⚠️ ${v.inc}` : '', v.bad ? `👎 ${v.bad}` : ''].filter(Boolean).join(' · ');
     const podium = rows.filter(([, v]) => v.pts > 0).slice(0, 3);
     return html`
-      ${pageHead('👷 Ouvrier de l’année', 'Classement de l’équipe : travail fini, photos après, urgences, avis des locataires. Les 3 premiers sont récompensés 🎁')}
+      ${champTabs('champeq')}${pageHead('👷 Ouvrier de l’année', 'Classement de l’équipe : travail fini, photos après, urgences, avis des locataires. Les 3 premiers sont récompensés 🎁')}
       <div class="chips" style="margin-bottom:14px">${[cy, cy - 1].map((yy) => html`<button class="chip" data-action="champeq-year" data-id="${yy}" aria-pressed="${yy === y}">${yy}</button>`)}
-        <button class="chip" data-action="go" data-to="champions">🏆 Locataire de l’année</button></div>
+</div>
       ${podium.length ? html`<div class="metrics" style="margin-bottom:14px">${podium.map(([id, v], i) => html`<div class="metric" style="text-align:center;border:2px solid ${['#d4a017', '#9ca3af', '#b45309'][i]}">
           <div style="font-size:40px;line-height:1.1">${medal[i]}</div>
           <div class="val" style="font-size:20px">${intervFull(w(id))}</div>
@@ -2518,7 +2519,7 @@ const VIEWS = {
     const place = (id, imId) => [logName(who(id).logId), immName(who(id).immId || imId)].filter(Boolean).join(' · ');
     const podium = rows.filter(([, v]) => v.done > 0).slice(0, 3);
     return html`
-      ${pageHead('🏆 Locataire de l’année', 'Classement des tours des poubelles faits, dans tous les immeubles. Les 3 premiers gagnent… une pizza 🍕')}
+      ${champTabs('champions')}${pageHead('🏆 Locataire de l’année', 'Classement des tours des poubelles faits, dans tous les immeubles. Les 3 premiers gagnent… une pizza 🍕')}
       <div class="chips" style="margin-bottom:14px">${[cy, cy - 1].map((yy) => html`<button class="chip" data-action="champ-year" data-id="${yy}" aria-pressed="${yy === y}">${yy}</button>`)}
         <button class="chip" data-action="champ-refresh">${icon('sync')} Actualiser</button></div>
       ${podium.length ? html`<div class="metrics" style="margin-bottom:14px">${podium.map(([id, v], i) => {
@@ -2825,7 +2826,7 @@ dashboard() {
     }
     const d = ui.ptl.data;
     if ((!d && !ui.ptl.err) || (d && Date.now() - d.at > 60000)) !ui.ptl.loading && setTimeout(ptlLoad, 0);
-    const head = pageHead('Gérances', d ? `${plural(d.orgs.length, 'gérance')} · Portail gérance` : 'Portail gérance', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Ajouter</button>`);
+    const head = pageHead('Gérances', d ? `${plural(d.orgs.length, 'gérance')} · Portail gérance` : 'Portail gérance', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Ajouter gérance</button>`);
     const foot = html`<p class="tiny muted" style="margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">Connecté au portail : <b>${c.email || ''}</b> ${portal}
       <button class="btn sm ghost" data-action="ger-reload">${icon('sync')} Actualiser</button><button class="btn sm ghost danger" data-action="ptl-logout">Déconnecter</button></p>`;
     if (!d) return html`${head}${ui.ptl.err ? html`<div class="alert warn">${icon('alert')}<div>${ui.ptl.err} <button class="btn sm" data-action="ger-reload">Réessayer</button></div></div>` : html`<p class="muted">Chargement…</p>`}${foot}`;
@@ -3120,8 +3121,7 @@ dashboard() {
       <div class="list settings">
         <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
           <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
-        <button class="row" data-action="go" data-to="champions"><span class="avatar">🏆</span><span class="grow"><span class="title" style="display:block">Locataire de l’année</span><span class="meta">Classement des tours des poubelles · podium · pizza 🍕</span></span></button>
-        <button class="row" data-action="go" data-to="champeq"><span class="avatar">👷</span><span class="grow"><span class="title" style="display:block">Ouvrier de l’année</span><span class="meta">Classement de l’équipe · podium · récompense 🎁</span></span></button>
+        <button class="row" data-action="go" data-to="champions"><span class="avatar">🏆</span><span class="grow"><span class="title" style="display:block">Classements de l’année</span><span class="meta">Locataire de l’année (poubelles · pizza 🍕) · Ouvrier de l’année (équipe · récompense 🎁)</span></span></button>
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
         <button class="row" data-action="go" data-to="maintenance">${icon('tool')}<span class="grow title">Maintenance — nettoyage, réparations, déchets</span></button>
         <button class="row" data-action="go" data-to="gerances">${icon('briefcase')}<span class="grow"><span class="title" style="display:block">Gérances — Portail gérance${ui.ptl.nNew ? html` <span class="badge warn">📥 ${ui.ptl.nNew}</span>` : ''}</span><span class="meta">Gérances externes : accès, résidences, demandes d’intervention</span></span></button>

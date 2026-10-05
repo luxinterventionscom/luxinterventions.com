@@ -9311,5 +9311,21 @@ export default [
 [
 "⭐ = métier conseillé pour cette demande : {0}",
 "⭐ = profissão aconselhada para este pedido: {0}"
+],
+[
+"Classements",
+"Classificações"
+],
+[
+"Classements de l’année",
+"Classificações do ano"
+],
+[
+"Locataire de l’année (poubelles · pizza 🍕) · Ouvrier de l’année (équipe · récompense 🎁)",
+"Inquilino do ano (lixo · pizza 🍕) · Trabalhador do ano (equipa · prémio 🎁)"
+],
+[
+"Ajouter gérance",
+"Adicionar gestora"
 ]
 ];
