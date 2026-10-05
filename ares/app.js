@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.73.0';
+const VERSION = '2.74.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1512,6 +1512,11 @@ async function ptlStatus(id, status, extra = {}) {
   ui.ptl.data = null; ptlLoad();
   if (ui.sheet && ui.sheet.kind === 'ger-ticket') ptlTicketOpen(id);
 }
+// métier conseillé pour une demande (catégorie + mots de la description)
+const MET_HINT = [[/plomb|sanitaire|fuite|wc|toilette|cesso|robinet|évier|douche|égout|canalis/i, 'plombier'], [/électri|electri|courant|prise|disjonct|lumière|lampe|voltage|tension|solaire|panneaux solaires/i, 'electricien'],
+  [/chauff|chaudière|radiateur|eau chaude/i, 'chauffagiste'], [/maçon|carrel|toit|façade|fissure|mur/i, 'macon'], [/peint/i, 'peintre'], [/serrur|clé|cle |porte bloqu|vitr/i, 'serrurier'],
+  [/menuis|bois|fenêtre|parquet|meuble/i, 'menuisier'], [/nettoy|ménage|propreté|sale/i, 'menage'], [/jardin|espaces verts|haie|pelouse|arbre/i, 'jardinier']];
+const metHints = (txt) => MET_HINT.filter(([rx]) => rx.test(txt || '')).map(([, m]) => m);
 // lien demande ↔ intervention : infos utiles à l'ouvrier (adresse, lieu, codes, disponibilités, contact)
 const ptlLink = (d) => { const t = d.ticket, r = d.residence || {}; return { tid: t.id, ref: t.ref, org: r.org_name || '', res: r.name || '', adr: r.address || '', lieu: t.lieu || '', acces: t.acces || '', dispo: t.dispo || '', contact: t.contact_name || r.contact_name || '', tel: t.contact_phone || r.contact_phone || '', interior: r.interior || '', floors: r.floors || '', codes: [r.access ? 'Porte : ' + r.access : '', r.alarm ? 'Alarme : ' + r.alarm : '', r.code_other ? 'Panneaux : ' + r.code_other : ''].filter(Boolean).join(' · ') }; };
 const ptlOrg = (id) => ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => o.id === id);
@@ -3411,11 +3416,11 @@ const SHEETS = {
         ${d.photos.length ? html`<div class="section-label">📷 Photos</div><div class="photos" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${d.photos.map((p) => html`<a target="_blank" rel="noopener"><img data-ptl-photo="${p.id}" alt="Photo" style="width:96px;height:96px;object-fit:cover;border-radius:10px;background:var(--surface-2)"></a>`)}</div>` : ''}
         ${linked.length ? html`<div class="alert info" style="margin-bottom:12px">${icon('tool')}<div>Dans Maintenance : ${linked.map((x) => html`<a href="#" data-action="edit-tache" data-id="${x.id}">${x.titre}${x.intervenantId ? ' — 👷 ' + intervFull(vault.get('intervenants', x.intervenantId) || {}) : ''}${x.date ? ' · ' + fmtDate(x.date) : ''}</a> `)}</div></div>` : ''}
         ${open ? html`<div class="actions" style="flex-wrap:wrap;margin-bottom:14px">
-          <button class="btn primary" data-action="ger-to-mt" data-id="${t.id}">${icon('tool')} ${linked.length ? 'Ajouter un ouvrier (Maintenance)' : 'Envoyer en Maintenance (choisir l’ouvrier)'}</button>
+          <button class="btn primary" style="flex:1 1 100%;white-space:normal" data-action="ger-to-mt" data-id="${t.id}">👷 ${linked.length ? 'Envoyer un autre ouvrier' : 'Envoyer un ouvrier (qui, quand)'}</button>
           ${t.status === 'recue' ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="prise">✅ Prendre en charge</button>` : ''}
           ${t.status === 'planifiee' ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="encours">🚚 En route</button>` : ''}
           ${['prise', 'planifiee', 'encours'].includes(t.status) ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="terminee">${icon('check')} Terminée</button>` : ''}
-          <button class="btn ghost danger" data-action="ger-st" data-id="${t.id}" data-st="annulee">Annuler</button></div>` : ''}
+          <button class="btn ghost danger" data-action="ger-st" data-id="${t.id}" data-st="annulee">Annuler la demande</button></div>` : ''}
         <div class="section-label">Suivi</div>
         <div class="list small" style="margin-bottom:10px">${d.events.map((e) => html`<div class="row" style="display:block"><b>${evLbl(e)}</b> <span class="muted">· ${e.user_name || ''} · ${ptlTime(e.created_at)}</span>${e.text && e.kind !== 'create' ? html`<div style="white-space:pre-wrap;margin-top:4px">${e.text}</div>` : ''}</div>`)}</div>
         <form data-form="ger-msg" class="chat-form"><input type="hidden" name="id" value="${t.id}"><textarea name="x" required maxlength="2000" placeholder="Message à la gérance…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>`,
@@ -3680,7 +3685,8 @@ const SHEETS = {
     if (id && !t) return null;
     const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === t.immId).sort(byAddr);
     if (!imms.length && !t.ptl) return { title: 'Nouvelle intervention', body: empty('building', "Ajoutez d'abord un immeuble.") };
-    const ints = vault.list('intervenants').sort((a, b) => intervFull(a).localeCompare(intervFull(b)));
+    const hint = t.metiers || [], fits = (i) => hint.includes(i.metier);
+    const ints = vault.list('intervenants').filter((i) => !i.archive || i.id === t.intervenantId).sort((a, b) => fits(b) - fits(a) || intervFull(a).localeCompare(intervFull(b)));
     return {
       title: id ? "Modifier l'intervention" : 'Nouvelle intervention',
       body: html`<form id="f" data-form="tache" class="fields">
@@ -3691,7 +3697,8 @@ const SHEETS = {
             <input type="hidden" name="ptl" value="${JSON.stringify(t.ptl)}"><input type="hidden" name="immId" value=""></div>`
           : html`<label class="field">Immeuble<select name="immId" data-input="tache-imm" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === t.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         <label class="field">Où ?<select name="logId" id="tacheLog">${logOptions(t.immId || imms[0].id, t.logId)}</select></label>`}
-        <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${ints.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${intervFull(i)} — ${METIERS[i.metier] || ''}${absOn(i, t.date || today()) ? ' (absent)' : ''}</option>`)}</select></label>
+        <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${ints.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${intervFull(i)} — ${METIERS[i.metier] || ''}${absOn(i, t.date || today()) ? ' (absent)' : ''}</option>`)}</select></label>
+        ${hint.length ? html`<p class="tiny muted full" style="margin:-6px 0 0">⭐ = métier conseillé pour cette demande : ${[...new Set(hint)].map((m) => METIERS[m]).join(', ')}${ints.some(fits) ? '' : ' (personne de ce métier dans l’équipe)'}</p>` : ''}
         ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
         ${field('Date', 'date', t.date, { type: 'date' })}
         <label class="field t-hours">Heure<span class="t-hrow"><span class="tph${t.heure ? ' v' : ''}"><input type="time" name="heure" value="${t.heure || ''}" aria-label="De"><i>--:--</i></span><span class="muted">→</span><span class="tph${t.heureFin ? ' v' : ''}"><input type="time" name="heureFin" value="${t.heureFin || ''}" aria-label="À"><i>--:--</i></span></span></label>
@@ -4815,7 +4822,7 @@ const ACTIONS = {
   'ger-to-mt'() {
     const d = ui.ptl.cur; if (!d) return;
     const L = ptlLink(d);
-    openOver('tache-form', null, null, { ptlPhotos: (d.photos || []).map((p) => p.id).slice(0, 6), ptl: L, titre: `#${L.ref} ${d.ticket.categorie || 'Intervention'}`.slice(0, 80), note: d.ticket.description || '' });
+    openOver('tache-form', null, null, { metiers: metHints(`${d.ticket.categorie || ''} ${d.ticket.description || ''}`), ptlPhotos: (d.photos || []).map((p) => p.id).slice(0, 6), ptl: L, titre: `#${L.ref} ${d.ticket.categorie || 'Intervention'}`.slice(0, 80), note: d.ticket.description || '' });
   },
   'ger-edit': (d) => openSheet('ger-form', d.id),
   'ger-open': (d) => { openSheet('ger', d.id, d.tab); ptlLoad(); }, // les données du portail sont rafraîchies à chaque ouverture

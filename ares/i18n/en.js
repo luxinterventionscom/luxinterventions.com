@@ -9135,5 +9135,17 @@ export default [
 [
 "Bravo, {0} !",
 "Well done, {0}!"
+],
+[
+"👷 Envoyer un ouvrier (qui, quand)",
+"👷 Send a worker (who, when)"
+],
+[
+"👷 Envoyer un autre ouvrier",
+"👷 Send another worker"
+],
+[
+"⭐ = métier conseillé pour cette demande : {0}",
+"⭐ = suggested trade for this request: {0}"
 ]
 ];
