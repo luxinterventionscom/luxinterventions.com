@@ -9347,5 +9347,17 @@ export default [
 [
 "Bravo, {0} !",
 "Bravo, {0}!"
+],
+[
+"👷 Envoyer un ouvrier (qui, quand)",
+"👷 Invia un operaio (chi, quando)"
+],
+[
+"👷 Envoyer un autre ouvrier",
+"👷 Invia un altro operaio"
+],
+[
+"⭐ = métier conseillé pour cette demande : {0}",
+"⭐ = mestiere consigliato per questa richiesta: {0}"
 ]
 ];

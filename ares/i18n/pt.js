@@ -9299,5 +9299,17 @@ export default [
 [
 "Bravo, {0} !",
 "Parabéns, {0}!"
+],
+[
+"👷 Envoyer un ouvrier (qui, quand)",
+"👷 Enviar um técnico (quem, quando)"
+],
+[
+"👷 Envoyer un autre ouvrier",
+"👷 Enviar outro técnico"
+],
+[
+"⭐ = métier conseillé pour cette demande : {0}",
+"⭐ = profissão aconselhada para este pedido: {0}"
 ]
 ];
