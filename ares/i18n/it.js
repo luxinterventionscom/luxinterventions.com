@@ -9459,5 +9459,29 @@ export default [
 [
 "Choisir un nouveau mot de passe du portail ?",
 "Scegliere una nuova password del portale?"
+],
+[
+"Resp. (invite collègues)",
+"Resp. (invita colleghi)"
+],
+[
+"Collab. (demandes)",
+"Collab. (richieste)"
+],
+[
+"Resp. = responsable : fait les demandes et invite ses collègues · Collab. = collaborateur : fait et suit les demandes",
+"Resp. = responsabile: fa le richieste e invita i colleghi · Collab. = collaboratore: fa e segue le richieste"
+],
+[
+"Fermer sans enregistrer ?",
+"Chiudere senza salvare?"
+],
+[
+"Fermer sans enregistrer",
+"Chiudi senza salvare"
+],
+[
+"Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement en bas de la fenêtre.",
+"Quello che hai scritto non è ancora salvato. Per tenerlo: «Annulla», poi il pulsante di salvataggio in fondo alla finestra."
 ]
 ];

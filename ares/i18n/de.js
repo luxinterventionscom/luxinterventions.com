@@ -9447,5 +9447,29 @@ export default [
 [
 "Choisir un nouveau mot de passe du portail ?",
 "Neues Portal-Passwort wählen?"
+],
+[
+"Resp. (invite collègues)",
+"Verantw. (lädt Kollegen ein)"
+],
+[
+"Collab. (demandes)",
+"Mitarb. (Anfragen)"
+],
+[
+"Resp. = responsable : fait les demandes et invite ses collègues · Collab. = collaborateur : fait et suit les demandes",
+"Verantw. = Verantwortlicher: stellt Anfragen und lädt Kollegen ein · Mitarb. = Mitarbeiter: stellt und verfolgt Anfragen"
+],
+[
+"Fermer sans enregistrer ?",
+"Ohne Speichern schließen?"
+],
+[
+"Fermer sans enregistrer",
+"Ohne Speichern schließen"
+],
+[
+"Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement en bas de la fenêtre.",
+"Ihre Eingabe ist noch nicht gespeichert. Zum Behalten: „Abbrechen“, dann die Speichern-Schaltfläche unten."
 ]
 ];

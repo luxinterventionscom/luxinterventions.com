@@ -9247,5 +9247,29 @@ export default [
 [
 "Choisir un nouveau mot de passe du portail ?",
 "Choose a new portal password?"
+],
+[
+"Resp. (invite collègues)",
+"Manager (invites colleagues)"
+],
+[
+"Collab. (demandes)",
+"Staff (requests)"
+],
+[
+"Resp. = responsable : fait les demandes et invite ses collègues · Collab. = collaborateur : fait et suit les demandes",
+"Manager: makes requests and invites colleagues · Staff: makes and follows requests"
+],
+[
+"Fermer sans enregistrer ?",
+"Close without saving?"
+],
+[
+"Fermer sans enregistrer",
+"Close without saving"
+],
+[
+"Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement en bas de la fenêtre.",
+"What you typed is not saved yet. To keep it: “Cancel”, then the save button at the bottom."
 ]
 ];
