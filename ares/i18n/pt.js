@@ -9331,5 +9331,25 @@ export default [
 [
 "👷 Envoyer un ouvrier",
 "👷 Enviar um técnico"
+],
+[
+"🧹 Nettoyage",
+"🧹 Limpeza"
+],
+[
+"🚚 Gros travaux",
+"🚚 Grandes obras"
+],
+[
+"pas encore organisé",
+"ainda não organizado"
+],
+[
+"jour et personne fixés",
+"dia e pessoa definidos"
+],
+[
+"travail fini",
+"trabalho concluído"
 ]
 ];
