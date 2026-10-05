@@ -9163,5 +9163,9 @@ export default [
 [
 "Ajouter gérance",
 "Add agency"
+],
+[
+"👷 Envoyer un ouvrier",
+"👷 Send a worker"
 ]
 ];
