@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.75.1';
+const VERSION = '2.76.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -141,7 +141,7 @@ const edlOutNew = () => vault.list('documents').filter((d) => d.kind === 'edl-ou
 
 // ───────────────────────── Maintenance : intervenants, interventions, collectes des déchets ─────────────────────────
 const METIERS = { menage: 'Femme de ménage / nettoyage', menuisier: 'Menuisier', electricien: 'Électricien', plombier: 'Plombier / sanitaire', chauffagiste: 'Chauffagiste', macon: 'Maçon', peintre: 'Peintre', serrurier: 'Serrurier', jardinier: 'Jardinier', autre: 'Autre' };
-const TACHE_TYPES = { nettoyage: '🧹 Nettoyage (ménage)', reparation: '🔧 Maintenance courante / réparation', gros: '🚚 Gros travaux (chaudière, toiture…)', autre: '📌 Autre' };
+const TACHE_TYPES = { nettoyage: '🧹 Nettoyage', reparation: '🔧 Réparation', gros: '🚚 Gros travaux', autre: '📌 Autre' };
 const tacheIcon = (type) => (type === 'entretien' ? '🔧' : (TACHE_TYPES[type] || '📌').split(' ')[0]);
 // Feu tricolore : rouge = aujourd'hui ou en retard, jaune = demain / après-demain, vert = il y a le temps
 const LIGHTS = { red: 'Urgent : aujourd’hui ou en retard', yellow: 'Attention : demain ou après-demain', green: 'Il y a le temps' };
@@ -152,6 +152,7 @@ function light(d) {
 }
 const RECURS = { '': 'Une seule fois', hebdo: 'Chaque semaine', '2sem': 'Toutes les 2 semaines', mois: 'Chaque mois' };
 const STATUTS = { afaire: 'À faire', planifie: 'Planifiée', fait: 'Terminée' };
+const ST_DOT = { afaire: '🔴', planifie: '🟡', fait: '🟢' };
 const DECHETS = {
   residuel: { label: 'Déchets résiduels (poubelle grise)', short: 'Résiduels', color: '#6b7280' },
   organique: { label: 'Biodéchets / organique (umido)', short: 'Organique', color: '#92400e' },
@@ -3706,7 +3707,8 @@ const SHEETS = {
         <label class="field">Répétition<select name="recur">${Object.entries(RECURS).map(([k, v]) => html`<option value="${k}" ${(t.recur || '') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field("Jusqu'au (si répétition)", 'fin', t.fin, { type: 'date' })}
         ${field('Coût (€)', 'cout', t.cout, { type: 'number', attrs: money$ })}
-        ${!t.recur ? html`<label class="field">Statut<select name="statut">${Object.entries(STATUTS).map(([k, v]) => html`<option value="${k}" ${t.statut === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>` : ''}
+        ${!t.recur ? html`<fieldset class="full st-radios"><legend>Statut</legend><div class="st-row">${Object.entries(STATUTS).map(([k, v]) => html`<label class="st-opt st-${k}"><input type="radio" name="statut" value="${k}" ${(t.statut || 'afaire') === k ? new Raw('checked') : ''}><span>${ST_DOT[k]} ${v}</span></label>`)}</div>
+          <p class="tiny muted" style="margin:6px 0 0">🔴 <b>À faire</b> : pas encore organisé · 🟡 <b>Planifiée</b> : jour et personne fixés · 🟢 <b>Terminée</b> : travail fini</p></fieldset>` : ''}
         <label class="field full">Notes<textarea name="note" placeholder="Accès, clés, pièces à acheter, ce qui a été fait…">${t.note || ''}</textarea></label>
         ${(() => { const pb = t.id ? eqPhotos(t.id, 'pb') : [], np = (t.ptlPhotos || []).length; return html`<label class="field full">📷 Photos du problème (envoyées dans l’app de la personne)<input type="file" name="pbphotos" accept="image/*" multiple></label>
         ${pb.length || np ? html`<p class="tiny muted full" style="margin:-4px 0 0">✓ ${pb.length + np} photo(s) déjà jointe(s)${np ? ' (photos de la gérance)' : ''}</p>` : ''}

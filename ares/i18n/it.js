@@ -9379,5 +9379,25 @@ export default [
 [
 "👷 Envoyer un ouvrier",
 "👷 Invia un operaio"
+],
+[
+"🧹 Nettoyage",
+"🧹 Pulizia"
+],
+[
+"🚚 Gros travaux",
+"🚚 Grandi lavori"
+],
+[
+"pas encore organisé",
+"non ancora organizzato"
+],
+[
+"jour et personne fixés",
+"giorno e persona fissati"
+],
+[
+"travail fini",
+"lavoro finito"
 ]
 ];

@@ -639,3 +639,14 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 .tph > i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-style: normal; color: var(--text-3); pointer-events: none; font-size: 14px; }
 .tph.v > i, .tph:focus-within > i { display: none; }
 @media (hover: hover) and (pointer: fine) { .tph > i { display: none; } }
+/* statut d'une intervention : 3 boutons de couleur */
+.st-radios { border: 0; padding: 0; margin: 0; min-width: 0; }
+.st-radios legend { font-size: 13px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; padding: 0; }
+.st-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.st-opt { display: block; cursor: pointer; }
+.st-opt input { position: absolute; opacity: 0; pointer-events: none; }
+.st-opt span { display: block; text-align: center; padding: 10px 4px; border-radius: 12px; border: 2px solid var(--border); font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st-opt input:focus-visible + span { outline: 2px solid var(--accent, #4f46e5); outline-offset: 2px; }
+.st-afaire input:checked + span { border-color: #dc2626; background: rgba(220, 38, 38, .1); }
+.st-planifie input:checked + span { border-color: #d97706; background: rgba(217, 119, 6, .12); }
+.st-fait input:checked + span { border-color: #16a34a; background: rgba(22, 163, 74, .12); }

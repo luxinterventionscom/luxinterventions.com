@@ -9167,5 +9167,25 @@ export default [
 [
 "👷 Envoyer un ouvrier",
 "👷 Send a worker"
+],
+[
+"🧹 Nettoyage",
+"🧹 Cleaning"
+],
+[
+"🚚 Gros travaux",
+"🚚 Major works"
+],
+[
+"pas encore organisé",
+"not organised yet"
+],
+[
+"jour et personne fixés",
+"day and person set"
+],
+[
+"travail fini",
+"work done"
 ]
 ];
