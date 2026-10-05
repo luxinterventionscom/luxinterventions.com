@@ -9347,5 +9347,21 @@ export default [
 [
 "⭐ = métier conseillé pour cette demande : {0}",
 "⭐ = empfohlener Beruf für diese Anfrage: {0}"
+],
+[
+"Classements",
+"Ranglisten"
+],
+[
+"Classements de l’année",
+"Ranglisten des Jahres"
+],
+[
+"Locataire de l’année (poubelles · pizza 🍕) · Ouvrier de l’année (équipe · récompense 🎁)",
+"Mieter des Jahres (Mülltonnen · Pizza 🍕) · Mitarbeiter des Jahres (Team · Belohnung 🎁)"
+],
+[
+"Ajouter gérance",
+"Verwaltung hinzufügen"
 ]
 ];

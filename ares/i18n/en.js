@@ -9147,5 +9147,21 @@ export default [
 [
 "⭐ = métier conseillé pour cette demande : {0}",
 "⭐ = suggested trade for this request: {0}"
+],
+[
+"Classements",
+"Rankings"
+],
+[
+"Classements de l’année",
+"Rankings of the year"
+],
+[
+"Locataire de l’année (poubelles · pizza 🍕) · Ouvrier de l’année (équipe · récompense 🎁)",
+"Tenant of the year (bins · pizza 🍕) · Worker of the year (team · reward 🎁)"
+],
+[
+"Ajouter gérance",
+"Add agency"
 ]
 ];
