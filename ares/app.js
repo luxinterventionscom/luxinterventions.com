@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.72.0';
+const VERSION = '2.73.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -410,6 +410,7 @@ function equipeData(i) {
     absences: (i.absences || []).filter((a) => !a.fin || a.fin >= addDays(today(), -30)).map((a) => ({ type: a.type, debut: a.debut, fin: a.fin || '' })),
     pres: Object.fromEntries(Object.entries(i.pres || {}).filter(([d]) => d >= addDays(today(), -7))),
     pubs: pubsActives([...imIds], 'eq').map(pubOut),
+    rank: (() => { const y = new Date().getFullYear(), r = eqScores(y), n = r.findIndex(([wid]) => wid === i.id), v = n >= 0 ? r[n][1] : null; return v ? { y, pos: n + 1, of: r.length, pts: v.pts, fait: v.fait, ph: v.ph, urg: v.urg, good: v.good } : null; })(),
     tasks, items: items.sort((a, b) => a.d.localeCompare(b.d)), signalKey: k ? k.pub : '',
   };
 }
@@ -1615,6 +1616,7 @@ const NAV = [
   ['paiements', 'Paiements', 'wallet'],
   ['maintenance', 'Maintenance', 'tool'],
   ['champions', 'Locataire de l’année', 'trophy'],
+  ['champeq', 'Ouvrier de l’année', 'trophy'],
   ['compta', 'Comptabilité', 'chart'],
   ['reglages', 'Réglages', 'more'],
 ];
@@ -2441,7 +2443,65 @@ function champScores(year) {
   return Object.entries(sc).filter(([id]) => vault.get('locataires', id)).sort((a, b) => b[1].done - a[1].done || a[1].forgot - b[1].forgot);
 }
 
+// Ouvrier de l'année : travail fini, photos après, urgences du jour, avis des locataires
+const EQ_PTS = { fait: 1, inc: -1, ph: 1, urg: 2, ev: { 4: 3, 3: 2, 2: 0, 1: -2 }, tagGood: 1, tagBad: -1 };
+const EQ_GOOD = ['ok', 'nice', 'clean'], EQ_BAD = ['late', 'rude', 'dirty'];
+function eqScores(year) {
+  const sc = {};
+  const get = (id) => sc[id] || (sc[id] = { pts: 0, fait: 0, inc: 0, ph: 0, urg: 0, ev: 0, good: 0, bad: 0 });
+  for (const t of vault.list('taches')) {
+    // une fois par jour et par intervention (dernier état du jour)
+    const last = {};
+    for (const j of t.journal || []) if ((j.by || t.intervenantId) && String(j.d || '').startsWith(year + '-') && j.st !== 'encours') last[(j.by || t.intervenantId) + '|' + j.d] = j;
+    for (const [k, j] of Object.entries(last)) {
+      const x = get(k.split('|')[0]);
+      if (j.st === 'fait') { x.fait++; if (t.urgent && !t.recur && j.d <= t.date) x.urg++; }
+      if (j.st === 'incomplet') x.inc++;
+    }
+    if (t.intervenantId) {
+      const days = new Set(eqPhotos(t.id, 'ap').filter((d) => String(d.date || '').startsWith(year + '-')).map((d) => d.date));
+      if (days.size) get(t.intervenantId).ph += days.size;
+    }
+  }
+  for (const i of vault.list('intervenants')) for (const e of i.evals || []) {
+    if (!String(e.d || '').startsWith(year + '-')) continue;
+    const x = get(i.id);
+    x.ev += EQ_PTS.ev[e.v] || 0; if (e.v >= 3) x.good++; if (e.v <= 1) x.bad++;
+    for (const k of e.tags || []) { if (EQ_GOOD.includes(k)) { x.ev += EQ_PTS.tagGood; x.good++; } if (EQ_BAD.includes(k)) { x.ev += EQ_PTS.tagBad; x.bad++; } }
+  }
+  for (const x of Object.values(sc)) x.pts = x.fait * EQ_PTS.fait + x.inc * EQ_PTS.inc + x.ph * EQ_PTS.ph + x.urg * EQ_PTS.urg + x.ev;
+  return Object.entries(sc).filter(([id]) => { const i = vault.get('intervenants', id); return i && !i.archive; }).sort((a, b) => b[1].pts - a[1].pts || a[1].bad - b[1].bad || b[1].fait - a[1].fait);
+}
+
 const VIEWS = {
+  champeq() {
+    const cy = new Date().getFullYear();
+    const y = ui.champEqYear || cy;
+    const rows = eqScores(y);
+    const prizes = ((vault.get('reglages', 'champions') || {}).eq || {})[y] || {};
+    const medal = ['🥇', '🥈', '🥉'];
+    const w = (id) => vault.get('intervenants', id) || {};
+    const detail = (v) => [v.fait ? `✅ ${v.fait}` : '', v.ph ? `📷 ${v.ph}` : '', v.urg ? `🔴 ${v.urg}` : '', v.good ? `⭐ ${v.good}` : '', v.inc ? `⚠️ ${v.inc}` : '', v.bad ? `👎 ${v.bad}` : ''].filter(Boolean).join(' · ');
+    const podium = rows.filter(([, v]) => v.pts > 0).slice(0, 3);
+    return html`
+      ${pageHead('👷 Ouvrier de l’année', 'Classement de l’équipe : travail fini, photos après, urgences, avis des locataires. Les 3 premiers sont récompensés 🎁')}
+      <div class="chips" style="margin-bottom:14px">${[cy, cy - 1].map((yy) => html`<button class="chip" data-action="champeq-year" data-id="${yy}" aria-pressed="${yy === y}">${yy}</button>`)}
+        <button class="chip" data-action="go" data-to="champions">🏆 Locataire de l’année</button></div>
+      ${podium.length ? html`<div class="metrics" style="margin-bottom:14px">${podium.map(([id, v], i) => html`<div class="metric" style="text-align:center;border:2px solid ${['#d4a017', '#9ca3af', '#b45309'][i]}">
+          <div style="font-size:40px;line-height:1.1">${medal[i]}</div>
+          <div class="val" style="font-size:20px">${intervFull(w(id))}</div>
+          <div class="sub">${METIERS[w(id).metier] || ''}</div>
+          <div style="margin:8px 0;font-size:18px;font-weight:700">${v.pts} pts</div>
+          <div class="tiny muted" style="margin-bottom:8px">${detail(v)}</div>
+          ${prizes[id] ? html`<button class="btn sm" style="max-width:100%;white-space:normal" data-action="champeq-prize" data-id="${id}">🎁 Remise le ${fmtDate(prizes[id])}</button>` : html`<button class="btn sm primary" style="max-width:100%;white-space:normal" data-action="champeq-prize" data-id="${id}">🎁 Récompense remise</button>`}
+        </div>`)}</div>` : html`<div class="alert info" style="margin-bottom:14px">${icon('trophy')}<div>Pas encore de points en ${y}. Le classement se remplit tout seul : travail fini dans l’app de l’équipe, photos après, avis des locataires.</div></div>`}
+      ${rows.length ? html`<div class="section-label">Classement ${y}</div>
+        <div class="list">${rows.map(([id, v], i) => html`<button class="row" data-action="open-interv" data-id="${id}">
+          <span class="avatar">${v.pts > 0 && i < 3 ? medal[i] : i + 1}</span>
+          <span class="grow"><span class="title" style="display:block">${intervFull(w(id))}</span><span class="meta">${detail(v) || '—'}</span></span>
+          <b>${v.pts} pts</b></button>`)}</div>` : ''}
+      <p class="tiny muted" style="margin-top:12px">✅ travail fini = 1 point · 📷 photos après = 1 · 🔴 urgence faite le jour prévu = 2 · avis des locataires : ⭐ Excellent 3, 🙂 Bien 2, 😞 Insuffisant −2 ; « à l’heure », « aimable », « bien nettoyé » +1 ; « en retard », « désagréable », « mal nettoyé » −1 · ⚠️ pas fini −1. Chacun voit sa place dans son app. Le classement repart de zéro chaque 1er janvier.</p>`;
+  },
   champions() {
     setTimeout(() => champLoad(), 0);
     const cy = new Date().getFullYear();
@@ -2481,7 +2541,7 @@ const VIEWS = {
     const chips = imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
       <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!f}">Tous</button>
       ${imms.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${f === im.id}">${im.adresse}</button>`)}</div>` : '';
-    const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button>`
+    const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions" style="margin:0"><button class="btn" data-action="go" data-to="champeq">🏆 Classement</button><button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button></div>`
       : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
       : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
     const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', html`<span>Réclamations</span> (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['pub', '📣 Publicité'], ['intervenants', 'Équipe']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
@@ -3056,6 +3116,7 @@ dashboard() {
         <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
           <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
         <button class="row" data-action="go" data-to="champions"><span class="avatar">🏆</span><span class="grow"><span class="title" style="display:block">Locataire de l’année</span><span class="meta">Classement des tours des poubelles · podium · pizza 🍕</span></span></button>
+        <button class="row" data-action="go" data-to="champeq"><span class="avatar">👷</span><span class="grow"><span class="title" style="display:block">Ouvrier de l’année</span><span class="meta">Classement de l’équipe · podium · récompense 🎁</span></span></button>
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
         <button class="row" data-action="go" data-to="maintenance">${icon('tool')}<span class="grow title">Maintenance — nettoyage, réparations, déchets</span></button>
         <button class="row" data-action="go" data-to="gerances">${icon('briefcase')}<span class="grow"><span class="title" style="display:block">Gérances — Portail gérance${ui.ptl.nNew ? html` <span class="badge warn">📥 ${ui.ptl.nNew}</span>` : ''}</span><span class="meta">Gérances externes : accès, résidences, demandes d’intervention</span></span></button>
@@ -5137,6 +5198,20 @@ const ACTIONS = {
     toolsLoad(true);
   },
   'champ-year': (d) => { ui.champYear = +d.id; renderView(); },
+  'champeq-year': (d) => { ui.champEqYear = +d.id; renderView(); },
+  async 'champeq-prize'(d) {
+    const y = ui.champEqYear || new Date().getFullYear();
+    const cur = vault.get('reglages', 'champions') || {};
+    const eq = { ...(cur.eq || {}) }, yp = { ...(eq[y] || {}) };
+    const w = vault.get('intervenants', d.id) || {};
+    if (yp[d.id]) {
+      if (!(await confirmBox('Annuler « récompense remise » ?', { ok: 'Annuler', detail: intervFull(w) }))) return;
+      delete yp[d.id];
+    } else yp[d.id] = today();
+    eq[y] = yp;
+    await vault.mutate((tx) => tx.put('reglages', { ...cur, id: 'champions', eq }), yp[d.id] ? 'Récompense remise 🎁' : 'Récompense annulée', `${intervFull(w)} — ouvrier de l’année ${y}`, d.id);
+    if (yp[d.id]) toast('🎁 Bravo, ' + (w.prenom || intervFull(w)) + ' !');
+  },
   'champ-refresh': () => champLoad(true),
   async 'champ-pizza'(d) {
     const y = ui.champYear || new Date().getFullYear();
@@ -5149,7 +5224,7 @@ const ACTIONS = {
       delete yp[d.id];
     } else yp[d.id] = today();
     prizes[y] = yp;
-    await vault.mutate((tx) => tx.put('reglages', { id: 'champions', prizes }), yp[d.id] ? 'Pizza offerte 🍕' : 'Pizza annulée', `${fullName(l)} — locataire de l’année ${y}`, d.id);
+    await vault.mutate((tx) => tx.put('reglages', { ...cur, id: 'champions', prizes }), yp[d.id] ? 'Pizza offerte 🍕' : 'Pizza annulée', `${fullName(l)} — locataire de l’année ${y}`, d.id);
     if (yp[d.id]) toast('🍕 Bon appétit, ' + (l.prenom || fullName(l)) + ' !');
   },
   'open-chat': (d) => { openSheet('imm', d.id, 'chat'); chatLoad(d.id, true); },

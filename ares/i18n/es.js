@@ -9283,5 +9283,45 @@ export default [
 [
 "Toucher pour les voir →",
 "Toca para verlas →"
+],
+[
+"Ouvrier de l’année",
+"Trabajador del año"
+],
+[
+"👷 Ouvrier de l’année",
+"👷 Trabajador del año"
+],
+[
+"Classement de l’équipe : travail fini, photos après, urgences, avis des locataires. Les 3 premiers sont récompensés 🎁",
+"Clasificación del equipo: trabajo terminado, fotos después, urgencias, opiniones de los inquilinos. Los 3 primeros reciben un premio 🎁"
+],
+[
+"🎁 Récompense remise",
+"🎁 Premio entregado"
+],
+[
+"🎁 Remise le {0}",
+"🎁 Entregado el {0}"
+],
+[
+"Classement de l’équipe · podium · récompense 🎁",
+"Clasificación del equipo · podio · premio 🎁"
+],
+[
+"🏆 Classement",
+"🏆 Clasificación"
+],
+[
+"Pas encore de points en {0}. Le classement se remplit tout seul : travail fini dans l’app de l’équipe, photos après, avis des locataires.",
+"Aún no hay puntos en {0}. La clasificación se llena sola: trabajo terminado en la app del equipo, fotos después, opiniones de los inquilinos."
+],
+[
+"Annuler « récompense remise » ?",
+"¿Anular «premio entregado»?"
+],
+[
+"Bravo, {0} !",
+"¡Bravo, {0}!"
 ]
 ];
