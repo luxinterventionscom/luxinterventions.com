@@ -9419,5 +9419,37 @@ export default [
 [
 "des gérances",
 "dalle agenzie"
+],
+[
+"Notifications désactivées sur cet appareil",
+"Notifiche disattivate su questo dispositivo"
+],
+[
+"Sans elles, vous ne voyez pas les nouvelles demandes, messages et fins de travaux quand l’app est fermée.",
+"Senza, non vedi le nuove richieste, i messaggi e i lavori finiti quando l’app è chiusa."
+],
+[
+"🔔 Activer les notifications",
+"🔔 Attiva le notifiche"
+],
+[
+"✅ Fini — à clôturer",
+"✅ Finito — da chiudere"
+],
+[
+"🟢 Clôturer",
+"🟢 Chiudi cantiere"
+],
+[
+"🟢 Chantier clôturé",
+"🟢 Cantiere chiuso"
+],
+[
+"chantier clôturé par le bureau",
+"cantiere chiuso dall’ufficio"
+],
+[
+"Vérifiez (photos après, travail fait), puis choisissez 🟢 Terminée pour clôturer le chantier.",
+"Controlla (foto dopo, lavoro fatto), poi scegli 🟢 Terminata per chiudere il cantiere."
 ]
 ];

@@ -728,7 +728,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 function notifCard(t) {
   if (!pushSt || pushSt === 'unsupported' || (pushSt === 'on' && !pushJust)) return '';
   const n = t.nt;
-  return `<div class="card notif"><h2>${esc(n.t)}</h2><p class="meta" style="margin:0 0 8px">${esc(n.hint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0"><b>${esc(n.ok)}</b></p>` : pushSt === 'install' ? `<p class="meta" style="margin:0">📱 ${esc(n.install)}</p>` : pushSt === 'denied' ? `<p class="meta" style="margin:0">⚠️ ${esc(n.denied)}</p>` : `<button class="btn block" data-push-on="1">${esc(n.on)}</button>`}</div>`;
+  return `<div class="card notif${pushSt !== 'on' ? ' notif-off' : ''}"><h2>${esc(n.t)}</h2><p class="meta" style="margin:0 0 8px">${esc(n.hint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0"><b>${esc(n.ok)}</b></p>` : pushSt === 'install' ? `<p class="meta" style="margin:0">📱 ${esc(n.install)}</p>` : pushSt === 'denied' ? `<p class="meta" style="margin:0">⚠️ ${esc(n.denied)}</p>` : `<button class="btn block" data-push-on="1">${esc(n.on)}</button>`}</div>`;
 }
 const TICKER_BASE = API;
 // la barra crypto (servie par le Worker) annonce sa hauteur réelle : le cadre s'adapte (PC, téléphone)
@@ -781,6 +781,7 @@ function render() {
     <div class="btn-row"><a class="btn" href="https://www.google.com/maps/dir/?api=1${d.adresse ? '&origin=' + encodeURIComponent(mapQ(addrFull)) : ''}&destination=${encodeURIComponent(mapQ(ad.adresse))}" target="_blank" rel="noopener">${esc(t.ad.route)}</a>${d.adresse ? `<button class="btn sec" data-home="1">${esc(t.ad.home)}</button>` : ''}${slot('haut') ? `<button class="btn sec" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div></div>`);
   else if (d.adresse) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">🏠 ${esc(addrFull)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(addrFull))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQ(addrFull))}" target="_blank" rel="noopener">${esc(t.ed.map)}</a><p class="meta" style="margin:6px 0 0;text-align:center">${esc(t.ed.mapHint)}</p>${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
   // Météo de la semaine + radio (carte pliable, ouverte par défaut)
+  if (pushSt && pushSt !== 'on') out.push(notifCard(t)); // notifications coupées : rappel en haut (sous la carte)
   { const w = (AX[lang] || AX.fr).wx; out.push(foldCard(`<div class="card" id="wxCard"><h2>🌤️ ${esc(w.t)} · 📻 ${esc(w.r)}</h2><div id="wxBox">${wxHtml()}</div><div id="radioBox">${radioHtml()}</div></div>`, 'meteo', `<span id="wxSum">${wxSumHtml()}</span>`)); setTimeout(() => wxLoad(d), 0); }
   if (d.bins && d.chat) out.push(`<div id="binBox">${binHtml()}</div>`);
   if (s.coll && (d.coll || []).length) {
@@ -953,7 +954,7 @@ function render() {
       ${d.regles.extra ? `<p style="margin:8px 0 4px"><b>${esc(t.hr.rulesExtra)}</b></p><p class="pre" style="margin:0">${esc(d.regles.extra)}</p>` : ''}
       ${lu ? `<p class="ok" style="margin:10px 0 0">✓ ${esc(t.hr.rulesOk)} ${esc(fmt(lu))}</p>` : `<button class="btn block" style="margin-top:12px" data-rules-ok="1">${esc(t.hr.rulesAccept)}</button>`}</details></div>`);
   }
-  out.push(notifCard(t));
+  if (pushSt === 'on') out.push(notifCard(t));
   out.push(installCard(t));
   out.push(`<div class="card notice"><details><summary>🔒 ${esc(t.rgpdT)}</summary><p>${esc(t.rgpd(d.societe))}</p>${d.chat || d.regles ? `<p>${esc(t.hr.rgpd2)}</p>` : ''}</details><p style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
   { const low = slot('bas'); if (low) out.push(adBox(low, t, d)); }
