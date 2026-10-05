@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.80.0';
+const VERSION = '2.81.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2875,7 +2875,11 @@ dashboard() {
           <span class="meta" style="display:block;white-space:normal">${t.technicien ? html`👷 ${t.technicien} · ` : ''}${t.planned_at ? html`📅 ${String(t.planned_at).replace('T', ' ')} · ` : ''}${ptlTime(t.created_at)}${t.photos ? html` · 📷 ${t.photos}` : ''}</span></span>
         <span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="badge ${t.status === 'recue' ? 'warn' : ''}">${PTL_ST[t.status] || t.status}</span>
           ${t.msgs ? html`<span class="tiny ${ptlUnread(t) ? 'ger-unread' : 'muted'}">💬 ${t.msgs} message${t.msgs > 1 ? 's' : ''}${ptlUnread(t) ? html` · <b>${ptlUnread(t)} nouveau${ptlUnread(t) > 1 ? 'x' : ''}</b>` : ''}</span>` : ''}</span></button>`; };
+    // demandes « mot de passe oublié » venues du portail : un nouveau lien en un toucher
+    const forgot = d.users.filter((u) => u.forgot_at && u.active);
+    const forgotBox = forgot.length ? html`<div class="alert warn" style="margin-bottom:14px">🔑<div><b>Mot de passe oublié</b>${forgot.map((u) => html`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px"><span class="grow">${u.name} · ${u.email}${ptlOrg(u.org_id) ? ' · 🏢 ' + ptlOrg(u.org_id).name : ''} <span class="tiny muted">(${ptlTime(u.forgot_at)})</span></span><button class="btn sm primary" data-action="ger-inv" data-id="${u.id}" data-org="${u.org_id || ''}">🔗 Envoyer un nouveau lien</button></div>`)}</div></div>` : '';
     return html`${head}
+      ${forgotBox}
       ${chips}
       <div class="section-label">📥 Demandes d’intervention ${nRecue ? html`<span class="badge warn">${nRecue} nouvelle(s)</span>` : ''}</div>
       <p style="margin:0 0 8px;text-align:right"><button class="btn sm ghost" data-action="ger-done" aria-pressed="${!!ui.ptl.done}">${ui.ptl.done ? 'Voir les demandes en cours' : 'Voir les terminées'}</button></p>
@@ -4901,6 +4905,7 @@ const ACTIONS = {
   async 'ger-inv'(d) {
     try { const r = await ptlApi(`users/${d.id}/invite`, { method: 'POST' }); ui.ptl.inv[d.id] = ptlInviteUrl(r.invite); } catch (e) { return toast(e.message, { bad: true }); }
     openSheet('ger-invite', d.id);
+    ptlLoad(); // la demande « mot de passe oublié » disparaît
   },
   'ger-inv-lang': (d) => { ui.sheet = null; openSheet('ger-invite', d.id, null, { lang: d.l }); },
   async 'ger-inv-copy'(d) {

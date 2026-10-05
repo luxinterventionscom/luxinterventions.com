@@ -1981,6 +1981,10 @@ export default [
 "Handle now"
 ],
 [
+"Écrivez d’abord votre email ci-dessus, puis touchez « Mot de passe oublié ? ».",
+"First type your email above, then tap “Forgot your password?”."
+],
+[
 "Électricité",
 "Electrical"
 ],
@@ -2069,6 +2073,10 @@ export default [
 "✏️ Edit request #{0}"
 ],
 [
+"✓ Demande envoyée. LuxInterventions vous envoie un nouveau lien (WhatsApp ou email) : ouvrez-le pour choisir un nouveau mot de passe.",
+"✓ Request sent. LuxInterventions will send you a new link (WhatsApp or email): open it to choose a new password."
+],
+[
 "⭐ Envoyer l’évaluation",
 "⭐ Send the rating"
 ],
@@ -2119,6 +2127,10 @@ export default [
 [
 "🔑 Le mot de passe se choisit",
 "🔑 The password is chosen"
+],
+[
+"🔑 Mot de passe oublié ?",
+"🔑 Forgot your password?"
 ],
 [
 "🚚 En route",

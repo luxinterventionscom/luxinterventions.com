@@ -337,7 +337,8 @@ function renderLock(mode, data = {}) {
     <label class="field">Mot de passe ${pwField('pass', '••••••••••', 'current-password')}</label>
     <div class="lock-err" role="alert">${data.message || ''}</div>
     <button class="btn primary block" type="submit">Se connecter</button>
-    <p class="tiny muted" style="text-align:center">Première fois ? Ouvrez le <b>lien personnel</b> reçu par email ou WhatsApp : vous y choisirez votre mot de passe.<br>Mot de passe oublié ? Demandez un nouveau lien à votre responsable ou à LuxInterventions.</p>
+    <button class="btn ghost block" type="button" data-action="forgot">🔑 Mot de passe oublié ?</button>
+    <p class="tiny muted" style="text-align:center">Première fois ? Ouvrez le <b>lien personnel</b> reçu par email ou WhatsApp : vous y choisirez votre mot de passe.</p>
     <button class="btn ghost block" type="button" data-action="demo-start">${icon('eye')} Découvrir le portail en mode démo</button>
     <p class="tiny muted" style="text-align:center"><a href="/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> · <a href="/mentions-legales.html" target="_blank" rel="noopener">Mentions légales</a></p>
   </form>`);
@@ -1478,6 +1479,15 @@ const ACTIONS = {
   },
   'change-password': () => openSheet('password-form'),
   copy: async (d) => { try { await navigator.clipboard.writeText(d.text); toast('Copié'); } catch { toast('Copie impossible', { bad: true }); } },
+  // mot de passe oublié : LuxInterventions (ou le responsable) reçoit la demande et envoie un nouveau lien
+  async forgot(d, btn) {
+    const f = lockEl.querySelector('form[data-form=login]'), em = f && f.querySelector('[name=email]'), err = f && f.querySelector('.lock-err');
+    const email = em ? em.value.trim().toLowerCase() : '';
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { if (err) err.textContent = 'Écrivez d’abord votre email ci-dessus, puis touchez « Mot de passe oublié ? ».'; em && em.focus(); return; }
+    try { await api('forgot', { method: 'POST', body: { email } }); } catch (e) { if (err) err.textContent = e.message; return; }
+    if (err) { err.classList.add('ok'); err.textContent = '✓ Demande envoyée. LuxInterventions vous envoie un nouveau lien (WhatsApp ou email) : ouvrez-le pour choisir un nouveau mot de passe.'; }
+    if (btn) btn.disabled = true;
+  },
   'push-on': () => enablePush().catch((e) => toast(e.message || 'Impossible d’activer les notifications', { bad: true })),
   'push-off': () => disablePush(),
   'push-test': async () => { await api('push/test', { method: 'POST' }); toast('Notification de test envoyée'); },

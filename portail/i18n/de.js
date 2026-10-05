@@ -2033,6 +2033,10 @@ export default [
 "Jetzt bearbeiten"
 ],
 [
+"Écrivez d’abord votre email ci-dessus, puis touchez « Mot de passe oublié ? ».",
+"Geben Sie zuerst oben Ihre E-Mail ein und tippen Sie dann auf „Passwort vergessen?“."
+],
+[
 "Électricité",
 "Elektrik"
 ],
@@ -2121,6 +2125,10 @@ export default [
 "✏️ Anfrage #{0} bearbeiten"
 ],
 [
+"✓ Demande envoyée. LuxInterventions vous envoie un nouveau lien (WhatsApp ou email) : ouvrez-le pour choisir un nouveau mot de passe.",
+"✓ Anfrage gesendet. LuxInterventions schickt Ihnen einen neuen Link (WhatsApp oder E-Mail): Öffnen Sie ihn, um ein neues Passwort zu wählen."
+],
+[
 "⭐ Envoyer l’évaluation",
 "⭐ Bewertung senden"
 ],
@@ -2175,6 +2183,10 @@ export default [
 [
 "🔑 Le mot de passe se choisit",
 "🔑 Das Passwort wählt man"
+],
+[
+"🔑 Mot de passe oublié ?",
+"🔑 Passwort vergessen?"
 ],
 [
 "🚚 En route",

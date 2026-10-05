@@ -906,7 +906,7 @@ const PTL_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
 ];
 // Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
-const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT"];
+const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER"];
 let ptlSchemaReady = false;
 
 // ── Utilità ──
@@ -1089,6 +1089,7 @@ const PUSH_TXT = {
   inbox: { fr: "Nouveau message à lire", it: "Nuovo messaggio da leggere", de: "Neue Nachricht", pt: "Nova mensagem", en: "New message to read", es: "Nuevo mensaje" },
   msg: { fr: "Nouveau message de la maison", it: "Nuovo messaggio della casa", de: "Neue Nachricht im Haus", pt: "Nova mensagem da casa", en: "New house message", es: "Nuevo mensaje de la casa" },
   ptl: { fr: "🏢 Nouvelle demande d'intervention", it: "🏢 Nuova richiesta di intervento", de: "🏢 Neue Einsatzanfrage", pt: "🏢 Novo pedido de intervenção", en: "🏢 New intervention request", es: "🏢 Nueva solicitud de intervención" },
+  pwd: { fr: "🔑 Mot de passe oublié : envoyez un nouveau lien", it: "🔑 Password dimenticata: invia un nuovo link", de: "🔑 Passwort vergessen: neuen Link senden", pt: "🔑 Palavra-passe esquecida: envie um novo link", en: "🔑 Forgotten password: send a new link", es: "🔑 Contraseña olvidada: envíe un nuevo enlace" },
   ptlmsg: { fr: "🏢 Nouveau message d'une gérance", it: "🏢 Nuovo messaggio da un'agenzia", de: "🏢 Neue Nachricht einer Verwaltung", pt: "🏢 Nova mensagem de uma gestora", en: "🏢 New message from an agency", es: "🏢 Nuevo mensaje de una administración" },
   news: { fr: "Du nouveau dans votre app", it: "Novità nella tua app", de: "Neues in Ihrer App", pt: "Novidades na sua app", en: "Something new in your app", es: "Novedades en tu app" },
 };
@@ -1175,6 +1176,25 @@ async function handlePortail(request, env, url, headers, ctx) {
       const email = clean((await body()).email, 200).toLowerCase();
       const u = await env.DB.prepare("SELECT salt, iter FROM users WHERE email = ? AND auth_hash IS NOT NULL").bind(email).first();
       return json(u ? { salt: u.salt, iter: u.iter } : { salt: await fakeSalt(env, email), iter: PTL_ITER });
+    }
+
+    // Mot de passe oublié : la demande arrive à LuxInterventions (et au responsable de la gérance), qui envoie un nouveau lien.
+    // Réponse toujours identique : on ne révèle pas quels emails ont un compte.
+    if (path === "forgot" && method === "POST") {
+      await guard();
+      const email = clean((await body()).email, 200).toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) fail(400, "Email invalide");
+      const kIp = "forgot-ip:" + ip, kMail = "forgot:" + email;
+      if ((await ptlFailures(env, kIp)) >= 10 || (await ptlFailures(env, kMail)) >= 3) return json({ ok: true });
+      await ptlRecordFailure(env, kIp); await ptlRecordFailure(env, kMail);
+      const u = await env.DB.prepare("SELECT id, name, org_id FROM users WHERE email = ? AND active = 1").bind(email).first();
+      if (u) {
+        await env.DB.prepare("UPDATE users SET forgot_at = ? WHERE id = ?").bind(now, u.id).run();
+        const msg = { title: "🔑 Mot de passe oublié", body: `${u.name} (${email}) demande un nouveau lien d'accès`, url: "/portail.html", tag: "pwd-" + u.id };
+        ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin' OR (u.role = 'gerance_admin' AND u.org_id = ? AND u.id != ?)", [u.org_id || "", u.id], msg, false));
+        ctx && ctx.waitUntil(espPushSend(env, "owner", "pwd"));
+      }
+      return json({ ok: true });
     }
 
     if (path === "login" && method === "POST") {
@@ -1329,13 +1349,13 @@ async function handlePortail(request, env, url, headers, ctx) {
       if (me.role === "gerance_user") fail(403, "Réservé aux responsables");
       const org = orgScope(me, url.searchParams.get("org"));
       const q = org
-        ? env.DB.prepare("SELECT id, org_id, role, name, email, phone, active, last_login, invite_expires, auth_hash IS NOT NULL AS has_password FROM users WHERE org_id = ? ORDER BY name").bind(org)
-        : env.DB.prepare("SELECT id, org_id, role, name, email, phone, active, last_login, invite_expires, auth_hash IS NOT NULL AS has_password FROM users ORDER BY role, name");
+        ? env.DB.prepare("SELECT id, org_id, role, name, email, phone, active, last_login, invite_expires, forgot_at, auth_hash IS NOT NULL AS has_password FROM users WHERE org_id = ? ORDER BY name").bind(org)
+        : env.DB.prepare("SELECT id, org_id, role, name, email, phone, active, last_login, invite_expires, forgot_at, auth_hash IS NOT NULL AS has_password FROM users ORDER BY role, name");
       return json({ users: (await q.all()).results || [] });
     }
     const inviteFor = async (userId) => {
       const tok = randHex(32);
-      await env.DB.prepare("UPDATE users SET invite_hash = ?, invite_expires = ? WHERE id = ?").bind(await sha256Hex(tok), now + PTL_INVITE_MS, userId).run();
+      await env.DB.prepare("UPDATE users SET invite_hash = ?, invite_expires = ?, forgot_at = NULL WHERE id = ?").bind(await sha256Hex(tok), now + PTL_INVITE_MS, userId).run();
       return tok;
     };
     if (path === "users" && method === "POST") {
