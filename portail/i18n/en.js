@@ -305,6 +305,10 @@ export default [
 "This browser could not turn on notifications (private browsing, or iPhone: first install the app on the home screen and open it from the icon)."
 ],
 [
+"Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement.",
+"What you typed is not saved yet. To keep it: “Cancel”, then the save button."
+],
+[
 "Chambre",
 "Room"
 ],
@@ -399,6 +403,10 @@ export default [
 [
 "Code porte, clé chez le concierge… (sinon : infos de la résidence)",
 "Door code, key with the caretaker… (otherwise: residence details)"
+],
+[
+"Collab. (demandes)",
+"Staff (requests)"
 ],
 [
 "Compte",
@@ -699,6 +707,14 @@ export default [
 [
 "Fermer",
 "Close"
+],
+[
+"Fermer sans enregistrer",
+"Close without saving"
+],
+[
+"Fermer sans enregistrer ?",
+"Close without saving?"
 ],
 [
 "Fiche d’évaluation de l’intervention",
@@ -1391,6 +1407,14 @@ export default [
 [
 "Replanifier",
 "Reschedule"
+],
+[
+"Resp. (invite collègues)",
+"Manager (invites colleagues)"
+],
+[
+"Resp. = responsable : fait les demandes et invite ses collègues · Collab. = collaborateur : fait et suit les demandes",
+"Manager: makes requests and invites colleagues · Staff: makes and follows requests"
 ],
 [
 "Responsable (peut inviter des collègues)",

@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.79.0';
+const VERSION = '2.80.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3219,7 +3219,12 @@ dashboard() {
 
 // ───────────────────────── Feuilles (détails & formulaires) ─────────────────────────
 const sheetEl = $('#sheet');
+// Saisie pas encore enregistrée dans la fenêtre : on demande avant de la fermer (sinon tout est perdu)
+let sheetDirty = false;
+sheetEl.addEventListener('input', (e) => { const el = e.target; if (el.closest('form') && !el.dataset.input && !['hidden', 'search'].includes(el.type)) sheetDirty = true; });
+const leaveSheetOk = async () => !sheetDirty || (await confirmBox('Fermer sans enregistrer ?', { ok: 'Fermer sans enregistrer', detail: 'Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement en bas de la fenêtre.' }));
 function openSheet(kind, id, tab, preset) {
+  sheetDirty = false;
   ui.sheet = { kind, id, tab: tab || null, preset };
   renderSheet();
   if (!sheetEl.open) sheetEl.showModal();
@@ -3240,7 +3245,8 @@ function closeSheet() {
   if (sheetEl.open) sheetEl.close();
 }
 sheetEl.addEventListener('close', () => (ui.sheet = null));
-sheetEl.addEventListener('click', (e) => { if (e.target === sheetEl) closeSheet(); });
+sheetEl.addEventListener('click', async (e) => { if (e.target === sheetEl && (await leaveSheetOk())) closeSheet(); });
+sheetEl.addEventListener('cancel', (e) => { if (!sheetDirty) return; e.preventDefault(); leaveSheetOk().then((ok) => ok && closeSheet()); });
 
 function renderSheet() {
   if (!ui.sheet || (!sheetEl.open && ui.sheet.rendered)) return;
@@ -3512,7 +3518,8 @@ const SHEETS = {
           <label class="field">Prénom et nom<input name="name" required></label>
           <label class="field">Email<input type="email" name="email" required></label>
           <label class="field">Téléphone (WhatsApp)<input type="tel" name="phone" placeholder="+352…"></label>
-          <label class="field">Rôle<select name="role"><option value="gerance_admin">Responsable (peut inviter des collègues)</option><option value="gerance_user">Collaborateur (fait et suit les demandes)</option></select></label>
+          <label class="field">Rôle<select name="role" style="font-size:14px"><option value="gerance_admin">Resp. (invite collègues)</option><option value="gerance_user">Collab. (demandes)</option></select></label>
+          <p class="tiny muted full" style="margin:-6px 0 0">Resp. = responsable : fait les demandes et invite ses collègues · Collab. = collaborateur : fait et suit les demandes</p>
           <button class="btn primary full" type="submit">${icon('plus')} Créer l’accès et le lien</button>
         </form>`;
     }
@@ -5195,7 +5202,7 @@ const ACTIONS = {
   'loc-seg': (d) => { ui.locSeg = d.id; renderView(); },
   'imm-seg': (d) => { ui.immSeg = d.id; renderView(); },
   'end-imm': (d) => openSheet('endimm-form', d.id),
-  'close-sheet': () => goBack(),
+  'close-sheet': async () => { if (await leaveSheetOk()) { sheetDirty = false; goBack(); } },
   pay: (d) => payFull(d.loc, +d.y, +d.m),
   async 'toggle-pay'(d) {
     const l = vault.get('locataires', d.loc);
@@ -6015,6 +6022,7 @@ document.addEventListener('submit', (e) => {
   const f = e.target;
   if (!FORMS[f.dataset.form]) return;
   e.preventDefault();
+  if (sheetEl.contains(f)) sheetDirty = false;
   FORMS[f.dataset.form](new FormData(f), f);
 });
 // Filtre de la liste « App des locataires » : recherche + avec / sans accès, sans recharger la fenêtre

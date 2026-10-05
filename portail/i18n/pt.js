@@ -301,6 +301,10 @@ export default [
 "Este navegador não conseguiu ativar as notificações (navegação privada, ou iPhone: instale primeiro a app no ecrã principal e abra-a pelo ícone)."
 ],
 [
+"Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement.",
+"O que escreveu ainda não está guardado. Para guardar: «Cancelar» e depois o botão de gravar."
+],
+[
 "Chambre",
 "Quarto"
 ],
@@ -395,6 +399,10 @@ export default [
 [
 "Code porte, clé chez le concierge… (sinon : infos de la résidence)",
 "Código da porta, chave com o porteiro… (senão: dados do condomínio)"
+],
+[
+"Collab. (demandes)",
+"Colab. (pedidos)"
 ],
 [
 "Compte",
@@ -711,6 +719,14 @@ export default [
 [
 "Fermer",
 "Fechar"
+],
+[
+"Fermer sans enregistrer",
+"Fechar sem guardar"
+],
+[
+"Fermer sans enregistrer ?",
+"Fechar sem guardar?"
 ],
 [
 "Fiche d’évaluation de l’intervention",
@@ -1427,6 +1443,14 @@ export default [
 [
 "Replanifier",
 "Replanear"
+],
+[
+"Resp. (invite collègues)",
+"Resp. (convida colegas)"
+],
+[
+"Resp. = responsable : fait les demandes et invite ses collègues · Collab. = collaborateur : fait et suit les demandes",
+"Resp. = responsável: faz pedidos e convida colegas · Colab. = colaborador: faz e acompanha pedidos"
 ],
 [
 "Responsable (peut inviter des collègues)",

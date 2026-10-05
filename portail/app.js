@@ -890,7 +890,12 @@ function userRow(u) {
 
 // ───────────────────────── Feuilles ─────────────────────────
 const sheetEl = $('#sheet');
+// Saisie pas encore enregistrée : on demande avant de fermer la fenêtre (sinon tout est perdu)
+let sheetDirty = false;
+sheetEl.addEventListener('input', (e) => { const el = e.target; if (el.closest('form') && !el.dataset.input && !['hidden', 'search', 'file'].includes(el.type)) sheetDirty = true; });
+const leaveSheetOk = async () => !sheetDirty || (await confirmBox('Fermer sans enregistrer ?', { ok: 'Fermer sans enregistrer', detail: 'Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement.' }));
 function openSheet(kind, id, data) {
+  sheetDirty = false;
   state.sheet = { kind, id, data };
   renderSheet();
   if (!sheetEl.open) sheetEl.showModal();
@@ -903,7 +908,8 @@ function closeSheet(fromPop) {
   if (wasTicket && !fromPop && /^#\/t\//.test(location.hash)) history.replaceState(null, '', '#/' + state.route);
 }
 sheetEl.addEventListener('close', () => { state.sheet = null; revokePhotos(); });
-sheetEl.addEventListener('click', (e) => { if (e.target === sheetEl) closeSheet(); });
+sheetEl.addEventListener('click', async (e) => { if (e.target === sheetEl && (await leaveSheetOk())) closeSheet(); });
+sheetEl.addEventListener('cancel', (e) => { if (!sheetDirty) return; e.preventDefault(); leaveSheetOk().then((ok) => ok && closeSheet()); });
 
 function renderSheet() {
   const s = state.sheet;
@@ -1230,7 +1236,7 @@ const SHEETS = {
   },
 
   'user-form'({ data }) {
-    const roles = data.role === 'admin' ? [['admin', ROLES.admin]] : [['gerance_admin', 'Responsable (peut inviter des collègues)'], ['gerance_user', 'Utilisateur (fait et suit les demandes)']];
+    const roles = data.role === 'admin' ? [['admin', ROLES.admin]] : [['gerance_admin', 'Resp. (invite collègues)'], ['gerance_user', 'Collab. (demandes)']];
     return {
       title: data.role === 'admin' ? 'Inviter un membre de l’équipe' : 'Inviter un utilisateur',
       narrow: true,
@@ -1239,6 +1245,7 @@ const SHEETS = {
         ${field('Email', 'email', '', { full: true, type: 'email', required: true })}
         ${field('Téléphone', 'phone', '', { full: true, type: 'tel' })}
         <label class="field full">Rôle<select name="role">${roles.map(([k, l]) => html`<option value="${k}" ${k === data.role ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+        ${data.role === 'admin' ? '' : html`<p class="tiny muted full" style="margin:-6px 0 0">Resp. = responsable : fait les demandes et invite ses collègues · Collab. = collaborateur : fait et suit les demandes</p>`}
         <p class="tiny muted full">Un lien personnel sera créé : la personne l’ouvre et choisit son mot de passe. Valable 14 jours.</p></form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Créer le lien</button>`,
     };
@@ -1375,7 +1382,7 @@ const ACTIONS = {
     inp.type = inp.type === 'password' ? 'text' : 'password';
     setHtml(el, icon(inp.type === 'password' ? 'eye' : 'eyeOff'));
   },
-  'close-sheet': () => closeSheet(),
+  'close-sheet': async () => { if (await leaveSheetOk()) { sheetDirty = false; closeSheet(); } },
   'demo-start': () => startDemo(),
   'demo-switch': async (d) => {
     state.demo.switchTo(d.id);
@@ -1677,6 +1684,7 @@ document.addEventListener('submit', (e) => {
   const f = e.target;
   if (!FORMS[f.dataset.form]) return;
   e.preventDefault();
+  if (sheetEl.contains(f)) sheetDirty = false;
   FORMS[f.dataset.form](new FormData(f), f);
 });
 document.addEventListener('input', (e) => {
