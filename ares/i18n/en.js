@@ -9239,5 +9239,13 @@ export default [
 [
 "Vérifiez (photos après, travail fait), puis choisissez 🟢 Terminée pour clôturer le chantier.",
 "Check (photos after, work done), then choose 🟢 Done to close the job."
+],
+[
+"🔑 Nouveau mot de passe du portail",
+"🔑 New portal password"
+],
+[
+"Choisir un nouveau mot de passe du portail ?",
+"Choose a new portal password?"
 ]
 ];

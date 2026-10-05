@@ -9403,5 +9403,13 @@ export default [
 [
 "Vérifiez (photos après, travail fait), puis choisissez 🟢 Terminée pour clôturer le chantier.",
 "Verifique (fotos depois, trabalho feito) e escolha 🟢 Concluída para fechar a obra."
+],
+[
+"🔑 Nouveau mot de passe du portail",
+"🔑 Nova palavra-passe do portal"
+],
+[
+"Choisir un nouveau mot de passe du portail ?",
+"Escolher uma nova palavra-passe do portal?"
 ]
 ];
