@@ -9395,5 +9395,37 @@ export default [
 [
 "des gérances",
 "de las administraciones"
+],
+[
+"Notifications désactivées sur cet appareil",
+"Notificaciones desactivadas en este dispositivo"
+],
+[
+"Sans elles, vous ne voyez pas les nouvelles demandes, messages et fins de travaux quand l’app est fermée.",
+"Sin ellas, no ve nuevas solicitudes, mensajes y trabajos terminados cuando la app está cerrada."
+],
+[
+"🔔 Activer les notifications",
+"🔔 Activar notificaciones"
+],
+[
+"✅ Fini — à clôturer",
+"✅ Terminado — por cerrar"
+],
+[
+"🟢 Clôturer",
+"🟢 Cerrar obra"
+],
+[
+"🟢 Chantier clôturé",
+"🟢 Obra cerrada"
+],
+[
+"chantier clôturé par le bureau",
+"obra cerrada por la oficina"
+],
+[
+"Vérifiez (photos après, travail fait), puis choisissez 🟢 Terminée pour clôturer le chantier.",
+"Compruebe (fotos después, trabajo hecho) y elija 🟢 Terminada para cerrar la obra."
 ]
 ];

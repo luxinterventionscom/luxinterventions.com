@@ -301,7 +301,7 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 function notifCard(t) {
   if (!pushSt || pushSt === 'unsupported' || (pushSt === 'on' && !pushJust)) return '';
   const n = t.nt;
-  return `<div class="card notif"><h2>${esc(n.t)}</h2><p class="meta" style="margin:0 0 8px">${esc(n.hint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0"><b>${esc(n.ok)}</b></p>` : pushSt === 'install' ? `<p class="meta" style="margin:0">📱 ${esc(n.install)}</p>` : pushSt === 'denied' ? `<p class="meta" style="margin:0">⚠️ ${esc(n.denied)}</p>` : `<button class="btn block" data-push-on="1">${esc(n.on)}</button>`}</div>`;
+  return `<div class="card notif${pushSt !== 'on' ? ' notif-off' : ''}"><h2>${esc(n.t)}</h2><p class="meta" style="margin:0 0 8px">${esc(n.hint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0"><b>${esc(n.ok)}</b></p>` : pushSt === 'install' ? `<p class="meta" style="margin:0">📱 ${esc(n.install)}</p>` : pushSt === 'denied' ? `<p class="meta" style="margin:0">⚠️ ${esc(n.denied)}</p>` : `<button class="btn block" data-push-on="1">${esc(n.on)}</button>`}</div>`;
 }
 const TICKER_BASE = API;
 // la barra crypto (servie par le Worker) annonce sa hauteur réelle : le cadre s'adapte (PC, téléphone)
@@ -335,6 +335,7 @@ function render() {
   const slot = (k) => pickPub(pubs.filter((x) => (x.slot || 'milieu') === k));
   if (place) out.push(`<div class="card"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">📍 ${esc(place)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(place))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQ(place))}" target="_blank" rel="noopener">${esc(t.x.route)}</a>${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
   else { const top = slot('haut'); if (top) out.push(adBox(top, t)); }
+  if (pushSt && pushSt !== 'on') out.push(notifCard(t)); // notifications coupées : rappel en haut (sous la carte)
   // météo de la semaine + radio (comme dans l'app des locataires)
   out.push(wxRadioCard());
   const q = getJ(QK());
@@ -401,7 +402,7 @@ function render() {
   out.push(`<div class="card"><details class="more"><summary>👤 ${esc(t.info)}</summary>
       ${[[t.tel, d.me.tel], [t.mail, d.me.mail], [t.adr, d.me.adresse], [t.ville, d.me.ville]].map(([k, v]) => `<div class="row"><span class="meta" style="width:130px">${esc(k)}</span><b class="grow">${esc(v || '—')}</b></div>`).join('')}
       <p class="meta" style="margin:8px 0 0">${esc(t.x.infoRO)}</p></details></div>`);
-  out.push(notifCard(t));
+  if (pushSt === 'on') out.push(notifCard(t));
   out.push(`<p class="meta" style="text-align:center">${esc(t.install)}</p>
     <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(t.rgpd)}</p><p class="meta" style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
   { const low = slot('bas'); if (low) out.push(adBox(low, t)); }

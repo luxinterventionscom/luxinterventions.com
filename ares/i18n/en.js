@@ -9207,5 +9207,37 @@ export default [
 [
 "des gérances",
 "from agencies"
+],
+[
+"Notifications désactivées sur cet appareil",
+"Notifications turned off on this device"
+],
+[
+"Sans elles, vous ne voyez pas les nouvelles demandes, messages et fins de travaux quand l’app est fermée.",
+"Without them you miss new requests, messages and finished jobs while the app is closed."
+],
+[
+"🔔 Activer les notifications",
+"🔔 Turn on notifications"
+],
+[
+"✅ Fini — à clôturer",
+"✅ Done — to close"
+],
+[
+"🟢 Clôturer",
+"🟢 Close job"
+],
+[
+"🟢 Chantier clôturé",
+"🟢 Job closed"
+],
+[
+"chantier clôturé par le bureau",
+"job closed by the office"
+],
+[
+"Vérifiez (photos après, travail fait), puis choisissez 🟢 Terminée pour clôturer le chantier.",
+"Check (photos after, work done), then choose 🟢 Done to close the job."
 ]
 ];

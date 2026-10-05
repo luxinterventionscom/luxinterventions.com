@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.77.0';
+const VERSION = '2.78.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -329,7 +329,7 @@ function agenda(from, to, immId) {
     if (immId && t.immId !== immId) continue;
     if (immGone(vault.get('immeubles', t.immId))) continue;
     if (t.recur) { for (const d of recurDates(t.date, t.recur, from, to, t.fin)) items.push({ d, kind: 'tache', t }); }
-    else if (t.statut !== 'fait' && t.date) items.push({ d: t.date < from ? from : t.date, late: t.date < today(), kind: 'tache', t });
+    else if (t.statut !== 'fait' && t.date) { const d0 = t.fini ? t.fini.d : t.date; items.push({ d: d0 < from ? from : d0, late: !t.fini && t.date < today(), kind: 'tache', t }); }
   }
   for (const c of vault.list('collectes')) {
     if (immId && c.immId !== immId) continue;
@@ -471,7 +471,9 @@ async function equipeInbox(w, msg) {
         const entry = { d, st: it.st, note, at, by: w.id, ph };
         if (/^\d{2}:\d{2}$/.test(it.h || '')) entry.h = it.h;
         const upd = { id: t.id, journal: [...(t.journal || []), entry].slice(-80) };
-        if (!t.recur && it.st === 'fait') Object.assign(upd, { statut: 'fait', doneDate: d });
+        // l'ouvrier a fini : c'est le bureau qui clôture le chantier (après contrôle des photos)
+        if (!t.recur && it.st === 'fait') Object.assign(upd, { fini: { d, by: w.id, h: entry.h || at.slice(11, 16), note } });
+        if (!t.recur && it.st === 'incomplet') upd.fini = null;
         tx.put('taches', upd);
         feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note, ph: ph.length, h: entry.h || '' });
         fresh++;
@@ -548,7 +550,7 @@ async function ptlFromTeam(w, msg) {
     if (it.k !== 'task') continue;
     const who = intervFull(w), note = String(it.note || '').slice(0, 1000);
     if (it.st === 'encours') await ptlApi(`tickets/${t.ptl.tid}/status`, { method: 'POST', body: { status: 'encours', technicien: who, text: `🚚 ${who} est sur place${note ? ' — ' + note : ''}` } });
-    else if (it.st === 'fait') await ptlApi(`tickets/${t.ptl.tid}/status`, { method: 'POST', body: { status: 'terminee', technicien: who, rapport: note || 'Intervention terminée', text: `✅ ${who} : ${note || 'intervention terminée'}` } });
+    else if (it.st === 'fait') await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `✅ ${who} a fini le travail${note ? ' — ' + note : ''}. Clôture après contrôle par LuxInterventions.` } });
     else if (it.st === 'incomplet') await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `⚠️ ${who} : pas terminé${note ? ' — ' + note : ''}` } });
   }
   // photos « après » de l'ouvrier → visibles par la gérance (avant / après)
@@ -1995,6 +1997,7 @@ function startSession() {
   firstOpen = false;
   vault.sync();
   setTimeout(ptlWatch, 1500);
+  pushInit(); // rappel « notifications coupées » dès l'Accueil
   setTimeout(async () => {
     await refreshIcs(false);
     // Une fois par jour : republier les pages locataires (dates glissantes sur 13 mois)
@@ -2214,7 +2217,10 @@ function updateBadge() {
 // Notifications de l'app de gestion sur ce téléphone
 let pushSt = '';
 const pushPost = (b) => vault.pushSub({ ...b, lang: getLang() });
-async function pushInit() { pushSt = await pushStatus('/locataires'); if (pushSt === 'on') pushRefresh('/locataires', pushPost); if (ui.route === 'reglages') renderView(); }
+async function pushInit() { pushSt = await pushStatus('/locataires'); if (pushSt === 'on') pushRefresh('/locataires', pushPost); if (['reglages', 'dashboard'].includes(ui.route)) renderView(); }
+// Accueil : tant que les notifications sont coupées sur cet appareil, on le rappelle (elles peuvent sauter après une mise à jour)
+const pushNudge = () => (!pushSt || pushSt === 'on' || pushSt === 'unsupported' ? '' : html`<div class="alert warn push-nudge" style="margin-bottom:14px">🔔<div><b>Notifications désactivées sur cet appareil</b><br><span class="small">Sans elles, vous ne voyez pas les nouvelles demandes, messages et fins de travaux quand l’app est fermée.</span>
+  ${pushSt === 'off' ? html`<br><button class="btn sm primary" style="margin-top:8px" data-action="push-on">🔔 Activer les notifications</button>` : html`<br><span class="small">${PUSH_MSG[pushSt]}</span>`}</div></div>`);
 const PUSH_MSG = { off: '', on: '✓ Activées sur ce téléphone : le numéro sur l’icône indique ce qui attend une action.', denied: 'Bloquées : réactivez-les dans les réglages du téléphone (Notifications → cette app).', install: 'iPhone : installez d’abord l’app sur l’écran d’accueil, ouvrez-la depuis l’icône, puis activez-les ici.', unsupported: 'Non disponibles dans ce navigateur.' };
 const pageHead = (title, sub, actions = '') => html`<div class="page-head"><div><h1>${title}</h1>${sub ? html`<p>${sub}</p>` : ''}</div>${actions}</div>`;
 const yearSelect = (y) => html`<select data-input="year" style="width:auto;min-width:100px" aria-label="Année">${dataYears().map((yy) => html`<option value="${yy}" ${yy === y ? new Raw('selected') : ''}>${yy}</option>`)}</select>`;
@@ -2281,10 +2287,10 @@ function tacheRow(t, x = {}) {
   const due = t.statut === 'fait' ? '' : x.d || (t.recur ? recurDates(t.date, t.recur, today(), addDays(today(), 62), t.fin)[0] : t.date);
   return html`<div class="row">${t.statut === 'fait' ? '' : light(due)}
     <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="edit-tache" data-id="${t.id}">
-      <span class="title" style="display:block">${t.urgent && t.statut !== 'fait' ? html`<span class="badge bad">🔴 Urgent</span> ` : ''}${tacheIcon(t.type)} ${t.titre}</span>
+      ${t.fini && t.statut !== 'fait' ? html`<span class="badge ok" style="display:table;margin-bottom:4px">✅ Fini — à clôturer</span>` : ''}<span class="title" style="display:block">${t.urgent && t.statut !== 'fait' && !t.fini ? html`<span class="badge bad">🔴 Urgent</span> ` : ''}${tacheIcon(t.type)} ${t.titre}</span>
       <span class="meta" style="white-space:normal">${placeName(t)}${who ? ' · ' + who : ' · intervenant à choisir'} · ${when}${t.heure ? ` · 🕒 ${t.heure}${t.heureFin ? '–' + t.heureFin : ''}` : ''}${t.cout ? ' · ' + money(t.cout) : ''}</span>
     </button>
-    ${!t.recur && t.statut !== 'fait' ? html`<button class="btn sm" data-action="tache-done" data-id="${t.id}">${icon('check')} Fait</button>` : t.statut === 'fait' ? html`<span class="badge ok">✓</span>` : ''}
+    ${!t.recur && t.statut !== 'fait' ? html`<button class="btn sm${t.fini ? ' cloture' : ''}" data-action="tache-done" data-id="${t.id}">${t.fini ? '🟢 Clôturer' : html`${icon('check')} Fait`}</button>` : t.statut === 'fait' ? html`<span class="badge ok">✓</span>` : ''}
   </div>`;
 }
 function reportCollectes(immId, y) {
@@ -2684,7 +2690,7 @@ dashboard() {
     const alertBtn = (cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`;
 
     if (!imms.length && !locs.length) {
-      return html`${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
+      return html`${pushNudge()}${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Ajouter un immeuble</button>`)}`;
     }
 
@@ -2707,8 +2713,13 @@ dashboard() {
     const absBox = absNow.length || absSoon.length ? html`<div class="stack" style="margin-bottom:14px">${absNow.map(([i, a]) => { const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length; return alertBtn(a.type === 'maladie' ? 'bad' : 'warn', 'calendar', 'open-interv', i.id, html`${ABS_TYPES[a.type]} : <b>${intervFull(i)}</b> absent${a.fin ? ' jusqu’au ' + fmtDate(a.fin) : ' (fin non connue)'}${n ? html` — <b>${plural(n, 'intervention')}</b> à vérifier` : ''}<div class="tiny">touchez pour la fiche</div>`); })}
       ${absSoon.map(([i, a]) => alertBtn('info', 'calendar', 'open-interv', i.id, html`${ABS_TYPES[a.type]} prévu : <b>${intervFull(i)}</b> du ${fmtDate(a.debut)}${a.fin ? ' au ' + fmtDate(a.fin) : ''}`))}</div>` : '';
     const toolsBox = ui.toolsPending ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('warn', 'check', 'open-tools', '', html`🧰 <b>${ui.toolsPending} annonce${ui.toolsPending > 1 ? 's' : ''} à approuver</b> (don · prêt · location)<div class="tiny">touchez pour voir et approuver</div>`)}</div>` : '';
+    // travaux finis par l'équipe, en attente de clôture par le bureau
+    const fins = vault.list('taches').filter((t) => t.fini && !t.recur && t.statut !== 'fait').sort((a, b) => (a.fini.d + a.fini.h).localeCompare(b.fini.d + b.fini.h));
+    const finBox = fins.length ? html`<div class="section-label" style="margin-top:0">🟢 ${plural(fins.length, 'chantier')} fini${fins.length > 1 ? 's' : ''} par l’équipe — à clôturer</div><div class="list fin-list" style="margin-bottom:14px">${fins.map((t) => tacheRow(t))}</div>` : '';
     return html`
+      ${pushNudge()}
       ${nudge}
+      ${finBox}
       ${sigBox}
       ${chatBox}
       ${virBox}
@@ -3729,8 +3740,9 @@ const SHEETS = {
         <label class="field">Répétition<select name="recur">${Object.entries(RECURS).map(([k, v]) => html`<option value="${k}" ${(t.recur || '') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field("Jusqu'au (si répétition)", 'fin', t.fin, { type: 'date' })}
         ${field('Coût (€)', 'cout', t.cout, { type: 'number', attrs: money$ })}
+        ${t.fini && t.statut !== 'fait' ? html`<div class="full alert ok" style="margin:0">✅<div><b>${intervFull(vault.get('intervenants', t.fini.by) || {})} a fini le travail</b> le ${fmtDate(t.fini.d)}${t.fini.h ? ' à ' + t.fini.h : ''}${t.fini.note ? html` — « ${t.fini.note} »` : ''}<br><span class="small">Vérifiez (photos après, travail fait), puis choisissez 🟢 <b>Terminée</b> pour clôturer le chantier.</span></div></div>` : ''}
         ${!t.recur ? html`<fieldset class="full st-radios"><legend>Statut</legend><div class="st-row">${Object.entries(STATUTS).map(([k, v]) => html`<label class="st-opt st-${k}"><input type="radio" name="statut" value="${k}" ${(t.statut || 'afaire') === k ? new Raw('checked') : ''}><span>${ST_DOT[k]} ${v}</span></label>`)}</div>
-          <p class="tiny muted" style="margin:6px 0 0">🔴 <b>À faire</b> : pas encore organisé · 🟡 <b>Planifiée</b> : jour et personne fixés · 🟢 <b>Terminée</b> : travail fini</p></fieldset>` : ''}
+          <p class="tiny muted" style="margin:6px 0 0">🔴 <b>À faire</b> : pas encore organisé · 🟡 <b>Planifiée</b> : jour et personne fixés · 🟢 <b>Terminée</b> : chantier clôturé par le bureau</p></fieldset>` : ''}
         <label class="field full">Notes<textarea name="note" placeholder="Accès, clés, pièces à acheter, ce qui a été fait…">${t.note || ''}</textarea></label>
         ${(() => { const pb = t.id ? eqPhotos(t.id, 'pb') : [], np = (t.ptlPhotos || []).length; return html`<label class="field full">📷 Photos du problème (envoyées dans l’app de la personne)<input type="file" name="pbphotos" accept="image/*" multiple></label>
         ${pb.length || np ? html`<p class="tiny muted full" style="margin:-4px 0 0">✓ ${pb.length + np} photo(s) déjà jointe(s)${np ? ' (photos de la gérance)' : ''}</p>` : ''}
@@ -5103,8 +5115,9 @@ const ACTIONS = {
     const t = vault.get('taches', d.id);
     if (!t) return;
     const fromSheet = ui.sheet && ui.sheet.kind === 'tache-form';
-    const saved = await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: today(), vu: true }), 'Intervention terminée', `${t.titre} — ${placeName(t)}`, t.immId);
-    toast(t.locId ? '✓ Réparé · le locataire voit « Terminé » dans son app' : 'Intervention terminée');
+    const saved = await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: t.fini ? t.fini.d : today(), vu: true }), 'Chantier clôturé', `${t.titre} — ${placeName(t)}`, t.immId);
+    toast(t.locId ? '✓ Réparé · le locataire voit « Terminé » dans son app' : '🟢 Chantier clôturé');
+    if (saved.ptl && ptlConf()) { const w = vault.get('intervenants', saved.intervenantId); ptlStatus(saved.ptl.tid, 'terminee', { technicien: w ? intervFull(w) : '', rapport: (saved.fini && saved.fini.note) || saved.note || 'Intervention terminée' }).then(() => toast('Portail gérance mis à jour : Terminée')).catch((e) => toast('Portail gérance : ' + e.message, { bad: true })); }
     if (fromSheet) goBack();
     await offerDepense(saved);
   },
