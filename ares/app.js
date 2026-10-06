@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.86.0';
+const VERSION = '2.86.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2086,9 +2086,9 @@ vault.on((kind) => {
 // Menu de gauche (ordinateur) : sections avec sous-rubriques et raccourcis « + »
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gérance', items: [['immeubles', 'Immeubles', 'building'], ['locataires', 'Locataires', 'users', ['new-loc', 'Ajouter loc.']], ['gerances', 'Gérances', 'briefcase', ['ger-new-go', 'Ajouter gérance']], ['maintenance', 'Maintenance', 'tool', ['new-tache', 'Intervention']]] },
+  { group: 'Gérance', items: [['immeubles', 'Immeubles', 'building'], ['locataires', 'Locataires', 'users'], ['gerances', 'Gérances', 'briefcase'], ['maintenance', 'Maintenance', 'tool']] },
   ['champions', 'Classement', 'trophy'],
-  { group: 'Comptabilité', items: [['paiements', 'Gestion locataire', 'wallet'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Statistiques', 'chart', null, 'stats']] },
+  { group: 'Comptabilité', items: [['paiements', 'Gestion locataire', 'wallet'], ['compta', 'Comptabilité', 'chart']] },
 ];
 function sideNavHtml() {
   const btn = ([id, label, ic, plus, sec], sub) => html`<button class="navbtn${sub ? ' nav-sub' : ''}" data-action="go" data-to="${id}" ${sec ? new Raw(`data-sec="${sec}"`) : ''}>${icon(ic)}<span>${label}</span></button>${plus ? html`<button class="navbtn nav-plus" data-action="${plus[0]}">＋ <span>${plus[1]}</span></button>` : ''}`;
@@ -3070,7 +3070,7 @@ dashboard() {
     if (orphans.length) groups.push({ im: { adresse: 'Sans immeuble' }, ls: orphans });
     const nGone = all.filter(isGone).length;
     return html`
-      ${pageHead('Locataires', `${all.length - nGone} actuels · ${nGone} anciens`, html`<button class="btn primary desk-only" data-action="new-loc">${icon('plus')} Ajouter</button>`)}
+      ${pageHead('Locataires', `${all.length - nGone} actuels · ${nGone} anciens`, html`<button class="btn primary desk-only" data-action="new-loc">${icon('plus')} Ajouter loc.</button>`)}
       <div class="tabs" role="tablist" style="max-width:360px">
         <button class="tab" role="tab" aria-selected="${!anciens}" data-action="loc-seg" data-id="actuels">Actuels</button>
         <button class="tab" role="tab" aria-selected="${anciens}" data-action="loc-seg" data-id="anciens">Anciens (${nGone})</button>
