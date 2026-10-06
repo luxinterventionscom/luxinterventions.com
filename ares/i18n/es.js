@@ -9723,5 +9723,57 @@ export default [
 [
 "Facturation enregistrée",
 "Facturación guardada"
+],
+[
+"🧾 Facturation",
+"🧾 Facturación"
+],
+[
+"TVA normale (%)",
+"IVA normal (%)"
+],
+[
+"Adresse de facturation",
+"Dirección de facturación"
+],
+[
+"Pays (code)",
+"País (código)"
+],
+[
+"N° TVA du client",
+"N.º IVA del cliente"
+],
+[
+"Régime de TVA",
+"Régimen de IVA"
+],
+[
+"Taux particulier (%)",
+"Tipo especial (%)"
+],
+[
+"Mention sur la facture",
+"Mención en la factura"
+],
+[
+"TVA de cette facture",
+"IVA de esta factura"
+],
+[
+"Taux particulier",
+"Tipo especial"
+],
+[
+"Autoliquidation — client assujetti UE (0 %)",
+"Inversión del sujeto pasivo — cliente UE (0 %)"
+],
+[
+"TVA non applicable / exonérée (0 %)",
+"IVA no aplicable / exenta (0 %)"
+],
+[
+"Facturation du client enregistrée",
+"Facturación del cliente guardada"
 ]
 ];
