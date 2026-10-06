@@ -10091,5 +10091,77 @@ export default [
 [
 "Intervention occasionnelle — il manque : {0}",
 "Gelegentlicher Einsatz — es fehlt: {0}"
+],
+[
+"Compte bancaire (pour le payer) — même fiche pour tous les pays",
+"Bankkonto (für die Bezahlung) — gleiches Formular für alle Länder"
+],
+[
+"Nom de la banque",
+"Name der Bank"
+],
+[
+"Code BIC / SWIFT",
+"BIC / SWIFT-Code"
+],
+[
+"L’IBAN contient déjà code banque, guichet, compte et clé (RIB en France, ABI/CAB en Italie, BLZ en Allemagne…) : pas besoin de les écrire à part. Le pays du BIC doit être celui de l’IBAN.",
+"Die IBAN enthält bereits Bankleitzahl, Filiale, Konto und Prüfziffer (RIB in Frankreich, ABI/CAB in Italien, BLZ in Deutschland…): nicht separat eingeben. Das Land des BIC muss das der IBAN sein."
+],
+[
+"Signature :",
+"Unterschrift:"
+],
+[
+"l’intervenant la fait lui-même dans son app (📱 App → lien à lui envoyer), rubrique « ✍️ Ma fiche d’engagement ».",
+"der Arbeiter macht sie selbst in seiner App (📱 App → Link senden), Bereich „✍️ Mein Verpflichtungsblatt“."
+],
+[
+"Signée par l’intervenant dans son app le",
+"Vom Arbeiter in seiner App unterschrieben am"
+],
+[
+"il la signe dans son app (onglet 📱 App → lui envoyer le lien), rubrique « ✍️ Ma fiche d’engagement »",
+"er unterschreibt in seiner App (Reiter 📱 App → Link senden), Bereich „✍️ Mein Verpflichtungsblatt“"
+],
+[
+"IBAN obligatoire",
+"IBAN erforderlich"
+],
+[
+"BIC obligatoire",
+"BIC erforderlich"
+],
+[
+"Doit commencer par le pays et 2 chiffres (ex. FR76…, LU28…, IT60…)",
+"Muss mit dem Land und 2 Ziffern beginnen (z. B. FR76…, LU28…, IT60…)"
+],
+[
+"Pays « {0} » inconnu pour un IBAN",
+"Land „{0}“ für IBAN unbekannt"
+],
+[
+"IBAN {0} : {1} caractères attendus, {2} écrits",
+"IBAN {0}: {1} Zeichen erwartet, {2} eingegeben"
+],
+[
+"Clé de contrôle fausse : un chiffre est mal recopié",
+"Prüfziffer falsch: eine Ziffer ist falsch abgeschrieben"
+],
+[
+"✓ IBAN {0} valide",
+"✓ IBAN {0} gültig"
+],
+[
+"8 ou 11 caractères : 4 lettres banque + 2 lettres pays + 2 (+3) (ex. BNPAFRPPXXX)",
+"8 oder 11 Zeichen: 4 Buchstaben Bank + 2 Buchstaben Land + 2 (+3) (z. B. BNPAFRPPXXX)"
+],
+[
+"Le BIC est du pays {0}, l’IBAN du pays {1}",
+"Der BIC ist aus {0}, die IBAN aus {1}"
+],
+[
+"✓ BIC valide",
+"✓ BIC gültig"
 ]
 ];

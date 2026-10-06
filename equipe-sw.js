@@ -1,6 +1,6 @@
-// App de l'équipe NOBIS s.a.r.l. : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'equipe-shell-v1.24.0';
-const SHELL = ['/equipe.html', '/equipe.js', '/ares/espace-crypto.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/pubstat.js', '/ares/reqmark.js', '/ares/wxradio.js', '/equipe.webmanifest', '/ares/icons/ares-192.png', '/ares/icons/nobis-logo.png', '/ares/icons/lux-192.png', '/assets/fonts/fonts.css'];
+// App de l'équipe ARES INVEST S.A. (ARES Équipe) : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
+const CACHE = 'equipe-shell-v1.25.0';
+const SHELL = ['/equipe.html', '/equipe.js', '/ares/espace-crypto.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/pubstat.js', '/ares/reqmark.js', '/ares/wxradio.js', '/equipe.webmanifest', '/ares/icons/ares-192.png', '/ares/icons/nobis-logo.png', '/ares/icons/lux-192.png', '/ares/icons/lux-apple-touch-icon.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
@@ -31,7 +31,7 @@ self.addEventListener('push', (e) => {
   e.waitUntil((async () => {
     const n = (await badgeGet()) + 1;
     await badgeSet(n);
-    await self.registration.showNotification(m.title || 'NOBIS s.a.r.l.', { body: m.body || '', icon: '/ares/icons/ares-192.png', badge: '/ares/icons/favicon-32.png', tag: m.tag || 'app', renotify: true, data: { url: m.url || '/equipe.html' } });
+    await self.registration.showNotification(m.title || 'ARES Équipe', { body: m.body || '', icon: '/ares/icons/lux-192.png', badge: '/ares/icons/favicon-32.png', tag: m.tag || 'app', renotify: true, data: { url: m.url || '/equipe.html' } });
   })());
 });
 self.addEventListener('notificationclick', (e) => {

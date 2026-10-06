@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.94.0';
+const VERSION = '2.95.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -415,6 +415,8 @@ function equipeData(i) {
     // l'équipe travaille pour ARES INVEST S.A. (LuxInterventions) : son nom et son logo (casque) dans l'app des ouvriers
     societe: { nom: factConf().nom || 'ARES INVEST S.A.', tel: factConf().tel || soc.tel || '', logo: '/ares/icons/lux-192.png' },
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '' },
+    // intervenant occasionnel : il lit et signe sa fiche d'engagement dans son app
+    eng: i.genre === 'prive' ? { assur: i.assur || '', police: i.police || '', signed: !!i.sign, signAt: i.signAt || '' } : null,
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
     horaires: hors(i).map((h) => ({ j: h.j, de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })), jours,
     absences: (i.absences || []).filter((a) => !a.fin || a.fin >= addDays(today(), -30)).map((a) => ({ type: a.type, debut: a.debut, fin: a.fin || '' })),
@@ -522,6 +524,13 @@ async function equipeInbox(w, msg) {
         ph.forEach((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'signal', label: `Problème — photo ${n + 1}`, date: d, mime: 'image/jpeg', size: Math.round(b.length * 0.75) }); files.push([doc.id, b]); });
         feed.push({ at, k: 'pb', tid: t.id, d, note: '⚠️ ' + titre, ph: ph.length });
         fresh++;
+      } else if (it.k === 'sign') {
+        // signature de la fiche d'engagement, faite par l'intervenant occasionnel dans son app
+        if (w.genre === 'prive' && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(it.png || '') && it.png.length < 400000) {
+          tx.put('intervenants', { id: w.id, sign: it.png, signAt: /^\d{4}-\d\d-\d\dT/.test(it.at || '') ? it.at : new Date().toISOString() });
+          feed.push({ at, k: 'info', note: '✍️ Fiche d’engagement signée dans son app' });
+          fresh++;
+        }
       } else if (it.k === 'info') {
         const clean = (v, n) => String(v || '').trim().slice(0, n);
         const upd = { id: w.id };
@@ -2586,38 +2595,53 @@ const ENG_OBL = (i) => [
 ];
 const ENG_RGPD = (c) => `Protection des données (RGPD — règlement (UE) 2016/679) : ${c.nom} traite les données de l’intervenant (identité, coordonnées, assurance, IBAN, signature, heures de travail) uniquement pour la gestion des missions, les paiements et ses obligations légales. Conservation : durée légale (10 ans pour les pièces comptables). Droits d’accès, de rectification, d’effacement et d’opposition : ${c.email || c.tel || c.nom}. Réclamation possible auprès de la CNPD (Luxembourg).`;
 function engForm(i) {
-  const on = (i.genre || 'interne') !== 'interne';
+  const on = (i.genre || 'interne') !== 'interne', occ = (i.genre || '') === 'prive';
   return html`<div class="full eng-wrap" ${on ? '' : new Raw('hidden')}>
-    <div class="section-label" style="margin:10px 0 0">📝 Engagement${(i.genre || '') === 'prive' ? ' — intervention occasionnelle' : ''}</div>
+    <div class="section-label" style="margin:10px 0 0">📝 Engagement<span class="eng-occ" ${occ ? '' : new Raw('hidden')}> — intervention occasionnelle</span></div>
     <div class="fields" style="margin-top:6px">
       ${field('Assurance RC (compagnie)', 'assur', i.assur, { placeholder: 'ex. Foyer, La Luxembourgeoise, AXA…' })}
       ${field('N° de police', 'police', i.police, { attrs: 'autocomplete="off"' })}
-      ${field('IBAN (pour le payer)', 'iban', i.iban, { full: true, placeholder: 'LU.. .... .... .... ....', attrs: 'autocomplete="off"' })}
       ${field('Payé à l’intervenant : € / heure', 'payeH', i.payeH ?? '', { type: 'number', attrs: money$ })}
       ${field('Déplacement payé (€)', 'payeDepl', i.payeDepl ?? '', { type: 'number', attrs: money$ })}
     </div>
+    <div class="section-label" style="margin:8px 0 0">🏦 Compte bancaire (pour le payer) — même fiche pour tous les pays</div>
+    <div class="fields bank-box" style="margin-top:6px">
+      ${field('Nom de la banque', 'banque', i.banque, { placeholder: 'ex. BNP Paribas, Spuerkeess, Intesa Sanpaolo…', attrs: 'autocomplete="off"' })}
+      <label class="field">Code BIC / SWIFT<input name="bic" value="${i.bic || ''}" placeholder="ex. BNPAFRPPXXX" autocomplete="off" autocapitalize="characters" maxlength="14" data-input="bank-chk"><span class="bank-msg tiny" data-for="bic"></span></label>
+      <label class="field full">IBAN<input name="iban" value="${ibanFmt(i.iban || '')}" placeholder="ex. FR76 3000 4028 3700 0123 4567 845 · LU28 0019 4006 4475 0000" autocomplete="off" autocapitalize="characters" maxlength="42" data-input="bank-chk"><span class="bank-msg tiny" data-for="iban"></span></label>
+      <p class="tiny muted full" style="margin:0">L’IBAN contient déjà code banque, guichet, compte et clé (RIB en France, ABI/CAB en Italie, BLZ en Allemagne…) : pas besoin de les écrire à part. Le pays du BIC doit être celui de l’IBAN.</p>
+    </div>
     <div class="note small" style="margin:8px 0">${ENG_OBL(i).map(([t, x]) => html`<div style="margin-bottom:4px"><b>${t} :</b> ${x}</div>`)}<div class="tiny muted" style="margin-top:6px">${ENG_RGPD(factConf())}</div></div>
-    <label class="check"><input type="checkbox" name="accepte" value="1" ${i.signAt ? new Raw('checked') : ''}> L’intervenant a lu et accepte ces obligations</label>
-    <div class="sig-box" style="margin-top:8px"><div class="small" style="margin-bottom:4px"><b>✍️ Signature de l’intervenant</b> <span class="muted">(avec le doigt ou la souris)</span></div>
-      <input type="hidden" name="sign" value="${i.sign || ''}">
-      ${i.sign ? html`<div class="sig-done"><img src="${i.sign}" alt="Signature" class="sig-img"><div class="tiny muted">Signée le ${fmtDateTime(Date.parse(i.signAt) || 0)}</div><button type="button" class="btn sm" data-action="sig-redo">✍️ Signer à nouveau</button></div>`
-        : html`<canvas class="sig-pad" width="600" height="200"></canvas><button type="button" class="btn sm ghost" data-action="sig-clear">Effacer</button>`}
-    </div></div>`;
+    <div class="alert ${i.sign ? 'info' : 'warn'} eng-occ" ${occ ? '' : new Raw('hidden')}>✍️<div>${i.sign ? html`Signée par l’intervenant dans son app le <b>${fmtDateTime(Date.parse(i.signAt) || 0)}</b>` : html`<b>Signature :</b> l’intervenant la fait lui-même dans son app (📱 App → lien à lui envoyer), rubrique « ✍️ Ma fiche d’engagement ».`}</div></div>
+  </div>`;
 }
-// signature : dessin sur le canvas → PNG dans le champ caché « sign »
-let sigDraw = null;
-document.addEventListener('pointerdown', (e) => {
-  const c = e.target.closest && e.target.closest('canvas.sig-pad'); if (!c) return;
-  e.preventDefault(); c.setPointerCapture(e.pointerId);
-  const r = c.getBoundingClientRect(), ctx = c.getContext('2d');
-  const pt = (ev) => [(ev.clientX - r.left) * (c.width / r.width), (ev.clientY - r.top) * (c.height / r.height)];
-  ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0b1f4d';
-  const [x, y] = pt(e); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 0.1, y + 0.1); ctx.stroke();
-  sigDraw = { c, ctx, pt };
-});
-document.addEventListener('pointermove', (e) => { if (!sigDraw) return; const [x, y] = sigDraw.pt(e); sigDraw.ctx.lineTo(x, y); sigDraw.ctx.stroke(); });
-const sigEnd = () => { if (!sigDraw) return; const { c } = sigDraw; sigDraw = null; const h = c.closest('.sig-box').querySelector('[name=sign]'); h.value = c.toDataURL('image/png'); sheetDirty = true; };
-document.addEventListener('pointerup', sigEnd); document.addEventListener('pointercancel', sigEnd);
+// Comptes bancaires : longueur de l'IBAN par pays (Europe + voisins) et contrôle modulo 97 ; BIC du même pays
+const IBAN_LEN = { AD: 24, AL: 28, AT: 20, BA: 20, BE: 16, BG: 22, BR: 29, CH: 21, CY: 28, CZ: 24, DE: 22, DK: 18, EE: 20, ES: 24, FI: 18, FO: 18, FR: 27, GB: 22, GI: 23, GL: 18, GR: 27, HR: 21, HU: 28, IE: 22, IS: 26, IT: 27, LI: 21, LT: 20, LU: 20, LV: 21, MA: 28, MC: 27, MD: 24, ME: 22, MK: 19, MT: 31, NL: 18, NO: 15, PL: 28, PT: 25, RO: 24, RS: 22, SE: 24, SI: 19, SK: 24, SM: 27, TN: 24, TR: 26, UA: 29, VA: 22, XK: 20 };
+const ibanClean = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const ibanFmt = (v) => ibanClean(v).replace(/(.{4})/g, '$1 ').trim();
+function ibanCheck(v) {
+  const x = ibanClean(v), cc = x.slice(0, 2);
+  if (!x) return { ok: false, msg: 'IBAN obligatoire' };
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]+$/.test(x)) return { ok: false, msg: 'Doit commencer par le pays et 2 chiffres (ex. FR76…, LU28…, IT60…)' };
+  if (!IBAN_LEN[cc]) return { ok: false, msg: `Pays « ${cc} » inconnu pour un IBAN` };
+  if (x.length !== IBAN_LEN[cc]) return { ok: false, msg: `IBAN ${cc} : ${IBAN_LEN[cc]} caractères attendus, ${x.length} écrits` };
+  let r = 0;
+  for (const ch of x.slice(4) + x.slice(0, 4)) { const d = /\d/.test(ch) ? ch : String(ch.charCodeAt(0) - 55); for (const c of d) r = (r * 10 + +c) % 97; }
+  if (r !== 1) return { ok: false, msg: 'Clé de contrôle fausse : un chiffre est mal recopié' };
+  return { ok: true, cc, msg: `✓ IBAN ${cc} valide` };
+}
+function bicCheck(v, cc) {
+  const x = String(v || '').toUpperCase().replace(/\s/g, '');
+  if (!x) return { ok: false, msg: 'BIC obligatoire' };
+  if (!/^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(x)) return { ok: false, msg: '8 ou 11 caractères : 4 lettres banque + 2 lettres pays + 2 (+3) (ex. BNPAFRPPXXX)' };
+  if (cc && x.slice(4, 6) !== cc) return { ok: false, msg: `Le BIC est du pays ${x.slice(4, 6)}, l’IBAN du pays ${cc}` };
+  return { ok: true, msg: '✓ BIC valide' };
+}
+function bankMsgs(f) {
+  const ib = ibanCheck(f.iban.value), bc = bicCheck(f.bic.value, ib.ok ? ib.cc : '');
+  for (const [k, r, v] of [['iban', ib, f.iban.value], ['bic', bc, f.bic.value]]) { const m = f.querySelector(`.bank-msg[data-for=${k}]`); if (m) { m.textContent = v.trim() ? r.msg : ''; m.className = `bank-msg tiny ${r.ok ? 'green' : 'red'}`; } }
+  return { ib, bc };
+}
 // PNG (signature) → JPEG sur fond blanc pour le PDF
 async function sigJpeg(url) {
   if (!url) return null;
@@ -2644,12 +2668,14 @@ async function engPdf(i) {
   p.rect(X, y - 12, R - X, 18, { fill: [0.15, 0.2, 0.35] }).text(X + 6, y, 'Intervenant', { size: 10, bold: true, color: [1, 1, 1] }); y += 22;
   kv('Nom', intervFull(i)); kv('Métier', METIERS[i.metier] || i.metier || ''); kv('Adresse', [i.adresse, i.ville].filter(Boolean).join(', '));
   kv('Téléphone / email', [i.tel, i.mail].filter(Boolean).join(' · ')); kv('RCS / N° TVA', [i.rcs, i.tva].filter(Boolean).join(' · '));
-  kv('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')); kv('IBAN', i.iban);
+  kv('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')); kv('Banque', [i.banque, i.bic ? 'BIC / SWIFT ' + i.bic : ''].filter(Boolean).join(' — ')); kv('IBAN', ibanFmt(i.iban));
   kv('Rémunération', [i.payeH ? eur(i.payeH) + ' / heure' : i.tarif || '', i.payeDepl ? 'déplacement ' + eur(i.payeDepl) : ''].filter(Boolean).join(' · '));
   y += 8; p.rect(X, y - 12, R - X, 18, { fill: [0.15, 0.2, 0.35] }).text(X + 6, y, 'Obligations de l’intervenant', { size: 10, bold: true, color: [1, 1, 1] }); y += 22;
   for (const [t, x] of ENG_OBL(i)) { p.text(X, y, t, { size: 9.5, bold: true }); y += 13; y += p.wrap(X, y, x, R - X, { size: 9.5 }) + 6; }
   y += 6; y += p.wrap(X, y, ENG_RGPD(c), R - X, { size: 8.5, color: [0.3, 0.3, 0.3] }) + 14;
-  p.text(X, y, 'Lu et approuvé — signature de l’intervenant', { size: 9, bold: true }); p.text(R, y, `Pour ${c.nom}`, { size: 9, bold: true, align: 'right' }); y += 8;
+  p.text(R, y, `Pour ${c.nom}`, { size: 9, bold: true, align: 'right' });
+  if (i.genre !== 'prive') return p.bytes();
+  p.text(X, y, 'Lu et approuvé — signature de l’intervenant', { size: 9, bold: true }); y += 8;
   const sg = await sigJpeg(i.sign);
   if (sg) { const w = 180, h = (w * sg.h) / sg.w; p.image(X, y, w, h, sg.bytes, sg.w, sg.h); y += h + 4; p.text(X, y + 8, `Signé électroniquement le ${new Date(Date.parse(i.signAt) || Date.now()).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`, { size: 8, color: [0.4, 0.4, 0.4] }); } else p.text(X, y + 30, '(pas encore signée)', { size: 9, color: [0.6, 0.1, 0.1] });
   return p.bytes();
@@ -2675,7 +2701,7 @@ async function occPdf(t, i, o) {
   if (o.mat) row(`Matériel avancé${o.matLib ? ' : ' + o.matLib : ''}`, '1', eur(o.mat), eur(o.mat));
   y += 6; p.text(R - 120, y, 'Total à payer', { size: 11, bold: true, align: 'right' }).text(R - 6, y, eur(o.tot), { size: 11, bold: true, align: 'right' }); y += 16;
   y += p.wrap(X, y, i.tva ? 'TVA : selon le régime de l’intervenant.' : 'TVA non applicable — intervenant non assujetti (travail occasionnel).', R - X, { size: 9 }) + 6;
-  if (i.iban) { p.rect(X, y, R - X, 24, { fill: [0.96, 0.97, 1] }).text(X + 10, y + 16, `Paiement par virement — IBAN : ${i.iban} — référence : ${o.no}`, { size: 9.5, bold: true }); y += 34; }
+  if (i.iban) { p.rect(X, y, R - X, 24, { fill: [0.96, 0.97, 1] }).text(X + 10, y + 16, `Virement — IBAN ${ibanFmt(i.iban)}${i.bic ? ' · BIC ' + i.bic : ''}${i.banque ? ' · ' + i.banque : ''} — réf. ${o.no}`, { size: 9.5, bold: true }); y += 34; }
   if (o.note) y += p.wrap(X, y, 'Note : ' + o.note, R - X, { size: 9 }) + 6;
   p.text(X, y + 6, 'Signature de l’intervenant', { size: 9, bold: true }); y += 12;
   const sg = await sigJpeg(i.sign);
@@ -4098,13 +4124,13 @@ const SHEETS = {
           ${i.tel ? kvRow('Téléphone', html`<a href="tel:${tel}">${i.tel}</a>`) : ''}
           ${i.mail ? kvRow('Email', html`<a href="mailto:${i.mail}">${i.mail}</a>`) : ''}
           ${i.rcs ? kvRow('RCS', i.rcs) : ''}${i.tva ? kvRow('N° TVA', i.tva) : ''}
-          ${i.assur || i.police ? kvRow('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')) : ''}${i.iban ? kvRow('IBAN', i.iban) : ''}
+          ${i.assur || i.police ? kvRow('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')) : ''}${i.iban ? kvRow('Banque', [i.banque, i.bic ? 'BIC ' + i.bic : '', ibanFmt(i.iban)].filter(Boolean).join(' · ')) : ''}
           ${i.payeH ? kvRow('Payé', `${eur(i.payeH)} / heure${i.payeDepl ? ' · déplacement ' + eur(i.payeDepl) : ''}`) : ''}
         </dl>
         ${(i.genre || 'interne') !== 'interne' ? (() => {
           const done = vault.list('taches').filter((t) => t.intervenantId === id && !t.recur && (t.statut === 'fait' || t.fini)).sort((a, b) => (b.doneDate || b.date || '').localeCompare(a.doneDate || a.date || ''));
           return html`<div class="section-label">📝 Engagement</div>
-          <div class="alert ${i.sign ? 'info' : 'warn'}" style="margin-bottom:8px">${i.sign ? '✍️' : '⚠️'}<div>${i.sign ? html`Fiche signée le <b>${fmtDateTime(Date.parse(i.signAt) || 0)}</b>` : html`<b>Pas encore signée</b> — Modifier → signature de l’intervenant`}</div></div>
+          ${i.genre === 'prive' ? html`<div class="alert ${i.sign ? 'info' : 'warn'}" style="margin-bottom:8px">${i.sign ? '✍️' : '⚠️'}<div>${i.sign ? html`Fiche signée le <b>${fmtDateTime(Date.parse(i.signAt) || 0)}</b>` : html`<b>Pas encore signée</b> — il la signe dans son app (onglet 📱 App → lui envoyer le lien), rubrique « ✍️ Ma fiche d’engagement »`}</div></div>` : ''}
           <button class="btn block" data-action="eng-pdf" data-id="${id}" style="margin-bottom:12px">📄 Fiche d’engagement (PDF)</button>
           ${i.genre === 'prive' ? html`<div class="section-label">🧾 Interventions occasionnelles (ses notes à payer)</div>
           ${done.length ? html`<div class="list small">${done.map((t) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${t.titre}</span><span class="meta">${placeName(t)} · ${fmtDate(t.doneDate || (t.fini && t.fini.d) || t.date)}${t.occ ? html` · <b>${t.occ.no}</b> · ${eur(t.occ.tot)}` : ''}</span></span>
@@ -5545,8 +5571,6 @@ const ACTIONS = {
   },
   'new-tache': (d) => openOver('tache-form', null, null, d.imm || ui.immFilter || ''),
   'edit-tache': (d) => openOver('tache-form', d.id),
-  'sig-clear': (d, el) => { const b = el.closest('.sig-box'), c = b.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); b.querySelector('[name=sign]').value = ''; },
-  'sig-redo': (d, el) => { const b = el.closest('.sig-box'); b.querySelector('[name=sign]').value = ''; const done = b.querySelector('.sig-done'); const c = document.createElement('canvas'); c.className = 'sig-pad'; c.width = 600; c.height = 200; done.replaceWith(c); },
   async 'eng-pdf'(d) { const i = vault.get('intervenants', d.id); if (!i) return; download(`Fiche engagement ${intervFull(i)}.pdf`, await engPdf(i), 'application/pdf'); },
   'occ-open': (d) => openOver('occ-fact', d.id),
   async 'occ-dl'(d) { const t = vault.get('taches', d.id), i = t && vault.get('intervenants', t.intervenantId); if (!t || !t.occ || !i) return; download(`Intervention occasionnelle ${t.occ.no}.pdf`, await occPdf(t, i, t.occ), 'application/pdf'); },
@@ -6167,14 +6191,13 @@ const FORMS = {
     }
     // engagement : assurance, paiement, obligations acceptées, signature digitale
     if (rec.genre !== 'interne') {
-      Object.assign(rec, { assur: g('assur'), police: g('police'), iban: g('iban').toUpperCase(), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')) });
-      const sign = /^data:image\/png;base64,/.test(g('sign')) ? g('sign') : '';
+      Object.assign(rec, { assur: g('assur'), police: g('police'), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s/g, ''), iban: ibanClean(g('iban')), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')) });
+      const ib = ibanCheck(rec.iban), bc = bicCheck(rec.bic, ib.ok ? ib.cc : '');
       if (rec.genre === 'prive') {
-        const miss = [!rec.assur && 'assurance', !rec.police && 'n° de police', fd.get('accepte') !== '1' && 'obligations acceptées', !sign && 'signature'].filter(Boolean);
+        const miss = [!rec.assur && 'assurance', !rec.police && 'n° de police', !rec.banque && 'nom de la banque', !bc.ok && 'BIC (' + bc.msg + ')', !ib.ok && 'IBAN (' + ib.msg + ')'].filter(Boolean);
         if (miss.length) return toast('Intervention occasionnelle — il manque : ' + miss.join(', '), { bad: true });
-      }
-      rec.sign = sign;
-      rec.signAt = sign ? (sign === prev.sign && prev.signAt ? prev.signAt : new Date().toISOString()) : '';
+      } else if ((rec.iban && !ib.ok) || (rec.bic && !bc.ok)) return toast(!ib.ok && rec.iban ? 'IBAN : ' + ib.msg : 'BIC : ' + bc.msg, { bad: true });
+      // la signature vient de l'app de l'intervenant occasionnel : on la garde telle quelle
     }
     if (!rec.nom) return;
     if (id) rec.id = id;
@@ -6662,6 +6685,7 @@ document.addEventListener('input', (e) => {
   const k = e.target.dataset.input;
   if (k === 'esp-search') filterEspList();
   if (k === 'vid-link') { const h = document.getElementById('vidHint'); if (h) h.textContent = vidHint(e.target.value); }
+  if (k === 'bank-chk') bankMsgs(e.target.form);
   if (k === 'search') { ui.search = e.target.value; renderView(); }
   if (k === 'cp-q') { ui.cpQ = e.target.value; ui.cpLim = 10; clearTimeout(ui.cpT); ui.cpT = setTimeout(renderView, 200); }
   if (k === 'idx-pct' || k === 'idx-amount') {
@@ -6678,7 +6702,9 @@ document.addEventListener('change', (e) => {
     const f = e.target.form, g = f.genre.value, c = f.cat.value;
     const hw = f.querySelector('.hor-wrap'); if (hw) hw.hidden = !horFixed({ genre: g, cat: c, metier: f.metier.value });
     const ew = f.querySelector('.eng-wrap'); if (ew) ew.hidden = g === 'interne';
+    f.querySelectorAll('.eng-occ').forEach((x) => { x.hidden = g !== 'prive'; });
   }
+  if (k === 'bank-chk') { if (e.target.name === 'iban') e.target.value = ibanFmt(e.target.value); bankMsgs(e.target.form); }
   // semaine choisie (date du téléphone par défaut) : les jours affichent leur date
   if (k === 'hor-wk' && /^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) {
     const mon = mondayOf(e.target.value);
