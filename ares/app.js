@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.84.0';
+const VERSION = '2.85.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2543,6 +2543,16 @@ function horFromForm(fd) {
 }
 // ── Factures des interventions (ARES INVEST S.A. — marque LuxInterventions) → la gérance la télécharge dans le portail ──
 const FACT_DEF = { nom: 'ARES INVEST S.A.', marque: 'LuxInterventions', adresse: '37, Val Saint André', ville: 'L-1128 Luxembourg', rcs: 'B225245', tva: 'LU30440727', tel: '+352 691 423 943', email: '', iban: '', bic: '', banque: '', taux: 17, delai: 30, seq: 0 };
+// Régime de TVA d'un client (gérance) : taux normal, taux particulier, autoliquidation (client assujetti d'un autre pays de l'UE), non applicable
+const TVA_REG = {
+  normal: ['TVA normale (taux des réglages)', ''],
+  taux: ['Taux particulier', ''],
+  autoliq: ['Autoliquidation — client assujetti UE (0 %)', 'Autoliquidation : TVA due par le preneur (art. 196 de la directive 2006/112/CE).'],
+  exo: ['TVA non applicable / exonérée (0 %)', 'TVA non applicable.'],
+};
+const factClient = (orgId, name) => { const all = (vault.get('reglages', 'factClients') || {}).list || {}; return { regime: 'normal', taux: '', tvaNum: '', adresse: '', pays: 'LU', mention: '', ...(all[orgId] || all['n:' + (name || '')] || {}) }; };
+const regTaux = (reg, c) => (reg.regime === 'autoliq' || reg.regime === 'exo' ? 0 : reg.regime === 'taux' ? num(reg.taux) : num(c.taux));
+const regMention = (reg) => (reg.regime === 'autoliq' || reg.regime === 'exo' ? reg.mention || TVA_REG[reg.regime][1] : reg.mention || '');
 const factConf = () => ({ ...FACT_DEF, ...(vault.get('reglages', 'facturation') || {}) });
 const factMissing = (c) => [['nom', 'raison sociale'], ['adresse', 'adresse'], ['rcs', 'RCS'], ['tva', 'n° TVA'], ['iban', 'IBAN']].filter(([k]) => !String(c[k] || '').trim()).map(([, l]) => l);
 const ymd = (iso) => iso.replace(/-/g, '');
@@ -2552,8 +2562,11 @@ function factDraft(t) {
   const w = vault.get('intervenants', t.intervenantId) || {};
   const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id);
   const h = L && L.min ? Math.ceil(L.min / 15) / 4 : 1;
-  return { h, taux: w.tauxH || 0, depl: w.depl || 0, mat: [], adj: { type: 'remise', mode: '%', val: 0, lib: '' } };
+  const cl = factClient(t.ptl && t.ptl.orgId, t.ptl && t.ptl.org);
+  return { h, taux: w.tauxH || 0, depl: w.depl || 0, mat: [], adj: { type: 'remise', mode: '%', val: 0, lib: '' }, reg: { regime: cl.regime, taux: cl.taux, mention: cl.mention } };
 }
+// taux effectif d'une facture : régime choisi pour cette facture (sinon celui du client), sinon les réglages
+const factTaux = (f, c) => regTaux(f.reg || { regime: 'normal' }, c);
 function factCalc(f, taux) {
   const mo = r2(num(f.h) * num(f.taux)), dep = r2(num(f.depl)), mat = r2(sum(f.mat || [], (m) => num(m.ht)));
   const sub = r2(mo + dep + mat);
@@ -2564,7 +2577,7 @@ function factCalc(f, taux) {
 }
 const eur = (n) => (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') + ' €';
 function factPdf(t, f, no, dateIso, c) {
-  const k = factCalc(f, c.taux), w = vault.get('intervenants', t.intervenantId) || {};
+  const k = factCalc(f, factTaux(f, c)), w = vault.get('intervenants', t.intervenantId) || {};
   const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id) || {};
   const org = ptlOrg((t.ptl && t.ptl.orgId) || '') || ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => t.ptl && o.name === t.ptl.org) || {};
   const p = makePdf(), X = 48, R = 547;
@@ -2574,7 +2587,8 @@ function factPdf(t, f, no, dateIso, c) {
   p.text(R, 64, 'FACTURE', { size: 20, bold: true, align: 'right' }).text(R, 84, `N° ${no}`, { size: 11, bold: true, align: 'right' }).text(R, 100, `Date : ${fr(dateIso)}`, { size: 9, align: 'right' });
   p.text(R, 112, `Échéance : ${fr(addDays(dateIso, +c.delai || 30))}`, { size: 9, align: 'right' });
   p.rect(X, 140, 250, 64, { fill: [0.96, 0.96, 0.96] }).text(X + 10, 156, 'Facturé à', { size: 8, color: [0.4, 0.4, 0.4] }).text(X + 10, 172, (t.ptl && t.ptl.org) || org.name || '', { size: 11, bold: true });
-  p.text(X + 10, 186, [org.email, org.phone].filter(Boolean).join(' · '), { size: 9 });
+  const cl = factClient(t.ptl && t.ptl.orgId, t.ptl && t.ptl.org), tx = factTaux(f, c);
+  p.wrap(X + 10, 186, [cl.adresse, cl.pays && cl.pays !== 'LU' ? cl.pays : '', cl.tvaNum ? 'N° TVA : ' + cl.tvaNum : '', !cl.adresse ? [org.email, org.phone].filter(Boolean).join(' · ') : ''].filter(Boolean).join(' · '), 230, { size: 9 });
   p.text(X + 270, 156, 'Intervention', { size: 8, color: [0.4, 0.4, 0.4] }).text(X + 270, 172, `${t.ptl && !String(t.titre).startsWith('#' + t.ptl.ref) ? 'Demande #' + t.ptl.ref + ' · ' : t.ptl ? 'Demande ' : ''}${t.titre}`.slice(0, 60), { size: 10, bold: true });
   p.wrap(X + 270, 186, `${t.ptl ? [t.ptl.res, t.ptl.adr].filter(Boolean).join(' — ') : placeName(t)}${t.ptl && t.ptl.lieu ? ' · ' + t.ptl.lieu : ''}`, 230, { size: 9 });
   let y = 236;
@@ -2588,7 +2602,9 @@ function factPdf(t, f, no, dateIso, c) {
   if (k.adj) row(`${f.adj.type === 'remise' ? 'Remise' : 'Majoration'}${f.adj.mode === '%' ? ' ' + String(num(f.adj.val)).replace('.', ',') + ' %' : ''}${f.adj.lib ? ' — ' + f.adj.lib : ''}`, '', '', (k.adj < 0 ? '− ' : '+ ') + eur(Math.abs(k.adj)));
   y += 8;
   const tot = (l, v, b) => { p.text(R - 120, y, l, { size: b ? 11 : 9.5, bold: b, align: 'right' }).text(R - 6, y, v, { size: b ? 11 : 9.5, bold: b, align: 'right' }); y += b ? 18 : 14; };
-  tot('Total HT', eur(k.ht)); tot(`TVA ${String(num(c.taux)).replace('.', ',')} %`, eur(k.tva)); p.line(R - 220, y - 9, R, y - 9, { w: 0.8, color: [0.2, 0.2, 0.2] }); y += 4; tot('Total TTC', eur(k.ttc), true);
+  tot('Total HT', eur(k.ht)); tot(`TVA ${String(tx).replace('.', ',')} %`, eur(k.tva)); p.line(R - 220, y - 9, R, y - 9, { w: 0.8, color: [0.2, 0.2, 0.2] }); y += 4; tot('Total TTC', eur(k.ttc), true);
+  const mention = regMention(f.reg || {});
+  if (mention) { y += 4; y += p.wrap(X, y, mention, R - X, { size: 9, bold: true }); }
   y += 18;
   p.rect(X, y, R - X, 52, { fill: [0.96, 0.97, 1] }).text(X + 10, y + 16, `Paiement à ${+c.delai || 30} jours, avant le ${fr(addDays(dateIso, +c.delai || 30))}, par virement — référence : ${no}`, { size: 9.5, bold: true });
   p.text(X + 10, y + 32, `IBAN : ${c.iban}${c.bic ? '   ·   BIC : ' + c.bic : ''}${c.banque ? '   ·   ' + c.banque : ''}`, { size: 9.5 });
@@ -2598,13 +2614,13 @@ function factPdf(t, f, no, dateIso, c) {
 const factRead = (fm) => {
   const fd = new FormData(fm), mat = [];
   for (let n = 0; n < 30; n++) if (fd.has(`ml${n}`)) { const lib = String(fd.get(`ml${n}`) || '').trim(), ht = num(fd.get(`mh${n}`)); if (lib || ht) mat.push({ lib, ht }); }
-  return { h: num(fd.get('h')), taux: num(fd.get('taux')), depl: num(fd.get('depl')), mat, adj: { type: fd.get('adj_type') === 'maj' ? 'maj' : 'remise', mode: fd.get('adj_mode') === '€' ? '€' : '%', val: num(fd.get('adj_val')), lib: String(fd.get('adj_lib') || '').trim() } };
+  return { reg: { regime: TVA_REG[fd.get('reg')] ? fd.get('reg') : 'normal', taux: String(fd.get('reg_taux') || ''), mention: String(fd.get('reg_mention') || '').trim() }, h: num(fd.get('h')), taux: num(fd.get('taux')), depl: num(fd.get('depl')), mat, adj: { type: fd.get('adj_type') === 'maj' ? 'maj' : 'remise', mode: fd.get('adj_mode') === '€' ? '€' : '%', val: num(fd.get('adj_val')), lib: String(fd.get('adj_lib') || '').trim() } };
 };
 const matRow = (n, m = {}) => html`<div class="fact-mat"><input name="ml${n}" value="${m.lib || ''}" placeholder="Matériel acheté (ex. disjoncteur 16 A)"><input name="mh${n}" type="number" ${new Raw(money$)} value="${m.ht ?? ''}" placeholder="€ HT" aria-label="Montant HT"></div>`;
 function factTotHtml(f) {
-  const c = factConf(), k = factCalc(f, c.taux);
+  const c = factConf(), tx = factTaux(f, c), k = factCalc(f, tx);
   return html`<div class="kv-tot"><span>Main-d’œuvre</span><b>${eur(k.mo)}</b><span>Déplacement</span><b>${eur(k.dep)}</b><span>Matériel</span><b>${eur(k.mat)}</b>${k.adj ? html`<span>${k.adj < 0 ? 'Remise' : 'Majoration'}</span><b>${k.adj < 0 ? '− ' : '+ '}${eur(Math.abs(k.adj))}</b>` : ''}
-    <span>Total HT</span><b>${eur(k.ht)}</b><span>TVA ${String(c.taux).replace('.', ',')} %</span><b>${eur(k.tva)}</b><span class="big">Total TTC</span><b class="big">${eur(k.ttc)}</b></div>`;
+    <span>Total HT</span><b>${eur(k.ht)}</b><span>TVA ${String(tx).replace('.', ',')} %${f.reg && (f.reg.regime === 'autoliq' || f.reg.regime === 'exo') ? ' — ' + TVA_REG[f.reg.regime][0].split(' (')[0] : ''}</span><b>${eur(k.tva)}</b><span class="big">Total TTC</span><b class="big">${eur(k.ttc)}</b></div>`;
 }
 // Registre des interventions terminées (ou finies par l'ouvrier) : où, quoi, qui, heures réelles, avis, coût
 function intervLedger(from, to) {
@@ -3642,8 +3658,21 @@ const SHEETS = {
     tab = tab || 'acces';
     const tabs = html`<div class="tabs" role="tablist" style="margin-bottom:12px">
       <button class="tab" role="tab" aria-selected="${tab === 'acces'}" data-action="ger-open" data-id="${id}" data-tab="acces">${icon('users')} Accès</button>
-      <button class="tab" role="tab" aria-selected="${tab === 'res'}" data-action="ger-open" data-id="${id}" data-tab="res">${icon('building')} Résidences</button></div>`;
+      <button class="tab" role="tab" aria-selected="${tab === 'res'}" data-action="ger-open" data-id="${id}" data-tab="res">${icon('building')} Résidences</button>
+      <button class="tab" role="tab" aria-selected="${tab === 'fact'}" data-action="ger-open" data-id="${id}" data-tab="fact">🧾 Facturation</button></div>`;
     let body;
+    if (tab === 'fact') {
+      const cl = factClient(id, o.name), c = factConf();
+      body = html`<form data-form="fact-client" class="fields"><input type="hidden" name="org" value="${id}">
+        <label class="field full">Adresse de facturation<textarea name="adresse" style="min-height:60px" placeholder="rue, n°, code postal, ville">${cl.adresse}</textarea></label>
+        <label class="field">Pays (code)<input name="pays" value="${cl.pays}" maxlength="2" placeholder="LU" style="text-transform:uppercase"></label>
+        <label class="field">N° TVA du client<input name="tvaNum" value="${cl.tvaNum}" placeholder="ex. LU12345678, FR…, BE…"></label>
+        <label class="field full">Régime de TVA<select name="regime">${Object.entries(TVA_REG).map(([k, v]) => html`<option value="${k}" ${cl.regime === k ? new Raw('selected') : ''}>${k === 'normal' ? `TVA normale (${String(c.taux).replace('.', ',')} %)` : v[0]}</option>`)}</select></label>
+        <label class="field">Taux particulier (%)<input name="taux" type="number" step="0.01" min="0" max="100" inputmode="decimal" value="${cl.taux}" placeholder="si « Taux particulier »"></label>
+        <label class="field">Mention sur la facture<input name="mention" value="${cl.mention}" placeholder="sinon la mention par défaut"></label>
+        <p class="tiny muted full" style="margin:0">Autoliquidation : client assujetti d’un autre pays de l’UE, avec son n° TVA (0 %, mention art. 196). Non applicable : 0 % avec mention. Travaux sur un immeuble situé au Luxembourg : en principe TVA luxembourgeoise même pour un client étranger. Vérifiez chaque cas avec votre comptable.</p>
+        <button class="btn primary full" type="submit">Enregistrer</button></form>`;
+    } else
     if (tab === 'res') {
       const rs = d.residences.filter((r) => r.org_id === id);
       body = html`${rs.length ? html`<div class="list" style="margin-bottom:14px">${rs.map((r) => html`<div class="row"><span class="avatar">🏠</span>
@@ -3772,7 +3801,9 @@ const SHEETS = {
         ${field('RCS', 'rcs', c.rcs, { required: true })}${field('N° TVA', 'tva', c.tva, { required: true })}
         ${field('Téléphone', 'tel', c.tel)}${field('Email', 'email', c.email, { type: 'email' })}
         ${field('IBAN (compte d’ARES INVEST S.A.)', 'iban', c.iban, { required: true, full: true, placeholder: 'LU.. .... .... .... ....' })}${field('BIC', 'bic', c.bic)}${field('Banque', 'banque', c.banque)}
-        <label class="field">TVA (%)<select name="taux">${[17, 16, 14, 8, 3, 0].map((r) => html`<option value="${r}" ${+c.taux === r ? new Raw('selected') : ''}>${r} %${r === 17 ? ' (taux normal au Luxembourg)' : ''}</option>`)}</select></label>
+        <label class="field">TVA normale (%)<input name="taux" type="number" step="0.01" min="0" max="100" inputmode="decimal" value="${c.taux}" list="tvaRates" required></label>
+        <datalist id="tvaRates">${[17, 16, 14, 8, 3, 0, 20, 21, 19, 22, 10, 5.5].map((r) => html`<option value="${r}"></option>`)}</datalist>
+        <p class="tiny muted full" style="margin:-6px 0 0">Taux appliqué par défaut (17 % = taux normal au Luxembourg ; tout autre taux possible). Chaque client peut avoir son propre régime : Gérances → la gérance → 🧾 Facturation.</p>
         ${field('Paiement à (jours)', 'delai', c.delai, { type: 'number', attrs: 'min="0" max="120" inputmode="numeric"' })}
         <p class="tiny muted full" style="margin:0">Taux de TVA à confirmer avec votre comptable. Prochain numéro : ${ymd(today())}-INT${String((+c.seq || 0) + 1).padStart(4, '0')}</p>
       </form>`,
@@ -3808,6 +3839,10 @@ const SHEETS = {
           <div class="fact-adj"><select name="adj_type"><option value="remise" ${f.adj.type === 'remise' ? new Raw('selected') : ''}>Remise −</option><option value="maj" ${f.adj.type === 'maj' ? new Raw('selected') : ''}>Majoration +</option></select>
             <input name="adj_val" type="number" ${new Raw(money$)} value="${f.adj.val || ''}" placeholder="0" aria-label="Valeur"><select name="adj_mode"><option value="%" ${f.adj.mode === '%' ? new Raw('selected') : ''}>%</option><option value="€" ${f.adj.mode === '€' ? new Raw('selected') : ''}>€</option></select></div>
           <input name="adj_lib" value="${f.adj.lib || ''}" placeholder="Motif (ex. client fidèle, urgence de nuit)" style="margin-top:6px"></div>
+        <div class="full"><div class="section-label" style="margin:4px 0 6px">TVA de cette facture</div>
+          <select name="reg">${Object.entries(TVA_REG).map(([k, v]) => html`<option value="${k}" ${(f.reg || {}).regime === k ? new Raw('selected') : ''}>${k === 'normal' ? `TVA normale (${String(c.taux).replace('.', ',')} %)` : v[0]}</option>`)}</select>
+          <div class="fact-adj" style="grid-template-columns:110px minmax(0,1fr);margin-top:6px"><input name="reg_taux" type="number" step="0.01" min="0" max="100" inputmode="decimal" value="${(f.reg || {}).taux || ''}" placeholder="% particulier" aria-label="Taux particulier"><input name="reg_mention" value="${(f.reg || {}).mention || ''}" placeholder="Mention légale sur la facture (sinon celle par défaut)"></div>
+          <p class="tiny muted" style="margin:4px 0 0">Par défaut : le régime du client (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.</p></div>
         <div class="full" id="factTot">${factTotHtml(f)}</div>
       </form>`,
       foot: html`<button class="btn" type="submit" form="f">Enregistrer le brouillon</button><button class="btn primary" data-action="fact-emit" data-id="${id}" ${miss.length ? new Raw('disabled') : ''}>🧾 Émettre et envoyer</button>`,
@@ -5164,7 +5199,9 @@ const ACTIONS = {
     if (!t.ptl || !ptlConf()) return toast('Facture : intervention liée à une gérance et portail connecté nécessaires', { bad: true });
     const f = factRead(fm), c = factConf(), miss = factMissing(c);
     if (miss.length) return toast('Complétez : ' + miss.join(', '), { bad: true });
-    const k = factCalc(f, c.taux);
+    const k = factCalc(f, factTaux(f, c));
+    const cl = factClient(t.ptl.orgId, t.ptl.org);
+    if (f.reg.regime === 'autoliq' && !cl.tvaNum) return toast('Autoliquidation : indiquez d’abord le n° TVA du client (Gérances → la gérance → 🧾 Facturation)', { bad: true });
     const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-INT${String(seq).padStart(4, '0')}`;
     if (!(await confirmBox(`Émettre la facture ${no} ?`, { ok: 'Émettre et envoyer', detail: `${t.ptl.org} · ${eur(k.ttc)} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son portail.` }))) return;
     const { bytes } = factPdf(t, f, no, date, c);
@@ -5835,6 +5872,13 @@ const FORMS = {
     const b = { org_id: fd.get('org'), name: String(fd.get('name') || '').trim(), address: String(fd.get('address') || '').trim(), apartments: fd.get('apartments'), contact_name: String(fd.get('contact_name') || '').trim() };
     try { await ptlApi('residences', { method: 'POST', body: b }); } catch (e) { return toast(e.message, { bad: true }); }
     f.reset(); toast('Résidence ajoutée'); await ptlLoad();
+  },
+  async 'fact-client'(fd) {
+    const g = (k) => String(fd.get(k) || '').trim(), org = g('org');
+    const cur = (vault.get('reglages', 'factClients') || {}).list || {};
+    const list = { ...cur, [org]: { regime: TVA_REG[g('regime')] ? g('regime') : 'normal', taux: g('taux'), tvaNum: g('tvaNum').toUpperCase().replace(/\s+/g, ''), adresse: g('adresse'), pays: (g('pays') || 'LU').toUpperCase().slice(0, 2), mention: g('mention') } };
+    await vault.mutate((tx) => tx.put('reglages', { id: 'factClients', list }), 'Facturation du client', (ptlOrg(org) || {}).name || org);
+    toast('Facturation du client enregistrée');
   },
   async 'fact-set'(fd) {
     const g = (k) => String(fd.get(k) || '').trim();

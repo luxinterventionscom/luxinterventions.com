@@ -9735,5 +9735,57 @@ export default [
 [
 "Facturation enregistrée",
 "Rechnungsdaten gespeichert"
+],
+[
+"🧾 Facturation",
+"🧾 Rechnungsstellung"
+],
+[
+"TVA normale (%)",
+"Normaler MwSt.-Satz (%)"
+],
+[
+"Adresse de facturation",
+"Rechnungsadresse"
+],
+[
+"Pays (code)",
+"Land (Code)"
+],
+[
+"N° TVA du client",
+"USt-IdNr. des Kunden"
+],
+[
+"Régime de TVA",
+"MwSt.-Regelung"
+],
+[
+"Taux particulier (%)",
+"Sondersatz (%)"
+],
+[
+"Mention sur la facture",
+"Vermerk auf der Rechnung"
+],
+[
+"TVA de cette facture",
+"MwSt. dieser Rechnung"
+],
+[
+"Taux particulier",
+"Sondersatz"
+],
+[
+"Autoliquidation — client assujetti UE (0 %)",
+"Reverse-Charge — steuerpflichtiger EU-Kunde (0 %)"
+],
+[
+"TVA non applicable / exonérée (0 %)",
+"MwSt. nicht anwendbar / befreit (0 %)"
+],
+[
+"Facturation du client enregistrée",
+"Rechnungsdaten des Kunden gespeichert"
 ]
 ];

@@ -9527,5 +9527,57 @@ export default [
 [
 "Facturation enregistrée",
 "Invoicing saved"
+],
+[
+"🧾 Facturation",
+"🧾 Invoicing"
+],
+[
+"TVA normale (%)",
+"Standard VAT (%)"
+],
+[
+"Adresse de facturation",
+"Billing address"
+],
+[
+"Pays (code)",
+"Country (code)"
+],
+[
+"N° TVA du client",
+"Client VAT number"
+],
+[
+"Régime de TVA",
+"VAT regime"
+],
+[
+"Taux particulier (%)",
+"Special rate (%)"
+],
+[
+"Mention sur la facture",
+"Note on the invoice"
+],
+[
+"TVA de cette facture",
+"VAT of this invoice"
+],
+[
+"Taux particulier",
+"Special rate"
+],
+[
+"Autoliquidation — client assujetti UE (0 %)",
+"Reverse charge — EU VAT-registered client (0 %)"
+],
+[
+"TVA non applicable / exonérée (0 %)",
+"VAT not applicable / exempt (0 %)"
+],
+[
+"Facturation du client enregistrée",
+"Client invoicing saved"
 ]
 ];
