@@ -29,6 +29,10 @@ export default [
 "Letzte 12 Monate"
 ],
 [
+"5 appartements",
+"5 Wohnungen"
+],
+[
 "6 photos maximum : les premières seront envoyées",
 "Maximal 6 Fotos: Die ersten werden gesendet"
 ],
@@ -415,6 +419,10 @@ export default [
 [
 "Code porte, clé chez le concierge… (sinon : infos de la résidence)",
 "Türcode, Schlüssel beim Hausmeister… (sonst: Angaben der Wohnanlage)"
+],
+[
+"Code serrure",
+"Schlosscode"
 ],
 [
 "Collab. (demandes)",
@@ -1233,6 +1241,10 @@ export default [
 "November"
 ],
 [
+"N° / nom",
+"Nr. / Name"
+],
+[
 "N° / précision",
 "Nr. / Angabe"
 ],
@@ -1385,6 +1397,10 @@ export default [
 "Verwaltungsportal"
 ],
 [
+"Porte",
+"Tür"
+],
+[
 "Porte de la cave",
 "Kellertür"
 ],
@@ -1427,6 +1443,10 @@ export default [
 [
 "Quitter",
 "Verlassen"
+],
+[
+"Quoi ? (ex. Portail)",
+"Was? (z. B. Tor)"
 ],
 [
 "Radiateurs",
@@ -2173,6 +2193,10 @@ export default [
 "— Auswählen —"
 ],
 [
+"— Parties communes / autre —",
+"— Gemeinschaftsbereiche / andere —"
+],
+[
 "— données d’exemple, rien n’est enregistré.",
 "— Beispieldaten, nichts wird gespeichert."
 ],
@@ -2281,6 +2305,10 @@ export default [
 "🔄 Nachrichten aktualisieren"
 ],
 [
+"🔐 Autres codes (portail, garage, serrure digitale, panneau de redémarrage…)",
+"🔐 Weitere Codes (Tor, Garage, digitales Schloss, Neustart-Panel…)"
+],
+[
 "🔐 Codes (repris de la résidence, modifiables)",
 "🔐 Codes (aus der Wohnanlage übernommen, änderbar)"
 ],
@@ -2299,6 +2327,10 @@ export default [
 [
 "🚨 Alarme",
 "🚨 Alarm"
+],
+[
+"🚪 Appartements (n°, étage, n° de porte, code de la serrure)",
+"🚪 Wohnungen (Nr., Etage, Türnr., Schlosscode)"
 ],
 [
 "🚪 Porte",

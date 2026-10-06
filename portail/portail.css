@@ -205,3 +205,9 @@ details.guide.fold:not([open]) > summary { margin-bottom: 0 !important; }
 .ptl-name { letter-spacing: .06em; font-size: 15px; line-height: 1.2; }
 .ptl-name small { letter-spacing: .02em; text-transform: none; font-size: 12px; font-weight: 600; }
 .lock-err.ok { color: #16a34a; }
+/* résidence : codes nommés et appartements */
+.code-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 6px; margin-bottom: 6px; }
+.apt-head, .apt-row { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, .7fr) minmax(0, .8fr) minmax(0, 1fr); gap: 6px; }
+.apt-head { font-size: 11px; font-weight: 600; color: var(--text-3, #888); margin-bottom: 4px; }
+.apt-row { margin-bottom: 6px; }
+.code-row input, .apt-row input { min-width: 0; width: 100%; }

@@ -29,6 +29,10 @@ export default [
 "Últimos 12 meses"
 ],
 [
+"5 appartements",
+"5 apartamentos"
+],
+[
 "6 photos maximum : les premières seront envoyées",
 "Máximo 6 fotos: serão enviadas as primeiras"
 ],
@@ -377,6 +381,10 @@ export default [
 "Marque a confirmação."
 ],
 [
+"Code",
+"Código"
+],
+[
 "Code alarme",
 "Código do alarme"
 ],
@@ -415,6 +423,10 @@ export default [
 [
 "Code porte, clé chez le concierge… (sinon : infos de la résidence)",
 "Código da porta, chave com o porteiro… (senão: dados do condomínio)"
+],
+[
+"Code serrure",
+"Código fechadura"
 ],
 [
 "Collab. (demandes)",
@@ -1237,6 +1249,10 @@ export default [
 "Novembro"
 ],
 [
+"N° / nom",
+"N.º / nome"
+],
+[
 "N° / précision",
 "N.º / pormenor"
 ],
@@ -1389,6 +1405,10 @@ export default [
 "Portal da administração"
 ],
 [
+"Porte",
+"Porta"
+],
+[
 "Porte de la cave",
 "Porta da cave"
 ],
@@ -1431,6 +1451,10 @@ export default [
 [
 "Quitter",
 "Sair"
+],
+[
+"Quoi ? (ex. Portail)",
+"O quê? (ex. Portão)"
 ],
 [
 "Radiateurs",
@@ -2161,6 +2185,10 @@ export default [
 "— Escolher —"
 ],
 [
+"— Parties communes / autre —",
+"— Partes comuns / outro —"
+],
+[
 "— données d’exemple, rien n’est enregistré.",
 "— dados de exemplo, nada é guardado."
 ],
@@ -2269,6 +2297,10 @@ export default [
 "🔄 Atualizar mensagens"
 ],
 [
+"🔐 Autres codes (portail, garage, serrure digitale, panneau de redémarrage…)",
+"🔐 Outros códigos (portão, garagem, fechadura digital, painel de reinício…)"
+],
+[
 "🔐 Codes",
 "🔐 Códigos"
 ],
@@ -2287,6 +2319,10 @@ export default [
 [
 "🚚 En route",
 "🚚 A caminho"
+],
+[
+"🚪 Appartements (n°, étage, n° de porte, code de la serrure)",
+"🚪 Apartamentos (n.º, andar, n.º da porta, código da fechadura)"
 ],
 [
 "🚪 Porte",

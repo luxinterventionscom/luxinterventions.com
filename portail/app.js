@@ -963,6 +963,12 @@ const kv = (k, v) => (v ? html`<dt>${k}</dt><dd>${v}</dd>` : '');
 // Photos : chargées avec le jeton, affichées via des URL « blob: »
 let photoUrls = [];
 function revokePhotos() { photoUrls.forEach((u) => URL.revokeObjectURL(u)); photoUrls = []; }
+// codes nommés et appartements d'une résidence (enregistrés en JSON par le serveur)
+const jsonArr = (v) => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
+const CODE_LABELS = ['Portail / portail d’entrée', 'Porte d’entrée', 'Porte de garage', 'Serrure digitale', 'Local technique', 'Panneau de redémarrage', 'Ascenseur', 'Boîte à clés', 'Cave', 'Interphone'];
+const codeRow = (n, c = {}) => html`<div class="code-row"><input name="cl${n}" value="${c.l || ''}" list="codeLabels" placeholder="Quoi ? (ex. Portail)"><input name="cc${n}" value="${c.c || ''}" placeholder="Code" autocomplete="off"></div>`;
+const aptRow = (n, a = {}) => html`<div class="apt-row"><input name="an${n}" value="${a.n || ''}" placeholder="App. 4B"><input name="ae${n}" value="${a.e || ''}" placeholder="2"><input name="ap${n}" value="${a.p || ''}" placeholder="12"><input name="ac${n}" value="${a.c || ''}" placeholder="Code" autocomplete="off"></div>`;
+const aptOpts = (r) => html`<option value="">— Parties communes / autre —</option>${jsonArr(r && r.apts).map((a, i) => html`<option value="${i}">${a.n || 'App.'}${a.e ? ' · étage ' + a.e : ''}${a.p ? ' · porte ' + a.p : ''}</option>`)}`;
 const eurP = (n) => (Math.round((+n || 0) * 100) / 100).toFixed(2).replace('.', ',') + ' €';
 async function loadPhotoInto(img) {
   try {
@@ -1148,6 +1154,7 @@ const SHEETS = {
         <label class="field">Travail demandé<select name="nature"><option value="">—</option>${NATURES.map((c) => html`<option value="${c}" ${v('nature') === c ? new Raw('selected') : ''}>${c}</option>`)}</select></label>
         <label class="field">Où ?<select name="zone"><option value="">—</option>${ZONES.map((c) => html`<option value="${c}" ${v('zone') === c ? new Raw('selected') : ''}>${c}</option>`)}</select></label>
         <label class="field">Étage<select name="etage"><option value="">—</option>${[-3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => { const val = n === 0 ? 'RDC' : String(n); return html`<option value="${val}" ${v('etage') === val ? new Raw('selected') : ''}>${n < 0 ? `${n} (sous-sol)` : n === 0 ? '0 (RDC)' : '+' + n}</option>`; })}<option value="autre" ${v('etage') === 'autre' ? new Raw('selected') : ''}>Autre (préciser dans la description)</option></select></label>
+        ${(() => { const r0 = res.find((r) => r.id === data.residence_id) || (res.length === 1 ? res[0] : {}); return html`<label class="field full apt-pick" ${jsonArr(r0.apts).length ? '' : new Raw('hidden')}>Appartement<select name="apt">${aptOpts(r0)}</select></label>`; })()}
         ${field('N° / précision', 'lieu', v('lieu'), { full: true, placeholder: 'ex. App. 4B, box 12, chambre 3, cuisine' })}
         <label class="field full">Description du problème<textarea name="description" required placeholder="Que se passe-t-il ? Depuis quand ? Risque de dégâts ?">${v('description')}</textarea></label>
         <label class="field full">${ed ? 'Ajouter des photos' : 'Photos (jusqu’à 6)'}<input type="file" name="photos" accept="image/*" multiple data-input="preview-files"></label>
@@ -1186,6 +1193,8 @@ const SHEETS = {
           ${kv('Intérieur', r.interior)}${kv('Étage(s)', r.floors)}
           ${kv('Code d’accès', codeShow(r.access))}${kv('Code alarme', codeShow(r.alarm))}${kv('Code panneaux / autre', codeShow(r.code_other))}${kv('Clés', r.keys_info)}${kv('Contact', [r.contact_name, r.contact_phone].filter(Boolean).join(' · '))}
         </dl>
+        ${jsonArr(r.codes).length ? html`<div class="section-label" style="margin-top:0">🔐 Codes</div><dl class="kv small" style="margin-bottom:14px">${jsonArr(r.codes).map((c) => kv(c.l || 'Code', isCode(c.c) ? codeShow(c.c) : c.c))}</dl>` : ''}
+        ${jsonArr(r.apts).length ? html`<div class="section-label" style="margin-top:0">🚪 Appartements (${jsonArr(r.apts).length})</div><div class="card" style="padding:0;overflow:auto;margin-bottom:14px"><table class="tbl small"><thead><tr><th>N°</th><th>Étage</th><th>Porte</th><th>Code serrure</th></tr></thead><tbody>${jsonArr(r.apts).map((a) => html`<tr><td>${a.n || '—'}</td><td>${a.e || ''}</td><td>${a.p || ''}</td><td>${a.c ? (isCode(a.c) ? codeShow(a.c) : a.c) : ''}</td></tr>`)}</tbody></table></div>` : ''}
         ${r.notes ? html`<div class="note" style="margin-bottom:14px">${r.notes}</div>` : ''}
         <button class="btn primary block" data-action="new-ticket" data-residence="${r.id}">${icon('plus')} Demande de dépannage pour cette résidence</button>
         <div class="section-label">Historique des interventions</div>
@@ -1195,6 +1204,10 @@ const SHEETS = {
   },
 
   'residence-form'({ id }) {
+    const rr = id ? (state.cache.residences || state.cache.residencesList || []).find((x) => x.id === id) || {} : {};
+    const codes = jsonArr(rr.codes), apts = jsonArr(rr.apts);
+    while (codes.length < 2) codes.push({});
+    while (apts.length < 3) apts.push({});
     const r = id ? (state.cache.residences || state.cache.residencesList || []).find((x) => x.id === id) || {} : {};
     return {
       title: id ? 'Modifier la résidence' : 'Nouvelle résidence',
@@ -1211,6 +1224,14 @@ const SHEETS = {
         ${code6('Code d’accès', 'access', r.access)}
         ${code6('Code alarme', 'alarm', r.alarm)}
         ${code6('Code panneaux ou autre', 'code_other', r.code_other)}
+        <datalist id="codeLabels">${CODE_LABELS.map((l) => html`<option value="${l}"></option>`)}</datalist>
+        <div class="full"><div class="section-label" style="margin:6px 0">🔐 Autres codes (portail, garage, serrure digitale, panneau de redémarrage…)</div>
+          <div id="resCodes">${codes.map((c, n) => codeRow(n, c))}</div>
+          <button type="button" class="btn sm" data-action="res-row" data-k="code">${icon('plus')} Code</button></div>
+        <div class="full"><div class="section-label" style="margin:6px 0">🚪 Appartements (n°, étage, n° de porte, code de la serrure)</div>
+          <div class="apt-head"><span>N° / nom</span><span>Étage</span><span>Porte</span><span>Code serrure</span></div>
+          <div id="resApts">${apts.map((a, n) => aptRow(n, a))}</div>
+          <button type="button" class="btn sm" data-action="res-row" data-k="apt">${icon('plus')} Appartement</button> <button type="button" class="btn sm" data-action="res-row" data-k="apt5">${icon('plus')} 5 appartements</button></div>
         <label class="field full">Notes<textarea name="notes" placeholder="Badge, interphone, clés, compteurs, local technique, particularités…">${[r.notes, r.access && !isCode(r.access) ? 'Accès : ' + r.access : '', r.keys_info ? 'Clés : ' + r.keys_info : ''].filter(Boolean).join('\n')}</textarea></label>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
@@ -1463,6 +1484,13 @@ const ACTIONS = {
     a.href = URL.createObjectURL(await r.blob()); a.download = `Facture-${d.no}.pdf`;
     document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
   },
+  'res-row': (d) => {
+    const box = $(d.k === 'code' ? '#resCodes' : '#resApts');
+    if (!box) return;
+    const n0 = box.children.length, times = d.k === 'apt5' ? 5 : 1;
+    for (let i = 0; i < times; i++) box.insertAdjacentHTML('beforeend', String(d.k === 'code' ? codeRow(n0 + i) : aptRow(n0 + i)));
+    box.lastElementChild.querySelector('input').focus();
+  },
   'cp-sec': (d) => { state.cpSec = d.id; renderView(); },
   'cp-csv': () => {
     const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -1610,8 +1638,10 @@ const FORMS = {
       // fin avant le début (ex. 22:00 → 06:00) : plage de nuit, jusqu'au lendemain (concierge, urgence)
       const plage = de && a ? `De ${de} à ${a}${a <= de ? ' (lendemain)' : ''}` : de ? `À partir de ${de}` : a ? `Jusqu’à ${a}` : '';
       body.dispo = [ds ? 'Date souhaitée : ' + ds : '', plage, body.dispo].filter(Boolean).join(' · ');
-      body.acces = [body.c_porte ? 'Porte : ' + body.c_porte : '', body.c_alarme ? 'Alarme : ' + body.c_alarme : '', body.c_panneaux ? 'Panneaux : ' + body.c_panneaux : '', body.acces].filter(Boolean).join(' · ').slice(0, 500);
-      for (const k of ['nature', 'zone', 'etage', 'date_souhaitee', 'h_de', 'h_a', 'c_porte', 'c_alarme', 'c_panneaux']) delete body[k];
+      const rs = (state.cache.residencesList || []).find((x) => x.id === body.residence_id) || {}, apt = body.apt !== '' && body.apt != null ? jsonArr(rs.apts)[+body.apt] : null;
+      const extra = [apt && apt.c ? `Serrure ${apt.n || 'appartement'} : ${apt.c}` : '', ...jsonArr(rs.codes).filter((c) => c.c).map((c) => `${c.l || 'Code'} : ${c.c}`)].filter((x) => x && !String(body.acces || '').includes(x));
+      body.acces = [body.c_porte ? 'Porte : ' + body.c_porte : '', body.c_alarme ? 'Alarme : ' + body.c_alarme : '', body.c_panneaux ? 'Panneaux : ' + body.c_panneaux : '', ...extra, body.acces].filter(Boolean).join(' · ').slice(0, 500);
+      for (const k of ['nature', 'zone', 'etage', 'date_souhaitee', 'h_de', 'h_a', 'c_porte', 'c_alarme', 'c_panneaux', 'apt']) delete body[k];
       if (body.edit) {
         const id = body.edit; delete body.edit;
         const r = await api('tickets/' + id, { method: 'PATCH', body });
@@ -1686,6 +1716,12 @@ const FORMS = {
   },
   async residence(fd) {
     const b = fd2obj(fd);
+    b.codes = []; b.apts = [];
+    for (let n = 0; n < 400; n++) {
+      if (fd.has(`cl${n}`)) { const l = String(fd.get(`cl${n}`) || '').trim(), c = String(fd.get(`cc${n}`) || '').trim(); if (l || c) b.codes.push({ l, c }); }
+      if (fd.has(`an${n}`)) { const a = { n: String(fd.get(`an${n}`) || '').trim(), e: String(fd.get(`ae${n}`) || '').trim(), p: String(fd.get(`ap${n}`) || '').trim(), c: String(fd.get(`ac${n}`) || '').trim() }; if (a.n || a.p || a.c) b.apts.push(a); }
+    }
+    for (const k of Object.keys(b)) if (/^(cl|cc|an|ae|ap|ac)\d+$/.test(k)) delete b[k];
     try {
       if (b.id) await api('residences/' + b.id, { method: 'PATCH', body: b });
       else await api('residences', { method: 'POST', body: b });
@@ -1780,9 +1816,17 @@ function setCode6(form, name, v) {
   c.querySelectorAll('.c6').forEach((b, i) => { b.value = v[i] || ''; });
 }
 document.addEventListener('change', (e) => {
+  if (e.target.name === 'apt' && e.target.closest('form[data-form=ticket]')) {
+    const f = e.target.form, r = (state.cache.residencesList || []).find((x) => x.id === f.residence_id.value) || {}, a = jsonArr(r.apts)[+e.target.value];
+    if (a) {
+      if (a.e && f.etage && [...f.etage.options].some((o) => o.value === String(a.e))) f.etage.value = String(a.e);
+      f.lieu.value = [a.n, a.p ? 'porte ' + a.p : ''].filter(Boolean).join(' · ');
+    }
+  }
   if (e.target.name === 'residence_id' && e.target.closest('form[data-form=ticket]')) {
     const r = (state.cache.residencesList || []).find((x) => x.id === e.target.value) || {}, f = e.target.form;
     setCode6(f, 'c_porte', r.access); setCode6(f, 'c_alarme', r.alarm); setCode6(f, 'c_panneaux', r.code_other);
+    const ap = f.querySelector('.apt-pick'); if (ap) { setHtml(ap.querySelector('select'), aptOpts(r)); ap.hidden = !jsonArr(r.apts).length; }
   }
   const k = e.target.dataset.input;
   if (k === 'residence') { state.filters.residence = e.target.value; go('demandes', true); }
