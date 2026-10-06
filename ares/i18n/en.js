@@ -9703,5 +9703,13 @@ export default [
 [
 "Portail gérance non connecté (menu Gérances).",
 "Management portal not connected (Gérances menu)."
+],
+[
+"Où exactement",
+"Where exactly"
+],
+[
+"étage(s) {0}",
+"floor(s) {0}"
 ]
 ];

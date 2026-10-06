@@ -9907,5 +9907,13 @@ export default [
 [
 "Portail gérance non connecté (menu Gérances).",
 "Portal de gérance no conectado (menú Gérances)."
+],
+[
+"Où exactement",
+"Dónde exactamente"
+],
+[
+"étage(s) {0}",
+"planta(s) {0}"
 ]
 ];

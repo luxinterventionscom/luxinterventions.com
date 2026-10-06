@@ -9927,5 +9927,13 @@ export default [
 [
 "Portail gérance non connecté (menu Gérances).",
 "Portale gérance non collegato (menu Gérances)."
+],
+[
+"Où exactement",
+"Dove esattamente"
+],
+[
+"étage(s) {0}",
+"piano/i {0}"
 ]
 ];

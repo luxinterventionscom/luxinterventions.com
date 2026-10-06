@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.91.0';
+const VERSION = '2.92.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1546,6 +1546,22 @@ const MET_HINT = [[/plomb|sanitaire|fuite|wc|toilette|cesso|robinet|évier|douch
 const metHints = (txt) => MET_HINT.filter(([rx]) => rx.test(txt || '')).map(([, m]) => m);
 // lien demande ↔ intervention : infos utiles à l'ouvrier (adresse, lieu, codes, disponibilités, contact)
 const ptlLink = (d) => { const t = d.ticket, r = d.residence || {}; return { tid: t.id, ref: t.ref, orgId: t.org_id || '', org: r.org_name || '', res: r.name || '', adr: r.address || '', lieu: t.lieu || '', acces: t.acces || '', dispo: t.dispo || '', contact: t.contact_name || r.contact_name || '', tel: t.contact_phone || r.contact_phone || '', interior: r.interior || '', floors: r.floors || '', codes: ptlResCodes(r).join(' · ') }; };
+// fiche du lieu d'intervention (demande d'une gérance) : où, à quel étage, qui contacter, codes, disponibilités
+const ptlPlace = (p) => {
+  const parts = (x) => String(x || '').split(' · ').filter(Boolean);
+  const codes = parts(p.acces).length ? parts(p.acces) : parts(p.codes);
+  const tel = String(p.tel || '').replace(/[^\d+]/g, '');
+  const q = encodeURIComponent([p.adr || p.res, 'Luxembourg'].join(', '));
+  return html`<b>🏢 ${p.org} · Demande #${p.ref}</b>
+    <dl class="kv small ptl-place">
+      <dt>📍 Adresse</dt><dd>${p.res}${p.adr ? html`<br>${p.adr}` : ''}${p.adr ? html` <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">🗺️ Plan</a>` : ''}</dd>
+      ${p.lieu ? html`<dt>🚪 Où exactement</dt><dd>${parts(p.lieu).join(' · ')}</dd>` : ''}
+      ${p.interior || p.floors ? html`<dt>🏠 Intérieur</dt><dd>${[p.interior, p.floors ? 'étage(s) ' + p.floors : ''].filter(Boolean).join(' · ')}</dd>` : ''}
+      ${p.contact || tel ? html`<dt>👤 Contact sur place</dt><dd>${p.contact || ''}${tel ? html` · <a href="tel:${tel}">${p.tel}</a>` : ''}</dd>` : ''}
+      ${codes.length ? html`<dt>🔐 Accès / codes</dt><dd>${codes.map((x) => html`<div>${x}</div>`)}</dd>` : ''}
+      ${p.dispo ? html`<dt>📅 Disponibilités</dt><dd>${parts(p.dispo).map((x) => html`<div>${x}</div>`)}</dd>` : ''}
+    </dl>`;
+};
 // codes d'une résidence du portail : boîte à clés, portes / portails, alarme, locaux techniques, puis les autres codes nommés
 const ptlResCodes = (r) => { let named = []; try { named = JSON.parse(r.codes || '[]'); } catch { /* illisible */ } if (!Array.isArray(named)) named = []; const kb = named.find((c) => c.l === 'Boîte à clés'); return [kb && kb.c ? 'Boîte à clés : ' + kb.c : '', r.access ? 'Porte : ' + r.access : '', r.alarm ? 'Alarme : ' + r.alarm : '', r.code_other ? 'Locaux techniques : ' + r.code_other : '', ...named.filter((c) => c.c && c !== kb).map((c) => `${c.l || 'Code'} : ${c.c}`)].filter(Boolean); };
 // affectation : l'équipe triée (métier conseillé d'abord ⭐), absents signalés
@@ -4032,7 +4048,7 @@ const SHEETS = {
         <input type="hidden" name="id" value="${id || ''}">
         <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${(t.type === 'entretien' ? 'reparation' : t.type) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}
-        ${t.ptl ? html`<div class="full ptl-box"><b>🏢 ${t.ptl.org} · Demande #${t.ptl.ref}</b><br>${t.ptl.res}${t.ptl.adr ? ' — ' + t.ptl.adr : ''}${t.ptl.lieu ? html`<br><span class="small">📍 ${t.ptl.lieu}</span>` : ''}${t.ptl.acces || t.ptl.codes ? html`<br><span class="small">🔐 ${t.ptl.acces || t.ptl.codes}</span>` : ''}${t.ptl.dispo ? html`<br><span class="small">📅 ${t.ptl.dispo}</span>` : ''}
+        ${t.ptl ? html`<div class="full ptl-box">${ptlPlace(t.ptl)}
             <input type="hidden" name="ptl" value="${JSON.stringify(t.ptl)}"><input type="hidden" name="immId" value=""></div>`
           : html`<label class="field">Immeuble<select name="immId" data-input="tache-imm" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === t.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         <label class="field">Où ?<select name="logId" id="tacheLog">${logOptions(t.immId || imms[0].id, t.logId)}</select></label>`}
