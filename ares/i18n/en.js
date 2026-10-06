@@ -9631,5 +9631,77 @@ export default [
 [
 "Ajouter immo.",
 "Add building"
+],
+[
+"Nouvel ouvrier",
+"New worker"
+],
+[
+"Affectation",
+"Assignment"
+],
+[
+"qui envoyer ?",
+"who to send?"
+],
+[
+"envoyer un autre ouvrier",
+"send another worker"
+],
+[
+"aucun {0} dans votre équipe.",
+"no {0} in your team."
+],
+[
+"aucun ouvrier dans votre équipe.",
+"no worker in your team."
+],
+[
+"Trouvez quelqu’un (ouvrier à engager, société externe ou privé occasionnel), créez-le avec « Nouvel ouvrier », puis affectez-le ici.",
+"Find someone (a worker to hire, an external company or an occasional private worker), create them with “New worker”, then assign them here."
+],
+[
+"Affecter →",
+"Assign →"
+],
+[
+"Affecter {0}",
+"Assign {0}"
+],
+[
+"Affectation (demandes d’intervention)",
+"Assignment (intervention requests)"
+],
+[
+"Autre travail (sans demande)",
+"Other job (no request)"
+],
+[
+"touchez la demande à confier : il reste à choisir le jour et l’heure. ⭐ = correspond au métier.",
+"tap the request to hand over: then pick the day and time. ⭐ = matches the trade."
+],
+[
+"déjà : {0}",
+"already: {0}"
+],
+[
+"pas encore affectée",
+"not assigned yet"
+],
+[
+"à affecter",
+"to assign"
+],
+[
+"Aucune demande d’intervention en cours.",
+"No intervention requests in progress."
+],
+[
+"Chargement des demandes…",
+"Loading requests…"
+],
+[
+"Portail gérance non connecté (menu Gérances).",
+"Management portal not connected (Gérances menu)."
 ]
 ];

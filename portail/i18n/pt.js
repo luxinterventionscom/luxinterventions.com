@@ -1005,6 +1005,10 @@ export default [
 "Local exato"
 ],
 [
+"Local poubelles",
+"Local do lixo"
+],
+[
 "Local technique au sous-sol, compteurs derrière la porte grise.",
 "Sala técnica na cave, contadores atrás da porta cinzenta."
 ],
@@ -2245,6 +2249,14 @@ export default [
 "⏳ a pagar"
 ],
 [
+"⚙️ Code locaux techniques (panneaux électriques, machines)",
+"⚙️ Código locais técnicos (quadros elétricos, máquinas)"
+],
+[
+"⚙️ Locaux techniques",
+"⚙️ Locais técnicos"
+],
+[
 "⚡ Créer plusieurs appartements d’un coup",
 "⚡ Criar vários apartamentos de uma vez"
 ],
@@ -2337,6 +2349,14 @@ export default [
 "🔄 Atualizar mensagens"
 ],
 [
+"🔐 Autres codes",
+"🔐 Outros códigos"
+],
+[
+"🔐 Autres codes (garage, serrure digitale, ascenseur, cave…)",
+"🔐 Outros códigos (garagem, fechadura digital, elevador, cave…)"
+],
+[
 "🔐 Autres codes (portail, garage, serrure digitale, panneau de redémarrage…)",
 "🔐 Outros códigos (portão, garagem, fechadura digital, painel de reinício…)"
 ],
@@ -2347,6 +2367,14 @@ export default [
 [
 "🔐 Codes (repris de la résidence, modifiables)",
 "🔐 Códigos (da residência, editáveis)"
+],
+[
+"🔑 Boîte à clés",
+"🔑 Caixa de chaves"
+],
+[
+"🔑 Code boîte à clés",
+"🔑 Código da caixa de chaves"
 ],
 [
 "🔑 Le mot de passe se choisit",
@@ -2361,12 +2389,28 @@ export default [
 "🚚 A caminho"
 ],
 [
+"🚨 Code alarme",
+"🚨 Código do alarme"
+],
+[
 "🚪 Appartements (n°, étage, n° de porte, code de la serrure)",
 "🚪 Apartamentos (n.º, andar, n.º da porta, código da fechadura)"
 ],
 [
+"🚪 Code portes appartements / portails d’entrée",
+"🚪 Código portas dos apartamentos / portões de entrada"
+],
+[
 "🚪 Porte",
 "🚪 Porta"
+],
+[
+"🚪 Portes / portails",
+"🚪 Portas / portões"
+],
+[
+"🚪 Portes / portails d’entrée",
+"🚪 Portas / portões de entrada"
 ],
 [
 "🧾 Facture",

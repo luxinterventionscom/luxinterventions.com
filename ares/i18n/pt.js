@@ -9807,5 +9807,81 @@ export default [
 [
 "Ajouter immo.",
 "Adicionar imóv."
+],
+[
+"Nouvel ouvrier",
+"Novo operário"
+],
+[
+"Affectation",
+"Atribuição"
+],
+[
+"qui envoyer ?",
+"quem enviar?"
+],
+[
+"envoyer un autre ouvrier",
+"enviar outro operário"
+],
+[
+"Stand-by",
+"Em espera"
+],
+[
+"aucun {0} dans votre équipe.",
+"nenhum {0} na sua equipa."
+],
+[
+"aucun ouvrier dans votre équipe.",
+"nenhum operário na sua equipa."
+],
+[
+"Trouvez quelqu’un (ouvrier à engager, société externe ou privé occasionnel), créez-le avec « Nouvel ouvrier », puis affectez-le ici.",
+"Encontre alguém (operário a contratar, empresa externa ou particular ocasional), crie-o com «Novo operário» e atribua-o aqui."
+],
+[
+"Affecter →",
+"Atribuir →"
+],
+[
+"Affecter {0}",
+"Atribuir {0}"
+],
+[
+"Affectation (demandes d’intervention)",
+"Atribuição (pedidos de intervenção)"
+],
+[
+"Autre travail (sans demande)",
+"Outro trabalho (sem pedido)"
+],
+[
+"touchez la demande à confier : il reste à choisir le jour et l’heure. ⭐ = correspond au métier.",
+"toque no pedido a confiar: falta escolher o dia e a hora. ⭐ = corresponde à profissão."
+],
+[
+"déjà : {0}",
+"já: {0}"
+],
+[
+"pas encore affectée",
+"ainda não atribuído"
+],
+[
+"à affecter",
+"a atribuir"
+],
+[
+"Aucune demande d’intervention en cours.",
+"Nenhum pedido de intervenção em curso."
+],
+[
+"Chargement des demandes…",
+"A carregar pedidos…"
+],
+[
+"Portail gérance non connecté (menu Gérances).",
+"Portal da gérance não ligado (menu Gérances)."
 ]
 ];

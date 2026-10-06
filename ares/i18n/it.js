@@ -9855,5 +9855,77 @@ export default [
 [
 "Ajouter immo.",
 "Aggiungi immob."
+],
+[
+"Nouvel ouvrier",
+"Nuovo operaio"
+],
+[
+"Affectation",
+"Assegnazione"
+],
+[
+"qui envoyer ?",
+"chi mandare?"
+],
+[
+"envoyer un autre ouvrier",
+"mandare un altro operaio"
+],
+[
+"aucun {0} dans votre équipe.",
+"nessun {0} nella vostra squadra."
+],
+[
+"aucun ouvrier dans votre équipe.",
+"nessun operaio nella vostra squadra."
+],
+[
+"Trouvez quelqu’un (ouvrier à engager, société externe ou privé occasionnel), créez-le avec « Nouvel ouvrier », puis affectez-le ici.",
+"Trovate qualcuno (operaio da assumere, ditta esterna o privato occasionale), createlo con «Nuovo operaio», poi assegnatelo qui."
+],
+[
+"Affecter →",
+"Assegna →"
+],
+[
+"Affecter {0}",
+"Assegna {0}"
+],
+[
+"Affectation (demandes d’intervention)",
+"Assegnazione (richieste d’intervento)"
+],
+[
+"Autre travail (sans demande)",
+"Altro lavoro (senza richiesta)"
+],
+[
+"touchez la demande à confier : il reste à choisir le jour et l’heure. ⭐ = correspond au métier.",
+"toccate la richiesta da affidare: restano da scegliere giorno e ora. ⭐ = corrisponde al mestiere."
+],
+[
+"déjà : {0}",
+"già: {0}"
+],
+[
+"pas encore affectée",
+"non ancora assegnata"
+],
+[
+"à affecter",
+"da assegnare"
+],
+[
+"Aucune demande d’intervention en cours.",
+"Nessuna richiesta d’intervento in corso."
+],
+[
+"Chargement des demandes…",
+"Caricamento richieste…"
+],
+[
+"Portail gérance non connecté (menu Gérances).",
+"Portale gérance non collegato (menu Gérances)."
 ]
 ];
