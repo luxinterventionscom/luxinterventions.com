@@ -9803,5 +9803,17 @@ export default [
 [
 "Paiements des loyers — touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
 "Pagos de alquiler — toque un mes vacío para marcarlo pagado; toque un mes pagado para el importe, recibo o anulación."
+],
+[
+"⬇ Voir plus ({0} sur {1} restantes)",
+"⬇ Ver más ({0} de {1} restantes)"
+],
+[
+"{0} sur {1} affichées",
+"{0} de {1} mostradas"
+],
+[
+"Tout est affiché ({0})",
+"Todo mostrado ({0})"
 ]
 ];
