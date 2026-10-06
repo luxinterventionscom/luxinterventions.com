@@ -9,7 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.7.0';
+const VERSION = '1.8.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -107,8 +107,8 @@ const code6 = (label, name, value) => { const v = isCode(value) ? String(value |
   <span class="code6" data-code6="${name}"><input type="hidden" name="${name}" value="${v}">${[0, 1, 2, 3, 4, 5].map((i) => html`<input class="c6" inputmode="numeric" autocomplete="off" aria-label="${label} ${i + 1}" value="${v[i] || ''}">`)}</span></label>`; };
 const codeShow = (v) => (v && isCode(v) ? html`<span class="code6-show">${String(v).split('').map((c) => html`<b>${c}</b>`)}</span>` : v || '');
 const partsHtml = (s) => String(s || '').split(' · ').filter(Boolean).map((x, i) => {
-  const h = /^De (\d\d:\d\d) à (\d\d:\d\d)( \(lendemain\))?$/.exec(x), f = /^(À partir de|Jusqu’à) (\d\d:\d\d)$/.exec(x), m = /^(Étage|Date souhaitée :) (.+)$/.exec(x), c = /^(Porte|Alarme|Panneaux) : (\d{1,6})$/.exec(x);
-  if (c) return html`${i ? ' · ' : ''}<span>${{ Porte: '🚪 Porte', Alarme: '🚨 Alarme', Panneaux: '⚡ Panneaux' }[c[1]]}</span> ${codeShow(c[2])}`;
+  const h = /^De (\d\d:\d\d) à (\d\d:\d\d)( \(lendemain\))?$/.exec(x), f = /^(À partir de|Jusqu’à) (\d\d:\d\d)$/.exec(x), m = /^(Étage|Date souhaitée :) (.+)$/.exec(x), c = /^(Boîte à clés|Porte|Alarme|Panneaux|Locaux techniques) : (\d{1,6})$/.exec(x);
+  if (c) return html`${i ? ' · ' : ''}<span>${{ 'Boîte à clés': '🔑 Boîte à clés', Porte: '🚪 Portes / portails', Alarme: '🚨 Alarme', Panneaux: '⚙️ Locaux techniques', 'Locaux techniques': '⚙️ Locaux techniques' }[c[1]]}</span> ${codeShow(c[2])}`;
   return html`${i ? ' · ' : ''}${h ? html`${h[3] ? '🌙' : '🕒'} <span>De</span> ${h[1]} <span>à</span> ${h[2]}${h[3] ? html` <span>(lendemain)</span>` : ''}` : f ? html`🕒 <span>${f[1]}</span> ${f[2]}` : m ? html`<span>${m[1]}</span> ${m[2]}` : html`<span>${x}</span>`}`;
 });
 const ROLES = { admin: 'LuxInterventions', gerance_admin: 'Responsable gérance', gerance_user: 'Utilisateur gérance' };
@@ -965,7 +965,10 @@ let photoUrls = [];
 function revokePhotos() { photoUrls.forEach((u) => URL.revokeObjectURL(u)); photoUrls = []; }
 // codes nommés et appartements d'une résidence (enregistrés en JSON par le serveur)
 const jsonArr = (v) => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
-const CODE_LABELS = ['Portail / portail d’entrée', 'Porte d’entrée', 'Porte de garage', 'Serrure digitale', 'Local technique', 'Panneau de redémarrage', 'Ascenseur', 'Boîte à clés', 'Cave', 'Interphone'];
+const CODE_LABELS = ['Porte de garage', 'Serrure digitale', 'Panneau de redémarrage', 'Ascenseur', 'Cave', 'Interphone', 'Local poubelles'];
+// 4 codes principaux d'une résidence : boîte à clés (dans « codes »), portes / portails, alarme, locaux techniques
+const KEYBOX = 'Boîte à clés';
+const keyboxOf = (r) => (jsonArr(r && r.codes).find((c) => c.l === KEYBOX) || {}).c || '';
 const codeRow = (n, c = {}) => html`<div class="code-row"><input name="cl${n}" value="${c.l || ''}" list="codeLabels" placeholder="Quoi ? (ex. Portail)"><input name="cc${n}" value="${c.c || ''}" placeholder="Code" autocomplete="off"></div>`;
 const aptRow = (n, a = {}) => html`<div class="apt-row"><input name="ab${n}" value="${a.b || ''}" placeholder="A"><input name="an${n}" value="${a.n || ''}" placeholder="App. 4B"><input name="ae${n}" value="${a.e || ''}" placeholder="2"><input name="ap${n}" value="${a.p || ''}" placeholder="12"><input name="ac${n}" value="${a.c || ''}" placeholder="Code" autocomplete="off"></div>`;
 const aptOpts = (r) => {
@@ -1081,7 +1084,7 @@ const SHEETS = {
           ${isAdmin() ? kv('Gérance', res.org_name) : ''}
           ${kv('Contact sur place', t.contact_name || res.contact_name ? html`${t.contact_name || res.contact_name}${tel ? html` · <a href="tel:${tel}">${t.contact_phone || res.contact_phone}</a>` : ''}` : '')}
           ${kv('Accès', t.acces ? (isCode(t.acces) ? codeShow(t.acces) : html`<div class="acc-lines">${String(t.acces).split(' · ').filter(Boolean).map((x) => html`<div>${partsHtml(x)}</div>`)}</div>`) : '')}
-          ${/(Porte|Alarme|Panneaux) : /.test(t.acces || '') ? '' : html`${kv('Code d’accès', codeShow(res.access))}${kv('Code alarme', codeShow(res.alarm))}${kv('Code panneaux / autre', codeShow(res.code_other))}`}
+          ${/(Boîte à clés|Porte|Alarme|Panneaux|Locaux techniques) : /.test(t.acces || '') ? '' : html`${kv('🔑 Boîte à clés', codeShow(keyboxOf(res)))}${kv('🚪 Portes / portails d’entrée', codeShow(res.access))}${kv('🚨 Alarme', codeShow(res.alarm))}${kv('⚙️ Locaux techniques', codeShow(res.code_other))}`}
           ${kv('Intérieur', res.interior)}${kv('Étage(s)', res.floors)}
           ${kv('Clés', res.keys_info)}
           ${kv('Disponibilités', t.dispo ? partsHtml(t.dispo) : '')}
@@ -1167,9 +1170,10 @@ const SHEETS = {
         ${field('Téléphone du contact', 'contact_phone', v('contact_phone'), { type: 'tel', placeholder: '+352 …' })}
         ${(() => { const r0 = res.find((r) => r.id === data.residence_id) || (res.length === 1 ? res[0] : {}); return html`
         <div class="full small muted" style="margin-bottom:-4px">🔐 Codes${ed ? '' : ' (repris de la résidence, modifiables)'}</div>
-        ${code6('Code porte électronique', 'c_porte', v('c_porte', r0.access))}
-        ${code6('Code alarme', 'c_alarme', v('c_alarme', r0.alarm))}
-        ${code6('Code panneaux électriques / machines', 'c_panneaux', v('c_panneaux', r0.code_other))}`; })()}
+        ${code6('🔑 Code boîte à clés', 'c_boite', v('c_boite', keyboxOf(r0)))}
+        ${code6('🚪 Code portes appartements / portails d’entrée', 'c_porte', v('c_porte', r0.access))}
+        ${code6('🚨 Code alarme', 'c_alarme', v('c_alarme', r0.alarm))}
+        ${code6('⚙️ Code locaux techniques (panneaux électriques, machines)', 'c_panneaux', v('c_panneaux', r0.code_other))}`; })()}
         ${field('Accès (autre)', 'acces', v('acces'), { full: true, placeholder: 'Badge, clé chez le concierge, interphone…' })}
         <fieldset class="full dispo-set"><legend>📅 Disponibilités</legend>
           <div class="dispo-row">
@@ -1195,9 +1199,9 @@ const SHEETS = {
         <dl class="kv small" style="margin-bottom:14px">
           ${kv('Adresse', r.address)}${isAdmin() ? kv('Gérance', r.org_name) : ''}${kv('Appartements', r.apartments)}
           ${kv('Intérieur', r.interior)}${kv('Étage(s)', r.floors)}
-          ${kv('Code d’accès', codeShow(r.access))}${kv('Code alarme', codeShow(r.alarm))}${kv('Code panneaux / autre', codeShow(r.code_other))}${kv('Clés', r.keys_info)}${kv('Contact', [r.contact_name, r.contact_phone].filter(Boolean).join(' · '))}
+          ${kv('🔑 Boîte à clés', codeShow(keyboxOf(r)))}${kv('🚪 Portes / portails d’entrée', codeShow(r.access))}${kv('🚨 Alarme', codeShow(r.alarm))}${kv('⚙️ Locaux techniques', codeShow(r.code_other))}${kv('Clés', r.keys_info)}${kv('Contact', [r.contact_name, r.contact_phone].filter(Boolean).join(' · '))}
         </dl>
-        ${jsonArr(r.codes).length ? html`<div class="section-label" style="margin-top:0">🔐 Codes</div><dl class="kv small" style="margin-bottom:14px">${jsonArr(r.codes).map((c) => kv(c.l || 'Code', isCode(c.c) ? codeShow(c.c) : c.c))}</dl>` : ''}
+        ${jsonArr(r.codes).filter((c) => c.l !== KEYBOX).length ? html`<div class="section-label" style="margin-top:0">🔐 Autres codes</div><dl class="kv small" style="margin-bottom:14px">${jsonArr(r.codes).filter((c) => c.l !== KEYBOX).map((c) => kv(c.l || 'Code', isCode(c.c) ? codeShow(c.c) : c.c))}</dl>` : ''}
         ${jsonArr(r.apts).length ? html`<div class="section-label" style="margin-top:0">🚪 Appartements (${jsonArr(r.apts).length})</div><div class="card" style="padding:0;overflow:auto;margin-bottom:14px"><table class="tbl small"><thead><tr><th>Bât.</th><th>N°</th><th>Étage</th><th>Porte</th><th>Code serrure</th></tr></thead><tbody>${jsonArr(r.apts).map((a) => html`<tr><td>${a.b || ''}</td><td>${a.n || '—'}</td><td>${a.e || ''}</td><td>${a.p || ''}</td><td>${a.c ? (isCode(a.c) ? codeShow(a.c) : a.c) : ''}</td></tr>`)}</tbody></table></div>` : ''}
         ${r.notes ? html`<div class="note" style="margin-bottom:14px">${r.notes}</div>` : ''}
         <button class="btn primary block" data-action="new-ticket" data-residence="${r.id}">${icon('plus')} Demande de dépannage pour cette résidence</button>
@@ -1209,7 +1213,7 @@ const SHEETS = {
 
   'residence-form'({ id }) {
     const rr = id ? (state.cache.residences || state.cache.residencesList || []).find((x) => x.id === id) || {} : {};
-    const codes = jsonArr(rr.codes), apts = jsonArr(rr.apts);
+    const codes = jsonArr(rr.codes).filter((c) => c.l !== KEYBOX), apts = jsonArr(rr.apts);
     while (codes.length < 2) codes.push({});
     while (apts.length < 3) apts.push({});
     const r = id ? (state.cache.residences || state.cache.residencesList || []).find((x) => x.id === id) || {} : {};
@@ -1225,11 +1229,13 @@ const SHEETS = {
         ${field('Téléphone du contact', 'contact_phone', r.contact_phone, { type: 'tel' })}
         ${field('Intérieur (dans l’immeuble)', 'interior', r.interior, { placeholder: 'ex. bâtiment B, app. 12, aile gauche' })}
         ${field('Étage(s) de l’appartement / des appartements', 'floors', r.floors, { placeholder: 'ex. 2e, ou RDC à 4e' })}
-        ${code6('Code d’accès', 'access', r.access)}
-        ${code6('Code alarme', 'alarm', r.alarm)}
-        ${code6('Code panneaux ou autre', 'code_other', r.code_other)}
+        <div class="full section-label" style="margin:6px 0 0">🔐 Codes</div>
+        ${code6('🔑 Code boîte à clés', 'keybox', keyboxOf(r))}
+        ${code6('🚪 Code portes appartements / portails d’entrée', 'access', r.access)}
+        ${code6('🚨 Code alarme', 'alarm', r.alarm)}
+        ${code6('⚙️ Code locaux techniques (panneaux électriques, machines)', 'code_other', r.code_other)}
         <datalist id="codeLabels">${CODE_LABELS.map((l) => html`<option value="${l}"></option>`)}</datalist>
-        <div class="full"><div class="section-label" style="margin:6px 0">🔐 Autres codes (portail, garage, serrure digitale, panneau de redémarrage…)</div>
+        <div class="full"><div class="section-label" style="margin:6px 0">🔐 Autres codes (garage, serrure digitale, ascenseur, cave…)</div>
           <div id="resCodes">${codes.map((c, n) => codeRow(n, c))}</div>
           <button type="button" class="btn sm" data-action="res-row" data-k="code">${icon('plus')} Code</button></div>
         <div class="full"><div class="section-label" style="margin:6px 0">🚪 Appartements (n°, étage, n° de porte, code de la serrure)</div>
@@ -1662,9 +1668,9 @@ const FORMS = {
       const plage = de && a ? `De ${de} à ${a}${a <= de ? ' (lendemain)' : ''}` : de ? `À partir de ${de}` : a ? `Jusqu’à ${a}` : '';
       body.dispo = [ds ? 'Date souhaitée : ' + ds : '', plage, body.dispo].filter(Boolean).join(' · ');
       const rs = (state.cache.residencesList || []).find((x) => x.id === body.residence_id) || {}, apt = body.apt !== '' && body.apt != null ? jsonArr(rs.apts)[+body.apt] : null;
-      const extra = [apt && apt.c ? `Serrure ${apt.n || 'appartement'} : ${apt.c}` : '', ...jsonArr(rs.codes).filter((c) => c.c).map((c) => `${c.l || 'Code'} : ${c.c}`)].filter((x) => x && !String(body.acces || '').includes(x));
-      body.acces = [body.c_porte ? 'Porte : ' + body.c_porte : '', body.c_alarme ? 'Alarme : ' + body.c_alarme : '', body.c_panneaux ? 'Panneaux : ' + body.c_panneaux : '', ...extra, body.acces].filter(Boolean).join(' · ').slice(0, 500);
-      for (const k of ['nature', 'zone', 'etage', 'date_souhaitee', 'h_de', 'h_a', 'c_porte', 'c_alarme', 'c_panneaux', 'apt']) delete body[k];
+      const extra = [apt && apt.c ? `Serrure ${apt.n || 'appartement'} : ${apt.c}` : '', ...jsonArr(rs.codes).filter((c) => c.c && c.l !== KEYBOX).map((c) => `${c.l || 'Code'} : ${c.c}`)].filter((x) => x && !String(body.acces || '').includes(x));
+      body.acces = [body.c_boite ? 'Boîte à clés : ' + body.c_boite : '', body.c_porte ? 'Porte : ' + body.c_porte : '', body.c_alarme ? 'Alarme : ' + body.c_alarme : '', body.c_panneaux ? 'Locaux techniques : ' + body.c_panneaux : '', ...extra, body.acces].filter(Boolean).join(' · ').slice(0, 500);
+      for (const k of ['nature', 'zone', 'etage', 'date_souhaitee', 'h_de', 'h_a', 'c_boite', 'c_porte', 'c_alarme', 'c_panneaux', 'apt']) delete body[k];
       if (body.edit) {
         const id = body.edit; delete body.edit;
         const r = await api('tickets/' + id, { method: 'PATCH', body });
@@ -1744,6 +1750,8 @@ const FORMS = {
       if (fd.has(`cl${n}`)) { const l = String(fd.get(`cl${n}`) || '').trim(), c = String(fd.get(`cc${n}`) || '').trim(); if (l || c) b.codes.push({ l, c }); }
       if (fd.has(`an${n}`)) { const a = { b: String(fd.get(`ab${n}`) || '').trim(), n: String(fd.get(`an${n}`) || '').trim(), e: String(fd.get(`ae${n}`) || '').trim(), p: String(fd.get(`ap${n}`) || '').trim(), c: String(fd.get(`ac${n}`) || '').trim() }; if (a.n || a.p || a.c) b.apts.push(a); }
     }
+    if (b.keybox) b.codes.unshift({ l: KEYBOX, c: b.keybox });
+    delete b.keybox;
     for (const k of Object.keys(b)) if (/^(cl|cc|ab|an|ae|ap|ac)\d+$/.test(k)) delete b[k];
     try {
       if (b.id) await api('residences/' + b.id, { method: 'PATCH', body: b });
@@ -1827,7 +1835,7 @@ function ticketParse(t) {
   }
   o.dispo = dispo.join(' · ');
   const acc = [];
-  for (const x of parts(t.acces)) { const m = /^(Porte|Alarme|Panneaux) : (\d{1,6})$/.exec(x); if (m) o[{ Porte: 'c_porte', Alarme: 'c_alarme', Panneaux: 'c_panneaux' }[m[1]]] = m[2]; else acc.push(x); }
+  for (const x of parts(t.acces)) { const m = /^(Boîte à clés|Porte|Alarme|Panneaux|Locaux techniques) : (\d{1,6})$/.exec(x); if (m) o[{ 'Boîte à clés': 'c_boite', Porte: 'c_porte', Alarme: 'c_alarme', Panneaux: 'c_panneaux', 'Locaux techniques': 'c_panneaux' }[m[1]]] = m[2]; else acc.push(x); }
   o.acces = acc.join(' · ');
   return o;
 }
@@ -1848,7 +1856,7 @@ document.addEventListener('change', (e) => {
   }
   if (e.target.name === 'residence_id' && e.target.closest('form[data-form=ticket]')) {
     const r = (state.cache.residencesList || []).find((x) => x.id === e.target.value) || {}, f = e.target.form;
-    setCode6(f, 'c_porte', r.access); setCode6(f, 'c_alarme', r.alarm); setCode6(f, 'c_panneaux', r.code_other);
+    setCode6(f, 'c_boite', keyboxOf(r)); setCode6(f, 'c_porte', r.access); setCode6(f, 'c_alarme', r.alarm); setCode6(f, 'c_panneaux', r.code_other);
     const ap = f.querySelector('.apt-pick'); if (ap) { setHtml(ap.querySelector('select'), aptOpts(r)); ap.hidden = !jsonArr(r.apts).length; }
   }
   const k = e.target.dataset.input;

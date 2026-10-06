@@ -989,6 +989,10 @@ export default [
 "Exact location"
 ],
 [
+"Local poubelles",
+"Bin room"
+],
+[
 "Local technique au sous-sol, compteurs derrière la porte grise.",
 "Plant room in the basement, meters behind the grey door."
 ],
@@ -2201,6 +2205,14 @@ export default [
 "⏳ to pay"
 ],
 [
+"⚙️ Code locaux techniques (panneaux électriques, machines)",
+"⚙️ Technical rooms code (electrical panels, machines)"
+],
+[
+"⚙️ Locaux techniques",
+"⚙️ Technical rooms"
+],
+[
 "⚡ Créer plusieurs appartements d’un coup",
 "⚡ Create several apartments at once"
 ],
@@ -2289,12 +2301,28 @@ export default [
 "🔄 Refresh messages"
 ],
 [
+"🔐 Autres codes",
+"🔐 Other codes"
+],
+[
+"🔐 Autres codes (garage, serrure digitale, ascenseur, cave…)",
+"🔐 Other codes (garage, digital lock, lift, cellar…)"
+],
+[
 "🔐 Autres codes (portail, garage, serrure digitale, panneau de redémarrage…)",
 "🔐 Other codes (gate, garage, digital lock, restart panel…)"
 ],
 [
 "🔐 Codes (repris de la résidence, modifiables)",
 "🔐 Codes (taken from the residence, editable)"
+],
+[
+"🔑 Boîte à clés",
+"🔑 Key box"
+],
+[
+"🔑 Code boîte à clés",
+"🔑 Key box code"
 ],
 [
 "🔑 Le mot de passe se choisit",
@@ -2313,12 +2341,28 @@ export default [
 "🚨 Alarm"
 ],
 [
+"🚨 Code alarme",
+"🚨 Alarm code"
+],
+[
 "🚪 Appartements (n°, étage, n° de porte, code de la serrure)",
 "🚪 Apartments (no., floor, door no., lock code)"
 ],
 [
+"🚪 Code portes appartements / portails d’entrée",
+"🚪 Apartment doors / entrance gates code"
+],
+[
 "🚪 Porte",
 "🚪 Door"
+],
+[
+"🚪 Portes / portails",
+"🚪 Doors / gates"
+],
+[
+"🚪 Portes / portails d’entrée",
+"🚪 Doors / entrance gates"
 ],
 [
 "🧾 Facture",

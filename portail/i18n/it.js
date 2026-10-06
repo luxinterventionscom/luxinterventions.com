@@ -1005,6 +1005,10 @@ export default [
 "Luogo preciso"
 ],
 [
+"Local poubelles",
+"Locale rifiuti"
+],
+[
 "Local technique au sous-sol, compteurs derrière la porte grise.",
 "Locale tecnico nel seminterrato, contatori dietro la porta grigia."
 ],
@@ -2249,6 +2253,14 @@ export default [
 "⏳ da pagare"
 ],
 [
+"⚙️ Code locaux techniques (panneaux électriques, machines)",
+"⚙️ Codice vani tecnici (quadri elettrici, macchine)"
+],
+[
+"⚙️ Locaux techniques",
+"⚙️ Vani tecnici"
+],
+[
 "⚡ Créer plusieurs appartements d’un coup",
 "⚡ Crea più appartamenti in un colpo"
 ],
@@ -2341,6 +2353,14 @@ export default [
 "🔄 Aggiorna i messaggi"
 ],
 [
+"🔐 Autres codes",
+"🔐 Altri codici"
+],
+[
+"🔐 Autres codes (garage, serrure digitale, ascenseur, cave…)",
+"🔐 Altri codici (garage, serratura digitale, ascensore, cantina…)"
+],
+[
 "🔐 Autres codes (portail, garage, serrure digitale, panneau de redémarrage…)",
 "🔐 Altri codici (cancello, garage, serratura digitale, quadro di riavvio…)"
 ],
@@ -2351,6 +2371,14 @@ export default [
 [
 "🔐 Codes (repris de la résidence, modifiables)",
 "🔐 Codici (ripresi dal condominio, modificabili)"
+],
+[
+"🔑 Boîte à clés",
+"🔑 Cassetta chiavi"
+],
+[
+"🔑 Code boîte à clés",
+"🔑 Codice cassetta chiavi"
 ],
 [
 "🔑 Le mot de passe se choisit",
@@ -2369,12 +2397,28 @@ export default [
 "🚨 Allarme"
 ],
 [
+"🚨 Code alarme",
+"🚨 Codice allarme"
+],
+[
 "🚪 Appartements (n°, étage, n° de porte, code de la serrure)",
 "🚪 Appartamenti (n°, piano, n° porta, codice serratura)"
 ],
 [
+"🚪 Code portes appartements / portails d’entrée",
+"🚪 Codice porte appartamenti / portoni d’ingresso"
+],
+[
 "🚪 Porte",
 "🚪 Porta"
+],
+[
+"🚪 Portes / portails",
+"🚪 Porte / portoni"
+],
+[
+"🚪 Portes / portails d’entrée",
+"🚪 Porte / portoni d’ingresso"
 ],
 [
 "🧾 Facture",

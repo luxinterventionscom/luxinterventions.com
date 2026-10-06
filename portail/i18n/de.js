@@ -1005,6 +1005,10 @@ export default [
 "Genauer Ort"
 ],
 [
+"Local poubelles",
+"Müllraum"
+],
+[
 "Local technique au sous-sol, compteurs derrière la porte grise.",
 "Technikraum im Untergeschoss, Zähler hinter der grauen Tür."
 ],
@@ -2253,6 +2257,14 @@ export default [
 "⏳ offen"
 ],
 [
+"⚙️ Code locaux techniques (panneaux électriques, machines)",
+"⚙️ Code Technikräume (Schaltschränke, Maschinen)"
+],
+[
+"⚙️ Locaux techniques",
+"⚙️ Technikräume"
+],
+[
 "⚡ Créer plusieurs appartements d’un coup",
 "⚡ Mehrere Wohnungen auf einmal anlegen"
 ],
@@ -2345,12 +2357,28 @@ export default [
 "🔄 Nachrichten aktualisieren"
 ],
 [
+"🔐 Autres codes",
+"🔐 Weitere Codes"
+],
+[
+"🔐 Autres codes (garage, serrure digitale, ascenseur, cave…)",
+"🔐 Weitere Codes (Garage, digitales Schloss, Aufzug, Keller…)"
+],
+[
 "🔐 Autres codes (portail, garage, serrure digitale, panneau de redémarrage…)",
 "🔐 Weitere Codes (Tor, Garage, digitales Schloss, Neustart-Panel…)"
 ],
 [
 "🔐 Codes (repris de la résidence, modifiables)",
 "🔐 Codes (aus der Wohnanlage übernommen, änderbar)"
+],
+[
+"🔑 Boîte à clés",
+"🔑 Schlüsselbox"
+],
+[
+"🔑 Code boîte à clés",
+"🔑 Code Schlüsselbox"
 ],
 [
 "🔑 Le mot de passe se choisit",
@@ -2369,12 +2397,28 @@ export default [
 "🚨 Alarm"
 ],
 [
+"🚨 Code alarme",
+"🚨 Alarmcode"
+],
+[
 "🚪 Appartements (n°, étage, n° de porte, code de la serrure)",
 "🚪 Wohnungen (Nr., Etage, Türnr., Schlosscode)"
 ],
 [
+"🚪 Code portes appartements / portails d’entrée",
+"🚪 Code Wohnungstüren / Eingangstore"
+],
+[
 "🚪 Porte",
 "🚪 Tür"
+],
+[
+"🚪 Portes / portails",
+"🚪 Türen / Tore"
+],
+[
+"🚪 Portes / portails d’entrée",
+"🚪 Türen / Eingangstore"
 ],
 [
 "🧾 Facture",
