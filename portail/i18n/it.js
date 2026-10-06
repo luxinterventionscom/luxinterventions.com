@@ -177,6 +177,10 @@ export default [
 "Almeno 10 caratteri"
 ],
 [
+"Au étage",
+"Al piano"
+],
+[
 "Aucun résultat.",
 "Nessun risultato."
 ],
@@ -299,6 +303,14 @@ export default [
 [
 "Bureau",
 "Ufficio"
+],
+[
+"Bât.",
+"Pal."
+],
+[
+"Bât. / escalier",
+"Palazzina / scala"
 ],
 [
 "Cage d’escalier",
@@ -513,6 +525,10 @@ export default [
 "Crea il link"
 ],
 [
+"Créer les appartements",
+"Crea gli appartamenti"
+],
+[
 "Créez le compte administrateur LuxInterventions.",
 "Create l’account amministratore LuxInterventions."
 ],
@@ -623,6 +639,10 @@ export default [
 [
 "Dont urgentes",
 "Di cui urgenti"
+],
+[
+"Du étage",
+"Dal piano"
 ],
 [
 "Décembre",
@@ -1245,6 +1265,10 @@ export default [
 "Nuovo condominio"
 ],
 [
+"Numéros",
+"Numeri"
+],
+[
 "N° / nom",
 "N° / nome"
 ],
@@ -1287,6 +1311,10 @@ export default [
 [
 "Par urgence",
 "Per urgenza"
+],
+[
+"Par étage",
+"Per piano"
 ],
 [
 "Parking / extérieur",
@@ -2109,6 +2137,10 @@ export default [
 "Da concordare"
 ],
 [
+"À la suite (1, 2, 3…)",
+"Di seguito (1, 2, 3…)"
+],
+[
 "À partir de",
 "Dalle"
 ],
@@ -2143,6 +2175,10 @@ export default [
 [
 "Étage",
 "Piano"
+],
+[
+"Étage + n° (201, 202…)",
+"Piano + n° (201, 202…)"
 ],
 [
 "Étage : autre",
@@ -2211,6 +2247,10 @@ export default [
 [
 "⏳ à payer",
 "⏳ da pagare"
+],
+[
+"⚡ Créer plusieurs appartements d’un coup",
+"⚡ Crea più appartamenti in un colpo"
 ],
 [
 "⚡ Panneaux",
