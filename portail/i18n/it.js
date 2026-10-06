@@ -1,6 +1,10 @@
 // Traduction du portail gérance (source : français). Généré — une ligne par phrase.
 export default [
 [
+"(carré avec flèche ↑) →",
+"(quadrato con freccia ↑) →"
+],
+[
 "(lendemain)",
 "(giorno dopo)"
 ],
@@ -11,6 +15,10 @@ export default [
 [
 ", avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Demandez un nouveau lien.",
 ", con il link d’invito. Poi: email + password, su qualsiasi dispositivo. Dimenticata? Chiedete un nuovo link."
+],
+[
+", avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Touchez « 🔑 Mot de passe oublié ? » sur la page de connexion.",
+", con il link d’invito. Poi: email + password, su qualsiasi dispositivo. Dimenticata? Tocca «🔑 Password dimenticata?» nella pagina di accesso."
 ],
 [
 "0 (RDC)",
@@ -1241,6 +1249,10 @@ export default [
 "Parcheggio / esterno"
 ],
 [
+"Partager",
+"Condividi"
+],
+[
 "Partiellement satisfait",
 "Parzialmente soddisfatto"
 ],
@@ -1625,6 +1637,10 @@ export default [
 "Su iPhone: installate prima l’app (Condividi → « Aggiungi alla schermata Home »), poi apritela dall’icona."
 ],
 [
+"Sur iPhone, d’abord installer l’app :",
+"Su iPhone, prima installa l’app:"
+],
+[
 "Syndic Exemple",
 "Condominio Esempio"
 ],
@@ -1813,8 +1829,20 @@ export default [
 "richieste aperte"
 ],
 [
+"depuis la nouvelle icône",
+"dalla nuova icona"
+],
+[
 "délai moyen",
 "tempo medio"
+],
+[
+"en bas de Safari, touchez",
+"in basso in Safari, tocca"
+],
+[
+"et touchez « Activer » : Safari seul ne permet pas les notifications.",
+"e tocca «Attiva»: Safari da solo non permette le notifiche."
 ],
 [
 "ex. 2e, ou RDC à 4e",
@@ -1977,6 +2005,10 @@ export default [
 "{0} utente/i"
 ],
 [
+"« Sur l’écran d’accueil »",
+"«Aggiungi alla schermata Home»"
+],
+[
 "· désactivé",
 "· disattivato"
 ],
@@ -2095,6 +2127,10 @@ export default [
 [
 "— technicien :",
 "— tecnico:"
+],
+[
+"→ Ajouter. Ouvrez ensuite le portail",
+"→ Aggiungi. Poi apri il portale"
 ],
 [
 "⚡ Panneaux",

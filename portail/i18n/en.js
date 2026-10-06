@@ -1,6 +1,10 @@
 // Traduction du portail gérance (source : français). Généré — une ligne par phrase.
 export default [
 [
+"(carré avec flèche ↑) →",
+"(square with arrow ↑) →"
+],
+[
 "(lendemain)",
 "(next day)"
 ],
@@ -11,6 +15,10 @@ export default [
 [
 ", avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Demandez un nouveau lien.",
 ", with the invitation link. After that: email + password, on any device. Forgotten? Ask for a new link."
+],
+[
+", avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Touchez « 🔑 Mot de passe oublié ? » sur la page de connexion.",
+", with the invitation link. Then: email + password, on any device. Forgotten? Tap “🔑 Forgot your password?” on the login page."
 ],
 [
 "0 (RDC)",
@@ -1217,6 +1225,10 @@ export default [
 "Car park / outside"
 ],
 [
+"Partager",
+"Share"
+],
+[
 "Partiellement satisfait",
 "Partly satisfied"
 ],
@@ -1589,6 +1601,10 @@ export default [
 "On iPhone: first install the app (Share → « Add to Home Screen »), then open it from the icon."
 ],
 [
+"Sur iPhone, d’abord installer l’app :",
+"On iPhone, first install the app:"
+],
+[
 "Syndic Exemple",
 "Example building manager"
 ],
@@ -1769,8 +1785,20 @@ export default [
 "open requests"
 ],
 [
+"depuis la nouvelle icône",
+"from the new icon"
+],
+[
 "délai moyen",
 "average time"
+],
+[
+"en bas de Safari, touchez",
+"at the bottom of Safari, tap"
+],
+[
+"et touchez « Activer » : Safari seul ne permet pas les notifications.",
+"and tap “Turn on”: Safari alone does not allow notifications."
 ],
 [
 "ex. 2e, ou RDC à 4e",
@@ -1933,6 +1961,10 @@ export default [
 "{0} user(s)"
 ],
 [
+"« Sur l’écran d’accueil »",
+"“Add to Home Screen”"
+],
+[
 "· désactivé",
 "· disabled"
 ],
@@ -2051,6 +2083,10 @@ export default [
 [
 "— technicien :",
 "— technician:"
+],
+[
+"→ Ajouter. Ouvrez ensuite le portail",
+"→ Add. Then open the portal"
 ],
 [
 "⚡ Panneaux",

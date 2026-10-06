@@ -1,6 +1,10 @@
 // Traduction du portail gérance (source : français). Généré — une ligne par phrase.
 export default [
 [
+"(carré avec flèche ↑) →",
+"(Quadrat mit Pfeil ↑) →"
+],
+[
 "(lendemain)",
 "(nächster Tag)"
 ],
@@ -11,6 +15,10 @@ export default [
 [
 ", avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Demandez un nouveau lien.",
 ", mit dem Einladungslink. Danach: E-Mail + Passwort, auf jedem Gerät. Vergessen? Fordern Sie einen neuen Link an."
+],
+[
+", avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Touchez « 🔑 Mot de passe oublié ? » sur la page de connexion.",
+", mit dem Einladungslink. Danach: E-Mail + Passwort, auf jedem Gerät. Vergessen? Tippen Sie auf der Anmeldeseite auf „🔑 Passwort vergessen?“."
 ],
 [
 "0 (RDC)",
@@ -1241,6 +1249,10 @@ export default [
 "Parkplatz / Außenbereich"
 ],
 [
+"Partager",
+"Teilen"
+],
+[
 "Partiellement satisfait",
 "Teilweise zufrieden"
 ],
@@ -1625,6 +1637,10 @@ export default [
 "Auf dem iPhone: Installieren Sie zuerst die App (Teilen → « Zum Home-Bildschirm ») und öffnen Sie sie dann über das Symbol."
 ],
 [
+"Sur iPhone, d’abord installer l’app :",
+"Auf dem iPhone zuerst die App installieren:"
+],
+[
 "Syndic Exemple",
 "Beispiel-Hausverwaltung"
 ],
@@ -1813,8 +1829,20 @@ export default [
 "offene Anfragen"
 ],
 [
+"depuis la nouvelle icône",
+"über das neue Symbol"
+],
+[
 "délai moyen",
 "durchschnittliche Zeit"
+],
+[
+"en bas de Safari, touchez",
+"unten in Safari tippen Sie auf"
+],
+[
+"et touchez « Activer » : Safari seul ne permet pas les notifications.",
+"und tippen Sie auf „Aktivieren“: Safari allein erlaubt keine Benachrichtigungen."
 ],
 [
 "ex. 2e, ou RDC à 4e",
@@ -1985,6 +2013,10 @@ export default [
 "{0} Benutzer"
 ],
 [
+"« Sur l’écran d’accueil »",
+"„Zum Home-Bildschirm“"
+],
+[
 "· désactivé",
 "· deaktiviert"
 ],
@@ -2103,6 +2135,10 @@ export default [
 [
 "— technicien :",
 "— Techniker:"
+],
+[
+"→ Ajouter. Ouvrez ensuite le portail",
+"→ Hinzufügen. Öffnen Sie das Portal dann"
 ],
 [
 "⚡ Panneaux",
