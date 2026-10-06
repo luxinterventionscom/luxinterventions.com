@@ -1116,7 +1116,7 @@ async function espPushSend(env, target, kind, except = "") {
     await Promise.all((subs.results || []).map(async (s) => {
       if (!ptlPushHostOk(s.endpoint)) return;
       const url = s.app === "ares" ? "/locataires.html" : s.app === "eq" ? "/equipe.html" : "/espace.html";
-      const msg = { title: s.app === "ares" ? "LuxInterventions" : "NOBIS s.a.r.l.", body: (PUSH_TXT[kind] || PUSH_TXT.news)[s.lang] || PUSH_TXT.news.fr, url, tag: kind };
+      const msg = { title: s.app === "ares" ? "LuxInterventions" : s.app === "eq" ? "ARES Équipe" : "NOBIS s.a.r.l.", body: (PUSH_TXT[kind] || PUSH_TXT.news)[s.lang] || PUSH_TXT.news.fr, url, tag: kind };
       try {
         const r = await fetch(s.endpoint, {
           method: "POST",

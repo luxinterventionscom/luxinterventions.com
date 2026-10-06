@@ -9871,5 +9871,77 @@ export default [
 [
 "Intervention occasionnelle — il manque : {0}",
 "Occasional job — missing: {0}"
+],
+[
+"Compte bancaire (pour le payer) — même fiche pour tous les pays",
+"Bank account (to pay them) — same form for every country"
+],
+[
+"Nom de la banque",
+"Bank name"
+],
+[
+"Code BIC / SWIFT",
+"BIC / SWIFT code"
+],
+[
+"L’IBAN contient déjà code banque, guichet, compte et clé (RIB en France, ABI/CAB en Italie, BLZ en Allemagne…) : pas besoin de les écrire à part. Le pays du BIC doit être celui de l’IBAN.",
+"The IBAN already contains bank code, branch, account and check digits (RIB in France, ABI/CAB in Italy, BLZ in Germany…): no need to write them separately. The BIC country must match the IBAN country."
+],
+[
+"Signature :",
+"Signature:"
+],
+[
+"l’intervenant la fait lui-même dans son app (📱 App → lien à lui envoyer), rubrique « ✍️ Ma fiche d’engagement ».",
+"the worker does it themselves in their app (📱 App → send them the link), section “✍️ My engagement form”."
+],
+[
+"Signée par l’intervenant dans son app le",
+"Signed by the worker in their app on"
+],
+[
+"il la signe dans son app (onglet 📱 App → lui envoyer le lien), rubrique « ✍️ Ma fiche d’engagement »",
+"they sign in their app (📱 App tab → send them the link), section “✍️ My engagement form”"
+],
+[
+"IBAN obligatoire",
+"IBAN required"
+],
+[
+"BIC obligatoire",
+"BIC required"
+],
+[
+"Doit commencer par le pays et 2 chiffres (ex. FR76…, LU28…, IT60…)",
+"Must start with the country and 2 digits (e.g. FR76…, LU28…, IT60…)"
+],
+[
+"Pays « {0} » inconnu pour un IBAN",
+"Unknown IBAN country “{0}”"
+],
+[
+"IBAN {0} : {1} caractères attendus, {2} écrits",
+"IBAN {0}: {1} characters expected, {2} typed"
+],
+[
+"Clé de contrôle fausse : un chiffre est mal recopié",
+"Wrong check digits: one digit is mistyped"
+],
+[
+"✓ IBAN {0} valide",
+"✓ IBAN {0} valid"
+],
+[
+"8 ou 11 caractères : 4 lettres banque + 2 lettres pays + 2 (+3) (ex. BNPAFRPPXXX)",
+"8 or 11 characters: 4 bank letters + 2 country letters + 2 (+3) (e.g. BNPAFRPPXXX)"
+],
+[
+"Le BIC est du pays {0}, l’IBAN du pays {1}",
+"The BIC is from {0}, the IBAN from {1}"
+],
+[
+"✓ BIC valide",
+"✓ BIC valid"
 ]
 ];

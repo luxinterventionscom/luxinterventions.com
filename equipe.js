@@ -118,6 +118,16 @@ const L = {
     install: 'Añade la app a la pantalla de inicio: iPhone → Compartir → « Añadir a pantalla de inicio »; Android → ⋮ → « Instalar app ».', logout: 'Cerrar sesión en este móvil', personal: 'Este enlace es personal.', rgpd: 'Tus datos están cifrados. Tu responsable ve lo que envías (estados, notas, fotos, ausencias, datos).', need: 'Escribe por qué no está terminado.',
   },
 };
+// Fiche d'engagement (intervenant occasionnel) : il la lit et la signe ici, avec le doigt
+const ENGT = {
+  fr: { t: 'Ma fiche d’engagement', top: 'Signez votre fiche d’engagement : obligatoire pour être payé.', open: 'Lire et signer', ob: [['Obligation de résultat', 'Je m’engage à exécuter le travail confié dans les règles de l’art, aux jour, heure et lieu convenus, et à le reprendre à mes frais s’il n’est pas conforme.'], ['Dommages', 'Tout dommage causé aux biens ou aux personnes pendant l’intervention est à ma charge et à celle de mon assurance responsabilité civile{a}.'], ['Indépendance', 'Intervention ponctuelle, sans lien de subordination : je déclare moi-même mes revenus et je m’acquitte de mes obligations fiscales et sociales.'], ['Confidentialité', 'Codes, clés et informations des lieux et des occupants restent confidentiels et ne servent qu’à l’intervention.']], rgpd: 'RGPD : {s} utilise mes données (identité, coordonnées, assurance, banque, signature, heures) seulement pour les missions, les paiements et ses obligations légales. Je peux demander à les voir, les corriger ou les effacer.', acc: 'J’ai lu et j’accepte ces obligations', sig: 'Ma signature (avec le doigt)', clr: 'Effacer', send: '✍️ Signer et envoyer', need: 'Cochez « J’ai lu et j’accepte » et signez dans le cadre.', ok: 'Signée ✓ — envoyée à {s}', done: 'Signée le {d}' },
+  it: { t: 'La mia scheda d’ingaggio', top: 'Firma la tua scheda d’ingaggio: obbligatoria per essere pagato.', open: 'Leggi e firma', ob: [['Obbligo di risultato', 'Mi impegno a eseguire il lavoro a regola d’arte, nel giorno, ora e luogo concordati, e a rifarlo a mie spese se non è conforme.'], ['Danni', 'Ogni danno causato a cose o persone durante l’intervento è a mio carico e della mia assicurazione di responsabilità civile{a}.'], ['Indipendenza', 'Intervento occasionale, senza vincolo di subordinazione: dichiaro io i miei redditi e adempio ai miei obblighi fiscali e sociali.'], ['Riservatezza', 'Codici, chiavi e informazioni dei luoghi e degli occupanti restano riservati e servono solo per l’intervento.']], rgpd: 'GDPR: {s} usa i miei dati (identità, contatti, assicurazione, banca, firma, ore) solo per i lavori, i pagamenti e i suoi obblighi di legge. Posso chiedere di vederli, correggerli o cancellarli.', acc: 'Ho letto e accetto questi obblighi', sig: 'La mia firma (con il dito)', clr: 'Cancella', send: '✍️ Firma e invia', need: 'Spunta «Ho letto e accetto» e firma nel riquadro.', ok: 'Firmata ✓ — inviata a {s}', done: 'Firmata il {d}' },
+  de: { t: 'Mein Verpflichtungsblatt', top: 'Unterschreiben Sie Ihr Verpflichtungsblatt: nötig, um bezahlt zu werden.', open: 'Lesen und unterschreiben', ob: [['Erfolgspflicht', 'Ich verpflichte mich, die Arbeit fachgerecht am vereinbarten Tag, zur vereinbarten Zeit und am vereinbarten Ort auszuführen und sie auf meine Kosten nachzubessern, wenn sie nicht ordnungsgemäß ist.'], ['Schäden', 'Jeder während des Einsatzes verursachte Sach- oder Personenschaden geht zu meinen Lasten und zu Lasten meiner Haftpflichtversicherung{a}.'], ['Unabhängigkeit', 'Einmaliger Einsatz ohne Weisungsgebundenheit: Ich melde meine Einkünfte selbst und erfülle meine steuerlichen und sozialen Pflichten.'], ['Vertraulichkeit', 'Codes, Schlüssel und Informationen über Orte und Bewohner bleiben vertraulich und dienen nur dem Einsatz.']], rgpd: 'DSGVO: {s} nutzt meine Daten (Identität, Kontakt, Versicherung, Bank, Unterschrift, Stunden) nur für die Einsätze, Zahlungen und gesetzlichen Pflichten. Ich kann Einsicht, Berichtigung oder Löschung verlangen.', acc: 'Ich habe diese Pflichten gelesen und akzeptiere sie', sig: 'Meine Unterschrift (mit dem Finger)', clr: 'Löschen', send: '✍️ Unterschreiben und senden', need: 'Haken Sie „gelesen und akzeptiert“ an und unterschreiben Sie im Rahmen.', ok: 'Unterschrieben ✓ — an {s} gesendet', done: 'Unterschrieben am {d}' },
+  en: { t: 'My engagement form', top: 'Sign your engagement form: required to be paid.', open: 'Read and sign', ob: [['Obligation of result', 'I undertake to do the job properly, on the agreed day, time and place, and to redo it at my own cost if it is not compliant.'], ['Damage', 'Any damage to property or people during the job is borne by me and my liability insurance{a}.'], ['Independence', 'One-off job, with no employment relationship: I declare my own income and meet my own tax and social obligations.'], ['Confidentiality', 'Codes, keys and information about the places and occupants stay confidential and are used only for the job.']], rgpd: 'GDPR: {s} uses my data (identity, contact, insurance, bank, signature, hours) only for the jobs, payments and its legal obligations. I can ask to see, correct or delete it.', acc: 'I have read and accept these obligations', sig: 'My signature (with your finger)', clr: 'Clear', send: '✍️ Sign and send', need: 'Tick “I have read and accept” and sign in the box.', ok: 'Signed ✓ — sent to {s}', done: 'Signed on {d}' },
+  pt: { t: 'A minha ficha de contratação', top: 'Assine a sua ficha de contratação: obrigatória para receber.', open: 'Ler e assinar', ob: [['Obrigação de resultado', 'Comprometo-me a executar o trabalho segundo as regras da arte, no dia, hora e local combinados, e a refazê-lo à minha custa se não estiver conforme.'], ['Danos', 'Qualquer dano causado a bens ou pessoas durante a intervenção fica a meu cargo e do meu seguro de responsabilidade civil{a}.'], ['Independência', 'Intervenção pontual, sem vínculo de subordinação: declaro eu próprio os meus rendimentos e cumpro as minhas obrigações fiscais e sociais.'], ['Confidencialidade', 'Códigos, chaves e informações dos locais e dos ocupantes permanecem confidenciais e servem apenas para a intervenção.']], rgpd: 'RGPD: {s} usa os meus dados (identidade, contactos, seguro, banco, assinatura, horas) apenas para os trabalhos, pagamentos e obrigações legais. Posso pedir para os ver, corrigir ou apagar.', acc: 'Li e aceito estas obrigações', sig: 'A minha assinatura (com o dedo)', clr: 'Apagar', send: '✍️ Assinar e enviar', need: 'Marque «Li e aceito» e assine no quadro.', ok: 'Assinada ✓ — enviada a {s}', done: 'Assinada em {d}' },
+  es: { t: 'Mi ficha de contratación', top: 'Firma tu ficha de contratación: obligatoria para cobrar.', open: 'Leer y firmar', ob: [['Obligación de resultado', 'Me comprometo a realizar el trabajo correctamente, en el día, hora y lugar acordados, y a rehacerlo a mi cargo si no es conforme.'], ['Daños', 'Todo daño causado a bienes o personas durante la intervención corre a mi cargo y al de mi seguro de responsabilidad civil{a}.'], ['Independencia', 'Intervención puntual, sin relación de subordinación: declaro yo mismo mis ingresos y cumplo mis obligaciones fiscales y sociales.'], ['Confidencialidad', 'Códigos, llaves e información de los lugares y ocupantes son confidenciales y solo sirven para la intervención.']], rgpd: 'RGPD: {s} usa mis datos (identidad, contacto, seguro, banco, firma, horas) solo para los trabajos, los pagos y sus obligaciones legales. Puedo pedir verlos, corregirlos o borrarlos.', acc: 'He leído y acepto estas obligaciones', sig: 'Mi firma (con el dedo)', clr: 'Borrar', send: '✍️ Firmar y enviar', need: 'Marca «He leído y acepto» y firma en el recuadro.', ok: 'Firmada ✓ — enviada a {s}', done: 'Firmada el {d}' },
+};
+let sigUrl = '', sigSent = '';
 const ICONS = { nettoyage: '🧹', reparation: '🔧', gros: '🚚', autre: '📌', entretien: '🔧' };
 let data = null, lang = 'fr', loadErr = '', form = null, flash = '';
 wxRadioInit({ app: 'eq', lang: () => lang, home: () => (data && data.me && data.me.ville) || 'Luxembourg', radio: () => (data && data.radio) || null });
@@ -316,6 +326,39 @@ async function pushInit() {
   render();
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) setBadge(0, '/equipe'); });
+function engCard(d) {
+  const e = ENGT[lang] || ENGT.fr, g = d.eng, s = d.societe.nom || '';
+  const a = g.assur ? ` (${g.assur}${g.police ? ', n° ' + g.police : ''})` : '';
+  const signed = g.signed || sigSent;
+  const when = signed ? new Date(sigSent || g.signAt || Date.now()).toLocaleString(T().loc, { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+  return `<div class="card" id="engCard"><details class="more"${signed ? '' : ' open'}><summary>✍️ ${esc(e.t)}${signed ? ` <span class="ok">✓</span>` : ''}</summary>
+    ${e.ob.map(([k, x]) => `<p style="margin:8px 0 0"><b>${esc(k)} :</b> ${esc(x.replace('{a}', a))}</p>`).join('')}
+    <p class="meta" style="margin:8px 0 0">${esc(e.rgpd.replace('{s}', s))}</p>
+    ${signed ? `<p class="ok" style="margin:10px 0 0"><b>${esc(e.done.replace('{d}', when))}</b></p>` : `<form id="engForm" style="margin-top:10px">
+      <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" name="acc" style="width:22px;height:22px"> ${esc(e.acc)}</label>
+      <p class="meta" style="margin:10px 0 4px">${esc(e.sig)}</p>
+      <canvas class="sig-pad" width="600" height="200" style="display:block;width:100%;aspect-ratio:3/1;background:#fff;border:1.5px dashed #9aa5a0;border-radius:12px;touch-action:none"></canvas>
+      <div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="btn sec sm" data-sig-clear="1">${esc(e.clr)}</button><button class="btn grow" type="submit">${esc(e.send)}</button></div></form>`}
+  </details></div>`;
+}
+// signature avec le doigt : on garde le dessin si l'écran se redessine
+let sigD = null;
+app.addEventListener('pointerdown', (ev) => {
+  const c = ev.target.closest && ev.target.closest('canvas.sig-pad'); if (!c) return;
+  ev.preventDefault(); c.setPointerCapture(ev.pointerId);
+  const r = c.getBoundingClientRect(), x = c.getContext('2d');
+  const pt = (q) => [(q.clientX - r.left) * (c.width / r.width), (q.clientY - r.top) * (c.height / r.height)];
+  x.lineWidth = 3; x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = '#0b1f4d';
+  const [a, b] = pt(ev); x.beginPath(); x.moveTo(a, b); x.lineTo(a + 0.1, b + 0.1); x.stroke();
+  sigD = { c, x, pt };
+});
+app.addEventListener('pointermove', (ev) => { if (!sigD) return; const [a, b] = sigD.pt(ev); sigD.x.lineTo(a, b); sigD.x.stroke(); });
+const sigUp = () => { if (!sigD) return; sigUrl = sigD.c.toDataURL('image/png'); sigD = null; };
+app.addEventListener('pointerup', sigUp); app.addEventListener('pointercancel', sigUp);
+function sigRestore() {
+  const c = app.querySelector('canvas.sig-pad'); if (!c || !sigUrl) return;
+  const im = new Image(); im.onload = () => c.getContext('2d').drawImage(im, 0, 0); im.src = sigUrl;
+}
 function notifCard(t) {
   if (!pushSt || pushSt === 'unsupported' || (pushSt === 'on' && !pushJust)) return '';
   const n = t.nt;
@@ -354,6 +397,8 @@ function render() {
   if (place) out.push(`<div class="card"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">📍 ${esc(place)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(place))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQ(place))}" target="_blank" rel="noopener">${esc(t.x.route)}</a>${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
   else { const top = slot('haut'); if (top) out.push(adBox(top, t)); }
   if (pushSt && pushSt !== 'on') out.push(notifCard(t)); // notifications coupées : rappel en haut (sous la carte)
+  const eg = d.eng && !d.eng.signed && !sigSent ? ENGT[lang] || ENGT.fr : null;
+  if (eg) out.push(`<div class="card warnc"><p style="margin:0 0 8px"><b>✍️ ${esc(eg.top)}</b></p><button class="btn sm" data-eng-open="1">${esc(eg.open)} ↓</button></div>`);
   // météo de la semaine + radio (comme dans l'app des locataires)
   out.push(wxRadioCard());
   const q = getJ(QK());
@@ -417,6 +462,7 @@ function render() {
       <label>${esc(t.note)}</label><textarea name="note" style="min-height:70px"></textarea>
       <label>${esc(t.cert)}</label><input type="file" name="photo" accept="image/*">
       <button class="btn block" style="margin-top:12px" type="submit">${esc(t.send)}</button></form></details></div>`);
+  if (d.eng) out.push(engCard(d));
   out.push(`<div class="card"><details class="more"><summary>👤 ${esc(t.info)}</summary>
       ${[[t.tel, d.me.tel], [t.mail, d.me.mail], [t.adr, d.me.adresse], [t.ville, d.me.ville]].map(([k, v]) => `<div class="row"><span class="meta" style="width:130px">${esc(k)}</span><b class="grow">${esc(v || '—')}</b></div>`).join('')}
       <p class="meta" style="margin:8px 0 0">${esc(t.x.infoRO)}</p></details></div>`);
@@ -428,6 +474,7 @@ function render() {
   const keepMap = document.querySelector('#mapBox iframe');
   const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');
+  sigRestore();
   hydratePb();
   document.querySelectorAll('.vid[data-vsrc], .ticker[data-vsrc]').forEach((v) => {
     const src = v.dataset.vsrc, old = keepVid.get(src);
@@ -457,6 +504,8 @@ app.addEventListener('toggle', (e) => {
   try { localStorage.setItem('eqPubShut', JSON.stringify([...pubShut])); } catch { /* stockage indisponible */ }
 }, true);
 app.addEventListener('click', async (e) => {
+  if (e.target.closest('[data-eng-open]')) { const c = document.getElementById('engCard'); if (c) { c.querySelector('details').open = true; c.scrollIntoView({ block: 'start', behavior: 'smooth' }); } return; }
+  if (e.target.closest('[data-sig-clear]')) { const c = app.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); sigUrl = ''; return; }
   const lb = e.target.closest('[data-lang]');
   if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('eqLang', lang); } catch {} if (pushSt === 'on') pushRefresh('/equipe', pushPost); return render(); }
   if (e.target.closest('[data-logout]')) { e.preventDefault(); try { localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; return render(); }
@@ -523,6 +572,18 @@ app.addEventListener('submit', async (e) => {
     await queue({ k: 'pres', d: today, [f.dataset.pres]: v, at: new Date().toISOString() });
     flash = t.sent;
     render();
+    return;
+  }
+  if (f.id === 'engForm') {
+    const e2 = ENGT[lang] || ENGT.fr;
+    if (!f.acc.checked || !sigUrl) { alert(e2.need); return; }
+    btn.disabled = true; btn.textContent = '…';
+    try {
+      await queue({ k: 'sign', png: sigUrl, lang, at: new Date().toISOString() });
+      sigSent = new Date().toISOString(); sigUrl = '';
+      flash = e2.ok.replace('{s}', data.societe.nom || '');
+    } catch (err) { alert('⚠ ' + (err.message || err)); }
+    render(); scrollTo(0, 0);
     return;
   }
   if (f.id === 'pbForm') {
