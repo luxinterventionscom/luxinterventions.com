@@ -9351,5 +9351,45 @@ export default [
 [
 "Revenir à l’habituel",
 "Back to usual"
+],
+[
+"📒 Comptabilité",
+"📒 Accounting"
+],
+[
+"📊 Statistiques",
+"📊 Statistics"
+],
+[
+"Loyers, occupation, dépenses, interventions",
+"Rents, occupancy, expenses, interventions"
+],
+[
+"Journal, TVA, interventions et export pour le comptable (déclarations)",
+"Journal, VAT, interventions and export for the accountant (tax returns)"
+],
+[
+"Heures réelles",
+"Real hours"
+],
+[
+"arrivée → départ (app de l’équipe)",
+"arrival → departure (team app)"
+],
+[
+"coûts indiqués sur les interventions",
+"costs entered on the interventions"
+],
+[
+"Aucune intervention terminée sur cette période.",
+"No finished intervention in this period."
+],
+[
+"Chaque ligne : où, quoi, qui, heures réelles (l’ouvrier note son arrivée et son départ), avis des locataires et coût. Les factures par intervention arrivent à l’étape suivante.",
+"Each line: where, what, who, real hours (arrival and departure), tenants’ review and cost. Invoices per intervention come in the next step."
+],
+[
+"✅ à clôturer",
+"✅ to close"
 ]
 ];

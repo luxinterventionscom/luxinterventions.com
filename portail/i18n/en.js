@@ -205,6 +205,10 @@ export default [
 "No job in progress."
 ],
 [
+"Aucune intervention terminée ce mois-ci.",
+"No finished intervention this month."
+],
+[
 "Aucune modification",
 "No change"
 ],
@@ -415,6 +419,10 @@ export default [
 [
 "Collab. (demandes)",
 "Staff (requests)"
+],
+[
+"Comptabilité",
+"Accounting"
 ],
 [
 "Compte",
@@ -829,6 +837,14 @@ export default [
 "Job finished"
 ],
 [
+"Interventions terminées",
+"Finished interventions"
+],
+[
+"Interventions terminées, par mois et par gérance",
+"Finished interventions, by month and agency"
+],
+[
 "Intérieur",
 "Inside"
 ],
@@ -911,6 +927,10 @@ export default [
 [
 "Les deux mots de passe ne correspondent pas.",
 "The two passwords do not match."
+],
+[
+"Les montants et factures par intervention apparaîtront ici dès qu’ils seront émis par LuxInterventions.",
+"Amounts and invoices per intervention will appear here once issued by LuxInterventions."
 ],
 [
 "Les photos de la réparation apparaîtront ici.",
@@ -1721,6 +1741,10 @@ export default [
 "Open emergencies"
 ],
 [
+"Urgentes",
+"Urgent"
+],
+[
 "Utilisateur (fait et suit les demandes)",
 "User (makes and follows requests)"
 ],
@@ -1851,6 +1875,10 @@ export default [
 [
 "il y a {0} min",
 "{0} min ago"
+],
+[
+"interventions terminées, par mois",
+"finished interventions, by month"
 ],
 [
 "lien personnel",
@@ -2131,6 +2159,14 @@ export default [
 [
 "📅 Disponibilités",
 "📅 Availability"
+],
+[
+"📊 Statistiques",
+"📊 Statistics"
+],
+[
+"📒 Comptabilité",
+"📒 Accounting"
 ],
 [
 "📲 En réel, LuxInterventions est prévenu de votre message.",

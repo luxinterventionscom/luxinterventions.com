@@ -205,6 +205,10 @@ export default [
 "Ninguna intervención en curso."
 ],
 [
+"Aucune intervention terminée ce mois-ci.",
+"Ninguna intervención terminada este mes."
+],
+[
 "Aucune modification",
 "Ningún cambio"
 ],
@@ -415,6 +419,10 @@ export default [
 [
 "Collab. (demandes)",
 "Colab. (solicitudes)"
+],
+[
+"Comptabilité",
+"Contabilidad"
 ],
 [
 "Compte",
@@ -841,6 +849,14 @@ export default [
 "Intervención terminada"
 ],
 [
+"Interventions terminées",
+"Intervenciones terminadas"
+],
+[
+"Interventions terminées, par mois et par gérance",
+"Intervenciones terminadas, por mes y administración"
+],
+[
 "Intérieur",
 "Interior"
 ],
@@ -923,6 +939,10 @@ export default [
 [
 "Les deux mots de passe ne correspondent pas.",
 "Las dos contraseñas no coinciden."
+],
+[
+"Les montants et factures par intervention apparaîtront ici dès qu’ils seront émis par LuxInterventions.",
+"Los importes y facturas por intervención aparecerán aquí cuando LuxInterventions los emita."
 ],
 [
 "Les photos de la réparation apparaîtront ici.",
@@ -1901,6 +1921,10 @@ export default [
 "hace {0} min"
 ],
 [
+"interventions terminées, par mois",
+"intervenciones terminadas, por mes"
+],
+[
 "lien personnel",
 "enlace personal"
 ],
@@ -2179,6 +2203,14 @@ export default [
 [
 "📅 Disponibilités",
 "📅 Disponibilidad"
+],
+[
+"📊 Statistiques",
+"📊 Estadísticas"
+],
+[
+"📒 Comptabilité",
+"📒 Contabilidad"
 ],
 [
 "📲 En réel, LuxInterventions est prévenu de votre message.",

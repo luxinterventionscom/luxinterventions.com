@@ -9551,5 +9551,53 @@ export default [
 [
 "Revenir à l’habituel",
 "Zum Üblichen zurück"
+],
+[
+"📒 Comptabilité",
+"📒 Buchhaltung"
+],
+[
+"📊 Statistiques",
+"📊 Statistiken"
+],
+[
+"Loyers, occupation, dépenses, interventions",
+"Mieten, Belegung, Ausgaben, Einsätze"
+],
+[
+"Journal, TVA, interventions et export pour le comptable (déclarations)",
+"Journal, MwSt., Einsätze und Export für den Buchhalter (Erklärungen)"
+],
+[
+"🔧 Interventions",
+"🔧 Einsätze"
+],
+[
+"Heures réelles",
+"Tatsächliche Stunden"
+],
+[
+"arrivée → départ (app de l’équipe)",
+"Ankunft → Abfahrt (Team-App)"
+],
+[
+"coûts indiqués sur les interventions",
+"bei den Einsätzen angegebene Kosten"
+],
+[
+"Interventions (Excel / CSV)",
+"Einsätze (Excel / CSV)"
+],
+[
+"Aucune intervention terminée sur cette période.",
+"Kein abgeschlossener Einsatz in diesem Zeitraum."
+],
+[
+"Chaque ligne : où, quoi, qui, heures réelles (l’ouvrier note son arrivée et son départ), avis des locataires et coût. Les factures par intervention arrivent à l’étape suivante.",
+"Jede Zeile: wo, was, wer, tatsächliche Stunden (Ankunft und Abfahrt), Mieterbewertung und Kosten. Rechnungen pro Einsatz folgen im nächsten Schritt."
+],
+[
+"✅ à clôturer",
+"✅ abzuschließen"
 ]
 ];
