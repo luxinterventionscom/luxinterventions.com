@@ -5050,7 +5050,7 @@ export default [
 ],
 [
 "— à choisir —",
-"— to choose —"
+"— choose —"
 ],
 [
 "— 🤒 Maladie",
@@ -9279,5 +9279,77 @@ export default [
 [
 "🔗 Envoyer un nouveau lien",
 "🔗 Send a new link"
+],
+[
+"📅 Planning par semaine (avec les dates)",
+"📅 Weekly planning (with dates)"
+],
+[
+"Semaine du {0} au {1}",
+"Week from {0} to {1}"
+],
+[
+"cette semaine",
+"this week"
+],
+[
+"✏️ Planifier cette semaine",
+"✏️ Plan this week"
+],
+[
+"↩️ Revenir à l’horaire habituel",
+"↩️ Back to usual schedule"
+],
+[
+"modifié",
+"changed"
+],
+[
+"Les jours sans modification suivent l’horaire habituel (plus bas). La personne voit ce planning, avec les dates, dans son app.",
+"Days without changes follow the usual schedule (below). The person sees this planning, with dates, in their app."
+],
+[
+"Horaire habituel — se répète chaque semaine (Lundi = tous les lundis)",
+"Usual schedule — repeats every week (Monday = every Monday)"
+],
+[
+"Laisser vide ce qui n’est pas travaillé. Pour une semaine précise avec les dates (lundi 12 oct., mardi 13 oct.…) : fiche de la personne → Horaires → 📅 Planning par semaine.",
+"Leave empty what is not worked. For a precise week with dates: person’s sheet → Hours → 📅 Weekly planning."
+],
+[
+"Chaque jour avec sa date. Ce qui est déjà rempli vient de l’horaire habituel : changez, ajoutez ou videz (jour non travaillé).",
+"Each day with its date. What is already filled comes from the usual schedule: change, add or clear (day off)."
+],
+[
+"Recopier ce planning aussi sur",
+"Also copy this planning to"
+],
+[
+"cette semaine seulement",
+"this week only"
+],
+[
+"Enregistrer la semaine",
+"Save the week"
+],
+[
+"Planning de la semaine enregistré",
+"Week planning saved"
+],
+[
+"Planning enregistré sur {0} semaines",
+"Planning saved on {0} weeks"
+],
+[
+"Semaine remise à l’horaire habituel",
+"Week reset to usual schedule"
+],
+[
+"Revenir à l’horaire habituel pour cette semaine ?",
+"Back to the usual schedule for this week?"
+],
+[
+"Revenir à l’habituel",
+"Back to usual"
 ]
 ];

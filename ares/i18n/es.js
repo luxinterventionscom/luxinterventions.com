@@ -5154,7 +5154,7 @@ export default [
 ],
 [
 "— à choisir —",
-"— por elegir —"
+"— a elegir —"
 ],
 [
 "— 🤒 Maladie",
@@ -9467,5 +9467,77 @@ export default [
 [
 "🔗 Envoyer un nouveau lien",
 "🔗 Enviar un nuevo enlace"
+],
+[
+"📅 Planning par semaine (avec les dates)",
+"📅 Planificación semanal (con fechas)"
+],
+[
+"Semaine du {0} au {1}",
+"Semana del {0} al {1}"
+],
+[
+"cette semaine",
+"esta semana"
+],
+[
+"✏️ Planifier cette semaine",
+"✏️ Planificar esta semana"
+],
+[
+"↩️ Revenir à l’horaire habituel",
+"↩️ Volver al horario habitual"
+],
+[
+"modifié",
+"modificado"
+],
+[
+"Les jours sans modification suivent l’horaire habituel (plus bas). La personne voit ce planning, avec les dates, dans son app.",
+"Los días sin cambios siguen el horario habitual (abajo). La persona ve esta planificación, con fechas, en su app."
+],
+[
+"Horaire habituel — se répète chaque semaine (Lundi = tous les lundis)",
+"Horario habitual — se repite cada semana (Lunes = todos los lunes)"
+],
+[
+"Laisser vide ce qui n’est pas travaillé. Pour une semaine précise avec les dates (lundi 12 oct., mardi 13 oct.…) : fiche de la personne → Horaires → 📅 Planning par semaine.",
+"Deje vacío lo que no se trabaja. Para una semana precisa con fechas: ficha de la persona → Horarios → 📅 Planificación semanal."
+],
+[
+"Chaque jour avec sa date. Ce qui est déjà rempli vient de l’horaire habituel : changez, ajoutez ou videz (jour non travaillé).",
+"Cada día con su fecha. Lo ya rellenado viene del horario habitual: cambie, añada o vacíe (día libre)."
+],
+[
+"Recopier ce planning aussi sur",
+"Copiar esta planificación también a"
+],
+[
+"cette semaine seulement",
+"solo esta semana"
+],
+[
+"Enregistrer la semaine",
+"Guardar la semana"
+],
+[
+"Planning de la semaine enregistré",
+"Planificación de la semana guardada"
+],
+[
+"Planning enregistré sur {0} semaines",
+"Planificación guardada en {0} semanas"
+],
+[
+"Semaine remise à l’horaire habituel",
+"Semana devuelta al horario habitual"
+],
+[
+"Revenir à l’horaire habituel pour cette semaine ?",
+"¿Volver al horario habitual esta semana?"
+],
+[
+"Revenir à l’habituel",
+"Volver al habitual"
 ]
 ];

@@ -9443,5 +9443,77 @@ export default [
 [
 "🔗 Envoyer un nouveau lien",
 "🔗 Enviar um novo link"
+],
+[
+"📅 Planning par semaine (avec les dates)",
+"📅 Planeamento por semana (com datas)"
+],
+[
+"Semaine du {0} au {1}",
+"Semana de {0} a {1}"
+],
+[
+"cette semaine",
+"esta semana"
+],
+[
+"✏️ Planifier cette semaine",
+"✏️ Planear esta semana"
+],
+[
+"↩️ Revenir à l’horaire habituel",
+"↩️ Voltar ao horário habitual"
+],
+[
+"modifié",
+"alterado"
+],
+[
+"Les jours sans modification suivent l’horaire habituel (plus bas). La personne voit ce planning, avec les dates, dans son app.",
+"Os dias sem alteração seguem o horário habitual (abaixo). A pessoa vê este planeamento, com datas, na sua app."
+],
+[
+"Horaire habituel — se répète chaque semaine (Lundi = tous les lundis)",
+"Horário habitual — repete-se todas as semanas (Segunda = todas as segundas)"
+],
+[
+"Laisser vide ce qui n’est pas travaillé. Pour une semaine précise avec les dates (lundi 12 oct., mardi 13 oct.…) : fiche de la personne → Horaires → 📅 Planning par semaine.",
+"Deixe vazio o que não é trabalhado. Para uma semana precisa com datas: ficha da pessoa → Horários → 📅 Planeamento por semana."
+],
+[
+"Chaque jour avec sa date. Ce qui est déjà rempli vient de l’horaire habituel : changez, ajoutez ou videz (jour non travaillé).",
+"Cada dia com a sua data. O que já está preenchido vem do horário habitual: altere, acrescente ou esvazie (dia sem trabalho)."
+],
+[
+"Recopier ce planning aussi sur",
+"Copiar este planeamento também para"
+],
+[
+"cette semaine seulement",
+"só esta semana"
+],
+[
+"Enregistrer la semaine",
+"Guardar a semana"
+],
+[
+"Planning de la semaine enregistré",
+"Planeamento da semana guardado"
+],
+[
+"Planning enregistré sur {0} semaines",
+"Planeamento guardado em {0} semanas"
+],
+[
+"Semaine remise à l’horaire habituel",
+"Semana reposta no horário habitual"
+],
+[
+"Revenir à l’horaire habituel pour cette semaine ?",
+"Voltar ao horário habitual nesta semana?"
+],
+[
+"Revenir à l’habituel",
+"Voltar ao habitual"
 ]
 ];

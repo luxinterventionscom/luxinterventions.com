@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.81.0';
+const VERSION = '2.82.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -303,6 +303,11 @@ const hm = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? +m
 document.addEventListener('input', (e) => { const w = e.target.closest && e.target.closest('.tph'); if (w) w.classList.toggle('v', !!e.target.value); }, true);
 document.addEventListener('change', (e) => { const w = e.target.closest && e.target.closest('.tph'); if (w) w.classList.toggle('v', !!e.target.value); }, true);
 const hors = (i) => (i.horaires || []).filter((h) => h.de && h.a && h.de !== h.a);
+const dowOf = (iso) => (new Date(iso + 'T12:00:00').getDay() + 6) % 7;
+const okSlot = (h) => h && h.de && h.a && h.de !== h.a;
+const horsOn = (i, iso) => (i.plan && Array.isArray(i.plan[iso]) ? i.plan[iso].filter(okSlot) : hors(i).filter((h) => h.j === dowOf(iso))).slice().sort((a, b) => a.de.localeCompare(b.de));
+const slotsHours = (hs) => hs.reduce((n, h) => { const a = hm(h.de), b = hm(h.a); return n + (a != null && b != null && b > a ? b - a : 0); }, 0);
+const mondayOf = (iso) => addDays(iso, -dowOf(iso));
 const dayHours = (i, dow) => hors(i).filter((h) => h.j === dow).reduce((n, h) => { const a = hm(h.de), b = hm(h.a); return n + (a != null && b != null && b > a ? b - a : 0); }, 0);
 const absOn = (i, d) => (i.absences || []).find((a) => a.debut <= d && (!a.fin || a.fin >= d));
 // Heures du mois : prévues selon l'horaire, moins les jours d'absence (par type)
@@ -311,7 +316,7 @@ function intervMonth(i, y, m) {
   const n = new Date(y, m, 0).getDate();
   for (let d = 1; d <= n; d++) {
     const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const h = dayHours(i, (new Date(y, m - 1, d).getDay() + 6) % 7);
+    const h = slotsHours(horsOn(i, iso));
     out.prevu += h;
     const a = absOn(i, iso);
     if (a && h) { out[a.type in out ? a.type : 'autre'] += h; out[{ maladie: 'jm', conges: 'jc' }[a.type] || 'ja']++; }
@@ -392,6 +397,8 @@ function equipeData(i) {
     };
   };
   const imIds = new Set(hors(i).map((h) => h.immId).filter(Boolean));
+  const jours = {};
+  for (const [iso, hs] of Object.entries(i.plan || {})) if (iso >= addDays(today(), -7) && iso <= to) { jours[iso] = hs.filter(okSlot).map((h) => ({ de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })); hs.forEach((h) => h.immId && imIds.add(h.immId)); }
   for (const x of agenda(from, to).filter((x) => x.kind === 'tache' && x.t.intervenantId === i.id)) {
     if (x.t.immId) imIds.add(x.t.immId);
     tasks[x.t.id] ||= out1(x.t);
@@ -407,7 +414,7 @@ function equipeData(i) {
     societe: { nom: soc.nom || 'NOBIS s.a.r.l.', tel: soc.tel || '', logo: soc.logo || '' },
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '' },
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
-    horaires: hors(i).map((h) => ({ j: h.j, de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })),
+    horaires: hors(i).map((h) => ({ j: h.j, de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })), jours,
     absences: (i.absences || []).filter((a) => !a.fin || a.fin >= addDays(today(), -30)).map((a) => ({ type: a.type, debut: a.debut, fin: a.fin || '' })),
     pres: Object.fromEntries(Object.entries(i.pres || {}).filter(([d]) => d >= addDays(today(), -7))),
     pubs: pubsActives([...imIds], 'eq').map(pubOut),
@@ -804,7 +811,7 @@ function espaceData(l) {
     for (const x of agenda(today(), addDays(today(), 14)).filter((x) => x.kind === 'tache' && x.t.type === 'nettoyage' && x.t.intervenantId && x.t.immId === l.immId && (!x.t.logId || x.t.logId === l.logId))) {
       const i = vault.get('intervenants', x.t.intervenantId);
       if (!i) continue;
-      const h = hors(i).find((hh) => hh.immId === l.immId && hh.j === (new Date(x.d + 'T12:00:00').getDay() + 6) % 7);
+      const h = horsOn(i, x.d).find((hh) => hh.immId === l.immId);
       dates.push({ w: i.id, nom: i.prenom || '', d: x.d, de: h ? h.de : '', a: h ? h.a : '', off: !!absOn(i, x.d) });
     }
     out.menage = { week, dates };
@@ -812,10 +819,7 @@ function espaceData(l) {
     // le titre d'une intervention : parties communes ou son propre logement (rien sur les logements des voisins)
     const visits = [], d0 = today(), dN = addDays(d0, 7);
     for (const i of vault.list('intervenants').filter((x) => !x.archive)) {
-      for (const h of hors(i)) {
-        if (h.immId !== l.immId || !h.de) continue;
-        for (let d = d0; d <= dN; d = addDays(d, 1)) if ((new Date(d + 'T12:00:00').getDay() + 6) % 7 === h.j) visits.push({ d, w: i.id, nom: i.prenom || '', m: i.metier || 'autre', de: h.de, a: h.a || '', off: !!absOn(i, d) });
-      }
+      for (let d = d0; d <= dN; d = addDays(d, 1)) for (const h of horsOn(i, d)) if (h.immId === l.immId) visits.push({ d, w: i.id, nom: i.prenom || '', m: i.metier || 'autre', de: h.de, a: h.a || '', off: !!absOn(i, d) });
     }
     for (const x of agenda(d0, dN).filter((x) => x.kind === 'tache' && x.t.intervenantId && x.t.immId === l.immId && (!x.t.logId || x.t.logId === l.logId) && x.t.statut !== 'fait')) {
       const i = vault.get('intervenants', x.t.intervenantId);
@@ -823,7 +827,7 @@ function espaceData(l) {
       const own = !x.t.logId || x.t.logId === l.logId ? x.t.titre : '';
       const same = visits.find((v) => v.w === i.id && v.d === x.d);
       if (same) { if (own) same.t = own; same.ty = x.t.type || ''; continue; }
-      const h = hors(i).find((hh) => hh.immId === l.immId && hh.j === (new Date(x.d + 'T12:00:00').getDay() + 6) % 7);
+      const h = horsOn(i, x.d).find((hh) => hh.immId === l.immId);
       visits.push({ d: x.d, w: i.id, nom: i.prenom || '', m: i.metier || 'autre', de: h ? h.de : '', a: h ? h.a : '', off: !!absOn(i, x.d), ty: x.t.type || '', t: own });
     }
     out.visits = visits.sort((a, b) => a.d.localeCompare(b.d) || (a.de || '99').localeCompare(b.de || '99'));
@@ -2505,6 +2509,39 @@ function eqScores(year) {
 }
 
 const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
+// Éditeur d'horaire sur 7 jours : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute.
+// slotsOf(j) : créneaux du jour j (0 = lundi) ; title(j) : nom du jour (avec la date pour une semaine précise)
+function horWeekEditor(slotsOf, title) {
+  const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
+  const dayRows = (j) => {
+    const g = { matin: [], aprem: [], soir: [], extra: [] };
+    for (const h of slotsOf(j).slice().sort((a, b) => (a.de || '').localeCompare(b.de || ''))) g[horP(h)].push(h);
+    for (const [p, n] of Object.entries(HOR_MIN)) while (g[p].length < n) g[p].push({});
+    return Object.entries(g).flatMap(([p, arr]) => arr.map((h, n) => ({ p, h, n: n + 1 })));
+  };
+  const imOpts = (cur) => imms.map((im) => html`<option value="${im.id}" ${cur === im.id ? new Raw('selected') : ''}>${im.adresse}</option>`);
+  const horRow = (j, k, p, h, n) => html`<div class="hor-row" data-p="${p}"><span class="hor-p">${HOR_P[p]}${p !== 'extra' && p !== 'soir' ? html`<span class="hor-n"> ${n}</span>` : ''}</span><input type="hidden" name="h${j}_${k}p" value="${p}">
+          <span class="hor-t"><span class="hor-tl">de</span><span class="tph${h.de ? ' v' : ''}"><input name="h${j}_${k}d" type="time" value="${h.de || ''}" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} de"><i>--:--</i></span></span>
+          <span class="hor-t"><span class="hor-tl">à</span><span class="tph${h.a ? ' v' : ''}"><input name="h${j}_${k}a" type="time" value="${h.a || ''}" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} à"><i>--:--</i></span></span>
+          <select name="h${j}_${k}i" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} lieu"><option value="">— lieu —</option>${imOpts(h.immId)}</select></div>`;
+  return html`<div class="full hor-week">${SEMAINE.map((jn, j) => { const rows = dayRows(j), used = rows.filter((r) => r.h.de); return html`<details class="hor-blk" ${used.length ? new Raw('open') : ''}>
+          <summary><b>${title(j)}</b> <span class="meta">${used.length ? used.map((r) => `${r.h.de}–${r.h.a}${r.h.immId ? ' · ' + immName(r.h.immId) : ''}`).join(' / ') : '—'}</span></summary>
+          <div class="hor-grid" data-n="${rows.length}">${rows.map((r, k) => horRow(j, k, r.p, r.h, r.n))}</div>
+          <div class="hor-adds"><button type="button" class="btn sm" data-action="hor-add" data-j="${j}" data-p="matin">${icon('plus')} <span>🌅 Matin</span></button><button type="button" class="btn sm" data-action="hor-add" data-j="${j}" data-p="aprem">${icon('plus')} <span>☀️ Après-midi</span></button><button type="button" class="btn sm" data-action="hor-add" data-j="${j}" data-p="extra">${icon('plus')} <span>Dépannage / supplément</span></button></div></details>`; })}</div>
+        ${Object.keys(HOR_P).map((p) => html`<template data-hor-tpl="${p}">${horRow('__J__', '__K__', p, {}, '__N__')}</template>`)}`;
+}
+// Lecture de l'éditeur : [{ j, de, a, immId, p }]
+function horFromForm(fd) {
+  const g = (k) => String(fd.get(k) || '').trim(), out = [];
+  for (let j = 0; j < 7; j++) for (let k = 0; k < 60; k++) {
+    if (!fd.has(`h${j}_${k}d`)) continue;
+    const de = g(`h${j}_${k}d`), a = g(`h${j}_${k}a`), p = g(`h${j}_${k}p`);
+    if (de && a && de !== a) out.push({ j, de, a, immId: g(`h${j}_${k}i`), p: HOR_P[p] ? p : '' });
+  }
+  return out.sort((x, y) => x.j - y.j || x.de.localeCompare(y.de));
+}
+const dayShort = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+
 const VIEWS = {
   champeq() {
     const cy = new Date().getFullYear();
@@ -3581,22 +3618,8 @@ const SHEETS = {
     };
   },
   'interv-form'({ id }) {
-    const i = id ? vault.get('intervenants', id) : { metier: 'menage', genre: 'interne', cat: 'quotidien' };
+    const i = id ? vault.get('intervenants', id) : { metier: '', genre: 'interne', cat: 'quotidien' };
     if (id && !i) return null;
-    const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
-    // par jour : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute
-    const dayRows = (j) => {
-      const hs = hors(i).filter((h) => h.j === j).sort((a, b) => (a.de || '').localeCompare(b.de || ''));
-      const g = { matin: [], aprem: [], soir: [], extra: [] };
-      for (const h of hs) g[horP(h)].push(h);
-      for (const [p, n] of Object.entries(HOR_MIN)) while (g[p].length < n) g[p].push({});
-      return Object.entries(g).flatMap(([p, arr]) => arr.map((h, n) => ({ p, h, n: n + 1 })));
-    };
-    const imOpts = (cur) => imms.map((im) => html`<option value="${im.id}" ${cur === im.id ? new Raw('selected') : ''}>${im.adresse}</option>`);
-    const horRow = (j, k, p, h, n) => html`<div class="hor-row" data-p="${p}"><span class="hor-p">${HOR_P[p]}${p !== 'extra' && p !== 'soir' ? html`<span class="hor-n"> ${n}</span>` : ''}</span><input type="hidden" name="h${j}_${k}p" value="${p}">
-          <span class="hor-t"><span class="hor-tl">de</span><span class="tph${h.de ? ' v' : ''}"><input name="h${j}_${k}d" type="time" value="${h.de || ''}" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} de"><i>--:--</i></span></span>
-          <span class="hor-t"><span class="hor-tl">à</span><span class="tph${h.a ? ' v' : ''}"><input name="h${j}_${k}a" type="time" value="${h.a || ''}" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} à"><i>--:--</i></span></span>
-          <select name="h${j}_${k}i" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} lieu"><option value="">— lieu —</option>${imOpts(h.immId)}</select></div>`;
     const sel = (name, opts, cur) => html`<select name="${name}">${Object.entries(opts).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</select>`;
     return {
       title: id ? 'Modifier la fiche' : 'Nouvelle personne',
@@ -3606,7 +3629,7 @@ const SHEETS = {
         <label class="field">Catégorie${sel('cat', INT_CATS, i.cat || 'quotidien')}</label>
         ${field('Prénom', 'prenom', i.prenom, { attrs: 'autocomplete="off"' })}
         ${field('Nom (ou nom de la société)', 'nom', i.nom, { required: true, placeholder: 'ex. Rossi, Électricité Schmit…', attrs: 'autocomplete="off"' })}
-        <label class="field">Métier / mansion${sel('metier', METIERS, i.metier)}</label>
+        <label class="field">Métier / mansion<select name="metier" required><option value="">— à choisir —</option>${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${i.metier === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Tarif', 'tarif', i.tarif, { placeholder: 'ex. 25 €/h, forfait 80 €…' })}
         ${field('Adresse', 'adresse', i.adresse, { full: true, attrs: 'autocomplete="off"' })}
         ${field('Code postal et ville', 'ville', i.ville, { placeholder: 'L-1234 Luxembourg' })}
@@ -3614,16 +3637,27 @@ const SHEETS = {
         ${field('Email', 'mail', i.mail, { type: 'email', full: true })}
         ${field('RCS (société)', 'rcs', i.rcs, { placeholder: 'ex. B123456' })}
         ${field('N° TVA (société)', 'tva', i.tva, { placeholder: 'ex. LU12345678' })}
-        <div class="section-label full" style="margin:10px 0 0">Horaire habituel : matin, après-midi, soir (laisser vide ce qui n’est pas travaillé)</div>
-        <div class="full hor-week">${SEMAINE.map((jn, j) => { const rows = dayRows(j), used = rows.filter((r) => r.h.de); return html`<details class="hor-blk" ${used.length ? new Raw('open') : ''}>
-          <summary><b>${jn}</b> <span class="meta">${used.length ? used.map((r) => `${r.h.de}–${r.h.a}${r.h.immId ? ' · ' + immName(r.h.immId) : ''}`).join(' / ') : '—'}</span></summary>
-          <div class="hor-grid" data-n="${rows.length}">${rows.map((r, k) => horRow(j, k, r.p, r.h, r.n))}</div>
-          <div class="hor-adds"><button type="button" class="btn sm" data-action="hor-add" data-j="${j}" data-p="matin">${icon('plus')} <span>🌅 Matin</span></button><button type="button" class="btn sm" data-action="hor-add" data-j="${j}" data-p="aprem">${icon('plus')} <span>☀️ Après-midi</span></button><button type="button" class="btn sm" data-action="hor-add" data-j="${j}" data-p="extra">${icon('plus')} <span>Dépannage / supplément</span></button></div></details>`; })}</div>
-        ${Object.keys(HOR_P).map((p) => html`<template data-hor-tpl="${p}">${horRow('__J__', '__K__', p, {}, '__N__')}</template>`)}
+        <div class="section-label full" style="margin:10px 0 0">Horaire habituel — se répète chaque semaine (Lundi = tous les lundis)</div>
+        <p class="tiny muted full" style="margin:0">Laisser vide ce qui n’est pas travaillé. Pour une semaine précise avec les dates (lundi 12 oct., mardi 13 oct.…) : fiche de la personne → Horaires → 📅 Planning par semaine.</p>
+        ${horWeekEditor((j) => hors(i).filter((h) => h.j === j), (j) => SEMAINE[j])}
         <label class="field full">Notes<textarea name="note" placeholder="Clés confiées, disponibilités…">${i.note || ''}</textarea></label>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-interv" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'plan-week'({ id, preset }) {
+    const i = vault.get('intervenants', id);
+    if (!i) return null;
+    const mon = preset;
+    return {
+      title: `📅 ${intervFull(i)} · semaine du ${dayShort(mon)}`,
+      body: html`<form id="f" data-form="plan-week" class="fields"><input type="hidden" name="id" value="${id}"><input type="hidden" name="mon" value="${mon}">
+        <p class="small muted full" style="margin:0">Chaque jour avec sa date. Ce qui est déjà rempli vient de l’horaire habituel : changez, ajoutez ou videz (jour non travaillé).</p>
+        ${horWeekEditor((j) => horsOn(i, addDays(mon, j)), (j) => `${SEMAINE[j]} ${dayShort(addDays(mon, j))}`)}
+        <label class="field full">Recopier ce planning aussi sur<select name="copy"><option value="0">cette semaine seulement</option>${[1, 2, 3, 4, 6, 8, 12].map((n) => html`<option value="${n}">+ ${n} semaine${n > 1 ? 's' : ''} suivante${n > 1 ? 's' : ''} (jusqu’au ${dayShort(addDays(mon, n * 7 + 6))})</option>`)}</select></label>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer la semaine</button>`,
     };
   },
   'eq-feed'() {
@@ -3664,7 +3698,21 @@ const SHEETS = {
       const d = new Date();
       const months = [0, 1, 2].map((k) => { const x = new Date(d.getFullYear(), d.getMonth() - k, 1); return [x.getFullYear(), x.getMonth() + 1]; });
       const hs = hors(i).slice().sort((a, b) => a.j - b.j || (a.de || '').localeCompare(b.de || ''));
-      body = html`${jobBtn}${jobList}<div class="section-label">Horaire habituel (chaque semaine)</div>
+      const mon = ui.planWk && ui.planWk[id] ? ui.planWk[id] : mondayOf(today());
+      const wkDays = [0, 1, 2, 3, 4, 5, 6].map((j) => addDays(mon, j));
+      const planHtml = html`<div class="section-label">📅 Planning par semaine (avec les dates)</div>
+        <div class="card" style="padding:10px 12px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button class="btn sm" data-action="plan-wk" data-id="${id}" data-d="-7" aria-label="Semaine précédente">◀</button>
+            <b class="grow" style="text-align:center">Semaine du ${dayShort(wkDays[0])} au ${dayShort(wkDays[6])}${mon === mondayOf(today()) ? ' · cette semaine' : ''}</b>
+            <button class="btn sm" data-action="plan-wk" data-id="${id}" data-d="7" aria-label="Semaine suivante">▶</button></div>
+          <div class="list small">${wkDays.map((iso, j) => { const hs = horsOn(i, iso), mod = i.plan && Array.isArray(i.plan[iso]), ab = absOn(i, iso), jb = vault.list('taches').filter((t) => t.intervenantId === id && !t.recur && t.date === iso && t.statut !== 'fait');
+            return html`<div class="row${iso === today() ? ' is-today' : ''}"><span style="min-width:92px"><b>${SEMAINE[j]}</b><span class="meta" style="display:block">${dayShort(iso)}</span></span>
+              <span class="grow">${ab ? html`<span class="badge ${ab.type === 'maladie' ? 'bad' : 'warn'}">${ABS_TYPES[ab.type] || ab.type}</span> ` : ''}${hs.length ? hs.map((h) => html`<span style="display:block">${HOR_P[horP(h)].split(' ')[0]} ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : ''}</span>`) : html`<span class="muted">—</span>`}${jb.map((t) => html`<span style="display:block">🔧 ${t.titre}${t.heure ? ' · ' + t.heure : ''}</span>`)}</span>
+              ${mod ? html`<span class="badge">modifié</span>` : ''}</div>`; })}</div>
+          <div class="actions" style="margin-top:8px"><button class="btn primary" data-action="plan-edit" data-id="${id}" data-d="${mon}">✏️ Planifier cette semaine</button>
+            ${wkDays.some((iso) => i.plan && i.plan[iso]) ? html`<button class="btn ghost" data-action="plan-reset" data-id="${id}" data-d="${mon}">↩️ Revenir à l’horaire habituel</button>` : ''}</div>
+          <p class="tiny muted" style="margin:6px 0 0">Les jours sans modification suivent l’horaire habituel (plus bas). La personne voit ce planning, avec les dates, dans son app.</p></div>`;
+      body = html`${jobBtn}${jobList}${planHtml}<div class="section-label">Horaire habituel (chaque semaine)</div>
         ${hs.length ? html`<div class="list small">${hs.map((h) => html`<div class="row"><span class="grow"><b>${SEMAINE[h.j]}</b> <span>${HOR_P[horP(h)]}</span> ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : ''}</span><span class="meta">${fmtH(dayHours({ horaires: [h] }, h.j))}</span></div>`)}</div>
           <p class="tiny muted">Total par semaine : <b>${fmtH([0, 1, 2, 3, 4, 5, 6].reduce((n, j) => n + dayHours(i, j), 0))}</b></p>` : html`<p class="small muted">Pas d’horaire enregistré. Touchez « Modifier » pour l’ajouter.</p>`}
         <div class="section-label">Heures par mois (horaire − absences)</div>
@@ -3742,7 +3790,7 @@ const SHEETS = {
             <input type="hidden" name="ptl" value="${JSON.stringify(t.ptl)}"><input type="hidden" name="immId" value=""></div>`
           : html`<label class="field">Immeuble<select name="immId" data-input="tache-imm" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === t.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         <label class="field">Où ?<select name="logId" id="tacheLog">${logOptions(t.immId || imms[0].id, t.logId)}</select></label>`}
-        <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${ints.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${intervFull(i)} — ${METIERS[i.metier] || ''}${absOn(i, t.date || today()) ? ' (absent)' : ''}</option>`)}</select></label>
+        <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
         ${hint.length ? html`<p class="tiny muted full" style="margin:-6px 0 0">⭐ = métier conseillé pour cette demande : ${[...new Set(hint)].map((m) => METIERS[m]).join(', ')}${ints.some(fits) ? '' : ' (personne de ce métier dans l’équipe)'}</p>` : ''}
         ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
         ${field('Date', 'date', t.date, { type: 'date' })}
@@ -4937,6 +4985,16 @@ const ACTIONS = {
     grid.querySelector(`[name="h${d.j}_${k}d"]`).focus();
   },
   'edit-interv': (d) => openOver('interv-form', d.id),
+  'plan-wk': (d) => { ui.planWk ||= {}; const cur = ui.planWk[d.id] || mondayOf(today()); ui.planWk[d.id] = addDays(cur, +d.d); ui.sheet.rendered = false; renderSheet(); },
+  'plan-edit': (d) => openOver('plan-week', d.id, null, d.d),
+  async 'plan-reset'(d) {
+    const i = vault.get('intervenants', d.id);
+    if (!i || !(await confirmBox('Revenir à l’horaire habituel pour cette semaine ?', { ok: 'Revenir à l’habituel', detail: `Semaine du ${dayShort(d.d)} : les changements de cette semaine sont effacés.` }))) return;
+    const plan = { ...(i.plan || {}) };
+    for (let j = 0; j < 7; j++) delete plan[addDays(d.d, j)];
+    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, plan }), 'Planning : retour à l’horaire habituel', `${intervFull(i)} — semaine du ${dayShort(d.d)}`, i.id);
+    toast('Semaine remise à l’horaire habituel');
+  },
   'open-interv': (d) => openSheet('interv', d.id),
   'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
   'cp-tab': (d) => { ui.cpTab = d.id; renderView(); },
@@ -5559,16 +5617,28 @@ const FORMS = {
     try { await ptlApi('residences', { method: 'POST', body: b }); } catch (e) { return toast(e.message, { bad: true }); }
     f.reset(); toast('Résidence ajoutée'); await ptlLoad();
   },
+  async 'plan-week'(fd) {
+    const i = vault.get('intervenants', fd.get('id'));
+    const mon = String(fd.get('mon') || '');
+    if (!i || !/^\d{4}-\d{2}-\d{2}$/.test(mon)) return;
+    const slots = horFromForm(fd), copy = Math.max(0, Math.min(12, +fd.get('copy') || 0));
+    const plan = { ...(i.plan || {}) };
+    const same = (a, b) => JSON.stringify(a.map((h) => [h.de, h.a, h.immId || ''])) === JSON.stringify(b.map((h) => [h.de, h.a, h.immId || '']));
+    for (let w = 0; w <= copy; w++) for (let j = 0; j < 7; j++) {
+      const iso = addDays(mon, w * 7 + j), day = slots.filter((h) => h.j === j).map(({ de, a, immId, p }) => ({ de, a, immId, p }));
+      // identique à l'horaire habituel : pas besoin de le garder
+      if (same(day, hors(i).filter((h) => h.j === j).sort((x, y) => x.de.localeCompare(y.de)))) delete plan[iso]; else plan[iso] = day;
+    }
+    // on ne garde pas les semaines passées depuis plus de 3 mois
+    for (const iso of Object.keys(plan)) if (iso < addDays(today(), -92)) delete plan[iso];
+    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, plan }), 'Planning de la semaine', `${intervFull(i)} — semaine du ${dayShort(mon)}${copy ? ` (+${copy})` : ''}`, i.id);
+    toast(copy ? `Planning enregistré sur ${copy + 1} semaines` : 'Planning de la semaine enregistré');
+    goBack();
+  },
   async interv(fd) {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
-    const horaires = [];
-    for (let j = 0; j < 7; j++) for (let k = 0; k < 60; k++) {
-      if (!fd.has(`h${j}_${k}d`)) continue;
-      const de = g(`h${j}_${k}d`), a = g(`h${j}_${k}a`), p = g(`h${j}_${k}p`);
-      if (de && a && de !== a) horaires.push({ j, de, a, immId: g(`h${j}_${k}i`), p: HOR_P[p] ? p : '' });
-    }
-    horaires.sort((x, y) => x.j - y.j || x.de.localeCompare(y.de));
+    const horaires = horFromForm(fd);
     const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), horaires, note: g('note') };
     if (!rec.nom) return;
     if (id) rec.id = id;
