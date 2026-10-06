@@ -9891,5 +9891,169 @@ export default [
 [
 "étage(s) {0}",
 "andar(es) {0}"
+],
+[
+"Horaire — personnel régulier (ménage)",
+"Horário — pessoal fixo (limpeza)"
+],
+[
+"Laisser vide pour les ouvriers : le jour, l’heure et le lieu se donnent à chaque travail (📌 Affectation).",
+"Deixar vazio para os operários: dia, hora e local dão-se em cada trabalho (📌 Atribuição)."
+],
+[
+"Semaine du (date)",
+"Semana de (data)"
+],
+[
+"Même horaire toutes les semaines",
+"Mesmo horário todas as semanas"
+],
+[
+"Engagement",
+"Contratação"
+],
+[
+"intervention occasionnelle",
+"intervenção ocasional"
+],
+[
+"Assurance RC (compagnie)",
+"Seguro RC (companhia)"
+],
+[
+"N° de police",
+"N.º da apólice"
+],
+[
+"IBAN (pour le payer)",
+"IBAN (para lhe pagar)"
+],
+[
+"Payé à l’intervenant : € / heure",
+"Pago ao operário: € / hora"
+],
+[
+"Déplacement payé (€)",
+"Deslocação paga (€)"
+],
+[
+"Obligation de résultat :",
+"Obrigação de resultado:"
+],
+[
+"L’intervenant s’engage à exécuter le travail confié dans les règles de l’art, aux jour, heure et lieu convenus, et à le reprendre à ses frais s’il n’est pas conforme.",
+"O operário compromete-se a executar o trabalho segundo as regras da arte, no dia, hora e local combinados, e a refazê-lo à sua custa se não estiver conforme."
+],
+[
+"Dommages :",
+"Danos:"
+],
+[
+"Tout dommage causé aux biens ou aux personnes pendant l’intervention est à la charge de l’intervenant et de son assurance responsabilité civile{0}.",
+"Qualquer dano causado a bens ou pessoas durante a intervenção fica a cargo do operário e do seu seguro de responsabilidade civil{0}."
+],
+[
+"Indépendance :",
+"Independência:"
+],
+[
+"Intervention ponctuelle, sans lien de subordination : l’intervenant déclare lui-même ses revenus et s’acquitte de ses obligations fiscales et sociales.",
+"Intervenção pontual, sem vínculo de subordinação: o operário declara ele próprio os seus rendimentos e cumpre as suas obrigações fiscais e sociais."
+],
+[
+"Confidentialité :",
+"Confidencialidade:"
+],
+[
+"Codes, clés et informations des lieux et des occupants restent confidentiels et ne servent qu’à l’intervention.",
+"Códigos, chaves e informações dos locais e dos ocupantes permanecem confidenciais e servem apenas para a intervenção."
+],
+[
+"L’intervenant a lu et accepte ces obligations",
+"O operário leu e aceita estas obrigações"
+],
+[
+"Signature de l’intervenant",
+"Assinatura do operário"
+],
+[
+"(avec le doigt ou la souris)",
+"(com o dedo ou o rato)"
+],
+[
+"Signer à nouveau",
+"Assinar de novo"
+],
+[
+"Signée le {0}",
+"Assinada em {0}"
+],
+[
+"Fiche signée le",
+"Ficha assinada em"
+],
+[
+"Pas encore signée",
+"Ainda não assinada"
+],
+[
+"Modifier → signature de l’intervenant",
+"Modificar → assinatura do operário"
+],
+[
+"Fiche d’engagement (PDF)",
+"Ficha de contratação (PDF)"
+],
+[
+"Interventions occasionnelles (ses notes à payer)",
+"Intervenções ocasionais (as suas notas a pagar)"
+],
+[
+"Faire la note",
+"Fazer a nota"
+],
+[
+"Aucun travail terminé pour l’instant.",
+"Nenhum trabalho terminado por agora."
+],
+[
+"Assurance RC",
+"Seguro RC"
+],
+[
+"Intervention occasionnelle",
+"Intervenção ocasional"
+],
+[
+"Heures travaillées",
+"Horas trabalhadas"
+],
+[
+"€ / heure",
+"€ / hora"
+],
+[
+"Déplacement (€)",
+"Deslocação (€)"
+],
+[
+"Matériel avancé (€)",
+"Material adiantado (€)"
+],
+[
+"Matériel : quoi ?",
+"Material: o quê?"
+],
+[
+"Enregistrer + PDF",
+"Guardar + PDF"
+],
+[
+"Indiquez les heures et le tarif",
+"Indique as horas e a tarifa"
+],
+[
+"Intervention occasionnelle — il manque : {0}",
+"Intervenção ocasional — falta: {0}"
 ]
 ];

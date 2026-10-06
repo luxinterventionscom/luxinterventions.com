@@ -672,3 +672,10 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 .sidenav .navbtn { position: relative; }
 .sidenav .navbtn .nav-n { position: static; margin-left: auto; box-shadow: none; }
 .ptl-place { margin: 6px 0 0; } .ptl-place dd a { font-weight: 600; }
+/* signature digitale (fiche d'engagement) */
+.sig-pad { display: block; width: 100%; max-width: 480px; height: auto; aspect-ratio: 3 / 1; background: #fff; border: 1.5px dashed var(--border-strong, #b8b2a7); border-radius: 12px; touch-action: none; cursor: crosshair; margin-bottom: 6px; }
+.sig-img { display: block; max-width: 260px; background: #fff; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 4px; }
+/* jour de la semaine dans la case de la date */
+.dwrap { position: relative; display: block; }
+.dwrap > input { width: 100%; }
+.dwrap .dow { position: absolute; right: 42px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 13px; font-weight: 650; color: var(--accent, #4f46e5); text-transform: capitalize; }

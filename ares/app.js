@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.92.0';
+const VERSION = '2.93.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2574,6 +2574,115 @@ function horFromForm(fd) {
   }
   return out.sort((x, y) => x.j - y.j || x.de.localeCompare(y.de));
 }
+// ── Fiche d'engagement (ouvriers occasionnels, sociétés) : assurance, paiement, obligations, signature digitale ──
+// horaire fixe : ménage régulier, ou personnel interne de gestion quotidienne ; les ouvriers reçoivent jour/heure/lieu à chaque travail
+const horFixed = (i) => i.metier === 'menage' || ((i.genre || 'interne') === 'interne' && (i.cat || 'quotidien') === 'quotidien');
+const ENG_OBL = (i) => [
+  ['Obligation de résultat', 'L’intervenant s’engage à exécuter le travail confié dans les règles de l’art, aux jour, heure et lieu convenus, et à le reprendre à ses frais s’il n’est pas conforme.'],
+  ['Dommages', `Tout dommage causé aux biens ou aux personnes pendant l’intervention est à la charge de l’intervenant et de son assurance responsabilité civile${i.assur ? ` (${i.assur}${i.police ? ', police n° ' + i.police : ''})` : ''}.`],
+  ['Indépendance', 'Intervention ponctuelle, sans lien de subordination : l’intervenant déclare lui-même ses revenus et s’acquitte de ses obligations fiscales et sociales.'],
+  ['Confidentialité', 'Codes, clés et informations des lieux et des occupants restent confidentiels et ne servent qu’à l’intervention.'],
+];
+const ENG_RGPD = (c) => `Protection des données (RGPD — règlement (UE) 2016/679) : ${c.nom} traite les données de l’intervenant (identité, coordonnées, assurance, IBAN, signature, heures de travail) uniquement pour la gestion des missions, les paiements et ses obligations légales. Conservation : durée légale (10 ans pour les pièces comptables). Droits d’accès, de rectification, d’effacement et d’opposition : ${c.email || c.tel || c.nom}. Réclamation possible auprès de la CNPD (Luxembourg).`;
+function engForm(i) {
+  const on = (i.genre || 'interne') !== 'interne';
+  return html`<div class="full eng-wrap" ${on ? '' : new Raw('hidden')}>
+    <div class="section-label" style="margin:10px 0 0">📝 Engagement${(i.genre || '') === 'prive' ? ' — intervention occasionnelle' : ''}</div>
+    <div class="fields" style="margin-top:6px">
+      ${field('Assurance RC (compagnie)', 'assur', i.assur, { placeholder: 'ex. Foyer, La Luxembourgeoise, AXA…' })}
+      ${field('N° de police', 'police', i.police, { attrs: 'autocomplete="off"' })}
+      ${field('IBAN (pour le payer)', 'iban', i.iban, { full: true, placeholder: 'LU.. .... .... .... ....', attrs: 'autocomplete="off"' })}
+      ${field('Payé à l’intervenant : € / heure', 'payeH', i.payeH ?? '', { type: 'number', attrs: money$ })}
+      ${field('Déplacement payé (€)', 'payeDepl', i.payeDepl ?? '', { type: 'number', attrs: money$ })}
+    </div>
+    <div class="note small" style="margin:8px 0">${ENG_OBL(i).map(([t, x]) => html`<div style="margin-bottom:4px"><b>${t} :</b> ${x}</div>`)}<div class="tiny muted" style="margin-top:6px">${ENG_RGPD(factConf())}</div></div>
+    <label class="check"><input type="checkbox" name="accepte" value="1" ${i.signAt ? new Raw('checked') : ''}> L’intervenant a lu et accepte ces obligations</label>
+    <div class="sig-box" style="margin-top:8px"><div class="small" style="margin-bottom:4px"><b>✍️ Signature de l’intervenant</b> <span class="muted">(avec le doigt ou la souris)</span></div>
+      <input type="hidden" name="sign" value="${i.sign || ''}">
+      ${i.sign ? html`<div class="sig-done"><img src="${i.sign}" alt="Signature" class="sig-img"><div class="tiny muted">Signée le ${fmtDateTime(Date.parse(i.signAt) || 0)}</div><button type="button" class="btn sm" data-action="sig-redo">✍️ Signer à nouveau</button></div>`
+        : html`<canvas class="sig-pad" width="600" height="200"></canvas><button type="button" class="btn sm ghost" data-action="sig-clear">Effacer</button>`}
+    </div></div>`;
+}
+// signature : dessin sur le canvas → PNG dans le champ caché « sign »
+let sigDraw = null;
+document.addEventListener('pointerdown', (e) => {
+  const c = e.target.closest && e.target.closest('canvas.sig-pad'); if (!c) return;
+  e.preventDefault(); c.setPointerCapture(e.pointerId);
+  const r = c.getBoundingClientRect(), ctx = c.getContext('2d');
+  const pt = (ev) => [(ev.clientX - r.left) * (c.width / r.width), (ev.clientY - r.top) * (c.height / r.height)];
+  ctx.lineWidth = 3; ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#0b1f4d';
+  const [x, y] = pt(e); ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + 0.1, y + 0.1); ctx.stroke();
+  sigDraw = { c, ctx, pt };
+});
+document.addEventListener('pointermove', (e) => { if (!sigDraw) return; const [x, y] = sigDraw.pt(e); sigDraw.ctx.lineTo(x, y); sigDraw.ctx.stroke(); });
+const sigEnd = () => { if (!sigDraw) return; const { c } = sigDraw; sigDraw = null; const h = c.closest('.sig-box').querySelector('[name=sign]'); h.value = c.toDataURL('image/png'); sheetDirty = true; };
+document.addEventListener('pointerup', sigEnd); document.addEventListener('pointercancel', sigEnd);
+// PNG (signature) → JPEG sur fond blanc pour le PDF
+async function sigJpeg(url) {
+  if (!url) return null;
+  const im = new Image(); im.src = url; await im.decode();
+  const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0);
+  const b = atob(c.toDataURL('image/jpeg', 0.9).split(',')[1]);
+  return { bytes: Uint8Array.from(b, (ch) => ch.charCodeAt(0)), w: c.width, h: c.height };
+}
+const frD = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+// pied de page : obligations + RGPD (sur la fiche d'engagement et sur chaque note « intervention occasionnelle »)
+function engFoot(p, i, c, y, X, R) {
+  p.line(X, y, R, y, { w: 0.6 }); y += 14;
+  for (const [t, x] of ENG_OBL(i)) y += p.wrap(X, y, `${t} : ${x}`, R - X, { size: 7.5 }) + 2;
+  y += 2; y += p.wrap(X, y, ENG_RGPD(c), R - X, { size: 7, color: [0.35, 0.35, 0.35] });
+  return y;
+}
+async function engPdf(i) {
+  const c = factConf(), p = makePdf(), X = 48, R = 547;
+  p.text(X, 64, c.nom, { size: 15, bold: true }).text(X, 80, [c.adresse, c.ville].filter(Boolean).join(', '), { size: 9 }).text(X, 92, `RCS ${c.rcs} · TVA ${c.tva}${c.tel ? ' · ' + c.tel : ''}`, { size: 9 });
+  p.text(R, 64, 'FICHE D’ENGAGEMENT', { size: 13, bold: true, align: 'right' }).text(R, 80, INT_GENRES[i.genre || 'prive'] || '', { size: 9.5, align: 'right' });
+  let y = 124;
+  const kv = (k, v) => { if (!v && v !== 0) return; p.text(X, y, k, { size: 9, color: [0.4, 0.4, 0.4] }); y += p.wrap(X + 150, y, String(v), R - X - 150, { size: 10, bold: true }) + 4; };
+  p.rect(X, y - 12, R - X, 18, { fill: [0.15, 0.2, 0.35] }).text(X + 6, y, 'Intervenant', { size: 10, bold: true, color: [1, 1, 1] }); y += 22;
+  kv('Nom', intervFull(i)); kv('Métier', METIERS[i.metier] || i.metier || ''); kv('Adresse', [i.adresse, i.ville].filter(Boolean).join(', '));
+  kv('Téléphone / email', [i.tel, i.mail].filter(Boolean).join(' · ')); kv('RCS / N° TVA', [i.rcs, i.tva].filter(Boolean).join(' · '));
+  kv('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')); kv('IBAN', i.iban);
+  kv('Rémunération', [i.payeH ? eur(i.payeH) + ' / heure' : i.tarif || '', i.payeDepl ? 'déplacement ' + eur(i.payeDepl) : ''].filter(Boolean).join(' · '));
+  y += 8; p.rect(X, y - 12, R - X, 18, { fill: [0.15, 0.2, 0.35] }).text(X + 6, y, 'Obligations de l’intervenant', { size: 10, bold: true, color: [1, 1, 1] }); y += 22;
+  for (const [t, x] of ENG_OBL(i)) { p.text(X, y, t, { size: 9.5, bold: true }); y += 13; y += p.wrap(X, y, x, R - X, { size: 9.5 }) + 6; }
+  y += 6; y += p.wrap(X, y, ENG_RGPD(c), R - X, { size: 8.5, color: [0.3, 0.3, 0.3] }) + 14;
+  p.text(X, y, 'Lu et approuvé — signature de l’intervenant', { size: 9, bold: true }); p.text(R, y, `Pour ${c.nom}`, { size: 9, bold: true, align: 'right' }); y += 8;
+  const sg = await sigJpeg(i.sign);
+  if (sg) { const w = 180, h = (w * sg.h) / sg.w; p.image(X, y, w, h, sg.bytes, sg.w, sg.h); y += h + 4; p.text(X, y + 8, `Signé électroniquement le ${new Date(Date.parse(i.signAt) || Date.now()).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`, { size: 8, color: [0.4, 0.4, 0.4] }); } else p.text(X, y + 30, '(pas encore signée)', { size: 9, color: [0.6, 0.1, 0.1] });
+  return p.bytes();
+}
+// note de l'intervenant occasionnel à ARES : « INTERVENTION OCCASIONNELLE » (une par travail terminé)
+async function occPdf(t, i, o) {
+  const c = factConf(), p = makePdf(), X = 48, R = 547;
+  const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id) || {};
+  p.text(X, 64, intervFull(i), { size: 15, bold: true }).text(X, 80, [i.adresse, i.ville].filter(Boolean).join(', '), { size: 9 }).text(X, 92, [i.tel, i.mail].filter(Boolean).join(' · '), { size: 9 });
+  if (i.rcs || i.tva) p.text(X, 104, [i.rcs ? 'RCS ' + i.rcs : '', i.tva ? 'TVA ' + i.tva : ''].filter(Boolean).join(' · '), { size: 9 });
+  p.text(R, 64, 'INTERVENTION OCCASIONNELLE', { size: 11.5, bold: true, align: 'right' }).text(R, 82, `N° ${o.no}`, { size: 11, bold: true, align: 'right' }).text(R, 98, `Date : ${frD(o.d)}`, { size: 9, align: 'right' });
+  p.rect(X, 124, 250, 60, { fill: [0.96, 0.96, 0.96] }).text(X + 10, 140, 'Adressée à', { size: 8, color: [0.4, 0.4, 0.4] }).text(X + 10, 156, c.nom, { size: 11, bold: true });
+  p.text(X + 10, 170, [c.adresse, c.ville].filter(Boolean).join(', '), { size: 9 }).text(X + 10, 181, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8.5 });
+  p.text(X + 270, 140, 'Travail effectué', { size: 8, color: [0.4, 0.4, 0.4] }).text(X + 270, 156, String(t.titre || '').slice(0, 55), { size: 10, bold: true });
+  p.wrap(X + 270, 170, `${t.ptl ? [t.ptl.res, t.ptl.adr, t.ptl.lieu].filter(Boolean).join(' — ') : placeName(t)} · ${frD(L.d || t.doneDate || t.date || o.d)}${L.arr ? ` (${L.arr}–${L.dep || ''})` : ''}`, 230, { size: 9 });
+  let y = 214;
+  p.rect(X, y - 12, R - X, 18, { fill: [0.15, 0.2, 0.35] });
+  for (const [x, l, al] of [[X + 6, 'Désignation', 'left'], [R - 170, 'Qté', 'right'], [R - 90, 'Prix unit.', 'right'], [R - 6, 'Total', 'right']]) p.text(x, y, l, { size: 9, bold: true, color: [1, 1, 1], align: al });
+  y += 22;
+  const row = (lib, q, pu, tot) => { p.text(X + 6, y, lib, { size: 9.5 }); if (q !== '') p.text(R - 170, y, q, { size: 9.5, align: 'right' }); if (pu !== '') p.text(R - 90, y, pu, { size: 9.5, align: 'right' }); p.text(R - 6, y, tot, { size: 9.5, align: 'right' }); y += 19; p.line(X, y - 10, R, y - 10, { w: 0.4 }); };
+  row(`Main-d'œuvre — ${METIERS[i.metier] || 'travail'}`, String(o.h).replace('.', ',') + ' h', eur(o.taux), eur(r2(o.h * o.taux)));
+  if (o.depl) row('Déplacement', '1', eur(o.depl), eur(o.depl));
+  if (o.mat) row(`Matériel avancé${o.matLib ? ' : ' + o.matLib : ''}`, '1', eur(o.mat), eur(o.mat));
+  y += 6; p.text(R - 120, y, 'Total à payer', { size: 11, bold: true, align: 'right' }).text(R - 6, y, eur(o.tot), { size: 11, bold: true, align: 'right' }); y += 16;
+  y += p.wrap(X, y, i.tva ? 'TVA : selon le régime de l’intervenant.' : 'TVA non applicable — intervenant non assujetti (travail occasionnel).', R - X, { size: 9 }) + 6;
+  if (i.iban) { p.rect(X, y, R - X, 24, { fill: [0.96, 0.97, 1] }).text(X + 10, y + 16, `Paiement par virement — IBAN : ${i.iban} — référence : ${o.no}`, { size: 9.5, bold: true }); y += 34; }
+  if (o.note) y += p.wrap(X, y, 'Note : ' + o.note, R - X, { size: 9 }) + 6;
+  p.text(X, y + 6, 'Signature de l’intervenant', { size: 9, bold: true }); y += 12;
+  const sg = await sigJpeg(i.sign);
+  if (sg) { const w = 150, h = (w * sg.h) / sg.w; p.image(X, y, w, h, sg.bytes, sg.w, sg.h); y += h; }
+  y = Math.max(y + 16, 640);
+  engFoot(p, i, c, y, X, R);
+  return p.bytes();
+}
 // ── Factures des interventions (ARES INVEST S.A. — marque LuxInterventions) → la gérance la télécharge dans le portail ──
 const FACT_DEF = { nom: 'ARES INVEST S.A.', marque: 'LuxInterventions', adresse: '37, Val Saint André', ville: 'L-1128 Luxembourg', rcs: 'B225245', tva: 'LU30440727', tel: '+352 691 423 943', email: '', iban: '', bic: '', banque: '', taux: 17, delai: 30, seq: 0 };
 // Régime de TVA d'un client (gérance) : taux normal, taux particulier, autoliquidation (client assujetti d'un autre pays de l'UE), non applicable
@@ -3419,6 +3528,17 @@ dashboard() {
 
 // ───────────────────────── Feuilles (détails & formulaires) ─────────────────────────
 const sheetEl = $('#sheet');
+// jour de la semaine écrit dans la case de chaque date (« lundi »), dans la langue de l'app
+const dowOfIso = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v || '') ? new Date(v + 'T12:00:00').toLocaleDateString(LOCALES[getLang()] || 'fr-FR', { weekday: 'long' }) : '');
+function dowTags(root) {
+  for (const inp of root.querySelectorAll('input[type=date]:not([data-dow])')) {
+    inp.dataset.dow = '1';
+    const w = document.createElement('span'); w.className = 'dwrap'; inp.replaceWith(w); w.appendChild(inp);
+    const t = document.createElement('span'); t.className = 'dow'; t.setAttribute('aria-hidden', 'true'); t.textContent = dowOfIso(inp.value); w.appendChild(t);
+  }
+}
+document.addEventListener('input', (e) => { if (e.target.matches && e.target.matches('input[type=date][data-dow]')) { const t = e.target.parentNode.querySelector('.dow'); if (t) t.textContent = dowOfIso(e.target.value); } });
+new MutationObserver(() => dowTags(document.body)).observe(document.body, { childList: true, subtree: true });
 // Saisie pas encore enregistrée dans la fenêtre : on demande avant de la fermer (sinon tout est perdu)
 let sheetDirty = false;
 sheetEl.addEventListener('input', (e) => { const el = e.target; if (el.closest('form') && !el.dataset.input && !['hidden', 'search'].includes(el.type)) sheetDirty = true; });
@@ -3674,6 +3794,28 @@ const SHEETS = {
       foot: html`<a class="btn" href="/portail.html#/t/${t.id}" target="_blank" rel="noopener">${icon('eye')} Ouvrir dans le portail</a><button class="btn primary" data-action="close-sheet">Fermer</button>`,
     };
   },
+  // note « INTERVENTION OCCASIONNELLE » d'un travail terminé (heures réelles × tarif payé)
+  'occ-fact'({ id }) {
+    const t = vault.get('taches', id), i = t && vault.get('intervenants', t.intervenantId);
+    if (!t || !i) return null;
+    const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id) || {};
+    const o = t.occ || { h: L.min ? r2(L.min / 60) : '', taux: i.payeH ?? '', depl: i.payeDepl ?? '', mat: '', matLib: '', note: '' };
+    return {
+      title: `🧾 Intervention occasionnelle${t.occ ? ' · ' + t.occ.no : ''}`,
+      narrow: true,
+      body: html`<form id="f" data-form="occ" class="fields"><input type="hidden" name="id" value="${id}">
+        <p class="small full" style="margin:0"><b>${intervFull(i)}</b> → ${factConf().nom}<br>${t.titre} · ${placeName(t)}${L.arr ? html` · 🕒 ${L.arr}–${L.dep || ''}` : ''}</p>
+        ${field('Heures travaillées', 'h', o.h, { type: 'number', attrs: 'step="0.25" min="0" inputmode="decimal" required' })}
+        ${field('€ / heure', 'taux', o.taux, { type: 'number', attrs: money$ + ' required' })}
+        ${field('Déplacement (€)', 'depl', o.depl, { type: 'number', attrs: money$ })}
+        ${field('Matériel avancé (€)', 'mat', o.mat, { type: 'number', attrs: money$ })}
+        ${field('Matériel : quoi ?', 'matLib', o.matLib, { full: true })}
+        <label class="field full">Note<textarea name="note">${o.note || ''}</textarea></label>
+        ${i.sign ? '' : html`<div class="alert warn full">⚠️<div>La fiche de ${intervFull(i)} n’est pas signée : la note sortira sans signature.</div></div>`}
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">🧾 Enregistrer + PDF</button>`,
+    };
+  },
   // affectation depuis la fiche d'un ouvrier : les demandes d'intervention en cours
   'ger-aff'({ id }) {
     const i = vault.get('intervenants', id);
@@ -3827,11 +3969,11 @@ const SHEETS = {
       title: id ? 'Modifier la fiche' : 'Nouvelle personne',
       body: html`<form id="f" data-form="interv" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        <label class="field">Type${sel('genre', INT_GENRES, i.genre || 'interne')}</label>
-        <label class="field">Catégorie${sel('cat', INT_CATS, i.cat || 'quotidien')}</label>
+        <label class="field">Type<select name="genre" data-input="interv-kind">${Object.entries(INT_GENRES).map(([k, v]) => html`<option value="${k}" ${(i.genre || 'interne') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        <label class="field">Catégorie<select name="cat" data-input="interv-kind">${Object.entries(INT_CATS).map(([k, v]) => html`<option value="${k}" ${(i.cat || 'quotidien') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Prénom', 'prenom', i.prenom, { attrs: 'autocomplete="off"' })}
         ${field('Nom (ou nom de la société)', 'nom', i.nom, { required: true, placeholder: 'ex. Rossi, Électricité Schmit…', attrs: 'autocomplete="off"' })}
-        <label class="field">Métier / mansion<select name="metier" required><option value="">— à choisir —</option>${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${i.metier === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        <label class="field">Métier / mansion<select name="metier" required data-input="interv-kind"><option value="">— à choisir —</option>${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${i.metier === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Tarif', 'tarif', i.tarif, { placeholder: 'ex. 25 €/h, forfait 80 €…' })}
         ${field('Facturé au client : € / heure (HT)', 'tauxH', i.tauxH ?? '', { type: 'number', attrs: money$ })}
         ${field('Déplacement facturé (€ HT)', 'depl', i.depl ?? '', { type: 'number', attrs: money$ })}
@@ -3841,9 +3983,12 @@ const SHEETS = {
         ${field('Email', 'mail', i.mail, { type: 'email', full: true })}
         ${field('RCS (société)', 'rcs', i.rcs, { placeholder: 'ex. B123456' })}
         ${field('N° TVA (société)', 'tva', i.tva, { placeholder: 'ex. LU12345678' })}
-        <div class="section-label full" style="margin:10px 0 0">Horaire habituel — se répète chaque semaine (Lundi = tous les lundis)</div>
-        <p class="tiny muted full" style="margin:0">Laisser vide ce qui n’est pas travaillé. Pour une semaine précise avec les dates (lundi 12 oct., mardi 13 oct.…) : fiche de la personne → Horaires → 📅 Planning par semaine.</p>
-        ${horWeekEditor((j) => hors(i).filter((h) => h.j === j), (j) => SEMAINE[j])}
+        ${engForm(i)}
+        ${(() => { const wk = mondayOf(today()), rep = !id || hors(i).length > 0; return html`<div class="full hor-wrap" ${horFixed(i) ? '' : new Raw('hidden')}><div class="section-label" style="margin:10px 0 0">📅 Horaire — personnel régulier (ménage)</div>
+        <p class="tiny muted" style="margin:0 0 6px">Laisser vide pour les ouvriers : le jour, l’heure et le lieu se donnent à chaque travail (📌 Affectation).</p>
+        <div class="fields"><label class="field">Semaine du (date)<input type="date" name="hwk" value="${today()}" data-input="hor-wk"></label>
+          <label class="check" style="align-self:end"><input type="checkbox" name="hrep" value="1" ${rep ? new Raw('checked') : ''}> 🔁 Même horaire toutes les semaines</label></div>
+        ${horWeekEditor((j) => horsOn(i, addDays(wk, j)), (j) => `${SEMAINE[j]} ${frD(addDays(wk, j))}`)}</div>`; })()}
         <label class="field full">Notes<textarea name="note" placeholder="Clés confiées, disponibilités…">${i.note || ''}</textarea></label>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-interv" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
@@ -3952,7 +4097,18 @@ const SHEETS = {
           ${i.tel ? kvRow('Téléphone', html`<a href="tel:${tel}">${i.tel}</a>`) : ''}
           ${i.mail ? kvRow('Email', html`<a href="mailto:${i.mail}">${i.mail}</a>`) : ''}
           ${i.rcs ? kvRow('RCS', i.rcs) : ''}${i.tva ? kvRow('N° TVA', i.tva) : ''}
+          ${i.assur || i.police ? kvRow('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')) : ''}${i.iban ? kvRow('IBAN', i.iban) : ''}
+          ${i.payeH ? kvRow('Payé', `${eur(i.payeH)} / heure${i.payeDepl ? ' · déplacement ' + eur(i.payeDepl) : ''}`) : ''}
         </dl>
+        ${(i.genre || 'interne') !== 'interne' ? (() => {
+          const done = vault.list('taches').filter((t) => t.intervenantId === id && !t.recur && (t.statut === 'fait' || t.fini)).sort((a, b) => (b.doneDate || b.date || '').localeCompare(a.doneDate || a.date || ''));
+          return html`<div class="section-label">📝 Engagement</div>
+          <div class="alert ${i.sign ? 'info' : 'warn'}" style="margin-bottom:8px">${i.sign ? '✍️' : '⚠️'}<div>${i.sign ? html`Fiche signée le <b>${fmtDateTime(Date.parse(i.signAt) || 0)}</b>` : html`<b>Pas encore signée</b> — Modifier → signature de l’intervenant`}</div></div>
+          <button class="btn block" data-action="eng-pdf" data-id="${id}" style="margin-bottom:12px">📄 Fiche d’engagement (PDF)</button>
+          ${i.genre === 'prive' ? html`<div class="section-label">🧾 Interventions occasionnelles (ses notes à payer)</div>
+          ${done.length ? html`<div class="list small">${done.map((t) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${t.titre}</span><span class="meta">${placeName(t)} · ${fmtDate(t.doneDate || (t.fini && t.fini.d) || t.date)}${t.occ ? html` · <b>${t.occ.no}</b> · ${eur(t.occ.tot)}` : ''}</span></span>
+            ${t.occ ? html`<button class="btn sm" data-action="occ-dl" data-id="${t.id}">⬇️ PDF</button>` : ''}<button class="btn sm ${t.occ ? 'ghost' : 'primary'}" data-action="occ-open" data-id="${t.id}">${t.occ ? '✏️' : '🧾 Faire la note'}</button></div>`)}</div>` : html`<p class="small muted">Aucun travail terminé pour l’instant.</p>`}` : ''}`;
+        })() : ''}
         ${(() => { const cm = (i.evals || []).filter((e) => (e.tags || []).length || e.note).slice(-8).reverse(); return cm.length ? html`<div class="section-label">Commentaires des locataires</div><div class="list small">${cm.map((e) => html`<div class="row"><span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDate(e.d)} · ${(vault.get('locataires', e.locId) && fullName(vault.get('locataires', e.locId))) || '—'}</span><b>${MEN_EVAL[e.v] || ''}</b>${(e.tags || []).map((k) => html` · <span>${MEN_TAGS[k] || k}</span>`)}${e.note ? html`<span style="display:block">« ${e.note} »</span>` : ''}</span></div>`)}</div>` : ''; })()}
         ${i.note ? html`<p class="small" style="white-space:pre-wrap">${i.note}</p>` : ''}
         ${tasks.length ? html`<div class="section-label">Interventions en cours</div><div class="list small">${tasks.map((t) => html`<button class="row" data-action="edit-tache" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.titre}</span><span class="meta">${placeName(t)} · ${t.recur ? 'récurrent' : fmtDate(t.date)}</span></span></button>`)}</div>` : ''}`;
@@ -5388,6 +5544,11 @@ const ACTIONS = {
   },
   'new-tache': (d) => openOver('tache-form', null, null, d.imm || ui.immFilter || ''),
   'edit-tache': (d) => openOver('tache-form', d.id),
+  'sig-clear': (d, el) => { const b = el.closest('.sig-box'), c = b.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); b.querySelector('[name=sign]').value = ''; },
+  'sig-redo': (d, el) => { const b = el.closest('.sig-box'); b.querySelector('[name=sign]').value = ''; const done = b.querySelector('.sig-done'); const c = document.createElement('canvas'); c.className = 'sig-pad'; c.width = 600; c.height = 200; done.replaceWith(c); },
+  async 'eng-pdf'(d) { const i = vault.get('intervenants', d.id); if (!i) return; download(`Fiche engagement ${intervFull(i)}.pdf`, await engPdf(i), 'application/pdf'); },
+  'occ-open': (d) => openOver('occ-fact', d.id),
+  async 'occ-dl'(d) { const t = vault.get('taches', d.id), i = t && vault.get('intervenants', t.intervenantId); if (!t || !t.occ || !i) return; download(`Intervention occasionnelle ${t.occ.no}.pdf`, await occPdf(t, i, t.occ), 'application/pdf'); },
   'interv-aff': (d) => { ui.ptl.data = null; ui.ptl.err = ''; openOver('ger-aff', d.id); },
   'ger-aff-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; ptlLoad(); },
   'interv-job': (d) => { const i = vault.get('intervenants', d.id); openOver('tache-form', null, null, { intervenantId: d.id, type: i && i.metier === 'menage' ? 'nettoyage' : 'reparation' }); },
@@ -5974,11 +6135,46 @@ const FORMS = {
     toast(copy ? `Planning enregistré sur ${copy + 1} semaines` : 'Planning de la semaine enregistré');
     goBack();
   },
+  async occ(fd) {
+    const t = vault.get('taches', fd.get('id')), i = t && vault.get('intervenants', t.intervenantId);
+    if (!t || !i) return;
+    const o = { h: num(fd.get('h')), taux: num(fd.get('taux')), depl: num(fd.get('depl')), mat: num(fd.get('mat')), matLib: String(fd.get('matLib') || '').trim(), note: String(fd.get('note') || '').trim() };
+    if (!(o.h > 0) || !(o.taux > 0)) return toast('Indiquez les heures et le tarif', { bad: true });
+    o.tot = r2(o.h * o.taux + o.depl + o.mat);
+    // numéro : OCC-AAAA-0001 (suite par année, toutes personnes)
+    const y = today().slice(0, 4), cf = vault.get('reglages', 'occ') || {};
+    if (t.occ && t.occ.no) { o.no = t.occ.no; o.d = t.occ.d; } else { const n = (cf.y === y ? cf.n || 0 : 0) + 1; o.no = `OCC-${y}-${String(n).padStart(4, '0')}`; o.d = today(); await vault.mutate((tx) => tx.put('reglages', { id: 'occ', y, n }), 'Numérotation', o.no); }
+    await vault.mutate((tx) => tx.put('taches', { id: t.id, occ: o }), 'Intervention occasionnelle', `${o.no} — ${intervFull(i)} — ${eur(o.tot)}`, t.immId);
+    download(`Intervention occasionnelle ${o.no}.pdf`, await occPdf(t, i, o), 'application/pdf');
+    toast(`🧾 ${o.no} — ${eur(o.tot)}`);
+    goBack();
+  },
   async interv(fd) {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
-    const horaires = horFromForm(fd);
-    const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), horaires, note: g('note') };
+    const prev = id ? vault.get('intervenants', id) || {} : {};
+    const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), note: g('note') };
+    // horaire : chaque semaine (horaire fixe) ou seulement la semaine choisie, avec ses dates
+    const slots = horFromForm(fd), wk = /^\d{4}-\d{2}-\d{2}$/.test(g('hwk')) ? mondayOf(g('hwk')) : mondayOf(today());
+    if (!horFixed(rec)) rec.horaires = prev.horaires || [];
+    else if (fd.get('hrep') === '1') rec.horaires = slots;
+    else {
+      rec.horaires = prev.horaires || [];
+      const plan = { ...(prev.plan || {}) };
+      for (let j = 0; j < 7; j++) plan[addDays(wk, j)] = slots.filter((h) => h.j === j).map(({ de, a, immId, p }) => ({ de, a, immId, p }));
+      rec.plan = plan;
+    }
+    // engagement : assurance, paiement, obligations acceptées, signature digitale
+    if (rec.genre !== 'interne') {
+      Object.assign(rec, { assur: g('assur'), police: g('police'), iban: g('iban').toUpperCase(), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')) });
+      const sign = /^data:image\/png;base64,/.test(g('sign')) ? g('sign') : '';
+      if (rec.genre === 'prive') {
+        const miss = [!rec.assur && 'assurance', !rec.police && 'n° de police', fd.get('accepte') !== '1' && 'obligations acceptées', !sign && 'signature'].filter(Boolean);
+        if (miss.length) return toast('Intervention occasionnelle — il manque : ' + miss.join(', '), { bad: true });
+      }
+      rec.sign = sign;
+      rec.signAt = sign ? (sign === prev.sign && prev.signAt ? prev.signAt : new Date().toISOString()) : '';
+    }
     if (!rec.nom) return;
     if (id) rec.id = id;
     await vault.mutate((tx) => tx.put('intervenants', rec), id ? 'Intervenant modifié' : 'Intervenant ajouté', `${intervFull(rec)} (${METIERS[rec.metier]})`);
@@ -6476,6 +6672,17 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('change', (e) => {
   const k = e.target.dataset.input;
+  // fiche d'une personne : horaire seulement pour le personnel régulier ; engagement pour occasionnels et sociétés
+  if (k === 'interv-kind') {
+    const f = e.target.form, g = f.genre.value, c = f.cat.value;
+    const hw = f.querySelector('.hor-wrap'); if (hw) hw.hidden = !horFixed({ genre: g, cat: c, metier: f.metier.value });
+    const ew = f.querySelector('.eng-wrap'); if (ew) ew.hidden = g === 'interne';
+  }
+  // semaine choisie (date du téléphone par défaut) : les jours affichent leur date
+  if (k === 'hor-wk' && /^\d{4}-\d{2}-\d{2}$/.test(e.target.value)) {
+    const mon = mondayOf(e.target.value);
+    e.target.form.querySelectorAll('.hor-blk > summary > b').forEach((b, j) => { b.textContent = `${SEMAINE[j]} ${frD(addDays(mon, j))}`; });
+  }
   if (k === 'year') { ui.year = +e.target.value; ui.cpLim = 10; renderView(); }
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
   if (k === 'soc-logo' && e.target.files[0]) setLogo(e.target.files[0]);
