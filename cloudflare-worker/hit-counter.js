@@ -1589,7 +1589,7 @@ async function handlePortail(request, env, url, headers, ctx) {
     // Évaluations des interventions (12 derniers mois) pour les statistiques de satisfaction
     if (path === "evals" && method === "GET") {
       const org = orgScope(me, url.searchParams.get("org"));
-      const rows = await env.DB.prepare(`SELECT e.text, e.created_at, t.categorie, t.residence_id FROM events e JOIN tickets t ON t.id = e.ticket_id
+      const rows = await env.DB.prepare(`SELECT e.text, e.created_at, e.ticket_id, t.categorie, t.residence_id FROM events e JOIN tickets t ON t.id = e.ticket_id
           WHERE e.kind = 'comment' AND e.text LIKE '⭐ %' AND e.created_at >= ? ${org ? "AND t.org_id = ?" : ""} ORDER BY e.created_at DESC LIMIT 1000`)
         .bind(now - 365 * 24 * 3600 * 1000, ...(org ? [org] : [])).all();
       return json({ evals: rows.results || [] });

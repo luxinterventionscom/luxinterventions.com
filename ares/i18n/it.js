@@ -9563,5 +9563,53 @@ export default [
 [
 "Revenir à l’habituel",
 "Torna all’abituale"
+],
+[
+"📒 Comptabilité",
+"📒 Contabilità"
+],
+[
+"📊 Statistiques",
+"📊 Statistiche"
+],
+[
+"Loyers, occupation, dépenses, interventions",
+"Affitti, occupazione, spese, interventi"
+],
+[
+"Journal, TVA, interventions et export pour le comptable (déclarations)",
+"Giornale, IVA, interventi ed export per il commercialista (dichiarazioni)"
+],
+[
+"🔧 Interventions",
+"🔧 Interventi"
+],
+[
+"Heures réelles",
+"Ore reali"
+],
+[
+"arrivée → départ (app de l’équipe)",
+"arrivo → partenza (app squadra)"
+],
+[
+"coûts indiqués sur les interventions",
+"costi indicati sugli interventi"
+],
+[
+"Interventions (Excel / CSV)",
+"Interventi (Excel / CSV)"
+],
+[
+"Aucune intervention terminée sur cette période.",
+"Nessun intervento terminato in questo periodo."
+],
+[
+"Chaque ligne : où, quoi, qui, heures réelles (l’ouvrier note son arrivée et son départ), avis des locataires et coût. Les factures par intervention arrivent à l’étape suivante.",
+"Ogni riga: dove, cosa, chi, ore reali (l’operaio segna arrivo e partenza), avis degli inquilini e costo. Le fatture per intervento arrivano alla prossima tappa."
+],
+[
+"✅ à clôturer",
+"✅ da chiudere"
 ]
 ];

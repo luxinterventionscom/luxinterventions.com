@@ -9539,5 +9539,53 @@ export default [
 [
 "Revenir à l’habituel",
 "Volver al habitual"
+],
+[
+"📒 Comptabilité",
+"📒 Contabilidad"
+],
+[
+"📊 Statistiques",
+"📊 Estadísticas"
+],
+[
+"Loyers, occupation, dépenses, interventions",
+"Alquileres, ocupación, gastos, intervenciones"
+],
+[
+"Journal, TVA, interventions et export pour le comptable (déclarations)",
+"Diario, IVA, intervenciones y exportación para el contable (declaraciones)"
+],
+[
+"🔧 Interventions",
+"🔧 Intervenciones"
+],
+[
+"Heures réelles",
+"Horas reales"
+],
+[
+"arrivée → départ (app de l’équipe)",
+"llegada → salida (app del equipo)"
+],
+[
+"coûts indiqués sur les interventions",
+"costes indicados en las intervenciones"
+],
+[
+"Interventions (Excel / CSV)",
+"Intervenciones (Excel / CSV)"
+],
+[
+"Aucune intervention terminée sur cette période.",
+"Ninguna intervención terminada en este periodo."
+],
+[
+"Chaque ligne : où, quoi, qui, heures réelles (l’ouvrier note son arrivée et son départ), avis des locataires et coût. Les factures par intervention arrivent à l’étape suivante.",
+"Cada línea: dónde, qué, quién, horas reales (llegada y salida), opinión de los inquilinos y coste. Las facturas por intervención llegan en la siguiente etapa."
+],
+[
+"✅ à clôturer",
+"✅ por cerrar"
 ]
 ];

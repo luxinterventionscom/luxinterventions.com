@@ -10,7 +10,7 @@ import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.82.0';
+const VERSION = '2.83.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2540,6 +2540,24 @@ function horFromForm(fd) {
   }
   return out.sort((x, y) => x.j - y.j || x.de.localeCompare(y.de));
 }
+// Registre des interventions terminées (ou finies par l'ouvrier) : où, quoi, qui, heures réelles, avis, coût
+function intervLedger(from, to) {
+  const out = [];
+  for (const t of vault.list('taches')) {
+    if (t.recur) continue;
+    const d = t.statut === 'fait' ? t.doneDate || t.date : t.fini ? t.fini.d : '';
+    if (!d || d < from || d > to) continue;
+    const j = (t.journal || []).filter((x) => x.d === d).sort((a, b) => (a.at || '').localeCompare(b.at || ''));
+    const hOf = (x) => (x ? x.h || (x.at || '').slice(11, 16) : '');
+    const arr = hOf(j.find((x) => x.st === 'encours')), dep = hOf([...j].reverse().find((x) => x.st === 'fait'));
+    const min = arr && dep ? Math.max(0, (hm(dep) - hm(arr)) * 60) : 0;
+    const w = vault.get('intervenants', t.intervenantId);
+    const ev = w ? (w.evals || []).filter((e) => e.d === d) : [];
+    const avis = ev.length ? MEN_EVAL[Math.round(sum(ev, (e) => e.v) / ev.length)] : '';
+    out.push({ t, d, arr, dep, min, who: w ? intervFull(w) : '', lieu: placeName(t), ger: t.ptl ? `${t.ptl.org} #${t.ptl.ref}` : '', avis, cout: t.cout || 0, state: t.statut === 'fait' ? 'fait' : 'fini' });
+  }
+  return out.sort((a, b) => b.d.localeCompare(a.d));
+}
 const dayShort = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
 const VIEWS = {
@@ -3040,8 +3058,12 @@ dashboard() {
     const y = ui.year, tab = ui.cpTab || 'journal';
     const per = ui.cpPer || (ui.cpPer = 'y');
     const soc = societe();
-    const tabs = html`<div class="tabs" role="tablist" style="max-width:620px">${[['journal', 'Journal'], ['tva', 'TVA'], ['stats', 'Statistiques'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
-    if (tab === 'stats') return html`${pageHead('Comptabilité', 'Journal, TVA, statistiques et export pour le comptable')}${tabs}${VIEWS.stats()}`;
+    // deux espaces séparés : Comptabilité (pour l'État) | Statistiques
+    const sec = ui.cpSec || 'compta';
+    const secTabs = html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['compta', '📒 Comptabilité'], ['stats', '📊 Statistiques']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sec === k}" data-action="cp-sec" data-id="${k}">${l}</button>`)}</div>`;
+    if (sec === 'stats') return html`${secTabs}${pageHead('📊 Statistiques', 'Loyers, occupation, dépenses, interventions')}${VIEWS.stats()}`;
+    const tabs = html`<div class="tabs" role="tablist" style="max-width:620px">${[['journal', 'Journal'], ['tva', 'TVA'], ['interv', '🔧 Interventions'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
+    if (tab === 'stats') ui.cpTab = 'journal';
     const perSel = html`<select data-input="cp-per" style="width:auto" aria-label="Période"><option value="y" ${per === 'y' ? new Raw('selected') : ''}>Toute l’année</option>${[1, 2, 3, 4].map((q) => html`<option value="q${q}" ${per === 'q' + q ? new Raw('selected') : ''}>Trimestre ${q}</option>`)}${MONTHS_FULL.map((mn, i) => html`<option value="m${i + 1}" ${per === 'm' + (i + 1) ? new Raw('selected') : ''}>${mn}</option>`)}</select>`;
     const [from, to] = cpRange(y, per);
     const all = journal(from, to);
@@ -3104,13 +3126,26 @@ dashboard() {
         <div class="list">${imms.map((im) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${im.adresse}</span><span class="meta">${IMM_TYPES[im.type] || IMM_TYPES.immeuble}</span></span>
           <select data-input="tva-loyer" data-id="${im.id}" style="width:auto"><option value="0">Exonéré (0 %)</option>${tvaRates().map((r) => html`<option value="${r}" ${(im.tvaLoyer || 0) === r ? new Raw('selected') : ''}>${String(r).replace('.', ',')} %</option>`)}</select></div>`)}</div>
         <p class="tiny muted" style="margin-top:10px">Taux de ${(PAYS[soc.pays || 'LU'] || PAYS.LU)[0]} : ${tvaRates().map((r) => String(r).replace('.', ',') + ' %').join(' · ')} — modifiables dans Réglages → Société & associés. Aide à la préparation, à faire vérifier par votre comptable.</p>`;
+    } else if (tab === 'interv') {
+      const L = intervLedger(from, to);
+      const hTot = sum(L, (x) => x.min) / 60, cTot = sum(L, (x) => x.cout || 0);
+      body = html`<div class="metrics" style="margin-bottom:14px">
+          <div class="metric"><div class="lbl">Interventions</div><div class="val">${L.length}</div><div class="sub">${cpLabel(y, per)}</div></div>
+          <div class="metric"><div class="lbl">Heures réelles</div><div class="val">${fmtH(hTot)}</div><div class="sub">arrivée → départ (app de l’équipe)</div></div>
+          <div class="metric hero"><div class="lbl">Montant</div><div class="val accent">${money(cTot)}</div><div class="sub">coûts indiqués sur les interventions</div></div></div>
+        <div class="toolbar" style="margin-bottom:10px"><button class="btn" data-action="cp-int-csv">${icon('download')} Interventions (Excel / CSV)</button></div>
+        ${L.length ? html`<div class="list">${L.map((x) => html`<button class="row" data-action="edit-tache" data-id="${x.t.id}"><span style="min-width:74px"><b>${dayShort(x.d)}</b><span class="meta" style="display:block">${x.arr ? `${x.arr}–${x.dep || '…'}` : '—'}</span></span>
+            <span class="grow"><span class="title" style="display:block;white-space:normal">${tacheIcon(x.t.type)} ${x.t.titre}${x.ger ? html` <span class="badge">🏢 ${x.ger}</span>` : ''}</span>
+              <span class="meta" style="white-space:normal">📍 ${x.lieu} · 👷 ${x.who || '—'}${x.min ? ' · 🕒 ' + fmtH(x.min / 60) : ''}${x.avis ? ' · ' + x.avis : ''}${x.state === 'fini' ? ' · ✅ à clôturer' : ''}</span></span>
+            <b>${x.cout ? money(x.cout) : ''}</b></button>`)}</div>` : html`<p class="muted">Aucune intervention terminée sur cette période.</p>`}
+        <p class="tiny muted" style="margin-top:10px">Chaque ligne : où, quoi, qui, heures réelles (l’ouvrier note son arrivée et son départ), avis des locataires et coût. Les factures par intervention arrivent à l’étape suivante.</p>`;
     } else {
       body = html`<div class="card"><p style="margin-top:0">Téléchargez le <b>journal ${cpLabel(y, per)}</b> (recettes, dépenses, bailleurs, frais fixes, avec HT / TVA / TTC) pour votre comptable. Le fichier s’ouvre dans Excel, Numbers ou LibreOffice.</p>
         <button class="btn primary" data-action="cp-csv">${icon('download')} Télécharger le journal (Excel / CSV)</button>
         <button class="btn" data-action="cp-print">${icon('file')} Imprimer / PDF</button>
         <p class="tiny muted" style="margin-bottom:0">Les factures restent dans l’app (chiffrées) : ouvrez-les avec 📎 dans le Journal pour les télécharger une par une.</p></div>`;
     }
-    return html`${pageHead('Comptabilité', 'Journal, TVA, statistiques et export pour le comptable')}${tabs}${tools}${body}`;
+    return html`${secTabs}${pageHead('📒 Comptabilité', 'Journal, TVA, interventions et export pour le comptable (déclarations)')}${tabs}${tools}${body}`;
   },
 
   stats() {
@@ -4998,6 +5033,14 @@ const ACTIONS = {
   'open-interv': (d) => openSheet('interv', d.id),
   'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
   'cp-tab': (d) => { ui.cpTab = d.id; renderView(); },
+  'cp-sec': (d) => { ui.cpSec = d.id; renderView(); },
+  'cp-int-csv': () => {
+    const [from, to] = cpRange(ui.year, ui.cpPer || 'y');
+    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const rows = [['Date', 'Arrivée', 'Départ', 'Heures', 'Lieu', 'Travail', 'Type', 'Intervenant', 'Gérance / réf.', 'Avis', 'Coût (€)', 'État'].map(q).join(';')];
+    for (const x of intervLedger(from, to)) rows.push([x.d, x.arr, x.dep, x.min ? (x.min / 60).toFixed(2).replace('.', ',') : '', x.lieu, x.t.titre, TACHE_TYPES[x.t.type] || x.t.type, x.who, x.ger, x.avis, x.cout ? String(x.cout).replace('.', ',') : '', x.state === 'fait' ? 'clôturée' : 'à clôturer'].map(q).join(';'));
+    download(`interventions-${from}-${to}.csv`, '\ufeff' + rows.join('\r\n'), 'text/csv;charset=utf-8');
+  },
   'cp-more': () => { ui.cpMonths = (ui.cpMonths || 1) + 1; renderView(); },
   'cp-clear': () => { ui.cpQ = ''; ui.cpFrom = ''; ui.cpTo = ''; ui.cpMonths = 1; renderView(); },
   'soc-sign-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: '', signPx: 0 }), 'Signature retirée', socName()); signRefresh(); },

@@ -454,7 +454,7 @@ function navItems() {
   const items = [['home', 'Accueil', 'home'], ['demandes', 'Demandes', 'wrench'], ['residences', 'Résidences', 'building']];
   if (isAdmin()) items.push(['gerances', 'Gérances', 'users']);
   else if (isManager()) items.push(['equipe', 'Équipe', 'users']);
-  items.push(['stats', 'Statistiques', 'chart']);
+  items.push(['stats', 'Comptabilité', 'chart']);
   items.push(['plus', 'Réglages', 'more']);
   return items;
 }
@@ -730,7 +730,36 @@ const VIEWS = {
       ${pubSlot('bas')}${tickerBar()}`;
   },
 
+  // Comptabilité : deux espaces séparés — Comptabilité (interventions terminées, par mois) | Statistiques
   stats() {
+    const sec = state.cpSec || 'compta';
+    const tabs = html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['compta', '📒 Comptabilité'], ['stats', '📊 Statistiques']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sec === k}" data-action="cp-sec" data-id="${k}">${l}</button>`)}</div>`;
+    return html`${tabs}${sec === 'stats' ? VIEWS.statsBody() : VIEWS.comptaBody()}`;
+  },
+  comptaBody() {
+    const { tickets, evals } = state.cache.stats || { tickets: [], evals: [] };
+    const now = new Date();
+    const months = Array.from({ length: 12 }, (_, i) => { const d = new Date(now.getFullYear(), now.getMonth() - i, 1); return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, lbl: d.toLocaleDateString(LOC, { month: 'long', year: 'numeric' }) }; });
+    const m = state.cpMonth || months[0].key;
+    const done = tickets.filter((t) => t.status === 'terminee' && t.done_at && new Date(t.done_at).toISOString().slice(0, 7) === m).sort((a, b) => b.done_at - a.done_at);
+    const evOf = (id) => { const e = (evals || []).find((x) => x.ticket_id === id); const v = e && evalParse(e.text); return v ? (EVAL_GLOBAL.find(([k]) => k === v.global) || [])[1] || '' : ''; };
+    const dt = (ms) => new Date(ms).toLocaleDateString(LOC, { day: 'numeric', month: 'short' });
+    state.cpRows = done.map((t) => ({ ref: t.ref, d: new Date(t.done_at).toISOString().slice(0, 10), org: t.org_name || '', res: t.residence_name || '', adr: t.residence_address || '', cat: t.categorie || '', lieu: t.lieu || '', tech: t.technicien || '', urg: t.urgence, avis: evOf(t.id), photos: t.photos || 0 }));
+    return html`
+      ${pageHead('📒 Comptabilité', isAdmin() ? 'Interventions terminées, par mois et par gérance' : html`${state.me.org_name || ''} — <span>interventions terminées, par mois</span>`)}
+      ${orgFilter()}
+      <div class="toolbar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><select data-input="cp-month" style="width:auto">${months.map((x) => html`<option value="${x.key}" ${x.key === m ? new Raw('selected') : ''}>${x.lbl}</option>`)}</select>
+        <button class="btn" data-action="cp-csv">${icon('download')} Excel / CSV</button></div>
+      <div class="metrics" style="margin-bottom:12px"><div class="metric"><div class="lbl">Interventions terminées</div><div class="val">${done.length}</div></div>
+        <div class="metric"><div class="lbl">Urgentes</div><div class="val">${done.filter((t) => t.urgence === 'urgent').length}</div></div>
+        <div class="metric"><div class="lbl">Résidences</div><div class="val">${new Set(done.map((t) => t.residence_id)).size}</div></div></div>
+      ${done.length ? html`<div class="list">${done.map((t) => html`<button class="row" data-action="open-ticket" data-id="${t.id}"><span style="min-width:64px"><b>${dt(t.done_at)}</b><span class="meta" style="display:block">#${t.ref}</span></span>
+        <span class="grow"><span class="title" style="display:block;white-space:normal">${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted small">— ${t.lieu}</span>` : ''}</span>
+          <span class="meta" style="white-space:normal">${isAdmin() ? html`🏢 ${t.org_name} · ` : ''}📍 ${t.residence_name}${t.technicien ? html` · 👷 ${t.technicien}` : ''}${evOf(t.id) ? ' · ' + evOf(t.id) : ''}${t.photos ? html` · 📷 ${t.photos}` : ''}</span></span>
+        ${t.urgence === 'urgent' ? html`<span class="badge bad">🔴</span>` : ''}</button>`)}</div>` : html`<p class="muted">Aucune intervention terminée ce mois-ci.</p>`}
+      <p class="tiny muted" style="margin-top:10px">Les montants et factures par intervention apparaîtront ici dès qu’ils seront émis par LuxInterventions.</p>`;
+  },
+  statsBody() {
     const { tickets, evals } = state.cache.stats || { tickets: [], evals: [] };
     const now = new Date(), Y = 365 * 864e5;
     const ts = tickets.filter((t) => t.created_at >= Date.now() - Y && t.status !== 'annulee');
@@ -1424,6 +1453,14 @@ const ACTIONS = {
   },
   scope: (d) => { state.filters.scope = d.id; go('demandes', true); },
   'urg-filter': (d) => { state.filters.urg = d.id; renderView(); },
+  'cp-sec': (d) => { state.cpSec = d.id; renderView(); },
+  'cp-csv': () => {
+    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const rows = [['Date', 'Réf.', 'Gérance', 'Résidence', 'Adresse', 'Catégorie', 'Lieu', 'Technicien', 'Urgence', 'Avis', 'Photos'].map(q).join(';'), ...(state.cpRows || []).map((r) => [r.d, '#' + r.ref, r.org, r.res, r.adr, r.cat, r.lieu, r.tech, r.urg, r.avis, r.photos].map(q).join(';'))];
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
+    a.download = `interventions-${state.cpMonth || 'mois'}.csv`; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  },
   'org-filter': (d) => { state.filters.org = d.id; state.filters.residence = ''; go(state.route, true); },
   'new-residence': async () => {
     if (isAdmin() && !state.cache.orgs) state.cache.orgs = (await api('orgs')).orgs;
@@ -1739,6 +1776,7 @@ document.addEventListener('change', (e) => {
   }
   const k = e.target.dataset.input;
   if (k === 'residence') { state.filters.residence = e.target.value; go('demandes', true); }
+  if (k === 'cp-month') { state.cpMonth = e.target.value; renderView(); }
   if (k === 'preview-files') {
     const box = $('#preview');
     revokePhotos();
