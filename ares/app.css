@@ -679,3 +679,11 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 .dwrap { position: relative; display: block; }
 .dwrap > input { width: 100%; }
 .dwrap .dow { position: absolute; right: 42px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 13px; font-weight: 650; color: var(--accent, #4f46e5); text-transform: capitalize; }
+/* tarifs : petites cases avec l'unité (€/h, €) dedans */
+.tarif-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
+.field.mini { font-size: 12.5px; }
+.sfx { position: relative; display: block; }
+.sfx > input { width: 100%; padding-right: 52px; }
+.sfx > i { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: 12px; font-weight: 650; color: var(--text-3); pointer-events: none; }
+@media (max-width: 380px) { .sfx > input { padding-right: 46px; } .sfx > i { right: 7px; font-size: 11px; } }
+.field.mini .rq-num, label:has(> .sfx) .rq-num { display: none; }

@@ -10127,5 +10127,61 @@ export default [
 [
 "✓ BIC valide",
 "✓ BIC válido"
+],
+[
+"Tarifs",
+"Tarifas"
+],
+[
+"Payé à l’intervenant",
+"Pago ao operário"
+],
+[
+"Déplacement payé",
+"Deslocação paga"
+],
+[
+"Tarif / accord",
+"Tarifa / acordo"
+],
+[
+"Facturé à la gérance",
+"Faturado à gérance"
+],
+[
+"Déplacement facturé",
+"Deslocação faturada"
+],
+[
+"Vide = payé + marge {0}",
+"Vazio = pago + margem {0}"
+],
+[
+"Tarif facturé",
+"Tarifa faturada"
+],
+[
+"Ma marge sur ses tarifs",
+"A minha margem sobre as tarifas dele"
+],
+[
+"→ recalcule tarif et déplacement",
+"→ recalcula tarifa e deslocação"
+],
+[
+"Coût (ouvrier + matériel)",
+"Custo (operário + material)"
+],
+[
+"Ma marge",
+"A minha margem"
+],
+[
+"Ma marge par défaut sur les ouvriers",
+"A minha margem padrão sobre os operários"
+],
+[
+"Ex. 25 % : ouvrier payé 40 €/h → facturé 50 €/h à la gérance (si la fiche de l’ouvrier n’a pas de tarif « facturé à la gérance »). Modifiable dans chaque facture, avec remise ou majoration.",
+"Ex. 25 %: operário pago a 40 €/h → faturado 50 €/h à gérance (se a ficha do operário não tiver tarifa «faturado à gérance»). Alterável em cada fatura, com desconto ou acréscimo."
 ]
 ];

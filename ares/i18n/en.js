@@ -9943,5 +9943,61 @@ export default [
 [
 "✓ BIC valide",
 "✓ BIC valid"
+],
+[
+"Tarifs",
+"Rates"
+],
+[
+"Payé à l’intervenant",
+"Paid to the worker"
+],
+[
+"Déplacement payé",
+"Travel paid"
+],
+[
+"Tarif / accord",
+"Rate / agreement"
+],
+[
+"Facturé à la gérance",
+"Billed to the agency"
+],
+[
+"Déplacement facturé",
+"Travel billed"
+],
+[
+"Vide = payé + marge {0}",
+"Empty = paid + margin {0}"
+],
+[
+"Tarif facturé",
+"Rate billed"
+],
+[
+"Ma marge sur ses tarifs",
+"My margin on their rates"
+],
+[
+"→ recalcule tarif et déplacement",
+"→ recalculates rate and travel"
+],
+[
+"Coût (ouvrier + matériel)",
+"Cost (worker + materials)"
+],
+[
+"Ma marge",
+"My margin"
+],
+[
+"Ma marge par défaut sur les ouvriers",
+"My default margin on workers"
+],
+[
+"Ex. 25 % : ouvrier payé 40 €/h → facturé 50 €/h à la gérance (si la fiche de l’ouvrier n’a pas de tarif « facturé à la gérance »). Modifiable dans chaque facture, avec remise ou majoration.",
+"E.g. 25 %: worker paid 40 €/h → billed 50 €/h to the agency (if the worker form has no “billed to the agency” rate). Can be changed on each invoice, with discount or surcharge."
 ]
 ];
