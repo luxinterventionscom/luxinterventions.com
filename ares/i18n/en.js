@@ -1773,10 +1773,6 @@ export default [
 "Person added"
 ],
 [
-"Intervention",
-"Job"
-],
-[
 "Intervention ajoutée",
 "Job added"
 ],
@@ -9579,5 +9575,33 @@ export default [
 [
 "Facturation du client enregistrée",
 "Client invoicing saved"
+],
+[
+"Gérance",
+"Management"
+],
+[
+"Ajouter loc.",
+"Add tenant"
+],
+[
+"Classement",
+"Ranking"
+],
+[
+"Gestion locataire",
+"Tenant management"
+],
+[
+"Gestion loc.",
+"Tenants"
+],
+[
+"reçus",
+"received"
+],
+[
+"Paiements des loyers — touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
+"Rent payments — tap an empty month to mark it paid; tap a paid month for the amount, receipt or cancellation."
 ]
 ];
