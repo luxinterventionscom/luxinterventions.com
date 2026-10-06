@@ -332,9 +332,9 @@ function render() {
   const t = T();
   document.documentElement.lang = lang;
   const langs = `<div class="langs">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
-  const top = (name, logo) => `<div class="top"><span class="brandx"><img class="top-logo" src="${esc(logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(name)}</b></span>${langs}</div>`;
+  const top = (name, logo) => `<div class="top"><span class="brandx"><img class="top-logo" src="${esc(logo || '/ares/icons/lux-192.png')}" alt="" width="76" height="32"><b>${esc(name)}</b></span>${langs}</div>`;
   if (!data) {
-    app.innerHTML = `${top('NOBIS s.a.r.l.')}
+    app.innerHTML = `${top('ARES INVEST S.A.')}
       <h1 style="text-align:center;margin-top:18px">👷 ${esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
       ${loadErr ? `<div class="card warnc"><p style="margin:0">${esc(loadErr)}</p></div>` : ''}
       <div class="card"><form id="codeForm"><label>${esc(t.code)}</label>
