@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.95.0';
+const VERSION = '2.97.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2594,6 +2594,14 @@ const ENG_OBL = (i) => [
   ['Confidentialité', 'Codes, clés et informations des lieux et des occupants restent confidentiels et ne servent qu’à l’intervention.'],
 ];
 const ENG_RGPD = (c) => `Protection des données (RGPD — règlement (UE) 2016/679) : ${c.nom} traite les données de l’intervenant (identité, coordonnées, assurance, IBAN, signature, heures de travail) uniquement pour la gestion des missions, les paiements et ses obligations légales. Conservation : durée légale (10 ans pour les pièces comptables). Droits d’accès, de rectification, d’effacement et d’opposition : ${c.email || c.tel || c.nom}. Réclamation possible auprès de la CNPD (Luxembourg).`;
+// Tarifs d'une personne : ce qu'on lui paie (accord) et ce qu'on facture à la gérance (avec notre marge)
+const sfx = (label, name, val, unit, attrs = money$) => html`<label class="field mini">${label}<span class="sfx"><input name="${name}" type="number" ${new Raw(attrs)} value="${val ?? ''}"><i>${unit}</i></span></label>`;
+function tarifBox(i) {
+  const m = num(factConf().marge);
+  return html`<div class="full tarif-box"><div class="section-label" style="margin:6px 0 4px">💶 Tarifs</div>
+    <div class="tarif-row">${sfx('Payé à l’intervenant', 'payeH', i.payeH, '€/h')}${sfx('Déplacement payé', 'payeDepl', i.payeDepl, '€')}<label class="field mini">Tarif / accord<input name="tarif" value="${i.tarif || ''}" placeholder="forfait 80 €…"></label></div>
+    <div class="tarif-row">${sfx('Facturé à la gérance', 'tauxH', i.tauxH, '€/h HT')}${sfx('Déplacement facturé', 'depl', i.depl, '€ HT')}<span class="tiny muted" style="align-self:center">Vide = payé + marge ${m ? String(m).replace('.', ',') + ' %' : '(Réglages → 🧾 Facturation)'}</span></div></div>`;
+}
 function engForm(i) {
   const on = (i.genre || 'interne') !== 'interne', occ = (i.genre || '') === 'prive';
   return html`<div class="full eng-wrap" ${on ? '' : new Raw('hidden')}>
@@ -2601,8 +2609,6 @@ function engForm(i) {
     <div class="fields" style="margin-top:6px">
       ${field('Assurance RC (compagnie)', 'assur', i.assur, { placeholder: 'ex. Foyer, La Luxembourgeoise, AXA…' })}
       ${field('N° de police', 'police', i.police, { attrs: 'autocomplete="off"' })}
-      ${field('Payé à l’intervenant : € / heure', 'payeH', i.payeH ?? '', { type: 'number', attrs: money$ })}
-      ${field('Déplacement payé (€)', 'payeDepl', i.payeDepl ?? '', { type: 'number', attrs: money$ })}
     </div>
     <div class="section-label" style="margin:8px 0 0">🏦 Compte bancaire (pour le payer) — même fiche pour tous les pays</div>
     <div class="fields bank-box" style="margin-top:6px">
@@ -2711,7 +2717,7 @@ async function occPdf(t, i, o) {
   return p.bytes();
 }
 // ── Factures des interventions (ARES INVEST S.A. — marque LuxInterventions) → la gérance la télécharge dans le portail ──
-const FACT_DEF = { nom: 'ARES INVEST S.A.', marque: 'LuxInterventions', adresse: '37, Val Saint André', ville: 'L-1128 Luxembourg', rcs: 'B225245', tva: 'LU30440727', tel: '+352 691 423 943', email: '', iban: '', bic: '', banque: '', taux: 17, delai: 30, seq: 0 };
+const FACT_DEF = { nom: 'ARES INVEST S.A.', marque: 'LuxInterventions', adresse: '37, Val Saint André', ville: 'L-1128 Luxembourg', rcs: 'B225245', tva: 'LU30440727', tel: '+352 691 423 943', email: '', iban: '', bic: '', banque: '', taux: 17, delai: 30, seq: 0, marge: 0 };
 // Régime de TVA d'un client (gérance) : taux normal, taux particulier, autoliquidation (client assujetti d'un autre pays de l'UE), non applicable
 const TVA_REG = {
   normal: ['TVA normale (taux des réglages)', ''],
@@ -2732,7 +2738,8 @@ function factDraft(t) {
   const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id);
   const h = L && L.min ? Math.ceil(L.min / 15) / 4 : 1;
   const cl = factClient(t.ptl && t.ptl.orgId, t.ptl && t.ptl.org);
-  return { h, taux: w.tauxH || 0, depl: w.depl || 0, mat: [], adj: { type: 'remise', mode: '%', val: 0, lib: '' }, reg: { regime: cl.regime, taux: cl.taux, mention: cl.mention } };
+  const m = 1 + num(factConf().marge) / 100;
+  return { h, taux: w.tauxH || (w.payeH ? r2(w.payeH * m) : 0), depl: w.depl || (w.payeDepl ? r2(w.payeDepl * m) : 0), mat: [], adj: { type: 'remise', mode: '%', val: 0, lib: '' }, reg: { regime: cl.regime, taux: cl.taux, mention: cl.mention } };
 }
 // taux effectif d'une facture : régime choisi pour cette facture (sinon celui du client), sinon les réglages
 const factTaux = (f, c) => regTaux(f.reg || { regime: 'normal' }, c);
@@ -2783,13 +2790,14 @@ function factPdf(t, f, no, dateIso, c) {
 const factRead = (fm) => {
   const fd = new FormData(fm), mat = [];
   for (let n = 0; n < 30; n++) if (fd.has(`ml${n}`)) { const lib = String(fd.get(`ml${n}`) || '').trim(), ht = num(fd.get(`mh${n}`)); if (lib || ht) mat.push({ lib, ht }); }
-  return { reg: { regime: TVA_REG[fd.get('reg')] ? fd.get('reg') : 'normal', taux: String(fd.get('reg_taux') || ''), mention: String(fd.get('reg_mention') || '').trim() }, h: num(fd.get('h')), taux: num(fd.get('taux')), depl: num(fd.get('depl')), mat, adj: { type: fd.get('adj_type') === 'maj' ? 'maj' : 'remise', mode: fd.get('adj_mode') === '€' ? '€' : '%', val: num(fd.get('adj_val')), lib: String(fd.get('adj_lib') || '').trim() } };
+  const cost = fd.has('cost_h') ? { h: num(fd.get('cost_h')), d: num(fd.get('cost_d')) } : null;
+  return { cost, reg: { regime: TVA_REG[fd.get('reg')] ? fd.get('reg') : 'normal', taux: String(fd.get('reg_taux') || ''), mention: String(fd.get('reg_mention') || '').trim() }, h: num(fd.get('h')), taux: num(fd.get('taux')), depl: num(fd.get('depl')), mat, adj: { type: fd.get('adj_type') === 'maj' ? 'maj' : 'remise', mode: fd.get('adj_mode') === '€' ? '€' : '%', val: num(fd.get('adj_val')), lib: String(fd.get('adj_lib') || '').trim() } };
 };
 const matRow = (n, m = {}) => html`<div class="fact-mat"><input name="ml${n}" value="${m.lib || ''}" placeholder="Matériel acheté (ex. disjoncteur 16 A)"><input name="mh${n}" type="number" ${new Raw(money$)} value="${m.ht ?? ''}" placeholder="€ HT" aria-label="Montant HT"></div>`;
 function factTotHtml(f) {
   const c = factConf(), tx = factTaux(f, c), k = factCalc(f, tx);
   return html`<div class="kv-tot"><span>Main-d’œuvre</span><b>${eur(k.mo)}</b><span>Déplacement</span><b>${eur(k.dep)}</b><span>Matériel</span><b>${eur(k.mat)}</b>${k.adj ? html`<span>${k.adj < 0 ? 'Remise' : 'Majoration'}</span><b>${k.adj < 0 ? '− ' : '+ '}${eur(Math.abs(k.adj))}</b>` : ''}
-    <span>Total HT</span><b>${eur(k.ht)}</b><span>TVA ${String(tx).replace('.', ',')} %${f.reg && (f.reg.regime === 'autoliq' || f.reg.regime === 'exo') ? ' — ' + TVA_REG[f.reg.regime][0].split(' (')[0] : ''}</span><b>${eur(k.tva)}</b><span class="big">Total TTC</span><b class="big">${eur(k.ttc)}</b></div>`;
+    <span>Total HT</span><b>${eur(k.ht)}</b>${f.cost ? (() => { const co = r2(num(f.h) * f.cost.h + (num(f.depl) ? f.cost.d : 0) + k.mat), mg = r2(k.ht - co); return html`<span class="muted">Coût (ouvrier + matériel)</span><b class="muted">${eur(co)}</b><span class="${mg < 0 ? 'red' : 'green'}">Ma marge</span><b class="${mg < 0 ? 'red' : 'green'}">${eur(mg)}${co ? ` (${Math.round((mg / co) * 100)} %)` : ''}</b>`; })() : ''}<span>TVA ${String(tx).replace('.', ',')} %${f.reg && (f.reg.regime === 'autoliq' || f.reg.regime === 'exo') ? ' — ' + TVA_REG[f.reg.regime][0].split(' (')[0] : ''}</span><b>${eur(k.tva)}</b><span class="big">Total TTC</span><b class="big">${eur(k.ttc)}</b></div>`;
 }
 // « Voir plus » : 10 lignes de plus à chaque toucher
 const moreBtn = (total, lim) => (total > lim ? html`<button class="btn block" style="margin-top:12px" data-action="cp-more">⬇ Voir plus (${Math.min(10, total - lim)} sur ${total - lim} restantes)</button><p class="tiny muted" style="text-align:center;margin:6px 0 0">${lim} sur ${total} affichées</p>` : total > 10 ? html`<p class="tiny muted" style="text-align:center;margin:10px 0 0">Tout est affiché (${total})</p>` : '');
@@ -4001,9 +4009,7 @@ const SHEETS = {
         ${field('Prénom', 'prenom', i.prenom, { attrs: 'autocomplete="off"' })}
         ${field('Nom (ou nom de la société)', 'nom', i.nom, { required: true, placeholder: 'ex. Rossi, Électricité Schmit…', attrs: 'autocomplete="off"' })}
         <label class="field">Métier / mansion<select name="metier" required data-input="interv-kind"><option value="">— à choisir —</option>${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${i.metier === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        ${field('Tarif', 'tarif', i.tarif, { placeholder: 'ex. 25 €/h, forfait 80 €…' })}
-        ${field('Facturé au client : € / heure (HT)', 'tauxH', i.tauxH ?? '', { type: 'number', attrs: money$ })}
-        ${field('Déplacement facturé (€ HT)', 'depl', i.depl ?? '', { type: 'number', attrs: money$ })}
+        ${tarifBox(i)}
         ${field('Adresse', 'adresse', i.adresse, { full: true, attrs: 'autocomplete="off"' })}
         ${field('Code postal et ville', 'ville', i.ville, { placeholder: 'L-1234 Luxembourg' })}
         ${field('Téléphone', 'tel', i.tel, { type: 'tel', placeholder: '+352 …' })}
@@ -4011,11 +4017,6 @@ const SHEETS = {
         ${field('RCS (société)', 'rcs', i.rcs, { placeholder: 'ex. B123456' })}
         ${field('N° TVA (société)', 'tva', i.tva, { placeholder: 'ex. LU12345678' })}
         ${engForm(i)}
-        ${(() => { const wk = mondayOf(today()), rep = !id || hors(i).length > 0; return html`<div class="full hor-wrap" ${horFixed(i) ? '' : new Raw('hidden')}><div class="section-label" style="margin:10px 0 0">📅 Horaire — personnel régulier (ménage)</div>
-        <p class="tiny muted" style="margin:0 0 6px">Laisser vide pour les ouvriers : le jour, l’heure et le lieu se donnent à chaque travail (📌 Affectation).</p>
-        <div class="fields"><label class="field">Semaine du (date)<input type="date" name="hwk" value="${today()}" data-input="hor-wk"></label>
-          <label class="check" style="align-self:end"><input type="checkbox" name="hrep" value="1" ${rep ? new Raw('checked') : ''}> 🔁 Même horaire toutes les semaines</label></div>
-        ${horWeekEditor((j) => horsOn(i, addDays(wk, j)), (j) => `${SEMAINE[j]} ${frD(addDays(wk, j))}`)}</div>`; })()}
         <label class="field full">Notes<textarea name="note" placeholder="Clés confiées, disponibilités…">${i.note || ''}</textarea></label>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-interv" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
@@ -4037,6 +4038,8 @@ const SHEETS = {
         <datalist id="tvaRates">${[17, 16, 14, 8, 3, 0, 20, 21, 19, 22, 10, 5.5].map((r) => html`<option value="${r}"></option>`)}</datalist>
         <p class="tiny muted full" style="margin:-6px 0 0">Taux appliqué par défaut (17 % = taux normal au Luxembourg ; tout autre taux possible). Chaque client peut avoir son propre régime : Gérances → la gérance → 🧾 Facturation.</p>
         ${field('Paiement à (jours)', 'delai', c.delai, { type: 'number', attrs: 'min="0" max="120" inputmode="numeric"' })}
+        ${sfx('Ma marge par défaut sur les ouvriers', 'marge', c.marge, '%', 'step="1" min="0" max="500" inputmode="decimal"')}
+        <p class="tiny muted full" style="margin:-6px 0 0">Ex. 25 % : ouvrier payé 40 €/h → facturé 50 €/h à la gérance (si la fiche de l’ouvrier n’a pas de tarif « facturé à la gérance »). Modifiable dans chaque facture, avec remise ou majoration.</p>
         <p class="tiny muted full" style="margin:0">Taux de TVA à confirmer avec votre comptable. Prochain numéro : ${ymd(today())}-INT${String((+c.seq || 0) + 1).padStart(4, '0')}</p>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
@@ -4063,8 +4066,11 @@ const SHEETS = {
         ${miss.length ? html`<div class="full alert warn" style="margin:0">⚠️<div>Avant d’émettre : complétez ${miss.join(', ')} dans <a href="#" data-action="fact-set">🧾 Facturation</a>.</div></div>` : ''}
         <p class="small muted full" style="margin:0">Client : <b>${t.ptl ? t.ptl.org : '—'}</b> · émise par ${c.nom} (${c.marque}). Rien n’est envoyé avant « Émettre ».</p>
         ${field('Heures (réelles, arrondies au ¼ h)', 'h', f.h, { type: 'number', attrs: 'step="0.25" min="0" inputmode="decimal"' })}
-        ${field('Tarif € / h HT', 'taux', f.taux, { type: 'number', attrs: money$ })}
-        ${field('Déplacement € HT', 'depl', f.depl, { type: 'number', attrs: money$ })}
+        ${(() => { const w = vault.get('intervenants', t.intervenantId) || {}; return w.payeH || w.payeDepl ? html`<div class="full note small" style="margin:0"><input type="hidden" name="cost_h" value="${w.payeH || 0}"><input type="hidden" name="cost_d" value="${w.payeDepl || 0}">
+          👷 Coût ${intervFull(w)} : <b>${eur(w.payeH || 0)}/h</b>${w.payeDepl ? html` · déplacement <b>${eur(w.payeDepl)}</b>` : ''}
+          <div class="fact-adj" style="grid-template-columns:auto 90px auto;align-items:center;margin-top:6px"><span>Ma marge sur ses tarifs</span><span class="sfx"><input name="marge" type="number" step="1" min="-90" max="500" inputmode="decimal" value="${w.payeH && f.taux ? Math.round((num(f.taux) / w.payeH - 1) * 100) : num(factConf().marge)}" data-input="fact-marge"><i>%</i></span><span class="tiny muted">→ recalcule tarif et déplacement</span></div></div>` : ''; })()}
+        ${sfx('Tarif facturé', 'taux', f.taux, '€/h HT')}
+        ${sfx('Déplacement facturé', 'depl', f.depl, '€ HT')}
         <div class="full"><div class="section-label" style="margin:4px 0 6px">Matériel acheté en plus (HT)</div><div id="factMats">${mats.map((m, n) => matRow(n, m))}</div>
           <button type="button" class="btn sm" data-action="fact-mat-add">${icon('plus')} Ligne</button></div>
         <div class="full"><div class="section-label" style="margin:4px 0 6px">Remise / majoration (avant émission)</div>
@@ -4078,6 +4084,21 @@ const SHEETS = {
         <div class="full" id="factTot">${factTotHtml(f)}</div>
       </form>`,
       foot: html`<button class="btn" type="submit" form="f">Enregistrer le brouillon</button><button class="btn primary" data-action="fact-emit" data-id="${id}" ${miss.length ? new Raw('disabled') : ''}>🧾 Émettre et envoyer</button>`,
+    };
+  },
+  // routine de chaque semaine (salariés : ménage, contrôles), avec la semaine en dates
+  'hor-std'({ id }) {
+    const i = vault.get('intervenants', id);
+    if (!i) return null;
+    const wk = mondayOf(today());
+    return {
+      title: `🔁 Routine · ${intervFull(i)}`,
+      body: html`<form id="f" data-form="hor-std" class="fields"><input type="hidden" name="id" value="${id}">
+        <p class="small muted full" style="margin:0">Se répète chaque semaine (ménage, contrôles…). Une semaine différente : 📅 Planning par semaine. Un dégât signalé : 📌 Affectation.</p>
+        <label class="field">Semaine du (date)<input type="date" name="hwk" value="${today()}" data-input="hor-wk"></label>
+        ${horWeekEditor((j) => hors(i).filter((h) => h.j === j), (j) => `${SEMAINE[j]} ${frD(addDays(wk, j))}`)}
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer la routine</button>`,
     };
   },
   'plan-week'({ id, preset }) {
@@ -4157,9 +4178,10 @@ const SHEETS = {
           <div class="actions" style="margin-top:8px"><button class="btn primary" data-action="plan-edit" data-id="${id}" data-d="${mon}">✏️ Planifier cette semaine</button>
             ${wkDays.some((iso) => i.plan && i.plan[iso]) ? html`<button class="btn ghost" data-action="plan-reset" data-id="${id}" data-d="${mon}">↩️ Revenir à l’horaire habituel</button>` : ''}</div>
           <p class="tiny muted" style="margin:6px 0 0">Les jours sans modification suivent l’horaire habituel (plus bas). La personne voit ce planning, avec les dates, dans son app.</p></div>`;
-      body = html`${jobBtn}${jobList}${planHtml}<div class="section-label">Horaire habituel (chaque semaine)</div>
+      body = html`${jobBtn}${jobList}${horFixed(i) || hs.length ? html`${planHtml}<div class="section-label">🔁 Routine chaque semaine</div>
+        <button class="btn block" data-action="hor-std" data-id="${id}" style="margin-bottom:8px">✏️ ${hs.length ? 'Modifier la routine' : 'Créer la routine (ménage, contrôles…)'}</button>
         ${hs.length ? html`<div class="list small">${hs.map((h) => html`<div class="row"><span class="grow"><b>${SEMAINE[h.j]}</b> <span>${HOR_P[horP(h)]}</span> ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : ''}</span><span class="meta">${fmtH(dayHours({ horaires: [h] }, h.j))}</span></div>`)}</div>
-          <p class="tiny muted">Total par semaine : <b>${fmtH([0, 1, 2, 3, 4, 5, 6].reduce((n, j) => n + dayHours(i, j), 0))}</b></p>` : html`<p class="small muted">Pas d’horaire enregistré. Touchez « Modifier » pour l’ajouter.</p>`}
+          <p class="tiny muted">Total par semaine : <b>${fmtH([0, 1, 2, 3, 4, 5, 6].reduce((n, j) => n + dayHours(i, j), 0))}</b></p>` : html`<p class="small muted">Pas encore de routine.</p>`}` : html`<p class="small muted">Pas de routine pour cette personne : le jour, l’heure et le lieu se donnent à chaque travail (📌 Affectation / 📅 Autre travail).</p>`}
         <div class="section-label">Heures par mois (horaire − absences)</div>
         <div class="list small">${months.map(([yy, mm]) => { const r = intervMonth(i, yy, mm); return html`<div class="row"><span class="grow"><b>${MONTHS_FULL[mm - 1]} ${yy}</b><span class="meta" style="display:block">prévu ${fmtH(r.prevu)}${r.jm ? ` · 🤒 ${r.jm} j (−${fmtH(r.maladie)})` : ''}${r.jc ? ` · 🏖️ ${r.jc} j (−${fmtH(r.conges)})` : ''}${r.ja ? ` · 📌 ${r.ja} j (−${fmtH(r.autre)})` : ''}</span></span><b>${fmtH(r.net)}</b></div>`; })}</div>
         <p class="tiny muted">Calcul sur l’horaire habituel : pour les heures en plus ou en moins, ajoutez une note.</p>`;
@@ -4176,7 +4198,7 @@ const SHEETS = {
           <button class="btn primary block" data-action="eq-on" data-id="${id}">📱 Créer l’accès à l’app</button>`;
       } else {
         const url = eqUrl(i);
-        const inv = inviteMsg('eq', e.lang, i.prenom || '', eqAppUrl(), e.code || '—', url, societe().nom || 'NOBIS s.a.r.l.');
+        const inv = inviteMsg('eq', e.lang, i.prenom || '', eqAppUrl(), e.code || '—', url, factConf().nom || 'ARES INVEST S.A.');
         const msgTxt = encodeURIComponent(inv.txt);
         body = html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code personnel</div>
             <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
@@ -5433,6 +5455,7 @@ const ACTIONS = {
   },
   'edit-interv': (d) => openOver('interv-form', d.id),
   'plan-wk': (d) => { ui.planWk ||= {}; const cur = ui.planWk[d.id] || mondayOf(today()); ui.planWk[d.id] = addDays(cur, +d.d); ui.sheet.rendered = false; renderSheet(); },
+  'hor-std': (d) => openOver('hor-std', d.id),
   'plan-edit': (d) => openOver('plan-week', d.id, null, d.d),
   'fact-set': () => openOver('fact-set'),
   'fact-open': (d) => openOver('facture', d.id),
@@ -6133,7 +6156,7 @@ const FORMS = {
   async 'fact-set'(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
     const iban = g('iban').toUpperCase().replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
-    await vault.mutate((tx) => tx.put('reglages', { id: 'facturation', nom: g('nom'), marque: g('marque'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), tel: g('tel'), email: g('email'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), taux: num(fd.get('taux')), delai: Math.max(0, Math.round(num(fd.get('delai')))) || 30 }), 'Facturation des interventions', g('nom'));
+    await vault.mutate((tx) => tx.put('reglages', { id: 'facturation', nom: g('nom'), marque: g('marque'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), tel: g('tel'), email: g('email'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), taux: num(fd.get('taux')), delai: Math.max(0, Math.round(num(fd.get('delai')))) || 30, marge: num(fd.get('marge')) }), 'Facturation des interventions', g('nom'));
     toast('Facturation enregistrée'); goBack();
   },
   async facture(fd, fm) {
@@ -6141,6 +6164,13 @@ const FORMS = {
     if (!t || t.facture) return;
     await vault.mutate((tx) => tx.put('taches', { id: t.id, factDraft: factRead(fm) }), 'Brouillon de facture', t.titre, t.immId);
     toast('Brouillon enregistré'); goBack();
+  },
+  async 'hor-std'(fd) {
+    const i = vault.get('intervenants', fd.get('id'));
+    if (!i) return;
+    const horaires = horFromForm(fd);
+    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, horaires }), 'Routine de la semaine', `${intervFull(i)} — ${horaires.length} créneau(x)`, i.id);
+    toast('Routine enregistrée'); goBack();
   },
   async 'plan-week'(fd) {
     const i = vault.get('intervenants', fd.get('id'));
@@ -6178,20 +6208,11 @@ const FORMS = {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
     const prev = id ? vault.get('intervenants', id) || {} : {};
-    const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), note: g('note') };
-    // horaire : chaque semaine (horaire fixe) ou seulement la semaine choisie, avec ses dates
-    const slots = horFromForm(fd), wk = /^\d{4}-\d{2}-\d{2}$/.test(g('hwk')) ? mondayOf(g('hwk')) : mondayOf(today());
-    if (!horFixed(rec)) rec.horaires = prev.horaires || [];
-    else if (fd.get('hrep') === '1') rec.horaires = slots;
-    else {
-      rec.horaires = prev.horaires || [];
-      const plan = { ...(prev.plan || {}) };
-      for (let j = 0; j < 7; j++) plan[addDays(wk, j)] = slots.filter((h) => h.j === j).map(({ de, a, immId, p }) => ({ de, a, immId, p }));
-      rec.plan = plan;
-    }
+    const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), note: g('note') };
+    // l'horaire ne se fait plus ici : fiche de la personne → Horaires (routine et planning par semaine)
     // engagement : assurance, paiement, obligations acceptées, signature digitale
     if (rec.genre !== 'interne') {
-      Object.assign(rec, { assur: g('assur'), police: g('police'), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s/g, ''), iban: ibanClean(g('iban')), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')) });
+      Object.assign(rec, { assur: g('assur'), police: g('police'), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s/g, ''), iban: ibanClean(g('iban')) });
       const ib = ibanCheck(rec.iban), bc = bicCheck(rec.bic, ib.ok ? ib.cc : '');
       if (rec.genre === 'prive') {
         const miss = [!rec.assur && 'assurance', !rec.police && 'n° de police', !rec.banque && 'nom de la banque', !bc.ok && 'BIC (' + bc.msg + ')', !ib.ok && 'IBAN (' + ib.msg + ')'].filter(Boolean);
@@ -6681,6 +6702,7 @@ document.addEventListener('pointerdown', (e) => {
 }, true);
 document.addEventListener('input', (e) => {
   const ff = e.target.closest && e.target.closest('form[data-form=facture]');
+  if (ff && e.target.name === 'marge') { const m = 1 + num(e.target.value) / 100; ff.taux.value = r2(num(ff.cost_h.value) * m) || ''; if (num(ff.cost_d.value)) ff.depl.value = r2(num(ff.cost_d.value) * m); }
   if (ff) { const box = $('#factTot'); if (box) setHtml(box, factTotHtml(factRead(ff))); }
   const k = e.target.dataset.input;
   if (k === 'esp-search') filterEspList();
