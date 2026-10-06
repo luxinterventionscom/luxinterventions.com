@@ -9787,5 +9787,33 @@ export default [
 [
 "Facturation du client enregistrée",
 "Rechnungsdaten des Kunden gespeichert"
+],
+[
+"Gérance",
+"Verwaltung"
+],
+[
+"Ajouter loc.",
+"Mieter hinzuf."
+],
+[
+"Classement",
+"Rangliste"
+],
+[
+"Gestion locataire",
+"Mieterverwaltung"
+],
+[
+"Gestion loc.",
+"Mieterverw."
+],
+[
+"reçus",
+"erhalten"
+],
+[
+"Paiements des loyers — touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
+"Mietzahlungen — leeren Monat antippen, um ihn als bezahlt zu markieren; bezahlten Monat antippen für Betrag, Quittung oder Storno."
 ]
 ];

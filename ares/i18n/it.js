@@ -9799,5 +9799,33 @@ export default [
 [
 "Facturation du client enregistrée",
 "Fatturazione del cliente salvata"
+],
+[
+"Gérance",
+"Gestione"
+],
+[
+"Ajouter loc.",
+"Aggiungi inq."
+],
+[
+"Classement",
+"Classifica"
+],
+[
+"Gestion locataire",
+"Gestione inquilini"
+],
+[
+"Gestion loc.",
+"Gestione inq."
+],
+[
+"reçus",
+"ricevuti"
+],
+[
+"Paiements des loyers — touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
+"Pagamenti degli affitti — tocca un mese vuoto per segnarlo pagato; tocca un mese pagato per importo, quietanza o annullamento."
 ]
 ];

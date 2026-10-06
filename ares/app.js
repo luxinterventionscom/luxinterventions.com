@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.85.0';
+const VERSION = '2.86.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2083,12 +2083,24 @@ vault.on((kind) => {
 });
 
 // ───────────────────────── Coquille ─────────────────────────
+// Menu de gauche (ordinateur) : sections avec sous-rubriques et raccourcis « + »
+const NAV_TREE = [
+  ['dashboard', 'Accueil', 'home'],
+  { group: 'Gérance', items: [['immeubles', 'Immeubles', 'building'], ['locataires', 'Locataires', 'users', ['new-loc', 'Ajouter loc.']], ['gerances', 'Gérances', 'briefcase', ['ger-new-go', 'Ajouter gérance']], ['maintenance', 'Maintenance', 'tool', ['new-tache', 'Intervention']]] },
+  ['champions', 'Classement', 'trophy'],
+  { group: 'Comptabilité', items: [['paiements', 'Gestion locataire', 'wallet'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Statistiques', 'chart', null, 'stats']] },
+];
+function sideNavHtml() {
+  const btn = ([id, label, ic, plus, sec], sub) => html`<button class="navbtn${sub ? ' nav-sub' : ''}" data-action="go" data-to="${id}" ${sec ? new Raw(`data-sec="${sec}"`) : ''}>${icon(ic)}<span>${label}</span></button>${plus ? html`<button class="navbtn nav-plus" data-action="${plus[0]}">＋ <span>${plus[1]}</span></button>` : ''}`;
+  return NAV_TREE.map((x) => (x.group ? html`<div class="nav-group">${x.group}</div>${x.items.map((it) => btn(it, true))}` : btn(x)));
+}
 function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
       <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>LuxInterventions<small>Gestion locative</small></span></div>
-      ${NAV.map(navBtn)}
+      ${sideNavHtml()}
+      ${navBtn(['reglages', 'Réglages', 'more'])}
       <div class="spacer"></div>
       <button class="navbtn" data-action="lock">${icon('lock')}<span>Verrouiller</span></button>
     </nav>
@@ -2100,7 +2112,7 @@ function renderShell() {
       </header>
       <main class="main" id="view"></main>
     </div>
-    <nav class="bottomnav" aria-label="Navigation">${NAV.filter(([id]) => MOBILE_NAV.includes(id)).map(([id, label, ic]) => navBtn([id, id === 'reglages' ? 'Plus' : label, ic]))}</nav>
+    <nav class="bottomnav" aria-label="Navigation">${NAV.filter(([id]) => MOBILE_NAV.includes(id)).map(([id, label, ic]) => navBtn([id, id === 'reglages' ? 'Plus' : id === 'paiements' ? 'Gestion loc.' : label, ic]))}</nav>
     <button class="fab" id="fab" data-action="fab" aria-label="Ajouter" hidden>${icon('plus')}</button>
   `);
   renderSync();
@@ -2122,7 +2134,7 @@ function go(route, replace) {
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
   const navRoute = route === 'champeq' ? 'champions' : route;
-  document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
+  document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute && (!b.dataset.sec || b.dataset.sec === (ui.cpSec || 'compta')) ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   const fab = $('#fab');
   if (fab) fab.hidden = !['immeubles', 'locataires'].includes(route);
   renderView();
@@ -3118,11 +3130,11 @@ dashboard() {
         </div>`;
       });
       gDue += due; gPaid += paid; gRest += rest; gColl += collected;
-      return html`<div class="card"><div class="card-title"><h3>${im.adresse}</h3><span class="badge ${level(pct(collected, due)) || 'ok'}">${pct(collected, due)}%</span></div>${rows}
+      return html`<div class="card"><div class="card-title"><h3>${im.adresse}</h3><span style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><span class="tiny muted"><b class="green">${money(collected)}</b> reçus</span><span class="badge ${level(pct(collected, due)) || 'ok'}">${pct(collected, due)}%</span></span></div>${rows}
         <div class="totals"><span>Échu à ce jour <b>${money(due)}</b></span><span>Reçu <b class="green">${money(paid)}</b></span><span>Impayé <b class="${rest > 0.009 ? 'red' : 'green'}">${money(rest)}</b></span></div></div>`;
     }).filter(Boolean);
     return html`
-      ${pageHead('Paiements', 'Touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.')}
+      ${pageHead('Gestion locataire', 'Paiements des loyers — touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.')}
       <div class="toolbar">
         ${yearSelect(y)}
         ${all.length > 1 ? html`<div class="chips pay-chips">
@@ -5239,7 +5251,7 @@ const ACTIONS = {
   'open-interv': (d) => openSheet('interv', d.id),
   'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
   'cp-tab': (d) => { ui.cpTab = d.id; renderView(); },
-  'cp-sec': (d) => { ui.cpSec = d.id; renderView(); },
+  'cp-sec': (d) => { ui.cpSec = d.id; go('compta', true); },
   'cp-fact-csv': () => {
     const [from, to] = cpRange(ui.year, ui.cpPer || 'y');
     const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`, n2 = (v) => String(r2(v || 0)).replace('.', ',');
@@ -5481,7 +5493,7 @@ const ACTIONS = {
     publishPub(c.immId);
     goBack();
   },
-  go: (d) => { closeSheet(); go(d.to); },
+  go: (d) => { closeSheet(); if (d.sec) ui.cpSec = d.sec; go(d.to); },
   lock: () => lockNow(),
   'sync-now': () => vault.sync().then(() => vault.status === 'synced' && toast('Synchronisé')),
   'toggle-pw': (_, el) => {
@@ -5493,6 +5505,7 @@ const ACTIONS = {
   'new-imm': () => openSheet('imm-form'),
   'edit-imm': (d) => openSheet('imm-form', d.id),
   'new-loc': (d) => openSheet('loc-form', null, null, d.log),
+  'ger-new-go': () => { go('gerances'); if (ptlConf()) openSheet('ger-form'); },
   'edit-loc': (d) => openSheet('loc-form', d.id),
   'open-loc': (d) => openSheet('loc', d.id),
   async 'open-vir'(d) {
