@@ -9615,5 +9615,17 @@ export default [
 [
 "Tout est affiché ({0})",
 "All shown ({0})"
+],
+[
+"TVA des factures d’interventions émises par {0} (LuxInterventions). Les loyers ne sont pas soumis à la TVA.",
+"VAT of the intervention invoices issued by {0} (LuxInterventions). Rents are not subject to VAT."
+],
+[
+"TVA collectée",
+"VAT collected"
+],
+[
+"Factures",
+"Invoices"
 ]
 ];
