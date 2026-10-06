@@ -10183,5 +10183,41 @@ export default [
 [
 "Ex. 25 % : ouvrier payé 40 €/h → facturé 50 €/h à la gérance (si la fiche de l’ouvrier n’a pas de tarif « facturé à la gérance »). Modifiable dans chaque facture, avec remise ou majoration.",
 "Ex. 25 %: operário pago a 40 €/h → faturado 50 €/h à gérance (se a ficha do operário não tiver tarifa «faturado à gérance»). Alterável em cada fatura, com desconto ou acréscimo."
+],
+[
+"Routine · {0}",
+"Rotina · {0}"
+],
+[
+"Routine chaque semaine",
+"Rotina todas as semanas"
+],
+[
+"Modifier la routine",
+"Modificar a rotina"
+],
+[
+"Créer la routine (ménage, contrôles…)",
+"Criar a rotina (limpeza, controlos…)"
+],
+[
+"Pas encore de routine.",
+"Ainda sem rotina."
+],
+[
+"Pas de routine pour cette personne : le jour, l’heure et le lieu se donnent à chaque travail (📌 Affectation / 📅 Autre travail).",
+"Sem rotina para esta pessoa: dia, hora e local dão-se em cada trabalho (📌 Atribuição / 📅 Outro trabalho)."
+],
+[
+"Se répète chaque semaine (ménage, contrôles…). Une semaine différente : 📅 Planning par semaine. Un dégât signalé : 📌 Affectation.",
+"Repete-se todas as semanas (limpeza, controlos…). Uma semana diferente: 📅 Planeamento por semana. Um dano comunicado: 📌 Atribuição."
+],
+[
+"Enregistrer la routine",
+"Guardar a rotina"
+],
+[
+"Routine enregistrée",
+"Rotina guardada"
 ]
 ];

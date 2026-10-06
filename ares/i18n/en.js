@@ -9999,5 +9999,37 @@ export default [
 [
 "Ex. 25 % : ouvrier payé 40 €/h → facturé 50 €/h à la gérance (si la fiche de l’ouvrier n’a pas de tarif « facturé à la gérance »). Modifiable dans chaque facture, avec remise ou majoration.",
 "E.g. 25 %: worker paid 40 €/h → billed 50 €/h to the agency (if the worker form has no “billed to the agency” rate). Can be changed on each invoice, with discount or surcharge."
+],
+[
+"Routine chaque semaine",
+"Weekly routine"
+],
+[
+"Modifier la routine",
+"Edit the routine"
+],
+[
+"Créer la routine (ménage, contrôles…)",
+"Create the routine (cleaning, checks…)"
+],
+[
+"Pas encore de routine.",
+"No routine yet."
+],
+[
+"Pas de routine pour cette personne : le jour, l’heure et le lieu se donnent à chaque travail (📌 Affectation / 📅 Autre travail).",
+"No routine for this person: day, time and place are given with each job (📌 Assignment / 📅 Other job)."
+],
+[
+"Se répète chaque semaine (ménage, contrôles…). Une semaine différente : 📅 Planning par semaine. Un dégât signalé : 📌 Affectation.",
+"Repeats every week (cleaning, checks…). A different week: 📅 Weekly planning. A reported damage: 📌 Assignment."
+],
+[
+"Enregistrer la routine",
+"Save the routine"
+],
+[
+"Routine enregistrée",
+"Routine saved"
 ]
 ];

@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.96.0';
+const VERSION = '2.97.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4017,11 +4017,6 @@ const SHEETS = {
         ${field('RCS (société)', 'rcs', i.rcs, { placeholder: 'ex. B123456' })}
         ${field('N° TVA (société)', 'tva', i.tva, { placeholder: 'ex. LU12345678' })}
         ${engForm(i)}
-        ${(() => { const wk = mondayOf(today()), rep = !id || hors(i).length > 0; return html`<div class="full hor-wrap" ${horFixed(i) ? '' : new Raw('hidden')}><div class="section-label" style="margin:10px 0 0">📅 Horaire — personnel régulier (ménage)</div>
-        <p class="tiny muted" style="margin:0 0 6px">Laisser vide pour les ouvriers : le jour, l’heure et le lieu se donnent à chaque travail (📌 Affectation).</p>
-        <div class="fields"><label class="field">Semaine du (date)<input type="date" name="hwk" value="${today()}" data-input="hor-wk"></label>
-          <label class="check" style="align-self:end"><input type="checkbox" name="hrep" value="1" ${rep ? new Raw('checked') : ''}> 🔁 Même horaire toutes les semaines</label></div>
-        ${horWeekEditor((j) => horsOn(i, addDays(wk, j)), (j) => `${SEMAINE[j]} ${frD(addDays(wk, j))}`)}</div>`; })()}
         <label class="field full">Notes<textarea name="note" placeholder="Clés confiées, disponibilités…">${i.note || ''}</textarea></label>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-interv" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
@@ -4089,6 +4084,21 @@ const SHEETS = {
         <div class="full" id="factTot">${factTotHtml(f)}</div>
       </form>`,
       foot: html`<button class="btn" type="submit" form="f">Enregistrer le brouillon</button><button class="btn primary" data-action="fact-emit" data-id="${id}" ${miss.length ? new Raw('disabled') : ''}>🧾 Émettre et envoyer</button>`,
+    };
+  },
+  // routine de chaque semaine (salariés : ménage, contrôles), avec la semaine en dates
+  'hor-std'({ id }) {
+    const i = vault.get('intervenants', id);
+    if (!i) return null;
+    const wk = mondayOf(today());
+    return {
+      title: `🔁 Routine · ${intervFull(i)}`,
+      body: html`<form id="f" data-form="hor-std" class="fields"><input type="hidden" name="id" value="${id}">
+        <p class="small muted full" style="margin:0">Se répète chaque semaine (ménage, contrôles…). Une semaine différente : 📅 Planning par semaine. Un dégât signalé : 📌 Affectation.</p>
+        <label class="field">Semaine du (date)<input type="date" name="hwk" value="${today()}" data-input="hor-wk"></label>
+        ${horWeekEditor((j) => hors(i).filter((h) => h.j === j), (j) => `${SEMAINE[j]} ${frD(addDays(wk, j))}`)}
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer la routine</button>`,
     };
   },
   'plan-week'({ id, preset }) {
@@ -4168,9 +4178,10 @@ const SHEETS = {
           <div class="actions" style="margin-top:8px"><button class="btn primary" data-action="plan-edit" data-id="${id}" data-d="${mon}">✏️ Planifier cette semaine</button>
             ${wkDays.some((iso) => i.plan && i.plan[iso]) ? html`<button class="btn ghost" data-action="plan-reset" data-id="${id}" data-d="${mon}">↩️ Revenir à l’horaire habituel</button>` : ''}</div>
           <p class="tiny muted" style="margin:6px 0 0">Les jours sans modification suivent l’horaire habituel (plus bas). La personne voit ce planning, avec les dates, dans son app.</p></div>`;
-      body = html`${jobBtn}${jobList}${planHtml}<div class="section-label">Horaire habituel (chaque semaine)</div>
+      body = html`${jobBtn}${jobList}${horFixed(i) || hs.length ? html`${planHtml}<div class="section-label">🔁 Routine chaque semaine</div>
+        <button class="btn block" data-action="hor-std" data-id="${id}" style="margin-bottom:8px">✏️ ${hs.length ? 'Modifier la routine' : 'Créer la routine (ménage, contrôles…)'}</button>
         ${hs.length ? html`<div class="list small">${hs.map((h) => html`<div class="row"><span class="grow"><b>${SEMAINE[h.j]}</b> <span>${HOR_P[horP(h)]}</span> ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : ''}</span><span class="meta">${fmtH(dayHours({ horaires: [h] }, h.j))}</span></div>`)}</div>
-          <p class="tiny muted">Total par semaine : <b>${fmtH([0, 1, 2, 3, 4, 5, 6].reduce((n, j) => n + dayHours(i, j), 0))}</b></p>` : html`<p class="small muted">Pas d’horaire enregistré. Touchez « Modifier » pour l’ajouter.</p>`}
+          <p class="tiny muted">Total par semaine : <b>${fmtH([0, 1, 2, 3, 4, 5, 6].reduce((n, j) => n + dayHours(i, j), 0))}</b></p>` : html`<p class="small muted">Pas encore de routine.</p>`}` : html`<p class="small muted">Pas de routine pour cette personne : le jour, l’heure et le lieu se donnent à chaque travail (📌 Affectation / 📅 Autre travail).</p>`}
         <div class="section-label">Heures par mois (horaire − absences)</div>
         <div class="list small">${months.map(([yy, mm]) => { const r = intervMonth(i, yy, mm); return html`<div class="row"><span class="grow"><b>${MONTHS_FULL[mm - 1]} ${yy}</b><span class="meta" style="display:block">prévu ${fmtH(r.prevu)}${r.jm ? ` · 🤒 ${r.jm} j (−${fmtH(r.maladie)})` : ''}${r.jc ? ` · 🏖️ ${r.jc} j (−${fmtH(r.conges)})` : ''}${r.ja ? ` · 📌 ${r.ja} j (−${fmtH(r.autre)})` : ''}</span></span><b>${fmtH(r.net)}</b></div>`; })}</div>
         <p class="tiny muted">Calcul sur l’horaire habituel : pour les heures en plus ou en moins, ajoutez une note.</p>`;
@@ -4187,7 +4198,7 @@ const SHEETS = {
           <button class="btn primary block" data-action="eq-on" data-id="${id}">📱 Créer l’accès à l’app</button>`;
       } else {
         const url = eqUrl(i);
-        const inv = inviteMsg('eq', e.lang, i.prenom || '', eqAppUrl(), e.code || '—', url, societe().nom || 'NOBIS s.a.r.l.');
+        const inv = inviteMsg('eq', e.lang, i.prenom || '', eqAppUrl(), e.code || '—', url, factConf().nom || 'ARES INVEST S.A.');
         const msgTxt = encodeURIComponent(inv.txt);
         body = html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code personnel</div>
             <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
@@ -5444,6 +5455,7 @@ const ACTIONS = {
   },
   'edit-interv': (d) => openOver('interv-form', d.id),
   'plan-wk': (d) => { ui.planWk ||= {}; const cur = ui.planWk[d.id] || mondayOf(today()); ui.planWk[d.id] = addDays(cur, +d.d); ui.sheet.rendered = false; renderSheet(); },
+  'hor-std': (d) => openOver('hor-std', d.id),
   'plan-edit': (d) => openOver('plan-week', d.id, null, d.d),
   'fact-set': () => openOver('fact-set'),
   'fact-open': (d) => openOver('facture', d.id),
@@ -6153,6 +6165,13 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('taches', { id: t.id, factDraft: factRead(fm) }), 'Brouillon de facture', t.titre, t.immId);
     toast('Brouillon enregistré'); goBack();
   },
+  async 'hor-std'(fd) {
+    const i = vault.get('intervenants', fd.get('id'));
+    if (!i) return;
+    const horaires = horFromForm(fd);
+    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, horaires }), 'Routine de la semaine', `${intervFull(i)} — ${horaires.length} créneau(x)`, i.id);
+    toast('Routine enregistrée'); goBack();
+  },
   async 'plan-week'(fd) {
     const i = vault.get('intervenants', fd.get('id'));
     const mon = String(fd.get('mon') || '');
@@ -6190,16 +6209,7 @@ const FORMS = {
     const g = (k) => String(fd.get(k) || '').trim();
     const prev = id ? vault.get('intervenants', id) || {} : {};
     const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), note: g('note') };
-    // horaire : chaque semaine (horaire fixe) ou seulement la semaine choisie, avec ses dates
-    const slots = horFromForm(fd), wk = /^\d{4}-\d{2}-\d{2}$/.test(g('hwk')) ? mondayOf(g('hwk')) : mondayOf(today());
-    if (!horFixed(rec)) rec.horaires = prev.horaires || [];
-    else if (fd.get('hrep') === '1') rec.horaires = slots;
-    else {
-      rec.horaires = prev.horaires || [];
-      const plan = { ...(prev.plan || {}) };
-      for (let j = 0; j < 7; j++) plan[addDays(wk, j)] = slots.filter((h) => h.j === j).map(({ de, a, immId, p }) => ({ de, a, immId, p }));
-      rec.plan = plan;
-    }
+    // l'horaire ne se fait plus ici : fiche de la personne → Horaires (routine et planning par semaine)
     // engagement : assurance, paiement, obligations acceptées, signature digitale
     if (rec.genre !== 'interne') {
       Object.assign(rec, { assur: g('assur'), police: g('police'), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s/g, ''), iban: ibanClean(g('iban')) });
