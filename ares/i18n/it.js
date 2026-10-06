@@ -9491,5 +9491,77 @@ export default [
 [
 "🔗 Envoyer un nouveau lien",
 "🔗 Invia un nuovo link"
+],
+[
+"📅 Planning par semaine (avec les dates)",
+"📅 Planning per settimana (con le date)"
+],
+[
+"Semaine du {0} au {1}",
+"Settimana dal {0} al {1}"
+],
+[
+"cette semaine",
+"questa settimana"
+],
+[
+"✏️ Planifier cette semaine",
+"✏️ Pianifica questa settimana"
+],
+[
+"↩️ Revenir à l’horaire habituel",
+"↩️ Torna all’orario abituale"
+],
+[
+"modifié",
+"modificato"
+],
+[
+"Les jours sans modification suivent l’horaire habituel (plus bas). La personne voit ce planning, avec les dates, dans son app.",
+"I giorni senza modifiche seguono l’orario abituale (più sotto). La persona vede questo planning, con le date, nella sua app."
+],
+[
+"Horaire habituel — se répète chaque semaine (Lundi = tous les lundis)",
+"Orario abituale — si ripete ogni settimana (Lunedì = tutti i lunedì)"
+],
+[
+"Laisser vide ce qui n’est pas travaillé. Pour une semaine précise avec les dates (lundi 12 oct., mardi 13 oct.…) : fiche de la personne → Horaires → 📅 Planning par semaine.",
+"Lascia vuoto ciò che non si lavora. Per una settimana precisa con le date (lunedì 12 ott., martedì 13 ott.…): scheda della persona → Orari → 📅 Planning per settimana."
+],
+[
+"Chaque jour avec sa date. Ce qui est déjà rempli vient de l’horaire habituel : changez, ajoutez ou videz (jour non travaillé).",
+"Ogni giorno con la sua data. Ciò che è già compilato viene dall’orario abituale: cambia, aggiungi o svuota (giorno non lavorato)."
+],
+[
+"Recopier ce planning aussi sur",
+"Copia questo planning anche su"
+],
+[
+"cette semaine seulement",
+"solo questa settimana"
+],
+[
+"Enregistrer la semaine",
+"Salva la settimana"
+],
+[
+"Planning de la semaine enregistré",
+"Planning della settimana salvato"
+],
+[
+"Planning enregistré sur {0} semaines",
+"Planning salvato su {0} settimane"
+],
+[
+"Semaine remise à l’horaire habituel",
+"Settimana riportata all’orario abituale"
+],
+[
+"Revenir à l’horaire habituel pour cette semaine ?",
+"Tornare all’orario abituale per questa settimana?"
+],
+[
+"Revenir à l’habituel",
+"Torna all’abituale"
 ]
 ];

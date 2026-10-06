@@ -9479,5 +9479,77 @@ export default [
 [
 "🔗 Envoyer un nouveau lien",
 "🔗 Neuen Link senden"
+],
+[
+"📅 Planning par semaine (avec les dates)",
+"📅 Wochenplanung (mit Datum)"
+],
+[
+"Semaine du {0} au {1}",
+"Woche vom {0} bis {1}"
+],
+[
+"cette semaine",
+"diese Woche"
+],
+[
+"✏️ Planifier cette semaine",
+"✏️ Diese Woche planen"
+],
+[
+"↩️ Revenir à l’horaire habituel",
+"↩️ Zum üblichen Plan zurück"
+],
+[
+"modifié",
+"geändert"
+],
+[
+"Les jours sans modification suivent l’horaire habituel (plus bas). La personne voit ce planning, avec les dates, dans son app.",
+"Tage ohne Änderung folgen dem üblichen Plan (unten). Die Person sieht diese Planung mit Datum in ihrer App."
+],
+[
+"Horaire habituel — se répète chaque semaine (Lundi = tous les lundis)",
+"Üblicher Plan — wiederholt sich jede Woche (Montag = jeden Montag)"
+],
+[
+"Laisser vide ce qui n’est pas travaillé. Pour une semaine précise avec les dates (lundi 12 oct., mardi 13 oct.…) : fiche de la personne → Horaires → 📅 Planning par semaine.",
+"Leer lassen, was nicht gearbeitet wird. Für eine bestimmte Woche mit Datum: Personenkarte → Zeiten → 📅 Wochenplanung."
+],
+[
+"Chaque jour avec sa date. Ce qui est déjà rempli vient de l’horaire habituel : changez, ajoutez ou videz (jour non travaillé).",
+"Jeder Tag mit Datum. Bereits Ausgefülltes kommt aus dem üblichen Plan: ändern, ergänzen oder leeren (freier Tag)."
+],
+[
+"Recopier ce planning aussi sur",
+"Diese Planung auch übernehmen für"
+],
+[
+"cette semaine seulement",
+"nur diese Woche"
+],
+[
+"Enregistrer la semaine",
+"Woche speichern"
+],
+[
+"Planning de la semaine enregistré",
+"Wochenplanung gespeichert"
+],
+[
+"Planning enregistré sur {0} semaines",
+"Planung für {0} Wochen gespeichert"
+],
+[
+"Semaine remise à l’horaire habituel",
+"Woche auf üblichen Plan zurückgesetzt"
+],
+[
+"Revenir à l’horaire habituel pour cette semaine ?",
+"Für diese Woche zum üblichen Plan zurück?"
+],
+[
+"Revenir à l’habituel",
+"Zum Üblichen zurück"
 ]
 ];

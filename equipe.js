@@ -210,6 +210,12 @@ function taskLine(it) {
   const done = stopTimes(it.tid, it.d).end;
   return `<div class="tline${x.urgent && !done ? ' urgent' : ''}">${done ? '✅' : ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}<div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button></div></div>`;
 }
+// horaire d'un jour précis : le planning daté (fait par le responsable) remplace l'horaire habituel ce jour-là
+function hOnDate(d, iso) {
+  const j = (new Date(iso + 'T12:00:00').getDay() + 6) % 7;
+  const hs = d.jours && d.jours[iso] ? d.jours[iso].map((h) => ({ ...h, j })) : (d.horaires || []).filter((h) => h.j === j);
+  return hs.slice().sort((a, b) => (a.de || '').localeCompare(b.de || ''));
+}
 function taskCard(it, withBtns) {
   const t = T(), x = data.tasks[it.tid];
   if (!x) return '';
@@ -295,6 +301,7 @@ function placesOf(d) {
   const add = (a) => { const k = (a || '').trim(); if (k && k !== 'Sans immeuble' && !seen.has(k.toLowerCase())) { seen.add(k.toLowerCase()); outp.push(k); } };
   for (const x of d.items.filter((z) => z.d >= today || z.late)) add((d.tasks[x.tid] || {}).adresse);
   for (const h of d.horaires || []) add(h.lieu);
+  for (const hs of Object.values(d.jours || {})) for (const h of hs) add(h.lieu);
   for (const x of d.pubs || []) add(x.adresse);
   return outp;
 }
@@ -356,7 +363,7 @@ function render() {
   if (absNow) out.push(`<div class="card warnc"><p style="margin:0"><b>${esc(t.absNow(t.types[absNow.type] || absNow.type, fmt(absNow.fin)))}</b></p></div>`);
   const todays = d.items.filter((x) => x.d <= today && (x.d === today || x.late)).sort(byHour);
   const dow = (new Date().getDay() + 6) % 7;
-  const hsToday = (d.horaires || []).filter((h) => h.j === dow).sort((a, b) => (a.de || '').localeCompare(b.de || ''));
+  const hsToday = hOnDate(d, today);
   const hrow = (h) => `<div class="hday"><b>${esc(t.days[h.j])}</b><span class="hh">🕒 ${esc(t.w.arr)} <b>${esc(h.de)}</b> · ${esc(t.w.dep)} <b>${esc(h.a)}</b></span>${h.lieu ? `<button class="place" data-place="${esc(h.lieu)}" aria-pressed="${h.lieu === place}">📍 ${esc(h.lieu)}</button>` : ''}</div>`;
   const todayAt = out.length;
   out.push(`<div class="card" id="todayCard"><h2>📅 ${esc(t.w.today)} · ${esc(fmtDay(today))}</h2>${hsToday.map(hrow).join('')}${todays.length ? todays.map(taskLine).join('') : hsToday.length ? '' : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}${hsToday.some((h) => h.lieu) || todays.length ? `<p class="meta" style="margin:8px 0 0">${esc(t.x.placesHint)}</p>` : ''}</div>`);
@@ -364,7 +371,7 @@ function render() {
   const nexts = d.items.filter((x) => x.d > today).sort(byHour);
   const byDay = {};
   for (const x of nexts) (byDay[x.d] ||= []).push(x);
-  const hOf = (dd) => (d.horaires || []).filter((h) => h.j === (new Date(dd + 'T12:00:00').getDay() + 6) % 7).sort((a, b) => (a.de || '').localeCompare(b.de || ''));
+  const hOf = (dd) => hOnDate(d, dd);
   // Planning du mois : une bannière par semaine (lundi → dimanche), repliable ; la semaine en cours a le contour qui « respire »
   const addD = (iso, n) => { const x = new Date(iso + 'T12:00:00'); x.setDate(x.getDate() + n); return isoDay(x); };
   const now = new Date(today + 'T12:00:00'), monthEnd = isoDay(new Date(now.getFullYear(), now.getMonth() + 1, 0));
@@ -522,7 +529,7 @@ app.addEventListener('submit', async (e) => {
     const note = f.note.value.trim();
     if (!note || pbPhotos.length < 3) return;
     btn.disabled = true; btn.textContent = '…';
-    const dow0 = (new Date().getDay() + 6) % 7, h0 = (data.horaires || []).find((h) => h.j === dow0 && h.lieu);
+    const h0 = hOnDate(data, isoDay(new Date())).find((h) => h.lieu);
     try {
       await queue({ k: 'pb', d: today, note: note.slice(0, 1000), lieu: place || (h0 ? h0.lieu : ''), photos: pbPhotos.map((x) => x.b), at: new Date().toISOString() });
       pbPhotos.forEach((x) => URL.revokeObjectURL(x.url)); pbPhotos = []; pbNote = '';
