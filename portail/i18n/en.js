@@ -177,6 +177,10 @@ export default [
 "At least 10 characters"
 ],
 [
+"Au étage",
+"To floor"
+],
+[
 "Aucun résultat.",
 "No results."
 ],
@@ -303,6 +307,14 @@ export default [
 [
 "Bureau",
 "Office"
+],
+[
+"Bât.",
+"Bldg"
+],
+[
+"Bât. / escalier",
+"Bldg / staircase"
 ],
 [
 "Cage d’escalier",
@@ -509,6 +521,10 @@ export default [
 "Create the link"
 ],
 [
+"Créer les appartements",
+"Create the apartments"
+],
+[
 "Créez le compte administrateur LuxInterventions.",
 "Create the LuxInterventions administrator account."
 ],
@@ -611,6 +627,10 @@ export default [
 [
 "Dont urgentes",
 "Of which urgent"
+],
+[
+"Du étage",
+"From floor"
 ],
 [
 "Décembre",
@@ -1217,6 +1237,10 @@ export default [
 "November"
 ],
 [
+"Numéros",
+"Numbers"
+],
+[
 "N° / nom",
 "No. / name"
 ],
@@ -1259,6 +1283,10 @@ export default [
 [
 "Par urgence",
 "By urgency"
+],
+[
+"Par étage",
+"Per floor"
 ],
 [
 "Parking / extérieur",
@@ -2061,6 +2089,10 @@ export default [
 "To be agreed"
 ],
 [
+"À la suite (1, 2, 3…)",
+"In sequence (1, 2, 3…)"
+],
+[
 "À partir de",
 "From"
 ],
@@ -2095,6 +2127,10 @@ export default [
 [
 "Étage",
 "Floor"
+],
+[
+"Étage + n° (201, 202…)",
+"Floor + no. (201, 202…)"
 ],
 [
 "Étage : autre",
@@ -2163,6 +2199,10 @@ export default [
 [
 "⏳ à payer",
 "⏳ to pay"
+],
+[
+"⚡ Créer plusieurs appartements d’un coup",
+"⚡ Create several apartments at once"
 ],
 [
 "⚡ Panneaux",

@@ -1407,7 +1407,7 @@ async function handlePortail(request, env, url, headers, ctx) {
     // codes nommés (portail, garage, serrure digitale, panneau de redémarrage…) et appartements (n°, étage, porte, code)
     const jsonList = (v, max, f) => JSON.stringify((Array.isArray(v) ? v : []).slice(0, max).map(f).filter((x) => Object.values(x).some(Boolean)));
     const resCodes = (b) => jsonList(b.codes, 30, (x) => ({ l: clean(x && x.l, 60), c: clean(x && x.c, 40) }));
-    const resApts = (b) => jsonList(b.apts, 400, (x) => ({ n: clean(x && x.n, 40), e: clean(x && x.e, 20), p: clean(x && x.p, 20), c: clean(x && x.c, 40) }));
+    const resApts = (b) => jsonList(b.apts, 600, (x) => ({ b: clean(x && x.b, 30), n: clean(x && x.n, 40), e: clean(x && x.e, 20), p: clean(x && x.p, 20), c: clean(x && x.c, 40) }));
     const resFields = (b) => [clean(b.name, 160), clean(b.address, 300), clean(b.access, 500), clean(b.keys_info, 500), clean(b.contact_name, 120), clean(b.contact_phone, 40), clean(b.notes, 2000), parseInt(b.apartments, 10) || null,
       code6(b.alarm), code6(b.code_other), clean(b.interior, 120), clean(b.floors, 120), resCodes(b), resApts(b)];
     if (path === "residences" && method === "POST") {

@@ -967,8 +967,12 @@ function revokePhotos() { photoUrls.forEach((u) => URL.revokeObjectURL(u)); phot
 const jsonArr = (v) => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
 const CODE_LABELS = ['Portail / portail d’entrée', 'Porte d’entrée', 'Porte de garage', 'Serrure digitale', 'Local technique', 'Panneau de redémarrage', 'Ascenseur', 'Boîte à clés', 'Cave', 'Interphone'];
 const codeRow = (n, c = {}) => html`<div class="code-row"><input name="cl${n}" value="${c.l || ''}" list="codeLabels" placeholder="Quoi ? (ex. Portail)"><input name="cc${n}" value="${c.c || ''}" placeholder="Code" autocomplete="off"></div>`;
-const aptRow = (n, a = {}) => html`<div class="apt-row"><input name="an${n}" value="${a.n || ''}" placeholder="App. 4B"><input name="ae${n}" value="${a.e || ''}" placeholder="2"><input name="ap${n}" value="${a.p || ''}" placeholder="12"><input name="ac${n}" value="${a.c || ''}" placeholder="Code" autocomplete="off"></div>`;
-const aptOpts = (r) => html`<option value="">— Parties communes / autre —</option>${jsonArr(r && r.apts).map((a, i) => html`<option value="${i}">${a.n || 'App.'}${a.e ? ' · étage ' + a.e : ''}${a.p ? ' · porte ' + a.p : ''}</option>`)}`;
+const aptRow = (n, a = {}) => html`<div class="apt-row"><input name="ab${n}" value="${a.b || ''}" placeholder="A"><input name="an${n}" value="${a.n || ''}" placeholder="App. 4B"><input name="ae${n}" value="${a.e || ''}" placeholder="2"><input name="ap${n}" value="${a.p || ''}" placeholder="12"><input name="ac${n}" value="${a.c || ''}" placeholder="Code" autocomplete="off"></div>`;
+const aptOpts = (r) => {
+  const groups = new Map();
+  jsonArr(r && r.apts).forEach((a, i) => { const k = [a.b ? 'Bât. ' + a.b : '', a.e !== undefined && a.e !== '' ? (a.e === 'RDC' || a.e === '0' ? 'RDC' : 'Étage ' + a.e) : ''].filter(Boolean).join(' · ') || 'Appartements'; if (!groups.has(k)) groups.set(k, []); groups.get(k).push([a, i]); });
+  return html`<option value="">— Parties communes / autre —</option>${[...groups].map(([k, arr]) => html`<optgroup label="${k}">${arr.map(([a, i]) => html`<option value="${i}">${a.n || 'App.'}${a.p ? ' · porte ' + a.p : ''}</option>`)}</optgroup>`)}`;
+};
 const eurP = (n) => (Math.round((+n || 0) * 100) / 100).toFixed(2).replace('.', ',') + ' €';
 async function loadPhotoInto(img) {
   try {
@@ -1194,7 +1198,7 @@ const SHEETS = {
           ${kv('Code d’accès', codeShow(r.access))}${kv('Code alarme', codeShow(r.alarm))}${kv('Code panneaux / autre', codeShow(r.code_other))}${kv('Clés', r.keys_info)}${kv('Contact', [r.contact_name, r.contact_phone].filter(Boolean).join(' · '))}
         </dl>
         ${jsonArr(r.codes).length ? html`<div class="section-label" style="margin-top:0">🔐 Codes</div><dl class="kv small" style="margin-bottom:14px">${jsonArr(r.codes).map((c) => kv(c.l || 'Code', isCode(c.c) ? codeShow(c.c) : c.c))}</dl>` : ''}
-        ${jsonArr(r.apts).length ? html`<div class="section-label" style="margin-top:0">🚪 Appartements (${jsonArr(r.apts).length})</div><div class="card" style="padding:0;overflow:auto;margin-bottom:14px"><table class="tbl small"><thead><tr><th>N°</th><th>Étage</th><th>Porte</th><th>Code serrure</th></tr></thead><tbody>${jsonArr(r.apts).map((a) => html`<tr><td>${a.n || '—'}</td><td>${a.e || ''}</td><td>${a.p || ''}</td><td>${a.c ? (isCode(a.c) ? codeShow(a.c) : a.c) : ''}</td></tr>`)}</tbody></table></div>` : ''}
+        ${jsonArr(r.apts).length ? html`<div class="section-label" style="margin-top:0">🚪 Appartements (${jsonArr(r.apts).length})</div><div class="card" style="padding:0;overflow:auto;margin-bottom:14px"><table class="tbl small"><thead><tr><th>Bât.</th><th>N°</th><th>Étage</th><th>Porte</th><th>Code serrure</th></tr></thead><tbody>${jsonArr(r.apts).map((a) => html`<tr><td>${a.b || ''}</td><td>${a.n || '—'}</td><td>${a.e || ''}</td><td>${a.p || ''}</td><td>${a.c ? (isCode(a.c) ? codeShow(a.c) : a.c) : ''}</td></tr>`)}</tbody></table></div>` : ''}
         ${r.notes ? html`<div class="note" style="margin-bottom:14px">${r.notes}</div>` : ''}
         <button class="btn primary block" data-action="new-ticket" data-residence="${r.id}">${icon('plus')} Demande de dépannage pour cette résidence</button>
         <div class="section-label">Historique des interventions</div>
@@ -1229,7 +1233,11 @@ const SHEETS = {
           <div id="resCodes">${codes.map((c, n) => codeRow(n, c))}</div>
           <button type="button" class="btn sm" data-action="res-row" data-k="code">${icon('plus')} Code</button></div>
         <div class="full"><div class="section-label" style="margin:6px 0">🚪 Appartements (n°, étage, n° de porte, code de la serrure)</div>
-          <div class="apt-head"><span>N° / nom</span><span>Étage</span><span>Porte</span><span>Code serrure</span></div>
+          <details class="apt-gen"><summary>⚡ Créer plusieurs appartements d’un coup</summary>
+            <div class="apt-gen-grid"><label class="field">Bât. / escalier<input data-gen="b" placeholder="A"></label><label class="field">Du étage<input data-gen="from" type="number" value="0" inputmode="numeric"></label><label class="field">Au étage<input data-gen="to" type="number" value="5" inputmode="numeric"></label><label class="field">Par étage<input data-gen="per" type="number" value="4" min="1" max="30" inputmode="numeric"></label>
+              <label class="field">Numéros<select data-gen="style"><option value="ef">Étage + n° (201, 202…)</option><option value="seq">À la suite (1, 2, 3…)</option></select></label></div>
+            <button type="button" class="btn sm primary" data-action="apt-gen">Créer les appartements</button></details>
+          <div class="apt-head"><span>Bât.</span><span>N° / nom</span><span>Étage</span><span>Porte</span><span>Code serrure</span></div>
           <div id="resApts">${apts.map((a, n) => aptRow(n, a))}</div>
           <button type="button" class="btn sm" data-action="res-row" data-k="apt">${icon('plus')} Appartement</button> <button type="button" class="btn sm" data-action="res-row" data-k="apt5">${icon('plus')} 5 appartements</button></div>
         <label class="field full">Notes<textarea name="notes" placeholder="Badge, interphone, clés, compteurs, local technique, particularités…">${[r.notes, r.access && !isCode(r.access) ? 'Accès : ' + r.access : '', r.keys_info ? 'Clés : ' + r.keys_info : ''].filter(Boolean).join('\n')}</textarea></label>
@@ -1484,6 +1492,21 @@ const ACTIONS = {
     a.href = URL.createObjectURL(await r.blob()); a.download = `Facture-${d.no}.pdf`;
     document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
   },
+  'apt-gen': (d, btn) => {
+    const g = (k) => btn.closest('.apt-gen').querySelector(`[data-gen=${k}]`).value.trim();
+    const bat = g('b'), from = parseInt(g('from'), 10), to = parseInt(g('to'), 10), per = Math.min(30, Math.max(1, parseInt(g('per'), 10) || 1)), seq = g('style') === 'seq';
+    if (!Number.isFinite(from) || !Number.isFinite(to) || to < from || (to - from + 1) * per > 400) return toast('Étages ou nombre d’appartements invalides (400 au plus)', { bad: true });
+    const box = $('#resApts');
+    // les lignes vides du bas sont remplacées
+    [...box.querySelectorAll('.apt-row')].filter((r) => [...r.querySelectorAll('input')].every((i) => !i.value.trim())).forEach((r) => r.remove());
+    let n0 = Math.max(-1, ...[...box.querySelectorAll('[name^=an]')].map((i) => +i.name.slice(2))) + 1, k = 1;
+    for (let e = from; e <= to; e++) for (let i = 1; i <= per; i++, k++) {
+      const no = seq ? String(k) : (e < 0 ? 'S' + -e : String(e)) + String(i).padStart(2, '0');
+      box.insertAdjacentHTML('beforeend', String(aptRow(n0++, { b: bat, n: (bat ? bat + '-' : '') + no, e: e === 0 ? 'RDC' : String(e), p: no })));
+    }
+    btn.closest('details').open = false;
+    toast(`${(to - from + 1) * per} appartements ajoutés — complétez les codes si besoin`);
+  },
   'res-row': (d) => {
     const box = $(d.k === 'code' ? '#resCodes' : '#resApts');
     if (!box) return;
@@ -1719,9 +1742,9 @@ const FORMS = {
     b.codes = []; b.apts = [];
     for (let n = 0; n < 400; n++) {
       if (fd.has(`cl${n}`)) { const l = String(fd.get(`cl${n}`) || '').trim(), c = String(fd.get(`cc${n}`) || '').trim(); if (l || c) b.codes.push({ l, c }); }
-      if (fd.has(`an${n}`)) { const a = { n: String(fd.get(`an${n}`) || '').trim(), e: String(fd.get(`ae${n}`) || '').trim(), p: String(fd.get(`ap${n}`) || '').trim(), c: String(fd.get(`ac${n}`) || '').trim() }; if (a.n || a.p || a.c) b.apts.push(a); }
+      if (fd.has(`an${n}`)) { const a = { b: String(fd.get(`ab${n}`) || '').trim(), n: String(fd.get(`an${n}`) || '').trim(), e: String(fd.get(`ae${n}`) || '').trim(), p: String(fd.get(`ap${n}`) || '').trim(), c: String(fd.get(`ac${n}`) || '').trim() }; if (a.n || a.p || a.c) b.apts.push(a); }
     }
-    for (const k of Object.keys(b)) if (/^(cl|cc|an|ae|ap|ac)\d+$/.test(k)) delete b[k];
+    for (const k of Object.keys(b)) if (/^(cl|cc|ab|an|ae|ap|ac)\d+$/.test(k)) delete b[k];
     try {
       if (b.id) await api('residences/' + b.id, { method: 'PATCH', body: b });
       else await api('residences', { method: 'POST', body: b });
@@ -1820,7 +1843,7 @@ document.addEventListener('change', (e) => {
     const f = e.target.form, r = (state.cache.residencesList || []).find((x) => x.id === f.residence_id.value) || {}, a = jsonArr(r.apts)[+e.target.value];
     if (a) {
       if (a.e && f.etage && [...f.etage.options].some((o) => o.value === String(a.e))) f.etage.value = String(a.e);
-      f.lieu.value = [a.n, a.p ? 'porte ' + a.p : ''].filter(Boolean).join(' · ');
+      f.lieu.value = [a.b && !String(a.n || '').startsWith(a.b) ? 'Bât. ' + a.b : '', a.n, a.p ? 'porte ' + a.p : ''].filter(Boolean).join(' · ');
     }
   }
   if (e.target.name === 'residence_id' && e.target.closest('form[data-form=ticket]')) {
