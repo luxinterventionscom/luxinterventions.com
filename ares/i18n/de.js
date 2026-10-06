@@ -9919,5 +9919,13 @@ export default [
 [
 "Portail gérance non connecté (menu Gérances).",
 "Verwaltungsportal nicht verbunden (Menü Gérances)."
+],
+[
+"Où exactement",
+"Wo genau"
+],
+[
+"étage(s) {0}",
+"Etage(n) {0}"
 ]
 ];

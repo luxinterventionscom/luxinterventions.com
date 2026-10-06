@@ -9883,5 +9883,13 @@ export default [
 [
 "Portail gérance non connecté (menu Gérances).",
 "Portal da gérance não ligado (menu Gérances)."
+],
+[
+"Où exactement",
+"Onde exatamente"
+],
+[
+"étage(s) {0}",
+"andar(es) {0}"
 ]
 ];
