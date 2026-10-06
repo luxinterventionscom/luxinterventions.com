@@ -656,3 +656,9 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 #sheet { overflow-x: hidden; max-width: 100vw; }
 .sheet-body select, .sheet-body input, .sheet-body textarea { max-width: 100%; }
 .t-hrow .tph { min-width: 0; }
+/* facture d'intervention */
+.fact-mat { display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 6px; margin-bottom: 6px; }
+.fact-adj { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) 70px; gap: 6px; }
+.kv-tot { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; padding: 12px; border-radius: 12px; background: var(--surface-2, #f4f4f2); }
+.kv-tot b { text-align: right; }
+.kv-tot .big { font-size: 17px; font-weight: 800; }

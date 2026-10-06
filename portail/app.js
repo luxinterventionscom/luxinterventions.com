@@ -744,20 +744,22 @@ const VIEWS = {
     const done = tickets.filter((t) => t.status === 'terminee' && t.done_at && new Date(t.done_at).toISOString().slice(0, 7) === m).sort((a, b) => b.done_at - a.done_at);
     const evOf = (id) => { const e = (evals || []).find((x) => x.ticket_id === id); const v = e && evalParse(e.text); return v ? (EVAL_GLOBAL.find(([k]) => k === v.global) || [])[1] || '' : ''; };
     const dt = (ms) => new Date(ms).toLocaleDateString(LOC, { day: 'numeric', month: 'short' });
-    state.cpRows = done.map((t) => ({ ref: t.ref, d: new Date(t.done_at).toISOString().slice(0, 10), org: t.org_name || '', res: t.residence_name || '', adr: t.residence_address || '', cat: t.categorie || '', lieu: t.lieu || '', tech: t.technicien || '', urg: t.urgence, avis: evOf(t.id), photos: t.photos || 0 }));
+    state.cpRows = done.map((t) => ({ fact: t.inv_no || '', ttc: t.inv_ttc || '', paye: t.inv_paid ? 'oui' : t.inv_no ? 'non' : '', ref: t.ref, d: new Date(t.done_at).toISOString().slice(0, 10), org: t.org_name || '', res: t.residence_name || '', adr: t.residence_address || '', cat: t.categorie || '', lieu: t.lieu || '', tech: t.technicien || '', urg: t.urgence, avis: evOf(t.id), photos: t.photos || 0 }));
     return html`
       ${pageHead('📒 Comptabilité', isAdmin() ? 'Interventions terminées, par mois et par gérance' : html`${state.me.org_name || ''} — <span>interventions terminées, par mois</span>`)}
       ${orgFilter()}
       <div class="toolbar" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><select data-input="cp-month" style="width:auto">${months.map((x) => html`<option value="${x.key}" ${x.key === m ? new Raw('selected') : ''}>${x.lbl}</option>`)}</select>
         <button class="btn" data-action="cp-csv">${icon('download')} Excel / CSV</button></div>
       <div class="metrics" style="margin-bottom:12px"><div class="metric"><div class="lbl">Interventions terminées</div><div class="val">${done.length}</div></div>
-        <div class="metric"><div class="lbl">Urgentes</div><div class="val">${done.filter((t) => t.urgence === 'urgent').length}</div></div>
+        <div class="metric"><div class="lbl">Facturé TTC</div><div class="val">${eurP(done.reduce((n, t) => n + (+t.inv_ttc || 0), 0))}</div></div>
+        <div class="metric"><div class="lbl">À payer</div><div class="val">${eurP(done.filter((t) => t.inv_no && !t.inv_paid).reduce((n, t) => n + (+t.inv_ttc || 0), 0))}</div></div>
         <div class="metric"><div class="lbl">Résidences</div><div class="val">${new Set(done.map((t) => t.residence_id)).size}</div></div></div>
       ${done.length ? html`<div class="list">${done.map((t) => html`<button class="row" data-action="open-ticket" data-id="${t.id}"><span style="min-width:64px"><b>${dt(t.done_at)}</b><span class="meta" style="display:block">#${t.ref}</span></span>
         <span class="grow"><span class="title" style="display:block;white-space:normal">${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted small">— ${t.lieu}</span>` : ''}</span>
           <span class="meta" style="white-space:normal">${isAdmin() ? html`🏢 ${t.org_name} · ` : ''}📍 ${t.residence_name}${t.technicien ? html` · 👷 ${t.technicien}` : ''}${evOf(t.id) ? ' · ' + evOf(t.id) : ''}${t.photos ? html` · 📷 ${t.photos}` : ''}</span></span>
-        ${t.urgence === 'urgent' ? html`<span class="badge bad">🔴</span>` : ''}</button>`)}</div>` : html`<p class="muted">Aucune intervention terminée ce mois-ci.</p>`}
-      <p class="tiny muted" style="margin-top:10px">Les montants et factures par intervention apparaîtront ici dès qu’ils seront émis par LuxInterventions.</p>`;
+        <span style="text-align:right">${t.inv_no ? html`<b>${eurP(t.inv_ttc)}</b><span class="tiny ${t.inv_paid ? '' : 'red'}" style="display:block">${t.inv_paid ? '✅ payée' : '⏳ à payer'}</span>` : html`<span class="tiny muted">facture à venir</span>`}</span></button>
+        ${t.inv_no ? html`<div style="display:flex;justify-content:flex-end;margin:-4px 0 8px"><button class="btn sm" data-action="inv-dl" data-id="${t.id}" data-no="${t.inv_no}">⬇️ Facture ${t.inv_no} (PDF)</button></div>` : ''}`)}</div>` : html`<p class="muted">Aucune intervention terminée ce mois-ci.</p>`}
+      <p class="tiny muted" style="margin-top:10px">Chaque facture est émise par ARES INVEST S.A. (LuxInterventions) une fois l’intervention clôturée ; téléchargez-la en PDF.</p>`;
   },
   statsBody() {
     const { tickets, evals } = state.cache.stats || { tickets: [], evals: [] };
@@ -961,6 +963,7 @@ const kv = (k, v) => (v ? html`<dt>${k}</dt><dd>${v}</dd>` : '');
 // Photos : chargées avec le jeton, affichées via des URL « blob: »
 let photoUrls = [];
 function revokePhotos() { photoUrls.forEach((u) => URL.revokeObjectURL(u)); photoUrls = []; }
+const eurP = (n) => (Math.round((+n || 0) * 100) / 100).toFixed(2).replace('.', ',') + ' €';
 async function loadPhotoInto(img) {
   try {
     const r = await api('photos/' + img.dataset.photo, { raw: true });
@@ -1040,7 +1043,7 @@ const SHEETS = {
       actions = html`<p class="tiny muted" style="margin:0 0 10px">Demande prise en charge : pour corriger quelque chose, écrivez-le dans un message ci-dessous.</p>`;
     }
     const evalEv = d.events.find((e) => e.kind === 'comment' && evalParse(e.text));
-    const evLabel = (e) => (e.kind === 'create' ? 'Demande créée' : e.kind === 'edit' ? '✏️ Demande modifiée' : e.kind === 'status' ? STATUS[e.status].label : e === evalEv ? '⭐ Évaluation' : 'Message');
+    const evLabel = (e) => (e.kind === 'create' ? 'Demande créée' : e.kind === 'edit' ? '✏️ Demande modifiée' : e.kind === 'status' ? STATUS[e.status].label : e === evalEv ? '⭐ Évaluation' : e.kind === 'invoice' ? '🧾 Facture' : 'Message');
     return {
       title: `#${t.ref} · ${res.name || ''}`,
       body: html`
@@ -1080,6 +1083,7 @@ const SHEETS = {
         ${evalEv ? html`<div class="section-label">Évaluation</div>${evalCard(evalParse(evalEv.text), evalEv)}`
           : t.status === 'terminee' && !isAdmin() ? html`<div class="card eval-cta" style="margin-bottom:12px"><div><b>Votre avis compte</b><div class="small muted">Évaluez cette intervention en 30 secondes : rapidité, compétence, courtoisie, propreté.</div></div>
             <button class="btn primary" data-action="t-eval" data-id="${t.id}">⭐ Évaluer l’intervention</button></div>` : ''}
+        ${d.ticket.inv_no ? html`<div class="alert ${d.ticket.inv_paid ? 'ok' : 'info'}" style="margin:0 0 12px;align-items:center">🧾<div style="flex:1"><b>Facture ${d.ticket.inv_no}</b> · ${eurP(d.ticket.inv_ttc)} TTC<br><span class="small">${d.ticket.inv_paid ? '✅ Payée' : '⏳ À payer'} · émise le ${new Date(d.ticket.inv_date).toLocaleDateString(LOC)}</span></div><button class="btn sm" data-action="inv-dl" data-id="${d.ticket.id}" data-no="${d.ticket.inv_no}">⬇️ PDF</button></div>` : ''}
         <div class="section-label">Suivi</div>
         <div class="timeline">${d.events.map((e) => html`<div class="tl ${e.kind} ${e.user_role === 'admin' ? 'staff' : ''}">
           <div class="tl-head"><b>${evLabel(e)}</b> <span class="muted">· ${e.user_name || '—'}${e.user_role === 'admin' ? ' (LuxInterventions)' : ''} · ${fmtDateTime(e.created_at)}</span></div>
@@ -1453,10 +1457,16 @@ const ACTIONS = {
   },
   scope: (d) => { state.filters.scope = d.id; go('demandes', true); },
   'urg-filter': (d) => { state.filters.urg = d.id; renderView(); },
+  async 'inv-dl'(d) {
+    const r = await api(`tickets/${d.id}/invoice`, { raw: true });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(await r.blob()); a.download = `Facture-${d.no}.pdf`;
+    document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  },
   'cp-sec': (d) => { state.cpSec = d.id; renderView(); },
   'cp-csv': () => {
     const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const rows = [['Date', 'Réf.', 'Gérance', 'Résidence', 'Adresse', 'Catégorie', 'Lieu', 'Technicien', 'Urgence', 'Avis', 'Photos'].map(q).join(';'), ...(state.cpRows || []).map((r) => [r.d, '#' + r.ref, r.org, r.res, r.adr, r.cat, r.lieu, r.tech, r.urg, r.avis, r.photos].map(q).join(';'))];
+    const rows = [['Date', 'Réf.', 'Gérance', 'Résidence', 'Adresse', 'Catégorie', 'Lieu', 'Technicien', 'Urgence', 'Avis', 'Photos', 'Facture', 'TTC (€)', 'Payée'].map(q).join(';'), ...(state.cpRows || []).map((r) => [r.d, '#' + r.ref, r.org, r.res, r.adr, r.cat, r.lieu, r.tech, r.urg, r.avis, r.photos, r.fact, String(r.ttc).replace('.', ','), r.paye].map(q).join(';'))];
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
     a.download = `interventions-${state.cpMonth || 'mois'}.csv`; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);

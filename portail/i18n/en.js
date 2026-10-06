@@ -333,6 +333,10 @@ export default [
 "Change my password"
 ],
 [
+"Chaque facture est émise par ARES INVEST S.A. (LuxInterventions) une fois l’intervention clôturée ; téléchargez-la en PDF.",
+"Each invoice is issued by ARES INVEST S.A. (LuxInterventions) once the intervention is closed; download it as PDF."
+],
+[
 "Chaque personne a son propre accès : on sait toujours qui a fait quelle demande. Un compte désactivé ne peut plus se connecter.",
 "Each person has their own access: you always know who made which request. A disabled account can no longer sign in."
 ],
@@ -711,6 +715,10 @@ export default [
 [
 "Espaces verts",
 "Green spaces"
+],
+[
+"Facturé TTC",
+"Invoiced incl. VAT"
 ],
 [
 "Facultatif",
@@ -1865,6 +1873,10 @@ export default [
 "e.g. ring the caretaker, not on Wednesdays"
 ],
 [
+"facture à venir",
+"invoice to come"
+],
+[
 "il y a {0} h",
 "{0} h ago"
 ],
@@ -2033,6 +2045,10 @@ export default [
 "From"
 ],
 [
+"À payer",
+"To pay"
+],
+[
 "À traiter",
 "To handle"
 ],
@@ -2117,8 +2133,24 @@ export default [
 "→ Add. Then open the portal"
 ],
 [
+"⏳ À payer",
+"⏳ To pay"
+],
+[
+"⏳ à payer",
+"⏳ to pay"
+],
+[
 "⚡ Panneaux",
 "⚡ Panels"
+],
+[
+"✅ Payée",
+"✅ Paid"
+],
+[
+"✅ payée",
+"✅ paid"
 ],
 [
 "✏️ Demande modifiée",
@@ -2215,5 +2247,9 @@ export default [
 [
 "🚪 Porte",
 "🚪 Door"
+],
+[
+"🧾 Facture",
+"🧾 Invoice"
 ]
 ];
