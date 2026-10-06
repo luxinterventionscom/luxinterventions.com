@@ -9603,5 +9603,17 @@ export default [
 [
 "Paiements des loyers — touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
 "Rent payments — tap an empty month to mark it paid; tap a paid month for the amount, receipt or cancellation."
+],
+[
+"⬇ Voir plus ({0} sur {1} restantes)",
+"⬇ See more ({0} of {1} remaining)"
+],
+[
+"{0} sur {1} affichées",
+"{0} of {1} shown"
+],
+[
+"Tout est affiché ({0})",
+"All shown ({0})"
 ]
 ];

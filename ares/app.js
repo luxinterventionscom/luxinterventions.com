@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.86.2';
+const VERSION = '2.87.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2634,6 +2634,8 @@ function factTotHtml(f) {
   return html`<div class="kv-tot"><span>Main-d’œuvre</span><b>${eur(k.mo)}</b><span>Déplacement</span><b>${eur(k.dep)}</b><span>Matériel</span><b>${eur(k.mat)}</b>${k.adj ? html`<span>${k.adj < 0 ? 'Remise' : 'Majoration'}</span><b>${k.adj < 0 ? '− ' : '+ '}${eur(Math.abs(k.adj))}</b>` : ''}
     <span>Total HT</span><b>${eur(k.ht)}</b><span>TVA ${String(tx).replace('.', ',')} %${f.reg && (f.reg.regime === 'autoliq' || f.reg.regime === 'exo') ? ' — ' + TVA_REG[f.reg.regime][0].split(' (')[0] : ''}</span><b>${eur(k.tva)}</b><span class="big">Total TTC</span><b class="big">${eur(k.ttc)}</b></div>`;
 }
+// « Voir plus » : 10 lignes de plus à chaque toucher
+const moreBtn = (total, lim) => (total > lim ? html`<button class="btn block" style="margin-top:12px" data-action="cp-more">⬇ Voir plus (${Math.min(10, total - lim)} sur ${total - lim} restantes)</button><p class="tiny muted" style="text-align:center;margin:6px 0 0">${lim} sur ${total} affichées</p>` : total > 10 ? html`<p class="tiny muted" style="text-align:center;margin:10px 0 0">Tout est affiché (${total})</p>` : '');
 // Registre des interventions terminées (ou finies par l'ouvrier) : où, quoi, qui, heures réelles, avis, coût
 function intervLedger(from, to) {
   const out = [];
@@ -3187,25 +3189,18 @@ dashboard() {
         ${q || ui.cpFrom || ui.cpTo ? html`<p class="small muted" style="margin:0 0 8px">${plural(rows.length, 'résultat')}</p>` : ''}
         ${(() => {
           if (!rows.length) return empty('file', q || ui.cpFrom || ui.cpTo ? 'Rien trouvé.' : 'Aucune écriture sur cette période.');
-          // mois par mois, le plus récent d'abord ; « mois précédent » ajoute un mois à chaque fois
+          // 10 lignes à la fois, les plus récentes d'abord ; « Voir plus » en ajoute 10
           const sorted = rows.slice().sort((a, b) => b.d.localeCompare(a.d) || a.sens.localeCompare(b.sens));
-          const months = [...new Set(sorted.map((r) => r.d.slice(0, 7)))];
-          // on part du mois en cours (les éventuels mois futurs restent visibles au-dessus)
-          const cur = today().slice(0, 7);
-          const start = Math.max(0, months.findIndex((k) => k <= cur));
-          const n = (months.findIndex((k) => k <= cur) < 0 ? 0 : start) + Math.max(1, ui.cpMonths || 1);
-          // en recherche (ou avec des dates) : tous les résultats d'un coup
-          const all2 = q || ui.cpFrom || ui.cpTo;
-          const shown = all2 ? months : months.slice(0, n);
-          const next = all2 ? null : months[n];
+          const lim = ui.cpLim || 10, vis = sorted.slice(0, lim);
+          const months = [...new Set(vis.map((r) => r.d.slice(0, 7)))];
           const mLabel = (k) => `${MONTHS_FULL[+k.slice(5, 7) - 1]} ${k.slice(0, 4)}`;
           return html`<div class="card" style="padding:0;overflow:auto"><table class="tbl cp-tbl"><thead><tr><th>Date</th><th>Libellé</th><th class="r">HT</th><th class="r">TVA</th><th class="r">TTC</th><th></th></tr></thead><tbody>
-          ${shown.map((mk) => { const mr = sorted.filter((r) => r.d.startsWith(mk)); const rr = sum(mr.filter((r) => r.sens === 'R'), (r) => r.ttc), dd = sum(mr.filter((r) => r.sens === 'D'), (r) => r.ttc); return html`<tr class="cp-month"><td colspan="6"><b>${mLabel(mk)}</b> <span class="tiny muted">· recettes ${money(rr)} · dépenses ${money(dd)} · ${plural(mr.length, 'écriture')}</span></td></tr>
+          ${months.map((mk) => { const mr = vis.filter((r) => r.d.startsWith(mk)), all = sorted.filter((r) => r.d.startsWith(mk)); const rr = sum(all.filter((r) => r.sens === 'R'), (r) => r.ttc), dd = sum(all.filter((r) => r.sens === 'D'), (r) => r.ttc); return html`<tr class="cp-month"><td colspan="6"><b>${mLabel(mk)}</b> <span class="tiny muted">· recettes <b class="green">${money(rr)}</b> · dépenses <b class="red">${money(dd)}</b></span></td></tr>
             ${mr.map((r) => html`<tr><td class="nowrap">${fmtDate(r.d)}</td><td><b>${r.cat}</b> · ${r.lib}${r.imm ? html`<div class="tiny muted">${r.imm}</div>` : ''}</td>
             <td class="r">${money(r.ttc - r.tva)}</td><td class="r">${r.tva ? money(r.tva) : '—'}</td><td class="r ${r.sens === 'R' ? 'green' : 'red'}">${r.sens === 'R' ? '' : '−'}${money(r.ttc)}</td>
             <td>${r.piece ? html`<button class="btn sm" data-action="open-doc" data-id="${r.piece}">📎</button>` : ''}</td></tr>`)}`; })}
           </tbody></table></div>
-          ${next ? html`<button class="btn block" style="margin-top:12px" data-action="cp-more">⬇ Afficher le mois précédent (${mLabel(next)})</button><p class="tiny muted" style="text-align:center;margin:6px 0 0">${plural(shown.length, 'mois affiché')} sur ${months.length}</p>` : months.length > 1 ? html`<p class="tiny muted" style="text-align:center;margin:10px 0 0">Tous les mois sont affichés (${months.length}).</p>` : ''}`;
+          ${moreBtn(sorted.length, lim)}`;
         })()}`;
     } else if (tab === 'tva') {
       const perT = soc.periode || 't';
@@ -3230,7 +3225,7 @@ dashboard() {
           <div class="metric hero"><div class="lbl">Facturé TTC</div><div class="val accent">${eur(sum(F, (t) => t.facture.ttc))}</div><div class="sub">HT ${eur(sum(F, (t) => t.facture.ht))} · TVA ${eur(sum(F, (t) => t.facture.tva))}</div></div></div>
         <div class="toolbar" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-action="cp-fact-csv">${icon('download')} Factures (Excel / CSV)</button><button class="btn ghost" data-action="fact-set">⚙️ Émetteur : ${c.nom}</button></div>
         ${todo.length ? html`<div class="section-label">🟡 À facturer (${todo.length})</div><div class="list" style="margin-bottom:14px">${todo.map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : ''} · clôturée le ${fmtDate(t.doneDate || t.date)}</span></span><span class="badge warn">🧾 Faire la facture</span></button>`)}</div>` : ''}
-        ${F.length ? html`<div class="section-label">Factures émises</div><div class="list">${F.map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.facture.no}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : ''} · ${fmtDate(t.facture.date)} · ${t.titre}</span></span><span style="text-align:right"><b>${eur(t.facture.ttc)}</b><span class="tiny ${t.facture.paid ? '' : 'red'}" style="display:block">${t.facture.paid ? '✅ payée' : '⏳ à payer'}</span></span></button>`)}</div>` : html`<p class="muted">Aucune facture émise sur cette période.</p>`}`;
+        ${F.length ? html`<div class="section-label">Factures émises</div><div class="list">${F.slice(0, ui.cpLim || 10).map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.facture.no}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : ''} · ${fmtDate(t.facture.date)} · ${t.titre}</span></span><span style="text-align:right"><b>${eur(t.facture.ttc)}</b><span class="tiny ${t.facture.paid ? '' : 'red'}" style="display:block">${t.facture.paid ? '✅ payée' : '⏳ à payer'}</span></span></button>`)}</div>${moreBtn(F.length, ui.cpLim || 10)}` : html`<p class="muted">Aucune facture émise sur cette période.</p>`}`;
     } else if (tab === 'interv') {
       const L = intervLedger(from, to);
       const hTot = sum(L, (x) => x.min) / 60, cTot = sum(L, (x) => x.cout || 0);
@@ -3239,10 +3234,10 @@ dashboard() {
           <div class="metric"><div class="lbl">Heures réelles</div><div class="val">${fmtH(hTot)}</div><div class="sub">arrivée → départ (app de l’équipe)</div></div>
           <div class="metric hero"><div class="lbl">Montant</div><div class="val accent">${money(cTot)}</div><div class="sub">coûts indiqués sur les interventions</div></div></div>
         <div class="toolbar" style="margin-bottom:10px"><button class="btn" data-action="cp-int-csv">${icon('download')} Interventions (Excel / CSV)</button></div>
-        ${L.length ? html`<div class="list">${L.map((x) => html`<button class="row" data-action="edit-tache" data-id="${x.t.id}"><span style="min-width:74px"><b>${dayShort(x.d)}</b><span class="meta" style="display:block">${x.arr ? `${x.arr}–${x.dep || '…'}` : '—'}</span></span>
+        ${L.length ? html`<div class="list">${L.slice(0, ui.cpLim || 10).map((x) => html`<button class="row" data-action="edit-tache" data-id="${x.t.id}"><span style="min-width:74px"><b>${dayShort(x.d)}</b><span class="meta" style="display:block">${x.arr ? `${x.arr}–${x.dep || '…'}` : '—'}</span></span>
             <span class="grow"><span class="title" style="display:block;white-space:normal">${tacheIcon(x.t.type)} ${x.t.titre}${x.ger ? html` <span class="badge">🏢 ${x.ger}</span>` : ''}</span>
               <span class="meta" style="white-space:normal">📍 ${x.lieu} · 👷 ${x.who || '—'}${x.min ? ' · 🕒 ' + fmtH(x.min / 60) : ''}${x.avis ? ' · ' + x.avis : ''}${x.state === 'fini' ? ' · ✅ à clôturer' : ''}</span></span>
-            <b>${x.cout ? money(x.cout) : ''}</b></button>`)}</div>` : html`<p class="muted">Aucune intervention terminée sur cette période.</p>`}
+            <b>${x.cout ? money(x.cout) : ''}</b></button>`)}</div>${moreBtn(L.length, ui.cpLim || 10)}` : html`<p class="muted">Aucune intervention terminée sur cette période.</p>`}
         <p class="tiny muted" style="margin-top:10px">Chaque ligne : où, quoi, qui, heures réelles (l’ouvrier note son arrivée et son départ), avis des locataires et coût. Les factures par intervention arrivent à l’étape suivante.</p>`;
     } else {
       body = html`<div class="card"><p style="margin-top:0">Téléchargez le <b>journal ${cpLabel(y, per)}</b> (recettes, dépenses, bailleurs, frais fixes, avec HT / TVA / TTC) pour votre comptable. Le fichier s’ouvre dans Excel, Numbers ou LibreOffice.</p>
@@ -5250,7 +5245,7 @@ const ACTIONS = {
   },
   'open-interv': (d) => openSheet('interv', d.id),
   'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
-  'cp-tab': (d) => { ui.cpTab = d.id; renderView(); },
+  'cp-tab': (d) => { ui.cpTab = d.id; ui.cpLim = 10; renderView(); },
   'cp-sec': (d) => { ui.cpSec = d.id; go('compta', true); },
   'cp-fact-csv': () => {
     const [from, to] = cpRange(ui.year, ui.cpPer || 'y');
@@ -5266,8 +5261,8 @@ const ACTIONS = {
     for (const x of intervLedger(from, to)) rows.push([x.d, x.arr, x.dep, x.min ? (x.min / 60).toFixed(2).replace('.', ',') : '', x.lieu, x.t.titre, TACHE_TYPES[x.t.type] || x.t.type, x.who, x.ger, x.avis, x.cout ? String(x.cout).replace('.', ',') : '', x.state === 'fait' ? 'clôturée' : 'à clôturer'].map(q).join(';'));
     download(`interventions-${from}-${to}.csv`, '\ufeff' + rows.join('\r\n'), 'text/csv;charset=utf-8');
   },
-  'cp-more': () => { ui.cpMonths = (ui.cpMonths || 1) + 1; renderView(); },
-  'cp-clear': () => { ui.cpQ = ''; ui.cpFrom = ''; ui.cpTo = ''; ui.cpMonths = 1; renderView(); },
+  'cp-more': () => { ui.cpLim = (ui.cpLim || 10) + 10; renderView(); },
+  'cp-clear': () => { ui.cpQ = ''; ui.cpFrom = ''; ui.cpTo = ''; ui.cpLim = 10; renderView(); },
   'soc-sign-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: '', signPx: 0 }), 'Signature retirée', socName()); signRefresh(); },
   'soc-logo-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', logo: '' }), 'Logo retiré', socName()); applyBrand(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
   'cp-csv': () => {
@@ -6415,7 +6410,7 @@ document.addEventListener('input', (e) => {
   if (k === 'esp-search') filterEspList();
   if (k === 'vid-link') { const h = document.getElementById('vidHint'); if (h) h.textContent = vidHint(e.target.value); }
   if (k === 'search') { ui.search = e.target.value; renderView(); }
-  if (k === 'cp-q') { ui.cpQ = e.target.value; ui.cpMonths = 1; clearTimeout(ui.cpT); ui.cpT = setTimeout(renderView, 200); }
+  if (k === 'cp-q') { ui.cpQ = e.target.value; ui.cpLim = 10; clearTimeout(ui.cpT); ui.cpT = setTimeout(renderView, 200); }
   if (k === 'idx-pct' || k === 'idx-amount') {
     const f = e.target.form;
     const l = vault.get('locataires', f.querySelector('[name=id]').value);
@@ -6425,13 +6420,13 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('change', (e) => {
   const k = e.target.dataset.input;
-  if (k === 'year') { ui.year = +e.target.value; renderView(); }
+  if (k === 'year') { ui.year = +e.target.value; ui.cpLim = 10; renderView(); }
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
   if (k === 'soc-logo' && e.target.files[0]) setLogo(e.target.files[0]);
   if (k === 'soc-sign' && e.target.files[0]) setLogo(e.target.files[0], 'signature');
   if (k === 'soc-sign-w') vault.mutate((tx) => tx.put('reglages', { id: 'main', signW: [6, 8, 10, 12].includes(+e.target.value) ? +e.target.value : 8 }), 'Taille de la signature', `${e.target.value} cm`).then(signRefresh);
-  if (k === 'cp-per') { ui.cpPer = e.target.value; ui.cpMonths = 1; renderView(); }
-  if (k === 'cp-from' || k === 'cp-to') { ui[k === 'cp-from' ? 'cpFrom' : 'cpTo'] = e.target.value; ui.cpMonths = 1; renderView(); }
+  if (k === 'cp-per') { ui.cpPer = e.target.value; ui.cpLim = 10; renderView(); }
+  if (k === 'cp-from' || k === 'cp-to') { ui[k === 'cp-from' ? 'cpFrom' : 'cpTo'] = e.target.value; ui.cpLim = 10; renderView(); }
   if (k === 'tva-loyer') { const im = vault.get('immeubles', e.target.dataset.id); if (im) vault.mutate((tx) => tx.put('immeubles', { id: im.id, tvaLoyer: parseFloat(e.target.value) || 0 }), 'TVA sur les loyers', `${im.adresse} : ${e.target.value || 0} %`, im.id); }
   if (k === 'place') {
     const isNew = e.target.value.startsWith('new:');

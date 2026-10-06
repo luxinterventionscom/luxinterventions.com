@@ -9815,5 +9815,17 @@ export default [
 [
 "Paiements des loyers — touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
 "Mietzahlungen — leeren Monat antippen, um ihn als bezahlt zu markieren; bezahlten Monat antippen für Betrag, Quittung oder Storno."
+],
+[
+"⬇ Voir plus ({0} sur {1} restantes)",
+"⬇ Mehr anzeigen ({0} von {1} übrigen)"
+],
+[
+"{0} sur {1} affichées",
+"{0} von {1} angezeigt"
+],
+[
+"Tout est affiché ({0})",
+"Alles angezeigt ({0})"
 ]
 ];
