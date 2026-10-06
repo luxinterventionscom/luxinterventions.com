@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.89.0';
+const VERSION = '2.90.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2964,7 +2964,7 @@ dashboard() {
     const anciens = ui.immSeg === 'anciens' && nGone > 0;
     const imms = every.filter((im) => immGone(im) === anciens);
     return html`
-      ${pageHead('Immeubles', `${plural(every.length - nGone, 'immeuble')} en gestion${nGone ? ' · ' + nGone + ' archivé' + (nGone > 1 ? 's' : '') : ''}`, html`<div class="actions" style="margin:0"><button class="btn" data-action="go" data-to="gerances">${icon('briefcase')} Gérances</button><button class="btn primary desk-only" data-action="new-imm">${icon('plus')} Ajouter</button></div>`)}
+      ${pageHead('Immeubles', `${plural(every.length - nGone, 'immeuble')} en gestion${nGone ? ' · ' + nGone + ' archivé' + (nGone > 1 ? 's' : '') : ''}`, html`<div class="actions" style="margin:0"><button class="btn primary desk-only" data-action="new-imm">${icon('plus')} Ajouter immo.</button></div>`)}
       ${nGone ? html`<div class="tabs" role="tablist" style="max-width:380px">
         <button class="tab" role="tab" aria-selected="${!anciens}" data-action="imm-seg" data-id="actuels">En gestion</button>
         <button class="tab" role="tab" aria-selected="${anciens}" data-action="imm-seg" data-id="anciens">Plus en gestion (${nGone})</button>

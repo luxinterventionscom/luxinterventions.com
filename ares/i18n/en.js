@@ -9627,5 +9627,9 @@ export default [
 [
 "Factures",
 "Invoices"
+],
+[
+"Ajouter immo.",
+"Add building"
 ]
 ];
