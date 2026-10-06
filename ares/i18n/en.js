@@ -1302,7 +1302,7 @@ export default [
 ],
 [
 "Effacer",
-"Delete"
+"Clear"
 ],
 [
 "Effacer l'ancienne copie non chiffrée ?",
@@ -9711,5 +9711,165 @@ export default [
 [
 "étage(s) {0}",
 "floor(s) {0}"
+],
+[
+"Horaire — personnel régulier (ménage)",
+"Schedule — regular staff (cleaning)"
+],
+[
+"Laisser vide pour les ouvriers : le jour, l’heure et le lieu se donnent à chaque travail (📌 Affectation).",
+"Leave empty for workers: day, time and place are given with each job (📌 Assignment)."
+],
+[
+"Semaine du (date)",
+"Week of (date)"
+],
+[
+"Même horaire toutes les semaines",
+"Same schedule every week"
+],
+[
+"intervention occasionnelle",
+"occasional job"
+],
+[
+"Assurance RC (compagnie)",
+"Liability insurance (company)"
+],
+[
+"N° de police",
+"Policy no."
+],
+[
+"IBAN (pour le payer)",
+"IBAN (to pay them)"
+],
+[
+"Payé à l’intervenant : € / heure",
+"Paid to the worker: € / hour"
+],
+[
+"Déplacement payé (€)",
+"Travel paid (€)"
+],
+[
+"Obligation de résultat :",
+"Obligation of result:"
+],
+[
+"L’intervenant s’engage à exécuter le travail confié dans les règles de l’art, aux jour, heure et lieu convenus, et à le reprendre à ses frais s’il n’est pas conforme.",
+"The worker undertakes to do the job properly, on the agreed day, time and place, and to redo it at their own cost if it is not compliant."
+],
+[
+"Dommages :",
+"Damage:"
+],
+[
+"Tout dommage causé aux biens ou aux personnes pendant l’intervention est à la charge de l’intervenant et de son assurance responsabilité civile{0}.",
+"Any damage to property or people during the job is borne by the worker and their liability insurance{0}."
+],
+[
+"Indépendance :",
+"Independence:"
+],
+[
+"Intervention ponctuelle, sans lien de subordination : l’intervenant déclare lui-même ses revenus et s’acquitte de ses obligations fiscales et sociales.",
+"One-off job, with no employment relationship: the worker declares their own income and meets their own tax and social obligations."
+],
+[
+"Confidentialité :",
+"Confidentiality:"
+],
+[
+"Codes, clés et informations des lieux et des occupants restent confidentiels et ne servent qu’à l’intervention.",
+"Codes, keys and information about the places and occupants stay confidential and are used only for the job."
+],
+[
+"L’intervenant a lu et accepte ces obligations",
+"The worker has read and accepts these obligations"
+],
+[
+"Signature de l’intervenant",
+"Worker’s signature"
+],
+[
+"(avec le doigt ou la souris)",
+"(with your finger or the mouse)"
+],
+[
+"Signer à nouveau",
+"Sign again"
+],
+[
+"Signée le {0}",
+"Signed on {0}"
+],
+[
+"Fiche signée le",
+"Form signed on"
+],
+[
+"Pas encore signée",
+"Not signed yet"
+],
+[
+"Modifier → signature de l’intervenant",
+"Edit → worker’s signature"
+],
+[
+"Fiche d’engagement (PDF)",
+"Engagement form (PDF)"
+],
+[
+"Interventions occasionnelles (ses notes à payer)",
+"Occasional jobs (their notes to pay)"
+],
+[
+"Faire la note",
+"Make the note"
+],
+[
+"Aucun travail terminé pour l’instant.",
+"No finished job yet."
+],
+[
+"Assurance RC",
+"Liability insurance"
+],
+[
+"Intervention occasionnelle",
+"Occasional job"
+],
+[
+"Heures travaillées",
+"Hours worked"
+],
+[
+"€ / heure",
+"€ / hour"
+],
+[
+"Déplacement (€)",
+"Travel (€)"
+],
+[
+"Matériel avancé (€)",
+"Materials advanced (€)"
+],
+[
+"Matériel : quoi ?",
+"Materials: what?"
+],
+[
+"Enregistrer + PDF",
+"Save + PDF"
+],
+[
+"Indiquez les heures et le tarif",
+"Enter the hours and the rate"
+],
+[
+"Intervention occasionnelle — il manque : {0}",
+"Occasional job — missing: {0}"
 ]
 ];

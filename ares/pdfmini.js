@@ -18,6 +18,7 @@ export const textWidth = (s, size, bold) => String(s ?? '').length * size * (bol
 
 export function makePdf() {
   const pages = [];
+  const imgs = [];
   let cur = null;
   const api = {
     W: 595.28, H: 841.89,
@@ -37,6 +38,12 @@ export function makePdf() {
       cur.push(`${fill.map((c) => c.toFixed(3)).join(' ')} rg ${x.toFixed(2)} ${(api.H - y - h).toFixed(2)} ${w.toFixed(2)} ${h.toFixed(2)} re f`);
       return api;
     },
+    // image JPEG (ex. signature) : jpeg = octets, pw × ph = taille en pixels
+    image(x, y, w, h, jpeg, pw, ph) {
+      imgs.push({ jpeg, pw, ph });
+      cur.push(`q ${w.toFixed(2)} 0 0 ${h.toFixed(2)} ${x.toFixed(2)} ${(api.H - y - h).toFixed(2)} cm /Im${imgs.length} Do Q`);
+      return api;
+    },
     // texte sur plusieurs lignes (coupe aux espaces) ; renvoie la hauteur utilisée
     wrap(x, y, s, maxW, opts = {}) {
       const size = opts.size || 10, lh = size * 1.3;
@@ -54,12 +61,18 @@ export function makePdf() {
       const add = (s) => { objs.push(s); return objs.length; };
       const font1 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
       const font2 = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+      const imIds = imgs.map((im) => {
+        let bin = '';
+        for (let i = 0; i < im.jpeg.length; i += 8192) bin += String.fromCharCode.apply(null, im.jpeg.subarray(i, i + 8192));
+        return add(`<< /Type /XObject /Subtype /Image /Width ${im.pw} /Height ${im.ph} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${bin.length} >>\nstream\n${bin}\nendstream`);
+      });
+      const xo = imIds.length ? ` /XObject << ${imIds.map((id, k) => `/Im${k + 1} ${id} 0 R`).join(' ')} >>` : '';
       const pagesId = objs.length + 1 + pages.length * 2;
       const kids = [];
       for (const p of pages) {
         const stream = p.join('\n');
         const c = add(`<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`);
-        kids.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${api.W} ${api.H}] /Resources << /Font << /F1 ${font1} 0 R /F2 ${font2} 0 R >> >> /Contents ${c} 0 R >>`));
+        kids.push(add(`<< /Type /Page /Parent ${pagesId} 0 R /MediaBox [0 0 ${api.W} ${api.H}] /Resources << /Font << /F1 ${font1} 0 R /F2 ${font2} 0 R >>${xo} >> /Contents ${c} 0 R >>`));
       }
       add(`<< /Type /Pages /Kids [${kids.map((k) => k + ' 0 R').join(' ')}] /Count ${kids.length} >>`);
       const cat = add(`<< /Type /Catalog /Pages ${pagesId} 0 R >>`);

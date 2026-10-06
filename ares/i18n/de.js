@@ -9927,5 +9927,169 @@ export default [
 [
 "étage(s) {0}",
 "Etage(n) {0}"
+],
+[
+"Horaire — personnel régulier (ménage)",
+"Arbeitszeit — festes Personal (Reinigung)"
+],
+[
+"Laisser vide pour les ouvriers : le jour, l’heure et le lieu se donnent à chaque travail (📌 Affectation).",
+"Für Arbeiter leer lassen: Tag, Uhrzeit und Ort werden bei jedem Auftrag vergeben (📌 Zuweisung)."
+],
+[
+"Semaine du (date)",
+"Woche vom (Datum)"
+],
+[
+"Même horaire toutes les semaines",
+"Jede Woche gleiche Zeiten"
+],
+[
+"Engagement",
+"Verpflichtung"
+],
+[
+"intervention occasionnelle",
+"gelegentlicher Einsatz"
+],
+[
+"Assurance RC (compagnie)",
+"Haftpflichtversicherung (Gesellschaft)"
+],
+[
+"N° de police",
+"Policennummer"
+],
+[
+"IBAN (pour le payer)",
+"IBAN (für die Bezahlung)"
+],
+[
+"Payé à l’intervenant : € / heure",
+"An den Arbeiter bezahlt: € / Stunde"
+],
+[
+"Déplacement payé (€)",
+"Bezahlte Anfahrt (€)"
+],
+[
+"Obligation de résultat :",
+"Erfolgspflicht:"
+],
+[
+"L’intervenant s’engage à exécuter le travail confié dans les règles de l’art, aux jour, heure et lieu convenus, et à le reprendre à ses frais s’il n’est pas conforme.",
+"Der Arbeiter verpflichtet sich, die Arbeit fachgerecht am vereinbarten Tag, zur vereinbarten Zeit und am vereinbarten Ort auszuführen und sie auf eigene Kosten nachzubessern, wenn sie nicht ordnungsgemäß ist."
+],
+[
+"Dommages :",
+"Schäden:"
+],
+[
+"Tout dommage causé aux biens ou aux personnes pendant l’intervention est à la charge de l’intervenant et de son assurance responsabilité civile{0}.",
+"Jeder während des Einsatzes verursachte Sach- oder Personenschaden geht zu Lasten des Arbeiters und seiner Haftpflichtversicherung{0}."
+],
+[
+"Indépendance :",
+"Unabhängigkeit:"
+],
+[
+"Intervention ponctuelle, sans lien de subordination : l’intervenant déclare lui-même ses revenus et s’acquitte de ses obligations fiscales et sociales.",
+"Einmaliger Einsatz ohne Weisungsgebundenheit: Der Arbeiter meldet seine Einkünfte selbst und erfüllt seine steuerlichen und sozialen Pflichten."
+],
+[
+"Confidentialité :",
+"Vertraulichkeit:"
+],
+[
+"Codes, clés et informations des lieux et des occupants restent confidentiels et ne servent qu’à l’intervention.",
+"Codes, Schlüssel und Informationen über Orte und Bewohner bleiben vertraulich und dienen nur dem Einsatz."
+],
+[
+"L’intervenant a lu et accepte ces obligations",
+"Der Arbeiter hat diese Pflichten gelesen und akzeptiert"
+],
+[
+"Signature de l’intervenant",
+"Unterschrift des Arbeiters"
+],
+[
+"(avec le doigt ou la souris)",
+"(mit dem Finger oder der Maus)"
+],
+[
+"Signer à nouveau",
+"Neu unterschreiben"
+],
+[
+"Signée le {0}",
+"Unterschrieben am {0}"
+],
+[
+"Fiche signée le",
+"Unterschrieben am"
+],
+[
+"Pas encore signée",
+"Noch nicht unterschrieben"
+],
+[
+"Modifier → signature de l’intervenant",
+"Bearbeiten → Unterschrift des Arbeiters"
+],
+[
+"Fiche d’engagement (PDF)",
+"Verpflichtungsblatt (PDF)"
+],
+[
+"Interventions occasionnelles (ses notes à payer)",
+"Gelegentliche Einsätze (seine Rechnungen)"
+],
+[
+"Faire la note",
+"Rechnung erstellen"
+],
+[
+"Aucun travail terminé pour l’instant.",
+"Noch keine Arbeit abgeschlossen."
+],
+[
+"Assurance RC",
+"Haftpflichtversicherung"
+],
+[
+"Intervention occasionnelle",
+"Gelegentlicher Einsatz"
+],
+[
+"Heures travaillées",
+"Gearbeitete Stunden"
+],
+[
+"€ / heure",
+"€ / Stunde"
+],
+[
+"Déplacement (€)",
+"Anfahrt (€)"
+],
+[
+"Matériel avancé (€)",
+"Ausgelegtes Material (€)"
+],
+[
+"Matériel : quoi ?",
+"Material: was?"
+],
+[
+"Enregistrer + PDF",
+"Speichern + PDF"
+],
+[
+"Indiquez les heures et le tarif",
+"Stunden und Tarif angeben"
+],
+[
+"Intervention occasionnelle — il manque : {0}",
+"Gelegentlicher Einsatz — es fehlt: {0}"
 ]
 ];
