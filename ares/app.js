@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.90.0';
+const VERSION = '2.91.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1546,6 +1546,9 @@ const MET_HINT = [[/plomb|sanitaire|fuite|wc|toilette|cesso|robinet|évier|douch
 const metHints = (txt) => MET_HINT.filter(([rx]) => rx.test(txt || '')).map(([, m]) => m);
 // lien demande ↔ intervention : infos utiles à l'ouvrier (adresse, lieu, codes, disponibilités, contact)
 const ptlLink = (d) => { const t = d.ticket, r = d.residence || {}; return { tid: t.id, ref: t.ref, orgId: t.org_id || '', org: r.org_name || '', res: r.name || '', adr: r.address || '', lieu: t.lieu || '', acces: t.acces || '', dispo: t.dispo || '', contact: t.contact_name || r.contact_name || '', tel: t.contact_phone || r.contact_phone || '', interior: r.interior || '', floors: r.floors || '', codes: [r.access ? 'Porte : ' + r.access : '', r.alarm ? 'Alarme : ' + r.alarm : '', r.code_other ? 'Panneaux : ' + r.code_other : ''].filter(Boolean).join(' · ') }; };
+// affectation : l'équipe triée (métier conseillé d'abord ⭐), absents signalés
+const affTeam = (hints) => vault.list('intervenants').filter((i) => !i.archive).sort((a, b) => hints.includes(b.metier) - hints.includes(a.metier) || intervFull(a).localeCompare(intervFull(b)));
+const affRow = (i, hints, attrs) => { const ab = absOn(i, today()); return html`<button class="row" ${new Raw(attrs)}><span class="avatar">${hints.includes(i.metier) ? '⭐' : '👷'}</span><span class="grow"><span class="title" style="display:block">${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || i.metier || '—'} · ${INT_GENRES[i.genre || 'interne']}${ab ? html` · <b class="red">${ABS_TYPES[ab.type]}</b>` : ''}</span></span><span class="badge">Affecter →</span></button>`; };
 const ptlOrg = (id) => ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => o.id === id);
 const ptlInviteUrl = (tok) => `${location.origin}/portail.html#invite=${tok}`;
 // mot de passe → clé dérivée sur l'appareil (comme dans le portail) : le serveur ne voit jamais le mot de passe
@@ -2732,7 +2735,7 @@ const VIEWS = {
     const chips = imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
       <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!f}">Tous</button>
       ${imms.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${f === im.id}">${im.adresse}</button>`)}</div>` : '';
-    const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions" style="margin:0"><button class="btn" data-action="go" data-to="champeq">🏆 Classement</button><button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button></div>`
+    const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions" style="margin:0"><button class="btn" data-action="go" data-to="champeq">🏆 Classement</button><button class="btn primary" data-action="new-interv">${icon('plus')} Nouvel ouvrier</button></div>`
       : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
       : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
     const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', html`<span>Réclamations</span> (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['pub', '📣 Publicité'], ['intervenants', 'Équipe']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
@@ -3033,7 +3036,7 @@ dashboard() {
         <span class="grow"><span class="title" style="display:block;white-space:normal">#${t.ref} · ${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted small">— ${t.lieu}</span>` : ''}</span>
           <span class="meta" style="white-space:normal">🏢 ${t.org_name} · ${t.residence_name}${t.residence_address ? ' — ' + t.residence_address : ''}</span>
           <span class="meta" style="display:block;white-space:normal">${t.technicien ? html`👷 ${t.technicien} · ` : ''}${t.planned_at ? html`📅 ${String(t.planned_at).replace('T', ' ')} · ` : ''}${ptlTime(t.created_at)}${t.photos ? html` · 📷 ${t.photos}` : ''}</span></span>
-        <span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="badge ${t.status === 'recue' ? 'warn' : ''}">${PTL_ST[t.status] || t.status}</span>
+        <span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="badge ${t.status === 'recue' ? 'warn' : ''}">${PTL_ST[t.status] || t.status}</span>${!['terminee', 'annulee'].includes(t.status) && !vault.list('taches').some((x) => x.ptl && x.ptl.tid === t.id && x.intervenantId) ? html`<span class="tiny amber">⏸ à affecter</span>` : ''}
           ${t.msgs ? html`<span class="tiny ${ptlUnread(t) ? 'ger-unread' : 'muted'}">💬 ${t.msgs} message${t.msgs > 1 ? 's' : ''}${ptlUnread(t) ? html` · <b>${ptlUnread(t)} nouveau${ptlUnread(t) > 1 ? 'x' : ''}</b>` : ''}</span>` : ''}</span></button>`; };
     // demandes « mot de passe oublié » venues du portail : un nouveau lien en un toucher
     const forgot = d.users.filter((u) => u.forgot_at && u.active);
@@ -3633,8 +3636,15 @@ const SHEETS = {
         </dl>
         ${d.photos.length ? html`<div class="section-label">📷 Photos</div><div class="photos" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${d.photos.map((p) => html`<a target="_blank" rel="noopener"><img data-ptl-photo="${p.id}" alt="Photo" style="width:96px;height:96px;object-fit:cover;border-radius:10px;background:var(--surface-2)"></a>`)}</div>` : ''}
         ${linked.length ? html`<div class="alert info" style="margin-bottom:12px">${icon('tool')}<div>Dans Maintenance : ${linked.map((x) => html`<a href="#" data-action="edit-tache" data-id="${x.id}">${x.titre}${x.intervenantId ? ' — 👷 ' + intervFull(vault.get('intervenants', x.intervenantId) || {}) : ''}${x.date ? ' · ' + fmtDate(x.date) : ''}</a>${x.statut === 'fait' ? html` <button class="btn sm" data-action="fact-open" data-id="${x.id}">🧾 ${x.facture ? x.facture.no : 'Faire la facture'}</button>` : ''} `)}</div></div>` : ''}
+        ${open ? (() => {
+          const hints = metHints(`${t.categorie || ''} ${t.description || ''}`), team = affTeam(hints), fit = team.filter((i) => hints.includes(i.metier));
+          const newBtn = html`<button class="btn sm" data-action="new-interv">${icon('plus')} Nouvel ouvrier</button>`;
+          return html`<div class="section-label">👷 Affectation${linked.length ? ' — envoyer un autre ouvrier' : ' — qui envoyer ?'}</div>
+          ${!team.length || (hints.length && !fit.length && !linked.length) ? html`<div class="alert warn" style="margin-bottom:10px">⏸<div><b>Stand-by</b> — ${team.length ? html`aucun ${hints.map((m) => METIERS[m]).join(' / ')} dans votre équipe` : 'aucun ouvrier dans votre équipe'}.<br><span class="small">Trouvez quelqu’un (ouvrier à engager, société externe ou privé occasionnel), créez-le avec « Nouvel ouvrier », puis affectez-le ici.</span></div></div>` : ''}
+          ${team.length ? html`<div class="list small" style="margin-bottom:8px">${team.map((i) => affRow(i, hints, `data-action="ger-to-mt" data-id="${t.id}" data-iid="${i.id}"`))}</div>` : ''}
+          <p style="margin:0 0 12px">${newBtn}</p>`;
+        })() : ''}
         ${open ? html`<div class="actions" style="flex-wrap:wrap;margin-bottom:14px">
-          <button class="btn primary" style="flex:1 1 100%;white-space:normal" data-action="ger-to-mt" data-id="${t.id}">👷 ${linked.length ? 'Envoyer un autre ouvrier' : 'Envoyer un ouvrier'}</button>
           ${t.status === 'recue' ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="prise">✅ Prendre en charge</button>` : ''}
           ${t.status === 'planifiee' ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="encours">🚚 En route</button>` : ''}
           ${['prise', 'planifiee', 'encours'].includes(t.status) ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="terminee">${icon('check')} Terminée</button>` : ''}
@@ -3644,6 +3654,29 @@ const SHEETS = {
         <form data-form="ger-msg" class="chat-form"><input type="hidden" name="id" value="${t.id}"><textarea name="x" required maxlength="2000" placeholder="Message à la gérance…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>
         <button class="btn sm" style="margin-top:8px" data-action="ger-ticket" data-id="${t.id}">${icon('sync')} Actualiser les messages</button>`,
       foot: html`<a class="btn" href="/portail.html#/t/${t.id}" target="_blank" rel="noopener">${icon('eye')} Ouvrir dans le portail</a><button class="btn primary" data-action="close-sheet">Fermer</button>`,
+    };
+  },
+  // affectation depuis la fiche d'un ouvrier : les demandes d'intervention en cours
+  'ger-aff'({ id }) {
+    const i = vault.get('intervenants', id);
+    if (!i) return null;
+    const foot = html`<button class="btn" data-action="ger-aff-reload" data-id="${id}">${icon('sync')} Actualiser</button><button class="btn primary" data-action="close-sheet">Fermer</button>`;
+    const title = `📌 Affecter ${intervFull(i)}`;
+    if (!ptlConf()) return { title, body: html`<p class="muted">Portail gérance non connecté (menu Gérances).</p>`, foot };
+    const d = ui.ptl.data;
+    if (!d && ui.ptl.err) return { title, body: html`<p class="red">${ui.ptl.err}</p>`, foot };
+    if (!d || ui.ptl.done) { if (ui.ptl.done) { ui.ptl.done = false; ui.ptl.data = null; } ptlLoad(); return { title, body: html`<p class="muted">Chargement des demandes…</p>`, foot }; }
+    const tks = d.tickets.filter((t) => !['terminee', 'annulee'].includes(t.status));
+    const fitT = (t) => metHints(`${t.categorie || ''} ${t.description || ''}`).includes(i.metier);
+    tks.sort((a, b) => fitT(b) - fitT(a) || (a.urgence === 'urgent' ? -1 : 0) - (b.urgence === 'urgent' ? -1 : 0));
+    return {
+      title,
+      body: html`<p class="small muted" style="margin:0 0 10px">${METIERS[i.metier] || ''} · touchez la demande à confier : il reste à choisir le jour et l’heure. ⭐ = correspond au métier.</p>
+        ${tks.length ? html`<div class="list small">${tks.map((t) => {
+          const u = PTL_URG[t.urgence] || PTL_URG.planifie, who = vault.list('taches').filter((x) => x.ptl && x.ptl.tid === t.id && x.intervenantId).map((x) => intervFull(vault.get('intervenants', x.intervenantId) || {}));
+          return html`<button class="row" data-action="ger-to-mt" data-id="${t.id}" data-iid="${id}"><span class="avatar">${fitT(t) ? '⭐' : u[0]}</span><span class="grow"><span class="title" style="display:block;white-space:normal">${u[0]} #${t.ref} · ${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted">— ${t.lieu}</span>` : ''}</span><span class="meta" style="white-space:normal">🏢 ${t.org_name} · ${t.residence_name}</span>${who.length ? html`<span class="meta" style="display:block">👷 déjà : ${who.join(', ')}</span>` : html`<span class="meta amber" style="display:block">⏸ pas encore affectée</span>`}</span><span class="badge">Affecter →</span></button>`;
+        })}</div>` : html`<p class="muted">Aucune demande d’intervention en cours.</p>`}`,
+      foot,
     };
   },
   'ger-form'({ id }) {
@@ -3880,7 +3913,7 @@ const SHEETS = {
     const i = vault.get('intervenants', id);
     if (!i) return null;
     const jobs = vault.list('taches').filter((t) => t.intervenantId === id && !t.recur && t.statut !== 'fait' && t.date).sort((a, b) => (a.date + (a.heure || '')).localeCompare(b.date + (b.heure || '')));
-    const jobBtn = html`<button class="btn primary block" data-action="interv-job" data-id="${id}" style="margin-bottom:12px">📅 Donner du travail (jour, heure, lieu)</button>`;
+    const jobBtn = html`<button class="btn primary block" data-action="interv-aff" data-id="${id}" style="margin-bottom:8px">📌 Affectation (demandes d’intervention)</button><button class="btn block" data-action="interv-job" data-id="${id}" style="margin-bottom:12px">📅 Autre travail (sans demande)</button>`;
     const jobList = html`<div class="section-label">📅 Travail prévu (avec date)</div>
       ${jobs.length ? html`<div class="list small">${jobs.map((t) => html`<button class="row${t.urgent ? ' u-urgent' : ''}" data-action="edit-tache" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.urgent ? '🔴 ' : ''}${t.titre}</span><span class="meta">${placeName(t)}</span></span><span class="meta" style="text-align:right">${t.date < today() ? html`<b style="color:var(--red)">${fmtDate(t.date)}</b>` : fmtDate(t.date)}${t.heure ? html`<br>🕒 ${t.heure}${t.heureFin ? '–' + t.heureFin : ''}` : ''}</span></button>`)}</div>` : html`<p class="small muted">Rien de prévu en plus de l’horaire habituel.</p>`}`;
     tab = tab || 'fiche';
@@ -5127,10 +5160,11 @@ const ACTIONS = {
     if (d.st === 'annulee' && !(await confirmBox('Annuler cette demande ?', { ok: 'Annuler la demande', danger: true }))) return;
     try { await ptlStatus(d.id, d.st, d.st === 'terminee' ? { rapport: 'Intervention terminée' } : {}); toast(PTL_ST[d.st] + ' — la gérance est prévenue'); } catch (e) { toast(e.message, { bad: true }); }
   },
-  'ger-to-mt'() {
+  async 'ger-to-mt'(a) {
+    if (a.id && (!ui.ptl.cur || !ui.ptl.cur.ticket || ui.ptl.cur.ticket.id !== a.id)) { try { ui.ptl.cur = await ptlApi('tickets/' + a.id); } catch (e) { return toast(e.message, { bad: true }); } }
     const d = ui.ptl.cur; if (!d) return;
-    const L = ptlLink(d);
-    openOver('tache-form', null, null, { metiers: metHints(`${d.ticket.categorie || ''} ${d.ticket.description || ''}`), ptlPhotos: (d.photos || []).map((p) => p.id).slice(0, 6), ptl: L, titre: `#${L.ref} ${d.ticket.categorie || 'Intervention'}`.slice(0, 80), note: d.ticket.description || '' });
+    const L = ptlLink(d), w = a.iid ? vault.get('intervenants', a.iid) : null;
+    openOver('tache-form', null, null, { ...(w ? { intervenantId: w.id, type: w.metier === 'menage' ? 'nettoyage' : 'reparation' } : {}), metiers: metHints(`${d.ticket.categorie || ''} ${d.ticket.description || ''}`), ptlPhotos: (d.photos || []).map((p) => p.id).slice(0, 6), ptl: L, titre: `#${L.ref} ${d.ticket.categorie || 'Intervention'}`.slice(0, 80), note: d.ticket.description || '' });
   },
   'ger-edit': (d) => openSheet('ger-form', d.id),
   'ger-open': (d) => { openSheet('ger', d.id, d.tab); ptlLoad(); }, // les données du portail sont rafraîchies à chaque ouverture
@@ -5336,6 +5370,8 @@ const ACTIONS = {
   },
   'new-tache': (d) => openOver('tache-form', null, null, d.imm || ui.immFilter || ''),
   'edit-tache': (d) => openOver('tache-form', d.id),
+  'interv-aff': (d) => { ui.ptl.data = null; ui.ptl.err = ''; openOver('ger-aff', d.id); },
+  'ger-aff-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; ptlLoad(); },
   'interv-job': (d) => { const i = vault.get('intervenants', d.id); openOver('tache-form', null, null, { intervenantId: d.id, type: i && i.metier === 'menage' ? 'nettoyage' : 'reparation' }); },
   'open-signal': (d) => { const t = vault.get('taches', d.id); if (t && !t.vu) vault.mutate((tx) => tx.put('taches', { id: t.id, vu: true }), 'Message du locataire lu', t.titre, t.locId); openOver('tache-form', d.id); },
   'ics-all': (d) => { ui.icsAll = null; openOver('ics-all', d.id); },

@@ -9843,5 +9843,81 @@ export default [
 [
 "Ajouter immo.",
 "Gebäude hinzuf."
+],
+[
+"Nouvel ouvrier",
+"Neuer Arbeiter"
+],
+[
+"Affectation",
+"Zuweisung"
+],
+[
+"qui envoyer ?",
+"wen schicken?"
+],
+[
+"envoyer un autre ouvrier",
+"einen weiteren Arbeiter schicken"
+],
+[
+"Stand-by",
+"Wartestellung"
+],
+[
+"aucun {0} dans votre équipe.",
+"kein {0} in Ihrem Team."
+],
+[
+"aucun ouvrier dans votre équipe.",
+"kein Arbeiter in Ihrem Team."
+],
+[
+"Trouvez quelqu’un (ouvrier à engager, société externe ou privé occasionnel), créez-le avec « Nouvel ouvrier », puis affectez-le ici.",
+"Finden Sie jemanden (einzustellender Arbeiter, externe Firma oder gelegentlicher Privater), legen Sie ihn mit „Neuer Arbeiter“ an und weisen Sie ihn hier zu."
+],
+[
+"Affecter →",
+"Zuweisen →"
+],
+[
+"Affecter {0}",
+"{0} zuweisen"
+],
+[
+"Affectation (demandes d’intervention)",
+"Zuweisung (Einsatzanfragen)"
+],
+[
+"Autre travail (sans demande)",
+"Andere Arbeit (ohne Anfrage)"
+],
+[
+"touchez la demande à confier : il reste à choisir le jour et l’heure. ⭐ = correspond au métier.",
+"tippen Sie auf die Anfrage: dann noch Tag und Uhrzeit wählen. ⭐ = passt zum Beruf."
+],
+[
+"déjà : {0}",
+"bereits: {0}"
+],
+[
+"pas encore affectée",
+"noch nicht zugewiesen"
+],
+[
+"à affecter",
+"zuzuweisen"
+],
+[
+"Aucune demande d’intervention en cours.",
+"Keine laufenden Einsatzanfragen."
+],
+[
+"Chargement des demandes…",
+"Anfragen werden geladen…"
+],
+[
+"Portail gérance non connecté (menu Gérances).",
+"Verwaltungsportal nicht verbunden (Menü Gérances)."
 ]
 ];
