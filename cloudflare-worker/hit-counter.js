@@ -906,7 +906,7 @@ const PTL_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
 ];
 // Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
-const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER"];
+const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT"];
 let ptlSchemaReady = false;
 
 // ── Utilità ──
@@ -1404,15 +1404,19 @@ async function handlePortail(request, env, url, headers, ctx) {
       return json({ residences: rows.results || [] });
     }
     const code6 = (v) => String(v ?? "").replace(/\D/g, "").slice(0, 6);
+    // codes nommés (portail, garage, serrure digitale, panneau de redémarrage…) et appartements (n°, étage, porte, code)
+    const jsonList = (v, max, f) => JSON.stringify((Array.isArray(v) ? v : []).slice(0, max).map(f).filter((x) => Object.values(x).some(Boolean)));
+    const resCodes = (b) => jsonList(b.codes, 30, (x) => ({ l: clean(x && x.l, 60), c: clean(x && x.c, 40) }));
+    const resApts = (b) => jsonList(b.apts, 400, (x) => ({ n: clean(x && x.n, 40), e: clean(x && x.e, 20), p: clean(x && x.p, 20), c: clean(x && x.c, 40) }));
     const resFields = (b) => [clean(b.name, 160), clean(b.address, 300), clean(b.access, 500), clean(b.keys_info, 500), clean(b.contact_name, 120), clean(b.contact_phone, 40), clean(b.notes, 2000), parseInt(b.apartments, 10) || null,
-      code6(b.alarm), code6(b.code_other), clean(b.interior, 120), clean(b.floors, 120)];
+      code6(b.alarm), code6(b.code_other), clean(b.interior, 120), clean(b.floors, 120), resCodes(b), resApts(b)];
     if (path === "residences" && method === "POST") {
       const b = await body();
       const org = isAdmin(me) ? clean(b.org_id, 40) : me.org_id;
       if (!(await env.DB.prepare("SELECT id FROM orgs WHERE id = ?").bind(org).first())) fail(400, "Gérance inconnue");
       if (!clean(b.name)) fail(400, "Nom de la résidence obligatoire");
       const id = ptlId();
-      await env.DB.prepare("INSERT INTO residences (id, org_id, name, address, access, keys_info, contact_name, contact_phone, notes, apartments, alarm, code_other, interior, floors, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
+      await env.DB.prepare("INSERT INTO residences (id, org_id, name, address, access, keys_info, contact_name, contact_phone, notes, apartments, alarm, code_other, interior, floors, codes, apts, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
         .bind(id, org, ...resFields(b), now).run();
       return json({ id });
     }
@@ -1425,7 +1429,7 @@ async function handlePortail(request, env, url, headers, ctx) {
         await env.DB.prepare("UPDATE residences SET active = 0 WHERE id = ?").bind(r.id).run();
       } else {
         if (!clean(b.name)) fail(400, "Nom de la résidence obligatoire");
-        await env.DB.prepare("UPDATE residences SET name = ?, address = ?, access = ?, keys_info = ?, contact_name = ?, contact_phone = ?, notes = ?, apartments = ?, alarm = ?, code_other = ?, interior = ?, floors = ? WHERE id = ?")
+        await env.DB.prepare("UPDATE residences SET name = ?, address = ?, access = ?, keys_info = ?, contact_name = ?, contact_phone = ?, notes = ?, apartments = ?, alarm = ?, code_other = ?, interior = ?, floors = ?, codes = ?, apts = ? WHERE id = ?")
           .bind(...resFields(b), r.id).run();
       }
       return json({ ok: true });

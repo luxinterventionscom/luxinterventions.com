@@ -29,6 +29,10 @@ export default [
 "Last 12 months"
 ],
 [
+"5 appartements",
+"5 apartments"
+],
+[
 "6 photos maximum : les premières seront envoyées",
 "6 photos maximum: the first ones will be sent"
 ],
@@ -146,7 +150,7 @@ export default [
 ],
 [
 "Appartement",
-"Flat"
+"Apartment"
 ],
 [
 "Appartements",
@@ -419,6 +423,10 @@ export default [
 [
 "Code porte, clé chez le concierge… (sinon : infos de la résidence)",
 "Door code, key with the caretaker… (otherwise: residence details)"
+],
+[
+"Code serrure",
+"Lock code"
 ],
 [
 "Collab. (demandes)",
@@ -1209,6 +1217,10 @@ export default [
 "November"
 ],
 [
+"N° / nom",
+"No. / name"
+],
+[
 "N° / précision",
 "No. / details"
 ],
@@ -1353,6 +1365,10 @@ export default [
 "Property manager portal"
 ],
 [
+"Porte",
+"Door"
+],
+[
 "Porte de la cave",
 "Cellar door"
 ],
@@ -1395,6 +1411,10 @@ export default [
 [
 "Quitter",
 "Exit"
+],
+[
+"Quoi ? (ex. Portail)",
+"What? (e.g. Gate)"
 ],
 [
 "Radiateurs",
@@ -2121,6 +2141,10 @@ export default [
 "— Choose —"
 ],
 [
+"— Parties communes / autre —",
+"— Common areas / other —"
+],
+[
 "— données d’exemple, rien n’est enregistré.",
 "— sample data, nothing is saved."
 ],
@@ -2225,6 +2249,10 @@ export default [
 "🔄 Refresh messages"
 ],
 [
+"🔐 Autres codes (portail, garage, serrure digitale, panneau de redémarrage…)",
+"🔐 Other codes (gate, garage, digital lock, restart panel…)"
+],
+[
 "🔐 Codes (repris de la résidence, modifiables)",
 "🔐 Codes (taken from the residence, editable)"
 ],
@@ -2243,6 +2271,10 @@ export default [
 [
 "🚨 Alarme",
 "🚨 Alarm"
+],
+[
+"🚪 Appartements (n°, étage, n° de porte, code de la serrure)",
+"🚪 Apartments (no., floor, door no., lock code)"
 ],
 [
 "🚪 Porte",

@@ -29,6 +29,10 @@ export default [
 "Ultimi 12 mesi"
 ],
 [
+"5 appartements",
+"5 appartamenti"
+],
+[
 "6 photos maximum : les premières seront envoyées",
 "Massimo 6 foto: verranno inviate le prime"
 ],
@@ -377,6 +381,10 @@ export default [
 "Spuntate la conferma."
 ],
 [
+"Code",
+"Codice"
+],
+[
 "Code alarme",
 "Codice allarme"
 ],
@@ -415,6 +423,10 @@ export default [
 [
 "Code porte, clé chez le concierge… (sinon : infos de la résidence)",
 "Codice porta, chiave dal portiere… (altrimenti: dati del condominio)"
+],
+[
+"Code serrure",
+"Codice serratura"
 ],
 [
 "Collab. (demandes)",
@@ -1233,6 +1245,10 @@ export default [
 "Nuovo condominio"
 ],
 [
+"N° / nom",
+"N° / nome"
+],
+[
 "N° / précision",
 "N° / dettaglio"
 ],
@@ -1385,6 +1401,10 @@ export default [
 "Portale amministrazioni"
 ],
 [
+"Porte",
+"Porta"
+],
+[
 "Porte de la cave",
 "Porta della cantina"
 ],
@@ -1427,6 +1447,10 @@ export default [
 [
 "Quitter",
 "Esci"
+],
+[
+"Quoi ? (ex. Portail)",
+"Cosa? (es. Cancello)"
 ],
 [
 "Radiateurs",
@@ -2165,6 +2189,10 @@ export default [
 "— Scegli —"
 ],
 [
+"— Parties communes / autre —",
+"— Parti comuni / altro —"
+],
+[
 "— données d’exemple, rien n’est enregistré.",
 "— dati d’esempio, non viene salvato niente."
 ],
@@ -2273,6 +2301,10 @@ export default [
 "🔄 Aggiorna i messaggi"
 ],
 [
+"🔐 Autres codes (portail, garage, serrure digitale, panneau de redémarrage…)",
+"🔐 Altri codici (cancello, garage, serratura digitale, quadro di riavvio…)"
+],
+[
 "🔐 Codes",
 "🔐 Codici"
 ],
@@ -2295,6 +2327,10 @@ export default [
 [
 "🚨 Alarme",
 "🚨 Allarme"
+],
+[
+"🚪 Appartements (n°, étage, n° de porte, code de la serrure)",
+"🚪 Appartamenti (n°, piano, n° porta, codice serratura)"
 ],
 [
 "🚪 Porte",
