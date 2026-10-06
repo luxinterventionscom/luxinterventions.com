@@ -612,7 +612,7 @@ function guideCard(stats) {
     <summary class="card-title" style="margin-bottom:8px"><h3>Premiers pas · ${done}/${steps.length}</h3></summary>
     <div class="progress" style="margin-bottom:10px"><i style="width:${(done / steps.length) * 100}%"></i></div>
     ${steps.map(([ok, label, action, to], i) => html`<div class="guide-step ${ok ? 'ok' : ''}"><span class="guide-num">${ok ? '✓' : i + 1}</span><span class="grow">${label}</span>${ok ? '' : html`<button class="btn sm" data-action="${action}" data-to="${to}">Faire</button>`}</div>`)}
-    <p class="tiny muted" style="margin-top:10px">🔑 Le mot de passe se choisit <b>une seule fois</b>, avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Demandez un nouveau lien.</p>
+    <p class="tiny muted" style="margin-top:10px">🔑 Le mot de passe se choisit <b>une seule fois</b>, avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Touchez « 🔑 Mot de passe oublié ? » sur la page de connexion.</p>
     <div style="text-align:right;margin-top:6px"><button class="btn sm ghost" data-action="guide-hide">Masquer</button></div>
   </details>`;
 }
@@ -688,7 +688,7 @@ const VIEWS = {
     const arrive = coming.length || planToday.length ? html`<div class="arrive">${coming.map((t) => html`<button class="arrive-b go" data-action="open-ticket" data-id="${t.id}"><span class="arr-dot"></span><span class="grow">🚚 <b>LuxInterventions est en route / sur place</b><span class="meta" style="display:block">#${t.ref} · ${t.residence_name}${t.technicien ? html` · <span>technicien</span> ${t.technicien}` : ''}</span></span></button>`)}
       ${planToday.map((t) => html`<button class="arrive-b today" data-action="open-ticket" data-id="${t.id}"><span class="arr-dot"></span><span class="grow">📅 <b>Aujourd'hui</b> ${new Date(t.planned_at).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })}<span class="meta" style="display:block">#${t.ref} · ${t.residence_name}${t.technicien ? html` · <span>technicien</span> ${t.technicien}` : ''}</span></span></button>`)}</div>` : '';
     const pushCard = !['on', 'demo'].includes(pushState()) ? html`<div class="alert ${isAdmin() ? 'warn' : 'info'}" style="margin-bottom:14px;align-items:center">${icon('bell')}<div style="flex:1">${isAdmin()
-      ? html`<b>Activez les notifications</b> pour être alerté immédiatement des nouvelles demandes urgentes.` : html`<b>Activez les notifications</b> pour suivre l'avancement de vos demandes.`}</div><button class="btn sm" data-action="push-on">Activer</button></div>` : '';
+      ? html`<b>Activez les notifications</b> pour être alerté immédiatement des nouvelles demandes urgentes.` : html`<b>Activez les notifications</b> pour suivre l'avancement de vos demandes.`}</div>${iosSafari() ? '' : html`<button class="btn sm" data-action="push-on">Activer</button>`}</div>${iosSafari() ? html`<div class="alert info" style="margin:-8px 0 14px">📱<div><b>Sur iPhone, d’abord installer l’app :</b> en bas de Safari, touchez <b>Partager</b> (carré avec flèche ↑) → <b>« Sur l’écran d’accueil »</b> → Ajouter. Ouvrez ensuite le portail <b>depuis la nouvelle icône</b> et touchez « Activer » : Safari seul ne permet pas les notifications.</div></div>` : ''}` : '';
     if (isAdmin()) {
       return html`${pushCard}
         ${guideCard(stats)}
@@ -1288,6 +1288,8 @@ const SHEETS = {
 // ───────────────────────── Notifications push ─────────────────────────
 let pushSub = null;
 let pushPerm = typeof Notification !== 'undefined' ? Notification.permission : 'unsupported';
+// iPhone dans Safari (pas depuis l'icône) : les notifications y sont impossibles, il faut installer l'app
+const iosSafari = () => /iphone|ipad|ipod/i.test(navigator.userAgent) && !(matchMedia('(display-mode: standalone)').matches || navigator.standalone === true);
 function pushState() {
   if (state.demo) return 'demo';
   if (!('serviceWorker' in navigator) || !('PushManager' in window) || typeof Notification === 'undefined') return 'unsupported';

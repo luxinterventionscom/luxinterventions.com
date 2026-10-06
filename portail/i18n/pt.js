@@ -1,6 +1,10 @@
 // Traduction du portail gérance (source : français). Généré — une ligne par phrase.
 export default [
 [
+"(carré avec flèche ↑) →",
+"(quadrado com seta ↑) →"
+],
+[
 "(lendemain)",
 "(dia seguinte)"
 ],
@@ -11,6 +15,10 @@ export default [
 [
 ", avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Demandez un nouveau lien.",
 ", com o link de convite. Depois: email + palavra-passe, em qualquer dispositivo. Esqueceu-se? Peça um novo link."
+],
+[
+", avec le lien d’invitation. Ensuite : email + mot de passe, sur n’importe quel appareil. Oublié ? Touchez « 🔑 Mot de passe oublié ? » sur la page de connexion.",
+", com o link de convite. Depois: email + palavra-passe, em qualquer aparelho. Esqueceu? Toque em «🔑 Esqueceu a palavra-passe?» na página de entrada."
 ],
 [
 "0 (RDC)",
@@ -1245,6 +1253,10 @@ export default [
 "Estacionamento / exterior"
 ],
 [
+"Partager",
+"Partilhar"
+],
+[
 "Partiellement satisfait",
 "Parcialmente satisfeito"
 ],
@@ -1629,6 +1641,10 @@ export default [
 "No iPhone: instale primeiro a app (Partilhar → « Adicionar ao ecrã principal ») e depois abra-a a partir do ícone."
 ],
 [
+"Sur iPhone, d’abord installer l’app :",
+"No iPhone, instale primeiro a app:"
+],
+[
 "Syndic Exemple",
 "Condomínio Exemplo"
 ],
@@ -1817,8 +1833,20 @@ export default [
 "pedidos abertos"
 ],
 [
+"depuis la nouvelle icône",
+"a partir do novo ícone"
+],
+[
 "délai moyen",
 "tempo médio"
+],
+[
+"en bas de Safari, touchez",
+"em baixo no Safari, toque em"
+],
+[
+"et touchez « Activer » : Safari seul ne permet pas les notifications.",
+"e toque em «Ativar»: o Safari sozinho não permite notificações."
 ],
 [
 "ex. 2e, ou RDC à 4e",
@@ -1977,6 +2005,10 @@ export default [
 "{0} utilizador(es)"
 ],
 [
+"« Sur l’écran d’accueil »",
+"«Adicionar ao ecrã principal»"
+],
+[
 "· désactivé",
 "· desativado"
 ],
@@ -2095,6 +2127,10 @@ export default [
 [
 "— technicien :",
 "— técnico:"
+],
+[
+"→ Ajouter. Ouvrez ensuite le portail",
+"→ Adicionar. Depois abra o portal"
 ],
 [
 "⚡ Panneaux",
