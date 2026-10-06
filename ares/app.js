@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.88.0';
+const VERSION = '2.89.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2636,6 +2636,14 @@ function factTotHtml(f) {
 }
 // « Voir plus » : 10 lignes de plus à chaque toucher
 const moreBtn = (total, lim) => (total > lim ? html`<button class="btn block" style="margin-top:12px" data-action="cp-more">⬇ Voir plus (${Math.min(10, total - lim)} sur ${total - lim} restantes)</button><p class="tiny muted" style="text-align:center;margin:6px 0 0">${lim} sur ${total} affichées</p>` : total > 10 ? html`<p class="tiny muted" style="text-align:center;margin:10px 0 0">Tout est affiché (${total})</p>` : '');
+// Radio de l'app des locataires (Maintenance → Publicité, sous les annonces)
+const radioCard = () => html`<div class="section-label">📻 Radio de l’app des locataires</div>
+      ${(() => { const r = vault.get('reglages', 'radio') || {}; return html`<form data-form="radio" class="fields card" style="margin:0 0 6px">
+        <label class="field">Nom<input name="nom" value="${r.nom || 'Seven Radio'}" placeholder="ex. Seven Radio"></label>
+        <label class="field">Lien (site ou flux audio)<input name="url" type="url" value="${r.url || 'https://sevenradio.lu/?proradio-popup=1'}" placeholder="https://…"></label>
+        <button class="btn primary full" type="submit">Enregistrer</button>
+        <p class="tiny muted full" style="margin:0">Proposée sous la météo dans l’app des locataires et l’app de l’équipe (bouton ▶). Avec le lien du <b>flux audio</b> (demandé à la radio), elle joue directement dans l’app ; avec le lien du site, l’app ouvre le site. Chaque locataire peut coller sa propre radio.</p>
+      </form>`; })()}`;
 // Registre des interventions terminées (ou finies par l'ouvrier) : où, quoi, qui, heures réelles, avis, coût
 function intervLedger(from, to) {
   const out = [];
@@ -2771,7 +2779,8 @@ const VIEWS = {
       body = html`<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
         ${all.length ? html`<p class="tiny muted" style="margin:-4px 0 8px">📊 Statistiques anonymes : vues (une fois par jour et par téléphone) et clics. <a href="#" data-action="pub-stats-refresh">↻ Actualiser les statistiques</a></p>` : ''}
         ${on.length ? html`<div class="list" style="margin-bottom:14px">${on.map(row)}</div>` : empty('msg', 'Aucune annonce en cours.', html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Nouvelle annonce</button>`)}
-        ${off.length ? html`<div class="section-label">Expirées (touchez pour republier)</div><div class="list">${off.map(row)}</div>` : ''}`;
+        ${off.length ? html`<div class="section-label">Expirées (touchez pour republier)</div><div class="list">${off.map(row)}</div>` : ''}
+        ${radioCard()}`;
     } else if (tab === 'dechets') {
       const shown = f ? imms.filter((im) => im.id === f) : imms;
       const y = new Date().getFullYear();
@@ -3378,13 +3387,6 @@ dashboard() {
       <p class="small muted" style="margin:0 0 8px">Un avis et le numéro sur l’icône quand un locataire ou l’équipe vous écrit (signalement, virement, photos, problème…). Le serveur ne lit rien : il dit seulement « nouveau message ».</p>
       ${pushSt === 'off' || !pushSt ? html`<button class="btn" data-action="push-on">🔔 Activer les notifications sur ce téléphone</button>` : html`<p class="small" style="margin:0">${PUSH_MSG[pushSt] || ''}</p>`}
 
-      <div class="section-label">📻 Radio de l’app des locataires</div>
-      ${(() => { const r = vault.get('reglages', 'radio') || {}; return html`<form data-form="radio" class="fields card" style="margin:0 0 6px">
-        <label class="field">Nom<input name="nom" value="${r.nom || 'Seven Radio'}" placeholder="ex. Seven Radio"></label>
-        <label class="field">Lien (site ou flux audio)<input name="url" type="url" value="${r.url || 'https://sevenradio.lu/?proradio-popup=1'}" placeholder="https://…"></label>
-        <button class="btn primary full" type="submit">Enregistrer</button>
-        <p class="tiny muted full" style="margin:0">Proposée sous la météo dans l’app des locataires et l’app de l’équipe (bouton ▶). Avec le lien du <b>flux audio</b> (demandé à la radio), elle joue directement dans l’app ; avec le lien du site, l’app ouvre le site. Chaque locataire peut coller sa propre radio.</p>
-      </form>`; })()}
       <div class="section-label">Apparence</div>
       <div class="chips">${[['auto', 'Automatique'], ['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => html`<button class="chip" data-action="theme" data-id="${k}" aria-pressed="${theme === k}">${l}</button>`)}</div>
       <div class="section-label">Langue</div>
