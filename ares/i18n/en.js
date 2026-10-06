@@ -9391,5 +9391,141 @@ export default [
 [
 "✅ à clôturer",
 "✅ to close"
+],
+[
+"🧾 Factures",
+"🧾 Invoices"
+],
+[
+"🧾 Facturation des interventions",
+"🧾 Invoicing of interventions"
+],
+[
+"Facturation des interventions",
+"Invoicing of interventions"
+],
+[
+"Facturé au client : € / heure (HT)",
+"Billed to the client: € / hour (excl. VAT)"
+],
+[
+"Déplacement facturé (€ HT)",
+"Travel billed (€ excl. VAT)"
+],
+[
+"Faire la facture",
+"Make the invoice"
+],
+[
+"🧾 Faire la facture",
+"🧾 Make the invoice"
+],
+[
+"Enregistrer le brouillon",
+"Save draft"
+],
+[
+"🧾 Émettre et envoyer",
+"🧾 Issue and send"
+],
+[
+"Émettre et envoyer",
+"Issue and send"
+],
+[
+"Matériel acheté en plus (HT)",
+"Extra material bought (excl. VAT)"
+],
+[
+"Remise / majoration (avant émission)",
+"Discount / surcharge (before issuing)"
+],
+[
+"Remise −",
+"Discount −"
+],
+[
+"Majoration +",
+"Surcharge +"
+],
+[
+"Heures (réelles, arrondies au ¼ h)",
+"Hours (real, rounded to ¼ h)"
+],
+[
+"Tarif € / h HT",
+"Rate € / h excl. VAT"
+],
+[
+"Déplacement € HT",
+"Travel € excl. VAT"
+],
+[
+"Main-d’œuvre",
+"Labour"
+],
+[
+"Déplacement",
+"Travel"
+],
+[
+"Matériel",
+"Material"
+],
+[
+"Remise",
+"Discount"
+],
+[
+"Majoration",
+"Surcharge"
+],
+[
+"Total HT",
+"Total excl. VAT"
+],
+[
+"Total TTC",
+"Total incl. VAT"
+],
+[
+"Facturé TTC",
+"Invoiced incl. VAT"
+],
+[
+"Factures (Excel / CSV)",
+"Invoices (Excel / CSV)"
+],
+[
+"Factures émises",
+"Issued invoices"
+],
+[
+"Aucune facture émise sur cette période.",
+"No invoice issued in this period."
+],
+[
+"✅ Marquer payée",
+"✅ Mark paid"
+],
+[
+"↩️ Marquer à payer",
+"↩️ Mark unpaid"
+],
+[
+"✅ payée",
+"✅ paid"
+],
+[
+"⏳ à payer",
+"⏳ to pay"
+],
+[
+"Brouillon enregistré",
+"Draft saved"
+],
+[
+"Facturation enregistrée",
+"Invoicing saved"
 ]
 ];

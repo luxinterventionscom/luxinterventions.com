@@ -8,9 +8,10 @@ import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { videoEmbed } from './video-embed.js';
 import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
+import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.83.0';
+const VERSION = '2.84.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1544,7 +1545,7 @@ const MET_HINT = [[/plomb|sanitaire|fuite|wc|toilette|cesso|robinet|évier|douch
   [/menuis|bois|fenêtre|parquet|meuble/i, 'menuisier'], [/nettoy|ménage|propreté|sale/i, 'menage'], [/jardin|espaces verts|haie|pelouse|arbre/i, 'jardinier']];
 const metHints = (txt) => MET_HINT.filter(([rx]) => rx.test(txt || '')).map(([, m]) => m);
 // lien demande ↔ intervention : infos utiles à l'ouvrier (adresse, lieu, codes, disponibilités, contact)
-const ptlLink = (d) => { const t = d.ticket, r = d.residence || {}; return { tid: t.id, ref: t.ref, org: r.org_name || '', res: r.name || '', adr: r.address || '', lieu: t.lieu || '', acces: t.acces || '', dispo: t.dispo || '', contact: t.contact_name || r.contact_name || '', tel: t.contact_phone || r.contact_phone || '', interior: r.interior || '', floors: r.floors || '', codes: [r.access ? 'Porte : ' + r.access : '', r.alarm ? 'Alarme : ' + r.alarm : '', r.code_other ? 'Panneaux : ' + r.code_other : ''].filter(Boolean).join(' · ') }; };
+const ptlLink = (d) => { const t = d.ticket, r = d.residence || {}; return { tid: t.id, ref: t.ref, orgId: t.org_id || '', org: r.org_name || '', res: r.name || '', adr: r.address || '', lieu: t.lieu || '', acces: t.acces || '', dispo: t.dispo || '', contact: t.contact_name || r.contact_name || '', tel: t.contact_phone || r.contact_phone || '', interior: r.interior || '', floors: r.floors || '', codes: [r.access ? 'Porte : ' + r.access : '', r.alarm ? 'Alarme : ' + r.alarm : '', r.code_other ? 'Panneaux : ' + r.code_other : ''].filter(Boolean).join(' · ') }; };
 const ptlOrg = (id) => ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => o.id === id);
 const ptlInviteUrl = (tok) => `${location.origin}/portail.html#invite=${tok}`;
 // mot de passe → clé dérivée sur l'appareil (comme dans le portail) : le serveur ne voit jamais le mot de passe
@@ -2540,6 +2541,71 @@ function horFromForm(fd) {
   }
   return out.sort((x, y) => x.j - y.j || x.de.localeCompare(y.de));
 }
+// ── Factures des interventions (ARES INVEST S.A. — marque LuxInterventions) → la gérance la télécharge dans le portail ──
+const FACT_DEF = { nom: 'ARES INVEST S.A.', marque: 'LuxInterventions', adresse: '37, Val Saint André', ville: 'L-1128 Luxembourg', rcs: 'B225245', tva: 'LU30440727', tel: '+352 691 423 943', email: '', iban: '', bic: '', banque: '', taux: 17, delai: 30, seq: 0 };
+const factConf = () => ({ ...FACT_DEF, ...(vault.get('reglages', 'facturation') || {}) });
+const factMissing = (c) => [['nom', 'raison sociale'], ['adresse', 'adresse'], ['rcs', 'RCS'], ['tva', 'n° TVA'], ['iban', 'IBAN']].filter(([k]) => !String(c[k] || '').trim()).map(([, l]) => l);
+const ymd = (iso) => iso.replace(/-/g, '');
+// brouillon d'une facture à partir de l'intervention clôturée : heures réelles × tarif, déplacement, matériel, remise / majoration
+function factDraft(t) {
+  if (t.factDraft) return t.factDraft;
+  const w = vault.get('intervenants', t.intervenantId) || {};
+  const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id);
+  const h = L && L.min ? Math.ceil(L.min / 15) / 4 : 1;
+  return { h, taux: w.tauxH || 0, depl: w.depl || 0, mat: [], adj: { type: 'remise', mode: '%', val: 0, lib: '' } };
+}
+function factCalc(f, taux) {
+  const mo = r2(num(f.h) * num(f.taux)), dep = r2(num(f.depl)), mat = r2(sum(f.mat || [], (m) => num(m.ht)));
+  const sub = r2(mo + dep + mat);
+  const a = f.adj || {}, raw = a.mode === '%' ? r2((sub * num(a.val)) / 100) : r2(num(a.val));
+  const adj = a.type === 'remise' ? -raw : raw;
+  const ht = r2(sub + adj), tva = r2((ht * num(taux)) / 100);
+  return { mo, dep, mat, sub, adj, ht, tva, ttc: r2(ht + tva) };
+}
+const eur = (n) => (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') + ' €';
+function factPdf(t, f, no, dateIso, c) {
+  const k = factCalc(f, c.taux), w = vault.get('intervenants', t.intervenantId) || {};
+  const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id) || {};
+  const org = ptlOrg((t.ptl && t.ptl.orgId) || '') || ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => t.ptl && o.name === t.ptl.org) || {};
+  const p = makePdf(), X = 48, R = 547;
+  const fr = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  p.text(X, 64, c.nom, { size: 16, bold: true }).text(X, 82, c.marque ? `${c.marque} — interventions techniques` : '', { size: 10, color: [0.35, 0.35, 0.35] });
+  p.text(X, 98, c.adresse, { size: 9 }).text(X, 110, c.ville, { size: 9 }).text(X, 122, [c.tel, c.email].filter(Boolean).join(' · '), { size: 9 });
+  p.text(R, 64, 'FACTURE', { size: 20, bold: true, align: 'right' }).text(R, 84, `N° ${no}`, { size: 11, bold: true, align: 'right' }).text(R, 100, `Date : ${fr(dateIso)}`, { size: 9, align: 'right' });
+  p.text(R, 112, `Échéance : ${fr(addDays(dateIso, +c.delai || 30))}`, { size: 9, align: 'right' });
+  p.rect(X, 140, 250, 64, { fill: [0.96, 0.96, 0.96] }).text(X + 10, 156, 'Facturé à', { size: 8, color: [0.4, 0.4, 0.4] }).text(X + 10, 172, (t.ptl && t.ptl.org) || org.name || '', { size: 11, bold: true });
+  p.text(X + 10, 186, [org.email, org.phone].filter(Boolean).join(' · '), { size: 9 });
+  p.text(X + 270, 156, 'Intervention', { size: 8, color: [0.4, 0.4, 0.4] }).text(X + 270, 172, `${t.ptl && !String(t.titre).startsWith('#' + t.ptl.ref) ? 'Demande #' + t.ptl.ref + ' · ' : t.ptl ? 'Demande ' : ''}${t.titre}`.slice(0, 60), { size: 10, bold: true });
+  p.wrap(X + 270, 186, `${t.ptl ? [t.ptl.res, t.ptl.adr].filter(Boolean).join(' — ') : placeName(t)}${t.ptl && t.ptl.lieu ? ' · ' + t.ptl.lieu : ''}`, 230, { size: 9 });
+  let y = 236;
+  p.rect(X, y - 12, R - X, 18, { fill: [0.15, 0.2, 0.35] });
+  for (const [x, l, al] of [[X + 6, 'Désignation', 'left'], [R - 170, 'Qté', 'right'], [R - 90, 'Prix unit. HT', 'right'], [R - 6, 'Total HT', 'right']]) p.text(x, y, l, { size: 9, bold: true, color: [1, 1, 1], align: al });
+  y += 22;
+  const row = (lib, q, pu, tot) => { const hh = p.wrap(X + 6, y, lib, 300, { size: 9.5 }); if (q !== '') p.text(R - 170, y, q, { size: 9.5, align: 'right' }); if (pu !== '') p.text(R - 90, y, pu, { size: 9.5, align: 'right' }); p.text(R - 6, y, tot, { size: 9.5, align: 'right' }); y += Math.max(hh, 13) + 6; p.line(X, y - 10, R, y - 10, { w: 0.4 }); };
+  row(`Main-d'œuvre — ${intervFull(w)} — ${fr(L.d || t.doneDate || dateIso)}${L.arr ? ` (${L.arr}–${L.dep || ''})` : ''}`, String(f.h).replace('.', ',') + ' h', eur(num(f.taux)), eur(k.mo));
+  if (k.dep) row('Déplacement', '1', eur(k.dep), eur(k.dep));
+  for (const m of f.mat || []) if (num(m.ht)) row(`Matériel : ${m.lib || 'fourniture'}`, '1', eur(num(m.ht)), eur(num(m.ht)));
+  if (k.adj) row(`${f.adj.type === 'remise' ? 'Remise' : 'Majoration'}${f.adj.mode === '%' ? ' ' + String(num(f.adj.val)).replace('.', ',') + ' %' : ''}${f.adj.lib ? ' — ' + f.adj.lib : ''}`, '', '', (k.adj < 0 ? '− ' : '+ ') + eur(Math.abs(k.adj)));
+  y += 8;
+  const tot = (l, v, b) => { p.text(R - 120, y, l, { size: b ? 11 : 9.5, bold: b, align: 'right' }).text(R - 6, y, v, { size: b ? 11 : 9.5, bold: b, align: 'right' }); y += b ? 18 : 14; };
+  tot('Total HT', eur(k.ht)); tot(`TVA ${String(num(c.taux)).replace('.', ',')} %`, eur(k.tva)); p.line(R - 220, y - 9, R, y - 9, { w: 0.8, color: [0.2, 0.2, 0.2] }); y += 4; tot('Total TTC', eur(k.ttc), true);
+  y += 18;
+  p.rect(X, y, R - X, 52, { fill: [0.96, 0.97, 1] }).text(X + 10, y + 16, `Paiement à ${+c.delai || 30} jours, avant le ${fr(addDays(dateIso, +c.delai || 30))}, par virement — référence : ${no}`, { size: 9.5, bold: true });
+  p.text(X + 10, y + 32, `IBAN : ${c.iban}${c.bic ? '   ·   BIC : ' + c.bic : ''}${c.banque ? '   ·   ' + c.banque : ''}`, { size: 9.5 });
+  p.text((X + R) / 2, 800, `${c.nom}${c.marque ? ' — ' + c.marque : ''} · ${c.adresse}, ${c.ville} · RCS Luxembourg ${c.rcs} · TVA ${c.tva}`, { size: 7.5, color: [0.4, 0.4, 0.4], align: 'center' });
+  return { bytes: p.bytes(), k };
+}
+const factRead = (fm) => {
+  const fd = new FormData(fm), mat = [];
+  for (let n = 0; n < 30; n++) if (fd.has(`ml${n}`)) { const lib = String(fd.get(`ml${n}`) || '').trim(), ht = num(fd.get(`mh${n}`)); if (lib || ht) mat.push({ lib, ht }); }
+  return { h: num(fd.get('h')), taux: num(fd.get('taux')), depl: num(fd.get('depl')), mat, adj: { type: fd.get('adj_type') === 'maj' ? 'maj' : 'remise', mode: fd.get('adj_mode') === '€' ? '€' : '%', val: num(fd.get('adj_val')), lib: String(fd.get('adj_lib') || '').trim() } };
+};
+const matRow = (n, m = {}) => html`<div class="fact-mat"><input name="ml${n}" value="${m.lib || ''}" placeholder="Matériel acheté (ex. disjoncteur 16 A)"><input name="mh${n}" type="number" ${new Raw(money$)} value="${m.ht ?? ''}" placeholder="€ HT" aria-label="Montant HT"></div>`;
+function factTotHtml(f) {
+  const c = factConf(), k = factCalc(f, c.taux);
+  return html`<div class="kv-tot"><span>Main-d’œuvre</span><b>${eur(k.mo)}</b><span>Déplacement</span><b>${eur(k.dep)}</b><span>Matériel</span><b>${eur(k.mat)}</b>${k.adj ? html`<span>${k.adj < 0 ? 'Remise' : 'Majoration'}</span><b>${k.adj < 0 ? '− ' : '+ '}${eur(Math.abs(k.adj))}</b>` : ''}
+    <span>Total HT</span><b>${eur(k.ht)}</b><span>TVA ${String(c.taux).replace('.', ',')} %</span><b>${eur(k.tva)}</b><span class="big">Total TTC</span><b class="big">${eur(k.ttc)}</b></div>`;
+}
 // Registre des interventions terminées (ou finies par l'ouvrier) : où, quoi, qui, heures réelles, avis, coût
 function intervLedger(from, to) {
   const out = [];
@@ -3062,7 +3128,7 @@ dashboard() {
     const sec = ui.cpSec || 'compta';
     const secTabs = html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['compta', '📒 Comptabilité'], ['stats', '📊 Statistiques']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sec === k}" data-action="cp-sec" data-id="${k}">${l}</button>`)}</div>`;
     if (sec === 'stats') return html`${secTabs}${pageHead('📊 Statistiques', 'Loyers, occupation, dépenses, interventions')}${VIEWS.stats()}`;
-    const tabs = html`<div class="tabs" role="tablist" style="max-width:620px">${[['journal', 'Journal'], ['tva', 'TVA'], ['interv', '🔧 Interventions'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
+    const tabs = html`<div class="tabs" role="tablist" style="max-width:620px">${[['journal', 'Journal'], ['tva', 'TVA'], ['interv', '🔧 Interventions'], ['fact', '🧾 Factures'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
     if (tab === 'stats') ui.cpTab = 'journal';
     const perSel = html`<select data-input="cp-per" style="width:auto" aria-label="Période"><option value="y" ${per === 'y' ? new Raw('selected') : ''}>Toute l’année</option>${[1, 2, 3, 4].map((q) => html`<option value="q${q}" ${per === 'q' + q ? new Raw('selected') : ''}>Trimestre ${q}</option>`)}${MONTHS_FULL.map((mn, i) => html`<option value="m${i + 1}" ${per === 'm' + (i + 1) ? new Raw('selected') : ''}>${mn}</option>`)}</select>`;
     const [from, to] = cpRange(y, per);
@@ -3126,6 +3192,17 @@ dashboard() {
         <div class="list">${imms.map((im) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${im.adresse}</span><span class="meta">${IMM_TYPES[im.type] || IMM_TYPES.immeuble}</span></span>
           <select data-input="tva-loyer" data-id="${im.id}" style="width:auto"><option value="0">Exonéré (0 %)</option>${tvaRates().map((r) => html`<option value="${r}" ${(im.tvaLoyer || 0) === r ? new Raw('selected') : ''}>${String(r).replace('.', ',')} %</option>`)}</select></div>`)}</div>
         <p class="tiny muted" style="margin-top:10px">Taux de ${(PAYS[soc.pays || 'LU'] || PAYS.LU)[0]} : ${tvaRates().map((r) => String(r).replace('.', ',') + ' %').join(' · ')} — modifiables dans Réglages → Société & associés. Aide à la préparation, à faire vérifier par votre comptable.</p>`;
+    } else if (tab === 'fact') {
+      const F = vault.list('taches').filter((t) => t.facture && t.facture.date >= from && t.facture.date <= to).sort((a, b) => b.facture.no.localeCompare(a.facture.no));
+      const todo = vault.list('taches').filter((t) => t.ptl && t.statut === 'fait' && !t.facture);
+      const c = factConf();
+      body = html`<div class="metrics" style="margin-bottom:14px">
+          <div class="metric"><div class="lbl">Factures</div><div class="val">${F.length}</div><div class="sub">${cpLabel(y, per)}</div></div>
+          <div class="metric"><div class="lbl">À encaisser</div><div class="val red">${eur(sum(F.filter((t) => !t.facture.paid), (t) => t.facture.ttc))}</div><div class="sub">${plural(F.filter((t) => !t.facture.paid).length, 'facture')}</div></div>
+          <div class="metric hero"><div class="lbl">Facturé TTC</div><div class="val accent">${eur(sum(F, (t) => t.facture.ttc))}</div><div class="sub">HT ${eur(sum(F, (t) => t.facture.ht))} · TVA ${eur(sum(F, (t) => t.facture.tva))}</div></div></div>
+        <div class="toolbar" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-action="cp-fact-csv">${icon('download')} Factures (Excel / CSV)</button><button class="btn ghost" data-action="fact-set">⚙️ Émetteur : ${c.nom}</button></div>
+        ${todo.length ? html`<div class="section-label">🟡 À facturer (${todo.length})</div><div class="list" style="margin-bottom:14px">${todo.map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : ''} · clôturée le ${fmtDate(t.doneDate || t.date)}</span></span><span class="badge warn">🧾 Faire la facture</span></button>`)}</div>` : ''}
+        ${F.length ? html`<div class="section-label">Factures émises</div><div class="list">${F.map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.facture.no}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : ''} · ${fmtDate(t.facture.date)} · ${t.titre}</span></span><span style="text-align:right"><b>${eur(t.facture.ttc)}</b><span class="tiny ${t.facture.paid ? '' : 'red'}" style="display:block">${t.facture.paid ? '✅ payée' : '⏳ à payer'}</span></span></button>`)}</div>` : html`<p class="muted">Aucune facture émise sur cette période.</p>`}`;
     } else if (tab === 'interv') {
       const L = intervLedger(from, to);
       const hTot = sum(L, (x) => x.min) / 60, cTot = sum(L, (x) => x.cout || 0);
@@ -3231,6 +3308,7 @@ dashboard() {
         <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
           <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
         <button class="row" data-action="go" data-to="champions"><span class="avatar">🏆</span><span class="grow"><span class="title" style="display:block">Classements de l’année</span><span class="meta">Locataire de l’année (poubelles · pizza 🍕) · Ouvrier de l’année (équipe · récompense 🎁)</span></span></button>
+        <button class="row" data-action="fact-set"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Facturation des interventions</span><span class="meta">${factConf().nom} — LuxInterventions · TVA ${factConf().taux} % · IBAN ${factConf().iban || 'à compléter'}</span></span></button>
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
         <button class="row" data-action="go" data-to="maintenance">${icon('tool')}<span class="grow title">Maintenance — nettoyage, réparations, déchets</span></button>
         <button class="row" data-action="go" data-to="gerances">${icon('briefcase')}<span class="grow"><span class="title" style="display:block">Gérances — Portail gérance${ui.ptl.nNew ? html` <span class="badge warn">📥 ${ui.ptl.nNew}</span>` : ''}</span><span class="meta">Gérances externes : accès, résidences, demandes d’intervention</span></span></button>
@@ -3513,7 +3591,7 @@ const SHEETS = {
     const parts = (x) => String(x || '').split(' · ').filter(Boolean);
     const linked = vault.list('taches').filter((x) => x.ptl && x.ptl.tid === t.id);
     const tel = (t.contact_phone || r.contact_phone || '').replace(/[^\d+]/g, '');
-    const evLbl = (e) => (e.kind === 'create' ? 'Demande créée' : e.kind === 'edit' ? '✏️ Demande modifiée' : e.kind === 'status' ? PTL_ST[e.status] || e.status : 'Message');
+    const evLbl = (e) => (e.kind === 'create' ? 'Demande créée' : e.kind === 'edit' ? '✏️ Demande modifiée' : e.kind === 'status' ? PTL_ST[e.status] || e.status : e.kind === 'invoice' ? '🧾 Facture' : 'Message');
     return {
       title: `#${t.ref} · ${r.name || ''}`,
       body: html`<div class="chips" style="margin-bottom:10px"><span class="badge ${u[2] === 'red' ? 'danger' : u[2] === 'amber' ? 'warn' : ''}">${u[0]} ${u[1]}</span><span class="badge">${PTL_ST[t.status]}</span><span class="badge">🏢 ${r.org_name || ''}</span></div>
@@ -3529,7 +3607,7 @@ const SHEETS = {
           ${kvRow('Demandée', ptlTime(t.created_at))}
         </dl>
         ${d.photos.length ? html`<div class="section-label">📷 Photos</div><div class="photos" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${d.photos.map((p) => html`<a target="_blank" rel="noopener"><img data-ptl-photo="${p.id}" alt="Photo" style="width:96px;height:96px;object-fit:cover;border-radius:10px;background:var(--surface-2)"></a>`)}</div>` : ''}
-        ${linked.length ? html`<div class="alert info" style="margin-bottom:12px">${icon('tool')}<div>Dans Maintenance : ${linked.map((x) => html`<a href="#" data-action="edit-tache" data-id="${x.id}">${x.titre}${x.intervenantId ? ' — 👷 ' + intervFull(vault.get('intervenants', x.intervenantId) || {}) : ''}${x.date ? ' · ' + fmtDate(x.date) : ''}</a> `)}</div></div>` : ''}
+        ${linked.length ? html`<div class="alert info" style="margin-bottom:12px">${icon('tool')}<div>Dans Maintenance : ${linked.map((x) => html`<a href="#" data-action="edit-tache" data-id="${x.id}">${x.titre}${x.intervenantId ? ' — 👷 ' + intervFull(vault.get('intervenants', x.intervenantId) || {}) : ''}${x.date ? ' · ' + fmtDate(x.date) : ''}</a>${x.statut === 'fait' ? html` <button class="btn sm" data-action="fact-open" data-id="${x.id}">🧾 ${x.facture ? x.facture.no : 'Faire la facture'}</button>` : ''} `)}</div></div>` : ''}
         ${open ? html`<div class="actions" style="flex-wrap:wrap;margin-bottom:14px">
           <button class="btn primary" style="flex:1 1 100%;white-space:normal" data-action="ger-to-mt" data-id="${t.id}">👷 ${linked.length ? 'Envoyer un autre ouvrier' : 'Envoyer un ouvrier'}</button>
           ${t.status === 'recue' ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="prise">✅ Prendre en charge</button>` : ''}
@@ -3666,6 +3744,8 @@ const SHEETS = {
         ${field('Nom (ou nom de la société)', 'nom', i.nom, { required: true, placeholder: 'ex. Rossi, Électricité Schmit…', attrs: 'autocomplete="off"' })}
         <label class="field">Métier / mansion<select name="metier" required><option value="">— à choisir —</option>${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${i.metier === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Tarif', 'tarif', i.tarif, { placeholder: 'ex. 25 €/h, forfait 80 €…' })}
+        ${field('Facturé au client : € / heure (HT)', 'tauxH', i.tauxH ?? '', { type: 'number', attrs: money$ })}
+        ${field('Déplacement facturé (€ HT)', 'depl', i.depl ?? '', { type: 'number', attrs: money$ })}
         ${field('Adresse', 'adresse', i.adresse, { full: true, attrs: 'autocomplete="off"' })}
         ${field('Code postal et ville', 'ville', i.ville, { placeholder: 'L-1234 Luxembourg' })}
         ${field('Téléphone', 'tel', i.tel, { type: 'tel', placeholder: '+352 …' })}
@@ -3679,6 +3759,58 @@ const SHEETS = {
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-interv" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'fact-set'() {
+    const c = factConf();
+    return {
+      title: '🧾 Facturation des interventions',
+      body: html`<form id="f" data-form="fact-set" class="fields">
+        <p class="small muted full" style="margin:0">Émetteur des factures envoyées aux gérances (marque LuxInterventions). Les factures des loyers (NOBIS s.a.r.l.) ne changent pas.</p>
+        ${field('Raison sociale', 'nom', c.nom, { required: true })}${field('Marque', 'marque', c.marque)}
+        ${field('Adresse', 'adresse', c.adresse, { required: true })}${field('Code postal et ville', 'ville', c.ville, { required: true })}
+        ${field('RCS', 'rcs', c.rcs, { required: true })}${field('N° TVA', 'tva', c.tva, { required: true })}
+        ${field('Téléphone', 'tel', c.tel)}${field('Email', 'email', c.email, { type: 'email' })}
+        ${field('IBAN (compte d’ARES INVEST S.A.)', 'iban', c.iban, { required: true, full: true, placeholder: 'LU.. .... .... .... ....' })}${field('BIC', 'bic', c.bic)}${field('Banque', 'banque', c.banque)}
+        <label class="field">TVA (%)<select name="taux">${[17, 16, 14, 8, 3, 0].map((r) => html`<option value="${r}" ${+c.taux === r ? new Raw('selected') : ''}>${r} %${r === 17 ? ' (taux normal au Luxembourg)' : ''}</option>`)}</select></label>
+        ${field('Paiement à (jours)', 'delai', c.delai, { type: 'number', attrs: 'min="0" max="120" inputmode="numeric"' })}
+        <p class="tiny muted full" style="margin:0">Taux de TVA à confirmer avec votre comptable. Prochain numéro : ${ymd(today())}-INT${String((+c.seq || 0) + 1).padStart(4, '0')}</p>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  facture({ id }) {
+    const t = vault.get('taches', id);
+    if (!t) return null;
+    const c = factConf();
+    if (t.facture) {
+      const F = t.facture;
+      return {
+        title: `🧾 Facture ${F.no}`,
+        body: html`<dl class="kv">${kvRow('Intervention', `${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`)}${kvRow('Gérance', t.ptl ? t.ptl.org : '—')}${kvRow('Date', fmtDate(F.date))}${kvRow('Total HT', eur(F.ht))}${kvRow('TVA', eur(F.tva))}${kvRow('Total TTC', html`<b>${eur(F.ttc)}</b>`)}${kvRow('Paiement', F.paid ? `✅ payée le ${fmtDate(F.paid)}` : '⏳ à payer')}</dl>
+          <p class="small muted">La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).</p>`,
+        foot: html`${F.docId ? html`<button class="btn" data-action="open-doc" data-id="${F.docId}">⬇️ PDF</button>` : ''}<button class="btn ${F.paid ? '' : 'primary'}" data-action="fact-paid" data-id="${id}">${F.paid ? '↩️ Marquer à payer' : '✅ Marquer payée'}</button>`,
+      };
+    }
+    const f = factDraft(t), miss = factMissing(c);
+    const mats = [...(f.mat || [])]; while (mats.length < 3) mats.push({});
+    return {
+      title: `🧾 Facture — ${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`,
+      body: html`<form id="f" data-form="facture" class="fields"><input type="hidden" name="id" value="${id}">
+        ${miss.length ? html`<div class="full alert warn" style="margin:0">⚠️<div>Avant d’émettre : complétez ${miss.join(', ')} dans <a href="#" data-action="fact-set">🧾 Facturation</a>.</div></div>` : ''}
+        <p class="small muted full" style="margin:0">Client : <b>${t.ptl ? t.ptl.org : '—'}</b> · émise par ${c.nom} (${c.marque}). Rien n’est envoyé avant « Émettre ».</p>
+        ${field('Heures (réelles, arrondies au ¼ h)', 'h', f.h, { type: 'number', attrs: 'step="0.25" min="0" inputmode="decimal"' })}
+        ${field('Tarif € / h HT', 'taux', f.taux, { type: 'number', attrs: money$ })}
+        ${field('Déplacement € HT', 'depl', f.depl, { type: 'number', attrs: money$ })}
+        <div class="full"><div class="section-label" style="margin:4px 0 6px">Matériel acheté en plus (HT)</div><div id="factMats">${mats.map((m, n) => matRow(n, m))}</div>
+          <button type="button" class="btn sm" data-action="fact-mat-add">${icon('plus')} Ligne</button></div>
+        <div class="full"><div class="section-label" style="margin:4px 0 6px">Remise / majoration (avant émission)</div>
+          <div class="fact-adj"><select name="adj_type"><option value="remise" ${f.adj.type === 'remise' ? new Raw('selected') : ''}>Remise −</option><option value="maj" ${f.adj.type === 'maj' ? new Raw('selected') : ''}>Majoration +</option></select>
+            <input name="adj_val" type="number" ${new Raw(money$)} value="${f.adj.val || ''}" placeholder="0" aria-label="Valeur"><select name="adj_mode"><option value="%" ${f.adj.mode === '%' ? new Raw('selected') : ''}>%</option><option value="€" ${f.adj.mode === '€' ? new Raw('selected') : ''}>€</option></select></div>
+          <input name="adj_lib" value="${f.adj.lib || ''}" placeholder="Motif (ex. client fidèle, urgence de nuit)" style="margin-top:6px"></div>
+        <div class="full" id="factTot">${factTotHtml(f)}</div>
+      </form>`,
+      foot: html`<button class="btn" type="submit" form="f">Enregistrer le brouillon</button><button class="btn primary" data-action="fact-emit" data-id="${id}" ${miss.length ? new Raw('disabled') : ''}>🧾 Émettre et envoyer</button>`,
     };
   },
   'plan-week'({ id, preset }) {
@@ -3848,6 +3980,7 @@ const SHEETS = {
         ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id && !x.phase).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id && !x.phase).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
+        ${id && t.ptl && t.statut === 'fait' ? html`<button class="btn" data-action="fact-open" data-id="${id}">🧾 ${t.facture ? 'Facture ' + t.facture.no : 'Facture'}</button>` : ''}
         ${id && t.locId && !t.recur && t.statut !== 'fait' ? html`<button class="btn" style="background:var(--green-soft);color:var(--green)" data-action="tache-done" data-id="${id}">${icon('check')} Réparé</button>` : html`<button class="btn" data-action="close-sheet">Annuler</button>`}
         <button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -5022,6 +5155,42 @@ const ACTIONS = {
   'edit-interv': (d) => openOver('interv-form', d.id),
   'plan-wk': (d) => { ui.planWk ||= {}; const cur = ui.planWk[d.id] || mondayOf(today()); ui.planWk[d.id] = addDays(cur, +d.d); ui.sheet.rendered = false; renderSheet(); },
   'plan-edit': (d) => openOver('plan-week', d.id, null, d.d),
+  'fact-set': () => openOver('fact-set'),
+  'fact-open': (d) => openOver('facture', d.id),
+  'fact-mat-add': () => { const box = $('#factMats'); if (box) box.insertAdjacentHTML('beforeend', String(matRow(box.children.length))); },
+  async 'fact-emit'(d) {
+    const t = vault.get('taches', d.id), fm = sheetEl.querySelector('form[data-form=facture]');
+    if (!t || !fm || t.facture) return;
+    if (!t.ptl || !ptlConf()) return toast('Facture : intervention liée à une gérance et portail connecté nécessaires', { bad: true });
+    const f = factRead(fm), c = factConf(), miss = factMissing(c);
+    if (miss.length) return toast('Complétez : ' + miss.join(', '), { bad: true });
+    const k = factCalc(f, c.taux);
+    const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-INT${String(seq).padStart(4, '0')}`;
+    if (!(await confirmBox(`Émettre la facture ${no} ?`, { ok: 'Émettre et envoyer', detail: `${t.ptl.org} · ${eur(k.ttc)} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son portail.` }))) return;
+    const { bytes } = factPdf(t, f, no, date, c);
+    try {
+      const r = await fetch(PTL_API + `tickets/${t.ptl.tid}/invoice`, { method: 'PUT', headers: { Authorization: 'Bearer ' + ptlConf().token, 'Content-Type': 'application/pdf', 'X-Invoice': encodeURIComponent(JSON.stringify({ no, ht: k.ht, tva: k.tva, ttc: k.ttc })) }, body: bytes });
+      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Erreur ' + r.status);
+    } catch (e) { return toast('Envoi impossible : ' + (e.message || 'connexion'), { bad: true }); }
+    let docId = '';
+    await vault.mutate((tx) => {
+      tx.put('reglages', { id: 'facturation', seq });
+      docId = tx.put('documents', { tacheId: t.id, kind: 'facture-int', label: `Facture ${no} — ${t.ptl.org}`, date, mime: 'application/pdf', size: bytes.length }).id;
+      tx.put('taches', { id: t.id, factDraft: f, facture: { no, date, ht: k.ht, tva: k.tva, ttc: k.ttc, paid: '', docId } });
+    }, 'Facture émise', `${no} — ${t.ptl.org} · ${eur(k.ttc)}`, t.immId);
+    await vault.saveFile(docId, bytes);
+    sheetDirty = false;
+    toast(`🧾 Facture ${no} envoyée à ${t.ptl.org}`);
+    ui.sheet.rendered = false; renderSheet();
+  },
+  async 'fact-paid'(d) {
+    const t = vault.get('taches', d.id);
+    if (!t || !t.facture) return;
+    const paid = t.facture.paid ? '' : today();
+    try { await ptlApi(`tickets/${t.ptl.tid}/invoice-paid`, { method: 'POST', body: { paid: !!paid } }); } catch (e) { return toast(e.message, { bad: true }); }
+    await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, paid } }), paid ? 'Facture payée' : 'Facture à payer', t.facture.no, t.immId);
+    toast(paid ? '✅ Facture payée' : 'Facture remise « à payer »');
+  },
   async 'plan-reset'(d) {
     const i = vault.get('intervenants', d.id);
     if (!i || !(await confirmBox('Revenir à l’horaire habituel pour cette semaine ?', { ok: 'Revenir à l’habituel', detail: `Semaine du ${dayShort(d.d)} : les changements de cette semaine sont effacés.` }))) return;
@@ -5034,6 +5203,13 @@ const ACTIONS = {
   'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
   'cp-tab': (d) => { ui.cpTab = d.id; renderView(); },
   'cp-sec': (d) => { ui.cpSec = d.id; renderView(); },
+  'cp-fact-csv': () => {
+    const [from, to] = cpRange(ui.year, ui.cpPer || 'y');
+    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`, n2 = (v) => String(r2(v || 0)).replace('.', ',');
+    const rows = [['N° facture', 'Date', 'Client (gérance)', 'Demande', 'Intervention', 'HT', 'TVA', 'TTC', 'Payée le'].map(q).join(';')];
+    for (const t of vault.list('taches').filter((t) => t.facture && t.facture.date >= from && t.facture.date <= to).sort((a, b) => a.facture.no.localeCompare(b.facture.no))) rows.push([t.facture.no, t.facture.date, t.ptl ? t.ptl.org : '', t.ptl ? '#' + t.ptl.ref : '', t.titre, n2(t.facture.ht), n2(t.facture.tva), n2(t.facture.ttc), t.facture.paid || ''].map(q).join(';'));
+    download(`factures-${from}-${to}.csv`, '\ufeff' + rows.join('\r\n'), 'text/csv;charset=utf-8');
+  },
   'cp-int-csv': () => {
     const [from, to] = cpRange(ui.year, ui.cpPer || 'y');
     const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -5660,6 +5836,18 @@ const FORMS = {
     try { await ptlApi('residences', { method: 'POST', body: b }); } catch (e) { return toast(e.message, { bad: true }); }
     f.reset(); toast('Résidence ajoutée'); await ptlLoad();
   },
+  async 'fact-set'(fd) {
+    const g = (k) => String(fd.get(k) || '').trim();
+    const iban = g('iban').toUpperCase().replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
+    await vault.mutate((tx) => tx.put('reglages', { id: 'facturation', nom: g('nom'), marque: g('marque'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), tel: g('tel'), email: g('email'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), taux: num(fd.get('taux')), delai: Math.max(0, Math.round(num(fd.get('delai')))) || 30 }), 'Facturation des interventions', g('nom'));
+    toast('Facturation enregistrée'); goBack();
+  },
+  async facture(fd, fm) {
+    const t = vault.get('taches', fd.get('id'));
+    if (!t || t.facture) return;
+    await vault.mutate((tx) => tx.put('taches', { id: t.id, factDraft: factRead(fm) }), 'Brouillon de facture', t.titre, t.immId);
+    toast('Brouillon enregistré'); goBack();
+  },
   async 'plan-week'(fd) {
     const i = vault.get('intervenants', fd.get('id'));
     const mon = String(fd.get('mon') || '');
@@ -5682,7 +5870,7 @@ const FORMS = {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
     const horaires = horFromForm(fd);
-    const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), horaires, note: g('note') };
+    const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), horaires, note: g('note') };
     if (!rec.nom) return;
     if (id) rec.id = id;
     await vault.mutate((tx) => tx.put('intervenants', rec), id ? 'Intervenant modifié' : 'Intervenant ajouté', `${intervFull(rec)} (${METIERS[rec.metier]})`);
@@ -6164,6 +6352,8 @@ document.addEventListener('pointerdown', (e) => {
   inp.value = prev ? prev.querySelector('input[name$="a"]').value : HOR_START[p];
 }, true);
 document.addEventListener('input', (e) => {
+  const ff = e.target.closest && e.target.closest('form[data-form=facture]');
+  if (ff) { const box = $('#factTot'); if (box) setHtml(box, factTotHtml(factRead(ff))); }
   const k = e.target.dataset.input;
   if (k === 'esp-search') filterEspList();
   if (k === 'vid-link') { const h = document.getElementById('vidHint'); if (h) h.textContent = vidHint(e.target.value); }

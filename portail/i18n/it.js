@@ -329,6 +329,10 @@ export default [
 "Cambia la mia password"
 ],
 [
+"Chaque facture est émise par ARES INVEST S.A. (LuxInterventions) une fois l’intervention clôturée ; téléchargez-la en PDF.",
+"Ogni fattura è emessa da ARES INVEST S.A. (LuxInterventions) dopo la chiusura dell’intervento; scaricala in PDF."
+],
+[
 "Chaque personne a son propre accès : on sait toujours qui a fait quelle demande. Un compte désactivé ne peut plus se connecter.",
 "Ogni persona ha il suo accesso: si sa sempre chi ha fatto quale richiesta. Un account disattivato non può più entrare."
 ],
@@ -723,6 +727,10 @@ export default [
 [
 "Excellent",
 "Eccellente"
+],
+[
+"Facturé TTC",
+"Fatturato IVA incl."
 ],
 [
 "Facultatif",
@@ -1909,6 +1917,10 @@ export default [
 "es. suonare al portinaio, non il mercoledì"
 ],
 [
+"facture à venir",
+"fattura in arrivo"
+],
+[
 "il y a {0} h",
 "{0} h fa"
 ],
@@ -2077,6 +2089,10 @@ export default [
 "Dalle"
 ],
 [
+"À payer",
+"Da pagare"
+],
+[
 "À traiter",
 "Da gestire"
 ],
@@ -2161,8 +2177,24 @@ export default [
 "→ Aggiungi. Poi apri il portale"
 ],
 [
+"⏳ À payer",
+"⏳ Da pagare"
+],
+[
+"⏳ à payer",
+"⏳ da pagare"
+],
+[
 "⚡ Panneaux",
 "⚡ Quadri"
+],
+[
+"✅ Payée",
+"✅ Pagata"
+],
+[
+"✅ payée",
+"✅ pagata"
 ],
 [
 "✏️ Demande modifiée",
@@ -2267,5 +2299,9 @@ export default [
 [
 "🚪 Porte",
 "🚪 Porta"
+],
+[
+"🧾 Facture",
+"🧾 Fattura"
 ]
 ];

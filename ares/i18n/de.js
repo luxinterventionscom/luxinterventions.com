@@ -4998,7 +4998,7 @@ export default [
 ],
 [
 "À encaisser",
-"Einzunehmen"
+"Offen"
 ],
 [
 "À encaisser — {0}",
@@ -9599,5 +9599,141 @@ export default [
 [
 "✅ à clôturer",
 "✅ abzuschließen"
+],
+[
+"🧾 Factures",
+"🧾 Rechnungen"
+],
+[
+"🧾 Facturation des interventions",
+"🧾 Rechnungsstellung der Einsätze"
+],
+[
+"Facturation des interventions",
+"Rechnungsstellung der Einsätze"
+],
+[
+"Facturé au client : € / heure (HT)",
+"Dem Kunden berechnet: € / Stunde (netto)"
+],
+[
+"Déplacement facturé (€ HT)",
+"Berechnete Anfahrt (€ netto)"
+],
+[
+"Faire la facture",
+"Rechnung erstellen"
+],
+[
+"🧾 Faire la facture",
+"🧾 Rechnung erstellen"
+],
+[
+"Enregistrer le brouillon",
+"Entwurf speichern"
+],
+[
+"🧾 Émettre et envoyer",
+"🧾 Ausstellen und senden"
+],
+[
+"Émettre et envoyer",
+"Ausstellen und senden"
+],
+[
+"Matériel acheté en plus (HT)",
+"Zusätzlich gekauftes Material (netto)"
+],
+[
+"Remise / majoration (avant émission)",
+"Rabatt / Zuschlag (vor Ausstellung)"
+],
+[
+"Remise −",
+"Rabatt −"
+],
+[
+"Majoration +",
+"Zuschlag +"
+],
+[
+"Heures (réelles, arrondies au ¼ h)",
+"Stunden (tatsächlich, auf ¼ Std. gerundet)"
+],
+[
+"Tarif € / h HT",
+"Satz € / Std. netto"
+],
+[
+"Déplacement € HT",
+"Anfahrt € netto"
+],
+[
+"Main-d’œuvre",
+"Arbeitszeit"
+],
+[
+"Déplacement",
+"Anfahrt"
+],
+[
+"Matériel",
+"Material"
+],
+[
+"Remise",
+"Rabatt"
+],
+[
+"Majoration",
+"Zuschlag"
+],
+[
+"Total HT",
+"Gesamt netto"
+],
+[
+"Total TTC",
+"Gesamt brutto"
+],
+[
+"Facturé TTC",
+"Fakturiert brutto"
+],
+[
+"Factures (Excel / CSV)",
+"Rechnungen (Excel / CSV)"
+],
+[
+"Factures émises",
+"Ausgestellte Rechnungen"
+],
+[
+"Aucune facture émise sur cette période.",
+"Keine Rechnung in diesem Zeitraum."
+],
+[
+"✅ Marquer payée",
+"✅ Als bezahlt markieren"
+],
+[
+"↩️ Marquer à payer",
+"↩️ Als offen markieren"
+],
+[
+"✅ payée",
+"✅ bezahlt"
+],
+[
+"⏳ à payer",
+"⏳ offen"
+],
+[
+"Brouillon enregistré",
+"Entwurf gespeichert"
+],
+[
+"Facturation enregistrée",
+"Rechnungsdaten gespeichert"
 ]
 ];

@@ -9611,5 +9611,141 @@ export default [
 [
 "✅ à clôturer",
 "✅ da chiudere"
+],
+[
+"🧾 Factures",
+"🧾 Fatture"
+],
+[
+"🧾 Facturation des interventions",
+"🧾 Fatturazione degli interventi"
+],
+[
+"Facturation des interventions",
+"Fatturazione degli interventi"
+],
+[
+"Facturé au client : € / heure (HT)",
+"Fatturato al cliente: € / ora (IVA escl.)"
+],
+[
+"Déplacement facturé (€ HT)",
+"Spostamento fatturato (€ IVA escl.)"
+],
+[
+"Faire la facture",
+"Fai la fattura"
+],
+[
+"🧾 Faire la facture",
+"🧾 Fai la fattura"
+],
+[
+"Enregistrer le brouillon",
+"Salva la bozza"
+],
+[
+"🧾 Émettre et envoyer",
+"🧾 Emetti e invia"
+],
+[
+"Émettre et envoyer",
+"Emetti e invia"
+],
+[
+"Matériel acheté en plus (HT)",
+"Materiale acquistato in più (IVA escl.)"
+],
+[
+"Remise / majoration (avant émission)",
+"Sconto / maggiorazione (prima dell’emissione)"
+],
+[
+"Remise −",
+"Sconto −"
+],
+[
+"Majoration +",
+"Maggiorazione +"
+],
+[
+"Heures (réelles, arrondies au ¼ h)",
+"Ore (reali, arrotondate al ¼ h)"
+],
+[
+"Tarif € / h HT",
+"Tariffa € / h IVA escl."
+],
+[
+"Déplacement € HT",
+"Spostamento € IVA escl."
+],
+[
+"Main-d’œuvre",
+"Manodopera"
+],
+[
+"Déplacement",
+"Spostamento"
+],
+[
+"Matériel",
+"Materiale"
+],
+[
+"Remise",
+"Sconto"
+],
+[
+"Majoration",
+"Maggiorazione"
+],
+[
+"Total HT",
+"Totale imponibile"
+],
+[
+"Total TTC",
+"Totale IVA incl."
+],
+[
+"Facturé TTC",
+"Fatturato IVA incl."
+],
+[
+"Factures (Excel / CSV)",
+"Fatture (Excel / CSV)"
+],
+[
+"Factures émises",
+"Fatture emesse"
+],
+[
+"Aucune facture émise sur cette période.",
+"Nessuna fattura emessa in questo periodo."
+],
+[
+"✅ Marquer payée",
+"✅ Segna pagata"
+],
+[
+"↩️ Marquer à payer",
+"↩️ Segna da pagare"
+],
+[
+"✅ payée",
+"✅ pagata"
+],
+[
+"⏳ à payer",
+"⏳ da pagare"
+],
+[
+"Brouillon enregistré",
+"Bozza salvata"
+],
+[
+"Facturation enregistrée",
+"Fatturazione salvata"
 ]
 ];

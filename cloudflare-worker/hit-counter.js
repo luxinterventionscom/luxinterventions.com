@@ -40,7 +40,7 @@ function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGIN,
     "Access-Control-Allow-Methods": "GET, PUT, POST, PATCH, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, If-Match, If-None-Match, X-Ares-Session, X-Ares-Device, X-Esp, X-Event-Id",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, If-Match, If-None-Match, X-Ares-Session, X-Ares-Device, X-Esp, X-Event-Id, X-Invoice",
     "Access-Control-Expose-Headers": "ETag",
     "Access-Control-Max-Age": "86400",
     "Cache-Control": "no-store",
@@ -906,7 +906,7 @@ const PTL_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
 ];
 // Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
-const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER"];
+const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER"];
 let ptlSchemaReady = false;
 
 // ── Utilità ──
@@ -1331,6 +1331,8 @@ async function handlePortail(request, env, url, headers, ctx) {
       if (clean(b.confirm, 120) !== o.name) fail(400, "Tapez exactement le nom de la gérance pour confirmer");
       const ph = (await env.DB.prepare("SELECT p.r2_key FROM photos p JOIN tickets t ON t.id = p.ticket_id WHERE t.org_id = ?").bind(o.id).all()).results || [];
       for (let i = 0; i < ph.length; i += 500) await env.PHOTOS.delete(ph.slice(i, i + 500).map((x) => x.r2_key));
+      const inv = ((await env.DB.prepare("SELECT inv_key FROM tickets WHERE org_id = ? AND inv_key IS NOT NULL").bind(o.id).all()).results || []).map((x) => x.inv_key);
+      for (let i = 0; i < inv.length; i += 500) await env.PHOTOS.delete(inv.slice(i, i + 500));
       await env.DB.batch([
         env.DB.prepare("DELETE FROM photos WHERE ticket_id IN (SELECT id FROM tickets WHERE org_id = ?)").bind(o.id),
         env.DB.prepare("DELETE FROM events WHERE ticket_id IN (SELECT id FROM tickets WHERE org_id = ?)").bind(o.id),
@@ -1448,7 +1450,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       }
       const sql = `SELECT t.id, t.ref, t.org_id, t.residence_id, t.lieu, t.categorie, t.urgence, t.description, t.status, t.planned_at, t.technicien,
           t.created_at, t.updated_at, t.taken_at, t.done_at, r.name AS residence_name, r.address AS residence_address, o.name AS org_name, u.name AS created_by_name,
-          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos,
+          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos, t.inv_no, t.inv_date, t.inv_ht, t.inv_tva, t.inv_ttc, t.inv_paid,
           (SELECT COUNT(*) FROM events e WHERE e.ticket_id = t.id AND e.kind = 'comment') AS msgs,
           (SELECT COUNT(*) FROM events e JOIN users ue ON ue.id = e.user_id WHERE e.ticket_id = t.id AND e.kind = 'comment' AND ue.role != 'admin') AS msgs_ger
         FROM tickets t JOIN residences r ON r.id = t.residence_id JOIN orgs o ON o.id = t.org_id LEFT JOIN users u ON u.id = t.created_by
@@ -1480,7 +1482,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       return json({ id, ref: refRow.ref });
     }
 
-    const tMatch = path.match(/^tickets\/([a-z0-9]+)(?:\/(status|comments|photos))?$/);
+    const tMatch = path.match(/^tickets\/([a-z0-9]+)(?:\/(status|comments|photos|invoice|invoice-paid))?$/);
     if (tMatch) {
       const t = await loadTicketFor(env, me, tMatch[1]);
       const sub = tMatch[2];
@@ -1558,6 +1560,39 @@ async function handlePortail(request, env, url, headers, ctx) {
         if (text) ctx && ctx.waitUntil(notifyOther({ title: `#${t.ref} · Message de ${me.name}`, body: text.slice(0, 140), url: `/portail.html#/t/${t.id}`, tag: t.id }, false));
         if (!isAdmin(me)) ctx && ctx.waitUntil(espPushSend(env, "owner", "ptlmsg"));
         return json({ ok: true, event_id: evId });
+      }
+      // Facture (PDF émis par l'app de gestion de LuxInterventions) : la gérance la télécharge
+      if (sub === "invoice" && method === "PUT") {
+        if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+        if ((request.headers.get("Content-Type") || "") !== "application/pdf") fail(415, "PDF attendu");
+        let meta = {};
+        try { meta = JSON.parse(decodeURIComponent(request.headers.get("X-Invoice") || "{}")); } catch { fail(400, "Facture illisible"); }
+        const no = clean(meta.no, 40);
+        if (!/^\d{8}-INT\d{4,}$/.test(no)) fail(400, "Numéro de facture invalide");
+        const data = await request.arrayBuffer();
+        if (!data.byteLength || data.byteLength > 3 * 1024 * 1024) fail(413, "PDF vide ou trop lourd");
+        const key = `portail/invoices/${t.id}.pdf`;
+        await env.PHOTOS.put(key, data, { httpMetadata: { contentType: "application/pdf" } });
+        const n = (x) => (Number.isFinite(+x) ? Math.round(+x * 100) / 100 : 0);
+        const ttc = n(meta.ttc);
+        await env.DB.batch([
+          env.DB.prepare("UPDATE tickets SET inv_no = ?, inv_date = ?, inv_ht = ?, inv_tva = ?, inv_ttc = ?, inv_key = ?, inv_paid = 0, updated_at = ? WHERE id = ?").bind(no, now, n(meta.ht), n(meta.tva), ttc, key, now, t.id),
+          env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'invoice', NULL, ?, ?)").bind(ptlId(), t.id, me.id, `🧾 Facture ${no} · ${ttc.toFixed(2).replace(".", ",")} € TTC`, now),
+        ]);
+        ctx && ctx.waitUntil(notifyOther({ title: `#${t.ref} · 🧾 Facture ${no}`, body: `${ttc.toFixed(2).replace(".", ",")} € TTC — à télécharger dans le portail`, url: `/portail.html#/t/${t.id}`, tag: t.id }, false));
+        return json({ ok: true });
+      }
+      if (sub === "invoice" && method === "GET") {
+        if (!t.inv_key) fail(404, "Pas encore de facture");
+        const obj = await env.PHOTOS.get(t.inv_key);
+        if (!obj) fail(404, "Facture introuvable");
+        return new Response(obj.body, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="Facture-${t.inv_no}.pdf"`, "Cache-Control": "private, no-store", ...headers } });
+      }
+      if (sub === "invoice-paid" && method === "POST") {
+        if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+        const b = await body();
+        await env.DB.prepare("UPDATE tickets SET inv_paid = ?, updated_at = ? WHERE id = ?").bind(b.paid ? now : 0, now, t.id).run();
+        return json({ ok: true });
       }
       if (sub === "photos" && method === "PUT") {
         const type = request.headers.get("Content-Type") || "";
