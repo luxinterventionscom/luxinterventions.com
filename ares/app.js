@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.87.0';
+const VERSION = '2.88.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1671,7 +1671,7 @@ function journal(from, to) {
     const d = p.date || `${p.y}-${pad(p.m)}-01`;
     if (!inR(d)) continue;
     const im = vault.get('immeubles', l.immId) || {};
-    const ttc = paidAmount(p, l), r = im.tvaLoyer || 0;
+    const ttc = paidAmount(p, l), r = 0; // loyers : pas de TVA
     rows.push({ d, sens: 'R', cat: 'Loyer', lib: `Loyer ${MONTHS_FULL[p.m - 1].toLowerCase()} ${p.y} — ${fullName(l)}`, imm: im.adresse || '', ttc, tva: r2(ttc - htOf(ttc, r)), taux: r, piece: '' });
   }
   for (const x of vault.list('depenses')) {
@@ -3206,15 +3206,15 @@ dashboard() {
       const perT = soc.periode || 't';
       const periods = perT === 'm' ? MONTHS_FULL.map((_, i) => 'm' + (i + 1)) : perT === 'a' ? ['y'] : ['q1', 'q2', 'q3', 'q4'];
       const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
-      body = html`${soc.assujetti === false ? html`<div class="alert info" style="margin-bottom:12px">${icon('alert')}<div>Votre société est indiquée comme <b>non assujettie</b> à la TVA (Réglages → Société). Les montants ci-dessous sont seulement indicatifs.</div></div>` : ''}
-        <div class="card" style="padding:0;overflow:auto;margin-bottom:14px"><table class="tbl"><thead><tr><th>Période</th><th class="r">Collectée<br><small>loyers</small></th><th class="r">Déductible<br><small>factures</small></th><th class="r">Solde</th></tr></thead><tbody>
-          ${periods.map((pp) => { const [a, b] = cpRange(y, pp); const rr = journal(a, b); const c = sum(rr.filter((r) => r.sens === 'R'), (r) => r.tva), dd = sum(rr.filter((r) => r.sens === 'D'), (r) => r.tva); return html`<tr><td>${cpLabel(y, pp)}</td><td class="r">${money(c)}</td><td class="r">${money(dd)}</td><td class="r"><b class="${c - dd < 0 ? 'green' : ''}">${c - dd < 0 ? '+' + money(dd - c) : money(c - dd)}</b><div class="tiny muted">${c - dd < 0 ? 'à récupérer' : c - dd > 0 ? 'à payer' : ''}</div></td></tr>`; })}
+      // TVA des factures d'interventions (ARES INVEST S.A. — LuxInterventions) : pas de TVA sur les loyers
+      const inv = (a, b) => vault.list('taches').filter((t) => t.facture && t.facture.date >= a && t.facture.date <= b);
+      const c0 = factConf();
+      body = html`<p class="small muted" style="margin-top:0">TVA des <b>factures d’interventions</b> émises par ${c0.nom} (LuxInterventions). Les loyers ne sont pas soumis à la TVA.</p>
+        <div class="card" style="padding:0;overflow:auto;margin-bottom:14px"><table class="tbl"><thead><tr><th>Période</th><th class="r">Factures</th><th class="r">HT</th><th class="r">TVA collectée</th><th class="r">TTC</th></tr></thead><tbody>
+          ${periods.map((pp) => { const [a, b] = cpRange(y, pp), F = inv(a, b); return html`<tr><td>${cpLabel(y, pp)}</td><td class="r">${F.length}</td><td class="r">${money(sum(F, (t) => t.facture.ht))}</td><td class="r"><b>${money(sum(F, (t) => t.facture.tva))}</b></td><td class="r">${money(sum(F, (t) => t.facture.ttc))}</td></tr>`; })}
+          ${(() => { const [a, b] = cpRange(y, 'y'), F = inv(a, b); return html`<tr class="cp-month"><td><b>Année ${y}</b></td><td class="r"><b>${F.length}</b></td><td class="r"><b>${money(sum(F, (t) => t.facture.ht))}</b></td><td class="r"><b>${money(sum(F, (t) => t.facture.tva))}</b></td><td class="r"><b>${money(sum(F, (t) => t.facture.ttc))}</b></td></tr>`; })()}
         </tbody></table></div>
-        <div class="section-label">TVA sur les loyers, par structure</div>
-        <p class="small muted" style="margin-top:0">Au Luxembourg, la location d’habitation est en principe <b>exonérée</b> de TVA ; les locaux commerciaux, bureaux ou garages peuvent y être soumis (option). Votre comptable vous confirme le bon taux.</p>
-        <div class="list">${imms.map((im) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${im.adresse}</span><span class="meta">${IMM_TYPES[im.type] || IMM_TYPES.immeuble}</span></span>
-          <select data-input="tva-loyer" data-id="${im.id}" style="width:auto"><option value="0">Exonéré (0 %)</option>${tvaRates().map((r) => html`<option value="${r}" ${(im.tvaLoyer || 0) === r ? new Raw('selected') : ''}>${String(r).replace('.', ',')} %</option>`)}</select></div>`)}</div>
-        <p class="tiny muted" style="margin-top:10px">Taux de ${(PAYS[soc.pays || 'LU'] || PAYS.LU)[0]} : ${tvaRates().map((r) => String(r).replace('.', ',') + ' %').join(' · ')} — modifiables dans Réglages → Société & associés. Aide à la préparation, à faire vérifier par votre comptable.</p>`;
+        <p class="tiny muted">Taux normal : ${String(c0.taux).replace('.', ',')} % (Réglages → 🧾 Facturation) ; régime par client (autoliquidation, non applicable…) dans Gérances → la gérance → 🧾 Facturation. Détail facture par facture : onglet 🧾 Factures. Aide à la déclaration, à faire vérifier par votre comptable.</p>`;
     } else if (tab === 'fact') {
       const F = vault.list('taches').filter((t) => t.facture && t.facture.date >= from && t.facture.date <= to).sort((a, b) => b.facture.no.localeCompare(a.facture.no));
       const todo = vault.list('taches').filter((t) => t.ptl && t.statut === 'fait' && !t.facture);
@@ -6427,7 +6427,7 @@ document.addEventListener('change', (e) => {
   if (k === 'soc-sign-w') vault.mutate((tx) => tx.put('reglages', { id: 'main', signW: [6, 8, 10, 12].includes(+e.target.value) ? +e.target.value : 8 }), 'Taille de la signature', `${e.target.value} cm`).then(signRefresh);
   if (k === 'cp-per') { ui.cpPer = e.target.value; ui.cpLim = 10; renderView(); }
   if (k === 'cp-from' || k === 'cp-to') { ui[k === 'cp-from' ? 'cpFrom' : 'cpTo'] = e.target.value; ui.cpLim = 10; renderView(); }
-  if (k === 'tva-loyer') { const im = vault.get('immeubles', e.target.dataset.id); if (im) vault.mutate((tx) => tx.put('immeubles', { id: im.id, tvaLoyer: parseFloat(e.target.value) || 0 }), 'TVA sur les loyers', `${im.adresse} : ${e.target.value || 0} %`, im.id); }
+  if (k === 'tva-loyer-off') { const im = vault.get('immeubles', e.target.dataset.id); if (im) vault.mutate((tx) => tx.put('immeubles', { id: im.id, tvaLoyer: parseFloat(e.target.value) || 0 }), 'TVA sur les loyers', `${im.adresse} : ${e.target.value || 0} %`, im.id); }
   if (k === 'place') {
     const isNew = e.target.value.startsWith('new:');
     $('#newLogWrap').hidden = !isNew;

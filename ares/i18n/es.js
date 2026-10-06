@@ -9815,5 +9815,17 @@ export default [
 [
 "Tout est affiché ({0})",
 "Todo mostrado ({0})"
+],
+[
+"TVA des factures d’interventions émises par {0} (LuxInterventions). Les loyers ne sont pas soumis à la TVA.",
+"IVA de las facturas de intervención emitidas por {0} (LuxInterventions). Los alquileres no están sujetos a IVA."
+],
+[
+"TVA collectée",
+"IVA repercutida"
+],
+[
+"Factures",
+"Facturas"
 ]
 ];
