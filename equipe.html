@@ -23,6 +23,10 @@
   main { max-width: 680px; margin: 0 auto; padding: 16px 16px 40px; padding-top: max(16px, env(safe-area-inset-top)); }
   .top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 8px; }
   .brandx { display: flex; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; }
+  .av-btn { width: 52px; height: 52px; flex: none; border-radius: 50%; border: 1.5px solid #d6dcd9; background: #fff; font-size: 24px; line-height: 1; cursor: pointer; padding: 0; letter-spacing: -4px; }
+  .av-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(48px, 1fr)); gap: 6px; }
+  .av-grid button { height: 48px; border-radius: 12px; border: 1px solid #e3e7e5; background: #fff; font-size: 22px; cursor: pointer; letter-spacing: -4px; }
+  .av-grid button[aria-pressed=true] { border: 2px solid #0f766e; background: #e8f4f2; }
   .top-logo { height: 32px; width: auto; border-radius: 6px; background: #fff; padding: 2px 4px; flex: none; }
   /* langues : « FR | DE | EN | IT | PT | ES » */
   .ger-box { margin: 6px 0; padding: 8px 10px; border-radius: 10px; background: #fff7ed; border: 1px solid #fed7aa; font-size: 14px; line-height: 1.5; }

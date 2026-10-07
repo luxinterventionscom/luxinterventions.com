@@ -128,6 +128,10 @@ const ENGT = {
   es: { t: 'Mi ficha de contratación', top: 'Firma tu ficha de contratación: obligatoria para cobrar.', open: 'Leer y firmar', ob: [['Obligación de resultado', 'Me comprometo a realizar el trabajo correctamente, en el día, hora y lugar acordados, y a rehacerlo a mi cargo si no es conforme.'], ['Daños', 'Todo daño causado a bienes o personas durante la intervención corre a mi cargo y al de mi seguro de responsabilidad civil{a}.'], ['Independencia', 'Intervención puntual, sin relación de subordinación: declaro yo mismo mis ingresos y cumplo mis obligaciones fiscales y sociales.'], ['Confidencialidad', 'Códigos, llaves e información de los lugares y ocupantes son confidenciales y solo sirven para la intervención.']], rgpd: 'RGPD: {s} usa mis datos (identidad, contacto, seguro, banco, firma, horas) solo para los trabajos, los pagos y sus obligaciones legales. Puedo pedir verlos, corregirlos o borrarlos.', acc: 'He leído y acepto estas obligaciones', sig: 'Mi firma (con el dedo)', clr: 'Borrar', send: '✍️ Firmar y enviar', need: 'Marca «He leído y acepto» y firma en el recuadro.', ok: 'Firmada ✓ — enviada a {s}', done: 'Firmada el {d}' },
 };
 let sigUrl = '', sigSent = '';
+// mon icône (métier) : choisie dans l'app, visible chez le responsable
+const WORK_ICONS = ['🧹🪣', '🧹', '🪣', '🧽', '🔨', '🪚', '⚡', '💡', '🔌', '🔧', '🪠', '🚰', '🔥', '🧱', '🖌️', '🎨', '🔑', '🔐', '🌿', '🌳', '✂️', '🪜', '🧰', '🛠️', '🚚', '👷', '👷‍♀️'];
+const ICT = { fr: 'Mon icône', it: 'La mia icona', de: 'Mein Symbol', en: 'My icon', pt: 'O meu ícone', es: 'Mi icono' };
+let icOpen = false, icMine = '';
 const ICONS = { nettoyage: '🧹', reparation: '🔧', gros: '🚚', autre: '📌', entretien: '🔧' };
 let data = null, lang = 'fr', loadErr = '', form = null, flash = '';
 wxRadioInit({ app: 'eq', lang: () => lang, home: () => (data && data.me && data.me.ville) || 'Luxembourg', radio: () => (data && data.radio) || null });
@@ -389,7 +393,9 @@ function render() {
   }
   const d = data, out = [];
   document.title = `${t.app} — ${d.societe.nom}`;
-  out.push(`${top(d.societe.nom, d.societe.logo)}<h1>${esc(t.hello)} ${esc(d.prenom || d.nom)} 👋</h1><p class="sub">${esc([d.metier, d.societe.nom].filter(Boolean).join(' · '))}</p>`);
+  const myIc = icMine || d.icon || '👷';
+  out.push(`${top(d.societe.nom, d.societe.logo)}<h1 style="display:flex;align-items:center;gap:10px"><button class="av-btn" data-ic-open="1" aria-label="${esc(ICT[lang] || ICT.fr)}">${esc(myIc)}</button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)} 👋</span></h1><p class="sub">${esc([d.metier, d.societe.nom].filter(Boolean).join(' · '))}</p>`);
+  if (icOpen) out.push(`<div class="card"><p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${WORK_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === myIc}">${esc(e)}</button>`).join('')}</div></div>`);
   const pls = placesOf(d);
   if (place && !pls.includes(place)) place = '';
   const pubs = (d.pubs || []).filter((x) => !x.fin || x.fin >= today);
@@ -505,6 +511,8 @@ app.addEventListener('toggle', (e) => {
 }, true);
 app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-eng-open]')) { const c = document.getElementById('engCard'); if (c) { c.querySelector('details').open = true; c.scrollIntoView({ block: 'start', behavior: 'smooth' }); } return; }
+  if (e.target.closest('[data-ic-open]')) { icOpen = !icOpen; return render(); }
+  { const ic = e.target.closest('[data-ic]'); if (ic) { icMine = ic.dataset.ic; icOpen = false; render(); try { await queue({ k: 'icon', e: icMine, at: new Date().toISOString() }); } catch { /* renvoyé plus tard */ } return; } }
   if (e.target.closest('[data-sig-clear]')) { const c = app.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); sigUrl = ''; return; }
   const lb = e.target.closest('[data-lang]');
   if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('eqLang', lang); } catch {} if (pushSt === 'on') pushRefresh('/equipe', pushPost); return render(); }

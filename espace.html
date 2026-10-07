@@ -265,6 +265,10 @@ details.more > summary { cursor: pointer; font-weight: 600; color: #4f46e5; padd
 details.more > summary::before { content: '▸ '; }
 details.more[open] > summary::before { content: '▾ '; }
   .notif-off { border: 2px solid #f59e0b; background: #fffbeb; }
+  .av-btn { width: 52px; height: 52px; flex: none; border-radius: 50%; border: 1.5px solid #d6dcd9; background: #fff; font-size: 26px; line-height: 1; cursor: pointer; padding: 0; }
+  .av-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr)); gap: 6px; }
+  .av-grid button { height: 46px; border-radius: 12px; border: 1px solid #e3e7e5; background: #fff; font-size: 24px; cursor: pointer; }
+  .av-grid button[aria-pressed=true] { border: 2px solid #0f766e; background: #e8f4f2; }
 </style>
 </head>
 <body>

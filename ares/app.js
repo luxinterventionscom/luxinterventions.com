@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.99.0';
+const VERSION = '2.100.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -89,7 +89,8 @@ const level = (p) => (p >= 80 ? '' : p >= 50 ? 'warn' : 'bad');
 //           ├─ Versements au bailleur (loyer du bail principal, mois par mois)
 //           └─ Dépenses (réparations…), rattachées à l'immeuble ou à un logement précis
 const fullName = (l) => [l.prenom, l.nom].filter(Boolean).join(' ') || 'Sans nom';
-const initials = (l) => (((l.prenom || '')[0] || '') + ((l.nom || '')[0] || '')).toUpperCase() || '?';
+// avatar d'un locataire : l'icône qu'il a choisie dans son app, sinon ses initiales
+const initials = (l) => (l && emojiOk(l.avatar) ? l.avatar : (((l.prenom || '')[0] || '') + ((l.nom || '')[0] || '')).toUpperCase() || '?');
 const immName = (id) => (vault.get('immeubles', id) || {}).adresse || 'Sans immeuble';
 // Type de structure (immeuble) et type d'unité louée (logement / local)
 const IMM_TYPES = {
@@ -142,8 +143,10 @@ const edlOutNew = () => vault.list('documents').filter((d) => d.kind === 'edl-ou
 
 // ───────────────────────── Maintenance : intervenants, interventions, collectes des déchets ─────────────────────────
 // icône du métier (comme dans l'app des locataires) : à la place des initiales dans les listes de l'équipe
-const MET_ICON = { menage: '🧹', menuisier: '🪚', electricien: '💡', plombier: '🚰', chauffagiste: '🔥', macon: '🧱', peintre: '🎨', serrurier: '🔑', jardinier: '🌿', autre: '🔧' };
-const metIcon = (i) => MET_ICON[i && i.metier] || '👷';
+const MET_ICON = { menage: '🧹🪣', menuisier: '🔨', electricien: '⚡', plombier: '🔧', chauffagiste: '🔥', macon: '🧱', peintre: '🖌️', serrurier: '🔑', jardinier: '🌿', autre: '🛠️' };
+// icône choisie par la personne dans son app (sinon celle de son métier)
+const emojiOk = (v) => typeof v === 'string' && v.length <= 16 && /^\p{Extended_Pictographic}/u.test(v);
+const metIcon = (i) => (i && emojiOk(i.icon) ? i.icon : MET_ICON[i && i.metier] || '👷');
 const METIERS = { menage: 'Femme de ménage / nettoyage', menuisier: 'Menuisier', electricien: 'Électricien', plombier: 'Plombier / sanitaire', chauffagiste: 'Chauffagiste', macon: 'Maçon', peintre: 'Peintre', serrurier: 'Serrurier', jardinier: 'Jardinier', autre: 'Autre' };
 const TACHE_TYPES = { nettoyage: '🧹 Nettoyage', reparation: '🔧 Réparation', gros: '🚚 Gros travaux', autre: '📌 Autre' };
 const tacheIcon = (type) => (type === 'entretien' ? '🔧' : (TACHE_TYPES[type] || '📌').split(' ')[0]);
@@ -414,7 +417,7 @@ function equipeData(i) {
   }
   const k = vault.get('reglages', 'signal');
   return {
-    v: 1, kind: 'equipe', lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '',
+    v: 1, kind: 'equipe', lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i),
     // l'équipe travaille pour ARES INVEST S.A. (LuxInterventions) : son nom et son logo (casque) dans l'app des ouvriers
     societe: { nom: factConf().nom || 'ARES INVEST S.A.', tel: factConf().tel || soc.tel || '', logo: '/ares/icons/lux-192.png' },
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '' },
@@ -527,6 +530,8 @@ async function equipeInbox(w, msg) {
         ph.forEach((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'signal', label: `Problème — photo ${n + 1}`, date: d, mime: 'image/jpeg', size: Math.round(b.length * 0.75) }); files.push([doc.id, b]); });
         feed.push({ at, k: 'pb', tid: t.id, d, note: '⚠️ ' + titre, ph: ph.length });
         fresh++;
+      } else if (it.k === 'icon') {
+        if (emojiOk(it.e)) { tx.put('intervenants', { id: w.id, icon: it.e }); feed.push({ at, k: 'info', note: `Icône choisie : ${it.e}` }); }
       } else if (it.k === 'sign') {
         // signature de la fiche d'engagement, faite par l'intervenant occasionnel dans son app
         if (w.genre === 'prive' && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(it.png || '') && it.png.length < 400000) {
@@ -782,7 +787,7 @@ function espaceData(l) {
   const g = vault.get('logements', l.logId), im = vault.get('immeubles', l.immId);
   const soc = societe();
   const out = {
-    v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
+    v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', avatar: emojiOk(l.avatar) ? l.avatar : '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
     societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: soc.signature || '', signW: soc.signW || 8 },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : { nom: 'Seven Radio', url: 'https://sevenradio.lu/?proradio-popup=1' }; })(),
@@ -1213,6 +1218,11 @@ async function inboxSync() {
         await vault.mutate((tx) => tx.put('locataires', { id: l.id, virSignal: vir }), 'Virement signalé par le locataire', `${fullName(l)} — ${money(vir.montant)}`, l.id);
         await vault.inboxDel(it.name);
         n++;
+        continue;
+      }
+      if (msg.type === 'avatar') {
+        if (emojiOk(msg.e)) await vault.mutate((tx) => tx.put('locataires', { id: l.id, avatar: msg.e }), 'Icône choisie par le locataire', `${fullName(l)} ${msg.e}`, l.id);
+        await vault.inboxDel(it.name);
         continue;
       }
       if (msg.type === 'regles') {
