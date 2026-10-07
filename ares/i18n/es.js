@@ -2534,7 +2534,7 @@ export default [
 ],
 [
 "N° TVA (société)",
-"NIF / IVA (sociedad)"
+"N.º IVA (empresa)"
 ],
 [
 "N° de facture",
@@ -2954,7 +2954,7 @@ export default [
 ],
 [
 "RCS (société)",
-"Registro mercantil (sociedad)"
+"RCS (empresa)"
 ],
 [
 "Raison",
@@ -10243,5 +10243,29 @@ export default [
 [
 "Routine enregistrée",
 "Rutina guardada"
+],
+[
+"Paiement cash",
+"Pago en efectivo"
+],
+[
+"(en espèces) — il le demande : la banque n’est alors pas obligatoire",
+"(en efectivo) — a petición suya: el banco ya no es obligatorio"
+],
+[
+"Paiement",
+"Pago"
+],
+[
+"Cash",
+"Efectivo"
+],
+[
+"(pas d’IBAN)",
+"(sin IBAN)"
+],
+[
+"cash (en espèces)",
+"en efectivo"
 ]
 ];

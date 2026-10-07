@@ -2538,7 +2538,7 @@ export default [
 ],
 [
 "N° TVA (société)",
-"P. IVA (società)"
+"N° IVA (società)"
 ],
 [
 "N° de facture",
@@ -10259,5 +10259,29 @@ export default [
 [
 "Routine enregistrée",
 "Routine salvata"
+],
+[
+"Paiement cash",
+"Pagamento cash"
+],
+[
+"(en espèces) — il le demande : la banque n’est alors pas obligatoire",
+"(in contanti) — lo chiede lui: la banca allora non è obbligatoria"
+],
+[
+"Paiement",
+"Pagamento"
+],
+[
+"Cash",
+"Contanti"
+],
+[
+"(pas d’IBAN)",
+"(nessun IBAN)"
+],
+[
+"cash (en espèces)",
+"contanti"
 ]
 ];

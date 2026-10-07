@@ -2878,7 +2878,7 @@ export default [
 ],
 [
 "RCS (société)",
-"Company reg. no."
+"RCS (company)"
 ],
 [
 "Raison",
@@ -10031,5 +10031,25 @@ export default [
 [
 "Routine enregistrée",
 "Routine saved"
+],
+[
+"Paiement cash",
+"Cash payment"
+],
+[
+"(en espèces) — il le demande : la banque n’est alors pas obligatoire",
+"(in cash) — at their request: the bank is then not required"
+],
+[
+"Paiement",
+"Payment"
+],
+[
+"(pas d’IBAN)",
+"(no IBAN)"
+],
+[
+"cash (en espèces)",
+"cash"
 ]
 ];
