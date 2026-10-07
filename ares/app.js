@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.97.0';
+const VERSION = '2.98.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -141,6 +141,9 @@ const edlIn = (logId, room) => edlOf(logId).filter((d) => d.room === room).pop()
 const edlOutNew = () => vault.list('documents').filter((d) => d.kind === 'edl-out' && !d.seen);
 
 // ───────────────────────── Maintenance : intervenants, interventions, collectes des déchets ─────────────────────────
+// icône du métier (comme dans l'app des locataires) : à la place des initiales dans les listes de l'équipe
+const MET_ICON = { menage: '🧹', menuisier: '🪚', electricien: '💡', plombier: '🚰', chauffagiste: '🔥', macon: '🧱', peintre: '🎨', serrurier: '🔑', jardinier: '🌿', autre: '🔧' };
+const metIcon = (i) => MET_ICON[i && i.metier] || '👷';
 const METIERS = { menage: 'Femme de ménage / nettoyage', menuisier: 'Menuisier', electricien: 'Électricien', plombier: 'Plombier / sanitaire', chauffagiste: 'Chauffagiste', macon: 'Maçon', peintre: 'Peintre', serrurier: 'Serrurier', jardinier: 'Jardinier', autre: 'Autre' };
 const TACHE_TYPES = { nettoyage: '🧹 Nettoyage', reparation: '🔧 Réparation', gros: '🚚 Gros travaux', autre: '📌 Autre' };
 const tacheIcon = (type) => (type === 'entretien' ? '🔧' : (TACHE_TYPES[type] || '📌').split(' ')[0]);
@@ -1576,7 +1579,7 @@ const ptlPlace = (p) => {
 const ptlResCodes = (r) => { let named = []; try { named = JSON.parse(r.codes || '[]'); } catch { /* illisible */ } if (!Array.isArray(named)) named = []; const kb = named.find((c) => c.l === 'Boîte à clés'); return [kb && kb.c ? 'Boîte à clés : ' + kb.c : '', r.access ? 'Porte : ' + r.access : '', r.alarm ? 'Alarme : ' + r.alarm : '', r.code_other ? 'Locaux techniques : ' + r.code_other : '', ...named.filter((c) => c.c && c !== kb).map((c) => `${c.l || 'Code'} : ${c.c}`)].filter(Boolean); };
 // affectation : l'équipe triée (métier conseillé d'abord ⭐), absents signalés
 const affTeam = (hints) => vault.list('intervenants').filter((i) => !i.archive).sort((a, b) => hints.includes(b.metier) - hints.includes(a.metier) || intervFull(a).localeCompare(intervFull(b)));
-const affRow = (i, hints, attrs) => { const ab = absOn(i, today()); return html`<button class="row" ${new Raw(attrs)}><span class="avatar">${hints.includes(i.metier) ? '⭐' : '👷'}</span><span class="grow"><span class="title" style="display:block">${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || i.metier || '—'} · ${INT_GENRES[i.genre || 'interne']}${ab ? html` · <b class="red">${ABS_TYPES[ab.type]}</b>` : ''}</span></span><span class="badge">Affecter →</span></button>`; };
+const affRow = (i, hints, attrs) => { const ab = absOn(i, today()); return html`<button class="row" ${new Raw(attrs)}><span class="avatar met-ic">${metIcon(i)}</span><span class="grow"><span class="title" style="display:block">${hints.includes(i.metier) ? '⭐ ' : ''}${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || i.metier || '—'} · ${INT_GENRES[i.genre || 'interne']}${ab ? html` · <b class="red">${ABS_TYPES[ab.type]}</b>` : ''}</span></span><span class="badge">Affecter →</span></button>`; };
 const ptlOrg = (id) => ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => o.id === id);
 const ptlInviteUrl = (tok) => `${location.origin}/portail.html#invite=${tok}`;
 // mot de passe → clé dérivée sur l'appareil (comme dans le portail) : le serveur ne voit jamais le mot de passe
@@ -2610,6 +2613,7 @@ function engForm(i) {
       ${field('Assurance RC (compagnie)', 'assur', i.assur, { placeholder: 'ex. Foyer, La Luxembourgeoise, AXA…' })}
       ${field('N° de police', 'police', i.police, { attrs: 'autocomplete="off"' })}
     </div>
+    <label class="check eng-occ" style="margin:8px 0 0" ${occ ? '' : new Raw('hidden')}><input type="checkbox" name="cash" value="1" ${i.cash ? new Raw('checked') : ''}> 💵 <b>Paiement cash</b> (en espèces) — il le demande : la banque n’est alors pas obligatoire</label>
     <div class="section-label" style="margin:8px 0 0">🏦 Compte bancaire (pour le payer) — même fiche pour tous les pays</div>
     <div class="fields bank-box" style="margin-top:6px">
       ${field('Nom de la banque', 'banque', i.banque, { placeholder: 'ex. BNP Paribas, Spuerkeess, Intesa Sanpaolo…', attrs: 'autocomplete="off"' })}
@@ -2675,6 +2679,7 @@ async function engPdf(i) {
   kv('Nom', intervFull(i)); kv('Métier', METIERS[i.metier] || i.metier || ''); kv('Adresse', [i.adresse, i.ville].filter(Boolean).join(', '));
   kv('Téléphone / email', [i.tel, i.mail].filter(Boolean).join(' · ')); kv('RCS / N° TVA', [i.rcs, i.tva].filter(Boolean).join(' · '));
   kv('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')); kv('Banque', [i.banque, i.bic ? 'BIC / SWIFT ' + i.bic : ''].filter(Boolean).join(' — ')); kv('IBAN', ibanFmt(i.iban));
+  if (i.genre === 'prive') kv('Paiement', i.cash ? 'en espèces (cash), à sa demande' : 'par virement');
   kv('Rémunération', [i.payeH ? eur(i.payeH) + ' / heure' : i.tarif || '', i.payeDepl ? 'déplacement ' + eur(i.payeDepl) : ''].filter(Boolean).join(' · '));
   y += 8; p.rect(X, y - 12, R - X, 18, { fill: [0.15, 0.2, 0.35] }).text(X + 6, y, 'Obligations de l’intervenant', { size: 10, bold: true, color: [1, 1, 1] }); y += 22;
   for (const [t, x] of ENG_OBL(i)) { p.text(X, y, t, { size: 9.5, bold: true }); y += 13; y += p.wrap(X, y, x, R - X, { size: 9.5 }) + 6; }
@@ -2707,7 +2712,8 @@ async function occPdf(t, i, o) {
   if (o.mat) row(`Matériel avancé${o.matLib ? ' : ' + o.matLib : ''}`, '1', eur(o.mat), eur(o.mat));
   y += 6; p.text(R - 120, y, 'Total à payer', { size: 11, bold: true, align: 'right' }).text(R - 6, y, eur(o.tot), { size: 11, bold: true, align: 'right' }); y += 16;
   y += p.wrap(X, y, i.tva ? 'TVA : selon le régime de l’intervenant.' : 'TVA non applicable — intervenant non assujetti (travail occasionnel).', R - X, { size: 9 }) + 6;
-  if (i.iban) { p.rect(X, y, R - X, 24, { fill: [0.96, 0.97, 1] }).text(X + 10, y + 16, `Virement — IBAN ${ibanFmt(i.iban)}${i.bic ? ' · BIC ' + i.bic : ''}${i.banque ? ' · ' + i.banque : ''} — réf. ${o.no}`, { size: 9.5, bold: true }); y += 34; }
+  if (o.cash) { p.rect(X, y, R - X, 24, { fill: [0.96, 1, 0.96] }).text(X + 10, y + 16, `Paiement en espèces (cash) — ${eur(o.tot)} — réf. ${o.no}`, { size: 9.5, bold: true }); y += 34; }
+  else if (i.iban) { p.rect(X, y, R - X, 24, { fill: [0.96, 0.97, 1] }).text(X + 10, y + 16, `Virement — IBAN ${ibanFmt(i.iban)}${i.bic ? ' · BIC ' + i.bic : ''}${i.banque ? ' · ' + i.banque : ''} — réf. ${o.no}`, { size: 9.5, bold: true }); y += 34; }
   if (o.note) y += p.wrap(X, y, 'Note : ' + o.note, R - X, { size: 9 }) + 6;
   p.text(X, y + 6, 'Signature de l’intervenant', { size: 9, bold: true }); y += 12;
   const sg = await sigJpeg(i.sign);
@@ -2976,7 +2982,7 @@ const VIEWS = {
         const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length;
         const tel = (i.tel || '').replace(/[^\d+]/g, '');
         const ab = absOn(i, today());
-        return html`<div class="row"><span class="avatar">${(i.prenom || i.nom).slice(0, 2).toUpperCase()}</span>
+        return html`<div class="row"><span class="avatar met-ic" title="${METIERS[i.metier] || ''}">${metIcon(i)}</span>
           <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="open-interv" data-id="${i.id}"><span class="title" style="display:block">${intervFull(i)}${i.espace && i.espace.on ? ' 📱' : ''}${ab ? html` <span class="badge ${ab.type === 'maladie' ? 'bad' : 'warn'}">${ABS_TYPES[ab.type]}${ab.fin ? ' → ' + fmtDate(ab.fin) : ''}</span>` : ''}</span><span class="meta">${METIERS[i.metier] || i.metier} · ${{ interne: 'interne', societe: 'société', prive: 'privé' }[i.genre || 'interne']} · ${(i.cat || 'quotidien') === 'specialise' ? 'spécialisé' : 'quotidien'}${i.tarif ? ' · ' + i.tarif : ''}${n ? ' · ' + plural(n, 'intervention') + ' en cours' : ''}</span></button>
           ${tel ? html`<a class="btn icon sm" href="tel:${tel}" aria-label="Appeler">${icon('phone')}</a>` : ''}
         </div>`;
@@ -3834,7 +3840,7 @@ const SHEETS = {
     const t = vault.get('taches', id), i = t && vault.get('intervenants', t.intervenantId);
     if (!t || !i) return null;
     const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id) || {};
-    const o = t.occ || { h: L.min ? r2(L.min / 60) : '', taux: i.payeH ?? '', depl: i.payeDepl ?? '', mat: '', matLib: '', note: '' };
+    const o = t.occ || { h: L.min ? r2(L.min / 60) : '', taux: i.payeH ?? '', depl: i.payeDepl ?? '', mat: '', matLib: '', note: '', cash: !!i.cash || !i.iban };
     return {
       title: `🧾 Intervention occasionnelle${t.occ ? ' · ' + t.occ.no : ''}`,
       narrow: true,
@@ -3845,6 +3851,7 @@ const SHEETS = {
         ${field('Déplacement (€)', 'depl', o.depl, { type: 'number', attrs: money$ })}
         ${field('Matériel avancé (€)', 'mat', o.mat, { type: 'number', attrs: money$ })}
         ${field('Matériel : quoi ?', 'matLib', o.matLib, { full: true })}
+        <div class="field full">Paiement<div class="st-radios" style="margin-top:4px"><label><input type="radio" name="pay" value="vir" ${o.cash ? '' : new Raw('checked')} ${i.iban ? '' : new Raw('disabled')}> 🏦 Virement${i.iban ? '' : ' (pas d’IBAN)'}</label><label><input type="radio" name="pay" value="cash" ${o.cash ? new Raw('checked') : ''}> 💵 Cash</label></div></div>
         <label class="field full">Note<textarea name="note">${o.note || ''}</textarea></label>
         ${i.sign ? '' : html`<div class="alert warn full">⚠️<div>La fiche de ${intervFull(i)} n’est pas signée : la note sortira sans signature.</div></div>`}
       </form>`,
@@ -4014,8 +4021,8 @@ const SHEETS = {
         ${field('Code postal et ville', 'ville', i.ville, { placeholder: 'L-1234 Luxembourg' })}
         ${field('Téléphone', 'tel', i.tel, { type: 'tel', placeholder: '+352 …' })}
         ${field('Email', 'mail', i.mail, { type: 'email', full: true })}
-        ${field('RCS (société)', 'rcs', i.rcs, { placeholder: 'ex. B123456' })}
-        ${field('N° TVA (société)', 'tva', i.tva, { placeholder: 'ex. LU12345678' })}
+        <label class="field soc-only" ${(i.genre || 'interne') === 'societe' ? '' : new Raw('hidden')}>RCS (société)<input name="rcs" value="${i.rcs || ''}" placeholder="ex. B123456"></label>
+        <label class="field soc-only" ${(i.genre || 'interne') === 'societe' ? '' : new Raw('hidden')}>N° TVA (société)<input name="tva" value="${i.tva || ''}" placeholder="ex. LU12345678"></label>
         ${engForm(i)}
         <label class="field full">Notes<textarea name="note" placeholder="Clés confiées, disponibilités…">${i.note || ''}</textarea></label>
       </form>`,
@@ -4146,6 +4153,7 @@ const SHEETS = {
           ${i.mail ? kvRow('Email', html`<a href="mailto:${i.mail}">${i.mail}</a>`) : ''}
           ${i.rcs ? kvRow('RCS', i.rcs) : ''}${i.tva ? kvRow('N° TVA', i.tva) : ''}
           ${i.assur || i.police ? kvRow('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')) : ''}${i.iban ? kvRow('Banque', [i.banque, i.bic ? 'BIC ' + i.bic : '', ibanFmt(i.iban)].filter(Boolean).join(' · ')) : ''}
+          ${i.cash ? kvRow('Paiement', '💵 cash (en espèces)') : ''}
           ${i.payeH ? kvRow('Payé', `${eur(i.payeH)} / heure${i.payeDepl ? ' · déplacement ' + eur(i.payeDepl) : ''}`) : ''}
         </dl>
         ${(i.genre || 'interne') !== 'interne' ? (() => {
@@ -4154,7 +4162,7 @@ const SHEETS = {
           ${i.genre === 'prive' ? html`<div class="alert ${i.sign ? 'info' : 'warn'}" style="margin-bottom:8px">${i.sign ? '✍️' : '⚠️'}<div>${i.sign ? html`Fiche signée le <b>${fmtDateTime(Date.parse(i.signAt) || 0)}</b>` : html`<b>Pas encore signée</b> — il la signe dans son app (onglet 📱 App → lui envoyer le lien), rubrique « ✍️ Ma fiche d’engagement »`}</div></div>` : ''}
           <button class="btn block" data-action="eng-pdf" data-id="${id}" style="margin-bottom:12px">📄 Fiche d’engagement (PDF)</button>
           ${i.genre === 'prive' ? html`<div class="section-label">🧾 Interventions occasionnelles (ses notes à payer)</div>
-          ${done.length ? html`<div class="list small">${done.map((t) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${t.titre}</span><span class="meta">${placeName(t)} · ${fmtDate(t.doneDate || (t.fini && t.fini.d) || t.date)}${t.occ ? html` · <b>${t.occ.no}</b> · ${eur(t.occ.tot)}` : ''}</span></span>
+          ${done.length ? html`<div class="list small">${done.map((t) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${t.titre}</span><span class="meta">${placeName(t)} · ${fmtDate(t.doneDate || (t.fini && t.fini.d) || t.date)}${t.occ ? html` · <b>${t.occ.no}</b> · ${eur(t.occ.tot)}${t.occ.cash ? ' · 💵 cash' : ''}` : ''}</span></span>
             ${t.occ ? html`<button class="btn sm" data-action="occ-dl" data-id="${t.id}">⬇️ PDF</button>` : ''}<button class="btn sm ${t.occ ? 'ghost' : 'primary'}" data-action="occ-open" data-id="${t.id}">${t.occ ? '✏️' : '🧾 Faire la note'}</button></div>`)}</div>` : html`<p class="small muted">Aucun travail terminé pour l’instant.</p>`}` : ''}`;
         })() : ''}
         ${(() => { const cm = (i.evals || []).filter((e) => (e.tags || []).length || e.note).slice(-8).reverse(); return cm.length ? html`<div class="section-label">Commentaires des locataires</div><div class="list small">${cm.map((e) => html`<div class="row"><span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDate(e.d)} · ${(vault.get('locataires', e.locId) && fullName(vault.get('locataires', e.locId))) || '—'}</span><b>${MEN_EVAL[e.v] || ''}</b>${(e.tags || []).map((k) => html` · <span>${MEN_TAGS[k] || k}</span>`)}${e.note ? html`<span style="display:block">« ${e.note} »</span>` : ''}</span></div>`)}</div>` : ''; })()}
@@ -4257,7 +4265,7 @@ const SHEETS = {
             <input type="hidden" name="ptl" value="${JSON.stringify(t.ptl)}"><input type="hidden" name="immId" value=""></div>`
           : html`<label class="field">Immeuble<select name="immId" data-input="tache-imm" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === t.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         <label class="field">Où ?<select name="logId" id="tacheLog">${logOptions(t.immId || imms[0].id, t.logId)}</select></label>`}
-        <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
+        <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
         ${hint.length ? html`<p class="tiny muted full" style="margin:-6px 0 0">⭐ = métier conseillé pour cette demande : ${[...new Set(hint)].map((m) => METIERS[m]).join(', ')}${ints.some(fits) ? '' : ' (personne de ce métier dans l’équipe)'}</p>` : ''}
         ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
         ${field('Date', 'date', t.date, { type: 'date' })}
@@ -6193,7 +6201,7 @@ const FORMS = {
   async occ(fd) {
     const t = vault.get('taches', fd.get('id')), i = t && vault.get('intervenants', t.intervenantId);
     if (!t || !i) return;
-    const o = { h: num(fd.get('h')), taux: num(fd.get('taux')), depl: num(fd.get('depl')), mat: num(fd.get('mat')), matLib: String(fd.get('matLib') || '').trim(), note: String(fd.get('note') || '').trim() };
+    const o = { cash: fd.get('pay') === 'cash' || !i.iban, h: num(fd.get('h')), taux: num(fd.get('taux')), depl: num(fd.get('depl')), mat: num(fd.get('mat')), matLib: String(fd.get('matLib') || '').trim(), note: String(fd.get('note') || '').trim() };
     if (!(o.h > 0) || !(o.taux > 0)) return toast('Indiquez les heures et le tarif', { bad: true });
     o.tot = r2(o.h * o.taux + o.depl + o.mat);
     // numéro : OCC-AAAA-0001 (suite par année, toutes personnes)
@@ -6209,13 +6217,15 @@ const FORMS = {
     const g = (k) => String(fd.get(k) || '').trim();
     const prev = id ? vault.get('intervenants', id) || {} : {};
     const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), note: g('note') };
+    if (rec.genre === 'prive') { rec.rcs = ''; rec.tva = ''; } // occasionnel : ni RCS ni TVA
     // l'horaire ne se fait plus ici : fiche de la personne → Horaires (routine et planning par semaine)
     // engagement : assurance, paiement, obligations acceptées, signature digitale
     if (rec.genre !== 'interne') {
-      Object.assign(rec, { assur: g('assur'), police: g('police'), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s/g, ''), iban: ibanClean(g('iban')) });
+      Object.assign(rec, { cash: rec.genre === 'prive' && fd.get('cash') === '1', assur: g('assur'), police: g('police'), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s/g, ''), iban: ibanClean(g('iban')) });
       const ib = ibanCheck(rec.iban), bc = bicCheck(rec.bic, ib.ok ? ib.cc : '');
       if (rec.genre === 'prive') {
-        const miss = [!rec.assur && 'assurance', !rec.police && 'n° de police', !rec.banque && 'nom de la banque', !bc.ok && 'BIC (' + bc.msg + ')', !ib.ok && 'IBAN (' + ib.msg + ')'].filter(Boolean);
+        const bank = !rec.cash || rec.iban || rec.bic || rec.banque; // cash : banque facultative (contrôlée si remplie)
+        const miss = [!rec.assur && 'assurance', !rec.police && 'n° de police', bank && !rec.banque && 'nom de la banque', bank && !bc.ok && 'BIC (' + bc.msg + ')', bank && !ib.ok && 'IBAN (' + ib.msg + ')'].filter(Boolean);
         if (miss.length) return toast('Intervention occasionnelle — il manque : ' + miss.join(', '), { bad: true });
       } else if ((rec.iban && !ib.ok) || (rec.bic && !bc.ok)) return toast(!ib.ok && rec.iban ? 'IBAN : ' + ib.msg : 'BIC : ' + bc.msg, { bad: true });
       // la signature vient de l'app de l'intervenant occasionnel : on la garde telle quelle
@@ -6725,6 +6735,7 @@ document.addEventListener('change', (e) => {
     const hw = f.querySelector('.hor-wrap'); if (hw) hw.hidden = !horFixed({ genre: g, cat: c, metier: f.metier.value });
     const ew = f.querySelector('.eng-wrap'); if (ew) ew.hidden = g === 'interne';
     f.querySelectorAll('.eng-occ').forEach((x) => { x.hidden = g !== 'prive'; });
+    f.querySelectorAll('.soc-only').forEach((x) => { x.hidden = g !== 'societe'; });
   }
   if (k === 'bank-chk') { if (e.target.name === 'iban') e.target.value = ibanFmt(e.target.value); bankMsgs(e.target.form); }
   // semaine choisie (date du téléphone par défaut) : les jours affichent leur date

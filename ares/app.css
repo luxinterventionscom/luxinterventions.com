@@ -687,3 +687,4 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 .sfx > i { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); font-style: normal; font-size: 12px; font-weight: 650; color: var(--text-3); pointer-events: none; }
 @media (max-width: 380px) { .sfx > input { padding-right: 46px; } .sfx > i { right: 7px; font-size: 11px; } }
 .field.mini .rq-num, label:has(> .sfx) .rq-num { display: none; }
+.avatar.met-ic { font-size: 22px; line-height: 1; }

@@ -2526,7 +2526,7 @@ export default [
 ],
 [
 "N° TVA (société)",
-"USt-IdNr. (Firma)"
+"USt-Nr. (Firma)"
 ],
 [
 "N° de facture",
@@ -2934,7 +2934,7 @@ export default [
 ],
 [
 "RCS (société)",
-"HR-Nr. (Firma)"
+"RCS (Firma)"
 ],
 [
 "Raison",
@@ -10251,5 +10251,29 @@ export default [
 [
 "Routine enregistrée",
 "Routine gespeichert"
+],
+[
+"Paiement cash",
+"Barzahlung"
+],
+[
+"(en espèces) — il le demande : la banque n’est alors pas obligatoire",
+"(in bar) — auf seinen Wunsch: die Bank ist dann nicht nötig"
+],
+[
+"Paiement",
+"Zahlung"
+],
+[
+"Cash",
+"Bar"
+],
+[
+"(pas d’IBAN)",
+"(keine IBAN)"
+],
+[
+"cash (en espèces)",
+"bar"
 ]
 ];
