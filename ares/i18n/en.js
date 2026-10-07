@@ -10051,5 +10051,17 @@ export default [
 [
 "cash (en espèces)",
 "cash"
+],
+[
+"Payé à l’ouvrier",
+"Paid to the worker"
+],
+[
+"Facturé vide = payé + marge {0}",
+"Billed empty = paid + margin {0}"
+],
+[
+"Accord / forfait (facultatif)",
+"Agreement / flat fee (optional)"
 ]
 ];

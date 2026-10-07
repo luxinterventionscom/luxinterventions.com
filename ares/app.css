@@ -688,3 +688,7 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 @media (max-width: 380px) { .sfx > input { padding-right: 46px; } .sfx > i { right: 7px; font-size: 11px; } }
 .field.mini .rq-num, label:has(> .sfx) .rq-num { display: none; }
 .avatar.met-ic { font-size: 22px; line-height: 1; }
+/* tarifs : petite grille alignée (payé / facturé × heure / déplacement) */
+.tarif-grid { display: grid; grid-template-columns: minmax(96px, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: center; }
+.tarif-grid .tg-h { font-size: 12px; font-weight: 650; color: var(--text-3); text-align: center; }
+.tarif-grid .tg-r { font-size: 13px; font-weight: 600; color: var(--text-2); line-height: 1.25; }

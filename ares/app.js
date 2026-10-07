@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.98.0';
+const VERSION = '2.99.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2601,9 +2601,15 @@ const ENG_RGPD = (c) => `Protection des données (RGPD — règlement (UE) 2016/
 const sfx = (label, name, val, unit, attrs = money$) => html`<label class="field mini">${label}<span class="sfx"><input name="${name}" type="number" ${new Raw(attrs)} value="${val ?? ''}"><i>${unit}</i></span></label>`;
 function tarifBox(i) {
   const m = num(factConf().marge);
-  return html`<div class="full tarif-box"><div class="section-label" style="margin:6px 0 4px">💶 Tarifs</div>
-    <div class="tarif-row">${sfx('Payé à l’intervenant', 'payeH', i.payeH, '€/h')}${sfx('Déplacement payé', 'payeDepl', i.payeDepl, '€')}<label class="field mini">Tarif / accord<input name="tarif" value="${i.tarif || ''}" placeholder="forfait 80 €…"></label></div>
-    <div class="tarif-row">${sfx('Facturé à la gérance', 'tauxH', i.tauxH, '€/h HT')}${sfx('Déplacement facturé', 'depl', i.depl, '€ HT')}<span class="tiny muted" style="align-self:center">Vide = payé + marge ${m ? String(m).replace('.', ',') + ' %' : '(Réglages → 🧾 Facturation)'}</span></div></div>`;
+  const cell = (name, val, unit, lbl) => html`<span class="sfx"><input name="${name}" type="number" ${new Raw(money$)} value="${val ?? ''}" aria-label="${lbl}"><i>${unit}</i></span>`;
+  return html`<div class="full tarif-box"><div class="section-label" style="margin:6px 0 6px">💶 Tarifs</div>
+    <div class="tarif-grid">
+      <span></span><span class="tg-h">€ / heure</span><span class="tg-h">Déplacement</span>
+      <span class="tg-r">Payé à l’ouvrier</span>${cell('payeH', i.payeH, '€/h', 'Payé à l’ouvrier € / heure')}${cell('payeDepl', i.payeDepl, '€', 'Déplacement payé')}
+      <span class="tg-r">Facturé à la gérance</span>${cell('tauxH', i.tauxH, '€/h HT', 'Facturé à la gérance € / heure')}${cell('depl', i.depl, '€ HT', 'Déplacement facturé')}
+    </div>
+    <p class="tiny muted" style="margin:4px 0 8px">Facturé vide = payé + marge ${m ? String(m).replace('.', ',') + ' %' : '(Réglages → 🧾 Facturation)'}</p>
+    <label class="field">Accord / forfait (facultatif)<input name="tarif" value="${i.tarif || ''}" placeholder="ex. forfait 80 € le chantier"></label></div>`;
 }
 function engForm(i) {
   const on = (i.genre || 'interne') !== 'interne', occ = (i.genre || '') === 'prive';
