@@ -10275,5 +10275,17 @@ export default [
 [
 "cash (en espèces)",
 "bar"
+],
+[
+"Payé à l’ouvrier",
+"An den Arbeiter bezahlt"
+],
+[
+"Facturé vide = payé + marge {0}",
+"Berechnet leer = bezahlt + Marge {0}"
+],
+[
+"Accord / forfait (facultatif)",
+"Vereinbarung / Pauschale (optional)"
 ]
 ];
