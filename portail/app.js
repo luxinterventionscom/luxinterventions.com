@@ -9,7 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.10.0';
+const VERSION = '1.11.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -532,6 +532,8 @@ async function loadRoute(route) {
     state.cache.orgs = orgs.orgs;
   } else if (route === 'equipe') {
     state.cache.equipe = (await api('users')).users;
+  } else if (route === 'plus' && !state.cache.residencesList) {
+    state.cache.residencesList = (await api('residences').catch(() => ({ residences: [] }))).residences; // filtres du rapport
   } else if (route === 'stats') {
     const [all, ev] = await Promise.all([api('tickets?scope=all' + org), api('evals' + (org ? '?' + org.slice(1) : '')).catch(() => null)]);
     state.cache.stats = { tickets: all.tickets, evals: ev ? ev.evals : null };
@@ -903,7 +905,17 @@ const VIEWS = {
         <label class="field" style="flex:1;min-width:140px">Mois<input type="month" name="month" value="${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}"></label>
         <label class="field" style="flex:1;min-width:100px">Année<select name="year">${[0, 1, 2, 3].map((k) => html`<option value="${now.getFullYear() - k}">${now.getFullYear() - k}</option>`)}</select></label>
         ${isAdmin() ? html`<label class="field" style="flex:1;min-width:160px">Gérance<select name="org"><option value="">Toutes</option>${(state.cache.orgs || []).map((o) => html`<option value="${o.id}">${o.name}</option>`)}</select></label>` : ''}
+        <details class="full rep-box" style="flex-basis:100%"><summary class="small" style="cursor:pointer">☑️ Contenu du rapport — cochez ce que vous voulez</summary>
+          <div class="rep-checks">${REP_SECTIONS.map(([k, l]) => html`<label><input type="checkbox" name="sec" value="${k}" checked> ${l}</label>`)}</div></details>
+        <details class="full rep-box" style="flex-basis:100%"><summary class="small" style="cursor:pointer">🔎 Filtres — rien coché = tout</summary>
+          ${(state.cache.residencesList || []).length ? html`<p class="small" style="margin:8px 0 4px"><b>Résidences</b></p><div class="rep-checks">${state.cache.residencesList.map((r) => html`<label><input type="checkbox" name="res" value="${r.name}"> ${r.name}</label>`)}</div>` : ''}
+          <p class="small" style="margin:8px 0 4px"><b>Type de travail</b></p><div class="rep-checks">${CATEGORIES.map((c) => html`<label><input type="checkbox" name="cat" value="${c}"> ${c}</label>`)}</div>
+          <p class="small" style="margin:8px 0 4px"><b>Fonction du demandeur</b></p><div class="rep-checks">${TITLES.map((c) => html`<label><input type="checkbox" name="fn" value="${c}"> ${c}</label>`)}</div>
+          <p class="small" style="margin:8px 0 4px"><b>Statut</b></p><div class="rep-checks">${[['terminee', 'Terminées'], ['ouvert', 'En cours'], ['annulee', 'Annulées']].map(([k, l]) => html`<label><input type="checkbox" name="st" value="${k}"> ${l}</label>`)}</div>
+          <p class="small" style="margin:8px 0 4px"><b>Urgence</b></p><div class="rep-checks">${Object.entries(URG).map(([k, u]) => html`<label><input type="checkbox" name="urg" value="${k}"> ${u.label}</label>`)}</div>
+        </details>
         <button class="btn primary" type="submit">${icon('download')} Rapport complet</button>
+        <button class="btn" type="button" data-action="report-csv">📊 Export Excel (CSV)</button>
       </form>
       <div class="section-label">Compte</div>
       <div class="list settings">
@@ -1411,14 +1423,29 @@ let installPrompt = null;
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; if (state.route === 'plus') renderView(); });
 
 // ───────────────────────── Rapport complet imprimable (tout le travail fait pour la gérance) ─────────────────────────
-async function printReport(per, month, year, org) {
+const REP_SECTIONS = [['resume', 'Résumé'], ['res', 'Par résidence'], ['cat', 'Par type de travail'], ['tech', 'Par technicien'], ['fn', 'Par fonction du demandeur'], ['who', 'Par demandeur'], ['mois', 'Statistiques mois par mois'], ['detail', 'Détail de chaque demande']];
+const repOpts = (fd) => ({ per: fd.get('per') || 'mois', month: fd.get('month'), year: fd.get('year'), org: fd.get('org') || '', res: fd.getAll('res'), cat: fd.getAll('cat'), fn: fd.getAll('fn'), st: fd.getAll('st'), urg: fd.getAll('urg'), sec: fd.getAll('sec') });
+// demandes de la période, puis filtres (résidence, type, fonction du demandeur, statut, urgence)
+async function repData(o) {
   let q = 'tickets?scope=all&full=1', label;
-  if (per === 'annee' && /^\d{4}$/.test(year || '')) { q += '&year=' + year; label = 'Année ' + year; }
-  else if (per === 'tout') label = 'Depuis le début';
-  else { if (!/^\d{4}-\d{2}$/.test(month || '')) throw new Error('Choisissez le mois'); const [y, m] = month.split('-').map(Number); q += '&month=' + month; label = `${MONTHS_FULL[m - 1]} ${y}`; }
-  if (org) q += '&org=' + org;
-  const { tickets } = await api(q);
+  if (o.per === 'annee' && /^\d{4}$/.test(o.year || '')) { q += '&year=' + o.year; label = 'Année ' + o.year; }
+  else if (o.per === 'tout') label = 'Depuis le début';
+  else { if (!/^\d{4}-\d{2}$/.test(o.month || '')) throw new Error('Choisissez le mois'); const [y, m] = o.month.split('-').map(Number); q += '&month=' + o.month; label = `${MONTHS_FULL[m - 1]} ${y}`; }
+  if (o.org) q += '&org=' + o.org;
+  let { tickets } = await api(q);
+  const filt = [];
+  // plusieurs cases cochées dans un groupe = l'une ou l'autre ; rien coché = tout
+  if (o.res.length) { tickets = tickets.filter((t) => o.res.includes(t.residence_name)); filt.push('Résidences : ' + o.res.join(', ')); }
+  if (o.cat.length) { tickets = tickets.filter((t) => o.cat.includes((t.categorie || '').split(' · ')[0])); filt.push('Types : ' + o.cat.join(', ')); }
+  if (o.fn.length) { tickets = tickets.filter((t) => o.fn.includes(t.created_by_title)); filt.push('Fonctions : ' + o.fn.join(', ')); }
+  if (o.st.length) { tickets = tickets.filter((t) => o.st.some((v) => (v === 'ouvert' ? !['terminee', 'annulee'].includes(t.status) : t.status === v))); filt.push('Statut : ' + o.st.map((v) => (v === 'ouvert' ? 'en cours' : STATUS[v].label)).join(', ')); }
+  if (o.urg.length) { tickets = tickets.filter((t) => o.urg.includes(t.urgence)); filt.push('Urgence : ' + o.urg.map((v) => URG[v].label).join(', ')); }
   tickets.sort((a, b) => a.created_at - b.created_at);
+  return { tickets, label, filt };
+}
+async function printReport(o) {
+  const { tickets, label, filt } = await repData(o), org = o.org;
+  const on = (k) => !o.sec || !o.sec.length || o.sec.includes(k);
   const title = `Rapport d'interventions — ${label}`;
   const who = org ? orgName(org) : isAdmin() ? 'Toutes les gérances' : state.me.org_name;
   const done = tickets.filter((t) => t.status === 'terminee'), cancel = tickets.filter((t) => t.status === 'annulee');
@@ -1428,12 +1455,16 @@ async function printReport(per, month, year, org) {
   const avgDone = avg(done.filter((t) => t.done_at).map((t) => t.done_at - t.created_at));
   const inv = tickets.filter((t) => t.inv_no), ttc = inv.reduce((a, t) => a + (+t.inv_ttc || 0), 0), paid = inv.filter((t) => t.inv_paid).reduce((a, t) => a + (+t.inv_ttc || 0), 0);
   const group = (key) => { const g = {}; for (const t of tickets) { const k = key(t) || '—'; (g[k] ||= { n: 0, done: 0, ttc: 0, urg: 0 }); g[k].n++; if (t.status === 'terminee') g[k].done++; if (t.urgence === 'urgent') g[k].urg++; g[k].ttc += +t.inv_ttc || 0; } return Object.entries(g).sort((a, b) => b[1].n - a[1].n); };
-  const byRes = group((t) => t.residence_name), byCat = group((t) => (t.categorie || 'Autre').split(' · ')[0]), byWho = group((t) => t.created_by_name), byTech = group((t) => t.technicien);
+  const byRes = group((t) => t.residence_name), byCat = group((t) => (t.categorie || 'Autre').split(' · ')[0]), byWho = group((t) => t.created_by_name), byTech = group((t) => t.technicien), byFn = group((t) => t.created_by_title);
+  // statistiques mois par mois
+  const months = {};
+  for (const t of tickets) { const d = new Date(t.created_at), k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; const x = (months[k] ||= { n: 0, urg: 0, done: 0, take: [], end: [], ttc: 0 }); x.n++; if (t.urgence === 'urgent') x.urg++; if (t.status === 'terminee') x.done++; if (t.taken_at) x.take.push(t.taken_at - t.created_at); if (t.done_at) x.end.push(t.done_at - t.created_at); x.ttc += +t.inv_ttc || 0; }
+  const mMax = Math.max(1, ...Object.values(months).map((x) => x.n));
   const gTable = (head, rows) => html`<table class="tbl"><thead><tr><th>${head}</th><th class="r">Demandes</th><th class="r">Urgentes</th><th class="r">Terminées</th><th class="r">Facturé TTC</th></tr></thead><tbody>${rows.map(([k, v]) => html`<tr><td>${k}</td><td class="r">${v.n}</td><td class="r">${v.urg}</td><td class="r">${v.done}</td><td class="r">${v.ttc ? eurP(v.ttc) : '—'}</td></tr>`)}</tbody></table>`;
   const el = $('#print');
   setHtml(el, html`<div class="pr-head"><div><b>LuxInterventions</b> · ARES INVEST S.A. · ${title}</div><div>Imprimé le ${fmtDate(Date.now())}</div></div>
-    <h1>${title}</h1><p class="pr-sub">${who} · ${tickets.length} demande(s)</p>
-    <h2>Résumé</h2>
+    <h1>${title}</h1><p class="pr-sub">${who} · ${tickets.length} demande(s)${filt.length ? ' · ' + filt.join(' · ') : ''}</p>
+    ${on('resume') ? html`<h2>Résumé</h2>
     <table class="tbl"><tbody>
       <tr><td>Demandes reçues</td><td class="r">${tickets.length}</td><td>Dont urgentes</td><td class="r">${tickets.filter((t) => t.urgence === 'urgent').length}</td></tr>
       <tr><td>Terminées</td><td class="r">${done.length}</td><td>En cours</td><td class="r">${open.length}</td></tr>
@@ -1441,24 +1472,26 @@ async function printReport(per, month, year, org) {
       <tr><td>Délai moyen de prise en charge</td><td class="r">${duration(avgTake)}</td><td>Délai moyen jusqu’à la fin</td><td class="r">${duration(avgDone)}</td></tr>
       <tr><td>Factures émises</td><td class="r">${inv.length} · ${eurP(ttc)} TTC</td><td>Payées / à payer</td><td class="r">${eurP(paid)} / ${eurP(ttc - paid)}</td></tr>
       <tr><td>Messages échangés</td><td class="r">${tickets.reduce((a, t) => a + (+t.msgs || 0), 0)}</td><td></td><td></td></tr>
-    </tbody></table>
-    ${tickets.length ? html`<h2>Par résidence</h2>${gTable('Résidence', byRes)}
-    <h2>Par type de travail</h2>${gTable('Type', byCat)}
-    <h2>Par technicien</h2>${gTable('Technicien', byTech)}
-    <h2>Par demandeur</h2>${gTable('Demandé par', byWho)}
-    <h2 class="pr-page">Détail de chaque demande</h2>
+    </tbody></table>` : ''}
+    ${tickets.length ? html`${on('res') ? html`<h2>Par résidence</h2>${gTable('Résidence', byRes)}` : ''}
+    ${on('cat') ? html`<h2>Par type de travail</h2>${gTable('Type', byCat)}` : ''}
+    ${on('tech') ? html`<h2>Par technicien</h2>${gTable('Technicien', byTech)}` : ''}
+    ${on('fn') ? html`<h2>Par fonction du demandeur</h2>${gTable('Fonction', byFn)}` : ''}
+    ${on('who') ? html`<h2>Par demandeur</h2>${gTable('Demandé par', byWho)}` : ''}
+    ${on('mois') && Object.keys(months).length > 1 ? html`<h2>Statistiques mois par mois</h2><table class="tbl"><thead><tr><th>Mois</th><th>Demandes</th><th class="r">Urgentes</th><th class="r">Terminées</th><th class="r">Prise en charge (moy.)</th><th class="r">Jusqu’à la fin (moy.)</th><th class="r">Facturé TTC</th></tr></thead><tbody>${Object.entries(months).sort().map(([k, x]) => { const [yy, mm] = k.split('-').map(Number); return html`<tr><td>${MONTHS_FULL[mm - 1]} ${yy}</td><td><span class="pr-bar" style="width:${Math.round((x.n / mMax) * 70)}px"></span> ${x.n}</td><td class="r">${x.urg}</td><td class="r">${x.done}</td><td class="r">${duration(avg(x.take))}</td><td class="r">${duration(avg(x.end))}</td><td class="r">${x.ttc ? eurP(x.ttc) : '—'}</td></tr>`; })}</tbody></table>` : ''}
+    ${on('detail') ? html`<h2 class="pr-page">Détail de chaque demande</h2>
     ${tickets.map((t) => html`<div class="pr-card">
       <div class="pr-card-h"><b>#${t.ref}</b> · ${t.categorie || 'Intervention'} · <span>${URG[t.urgence] ? URG[t.urgence].label : t.urgence}</span> · <b>${STATUS[t.status] ? STATUS[t.status].label : t.status}</b></div>
       <table class="tbl"><tbody>
         <tr><td style="width:24%">Résidence / lieu</td><td>${t.residence_name}${t.residence_address ? ' — ' + t.residence_address : ''}${t.lieu ? ' · ' + t.lieu : ''}</td></tr>
-        <tr><td>Demandée</td><td>${fmtDate(t.created_at)}${t.created_by_name ? ' par ' + t.created_by_name : ''}${isAdmin() && t.org_name ? ' · ' + t.org_name : ''}</td></tr>
+        <tr><td>Demandée</td><td>${fmtDate(t.created_at)}${t.created_by_name ? ' par ' + t.created_by_name : ''}${t.created_by_title ? ' (' + t.created_by_title + ')' : ''}${isAdmin() && t.org_name ? ' · ' + t.org_name : ''}</td></tr>
         <tr><td>Problème</td><td style="white-space:pre-wrap">${t.description || ''}</td></tr>
         <tr><td>Technicien / planifiée</td><td>${t.technicien || '—'}${t.planned_at ? ' · ' + String(t.planned_at).replace('T', ' ') : ''}</td></tr>
         <tr><td>Prise en charge / fin</td><td>${t.taken_at ? 'après ' + duration(t.taken_at - t.created_at) : '—'}${t.done_at ? ' · terminée le ' + fmtDate(t.done_at) + ' (' + duration(t.done_at - t.created_at) + ')' : ''}</td></tr>
         ${t.rapport ? html`<tr><td>Rapport d’intervention</td><td style="white-space:pre-wrap">${t.rapport}</td></tr>` : ''}
         <tr><td>Photos · messages</td><td>${+t.photos || 0} photo(s) · ${+t.msgs || 0} message(s)</td></tr>
         ${t.inv_no ? html`<tr><td>Facture</td><td>${t.inv_no} · ${eurP(t.inv_ttc)} TTC · ${t.inv_paid ? 'payée' : 'à payer'}</td></tr>` : ''}
-      </tbody></table></div>`)}` : html`<p>Aucune demande sur cette période.</p>`}`);
+      </tbody></table></div>`)}` : ''}` : html`<p>Aucune demande sur cette période.</p>`}`);
   document.body.classList.add('printing');
   const doneFn = () => { document.body.classList.remove('printing'); setHtml(el, ''); removeEventListener('afterprint', doneFn); };
   addEventListener('afterprint', doneFn);
@@ -1485,6 +1518,16 @@ const ACTIONS = {
   },
   'close-sheet': async () => { if (await leaveSheetOk()) { sheetDirty = false; closeSheet(); } },
   'demo-start': () => startDemo(),
+  async 'report-csv'(d, el) {
+    const o = repOpts(new FormData(el.form)), { tickets, label } = await repData(o);
+    const q = (v) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    const rows = [['N°', 'Date', 'Gérance', 'Résidence', 'Adresse', 'Lieu', 'Type', 'Urgence', 'Statut', 'Demandé par', 'Fonction', 'Problème', 'Technicien', 'Planifiée', 'Prise en charge (h)', 'Fin (h)', 'Rapport', 'Photos', 'Messages', 'Facture', 'TTC', 'Payée'].map(q).join(';')];
+    const h = (ms) => (ms ? String(Math.round((ms / 36e5) * 10) / 10).replace('.', ',') : '');
+    for (const t of tickets) rows.push([t.ref, fmtDate(t.created_at), t.org_name, t.residence_name, t.residence_address, t.lieu, t.categorie, URG[t.urgence] ? URG[t.urgence].label : t.urgence, STATUS[t.status] ? STATUS[t.status].label : t.status, t.created_by_name, t.created_by_title, t.description, t.technicien, t.planned_at, t.taken_at ? h(t.taken_at - t.created_at) : '', t.done_at ? h(t.done_at - t.created_at) : '', t.rapport, t.photos, t.msgs, t.inv_no, t.inv_ttc ? String(t.inv_ttc).replace('.', ',') : '', t.inv_no ? (t.inv_paid ? 'oui' : 'non') : ''].map(q).join(';'));
+    const blob = new Blob(['\ufeff' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `rapport-${label.replace(/[^\w-]+/g, '-')}.csv`; document.body.appendChild(a); a.click(); a.remove();
+    toast(`${tickets.length} demande(s) exportée(s)`);
+  },
   'demo-switch': async (d) => {
     state.demo.switchTo(d.id);
     state.me = { ...state.demo.me };
@@ -1825,7 +1868,7 @@ const FORMS = {
     } catch (e) { errEl.textContent = e.message; }
   },
   async report(fd) {
-    try { await printReport(fd.get('per') || 'mois', fd.get('month'), fd.get('year'), fd.get('org') || ''); } catch (e) { toast(e.message, { bad: true }); }
+    try { await printReport(repOpts(fd)); } catch (e) { toast(e.message, { bad: true }); }
   },
 };
 
