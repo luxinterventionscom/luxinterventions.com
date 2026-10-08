@@ -1598,6 +1598,13 @@ async function ptlPhotos() {
     if (ui.ptl.blobs[pid]) { img.src = ui.ptl.blobs[pid]; img.closest('a') && (img.closest('a').href = ui.ptl.blobs[pid]); }
   }
 }
+// liens d'invitation déjà créés (dans le coffre chiffré) : rouvrir l'invitation renvoie le même lien au lieu de l'annuler
+const ptlInvSaved = (uid) => { const x = ((vault.get('reglages', 'ptlinv') || {}).links || {})[uid]; return x && x.exp > Date.now() ? x : null; };
+async function ptlInvSave(uid, url) {
+  const links = Object.fromEntries(Object.entries((vault.get('reglages', 'ptlinv') || {}).links || {}).filter(([, x]) => x.exp > Date.now()));
+  links[uid] = { url, exp: Date.now() + 14 * 864e5 };
+  await vault.mutate((tx) => tx.put('reglages', { id: 'ptlinv', links }), 'Lien d’invitation au portail');
+}
 async function ptlStatus(id, status, extra = {}) {
   await ptlApi(`tickets/${id}/status`, { method: 'POST', body: { status, ...extra } });
   ui.ptl.data = null; ptlLoad();
@@ -4072,7 +4079,7 @@ const SHEETS = {
       body = html`${us.length ? html`<div class="list" style="margin-bottom:14px">${us.map((u) => html`<div class="row">
           <span class="avatar">${(u.name || '?').split(/\s+/).map((x) => x[0]).join('').slice(0, 2).toUpperCase()}</span>
           <span class="grow"><span class="title" style="display:block">${u.name} <span class="badge">${PTL_ROLES[u.role] || u.role}</span></span>
-            <span class="meta" style="white-space:normal">${u.email}${!u.active ? html` · <span>désactivé</span>` : !u.has_password ? html` · <span>invitation envoyée, pas encore ouverte</span>` : u.last_login ? html` · <span>dernière connexion</span> ${fmtDateTime(u.last_login)}` : ''}</span></span>
+            <span class="meta" style="white-space:normal">${u.email}${!u.active ? html` · <span>désactivé</span>` : !u.has_password ? html` · <span>${u.invite_expires > Date.now() ? `invitation envoyée, valable jusqu’au ${fmtDate(new Date(u.invite_expires).toISOString().slice(0, 10))}` : '⚠️ invitation expirée : créez un nouveau lien'}</span>` : u.last_login ? html` · <span>dernière connexion</span> ${fmtDateTime(u.last_login)}` : ''}</span></span>
           ${u.active ? html`<button class="btn sm" data-action="ger-inv" data-id="${u.id}" data-org="${id}">🔗 ${u.has_password ? 'Nouveau lien' : 'Lien d’invitation'}</button>` : ''}
           <button class="btn sm ghost ${u.active ? 'danger' : ''}" data-action="ger-user-toggle" data-id="${u.id}" data-org="${id}" data-on="${u.active ? 1 : 0}">${u.active ? 'Désactiver' : 'Réactiver'}</button></div>`)}</div>` : html`<p class="muted small">Personne n’a encore accès. Ajoutez le responsable de la gérance : il reçoit un lien personnel et choisit son mot de passe.</p>`}
         <div class="section-label">Donner l’accès à une personne</div>
@@ -4102,6 +4109,7 @@ const SHEETS = {
       title: 'Invitation au Portail gérance',
       narrow: true,
       body: html`<p style="margin-top:0">Lien personnel pour <b>${u.name}</b> (${u.email}) : il/elle ouvre le lien et choisit son mot de passe. <b>Valable 14 jours</b>, une seule fois.</p>
+        <p class="tiny muted" style="margin:-6px 0 10px">Rouvrir cette fenêtre redonne <b>le même lien</b> (aperçu, autre langue…) : celui déjà envoyé reste bon.</p>
         <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(link, 5)}</div>
         <div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => html`<button type="button" data-action="ger-inv-lang" data-id="${id}" data-l="${k}" aria-pressed="${lang === k}">${k.toUpperCase()}</button>`)}</div>
         <p class="tiny muted" style="margin:0 0 10px">Langue du message d’invitation.</p>
@@ -5569,7 +5577,13 @@ const ACTIONS = {
     } catch (e) { if (win) win.close(); toast(e.message, { bad: true }); }
   },
   async 'ger-inv'(d) {
-    try { const r = await ptlApi(`users/${d.id}/invite`, { method: 'POST' }); ui.ptl.inv[d.id] = ptlInviteUrl(r.invite); } catch (e) { return toast(e.message, { bad: true }); }
+    // un nouveau lien annule le précédent : on renvoie le même tant qu'il est valable (gardé chiffré dans le coffre)
+    const u = ui.ptl.data && ui.ptl.data.users.find((x) => x.id === d.id);
+    const pending = u && !u.has_password && u.invite_expires > Date.now();
+    const saved = ptlInvSaved(d.id);
+    if (pending && saved && Math.abs(saved.exp - u.invite_expires) < 5 * 60000) { ui.ptl.inv[d.id] = saved.url; return openSheet('ger-invite', d.id); }
+    if (pending && !(await confirmBox('Créer un nouveau lien ?', { ok: 'Nouveau lien', danger: true, detail: `Un lien a déjà été envoyé à ${u.name} (valable jusqu’au ${fmtDate(new Date(u.invite_expires).toISOString().slice(0, 10))}). Avec un nouveau lien, l’ancien ne marchera plus : envoyez bien le nouveau.` }))) return;
+    try { const r = await ptlApi(`users/${d.id}/invite`, { method: 'POST' }); ui.ptl.inv[d.id] = ptlInviteUrl(r.invite); await ptlInvSave(d.id, ui.ptl.inv[d.id]); } catch (e) { return toast(e.message, { bad: true }); }
     openSheet('ger-invite', d.id);
     ptlLoad(); // la demande « mot de passe oublié » disparaît
   },
@@ -6299,6 +6313,7 @@ const FORMS = {
     try { r = await ptlApi('users', { method: 'POST', body: b }); } catch (e) { return toast(e.message, { bad: true }); }
     f.reset();
     ui.ptl.inv[r.id] = ptlInviteUrl(r.invite);
+    await ptlInvSave(r.id, ui.ptl.inv[r.id]);
     await ptlLoad();
     openSheet('ger-invite', r.id);
   },

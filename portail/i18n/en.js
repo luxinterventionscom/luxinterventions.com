@@ -1053,6 +1053,10 @@ export default [
 "Language, notifications, reports, account"
 ],
 [
+"Le lien a déjà servi, il a plus de 14 jours, ou un lien plus récent vous a été envoyé (seul le dernier marche).",
+"The link was already used, is older than 14 days, or a newer link was sent to you (only the latest works)."
+],
+[
 "Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.",
 "The server is not ready for notifications yet: try again in a moment."
 ],
@@ -1575,6 +1579,10 @@ export default [
 [
 "Pour les gérances qui grandissent.",
 "For growing agencies."
+],
+[
+"Pourquoi ?",
+"Why?"
 ],
 [
 "Premiers pas · {0}/{1}",
@@ -2497,6 +2505,10 @@ export default [
 "⚡ Panels"
 ],
 [
+"✅ Mot de passe déjà choisi ? Connectez-vous avec votre email.",
+"✅ Password already chosen? Sign in with your email."
+],
+[
 "✅ Payée",
 "✅ Paid"
 ],
@@ -2631,6 +2643,10 @@ export default [
 [
 "🔑 Mot de passe oublié ?",
 "🔑 Forgot your password?"
+],
+[
+"🔑 Pas encore ? Touchez « Mot de passe oublié ? » : LuxInterventions vous envoie un nouveau lien.",
+"🔑 Not yet? Tap “Forgot password?”: LuxInterventions will send you a new link."
 ],
 [
 "🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.",

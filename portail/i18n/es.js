@@ -1069,6 +1069,10 @@ export default [
 "Idioma, notificaciones, informes, cuenta"
 ],
 [
+"Le lien a déjà servi, il a plus de 14 jours, ou un lien plus récent vous a été envoyé (seul le dernier marche).",
+"El enlace ya se usó, tiene más de 14 días, o se le envió un enlace más reciente (solo funciona el último)."
+],
+[
 "Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.",
 "El servidor aún no está listo para las notificaciones: inténtalo de nuevo en un momento."
 ],
@@ -1619,6 +1623,10 @@ export default [
 [
 "Pour les gérances qui grandissent.",
 "Para administradoras en crecimiento."
+],
+[
+"Pourquoi ?",
+"¿Por qué?"
 ],
 [
 "Premiers pas · {0}/{1}",
@@ -2541,6 +2549,10 @@ export default [
 "⚡ Cuadros"
 ],
 [
+"✅ Mot de passe déjà choisi ? Connectez-vous avec votre email.",
+"✅ ¿Ya eligió su contraseña? Inicie sesión con su email."
+],
+[
 "✅ Payée",
 "✅ Pagada"
 ],
@@ -2683,6 +2695,10 @@ export default [
 [
 "🔑 Mot de passe oublié ?",
 "🔑 ¿Olvidó su contraseña?"
+],
+[
+"🔑 Pas encore ? Touchez « Mot de passe oublié ? » : LuxInterventions vous envoie un nouveau lien.",
+"🔑 ¿Todavía no? Toque «¿Olvidó la contraseña?»: LuxInterventions le envía un nuevo enlace."
 ],
 [
 "🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.",
