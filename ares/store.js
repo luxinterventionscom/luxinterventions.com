@@ -598,7 +598,7 @@ export class Vault {
   pushSub(body) { return this.call('push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   async videoLink(u) { try { return (await (await this.call('video-link?u=' + encodeURIComponent(u))).json()).url || ''; } catch { return ''; } }
   async pubStats(days) { return (await (await this.call('pubstats?days=' + days)).json()).rows || []; }
-  pubsPortail(items) { return this.call('pubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items }) }); }
+  pubsPortail(items, offers = true) { return this.call('pubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, offers }) }); }
   espNotify(id) { return this.call('espace/' + id + '/notify', { method: 'POST' }); }
   async inboxList() { return (await (await this.call('inbox')).json()).items || []; }
   async inboxGet(name) { return new Uint8Array(await (await this.call('inbox/' + name)).arrayBuffer()); }

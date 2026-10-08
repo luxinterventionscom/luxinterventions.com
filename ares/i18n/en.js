@@ -10159,5 +10159,41 @@ export default [
 [
 "✅ Oui, il l’a demandé — désactiver",
 "✅ Yes, they asked — deactivate"
+],
+[
+"💳 Abonnements",
+"💳 Subscriptions"
+],
+[
+"Abonnements",
+"Subscriptions"
+],
+[
+"Compta",
+"Accounts"
+],
+[
+"Annonces",
+"Ads"
+],
+[
+"🟢 Activé",
+"🟢 On"
+],
+[
+"⚪ Désactivé",
+"⚪ Off"
+],
+[
+"Offres d’abonnement dans le portail des gérances",
+"Subscription offers in the agencies’ portal"
+],
+[
+"💼 Abonnements des gérances",
+"💼 Agencies’ subscriptions"
+],
+[
+"✅ Paiement reçu",
+"✅ Payment received"
 ]
 ];

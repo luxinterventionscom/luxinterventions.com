@@ -370,6 +370,7 @@ async function boot() {
     try {
       const d = await api('invite/' + inv[1]);
       history.replaceState(null, '', location.pathname);
+      state.offersOff = d.offers === false;
       return renderLock('invite', { ...d, token: inv[1] });
     } catch (e) {
       history.replaceState(null, '', location.pathname);
@@ -419,7 +420,7 @@ async function startSession() {
   if (t) openTicket(t[1]);
   startPolling();
   initPush();
-  if (!isAdmin() && !state.demo && !t && !offerSeen()) setTimeout(() => { if (!state.sheet) openSheet('offer'); }, 900);
+  if (!isAdmin() && !state.demo && !t && !offerSeen()) api('pubs').then((r) => { state.offersOff = r.offers === false; if (!state.offersOff) setTimeout(() => { if (!state.sheet) openSheet('offer'); }, 600); }).catch(() => {});
   let want = ''; try { want = localStorage.getItem('ptlOfferWant') || ''; localStorage.removeItem('ptlOfferWant'); } catch { /* stockage indisponible */ }
   if (want && !isAdmin() && !state.demo) api('offer', { method: 'POST', body: { plan: want } }).catch(() => {});
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/portail-sw.js', { scope: '/portail' }).catch(() => {});
@@ -523,6 +524,7 @@ async function loadRoute(route) {
   if (route === 'home') {
     const [stats, tickets, pubs] = await Promise.all([api('stats' + (org ? '?' + org.slice(1) : '')), api('tickets?scope=active' + org), api('pubs').catch(() => ({ items: [] }))]);
     state.cache.home = { stats, tickets: tickets.tickets, pubs: pubs.items || [] };
+    if (pubs.offers === false) state.offersOff = true; else if (pubs.items) state.offersOff = false; // offres d'abonnement masquées par LuxInterventions
   } else if (route === 'demandes') {
     const [tickets, residences] = await Promise.all([
       api(`tickets?scope=${f.scope}${org}${f.residence ? '&residence=' + f.residence : ''}`),
@@ -1074,7 +1076,7 @@ const OFFER_PLANS = [
 ];
 const OFFER_KEY = 'ptlOfferSeen';
 // bannière « 💼 Gérez aussi vos propres locataires — Voir les offres » (page d'invitation, accueil, Plus) ; « Voir les offres » clignote en rouge
-const offerBanner = () => html`<button type="button" class="offer-banner" data-action="offer-open"><span class="ob-ic">💼</span><span class="grow"><b>Gérez aussi vos propres locataires</b><span class="tiny muted" style="display:block">Gratuit pour 1 immeuble · Pro dès 29 € / mois · données chiffrées</span></span><span class="ob-go">Voir les offres ›</span></button>`;
+const offerBanner = () => state.offersOff ? '' : html`<button type="button" class="offer-banner" data-action="offer-open"><span class="ob-ic">💼</span><span class="grow"><b>Gérez aussi vos propres locataires</b><span class="tiny muted" style="display:block">Gratuit pour 1 immeuble · Pro dès 29 € / mois · données chiffrées</span></span><span class="ob-go">Voir les offres ›</span></button>`;
 const offerSeen = () => { try { return localStorage.getItem(OFFER_KEY) === '1'; } catch { return true; } };
 const offerMark = () => { try { localStorage.setItem(OFFER_KEY, '1'); } catch { /* stockage indisponible */ } };
 

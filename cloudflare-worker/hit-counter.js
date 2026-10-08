@@ -712,7 +712,8 @@ async function handleAres(request, env, url, headers) {
       id: s(a.id, 40), slot: ["haut", "milieu", "bas"].includes(a.slot) ? a.slot : "milieu", cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
       tel: s(a.tel, 40), web: url(a.web), video: url(a.video), fin: /^\d{4}-\d{2}-\d{2}$/.test(a.fin || "") ? a.fin : "",
     })).filter((a) => a.nom);
-    await env.PHOTOS.put(ARES_PUBS, JSON.stringify({ items, at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
+    // offers : bannière / fenêtre « Nos abonnements » dans le portail des gérances (activée par défaut)
+    await env.PHOTOS.put(ARES_PUBS, JSON.stringify({ items, offers: !(b && b.offers === false), at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
     return aresJson({ ok: true, n: items.length }, 200, headers);
   }
   // Lien court TikTok (vm.tiktok.com/…, tiktok.com/t/…) → lien complet de la vidéo (pour le mini lecteur des annonces)
@@ -1224,7 +1225,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       await guard();
       const u = await env.DB.prepare("SELECT u.*, o.name AS org_name FROM users u LEFT JOIN orgs o ON o.id = u.org_id WHERE invite_hash = ?").bind(await sha256Hex(inviteMatch[1])).first();
       if (!u || u.invite_expires < now) { await ptlRecordFailure(env, ip); fail(404, "Lien d'invitation invalide ou expiré. Demandez un nouveau lien."); }
-      if (method === "GET") return json({ name: u.name, email: u.email, org: u.org_name || "LuxInterventions", iter: PTL_ITER });
+      if (method === "GET") { const po = await env.PHOTOS.get(ARES_PUBS); const pj = po ? await po.json() : {}; return json({ name: u.name, email: u.email, org: u.org_name || "LuxInterventions", iter: PTL_ITER, offers: pj.offers !== false }); }
       if (method === "POST") {
         const b = await body();
         if (!/^[0-9a-f]{64}$/.test(b.authHash || "") || !b.salt) fail(400, "Données invalides");
@@ -1263,8 +1264,9 @@ async function handlePortail(request, env, url, headers, ctx) {
     if (path === "pubs" && method === "GET") {
       const obj = await env.PHOTOS.get(ARES_PUBS);
       const day = new Date().toISOString().slice(0, 10);
-      const items = obj ? ((await obj.json()).items || []).filter((a) => !a.fin || a.fin >= day) : [];
-      return json({ items });
+      const j = obj ? await obj.json() : {};
+      const items = (j.items || []).filter((a) => !a.fin || a.fin >= day);
+      return json({ items, offers: j.offers !== false });
     }
 
     // « Je suis intéressé » (offre d'abonnement affichée à la gérance) : prévient LuxInterventions
