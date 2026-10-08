@@ -9,7 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.14.0';
+const VERSION = '1.14.1';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -334,7 +334,9 @@ function renderLock(mode, data = {}) {
   }
   if (mode === 'invalid-invite') {
     setHtml(lockEl, html`<div class="lock-card">${brandHead()}<div class="alert bad">${icon('alert')}<div>${data.message}</div></div>
-      <button class="btn block" data-action="to-login">Aller à la connexion</button></div>`);
+      <p class="small" style="margin:4px 0 0"><b>Pourquoi ?</b> Le lien a déjà servi, il a plus de 14 jours, ou un lien plus récent vous a été envoyé (seul le dernier marche).</p>
+      <p class="small" style="margin:0">✅ Mot de passe déjà choisi ? Connectez-vous avec votre email.<br>🔑 Pas encore ? Touchez « Mot de passe oublié ? » : LuxInterventions vous envoie un nouveau lien.</p>
+      <button class="btn primary block" data-action="to-login">Aller à la connexion</button></div>`);
     return;
   }
   setHtml(lockEl, html`<form class="lock-card" data-form="login">${brandHead()}
