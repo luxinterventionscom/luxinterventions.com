@@ -377,6 +377,10 @@ export default [
 "Boiler room / plant room"
 ],
 [
+"Chef d’équipe",
+"Team leader"
+],
+[
 "Choisissez une note pour chaque critère et l’avis global.",
 "Choose a score for each criterion and the overall opinion."
 ],
@@ -617,6 +621,10 @@ export default [
 "Description of the problem"
 ],
 [
+"Directeur",
+"Director"
+],
+[
 "Disponibilités",
 "Availability"
 ],
@@ -771,6 +779,10 @@ export default [
 [
 "Fiche d’évaluation de l’intervention",
 "Job rating form"
+],
+[
+"Fonction",
+"Role"
 ],
 [
 "Fuite sous l’évier, l’eau coule dans l’appartement du dessous.",
@@ -1509,12 +1521,20 @@ export default [
 "Manager: makes requests and invites colleagues · Staff: makes and follows requests"
 ],
 [
+"Responsable",
+"Manager"
+],
+[
 "Responsable (peut inviter des collègues)",
 "Lead contact (can invite colleagues)"
 ],
 [
 "Responsable gérance",
 "Property manager lead"
+],
+[
+"Responsable sec.",
+"Section manager"
 ],
 [
 "Retapez le mot de passe",
@@ -1613,6 +1633,10 @@ export default [
 "Sign out?"
 ],
 [
+"Secrétaire",
+"Secretary"
+],
+[
 "Septembre",
 "September"
 ],
@@ -1695,6 +1719,10 @@ export default [
 [
 "Technicien",
 "Technician"
+],
+[
+"Technicien de maintenance",
+"Maintenance technician"
 ],
 [
 "Technicien sur place.",
@@ -2191,6 +2219,10 @@ export default [
 [
 "— technicien :",
 "— technician:"
+],
+[
+"— à choisir —",
+"— choose —"
 ],
 [
 "→ Ajouter. Ouvrez ensuite le portail",

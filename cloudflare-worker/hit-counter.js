@@ -906,7 +906,7 @@ const PTL_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
 ];
 // Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
-const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT"];
+const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT"];
 let ptlSchemaReady = false;
 
 // ── Utilità ──
@@ -1247,7 +1247,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       "SELECT u.*, o.name AS org_name FROM sessions s JOIN users u ON u.id = s.user_id LEFT JOIN orgs o ON o.id = u.org_id WHERE s.token_hash = ? AND s.expires > ? AND u.active = 1"
     ).bind(tokenHash, now).first();
     if (!me) fail(401, "Session expirée");
-    const publicUser = (u) => ({ id: u.id, org_id: u.org_id, org_name: u.org_name || null, role: u.role, name: u.name, email: u.email, phone: u.phone || "" });
+    const publicUser = (u) => ({ id: u.id, org_id: u.org_id, org_name: u.org_name || null, role: u.role, name: u.name, title: u.title || "", email: u.email, phone: u.phone || "" });
 
     if (path === "logout" && method === "POST") {
       await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(tokenHash).run();
@@ -1351,8 +1351,8 @@ async function handlePortail(request, env, url, headers, ctx) {
       if (me.role === "gerance_user") fail(403, "Réservé aux responsables");
       const org = orgScope(me, url.searchParams.get("org"));
       const q = org
-        ? env.DB.prepare("SELECT id, org_id, role, name, email, phone, active, last_login, invite_expires, forgot_at, auth_hash IS NOT NULL AS has_password FROM users WHERE org_id = ? ORDER BY name").bind(org)
-        : env.DB.prepare("SELECT id, org_id, role, name, email, phone, active, last_login, invite_expires, forgot_at, auth_hash IS NOT NULL AS has_password FROM users ORDER BY role, name");
+        ? env.DB.prepare("SELECT id, org_id, role, name, title, email, phone, active, last_login, invite_expires, forgot_at, auth_hash IS NOT NULL AS has_password FROM users WHERE org_id = ? ORDER BY name").bind(org)
+        : env.DB.prepare("SELECT id, org_id, role, name, title, email, phone, active, last_login, invite_expires, forgot_at, auth_hash IS NOT NULL AS has_password FROM users ORDER BY role, name");
       return json({ users: (await q.all()).results || [] });
     }
     const inviteFor = async (userId) => {
@@ -1371,8 +1371,8 @@ async function handlePortail(request, env, url, headers, ctx) {
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !clean(b.name)) fail(400, "Nom et email valides obligatoires");
       if (await env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first()) fail(409, "Cet email a déjà un compte");
       const id = ptlId();
-      await env.DB.prepare("INSERT INTO users (id, org_id, role, name, email, phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)")
-        .bind(id, org, role, clean(b.name, 120), email, clean(b.phone, 40), now).run();
+      await env.DB.prepare("INSERT INTO users (id, org_id, role, name, title, email, phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
+        .bind(id, org, role, clean(b.name, 120), clean(b.title, 40), email, clean(b.phone, 40), now).run();
       return json({ id, invite: await inviteFor(id) });
     }
     const userMatch = path.match(/^users\/([a-z0-9]+)(\/invite)?$/);

@@ -373,6 +373,10 @@ export default [
 "Casa das caldeiras / sala técnica"
 ],
 [
+"Chef d’équipe",
+"Chefe de equipa"
+],
+[
 "Choisissez une note pour chaque critère et l’avis global.",
 "Escolha uma nota para cada critério e a opinião global."
 ],
@@ -629,6 +633,10 @@ export default [
 "Descrição do problema"
 ],
 [
+"Directeur",
+"Diretor"
+],
+[
 "Disponibilités",
 "Disponibilidade"
 ],
@@ -787,6 +795,10 @@ export default [
 [
 "Fiche d’évaluation de l’intervention",
 "Ficha de avaliação da intervenção"
+],
+[
+"Fonction",
+"Função"
 ],
 [
 "Fuite sous l’évier, l’eau coule dans l’appartement du dessous.",
@@ -1039,6 +1051,10 @@ export default [
 [
 "Mai",
 "Maio"
+],
+[
+"Manager",
+"Gestor"
 ],
 [
 "Marc (démo)",
@@ -1549,12 +1565,20 @@ export default [
 "Resp. = responsável: faz pedidos e convida colegas · Colab. = colaborador: faz e acompanha pedidos"
 ],
 [
+"Responsable",
+"Responsável"
+],
+[
 "Responsable (peut inviter des collègues)",
 "Responsável (pode convidar colegas)"
 ],
 [
 "Responsable gérance",
 "Responsável da administração"
+],
+[
+"Responsable sec.",
+"Responsável de setor"
 ],
 [
 "Retapez le mot de passe",
@@ -1657,6 +1681,10 @@ export default [
 "Terminar sessão?"
 ],
 [
+"Secrétaire",
+"Secretária"
+],
+[
 "Septembre",
 "Setembro"
 ],
@@ -1739,6 +1767,10 @@ export default [
 [
 "Technicien",
 "Técnico"
+],
+[
+"Technicien de maintenance",
+"Técnico de manutenção"
 ],
 [
 "Technicien sur place.",
@@ -2235,6 +2267,10 @@ export default [
 [
 "— technicien :",
 "— técnico:"
+],
+[
+"— à choisir —",
+"— escolher —"
 ],
 [
 "→ Ajouter. Ouvrez ensuite le portail",

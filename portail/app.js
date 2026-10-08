@@ -9,7 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.8.0';
+const VERSION = '1.9.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -111,6 +111,9 @@ const partsHtml = (s) => String(s || '').split(' · ').filter(Boolean).map((x, i
   if (c) return html`${i ? ' · ' : ''}<span>${{ 'Boîte à clés': '🔑 Boîte à clés', Porte: '🚪 Portes / portails', Alarme: '🚨 Alarme', Panneaux: '⚙️ Locaux techniques', 'Locaux techniques': '⚙️ Locaux techniques' }[c[1]]}</span> ${codeShow(c[2])}`;
   return html`${i ? ' · ' : ''}${h ? html`${h[3] ? '🌙' : '🕒'} <span>De</span> ${h[1]} <span>à</span> ${h[2]}${h[3] ? html` <span>(lendemain)</span>` : ''}` : f ? html`🕒 <span>${f[1]}</span> ${f[2]}` : m ? html`<span>${m[1]}</span> ${m[2]}` : html`<span>${x}</span>`}`;
 });
+// fonction de la personne dans la gérance ; les 3 premières invitent leurs collègues (responsable)
+const TITLES = ['Directeur', 'Responsable sec.', 'Manager', 'Chef d’équipe', 'Secrétaire', 'Technicien de maintenance'];
+const TITLE_ADMIN = ['Directeur', 'Responsable sec.', 'Manager'];
 const ROLES = { admin: 'LuxInterventions', gerance_admin: 'Responsable gérance', gerance_user: 'Utilisateur gérance' };
 // Fiche d'évaluation d'une intervention terminée (remplie par la gérance, enregistrée comme message du suivi)
 const EVAL_CRIT = [
@@ -867,7 +870,7 @@ const VIEWS = {
   equipe() {
     const users = state.cache.equipe || [];
     return html`
-      ${pageHead('Équipe', state.me.org_name, html`<button class="btn primary" data-action="new-user" data-org="${state.me.org_id}" data-role="gerance_user">${icon('plus')} Inviter</button>`)}
+      ${pageHead('Équipe', state.me.org_name, html`<button class="btn primary" data-action="new-user" data-org="${state.me.org_id}" data-role="gerance_user">${icon('plus')} Resp. (invite collègues)</button>`)}
       <p class="small muted" style="margin-bottom:12px">Chaque personne a son propre accès : on sait toujours qui a fait quelle demande. Un compte désactivé ne peut plus se connecter.</p>
       <div class="list">${users.map(userRow)}</div>`;
   },
@@ -914,7 +917,7 @@ function userRow(u) {
   return html`<div class="row">
     <span class="avatar" style="${u.active ? '' : 'background:var(--surface-2);color:var(--text-3)'}">${initials(u.name)}</span>
     <span class="grow"><span class="title" style="display:block">${u.name} ${u.id === state.me.id ? html`<span class="badge">vous</span>` : ''}</span>
-      <span class="meta">${u.email} · ${ROLES[u.role]}${!u.active ? ' · désactivé' : pending ? ' · invitation en attente' : u.last_login ? ' · vu ' + ago(u.last_login) : ''}</span></span>
+      <span class="meta">${u.title ? html`<b>${u.title}</b> · ` : ''}${u.email} · ${ROLES[u.role]}${!u.active ? ' · désactivé' : pending ? ' · invitation en attente' : u.last_login ? ' · vu ' + ago(u.last_login) : ''}</span></span>
     ${u.id !== state.me.id ? html`<button class="btn sm" data-action="user-link" data-id="${u.id}" title="Nouveau lien d'accès">${icon('link')}<span class="hide-xs">${pending ? 'Lien' : 'Réinit.'}</span></button>
       <button class="btn sm ghost ${u.active ? 'danger' : ''}" data-action="user-toggle" data-id="${u.id}" data-active="${u.active ? 1 : 0}">${u.active ? 'Désactiver' : 'Réactiver'}</button>` : ''}
   </div>`;
@@ -1313,6 +1316,7 @@ const SHEETS = {
         ${field('Nom et prénom', 'name', '', { full: true, required: true })}
         ${field('Email', 'email', '', { full: true, type: 'email', required: true })}
         ${field('Téléphone', 'phone', '', { full: true, type: 'tel' })}
+        ${data.role === 'admin' ? '' : html`<label class="field full">Fonction<select name="title" required data-input="user-title"><option value="">— à choisir —</option>${TITLES.map((t) => html`<option value="${t}">${t}</option>`)}</select></label>`}
         <label class="field full">Rôle<select name="role">${roles.map(([k, l]) => html`<option value="${k}" ${k === data.role ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
         ${data.role === 'admin' ? '' : html`<p class="tiny muted full" style="margin:-6px 0 0">Resp. = responsable : fait les demandes et invite ses collègues · Collab. = collaborateur : fait et suit les demandes</p>`}
         <p class="tiny muted full">Un lien personnel sera créé : la personne l’ouvre et choisit son mot de passe. Valable 14 jours.</p></form>`,
@@ -1847,6 +1851,10 @@ function setCode6(form, name, v) {
   c.querySelectorAll('.c6').forEach((b, i) => { b.value = v[i] || ''; });
 }
 document.addEventListener('change', (e) => {
+  if (e.target.dataset.input === 'user-title' && e.target.form && e.target.form.role) {
+    // Directeur / Responsable sec. / Manager → responsable (invite ses collègues) ; les autres → collaborateur (modifiable)
+    e.target.form.role.value = TITLE_ADMIN.includes(e.target.value) ? 'gerance_admin' : 'gerance_user';
+  }
   if (e.target.name === 'apt' && e.target.closest('form[data-form=ticket]')) {
     const f = e.target.form, r = (state.cache.residencesList || []).find((x) => x.id === f.residence_id.value) || {}, a = jsonArr(r.apts)[+e.target.value];
     if (a) {

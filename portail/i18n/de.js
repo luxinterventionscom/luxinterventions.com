@@ -373,6 +373,10 @@ export default [
 "Heizraum / Technikraum"
 ],
 [
+"Chef d’équipe",
+"Teamleiter"
+],
+[
 "Choisissez une note pour chaque critère et l’avis global.",
 "Wählen Sie eine Note für jedes Kriterium und das Gesamturteil."
 ],
@@ -625,6 +629,10 @@ export default [
 "Beschreibung des Problems"
 ],
 [
+"Directeur",
+"Direktor"
+],
+[
 "Disponibilités",
 "Verfügbarkeit"
 ],
@@ -787,6 +795,10 @@ export default [
 [
 "Fiche d’évaluation de l’intervention",
 "Bewertungsbogen des Einsatzes"
+],
+[
+"Fonction",
+"Funktion"
 ],
 [
 "Fuite sous l’évier, l’eau coule dans l’appartement du dessous.",
@@ -1541,12 +1553,20 @@ export default [
 "Verantw. = Verantwortlicher: stellt Anfragen und lädt Kollegen ein · Mitarb. = Mitarbeiter: stellt und verfolgt Anfragen"
 ],
 [
+"Responsable",
+"Verantwortlicher"
+],
+[
 "Responsable (peut inviter des collègues)",
 "Verantwortlicher (kann Kollegen einladen)"
 ],
 [
 "Responsable gérance",
 "Verantwortlicher Verwaltung"
+],
+[
+"Responsable sec.",
+"Bereichsleiter"
 ],
 [
 "Retapez le mot de passe",
@@ -1649,6 +1669,10 @@ export default [
 "Abmelden?"
 ],
 [
+"Secrétaire",
+"Sekretariat"
+],
+[
 "Septembre",
 "September"
 ],
@@ -1731,6 +1755,10 @@ export default [
 [
 "Technicien",
 "Techniker"
+],
+[
+"Technicien de maintenance",
+"Wartungstechniker"
 ],
 [
 "Technicien sur place.",
@@ -2243,6 +2271,10 @@ export default [
 [
 "— technicien :",
 "— Techniker:"
+],
+[
+"— à choisir —",
+"— bitte wählen —"
 ],
 [
 "→ Ajouter. Ouvrez ensuite le portail",
