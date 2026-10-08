@@ -4041,13 +4041,21 @@ const SHEETS = {
       narrow: true,
       body: html`<form id="gerForm" data-form="ger" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        <label class="field full">Nom de la gérance<input name="name" required value="${o.name || ''}" placeholder="ex. Gérance du Centre S.A."></label>
+        ${(() => { const cl = factClient(id || '', o.name); return html`<div class="section-label full" style="margin:0">🏢 Société de gestion</div>
+        <label class="field full">Nom de la société<input name="name" required value="${o.name || ''}" placeholder="ex. Gérance du Centre S.A."></label>
+        <label class="field full">Adresse<textarea name="adresse" style="min-height:56px" placeholder="rue, n°, code postal, ville">${cl.adresse}</textarea></label>
+        <label class="field">RCS<input name="rcs" value="${cl.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
+        <label class="field">N° TVA<input name="tvaNum" value="${cl.tvaNum}" placeholder="LU12345678" autocapitalize="characters"></label>`; })()}
         <label class="field">Email<input type="email" name="email" value="${o.email || ''}"></label>
         <label class="field">Téléphone<input type="tel" name="phone" value="${o.phone || ''}"></label>
-        ${(() => { const cl = factClient(id || '', o.name), c = factConf(); return html`<details class="full"${cl.adresse || cl.tvaNum ? '' : ' open'}><summary class="section-label" style="cursor:pointer">🧾 Données de facturation (sur vos factures)</summary><div class="fields" style="margin-top:8px">
-        <label class="field full">Adresse de facturation<textarea name="adresse" style="min-height:60px" placeholder="rue, n°, code postal, ville">${cl.adresse}</textarea></label>
+        ${id ? '' : html`<div class="section-label full" style="margin:6px 0 0">⭐ Responsable de la gérance</div>
+        <label class="field">Prénom<input name="rprenom" required autocomplete="off"></label>
+        <label class="field">Nom<input name="rnom" required autocomplete="off"></label>
+        <label class="field">Email<input type="email" name="remail" required></label>
+        <label class="field">Téléphone (WhatsApp)<input type="tel" name="rphone" placeholder="+352…"></label>
+        <p class="tiny muted full" style="margin:-4px 0 0">Il reçoit un lien d’invitation (14 jours), choisit son mot de passe et ajoute lui-même ses collaborateurs dans son portail.</p>`}
+        ${(() => { const cl = factClient(id || '', o.name), c = factConf(); return html`<details class="full"><summary class="section-label" style="cursor:pointer">🧾 TVA sur vos factures (régime, pays)</summary><div class="fields" style="margin-top:8px">
         <label class="field">Pays (code)<input name="pays" value="${cl.pays}" maxlength="2" placeholder="LU" style="text-transform:uppercase"></label>
-        <label class="field">N° TVA du client<input name="tvaNum" value="${cl.tvaNum}" placeholder="ex. LU12345678, FR…, BE…"></label>
         <label class="field full">Régime de TVA<select name="regime">${Object.entries(TVA_REG).map(([k, v]) => html`<option value="${k}" ${cl.regime === k ? new Raw('selected') : ''}>${k === 'normal' ? `TVA normale (${String(c.taux).replace('.', ',')} %)` : v[0]}</option>`)}</select></label>
         <label class="field">Taux particulier (%)<input name="taux" type="number" step="0.01" min="0" max="100" inputmode="decimal" value="${cl.taux}" placeholder="si « Taux particulier »"></label>
         <label class="field">Mention sur la facture<input name="mention" value="${cl.mention}" placeholder="sinon la mention par défaut"></label>
@@ -4110,23 +4118,34 @@ const SHEETS = {
           <button class="btn primary full" type="submit">${icon('plus')} Ajouter la résidence</button>
         </form>`;
     } else {
-      const us = d.users.filter((u) => u.org_id === id);
-      body = html`${us.length ? html`<div class="list" style="margin-bottom:14px">${us.map((u) => html`<div class="row">
-          <span class="avatar">${(u.name || '?').split(/\s+/).map((x) => x[0]).join('').slice(0, 2).toUpperCase()}</span>
-          <span class="grow"><span class="title" style="display:block">${u.name} <span class="badge">${PTL_ROLES[u.role] || u.role}</span></span>
-            <span class="meta" style="white-space:normal">${u.email}${!u.active ? html` · <span>désactivé</span>` : !u.has_password ? html` · <span>${u.invite_expires > Date.now() ? `invitation envoyée, valable jusqu’au ${fmtDate(new Date(u.invite_expires).toISOString().slice(0, 10))}` : '⚠️ invitation expirée : créez un nouveau lien'}</span>` : u.last_login ? html` · <span>dernière connexion</span> ${fmtDateTime(u.last_login)}` : ''}</span></span>
-          ${u.active ? html`<button class="btn sm" data-action="ger-inv" data-id="${u.id}" data-org="${id}">🔗 ${u.has_password ? 'Nouveau lien' : 'Lien d’invitation'}</button>` : ''}
-          <button class="btn sm ghost ${u.active ? 'danger' : ''}" data-action="ger-user-toggle" data-id="${u.id}" data-org="${id}" data-on="${u.active ? 1 : 0}">${u.active ? 'Désactiver' : 'Réactiver'}</button></div>`)}</div>` : html`<p class="muted small">Personne n’a encore accès. Ajoutez le responsable de la gérance : il reçoit un lien personnel et choisit son mot de passe.</p>`}
-        <div class="section-label">Donner l’accès à une personne</div>
+      // le responsable (créé par LuxInterventions) en premier, puis les collègues qu'il a ajoutés dans son portail
+      const us = d.users.filter((u) => u.org_id === id).sort((a, b) => (a.role === 'gerance_admin' ? 0 : 1) - (b.role === 'gerance_admin' ? 0 : 1) || a.name.localeCompare(b.name));
+      const hasResp = us.some((u) => u.role === 'gerance_admin' && u.active);
+      const cl = factClient(id, o.name);
+      const uRow = (u) => html`<div class="card ger-u${u.active ? '' : ' off'}" style="margin-bottom:10px;padding:12px">
+          <div style="display:flex;gap:10px;align-items:flex-start"><span class="avatar">${(u.name || '?').split(/\s+/).map((x) => x[0]).join('').slice(0, 2).toUpperCase()}</span>
+          <span class="grow"><b style="display:block">${u.name} <span class="badge ${u.role === 'gerance_admin' ? 'accent' : ''}">${u.role === 'gerance_admin' ? '⭐ Responsable' : 'Collaborateur'}</span></b>
+            ${u.title ? html`<span class="meta" style="display:block">${u.title}</span>` : ''}
+            <span class="meta" style="display:block">✉️ <a href="mailto:${u.email}">${u.email}</a>${u.phone ? html` · 📞 <a href="tel:${u.phone.replace(/[^\d+]/g, '')}">${u.phone}</a>` : ''}</span>
+            <span class="meta" style="display:block;white-space:normal">${!u.active ? html`<span class="red">⛔ désactivé</span>` : !u.has_password ? html`<span>${u.invite_expires > Date.now() ? `✉️ invitation envoyée, valable jusqu’au ${fmtDate(new Date(u.invite_expires).toISOString().slice(0, 10))}` : '⚠️ invitation expirée : créez un nouveau lien'}</span>` : u.last_login ? html`✅ <span>dernière connexion</span> ${fmtDateTime(u.last_login)}` : '✅ accès activé'}</span></span></div>
+          <div class="actions" style="margin:10px 0 0;flex-wrap:wrap">
+            ${u.active ? html`<button class="btn sm" data-action="ger-inv" data-id="${u.id}" data-org="${id}">${u.has_password ? '🔑 Nouvel accès' : '🔗 Lien d’invitation'}</button>` : ''}
+            <button class="btn sm ghost ${u.active ? 'danger' : ''}" data-action="ger-user-toggle" data-id="${u.id}" data-org="${id}" data-on="${u.active ? 1 : 0}">${u.active ? 'Désactiver' : 'Réactiver'}</button></div></div>`;
+      body = html`<div class="card" style="margin-bottom:12px;padding:12px">
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>🏢 ${o.name}</b><button class="btn sm ghost" data-action="ger-edit" data-id="${id}">${icon('edit')} Modifier</button></div>
+          <dl class="kv small" style="margin:6px 0 0">${cl.adresse ? html`<dt>Adresse</dt><dd style="white-space:pre-line">${cl.adresse}</dd>` : ''}${cl.rcs ? html`<dt>RCS</dt><dd>${cl.rcs}</dd>` : ''}${cl.tvaNum ? html`<dt>N° TVA</dt><dd>${cl.tvaNum}</dd>` : ''}${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}</dl>
+          ${!cl.adresse || !cl.rcs || !cl.tvaNum ? html`<p class="tiny amber" style="margin:6px 0 0">⚠️ À compléter : ${[!cl.adresse && 'adresse', !cl.rcs && 'RCS (B…)', !cl.tvaNum && 'n° TVA (LU…)'].filter(Boolean).join(', ')} → ✏️ Modifier</p>` : ''}</div>
+        ${us.length ? html`<div class="section-label">Responsable et collaborateurs (${us.length})</div>${us.map(uRow)}<p class="tiny muted" style="margin:0 0 12px">Les collaborateurs sont ajoutés par le responsable dans son portail (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.</p>` : ''}
+        ${hasResp ? '' : html`<div class="section-label">⭐ Responsable de la gérance</div>
+        <p class="small muted" style="margin:0 0 8px">Il reçoit un lien personnel, choisit son mot de passe, puis ajoute lui-même ses collaborateurs.</p>
         <form data-form="ger-user" class="fields">
-          <input type="hidden" name="org" value="${id}">
-          <label class="field">Prénom et nom<input name="name" required></label>
+          <input type="hidden" name="org" value="${id}"><input type="hidden" name="role" value="gerance_admin">
+          <label class="field">Prénom<input name="prenom" required autocomplete="off"></label>
+          <label class="field">Nom<input name="nom" required autocomplete="off"></label>
           <label class="field">Email<input type="email" name="email" required></label>
           <label class="field">Téléphone (WhatsApp)<input type="tel" name="phone" placeholder="+352…"></label>
-          <label class="field">Rôle<select name="role" style="font-size:14px"><option value="gerance_admin">Resp. (invite collègues)</option><option value="gerance_user">Collab. (demandes)</option></select></label>
-          <p class="tiny muted full" style="margin:-6px 0 0">Resp. = responsable : fait les demandes et invite ses collègues · Collab. = collaborateur : fait et suit les demandes</p>
-          <button class="btn primary full" type="submit">${icon('plus')} Créer l’accès et le lien</button>
-        </form>`;
+          <button class="btn primary full" type="submit">${icon('plus')} Créer l’accès du responsable et le lien</button>
+        </form>`}`;
     }
     return {
       title: '🏢 ' + o.name,
@@ -5639,7 +5658,13 @@ const ACTIONS = {
   },
   async 'ger-user-toggle'(d) {
     const on = d.on === '1';
-    if (on && !(await confirmBox('Désactiver cet accès ?', { ok: 'Désactiver', danger: true, detail: 'La personne est déconnectée tout de suite. Vous pourrez réactiver l’accès.' }))) return;
+    // désactiver : seulement à la demande du responsable de la gérance (on le demande avant)
+    if (on) {
+      const u = ui.ptl.data && ui.ptl.data.users.find((x) => x.id === d.id);
+      const resp = ui.ptl.data && ui.ptl.data.users.find((x) => x.org_id === d.org && x.role === 'gerance_admin' && x.id !== d.id);
+      const v = await choiceBox(`Désactiver l’accès de ${u ? u.name : 'cette personne'} ?`, `⚠️ Le responsable de la gérance${resp ? ' (' + resp.name + ')' : ''} vous l’a-t-il demandé ? Sans sa demande, ne désactivez pas. La personne est déconnectée tout de suite ; vous pourrez réactiver l’accès.`, [{ value: 'yes', label: '✅ Oui, il l’a demandé — désactiver', cls: 'danger' }]);
+      if (v !== 'yes') return;
+    }
     try { await ptlApi('users/' + d.id, { method: 'PATCH', body: { active: !on } }); } catch (e) { return toast(e.message, { bad: true }); }
     toast(on ? 'Accès désactivé' : 'Accès réactivé'); await ptlLoad();
   },
@@ -6350,14 +6375,20 @@ const FORMS = {
     try { if (id) await ptlApi('orgs/' + id, { method: 'PATCH', body: b }); else nid = (await ptlApi('orgs', { method: 'POST', body: b })).id; } catch (e) { return toast(e.message, { bad: true }); }
     const g = (k) => String(fd.get(k) || '').trim();
     const cur = (vault.get('reglages', 'factClients') || {}).list || {};
-    const list = { ...cur, [nid]: { regime: TVA_REG[g('regime')] ? g('regime') : 'normal', taux: g('taux'), tvaNum: g('tvaNum').toUpperCase().replace(/\s+/g, ''), adresse: g('adresse'), pays: (g('pays') || 'LU').toUpperCase().slice(0, 2), mention: g('mention') } };
+    const list = { ...cur, [nid]: { regime: TVA_REG[g('regime')] ? g('regime') : 'normal', taux: g('taux'), tvaNum: g('tvaNum').toUpperCase().replace(/\s+/g, ''), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), adresse: g('adresse'), pays: (g('pays') || 'LU').toUpperCase().slice(0, 2), mention: g('mention') } };
     await vault.mutate((tx) => { tx.put('reglages', { id: 'portail', lastOrg: b.name }); tx.put('reglages', { id: 'factClients', list }); }, id ? 'Gérance modifiée' : 'Gérance créée', b.name);
     toast(id ? 'Gérance enregistrée' : 'Gérance créée');
+    // nouvelle gérance : on crée aussi l'accès du responsable et on montre son lien d'invitation
+    if (!id && g('remail')) {
+      const rb = { org_id: nid, name: `${g('rprenom')} ${g('rnom')}`.trim(), email: g('remail'), phone: g('rphone'), role: 'gerance_admin' };
+      try { const r = await ptlApi('users', { method: 'POST', body: rb }); ui.ptl.inv[r.id] = ptlInviteUrl(r.invite); await ptlInvSave(r.id, ui.ptl.inv[r.id]); await ptlLoad(); return openSheet('ger-invite', r.id); } catch (e) { toast(e.message, { bad: true }); }
+    }
     await ptlLoad();
     openSheet('ger', nid, id ? null : 'acces');
   },
   async 'ger-user'(fd, f) {
-    const org = fd.get('org'), b = { org_id: org, name: String(fd.get('name') || '').trim(), email: String(fd.get('email') || '').trim(), phone: String(fd.get('phone') || '').trim(), role: fd.get('role') };
+    const nm = fd.get('prenom') != null ? `${String(fd.get('prenom') || '').trim()} ${String(fd.get('nom') || '').trim()}`.trim() : String(fd.get('name') || '').trim();
+    const org = fd.get('org'), b = { org_id: org, name: nm, email: String(fd.get('email') || '').trim(), phone: String(fd.get('phone') || '').trim(), role: fd.get('role') };
     let r;
     try { r = await ptlApi('users', { method: 'POST', body: b }); } catch (e) { return toast(e.message, { bad: true }); }
     f.reset();
