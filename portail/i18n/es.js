@@ -377,6 +377,10 @@ export default [
 "Sala de calderas / cuarto técnico"
 ],
 [
+"Chef d’équipe",
+"Jefe de equipo"
+],
+[
 "Choisissez une note pour chaque critère et l’avis global.",
 "Elige una nota para cada criterio y la opinión general."
 ],
@@ -629,6 +633,10 @@ export default [
 "Descripción del problema"
 ],
 [
+"Directeur",
+"Director"
+],
+[
 "Disponibilités",
 "Disponibilidad"
 ],
@@ -787,6 +795,10 @@ export default [
 [
 "Fiche d’évaluation de l’intervention",
 "Ficha de valoración de la intervención"
+],
+[
+"Fonction",
+"Función"
 ],
 [
 "Fuite sous l’évier, l’eau coule dans l’appartement du dessous.",
@@ -1039,6 +1051,10 @@ export default [
 [
 "Mai",
 "Mayo"
+],
+[
+"Manager",
+"Gerente"
 ],
 [
 "Marc (démo)",
@@ -1557,6 +1573,10 @@ export default [
 "Responsable de administración"
 ],
 [
+"Responsable sec.",
+"Responsable de sección"
+],
+[
 "Retapez le mot de passe",
 "Repite la contraseña"
 ],
@@ -1657,6 +1677,10 @@ export default [
 "¿Cerrar sesión?"
 ],
 [
+"Secrétaire",
+"Secretaria"
+],
+[
 "Septembre",
 "Septiembre"
 ],
@@ -1739,6 +1763,10 @@ export default [
 [
 "Technicien",
 "Técnico"
+],
+[
+"Technicien de maintenance",
+"Técnico de mantenimiento"
 ],
 [
 "Technicien sur place.",
@@ -2235,6 +2263,10 @@ export default [
 [
 "— technicien :",
 "— técnico:"
+],
+[
+"— à choisir —",
+"— elegir —"
 ],
 [
 "→ Ajouter. Ouvrez ensuite le portail",

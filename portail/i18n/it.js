@@ -373,6 +373,10 @@ export default [
 "Locale caldaia / locale tecnico"
 ],
 [
+"Chef d’équipe",
+"Caposquadra"
+],
+[
 "Choisissez une note pour chaque critère et l’avis global.",
 "Scegliete un voto per ogni criterio e il giudizio complessivo."
 ],
@@ -629,6 +633,10 @@ export default [
 "Descrizione del problema"
 ],
 [
+"Directeur",
+"Direttore"
+],
+[
 "Disponibilités",
 "Disponibilità"
 ],
@@ -787,6 +795,10 @@ export default [
 [
 "Fiche d’évaluation de l’intervention",
 "Scheda di valutazione dell’intervento"
+],
+[
+"Fonction",
+"Funzione"
 ],
 [
 "Fuite sous l’évier, l’eau coule dans l’appartement du dessous.",
@@ -1545,12 +1557,20 @@ export default [
 "Resp. = responsabile: fa le richieste e invita i colleghi · Collab. = collaboratore: fa e segue le richieste"
 ],
 [
+"Responsable",
+"Responsabile"
+],
+[
 "Responsable (peut inviter des collègues)",
 "Responsabile (può invitare i colleghi)"
 ],
 [
 "Responsable gérance",
 "Responsabile amministrazione"
+],
+[
+"Responsable sec.",
+"Responsabile di settore"
 ],
 [
 "Retapez le mot de passe",
@@ -1653,6 +1673,10 @@ export default [
 "Uscire?"
 ],
 [
+"Secrétaire",
+"Segretaria"
+],
+[
 "Septembre",
 "Settembre"
 ],
@@ -1735,6 +1759,10 @@ export default [
 [
 "Technicien",
 "Tecnico"
+],
+[
+"Technicien de maintenance",
+"Tecnico della manutenzione"
 ],
 [
 "Technicien sur place.",
@@ -2239,6 +2267,10 @@ export default [
 [
 "— technicien :",
 "— tecnico:"
+],
+[
+"— à choisir —",
+"— da scegliere —"
 ],
 [
 "→ Ajouter. Ouvrez ensuite le portail",
