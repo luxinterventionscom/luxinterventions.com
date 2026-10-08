@@ -10281,19 +10281,23 @@ export default [
 "Acuerdo / tarifa fija (opcional)"
 ],
 [
-"Ajouter une photo",
-"Añadir una foto"
+"F. de ménage / nettoyage",
+"Limpiadora / limpieza"
 ],
 [
-"Changer la photo",
-"Cambiar la foto"
+"H. à tout faire",
+"Manitas"
 ],
 [
-"Facultatif — la personne peut aussi la mettre elle-même dans son app (⚙️).",
-"Opcional — la persona también puede ponerla ella misma en su app (⚙️)."
+"✋ Refusé",
+"✋ Rechazado"
 ],
 [
-"Photo illisible",
-"Foto ilegible"
+"l’ouvrier — à réaffecter",
+"el operario — a reasignar"
+],
+[
+" (✋ a refusé)",
+" (✋ rechazó)"
 ]
 ];

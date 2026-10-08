@@ -10257,19 +10257,23 @@ export default [
 "Acordo / valor fixo (facultativo)"
 ],
 [
-"Ajouter une photo",
-"Adicionar uma foto"
+"F. de ménage / nettoyage",
+"Empregada de limpeza / limpeza"
 ],
 [
-"Changer la photo",
-"Mudar a foto"
+"H. à tout faire",
+"Faz-tudo"
 ],
 [
-"Facultatif — la personne peut aussi la mettre elle-même dans son app (⚙️).",
-"Facultativo — a pessoa também a pode pôr ela própria na sua app (⚙️)."
+"✋ Refusé",
+"✋ Recusado"
 ],
 [
-"Photo illisible",
-"Foto ilegível"
+"l’ouvrier — à réaffecter",
+"o trabalhador — a reatribuir"
+],
+[
+" (✋ a refusé)",
+" (✋ recusou)"
 ]
 ];

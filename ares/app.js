@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.102.0';
+const VERSION = '2.103.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -161,11 +161,11 @@ const edlOutNew = () => vault.list('documents').filter((d) => d.kind === 'edl-ou
 
 // ───────────────────────── Maintenance : intervenants, interventions, collectes des déchets ─────────────────────────
 // icône du métier (comme dans l'app des locataires) : à la place des initiales dans les listes de l'équipe
-const MET_ICON = { menage: '🧹🪣', menuisier: '🔨', electricien: '⚡', plombier: '🔧', chauffagiste: '🔥', macon: '🧱', peintre: '🖌️', serrurier: '🔑', jardinier: '🌿', autre: '🛠️' };
+const MET_ICON = { menage: '🧹', homme: '🧰', menuisier: '🔨', electricien: '⚡', plombier: '🔧', chauffagiste: '🔥', macon: '🧱', peintre: '🖌️', serrurier: '🔑', jardinier: '🌿', autre: '🛠️' };
 // icône choisie par la personne dans son app (sinon celle de son métier)
 const emojiOk = (v) => typeof v === 'string' && v.length <= 16 && /^\p{Extended_Pictographic}/u.test(v);
 const metIcon = (i) => (i && emojiOk(i.icon) ? i.icon : MET_ICON[i && i.metier] || '👷');
-const METIERS = { menage: 'Femme de ménage / nettoyage', menuisier: 'Menuisier', electricien: 'Électricien', plombier: 'Plombier / sanitaire', chauffagiste: 'Chauffagiste', macon: 'Maçon', peintre: 'Peintre', serrurier: 'Serrurier', jardinier: 'Jardinier', autre: 'Autre' };
+const METIERS = { menage: 'F. de ménage / nettoyage', homme: 'H. à tout faire', menuisier: 'Menuisier', electricien: 'Électricien', plombier: 'Plombier / sanitaire', chauffagiste: 'Chauffagiste', macon: 'Maçon', peintre: 'Peintre', serrurier: 'Serrurier', jardinier: 'Jardinier', autre: 'Autre' };
 const TACHE_TYPES = { nettoyage: '🧹 Nettoyage', reparation: '🔧 Réparation', gros: '🚚 Gros travaux', autre: '📌 Autre' };
 const tacheIcon = (type) => (type === 'entretien' ? '🔧' : (TACHE_TYPES[type] || '📌').split(' ')[0]);
 // Feu tricolore : rouge = aujourd'hui ou en retard, jaune = demain / après-demain, vert = il y a le temps
@@ -397,7 +397,7 @@ const eqUrl = (i) => `${location.origin}/equipe.html#${i.espace.id}.${i.espace.k
 const eqAppUrl = () => `${location.origin}/equipe.html`;
 const MEN_TAGS = { ok: '⏰ À l’heure', late: '⏰ En retard', nice: '😊 Aimable', rude: '😠 Désagréable', clean: '✨ Bien nettoyé', dirty: '🧹 Oublis / mal nettoyé' };
 const MEN_EVAL = { 1: '😞 Insuffisant', 2: '😐 Suffisant', 3: '🙂 Bien', 4: '⭐ Excellent' };
-const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini' };
+const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini', refus: '✋ Refusé' };
 // Dernier état donné par l'équipe pour une intervention un jour donné
 // Photos « avant » / « après » envoyées par l'équipe pour une intervention (6 + 6 maximum)
 const EQ_PH = { av: 'Avant', ap: 'Après' }, EQ_PH_MAX = 6;
@@ -509,6 +509,13 @@ async function equipeInbox(w, msg) {
         // l'ouvrier a fini : c'est le bureau qui clôture le chantier (après contrôle des photos)
         if (!t.recur && it.st === 'fait') Object.assign(upd, { fini: { d, by: w.id, h: entry.h || at.slice(11, 16), note } });
         if (!t.recur && it.st === 'incomplet') upd.fini = null;
+        // ✋ « Je ne peux pas » (malade, pas disponible…) : le travail revient sans ouvrier, à réaffecter
+        if (it.st === 'refus') {
+          if (t.fini || t.statut === 'fait' || (t.journal || []).some((x) => x.d === d && x.by === w.id && x.st !== 'refus')) continue;
+          upd.refus = { by: w.id, at, d, note };
+          upd.refusBy = [...new Set([...(t.refusBy || []), w.id])];
+          if (!t.recur) Object.assign(upd, { intervenantId: '', statut: 'afaire' });
+        }
         tx.put('taches', upd);
         feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note, ph: ph.length, h: entry.h || '' });
         fresh++;
@@ -598,6 +605,7 @@ async function ptlFromTeam(w, msg) {
     if (it.st === 'encours') await ptlApi(`tickets/${t.ptl.tid}/status`, { method: 'POST', body: { status: 'encours', technicien: who, text: `🚚 ${who} est sur place${note ? ' — ' + note : ''}` } });
     else if (it.st === 'fait') await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `✅ ${who} a fini le travail${note ? ' — ' + note : ''}. Clôture après contrôle par LuxInterventions.` } });
     else if (it.st === 'incomplet') await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `⚠️ ${who} : pas terminé${note ? ' — ' + note : ''}` } });
+    else if (it.st === 'refus' && !t.intervenantId && t.refus && t.refus.by === w.id) await ptlStatus(t.ptl.tid, 'prise', { technicien: '', planned_at: '', text: '🔄 L’ouvrier prévu n’est pas disponible — LuxInterventions envoie un autre ouvrier.' });
   }
   // photos « après » de l'ouvrier → visibles par la gérance (avant / après)
   for (const { t, ph } of Object.values(after)) {
@@ -3149,9 +3157,13 @@ dashboard() {
     // travaux finis par l'équipe, en attente de clôture par le bureau
     const fins = vault.list('taches').filter((t) => t.fini && !t.recur && t.statut !== 'fait').sort((a, b) => (a.fini.d + a.fini.h).localeCompare(b.fini.d + b.fini.h));
     const finBox = fins.length ? html`<div class="section-label" style="margin-top:0">🟢 ${plural(fins.length, 'chantier')} fini${fins.length > 1 ? 's' : ''} par l’équipe — à clôturer</div><div class="list fin-list" style="margin-bottom:14px">${fins.map((t) => tacheRow(t))}</div>` : '';
+    // ✋ travaux refusés par l'ouvrier (malade, pas disponible…) : à donner à quelqu'un d'autre
+    const refs = vault.list('taches').filter((t) => t.refus && !t.intervenantId && !t.recur && t.statut !== 'fait').sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
+    const refBox = refs.length ? html`<div class="section-label" style="margin-top:0;color:var(--bad,#c0392b)">✋ ${refs.length} ${refs.length > 1 ? 'travaux' : 'travail'} refusé${refs.length > 1 ? 's' : ''} par l’ouvrier — à réaffecter</div><div class="list ref-list" style="margin-bottom:14px">${refs.map((t) => html`<div>${tacheRow(t)}<div class="tiny" style="padding:2px 12px 8px">✋ ${intervName(t.refus.by)} · ${fmtDateTime(t.refus.at)}${t.refus.note ? ' — ' + t.refus.note : ''}</div></div>`)}</div>` : '';
     return html`
       ${pushNudge()}
       ${nudge}
+      ${refBox}
       ${finBox}
       ${sigBox}
       ${chatBox}
@@ -4368,7 +4380,7 @@ const SHEETS = {
             <input type="hidden" name="ptl" value="${JSON.stringify(t.ptl)}"><input type="hidden" name="immId" value=""></div>`
           : html`<label class="field">Immeuble<select name="immId" data-input="tache-imm" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === t.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         <label class="field">Où ?<select name="logId" id="tacheLog">${logOptions(t.immId || imms[0].id, t.logId)}</select></label>`}
-        <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
+        <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}${(t.refusBy || []).includes(i.id) ? ' (✋ a refusé)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
         ${hint.length ? html`<p class="tiny muted full" style="margin:-6px 0 0">⭐ = métier conseillé pour cette demande : ${[...new Set(hint)].map((m) => METIERS[m]).join(', ')}${ints.some(fits) ? '' : ' (personne de ce métier dans l’équipe)'}</p>` : ''}
         ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
         ${field('Date', 'date', t.date, { type: 'date' })}

@@ -10297,19 +10297,23 @@ export default [
 "Accordo / forfait (facoltativo)"
 ],
 [
-"Ajouter une photo",
-"Aggiungi una foto"
+"F. de ménage / nettoyage",
+"Donna delle pulizie / pulizia"
 ],
 [
-"Changer la photo",
-"Cambia la foto"
+"H. à tout faire",
+"Tuttofare"
 ],
 [
-"Facultatif — la personne peut aussi la mettre elle-même dans son app (⚙️).",
-"Facoltativo — la persona può anche metterla da sé nella sua app (⚙️)."
+"✋ Refusé",
+"✋ Rifiutato"
 ],
 [
-"Photo illisible",
-"Foto illeggibile"
+"l’ouvrier — à réaffecter",
+"l’operaio — da riassegnare"
+],
+[
+" (✋ a refusé)",
+" (✋ ha rifiutato)"
 ]
 ];
