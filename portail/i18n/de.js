@@ -137,6 +137,10 @@ export default [
 "Storniert"
 ],
 [
+"Année",
+"Jahr"
+],
+[
 "Août",
 "August"
 ],
@@ -1481,6 +1485,10 @@ export default [
 "Werbung"
 ],
 [
+"Période",
+"Zeitraum"
+],
+[
 "Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
 "Was ist los? Seit wann? Gefahr von Schäden?"
 ],
@@ -1499,6 +1507,10 @@ export default [
 [
 "Rapidité & ponctualité",
 "Schnelligkeit & Pünktlichkeit"
+],
+[
+"Rapport complet",
+"Vollständiger Bericht"
 ],
 [
 "Rapport d'intervention",
@@ -1801,6 +1813,10 @@ export default [
 "Dach / Fassade"
 ],
 [
+"Tout depuis le début",
+"Alles seit Beginn"
+],
+[
 "Toutes",
 "Alle"
 ],
@@ -1851,6 +1867,14 @@ export default [
 [
 "Un lien personnel sera créé : la personne l’ouvre et choisit son mot de passe. Valable 14 jours.",
 "Ein persönlicher Link wird erstellt: Die Person öffnet ihn und wählt ihr Passwort. Gültig 14 Tage."
+],
+[
+"Un mois",
+"Ein Monat"
+],
+[
+"Une année",
+"Ein Jahr"
 ],
 [
 "Urgence",
