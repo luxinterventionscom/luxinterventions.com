@@ -94,11 +94,9 @@
     box-shadow: 0 2px 8px rgba(232,114,58,0.30);
   }
   .nav-mid { display: flex; align-items: center; gap: 1.6rem; }
-  .jingle.mini { gap: 0.3rem; padding: 3px; box-shadow: none; }
+  .jingle.mini { gap: 0.4rem; padding: 3px 9px 3px 3px; box-shadow: none; }
   .jingle.mini .jg-play { width: 30px; height: 30px; }
   .jingle.mini .jg-play svg { width: 12px; height: 12px; }
-  .jingle.mini .jg-mute { width: 26px !important; height: 26px !important; }
-  .jingle.mini .jg-mute svg { width: 13px; height: 13px; }
   .jingle.mini .jg-bars { height: 12px; width: 15px; }
   @media (max-width: 600px) { .nav-cta .cta-num { display: none; } .nav-cta { padding: 0.6rem; } .nav-logo { font-size: 1.15rem; } nav { padding: 0 14px; } }
   @media (max-width: 380px) { .jingle.mini .jg-bars { display: none; } .nav-logo { font-size: 1rem; gap: 0.35rem; } .nav-logo img { width: 32px; height: 32px; } }
@@ -176,14 +174,12 @@
   .jingle button { width: 40px; height: 40px; border-radius: 50%; border: 0; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; flex: none; transition: transform .15s; }
   .jingle button:active { transform: scale(.93); }
   .jg-play { background: var(--accent); color: #fff; }
-  .jg-mute { background: var(--navy-light); color: var(--navy); width: 34px !important; height: 34px !important; }
   .jg-txt { font-size: 0.82rem; font-weight: 600; color: var(--black); white-space: nowrap; }
   .jg-txt small { display: block; font-weight: 400; font-size: 0.7rem; color: var(--grey-600); }
   .jg-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 16px; width: 18px; }
   .jg-bars i { width: 3px; height: 30%; background: var(--accent); border-radius: 2px; }
   .jingle.on .jg-bars i { animation: jg-eq .9s ease-in-out infinite; }
   .jingle.on .jg-bars i:nth-child(2) { animation-delay: .2s; } .jingle.on .jg-bars i:nth-child(3) { animation-delay: .45s; } .jingle.on .jg-bars i:nth-child(4) { animation-delay: .1s; }
-  .jingle.muted .jg-bars i { animation: none; opacity: .35; }
   @keyframes jg-eq { 0%, 100% { height: 30%; } 50% { height: 100%; } }
   @media (prefers-reduced-motion: reduce) { .jingle.on .jg-bars i { animation: none; height: 10px; } }
   .hero-actions {
@@ -965,7 +961,6 @@
   <div class="jingle mini" id="jingle" title="Notre jingle radio">
     <button class="jg-play" id="jgPlay" type="button" aria-label="Écouter notre jingle"><svg id="jgIcPlay" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><svg id="jgIcPause" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" style="display:none"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg></button>
     <span class="jg-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
-    <button class="jg-mute" id="jgMute" type="button" aria-label="Couper le son"><svg id="jgIcSnd" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M11 5L6 9H3v6h3l5 4z" fill="currentColor"/><path d="M15.5 8.5a5 5 0 010 7M18.5 5.5a9 9 0 010 13"/></svg><svg id="jgIcMute" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" style="display:none"><path d="M11 5L6 9H3v6h3l5 4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6"/></svg></button>
     <audio id="jgAudio" src="/assets/jingle-luxinterventions.mp3" loop preload="none"></audio>
   </div>
   </div>
@@ -2359,32 +2354,25 @@ fetch('https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev/api/h
 <script>
 // Jingle radio : démarre au premier toucher / clic sur la page (les navigateurs bloquent le son sans geste ;
 // sur iPhone, seul le doigt qui se lève — touchend / click — autorise le son),
-// en boucle ; ▶/⏸ et muet, choix mémorisés sur cet appareil.
+// en boucle ; ▶/⏸, choix mémorisé sur cet appareil.
 (function () {
   var box = document.getElementById('jingle'), au = document.getElementById('jgAudio');
   if (!box || !au) return;
   var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
   var set = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
   au.volume = 0.8;
-  au.muted = get('lxJgMute') === '1';
+  au.muted = false; // plus de bouton muet : ▶ / ⏸ suffisent
   var ui = function () {
     var on = !au.paused;
-    box.classList.toggle('on', on); box.classList.toggle('muted', au.muted);
+    box.classList.toggle('on', on);
     document.getElementById('jgIcPlay').style.display = on ? 'none' : '';
     document.getElementById('jgIcPause').style.display = on ? '' : 'none';
-    document.getElementById('jgIcSnd').style.display = au.muted ? 'none' : '';
-    document.getElementById('jgIcMute').style.display = au.muted ? '' : 'none';
     document.getElementById('jgPlay').setAttribute('aria-label', on ? 'Mettre le jingle en pause' : 'Écouter notre jingle');
-    document.getElementById('jgMute').setAttribute('aria-label', au.muted ? 'Remettre le son' : 'Couper le son');
   };
   var play = function () { var p = au.play(); if (p && p.catch) p.catch(function () {}); };
-  au.addEventListener('play', ui); au.addEventListener('pause', ui); au.addEventListener('volumechange', ui);
+  au.addEventListener('play', ui); au.addEventListener('pause', ui);
   document.getElementById('jgPlay').addEventListener('click', function () {
     if (au.paused) { set('lxJgOff', '0'); play(); } else { set('lxJgOff', '1'); au.pause(); }
-  });
-  document.getElementById('jgMute').addEventListener('click', function () {
-    au.muted = !au.muted; set('lxJgMute', au.muted ? '1' : '0');
-    if (!au.muted && au.paused) play();
   });
   // premier geste du visiteur ailleurs sur la page : le jingle part (sauf s'il l'a arrêté avant)
   var first = function (e) {
