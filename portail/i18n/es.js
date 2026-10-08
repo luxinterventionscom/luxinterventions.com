@@ -141,6 +141,10 @@ export default [
 "Cancelada"
 ],
 [
+"Année",
+"Año"
+],
+[
 "Août",
 "Agosto"
 ],
@@ -1493,6 +1497,10 @@ export default [
 "Publicidad"
 ],
 [
+"Période",
+"Periodo"
+],
+[
 "Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
 "¿Qué pasa? ¿Desde cuándo? ¿Riesgo de daños?"
 ],
@@ -1511,6 +1519,10 @@ export default [
 [
 "Rapidité & ponctualité",
 "Rapidez y puntualidad"
+],
+[
+"Rapport complet",
+"Informe completo"
 ],
 [
 "Rapport d'intervention",
@@ -1809,6 +1821,10 @@ export default [
 "Tejado / fachada"
 ],
 [
+"Tout depuis le début",
+"Todo desde el inicio"
+],
+[
 "Toutes",
 "Todas"
 ],
@@ -1859,6 +1875,14 @@ export default [
 [
 "Un lien personnel sera créé : la personne l’ouvre et choisit son mot de passe. Valable 14 jours.",
 "Se creará un enlace personal: la persona lo abre y elige su contraseña. Válido 14 días."
+],
+[
+"Un mois",
+"Un mes"
+],
+[
+"Une année",
+"Un año"
 ],
 [
 "Urgence",

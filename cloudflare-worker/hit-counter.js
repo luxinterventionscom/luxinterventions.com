@@ -1452,15 +1452,18 @@ async function handlePortail(request, env, url, headers, ctx) {
         where.push("t.created_at >= ? AND t.created_at < ?");
         binds.push(Date.UTC(y, m - 1, 1), Date.UTC(y, m, 1));
       }
+      const year = url.searchParams.get("year"); // AAAA (rapport annuel)
+      if (/^\d{4}$/.test(year || "")) { where.push("t.created_at >= ? AND t.created_at < ?"); binds.push(Date.UTC(+year, 0, 1), Date.UTC(+year + 1, 0, 1)); }
+      const full = url.searchParams.get("full") === "1"; // rapport : rapport d'intervention en plus
       const sql = `SELECT t.id, t.ref, t.org_id, t.residence_id, t.lieu, t.categorie, t.urgence, t.description, t.status, t.planned_at, t.technicien,
           t.created_at, t.updated_at, t.taken_at, t.done_at, r.name AS residence_name, r.address AS residence_address, o.name AS org_name, u.name AS created_by_name,
-          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos, t.inv_no, t.inv_date, t.inv_ht, t.inv_tva, t.inv_ttc, t.inv_paid,
+          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos, t.inv_no, t.inv_date, t.inv_ht, t.inv_tva, t.inv_ttc, t.inv_paid,${full ? " substr(t.rapport, 1, 2000) AS rapport," : ""}
           (SELECT COUNT(*) FROM events e WHERE e.ticket_id = t.id AND e.kind = 'comment') AS msgs,
           (SELECT COUNT(*) FROM events e JOIN users ue ON ue.id = e.user_id WHERE e.ticket_id = t.id AND e.kind = 'comment' AND ue.role != 'admin') AS msgs_ger
         FROM tickets t JOIN residences r ON r.id = t.residence_id JOIN orgs o ON o.id = t.org_id LEFT JOIN users u ON u.id = t.created_by
         ${where.length ? "WHERE " + where.join(" AND ") : ""}
         ORDER BY CASE t.status WHEN 'recue' THEN 0 ELSE 1 END, CASE t.urgence WHEN 'urgent' THEN 0 WHEN '24h' THEN 1 ELSE 2 END, t.updated_at DESC
-        LIMIT ${scope === "active" ? 500 : 300}`;
+        LIMIT ${scope === "active" ? 500 : full ? 3000 : 300}`;
       return json({ tickets: (await env.DB.prepare(sql).bind(...binds).all()).results || [] });
     }
 

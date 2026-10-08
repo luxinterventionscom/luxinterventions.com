@@ -141,6 +141,10 @@ export default [
 "Cancelled"
 ],
 [
+"Année",
+"Year"
+],
+[
 "Août",
 "August"
 ],
@@ -1449,6 +1453,10 @@ export default [
 "Advertising"
 ],
 [
+"Période",
+"Period"
+],
+[
 "Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
 "What is happening? Since when? Risk of damage?"
 ],
@@ -1467,6 +1475,10 @@ export default [
 [
 "Rapidité & ponctualité",
 "Speed & punctuality"
+],
+[
+"Rapport complet",
+"Full report"
 ],
 [
 "Rapport d'intervention",
@@ -1765,6 +1777,10 @@ export default [
 "Roof / façade"
 ],
 [
+"Tout depuis le début",
+"Everything since the start"
+],
+[
 "Toutes",
 "All"
 ],
@@ -1811,6 +1827,14 @@ export default [
 [
 "Un lien personnel sera créé : la personne l’ouvre et choisit son mot de passe. Valable 14 jours.",
 "A personal link will be created: the person opens it and chooses their password. Valid for 14 days."
+],
+[
+"Un mois",
+"One month"
+],
+[
+"Une année",
+"One year"
 ],
 [
 "Urgence",
