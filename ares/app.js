@@ -5742,7 +5742,7 @@ const ACTIONS = {
   },
   'cp-more': () => { ui.cpLim = (ui.cpLim || 10) + 10; renderView(); },
   'cp-clear': () => { ui.cpQ = ''; ui.cpFrom = ''; ui.cpTo = ''; ui.cpLim = 10; renderView(); },
-  'soc-sign-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: '', signPx: 0 }), 'Signature retirée', socName()); signRefresh(); },
+  'soc-sign-del': async () => { if (!(await confirmBox('Supprimer la signature ?', { ok: 'Supprimer', danger: true, detail: 'Elle n’apparaîtra plus sur les quittances et documents. Ensuite, dessinez ou importez la nouvelle signature.' }))) return; await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: '', signPx: 0 }), 'Signature retirée', socName()); signRefresh(); },
   'soc-logo-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', logo: '' }), 'Logo retiré', socName()); applyBrand(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
   'cp-csv': () => {
     const y = ui.year, per = ui.cpPer || 'y';
@@ -6051,6 +6051,7 @@ const ACTIONS = {
   async 'del-pay'(d) {
     const l = vault.get('locataires', d.loc);
     const k = payKey(d.loc, +d.y, +d.m);
+    if (!(await confirmBox(`Annuler le paiement de ${fullName(l)} — ${MONTHS_FULL[+d.m - 1]} ${d.y} ?`, { ok: 'Annuler le paiement', danger: true, detail: 'Le mois redevient « à payer ». Ce paiement enregistré est supprimé.' }))) return;
     await vault.mutate((tx) => tx.remove('paiements', k), 'Paiement annulé', `${fullName(l)} — ${MONTHS_FULL[+d.m - 1]} ${d.y}`, d.loc);
     toast('Paiement annulé');
     goBack();

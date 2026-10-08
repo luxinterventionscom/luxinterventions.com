@@ -10123,5 +10123,17 @@ export default [
 [
 "Mettre cette facture en contentieux ?",
 "Put this invoice in dispute?"
+],
+[
+"Le mois redevient « à payer ». Ce paiement enregistré est supprimé.",
+"The month goes back to “to pay”. This recorded payment is deleted."
+],
+[
+"Supprimer la signature ?",
+"Delete the signature?"
+],
+[
+"Elle n’apparaîtra plus sur les quittances et documents. Ensuite, dessinez ou importez la nouvelle signature.",
+"It will no longer appear on receipts and documents. Then draw or import the new signature."
 ]
 ];
