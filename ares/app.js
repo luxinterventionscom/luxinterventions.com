@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.101.0';
+const VERSION = '2.102.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2734,27 +2734,46 @@ async function engPdf(i) {
 }
 // note de l'intervenant occasionnel à ARES : « INTERVENTION OCCASIONNELLE » (une par travail terminé)
 async function occPdf(t, i, o) {
-  const c = factConf(), p = makePdf(), X = 48, R = 547;
+  const c = factConf(), p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42];
   const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id) || {};
-  p.text(X, 64, intervFull(i), { size: 15, bold: true }).text(X, 80, [i.adresse, i.ville].filter(Boolean).join(', '), { size: 9 }).text(X, 92, [i.tel, i.mail].filter(Boolean).join(' · '), { size: 9 });
-  if (i.rcs || i.tva) p.text(X, 104, [i.rcs ? 'RCS ' + i.rcs : '', i.tva ? 'TVA ' + i.tva : ''].filter(Boolean).join(' · '), { size: 9 });
-  p.text(R, 64, 'INTERVENTION OCCASIONNELLE', { size: 11.5, bold: true, align: 'right' }).text(R, 82, `N° ${o.no}`, { size: 11, bold: true, align: 'right' }).text(R, 98, `Date : ${frD(o.d)}`, { size: 9, align: 'right' });
-  p.rect(X, 124, 250, 60, { fill: [0.96, 0.96, 0.96] }).text(X + 10, 140, 'Adressée à', { size: 8, color: [0.4, 0.4, 0.4] }).text(X + 10, 156, c.nom, { size: 11, bold: true });
-  p.text(X + 10, 170, [c.adresse, c.ville].filter(Boolean).join(', '), { size: 9 }).text(X + 10, 181, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8.5 });
-  p.text(X + 270, 140, 'Travail effectué', { size: 8, color: [0.4, 0.4, 0.4] }).text(X + 270, 156, String(t.titre || '').slice(0, 55), { size: 10, bold: true });
-  p.wrap(X + 270, 170, `${t.ptl ? [t.ptl.res, t.ptl.adr, t.ptl.lieu].filter(Boolean).join(' — ') : placeName(t)} · ${frD(L.d || t.doneDate || t.date || o.d)}${L.arr ? ` (${L.arr}–${L.dep || ''})` : ''}`, 230, { size: 9 });
-  let y = 214;
-  p.rect(X, y - 12, R - X, 18, { fill: [0.15, 0.2, 0.35] });
-  for (const [x, l, al] of [[X + 6, 'Désignation', 'left'], [R - 170, 'Qté', 'right'], [R - 90, 'Prix unit.', 'right'], [R - 6, 'Total', 'right']]) p.text(x, y, l, { size: 9, bold: true, color: [1, 1, 1], align: al });
-  y += 22;
-  const row = (lib, q, pu, tot) => { p.text(X + 6, y, lib, { size: 9.5 }); if (q !== '') p.text(R - 170, y, q, { size: 9.5, align: 'right' }); if (pu !== '') p.text(R - 90, y, pu, { size: 9.5, align: 'right' }); p.text(R - 6, y, tot, { size: 9.5, align: 'right' }); y += 19; p.line(X, y - 10, R, y - 10, { w: 0.4 }); };
-  row(`Main-d'œuvre — ${METIERS[i.metier] || 'travail'}`, String(o.h).replace('.', ',') + ' h', eur(o.taux), eur(r2(o.h * o.taux)));
-  if (o.depl) row('Déplacement', '1', eur(o.depl), eur(o.depl));
-  if (o.mat) row(`Matériel avancé${o.matLib ? ' : ' + o.matLib : ''}`, '1', eur(o.mat), eur(o.mat));
-  y += 6; p.text(R - 120, y, 'Total à payer', { size: 11, bold: true, align: 'right' }).text(R - 6, y, eur(o.tot), { size: 11, bold: true, align: 'right' }); y += 16;
-  y += p.wrap(X, y, i.tva ? 'TVA : selon le régime de l’intervenant.' : 'TVA non applicable — intervenant non assujetti (travail occasionnel).', R - X, { size: 9 }) + 6;
-  if (o.cash) { p.rect(X, y, R - X, 24, { fill: [0.96, 1, 0.96] }).text(X + 10, y + 16, `Paiement en espèces (cash) — ${eur(o.tot)} — réf. ${o.no}`, { size: 9.5, bold: true }); y += 34; }
-  else if (i.iban) { p.rect(X, y, R - X, 24, { fill: [0.96, 0.97, 1] }).text(X + 10, y + 16, `Virement — IBAN ${ibanFmt(i.iban)}${i.bic ? ' · BIC ' + i.bic : ''}${i.banque ? ' · ' + i.banque : ''} — réf. ${o.no}`, { size: 9.5, bold: true }); y += 34; }
+  // émetteur : l'intervenant
+  p.text(X, 52, intervFull(i), { size: 11, bold: true }).text(X, 66, METIERS[i.metier] || '', { size: 9, color: G });
+  let ey = 80;
+  for (const ln of [i.adresse, i.ville, [i.tel, i.mail].filter(Boolean).join(' · '), [i.rcs ? 'RCS ' + i.rcs : '', i.tva ? 'TVA ' + i.tva : ''].filter(Boolean).join(' · ')]) if (ln) { p.text(X, ey, ln, { size: 9 }); ey += 12; }
+  // client : ARES INVEST S.A.
+  const CX = 330;
+  p.text(CX, 150, c.nom, { size: 11, bold: true }).text(CX, 164, c.adresse, { size: 9.5 }).text(CX, 176, c.ville, { size: 9.5 }).text(CX, 192, 'TVA : ' + c.tva, { size: 9.5 });
+  let y = 236;
+  p.text(X, y, 'INTERVENTION OCCASIONNELLE', { size: 15, bold: true, color: [0.2, 0.2, 0.2] }).text(X, y + 18, `N° ${o.no}`, { size: 11, bold: true }); y += 44;
+  const info = [['Date', frD(o.d)], ['Date d’intervention', frD(L.d || t.doneDate || t.date || o.d)], ['Horaire', L.arr ? `${L.arr}–${L.dep || ''}` : '—'], ['Référence', t.ptl ? 'Demande #' + t.ptl.ref : o.no]];
+  info.forEach(([l, v], k) => { const xx = X + k * 125; p.text(xx, y, l, { size: 8.5, color: G }).text(xx, y + 13, v, { size: 10 }); });
+  y += 40;
+  const CQ = 400, CP = 470;
+  p.text(X + 6, y, 'Description', { size: 9.5, bold: true }).text(CQ, y, 'Quantité', { size: 9.5, bold: true, align: 'right' }).text(CP, y, 'Prix unitaire', { size: 9.5, bold: true, align: 'right' }).text(R - 6, y, 'Montant', { size: 9.5, bold: true, align: 'right' });
+  y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
+  const n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
+  const row = (lib, sub, q, pu, tot) => {
+    p.text(CQ, y, q, { size: 9.5, align: 'right' }).text(CP, y, pu, { size: 9.5, align: 'right' }).text(R - 6, y, tot, { size: 9.5, align: 'right' });
+    let hh = p.wrap(X + 6, y, lib, 300, { size: 9.5 });
+    if (sub) hh += p.wrap(X + 6, y + hh, sub, 300, { size: 8.5, color: G });
+    y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
+  };
+  row(`Main-d'œuvre — ${t.titre || METIERS[i.metier] || 'travail'}`, t.ptl ? [t.ptl.res, t.ptl.adr, t.ptl.lieu].filter(Boolean).join(' — ') : placeName(t), n2(o.h) + ' h', n2(o.taux), eur(r2(o.h * o.taux)));
+  if (o.depl) row('Déplacement', '', '1,00', n2(o.depl), eur(o.depl));
+  if (o.mat) row(`Matériel avancé${o.matLib ? ' : ' + o.matLib : ''}`, '', '1,00', n2(o.mat), eur(o.mat));
+  y += 10;
+  const TX = 330, ty = y;
+  p.rect(TX, y - 12, R - TX, 20, { fill: [0.94, 0.94, 0.94] }).text(TX + 8, y, 'Total à payer', { size: 11, bold: true }).text(R - 8, y, eur(o.tot), { size: 11, bold: true, align: 'right' }); y += 22;
+  p.text(TX + 8, y, i.tva ? 'TVA : selon le régime de l’intervenant' : 'TVA non applicable (non assujetti)', { size: 8.5, color: G }); y += 16;
+  let py = ty;
+  if (o.cash) { p.text(X, py, 'Paiement en espèces (cash)', { size: 9.5, bold: true }); py += 13; p.text(X, py, `Référence : ${o.no}`, { size: 9.5 }); py += 14; }
+  else if (i.iban) {
+    p.text(X, py, `Communication de paiement : ${o.no}`, { size: 9.5, bold: true }); py += 13;
+    p.text(X, py, `sur ce compte : ${ibanFmt(i.iban)}${i.banque ? ' - ' + i.banque : ''}`, { size: 9.5 }); py += 12;
+    if (i.bic) { p.text(X, py, 'BIC : ' + i.bic, { size: 9, color: G }); py += 12; }
+    qrPdf(p, X, py + 6, 86, epcText(intervFull(i), i.iban, i.bic, o.tot, o.no)); p.text(X + 96, py + 30, 'Scanner le code QR avec', { size: 8.5, color: G }).text(X + 96, py + 42, 'votre application bancaire', { size: 8.5, color: G }); py += 100;
+  }
+  y = Math.max(y, py) + 8;
   if (o.note) y += p.wrap(X, y, 'Note : ' + o.note, R - X, { size: 9 }) + 6;
   p.text(X, y + 6, 'Signature de l’intervenant', { size: 9, bold: true }); y += 12;
   const sg = await sigJpeg(i.sign);
@@ -2799,39 +2818,81 @@ function factCalc(f, taux) {
   return { mo, dep, mat, sub, adj, ht, tva, ttc: r2(ht + tva) };
 }
 const eur = (n) => (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') + ' €';
-function factPdf(t, f, no, dateIso, c) {
-  const k = factCalc(f, factTaux(f, c)), w = vault.get('intervenants', t.intervenantId) || {};
+// QR « EPC » (virement SEPA) : scanné avec l'app de la banque, il remplit bénéficiaire, IBAN, montant et référence
+const ascii = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7e]/g, ' ');
+const epcText = (name, iban, bic, amount, ref) => ['BCD', '002', '1', 'SCT', ascii(bic).replace(/\s/g, ''), ascii(name).slice(0, 70), ascii(iban).replace(/\s/g, ''), 'EUR' + (Math.round(amount * 100) / 100).toFixed(2), '', '', ascii(ref).slice(0, 140)].join('\n');
+function qrPdf(p, x, y, size, text) {
+  const q = qrcode(0, 'M'); q.addData(text); q.make();
+  const n = q.getModuleCount(), m = size / (n + 2);
+  p.rect(x, y, size, size, { fill: [1, 1, 1] });
+  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) p.rect(x + (c + 1) * m, y + (r + 1) * m, m + 0.05, m + 0.05, { fill: [0, 0, 0] });
+}
+// Facture LuxInterventions (ARES INVEST S.A.) → gérance, mise en page « facture classique » :
+// émetteur + logo, client à droite, n°, dates, tableau Description / Quantité / Prix unitaire / TVA / Montant, totaux, paiement + QR
+async function factPdf(t, f, no, dateIso, c) {
+  const k = factCalc(f, factTaux(f, c)), w = vault.get('intervenants', t.intervenantId) || {}, tx = factTaux(f, c);
   const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id) || {};
   const org = ptlOrg((t.ptl && t.ptl.orgId) || '') || ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => t.ptl && o.name === t.ptl.org) || {};
-  const p = makePdf(), X = 48, R = 547;
-  const fr = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  p.text(X, 64, c.nom, { size: 16, bold: true }).text(X, 82, c.marque ? `${c.marque} — interventions techniques` : '', { size: 10, color: [0.35, 0.35, 0.35] });
-  p.text(X, 98, c.adresse, { size: 9 }).text(X, 110, c.ville, { size: 9 }).text(X, 122, [c.tel, c.email].filter(Boolean).join(' · '), { size: 9 });
-  p.text(R, 64, 'FACTURE', { size: 20, bold: true, align: 'right' }).text(R, 84, `N° ${no}`, { size: 11, bold: true, align: 'right' }).text(R, 100, `Date : ${fr(dateIso)}`, { size: 9, align: 'right' });
-  p.text(R, 112, `Échéance : ${fr(addDays(dateIso, +c.delai || 30))}`, { size: 9, align: 'right' });
-  p.rect(X, 140, 250, 64, { fill: [0.96, 0.96, 0.96] }).text(X + 10, 156, 'Facturé à', { size: 8, color: [0.4, 0.4, 0.4] }).text(X + 10, 172, (t.ptl && t.ptl.org) || org.name || '', { size: 11, bold: true });
-  const cl = factClient(t.ptl && t.ptl.orgId, t.ptl && t.ptl.org), tx = factTaux(f, c);
-  p.wrap(X + 10, 186, [cl.adresse, cl.pays && cl.pays !== 'LU' ? cl.pays : '', cl.tvaNum ? 'N° TVA : ' + cl.tvaNum : '', !cl.adresse ? [org.email, org.phone].filter(Boolean).join(' · ') : ''].filter(Boolean).join(' · '), 230, { size: 9 });
-  p.text(X + 270, 156, 'Intervention', { size: 8, color: [0.4, 0.4, 0.4] }).text(X + 270, 172, `${t.ptl && !String(t.titre).startsWith('#' + t.ptl.ref) ? 'Demande #' + t.ptl.ref + ' · ' : t.ptl ? 'Demande ' : ''}${t.titre}`.slice(0, 60), { size: 10, bold: true });
-  p.wrap(X + 270, 186, `${t.ptl ? [t.ptl.res, t.ptl.adr].filter(Boolean).join(' — ') : placeName(t)}${t.ptl && t.ptl.lieu ? ' · ' + t.ptl.lieu : ''}`, 230, { size: 9 });
+  const cl = factClient(t.ptl && t.ptl.orgId, t.ptl && t.ptl.org);
+  const p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42];
+  const due = addDays(dateIso, +c.delai || 30);
+  // émetteur + logo
+  const logo = await sigJpeg('/ares/icons/lux-192.png').catch(() => null);
+  if (logo) p.image(X, 40, 62, 62, logo.bytes, logo.w, logo.h);
+  const ex = logo ? X + 78 : X;
+  p.text(ex, 52, c.nom, { size: 11, bold: true }).text(ex, 66, c.marque || '', { size: 9, color: G });
+  p.text(ex, 80, c.adresse, { size: 9 }).text(ex, 92, c.ville, { size: 9 }).text(ex, 104, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8.5, color: G });
+  if (c.tel || c.email) p.text(ex, 116, [c.tel, c.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
+  // client
+  const CX = 330;
+  let cy = 150;
+  p.text(CX, cy, (t.ptl && t.ptl.org) || org.name || '', { size: 11, bold: true }); cy += 14;
+  for (const ln of String(cl.adresse || '').split(/\n|,\s*(?=L-|\d{4})/).filter(Boolean).slice(0, 3)) { p.text(CX, cy, ln.trim(), { size: 9.5 }); cy += 12; }
+  if (!cl.adresse) { const ct = [org.email, org.phone].filter(Boolean).join(' · '); if (ct) { p.text(CX, cy, ct, { size: 9.5 }); cy += 12; } }
+  if (cl.pays && cl.pays !== 'LU') { p.text(CX, cy, cl.pays, { size: 9.5 }); cy += 12; }
+  if (cl.tvaNum) { cy += 4; p.text(CX, cy, 'TVA : ' + cl.tvaNum, { size: 9.5 }); }
+  // titre + dates
   let y = 236;
-  p.rect(X, y - 12, R - X, 18, { fill: [0.15, 0.2, 0.35] });
-  for (const [x, l, al] of [[X + 6, 'Désignation', 'left'], [R - 170, 'Qté', 'right'], [R - 90, 'Prix unit. HT', 'right'], [R - 6, 'Total HT', 'right']]) p.text(x, y, l, { size: 9, bold: true, color: [1, 1, 1], align: al });
-  y += 22;
-  const row = (lib, q, pu, tot) => { const hh = p.wrap(X + 6, y, lib, 300, { size: 9.5 }); if (q !== '') p.text(R - 170, y, q, { size: 9.5, align: 'right' }); if (pu !== '') p.text(R - 90, y, pu, { size: 9.5, align: 'right' }); p.text(R - 6, y, tot, { size: 9.5, align: 'right' }); y += Math.max(hh, 13) + 6; p.line(X, y - 10, R, y - 10, { w: 0.4 }); };
-  row(`Main-d'œuvre — ${intervFull(w)} — ${fr(L.d || t.doneDate || dateIso)}${L.arr ? ` (${L.arr}–${L.dep || ''})` : ''}`, String(f.h).replace('.', ',') + ' h', eur(num(f.taux)), eur(k.mo));
-  if (k.dep) row('Déplacement', '1', eur(k.dep), eur(k.dep));
-  for (const m of f.mat || []) if (num(m.ht)) row(`Matériel : ${m.lib || 'fourniture'}`, '1', eur(num(m.ht)), eur(num(m.ht)));
-  if (k.adj) row(`${f.adj.type === 'remise' ? 'Remise' : 'Majoration'}${f.adj.mode === '%' ? ' ' + String(num(f.adj.val)).replace('.', ',') + ' %' : ''}${f.adj.lib ? ' — ' + f.adj.lib : ''}`, '', '', (k.adj < 0 ? '− ' : '+ ') + eur(Math.abs(k.adj)));
-  y += 8;
-  const tot = (l, v, b) => { p.text(R - 120, y, l, { size: b ? 11 : 9.5, bold: b, align: 'right' }).text(R - 6, y, v, { size: b ? 11 : 9.5, bold: b, align: 'right' }); y += b ? 18 : 14; };
-  tot('Total HT', eur(k.ht)); tot(`TVA ${String(tx).replace('.', ',')} %`, eur(k.tva)); p.line(R - 220, y - 9, R, y - 9, { w: 0.8, color: [0.2, 0.2, 0.2] }); y += 4; tot('Total TTC', eur(k.ttc), true);
+  p.text(X, y, `Facture ${no}`, { size: 20, bold: true, color: [0.2, 0.2, 0.2] }); y += 26;
+  const fr = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const info = [['Date de facturation', fr(dateIso)], ['Date d’échéance', fr(due)], ['Date d’intervention', fr(L.d || t.doneDate || dateIso)], ['Référence', t.ptl ? 'Demande #' + t.ptl.ref : no]];
+  info.forEach(([l, v], i) => { const xx = X + i * 125; p.text(xx, y, l, { size: 8.5, color: G }).text(xx, y + 13, v, { size: 10 }); });
+  y += 40;
+  // tableau
+  const CQ = 352, CP = 430, CT = 482;
+  p.text(X + 6, y, 'Description', { size: 9.5, bold: true }).text(CQ, y, 'Quantité', { size: 9.5, bold: true, align: 'right' }).text(CP, y, 'Prix unitaire', { size: 9.5, bold: true, align: 'right' }).text(CT, y, 'TVA', { size: 9.5, bold: true, align: 'right' }).text(R - 6, y, 'Montant', { size: 9.5, bold: true, align: 'right' });
+  y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
+  const txt = String(tx).replace('.', ',') + '%';
+  const row = (lib, sub, q, pu, tot) => {
+    if (q !== '') p.text(CQ, y, q, { size: 9.5, align: 'right' });
+    if (pu !== '') p.text(CP, y, pu, { size: 9.5, align: 'right' });
+    p.text(CT, y, txt, { size: 9.5, align: 'right' }).text(R - 6, y, tot, { size: 9.5, align: 'right' });
+    let hh = p.wrap(X + 6, y, lib, 240, { size: 9.5 });
+    if (sub) hh += p.wrap(X + 6, y + hh, sub, 240, { size: 8.5, color: G });
+    y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
+  };
+  const n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
+  const lieu = t.ptl ? [t.ptl.res, t.ptl.adr, t.ptl.lieu].filter(Boolean).join(' — ') : placeName(t);
+  row(`Main-d'œuvre — ${String(t.titre || 'Intervention').replace(/^#\d+\s*/, '')}`, `${intervFull(w)}${L.arr ? ` · ${L.arr}–${L.dep || ''}` : ''} · ${lieu}`, n2(num(f.h)) + ' h', n2(num(f.taux)), eur(k.mo));
+  if (k.dep) row('Déplacement', '', '1,00', n2(k.dep), eur(k.dep));
+  for (const m of f.mat || []) if (num(m.ht)) row(`Matériel : ${m.lib || 'fourniture'}`, '', '1,00', n2(num(m.ht)), eur(num(m.ht)));
+  if (k.adj) row(`${f.adj.type === 'remise' ? 'Remise' : 'Majoration'}${f.adj.mode === '%' ? ' ' + String(num(f.adj.val)).replace('.', ',') + ' %' : ''}${f.adj.lib ? ' — ' + f.adj.lib : ''}`, '', '', '', (k.adj < 0 ? '− ' : '') + eur(Math.abs(k.adj)));
+  // totaux (encadré à droite)
+  y += 10;
+  const TX = 330, ty = y;
+  const trow = (l, v, b, bg) => { if (bg) p.rect(TX, y - 12, R - TX, 20, { fill: [0.94, 0.94, 0.94] }); p.text(TX + 8, y, l, { size: b ? 11 : 9.5, bold: b }).text(R - 8, y, v, { size: b ? 11 : 9.5, bold: b, align: 'right' }); y += 22; };
+  trow('Montant hors taxes', eur(k.ht), false, true); trow(`TVA ${txt}`, eur(k.tva), false, false); trow('Total', eur(k.ttc), true, true);
+  // paiement + QR (à gauche des totaux)
+  let py = ty;
+  p.text(X, py, `Communication de paiement : ${no}`, { size: 9.5, bold: true }); py += 13;
+  p.text(X, py, `sur ce compte : ${c.iban}${c.banque ? ' - ' + c.banque : ''}`, { size: 9.5 }); py += 12;
+  if (c.bic) { p.text(X, py, 'BIC : ' + c.bic, { size: 9, color: G }); py += 12; }
+  if (c.iban) { qrPdf(p, X, py + 6, 92, epcText(c.nom, c.iban, c.bic, k.ttc, no)); p.text(X + 102, py + 30, 'Scanner le code QR avec', { size: 8.5, color: G }).text(X + 102, py + 42, 'votre application bancaire', { size: 8.5, color: G }); py += 106; }
+  y = Math.max(y, py) + 10;
   const mention = regMention(f.reg || {});
-  if (mention) { y += 4; y += p.wrap(X, y, mention, R - X, { size: 9, bold: true }); }
-  y += 18;
-  p.rect(X, y, R - X, 52, { fill: [0.96, 0.97, 1] }).text(X + 10, y + 16, `Paiement à ${+c.delai || 30} jours, avant le ${fr(addDays(dateIso, +c.delai || 30))}, par virement — référence : ${no}`, { size: 9.5, bold: true });
-  p.text(X + 10, y + 32, `IBAN : ${c.iban}${c.bic ? '   ·   BIC : ' + c.bic : ''}${c.banque ? '   ·   ' + c.banque : ''}`, { size: 9.5 });
-  p.text((X + R) / 2, 800, `${c.nom}${c.marque ? ' — ' + c.marque : ''} · ${c.adresse}, ${c.ville} · RCS Luxembourg ${c.rcs} · TVA ${c.tva}`, { size: 7.5, color: [0.4, 0.4, 0.4], align: 'center' });
+  if (mention) y += p.wrap(X, y, mention, R - X, { size: 9, bold: true }) + 4;
+  p.text(X, y, `Paiement à ${+c.delai || 30} jours, avant le ${fr(due)}.`, { size: 9, color: G });
+  p.text((X + R) / 2, 800, `${c.nom}${c.marque ? ' — ' + c.marque : ''} · ${c.adresse}, ${c.ville} · RCS Luxembourg ${c.rcs} · TVA ${c.tva}`, { size: 7.5, color: G, align: 'center' });
   return { bytes: p.bytes(), k };
 }
 const factRead = (fm) => {
@@ -5522,7 +5583,7 @@ const ACTIONS = {
     if (f.reg.regime === 'autoliq' && !cl.tvaNum) return toast('Autoliquidation : indiquez d’abord le n° TVA du client (Gérances → la gérance → 🧾 Facturation)', { bad: true });
     const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-INT${String(seq).padStart(4, '0')}`;
     if (!(await confirmBox(`Émettre la facture ${no} ?`, { ok: 'Émettre et envoyer', detail: `${t.ptl.org} · ${eur(k.ttc)} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son portail.` }))) return;
-    const { bytes } = factPdf(t, f, no, date, c);
+    const { bytes } = await factPdf(t, f, no, date, c);
     try {
       const r = await fetch(PTL_API + `tickets/${t.ptl.tid}/invoice`, { method: 'PUT', headers: { Authorization: 'Bearer ' + ptlConf().token, 'Content-Type': 'application/pdf', 'X-Invoice': encodeURIComponent(JSON.stringify({ no, ht: k.ht, tva: k.tva, ttc: k.ttc })) }, body: bytes });
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Erreur ' + r.status);
