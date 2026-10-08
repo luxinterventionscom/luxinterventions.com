@@ -10281,8 +10281,8 @@ export default [
 "Acuerdo / tarifa fija (opcional)"
 ],
 [
-"F. de ménage / nettoyage",
-"Limpiadora / limpieza"
+"F. de ménage",
+"Limpiadora"
 ],
 [
 "H. à tout faire",

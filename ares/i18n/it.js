@@ -10297,8 +10297,8 @@ export default [
 "Accordo / forfait (facoltativo)"
 ],
 [
-"F. de ménage / nettoyage",
-"Donna delle pulizie / pulizia"
+"F. de ménage",
+"Donna delle pulizie"
 ],
 [
 "H. à tout faire",

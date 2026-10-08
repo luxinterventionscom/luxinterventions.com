@@ -10065,8 +10065,8 @@ export default [
 "Agreement / flat fee (optional)"
 ],
 [
-"F. de ménage / nettoyage",
-"Cleaner / cleaning"
+"F. de ménage",
+"Cleaner"
 ],
 [
 "H. à tout faire",
