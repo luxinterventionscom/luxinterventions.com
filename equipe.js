@@ -119,6 +119,34 @@ const L = {
   },
 };
 // Fiche d'engagement (intervenant occasionnel) : il la lit et la signe ici, avec le doigt
+// « Je ne peux pas » : l'ouvrier refuse un travail pas encore commencé → le responsable en envoie un autre
+const REFT = {
+  fr: { needNote: 'Expliquez la raison (obligatoire pour « Autre »)', btn: '✋ Je ne peux pas — refuser', t: '✋ Refuser ce travail', why: 'Pourquoi ? (obligatoire)', r: { malade: '🤒 Je suis malade', dispo: '📅 Pas disponible ce jour-là', loin: '🚗 Trop loin / pas de transport', metier: '🛠️ Ce n’est pas mon métier', autre: '✏️ Autre raison' }, choose: '— choisir —', notePh: 'Un mot pour le responsable (facultatif)', send: '✋ Envoyer le refus', done: '✋ Refusé — le responsable envoie quelqu’un d’autre', ok: 'Refus envoyé. Merci de prévenir : le responsable envoie un autre ouvrier.' },
+  it: { needNote: 'Spiega il motivo (obbligatorio per «Altro»)', btn: '✋ Non posso — rifiuto', t: '✋ Rifiutare questo lavoro', why: 'Perché? (obbligatorio)', r: { malade: '🤒 Sono malato', dispo: '📅 Non disponibile quel giorno', loin: '🚗 Troppo lontano / senza trasporto', metier: '🛠️ Non è il mio mestiere', autre: '✏️ Altro motivo' }, choose: '— scegliere —', notePh: 'Una parola per il responsabile (facoltativo)', send: '✋ Invia il rifiuto', done: '✋ Rifiutato — il responsabile manda un altro', ok: 'Rifiuto inviato. Grazie di aver avvisato: il responsabile manda un altro operaio.' },
+  pt: { needNote: 'Explique o motivo (obrigatório para «Outro»)', btn: '✋ Não posso — recusar', t: '✋ Recusar este trabalho', why: 'Porquê? (obrigatório)', r: { malade: '🤒 Estou doente', dispo: '📅 Não disponível nesse dia', loin: '🚗 Muito longe / sem transporte', metier: '🛠️ Não é a minha profissão', autre: '✏️ Outro motivo' }, choose: '— escolher —', notePh: 'Uma palavra para o responsável (opcional)', send: '✋ Enviar a recusa', done: '✋ Recusado — o responsável envia outra pessoa', ok: 'Recusa enviada. Obrigado por avisar: o responsável envia outro trabalhador.' },
+  de: { needNote: 'Grund erklären (Pflicht bei „Anderer Grund“)', btn: '✋ Ich kann nicht — ablehnen', t: '✋ Diesen Auftrag ablehnen', why: 'Warum? (Pflicht)', r: { malade: '🤒 Ich bin krank', dispo: '📅 An diesem Tag nicht verfügbar', loin: '🚗 Zu weit / kein Transport', metier: '🛠️ Nicht mein Beruf', autre: '✏️ Anderer Grund' }, choose: '— wählen —', notePh: 'Ein Wort für den Verantwortlichen (optional)', send: '✋ Ablehnung senden', done: '✋ Abgelehnt — der Verantwortliche schickt jemand anderen', ok: 'Ablehnung gesendet. Danke für die Info: der Verantwortliche schickt einen anderen Mitarbeiter.' },
+  en: { needNote: 'Explain the reason (required for “Other”)', btn: '✋ I can’t — refuse', t: '✋ Refuse this job', why: 'Why? (required)', r: { malade: '🤒 I am sick', dispo: '📅 Not available that day', loin: '🚗 Too far / no transport', metier: '🛠️ Not my trade', autre: '✏️ Other reason' }, choose: '— choose —', notePh: 'A word for the manager (optional)', send: '✋ Send refusal', done: '✋ Refused — the manager sends someone else', ok: 'Refusal sent. Thanks for letting us know: the manager will send another worker.' },
+  es: { needNote: 'Explique el motivo (obligatorio para «Otro»)', btn: '✋ No puedo — rechazar', t: '✋ Rechazar este trabajo', why: '¿Por qué? (obligatorio)', r: { malade: '🤒 Estoy enfermo', dispo: '📅 No disponible ese día', loin: '🚗 Demasiado lejos / sin transporte', metier: '🛠️ No es mi oficio', autre: '✏️ Otro motivo' }, choose: '— elegir —', notePh: 'Una palabra para el responsable (opcional)', send: '✋ Enviar el rechazo', done: '✋ Rechazado — el responsable envía a otra persona', ok: 'Rechazo enviado. Gracias por avisar: el responsable envía a otro trabajador.' },
+};
+const isRefused = (tid, d) => { const st = stateOf(tid, d); return !!st && st.st === 'refus'; };
+// bouton rouge en haut à droite de la carte du travail (pas encore commencé, pas encore refusé)
+function refusTop(it) {
+  const r = REFT[lang] || REFT.fr;
+  if (isRefused(it.tid, it.d) || (form && form.tid === it.tid && form.d === it.d && form.st === 'refus')) return '';
+  return `<button class="refus-top" data-act="refus" data-tid="${it.tid}" data-d="${it.d}">${esc(r.btn)}</button>`;
+}
+// formulaire du motif / confirmation (travail pas encore commencé)
+function refusUi(it) {
+  const r = REFT[lang] || REFT.fr, t = T();
+  if (isRefused(it.tid, it.d)) return `<div class="stline refus">${esc(r.done)}</div>`;
+  const f = form && form.tid === it.tid && form.d === it.d && form.st === 'refus';
+  if (!f) return '';
+  return `<form class="act refus-f" data-tid="${it.tid}" data-d="${it.d}" data-st="refus"><b>${esc(r.t)}</b>
+      <label>${esc(r.why)}</label><select name="why" required><option value="">${esc(r.choose)}</option>${Object.entries(r.r).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select>
+      <textarea name="note" placeholder="${esc(r.notePh)}"></textarea>
+      <div class="btns"><button class="btn warn" type="submit">${esc(r.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>`;
+}
+
 const ENGT = {
   fr: { t: 'Ma fiche d’engagement', top: 'Signez votre fiche d’engagement : obligatoire pour être payé.', open: 'Lire et signer', ob: [['Obligation de résultat', 'Je m’engage à exécuter le travail confié dans les règles de l’art, aux jour, heure et lieu convenus, et à le reprendre à mes frais s’il n’est pas conforme.'], ['Dommages', 'Tout dommage causé aux biens ou aux personnes pendant l’intervention est à ma charge et à celle de mon assurance responsabilité civile{a}.'], ['Indépendance', 'Intervention ponctuelle, sans lien de subordination : je déclare moi-même mes revenus et je m’acquitte de mes obligations fiscales et sociales.'], ['Confidentialité', 'Codes, clés et informations des lieux et des occupants restent confidentiels et ne servent qu’à l’intervention.']], rgpd: 'RGPD : {s} utilise mes données (identité, coordonnées, assurance, banque, signature, heures) seulement pour les missions, les paiements et ses obligations légales. Je peux demander à les voir, les corriger ou les effacer.', acc: 'J’ai lu et j’accepte ces obligations', sig: 'Ma signature (avec le doigt)', clr: 'Effacer', send: '✍️ Signer et envoyer', need: 'Cochez « J’ai lu et j’accepte » et signez dans le cadre.', ok: 'Signée ✓ — envoyée à {s}', done: 'Signée le {d}' },
   it: { t: 'La mia scheda d’ingaggio', top: 'Firma la tua scheda d’ingaggio: obbligatoria per essere pagato.', open: 'Leggi e firma', ob: [['Obbligo di risultato', 'Mi impegno a eseguire il lavoro a regola d’arte, nel giorno, ora e luogo concordati, e a rifarlo a mie spese se non è conforme.'], ['Danni', 'Ogni danno causato a cose o persone durante l’intervento è a mio carico e della mia assicurazione di responsabilità civile{a}.'], ['Indipendenza', 'Intervento occasionale, senza vincolo di subordinazione: dichiaro io i miei redditi e adempio ai miei obblighi fiscali e sociali.'], ['Riservatezza', 'Codici, chiavi e informazioni dei luoghi e degli occupanti restano riservati e servono solo per l’intervento.']], rgpd: 'GDPR: {s} usa i miei dati (identità, contatti, assicurazione, banca, firma, ore) solo per i lavori, i pagamenti e i suoi obblighi di legge. Posso chiedere di vederli, correggerli o cancellarli.', acc: 'Ho letto e accetto questi obblighi', sig: 'La mia firma (con il dito)', clr: 'Cancella', send: '✍️ Firma e invia', need: 'Spunta «Ho letto e accetto» e firma nel riquadro.', ok: 'Firmata ✓ — inviata a {s}', done: 'Firmata il {d}' },
@@ -129,7 +157,7 @@ const ENGT = {
 };
 let sigUrl = '', sigSent = '';
 // mon icône (métier) : choisie dans l'app, visible chez le responsable
-const WORK_ICONS = ['🧹🪣', '🧹', '🪣', '🧽', '🔨', '🪚', '⚡', '💡', '🔌', '🔧', '🪠', '🚰', '🔥', '🧱', '🖌️', '🎨', '🔑', '🔐', '🌿', '🌳', '✂️', '🪜', '🧰', '🛠️', '🚚', '👷', '👷‍♀️'];
+const WORK_ICONS = ['🧹', '🧽', '🔨', '🪚', '⚡', '💡', '🔌', '🔧', '🪠', '🚰', '🔥', '🧱', '🖌️', '🎨', '🔑', '🔐', '🌿', '🌳', '✂️', '🪜', '🧰', '🛠️', '🚚', '👷', '👷‍♀️'];
 const ICT = { fr: 'Mon icône', it: 'La mia icona', de: 'Mein Symbol', en: 'My icon', pt: 'O meu ícone', es: 'Mi icono' };
 const SETT = {
   fr: { t: 'Réglages', ph: 'Ma photo', pick: '📷 Choisir une photo', del: 'Retirer', hint: 'Elle apparaît chez votre responsable, à côté de votre nom.', ok: 'Photo envoyée ✓' },
@@ -236,7 +264,7 @@ function taskLine(it) {
   const x = data.tasks[it.tid];
   if (!x) return '';
   const done = stopTimes(it.tid, it.d).end;
-  return `<div class="tline${x.urgent && !done ? ' urgent' : ''}">${done ? '✅' : ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}<div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button></div></div>`;
+  return `<div class="tline${x.urgent && !done ? ' urgent' : ''}">${!done && !stateOf(it.tid, it.d) ? refusTop(it) : ''}${done ? '✅' : ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}<div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button></div></div>`;
 }
 // horaire d'un jour précis : le planning daté (fait par le responsable) remplace l'horaire habituel ce jour-là
 function hOnDate(d, iso) {
@@ -251,18 +279,19 @@ function taskCard(it, withBtns) {
   const tel = x.contact && x.contact.tel ? x.contact.tel.replace(/[^\d+]/g, '') : '';
   const done = st && st.st === 'fait';
   const f = form && form.tid === it.tid && form.d === it.d ? form : null;
-  const btns = withBtns && !done && !f ? `<div class="btns">${!st || st.st !== 'encours' ? `<button class="btn sec" data-act="encours" data-tid="${it.tid}" data-d="${it.d}">${esc(t.start)}</button>` : ''}
+  const notStarted = !st || st.st === 'refus';
+  const btns = withBtns && !done && !f && !(st && st.st === 'refus') ? `<div class="btns">${!st || st.st !== 'encours' ? `<button class="btn sec" data-act="encours" data-tid="${it.tid}" data-d="${it.d}">${esc(t.start)}</button>` : ''}
       <button class="btn ok" data-act="fait" data-tid="${it.tid}" data-d="${it.d}">${esc(t.done)}</button>
       <button class="btn warn" data-act="incomplet" data-tid="${it.tid}" data-d="${it.d}">${esc(t.inc)}</button></div>` : '';
-  const fh = f ? `<form class="act" data-tid="${it.tid}" data-d="${it.d}" data-st="${f.st}"><b>${esc(t.st[f.st])}</b>
+  const fh = f && f.st !== 'refus' ? `<form class="act" data-tid="${it.tid}" data-d="${it.d}" data-st="${f.st}"><b>${esc(t.st[f.st])}</b>
       <label>${esc(f.st === 'incomplet' ? t.why : t.note)}</label><textarea name="note" placeholder="${esc(f.st === 'incomplet' ? t.whyPh : t.notePh)}" ${f.st === 'incomplet' ? 'required' : ''}></textarea>
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>` : '';
-  return `<div class="task ${done ? 'done' : ''}${x.urgent && !done ? ' urgent' : ''}">
+  return `<div class="task ${done ? 'done' : ''}${x.urgent && !done ? ' urgent' : ''}">${notStarted && !done ? refusTop(it) : ''}
     <div class="tt">${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${it.late ? ` <span class="tag bad">${esc(t.late)}</span>` : ''}</div>
     <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}${x.recur ? ' · 🔁 ' + esc(x.recur) : ''}</div>
     ${infoHtml(x, t)}
-    ${st ? `<div class="stline ${st.st}">${esc(t.st[st.st])} · ${esc(fmt(st.at))} ${esc(t.at)} ${esc(st.h || (st.at || '').slice(11, 16))}${st.note ? ' — ' + esc(st.note) : ''}</div>` : ''}
-    ${btns}${fh}${withBtns ? phBlock(it, x) : ''}</div>`;
+    ${st && st.st !== 'refus' ? `<div class="stline ${st.st}">${esc(t.st[st.st])} · ${esc(fmt(st.at))} ${esc(t.at)} ${esc(st.h || (st.at || '').slice(11, 16))}${st.note ? ' — ' + esc(st.note) : ''}</div>` : ''}
+    ${btns}${fh}${notStarted && !done ? refusUi(it) : ''}${withBtns && !(st && st.st === 'refus') ? phBlock(it, x) : ''}</div>`;
 }
 // Arrivée / départ d'une intervention (journal du serveur + ce téléphone) ; h = heure écrite par la personne
 const hOfE = (e) => (e ? e.h || (e.at || '').slice(11, 16) : '');
@@ -277,15 +306,16 @@ function stopCard(it, cur) {
   const t = T(), x = data.tasks[it.tid];
   if (!x) return '';
   const tm = stopTimes(it.tid, it.d), f = form && form.tid === it.tid && form.d === it.d ? form : null;
-  const ended = !!tm.end;
+  const refused = isRefused(it.tid, it.d), ended = !!tm.end || refused;
   let act = '';
-  if (!tm.arr && !ended) act = `<form class="pres" data-stop="encours" data-tid="${it.tid}" data-d="${it.d}"><input type="time" name="h" value="${nowHM()}" required><button class="btn sm" type="submit">${esc(t.s.arrBtn)}</button></form>`;
+  if (refused) act = refusUi(it);
+  else if (!tm.arr && !ended) act = `${f && f.st === 'refus' ? '' : `<form class="pres" data-stop="encours" data-tid="${it.tid}" data-d="${it.d}"><input type="time" name="h" value="${nowHM()}" required><button class="btn sm" type="submit">${esc(t.s.arrBtn)}</button></form>`}${refusUi(it)}`;
   else if (!ended) act = `${phBlock(it, x)}${f ? `<form class="act" data-tid="${it.tid}" data-d="${it.d}" data-st="${f.st}"><b>${esc(t.st[f.st])}</b>
       <label>${esc(t.why)}</label><textarea name="note" placeholder="${esc(t.whyPh)}" required></textarea>
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>`
       : `<form class="pres" data-stop="fait" data-tid="${it.tid}" data-d="${it.d}"><input type="time" name="h" value="${nowHM()}" required><button class="btn sm ok" type="submit">${esc(t.s.depBtn)}</button></form>
       <button class="btn sm warn" style="margin-top:6px" data-act="incomplet" data-tid="${it.tid}" data-d="${it.d}">${esc(t.inc)}</button>`}`;
-  return `<div class="stop${cur ? ' cur' : ''}${ended ? ' done' : ''}${x.urgent && !ended ? ' urgent' : ''}">
+  return `<div class="stop${cur ? ' cur' : ''}${ended ? ' done' : ''}${x.urgent && !ended ? ' urgent' : ''}">${!tm.arr && !ended ? refusTop(it) : ''}
     <div class="tt">${cur ? '<span class="live" aria-hidden="true"></span>' : ''}${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${cur ? ` <span class="tag now">${esc(tm.arr ? t.s.now : t.s.next)}</span>` : ''}</div>
     <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}</div>
     ${ended ? '' : infoHtml(x, T())}<div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
@@ -459,7 +489,7 @@ function render() {
   const pr = presOf(today), pp = t.p;
   const presH = (`<div id="presCard" class="pres-in"><h2>🕒 ${esc(pp.me)} · ${esc(fmtDay(today))}</h2><p class="meta" style="margin:0 0 8px">${esc(todays.length ? t.s.hint : pp.hint)}</p>
     ${hsToday.length ? `<p class="meta" style="margin:0 0 8px">${esc(pp.planned)} : ${hsToday.map((h) => `${esc(h.de)}–${esc(h.a)}`).join(' · ')}</p>` : ''}
-    ${todays.length ? (() => { const ci = todays.findIndex((x) => !stopTimes(x.tid, x.d).end); return todays.map((x, i) => stopCard(x, i === ci)).join(''); })() : `<p style="margin:0"><b>${esc(t.s.day)}</b></p>` + ['arr', 'dep'].map((k) => `<form class="pres" data-pres="${k}"><span class="pres-l">${k === 'arr' ? '🟢' : '🔴'} ${esc(pp[k])}</span><input type="time" name="h" value="${esc(pr[k] || (k === 'dep' && !pr.arr ? '' : nowHM()))}" required><button class="btn sm${pr[k] ? ' sec' : ''}" type="submit">${esc(pp.send)}</button>${pr[k] ? `<span class="pres-ok">✓ ${esc(pr[k])}</span>` : ''}</form>`).join('')}
+    ${todays.length ? (() => { const ci = todays.findIndex((x) => !stopTimes(x.tid, x.d).end && !isRefused(x.tid, x.d)); return todays.map((x, i) => stopCard(x, i === ci)).join(''); })() : `<p style="margin:0"><b>${esc(t.s.day)}</b></p>` + ['arr', 'dep'].map((k) => `<form class="pres" data-pres="${k}"><span class="pres-l">${k === 'arr' ? '🟢' : '🔴'} ${esc(pp[k])}</span><input type="time" name="h" value="${esc(pr[k] || (k === 'dep' && !pr.arr ? '' : nowHM()))}" required><button class="btn sm${pr[k] ? ' sec' : ''}" type="submit">${esc(pp.send)}</button>${pr[k] ? `<span class="pres-ok">✓ ${esc(pr[k])}</span>` : ''}</form>`).join('')}
     <details class="more"${pbPhotos.length ? ' open' : ''}><summary>${esc(pp.pb)}</summary><form id="pbForm">
       <label>${esc(pp.what)}</label><textarea name="note" required placeholder="${esc(pp.ph)}">${esc(pbNote)}</textarea>
       <label>${esc(pp.photos)}</label>
@@ -558,7 +588,7 @@ app.addEventListener('click', async (e) => {
     if (act === 'encours') { await queue({ k: 'task', tid, d, st: 'encours', note: '', at: new Date().toISOString() }); return render(); }
     form = { tid, d, st: act };
     render();
-    const ta = app.querySelector('form.act textarea'); if (ta) ta.focus();
+    const ta = app.querySelector('form.act select, form.act textarea'); if (ta) ta.focus();
   }
 });
 app.addEventListener('submit', async (e) => {
@@ -629,6 +659,16 @@ app.addEventListener('submit', async (e) => {
   btn.disabled = true; btn.textContent = '…';
   try {
     if (f.classList.contains('act')) {
+      if (f.dataset.st === 'refus') {
+        const r = REFT[lang] || REFT.fr, why = f.why.value;
+        const extra = f.note.value.trim();
+        if (!r.r[why] || (why === 'autre' && extra.length < 3)) { alert(r.r[why] ? r.needNote : r.why); btn.disabled = false; btn.textContent = r.send; return; }
+        form = null;
+        await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: 'refus', why, note: (REFT.fr.r[why] + (extra ? ' — ' + extra : '')).slice(0, 1000), at: new Date().toISOString() });
+        flash = r.ok;
+        render(); scrollTo(0, 0);
+        return;
+      }
       const note = f.note.value.trim();
       if (f.dataset.st === 'incomplet' && !note) { alert(t.need); btn.disabled = false; btn.textContent = t.send; return; }
       form = null;

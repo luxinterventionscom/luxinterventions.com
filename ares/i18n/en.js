@@ -10065,19 +10065,23 @@ export default [
 "Agreement / flat fee (optional)"
 ],
 [
-"Ajouter une photo",
-"Add a photo"
+"F. de ménage / nettoyage",
+"Cleaner / cleaning"
 ],
 [
-"Changer la photo",
-"Change the photo"
+"H. à tout faire",
+"Handyman"
 ],
 [
-"Facultatif — la personne peut aussi la mettre elle-même dans son app (⚙️).",
-"Optional — the person can also add it themselves in their app (⚙️)."
+"✋ Refusé",
+"✋ Refused"
 ],
 [
-"Photo illisible",
-"Unreadable photo"
+"l’ouvrier — à réaffecter",
+"the worker — to reassign"
+],
+[
+" (✋ a refusé)",
+" (✋ refused)"
 ]
 ];

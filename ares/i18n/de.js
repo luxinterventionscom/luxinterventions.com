@@ -10289,19 +10289,23 @@ export default [
 "Vereinbarung / Pauschale (optional)"
 ],
 [
-"Ajouter une photo",
-"Foto hinzufügen"
+"F. de ménage / nettoyage",
+"Reinigungskraft / Reinigung"
 ],
 [
-"Changer la photo",
-"Foto ändern"
+"H. à tout faire",
+"Hausmeister / Allrounder"
 ],
 [
-"Facultatif — la personne peut aussi la mettre elle-même dans son app (⚙️).",
-"Optional — die Person kann es auch selbst in ihrer App einstellen (⚙️)."
+"✋ Refusé",
+"✋ Abgelehnt"
 ],
 [
-"Photo illisible",
-"Foto unlesbar"
+"l’ouvrier — à réaffecter",
+"dem Arbeiter — neu zuweisen"
+],
+[
+" (✋ a refusé)",
+" (✋ hat abgelehnt)"
 ]
 ];
