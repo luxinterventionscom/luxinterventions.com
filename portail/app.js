@@ -9,7 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.11.0';
+const VERSION = '1.12.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -908,11 +908,11 @@ const VIEWS = {
         <details class="full rep-box" style="flex-basis:100%"><summary class="small" style="cursor:pointer">☑️ Contenu du rapport — cochez ce que vous voulez</summary>
           <div class="rep-checks">${REP_SECTIONS.map(([k, l]) => html`<label><input type="checkbox" name="sec" value="${k}" checked> ${l}</label>`)}</div></details>
         <details class="full rep-box" style="flex-basis:100%"><summary class="small" style="cursor:pointer">🔎 Filtres — rien coché = tout</summary>
-          ${(state.cache.residencesList || []).length ? html`<p class="small" style="margin:8px 0 4px"><b>Résidences</b></p><div class="rep-checks">${state.cache.residencesList.map((r) => html`<label><input type="checkbox" name="res" value="${r.name}"> ${r.name}</label>`)}</div>` : ''}
-          <p class="small" style="margin:8px 0 4px"><b>Type de travail</b></p><div class="rep-checks">${CATEGORIES.map((c) => html`<label><input type="checkbox" name="cat" value="${c}"> ${c}</label>`)}</div>
-          <p class="small" style="margin:8px 0 4px"><b>Fonction du demandeur</b></p><div class="rep-checks">${TITLES.map((c) => html`<label><input type="checkbox" name="fn" value="${c}"> ${c}</label>`)}</div>
-          <p class="small" style="margin:8px 0 4px"><b>Statut</b></p><div class="rep-checks">${[['terminee', 'Terminées'], ['ouvert', 'En cours'], ['annulee', 'Annulées']].map(([k, l]) => html`<label><input type="checkbox" name="st" value="${k}"> ${l}</label>`)}</div>
-          <p class="small" style="margin:8px 0 4px"><b>Urgence</b></p><div class="rep-checks">${Object.entries(URG).map(([k, u]) => html`<label><input type="checkbox" name="urg" value="${k}"> ${u.label}</label>`)}</div>
+          ${repGroup('res', 'Résidences', (state.cache.residencesList || []).map((r) => [r.name, r.name]), true)}
+          ${repGroup('cat', 'Type de travail', CATEGORIES.map((c) => [c, c]))}
+          ${repGroup('fn', 'Fonction du demandeur', TITLES.map((c) => [c, c]))}
+          ${repGroup('st', 'Statut', [['terminee', 'Terminées'], ['ouvert', 'En cours'], ['annulee', 'Annulées']])}
+          ${repGroup('urg', 'Urgence', Object.entries(URG).map(([k, u]) => [k, u.label]))}
         </details>
         <button class="btn primary" type="submit">${icon('download')} Rapport complet</button>
         <button class="btn" type="button" data-action="report-csv">📊 Export Excel (CSV)</button>
@@ -1423,6 +1423,10 @@ let installPrompt = null;
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; if (state.route === 'plus') renderView(); });
 
 // ───────────────────────── Rapport complet imprimable (tout le travail fait pour la gérance) ─────────────────────────
+// un groupe de filtres repliable (« Résidences · 2 cochées »), avec recherche + Tout / Aucun quand la liste est longue
+const repGroup = (name, title, items, big) => (items.length ? html`<details class="rep-grp" data-grp="${name}"><summary><b>${title}</b> <span class="rep-n muted small"></span></summary>
+  ${big || items.length > 12 ? html`<div class="rep-tools"><input type="search" placeholder="Rechercher…" data-input="rep-find" aria-label="Rechercher"><button type="button" class="btn sm ghost" data-action="rep-all" data-v="1">Tout</button><button type="button" class="btn sm ghost" data-action="rep-all" data-v="0">Aucun</button></div>` : ''}
+  <div class="rep-checks rep-scroll">${items.map(([v, l]) => html`<label><input type="checkbox" name="${name}" value="${v}" data-input="rep-chk"> ${l}</label>`)}</div></details>` : '');
 const REP_SECTIONS = [['resume', 'Résumé'], ['res', 'Par résidence'], ['cat', 'Par type de travail'], ['tech', 'Par technicien'], ['fn', 'Par fonction du demandeur'], ['who', 'Par demandeur'], ['mois', 'Statistiques mois par mois'], ['detail', 'Détail de chaque demande']];
 const repOpts = (fd) => ({ per: fd.get('per') || 'mois', month: fd.get('month'), year: fd.get('year'), org: fd.get('org') || '', res: fd.getAll('res'), cat: fd.getAll('cat'), fn: fd.getAll('fn'), st: fd.getAll('st'), urg: fd.getAll('urg'), sec: fd.getAll('sec') });
 // demandes de la période, puis filtres (résidence, type, fonction du demandeur, statut, urgence)
@@ -1518,6 +1522,7 @@ const ACTIONS = {
   },
   'close-sheet': async () => { if (await leaveSheetOk()) { sheetDirty = false; closeSheet(); } },
   'demo-start': () => startDemo(),
+  'rep-all': (d, el) => { const g = el.closest('.rep-grp'); g.querySelectorAll('.rep-checks label').forEach((l) => { if (!l.hidden) l.querySelector('input').checked = d.v === '1'; }); repCount(g); },
   async 'report-csv'(d, el) {
     const o = repOpts(new FormData(el.form)), { tickets, label } = await repData(o);
     const q = (v) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
@@ -1872,6 +1877,10 @@ const FORMS = {
   },
 };
 
+const repCount = (g) => { if (!g) return; const n = g.querySelectorAll('input[type=checkbox]:checked').length; g.querySelector('.rep-n').textContent = n ? `· ${n} cochée(s)` : ''; };
+document.addEventListener('input', (e) => {
+  if (e.target.dataset && e.target.dataset.input === 'rep-find') { const q = e.target.value.trim().toLowerCase(); e.target.closest('.rep-grp').querySelectorAll('.rep-checks label').forEach((l) => { l.hidden = !!q && !l.textContent.toLowerCase().includes(q); }); }
+});
 // ───────────────────────── Événements ─────────────────────────
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
@@ -1920,6 +1929,7 @@ function setCode6(form, name, v) {
   c.querySelectorAll('.c6').forEach((b, i) => { b.value = v[i] || ''; });
 }
 document.addEventListener('change', (e) => {
+  if (e.target.dataset.input === 'rep-chk') repCount(e.target.closest('.rep-grp'));
   if (e.target.dataset.input === 'user-title' && e.target.form && e.target.form.role) {
     // Directeur / Responsable sec. / Manager → responsable (invite ses collègues) ; les autres → collaborateur (modifiable)
     e.target.form.role.value = TITLE_ADMIN.includes(e.target.value) ? 'gerance_admin' : 'gerance_user';

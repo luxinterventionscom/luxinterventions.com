@@ -189,6 +189,10 @@ export default [
 "Al piano"
 ],
 [
+"Aucun",
+"Nessuno"
+],
+[
 "Aucun résultat.",
 "Nessun risultato."
 ],
@@ -1569,6 +1573,10 @@ export default [
 "Cerca un condominio, un indirizzo…"
 ],
 [
+"Rechercher…",
+"Cerca…"
+],
+[
 "Refaire",
 "Rifare"
 ],
@@ -1851,6 +1859,10 @@ export default [
 [
 "Toiture / façade",
 "Tetto / facciata"
+],
+[
+"Tout",
+"Tutti"
 ],
 [
 "Tout depuis le début",
@@ -2223,6 +2235,10 @@ export default [
 [
 "· vu",
 "· visto"
+],
+[
+"· {0} cochée(s)",
+"· {0} spuntate"
 ],
 [
 "· à l'instant",

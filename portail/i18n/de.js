@@ -185,6 +185,10 @@ export default [
 "Bis Etage"
 ],
 [
+"Aucun",
+"Keine"
+],
+[
 "Aucun résultat.",
 "Kein Ergebnis."
 ],
@@ -1565,6 +1569,10 @@ export default [
 "Wohnanlage, Adresse suchen…"
 ],
 [
+"Rechercher…",
+"Suchen…"
+],
+[
 "Refaire",
 "Erneuern"
 ],
@@ -1847,6 +1855,10 @@ export default [
 [
 "Toiture / façade",
 "Dach / Fassade"
+],
+[
+"Tout",
+"Alle"
 ],
 [
 "Tout depuis le début",
@@ -2227,6 +2239,10 @@ export default [
 [
 "· vu",
 "· gesehen"
+],
+[
+"· {0} cochée(s)",
+"· {0} ausgewählt"
 ],
 [
 "· à l'instant",

@@ -189,6 +189,10 @@ export default [
 "To floor"
 ],
 [
+"Aucun",
+"None"
+],
+[
 "Aucun résultat.",
 "No results."
 ],
@@ -1533,6 +1537,10 @@ export default [
 "Search a residence, an address…"
 ],
 [
+"Rechercher…",
+"Search…"
+],
+[
 "Refaire",
 "Redo"
 ],
@@ -1811,6 +1819,10 @@ export default [
 [
 "Toiture / façade",
 "Roof / façade"
+],
+[
+"Tout",
+"All"
 ],
 [
 "Tout depuis le début",
@@ -2175,6 +2187,10 @@ export default [
 [
 "· vu",
 "· seen"
+],
+[
+"· {0} cochée(s)",
+"· {0} ticked"
 ],
 [
 "· à l'instant",
