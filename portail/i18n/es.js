@@ -189,6 +189,10 @@ export default [
 "Hasta planta"
 ],
 [
+"Aucun",
+"Ninguno"
+],
+[
 "Aucun résultat.",
 "Ningún resultado."
 ],
@@ -1577,6 +1581,10 @@ export default [
 "Buscar una comunidad, una dirección…"
 ],
 [
+"Rechercher…",
+"Buscar…"
+],
+[
 "Refaire",
 "Rehacer"
 ],
@@ -1855,6 +1863,10 @@ export default [
 [
 "Toiture / façade",
 "Tejado / fachada"
+],
+[
+"Tout",
+"Todos"
 ],
 [
 "Tout depuis le début",
@@ -2219,6 +2231,10 @@ export default [
 [
 "· vu",
 "· visto"
+],
+[
+"· {0} cochée(s)",
+"· {0} marcado(s)"
 ],
 [
 "· à l'instant",

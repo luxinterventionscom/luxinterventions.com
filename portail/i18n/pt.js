@@ -189,6 +189,10 @@ export default [
 "Até ao andar"
 ],
 [
+"Aucun",
+"Nenhum"
+],
+[
 "Aucun résultat.",
 "Nenhum resultado."
 ],
@@ -1577,6 +1581,10 @@ export default [
 "Procurar um condomínio, uma morada…"
 ],
 [
+"Rechercher…",
+"Pesquisar…"
+],
+[
 "Refaire",
 "Refazer"
 ],
@@ -1859,6 +1867,10 @@ export default [
 [
 "Toiture / façade",
 "Telhado / fachada"
+],
+[
+"Tout",
+"Todos"
 ],
 [
 "Tout depuis le début",
@@ -2223,6 +2235,10 @@ export default [
 [
 "· vu",
 "· visto"
+],
+[
+"· {0} cochée(s)",
+"· {0} marcado(s)"
 ],
 [
 "· à l'instant",
