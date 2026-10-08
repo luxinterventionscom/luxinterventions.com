@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.103.0';
+const VERSION = '2.104.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -440,7 +440,7 @@ function equipeData(i) {
     societe: { nom: factConf().nom || 'ARES INVEST S.A.', tel: factConf().tel || soc.tel || '', logo: '/ares/icons/lux-192.png' },
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '' },
     // intervenant occasionnel : il lit et signe sa fiche d'engagement dans son app
-    eng: i.genre === 'prive' ? { assur: i.assur || '', police: i.police || '', signed: !!i.sign, signAt: i.signAt || '' } : null,
+    eng: i.genre === 'prive' ? { assur: i.assur || '', police: i.police || '', assurTodo: !!i.assurTodo, signed: !!i.sign, signAt: i.signAt || '' } : null,
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
     horaires: hors(i).map((h) => ({ j: h.j, de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })), jours,
     absences: (i.absences || []).filter((a) => !a.fin || a.fin >= addDays(today(), -30)).map((a) => ({ type: a.type, debut: a.debut, fin: a.fin || '' })),
@@ -468,7 +468,7 @@ async function equipeSync(onlyId, loud) {
       await vault.espacePut(i.espace.id, await sealJson(i.espace.key, data));
       eqHashes.set(i.id, h);
       if (filesChanged) await vault.mutate((tx) => { const cur = vault.get('intervenants', i.id); if (cur && cur.espace) tx.put('intervenants', { id: i.id, espace: { ...cur.espace, files: [...up] } }); }, 'App de l’équipe : photos', intervFull(i), i.id);
-      await notifyNews(i.espace.id, data.items.filter((x) => x.d >= today()).map((x) => 'i:' + x.tid + ':' + x.d));
+      await notifyNews(i.espace.id, [...data.items.filter((x) => x.d >= today()).map((x) => 'i:' + x.tid + ':' + x.d), ...(i.assurTodo ? ['assur'] : [])]); // 🛡️ assurance « à faire » → notification sur son téléphone
       try { localStorage.setItem('aresEq:' + i.espace.id, h); } catch {}
     } catch (e) {
       if (loud) { toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
@@ -559,6 +559,14 @@ async function equipeInbox(w, msg) {
         if (photoOk(it.d) || it.d === '') { tx.put('intervenants', { id: w.id, photo: it.d }); feed.push({ at, k: 'info', note: it.d ? '📷 Photo de profil mise à jour' : 'Photo de profil retirée' }); fresh++; }
       } else if (it.k === 'icon') {
         if (emojiOk(it.e)) { tx.put('intervenants', { id: w.id, icon: it.e }); feed.push({ at, k: 'info', note: `Icône choisie : ${it.e}` }); }
+      } else if (it.k === 'assur') {
+        // 🛡️ l'occasionnel écrit lui-même son assurance RC (elle était « à faire »)
+        const co = String(it.assur || '').trim().slice(0, 80), pol = String(it.police || '').trim().slice(0, 40);
+        if (w.genre === 'prive' && co && pol) {
+          tx.put('intervenants', { id: w.id, assur: co, police: pol, assurTodo: false });
+          feed.push({ at, k: 'info', note: `🛡️ Assurance RC reçue : ${co} — police n° ${pol}` });
+          fresh++;
+        }
       } else if (it.k === 'sign') {
         // signature de la fiche d'engagement, faite par l'intervenant occasionnel dans son app
         if (w.genre === 'prive' && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(it.png || '') && it.png.length < 400000) {
@@ -2662,6 +2670,7 @@ function engForm(i) {
       ${field('Assurance RC (compagnie)', 'assur', i.assur, { placeholder: 'ex. Foyer, La Luxembourgeoise, AXA…' })}
       ${field('N° de police', 'police', i.police, { attrs: 'autocomplete="off"' })}
     </div>
+    <label class="check eng-occ" style="margin:8px 0 0" ${occ ? '' : new Raw('hidden')}><input type="checkbox" name="assurTodo" value="1" ${i.assurTodo ? new Raw('checked') : ''}> 🛡️ <b>Assurance à faire</b> — il n’a pas encore les données : un rappel reste dans son app (il pourra l’écrire lui-même)</label>
     <label class="check eng-occ" style="margin:8px 0 0" ${occ ? '' : new Raw('hidden')}><input type="checkbox" name="cash" value="1" ${i.cash ? new Raw('checked') : ''}> 💵 <b>Paiement cash</b> (en espèces) — il le demande : la banque n’est alors pas obligatoire</label>
     <div class="section-label" style="margin:8px 0 0">🏦 Compte bancaire (pour le payer) — même fiche pour tous les pays</div>
     <div class="fields bank-box" style="margin-top:6px">
@@ -3149,6 +3158,8 @@ dashboard() {
     const virBox = virs.length ? html`<div class="stack" style="margin-bottom:14px">${virs.map((l) => alertBtn('info', 'wallet', 'open-vir', l.id, html`💳 <b>${fullName(l)}</b> dit avoir payé${l.virSignal.montant ? html` <b>${money(l.virSignal.montant)}</b>` : ''} par ${PAY_VIA[l.virSignal.via || 'vir']} — ${l.virSignal.ref}<div class="tiny">${fmtDateTime(l.virSignal.t)} · vérifiez la réception, puis cochez le mois payé</div>`))}</div>` : '';
     const eqNew = sum(vault.list('intervenants'), (i) => i.feedNew || 0);
     const eqBox = eqNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'eq-feed', '', html`👷 <b>${eqNew} nouvelle${eqNew > 1 ? 's' : ''} de l’équipe</b> (commencé, fini, pas fini, notes, photos…)<div class="tiny">touchez pour voir qui fait quoi, où et quand</div>`)}</div>` : '';
+    const assurTodo = vault.list('intervenants').filter((i) => i.genre === 'prive' && i.assurTodo && !i.archive);
+    const assurBox = assurTodo.length ? html`<div class="stack" style="margin-bottom:14px">${assurTodo.map((i) => alertBtn('warn', 'alert', 'open-interv', i.id, html`🛡️ <b>Assurance RC à faire</b> : ${intervFull(i)} (occasionnel) n’a pas encore donné son assurance<div class="tiny">rappel affiché dans son app · touchez pour ouvrir sa fiche</div>`))}</div>` : '';
     const absNow = vault.list('intervenants').map((i) => [i, absOn(i, today())]).filter(([, a]) => a);
     const absSoon = vault.list('intervenants').map((i) => [i, (i.absences || []).find((a) => a.debut > today() && a.debut <= addDays(today(), 7))]).filter(([, a]) => a);
     const absBox = absNow.length || absSoon.length ? html`<div class="stack" style="margin-bottom:14px">${absNow.map(([i, a]) => { const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length; return alertBtn(a.type === 'maladie' ? 'bad' : 'warn', 'calendar', 'open-interv', i.id, html`${ABS_TYPES[a.type]} : <b>${intervFull(i)}</b> absent${a.fin ? ' jusqu’au ' + fmtDate(a.fin) : ' (fin non connue)'}${n ? html` — <b>${plural(n, 'intervention')}</b> à vérifier` : ''}<div class="tiny">touchez pour la fiche</div>`); })}
@@ -3164,6 +3175,7 @@ dashboard() {
       ${pushNudge()}
       ${nudge}
       ${refBox}
+      ${assurBox}
       ${finBox}
       ${sigBox}
       ${chatBox}
@@ -4267,7 +4279,7 @@ const SHEETS = {
           ${i.tel ? kvRow('Téléphone', html`<a href="tel:${tel}">${i.tel}</a>`) : ''}
           ${i.mail ? kvRow('Email', html`<a href="mailto:${i.mail}">${i.mail}</a>`) : ''}
           ${i.rcs ? kvRow('RCS', i.rcs) : ''}${i.tva ? kvRow('N° TVA', i.tva) : ''}
-          ${i.assur || i.police ? kvRow('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')) : ''}${i.iban ? kvRow('Banque', [i.banque, i.bic ? 'BIC ' + i.bic : '', ibanFmt(i.iban)].filter(Boolean).join(' · ')) : ''}
+          ${i.assurTodo ? kvRow('Assurance RC', html`<span class="badge warn">🛡️ à faire</span> pas encore fournie${i.assur || i.police ? ' — ' + [i.assur, i.police].filter(Boolean).join(' · ') : ''} (rappel dans son app)`) : i.assur || i.police ? kvRow('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')) : ''}${i.iban ? kvRow('Banque', [i.banque, i.bic ? 'BIC ' + i.bic : '', ibanFmt(i.iban)].filter(Boolean).join(' · ')) : ''}
           ${i.cash ? kvRow('Paiement', '💵 cash (en espèces)') : ''}
           ${i.payeH ? kvRow('Payé', `${eur(i.payeH)} / heure${i.payeDepl ? ' · déplacement ' + eur(i.payeDepl) : ''}`) : ''}
         </dl>
@@ -6339,11 +6351,11 @@ const FORMS = {
     // l'horaire ne se fait plus ici : fiche de la personne → Horaires (routine et planning par semaine)
     // engagement : assurance, paiement, obligations acceptées, signature digitale
     if (rec.genre !== 'interne') {
-      Object.assign(rec, { cash: rec.genre === 'prive' && fd.get('cash') === '1', assur: g('assur'), police: g('police'), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s/g, ''), iban: ibanClean(g('iban')) });
+      Object.assign(rec, { cash: rec.genre === 'prive' && fd.get('cash') === '1', assurTodo: rec.genre === 'prive' && fd.get('assurTodo') === '1' && !(g('assur') && g('police')), assur: g('assur'), police: g('police'), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s/g, ''), iban: ibanClean(g('iban')) });
       const ib = ibanCheck(rec.iban), bc = bicCheck(rec.bic, ib.ok ? ib.cc : '');
       if (rec.genre === 'prive') {
         const bank = !rec.cash || rec.iban || rec.bic || rec.banque; // cash : banque facultative (contrôlée si remplie)
-        const miss = [!rec.assur && 'assurance', !rec.police && 'n° de police', bank && !rec.banque && 'nom de la banque', bank && !bc.ok && 'BIC (' + bc.msg + ')', bank && !ib.ok && 'IBAN (' + ib.msg + ')'].filter(Boolean);
+        const miss = [!rec.assurTodo && !rec.assur && 'assurance (ou cochez « Assurance à faire »)', !rec.assurTodo && !rec.police && 'n° de police', bank && !rec.banque && 'nom de la banque', bank && !bc.ok && 'BIC (' + bc.msg + ')', bank && !ib.ok && 'IBAN (' + ib.msg + ')'].filter(Boolean);
         if (miss.length) return toast('Intervention occasionnelle — il manque : ' + miss.join(', '), { bad: true });
       } else if ((rec.iban && !ib.ok) || (rec.bic && !bc.ok)) return toast(!ib.ok && rec.iban ? 'IBAN : ' + ib.msg : 'BIC : ' + bc.msg, { bad: true });
       // la signature vient de l'app de l'intervenant occasionnel : on la garde telle quelle

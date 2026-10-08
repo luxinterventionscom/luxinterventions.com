@@ -155,7 +155,23 @@ const ENGT = {
   pt: { t: 'A minha ficha de contratação', top: 'Assine a sua ficha de contratação: obrigatória para receber.', open: 'Ler e assinar', ob: [['Obrigação de resultado', 'Comprometo-me a executar o trabalho segundo as regras da arte, no dia, hora e local combinados, e a refazê-lo à minha custa se não estiver conforme.'], ['Danos', 'Qualquer dano causado a bens ou pessoas durante a intervenção fica a meu cargo e do meu seguro de responsabilidade civil{a}.'], ['Independência', 'Intervenção pontual, sem vínculo de subordinação: declaro eu próprio os meus rendimentos e cumpro as minhas obrigações fiscais e sociais.'], ['Confidencialidade', 'Códigos, chaves e informações dos locais e dos ocupantes permanecem confidenciais e servem apenas para a intervenção.']], rgpd: 'RGPD: {s} usa os meus dados (identidade, contactos, seguro, banco, assinatura, horas) apenas para os trabalhos, pagamentos e obrigações legais. Posso pedir para os ver, corrigir ou apagar.', acc: 'Li e aceito estas obrigações', sig: 'A minha assinatura (com o dedo)', clr: 'Apagar', send: '✍️ Assinar e enviar', need: 'Marque «Li e aceito» e assine no quadro.', ok: 'Assinada ✓ — enviada a {s}', done: 'Assinada em {d}' },
   es: { t: 'Mi ficha de contratación', top: 'Firma tu ficha de contratación: obligatoria para cobrar.', open: 'Leer y firmar', ob: [['Obligación de resultado', 'Me comprometo a realizar el trabajo correctamente, en el día, hora y lugar acordados, y a rehacerlo a mi cargo si no es conforme.'], ['Daños', 'Todo daño causado a bienes o personas durante la intervención corre a mi cargo y al de mi seguro de responsabilidad civil{a}.'], ['Independencia', 'Intervención puntual, sin relación de subordinación: declaro yo mismo mis ingresos y cumplo mis obligaciones fiscales y sociales.'], ['Confidencialidad', 'Códigos, llaves e información de los lugares y ocupantes son confidenciales y solo sirven para la intervención.']], rgpd: 'RGPD: {s} usa mis datos (identidad, contacto, seguro, banco, firma, horas) solo para los trabajos, los pagos y sus obligaciones legales. Puedo pedir verlos, corregirlos o borrarlos.', acc: 'He leído y acepto estas obligaciones', sig: 'Mi firma (con el dedo)', clr: 'Borrar', send: '✍️ Firmar y enviar', need: 'Marca «He leído y acepto» y firma en el recuadro.', ok: 'Firmada ✓ — enviada a {s}', done: 'Firmada el {d}' },
 };
-let sigUrl = '', sigSent = '';
+let sigUrl = '', sigSent = '', assurSent = false;
+// 🛡️ assurance RC « à faire » : rappel en haut tant qu'elle n'est pas donnée, et petit formulaire pour l'envoyer
+const ASST = {
+  fr: { t: '🛡️ N’oubliez pas : votre assurance RC est à faire !', hint: 'Elle est obligatoire pour travailler avec nous. Écrivez la compagnie et le numéro de police dès que vous l’avez.', co: 'Compagnie d’assurance', coPh: 'ex. Foyer, AXA, Allianz…', pol: 'N° de police', send: '🛡️ Envoyer mon assurance', ok: 'Assurance envoyée ✓ — merci !', need: 'Écrivez la compagnie et le n° de police.' },
+  it: { t: '🛡️ Non dimenticare: la tua assicurazione RC è da fare!', hint: 'È obbligatoria per lavorare con noi. Scrivi la compagnia e il numero di polizza appena ce l’hai.', co: 'Compagnia di assicurazione', coPh: 'es. Foyer, AXA, Allianz…', pol: 'N° di polizza', send: '🛡️ Invia la mia assicurazione', ok: 'Assicurazione inviata ✓ — grazie!', need: 'Scrivi la compagnia e il n° di polizza.' },
+  de: { t: '🛡️ Nicht vergessen: Ihre Haftpflichtversicherung fehlt noch!', hint: 'Sie ist Pflicht, um mit uns zu arbeiten. Schreiben Sie Versicherung und Policennummer, sobald Sie sie haben.', co: 'Versicherung', coPh: 'z. B. Foyer, AXA, Allianz…', pol: 'Policennummer', send: '🛡️ Versicherung senden', ok: 'Versicherung gesendet ✓ — danke!', need: 'Versicherung und Policennummer eingeben.' },
+  pt: { t: '🛡️ Não se esqueça: o seu seguro RC está por fazer!', hint: 'É obrigatório para trabalhar connosco. Escreva a seguradora e o número da apólice assim que o tiver.', co: 'Seguradora', coPh: 'ex. Foyer, AXA, Allianz…', pol: 'N.º da apólice', send: '🛡️ Enviar o meu seguro', ok: 'Seguro enviado ✓ — obrigado!', need: 'Escreva a seguradora e o n.º da apólice.' },
+  en: { t: '🛡️ Don’t forget: your liability insurance is still to do!', hint: 'It is required to work with us. Write the company and the policy number as soon as you have it.', co: 'Insurance company', coPh: 'e.g. Foyer, AXA, Allianz…', pol: 'Policy number', send: '🛡️ Send my insurance', ok: 'Insurance sent ✓ — thank you!', need: 'Write the company and the policy number.' },
+  es: { t: '🛡️ No lo olvide: ¡su seguro de RC está pendiente!', hint: 'Es obligatorio para trabajar con nosotros. Escriba la aseguradora y el número de póliza en cuanto lo tenga.', co: 'Aseguradora', coPh: 'ej. Foyer, AXA, Allianz…', pol: 'N.º de póliza', send: '🛡️ Enviar mi seguro', ok: 'Seguro enviado ✓ — ¡gracias!', need: 'Escriba la aseguradora y el n.º de póliza.' },
+};
+function assurCard() {
+  const a = ASST[lang] || ASST.fr;
+  return `<div class="card warnc" id="assurCard"><p style="margin:0 0 4px"><b>${esc(a.t)}</b></p><p class="meta" style="margin:0 0 8px">${esc(a.hint)}</p>
+    <form id="assurForm"><label>${esc(a.co)}</label><input type="text" name="co" maxlength="80" placeholder="${esc(a.coPh)}" required>
+    <label>${esc(a.pol)}</label><input type="text" name="pol" maxlength="40" autocomplete="off" required>
+    <button class="btn block" style="margin-top:10px" type="submit">${esc(a.send)}</button></form></div>`;
+}
 // mon icône (métier) : choisie dans l'app, visible chez le responsable
 const WORK_ICONS = ['🧹', '🧽', '🔨', '🪚', '⚡', '💡', '🔌', '🔧', '🪠', '🚰', '🔥', '🧱', '🖌️', '🎨', '🔑', '🔐', '🌿', '🌳', '✂️', '🪜', '🧰', '🛠️', '🚚', '👷', '👷‍♀️'];
 const ICT = { fr: 'Mon icône', it: 'La mia icona', de: 'Mein Symbol', en: 'My icon', pt: 'O meu ícone', es: 'Mi icono' };
@@ -452,6 +468,7 @@ function render() {
   if (pushSt && pushSt !== 'on') out.push(notifCard(t)); // notifications coupées : rappel en haut (sous la carte)
   const eg = d.eng && !d.eng.signed && !sigSent ? ENGT[lang] || ENGT.fr : null;
   if (eg) out.push(`<div class="card warnc"><p style="margin:0 0 8px"><b>✍️ ${esc(eg.top)}</b></p><button class="btn sm" data-eng-open="1">${esc(eg.open)} ↓</button></div>`);
+  if (d.eng && d.eng.assurTodo && !assurSent) out.push(assurCard());
   // météo de la semaine + radio (comme dans l'app des locataires)
   out.push(wxRadioCard());
   const q = getJ(QK());
@@ -639,6 +656,14 @@ app.addEventListener('submit', async (e) => {
       sigSent = new Date().toISOString(); sigUrl = '';
       flash = e2.ok.replace('{s}', data.societe.nom || '');
     } catch (err) { alert('⚠ ' + (err.message || err)); }
+    render(); scrollTo(0, 0);
+    return;
+  }
+  if (f.id === 'assurForm') {
+    const a = ASST[lang] || ASST.fr, co = f.co.value.trim(), pol = f.pol.value.trim();
+    if (co.length < 2 || pol.length < 2) { alert(a.need); return; }
+    btn.disabled = true; btn.textContent = '…';
+    try { await queue({ k: 'assur', assur: co.slice(0, 80), police: pol.slice(0, 40), at: new Date().toISOString() }); assurSent = true; flash = a.ok; } catch (err) { alert('⚠ ' + (err.message || err)); }
     render(); scrollTo(0, 0);
     return;
   }
