@@ -1169,6 +1169,10 @@ export default [
 "Thank you! Rating sent to LuxInterventions"
 ],
 [
+"Merci d’avoir choisi LuxInterventions.",
+"Thank you for choosing LuxInterventions."
+],
+[
 "Mes demandes en cours",
 "My open requests"
 ],
@@ -1315,6 +1319,10 @@ export default [
 [
 "Notifications sur cet appareil",
 "Notifications on this device"
+],
+[
+"Nous sommes très heureux de travailler avec vous.",
+"We are very happy to work with you."
 ],
 [
 "Nouveau lien d'accès",
@@ -2017,6 +2025,10 @@ export default [
 "One year"
 ],
 [
+"Une seule fois : ensuite vous vous connecterez avec votre email et ce mot de passe.",
+"Just once: after that you sign in with your email and this password."
+],
+[
 "Urgence",
 "Urgency"
 ],
@@ -2529,6 +2541,10 @@ export default [
 "🌐 Language"
 ],
 [
+"🎉 Bienvenue {0} !",
+"🎉 Welcome, {0}!"
+],
+[
 "💼 Gérez aussi vos propres locataires",
 "💼 Manage your own tenants too"
 ],
@@ -2599,6 +2615,10 @@ export default [
 [
 "🔑 Boîte à clés",
 "🔑 Key box"
+],
+[
+"🔑 Choisissez votre mot de passe",
+"🔑 Choose your password"
 ],
 [
 "🔑 Code boîte à clés",

@@ -9,7 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.13.0';
+const VERSION = '1.14.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -320,7 +320,9 @@ function renderLock(mode, data = {}) {
   }
   if (mode === 'invite') {
     setHtml(lockEl, html`<form class="lock-card" data-form="invite" autocomplete="off">${brandHead()}
-      <div class="alert info">${icon('users')}<div>Bienvenue <b>${data.name}</b> — ${data.org}.<br>Choisissez votre mot de passe <b>une seule fois</b> : ensuite vous vous connecterez avec votre email et ce mot de passe.</div></div>
+      <div class="inv-welcome"><p class="iw-t">🎉 Bienvenue ${data.name} !</p><p class="iw-org">${data.org}</p><p><b>Merci d’avoir choisi LuxInterventions.</b> Nous sommes très heureux de travailler avec vous.</p></div>
+      <p class="iw-step">🔑 Choisissez votre mot de passe</p>
+      <p class="small muted" style="margin:-4px 0 4px">Une seule fois : ensuite vous vous connecterez avec votre email et ce mot de passe.</p>
       <input type="hidden" name="token" value="${data.token}">
       <input type="text" name="username" value="${data.email}" autocomplete="username" readonly class="muted">
       <label class="field">Mot de passe ${pwField('pass', 'Au moins 10 caractères', 'new-password')}</label>
@@ -944,7 +946,17 @@ const sheetEl = $('#sheet');
 // Saisie pas encore enregistrée : on demande avant de fermer la fenêtre (sinon tout est perdu)
 let sheetDirty = false;
 sheetEl.addEventListener('input', (e) => { const el = e.target; if (el.closest('form') && !el.dataset.input && !['hidden', 'search', 'file'].includes(el.type)) sheetDirty = true; });
-const leaveSheetOk = async () => !sheetDirty || (await confirmBox('Fermer sans enregistrer ?', { ok: 'Fermer sans enregistrer', detail: 'Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement.' }));
+// fermer une fenêtre où l'on a écrit : proposer directement d'enregistrer (le bouton du bas peut être caché ou loin)
+const leaveSheetOk = async () => {
+  if (!sheetDirty) return true;
+  const subs = [...sheetEl.querySelectorAll('button[type=submit]')].filter((b) => !b.disabled);
+  const save = subs.find((b) => b.closest('.sheet-foot')) || subs[subs.length - 1];
+  if (!save) return true; // rien à enregistrer dans cette fenêtre
+  const lbl = save.textContent.replace(/\s+/g, ' ').trim() || 'Enregistrer';
+  const v = await choiceBox('Fermer sans enregistrer ?', 'Ce que vous avez écrit n’est pas encore enregistré.', [{ value: 'drop', label: 'Fermer sans enregistrer', cls: 'ghost danger' }, { value: 'save', label: '💾 ' + lbl, cls: 'primary' }]);
+  if (v === 'save') { save.click(); return false; }
+  return v === 'drop';
+};
 function openSheet(kind, id, data) {
   sheetDirty = false;
   state.sheet = { kind, id, data };

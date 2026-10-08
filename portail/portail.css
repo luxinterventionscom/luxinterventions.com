@@ -234,3 +234,9 @@ dialog.sheet.wide { max-width: 1040px; }
 .offer-banner { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; cursor: pointer; margin: 0 0 16px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--text); }
 .offer-banner .ob-ic { font-size: 26px; }
 .offer-banner .ob-go { font-weight: 700; color: var(--accent); white-space: nowrap; }
+/* page d'invitation : bienvenue chaleureuse, étape en orange */
+.inv-welcome { padding: 14px 16px; border-radius: 16px; background: var(--accent-soft); border: 1px solid var(--accent); }
+.inv-welcome p { margin: 0 0 4px; }
+.inv-welcome .iw-t { font-size: 20px; font-weight: 800; color: var(--accent); }
+.inv-welcome .iw-org { font-size: 13px; color: var(--text-2); margin-bottom: 8px; }
+.iw-step { margin: 6px 0 0; font-size: 18px; font-weight: 800; color: var(--accent); }
