@@ -723,3 +723,6 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 @keyframes contPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, .55); border-color: #dc2626; } 50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); border-color: #fca5a5; } }
 .cont-blink-box { border: 2px solid #dc2626 !important; animation: contPulse 1.2s ease-in-out infinite; } /* le texte reste lisible : seul le cadre clignote */
 @media (prefers-reduced-motion: reduce) { .cont-blink, .cont-blink-box { animation: none; } }
+/* onglets : libellés courts sur téléphone */
+.tab-short { display: none; }
+@media (max-width: 560px) { .tab-long { display: none; } .tab-short { display: inline; } }

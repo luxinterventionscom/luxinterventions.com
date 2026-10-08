@@ -10351,5 +10351,45 @@ export default [
 [
 "✅ Oui, il l’a demandé — désactiver",
 "✅ Sim, ele pediu — desativar"
+],
+[
+"💳 Abonnements",
+"💳 Assinaturas"
+],
+[
+"Abonnements",
+"Assinaturas"
+],
+[
+"Compta",
+"Contab."
+],
+[
+"Stats",
+"Estat."
+],
+[
+"Annonces",
+"Anúncios"
+],
+[
+"🟢 Activé",
+"🟢 Ativado"
+],
+[
+"⚪ Désactivé",
+"⚪ Desativado"
+],
+[
+"Offres d’abonnement dans le portail des gérances",
+"Ofertas de assinatura no portal das gestoras"
+],
+[
+"💼 Abonnements des gérances",
+"💼 Assinaturas das gestoras"
+],
+[
+"✅ Paiement reçu",
+"✅ Pagamento recebido"
 ]
 ];

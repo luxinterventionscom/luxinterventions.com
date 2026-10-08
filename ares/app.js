@@ -1031,6 +1031,62 @@ async function binDaily() {
   }
   try { localStorage.setItem('aresBinDay', today()); } catch {}
 }
+// 📣 annonces publicitaires des partenaires (vendues) : dans Comptabilité → Abonnements
+function pubSection(f = '') {
+      pubStatsLoad();
+      const all = vault.list('avis').filter((a) => isPub(a) && (!f || !a.immId || a.immId === f)).sort((a, b) => (b.debut || '').localeCompare(a.debut || ''));
+      const on = all.filter((a) => !a.fin || a.fin >= today()), off = all.filter((a) => a.fin && a.fin < today()).slice(0, 20);
+      const left = (a) => { if (!a.fin) return 'sans fin'; const n = Math.round((new Date(a.fin + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 864e5); return a.debut > today() ? `à partir du ${fmtDate(a.debut)}` : n <= 0 ? 'dernier jour' : `encore ${plural(n, 'jour')}`; };
+      const row = (a) => html`<button class="row" data-action="edit-pub" data-id="${a.id}"><span class="grow"><span class="title" style="display:block;white-space:normal">${(PUB_CATS[a.cat] || PUB_CATS.autre).split(' ')[0]} <b>${a.nom}</b></span>
+        <span class="meta" style="display:block;white-space:normal">📍 ${a.adresse}${a.texte ? ' · ' + a.texte.slice(0, 90) : ''}${a.video ? ' · ▶ ' + (videoEmbed(a.video) ? videoEmbed(a.video).name : 'vidéo') : ''}</span>
+        <span class="meta" style="display:block"><b>${PUB_SLOTS[pubSlot(a)].split(' — ')[0]}</b> · ${pubAud(a).map((k) => html`<span>${PUB_AUD[k]}</span>`).reduce((x, y) => html`${x} · ${y}`)}</span>
+        <span class="meta"><span>${a.immId ? immName(a.immId) : 'Tous les immeubles'}</span>${a.fin ? html` · <span>${fmtDate(a.debut)} → ${fmtDate(a.fin)}</span>` : ''}</span>
+        ${(() => { const st = pubStatsFor(a.id, a.debut || '0000'); return st.v || st.taps ? html`<span class="meta" style="display:block">📊 <b>${st.v}</b> <span>vues</span> · <b>${st.taps}</b> <span>clics</span>${st.v ? html` · <span>${String(st.ctr).replace('.', ',')} %</span>` : ''}</span>` : ''; })()}</span>
+        <span class="badge ${a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
+      return html`<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
+        ${all.length ? html`<p class="tiny muted" style="margin:-4px 0 8px">📊 Statistiques anonymes : vues (une fois par jour et par téléphone) et clics. <a href="#" data-action="pub-stats-refresh">↻ Actualiser les statistiques</a></p>` : ''}
+        ${on.length ? html`<div class="list" style="margin-bottom:14px">${on.map(row)}</div>` : empty('msg', 'Aucune annonce en cours.', html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Nouvelle annonce</button>`)}
+        ${off.length ? html`<div class="section-label">Expirées (touchez pour republier)</div><div class="list">${off.map(row)}</div>` : ''}
+        ${radioCard()}`;
+}
+// 💼 abonnements des gérances (offre « Gérez aussi vos propres locataires ») : formule, prix, payé jusqu'au…
+const ABO_PLANS = { decouverte: ['Découverte', 0], pro: ['Pro', 29], agence: ['Agence', 79], mesure: ['Sur devis', 0] };
+const aboAll = () => (vault.get('reglages', 'abos') || {}).list || {};
+const aboOf = (orgId) => aboAll()[orgId] || null;
+const aboState = (a) => (!a ? 'none' : a.plan === 'decouverte' ? 'free' : a.paidUntil && a.paidUntil >= today() ? 'ok' : 'due');
+const aboOffersOn = () => (vault.get('reglages', 'abos') || {}).offers !== false;
+function aboSection() {
+  const sub = ui.aboTab || 'ger';
+  const tabs = html`<div class="tabs" role="tablist" style="max-width:560px;margin-bottom:14px">${[['ger', html`💼 <span class="tab-long">Abonnements </span>gérances`], ['pub', html`📣 Annonces<span class="tab-long"> publicitaires</span>`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sub === k}" data-action="abo-tab" data-id="${k}">${l}</button>`)}</div>`;
+  if (sub === 'pub') return html`${tabs}<p style="margin:0 0 10px"><button class="btn primary" data-action="new-pub" data-imm="">${icon('plus')} Annonce</button></p>${pubSection('')}`;
+  const on = aboOffersOn();
+  const sw = html`<div class="card" style="margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="grow"><b>Offres d’abonnement dans le portail des gérances</b><span class="meta" style="display:block">${on ? 'Les gérances voient « 💼 Nos abonnements » et « Voir les offres ».' : 'Masquées : les gérances ne voient aucune offre d’abonnement.'}</span></span>
+    <button class="btn ${on ? 'primary' : ''}" data-action="abo-offers" aria-pressed="${on}">${on ? '🟢 Activé' : '⚪ Désactivé'}</button></div>`;
+  return html`${tabs}${sw}${aboGer()}`;
+}
+function aboGer() {
+  const d = ui.ptl.data;
+  if (!d && ptlConf()) ptlLoad();
+  const orgs = d ? d.orgs : [];
+  const rows = orgs.map((o) => ({ o, a: aboOf(o.id) }));
+  const subs = rows.filter((x) => x.a), none = rows.filter((x) => !x.a);
+  const due = subs.filter((x) => aboState(x.a) === 'due'), ok = subs.filter((x) => aboState(x.a) === 'ok');
+  const mrr = sum(subs.filter((x) => x.a.plan !== 'decouverte'), (x) => (x.a.periode === 'an' ? (+x.a.prix || 0) / 12 : +x.a.prix || 0));
+  const st = (a) => { const k = aboState(a); return k === 'free' ? html`<span class="badge">🎁 gratuit</span>` : k === 'ok' ? html`<span class="badge ok">✅ payé jusqu’au ${fmtDate(a.paidUntil)}</span>` : html`<span class="badge cont-blink">⏳ à payer</span>`; };
+  const row = ({ o, a }) => html`<button class="row" data-action="abo-edit" data-id="${o.id}"><span class="grow"><span class="title" style="display:block">🏢 ${o.name}</span>
+      <span class="meta">${a ? html`<b>${(ABO_PLANS[a.plan] || ABO_PLANS.pro)[0]}</b> · ${a.prix ? eur(+a.prix) + (a.periode === 'an' ? ' / an' : ' / mois') : 'gratuit'}${a.debut ? ' · depuis le ' + fmtDate(a.debut) : ''}` : 'pas d’abonnement'}</span></span>${a ? st(a) : html`<span class="badge">＋ Abonnement</span>`}</button>`;
+  return html`<div class="metrics" style="margin-bottom:14px">
+      <div class="metric"><div class="lbl">Abonnements</div><div class="val">${subs.length}</div><div class="sub">${ok.length} payé(s) · ${subs.filter((x) => x.a.plan === 'decouverte').length} gratuit(s)</div></div>
+      <div class="metric ${due.length ? 'cont-blink-box' : ''}"><div class="lbl">À payer</div><div class="val ${due.length ? 'red' : ''}">${due.length}</div><div class="sub">${eur(sum(due, (x) => +x.a.prix || 0))}</div></div>
+      <div class="metric hero"><div class="lbl">Revenu mensuel</div><div class="val accent">${eur(mrr)}</div><div class="sub">abonnements payants</div></div></div>
+    <div class="section-label">💼 Abonnements des gérances</div>
+    ${!ptlConf() ? html`<p class="muted small">Connectez d’abord le Portail gérance (menu Gérances).</p>` : !d ? html`<p class="muted small">Chargement…</p>` : html`
+      ${due.length ? html`<div class="list" style="margin-bottom:10px">${due.map(row)}</div>` : ''}
+      ${ok.length || subs.length - due.length ? html`<div class="list" style="margin-bottom:10px">${subs.filter((x) => aboState(x.a) !== 'due').map(row)}</div>` : ''}
+      ${none.length ? html`<details style="margin-bottom:14px"><summary class="small" style="cursor:pointer">Gérances sans abonnement (${none.length})</summary><div class="list" style="margin-top:8px">${none.map(row)}</div></details>` : ''}
+      <p class="tiny muted" style="margin:0 0 18px">Quand une gérance touche « Je suis intéressé » dans son portail, vous recevez une notification. Touchez une gérance pour choisir sa formule et noter ses paiements.</p>`}
+`;
+}
 // Classement de l'année : tours faits par personne, tours à rattraper
 function binScores(plan, year) {
   const sc = {};
@@ -1223,12 +1279,12 @@ async function espaceSync(onlyId, loud) {
 }
 // Annonces pour le portail gérance : publiées en clair (publicité, aucune donnée personnelle), relues par le portail
 async function portailPubsSync() {
-  const list = pubsActives('', 'ptl').map(pubOut);
-  const h = await sha256Hex(JSON.stringify(list));
+  const list = pubsActives('', 'ptl').map(pubOut), offers = aboOffersOn();
+  const h = await sha256Hex(JSON.stringify([list, offers]));
   let prev = '';
   try { prev = localStorage.getItem('aresPubPtl') || ''; } catch { /* stockage indisponible */ }
   if (h === prev) return;
-  try { await vault.pubsPortail(list); localStorage.setItem('aresPubPtl', h); } catch { /* Worker pas encore à jour ou hors ligne : on réessaiera */ }
+  try { await vault.pubsPortail(list, offers); localStorage.setItem('aresPubPtl', h); } catch { /* Worker pas encore à jour ou hors ligne : on réessaiera */ }
 }
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
@@ -2188,7 +2244,7 @@ const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
   { group: 'Gérance', items: [['immeubles', 'Immeubles', 'building'], ['locataires', 'Locataires', 'users'], ['gerances', 'Gérances', 'briefcase'], ['maintenance', 'Maintenance', 'tool']] },
   ['champions', 'Classement', 'trophy'],
-  { group: 'Comptabilité', items: [['paiements', 'Gestion locataire', 'wallet'], ['compta', 'Comptabilité', 'chart']] },
+  { group: 'Comptabilité', items: [['paiements', 'Gestion locataire', 'wallet'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 function sideNavHtml() {
   const btn = ([id, label, ic, plus, sec], sub) => html`<button class="navbtn${sub ? ' nav-sub' : ''}" data-action="go" data-to="${id}" ${sec ? new Raw(`data-sec="${sec}"`) : ''}>${icon(ic)}<span>${label}</span></button>${plus ? html`<button class="navbtn nav-plus" data-action="${plus[0]}">＋ <span>${plus[1]}</span></button>` : ''}`;
@@ -2234,7 +2290,7 @@ function go(route, replace) {
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
   const navRoute = route === 'champeq' ? 'champions' : route;
-  document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute && (!b.dataset.sec || b.dataset.sec === (ui.cpSec || 'compta')) ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
+  document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute && (!b.dataset.sec || b.dataset.sec === (ui.cpSec === 'abo' ? 'abo' : 'compta')) ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   const fab = $('#fab');
   if (fab) fab.hidden = !['immeubles', 'locataires'].includes(route);
   renderView();
@@ -3031,6 +3087,7 @@ const VIEWS = {
   },
 
   maintenance() {
+    if (ui.mtTab === 'pub') { ui.mtTab = 'planning'; ui.cpSec = 'abo'; go('compta', true); return ''; } // les annonces sont dans Comptabilité → Abonnements
     const tab = ui.mtTab || 'planning';
     const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
     const f = ui.immFilter && imms.some((im) => im.id === ui.immFilter) ? ui.immFilter : '';
@@ -3040,7 +3097,7 @@ const VIEWS = {
     const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions" style="margin:0"><button class="btn" data-action="go" data-to="champeq">🏆 Classement</button><button class="btn primary" data-action="new-interv">${icon('plus')} Nouvel ouvrier</button></div>`
       : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
       : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
-    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', html`<span>Réclamations</span> (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['pub', '📣 Publicité'], ['intervenants', 'Équipe']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
+    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', html`<span>Réclamations</span> (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['intervenants', 'Équipe']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
     let body;
     if (tab === 'planning') {
       const from = today(), to = addDays(from, 13);
@@ -3070,22 +3127,6 @@ const VIEWS = {
       body = html`<p class="small muted" style="margin:0 0 10px">Messages affichés dans l'espace des locataires (coupure d'eau, travaux, nettoyage de la cave…).</p>
         ${actifs.length ? html`<div class="list" style="margin-bottom:14px">${actifs.map(row)}</div>` : empty('msg', 'Aucun avis en cours.', html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Nouvel avis</button>`)}
         ${passes.length ? html`<div class="section-label">Terminés</div><div class="list">${passes.map(row)}</div>` : ''}`;
-    } else if (tab === 'pub') {
-      pubStatsLoad();
-      const all = vault.list('avis').filter((a) => isPub(a) && (!f || !a.immId || a.immId === f)).sort((a, b) => (b.debut || '').localeCompare(a.debut || ''));
-      const on = all.filter((a) => !a.fin || a.fin >= today()), off = all.filter((a) => a.fin && a.fin < today()).slice(0, 20);
-      const left = (a) => { if (!a.fin) return 'sans fin'; const n = Math.round((new Date(a.fin + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 864e5); return a.debut > today() ? `à partir du ${fmtDate(a.debut)}` : n <= 0 ? 'dernier jour' : `encore ${plural(n, 'jour')}`; };
-      const row = (a) => html`<button class="row" data-action="edit-pub" data-id="${a.id}"><span class="grow"><span class="title" style="display:block;white-space:normal">${(PUB_CATS[a.cat] || PUB_CATS.autre).split(' ')[0]} <b>${a.nom}</b></span>
-        <span class="meta" style="display:block;white-space:normal">📍 ${a.adresse}${a.texte ? ' · ' + a.texte.slice(0, 90) : ''}${a.video ? ' · ▶ ' + (videoEmbed(a.video) ? videoEmbed(a.video).name : 'vidéo') : ''}</span>
-        <span class="meta" style="display:block"><b>${PUB_SLOTS[pubSlot(a)].split(' — ')[0]}</b> · ${pubAud(a).map((k) => html`<span>${PUB_AUD[k]}</span>`).reduce((x, y) => html`${x} · ${y}`)}</span>
-        <span class="meta"><span>${a.immId ? immName(a.immId) : 'Tous les immeubles'}</span>${a.fin ? html` · <span>${fmtDate(a.debut)} → ${fmtDate(a.fin)}</span>` : ''}</span>
-        ${(() => { const st = pubStatsFor(a.id, a.debut || '0000'); return st.v || st.taps ? html`<span class="meta" style="display:block">📊 <b>${st.v}</b> <span>vues</span> · <b>${st.taps}</b> <span>clics</span>${st.v ? html` · <span>${String(st.ctr).replace('.', ',')} %</span>` : ''}</span>` : ''; })()}</span>
-        <span class="badge ${a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
-      body = html`<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
-        ${all.length ? html`<p class="tiny muted" style="margin:-4px 0 8px">📊 Statistiques anonymes : vues (une fois par jour et par téléphone) et clics. <a href="#" data-action="pub-stats-refresh">↻ Actualiser les statistiques</a></p>` : ''}
-        ${on.length ? html`<div class="list" style="margin-bottom:14px">${on.map(row)}</div>` : empty('msg', 'Aucune annonce en cours.', html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Nouvelle annonce</button>`)}
-        ${off.length ? html`<div class="section-label">Expirées (touchez pour republier)</div><div class="list">${off.map(row)}</div>` : ''}
-        ${radioCard()}`;
     } else if (tab === 'dechets') {
       const shown = f ? imms.filter((im) => im.id === f) : imms;
       const y = new Date().getFullYear();
@@ -3477,7 +3518,8 @@ dashboard() {
     const soc = societe();
     // deux espaces séparés : Comptabilité (pour l'État) | Statistiques
     const sec = ui.cpSec || 'compta';
-    const secTabs = html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['compta', '📒 Comptabilité'], ['stats', '📊 Statistiques']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sec === k}" data-action="cp-sec" data-id="${k}">${l}</button>`)}</div>`;
+    const secTabs = html`<div class="tabs" role="tablist" style="max-width:640px;margin-bottom:16px">${[['compta', html`📒 <span class="tab-long">Comptabilité</span><span class="tab-short">Compta</span>`], ['stats', html`📊 <span class="tab-long">Statistiques</span><span class="tab-short">Stats</span>`], ['abo', '💳 Abonnements']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sec === k}" data-action="cp-sec" data-id="${k}">${l}</button>`)}</div>`;
+    if (sec === 'abo') return html`${secTabs}${pageHead('💳 Abonnements', 'Abonnements des gérances et annonces publicitaires vendues')}${aboSection()}`;
     if (sec === 'stats') return html`${secTabs}${pageHead('📊 Statistiques', 'Loyers, occupation, dépenses, interventions')}${VIEWS.stats()}`;
     const tabs = html`<div class="tabs" role="tablist" style="max-width:620px">${[['journal', 'Journal'], ['tva', 'TVA'], ['interv', '🔧 Interventions'], ['fact', '🧾 Factures'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
     if (tab === 'stats') ui.cpTab = 'journal';
@@ -3943,6 +3985,28 @@ function relanceText(l, lang) {
 }
 
 const SHEETS = {
+  // 💼 abonnement d'une gérance : formule, prix, période, payé jusqu'au, paiements reçus
+  abo({ id }) {
+    const o = ptlOrg(id);
+    if (!o) return null;
+    const a = aboOf(id) || { plan: 'pro', prix: 29, periode: 'mois', debut: today(), paidUntil: '', pays: [] };
+    const pays = (a.pays || []).slice().reverse();
+    return {
+      title: '💼 Abonnement — ' + o.name,
+      narrow: true,
+      body: html`<form id="f" data-form="abo" class="fields"><input type="hidden" name="id" value="${id}">
+        <label class="field full">Formule<select name="plan" data-input="abo-plan">${Object.entries(ABO_PLANS).map(([k, [l, pr]]) => html`<option value="${k}" data-prix="${pr}" ${a.plan === k ? new Raw('selected') : ''}>${l}${pr ? ` — ${pr} € / mois` : k === 'decouverte' ? ' — gratuit (1 immeuble)' : ''}</option>`)}</select></label>
+        <label class="field">Prix HT (€)<input name="prix" type="number" step="0.01" min="0" inputmode="decimal" value="${a.prix ?? ''}"></label>
+        <label class="field">Période<select name="periode"><option value="mois" ${a.periode !== 'an' ? new Raw('selected') : ''}>par mois</option><option value="an" ${a.periode === 'an' ? new Raw('selected') : ''}>par an (2 mois offerts)</option></select></label>
+        <label class="field">Début<input type="date" name="debut" value="${a.debut || today()}"></label>
+        <label class="field">Payé jusqu’au<input type="date" name="paidUntil" value="${a.paidUntil || ''}"></label>
+      </form>
+      ${aboOf(id) && a.plan !== 'decouverte' ? html`<div class="alert ${aboState(a) === 'ok' ? 'ok' : 'warn'}" style="margin:12px 0">${aboState(a) === 'ok' ? '✅' : '⏳'}<div>${aboState(a) === 'ok' ? html`Payé jusqu’au <b>${fmtDate(a.paidUntil)}</b>` : html`<b>À payer</b>${a.paidUntil ? html` depuis le ${fmtDate(a.paidUntil)}` : ''}`}
+        <div style="margin-top:8px"><button class="btn sm primary" data-action="abo-paid" data-id="${id}">✅ Paiement reçu (${eur(+a.prix || 0)} · ${a.periode === 'an' ? '1 an' : '1 mois'})</button></div></div></div>` : ''}
+      ${pays.length ? html`<div class="section-label">Paiements reçus</div><div class="list small">${pays.slice(0, 24).map((p) => html`<div class="row"><span class="grow">${fmtDate(p.d)} · <b>${eur(p.m)}</b></span><span class="meta">jusqu’au ${fmtDate(p.to)}</span></div>`)}</div>` : ''}`,
+      foot: html`${aboOf(id) ? html`<button class="btn ghost danger" data-action="abo-del" data-id="${id}">${icon('trash')} Supprimer</button>` : ''}<button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
   'ger-ticket'({ id }) {
     const d = ui.ptl.cur;
     if (!d || !d.ticket || d.ticket.id !== id) return { title: 'Demande', body: html`<p class="muted">Chargement…</p>` };
@@ -5586,6 +5650,32 @@ let installPrompt = null;
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; if (ui.route === 'reglages') renderView(); });
 
 const ACTIONS = {
+  'abo-edit': (d) => openSheet('abo', d.id),
+  'abo-tab': (d) => { ui.aboTab = d.id; renderView(); },
+  async 'abo-offers'() {
+    const on = !aboOffersOn();
+    await vault.mutate((tx) => tx.put('reglages', { id: 'abos', offers: on }), on ? 'Offres d’abonnement activées' : 'Offres d’abonnement désactivées', 'Portail gérance');
+    toast(on ? '🟢 Offres visibles dans le portail des gérances' : '⚪ Offres masquées dans le portail des gérances');
+    portailPubsSync().catch(() => {});
+  },
+  async 'abo-paid'(d) {
+    const a = aboOf(d.id), o = ptlOrg(d.id);
+    if (!a) return;
+    const from = a.paidUntil && a.paidUntil >= today() ? a.paidUntil : today();
+    const x = new Date(from + 'T12:00:00'); if (a.periode === 'an') x.setFullYear(x.getFullYear() + 1); else x.setMonth(x.getMonth() + 1);
+    const to = x.toISOString().slice(0, 10);
+    if (!(await confirmBox(`Paiement reçu : ${eur(+a.prix || 0)} ?`, { ok: '✅ Paiement reçu', detail: `${o ? o.name : ''} — abonnement payé jusqu’au ${fmtDate(to)}.` }))) return;
+    const list = { ...aboAll(), [d.id]: { ...a, paidUntil: to, pays: [...(a.pays || []), { d: today(), m: +a.prix || 0, to }].slice(-60) } };
+    await vault.mutate((tx) => tx.put('reglages', { id: 'abos', list }), 'Abonnement payé', o ? o.name : d.id);
+    toast('✅ Paiement enregistré'); ui.sheet.rendered = false; renderSheet();
+  },
+  async 'abo-del'(d) {
+    const o = ptlOrg(d.id);
+    if (!(await confirmBox(`Supprimer l’abonnement de ${o ? o.name : 'cette gérance'} ?`, { ok: 'Supprimer', danger: true, detail: 'La formule et l’historique des paiements de cet abonnement sont effacés. La gérance et ses demandes ne changent pas.' }))) return;
+    const list = { ...aboAll() }; delete list[d.id];
+    await vault.mutate((tx) => tx.put('reglages', { id: 'abos', list }), 'Abonnement supprimé', o ? o.name : d.id);
+    closeSheet(); toast('Abonnement supprimé');
+  },
   'ger-new': () => openSheet('ger-form'),
   'ger-filter': (d) => { ui.ptl.org = d.id; renderView(); },
   'ger-done': () => { ui.ptl.done = !ui.ptl.done; ui.ptl.data = null; renderView(); },
@@ -6340,6 +6430,13 @@ const ACTIONS = {
 };
 
 const FORMS = {
+  async abo(fd) {
+    const id = fd.get('id'), g = (k) => String(fd.get(k) || '').trim(), cur = aboOf(id) || {};
+    const plan = ABO_PLANS[g('plan')] ? g('plan') : 'pro';
+    const rec = { ...cur, plan, prix: plan === 'decouverte' ? 0 : Math.max(0, num(g('prix'))), periode: g('periode') === 'an' ? 'an' : 'mois', debut: g('debut') || today(), paidUntil: g('paidUntil') };
+    await vault.mutate((tx) => tx.put('reglages', { id: 'abos', list: { ...aboAll(), [id]: rec } }), 'Abonnement', (ptlOrg(id) || {}).name || id);
+    closeSheet(); toast('Abonnement enregistré');
+  },
   async 'ger-msg'(fd, f) {
     const id = fd.get('id'), x = String(fd.get('x') || '').trim(); if (!x) return;
     try { await ptlApi(`tickets/${id}/comments`, { method: 'POST', body: { text: x } }); } catch (e) { return toast(e.message, { bad: true }); }
@@ -7003,6 +7100,7 @@ document.addEventListener('change', (e) => {
   if (k === 'soc-sign' && e.target.files[0]) setLogo(e.target.files[0], 'signature');
   if (k === 'soc-sign-w') vault.mutate((tx) => tx.put('reglages', { id: 'main', signW: [6, 8, 10, 12].includes(+e.target.value) ? +e.target.value : 8 }), 'Taille de la signature', `${e.target.value} cm`).then(signRefresh);
   if (k === 'cp-per') { ui.cpPer = e.target.value; ui.cpLim = 10; renderView(); }
+  if (k === 'abo-plan') { const o = e.target.selectedOptions[0], f = e.target.form; if (f && o) f.prix.value = o.dataset.prix || 0; }
   if (k === 'cp-from' || k === 'cp-to') { ui[k === 'cp-from' ? 'cpFrom' : 'cpTo'] = e.target.value; ui.cpLim = 10; renderView(); }
   if (k === 'tva-loyer-off') { const im = vault.get('immeubles', e.target.dataset.id); if (im) vault.mutate((tx) => tx.put('immeubles', { id: im.id, tvaLoyer: parseFloat(e.target.value) || 0 }), 'TVA sur les loyers', `${im.adresse} : ${e.target.value || 0} %`, im.id); }
   if (k === 'place') {
