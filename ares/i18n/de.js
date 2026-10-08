@@ -10347,5 +10347,17 @@ export default [
 [
 "Mettre cette facture en contentieux ?",
 "Diese Rechnung in den Streitfall setzen?"
+],
+[
+"Le mois redevient « à payer ». Ce paiement enregistré est supprimé.",
+"Der Monat ist wieder „zu zahlen“. Diese erfasste Zahlung wird gelöscht."
+],
+[
+"Supprimer la signature ?",
+"Unterschrift löschen?"
+],
+[
+"Elle n’apparaîtra plus sur les quittances et documents. Ensuite, dessinez ou importez la nouvelle signature.",
+"Sie erscheint nicht mehr auf Quittungen und Dokumenten. Zeichnen oder importieren Sie dann die neue Unterschrift."
 ]
 ];

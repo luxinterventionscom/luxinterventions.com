@@ -10339,5 +10339,17 @@ export default [
 [
 "Mettre cette facture en contentieux ?",
 "¿Poner esta factura en contencioso?"
+],
+[
+"Le mois redevient « à payer ». Ce paiement enregistré est supprimé.",
+"El mes vuelve a «por pagar». Este pago registrado se borra."
+],
+[
+"Supprimer la signature ?",
+"¿Borrar la firma?"
+],
+[
+"Elle n’apparaîtra plus sur les quittances et documents. Ensuite, dessinez ou importez la nouvelle signature.",
+"Ya no aparecerá en recibos y documentos. Después, dibuje o importe la nueva firma."
 ]
 ];
