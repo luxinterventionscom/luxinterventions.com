@@ -289,7 +289,21 @@ let data = null, lang = 'fr', sentOk = false;
 // mon icône (comme sur WhatsApp) : choisie ici, visible chez le gestionnaire
 const MY_ICONS = ['😀', '😊', '🙂', '😎', '🥰', '😇', '🤓', '🧐', '🤠', '🥳', '😺', '👩', '👨', '👧', '👦', '👵', '👴', '🧑‍💼', '👩‍🍳', '👨‍🎓', '🐶', '🐱', '🦊', '🐻', '🐼', '🦁', '🐯', '🐸', '🐵', '🐧', '🦄', '🐢', '🌸', '🌻', '🌈', '⚽', '🎵', '🎨', '🚗', '🏍️', '🏠', '⭐', '❤️', '🍕', '☕', '🌍'];
 const ICT = { fr: 'Mon icône', it: 'La mia icona', de: 'Mein Symbol', en: 'My icon', pt: 'O meu ícone', es: 'Mi icono' };
-let icOpen = false, icMine = '';
+const SETT = {
+  fr: { t: 'Réglages', ph: 'Ma photo', pick: '📷 Choisir une photo', del: 'Retirer', hint: 'Elle apparaît chez votre gestionnaire, à côté de votre nom.', ok: 'Photo envoyée ✓' },
+  it: { t: 'Impostazioni', ph: 'La mia foto', pick: '📷 Scegli una foto', del: 'Togli', hint: 'Appare al tuo gestore, accanto al tuo nome.', ok: 'Foto inviata ✓' },
+  de: { t: 'Einstellungen', ph: 'Mein Foto', pick: '📷 Foto wählen', del: 'Entfernen', hint: 'Es erscheint bei Ihrer Verwaltung neben Ihrem Namen.', ok: 'Foto gesendet ✓' },
+  en: { t: 'Settings', ph: 'My photo', pick: '📷 Choose a photo', del: 'Remove', hint: 'It shows up for your manager, next to your name.', ok: 'Photo sent ✓' },
+  pt: { t: 'Definições', ph: 'A minha foto', pick: '📷 Escolher uma foto', del: 'Retirar', hint: 'Aparece ao seu gestor, ao lado do seu nome.', ok: 'Foto enviada ✓' },
+  es: { t: 'Ajustes', ph: 'Mi foto', pick: '📷 Elegir una foto', del: 'Quitar', hint: 'Aparece a tu administrador, junto a tu nombre.', ok: 'Foto enviada ✓' },
+};
+let icOpen = false, icMine = '', phMine = null;
+async function photoSquare(file) {
+  const bmp = await createImageBitmap(file), m = Math.min(bmp.width, bmp.height), c = document.createElement('canvas');
+  c.width = c.height = 256; c.getContext('2d').drawImage(bmp, (bmp.width - m) / 2, (bmp.height - m) / 2, m, m, 0, 0, 256, 256);
+  return c.toDataURL('image/jpeg', 0.82);
+}
+async function sendOwner(o) { if (data && data.signalKey) await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) }); }
 const T = () => L[lang];
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -772,7 +786,10 @@ function render() {
   const out = [];
   // adresse complète : rue + code postal et localité (si renseignés dans l'app de gestion)
   const addrFull = [d.adresse, d.ville].filter(Boolean).join(', ');
-  out.push(`<div class="top"><span class="brandx"><img class="top-logo" src="${esc(d.societe.logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(d.societe.nom)}</b></span>${langs}</div><h1 style="display:flex;align-items:center;gap:10px"><button class="av-btn" data-ic-open="1" aria-label="${esc(ICT[lang] || ICT.fr)}">${esc(icMine || d.avatar || '🙂')}</button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1>${icOpen ? `<div class="card"><p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${MY_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === (icMine || d.avatar)}">${esc(e)}</button>`).join('')}</div></div>` : ''}<p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);
+  out.push(`<div class="top"><span class="brandx"><img class="top-logo" src="${esc(d.societe.logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(d.societe.nom)}</b></span>${langs}</div><h1 style="display:flex;align-items:center;gap:10px"><button class="gear-btn" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}">⚙️</button><button class="av-btn" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}">${(phMine !== null ? phMine : d.photo) ? `<img src="${esc(phMine !== null ? phMine : d.photo)}" alt="">` : esc(icMine || d.avatar || '🙂')}</button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1>${icOpen ? (() => { const st = SETT[lang] || SETT.fr, ph = phMine !== null ? phMine : d.photo || ''; return `<div class="card" id="settCard"><h2 style="margin:0 0 10px">⚙️ ${esc(st.t)}</h2><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span class="av-btn" style="width:72px;height:72px;font-size:32px">${ph ? `<img src="${esc(ph)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span>
+    <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${ph ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
+    <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>`; })() + `<p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${MY_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === (icMine || d.avatar)}">${esc(e)}</button>`).join('')}</div></div>` : ''}<p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);
   const pubs = s.pub ? (d.pubs || []).filter((x) => !x.fin || x.fin >= today) : [];
   const ad = pubs.find((x) => x.id === adSel);
   if (!ad) adSel = '';
@@ -1178,7 +1195,8 @@ app.addEventListener('click', async (e) => {
   const lb = e.target.closest('[data-lang]');
   if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('espLang', lang); } catch {} if (pushSt === 'on') pushRefresh('/espace', pushPost); return render(); }
   if (e.target.closest('[data-recap]')) return recap();
-  if (e.target.closest('[data-ic-open]')) { icOpen = !icOpen; return render(); }
+  if (e.target.closest('[data-ic-open]')) { icOpen = !icOpen; render(); return; }
+  if (e.target.closest('[data-photo-del]')) { phMine = ''; render(); try { await sendOwner({ type: 'photo', d: '' }); } catch { /* hors ligne */ } return; }
   { const ic = e.target.closest('[data-ic]'); if (ic) { icMine = ic.dataset.ic; icOpen = false; render(); if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'avatar', e: icMine }) }); } catch { /* hors ligne */ } } return; } }
   const db = e.target.closest('[data-doc]');
   if (db) {
@@ -1220,6 +1238,10 @@ app.addEventListener('toggle', (e) => {
   if (k === 'chat' && e.target.open) { chatSeen(); const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight; }
 }, true);
 app.addEventListener('change', async (e) => {
+  if (e.target.dataset && e.target.dataset.photoPick && e.target.files[0]) {
+    try { phMine = await photoSquare(e.target.files[0]); render(); await sendOwner({ type: 'photo', d: phMine }); } catch { /* hors ligne ou image illisible */ }
+    return;
+  }
   if (e.target.dataset && e.target.dataset.wxCity) {
     try { if (e.target.value) localStorage.setItem('espWxCity', e.target.value); else localStorage.removeItem('espWxCity'); } catch { /* stockage indisponible */ }
     wx = null; wxPaint(); return wxLoad(data);

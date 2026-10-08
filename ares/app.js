@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.100.0';
+const VERSION = '2.101.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -90,6 +90,24 @@ const level = (p) => (p >= 80 ? '' : p >= 50 ? 'warn' : 'bad');
 //           └─ Dépenses (réparations…), rattachées à l'immeuble ou à un logement précis
 const fullName = (l) => [l.prenom, l.nom].filter(Boolean).join(' ') || 'Sans nom';
 // avatar d'un locataire : l'icône qu'il a choisie dans son app, sinon ses initiales
+// photo de profil (locataire / ouvrier) : JPEG carré 256 px, mise par nous ou par la personne dans son app
+const photoOk = (v) => typeof v === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(v) && v.length < 160000;
+const avIn = (l) => (l && photoOk(l.photo) ? html`<img class="av-ph" src="${l.photo}" alt="">` : initials(l));
+// mini-pastille (photo ou icône du métier) devant un nom
+const miniW = (i) => html`<span class="mini-av">${i && photoOk(i.photo) ? html`<img src="${i.photo}" alt="">` : metIcon(i)}</span>`;
+const avW = (i) => (i && photoOk(i.photo) ? html`<img class="av-ph" src="${i.photo}" alt="">` : metIcon(i));
+const photoField = (rec, fallback) => html`<div class="full photo-pick"><span class="pp-circle">${photoOk(rec.photo) ? html`<img src="${rec.photo}" alt="">` : fallback}</span>
+  <input type="hidden" name="photo" value="${photoOk(rec.photo) ? rec.photo : ''}">
+  <label class="btn sm" style="cursor:pointer">📷 ${photoOk(rec.photo) ? 'Changer la photo' : 'Ajouter une photo'}<input type="file" accept="image/*" data-input="photo-pick" hidden></label>
+  ${photoOk(rec.photo) ? html`<button type="button" class="btn sm ghost" data-action="photo-del">Retirer</button>` : ''}
+  <span class="tiny muted">Facultatif — la personne peut aussi la mettre elle-même dans son app (⚙️).</span></div>`;
+// photo choisie → carré 256 px (centre de l'image), JPEG léger
+async function photoSquare(file, size = 256) {
+  const bmp = await createImageBitmap(file);
+  const m = Math.min(bmp.width, bmp.height), c = document.createElement('canvas'); c.width = c.height = size;
+  c.getContext('2d').drawImage(bmp, (bmp.width - m) / 2, (bmp.height - m) / 2, m, m, 0, 0, size, size);
+  return c.toDataURL('image/jpeg', 0.82);
+}
 const initials = (l) => (l && emojiOk(l.avatar) ? l.avatar : (((l.prenom || '')[0] || '') + ((l.nom || '')[0] || '')).toUpperCase() || '?');
 const immName = (id) => (vault.get('immeubles', id) || {}).adresse || 'Sans immeuble';
 // Type de structure (immeuble) et type d'unité louée (logement / local)
@@ -417,7 +435,7 @@ function equipeData(i) {
   }
   const k = vault.get('reglages', 'signal');
   return {
-    v: 1, kind: 'equipe', lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i),
+    v: 1, kind: 'equipe', lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i), photo: photoOk(i.photo) ? i.photo : '',
     // l'équipe travaille pour ARES INVEST S.A. (LuxInterventions) : son nom et son logo (casque) dans l'app des ouvriers
     societe: { nom: factConf().nom || 'ARES INVEST S.A.', tel: factConf().tel || soc.tel || '', logo: '/ares/icons/lux-192.png' },
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '' },
@@ -530,6 +548,8 @@ async function equipeInbox(w, msg) {
         ph.forEach((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'signal', label: `Problème — photo ${n + 1}`, date: d, mime: 'image/jpeg', size: Math.round(b.length * 0.75) }); files.push([doc.id, b]); });
         feed.push({ at, k: 'pb', tid: t.id, d, note: '⚠️ ' + titre, ph: ph.length });
         fresh++;
+      } else if (it.k === 'photo') {
+        if (photoOk(it.d) || it.d === '') { tx.put('intervenants', { id: w.id, photo: it.d }); feed.push({ at, k: 'info', note: it.d ? '📷 Photo de profil mise à jour' : 'Photo de profil retirée' }); fresh++; }
       } else if (it.k === 'icon') {
         if (emojiOk(it.e)) { tx.put('intervenants', { id: w.id, icon: it.e }); feed.push({ at, k: 'info', note: `Icône choisie : ${it.e}` }); }
       } else if (it.k === 'sign') {
@@ -598,7 +618,7 @@ function eqFeedHtml(onlyId, max = 80) {
     const t = f.tid ? vault.get('taches', f.tid) : null;
     const what = f.k === 'eval' ? html`<b>${f.note}</b>` : f.k === 'pres' ? html`<b>${f.note}</b>` : f.k === 'pb' ? html`<b>${f.note}</b>` : f.k === 'task' || f.k === 'ph' ? html`<b>${f.k === 'ph' ? '📷 ' + EQ_PH[f.phase] : EQ_ST[f.st] || f.st}${f.h ? ' 🕒 ' + f.h : ''}</b> · ${t ? t.titre : '(intervention supprimée)'}${t ? html`<span class="meta" style="display:block">📍 ${placeName(t)} · ${fmtDate(f.d)}</span>` : ''}` : f.k === 'abs' ? html`<b>${f.note}</b>` : html`<b>✏️ ${f.note}</b>`;
     return html`<button class="row" ${t ? html`data-action="edit-tache" data-id="${t.id}"` : html`data-action="open-interv" data-id="${i.id}"`} style="text-align:left">
-      <span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDateTime(f.at)} · ${intervFull(i)}</span>${what}${f.k === 'task' && f.note ? html`<span class="small" style="display:block;margin-top:2px">📝 ${f.note}</span>` : ''}</span>
+      <span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDateTime(f.at)} · ${miniW(i)}${intervFull(i)}</span>${what}${f.k === 'task' && f.note ? html`<span class="small" style="display:block;margin-top:2px">📝 ${f.note}</span>` : ''}</span>
       ${f.ph ? html`<span class="badge">📷 ${f.ph}</span>` : ''}</button>`;
   })}</div>`;
 }
@@ -614,10 +634,10 @@ function eqTodayHtml() {
   return html`<div class="card" style="margin-bottom:14px"><div class="card-title" style="margin-bottom:6px"><h3>👷 Aujourd’hui</h3></div>
     <div class="list small">${its.map((x) => {
       const t = x.t, i = vault.get('intervenants', t.intervenantId) || {}, st = eqState(t, x.d);
-      return html`<button class="row" data-action="edit-tache" data-id="${t.id}" style="text-align:left"><span class="grow" style="white-space:normal"><b>${intervFull(i)}</b> — ${tacheIcon(t.type)} ${t.titre}<span class="meta" style="display:block">📍 ${placeName(t)}${st && st.note ? ' · 📝 ' + st.note : ''}</span></span>
+      return html`<button class="row" data-action="edit-tache" data-id="${t.id}" style="text-align:left"><span class="grow" style="white-space:normal">${miniW(i)}<b>${intervFull(i)}</b> — ${tacheIcon(t.type)} ${t.titre}<span class="meta" style="display:block">📍 ${placeName(t)}${st && st.note ? ' · 📝 ' + st.note : ''}</span></span>
         <span class="badge ${st ? (st.st === 'fait' ? 'ok' : st.st === 'incomplet' ? 'bad' : 'warn') : ''}">${st ? EQ_ST[st.st] + ' ' + (st.h || (st.at || '').slice(11, 16)) : absOn(i, d0) ? '🤒 absent' : '⏳ pas encore'}</span></button>`;
     })}
-    ${pointes.map((i) => { const p = i.pres[d0]; return html`<div class="row"><span class="grow"><b>${intervFull(i)}</b> — 🕒 <span>Arrivée</span> <b>${p.arr || '—'}</b> · <span>Départ</span> <b>${p.dep || '—'}</b></span></div>`; })}
+    ${pointes.map((i) => { const p = i.pres[d0]; return html`<div class="row"><span class="grow">${miniW(i)}<b>${intervFull(i)}</b> — 🕒 <span>Arrivée</span> <b>${p.arr || '—'}</b> · <span>Départ</span> <b>${p.dep || '—'}</b></span></div>`; })}
     ${absent.filter((i) => !its.some((x) => x.t.intervenantId === i.id)).map((i) => html`<div class="row"><span class="grow"><b>${intervFull(i)}</b> — ${ABS_TYPES[absOn(i, d0).type]}</span></div>`)}</div></div>`;
 }
 
@@ -787,7 +807,7 @@ function espaceData(l) {
   const g = vault.get('logements', l.logId), im = vault.get('immeubles', l.immId);
   const soc = societe();
   const out = {
-    v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', avatar: emojiOk(l.avatar) ? l.avatar : '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
+    v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', avatar: emojiOk(l.avatar) ? l.avatar : '', photo: photoOk(l.photo) ? l.photo : '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
     societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: soc.signature || '', signW: soc.signW || 8 },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : { nom: 'Seven Radio', url: 'https://sevenradio.lu/?proradio-popup=1' }; })(),
@@ -1220,6 +1240,11 @@ async function inboxSync() {
         n++;
         continue;
       }
+      if (msg.type === 'photo') {
+        if (photoOk(msg.d) || msg.d === '') await vault.mutate((tx) => tx.put('locataires', { id: l.id, photo: msg.d }), msg.d ? 'Photo de profil du locataire' : 'Photo de profil retirée', fullName(l), l.id);
+        await vault.inboxDel(it.name);
+        continue;
+      }
       if (msg.type === 'avatar') {
         if (emojiOk(msg.e)) await vault.mutate((tx) => tx.put('locataires', { id: l.id, avatar: msg.e }), 'Icône choisie par le locataire', `${fullName(l)} ${msg.e}`, l.id);
         await vault.inboxDel(it.name);
@@ -1589,7 +1614,7 @@ const ptlPlace = (p) => {
 const ptlResCodes = (r) => { let named = []; try { named = JSON.parse(r.codes || '[]'); } catch { /* illisible */ } if (!Array.isArray(named)) named = []; const kb = named.find((c) => c.l === 'Boîte à clés'); return [kb && kb.c ? 'Boîte à clés : ' + kb.c : '', r.access ? 'Porte : ' + r.access : '', r.alarm ? 'Alarme : ' + r.alarm : '', r.code_other ? 'Locaux techniques : ' + r.code_other : '', ...named.filter((c) => c.c && c !== kb).map((c) => `${c.l || 'Code'} : ${c.c}`)].filter(Boolean); };
 // affectation : l'équipe triée (métier conseillé d'abord ⭐), absents signalés
 const affTeam = (hints) => vault.list('intervenants').filter((i) => !i.archive).sort((a, b) => hints.includes(b.metier) - hints.includes(a.metier) || intervFull(a).localeCompare(intervFull(b)));
-const affRow = (i, hints, attrs) => { const ab = absOn(i, today()); return html`<button class="row" ${new Raw(attrs)}><span class="avatar met-ic">${metIcon(i)}</span><span class="grow"><span class="title" style="display:block">${hints.includes(i.metier) ? '⭐ ' : ''}${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || i.metier || '—'} · ${INT_GENRES[i.genre || 'interne']}${ab ? html` · <b class="red">${ABS_TYPES[ab.type]}</b>` : ''}</span></span><span class="badge">Affecter →</span></button>`; };
+const affRow = (i, hints, attrs) => { const ab = absOn(i, today()); return html`<button class="row" ${new Raw(attrs)}><span class="avatar met-ic">${avW(i)}</span><span class="grow"><span class="title" style="display:block">${hints.includes(i.metier) ? '⭐ ' : ''}${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || i.metier || '—'} · ${INT_GENRES[i.genre || 'interne']}${ab ? html` · <b class="red">${ABS_TYPES[ab.type]}</b>` : ''}</span></span><span class="badge">Affecter →</span></button>`; };
 const ptlOrg = (id) => ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => o.id === id);
 const ptlInviteUrl = (tok) => `${location.origin}/portail.html#invite=${tok}`;
 // mot de passe → clé dérivée sur l'appareil (comme dans le portail) : le serveur ne voit jamais le mot de passe
@@ -2998,7 +3023,7 @@ const VIEWS = {
         const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length;
         const tel = (i.tel || '').replace(/[^\d+]/g, '');
         const ab = absOn(i, today());
-        return html`<div class="row"><span class="avatar met-ic" title="${METIERS[i.metier] || ''}">${metIcon(i)}</span>
+        return html`<div class="row"><span class="avatar met-ic" title="${METIERS[i.metier] || ''}">${avW(i)}</span>
           <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="open-interv" data-id="${i.id}"><span class="title" style="display:block">${intervFull(i)}${i.espace && i.espace.on ? ' 📱' : ''}${ab ? html` <span class="badge ${ab.type === 'maladie' ? 'bad' : 'warn'}">${ABS_TYPES[ab.type]}${ab.fin ? ' → ' + fmtDate(ab.fin) : ''}</span>` : ''}</span><span class="meta">${METIERS[i.metier] || i.metier} · ${{ interne: 'interne', societe: 'société', prive: 'privé' }[i.genre || 'interne']} · ${(i.cat || 'quotidien') === 'specialise' ? 'spécialisé' : 'quotidien'}${i.tarif ? ' · ' + i.tarif : ''}${n ? ' · ' + plural(n, 'intervention') + ' en cours' : ''}</span></button>
           ${tel ? html`<a class="btn icon sm" href="tel:${tel}" aria-label="Appeler">${icon('phone')}</a>` : ''}
         </div>`;
@@ -3115,7 +3140,7 @@ dashboard() {
       <div class="section-label">À encaisser — ${MONTHS_FULL[m - 1]}</div>
       ${todo.length ? html`<div class="list">${todo.map((l) => html`
         <div class="row">
-          <button class="avatar" style="border:0;cursor:pointer" data-action="open-loc" data-id="${l.id}">${initials(l)}</button>
+          <button class="avatar" style="border:0;cursor:pointer" data-action="open-loc" data-id="${l.id}">${avIn(l)}</button>
           <div class="grow"><div class="title">${fullName(l)}</div><div class="meta">${payState(l, y, m).state === 'part' ? html`<span class="amber">payé ${money(payState(l, y, m).paid)} · reste</span> ` : ''}${whereOf(l)}</div></div>
           <div class="amount">${money(payState(l, y, m).rest)}</div>
           <button class="btn icon sm ghost" data-action="relance" data-id="${l.id}" aria-label="Relancer" title="Relancer">${icon('msg')}</button>
@@ -3292,7 +3317,7 @@ dashboard() {
             if (d != null && d >= 0 && d <= 60 && !l.sortie) badges.push(html`<span class="badge warn">Fin ${fmtDate(l.fin)}</span>`);
           }
           return html`<button class="row" data-action="open-loc" data-id="${l.id}">
-            <span class="avatar" ${anciens ? new Raw('style="background:var(--surface-2);color:var(--text-3)"') : ''}>${initials(l)}</span>
+            <span class="avatar" ${anciens ? new Raw('style="background:var(--surface-2);color:var(--text-3)"') : ''}>${avIn(l)}</span>
             <span class="grow">
               <span class="title" style="display:block">${fullName(l)}</span>
               <span class="meta" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${l.logId ? html`<span>${logName(l.logId)}</span>` : ''}${badges}</span>
@@ -4027,6 +4052,7 @@ const SHEETS = {
       title: id ? 'Modifier la fiche' : 'Nouvelle personne',
       body: html`<form id="f" data-form="interv" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
+        ${photoField(i, metIcon(i))}
         <label class="field">Type<select name="genre" data-input="interv-kind">${Object.entries(INT_GENRES).map(([k, v]) => html`<option value="${k}" ${(i.genre || 'interne') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <label class="field">Catégorie<select name="cat" data-input="interv-kind">${Object.entries(INT_CATS).map(([k, v]) => html`<option value="${k}" ${(i.cat || 'quotidien') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Prénom', 'prenom', i.prenom, { attrs: 'autocomplete="off"' })}
@@ -4505,7 +4531,7 @@ const SHEETS = {
       const unassigned = tenantsOfImm(id).filter((l) => isCurrent(l) && !vault.get('logements', l.logId));
       body = html`
         ${unassigned.length ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${plural(unassigned.length, 'locataire')} sans logement attribué. Attribuez-leur un logement pour suivre les changements d'occupants.</div></div>
-          <div class="list" style="margin-bottom:16px">${unassigned.map((l) => html`<div class="row"><span class="avatar">${initials(l)}</span><span class="grow title">${fullName(l)}</span><button class="btn sm" data-action="edit-loc" data-id="${l.id}">Attribuer</button></div>`)}</div>` : ''}
+          <div class="list" style="margin-bottom:16px">${unassigned.map((l) => html`<div class="row"><span class="avatar">${avIn(l)}</span><span class="grow title">${fullName(l)}</span><button class="btn sm" data-action="edit-loc" data-id="${l.id}">Attribuer</button></div>`)}</div>` : ''}
         ${logs.length ? html`${(() => {
           const row = (g, inside) => {
           const occ = occupantsNow(g.id);
@@ -4756,11 +4782,11 @@ const SHEETS = {
         ${g.note ? html`<div class="note" style="margin-bottom:16px">${g.note}</div>` : ''}
         <div class="section-label" style="margin-top:0">Occupant${occ.length > 1 ? 's' : ''} actuel${occ.length > 1 ? 's' : ''}</div>
         ${occ.length ? html`<div class="list" style="margin-bottom:12px">${occ.map((l) => html`<div class="row">
-          <button class="avatar" style="border:0;cursor:pointer" data-action="open-loc" data-id="${l.id}">${initials(l)}</button>
+          <button class="avatar" style="border:0;cursor:pointer" data-action="open-loc" data-id="${l.id}">${avIn(l)}</button>
           <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="open-loc" data-id="${l.id}"><span class="title" style="display:block">${fullName(l)}</span><span class="meta">depuis ${fmtDate(l.debut) || '?'}${l.sortie ? ' · départ le ' + fmtDate(l.sortie) : ''}</span></button>
           <button class="btn sm" data-action="replace" data-id="${l.id}">${icon('sync')} Changer</button>
         </div>`)}</div>` : html`<div class="alert warn" style="margin-bottom:12px">${icon('home')}<div><b>Logement vacant</b>${last ? html` depuis le départ de ${fullName(last)} (${fmtDate(last.sortie)})` : ''}.</div></div>`}
-        ${future.length ? html`<div class="section-label">Arrivée prévue</div><div class="list" style="margin-bottom:12px">${future.map((l) => html`<button class="row" data-action="open-loc" data-id="${l.id}"><span class="avatar">${initials(l)}</span><span class="grow"><span class="title" style="display:block">${fullName(l)}</span><span class="meta">le ${fmtDate(l.debut)}</span></span></button>`)}</div>` : ''}
+        ${future.length ? html`<div class="section-label">Arrivée prévue</div><div class="list" style="margin-bottom:12px">${future.map((l) => html`<button class="row" data-action="open-loc" data-id="${l.id}"><span class="avatar">${avIn(l)}</span><span class="grow"><span class="title" style="display:block">${fullName(l)}</span><span class="meta">le ${fmtDate(l.debut)}</span></span></button>`)}</div>` : ''}
         <button class="btn block ${occ.length ? '' : 'primary'}" data-action="new-loc" data-log="${id}">${icon('plus')} ${occ.length ? 'Ajouter une 2ᵉ personne dans ce logement (couple, colocataire)' : 'Ajouter un locataire'}</button>`;
     } else if (tab === 'porte') {
       const pt = g.porte || {};
@@ -4799,7 +4825,7 @@ const SHEETS = {
       body = all.length ? html`<div class="list">${[...all].reverse().map((l) => {
         const months = stayMonths(l);
         return html`<button class="row" data-action="open-loc" data-id="${l.id}">
-          <span class="avatar" style="${isGone(l) ? 'background:var(--surface-2);color:var(--text-3)' : ''}">${initials(l)}</span>
+          <span class="avatar" style="${isGone(l) ? 'background:var(--surface-2);color:var(--text-3)' : ''}">${avIn(l)}</span>
           <span class="grow"><span class="title" style="display:block">${fullName(l)} ${!isGone(l) && !isFuture(l) ? html`<span class="badge ok">actuel</span>` : isFuture(l) ? html`<span class="badge acc">à venir</span>` : ''}</span>
             <span class="meta">${isFuture(l) ? `arrivée prévue le ${fmtDate(l.debut)}` : html`${fmtDate(l.debut) || '?'} → ${l.sortie ? (isGone(l) ? fmtDate(l.sortie) : 'départ prévu le ' + fmtDate(l.sortie)) : "aujourd'hui"}${months ? ' · ' + duree(months) : ''}`}</span></span>
           <span class="amount green">${money(totalPaid(l))}</span>
@@ -4840,6 +4866,7 @@ const SHEETS = {
       title: id ? 'Modifier le locataire' : 'Nouveau locataire',
       body: html`<form id="f" data-form="loc" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
+        ${photoField(l, id ? initials(l) : '👤')}
         ${id ? '' : html`<p class="tiny muted full" style="margin:0">Bailleur (propriétaire) → <b>${societe().nom || 'NOBIS s.a.r.l.'}</b> (locataire principal) → <b>sous-locataire</b> que vous ajoutez ici.</p>`}
         ${logementSelect(l.logId, l.immId)}
         ${tenantFields(l)}
@@ -5621,6 +5648,7 @@ const ACTIONS = {
   async 'eng-pdf'(d) { const i = vault.get('intervenants', d.id); if (!i) return; download(`Fiche engagement ${intervFull(i)}.pdf`, await engPdf(i), 'application/pdf'); },
   'occ-open': (d) => openOver('occ-fact', d.id),
   async 'occ-dl'(d) { const t = vault.get('taches', d.id), i = t && vault.get('intervenants', t.intervenantId); if (!t || !t.occ || !i) return; download(`Intervention occasionnelle ${t.occ.no}.pdf`, await occPdf(t, i, t.occ), 'application/pdf'); },
+  'photo-del': (d, el) => { const box = el.closest('.photo-pick'); box.querySelector('[name=photo]').value = ''; setHtml(box.querySelector('.pp-circle'), '👤'); el.remove(); },
   'interv-aff': (d) => { ui.ptl.data = null; ui.ptl.err = ''; openOver('ger-aff', d.id); },
   'ger-aff-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; ptlLoad(); },
   'interv-job': (d) => { const i = vault.get('intervenants', d.id); openOver('tache-form', null, null, { intervenantId: d.id, type: i && i.metier === 'menage' ? 'nettoyage' : 'reparation' }); },
@@ -6233,6 +6261,7 @@ const FORMS = {
     const g = (k) => String(fd.get(k) || '').trim();
     const prev = id ? vault.get('intervenants', id) || {} : {};
     const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), note: g('note') };
+    rec.photo = photoOk(g('photo')) ? g('photo') : '';
     if (rec.genre === 'prive') { rec.rcs = ''; rec.tva = ''; } // occasionnel : ni RCS ni TVA
     // l'horaire ne se fait plus ici : fiche de la personne → Horaires (routine et planning par semaine)
     // engagement : assurance, paiement, obligations acceptées, signature digitale
@@ -6429,6 +6458,7 @@ const FORMS = {
     const place = readPlace(fd);
     if (!place.immId) return toast('Choisissez un logement ou un immeuble', { bad: true });
     const rec = { ...tenantFromForm(fd), id: id || uid(), immId: place.immId, logId: place.logId || '' };
+    rec.photo = photoOk(String(fd.get('photo') || '')) ? String(fd.get('photo')) : '';
     if (id) {
       rec.sortie = fd.get('sortie') || '';
     }
@@ -6746,6 +6776,10 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', (e) => {
   const k = e.target.dataset.input;
   // fiche d'une personne : horaire seulement pour le personnel régulier ; engagement pour occasionnels et sociétés
+  if (k === 'photo-pick' && e.target.files[0]) {
+    const box = e.target.closest('.photo-pick');
+    photoSquare(e.target.files[0]).then((u) => { box.querySelector('[name=photo]').value = u; setHtml(box.querySelector('.pp-circle'), html`<img src="${u}" alt="">`); sheetDirty = true; }).catch(() => toast('Photo illisible', { bad: true }));
+  }
   if (k === 'interv-kind') {
     const f = e.target.form, g = f.genre.value, c = f.cat.value;
     const hw = f.querySelector('.hor-wrap'); if (hw) hw.hidden = !horFixed({ genre: g, cat: c, metier: f.metier.value });

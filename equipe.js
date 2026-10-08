@@ -131,7 +131,21 @@ let sigUrl = '', sigSent = '';
 // mon icône (métier) : choisie dans l'app, visible chez le responsable
 const WORK_ICONS = ['🧹🪣', '🧹', '🪣', '🧽', '🔨', '🪚', '⚡', '💡', '🔌', '🔧', '🪠', '🚰', '🔥', '🧱', '🖌️', '🎨', '🔑', '🔐', '🌿', '🌳', '✂️', '🪜', '🧰', '🛠️', '🚚', '👷', '👷‍♀️'];
 const ICT = { fr: 'Mon icône', it: 'La mia icona', de: 'Mein Symbol', en: 'My icon', pt: 'O meu ícone', es: 'Mi icono' };
-let icOpen = false, icMine = '';
+const SETT = {
+  fr: { t: 'Réglages', ph: 'Ma photo', pick: '📷 Choisir une photo', del: 'Retirer', hint: 'Elle apparaît chez votre responsable, à côté de votre nom.', ok: 'Photo envoyée ✓' },
+  it: { t: 'Impostazioni', ph: 'La mia foto', pick: '📷 Scegli una foto', del: 'Togli', hint: 'Appare al tuo responsabile, accanto al tuo nome.', ok: 'Foto inviata ✓' },
+  de: { t: 'Einstellungen', ph: 'Mein Foto', pick: '📷 Foto wählen', del: 'Entfernen', hint: 'Es erscheint bei Ihrem Verantwortlichen neben Ihrem Namen.', ok: 'Foto gesendet ✓' },
+  en: { t: 'Settings', ph: 'My photo', pick: '📷 Choose a photo', del: 'Remove', hint: 'It shows up for your manager, next to your name.', ok: 'Photo sent ✓' },
+  pt: { t: 'Definições', ph: 'A minha foto', pick: '📷 Escolher uma foto', del: 'Retirar', hint: 'Aparece ao seu responsável, ao lado do seu nome.', ok: 'Foto enviada ✓' },
+  es: { t: 'Ajustes', ph: 'Mi foto', pick: '📷 Elegir una foto', del: 'Quitar', hint: 'Aparece a tu responsable, junto a tu nombre.', ok: 'Foto enviada ✓' },
+};
+let icOpen = false, icMine = '', phMine = null;
+// photo → carré 256 px (centre), JPEG léger
+async function photoSquare(file) {
+  const bmp = await createImageBitmap(file), m = Math.min(bmp.width, bmp.height), c = document.createElement('canvas');
+  c.width = c.height = 256; c.getContext('2d').drawImage(bmp, (bmp.width - m) / 2, (bmp.height - m) / 2, m, m, 0, 0, 256, 256);
+  return c.toDataURL('image/jpeg', 0.82);
+}
 const ICONS = { nettoyage: '🧹', reparation: '🔧', gros: '🚚', autre: '📌', entretien: '🔧' };
 let data = null, lang = 'fr', loadErr = '', form = null, flash = '';
 wxRadioInit({ app: 'eq', lang: () => lang, home: () => (data && data.me && data.me.ville) || 'Luxembourg', radio: () => (data && data.radio) || null });
@@ -393,9 +407,12 @@ function render() {
   }
   const d = data, out = [];
   document.title = `${t.app} — ${d.societe.nom}`;
-  const myIc = icMine || d.icon || '👷';
-  out.push(`${top(d.societe.nom, d.societe.logo)}<h1 style="display:flex;align-items:center;gap:10px"><button class="av-btn" data-ic-open="1" aria-label="${esc(ICT[lang] || ICT.fr)}">${esc(myIc)}</button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)} 👋</span></h1><p class="sub">${esc([d.metier, d.societe.nom].filter(Boolean).join(' · '))}</p>`);
-  if (icOpen) out.push(`<div class="card"><p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${WORK_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === myIc}">${esc(e)}</button>`).join('')}</div></div>`);
+  const myIc = icMine || d.icon || '👷', myPh = phMine !== null ? phMine : d.photo || '', st = SETT[lang] || SETT.fr;
+  out.push(`${top(d.societe.nom, d.societe.logo)}<h1 style="display:flex;align-items:center;gap:10px"><button class="gear-btn" data-ic-open="1" aria-label="${esc(st.t)}">⚙️</button><button class="av-btn" data-ic-open="1" aria-label="${esc(st.t)}">${myPh ? `<img src="${esc(myPh)}" alt="">` : esc(myIc)}</button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)} 👋</span></h1><p class="sub">${esc([d.metier, d.societe.nom].filter(Boolean).join(' · '))}</p>`);
+  if (icOpen) out.push(`<div class="card" id="settCard"><h2 style="margin:0 0 10px">⚙️ ${esc(st.t)}</h2><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span class="av-btn" style="width:72px;height:72px;font-size:30px">${myPh ? `<img src="${esc(myPh)}" alt="">` : esc(myIc)}</span>
+    <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${myPh ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
+    <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p><p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${WORK_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === myIc}">${esc(e)}</button>`).join('')}</div></div>`);
   const pls = placesOf(d);
   if (place && !pls.includes(place)) place = '';
   const pubs = (d.pubs || []).filter((x) => !x.fin || x.fin >= today);
@@ -511,7 +528,8 @@ app.addEventListener('toggle', (e) => {
 }, true);
 app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-eng-open]')) { const c = document.getElementById('engCard'); if (c) { c.querySelector('details').open = true; c.scrollIntoView({ block: 'start', behavior: 'smooth' }); } return; }
-  if (e.target.closest('[data-ic-open]')) { icOpen = !icOpen; return render(); }
+  if (e.target.closest('[data-ic-open]')) { icOpen = !icOpen; render(); if (icOpen) document.getElementById('settCard')?.scrollIntoView({ block: 'nearest' }); return; }
+  if (e.target.closest('[data-photo-del]')) { phMine = ''; render(); try { await queue({ k: 'photo', d: '', at: new Date().toISOString() }); } catch { /* renvoyé plus tard */ } return; }
   { const ic = e.target.closest('[data-ic]'); if (ic) { icMine = ic.dataset.ic; icOpen = false; render(); try { await queue({ k: 'icon', e: icMine, at: new Date().toISOString() }); } catch { /* renvoyé plus tard */ } return; } }
   if (e.target.closest('[data-sig-clear]')) { const c = app.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); sigUrl = ''; return; }
   const lb = e.target.closest('[data-lang]');
@@ -631,6 +649,10 @@ app.addEventListener('submit', async (e) => {
 
 app.addEventListener('input', (e) => { if (e.target.form && e.target.form.id === 'pbForm' && e.target.name === 'note') pbNote = e.target.value; });
 app.addEventListener('change', async (e) => {
+  if (e.target.dataset && e.target.dataset.photoPick && e.target.files[0]) {
+    try { phMine = await photoSquare(e.target.files[0]); render(); await queue({ k: 'photo', d: phMine, at: new Date().toISOString() }); flash = (SETT[lang] || SETT.fr).ok; render(); } catch { alert('⚠'); }
+    return;
+  }
   if (e.target.dataset && e.target.dataset.pbPick) {
     const files = [...e.target.files].slice(0, 6 - pbPhotos.length);
     e.target.value = '';

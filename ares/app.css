@@ -692,3 +692,10 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 .tarif-grid { display: grid; grid-template-columns: minmax(96px, 1.1fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: center; }
 .tarif-grid .tg-h { font-size: 12px; font-weight: 650; color: var(--text-3); text-align: center; }
 .tarif-grid .tg-r { font-size: 13px; font-weight: 600; color: var(--text-2); line-height: 1.25; }
+/* photo de profil dans un cercle */
+.avatar .av-ph { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; }
+.avatar:has(.av-ph) { padding: 0; overflow: hidden; }
+.photo-pick { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.pp-circle { width: 72px; height: 72px; border-radius: 50%; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-2); font-size: 28px; font-weight: 700; color: var(--text-2); flex: none; border: 2px solid var(--border); }
+.pp-circle img { width: 100%; height: 100%; object-fit: cover; }
+.mini-av { display: inline-flex; width: 20px; height: 20px; border-radius: 50%; overflow: hidden; align-items: center; justify-content: center; vertical-align: -5px; margin-right: 5px; font-size: 12px; letter-spacing: -3px; background: var(--surface-2); } .mini-av img { width: 100%; height: 100%; object-fit: cover; }
