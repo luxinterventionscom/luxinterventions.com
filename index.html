@@ -2353,37 +2353,44 @@ fetch('https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev/api/h
 </script>
 <script>
 // Jingle radio : essaie de démarrer à l'ouverture, sinon au premier toucher / clic (les navigateurs bloquent souvent le son sans geste ;
-// sur iPhone, seul le doigt qui se lève — touchend / click — autorise le son),
-// en boucle ; ▶/⏸, choix mémorisé sur cet appareil.
+// sur iPhone, seul le doigt qui se lève — touchend / click — autorise le son), en boucle ; ▶/⏸.
+// « Joue vraiment » = le temps avance (Brave peut dire « en lecture » alors que le son est bloqué).
 (function () {
   var box = document.getElementById('jingle'), au = document.getElementById('jgAudio');
   if (!box || !au) return;
   var get = function (k) { try { return localStorage.getItem(k); } catch (e) { return null; } };
   var set = function (k, v) { try { localStorage.setItem(k, v); } catch (e) {} };
-  au.volume = 0.8;
-  au.muted = false; // plus de bouton muet : ▶ / ⏸ suffisent
+  au.volume = 0.8; au.muted = false;
+  var lastT = 0, lastPos = -1, asked = 0;
+  var playing = function () { return !au.paused && (Date.now() - lastT < 1500 || Date.now() - asked < 1500); };
   var ui = function () {
-    var on = !au.paused;
+    var on = playing();
     box.classList.toggle('on', on);
     document.getElementById('jgIcPlay').style.display = on ? 'none' : '';
     document.getElementById('jgIcPause').style.display = on ? '' : 'none';
     document.getElementById('jgPlay').setAttribute('aria-label', on ? 'Mettre le jingle en pause' : 'Écouter notre jingle');
   };
-  var play = function () { var p = au.play(); if (p && p.catch) p.catch(function () {}); };
-  au.addEventListener('play', ui); au.addEventListener('pause', ui);
+  au.addEventListener('timeupdate', function () { if (au.currentTime !== lastPos) { lastPos = au.currentTime; lastT = Date.now(); } ui(); });
+  au.addEventListener('play', ui); au.addEventListener('pause', ui); au.addEventListener('playing', ui);
+  setInterval(ui, 1000);
+  var play = function () {
+    asked = Date.now();
+    if (!au.paused && Date.now() - lastT > 1500) au.pause(); // bloqué en « lecture » muette : on relance proprement
+    var p = au.play(); if (p && p.catch) p.catch(function () { ui(); });
+    ui();
+  };
   document.getElementById('jgPlay').addEventListener('click', function () {
-    if (au.paused) { set('lxJgOff', '0'); play(); } else { set('lxJgOff', '1'); au.pause(); }
+    if (playing()) { set('lxJgOff', '1'); au.pause(); } else { set('lxJgOff', '0'); play(); }
   });
-  // premier geste du visiteur ailleurs sur la page : le jingle part (sauf s'il l'a arrêté avant)
+  // clic / toucher ailleurs sur la page : le jingle part s'il ne joue pas encore (sauf si le visiteur l'a arrêté avec ⏸)
   var first = function (e) {
     if (box.contains(e.target)) return;
-    ['click', 'touchend', 'keydown'].forEach(function (t) { document.removeEventListener(t, first, true); });
-    if (get('lxJgOff') !== '1' && au.paused) play();
+    if (playing()) { ['click', 'touchend', 'keydown'].forEach(function (t) { document.removeEventListener(t, first, true); }); return; }
+    if (get('lxJgOff') !== '1') play();
   };
   ['click', 'touchend', 'keydown'].forEach(function (t) { document.addEventListener(t, first, true); });
-  // essai tout de suite à l'ouverture : certains navigateurs le permettent (visiteur habituel, autoplay autorisé) ;
-  // sinon le navigateur refuse sans rien afficher et le jingle partira au premier geste
-  if (get('lxJgOff') !== '1') { au.preload = 'auto'; var tp = au.play(); if (tp && tp.then) tp.then(function () { ['click', 'touchend', 'keydown'].forEach(function (t) { document.removeEventListener(t, first, true); }); }, function () {}); }
+  // essai tout de suite à l'ouverture (si le navigateur l'autorise)
+  if (get('lxJgOff') !== '1') { au.preload = 'auto'; play(); }
   ui();
 })();
 </script>
