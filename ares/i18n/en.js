@@ -10135,5 +10135,29 @@ export default [
 [
 "Elle n’apparaîtra plus sur les quittances et documents. Ensuite, dessinez ou importez la nouvelle signature.",
 "It will no longer appear on receipts and documents. Then draw or import the new signature."
+],
+[
+"🔑 Nouvel accès",
+"🔑 New access"
+],
+[
+"⭐ Responsable",
+"⭐ Manager"
+],
+[
+"⭐ Responsable de la gérance",
+"⭐ Agency manager"
+],
+[
+"🏢 Société de gestion",
+"🏢 Management company"
+],
+[
+"Nom de la société",
+"Company name"
+],
+[
+"✅ Oui, il l’a demandé — désactiver",
+"✅ Yes, they asked — deactivate"
 ]
 ];

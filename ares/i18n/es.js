@@ -10351,5 +10351,25 @@ export default [
 [
 "Elle n’apparaîtra plus sur les quittances et documents. Ensuite, dessinez ou importez la nouvelle signature.",
 "Ya no aparecerá en recibos y documentos. Después, dibuje o importe la nueva firma."
+],
+[
+"🔑 Nouvel accès",
+"🔑 Nuevo acceso"
+],
+[
+"⭐ Responsable de la gérance",
+"⭐ Responsable de la administradora"
+],
+[
+"🏢 Société de gestion",
+"🏢 Sociedad gestora"
+],
+[
+"Nom de la société",
+"Nombre de la sociedad"
+],
+[
+"✅ Oui, il l’a demandé — désactiver",
+"✅ Sí, lo ha pedido — desactivar"
 ]
 ];
