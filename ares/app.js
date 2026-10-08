@@ -1517,6 +1517,14 @@ async function ptlApi(path, opts = {}) {
   if (!r.ok) throw new PtlError(r.status, j.error || 'Erreur ' + r.status);
   return j;
 }
+// toutes les demandes d'une gérance (ouvertes, en cours, fermées) pour l'onglet Facturation de sa fiche
+async function ptlOrgTickets(id) {
+  if (ui.ptl.orgTLoading === id) return;
+  ui.ptl.orgTLoading = id;
+  try { const r = await ptlApi(`tickets?scope=all&org=${id}`); ui.ptl.orgT = { id, list: r.tickets || [] }; } catch (e) { ui.ptl.orgT = { id, list: [] }; toast(e.message, { bad: true }); }
+  ui.ptl.orgTLoading = '';
+  if (ui.sheet && ui.sheet.kind === 'ger') { ui.sheet.rendered = false; renderSheet(); }
+}
 async function ptlLoad() {
   if (ui.ptl.loading || !ptlConf()) return;
   ui.ptl.loading = true; ui.ptl.err = '';
@@ -3331,7 +3339,7 @@ dashboard() {
     const chips = html`<div class="chips ger-chips" style="margin-bottom:10px">
       <button class="chip" data-action="ger-filter" data-id="" aria-pressed="${!of}">Toutes les gérances</button>
       ${d.orgs.map((o) => html`<button class="chip" data-action="ger-filter" data-id="${o.id}" aria-pressed="${of === o.id}">🏢 ${o.name}${o.open ? html` <b class="ger-n">${o.open}</b>` : ''}</button>`)}</div>
-      ${oSel ? html`<div class="actions" style="margin:0 0 12px"><button class="btn sm" data-action="ger-open" data-id="${of}">${icon('users')} Accès</button><button class="btn sm" data-action="ger-open" data-id="${of}" data-tab="res">${icon('building')} Résidences</button><button class="btn sm ghost" data-action="ger-edit" data-id="${of}">${icon('edit')} Modifier</button></div>` : ''}`;
+      ${oSel ? html`<div class="actions" style="margin:0 0 12px"><button class="btn sm" data-action="ger-open" data-id="${of}">${icon('users')} Accès</button><button class="btn sm" data-action="ger-open" data-id="${of}" data-tab="fact">🧾 Facturation</button><button class="btn sm ghost" data-action="ger-edit" data-id="${of}">${icon('edit')} Modifier</button></div>` : ''}`;
     const row = (t) => { const u = PTL_URG[t.urgence] || PTL_URG.planifie; return html`<button class="row ger-req ${t.status === 'recue' ? 'is-new' : ''} u-${t.urgence}" data-action="ger-ticket" data-id="${t.id}">
         <span class="avatar" style="background:var(--${u[2]}-soft, var(--surface-2))">${u[0]}</span>
         <span class="grow"><span class="title" style="display:block;white-space:normal">#${t.ref} · ${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted small">— ${t.lieu}</span>` : ''}</span>
@@ -3363,7 +3371,7 @@ dashboard() {
           </dl>
           <div class="actions" style="margin:14px 0 0">
             <button class="btn sm primary" data-action="ger-open" data-id="${o.id}">${icon('users')} Accès</button>
-            <button class="btn sm" data-action="ger-open" data-id="${o.id}" data-tab="res">${icon('building')} Résidences</button>
+            <button class="btn sm" data-action="ger-open" data-id="${o.id}" data-tab="fact">🧾 Facturation</button>
           </div>
         </div>`;
       })}</div>` : empty('briefcase', 'Aucune gérance pour l’instant.', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Ajouter une gérance</button>`)}
@@ -3535,10 +3543,11 @@ dashboard() {
       body = html`<div class="metrics" style="margin-bottom:14px">
           <div class="metric"><div class="lbl">Factures</div><div class="val">${F.length}</div><div class="sub">${cpLabel(y, per)}</div></div>
           <div class="metric"><div class="lbl">À encaisser</div><div class="val red">${eur(sum(F.filter((t) => !t.facture.paid), (t) => t.facture.ttc))}</div><div class="sub">${plural(F.filter((t) => !t.facture.paid).length, 'facture')}</div></div>
+          ${(() => { const C = vault.list('taches').filter((t) => t.facture && t.facture.cont && !t.facture.paid); return C.length ? html`<div class="metric cont-blink-box"><div class="lbl">⚠️ Contentieux</div><div class="val red">${eur(sum(C, (t) => t.facture.ttc))}</div><div class="sub">${plural(C.length, 'facture')} impayée${C.length > 1 ? 's' : ''} en litige</div></div>` : ''; })()}
           <div class="metric hero"><div class="lbl">Facturé TTC</div><div class="val accent">${eur(sum(F, (t) => t.facture.ttc))}</div><div class="sub">HT ${eur(sum(F, (t) => t.facture.ht))} · TVA ${eur(sum(F, (t) => t.facture.tva))}</div></div></div>
         <div class="toolbar" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-action="cp-fact-csv">${icon('download')} Factures (Excel / CSV)</button><button class="btn ghost" data-action="fact-set">⚙️ Émetteur : ${c.nom}</button></div>
         ${todo.length ? html`<div class="section-label">🟡 À facturer (${todo.length})</div><div class="list" style="margin-bottom:14px">${todo.map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : ''} · clôturée le ${fmtDate(t.doneDate || t.date)}</span></span><span class="badge warn">🧾 Faire la facture</span></button>`)}</div>` : ''}
-        ${F.length ? html`<div class="section-label">Factures émises</div><div class="list">${F.slice(0, ui.cpLim || 10).map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.facture.no}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : ''} · ${fmtDate(t.facture.date)} · ${t.titre}</span></span><span style="text-align:right"><b>${eur(t.facture.ttc)}</b><span class="tiny ${t.facture.paid ? '' : 'red'}" style="display:block">${t.facture.paid ? '✅ payée' : '⏳ à payer'}</span></span></button>`)}</div>${moreBtn(F.length, ui.cpLim || 10)}` : html`<p class="muted">Aucune facture émise sur cette période.</p>`}`;
+        ${F.length ? html`<div class="section-label">Factures émises</div><div class="list">${F.slice(0, ui.cpLim || 10).map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.facture.no}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : ''} · ${fmtDate(t.facture.date)} · ${t.titre}</span></span><span style="text-align:right"><b>${eur(t.facture.ttc)}</b>${t.facture.cont && !t.facture.paid ? html`<span class="badge cont-blink" style="display:block">⚠️ CONTENTIEUX</span>` : html`<span class="tiny ${t.facture.paid ? '' : 'red'}" style="display:block">${t.facture.paid ? '✅ payée' : '⏳ à payer'}</span>`}</span></button>`)}</div>${moreBtn(F.length, ui.cpLim || 10)}` : html`<p class="muted">Aucune facture émise sur cette période.</p>`}`;
     } else if (tab === 'interv') {
       const L = intervLedger(from, to);
       const hTot = sum(L, (x) => x.min) / 60, cTot = sum(L, (x) => x.cout || 0);
@@ -4035,6 +4044,14 @@ const SHEETS = {
         <label class="field full">Nom de la gérance<input name="name" required value="${o.name || ''}" placeholder="ex. Gérance du Centre S.A."></label>
         <label class="field">Email<input type="email" name="email" value="${o.email || ''}"></label>
         <label class="field">Téléphone<input type="tel" name="phone" value="${o.phone || ''}"></label>
+        ${(() => { const cl = factClient(id || '', o.name), c = factConf(); return html`<details class="full"${cl.adresse || cl.tvaNum ? '' : ' open'}><summary class="section-label" style="cursor:pointer">🧾 Données de facturation (sur vos factures)</summary><div class="fields" style="margin-top:8px">
+        <label class="field full">Adresse de facturation<textarea name="adresse" style="min-height:60px" placeholder="rue, n°, code postal, ville">${cl.adresse}</textarea></label>
+        <label class="field">Pays (code)<input name="pays" value="${cl.pays}" maxlength="2" placeholder="LU" style="text-transform:uppercase"></label>
+        <label class="field">N° TVA du client<input name="tvaNum" value="${cl.tvaNum}" placeholder="ex. LU12345678, FR…, BE…"></label>
+        <label class="field full">Régime de TVA<select name="regime">${Object.entries(TVA_REG).map(([k, v]) => html`<option value="${k}" ${cl.regime === k ? new Raw('selected') : ''}>${k === 'normal' ? `TVA normale (${String(c.taux).replace('.', ',')} %)` : v[0]}</option>`)}</select></label>
+        <label class="field">Taux particulier (%)<input name="taux" type="number" step="0.01" min="0" max="100" inputmode="decimal" value="${cl.taux}" placeholder="si « Taux particulier »"></label>
+        <label class="field">Mention sur la facture<input name="mention" value="${cl.mention}" placeholder="sinon la mention par défaut"></label>
+        <p class="tiny muted full" style="margin:0">Autoliquidation : client assujetti d’un autre pays de l’UE, avec son n° TVA (0 %, mention art. 196). Travaux sur un immeuble au Luxembourg : en principe TVA luxembourgeoise. Vérifiez avec votre comptable.</p></div></details>`; })()}
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="gerForm">${id ? 'Enregistrer' : 'Créer la gérance'}</button>`,
     };
@@ -4045,20 +4062,38 @@ const SHEETS = {
     tab = tab || 'acces';
     const tabs = html`<div class="tabs" role="tablist" style="margin-bottom:12px">
       <button class="tab" role="tab" aria-selected="${tab === 'acces'}" data-action="ger-open" data-id="${id}" data-tab="acces">${icon('users')} Accès</button>
-      <button class="tab" role="tab" aria-selected="${tab === 'res'}" data-action="ger-open" data-id="${id}" data-tab="res">${icon('building')} Résidences</button>
       <button class="tab" role="tab" aria-selected="${tab === 'fact'}" data-action="ger-open" data-id="${id}" data-tab="fact">🧾 Facturation</button></div>`;
+    if (tab === 'res') tab = 'acces'; // les résidences sont créées par la gérance dans son portail
     let body;
     if (tab === 'fact') {
-      const cl = factClient(id, o.name), c = factConf();
-      body = html`<form data-form="fact-client" class="fields"><input type="hidden" name="org" value="${id}">
-        <label class="field full">Adresse de facturation<textarea name="adresse" style="min-height:60px" placeholder="rue, n°, code postal, ville">${cl.adresse}</textarea></label>
-        <label class="field">Pays (code)<input name="pays" value="${cl.pays}" maxlength="2" placeholder="LU" style="text-transform:uppercase"></label>
-        <label class="field">N° TVA du client<input name="tvaNum" value="${cl.tvaNum}" placeholder="ex. LU12345678, FR…, BE…"></label>
-        <label class="field full">Régime de TVA<select name="regime">${Object.entries(TVA_REG).map(([k, v]) => html`<option value="${k}" ${cl.regime === k ? new Raw('selected') : ''}>${k === 'normal' ? `TVA normale (${String(c.taux).replace('.', ',')} %)` : v[0]}</option>`)}</select></label>
-        <label class="field">Taux particulier (%)<input name="taux" type="number" step="0.01" min="0" max="100" inputmode="decimal" value="${cl.taux}" placeholder="si « Taux particulier »"></label>
-        <label class="field">Mention sur la facture<input name="mention" value="${cl.mention}" placeholder="sinon la mention par défaut"></label>
-        <p class="tiny muted full" style="margin:0">Autoliquidation : client assujetti d’un autre pays de l’UE, avec son n° TVA (0 %, mention art. 196). Non applicable : 0 % avec mention. Travaux sur un immeuble situé au Luxembourg : en principe TVA luxembourgeoise même pour un client étranger. Vérifiez chaque cas avec votre comptable.</p>
-        <button class="btn primary full" type="submit">Enregistrer</button></form>`;
+      // liste des chantiers de la gérance : ouverts, en cours, fermés, contentieux (les montants, remises, TVA : Réglages + Comptabilité)
+      const all = (ui.ptl.orgT && ui.ptl.orgT.id === id ? ui.ptl.orgT.list : null);
+      if (!all) { ptlOrgTickets(id); body = html`<p class="muted">Chargement…</p>`; }
+      else {
+        const tache = (t) => vault.list('taches').find((x) => x.ptl && x.ptl.tid === t.id);
+        const fOf = (t) => { const x = tache(t); return x && x.facture ? x.facture : null; };
+        const cont = all.filter((t) => t.inv_cont && !t.inv_paid);
+        const open = all.filter((t) => ['recue', 'prise', 'planifiee'].includes(t.status));
+        const cours = all.filter((t) => t.status === 'encours');
+        const done = all.filter((t) => t.status === 'terminee' && !(t.inv_cont && !t.inv_paid));
+        const st = (t) => { const f = fOf(t); return t.inv_no ? (t.inv_paid ? html`<span class="badge ok">✅ payée</span>` : t.inv_cont ? html`<span class="badge cont-blink">⚠️ CONTENTIEUX</span>` : html`<span class="badge warn">⏳ à payer</span>`) : t.status === 'terminee' ? html`<span class="badge">${f ? 'facturée' : '🟡 à facturer'}</span>` : html`<span class="badge">${PTL_ST[t.status] || t.status}</span>`; };
+        const line = (t) => { const x = tache(t); return html`<button class="row" data-action="${x && (x.facture || t.status === 'terminee') ? 'fact-open' : 'ger-ticket'}" data-id="${x && (x.facture || t.status === 'terminee') ? x.id : t.id}">
+          <span class="grow"><span class="title" style="display:block;white-space:normal">#${t.ref} · ${t.categorie || 'Intervention'}${t.inv_no ? html` <span class="muted small">· ${t.inv_no}</span>` : ''}</span>
+          <span class="meta" style="white-space:normal">📍 ${t.residence_name}${t.lieu ? ' — ' + t.lieu : ''} · ${ptlTime(t.done_at || t.created_at)}</span></span>
+          <span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">${t.inv_ttc ? html`<b>${eur(t.inv_ttc)}</b>` : ''}${st(t)}</span></button>`; };
+        const grp = (title, list, cls = '') => list.length ? html`<div class="section-label ${cls}">${title} (${list.length})</div><div class="list" style="margin-bottom:14px">${list.map(line)}</div>` : '';
+        const due = sum(all.filter((t) => t.inv_no && !t.inv_paid), (t) => +t.inv_ttc || 0), dueC = sum(cont, (t) => +t.inv_ttc || 0);
+        body = html`<div class="metrics" style="margin-bottom:14px">
+            <div class="metric"><div class="lbl">Ouverts / en cours</div><div class="val">${open.length + cours.length}</div></div>
+            <div class="metric"><div class="lbl">À encaisser</div><div class="val red">${eur(due)}</div></div>
+            <div class="metric ${cont.length ? 'cont-blink-box' : ''}"><div class="lbl">⚠️ Contentieux</div><div class="val ${cont.length ? 'red' : ''}">${cont.length ? eur(dueC) : '—'}</div></div></div>
+          ${grp('⚠️ CONTENTIEUX — impayés en litige', cont, 'cont-blink')}
+          ${grp('🟠 Ouverts', open)}
+          ${grp('🔵 En cours', cours)}
+          ${grp('✅ Fermés', done)}
+          ${all.length ? '' : html`<p class="muted small">Aucune demande de cette gérance pour l’instant.</p>`}
+          <p class="tiny muted" style="margin-top:6px">Montants, TVA, remises, acomptes : réglés dans <b>Réglages → 🧾 Facturation</b> et dans chaque facture (<b>Comptabilité → Factures</b>). Données de facturation de la gérance : <a href="#" data-action="ger-edit" data-id="${id}">✏️ Modifier la gérance</a>.</p>`;
+      }
     } else
     if (tab === 'res') {
       const rs = d.residences.filter((r) => r.org_id === id);
@@ -4208,9 +4243,9 @@ const SHEETS = {
       const F = t.facture;
       return {
         title: `🧾 Facture ${F.no}`,
-        body: html`<dl class="kv">${kvRow('Intervention', `${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`)}${kvRow('Gérance', t.ptl ? t.ptl.org : '—')}${kvRow('Date', fmtDate(F.date))}${kvRow('Total HT', eur(F.ht))}${kvRow('TVA', eur(F.tva))}${kvRow('Total TTC', html`<b>${eur(F.ttc)}</b>`)}${kvRow('Paiement', F.paid ? `✅ payée le ${fmtDate(F.paid)}` : '⏳ à payer')}</dl>
+        body: html`${F.cont && !F.paid ? html`<div class="alert bad cont-blink-box" style="margin-bottom:10px">⚠️<div><b>CONTENTIEUX</b> depuis le ${fmtDate(F.cont)} — facture impayée en litige. La gérance le voit en rouge dans son portail.</div></div>` : ''}<dl class="kv">${kvRow('Intervention', `${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`)}${kvRow('Gérance', t.ptl ? t.ptl.org : '—')}${kvRow('Date', fmtDate(F.date))}${kvRow('Total HT', eur(F.ht))}${kvRow('TVA', eur(F.tva))}${kvRow('Total TTC', html`<b>${eur(F.ttc)}</b>`)}${kvRow('Paiement', F.paid ? `✅ payée le ${fmtDate(F.paid)}` : '⏳ à payer')}</dl>
           <p class="small muted">La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).</p>`,
-        foot: html`${F.docId ? html`<button class="btn" data-action="open-doc" data-id="${F.docId}">⬇️ PDF</button>` : ''}<button class="btn ${F.paid ? '' : 'primary'}" data-action="fact-paid" data-id="${id}">${F.paid ? '↩️ Marquer à payer' : '✅ Marquer payée'}</button>`,
+        foot: html`${F.docId ? html`<button class="btn" data-action="open-doc" data-id="${F.docId}">⬇️ PDF</button>` : ''}${F.paid ? '' : html`<button class="btn ${F.cont ? '' : 'danger'}" data-action="fact-cont" data-id="${id}">${F.cont ? '↩️ Sortir du contentieux' : '⚠️ Contentieux'}</button>`}<button class="btn ${F.paid ? '' : 'primary'}" data-action="fact-paid" data-id="${id}">${F.paid ? '↩️ Marquer à payer' : '✅ Marquer payée'}</button>`,
       };
     }
     const f = factDraft(t), miss = factMissing(c);
@@ -5547,7 +5582,7 @@ const ACTIONS = {
     openOver('tache-form', null, null, { ...(w ? { intervenantId: w.id, type: w.metier === 'menage' ? 'nettoyage' : 'reparation' } : {}), metiers: metHints(`${d.ticket.categorie || ''} ${d.ticket.description || ''}`), ptlPhotos: (d.photos || []).map((p) => p.id).slice(0, 6), ptl: L, titre: `#${L.ref} ${d.ticket.categorie || 'Intervention'}`.slice(0, 80), note: d.ticket.description || '' });
   },
   'ger-edit': (d) => openSheet('ger-form', d.id),
-  'ger-open': (d) => { openSheet('ger', d.id, d.tab); ptlLoad(); }, // les données du portail sont rafraîchies à chaque ouverture
+  'ger-open': (d) => { if (d.tab === 'fact') ui.ptl.orgT = null; openSheet('ger', d.id, d.tab); ptlLoad(); }, // les données du portail sont rafraîchies à chaque ouverture
   'ger-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; renderView(); },
   async 'ptl-logout'() {
     if (!(await confirmBox('Déconnecter l’app du portail ?', { ok: 'Déconnecter', detail: 'Les gérances restent dans le portail ; vous pourrez vous reconnecter.' }))) return;
@@ -5661,12 +5696,22 @@ const ACTIONS = {
     toast(`🧾 Facture ${no} envoyée à ${t.ptl.org}`);
     ui.sheet.rendered = false; renderSheet();
   },
+  // ⚠️ contentieux : facture impayée en litige — rouge clignotant dans la master et dans le portail de la gérance
+  async 'fact-cont'(d) {
+    const t = vault.get('taches', d.id);
+    if (!t || !t.facture || t.facture.paid) return;
+    const on = !t.facture.cont;
+    if (on && !(await confirmBox('Mettre cette facture en contentieux ?', { ok: '⚠️ Contentieux', danger: true, detail: `${t.facture.no} · ${eur(t.facture.ttc)} — la gérance reçoit un message et voit la facture en rouge dans son portail.` }))) return;
+    try { await ptlApi(`tickets/${t.ptl.tid}/invoice-paid`, { method: 'POST', body: { cont: on } }); } catch (e) { return toast(e.message, { bad: true }); }
+    await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, cont: on ? today() : '' } }), on ? 'Facture en contentieux' : 'Contentieux levé', t.facture.no, t.immId);
+    toast(on ? '⚠️ Facture en contentieux' : 'Contentieux levé');
+  },
   async 'fact-paid'(d) {
     const t = vault.get('taches', d.id);
     if (!t || !t.facture) return;
     const paid = t.facture.paid ? '' : today();
     try { await ptlApi(`tickets/${t.ptl.tid}/invoice-paid`, { method: 'POST', body: { paid: !!paid } }); } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, paid } }), paid ? 'Facture payée' : 'Facture à payer', t.facture.no, t.immId);
+    await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, paid, ...(paid ? { cont: '' } : {}) } }), paid ? 'Facture payée' : 'Facture à payer', t.facture.no, t.immId);
     toast(paid ? '✅ Facture payée' : 'Facture remise « à payer »');
   },
   async 'plan-reset'(d) {
@@ -6302,7 +6347,10 @@ const FORMS = {
     if (!b.name) return;
     let nid = id;
     try { if (id) await ptlApi('orgs/' + id, { method: 'PATCH', body: b }); else nid = (await ptlApi('orgs', { method: 'POST', body: b })).id; } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', lastOrg: b.name }), id ? 'Gérance modifiée' : 'Gérance créée', b.name);
+    const g = (k) => String(fd.get(k) || '').trim();
+    const cur = (vault.get('reglages', 'factClients') || {}).list || {};
+    const list = { ...cur, [nid]: { regime: TVA_REG[g('regime')] ? g('regime') : 'normal', taux: g('taux'), tvaNum: g('tvaNum').toUpperCase().replace(/\s+/g, ''), adresse: g('adresse'), pays: (g('pays') || 'LU').toUpperCase().slice(0, 2), mention: g('mention') } };
+    await vault.mutate((tx) => { tx.put('reglages', { id: 'portail', lastOrg: b.name }); tx.put('reglages', { id: 'factClients', list }); }, id ? 'Gérance modifiée' : 'Gérance créée', b.name);
     toast(id ? 'Gérance enregistrée' : 'Gérance créée');
     await ptlLoad();
     openSheet('ger', nid, id ? null : 'acces');

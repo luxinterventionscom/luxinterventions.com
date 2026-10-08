@@ -357,6 +357,10 @@ export default [
 "Bldg / staircase"
 ],
 [
+"CONTENTIEUX",
+"DISPUTE"
+],
+[
 "Cage d’escalier",
 "Stairwell"
 ],
@@ -2285,6 +2289,10 @@ export default [
 "{0} in progress"
 ],
 [
+"{0} facture(s) impayée(s) en litige",
+"{0} unpaid invoice(s) in dispute"
+],
+[
 "{0} gérance{1} · {2} utilisateurs actifs",
 "{0} property manager(s) · {2} active users"
 ],
@@ -2495,6 +2503,14 @@ export default [
 [
 "⚙️ Locaux techniques",
 "⚙️ Technical rooms"
+],
+[
+"⚠️ CONTENTIEUX",
+"⚠️ DISPUTE"
+],
+[
+"⚠️ CONTENTIEUX — impayée",
+"⚠️ DISPUTE — unpaid"
 ],
 [
 "⚡ Créer plusieurs appartements d’un coup",

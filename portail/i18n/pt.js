@@ -357,6 +357,10 @@ export default [
 "Bloco / escada"
 ],
 [
+"CONTENTIEUX",
+"CONTENCIOSO"
+],
+[
 "Cage d’escalier",
 "Caixa de escadas"
 ],
@@ -2337,6 +2341,10 @@ export default [
 "{0} em curso"
 ],
 [
+"{0} facture(s) impayée(s) en litige",
+"{0} fatura(s) por pagar em contencioso"
+],
+[
 "{0} gérance{1} · {2} utilisateurs actifs",
 "{0} administração(ões) · {2} utilizadores ativos"
 ],
@@ -2543,6 +2551,14 @@ export default [
 [
 "⚙️ Locaux techniques",
 "⚙️ Locais técnicos"
+],
+[
+"⚠️ CONTENTIEUX",
+"⚠️ CONTENCIOSO"
+],
+[
+"⚠️ CONTENTIEUX — impayée",
+"⚠️ CONTENCIOSO — por pagar"
 ],
 [
 "⚡ Créer plusieurs appartements d’un coup",

@@ -10083,5 +10083,45 @@ export default [
 [
 " (✋ a refusé)",
 " (✋ refused)"
+],
+[
+"⚠️ CONTENTIEUX",
+"⚠️ DISPUTE"
+],
+[
+"⚠️ Contentieux",
+"⚠️ Dispute"
+],
+[
+"↩️ Sortir du contentieux",
+"↩️ End dispute"
+],
+[
+"⚠️ CONTENTIEUX — impayés en litige",
+"⚠️ DISPUTE — unpaid, contested"
+],
+[
+"🟠 Ouverts",
+"🟠 Open"
+],
+[
+"🔵 En cours",
+"🔵 In progress"
+],
+[
+"✅ Fermés",
+"✅ Closed"
+],
+[
+"Ouverts / en cours",
+"Open / in progress"
+],
+[
+"🧾 Données de facturation (sur vos factures)",
+"🧾 Billing details (on your invoices)"
+],
+[
+"Mettre cette facture en contentieux ?",
+"Put this invoice in dispute?"
 ]
 ];

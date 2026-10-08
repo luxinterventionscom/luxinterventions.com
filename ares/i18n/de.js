@@ -10307,5 +10307,45 @@ export default [
 [
 " (✋ a refusé)",
 " (✋ hat abgelehnt)"
+],
+[
+"⚠️ CONTENTIEUX",
+"⚠️ STREITFALL"
+],
+[
+"⚠️ Contentieux",
+"⚠️ Streitfall"
+],
+[
+"↩️ Sortir du contentieux",
+"↩️ Streitfall beenden"
+],
+[
+"⚠️ CONTENTIEUX — impayés en litige",
+"⚠️ STREITFALL — unbezahlt, strittig"
+],
+[
+"🟠 Ouverts",
+"🟠 Offen"
+],
+[
+"🔵 En cours",
+"🔵 In Arbeit"
+],
+[
+"✅ Fermés",
+"✅ Abgeschlossen"
+],
+[
+"Ouverts / en cours",
+"Offen / in Arbeit"
+],
+[
+"🧾 Données de facturation (sur vos factures)",
+"🧾 Rechnungsdaten (auf Ihren Rechnungen)"
+],
+[
+"Mettre cette facture en contentieux ?",
+"Diese Rechnung in den Streitfall setzen?"
 ]
 ];
