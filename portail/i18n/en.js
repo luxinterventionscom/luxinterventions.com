@@ -141,6 +141,10 @@ export default [
 "Cancelled"
 ],
 [
+"Annulées",
+"Cancelled"
+],
+[
 "Année",
 "Year"
 ],
@@ -693,6 +697,10 @@ export default [
 "Off"
 ],
 [
+"Détail de chaque demande",
+"Detail of each request"
+],
+[
 "Détail des demandes",
 "Request details"
 ],
@@ -787,6 +795,10 @@ export default [
 [
 "Fonction",
 "Role"
+],
+[
+"Fonction du demandeur",
+"Requester's role"
 ],
 [
 "Fuite sous l’évier, l’eau coule dans l’appartement du dessous.",
@@ -1289,12 +1301,28 @@ export default [
 "Solar panels"
 ],
 [
+"Par demandeur",
+"By requester"
+],
+[
+"Par fonction du demandeur",
+"By requester's role"
+],
+[
 "Par résidence",
 "By residence"
 ],
 [
+"Par technicien",
+"By technician"
+],
+[
 "Par type",
 "By type"
+],
+[
+"Par type de travail",
+"By type of work"
 ],
 [
 "Par type de travaux",
@@ -1617,6 +1645,10 @@ export default [
 "Effective fix of the problem"
 ],
 [
+"Résumé",
+"Summary"
+],
+[
 "Rôle",
 "Role"
 ],
@@ -1691,6 +1723,10 @@ export default [
 [
 "Statistiques de nos interventions",
 "Statistics of our jobs"
+],
+[
+"Statistiques mois par mois",
+"Month-by-month statistics"
 ],
 [
 "Statut",
@@ -1811,6 +1847,10 @@ export default [
 [
 "Type d'intervention",
 "Type of job"
+],
+[
+"Type de travail",
+"Type of work"
 ],
 [
 "Type de travaux",
@@ -2065,6 +2105,10 @@ export default [
 "{0} flats"
 ],
 [
+"{0} demande(s) exportée(s)",
+"{0} request(s) exported"
+],
+[
 "{0} demande{1}",
 "{0} request(s)"
 ],
@@ -2261,6 +2305,10 @@ export default [
 "⏳ to pay"
 ],
 [
+"☑️ Contenu du rapport — cochez ce que vous voulez",
+"☑️ Report content — tick what you want"
+],
+[
 "⚙️ Code locaux techniques (panneaux électriques, machines)",
 "⚙️ Technical rooms code (electrical panels, machines)"
 ],
@@ -2325,6 +2373,10 @@ export default [
 "📅 Availability"
 ],
 [
+"📊 Export Excel (CSV)",
+"📊 Excel export (CSV)"
+],
+[
 "📊 Statistiques",
 "📊 Statistics"
 ],
@@ -2355,6 +2407,10 @@ export default [
 [
 "🔄 Actualiser les messages",
 "🔄 Refresh messages"
+],
+[
+"🔎 Filtres — rien coché = tout",
+"🔎 Filters — nothing ticked = everything"
 ],
 [
 "🔐 Autres codes",

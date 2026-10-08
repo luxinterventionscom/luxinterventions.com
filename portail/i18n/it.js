@@ -141,6 +141,10 @@ export default [
 "Annullata"
 ],
 [
+"Annulées",
+"Annullate"
+],
+[
 "Année",
 "Anno"
 ],
@@ -705,6 +709,10 @@ export default [
 "Disattivate"
 ],
 [
+"Détail de chaque demande",
+"Dettaglio di ogni richiesta"
+],
+[
 "Détail des demandes",
 "Dettaglio delle richieste"
 ],
@@ -803,6 +811,10 @@ export default [
 [
 "Fonction",
 "Funzione"
+],
+[
+"Fonction du demandeur",
+"Funzione del richiedente"
 ],
 [
 "Fuite sous l’évier, l’eau coule dans l’appartement du dessous.",
@@ -1317,12 +1329,28 @@ export default [
 "Pannelli solari"
 ],
 [
+"Par demandeur",
+"Per richiedente"
+],
+[
+"Par fonction du demandeur",
+"Per funzione del richiedente"
+],
+[
 "Par résidence",
 "Per residenza"
 ],
 [
+"Par technicien",
+"Per tecnico"
+],
+[
 "Par type",
 "Per tipo"
+],
+[
+"Par type de travail",
+"Per tipo di lavoro"
 ],
 [
 "Par type de travaux",
@@ -1642,7 +1670,7 @@ export default [
 ],
 [
 "Résidences",
-"Condomini"
+"Residenze"
 ],
 [
 "Résolution",
@@ -1651,6 +1679,10 @@ export default [
 [
 "Résolution efficace de la panne",
 "Risoluzione efficace del guasto"
+],
+[
+"Résumé",
+"Riepilogo"
 ],
 [
 "Rôle",
@@ -1731,6 +1763,10 @@ export default [
 [
 "Statistiques de nos interventions",
 "Statistiche dei nostri interventi"
+],
+[
+"Statistiques mois par mois",
+"Statistiche mese per mese"
 ],
 [
 "Statut",
@@ -1855,6 +1891,10 @@ export default [
 [
 "Type d'intervention",
 "Tipo di intervento"
+],
+[
+"Type de travail",
+"Tipo di lavoro"
 ],
 [
 "Type de travaux",
@@ -2113,6 +2153,10 @@ export default [
 "{0} appartamenti"
 ],
 [
+"{0} demande(s) exportée(s)",
+"{0} richiesta/e esportata/e"
+],
+[
 "{0} demande{1}",
 "{0} richiesta/e"
 ],
@@ -2309,6 +2353,10 @@ export default [
 "⏳ da pagare"
 ],
 [
+"☑️ Contenu du rapport — cochez ce que vous voulez",
+"☑️ Contenuto del rapporto — spunta ciò che vuoi"
+],
+[
 "⚙️ Code locaux techniques (panneaux électriques, machines)",
 "⚙️ Codice vani tecnici (quadri elettrici, macchine)"
 ],
@@ -2377,6 +2425,10 @@ export default [
 "📅 Disponibilità"
 ],
 [
+"📊 Export Excel (CSV)",
+"📊 Esporta Excel (CSV)"
+],
+[
 "📊 Statistiques",
 "📊 Statistiche"
 ],
@@ -2407,6 +2459,10 @@ export default [
 [
 "🔄 Actualiser les messages",
 "🔄 Aggiorna i messaggi"
+],
+[
+"🔎 Filtres — rien coché = tout",
+"🔎 Filtri — niente spuntato = tutto"
 ],
 [
 "🔐 Autres codes",
