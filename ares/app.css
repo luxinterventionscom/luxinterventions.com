@@ -622,7 +622,7 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 @media (prefers-reduced-motion: reduce) { .ger-req.is-new.u-urgent { animation: none; } }
 /* pastille des nouvelles demandes des gérances */
 .navbtn { position: relative; }
-.nav-n { position: absolute; top: 4px; left: 26px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #2563eb; color: #fff; font: 700 11px/18px system-ui, sans-serif; font-style: normal; text-align: center; box-shadow: 0 0 0 2px var(--bg, #fff); }
+.nav-n { position: absolute; top: 0; left: calc(50% + 9px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: #2563eb; color: #fff; font: 700 11px/18px system-ui, sans-serif; font-style: normal; text-align: center; box-shadow: 0 0 0 2px var(--bg, #fff); }
 .nav-n.u-urgent { background: #dc2626; }
 /* intervention : heure de → à, urgence */
 .t-hours .t-hrow { margin-top: 6px; }
@@ -667,8 +667,8 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 .kv-tot .big { font-size: 17px; font-weight: 800; }
 /* menu de gauche : sections, sous-rubriques, raccourcis « + » */
 .sidenav .nav-group { margin: 12px 0 2px 12px; font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
-.sidenav .navbtn.nav-sub { padding-left: 22px; }
-.sidenav .navbtn.nav-plus { padding: 4px 10px 4px 50px; min-height: 30px; font-size: 12.5px; font-weight: 600; color: var(--accent, #4f46e5); }
+.sidenav .navbtn.nav-sub { padding-left: 12px; } /* toutes les rubriques alignées sur la même colonne d’icônes */
+.sidenav .navbtn.nav-plus { padding: 4px 10px 4px 47px; min-height: 30px; font-size: 12.5px; font-weight: 600; color: var(--accent, #4f46e5); }
 .sidenav .navbtn.nav-plus .ic { display: none; }
 .sidenav { overflow-y: auto; }
 /* pastille des gérances dans la barre de gauche : à droite du libellé, l'icône reste visible */
