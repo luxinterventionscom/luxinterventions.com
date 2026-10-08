@@ -10295,5 +10295,21 @@ export default [
 [
 "Accord / forfait (facultatif)",
 "Accordo / forfait (facoltativo)"
+],
+[
+"Ajouter une photo",
+"Aggiungi una foto"
+],
+[
+"Changer la photo",
+"Cambia la foto"
+],
+[
+"Facultatif — la personne peut aussi la mettre elle-même dans son app (⚙️).",
+"Facoltativo — la persona può anche metterla da sé nella sua app (⚙️)."
+],
+[
+"Photo illisible",
+"Foto illeggibile"
 ]
 ];
