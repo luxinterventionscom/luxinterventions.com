@@ -353,6 +353,10 @@ export default [
 "Geb. / Treppe"
 ],
 [
+"CONTENTIEUX",
+"STREITFALL"
+],
+[
 "Cage d’escalier",
 "Treppenhaus"
 ],
@@ -2321,6 +2325,10 @@ export default [
 "{0} in Arbeit"
 ],
 [
+"{0} facture(s) impayée(s) en litige",
+"{0} unbezahlte Rechnung(en) im Streitfall"
+],
+[
 "{0} gérance{1} · {2} utilisateurs actifs",
 "{0} Verwaltung(en) · {2} aktive Benutzer"
 ],
@@ -2539,6 +2547,14 @@ export default [
 [
 "⚙️ Locaux techniques",
 "⚙️ Technikräume"
+],
+[
+"⚠️ CONTENTIEUX",
+"⚠️ STREITFALL"
+],
+[
+"⚠️ CONTENTIEUX — impayée",
+"⚠️ STREITFALL — unbezahlt"
 ],
 [
 "⚡ Créer plusieurs appartements d’un coup",

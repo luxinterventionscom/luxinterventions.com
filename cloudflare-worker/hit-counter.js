@@ -906,7 +906,7 @@ const PTL_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
 ];
 // Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
-const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT"];
+const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER"];
 let ptlSchemaReady = false;
 
 // ── Utilità ──
@@ -1471,7 +1471,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       const full = url.searchParams.get("full") === "1"; // rapport : rapport d'intervention en plus
       const sql = `SELECT t.id, t.ref, t.org_id, t.residence_id, t.lieu, t.categorie, t.urgence, t.description, t.status, t.planned_at, t.technicien,
           t.created_at, t.updated_at, t.taken_at, t.done_at, r.name AS residence_name, r.address AS residence_address, o.name AS org_name, u.name AS created_by_name, u.title AS created_by_title,
-          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos, t.inv_no, t.inv_date, t.inv_ht, t.inv_tva, t.inv_ttc, t.inv_paid,${full ? " substr(t.rapport, 1, 2000) AS rapport," : ""}
+          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos, t.inv_no, t.inv_date, t.inv_ht, t.inv_tva, t.inv_ttc, t.inv_paid, t.inv_cont,${full ? " substr(t.rapport, 1, 2000) AS rapport," : ""}
           (SELECT COUNT(*) FROM events e WHERE e.ticket_id = t.id AND e.kind = 'comment') AS msgs,
           (SELECT COUNT(*) FROM events e JOIN users ue ON ue.id = e.user_id WHERE e.ticket_id = t.id AND e.kind = 'comment' AND ue.role != 'admin') AS msgs_ger
         FROM tickets t JOIN residences r ON r.id = t.residence_id JOIN orgs o ON o.id = t.org_id LEFT JOIN users u ON u.id = t.created_by
@@ -1612,7 +1612,15 @@ async function handlePortail(request, env, url, headers, ctx) {
       if (sub === "invoice-paid" && method === "POST") {
         if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
         const b = await body();
-        await env.DB.prepare("UPDATE tickets SET inv_paid = ?, updated_at = ? WHERE id = ?").bind(b.paid ? now : 0, now, t.id).run();
+        // payée / à payer ; « contentieux » = facture impayée en litige (une facture payée sort du contentieux)
+        const paid = "paid" in b ? (b.paid ? now : 0) : t.inv_paid || 0;
+        const cont = paid ? 0 : "cont" in b ? (b.cont ? now : 0) : t.inv_cont || 0;
+        await env.DB.prepare("UPDATE tickets SET inv_paid = ?, inv_cont = ?, updated_at = ? WHERE id = ?").bind(paid, cont, now, t.id).run();
+        if ("cont" in b && !!cont !== !!t.inv_cont) {
+          const txt = cont ? `⚠️ Facture ${t.inv_no || ""} en CONTENTIEUX : impayée. Merci de régulariser ou de contacter LuxInterventions.` : `✅ Facture ${t.inv_no || ""} : contentieux levé.`;
+          await env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'comment', NULL, ?, ?)").bind(ptlId(), t.id, me.id, txt, now).run();
+          ctx && ctx.waitUntil(notifyOther({ title: `#${t.ref} · ${cont ? "⚠️ Contentieux" : "Contentieux levé"}`, body: txt.slice(0, 140), url: `/portail.html#/t/${t.id}`, tag: t.id }, !!cont));
+        }
         return json({ ok: true });
       }
       if (sub === "photos" && method === "PUT") {

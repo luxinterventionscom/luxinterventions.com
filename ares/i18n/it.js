@@ -10315,5 +10315,45 @@ export default [
 [
 " (✋ a refusé)",
 " (✋ ha rifiutato)"
+],
+[
+"⚠️ CONTENTIEUX",
+"⚠️ CONTENZIOSO"
+],
+[
+"⚠️ Contentieux",
+"⚠️ Contenzioso"
+],
+[
+"↩️ Sortir du contentieux",
+"↩️ Togliere dal contenzioso"
+],
+[
+"⚠️ CONTENTIEUX — impayés en litige",
+"⚠️ CONTENZIOSO — non pagati in lite"
+],
+[
+"🟠 Ouverts",
+"🟠 Aperti"
+],
+[
+"🔵 En cours",
+"🔵 In corso"
+],
+[
+"✅ Fermés",
+"✅ Chiusi"
+],
+[
+"Ouverts / en cours",
+"Aperti / in corso"
+],
+[
+"🧾 Données de facturation (sur vos factures)",
+"🧾 Dati di fatturazione (sulle vostre fatture)"
+],
+[
+"Mettre cette facture en contentieux ?",
+"Mettere questa fattura in contenzioso?"
 ]
 ];

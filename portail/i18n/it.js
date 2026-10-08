@@ -353,6 +353,10 @@ export default [
 "Palazzina / scala"
 ],
 [
+"CONTENTIEUX",
+"CONTENZIOSO"
+],
+[
 "Cage d’escalier",
 "Vano scale"
 ],
@@ -2325,6 +2329,10 @@ export default [
 "{0} in corso"
 ],
 [
+"{0} facture(s) impayée(s) en litige",
+"{0} fattura/e non pagata/e in contenzioso"
+],
+[
 "{0} gérance{1} · {2} utilisateurs actifs",
 "{0} amministrazione/i · {2} utenti attivi"
 ],
@@ -2535,6 +2543,14 @@ export default [
 [
 "⚙️ Locaux techniques",
 "⚙️ Vani tecnici"
+],
+[
+"⚠️ CONTENTIEUX",
+"⚠️ CONTENZIOSO"
+],
+[
+"⚠️ CONTENTIEUX — impayée",
+"⚠️ CONTENZIOSO — non pagata"
 ],
 [
 "⚡ Créer plusieurs appartements d’un coup",
