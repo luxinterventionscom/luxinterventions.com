@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.104.2';
+const VERSION = '2.105.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3709,7 +3709,17 @@ new MutationObserver(() => dowTags(document.body)).observe(document.body, { chil
 // Saisie pas encore enregistrée dans la fenêtre : on demande avant de la fermer (sinon tout est perdu)
 let sheetDirty = false;
 sheetEl.addEventListener('input', (e) => { const el = e.target; if (el.closest('form') && !el.dataset.input && !['hidden', 'search'].includes(el.type)) sheetDirty = true; });
-const leaveSheetOk = async () => !sheetDirty || (await confirmBox('Fermer sans enregistrer ?', { ok: 'Fermer sans enregistrer', detail: 'Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement en bas de la fenêtre.' }));
+// fermer une fenêtre où l'on a écrit : proposer directement d'enregistrer (le bouton du bas peut être caché ou loin)
+const leaveSheetOk = async () => {
+  if (!sheetDirty) return true;
+  const subs = [...sheetEl.querySelectorAll('button[type=submit]')].filter((b) => !b.disabled);
+  const save = subs.find((b) => b.closest('.sheet-foot')) || subs[subs.length - 1];
+  if (!save) return true; // rien à enregistrer dans cette fenêtre
+  const lbl = save.textContent.replace(/\s+/g, ' ').trim() || 'Enregistrer';
+  const v = await choiceBox('Fermer sans enregistrer ?', 'Ce que vous avez écrit n’est pas encore enregistré.', [{ value: 'drop', label: 'Fermer sans enregistrer', cls: 'ghost danger' }, { value: 'save', label: '💾 ' + lbl, cls: 'primary' }]);
+  if (v === 'save') { save.click(); return false; }
+  return v === 'drop';
+};
 function openSheet(kind, id, tab, preset) {
   sheetDirty = false;
   ui.sheet = { kind, id, tab: tab || null, preset };
@@ -4086,7 +4096,7 @@ const SHEETS = {
     const d = ui.ptl.data, u = d && d.users.find((x) => x.id === id), link = ui.ptl.inv[id];
     if (!u || !link) return null;
     const lang = preset && preset.lang || 'fr';
-    const t = PTL_INVITE[lang] || PTL_INVITE.fr, msg = t.text(u.name.split(' ')[0], link), enc = encodeURIComponent(msg);
+    const t = PTL_INVITE[lang] || PTL_INVITE.fr, first = u.name.split(' ')[0], msg = t.text(first, link), enc = encodeURIComponent(msg), encWa = encodeURIComponent(t.wa(first, link));
     const tel = (u.phone || '').replace(/[^\d+]/g, '').replace(/^00/, '+');
     return {
       title: 'Invitation au Portail gérance',
@@ -4095,8 +4105,11 @@ const SHEETS = {
         <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(link, 5)}</div>
         <div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => html`<button type="button" data-action="ger-inv-lang" data-id="${id}" data-l="${k}" aria-pressed="${lang === k}">${k.toUpperCase()}</button>`)}</div>
         <p class="tiny muted" style="margin:0 0 10px">Langue du message d’invitation.</p>
+        <details class="inv-prev" style="margin:0 0 12px"><summary class="small"><b>👁 Aperçu de l’invitation</b></summary><div class="inv-card" data-notr="1">${new Raw(t.html(first, link))}</div></details>
         <div class="actions" style="flex-direction:column">
-          ${tel ? html`<a class="btn" href="https://wa.me/${tel.replace(/^\+/, '')}?text=${enc}" target="_blank" rel="noopener">${icon('msg')} Envoyer par WhatsApp</a><a class="btn" href="sms:${tel}?&body=${enc}">${icon('msg')} Envoyer par SMS</a>` : ''}
+          <button class="btn primary" data-action="ger-inv-html" data-id="${id}" data-l="${lang}">✨ Copier l’invitation mise en forme</button>
+          <p class="tiny muted" style="margin:-4px 0 4px;text-align:center">Puis « Envoyer par email » et collez (⌘V / Ctrl+V) à la place du texte : couleurs, gras et bouton orange.</p>
+          ${tel ? html`<a class="btn" href="https://wa.me/${tel.replace(/^\+/, '')}?text=${encWa}" target="_blank" rel="noopener">${icon('msg')} Envoyer par WhatsApp</a><a class="btn" href="sms:${tel}?&body=${enc}">${icon('msg')} Envoyer par SMS</a>` : ''}
           <a class="btn" href="mailto:${u.email}?subject=${encodeURIComponent(t.subject)}&body=${enc}">${icon('mail')} Envoyer par email</a>
           <button class="btn" data-action="ger-inv-copy" data-id="${id}">${icon('file')} Copier le lien</button>
         </div>`,
@@ -5561,6 +5574,17 @@ const ACTIONS = {
     ptlLoad(); // la demande « mot de passe oublié » disparaît
   },
   'ger-inv-lang': (d) => { ui.sheet = null; openSheet('ger-invite', d.id, null, { lang: d.l }); },
+  // invitation en HTML (couleurs, gras, bouton orange) : à coller dans le corps de l'email
+  async 'ger-inv-html'(d) {
+    const dd = ui.ptl.data, u = dd && dd.users.find((x) => x.id === d.id), link = ui.ptl.inv[d.id];
+    if (!u || !link) return;
+    const t = PTL_INVITE[d.l] || PTL_INVITE.fr, first = u.name.split(' ')[0], h = t.html(first, link), txt = t.text(first, link);
+    try {
+      if (window.ClipboardItem) await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([h], { type: 'text/html' }), 'text/plain': new Blob([txt], { type: 'text/plain' }) })]);
+      else await navigator.clipboard.writeText(txt);
+      toast('Invitation copiée — collez-la dans votre email');
+    } catch { toast('Copie impossible', { bad: true }); }
+  },
   async 'ger-inv-copy'(d) {
     try { await navigator.clipboard.writeText(ui.ptl.inv[d.id]); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); }
   },
