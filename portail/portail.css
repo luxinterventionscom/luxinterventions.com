@@ -240,3 +240,8 @@ dialog.sheet.wide { max-width: 1040px; }
 .inv-welcome .iw-t { font-size: 20px; font-weight: 800; color: var(--accent); }
 .inv-welcome .iw-org { font-size: 13px; color: var(--text-2); margin-bottom: 8px; }
 .iw-step { margin: 6px 0 0; font-size: 18px; font-weight: 800; color: var(--accent); }
+/* « Voir les offres » : clignote en rouge */
+@keyframes obBlink { 0%, 100% { color: #dc2626; opacity: 1; } 50% { color: #dc2626; opacity: .35; } }
+.offer-banner .ob-go { color: #dc2626; animation: obBlink 1s ease-in-out infinite; }
+.lock-card .offer-banner { margin: 12px 0 4px; }
+@media (prefers-reduced-motion: reduce) { .offer-banner .ob-go { animation: none; } }

@@ -321,6 +321,7 @@ function renderLock(mode, data = {}) {
   if (mode === 'invite') {
     setHtml(lockEl, html`<form class="lock-card" data-form="invite" autocomplete="off">${brandHead()}
       <div class="inv-welcome"><p class="iw-t">🎉 Bienvenue ${data.name} !</p><p class="iw-org">${data.org}</p><p><b>Merci d’avoir choisi LuxInterventions.</b> Nous sommes très heureux de travailler avec vous.</p></div>
+      ${offerBanner()}
       <p class="iw-step">🔑 Choisissez votre mot de passe</p>
       <p class="small muted" style="margin:-4px 0 4px">Une seule fois : ensuite vous vous connecterez avec votre email et ce mot de passe.</p>
       <input type="hidden" name="token" value="${data.token}">
@@ -419,6 +420,8 @@ async function startSession() {
   startPolling();
   initPush();
   if (!isAdmin() && !state.demo && !t && !offerSeen()) setTimeout(() => { if (!state.sheet) openSheet('offer'); }, 900);
+  let want = ''; try { want = localStorage.getItem('ptlOfferWant') || ''; localStorage.removeItem('ptlOfferWant'); } catch { /* stockage indisponible */ }
+  if (want && !isAdmin() && !state.demo) api('offer', { method: 'POST', body: { plan: want } }).catch(() => {});
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/portail-sw.js', { scope: '/portail' }).catch(() => {});
 }
 
@@ -723,6 +726,7 @@ const VIEWS = {
     return html`${pushCard}
       ${guideCard(stats)}
       ${pageHead(hello, state.me.org_name || '')}
+      ${offerBanner()}
       ${arrive}
       ${pubSlot('haut')}
         ${new Raw(wxRadioCard())}
@@ -923,7 +927,7 @@ const VIEWS = {
         <button class="btn primary" type="submit">${icon('download')} Rapport complet</button>
         <button class="btn" type="button" data-action="report-csv">📊 Export Excel (CSV)</button>
       </form>
-      ${isAdmin() ? '' : html`<button class="offer-banner" data-action="offer-open"><span class="ob-ic">💼</span><span class="grow"><b>Gérez aussi vos propres locataires</b><span class="tiny muted" style="display:block">Gratuit pour 1 immeuble · Pro dès 29 € / mois · données chiffrées</span></span><span class="ob-go">Voir les offres ›</span></button>`}
+      ${isAdmin() ? '' : offerBanner()}
       <div class="section-label">Compte</div>
       <div class="list settings">
         <button class="row" data-action="change-password">${icon('key')}<span class="grow title">Changer mon mot de passe</span></button>
@@ -1069,6 +1073,8 @@ const OFFER_PLANS = [
   { id: 'agence', name: 'Agence', sub: 'Pour les grands portefeuilles.', price: '79 €', per: '/ mois', save: '2 mois offerts en payant à l’année', badge: 'MEILLEUR PRIX', cta: 'Je suis intéressé', items: [[1, 'Jusqu’à 250 logements'], [1, 'Tout le plan Pro'], [1, 'Équipe illimitée'], [1, 'Annonces dans les apps (espaces publicitaires)'], [1, 'Aide prioritaire'], [1, 'Plus de 250 logements : sur devis']] },
 ];
 const OFFER_KEY = 'ptlOfferSeen';
+// bannière « 💼 Gérez aussi vos propres locataires — Voir les offres » (page d'invitation, accueil, Plus) ; « Voir les offres » clignote en rouge
+const offerBanner = () => html`<button type="button" class="offer-banner" data-action="offer-open"><span class="ob-ic">💼</span><span class="grow"><b>Gérez aussi vos propres locataires</b><span class="tiny muted" style="display:block">Gratuit pour 1 immeuble · Pro dès 29 € / mois · données chiffrées</span></span><span class="ob-go">Voir les offres ›</span></button>`;
 const offerSeen = () => { try { return localStorage.getItem(OFFER_KEY) === '1'; } catch { return true; } };
 const offerMark = () => { try { localStorage.setItem(OFFER_KEY, '1'); } catch { /* stockage indisponible */ } };
 
@@ -1558,7 +1564,8 @@ const ACTIONS = {
   'offer-later': () => { offerMark(); closeSheet(); },
   'offer-want': async (d, btn) => {
     offerMark();
-    if (!state.demo) { try { await api('offer', { method: 'POST', body: { plan: d.id } }); } catch { /* ancien serveur : on remercie quand même */ } }
+    if (!state.me) { try { localStorage.setItem('ptlOfferWant', d.id); } catch { /* stockage indisponible */ } } // pas encore connecté : envoyé après le mot de passe
+    else if (!state.demo) { try { await api('offer', { method: 'POST', body: { plan: d.id } }); } catch { /* ancien serveur : on remercie quand même */ } }
     closeSheet();
     toast('Merci ! LuxInterventions vous contacte très vite pour votre abonnement.');
   },
