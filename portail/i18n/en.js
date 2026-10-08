@@ -21,12 +21,24 @@ export default [
 ", with the invitation link. Then: email + password, on any device. Forgotten? Tap “🔑 Forgot your password?” on the login page."
 ],
 [
+"/ mois",
+"/ month"
+],
+[
 "0 (RDC)",
 "0 (ground floor)"
 ],
 [
+"1 immeuble (jusqu’à 10 logements)",
+"1 building (up to 10 units)"
+],
+[
 "12 derniers mois",
 "Last 12 months"
+],
+[
+"2 mois offerts en payant à l’année",
+"2 months free when paying yearly"
 ],
 [
 "5 appartements",
@@ -97,6 +109,14 @@ export default [
 "Show"
 ],
 [
+"Agence",
+"Agency"
+],
+[
+"Aide prioritaire",
+"Priority support"
+],
+[
 "Ajoute l’icône LuxInterventions sur l’écran d’accueil.",
 "Adds the LuxInterventions icon to the home screen."
 ],
@@ -125,6 +145,10 @@ export default [
 "Go to sign-in"
 ],
 [
+"Annonces dans les apps (espaces publicitaires)",
+"Ads in the apps (advertising spaces)"
+],
+[
 "Annuler",
 "Cancel"
 ],
@@ -151,6 +175,10 @@ export default [
 [
 "Août",
 "August"
+],
+[
+"App des locataires",
+"Tenants’ app"
 ],
 [
 "App. 3B, cuisine",
@@ -465,6 +493,10 @@ export default [
 "Accounting"
 ],
 [
+"Comptabilité et rappels de paiement",
+"Accounting and payment reminders"
+],
+[
 "Compte",
 "Account"
 ],
@@ -609,6 +641,10 @@ export default [
 "Requests"
 ],
 [
+"Demandes d’intervention à LuxInterventions",
+"Intervention requests to LuxInterventions"
+],
+[
 "Demandes en cours",
 "Open requests"
 ],
@@ -659,6 +695,10 @@ export default [
 [
 "Déconnexion",
 "Sign out"
+],
+[
+"Découverte",
+"Starter"
 ],
 [
 "Découvrir le portail en mode démo",
@@ -813,6 +853,10 @@ export default [
 "February"
 ],
 [
+"Gratuit pour 1 immeuble · Pro dès 29 € / mois · données chiffrées",
+"Free for 1 building · Pro from €29 / month · encrypted data"
+],
+[
 "Gérance",
 "Property manager"
 ],
@@ -835,6 +879,10 @@ export default [
 [
 "Gérances & accès",
 "Managers & access"
+],
+[
+"Gérez aussi vos propres locataires",
+"Manage your own tenants too"
 ],
 [
 "Hall d’entrée",
@@ -953,8 +1001,16 @@ export default [
 "Shared garden"
 ],
 [
+"Je commence gratuitement",
+"Start for free"
+],
+[
 "Je confirme cette évaluation (vaut signature).",
 "I confirm this rating (counts as signature)."
+],
+[
+"Je suis intéressé",
+"I’m interested"
 ],
 [
 "Juillet",
@@ -967,6 +1023,18 @@ export default [
 [
 "Jusqu’à",
 "Until"
+],
+[
+"Jusqu’à 250 logements",
+"Up to 250 units"
+],
+[
+"Jusqu’à 50 logements",
+"Up to 50 units"
+],
+[
+"La même app que LuxInterventions, pour vos immeubles et vos locataires.",
+"The same app as LuxInterventions, for your buildings and your tenants."
 ],
 [
 "La personne est déconnectée immédiatement et ne peut plus se connecter. Ses demandes restent dans l’historique.",
@@ -991,6 +1059,10 @@ export default [
 [
 "Les clés sont chez M. Weber.",
 "The keys are with Mr Weber."
+],
+[
+"Les demandes d’intervention à LuxInterventions restent gratuites, avec ou sans abonnement. Prix hors TVA.",
+"Intervention requests to LuxInterventions stay free, with or without a plan. Prices excl. VAT."
 ],
 [
 "Les deux mots de passe ne correspondent pas.",
@@ -1029,6 +1101,10 @@ export default [
 "Plant room in the basement, meters behind the grey door."
 ],
 [
+"Locataires, loyers, quittances",
+"Tenants, rents, receipts"
+],
+[
 "Luca passe cet après-midi, merci de prévenir le concierge.",
 "Luca is coming this afternoon, please let the caretaker know."
 ],
@@ -1051,6 +1127,10 @@ export default [
 [
 "M. Weber (concierge)",
 "Mr Weber (caretaker)"
+],
+[
+"MEILLEUR PRIX",
+"BEST VALUE"
 ],
 [
 "Mai",
@@ -1079,6 +1159,10 @@ export default [
 [
 "Menuiserie",
 "Joinery"
+],
+[
+"Merci ! LuxInterventions vous contacte très vite pour votre abonnement.",
+"Thank you! LuxInterventions will contact you very soon about your plan."
 ],
 [
 "Merci ! Évaluation envoyée à LuxInterventions",
@@ -1417,8 +1501,24 @@ export default [
 "More"
 ],
 [
+"Plus de 250 logements : sur devis",
+"Over 250 units: on quote"
+],
+[
 "Plus d’eau chaude dans tout l’immeuble.",
 "No more hot water in the whole building."
+],
+[
+"Plus tard",
+"Later"
+],
+[
+"Plusieurs collègues (responsables)",
+"Several colleagues (managers)"
+],
+[
+"Plusieurs immeubles",
+"Several buildings"
 ],
 [
 "Plusieurs spots du hall ne fonctionnent plus.",
@@ -1455,6 +1555,18 @@ export default [
 [
 "Pose de panneaux",
 "Panel fitting"
+],
+[
+"Pour commencer, sans engagement.",
+"To get started, no commitment."
+],
+[
+"Pour les grands portefeuilles.",
+"For large portfolios."
+],
+[
+"Pour les gérances qui grandissent.",
+"For growing agencies."
 ],
 [
 "Premiers pas · {0}/{1}",
@@ -1527,6 +1639,14 @@ export default [
 [
 "Rapports",
 "Reports"
+],
+[
+"Rapports et statistiques",
+"Reports and statistics"
+],
+[
+"Rapports et statistiques avancés",
+"Advanced reports and statistics"
 ],
 [
 "Rechercher : n°, résidence, lieu…",
@@ -1829,6 +1949,14 @@ export default [
 "Everything since the start"
 ],
 [
+"Tout le plan Découverte",
+"Everything in Starter"
+],
+[
+"Tout le plan Pro",
+"Everything in Pro"
+],
+[
 "Toutes",
 "All"
 ],
@@ -1927,6 +2055,10 @@ export default [
 [
 "Vitrerie",
 "Glazing"
+],
+[
+"Voir les offres ›",
+"See the plans ›"
 ],
 [
 "Votre accès au portail LuxInterventions",
@@ -2241,6 +2373,10 @@ export default [
 "LuxInterventions team"
 ],
 [
+"Équipe illimitée",
+"Unlimited team"
+],
+[
 "Étage",
 "Floor"
 ],
@@ -2259,6 +2395,10 @@ export default [
 [
 "Étage(s) de l’appartement / des appartements",
 "Floor(s) of the flat(s)"
+],
+[
+"États des lieux avec photos",
+"Check-in/out reports with photos"
 ],
 [
 "Évaluation",
@@ -2325,6 +2465,10 @@ export default [
 "☑️ Report content — tick what you want"
 ],
 [
+"♥ LE PLUS CHOISI",
+"♥ MOST POPULAR"
+],
+[
 "⚙️ Code locaux techniques (panneaux électriques, machines)",
 "⚙️ Technical rooms code (electrical panels, machines)"
 ],
@@ -2383,6 +2527,14 @@ export default [
 [
 "🌐 Langue · Language",
 "🌐 Language"
+],
+[
+"💼 Gérez aussi vos propres locataires",
+"💼 Manage your own tenants too"
+],
+[
+"💼 Nos abonnements",
+"💼 Our plans"
 ],
 [
 "📅 Disponibilités",
@@ -2459,6 +2611,10 @@ export default [
 [
 "🔑 Mot de passe oublié ?",
 "🔑 Forgot your password?"
+],
+[
+"🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.",
+"🔒 Your data is encrypted: nobody else, not even LuxInterventions, can read it."
 ],
 [
 "🚚 En route",

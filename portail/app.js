@@ -9,7 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.12.0';
+const VERSION = '1.13.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -414,6 +414,7 @@ async function startSession() {
   if (t) openTicket(t[1]);
   startPolling();
   initPush();
+  if (!isAdmin() && !state.demo && !t && !offerSeen()) setTimeout(() => { if (!state.sheet) openSheet('offer'); }, 900);
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/portail-sw.js', { scope: '/portail' }).catch(() => {});
 }
 
@@ -917,6 +918,7 @@ const VIEWS = {
         <button class="btn primary" type="submit">${icon('download')} Rapport complet</button>
         <button class="btn" type="button" data-action="report-csv">📊 Export Excel (CSV)</button>
       </form>
+      ${isAdmin() ? '' : html`<button class="offer-banner" data-action="offer-open"><span class="ob-ic">💼</span><span class="grow"><b>Gérez aussi vos propres locataires</b><span class="tiny muted" style="display:block">Gratuit pour 1 immeuble · Pro dès 29 € / mois · données chiffrées</span></span><span class="ob-go">Voir les offres ›</span></button>`}
       <div class="section-label">Compte</div>
       <div class="list settings">
         <button class="row" data-action="change-password">${icon('key')}<span class="grow title">Changer mon mot de passe</span></button>
@@ -965,7 +967,7 @@ function renderSheet() {
   if (!s) return;
   const r = SHEETS[s.kind](s);
   if (!r) return closeSheet();
-  sheetEl.className = 'sheet' + (r.narrow ? ' narrow' : '');
+  sheetEl.className = 'sheet' + (r.narrow ? ' narrow' : '') + (r.wide ? ' wide' : '');
   setHtml(sheetEl, html`
     <div class="sheet-head"><h2>${r.title}</h2><button class="btn icon ghost" data-action="close-sheet" aria-label="Fermer">${icon('x')}</button></div>
     <div class="sheet-body">${r.body}</div>
@@ -1045,7 +1047,35 @@ async function openTicket(id, silent) {
   }
 }
 
+// 💼 Offre d'abonnement : gérer aussi ses propres immeubles et locataires (s'affiche à la 1ʳᵉ ouverture du portail)
+const OFFER_PLANS = [
+  { id: 'decouverte', name: 'Découverte', sub: 'Pour commencer, sans engagement.', price: '0 €', per: '/ mois', cta: 'Je commence gratuitement', items: [[1, '1 immeuble (jusqu’à 10 logements)'], [1, 'Locataires, loyers, quittances'], [1, 'App des locataires'], [1, 'Demandes d’intervention à LuxInterventions'], [0, 'Plusieurs immeubles'], [0, 'Rapports et statistiques avancés']] },
+  { id: 'pro', name: 'Pro', sub: 'Pour les gérances qui grandissent.', price: '29 €', per: '/ mois', save: '2 mois offerts en payant à l’année', badge: '♥ LE PLUS CHOISI', cta: 'Je suis intéressé', items: [[1, 'Jusqu’à 50 logements'], [1, 'Tout le plan Découverte'], [1, 'États des lieux avec photos'], [1, 'Comptabilité et rappels de paiement'], [1, 'Rapports et statistiques'], [1, 'Plusieurs collègues (responsables)']] },
+  { id: 'agence', name: 'Agence', sub: 'Pour les grands portefeuilles.', price: '79 €', per: '/ mois', save: '2 mois offerts en payant à l’année', badge: 'MEILLEUR PRIX', cta: 'Je suis intéressé', items: [[1, 'Jusqu’à 250 logements'], [1, 'Tout le plan Pro'], [1, 'Équipe illimitée'], [1, 'Annonces dans les apps (espaces publicitaires)'], [1, 'Aide prioritaire'], [1, 'Plus de 250 logements : sur devis']] },
+];
+const OFFER_KEY = 'ptlOfferSeen';
+const offerSeen = () => { try { return localStorage.getItem(OFFER_KEY) === '1'; } catch { return true; } };
+const offerMark = () => { try { localStorage.setItem(OFFER_KEY, '1'); } catch { /* stockage indisponible */ } };
+
 const SHEETS = {
+  offer() {
+    return {
+      wide: true,
+      title: '💼 Nos abonnements',
+      body: html`<h3 style="margin:0 0 6px">Gérez aussi vos propres locataires</h3><p class="muted" style="margin:0 0 4px">La même app que LuxInterventions, pour vos immeubles et vos locataires.</p>
+        <p style="margin:0 0 4px"><b>🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.</b></p>
+        <p class="tiny muted" style="margin:0 0 14px">Les demandes d’intervention à LuxInterventions restent gratuites, avec ou sans abonnement. Prix hors TVA.</p>
+        <div class="offer-grid">${OFFER_PLANS.map((p) => html`<div class="offer-card${p.id === 'pro' ? ' pop' : ''}">
+          <div class="offer-top"><h3>${p.name}</h3>${p.badge ? html`<span class="offer-badge">${p.badge}</span>` : ''}</div>
+          <p class="tiny muted" style="margin:2px 0 10px">${p.sub}</p>
+          <div class="offer-price"><b>${p.price}</b> <span class="muted">${p.per}</span></div>
+          <p class="tiny muted offer-save">${p.save || ' '}</p>
+          <button class="btn ${p.id === 'pro' ? 'primary' : ''} block" data-action="offer-want" data-id="${p.id}">${p.cta}</button>
+          <ul class="offer-list">${p.items.map(([ok, t]) => html`<li class="${ok ? '' : 'no'}"><span>${ok ? '✓' : '✕'}</span>${t}</li>`)}</ul>
+        </div>`)}</div>`,
+      foot: html`<button class="btn ghost" data-action="offer-later">Plus tard</button>`,
+    };
+  },
   ticket({ data: d }) {
     const t = d.ticket;
     const res = d.residence || {};
@@ -1510,6 +1540,14 @@ async function setStatus(id, status, extra = {}) {
 }
 
 const ACTIONS = {
+  'offer-later': () => { offerMark(); closeSheet(); },
+  'offer-want': async (d, btn) => {
+    offerMark();
+    if (!state.demo) { try { await api('offer', { method: 'POST', body: { plan: d.id } }); } catch { /* ancien serveur : on remercie quand même */ } }
+    closeSheet();
+    toast('Merci ! LuxInterventions vous contacte très vite pour votre abonnement.');
+  },
+  'offer-open': () => openSheet('offer'),
   go: (d) => { if (state.sheet) closeSheet(); go(d.to); },
   retry: () => go(state.route, true),
   logout: async () => { if (await confirmBox('Se déconnecter ?', { ok: 'Déconnexion' })) logout(); },
