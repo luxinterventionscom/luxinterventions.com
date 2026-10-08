@@ -2352,7 +2352,7 @@ fetch('https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev/api/h
   });
 </script>
 <script>
-// Jingle radio : démarre au premier toucher / clic sur la page (les navigateurs bloquent le son sans geste ;
+// Jingle radio : essaie de démarrer à l'ouverture, sinon au premier toucher / clic (les navigateurs bloquent souvent le son sans geste ;
 // sur iPhone, seul le doigt qui se lève — touchend / click — autorise le son),
 // en boucle ; ▶/⏸, choix mémorisé sur cet appareil.
 (function () {
@@ -2381,6 +2381,9 @@ fetch('https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev/api/h
     if (get('lxJgOff') !== '1' && au.paused) play();
   };
   ['click', 'touchend', 'keydown'].forEach(function (t) { document.addEventListener(t, first, true); });
+  // essai tout de suite à l'ouverture : certains navigateurs le permettent (visiteur habituel, autoplay autorisé) ;
+  // sinon le navigateur refuse sans rien afficher et le jingle partira au premier geste
+  if (get('lxJgOff') !== '1') { au.preload = 'auto'; var tp = au.play(); if (tp && tp.then) tp.then(function () { ['click', 'touchend', 'keydown'].forEach(function (t) { document.removeEventListener(t, first, true); }); }, function () {}); }
   ui();
 })();
 </script>
