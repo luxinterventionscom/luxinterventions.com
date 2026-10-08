@@ -10257,8 +10257,8 @@ export default [
 "Acordo / valor fixo (facultativo)"
 ],
 [
-"F. de ménage / nettoyage",
-"Empregada de limpeza / limpeza"
+"F. de ménage",
+"Empregada de limpeza"
 ],
 [
 "H. à tout faire",

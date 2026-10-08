@@ -10289,8 +10289,8 @@ export default [
 "Vereinbarung / Pauschale (optional)"
 ],
 [
-"F. de ménage / nettoyage",
-"Reinigungskraft / Reinigung"
+"F. de ménage",
+"Reinigungskraft"
 ],
 [
 "H. à tout faire",
