@@ -21,12 +21,24 @@ export default [
 ", com o link de convite. Depois: email + palavra-passe, em qualquer aparelho. Esqueceu? Toque em «🔑 Esqueceu a palavra-passe?» na página de entrada."
 ],
 [
+"/ mois",
+"/ mês"
+],
+[
 "0 (RDC)",
 "0 (R/C)"
 ],
 [
+"1 immeuble (jusqu’à 10 logements)",
+"1 edifício (até 10 frações)"
+],
+[
 "12 derniers mois",
 "Últimos 12 meses"
+],
+[
+"2 mois offerts en payant à l’année",
+"2 meses grátis pagando ao ano"
 ],
 [
 "5 appartements",
@@ -97,6 +109,14 @@ export default [
 "Mostrar"
 ],
 [
+"Agence",
+"Agência"
+],
+[
+"Aide prioritaire",
+"Apoio prioritário"
+],
+[
 "Ajoute l’icône LuxInterventions sur l’écran d’accueil.",
 "Adiciona o ícone LuxInterventions ao ecrã principal."
 ],
@@ -125,6 +145,10 @@ export default [
 "Ir para o início de sessão"
 ],
 [
+"Annonces dans les apps (espaces publicitaires)",
+"Anúncios nas apps (espaços publicitários)"
+],
+[
 "Annuler",
 "Cancelar"
 ],
@@ -151,6 +175,10 @@ export default [
 [
 "Août",
 "Agosto"
+],
+[
+"App des locataires",
+"App dos inquilinos"
 ],
 [
 "App. 3B, cuisine",
@@ -465,6 +493,10 @@ export default [
 "Contabilidade"
 ],
 [
+"Comptabilité et rappels de paiement",
+"Contabilidade e lembretes de pagamento"
+],
+[
 "Compte",
 "Conta"
 ],
@@ -617,6 +649,10 @@ export default [
 "Pedidos"
 ],
 [
+"Demandes d’intervention à LuxInterventions",
+"Pedidos de intervenção à LuxInterventions"
+],
+[
 "Demandes en cours",
 "Pedidos em curso"
 ],
@@ -671,6 +707,10 @@ export default [
 [
 "Déconnexion",
 "Terminar sessão"
+],
+[
+"Découverte",
+"Descoberta"
 ],
 [
 "Découvrir le portail en mode démo",
@@ -829,6 +869,10 @@ export default [
 "Fevereiro"
 ],
 [
+"Gratuit pour 1 immeuble · Pro dès 29 € / mois · données chiffrées",
+"Grátis para 1 edifício · Pro desde 29 € / mês · dados encriptados"
+],
+[
 "Gérance",
 "Administração"
 ],
@@ -851,6 +895,10 @@ export default [
 [
 "Gérances & accès",
 "Administrações e acessos"
+],
+[
+"Gérez aussi vos propres locataires",
+"Gira também os seus próprios inquilinos"
 ],
 [
 "Hall d’entrée",
@@ -969,8 +1017,16 @@ export default [
 "Jardim comum"
 ],
 [
+"Je commence gratuitement",
+"Começo grátis"
+],
+[
 "Je confirme cette évaluation (vaut signature).",
 "Confirmo esta avaliação (vale como assinatura)."
+],
+[
+"Je suis intéressé",
+"Estou interessado"
 ],
 [
 "Juillet",
@@ -983,6 +1039,18 @@ export default [
 [
 "Jusqu’à",
 "Até às"
+],
+[
+"Jusqu’à 250 logements",
+"Até 250 frações"
+],
+[
+"Jusqu’à 50 logements",
+"Até 50 frações"
+],
+[
+"La même app que LuxInterventions, pour vos immeubles et vos locataires.",
+"A mesma app que a LuxInterventions, para os seus edifícios e os seus inquilinos."
 ],
 [
 "La personne est déconnectée immédiatement et ne peut plus se connecter. Ses demandes restent dans l’historique.",
@@ -1007,6 +1075,10 @@ export default [
 [
 "Les clés sont chez M. Weber.",
 "As chaves estão com o Sr. Weber."
+],
+[
+"Les demandes d’intervention à LuxInterventions restent gratuites, avec ou sans abonnement. Prix hors TVA.",
+"Os pedidos de intervenção à LuxInterventions continuam gratuitos, com ou sem assinatura. Preços sem IVA."
 ],
 [
 "Les deux mots de passe ne correspondent pas.",
@@ -1045,6 +1117,10 @@ export default [
 "Sala técnica na cave, contadores atrás da porta cinzenta."
 ],
 [
+"Locataires, loyers, quittances",
+"Inquilinos, rendas, recibos"
+],
+[
 "Luca passe cet après-midi, merci de prévenir le concierge.",
 "O Luca passa esta tarde, por favor avisem o porteiro."
 ],
@@ -1067,6 +1143,10 @@ export default [
 [
 "M. Weber (concierge)",
 "Sr. Weber (porteiro)"
+],
+[
+"MEILLEUR PRIX",
+"MELHOR PREÇO"
 ],
 [
 "Mai",
@@ -1099,6 +1179,10 @@ export default [
 [
 "Menuiserie",
 "Carpintaria"
+],
+[
+"Merci ! LuxInterventions vous contacte très vite pour votre abonnement.",
+"Obrigado! A LuxInterventions contacta-o muito em breve sobre a sua assinatura."
 ],
 [
 "Merci ! Évaluation envoyée à LuxInterventions",
@@ -1461,8 +1545,24 @@ export default [
 "Mais"
 ],
 [
+"Plus de 250 logements : sur devis",
+"Mais de 250 frações: sob orçamento"
+],
+[
 "Plus d’eau chaude dans tout l’immeuble.",
 "Não há água quente em todo o prédio."
+],
+[
+"Plus tard",
+"Mais tarde"
+],
+[
+"Plusieurs collègues (responsables)",
+"Vários colegas (responsáveis)"
+],
+[
+"Plusieurs immeubles",
+"Vários edifícios"
 ],
 [
 "Plusieurs spots du hall ne fonctionnent plus.",
@@ -1499,6 +1599,18 @@ export default [
 [
 "Pose de panneaux",
 "Colocação de painéis"
+],
+[
+"Pour commencer, sans engagement.",
+"Para começar, sem compromisso."
+],
+[
+"Pour les grands portefeuilles.",
+"Para grandes carteiras."
+],
+[
+"Pour les gérances qui grandissent.",
+"Para gestoras em crescimento."
 ],
 [
 "Premiers pas · {0}/{1}",
@@ -1571,6 +1683,14 @@ export default [
 [
 "Rapports",
 "Relatórios"
+],
+[
+"Rapports et statistiques",
+"Relatórios e estatísticas"
+],
+[
+"Rapports et statistiques avancés",
+"Relatórios e estatísticas avançados"
 ],
 [
 "Rechercher : n°, résidence, lieu…",
@@ -1877,6 +1997,14 @@ export default [
 "Tudo desde o início"
 ],
 [
+"Tout le plan Découverte",
+"Tudo do plano Descoberta"
+],
+[
+"Tout le plan Pro",
+"Tudo do plano Pro"
+],
+[
 "Toutes",
 "Todas"
 ],
@@ -1979,6 +2107,10 @@ export default [
 [
 "Vitrerie",
 "Vidraria"
+],
+[
+"Voir les offres ›",
+"Ver as ofertas ›"
 ],
 [
 "Votre accès au portail LuxInterventions",
@@ -2289,6 +2421,10 @@ export default [
 "Equipa LuxInterventions"
 ],
 [
+"Équipe illimitée",
+"Equipa ilimitada"
+],
+[
 "Étage",
 "Piso"
 ],
@@ -2307,6 +2443,10 @@ export default [
 [
 "Étage(s) de l’appartement / des appartements",
 "Andar(es) do(s) apartamento(s)"
+],
+[
+"États des lieux avec photos",
+"Vistorias com fotos"
 ],
 [
 "Évaluation",
@@ -2373,6 +2513,10 @@ export default [
 "☑️ Conteúdo do relatório — marque o que quer"
 ],
 [
+"♥ LE PLUS CHOISI",
+"♥ O MAIS ESCOLHIDO"
+],
+[
 "⚙️ Code locaux techniques (panneaux électriques, machines)",
 "⚙️ Código locais técnicos (quadros elétricos, máquinas)"
 ],
@@ -2435,6 +2579,14 @@ export default [
 [
 "🌐 Langue · Language",
 "🌐 Língua · Language"
+],
+[
+"💼 Gérez aussi vos propres locataires",
+"💼 Gira também os seus próprios inquilinos"
+],
+[
+"💼 Nos abonnements",
+"💼 As nossas assinaturas"
 ],
 [
 "📅 Disponibilités",
@@ -2515,6 +2667,10 @@ export default [
 [
 "🔑 Mot de passe oublié ?",
 "🔑 Esqueceu a palavra-passe?"
+],
+[
+"🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.",
+"🔒 Os seus dados são encriptados: mais ninguém, nem mesmo a LuxInterventions, os pode ler."
 ],
 [
 "🚚 En route",

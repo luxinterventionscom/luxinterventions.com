@@ -1091,6 +1091,7 @@ const PUSH_TXT = {
   ptl: { fr: "🏢 Nouvelle demande d'intervention", it: "🏢 Nuova richiesta di intervento", de: "🏢 Neue Einsatzanfrage", pt: "🏢 Novo pedido de intervenção", en: "🏢 New intervention request", es: "🏢 Nueva solicitud de intervención" },
   pwd: { fr: "🔑 Mot de passe oublié : envoyez un nouveau lien", it: "🔑 Password dimenticata: invia un nuovo link", de: "🔑 Passwort vergessen: neuen Link senden", pt: "🔑 Palavra-passe esquecida: envie um novo link", en: "🔑 Forgotten password: send a new link", es: "🔑 Contraseña olvidada: envíe un nuevo enlace" },
   ptlmsg: { fr: "🏢 Nouveau message d'une gérance", it: "🏢 Nuovo messaggio da un'agenzia", de: "🏢 Neue Nachricht einer Verwaltung", pt: "🏢 Nova mensagem de uma gestora", en: "🏢 New message from an agency", es: "🏢 Nuevo mensaje de una administración" },
+  offer: { fr: "💼 Une gérance est intéressée par un abonnement", it: "💼 Una gérance è interessata a un abbonamento", de: "💼 Eine Verwaltung interessiert sich für ein Abo", pt: "💼 Uma gestora está interessada numa assinatura", en: "💼 A property manager is interested in a plan", es: "💼 Una administradora está interesada en una suscripción" },
   news: { fr: "Du nouveau dans votre app", it: "Novità nella tua app", de: "Neues in Ihrer App", pt: "Novidades na sua app", en: "Something new in your app", es: "Novedades en tu app" },
 };
 async function espPushSave(env, target, b) {
@@ -1264,6 +1265,19 @@ async function handlePortail(request, env, url, headers, ctx) {
       const day = new Date().toISOString().slice(0, 10);
       const items = obj ? ((await obj.json()).items || []).filter((a) => !a.fin || a.fin >= day) : [];
       return json({ items });
+    }
+
+    // « Je suis intéressé » (offre d'abonnement affichée à la gérance) : prévient LuxInterventions
+    if (path === "offer" && method === "POST") {
+      const pb = (await body()).plan, plan = ["decouverte", "pro", "agence", "mesure"].includes(pb) ? pb : "pro";
+      const k = "offer:" + me.id;
+      if ((await ptlFailures(env, k)) < 5) {
+        await ptlRecordFailure(env, k);
+        const msg = { title: "💼 Intéressé par un abonnement", body: `${me.name}${me.org_name ? " (" + me.org_name + ")" : ""} — offre ${plan} · ${me.email}`, url: "/portail.html", tag: "offer-" + me.id };
+        ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], msg, false));
+        ctx && ctx.waitUntil(espPushSend(env, "owner", "offer"));
+      }
+      return json({ ok: true });
     }
 
     if (path === "me/password" && method === "POST") {

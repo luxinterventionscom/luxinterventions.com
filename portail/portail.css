@@ -214,3 +214,23 @@ details.guide.fold:not([open]) > summary { margin-bottom: 0 !important; }
 .apt-gen { margin: 4px 0 10px; padding: 8px 10px; border: 1px dashed var(--border, #ddd); border-radius: 12px; }
 .apt-gen summary { cursor: pointer; font-weight: 600; font-size: 14px; }
 .apt-gen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px 8px; margin: 8px 0; }
+/* 💼 offre d'abonnement (cartes comme une page de prix) */
+dialog.sheet.wide { max-width: 1040px; }
+.offer-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+@media (max-width: 760px) { .offer-grid { grid-template-columns: 1fr; } }
+.offer-card { border: 1px solid var(--border); border-radius: 18px; padding: 16px; background: var(--surface); display: flex; flex-direction: column; }
+.offer-card.pop { border: 2px solid var(--accent); box-shadow: 0 8px 24px rgba(79, 70, 229, .14); }
+.offer-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.offer-top h3 { margin: 0; font-size: 20px; }
+.offer-badge { font-size: 10.5px; font-weight: 800; letter-spacing: .04em; padding: 3px 8px; border-radius: 999px; background: var(--accent); color: #fff; white-space: nowrap; }
+.offer-card:not(.pop) .offer-badge { background: var(--surface-2); color: var(--text-2); }
+.offer-price b { font-size: 26px; }
+.offer-save { min-height: 1.4em; margin: 2px 0 12px; }
+.offer-list { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; font-size: 14px; }
+.offer-list li { display: flex; gap: 8px; align-items: baseline; }
+.offer-list li span { color: #15803d; font-weight: 800; width: 14px; flex: none; }
+.offer-list li.no { color: var(--text-3); }
+.offer-list li.no span { color: var(--text-3); }
+.offer-banner { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; font: inherit; cursor: pointer; margin: 0 0 16px; padding: 14px 16px; border-radius: 16px; border: 1px solid var(--accent); background: var(--accent-soft); color: var(--text); }
+.offer-banner .ob-ic { font-size: 26px; }
+.offer-banner .ob-go { font-weight: 700; color: var(--accent); white-space: nowrap; }
