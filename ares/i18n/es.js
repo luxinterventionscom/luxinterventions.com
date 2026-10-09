@@ -10939,5 +10939,69 @@ export default [
 [
 "Interlocuteur",
 "Interlocutor"
+],
+[
+"Aucun devis envoyé en {0}.",
+"Ningún presupuesto enviado en {0}."
+],
+[
+"Envoyés",
+"Enviados"
+],
+[
+"✅ Acceptés",
+"✅ Aceptados"
+],
+[
+"❌ Refusés",
+"❌ Rechazados"
+],
+[
+"🔄 Rediscutés",
+"🔄 Renegociados"
+],
+[
+"au moins une révision",
+"al menos una revisión"
+],
+[
+"⏱️ Réponse",
+"⏱️ Respuesta"
+],
+[
+"délai moyen",
+"plazo medio"
+],
+[
+"En cours / expirés",
+"En curso / caducados"
+],
+[
+"{0} devenus interventions",
+"{0} convertidos en intervenciones"
+],
+[
+"{0} % acceptés",
+"{0} % aceptados"
+],
+[
+"⚡ Le plus rapide :",
+"⚡ El más rápido:"
+],
+[
+"en {0} · 🐢 le plus lent :",
+"en {0} · 🐢 el más lento:"
+],
+[
+"Export CSV des devis {0}",
+"Exportar CSV de presupuestos {0}"
+],
+[
+"Temps de réponse : du premier envoi (PDF, WhatsApp, email ou portail) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.",
+"Tiempo de respuesta: del primer envío (PDF, WhatsApp, email o portal) a la firma, a «Accepté / Refusé» o a la respuesta de la administradora."
+],
+[
+"Loyers, occupation, dépenses, interventions, devis",
+"Alquileres, ocupación, gastos, intervenciones, presupuestos"
 ]
 ];

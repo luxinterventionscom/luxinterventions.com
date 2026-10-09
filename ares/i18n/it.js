@@ -10955,5 +10955,69 @@ export default [
 [
 "Interlocuteur",
 "Interlocutore"
+],
+[
+"Aucun devis envoyé en {0}.",
+"Nessun preventivo inviato nel {0}."
+],
+[
+"Envoyés",
+"Inviati"
+],
+[
+"✅ Acceptés",
+"✅ Accettati"
+],
+[
+"❌ Refusés",
+"❌ Rifiutati"
+],
+[
+"🔄 Rediscutés",
+"🔄 Ridiscussi"
+],
+[
+"au moins une révision",
+"almeno una revisione"
+],
+[
+"⏱️ Réponse",
+"⏱️ Risposta"
+],
+[
+"délai moyen",
+"tempo medio"
+],
+[
+"En cours / expirés",
+"In corso / scaduti"
+],
+[
+"{0} devenus interventions",
+"{0} diventati interventi"
+],
+[
+"{0} % acceptés",
+"{0} % accettati"
+],
+[
+"⚡ Le plus rapide :",
+"⚡ Il più veloce:"
+],
+[
+"en {0} · 🐢 le plus lent :",
+"in {0} · 🐢 il più lento:"
+],
+[
+"Export CSV des devis {0}",
+"Export CSV dei preventivi {0}"
+],
+[
+"Temps de réponse : du premier envoi (PDF, WhatsApp, email ou portail) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.",
+"Tempo di risposta: dal primo invio (PDF, WhatsApp, email o portale) alla firma, ad «Accepté / Refusé» o alla risposta della gérance."
+],
+[
+"Loyers, occupation, dépenses, interventions, devis",
+"Affitti, occupazione, spese, interventi, preventivi"
 ]
 ];

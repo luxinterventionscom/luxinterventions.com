@@ -10943,5 +10943,69 @@ export default [
 [
 "Interlocuteur",
 "Ansprechpartner"
+],
+[
+"Aucun devis envoyé en {0}.",
+"Keine Angebote gesendet in {0}."
+],
+[
+"Envoyés",
+"Gesendet"
+],
+[
+"✅ Acceptés",
+"✅ Angenommen"
+],
+[
+"❌ Refusés",
+"❌ Abgelehnt"
+],
+[
+"🔄 Rediscutés",
+"🔄 Neu verhandelt"
+],
+[
+"au moins une révision",
+"mindestens eine Überarbeitung"
+],
+[
+"⏱️ Réponse",
+"⏱️ Antwort"
+],
+[
+"délai moyen",
+"durchschnittliche Dauer"
+],
+[
+"En cours / expirés",
+"Laufend / abgelaufen"
+],
+[
+"{0} devenus interventions",
+"{0} zu Einsätzen geworden"
+],
+[
+"{0} % acceptés",
+"{0} % angenommen"
+],
+[
+"⚡ Le plus rapide :",
+"⚡ Am schnellsten:"
+],
+[
+"en {0} · 🐢 le plus lent :",
+"in {0} · 🐢 am langsamsten:"
+],
+[
+"Export CSV des devis {0}",
+"CSV-Export der Angebote {0}"
+],
+[
+"Temps de réponse : du premier envoi (PDF, WhatsApp, email ou portail) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.",
+"Antwortzeit: vom ersten Versand (PDF, WhatsApp, E-Mail oder Portal) bis zur Unterschrift, „Accepté / Refusé“ oder der Antwort der Verwaltung."
+],
+[
+"Loyers, occupation, dépenses, interventions, devis",
+"Mieten, Belegung, Ausgaben, Einsätze, Angebote"
 ]
 ];

@@ -9,7 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.16.0';
+const VERSION = '1.17.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -547,8 +547,8 @@ async function loadRoute(route) {
   } else if (route === 'plus' && !state.cache.residencesList) {
     state.cache.residencesList = (await api('residences').catch(() => ({ residences: [] }))).residences; // filtres du rapport
   } else if (route === 'stats') {
-    const [all, ev] = await Promise.all([api('tickets?scope=all' + org), api('evals' + (org ? '?' + org.slice(1) : '')).catch(() => null)]);
-    state.cache.stats = { tickets: all.tickets, evals: ev ? ev.evals : null };
+    const [all, ev, dv] = await Promise.all([api('tickets?scope=all' + org), api('evals' + (org ? '?' + org.slice(1) : '')).catch(() => null), api('devis?all=1' + org).catch(() => null)]);
+    state.cache.stats = { tickets: all.tickets, evals: ev ? ev.evals : null, devis: dv ? dv.devis || [] : null };
   }
   if (isAdmin() && !state.cache.orgs) state.cache.orgs = (await api('orgs')).orgs;
   updateBadges();
@@ -810,6 +810,7 @@ const VIEWS = {
     return html`
       ${pageHead('Statistiques', isAdmin() ? 'Toutes les gérances — 12 derniers mois' : html`${state.me.org_name || ''} — <span>12 derniers mois</span>`)}
       ${orgFilter()}
+      ${activityCard(tickets, (state.cache.stats || {}).devis)}
       <div class="metrics">
         <div class="metric"><div class="lbl">Demandes</div><div class="val">${ts.length}</div><div class="sub">12 derniers mois</div></div>
         <div class="metric"><div class="lbl">Terminées</div><div class="val green">${done.length}</div><div class="sub">${ts.length ? Math.round((done.length / ts.length) * 100) + ' %' : ''}</div></div>
@@ -829,7 +830,8 @@ const VIEWS = {
         ${evals == null ? html`<p class="muted small">Disponible après la mise à jour du serveur.</p>` : ev.length ? html`<div class="stat-grid">
           <div>${bars(glob, ev.length)}</div>
           <div class="hbars">${crit.map(([l, a]) => html`<div class="hbar"><span class="hb-l"><span>${l}</span></span><span class="hb-t"><i class="sat" style="width:${a ? Math.round((a / 4) * 100) : 0}%"></i></span><b>${a ? EVAL_LVL[Math.round(a) - 1][1] + ' ' + a.toFixed(1).replace('.', ',') : '—'}</b></div>`)}</div>
-        </div>` : html`<p class="muted small">Pas encore d’évaluation. Après chaque intervention terminée, la gérance peut remplir la fiche « ⭐ Évaluer l’intervention ».</p>`}</div>`;
+        </div>` : html`<p class="muted small">Pas encore d’évaluation. Après chaque intervention terminée, la gérance peut remplir la fiche « ⭐ Évaluer l’intervention ».</p>`}</div>
+      ${devisStats((state.cache.stats || {}).devis)}`;
   },
 
   demandes() {
@@ -1097,6 +1099,46 @@ function devisBall(v) {
   const left = Math.round((Date.parse(v.valid_until + 'T12:00:00') - Date.parse(new Date().toISOString().slice(0, 10) + 'T12:00:00')) / 864e5);
   const d = fmtDate(Date.parse(v.valid_until + 'T12:00:00'));
   return left < 0 ? ['red', html`<span>Expiré le</span> ${d}`] : left <= 3 ? ['yellow', left === 0 ? html`<span>Expire ce soir à minuit</span>` : html`<span>Expire dans ${left} jour(s)</span>`] : ['green', html`<span>Valable jusqu’au</span> ${d}`];
+}
+// « Votre activité avec LuxInterventions » : ce que la gérance a confié à LuxInterventions, en grand
+function activityCard(tickets, devis) {
+  const y = new Date().getFullYear(), inY = (t) => t && new Date(t).getFullYear() === y;
+  const fact = (L) => L.reduce((n, t) => n + (+t.inv_ttc || 0), 0);
+  const inv = tickets.filter((t) => t.inv_no), done = tickets.filter((t) => t.status === 'terminee' && t.done_at);
+  const accY = (devis || []).filter((v) => v.status === 'accepte' && inY(v.decided_at));
+  const res = new Set(tickets.map((t) => t.residence_id)).size;
+  return html`<div class="card activity-card">
+    <div class="section-label" style="margin-top:0">🤝 <span>Votre activité avec LuxInterventions</span> · ${y}</div>
+    <div class="act-big">${eurP(fact(inv.filter((t) => inY(t.inv_date))))}</div><div class="small muted"><span>facturés cette année (TTC)</span></div>
+    <div class="act-row">
+      <span><b>${done.filter((t) => inY(t.done_at)).length}</b> <span>interventions terminées</span></span>
+      <span><b>${accY.length}</b> <span>devis acceptés</span> · ${eurP(accY.reduce((n, v) => n + (+v.ttc || 0), 0))}</span>
+      <span><b>${res}</b> <span>résidences suivies</span></span>
+    </div>
+    <p class="tiny muted" style="margin:8px 0 0"><span>Depuis le début :</span> ${eurP(fact(inv))} · ${done.length} <span>interventions terminées</span></p></div>`;
+}
+// Statistiques → 📝 Devis : acceptés, refusés, rediscutés, temps de réponse
+function devisStats(devis) {
+  if (devis == null) return '';
+  const Y = 365 * 864e5, L = devis.filter((v) => v.created_at >= Date.now() - Y);
+  if (!L.length) return html`<div class="card stat-card"><div class="section-label" style="margin-top:0">📝 Devis</div><p class="muted small">Pas encore de devis sur les 12 derniers mois.</p></div>`;
+  const acc = L.filter((v) => v.status === 'accepte'), ref = L.filter((v) => v.status === 'refuse'), rev = L.filter((v) => (v.revs || 0) > 0 || v.status === 'revision');
+  const exp = L.filter((v) => v.status === 'envoye' && v.valid_until && v.valid_until < new Date().toISOString().slice(0, 10));
+  const dec = [...acc, ...ref].filter((v) => v.decided_at && v.created_at).map((v) => ({ v, ms: v.decided_at - v.created_at }));
+  const avg = dec.length ? dec.reduce((n, x) => n + x.ms, 0) / dec.length : null;
+  const rate = acc.length + ref.length ? Math.round((acc.length / (acc.length + ref.length)) * 100) : null;
+  const sum = (A) => A.reduce((n, v) => n + (+v.ttc || 0), 0);
+  return html`<div class="card stat-card"><div class="section-label" style="margin-top:0">📝 Devis · <span>12 derniers mois</span></div>
+    <div class="metrics">
+      <div class="metric"><div class="lbl">Reçus</div><div class="val">${L.length}</div><div class="sub">${eurP(sum(L))}</div></div>
+      <div class="metric"><div class="lbl">✅ Acceptés</div><div class="val green">${acc.length}</div><div class="sub">${eurP(sum(acc))}</div></div>
+      <div class="metric"><div class="lbl">❌ Refusés</div><div class="val">${ref.length}</div><div class="sub">${rate == null ? '' : html`${rate} % <span>acceptés</span>`}</div></div>
+      <div class="metric"><div class="lbl">🔄 Rediscutés</div><div class="val">${rev.length}</div><div class="sub">${exp.length ? html`${exp.length} <span>expiré(s)</span>` : ''}</div></div>
+      <div class="metric"><div class="lbl">⏱️ Réponse</div><div class="val">${duration(avg)}</div><div class="sub">délai moyen</div></div>
+    </div>
+    ${dec.length ? html`<div class="list" style="margin-top:10px">${dec.sort((a, b) => b.v.decided_at - a.v.decided_at).slice(0, 20).map(({ v, ms }) => html`<div class="row"><span class="grow"><span class="title" style="display:block;white-space:normal">${v.no}${v.title ? html` <span class="muted small">— ${v.title}</span>` : ''}</span>
+      <span class="meta">${v.status === 'accepte' ? html`<span>✅ accepté en</span>` : html`<span>❌ refusé en</span>`} <b>${duration(ms)}</b>${v.revs ? html` · ${v.revs} <span>révision(s)</span>` : ''}${v.decided_by_name ? ' · ' + v.decided_by_name : ''}</span></span><b style="white-space:nowrap">${eurP(v.ttc)}</b></div>`)}</div>` : ''}
+  </div>`;
 }
 function devisBanner() {
   const all = (state.cache.home && state.cache.home.devis) || [], open = all.filter((v) => v.status === 'envoye' || v.status === 'revision');

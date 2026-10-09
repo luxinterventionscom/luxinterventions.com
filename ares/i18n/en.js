@@ -10715,5 +10715,69 @@ export default [
 [
 "Interlocuteur",
 "Contact"
+],
+[
+"Aucun devis envoyé en {0}.",
+"No quotes sent in {0}."
+],
+[
+"Envoyés",
+"Sent"
+],
+[
+"✅ Acceptés",
+"✅ Accepted"
+],
+[
+"❌ Refusés",
+"❌ Declined"
+],
+[
+"🔄 Rediscutés",
+"🔄 Renegotiated"
+],
+[
+"au moins une révision",
+"at least one revision"
+],
+[
+"⏱️ Réponse",
+"⏱️ Answer"
+],
+[
+"délai moyen",
+"average time"
+],
+[
+"En cours / expirés",
+"Open / expired"
+],
+[
+"{0} devenus interventions",
+"{0} turned into jobs"
+],
+[
+"{0} % acceptés",
+"{0} % accepted"
+],
+[
+"⚡ Le plus rapide :",
+"⚡ Fastest:"
+],
+[
+"en {0} · 🐢 le plus lent :",
+"in {0} · 🐢 slowest:"
+],
+[
+"Export CSV des devis {0}",
+"CSV export of quotes {0}"
+],
+[
+"Temps de réponse : du premier envoi (PDF, WhatsApp, email ou portail) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.",
+"Response time: from the first sending (PDF, WhatsApp, email or portal) to the signature, “Accepté / Refusé” or the agency’s answer."
+],
+[
+"Loyers, occupation, dépenses, interventions, devis",
+"Rents, occupancy, expenses, jobs, quotes"
 ]
 ];

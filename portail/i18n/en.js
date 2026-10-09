@@ -34,7 +34,7 @@ export default [
 ],
 [
 "12 derniers mois",
-"Last 12 months"
+"last 12 months"
 ],
 [
 "2 mois offerts en payant à l’année",
@@ -691,6 +691,10 @@ export default [
 [
 "Demandées",
 "Requested"
+],
+[
+"Depuis le début :",
+"Since the start:"
 ],
 [
 "Description du problème",
@@ -1565,6 +1569,10 @@ export default [
 "No internet connection"
 ],
 [
+"Pas encore de devis sur les 12 derniers mois.",
+"No quotes in the last 12 months yet."
+],
+[
 "Pas encore d’évaluation. Après chaque intervention terminée, la gérance peut remplir la fiche « ⭐ Évaluer l’intervention ».",
 "No ratings yet. After each completed job, the management company can fill in the “⭐ Rate the job” form."
 ],
@@ -1846,6 +1854,10 @@ export default [
 ],
 [
 "Reçue",
+"Received"
+],
+[
+"Reçus",
 "Received"
 ],
 [
@@ -2213,6 +2225,10 @@ export default [
 "Your access to the LuxInterventions portal"
 ],
 [
+"Votre activité avec LuxInterventions",
+"Your activity with LuxInterventions"
+],
+[
 "Votre avis compte",
 "Your opinion counts"
 ],
@@ -2249,6 +2265,10 @@ export default [
 "Property manager view"
 ],
 [
+"acceptés",
+"accepted"
+],
+[
 "acompte",
 "deposit"
 ],
@@ -2263,6 +2283,10 @@ export default [
 [
 "depuis la nouvelle icône",
 "from the new icon"
+],
+[
+"devis acceptés",
+"accepted quotes"
 ],
 [
 "délai moyen",
@@ -2317,8 +2341,16 @@ export default [
 "e.g. ring the caretaker, not on Wednesdays"
 ],
 [
+"expiré(s)",
+"expired"
+],
+[
 "facture à venir",
 "invoice to come"
+],
+[
+"facturés cette année (TTC)",
+"invoiced this year (incl. VAT)"
 ],
 [
 "il y a {0} h",
@@ -2331,6 +2363,10 @@ export default [
 [
 "il y a {0} min",
 "{0} min ago"
+],
+[
+"interventions terminées",
+"completed jobs"
 ],
 [
 "interventions terminées, par mois",
@@ -2363,6 +2399,14 @@ export default [
 [
 "reçu par email ou WhatsApp : vous y choisirez votre mot de passe.",
 "you received by email or WhatsApp: there you will choose your password."
+],
+[
+"résidences suivies",
+"residences followed"
+],
+[
+"révision(s)",
+"revision(s)"
 ],
 [
 "travail terminé",
@@ -2617,6 +2661,10 @@ export default [
 "→ Add. Then open the portal"
 ],
 [
+"⏱️ Réponse",
+"⏱️ Answer"
+],
+[
 "⏳ À payer",
 "⏳ To pay"
 ],
@@ -2669,6 +2717,10 @@ export default [
 "✅ Accept"
 ],
 [
+"✅ Acceptés",
+"✅ Accepted"
+],
+[
 "✅ Devis accepté",
 "✅ Quote accepted"
 ],
@@ -2679,6 +2731,10 @@ export default [
 [
 "✅ Payée",
 "✅ Paid"
+],
+[
+"✅ accepté en",
+"✅ accepted in"
 ],
 [
 "✅ payée",
@@ -2715,6 +2771,14 @@ export default [
 [
 "❌ Refuser",
 "❌ Decline"
+],
+[
+"❌ Refusés",
+"❌ Declined"
+],
+[
+"❌ refusé en",
+"❌ declined in"
 ],
 [
 "⭐ Envoyer l’évaluation",
@@ -2773,6 +2837,10 @@ export default [
 "📒 Accounting"
 ],
 [
+"📝 Devis",
+"📝 Quotes"
+],
+[
 "📝 Devis en cours ({0})",
 "📝 Open quotes ({0})"
 ],
@@ -2815,6 +2883,10 @@ export default [
 [
 "🔄 Demander une révision",
 "🔄 Ask for a revision"
+],
+[
+"🔄 Rediscutés",
+"🔄 Renegotiated"
 ],
 [
 "🔎 Filtres — rien coché = tout",
