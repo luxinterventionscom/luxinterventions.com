@@ -1,5 +1,6 @@
 // Petit dessin animé « Mettre l'icône sur l'écran du téléphone » (iPhone / Android), en boucle.
-// Chargé seulement quand on touche le bouton (import dynamique) : rien à télécharger sinon. Pas de vidéo, juste du dessin (CSS).
+// Chargé seulement quand on touche le bouton (import dynamique) : rien à télécharger sinon.
+// iPhone : la vraie vidéo annotée (/assets/install-iphone.mp4, chargée seulement à l'ouverture) ; Android : petit dessin animé (CSS).
 const TXT = {
   fr: { t: 'Mettre l’icône sur l’écran', ios: 'iPhone', and: 'Android', close: 'Fermer', s: { ios: ['Dans Safari, touchez « ••• » en bas à droite', 'Touchez « Partager » ⬆︎', 'Touchez « En voir plus » ⌄', 'Touchez « Sur l’écran d’accueil » ⊞', '« Ouvrir comme app web » activé → « Ajouter »', 'L’icône est sur votre écran 🎉 Ouvrez l’app depuis l’icône'], and: ['Ouvrez le lien dans Chrome, touchez « ⋮ »', 'Touchez « Installer l’application »', 'Touchez « Installer »', 'L’icône est sur votre écran 🎉 Ouvrez l’app depuis l’icône'] }, w: { partager: 'Partager', more: 'En voir plus', webapp: 'Ouvrir comme app web', old: 'Ancien iPhone : touchez directement ⬆︎ « Partager ».', share: 'Sur l’écran d’accueil', copy: 'Copier', fav: 'Favoris', add: 'Ajouter', cancel: 'Annuler', inst: 'Installer l’application', install: 'Installer', newtab: 'Nouvel onglet' } },
   it: { t: 'Mettere l’icona sullo schermo', ios: 'iPhone', and: 'Android', close: 'Chiudi', s: { ios: ['In Safari, tocca «•••» in basso a destra', 'Tocca «Condividi» ⬆︎', 'Tocca «Mostra altro» ⌄', 'Tocca «Aggiungi alla schermata Home» ⊞', '«Apri come web app» attivo → «Aggiungi»', 'L’icona è sul tuo schermo 🎉 Apri l’app dall’icona'], and: ['Apri il link in Chrome, tocca «⋮»', 'Tocca «Installa app»', 'Tocca «Installa»', 'L’icona è sul tuo schermo 🎉 Apri l’app dall’icona'] }, w: { partager: 'Condividi', more: 'Mostra altro', webapp: 'Apri come web app', old: 'iPhone meno recente: tocca subito ⬆︎ «Condividi».', share: 'Aggiungi a Home', copy: 'Copia', fav: 'Preferiti', add: 'Aggiungi', cancel: 'Annulla', inst: 'Installa app', install: 'Installa', newtab: 'Nuova scheda' } },
@@ -30,6 +31,7 @@ const CSS = `
 .ia-app img{width:34px;height:34px;border-radius:9px;display:block;margin:0 auto 3px;animation:iaIcon .9s cubic-bezier(.3,1.6,.5,1) both}
 .ia-tap{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:rgba(229,57,53,.35);border:3px solid #e53935;animation:iaTap 1.1s ease-out .5s infinite;pointer-events:none}
 .ia-cap{min-height:44px;margin:12px 4px 4px;font-size:15px;font-weight:700;text-align:center;line-height:1.3}.ia-cap span{color:#d9622b}
+.ia-list{margin:10px 0 0;padding-left:22px;font-size:13px;line-height:1.45}.ia-list li::marker{color:#d9622b;font-weight:800}
 .ia-dots{display:flex;justify-content:center;gap:6px}.ia-dots i{width:8px;height:8px;border-radius:50%;background:#ddd}.ia-dots i.on{background:#d9622b}
 .ia-fing{position:absolute;font-size:30px;margin:2px 0 0 4px;pointer-events:none;animation:iaFing 1.1s ease-in-out .3s infinite;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
 @keyframes iaFing{0%,100%{transform:translate(8px,10px)}45%{transform:translate(0,0)}55%{transform:translate(0,0) scale(.92)}}
@@ -70,19 +72,6 @@ export function showInstallAnim({ name = 'App', icon = '', lang = 'fr', host = l
   const pill = `<div class="i-pill"><span class="b">‹</span><span class="u">≡ ${esc(host.replace(/^www\./, ''))} ⟳</span><span class="b">•••</span></div>`;
   const home = `<div class="ia-home">${Array.from({ length: 7 }, () => '<div class="ia-app"><i></i></div>').join('')}<div class="ia-app">${ico}${esc(name).slice(0, 12)}</div></div>`;
   const scenes = {
-    ios: [ // iPhone récent (iOS 26), comme dans la vraie vidéo : ••• → Partager → En voir plus → Sur l'écran d'accueil → Ajouter
-      `${page}${pill}${tap(88, 341)}`,
-      `${page}<div class="i-pop"><div class="it ia-on"><b>⬆︎ ${esc(w.partager)}</b></div><div class="it">🔖<span class="i-bar"></span></div><div class="it">📖<span class="i-bar"></span></div><div class="it">＋<span class="i-bar"></span></div><div class="it">✋<span class="i-bar"></span></div></div>${pill}${tap(56, 178)}`,
-      `${page}<div class="i-sh"><div class="i-hd">${ico}<span><b>${esc(name)}</b><br><span style="color:#888">${esc(host)}</span></span></div>
-        <div class="i-apps"><span><i style="background:#2f8cf7;color:#fff">◎</i>AirDrop</span><span><i style="background:#34c759;color:#fff">💬</i>Messages</span><span><i style="background:#3a8ef6;color:#fff">✉</i>Mail</span><span><i style="background:#ffd60a">≡</i>Notes</span></div>
-        <div class="i-acts"><span><i>⧉</i>${esc(w.copy)}</span><span><i>🔖</i>${esc(w.fav)}</span><span><i>👓</i>…</span><span class="ia-on"><i>⌄</i><b>${esc(w.more)}</b></span></div></div>${tap(84, 340)}`,
-      `<div class="i-sh" style="top:40px"><div class="i-acts"><span><i>⧉</i>${esc(w.copy)}</span><span><i>🔖</i>${esc(w.fav)}</span><span><i>👓</i>…</span><span><i>⌃</i>…</span></div>
-        <div class="i-list"><div class="it">📖<span class="i-bar"></span></div><div class="it">☆<span class="i-bar"></span></div><div class="it">📝<span class="i-bar"></span></div><div class="it">🔍<span class="i-bar"></span></div><div class="it ia-on">⊞ <b>${esc(w.share)}</b></div></div></div>${tap(45, 246)}`,
-      `<div class="i-add"><div class="top"><span class="x">✕</span><b>${esc(w.share)}</b><span class="ok">${esc(w.add)}</span></div>
-        <div class="card">${ico}<span><b>${esc(name)}</b><br><span style="color:#999">https://${esc(host)}/</span></span></div>
-        <div class="tg"><span>${esc(w.webapp)}</span><span class="sw"></span></div><div class="i-kb">${'<i></i>'.repeat(30)}</div></div>${tap(84, 26)}`,
-      home,
-    ],
     and: [
       `<div class="ia-top"><span>⌂</span><span class="ia-url">🔒 ${esc(host)}</span><span>⋮</span></div>${site}${tap(93, 17)}`,
       `<div class="ia-top"><span>⌂</span><span class="ia-url">🔒 ${esc(host)}</span><span>⋮</span></div>${site}<div class="ia-menu"><div>${esc(w.newtab)}</div><div>${esc(w.fav)}</div><div><b>${esc(w.inst)}</b> 📲</div></div>${tap(70, 130)}`,
@@ -93,21 +82,23 @@ export function showInstallAnim({ name = 'App', icon = '', lang = 'fr', host = l
   const draw = () => {
     back.innerHTML = `<div class="ia-box"><div class="ia-h"><b>📲 ${esc(t.t)}</b><button class="ia-x" data-ia="x" aria-label="${esc(t.close)}">✕</button></div>
       <div class="ia-tabs"><button data-ia="ios" aria-pressed="${os === 'ios'}">🍎 ${esc(t.ios)}</button><button data-ia="and" aria-pressed="${os === 'and'}">🤖 ${esc(t.and)}</button></div>
-      <div class="ia-ph">${scenes[os][step]}</div>
+      ${os === 'ios' ? `<div class="ia-ph" style="height:400px;width:186px;background:#000"><video src="/assets/install-iphone.mp4" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover"></video></div>
+      <ol class="ia-list">${t.s.ios.map((x) => `<li>${esc(x)}</li>`).join('')}</ol>
+      <p style="text-align:center;font-size:12px;color:#777;margin:6px 0 0">${esc(w.old)}</p>`
+      : `<div class="ia-ph">${scenes[os][step]}</div>
       <div class="ia-cap"><span>${step + 1}.</span> ${esc(t.s[os][step])}</div>
-      <div class="ia-dots">${scenes[os].map((_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('')}</div>
-      ${os === 'ios' ? `<p style="text-align:center;font-size:12px;color:#777;margin:8px 0 0">${esc(w.old)}</p>` : ''}</div>`;
+      <div class="ia-dots">${scenes[os].map((_, i) => `<i class="${i === step ? 'on' : ''}"></i>`).join('')}</div>`}</div>`;
   };
-  const tick = () => { const n = scenes[os].length; step = (step + 1) % n; draw(); timer = setTimeout(tick, step === n - 1 ? 3200 : 2600); };
+  const tick = () => { if (os === 'ios') return; const n = scenes[os].length; step = (step + 1) % n; draw(); timer = setTimeout(tick, step === n - 1 ? 3200 : 2600); };
   const close = () => { clearTimeout(timer); back.remove(); document.removeEventListener('keydown', onKey); };
   const onKey = (e) => { if (e.key === 'Escape') close(); };
   back.addEventListener('click', (e) => {
     const b = e.target.closest('[data-ia]');
     if (e.target === back || (b && b.dataset.ia === 'x')) return close();
-    if (b && b.dataset.ia !== os) { os = b.dataset.ia; step = 0; clearTimeout(timer); draw(); timer = setTimeout(tick, 2600); }
+    if (b && b.dataset.ia !== os) { os = b.dataset.ia; step = 0; clearTimeout(timer); draw(); if (os !== 'ios') timer = setTimeout(tick, 2600); }
   });
   document.addEventListener('keydown', onKey);
   document.body.appendChild(back);
-  draw(); timer = setTimeout(tick, 2600);
+  draw(); if (os !== 'ios') timer = setTimeout(tick, 2600);
   return close;
 }
