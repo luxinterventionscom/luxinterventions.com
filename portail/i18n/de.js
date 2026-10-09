@@ -2581,6 +2581,10 @@ export default [
 "⏳ offen"
 ],
 [
+"▶ Voir comment (animation)",
+"▶ So geht’s (Animation)"
+],
+[
 "☑️ Contenu du rapport — cochez ce que vous voulez",
 "☑️ Inhalt des Berichts — ankreuzen, was Sie möchten"
 ],

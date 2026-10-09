@@ -120,6 +120,9 @@ const L = {
 };
 // Fiche d'engagement (intervenant occasionnel) : il la lit et la signe ici, avec le doigt
 // « Je ne peux pas » : l'ouvrier refuse un travail pas encore commencé → le responsable en envoie un autre
+// ▶ petit dessin animé « mettre l'icône sur l'écran » (chargé seulement au toucher)
+const IA_BTN = { fr: '▶ Voir comment (animation)', it: '▶ Guarda come (animazione)', de: '▶ So geht’s (Animation)', pt: '▶ Ver como (animação)', en: '▶ See how (animation)', es: '▶ Ver cómo (animación)' };
+const iaBtn = () => (matchMedia('(display-mode: standalone)').matches || navigator.standalone ? '' : `<p style="text-align:center;margin:-4px 0 12px"><button class="btn sm sec" data-ianim="1">${esc(IA_BTN[lang] || IA_BTN.fr)}</button></p>`);
 const REFT = {
   fr: { needNote: 'Expliquez la raison (obligatoire pour « Autre »)', btn: '✋ Je ne peux pas — refuser', t: '✋ Refuser ce travail', why: 'Pourquoi ? (obligatoire)', r: { malade: '🤒 Je suis malade', dispo: '📅 Pas disponible ce jour-là', loin: '🚗 Trop loin / pas de transport', metier: '🛠️ Ce n’est pas mon métier', autre: '✏️ Autre raison' }, choose: '— choisir —', notePh: 'Un mot pour le responsable (facultatif)', send: '✋ Envoyer le refus', done: '✋ Refusé — le responsable envoie quelqu’un d’autre', ok: 'Refus envoyé. Merci de prévenir : le responsable envoie un autre ouvrier.' },
   it: { needNote: 'Spiega il motivo (obbligatorio per «Altro»)', btn: '✋ Non posso — rifiuto', t: '✋ Rifiutare questo lavoro', why: 'Perché? (obbligatorio)', r: { malade: '🤒 Sono malato', dispo: '📅 Non disponibile quel giorno', loin: '🚗 Troppo lontano / senza trasporto', metier: '🛠️ Non è il mio mestiere', autre: '✏️ Altro motivo' }, choose: '— scegliere —', notePh: 'Una parola per il responsabile (facoltativo)', send: '✋ Invia il rifiuto', done: '✋ Rifiutato — il responsabile manda un altro', ok: 'Rifiuto inviato. Grazie di aver avvisato: il responsabile manda un altro operaio.' },
@@ -448,7 +451,7 @@ function render() {
         <input type="text" name="code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="${esc(t.codePh)}" style="font-size:22px;letter-spacing:.08em;text-align:center" required>
         <button class="btn block" style="margin-top:12px" type="submit">${esc(t.enter)}</button></form>
         <p class="meta" style="text-align:center;margin:10px 0 0">${esc(t.noCode)}</p></div>
-      <p class="meta" style="text-align:center">${esc(t.install)}</p>`;
+      <p class="meta" style="text-align:center">${esc(t.install)}</p>${iaBtn()}`;
     return;
   }
   const d = data, out = [];
@@ -537,7 +540,7 @@ function render() {
       ${[[t.tel, d.me.tel], [t.mail, d.me.mail], [t.adr, d.me.adresse], [t.ville, d.me.ville]].map(([k, v]) => `<div class="row"><span class="meta" style="width:130px">${esc(k)}</span><b class="grow">${esc(v || '—')}</b></div>`).join('')}
       <p class="meta" style="margin:8px 0 0">${esc(t.x.infoRO)}</p></details></div>`);
   if (pushSt === 'on') out.push(notifCard(t));
-  out.push(`<p class="meta" style="text-align:center">${esc(t.install)}</p>
+  out.push(`<p class="meta" style="text-align:center">${esc(t.install)}</p>${iaBtn()}
     <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(t.rgpd)}</p><p class="meta" style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
   { const low = slot('bas'); if (low) out.push(adBox(low, t)); }
   out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
@@ -574,6 +577,7 @@ app.addEventListener('toggle', (e) => {
   try { localStorage.setItem('eqPubShut', JSON.stringify([...pubShut])); } catch { /* stockage indisponible */ }
 }, true);
 app.addEventListener('click', async (e) => {
+  if (e.target.closest('[data-ianim]')) { import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'ARES Équipe', icon: '/ares/icons/lux-192.png', lang })); return; }
   if (e.target.closest('[data-eng-open]')) { const c = document.getElementById('engCard'); if (c) { c.querySelector('details').open = true; c.scrollIntoView({ block: 'start', behavior: 'smooth' }); } return; }
   if (e.target.closest('[data-ic-open]')) { icOpen = !icOpen; render(); if (icOpen) document.getElementById('settCard')?.scrollIntoView({ block: 'nearest' }); return; }
   if (e.target.closest('[data-photo-del]')) { phMine = ''; render(); try { await queue({ k: 'photo', d: '', at: new Date().toISOString() }); } catch { /* renvoyé plus tard */ } return; }

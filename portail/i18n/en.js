@@ -2529,6 +2529,10 @@ export default [
 "⏳ to pay"
 ],
 [
+"▶ Voir comment (animation)",
+"▶ See how (animation)"
+],
+[
 "☑️ Contenu du rapport — cochez ce que vous voulez",
 "☑️ Report content — tick what you want"
 ],

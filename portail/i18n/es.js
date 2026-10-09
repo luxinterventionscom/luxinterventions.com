@@ -2573,6 +2573,10 @@ export default [
 "⏳ pendiente"
 ],
 [
+"▶ Voir comment (animation)",
+"▶ Ver cómo (animación)"
+],
+[
 "☑️ Contenu du rapport — cochez ce que vous voulez",
 "☑️ Contenido del informe — marque lo que quiera"
 ],
