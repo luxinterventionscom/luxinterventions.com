@@ -14,7 +14,7 @@ const CSS = `
 .ia-h{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}.ia-h b{font-size:17px}
 .ia-x{border:0;background:#eee;border-radius:50%;width:34px;height:34px;font-size:18px;cursor:pointer}
 .ia-tabs{display:flex;gap:6px;background:#f1f1f1;border-radius:12px;padding:4px;margin-bottom:10px}.ia-tabs button{flex:1;border:0;background:none;padding:7px;border-radius:9px;font:inherit;font-weight:700;cursor:pointer;color:#555}.ia-tabs button[aria-pressed=true]{background:#fff;color:#111;box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.ia-ph{position:relative;height:330px;width:190px;margin:0 auto;border:8px solid #222;border-radius:30px;background:#f6f6f6;overflow:hidden}
+.ia-ph{position:relative;height:380px;width:206px;margin:0 auto;border:8px solid #222;border-radius:30px;background:#f6f6f6;overflow:hidden}
 .ia-top,.ia-bot{position:absolute;left:0;right:0;height:34px;background:#fafafa;display:flex;align-items:center;justify-content:space-around;font-size:15px;color:#2f6fd8}
 .ia-top{top:0;border-bottom:1px solid #ddd;justify-content:space-between;padding:0 6px;color:#666}.ia-bot{bottom:0;border-top:1px solid #ddd}
 .ia-url{flex:1;margin:0 5px;background:#e9e9ee;border-radius:8px;font-size:10px;padding:4px 6px;color:#333;white-space:nowrap;overflow:hidden}
@@ -31,6 +31,26 @@ const CSS = `
 .ia-tap{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:rgba(229,57,53,.35);border:3px solid #e53935;animation:iaTap 1.1s ease-out .5s infinite;pointer-events:none}
 .ia-cap{min-height:44px;margin:12px 4px 4px;font-size:15px;font-weight:700;text-align:center;line-height:1.3}.ia-cap span{color:#d9622b}
 .ia-dots{display:flex;justify-content:center;gap:6px}.ia-dots i{width:8px;height:8px;border-radius:50%;background:#ddd}.ia-dots i.on{background:#d9622b}
+.ia-fing{position:absolute;font-size:30px;margin:2px 0 0 4px;pointer-events:none;animation:iaFing 1.1s ease-in-out .3s infinite;filter:drop-shadow(0 2px 3px rgba(0,0,0,.35))}
+@keyframes iaFing{0%,100%{transform:translate(8px,10px)}45%{transform:translate(0,0)}55%{transform:translate(0,0) scale(.92)}}
+.ia-on{animation:iaPress 1.1s ease-in-out .3s infinite;border-radius:9px}
+@keyframes iaPress{0%,40%,100%{background:transparent}50%,70%{background:rgba(229,57,53,.18)}}
+.i-pill{position:absolute;left:8px;right:8px;bottom:8px;display:flex;gap:6px;align-items:center}
+.i-pill .b{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 2px 8px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;font-size:13px;color:#222;flex:none}
+.i-pill .u{flex:1;height:30px;border-radius:16px;background:rgba(255,255,255,.92);box-shadow:0 2px 8px rgba(0,0,0,.18);display:flex;align-items:center;justify-content:center;gap:5px;font-size:10px;color:#222}
+.i-pop{position:absolute;right:8px;bottom:46px;width:128px;background:rgba(250,250,250,.97);border-radius:16px;box-shadow:0 8px 24px rgba(0,0,0,.22);padding:4px 0;font-size:11px;animation:iaPop .3s ease-out both}
+.i-pop .it{display:flex;gap:7px;align-items:center;padding:7px 10px}.i-bar{height:6px;border-radius:3px;background:#d8d8dc;flex:1}
+.i-sh{position:absolute;left:0;right:0;bottom:0;background:#f2f2f7;border-radius:16px 16px 0 0;padding:10px 8px 8px;animation:iaUp .4s ease-out both;font-size:9px}
+.i-hd{display:flex;gap:6px;align-items:center;margin-bottom:8px}.i-hd img{width:28px;height:28px;border-radius:7px}
+.i-apps{display:flex;justify-content:space-around;margin-bottom:8px;text-align:center}.i-apps i{display:block;width:30px;height:30px;border-radius:9px;margin:0 auto 2px;font-style:normal;font-size:16px;line-height:30px}
+.i-acts{display:flex;justify-content:space-around;text-align:center}.i-acts span{width:44px}.i-acts i{display:block;width:30px;height:30px;border-radius:50%;background:#fff;margin:0 auto 2px;font-style:normal;font-size:13px;line-height:30px}
+.i-list{background:#fff;border-radius:10px;margin-top:8px}.i-list .it{display:flex;gap:7px;align-items:center;padding:7px 9px;border-bottom:1px solid #eee;font-size:10px}.i-list .it:last-child{border:0}
+.i-add{position:absolute;inset:0;background:#f2f2f7;font-size:10px;animation:iaUp .4s ease-out both}
+.i-add .top{display:flex;justify-content:space-between;align-items:center;padding:10px 8px;background:#f9f9f9}.i-add .x{width:24px;height:24px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center}
+.i-add .ok{background:#0a84ff;color:#fff;border-radius:14px;padding:5px 10px;font-weight:700}
+.i-add .card{background:#fff;margin:8px;border-radius:10px;padding:8px;display:flex;gap:8px;align-items:center}.i-add .card img{width:34px;height:34px;border-radius:8px}
+.i-add .tg{background:#fff;margin:8px;border-radius:10px;padding:9px;display:flex;justify-content:space-between;align-items:center}.i-add .sw{width:30px;height:18px;border-radius:9px;background:#34c759;position:relative}.i-add .sw::after{content:'';position:absolute;right:2px;top:2px;width:14px;height:14px;border-radius:50%;background:#fff}
+.i-kb{position:absolute;left:0;right:0;bottom:0;height:120px;background:#d1d3d9;display:grid;grid-template-columns:repeat(10,1fr);gap:4px;padding:8px 4px}.i-kb i{background:#fff;border-radius:4px;height:22px}
 @keyframes iaTap{0%{transform:scale(.4);opacity:0}30%{opacity:1}100%{transform:scale(1.5);opacity:0}}
 @keyframes iaUp{from{transform:translateY(120%)}to{transform:none}}@keyframes iaDrop{from{transform:scale(.6);opacity:0;transform-origin:top right}to{transform:none;opacity:1}}
 @keyframes iaPop{from{transform:scale(.8);opacity:0}to{transform:none;opacity:1}}@keyframes iaIcon{0%{transform:scale(0)}100%{transform:scale(1)}}
@@ -45,15 +65,22 @@ export function showInstallAnim({ name = 'App', icon = '', lang = 'fr', host = l
   back.className = 'ia-back'; back.setAttribute('role', 'dialog'); back.setAttribute('aria-modal', 'true');
   const ico = `<img src="${esc(icon)}" alt="">`;
   const site = `<div class="ia-site">${ico}${esc(name)}</div>`;
-  const tap = (x, y) => `<span class="ia-tap" style="left:${x}%;top:${y}px"></span>`;
+  const tap = (x, y) => `<span class="ia-tap" style="left:${x}%;top:${y}px"></span><span class="ia-fing" style="left:${x}%;top:${y}px">👆</span>`;
+  const page = `<div class="ia-site" style="top:40px">${ico}${esc(name)}</div><div style="position:absolute;left:14px;right:14px;top:150px;display:grid;gap:7px"><div class="i-bar" style="height:10px;width:80%"></div><div class="i-bar" style="height:10px;width:60%"></div><div class="i-bar"></div><div class="i-bar" style="width:90%"></div><div class="i-bar" style="width:70%"></div></div>`;
+  const pill = `<div class="i-pill"><span class="b">‹</span><span class="u">≡ ${esc(host.replace(/^www\./, ''))} ⟳</span><span class="b">•••</span></div>`;
   const home = `<div class="ia-home">${Array.from({ length: 7 }, () => '<div class="ia-app"><i></i></div>').join('')}<div class="ia-app">${ico}${esc(name).slice(0, 12)}</div></div>`;
   const scenes = {
-    ios: [ // iPhone récent (iOS 26) : ••• → Partager → En voir plus → Sur l'écran d'accueil → Ajouter
-      `${site}<div class="ia-bot"><span>‹</span><span class="ia-url" style="flex:1.6">${esc(host)}</span><span>⟳</span><span>•••</span></div>${tap(90, 297)}`,
-      `${site}<div class="ia-menu" style="top:auto;bottom:40px"><div><b>⬆︎ ${esc(w.partager)}</b></div><div>☆ ${esc(w.fav)}</div><div>＋ ${esc(w.newtab)}</div></div><div class="ia-bot"><span>‹</span><span class="ia-url" style="flex:1.6">${esc(host)}</span><span>⟳</span><span>•••</span></div>${tap(62, 205)}`,
-      `<div class="ia-sheet" style="bottom:6px"><div style="justify-content:space-around"><span>💬</span><span>✉️</span><span>📝</span></div><div style="justify-content:space-around;font-size:9px"><span>⧉<br>${esc(w.copy)}</span><span>☆<br>${esc(w.fav)}</span><span><b>⌄<br>${esc(w.more)}</b></span></div></div>${tap(78, 285)}`,
-      `<div class="ia-sheet" style="bottom:6px"><div>☆ ${esc(w.fav)}</div><div>🔍 …</div><div><b>⊞ ${esc(w.share)}</b></div></div>${tap(45, 293)}`,
-      `<div class="ia-dlg" style="top:10px"><div class="ia-btns"><span>✕</span><span style="background:#2f6fd8;color:#fff;border-radius:10px;padding:2px 8px">${esc(w.add)}</span></div><div class="r">${ico}<b>${esc(name)}</b></div><div style="display:flex;justify-content:space-between;align-items:center"><span>${esc(w.webapp)}</span><span style="background:#34c759;border-radius:9px;width:26px;height:15px;display:inline-block"></span></div></div>${tap(85, 25)}`,
+    ios: [ // iPhone récent (iOS 26), comme dans la vraie vidéo : ••• → Partager → En voir plus → Sur l'écran d'accueil → Ajouter
+      `${page}${pill}${tap(88, 341)}`,
+      `${page}<div class="i-pop"><div class="it ia-on"><b>⬆︎ ${esc(w.partager)}</b></div><div class="it">🔖<span class="i-bar"></span></div><div class="it">📖<span class="i-bar"></span></div><div class="it">＋<span class="i-bar"></span></div><div class="it">✋<span class="i-bar"></span></div></div>${pill}${tap(56, 178)}`,
+      `${page}<div class="i-sh"><div class="i-hd">${ico}<span><b>${esc(name)}</b><br><span style="color:#888">${esc(host)}</span></span></div>
+        <div class="i-apps"><span><i style="background:#2f8cf7;color:#fff">◎</i>AirDrop</span><span><i style="background:#34c759;color:#fff">💬</i>Messages</span><span><i style="background:#3a8ef6;color:#fff">✉</i>Mail</span><span><i style="background:#ffd60a">≡</i>Notes</span></div>
+        <div class="i-acts"><span><i>⧉</i>${esc(w.copy)}</span><span><i>🔖</i>${esc(w.fav)}</span><span><i>👓</i>…</span><span class="ia-on"><i>⌄</i><b>${esc(w.more)}</b></span></div></div>${tap(84, 340)}`,
+      `<div class="i-sh" style="top:40px"><div class="i-acts"><span><i>⧉</i>${esc(w.copy)}</span><span><i>🔖</i>${esc(w.fav)}</span><span><i>👓</i>…</span><span><i>⌃</i>…</span></div>
+        <div class="i-list"><div class="it">📖<span class="i-bar"></span></div><div class="it">☆<span class="i-bar"></span></div><div class="it">📝<span class="i-bar"></span></div><div class="it">🔍<span class="i-bar"></span></div><div class="it ia-on">⊞ <b>${esc(w.share)}</b></div></div></div>${tap(45, 246)}`,
+      `<div class="i-add"><div class="top"><span class="x">✕</span><b>${esc(w.share)}</b><span class="ok">${esc(w.add)}</span></div>
+        <div class="card">${ico}<span><b>${esc(name)}</b><br><span style="color:#999">https://${esc(host)}/</span></span></div>
+        <div class="tg"><span>${esc(w.webapp)}</span><span class="sw"></span></div><div class="i-kb">${'<i></i>'.repeat(30)}</div></div>${tap(84, 26)}`,
       home,
     ],
     and: [
