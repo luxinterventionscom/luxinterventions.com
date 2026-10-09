@@ -260,3 +260,8 @@ img.org-logo[hidden]{display:none}
 @keyframes devBlink{50%{opacity:.35}}
 @media (prefers-reduced-motion:reduce){.dev-banner,.dball{animation:none}}
 .dev-btns{display:flex;flex-wrap:wrap;gap:8px}.dev-btns .btn{flex:0 0 auto;width:auto;white-space:nowrap}
+/* « Votre activité avec LuxInterventions » */
+.activity-card{margin-bottom:14px;border:2px solid var(--accent,#E8723A);background:linear-gradient(135deg,rgba(232,114,58,.10),rgba(232,114,58,.02))}
+.act-big{font-size:clamp(30px,8vw,46px);font-weight:800;color:var(--accent,#E8723A);line-height:1.1;margin:4px 0 2px}
+.act-row{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:10px;font-size:15px}
+.act-row b{font-size:20px}

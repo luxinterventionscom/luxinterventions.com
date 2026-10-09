@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.107.0';
+const VERSION = '2.108.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3548,7 +3548,7 @@ dashboard() {
     const sec = ui.cpSec || 'compta';
     const secTabs = html`<div class="tabs" role="tablist" style="max-width:640px;margin-bottom:16px">${[['compta', html`📒 <span class="tab-long">Comptabilité</span><span class="tab-short">Compta</span>`], ['stats', html`📊 <span class="tab-long">Statistiques</span><span class="tab-short">Stats</span>`], ['abo', '💳 Abonnements']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sec === k}" data-action="cp-sec" data-id="${k}">${l}</button>`)}</div>`;
     if (sec === 'abo') return html`${secTabs}${pageHead('💳 Abonnements', 'Abonnements des gérances et annonces publicitaires vendues')}${aboSection()}`;
-    if (sec === 'stats') return html`${secTabs}${pageHead('📊 Statistiques', 'Loyers, occupation, dépenses, interventions')}${VIEWS.stats()}`;
+    if (sec === 'stats') return html`${secTabs}${pageHead('📊 Statistiques', 'Loyers, occupation, dépenses, interventions, devis')}${VIEWS.stats()}${devStatsHtml(ui.year)}`;
     const tabs = html`<div class="tabs" role="tablist" style="max-width:620px">${[['journal', 'Journal'], ['tva', 'TVA'], ['interv', '🔧 Interventions'], ['fact', '🧾 Factures'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
     if (tab === 'stats') ui.cpTab = 'journal';
     const perSel = html`<select data-input="cp-per" style="width:auto" aria-label="Période"><option value="y" ${per === 'y' ? new Raw('selected') : ''}>Toute l’année</option>${[1, 2, 3, 4].map((q) => html`<option value="q${q}" ${per === 'q' + q ? new Raw('selected') : ''}>Trimestre ${q}</option>`)}${MONTHS_FULL.map((mn, i) => html`<option value="m${i + 1}" ${per === 'm' + (i + 1) ? new Raw('selected') : ''}>${mn}</option>`)}</select>`;
@@ -7161,6 +7161,40 @@ function devState(d) {
   if (left <= 3) return { k: 'yellow', lbl: `${rv}🟡 Expire ${left === 0 ? 'ce soir à minuit' : `dans ${left} jour${left > 1 ? 's' : ''}`} (${fmtDate(until)})`, open: true, until };
   return { k: 'green', lbl: `${rv}🟢 En attente — valable jusqu’au ${fmtDate(until)}`, open: true, until };
 }
+// cronologie du devis (envoi, révision, nouvelle version, accord, refus) : pour les temps de réponse des statistiques
+const devH = (d, st, at = Date.now()) => ({ hist: [...((d && d.hist) || []), { st, at }] });
+const devSentAt = (d) => { const h = (d.hist || []).find((x) => x.st === 'envoye'); return h ? h.at : Date.parse(d.sentAt || '') || 0; };
+const devDecAt = (d) => (d.st === 'accepte' ? Date.parse(d.acc || '') || (d.decision && d.decision.at) || 0 : d.st === 'refuse' ? (d.decision && d.decision.at) || 0 : 0);
+const durTxt = (ms) => { if (ms == null || ms < 0) return '—'; const m = Math.round(ms / 60000); if (m < 60) return `${Math.max(1, m)} min`; const h = Math.round(m / 60); if (h < 48) return `${h} h`; return `${Math.round(h / 24)} jours`; };
+// Statistiques → 📝 Devis : émis, acceptés, refusés, rediscutés, expirés ; taux, montants, temps de réponse
+function devStatsHtml(y) {
+  const all = vault.list('devis').filter((d) => d.st !== 'brouillon' && (d.date || '').startsWith(String(y)));
+  if (!all.length) return html`<div class="section-label">📝 Devis ${y}</div><p class="muted small">Aucun devis envoyé en ${y}.</p>`;
+  const acc = all.filter((d) => d.st === 'accepte'), ref = all.filter((d) => d.st === 'refuse'), rev = all.filter((d) => (d.rev || 0) > 0 || d.st === 'revision');
+  const exp = all.filter((d) => devState(d).k === 'red'), open = all.filter((d) => ['green', 'yellow', 'purple'].includes(devState(d).k) || d.st === 'revision');
+  const decided = [...acc, ...ref].filter((d) => devSentAt(d) && devDecAt(d) >= devSentAt(d)).map((d) => ({ d, ms: devDecAt(d) - devSentAt(d) }));
+  const avg = decided.length ? decided.reduce((n, x) => n + x.ms, 0) / decided.length : null;
+  const fast = decided.slice().sort((a, b) => a.ms - b.ms)[0], slow = decided.slice().sort((a, b) => b.ms - a.ms)[0];
+  const tot = (L) => L.reduce((n, d) => n + devCalc(d).ttc, 0);
+  const rate = acc.length + ref.length ? Math.round((acc.length / (acc.length + ref.length)) * 100) : null;
+  const byType = Object.entries(DEV_TYPES).map(([k, l]) => { const L = all.filter((d) => (d.client || {}).type === k), a = L.filter((d) => d.st === 'accepte').length; return [l, L.length, a]; }).filter((x) => x[1]);
+  const lbl = { accepte: '✅ accepté', refuse: '❌ refusé' };
+  const rows = decided.sort((a, b) => devDecAt(b.d) - devDecAt(a.d)).slice(0, 30);
+  return html`<div class="section-label">📝 Devis ${y}</div>
+    <div class="metrics">
+      <div class="metric"><div class="lbl">Envoyés</div><div class="val">${all.length}</div><div class="sub">${eur(tot(all))} TTC</div></div>
+      <div class="metric"><div class="lbl">✅ Acceptés</div><div class="val green">${acc.length}</div><div class="sub">${eur(tot(acc))} TTC</div></div>
+      <div class="metric"><div class="lbl">❌ Refusés</div><div class="val ${ref.length ? 'red' : ''}">${ref.length}</div><div class="sub">${rate == null ? '' : rate + ' % acceptés'}</div></div>
+      <div class="metric"><div class="lbl">🔄 Rediscutés</div><div class="val">${rev.length}</div><div class="sub">au moins une révision</div></div>
+      <div class="metric"><div class="lbl">⏱️ Réponse</div><div class="val">${durTxt(avg)}</div><div class="sub">délai moyen</div></div>
+      <div class="metric"><div class="lbl">En cours / expirés</div><div class="val">${open.length} / <span class="${exp.length ? 'red' : ''}">${exp.length}</span></div><div class="sub">${acc.filter((d) => d.tacheId).length} devenus interventions</div></div>
+    </div>
+    ${fast ? html`<p class="small" style="margin:8px 0">⚡ Le plus rapide : <b>${devClient(fast.d)}</b> en ${durTxt(fast.ms)} · 🐢 le plus lent : <b>${devClient(slow.d)}</b> en ${durTxt(slow.ms)}</p>` : ''}
+    ${byType.length > 1 ? html`<p class="small muted" style="margin:0 0 8px">${byType.map(([l, n, a]) => html`${l} : ${a}/${n} acceptés · `)}</p>` : ''}
+    ${rows.length ? html`<div class="list">${rows.map(({ d, ms }) => html`<button class="row" data-action="dev-open" data-id="${d.id}">${devBall(d)}<span class="grow"><span class="title" style="display:block;white-space:normal">${devNo(d)}</span><span class="meta">${devClient(d)} · ${lbl[d.st]} en <b>${durTxt(ms)}</b>${d.rev ? ` · après ${d.rev} révision${d.rev > 1 ? 's' : ''}` : ''}</span></span><b style="white-space:nowrap">${eur(devCalc(d).ttc)}</b></button>`)}</div>` : ''}
+    <p style="margin:10px 0 0"><button class="btn sm" data-action="dev-csv" data-y="${y}">${icon('download')} Export CSV des devis ${y}</button></p>
+    <p class="tiny muted">Temps de réponse : du premier envoi (PDF, WhatsApp, email ou portail) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.</p>`;
+}
 const devBall = (d) => html`<span class="dball dball-${devState(d).k}" aria-hidden="true"></span>`;
 const devClient = (d) => (d.client && d.client.nom) || '—';
 const devOpen = () => vault.list('devis').filter((d) => devState(d).open).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
@@ -7375,7 +7409,7 @@ Object.assign(FORMS, {
     if (!d) return;
     if (devSigEmpty(c)) return toast('Le client doit signer dans le cadre blanc', { bad: true });
     const png = c.toDataURL('image/png'), at = new Date().toISOString();
-    await vault.mutate((tx) => tx.put('devis', { id: d.id, st: 'accepte', acc: at, sign: { png, at, nom: String(fd.get('nom') || '').trim(), early: fd.get('early') === '1' } }), 'Devis signé par le client', `${devNo(d)} — ${devClient(d)}`);
+    await vault.mutate((tx) => tx.put('devis', { id: d.id, st: 'accepte', acc: at, sign: { png, at, nom: String(fd.get('nom') || '').trim(), early: fd.get('early') === '1' }, ...devH(d, 'accepte') }), 'Devis signé par le client', `${devNo(d)} — ${devClient(d)}`);
     devSigUrl = ''; sheetDirty = false;
     toast('✍️ Devis signé — bon pour accord');
     goBack();
@@ -7516,7 +7550,7 @@ function pdfView(bytes, label) {
   document.body.appendChild(dlg); dlg.showModal();
 }
 // premier envoi : le brouillon devient « envoyé » (la validité court depuis la date du devis)
-const devSent = (d, extra = {}) => vault.mutate((tx) => tx.put('devis', { id: d.id, ...(d.st === 'brouillon' ? { st: 'envoye', sentAt: new Date().toISOString() } : {}), ...extra }), 'Devis envoyé', `${devNo(d)} — ${devClient(d)}`);
+const devSent = (d, extra = {}) => vault.mutate((tx) => tx.put('devis', { id: d.id, ...(d.st === 'brouillon' ? { st: 'envoye', sentAt: new Date().toISOString(), ...devH(d, 'envoye') } : {}), ...extra }), 'Devis envoyé', `${devNo(d)} — ${devClient(d)}`);
 const devMsg = (d) => { const k = devCalc(d), c = factConf(); return `Bonjour ${d.interloc || devClient(d)},\n\nVoici notre devis n° ${devNo(d)}${d.titre ? ' — ' + d.titre : ''} : ${eur(k.ttc)} TTC${k.pct ? ` (acompte ${k.pct} % : ${eur(k.acompte)})` : ''}, valable jusqu’au ${fmtDate(addDays(d.date || today(), num((d.dir || {}).valid) || 30))}.\nDevis gratuit et sans engagement.\n\nBien à vous,\n${c.marque || c.nom}${c.tel ? '\n📞 ' + c.tel : ''}${c.email ? '\n✉️ ' + c.email : ''}`; };
 // synchronisation avec le portail : la gérance accepte, refuse ou demande une révision
 async function devSync() {
@@ -7531,13 +7565,20 @@ async function devSync() {
     upd.push([d, r]);
   }
   if (!upd.length) return;
-  await vault.mutate((tx) => { for (const [d, r] of upd) tx.put('devis', { id: d.id, st: r.status, ptlSt: r.status, decision: { st: r.status, at: r.decided_at, by: r.decided_by_name || '', note: r.note || '' }, ...(r.status === 'accepte' ? { acc: new Date(r.decided_at).toISOString() } : {}) }); }, 'Réponse de la gérance au devis', upd.map(([d, r]) => `${devNo(d)} : ${({ accepte: 'accepté', refuse: 'refusé', revision: 'révision demandée' })[r.status]}`).join(' · '));
+  await vault.mutate((tx) => { for (const [d, r] of upd) tx.put('devis', { id: d.id, st: r.status, ptlSt: r.status, decision: { st: r.status, at: r.decided_at, by: r.decided_by_name || '', note: r.note || '' }, ...(r.status === 'accepte' ? { acc: new Date(r.decided_at).toISOString() } : {}), ...devH(d, r.status, r.decided_at) }); }, 'Réponse de la gérance au devis', upd.map(([d, r]) => `${devNo(d)} : ${({ accepte: 'accepté', refuse: 'refusé', revision: 'révision demandée' })[r.status]}`).join(' · '));
   for (const [d, r] of upd) toast(`📝 ${devClient(d)} : devis ${devNo(d)} ${({ accepte: '✅ accepté', refuse: '❌ refusé', revision: '🔄 révision demandée' })[r.status]}`);
   if (['dashboard', 'maintenance'].includes(ui.route)) renderView();
   if (ui.sheet && ui.sheet.kind === 'devis') { ui.sheet.rendered = false; renderSheet(); }
 }
 Object.assign(ACTIONS, {
   'dev-new': () => openSheet('devis'),
+  'dev-csv': (d) => {
+    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`, n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
+    const L = vault.list('devis').filter((x) => x.st !== 'brouillon' && (x.date || '').startsWith(String(d.y))).sort((a, b) => (a.seq || 0) - (b.seq || 0));
+    const rows = [['Numéro', 'Date', 'Client', 'Type', 'Objet', 'HT', 'TVA', 'TTC', 'Acompte', 'Statut', 'Envoyé le', 'Réponse le', 'Temps de réponse', 'Révisions'].map(q).join(';')];
+    for (const x of L) { const k = devCalc(x), s0 = devSentAt(x), s1 = devDecAt(x); rows.push([devNo(x), x.date, devClient(x), DEV_TYPES[(x.client || {}).type] || '', x.titre || '', n2(k.ht), n2(k.tva), n2(k.ttc), n2(k.acompte), devState(x).lbl, s0 ? new Date(s0).toLocaleString('fr-FR') : '', s1 ? new Date(s1).toLocaleString('fr-FR') : '', s0 && s1 >= s0 ? durTxt(s1 - s0) : '', x.rev || 0].map(q).join(';')); }
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv' })); a.download = `devis-${d.y}.csv`; document.body.appendChild(a); a.click(); a.remove();
+  },
   'dev-open': (d) => openSheet('devis', d.id),
   'dev-row-add': () => { const box = $('#devRows'); if (box) box.insertAdjacentHTML('beforeend', String(devChefRow(box.children.length))); },
   'dev-sig-clear': () => { const c = sheetEl.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); devSigUrl = ''; },
@@ -7594,19 +7635,19 @@ Object.assign(ACTIONS, {
     const part = v.client && v.client.type === 'part';
     if (!(await confirmBox(`Devis ${devNo(v)} accepté ?`, { ok: '✅ Accepté', detail: `${devClient(v)} a donné son accord (signature papier, email…).${part ? ' Particulier : il garde 14 jours pour se rétracter (pastille violette).' : ''} Pour une signature sur le téléphone : « ✍️ Faire signer le client ».` }))) return;
     const at = new Date().toISOString();
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'accepte', acc: at, decision: { st: 'accepte', at: Date.now(), by: 'LuxInterventions', note: '' } }), 'Devis accepté', `${devNo(v)} — ${devClient(v)}`);
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'accepte', acc: at, decision: { st: 'accepte', at: Date.now(), by: 'LuxInterventions', note: '' }, ...devH(v, 'accepte') }), 'Devis accepté', `${devNo(v)} — ${devClient(v)}`);
     toast('✅ Devis accepté'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
   async 'dev-ref'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
     if (!(await confirmBox(`Devis ${devNo(v)} refusé ?`, { ok: '❌ Refusé', danger: true, detail: devClient(v) }))) return;
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'refuse', decision: { st: 'refuse', at: Date.now(), by: 'LuxInterventions', note: '' } }), 'Devis refusé', `${devNo(v)} — ${devClient(v)}`);
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'refuse', decision: { st: 'refuse', at: Date.now(), by: 'LuxInterventions', note: '' }, ...devH(v, 'refuse') }), 'Devis refusé', `${devNo(v)} — ${devClient(v)}`);
     toast('Devis refusé'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
   async 'dev-rev'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
     if (!(await confirmBox(`Nouvelle version R${(v.rev || 0) + 1} ?`, { ok: '🔄 Nouvelle version', detail: 'Même numéro + R1, R2… Modifiez les travaux ou faites une remise, puis renvoyez-le. La signature éventuelle est retirée.' }))) return;
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, rev: (v.rev || 0) + 1, st: 'brouillon', date: today(), sign: null, acc: '' }), 'Nouvelle version du devis', `${v.no}-R${(v.rev || 0) + 1}`);
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, rev: (v.rev || 0) + 1, st: 'brouillon', date: today(), sign: null, acc: '', ...devH(v, 'R' + ((v.rev || 0) + 1)) }), 'Nouvelle version du devis', `${v.no}-R${(v.rev || 0) + 1}`);
     toast(`Version R${(v.rev || 0) + 1} : modifiez puis renvoyez`); ui.sheet.rendered = false; renderSheet();
   },
   async 'dev-del'(d) {

@@ -34,7 +34,7 @@ export default [
 ],
 [
 "12 derniers mois",
-"Letzte 12 Monate"
+"letzte 12 Monate"
 ],
 [
 "2 mois offerts en payant à l’année",
@@ -695,6 +695,10 @@ export default [
 [
 "Demandées",
 "Angefragt"
+],
+[
+"Depuis le début :",
+"Seit Beginn:"
 ],
 [
 "Description",
@@ -1589,6 +1593,10 @@ export default [
 "Keine Internetverbindung"
 ],
 [
+"Pas encore de devis sur les 12 derniers mois.",
+"Noch keine Angebote in den letzten 12 Monaten."
+],
+[
 "Pas encore d’évaluation. Après chaque intervention terminée, la gérance peut remplir la fiche « ⭐ Évaluer l’intervention ».",
 "Noch keine Bewertung. Nach jedem abgeschlossenen Einsatz kann die Verwaltung das Formular „⭐ Einsatz bewerten“ ausfüllen."
 ],
@@ -1879,6 +1887,10 @@ export default [
 [
 "Reçue",
 "Eingegangen"
+],
+[
+"Reçus",
+"Erhalten"
 ],
 [
 "Rue, numéro, code postal, ville",
@@ -2257,6 +2269,10 @@ export default [
 "Ihr Zugang zum LuxInterventions-Portal"
 ],
 [
+"Votre activité avec LuxInterventions",
+"Ihre Aktivität mit LuxInterventions"
+],
+[
 "Votre avis compte",
 "Ihre Meinung zählt"
 ],
@@ -2293,6 +2309,10 @@ export default [
 "Ansicht Verwaltung"
 ],
 [
+"acceptés",
+"angenommen"
+],
+[
 "acompte",
 "Anzahlung"
 ],
@@ -2307,6 +2327,10 @@ export default [
 [
 "depuis la nouvelle icône",
 "über das neue Symbol"
+],
+[
+"devis acceptés",
+"angenommene Angebote"
 ],
 [
 "délai moyen",
@@ -2361,8 +2385,16 @@ export default [
 "z. B. beim Hausmeister klingeln, nicht mittwochs"
 ],
 [
+"expiré(s)",
+"abgelaufen"
+],
+[
 "facture à venir",
 "Rechnung folgt"
+],
+[
+"facturés cette année (TTC)",
+"in diesem Jahr berechnet (brutto)"
 ],
 [
 "il y a {0} h",
@@ -2375,6 +2407,10 @@ export default [
 [
 "il y a {0} min",
 "vor {0} Min."
+],
+[
+"interventions terminées",
+"abgeschlossene Einsätze"
 ],
 [
 "interventions terminées, par mois",
@@ -2407,6 +2443,14 @@ export default [
 [
 "reçu par email ou WhatsApp : vous y choisirez votre mot de passe.",
 "aus der E-Mail oder WhatsApp: Dort wählen Sie Ihr Passwort."
+],
+[
+"résidences suivies",
+"betreute Residenzen"
+],
+[
+"révision(s)",
+"Überarbeitung(en)"
 ],
 [
 "travail terminé",
@@ -2669,6 +2713,10 @@ export default [
 "→ Hinzufügen. Öffnen Sie das Portal dann"
 ],
 [
+"⏱️ Réponse",
+"⏱️ Antwort"
+],
+[
 "⏳ À payer",
 "⏳ Offen"
 ],
@@ -2721,6 +2769,10 @@ export default [
 "✅ Annehmen"
 ],
 [
+"✅ Acceptés",
+"✅ Angenommen"
+],
+[
 "✅ Devis accepté",
 "✅ Angebot angenommen"
 ],
@@ -2731,6 +2783,10 @@ export default [
 [
 "✅ Payée",
 "✅ Bezahlt"
+],
+[
+"✅ accepté en",
+"✅ angenommen in"
 ],
 [
 "✅ payée",
@@ -2767,6 +2823,14 @@ export default [
 [
 "❌ Refuser",
 "❌ Ablehnen"
+],
+[
+"❌ Refusés",
+"❌ Abgelehnt"
+],
+[
+"❌ refusé en",
+"❌ abgelehnt in"
 ],
 [
 "⭐ Envoyer l’évaluation",
@@ -2829,6 +2893,10 @@ export default [
 "📒 Buchhaltung"
 ],
 [
+"📝 Devis",
+"📝 Angebote"
+],
+[
 "📝 Devis en cours ({0})",
 "📝 Laufende Angebote ({0})"
 ],
@@ -2871,6 +2939,10 @@ export default [
 [
 "🔄 Demander une révision",
 "🔄 Überarbeitung anfragen"
+],
+[
+"🔄 Rediscutés",
+"🔄 Neu verhandelt"
 ],
 [
 "🔎 Filtres — rien coché = tout",

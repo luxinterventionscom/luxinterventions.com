@@ -910,7 +910,7 @@ const PTL_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_devis_org ON devis(org_id, updated_at)`,
 ];
 // Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
-const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT", "ALTER TABLE orgs ADD COLUMN logo TEXT"];
+const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT", "ALTER TABLE orgs ADD COLUMN logo TEXT", "ALTER TABLE devis ADD COLUMN revs INTEGER"];
 let ptlSchemaReady = false;
 
 // ── Utilità ──
@@ -1302,16 +1302,19 @@ async function handlePortail(request, env, url, headers, ctx) {
       const id = old ? old.id : ptlId(), key = `portail/devis/${id}.pdf`;
       await env.PHOTOS.put(key, data, { httpMetadata: { contentType: "application/pdf" } });
       const vu = /^\d{4}-\d{2}-\d{2}$/.test(meta.valid_until || "") ? meta.valid_until : "";
-      if (old) await env.DB.prepare("UPDATE devis SET org_id = ?, no = ?, title = ?, ttc = ?, acompte = ?, pct = ?, valid_until = ?, status = 'envoye', note = NULL, pdf_key = ?, updated_at = ?, decided_at = NULL, decided_by = NULL, decided_by_name = NULL WHERE id = ?")
+      if (old) await env.DB.prepare("UPDATE devis SET org_id = ?, no = ?, title = ?, ttc = ?, acompte = ?, pct = ?, valid_until = ?, status = 'envoye', note = NULL, pdf_key = ?, updated_at = ?, revs = COALESCE(revs, 0) + 1, decided_at = NULL, decided_by = NULL, decided_by_name = NULL WHERE id = ?")
         .bind(org, no, clean(meta.title, 200), n(meta.ttc), n(meta.acompte), Math.round(n(meta.pct)), vu, key, now, id).run();
       else await env.DB.prepare("INSERT INTO devis (id, org_id, no, title, ttc, acompte, pct, valid_until, status, pdf_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'envoye', ?, ?, ?)")
         .bind(id, org, no, clean(meta.title, 200), n(meta.ttc), n(meta.acompte), Math.round(n(meta.pct)), vu, key, now, now).run();
       ctx && ctx.waitUntil(ptlNotify(env, "u.org_id = ? AND u.role = 'gerance_admin'", [org], { title: `📝 Devis ${no}`, body: `${n(meta.ttc).toFixed(2).replace(".", ",")} € TTC — à accepter, refuser ou revoir dans le portail`, url: "/portail.html#/home", tag: "devis-" + id }, false));
       return json({ ok: true, id });
     }
+    // ?all=1 : tout l'historique (statistiques de la gérance) ; sinon les devis en cours et récents
     if (path === "devis" && method === "GET") {
+      const all = url.searchParams.get("all") === "1", org = clean(url.searchParams.get("org"), 40);
       const rows = isAdmin(me)
-        ? await env.DB.prepare("SELECT d.*, o.name AS org_name FROM devis d JOIN orgs o ON o.id = d.org_id ORDER BY d.updated_at DESC LIMIT 300").all()
+        ? await env.DB.prepare(`SELECT d.*, o.name AS org_name FROM devis d JOIN orgs o ON o.id = d.org_id ${org ? "WHERE d.org_id = ?" : ""} ORDER BY d.updated_at DESC LIMIT 1000`).bind(...(org ? [org] : [])).all()
+        : all ? await env.DB.prepare("SELECT * FROM devis WHERE org_id = ? ORDER BY created_at DESC LIMIT 1000").bind(me.org_id).all()
         : await env.DB.prepare("SELECT * FROM devis WHERE org_id = ? AND (status IN ('envoye', 'revision') OR updated_at > ?) ORDER BY updated_at DESC LIMIT 50").bind(me.org_id, now - 60 * 864e5).all();
       return json({ devis: (rows.results || []).map(({ pdf_key, ...r }) => r) });
     }

@@ -34,7 +34,7 @@ export default [
 ],
 [
 "12 derniers mois",
-"Ultimi 12 mesi"
+"ultimi 12 mesi"
 ],
 [
 "2 mois offerts en payant à l’année",
@@ -699,6 +699,10 @@ export default [
 [
 "Demandées",
 "Richieste"
+],
+[
+"Depuis le début :",
+"Dall’inizio:"
 ],
 [
 "Description",
@@ -1593,6 +1597,10 @@ export default [
 "Nessuna connessione internet"
 ],
 [
+"Pas encore de devis sur les 12 derniers mois.",
+"Ancora nessun preventivo negli ultimi 12 mesi."
+],
+[
 "Pas encore d’évaluation. Après chaque intervention terminée, la gérance peut remplir la fiche « ⭐ Évaluer l’intervention ».",
 "Ancora nessuna valutazione. Dopo ogni intervento terminato, la gérance può compilare la scheda «⭐ Valuta l’intervento»."
 ],
@@ -1883,6 +1891,10 @@ export default [
 [
 "Reçue",
 "Ricevuta"
+],
+[
+"Reçus",
+"Ricevuti"
 ],
 [
 "Rue, numéro, code postal, ville",
@@ -2261,6 +2273,10 @@ export default [
 "Il vostro accesso al portale LuxInterventions"
 ],
 [
+"Votre activité avec LuxInterventions",
+"La vostra attività con LuxInterventions"
+],
+[
 "Votre avis compte",
 "La vostra opinione conta"
 ],
@@ -2297,6 +2313,10 @@ export default [
 "Vista amministrazione"
 ],
 [
+"acceptés",
+"accettati"
+],
+[
 "acompte",
 "acconto"
 ],
@@ -2311,6 +2331,10 @@ export default [
 [
 "depuis la nouvelle icône",
 "dalla nuova icona"
+],
+[
+"devis acceptés",
+"preventivi accettati"
 ],
 [
 "délai moyen",
@@ -2365,8 +2389,16 @@ export default [
 "es. suonare al portinaio, non il mercoledì"
 ],
 [
+"expiré(s)",
+"scaduto/i"
+],
+[
 "facture à venir",
 "fattura in arrivo"
+],
+[
+"facturés cette année (TTC)",
+"fatturati quest’anno (IVA incl.)"
 ],
 [
 "il y a {0} h",
@@ -2379,6 +2411,10 @@ export default [
 [
 "il y a {0} min",
 "{0} min fa"
+],
+[
+"interventions terminées",
+"interventi conclusi"
 ],
 [
 "interventions terminées, par mois",
@@ -2411,6 +2447,14 @@ export default [
 [
 "reçu par email ou WhatsApp : vous y choisirez votre mot de passe.",
 "ricevuto via email o WhatsApp: lì sceglierete la password."
+],
+[
+"résidences suivies",
+"residenze seguite"
+],
+[
+"révision(s)",
+"revisione/i"
 ],
 [
 "travail terminé",
@@ -2665,6 +2709,10 @@ export default [
 "→ Aggiungi. Poi apri il portale"
 ],
 [
+"⏱️ Réponse",
+"⏱️ Risposta"
+],
+[
 "⏳ À payer",
 "⏳ Da pagare"
 ],
@@ -2717,6 +2765,10 @@ export default [
 "✅ Accetta"
 ],
 [
+"✅ Acceptés",
+"✅ Accettati"
+],
+[
 "✅ Devis accepté",
 "✅ Preventivo accettato"
 ],
@@ -2727,6 +2779,10 @@ export default [
 [
 "✅ Payée",
 "✅ Pagata"
+],
+[
+"✅ accepté en",
+"✅ accettato in"
 ],
 [
 "✅ payée",
@@ -2763,6 +2819,14 @@ export default [
 [
 "❌ Refuser",
 "❌ Rifiuta"
+],
+[
+"❌ Refusés",
+"❌ Rifiutati"
+],
+[
+"❌ refusé en",
+"❌ rifiutato in"
 ],
 [
 "⭐ Envoyer l’évaluation",
@@ -2825,6 +2889,10 @@ export default [
 "📒 Contabilità"
 ],
 [
+"📝 Devis",
+"📝 Preventivi"
+],
+[
 "📝 Devis en cours ({0})",
 "📝 Preventivi in corso ({0})"
 ],
@@ -2867,6 +2935,10 @@ export default [
 [
 "🔄 Demander une révision",
 "🔄 Chiedi una revisione"
+],
+[
+"🔄 Rediscutés",
+"🔄 Ridiscussi"
 ],
 [
 "🔎 Filtres — rien coché = tout",
