@@ -297,6 +297,10 @@ export default [
 "April"
 ],
 [
+"BIC incorrect : 8 ou 11 caractères, du même pays que l’IBAN (ex. CCPLLULL).",
+"Wrong BIC: 8 or 11 characters, same country as the IBAN (e.g. CCPLLULL)."
+],
+[
 "Badge chez le gardien",
 "Badge with the caretaker"
 ],
@@ -381,6 +385,10 @@ export default [
 "What you typed is not saved yet. To keep it: “Cancel”, then the save button."
 ],
 [
+"Ces données figurent sur les factures de LuxInterventions (ARES INVEST S.A.). Le nom de la société est modifié par LuxInterventions.",
+"These details appear on LuxInterventions (ARES INVEST S.A.) invoices. The company name is changed by LuxInterventions."
+],
+[
 "Chambre",
 "Room"
 ],
@@ -443,6 +451,10 @@ export default [
 [
 "Cochez la confirmation.",
 "Tick the confirmation."
+],
+[
+"Code BIC / SWIFT",
+"BIC / SWIFT code"
 ],
 [
 "Code alarme",
@@ -685,6 +697,18 @@ export default [
 "Available after the server update."
 ],
 [
+"Données de la société enregistrées",
+"Company details saved"
+],
+[
+"Données de votre société (adresse, RCS, TVA, banque)",
+"Your company details (address, RCS, VAT, bank)"
+],
+[
+"Données de votre société à compléter",
+"Company details to complete"
+],
+[
 "Dont urgentes",
 "Of which urgent"
 ],
@@ -897,6 +921,14 @@ export default [
 "Job history"
 ],
 [
+"IBAN incomplet ou incorrect",
+"IBAN incomplete or wrong"
+],
+[
+"IBAN incorrect : vérifiez les chiffres (ex. LU28 0019 4006 4475 0000).",
+"Wrong IBAN: check the digits (e.g. LU28 0019 4006 4475 0000)."
+],
+[
 "Impossible d’activer les notifications",
 "Could not turn on notifications"
 ],
@@ -1057,10 +1089,6 @@ export default [
 "Language, notifications, reports, account"
 ],
 [
-"Le lien a déjà servi, il a plus de 14 jours, ou un lien plus récent vous a été envoyé (seul le dernier marche).",
-"The link was already used, is older than 14 days, or a newer link was sent to you (only the latest works)."
-],
-[
 "Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.",
 "The server is not ready for notifications yet: try again in a moment."
 ],
@@ -1139,6 +1167,10 @@ export default [
 [
 "MEILLEUR PRIX",
 "BEST VALUE"
+],
+[
+"Ma société",
+"My company"
 ],
 [
 "Mai",
@@ -1259,6 +1291,10 @@ export default [
 [
 "Nom (locataire, concierge…)",
 "Name (tenant, caretaker…)"
+],
+[
+"Nom de la banque",
+"Bank name"
 ],
 [
 "Nom de la résidence",
@@ -1383,6 +1419,10 @@ export default [
 [
 "N° / précision",
 "No. / details"
+],
+[
+"N° TVA",
+"VAT no."
 ],
 [
 "Octobre",
@@ -1583,10 +1623,6 @@ export default [
 [
 "Pour les gérances qui grandissent.",
 "For growing agencies."
-],
-[
-"Pourquoi ?",
-"Why?"
 ],
 [
 "Premiers pas · {0}/{1}",
@@ -1847,6 +1883,10 @@ export default [
 [
 "Site web",
 "Website"
+],
+[
+"Société",
+"Company"
 ],
 [
 "Soin des lieux en fin de travaux",
@@ -2513,16 +2553,16 @@ export default [
 "⚠️ DISPUTE — unpaid"
 ],
 [
+"⚠️ à compléter",
+"⚠️ to complete"
+],
+[
 "⚡ Créer plusieurs appartements d’un coup",
 "⚡ Create several apartments at once"
 ],
 [
 "⚡ Panneaux",
 "⚡ Panels"
-],
-[
-"✅ Mot de passe déjà choisi ? Connectez-vous avec votre email.",
-"✅ Password already chosen? Sign in with your email."
 ],
 [
 "✅ Payée",
@@ -2553,6 +2593,10 @@ export default [
 "✓ Request sent. LuxInterventions will send you a new link (WhatsApp or email): open it to choose a new password."
 ],
 [
+"✓ IBAN valide",
+"✓ Valid IBAN"
+],
+[
 "⭐ Envoyer l’évaluation",
 "⭐ Send the rating"
 ],
@@ -2571,6 +2615,10 @@ export default [
 [
 "🎉 Bienvenue {0} !",
 "🎉 Welcome, {0}!"
+],
+[
+"🏢 Ma société",
+"🏢 My company"
 ],
 [
 "💼 Gérez aussi vos propres locataires",
@@ -2659,10 +2707,6 @@ export default [
 [
 "🔑 Mot de passe oublié ?",
 "🔑 Forgot your password?"
-],
-[
-"🔑 Pas encore ? Touchez « Mot de passe oublié ? » : LuxInterventions vous envoie un nouveau lien.",
-"🔑 Not yet? Tap “Forgot password?”: LuxInterventions will send you a new link."
 ],
 [
 "🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.",
