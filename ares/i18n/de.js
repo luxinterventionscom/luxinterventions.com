@@ -10415,5 +10415,13 @@ export default [
 [
 "✅ Paiement reçu",
 "✅ Zahlung erhalten"
+],
+[
+"🏦 Banque de la gérance",
+"🏦 Bank der Verwaltung"
+],
+[
+"IBAN (compte d’ARES INVEST S.A.)",
+"IBAN (Konto der ARES INVEST S.A.)"
 ]
 ];
