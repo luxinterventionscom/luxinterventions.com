@@ -726,3 +726,10 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 /* onglets : libellés courts sur téléphone */
 .tab-short { display: none; }
 @media (max-width: 560px) { .tab-long { display: none; } .tab-short { display: inline; } }
+/* logo des agences (gérances) */
+img.org-logo{height:16px;max-width:44px;object-fit:contain;vertical-align:-3px;border-radius:3px;background:#fff}
+img.org-logo.big{height:26px;max-width:72px;vertical-align:-7px;margin-right:8px;border-radius:5px}
+img.org-logo.xl{height:40px;max-width:110px;vertical-align:middle;margin-right:10px;border-radius:6px}
+.org-logo-pick{display:flex;gap:12px;align-items:center;padding:10px;border:1px dashed var(--line,#ddd);border-radius:12px}
+.org-logo-box{flex:0 0 64px;width:64px;height:64px;border-radius:12px;background:#fff;border:1px solid var(--line,#ddd);display:grid;place-items:center;text-align:center;overflow:hidden}
+.org-logo-box img{max-width:100%;max-height:100%;object-fit:contain}

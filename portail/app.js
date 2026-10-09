@@ -9,7 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.14.1';
+const VERSION = '1.15.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -474,14 +474,14 @@ function renderShell() {
   const nb = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span><i class="navbadge" data-badge="${id}" hidden></i></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">PORTAIL GÉRANCES<small>${isAdmin() ? 'Espace équipe LuxInterventions' : state.me.org_name || ''}</small></span></div>
+      <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">PORTAIL GÉRANCES<small>${isAdmin() ? 'Espace équipe LuxInterventions' : html`${orgLogoImg('ptl-orglogo')}${state.me.org_name || ''}`}</small></span></div>
       ${navItems().map(nb)}
       <div class="spacer"></div>
       <button class="navbtn" data-action="logout">${icon('logout')}<span>Déconnexion</span></button>
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">PORTAIL GÉRANCES<small>${isAdmin() ? 'Espace équipe LuxInterventions' : state.me.org_name || ''}</small></span></div>
+        <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">PORTAIL GÉRANCES<small>${isAdmin() ? 'Espace équipe LuxInterventions' : html`${orgLogoImg('ptl-orglogo')}${state.me.org_name || ''}`}</small></span></div>
         <button class="btn sm primary" data-action="new-ticket">${icon('plus')} <span class="show-xs">Dépannage</span><span class="hide-xs">Demande de dépannage</span></button>
       </header>
       ${state.demo ? html`<div class="demo-bar">${icon('eye')}<span class="grow"><b>Mode démo</b> — données d’exemple, rien n’est enregistré.</span>
@@ -525,7 +525,7 @@ async function loadRoute(route) {
     const [stats, tickets, pubs] = await Promise.all([api('stats' + (org ? '?' + org.slice(1) : '')), api('tickets?scope=active' + org), api('pubs').catch(() => ({ items: [] }))]);
     state.cache.home = { stats, tickets: tickets.tickets, pubs: pubs.items || [] };
     if (pubs.offers === false) state.offersOff = true; else if (pubs.items) state.offersOff = false; // offres d'abonnement masquées par LuxInterventions
-    if (!isAdmin()) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; } catch { /* hors ligne */ } }
+    if (!isAdmin()) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; orgLogoRefresh(); } catch { /* hors ligne */ } }
   } else if (route === 'demandes') {
     const [tickets, residences] = await Promise.all([
       api(`tickets?scope=${f.scope}${org}${f.residence ? '&residence=' + f.residence : ''}`),
@@ -616,6 +616,7 @@ function guideCard(stats) {
       ]
     : [
         ...(isManager() && state.myOrg ? [[!orgMissing(state.myOrg).length, orgMissing(state.myOrg).length ? html`<span class="red">⚠️ <b>Données de votre société à compléter</b> :</span> <span>${orgMissing(state.myOrg).join(', ')}</span>` : 'Données de votre société (adresse, RCS, TVA, banque)', 'org-edit', '']] : []),
+        ...(isManager() && state.myOrg ? [[!!state.myOrg.logo, '🎨 Ajoutez le logo de votre agence : LuxInterventions vous reconnaît d’un coup d’œil', 'org-edit', '']] : []),
         [(stats.residences || 0) > 0, 'Ajoutez vos résidences (une seule fois : accès, clés, contact)', 'new-residence', ''],
         [(stats.createdMonth || 0) + (stats.open || 0) > 0, 'Envoyez votre première demande d’intervention', 'new-ticket', ''],
         [push, 'Activez les notifications pour suivre vos demandes', 'push-on', ''],
@@ -1104,6 +1105,35 @@ function ibanOk(v) {
 }
 const bicOk = (v, iban) => { const x = String(v || '').toUpperCase().replace(/\s/g, ''); return /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(x) && (!iban || x.slice(4, 6) === ibanClean(iban).slice(0, 2)); };
 const LU_BIC = { '001': ['BCEELULL', 'Spuerkeess'], '002': ['BILLLULL', 'BIL'], '003': ['BGLLLULL', 'BGL BNP Paribas'], '009': ['CCRALULL', 'Raiffeisen'], '014': ['CELLLULL', 'ING Luxembourg'], '111': ['CCPLLULL', 'POST Luxembourg'] };
+// Logo de l'agence (choisi par le responsable dans « Ma société ») : réduit à 256 px, gardé dans le portail
+const orgLogoImg = (cls = '') => (state.myOrg && state.myOrg.logo ? html`<img class="org-logo ${cls}" src="${state.myOrg.logo}" alt="">` : html`<img class="org-logo ${cls}" alt="" hidden>`);
+function orgLogoRefresh() {
+  const lg = (state.myOrg && state.myOrg.logo) || '';
+  document.querySelectorAll('img.ptl-orglogo').forEach((im) => { if (lg) im.src = lg; else im.removeAttribute('src'); im.hidden = !lg; });
+}
+async function logoShrink(file) {
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, 256 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+  const g = c.getContext('2d');
+  g.drawImage(bmp, 0, 0, c.width, c.height);
+  let url = c.toDataURL('image/png');
+  if (url.length > 140000) { g.globalCompositeOperation = 'destination-over'; g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); url = c.toDataURL('image/jpeg', 0.85); }
+  return url;
+}
+async function orgLogoSave(logo) {
+  await api('orgs/' + state.me.org_id, { method: 'PATCH', body: { logo } });
+  state.myOrg = { ...(state.myOrg || {}), logo };
+  orgLogoRefresh();
+  const pv = document.querySelector('.org-logo-pick'); if (pv) setHtml(pv, orgLogoPick());
+  toast(logo ? 'Logo enregistré 🎨' : 'Logo retiré');
+}
+const orgLogoPick = () => {
+  const lg = state.myOrg && state.myOrg.logo;
+  return html`<span class="org-logo-box">${lg ? html`<img src="${lg}" alt="Logo">` : html`<span class="muted tiny">Logo</span>`}</span>
+    <span class="grow"><b style="display:block">🎨 Logo de votre agence</b><span class="tiny muted">LuxInterventions vous reconnaît d’un coup d’œil. PNG ou JPG, carré de préférence.</span>
+    <span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><label class="btn sm">${lg ? '🔄 Changer' : '📷 Choisir le logo'}<input type="file" accept="image/png,image/jpeg,image/webp" data-input="org-logo" hidden></label>${lg ? html`<button class="btn sm ghost" type="button" data-action="org-logo-del">Retirer</button>` : ''}</span></span>`;
+};
 const orgMissing = (o) => (o ? [!o.address && 'adresse', !o.rcs && 'RCS (B…)', !o.tva && 'n° TVA (LU…)', !o.banque && 'banque', !o.bic && 'BIC', !o.iban && 'IBAN'].filter(Boolean) : []);
 
 const SHEETS = {
@@ -1113,6 +1143,7 @@ const SHEETS = {
       title: '🏢 Ma société',
       narrow: true,
       body: html`<form id="f" data-form="myorg" class="fields">
+        <div class="org-logo-pick full">${orgLogoPick()}</div>
         <p class="small muted full" style="margin:0">Ces données figurent sur les factures de LuxInterventions (ARES INVEST S.A.). Le nom de la société est modifié par LuxInterventions.</p>
         <label class="field full">Société<input value="${o.name || state.me.org_name || ''}" readonly class="muted"></label>
         <label class="field full">Adresse<textarea name="address" required style="min-height:56px" placeholder="rue, n°, code postal, ville">${o.address || ''}</textarea></label>
@@ -1771,6 +1802,7 @@ const ACTIONS = {
   },
   'change-password': () => openSheet('password-form'),
   'install-anim': () => import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'Portail Gérances', icon: '/portail/icons/ptl-192.png', lang: LANG })),
+  'org-logo-del': () => orgLogoSave('').catch((e) => toast(e.message, { bad: true })),
   'org-edit': async () => { if (!state.myOrg) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; } catch { /* hors ligne */ } } openSheet('myorg'); },
   copy: async (d) => { try { await navigator.clipboard.writeText(d.text); toast('Copié'); } catch { toast('Copie impossible', { bad: true }); } },
   // mot de passe oublié : LuxInterventions (ou le responsable) reçoit la demande et envoie un nouveau lien
@@ -2068,6 +2100,7 @@ document.addEventListener('change', (e) => {
   const k = e.target.dataset.input;
   if (k === 'residence') { state.filters.residence = e.target.value; go('demandes', true); }
   if (k === 'cp-month') { state.cpMonth = e.target.value; renderView(); }
+  if (k === 'org-logo' && e.target.files[0]) logoShrink(e.target.files[0]).then(orgLogoSave).catch((err) => toast(err && err.message && !/decode|source/i.test(err.message) ? err.message : 'Image illisible : choisissez un PNG ou un JPG', { bad: true }));
   if (k === 'preview-files') {
     const box = $('#preview');
     revokePhotos();

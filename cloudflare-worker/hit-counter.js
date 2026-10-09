@@ -907,7 +907,7 @@ const PTL_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
 ];
 // Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
-const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT"];
+const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT", "ALTER TABLE orgs ADD COLUMN logo TEXT"];
 let ptlSchemaReady = false;
 
 // ── Utilità ──
@@ -1337,6 +1337,14 @@ async function handlePortail(request, env, url, headers, ctx) {
       if (!isAdmin(me) && !own) fail(403, "Réservé à LuxInterventions ou au responsable de la gérance");
       const b = await body();
       const v = (k, n) => (b[k] != null ? clean(b[k], n) : null);
+      // logo de l'agence : petite image (data URL PNG/JPEG/WebP, ≤ 256 px, réduite par l'app), "" = retirer
+      if (b.logo != null) {
+        const lg = String(b.logo);
+        if (lg && (lg.length > 150000 || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(lg))) fail(400, "Logo trop lourd ou format non reconnu (PNG, JPG)");
+        await env.DB.prepare("UPDATE orgs SET logo = ? WHERE id = ?").bind(lg, orgMatch[1]).run();
+        if (own && lg) ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], { title: `🏢 ${me.org_name || "Gérance"} · nouveau logo`, body: "La gérance a ajouté son logo dans le portail", url: "/portail.html", tag: "org-" + orgMatch[1] }, false));
+        if (Object.keys(b).length === 1) return json({ ok: true });
+      }
       await env.DB.prepare("UPDATE orgs SET name = COALESCE(?, name), phone = COALESCE(?, phone), email = COALESCE(?, email), address = COALESCE(?, address), rcs = COALESCE(?, rcs), tva = COALESCE(?, tva), banque = COALESCE(?, banque), bic = COALESCE(?, bic), iban = COALESCE(?, iban) WHERE id = ?")
         .bind(isAdmin(me) ? v("name", 120) : null, v("phone", 40), v("email", 200), v("address", 300), v("rcs", 30), v("tva", 30), v("banque", 80), v("bic", 14), v("iban", 42), orgMatch[1]).run();
       if (own) ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], { title: `🏢 ${me.org_name || "Gérance"} · données mises à jour`, body: "Adresse, RCS, TVA ou banque complétés dans le portail", url: "/portail.html", tag: "org-" + orgMatch[1] }, false));

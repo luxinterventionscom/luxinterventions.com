@@ -10399,5 +10399,29 @@ export default [
 [
 "IBAN (compte d’ARES INVEST S.A.)",
 "IBAN (conta da ARES INVEST S.A.)"
+],
+[
+"🎨 Logo de l’agence",
+"🎨 Logótipo da agência"
+],
+[
+"(facultatif)",
+"(opcional)"
+],
+[
+"La gérance peut aussi l’ajouter elle-même dans son portail (Ma société).",
+"A gestora também o pode adicionar no seu portal (A minha empresa)."
+],
+[
+"📷 Choisir",
+"📷 Escolher"
+],
+[
+"Logo",
+"Logótipo"
+],
+[
+"Image illisible : choisissez un PNG ou un JPG",
+"Imagem ilegível: escolha um PNG ou JPG"
 ]
 ];

@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.105.2';
+const VERSION = '2.106.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1703,6 +1703,18 @@ const ptlResCodes = (r) => { let named = []; try { named = JSON.parse(r.codes ||
 const affTeam = (hints) => vault.list('intervenants').filter((i) => !i.archive).sort((a, b) => hints.includes(b.metier) - hints.includes(a.metier) || intervFull(a).localeCompare(intervFull(b)));
 const affRow = (i, hints, attrs) => { const ab = absOn(i, today()); return html`<button class="row" ${new Raw(attrs)}><span class="avatar met-ic">${avW(i)}</span><span class="grow"><span class="title" style="display:block">${hints.includes(i.metier) ? '⭐ ' : ''}${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || i.metier || '—'} · ${INT_GENRES[i.genre || 'interne']}${ab ? html` · <b class="red">${ABS_TYPES[ab.type]}</b>` : ''}</span></span><span class="badge">Affecter →</span></button>`; };
 const ptlOrg = (id) => ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => o.id === id);
+// logo de l'agence (ajouté par la gérance dans son portail, ou ici dans « Modifier ») : on la reconnaît d'un coup d'œil
+const orgLogo = (id, big) => { const o = ptlOrg(id || ''); return o && o.logo ? html`<img class="org-logo${big ? ' big' : ''}" src="${o.logo}" alt="">` : '🏢'; };
+async function logoShrink(file) {
+  const bmp = await createImageBitmap(file);
+  const k = Math.min(1, 256 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+  const g = c.getContext('2d');
+  g.drawImage(bmp, 0, 0, c.width, c.height);
+  let url = c.toDataURL('image/png');
+  if (url.length > 140000) { g.globalCompositeOperation = 'destination-over'; g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); url = c.toDataURL('image/jpeg', 0.85); }
+  return url;
+}
 const ptlInviteUrl = (tok) => `${location.origin}/portail.html#invite=${tok}`;
 // mot de passe → clé dérivée sur l'appareil (comme dans le portail) : le serveur ne voit jamais le mot de passe
 async function ptlDerive(password, saltB64, iter) {
@@ -3390,12 +3402,12 @@ dashboard() {
     const nRecue = d.tickets.filter((t) => t.status === 'recue').length;
     const chips = html`<div class="chips ger-chips" style="margin-bottom:10px">
       <button class="chip" data-action="ger-filter" data-id="" aria-pressed="${!of}">Toutes les gérances</button>
-      ${d.orgs.map((o) => html`<button class="chip" data-action="ger-filter" data-id="${o.id}" aria-pressed="${of === o.id}">🏢 ${o.name}${o.open ? html` <b class="ger-n">${o.open}</b>` : ''}</button>`)}</div>
+      ${d.orgs.map((o) => html`<button class="chip" data-action="ger-filter" data-id="${o.id}" aria-pressed="${of === o.id}">${orgLogo(o.id)} ${o.name}${o.open ? html` <b class="ger-n">${o.open}</b>` : ''}</button>`)}</div>
       ${oSel ? html`<div class="actions" style="margin:0 0 12px"><button class="btn sm" data-action="ger-open" data-id="${of}">${icon('users')} Accès</button><button class="btn sm" data-action="ger-open" data-id="${of}" data-tab="fact">🧾 Facturation</button><button class="btn sm ghost" data-action="ger-edit" data-id="${of}">${icon('edit')} Modifier</button></div>` : ''}`;
     const row = (t) => { const u = PTL_URG[t.urgence] || PTL_URG.planifie; return html`<button class="row ger-req ${t.status === 'recue' ? 'is-new' : ''} u-${t.urgence}" data-action="ger-ticket" data-id="${t.id}">
         <span class="avatar" style="background:var(--${u[2]}-soft, var(--surface-2))">${u[0]}</span>
         <span class="grow"><span class="title" style="display:block;white-space:normal">#${t.ref} · ${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted small">— ${t.lieu}</span>` : ''}</span>
-          <span class="meta" style="white-space:normal">🏢 ${t.org_name} · ${t.residence_name}${t.residence_address ? ' — ' + t.residence_address : ''}</span>
+          <span class="meta" style="white-space:normal">${orgLogo(t.org_id)} ${t.org_name} · ${t.residence_name}${t.residence_address ? ' — ' + t.residence_address : ''}</span>
           <span class="meta" style="display:block;white-space:normal">${t.technicien ? html`👷 ${t.technicien} · ` : ''}${t.planned_at ? html`📅 ${String(t.planned_at).replace('T', ' ')} · ` : ''}${ptlTime(t.created_at)}${t.photos ? html` · 📷 ${t.photos}` : ''}</span></span>
         <span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="badge ${t.status === 'recue' ? 'warn' : ''}">${PTL_ST[t.status] || t.status}</span>${!['terminee', 'annulee'].includes(t.status) && !vault.list('taches').some((x) => x.ptl && x.ptl.tid === t.id && x.intervenantId) ? html`<span class="tiny amber">⏸ à affecter</span>` : ''}
           ${t.msgs ? html`<span class="tiny ${ptlUnread(t) ? 'ger-unread' : 'muted'}">💬 ${t.msgs} message${t.msgs > 1 ? 's' : ''}${ptlUnread(t) ? html` · <b>${ptlUnread(t)} nouveau${ptlUnread(t) > 1 ? 'x' : ''}</b>` : ''}</span>` : ''}</span></button>`; };
@@ -3413,7 +3425,7 @@ dashboard() {
         const us = d.users.filter((u) => u.org_id === o.id);
         const wait = us.filter((u) => u.active && !u.has_password).length;
         return html`<div class="card">
-          <div class="card-title"><h3><img src="/portail/icons/ptl-32.png" alt="" width="22" height="22" style="vertical-align:-4px;margin-right:6px;border-radius:5px">${o.name}</h3><button class="btn icon ghost sm" data-action="ger-edit" data-id="${o.id}" aria-label="Modifier">${icon('edit')}</button></div>
+          <div class="card-title"><h3>${o.logo ? html`<img class="org-logo big" src="${o.logo}" alt="">` : html`<img src="/portail/icons/ptl-32.png" alt="" width="22" height="22" style="vertical-align:-4px;margin-right:6px;border-radius:5px">`}${o.name}</h3><button class="btn icon ghost sm" data-action="ger-edit" data-id="${o.id}" aria-label="Modifier">${icon('edit')}</button></div>
           <dl class="kv small">
             <dt>Accès</dt><dd>${us.filter((u) => u.active).length}${wait ? html` · <span class="amber">${wait} invitation(s) en attente</span>` : ''}</dd>
             <dt>Résidences</dt><dd>${o.residences || 0}</dd>
@@ -4028,7 +4040,7 @@ const SHEETS = {
     const evLbl = (e) => (e.kind === 'create' ? 'Demande créée' : e.kind === 'edit' ? '✏️ Demande modifiée' : e.kind === 'status' ? PTL_ST[e.status] || e.status : e.kind === 'invoice' ? '🧾 Facture' : 'Message');
     return {
       title: `#${t.ref} · ${r.name || ''}`,
-      body: html`<div class="chips" style="margin-bottom:10px"><span class="badge ${u[2] === 'red' ? 'danger' : u[2] === 'amber' ? 'warn' : ''}">${u[0]} ${u[1]}</span><span class="badge">${PTL_ST[t.status]}</span><span class="badge">🏢 ${r.org_name || ''}</span></div>
+      body: html`<div class="chips" style="margin-bottom:10px"><span class="badge ${u[2] === 'red' ? 'danger' : u[2] === 'amber' ? 'warn' : ''}">${u[0]} ${u[1]}</span><span class="badge">${PTL_ST[t.status]}</span><span class="badge">${orgLogo(t.org_id)} ${r.org_name || ''}</span></div>
         <div class="note" style="margin-bottom:12px;white-space:pre-wrap"><b>${t.categorie || 'Intervention'}</b>\n${t.description}</div>
         <dl class="kv small" style="margin-bottom:12px">
           ${kvRow('Résidence', `${r.name || ''}${r.address ? ' — ' + r.address : ''}`)}
@@ -4103,7 +4115,7 @@ const SHEETS = {
       body: html`<p class="small muted" style="margin:0 0 10px">${METIERS[i.metier] || ''} · touchez la demande à confier : il reste à choisir le jour et l’heure. ⭐ = correspond au métier.</p>
         ${tks.length ? html`<div class="list small">${tks.map((t) => {
           const u = PTL_URG[t.urgence] || PTL_URG.planifie, who = vault.list('taches').filter((x) => x.ptl && x.ptl.tid === t.id && x.intervenantId).map((x) => intervFull(vault.get('intervenants', x.intervenantId) || {}));
-          return html`<button class="row" data-action="ger-to-mt" data-id="${t.id}" data-iid="${id}"><span class="avatar">${fitT(t) ? '⭐' : u[0]}</span><span class="grow"><span class="title" style="display:block;white-space:normal">${u[0]} #${t.ref} · ${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted">— ${t.lieu}</span>` : ''}</span><span class="meta" style="white-space:normal">🏢 ${t.org_name} · ${t.residence_name}</span>${who.length ? html`<span class="meta" style="display:block">👷 déjà : ${who.join(', ')}</span>` : html`<span class="meta amber" style="display:block">⏸ pas encore affectée</span>`}</span><span class="badge">Affecter →</span></button>`;
+          return html`<button class="row" data-action="ger-to-mt" data-id="${t.id}" data-iid="${id}"><span class="avatar">${fitT(t) ? '⭐' : u[0]}</span><span class="grow"><span class="title" style="display:block;white-space:normal">${u[0]} #${t.ref} · ${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted">— ${t.lieu}</span>` : ''}</span><span class="meta" style="white-space:normal">${orgLogo(t.org_id)} ${t.org_name} · ${t.residence_name}</span>${who.length ? html`<span class="meta" style="display:block">👷 déjà : ${who.join(', ')}</span>` : html`<span class="meta amber" style="display:block">⏸ pas encore affectée</span>`}</span><span class="badge">Affecter →</span></button>`;
         })}</div>` : html`<p class="muted">Aucune demande d’intervention en cours.</p>`}`,
       foot,
     };
@@ -4118,6 +4130,9 @@ const SHEETS = {
         <input type="hidden" name="id" value="${id || ''}">
         ${(() => { const cl = factClient(id || '', o.name); return html`<div class="section-label full" style="margin:0">🏢 Société de gestion</div>
         <label class="field full">Nom de la société<input name="name" required value="${o.name || ''}" placeholder="ex. Gérance du Centre S.A."></label>
+        <div class="field full org-logo-pick"><input type="hidden" name="logo" value="${o.logo || ''}"><span class="org-logo-box">${o.logo ? html`<img src="${o.logo}" alt="Logo">` : html`<span class="muted tiny">Logo</span>`}</span>
+          <span class="grow"><b style="display:block">🎨 Logo de l’agence <span class="tiny muted">(facultatif)</span></b><span class="tiny muted">La gérance peut aussi l’ajouter elle-même dans son portail (Ma société).</span>
+          <span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><label class="btn sm">📷 Choisir<input type="file" accept="image/png,image/jpeg,image/webp" data-input="ger-logo" hidden></label><button class="btn sm ghost" type="button" data-action="ger-logo-del">Retirer</button></span></span></div>
         <label class="field full">Adresse<textarea name="adresse" style="min-height:56px" placeholder="rue, n°, code postal, ville">${cl.adresse}</textarea></label>
         <label class="field">RCS<input name="rcs" value="${cl.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
         <label class="field">N° TVA<input name="tvaNum" value="${cl.tvaNum}" placeholder="LU12345678" autocapitalize="characters"></label>
@@ -4211,7 +4226,7 @@ const SHEETS = {
             ${u.active ? html`<button class="btn sm" data-action="ger-inv" data-id="${u.id}" data-org="${id}">${u.has_password ? '🔑 Nouvel accès' : '🔗 Lien d’invitation'}</button>` : ''}
             <button class="btn sm ghost ${u.active ? 'danger' : ''}" data-action="ger-user-toggle" data-id="${u.id}" data-org="${id}" data-on="${u.active ? 1 : 0}">${u.active ? 'Désactiver' : 'Réactiver'}</button></div></div>`;
       body = html`<div class="card" style="margin-bottom:12px;padding:12px">
-          <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>🏢 ${o.name}</b><button class="btn sm ghost" data-action="ger-edit" data-id="${id}">${icon('edit')} Modifier</button></div>
+          <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>${o.logo ? html`<img class="org-logo xl" src="${o.logo}" alt="">` : '🏢 '}${o.name}</b><button class="btn sm ghost" data-action="ger-edit" data-id="${id}">${icon('edit')} Modifier</button></div>
           <dl class="kv small" style="margin:6px 0 0">${cl.adresse ? html`<dt>Adresse</dt><dd style="white-space:pre-line">${cl.adresse}</dd>` : ''}${cl.rcs ? html`<dt>RCS</dt><dd>${cl.rcs}</dd>` : ''}${cl.tvaNum ? html`<dt>N° TVA</dt><dd>${cl.tvaNum}</dd>` : ''}${cl.iban ? html`<dt>Banque</dt><dd>${[cl.banque, cl.bic ? 'BIC ' + cl.bic : '', ibanFmt(cl.iban)].filter(Boolean).join(' · ')}</dd>` : ''}${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}</dl>
           ${orgMissing(cl).length ? html`<p class="tiny amber" style="margin:6px 0 0">⚠️ À compléter : ${orgMissing(cl).join(', ')} → ✏️ Modifier <span class="muted">(la gérance peut aussi les compléter dans son portail)</span></p>` : ''}</div>
         ${us.length ? html`<div class="section-label">Responsable et collaborateurs (${us.length})</div>${us.map(uRow)}<p class="tiny muted" style="margin:0 0 12px">Les collaborateurs sont ajoutés par le responsable dans son portail (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.</p>` : ''}
@@ -5709,6 +5724,7 @@ const ACTIONS = {
     openOver('tache-form', null, null, { ...(w ? { intervenantId: w.id, type: w.metier === 'menage' ? 'nettoyage' : 'reparation' } : {}), metiers: metHints(`${d.ticket.categorie || ''} ${d.ticket.description || ''}`), ptlPhotos: (d.photos || []).map((p) => p.id).slice(0, 6), ptl: L, titre: `#${L.ref} ${d.ticket.categorie || 'Intervention'}`.slice(0, 80), note: d.ticket.description || '' });
   },
   'ger-edit': (d) => openSheet('ger-form', d.id),
+  'ger-logo-del': (d, el) => { const w = el.closest('.org-logo-pick'); w.querySelector('[name=logo]').value = ''; setHtml(w.querySelector('.org-logo-box'), html`<span class="muted tiny">Logo</span>`); sheetDirty = true; },
   'ger-open': (d) => { if (d.tab === 'fact') ui.ptl.orgT = null; openSheet('ger', d.id, d.tab); ptlLoad(); }, // les données du portail sont rafraîchies à chaque ouverture
   'ger-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; renderView(); },
   async 'ptl-logout'() {
@@ -6491,6 +6507,7 @@ const FORMS = {
     Object.assign(b, { address: gv('adresse'), rcs: gv('rcs').toUpperCase().replace(/\s+/g, ''), tva: gv('tvaNum').toUpperCase().replace(/\s+/g, ''), banque: gv('banque'), bic: gv('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(gv('iban')) });
     let nid = id;
     try { if (id) await ptlApi('orgs/' + id, { method: 'PATCH', body: b }); else nid = (await ptlApi('orgs', { method: 'POST', body: b })).id; } catch (e) { return toast(e.message, { bad: true }); }
+    { const lg = String(fd.get('logo') || ''); if (lg !== ((id && ptlOrg(id)) || {}).logo && (lg || id)) { try { await ptlApi('orgs/' + nid, { method: 'PATCH', body: { logo: lg } }); } catch (e) { toast('Logo : ' + e.message, { bad: true }); } } }
     const g = (k) => String(fd.get(k) || '').trim();
     const cur = (vault.get('reglages', 'factClients') || {}).list || {};
     const list = { ...cur, [nid]: { regime: TVA_REG[g('regime')] ? g('regime') : 'normal', taux: g('taux'), tvaNum: g('tvaNum').toUpperCase().replace(/\s+/g, ''), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(g('iban')), adresse: g('adresse'), pays: (g('pays') || 'LU').toUpperCase().slice(0, 2), mention: g('mention') } };
@@ -7119,6 +7136,10 @@ document.addEventListener('change', (e) => {
   if (k === 'year') { ui.year = +e.target.value; ui.cpLim = 10; renderView(); }
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
   if (k === 'soc-logo' && e.target.files[0]) setLogo(e.target.files[0]);
+  if (k === 'ger-logo' && e.target.files[0]) {
+    const w = e.target.closest('.org-logo-pick');
+    logoShrink(e.target.files[0]).then((u) => { w.querySelector('[name=logo]').value = u; setHtml(w.querySelector('.org-logo-box'), html`<img src="${u}" alt="Logo">`); sheetDirty = true; }).catch(() => toast('Image illisible : choisissez un PNG ou un JPG', { bad: true }));
+  }
   if (k === 'soc-sign' && e.target.files[0]) setLogo(e.target.files[0], 'signature');
   if (k === 'soc-sign-w') vault.mutate((tx) => tx.put('reglages', { id: 'main', signW: [6, 8, 10, 12].includes(+e.target.value) ? +e.target.value : 8 }), 'Taille de la signature', `${e.target.value} cm`).then(signRefresh);
   if (k === 'cp-per') { ui.cpPer = e.target.value; ui.cpLim = 10; renderView(); }
