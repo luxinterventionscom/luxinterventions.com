@@ -2776,8 +2776,12 @@ function bicCheck(v, cc) {
   if (cc && x.slice(4, 6) !== cc) return { ok: false, msg: `Le BIC est du pays ${x.slice(4, 6)}, l’IBAN du pays ${cc}` };
   return { ok: true, msg: '✓ BIC valide' };
 }
+// BIC des principales banques luxembourgeoises, d'après le code banque de l'IBAN (LUkk BBB…) : proposé si la case est vide
+const LU_BIC = { '001': ['BCEELULL', 'Spuerkeess'], '002': ['BILLLULL', 'BIL'], '003': ['BGLLLULL', 'BGL BNP Paribas'], '009': ['CCRALULL', 'Raiffeisen'], '014': ['CELLLULL', 'ING Luxembourg'], '111': ['CCPLLULL', 'POST Luxembourg'] };
 function bankMsgs(f) {
-  const ib = ibanCheck(f.iban.value), bc = bicCheck(f.bic.value, ib.ok ? ib.cc : '');
+  const ib0 = ibanCheck(f.iban.value), x = ibanClean(f.iban.value);
+  if (ib0.ok && ib0.cc === 'LU' && !f.bic.value.trim() && LU_BIC[x.slice(4, 7)]) { f.bic.value = LU_BIC[x.slice(4, 7)][0]; if (f.banque && !f.banque.value.trim()) f.banque.value = LU_BIC[x.slice(4, 7)][1]; }
+  const ib = ib0, bc = bicCheck(f.bic.value, ib.ok ? ib.cc : '');
   for (const [k, r, v] of [['iban', ib, f.iban.value], ['bic', bc, f.bic.value]]) { const m = f.querySelector(`.bank-msg[data-for=${k}]`); if (m) { m.textContent = v.trim() ? r.msg : ''; m.className = `bank-msg tiny ${r.ok ? 'green' : 'red'}`; } }
   return { ib, bc };
 }
@@ -4109,7 +4113,11 @@ const SHEETS = {
         <label class="field full">Nom de la société<input name="name" required value="${o.name || ''}" placeholder="ex. Gérance du Centre S.A."></label>
         <label class="field full">Adresse<textarea name="adresse" style="min-height:56px" placeholder="rue, n°, code postal, ville">${cl.adresse}</textarea></label>
         <label class="field">RCS<input name="rcs" value="${cl.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
-        <label class="field">N° TVA<input name="tvaNum" value="${cl.tvaNum}" placeholder="LU12345678" autocapitalize="characters"></label>`; })()}
+        <label class="field">N° TVA<input name="tvaNum" value="${cl.tvaNum}" placeholder="LU12345678" autocapitalize="characters"></label>
+        <div class="section-label full" style="margin:4px 0 0">🏦 Banque de la gérance</div>
+        <label class="field">Nom de la banque<input name="banque" required value="${cl.banque || ''}" placeholder="ex. POST Luxembourg, Spuerkeess…"></label>
+        <label class="field">Code BIC / SWIFT<input name="bic" required value="${cl.bic || ''}" placeholder="ex. CCPLLULL" autocomplete="off" autocapitalize="characters" maxlength="14" data-input="bank-chk"><span class="bank-msg tiny" data-for="bic"></span></label>
+        <label class="field full">IBAN<input name="iban" required value="${ibanFmt(cl.iban || '')}" placeholder="LU.. .... .... .... ...." autocomplete="off" autocapitalize="characters" maxlength="42" data-input="bank-chk"><span class="bank-msg tiny" data-for="iban"></span></label>`; })()}
         <label class="field">Email<input type="email" name="email" value="${o.email || ''}"></label>
         <label class="field">Téléphone<input type="tel" name="phone" value="${o.phone || ''}"></label>
         ${id ? '' : html`<div class="section-label full" style="margin:6px 0 0">⭐ Responsable de la gérance</div>
@@ -4197,8 +4205,8 @@ const SHEETS = {
             <button class="btn sm ghost ${u.active ? 'danger' : ''}" data-action="ger-user-toggle" data-id="${u.id}" data-org="${id}" data-on="${u.active ? 1 : 0}">${u.active ? 'Désactiver' : 'Réactiver'}</button></div></div>`;
       body = html`<div class="card" style="margin-bottom:12px;padding:12px">
           <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>🏢 ${o.name}</b><button class="btn sm ghost" data-action="ger-edit" data-id="${id}">${icon('edit')} Modifier</button></div>
-          <dl class="kv small" style="margin:6px 0 0">${cl.adresse ? html`<dt>Adresse</dt><dd style="white-space:pre-line">${cl.adresse}</dd>` : ''}${cl.rcs ? html`<dt>RCS</dt><dd>${cl.rcs}</dd>` : ''}${cl.tvaNum ? html`<dt>N° TVA</dt><dd>${cl.tvaNum}</dd>` : ''}${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}</dl>
-          ${!cl.adresse || !cl.rcs || !cl.tvaNum ? html`<p class="tiny amber" style="margin:6px 0 0">⚠️ À compléter : ${[!cl.adresse && 'adresse', !cl.rcs && 'RCS (B…)', !cl.tvaNum && 'n° TVA (LU…)'].filter(Boolean).join(', ')} → ✏️ Modifier</p>` : ''}</div>
+          <dl class="kv small" style="margin:6px 0 0">${cl.adresse ? html`<dt>Adresse</dt><dd style="white-space:pre-line">${cl.adresse}</dd>` : ''}${cl.rcs ? html`<dt>RCS</dt><dd>${cl.rcs}</dd>` : ''}${cl.tvaNum ? html`<dt>N° TVA</dt><dd>${cl.tvaNum}</dd>` : ''}${cl.iban ? html`<dt>Banque</dt><dd>${[cl.banque, cl.bic ? 'BIC ' + cl.bic : '', ibanFmt(cl.iban)].filter(Boolean).join(' · ')}</dd>` : ''}${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}</dl>
+          ${!cl.adresse || !cl.rcs || !cl.tvaNum || !cl.iban || !cl.bic || !cl.banque ? html`<p class="tiny amber" style="margin:6px 0 0">⚠️ À compléter : ${[!cl.adresse && 'adresse', !cl.rcs && 'RCS (B…)', !cl.tvaNum && 'n° TVA (LU…)', !cl.banque && 'banque', !cl.bic && 'BIC', !cl.iban && 'IBAN'].filter(Boolean).join(', ')} → ✏️ Modifier</p>` : ''}</div>
         ${us.length ? html`<div class="section-label">Responsable et collaborateurs (${us.length})</div>${us.map(uRow)}<p class="tiny muted" style="margin:0 0 12px">Les collaborateurs sont ajoutés par le responsable dans son portail (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.</p>` : ''}
         ${hasResp ? '' : html`<div class="section-label">⭐ Responsable de la gérance</div>
         <p class="small muted" style="margin:0 0 8px">Il reçoit un lien personnel, choisit son mot de passe, puis ajoute lui-même ses collaborateurs.</p>
@@ -4306,7 +4314,10 @@ const SHEETS = {
         ${field('Adresse', 'adresse', c.adresse, { required: true })}${field('Code postal et ville', 'ville', c.ville, { required: true })}
         ${field('RCS', 'rcs', c.rcs, { required: true })}${field('N° TVA', 'tva', c.tva, { required: true })}
         ${field('Téléphone', 'tel', c.tel)}${field('Email', 'email', c.email, { type: 'email' })}
-        ${field('IBAN (compte d’ARES INVEST S.A.)', 'iban', c.iban, { required: true, full: true, placeholder: 'LU.. .... .... .... ....' })}${field('BIC', 'bic', c.bic)}${field('Banque', 'banque', c.banque)}
+        <label class="field full">IBAN (compte d’ARES INVEST S.A.)<input name="iban" value="${c.iban}" required placeholder="LU.. .... .... .... ...." autocomplete="off" autocapitalize="characters" maxlength="42" data-input="bank-chk"><span class="bank-msg tiny" data-for="iban"></span></label>
+        <label class="field">Code BIC / SWIFT<input name="bic" value="${c.bic}" required placeholder="ex. CCPLLULL (POST Luxembourg)" autocomplete="off" autocapitalize="characters" maxlength="14" data-input="bank-chk"><span class="bank-msg tiny" data-for="bic"></span></label>
+        ${field('Banque', 'banque', c.banque, { placeholder: 'ex. POST Luxembourg' })}
+        <p class="tiny muted full" style="margin:-6px 0 0">Le BIC (8 ou 11 caractères) est proposé tout seul pour un IBAN luxembourgeois connu (POST : CCPLLULL, Spuerkeess : BCEELULL…). Il est imprimé sur la facture et dans le QR code de paiement.</p>
         <label class="field">TVA normale (%)<input name="taux" type="number" step="0.01" min="0" max="100" inputmode="decimal" value="${c.taux}" list="tvaRates" required></label>
         <datalist id="tvaRates">${[17, 16, 14, 8, 3, 0, 20, 21, 19, 22, 10, 5.5].map((r) => html`<option value="${r}"></option>`)}</datalist>
         <p class="tiny muted full" style="margin:-6px 0 0">Taux appliqué par défaut (17 % = taux normal au Luxembourg ; tout autre taux possible). Chaque client peut avoir son propre régime : Gérances → la gérance → 🧾 Facturation.</p>
@@ -6468,11 +6479,12 @@ const FORMS = {
   async ger(fd) {
     const id = fd.get('id'), b = { name: String(fd.get('name') || '').trim(), email: String(fd.get('email') || '').trim(), phone: String(fd.get('phone') || '').trim() };
     if (!b.name) return;
+    { const ib = ibanCheck(fd.get('iban')), bc = bicCheck(fd.get('bic'), ib.ok ? ib.cc : ''); if (!ib.ok) return toast('IBAN de la gérance : ' + ib.msg, { bad: true }); if (!bc.ok) return toast('BIC de la gérance : ' + bc.msg, { bad: true }); }
     let nid = id;
     try { if (id) await ptlApi('orgs/' + id, { method: 'PATCH', body: b }); else nid = (await ptlApi('orgs', { method: 'POST', body: b })).id; } catch (e) { return toast(e.message, { bad: true }); }
     const g = (k) => String(fd.get(k) || '').trim();
     const cur = (vault.get('reglages', 'factClients') || {}).list || {};
-    const list = { ...cur, [nid]: { regime: TVA_REG[g('regime')] ? g('regime') : 'normal', taux: g('taux'), tvaNum: g('tvaNum').toUpperCase().replace(/\s+/g, ''), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), adresse: g('adresse'), pays: (g('pays') || 'LU').toUpperCase().slice(0, 2), mention: g('mention') } };
+    const list = { ...cur, [nid]: { regime: TVA_REG[g('regime')] ? g('regime') : 'normal', taux: g('taux'), tvaNum: g('tvaNum').toUpperCase().replace(/\s+/g, ''), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(g('iban')), adresse: g('adresse'), pays: (g('pays') || 'LU').toUpperCase().slice(0, 2), mention: g('mention') } };
     await vault.mutate((tx) => { tx.put('reglages', { id: 'portail', lastOrg: b.name }); tx.put('reglages', { id: 'factClients', list }); }, id ? 'Gérance modifiée' : 'Gérance créée', b.name);
     toast(id ? 'Gérance enregistrée' : 'Gérance créée');
     // nouvelle gérance : on crée aussi l'accès du responsable et on montre son lien d'invitation
@@ -6508,6 +6520,7 @@ const FORMS = {
   },
   async 'fact-set'(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
+    { const ib = ibanCheck(g('iban')), bc = bicCheck(g('bic'), ib.ok ? ib.cc : ''); if (!ib.ok) return toast('IBAN : ' + ib.msg, { bad: true }); if (!bc.ok) return toast('BIC : ' + bc.msg, { bad: true }); }
     const iban = g('iban').toUpperCase().replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
     await vault.mutate((tx) => tx.put('reglages', { id: 'facturation', nom: g('nom'), marque: g('marque'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), tel: g('tel'), email: g('email'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), taux: num(fd.get('taux')), delai: Math.max(0, Math.round(num(fd.get('delai')))) || 30, marge: num(fd.get('marge')) }), 'Facturation des interventions', g('nom'));
     toast('Facturation enregistrée'); goBack();
