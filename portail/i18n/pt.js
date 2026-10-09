@@ -2577,6 +2577,10 @@ export default [
 "⏳ a pagar"
 ],
 [
+"▶ Voir comment (animation)",
+"▶ Ver como (animação)"
+],
+[
 "☑️ Contenu du rapport — cochez ce que vous voulez",
 "☑️ Conteúdo do relatório — marque o que quer"
 ],

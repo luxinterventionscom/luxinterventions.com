@@ -612,14 +612,14 @@ function guideCard(stats) {
         [orgs.length > 0, 'Créez les gérances partenaires', 'go', 'gerances'],
         [orgs.some((o) => o.users > 0), 'Invitez leurs responsables (lien personnel par email ou WhatsApp)', 'go', 'gerances'],
         [push, 'Activez les notifications pour être alerté des urgences', 'push-on', ''],
-        [standalone, 'Installez l’app sur votre téléphone', 'go', 'plus'],
+        [standalone, 'Installez l’app sur votre téléphone', 'install-anim', ''],
       ]
     : [
         ...(isManager() && state.myOrg ? [[!orgMissing(state.myOrg).length, orgMissing(state.myOrg).length ? html`<span class="red">⚠️ <b>Données de votre société à compléter</b> :</span> <span>${orgMissing(state.myOrg).join(', ')}</span>` : 'Données de votre société (adresse, RCS, TVA, banque)', 'org-edit', '']] : []),
         [(stats.residences || 0) > 0, 'Ajoutez vos résidences (une seule fois : accès, clés, contact)', 'new-residence', ''],
         [(stats.createdMonth || 0) + (stats.open || 0) > 0, 'Envoyez votre première demande d’intervention', 'new-ticket', ''],
         [push, 'Activez les notifications pour suivre vos demandes', 'push-on', ''],
-        [standalone, 'Installez l’app sur votre téléphone', 'go', 'plus'],
+        [standalone, 'Installez l’app sur votre téléphone', 'install-anim', ''],
       ];
   const done = steps.filter((x) => x[0]).length;
   if (done === steps.length && !state.demo) return '';
@@ -912,7 +912,8 @@ const VIEWS = {
       </div>
       ${!standalone ? html`<div class="section-label">Application</div><div class="list settings"><div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Installer sur ce téléphone</span>
         <span class="meta" style="white-space:normal">${isIOS ? 'Safari : Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône LuxInterventions sur l’écran d’accueil.'}</span></span>
-        ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}</div></div>` : ''}
+        ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}</div>
+        <div class="row"><span class="grow"></span><button class="btn sm" data-action="install-anim">▶ Voir comment (animation)</button></div></div>` : ''}
       <div class="section-label">Rapports</div>
       <form class="card" data-form="report" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
         <label class="field" style="flex:1;min-width:130px">Période<select name="per"><option value="mois">Un mois</option><option value="annee">Une année</option><option value="tout">Tout depuis le début</option></select></label>
@@ -1769,6 +1770,7 @@ const ACTIONS = {
     toast(active ? 'Accès réactivé' : 'Accès désactivé');
   },
   'change-password': () => openSheet('password-form'),
+  'install-anim': () => import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'Portail Gérances', icon: '/portail/icons/ptl-192.png', lang: LANG })),
   'org-edit': async () => { if (!state.myOrg) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; } catch { /* hors ligne */ } } openSheet('myorg'); },
   copy: async (d) => { try { await navigator.clipboard.writeText(d.text); toast('Copié'); } catch { toast('Copie impossible', { bad: true }); } },
   // mot de passe oublié : LuxInterventions (ou le responsable) reçoit la demande et envoie un nouveau lien

@@ -348,6 +348,7 @@ const isStandalone = () => matchMedia('(display-mode: standalone)').matches || n
 const UA = navigator.userAgent;
 const IS_IOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const IN_APP = /FBAN|FBAV|FB_IAB|Instagram|Line\/|Snapchat|musical_ly|TikTok|LinkedInApp|GSA\//.test(UA);
+const IA_BTN = { fr: '▶ Voir comment (animation)', it: '▶ Guarda come (animazione)', de: '▶ So geht’s (Animation)', pt: '▶ Ver como (animação)', en: '▶ See how (animation)', es: '▶ Ver cómo (animación)' };
 function installCard(t) {
   if (isStandalone()) return '';
   return `<button class="install-big" data-guide="1"><span class="ph">📱</span><span class="tx"><b>${esc(t.install)}</b><small>${esc(t.g.sub)}</small></span><span class="go">›</span></button>`;
@@ -387,6 +388,7 @@ function renderGuide() {
   el.innerHTML = `<div class="g-head"><b>📱 ${esc(t.install)}</b><button class="btn sm sec" data-gclose="1">✕ ${esc(t.close)}</button></div>
     <div class="langs g-langs">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => `<button data-glang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>
     <div class="g-tabs"><button data-gtab="ios" aria-pressed="${guideTab === 'ios'}">🍎 iPhone</button><button data-gtab="and" aria-pressed="${guideTab === 'and'}">🤖 Android</button></div>
+    <p style="text-align:center;margin:0 0 10px"><button class="btn sm" data-ianim="1">${esc(IA_BTN[lang] || IA_BTN.fr)}</button></p>
     ${IN_APP ? `<div class="card avis"><p style="margin:0">${esc(t.ins.app)}</p><button class="btn sec block" style="margin-top:10px" data-copylink="1">${esc(t.ins.copy)}</button></div>` : ''}
     ${guideTab === 'ios' ? `<p class="meta" style="margin:0 0 10px">${esc(g.safari)}</p>` : ''}
     <ol class="g-steps">${steps.map(([txt, mk], i) => `<li><div class="g-txt"><span class="n">${i === steps.length - 1 ? '✓' : i + 1}</span>${esc(txt)}</div>${mk}</li>`).join('')}</ol>
@@ -1051,6 +1053,7 @@ async function compress(file) {
 pubStatInit(API, 'loc', () => lang);
 app.addEventListener('click', pubTap, true);
 app.addEventListener('click', async (e) => {
+  if (e.target.closest('[data-ianim]')) { import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'NOBIS', icon: '/ares/icons/ares-192.png', lang })); return; }
   if (e.target.closest('[data-chat-refresh]')) return chatFetch();
   if (e.target.closest('[data-radio-play]')) return radioToggle();
   if (e.target.closest('[data-radio-save]')) {
