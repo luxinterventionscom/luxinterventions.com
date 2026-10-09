@@ -9,7 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.15.0';
+const VERSION = '1.16.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -526,6 +526,7 @@ async function loadRoute(route) {
     state.cache.home = { stats, tickets: tickets.tickets, pubs: pubs.items || [] };
     if (pubs.offers === false) state.offersOff = true; else if (pubs.items) state.offersOff = false; // offres d'abonnement masquées par LuxInterventions
     if (!isAdmin()) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; orgLogoRefresh(); } catch { /* hors ligne */ } }
+    if (!isAdmin()) { try { state.cache.home.devis = (await api('devis')).devis || []; } catch { state.cache.home.devis = []; } }
   } else if (route === 'demandes') {
     const [tickets, residences] = await Promise.all([
       api(`tickets?scope=${f.scope}${org}${f.residence ? '&residence=' + f.residence : ''}`),
@@ -731,6 +732,7 @@ const VIEWS = {
     return html`${pushCard}
       ${guideCard(stats)}
       ${pageHead(hello, state.me.org_name || '')}
+      ${devisBanner()}
       ${offerBanner()}
       ${arrive}
       ${pubSlot('haut')}
@@ -1089,6 +1091,28 @@ const OFFER_PLANS = [
 ];
 const OFFER_KEY = 'ptlOfferSeen';
 // bannière « 💼 Gérez aussi vos propres locataires — Voir les offres » (page d'invitation, accueil, Plus) ; « Voir les offres » clignote en rouge
+// Devis de LuxInterventions : « DEVIS EN COURS » (violet) → ✅ Accepter · ❌ Refuser · 🔄 Demander une révision
+function devisBall(v) {
+  if (!v.valid_until) return ['green', ''];
+  const left = Math.round((Date.parse(v.valid_until + 'T12:00:00') - Date.parse(new Date().toISOString().slice(0, 10) + 'T12:00:00')) / 864e5);
+  const d = fmtDate(Date.parse(v.valid_until + 'T12:00:00'));
+  return left < 0 ? ['red', html`<span>Expiré le</span> ${d}`] : left <= 3 ? ['yellow', left === 0 ? html`<span>Expire ce soir à minuit</span>` : html`<span>Expire dans ${left} jour(s)</span>`] : ['green', html`<span>Valable jusqu’au</span> ${d}`];
+}
+function devisBanner() {
+  const all = (state.cache.home && state.cache.home.devis) || [], open = all.filter((v) => v.status === 'envoye' || v.status === 'revision');
+  const done = all.filter((v) => ['accepte', 'refuse'].includes(v.status) && v.decided_at > Date.now() - 14 * 864e5);
+  if (!open.length && !done.length) return '';
+  const st = { accepte: html`<span>✅ Devis accepté</span>`, refuse: html`<span>❌ Devis refusé</span>` };
+  return html`<div class="dev-banner" style="margin-bottom:14px">${open.length ? html`<div class="section-label" style="margin:0 0 8px;color:#7c3aed">📝 Devis en cours (${open.length})</div>` : ''}
+    ${open.map((v) => { const [k, lbl] = devisBall(v); return html`<div class="dev-item">
+      <div style="display:flex;gap:10px;align-items:flex-start"><span class="dball dball-${k}"></span><span class="grow"><b style="display:block"><span>Devis</span> ${v.no}</b>${v.title ? html`<span class="small" style="display:block">${v.title}</span>` : ''}
+        <span class="small"><b>${eurP(v.ttc)} TTC</b>${v.pct ? html` · <span>acompte</span> ${v.pct} % : ${eurP(v.acompte)}` : ''}</span><span class="tiny muted" style="display:block">${lbl}</span>
+        ${v.status === 'revision' ? html`<span class="tiny" style="display:block;color:#7c3aed">🔄 <span>Révision demandée — LuxInterventions prépare une nouvelle version.</span></span>` : ''}</span></div>
+      <div class="dev-btns" style="margin-top:10px"><button class="btn sm" data-action="dev-dl" data-id="${v.id}" data-no="${v.no}">⬇️ <span>Voir le devis (PDF)</span></button>
+        ${v.status === 'envoye' && isManager() ? html`<button class="btn sm primary" data-action="dev-dec" data-id="${v.id}" data-st="accepte" data-no="${v.no}">✅ Accepter</button><button class="btn sm" data-action="dev-rev" data-id="${v.id}" data-no="${v.no}">🔄 Demander une révision</button><button class="btn sm ghost danger" data-action="dev-dec" data-id="${v.id}" data-st="refuse" data-no="${v.no}">❌ Refuser</button>`
+          : v.status === 'envoye' ? html`<span class="tiny muted">Le responsable de votre gérance accepte ou refuse le devis.</span>` : ''}</div></div>`; })}
+    ${done.map((v) => html`<p class="small" style="margin:6px 0 0">${st[v.status]} — ${v.no}${v.decided_by_name ? ' · ' + v.decided_by_name : ''} · ${fmtDateTime(v.decided_at)}</p>`)}</div>`;
+}
 const offerBanner = () => state.offersOff ? '' : html`<button type="button" class="offer-banner" data-action="offer-open"><span class="ob-ic">💼</span><span class="grow"><b>Gérez aussi vos propres locataires</b><span class="tiny muted" style="display:block">Gratuit pour 1 immeuble · Pro dès 29 € / mois · données chiffrées</span></span><span class="ob-go">Voir les offres ›</span></button>`;
 const offerSeen = () => { try { return localStorage.getItem(OFFER_KEY) === '1'; } catch { return true; } };
 const offerMark = () => { try { localStorage.setItem(OFFER_KEY, '1'); } catch { /* stockage indisponible */ } };
@@ -1137,6 +1161,19 @@ const orgLogoPick = () => {
 const orgMissing = (o) => (o ? [!o.address && 'adresse', !o.rcs && 'RCS (B…)', !o.tva && 'n° TVA (LU…)', !o.banque && 'banque', !o.bic && 'BIC', !o.iban && 'IBAN'].filter(Boolean) : []);
 
 const SHEETS = {
+  'devis-rev'({ id, data }) {
+    const no = (data && data.no) || '';
+    return {
+      title: '🔄 Demander une révision',
+      narrow: true,
+      body: html`<form id="f" data-form="devis-rev" class="fields"><input type="hidden" name="id" value="${id}">
+        <p class="tiny muted full" style="margin:0"><span>Devis</span> ${no}</p>
+        <p class="small full" style="margin:0">Dites à LuxInterventions ce qu’il faut revoir (travaux en plus ou en moins, délai, prix…). Vous recevrez une nouvelle version.</p>
+        <label class="field full">Votre message<textarea name="note" required style="min-height:110px" placeholder="ex. Pouvez-vous enlever la peinture du couloir et revoir le prix ?"></textarea></label>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Envoyer</button>`,
+    };
+  },
   myorg() {
     const o = state.myOrg || {};
     return {
@@ -1709,6 +1746,19 @@ const ACTIONS = {
   },
   scope: (d) => { state.filters.scope = d.id; go('demandes', true); },
   'urg-filter': (d) => { state.filters.urg = d.id; renderView(); },
+  async 'dev-dl'(d) {
+    const r = await api(`devis/${d.id}/pdf`, { raw: true });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(await r.blob()); a.download = `Devis-${d.no}.pdf`;
+    document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  },
+  'dev-rev': (d) => openSheet('devis-rev', d.id, { no: d.no }),
+  async 'dev-dec'(d) {
+    const acc = d.st === 'accepte';
+    if (!(await confirmBox(acc ? 'Accepter ce devis ?' : 'Refuser ce devis ?', { ok: acc ? '✅ Accepter' : '❌ Refuser', danger: !acc, detail: acc ? 'Bon pour accord : votre acceptation est ferme et définitive. LuxInterventions organise les travaux.' : 'LuxInterventions est prévenu.' }))) return;
+    await api(`devis/${d.id}/decision`, { method: 'POST', body: { status: d.st } });
+    toast(acc ? '✅ Devis accepté — merci !' : 'Devis refusé'); go('home', true);
+  },
   async 'inv-dl'(d) {
     const r = await api(`tickets/${d.id}/invoice`, { raw: true });
     const a = document.createElement('a');
@@ -1823,6 +1873,12 @@ const ACTIONS = {
 // ───────────────────────── Formulaires ─────────────────────────
 const fd2obj = (fd) => Object.fromEntries([...fd.entries()].filter(([, v]) => typeof v === 'string'));
 const FORMS = {
+  async 'devis-rev'(fd) {
+    const note = String(fd.get('note') || '').trim();
+    if (!note) return;
+    await api(`devis/${fd.get('id')}/decision`, { method: 'POST', body: { status: 'revision', note } });
+    closeSheet(); toast('🔄 Demande de révision envoyée à LuxInterventions'); go('home', true);
+  },
   async myorg(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
     const b = { address: g('address'), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), tva: g('tva').toUpperCase().replace(/\s+/g, ''), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(g('iban')), email: g('email'), phone: g('phone') };

@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.106.0';
+const VERSION = '2.107.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -350,7 +350,7 @@ function intervMonth(i, y, m) {
   return out;
 }
 const fmtH = (h) => { const r = Math.round(h * 60); return `${Math.floor(r / 60)} h${r % 60 ? String(r % 60).padStart(2, '0') : ''}`; };
-const placeName = (t) => (t.ptl ? `🏢 ${t.ptl.res}${t.ptl.adr ? ' — ' + t.ptl.adr : ''}` : [t.logId ? logName(t.logId) : 'Parties communes', immName(t.immId)].join(' · '));
+const placeName = (t) => (t.dev ? `📝 ${[t.dev.client, t.dev.adr].filter(Boolean).join(' — ')}` : t.ptl ? `🏢 ${t.ptl.res}${t.ptl.adr ? ' — ' + t.ptl.adr : ''}` : [t.logId ? logName(t.logId) : 'Parties communes', immName(t.immId)].join(' · '));
 
 // Agenda : tout ce qui se passe entre from et to (interventions + collectes), trié par jour
 function agenda(from, to, immId) {
@@ -412,8 +412,8 @@ function equipeData(i) {
     const l = t.locId ? vault.get('locataires', t.locId) : null;
     return {
       titre: t.titre, type: t.type, recur: t.recur ? RECURS[t.recur] : '', note: t.note || '', heure: t.heure || '', heureFin: t.heureFin || '', urgent: !!t.urgent,
-      adresse: t.ptl ? [t.ptl.res, t.ptl.adr].filter(Boolean).join(' — ') : immName(t.immId), lieu: t.ptl ? [t.ptl.lieu, t.ptl.interior].filter(Boolean).join(' · ') : t.logId ? logName(t.logId) : '', statut: t.statut,
-      contact: l ? { nom: l.prenom || fullName(l), tel: l.tel || '' } : t.ptl && (t.ptl.contact || t.ptl.tel) ? { nom: t.ptl.contact || '', tel: t.ptl.tel || '' } : null,
+      adresse: t.dev ? [t.dev.client, t.dev.adr].filter(Boolean).join(' — ') : t.ptl ? [t.ptl.res, t.ptl.adr].filter(Boolean).join(' — ') : immName(t.immId), lieu: t.dev ? '' : t.ptl ? [t.ptl.lieu, t.ptl.interior].filter(Boolean).join(' · ') : t.logId ? logName(t.logId) : '', statut: t.statut,
+      contact: l ? { nom: l.prenom || fullName(l), tel: l.tel || '' } : t.dev && (t.dev.contact || t.dev.tel) ? { nom: t.dev.contact || '', tel: t.dev.tel || '' } : t.ptl && (t.ptl.contact || t.ptl.tel) ? { nom: t.ptl.contact || '', tel: t.ptl.tel || '' } : null,
       // demande d'une gérance : codes, disponibilités, heure, gérance
       ...(t.ptl ? { ger: { org: t.ptl.org, ref: t.ptl.ref, acces: t.ptl.acces || t.ptl.codes || '', dispo: t.ptl.dispo || '', heure: t.heure || '' } } : {}),
       journal: (t.journal || []).slice(-20).map((x) => ({ d: x.d, st: x.st, note: x.note || '', at: x.at, h: x.h || '' })),
@@ -1638,6 +1638,7 @@ async function ptlWatch() {
   const typing = sheetEl.contains(document.activeElement) && document.activeElement.matches('input, textarea, select');
   if (ui.route === 'gerances' && !typing) return ptlLoad();
   try { const t = await ptlApi('tickets?scope=active'); ptlBadge(t.tickets || []); } catch { /* hors ligne : on réessaiera */ }
+  devSync();
 }
 // Demandes d'intervention des gérances (Portail gérance) — affichage dans l'app de gestion
 const PTL_URG = { urgent: ['🔴', 'Urgent', 'red'], '24h': ['🟠', 'Sous 24 h', 'amber'], planifie: ['🟢', 'Planifiable', 'green'] };
@@ -3119,8 +3120,9 @@ const VIEWS = {
       ${imms.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${f === im.id}">${im.adresse}</button>`)}</div>` : '';
     const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions" style="margin:0"><button class="btn" data-action="go" data-to="champeq">🏆 Classement</button><button class="btn primary" data-action="new-interv">${icon('plus')} Nouvel ouvrier</button></div>`
       : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
+      : tab === 'devis' ? html`<button class="btn primary" data-action="dev-new">${icon('plus')} Nouveau devis</button>`
       : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
-    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', html`<span>Réclamations</span> (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['intervenants', 'Équipe']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
+    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', html`<span>Réclamations</span> (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['intervenants', 'Équipe'], ['devis', html`📝 Devis${devOpen().length ? html` <b class="dev-n">${devOpen().length}</b>` : ''}`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
     let body;
     if (tab === 'planning') {
       const from = today(), to = addDays(from, 13);
@@ -3173,6 +3175,8 @@ const VIEWS = {
           </div>`;
         })}`;
       if (!shown.length) body = empty('building', 'Ajoutez d’abord un immeuble.');
+    } else if (tab === 'devis') {
+      body = devTab();
     } else {
       const ints = vault.list('intervenants').sort((a, b) => (a.cat === 'specialise') - (b.cat === 'specialise') || Object.keys(METIERS).indexOf(a.metier) - Object.keys(METIERS).indexOf(b.metier) || intervFull(a).localeCompare(intervFull(b)));
       const nNew = sum(ints, (i) => i.feedNew || 0);
@@ -3186,7 +3190,7 @@ const VIEWS = {
         </div>`;
       })}</div>` : empty('users', 'Aucun intervenant. Ajoutez la femme de ménage et les artisans (menuisier, électricien, plombier, chauffagiste, maçon…).', html`<button class="btn primary" data-action="new-interv">${icon('plus')} Ajouter un intervenant</button>`);
     }
-    return html`${pageHead('Maintenance', 'Nettoyage, réparations et collecte des déchets', add)}${tabs}${tab !== 'intervenants' ? chips : ''}${body}`;
+    return html`${pageHead('Maintenance', 'Nettoyage, réparations et collecte des déchets', add)}${tabs}${tab !== 'intervenants' && tab !== 'devis' ? chips : ''}${body}`;
   },
 
 dashboard() {
@@ -3253,6 +3257,7 @@ dashboard() {
     return html`
       ${pushNudge()}
       ${nudge}
+      ${devBanner()}
       ${refBox}
       ${assurBox}
       ${finBox}
@@ -4336,6 +4341,7 @@ const SHEETS = {
         ${field('Adresse', 'adresse', c.adresse, { required: true })}${field('Code postal et ville', 'ville', c.ville, { required: true })}
         ${field('RCS', 'rcs', c.rcs, { required: true })}${field('N° TVA', 'tva', c.tva, { required: true })}
         ${field('Téléphone', 'tel', c.tel)}${field('Email', 'email', c.email, { type: 'email' })}
+        ${field('N° d’autorisation d’établissement', 'autorisation', c.autorisation || '', { placeholder: 'imprimé sur les devis et factures' })}
         <label class="field full">IBAN (compte d’ARES INVEST S.A.)<input name="iban" value="${c.iban}" required placeholder="LU.. .... .... .... ...." autocomplete="off" autocapitalize="characters" maxlength="42" data-input="bank-chk"><span class="bank-msg tiny" data-for="iban"></span></label>
         <label class="field">Code BIC / SWIFT<input name="bic" value="${c.bic}" required placeholder="ex. CCPLLULL (POST Luxembourg)" autocomplete="off" autocapitalize="characters" maxlength="14" data-input="bank-chk"><span class="bank-msg tiny" data-for="bic"></span></label>
         ${field('Banque', 'banque', c.banque, { placeholder: 'ex. POST Luxembourg' })}
@@ -4346,7 +4352,7 @@ const SHEETS = {
         ${field('Paiement à (jours)', 'delai', c.delai, { type: 'number', attrs: 'min="0" max="120" inputmode="numeric"' })}
         ${sfx('Ma marge par défaut sur les ouvriers', 'marge', c.marge, '%', 'step="1" min="0" max="500" inputmode="decimal"')}
         <p class="tiny muted full" style="margin:-6px 0 0">Ex. 25 % : ouvrier payé 40 €/h → facturé 50 €/h à la gérance (si la fiche de l’ouvrier n’a pas de tarif « facturé à la gérance »). Modifiable dans chaque facture, avec remise ou majoration.</p>
-        <p class="tiny muted full" style="margin:0">Taux de TVA à confirmer avec votre comptable. Prochain numéro : ${ymd(today())}-INT${String((+c.seq || 0) + 1).padStart(4, '0')}</p>
+        <p class="tiny muted full" style="margin:0">Taux de TVA à confirmer avec votre comptable. Prochain numéro : ${ymd(today())}-INT${String((+c.seq || 0) + 1).padStart(4, '0')} · prochain devis n° …-${String((+c.devSeq || 0) + 1).padStart(4, '0')}</p>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -4551,7 +4557,7 @@ const SHEETS = {
     // depuis la fiche d'une personne : elle est déjà choisie, il reste quoi, où, quel jour et à quelle heure
     if (id && !t) return null;
     const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === t.immId).sort(byAddr);
-    if (!imms.length && !t.ptl) return { title: 'Nouvelle intervention', body: empty('building', "Ajoutez d'abord un immeuble.") };
+    if (!imms.length && !t.ptl && !t.dev) return { title: 'Nouvelle intervention', body: empty('building', "Ajoutez d'abord un immeuble.") };
     const hint = t.metiers || [], fits = (i) => hint.includes(i.metier);
     const ints = vault.list('intervenants').filter((i) => !i.archive || i.id === t.intervenantId).sort((a, b) => fits(b) - fits(a) || intervFull(a).localeCompare(intervFull(b)));
     return {
@@ -4560,7 +4566,9 @@ const SHEETS = {
         <input type="hidden" name="id" value="${id || ''}">
         <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${(t.type === 'entretien' ? 'reparation' : t.type) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}
-        ${t.ptl ? html`<div class="full ptl-box">${ptlPlace(t.ptl)}
+        ${t.dev ? html`<div class="full ptl-box">📝 <b>Devis ${t.dev.no}</b> — ${t.dev.client}${t.dev.adr ? html`<br>📍 ${t.dev.adr}` : ''}${t.dev.contact ? html`<br>👤 ${t.dev.contact}${t.dev.tel ? ' · ' + t.dev.tel : ''}` : ''}
+            <input type="hidden" name="dev" value="${JSON.stringify(t.dev)}"><input type="hidden" name="immId" value=""></div>`
+          : t.ptl ? html`<div class="full ptl-box">${ptlPlace(t.ptl)}
             <input type="hidden" name="ptl" value="${JSON.stringify(t.ptl)}"><input type="hidden" name="immId" value=""></div>`
           : html`<label class="field">Immeuble<select name="immId" data-input="tache-imm" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === t.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         <label class="field">Où ?<select name="logId" id="tacheLog">${logOptions(t.immId || imms[0].id, t.logId)}</select></label>`}
@@ -6548,7 +6556,7 @@ const FORMS = {
     const g = (k) => String(fd.get(k) || '').trim();
     { const ib = ibanCheck(g('iban')), bc = bicCheck(g('bic'), ib.ok ? ib.cc : ''); if (!ib.ok) return toast('IBAN : ' + ib.msg, { bad: true }); if (!bc.ok) return toast('BIC : ' + bc.msg, { bad: true }); }
     const iban = g('iban').toUpperCase().replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
-    await vault.mutate((tx) => tx.put('reglages', { id: 'facturation', nom: g('nom'), marque: g('marque'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), tel: g('tel'), email: g('email'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), taux: num(fd.get('taux')), delai: Math.max(0, Math.round(num(fd.get('delai')))) || 30, marge: num(fd.get('marge')) }), 'Facturation des interventions', g('nom'));
+    await vault.mutate((tx) => tx.put('reglages', { id: 'facturation', nom: g('nom'), marque: g('marque'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), tel: g('tel'), email: g('email'), autorisation: g('autorisation'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), taux: num(fd.get('taux')), delai: Math.max(0, Math.round(num(fd.get('delai')))) || 30, marge: num(fd.get('marge')) }), 'Facturation des interventions', g('nom'));
     toast('Facturation enregistrée'); goBack();
   },
   async facture(fd, fm) {
@@ -6632,10 +6640,12 @@ const FORMS = {
     };
     try { const pj = fd.get('ptl'); if (pj) rec.ptl = JSON.parse(pj); } catch { /* lien illisible */ }
     if (prev && prev.ptl && !rec.ptl) rec.ptl = prev.ptl;
+    try { const dj = fd.get('dev'); if (dj) rec.dev = JSON.parse(dj); } catch { /* lien illisible */ }
+    if (prev && prev.dev && !rec.dev) rec.dev = prev.dev;
     const hh = (k) => (/^\d\d:\d\d$/.test(fd.get(k) || '') ? fd.get(k) : '');
     rec.heure = hh('heure'); rec.heureFin = rec.heure ? hh('heureFin') : ''; rec.urgent = fd.get('urgent') === '1';
     if (rec.ptl) rec.recur = '';
-    if (!rec.titre || (!rec.immId && !rec.ptl)) return;
+    if (!rec.titre || (!rec.immId && !rec.ptl && !rec.dev)) return;
     if (recur && !rec.date) return toast('Indiquez la date de la première fois', { bad: true });
     if (id) rec.id = id;
     if (!recur && rec.statut === 'fait' && !(prev && prev.statut === 'fait')) rec.doneDate = today();
@@ -6651,7 +6661,16 @@ const FORMS = {
           .then(() => toast('Portail gérance mis à jour : ' + PTL_ST[st])).catch((e) => toast('Portail gérance : ' + e.message, { bad: true }));
       }
     }
-    if (!recur && !saved.ptl) await syncDepense(saved);
+    if (!recur && !saved.ptl && !saved.dev) await syncDepense(saved);
+    // intervention née d'un devis : le devis la connaît, les photos du chantier vont dans l'app de l'ouvrier
+    if (saved.dev && !prev) {
+      const v = vault.get('devis', saved.dev.id), ph = v ? devPhotos(v.id).slice(0, 6) : [], docs = [];
+      if (v) {
+        const bytes = []; for (const x of ph) { try { bytes.push(await vault.readFile(x.id)); } catch { /* photo absente */ } }
+        await vault.mutate((tx) => { tx.put('devis', { id: v.id, tacheId: saved.id }); bytes.forEach((b, n) => docs.push([tx.put('documents', { tacheId: saved.id, kind: 'equipe', phase: 'pb', label: `Chantier ${n + 1} — ${saved.titre}`, date: today(), mime: 'image/jpeg', size: b.length }).id, b])); }, 'Intervention créée depuis le devis', devNo(v));
+        for (const [did, b] of docs) await vault.saveFile(did, b);
+      }
+    }
     // photos du problème : jointes à l'intervention, publiées dans l'app de la personne
     const pics = [];
     for (const f of fd.getAll('pbphotos').filter((f) => f && f.size)) pics.push(await compressPhoto(f));
@@ -7096,10 +7115,527 @@ document.addEventListener('pointerdown', (e) => {
   while (prev && !(prev.dataset.p === p && prev.querySelector('input[name$="a"]').value)) prev = prev.dataset.p === p ? prev.previousElementSibling : null;
   inp.value = prev ? prev.querySelector('input[name$="a"]').value : HOR_START[p];
 }, true);
+// ───────────────────────── Devis (ARES INVEST S.A. — LuxInterventions) ─────────────────────────
+// Sur place : le chef de chantier prend les photos, écrit son rapport et prévoit les ouvriers et les heures (sans prix).
+// Ensuite : le directeur choisit les ouvriers (tarifs des réglages), déplacement, matériel, remise, acompte, validité.
+// Le client signe avec le doigt (« Bon pour accord ») ; PDF à imprimer ou à envoyer par WhatsApp / email ;
+// une gérance du portail accepte, refuse ou demande une révision depuis son portail.
+const DEV_TYPES = { part: '👤 Particulier', pro: '🏢 Société', ger: '💼 Gérance du portail' };
+const DEV_ACOMPTE = [40, 30, 20, 10, 0];
+const DEV_RETRACT = 14; // jours de rétractation d'un particulier (contrat signé hors établissement)
+const devAcompteConseil = (ttc) => (ttc <= 2000 ? 40 : ttc <= 10000 ? 30 : ttc <= 50000 ? 20 : 10);
+// initiales du client : « Agigest » → AG, « Mario Rossi » → MR, « Gérance du Centre S.A. » → GC
+function devInitials(nom) {
+  const w = ascii(nom).toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter((x) => x && !['DU', 'DE', 'DES', 'LA', 'LE', 'LES', 'ET', 'SA', 'SARL', 'SAS', 'SC', 'S', 'A', 'R', 'L', 'ASBL', 'SPRL', 'GMBH', 'CO'].includes(x));
+  if (!w.length) return 'XX';
+  return w.length === 1 ? w[0].slice(0, 2) : w.slice(0, 3).map((x) => x[0]).join('');
+}
+const devNo = (d) => (d.no || '—') + (d.rev ? '-R' + d.rev : '');
+const devPhotos = (id) => vault.list('documents').filter((x) => x.devisId === id && x.kind === 'devis').sort((a, b) => (a.n || 0) - (b.n || 0));
+// main-d'œuvre : lignes du chef (métier, nombre, heures) + choix du directeur (ouvrier, tarif)
+function devCalc(d) {
+  const rows = (d.chef && d.chef.rows) || [], dir = (d.dir && d.dir.rows) || [];
+  const lines = rows.map((r, n) => { const t = num((dir[n] || {}).taux), hh = num(r.nb || 1) * num(r.h); return { ...r, w: (dir[n] || {}).w || '', taux: t, hh, mt: r2(hh * t) }; });
+  const mo = r2(sum(lines, (l) => l.mt)), dep = r2(num(d.dir && d.dir.depl)), mat = r2(sum((d.dir && d.dir.mat) || [], (m) => num(m.ht)));
+  const sub = r2(mo + dep + mat), rem = r2((sub * num(d.dir && d.dir.remise)) / 100), ht = r2(sub - rem);
+  const taux = d.dir && d.dir.tva !== '' && d.dir.tva != null ? num(d.dir.tva) : num(factConf().taux);
+  const tva = r2((ht * taux) / 100), ttc = r2(ht + tva);
+  const pct = d.dir && d.dir.acompte != null && d.dir.acompte !== '' ? +d.dir.acompte : devAcompteConseil(ttc);
+  return { lines, mo, dep, mat, sub, rem, ht, taux, tva, ttc, pct, acompte: r2((ttc * pct) / 100) };
+}
+// état et pastille : 🟢 en attente · 🟡 3 derniers jours · 🔴 expiré (à 00:00) · 🟣 particulier dans les 14 jours de rétractation
+function devState(d) {
+  const t = today();
+  if (d.st === 'refuse') return { k: 'refuse', lbl: '❌ Refusé', open: false };
+  if (d.st === 'accepte') {
+    const acc = (d.acc || '').slice(0, 10) || t, end = addDays(acc, DEV_RETRACT);
+    if (d.tacheId) return { k: 'done', lbl: '➡️ Intervention créée', open: false };
+    if (d.client && d.client.type === 'part' && t <= end) return { k: 'purple', lbl: `🟣 Rétractation possible jusqu’au ${fmtDate(end)}${d.sign && d.sign.early ? ' · début anticipé demandé' : ''}`, open: true, end };
+    return { k: 'ok', lbl: '✅ Accepté — libre de commencer', open: true };
+  }
+  if (d.st === 'brouillon' || !d.st) return { k: 'draft', lbl: '📝 Brouillon', open: false };
+  const until = addDays(d.date || t, num((d.dir || {}).valid) || 30);
+  const left = Math.round((Date.parse(until + 'T12:00:00') - Date.parse(t + 'T12:00:00')) / 864e5);
+  const rv = d.st === 'revision' ? '🔄 Révision demandée · ' : '';
+  if (left < 0) return { k: 'red', lbl: `${rv}🔴 Expiré le ${fmtDate(until)} à minuit`, open: true, until };
+  if (left <= 3) return { k: 'yellow', lbl: `${rv}🟡 Expire ${left === 0 ? 'ce soir à minuit' : `dans ${left} jour${left > 1 ? 's' : ''}`} (${fmtDate(until)})`, open: true, until };
+  return { k: 'green', lbl: `${rv}🟢 En attente — valable jusqu’au ${fmtDate(until)}`, open: true, until };
+}
+const devBall = (d) => html`<span class="dball dball-${devState(d).k}" aria-hidden="true"></span>`;
+const devClient = (d) => (d.client && d.client.nom) || '—';
+const devOpen = () => vault.list('devis').filter((d) => devState(d).open).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+function devRow(d) {
+  const s = devState(d), k = devCalc(d);
+  return html`<button class="row dev-row" data-action="dev-open" data-id="${d.id}">${devBall(d)}
+    <span class="grow"><span class="title" style="display:block;white-space:normal">${devNo(d)}${d.titre ? html` <span class="muted small">— ${d.titre}</span>` : ''}</span>
+      <span class="meta" style="white-space:normal">${d.client && d.client.type === 'ger' ? orgLogo(d.client.orgId) : d.client && d.client.type === 'pro' ? '🏢' : '👤'} ${devClient(d)}${d.chantier ? ' · ' + d.chantier : ''}</span>
+      <span class="meta" style="display:block;white-space:normal">${s.lbl}${d.ptlSt === 'envoye' && d.st !== 'accepte' ? ' · 📤 dans son portail' : ''}</span></span>
+    <b style="white-space:nowrap">${eur(k.ttc)}</b></button>`;
+}
+// bandeau de l'accueil : « DEVIS EN COURS », violet qui clignote
+// réponses des gérances : relues en ouvrant l'Accueil ou l'onglet Devis (au plus toutes les 15 s), sinon toutes les 30 s
+let devSyncAt = 0;
+const devSyncSoon = () => { if (Date.now() - devSyncAt > 15000) { devSyncAt = Date.now(); setTimeout(devSync, 0); } };
+function devBanner() {
+  devSyncSoon();
+  const L = devOpen();
+  if (!L.length) return '';
+  return html`<div class="dev-banner" style="margin-bottom:14px"><div class="section-label" style="margin:0 0 8px;color:#7c3aed">📝 Devis en cours (${L.length})</div>
+    <div class="list">${L.map((d) => { const s = devState(d); return html`<div class="dev-bline">${devRow(d)}
+      <div class="dev-bact">${s.k === 'ok' ? html`<button class="btn sm primary" data-action="dev-tache" data-id="${d.id}">➡️ Créer l’intervention</button>`
+        : s.k === 'purple' ? html`<span class="tiny" style="color:#7c3aed">Le client peut encore se rétracter. Ensuite : « ➡️ Créer l’intervention ».</span>`
+        : html`<button class="btn sm" data-action="dev-acc" data-id="${d.id}">✅ Accepté</button><button class="btn sm ghost danger" data-action="dev-ref" data-id="${d.id}">❌ Refusé</button>`}</div></div>`; })}</div></div>`;
+}
+// onglet Maintenance → Devis
+function devTab() {
+  devSyncSoon();
+  const all = vault.list('devis').sort((a, b) => (b.created || '').localeCompare(a.created || ''));
+  const open = all.filter((d) => devState(d).open), drafts = all.filter((d) => devState(d).k === 'draft'), done = all.filter((d) => !devState(d).open && devState(d).k !== 'draft').slice(0, ui.cpLim || 10);
+  const c = factConf();
+  return html`<p class="small muted" style="margin:0 0 10px">Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier). Ensuite les prix (👔 directeur), la signature du client et l’envoi (PDF, WhatsApp, email ou portail de la gérance).</p>
+    ${c.autorisation ? '' : html`<div class="alert warn" style="margin-bottom:12px">⚠️<div>Ajoutez le <b>n° d’autorisation d’établissement</b> dans <a href="#" data-action="fact-set">🧾 Facturation</a> : il est imprimé sur chaque devis.</div></div>`}
+    <p style="margin:0 0 6px"><span class="tiny muted">🟢 en attente · 🟡 expire bientôt (3 derniers jours) · 🔴 expiré à minuit · 🟣 particulier : délai de rétractation de 14 jours · ✅ accepté</span></p>
+    ${open.length ? html`<div class="section-label">En cours (${open.length})</div><div class="list" style="margin-bottom:14px">${open.map(devRow)}</div>` : ''}
+    ${drafts.length ? html`<div class="section-label">Brouillons (${drafts.length})</div><div class="list" style="margin-bottom:14px">${drafts.map(devRow)}</div>` : ''}
+    ${done.length ? html`<div class="section-label">Terminés</div><div class="list">${done.map(devRow)}</div>` : ''}
+    ${!all.length ? empty('file', 'Aucun devis pour l’instant.', html`<button class="btn primary" data-action="dev-new">${icon('plus')} Nouveau devis</button>`) : ''}`;
+}
+// formulaire : lignes du chef (métier · nombre d'ouvriers · heures par ouvrier)
+const devChefRow = (n, r = {}) => html`<div class="dev-crow" data-n="${n}"><select name="met${n}" data-input="dev-chef" aria-label="Métier"><option value="">— métier —</option>${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${r.met === k ? new Raw('selected') : ''}>${MET_ICON[k] || '👷'} ${v}</option>`)}</select>
+  <span class="sfx"><input name="nb${n}" type="number" min="1" max="99" inputmode="numeric" value="${r.nb || ''}" placeholder="1" data-input="dev-chef" aria-label="Nombre d’ouvriers"><i>ouvr.</i></span>
+  <span class="sfx"><input name="h${n}" type="number" step="0.5" min="0" inputmode="decimal" value="${r.h || ''}" placeholder="0" data-input="dev-chef" aria-label="Heures par ouvrier"><i>h</i></span></div>`;
+const devRate = (w) => { if (!w) return 0; const m = 1 + num(factConf().marge) / 100; return w.tauxH || (w.payeH ? r2(w.payeH * m) : 0); };
+// cadre du directeur : un ouvrier et un tarif pour chaque ligne du chef
+function devDirHtml(chefRows, dirRows) {
+  const rows = chefRows.map((r, n) => [r, n]).filter(([r]) => r.met || num(r.h));
+  if (!rows.length) return html`<p class="tiny muted" style="margin:0">Les lignes du chef de chantier (métier, ouvriers, heures) apparaissent ici pour choisir l’ouvrier et le tarif.</p>`;
+  const ints = vault.list('intervenants').filter((i) => !i.archive);
+  return rows.map(([r, n]) => {
+    const dr = dirRows[n] || {}, cand = ints.filter((i) => !r.met || i.metier === r.met).concat(ints.filter((i) => r.met && i.metier !== r.met));
+    return html`<div class="dev-drow"><span class="small"><b>${num(r.nb || 1)} × ${METIERS[r.met] || 'ouvrier'}</b> × ${String(num(r.h)).replace('.', ',')} h = <b>${String(num(r.nb || 1) * num(r.h)).replace('.', ',')} h</b></span>
+      <select name="dw${n}" data-input="dev-w" aria-label="Ouvrier"><option value="">— tarif libre —</option>${cand.map((i) => html`<option value="${i.id}" data-rate="${devRate(i)}" ${dr.w === i.id ? new Raw('selected') : ''}>${metIcon(i)} ${intervFull(i)}${devRate(i) ? ' · ' + eur(devRate(i)) + '/h' : ''}</option>`)}</select>
+      <span class="sfx"><input name="dt${n}" type="number" ${new Raw(money$)} value="${dr.taux ?? ''}" placeholder="€/h" aria-label="Tarif horaire HT"><i>€/h HT</i></span></div>`;
+  });
+}
+function devRead(fm) {
+  const fd = new FormData(fm), g = (k) => String(fd.get(k) || '').trim();
+  const rows = [], dir = [], mat = [];
+  for (let n = 0; n < 40; n++) {
+    if (!fd.has(`met${n}`)) continue;
+    rows[n] = { met: g(`met${n}`), nb: num(fd.get(`nb${n}`)) || (g(`met${n}`) || num(fd.get(`h${n}`)) ? 1 : 0), h: num(fd.get(`h${n}`)) };
+    dir[n] = { w: g(`dw${n}`), taux: fd.has(`dt${n}`) && g(`dt${n}`) !== '' ? num(fd.get(`dt${n}`)) : '' };
+  }
+  for (let n = 0; n < 30; n++) if (fd.has(`ml${n}`)) { const lib = g(`ml${n}`), ht = num(fd.get(`mh${n}`)); if (lib || ht) mat.push({ lib, ht }); }
+  const keep = rows.map((r, n) => [r, dir[n] || {}]).filter(([r]) => r && (r.met || r.h));
+  return {
+    titre: g('titre'), chantier: g('chantier'), interloc: g('interloc'),
+    client: { type: DEV_TYPES[g('ctype')] ? g('ctype') : 'part', orgId: g('org'), nom: g('cnom'), rcs: g('crcs').toUpperCase().replace(/\s+/g, ''), tva: g('ctva').toUpperCase().replace(/\s+/g, ''), adresse: g('cadr'), tel: g('ctel'), email: g('cmail') },
+    chef: { rapport: String(fd.get('rapport') || '').trim(), jours: g('jours'), rows: keep.map(([r]) => r) },
+    dir: { rows: keep.map(([, d]) => d), depl: g('depl') === '' ? '' : num(fd.get('depl')), mat, remise: num(fd.get('remise')), tva: g('tva') === '' ? '' : num(fd.get('tva')), acompte: g('acompte') === '' ? '' : +g('acompte'), valid: Math.max(1, Math.round(num(fd.get('valid')))) || 30, delai: g('delai') },
+  };
+}
+function devTotHtml(d) {
+  const k = devCalc(d);
+  return html`<div class="kv-tot"><span>Main-d’œuvre</span><b>${eur(k.mo)}</b><span>Déplacement</span><b>${eur(k.dep)}</b><span>Matériel</span><b>${eur(k.mat)}</b>${k.rem ? html`<span>Remise ${String(num(d.dir.remise)).replace('.', ',')} %</span><b>− ${eur(k.rem)}</b>` : ''}
+    <span>Total HT</span><b>${eur(k.ht)}</b><span>TVA ${String(k.taux).replace('.', ',')} %</span><b>${eur(k.tva)}</b><span class="big">Total TTC</span><b class="big">${eur(k.ttc)}</b>
+    <span>Acompte ${k.pct} %</span><b>${eur(k.acompte)}</b></div>${k.pct !== devAcompteConseil(k.ttc) ? html`<p class="tiny muted" style="margin:4px 0 0">Acompte conseillé pour ce montant : ${devAcompteConseil(k.ttc)} %</p>` : ''}`;
+}
+Object.assign(SHEETS, {
+  devis({ id }) {
+    const d = id ? vault.get('devis', id) : { st: 'brouillon', client: { type: 'part' }, chef: { rows: [] }, dir: { rows: [], valid: 30 } };
+    if (id && !d) return null;
+    const c = factConf(), cl = d.client || {}, chef = d.chef || {}, dir = d.dir || {};
+    const crows = [...(chef.rows || [])]; while (crows.length < 3) crows.push({});
+    const mats = [...(dir.mat || [])]; while (mats.length < 2) mats.push({});
+    const orgs = (ui.ptl.data && ui.ptl.data.orgs) || [];
+    const ph = id ? devPhotos(id) : [], s = devState(d), k = devCalc(d);
+    const acts = id ? html`<div class="card dev-acts" style="margin-bottom:12px;padding:12px">
+        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">${devBall(d)}<b class="grow">${s.lbl}</b></div>
+        ${d.decision && d.decision.note ? html`<p class="small" style="margin:0 0 8px">💬 <b>${d.decision.by || 'La gérance'}</b> : ${d.decision.note}</p>` : ''}
+        ${d.sign ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ Signé par ${d.sign.nom || 'le client'} le ${fmtDateTime(Date.parse(d.sign.at) || 0)}${d.sign.early ? ' · début des travaux avant la fin du délai de rétractation demandé' : ''}</p>` : ''}
+        <div class="dev-btns">
+          <button class="btn sm" data-action="dev-pdf" data-id="${id}">📄 PDF / imprimer</button>
+          <button class="btn sm" data-action="dev-share" data-id="${id}" data-via="wa">💬 WhatsApp</button>
+          <button class="btn sm" data-action="dev-share" data-id="${id}" data-via="mail">✉️ Email</button>
+          ${cl.type === 'ger' && cl.orgId && d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm" data-action="dev-ptl" data-id="${id}">📤 ${d.ptlSt ? 'Renvoyer' : 'Envoyer'} au portail de la gérance</button>` : ''}
+          ${d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm primary" data-action="dev-sign" data-id="${id}">✍️ Faire signer le client</button><button class="btn sm" data-action="dev-acc" data-id="${id}">✅ Accepté</button><button class="btn sm ghost danger" data-action="dev-ref" data-id="${id}">❌ Refusé</button>` : ''}
+          ${s.k === 'ok' ? html`<button class="btn sm primary" data-action="dev-tache" data-id="${id}">➡️ Créer l’intervention</button>` : ''}
+          ${d.st !== 'brouillon' && !d.tacheId ? html`<button class="btn sm ghost" data-action="dev-rev" data-id="${id}">🔄 Nouvelle version (R${(d.rev || 0) + 1})</button>` : ''}
+          ${d.tacheId && vault.get('taches', d.tacheId) ? html`<button class="btn sm ghost" data-action="edit-tache" data-id="${d.tacheId}">🛠️ Voir l’intervention</button>` : ''}
+          <button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button></div></div>` : '';
+    return {
+      title: id ? `📝 Devis ${devNo(d)}` : '📝 Nouveau devis',
+      body: html`${acts}<form id="f" data-form="devis" class="fields"><input type="hidden" name="id" value="${id || ''}">
+        <div class="section-label full" style="margin:0">Client</div>
+        <label class="field">Type de client<select name="ctype" data-input="dev-ctype">${Object.entries(DEV_TYPES).filter(([kk]) => kk !== 'ger' || orgs.length || cl.type === 'ger').map(([kk, v]) => html`<option value="${kk}" ${cl.type === kk ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        <label class="field dev-ger" ${cl.type === 'ger' ? '' : new Raw('hidden')}>Gérance<select name="org" data-input="dev-org"><option value="">— choisir —</option>${orgs.map((o) => html`<option value="${o.id}" ${cl.orgId === o.id ? new Raw('selected') : ''}>${o.name}</option>`)}</select></label>
+        <label class="field">Nom / raison sociale<input name="cnom" required value="${cl.nom || ''}" placeholder="ex. Mario Rossi, Gérance du Centre S.A."></label>
+        <label class="field dev-soc" ${cl.type === 'part' ? new Raw('hidden') : ''}>RCS <span class="red">*</span><input name="crcs" value="${cl.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
+        <label class="field dev-soc" ${cl.type === 'part' ? new Raw('hidden') : ''}>N° TVA<input name="ctva" value="${cl.tva || ''}" placeholder="LU12345678" autocapitalize="characters"></label>
+        <label class="field full">Adresse du client<textarea name="cadr" style="min-height:52px" placeholder="rue, n°, code postal, ville">${cl.adresse || ''}</textarea></label>
+        <label class="field">Téléphone (WhatsApp)<input type="tel" name="ctel" value="${cl.tel || ''}" placeholder="+352…"></label>
+        <label class="field">Email<input type="email" name="cmail" value="${cl.email || ''}"></label>
+        <label class="field full">Objet du devis<input name="titre" value="${d.titre || ''}" placeholder="ex. Remise en état des appartements et du commerce"></label>
+        <label class="field">Adresse du chantier<input name="chantier" value="${d.chantier || ''}" placeholder="si différente de celle du client"></label>
+        <label class="field">Interlocuteur sur place<input name="interloc" value="${d.interloc || ''}" placeholder="ex. M. Pierre Loan"></label>
+        <fieldset class="full dev-box dev-chef"><legend>🦺 À remplir par le chef de chantier</legend>
+          <label class="field full">📷 Photos (2 à 20)<input type="file" name="photos" accept="image/*" multiple></label>
+          ${ph.length ? html`<div class="dev-ph full">${ph.map((p) => html`<figure><img data-edl="${p.id}" alt=""><button type="button" class="btn icon sm ghost" data-action="dev-ph-del" data-id="${p.id}" aria-label="Retirer la photo">${icon('x')}</button></figure>`)}</div><p class="tiny muted full" style="margin:-4px 0 0">${ph.length} / 20 photo(s)</p>` : ''}
+          <label class="field full">Rapport du chantier (ce qu’il faut faire)<textarea name="rapport" style="min-height:110px" placeholder="Constats, travaux à prévoir, accès, remarques…">${chef.rapport || ''}</textarea></label>
+          <div class="full"><div class="section-label" style="margin:0 0 6px">Ouvriers prévus (métier · nombre · heures par ouvrier)</div><div id="devRows">${crows.map((r, n) => devChefRow(n, r))}</div>
+            <button type="button" class="btn sm" data-action="dev-row-add">${icon('plus')} Ligne</button></div>
+          <label class="field">Durée prévue<input name="jours" value="${chef.jours || ''}" placeholder="ex. 3 jours, 2 semaines"></label>
+        </fieldset>
+        <fieldset class="full dev-box dev-dir"><legend>👔 À remplir par le directeur</legend>
+          <div class="full" id="devDir">${devDirHtml(crows, dir.rows || [])}</div>
+          ${sfx('Déplacement', 'depl', dir.depl ?? '', '€ HT')}
+          ${sfx('Remise', 'remise', dir.remise || '', '%', 'inputmode="decimal" step="0.5" min="0" max="100"')}
+          <div class="full"><div class="section-label" style="margin:4px 0 6px">Matériel (HT)</div><div id="factMats">${mats.map((m, n) => matRow(n, m))}</div>
+            <button type="button" class="btn sm" data-action="fact-mat-add">${icon('plus')} Ligne</button></div>
+          ${sfx('TVA', 'tva', dir.tva ?? c.taux, '%', 'inputmode="decimal" step="0.01" min="0" max="100"')}
+          <label class="field mini">Acompte<select name="acompte" data-input="dev-tot"><option value="" ${dir.acompte === '' || dir.acompte == null ? new Raw('selected') : ''}>Conseillé (${devAcompteConseil(k.ttc)} %)</option>${DEV_ACOMPTE.map((p) => html`<option value="${p}" ${dir.acompte !== '' && dir.acompte != null && +dir.acompte === p ? new Raw('selected') : ''}>${p ? p + ' %' : 'Sans acompte'}</option>`)}</select></label>
+          ${sfx('Devis valable', 'valid', dir.valid || 30, 'jours', 'inputmode="numeric" step="1" min="1" max="365"')}
+          <label class="field">Délai / début des travaux<input name="delai" value="${dir.delai || ''}" placeholder="ex. début sous 2 semaines, durée 3 jours"></label>
+          <p class="tiny muted full" style="margin:0">Acompte conseillé : jusqu’à 2 000 € TTC 40 % · jusqu’à 10 000 € 30 % · jusqu’à 50 000 € 20 % · au-delà 10 %.</p>
+          <div class="full" id="devTot">${devTotHtml(d)}</div>
+        </fieldset>
+        ${!id ? html`<p class="tiny muted full" style="margin:0">Le numéro est donné à l’enregistrement : DEV-initiales-RCS (sociétés)-date-heure-numéro suivi (ex. DEV-AG-B123456-${ymd(today())}-0930-${String((+c.devSeq || 0) + 1).padStart(4, '0')}).</p>` : ''}
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" type="submit" form="f">💾 Enregistrer</button>`,
+    };
+  },
+  // signature du client avec le doigt : « Bon pour accord »
+  'devis-sign'({ id }) {
+    const d = vault.get('devis', id);
+    if (!d) return null;
+    const k = devCalc(d), part = d.client && d.client.type === 'part';
+    return {
+      title: `✍️ Bon pour accord — ${devNo(d)}`,
+      narrow: true,
+      body: html`<form id="fs" data-form="devis-sign" class="fields"><input type="hidden" name="id" value="${id}">
+        <div class="full card" style="padding:10px;margin:0"><b>${d.titre || 'Devis'}</b><div class="small">${devClient(d)}${d.chantier ? ' · ' + d.chantier : ''}</div>
+          <div style="margin-top:6px">Total : <b>${eur(k.ttc)} TTC</b>${k.pct ? html` · acompte ${k.pct} % : <b>${eur(k.acompte)}</b>` : ''}</div></div>
+        <label class="field full">Nom du signataire<input name="nom" required value="${d.interloc || devClient(d)}"></label>
+        ${part ? html`<p class="small full" style="margin:0">Vous disposez de <b>14 jours</b> pour vous rétracter, sans motif et sans frais (formulaire joint au devis).</p>
+          <label class="full" style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" name="early" value="1" style="width:22px;height:22px;flex:none"> <span class="small">Je demande expressément que les travaux commencent avant la fin du délai de rétractation. Si je me rétracte ensuite, je paierai les travaux déjà réalisés.</span></label>` : ''}
+        <p class="small full" style="margin:0"><b>Bon pour accord</b> — signez avec le doigt :</p>
+        <canvas class="sig-pad full" width="600" height="220" style="display:block;width:100%;aspect-ratio:30/11;background:#fff;border:1.5px dashed #9aa5a0;border-radius:12px;touch-action:none"></canvas>
+        <div class="full" style="display:flex;gap:8px"><button type="button" class="btn sm" data-action="dev-sig-clear">Effacer</button></div>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="fs">✍️ Valider la signature</button>`,
+    };
+  },
+});
+// pavé de signature (doigt / souris)
+let devSig = null, devSigUrl = '';
+document.addEventListener('pointerdown', (ev) => {
+  const c = ev.target.closest && ev.target.closest('canvas.sig-pad'); if (!c || !sheetEl.contains(c)) return;
+  ev.preventDefault(); c.setPointerCapture(ev.pointerId);
+  const r = c.getBoundingClientRect(), x = c.getContext('2d');
+  const pt = (q) => [(q.clientX - r.left) * (c.width / r.width), (q.clientY - r.top) * (c.height / r.height)];
+  x.lineWidth = 3.2; x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = '#0b1f4d';
+  const [a, b] = pt(ev); x.beginPath(); x.moveTo(a, b); x.lineTo(a + 0.1, b + 0.1); x.stroke();
+  devSig = { c, x, pt };
+});
+document.addEventListener('pointermove', (ev) => { if (!devSig) return; const [a, b] = devSig.pt(ev); devSig.x.lineTo(a, b); devSig.x.stroke(); });
+const devSigUp = () => { if (!devSig) return; devSigUrl = devSig.c.toDataURL('image/png'); devSig = null; };
+document.addEventListener('pointerup', devSigUp); document.addEventListener('pointercancel', devSigUp);
+// la signature est-elle vide ? (aucun pixel dessiné)
+const devSigEmpty = (c) => !c || !c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some((v, i) => i % 4 === 3 && v > 0);
+Object.assign(FORMS, {
+  async devis(fd, fm) {
+    const id = fd.get('id'), prev = id ? vault.get('devis', id) : null, rec = devRead(fm);
+    if (!rec.client.nom) return toast('Indiquez le nom du client', { bad: true });
+    if (rec.client.type !== 'part' && !rec.client.rcs) return toast('RCS obligatoire pour une société (ex. B123456)', { bad: true });
+    if (rec.client.type === 'ger' && !rec.client.orgId) return toast('Choisissez la gérance', { bad: true });
+    const files = fd.getAll('photos').filter((f) => f && f.size), nb = id ? devPhotos(id).length : 0;
+    if (nb + files.length > 20) toast(`20 photos maximum : ${Math.max(0, 20 - nb)} ajoutée(s)`, { bad: true });
+    const pics = [];
+    for (const f of files.slice(0, Math.max(0, 20 - nb))) pics.push(await compressPhoto(f));
+    let saved, seq = 0;
+    if (!prev) {
+      const c = factConf(), now = new Date(), hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+      seq = (+c.devSeq || 0) + 1;
+      rec.no = ['DEV', devInitials(rec.client.nom), rec.client.type !== 'part' ? rec.client.rcs : '', ymd(today()), hhmm, String(seq).padStart(4, '0')].filter(Boolean).join('-');
+      Object.assign(rec, { seq, st: 'brouillon', date: today(), created: now.toISOString(), rev: 0 });
+    } else rec.id = id;
+    const docs = [];
+    await vault.mutate((tx) => {
+      if (seq) tx.put('reglages', { id: 'facturation', devSeq: seq });
+      saved = tx.put('devis', rec);
+      pics.forEach((b, n) => docs.push([tx.put('documents', { devisId: saved.id, kind: 'devis', n: nb + n + 1, label: `${devNo(saved)} — photo ${nb + n + 1}`, date: today(), mime: 'image/jpeg', size: b.length }).id, b]));
+    }, prev ? 'Devis modifié' : 'Devis créé', `${devNo(prev || rec)} — ${rec.client.nom}`);
+    for (const [did, b] of docs) await vault.saveFile(did, b);
+    sheetDirty = false;
+    toast(prev ? 'Devis enregistré' : `📝 Devis ${devNo(saved)} créé`);
+    openSheet('devis', saved.id);
+  },
+  async 'devis-sign'(fd) {
+    const d = vault.get('devis', fd.get('id')), c = sheetEl.querySelector('canvas.sig-pad');
+    if (!d) return;
+    if (devSigEmpty(c)) return toast('Le client doit signer dans le cadre blanc', { bad: true });
+    const png = c.toDataURL('image/png'), at = new Date().toISOString();
+    await vault.mutate((tx) => tx.put('devis', { id: d.id, st: 'accepte', acc: at, sign: { png, at, nom: String(fd.get('nom') || '').trim(), early: fd.get('early') === '1' } }), 'Devis signé par le client', `${devNo(d)} — ${devClient(d)}`);
+    devSigUrl = ''; sheetDirty = false;
+    toast('✍️ Devis signé — bon pour accord');
+    goBack();
+  },
+});
+// PDF du devis : en-tête ARES, client, rapport, lignes, totaux, acompte, signatures, mentions légales, photos (4 par page), « N° … x/N »
+async function devPdf(d) {
+  const c = factConf(), k = devCalc(d), cl = d.client || {}, part = cl.type === 'part';
+  const p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42], BOT = 795, VIO = [0.36, 0.2, 0.62];
+  const no = devNo(d);
+  const logo = await sigJpeg('/ares/icons/lux-192.png').catch(() => null);
+  const head = () => {
+    if (logo) p.image(X, 36, 56, 56, logo.bytes, logo.w, logo.h);
+    const ex = logo ? X + 70 : X;
+    p.text(ex, 48, c.nom, { size: 11, bold: true }).text(ex, 61, c.marque || '', { size: 9, color: G });
+    p.text(ex, 74, `${c.adresse}, ${c.ville}`, { size: 8.5 }).text(ex, 86, [c.tel ? 'Tél. ' + c.tel : '', c.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
+    p.text(ex, 98, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8, color: G });
+    if (c.autorisation) p.text(ex, 110, `Autorisation d’établissement n° ${c.autorisation}`, { size: 8, color: G });
+  };
+  let y = 0;
+  const newPage = () => { p.page(); head(); y = 124; };
+  const need = (h) => { if (y + h > BOT) newPage(); };
+  head();
+  // client (en haut à droite, à côté de l'émetteur)
+  const CX = 330;
+  let cy = 48;
+  p.text(CX, cy, cl.nom || '', { size: 11, bold: true }); cy += 14;
+  for (const ln of String(cl.adresse || '').split(/\n|,\s*(?=L-|\d{4})/).filter(Boolean).slice(0, 3)) { p.text(CX, cy, ln.trim(), { size: 9.5 }); cy += 12; }
+  if (cl.rcs) { p.text(CX, cy, `RCS ${cl.rcs}${cl.tva ? ' · TVA ' + cl.tva : ''}`, { size: 9 }); cy += 12; }
+  if (cl.tel || cl.email) { p.text(CX, cy, [cl.tel, cl.email].filter(Boolean).join(' · '), { size: 9, color: G }); cy += 12; }
+  y = Math.max(cy + 20, 150);
+  p.text(X, y, 'DEVIS', { size: 22, bold: true, color: [0.2, 0.2, 0.2] }); y += 18;
+  p.text(X, y, `N° ${no}`, { size: 10.5, bold: true }); y += 20;
+  const until = addDays(d.date || today(), num((d.dir || {}).valid) || 30);
+  const info = [['Date', frD(d.date || today())], ['Valable jusqu’au', frD(until)], ['Durée prévue', (d.chef && d.chef.jours) || '—'], ['Devis gratuit', 'sans engagement']];
+  info.forEach(([l, v], i) => { const xx = X + i * 125; p.text(xx, y, l, { size: 8.5, color: G }).text(xx, y + 13, v, { size: 10 }); });
+  y += 36;
+  const kv = (l, v) => { if (!v) return; need(16); p.text(X, y, l, { size: 9, color: G }); y += p.wrap(X + 130, y, v, R - X - 130, { size: 10, bold: true }) + 3; };
+  kv('Objet', d.titre); kv('Lieu d’intervention', d.chantier || cl.adresse); kv('Interlocuteur', d.interloc); kv('Délai / début', (d.dir || {}).delai);
+  // rapport du chantier
+  const rap = String((d.chef && d.chef.rapport) || '').trim();
+  if (rap) {
+    y += 8; need(40);
+    p.rect(X, y - 12, R - X, 18, { fill: [0.93, 0.91, 0.97] }).text(X + 6, y, 'DESCRIPTION DES TRAVAUX', { size: 9.5, bold: true, color: VIO }); y += 20;
+    for (const para of rap.split(/\n+/)) { const h = p.wrap(X, -1000, para, R - X, { size: 9.5 }); need(Math.min(h, 200) + 4); y += p.wrap(X, y, para, R - X, { size: 9.5 }) + 4; }
+  }
+  // tableau des prix
+  y += 10; need(60);
+  const CQ = 352, CP = 430, CT = 482;
+  p.text(X + 6, y, 'Description', { size: 9.5, bold: true }).text(CQ, y, 'Quantité', { size: 9.5, bold: true, align: 'right' }).text(CP, y, 'Prix unitaire', { size: 9.5, bold: true, align: 'right' }).text(CT, y, 'TVA', { size: 9.5, bold: true, align: 'right' }).text(R - 6, y, 'Montant', { size: 9.5, bold: true, align: 'right' });
+  y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
+  const n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
+  const txt = String(k.taux).replace('.', ',') + '%';
+  const row = (lib, sub, q, pu, tot) => {
+    need(30);
+    if (q !== '') p.text(CQ, y, q, { size: 9.5, align: 'right' });
+    if (pu !== '') p.text(CP, y, pu, { size: 9.5, align: 'right' });
+    p.text(CT, y, txt, { size: 9.5, align: 'right' }).text(R - 6, y, tot, { size: 9.5, align: 'right' });
+    let hh = p.wrap(X + 6, y, lib, 240, { size: 9.5 });
+    if (sub) hh += p.wrap(X + 6, y + hh, sub, 240, { size: 8.5, color: G });
+    y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
+  };
+  for (const l of k.lines) row(`Main-d'œuvre — ${METIERS[l.met] || 'ouvrier'}`, `${num(l.nb || 1)} ouvrier(s) × ${n2(num(l.h))} h`, n2(l.hh) + ' h', n2(l.taux), eur(l.mt));
+  if (k.dep) row('Déplacement', '', '1,00', n2(k.dep), eur(k.dep));
+  for (const m of (d.dir && d.dir.mat) || []) if (num(m.ht)) row(`Matériel : ${m.lib || 'fourniture'}`, '', '1,00', n2(num(m.ht)), eur(num(m.ht)));
+  if (k.rem) row(`Remise ${String(num(d.dir.remise)).replace('.', ',')} %`, '', '', '', '− ' + eur(k.rem));
+  y += 10; need(110);
+  const TX = 330;
+  const trow = (l, v, b, bg) => { if (bg) p.rect(TX, y - 12, R - TX, 20, { fill: [0.94, 0.94, 0.94] }); p.text(TX + 8, y, l, { size: b ? 11 : 9.5, bold: b }).text(R - 8, y, v, { size: b ? 11 : 9.5, bold: b, align: 'right' }); y += 22; };
+  const ty = y;
+  trow('Montant hors taxes', eur(k.ht), false, true); trow(`TVA ${txt}`, eur(k.tva), false, false); trow('Total TTC', eur(k.ttc), true, true);
+  if (k.pct) trow(`Acompte (${k.pct} %)`, eur(k.acompte), true, false);
+  let py = ty;
+  if (c.iban) { p.text(X, py, 'Paiement par virement :', { size: 9, bold: true }); py += 12; p.text(X, py, `${c.iban}${c.bic ? ' · BIC ' + c.bic : ''}`, { size: 9 }); py += 12; p.text(X, py, `Communication : ${no}`, { size: 9, color: G }); py += 12; }
+  y = Math.max(y, py) + 14;
+  // mentions légales
+  y += 2; need(60);
+  const legal = part
+    ? [`Devis gratuit et sans engagement, valable ${num((d.dir || {}).valid) || 30} jours (jusqu’au ${frD(until)}). Il n’engage le client qu’après sa signature « Bon pour accord ».`,
+      'Droit de rétractation (contrat conclu hors établissement, Code de la consommation) : vous disposez de 14 jours à compter de la signature pour vous rétracter, sans donner de motif et sans frais, en nous envoyant le formulaire ci-joint ou une déclaration claire (courrier ou email). L’acompte éventuellement versé est alors remboursé sous 14 jours.',
+      'Les travaux ne commencent pas avant la fin de ce délai, sauf demande expresse du client ; s’il se rétracte ensuite, il paie la part des travaux déjà réalisés. Pas de droit de rétractation pour une réparation urgente demandée par le client.']
+    : [`Devis gratuit et sans engagement, valable ${num((d.dir || {}).valid) || 30} jours (jusqu’au ${frD(until)}). Pour un professionnel, l’acceptation (signature « Bon pour accord » ou accord dans le portail) est ferme et définitive.`];
+  legal.push(`Paiement du solde à réception de la facture (${+c.delai || 30} jours). Tout travail supplémentaire fera l’objet d’un avenant ou d’un nouveau devis.`);
+  p.line(X, y, R, y, { w: 0.6 }); y += 14;
+  for (const t of legal) { need(30); y += p.wrap(X, y, t, R - X, { size: 7.5 }) + 3; }
+  y += 12;
+  // signatures
+  need(116);
+  p.text(X, y, 'Bon pour accord — le client', { size: 10, bold: true }).text(TX, y, `Pour ${c.nom}`, { size: 10, bold: true }); y += 6;
+  p.rect(X, y, 250, 66, { fill: [0.97, 0.97, 0.97] }).rect(TX, y, R - TX, 66, { fill: [0.97, 0.97, 0.97] });
+  const sg = d.sign ? await sigJpeg(d.sign.png).catch(() => null) : null;
+  if (sg) { const w = 170, h = Math.min(56, (w * sg.h) / sg.w); p.image(X + 8, y + 6, (h * sg.w) / sg.h, h, sg.bytes, sg.w, sg.h); }
+  y += 78;
+  if (d.sign) { p.text(X, y, `${d.sign.nom || ''} — signé le ${new Date(Date.parse(d.sign.at) || Date.now()).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`, { size: 8.5, color: G }); y += 12; }
+  else { p.text(X, y, 'Nom, date, mention « Bon pour accord » et signature', { size: 8.5, color: G }); y += 12; }
+  if (d.sign && d.sign.early) { y += p.wrap(X, y, 'Le client a demandé expressément que les travaux commencent avant la fin du délai de rétractation ; en cas de rétractation, il paie les travaux déjà réalisés.', R - X, { size: 8.5, color: G }) + 2; }
+  // formulaire de rétractation (particulier)
+  if (part) {
+    newPage();
+    p.text(X, y, 'FORMULAIRE DE RÉTRACTATION', { size: 14, bold: true }); y += 20;
+    y += p.wrap(X, y, '(Veuillez compléter et renvoyer le présent formulaire uniquement si vous souhaitez vous rétracter du contrat.)', R - X, { size: 9, color: G }) + 10;
+    y += p.wrap(X, y, `À l’attention de ${c.nom}${c.marque ? ' (' + c.marque + ')' : ''}, ${c.adresse}, ${c.ville}${c.email ? ', ' + c.email : ''} :`, R - X, { size: 10 }) + 10;
+    for (const t of [`Je vous notifie par la présente ma rétractation du contrat portant sur la prestation de services ci-dessous : devis n° ${no}${d.titre ? ' — ' + d.titre : ''}.`, 'Signé le (date) : ……………………………………', 'Nom du client : ……………………………………………………………', 'Adresse du client : ……………………………………………………………………………………………', 'Signature du client (uniquement en cas de notification sur papier) :', 'Date : ……………………………']) y += p.wrap(X, y, t, R - X, { size: 10 }) + 14;
+  }
+  // photos : 4 par page (2 × 2)
+  const ph = devPhotos(d.id);
+  if (ph.length) {
+    const W2 = (R - X - 14) / 2, H2 = 300;
+    for (let i = 0; i < ph.length; i++) {
+      if (i % 4 === 0) { newPage(); p.text(X, y, `PHOTO(S) — ${i + 1} à ${Math.min(ph.length, i + 4)} sur ${ph.length}`, { size: 11, bold: true }); y += 14; }
+      try {
+        const b = await vault.readFile(ph[i].id), bmp = await createImageBitmap(new Blob([b], { type: 'image/jpeg' }));
+        const k2 = Math.min(W2 / bmp.width, H2 / bmp.height), w = bmp.width * k2, h = bmp.height * k2, cx = X + (i % 2) * (W2 + 14), cyy = y + Math.floor((i % 4) / 2) * (H2 + 14);
+        p.image(cx + (W2 - w) / 2, cyy + (H2 - h) / 2, w, h, b, bmp.width, bmp.height);
+      } catch { /* photo illisible */ }
+    }
+  }
+  // pied de page : « N° … x/N »
+  const N = p.count();
+  for (let i = 0; i < N; i++) p.onPage(i).text((X + R) / 2, 812, `${c.nom}${c.marque ? ' — ' + c.marque : ''} · Devis N° ${no} · ${i + 1}/${N}`, { size: 7.5, color: G, align: 'center' });
+  return p.bytes();
+}
+// aperçu du PDF (imprimer / télécharger), comme les autres documents
+function pdfView(bytes, label) {
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  const dlg = document.createElement('dialog');
+  dlg.className = 'pv';
+  setHtml(dlg, html`<div class="pv-bar"><b>${label}</b>
+    <a class="btn sm" href="${url}" download="${label}.pdf">${icon('download')}</a>
+    <button class="btn sm" type="button" data-pv-print="1">🖨️ Imprimer</button>
+    <button class="btn sm" type="button" data-pv-close="1">${icon('x')} Fermer</button></div>
+    <iframe src="${url}" title="${label}"></iframe>`);
+  dlg.addEventListener('click', (e) => {
+    if (e.target.closest('[data-pv-close]')) dlg.close();
+    if (e.target.closest('[data-pv-print]')) { try { dlg.querySelector('iframe').contentWindow.print(); } catch { window.open(url, '_blank'); } }
+  });
+  dlg.addEventListener('close', () => { dlg.remove(); URL.revokeObjectURL(url); });
+  document.body.appendChild(dlg); dlg.showModal();
+}
+// premier envoi : le brouillon devient « envoyé » (la validité court depuis la date du devis)
+const devSent = (d, extra = {}) => vault.mutate((tx) => tx.put('devis', { id: d.id, ...(d.st === 'brouillon' ? { st: 'envoye', sentAt: new Date().toISOString() } : {}), ...extra }), 'Devis envoyé', `${devNo(d)} — ${devClient(d)}`);
+const devMsg = (d) => { const k = devCalc(d), c = factConf(); return `Bonjour ${d.interloc || devClient(d)},\n\nVoici notre devis n° ${devNo(d)}${d.titre ? ' — ' + d.titre : ''} : ${eur(k.ttc)} TTC${k.pct ? ` (acompte ${k.pct} % : ${eur(k.acompte)})` : ''}, valable jusqu’au ${fmtDate(addDays(d.date || today(), num((d.dir || {}).valid) || 30))}.\nDevis gratuit et sans engagement.\n\nBien à vous,\n${c.marque || c.nom}${c.tel ? '\n📞 ' + c.tel : ''}${c.email ? '\n✉️ ' + c.email : ''}`; };
+// synchronisation avec le portail : la gérance accepte, refuse ou demande une révision
+async function devSync() {
+  if (!ptlConf() || !vault.list('devis').some((d) => d.ptlId)) return;
+  let list;
+  try { list = (await ptlApi('devis')).devis || []; } catch { return; }
+  const upd = [];
+  for (const r of list) {
+    const d = vault.list('devis').find((x) => x.ptlId === r.id);
+    if (!d || !r.decided_at || (d.decision && d.decision.at >= r.decided_at)) continue;
+    if (!['accepte', 'refuse', 'revision'].includes(r.status)) continue;
+    upd.push([d, r]);
+  }
+  if (!upd.length) return;
+  await vault.mutate((tx) => { for (const [d, r] of upd) tx.put('devis', { id: d.id, st: r.status, ptlSt: r.status, decision: { st: r.status, at: r.decided_at, by: r.decided_by_name || '', note: r.note || '' }, ...(r.status === 'accepte' ? { acc: new Date(r.decided_at).toISOString() } : {}) }); }, 'Réponse de la gérance au devis', upd.map(([d, r]) => `${devNo(d)} : ${({ accepte: 'accepté', refuse: 'refusé', revision: 'révision demandée' })[r.status]}`).join(' · '));
+  for (const [d, r] of upd) toast(`📝 ${devClient(d)} : devis ${devNo(d)} ${({ accepte: '✅ accepté', refuse: '❌ refusé', revision: '🔄 révision demandée' })[r.status]}`);
+  if (['dashboard', 'maintenance'].includes(ui.route)) renderView();
+  if (ui.sheet && ui.sheet.kind === 'devis') { ui.sheet.rendered = false; renderSheet(); }
+}
+Object.assign(ACTIONS, {
+  'dev-new': () => openSheet('devis'),
+  'dev-open': (d) => openSheet('devis', d.id),
+  'dev-row-add': () => { const box = $('#devRows'); if (box) box.insertAdjacentHTML('beforeend', String(devChefRow(box.children.length))); },
+  'dev-sig-clear': () => { const c = sheetEl.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); devSigUrl = ''; },
+  'dev-sign': (d) => { if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true }); openOver('devis-sign', d.id); },
+  async 'dev-ph-del'(d) {
+    const doc = vault.get('documents', d.id);
+    if (!doc || !(await confirmBox('Retirer cette photo du devis ?', { ok: 'Retirer', danger: true }))) return;
+    await vault.mutate((tx) => tx.remove('documents', doc.id), 'Photo du devis retirée', doc.label);
+    await vault.deleteFile(doc.id).catch(() => {});
+    ui.sheet.rendered = false; renderSheet();
+  },
+  async 'dev-pdf'(d) {
+    const v = vault.get('devis', d.id); if (!v) return;
+    if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
+    try { pdfView(await devPdf(v), 'Devis ' + devNo(v)); } catch (e) { return toast('PDF impossible : ' + (e.message || e), { bad: true }); }
+    if (v.st === 'brouillon') await devSent(v);
+  },
+  async 'dev-share'(d) {
+    const v = vault.get('devis', d.id); if (!v) return;
+    if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
+    const bytes = await devPdf(v), name = `Devis-${devNo(v)}.pdf`, msg = devMsg(v), cl = v.client || {};
+    const file = new File([bytes], name, { type: 'application/pdf' });
+    let shared = false;
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: 'Devis ' + devNo(v), text: msg }); shared = true; } catch (e) { if (e && e.name === 'AbortError') return; }
+    }
+    if (!shared) {
+      // ordinateur : le PDF est téléchargé, puis WhatsApp ou l'email s'ouvre avec le message (joindre le PDF)
+      const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+      const tel = String(cl.tel || '').replace(/[^\d]/g, '').replace(/^00/, '');
+      if (d.via === 'wa') window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
+      else location.href = `mailto:${encodeURIComponent(cl.email || '')}?subject=${encodeURIComponent('Devis ' + devNo(v) + (v.titre ? ' — ' + v.titre : ''))}&body=${encodeURIComponent(msg + '\n\n(PDF du devis en pièce jointe)')}`;
+      toast('PDF téléchargé : joignez-le au message');
+    }
+    await devSent(v);
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  },
+  async 'dev-ptl'(d) {
+    const v = vault.get('devis', d.id); if (!v || !ptlConf()) return toast('Portail gérance non connecté', { bad: true });
+    if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
+    const k = devCalc(v), bytes = await devPdf(v);
+    const meta = { id: v.ptlId || '', org: v.client.orgId, no: devNo(v), title: v.titre || '', ttc: k.ttc, acompte: k.acompte, pct: k.pct, valid_until: addDays(v.date || today(), num((v.dir || {}).valid) || 30) };
+    try {
+      const r = await fetch(PTL_API + 'devis', { method: 'PUT', headers: { Authorization: 'Bearer ' + ptlConf().token, 'Content-Type': 'application/pdf', 'X-Devis': encodeURIComponent(JSON.stringify(meta)) }, body: bytes });
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'Erreur ' + r.status);
+      await devSent(v, { ptlId: j.id, ptlSt: 'envoye', ...(v.st === 'revision' ? { st: 'envoye' } : {}) });
+    } catch (e) { return toast('Envoi impossible : ' + (e.message || 'connexion'), { bad: true }); }
+    toast(`📤 Devis ${devNo(v)} envoyé dans le portail de ${devClient(v)}`);
+    ui.sheet.rendered = false; renderSheet();
+  },
+  async 'dev-acc'(d) {
+    const v = vault.get('devis', d.id); if (!v) return;
+    const part = v.client && v.client.type === 'part';
+    if (!(await confirmBox(`Devis ${devNo(v)} accepté ?`, { ok: '✅ Accepté', detail: `${devClient(v)} a donné son accord (signature papier, email…).${part ? ' Particulier : il garde 14 jours pour se rétracter (pastille violette).' : ''} Pour une signature sur le téléphone : « ✍️ Faire signer le client ».` }))) return;
+    const at = new Date().toISOString();
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'accepte', acc: at, decision: { st: 'accepte', at: Date.now(), by: 'LuxInterventions', note: '' } }), 'Devis accepté', `${devNo(v)} — ${devClient(v)}`);
+    toast('✅ Devis accepté'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  },
+  async 'dev-ref'(d) {
+    const v = vault.get('devis', d.id); if (!v) return;
+    if (!(await confirmBox(`Devis ${devNo(v)} refusé ?`, { ok: '❌ Refusé', danger: true, detail: devClient(v) }))) return;
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'refuse', decision: { st: 'refuse', at: Date.now(), by: 'LuxInterventions', note: '' } }), 'Devis refusé', `${devNo(v)} — ${devClient(v)}`);
+    toast('Devis refusé'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  },
+  async 'dev-rev'(d) {
+    const v = vault.get('devis', d.id); if (!v) return;
+    if (!(await confirmBox(`Nouvelle version R${(v.rev || 0) + 1} ?`, { ok: '🔄 Nouvelle version', detail: 'Même numéro + R1, R2… Modifiez les travaux ou faites une remise, puis renvoyez-le. La signature éventuelle est retirée.' }))) return;
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, rev: (v.rev || 0) + 1, st: 'brouillon', date: today(), sign: null, acc: '' }), 'Nouvelle version du devis', `${v.no}-R${(v.rev || 0) + 1}`);
+    toast(`Version R${(v.rev || 0) + 1} : modifiez puis renvoyez`); ui.sheet.rendered = false; renderSheet();
+  },
+  async 'dev-del'(d) {
+    const v = vault.get('devis', d.id); if (!v) return;
+    if (!(await confirmBox(`Supprimer le devis ${devNo(v)} ?`, { ok: 'Supprimer', danger: true, detail: 'Le devis et ses photos sont effacés. Le numéro n’est pas réutilisé.' }))) return;
+    const ph = devPhotos(v.id);
+    await vault.mutate((tx) => { tx.remove('devis', v.id); ph.forEach((x) => tx.remove('documents', x.id)); }, 'Devis supprimé', `${devNo(v)} — ${devClient(v)}`);
+    for (const x of ph) await vault.deleteFile(x.id).catch(() => {});
+    if (v.ptlId && ptlConf()) ptlApi('devis/' + v.ptlId, { method: 'DELETE' }).catch(() => {});
+    sheetDirty = false; closeSheet(); toast('Devis supprimé'); renderView();
+  },
+  // devis accepté → intervention au planning (chantier, rapport, ouvriers prévus, photos du chantier)
+  'dev-tache': (d) => {
+    const v = vault.get('devis', d.id); if (!v) return;
+    const k = devCalc(v), first = k.lines.find((l) => l.w) || {};
+    const note = [`Devis ${devNo(v)} accepté — ${eur(k.ttc)} TTC`, v.interloc ? 'Interlocuteur : ' + v.interloc : '', v.client.tel ? 'Tél. ' + v.client.tel : '', ...k.lines.map((l) => `• ${num(l.nb || 1)} × ${METIERS[l.met] || 'ouvrier'} × ${String(num(l.h)).replace('.', ',')} h${l.w ? ' (' + intervName(l.w) + ')' : ''}`), v.chef && v.chef.jours ? 'Durée prévue : ' + v.chef.jours : '', v.chef && v.chef.rapport ? '\n' + v.chef.rapport : ''].filter(Boolean).join('\n');
+    openOver('tache-form', null, null, { titre: v.titre || 'Devis ' + devNo(v), note, intervenantId: first.w || '', metiers: k.lines.map((l) => l.met).filter(Boolean), dev: { id: v.id, no: devNo(v), client: devClient(v), adr: v.chantier || v.client.adresse || '', contact: v.interloc || '', tel: v.client.tel || '' } });
+  },
+});
+
 document.addEventListener('input', (e) => {
   const ff = e.target.closest && e.target.closest('form[data-form=facture]');
   if (ff && e.target.name === 'marge') { const m = 1 + num(e.target.value) / 100; ff.taux.value = r2(num(ff.cost_h.value) * m) || ''; if (num(ff.cost_d.value)) ff.depl.value = r2(num(ff.cost_d.value) * m); }
   if (ff) { const box = $('#factTot'); if (box) setHtml(box, factTotHtml(factRead(ff))); }
+  const fdv = e.target.closest && e.target.closest('form[data-form=devis]');
+  if (fdv) {
+    if (e.target.dataset.input === 'dev-chef') { const box = $('#devDir'), raw = [], dir = []; fdv.querySelectorAll('.dev-crow').forEach((row) => { const n = +row.dataset.n; raw[n] = { met: fdv[`met${n}`].value, nb: num(fdv[`nb${n}`].value), h: num(fdv[`h${n}`].value) }; dir[n] = { w: fdv[`dw${n}`] ? fdv[`dw${n}`].value : '', taux: fdv[`dt${n}`] ? fdv[`dt${n}`].value : '' }; }); if (box) setHtml(box, devDirHtml(raw.map((x) => x || {}), dir)); }
+    const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(fdv)));
+  }
   const k = e.target.dataset.input;
   if (k === 'esp-search') filterEspList();
   if (k === 'vid-link') { const h = document.getElementById('vidHint'); if (h) h.textContent = vidHint(e.target.value); }
@@ -7136,6 +7672,13 @@ document.addEventListener('change', (e) => {
   if (k === 'year') { ui.year = +e.target.value; ui.cpLim = 10; renderView(); }
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
   if (k === 'soc-logo' && e.target.files[0]) setLogo(e.target.files[0]);
+  if (k === 'dev-w') { const o = e.target.selectedOptions[0], t = e.target.form[e.target.name.replace('dw', 'dt')]; if (t && o && num(o.dataset.rate)) t.value = o.dataset.rate; const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(e.target.form))); }
+  if (k === 'dev-tot') { const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(e.target.form))); }
+  if (k === 'dev-ctype') { const f = e.target.form, v = e.target.value; f.querySelectorAll('.dev-ger').forEach((x) => { x.hidden = v !== 'ger'; }); f.querySelectorAll('.dev-soc').forEach((x) => { x.hidden = v === 'part'; }); }
+  if (k === 'dev-org') {
+    const f = e.target.form, o = ptlOrg(e.target.value);
+    if (o) { const cl = factClient(o.id, o.name); f.cnom.value = o.name; f.crcs.value = cl.rcs || ''; f.ctva.value = cl.tvaNum || ''; f.cadr.value = cl.adresse || ''; if (o.phone && !f.ctel.value) f.ctel.value = o.phone; if (o.email && !f.cmail.value) f.cmail.value = o.email; }
+  }
   if (k === 'ger-logo' && e.target.files[0]) {
     const w = e.target.closest('.org-logo-pick');
     logoShrink(e.target.files[0]).then((u) => { w.querySelector('[name=logo]').value = u; setHtml(w.querySelector('.org-logo-box'), html`<img src="${u}" alt="Logo">`); sheetDirty = true; }).catch(() => toast('Image illisible : choisissez un PNG ou un JPG', { bad: true }));

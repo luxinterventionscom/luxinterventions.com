@@ -53,6 +53,10 @@ export default [
 ": after that you will sign in with your email and this password."
 ],
 [
+"Accepter ce devis ?",
+"Accept this quote?"
+],
+[
 "Accueil",
 "Home"
 ],
@@ -329,6 +333,10 @@ export default [
 "Good"
 ],
 [
+"Bon pour accord : votre acceptation est ferme et définitive. LuxInterventions organise les travaux.",
+"Agreed: your acceptance is firm and final. LuxInterventions organises the work."
+],
+[
 "Bonjour",
 "Hello"
 ],
@@ -375,6 +383,10 @@ export default [
 [
 "Cave",
 "Cellar"
+],
+[
+"Ce devis a déjà une réponse",
+"This quote already has an answer"
 ],
 [
 "Ce navigateur n’a pas pu activer les notifications (navigation privée, ou iPhone : installez d’abord l’app sur l’écran d’accueil et ouvrez-la depuis l’icône).",
@@ -685,6 +697,14 @@ export default [
 "Description of the problem"
 ],
 [
+"Devis",
+"Quote"
+],
+[
+"Devis refusé",
+"Quote declined"
+],
+[
 "Directeur",
 "Director"
 ],
@@ -695,6 +715,10 @@ export default [
 [
 "Disponible après la mise à jour du serveur.",
 "Available after the server update."
+],
+[
+"Dites à LuxInterventions ce qu’il faut revoir (travaux en plus ou en moins, délai, prix…). Vous recevrez une nouvelle version.",
+"Tell LuxInterventions what to review (more or less work, timing, price…). You will receive a new version."
 ],
 [
 "Données de la société enregistrées",
@@ -835,6 +859,18 @@ export default [
 [
 "Espaces verts",
 "Green spaces"
+],
+[
+"Expire ce soir à minuit",
+"Expires tonight at midnight"
+],
+[
+"Expire dans {0} jour(s)",
+"Expires in {0} day(s)"
+],
+[
+"Expiré le",
+"Expired on"
 ],
 [
 "Facturé TTC",
@@ -1093,6 +1129,10 @@ export default [
 "Language, notifications, reports, account"
 ],
 [
+"Le responsable de votre gérance accepte ou refuse le devis.",
+"Your agency’s manager accepts or declines the quote."
+],
+[
 "Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.",
 "The server is not ready for notifications yet: try again in a moment."
 ],
@@ -1163,6 +1203,10 @@ export default [
 [
 "LuxInterventions est en route / sur place",
 "LuxInterventions is on the way / on site"
+],
+[
+"LuxInterventions est prévenu.",
+"LuxInterventions has been notified."
 ],
 [
 "LuxInterventions vous reconnaît d’un coup d’œil. PNG ou JPG, carré de préférence.",
@@ -1741,6 +1785,10 @@ export default [
 "Redo"
 ],
 [
+"Refuser ce devis ?",
+"Decline this quote?"
+],
+[
 "Relation avec le personnel",
 "Relationship with the staff"
 ],
@@ -1825,6 +1873,10 @@ export default [
 "Repair"
 ],
 [
+"Réservé au responsable de la gérance",
+"Reserved for the agency manager"
+],
+[
 "Résidence",
 "Residence"
 ],
@@ -1851,6 +1903,10 @@ export default [
 [
 "Résumé",
 "Summary"
+],
+[
+"Révision demandée — LuxInterventions prépare une nouvelle version.",
+"Revision requested — LuxInterventions is preparing a new version."
 ],
 [
 "Rôle",
@@ -2133,12 +2189,20 @@ export default [
 "Users"
 ],
 [
+"Valable jusqu’au",
+"Valid until"
+],
+[
 "Vidéo",
 "Video"
 ],
 [
 "Vitrerie",
 "Glazing"
+],
+[
+"Voir le devis (PDF)",
+"View the quote (PDF)"
 ],
 [
 "Voir les offres ›",
@@ -2155,6 +2219,10 @@ export default [
 [
 "Votre avis est essentiel pour améliorer notre service.",
 "Your opinion is essential to improve our service."
+],
+[
+"Votre message",
+"Your message"
 ],
 [
 "Votre nom",
@@ -2179,6 +2247,10 @@ export default [
 [
 "Vue gérance",
 "Property manager view"
+],
+[
+"acompte",
+"deposit"
 ],
 [
 "de la demande à la fin",
@@ -2445,6 +2517,10 @@ export default [
 "Handle now"
 ],
 [
+"Écrivez ce qu'il faut revoir",
+"Write what needs to be reviewed"
+],
+[
 "Écrivez d’abord votre email ci-dessus, puis touchez « Mot de passe oublié ? ».",
 "First type your email above, then tap “Forgot your password?”."
 ],
@@ -2589,6 +2665,18 @@ export default [
 "⚡ Panels"
 ],
 [
+"✅ Accepter",
+"✅ Accept"
+],
+[
+"✅ Devis accepté",
+"✅ Quote accepted"
+],
+[
+"✅ Devis accepté — merci !",
+"✅ Quote accepted — thank you!"
+],
+[
 "✅ Payée",
 "✅ Paid"
 ],
@@ -2619,6 +2707,14 @@ export default [
 [
 "✓ IBAN valide",
 "✓ Valid IBAN"
+],
+[
+"❌ Devis refusé",
+"❌ Quote declined"
+],
+[
+"❌ Refuser",
+"❌ Decline"
 ],
 [
 "⭐ Envoyer l’évaluation",
@@ -2677,6 +2773,10 @@ export default [
 "📒 Accounting"
 ],
 [
+"📝 Devis en cours ({0})",
+"📝 Open quotes ({0})"
+],
+[
 "📲 En réel, LuxInterventions est prévenu de votre message.",
 "📲 In real use, LuxInterventions is notified of your message."
 ],
@@ -2707,6 +2807,14 @@ export default [
 [
 "🔄 Changer",
 "🔄 Change"
+],
+[
+"🔄 Demande de révision envoyée à LuxInterventions",
+"🔄 Revision request sent to LuxInterventions"
+],
+[
+"🔄 Demander une révision",
+"🔄 Ask for a revision"
 ],
 [
 "🔎 Filtres — rien coché = tout",

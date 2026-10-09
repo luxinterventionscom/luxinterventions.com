@@ -10459,5 +10459,501 @@ export default [
 [
 "Image illisible : choisissez un PNG ou un JPG",
 "Immagine illeggibile: scegliete un PNG o un JPG"
+],
+[
+"20 photos maximum : {0} ajoutée(s)",
+"Massimo 20 foto: {0} aggiunta/e"
+],
+[
+": il est imprimé sur chaque devis.",
+": è stampato su ogni preventivo."
+],
+[
+"Acompte",
+"Acconto"
+],
+[
+"Acompte {0} %",
+"Acconto {0} %"
+],
+[
+"Acompte conseillé : jusqu’à 2 000 € TTC 40 % · jusqu’à 10 000 € 30 % · jusqu’à 50 000 € 20 % · au-delà 10 %.",
+"Acconto consigliato: fino a 2.000 € IVA incl. 40 % · fino a 10.000 € 30 % · fino a 50.000 € 20 % · oltre 10 %."
+],
+[
+"Acompte conseillé pour ce montant : {0} %",
+"Acconto consigliato per questo importo: {0} %"
+],
+[
+"Adresse du chantier",
+"Indirizzo del cantiere"
+],
+[
+"Adresse du client",
+"Indirizzo del cliente"
+],
+[
+"Ajoutez le",
+"Aggiungete il"
+],
+[
+"Aucun devis pour l’instant.",
+"Nessun preventivo per ora."
+],
+[
+"Bon pour accord",
+"Buono per accordo"
+],
+[
+"Brouillons ({0})",
+"Bozze ({0})"
+],
+[
+"Choisissez la gérance",
+"Scegliete la gérance"
+],
+[
+"Client",
+"Cliente"
+],
+[
+"Conseillé ({0} %)",
+"Consigliato ({0} %)"
+],
+[
+"Constats, travaux à prévoir, accès, remarques…",
+"Constatazioni, lavori da prevedere, accesso, note…"
+],
+[
+"Devis",
+"Preventivo"
+],
+[
+"Devis accepté",
+"Preventivo accettato"
+],
+[
+"Devis créé",
+"Preventivo creato"
+],
+[
+"Devis enregistré",
+"Preventivo salvato"
+],
+[
+"Devis envoyé",
+"Preventivo inviato"
+],
+[
+"Devis modifié",
+"Preventivo modificato"
+],
+[
+"Devis refusé",
+"Preventivo rifiutato"
+],
+[
+"Devis signé par le client",
+"Preventivo firmato dal cliente"
+],
+[
+"Devis supprimé",
+"Preventivo eliminato"
+],
+[
+"Devis valable",
+"Preventivo valido"
+],
+[
+"Devis {0} accepté ?",
+"Preventivo {0} accettato?"
+],
+[
+"Devis {0} refusé ?",
+"Preventivo {0} rifiutato?"
+],
+[
+"Durée prévue",
+"Durata prevista"
+],
+[
+"Délai / début des travaux",
+"Tempi / inizio dei lavori"
+],
+[
+"En cours ({0})",
+"In corso ({0})"
+],
+[
+"Enregistrez d’abord le devis (💾)",
+"Salvate prima il preventivo (💾)"
+],
+[
+"Heures par ouvrier",
+"Ore per operaio"
+],
+[
+"Indiquez le nom du client",
+"Indicate il nome del cliente"
+],
+[
+"Interlocuteur sur place",
+"Interlocutore sul posto"
+],
+[
+"Je demande expressément que les travaux commencent avant la fin du délai de rétractation. Si je me rétracte ensuite, je paierai les travaux déjà réalisés.",
+"Chiedo espressamente che i lavori inizino prima della fine del periodo di recesso. Se poi recedo, pagherò i lavori già eseguiti."
+],
+[
+"Le client doit signer dans le cadre blanc",
+"Il cliente deve firmare nel riquadro bianco"
+],
+[
+"Le client peut encore se rétracter. Ensuite : « ➡️ Créer l’intervention ».",
+"Il cliente può ancora recedere. Poi: «➡️ Créer l’intervention»."
+],
+[
+"Le devis et ses photos sont effacés. Le numéro n’est pas réutilisé.",
+"Il preventivo e le sue foto vengono cancellati. Il numero non viene riutilizzato."
+],
+[
+"Le numéro est donné à l’enregistrement : DEV-initiales-RCS (sociétés)-date-heure-numéro suivi (ex. DEV-AG-B123456-{0}-0930-{1}).",
+"Il numero viene dato al salvataggio: DEV-iniziali-RCS (società)-data-ora-numero progressivo (es. DEV-AG-B123456-{0}-0930-{1})."
+],
+[
+"Les lignes du chef de chantier (métier, ouvriers, heures) apparaissent ici pour choisir l’ouvrier et le tarif.",
+"Le righe del capo cantiere (mestiere, operai, ore) appaiono qui per scegliere l’operaio e la tariffa."
+],
+[
+"Ligne",
+"Riga"
+],
+[
+"Matériel (HT)",
+"Materiale (IVA escl.)"
+],
+[
+"Même numéro + R1, R2… Modifiez les travaux ou faites une remise, puis renvoyez-le. La signature éventuelle est retirée.",
+"Stesso numero + R1, R2… Modificate i lavori o fate uno sconto, poi rimandatelo. L’eventuale firma viene tolta."
+],
+[
+"Nom / raison sociale",
+"Nome / ragione sociale"
+],
+[
+"Nom du signataire",
+"Nome del firmatario"
+],
+[
+"Nombre d’ouvriers",
+"Numero di operai"
+],
+[
+"Nouveau devis",
+"Nuovo preventivo"
+],
+[
+"Nouvelle version R{0} ?",
+"Nuova versione R{0}?"
+],
+[
+"Nouvelle version du devis",
+"Nuova versione del preventivo"
+],
+[
+"Objet du devis",
+"Oggetto del preventivo"
+],
+[
+"Ouvrier",
+"Operaio"
+],
+[
+"Ouvriers prévus (métier · nombre · heures par ouvrier)",
+"Operai previsti (mestiere · numero · ore per operaio)"
+],
+[
+"PDF impossible :",
+"PDF impossibile:"
+],
+[
+"PDF téléchargé : joignez-le au message",
+"PDF scaricato: allegatelo al messaggio"
+],
+[
+"Particulier : il garde 14 jours pour se rétracter (pastille violette).",
+"Privato: ha 14 giorni per recedere (pallina viola)."
+],
+[
+"Photo du devis retirée",
+"Foto del preventivo tolta"
+],
+[
+"Portail gérance non connecté",
+"Portale gérance non collegato"
+],
+[
+"RCS obligatoire pour une société (ex. B123456)",
+"RCS obbligatorio per una società (es. B123456)"
+],
+[
+"Rapport du chantier (ce qu’il faut faire)",
+"Rapporto del cantiere (cosa bisogna fare)"
+],
+[
+"Renvoyer",
+"Rimanda"
+],
+[
+"Retirer cette photo du devis ?",
+"Togliere questa foto dal preventivo?"
+],
+[
+"Réponse de la gérance au devis",
+"Risposta della gérance al preventivo"
+],
+[
+"Sans acompte",
+"Senza acconto"
+],
+[
+"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier). Ensuite les prix (👔 directeur), la signature du client et l’envoi (PDF, WhatsApp, email ou portail de la gérance).",
+"Sul posto: foto, rapporto e operai previsti (🦺 capo cantiere). Poi i prezzi (👔 direttore), la firma del cliente e l’invio (PDF, WhatsApp, email o portale della gérance)."
+],
+[
+"Supprimer le devis {0} ?",
+"Eliminare il preventivo {0}?"
+],
+[
+"Tarif horaire HT",
+"Tariffa oraria IVA escl."
+],
+[
+"Total :",
+"Totale:"
+],
+[
+"Type de client",
+"Tipo di cliente"
+],
+[
+"Version R{0} : modifiez puis renvoyez",
+"Versione R{0}: modificate e rimandate"
+],
+[
+"Vous disposez de",
+"Avete"
+],
+[
+"ex. 3 jours, 2 semaines",
+"es. 3 giorni, 2 settimane"
+],
+[
+"ex. début sous 2 semaines, durée 3 jours",
+"es. inizio entro 2 settimane, durata 3 giorni"
+],
+[
+"n° d’autorisation d’établissement",
+"n° di autorizzazione di stabilimento"
+],
+[
+"pour vous rétracter, sans motif et sans frais (formulaire joint au devis).",
+"per recedere, senza motivo e senza spese (modulo allegato al preventivo)."
+],
+[
+"si différente de celle du client",
+"se diverso da quello del cliente"
+],
+[
+"{0} / 20 photo(s)",
+"{0} / 20 foto"
+],
+[
+"{0} a donné son accord (signature papier, email…).{1} Pour une signature sur le téléphone : « ✍️ Faire signer le client ».",
+"{0} ha dato il suo accordo (firma su carta, email…).{1} Per una firma sul telefono: «✍️ Faire signer le client»."
+],
+[
+"{0}🔴 Expiré le {1} à minuit",
+"{0}🔴 Scaduto il {1} a mezzanotte"
+],
+[
+"{0}🟡 Expire {1} ({2})",
+"{0}🟡 Scade {1} ({2})"
+],
+[
+"{0}🟢 En attente — valable jusqu’au {1}",
+"{0}🟢 In attesa — valido fino al {1}"
+],
+[
+"ce soir à minuit",
+"stasera a mezzanotte"
+],
+[
+"dans {0} jour{1}",
+"tra {0} giorno/i"
+],
+[
+"· acompte {0} % :",
+"· acconto {0} %:"
+],
+[
+"· début anticipé demandé",
+"· inizio anticipato richiesto"
+],
+[
+"· début des travaux avant la fin du délai de rétractation demandé",
+"· inizio dei lavori prima della fine del periodo di recesso richiesto"
+],
+[
+"· 📤 dans son portail",
+"· 📤 nel suo portale"
+],
+[
+"— choisir —",
+"— scegliere —"
+],
+[
+"— métier —",
+"— mestiere —"
+],
+[
+"— signez avec le doigt :",
+"— firmate con il dito:"
+],
+[
+"— tarif libre —",
+"— tariffa libera —"
+],
+[
+"✅ Accepté",
+"✅ Accettato"
+],
+[
+"✅ Accepté — libre de commencer",
+"✅ Accettato — si può iniziare"
+],
+[
+"✍️ Bon pour accord — {0}",
+"✍️ Buono per accordo — {0}"
+],
+[
+"✍️ Devis signé — bon pour accord",
+"✍️ Preventivo firmato — buono per accordo"
+],
+[
+"✍️ Faire signer le client",
+"✍️ Far firmare il cliente"
+],
+[
+"✍️ Signé par {0} le {1}{2}",
+"✍️ Firmato da {0} il {1}{2}"
+],
+[
+"✍️ Valider la signature",
+"✍️ Conferma la firma"
+],
+[
+"❌ Refusé",
+"❌ Rifiutato"
+],
+[
+"➡️ Créer l’intervention",
+"➡️ Crea l’intervento"
+],
+[
+"➡️ Intervention créée",
+"➡️ Intervento creato"
+],
+[
+"🏢 Société",
+"🏢 Società"
+],
+[
+"👔 À remplir par le directeur",
+"👔 Da compilare dal direttore"
+],
+[
+"👤 Particulier",
+"👤 Privato"
+],
+[
+"💼 Gérance du portail",
+"💼 Gérance del portale"
+],
+[
+"📄 PDF / imprimer",
+"📄 PDF / stampa"
+],
+[
+"📝 Brouillon",
+"📝 Bozza"
+],
+[
+"📝 Devis en cours ({0})",
+"📝 Preventivi in corso ({0})"
+],
+[
+"📝 Devis {0}",
+"📝 Preventivo {0}"
+],
+[
+"📝 Devis {0} créé",
+"📝 Preventivo {0} creato"
+],
+[
+"📝 Nouveau devis",
+"📝 Nuovo preventivo"
+],
+[
+"📤 Devis {0} envoyé dans le portail de {1}",
+"📤 Preventivo {0} inviato nel portale di {1}"
+],
+[
+"📤 {0} au portail de la gérance",
+"📤 {0} al portale della gérance"
+],
+[
+"📷 Photos (2 à 20)",
+"📷 Foto (da 2 a 20)"
+],
+[
+"🔄 Nouvelle version",
+"🔄 Nuova versione"
+],
+[
+"🔄 Nouvelle version (R{0})",
+"🔄 Nuova versione (R{0})"
+],
+[
+"🔄 Révision demandée ·",
+"🔄 Revisione richiesta ·"
+],
+[
+"🖨️ Imprimer",
+"🖨️ Stampa"
+],
+[
+"🛠️ Voir l’intervention",
+"🛠️ Vedi l’intervento"
+],
+[
+"🟢 en attente · 🟡 expire bientôt (3 derniers jours) · 🔴 expiré à minuit · 🟣 particulier : délai de rétractation de 14 jours · ✅ accepté",
+"🟢 in attesa · 🟡 scade presto (ultimi 3 giorni) · 🔴 scaduto a mezzanotte · 🟣 privato: 14 giorni di recesso · ✅ accettato"
+],
+[
+"🟣 Rétractation possible jusqu’au {0}{1}",
+"🟣 Recesso possibile fino al {0}{1}"
+],
+[
+"🦺 À remplir par le chef de chantier",
+"🦺 Da compilare dal capo cantiere"
+],
+[
+"Envoi impossible :",
+"Invio impossibile:"
+],
+[
+"Interlocuteur",
+"Interlocutore"
 ]
 ];
