@@ -297,6 +297,10 @@ export default [
 "Aprile"
 ],
 [
+"BIC incorrect : 8 ou 11 caractères, du même pays que l’IBAN (ex. CCPLLULL).",
+"BIC errato: 8 o 11 caratteri, dello stesso paese dell’IBAN (es. CCPLLULL)."
+],
+[
 "Badge chez le gardien",
 "Badge dal portiere"
 ],
@@ -377,6 +381,10 @@ export default [
 "Quello che hai scritto non è ancora salvato. Per tenerlo: «Annulla», poi il pulsante di salvataggio."
 ],
 [
+"Ces données figurent sur les factures de LuxInterventions (ARES INVEST S.A.). Le nom de la société est modifié par LuxInterventions.",
+"Questi dati compaiono sulle fatture di LuxInterventions (ARES INVEST S.A.). Il nome della società lo modifica LuxInterventions."
+],
+[
 "Chambre",
 "Camera"
 ],
@@ -443,6 +451,10 @@ export default [
 [
 "Code",
 "Codice"
+],
+[
+"Code BIC / SWIFT",
+"Codice BIC / SWIFT"
 ],
 [
 "Code alarme",
@@ -697,6 +709,18 @@ export default [
 "Disponibile dopo l’aggiornamento del server."
 ],
 [
+"Données de la société enregistrées",
+"Dati della società salvati"
+],
+[
+"Données de votre société (adresse, RCS, TVA, banque)",
+"Dati della vostra società (indirizzo, RCS, IVA, banca)"
+],
+[
+"Données de votre société à compléter",
+"Dati della vostra società da completare"
+],
+[
 "Dont urgentes",
 "Di cui urgenti"
 ],
@@ -913,6 +937,14 @@ export default [
 "Storico degli interventi"
 ],
 [
+"IBAN incomplet ou incorrect",
+"IBAN incompleto o errato"
+],
+[
+"IBAN incorrect : vérifiez les chiffres (ex. LU28 0019 4006 4475 0000).",
+"IBAN errato: controllate le cifre (es. LU28 0019 4006 4475 0000)."
+],
+[
 "Impossible d’activer les notifications",
 "Impossibile attivare le notifiche"
 ],
@@ -1073,10 +1105,6 @@ export default [
 "Lingua, notifiche, rapporti, account"
 ],
 [
-"Le lien a déjà servi, il a plus de 14 jours, ou un lien plus récent vous a été envoyé (seul le dernier marche).",
-"Il link è già stato usato, ha più di 14 giorni, oppure vi è stato inviato un link più recente (funziona solo l’ultimo)."
-],
-[
 "Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.",
 "Il server non è ancora pronto per le notifiche: riprovate tra un istante."
 ],
@@ -1155,6 +1183,10 @@ export default [
 [
 "MEILLEUR PRIX",
 "MIGLIOR PREZZO"
+],
+[
+"Ma société",
+"La mia società"
 ],
 [
 "Mai",
@@ -1285,6 +1317,10 @@ export default [
 "Nome (inquilino, portiere…)"
 ],
 [
+"Nom de la banque",
+"Nome della banca"
+],
+[
 "Nom de la résidence",
 "Nome del condominio"
 ],
@@ -1411,6 +1447,10 @@ export default [
 [
 "N° / précision",
 "N° / dettaglio"
+],
+[
+"N° TVA",
+"N° IVA"
 ],
 [
 "Octobre",
@@ -1619,10 +1659,6 @@ export default [
 [
 "Pour les gérances qui grandissent.",
 "Per le agenzie che crescono."
-],
-[
-"Pourquoi ?",
-"Perché?"
 ],
 [
 "Premiers pas · {0}/{1}",
@@ -1887,6 +1923,10 @@ export default [
 [
 "Site web",
 "Sito web"
+],
+[
+"Société",
+"Società"
 ],
 [
 "Soin des lieux en fin de travaux",
@@ -2561,16 +2601,16 @@ export default [
 "⚠️ CONTENZIOSO — non pagata"
 ],
 [
+"⚠️ à compléter",
+"⚠️ da completare"
+],
+[
 "⚡ Créer plusieurs appartements d’un coup",
 "⚡ Crea più appartamenti in un colpo"
 ],
 [
 "⚡ Panneaux",
 "⚡ Quadri"
-],
-[
-"✅ Mot de passe déjà choisi ? Connectez-vous avec votre email.",
-"✅ Password già scelta? Accedete con la vostra email."
 ],
 [
 "✅ Payée",
@@ -2601,6 +2641,10 @@ export default [
 "✓ Richiesta inviata. LuxInterventions ti manda un nuovo link (WhatsApp o email): aprilo per scegliere una nuova password."
 ],
 [
+"✓ IBAN valide",
+"✓ IBAN valido"
+],
+[
 "⭐ Envoyer l’évaluation",
 "⭐ Invia la valutazione"
 ],
@@ -2623,6 +2667,10 @@ export default [
 [
 "🎉 Bienvenue {0} !",
 "🎉 Benvenuti, {0}!"
+],
+[
+"🏢 Ma société",
+"🏢 La mia società"
 ],
 [
 "💼 Gérez aussi vos propres locataires",
@@ -2715,10 +2763,6 @@ export default [
 [
 "🔑 Mot de passe oublié ?",
 "🔑 Password dimenticata?"
-],
-[
-"🔑 Pas encore ? Touchez « Mot de passe oublié ? » : LuxInterventions vous envoie un nouveau lien.",
-"🔑 Non ancora? Toccate «Password dimenticata?»: LuxInterventions vi invia un nuovo link."
 ],
 [
 "🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.",

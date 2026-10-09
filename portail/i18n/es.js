@@ -297,6 +297,10 @@ export default [
 "Abril"
 ],
 [
+"BIC incorrect : 8 ou 11 caractères, du même pays que l’IBAN (ex. CCPLLULL).",
+"BIC incorrecto: 8 u 11 caracteres, del mismo país que el IBAN (ej. CCPLLULL)."
+],
+[
 "Badge chez le gardien",
 "Tarjeta en la portería"
 ],
@@ -381,6 +385,10 @@ export default [
 "Lo que escribió aún no está guardado. Para conservarlo: «Cancelar» y luego el botón de guardar."
 ],
 [
+"Ces données figurent sur les factures de LuxInterventions (ARES INVEST S.A.). Le nom de la société est modifié par LuxInterventions.",
+"Estos datos figuran en las facturas de LuxInterventions (ARES INVEST S.A.). El nombre de la empresa lo cambia LuxInterventions."
+],
+[
 "Chambre",
 "Habitación"
 ],
@@ -447,6 +455,10 @@ export default [
 [
 "Code",
 "Código"
+],
+[
+"Code BIC / SWIFT",
+"Código BIC / SWIFT"
 ],
 [
 "Code alarme",
@@ -697,6 +709,18 @@ export default [
 "Disponible tras la actualización del servidor."
 ],
 [
+"Données de la société enregistrées",
+"Datos de la empresa guardados"
+],
+[
+"Données de votre société (adresse, RCS, TVA, banque)",
+"Datos de su empresa (dirección, RCS, IVA, banco)"
+],
+[
+"Données de votre société à compléter",
+"Datos de su empresa por completar"
+],
+[
 "Dont urgentes",
 "De ellas urgentes"
 ],
@@ -913,6 +937,14 @@ export default [
 "Historial de intervenciones"
 ],
 [
+"IBAN incomplet ou incorrect",
+"IBAN incompleto o incorrecto"
+],
+[
+"IBAN incorrect : vérifiez les chiffres (ex. LU28 0019 4006 4475 0000).",
+"IBAN incorrecto: revise los dígitos (ej. LU28 0019 4006 4475 0000)."
+],
+[
 "Impossible d’activer les notifications",
 "No se pueden activar las notificaciones"
 ],
@@ -1073,10 +1105,6 @@ export default [
 "Idioma, notificaciones, informes, cuenta"
 ],
 [
-"Le lien a déjà servi, il a plus de 14 jours, ou un lien plus récent vous a été envoyé (seul le dernier marche).",
-"El enlace ya se usó, tiene más de 14 días, o se le envió un enlace más reciente (solo funciona el último)."
-],
-[
 "Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.",
 "El servidor aún no está listo para las notificaciones: inténtalo de nuevo en un momento."
 ],
@@ -1155,6 +1183,10 @@ export default [
 [
 "MEILLEUR PRIX",
 "MEJOR PRECIO"
+],
+[
+"Ma société",
+"Mi empresa"
 ],
 [
 "Mai",
@@ -1289,6 +1321,10 @@ export default [
 "Nombre (inquilino, conserje…)"
 ],
 [
+"Nom de la banque",
+"Nombre del banco"
+],
+[
 "Nom de la résidence",
 "Nombre de la comunidad"
 ],
@@ -1419,6 +1455,10 @@ export default [
 [
 "N° / précision",
 "N.º / detalle"
+],
+[
+"N° TVA",
+"N.º IVA"
 ],
 [
 "Octobre",
@@ -1627,10 +1667,6 @@ export default [
 [
 "Pour les gérances qui grandissent.",
 "Para administradoras en crecimiento."
-],
-[
-"Pourquoi ?",
-"¿Por qué?"
 ],
 [
 "Premiers pas · {0}/{1}",
@@ -1891,6 +1927,10 @@ export default [
 [
 "Site web",
 "Sitio web"
+],
+[
+"Société",
+"Empresa"
 ],
 [
 "Soin des lieux en fin de travaux",
@@ -2557,16 +2597,16 @@ export default [
 "⚠️ CONTENCIOSO — impagada"
 ],
 [
+"⚠️ à compléter",
+"⚠️ por completar"
+],
+[
 "⚡ Créer plusieurs appartements d’un coup",
 "⚡ Crear varios apartamentos de una vez"
 ],
 [
 "⚡ Panneaux",
 "⚡ Cuadros"
-],
-[
-"✅ Mot de passe déjà choisi ? Connectez-vous avec votre email.",
-"✅ ¿Ya eligió su contraseña? Inicie sesión con su email."
 ],
 [
 "✅ Payée",
@@ -2597,6 +2637,10 @@ export default [
 "✓ Solicitud enviada. LuxInterventions le envía un nuevo enlace (WhatsApp o email): ábralo para elegir una nueva contraseña."
 ],
 [
+"✓ IBAN valide",
+"✓ IBAN válido"
+],
+[
 "⭐ Envoyer l’évaluation",
 "⭐ Enviar la valoración"
 ],
@@ -2619,6 +2663,10 @@ export default [
 [
 "🎉 Bienvenue {0} !",
 "🎉 ¡Bienvenido, {0}!"
+],
+[
+"🏢 Ma société",
+"🏢 Mi empresa"
 ],
 [
 "💼 Gérez aussi vos propres locataires",
@@ -2711,10 +2759,6 @@ export default [
 [
 "🔑 Mot de passe oublié ?",
 "🔑 ¿Olvidó su contraseña?"
-],
-[
-"🔑 Pas encore ? Touchez « Mot de passe oublié ? » : LuxInterventions vous envoie un nouveau lien.",
-"🔑 ¿Todavía no? Toque «¿Olvidó la contraseña?»: LuxInterventions le envía un nuevo enlace."
 ],
 [
 "🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.",

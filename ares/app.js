@@ -2883,7 +2883,14 @@ const TVA_REG = {
   autoliq: ['Autoliquidation — client assujetti UE (0 %)', 'Autoliquidation : TVA due par le preneur (art. 196 de la directive 2006/112/CE).'],
   exo: ['TVA non applicable / exonérée (0 %)', 'TVA non applicable.'],
 };
-const factClient = (orgId, name) => { const all = (vault.get('reglages', 'factClients') || {}).list || {}; return { regime: 'normal', taux: '', tvaNum: '', adresse: '', pays: 'LU', mention: '', ...(all[orgId] || all['n:' + (name || '')] || {}) }; };
+// données de facturation d'une gérance : régime TVA (coffre) + société (portail : adresse, RCS, TVA, banque — la gérance peut les compléter elle-même)
+const factClient = (orgId, name) => {
+  const all = (vault.get('reglages', 'factClients') || {}).list || {};
+  const o = (ui.ptl && ui.ptl.data && ui.ptl.data.orgs.find((x) => x.id === orgId)) || {};
+  const fromPtl = Object.fromEntries([['adresse', o.address], ['rcs', o.rcs], ['tvaNum', o.tva], ['banque', o.banque], ['bic', o.bic], ['iban', o.iban]].filter(([, v]) => v));
+  return { regime: 'normal', taux: '', tvaNum: '', adresse: '', pays: 'LU', mention: '', ...(all[orgId] || all['n:' + (name || '')] || {}), ...fromPtl };
+};
+const orgMissing = (cl) => [!cl.adresse && 'adresse', !cl.rcs && 'RCS (B…)', !cl.tvaNum && 'n° TVA (LU…)', !cl.banque && 'banque', !cl.bic && 'BIC', !cl.iban && 'IBAN'].filter(Boolean);
 const regTaux = (reg, c) => (reg.regime === 'autoliq' || reg.regime === 'exo' ? 0 : reg.regime === 'taux' ? num(reg.taux) : num(c.taux));
 const regMention = (reg) => (reg.regime === 'autoliq' || reg.regime === 'exo' ? reg.mention || TVA_REG[reg.regime][1] : reg.mention || '');
 const factConf = () => ({ ...FACT_DEF, ...(vault.get('reglages', 'facturation') || {}) });
@@ -4206,7 +4213,7 @@ const SHEETS = {
       body = html`<div class="card" style="margin-bottom:12px;padding:12px">
           <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>🏢 ${o.name}</b><button class="btn sm ghost" data-action="ger-edit" data-id="${id}">${icon('edit')} Modifier</button></div>
           <dl class="kv small" style="margin:6px 0 0">${cl.adresse ? html`<dt>Adresse</dt><dd style="white-space:pre-line">${cl.adresse}</dd>` : ''}${cl.rcs ? html`<dt>RCS</dt><dd>${cl.rcs}</dd>` : ''}${cl.tvaNum ? html`<dt>N° TVA</dt><dd>${cl.tvaNum}</dd>` : ''}${cl.iban ? html`<dt>Banque</dt><dd>${[cl.banque, cl.bic ? 'BIC ' + cl.bic : '', ibanFmt(cl.iban)].filter(Boolean).join(' · ')}</dd>` : ''}${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}</dl>
-          ${!cl.adresse || !cl.rcs || !cl.tvaNum || !cl.iban || !cl.bic || !cl.banque ? html`<p class="tiny amber" style="margin:6px 0 0">⚠️ À compléter : ${[!cl.adresse && 'adresse', !cl.rcs && 'RCS (B…)', !cl.tvaNum && 'n° TVA (LU…)', !cl.banque && 'banque', !cl.bic && 'BIC', !cl.iban && 'IBAN'].filter(Boolean).join(', ')} → ✏️ Modifier</p>` : ''}</div>
+          ${orgMissing(cl).length ? html`<p class="tiny amber" style="margin:6px 0 0">⚠️ À compléter : ${orgMissing(cl).join(', ')} → ✏️ Modifier <span class="muted">(la gérance peut aussi les compléter dans son portail)</span></p>` : ''}</div>
         ${us.length ? html`<div class="section-label">Responsable et collaborateurs (${us.length})</div>${us.map(uRow)}<p class="tiny muted" style="margin:0 0 12px">Les collaborateurs sont ajoutés par le responsable dans son portail (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.</p>` : ''}
         ${hasResp ? '' : html`<div class="section-label">⭐ Responsable de la gérance</div>
         <p class="small muted" style="margin:0 0 8px">Il reçoit un lien personnel, choisit son mot de passe, puis ajoute lui-même ses collaborateurs.</p>
@@ -6480,6 +6487,8 @@ const FORMS = {
     const id = fd.get('id'), b = { name: String(fd.get('name') || '').trim(), email: String(fd.get('email') || '').trim(), phone: String(fd.get('phone') || '').trim() };
     if (!b.name) return;
     { const ib = ibanCheck(fd.get('iban')), bc = bicCheck(fd.get('bic'), ib.ok ? ib.cc : ''); if (!ib.ok) return toast('IBAN de la gérance : ' + ib.msg, { bad: true }); if (!bc.ok) return toast('BIC de la gérance : ' + bc.msg, { bad: true }); }
+    const gv = (k) => String(fd.get(k) || '').trim();
+    Object.assign(b, { address: gv('adresse'), rcs: gv('rcs').toUpperCase().replace(/\s+/g, ''), tva: gv('tvaNum').toUpperCase().replace(/\s+/g, ''), banque: gv('banque'), bic: gv('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(gv('iban')) });
     let nid = id;
     try { if (id) await ptlApi('orgs/' + id, { method: 'PATCH', body: b }); else nid = (await ptlApi('orgs', { method: 'POST', body: b })).id; } catch (e) { return toast(e.message, { bad: true }); }
     const g = (k) => String(fd.get(k) || '').trim();

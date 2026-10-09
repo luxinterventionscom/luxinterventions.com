@@ -525,6 +525,7 @@ async function loadRoute(route) {
     const [stats, tickets, pubs] = await Promise.all([api('stats' + (org ? '?' + org.slice(1) : '')), api('tickets?scope=active' + org), api('pubs').catch(() => ({ items: [] }))]);
     state.cache.home = { stats, tickets: tickets.tickets, pubs: pubs.items || [] };
     if (pubs.offers === false) state.offersOff = true; else if (pubs.items) state.offersOff = false; // offres d'abonnement masquées par LuxInterventions
+    if (!isAdmin()) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; } catch { /* hors ligne */ } }
   } else if (route === 'demandes') {
     const [tickets, residences] = await Promise.all([
       api(`tickets?scope=${f.scope}${org}${f.residence ? '&residence=' + f.residence : ''}`),
@@ -614,6 +615,7 @@ function guideCard(stats) {
         [standalone, 'Installez l’app sur votre téléphone', 'go', 'plus'],
       ]
     : [
+        ...(isManager() && state.myOrg ? [[!orgMissing(state.myOrg).length, orgMissing(state.myOrg).length ? html`<span class="red">⚠️ <b>Données de votre société à compléter</b> :</span> <span>${orgMissing(state.myOrg).join(', ')}</span>` : 'Données de votre société (adresse, RCS, TVA, banque)', 'org-edit', '']] : []),
         [(stats.residences || 0) > 0, 'Ajoutez vos résidences (une seule fois : accès, clés, contact)', 'new-residence', ''],
         [(stats.createdMonth || 0) + (stats.open || 0) > 0, 'Envoyez votre première demande d’intervention', 'new-ticket', ''],
         [push, 'Activez les notifications pour suivre vos demandes', 'push-on', ''],
@@ -932,6 +934,7 @@ const VIEWS = {
       ${isAdmin() ? '' : offerBanner()}
       <div class="section-label">Compte</div>
       <div class="list settings">
+        ${isManager() && !isAdmin() ? html`<button class="row" data-action="org-edit">🏢<span class="grow title">Ma société${orgMissing(state.myOrg).length ? html` <span class="tiny red">⚠️ à compléter</span>` : ''}</span></button>` : ''}
         <button class="row" data-action="change-password">${icon('key')}<span class="grow title">Changer mon mot de passe</span></button>
         <button class="row" data-action="logout">${icon('logout')}<span class="grow title red">Se déconnecter</span></button>
       </div>
@@ -955,6 +958,14 @@ const sheetEl = $('#sheet');
 // Saisie pas encore enregistrée : on demande avant de fermer la fenêtre (sinon tout est perdu)
 let sheetDirty = false;
 sheetEl.addEventListener('input', (e) => { const el = e.target; if (el.closest('form') && !el.dataset.input && !['hidden', 'search', 'file'].includes(el.type)) sheetDirty = true; });
+// IBAN de la société : contrôle en direct ; BIC proposé pour les banques luxembourgeoises connues
+sheetEl.addEventListener('input', (e) => {
+  if (e.target.dataset.input !== 'org-iban') return;
+  sheetDirty = true;
+  const f = e.target.form, x = ibanClean(e.target.value), m = f.querySelector('.org-iban-msg'), ok = ibanOk(x);
+  if (m) { m.textContent = !x ? '' : ok ? '✓ IBAN valide' : 'IBAN incomplet ou incorrect'; m.className = 'tiny org-iban-msg ' + (ok ? 'green' : 'red'); }
+  if (ok && x.startsWith('LU') && LU_BIC[x.slice(4, 7)] && !f.bic.value.trim()) { f.bic.value = LU_BIC[x.slice(4, 7)][0]; if (!f.banque.value.trim()) f.banque.value = LU_BIC[x.slice(4, 7)][1]; }
+});
 // fermer une fenêtre où l'on a écrit : proposer directement d'enregistrer (le bouton du bas peut être caché ou loin)
 const leaveSheetOk = async () => {
   if (!sheetDirty) return true;
@@ -1080,7 +1091,41 @@ const offerBanner = () => state.offersOff ? '' : html`<button type="button" clas
 const offerSeen = () => { try { return localStorage.getItem(OFFER_KEY) === '1'; } catch { return true; } };
 const offerMark = () => { try { localStorage.setItem(OFFER_KEY, '1'); } catch { /* stockage indisponible */ } };
 
+// 🏢 données de la société de la gérance (factures de LuxInterventions) : ce qui manque est signalé ⚠️ dans « Premiers pas »
+const ibanClean = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+const ibanFmt = (v) => ibanClean(v).replace(/(.{4})/g, '$1 ').trim();
+function ibanOk(v) {
+  const x = ibanClean(v);
+  if (!/^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/.test(x)) return false;
+  let r = 0;
+  for (const ch of x.slice(4) + x.slice(0, 4)) { const d = /\d/.test(ch) ? ch : String(ch.charCodeAt(0) - 55); for (const c of d) r = (r * 10 + +c) % 97; }
+  return r === 1;
+}
+const bicOk = (v, iban) => { const x = String(v || '').toUpperCase().replace(/\s/g, ''); return /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(x) && (!iban || x.slice(4, 6) === ibanClean(iban).slice(0, 2)); };
+const LU_BIC = { '001': ['BCEELULL', 'Spuerkeess'], '002': ['BILLLULL', 'BIL'], '003': ['BGLLLULL', 'BGL BNP Paribas'], '009': ['CCRALULL', 'Raiffeisen'], '014': ['CELLLULL', 'ING Luxembourg'], '111': ['CCPLLULL', 'POST Luxembourg'] };
+const orgMissing = (o) => (o ? [!o.address && 'adresse', !o.rcs && 'RCS (B…)', !o.tva && 'n° TVA (LU…)', !o.banque && 'banque', !o.bic && 'BIC', !o.iban && 'IBAN'].filter(Boolean) : []);
+
 const SHEETS = {
+  myorg() {
+    const o = state.myOrg || {};
+    return {
+      title: '🏢 Ma société',
+      narrow: true,
+      body: html`<form id="f" data-form="myorg" class="fields">
+        <p class="small muted full" style="margin:0">Ces données figurent sur les factures de LuxInterventions (ARES INVEST S.A.). Le nom de la société est modifié par LuxInterventions.</p>
+        <label class="field full">Société<input value="${o.name || state.me.org_name || ''}" readonly class="muted"></label>
+        <label class="field full">Adresse<textarea name="address" required style="min-height:56px" placeholder="rue, n°, code postal, ville">${o.address || ''}</textarea></label>
+        <label class="field">RCS<input name="rcs" required value="${o.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
+        <label class="field">N° TVA<input name="tva" required value="${o.tva || ''}" placeholder="LU12345678" autocapitalize="characters"></label>
+        <label class="field">Nom de la banque<input name="banque" required value="${o.banque || ''}" placeholder="ex. POST Luxembourg"></label>
+        <label class="field">Code BIC / SWIFT<input name="bic" required value="${o.bic || ''}" placeholder="ex. CCPLLULL" autocapitalize="characters" maxlength="14"></label>
+        <label class="field full">IBAN<input name="iban" required value="${ibanFmt(o.iban || '')}" placeholder="LU.. .... .... .... ...." autocapitalize="characters" maxlength="42" data-input="org-iban"><span class="tiny org-iban-msg"></span></label>
+        <label class="field">Email<input type="email" name="email" value="${o.email || ''}"></label>
+        <label class="field">Téléphone<input type="tel" name="phone" value="${o.phone || ''}"></label>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
   offer() {
     return {
       wide: true,
@@ -1724,6 +1769,7 @@ const ACTIONS = {
     toast(active ? 'Accès réactivé' : 'Accès désactivé');
   },
   'change-password': () => openSheet('password-form'),
+  'org-edit': async () => { if (!state.myOrg) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; } catch { /* hors ligne */ } } openSheet('myorg'); },
   copy: async (d) => { try { await navigator.clipboard.writeText(d.text); toast('Copié'); } catch { toast('Copie impossible', { bad: true }); } },
   // mot de passe oublié : LuxInterventions (ou le responsable) reçoit la demande et envoie un nouveau lien
   async forgot(d, btn) {
@@ -1743,6 +1789,15 @@ const ACTIONS = {
 // ───────────────────────── Formulaires ─────────────────────────
 const fd2obj = (fd) => Object.fromEntries([...fd.entries()].filter(([, v]) => typeof v === 'string'));
 const FORMS = {
+  async myorg(fd) {
+    const g = (k) => String(fd.get(k) || '').trim();
+    const b = { address: g('address'), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), tva: g('tva').toUpperCase().replace(/\s+/g, ''), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(g('iban')), email: g('email'), phone: g('phone') };
+    if (!ibanOk(b.iban)) return toast('IBAN incorrect : vérifiez les chiffres (ex. LU28 0019 4006 4475 0000).', { bad: true });
+    if (!bicOk(b.bic, b.iban)) return toast('BIC incorrect : 8 ou 11 caractères, du même pays que l’IBAN (ex. CCPLLULL).', { bad: true });
+    await api('orgs/' + state.me.org_id, { method: 'PATCH', body: b });
+    state.myOrg = { ...(state.myOrg || {}), ...b };
+    closeSheet(); toast('Données de la société enregistrées'); renderView();
+  },
   async login(fd, form) {
     const btn = form.querySelector('[type=submit]');
     setBusy(btn, true, 'Connexion…');
