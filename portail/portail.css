@@ -245,3 +245,9 @@ dialog.sheet.wide { max-width: 1040px; }
 .offer-banner .ob-go { color: #dc2626; animation: obBlink 1s ease-in-out infinite; }
 .lock-card .offer-banner { margin: 12px 0 4px; }
 @media (prefers-reduced-motion: reduce) { .offer-banner .ob-go { animation: none; } }
+/* logo de l'agence (Ma société, en-tête) */
+.org-logo-pick{display:flex;gap:12px;align-items:center;padding:10px;border:1px dashed var(--line,#ddd);border-radius:12px}
+.org-logo-box{flex:0 0 64px;width:64px;height:64px;border-radius:12px;background:#fff;border:1px solid var(--line,#ddd);display:grid;place-items:center;text-align:center;overflow:hidden}
+.org-logo-box img{max-width:100%;max-height:100%;object-fit:contain}
+img.org-logo{height:16px;max-width:48px;object-fit:contain;vertical-align:-3px;margin-right:5px;border-radius:3px;background:#fff}
+img.org-logo[hidden]{display:none}

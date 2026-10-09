@@ -10203,5 +10203,25 @@ export default [
 [
 "IBAN (compte d’ARES INVEST S.A.)",
 "IBAN (ARES INVEST S.A. account)"
+],
+[
+"🎨 Logo de l’agence",
+"🎨 Agency logo"
+],
+[
+"(facultatif)",
+"(optional)"
+],
+[
+"La gérance peut aussi l’ajouter elle-même dans son portail (Ma société).",
+"The agency can also add it itself in its portal (My company)."
+],
+[
+"📷 Choisir",
+"📷 Choose"
+],
+[
+"Image illisible : choisissez un PNG ou un JPG",
+"Unreadable image: choose a PNG or JPG"
 ]
 ];

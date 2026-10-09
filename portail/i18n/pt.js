@@ -945,6 +945,10 @@ export default [
 "IBAN errado: verifique os dígitos (ex. LU28 0019 4006 4475 0000)."
 ],
 [
+"Image illisible : choisissez un PNG ou un JPG",
+"Imagem ilegível: escolha um PNG ou JPG"
+],
+[
 "Impossible d’activer les notifications",
 "Não foi possível ativar as notificações"
 ],
@@ -1157,12 +1161,32 @@ export default [
 "Inquilinos, rendas, recibos"
 ],
 [
+"Logo",
+"Logótipo"
+],
+[
+"Logo enregistré 🎨",
+"Logótipo guardado 🎨"
+],
+[
+"Logo retiré",
+"Logótipo removido"
+],
+[
+"Logo trop lourd ou format non reconnu (PNG, JPG)",
+"Logótipo demasiado pesado ou formato não reconhecido (PNG, JPG)"
+],
+[
 "Luca passe cet après-midi, merci de prévenir le concierge.",
 "O Luca passa esta tarde, por favor avisem o porteiro."
 ],
 [
 "LuxInterventions est en route / sur place",
 "A LuxInterventions está a caminho / no local"
+],
+[
+"LuxInterventions vous reconnaît d’un coup d’œil. PNG ou JPG, carré de préférence.",
+"A LuxInterventions reconhece-o num relance. PNG ou JPG, de preferência quadrado."
 ],
 [
 "LuxInterventions · Interventions techniques 7j/7",
@@ -1810,7 +1834,7 @@ export default [
 ],
 [
 "Retirer",
-"Retirar"
+"Remover"
 ],
 [
 "Retirer cette résidence ?",
@@ -2673,6 +2697,14 @@ export default [
 "🎉 Bem-vindo, {0}!"
 ],
 [
+"🎨 Ajoutez le logo de votre agence : LuxInterventions vous reconnaît d’un coup d’œil",
+"🎨 Adicione o logótipo da sua agência: a LuxInterventions reconhece-o num relance"
+],
+[
+"🎨 Logo de votre agence",
+"🎨 Logótipo da sua agência"
+],
+[
 "🏢 Ma société",
 "🏢 A minha empresa"
 ],
@@ -2721,8 +2753,16 @@ export default [
 "📲 Na realidade, a equipa LuxInterventions recebe agora uma notificação."
 ],
 [
+"📷 Choisir le logo",
+"📷 Escolher o logótipo"
+],
+[
 "🔄 Actualiser les messages",
 "🔄 Atualizar mensagens"
+],
+[
+"🔄 Changer",
+"🔄 Mudar"
 ],
 [
 "🔎 Filtres — rien coché = tout",
