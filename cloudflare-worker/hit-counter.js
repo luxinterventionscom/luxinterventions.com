@@ -905,6 +905,9 @@ const PTL_SCHEMA = [
   `CREATE INDEX IF NOT EXISTS idx_photos_ticket ON photos(ticket_id)`,
   `CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, user_id TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created_at INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS devis (id TEXT PRIMARY KEY, org_id TEXT NOT NULL, no TEXT NOT NULL, title TEXT, ttc REAL, acompte REAL, pct INTEGER, valid_until TEXT,
+     status TEXT NOT NULL, note TEXT, pdf_key TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, decided_at INTEGER, decided_by TEXT, decided_by_name TEXT)`,
+  `CREATE INDEX IF NOT EXISTS idx_devis_org ON devis(org_id, updated_at)`,
 ];
 // Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
 const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT", "ALTER TABLE orgs ADD COLUMN logo TEXT"];
@@ -1092,6 +1095,7 @@ const PUSH_TXT = {
   ptl: { fr: "🏢 Nouvelle demande d'intervention", it: "🏢 Nuova richiesta di intervento", de: "🏢 Neue Einsatzanfrage", pt: "🏢 Novo pedido de intervenção", en: "🏢 New intervention request", es: "🏢 Nueva solicitud de intervención" },
   pwd: { fr: "🔑 Mot de passe oublié : envoyez un nouveau lien", it: "🔑 Password dimenticata: invia un nuovo link", de: "🔑 Passwort vergessen: neuen Link senden", pt: "🔑 Palavra-passe esquecida: envie um novo link", en: "🔑 Forgotten password: send a new link", es: "🔑 Contraseña olvidada: envíe un nuevo enlace" },
   ptlmsg: { fr: "🏢 Nouveau message d'une gérance", it: "🏢 Nuovo messaggio da un'agenzia", de: "🏢 Neue Nachricht einer Verwaltung", pt: "🏢 Nova mensagem de uma gestora", en: "🏢 New message from an agency", es: "🏢 Nuevo mensaje de una administración" },
+  devis: { fr: "📝 Réponse d'une gérance à un devis", it: "📝 Risposta di una gérance a un preventivo", de: "📝 Antwort einer Verwaltung auf ein Angebot", pt: "📝 Resposta de uma gestora a um orçamento", en: "📝 A property manager answered a quote", es: "📝 Respuesta de una administradora a un presupuesto" },
   offer: { fr: "💼 Une gérance est intéressée par un abonnement", it: "💼 Una gérance è interessata a un abbonamento", de: "💼 Eine Verwaltung interessiert sich für ein Abo", pt: "💼 Uma gestora está interessada numa assinatura", en: "💼 A property manager is interested in a plan", es: "💼 Una administradora está interesada en una suscripción" },
   news: { fr: "Du nouveau dans votre app", it: "Novità nella tua app", de: "Neues in Ihrer App", pt: "Novidades na sua app", en: "Something new in your app", es: "Novedades en tu app" },
 };
@@ -1280,6 +1284,65 @@ async function handlePortail(request, env, url, headers, ctx) {
         ctx && ctx.waitUntil(espPushSend(env, "owner", "offer"));
       }
       return json({ ok: true });
+    }
+
+    // ── Devis (PDF émis par l'app de gestion) : la gérance accepte, refuse ou demande une révision ──
+    if (path === "devis" && method === "PUT") {
+      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      if ((request.headers.get("Content-Type") || "") !== "application/pdf") fail(415, "PDF attendu");
+      let meta = {};
+      try { meta = JSON.parse(decodeURIComponent(request.headers.get("X-Devis") || "{}")); } catch { fail(400, "Devis illisible"); }
+      const no = clean(meta.no, 80), org = clean(meta.org, 40);
+      if (!/^DEV-[A-Z0-9-]{6,}$/.test(no)) fail(400, "Numéro de devis invalide");
+      if (!(await env.DB.prepare("SELECT id FROM orgs WHERE id = ?").bind(org).first())) fail(400, "Gérance inconnue");
+      const data = await request.arrayBuffer();
+      if (!data.byteLength || data.byteLength > 12 * 1024 * 1024) fail(413, "PDF vide ou trop lourd");
+      const n = (x) => (Number.isFinite(+x) ? Math.round(+x * 100) / 100 : 0);
+      const old = /^[a-z0-9]+$/.test(meta.id || "") ? await env.DB.prepare("SELECT * FROM devis WHERE id = ?").bind(meta.id).first() : null;
+      const id = old ? old.id : ptlId(), key = `portail/devis/${id}.pdf`;
+      await env.PHOTOS.put(key, data, { httpMetadata: { contentType: "application/pdf" } });
+      const vu = /^\d{4}-\d{2}-\d{2}$/.test(meta.valid_until || "") ? meta.valid_until : "";
+      if (old) await env.DB.prepare("UPDATE devis SET org_id = ?, no = ?, title = ?, ttc = ?, acompte = ?, pct = ?, valid_until = ?, status = 'envoye', note = NULL, pdf_key = ?, updated_at = ?, decided_at = NULL, decided_by = NULL, decided_by_name = NULL WHERE id = ?")
+        .bind(org, no, clean(meta.title, 200), n(meta.ttc), n(meta.acompte), Math.round(n(meta.pct)), vu, key, now, id).run();
+      else await env.DB.prepare("INSERT INTO devis (id, org_id, no, title, ttc, acompte, pct, valid_until, status, pdf_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'envoye', ?, ?, ?)")
+        .bind(id, org, no, clean(meta.title, 200), n(meta.ttc), n(meta.acompte), Math.round(n(meta.pct)), vu, key, now, now).run();
+      ctx && ctx.waitUntil(ptlNotify(env, "u.org_id = ? AND u.role = 'gerance_admin'", [org], { title: `📝 Devis ${no}`, body: `${n(meta.ttc).toFixed(2).replace(".", ",")} € TTC — à accepter, refuser ou revoir dans le portail`, url: "/portail.html#/home", tag: "devis-" + id }, false));
+      return json({ ok: true, id });
+    }
+    if (path === "devis" && method === "GET") {
+      const rows = isAdmin(me)
+        ? await env.DB.prepare("SELECT d.*, o.name AS org_name FROM devis d JOIN orgs o ON o.id = d.org_id ORDER BY d.updated_at DESC LIMIT 300").all()
+        : await env.DB.prepare("SELECT * FROM devis WHERE org_id = ? AND (status IN ('envoye', 'revision') OR updated_at > ?) ORDER BY updated_at DESC LIMIT 50").bind(me.org_id, now - 60 * 864e5).all();
+      return json({ devis: (rows.results || []).map(({ pdf_key, ...r }) => r) });
+    }
+    const devMatch = path.match(/^devis\/([a-z0-9]+)(?:\/(pdf|decision))?$/);
+    if (devMatch) {
+      const dv = await env.DB.prepare("SELECT * FROM devis WHERE id = ?").bind(devMatch[1]).first();
+      if (!dv || (!isAdmin(me) && dv.org_id !== me.org_id)) fail(404, "Devis introuvable");
+      if (devMatch[2] === "pdf" && method === "GET") {
+        const obj = await env.PHOTOS.get(dv.pdf_key);
+        if (!obj) fail(404, "Devis introuvable");
+        return new Response(obj.body, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="Devis-${dv.no}.pdf"`, "Cache-Control": "private, no-store", ...headers } });
+      }
+      // réponse de la gérance (le responsable) : acceptée, refusée, ou révision demandée (avec un mot)
+      if (devMatch[2] === "decision" && method === "POST") {
+        if (me.role !== "gerance_admin" && !isAdmin(me)) fail(403, "Réservé au responsable de la gérance");
+        if (!["envoye", "revision"].includes(dv.status)) fail(409, "Ce devis a déjà une réponse");
+        const b = await body(), st = ["accepte", "refuse", "revision"].includes(b.status) ? b.status : "", note = clean(b.note, 1500);
+        if (!st) fail(400, "Réponse invalide");
+        if (st === "revision" && !note) fail(400, "Écrivez ce qu'il faut revoir");
+        await env.DB.prepare("UPDATE devis SET status = ?, note = ?, decided_at = ?, decided_by = ?, decided_by_name = ?, updated_at = ? WHERE id = ?").bind(st, note || null, now, me.id, me.name, now, dv.id).run();
+        const lbl = { accepte: "✅ accepté", refuse: "❌ refusé", revision: "🔄 révision demandée" }[st];
+        ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], { title: `📝 Devis ${dv.no} ${lbl}`, body: `${me.name}${me.org_name ? " (" + me.org_name + ")" : ""}${note ? " — " + note.slice(0, 120) : ""}`, url: "/portail.html", tag: "devis-" + dv.id }, st !== "refuse"));
+        ctx && ctx.waitUntil(espPushSend(env, "owner", "devis"));
+        return json({ ok: true });
+      }
+      if (!devMatch[2] && method === "DELETE") {
+        if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+        await env.PHOTOS.delete(dv.pdf_key);
+        await env.DB.prepare("DELETE FROM devis WHERE id = ?").bind(dv.id).run();
+        return json({ ok: true });
+      }
     }
 
     if (path === "me/password" && method === "POST") {

@@ -53,6 +53,10 @@ export default [
 ": después entrarás con tu email y esta contraseña."
 ],
 [
+"Accepter ce devis ?",
+"¿Aceptar este presupuesto?"
+],
+[
 "Accueil",
 "Inicio"
 ],
@@ -329,6 +333,10 @@ export default [
 "Bueno"
 ],
 [
+"Bon pour accord : votre acceptation est ferme et définitive. LuxInterventions organise les travaux.",
+"Conforme: tu aceptación es firme y definitiva. LuxInterventions organiza los trabajos."
+],
+[
 "Bonjour",
 "Hola"
 ],
@@ -375,6 +383,10 @@ export default [
 [
 "Cave",
 "Sótano"
+],
+[
+"Ce devis a déjà une réponse",
+"Este presupuesto ya tiene respuesta"
 ],
 [
 "Ce navigateur n’a pas pu activer les notifications (navigation privée, ou iPhone : installez d’abord l’app sur l’écran d’accueil et ouvrez-la depuis l’icône).",
@@ -697,6 +709,14 @@ export default [
 "Descripción del problema"
 ],
 [
+"Devis",
+"Presupuesto"
+],
+[
+"Devis refusé",
+"Presupuesto rechazado"
+],
+[
 "Directeur",
 "Director"
 ],
@@ -707,6 +727,10 @@ export default [
 [
 "Disponible après la mise à jour du serveur.",
 "Disponible tras la actualización del servidor."
+],
+[
+"Dites à LuxInterventions ce qu’il faut revoir (travaux en plus ou en moins, délai, prix…). Vous recevrez une nouvelle version.",
+"Dile a LuxInterventions qué revisar (más o menos trabajos, plazo, precio…). Recibirás una nueva versión."
 ],
 [
 "Données de la société enregistrées",
@@ -851,6 +875,18 @@ export default [
 [
 "Excellent",
 "Excelente"
+],
+[
+"Expire ce soir à minuit",
+"Caduca esta noche a medianoche"
+],
+[
+"Expire dans {0} jour(s)",
+"Caduca en {0} día(s)"
+],
+[
+"Expiré le",
+"Caducó el"
 ],
 [
 "Facturé TTC",
@@ -1109,6 +1145,10 @@ export default [
 "Idioma, notificaciones, informes, cuenta"
 ],
 [
+"Le responsable de votre gérance accepte ou refuse le devis.",
+"El responsable de tu administradora acepta o rechaza el presupuesto."
+],
+[
 "Le serveur n’est pas encore prêt pour les notifications : réessayez dans un instant.",
 "El servidor aún no está listo para las notificaciones: inténtalo de nuevo en un momento."
 ],
@@ -1179,6 +1219,10 @@ export default [
 [
 "LuxInterventions est en route / sur place",
 "LuxInterventions está en camino / en el lugar"
+],
+[
+"LuxInterventions est prévenu.",
+"LuxInterventions ha sido avisado."
 ],
 [
 "LuxInterventions vous reconnaît d’un coup d’œil. PNG ou JPG, carré de préférence.",
@@ -1785,6 +1829,10 @@ export default [
 "Rehacer"
 ],
 [
+"Refuser ce devis ?",
+"¿Rechazar este presupuesto?"
+],
+[
 "Relation avec le personnel",
 "Relación con el personal"
 ],
@@ -1865,6 +1913,10 @@ export default [
 "Reparar"
 ],
 [
+"Réservé au responsable de la gérance",
+"Reservado al responsable de la administradora"
+],
+[
 "Résidence",
 "Residencia"
 ],
@@ -1891,6 +1943,10 @@ export default [
 [
 "Résumé",
 "Resumen"
+],
+[
+"Révision demandée — LuxInterventions prépare une nouvelle version.",
+"Revisión solicitada — LuxInterventions prepara una nueva versión."
 ],
 [
 "Rôle",
@@ -2181,12 +2237,20 @@ export default [
 "Usuarios"
 ],
 [
+"Valable jusqu’au",
+"Válido hasta"
+],
+[
 "Vidéo",
 "Vídeo"
 ],
 [
 "Vitrerie",
 "Cristalería"
+],
+[
+"Voir le devis (PDF)",
+"Ver el presupuesto (PDF)"
 ],
 [
 "Voir les offres ›",
@@ -2203,6 +2267,10 @@ export default [
 [
 "Votre avis est essentiel pour améliorer notre service.",
 "Tu opinión es fundamental para mejorar nuestro servicio."
+],
+[
+"Votre message",
+"Tu mensaje"
 ],
 [
 "Votre nom",
@@ -2227,6 +2295,10 @@ export default [
 [
 "Vue gérance",
 "Vista administración"
+],
+[
+"acompte",
+"anticipo"
 ],
 [
 "de la demande à la fin",
@@ -2489,6 +2561,10 @@ export default [
 "Tratar ahora"
 ],
 [
+"Écrivez ce qu'il faut revoir",
+"Escribe qué hay que revisar"
+],
+[
 "Écrivez d’abord votre email ci-dessus, puis touchez « Mot de passe oublié ? ».",
 "Escriba primero su email arriba y toque «¿Olvidó su contraseña?»."
 ],
@@ -2633,6 +2709,18 @@ export default [
 "⚡ Cuadros"
 ],
 [
+"✅ Accepter",
+"✅ Aceptar"
+],
+[
+"✅ Devis accepté",
+"✅ Presupuesto aceptado"
+],
+[
+"✅ Devis accepté — merci !",
+"✅ Presupuesto aceptado — ¡gracias!"
+],
+[
 "✅ Payée",
 "✅ Pagada"
 ],
@@ -2663,6 +2751,14 @@ export default [
 [
 "✓ IBAN valide",
 "✓ IBAN válido"
+],
+[
+"❌ Devis refusé",
+"❌ Presupuesto rechazado"
+],
+[
+"❌ Refuser",
+"❌ Rechazar"
 ],
 [
 "⭐ Envoyer l’évaluation",
@@ -2725,6 +2821,10 @@ export default [
 "📒 Contabilidad"
 ],
 [
+"📝 Devis en cours ({0})",
+"📝 Presupuestos en curso ({0})"
+],
+[
 "📲 En réel, LuxInterventions est prévenu de votre message.",
 "📲 En la realidad, LuxInterventions recibe aviso de tu mensaje."
 ],
@@ -2755,6 +2855,14 @@ export default [
 [
 "🔄 Changer",
 "🔄 Cambiar"
+],
+[
+"🔄 Demande de révision envoyée à LuxInterventions",
+"🔄 Solicitud de revisión enviada a LuxInterventions"
+],
+[
+"🔄 Demander une révision",
+"🔄 Pedir una revisión"
 ],
 [
 "🔎 Filtres — rien coché = tout",

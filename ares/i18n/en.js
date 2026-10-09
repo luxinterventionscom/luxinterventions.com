@@ -10223,5 +10223,497 @@ export default [
 [
 "Image illisible : choisissez un PNG ou un JPG",
 "Unreadable image: choose a PNG or JPG"
+],
+[
+"20 photos maximum : {0} ajoutée(s)",
+"20 photos maximum: {0} added"
+],
+[
+": il est imprimé sur chaque devis.",
+": it is printed on every quote."
+],
+[
+"Acompte",
+"Deposit"
+],
+[
+"Acompte {0} %",
+"Deposit {0} %"
+],
+[
+"Acompte conseillé : jusqu’à 2 000 € TTC 40 % · jusqu’à 10 000 € 30 % · jusqu’à 50 000 € 20 % · au-delà 10 %.",
+"Suggested deposit: up to €2,000 incl. VAT 40 % · up to €10,000 30 % · up to €50,000 20 % · above 10 %."
+],
+[
+"Acompte conseillé pour ce montant : {0} %",
+"Suggested deposit for this amount: {0} %"
+],
+[
+"Adresse du chantier",
+"Site address"
+],
+[
+"Adresse du client",
+"Client address"
+],
+[
+"Ajoutez le",
+"Add the"
+],
+[
+"Aucun devis pour l’instant.",
+"No quotes yet."
+],
+[
+"Bon pour accord",
+"Approved (agreed)"
+],
+[
+"Brouillons ({0})",
+"Drafts ({0})"
+],
+[
+"Choisissez la gérance",
+"Choose the agency"
+],
+[
+"Conseillé ({0} %)",
+"Suggested ({0} %)"
+],
+[
+"Constats, travaux à prévoir, accès, remarques…",
+"Findings, work to plan, access, notes…"
+],
+[
+"Devis",
+"Quote"
+],
+[
+"Devis accepté",
+"Quote accepted"
+],
+[
+"Devis créé",
+"Quote created"
+],
+[
+"Devis enregistré",
+"Quote saved"
+],
+[
+"Devis envoyé",
+"Quote sent"
+],
+[
+"Devis modifié",
+"Quote changed"
+],
+[
+"Devis refusé",
+"Quote declined"
+],
+[
+"Devis signé par le client",
+"Quote signed by the client"
+],
+[
+"Devis supprimé",
+"Quote deleted"
+],
+[
+"Devis valable",
+"Quote valid for"
+],
+[
+"Devis {0} accepté ?",
+"Quote {0} accepted?"
+],
+[
+"Devis {0} refusé ?",
+"Quote {0} declined?"
+],
+[
+"Durée prévue",
+"Planned duration"
+],
+[
+"Délai / début des travaux",
+"Timing / start of work"
+],
+[
+"En cours ({0})",
+"Open ({0})"
+],
+[
+"Enregistrez d’abord le devis (💾)",
+"Save the quote first (💾)"
+],
+[
+"Heures par ouvrier",
+"Hours per worker"
+],
+[
+"Indiquez le nom du client",
+"Enter the client name"
+],
+[
+"Interlocuteur sur place",
+"Contact on site"
+],
+[
+"Je demande expressément que les travaux commencent avant la fin du délai de rétractation. Si je me rétracte ensuite, je paierai les travaux déjà réalisés.",
+"I expressly ask for the work to start before the end of the withdrawal period. If I then withdraw, I will pay for the work already done."
+],
+[
+"La gérance",
+"The agency"
+],
+[
+"Le client doit signer dans le cadre blanc",
+"The client must sign in the white box"
+],
+[
+"Le client peut encore se rétracter. Ensuite : « ➡️ Créer l’intervention ».",
+"The client can still withdraw. Then: “➡️ Créer l’intervention”."
+],
+[
+"Le devis et ses photos sont effacés. Le numéro n’est pas réutilisé.",
+"The quote and its photos are deleted. The number is not reused."
+],
+[
+"Le numéro est donné à l’enregistrement : DEV-initiales-RCS (sociétés)-date-heure-numéro suivi (ex. DEV-AG-B123456-{0}-0930-{1}).",
+"The number is given when saving: DEV-initials-RCS (companies)-date-time-running number (e.g. DEV-AG-B123456-{0}-0930-{1})."
+],
+[
+"Les lignes du chef de chantier (métier, ouvriers, heures) apparaissent ici pour choisir l’ouvrier et le tarif.",
+"The site manager’s lines (trade, workers, hours) appear here to choose the worker and the rate."
+],
+[
+"Ligne",
+"Line"
+],
+[
+"Matériel (HT)",
+"Materials (excl. VAT)"
+],
+[
+"Même numéro + R1, R2… Modifiez les travaux ou faites une remise, puis renvoyez-le. La signature éventuelle est retirée.",
+"Same number + R1, R2… Change the work or give a discount, then send it again. Any signature is removed."
+],
+[
+"Nom / raison sociale",
+"Name / company name"
+],
+[
+"Nom du signataire",
+"Signatory name"
+],
+[
+"Nombre d’ouvriers",
+"Number of workers"
+],
+[
+"Nouveau devis",
+"New quote"
+],
+[
+"Nouvelle version R{0} ?",
+"New version R{0}?"
+],
+[
+"Nouvelle version du devis",
+"New version of the quote"
+],
+[
+"Objet du devis",
+"Quote subject"
+],
+[
+"Ouvrier",
+"Worker"
+],
+[
+"Ouvriers prévus (métier · nombre · heures par ouvrier)",
+"Planned workers (trade · number · hours per worker)"
+],
+[
+"PDF impossible :",
+"PDF failed:"
+],
+[
+"PDF téléchargé : joignez-le au message",
+"PDF downloaded: attach it to the message"
+],
+[
+"Particulier : il garde 14 jours pour se rétracter (pastille violette).",
+"Private client: 14 days to withdraw (purple dot)."
+],
+[
+"Photo du devis retirée",
+"Quote photo removed"
+],
+[
+"Portail gérance non connecté",
+"Agency portal not connected"
+],
+[
+"RCS obligatoire pour une société (ex. B123456)",
+"RCS required for a company (e.g. B123456)"
+],
+[
+"Rapport du chantier (ce qu’il faut faire)",
+"Site report (what needs doing)"
+],
+[
+"Renvoyer",
+"Send again"
+],
+[
+"Retirer cette photo du devis ?",
+"Remove this photo from the quote?"
+],
+[
+"Réponse de la gérance au devis",
+"Agency’s answer to the quote"
+],
+[
+"Sans acompte",
+"No deposit"
+],
+[
+"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier). Ensuite les prix (👔 directeur), la signature du client et l’envoi (PDF, WhatsApp, email ou portail de la gérance).",
+"On site: photos, report and planned workers (🦺 site manager). Then prices (👔 director), the client’s signature and sending (PDF, WhatsApp, email or the agency portal)."
+],
+[
+"Supprimer le devis {0} ?",
+"Delete quote {0}?"
+],
+[
+"Tarif horaire HT",
+"Hourly rate excl. VAT"
+],
+[
+"Total :",
+"Total:"
+],
+[
+"Type de client",
+"Client type"
+],
+[
+"Version R{0} : modifiez puis renvoyez",
+"Version R{0}: edit then send again"
+],
+[
+"Vous disposez de",
+"You have"
+],
+[
+"ex. 3 jours, 2 semaines",
+"e.g. 3 days, 2 weeks"
+],
+[
+"ex. début sous 2 semaines, durée 3 jours",
+"e.g. start within 2 weeks, 3 days long"
+],
+[
+"n° d’autorisation d’établissement",
+"business permit number"
+],
+[
+"pour vous rétracter, sans motif et sans frais (formulaire joint au devis).",
+"to withdraw, without reason and free of charge (form attached to the quote)."
+],
+[
+"si différente de celle du client",
+"if different from the client’s"
+],
+[
+"{0} a donné son accord (signature papier, email…).{1} Pour une signature sur le téléphone : « ✍️ Faire signer le client ».",
+"{0} agreed (paper signature, email…).{1} To sign on the phone: “✍️ Faire signer le client”."
+],
+[
+"{0}🔴 Expiré le {1} à minuit",
+"{0}🔴 Expired on {1} at midnight"
+],
+[
+"{0}🟡 Expire {1} ({2})",
+"{0}🟡 Expires {1} ({2})"
+],
+[
+"{0}🟢 En attente — valable jusqu’au {1}",
+"{0}🟢 Waiting — valid until {1}"
+],
+[
+"ce soir à minuit",
+"tonight at midnight"
+],
+[
+"dans {0} jour{1}",
+"in {0} day(s)"
+],
+[
+"· acompte {0} % :",
+"· deposit {0} %:"
+],
+[
+"· début anticipé demandé",
+"· early start requested"
+],
+[
+"· début des travaux avant la fin du délai de rétractation demandé",
+"· work start before the end of the withdrawal period requested"
+],
+[
+"· 📤 dans son portail",
+"· 📤 in its portal"
+],
+[
+"— choisir —",
+"— choose —"
+],
+[
+"— métier —",
+"— trade —"
+],
+[
+"— signez avec le doigt :",
+"— sign with your finger:"
+],
+[
+"— tarif libre —",
+"— free rate —"
+],
+[
+"✅ Accepté",
+"✅ Accepted"
+],
+[
+"✅ Accepté — libre de commencer",
+"✅ Accepted — free to start"
+],
+[
+"✍️ Bon pour accord — {0}",
+"✍️ Agreed — {0}"
+],
+[
+"✍️ Devis signé — bon pour accord",
+"✍️ Quote signed — agreed"
+],
+[
+"✍️ Faire signer le client",
+"✍️ Have the client sign"
+],
+[
+"✍️ Signé par {0} le {1}{2}",
+"✍️ Signed by {0} on {1}{2}"
+],
+[
+"✍️ Valider la signature",
+"✍️ Confirm the signature"
+],
+[
+"❌ Refusé",
+"❌ Declined"
+],
+[
+"➡️ Créer l’intervention",
+"➡️ Create the job"
+],
+[
+"➡️ Intervention créée",
+"➡️ Job created"
+],
+[
+"🏢 Société",
+"🏢 Company"
+],
+[
+"👔 À remplir par le directeur",
+"👔 To be filled in by the director"
+],
+[
+"👤 Particulier",
+"👤 Private client"
+],
+[
+"💼 Gérance du portail",
+"💼 Portal agency"
+],
+[
+"📄 PDF / imprimer",
+"📄 PDF / print"
+],
+[
+"📝 Brouillon",
+"📝 Draft"
+],
+[
+"📝 Devis en cours ({0})",
+"📝 Open quotes ({0})"
+],
+[
+"📝 Devis {0}",
+"📝 Quote {0}"
+],
+[
+"📝 Devis {0} créé",
+"📝 Quote {0} created"
+],
+[
+"📝 Nouveau devis",
+"📝 New quote"
+],
+[
+"📤 Devis {0} envoyé dans le portail de {1}",
+"📤 Quote {0} sent to {1}’s portal"
+],
+[
+"📤 {0} au portail de la gérance",
+"📤 {0} to the agency portal"
+],
+[
+"📷 Photos (2 à 20)",
+"📷 Photos (2 to 20)"
+],
+[
+"🔄 Nouvelle version",
+"🔄 New version"
+],
+[
+"🔄 Nouvelle version (R{0})",
+"🔄 New version (R{0})"
+],
+[
+"🔄 Révision demandée ·",
+"🔄 Revision requested ·"
+],
+[
+"🖨️ Imprimer",
+"🖨️ Print"
+],
+[
+"🛠️ Voir l’intervention",
+"🛠️ View the job"
+],
+[
+"🟢 en attente · 🟡 expire bientôt (3 derniers jours) · 🔴 expiré à minuit · 🟣 particulier : délai de rétractation de 14 jours · ✅ accepté",
+"🟢 waiting · 🟡 expiring soon (last 3 days) · 🔴 expired at midnight · 🟣 private client: 14-day withdrawal period · ✅ accepted"
+],
+[
+"🟣 Rétractation possible jusqu’au {0}{1}",
+"🟣 Withdrawal possible until {0}{1}"
+],
+[
+"🦺 À remplir par le chef de chantier",
+"🦺 To be filled in by the site manager"
+],
+[
+"Envoi impossible :",
+"Sending failed:"
+],
+[
+"Interlocuteur",
+"Contact"
 ]
 ];

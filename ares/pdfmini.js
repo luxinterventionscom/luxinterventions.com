@@ -23,6 +23,9 @@ export function makePdf() {
   const api = {
     W: 595.28, H: 841.89,
     page() { cur = []; pages.push(cur); return api; },
+    count() { return pages.length; },
+    // revenir sur une page déjà faite (ex. pied de page « x/N » à la fin)
+    onPage(i) { cur = pages[i]; return api; },
     // y mesuré depuis le haut de la page
     text(x, y, s, { size = 10, bold = false, color = [0, 0, 0], align = 'left' } = {}) {
       const w = textWidth(s, size, bold);
