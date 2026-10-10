@@ -10987,5 +10987,101 @@ export default [
 [
 "Loyers, occupation, dépenses, interventions, devis",
 "Rendas, ocupação, despesas, intervenções, orçamentos"
+],
+[
+"Type de devis",
+"Tipo de orçamento"
+],
+[
+"🛠️ Travaux — prix par prestation",
+"🛠️ Obras — preço por prestação"
+],
+[
+"🧹 Contrat d’entretien — forfait mensuel + protocole",
+"🧹 Contrato de manutenção — forfait mensal + protocolo"
+],
+[
+"📋 Prestations / description des travaux",
+"📋 Prestações / descrição dos trabalhos"
+],
+[
+"Le chef de chantier coche les travaux et note la quantité, l’unité et les détails (mesures en cm / mm, format, couleur, modèle). Le directeur met les prix plus bas.",
+"O chefe de obra marca os trabalhos e indica quantidade, unidade e detalhes (medidas em cm / mm, formato, cor, modelo). O diretor põe os preços mais abaixo."
+],
+[
+"Rechercher : carrelage, fuite, peinture, porte…",
+"Procurar: azulejo, fuga, pintura, porta…"
+],
+[
+"Autres travaux (texte libre)",
+"Outros trabalhos (texto livre)"
+],
+[
+"Ligne libre",
+"Linha livre"
+],
+[
+"Protocole d’entretien (parties communes)",
+"Protocolo de manutenção (partes comuns)"
+],
+[
+"Une ligne sans case cochée n’apparaît pas dans le contrat. Les prestations cochées plus haut deviennent les prestations ponctuelles (prix par exécution).",
+"Uma linha sem caixa marcada não aparece no contrato. As prestações marcadas acima tornam-se prestações pontuais (preço por execução)."
+],
+[
+"Les prestations cochées dans « 📋 Prestations » apparaissent ici pour mettre le prix unitaire.",
+"As prestações marcadas em «📋 Prestations» aparecem aqui para pôr o preço unitário."
+],
+[
+"Prix des prestations",
+"Preços das prestações"
+],
+[
+"Prestations ponctuelles — prix par exécution",
+"Prestações pontuais — preço por execução"
+],
+[
+"Prix unitaire",
+"Preço unitário"
+],
+[
+"Forfait mensuel",
+"Forfait mensal"
+],
+[
+"Passages par semaine",
+"Passagens por semana"
+],
+[
+"Agents par passage",
+"Agentes por passagem"
+],
+[
+"Durée du contrat",
+"Duração do contrato"
+],
+[
+"Préavis de résiliation",
+"Pré-aviso de rescisão"
+],
+[
+"Indice (cote d’application)",
+"Índice (cote d’application)"
+],
+[
+"Forfait mensuel HT",
+"Forfait mensal s/ IVA"
+],
+[
+"Total TTC / mois",
+"Total c/ IVA / mês"
+],
+[
+"Prestations",
+"Prestações"
+],
+[
+"/ mois",
+"/ mês"
 ]
 ];

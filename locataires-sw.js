@@ -1,7 +1,7 @@
 // Service worker Ares : met l'application en cache pour l'ouvrir hors ligne.
 // Les données ne passent jamais par ce cache (elles sont chiffrées dans IndexedDB
 // et les appels à l'API ne sont pas interceptés).
-const CACHE = 'ares-shell-v2.108.2';
+const CACHE = 'ares-shell-v2.109.0';
 const SHELL = [
   '/locataires.html',
   '/ares/app.css',

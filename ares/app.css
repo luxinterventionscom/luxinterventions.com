@@ -761,3 +761,25 @@ img.org-logo.xl{height:40px;max-width:110px;vertical-align:middle;margin-right:1
 .dev-ph figure .btn{position:absolute;top:2px;right:2px;background:rgba(255,255,255,.85)}
 .dev-n{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#8b5cf6;color:#fff;font-size:11px}
 .dev-btns{display:flex;flex-wrap:wrap;gap:8px}.dev-btns .btn{flex:0 0 auto;width:auto;white-space:nowrap}
+/* devis : cadre Prestations (catalogue à cocher), protocole d'entretien, type de devis */
+.dev-prest{border-color:#2f9e6a;background:rgba(47,158,106,.05)}.dev-prest>legend{color:#23784f}
+.dev-pcats{display:flex;flex-direction:column;gap:6px}
+.dev-pg{border:1px solid var(--border,#ddd);border-radius:12px;background:var(--surface,#fff)}
+.dev-pg>summary{cursor:pointer;padding:10px 12px;font-weight:650;list-style:none;display:flex;align-items:center;gap:8px}
+.dev-pg>summary::-webkit-details-marker{display:none}
+.dev-pg>summary::after{content:'▸';margin-left:auto;color:var(--text-3,#999)}.dev-pg[open]>summary::after{content:'▾'}
+.dev-pn{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:10px;background:#2f9e6a;color:#fff;font-size:12px}
+.dev-pi{padding:8px 12px;border-top:1px solid var(--border,#eee)}
+.dev-pi>label{display:flex;gap:8px;align-items:flex-start;cursor:pointer;font-size:14px;line-height:1.35}
+.dev-pi>label input{width:20px;height:20px;min-height:0;flex:none;margin-top:1px}
+.dev-pq{display:grid;grid-template-columns:90px 110px minmax(0,1fr);gap:6px;margin:8px 0 2px 28px}
+.dev-pi:not(.dev-free):not(:has(input[name=pk]:checked)) .dev-pq{display:none}
+.dev-free{border:1px dashed var(--border,#ddd);border-radius:12px;margin-bottom:6px;display:grid;gap:6px}
+.dev-free .dev-pq{margin:0}
+@media (max-width:520px){.dev-pq{grid-template-columns:1fr 1fr;margin-left:0}.dev-pq input[name^=pd_]{grid-column:1/-1}}
+.dev-proto{display:flex;flex-direction:column;border:1px solid var(--border,#ddd);border-radius:12px;overflow:hidden;background:var(--surface,#fff)}
+.dev-proto-r{display:grid;grid-template-columns:minmax(0,1fr) repeat(4,48px);gap:4px;align-items:center;padding:6px 10px;border-top:1px solid var(--border,#eee)}
+.dev-proto-r input[type=checkbox]{width:20px;height:20px;min-height:0;justify-self:center}
+.dev-proto-h{border-top:0;background:var(--surface-2,#f4f4f4);font-size:11px}.dev-proto-h b{text-align:center}
+form[data-kind=contrat] .dev-k-tr{display:none !important}
+form:not([data-kind=contrat]) .dev-k-ct{display:none !important}

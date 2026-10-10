@@ -11007,5 +11007,101 @@ export default [
 [
 "Loyers, occupation, dépenses, interventions, devis",
 "Mieten, Belegung, Ausgaben, Einsätze, Angebote"
+],
+[
+"Type de devis",
+"Angebotsart"
+],
+[
+"🛠️ Travaux — prix par prestation",
+"🛠️ Arbeiten — Preis pro Leistung"
+],
+[
+"🧹 Contrat d’entretien — forfait mensuel + protocole",
+"🧹 Wartungsvertrag — Monatspauschale + Protokoll"
+],
+[
+"📋 Prestations / description des travaux",
+"📋 Leistungen / Beschreibung der Arbeiten"
+],
+[
+"Le chef de chantier coche les travaux et note la quantité, l’unité et les détails (mesures en cm / mm, format, couleur, modèle). Le directeur met les prix plus bas.",
+"Der Bauleiter hakt die Arbeiten an und notiert Menge, Einheit und Details (Maße in cm / mm, Format, Farbe, Modell). Der Direktor setzt unten die Preise."
+],
+[
+"Rechercher : carrelage, fuite, peinture, porte…",
+"Suchen: Fliesen, Leck, Malerei, Tür…"
+],
+[
+"Autres travaux (texte libre)",
+"Weitere Arbeiten (freier Text)"
+],
+[
+"Ligne libre",
+"Freie Zeile"
+],
+[
+"Protocole d’entretien (parties communes)",
+"Reinigungsprotokoll (Gemeinschaftsflächen)"
+],
+[
+"Une ligne sans case cochée n’apparaît pas dans le contrat. Les prestations cochées plus haut deviennent les prestations ponctuelles (prix par exécution).",
+"Eine Zeile ohne Häkchen erscheint nicht im Vertrag. Die oben angehakten Leistungen werden Einzelleistungen (Preis pro Ausführung)."
+],
+[
+"Les prestations cochées dans « 📋 Prestations » apparaissent ici pour mettre le prix unitaire.",
+"Die in „📋 Prestations“ angehakten Leistungen erscheinen hier, um den Einzelpreis einzutragen."
+],
+[
+"Prix des prestations",
+"Preise der Leistungen"
+],
+[
+"Prestations ponctuelles — prix par exécution",
+"Einzelleistungen — Preis pro Ausführung"
+],
+[
+"Prix unitaire",
+"Einzelpreis"
+],
+[
+"Forfait mensuel",
+"Monatspauschale"
+],
+[
+"Passages par semaine",
+"Einsätze pro Woche"
+],
+[
+"Agents par passage",
+"Mitarbeiter pro Einsatz"
+],
+[
+"Durée du contrat",
+"Vertragsdauer"
+],
+[
+"Préavis de résiliation",
+"Kündigungsfrist"
+],
+[
+"Indice (cote d’application)",
+"Index (cote d’application)"
+],
+[
+"Forfait mensuel HT",
+"Monatspauschale netto"
+],
+[
+"Total TTC / mois",
+"Gesamt brutto / Monat"
+],
+[
+"Prestations",
+"Leistungen"
+],
+[
+"/ mois",
+"/ Monat"
 ]
 ];
