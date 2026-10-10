@@ -10779,5 +10779,101 @@ export default [
 [
 "Loyers, occupation, dépenses, interventions, devis",
 "Rents, occupancy, expenses, jobs, quotes"
+],
+[
+"Type de devis",
+"Quote type"
+],
+[
+"🛠️ Travaux — prix par prestation",
+"🛠️ Works — price per item"
+],
+[
+"🧹 Contrat d’entretien — forfait mensuel + protocole",
+"🧹 Maintenance contract — monthly fee + protocol"
+],
+[
+"📋 Prestations / description des travaux",
+"📋 Services / description of works"
+],
+[
+"Le chef de chantier coche les travaux et note la quantité, l’unité et les détails (mesures en cm / mm, format, couleur, modèle). Le directeur met les prix plus bas.",
+"The site manager ticks the works and notes quantity, unit and details (measurements in cm / mm, format, colour, model). The director adds prices below."
+],
+[
+"Rechercher : carrelage, fuite, peinture, porte…",
+"Search: tiles, leak, painting, door…"
+],
+[
+"Autres travaux (texte libre)",
+"Other works (free text)"
+],
+[
+"Ligne libre",
+"Free line"
+],
+[
+"Protocole d’entretien (parties communes)",
+"Maintenance protocol (common areas)"
+],
+[
+"Une ligne sans case cochée n’apparaît pas dans le contrat. Les prestations cochées plus haut deviennent les prestations ponctuelles (prix par exécution).",
+"A line with no box ticked is left out of the contract. Items ticked above become one-off services (price per visit)."
+],
+[
+"Les prestations cochées dans « 📋 Prestations » apparaissent ici pour mettre le prix unitaire.",
+"Items ticked in “📋 Prestations” appear here to set the unit price."
+],
+[
+"Prix des prestations",
+"Item prices"
+],
+[
+"Prestations ponctuelles — prix par exécution",
+"One-off services — price per visit"
+],
+[
+"Prix unitaire",
+"Unit price"
+],
+[
+"Forfait mensuel",
+"Monthly fee"
+],
+[
+"Passages par semaine",
+"Visits per week"
+],
+[
+"Agents par passage",
+"Staff per visit"
+],
+[
+"Durée du contrat",
+"Contract length"
+],
+[
+"Préavis de résiliation",
+"Notice period"
+],
+[
+"Indice (cote d’application)",
+"Index (cote d’application)"
+],
+[
+"Forfait mensuel HT",
+"Monthly fee excl. VAT"
+],
+[
+"Total TTC / mois",
+"Total incl. VAT / month"
+],
+[
+"Prestations",
+"Services"
+],
+[
+"/ mois",
+"/ month"
 ]
 ];

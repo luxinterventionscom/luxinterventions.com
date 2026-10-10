@@ -11019,5 +11019,97 @@ export default [
 [
 "Loyers, occupation, dépenses, interventions, devis",
 "Affitti, occupazione, spese, interventi, preventivi"
+],
+[
+"Type de devis",
+"Tipo di preventivo"
+],
+[
+"🛠️ Travaux — prix par prestation",
+"🛠️ Lavori — prezzo per prestazione"
+],
+[
+"🧹 Contrat d’entretien — forfait mensuel + protocole",
+"🧹 Contratto di manutenzione — forfait mensile + protocollo"
+],
+[
+"📋 Prestations / description des travaux",
+"📋 Prestazioni / descrizione dei lavori"
+],
+[
+"Le chef de chantier coche les travaux et note la quantité, l’unité et les détails (mesures en cm / mm, format, couleur, modèle). Le directeur met les prix plus bas.",
+"Il capo cantiere spunta i lavori e scrive quantità, unità e dettagli (misure in cm / mm, formato, colore, modello). Il direttore mette i prezzi più sotto."
+],
+[
+"Rechercher : carrelage, fuite, peinture, porte…",
+"Cerca: piastrelle, perdita, pittura, porta…"
+],
+[
+"Autres travaux (texte libre)",
+"Altri lavori (testo libero)"
+],
+[
+"Ligne libre",
+"Riga libera"
+],
+[
+"Protocole d’entretien (parties communes)",
+"Protocollo di manutenzione (parti comuni)"
+],
+[
+"Une ligne sans case cochée n’apparaît pas dans le contrat. Les prestations cochées plus haut deviennent les prestations ponctuelles (prix par exécution).",
+"Una riga senza casella spuntata non compare nel contratto. Le prestazioni spuntate sopra diventano le prestazioni puntuali (prezzo per esecuzione)."
+],
+[
+"Les prestations cochées dans « 📋 Prestations » apparaissent ici pour mettre le prix unitaire.",
+"Le prestazioni spuntate in «📋 Prestations» compaiono qui per mettere il prezzo unitario."
+],
+[
+"Prix des prestations",
+"Prezzi delle prestazioni"
+],
+[
+"Prestations ponctuelles — prix par exécution",
+"Prestazioni puntuali — prezzo per esecuzione"
+],
+[
+"Prix unitaire",
+"Prezzo unitario"
+],
+[
+"Forfait mensuel",
+"Forfait mensile"
+],
+[
+"Passages par semaine",
+"Passaggi a settimana"
+],
+[
+"Agents par passage",
+"Addetti per passaggio"
+],
+[
+"Durée du contrat",
+"Durata del contratto"
+],
+[
+"Préavis de résiliation",
+"Preavviso di disdetta"
+],
+[
+"Forfait mensuel HT",
+"Forfait mensile IVA escl."
+],
+[
+"Total TTC / mois",
+"Totale IVA incl. / mese"
+],
+[
+"Prestations",
+"Prestazioni"
+],
+[
+"/ mois",
+"/ mese"
 ]
 ];

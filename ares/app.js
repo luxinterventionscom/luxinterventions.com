@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.108.2';
+const VERSION = '2.109.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -7119,15 +7119,26 @@ function devInitials(nom) {
 const devNo = (d) => (d.no || '—') + (d.rev ? '-R' + d.rev : '');
 const devPhotos = (id) => vault.list('documents').filter((x) => x.devisId === id && x.kind === 'devis').sort((a, b) => (a.n || 0) - (b.n || 0));
 // main-d'œuvre : lignes du chef (métier, nombre, heures) + choix du directeur (ouvrier, tarif)
+// Catalogue des prestations (chef de chantier) : [catégorie, [[type, prestation, unité, détails à préciser]]]
+const DEV_CAT = [["🏗️ Installation de chantier", [["diag", "Visite technique et métré sur place", "fft", ""], ["pose", "Installation de chantier : amenée et repli du matériel, mise en sécurité", "fft", ""], ["pose", "Protection des sols et des meubles (bâches, cartons, rubans)", "m²", "surface"], ["pose", "Location et montage d’échafaudage", "m²", "hauteur (m)"], ["reno", "Évacuation des gravats vers une décharge agréée", "m³", "type de déchets"], ["reno", "Location de conteneur / benne", "pc", "volume (m³)"], ["ent", "Nettoyage de fin de chantier", "fft", ""]]], ["📊 Rapport d’expert / Diagnostic", [["diag", "Détection de fuite non destructive", "fft", "lieu de la fuite"], ["diag", "Mesure d’humidité et recherche d’infiltration", "fft", "pièces concernées"], ["diag", "Thermographie infrarouge", "fft", "surface / pièces"], ["diag", "Inspection vidéo de canalisation", "ml", "diamètre (mm)"], ["diag", "Traçage de conduites", "fft", ""], ["diag", "Rapport écrit avec photos (dossier assurance / litige)", "fft", "objectif du rapport"]]], ["🏠 Toiture", [["rep", "Réparation d’urgence après intempéries (bâchage)", "fft", "surface bâchée (m²)"], ["rep", "Remplacement de tuiles / ardoises cassées", "pc", "modèle de tuile"], ["rep", "Réparation de gouttière / descente d’eau", "ml", "diamètre (cm)"], ["pose", "Fourniture et pose de gouttière", "ml", "matière, diamètre (cm)"], ["pose", "Fourniture et pose de fenêtre de toit", "pc", "dimensions (cm)"], ["ent", "Nettoyage et démoussage de toiture", "m²", ""], ["ent", "Nettoyage des gouttières", "ml", ""], ["diag", "Inspection de toiture (photos / drone)", "fft", ""]]], ["🛡️ Étanchéité", [["rep", "Réparation ponctuelle d’étanchéité de terrasse", "m²", ""], ["pose", "Étanchéité de toiture-terrasse (membrane)", "m²", "type de membrane"], ["pose", "Étanchéité de balcon / terrasse carrelée", "m²", ""], ["pose", "Cuvelage / traitement de sous-sol contre les infiltrations", "m²", ""], ["reno", "Reprise des joints de façade", "ml", ""], ["pose", "Traitement hydrofuge de façade", "m²", ""]]], ["🎨 Peinture & revêtements muraux", [["reno", "Plafonds : enduisage complet et mise en peinture", "m²", "couleur, finition (mat / satin)"], ["reno", "Murs : enduisage complet et mise en peinture", "m²", "couleur, finition"], ["reno", "Enlèvement de l’ancien papier peint", "m²", ""], ["pose", "Fourniture et pose de toile de rénovation (variovlies)", "m²", ""], ["reno", "Mise en peinture des portes et encadrements", "pc", "dimensions (cm)"], ["reno", "Mise en peinture des radiateurs (démontage, montage, purge)", "pc", ""], ["reno", "Peinture de cage d’escalier", "m²", "nombre d’étages"], ["reno", "Peinture de façade", "m²", "hauteur (m), couleur"], ["reno", "Peinture de sol (garage, cave)", "m²", "type de peinture"], ["rep", "Retouches et réparation de fissures", "fft", ""]]], ["🧱 Maçonnerie / gros œuvre", [["reno", "Démolition de cloison (bloc béton, plâtre)", "m²", "épaisseur (cm)"], ["pose", "Construction de cloison (bloc, plaques de plâtre)", "m²", "épaisseur (cm)"], ["pose", "Confection de chape armée", "m²", "épaisseur (cm)"], ["reno", "Ragréage de sol", "m²", "épaisseur (mm)"], ["reno", "Ragréage / enduit de murs", "m²", ""], ["rep", "Rebouchage de saignées et fermeture de trous", "fft", ""], ["pose", "Création d’ouverture dans un mur (avec linteau)", "pc", "dimensions (cm)"], ["pose", "Pose de faux plafond (plaques de plâtre)", "m²", ""]]], ["🔲 Carrelage & sols", [["reno", "Décapage de carrelage au sol (chape et plinthes incluses), évacuation", "m²", ""], ["reno", "Décapage de revêtement mural et évacuation", "m²", ""], ["pose", "Fourniture et mise en place d’un fond d’accrochage", "m²", ""], ["pose", "Fourniture de carrelage de sol", "m²", "format (cm), ex. 60×60"], ["pose", "Fourniture de carrelage mural", "m²", "format (cm), ex. 60×30"], ["pose", "Pose de carrelage de sol, jointement en mortier", "m²", "format (cm)"], ["pose", "Pose de carrelage mural, jointement", "m²", "format (cm)"], ["pose", "Fourniture et pose de plinthes, joints silicone", "ml", "hauteur (cm)"], ["pose", "Découpes autour des cadres de porte", "pc", ""], ["pose", "Joints silicone sur angles verticaux et horizontaux", "ml", ""], ["pose", "Fourniture et pose de baguettes d’angle", "ml", "matière"], ["pose", "Fourniture et pose de parquet / sol stratifié / vinyle", "m²", "type, épaisseur (mm)"], ["rep", "Remplacement de carreaux cassés", "pc", "format (cm)"]]], ["💧 Plomberie & sanitaire", [["rep", "Recherche et réparation de fuite", "fft", "lieu"], ["rep", "Débouchage de canalisation / WC / évier", "fft", ""], ["rep", "Débouchage haute pression (colonne d’immeuble)", "h", ""], ["rep", "Remplacement de robinet / mitigeur", "pc", "marque, modèle"], ["rep", "Remplacement de mécanisme de chasse d’eau", "pc", ""], ["pose", "Démontage et évacuation du mobilier de salle de bain, WC, baignoire", "fft", ""], ["pose", "Fourniture et pose de conduites eau froide, eau chaude et écoulements", "fft", "appareils raccordés"], ["pose", "Réalisation d’une douche à l’italienne (chape en pente, isolation, caniveau, paroi)", "fft", "caniveau (cm), paroi (cm)"], ["pose", "Fourniture de bloc WC suspendu (bâti, cuvette, plaque) et habillage", "fft", "marque, modèle"], ["pose", "Fourniture de meuble de salle de bain (vasque, mitigeur, miroir)", "fft", "largeur (cm), modèle"], ["pose", "Fourniture de sèche-serviettes", "pc", "dimensions (mm)"], ["pose", "Fourniture de mitigeur de douche avec douchette", "pc", "modèle"], ["pose", "Montage de l’ensemble sanitaire et joints silicone", "fft", ""], ["pose", "Remplacement de chauffe-eau / boiler", "pc", "capacité (litres)"], ["ent", "Entretien de chaudière", "pc", "marque, modèle"], ["ent", "Purge et équilibrage des radiateurs", "pc", ""]]], ["⚡ Électricité", [["rep", "Dépannage électrique (recherche de panne)", "h", ""], ["rep", "Remplacement de prise / interrupteur", "pc", ""], ["pose", "Création d’un point lumineux ou d’une prise", "pc", ""], ["pose", "Remplacement de tableau électrique", "pc", "nombre de circuits"], ["pose", "Mise en conformité de l’installation", "fft", ""], ["pose", "Fourniture et pose de luminaire", "pc", "modèle"], ["pose", "Fourniture et pose de ventilateur d’aération (câblage inclus)", "pc", "diamètre (mm)"], ["pose", "Installation d’éclairage extérieur / potelets", "pc", ""], ["reno", "Enlèvement de luminaires existants et évacuation", "pc", ""], ["rep", "Vérification du câblage, offre si nécessaire", "fft", ""]]], ["🔐 Serrurerie", [["rep", "Ouverture de porte (claquée / fermée à clé)", "fft", "jour / nuit"], ["rep", "Remplacement de cylindre", "pc", "dimensions (mm), nombre de clés"], ["rep", "Réparation de serrure / gâche", "pc", ""], ["pose", "Pose de serrure multipoints / blindage", "pc", "modèle"], ["pose", "Pose de ferme-porte", "pc", ""], ["pose", "Reproduction de clés / badges", "pc", ""]]], ["🚪 Menuiserie & portes", [["pose", "Fourniture et pose de porte intérieure avec chambranle et poignée", "pc", "dimensions (mm), modèle"], ["pose", "Fourniture et pose de porte d’appartement coupe-feu", "pc", "dimensions (mm), classe (T30…)"], ["reno", "Démontage et évacuation d’anciennes portes", "pc", ""], ["rep", "Réglage / réparation de porte ou fenêtre", "pc", ""], ["pose", "Remplacement de vitrage", "pc", "dimensions (cm), type de verre"], ["pose", "Pose de cuisine / meubles", "fft", "longueur (cm)"], ["reno", "Dépose et évacuation de l’ancienne cuisine", "fft", ""], ["pose", "Pose de plinthes bois", "ml", ""]]], ["🔧 Bricolage & petits travaux", [["pose", "Montage de meubles", "pc", ""], ["pose", "Fixations murales (étagères, tringles, TV, miroirs)", "pc", ""], ["rep", "Petites réparations diverses", "h", ""], ["pose", "Pose de boîtes aux lettres / sonnettes", "pc", ""], ["pose", "Pose de stores / rideaux", "pc", "largeur (cm)"], ["rep", "Remplacement de joints silicone (cuisine, salle de bain)", "ml", ""]]], ["🌿 Jardinage & extérieurs", [["ent", "Tonte de pelouse", "m²", ""], ["ent", "Taille de haies", "ml", "hauteur (m)"], ["ent", "Taille d’arbres et d’arbustes", "pc", ""], ["ent", "Désherbage des allées et massifs", "m²", ""], ["ent", "Ramassage des feuilles et évacuation des déchets verts", "fft", ""], ["ent", "Déneigement et salage", "exécution", "surface (m²)"], ["ent", "Nettoyage haute pression de cour / terrasse (brosse rotative)", "m²", ""], ["pose", "Plantations et aménagement", "fft", ""]]], ["🧹 Nettoyage", [["ent", "Nettoyage des parties communes (forfait)", "mois", "fréquence par semaine"], ["ent", "Nettoyage du garage à l’autolaveuse", "exécution", "surface (m²)"], ["ent", "Nettoyage approfondi et détachage des escaliers", "exécution", "nombre d’étages"], ["ent", "Nettoyage des passerelles extérieures", "exécution", ""], ["ent", "Nettoyage des vitres", "m²", "hauteur (m)"], ["ent", "Nettoyage de fin de chantier / remise en état", "m²", ""], ["ent", "Nettoyage après déménagement / état des lieux", "fft", "surface (m²)"], ["ent", "Nettoyage des caves et greniers", "fft", ""]]], ["🗑️ Déchets & débarras", [["ent", "Sortie et rentrée des poubelles (contrat)", "mois", "jours de collecte"], ["ent", "Nettoyage et désinfection des conteneurs", "exécution", "nombre de conteneurs"], ["reno", "Débarras de cave / grenier / appartement", "m³", ""], ["reno", "Évacuation d’encombrants", "m³", ""], ["reno", "Collecte de déchets spéciaux (partenaire Arcolux)", "fft", "type de déchets"]]], ["🚚 Déménagement", [["pose", "Déménagement (main-d’œuvre)", "h", "nombre de déménageurs"], ["pose", "Camion avec chauffeur", "h", "volume (m³)"], ["pose", "Fourniture de cartons et protections", "fft", ""], ["pose", "Démontage et remontage de meubles", "fft", ""], ["pose", "Monte-meubles", "h", "étage"]]], ["⏱️ Régie", [["rep", "Travaux en régie (par heure et par personne, hors déplacement)", "h", "nombre de personnes"], ["rep", "Déplacement", "fft", ""]]]];
+// Protocole d'entretien (contrat) : [fréquence par défaut h/m/t/a, prestation]
+const DEV_PROTO = [["h", "Balayage / aspiration et lavage des sols des entrées, paliers et escaliers"], ["h", "Nettoyage des ascenseurs : sols, miroirs, boutons, portes et rails"], ["h", "Nettoyage des mains courantes et garde-corps"], ["h", "Enlèvement des traces sur les portes communes et portes d’entrée"], ["h", "Nettoyage des vitrages des portes d’entrée"], ["h", "Nettoyage humide des boîtes aux lettres et interphones"], ["h", "Entretien courant du local poubelles"], ["h", "Ramassage des feuilles, papiers et déchets dans les zones extérieures, rampe de garage comprise"], ["m", "Nettoyage des couloirs de caves"], ["m", "Nettoyage des buanderies : sols et surfaces communes accessibles"], ["m", "Enlèvement des toiles d’araignées visibles"], ["m", "Nettoyage des plinthes"], ["t", "Nettoyage complet des portes communes et encadrements"], ["t", "Dépoussiérage des luminaires accessibles"], ["t", "Nettoyage des traces sur les surfaces murales lavables"], ["t", "Nettoyage des locaux techniques accessibles"], ["t", "Dépoussiérage des équipements communs accessibles"], ["t", "Nettoyage des vitrages communs hors portes d’entrée"], ["t", "Dépoussiérage des grilles de ventilation accessibles"], ["t", "Dépoussiérage des conduites et installations techniques accessibles"], ["t", "Dépoussiérage en hauteur et enlèvement des toiles d’araignées accessibles"], ["a", "Nettoyage du garage à l’autolaveuse (facturé à part)"], ["a", "Nettoyage des passerelles extérieures"]];
+const DEV_UNITS = ['fft', 'm²', 'ml', 'm³', 'pc', 'h', 'kg', 'exécution', 'mois'];
+const DEV_PTYPE = { rep: '🚨 dépannage', pose: '🔩 installation', reno: '🏠 rénovation', ent: '🧽 entretien', diag: '🔎 diagnostic' };
+const devCatItem = (key) => { const m = /^c(\d+)i(\d+)$/.exec(key || ''); return m && DEV_CAT[+m[1]] ? DEV_CAT[+m[1]][1][+m[2]] || null : null; };
+const devPrestTot = (p) => r2((p.q === '' || p.q == null ? 1 : num(p.q)) * num(p.pu));
+const devQty = (p) => String(p.q === '' || p.q == null ? 1 : num(p.q)).replace('.', ',');
 function devCalc(d) {
   const rows = (d.chef && d.chef.rows) || [], dir = (d.dir && d.dir.rows) || [];
   const lines = rows.map((r, n) => { const t = num((dir[n] || {}).taux), hh = num(r.nb || 1) * num(r.h); return { ...r, w: (dir[n] || {}).w || '', taux: t, hh, mt: r2(hh * t) }; });
-  const mo = r2(sum(lines, (l) => l.mt)), dep = r2(num(d.dir && d.dir.depl)), mat = r2(sum((d.dir && d.dir.mat) || [], (m) => num(m.ht)));
-  const sub = r2(mo + dep + mat), rem = r2((sub * num(d.dir && d.dir.remise)) / 100), ht = r2(sub - rem);
+  const ct = d.kind === 'contrat', prest = (d.prest || []).map((p) => ({ ...p, mt: devPrestTot(p) }));
+  const mo = ct ? 0 : r2(sum(lines, (l) => l.mt)), dep = ct ? 0 : r2(num(d.dir && d.dir.depl)), mat = ct ? 0 : r2(sum((d.dir && d.dir.mat) || [], (m) => num(m.ht)));
+  const pr = ct ? 0 : r2(sum(prest, (p) => p.mt)), forfait = ct ? r2(num(d.ct && d.ct.forfait)) : 0;
+  const sub = ct ? forfait : r2(mo + dep + mat + pr), rem = r2((sub * num(d.dir && d.dir.remise)) / 100), ht = r2(sub - rem);
   const taux = d.dir && d.dir.tva !== '' && d.dir.tva != null ? num(d.dir.tva) : num(factConf().taux);
   const tva = r2((ht * taux) / 100), ttc = r2(ht + tva);
-  const pct = d.dir && d.dir.acompte != null && d.dir.acompte !== '' ? +d.dir.acompte : devAcompteConseil(ttc);
-  return { lines, mo, dep, mat, sub, rem, ht, taux, tva, ttc, pct, acompte: r2((ttc * pct) / 100) };
+  const pct = ct ? 0 : d.dir && d.dir.acompte != null && d.dir.acompte !== '' ? +d.dir.acompte : devAcompteConseil(ttc);
+  return { ct, prest, lines, mo, dep, mat, pr, forfait, sub, rem, ht, taux, tva, ttc, pct, acompte: r2((ttc * pct) / 100) };
 }
 // état et pastille : 🟢 en attente · 🟡 3 derniers jours · 🔴 expiré (à 00:00) · 🟣 particulier dans les 14 jours de rétractation
 function devState(d) {
@@ -7190,7 +7201,7 @@ function devRow(d) {
     <span class="grow"><span class="title" style="display:block;white-space:normal">${devNo(d)}${d.titre ? html` <span class="muted small">— ${d.titre}</span>` : ''}</span>
       <span class="meta" style="white-space:normal">${d.client && d.client.type === 'ger' ? orgLogo(d.client.orgId) : d.client && d.client.type === 'pro' ? '🏢' : '👤'} ${devClient(d)}${d.chantier ? ' · ' + d.chantier : ''}</span>
       <span class="meta" style="display:block;white-space:normal">${s.lbl}${d.ptlSt === 'envoye' && d.st !== 'accepte' ? ' · 📤 dans son portail' : ''}</span></span>
-    <b style="white-space:nowrap">${eur(k.ttc)}</b></button>`;
+    <b style="white-space:nowrap">${eur(k.ttc)}${k.ct ? html`<span class="tiny muted"> / mois</span>` : ''}</b></button>`;
 }
 // bandeau de l'accueil : « DEVIS EN COURS », violet qui clignote
 // réponses des gérances : relues en ouvrant l'Accueil ou l'onglet Devis (au plus toutes les 15 s), sinon toutes les 30 s
@@ -7247,16 +7258,64 @@ function devRead(fm) {
   }
   for (let n = 0; n < 30; n++) if (fd.has(`ml${n}`)) { const lib = g(`ml${n}`), ht = num(fd.get(`mh${n}`)); if (lib || ht) mat.push({ lib, ht }); }
   const keep = rows.map((r, n) => [r, dir[n] || {}]).filter(([r]) => r && (r.met || r.h));
+  // prestations cochées (catalogue) + lignes libres : quantité, unité, détails ; prix unitaire (directeur)
+  const prest = [];
+  const pq = (key, l) => prest.push({ k: key, l, q: g('pq_' + key) === '' ? '' : num(fd.get('pq_' + key)), u: g('pu_' + key) || 'fft', det: g('pd_' + key), pu: g('pp_' + key) === '' ? '' : num(fd.get('pp_' + key)) });
+  for (const key of fd.getAll('pk')) { const it = devCatItem(key); if (it) pq(key, it[1]); }
+  for (let n = 0; n < 80; n++) if (fd.has('pl_f' + n) && g('pl_f' + n)) pq('f' + n, g('pl_f' + n));
+  const kind = g('dkind') === 'contrat' ? 'contrat' : 'travaux', proto = [];
+  for (let n = 0; n < 200; n++) {
+    if (!fd.has('frl' + n)) continue;
+    const f = {}; for (const x of ['h', 'm', 't', 'a']) if (fd.get(`fr${n}_${x}`)) f[x] = 1;
+    if (g('frl' + n) && Object.keys(f).length) proto.push({ l: g('frl' + n), f });
+  }
   return {
+    kind, prest, proto: kind === 'contrat' ? proto : undefined,
+    ct: { forfait: g('cforfait') === '' ? '' : num(fd.get('cforfait')), pass: g('cpass'), agents: g('cagents'), duree: num(fd.get('cduree')) || 12, preavis: num(fd.get('cpreavis')) || 3, cote: g('ccote'), pay: num(fd.get('cpay')) || 15 },
     titre: g('titre'), chantier: g('chantier'), interloc: g('interloc'),
     client: { type: DEV_TYPES[g('ctype')] ? g('ctype') : 'part', orgId: g('org'), nom: g('cnom'), rcs: g('crcs').toUpperCase().replace(/\s+/g, ''), tva: g('ctva').toUpperCase().replace(/\s+/g, ''), adresse: g('cadr'), tel: g('ctel'), email: g('cmail') },
     chef: { rapport: String(fd.get('rapport') || '').trim(), jours: g('jours'), rows: keep.map(([r]) => r) },
     dir: { rows: keep.map(([, d]) => d), depl: g('depl') === '' ? '' : num(fd.get('depl')), mat, remise: num(fd.get('remise')), tva: g('tva') === '' ? '' : num(fd.get('tva')), acompte: g('acompte') === '' ? '' : +g('acompte'), valid: Math.max(1, Math.round(num(fd.get('valid')))) || 30, delai: g('delai') },
   };
 }
+// cadre « Prestations » : catalogue par catégorie, cases à cocher, quantité + unité + détails (mesures en cm / mm…)
+const devPq = (key, p, ph) => html`<div class="dev-pq"><input name="pq_${key}" type="number" step="0.01" min="0" inputmode="decimal" value="${p.q ?? ''}" placeholder="Qté" aria-label="Quantité"><select name="pu_${key}" aria-label="Unité">${DEV_UNITS.map((u) => html`<option ${u === p.u ? new Raw('selected') : ''}>${u}</option>`)}</select><input name="pd_${key}" value="${p.det || ''}" placeholder="${ph || 'détails : mesures (cm), format, couleur, modèle…'}" aria-label="Détails"></div>`;
+const devFreeRow = (n, p = {}) => html`<div class="dev-pi dev-free"><input name="pl_f${n}" value="${p.l || ''}" placeholder="Autre prestation (ex. Pose d’une crédence en verre)" aria-label="Prestation">${devPq('f' + n, { q: p.q, u: p.u || 'fft', det: p.det }, '')}</div>`;
+const devProtoRow = (n, r = { f: {} }) => html`<div class="dev-proto-r">${r.base ? html`<span class="small">${r.l}</span><input type="hidden" name="frl${n}" value="${r.l}">` : html`<input name="frl${n}" value="${r.l || ''}" placeholder="Autre prestation d’entretien">`}${['h', 'm', 't', 'a'].map((x) => html`<input type="checkbox" name="fr${n}_${x}" value="1" ${r.f && r.f[x] ? new Raw('checked') : ''} aria-label="${({ h: 'Hebdomadaire', m: 'Mensuel', t: 'Trimestriel', a: 'Annuel' })[x]}">`)}</div>`;
+function devPrestBox(d) {
+  const sel = Object.fromEntries((d.prest || []).filter((p) => /^c\d+i\d+$/.test(p.k)).map((p) => [p.k, p]));
+  const free = (d.prest || []).filter((p) => /^f\d+$/.test(p.k)).map((p) => [+p.k.slice(1), p]);
+  let nx = free.reduce((m, [n]) => Math.max(m, n + 1), 0);
+  while (free.length < 2) free.push([nx++, {}]);
+  const saved = d.kind === 'contrat' && Array.isArray(d.proto) ? d.proto : null;
+  const prows = DEV_PROTO.map(([f, l]) => { const s0 = saved && saved.find((x) => x.l === l); return { l, base: 1, f: s0 ? s0.f : saved ? {} : { [f]: 1 } }; });
+  for (const s0 of saved || []) if (!DEV_PROTO.some(([, l]) => l === s0.l)) prows.push({ l: s0.l, f: s0.f });
+  return html`<fieldset class="full dev-box dev-prest"><legend>📋 Prestations / description des travaux</legend>
+    <p class="tiny muted full" style="margin:0">Le chef de chantier coche les travaux et note la quantité, l’unité et les détails (mesures en cm / mm, format, couleur, modèle). Le directeur met les prix plus bas.</p>
+    <div class="search full" style="margin:0">${icon('search')}<input type="search" data-input="dev-psearch" placeholder="Rechercher : carrelage, fuite, peinture, porte…" autocomplete="off"></div>
+    <div class="full dev-pcats">${DEV_CAT.map(([cat, items], ci) => { const n = items.filter((_, ii) => sel[`c${ci}i${ii}`]).length; return html`<details class="dev-pg"${n ? new Raw(' open') : ''}><summary>${cat} <b class="dev-pn"${n ? '' : new Raw(' hidden')}>${n}</b></summary>
+      ${items.map(([t, l, u, det], ii) => { const key = `c${ci}i${ii}`, p = sel[key]; return html`<div class="dev-pi" data-l="${(l + ' ' + cat).toLowerCase()}"><label><input type="checkbox" name="pk" value="${key}"${p ? new Raw(' checked') : ''}> <span>${l}</span> <span class="tiny muted">· ${DEV_PTYPE[t] || ''}</span></label>${devPq(key, p || { q: '', u, det: '' }, det ? 'détails : ' + det : '')}</div>`; })}</details>`; })}</div>
+    <div class="full"><div class="section-label" style="margin:4px 0 6px">Autres travaux (texte libre)</div><div id="devFree">${free.map(([n, p]) => devFreeRow(n, p))}</div>
+      <button type="button" class="btn sm" data-action="dev-free-add">${icon('plus')} Ligne libre</button></div>
+    <div class="full dev-k-ct"><div class="section-label" style="margin:6px 0 6px">Protocole d’entretien (parties communes)</div>
+      <div class="dev-proto" id="devProto"><div class="dev-proto-r dev-proto-h"><span></span><b>Hebdo.</b><b>Mens.</b><b>Trim.</b><b>Annuel</b></div>${prows.map((r, n) => devProtoRow(n, r))}</div>
+      <button type="button" class="btn sm" data-action="dev-proto-add">${icon('plus')} Ligne</button>
+      <p class="tiny muted" style="margin:4px 0 0">Une ligne sans case cochée n’apparaît pas dans le contrat. Les prestations cochées plus haut deviennent les prestations ponctuelles (prix par exécution).</p></div>
+  </fieldset>`;
+}
+// prix des prestations (directeur) : prix unitaire HT par ligne
+function devPDirHtml(d) {
+  const L = d.prest || [];
+  if (!L.length) return html`<p class="tiny muted" style="margin:0">Les prestations cochées dans « 📋 Prestations » apparaissent ici pour mettre le prix unitaire.</p>`;
+  return html`<div class="section-label" style="margin:0 0 6px">${d.kind === 'contrat' ? 'Prestations ponctuelles — prix par exécution' : 'Prix des prestations'}</div>
+    ${L.map((p) => html`<div class="dev-drow"><span class="small"><b>${p.l}</b>${p.det ? html` <span class="muted">— ${p.det}</span>` : ''}<span class="muted" style="display:block">${devQty(p)} ${p.u || ''}</span></span>
+      <span class="sfx"><input name="pp_${p.k}" type="number" ${new Raw(money$)} value="${p.pu ?? ''}" placeholder="Prix unitaire" aria-label="Prix unitaire HT"><i>€ HT / ${p.u || 'u.'}</i></span>
+      <b class="small" style="text-align:right">${p.pu !== '' && p.pu != null ? eur(devPrestTot(p)) : ''}</b></div>`)}`;
+}
 function devTotHtml(d) {
   const k = devCalc(d);
-  return html`<div class="kv-tot"><span>Main-d’œuvre</span><b>${eur(k.mo)}</b><span>Déplacement</span><b>${eur(k.dep)}</b><span>Matériel</span><b>${eur(k.mat)}</b>${k.rem ? html`<span>Remise ${String(num(d.dir.remise)).replace('.', ',')} %</span><b>− ${eur(k.rem)}</b>` : ''}
+  if (k.ct) return html`<div class="kv-tot"><span>Forfait mensuel HT</span><b>${eur(k.forfait)}</b>${k.rem ? html`<span>Remise ${String(num(d.dir.remise)).replace('.', ',')} %</span><b>− ${eur(k.rem)}</b>` : ''}<span>TVA ${String(k.taux).replace('.', ',')} %</span><b>${eur(k.tva)}</b><span class="big">Total TTC / mois</span><b class="big">${eur(k.ttc)}</b></div>${k.prest.length ? html`<p class="tiny muted" style="margin:4px 0 0">+ ${k.prest.length} prestation(s) ponctuelle(s), facturée(s) à chaque exécution.</p>` : ''}`;
+  return html`${k.pr ? html`<div class="kv-tot" style="margin-bottom:0"><span>Prestations</span><b>${eur(k.pr)}</b></div>` : ''}<div class="kv-tot"><div class="kv-tot"><span>Main-d’œuvre</span><b>${eur(k.mo)}</b><span>Déplacement</span><b>${eur(k.dep)}</b><span>Matériel</span><b>${eur(k.mat)}</b>${k.rem ? html`<span>Remise ${String(num(d.dir.remise)).replace('.', ',')} %</span><b>− ${eur(k.rem)}</b>` : ''}
     <span>Total HT</span><b>${eur(k.ht)}</b><span>TVA ${String(k.taux).replace('.', ',')} %</span><b>${eur(k.tva)}</b><span class="big">Total TTC</span><b class="big">${eur(k.ttc)}</b>
     <span>Acompte ${k.pct} %</span><b>${eur(k.acompte)}</b></div>${k.pct !== devAcompteConseil(k.ttc) ? html`<p class="tiny muted" style="margin:4px 0 0">Acompte conseillé pour ce montant : ${devAcompteConseil(k.ttc)} %</p>` : ''}`;
 }
@@ -7285,7 +7344,8 @@ Object.assign(SHEETS, {
           <button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button></div></div>` : '';
     return {
       title: id ? `📝 Devis ${devNo(d)}` : '📝 Nouveau devis',
-      body: html`${acts}<form id="f" data-form="devis" class="fields"><input type="hidden" name="id" value="${id || ''}">
+      body: html`${acts}<form id="f" data-form="devis" class="fields" data-kind="${d.kind === 'contrat' ? 'contrat' : 'travaux'}"><input type="hidden" name="id" value="${id || ''}">
+        <label class="field full">Type de devis<select name="dkind" data-input="dev-kind"><option value="travaux">🛠️ Travaux — prix par prestation</option><option value="contrat" ${d.kind === 'contrat' ? new Raw('selected') : ''}>🧹 Contrat d’entretien — forfait mensuel + protocole</option></select></label>
         <div class="section-label full" style="margin:0">Client</div>
         <label class="field">Type de client<select name="ctype" data-input="dev-ctype">${Object.entries(DEV_TYPES).filter(([kk]) => kk !== 'ger' || orgs.length || cl.type === 'ger').map(([kk, v]) => html`<option value="${kk}" ${cl.type === kk ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <label class="field dev-ger" ${cl.type === 'ger' ? '' : new Raw('hidden')}>Gérance<select name="org" data-input="dev-org"><option value="">— choisir —</option>${orgs.map((o) => html`<option value="${o.id}" ${cl.orgId === o.id ? new Raw('selected') : ''}>${o.name}</option>`)}</select></label>
@@ -7306,17 +7366,28 @@ Object.assign(SHEETS, {
             <button type="button" class="btn sm" data-action="dev-row-add">${icon('plus')} Ligne</button></div>
           <label class="field">Durée prévue<input name="jours" value="${chef.jours || ''}" placeholder="ex. 3 jours, 2 semaines"></label>
         </fieldset>
+        ${devPrestBox(d)}
         <fieldset class="full dev-box dev-dir"><legend>👔 À remplir par le directeur</legend>
+          <div class="full" id="devPDir">${devPDirHtml(d)}</div>
+          <div class="dev-k-ct" style="display:contents">${(() => { const t = d.ct || {}; return html`
+          ${sfx('Forfait mensuel', 'cforfait', t.forfait ?? '', '€ HT / mois')}
+          <label class="field">Passages par semaine<input name="cpass" value="${t.pass || '1'}" inputmode="numeric"></label>
+          <label class="field">Agents par passage<input name="cagents" value="${t.agents || '2'}" inputmode="numeric"></label>
+          ${sfx('Durée du contrat', 'cduree', t.duree || 12, 'mois', 'inputmode="numeric" step="1" min="1" max="120"')}
+          ${sfx('Préavis de résiliation', 'cpreavis', t.preavis || 3, 'mois', 'inputmode="numeric" step="1" min="0" max="24"')}
+          ${sfx('Paiement', 'cpay', t.pay || 15, 'jours', 'inputmode="numeric" step="1" min="0" max="90"')}
+          <label class="field">Indice (cote d’application)<input name="ccote" value="${t.cote || ''}" placeholder="ex. 992,24"></label>`; })()}</div>
+          <div class="dev-k-tr" style="display:contents">
           <div class="full" id="devDir">${devDirHtml(crows, dir.rows || [])}</div>
           ${sfx('Déplacement', 'depl', dir.depl ?? '', '€ HT')}
           ${sfx('Remise', 'remise', dir.remise || '', '%', 'inputmode="decimal" step="0.5" min="0" max="100"')}
           <div class="full"><div class="section-label" style="margin:4px 0 6px">Matériel (HT)</div><div id="factMats">${mats.map((m, n) => matRow(n, m))}</div>
-            <button type="button" class="btn sm" data-action="fact-mat-add">${icon('plus')} Ligne</button></div>
+            <button type="button" class="btn sm" data-action="fact-mat-add">${icon('plus')} Ligne</button></div></div>
           ${sfx('TVA', 'tva', dir.tva ?? c.taux, '%', 'inputmode="decimal" step="0.01" min="0" max="100"')}
-          <label class="field mini">Acompte<select name="acompte" data-input="dev-tot"><option value="" ${dir.acompte === '' || dir.acompte == null ? new Raw('selected') : ''}>Conseillé (${devAcompteConseil(k.ttc)} %)</option>${DEV_ACOMPTE.map((p) => html`<option value="${p}" ${dir.acompte !== '' && dir.acompte != null && +dir.acompte === p ? new Raw('selected') : ''}>${p ? p + ' %' : 'Sans acompte'}</option>`)}</select></label>
+          <label class="field mini dev-k-tr">Acompte<select name="acompte" data-input="dev-tot"><option value="" ${dir.acompte === '' || dir.acompte == null ? new Raw('selected') : ''}>Conseillé (${devAcompteConseil(k.ttc)} %)</option>${DEV_ACOMPTE.map((p) => html`<option value="${p}" ${dir.acompte !== '' && dir.acompte != null && +dir.acompte === p ? new Raw('selected') : ''}>${p ? p + ' %' : 'Sans acompte'}</option>`)}</select></label>
           ${sfx('Devis valable', 'valid', dir.valid || 30, 'jours', 'inputmode="numeric" step="1" min="1" max="365"')}
           <label class="field">Délai / début des travaux<input name="delai" value="${dir.delai || ''}" placeholder="ex. début sous 2 semaines, durée 3 jours"></label>
-          <p class="tiny muted full" style="margin:0">Acompte conseillé : jusqu’à 2 000 € TTC 40 % · jusqu’à 10 000 € 30 % · jusqu’à 50 000 € 20 % · au-delà 10 %.</p>
+          <p class="tiny muted full dev-k-tr" style="margin:0">Acompte conseillé : jusqu’à 2 000 € TTC 40 % · jusqu’à 10 000 € 30 % · jusqu’à 50 000 € 20 % · au-delà 10 %.</p>
           <div class="full" id="devTot">${devTotHtml(d)}</div>
         </fieldset>
         ${!id ? html`<p class="tiny muted full" style="margin:0">Le numéro est donné à l’enregistrement : DEV-initiales-RCS (sociétés)-date-heure-numéro suivi (ex. DEV-AG-B123456-${ymd(today())}-0930-${String((+c.devSeq || 0) + 1).padStart(4, '0')}).</p>` : ''}
@@ -7427,10 +7498,10 @@ async function devPdf(d) {
   if (cl.rcs) { p.text(CX, cy, `RCS ${cl.rcs}${cl.tva ? ' · TVA ' + cl.tva : ''}`, { size: 9 }); cy += 12; }
   if (cl.tel || cl.email) { p.text(CX, cy, [cl.tel, cl.email].filter(Boolean).join(' · '), { size: 9, color: G }); cy += 12; }
   y = Math.max(cy + 20, 150);
-  p.text(X, y, 'DEVIS', { size: 22, bold: true, color: [0.2, 0.2, 0.2] }); y += 18;
+  p.text(X, y, k.ct ? 'OFFRE DE SERVICE' : 'DEVIS', { size: 22, bold: true, color: [0.2, 0.2, 0.2] }); if (k.ct) p.text(X + 230, y, 'Contrat d’entretien', { size: 11, color: G }); y += 18;
   p.text(X, y, `N° ${no}`, { size: 10.5, bold: true }); y += 20;
   const until = addDays(d.date || today(), num((d.dir || {}).valid) || 30);
-  const info = [['Date', frD(d.date || today())], ['Valable jusqu’au', frD(until)], ['Durée prévue', (d.chef && d.chef.jours) || '—'], ['Devis gratuit', 'sans engagement']];
+  const info = [['Date', frD(d.date || today())], ['Valable jusqu’au', frD(until)], k.ct ? ['Durée du contrat', `${(d.ct && d.ct.duree) || 12} mois`] : ['Durée prévue', (d.chef && d.chef.jours) || '—'], ['Devis gratuit', 'sans engagement']];
   info.forEach(([l, v], i) => { const xx = X + i * 125; p.text(xx, y, l, { size: 8.5, color: G }).text(xx, y + 13, v, { size: 10 }); });
   y += 36;
   const kv = (l, v) => { if (!v) return; need(16); p.text(X, y, l, { size: 9, color: G }); y += p.wrap(X + 130, y, v, R - X - 130, { size: 10, bold: true }) + 3; };
@@ -7442,13 +7513,15 @@ async function devPdf(d) {
     p.rect(X, y - 12, R - X, 18, { fill: [0.93, 0.91, 0.97] }).text(X + 6, y, 'DESCRIPTION DES TRAVAUX', { size: 9.5, bold: true, color: VIO }); y += 20;
     for (const para of rap.split(/\n+/)) { const h = p.wrap(X, -1000, para, R - X, { size: 9.5 }); need(Math.min(h, 200) + 4); y += p.wrap(X, y, para, R - X, { size: 9.5 }) + 4; }
   }
+  const n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
+  const txt = String(k.taux).replace('.', ',') + '%';
+  const TX = 330;
+  if (!k.ct) {
   // tableau des prix
   y += 10; need(60);
   const CQ = 352, CP = 430, CT = 482;
   p.text(X + 6, y, 'Description', { size: 9.5, bold: true }).text(CQ, y, 'Quantité', { size: 9.5, bold: true, align: 'right' }).text(CP, y, 'Prix unitaire', { size: 9.5, bold: true, align: 'right' }).text(CT, y, 'TVA', { size: 9.5, bold: true, align: 'right' }).text(R - 6, y, 'Montant', { size: 9.5, bold: true, align: 'right' });
   y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
-  const n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
-  const txt = String(k.taux).replace('.', ',') + '%';
   const row = (lib, sub, q, pu, tot) => {
     need(30);
     if (q !== '') p.text(CQ, y, q, { size: 9.5, align: 'right' });
@@ -7458,12 +7531,12 @@ async function devPdf(d) {
     if (sub) hh += p.wrap(X + 6, y + hh, sub, 240, { size: 8.5, color: G });
     y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
   };
+  for (const pp of k.prest) { const has = pp.pu !== '' && pp.pu != null; row(pp.l, pp.det, `${devQty(pp)} ${pp.u || ''}`, has ? n2(num(pp.pu)) : '', has ? eur(pp.mt) : ''); }
   for (const l of k.lines) row(`Main-d'œuvre — ${METIERS[l.met] || 'ouvrier'}`, `${num(l.nb || 1)} ouvrier(s) × ${n2(num(l.h))} h`, n2(l.hh) + ' h', n2(l.taux), eur(l.mt));
   if (k.dep) row('Déplacement', '', '1,00', n2(k.dep), eur(k.dep));
   for (const m of (d.dir && d.dir.mat) || []) if (num(m.ht)) row(`Matériel : ${m.lib || 'fourniture'}`, '', '1,00', n2(num(m.ht)), eur(num(m.ht)));
   if (k.rem) row(`Remise ${String(num(d.dir.remise)).replace('.', ',')} %`, '', '', '', '− ' + eur(k.rem));
   y += 10; need(110);
-  const TX = 330;
   const trow = (l, v, b, bg) => { if (bg) p.rect(TX, y - 12, R - TX, 20, { fill: [0.94, 0.94, 0.94] }); p.text(TX + 8, y, l, { size: b ? 11 : 9.5, bold: b }).text(R - 8, y, v, { size: b ? 11 : 9.5, bold: b, align: 'right' }); y += 22; };
   const ty = y;
   trow('Montant hors taxes', eur(k.ht), false, true); trow(`TVA ${txt}`, eur(k.tva), false, false); trow('Total TTC', eur(k.ttc), true, true);
@@ -7471,6 +7544,42 @@ async function devPdf(d) {
   let py = ty;
   if (c.iban) { p.text(X, py, 'Paiement par virement :', { size: 9, bold: true }); py += 12; p.text(X, py, `${c.iban}${c.bic ? ' · BIC ' + c.bic : ''}`, { size: 9 }); py += 12; p.text(X, py, `Communication : ${no}`, { size: 9, color: G }); py += 12; }
   y = Math.max(y, py) + 14;
+  } else {
+    // contrat d'entretien : offre financière, organisation, durée et conditions, protocole d'entretien
+    const t = d.ct || {};
+    const sec = (s0) => { y += 8; need(44); p.rect(X, y - 12, R - X, 18, { fill: [0.93, 0.91, 0.97] }).text(X + 6, y, s0, { size: 9.5, bold: true, color: VIO }); y += 20; };
+    const bl = (s0) => { need(20); y += p.wrap(X + 10, y, '• ' + s0, R - X - 10, { size: 9.5 }) + 3; };
+    sec('1. OFFRE FINANCIÈRE');
+    const C1 = 350, C2 = 440;
+    p.text(X + 6, y, 'Prestation', { size: 9, bold: true }).text(C1, y, 'HTVA', { size: 9, bold: true, align: 'right' }).text(C2, y, `TVA ${txt}`, { size: 9, bold: true, align: 'right' }).text(R - 6, y, 'Total TTC', { size: 9, bold: true, align: 'right' });
+    y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
+    const frow = (lib, ht, unit) => { need(30); const tv = r2((ht * k.taux) / 100); p.text(C1, y, eur(ht) + unit, { size: 9, align: 'right' }).text(C2, y, eur(tv), { size: 9, align: 'right' }).text(R - 6, y, eur(r2(ht + tv)) + unit, { size: 9, bold: true, align: 'right' }); const hh = p.wrap(X + 6, y, lib, 205, { size: 9.5 }); y += Math.max(hh, 13) + 8; p.line(X, y - 11, R, y - 11, { w: 0.4, color: [0.85, 0.85, 0.85] }); };
+    frow('Forfait mensuel — entretien des parties communes', k.ht, ' / mois');
+    for (const pp of k.prest) frow(pp.l + (pp.det ? ' — ' + pp.det : '') + (pp.q !== '' && pp.q != null && num(pp.q) !== 1 ? ` (${devQty(pp)} ${pp.u})` : ''), pp.mt, ' / exéc.');
+    y += 2; y += p.wrap(X, y, 'Le forfait mensuel comprend les prestations hebdomadaires, mensuelles et trimestrielles du protocole d’entretien ci-après. Les prestations annuelles et ponctuelles sont facturées séparément, à chaque exécution.', R - X, { size: 8.5, color: G }) + 4;
+    sec('2. ORGANISATION DE LA PRESTATION');
+    bl(`Fréquence : ${t.pass || 1} intervention(s) par semaine, réalisée(s) par ${t.agents || 1} agent(s) d’entretien.`);
+    bl('Matériel : produits de nettoyage et matériel courant nécessaires inclus dans le forfait.');
+    bl(`Remplacement : organisé par ${c.marque || c.nom} en cas de congé ou d’absence de l’agent habituellement affecté au site.`);
+    bl('Jours fériés : lorsqu’une intervention coïncide avec un jour férié, elle est replanifiée en concertation avec le client.');
+    bl('Déchets : les déchets collectés lors de l’entretien sont évacués dans les conteneurs prévus sur le site.');
+    bl(`Contrôle qualité : suivi du chantier par la responsable de ${c.marque || c.nom}, contrôle régulier et à chaque signalement du client.`);
+    sec('3. DURÉE, RÉSILIATION ET CONDITIONS');
+    bl(`Durée : ${t.duree || 12} mois à compter de la date de démarrage, renouvelable tacitement.`);
+    bl(`Résiliation : préavis de ${t.preavis || 3} mois, par écrit.`);
+    bl('Facturation : mensuelle pour le forfait d’entretien ; après exécution pour les prestations ponctuelles.');
+    bl(`Délai de paiement : ${t.pay || 15} jours à compter de la date de facture.`);
+    if (t.cote) bl(`Indexation : prix établis à la cote d’application ${t.cote}. En cas de modification légale de l’échelle mobile des salaires, les prix pourront être adaptés proportionnellement à l’évolution des coûts salariaux.`);
+    const pr0 = d.proto || [];
+    if (pr0.length) {
+      sec('PROTOCOLE D’ENTRETIEN');
+      const cols = [['h', 'Hebdo.'], ['m', 'Mensuel'], ['t', 'Trim.'], ['a', 'Annuel']], cx = (i) => 382 + i * 46;
+      need(30); p.text(X + 6, y, 'Prestations', { size: 8.5, bold: true }); cols.forEach(([, l], i) => p.text(cx(i), y, l, { size: 8.5, bold: true, align: 'center' })); y += 6; p.line(X, y, R, y, { w: 0.8, color: [0.55, 0.55, 0.55] }); y += 13;
+      for (const r of pr0) { need(24); const hh = p.wrap(X + 6, y, r.l, 310, { size: 9 }); cols.forEach(([x], i) => { if (r.f && r.f[x]) p.text(cx(i), y, 'X', { size: 9.5, bold: true, align: 'center' }); }); y += Math.max(hh, 12) + 6; p.line(X, y - 10, R, y - 10, { w: 0.3, color: [0.88, 0.88, 0.88] }); }
+      y += 2; y += p.wrap(X, y, 'Le protocole pourra être ajusté d’un commun accord selon les besoins constatés sur site. Les travaux non repris au présent protocole feront l’objet d’un accord préalable.', R - X, { size: 8.5, color: G }) + 4;
+    }
+    y += 10;
+  }
   // mentions légales
   y += 2; need(60);
   const legal = part
@@ -7478,7 +7587,7 @@ async function devPdf(d) {
       'Droit de rétractation (contrat conclu hors établissement, Code de la consommation) : vous disposez de 14 jours à compter de la signature pour vous rétracter, sans donner de motif et sans frais, en nous envoyant le formulaire ci-joint ou une déclaration claire (courrier ou email). L’acompte éventuellement versé est alors remboursé sous 14 jours.',
       'Les travaux ne commencent pas avant la fin de ce délai, sauf demande expresse du client ; s’il se rétracte ensuite, il paie la part des travaux déjà réalisés. Pas de droit de rétractation pour une réparation urgente demandée par le client.']
     : [`Devis gratuit et sans engagement, valable ${num((d.dir || {}).valid) || 30} jours (jusqu’au ${frD(until)}). Pour un professionnel, l’acceptation (signature « Bon pour accord » ou accord dans le portail) est ferme et définitive.`];
-  legal.push(`Paiement du solde à réception de la facture (${+c.delai || 30} jours). Tout travail supplémentaire fera l’objet d’un avenant ou d’un nouveau devis.`);
+  legal.push(k.ct ? 'Toute prestation supplémentaire fera l’objet d’un accord préalable ou d’un avenant au contrat.' : `Paiement du solde à réception de la facture (${+c.delai || 30} jours). Tout travail supplémentaire fera l’objet d’un avenant ou d’un nouveau devis.`);
   p.line(X, y, R, y, { w: 0.6 }); y += 14;
   for (const t of legal) { need(30); y += p.wrap(X, y, t, R - X, { size: 7.5 }) + 3; }
   y += 12;
@@ -7537,7 +7646,7 @@ function pdfView(bytes, label) {
 }
 // premier envoi : le brouillon devient « envoyé » (la validité court depuis la date du devis)
 const devSent = (d, extra = {}) => vault.mutate((tx) => tx.put('devis', { id: d.id, ...(d.st === 'brouillon' ? { st: 'envoye', sentAt: new Date().toISOString(), ...devH(d, 'envoye') } : {}), ...extra }), 'Devis envoyé', `${devNo(d)} — ${devClient(d)}`);
-const devMsg = (d) => { const k = devCalc(d), c = factConf(); return `Bonjour ${d.interloc || devClient(d)},\n\nVoici notre devis n° ${devNo(d)}${d.titre ? ' — ' + d.titre : ''} : ${eur(k.ttc)} TTC${k.pct ? ` (acompte ${k.pct} % : ${eur(k.acompte)})` : ''}, valable jusqu’au ${fmtDate(addDays(d.date || today(), num((d.dir || {}).valid) || 30))}.\nDevis gratuit et sans engagement.\n\nBien à vous,\n${c.marque || c.nom}${c.tel ? '\n📞 ' + c.tel : ''}${c.email ? '\n✉️ ' + c.email : ''}`; };
+const devMsg = (d) => { const k = devCalc(d), c = factConf(); return `Bonjour ${d.interloc || devClient(d)},\n\nVoici notre ${k.ct ? 'offre de service (contrat d’entretien)' : 'devis'} n° ${devNo(d)}${d.titre ? ' — ' + d.titre : ''} : ${k.ct ? `forfait mensuel ${eur(k.ttc)} TTC` : `${eur(k.ttc)} TTC`}${k.pct ? ` (acompte ${k.pct} % : ${eur(k.acompte)})` : ''}, valable jusqu’au ${fmtDate(addDays(d.date || today(), num((d.dir || {}).valid) || 30))}.\nDevis gratuit et sans engagement.\n\nBien à vous,\n${c.marque || c.nom}${c.tel ? '\n📞 ' + c.tel : ''}${c.email ? '\n✉️ ' + c.email : ''}`; };
 // synchronisation avec le portail : la gérance accepte, refuse ou demande une révision
 async function devSync() {
   if (!ptlConf() || !vault.list('devis').some((d) => d.ptlId)) return;
@@ -7566,6 +7675,8 @@ Object.assign(ACTIONS, {
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv' })); a.download = `devis-${d.y}.csv`; document.body.appendChild(a); a.click(); a.remove();
   },
   'dev-open': (d) => openSheet('devis', d.id),
+  'dev-free-add': () => { const box = $('#devFree'); if (!box) return; const n = 1 + Math.max(-1, ...[...box.querySelectorAll('[name^=pl_f]')].map((x) => +x.name.slice(4))); box.insertAdjacentHTML('beforeend', String(devFreeRow(n))); box.lastElementChild.querySelector('input').focus(); },
+  'dev-proto-add': () => { const box = $('#devProto'); if (!box) return; const n = 1 + Math.max(-1, ...[...box.querySelectorAll('[name^=frl]')].map((x) => +x.name.slice(3))); box.insertAdjacentHTML('beforeend', String(devProtoRow(n, { f: { m: 1 } }))); box.lastElementChild.querySelector('input').focus(); },
   'dev-row-add': () => { const box = $('#devRows'); if (box) box.insertAdjacentHTML('beforeend', String(devChefRow(box.children.length))); },
   'dev-sig-clear': () => { const c = sheetEl.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); devSigUrl = ''; },
   'dev-sign': (d) => { if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true }); openOver('devis-sign', d.id); },
@@ -7661,6 +7772,16 @@ document.addEventListener('input', (e) => {
   const fdv = e.target.closest && e.target.closest('form[data-form=devis]');
   if (fdv) {
     if (e.target.dataset.input === 'dev-chef') { const box = $('#devDir'), raw = [], dir = []; fdv.querySelectorAll('.dev-crow').forEach((row) => { const n = +row.dataset.n; raw[n] = { met: fdv[`met${n}`].value, nb: num(fdv[`nb${n}`].value), h: num(fdv[`h${n}`].value) }; dir[n] = { w: fdv[`dw${n}`] ? fdv[`dw${n}`].value : '', taux: fdv[`dt${n}`] ? fdv[`dt${n}`].value : '' }; }); if (box) setHtml(box, devDirHtml(raw.map((x) => x || {}), dir)); }
+    if (e.target.dataset.input === 'dev-psearch') {
+      const q = e.target.value.trim().toLowerCase();
+      fdv.querySelectorAll('.dev-pg').forEach((g) => { let hit = 0; g.querySelectorAll('.dev-pi').forEach((it) => { const ok = !q || it.dataset.l.includes(q); it.hidden = !ok; hit += ok; }); g.hidden = !hit; if (q) g.open = !!hit; });
+      return;
+    }
+    if (e.target.closest('.dev-prest')) {
+      const g = e.target.closest('.dev-pg');
+      if (g) { const n = g.querySelectorAll('input[name=pk]:checked').length, b = g.querySelector('.dev-pn'); b.textContent = n; b.hidden = !n; }
+      const pd = $('#devPDir'); if (pd) setHtml(pd, devPDirHtml(devRead(fdv)));
+    }
     const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(fdv)));
   }
   const k = e.target.dataset.input;
@@ -7700,6 +7821,7 @@ document.addEventListener('change', (e) => {
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
   if (k === 'soc-logo' && e.target.files[0]) setLogo(e.target.files[0]);
   if (k === 'dev-w') { const o = e.target.selectedOptions[0], t = e.target.form[e.target.name.replace('dw', 'dt')]; if (t && o && num(o.dataset.rate)) t.value = o.dataset.rate; const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(e.target.form))); }
+  if (k === 'dev-kind') { const f = e.target.form; f.dataset.kind = e.target.value; const pd = $('#devPDir'); if (pd) setHtml(pd, devPDirHtml(devRead(f))); const tb = $('#devTot'); if (tb) setHtml(tb, devTotHtml(devRead(f))); }
   if (k === 'dev-tot') { const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(e.target.form))); }
   if (k === 'dev-ctype') { const f = e.target.form, v = e.target.value; f.querySelectorAll('.dev-ger').forEach((x) => { x.hidden = v !== 'ger'; }); f.querySelectorAll('.dev-soc').forEach((x) => { x.hidden = v === 'part'; }); }
   if (k === 'dev-org') {
