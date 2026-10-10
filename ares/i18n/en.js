@@ -10875,5 +10875,37 @@ export default [
 [
 "/ mois",
 "/ month"
+],
+[
+"🔗 Lien du devis — {0}",
+"🔗 Quote link — {0}"
+],
+[
+"Le client ouvre ce lien (ou scanne le QR code) : il voit le devis, l’imprime et le",
+"The client opens this link (or scans the QR code): they see the quote, print it and"
+],
+[
+"signe avec le doigt sur son téléphone",
+"sign it with their finger on their phone"
+],
+[
+". La signature revient ici toute seule.",
+". The signature comes back here automatically."
+],
+[
+"📋 Copier le lien",
+"📋 Copy the link"
+],
+[
+"Après une nouvelle version (R1, R2…), touchez à nouveau « 🔗 Lien / QR code » : le même lien montre la nouvelle version.",
+"After a new version (R1, R2…), tap “🔗 Lien / QR code” again: the same link shows the new version."
+],
+[
+"Lien impossible :",
+"Link failed:"
+],
+[
+"Connectez d’abord le portail gérance (Gérances) : il héberge les liens des devis",
+"Connect the agency portal first (Gérances): it hosts the quote links"
 ]
 ];

@@ -11083,5 +11083,37 @@ export default [
 [
 "/ mois",
 "/ mês"
+],
+[
+"🔗 Lien du devis — {0}",
+"🔗 Link do orçamento — {0}"
+],
+[
+"Le client ouvre ce lien (ou scanne le QR code) : il voit le devis, l’imprime et le",
+"O cliente abre este link (ou lê o QR code): vê o orçamento, imprime-o e"
+],
+[
+"signe avec le doigt sur son téléphone",
+"assina com o dedo no telemóvel"
+],
+[
+". La signature revient ici toute seule.",
+". A assinatura volta aqui sozinha."
+],
+[
+"📋 Copier le lien",
+"📋 Copiar o link"
+],
+[
+"Après une nouvelle version (R1, R2…), touchez à nouveau « 🔗 Lien / QR code » : le même lien montre la nouvelle version.",
+"Depois de uma nova versão (R1, R2…), toque de novo em «🔗 Lien / QR code»: o mesmo link mostra a nova versão."
+],
+[
+"Lien impossible :",
+"Link impossível:"
+],
+[
+"Connectez d’abord le portail gérance (Gérances) : il héberge les liens des devis",
+"Ligue primeiro o portal das gestoras (Gérances): aloja os links dos orçamentos"
 ]
 ];

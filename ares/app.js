@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.109.0';
+const VERSION = '2.110.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -7336,6 +7336,7 @@ Object.assign(SHEETS, {
           <button class="btn sm" data-action="dev-pdf" data-id="${id}">📄 PDF / imprimer</button>
           <button class="btn sm" data-action="dev-share" data-id="${id}" data-via="wa">💬 WhatsApp</button>
           <button class="btn sm" data-action="dev-share" data-id="${id}" data-via="mail">✉️ Email</button>
+          ${cl.type !== 'ger' && d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm" data-action="dev-link" data-id="${id}">🔗 Lien / QR code${d.pubId ? ' ✓' : ''}</button>` : ''}
           ${cl.type === 'ger' && cl.orgId && d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm" data-action="dev-ptl" data-id="${id}">📤 ${d.ptlSt ? 'Renvoyer' : 'Envoyer'} au portail de la gérance</button>` : ''}
           ${d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm primary" data-action="dev-sign" data-id="${id}">✍️ Faire signer le client</button><button class="btn sm" data-action="dev-acc" data-id="${id}">✅ Accepté</button><button class="btn sm ghost danger" data-action="dev-ref" data-id="${id}">❌ Refusé</button>` : ''}
           ${s.k === 'ok' ? html`<button class="btn sm primary" data-action="dev-tache" data-id="${id}">➡️ Créer l’intervention</button>` : ''}
@@ -7393,6 +7394,28 @@ Object.assign(SHEETS, {
         ${!id ? html`<p class="tiny muted full" style="margin:0">Le numéro est donné à l’enregistrement : DEV-initiales-RCS (sociétés)-date-heure-numéro suivi (ex. DEV-AG-B123456-${ymd(today())}-0930-${String((+c.devSeq || 0) + 1).padStart(4, '0')}).</p>` : ''}
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" type="submit" form="f">💾 Enregistrer</button>`,
+    };
+  },
+  // lien web + QR code du devis (client externe)
+  'dev-link'({ id }) {
+    const d = vault.get('devis', id);
+    if (!d || !d.pubToken) return null;
+    const url = `${location.origin}/devis.html#t=${d.pubToken}`, cl = d.client || {}, k = devCalc(d);
+    const msg = `Bonjour ${d.interloc || devClient(d)},\n\nVoici votre ${k.ct ? 'offre de service' : 'devis'} LuxInterventions n° ${devNo(d)}${d.titre ? ' — ' + d.titre : ''} : ${eur(k.ttc)} TTC${k.ct ? ' / mois' : ''}.\nVous pouvez le lire, l’imprimer et le signer sur votre téléphone :\n${url}\n\nBien à vous,\n${factConf().marque || 'LuxInterventions'}`;
+    const tel = String(cl.tel || '').replace(/[^\d+]/g, ''), wa = tel.replace(/^\+/, '').replace(/^00/, '');
+    return {
+      title: `🔗 Lien du devis — ${devNo(d)}`,
+      narrow: true,
+      body: html`<p class="small" style="margin:0 0 10px">Le client ouvre ce lien (ou scanne le QR code) : il voit le devis, l’imprime et le <b>signe avec le doigt sur son téléphone</b>. La signature revient ici toute seule.</p>
+        <div style="text-align:center;margin:6px 0 10px"><div class="qr-box" style="display:inline-block;background:#fff;padding:10px;border-radius:12px">${qrSvg(url, 5)}</div></div>
+        <p class="tiny" style="word-break:break-all;margin:0 0 12px"><a href="${url}" target="_blank" rel="noopener">${url}</a></p>
+        <div class="dev-btns">
+          <a class="btn sm" href="https://wa.me/${wa}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">💬 WhatsApp</a>
+          <a class="btn sm" href="sms:${tel}${/iPhone|iPad/.test(navigator.userAgent) ? '&' : '?'}body=${encodeURIComponent(msg)}">📱 SMS</a>
+          <a class="btn sm" href="mailto:${encodeURIComponent(cl.email || '')}?subject=${encodeURIComponent('Devis ' + devNo(d))}&body=${encodeURIComponent(msg)}">✉️ Email</a>
+          <button class="btn sm" data-action="dev-link-copy" data-url="${url}">📋 Copier le lien</button></div>
+        <p class="tiny muted" style="margin:10px 0 0">Après une nouvelle version (R1, R2…), touchez à nouveau « 🔗 Lien / QR code » : le même lien montre la nouvelle version.</p>`,
+      foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
     };
   },
   // signature du client avec le doigt : « Bon pour accord »
@@ -7648,7 +7671,20 @@ function pdfView(bytes, label) {
 const devSent = (d, extra = {}) => vault.mutate((tx) => tx.put('devis', { id: d.id, ...(d.st === 'brouillon' ? { st: 'envoye', sentAt: new Date().toISOString(), ...devH(d, 'envoye') } : {}), ...extra }), 'Devis envoyé', `${devNo(d)} — ${devClient(d)}`);
 const devMsg = (d) => { const k = devCalc(d), c = factConf(); return `Bonjour ${d.interloc || devClient(d)},\n\nVoici notre ${k.ct ? 'offre de service (contrat d’entretien)' : 'devis'} n° ${devNo(d)}${d.titre ? ' — ' + d.titre : ''} : ${k.ct ? `forfait mensuel ${eur(k.ttc)} TTC` : `${eur(k.ttc)} TTC`}${k.pct ? ` (acompte ${k.pct} % : ${eur(k.acompte)})` : ''}, valable jusqu’au ${fmtDate(addDays(d.date || today(), num((d.dir || {}).valid) || 30))}.\nDevis gratuit et sans engagement.\n\nBien à vous,\n${c.marque || c.nom}${c.tel ? '\n📞 ' + c.tel : ''}${c.email ? '\n✉️ ' + c.email : ''}`; };
 // synchronisation avec le portail : la gérance accepte, refuse ou demande une révision
+// signatures faites par le client sur son téléphone (lien / QR code) : reprises dans le devis (signature sur le PDF)
+async function devPubSync() {
+  if (!ptlConf() || !vault.list('devis').some((d) => d.pubId && d.st !== 'accepte' && d.st !== 'refuse')) return;
+  let list;
+  try { list = (await ptlApi('devis-pub')).devis || []; } catch { return; }
+  const upd = list.map((r) => [vault.list('devis').find((x) => x.pubId === r.id), r]).filter(([d, r]) => d && d.st !== 'accepte' && d.st !== 'refuse' && r.decided_at && !(d.decision && d.decision.at >= r.decided_at));
+  if (!upd.length) return;
+  await vault.mutate((tx) => { for (const [d, r] of upd) { const at = new Date(r.decided_at).toISOString(); tx.put('devis', { id: d.id, st: r.status, decision: { st: r.status, at: r.decided_at, by: r.sign_name || 'le client', note: '' }, ...(r.status === 'accepte' ? { acc: at, sign: { png: r.sign_png, at, nom: r.sign_name || '', early: !!r.sign_early, remote: true } } : {}), ...devH(d, r.status, r.decided_at) }); } }, 'Réponse du client au devis (lien)', upd.map(([d, r]) => `${devNo(d)} : ${r.status === 'accepte' ? 'signé' : 'refusé'}`).join(' · '));
+  for (const [d, r] of upd) toast(`📝 ${devClient(d)} : devis ${devNo(d)} ${r.status === 'accepte' ? '✍️ signé sur son téléphone' : '❌ refusé'}`);
+  if (['dashboard', 'maintenance'].includes(ui.route)) renderView();
+  if (ui.sheet && ui.sheet.kind === 'devis') { ui.sheet.rendered = false; renderSheet(); }
+}
 async function devSync() {
+  devPubSync();
   if (!ptlConf() || !vault.list('devis').some((d) => d.ptlId)) return;
   let list;
   try { list = (await ptlApi('devis')).devis || []; } catch { return; }
@@ -7675,6 +7711,23 @@ Object.assign(ACTIONS, {
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv' })); a.download = `devis-${d.y}.csv`; document.body.appendChild(a); a.click(); a.remove();
   },
   'dev-open': (d) => openSheet('devis', d.id),
+  // lien web + QR code pour un client externe : il voit, imprime et signe le devis sur son téléphone
+  async 'dev-link'(d) {
+    const v = vault.get('devis', d.id); if (!v) return;
+    if (!ptlConf()) return toast('Connectez d’abord le portail gérance (Gérances) : il héberge les liens des devis', { bad: true });
+    if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
+    const k = devCalc(v), bytes = await devPdf(v);
+    const meta = { id: v.pubId || '', no: devNo(v), title: v.titre || '', client: devClient(v), ttc: k.ttc, acompte: k.acompte, pct: k.pct, valid_until: addDays(v.date || today(), num((v.dir || {}).valid) || 30), part: (v.client || {}).type === 'part', kind: v.kind || 'travaux' };
+    let j;
+    try {
+      const r = await fetch(PTL_API + 'devis-pub', { method: 'PUT', headers: { Authorization: 'Bearer ' + ptlConf().token, 'Content-Type': 'application/pdf', 'X-Devis': encodeURIComponent(JSON.stringify(meta)) }, body: bytes });
+      j = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(j.error || 'Erreur ' + r.status);
+    } catch (e) { return toast('Lien impossible : ' + (e.message || 'connexion'), { bad: true }); }
+    await devSent(v, { pubId: j.id, ...(j.token ? { pubToken: j.token } : {}) });
+    openOver('dev-link', v.id);
+  },
+  'dev-link-copy': async (d) => { try { await navigator.clipboard.writeText(d.url); toast('Lien copié'); } catch { toast('Copie impossible : sélectionnez le lien', { bad: true }); } },
   'dev-free-add': () => { const box = $('#devFree'); if (!box) return; const n = 1 + Math.max(-1, ...[...box.querySelectorAll('[name^=pl_f]')].map((x) => +x.name.slice(4))); box.insertAdjacentHTML('beforeend', String(devFreeRow(n))); box.lastElementChild.querySelector('input').focus(); },
   'dev-proto-add': () => { const box = $('#devProto'); if (!box) return; const n = 1 + Math.max(-1, ...[...box.querySelectorAll('[name^=frl]')].map((x) => +x.name.slice(3))); box.insertAdjacentHTML('beforeend', String(devProtoRow(n, { f: { m: 1 } }))); box.lastElementChild.querySelector('input').focus(); },
   'dev-row-add': () => { const box = $('#devRows'); if (box) box.insertAdjacentHTML('beforeend', String(devChefRow(box.children.length))); },
@@ -7754,6 +7807,7 @@ Object.assign(ACTIONS, {
     await vault.mutate((tx) => { tx.remove('devis', v.id); ph.forEach((x) => tx.remove('documents', x.id)); }, 'Devis supprimé', `${devNo(v)} — ${devClient(v)}`);
     for (const x of ph) await vault.deleteFile(x.id).catch(() => {});
     if (v.ptlId && ptlConf()) ptlApi('devis/' + v.ptlId, { method: 'DELETE' }).catch(() => {});
+    if (v.pubId && ptlConf()) ptlApi('devis-pub/' + v.pubId, { method: 'DELETE' }).catch(() => {});
     sheetDirty = false; closeSheet(); toast('Devis supprimé'); renderView();
   },
   // devis accepté → intervention au planning (chantier, rapport, ouvriers prévus, photos du chantier)
