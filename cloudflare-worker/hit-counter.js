@@ -1403,8 +1403,9 @@ async function handlePortail(request, env, url, headers, ctx) {
       if (!isAdmin(me) && !own) fail(403, "Réservé à LuxInterventions ou au responsable de la gérance");
       const b = await body();
       const v = (k, n) => (b[k] != null ? clean(b[k], n) : null);
-      // logo de l'agence : petite image (data URL PNG/JPEG/WebP, ≤ 256 px, réduite par l'app), "" = retirer
+      // logo de l'agence (uniquement par son responsable, dans le portail) : petite image (data URL PNG/JPEG/WebP, ≤ 256 px, réduite par l'app), "" = retirer
       if (b.logo != null) {
+        if (!own) fail(403, "Le logo est ajouté par la gérance dans son portail");
         const lg = String(b.logo);
         if (lg && (lg.length > 150000 || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(lg))) fail(400, "Logo trop lourd ou format non reconnu (PNG, JPG)");
         await env.DB.prepare("UPDATE orgs SET logo = ? WHERE id = ?").bind(lg, orgMatch[1]).run();

@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.108.1';
+const VERSION = '2.108.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1706,16 +1706,6 @@ const affRow = (i, hints, attrs) => { const ab = absOn(i, today()); return html`
 const ptlOrg = (id) => ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => o.id === id);
 // logo de l'agence (ajouté par la gérance dans son portail, ou ici dans « Modifier ») : on la reconnaît d'un coup d'œil
 const orgLogo = (id, big) => { const o = ptlOrg(id || ''); return o && o.logo ? html`<img class="org-logo${big ? ' big' : ''}" src="${o.logo}" alt="">` : '🏢'; };
-async function logoShrink(file) {
-  const bmp = await createImageBitmap(file);
-  const k = Math.min(1, 256 / Math.max(bmp.width, bmp.height));
-  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
-  const g = c.getContext('2d');
-  g.drawImage(bmp, 0, 0, c.width, c.height);
-  let url = c.toDataURL('image/png');
-  if (url.length > 140000) { g.globalCompositeOperation = 'destination-over'; g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); url = c.toDataURL('image/jpeg', 0.85); }
-  return url;
-}
 const ptlInviteUrl = (tok) => `${location.origin}/portail.html#invite=${tok}`;
 // mot de passe → clé dérivée sur l'appareil (comme dans le portail) : le serveur ne voit jamais le mot de passe
 async function ptlDerive(password, saltB64, iter) {
@@ -4135,9 +4125,7 @@ const SHEETS = {
         <input type="hidden" name="id" value="${id || ''}">
         ${(() => { const cl = factClient(id || '', o.name); return html`<div class="section-label full" style="margin:0">🏢 Société de gestion</div>
         <label class="field full">Nom de la société<input name="name" required value="${o.name || ''}" placeholder="ex. Gérance du Centre S.A."></label>
-        <div class="field full org-logo-pick"><input type="hidden" name="logo" value="${o.logo || ''}"><span class="org-logo-box">${o.logo ? html`<img src="${o.logo}" alt="Logo">` : html`<span class="muted tiny">Logo</span>`}</span>
-          <span class="grow"><b style="display:block">🎨 Logo de l’agence <span class="tiny muted">(facultatif)</span></b><span class="tiny muted">La gérance peut aussi l’ajouter elle-même dans son portail (Ma société).</span>
-          <span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><label class="btn sm">📷 Choisir<input type="file" accept="image/png,image/jpeg,image/webp" data-input="ger-logo" hidden></label><button class="btn sm ghost" type="button" data-action="ger-logo-del">Retirer</button></span></span></div>
+        ${o.logo ? html`<div class="field full" style="display:flex;gap:10px;align-items:center"><img class="org-logo xl" src="${o.logo}" alt=""><span class="tiny muted">Logo ajouté par la gérance dans son portail (Ma société).</span></div>` : ''}
         <label class="field full">Adresse<textarea name="adresse" style="min-height:56px" placeholder="rue, n°, code postal, ville">${cl.adresse}</textarea></label>
         <label class="field">RCS<input name="rcs" value="${cl.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
         <label class="field">N° TVA<input name="tvaNum" value="${cl.tvaNum}" placeholder="LU12345678" autocapitalize="characters"></label>
@@ -5732,7 +5720,6 @@ const ACTIONS = {
     openOver('tache-form', null, null, { ...(w ? { intervenantId: w.id, type: w.metier === 'menage' ? 'nettoyage' : 'reparation' } : {}), metiers: metHints(`${d.ticket.categorie || ''} ${d.ticket.description || ''}`), ptlPhotos: (d.photos || []).map((p) => p.id).slice(0, 6), ptl: L, titre: `#${L.ref} ${d.ticket.categorie || 'Intervention'}`.slice(0, 80), note: d.ticket.description || '' });
   },
   'ger-edit': (d) => openSheet('ger-form', d.id),
-  'ger-logo-del': (d, el) => { const w = el.closest('.org-logo-pick'); w.querySelector('[name=logo]').value = ''; setHtml(w.querySelector('.org-logo-box'), html`<span class="muted tiny">Logo</span>`); sheetDirty = true; },
   'ger-open': (d) => { if (d.tab === 'fact') ui.ptl.orgT = null; openSheet('ger', d.id, d.tab); ptlLoad(); }, // les données du portail sont rafraîchies à chaque ouverture
   'ger-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; renderView(); },
   async 'ptl-logout'() {
@@ -6515,7 +6502,6 @@ const FORMS = {
     Object.assign(b, { address: gv('adresse'), rcs: gv('rcs').toUpperCase().replace(/\s+/g, ''), tva: gv('tvaNum').toUpperCase().replace(/\s+/g, ''), banque: gv('banque'), bic: gv('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(gv('iban')) });
     let nid = id;
     try { if (id) await ptlApi('orgs/' + id, { method: 'PATCH', body: b }); else nid = (await ptlApi('orgs', { method: 'POST', body: b })).id; } catch (e) { return toast(e.message, { bad: true }); }
-    { const lg = String(fd.get('logo') || ''); if (lg !== ((id && ptlOrg(id)) || {}).logo && (lg || id)) { try { await ptlApi('orgs/' + nid, { method: 'PATCH', body: { logo: lg } }); } catch (e) { toast('Logo : ' + e.message, { bad: true }); } } }
     const g = (k) => String(fd.get(k) || '').trim();
     const cur = (vault.get('reglages', 'factClients') || {}).list || {};
     const list = { ...cur, [nid]: { regime: TVA_REG[g('regime')] ? g('regime') : 'normal', taux: g('taux'), tvaNum: g('tvaNum').toUpperCase().replace(/\s+/g, ''), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(g('iban')), adresse: g('adresse'), pays: (g('pays') || 'LU').toUpperCase().slice(0, 2), mention: g('mention') } };
@@ -7720,10 +7706,7 @@ document.addEventListener('change', (e) => {
     const f = e.target.form, o = ptlOrg(e.target.value);
     if (o) { const cl = factClient(o.id, o.name); f.cnom.value = o.name; f.crcs.value = cl.rcs || ''; f.ctva.value = cl.tvaNum || ''; f.cadr.value = cl.adresse || ''; if (o.phone && !f.ctel.value) f.ctel.value = o.phone; if (o.email && !f.cmail.value) f.cmail.value = o.email; }
   }
-  if (k === 'ger-logo' && e.target.files[0]) {
-    const w = e.target.closest('.org-logo-pick');
-    logoShrink(e.target.files[0]).then((u) => { w.querySelector('[name=logo]').value = u; setHtml(w.querySelector('.org-logo-box'), html`<img src="${u}" alt="Logo">`); sheetDirty = true; }).catch(() => toast('Image illisible : choisissez un PNG ou un JPG', { bad: true }));
-  }
+
   if (k === 'soc-sign' && e.target.files[0]) setLogo(e.target.files[0], 'signature');
   if (k === 'soc-sign-w') vault.mutate((tx) => tx.put('reglages', { id: 'main', signW: [6, 8, 10, 12].includes(+e.target.value) ? +e.target.value : 8 }), 'Taille de la signature', `${e.target.value} cm`).then(signRefresh);
   if (k === 'cp-per') { ui.cpPer = e.target.value; ui.cpLim = 10; renderView(); }
