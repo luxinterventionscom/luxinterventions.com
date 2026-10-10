@@ -11111,5 +11111,37 @@ export default [
 [
 "/ mois",
 "/ mese"
+],
+[
+"🔗 Lien du devis — {0}",
+"🔗 Link del preventivo — {0}"
+],
+[
+"Le client ouvre ce lien (ou scanne le QR code) : il voit le devis, l’imprime et le",
+"Il cliente apre questo link (o scansiona il QR code): vede il preventivo, lo stampa e lo"
+],
+[
+"signe avec le doigt sur son téléphone",
+"firma con il dito sul suo telefono"
+],
+[
+". La signature revient ici toute seule.",
+". La firma torna qui da sola."
+],
+[
+"📋 Copier le lien",
+"📋 Copia il link"
+],
+[
+"Après une nouvelle version (R1, R2…), touchez à nouveau « 🔗 Lien / QR code » : le même lien montre la nouvelle version.",
+"Dopo una nuova versione (R1, R2…), toccate di nuovo «🔗 Lien / QR code»: lo stesso link mostra la nuova versione."
+],
+[
+"Lien impossible :",
+"Link impossibile:"
+],
+[
+"Connectez d’abord le portail gérance (Gérances) : il héberge les liens des devis",
+"Collegate prima il portale gérance (Gérances): ospita i link dei preventivi"
 ]
 ];

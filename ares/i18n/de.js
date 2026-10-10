@@ -11103,5 +11103,37 @@ export default [
 [
 "/ mois",
 "/ Monat"
+],
+[
+"🔗 Lien du devis — {0}",
+"🔗 Link zum Angebot — {0}"
+],
+[
+"Le client ouvre ce lien (ou scanne le QR code) : il voit le devis, l’imprime et le",
+"Der Kunde öffnet diesen Link (oder scannt den QR-Code): er sieht das Angebot, druckt es und"
+],
+[
+"signe avec le doigt sur son téléphone",
+"unterschreibt mit dem Finger auf seinem Handy"
+],
+[
+". La signature revient ici toute seule.",
+". Die Unterschrift kommt automatisch hierher zurück."
+],
+[
+"📋 Copier le lien",
+"📋 Link kopieren"
+],
+[
+"Après une nouvelle version (R1, R2…), touchez à nouveau « 🔗 Lien / QR code » : le même lien montre la nouvelle version.",
+"Nach einer neuen Version (R1, R2…) erneut „🔗 Lien / QR code“ tippen: derselbe Link zeigt die neue Version."
+],
+[
+"Lien impossible :",
+"Link nicht möglich:"
+],
+[
+"Connectez d’abord le portail gérance (Gérances) : il héberge les liens des devis",
+"Verbinden Sie zuerst das Verwaltungsportal (Gérances): es hostet die Angebotslinks"
 ]
 ];

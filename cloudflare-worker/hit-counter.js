@@ -40,7 +40,7 @@ function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGIN,
     "Access-Control-Allow-Methods": "GET, PUT, POST, PATCH, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, If-Match, If-None-Match, X-Ares-Session, X-Ares-Device, X-Esp, X-Event-Id, X-Invoice",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, If-Match, If-None-Match, X-Ares-Session, X-Ares-Device, X-Esp, X-Event-Id, X-Invoice, X-Devis",
     "Access-Control-Expose-Headers": "ETag",
     "Access-Control-Max-Age": "86400",
     "Cache-Control": "no-store",
@@ -908,6 +908,9 @@ const PTL_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS devis (id TEXT PRIMARY KEY, org_id TEXT NOT NULL, no TEXT NOT NULL, title TEXT, ttc REAL, acompte REAL, pct INTEGER, valid_until TEXT,
      status TEXT NOT NULL, note TEXT, pdf_key TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, decided_at INTEGER, decided_by TEXT, decided_by_name TEXT)`,
   `CREATE INDEX IF NOT EXISTS idx_devis_org ON devis(org_id, updated_at)`,
+  `CREATE TABLE IF NOT EXISTS devis_pub (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE, no TEXT NOT NULL, title TEXT, client TEXT, ttc REAL, acompte REAL, pct INTEGER,
+     valid_until TEXT, part INTEGER, kind TEXT, pdf_key TEXT NOT NULL, status TEXT NOT NULL, sign_name TEXT, sign_png TEXT, sign_early INTEGER, decided_at INTEGER, ip TEXT,
+     created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
 ];
 // Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
 const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT", "ALTER TABLE orgs ADD COLUMN logo TEXT", "ALTER TABLE devis ADD COLUMN revs INTEGER"];
@@ -1224,6 +1227,37 @@ async function handlePortail(request, env, url, headers, ctx) {
       return json({ token });
     }
 
+    // ── Devis par lien / QR code (client externe) : voir, imprimer, signer « Bon pour accord » sur son téléphone ──
+    const pubMatch = path.match(/^pub\/devis\/([0-9a-f]{48})(?:\/(pdf|sign))?$/);
+    if (pubMatch) {
+      await guard();
+      const dp = await env.DB.prepare("SELECT * FROM devis_pub WHERE token_hash = ?").bind(await sha256Hex(pubMatch[1])).first();
+      if (!dp) { await ptlRecordFailure(env, ip); fail(404, "Lien de devis invalide. Demandez un nouveau lien à LuxInterventions."); }
+      const expired = dp.valid_until && dp.valid_until < new Date(now).toISOString().slice(0, 10);
+      if (!pubMatch[2] && method === "GET") return json({ no: dp.no, title: dp.title, client: dp.client, ttc: dp.ttc, acompte: dp.acompte, pct: dp.pct, valid_until: dp.valid_until, part: !!dp.part, kind: dp.kind, status: dp.status, expired: !!expired, sign_name: dp.sign_name, decided_at: dp.decided_at });
+      if (pubMatch[2] === "pdf" && method === "GET") {
+        const obj = await env.PHOTOS.get(dp.pdf_key);
+        if (!obj) fail(404, "Devis introuvable");
+        return new Response(obj.body, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="Devis-${dp.no}.pdf"`, "Cache-Control": "private, no-store", ...headers } });
+      }
+      if (pubMatch[2] === "sign" && method === "POST") {
+        if (dp.status !== "envoye") fail(409, "Ce devis a déjà une réponse");
+        if (expired) fail(410, "Ce devis a expiré : demandez une nouvelle offre à LuxInterventions");
+        const b = await body(), st = b.status === "refuse" ? "refuse" : "accepte", nom = clean(b.nom, 120), png = String(b.png || "");
+        if (st === "accepte") {
+          if (!nom) fail(400, "Indiquez votre nom");
+          if (png.length > 400000 || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(png)) fail(400, "Signature manquante");
+        }
+        await env.DB.prepare("UPDATE devis_pub SET status = ?, sign_name = ?, sign_png = ?, sign_early = ?, decided_at = ?, ip = ?, updated_at = ? WHERE id = ?")
+          .bind(st, nom || null, st === "accepte" ? png : null, b.early ? 1 : 0, now, ip, now, dp.id).run();
+        const msg = { title: `📝 Devis ${dp.no} ${st === "accepte" ? "✅ signé par le client" : "❌ refusé par le client"}`, body: `${nom || dp.client || ""} — par le lien du devis`, url: "/portail.html", tag: "devpub-" + dp.id };
+        ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], msg, st === "accepte"));
+        ctx && ctx.waitUntil(espPushSend(env, "owner", "devis"));
+        return json({ ok: true });
+      }
+      fail(405, "Méthode non autorisée");
+    }
+
     const inviteMatch = path.match(/^invite\/([0-9a-f]{64})$/);
     if (inviteMatch) {
       await guard();
@@ -1287,6 +1321,39 @@ async function handlePortail(request, env, url, headers, ctx) {
     }
 
     // ── Devis (PDF émis par l'app de gestion) : la gérance accepte, refuse ou demande une révision ──
+    // lien public d'un devis (client externe) : publié par l'app de gestion, réponses relues par elle
+    if (path === "devis-pub" && method === "PUT") {
+      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      if ((request.headers.get("Content-Type") || "") !== "application/pdf") fail(415, "PDF attendu");
+      let meta = {};
+      try { meta = JSON.parse(decodeURIComponent(request.headers.get("X-Devis") || "{}")); } catch { fail(400, "Devis illisible"); }
+      const no = clean(meta.no, 80);
+      if (!/^DEV-[A-Z0-9-]{6,}$/.test(no)) fail(400, "Numéro de devis invalide");
+      const data = await request.arrayBuffer();
+      if (!data.byteLength || data.byteLength > 12 * 1024 * 1024) fail(413, "PDF vide ou trop lourd");
+      const n = (x) => (Number.isFinite(+x) ? Math.round(+x * 100) / 100 : 0);
+      const vu = /^\d{4}-\d{2}-\d{2}$/.test(meta.valid_until || "") ? meta.valid_until : "";
+      const old = /^[a-z0-9]+$/.test(meta.id || "") ? await env.DB.prepare("SELECT id FROM devis_pub WHERE id = ?").bind(meta.id).first() : null;
+      const id = old ? old.id : ptlId(), key = `portail/devis-pub/${id}.pdf`;
+      await env.PHOTOS.put(key, data, { httpMetadata: { contentType: "application/pdf" } });
+      const vals = [no, clean(meta.title, 200), clean(meta.client, 160), n(meta.ttc), n(meta.acompte), Math.round(n(meta.pct)), vu, meta.part ? 1 : 0, meta.kind === "contrat" ? "contrat" : "travaux", key];
+      let tok = null;
+      if (old) await env.DB.prepare("UPDATE devis_pub SET no = ?, title = ?, client = ?, ttc = ?, acompte = ?, pct = ?, valid_until = ?, part = ?, kind = ?, pdf_key = ?, status = 'envoye', sign_name = NULL, sign_png = NULL, sign_early = NULL, decided_at = NULL, updated_at = ? WHERE id = ?").bind(...vals, now, id).run();
+      else { tok = randHex(24); await env.DB.prepare("INSERT INTO devis_pub (id, token_hash, no, title, client, ttc, acompte, pct, valid_until, part, kind, pdf_key, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'envoye', ?, ?)").bind(id, await sha256Hex(tok), ...vals, now, now).run(); }
+      return json({ ok: true, id, token: tok });
+    }
+    if (path === "devis-pub" && method === "GET") {
+      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      const rows = await env.DB.prepare("SELECT id, no, status, sign_name, sign_png, sign_early, decided_at FROM devis_pub WHERE decided_at IS NOT NULL ORDER BY decided_at DESC LIMIT 300").all();
+      return json({ devis: rows.results || [] });
+    }
+    const dpMatch = path.match(/^devis-pub\/([a-z0-9]+)$/);
+    if (dpMatch && method === "DELETE") {
+      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      const dp = await env.DB.prepare("SELECT pdf_key FROM devis_pub WHERE id = ?").bind(dpMatch[1]).first();
+      if (dp) { await env.PHOTOS.delete(dp.pdf_key); await env.DB.prepare("DELETE FROM devis_pub WHERE id = ?").bind(dpMatch[1]).run(); }
+      return json({ ok: true });
+    }
     if (path === "devis" && method === "PUT") {
       if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
       if ((request.headers.get("Content-Type") || "") !== "application/pdf") fail(415, "PDF attendu");
