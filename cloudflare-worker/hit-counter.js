@@ -724,7 +724,8 @@ async function handleAres(request, env, url, headers) {
     if (!short) return aresJson({ error: "not a short link" }, 400, headers);
     let next = u.href;
     for (let i = 0; i < 4; i++) {
-      const r = await fetch(next, { method: "GET", redirect: "manual", headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148" } });
+      let r;
+      try { r = await fetch(next, { method: "GET", redirect: "manual", headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148" } }); } catch { break; } // TikTok injoignable : « not found »
       const loc = r.headers.get("Location");
       if (!loc) break;
       next = new URL(loc, next).href;

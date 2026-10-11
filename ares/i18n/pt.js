@@ -1486,7 +1486,7 @@ export default [
 ],
 [
 "Export",
-"Exportação"
+"Exportar"
 ],
 [
 "Export lisible (JSON)",
@@ -11066,7 +11066,7 @@ export default [
 ],
 [
 "Indice (cote d’application)",
-"Índice (cote d’application)"
+"Índice (valor de aplicação)"
 ],
 [
 "Forfait mensuel HT",
@@ -11115,5 +11115,2257 @@ export default [
 [
 "Connectez d’abord le portail gérance (Gérances) : il héberge les liens des devis",
 "Ligue primeiro o portal das gestoras (Gérances): aloja os links dos orçamentos"
+],
+[
+"🏗️ Installation de chantier",
+"🏗️ Instalação do estaleiro"
+],
+[
+"Visite technique et métré sur place",
+"Visita técnica e medição no local"
+],
+[
+"Installation de chantier : amenée et repli du matériel, mise en sécurité",
+"Instalação do estaleiro: transporte e recolha do material, segurança"
+],
+[
+"Protection des sols et des meubles (bâches, cartons, rubans)",
+"Proteção de pavimentos e móveis (lonas, cartões, fitas)"
+],
+[
+"Location et montage d’échafaudage",
+"Aluguer e montagem de andaime"
+],
+[
+"Évacuation des gravats vers une décharge agréée",
+"Remoção do entulho para aterro autorizado"
+],
+[
+"Location de conteneur / benne",
+"Aluguer de contentor / caçamba"
+],
+[
+"Nettoyage de fin de chantier",
+"Limpeza de fim de obra"
+],
+[
+"📊 Rapport d’expert / Diagnostic",
+"📊 Relatório de perito / Diagnóstico"
+],
+[
+"Détection de fuite non destructive",
+"Deteção de fugas não destrutiva"
+],
+[
+"Mesure d’humidité et recherche d’infiltration",
+"Medição de humidade e pesquisa de infiltrações"
+],
+[
+"Thermographie infrarouge",
+"Termografia por infravermelhos"
+],
+[
+"Inspection vidéo de canalisation",
+"Inspeção por vídeo da canalização"
+],
+[
+"Traçage de conduites",
+"Localização de condutas"
+],
+[
+"Rapport écrit avec photos (dossier assurance / litige)",
+"Relatório escrito com fotos (seguro / litígio)"
+],
+[
+"🏠 Toiture",
+"🏠 Telhado"
+],
+[
+"Réparation d’urgence après intempéries (bâchage)",
+"Reparação de urgência após intempéries (cobertura com lona)"
+],
+[
+"Remplacement de tuiles / ardoises cassées",
+"Substituição de telhas / ardósias partidas"
+],
+[
+"Réparation de gouttière / descente d’eau",
+"Reparação de caleira / tubo de queda"
+],
+[
+"Fourniture et pose de gouttière",
+"Fornecimento e colocação de caleira"
+],
+[
+"Fourniture et pose de fenêtre de toit",
+"Fornecimento e colocação de janela de telhado"
+],
+[
+"Nettoyage et démoussage de toiture",
+"Limpeza e remoção de musgo do telhado"
+],
+[
+"Nettoyage des gouttières",
+"Limpeza das caleiras"
+],
+[
+"Inspection de toiture (photos / drone)",
+"Inspeção do telhado (fotos / drone)"
+],
+[
+"🛡️ Étanchéité",
+"🛡️ Impermeabilização"
+],
+[
+"Réparation ponctuelle d’étanchéité de terrasse",
+"Reparação pontual da impermeabilização do terraço"
+],
+[
+"Étanchéité de toiture-terrasse (membrane)",
+"Impermeabilização de cobertura plana (membrana)"
+],
+[
+"Étanchéité de balcon / terrasse carrelée",
+"Impermeabilização de varanda / terraço ladrilhado"
+],
+[
+"Cuvelage / traitement de sous-sol contre les infiltrations",
+"Impermeabilização de cave contra infiltrações"
+],
+[
+"Reprise des joints de façade",
+"Refazer as juntas da fachada"
+],
+[
+"Traitement hydrofuge de façade",
+"Tratamento hidrófugo da fachada"
+],
+[
+"🎨 Peinture & revêtements muraux",
+"🎨 Pintura e revestimentos de parede"
+],
+[
+"Plafonds : enduisage complet et mise en peinture",
+"Tetos: barramento completo e pintura"
+],
+[
+"Murs : enduisage complet et mise en peinture",
+"Paredes: barramento completo e pintura"
+],
+[
+"Enlèvement de l’ancien papier peint",
+"Remoção do papel de parede antigo"
+],
+[
+"Fourniture et pose de toile de rénovation (variovlies)",
+"Fornecimento e colocação de tela de renovação (variovlies)"
+],
+[
+"Mise en peinture des portes et encadrements",
+"Pintura de portas e aros"
+],
+[
+"Mise en peinture des radiateurs (démontage, montage, purge)",
+"Pintura dos radiadores (desmontagem, montagem, purga)"
+],
+[
+"Peinture de cage d’escalier",
+"Pintura da caixa de escada"
+],
+[
+"Peinture de façade",
+"Pintura de fachada"
+],
+[
+"Peinture de sol (garage, cave)",
+"Pintura de pavimento (garagem, cave)"
+],
+[
+"Retouches et réparation de fissures",
+"Retoques e reparação de fissuras"
+],
+[
+"🧱 Maçonnerie / gros œuvre",
+"🧱 Alvenaria / estrutura"
+],
+[
+"Démolition de cloison (bloc béton, plâtre)",
+"Demolição de divisória (bloco de betão, gesso)"
+],
+[
+"Construction de cloison (bloc, plaques de plâtre)",
+"Construção de divisória (bloco, placas de gesso)"
+],
+[
+"Confection de chape armée",
+"Execução de betonilha armada"
+],
+[
+"Ragréage de sol",
+"Regularização de pavimento"
+],
+[
+"Ragréage / enduit de murs",
+"Regularização / reboco de paredes"
+],
+[
+"Rebouchage de saignées et fermeture de trous",
+"Tapar roços e fechar buracos"
+],
+[
+"Création d’ouverture dans un mur (avec linteau)",
+"Abertura numa parede (com lintel)"
+],
+[
+"Pose de faux plafond (plaques de plâtre)",
+"Colocação de teto falso (placas de gesso)"
+],
+[
+"🔲 Carrelage & sols",
+"🔲 Ladrilhos e pavimentos"
+],
+[
+"Décapage de carrelage au sol (chape et plinthes incluses), évacuation",
+"Remoção do ladrilho do chão (betonilha e rodapés incluídos), evacuação"
+],
+[
+"Décapage de revêtement mural et évacuation",
+"Remoção do revestimento de parede e evacuação"
+],
+[
+"Fourniture et mise en place d’un fond d’accrochage",
+"Fornecimento e aplicação de primário de aderência"
+],
+[
+"Fourniture de carrelage de sol",
+"Fornecimento de ladrilho de chão"
+],
+[
+"Fourniture de carrelage mural",
+"Fornecimento de azulejo de parede"
+],
+[
+"Pose de carrelage de sol, jointement en mortier",
+"Assentamento de ladrilho de chão, juntas em argamassa"
+],
+[
+"Pose de carrelage mural, jointement",
+"Assentamento de azulejo de parede, juntas"
+],
+[
+"Fourniture et pose de plinthes, joints silicone",
+"Fornecimento e colocação de rodapés, juntas de silicone"
+],
+[
+"Découpes autour des cadres de porte",
+"Cortes à volta dos aros das portas"
+],
+[
+"Joints silicone sur angles verticaux et horizontaux",
+"Juntas de silicone em ângulos verticais e horizontais"
+],
+[
+"Fourniture et pose de baguettes d’angle",
+"Fornecimento e colocação de cantoneiras"
+],
+[
+"Fourniture et pose de parquet / sol stratifié / vinyle",
+"Fornecimento e colocação de parquet / laminado / vinil"
+],
+[
+"Remplacement de carreaux cassés",
+"Substituição de ladrilhos partidos"
+],
+[
+"💧 Plomberie & sanitaire",
+"💧 Canalização e sanitários"
+],
+[
+"Recherche et réparation de fuite",
+"Pesquisa e reparação de fuga"
+],
+[
+"Débouchage de canalisation / WC / évier",
+"Desentupimento de canalização / WC / lava-loiça"
+],
+[
+"Débouchage haute pression (colonne d’immeuble)",
+"Desentupimento a alta pressão (coluna do prédio)"
+],
+[
+"Remplacement de robinet / mitigeur",
+"Substituição de torneira / misturadora"
+],
+[
+"Remplacement de mécanisme de chasse d’eau",
+"Substituição do mecanismo do autoclismo"
+],
+[
+"Démontage et évacuation du mobilier de salle de bain, WC, baignoire",
+"Desmontagem e evacuação do mobiliário de casa de banho, WC, banheira"
+],
+[
+"Fourniture et pose de conduites eau froide, eau chaude et écoulements",
+"Fornecimento e colocação de tubagens de água fria, quente e esgotos"
+],
+[
+"Réalisation d’une douche à l’italienne (chape en pente, isolation, caniveau, paroi)",
+"Execução de duche de nível (betonilha com pendente, isolamento, caleira, painel)"
+],
+[
+"Fourniture de bloc WC suspendu (bâti, cuvette, plaque) et habillage",
+"Fornecimento de sanita suspensa (estrutura, sanita, placa) e revestimento"
+],
+[
+"Fourniture de meuble de salle de bain (vasque, mitigeur, miroir)",
+"Fornecimento de móvel de casa de banho (lavatório, misturadora, espelho)"
+],
+[
+"Fourniture de sèche-serviettes",
+"Fornecimento de toalheiro aquecido"
+],
+[
+"Fourniture de mitigeur de douche avec douchette",
+"Fornecimento de misturadora de duche com chuveiro"
+],
+[
+"Montage de l’ensemble sanitaire et joints silicone",
+"Montagem do conjunto sanitário e juntas de silicone"
+],
+[
+"Remplacement de chauffe-eau / boiler",
+"Substituição de esquentador / termoacumulador"
+],
+[
+"Entretien de chaudière",
+"Manutenção da caldeira"
+],
+[
+"Purge et équilibrage des radiateurs",
+"Purga e equilíbrio dos radiadores"
+],
+[
+"⚡ Électricité",
+"⚡ Eletricidade"
+],
+[
+"Dépannage électrique (recherche de panne)",
+"Reparação elétrica (pesquisa de avaria)"
+],
+[
+"Remplacement de prise / interrupteur",
+"Substituição de tomada / interruptor"
+],
+[
+"Création d’un point lumineux ou d’une prise",
+"Criação de ponto de luz ou tomada"
+],
+[
+"Remplacement de tableau électrique",
+"Substituição do quadro elétrico"
+],
+[
+"Mise en conformité de l’installation",
+"Adequação da instalação às normas"
+],
+[
+"Fourniture et pose de luminaire",
+"Fornecimento e colocação de luminária"
+],
+[
+"Fourniture et pose de ventilateur d’aération (câblage inclus)",
+"Fornecimento e colocação de ventilador de extração (cablagem incluída)"
+],
+[
+"Installation d’éclairage extérieur / potelets",
+"Instalação de iluminação exterior / balizadores"
+],
+[
+"Enlèvement de luminaires existants et évacuation",
+"Remoção das luminárias existentes e evacuação"
+],
+[
+"Vérification du câblage, offre si nécessaire",
+"Verificação da cablagem, orçamento se necessário"
+],
+[
+"🔐 Serrurerie",
+"🔐 Serralharia"
+],
+[
+"Ouverture de porte (claquée / fermée à clé)",
+"Abertura de porta (batida / fechada à chave)"
+],
+[
+"Remplacement de cylindre",
+"Substituição de canhão"
+],
+[
+"Réparation de serrure / gâche",
+"Reparação de fechadura / testa"
+],
+[
+"Pose de serrure multipoints / blindage",
+"Colocação de fechadura multiponto / blindagem"
+],
+[
+"Pose de ferme-porte",
+"Colocação de mola de porta"
+],
+[
+"Reproduction de clés / badges",
+"Cópia de chaves / cartões"
+],
+[
+"🚪 Menuiserie & portes",
+"🚪 Carpintaria e portas"
+],
+[
+"Fourniture et pose de porte intérieure avec chambranle et poignée",
+"Fornecimento e colocação de porta interior com aro e puxador"
+],
+[
+"Fourniture et pose de porte d’appartement coupe-feu",
+"Fornecimento e colocação de porta de apartamento corta-fogo"
+],
+[
+"Démontage et évacuation d’anciennes portes",
+"Desmontagem e evacuação de portas antigas"
+],
+[
+"Réglage / réparation de porte ou fenêtre",
+"Afinação / reparação de porta ou janela"
+],
+[
+"Remplacement de vitrage",
+"Substituição de vidro"
+],
+[
+"Pose de cuisine / meubles",
+"Montagem de cozinha / móveis"
+],
+[
+"Dépose et évacuation de l’ancienne cuisine",
+"Desmontagem e evacuação da cozinha antiga"
+],
+[
+"Pose de plinthes bois",
+"Colocação de rodapés de madeira"
+],
+[
+"🔧 Bricolage & petits travaux",
+"🔧 Bricolage e pequenos trabalhos"
+],
+[
+"Montage de meubles",
+"Montagem de móveis"
+],
+[
+"Fixations murales (étagères, tringles, TV, miroirs)",
+"Fixações na parede (prateleiras, varões, TV, espelhos)"
+],
+[
+"Petites réparations diverses",
+"Pequenas reparações diversas"
+],
+[
+"Pose de boîtes aux lettres / sonnettes",
+"Colocação de caixas de correio / campainhas"
+],
+[
+"Pose de stores / rideaux",
+"Colocação de estores / cortinas"
+],
+[
+"Remplacement de joints silicone (cuisine, salle de bain)",
+"Substituição de juntas de silicone (cozinha, casa de banho)"
+],
+[
+"🌿 Jardinage & extérieurs",
+"🌿 Jardinagem e exteriores"
+],
+[
+"Tonte de pelouse",
+"Corte de relva"
+],
+[
+"Taille de haies",
+"Poda de sebes"
+],
+[
+"Taille d’arbres et d’arbustes",
+"Poda de árvores e arbustos"
+],
+[
+"Désherbage des allées et massifs",
+"Monda de caminhos e canteiros"
+],
+[
+"Ramassage des feuilles et évacuation des déchets verts",
+"Recolha de folhas e evacuação de resíduos verdes"
+],
+[
+"Déneigement et salage",
+"Remoção de neve e salga"
+],
+[
+"Nettoyage haute pression de cour / terrasse (brosse rotative)",
+"Limpeza a alta pressão de pátio / terraço (escova rotativa)"
+],
+[
+"Plantations et aménagement",
+"Plantações e arranjos"
+],
+[
+"Nettoyage des parties communes (forfait)",
+"Limpeza das partes comuns (avença)"
+],
+[
+"Nettoyage du garage à l’autolaveuse",
+"Limpeza da garagem com máquina lavadora"
+],
+[
+"Nettoyage approfondi et détachage des escaliers",
+"Limpeza profunda e remoção de manchas das escadas"
+],
+[
+"Nettoyage des passerelles extérieures",
+"Limpeza das passagens exteriores"
+],
+[
+"Nettoyage des vitres",
+"Limpeza de vidros"
+],
+[
+"Nettoyage de fin de chantier / remise en état",
+"Limpeza de fim de obra / reposição"
+],
+[
+"Nettoyage après déménagement / état des lieux",
+"Limpeza após mudança / vistoria"
+],
+[
+"Nettoyage des caves et greniers",
+"Limpeza de caves e sótãos"
+],
+[
+"🗑️ Déchets & débarras",
+"🗑️ Resíduos e despejos"
+],
+[
+"Sortie et rentrée des poubelles (contrat)",
+"Colocação e recolha dos contentores (contrato)"
+],
+[
+"Nettoyage et désinfection des conteneurs",
+"Limpeza e desinfeção dos contentores"
+],
+[
+"Débarras de cave / grenier / appartement",
+"Despejo de cave / sótão / apartamento"
+],
+[
+"Évacuation d’encombrants",
+"Remoção de monos"
+],
+[
+"Collecte de déchets spéciaux (partenaire Arcolux)",
+"Recolha de resíduos especiais (parceiro Arcolux)"
+],
+[
+"🚚 Déménagement",
+"🚚 Mudança"
+],
+[
+"Déménagement (main-d’œuvre)",
+"Mudança (mão de obra)"
+],
+[
+"Camion avec chauffeur",
+"Camião com motorista"
+],
+[
+"Fourniture de cartons et protections",
+"Fornecimento de caixas e proteções"
+],
+[
+"Démontage et remontage de meubles",
+"Desmontagem e remontagem de móveis"
+],
+[
+"Monte-meubles",
+"Elevador de mudanças"
+],
+[
+"⏱️ Régie",
+"⏱️ Trabalhos por administração"
+],
+[
+"Travaux en régie (par heure et par personne, hors déplacement)",
+"Trabalhos por administração (por hora e por pessoa, sem deslocação)"
+],
+[
+"Balayage / aspiration et lavage des sols des entrées, paliers et escaliers",
+"Varrer / aspirar e lavar o chão das entradas, patamares e escadas"
+],
+[
+"Nettoyage des ascenseurs : sols, miroirs, boutons, portes et rails",
+"Limpeza dos elevadores: chão, espelhos, botões, portas e calhas"
+],
+[
+"Nettoyage des mains courantes et garde-corps",
+"Limpeza de corrimãos e guarda-corpos"
+],
+[
+"Enlèvement des traces sur les portes communes et portes d’entrée",
+"Remoção de marcas nas portas comuns e de entrada"
+],
+[
+"Nettoyage des vitrages des portes d’entrée",
+"Limpeza dos vidros das portas de entrada"
+],
+[
+"Nettoyage humide des boîtes aux lettres et interphones",
+"Limpeza húmida das caixas de correio e intercomunicadores"
+],
+[
+"Entretien courant du local poubelles",
+"Manutenção corrente do compartimento do lixo"
+],
+[
+"Ramassage des feuilles, papiers et déchets dans les zones extérieures, rampe de garage comprise",
+"Recolha de folhas, papéis e lixo nas zonas exteriores, rampa da garagem incluída"
+],
+[
+"Nettoyage des couloirs de caves",
+"Limpeza dos corredores das caves"
+],
+[
+"Nettoyage des buanderies : sols et surfaces communes accessibles",
+"Limpeza das lavandarias: chão e superfícies comuns acessíveis"
+],
+[
+"Enlèvement des toiles d’araignées visibles",
+"Remoção de teias de aranha visíveis"
+],
+[
+"Nettoyage des plinthes",
+"Limpeza dos rodapés"
+],
+[
+"Nettoyage complet des portes communes et encadrements",
+"Limpeza completa das portas comuns e aros"
+],
+[
+"Dépoussiérage des luminaires accessibles",
+"Remoção de pó das luminárias acessíveis"
+],
+[
+"Nettoyage des traces sur les surfaces murales lavables",
+"Limpeza de marcas nas superfícies de parede laváveis"
+],
+[
+"Nettoyage des locaux techniques accessibles",
+"Limpeza dos compartimentos técnicos acessíveis"
+],
+[
+"Dépoussiérage des équipements communs accessibles",
+"Remoção de pó dos equipamentos comuns acessíveis"
+],
+[
+"Nettoyage des vitrages communs hors portes d’entrée",
+"Limpeza dos vidros comuns exceto portas de entrada"
+],
+[
+"Dépoussiérage des grilles de ventilation accessibles",
+"Remoção de pó das grelhas de ventilação acessíveis"
+],
+[
+"Dépoussiérage des conduites et installations techniques accessibles",
+"Remoção de pó das condutas e instalações técnicas acessíveis"
+],
+[
+"Dépoussiérage en hauteur et enlèvement des toiles d’araignées accessibles",
+"Remoção de pó em altura e de teias de aranha acessíveis"
+],
+[
+"Nettoyage du garage à l’autolaveuse (facturé à part)",
+"Limpeza da garagem com máquina lavadora (faturada à parte)"
+],
+[
+"Hebdo.",
+"Sem."
+],
+[
+"Annuel",
+"Anual"
+],
+[
+"Hebdomadaire",
+"Semanal"
+],
+[
+"Mensuel",
+"Mensal"
+],
+[
+"Trimestriel",
+"Trimestral"
+],
+[
+"fft",
+"forf."
+],
+[
+"pc",
+"un."
+],
+[
+"exécution",
+"execução"
+],
+[
+"mois",
+"mês"
+],
+[
+"€ HT / {0}",
+"€ s/ IVA / {0}"
+],
+[
+"€ HT / mois",
+"€ s/ IVA / mês"
+],
+[
+"€/h HT",
+"€/h s/ IVA"
+],
+[
+"diagnostic",
+"diagnóstico"
+],
+[
+"installation",
+"instalação"
+],
+[
+"rénovation",
+"renovação"
+],
+[
+"entretien",
+"manutenção"
+],
+[
+"dépannage",
+"reparação urgente"
+],
+[
+"détails",
+"detalhes"
+],
+[
+"mesures (cm), format, couleur, modèle…",
+"medidas (cm), formato, cor, modelo…"
+],
+[
+"surface",
+"superfície"
+],
+[
+"hauteur (m)",
+"altura (m)"
+],
+[
+"type de déchets",
+"tipo de resíduos"
+],
+[
+"lieu de la fuite",
+"local da fuga"
+],
+[
+"pièces concernées",
+"divisões em causa"
+],
+[
+"surface / pièces",
+"superfície / divisões"
+],
+[
+"diamètre (mm)",
+"diâmetro (mm)"
+],
+[
+"objectif du rapport",
+"objetivo do relatório"
+],
+[
+"surface bâchée (m²)",
+"superfície coberta (m²)"
+],
+[
+"modèle de tuile",
+"modelo de telha"
+],
+[
+"diamètre (cm)",
+"diâmetro (cm)"
+],
+[
+"matière, diamètre (cm)",
+"material, diâmetro (cm)"
+],
+[
+"dimensions (cm)",
+"dimensões (cm)"
+],
+[
+"type de membrane",
+"tipo de membrana"
+],
+[
+"couleur, finition (mat / satin)",
+"cor, acabamento (mate / acetinado)"
+],
+[
+"couleur, finition",
+"cor, acabamento"
+],
+[
+"nombre d’étages",
+"número de andares"
+],
+[
+"hauteur (m), couleur",
+"altura (m), cor"
+],
+[
+"type de peinture",
+"tipo de tinta"
+],
+[
+"épaisseur (cm)",
+"espessura (cm)"
+],
+[
+"épaisseur (mm)",
+"espessura (mm)"
+],
+[
+"format (cm), ex. 60×60",
+"formato (cm), ex. 60×60"
+],
+[
+"format (cm), ex. 60×30",
+"formato (cm), ex. 60×30"
+],
+[
+"format (cm)",
+"formato (cm)"
+],
+[
+"hauteur (cm)",
+"altura (cm)"
+],
+[
+"matière",
+"material"
+],
+[
+"type, épaisseur (mm)",
+"tipo, espessura (mm)"
+],
+[
+"lieu",
+"local"
+],
+[
+"marque, modèle",
+"marca, modelo"
+],
+[
+"appareils raccordés",
+"aparelhos ligados"
+],
+[
+"caniveau (cm), paroi (cm)",
+"caleira (cm), painel (cm)"
+],
+[
+"largeur (cm), modèle",
+"largura (cm), modelo"
+],
+[
+"dimensions (mm)",
+"dimensões (mm)"
+],
+[
+"modèle",
+"modelo"
+],
+[
+"capacité (litres)",
+"capacidade (litros)"
+],
+[
+"nombre de circuits",
+"número de circuitos"
+],
+[
+"jour / nuit",
+"dia / noite"
+],
+[
+"dimensions (mm), nombre de clés",
+"dimensões (mm), número de chaves"
+],
+[
+"dimensions (mm), modèle",
+"dimensões (mm), modelo"
+],
+[
+"dimensions (mm), classe (T30…)",
+"dimensões (mm), classe (T30…)"
+],
+[
+"dimensions (cm), type de verre",
+"dimensões (cm), tipo de vidro"
+],
+[
+"longueur (cm)",
+"comprimento (cm)"
+],
+[
+"largeur (cm)",
+"largura (cm)"
+],
+[
+"surface (m²)",
+"superfície (m²)"
+],
+[
+"fréquence par semaine",
+"frequência por semana"
+],
+[
+"jours de collecte",
+"dias de recolha"
+],
+[
+"nombre de conteneurs",
+"número de contentores"
+],
+[
+"nombre de déménageurs",
+"número de carregadores"
+],
+[
+"nombre de personnes",
+"número de pessoas"
+],
+[
+"Autre prestation (ex. Pose d’une crédence en verre)",
+"Outro serviço (ex. Colocação de um resguardo em vidro)"
+],
+[
+"Autre prestation d’entretien",
+"Outro serviço de manutenção"
+],
+[
+"Prestation",
+"Serviço"
+],
+[
+"Qté",
+"Qtd."
+],
+[
+"Quantité",
+"Quantidade"
+],
+[
+"Unité",
+"Unidade"
+],
+[
+"Détails",
+"Detalhes"
+],
+[
+"Prix unitaire HT",
+"Preço unitário s/ IVA"
+],
+[
+"Prix HT (€)",
+"Preço s/ IVA (€)"
+],
+[
+"Montant HT",
+"Montante s/ IVA"
+],
+[
+"Montant hors taxes",
+"Montante sem impostos"
+],
+[
+"Matériel acheté (ex. disjoncteur 16 A)",
+"Material comprado (ex. disjuntor 16 A)"
+],
+[
+"ex. Remise en état des appartements et du commerce",
+"ex. Reparação dos apartamentos e da loja"
+],
+[
+"ex. M. Pierre Loan",
+"ex. Sr. Pierre Loan"
+],
+[
+"rue, n°, code postal, ville",
+"rua, n.º, código postal, cidade"
+],
+[
+"+ {0} prestation(s) ponctuelle(s), facturée(s) à chaque exécution.",
+"+ {0} serviço(s) pontual(ais), faturado(s) em cada execução."
+],
+[
+"forfait mensuel {0} TTC",
+"avença mensal {0} c/ IVA"
+],
+[
+"offre de service (contrat d’entretien)",
+"proposta de serviço (contrato de manutenção)"
+],
+[
+"Contrat d’entretien",
+"Contrato de manutenção"
+],
+[
+"Acompte ({0} %)",
+"Sinal ({0} %)"
+],
+[
+"(acompte {0} % : {1})",
+"(sinal {0} %: {1})"
+],
+[
+"Remise {0} %",
+"Desconto {0} %"
+],
+[
+"HT {0} · TVA {1}",
+"s/ IVA {0} · IVA {1}"
+],
+[
+"TVA {0} %",
+"IVA {0} %"
+],
+[
+"TVA {0}",
+"IVA {0}"
+],
+[
+"{0} ouvrier(s) × {1} h",
+"{0} operário(s) × {1} h"
+],
+[
+"Devis gratuit",
+"Orçamento gratuito"
+],
+[
+"Devis {0}",
+"Orçamento {0}"
+],
+[
+"Devis {0} accepté — {1} TTC",
+"Orçamento {0} aceite — {1} c/ IVA"
+],
+[
+"📝 {0} : devis {1} {2}",
+"📝 {0}: orçamento {1} {2}"
+],
+[
+"✅ accepté",
+"✅ aceite"
+],
+[
+"❌ refusé",
+"❌ recusado"
+],
+[
+"🔄 révision demandée",
+"🔄 revisão pedida"
+],
+[
+"accepté",
+"aceite"
+],
+[
+"refusé",
+"recusado"
+],
+[
+"révision demandée",
+"revisão pedida"
+],
+[
+"signé",
+"assinado"
+],
+[
+"{0} — signé le {1}",
+"{0} — assinado em {1}"
+],
+[
+"· après {0} révision{1}",
+"· após {0} revisão(ões)"
+],
+[
+"en {0}",
+"em {0}"
+],
+[
+"{0} : {1}/{2} acceptés ·",
+"{0}: {1}/{2} aceites ·"
+],
+[
+"% acceptés",
+"% aceites"
+],
+[
+"🔗 Lien / QR code{0}",
+"🔗 Link / código QR{0}"
+],
+[
+"Scanner le code QR avec",
+"Ler o código QR com"
+],
+[
+"Réponse du client au devis (lien)",
+"Resposta do cliente ao orçamento (link)"
+],
+[
+"Signé électroniquement le {0}",
+"Assinado eletronicamente em {0}"
+],
+[
+"Créer un nouveau lien ?",
+"Criar um novo link?"
+],
+[
+"Client (gérance)",
+"Cliente (gestora)"
+],
+[
+"Délai / début",
+"Prazo / início"
+],
+[
+"Lieu d’intervention",
+"Local da intervenção"
+],
+[
+"N° d’autorisation d’établissement",
+"N.º de autorização de estabelecimento"
+],
+[
+"Autorisation d’établissement n° {0}",
+"Autorização de estabelecimento n.º {0}"
+],
+[
+"imprimé sur les devis et factures",
+"impresso nos orçamentos e faturas"
+],
+[
+"Raison sociale",
+"Denominação social"
+],
+[
+"Marque",
+"Marca"
+],
+[
+"Numérotation",
+"Numeração"
+],
+[
+"Taux de TVA à confirmer avec votre comptable. Prochain numéro : {0}-INT{1} · prochain devis n° …-{2}",
+"Taxa de IVA a confirmar com o seu contabilista. Próximo número: {0}-INT{1} · próximo orçamento n.º …-{2}"
+],
+[
+"Facture",
+"Fatura"
+],
+[
+"🧾 Facture",
+"🧾 Fatura"
+],
+[
+"Facture {0}",
+"Fatura {0}"
+],
+[
+"🧾 Facture {0}",
+"🧾 Fatura {0}"
+],
+[
+"Facture {0} — {1}",
+"Fatura {0} — {1}"
+],
+[
+"🧾 Facture {0} envoyée à {1}",
+"🧾 Fatura {0} enviada a {1}"
+],
+[
+"Facture payée",
+"Fatura paga"
+],
+[
+"✅ Facture payée",
+"✅ Fatura paga"
+],
+[
+"Facture à payer",
+"Fatura por pagar"
+],
+[
+"Facture émise",
+"Fatura emitida"
+],
+[
+"Facture remise « à payer »",
+"Fatura reposta «por pagar»"
+],
+[
+"Facture en contentieux",
+"Fatura em contencioso"
+],
+[
+"⚠️ Facture en contentieux",
+"⚠️ Fatura em contencioso"
+],
+[
+"Contentieux levé",
+"Contencioso levantado"
+],
+[
+"{0} impayée{1} en litige",
+"{0} por pagar em litígio"
+],
+[
+"Brouillon de facture",
+"Rascunho de fatura"
+],
+[
+"Facture : intervention liée à une gérance et portail connecté nécessaires",
+"Fatura: é preciso uma intervenção ligada a uma gestora e o portal ligado"
+],
+[
+"Facturation du client",
+"Faturação do cliente"
+],
+[
+"Date de facturation",
+"Data de faturação"
+],
+[
+"Date d’intervention",
+"Data da intervenção"
+],
+[
+"Date d’échéance",
+"Data de vencimento"
+],
+[
+"N° facture",
+"N.º da fatura"
+],
+[
+"Référence",
+"Referência"
+],
+[
+"Référence : {0}",
+"Referência: {0}"
+],
+[
+"Communication : {0}",
+"Comunicação: {0}"
+],
+[
+"Communication de paiement : {0}",
+"Referência de pagamento: {0}"
+],
+[
+"Paiement par virement :",
+"Pagamento por transferência:"
+],
+[
+"Paiement en espèces (cash)",
+"Pagamento em numerário (cash)"
+],
+[
+"en espèces (cash), à sa demande",
+"em numerário (cash), a seu pedido"
+],
+[
+"Paiement reçu : {0} ?",
+"Pagamento recebido: {0}?"
+],
+[
+"✅ Paiement reçu ({0} · {1})",
+"✅ Pagamento recebido ({0} · {1})"
+],
+[
+"Paiements reçus",
+"Pagamentos recebidos"
+],
+[
+"Paiement à (jours)",
+"Pagamento a (dias)"
+],
+[
+"Payée le",
+"Paga em"
+],
+[
+"✅ payée le {0}",
+"✅ paga em {0}"
+],
+[
+"Total à payer",
+"Total a pagar"
+],
+[
+"À payer",
+"Por pagar"
+],
+[
+"facturée",
+"faturada"
+],
+[
+"clôturée",
+"encerrada"
+],
+[
+"à clôturer",
+"por encerrar"
+],
+[
+"· ✅ à clôturer",
+"· ✅ por encerrar"
+],
+[
+"🟡 à facturer",
+"🟡 por faturar"
+],
+[
+"🟡 À facturer ({0})",
+"🟡 Por faturar ({0})"
+],
+[
+"⚙️ Émetteur : {0}",
+"⚙️ Emitente: {0}"
+],
+[
+"Émetteur des factures envoyées aux gérances (marque LuxInterventions). Les factures des loyers (NOBIS s.a.r.l.) ne changent pas.",
+"Emitente das faturas enviadas às gestoras (marca LuxInterventions). As faturas das rendas (NOBIS s.a.r.l.) não mudam."
+],
+[
+"Émettre la facture {0} ?",
+"Emitir a fatura {0}?"
+],
+[
+"{0} · {1} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son portail.",
+"{0} · {1} c/ IVA. O número já não pode mudar; a gestora recebe-a no seu portal."
+],
+[
+"· émise par {0} ({1}). Rien n’est envoyé avant « Émettre ».",
+"· emitida por {0} ({1}). Nada é enviado antes de «Émettre»."
+],
+[
+"La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).",
+"A gestora vê-a e descarrega-a no seu portal (Contabilidade e ficha do pedido)."
+],
+[
+"Montants, TVA, remises, acomptes : réglés dans",
+"Montantes, IVA, descontos, sinais: definidos em"
+],
+[
+"et dans chaque facture (",
+"e em cada fatura ("
+],
+[
+"). Données de facturation de la gérance :",
+"). Dados de faturação da gestora:"
+],
+[
+"Mention légale sur la facture (sinon celle par défaut)",
+"Menção legal na fatura (senão a predefinida)"
+],
+[
+"sinon la mention par défaut",
+"senão a menção predefinida"
+],
+[
+"si « Taux particulier »",
+"se «Taxa especial»"
+],
+[
+"% particulier",
+"% especial"
+],
+[
+"TVA normale (taux des réglages)",
+"IVA normal (taxa das definições)"
+],
+[
+"TVA non applicable (non assujetti)",
+"IVA não aplicável (não sujeito)"
+],
+[
+"TVA non applicable.",
+"IVA não aplicável."
+],
+[
+"Autoliquidation : TVA due par le preneur (art. 196 de la directive 2006/112/CE).",
+"Autoliquidação: IVA devido pelo adquirente (art. 196.º da Diretiva 2006/112/CE)."
+],
+[
+"Autoliquidation : indiquez d’abord le n° TVA du client (Gérances → la gérance → 🧾 Facturation)",
+"Autoliquidação: indique primeiro o n.º de IVA do cliente (Gérances → a gestora → 🧾 Facturation)"
+],
+[
+"🧾 TVA sur vos factures (régime, pays)",
+"🧾 IVA nas suas faturas (regime, país)"
+],
+[
+"Par défaut : le régime du client (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.",
+"Por defeito: o regime do cliente (Gérances → a gestora → 🧾 Facturation). Obras num imóvel situado no Luxemburgo: aplica-se em princípio o IVA luxemburguês, mesmo para um cliente estrangeiro — a confirmar com o seu contabilista."
+],
+[
+"Taux normal : {0} % (Réglages → 🧾 Facturation) ; régime par client (autoliquidation, non applicable…) dans Gérances → la gérance → 🧾 Facturation. Détail facture par facture : onglet 🧾 Factures. Aide à la déclaration, à faire vérifier par votre comptable.",
+"Taxa normal: {0} % (Réglages → 🧾 Facturation); regime por cliente (autoliquidação, não aplicável…) em Gérances → a gestora → 🧾 Facturation. Detalhe fatura a fatura: separador 🧾 Factures. Ajuda à declaração, a verificar pelo seu contabilista."
+],
+[
+"TVA des",
+"IVA das"
+],
+[
+"factures d’interventions",
+"faturas de intervenções"
+],
+[
+"émises par ARES INVEST S.A. (LuxInterventions). Les loyers ne sont pas soumis à la TVA.",
+"emitidas por ARES INVEST S.A. (LuxInterventions). As rendas não estão sujeitas a IVA."
+],
+[
+"Avant d’émettre : complétez {0} dans",
+"Antes de emitir: complete {0} em"
+],
+[
+"Complétez :",
+"Complete:"
+],
+[
+"à compléter",
+"a completar"
+],
+[
+"Adresse à compléter",
+"Endereço a completar"
+],
+[
+"IBAN de la gérance :",
+"IBAN da gestora:"
+],
+[
+"BIC de la gérance :",
+"BIC da gestora:"
+],
+[
+"🏦 Virement{0}",
+"🏦 Transferência{0}"
+],
+[
+"💵 Cash",
+"💵 Numerário"
+],
+[
+"· 💵 cash",
+"· 💵 numerário"
+],
+[
+"RCS / N° TVA",
+"RCS / N.º IVA"
+],
+[
+"n° TVA",
+"n.º IVA"
+],
+[
+"n° TVA (LU…)",
+"n.º IVA (LU…)"
+],
+[
+"adresse, RCS (B…), n° TVA (LU…)",
+"endereço, RCS (B…), n.º IVA (LU…)"
+],
+[
+"Motif (ex. client fidèle, urgence de nuit)",
+"Motivo (ex. cliente fiel, urgência noturna)"
+],
+[
+"Valeur",
+"Valor"
+],
+[
+"Formule",
+"Fórmula"
+],
+[
+"👷 Coût {0} :",
+"👷 Custo {0}:"
+],
+[
+"· déplacement",
+"· deslocação"
+],
+[
+"déplacement",
+"deslocação"
+],
+[
+"{0} / heure{1}",
+"{0} / hora{1}"
+],
+[
+"Payé à l’ouvrier € / heure",
+"Pago ao operário € / hora"
+],
+[
+"Facturé à la gérance € / heure",
+"Faturado à gestora € / hora"
+],
+[
+"Main-d'œuvre — {0}",
+"Mão de obra — {0}"
+],
+[
+"Matériel avancé{0}",
+"Material adiantado{0}"
+],
+[
+"Heures",
+"Horas"
+],
+[
+"Travail",
+"Trabalho"
+],
+[
+"Rémunération",
+"Remuneração"
+],
+[
+"Abonnement",
+"Assinatura"
+],
+[
+"＋ Abonnement",
+"＋ Assinatura"
+],
+[
+"💼 Abonnement —",
+"💼 Assinatura —"
+],
+[
+"Abonnement enregistré",
+"Assinatura registada"
+],
+[
+"Abonnement payé",
+"Assinatura paga"
+],
+[
+"Abonnement supprimé",
+"Assinatura eliminada"
+],
+[
+"Abonnements des gérances et annonces publicitaires vendues",
+"Assinaturas das gestoras e anúncios publicitários vendidos"
+],
+[
+"publicitaires",
+"publicitários"
+],
+[
+"pas d’abonnement",
+"sem assinatura"
+],
+[
+"Gérances sans abonnement ({0})",
+"Gestoras sem assinatura ({0})"
+],
+[
+"{0} payé(s) · {1} gratuit(s)",
+"{0} pago(s) · {1} gratuito(s)"
+],
+[
+"🎁 gratuit",
+"🎁 gratuito"
+],
+[
+"Revenu mensuel",
+"Receita mensal"
+],
+[
+"abonnements payants",
+"assinaturas pagas"
+],
+[
+"Payé jusqu’au",
+"Pago até"
+],
+[
+"{0} — abonnement payé jusqu’au {1}.",
+"{0} — assinatura paga até {1}."
+],
+[
+"Annuler le paiement de {0} — {1} {2} ?",
+"Anular o pagamento de {0} — {1} {2}?"
+],
+[
+"La formule et l’historique des paiements de cet abonnement sont effacés. La gérance et ses demandes ne changent pas.",
+"A fórmula e o histórico de pagamentos desta assinatura são apagados. A gestora e os seus pedidos não mudam."
+],
+[
+"Les gérances voient « 💼 Nos abonnements » et « Voir les offres ».",
+"As gestoras veem «💼 Nos abonnements» e «Voir les offres»."
+],
+[
+"Masquées : les gérances ne voient aucune offre d’abonnement.",
+"Ocultas: as gestoras não veem nenhuma oferta de assinatura."
+],
+[
+"⚪ Offres masquées dans le portail des gérances",
+"⚪ Ofertas ocultas no portal das gestoras"
+],
+[
+"🟢 Offres visibles dans le portail des gérances",
+"🟢 Ofertas visíveis no portal das gestoras"
+],
+[
+"Offres d’abonnement activées",
+"Ofertas de assinatura ativadas"
+],
+[
+"Offres d’abonnement désactivées",
+"Ofertas de assinatura desativadas"
+],
+[
+"Quand une gérance touche « Je suis intéressé » dans son portail, vous recevez une notification. Touchez une gérance pour choisir sa formule et noter ses paiements.",
+"Quando uma gestora toca em «Je suis intéressé» no seu portal, recebe uma notificação. Toque numa gestora para escolher a fórmula e anotar os pagamentos."
+],
+[
+"cette gérance",
+"esta gestora"
+],
+[
+"— la gérance est prévenue",
+"— a gestora é avisada"
+],
+[
+"Aucune demande de cette gérance pour l’instant.",
+"Nenhum pedido desta gestora por agora."
+],
+[
+"Responsable et collaborateurs ({0})",
+"Responsável e colaboradores ({0})"
+],
+[
+"Les collaborateurs sont ajoutés par le responsable dans son portail (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.",
+"Os colaboradores são adicionados pelo responsável no seu portal (Équipe). 🔑 Nouvel accès = novo link se alguém esqueceu a palavra-passe."
+],
+[
+"Il reçoit un lien personnel, choisit son mot de passe, puis ajoute lui-même ses collaborateurs.",
+"Recebe um link pessoal, escolhe a palavra-passe e depois adiciona ele próprio os colaboradores."
+],
+[
+"Créer l’accès du responsable et le lien",
+"Criar o acesso do responsável e o link"
+],
+[
+"Désactiver l’accès de {0} ?",
+"Desativar o acesso de {0}?"
+],
+[
+"⚠️ Le responsable de la gérance{0} vous l’a-t-il demandé ? Sans sa demande, ne désactivez pas. La personne est déconnectée tout de suite ; vous pourrez réactiver l’accès.",
+"⚠️ O responsável da gestora{0} pediu-lho? Sem o pedido dele, não desative. A pessoa é desligada de imediato; poderá reativar o acesso."
+],
+[
+"✅ accès activé",
+"✅ acesso ativado"
+],
+[
+"✉️ invitation envoyée, valable jusqu’au {0}",
+"✉️ convite enviado, válido até {0}"
+],
+[
+"⚠️ invitation expirée : créez un nouveau lien",
+"⚠️ convite expirado: crie um novo link"
+],
+[
+"Lien d’invitation au portail",
+"Link de convite para o portal"
+],
+[
+"Invitation copiée — collez-la dans votre email",
+"Convite copiado — cole-o no seu email"
+],
+[
+"👁 Aperçu de l’invitation",
+"👁 Pré-visualização do convite"
+],
+[
+"✨ Copier l’invitation mise en forme",
+"✨ Copiar o convite formatado"
+],
+[
+"Puis « Envoyer par email » et collez (⌘V / Ctrl+V) à la place du texte : couleurs, gras et bouton orange.",
+"Depois «Envoyer par email» e cole (⌘V / Ctrl+V) em vez do texto: cores, negrito e botão laranja."
+],
+[
+"Rouvrir cette fenêtre redonne",
+"Reabrir esta janela dá"
+],
+[
+"le même lien",
+"o mesmo link"
+],
+[
+"(aperçu, autre langue…) : celui déjà envoyé reste bon.",
+"(pré-visualização, outra língua…): o já enviado continua válido."
+],
+[
+"(la gérance peut aussi les compléter dans son portail)",
+"(a gestora também os pode completar no seu portal)"
+],
+[
+"Logo ajouté par la gérance dans son portail (Ma société).",
+"Logótipo adicionado pela gestora no seu portal (Ma société)."
+],
+[
+"Connectez d’abord le Portail gérance (menu Gérances).",
+"Ligue primeiro o Portal das gestoras (menu Gérances)."
+],
+[
+"Portail gérance mis à jour :",
+"Portal da gestora atualizado:"
+],
+[
+"💬 Nouveau message de la gérance :",
+"💬 Nova mensagem da gestora:"
+],
+[
+"Message à la gérance…",
+"Mensagem para a gestora…"
+],
+[
+"nouvelles demandes d’intervention",
+"novos pedidos de intervenção"
+],
+[
+"Nouvelle demande",
+"Novo pedido"
+],
+[
+"Demande créée",
+"Pedido criado"
+],
+[
+"✏️ Demande modifiée",
+"✏️ Pedido alterado"
+],
+[
+"🏢 {0} · Demande #{1}",
+"🏢 {0} · Pedido #{1}"
+],
+[
+"🏢 {0} · clôturée le {1}",
+"🏢 {0} · encerrada em {1}"
+],
+[
+"📥 {0} d'intervention :",
+"📥 {0} de intervenção:"
+],
+[
+"Photos du problème",
+"Fotos do problema"
+],
+[
+"Problème {0} — {1}",
+"Problema {0} — {1}"
+],
+[
+"Chantier {0} — {1}",
+"Obra {0} — {1}"
+],
+[
+"Chantier clôturé",
+"Obra encerrada"
+],
+[
+"🟢 {0} fini{1} par l’équipe — à clôturer",
+"🟢 {0} terminado(s) pela equipa — por encerrar"
+],
+[
+"{0} a fini le travail",
+"{0} terminou o trabalho"
+],
+[
+"✅ {0} a fini le travail{1}. Clôture après contrôle par LuxInterventions.",
+"✅ {0} terminou o trabalho{1}. Encerramento após controlo pela LuxInterventions."
+],
+[
+"Vérifiez (photos après, travail fait), puis choisissez 🟢",
+"Verifique (fotos depois, trabalho feito) e escolha 🟢"
+],
+[
+"pour clôturer le chantier.",
+"para encerrar a obra."
+],
+[
+"⚠️ {0} : pas terminé{1}",
+"⚠️ {0}: não terminado"
+],
+[
+"📷 Photos après les travaux ({0})",
+"📷 Fotos depois dos trabalhos ({0})"
+],
+[
+"🚚 {0} est sur place",
+"🚚 {0} está no local"
+],
+[
+"✋ {0} {1} refusé{2} par l’ouvrier — à réaffecter",
+"✋ {0} {1} recusado(s) pelo operário — a reatribuir"
+],
+[
+"(✋ a refusé)",
+"(✋ recusou)"
+],
+[
+"🔄 L’ouvrier prévu n’est pas disponible — LuxInterventions envoie un autre ouvrier.",
+"🔄 O operário previsto não está disponível — a LuxInterventions envia outro operário."
+],
+[
+"👷 Affectation{0}",
+"👷 Atribuição{0}"
+],
+[
+"⭐ = métier conseillé pour cette demande :",
+"⭐ = profissão aconselhada para este pedido:"
+],
+[
+"(personne de ce métier dans l’équipe)",
+"(ninguém desta profissão na equipa)"
+],
+[
+"aucun ouvrier dans votre équipe",
+"nenhum operário na sua equipa"
+],
+[
+"dans votre équipe",
+"na sua equipa"
+],
+[
+"(photos de la gérance)",
+"(fotos da gestora)"
+],
+[
+"App de l’équipe : photos",
+"App da equipa: fotos"
+],
+[
+"Dans Maintenance :",
+"Em Maintenance:"
+],
+[
+"Gérance / réf.",
+"Gestora / ref."
+],
+[
+"Lieu",
+"Local"
+],
+[
+"Où",
+"Onde"
+],
+[
+"Objet",
+"Assunto"
+],
+[
+"Pour {0}",
+"Para {0}"
+],
+[
+"Début",
+"Início"
+],
+[
+"Envoyé le",
+"Enviado em"
+],
+[
+"Réponse le",
+"Resposta em"
+],
+[
+"Temps de réponse",
+"Tempo de resposta"
+],
+[
+"Révisions",
+"Revisões"
+],
+[
+"Interventions",
+"Intervenções"
+],
+[
+"Horaire",
+"Horário"
+],
+[
+"Planning de la semaine",
+"Planeamento da semana"
+],
+[
+"Routine de la semaine",
+"Rotina da semana"
+],
+[
+"Semaine précédente",
+"Semana anterior"
+],
+[
+"Semaine suivante",
+"Semana seguinte"
+],
+[
+"Planning : retour à l’horaire habituel",
+"Planeamento: regresso ao horário habitual"
+],
+[
+"Semaine du {0} : les changements de cette semaine sont effacés.",
+"Semana de {0}: as alterações desta semana são apagadas."
+],
+[
+"{0} — semaine du {1}",
+"{0} — semana de {1}"
+],
+[
+"{0} — semaine du {1}{2}",
+"{0} — semana de {1}{2}"
+],
+[
+"📅 {0} · semaine du {1}",
+"📅 {0} · semana de {1}"
+],
+[
+"+ {0} semaine{1} suivante{2} (jusqu’au {3})",
+"+ {0} semana(s) seguinte(s) (até {3})"
+],
+[
+"🔁 Routine · {0}",
+"🔁 Rotina · {0}"
+],
+[
+"{0} — {1} créneau(x)",
+"{0} — {1} horário(s)"
+],
+[
+"jusqu’au {0}",
+"até {0}"
+],
+[
+"Récompense annulée",
+"Recompensa anulada"
+],
+[
+"Récompense remise 🎁",
+"Recompensa entregue 🎁"
+],
+[
+"🎁 Bravo,",
+"🎁 Parabéns,"
+],
+[
+"{0} — ouvrier de l’année {1}",
+"{0} — operário do ano {1}"
+],
+[
+"Icône choisie : {0}",
+"Ícone escolhido: {0}"
+],
+[
+"Icône choisie par le locataire",
+"Ícone escolhido pelo inquilino"
+],
+[
+"Photo de profil du locataire",
+"Foto de perfil do inquilino"
+],
+[
+"Photo de profil retirée",
+"Foto de perfil retirada"
+],
+[
+"📷 Photo de profil mise à jour",
+"📷 Foto de perfil atualizada"
+],
+[
+"Photo",
+"Foto"
+],
+[
+"Photo illisible",
+"Foto ilegível"
+],
+[
+"Ajouter une photo",
+"Adicionar uma foto"
+],
+[
+"Changer la photo",
+"Mudar a foto"
+],
+[
+"Facultatif — la personne peut aussi la mettre elle-même dans son app (⚙️).",
+"Opcional — a pessoa também a pode pôr ela própria na sua app (⚙️)."
+],
+[
+"Assurance à faire",
+"Seguro por fazer"
+],
+[
+"Assurance RC à faire",
+"Seguro RC por fazer"
+],
+[
+"🛡️ à faire",
+"🛡️ por fazer"
+],
+[
+"assurance (ou cochez « Assurance à faire »)",
+"seguro (ou marque «Assurance à faire»)"
+],
+[
+"— il n’a pas encore les données : un rappel reste dans son app (il pourra l’écrire lui-même)",
+"— ainda não tem os dados: fica um lembrete na sua app (poderá escrevê-lo ele próprio)"
+],
+[
+"pas encore fournie{0} (rappel dans son app)",
+"ainda não fornecida (lembrete na sua app)"
+],
+[
+"rappel affiché dans son app · touchez pour ouvrir sa fiche",
+"lembrete mostrado na sua app · toque para abrir a ficha"
+],
+[
+": {0} (occasionnel) n’a pas encore donné son assurance",
+": {0} (ocasional) ainda não deu o seu seguro"
+],
+[
+"🛡️ Assurance RC reçue : {0} — police n° {1}",
+"🛡️ Seguro RC recebido: {0} — apólice n.º {1}"
+],
+[
+", police n°",
+", apólice n.º"
+],
+[
+"police n°",
+"apólice n.º"
+],
+[
+"n° de police",
+"n.º da apólice"
+],
+[
+"Dommages",
+"Danos"
+],
+[
+"✍️ Fiche d’engagement signée dans son app",
+"✍️ Ficha de compromisso assinada na sua app"
+],
+[
+"✍️ signé sur son téléphone",
+"✍️ assinado no seu telefone"
+],
+[
+"— il la signe dans son app (onglet 📱 App → lui envoyer le lien), rubrique « ✍️ Ma fiche d’engagement »",
+"— assina-a na sua app (separador 📱 App → enviar-lhe o link), secção «✍️ Ma fiche d’engagement»"
+],
+[
+"(pas encore signée)",
+"(ainda não assinada)"
+],
+[
+"La fiche de {0} n’est pas signée : la note sortira sans signature.",
+"A ficha de {0} não está assinada: a nota sairá sem assinatura."
+],
+[
+"Lu et approuvé — signature de l’intervenant",
+"Lido e aprovado — assinatura do interveniente"
+],
+[
+"Obligations de l’intervenant",
+"Obrigações do interveniente"
+],
+[
+"Obligation de résultat",
+"Obrigação de resultado"
+],
+[
+"Indépendance",
+"Independência"
+],
+[
+"Confidentialité",
+"Confidencialidade"
+],
+[
+"Découverte",
+"Descoberta"
+],
+[
+"Boîte à clés",
+"Caixa de chaves"
+],
+[
+"Boîte à clés :",
+"Caixa de chaves:"
+],
+[
+"Alarme :",
+"Alarme:"
+],
+[
+"Locaux techniques :",
+"Compartimentos técnicos:"
+],
+[
+"Code",
+"Código"
+],
+[
+"Agence",
+"Agência"
+],
+[
+"+ mansarde",
+"+ águas-furtadas"
+],
+[
+"Radio de l’app des locataires",
+"Rádio da app dos inquilinos"
+],
+[
+"Proposée sous la météo dans l’app des locataires et l’app de l’équipe (bouton ▶). Avec le lien du",
+"Proposta por baixo da meteorologia na app dos inquilinos e na app da equipa (botão ▶). Com o link do"
+],
+[
+"flux audio",
+"fluxo áudio"
+],
+[
+"(demandé à la radio), elle joue directement dans l’app ; avec le lien du site, l’app ouvre le site. Chaque locataire peut coller sa propre radio.",
+"(pedido à rádio), toca diretamente na app; com o link do site, a app abre o site. Cada inquilino pode colar a sua própria rádio."
+],
+[
+"Ce que vous avez écrit n’est pas encore enregistré.",
+"O que escreveu ainda não está guardado."
+],
+[
+"ex. forfait 80 € le chantier",
+"ex. avença 80 € por obra"
+],
+[
+"Sur devis",
+"Sob orçamento"
+],
+[
+"Valable jusqu’au",
+"Válido até"
+],
+[
+"Numéro",
+"Número"
+],
+[
+"Téléphone / email",
+"Telefone / email"
+],
+[
+"État",
+"Estado"
+],
+[
+"étage(s)",
+"andar(es)"
+],
+[
+"{0} · {1} chambres{2} ({3})",
+"{0} · {1} quartos ({3})"
+],
+[
+"{0} · {1} occupée{2}",
+"{0} · {1} ocupado(s)"
+],
+[
+"ℹ️ {0} sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).",
+"ℹ️ {0} sem apartamento indicado: os seus habitantes conversam entre si. Se houver vários apartamentos, indique-o em cada quarto («Fait partie de l’appartement»)."
+],
+[
+"URGENT",
+"URGENTE"
+],
+[
+"recettes",
+"receitas"
+],
+[
+"🧾 Intervention occasionnelle{0}",
+"🧾 Intervenção ocasional{0}"
+],
+[
+"/ exéc.",
+"/ exec."
+],
+[
+"détails : {0}",
+"detalhes: {0}"
+],
+[
+"jours",
+"dias"
+],
+[
+"dans",
+"em"
+],
+[
+"ouvr.",
+"oper."
+],
+[
+"Bureau (loyer à payer)",
+"Escritório (renda a pagar)"
 ]
 ];

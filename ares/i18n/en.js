@@ -10858,7 +10858,7 @@ export default [
 ],
 [
 "Indice (cote d’application)",
-"Index (cote d’application)"
+"Index (applicable value)"
 ],
 [
 "Forfait mensuel HT",
@@ -10907,5 +10907,2269 @@ export default [
 [
 "Connectez d’abord le portail gérance (Gérances) : il héberge les liens des devis",
 "Connect the agency portal first (Gérances): it hosts the quote links"
+],
+[
+"🏗️ Installation de chantier",
+"🏗️ Site set-up"
+],
+[
+"Visite technique et métré sur place",
+"Technical visit and on-site measurements"
+],
+[
+"Installation de chantier : amenée et repli du matériel, mise en sécurité",
+"Site set-up: delivery and removal of equipment, making safe"
+],
+[
+"Protection des sols et des meubles (bâches, cartons, rubans)",
+"Protection of floors and furniture (sheets, cardboard, tape)"
+],
+[
+"Location et montage d’échafaudage",
+"Scaffolding hire and erection"
+],
+[
+"Évacuation des gravats vers une décharge agréée",
+"Rubble removal to an approved tip"
+],
+[
+"Location de conteneur / benne",
+"Skip / container hire"
+],
+[
+"Nettoyage de fin de chantier",
+"End-of-works cleaning"
+],
+[
+"📊 Rapport d’expert / Diagnostic",
+"📊 Expert report / Diagnosis"
+],
+[
+"Détection de fuite non destructive",
+"Non-destructive leak detection"
+],
+[
+"Mesure d’humidité et recherche d’infiltration",
+"Moisture measurement and infiltration search"
+],
+[
+"Thermographie infrarouge",
+"Infrared thermography"
+],
+[
+"Inspection vidéo de canalisation",
+"CCTV drain inspection"
+],
+[
+"Traçage de conduites",
+"Pipe tracing"
+],
+[
+"Rapport écrit avec photos (dossier assurance / litige)",
+"Written report with photos (insurance / dispute file)"
+],
+[
+"🏠 Toiture",
+"🏠 Roofing"
+],
+[
+"Réparation d’urgence après intempéries (bâchage)",
+"Emergency repair after storms (tarpaulin)"
+],
+[
+"Remplacement de tuiles / ardoises cassées",
+"Replacement of broken tiles / slates"
+],
+[
+"Réparation de gouttière / descente d’eau",
+"Gutter / downpipe repair"
+],
+[
+"Fourniture et pose de gouttière",
+"Supply and fitting of gutter"
+],
+[
+"Fourniture et pose de fenêtre de toit",
+"Supply and fitting of roof window"
+],
+[
+"Nettoyage et démoussage de toiture",
+"Roof cleaning and moss removal"
+],
+[
+"Nettoyage des gouttières",
+"Gutter cleaning"
+],
+[
+"Inspection de toiture (photos / drone)",
+"Roof inspection (photos / drone)"
+],
+[
+"🛡️ Étanchéité",
+"🛡️ Waterproofing"
+],
+[
+"Réparation ponctuelle d’étanchéité de terrasse",
+"Spot repair of terrace waterproofing"
+],
+[
+"Étanchéité de toiture-terrasse (membrane)",
+"Flat-roof waterproofing (membrane)"
+],
+[
+"Étanchéité de balcon / terrasse carrelée",
+"Waterproofing of balcony / tiled terrace"
+],
+[
+"Cuvelage / traitement de sous-sol contre les infiltrations",
+"Basement tanking against water ingress"
+],
+[
+"Reprise des joints de façade",
+"Façade joint repointing"
+],
+[
+"Traitement hydrofuge de façade",
+"Water-repellent façade treatment"
+],
+[
+"🎨 Peinture & revêtements muraux",
+"🎨 Painting & wall coverings"
+],
+[
+"Plafonds : enduisage complet et mise en peinture",
+"Ceilings: full skim coat and painting"
+],
+[
+"Murs : enduisage complet et mise en peinture",
+"Walls: full skim coat and painting"
+],
+[
+"Enlèvement de l’ancien papier peint",
+"Removal of old wallpaper"
+],
+[
+"Fourniture et pose de toile de rénovation (variovlies)",
+"Supply and fitting of renovation fleece (variovlies)"
+],
+[
+"Mise en peinture des portes et encadrements",
+"Painting of doors and frames"
+],
+[
+"Mise en peinture des radiateurs (démontage, montage, purge)",
+"Painting of radiators (removal, refitting, bleeding)"
+],
+[
+"Peinture de cage d’escalier",
+"Stairwell painting"
+],
+[
+"Peinture de façade",
+"Façade painting"
+],
+[
+"Peinture de sol (garage, cave)",
+"Floor painting (garage, cellar)"
+],
+[
+"Retouches et réparation de fissures",
+"Touch-ups and crack repair"
+],
+[
+"🧱 Maçonnerie / gros œuvre",
+"🧱 Masonry / structural work"
+],
+[
+"Démolition de cloison (bloc béton, plâtre)",
+"Partition demolition (concrete block, plaster)"
+],
+[
+"Construction de cloison (bloc, plaques de plâtre)",
+"Partition construction (block, plasterboard)"
+],
+[
+"Confection de chape armée",
+"Reinforced screed"
+],
+[
+"Ragréage de sol",
+"Floor levelling"
+],
+[
+"Ragréage / enduit de murs",
+"Wall levelling / plastering"
+],
+[
+"Rebouchage de saignées et fermeture de trous",
+"Filling of chases and holes"
+],
+[
+"Création d’ouverture dans un mur (avec linteau)",
+"Opening in a wall (with lintel)"
+],
+[
+"Pose de faux plafond (plaques de plâtre)",
+"Suspended ceiling installation (plasterboard)"
+],
+[
+"🔲 Carrelage & sols",
+"🔲 Tiling & flooring"
+],
+[
+"Décapage de carrelage au sol (chape et plinthes incluses), évacuation",
+"Removal of floor tiles (screed and skirting included), disposal"
+],
+[
+"Décapage de revêtement mural et évacuation",
+"Removal of wall covering and disposal"
+],
+[
+"Fourniture et mise en place d’un fond d’accrochage",
+"Supply and application of bonding primer"
+],
+[
+"Fourniture de carrelage de sol",
+"Supply of floor tiles"
+],
+[
+"Fourniture de carrelage mural",
+"Supply of wall tiles"
+],
+[
+"Pose de carrelage de sol, jointement en mortier",
+"Laying of floor tiles, mortar grouting"
+],
+[
+"Pose de carrelage mural, jointement",
+"Laying of wall tiles, grouting"
+],
+[
+"Fourniture et pose de plinthes, joints silicone",
+"Supply and fitting of skirting, silicone joints"
+],
+[
+"Découpes autour des cadres de porte",
+"Cuts around door frames"
+],
+[
+"Joints silicone sur angles verticaux et horizontaux",
+"Silicone joints on vertical and horizontal corners"
+],
+[
+"Fourniture et pose de baguettes d’angle",
+"Supply and fitting of corner trims"
+],
+[
+"Fourniture et pose de parquet / sol stratifié / vinyle",
+"Supply and laying of parquet / laminate / vinyl"
+],
+[
+"Remplacement de carreaux cassés",
+"Replacement of broken tiles"
+],
+[
+"💧 Plomberie & sanitaire",
+"💧 Plumbing & sanitary"
+],
+[
+"Recherche et réparation de fuite",
+"Leak detection and repair"
+],
+[
+"Débouchage de canalisation / WC / évier",
+"Unblocking of drain / WC / sink"
+],
+[
+"Débouchage haute pression (colonne d’immeuble)",
+"High-pressure unblocking (building stack)"
+],
+[
+"Remplacement de robinet / mitigeur",
+"Tap / mixer replacement"
+],
+[
+"Remplacement de mécanisme de chasse d’eau",
+"Flush mechanism replacement"
+],
+[
+"Démontage et évacuation du mobilier de salle de bain, WC, baignoire",
+"Removal and disposal of bathroom furniture, WC, bathtub"
+],
+[
+"Fourniture et pose de conduites eau froide, eau chaude et écoulements",
+"Supply and fitting of cold water, hot water and waste pipes"
+],
+[
+"Réalisation d’une douche à l’italienne (chape en pente, isolation, caniveau, paroi)",
+"Walk-in shower (sloped screed, waterproofing, channel drain, screen)"
+],
+[
+"Fourniture de bloc WC suspendu (bâti, cuvette, plaque) et habillage",
+"Supply of wall-hung WC (frame, pan, plate) and boxing-in"
+],
+[
+"Fourniture de meuble de salle de bain (vasque, mitigeur, miroir)",
+"Supply of bathroom vanity unit (basin, mixer, mirror)"
+],
+[
+"Fourniture de sèche-serviettes",
+"Supply of towel radiator"
+],
+[
+"Fourniture de mitigeur de douche avec douchette",
+"Supply of shower mixer with hand shower"
+],
+[
+"Montage de l’ensemble sanitaire et joints silicone",
+"Fitting of all sanitary ware and silicone joints"
+],
+[
+"Remplacement de chauffe-eau / boiler",
+"Water heater / boiler replacement"
+],
+[
+"Entretien de chaudière",
+"Boiler servicing"
+],
+[
+"Purge et équilibrage des radiateurs",
+"Radiator bleeding and balancing"
+],
+[
+"⚡ Électricité",
+"⚡ Electrical"
+],
+[
+"Dépannage électrique (recherche de panne)",
+"Electrical repair (fault finding)"
+],
+[
+"Remplacement de prise / interrupteur",
+"Socket / switch replacement"
+],
+[
+"Création d’un point lumineux ou d’une prise",
+"New light point or socket"
+],
+[
+"Remplacement de tableau électrique",
+"Consumer unit replacement"
+],
+[
+"Mise en conformité de l’installation",
+"Bringing the installation up to standard"
+],
+[
+"Fourniture et pose de luminaire",
+"Supply and fitting of light fitting"
+],
+[
+"Fourniture et pose de ventilateur d’aération (câblage inclus)",
+"Supply and fitting of extractor fan (wiring included)"
+],
+[
+"Installation d’éclairage extérieur / potelets",
+"Outdoor lighting / bollard installation"
+],
+[
+"Enlèvement de luminaires existants et évacuation",
+"Removal and disposal of existing light fittings"
+],
+[
+"Vérification du câblage, offre si nécessaire",
+"Wiring check, quote if needed"
+],
+[
+"🔐 Serrurerie",
+"🔐 Locksmith"
+],
+[
+"Ouverture de porte (claquée / fermée à clé)",
+"Door opening (slammed / locked)"
+],
+[
+"Remplacement de cylindre",
+"Cylinder replacement"
+],
+[
+"Réparation de serrure / gâche",
+"Lock / strike plate repair"
+],
+[
+"Pose de serrure multipoints / blindage",
+"Multipoint lock / armour fitting"
+],
+[
+"Pose de ferme-porte",
+"Door closer fitting"
+],
+[
+"Reproduction de clés / badges",
+"Key / fob copying"
+],
+[
+"🚪 Menuiserie & portes",
+"🚪 Joinery & doors"
+],
+[
+"Fourniture et pose de porte intérieure avec chambranle et poignée",
+"Supply and fitting of interior door with frame and handle"
+],
+[
+"Fourniture et pose de porte d’appartement coupe-feu",
+"Supply and fitting of fire-rated flat door"
+],
+[
+"Démontage et évacuation d’anciennes portes",
+"Removal and disposal of old doors"
+],
+[
+"Réglage / réparation de porte ou fenêtre",
+"Door or window adjustment / repair"
+],
+[
+"Remplacement de vitrage",
+"Glazing replacement"
+],
+[
+"Pose de cuisine / meubles",
+"Kitchen / furniture fitting"
+],
+[
+"Dépose et évacuation de l’ancienne cuisine",
+"Removal and disposal of the old kitchen"
+],
+[
+"Pose de plinthes bois",
+"Fitting of wooden skirting"
+],
+[
+"🔧 Bricolage & petits travaux",
+"🔧 Handyman & small jobs"
+],
+[
+"Montage de meubles",
+"Furniture assembly"
+],
+[
+"Fixations murales (étagères, tringles, TV, miroirs)",
+"Wall fixings (shelves, rails, TV, mirrors)"
+],
+[
+"Petites réparations diverses",
+"Various small repairs"
+],
+[
+"Pose de boîtes aux lettres / sonnettes",
+"Letterbox / doorbell fitting"
+],
+[
+"Pose de stores / rideaux",
+"Blind / curtain fitting"
+],
+[
+"Remplacement de joints silicone (cuisine, salle de bain)",
+"Silicone joint replacement (kitchen, bathroom)"
+],
+[
+"🌿 Jardinage & extérieurs",
+"🌿 Gardening & outdoors"
+],
+[
+"Tonte de pelouse",
+"Lawn mowing"
+],
+[
+"Taille de haies",
+"Hedge trimming"
+],
+[
+"Taille d’arbres et d’arbustes",
+"Tree and shrub pruning"
+],
+[
+"Désherbage des allées et massifs",
+"Weeding of paths and beds"
+],
+[
+"Ramassage des feuilles et évacuation des déchets verts",
+"Leaf collection and green waste disposal"
+],
+[
+"Déneigement et salage",
+"Snow clearing and gritting"
+],
+[
+"Nettoyage haute pression de cour / terrasse (brosse rotative)",
+"High-pressure cleaning of yard / terrace (rotary brush)"
+],
+[
+"Plantations et aménagement",
+"Planting and landscaping"
+],
+[
+"Nettoyage des parties communes (forfait)",
+"Cleaning of common areas (flat rate)"
+],
+[
+"Nettoyage du garage à l’autolaveuse",
+"Garage cleaning with scrubber-dryer"
+],
+[
+"Nettoyage approfondi et détachage des escaliers",
+"Deep cleaning and stain removal of stairs"
+],
+[
+"Nettoyage des passerelles extérieures",
+"Cleaning of outdoor walkways"
+],
+[
+"Nettoyage des vitres",
+"Window cleaning"
+],
+[
+"Nettoyage de fin de chantier / remise en état",
+"End-of-works cleaning / restoration"
+],
+[
+"Nettoyage après déménagement / état des lieux",
+"Cleaning after move-out / inventory"
+],
+[
+"Nettoyage des caves et greniers",
+"Cleaning of cellars and attics"
+],
+[
+"🗑️ Déchets & débarras",
+"🗑️ Waste & clearance"
+],
+[
+"Sortie et rentrée des poubelles (contrat)",
+"Putting bins out and in (contract)"
+],
+[
+"Nettoyage et désinfection des conteneurs",
+"Bin cleaning and disinfection"
+],
+[
+"Débarras de cave / grenier / appartement",
+"Clearance of cellar / attic / flat"
+],
+[
+"Évacuation d’encombrants",
+"Bulky waste removal"
+],
+[
+"Collecte de déchets spéciaux (partenaire Arcolux)",
+"Special waste collection (partner Arcolux)"
+],
+[
+"🚚 Déménagement",
+"🚚 Removals"
+],
+[
+"Déménagement (main-d’œuvre)",
+"Removal (labour)"
+],
+[
+"Camion avec chauffeur",
+"Truck with driver"
+],
+[
+"Fourniture de cartons et protections",
+"Supply of boxes and protection"
+],
+[
+"Démontage et remontage de meubles",
+"Furniture dismantling and reassembly"
+],
+[
+"Monte-meubles",
+"Furniture lift"
+],
+[
+"⏱️ Régie",
+"⏱️ Time and materials"
+],
+[
+"Travaux en régie (par heure et par personne, hors déplacement)",
+"Time-and-materials work (per hour and per person, excl. travel)"
+],
+[
+"Balayage / aspiration et lavage des sols des entrées, paliers et escaliers",
+"Sweeping / vacuuming and mopping of entrance, landing and stair floors"
+],
+[
+"Nettoyage des ascenseurs : sols, miroirs, boutons, portes et rails",
+"Lift cleaning: floors, mirrors, buttons, doors and rails"
+],
+[
+"Nettoyage des mains courantes et garde-corps",
+"Cleaning of handrails and balustrades"
+],
+[
+"Enlèvement des traces sur les portes communes et portes d’entrée",
+"Removing marks on communal and entrance doors"
+],
+[
+"Nettoyage des vitrages des portes d’entrée",
+"Cleaning of entrance door glazing"
+],
+[
+"Nettoyage humide des boîtes aux lettres et interphones",
+"Damp cleaning of letterboxes and intercoms"
+],
+[
+"Entretien courant du local poubelles",
+"Routine upkeep of the bin store"
+],
+[
+"Ramassage des feuilles, papiers et déchets dans les zones extérieures, rampe de garage comprise",
+"Picking up leaves, paper and litter outdoors, garage ramp included"
+],
+[
+"Nettoyage des couloirs de caves",
+"Cleaning of cellar corridors"
+],
+[
+"Nettoyage des buanderies : sols et surfaces communes accessibles",
+"Laundry room cleaning: floors and accessible common surfaces"
+],
+[
+"Enlèvement des toiles d’araignées visibles",
+"Removing visible cobwebs"
+],
+[
+"Nettoyage des plinthes",
+"Skirting board cleaning"
+],
+[
+"Nettoyage complet des portes communes et encadrements",
+"Full cleaning of communal doors and frames"
+],
+[
+"Dépoussiérage des luminaires accessibles",
+"Dusting of accessible light fittings"
+],
+[
+"Nettoyage des traces sur les surfaces murales lavables",
+"Cleaning marks on washable wall surfaces"
+],
+[
+"Nettoyage des locaux techniques accessibles",
+"Cleaning of accessible plant rooms"
+],
+[
+"Dépoussiérage des équipements communs accessibles",
+"Dusting of accessible common equipment"
+],
+[
+"Nettoyage des vitrages communs hors portes d’entrée",
+"Cleaning of common glazing except entrance doors"
+],
+[
+"Dépoussiérage des grilles de ventilation accessibles",
+"Dusting of accessible ventilation grilles"
+],
+[
+"Dépoussiérage des conduites et installations techniques accessibles",
+"Dusting of accessible pipes and technical installations"
+],
+[
+"Dépoussiérage en hauteur et enlèvement des toiles d’araignées accessibles",
+"High-level dusting and removal of accessible cobwebs"
+],
+[
+"Nettoyage du garage à l’autolaveuse (facturé à part)",
+"Garage cleaning with scrubber-dryer (billed separately)"
+],
+[
+"Hebdo.",
+"Wkly"
+],
+[
+"Mens.",
+"Mthly"
+],
+[
+"Trim.",
+"Qtrly"
+],
+[
+"Annuel",
+"Yearly"
+],
+[
+"Hebdomadaire",
+"Weekly"
+],
+[
+"Mensuel",
+"Monthly"
+],
+[
+"Trimestriel",
+"Quarterly"
+],
+[
+"fft",
+"flat"
+],
+[
+"ml",
+"lm"
+],
+[
+"exécution",
+"visit"
+],
+[
+"mois",
+"month"
+],
+[
+"€ HT / {0}",
+"€ excl. VAT / {0}"
+],
+[
+"€ HT / mois",
+"€ excl. VAT / month"
+],
+[
+"€/h HT",
+"€/h excl. VAT"
+],
+[
+"diagnostic",
+"diagnosis"
+],
+[
+"rénovation",
+"renovation"
+],
+[
+"entretien",
+"maintenance"
+],
+[
+"dépannage",
+"emergency repair"
+],
+[
+"détails",
+"details"
+],
+[
+"mesures (cm), format, couleur, modèle…",
+"measurements (cm), size, colour, model…"
+],
+[
+"surface",
+"area"
+],
+[
+"hauteur (m)",
+"height (m)"
+],
+[
+"type de déchets",
+"type of waste"
+],
+[
+"lieu de la fuite",
+"location of the leak"
+],
+[
+"pièces concernées",
+"rooms concerned"
+],
+[
+"surface / pièces",
+"area / rooms"
+],
+[
+"diamètre (mm)",
+"diameter (mm)"
+],
+[
+"objectif du rapport",
+"purpose of the report"
+],
+[
+"surface bâchée (m²)",
+"area covered (m²)"
+],
+[
+"modèle de tuile",
+"tile model"
+],
+[
+"diamètre (cm)",
+"diameter (cm)"
+],
+[
+"matière, diamètre (cm)",
+"material, diameter (cm)"
+],
+[
+"type de membrane",
+"membrane type"
+],
+[
+"couleur, finition (mat / satin)",
+"colour, finish (matt / satin)"
+],
+[
+"couleur, finition",
+"colour, finish"
+],
+[
+"nombre d’étages",
+"number of floors"
+],
+[
+"hauteur (m), couleur",
+"height (m), colour"
+],
+[
+"type de peinture",
+"type of paint"
+],
+[
+"épaisseur (cm)",
+"thickness (cm)"
+],
+[
+"épaisseur (mm)",
+"thickness (mm)"
+],
+[
+"format (cm), ex. 60×60",
+"size (cm), e.g. 60×60"
+],
+[
+"format (cm), ex. 60×30",
+"size (cm), e.g. 60×30"
+],
+[
+"format (cm)",
+"size (cm)"
+],
+[
+"hauteur (cm)",
+"height (cm)"
+],
+[
+"matière",
+"material"
+],
+[
+"type, épaisseur (mm)",
+"type, thickness (mm)"
+],
+[
+"lieu",
+"location"
+],
+[
+"marque, modèle",
+"brand, model"
+],
+[
+"appareils raccordés",
+"connected appliances"
+],
+[
+"caniveau (cm), paroi (cm)",
+"channel (cm), screen (cm)"
+],
+[
+"largeur (cm), modèle",
+"width (cm), model"
+],
+[
+"modèle",
+"model"
+],
+[
+"capacité (litres)",
+"capacity (litres)"
+],
+[
+"nombre de circuits",
+"number of circuits"
+],
+[
+"jour / nuit",
+"day / night"
+],
+[
+"dimensions (mm), nombre de clés",
+"dimensions (mm), number of keys"
+],
+[
+"dimensions (mm), modèle",
+"dimensions (mm), model"
+],
+[
+"dimensions (mm), classe (T30…)",
+"dimensions (mm), rating (T30…)"
+],
+[
+"dimensions (cm), type de verre",
+"dimensions (cm), glass type"
+],
+[
+"longueur (cm)",
+"length (cm)"
+],
+[
+"largeur (cm)",
+"width (cm)"
+],
+[
+"surface (m²)",
+"area (m²)"
+],
+[
+"fréquence par semaine",
+"frequency per week"
+],
+[
+"jours de collecte",
+"collection days"
+],
+[
+"nombre de conteneurs",
+"number of bins"
+],
+[
+"nombre de déménageurs",
+"number of movers"
+],
+[
+"nombre de personnes",
+"number of people"
+],
+[
+"Autre prestation (ex. Pose d’une crédence en verre)",
+"Other service (e.g. Fitting a glass splashback)"
+],
+[
+"Autre prestation d’entretien",
+"Other maintenance service"
+],
+[
+"Prestation",
+"Service"
+],
+[
+"Qté",
+"Qty"
+],
+[
+"Quantité",
+"Quantity"
+],
+[
+"Unité",
+"Unit"
+],
+[
+"Détails",
+"Details"
+],
+[
+"Prix unitaire HT",
+"Unit price excl. VAT"
+],
+[
+"Prix HT (€)",
+"Price excl. VAT (€)"
+],
+[
+"Montant HT",
+"Amount excl. VAT"
+],
+[
+"Montant hors taxes",
+"Amount before tax"
+],
+[
+"Matériel acheté (ex. disjoncteur 16 A)",
+"Materials bought (e.g. 16 A breaker)"
+],
+[
+"ex. Mario Rossi, Gérance du Centre S.A.",
+"e.g. Mario Rossi, Gérance du Centre S.A."
+],
+[
+"ex. Remise en état des appartements et du commerce",
+"e.g. Refurbishment of the flats and the shop"
+],
+[
+"ex. M. Pierre Loan",
+"e.g. Mr Pierre Loan"
+],
+[
+"rue, n°, code postal, ville",
+"street, no., postcode, town"
+],
+[
+"+ {0} prestation(s) ponctuelle(s), facturée(s) à chaque exécution.",
+"+ {0} one-off service(s), billed each time."
+],
+[
+"forfait mensuel {0} TTC",
+"monthly flat rate {0} incl. VAT"
+],
+[
+"offre de service (contrat d’entretien)",
+"service offer (maintenance contract)"
+],
+[
+"Contrat d’entretien",
+"Maintenance contract"
+],
+[
+"Acompte ({0} %)",
+"Deposit ({0} %)"
+],
+[
+"(acompte {0} % : {1})",
+"(deposit {0} %: {1})"
+],
+[
+"Remise {0} %",
+"Discount {0} %"
+],
+[
+"HT {0} · TVA {1}",
+"excl. VAT {0} · VAT {1}"
+],
+[
+"TVA {0} %",
+"VAT {0} %"
+],
+[
+"TVA {0}",
+"VAT {0}"
+],
+[
+"{0} ouvrier(s) × {1} h",
+"{0} worker(s) × {1} h"
+],
+[
+"Devis gratuit",
+"Free quote"
+],
+[
+"Devis {0}",
+"Quote {0}"
+],
+[
+"Devis {0} accepté — {1} TTC",
+"Quote {0} accepted — {1} incl. VAT"
+],
+[
+"📝 {0} : devis {1} {2}",
+"📝 {0}: quote {1} {2}"
+],
+[
+"✅ accepté",
+"✅ accepted"
+],
+[
+"❌ refusé",
+"❌ declined"
+],
+[
+"🔄 révision demandée",
+"🔄 revision requested"
+],
+[
+"accepté",
+"accepted"
+],
+[
+"refusé",
+"declined"
+],
+[
+"révision demandée",
+"revision requested"
+],
+[
+"signé",
+"signed"
+],
+[
+"{0} — signé le {1}",
+"{0} — signed on {1}"
+],
+[
+"· après {0} révision{1}",
+"· after {0} revision(s)"
+],
+[
+"en {0}",
+"in {0}"
+],
+[
+"{0} : {1}/{2} acceptés ·",
+"{0}: {1}/{2} accepted ·"
+],
+[
+"% acceptés",
+"% accepted"
+],
+[
+"🔗 Lien / QR code{0}",
+"🔗 Link / QR code{0}"
+],
+[
+"Scanner le code QR avec",
+"Scan the QR code with"
+],
+[
+"Réponse du client au devis (lien)",
+"Customer’s answer to the quote (link)"
+],
+[
+"Signé électroniquement le {0}",
+"Signed electronically on {0}"
+],
+[
+"Créer un nouveau lien ?",
+"Create a new link?"
+],
+[
+"Client (gérance)",
+"Client (agency)"
+],
+[
+"Délai / début",
+"Lead time / start"
+],
+[
+"Lieu d’intervention",
+"Job location"
+],
+[
+"N° d’autorisation d’établissement",
+"Business permit no."
+],
+[
+"Autorisation d’établissement n° {0}",
+"Business permit no. {0}"
+],
+[
+"imprimé sur les devis et factures",
+"printed on quotes and invoices"
+],
+[
+"Raison sociale",
+"Company name"
+],
+[
+"Marque",
+"Brand"
+],
+[
+"Numérotation",
+"Numbering"
+],
+[
+"Taux de TVA à confirmer avec votre comptable. Prochain numéro : {0}-INT{1} · prochain devis n° …-{2}",
+"VAT rate to be confirmed with your accountant. Next number: {0}-INT{1} · next quote no. …-{2}"
+],
+[
+"Facture",
+"Invoice"
+],
+[
+"🧾 Facture",
+"🧾 Invoice"
+],
+[
+"Facture {0}",
+"Invoice {0}"
+],
+[
+"🧾 Facture {0}",
+"🧾 Invoice {0}"
+],
+[
+"Facture {0} — {1}",
+"Invoice {0} — {1}"
+],
+[
+"🧾 Facture {0} envoyée à {1}",
+"🧾 Invoice {0} sent to {1}"
+],
+[
+"Facture payée",
+"Invoice paid"
+],
+[
+"✅ Facture payée",
+"✅ Invoice paid"
+],
+[
+"Facture à payer",
+"Invoice unpaid"
+],
+[
+"Facture émise",
+"Invoice issued"
+],
+[
+"Facture remise « à payer »",
+"Invoice set back to “unpaid”"
+],
+[
+"Facture en contentieux",
+"Invoice in dispute"
+],
+[
+"⚠️ Facture en contentieux",
+"⚠️ Invoice in dispute"
+],
+[
+"Contentieux levé",
+"Dispute lifted"
+],
+[
+"{0} impayée{1} en litige",
+"{0} unpaid in dispute"
+],
+[
+"Brouillon de facture",
+"Draft invoice"
+],
+[
+"Facture : intervention liée à une gérance et portail connecté nécessaires",
+"Invoice: needs a job linked to an agency and the portal connected"
+],
+[
+"Facturation du client",
+"Client billing"
+],
+[
+"Date de facturation",
+"Invoice date"
+],
+[
+"Date d’intervention",
+"Job date"
+],
+[
+"Date d’échéance",
+"Due date"
+],
+[
+"N° facture",
+"Invoice no."
+],
+[
+"Référence",
+"Reference"
+],
+[
+"Référence : {0}",
+"Reference: {0}"
+],
+[
+"Communication : {0}",
+"Payment reference: {0}"
+],
+[
+"Communication de paiement : {0}",
+"Payment reference: {0}"
+],
+[
+"Paiement par virement :",
+"Payment by bank transfer:"
+],
+[
+"Paiement en espèces (cash)",
+"Cash payment"
+],
+[
+"en espèces (cash), à sa demande",
+"in cash, at their request"
+],
+[
+"Paiement reçu : {0} ?",
+"Payment received: {0}?"
+],
+[
+"✅ Paiement reçu ({0} · {1})",
+"✅ Payment received ({0} · {1})"
+],
+[
+"Paiements reçus",
+"Payments received"
+],
+[
+"Paiement à (jours)",
+"Payment within (days)"
+],
+[
+"Payée le",
+"Paid on"
+],
+[
+"✅ payée le {0}",
+"✅ paid on {0}"
+],
+[
+"Total à payer",
+"Total due"
+],
+[
+"À payer",
+"Unpaid"
+],
+[
+"facturée",
+"invoiced"
+],
+[
+"clôturée",
+"closed"
+],
+[
+"à clôturer",
+"to be closed"
+],
+[
+"· ✅ à clôturer",
+"· ✅ to be closed"
+],
+[
+"🟡 à facturer",
+"🟡 to invoice"
+],
+[
+"🟡 À facturer ({0})",
+"🟡 To invoice ({0})"
+],
+[
+"⚙️ Émetteur : {0}",
+"⚙️ Issuer: {0}"
+],
+[
+"Émetteur des factures envoyées aux gérances (marque LuxInterventions). Les factures des loyers (NOBIS s.a.r.l.) ne changent pas.",
+"Issuer of the invoices sent to agencies (LuxInterventions brand). Rent invoices (NOBIS s.a.r.l.) do not change."
+],
+[
+"Émettre la facture {0} ?",
+"Issue invoice {0}?"
+],
+[
+"{0} · {1} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son portail.",
+"{0} · {1} incl. VAT. The number can no longer change; the agency receives it in its portal."
+],
+[
+"· émise par {0} ({1}). Rien n’est envoyé avant « Émettre ».",
+"· issued by {0} ({1}). Nothing is sent before “Émettre”."
+],
+[
+"La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).",
+"The agency sees and downloads it in its portal (Accounting and request sheet)."
+],
+[
+"Montants, TVA, remises, acomptes : réglés dans",
+"Amounts, VAT, discounts, deposits: set in"
+],
+[
+"et dans chaque facture (",
+"and in each invoice ("
+],
+[
+"). Données de facturation de la gérance :",
+"). Agency billing details:"
+],
+[
+"Mention légale sur la facture (sinon celle par défaut)",
+"Legal notice on the invoice (otherwise the default one)"
+],
+[
+"sinon la mention par défaut",
+"otherwise the default notice"
+],
+[
+"si « Taux particulier »",
+"if “Special rate”"
+],
+[
+"% particulier",
+"% special rate"
+],
+[
+"TVA normale (taux des réglages)",
+"Standard VAT (rate from settings)"
+],
+[
+"TVA non applicable (non assujetti)",
+"VAT not applicable (not liable)"
+],
+[
+"TVA non applicable.",
+"VAT not applicable."
+],
+[
+"Autoliquidation : TVA due par le preneur (art. 196 de la directive 2006/112/CE).",
+"Reverse charge: VAT due by the customer (art. 196 of Directive 2006/112/EC)."
+],
+[
+"Autoliquidation : indiquez d’abord le n° TVA du client (Gérances → la gérance → 🧾 Facturation)",
+"Reverse charge: first enter the client’s VAT no. (Gérances → the agency → 🧾 Facturation)"
+],
+[
+"🧾 TVA sur vos factures (régime, pays)",
+"🧾 VAT on your invoices (scheme, country)"
+],
+[
+"Par défaut : le régime du client (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.",
+"Default: the client’s scheme (Gérances → the agency → 🧾 Facturation). Work on a building in Luxembourg: Luxembourg VAT applies in principle, even for a foreign client — to be confirmed with your accountant."
+],
+[
+"Taux normal : {0} % (Réglages → 🧾 Facturation) ; régime par client (autoliquidation, non applicable…) dans Gérances → la gérance → 🧾 Facturation. Détail facture par facture : onglet 🧾 Factures. Aide à la déclaration, à faire vérifier par votre comptable.",
+"Standard rate: {0} % (Réglages → 🧾 Facturation); per-client scheme (reverse charge, not applicable…) in Gérances → the agency → 🧾 Facturation. Invoice-by-invoice detail: 🧾 Factures tab. Help with the return, to be checked by your accountant."
+],
+[
+"TVA des",
+"VAT on"
+],
+[
+"factures d’interventions",
+"job invoices"
+],
+[
+"émises par ARES INVEST S.A. (LuxInterventions). Les loyers ne sont pas soumis à la TVA.",
+"issued by ARES INVEST S.A. (LuxInterventions). Rents are not subject to VAT."
+],
+[
+"Avant d’émettre : complétez {0} dans",
+"Before issuing: complete {0} in"
+],
+[
+"Complétez :",
+"Complete:"
+],
+[
+"à compléter",
+"to complete"
+],
+[
+"Adresse à compléter",
+"Address to complete"
+],
+[
+"IBAN de la gérance :",
+"Agency IBAN:"
+],
+[
+"BIC de la gérance :",
+"Agency BIC:"
+],
+[
+"🏦 Virement{0}",
+"🏦 Bank transfer{0}"
+],
+[
+"RCS / N° TVA",
+"RCS / VAT no."
+],
+[
+"n° TVA",
+"VAT no."
+],
+[
+"n° TVA (LU…)",
+"VAT no. (LU…)"
+],
+[
+"adresse, RCS (B…), n° TVA (LU…)",
+"address, RCS (B…), VAT no. (LU…)"
+],
+[
+"ex. POST Luxembourg",
+"e.g. POST Luxembourg"
+],
+[
+"ex. POST Luxembourg, Spuerkeess…",
+"e.g. POST Luxembourg, Spuerkeess…"
+],
+[
+"ex. CCPLLULL",
+"e.g. CCPLLULL"
+],
+[
+"ex. CCPLLULL (POST Luxembourg)",
+"e.g. CCPLLULL (POST Luxembourg)"
+],
+[
+"ex. BNP Paribas, Spuerkeess, Intesa Sanpaolo…",
+"e.g. BNP Paribas, Spuerkeess, Intesa Sanpaolo…"
+],
+[
+"ex. BNPAFRPPXXX",
+"e.g. BNPAFRPPXXX"
+],
+[
+"ex. Foyer, La Luxembourgeoise, AXA…",
+"e.g. Foyer, La Luxembourgeoise, AXA…"
+],
+[
+"Motif (ex. client fidèle, urgence de nuit)",
+"Reason (e.g. loyal client, night emergency)"
+],
+[
+"Valeur",
+"Value"
+],
+[
+"Formule",
+"Plan"
+],
+[
+"👷 Coût {0} :",
+"👷 Cost {0}:"
+],
+[
+"· déplacement",
+"· travel"
+],
+[
+"déplacement",
+"travel"
+],
+[
+"{0} / heure{1}",
+"{0} / hour{1}"
+],
+[
+"Payé à l’ouvrier € / heure",
+"Paid to the worker € / hour"
+],
+[
+"Facturé à la gérance € / heure",
+"Billed to the agency € / hour"
+],
+[
+"Main-d'œuvre — {0}",
+"Labour — {0}"
+],
+[
+"Matériel avancé{0}",
+"Materials advanced{0}"
+],
+[
+"Heures",
+"Hours"
+],
+[
+"Travail",
+"Work"
+],
+[
+"Rémunération",
+"Pay"
+],
+[
+"Abonnement",
+"Subscription"
+],
+[
+"＋ Abonnement",
+"＋ Subscription"
+],
+[
+"💼 Abonnement —",
+"💼 Subscription —"
+],
+[
+"Abonnement enregistré",
+"Subscription saved"
+],
+[
+"Abonnement payé",
+"Subscription paid"
+],
+[
+"Abonnement supprimé",
+"Subscription deleted"
+],
+[
+"Abonnements des gérances et annonces publicitaires vendues",
+"Agency subscriptions and advertising sold"
+],
+[
+"publicitaires",
+"adverts"
+],
+[
+"pas d’abonnement",
+"no subscription"
+],
+[
+"Gérances sans abonnement ({0})",
+"Agencies without subscription ({0})"
+],
+[
+"{0} payé(s) · {1} gratuit(s)",
+"{0} paid · {1} free"
+],
+[
+"🎁 gratuit",
+"🎁 free"
+],
+[
+"Revenu mensuel",
+"Monthly revenue"
+],
+[
+"abonnements payants",
+"paid subscriptions"
+],
+[
+"Payé jusqu’au",
+"Paid until"
+],
+[
+"{0} — abonnement payé jusqu’au {1}.",
+"{0} — subscription paid until {1}."
+],
+[
+"Annuler le paiement de {0} — {1} {2} ?",
+"Cancel the payment of {0} — {1} {2}?"
+],
+[
+"La formule et l’historique des paiements de cet abonnement sont effacés. La gérance et ses demandes ne changent pas.",
+"The plan and payment history of this subscription are erased. The agency and its requests do not change."
+],
+[
+"Les gérances voient « 💼 Nos abonnements » et « Voir les offres ».",
+"Agencies see “💼 Nos abonnements” and “Voir les offres”."
+],
+[
+"Masquées : les gérances ne voient aucune offre d’abonnement.",
+"Hidden: agencies see no subscription offer."
+],
+[
+"⚪ Offres masquées dans le portail des gérances",
+"⚪ Offers hidden in the agency portal"
+],
+[
+"🟢 Offres visibles dans le portail des gérances",
+"🟢 Offers visible in the agency portal"
+],
+[
+"Offres d’abonnement activées",
+"Subscription offers turned on"
+],
+[
+"Offres d’abonnement désactivées",
+"Subscription offers turned off"
+],
+[
+"Quand une gérance touche « Je suis intéressé » dans son portail, vous recevez une notification. Touchez une gérance pour choisir sa formule et noter ses paiements.",
+"When an agency taps “Je suis intéressé” in its portal, you get a notification. Tap an agency to choose its plan and record its payments."
+],
+[
+"cette gérance",
+"this agency"
+],
+[
+"— la gérance est prévenue",
+"— the agency is notified"
+],
+[
+"Aucune demande de cette gérance pour l’instant.",
+"No requests from this agency yet."
+],
+[
+"Responsable et collaborateurs ({0})",
+"Manager and staff ({0})"
+],
+[
+"Les collaborateurs sont ajoutés par le responsable dans son portail (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.",
+"Staff are added by the manager in their portal (Équipe). 🔑 Nouvel accès = new link if someone forgot their password."
+],
+[
+"Il reçoit un lien personnel, choisit son mot de passe, puis ajoute lui-même ses collaborateurs.",
+"They receive a personal link, choose their password, then add their own staff."
+],
+[
+"Créer l’accès du responsable et le lien",
+"Create the manager’s access and link"
+],
+[
+"Désactiver l’accès de {0} ?",
+"Deactivate {0}’s access?"
+],
+[
+"⚠️ Le responsable de la gérance{0} vous l’a-t-il demandé ? Sans sa demande, ne désactivez pas. La personne est déconnectée tout de suite ; vous pourrez réactiver l’accès.",
+"⚠️ Did the agency manager{0} ask you to? Without their request, don’t deactivate. The person is logged out at once; you can reactivate the access."
+],
+[
+"✅ accès activé",
+"✅ access active"
+],
+[
+"✉️ invitation envoyée, valable jusqu’au {0}",
+"✉️ invitation sent, valid until {0}"
+],
+[
+"⚠️ invitation expirée : créez un nouveau lien",
+"⚠️ invitation expired: create a new link"
+],
+[
+"Lien d’invitation au portail",
+"Portal invitation link"
+],
+[
+"Invitation copiée — collez-la dans votre email",
+"Invitation copied — paste it into your email"
+],
+[
+"👁 Aperçu de l’invitation",
+"👁 Invitation preview"
+],
+[
+"✨ Copier l’invitation mise en forme",
+"✨ Copy the formatted invitation"
+],
+[
+"Puis « Envoyer par email » et collez (⌘V / Ctrl+V) à la place du texte : couleurs, gras et bouton orange.",
+"Then “Envoyer par email” and paste (⌘V / Ctrl+V) instead of the text: colours, bold and orange button."
+],
+[
+"Rouvrir cette fenêtre redonne",
+"Reopening this window gives"
+],
+[
+"le même lien",
+"the same link"
+],
+[
+"(aperçu, autre langue…) : celui déjà envoyé reste bon.",
+"(preview, other language…): the one already sent stays valid."
+],
+[
+"(la gérance peut aussi les compléter dans son portail)",
+"(the agency can also complete them in its portal)"
+],
+[
+"Logo ajouté par la gérance dans son portail (Ma société).",
+"Logo added by the agency in its portal (Ma société)."
+],
+[
+"Connectez d’abord le Portail gérance (menu Gérances).",
+"Connect the agency portal first (Gérances menu)."
+],
+[
+"Portail gérance mis à jour :",
+"Agency portal updated:"
+],
+[
+"💬 Nouveau message de la gérance :",
+"💬 New message from the agency:"
+],
+[
+"Message à la gérance…",
+"Message to the agency…"
+],
+[
+"nouvelles demandes d’intervention",
+"new job requests"
+],
+[
+"Nouvelle demande",
+"New request"
+],
+[
+"Demande créée",
+"Request created"
+],
+[
+"✏️ Demande modifiée",
+"✏️ Request edited"
+],
+[
+"🏢 {0} · Demande #{1}",
+"🏢 {0} · Request #{1}"
+],
+[
+"🏢 {0} · clôturée le {1}",
+"🏢 {0} · closed on {1}"
+],
+[
+"📥 {0} d'intervention :",
+"📥 Job {0}:"
+],
+[
+"Photos du problème",
+"Photos of the problem"
+],
+[
+"Problème {0} — {1}",
+"Problem {0} — {1}"
+],
+[
+"Chantier {0} — {1}",
+"Job site {0} — {1}"
+],
+[
+"Chantier clôturé",
+"Job closed"
+],
+[
+"🟢 {0} fini{1} par l’équipe — à clôturer",
+"🟢 {0} finished by the team — to close"
+],
+[
+"{0} a fini le travail",
+"{0} finished the job"
+],
+[
+"✅ {0} a fini le travail{1}. Clôture après contrôle par LuxInterventions.",
+"✅ {0} finished the job{1}. Closed after LuxInterventions checks it."
+],
+[
+"Vérifiez (photos après, travail fait), puis choisissez 🟢",
+"Check (after photos, work done), then choose 🟢"
+],
+[
+"pour clôturer le chantier.",
+"to close the job."
+],
+[
+"⚠️ {0} : pas terminé{1}",
+"⚠️ {0}: not finished"
+],
+[
+"📷 Photos après les travaux ({0})",
+"📷 Photos after the work ({0})"
+],
+[
+"🚚 {0} est sur place",
+"🚚 {0} is on site"
+],
+[
+"✋ {0} {1} refusé{2} par l’ouvrier — à réaffecter",
+"✋ {0} {1} declined by the worker — reassign"
+],
+[
+"(✋ a refusé)",
+"(✋ declined)"
+],
+[
+"🔄 L’ouvrier prévu n’est pas disponible — LuxInterventions envoie un autre ouvrier.",
+"🔄 The planned worker isn’t available — LuxInterventions is sending another one."
+],
+[
+"👷 Affectation{0}",
+"👷 Assignment{0}"
+],
+[
+"⭐ = métier conseillé pour cette demande :",
+"⭐ = trade recommended for this request:"
+],
+[
+"(personne de ce métier dans l’équipe)",
+"(nobody with this trade in the team)"
+],
+[
+"aucun ouvrier dans votre équipe",
+"no worker in your team"
+],
+[
+"dans votre équipe",
+"in your team"
+],
+[
+"(photos de la gérance)",
+"(agency photos)"
+],
+[
+"App de l’équipe : photos",
+"Team app: photos"
+],
+[
+"Dans Maintenance :",
+"In Maintenance:"
+],
+[
+"Gérance / réf.",
+"Agency / ref."
+],
+[
+"Lieu",
+"Place"
+],
+[
+"Où",
+"Where"
+],
+[
+"Objet",
+"Subject"
+],
+[
+"Pour {0}",
+"For {0}"
+],
+[
+"De",
+"From"
+],
+[
+"Début",
+"Start"
+],
+[
+"Envoyé le",
+"Sent on"
+],
+[
+"Réponse le",
+"Answer on"
+],
+[
+"Temps de réponse",
+"Response time"
+],
+[
+"Révisions",
+"Revisions"
+],
+[
+"Interventions",
+"Jobs"
+],
+[
+"Horaire",
+"Schedule"
+],
+[
+"Planning de la semaine",
+"Week schedule"
+],
+[
+"Routine de la semaine",
+"Weekly routine"
+],
+[
+"Semaine précédente",
+"Previous week"
+],
+[
+"Semaine suivante",
+"Next week"
+],
+[
+"Planning : retour à l’horaire habituel",
+"Schedule: back to the usual hours"
+],
+[
+"Semaine du {0} : les changements de cette semaine sont effacés.",
+"Week of {0}: this week’s changes are erased."
+],
+[
+"{0} — semaine du {1}",
+"{0} — week of {1}"
+],
+[
+"{0} — semaine du {1}{2}",
+"{0} — week of {1}{2}"
+],
+[
+"📅 {0} · semaine du {1}",
+"📅 {0} · week of {1}"
+],
+[
+"+ {0} semaine{1} suivante{2} (jusqu’au {3})",
+"+ {0} following week(s) (until {3})"
+],
+[
+"{0} — {1} créneau(x)",
+"{0} — {1} slot(s)"
+],
+[
+"jusqu’au {0}",
+"until {0}"
+],
+[
+"Récompense annulée",
+"Reward cancelled"
+],
+[
+"Récompense remise 🎁",
+"Reward given 🎁"
+],
+[
+"🎁 Bravo,",
+"🎁 Well done,"
+],
+[
+"{0} — ouvrier de l’année {1}",
+"{0} — worker of the year {1}"
+],
+[
+"Icône choisie : {0}",
+"Chosen icon: {0}"
+],
+[
+"Icône choisie par le locataire",
+"Icon chosen by the tenant"
+],
+[
+"Photo de profil du locataire",
+"Tenant’s profile photo"
+],
+[
+"Photo de profil retirée",
+"Profile photo removed"
+],
+[
+"📷 Photo de profil mise à jour",
+"📷 Profile photo updated"
+],
+[
+"Photo illisible",
+"Unreadable photo"
+],
+[
+"Ajouter une photo",
+"Add a photo"
+],
+[
+"Changer la photo",
+"Change photo"
+],
+[
+"Facultatif — la personne peut aussi la mettre elle-même dans son app (⚙️).",
+"Optional — the person can also add it in their app (⚙️)."
+],
+[
+"Assurance à faire",
+"Insurance to do"
+],
+[
+"Assurance RC à faire",
+"Liability insurance to do"
+],
+[
+"🛡️ à faire",
+"🛡️ to do"
+],
+[
+"assurance (ou cochez « Assurance à faire »)",
+"insurance (or tick “Assurance à faire”)"
+],
+[
+"— il n’a pas encore les données : un rappel reste dans son app (il pourra l’écrire lui-même)",
+"— they don’t have the details yet: a reminder stays in their app (they can enter it themselves)"
+],
+[
+"pas encore fournie{0} (rappel dans son app)",
+"not provided yet (reminder in their app)"
+],
+[
+"rappel affiché dans son app · touchez pour ouvrir sa fiche",
+"reminder shown in their app · tap to open their sheet"
+],
+[
+": {0} (occasionnel) n’a pas encore donné son assurance",
+": {0} (occasional) hasn’t given their insurance yet"
+],
+[
+"🛡️ Assurance RC reçue : {0} — police n° {1}",
+"🛡️ Liability insurance received: {0} — policy no. {1}"
+],
+[
+", police n°",
+", policy no."
+],
+[
+"police n°",
+"policy no."
+],
+[
+"n° de police",
+"policy number"
+],
+[
+"Dommages",
+"Damage"
+],
+[
+"✍️ Fiche d’engagement signée dans son app",
+"✍️ Commitment form signed in their app"
+],
+[
+"✍️ signé sur son téléphone",
+"✍️ signed on their phone"
+],
+[
+"— il la signe dans son app (onglet 📱 App → lui envoyer le lien), rubrique « ✍️ Ma fiche d’engagement »",
+"— they sign it in their app (📱 App tab → send them the link), “✍️ Ma fiche d’engagement” section"
+],
+[
+"(pas encore signée)",
+"(not signed yet)"
+],
+[
+"La fiche de {0} n’est pas signée : la note sortira sans signature.",
+"{0}’s form isn’t signed: the note will come out without a signature."
+],
+[
+"Lu et approuvé — signature de l’intervenant",
+"Read and approved — worker’s signature"
+],
+[
+"Obligations de l’intervenant",
+"Worker’s obligations"
+],
+[
+"Obligation de résultat",
+"Obligation of result"
+],
+[
+"Indépendance",
+"Independence"
+],
+[
+"Confidentialité",
+"Confidentiality"
+],
+[
+"Découverte",
+"Discovery"
+],
+[
+"Boîte à clés",
+"Key box"
+],
+[
+"Boîte à clés :",
+"Key box:"
+],
+[
+"Alarme :",
+"Alarm:"
+],
+[
+"Locaux techniques :",
+"Plant rooms:"
+],
+[
+"Agence",
+"Agency"
+],
+[
+"+ mansarde",
+"+ attic room"
+],
+[
+"Radio de l’app des locataires",
+"Tenants’ app radio"
+],
+[
+"Proposée sous la météo dans l’app des locataires et l’app de l’équipe (bouton ▶). Avec le lien du",
+"Offered under the weather in the tenants’ and team apps (▶ button). With the"
+],
+[
+"flux audio",
+"audio stream link"
+],
+[
+"(demandé à la radio), elle joue directement dans l’app ; avec le lien du site, l’app ouvre le site. Chaque locataire peut coller sa propre radio.",
+"(ask the station), it plays straight in the app; with the website link, the app opens the site. Each tenant can paste their own radio."
+],
+[
+"ex. Seven Radio",
+"e.g. Seven Radio"
+],
+[
+"Ce que vous avez écrit n’est pas encore enregistré.",
+"What you wrote isn’t saved yet."
+],
+[
+"ex. forfait 80 € le chantier",
+"e.g. flat fee €80 per job"
+],
+[
+"Sur devis",
+"On quote"
+],
+[
+"Valable jusqu’au",
+"Valid until"
+],
+[
+"Numéro",
+"Number"
+],
+[
+"Téléphone / email",
+"Phone / email"
+],
+[
+"État",
+"Condition"
+],
+[
+"étage(s)",
+"floor(s)"
+],
+[
+"{0} · {1} chambres{2} ({3})",
+"{0} · {1} rooms ({3})"
+],
+[
+"{0} · {1} occupée{2}",
+"{0} · {1} occupied"
+],
+[
+"ℹ️ {0} sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).",
+"ℹ️ {0} with no flat given: their occupants chat together. If there are several flats, set it in each room (“Fait partie de l’appartement”)."
+],
+[
+"recettes",
+"income"
+],
+[
+"🧾 Intervention occasionnelle{0}",
+"🧾 One-off job{0}"
+],
+[
+"/ exéc.",
+"/ visit"
+],
+[
+"détails : {0}",
+"details: {0}"
+],
+[
+"jours",
+"days"
+],
+[
+"dans",
+"in"
+],
+[
+"ouvr.",
+"wkr"
+],
+[
+"Bureau (loyer à payer)",
+"Office (rent to pay)"
 ]
 ];
