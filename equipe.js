@@ -456,6 +456,15 @@ function render() {
   }
   const d = data, out = [];
   document.title = `${t.app} — ${d.societe.nom}`;
+  if (devEd && !d.devis) devEd = null;
+  if (devEd) {
+    // l'éditeur du devis occupe l'écran ; il n'est redessiné que si sa forme change (le texte tapé reste)
+    if (!devRedraw && document.getElementById('devEd')) return;
+    devRedraw = false;
+    app.innerHTML = top(d.societe.nom, d.societe.logo) + devEditor();
+    sigRestore(); hydrateDv();
+    return;
+  }
   const myIc = icMine || d.icon || '👷', myPh = phMine !== null ? phMine : d.photo || '', st = SETT[lang] || SETT.fr;
   out.push(`${top(d.societe.nom, d.societe.logo)}<h1 style="display:flex;align-items:center;gap:10px"><button class="gear-btn" data-ic-open="1" aria-label="${esc(st.t)}">⚙️</button><button class="av-btn" data-ic-open="1" aria-label="${esc(st.t)}">${myPh ? `<img src="${esc(myPh)}" alt="">` : esc(myIc)}</button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)} 👋</span></h1><p class="sub">${esc([d.metier, d.societe.nom].filter(Boolean).join(' · '))}</p>`);
   if (icOpen) out.push(`<div class="card" id="settCard"><h2 style="margin:0 0 10px">⚙️ ${esc(st.t)}</h2><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
@@ -505,6 +514,7 @@ function render() {
   const wkOpen = (w) => { const v = wkMap()[w.ws]; return v === undefined ? w.cur : v; };
   out.push(`<div class="card" id="monthCard"><h2>🗓️ ${esc(t.wk.t)} · ${esc(now.toLocaleDateString(T().loc, { month: 'long', year: 'numeric' }))}</h2>${weeks.map((w) => `<details class="wk${w.cur ? ' cur' : ''}" data-wk="${w.ws}"${wkOpen(w) ? ' open' : ''}><summary><b>${esc(t.wk.w)} ${w.n}</b> <span class="meta">${esc(sd(w.ws))} – ${esc(sd(w.we))}${w.days.length ? ` · ${w.days.length} ${esc(w.days.length === 1 ? t.wk.day1 : t.wk.days)}` : ''}</span></summary>
     ${w.days.length ? w.days.map((dd) => `<div class="day">${esc(fmtDay(dd))}</div>${hOf(dd).map(hrow).join('')}${(byDay[dd] || []).map((x) => taskCard(x, false)).join('')}`).join('') : `<p class="meta" style="margin:6px 0 0">${esc(t.wk.none)}</p>`}</details>`).join('')}</div>`);
+  if (d.devis) out.push(devCard());
   // Mon horaire : la personne écrit son arrivée / son départ, et signale ce qui ne va pas (3 photos minimum)
   const pr = presOf(today), pp = t.p;
   const presH = (`<div id="presCard" class="pres-in"><h2>🕒 ${esc(pp.me)} · ${esc(fmtDay(today))}</h2><p class="meta" style="margin:0 0 8px">${esc(todays.length ? t.s.hint : pp.hint)}</p>
@@ -755,6 +765,323 @@ app.addEventListener('change', async (e) => {
   render();
 });
 
+// ── 🦺 Devis du chef de chantier : préparé ici (sans prix), envoyé chiffré au directeur ──
+const DVT = {
+  fr: { t: '📝 Devis', hint: 'Préparez un devis sur place : client, photos, rapport, travaux à faire. Le directeur met les prix et l’envoie au client.', new: '➕ Nouveau devis', mine: 'Mes devis', none: 'Aucun devis pour l’instant.',
+    st: { draft: '📝 Brouillon (pas encore envoyé)', wait: '📨 Envoyé au directeur — en attente', prep: '🟡 En préparation chez le directeur', fini: '✅ Terminé par le directeur', envoye: '📤 Envoyé au client', revision: '🔄 Le client demande une modification', accepte: '✍️ Signé par le client ✅', refuse: '❌ Refusé par le client', done: '➡️ Intervention planifiée' },
+    edit: '✏️ Corriger', open: 'Ouvrir', back: '← Retour', client: 'Client', ctype: 'Type de client', part: '👤 Particulier', pro: '🏢 Société', nom: 'Nom / raison sociale', rcs: 'RCS', tva: 'N° TVA', adr: 'Adresse du client', tel: 'Téléphone (WhatsApp)', mail: 'Email',
+    titre: 'Objet du devis', titrePh: 'ex. Rénovation de la salle de bain', chantier: 'Adresse du chantier', chantierPh: 'si différente de celle du client', interloc: 'Interlocuteur sur place',
+    photos: '📷 Photos (2 à 20)', sentPh: '{n} photo(s) déjà envoyée(s)', pend: '{n} photo(s) en attente d’envoi', max: '20 photos maximum',
+    rapport: 'Rapport du chantier (ce qu’il faut faire)', rapportPh: 'Constats, travaux à prévoir, accès, remarques…',
+    prest: '📋 Travaux à faire', prestHint: 'Cochez les travaux, puis la quantité, l’unité et les détails (mesures en cm, format, couleur, modèle). Les textes du devis restent en français. Pas de prix : c’est le directeur qui les met.',
+    free: 'Autres travaux (texte libre)', freePh: 'Autre travail', addFree: '➕ Ligne libre', q: 'Qté', det: 'détails',
+    rows: 'Ouvriers prévus (métier · nombre · heures par ouvrier)', met: '— métier —', addRow: '➕ Ligne', ouvr: 'ouvr.', jours: 'Durée prévue', joursPh: 'ex. 3 jours',
+    visaT: '✍️ Vu et correct (facultatif)', visaHint: 'Le client confirme que votre rapport décrit bien les travaux qu’il demande. Ce n’est pas une commande : il n’y a pas encore de prix.', visaNom: 'Nom du client', visaOk: '✓ Signé par {n} le {d}', visaRedo: 'Refaire la signature', visaSign: '✍️ Valider la signature', visaGone: 'Rapport ou travaux modifiés : la signature « Vu et correct » est retirée. Faites-la refaire si besoin.', clear: 'Effacer',
+    save: '💾 Enregistrer le brouillon', send: '📤 Envoyer au directeur', resend: '📤 Renvoyer la correction', del: 'Supprimer le brouillon', delQ: 'Supprimer ce brouillon ?',
+    needNom: 'Écrivez le nom du client', needWork: 'Écrivez le rapport ou cochez au moins un travail', needSig: 'Le client doit signer dans le cadre blanc', saved: 'Brouillon enregistré sur ce téléphone', sentOk: '📤 Devis envoyé au directeur. Vous pouvez encore le corriger tant qu’il ne l’a pas terminé.', locked: 'Le directeur a terminé ce devis : appelez-le pour une correction.' },
+  it: { t: '📝 Preventivi', hint: 'Prepara un preventivo sul posto: cliente, foto, rapporto, lavori da fare. Il direttore mette i prezzi e lo invia al cliente.', new: '➕ Nuovo preventivo', mine: 'I miei preventivi', none: 'Nessun preventivo per ora.',
+    st: { draft: '📝 Bozza (non ancora inviata)', wait: '📨 Inviato al direttore — in attesa', prep: '🟡 In preparazione dal direttore', fini: '✅ Completato dal direttore', envoye: '📤 Inviato al cliente', revision: '🔄 Il cliente chiede una modifica', accepte: '✍️ Firmato dal cliente ✅', refuse: '❌ Rifiutato dal cliente', done: '➡️ Intervento pianificato' },
+    edit: '✏️ Correggi', open: 'Apri', back: '← Indietro', client: 'Cliente', ctype: 'Tipo di cliente', part: '👤 Privato', pro: '🏢 Società', nom: 'Nome / ragione sociale', rcs: 'RCS', tva: 'Partita IVA', adr: 'Indirizzo del cliente', tel: 'Telefono (WhatsApp)', mail: 'Email',
+    titre: 'Oggetto del preventivo', titrePh: 'es. Ristrutturazione del bagno', chantier: 'Indirizzo del cantiere', chantierPh: 'se diverso da quello del cliente', interloc: 'Referente sul posto',
+    photos: '📷 Foto (da 2 a 20)', sentPh: '{n} foto già inviate', pend: '{n} foto in attesa di invio', max: '20 foto al massimo',
+    rapport: 'Rapporto del cantiere (cosa bisogna fare)', rapportPh: 'Constatazioni, lavori da prevedere, accesso, osservazioni…',
+    prest: '📋 Lavori da fare', prestHint: 'Spunta i lavori, poi quantità, unità e dettagli (misure in cm, formato, colore, modello). I testi del preventivo restano in francese. Niente prezzi: li mette il direttore.',
+    free: 'Altri lavori (testo libero)', freePh: 'Altro lavoro', addFree: '➕ Riga libera', q: 'Qtà', det: 'dettagli',
+    rows: 'Operai previsti (mestiere · numero · ore per operaio)', met: '— mestiere —', addRow: '➕ Riga', ouvr: 'op.', jours: 'Durata prevista', joursPh: 'es. 3 giorni',
+    visaT: '✍️ Visto e corretto (facoltativo)', visaHint: 'Il cliente conferma che il tuo rapporto descrive bene i lavori che chiede. Non è un ordine: non ci sono ancora prezzi.', visaNom: 'Nome del cliente', visaOk: '✓ Firmato da {n} il {d}', visaRedo: 'Rifai la firma', visaSign: '✍️ Conferma la firma', visaGone: 'Rapporto o lavori modificati: la firma «Visto e corretto» è stata tolta. Falla rifare se serve.', clear: 'Cancella',
+    save: '💾 Salva la bozza', send: '📤 Invia al direttore', resend: '📤 Invia di nuovo la correzione', del: 'Elimina la bozza', delQ: 'Eliminare questa bozza?',
+    needNom: 'Scrivi il nome del cliente', needWork: 'Scrivi il rapporto o spunta almeno un lavoro', needSig: 'Il cliente deve firmare nel riquadro bianco', saved: 'Bozza salvata su questo telefono', sentOk: '📤 Preventivo inviato al direttore. Puoi ancora correggerlo finché non lo ha completato.', locked: 'Il direttore ha completato questo preventivo: chiamalo per una correzione.' },
+  de: { t: '📝 Kostenvoranschläge', hint: 'Bereiten Sie vor Ort einen Kostenvoranschlag vor: Kunde, Fotos, Bericht, Arbeiten. Der Direktor setzt die Preise ein und schickt ihn dem Kunden.', new: '➕ Neuer Kostenvoranschlag', mine: 'Meine Kostenvoranschläge', none: 'Noch keine Kostenvoranschläge.',
+    st: { draft: '📝 Entwurf (noch nicht gesendet)', wait: '📨 An den Direktor gesendet — wartet', prep: '🟡 In Bearbeitung beim Direktor', fini: '✅ Vom Direktor fertiggestellt', envoye: '📤 An den Kunden gesendet', revision: '🔄 Der Kunde wünscht eine Änderung', accepte: '✍️ Vom Kunden unterschrieben ✅', refuse: '❌ Vom Kunden abgelehnt', done: '➡️ Einsatz geplant' },
+    edit: '✏️ Korrigieren', open: 'Öffnen', back: '← Zurück', client: 'Kunde', ctype: 'Art des Kunden', part: '👤 Privatperson', pro: '🏢 Firma', nom: 'Name / Firmenname', rcs: 'RCS', tva: 'MwSt.-Nr.', adr: 'Adresse des Kunden', tel: 'Telefon (WhatsApp)', mail: 'E-Mail',
+    titre: 'Gegenstand', titrePh: 'z. B. Badsanierung', chantier: 'Adresse der Baustelle', chantierPh: 'falls anders als die des Kunden', interloc: 'Ansprechpartner vor Ort',
+    photos: '📷 Fotos (2 bis 20)', sentPh: '{n} Foto(s) bereits gesendet', pend: '{n} Foto(s) warten auf Versand', max: 'Höchstens 20 Fotos',
+    rapport: 'Baustellenbericht (was zu tun ist)', rapportPh: 'Feststellungen, geplante Arbeiten, Zugang, Bemerkungen…',
+    prest: '📋 Auszuführende Arbeiten', prestHint: 'Arbeiten ankreuzen, dann Menge, Einheit und Details (Maße in cm, Format, Farbe, Modell). Die Texte des Kostenvoranschlags bleiben auf Französisch. Keine Preise: die setzt der Direktor ein.',
+    free: 'Weitere Arbeiten (freier Text)', freePh: 'Andere Arbeit', addFree: '➕ Freie Zeile', q: 'Menge', det: 'Details',
+    rows: 'Geplante Arbeiter (Beruf · Anzahl · Stunden pro Arbeiter)', met: '— Beruf —', addRow: '➕ Zeile', ouvr: 'Arb.', jours: 'Geplante Dauer', joursPh: 'z. B. 3 Tage',
+    visaT: '✍️ Gesehen und richtig (freiwillig)', visaHint: 'Der Kunde bestätigt, dass Ihr Bericht die gewünschten Arbeiten richtig beschreibt. Das ist kein Auftrag: es gibt noch keine Preise.', visaNom: 'Name des Kunden', visaOk: '✓ Unterschrieben von {n} am {d}', visaRedo: 'Neu unterschreiben', visaSign: '✍️ Unterschrift bestätigen', visaGone: 'Bericht oder Arbeiten geändert: die Unterschrift „Gesehen und richtig“ wurde entfernt. Bei Bedarf neu unterschreiben lassen.', clear: 'Löschen',
+    save: '💾 Entwurf speichern', send: '📤 An den Direktor senden', resend: '📤 Korrektur erneut senden', del: 'Entwurf löschen', delQ: 'Diesen Entwurf löschen?',
+    needNom: 'Schreiben Sie den Namen des Kunden', needWork: 'Schreiben Sie den Bericht oder kreuzen Sie mindestens eine Arbeit an', needSig: 'Der Kunde muss im weißen Feld unterschreiben', saved: 'Entwurf auf diesem Telefon gespeichert', sentOk: '📤 Kostenvoranschlag an den Direktor gesendet. Sie können ihn noch korrigieren, solange er nicht fertiggestellt ist.', locked: 'Der Direktor hat diesen Kostenvoranschlag fertiggestellt: rufen Sie ihn für eine Korrektur an.' },
+  pt: { t: '📝 Orçamentos', hint: 'Prepare um orçamento no local: cliente, fotos, relatório, trabalhos a fazer. O diretor põe os preços e envia-o ao cliente.', new: '➕ Novo orçamento', mine: 'Os meus orçamentos', none: 'Ainda não há orçamentos.',
+    st: { draft: '📝 Rascunho (ainda não enviado)', wait: '📨 Enviado ao diretor — em espera', prep: '🟡 Em preparação pelo diretor', fini: '✅ Concluído pelo diretor', envoye: '📤 Enviado ao cliente', revision: '🔄 O cliente pede uma alteração', accepte: '✍️ Assinado pelo cliente ✅', refuse: '❌ Recusado pelo cliente', done: '➡️ Intervenção planeada' },
+    edit: '✏️ Corrigir', open: 'Abrir', back: '← Voltar', client: 'Cliente', ctype: 'Tipo de cliente', part: '👤 Particular', pro: '🏢 Empresa', nom: 'Nome / denominação social', rcs: 'RCS', tva: 'N.º de IVA', adr: 'Morada do cliente', tel: 'Telefone (WhatsApp)', mail: 'Email',
+    titre: 'Objeto do orçamento', titrePh: 'ex. Remodelação da casa de banho', chantier: 'Morada da obra', chantierPh: 'se for diferente da do cliente', interloc: 'Contacto no local',
+    photos: '📷 Fotos (2 a 20)', sentPh: '{n} foto(s) já enviada(s)', pend: '{n} foto(s) à espera de envio', max: '20 fotos no máximo',
+    rapport: 'Relatório da obra (o que é preciso fazer)', rapportPh: 'Constatações, trabalhos a prever, acesso, observações…',
+    prest: '📋 Trabalhos a fazer', prestHint: 'Marque os trabalhos e depois a quantidade, a unidade e os detalhes (medidas em cm, formato, cor, modelo). Os textos do orçamento ficam em francês. Sem preços: é o diretor que os põe.',
+    free: 'Outros trabalhos (texto livre)', freePh: 'Outro trabalho', addFree: '➕ Linha livre', q: 'Qtd.', det: 'detalhes',
+    rows: 'Trabalhadores previstos (profissão · número · horas por trabalhador)', met: '— profissão —', addRow: '➕ Linha', ouvr: 'trab.', jours: 'Duração prevista', joursPh: 'ex. 3 dias',
+    visaT: '✍️ Visto e conforme (facultativo)', visaHint: 'O cliente confirma que o seu relatório descreve bem os trabalhos que pede. Não é uma encomenda: ainda não há preços.', visaNom: 'Nome do cliente', visaOk: '✓ Assinado por {n} em {d}', visaRedo: 'Refazer a assinatura', visaSign: '✍️ Confirmar a assinatura', visaGone: 'Relatório ou trabalhos alterados: a assinatura «Visto e conforme» foi retirada. Peça para refazer se for preciso.', clear: 'Apagar',
+    save: '💾 Guardar o rascunho', send: '📤 Enviar ao diretor', resend: '📤 Reenviar a correção', del: 'Eliminar o rascunho', delQ: 'Eliminar este rascunho?',
+    needNom: 'Escreva o nome do cliente', needWork: 'Escreva o relatório ou marque pelo menos um trabalho', needSig: 'O cliente tem de assinar no quadro branco', saved: 'Rascunho guardado neste telemóvel', sentOk: '📤 Orçamento enviado ao diretor. Ainda o pode corrigir enquanto ele não o concluir.', locked: 'O diretor concluiu este orçamento: ligue-lhe para uma correção.' },
+  en: { t: '📝 Quotes', hint: 'Prepare a quote on site: client, photos, report, work to do. The director adds the prices and sends it to the client.', new: '➕ New quote', mine: 'My quotes', none: 'No quotes yet.',
+    st: { draft: '📝 Draft (not sent yet)', wait: '📨 Sent to the director — waiting', prep: '🟡 Being prepared by the director', fini: '✅ Finished by the director', envoye: '📤 Sent to the client', revision: '🔄 The client asks for a change', accepte: '✍️ Signed by the client ✅', refuse: '❌ Refused by the client', done: '➡️ Job scheduled' },
+    edit: '✏️ Correct', open: 'Open', back: '← Back', client: 'Client', ctype: 'Type of client', part: '👤 Private person', pro: '🏢 Company', nom: 'Name / company name', rcs: 'RCS', tva: 'VAT no.', adr: 'Client address', tel: 'Phone (WhatsApp)', mail: 'Email',
+    titre: 'Subject of the quote', titrePh: 'e.g. Bathroom renovation', chantier: 'Site address', chantierPh: 'if different from the client’s', interloc: 'Contact person on site',
+    photos: '📷 Photos (2 to 20)', sentPh: '{n} photo(s) already sent', pend: '{n} photo(s) waiting to be sent', max: '20 photos maximum',
+    rapport: 'Site report (what needs to be done)', rapportPh: 'Findings, work to plan, access, remarks…',
+    prest: '📋 Work to do', prestHint: 'Tick the work, then the quantity, unit and details (sizes in cm, format, colour, model). The quote texts stay in French. No prices: the director adds them.',
+    free: 'Other work (free text)', freePh: 'Other work', addFree: '➕ Free line', q: 'Qty', det: 'details',
+    rows: 'Planned workers (trade · number · hours per worker)', met: '— trade —', addRow: '➕ Line', ouvr: 'wkr.', jours: 'Planned duration', joursPh: 'e.g. 3 days',
+    visaT: '✍️ Seen and correct (optional)', visaHint: 'The client confirms that your report correctly describes the work they ask for. It is not an order: there are no prices yet.', visaNom: 'Client name', visaOk: '✓ Signed by {n} on {d}', visaRedo: 'Sign again', visaSign: '✍️ Confirm the signature', visaGone: 'Report or work changed: the “Seen and correct” signature was removed. Have it signed again if needed.', clear: 'Clear',
+    save: '💾 Save draft', send: '📤 Send to the director', resend: '📤 Send the correction', del: 'Delete draft', delQ: 'Delete this draft?',
+    needNom: 'Write the client’s name', needWork: 'Write the report or tick at least one job', needSig: 'The client must sign in the white box', saved: 'Draft saved on this phone', sentOk: '📤 Quote sent to the director. You can still correct it until it is finished.', locked: 'The director has finished this quote: call them for a correction.' },
+  es: { t: '📝 Presupuestos', hint: 'Prepara un presupuesto en el lugar: cliente, fotos, informe, trabajos a realizar. El director pone los precios y lo envía al cliente.', new: '➕ Nuevo presupuesto', mine: 'Mis presupuestos', none: 'Todavía no hay presupuestos.',
+    st: { draft: '📝 Borrador (aún no enviado)', wait: '📨 Enviado al director — en espera', prep: '🟡 En preparación por el director', fini: '✅ Terminado por el director', envoye: '📤 Enviado al cliente', revision: '🔄 El cliente pide un cambio', accepte: '✍️ Firmado por el cliente ✅', refuse: '❌ Rechazado por el cliente', done: '➡️ Intervención planificada' },
+    edit: '✏️ Corregir', open: 'Abrir', back: '← Volver', client: 'Cliente', ctype: 'Tipo de cliente', part: '👤 Particular', pro: '🏢 Empresa', nom: 'Nombre / razón social', rcs: 'RCS', tva: 'N.º de IVA', adr: 'Dirección del cliente', tel: 'Teléfono (WhatsApp)', mail: 'Email',
+    titre: 'Objeto del presupuesto', titrePh: 'ej. Reforma del baño', chantier: 'Dirección de la obra', chantierPh: 'si es distinta de la del cliente', interloc: 'Contacto en el lugar',
+    photos: '📷 Fotos (de 2 a 20)', sentPh: '{n} foto(s) ya enviada(s)', pend: '{n} foto(s) pendiente(s) de envío', max: '20 fotos como máximo',
+    rapport: 'Informe de la obra (lo que hay que hacer)', rapportPh: 'Constataciones, trabajos a prever, acceso, observaciones…',
+    prest: '📋 Trabajos a realizar', prestHint: 'Marca los trabajos y luego la cantidad, la unidad y los detalles (medidas en cm, formato, color, modelo). Los textos del presupuesto quedan en francés. Sin precios: los pone el director.',
+    free: 'Otros trabajos (texto libre)', freePh: 'Otro trabajo', addFree: '➕ Línea libre', q: 'Cant.', det: 'detalles',
+    rows: 'Trabajadores previstos (oficio · número · horas por trabajador)', met: '— oficio —', addRow: '➕ Línea', ouvr: 'trab.', jours: 'Duración prevista', joursPh: 'ej. 3 días',
+    visaT: '✍️ Visto y conforme (opcional)', visaHint: 'El cliente confirma que tu informe describe bien los trabajos que pide. No es un pedido: todavía no hay precios.', visaNom: 'Nombre del cliente', visaOk: '✓ Firmado por {n} el {d}', visaRedo: 'Volver a firmar', visaSign: '✍️ Confirmar la firma', visaGone: 'Informe o trabajos modificados: se ha quitado la firma «Visto y conforme». Hazla repetir si hace falta.', clear: 'Borrar',
+    save: '💾 Guardar el borrador', send: '📤 Enviar al director', resend: '📤 Reenviar la corrección', del: 'Eliminar el borrador', delQ: '¿Eliminar este borrador?',
+    needNom: 'Escribe el nombre del cliente', needWork: 'Escribe el informe o marca al menos un trabajo', needSig: 'El cliente debe firmar en el recuadro blanco', saved: 'Borrador guardado en este teléfono', sentOk: '📤 Presupuesto enviado al director. Todavía puedes corregirlo mientras no lo haya terminado.', locked: 'El director ha terminado este presupuesto: llámalo para una corrección.' },
+};
+const DV = () => DVT[lang] || DVT.fr;
+// brouillons sur ce téléphone (texte) ; les photos attendent dans IndexedDB jusqu'à leur envoi
+const DK = () => 'eqDev:' + id;
+const dvAll = () => { try { const m = JSON.parse(localStorage.getItem(DK()) || '{}'); return m && typeof m === 'object' && !Array.isArray(m) ? m : {}; } catch { return {}; } };
+const dvPut = (dr) => { const m = dvAll(); m[dr.did] = dr; setJ(DK(), m); };
+const dvDrop = (did) => { const m = dvAll(); delete m[did]; setJ(DK(), m); };
+const dvDb = () => new Promise((res, rej) => { const r = indexedDB.open('eqDevis', 1); r.onupgradeneeded = () => r.result.createObjectStore('ph'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+async function phIdb(mode, fn) { const db = await dvDb(); return new Promise((res, rej) => { const tx = db.transaction('ph', mode); const q = fn(tx.objectStore('ph')); tx.oncomplete = () => { db.close(); res(q && q.result); }; tx.onerror = () => { db.close(); rej(tx.error); }; }); }
+const phPut = (k, v) => phIdb('readwrite', (s) => s.put(v, k));
+const phGet = (k) => phIdb('readonly', (s) => s.get(k));
+const phDel = (k) => phIdb('readwrite', (s) => s.delete(k));
+const dvTxt = ['c', 'titre', 'chantier', 'interloc', 'rapport', 'jours', 'rows', 'prest', 'visa'];
+const dvHash = (x) => JSON.stringify([String(x.rapport || '').trim(), (x.prest || []).map((p) => [p.k, p.l, p.q === '' || p.q == null ? '' : +p.q, p.u || '', p.det || ''])]);
+const dvSrv = (did) => ((data.devis && data.devis.mine) || []).find((x) => x.did === did) || null;
+let devEd = null, devRedraw = true, devBusy = false, devMsg = '';
+const devCats = new Set();
+function dvNew() {
+  const r = crypto.getRandomValues(new Uint8Array(8));
+  return { did: [...r].map((b) => b.toString(16).padStart(2, '0')).join(''), c: { type: 'part', nom: '', rcs: '', tva: '', adresse: '', tel: '', email: '' }, titre: '', chantier: '', interloc: '', rapport: '', jours: '', rows: [{ met: '', nb: 1, h: '' }], prest: [], visa: null, ph: [], nx: 1, phSent: 0, sent: false, dirty: true };
+}
+// ouvrir : le brouillon de ce téléphone, sinon la version reçue par le directeur
+function dvOpen(did) {
+  const loc = did ? dvAll()[did] : null, srv = did ? dvSrv(did) : null;
+  if (srv && !['prep'].includes(srv.st) && !(loc && !loc.sent)) return;
+  if (loc && (loc.dirty || loc.ph.length || !srv)) devEd = JSON.parse(JSON.stringify(loc));
+  else if (srv) {
+    const dr = dvNew();
+    Object.assign(dr, { did: srv.did, c: { ...dr.c, ...srv.c }, titre: srv.titre, chantier: srv.chantier, interloc: srv.interloc, rapport: srv.rapport, jours: srv.jours, rows: srv.rows.length ? srv.rows : dr.rows, prest: srv.prest, nx: srv.nx || 1, phSent: srv.nph || 0, sent: true, dirty: false });
+    if (srv.visa) dr.visa = { nom: srv.visa.nom, at: srv.visa.at, keep: true, h: dvHash(dr) };
+    dvPut(dr); devEd = JSON.parse(JSON.stringify(dr));
+  } else { devEd = dvNew(); dvPut(devEd); }
+  devMsg = ''; devRedraw = true; sigUrl = '';
+  render(); scrollTo(0, 0);
+}
+// enregistre le texte (les photos et l'état d'envoi restent ceux du téléphone)
+function dvSave() {
+  if (!devEd) return;
+  if (devEd.visa && devEd.visa.h !== dvHash(devEd)) { devEd.visa = null; devMsg = DV().visaGone; devRedraw = true; }
+  const cur = dvAll()[devEd.did] || {};
+  const nx = { ...cur, did: devEd.did, dirty: true };
+  for (const k of dvTxt) nx[k] = devEd[k];
+  for (const k of ['ph', 'nx', 'phSent', 'sent']) nx[k] = cur[k] ?? devEd[k];
+  dvPut(nx);
+}
+const dvItem = (dr) => ({ k: 'devis', did: dr.did, c: dr.c, titre: dr.titre, chantier: dr.chantier, interloc: dr.interloc, rapport: dr.rapport, jours: dr.jours, rows: dr.rows.filter((r) => r.met || +r.h), prest: dr.prest.filter((p) => p.l), visa: dr.visa && dr.visa.png ? { png: dr.visa.png, nom: dr.visa.nom, at: dr.visa.at } : null, visaKeep: !!(dr.visa && dr.visa.keep), at: new Date().toISOString() });
+// envoi au directeur : le devis puis les photos, par paquets de ~2,5 Mo (chiffrés, comme le reste)
+async function devFlush() {
+  if (!data || !data.signalKey || devBusy) return;
+  devBusy = true;
+  try {
+    for (const did of Object.keys(dvAll())) {
+      for (let guard = 0; guard < 30; guard++) {
+        const dr = dvAll()[did];
+        if (!dr || !dr.out) break;
+        const items = [], done = [];
+        let size = 0, got = 0;
+        if (dr.out.main) { const it = dvItem(dr); items.push(it); size += JSON.stringify(it).length; }
+        for (const n of dr.ph) {
+          if (items.length >= 25) break;
+          const b = await phGet(did + ':' + n).catch(() => null);
+          if (!b) { done.push(n); continue; }
+          if (items.length && size + b.length > 2.5e6) break;
+          items.push({ k: 'devph', did, n, b, at: new Date().toISOString() }); done.push(n); size += b.length; got++;
+        }
+        if (items.length) {
+          const body = await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'equipe', items });
+          const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body });
+          if (!r.ok) throw new Error(r.status);
+        }
+        for (const n of done) await phDel(did + ':' + n).catch(() => {});
+        const cur = dvAll()[did] || dr;
+        cur.ph = (cur.ph || []).filter((n) => !done.includes(n));
+        cur.phSent = (cur.phSent || 0) + got;
+        cur.out = cur.ph.length ? { main: false } : null;
+        if (cur.out === null && devEd && devEd.did === did) devEd.ph = [];
+        dvPut(cur);
+      }
+    }
+  } catch { /* pas de réseau : on réessaie plus tard */ } finally { devBusy = false; }
+  if (!devEd) render();
+}
+// brouillons déjà reçus par le directeur, sans changement ni photo en attente : la version du directeur suffit
+function dvClean() {
+  const m = dvAll();
+  let ch = false;
+  for (const [did, dr] of Object.entries(m)) { const srv = dvSrv(did); if (srv && dr.sent && !dr.dirty && !dr.out && !(dr.ph || []).length) { delete m[did]; ch = true; } }
+  if (ch) setJ(DK(), m);
+}
+function devCard() {
+  const v = DV(), m = dvAll(), srv = (data.devis.mine || []);
+  const rows = [];
+  for (const dr of Object.values(m)) if (!srv.some((x) => x.did === dr.did)) rows.push({ did: dr.did, no: '', nom: dr.c.nom, titre: dr.titre, st: dr.sent ? 'wait' : 'draft', ed: true, pend: (dr.ph || []).length });
+  for (const x of srv) { const loc = m[x.did]; rows.push({ did: x.did, no: x.no, nom: x.c.nom, titre: x.titre, st: x.st, ed: x.st === 'prep', pend: loc ? (loc.ph || []).length : 0, dirty: loc && loc.dirty }); }
+  return `<div class="card" id="devCard"><h2>${esc(v.t)}</h2><p class="meta" style="margin:0 0 10px">${esc(v.hint)}</p>
+    <button class="btn block" data-dv-new="1">${esc(v.new)}</button>
+    <p style="margin:14px 0 4px"><b>${esc(v.mine)}</b></p>
+    ${rows.length ? rows.map((r) => `<div class="row"><span class="grow"><b>${esc(r.nom || '—')}</b>${r.titre ? ` · ${esc(r.titre)}` : ''}${r.no ? `<div class="meta">${esc(r.no)}</div>` : ''}
+      <div class="meta">${esc(v.st[r.st] || r.st)}${r.pend ? ' · ' + esc(v.pend.replace('{n}', r.pend)) : ''}</div></span>
+      ${r.ed ? `<button class="btn sm sec" data-dv-open="${esc(r.did)}">${esc(r.st === 'draft' ? v.open : v.edit)}</button>` : ''}</div>`).join('') : `<p class="meta" style="margin:0">${esc(v.none)}</p>`}</div>`;
+}
+const dvIn = (lbl, path, val, extra = '') => `<label>${esc(lbl)}</label><input type="text" data-dv="${path}" value="${esc(val)}" ${extra}>`;
+function devEditor() {
+  const v = DV(), dr = devEd, D = data.devis, st = dvAll()[dr.did] || dr;
+  const sel = Object.fromEntries(dr.prest.filter((p) => /^c\d+i\d+$/.test(p.k)).map((p) => [p.k, p]));
+  const free = dr.prest.filter((p) => /^f\d+$/.test(p.k));
+  const pend = st.ph || [], nPh = (st.phSent || 0) + pend.length;
+  const unitSel = (k, u) => `<select data-dvp="${esc(k)}" data-f="u">${D.units.map((x) => `<option${x === u ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select>`;
+  const pq = (k, p, ph) => `<div class="dv-pq"><input type="number" step="0.01" min="0" inputmode="decimal" placeholder="${esc(v.q)}" data-dvp="${esc(k)}" data-f="q" value="${esc(p.q ?? '')}">${unitSel(k, p.u)}<input type="text" placeholder="${esc(ph || v.det)}" data-dvp="${esc(k)}" data-f="det" value="${esc(p.det || '')}"></div>`;
+  const srv = dvSrv(dr.did), vs = dr.visa;
+  return `<div id="devEd"><p style="margin:0 0 10px"><button class="btn sm sec" data-dv-back="1">${esc(v.back)}</button></p>
+    <h1 style="margin:0 0 10px">${esc(v.t)}${srv ? ` <span class="meta">${esc(srv.no)}</span>` : ''}</h1>
+    ${devMsg ? `<div class="card warnc"><p style="margin:0">${esc(devMsg)}</p></div>` : ''}
+    <div class="card"><h2>👤 ${esc(v.client)}</h2>
+      <label>${esc(v.ctype)}</label><select data-dv="c.type" data-redraw="1"><option value="part">${esc(v.part)}</option><option value="pro"${dr.c.type === 'pro' ? ' selected' : ''}>${esc(v.pro)}</option></select>
+      ${dvIn(v.nom, 'c.nom', dr.c.nom, 'maxlength="120" required')}
+      ${dr.c.type === 'pro' ? dvIn(v.rcs, 'c.rcs', dr.c.rcs, 'maxlength="20" autocapitalize="characters" placeholder="B123456"') + dvIn(v.tva, 'c.tva', dr.c.tva, 'maxlength="20" autocapitalize="characters" placeholder="LU12345678"') : ''}
+      <label>${esc(v.adr)}</label><textarea data-dv="c.adresse" maxlength="300" style="min-height:60px">${esc(dr.c.adresse)}</textarea>
+      <label>${esc(v.tel)}</label><input type="tel" data-dv="c.tel" maxlength="40" value="${esc(dr.c.tel)}" placeholder="+352…">
+      <label>${esc(v.mail)}</label><input type="email" data-dv="c.email" maxlength="120" value="${esc(dr.c.email)}">
+      ${dvIn(v.titre, 'titre', dr.titre, `maxlength="200" placeholder="${esc(v.titrePh)}"`)}
+      ${dvIn(v.chantier, 'chantier', dr.chantier, `maxlength="300" placeholder="${esc(v.chantierPh)}"`)}
+      ${dvIn(v.interloc, 'interloc', dr.interloc, 'maxlength="120"')}</div>
+    <div class="card"><h2>${esc(v.photos)}</h2>
+      ${st.phSent ? `<p class="meta" style="margin:0 0 6px">✓ ${esc(v.sentPh.replace('{n}', st.phSent))}</p>` : ''}
+      ${pend.length ? `<div class="pb-thumbs">${pend.map((n) => `<span class="pb-th"><img data-dvimg="${esc(dr.did + ':' + n)}" alt=""><button type="button" data-dv-phdel="${n}" aria-label="✕">✕</button></span>`).join('')}</div>` : ''}
+      ${nPh < 20 ? `<div class="btns"><label class="btn sm">${esc(T().x.cam)}<input type="file" accept="image/*" capture="environment" hidden data-dv-pick="1"></label><label class="btn sm sec">${esc(T().x.gal)}<input type="file" accept="image/*" multiple hidden data-dv-pick="1"></label></div>` : `<p class="meta" style="margin:0">${esc(v.max)}</p>`}
+      <p class="meta" style="margin:6px 0 0">${nPh} / 20</p></div>
+    <div class="card"><h2>📝 ${esc(v.rapport)}</h2><textarea data-dv="rapport" maxlength="6000" style="min-height:140px" placeholder="${esc(v.rapportPh)}">${esc(dr.rapport)}</textarea></div>
+    <div class="card"><h2>${esc(v.prest)}</h2><p class="meta" style="margin:0 0 8px">${esc(v.prestHint)}</p>
+      ${D.cat.map(([cat, items], ci) => { const n = items.filter((_, ii) => sel[`c${ci}i${ii}`]).length; return `<details class="dv-cat" data-dvcat="${ci}"${n || devCats.has(ci) ? ' open' : ''}><summary>${esc(cat)}${n ? ` <b class="dv-n">${n}</b>` : ''}</summary>
+        ${items.map(([l, u, det], ii) => { const k = `c${ci}i${ii}`, p = sel[k]; return `<div class="dv-pi"><label class="dv-ck"><input type="checkbox" data-dvk="${k}"${p ? ' checked' : ''}> <span>${esc(l)}</span></label>${p ? pq(k, p, det ? v.det + ' : ' + det : '') : ''}</div>`; }).join('')}</details>`; }).join('')}
+      <p style="margin:12px 0 4px"><b>${esc(v.free)}</b></p>
+      ${free.map((p) => `<div class="dv-pi"><input type="text" placeholder="${esc(v.freePh)}" data-dvp="${esc(p.k)}" data-f="l" value="${esc(p.l)}" maxlength="200">${pq(p.k, p, '')}</div>`).join('')}
+      <button class="btn sm sec" data-dv-free="1">${esc(v.addFree)}</button></div>
+    <div class="card"><h2>👷 ${esc(v.rows)}</h2>
+      ${dr.rows.map((r, n) => `<div class="dv-row"><select data-dvr="${n}" data-f="met"><option value="">${esc(v.met)}</option>${D.metiers.map(([k, l]) => `<option value="${esc(k)}"${r.met === k ? ' selected' : ''}>${esc(l)}</option>`).join('')}</select>
+        <span class="dv-sfx"><input type="number" min="1" max="99" inputmode="numeric" data-dvr="${n}" data-f="nb" value="${esc(r.nb || '')}" placeholder="1"><i>${esc(v.ouvr)}</i></span>
+        <span class="dv-sfx"><input type="number" min="0" step="0.5" inputmode="decimal" data-dvr="${n}" data-f="h" value="${esc(r.h || '')}" placeholder="0"><i>h</i></span></div>`).join('')}
+      <button class="btn sm sec" data-dv-row="1">${esc(v.addRow)}</button>
+      ${dvIn(v.jours, 'jours', dr.jours, `maxlength="80" placeholder="${esc(v.joursPh)}"`)}</div>
+    <div class="card"><h2>${esc(v.visaT)}</h2><p class="meta" style="margin:0 0 8px">${esc(v.visaHint)}</p>
+      ${vs ? `<p class="ok" style="margin:0 0 8px"><b>${esc(v.visaOk.replace('{n}', vs.nom || '—').replace('{d}', new Date(vs.at).toLocaleString(T().loc, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })))}</b></p><button class="btn sm sec" data-dv-visa-redo="1">${esc(v.visaRedo)}</button>`
+        : `<label>${esc(v.visaNom)}</label><input type="text" id="dvVisaNom" maxlength="120" value="${esc(dr.interloc || dr.c.nom)}">
+        <canvas class="sig-pad" width="600" height="220" style="display:block;width:100%;aspect-ratio:30/11;background:#fff;border:1.5px dashed #9aa5a0;border-radius:12px;touch-action:none;margin-top:8px"></canvas>
+        <div style="display:flex;gap:8px;margin-top:8px"><button type="button" class="btn sec sm" data-sig-clear="1">${esc(v.clear)}</button><button type="button" class="btn sm grow" data-dv-visa="1">${esc(v.visaSign)}</button></div>`}</div>
+    <div class="card"><button class="btn block" data-dv-send="1">${esc(st.sent ? v.resend : v.send)}</button>
+      <button class="btn block sec" style="margin-top:8px" data-dv-save="1">${esc(v.save)}</button>
+      ${!st.sent ? `<p style="text-align:center;margin:10px 0 0"><button class="linkb" data-dv-del="1">${esc(v.del)}</button></p>` : ''}</div></div>`;
+}
+const dvUrls = new Map();
+function hydrateDv() {
+  document.querySelectorAll('img[data-dvimg]').forEach((img) => {
+    const k = img.dataset.dvimg;
+    if (dvUrls.has(k)) { img.src = dvUrls.get(k); return; }
+    phGet(k).then((b) => { if (!b) return; const bin = atob(b.replace(/-/g, '+').replace(/_/g, '/')); const u = URL.createObjectURL(new Blob([Uint8Array.from(bin, (c) => c.charCodeAt(0))], { type: 'image/jpeg' })); dvUrls.set(k, u); img.src = u; }).catch(() => {});
+  });
+}
+const dvSet = (o, path, val) => { const ks = path.split('.'); let x = o; while (ks.length > 1) x = x[ks.shift()]; x[ks[0]] = val; };
+app.addEventListener('input', (e) => {
+  if (!devEd) return;
+  const t = e.target, ds = t.dataset || {};
+  if (ds.dv) dvSet(devEd, ds.dv, t.value);
+  else if (ds.dvr) { const r = devEd.rows[+ds.dvr]; if (r) r[ds.f] = ds.f === 'met' ? t.value : t.value === '' ? '' : +t.value; }
+  else if (ds.dvp) { const p = devEd.prest.find((x) => x.k === ds.dvp); if (p) p[ds.f] = ds.f === 'q' ? (t.value === '' ? '' : +t.value) : t.value; }
+  else return;
+  dvSave();
+});
+app.addEventListener('change', async (e) => {
+  if (!devEd) return;
+  const t = e.target, ds = t.dataset || {};
+  if (ds.dvk) {
+    const k = ds.dvk;
+    if (t.checked) { const m = /^c(\d+)i(\d+)$/.exec(k), it = data.devis.cat[+m[1]][1][+m[2]]; devEd.prest.push({ k, l: it[0], q: '', u: it[1], det: '' }); devCats.add(+m[1]); }
+    else devEd.prest = devEd.prest.filter((p) => p.k !== k);
+    dvSave(); devRedraw = true; return render();
+  }
+  if (ds.dvPick && t.files.length) {
+    const files = [...t.files];
+    t.value = '';
+    const cur = dvAll()[devEd.did] || devEd;
+    const room = 20 - (cur.phSent || 0) - (cur.ph || []).length;
+    if (room <= 0) return alert(DV().max);
+    for (const f of files.slice(0, room)) {
+      try {
+        const b = await compress(f), c2 = dvAll()[devEd.did] || devEd, n = Math.max(c2.nx || 1, devEd.nx || 1);
+        await phPut(devEd.did + ':' + n, b);
+        c2.ph = [...(c2.ph || []), n]; c2.nx = n + 1; devEd.nx = n + 1; devEd.ph = c2.ph;
+        dvPut(c2);
+      } catch { /* image illisible */ }
+    }
+    if (files.length > room) alert(DV().max);
+    devRedraw = true; return render();
+  }
+  if (ds.redraw || devRedraw) { dvSave(); devRedraw = true; render(); }
+});
+app.addEventListener('toggle', (e) => { const c = e.target.dataset && e.target.dataset.dvcat; if (c === undefined) return; if (e.target.open) devCats.add(+c); else devCats.delete(+c); }, true);
+app.addEventListener('click', async (e) => {
+  const v = DV();
+  if (e.target.closest('[data-dv-new]')) return dvOpen('');
+  const op = e.target.closest('[data-dv-open]');
+  if (op) return dvOpen(op.dataset.dvOpen);
+  if (!devEd) return;
+  if (e.target.closest('[data-dv-back]') || e.target.closest('[data-dv-save]')) {
+    if (e.target.closest('[data-dv-save]')) dvSave();
+    devEd = null; devMsg = ''; flash = e.target.closest('[data-dv-save]') ? v.saved : ''; render(); document.getElementById('devCard')?.scrollIntoView({ block: 'start' }); return;
+  }
+  if (e.target.closest('[data-dv-row]')) { devEd.rows.push({ met: '', nb: 1, h: '' }); dvSave(); devRedraw = true; return render(); }
+  if (e.target.closest('[data-dv-free]')) { const n = 1 + Math.max(-1, ...devEd.prest.filter((p) => /^f\d+$/.test(p.k)).map((p) => +p.k.slice(1))); devEd.prest.push({ k: 'f' + n, l: '', q: '', u: 'fft', det: '' }); dvSave(); devRedraw = true; return render(); }
+  const pd = e.target.closest('[data-dv-phdel]');
+  if (pd) {
+    const n = +pd.dataset.dvPhdel, cur = dvAll()[devEd.did];
+    if (cur) { cur.ph = (cur.ph || []).filter((x) => x !== n); dvPut(cur); devEd.ph = cur.ph; }
+    await phDel(devEd.did + ':' + n).catch(() => {});
+    devRedraw = true; return render();
+  }
+  if (e.target.closest('[data-dv-visa-redo]')) { devEd.visa = null; dvSave(); devRedraw = true; return render(); }
+  if (e.target.closest('[data-dv-visa]')) {
+    const c = app.querySelector('canvas.sig-pad'), nom = (document.getElementById('dvVisaNom') || {}).value || '';
+    const blank = !c || !c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some((x, i) => i % 4 === 3 && x > 0);
+    if (blank) return alert(v.needSig);
+    devEd.visa = { png: c.toDataURL('image/png'), nom: nom.trim().slice(0, 120), at: new Date().toISOString(), h: dvHash(devEd) };
+    sigUrl = ''; devMsg = ''; dvSave(); devRedraw = true; return render();
+  }
+  if (e.target.closest('[data-dv-del]')) {
+    if (!confirm(v.delQ)) return;
+    const cur = dvAll()[devEd.did];
+    for (const n of (cur && cur.ph) || []) await phDel(devEd.did + ':' + n).catch(() => {});
+    dvDrop(devEd.did); devEd = null; return render();
+  }
+  if (e.target.closest('[data-dv-send]')) {
+    if (!String(devEd.c.nom || '').trim()) return alert(v.needNom);
+    if (!String(devEd.rapport || '').trim() && !devEd.prest.some((p) => p.l)) return alert(v.needWork);
+    dvSave();
+    const cur = dvAll()[devEd.did];
+    Object.assign(cur, { sent: true, dirty: false, out: { main: true }, sentAt: new Date().toISOString() });
+    dvPut(cur);
+    devEd = null; devMsg = ''; flash = v.sentOk;
+    render(); scrollTo(0, 0);
+    await devFlush();
+  }
+});
+
 async function load() {
   data = null;
   if (id && key) {
@@ -768,12 +1095,13 @@ async function load() {
     } catch { loadErr = '⚠ offline'; }
   }
   try { if (!localStorage.getItem('eqLang')) lang = pick(data); } catch { lang = pick(data); }
+  if (data && data.devis) dvClean();
   render();
   flush();
-  if (data) pushInit();
+  if (data) { pushInit(); devFlush(); }
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && id && key && !form) load(); });
-addEventListener('online', () => flush());
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && id && key && !form && !devEd) load(); });
+addEventListener('online', () => { flush(); devFlush(); });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/equipe-sw.js', { scope: '/equipe' }).catch(() => {});
 lang = (() => { try { return localStorage.getItem('eqLang') || pick(null); } catch { return pick(null); } })();
 load();

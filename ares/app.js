@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.112.1';
+const VERSION = '2.113.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -449,6 +449,7 @@ function equipeData(i) {
     pubs: pubsActives([...imIds], 'eq').map(pubOut),
     rank: (() => { const y = new Date().getFullYear(), r = eqScores(y), n = r.findIndex(([wid]) => wid === i.id), v = n >= 0 ? r[n][1] : null; return v ? { y, pos: n + 1, of: r.length, pts: v.pts, fait: v.fait, ph: v.ph, urg: v.urg, good: v.good } : null; })(),
     tasks, items: items.sort((a, b) => a.d.localeCompare(b.d)), signalKey: k ? k.pub : '',
+    ...(i.chefDevis ? { devis: devChefData(i) } : {}),
   };
 }
 const eqHashes = new Map();
@@ -555,6 +556,13 @@ async function equipeInbox(w, msg) {
         const t = tx.put('taches', { type: 'reparation', titre: `Problème signalé par ${intervFull(w)} : ${titre}`, immId: im ? im.id : '', logId: '', locId: '', intervenantId: '', byInterv: w.id, date: d, recur: '', statut: 'afaire', sentAt: at, note: `${note}\n\n— Envoyé par ${intervFull(w)} (équipe) le ${fmtDateTime(at)}${it.lieu ? ' · lieu : ' + String(it.lieu).slice(0, 120) : ''}` });
         ph.forEach((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'signal', label: `Problème — photo ${n + 1}`, date: d, mime: 'image/jpeg', size: Math.round(b.length * 0.75) }); files.push([doc.id, b]); });
         feed.push({ at, k: 'pb', tid: t.id, d, note: '⚠️ ' + titre, ph: ph.length });
+        fresh++;
+      } else if (it.k === 'devis' || it.k === 'devph') {
+        // 🦺 devis préparé par le chef de chantier dans son app (sans prix) : créé ou corrigé tant qu'il n'est pas terminé
+        if (!cur.chefDevis) continue;
+        const r = it.k === 'devis' ? devChefIn(tx, w, it, at) : devChefPhoto(tx, w, it, at, files);
+        if (!r) continue;
+        if (r.note) { const last = feed[feed.length - 1]; if (r.ph && last && last.devPh === r.did) { last.ph = (last.ph || 0) + 1; last.note = `📷 ${last.ph} photos pour le devis ${r.no}`; last.at = at; } else feed.push({ at, k: 'info', note: r.note, ...(r.ph ? { devPh: r.did, ph: 1 } : {}) }); }
         fresh++;
       } else if (it.k === 'photo') {
         if (photoOk(it.d) || it.d === '') { tx.put('intervenants', { id: w.id, photo: it.d }); feed.push({ at, k: 'info', note: it.d ? '📷 Photo de profil mise à jour' : 'Photo de profil retirée' }); fresh++; }
@@ -4290,6 +4298,7 @@ const SHEETS = {
         ${field('Email', 'mail', i.mail, { type: 'email', full: true })}
         <label class="field soc-only" ${(i.genre || 'interne') === 'societe' ? '' : new Raw('hidden')}>RCS (société)<input name="rcs" value="${i.rcs || ''}" placeholder="ex. B123456"></label>
         <label class="field soc-only" ${(i.genre || 'interne') === 'societe' ? '' : new Raw('hidden')}>N° TVA (société)<input name="tva" value="${i.tva || ''}" placeholder="ex. LU12345678"></label>
+        <label class="check full" style="margin:4px 0 0"><input type="checkbox" name="chefDevis" value="1" ${i.chefDevis ? new Raw('checked') : ''}> 🦺 <b>Chef de chantier — devis</b> : il prépare les devis dans son app (photos, rapport, travaux, signature « Vu et correct » du client), sans voir les prix</label>
         ${engForm(i)}
         <label class="field full">Notes<textarea name="note" placeholder="Clés confiées, disponibilités…">${i.note || ''}</textarea></label>
       </form>`,
@@ -6564,6 +6573,7 @@ const FORMS = {
     const prev = id ? vault.get('intervenants', id) || {} : {};
     const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), note: g('note') };
     rec.photo = photoOk(g('photo')) ? g('photo') : '';
+    rec.chefDevis = fd.get('chefDevis') === '1';
     if (rec.genre === 'prive') { rec.rcs = ''; rec.tva = ''; } // occasionnel : ni RCS ni TVA
     // l'horaire ne se fait plus ici : fiche de la personne → Horaires (routine et planning par semaine)
     // engagement : assurance, paiement, obligations acceptées, signature digitale
@@ -7125,7 +7135,11 @@ function devState(d) {
     if (d.client && d.client.type === 'part' && t <= end) return { k: 'purple', lbl: `🟣 Rétractation possible jusqu’au ${fmtDate(end)}${d.sign && d.sign.early ? ' · début anticipé demandé' : ''}`, open: true, end };
     return { k: 'ok', lbl: '✅ Accepté — libre de commencer', open: true };
   }
-  if (d.st === 'brouillon' || !d.st) return { k: 'draft', lbl: '📝 Brouillon', open: false };
+  if (d.st === 'brouillon' || !d.st) {
+    if (d.fini) return { k: 'draft', lbl: '✅ Terminé — prêt à envoyer au client', open: false };
+    const w = d.chefBy ? vault.get('intervenants', d.chefBy) : null;
+    return { k: 'prep', lbl: `🟡 En préparation${w ? ' · 🦺 ' + intervFull(w) : ''}${d.visa ? ' · ✍️ Vu et correct' : ''}`, open: false };
+  }
   const until = addDays(d.date || t, num((d.dir || {}).valid) || 30);
   const left = Math.round((Date.parse(until + 'T12:00:00') - Date.parse(t + 'T12:00:00')) / 864e5);
   const rv = d.st === 'revision' ? '🔄 Révision demandée · ' : '';
@@ -7167,6 +7181,8 @@ function devStatsHtml(y) {
     <p style="margin:10px 0 0"><button class="btn sm" data-action="dev-csv" data-y="${y}">${icon('download')} Export CSV des devis ${y}</button></p>
     <p class="tiny muted">Temps de réponse : du premier envoi (PDF, WhatsApp, email ou portail) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.</p>`;
 }
+// le directeur a mis les prix et terminé le devis (les devis déjà envoyés le sont forcément)
+const devFini = (d) => !!d.fini || !!(d.st && d.st !== 'brouillon');
 const devBall = (d) => html`<span class="dball dball-${devState(d).k}" aria-hidden="true"></span>`;
 const devClient = (d) => (d.client && d.client.nom) || '—';
 const devOpen = () => vault.list('devis').filter((d) => devState(d).open).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
@@ -7196,13 +7212,14 @@ function devBanner() {
 function devTab() {
   devSyncSoon();
   const all = vault.list('devis').sort((a, b) => (b.created || '').localeCompare(a.created || ''));
-  const open = all.filter((d) => devState(d).open), drafts = all.filter((d) => devState(d).k === 'draft'), done = all.filter((d) => !devState(d).open && devState(d).k !== 'draft').slice(0, ui.cpLim || 10);
+  const open = all.filter((d) => devState(d).open), prep = all.filter((d) => devState(d).k === 'prep'), drafts = all.filter((d) => devState(d).k === 'draft'), done = all.filter((d) => !devState(d).open && !['draft', 'prep'].includes(devState(d).k)).slice(0, ui.cpLim || 10);
   const c = factConf();
-  return html`<p class="small muted" style="margin:0 0 10px">Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier). Ensuite les prix (👔 directeur), la signature du client et l’envoi (PDF, WhatsApp, email ou portail de la gérance).</p>
+  return html`<p class="small muted" style="margin:0 0 10px">Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou portail de la gérance) et la signature du client.</p>
     ${c.autorisation ? '' : html`<div class="alert warn" style="margin-bottom:12px">⚠️<div>Ajoutez le <b>n° d’autorisation d’établissement</b> dans <a href="#" data-action="fact-set">🧾 Facturation</a> : il est imprimé sur chaque devis.</div></div>`}
     <p style="margin:0 0 6px"><span class="tiny muted">🟢 en attente · 🟡 expire bientôt (3 derniers jours) · 🔴 expiré à minuit · 🟣 particulier : délai de rétractation de 14 jours · ✅ accepté</span></p>
     ${open.length ? html`<div class="section-label">En cours (${open.length})</div><div class="list" style="margin-bottom:14px">${open.map(devRow)}</div>` : ''}
-    ${drafts.length ? html`<div class="section-label">Brouillons (${drafts.length})</div><div class="list" style="margin-bottom:14px">${drafts.map(devRow)}</div>` : ''}
+    ${prep.length ? html`<div class="section-label">🟡 En préparation (${prep.length})</div><p class="tiny muted" style="margin:-4px 0 6px">Le chef de chantier peut encore les corriger. Le directeur met les prix puis touche « ✅ Devis terminé » : ensuite seulement le devis part au client.</p><div class="list" style="margin-bottom:14px">${prep.map(devRow)}</div>` : ''}
+    ${drafts.length ? html`<div class="section-label">✅ Prêts à envoyer (${drafts.length})</div><div class="list" style="margin-bottom:14px">${drafts.map(devRow)}</div>` : ''}
     ${done.length ? html`<div class="section-label">Terminés</div><div class="list">${done.map(devRow)}</div>` : ''}
     ${!all.length ? empty('file', 'Aucun devis pour l’instant.', html`<button class="btn primary" data-action="dev-new">${icon('plus')} Nouveau devis</button>`) : ''}`;
 }
@@ -7253,6 +7270,75 @@ function devRead(fm) {
     dir: { rows: keep.map(([, d]) => d), depl: g('depl') === '' ? '' : num(fd.get('depl')), mat, remise: num(fd.get('remise')), tva: g('tva') === '' ? '' : num(fd.get('tva')), acompte: g('acompte') === '' ? '' : +g('acompte'), valid: Math.max(1, Math.round(num(fd.get('valid')))) || 30, delai: g('delai') },
   };
 }
+// ── 🦺 Devis du chef de chantier (app de l'équipe) : il voit et écrit tout sauf les prix ──
+const DEV_CHEF_ST = (d) => (d.tacheId ? 'done' : d.st === 'brouillon' || !d.st ? (d.fini ? 'fini' : 'prep') : d.st);
+function devChefData(i) {
+  const since = addDays(today(), -120);
+  const mine = vault.list('devis').filter((d) => d.chefBy === i.id && d.chefDid && ((d.created || '') >= since || devState(d).open || !devFini(d)))
+    .sort((a, b) => (b.created || '').localeCompare(a.created || '')).slice(0, 30)
+    .map((d) => ({
+      did: d.chefDid, no: devNo(d), date: d.date || '', st: DEV_CHEF_ST(d), nph: devPhotos(d.id).length,
+      nx: 1 + Math.max(0, ...vault.list('documents').filter((x) => x.devisId === d.id && x.id.startsWith(d.id + 'c')).map((x) => +x.id.slice(d.id.length + 1) || 0)),
+      c: { type: (d.client || {}).type || 'part', nom: (d.client || {}).nom || '', rcs: (d.client || {}).rcs || '', tva: (d.client || {}).tva || '', adresse: (d.client || {}).adresse || '', tel: (d.client || {}).tel || '', email: (d.client || {}).email || '' },
+      titre: d.titre || '', chantier: d.chantier || '', interloc: d.interloc || '', rapport: (d.chef || {}).rapport || '', jours: (d.chef || {}).jours || '',
+      rows: ((d.chef || {}).rows || []).map((r) => ({ met: r.met || '', nb: r.nb || 1, h: r.h || 0 })),
+      prest: (d.prest || []).map((p) => ({ k: p.k, l: p.l, q: p.q ?? '', u: p.u || '', det: p.det || '' })),
+      visa: d.visa ? { nom: d.visa.nom || '', at: d.visa.at || '' } : null,
+    }));
+  return {
+    mine,
+    cat: DEV_CAT.map(([c, items]) => [c, items.map(([, l, u, det]) => [l, u, det])]),
+    units: DEV_UNITS, metiers: Object.entries(METIERS).map(([k, v]) => [k, (MET_ICON[k] || '👷') + ' ' + v]),
+  };
+}
+// ce que le client a vu et confirmé (« Vu et correct ») : rapport + travaux, sans les prix
+const devTravaux = (x) => JSON.stringify([String((x.chef && x.chef.rapport) || '').trim(), (x.prest || []).map((p) => [p.k, p.l, p.q === '' || p.q == null ? '' : +p.q, p.u || '', p.det || ''])]);
+const devByDid = (w, did) => vault.list('devis').find((d) => d.chefBy === w.id && d.chefDid === did) || null;
+function devChefIn(tx, w, it, at) {
+  const did = String(it.did || ''), s = (v, n) => String(v ?? '').trim().slice(0, n);
+  if (!/^[a-z0-9]{8,32}$/.test(did)) return null;
+  const prev = devByDid(w, did);
+  if (prev && devFini(prev)) return { note: `⚠️ Correction du devis ${devNo(prev)} reçue après « Devis terminé » : non appliquée (appelez ${intervFull(w)})` };
+  const c = it.c || {}, pc = (prev && prev.client) || {};
+  const client = { ...pc, type: pc.type === 'ger' ? 'ger' : c.type === 'pro' ? 'pro' : 'part', nom: s(c.nom, 120), rcs: s(c.rcs, 20).toUpperCase().replace(/\s+/g, ''), tva: s(c.tva, 20).toUpperCase().replace(/\s+/g, ''), adresse: s(c.adresse, 300), tel: s(c.tel, 40), email: s(c.email, 120) };
+  if (!client.nom) return null;
+  const rows = (Array.isArray(it.rows) ? it.rows : []).slice(0, 20).map((r) => ({ met: METIERS[r && r.met] ? r.met : '', nb: Math.min(99, Math.max(1, Math.round(num(r && r.nb)) || 1)), h: Math.min(9999, Math.max(0, num(r && r.h))) })).filter((r) => r.met || r.h);
+  // prix déjà mis par le directeur : gardés pour la même ligne (même travail / même métier)
+  const oldP = Object.fromEntries(((prev && prev.prest) || []).map((p) => [p.k, p]));
+  const prest = (Array.isArray(it.prest) ? it.prest : []).slice(0, 120).map((p) => {
+    const k = String((p && p.k) || ''), ci = devCatItem(k);
+    if (!ci && !/^f\d{1,2}$/.test(k)) return null;
+    const l = ci ? ci[1] : s(p.l, 200);
+    if (!l) return null;
+    const o = oldP[k] && oldP[k].l === l ? oldP[k] : null;
+    return { k, l, q: p.q === '' || p.q == null ? '' : Math.max(0, num(p.q)), u: DEV_UNITS.includes(p.u) ? p.u : ci ? ci[2] : 'fft', det: s(p.det, 200), pu: o ? o.pu ?? '' : '' };
+  }).filter(Boolean);
+  const oldRows = (prev && prev.chef && prev.chef.rows) || [], oldDir = (prev && prev.dir && prev.dir.rows) || [], used = new Set();
+  const dirRows = rows.map((r) => { const n = oldRows.findIndex((o, j) => !used.has(j) && o.met === r.met); if (n < 0) return { w: '', taux: '' }; used.add(n); return oldDir[n] || { w: '', taux: '' }; });
+  const v = it.visa;
+  let visa = v && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(v.png || '') && v.png.length < 400000 ? { png: v.png, nom: s(v.nom, 120), at: /^\d{4}-\d\d-\d\dT/.test(v.at || '') ? s(v.at, 30) : at } : null;
+  // signature déjà reçue : gardée si le rapport et les travaux n'ont pas changé
+  if (!visa && it.visaKeep && prev && prev.visa && devTravaux(prev) === devTravaux({ chef: { rapport: s(it.rapport, 6000) }, prest })) visa = prev.visa;
+  const rec = { client, titre: s(it.titre, 200), chantier: s(it.chantier, 300), interloc: s(it.interloc, 120), chef: { rapport: s(it.rapport, 6000), jours: s(it.jours, 80), rows }, prest, visa, chefAt: at, dir: { ...((prev && prev.dir) || { valid: 30 }), rows: dirRows } };
+  if (prev) { tx.put('devis', { id: prev.id, ...rec }); return { note: `✏️ Devis ${devNo(prev)} corrigé par ${intervFull(w)} : ${client.nom}` }; }
+  const conf = factConf(), now = new Date(), seq = (+conf.devSeq || 0) + 1;
+  const hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
+  rec.no = ['DEV', devInitials(client.nom), client.type !== 'part' ? client.rcs : '', ymd(today()), hhmm, String(seq).padStart(4, '0')].filter(Boolean).join('-');
+  Object.assign(rec, { kind: 'travaux', seq, st: 'brouillon', date: today(), created: now.toISOString(), rev: 0, chefBy: w.id, chefDid: did });
+  tx.put('reglages', { id: 'facturation', devSeq: seq });
+  tx.put('devis', rec);
+  return { note: `📝 Nouveau devis ${rec.no} de ${intervFull(w)} : ${client.nom}${visa ? ' · ✍️ Vu et correct' : ''}` };
+}
+// photo du devis (envoyées une par une, dans l'ordre) : 20 au maximum, jamais en double
+function devChefPhoto(tx, w, it, at, files) {
+  const d = devByDid(w, String(it.did || '')), n = Math.round(num(it.n)), b = typeof it.b === 'string' ? it.b : '';
+  if (!d || devFini(d) || !(n >= 1 && n <= 99) || !b || b.length > 2.5e6) return null;
+  const docId = d.id + 'c' + n, nb = devPhotos(d.id).length;
+  if (vault.get('documents', docId) || nb >= 20) return null;
+  tx.put('documents', { id: docId, devisId: d.id, kind: 'devis', n: nb + 1, label: `${devNo(d)} — photo ${nb + 1}`, date: at.slice(0, 10), mime: 'image/jpeg', size: Math.round(b.length * 0.75) });
+  files.push([docId, b]);
+  return { note: `📷 1 photo pour le devis ${devNo(d)}`, ph: 1, did: d.chefDid, no: devNo(d) };
+}
 // cadre « Prestations » : catalogue par catégorie, cases à cocher, quantité + unité + détails (mesures en cm / mm…)
 const devPq = (key, p, ph) => html`<div class="dev-pq"><input name="pq_${key}" type="number" step="0.01" min="0" inputmode="decimal" value="${p.q ?? ''}" placeholder="Qté" aria-label="Quantité"><select name="pu_${key}" aria-label="Unité">${DEV_UNITS.map((u) => html`<option ${u === p.u ? new Raw('selected') : ''}>${u}</option>`)}</select><input name="pd_${key}" value="${p.det || ''}" placeholder="${ph || 'détails : mesures (cm), format, couleur, modèle…'}" aria-label="Détails"></div>`;
 const devFreeRow = (n, p = {}) => html`<div class="dev-pi dev-free"><input name="pl_f${n}" value="${p.l || ''}" placeholder="Autre prestation (ex. Pose d’une crédence en verre)" aria-label="Prestation">${devPq('f' + n, { q: p.q, u: p.u || 'fft', det: p.det }, '')}</div>`;
@@ -7302,11 +7388,17 @@ Object.assign(SHEETS, {
     const crows = [...(chef.rows || [])]; while (crows.length < 3) crows.push({});
     const mats = [...(dir.mat || [])]; while (mats.length < 2) mats.push({});
     const orgs = (ui.ptl.data && ui.ptl.data.orgs) || [];
-    const ph = id ? devPhotos(id) : [], s = devState(d), k = devCalc(d);
+    const ph = id ? devPhotos(id) : [], s = devState(d), k = devCalc(d), chefW = d.chefBy ? vault.get('intervenants', d.chefBy) : null;
     const acts = id ? html`<div class="card dev-acts" style="margin-bottom:12px;padding:12px">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">${devBall(d)}<b class="grow">${s.lbl}</b></div>
         ${d.decision && d.decision.note ? html`<p class="small" style="margin:0 0 8px">💬 <b>${d.decision.by || 'La gérance'}</b> : ${d.decision.note}</p>` : ''}
         ${d.sign ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ Signé par ${d.sign.nom || 'le client'} le ${fmtDateTime(Date.parse(d.sign.at) || 0)}${d.sign.early ? ' · début des travaux avant la fin du délai de rétractation demandé' : ''}</p>` : ''}
+        ${chefW ? html`<p class="tiny muted" style="margin:0 0 8px">🦺 Préparé par <b>${intervFull(chefW)}</b> dans son app${d.chefAt ? ' · dernier envoi le ' + fmtDateTime(Date.parse(d.chefAt) || 0) : ''}</p>` : ''}
+        ${d.visa ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ « Vu et correct » signé par ${d.visa.nom || 'le client'} le ${fmtDateTime(Date.parse(d.visa.at) || 0)} (le rapport du chef correspond à sa demande — sans prix)</p>` : ''}
+        ${!devFini(d) ? html`<div class="alert info" style="margin:0 0 8px">🟡<div><b>En préparation.</b> Enregistrez autant de fois que vous voulez, sans signature. Le directeur met les prix puis touche <b>« ✅ Devis terminé »</b> : alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, portail) et la signature « Bon pour accord ».</div></div>
+        <div class="dev-btns"><button class="btn sm primary" data-action="dev-fini" data-id="${id}">✅ Devis terminé</button>
+          <button class="btn sm" data-action="dev-visa" data-id="${id}">✍️ ${d.visa ? 'Refaire' : 'Faire signer'} « Vu et correct »</button>
+          <button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button></div></div>` : html`
         <div class="dev-btns">
           <button class="btn sm" data-action="dev-pdf" data-id="${id}">📄 PDF / imprimer</button>
           <button class="btn sm" data-action="dev-share" data-id="${id}" data-via="wa">💬 WhatsApp</button>
@@ -7317,7 +7409,8 @@ Object.assign(SHEETS, {
           ${s.k === 'ok' ? html`<button class="btn sm primary" data-action="dev-tache" data-id="${id}">➡️ Créer l’intervention</button>` : ''}
           ${d.st !== 'brouillon' && !d.tacheId ? html`<button class="btn sm ghost" data-action="dev-rev" data-id="${id}">🔄 Nouvelle version (R${(d.rev || 0) + 1})</button>` : ''}
           ${d.tacheId && vault.get('taches', d.tacheId) ? html`<button class="btn sm ghost" data-action="edit-tache" data-id="${d.tacheId}">🛠️ Voir l’intervention</button>` : ''}
-          <button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button></div></div>` : '';
+          ${d.st === 'brouillon' ? html`<button class="btn sm ghost" data-action="dev-unfini" data-id="${id}">↩️ Remettre en préparation</button>` : ''}
+          <button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button></div>`}</div>` : '';
     return {
       title: id ? `📝 Devis ${devNo(d)}` : '📝 Nouveau devis',
       body: html`${acts}<form id="f" data-form="devis" class="fields" data-kind="${d.kind === 'contrat' ? 'contrat' : 'travaux'}"><input type="hidden" name="id" value="${id || ''}">
@@ -7394,10 +7487,28 @@ Object.assign(SHEETS, {
     };
   },
   // signature du client avec le doigt : « Bon pour accord »
-  'devis-sign'({ id }) {
+  'devis-sign'({ id, preset }) {
     const d = vault.get('devis', id);
     if (!d) return null;
     const k = devCalc(d), part = d.client && d.client.type === 'part';
+    // « Vu et correct » : le client confirme que le rapport du chef décrit sa demande (sans prix, sans engagement)
+    if (preset && preset.visa) {
+      const rap = String((d.chef && d.chef.rapport) || '').trim();
+      return {
+        title: `✍️ Vu et correct — ${devNo(d)}`,
+        narrow: true,
+        body: html`<form id="fs" data-form="devis-sign" class="fields"><input type="hidden" name="id" value="${id}"><input type="hidden" name="visa" value="1">
+          <div class="full card" style="padding:10px;margin:0"><b>${d.titre || 'Travaux demandés'}</b><div class="small">${devClient(d)}${d.chantier ? ' · ' + d.chantier : ''}</div>
+            ${rap ? html`<p class="small" style="margin:6px 0 0;white-space:pre-wrap">${rap}</p>` : ''}
+            ${(d.prest || []).length ? html`<ul class="small" style="margin:6px 0 0;padding-left:18px">${d.prest.map((p) => html`<li>${p.l} — ${devQty(p)} ${p.u || ''}${p.det ? ' · ' + p.det : ''}</li>`)}</ul>` : ''}</div>
+          <label class="field full">Nom du client<input name="nom" required value="${d.interloc || devClient(d)}"></label>
+          <p class="small full" style="margin:0"><b>Vu et correct</b> — je confirme que ce rapport décrit les travaux que je demande. Ce n’est pas une commande : le prix viendra dans le devis, que je signerai ensuite si je l’accepte.</p>
+          <canvas class="sig-pad full" width="600" height="220" style="display:block;width:100%;aspect-ratio:30/11;background:#fff;border:1.5px dashed #9aa5a0;border-radius:12px;touch-action:none"></canvas>
+          <div class="full" style="display:flex;gap:8px"><button type="button" class="btn sm" data-action="dev-sig-clear">Effacer</button></div>
+        </form>`,
+        foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="fs">✍️ Valider « Vu et correct »</button>`,
+      };
+    }
     return {
       title: `✍️ Bon pour accord — ${devNo(d)}`,
       narrow: true,
@@ -7448,6 +7559,7 @@ Object.assign(FORMS, {
       rec.no = ['DEV', devInitials(rec.client.nom), rec.client.type !== 'part' ? rec.client.rcs : '', ymd(today()), hhmm, String(seq).padStart(4, '0')].filter(Boolean).join('-');
       Object.assign(rec, { seq, st: 'brouillon', date: today(), created: now.toISOString(), rev: 0 });
     } else rec.id = id;
+    if (prev && prev.visa && devTravaux(prev) !== devTravaux(rec)) { rec.visa = null; toast('Rapport ou travaux modifiés : la signature « Vu et correct » est retirée (à refaire)', { bad: true }); }
     const docs = [];
     await vault.mutate((tx) => {
       if (seq) tx.put('reglages', { id: 'facturation', devSeq: seq });
@@ -7464,6 +7576,12 @@ Object.assign(FORMS, {
     if (!d) return;
     if (devSigEmpty(c)) return toast('Le client doit signer dans le cadre blanc', { bad: true });
     const png = c.toDataURL('image/png'), at = new Date().toISOString();
+    if (fd.get('visa') === '1') {
+      await vault.mutate((tx) => tx.put('devis', { id: d.id, visa: { png, at, nom: String(fd.get('nom') || '').trim() } }), 'Devis : « Vu et correct » signé par le client', `${devNo(d)} — ${devClient(d)}`);
+      devSigUrl = ''; sheetDirty = false;
+      toast('✍️ « Vu et correct » signé');
+      return goBack();
+    }
     await vault.mutate((tx) => tx.put('devis', { id: d.id, st: 'accepte', acc: at, sign: { png, at, nom: String(fd.get('nom') || '').trim(), early: fd.get('early') === '1' }, ...devH(d, 'accepte') }), 'Devis signé par le client', `${devNo(d)} — ${devClient(d)}`);
     devSigUrl = ''; sheetDirty = false;
     toast('✍️ Devis signé — bon pour accord');
@@ -7510,6 +7628,14 @@ async function devPdf(d) {
     y += 8; need(40);
     p.rect(X, y - 12, R - X, 18, { fill: [0.93, 0.91, 0.97] }).text(X + 6, y, 'DESCRIPTION DES TRAVAUX', { size: 9.5, bold: true, color: VIO }); y += 20;
     for (const para of rap.split(/\n+/)) { const h = p.wrap(X, -1000, para, R - X, { size: 9.5 }); need(Math.min(h, 200) + 4); y += p.wrap(X, y, para, R - X, { size: 9.5 }) + 4; }
+  }
+  // « Vu et correct » : le client a confirmé sur place que le rapport décrit sa demande
+  if (d.visa) {
+    const vs = await sigJpeg(d.visa.png).catch(() => null);
+    need(50); y += 4;
+    p.text(X, y, `Vu et correct — constat confirmé par ${d.visa.nom || 'le client'} le ${new Date(Date.parse(d.visa.at) || Date.now()).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`, { size: 8.5, color: G });
+    if (vs) { const h = 30, w = Math.min(120, (h * vs.w) / vs.h); p.image(R - w, y - 12, w, (w * vs.h) / vs.w, vs.bytes, vs.w, vs.h); }
+    y += 36;
   }
   const n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
   const txt = String(k.taux).replace('.', ',') + '%';
@@ -7708,6 +7834,24 @@ Object.assign(ACTIONS, {
   'dev-row-add': () => { const box = $('#devRows'); if (box) box.insertAdjacentHTML('beforeend', String(devChefRow(box.children.length))); },
   'dev-sig-clear': () => { const c = sheetEl.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); devSigUrl = ''; },
   'dev-sign': (d) => { if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true }); openOver('devis-sign', d.id); },
+  'dev-visa': (d) => { if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true }); openOver('devis-sign', d.id, null, { visa: true }); },
+  // le directeur a fini (prix compris) : le devis peut partir au client
+  async 'dev-fini'(d) {
+    const v = vault.get('devis', d.id); if (!v) return;
+    if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
+    const k = devCalc(v);
+    if (!(k.ttc > 0)) return toast('Mettez d’abord les prix (👔 directeur) : le total est à 0 €', { bad: true });
+    const sansPrix = k.prest.filter((p) => p.pu === '' || p.pu == null).length + k.lines.filter((l) => !l.taux).length;
+    if (!(await confirmBox(`Devis ${devNo(v)} terminé ?`, { ok: '✅ Terminé', detail: `${sansPrix ? `⚠️ ${sansPrix} ligne(s) sans prix. ` : ''}Total ${eur(k.ttc)} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.` }))) return;
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, fini: { at: new Date().toISOString() } }), 'Devis terminé (directeur)', `${devNo(v)} — ${devClient(v)}`);
+    toast('✅ Devis terminé : vous pouvez l’envoyer au client'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  },
+  async 'dev-unfini'(d) {
+    const v = vault.get('devis', d.id); if (!v || v.st !== 'brouillon') return;
+    if (!(await confirmBox(`Remettre le devis ${devNo(v)} en préparation ?`, { ok: '↩️ En préparation', detail: 'Il n’a pas encore été envoyé. Le chef de chantier pourra de nouveau le corriger dans son app ; ensuite touchez encore « ✅ Devis terminé ».' }))) return;
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, fini: null }), 'Devis remis en préparation', `${devNo(v)} — ${devClient(v)}`);
+    renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  },
   async 'dev-ph-del'(d) {
     const doc = vault.get('documents', d.id);
     if (!doc || !(await confirmBox('Retirer cette photo du devis ?', { ok: 'Retirer', danger: true }))) return;
@@ -7771,8 +7915,8 @@ Object.assign(ACTIONS, {
   },
   async 'dev-rev'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
-    if (!(await confirmBox(`Nouvelle version R${(v.rev || 0) + 1} ?`, { ok: '🔄 Nouvelle version', detail: 'Même numéro + R1, R2… Modifiez les travaux ou faites une remise, puis renvoyez-le. La signature éventuelle est retirée.' }))) return;
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, rev: (v.rev || 0) + 1, st: 'brouillon', date: today(), sign: null, acc: '', ...devH(v, 'R' + ((v.rev || 0) + 1)) }), 'Nouvelle version du devis', `${v.no}-R${(v.rev || 0) + 1}`);
+    if (!(await confirmBox(`Nouvelle version R${(v.rev || 0) + 1} ?`, { ok: '🔄 Nouvelle version', detail: 'Même numéro + R1, R2… Modifiez les travaux ou faites une remise, touchez « ✅ Devis terminé », puis renvoyez-le. La signature éventuelle est retirée.' }))) return;
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, rev: (v.rev || 0) + 1, st: 'brouillon', fini: null, date: today(), sign: null, acc: '', ...devH(v, 'R' + ((v.rev || 0) + 1)) }), 'Nouvelle version du devis', `${v.no}-R${(v.rev || 0) + 1}`);
     toast(`Version R${(v.rev || 0) + 1} : modifiez puis renvoyez`); ui.sheet.rendered = false; renderSheet();
   },
   async 'dev-del'(d) {
