@@ -891,7 +891,6 @@ const PTL_INVITE_MS = 14 * 24 * 3600 * 1000;
 const PTL_MAX_PHOTO = 6 * 1024 * 1024;
 const PTL_MAX_FAILS = 10;
 const PTL_STATUSES = ["recue", "prise", "planifiee", "encours", "terminee", "annulee"];
-const PTL_OPEN = ["recue", "prise", "planifiee", "encours"];
 const PTL_URGENCES = ["urgent", "24h", "planifie"];
 const PTL_ROLES = ["admin", "gerance_admin", "gerance_user"];
 

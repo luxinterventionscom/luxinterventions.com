@@ -3,6 +3,7 @@
 import './reqmark.js';
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
+import { binPlan } from './binplan.js';
 import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { videoEmbed } from './video-embed.js';
@@ -11,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.111.2';
+const VERSION = '2.111.3';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -977,33 +978,7 @@ function binRota(im, g, from, to) {
 }
 // Tours réels : oubli (personne n'a touché « Fait » avant le passage du camion) → l'oublieux fait aussi le tour suivant ;
 // fait par un autre (« Je l'ai fait à sa place ») → l'autre lui rendra ce service au prochain tour de celui qui a aidé.
-// Même calcul dans l'app des locataires (espace.js).
-function binPlan(order, events, msgs, log, evalFrom, now) {
-  const n = order.length, pen = [], owed = {}, out = [];
-  let shift = 0;
-  for (const e of events) {
-    let who, extra = false;
-    if (pen.length) { who = pen.shift(); extra = true; shift++; } else {
-      who = order[(((e.k - shift) % n) + n) % n];
-      const o = owed[who];
-      if (o && o.length) who = o.shift();
-    }
-    let done = '', cant = '', forgot = false;
-    const lg = log && log[e.p];
-    if (lg) { who = lg.w || who; done = lg.d || ''; forgot = !!lg.f; } else {
-      for (const m of (msgs || []).filter((x) => x.k === 'bin' && x.d === e.p)) {
-        if (m.act === 'take') { who = m.m; cant = ''; }
-        if (m.act === 'cant') cant = m.m;
-        if (m.act === 'done' || m.act === 'instead') done = m.m;
-      }
-      forgot = !done && e.d < now && msgs != null && e.p >= evalFrom;
-    }
-    if (forgot) pen.push(who);
-    if (done && done !== who) (owed[done] ||= []).push(who);
-    out.push({ ...e, who, extra, done, cant, forgot });
-  }
-  return out;
-}
+// Calcul partagé avec l'app des locataires : ares/binplan.js.
 const binGroupPlan = (im, gk, g, msgs, to) => {
   const order = (g.order || g.members).filter((id) => id && g.members.includes(id));
   return binPlan(order, binRota(im, g, g.since || '2026-09-01', to || addDays(today(), 30)), msgs, ((im.binLog || {})[gk]) || {}, addDays(today(), -60), today());
@@ -1095,16 +1070,6 @@ function binScores(plan, year) {
     if (e.forgot) (sc[e.who] ||= { done: 0, forgot: 0 }).forgot++;
   }
   return Object.entries(sc).sort((a, b) => b[1].done - a[1].done || a[1].forgot - b[1].forgot);
-}
-// État d'un tour d'après les messages du fil (fait, « je ne peux pas », « je le fais »)
-function binState(msgs, e) {
-  let who = e.who, done = '', cant = '';
-  for (const m of (msgs || []).filter((x) => x.k === 'bin' && x.d === e.p)) {
-    if (m.act === 'take') { who = m.m; cant = ''; }
-    if (m.act === 'cant') cant = m.m;
-    if (m.act === 'done') done = m.m;
-  }
-  return { who, done, cant };
 }
 
 let chatBusy = false;
@@ -1557,7 +1522,6 @@ const societe = () => vault.get('reglages', 'main') || {};
 // Les gérances (sociétés externes) utilisent le Portail gérance ; ici, LuxInterventions les crée, invite leurs responsables,
 // gère leurs résidences et peut les supprimer. La session du portail (compte LuxInterventions) est gardée dans le coffre chiffré.
 const PTL_API = API.replace(/\/$/, '') + '/api/portail/';
-const PTL_ROLES = { gerance_admin: 'Responsable', gerance_user: 'Collaborateur' };
 const ptlConf = () => { const c = vault.get('reglages', 'portail'); return c && c.token ? c : null; };
 class PtlError extends Error { constructor(status, message) { super(message); this.status = status; } }
 async function ptlApi(path, opts = {}) {
@@ -1774,7 +1738,6 @@ async function fixIdentity() {
 function applyBrand() {
   document.querySelectorAll('.brand-mark').forEach((img) => { img.src = APP_BRAND.logo; });
 }
-const brandCache = () => { try { return JSON.parse(localStorage.getItem('aresBrand') || '{}'); } catch { return {}; } };
 const associes = () => (societe().associes || []).filter((a) => a.nom && a.part > 0);
 
 function dataYears() {
@@ -6132,7 +6095,6 @@ const ACTIONS = {
   'new-imm': () => openSheet('imm-form'),
   'edit-imm': (d) => openSheet('imm-form', d.id),
   'new-loc': (d) => openSheet('loc-form', null, null, d.log),
-  'ger-new-go': () => { go('gerances'); if (ptlConf()) openSheet('ger-form'); },
   'edit-loc': (d) => openSheet('loc-form', d.id),
   'open-loc': (d) => openSheet('loc', d.id),
   async 'open-vir'(d) {
@@ -6312,8 +6274,6 @@ const ACTIONS = {
     if (c) printDoc('Rapport ' + ui.year, reportGlobal(ui.year, c === 'full'));
   },
   'imm-filter': (d) => { ui.immFilter = d.id; renderView(); },
-  'imm-locs': (d) => { ui.immFilter = d.id; go('locataires'); },
-  'imm-pay': (d) => { ui.immFilter = d.id; ui.year = new Date().getFullYear(); go('paiements'); },
   'more-hist': () => { ui.histShown += 30; renderView(); },
   'set-lang': (d) => { if (d.id === LANG) return; setLang(d.id); location.reload(); },
   theme: (d) => { localStorage.setItem('aresTheme', d.id); applyTheme(); renderView(); },
@@ -6533,13 +6493,6 @@ const FORMS = {
     const b = { org_id: fd.get('org'), name: String(fd.get('name') || '').trim(), address: String(fd.get('address') || '').trim(), apartments: fd.get('apartments'), contact_name: String(fd.get('contact_name') || '').trim() };
     try { await ptlApi('residences', { method: 'POST', body: b }); } catch (e) { return toast(e.message, { bad: true }); }
     f.reset(); toast('Résidence ajoutée'); await ptlLoad();
-  },
-  async 'fact-client'(fd) {
-    const g = (k) => String(fd.get(k) || '').trim(), org = g('org');
-    const cur = (vault.get('reglages', 'factClients') || {}).list || {};
-    const list = { ...cur, [org]: { regime: TVA_REG[g('regime')] ? g('regime') : 'normal', taux: g('taux'), tvaNum: g('tvaNum').toUpperCase().replace(/\s+/g, ''), adresse: g('adresse'), pays: (g('pays') || 'LU').toUpperCase().slice(0, 2), mention: g('mention') } };
-    await vault.mutate((tx) => tx.put('reglages', { id: 'factClients', list }), 'Facturation du client', (ptlOrg(org) || {}).name || org);
-    toast('Facturation du client enregistrée');
   },
   async 'fact-set'(fd) {
     const g = (k) => String(fd.get(k) || '').trim();

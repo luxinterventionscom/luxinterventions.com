@@ -2,6 +2,7 @@
 // Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
 import '/ares/reqmark.js';
 import qrcode from '/ares/qrcode.js';
+import { binPlan } from '/ares/binplan.js';
 import { openJson, sealJson, openBytes, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
 
 import { videoEmbed } from '/ares/video-embed.js';
@@ -314,7 +315,6 @@ const day = (s) => new Date(s + 'T00:00:00').toLocaleDateString(T().loc, { weekd
 const money = (n) => new Intl.NumberFormat(T().loc, { style: 'currency', currency: 'EUR' }).format(n || 0);
 // 🟢 fixe : plus tard · 🟡 clignote : demain · 🔴 clignote : aujourd'hui (urgent)
 const lightOf = (d) => (d <= today ? 'red' : d <= addDays(today, 1) ? 'yellow' : 'green');
-const lightCls = (c) => `light l-${c}${c === 'green' ? '' : ' blink'}`;
 const BIN_COLORS = { residuel: '#6b7280', organique: '#92400e', papier: '#2563eb', verre: '#15803d', valorlux: '#0891b2', encombrants: '#7c3aed', autre: '#9a958a' };
 const CATS = {
   fr: { residuel: 'Déchets résiduels', organique: 'Biodéchets', papier: 'Papier / carton', verre: 'Verre', valorlux: 'Valorlux', encombrants: 'Encombrants', autre: 'Autre' },
@@ -343,7 +343,6 @@ function preview(doc, url, keep) {
   document.body.append(el);
 }
 // Guide d'installation selon le téléphone et le navigateur (Apple/Google exigent un geste de l'utilisateur)
-const SHARE_ICON = '<svg class="share-ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 10H5v11h14V10h-2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 const UA = navigator.userAgent;
 const IS_IOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -401,33 +400,7 @@ const binCats = (e) => e.cats.map((c) => CATS[lang][c] || c).join(' + ');
 const binName = (id) => (data.chat && id === data.chat.mid ? T().bn.me : (data.bins.names || {})[id] || '?');
 // après « fait par », « au tour de », « à la place de » : forme complément (te, dir, ti…)
 const binObj = (id) => (data.chat && id === data.chat.mid ? T().bn.meObj || T().bn.me : binName(id));
-// Même calcul que dans Ares (app.js → binPlan) : oubli → tour de rattrapage ; fait par un autre → service rendu
-function binPlan(order, events, msgs, log, evalFrom, now) {
-  const n = order.length, pen = [], owed = {}, out = [];
-  let shift = 0;
-  for (const e of events) {
-    let who, extra = false;
-    if (pen.length) { who = pen.shift(); extra = true; shift++; } else {
-      who = order[(((e.k - shift) % n) + n) % n];
-      const o = owed[who];
-      if (o && o.length) who = o.shift();
-    }
-    let done = '', cant = '', forgot = false;
-    const lg = log && log[e.p];
-    if (lg) { who = lg.w || who; done = lg.d || ''; forgot = !!lg.f; } else {
-      for (const m of (msgs || []).filter((x) => x.k === 'bin' && x.d === e.p)) {
-        if (m.act === 'take') { who = m.m; cant = ''; }
-        if (m.act === 'cant') cant = m.m;
-        if (m.act === 'done' || m.act === 'instead') done = m.m;
-      }
-      forgot = !done && e.d < now && msgs != null && e.p >= evalFrom;
-    }
-    if (forgot) pen.push(who);
-    if (done && done !== who) (owed[done] ||= []).push(who);
-    out.push({ ...e, who, extra, done, cant, forgot });
-  }
-  return out;
-}
+// binPlan (ares/binplan.js, partagé avec l'app de gestion) : oubli → tour de rattrapage ; fait par un autre → service rendu
 const binPlanNow = () => binPlan(data.bins.order || [], data.bins.ev || [], chatMsgs, data.bins.log || {}, addDays(today, -60), today);
 const binState = (e) => binPlanNow().find((x) => x.p === e.p) || { who: e.who, done: '', cant: '' };
 // Carte « Ce soir c'est ton tour » (ou demande d'aide d'un colocataire), seulement pour le jour même
