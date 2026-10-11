@@ -281,7 +281,6 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
 .card-title h3 { font-size: 16px; }
 .section-label { font-size: 12px; font-weight: 650; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-3); margin: 24px 0 10px; }
 .grid { display: grid; gap: 12px; }
-.grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 @media (min-width: 720px) { .grid.cols-auto { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); } }
 
 .metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
@@ -559,7 +558,6 @@ dialog.pv iframe { flex: 1; border: 0; width: 100%; background: #fff; }
 .hor-n { color: var(--text-2); font-weight: 500; }
 .hor-adds { display: flex; flex-wrap: wrap; gap: 6px; }
 .hor-grid input, .hor-grid select { min-width: 0; width: 100%; font: inherit; font-size: 14px; padding: 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); color: inherit; }
-.hor-day { font-size: 13px; font-weight: 600; }
 @media (max-width: 480px) { .hor-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .hor-grid .hor-p { grid-column: 1 / 3; margin-top: 4px; } .hor-grid select { grid-column: 1 / 3; } }
 
 /* Cartes repliables de l'accueil : un clic ouvre / ferme ; ouvertes, lumière chaude et douce qui respire */
@@ -681,13 +679,11 @@ details.gfold .fold-acts { display: flex; flex-wrap: wrap; gap: 6px; justify-con
 .ptl-place { margin: 6px 0 0; } .ptl-place dd a { font-weight: 600; }
 /* signature digitale (fiche d'engagement) */
 .sig-pad { display: block; width: 100%; max-width: 480px; height: auto; aspect-ratio: 3 / 1; background: #fff; border: 1.5px dashed var(--border-strong, #b8b2a7); border-radius: 12px; touch-action: none; cursor: crosshair; margin-bottom: 6px; }
-.sig-img { display: block; max-width: 260px; background: #fff; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 4px; }
 /* jour de la semaine dans la case de la date */
 .dwrap { position: relative; display: block; }
 .dwrap > input { width: 100%; }
 .dwrap .dow { position: absolute; right: 42px; top: 50%; transform: translateY(-50%); pointer-events: none; font-size: 13px; font-weight: 650; color: var(--accent, #4f46e5); text-transform: capitalize; }
 /* tarifs : petites cases avec l'unité (€/h, €) dedans */
-.tarif-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 8px; }
 .field.mini { font-size: 12.5px; }
 .sfx { position: relative; display: block; }
 .sfx > input { width: 100%; padding-right: 52px; }
