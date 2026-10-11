@@ -783,3 +783,7 @@ form:not([data-kind=contrat]) .dev-k-ct{display:none !important}
 /* Paiements : le navigateur ne dessine que les immeubles visibles à l'écran (beaucoup de cases mois × locataires) */
 .pay-stack > .card { content-visibility: auto; contain-intrinsic-size: auto 600px; }
 @media print { .pay-stack > .card { content-visibility: visible; } }
+
+/* Maintenance : info repliable sur les unités des devis */
+.units-info { margin-top: 18px; } .units-info > summary { cursor: pointer; list-style: none; } .units-info > summary::-webkit-details-marker { display: none; }
+.units-grid { display: grid; grid-template-columns: 92px 1fr; gap: 8px 12px; align-items: baseline; } .units-grid > b { font-variant-numeric: tabular-nums; }

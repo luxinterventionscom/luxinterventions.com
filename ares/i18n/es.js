@@ -4034,7 +4034,7 @@ export default [
 ],
 [
 "ex. {0}",
-"p. ej. {0}"
+"ej. {0}"
 ],
 [
 "ex. {0} ; porte d’entrée de l’immeuble : {1}",
@@ -13447,5 +13447,89 @@ export default [
 [
 "📌 Affecter",
 "📌 Asignar"
+],
+[
+"Unités des devis",
+"Unidades de los presupuestos"
+],
+[
+"Prix d’une ligne = quantité × prix unitaire (ex. 45 m² × 22,00 € HT).",
+"Precio de una línea = cantidad × precio unitario (ej. 45 m² × 22,00 € sin IVA)."
+],
+[
+"forfait : prix fixe, tout compris (quantité 1)",
+"tarifa fija: precio cerrado, todo incluido (cantidad 1)"
+],
+[
+"mètre carré : une surface",
+"metro cuadrado: una superficie"
+],
+[
+"mètre linéaire : une longueur",
+"metro lineal: una longitud"
+],
+[
+"mètre cube : un volume",
+"metro cúbico: un volumen"
+],
+[
+"pièce : un nombre d’éléments",
+"unidad: un número de piezas"
+],
+[
+"heure de travail",
+"hora de trabajo"
+],
+[
+"kilogramme : un poids",
+"kilogramo: un peso"
+],
+[
+"à chaque passage",
+"en cada pasada"
+],
+[
+"par mois",
+"al mes"
+],
+[
+"visite technique, débouchage, nettoyage de fin de chantier",
+"visita técnica, desatasco, limpieza de fin de obra"
+],
+[
+"peinture 45 m², carrelage 12 m²",
+"pintura 45 m², alicatado 12 m²"
+],
+[
+"plinthes 18 ml, gouttière 12 ml, joints silicone",
+"zócalos 18 ml, canalón 12 ml, juntas de silicona"
+],
+[
+"gravats 3 m³, débarras de cave",
+"escombros 3 m³, vaciado de sótano"
+],
+[
+"2 robinets, 4 prises, 3 portes",
+"2 grifos, 4 enchufes, 3 puertas"
+],
+[
+"travaux en régie 6 h, petites réparations",
+"trabajos por administración 6 h, pequeñas reparaciones"
+],
+[
+"matériel ou déchets au poids",
+"material o residuos al peso"
+],
+[
+"déneigement, garage à l’autolaveuse",
+"retirada de nieve, garaje con fregadora"
+],
+[
+"contrat d’entretien, sortie des poubelles",
+"contrato de mantenimiento, sacar los contenedores"
+],
+[
+"ex.",
+"ej."
 ]
 ];

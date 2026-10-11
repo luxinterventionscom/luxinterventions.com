@@ -13467,5 +13467,89 @@ export default [
 [
 "📌 Affecter",
 "📌 Assegna"
+],
+[
+"Unités des devis",
+"Unità dei preventivi"
+],
+[
+"Prix d’une ligne = quantité × prix unitaire (ex. 45 m² × 22,00 € HT).",
+"Prezzo di una riga = quantità × prezzo unitario (es. 45 m² × 22,00 € IVA escl.)."
+],
+[
+"forfait : prix fixe, tout compris (quantité 1)",
+"forfait: prezzo fisso, tutto compreso (quantità 1)"
+],
+[
+"mètre carré : une surface",
+"metro quadrato: una superficie"
+],
+[
+"mètre linéaire : une longueur",
+"metro lineare: una lunghezza"
+],
+[
+"mètre cube : un volume",
+"metro cubo: un volume"
+],
+[
+"pièce : un nombre d’éléments",
+"pezzo: un numero di elementi"
+],
+[
+"heure de travail",
+"ora di lavoro"
+],
+[
+"kilogramme : un poids",
+"chilogrammo: un peso"
+],
+[
+"à chaque passage",
+"a ogni passaggio"
+],
+[
+"par mois",
+"al mese"
+],
+[
+"visite technique, débouchage, nettoyage de fin de chantier",
+"sopralluogo tecnico, disostruzione, pulizia di fine cantiere"
+],
+[
+"peinture 45 m², carrelage 12 m²",
+"pittura 45 m², piastrelle 12 m²"
+],
+[
+"plinthes 18 ml, gouttière 12 ml, joints silicone",
+"battiscopa 18 ml, grondaia 12 ml, giunti in silicone"
+],
+[
+"gravats 3 m³, débarras de cave",
+"macerie 3 m³, sgombero cantina"
+],
+[
+"2 robinets, 4 prises, 3 portes",
+"2 rubinetti, 4 prese, 3 porte"
+],
+[
+"travaux en régie 6 h, petites réparations",
+"lavori in economia 6 h, piccole riparazioni"
+],
+[
+"matériel ou déchets au poids",
+"materiale o rifiuti a peso"
+],
+[
+"déneigement, garage à l’autolaveuse",
+"sgombero neve, garage con lavasciuga"
+],
+[
+"contrat d’entretien, sortie des poubelles",
+"contratto di manutenzione, uscita dei bidoni"
+],
+[
+"ex.",
+"es."
 ]
 ];
