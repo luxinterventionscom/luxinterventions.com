@@ -13199,5 +13199,89 @@ export default [
 [
 "📌 Affecter",
 "📌 Assign"
+],
+[
+"Unités des devis",
+"Quote units"
+],
+[
+"Prix d’une ligne = quantité × prix unitaire (ex. 45 m² × 22,00 € HT).",
+"Line price = quantity × unit price (e.g. 45 m² × €22.00 excl. VAT)."
+],
+[
+"forfait : prix fixe, tout compris (quantité 1)",
+"flat rate: fixed price, all included (quantity 1)"
+],
+[
+"mètre carré : une surface",
+"square metre: an area"
+],
+[
+"mètre linéaire : une longueur",
+"linear metre: a length"
+],
+[
+"mètre cube : un volume",
+"cubic metre: a volume"
+],
+[
+"pièce : un nombre d’éléments",
+"piece: a number of items"
+],
+[
+"heure de travail",
+"working hour"
+],
+[
+"kilogramme : un poids",
+"kilogram: a weight"
+],
+[
+"à chaque passage",
+"each visit"
+],
+[
+"par mois",
+"per month"
+],
+[
+"visite technique, débouchage, nettoyage de fin de chantier",
+"technical visit, unblocking, end-of-works cleaning"
+],
+[
+"peinture 45 m², carrelage 12 m²",
+"painting 45 m², tiling 12 m²"
+],
+[
+"plinthes 18 ml, gouttière 12 ml, joints silicone",
+"skirting 18 lm, gutter 12 lm, silicone joints"
+],
+[
+"gravats 3 m³, débarras de cave",
+"rubble 3 m³, cellar clearance"
+],
+[
+"2 robinets, 4 prises, 3 portes",
+"2 taps, 4 sockets, 3 doors"
+],
+[
+"travaux en régie 6 h, petites réparations",
+"time-and-materials 6 h, small repairs"
+],
+[
+"matériel ou déchets au poids",
+"materials or waste by weight"
+],
+[
+"déneigement, garage à l’autolaveuse",
+"snow clearing, garage scrubber-dryer"
+],
+[
+"contrat d’entretien, sortie des poubelles",
+"maintenance contract, putting bins out"
+],
+[
+"ex.",
+"e.g."
 ]
 ];

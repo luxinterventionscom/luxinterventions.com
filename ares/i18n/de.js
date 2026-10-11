@@ -13455,5 +13455,89 @@ export default [
 [
 "📌 Affecter",
 "📌 Zuweisen"
+],
+[
+"Unités des devis",
+"Einheiten der Angebote"
+],
+[
+"Prix d’une ligne = quantité × prix unitaire (ex. 45 m² × 22,00 € HT).",
+"Preis einer Zeile = Menge × Einzelpreis (z. B. 45 m² × 22,00 € netto)."
+],
+[
+"forfait : prix fixe, tout compris (quantité 1)",
+"Pauschale: Festpreis, alles inklusive (Menge 1)"
+],
+[
+"mètre carré : une surface",
+"Quadratmeter: eine Fläche"
+],
+[
+"mètre linéaire : une longueur",
+"laufender Meter: eine Länge"
+],
+[
+"mètre cube : un volume",
+"Kubikmeter: ein Volumen"
+],
+[
+"pièce : un nombre d’éléments",
+"Stück: eine Anzahl von Teilen"
+],
+[
+"heure de travail",
+"Arbeitsstunde"
+],
+[
+"kilogramme : un poids",
+"Kilogramm: ein Gewicht"
+],
+[
+"à chaque passage",
+"bei jedem Einsatz"
+],
+[
+"par mois",
+"pro Monat"
+],
+[
+"visite technique, débouchage, nettoyage de fin de chantier",
+"technische Besichtigung, Rohrreinigung, Baustellenendreinigung"
+],
+[
+"peinture 45 m², carrelage 12 m²",
+"Anstrich 45 m², Fliesen 12 m²"
+],
+[
+"plinthes 18 ml, gouttière 12 ml, joints silicone",
+"Sockelleisten 18 lfm, Dachrinne 12 lfm, Silikonfugen"
+],
+[
+"gravats 3 m³, débarras de cave",
+"Bauschutt 3 m³, Kellerentrümpelung"
+],
+[
+"2 robinets, 4 prises, 3 portes",
+"2 Wasserhähne, 4 Steckdosen, 3 Türen"
+],
+[
+"travaux en régie 6 h, petites réparations",
+"Regiearbeiten 6 Std., Kleinreparaturen"
+],
+[
+"matériel ou déchets au poids",
+"Material oder Abfall nach Gewicht"
+],
+[
+"déneigement, garage à l’autolaveuse",
+"Schneeräumung, Garage mit Scheuersaugmaschine"
+],
+[
+"contrat d’entretien, sortie des poubelles",
+"Wartungsvertrag, Mülltonnen rausstellen"
+],
+[
+"ex.",
+"z. B."
 ]
 ];

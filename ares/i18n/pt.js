@@ -13395,5 +13395,85 @@ export default [
 [
 "📌 Affecter",
 "📌 Atribuir"
+],
+[
+"Unités des devis",
+"Unidades dos orçamentos"
+],
+[
+"Prix d’une ligne = quantité × prix unitaire (ex. 45 m² × 22,00 € HT).",
+"Preço de uma linha = quantidade × preço unitário (ex. 45 m² × 22,00 € s/ IVA)."
+],
+[
+"forfait : prix fixe, tout compris (quantité 1)",
+"avença: preço fixo, tudo incluído (quantidade 1)"
+],
+[
+"mètre carré : une surface",
+"metro quadrado: uma superfície"
+],
+[
+"mètre linéaire : une longueur",
+"metro linear: um comprimento"
+],
+[
+"mètre cube : un volume",
+"metro cúbico: um volume"
+],
+[
+"pièce : un nombre d’éléments",
+"unidade: um número de peças"
+],
+[
+"heure de travail",
+"hora de trabalho"
+],
+[
+"kilogramme : un poids",
+"quilograma: um peso"
+],
+[
+"à chaque passage",
+"em cada passagem"
+],
+[
+"par mois",
+"por mês"
+],
+[
+"visite technique, débouchage, nettoyage de fin de chantier",
+"visita técnica, desentupimento, limpeza de fim de obra"
+],
+[
+"peinture 45 m², carrelage 12 m²",
+"pintura 45 m², ladrilho 12 m²"
+],
+[
+"plinthes 18 ml, gouttière 12 ml, joints silicone",
+"rodapés 18 ml, caleira 12 ml, juntas de silicone"
+],
+[
+"gravats 3 m³, débarras de cave",
+"entulho 3 m³, despejo de cave"
+],
+[
+"2 robinets, 4 prises, 3 portes",
+"2 torneiras, 4 tomadas, 3 portas"
+],
+[
+"travaux en régie 6 h, petites réparations",
+"trabalhos por administração 6 h, pequenas reparações"
+],
+[
+"matériel ou déchets au poids",
+"material ou resíduos ao peso"
+],
+[
+"déneigement, garage à l’autolaveuse",
+"remoção de neve, garagem com máquina lavadora"
+],
+[
+"contrat d’entretien, sortie des poubelles",
+"contrato de manutenção, colocação dos contentores"
 ]
 ];
