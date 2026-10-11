@@ -138,6 +138,20 @@
   .notice { font-size: 13px; }
   .err { text-align: center; color: var(--muted); padding: 40px 10px; }
   .notif-off { border: 2px solid #f59e0b; background: #fffbeb; }
+  /* 🦺 devis du chef de chantier */
+  input[type=number] { font: inherit; padding: 10px 8px; border: 1px solid var(--line); border-radius: 10px; background: #fff; width: 100%; box-sizing: border-box; }
+  details.dv-cat { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; margin-top: 8px; }
+  details.dv-cat > summary { cursor: pointer; font-weight: 700; }
+  .dv-n { background: var(--accent); color: #fff; border-radius: 999px; padding: 0 8px; font-size: 13px; }
+  .dv-pi { padding: 8px 0; border-top: 1px solid var(--line); }
+  details.dv-cat .dv-pi:first-of-type { border-top: 0; }
+  label.dv-ck { display: flex; gap: 8px; align-items: flex-start; margin: 0; color: var(--text); font-weight: 500; font-size: 15px; }
+  label.dv-ck input { width: 22px; height: 22px; flex: none; margin-top: 1px; }
+  .dv-pq { display: grid; grid-template-columns: 76px 96px 1fr; gap: 6px; margin-top: 6px; }
+  .dv-pq select { padding: 10px 6px; }
+  .dv-row { display: grid; grid-template-columns: 1fr 88px 80px; gap: 6px; margin-bottom: 8px; align-items: center; }
+  .dv-sfx { display: flex; align-items: center; gap: 4px; } .dv-sfx i { font-style: normal; color: var(--muted); font-size: 13px; }
+  @media (max-width: 380px) { .dv-pq { grid-template-columns: 70px 1fr; } .dv-pq input[type=text] { grid-column: 1 / -1; } .dv-row { grid-template-columns: 1fr 1fr; } .dv-row select { grid-column: 1 / -1; } }
 </style>
 </head>
 <body>

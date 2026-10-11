@@ -13551,5 +13551,193 @@ export default [
 [
 "ex.",
 "es."
+],
+[
+"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou portail de la gérance) et la signature du client.",
+"Sul posto: foto, rapporto e operai previsti (🦺 capo cantiere, qui o nella sua app). Poi i prezzi (👔 direttore) e «✅ Preventivo completato»; solo allora l’invio (PDF, WhatsApp, email o portale della gérance) e la firma del cliente."
+],
+[
+"🟡 En préparation ({0})",
+"🟡 In preparazione ({0})"
+],
+[
+"Le chef de chantier peut encore les corriger. Le directeur met les prix puis touche « ✅ Devis terminé » : ensuite seulement le devis part au client.",
+"Il capo cantiere può ancora correggerli. Il direttore mette i prezzi e poi tocca «✅ Preventivo completato»: solo dopo il preventivo parte al cliente."
+],
+[
+"🟡 En préparation",
+"🟡 In preparazione"
+],
+[
+"En préparation.",
+"In preparazione."
+],
+[
+"Enregistrez autant de fois que vous voulez, sans signature. Le directeur met les prix puis touche",
+"Salva tutte le volte che vuoi, senza firma. Il direttore mette i prezzi e poi tocca"
+],
+[
+"« ✅ Devis terminé »",
+"«✅ Preventivo completato»"
+],
+[
+": alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, portail) et la signature « Bon pour accord ».",
+": solo allora compaiono l’invio al cliente (PDF, WhatsApp, email, link, portale) e la firma «Bon pour accord»."
+],
+[
+"✅ Devis terminé",
+"✅ Preventivo completato"
+],
+[
+"✍️ Faire signer « Vu et correct »",
+"✍️ Far firmare «Visto e corretto»"
+],
+[
+"✍️ Refaire « Vu et correct »",
+"✍️ Rifare «Visto e corretto»"
+],
+[
+"Mettez d’abord les prix (👔 directeur) : le total est à 0 €",
+"Metti prima i prezzi (👔 direttore): il totale è 0 €"
+],
+[
+"Chef de chantier — devis",
+"Capo cantiere — preventivi"
+],
+[
+": il prépare les devis dans son app (photos, rapport, travaux, signature « Vu et correct » du client), sans voir les prix",
+": prepara i preventivi nella sua app (foto, rapporto, lavori, firma «Visto e corretto» del cliente), senza vedere i prezzi"
+],
+[
+"🟡 En préparation · 🦺 {0} · ✍️ Vu et correct",
+"🟡 In preparazione · 🦺 {0} · ✍️ Visto e corretto"
+],
+[
+"🟡 En préparation · 🦺 {0}",
+"🟡 In preparazione · 🦺 {0}"
+],
+[
+"🟡 En préparation · ✍️ Vu et correct",
+"🟡 In preparazione · ✍️ Visto e corretto"
+],
+[
+"🦺 Préparé par",
+"🦺 Preparato da"
+],
+[
+"dans son app · dernier envoi le {0}",
+"nella sua app · ultimo invio il {0}"
+],
+[
+"dans son app",
+"nella sua app"
+],
+[
+"✍️ « Vu et correct » signé par {0} le {1} (le rapport du chef correspond à sa demande — sans prix)",
+"✍️ «Visto e corretto» firmato da {0} il {1} (il rapporto del capo cantiere corrisponde alla sua richiesta — senza prezzi)"
+],
+[
+"✅ Prêts à envoyer ({0})",
+"✅ Pronti da inviare ({0})"
+],
+[
+"✅ Terminé — prêt à envoyer au client",
+"✅ Completato — pronto da inviare al cliente"
+],
+[
+"↩️ Remettre en préparation",
+"↩️ Rimetti in preparazione"
+],
+[
+"Devis {0} terminé ?",
+"Preventivo {0} completato?"
+],
+[
+"⚠️ {0} ligne(s) sans prix. Total {1} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.",
+"⚠️ {0} riga/e senza prezzo. Totale {1} IVA incl. Poi potrai inviarlo al cliente (o nel suo portale) e farlo firmare. Il capo cantiere non può più modificarlo."
+],
+[
+"Total {0} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.",
+"Totale {0} IVA incl. Poi potrai inviarlo al cliente (o nel suo portale) e farlo firmare. Il capo cantiere non può più modificarlo."
+],
+[
+"✅ Terminé",
+"✅ Completato"
+],
+[
+"✅ Devis terminé : vous pouvez l’envoyer au client",
+"✅ Preventivo completato: puoi inviarlo al cliente"
+],
+[
+"Remettre le devis {0} en préparation ?",
+"Rimettere il preventivo {0} in preparazione?"
+],
+[
+"↩️ En préparation",
+"↩️ In preparazione"
+],
+[
+"Il n’a pas encore été envoyé. Le chef de chantier pourra de nouveau le corriger dans son app ; ensuite touchez encore « ✅ Devis terminé ».",
+"Non è ancora stato inviato. Il capo cantiere potrà di nuovo correggerlo nella sua app; poi tocca di nuovo «✅ Preventivo completato»."
+],
+[
+"✍️ Vu et correct — {0}",
+"✍️ Visto e corretto — {0}"
+],
+[
+"Travaux demandés",
+"Lavori richiesti"
+],
+[
+"Nom du client",
+"Nome del cliente"
+],
+[
+"Vu et correct",
+"Visto e corretto"
+],
+[
+"— je confirme que ce rapport décrit les travaux que je demande. Ce n’est pas une commande : le prix viendra dans le devis, que je signerai ensuite si je l’accepte.",
+"— confermo che questo rapporto descrive i lavori che chiedo. Non è un ordine: il prezzo arriverà nel preventivo, che firmerò poi se lo accetto."
+],
+[
+"✍️ Valider « Vu et correct »",
+"✍️ Conferma «Visto e corretto»"
+],
+[
+"✍️ « Vu et correct » signé",
+"✍️ «Visto e corretto» firmato"
+],
+[
+"Rapport ou travaux modifiés : la signature « Vu et correct » est retirée (à refaire)",
+"Rapporto o lavori modificati: la firma «Visto e corretto» è stata tolta (da rifare)"
+],
+[
+"Même numéro + R1, R2… Modifiez les travaux ou faites une remise, touchez « ✅ Devis terminé », puis renvoyez-le. La signature éventuelle est retirée.",
+"Stesso numero + R1, R2… Modifica i lavori o fai uno sconto, tocca «✅ Preventivo completato», poi rinvialo. L’eventuale firma viene tolta."
+],
+[
+"📝 Nouveau devis {0} de {1} : {2} · ✍️ Vu et correct",
+"📝 Nuovo preventivo {0} da {1}: {2} · ✍️ Visto e corretto"
+],
+[
+"📝 Nouveau devis {0} de {1} : {2}",
+"📝 Nuovo preventivo {0} da {1}: {2}"
+],
+[
+"✏️ Devis {0} corrigé par {1} : {2}",
+"✏️ Preventivo {0} corretto da {1}: {2}"
+],
+[
+"📷 1 photo pour le devis {0}",
+"📷 1 foto per il preventivo {0}"
+],
+[
+"📷 {0} photos pour le devis {1}",
+"📷 {0} foto per il preventivo {1}"
+],
+[
+"⚠️ Correction du devis {0} reçue après « Devis terminé » : non appliquée (appelez {1})",
+"⚠️ Correzione del preventivo {0} ricevuta dopo «Preventivo completato»: non applicata (chiama {1})"
 ]
 ];

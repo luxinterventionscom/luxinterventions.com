@@ -13539,5 +13539,193 @@ export default [
 [
 "ex.",
 "z. B."
+],
+[
+"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou portail de la gérance) et la signature du client.",
+"Vor Ort: Fotos, Bericht und geplante Arbeiter (🦺 Bauleiter, hier oder in seiner App). Dann die Preise (👔 Direktor) und „✅ Kostenvoranschlag fertig“; erst dann der Versand (PDF, WhatsApp, E-Mail oder Portal der Hausverwaltung) und die Unterschrift des Kunden."
+],
+[
+"🟡 En préparation ({0})",
+"🟡 In Vorbereitung ({0})"
+],
+[
+"Le chef de chantier peut encore les corriger. Le directeur met les prix puis touche « ✅ Devis terminé » : ensuite seulement le devis part au client.",
+"Der Bauleiter kann sie noch korrigieren. Der Direktor setzt die Preise ein und tippt dann auf „✅ Kostenvoranschlag fertig“: erst danach geht er an den Kunden."
+],
+[
+"🟡 En préparation",
+"🟡 In Vorbereitung"
+],
+[
+"En préparation.",
+"In Vorbereitung."
+],
+[
+"Enregistrez autant de fois que vous voulez, sans signature. Le directeur met les prix puis touche",
+"Speichern Sie so oft Sie wollen, ohne Unterschrift. Der Direktor setzt die Preise ein und tippt dann auf"
+],
+[
+"« ✅ Devis terminé »",
+"„✅ Kostenvoranschlag fertig“"
+],
+[
+": alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, portail) et la signature « Bon pour accord ».",
+": erst dann erscheinen der Versand an den Kunden (PDF, WhatsApp, E-Mail, Link, Portal) und die Unterschrift „Bon pour accord“."
+],
+[
+"✅ Devis terminé",
+"✅ Kostenvoranschlag fertig"
+],
+[
+"✍️ Faire signer « Vu et correct »",
+"✍️ „Gesehen und richtig“ unterschreiben lassen"
+],
+[
+"✍️ Refaire « Vu et correct »",
+"✍️ „Gesehen und richtig“ neu unterschreiben"
+],
+[
+"Mettez d’abord les prix (👔 directeur) : le total est à 0 €",
+"Setzen Sie zuerst die Preise ein (👔 Direktor): die Summe ist 0 €"
+],
+[
+"Chef de chantier — devis",
+"Bauleiter — Kostenvoranschläge"
+],
+[
+": il prépare les devis dans son app (photos, rapport, travaux, signature « Vu et correct » du client), sans voir les prix",
+": er bereitet die Kostenvoranschläge in seiner App vor (Fotos, Bericht, Arbeiten, Unterschrift „Gesehen und richtig“ des Kunden), ohne die Preise zu sehen"
+],
+[
+"🟡 En préparation · 🦺 {0} · ✍️ Vu et correct",
+"🟡 In Vorbereitung · 🦺 {0} · ✍️ Gesehen und richtig"
+],
+[
+"🟡 En préparation · 🦺 {0}",
+"🟡 In Vorbereitung · 🦺 {0}"
+],
+[
+"🟡 En préparation · ✍️ Vu et correct",
+"🟡 In Vorbereitung · ✍️ Gesehen und richtig"
+],
+[
+"🦺 Préparé par",
+"🦺 Vorbereitet von"
+],
+[
+"dans son app · dernier envoi le {0}",
+"in seiner App · letzter Versand am {0}"
+],
+[
+"dans son app",
+"in seiner App"
+],
+[
+"✍️ « Vu et correct » signé par {0} le {1} (le rapport du chef correspond à sa demande — sans prix)",
+"✍️ „Gesehen und richtig“ unterschrieben von {0} am {1} (der Bericht des Bauleiters entspricht seinem Wunsch — ohne Preise)"
+],
+[
+"✅ Prêts à envoyer ({0})",
+"✅ Bereit zum Versand ({0})"
+],
+[
+"✅ Terminé — prêt à envoyer au client",
+"✅ Fertig — bereit zum Versand an den Kunden"
+],
+[
+"↩️ Remettre en préparation",
+"↩️ Zurück in Vorbereitung"
+],
+[
+"Devis {0} terminé ?",
+"Kostenvoranschlag {0} fertig?"
+],
+[
+"⚠️ {0} ligne(s) sans prix. Total {1} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.",
+"⚠️ {0} Zeile(n) ohne Preis. Summe {1} brutto. Danach können Sie ihn dem Kunden (oder in sein Portal) schicken und unterschreiben lassen. Der Bauleiter kann ihn nicht mehr ändern."
+],
+[
+"Total {0} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.",
+"Summe {0} brutto. Danach können Sie ihn dem Kunden (oder in sein Portal) schicken und unterschreiben lassen. Der Bauleiter kann ihn nicht mehr ändern."
+],
+[
+"✅ Terminé",
+"✅ Fertig"
+],
+[
+"✅ Devis terminé : vous pouvez l’envoyer au client",
+"✅ Kostenvoranschlag fertig: Sie können ihn dem Kunden schicken"
+],
+[
+"Remettre le devis {0} en préparation ?",
+"Kostenvoranschlag {0} zurück in Vorbereitung?"
+],
+[
+"↩️ En préparation",
+"↩️ In Vorbereitung"
+],
+[
+"Il n’a pas encore été envoyé. Le chef de chantier pourra de nouveau le corriger dans son app ; ensuite touchez encore « ✅ Devis terminé ».",
+"Er wurde noch nicht gesendet. Der Bauleiter kann ihn in seiner App wieder korrigieren; danach tippen Sie erneut auf „✅ Kostenvoranschlag fertig“."
+],
+[
+"✍️ Vu et correct — {0}",
+"✍️ Gesehen und richtig — {0}"
+],
+[
+"Travaux demandés",
+"Gewünschte Arbeiten"
+],
+[
+"Nom du client",
+"Name des Kunden"
+],
+[
+"Vu et correct",
+"Gesehen und richtig"
+],
+[
+"— je confirme que ce rapport décrit les travaux que je demande. Ce n’est pas une commande : le prix viendra dans le devis, que je signerai ensuite si je l’accepte.",
+"— ich bestätige, dass dieser Bericht die von mir gewünschten Arbeiten beschreibt. Das ist kein Auftrag: der Preis kommt mit dem Kostenvoranschlag, den ich danach unterschreibe, wenn ich ihn annehme."
+],
+[
+"✍️ Valider « Vu et correct »",
+"✍️ „Gesehen und richtig“ bestätigen"
+],
+[
+"✍️ « Vu et correct » signé",
+"✍️ „Gesehen und richtig“ unterschrieben"
+],
+[
+"Rapport ou travaux modifiés : la signature « Vu et correct » est retirée (à refaire)",
+"Bericht oder Arbeiten geändert: die Unterschrift „Gesehen und richtig“ wurde entfernt (neu machen)"
+],
+[
+"Même numéro + R1, R2… Modifiez les travaux ou faites une remise, touchez « ✅ Devis terminé », puis renvoyez-le. La signature éventuelle est retirée.",
+"Gleiche Nummer + R1, R2… Ändern Sie die Arbeiten oder geben Sie einen Rabatt, tippen Sie auf „✅ Kostenvoranschlag fertig“ und senden Sie ihn erneut. Eine eventuelle Unterschrift wird entfernt."
+],
+[
+"📝 Nouveau devis {0} de {1} : {2} · ✍️ Vu et correct",
+"📝 Neuer Kostenvoranschlag {0} von {1}: {2} · ✍️ Gesehen und richtig"
+],
+[
+"📝 Nouveau devis {0} de {1} : {2}",
+"📝 Neuer Kostenvoranschlag {0} von {1}: {2}"
+],
+[
+"✏️ Devis {0} corrigé par {1} : {2}",
+"✏️ Kostenvoranschlag {0} korrigiert von {1}: {2}"
+],
+[
+"📷 1 photo pour le devis {0}",
+"📷 1 Foto für den Kostenvoranschlag {0}"
+],
+[
+"📷 {0} photos pour le devis {1}",
+"📷 {0} Fotos für den Kostenvoranschlag {1}"
+],
+[
+"⚠️ Correction du devis {0} reçue après « Devis terminé » : non appliquée (appelez {1})",
+"⚠️ Korrektur des Kostenvoranschlags {0} nach „Kostenvoranschlag fertig“ erhalten: nicht übernommen (rufen Sie {1} an)"
 ]
 ];

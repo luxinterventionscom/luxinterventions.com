@@ -13283,5 +13283,193 @@ export default [
 [
 "ex.",
 "e.g."
+],
+[
+"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou portail de la gérance) et la signature du client.",
+"On site: photos, report and planned workers (🦺 site manager, here or in their app). Then the prices (👔 director) and “✅ Quote finished”; only then sending (PDF, WhatsApp, email or the property manager’s portal) and the client’s signature."
+],
+[
+"🟡 En préparation ({0})",
+"🟡 Being prepared ({0})"
+],
+[
+"Le chef de chantier peut encore les corriger. Le directeur met les prix puis touche « ✅ Devis terminé » : ensuite seulement le devis part au client.",
+"The site manager can still correct them. The director adds the prices, then taps “✅ Quote finished”: only then does the quote go to the client."
+],
+[
+"🟡 En préparation",
+"🟡 Being prepared"
+],
+[
+"En préparation.",
+"Being prepared."
+],
+[
+"Enregistrez autant de fois que vous voulez, sans signature. Le directeur met les prix puis touche",
+"Save as often as you like, without a signature. The director adds the prices, then taps"
+],
+[
+"« ✅ Devis terminé »",
+"“✅ Quote finished”"
+],
+[
+": alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, portail) et la signature « Bon pour accord ».",
+": only then do sending to the client (PDF, WhatsApp, email, link, portal) and the “Bon pour accord” signature appear."
+],
+[
+"✅ Devis terminé",
+"✅ Quote finished"
+],
+[
+"✍️ Faire signer « Vu et correct »",
+"✍️ Get “Seen and correct” signed"
+],
+[
+"✍️ Refaire « Vu et correct »",
+"✍️ Redo “Seen and correct”"
+],
+[
+"Mettez d’abord les prix (👔 directeur) : le total est à 0 €",
+"Add the prices first (👔 director): the total is €0"
+],
+[
+"Chef de chantier — devis",
+"Site manager — quotes"
+],
+[
+": il prépare les devis dans son app (photos, rapport, travaux, signature « Vu et correct » du client), sans voir les prix",
+": they prepare quotes in their app (photos, report, work, the client’s “Seen and correct” signature), without seeing the prices"
+],
+[
+"🟡 En préparation · 🦺 {0} · ✍️ Vu et correct",
+"🟡 Being prepared · 🦺 {0} · ✍️ Seen and correct"
+],
+[
+"🟡 En préparation · 🦺 {0}",
+"🟡 Being prepared · 🦺 {0}"
+],
+[
+"🟡 En préparation · ✍️ Vu et correct",
+"🟡 Being prepared · ✍️ Seen and correct"
+],
+[
+"🦺 Préparé par",
+"🦺 Prepared by"
+],
+[
+"dans son app · dernier envoi le {0}",
+"in their app · last sent on {0}"
+],
+[
+"dans son app",
+"in their app"
+],
+[
+"✍️ « Vu et correct » signé par {0} le {1} (le rapport du chef correspond à sa demande — sans prix)",
+"✍️ “Seen and correct” signed by {0} on {1} (the site manager’s report matches their request — no prices)"
+],
+[
+"✅ Prêts à envoyer ({0})",
+"✅ Ready to send ({0})"
+],
+[
+"✅ Terminé — prêt à envoyer au client",
+"✅ Finished — ready to send to the client"
+],
+[
+"↩️ Remettre en préparation",
+"↩️ Back to preparation"
+],
+[
+"Devis {0} terminé ?",
+"Quote {0} finished?"
+],
+[
+"⚠️ {0} ligne(s) sans prix. Total {1} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.",
+"⚠️ {0} line(s) without a price. Total {1} incl. VAT. Then you can send it to the client (or to their portal) and have it signed. The site manager can no longer change it."
+],
+[
+"Total {0} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.",
+"Total {0} incl. VAT. Then you can send it to the client (or to their portal) and have it signed. The site manager can no longer change it."
+],
+[
+"✅ Terminé",
+"✅ Finished"
+],
+[
+"✅ Devis terminé : vous pouvez l’envoyer au client",
+"✅ Quote finished: you can send it to the client"
+],
+[
+"Remettre le devis {0} en préparation ?",
+"Put quote {0} back into preparation?"
+],
+[
+"↩️ En préparation",
+"↩️ Back to preparation"
+],
+[
+"Il n’a pas encore été envoyé. Le chef de chantier pourra de nouveau le corriger dans son app ; ensuite touchez encore « ✅ Devis terminé ».",
+"It has not been sent yet. The site manager will be able to correct it again in their app; then tap “✅ Quote finished” again."
+],
+[
+"✍️ Vu et correct — {0}",
+"✍️ Seen and correct — {0}"
+],
+[
+"Travaux demandés",
+"Requested work"
+],
+[
+"Nom du client",
+"Client name"
+],
+[
+"Vu et correct",
+"Seen and correct"
+],
+[
+"— je confirme que ce rapport décrit les travaux que je demande. Ce n’est pas une commande : le prix viendra dans le devis, que je signerai ensuite si je l’accepte.",
+"— I confirm that this report describes the work I am asking for. It is not an order: the price will come in the quote, which I will sign later if I accept it."
+],
+[
+"✍️ Valider « Vu et correct »",
+"✍️ Confirm “Seen and correct”"
+],
+[
+"✍️ « Vu et correct » signé",
+"✍️ “Seen and correct” signed"
+],
+[
+"Rapport ou travaux modifiés : la signature « Vu et correct » est retirée (à refaire)",
+"Report or work changed: the “Seen and correct” signature was removed (to redo)"
+],
+[
+"Même numéro + R1, R2… Modifiez les travaux ou faites une remise, touchez « ✅ Devis terminé », puis renvoyez-le. La signature éventuelle est retirée.",
+"Same number + R1, R2… Change the work or give a discount, tap “✅ Quote finished”, then send it again. Any signature is removed."
+],
+[
+"📝 Nouveau devis {0} de {1} : {2} · ✍️ Vu et correct",
+"📝 New quote {0} from {1}: {2} · ✍️ Seen and correct"
+],
+[
+"📝 Nouveau devis {0} de {1} : {2}",
+"📝 New quote {0} from {1}: {2}"
+],
+[
+"✏️ Devis {0} corrigé par {1} : {2}",
+"✏️ Quote {0} corrected by {1}: {2}"
+],
+[
+"📷 1 photo pour le devis {0}",
+"📷 1 photo for quote {0}"
+],
+[
+"📷 {0} photos pour le devis {1}",
+"📷 {0} photos for quote {1}"
+],
+[
+"⚠️ Correction du devis {0} reçue après « Devis terminé » : non appliquée (appelez {1})",
+"⚠️ Correction of quote {0} received after “Quote finished”: not applied (call {1})"
 ]
 ];

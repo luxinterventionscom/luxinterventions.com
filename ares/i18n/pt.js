@@ -13475,5 +13475,193 @@ export default [
 [
 "contrat d’entretien, sortie des poubelles",
 "contrato de manutenção, colocação dos contentores"
+],
+[
+"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou portail de la gérance) et la signature du client.",
+"No local: fotos, relatório e trabalhadores previstos (🦺 chefe de obra, aqui ou na sua app). Depois os preços (👔 diretor) e «✅ Orçamento concluído»; só então o envio (PDF, WhatsApp, email ou portal da gestora) e a assinatura do cliente."
+],
+[
+"🟡 En préparation ({0})",
+"🟡 Em preparação ({0})"
+],
+[
+"Le chef de chantier peut encore les corriger. Le directeur met les prix puis touche « ✅ Devis terminé » : ensuite seulement le devis part au client.",
+"O chefe de obra ainda os pode corrigir. O diretor põe os preços e depois toca em «✅ Orçamento concluído»: só então o orçamento segue para o cliente."
+],
+[
+"🟡 En préparation",
+"🟡 Em preparação"
+],
+[
+"En préparation.",
+"Em preparação."
+],
+[
+"Enregistrez autant de fois que vous voulez, sans signature. Le directeur met les prix puis touche",
+"Guarde quantas vezes quiser, sem assinatura. O diretor põe os preços e depois toca em"
+],
+[
+"« ✅ Devis terminé »",
+"«✅ Orçamento concluído»"
+],
+[
+": alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, portail) et la signature « Bon pour accord ».",
+": só então aparecem o envio ao cliente (PDF, WhatsApp, email, link, portal) e a assinatura «Bon pour accord»."
+],
+[
+"✅ Devis terminé",
+"✅ Orçamento concluído"
+],
+[
+"✍️ Faire signer « Vu et correct »",
+"✍️ Mandar assinar «Visto e conforme»"
+],
+[
+"✍️ Refaire « Vu et correct »",
+"✍️ Refazer «Visto e conforme»"
+],
+[
+"Mettez d’abord les prix (👔 directeur) : le total est à 0 €",
+"Ponha primeiro os preços (👔 diretor): o total está a 0 €"
+],
+[
+"Chef de chantier — devis",
+"Chefe de obra — orçamentos"
+],
+[
+": il prépare les devis dans son app (photos, rapport, travaux, signature « Vu et correct » du client), sans voir les prix",
+": prepara os orçamentos na sua app (fotos, relatório, trabalhos, assinatura «Visto e conforme» do cliente), sem ver os preços"
+],
+[
+"🟡 En préparation · 🦺 {0} · ✍️ Vu et correct",
+"🟡 Em preparação · 🦺 {0} · ✍️ Visto e conforme"
+],
+[
+"🟡 En préparation · 🦺 {0}",
+"🟡 Em preparação · 🦺 {0}"
+],
+[
+"🟡 En préparation · ✍️ Vu et correct",
+"🟡 Em preparação · ✍️ Visto e conforme"
+],
+[
+"🦺 Préparé par",
+"🦺 Preparado por"
+],
+[
+"dans son app · dernier envoi le {0}",
+"na sua app · último envio em {0}"
+],
+[
+"dans son app",
+"na sua app"
+],
+[
+"✍️ « Vu et correct » signé par {0} le {1} (le rapport du chef correspond à sa demande — sans prix)",
+"✍️ «Visto e conforme» assinado por {0} em {1} (o relatório do chefe corresponde ao seu pedido — sem preços)"
+],
+[
+"✅ Prêts à envoyer ({0})",
+"✅ Prontos a enviar ({0})"
+],
+[
+"✅ Terminé — prêt à envoyer au client",
+"✅ Concluído — pronto a enviar ao cliente"
+],
+[
+"↩️ Remettre en préparation",
+"↩️ Voltar a pôr em preparação"
+],
+[
+"Devis {0} terminé ?",
+"Orçamento {0} concluído?"
+],
+[
+"⚠️ {0} ligne(s) sans prix. Total {1} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.",
+"⚠️ {0} linha(s) sem preço. Total {1} c/ IVA. Depois poderá enviá-lo ao cliente (ou para o seu portal) e mandá-lo assinar. O chefe de obra já não o pode alterar."
+],
+[
+"Total {0} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.",
+"Total {0} c/ IVA. Depois poderá enviá-lo ao cliente (ou para o seu portal) e mandá-lo assinar. O chefe de obra já não o pode alterar."
+],
+[
+"✅ Terminé",
+"✅ Concluído"
+],
+[
+"✅ Devis terminé : vous pouvez l’envoyer au client",
+"✅ Orçamento concluído: pode enviá-lo ao cliente"
+],
+[
+"Remettre le devis {0} en préparation ?",
+"Voltar a pôr o orçamento {0} em preparação?"
+],
+[
+"↩️ En préparation",
+"↩️ Em preparação"
+],
+[
+"Il n’a pas encore été envoyé. Le chef de chantier pourra de nouveau le corriger dans son app ; ensuite touchez encore « ✅ Devis terminé ».",
+"Ainda não foi enviado. O chefe de obra poderá voltar a corrigi-lo na sua app; depois toque outra vez em «✅ Orçamento concluído»."
+],
+[
+"✍️ Vu et correct — {0}",
+"✍️ Visto e conforme — {0}"
+],
+[
+"Travaux demandés",
+"Trabalhos pedidos"
+],
+[
+"Nom du client",
+"Nome do cliente"
+],
+[
+"Vu et correct",
+"Visto e conforme"
+],
+[
+"— je confirme que ce rapport décrit les travaux que je demande. Ce n’est pas une commande : le prix viendra dans le devis, que je signerai ensuite si je l’accepte.",
+"— confirmo que este relatório descreve os trabalhos que peço. Não é uma encomenda: o preço virá no orçamento, que assinarei depois se o aceitar."
+],
+[
+"✍️ Valider « Vu et correct »",
+"✍️ Confirmar «Visto e conforme»"
+],
+[
+"✍️ « Vu et correct » signé",
+"✍️ «Visto e conforme» assinado"
+],
+[
+"Rapport ou travaux modifiés : la signature « Vu et correct » est retirée (à refaire)",
+"Relatório ou trabalhos alterados: a assinatura «Visto e conforme» foi retirada (a refazer)"
+],
+[
+"Même numéro + R1, R2… Modifiez les travaux ou faites une remise, touchez « ✅ Devis terminé », puis renvoyez-le. La signature éventuelle est retirée.",
+"Mesmo número + R1, R2… Altere os trabalhos ou faça um desconto, toque em «✅ Orçamento concluído» e reenvie-o. A eventual assinatura é retirada."
+],
+[
+"📝 Nouveau devis {0} de {1} : {2} · ✍️ Vu et correct",
+"📝 Novo orçamento {0} de {1}: {2} · ✍️ Visto e conforme"
+],
+[
+"📝 Nouveau devis {0} de {1} : {2}",
+"📝 Novo orçamento {0} de {1}: {2}"
+],
+[
+"✏️ Devis {0} corrigé par {1} : {2}",
+"✏️ Orçamento {0} corrigido por {1}: {2}"
+],
+[
+"📷 1 photo pour le devis {0}",
+"📷 1 foto para o orçamento {0}"
+],
+[
+"📷 {0} photos pour le devis {1}",
+"📷 {0} fotos para o orçamento {1}"
+],
+[
+"⚠️ Correction du devis {0} reçue après « Devis terminé » : non appliquée (appelez {1})",
+"⚠️ Correção do orçamento {0} recebida depois de «Orçamento concluído»: não aplicada (ligue a {1})"
 ]
 ];
