@@ -40,7 +40,8 @@ function tr1(s) {
     if (p.key && !s.includes(p.key)) continue;
     const m = p.re.exec(s);
     if (!m) continue;
-    if (p.num && !m.slice(1).some((v) => /\d/.test(v))) continue;
+    // modèle court (« {0} jour{1} ») : des valeurs courtes avec un chiffre, sinon il avalerait toute une phrase
+    if (p.num && (!m.slice(1).some((v) => /\d/.test(v)) || m.slice(1).some((v) => v.length > 12))) continue;
     const vals = {};
     p.order.forEach((ph, i) => { const v = m[i + 1]; vals[ph] = (v.trim() && exact.get(v.trim())) ?? v; });
     return p.tr.replace(/\{(\d+)\}/g, (_, k) => vals[k] ?? '');
