@@ -13171,5 +13171,33 @@ export default [
 [
 "Bureau (loyer à payer)",
 "Office (rent to pay)"
+],
+[
+"valable jusqu’au {0}",
+"valid until {0}"
+],
+[
+"début anticipé demandé",
+"early start requested"
+],
+[
+"Expiré le {0} à minuit",
+"Expired on {0} at midnight"
+],
+[
+"Expire dans {0} jour{1} ({2})",
+"Expires in {0} day(s) ({2})"
+],
+[
+"Expire ce soir à minuit ({0})",
+"Expires tonight at midnight ({0})"
+],
+[
+"📌 Affecter {0}",
+"📌 Assign {0}"
+],
+[
+"📌 Affecter",
+"📌 Assign"
 ]
 ];

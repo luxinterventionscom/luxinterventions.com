@@ -13367,5 +13367,33 @@ export default [
 [
 "Bureau (loyer à payer)",
 "Escritório (renda a pagar)"
+],
+[
+"valable jusqu’au {0}",
+"válido até {0}"
+],
+[
+"début anticipé demandé",
+"início antecipado pedido"
+],
+[
+"Expiré le {0} à minuit",
+"Expirou em {0} à meia-noite"
+],
+[
+"Expire dans {0} jour{1} ({2})",
+"Expira dentro de {0} dia(s) ({2})"
+],
+[
+"Expire ce soir à minuit ({0})",
+"Expira hoje à meia-noite ({0})"
+],
+[
+"📌 Affecter {0}",
+"📌 Atribuir a {0}"
+],
+[
+"📌 Affecter",
+"📌 Atribuir"
 ]
 ];

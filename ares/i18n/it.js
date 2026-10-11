@@ -13439,5 +13439,33 @@ export default [
 [
 "Bureau (loyer à payer)",
 "Ufficio (affitto da pagare)"
+],
+[
+"valable jusqu’au {0}",
+"valido fino al {0}"
+],
+[
+"début anticipé demandé",
+"inizio anticipato richiesto"
+],
+[
+"Expiré le {0} à minuit",
+"Scaduto il {0} a mezzanotte"
+],
+[
+"Expire dans {0} jour{1} ({2})",
+"Scade tra {0} giorno/i ({2})"
+],
+[
+"Expire ce soir à minuit ({0})",
+"Scade stasera a mezzanotte ({0})"
+],
+[
+"📌 Affecter {0}",
+"📌 Assegna {0}"
+],
+[
+"📌 Affecter",
+"📌 Assegna"
 ]
 ];

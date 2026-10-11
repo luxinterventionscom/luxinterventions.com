@@ -13427,5 +13427,33 @@ export default [
 [
 "Bureau (loyer à payer)",
 "Büro (Miete zu zahlen)"
+],
+[
+"valable jusqu’au {0}",
+"gültig bis {0}"
+],
+[
+"début anticipé demandé",
+"vorzeitiger Beginn verlangt"
+],
+[
+"Expiré le {0} à minuit",
+"Abgelaufen am {0} um Mitternacht"
+],
+[
+"Expire dans {0} jour{1} ({2})",
+"Läuft in {0} Tag(en) ab ({2})"
+],
+[
+"Expire ce soir à minuit ({0})",
+"Läuft heute um Mitternacht ab ({0})"
+],
+[
+"📌 Affecter {0}",
+"📌 {0} zuweisen"
+],
+[
+"📌 Affecter",
+"📌 Zuweisen"
 ]
 ];
