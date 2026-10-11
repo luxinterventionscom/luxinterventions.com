@@ -9,6 +9,10 @@ export default [
 "(next day)"
 ],
 [
+"(repris de la résidence, modifiables)",
+"(taken from the residence, editable)"
+],
+[
 "({0}). Il est personnel : ne le partagez pas avec d’autres personnes.",
 "({0}). It is personal: do not share it with anyone else."
 ],
@@ -67,6 +71,10 @@ export default [
 [
 "Accès (autre)",
 "Access (other)"
+],
+[
+"Accès / codes",
+"Access / codes"
 ],
 [
 "Accès désactivé",
@@ -143,6 +151,10 @@ export default [
 [
 "Ajoutez vos résidences (une seule fois : accès, clés, contact)",
 "Add your residences (only once: access, keys, contact)"
+],
+[
+"Alarme :",
+"Alarm:"
 ],
 [
 "Aller à la connexion",
@@ -245,6 +257,10 @@ export default [
 "No requests for this residence."
 ],
 [
+"Aucune demande sur cette période.",
+"No requests in this period."
+],
+[
 "Aucune demande.",
 "No requests."
 ],
@@ -291,6 +307,10 @@ export default [
 [
 "Avant",
 "Before"
+],
+[
+"Avis",
+"Rating"
 ],
 [
 "Avis global",
@@ -353,6 +373,14 @@ export default [
 "Lock-up / garage"
 ],
 [
+"Boîte à clés",
+"Key box"
+],
+[
+"Boîte à clés :",
+"Key box:"
+],
+[
 "Boîte à clés à gauche de l’entrée, code 1990",
 "Key box left of the entrance, code 1990"
 ],
@@ -381,6 +409,10 @@ export default [
 "Tiling"
 ],
 [
+"Catégorie",
+"Category"
+],
+[
 "Cave",
 "Cellar"
 ],
@@ -391,6 +423,10 @@ export default [
 [
 "Ce navigateur n’a pas pu activer les notifications (navigation privée, ou iPhone : installez d’abord l’app sur l’écran d’accueil et ouvrez-la depuis l’icône).",
 "This browser could not turn on notifications (private browsing, or iPhone: first install the app on the home screen and open it from the icon)."
+],
+[
+"Ce que vous avez écrit n’est pas encore enregistré.",
+"What you wrote isn’t saved yet."
 ],
 [
 "Ce que vous avez écrit n’est pas encore enregistré. Pour le garder : « Annuler », puis le bouton d’enregistrement.",
@@ -407,6 +443,10 @@ export default [
 [
 "Changer",
 "Change"
+],
+[
+"Changer de radio",
+"Change radio"
 ],
 [
 "Changer mon mot de passe",
@@ -445,6 +485,10 @@ export default [
 "Team leader"
 ],
 [
+"Choisissez le mois",
+"Choose the month"
+],
+[
 "Choisissez une note pour chaque critère et l’avis global.",
 "Choose a score for each criterion and the overall opinion."
 ],
@@ -475,6 +519,10 @@ export default [
 [
 "Code de configuration",
 "Setup code"
+],
+[
+"Code de configuration incorrect",
+"Wrong setup code"
 ],
 [
 "Code d’accès",
@@ -515,6 +563,10 @@ export default [
 [
 "Collab. (demandes)",
 "Staff (requests)"
+],
+[
+"Collez le lien de votre radio (site ou flux audio)",
+"Paste your radio link (website or audio stream)"
 ],
 [
 "Comptabilité",
@@ -563,6 +615,10 @@ export default [
 [
 "Contact sur place",
 "On-site contact"
+],
+[
+"Contrat d’entretien des parties communes — Kirchberg Parc",
+"Common areas maintenance contract — Kirchberg Parc"
 ],
 [
 "Contrôler",
@@ -633,6 +689,10 @@ export default [
 "From"
 ],
 [
+"De {0} à {1}{2}",
+"From {0} to {1}{2}"
+],
+[
 "Demande #{0} envoyée — LuxInterventions est prévenu",
 "Request #{0} sent — LuxInterventions has been notified"
 ],
@@ -653,8 +713,16 @@ export default [
 "Repair request for this residence"
 ],
 [
+"Demande déjà prise en charge : écrivez la correction dans un message",
+"Request already taken on: write the correction in a message"
+],
+[
 "Demande introuvable",
 "Request not found"
+],
+[
+"Demande modifiée —",
+"Request edited —"
 ],
 [
 "Demande prise en charge : pour corriger quelque chose, écrivez-le dans un message ci-dessous.",
@@ -663,6 +731,10 @@ export default [
 [
 "Demande prise en charge — la gérance est prévenue",
 "Request taken on — the property manager has been notified"
+],
+[
+"Demande terminée ou annulée : elle ne peut plus être modifiée",
+"Request finished or cancelled: it can no longer be edited"
 ],
 [
 "Demandes",
@@ -685,12 +757,20 @@ export default [
 "Requests received"
 ],
 [
+"Demandé par",
+"Requested by"
+],
+[
 "Demandée",
 "Requested"
 ],
 [
 "Demandées",
 "Requested"
+],
+[
+"Depuis le début",
+"Since the start"
 ],
 [
 "Depuis le début :",
@@ -703,6 +783,10 @@ export default [
 [
 "Devis",
 "Quote"
+],
+[
+"Devis introuvable",
+"Quote not found"
 ],
 [
 "Devis refusé",
@@ -745,6 +829,10 @@ export default [
 "From floor"
 ],
 [
+"Débouchage de la colonne d’immeuble",
+"Unblocking the building stack"
+],
+[
 "Décembre",
 "December"
 ],
@@ -767,6 +855,10 @@ export default [
 [
 "Délai moyen de prise en charge",
 "Average response time"
+],
+[
+"Délai moyen jusqu’à la fin",
+"Average time to completion"
 ],
 [
 "Délais de réponse et d’arrivée",
@@ -807,6 +899,10 @@ export default [
 [
 "Elle ne sera plus proposée pour les nouvelles demandes. L’historique des interventions est conservé.",
 "It will no longer be offered for new requests. The job history is kept."
+],
+[
+"Email ou mot de passe incorrect",
+"Wrong email or password"
 ],
 [
 "En activant votre accès, vous confirmez avoir pris connaissance de la",
@@ -877,6 +973,18 @@ export default [
 "Expired on"
 ],
 [
+"Facture",
+"Invoice"
+],
+[
+"Facture {0}",
+"Invoice {0}"
+],
+[
+"Factures émises",
+"Invoices issued"
+],
+[
 "Facturé TTC",
 "Invoiced incl. VAT"
 ],
@@ -905,12 +1013,20 @@ export default [
 "Job rating form"
 ],
 [
+"Fin (h)",
+"End (h)"
+],
+[
 "Fonction",
 "Role"
 ],
 [
 "Fonction du demandeur",
 "Requester's role"
+],
+[
+"Fonctions :",
+"Features:"
 ],
 [
 "Fuite sous l’évier, l’eau coule dans l’appartement du dessous.",
@@ -1005,8 +1121,20 @@ export default [
 "Poor"
 ],
 [
+"Interphone",
+"Intercom"
+],
+[
 "Interphone « Syndic »",
 "Intercom « Syndic »"
+],
+[
+"Intervention",
+"Job"
+],
+[
+"Intervention d’exemple (historique).",
+"Sample job (history)."
 ],
 [
 "Intervention en cours",
@@ -1113,6 +1241,14 @@ export default [
 "Up to 50 units"
 ],
 [
+"Jusqu’à la fin (moy.)",
+"To completion (avg.)"
+],
+[
+"Jusqu’à {0}",
+"Up to {0}"
+],
+[
 "La même app que LuxInterventions, pour vos immeubles et vos locataires.",
 "The same app as LuxInterventions, for your buildings and your tenants."
 ],
@@ -1131,6 +1267,14 @@ export default [
 [
 "Langue, notifications, rapports, compte",
 "Language, notifications, reports, account"
+],
+[
+"Le lien a déjà servi, il a plus de 14 jours, ou un lien plus récent vous a été envoyé (seul le dernier marche).",
+"The link was already used, is older than 14 days, or a newer link was sent to you (only the last one works)."
+],
+[
+"Le logo est ajouté par la gérance dans son portail",
+"The logo is added by the agency in its portal"
 ],
 [
 "Le responsable de votre gérance accepte ou refuse le devis.",
@@ -1187,6 +1331,10 @@ export default [
 [
 "Locataires, loyers, quittances",
 "Tenants, rents, receipts"
+],
+[
+"Locaux techniques :",
+"Plant rooms:"
 ],
 [
 "Logo enregistré 🎨",
@@ -1297,6 +1445,10 @@ export default [
 "Message to the property manager…"
 ],
 [
+"Messages échangés",
+"Messages exchanged"
+],
+[
 "Mme Klein",
 "Mrs Klein"
 ],
@@ -1345,8 +1497,16 @@ export default [
 "Password too short (10 characters minimum)."
 ],
 [
+"Météo indisponible pour le moment.",
+"Weather not available right now."
+],
+[
 "Nettoyage",
 "Cleaning"
+],
+[
+"Nettoyage de fin de chantier",
+"End-of-works cleaning"
 ],
 [
 "Nettoyer",
@@ -1509,6 +1669,10 @@ export default [
 "PROPERTY MANAGER PORTAL"
 ],
 [
+"Panneau de redémarrage",
+"Reset panel"
+],
+[
 "Panneaux solaires",
 "Solar panels"
 ],
@@ -1573,12 +1737,28 @@ export default [
 "No quotes in the last 12 months yet."
 ],
 [
+"Pas encore de facture",
+"No invoice yet"
+],
+[
 "Pas encore d’évaluation. Après chaque intervention terminée, la gérance peut remplir la fiche « ⭐ Évaluer l’intervention ».",
 "No ratings yet. After each completed job, the management company can fill in the “⭐ Rate the job” form."
 ],
 [
+"Payée",
+"Paid"
+],
+[
+"Payées / à payer",
+"Paid / unpaid"
+],
+[
 "Peinture",
 "Painting"
+],
+[
+"Peinture du hall d’entrée",
+"Entrance hall painting"
 ],
 [
 "Photo indisponible",
@@ -1603,6 +1783,10 @@ export default [
 [
 "Photos après intervention",
 "Photos after the job"
+],
+[
+"Photos envoyées",
+"Photos sent"
 ],
 [
 "Planifier",
@@ -1677,8 +1861,16 @@ export default [
 "Door"
 ],
 [
+"Porte de garage",
+"Garage door"
+],
+[
 "Porte de la cave",
 "Cellar door"
+],
+[
+"Pose de boîtes aux lettres",
+"Letterbox fitting"
 ],
 [
 "Pose de panneaux",
@@ -1695,6 +1887,14 @@ export default [
 [
 "Pour les gérances qui grandissent.",
 "For growing agencies."
+],
+[
+"Pourquoi ?",
+"Why?"
+],
+[
+"Pouvez-vous ajouter le nettoyage des vitres du hall ?",
+"Could you add cleaning of the hall windows?"
 ],
 [
 "Premiers pas · {0}/{1}",
@@ -1715,6 +1915,22 @@ export default [
 [
 "Prise en charge",
 "Taken on"
+],
+[
+"Prise en charge (h)",
+"Taken on (h)"
+],
+[
+"Prise en charge (moy.)",
+"Taken on (avg.)"
+],
+[
+"Prise en charge / fin",
+"Taken on / finished"
+],
+[
+"Problème",
+"Problem"
 ],
 [
 "Propreté & ordre",
@@ -1749,6 +1965,10 @@ export default [
 "Speed & punctuality"
 ],
 [
+"Rapport",
+"Report"
+],
+[
 "Rapport complet",
 "Full report"
 ],
@@ -1757,8 +1977,16 @@ export default [
 "Job report"
 ],
 [
+"Rapport d'interventions — {0}",
+"Jobs report — {0}"
+],
+[
 "Rapport d'interventions — {0} {1}",
 "Job report — {0} {1}"
+],
+[
+"Rapport d’intervention",
+"Job report"
 ],
 [
 "Rapport mensuel",
@@ -1775,6 +2003,10 @@ export default [
 [
 "Rapports et statistiques avancés",
 "Advanced reports and statistics"
+],
+[
+"Rechercher",
+"Search"
 ],
 [
 "Rechercher : n°, résidence, lieu…",
@@ -1799,6 +2031,14 @@ export default [
 [
 "Relation avec le personnel",
 "Relationship with the staff"
+],
+[
+"Remplacement de vitrage",
+"Glazing replacement"
+],
+[
+"Remplacement du chauffe-eau",
+"Water heater replacement"
 ],
 [
 "Remplacer",
@@ -1873,12 +2113,24 @@ export default [
 "Try again"
 ],
 [
+"Réf.",
+"Ref."
+],
+[
+"Réfection des joints de façade",
+"Façade joint repointing"
+],
+[
 "Réglages",
 "Settings"
 ],
 [
 "Réinit.",
 "Reset"
+],
+[
+"Rénovation de la cage d’escalier — Résidence Les Tilleuls",
+"Stairwell renovation — Résidence Les Tilleuls"
 ],
 [
 "Réparer",
@@ -1889,8 +2141,16 @@ export default [
 "Reserved for the agency manager"
 ],
 [
+"Réservé à LuxInterventions ou au responsable de la gérance",
+"Reserved for LuxInterventions or the agency manager"
+],
+[
 "Résidence",
 "Residence"
+],
+[
+"Résidence / lieu",
+"Residence / place"
 ],
 [
 "Résidence enregistrée",
@@ -1955,6 +2215,14 @@ export default [
 [
 "Septembre",
 "September"
+],
+[
+"Serrure digitale",
+"Digital lock"
+],
+[
+"Serrure {0} : {1}",
+"Lock {0}: {1}"
 ],
 [
 "Serrurerie",
@@ -2037,12 +2305,28 @@ export default [
 "Example building manager"
 ],
 [
+"TTC (€)",
+"Incl. VAT (€)"
+],
+[
+"Taille de haies et tonte",
+"Hedge trimming and mowing"
+],
+[
+"Tapez exactement le nom de la gérance pour confirmer",
+"Type the agency name exactly to confirm"
+],
+[
 "Tapez son nom pour confirmer :",
 "Type its name to confirm:"
 ],
 [
 "Technicien",
 "Technician"
+],
+[
+"Technicien / planifiée",
+"Technician / planned"
 ],
 [
 "Technicien de maintenance",
@@ -2079,6 +2363,10 @@ export default [
 [
 "Terminées ce mois",
 "Finished this month"
+],
+[
+"Terre · Eau · Feu · Air — LuxInterventions",
+"Earth · Water · Fire · Air — LuxInterventions"
 ],
 [
 "Tester",
@@ -2129,6 +2417,10 @@ export default [
 "Work requested"
 ],
 [
+"Travail terminé.",
+"Work finished."
+],
+[
 "Travaux effectués, pièces remplacées, recommandations…",
 "Work done, parts replaced, recommendations…"
 ],
@@ -2143,6 +2435,10 @@ export default [
 [
 "Type de travaux",
 "Type of work"
+],
+[
+"Types :",
+"Types:"
 ],
 [
 "Téléphone",
@@ -2273,6 +2569,18 @@ export default [
 "deposit"
 ],
 [
+"adresse, RCS (B…), n° TVA (LU…)",
+"address, RCS (B…), VAT no. (LU…)"
+],
+[
+"adresse, RCS (B…), n° TVA (LU…), banque, BIC, IBAN",
+"address, RCS (B…), VAT no. (LU…), bank, BIC, IBAN"
+],
+[
+"après",
+"after"
+],
+[
 "de la demande à la fin",
 "from request to completion"
 ],
@@ -2313,12 +2621,24 @@ export default [
 "e.g. Flat 4B, hall, cellar, roof"
 ],
 [
+"ex. CCPLLULL",
+"e.g. CCPLLULL"
+],
+[
 "ex. Gérance Dupont SA",
 "e.g. Dupont Management SA"
 ],
 [
 "ex. Merci de prévenir le locataire",
 "e.g. Please let the tenant know"
+],
+[
+"ex. POST Luxembourg",
+"e.g. POST Luxembourg"
+],
+[
+"ex. Pouvez-vous enlever la peinture du couloir et revoir le prix ?",
+"e.g. Could you remove the corridor painting and revise the price?"
 ],
 [
 "ex. RDC, 2, sous-sol",
@@ -2373,6 +2693,10 @@ export default [
 "finished interventions, by month"
 ],
 [
+"lecteur officiel",
+"official player"
+],
+[
 "lien personnel",
 "personal link"
 ],
@@ -2381,12 +2705,24 @@ export default [
 "new requests"
 ],
 [
+"n° TVA (LU…)",
+"VAT no. (LU…)"
+],
+[
+"payée",
+"paid"
+],
+[
 "photos du dégât",
 "photos of the damage"
 ],
 [
 "politique de confidentialité",
 "privacy policy"
+],
+[
+"porte",
+"door"
 ],
 [
 "pour suivre l'avancement de vos demandes.",
@@ -2401,12 +2737,24 @@ export default [
 "you received by email or WhatsApp: there you will choose your password."
 ],
 [
+"rue, n°, code postal, ville",
+"street, no., postcode, town"
+],
+[
 "résidences suivies",
 "residences followed"
 ],
 [
 "révision(s)",
 "revision(s)"
+],
+[
+"technicien",
+"technician"
+],
+[
+"terminée le",
+"finished on"
 ],
 [
 "travail terminé",
@@ -2445,8 +2793,16 @@ export default [
 "{0} (basement)"
 ],
 [
+"{0} TTC",
+"{0} incl. VAT"
+],
+[
 "{0} appartements",
 "{0} flats"
+],
+[
+"{0} appartements ajoutés — complétez les codes si besoin",
+"{0} flats added — complete the codes if needed"
 ],
 [
 "{0} demande(s) exportée(s)",
@@ -2495,6 +2851,10 @@ export default [
 [
 "{0} utilisateur{1}",
 "{0} user(s)"
+],
+[
+"{0} · émise le {1}",
+"{0} · issued on {1}"
 ],
 [
 "« Sur l’écran d’accueil »",
@@ -2549,6 +2909,10 @@ export default [
 "From"
 ],
 [
+"À partir de {0}",
+"From {0}"
+],
+[
 "À payer",
 "To pay"
 ],
@@ -2563,6 +2927,10 @@ export default [
 [
 "Écrivez ce qu'il faut revoir",
 "Write what needs to be reviewed"
+],
+[
+"Écrivez ce qu’il faut revoir",
+"Write what needs revising"
 ],
 [
 "Écrivez d’abord votre email ci-dessus, puis touchez « Mot de passe oublié ? ».",
@@ -2605,6 +2973,10 @@ export default [
 "Floor(s) of the flat(s)"
 ],
 [
+"Étages ou nombre d’appartements invalides (400 au plus)",
+"Invalid floors or number of flats (400 at most)"
+],
+[
 "États des lieux avec photos",
 "Check-in/out reports with photos"
 ],
@@ -2627,6 +2999,10 @@ export default [
 [
 "à l'instant",
 "just now"
+],
+[
+"à payer",
+"unpaid"
 ],
 [
 "évaluations",
@@ -2661,6 +3037,10 @@ export default [
 "→ Add. Then open the portal"
 ],
 [
+"−10 % pour les gérances et leurs résidents",
+"−10 % for agencies and their residents"
+],
+[
 "⏱️ Réponse",
 "⏱️ Answer"
 ],
@@ -2687,6 +3067,10 @@ export default [
 [
 "⚙️ Code locaux techniques (panneaux électriques, machines)",
 "⚙️ Technical rooms code (electrical panels, machines)"
+],
+[
+"⚙️ Code locaux techniques (panneaux électriques, machines) {0}",
+"⚙️ Plant room code (electrical panels, machinery) {0}"
 ],
 [
 "⚙️ Locaux techniques",
@@ -2727,6 +3111,10 @@ export default [
 [
 "✅ Devis accepté — merci !",
 "✅ Quote accepted — thank you!"
+],
+[
+"✅ Mot de passe déjà choisi ? Connectez-vous avec votre email.",
+"✅ Already chose a password? Log in with your email."
 ],
 [
 "✅ Payée",
@@ -2781,6 +3169,10 @@ export default [
 "❌ declined in"
 ],
 [
+"⬇️ Facture {0} (PDF)",
+"⬇️ Invoice {0} (PDF)"
+],
+[
 "⭐ Envoyer l’évaluation",
 "⭐ Send the rating"
 ],
@@ -2795,6 +3187,10 @@ export default [
 [
 "🌐 Langue · Language",
 "🌐 Language"
+],
+[
+"🌤️ Météo · 📻 Radio",
+"🌤️ Weather · 📻 Radio"
 ],
 [
 "🎉 Bienvenue {0} !",
@@ -2849,6 +3245,10 @@ export default [
 "📲 In real use, LuxInterventions is notified of your message."
 ],
 [
+"📲 En réel, LuxInterventions reçoit maintenant votre réponse au devis.",
+"📲 For real, LuxInterventions now receives your answer to the quote."
+],
+[
 "📲 En réel, la gérance est prévenue de votre message.",
 "📲 In real use, the property manager is notified of your message."
 ],
@@ -2883,6 +3283,10 @@ export default [
 [
 "🔄 Demander une révision",
 "🔄 Ask for a revision"
+],
+[
+"🔄 L’ouvrier prévu n’est pas disponible — LuxInterventions envoie un autre ouvrier.",
+"🔄 The planned worker isn’t available — LuxInterventions is sending another one."
 ],
 [
 "🔄 Rediscutés",
@@ -2921,12 +3325,20 @@ export default [
 "🔑 Key box code"
 ],
 [
+"🔑 Code boîte à clés {0}",
+"🔑 Key box code {0}"
+],
+[
 "🔑 Le mot de passe se choisit",
 "🔑 The password is chosen"
 ],
 [
 "🔑 Mot de passe oublié ?",
 "🔑 Forgot your password?"
+],
+[
+"🔑 Pas encore ? Touchez « Mot de passe oublié ? » : LuxInterventions vous envoie un nouveau lien.",
+"🔑 Not yet? Tap “Mot de passe oublié ?”: LuxInterventions sends you a new link."
 ],
 [
 "🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.",
@@ -2945,12 +3357,20 @@ export default [
 "🚨 Alarm code"
 ],
 [
+"🚨 Code alarme {0}",
+"🚨 Alarm code {0}"
+],
+[
 "🚪 Appartements (n°, étage, n° de porte, code de la serrure)",
 "🚪 Apartments (no., floor, door no., lock code)"
 ],
 [
 "🚪 Code portes appartements / portails d’entrée",
 "🚪 Apartment doors / entrance gates code"
+],
+[
+"🚪 Code portes appartements / portails d’entrée {0}",
+"🚪 Flat doors / entrance gates code {0}"
 ],
 [
 "🚪 Porte",

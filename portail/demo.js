@@ -12,7 +12,7 @@ export function createDemo() {
     lux: { id: 'demo-lux', org_id: null, org_name: null, role: 'admin', name: 'Équipe LuxInterventions', email: 'equipe@luxinterventions.com', phone: '', active: 1, has_password: 1, last_login: now - H },
   };
   const orgs = [
-    { id: 'demo-org', name: 'Gérance Démo', phone: '+352 20 00 00', email: 'contact@gerance-demo.lu', created_at: now - 90 * 24 * H },
+    { id: 'demo-org', name: 'Gérance Démo', phone: '+352 20 00 00', email: 'contact@gerance-demo.lu', created_at: now - 90 * 24 * H, address: '1, place de la Gare, L-1616 Luxembourg', rcs: 'B000000', tva: 'LU00000000', banque: 'Banque Démo', bic: 'DEMOLULL', iban: 'LU00 0000 0000 0000 0000', logo: '' },
     { id: 'demo-org2', name: 'Syndic Exemple', phone: '', email: '', created_at: now - 60 * 24 * H },
   ];
   const residences = [
@@ -44,6 +44,7 @@ export function createDemo() {
     ] });
   seed({ residence_id: 'r3', org_id: 'demo-org', urgence: 'planifie', categorie: 'Serrurerie', lieu: 'Porte de la cave', description: 'La serrure de la cave commune est dure, il faut forcer.', status: 'terminee', created_by: 'demo-sophie', created_at: now - 6 * 24 * H, taken_at: now - 6 * 24 * H + 2 * H, done_at: now - 4 * 24 * H, updated_at: now - 4 * 24 * H,
     technicien: 'Marco', rapport: 'Cylindre remplacé, 3 clés remises au concierge.',
+    inv_no: new Date(now - 4 * 24 * H).toISOString().slice(0, 10).replace(/-/g, '') + '-INT0027', inv_date: now - 3 * 24 * H, inv_ht: 185, inv_tva: 31.45, inv_ttc: 216.45, inv_paid: 0, inv_cont: 0,
     history: [
       { user_id: 'demo-lux', kind: 'status', status: 'prise', created_at: now - 6 * 24 * H + 2 * H },
       { user_id: 'demo-sophie', kind: 'comment', text: 'Les clés sont chez M. Weber.', created_at: now - 5 * 24 * H },
@@ -63,11 +64,30 @@ export function createDemo() {
     const t = seed({ residence_id: ['r1', 'r2', 'r3'][i % 3], org_id: 'demo-org', urgence: ['planifie', '24h', 'urgent'][i % 3], categorie: cat, lieu, description: 'Intervention d’exemple (historique).', status: 'terminee',
       created_by: 'demo-sophie', created_at: c, taken_at: c + take, done_at: c + dur, updated_at: c + dur, technicien: ['Luca', 'Marco', 'Teddy'][i % 3], rapport: 'Travail terminé.',
       history: [{ user_id: 'demo-lux', kind: 'status', status: 'prise', created_at: c + take }, { user_id: 'demo-lux', kind: 'status', status: 'terminee', text: 'Travail terminé.', created_at: c + dur }] });
+    // facture d'exemple : la plupart des interventions terminées sont facturées ; une impayée en contentieux
+    if (i % 5 !== 4) {
+      const ht = 120 + ((i * 37) % 9) * 55, d = new Date(c + dur + 24 * H);
+      Object.assign(t, { inv_no: `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-INT${String(i + 1).padStart(4, '0')}`, inv_date: c + dur + 24 * H,
+        inv_ht: ht, inv_tva: Math.round(ht * 17) / 100, inv_ttc: Math.round(ht * 117) / 100, inv_paid: i < 22 ? c + dur + 20 * 24 * H : 0, inv_cont: i === 23 ? now - 5 * 24 * H : 0 });
+    }
     if (i % 4 !== 3) {
       const n = [3, 3, 2, 3, 1, 3][i % 6];
       events.push({ id: id() + events.length, ticket_id: t.id, user_id: 'demo-sophie', kind: 'comment', status: null, created_at: c + dur + 20 * H,
         text: [`⭐ Évaluation de l’intervention #${t.ref}`, ...CRIT.map((k, j) => `${k} : ${LVL[Math.max(0, n - (j === 0 && i % 5 === 0 ? 1 : 0))]}`), `Avis global : ${n >= 3 ? 'Satisfait' : n === 2 ? 'Partiellement satisfait' : 'Non satisfait'}`, 'Rempli et confirmé par : Sophie (démo)'].join('\n') });
     }
+  }
+
+  // devis d'exemple : deux en cours (à accepter / révision demandée) et un historique sur 12 mois pour les statistiques
+  const day = (ms) => new Date(ms).toISOString().slice(0, 10);
+  const devis = [
+    { id: 'dv1', org_id: 'demo-org', no: 'DEV-LI-B000000-' + day(now - 2 * 24 * H).replace(/-/g, '') + '-0930-0012', title: 'Rénovation de la cage d’escalier — Résidence Les Tilleuls', ttc: 8424, acompte: 2527.2, pct: 30, valid_until: day(now + 13 * 24 * H), status: 'envoye', created_at: now - 2 * 24 * H, updated_at: now - 2 * 24 * H, revs: 0 },
+    { id: 'dv2', org_id: 'demo-org', no: 'DEV-LI-B000000-' + day(now - 9 * 24 * H).replace(/-/g, '') + '-1415-0011', title: 'Contrat d’entretien des parties communes — Kirchberg Parc', ttc: 585, acompte: 0, pct: 0, valid_until: day(now + 2 * 24 * H), status: 'revision', note: 'Pouvez-vous ajouter le nettoyage des vitres du hall ?', created_at: now - 9 * 24 * H, updated_at: now - 3 * 24 * H, revs: 0 },
+  ];
+  const DTIT = ['Remplacement du chauffe-eau', 'Peinture du hall d’entrée', 'Réfection des joints de façade', 'Débouchage de la colonne d’immeuble', 'Pose de boîtes aux lettres', 'Nettoyage de fin de chantier', 'Remplacement de vitrage', 'Taille de haies et tonte'];
+  for (let i = 0; i < 10; i++) {
+    const c = now - (320 - i * 30) * 24 * H, st = i % 4 === 3 ? 'refuse' : 'accepte', ttc = 650 + ((i * 53) % 11) * 410;
+    devis.push({ id: 'dvh' + i, org_id: 'demo-org', no: 'DEV-LI-B000000-' + day(c).replace(/-/g, '') + '-1000-' + String(i + 1).padStart(4, '0'), title: DTIT[i % DTIT.length], ttc, acompte: Math.round(ttc * 0.3 * 100) / 100, pct: 30,
+      valid_until: day(c + 15 * 24 * H), status: st, created_at: c, updated_at: c + (1 + (i % 4)) * 24 * H, decided_at: c + (1 + (i % 4)) * 24 * H, decided_by: 'demo-sophie', decided_by_name: 'Sophie (démo)', revs: i % 3 === 1 ? 1 : 0 });
   }
 
   let me = users.sophie;
@@ -81,6 +101,19 @@ export function createDemo() {
   };
   const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
   const notify = (text) => notices.push(text);
+  // petit PDF d'exemple (devis, facture) : en réel, c'est le document complet envoyé par LuxInterventions
+  const pdfOf = (lines) => {
+    const esc = (t) => [...t.replace(/[’‘]/g, "'").replace(/[\\()]/g, (m) => '\\' + m)].map((ch) => (ch === '€' ? '\\200' : ch.charCodeAt(0) > 255 ? '?' : ch.charCodeAt(0) > 126 ? '\\' + ch.charCodeAt(0).toString(8) : ch)).join('');
+    const txt = lines.map((l, i) => `BT /F1 ${i ? 12 : 18} Tf 60 ${770 - i * 26} Td (${esc(l)}) Tj ET`).join('\n');
+    const objs = ['<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>', '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+      '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>', `<< /Length ${txt.length} >>\nstream\n${txt}\nendstream`];
+    let out = '%PDF-1.4\n';
+    const off = objs.map((o, i) => { const at = out.length; out += `${i + 1} 0 obj\n${o}\nendobj\n`; return at; });
+    const x = out.length;
+    out += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${off.map((o) => String(o).padStart(10, '0') + ' 00000 n \n').join('')}trailer\n<< /Size ${objs.length + 1} /Root 1 0 R >>\nstartxref\n${x}\n%%EOF`;
+    return new Response(new Blob([Uint8Array.from(out, (ch) => ch.charCodeAt(0))], { type: 'application/pdf' }));
+  };
+  const eur = (n) => (+n || 0).toFixed(2).replace('.', ',') + ' €';
 
   async function api(path, opts = {}) {
     const method = opts.method || 'GET';
@@ -132,6 +165,30 @@ export function createDemo() {
       const t = seed({ residence_id: r.id, org_id: r.org_id, urgence: b.urgence, categorie: b.categorie, lieu: b.lieu, description: b.description, contact_name: b.contact_name, contact_phone: b.contact_phone, acces: b.acces, dispo: b.dispo, status: 'recue', created_by: me.id, created_at: Date.now() });
       if (!isAdmin()) notify(b.urgence === 'urgent' ? '📲 En réel, l’équipe LuxInterventions reçoit maintenant une alerte URGENTE sur son téléphone.' : '📲 En réel, l’équipe LuxInterventions reçoit maintenant une notification.');
       return { id: t.id, ref: t.ref };
+    }
+    if (p === 'devis' && method === 'GET') {
+      const all = q.get('all') === '1';
+      let ds = devis.filter((v) => (isAdmin() ? !scopeOrg || v.org_id === scopeOrg : v.org_id === me.org_id));
+      if (!isAdmin() && !all) ds = ds.filter((v) => ['envoye', 'revision'].includes(v.status) || v.updated_at > now - 60 * 24 * H);
+      return { devis: ds.sort((a, b) => b.updated_at - a.updated_at).map((v) => ({ ...v, org_name: orgs.find((o) => o.id === v.org_id).name })) };
+    }
+    const dm = p.match(/^devis\/([^/]+)\/(pdf|decision)$/);
+    if (dm) {
+      const v = devis.find((x) => x.id === dm[1] && (isAdmin() || x.org_id === me.org_id));
+      if (!v) fail(404, 'Devis introuvable');
+      if (dm[2] === 'pdf') return pdfOf([`Devis ${v.no}`, v.title || '', `Total : ${eur(v.ttc)} TTC`, v.pct ? `Acompte ${v.pct} % : ${eur(v.acompte)}` : '', `Valable jusqu'au ${v.valid_until}`, '', 'Exemple (mode demo) : en reel, le devis complet de LuxInterventions.']);
+      if (me.role !== 'gerance_admin' && !isAdmin()) fail(403, 'Réservé au responsable de la gérance');
+      if (!['envoye', 'revision'].includes(v.status)) fail(409, 'Ce devis a déjà une réponse');
+      if (b.status === 'revision' && !b.note) fail(400, 'Écrivez ce qu’il faut revoir');
+      Object.assign(v, { status: b.status, note: b.note || null, decided_at: Date.now(), decided_by: me.id, decided_by_name: me.name, updated_at: Date.now() });
+      notify('📲 En réel, LuxInterventions reçoit maintenant votre réponse au devis.');
+      return { ok: true };
+    }
+    const im = p.match(/^tickets\/([^/]+)\/invoice$/);
+    if (im) {
+      const t = tickets.find((x) => x.id === im[1]);
+      if (!t || !visible(t) || !t.inv_no) fail(404, 'Pas encore de facture');
+      return pdfOf([`Facture ${t.inv_no}`, `Intervention #${t.ref} - ${t.categorie}`, `Montant HT : ${eur(t.inv_ht)}`, `TVA : ${eur(t.inv_tva)}`, `Total TTC : ${eur(t.inv_ttc)}`, '', 'Exemple (mode demo) : en reel, la facture PDF de LuxInterventions.']);
     }
     const tm = p.match(/^tickets\/([^/]+)(?:\/(status|comments|photos))?$/);
     if (tm) {
@@ -216,7 +273,14 @@ export function createDemo() {
       for (const [k, u] of Object.entries(users)) if (u.org_id === o.id && u !== me) delete users[k];
       return { ok: true };
     }
-    if (om) { Object.assign(orgs.find((o) => o.id === om[1]), { name: b.name, phone: b.phone, email: b.email }); return { ok: true }; }
+    if (om) {
+      const o = orgs.find((x) => x.id === om[1]), own = me.role === 'gerance_admin' && me.org_id === o.id;
+      if (!isAdmin() && !own) fail(403, 'Réservé à LuxInterventions ou au responsable de la gérance');
+      if (b.logo != null) { if (!own) fail(403, 'Le logo est ajouté par la gérance dans son portail'); o.logo = String(b.logo); }
+      for (const k of ['phone', 'email', 'address', 'rcs', 'tva', 'banque', 'bic', 'iban']) if (b[k] != null) o[k] = b[k];
+      if (isAdmin() && b.name != null) o.name = b.name;
+      return { ok: true };
+    }
 
     if (p === 'users' && method === 'GET') {
       const list = Object.values(users).filter((u) => (isAdmin() ? true : u.org_id === me.org_id));
