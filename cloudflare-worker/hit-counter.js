@@ -465,8 +465,14 @@ async function toolCreate(env, b, owner, status) {
 }
 async function toolsPublic(request, env, id, sub, headers) {
   if (!id && request.method === "GET") {
+    // liste publique : gardée 60 s dans le cache de Cloudflare (sinon chaque visite relit toutes les annonces)
+    const cache = typeof caches !== "undefined" ? caches.default : null, ck = new Request(new URL(request.url).origin + "/api/tools?v=1");
+    const hit = cache && (await cache.match(ck));
+    if (hit) { const r = new Response(hit.body, hit); for (const [k, v] of Object.entries(headers)) r.headers.set(k, v); r.headers.set("Cache-Control", "public, max-age=60"); return r; }
     const items = (await toolList(env)).filter((it) => it.status === "ok" && it.exp > Date.now()).map(toolPublic);
-    return aresJson({ items }, 200, headers, { "Cache-Control": "public, max-age=60" });
+    const res = aresJson({ items }, 200, headers, { "Cache-Control": "public, max-age=60" });
+    if (cache) await cache.put(ck, res.clone()).catch(() => {});
+    return res;
   }
   if (id && sub && sub.endsWith(".jpg") && request.method === "GET") {
     const obj = await env.PHOTOS.get(TOOLS + id + "/" + sub);
@@ -916,6 +922,12 @@ const PTL_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS devis (id TEXT PRIMARY KEY, org_id TEXT NOT NULL, no TEXT NOT NULL, title TEXT, ttc REAL, acompte REAL, pct INTEGER, valid_until TEXT,
      status TEXT NOT NULL, note TEXT, pdf_key TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, decided_at INTEGER, decided_by TEXT, decided_by_name TEXT)`,
   `CREATE INDEX IF NOT EXISTS idx_devis_org ON devis(org_id, updated_at)`,
+  // comptages par résidence, utilisateurs / abonnements push par gérance ou par personne, sessions à fermer
+  `CREATE INDEX IF NOT EXISTS idx_tickets_res ON tickets(residence_id, status)`,
+  `CREATE INDEX IF NOT EXISTS idx_res_org ON residences(org_id, active)`,
+  `CREATE INDEX IF NOT EXISTS idx_users_org ON users(org_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_push_user ON push_subs(user_id)`,
   `CREATE TABLE IF NOT EXISTS devis_pub (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE, no TEXT NOT NULL, title TEXT, client TEXT, ttc REAL, acompte REAL, pct INTEGER,
      valid_until TEXT, part INTEGER, kind TEXT, pdf_key TEXT NOT NULL, status TEXT NOT NULL, sign_name TEXT, sign_png TEXT, sign_early INTEGER, decided_at INTEGER, ip TEXT,
      created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,

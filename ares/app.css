@@ -779,3 +779,7 @@ img.org-logo.xl{height:40px;max-width:110px;vertical-align:middle;margin-right:1
 .dev-proto-h{border-top:0;background:var(--surface-2,#f4f4f4);font-size:11px}.dev-proto-h b{text-align:center}
 form[data-kind=contrat] .dev-k-tr{display:none !important}
 form:not([data-kind=contrat]) .dev-k-ct{display:none !important}
+
+/* Paiements : le navigateur ne dessine que les immeubles visibles à l'écran (beaucoup de cases mois × locataires) */
+.pay-stack > .card { content-visibility: auto; contain-intrinsic-size: auto 600px; }
+@media print { .pay-stack > .card { content-visibility: visible; } }

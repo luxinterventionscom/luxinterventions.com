@@ -432,6 +432,7 @@ export class Vault {
         const next = { ...(prev && !prev.del ? prev : {}), ...rec, id, u: now };
         delete next.del;
         this.state[c][id] = next;
+        this.rev = (this.rev || 0) + 1; // numéro de version : les index en mémoire de l'app se reconstruisent
         touched.push([c, id]);
         return next;
       },
@@ -439,6 +440,7 @@ export class Vault {
         const prev = this.state[c][id];
         if (!prev || prev.del) return;
         this.state[c][id] = { id, del: true, u: now };
+        this.rev = (this.rev || 0) + 1;
         touched.push([c, id]);
       },
     };
