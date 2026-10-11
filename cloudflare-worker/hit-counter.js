@@ -45,14 +45,23 @@ function corsHeaders(origin) {
     "Access-Control-Max-Age": "86400",
     "Cache-Control": "no-store",
     "Vary": "Origin",
+    "X-Content-Type-Options": "nosniff",
   };
 }
 
 export default {
   async fetch(request, env, ctx) {
+    const headers = corsHeaders(request.headers.get("Origin") || "");
+    try {
+      return await route(request, env, ctx, headers);
+    } catch {
+      return new Response(JSON.stringify({ error: "Erreur serveur" }), { status: 500, headers: { "Content-Type": "application/json", ...headers } });
+    }
+  },
+};
+
+async function route(request, env, ctx, headers) {
     const url = new URL(request.url);
-    const origin = request.headers.get("Origin") || "";
-    const headers = corsHeaders(origin);
 
     if (request.method === "OPTIONS") {
       return new Response(null, { headers });
@@ -171,8 +180,7 @@ export default {
     }
 
     return new Response("Not found", { status: 404, headers });
-  },
-};
+}
 
 /* ════════════════════════════════════════════════════════════════════════
  * ARES — archivio cifrato end-to-end per locataires.html
@@ -437,7 +445,7 @@ async function toolCreate(env, b, owner, status) {
   if (!b || !TOOL_KINDS.includes(b.kind)) return null;
   const title = str(b.title, 80), mail = str(b.mail, 120);
   if (title.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return null;
-  const photos = Array.isArray(b.photos) ? b.photos.filter((x) => typeof x === "string" && x.length < 900000).slice(0, 3) : [];
+  const photos = Array.isArray(b.photos) ? b.photos.filter((x) => typeof x === "string" && x.length < 900000 && /^[A-Za-z0-9_-]+={0,2}$/.test(x)).slice(0, 3) : [];
   if (!photos.length) return null;
   const price = b.kind === "loc" ? Math.max(0, Math.min(100000, Number(b.price) || 0)) : 0;
   const id = [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, "0")).join("");
