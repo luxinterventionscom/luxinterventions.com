@@ -11,7 +11,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.111.1';
+const VERSION = '2.111.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1237,10 +1237,13 @@ const espNews = (d) => [
   ...(d.avis || []).map((a) => 'a:' + a.texte.slice(0, 40)), ...(d.docs || []).map((x) => 'd:' + x.id), ...(d.edl || []).map((x) => 'e:' + x.id),
   ...(d.signals || []).map((x) => 's:' + x.titre.slice(0, 30) + ':' + x.statut), ...(d.pubs || []).map((x) => 'p:' + x.id), ...(d.porte ? ['k:' + d.porte.code] : []),
 ];
-async function notifyNews(espId, keys) {
-  const k = 'aresNews:' + espId;
+// empreintes courtes (FNV-1a) : le navigateur ne garde pas en clair le code de porte ni les titres
+const fnv = (str) => { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619); return (h >>> 0).toString(36); };
+async function notifyNews(espId, raw) {
+  const k = 'aresNews:' + espId, keys = raw.map(fnv);
   let prev = null;
   try { prev = JSON.parse(localStorage.getItem(k) || 'null'); } catch { /* stockage indisponible */ }
+  if (Array.isArray(prev) && prev.some((x) => String(x).includes(':'))) prev = null; // ancien format en clair : pas de fausse « nouveauté »
   try { localStorage.setItem(k, JSON.stringify(keys)); } catch { /* stockage plein */ }
   if (Array.isArray(prev) && keys.some((x) => !prev.includes(x))) await vault.espNotify(espId).catch(() => {});
 }

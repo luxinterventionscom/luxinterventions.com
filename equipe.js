@@ -136,7 +136,7 @@ const isRefused = (tid, d) => { const st = stateOf(tid, d); return !!st && st.st
 function refusTop(it) {
   const r = REFT[lang] || REFT.fr;
   if (isRefused(it.tid, it.d) || (form && form.tid === it.tid && form.d === it.d && form.st === 'refus')) return '';
-  return `<button class="refus-top" data-act="refus" data-tid="${it.tid}" data-d="${it.d}">${esc(r.btn)}</button>`;
+  return `<button class="refus-top" data-act="refus" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(r.btn)}</button>`;
 }
 // formulaire du motif / confirmation (travail pas encore commencé)
 function refusUi(it) {
@@ -144,7 +144,7 @@ function refusUi(it) {
   if (isRefused(it.tid, it.d)) return `<div class="stline refus">${esc(r.done)}</div>`;
   const f = form && form.tid === it.tid && form.d === it.d && form.st === 'refus';
   if (!f) return '';
-  return `<form class="act refus-f" data-tid="${it.tid}" data-d="${it.d}" data-st="refus"><b>${esc(r.t)}</b>
+  return `<form class="act refus-f" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}" data-st="refus"><b>${esc(r.t)}</b>
       <label>${esc(r.why)}</label><select name="why" required><option value="">${esc(r.choose)}</option>${Object.entries(r.r).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select>
       <textarea name="note" placeholder="${esc(r.notePh)}"></textarea>
       <div class="btns"><button class="btn warn" type="submit">${esc(r.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>`;
@@ -299,10 +299,10 @@ function taskCard(it, withBtns) {
   const done = st && st.st === 'fait';
   const f = form && form.tid === it.tid && form.d === it.d ? form : null;
   const notStarted = !st || st.st === 'refus';
-  const btns = withBtns && !done && !f && !(st && st.st === 'refus') ? `<div class="btns">${!st || st.st !== 'encours' ? `<button class="btn sec" data-act="encours" data-tid="${it.tid}" data-d="${it.d}">${esc(t.start)}</button>` : ''}
-      <button class="btn ok" data-act="fait" data-tid="${it.tid}" data-d="${it.d}">${esc(t.done)}</button>
-      <button class="btn warn" data-act="incomplet" data-tid="${it.tid}" data-d="${it.d}">${esc(t.inc)}</button></div>` : '';
-  const fh = f && f.st !== 'refus' ? `<form class="act" data-tid="${it.tid}" data-d="${it.d}" data-st="${f.st}"><b>${esc(t.st[f.st])}</b>
+  const btns = withBtns && !done && !f && !(st && st.st === 'refus') ? `<div class="btns">${!st || st.st !== 'encours' ? `<button class="btn sec" data-act="encours" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(t.start)}</button>` : ''}
+      <button class="btn ok" data-act="fait" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(t.done)}</button>
+      <button class="btn warn" data-act="incomplet" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(t.inc)}</button></div>` : '';
+  const fh = f && f.st !== 'refus' ? `<form class="act" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}" data-st="${f.st}"><b>${esc(t.st[f.st])}</b>
       <label>${esc(f.st === 'incomplet' ? t.why : t.note)}</label><textarea name="note" placeholder="${esc(f.st === 'incomplet' ? t.whyPh : t.notePh)}" ${f.st === 'incomplet' ? 'required' : ''}></textarea>
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>` : '';
   return `<div class="task ${done ? 'done' : ''}${x.urgent && !done ? ' urgent' : ''}">${notStarted && !done ? refusTop(it) : ''}
@@ -328,12 +328,12 @@ function stopCard(it, cur) {
   const refused = isRefused(it.tid, it.d), ended = !!tm.end || refused;
   let act = '';
   if (refused) act = refusUi(it);
-  else if (!tm.arr && !ended) act = `${f && f.st === 'refus' ? '' : `<form class="pres" data-stop="encours" data-tid="${it.tid}" data-d="${it.d}"><input type="time" name="h" value="${nowHM()}" required><button class="btn sm" type="submit">${esc(t.s.arrBtn)}</button></form>`}${refusUi(it)}`;
-  else if (!ended) act = `${phBlock(it, x)}${f ? `<form class="act" data-tid="${it.tid}" data-d="${it.d}" data-st="${f.st}"><b>${esc(t.st[f.st])}</b>
+  else if (!tm.arr && !ended) act = `${f && f.st === 'refus' ? '' : `<form class="pres" data-stop="encours" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}"><input type="time" name="h" value="${nowHM()}" required><button class="btn sm" type="submit">${esc(t.s.arrBtn)}</button></form>`}${refusUi(it)}`;
+  else if (!ended) act = `${phBlock(it, x)}${f ? `<form class="act" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}" data-st="${f.st}"><b>${esc(t.st[f.st])}</b>
       <label>${esc(t.why)}</label><textarea name="note" placeholder="${esc(t.whyPh)}" required></textarea>
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>`
-      : `<form class="pres" data-stop="fait" data-tid="${it.tid}" data-d="${it.d}"><input type="time" name="h" value="${nowHM()}" required><button class="btn sm ok" type="submit">${esc(t.s.depBtn)}</button></form>
-      <button class="btn sm warn" style="margin-top:6px" data-act="incomplet" data-tid="${it.tid}" data-d="${it.d}">${esc(t.inc)}</button>`}`;
+      : `<form class="pres" data-stop="fait" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}"><input type="time" name="h" value="${nowHM()}" required><button class="btn sm ok" type="submit">${esc(t.s.depBtn)}</button></form>
+      <button class="btn sm warn" style="margin-top:6px" data-act="incomplet" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(t.inc)}</button>`}`;
   return `<div class="stop${cur ? ' cur' : ''}${ended ? ' done' : ''}${x.urgent && !ended ? ' urgent' : ''}">${!tm.arr && !ended ? refusTop(it) : ''}
     <div class="tt">${cur ? '<span class="live" aria-hidden="true"></span>' : ''}${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${cur ? ` <span class="tag now">${esc(tm.arr ? t.s.now : t.s.next)}</span>` : ''}</div>
     <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}</div>
@@ -347,7 +347,7 @@ function phBlock(it, x) {
   const t = T(), xx = t.x;
   return `<div class="phb"><b>📷 ${esc(xx.phT)}</b><div class="meta">${esc(xx.phHint)}</div><div class="phrow">${['av', 'ap'].map((ph) => {
     const n = phCount(it.tid, ph), full = n >= 6;
-    return `<div class="phcol"><div class="phh">${esc(xx[ph])} <span class="meta">${n} / 6</span></div>${full ? `<div class="meta">${esc(xx.full)}</div>` : `<div class="btns"><label class="btn sm">${esc(xx.cam)}<input type="file" accept="image/*" capture="environment" hidden data-ph="${ph}" data-tid="${it.tid}" data-d="${it.d}"></label><label class="btn sm sec">${esc(xx.gal)}<input type="file" accept="image/*" multiple hidden data-ph="${ph}" data-tid="${it.tid}" data-d="${it.d}"></label></div>`}</div>`;
+    return `<div class="phcol"><div class="phh">${esc(xx[ph])} <span class="meta">${n} / 6</span></div>${full ? `<div class="meta">${esc(xx.full)}</div>` : `<div class="btns"><label class="btn sm">${esc(xx.cam)}<input type="file" accept="image/*" capture="environment" hidden data-ph="${ph}" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}"></label><label class="btn sm sec">${esc(xx.gal)}<input type="file" accept="image/*" multiple hidden data-ph="${ph}" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}"></label></div>`}</div>`;
   }).join('')}</div></div>`;
 }
 // Pointage : ce que la personne a envoyé (ce téléphone) + ce que le responsable a reçu
