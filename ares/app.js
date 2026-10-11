@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.111.3';
+const VERSION = '2.112.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1404,8 +1404,11 @@ function isDue(l, y, m) {
 const payment = (locId, y, m) => vault.get('paiements', payKey(locId, y, m));
 
 // Loyer applicable à un mois donné (tient compte des révisions : l.loyerHist = [{ from, loyer, prev }])
+const histSorted = new WeakMap(); // l'historique trié une seule fois (et non à chaque mois affiché)
 function loyerAt(l, y, m) {
-  const hist = [...(l.loyerHist || [])].sort((a, b) => a.from.localeCompare(b.from));
+  const raw = l.loyerHist || [];
+  let hist = histSorted.get(raw);
+  if (!hist) { hist = [...raw].sort((a, b) => a.from.localeCompare(b.from)); if (raw.length) histSorted.set(raw, hist); }
   if (!hist.length) return l.loyer || 0;
   let v = hist[0].prev != null ? hist[0].prev : l.loyer;
   for (const h of hist) if (ym(y, m) >= ymOf(h.from)) v = h.loyer;
@@ -1421,7 +1424,16 @@ function payState(l, y, m) {
   const rest = Math.max(0, due - paid);
   return { p, due, paid, rest, state: !p ? 'none' : rest > 0.009 ? 'part' : 'paid' };
 }
-const paysOf = (locId) => vault.list('paiements').filter((p) => p.locId === locId);
+// paiements groupés par locataire : un index reconstruit seulement quand les données changent
+let payIdx = null, payIdxOf = null, payIdxRev = -1;
+const paysOf = (locId) => {
+  if (!payIdx || payIdxOf !== vault.state.paiements || payIdxRev !== vault.rev) {
+    payIdx = new Map();
+    for (const p of vault.list('paiements')) { const a = payIdx.get(p.locId); if (a) a.push(p); else payIdx.set(p.locId, [p]); }
+    payIdxOf = vault.state.paiements; payIdxRev = vault.rev;
+  }
+  return (payIdx.get(locId) || []).slice();
+};
 const totalPaid = (l) => paysOf(l.id).reduce((a, p) => a + paidAmount(p, l), 0);
 
 // Mois échus (avant le mois en cours) non payés ou payés en partie
@@ -3490,7 +3502,7 @@ dashboard() {
           ${all.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${ui.immFilter === im.id}">${im.adresse}</button>`)}
         </div>` : ''}
       </div>
-      ${cards.length ? html`<div class="stack">${cards}</div>
+      ${cards.length ? html`<div class="stack pay-stack">${cards}</div>
         <div class="card" style="margin-top:12px;border-color:var(--accent)"><div class="card-title" style="margin:0"><h3>Total ${y}</h3></div>
         <div class="totals" style="background:none;padding:8px 0 0;margin:0"><span>Échu à ce jour <b>${money(gDue)}</b></span><span>Reçu <b class="green">${money(gPaid)}</b></span><span>Impayé <b class="${gRest > 0.009 ? 'red' : 'green'}">${money(gRest)}</b></span><span>Taux <b>${pct(gColl, gDue)}%</b></span></div></div>`
         : empty('wallet', 'Aucun locataire à afficher pour ' + y + '.')}`;
