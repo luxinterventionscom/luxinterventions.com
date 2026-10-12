@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.114.2';
+const VERSION = '2.115.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -397,7 +397,7 @@ async function publishPub(immId, loud) {
 // elle renvoie « commencé / fini / pas fini » avec note et photos, ses coordonnées, ses arrêts maladie.
 const eqUrl = (i) => `${location.origin}/equipe.html#${i.espace.id}.${i.espace.key}`;
 const eqAppUrl = () => `${location.origin}/equipe.html`;
-const MEN_TAGS = { ok: '⏰ À l’heure', late: '⏰ En retard', nice: '😊 Aimable', rude: '😠 Désagréable', clean: '✨ Bien nettoyé', dirty: '🧹 Oublis / mal nettoyé' };
+const MEN_TAGS = { ok: '⏰ À l’heure', late: '⏰ En retard', nice: '😊 Aimable', rude: '😠 Désagréable', clean: '✨ Bien nettoyé', dirty: '🧹 Oublis / mal nettoyé', fait: '✅ Travail bien fait', pasfini: '⚠️ Pas fini', tidy: '🧽 Laissé propre', messy: '🗑️ Laissé sale' };
 const MEN_EVAL = { 1: '😞 Insuffisant', 2: '😐 Suffisant', 3: '🙂 Bien', 4: '⭐ Excellent' };
 const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini', refus: '✋ Refusé' };
 // Dernier état donné par l'équipe pour une intervention un jour donné
@@ -882,11 +882,12 @@ function espaceData(l) {
     out.menage = { week, dates };
     // Maintenance : passages des 7 prochains jours dans cet immeuble — femme de ménage ET ouvriers (horaire habituel + interventions datées)
     // le titre d'une intervention : parties communes ou son propre logement (rien sur les logements des voisins)
-    const visits = [], d0 = today(), dN = addDays(d0, 7);
+    // (+ les 7 derniers jours : le locataire donne son avis sur chaque passage, l'un après l'autre)
+    const visits = [], d0 = addDays(today(), -7), dN = addDays(today(), 7);
     for (const i of vault.list('intervenants').filter((x) => !x.archive)) {
       for (let d = d0; d <= dN; d = addDays(d, 1)) for (const h of horsOn(i, d)) if (h.immId === l.immId) visits.push({ d, w: i.id, nom: i.prenom || '', m: i.metier || 'autre', de: h.de, a: h.a || '', off: !!absOn(i, d) });
     }
-    for (const x of agenda(d0, dN).filter((x) => x.kind === 'tache' && x.t.intervenantId && x.t.immId === l.immId && (!x.t.logId || x.t.logId === l.logId) && x.t.statut !== 'fait')) {
+    for (const x of agenda(d0, dN).filter((x) => x.kind === 'tache' && x.t.intervenantId && x.t.immId === l.immId && (!x.t.logId || x.t.logId === l.logId) && (x.t.statut !== 'fait' || x.d < today()))) {
       const i = vault.get('intervenants', x.t.intervenantId);
       if (!i || i.archive) continue;
       const own = !x.t.logId || x.t.logId === l.logId ? x.t.titre : '';
@@ -895,7 +896,9 @@ function espaceData(l) {
       const h = horsOn(i, x.d).find((hh) => hh.immId === l.immId);
       visits.push({ d: x.d, w: i.id, nom: i.prenom || '', m: i.metier || 'autre', de: h ? h.de : '', a: h ? h.a : '', off: !!absOn(i, x.d), ty: x.t.type || '', t: own });
     }
-    out.visits = visits.sort((a, b) => a.d.localeCompare(b.d) || (a.de || '99').localeCompare(b.de || '99'));
+    visits.sort((a, b) => a.d.localeCompare(b.d) || (a.de || '99').localeCompare(b.de || '99'));
+    out.visits = visits.filter((v) => v.d >= today());
+    out.done = visits.filter((v) => v.d < today() && !v.off).map((v) => ({ d: v.d, w: v.w, nom: v.nom, m: v.m, de: v.de, a: v.a }));
   }
   if (show.pub) out.pubs = pubsActives(l.immId).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut);
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
@@ -1317,7 +1320,7 @@ async function inboxSync() {
           evals.push({ d, v, locId: l.id, at: String(msg.t || new Date().toISOString()).slice(0, 30), ...(tags.length || note ? { tags, note } : prevE && (prevE.tags || prevE.note) ? { tags: prevE.tags || [], note: prevE.note || '' } : {}) });
           const extra = [tags.map((k) => MEN_TAGS[k]).join(' · '), note ? `« ${note} »` : ''].filter(Boolean).join(' — ');
           const feed = [...(w.feed || []), { at: String(msg.t || new Date().toISOString()).slice(0, 30), k: 'eval', note: `${MEN_EVAL[v]} — avis de ${fullName(l)} (${fmtDate(d)})${extra ? ' — ' + extra : ''}` }];
-          await vault.mutate((tx) => tx.put('intervenants', { id: w.id, evals: evals.slice(-300), feed: feed.slice(-200), feedNew: (w.feedNew || 0) + 1 }), 'Avis sur le ménage', `${intervFull(w)} — ${MEN_EVAL[v]}`, w.id);
+          await vault.mutate((tx) => tx.put('intervenants', { id: w.id, evals: evals.slice(-300), feed: feed.slice(-200), feedNew: (w.feedNew || 0) + 1 }), w.metier === 'menage' ? 'Avis sur le ménage' : 'Avis sur le passage', `${intervFull(w)} — ${MEN_EVAL[v]}`, w.id);
           n++;
         }
         await vault.inboxDel(it.name);
