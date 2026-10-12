@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.116.0';
+const VERSION = '2.116.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2675,7 +2675,7 @@ function eqScores(year) {
 
 const immHead = (cur, sub) => html`${pageHead('🏢 Immeubles', sub, html`<div class="actions" style="margin:0"><button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button></div>`)}
   <div class="imm-row"><div class="tabs" role="tablist">${[['immeubles', '🏢 Immeubles'], ['locataires', '👥 Locataires'], ['paiements', '💶 Gestion locataire', '💶 Gestion loc.']].map(([r, l, sh]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${sh ? html`<span class="t-lg">${l}</span><span class="t-sm">${sh}</span>` : l}</button>`)}</div>
-    <button class="btn" data-action="new-loc">${icon('plus')} Ajout. locataire</button></div>`;
+    <button class="btn primary" data-action="new-loc">${icon('plus')} Ajout. locataire</button></div>`;
 const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
 // Éditeur d'horaire sur 7 jours : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute.
 // slotsOf(j) : créneaux du jour j (0 = lundi) ; title(j) : nom du jour (avec la date pour une semaine précise)
