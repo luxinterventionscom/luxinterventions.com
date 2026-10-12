@@ -13719,5 +13719,9 @@ export default [
 [
 "⚠️ Correction du devis {0} reçue après « Devis terminé » : non appliquée (appelez {1})",
 "⚠️ Corrección del presupuesto {0} recibida después de «Presupuesto terminado»: no aplicada (llama a {1})"
+],
+[
+"{0} photo(s) choisie(s) — touchez 💾 Enregistrer pour les ajouter au devis (les miniatures apparaissent ensuite)",
+"{0} foto(s) elegida(s) — toca 💾 Enregistrer para añadirlas al presupuesto (luego aparecen las miniaturas)"
 ]
 ];

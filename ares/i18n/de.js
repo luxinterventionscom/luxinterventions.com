@@ -13727,5 +13727,9 @@ export default [
 [
 "⚠️ Correction du devis {0} reçue après « Devis terminé » : non appliquée (appelez {1})",
 "⚠️ Korrektur des Kostenvoranschlags {0} nach „Kostenvoranschlag fertig“ erhalten: nicht übernommen (rufen Sie {1} an)"
+],
+[
+"{0} photo(s) choisie(s) — touchez 💾 Enregistrer pour les ajouter au devis (les miniatures apparaissent ensuite)",
+"{0} Foto(s) ausgewählt — tippen Sie auf 💾 Enregistrer, um sie zum Angebot hinzuzufügen (danach erscheinen die Vorschaubilder)"
 ]
 ];

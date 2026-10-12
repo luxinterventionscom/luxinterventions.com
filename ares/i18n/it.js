@@ -13739,5 +13739,9 @@ export default [
 [
 "⚠️ Correction du devis {0} reçue après « Devis terminé » : non appliquée (appelez {1})",
 "⚠️ Correzione del preventivo {0} ricevuta dopo «Preventivo completato»: non applicata (chiama {1})"
+],
+[
+"{0} photo(s) choisie(s) — touchez 💾 Enregistrer pour les ajouter au devis (les miniatures apparaissent ensuite)",
+"{0} foto scelte — tocca 💾 Enregistrer per aggiungerle al devis (poi compaiono le miniature)"
 ]
 ];
