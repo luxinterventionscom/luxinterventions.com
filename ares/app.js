@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.114.1';
+const VERSION = '2.114.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3771,13 +3771,17 @@ new MutationObserver(() => dowTags(document.body)).observe(document.body, { chil
 let sheetDirty = false;
 sheetEl.addEventListener('input', (e) => { const el = e.target; if (el.closest('form') && !el.dataset.input && !['hidden', 'search'].includes(el.type)) sheetDirty = true; });
 // fermer une fenêtre où l'on a écrit : proposer directement d'enregistrer (le bouton du bas peut être caché ou loin)
+// photo des champs de la fenêtre à l'ouverture : écrire puis effacer n'est pas une modification
+let sheetSnap = '';
+const sheetSig = () => [...sheetEl.querySelectorAll('form')].map((f) => { try { return [...new FormData(f)].map(([k, v]) => k + '=' + (typeof v === 'string' ? v : v.name)).join('&'); } catch { return ''; } }).join('|');
 const leaveSheetOk = async () => {
   if (!sheetDirty) return true;
+  if (sheetSig() === sheetSnap && !(ui.sheet && ui.sheet.kind === 'devis' && devPend.files.length)) return true;
   const subs = [...sheetEl.querySelectorAll('button[type=submit]')].filter((b) => !b.disabled);
   const save = subs.find((b) => b.closest('.sheet-foot')) || subs[subs.length - 1];
   if (!save) return true; // rien à enregistrer dans cette fenêtre
   const lbl = save.textContent.replace(/\s+/g, ' ').trim() || 'Enregistrer';
-  const v = await choiceBox('Fermer sans enregistrer ?', 'Ce que vous avez écrit n’est pas encore enregistré.', [{ value: 'drop', label: 'Fermer sans enregistrer', cls: 'ghost danger' }, { value: 'save', label: '💾 ' + lbl, cls: 'primary' }]);
+  const v = await choiceBox('Fermer sans enregistrer ?', 'Ce que vous avez écrit n’est pas encore enregistré.', [{ value: 'drop', label: 'Fermer sans enregistrer', cls: 'ghost danger' }, { value: 'save', label: /^💾/.test(lbl) ? lbl : '💾 ' + lbl, cls: 'primary' }]);
   if (v === 'save') { save.click(); return false; }
   return v === 'drop';
 };
@@ -3820,6 +3824,7 @@ function renderSheet() {
     <div class="sheet-body">${r.body}</div>
     ${r.foot ? html`<div class="sheet-foot">${r.foot}</div>` : ''}`);
   s.rendered = true;
+  if (!sheetDirty) sheetSnap = sheetSig();
   // dans les fiches : mêmes sections repliables, ouvertes par défaut
   enhanceFolds(sheetEl.querySelector('.sheet-body'), 'sheet:' + s.kind + ':' + (s.tab || ''), true);
   if (s.kind === 'ger-ticket') setTimeout(ptlPhotos, 0);
