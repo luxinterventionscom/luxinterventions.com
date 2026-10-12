@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.113.0';
+const VERSION = '2.114.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -35,6 +35,7 @@ const ICONS = {
   users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.3-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.8.7 3 2.5 3.5 5.2"/>',
   wallet: '<rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M16 15h2"/><path d="M6 6V5a2 2 0 0 1 2-2h9"/>',
   chart: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   more: '<circle cx="5" cy="12" r="1.3"/><circle cx="12" cy="12" r="1.3"/><circle cx="19" cy="12" r="1.3"/>',
   lock: '<rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/>',
   shield: '<path d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6L12 3Z"/><path d="m9 12 2 2 4-4"/>',
@@ -1610,7 +1611,7 @@ function ptlBadge(tickets) {
       try { navigator.vibrate && navigator.vibrate(urg ? [300, 150, 300] : 200); } catch {}
     }
   }
-  document.querySelectorAll('.navbtn[data-to="gerances"], .bottomnav .navbtn[data-to="reglages"]').forEach((b) => {
+  document.querySelectorAll('.navbtn[data-to="gerances"]').forEach((b) => {
     let n = b.querySelector('.nav-n');
     const tot = fresh.length + nMsg;
     if (!tot) return n && n.remove();
@@ -1785,18 +1786,6 @@ const ui = {
   ptl: { data: null, loading: false, err: '', inv: {} }, // branche gérances (Portail gérance)
 };
 
-const NAV = [
-  ['dashboard', 'Accueil', 'home'],
-  ['immeubles', 'Immeubles', 'building'],
-  ['gerances', 'Gérances', 'briefcase'],
-  ['locataires', 'Locataires', 'users'],
-  ['paiements', 'Paiements', 'wallet'],
-  ['maintenance', 'Maintenance', 'tool'],
-  ['champions', 'Classements', 'trophy'],
-  ['compta', 'Comptabilité', 'chart'],
-  ['reglages', 'Réglages', 'more'],
-];
-const MOBILE_NAV = ['dashboard', 'immeubles', 'locataires', 'paiements', 'reglages'];
 // Période choisie dans Comptabilité : année, trimestre (q1..q4) ou mois (m1..m12)
 function cpRange(y, per) {
   const pad = (n) => String(n).padStart(2, '0');
@@ -2229,15 +2218,20 @@ vault.on((kind) => {
 
 // ───────────────────────── Coquille ─────────────────────────
 // Menu de gauche (ordinateur) : sections avec sous-rubriques et raccourcis « + »
+// (même ordre que la barre du bas du téléphone ; « Gestion locataire » est un onglet de Locataires)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gérance', items: [['immeubles', 'Immeubles', 'building'], ['locataires', 'Locataires', 'users'], ['gerances', 'Gérances', 'briefcase'], ['maintenance', 'Maintenance', 'tool']] },
+  { group: 'Gérance', items: [['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase'], ['locataires', 'Locataires', 'users']] },
   ['champions', 'Classement', 'trophy'],
-  { group: 'Comptabilité', items: [['paiements', 'Gestion locataire', 'wallet'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
+  { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
+// téléphone : toutes les rubriques sur une barre qui défile au doigt
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase'], ['locataires', 'Locataires', 'users'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 function sideNavHtml() {
-  const btn = ([id, label, ic, plus, sec], sub) => html`<button class="navbtn${sub ? ' nav-sub' : ''}" data-action="go" data-to="${id}" ${sec ? new Raw(`data-sec="${sec}"`) : ''}>${icon(ic)}<span>${label}</span></button>${plus ? html`<button class="navbtn nav-plus" data-action="${plus[0]}">＋ <span>${plus[1]}</span></button>` : ''}`;
-  return NAV_TREE.map((x) => (x.group ? html`<div class="nav-group">${x.group}</div>${x.items.map((it) => btn(it, true))}` : btn(x)));
+  return NAV_TREE.map((x) => (x.group ? html`<div class="nav-group">${x.group}</div>${x.items.map((it) => navItem(it, true))}` : navItem(x)));
+}
+function navItem([id, label, ic, plus, sec], sub) {
+  return html`<button class="navbtn${sub ? ' nav-sub' : ''}" data-action="go" data-to="${id}" ${sec ? new Raw(`data-sec="${sec}"`) : ''}>${icon(ic)}<span>${label}</span></button>${plus ? html`<button class="navbtn nav-plus" data-action="${plus[0]}">＋ <span>${plus[1]}</span></button>` : ''}`;
 }
 function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
@@ -2245,7 +2239,7 @@ function renderShell() {
     <nav class="sidenav" aria-label="Navigation">
       <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>LuxInterventions<small>Gestion locative</small></span></div>
       ${sideNavHtml()}
-      ${navBtn(['reglages', 'Réglages', 'more'])}
+      ${navBtn(['reglages', 'Réglages', 'gear'])}
       <div class="spacer"></div>
       <button class="navbtn" data-action="lock">${icon('lock')}<span>Verrouiller</span></button>
     </nav>
@@ -2257,7 +2251,7 @@ function renderShell() {
       </header>
       <main class="main" id="view"></main>
     </div>
-    <nav class="bottomnav" aria-label="Navigation">${NAV.filter(([id]) => MOBILE_NAV.includes(id)).map(([id, label, ic]) => navBtn([id, id === 'reglages' ? 'Plus' : id === 'paiements' ? 'Gestion loc.' : label, ic]))}</nav>
+    <nav class="bottomnav" aria-label="Navigation">${NAV_MOBILE.map((x) => navItem(x))}</nav>
     <button class="fab" id="fab" data-action="fab" aria-label="Ajouter" hidden>${icon('plus')}</button>
   `);
   renderSync();
@@ -2278,14 +2272,24 @@ function go(route, replace) {
   ui.route = route;
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
-  const navRoute = route === 'champeq' ? 'champions' : route;
+  const navRoute = route === 'champeq' ? 'champions' : route === 'paiements' ? 'locataires' : route;
   document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute && (!b.dataset.sec || b.dataset.sec === (ui.cpSec === 'abo' ? 'abo' : 'compta')) ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
+  bnavShow();
   const fab = $('#fab');
   if (fab) fab.hidden = !['immeubles', 'locataires'].includes(route);
   renderView();
   scrollTo(0, 0);
   if (route === 'gerances' && ui.ptl.data) setTimeout(ptlLoad, 0); // toujours les demandes du moment
 }
+// barre du bas : la rubrique ouverte reste visible ; un fondu indique qu'il y en a d'autres à gauche / à droite
+function bnavShow() {
+  const nav = $('.bottomnav'), cur = nav && nav.querySelector('[aria-current=page]');
+  if (!nav) return;
+  if (cur && nav.scrollWidth > nav.clientWidth) { const x = cur.offsetLeft - (nav.clientWidth - cur.offsetWidth) / 2; nav.scrollTo({ left: Math.max(0, x), behavior: 'smooth' }); }
+  bnavEdges(nav);
+}
+const bnavEdges = (nav) => { nav.classList.toggle('more-l', nav.scrollLeft > 4); nav.classList.toggle('more-r', nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 4); };
+document.addEventListener('scroll', (e) => { if (e.target.classList && e.target.classList.contains('bottomnav')) bnavEdges(e.target); }, true);
 addEventListener('popstate', () => vault.unlocked && go(location.hash.slice(2) || 'dashboard', true));
 
 // ── Toutes les sections de l'app : un clic ouvre / ferme, ouvertes elles brillent (lumière chaude) ──
@@ -2666,6 +2670,7 @@ function eqScores(year) {
   return Object.entries(sc).filter(([id]) => { const i = vault.get('intervenants', id); return i && !i.archive; }).sort((a, b) => b[1].pts - a[1].pts || a[1].bad - b[1].bad || b[1].fait - a[1].fait);
 }
 
+const locTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['locataires', '👥 Locataires'], ['paiements', '💶 Gestion locataire']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
 const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
 // Éditeur d'horaire sur 7 jours : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute.
 // slotsOf(j) : créneaux du jour j (0 = lundi) ; title(j) : nom du jour (avec la date pour une semaine précise)
@@ -3438,7 +3443,7 @@ dashboard() {
     if (orphans.length) groups.push({ im: { adresse: 'Sans immeuble' }, ls: orphans });
     const nGone = all.filter(isGone).length;
     return html`
-      ${pageHead('Locataires', `${all.length - nGone} actuels · ${nGone} anciens`, html`<button class="btn primary desk-only" data-action="new-loc">${icon('plus')} Ajouter loc.</button>`)}
+      ${locTabs('locataires')}${pageHead('Locataires', `${all.length - nGone} actuels · ${nGone} anciens`, html`<button class="btn primary desk-only" data-action="new-loc">${icon('plus')} Ajouter loc.</button>`)}
       <div class="tabs" role="tablist" style="max-width:360px">
         <button class="tab" role="tab" aria-selected="${!anciens}" data-action="loc-seg" data-id="actuels">Actuels</button>
         <button class="tab" role="tab" aria-selected="${anciens}" data-action="loc-seg" data-id="anciens">Anciens (${nGone})</button>
@@ -3502,7 +3507,7 @@ dashboard() {
         <div class="totals"><span>Échu à ce jour <b>${money(due)}</b></span><span>Reçu <b class="green">${money(paid)}</b></span><span>Impayé <b class="${rest > 0.009 ? 'red' : 'green'}">${money(rest)}</b></span></div></div>`;
     }).filter(Boolean);
     return html`
-      ${pageHead('Gestion locataire', 'Paiements des loyers — touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.')}
+      ${locTabs('paiements')}${pageHead('Gestion locataire', 'Paiements des loyers — touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.')}
       <div class="toolbar">
         ${yearSelect(y)}
         ${all.length > 1 ? html`<div class="chips pay-chips">
@@ -3692,18 +3697,12 @@ dashboard() {
     const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     return html`
       ${pageHead('Réglages', 'Sécurité, synchronisation et données')}
-      ${ui.ptl.nMsg ? html`<button class="alert info" data-action="go" data-to="gerances" style="width:100%;text-align:left;cursor:pointer;margin-bottom:10px">💬<div><b>${ui.ptl.nMsg > 1 ? ui.ptl.nMsg + ' messages non lus' : '1 message non lu'}</b> des gérances<br><span class="small">Toucher pour les voir →</span></div></button>` : ''}
-      ${ui.ptl.nNew ? html`<button class="alert warn ger-alert" data-action="go" data-to="gerances" style="width:100%;text-align:left;cursor:pointer;margin-bottom:14px">📥<div><b>${ui.ptl.nNew > 1 ? ui.ptl.nNew + ' nouvelles demandes d’intervention' : '1 nouvelle demande d’intervention'}</b> des gérances, pas encore prises en charge<br><span class="small">Toucher pour les voir →</span></div></button>` : ''}
       <div class="section-label">Synchronisation</div>
       <div class="list settings">
         <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
           <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
-        <button class="row" data-action="go" data-to="champions"><span class="avatar">🏆</span><span class="grow"><span class="title" style="display:block">Classements de l’année</span><span class="meta">Locataire de l’année (poubelles · pizza 🍕) · Ouvrier de l’année (équipe · récompense 🎁)</span></span></button>
         <button class="row" data-action="fact-set"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Facturation des interventions</span><span class="meta">${factConf().nom} — LuxInterventions · TVA ${factConf().taux} % · IBAN ${factConf().iban || 'à compléter'}</span></span></button>
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
-        <button class="row" data-action="go" data-to="maintenance">${icon('tool')}<span class="grow title">Maintenance — nettoyage, réparations, déchets</span></button>
-        <button class="row" data-action="go" data-to="gerances">${icon('briefcase')}<span class="grow"><span class="title" style="display:block">Gérances — Portail gérance${ui.ptl.nNew ? html` <span class="badge warn">📥 ${ui.ptl.nNew}</span>` : ''}</span><span class="meta">Gérances externes : accès, résidences, demandes d’intervention</span></span></button>
-        <button class="row" data-action="go" data-to="compta">${icon('chart')}<span class="grow title">Comptabilité — journal, TVA, statistiques, export</span></button>
       </div>
 
       <div class="section-label">Gestion</div>
