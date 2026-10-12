@@ -746,6 +746,13 @@
   @media (max-width: 900px) { .portail-grid { grid-template-columns: 1fr; } }
 
 
+  /* ── Petits dessins animés des métiers (souris dessus / carte au centre de l'écran sur téléphone) ── */
+  .service-card .clip { position: absolute; inset: 0; z-index: 2; opacity: 0; transition: opacity .35s; background: #F7F5F0; pointer-events: none; }
+  .service-card .clip video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .service-card .clip b { position: absolute; left: 0; right: 0; bottom: 0; padding: 1.6rem .9rem .7rem; color: #fff; font-size: .95rem; background: linear-gradient(transparent, rgba(27,46,75,.85)); }
+  .service-card .clip b small { display: block; font-size: .72rem; color: #FFD9C4; font-weight: 600; margin-top: .15rem; }
+  .service-card.playing .clip { opacity: 1; }
+
   /* ── SERVICE MODAL ── */
   .service-card { cursor: pointer; }
   .service-card .service-click-hint {
@@ -1083,7 +1090,7 @@
 
   <div class="services-grid">
 
-    <div class="service-card" onclick="openReportModal()">
+    <div class="service-card" onclick="openReportModal()" data-clip="expert">
       <div class="service-icon" style="background:var(--navy-light)">📊</div>
       <div class="service-name">Rapport d'expertise</div>
       <div class="service-desc">Détection de fuites, humidité, thermographie infrarouge, inspection vidéo et traçage de conduites.</div>
@@ -1131,7 +1138,7 @@
       <div class="service-click-hint">▶ Faire une demande</div>
     </div>
 
-    <div class="service-card" onclick="openModal('Plomberie &amp; Débouchage','💧','#EBF3FB')">
+    <div class="service-card" onclick="openModal('Plomberie &amp; Débouchage','💧','#EBF3FB')" data-clip="plombier">
       <div class="service-icon" style="background:#EBF3FB">💧</div>
       <div class="service-name">Plomberie &amp; Débouchage</div>
       <div class="service-desc">Fuites, canalisations bouchées, WC, colonnes. Urgences nocturnes et week-end disponibles.</div>
@@ -2393,6 +2400,43 @@ fetch('https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev/api/h
   // essai tout de suite à l'ouverture (si le navigateur l'autorise)
   if (get('lxJgOff') !== '1') { au.preload = 'auto'; play(); }
   ui();
+})();
+</script>
+<script>
+// Petits dessins animés des métiers : rien n'est chargé tant qu'on ne survole pas la carte (ordinateur)
+// ou qu'elle n'arrive pas au centre de l'écran (téléphone). Pas de son, pas avec « réduire les animations » ni « économie de données ».
+(() => {
+  if (!/[?&]clips\b/.test(location.search)) return; // en essai : visible seulement avec ?clips
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches || (navigator.connection && navigator.connection.saveData)) return;
+  const cards = [...document.querySelectorAll('.service-card[data-clip]')];
+  const play = (c) => {
+    let box = c.querySelector('.clip');
+    if (!box) {
+      box = document.createElement('div'); box.className = 'clip';
+      const v = document.createElement('video');
+      Object.assign(v, { muted: true, loop: true, playsInline: true, preload: 'auto', poster: '/assets/metiers/' + c.dataset.clip + '.jpg' });
+      v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+      for (const [ext, type] of [['webm', 'video/webm'], ['mp4', 'video/mp4']]) { const s = document.createElement('source'); s.src = '/assets/metiers/' + c.dataset.clip + '.' + ext; s.type = type; v.append(s); }
+      const t = document.createElement('b'); t.textContent = c.querySelector('.service-name').textContent;
+      const h = document.createElement('small'); h.textContent = (c.querySelector('.service-click-hint') || {}).textContent || ''; t.append(h);
+      box.append(v, t); c.append(box);
+    }
+    c.classList.add('playing');
+    const v = box.querySelector('video'); v.currentTime = 0; v.play().catch(() => {});
+  };
+  const stop = (c) => { c.classList.remove('playing'); const v = c.querySelector('.clip video'); if (v) setTimeout(() => { if (!c.classList.contains('playing')) v.pause(); }, 400); };
+  if (matchMedia('(hover: hover)').matches) {
+    cards.forEach((c) => { c.addEventListener('mouseenter', () => play(c)); c.addEventListener('mouseleave', () => stop(c)); });
+  } else {
+    // téléphone : la carte la plus au centre joue, les autres s'arrêtent
+    const seen = new Map();
+    const io = new IntersectionObserver((es) => {
+      es.forEach((e) => seen.set(e.target, e.intersectionRatio));
+      const best = [...seen].filter(([, r]) => r > 0.75).sort((a, b) => b[1] - a[1])[0];
+      cards.forEach((c) => (best && c === best[0] ? (c.classList.contains('playing') || play(c)) : c.classList.contains('playing') && stop(c)));
+    }, { threshold: [0, 0.5, 0.75, 1], rootMargin: '-20% 0px -20% 0px' });
+    cards.forEach((c) => io.observe(c));
+  }
 })();
 </script>
 <script src="/assets/mail.js" defer></script>
