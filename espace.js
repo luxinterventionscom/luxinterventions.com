@@ -780,6 +780,7 @@ function render() {
   if (pushSt && pushSt !== 'on') out.push(notifCard(t)); // notifications coupées : rappel en haut (sous la carte)
   { const w = (AX[lang] || AX.fr).wx; out.push(foldCard(`<div class="card" id="wxCard"><h2>🌤️ ${esc(w.t)} · 📻 ${esc(w.r)}</h2><div id="wxBox">${wxHtml()}</div><div id="radioBox">${radioHtml()}</div></div>`, 'meteo', `<span id="wxSum">${wxSumHtml()}</span>`)); setTimeout(() => wxLoad(d), 0); }
   if (d.bins && d.chat) out.push(`<div id="binBox">${binHtml()}</div>`);
+  let binSoon = null;
   if (s.coll && (d.coll || []).length) {
     const soon = [];
     for (const it of d.coll) for (const dd of it.dates || []) { const p = it.sortie === 'jour' ? dd : addDays(dd, -1); if (p === today || p === addDays(today, 1)) soon.push({ it, dd, p }); }
@@ -787,7 +788,9 @@ function render() {
     if (shown.length) {
       const cats = CATS[lang], c = shown.some((x) => x.p === today) ? 'red' : 'yellow';
       const what = (x) => ((x.it.cat === 'autre' || !cats[x.it.cat]) && x.it.names && x.it.names[x.dd]) || cats[x.it.cat] || x.it.cat;
-      out.push(`<div class="card avis bin-soon bin-${c}"><b><span class="light l-${c} blink"></span> 🗑️ ${shown.sort((a, b) => a.p.localeCompare(b.p)).map((x) => `${esc(x.p === today ? t.cr.today : t.cr.tomorrow)} — ${esc(t.putOut)} <span class="bin" style="--c:${BIN_COLORS[x.it.cat] || '#9a958a'}">${esc(what(x))}</span>`).join(' · ')}</b></div>`);
+      // dans la carte « Maintenance » (qui clignote) : « Demain — sortir : » une seule fois par jour, puis les poubelles
+      const day = (p) => shown.filter((x) => x.p === p);
+      binSoon = { c, html: `<div class="avis bin-soon bin-${c}" style="border-radius:12px;padding:10px 12px;margin:0 0 12px">${[today, addDays(today, 1)].filter((p) => day(p).length).map((p) => `<b><span class="light l-${p === today ? 'red' : 'yellow'} blink"></span> 🗑️ ${esc(p === today ? t.cr.today : t.cr.tomorrow)} — ${esc(t.putOut)} :</b> ${day(p).map((x) => `<span class="bin" style="--c:${BIN_COLORS[x.it.cat] || '#9a958a'}">${esc(what(x))}</span>`).join(' · ')}`).join('<br>')}</div>` };
     }
   }
   // Maintenance : avec les nouvelles données (femme de ménage + ouvriers), alerte en haut pour aujourd'hui / demain
@@ -942,7 +945,10 @@ function render() {
       ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div></div></div>`).join('')}` : ''}</details>`;
   }
   const legHtml = s.coll || s.signal ? `<p class="meta mt-leg"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow"></span> ${esc(t.lights[1])} · <span class="light l-red"></span> ${esc(t.lights[2])}${vis ? ` · <span class="light l-grey"></span> ${esc(t.mt.offL)}` : ''}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</p>` : '';
-  if (mtCard || collHtml || sigHtml || legHtml) out[mtAt] = foldCard(`<div class="card" id="mtCard"><h2>${mtLight ? `<span class="light l-${mtLight} blink"></span> ` : ''}🛠️ ${esc(t.mt.t)}</h2>${mtCard}${collHtml}${sigHtml}${legHtml}</div>`, 'mt', '');
+  // un avertissement aujourd'hui / demain (ouvriers, ménage, poubelles) : le cadre de « Maintenance » clignote en rouge ;
+  // dedans, chaque avertissement garde sa propre pastille
+  const mtL = [binSoon && binSoon.c, mtLight].includes('red') ? 'red' : [binSoon && binSoon.c, mtLight].includes('yellow') ? 'yellow' : mtLight;
+  if (mtCard || collHtml || sigHtml || legHtml || binSoon) out[mtAt] = foldCard(`<div class="card" id="mtCard"${binSoon || mtLight ? ' data-alert="red"' : ''}><h2>${mtL ? `<span class="light l-${mtL} blink"></span> ` : ''}🛠️ ${esc(t.mt.t)}</h2>${binSoon ? binSoon.html : ''}${mtCard}${collHtml}${sigHtml}${legHtml}</div>`, 'mt', '');
   if (d.regles) {
     const lu = rulesDate(d);
     out.push(`<div class="card" id="rules"><details${lu ? '' : ' open'}><summary><h2 style="display:inline">📜 ${esc(t.hr.rulesT)}</h2>${lu ? ` <span class="meta">✓ ${esc(fmt(lu))}</span>` : ''}</summary>
