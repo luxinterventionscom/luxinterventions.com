@@ -229,7 +229,7 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
 
 .bottomnav {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: flex; overflow-x: auto; overflow-y: hidden; scroll-snap-type: x proximity; scrollbar-width: none; overscroll-behavior-x: contain;
   height: calc(var(--nav-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   background: color-mix(in srgb, var(--surface) 92%, transparent);
@@ -242,6 +242,12 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
   background: none; border: 0; color: var(--text-3); font: inherit; font-size: 11px; font-weight: 600; cursor: pointer;
 }
 .navbtn .ic { width: 23px; height: 23px; }
+/* barre du bas : 9 rubriques, environ 4 et demie visibles ; on fait défiler au doigt */
+.bottomnav::-webkit-scrollbar { display: none; }
+.bottomnav .navbtn { flex: 0 0 21.5%; min-width: 70px; scroll-snap-align: start; position: relative; white-space: nowrap; }
+.bottomnav.more-r { -webkit-mask-image: linear-gradient(to right, #000 82%, transparent); mask-image: linear-gradient(to right, #000 82%, transparent); }
+.bottomnav.more-l { -webkit-mask-image: linear-gradient(to left, #000 82%, transparent); mask-image: linear-gradient(to left, #000 82%, transparent); }
+.bottomnav.more-l.more-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 14%, #000 82%, transparent); mask-image: linear-gradient(to right, transparent, #000 14%, #000 82%, transparent); }
 .navbtn[aria-current='page'] { color: var(--accent); }
 .sidenav { display: none; }
 
