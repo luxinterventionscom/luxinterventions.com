@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.114.0';
+const VERSION = '2.114.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -7338,6 +7338,14 @@ function devChefPhoto(tx, w, it, at, files) {
   files.push([docId, b]);
   return { note: `📷 1 photo pour le devis ${devNo(d)}`, ph: 1, did: d.chefDid, no: devNo(d) };
 }
+// photos choisies mais pas encore enregistrées : leur nom s'affiche, et un nouveau choix s'ajoute (au lieu de remplacer)
+let devPend = { id: '', files: [] };
+function devPendHtml() {
+  const L = devPend.files;
+  if (!L.length) return '';
+  return html`<div class="dev-pf-list">${L.map((f, n) => html`<span class="dev-pf">📷 ${f.name} <span class="tiny muted">${Math.max(1, Math.round(f.size / 1024))} Ko</span><button type="button" class="btn icon sm ghost" data-action="dev-pend-del" data-n="${n}" aria-label="Retirer">${icon('x')}</button></span>`)}</div>
+    <p class="tiny" style="margin:4px 0 0;color:var(--accent)">${L.length} photo(s) choisie(s) — touchez 💾 Enregistrer pour les ajouter au devis (les miniatures apparaissent ensuite)</p>`;
+}
 // cadre « Prestations » : catalogue par catégorie, cases à cocher, quantité + unité + détails (mesures en cm / mm…)
 const devPq = (key, p, ph) => html`<div class="dev-pq"><input name="pq_${key}" type="number" step="0.01" min="0" inputmode="decimal" value="${p.q ?? ''}" placeholder="Qté" aria-label="Quantité"><select name="pu_${key}" aria-label="Unité">${DEV_UNITS.map((u) => html`<option ${u === p.u ? new Raw('selected') : ''}>${u}</option>`)}</select><input name="pd_${key}" value="${p.det || ''}" placeholder="${ph || 'détails : mesures (cm), format, couleur, modèle…'}" aria-label="Détails"></div>`;
 const devFreeRow = (n, p = {}) => html`<div class="dev-pi dev-free"><input name="pl_f${n}" value="${p.l || ''}" placeholder="Autre prestation (ex. Pose d’une crédence en verre)" aria-label="Prestation">${devPq('f' + n, { q: p.q, u: p.u || 'fft', det: p.det }, '')}</div>`;
@@ -7387,6 +7395,7 @@ Object.assign(SHEETS, {
     const crows = [...(chef.rows || [])]; while (crows.length < 3) crows.push({});
     const mats = [...(dir.mat || [])]; while (mats.length < 2) mats.push({});
     const orgs = (ui.ptl.data && ui.ptl.data.orgs) || [];
+    if (devPend.id !== (id || 'new')) devPend = { id: id || 'new', files: [] };
     const ph = id ? devPhotos(id) : [], s = devState(d), k = devCalc(d), chefW = d.chefBy ? vault.get('intervenants', d.chefBy) : null;
     const acts = id ? html`<div class="card dev-acts" style="margin-bottom:12px;padding:12px">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">${devBall(d)}<b class="grow">${s.lbl}</b></div>
@@ -7427,7 +7436,8 @@ Object.assign(SHEETS, {
         <label class="field">Adresse du chantier<input name="chantier" value="${d.chantier || ''}" placeholder="si différente de celle du client"></label>
         <label class="field">Interlocuteur sur place<input name="interloc" value="${d.interloc || ''}" placeholder="ex. M. Pierre Loan"></label>
         <fieldset class="full dev-box dev-chef"><legend>🦺 À remplir par le chef de chantier</legend>
-          <label class="field full">📷 Photos (2 à 20)<input type="file" name="photos" accept="image/*" multiple></label>
+          <label class="field full">📷 Photos (2 à 20)<input type="file" name="photos" accept="image/*" multiple data-input="dev-photos"></label>
+          <div class="full dev-pend" id="devPend">${devPendHtml()}</div>
           ${ph.length ? html`<div class="dev-ph full">${ph.map((p) => html`<figure><img data-edl="${p.id}" alt=""><button type="button" class="btn icon sm ghost" data-action="dev-ph-del" data-id="${p.id}" aria-label="Retirer la photo">${icon('x')}</button></figure>`)}</div><p class="tiny muted full" style="margin:-4px 0 0">${ph.length} / 20 photo(s)</p>` : ''}
           <label class="field full">Rapport du chantier (ce qu’il faut faire)<textarea name="rapport" style="min-height:110px" placeholder="Constats, travaux à prévoir, accès, remarques…">${chef.rapport || ''}</textarea></label>
           <div class="full"><div class="section-label" style="margin:0 0 6px">Ouvriers prévus (métier · nombre · heures par ouvrier)</div><div id="devRows">${crows.map((r, n) => devChefRow(n, r))}</div>
@@ -7547,7 +7557,7 @@ Object.assign(FORMS, {
     if (!rec.client.nom) return toast('Indiquez le nom du client', { bad: true });
     if (rec.client.type !== 'part' && !rec.client.rcs) return toast('RCS obligatoire pour une société (ex. B123456)', { bad: true });
     if (rec.client.type === 'ger' && !rec.client.orgId) return toast('Choisissez la gérance', { bad: true });
-    const files = fd.getAll('photos').filter((f) => f && f.size), nb = id ? devPhotos(id).length : 0;
+    const files = devPend.files.filter((f) => f && f.size), nb = id ? devPhotos(id).length : 0;
     if (nb + files.length > 20) toast(`20 photos maximum : ${Math.max(0, 20 - nb)} ajoutée(s)`, { bad: true });
     const pics = [];
     for (const f of files.slice(0, Math.max(0, 20 - nb))) pics.push(await compressPhoto(f));
@@ -7566,7 +7576,7 @@ Object.assign(FORMS, {
       pics.forEach((b, n) => docs.push([tx.put('documents', { devisId: saved.id, kind: 'devis', n: nb + n + 1, label: `${devNo(saved)} — photo ${nb + n + 1}`, date: today(), mime: 'image/jpeg', size: b.length }).id, b]));
     }, prev ? 'Devis modifié' : 'Devis créé', `${devNo(prev || rec)} — ${rec.client.nom}`);
     for (const [did, b] of docs) await vault.saveFile(did, b);
-    sheetDirty = false;
+    sheetDirty = false; devPend = { id: '', files: [] };
     toast(prev ? 'Devis enregistré' : `📝 Devis ${devNo(saved)} créé`);
     openSheet('devis', saved.id);
   },
@@ -7831,6 +7841,7 @@ Object.assign(ACTIONS, {
   'dev-free-add': () => { const box = $('#devFree'); if (!box) return; const n = 1 + Math.max(-1, ...[...box.querySelectorAll('[name^=pl_f]')].map((x) => +x.name.slice(4))); box.insertAdjacentHTML('beforeend', String(devFreeRow(n))); box.lastElementChild.querySelector('input').focus(); },
   'dev-proto-add': () => { const box = $('#devProto'); if (!box) return; const n = 1 + Math.max(-1, ...[...box.querySelectorAll('[name^=frl]')].map((x) => +x.name.slice(3))); box.insertAdjacentHTML('beforeend', String(devProtoRow(n, { f: { m: 1 } }))); box.lastElementChild.querySelector('input').focus(); },
   'dev-row-add': () => { const box = $('#devRows'); if (box) box.insertAdjacentHTML('beforeend', String(devChefRow(box.children.length))); },
+  'dev-pend-del': (d) => { devPend.files.splice(+d.n, 1); const box = $('#devPend'); if (box) setHtml(box, devPendHtml()); },
   'dev-sig-clear': () => { const c = sheetEl.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); devSigUrl = ''; },
   'dev-sign': (d) => { if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true }); openOver('devis-sign', d.id); },
   'dev-visa': (d) => { if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true }); openOver('devis-sign', d.id, null, { visa: true }); },
@@ -7994,6 +8005,13 @@ document.addEventListener('change', (e) => {
   if (k === 'soc-logo' && e.target.files[0]) setLogo(e.target.files[0]);
   if (k === 'dev-w') { const o = e.target.selectedOptions[0], t = e.target.form[e.target.name.replace('dw', 'dt')]; if (t && o && num(o.dataset.rate)) t.value = o.dataset.rate; const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(e.target.form))); }
   if (k === 'dev-kind') { const f = e.target.form; f.dataset.kind = e.target.value; const pd = $('#devPDir'); if (pd) setHtml(pd, devPDirHtml(devRead(f))); const tb = $('#devTot'); if (tb) setHtml(tb, devTotHtml(devRead(f))); }
+  if (k === 'dev-photos' && e.target.files.length) {
+    const id = (e.target.form.querySelector('[name=id]') || {}).value, room = 20 - (id ? devPhotos(id).length : 0) - devPend.files.length;
+    const add = [...e.target.files].slice(0, Math.max(0, room));
+    if (e.target.files.length > add.length) toast(`20 photos maximum : ${add.length} ajoutée(s)`, { bad: true });
+    devPend.files.push(...add); e.target.value = ''; sheetDirty = true;
+    const box = $('#devPend'); if (box) setHtml(box, devPendHtml());
+  }
   if (k === 'dev-tot') { const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(e.target.form))); }
   if (k === 'dev-ctype') { const f = e.target.form, v = e.target.value; f.querySelectorAll('.dev-ger').forEach((x) => { x.hidden = v !== 'ger'; }); f.querySelectorAll('.dev-soc').forEach((x) => { x.hidden = v === 'part'; }); }
   if (k === 'dev-org') {
