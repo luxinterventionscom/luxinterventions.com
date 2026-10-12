@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.116.1';
+const VERSION = '2.116.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2673,9 +2673,9 @@ function eqScores(year) {
   return Object.entries(sc).filter(([id]) => { const i = vault.get('intervenants', id); return i && !i.archive; }).sort((a, b) => b[1].pts - a[1].pts || a[1].bad - b[1].bad || b[1].fait - a[1].fait);
 }
 
-const immHead = (cur, sub) => html`${pageHead('🏢 Immeubles', sub, html`<div class="actions" style="margin:0"><button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button></div>`)}
+const immHead = (cur, sub) => html`${pageHead('🏢 Immeubles', sub)}
   <div class="imm-row"><div class="tabs" role="tablist">${[['immeubles', '🏢 Immeubles'], ['locataires', '👥 Locataires'], ['paiements', '💶 Gestion locataire', '💶 Gestion loc.']].map(([r, l, sh]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${sh ? html`<span class="t-lg">${l}</span><span class="t-sm">${sh}</span>` : l}</button>`)}</div>
-    <button class="btn primary" data-action="new-loc">${icon('plus')} Ajout. locataire</button></div>`;
+    <div class="imm-btns"><button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button><button class="btn primary" data-action="new-loc">${icon('plus')} Ajout. locataire</button></div></div>`;
 const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
 // Éditeur d'horaire sur 7 jours : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute.
 // slotsOf(j) : créneaux du jour j (0 = lundi) ; title(j) : nom du jour (avec la date pour une semaine précise)
@@ -3176,7 +3176,7 @@ const VIEWS = {
         </div>`;
       })}</div>` : empty('users', 'Aucun intervenant. Ajoutez la femme de ménage et les artisans (menuisier, électricien, plombier, chauffagiste, maçon…).', html`<button class="btn primary" data-action="new-interv">${icon('plus')} Ajouter un intervenant</button>`);
     }
-    return html`${pageHead('Maintenance', 'Nettoyage, réparations et collecte des déchets', add)}${tabs}${tab !== 'intervenants' && tab !== 'devis' ? chips : ''}${body}${unitsInfo()}`;
+    return html`${pageHead('Maintenance', 'Nettoyage, réparations et collecte des déchets')}<div class="imm-row">${tabs}<div class="imm-btns">${add}</div></div>${tab !== 'intervenants' && tab !== 'devis' ? chips : ''}${body}${unitsInfo()}`;
   },
 
 dashboard() {
