@@ -665,10 +665,52 @@ function visLine(v, t, short) {
   return `<div class="row vis"><span class="light l-${visColor(v)}${soon && !v.off ? ' blink' : ''}" style="margin-top:6px"></span><div class="grow"><b>${esc(short ? when + ' · ' + who : who)}</b><div class="${v.off ? 'bad' : 'meta'}">${short ? '' : esc(when) + ' · '}${v.off ? esc(mt.off) : esc(v.hrs.join(' · '))}${v.t ? ' · ' + esc(v.t) : ''}</div></div></div>`;
 }
 const menKey = () => 'espMen:' + id;
+// ⭐ Avis sur chaque passage (ménage et ouvriers), un à la fois : quand l'horaire est fini, du plus ancien au plus récent ;
+// voté (+ commentaire envoyé, ou « Suivant ») → le suivant. En attente 7 jours au plus (la liste vient de l'app de gestion).
+const RVT = {
+  fr: { t: '⭐ Votre avis', qm: 'Êtes-vous satisfait du ménage ?', qo: 'Êtes-vous satisfait de l’intervention ?', skip: 'Passer', next: 'Suivant ›', left: (n) => `encore ${n} passage${n > 1 ? 's' : ''} à noter`, tags: { fait: '✅ Travail bien fait', pasfini: '⚠️ Pas fini', tidy: '🧽 Laissé propre', messy: '🗑️ Laissé sale' } },
+  it: { t: '⭐ Il tuo voto', qm: 'Sei soddisfatto delle pulizie?', qo: 'Sei soddisfatto dell’intervento?', skip: 'Salta', next: 'Avanti ›', left: (n) => `ancora ${n} ${n > 1 ? 'passaggi' : 'passaggio'} da votare`, tags: { fait: '✅ Lavoro ben fatto', pasfini: '⚠️ Non finito', tidy: '🧽 Lasciato pulito', messy: '🗑️ Lasciato sporco' } },
+  de: { t: '⭐ Ihre Meinung', qm: 'Sind Sie mit der Reinigung zufrieden?', qo: 'Sind Sie mit dem Einsatz zufrieden?', skip: 'Überspringen', next: 'Weiter ›', left: (n) => `noch ${n} ${n > 1 ? 'Besuche' : 'Besuch'} zu bewerten`, tags: { fait: '✅ Gute Arbeit', pasfini: '⚠️ Nicht fertig', tidy: '🧽 Sauber hinterlassen', messy: '🗑️ Schmutzig hinterlassen' } },
+  pt: { t: '⭐ A sua opinião', qm: 'Está satisfeito com a limpeza?', qo: 'Está satisfeito com a intervenção?', skip: 'Saltar', next: 'Seguinte ›', left: (n) => `ainda ${n} ${n > 1 ? 'visitas' : 'visita'} para avaliar`, tags: { fait: '✅ Trabalho bem feito', pasfini: '⚠️ Não terminado', tidy: '🧽 Deixou limpo', messy: '🗑️ Deixou sujo' } },
+  en: { t: '⭐ Your opinion', qm: 'Are you happy with the cleaning?', qo: 'Are you happy with the job?', skip: 'Skip', next: 'Next ›', left: (n) => `${n} more visit${n > 1 ? 's' : ''} to rate`, tags: { fait: '✅ Job well done', pasfini: '⚠️ Not finished', tidy: '🧽 Left clean', messy: '🗑️ Left dirty' } },
+  es: { t: '⭐ Tu opinión', qm: '¿Estás satisfecho con la limpieza?', qo: '¿Estás satisfecho con la intervención?', skip: 'Saltar', next: 'Siguiente ›', left: (n) => `quedan ${n} ${n > 1 ? 'visitas' : 'visita'} por valorar`, tags: { fait: '✅ Trabajo bien hecho', pasfini: '⚠️ Sin terminar', tidy: '🧽 Lo dejó limpio', messy: '🗑️ Lo dejó sucio' } },
+};
+const RK = () => 'espRate:' + id;
+const rateAll = () => { try { const m = JSON.parse(localStorage.getItem(RK()) || '{}'); return m && typeof m === 'object' ? m : {}; } catch { return {}; } };
+const ratePut = (k, v) => { const m = rateAll(); m[k] = { ...(m[k] || {}), ...v, at: today }; for (const x of Object.keys(m).filter((x) => m[x].at < addDays(today, -30))) delete m[x]; try { localStorage.setItem(RK(), JSON.stringify(m)); } catch { /* stockage plein */ } };
+const nowHM = () => new Date().toTimeString().slice(0, 5);
+// passages à noter : les 7 derniers jours + ceux d'aujourd'hui dont l'horaire est fini (sans horaire : à partir de 18 h)
+function toRate(d) {
+  const all = [...(d.done || []), ...(d.visits || []).filter((v) => v.d === today && !v.off)];
+  const by = new Map();
+  for (const v of all) {
+    const k = v.w + '|' + v.d, x = by.get(k);
+    if (x) { if ((v.a || v.de || '') > x.end) x.end = v.a || v.de || ''; continue; }
+    by.set(k, { ...v, k, end: v.a || v.de || '' });
+  }
+  const m = rateAll(), old = (() => { try { return JSON.parse(localStorage.getItem(menKey()) || '{}'); } catch { return {}; } })();
+  return [...by.values()].filter((v) => (v.d < today || nowHM() >= (v.end || '18:00')) && !(m[v.k] && m[v.k].done) && !(v.m === 'menage' && old[v.d] && !m[v.k]))
+    .sort((a, b) => a.d.localeCompare(b.d) || (a.end || '').localeCompare(b.end || ''));
+}
+function rateCard(d, t) {
+  const L = toRate(d);
+  if (!L.length) return '';
+  const v = L[0], r = RVT[lang] || RVT.fr, cur = rateAll()[v.k] || {}, mv = cur.v || 0;
+  const who = (t.mt.m[v.m] || t.mt.m.autre) + (v.nom ? ' (' + v.nom + ')' : ''), when = v.d === today ? t.mt.today : day(v.d);
+  const tags = v.m === 'menage' ? t.mc.tags : { ok: t.mc.tags.ok, late: t.mc.tags.late, nice: t.mc.tags.nice, rude: t.mc.tags.rude, ...r.tags };
+  return `<div class="men-rate" id="rateBox"><p style="margin:0 0 6px"><b>${esc(r.t)} — ${esc(who)}</b> <span class="meta">${esc(when)}${v.de ? ' · ' + esc(v.de) + (v.end && v.end !== v.de ? '–' + esc(v.end) : '') : ''}</span><br><span class="meta">${esc(v.m === 'menage' ? r.qm : r.qo)}</span></p>
+    <div class="men-opts" role="radiogroup" aria-label="${esc(t.men.crit)}">${t.men.opts.map((o, i) => `<button role="radio" aria-checked="${mv === i + 1}" data-rv="${i + 1}" data-k="${esc(v.k)}" data-w="${esc(v.w)}" data-d="${esc(v.d)}">${esc(o)}</button>`).join('')}</div>
+    ${mv ? `<p class="ok" style="margin:8px 0 0"><b>✓ ${esc(t.men.thanks)}</b></p><details class="more"${menTags.size || menNote ? ' open' : ''}><summary>${esc(t.mc.add)}</summary>
+      <div class="men-tags">${Object.entries(tags).map(([k, x]) => `<button type="button" aria-pressed="${menTags.has(k)}" data-mtag="${k}">${esc(x)}</button>`).join('')}</div>
+      <textarea id="menNote" maxlength="500" placeholder="${esc(t.mc.ph)}">${esc(menNote)}</textarea>
+      <button class="btn block" style="margin-top:8px" data-rv-send="${esc(v.k)}" data-w="${esc(v.w)}" data-d="${esc(v.d)}">${esc(t.mc.send)}</button></details>
+      <button class="btn sec block" style="margin-top:8px" data-rv-next="${esc(v.k)}">${esc(r.next)}</button>`
+    : `<p style="margin:8px 0 0;text-align:right"><button class="linkb" data-rv-next="${esc(v.k)}">${esc(r.skip)}</button></p>`}
+    ${L.length > 1 ? `<p class="meta" style="margin:6px 0 0">${esc(r.left(L.length - 1))}</p>` : ''}</div>`;
+}
 // commentaire sur le ménage du jour : cases rapides (à l'heure, aimable…) + texte libre, envoyés avec la note
 const menTags = new Set();
 let menNote = '';
-const menNoteSent = () => { try { return (JSON.parse(localStorage.getItem('espMenC:' + id) || '{}'))[today]; } catch { return false; } };
 const menVote = () => { try { return (JSON.parse(localStorage.getItem(menKey()) || '{}'))[today] || 0; } catch { return 0; } };
 // Annonces : une par emplacement ; s'il y en a plusieurs au même endroit, une autre à chaque ouverture de l'app
 let homeMap = false, pubTurn = 0, topPubId = '';
@@ -800,15 +842,9 @@ function render() {
   if (vis) {
     // pastille dans le titre « Maintenance » : verte = passage aujourd'hui, jaune = demain, rouge = ne passe pas
     const soon = vis.filter((v) => v.d <= addDays(today, 1));
-    mtLight = !soon.length ? '' : soon.some((v) => v.off) ? 'red' : soon.some((v) => v.d === today) ? 'green' : 'yellow';
-    const menToday = vis.find((v) => v.m === 'menage' && v.d === today && !v.off);
-    const mv = menVote();
-    mtCard = `${vis.length ? vis.map((v) => visLine(v, t)).join('') : `<p class="meta" style="margin:0">${esc(t.mt.none)}</p>`}
-      ${menToday ? `<div class="men-rate"><p style="margin:0 0 6px"><b>🧹 ${esc(t.mt.rate)}</b> — <span class="meta">${esc(t.men.q)}</span></p><div class="men-opts" role="radiogroup" aria-label="${esc(t.men.crit)}">${t.men.opts.map((o, i) => `<button role="radio" aria-checked="${mv === i + 1}" data-men="${i + 1}" data-w="${esc(menToday.w)}">${esc(o)}</button>`).join('')}</div>
-      ${mv ? `<p class="ok" style="margin:8px 0 0"><b>✓ ${esc(t.men.thanks)}</b></p>${menNoteSent() ? `<p class="ok" style="margin:4px 0 0">${esc(t.mc.ok)}</p>` : `<details class="more"${menTags.size || menNote ? ' open' : ''}><summary>${esc(t.mc.add)}</summary>
-        <div class="men-tags">${Object.entries(t.mc.tags).map(([k, v]) => `<button type="button" aria-pressed="${menTags.has(k)}" data-mtag="${k}">${esc(v)}</button>`).join('')}</div>
-        <textarea id="menNote" maxlength="500" placeholder="${esc(t.mc.ph)}">${esc(menNote)}</textarea>
-        <button class="btn block" style="margin-top:8px" data-men-send="${esc(menToday.w)}">${esc(t.mc.send)}</button></details>`}` : ''}</div>` : ''}`;
+    // pastille du titre : la plus urgente gagne (🔴 aujourd'hui ou ne passe pas, 🟡 demain)
+    mtLight = !soon.length ? '' : soon.some((v) => v.off || v.d === today) ? 'red' : 'yellow';
+    mtCard = `${vis.length ? vis.map((v) => visLine(v, t)).join('') : `<p class="meta" style="margin:0">${esc(t.mt.none)}</p>`}${rateCard(d, t)}`;
   }
   const mt = s.menage && !vis ? menState(d) : null;
   if (mt && mt.c !== 'green') out.push(`<div class="card avis men men-${mt.c}"><h2><span class="light l-${mt.c} blink"></span> 🧹 ${esc(mt.c === 'red' ? (mt.when === 'today' ? t.men.noToday : t.men.noTomorrow) : t.men.tomorrow)}${mt.nom && mt.c !== 'red' ? ' (' + esc(mt.nom) + ')' : ''}</h2>${mt.c === 'red' ? `<p class="meta" style="margin:0">${esc(t.men.noWhy)}</p>` : mt.de ? `<p style="margin:0"><b>${esc(t.men.at)} ${esc(mt.de)}</b>${mt.a ? ` – ${esc(mt.a)}` : ''}</p>` : ''}</div>`);
@@ -1053,27 +1089,39 @@ app.addEventListener('click', async (e) => {
     return render();
   }
 
-  const mtg = e.target.closest('[data-mtag]');
-  if (mtg) {
-    const k = mtg.dataset.mtag, opp = { ok: 'late', late: 'ok', nice: 'rude', rude: 'nice', clean: 'dirty', dirty: 'clean' };
-    const nt = document.getElementById('menNote'); if (nt) menNote = nt.value;
-    if (menTags.has(k)) menTags.delete(k); else { menTags.add(k); menTags.delete(opp[k]); }
-    return render();
+  // ⭐ avis sur un passage : note → merci + commentaire ; « Suivant » / « Passer » / commentaire envoyé → le passage suivant
+  const rv = e.target.closest('[data-rv]');
+  if (rv) {
+    const v = +rv.dataset.rv;
+    ratePut(rv.dataset.k, { v });
+    render();
+    if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: rv.dataset.w, d: rv.dataset.d, v }) }); } catch { /* hors ligne */ } }
+    return;
   }
-  const ms = e.target.closest('[data-men-send]');
-  if (ms) {
+  const rn = e.target.closest('[data-rv-next]');
+  if (rn) { ratePut(rn.dataset.rvNext, { done: true }); menTags.clear(); menNote = ''; return render(); }
+  const rs = e.target.closest('[data-rv-send]');
+  if (rs) {
     const nt = document.getElementById('menNote'); if (nt) menNote = nt.value.trim().slice(0, 500);
     if (!menTags.size && !menNote) return;
-    ms.disabled = true;
+    rs.disabled = true;
     try {
-      const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: ms.dataset.menSend, d: today, v: menVote(), tags: [...menTags], note: menNote }) });
+      const k = rs.dataset.rvSend, cur = rateAll()[k] || {};
+      const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: rs.dataset.w, d: rs.dataset.d, v: cur.v, tags: [...menTags], note: menNote }) });
       if (!r.ok) throw new Error();
-      let c = {}; try { c = JSON.parse(localStorage.getItem('espMenC:' + id) || '{}'); } catch { /* stockage indisponible */ }
-      c[today] = true;
-      for (const k of Object.keys(c).sort().slice(0, -30)) delete c[k];
-      try { localStorage.setItem('espMenC:' + id, JSON.stringify(c)); } catch { /* stockage plein */ }
       menTags.clear(); menNote = '';
-    } catch { alert('⚠'); }
+      // « Commentaire envoyé » un instant, puis le passage suivant
+      const box = document.getElementById('rateBox');
+      if (box) box.insertAdjacentHTML('beforeend', `<p class="ok" style="margin:6px 0 0"><b>${esc(T().mc.ok)}</b></p>`);
+      setTimeout(() => { ratePut(k, { done: true }); render(); }, 1400);
+    } catch { alert('⚠'); rs.disabled = false; }
+    return;
+  }
+  const mtg = e.target.closest('[data-mtag]');
+  if (mtg) {
+    const k = mtg.dataset.mtag, opp = { ok: 'late', late: 'ok', nice: 'rude', rude: 'nice', clean: 'dirty', dirty: 'clean', fait: 'pasfini', pasfini: 'fait', tidy: 'messy', messy: 'tidy' };
+    const nt = document.getElementById('menNote'); if (nt) menNote = nt.value;
+    if (menTags.has(k)) menTags.delete(k); else { menTags.add(k); menTags.delete(opp[k]); }
     return render();
   }
   const mb = e.target.closest('[data-men]');
