@@ -679,6 +679,7 @@ function visLine(v, t, short) {
   return `<div class="row vis"><span class="light l-${visColor(v)}${soon && !v.off ? ' blink' : ''}" style="margin-top:6px"></span><div class="grow"><b>${esc(short ? when + ' · ' + who : who)}</b><div class="${v.off ? 'bad' : 'meta'}">${short ? '' : esc(when) + ' · '}${v.off ? esc(mt.off) : esc(v.hrs.join(' · '))}${v.t ? ' · ' + esc(v.t) : ''}</div></div></div>`;
 }
 const menKey = () => 'espMen:' + id;
+let payYear = 0; // « Mes loyers » : l'année affichée (un bouton par année)
 // ⭐ Avis sur chaque passage (ménage et ouvriers), un à la fois : quand l'horaire est fini, du plus ancien au plus récent ;
 // voté (+ commentaire envoyé, ou « Suivant ») → le suivant. En attente 7 jours au plus (la liste vient de l'app de gestion).
 const RVT = {
@@ -887,7 +888,8 @@ function render() {
     payAt = out.length;
     payH = `<div class="card"${rest > 0.009 ? ' data-due="1"' : ''}><h2>${rest > 0.009 ? '<span class="light l-red blink"></span> ' : ''}💶 ${esc(t.pay)}</h2>
       <p style="margin:0">${rest > 0.009 ? `<span class="big bad">${esc(money(rest))}</span> <span class="meta">${esc(t.restNow)}</span>` : `<span class="big ok">${esc(t.allPaid)}</span>`}${cur.upcoming > 0.009 ? ` <span class="meta">· ${esc(t.upcoming)} ${esc(money(cur.upcoming))}</span>` : ''}</p>
-      ${d.years.map((y) => `<div class="meta" style="margin-top:10px;font-weight:700">${y.y}</div><div class="months">${y.months.map(([due, paid], i) => {
+      ${(() => { if (!d.years.some((y) => y.y === payYear)) payYear = d.years[0].y; return d.years.length > 1 ? `<div class="pay-years" role="tablist">${d.years.map((y) => `<button role="tab" aria-selected="${y.y === payYear}" data-pyear="${y.y}">${y.y}${y.rest > 0.009 ? ' <span class="bad">!</span>' : ''}</button>`).join('')}</div>` : ''; })()}
+      ${d.years.filter((y) => d.years.length === 1 || y.y === payYear).map((y) => `${d.years.length === 1 ? `<div class="meta" style="margin-top:10px;font-weight:700">${y.y}</div>` : ''}<div class="months">${y.months.map(([due, paid], i) => {
         const past = y.y < cy || (y.y === cy && i < cm), now = y.y === cy && i === cm;
         const cls = paid >= due - 0.009 && paid > 0 ? 'paid' : paid > 0 ? 'part' : !due ? 'off' : past ? 'late' : '';
         return `<div class="m ${cls}" ${now ? 'style="outline:2px solid var(--accent)"' : ''}>${esc(t.months[i])}<small>${paid > 0 && paid < due - 0.009 ? esc(Math.round(paid) + '€') : cls === 'paid' ? '✓' : cls === 'late' ? '!' : due ? '·' : '–'}</small></div>`;
@@ -1107,6 +1109,8 @@ app.addEventListener('click', async (e) => {
     return render();
   }
 
+  const py = e.target.closest('[data-pyear]');
+  if (py) { payYear = +py.dataset.pyear; return render(); }
   // ⭐ avis sur un passage : note → merci + commentaire ; « Suivant » / « Passer » / commentaire envoyé → le passage suivant
   const rv = e.target.closest('[data-rv]');
   if (rv) {
