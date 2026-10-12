@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.115.0';
+const VERSION = '2.116.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2221,15 +2221,15 @@ vault.on((kind) => {
 
 // ───────────────────────── Coquille ─────────────────────────
 // Menu de gauche (ordinateur) : sections avec sous-rubriques et raccourcis « + »
-// (même ordre que la barre du bas du téléphone ; « Gestion locataire » est un onglet de Locataires)
+// (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gérance', items: [['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase'], ['locataires', 'Locataires', 'users']] },
+  { group: 'Gestion', items: [['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase'], ['locataires', 'Locataires', 'users'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 function sideNavHtml() {
   return NAV_TREE.map((x) => (x.group ? html`<div class="nav-group">${x.group}</div>${x.items.map((it) => navItem(it, true))}` : navItem(x)));
 }
@@ -2275,7 +2275,7 @@ function go(route, replace) {
   ui.route = route;
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
-  const navRoute = route === 'champeq' ? 'champions' : route === 'paiements' ? 'locataires' : route;
+  const navRoute = route === 'champeq' ? 'champions' : ['paiements', 'locataires'].includes(route) ? 'immeubles' : route;
   document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute && (!b.dataset.sec || b.dataset.sec === (ui.cpSec === 'abo' ? 'abo' : 'compta')) ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   bnavShow();
   const fab = $('#fab');
@@ -2673,7 +2673,9 @@ function eqScores(year) {
   return Object.entries(sc).filter(([id]) => { const i = vault.get('intervenants', id); return i && !i.archive; }).sort((a, b) => b[1].pts - a[1].pts || a[1].bad - b[1].bad || b[1].fait - a[1].fait);
 }
 
-const locTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['locataires', '👥 Locataires'], ['paiements', '💶 Gestion locataire']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
+const immHead = (cur, sub) => html`${pageHead('🏢 Immeubles', sub, html`<div class="actions" style="margin:0"><button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button></div>`)}
+  <div class="imm-row"><div class="tabs" role="tablist">${[['immeubles', '🏢 Immeubles'], ['locataires', '👥 Locataires'], ['paiements', '💶 Gestion locataire', '💶 Gestion loc.']].map(([r, l, sh]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${sh ? html`<span class="t-lg">${l}</span><span class="t-sm">${sh}</span>` : l}</button>`)}</div>
+    <button class="btn" data-action="new-loc">${icon('plus')} Ajout. locataire</button></div>`;
 const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
 // Éditeur d'horaire sur 7 jours : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute.
 // slotsOf(j) : créneaux du jour j (0 = lundi) ; title(j) : nom du jour (avec la date pour une semaine précise)
@@ -3329,7 +3331,7 @@ dashboard() {
     const anciens = ui.immSeg === 'anciens' && nGone > 0;
     const imms = every.filter((im) => immGone(im) === anciens);
     return html`
-      ${pageHead('Immeubles', `${plural(every.length - nGone, 'immeuble')} en gestion${nGone ? ' · ' + nGone + ' archivé' + (nGone > 1 ? 's' : '') : ''}`, html`<div class="actions" style="margin:0"><button class="btn primary desk-only" data-action="new-imm">${icon('plus')} Ajouter immo.</button></div>`)}
+      ${immHead('immeubles', `${plural(every.length - nGone, 'immeuble')} en gestion${nGone ? ' · ' + nGone + ' archivé' + (nGone > 1 ? 's' : '') : ''}`)}
       ${nGone ? html`<div class="tabs" role="tablist" style="max-width:380px">
         <button class="tab" role="tab" aria-selected="${!anciens}" data-action="imm-seg" data-id="actuels">En gestion</button>
         <button class="tab" role="tab" aria-selected="${anciens}" data-action="imm-seg" data-id="anciens">Plus en gestion (${nGone})</button>
@@ -3446,7 +3448,7 @@ dashboard() {
     if (orphans.length) groups.push({ im: { adresse: 'Sans immeuble' }, ls: orphans });
     const nGone = all.filter(isGone).length;
     return html`
-      ${locTabs('locataires')}${pageHead('Locataires', `${all.length - nGone} actuels · ${nGone} anciens`, html`<button class="btn primary desk-only" data-action="new-loc">${icon('plus')} Ajouter loc.</button>`)}
+      ${immHead('locataires', `👥 ${all.length - nGone} locataires actuels · ${nGone} anciens`)}
       <div class="tabs" role="tablist" style="max-width:360px">
         <button class="tab" role="tab" aria-selected="${!anciens}" data-action="loc-seg" data-id="actuels">Actuels</button>
         <button class="tab" role="tab" aria-selected="${anciens}" data-action="loc-seg" data-id="anciens">Anciens (${nGone})</button>
@@ -3510,7 +3512,7 @@ dashboard() {
         <div class="totals"><span>Échu à ce jour <b>${money(due)}</b></span><span>Reçu <b class="green">${money(paid)}</b></span><span>Impayé <b class="${rest > 0.009 ? 'red' : 'green'}">${money(rest)}</b></span></div></div>`;
     }).filter(Boolean);
     return html`
-      ${locTabs('paiements')}${pageHead('Gestion locataire', 'Paiements des loyers — touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.')}
+      ${immHead('paiements', '💶 Gestion locataire — paiements des loyers : touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.')}
       <div class="toolbar">
         ${yearSelect(y)}
         ${all.length > 1 ? html`<div class="chips pay-chips">

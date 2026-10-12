@@ -13667,5 +13667,17 @@ export default [
 [
 "{0} photo(s) choisie(s) — touchez 💾 Enregistrer pour les ajouter au devis (les miniatures apparaissent ensuite)",
 "{0} foto(s) escolhida(s) — toque em 💾 Enregistrer para as juntar ao orçamento (depois aparecem as miniaturas)"
+],
+[
+"Ajout. locataire",
+"Adic. inquilino"
+],
+[
+"👥 {0} locataires actuels · {1} anciens",
+"👥 {0} inquilinos atuais · {1} antigos"
+],
+[
+"💶 Gestion locataire — paiements des loyers : touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
+"💶 Gestão de inquilinos — pagamento das rendas: toque num mês vazio para o marcar como pago; toque num mês pago para o montante, o recibo ou a anulação."
 ]
 ];

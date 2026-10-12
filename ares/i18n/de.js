@@ -13731,5 +13731,17 @@ export default [
 [
 "{0} photo(s) choisie(s) — touchez 💾 Enregistrer pour les ajouter au devis (les miniatures apparaissent ensuite)",
 "{0} Foto(s) ausgewählt — tippen Sie auf 💾 Enregistrer, um sie zum Angebot hinzuzufügen (danach erscheinen die Vorschaubilder)"
+],
+[
+"Ajout. locataire",
+"Mieter hinzuf."
+],
+[
+"👥 {0} locataires actuels · {1} anciens",
+"👥 {0} aktuelle Mieter · {1} frühere"
+],
+[
+"💶 Gestion locataire — paiements des loyers : touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
+"💶 Mieterverwaltung — Mietzahlungen: tippen Sie auf einen leeren Monat, um ihn als bezahlt zu markieren; auf einen bezahlten Monat für Betrag, Quittung oder Stornierung."
 ]
 ];
