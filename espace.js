@@ -888,7 +888,7 @@ function render() {
     payAt = out.length;
     payH = `<div class="card"${rest > 0.009 ? ' data-due="1"' : ''}><h2>${rest > 0.009 ? '<span class="light l-red blink"></span> ' : ''}💶 ${esc(t.pay)}</h2>
       <p style="margin:0">${rest > 0.009 ? `<span class="big bad">${esc(money(rest))}</span> <span class="meta">${esc(t.restNow)}</span>` : `<span class="big ok">${esc(t.allPaid)}</span>`}${cur.upcoming > 0.009 ? ` <span class="meta">· ${esc(t.upcoming)} ${esc(money(cur.upcoming))}</span>` : ''}</p>
-      ${(() => { if (!d.years.some((y) => y.y === payYear)) payYear = d.years[0].y; return d.years.length > 1 ? `<div class="pay-years" role="tablist">${d.years.map((y) => `<button role="tab" aria-selected="${y.y === payYear}" data-pyear="${y.y}">${y.y}${y.rest > 0.009 ? ' <span class="bad">!</span>' : ''}</button>`).join('')}</div>` : ''; })()}
+      ${(() => { if (!d.years.some((y) => y.y === payYear)) payYear = d.years[0].y; return d.years.length > 1 ? `<label class="pay-years">📅 <select data-pyear-sel="1">${[...d.years].sort((a, b) => a.y - b.y).map((y) => `<option value="${y.y}"${y.y === payYear ? ' selected' : ''}>${y.y}${y.rest > 0.009 ? ' ⚠️' : ''}</option>`).join('')}</select></label>` : ''; })()}
       ${d.years.filter((y) => d.years.length === 1 || y.y === payYear).map((y) => `${d.years.length === 1 ? `<div class="meta" style="margin-top:10px;font-weight:700">${y.y}</div>` : ''}<div class="months">${y.months.map(([due, paid], i) => {
         const past = y.y < cy || (y.y === cy && i < cm), now = y.y === cy && i === cm;
         const cls = paid >= due - 0.009 && paid > 0 ? 'paid' : paid > 0 ? 'part' : !due ? 'off' : past ? 'late' : '';
@@ -1109,8 +1109,6 @@ app.addEventListener('click', async (e) => {
     return render();
   }
 
-  const py = e.target.closest('[data-pyear]');
-  if (py) { payYear = +py.dataset.pyear; return render(); }
   // ⭐ avis sur un passage : note → merci + commentaire ; « Suivant » / « Passer » / commentaire envoyé → le passage suivant
   const rv = e.target.closest('[data-rv]');
   if (rv) {
@@ -1290,6 +1288,7 @@ app.addEventListener('toggle', (e) => {
   if (k === 'chat' && e.target.open) { chatSeen(); const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight; }
 }, true);
 app.addEventListener('change', async (e) => {
+  if (e.target.dataset && e.target.dataset.pyearSel) { payYear = +e.target.value; return render(); }
   if (e.target.dataset && e.target.dataset.photoPick && e.target.files[0]) {
     try { phMine = await photoSquare(e.target.files[0]); render(); await sendOwner({ type: 'photo', d: phMine }); } catch { /* hors ligne ou image illisible */ }
     return;
