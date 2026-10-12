@@ -13743,5 +13743,17 @@ export default [
 [
 "{0} photo(s) choisie(s) — touchez 💾 Enregistrer pour les ajouter au devis (les miniatures apparaissent ensuite)",
 "{0} foto scelte — tocca 💾 Enregistrer per aggiungerle al devis (poi compaiono le miniature)"
+],
+[
+"Ajout. locataire",
+"Agg. inquilino"
+],
+[
+"👥 {0} locataires actuels · {1} anciens",
+"👥 {0} inquilini attuali · {1} ex inquilini"
+],
+[
+"💶 Gestion locataire — paiements des loyers : touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
+"💶 Gestione inquilini — pagamento degli affitti: tocca un mese vuoto per segnarlo pagato; tocca un mese pagato per l’importo, la ricevuta o l’annullamento."
 ]
 ];

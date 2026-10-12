@@ -13475,5 +13475,17 @@ export default [
 [
 "{0} photo(s) choisie(s) — touchez 💾 Enregistrer pour les ajouter au devis (les miniatures apparaissent ensuite)",
 "{0} photo(s) chosen — tap 💾 Enregistrer to add them to the quote (thumbnails appear afterwards)"
+],
+[
+"Ajout. locataire",
+"Add tenant"
+],
+[
+"👥 {0} locataires actuels · {1} anciens",
+"👥 {0} current tenants · {1} former"
+],
+[
+"💶 Gestion locataire — paiements des loyers : touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
+"💶 Tenant management — rent payments: tap an empty month to mark it paid; tap a paid month for the amount, the receipt or to cancel."
 ]
 ];
