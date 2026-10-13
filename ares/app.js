@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.119.0';
+const VERSION = '2.120.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2764,6 +2764,45 @@ function engForm(i) {
 const IBAN_LEN = { AD: 24, AL: 28, AT: 20, BA: 20, BE: 16, BG: 22, BR: 29, CH: 21, CY: 28, CZ: 24, DE: 22, DK: 18, EE: 20, ES: 24, FI: 18, FO: 18, FR: 27, GB: 22, GI: 23, GL: 18, GR: 27, HR: 21, HU: 28, IE: 22, IS: 26, IT: 27, LI: 21, LT: 20, LU: 20, LV: 21, MA: 28, MC: 27, MD: 24, ME: 22, MK: 19, MT: 31, NL: 18, NO: 15, PL: 28, PT: 25, RO: 24, RS: 22, SE: 24, SI: 19, SK: 24, SM: 27, TN: 24, TR: 26, UA: 29, VA: 22, XK: 20 };
 const ibanClean = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const ibanFmt = (v) => ibanClean(v).replace(/(.{4})/g, '$1 ').trim();
+// 🏠 Biens des agences : types, pièces (catalogue + libres), photos chiffrées, affiche horizontale à faire défiler
+const BIEN_TYPES = { appartement: 'Appartement', maison: 'Maison', villa: 'Villa', studio: 'Studio', chambre: 'Chambre', duplex: 'Duplex', penthouse: 'Penthouse', local: 'Local commercial', bureau: 'Bureau', entrepot: 'Entrepôt', terrain: 'Terrain', parking: 'Parking / garage', autre: 'Autre' };
+const PIECES = { chambre: '🛏️ Chambre', salon: '🛋️ Salon', sejour: '🍽️ Séjour', cuisine: '🍳 Cuisine', sdb: '🛁 Salle de bain', douche: '🚿 Salle de douche', wc: '🚽 WC', bureau: '💼 Bureau', dressing: '👔 Dressing', buanderie: '🧺 Buanderie', cave: '🍷 Cave', grenier: '📦 Grenier', balcon: '🌇 Balcon', terrasse: '☀️ Terrasse', jardin: '🌳 Jardin', piscine: '🏊 Piscine', garage: '🚗 Garage', box: '🅿️ Box / parking', vitrine: '🪟 Vitrine', reserve: '📦 Réserve', technique: '⚙️ Local technique', autre: '➕ Autre' };
+const pieceRow = (p = {}) => html`<div class="piece-row"><select name="p_k">${Object.entries(PIECES).map(([k, l]) => html`<option value="${k}" ${p.k === k ? new Raw('selected') : ''}>${l}</option>`)}</select><input name="p_nom" value="${p.nom || ''}" placeholder="précision (ex. chambre 2, côté jardin)"><input name="p_m2" value="${p.m2 || ''}" inputmode="decimal" placeholder="m²"><input name="p_note" value="${p.note || ''}" placeholder="note"><button type="button" class="btn icon sm ghost" data-action="bien-piece-del" aria-label="Retirer">✕</button></div>`;
+const eur0 = (n) => (+n || 0).toLocaleString('fr-LU', { maximumFractionDigits: 0 }) + ' €';
+const bienPrix = (b) => [b.louer && b.loyer ? html`<b>${eur0(b.loyer)}</b><span class="muted"> / mois</span>${b.charges ? html`<span class="muted"> + ${eur0(b.charges)} charges</span>` : ''}` : '', b.vendre && b.prix ? html`<b>${eur0(b.prix)}</b><span class="muted"> à vendre</span>` : ''].filter(Boolean);
+// affiche : photos à faire défiler (flèches, doigt), un toucher → plein écran
+const bienAffiche = (b) => html`<div class="bien-card" data-bien="${b.id}">
+  <div class="bien-media"><div class="bien-car">${(b.photos || []).length ? b.photos.map((ph, i) => html`<img data-bph="${ph}" data-action="bien-full" data-id="${b.id}" data-n="${i}" alt="">`) : html`<div class="bien-nophoto">🏠</div>`}</div>
+  ${(b.photos || []).length > 1 ? html`<button class="car-arrow l" data-action="car-move" data-dir="-1" aria-label="Photo précédente">‹</button><button class="car-arrow r" data-action="car-move" data-dir="1" aria-label="Photo suivante">›</button><span class="car-count">📷 ${b.photos.length}</span>` : ''}</div>
+  <div class="bien-info" data-action="edit-bien" data-id="${b.id}"><span class="bien-new">🆕</span> <b>${b.titre}</b><br>
+    <span class="small">${BIEN_TYPES[b.type] || ''}${b.surface ? ` · ${b.surface} m²` : ''}${(b.pieces || []).length ? ` · ${b.pieces.length} pièces` : ''}</span><br>
+    <span class="small">${bienPrix(b).map((x, i) => html`${i ? ' · ' : ''}${x}`)}</span><br>
+    <span class="tiny muted">📍 ${b.adresse || '—'}${b.dispo ? html` · disponible dès le ${fmtDate(b.dispo)}` : ''}${b.agenceId ? html` · 🏘️ ${(vault.get('agences', b.agenceId) || {}).nom || ''}` : ''}</span></div>
+</div>`;
+const bienUrls = new Map();
+function hydrateBiens(root = document) {
+  root.querySelectorAll('img[data-bph]').forEach(async (img) => {
+    const id = img.dataset.bph;
+    try {
+      if (!bienUrls.has(id)) bienUrls.set(id, URL.createObjectURL(new Blob([await vault.readFile(id)], { type: 'image/jpeg' })));
+      img.src = bienUrls.get(id);
+    } catch { img.classList.add('missing'); }
+  });
+}
+// plein écran : largeur du téléphone, hauteur limitée ; flèches et doigt
+function bienFull(id, n) {
+  const b = vault.get('biens', id);
+  if (!b || !(b.photos || []).length) return;
+  let d = $('#bienFull');
+  if (!d) { d = document.createElement('dialog'); d.id = 'bienFull'; d.className = 'bien-full'; document.body.append(d); d.addEventListener('click', (e) => { if (e.target === d || e.target.closest('[data-close]')) d.close(); }); }
+  setHtml(d, html`<button class="bf-x" data-close aria-label="Fermer">✕</button><div class="bien-media"><div class="bien-car bf-car">${b.photos.map((ph) => html`<img data-bph="${ph}" alt="">`)}</div>
+    ${b.photos.length > 1 ? html`<button class="car-arrow l" data-action="car-move" data-dir="-1" aria-label="Photo précédente">‹</button><button class="car-arrow r" data-action="car-move" data-dir="1" aria-label="Photo suivante">›</button>` : ''}</div>
+    <p class="bf-cap"><b>${b.titre}</b> · ${bienPrix(b).map((x, i) => html`${i ? ' · ' : ''}${x}`)}</p>`);
+  hydrateBiens(d);
+  d.showModal();
+  const car = d.querySelector('.bf-car');
+  requestAnimationFrame(() => { car.scrollLeft = car.clientWidth * (+n || 0); });
+}
 // Banque d'une société (gérance, agence) : IBAN/BIC obligatoires, sauf « 🕓 Compléter plus tard » coché
 const bankBlock = (cl, who) => {
   const later = cl.bankLater || (!cl.iban && !cl.bic && !!cl.rcs);
@@ -3394,7 +3433,12 @@ dashboard() {
   agences() {
     const list = vault.list('agences').sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
     const miss = (a) => [!a.tva && 'N° TVA', !a.banque && 'banque', !a.bic && 'BIC', !a.iban && 'IBAN'].filter(Boolean);
+    const biens = vault.list('biens').sort((a, b) => (b.cree || '').localeCompare(a.cree || '') || (a.titre || '').localeCompare(b.titre || ''));
+    setTimeout(() => hydrateBiens($('#view')), 0);
     return html`${immHead('agences', `${list.length} agence${list.length > 1 ? 's' : ''} immobilière${list.length > 1 ? 's' : ''}`)}
+      <div class="section-label" style="display:flex;align-items:center;gap:10px">🏠 Biens à louer / à vendre <button class="btn sm primary" data-action="new-bien" style="margin-left:auto">${icon('plus')} Bien immo.</button></div>
+      ${biens.length ? html`<div class="bien-grid">${biens.map(bienAffiche)}</div>` : html`<p class="small muted" style="margin:0 0 14px">Aucun bien publié. ＋ Bien immo. : type, m², pièces, photos, prix.</p>`}
+      <div class="section-label">🏘️ Agences</div>
       ${list.length ? html`<div class="list">${list.map((a) => html`<button class="row" data-action="edit-agence" data-id="${a.id}"><span class="avatar">🏘️</span>
         <span class="grow"><span class="title" style="display:block">${a.nom}</span>
         <span class="meta">RCS ${a.rcs}${a.dir ? html` · ⭐ ${[a.dir.prenom, a.dir.nom].filter(Boolean).join(' ')}` : ''}</span>
@@ -4725,6 +4769,39 @@ const SHEETS = {
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-pub" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${exp ? 'Republier' : 'Publier'}</button>`,
+    };
+  },
+  'bien-form'({ id }) {
+    const b = id ? vault.get('biens', id) : { louer: true, pieces: [{ k: 'chambre' }, { k: 'salon' }, { k: 'cuisine' }, { k: 'sdb' }] };
+    if (id && !b) return null;
+    const ags = vault.list('agences').sort((a, x) => (a.nom || '').localeCompare(x.nom || ''));
+    setTimeout(() => hydrateBiens(sheetEl), 0);
+    return {
+      title: id ? 'Modifier le bien' : 'Nouveau bien',
+      body: html`<form id="f" data-form="bien" class="fields">
+        <input type="hidden" name="id" value="${id || ''}">
+        <label class="field full">Agence<select name="agenceId"><option value="">— Nos biens (sans agence) —</option>${ags.map((a) => html`<option value="${a.id}" ${b.agenceId === a.id ? new Raw('selected') : ''}>${a.nom}</option>`)}</select></label>
+        <label class="field full">Titre de l’annonce<input name="titre" required value="${b.titre || ''}" placeholder="ex. Bel appartement 2 chambres avec terrasse"></label>
+        <label class="field">Type<select name="type">${Object.entries(BIEN_TYPES).map(([k, l]) => html`<option value="${k}" ${b.type === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+        ${field('Surface totale (m²)', 'surface', b.surface, { attrs: 'inputmode="decimal"' })}
+        ${field('Adresse', 'adresse', b.adresse, { full: true, placeholder: 'rue, n°, code postal, ville (pour la carte)' })}
+        ${field('Disponible dès le', 'dispo', b.dispo, { type: 'date' })}
+        <div class="section-label full" style="margin:6px 0 0">💶 Prix</div>
+        <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="louer" ${b.louer ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"> À louer</label>
+        <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="vendre" ${b.vendre ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"> À vendre</label>
+        ${field('Loyer (€ / mois)', 'loyer', b.loyer, { attrs: money$ })}${field('Charges (€ / mois)', 'charges', b.charges, { attrs: money$ })}
+        ${field('Prix de vente (€)', 'prix', b.prix, { full: true, attrs: money$ })}
+        <div class="section-label full" style="margin:6px 0 0">🚪 Pièces et espaces</div>
+        <p class="tiny muted full" style="margin:-4px 0 0">Chambres, cuisine, cave, balcon, piscine… choisissez dans la liste ou « ➕ Autre » ; m² et note facultatifs.</p>
+        <div class="full" id="bienPieces">${(b.pieces || []).map((p) => pieceRow(p))}</div>
+        <button type="button" class="btn sm full" data-action="bien-piece-add">${icon('plus')} Ajouter une pièce ou un espace</button>
+        <div class="section-label full" style="margin:6px 0 0">📷 Photos de l’annonce</div>
+        ${(b.photos || []).length ? html`<div class="full bien-thumbs">${b.photos.map((ph) => html`<label class="bien-thumb"><img data-bph="${ph}" alt=""><span><input type="checkbox" name="delph" value="${ph}"> 🗑</span></label>`)}</div>` : ''}
+        <label class="field full">Ajouter des photos (horizontales de préférence)<input type="file" name="photos" accept="image/*" multiple></label>
+        <label class="field full">Description<textarea name="description" style="min-height:90px" placeholder="état, étage, ascenseur, chauffage, proximité…">${b.description || ''}</textarea></label>
+      </form>`,
+      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-bien" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
+        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${id ? 'Enregistrer' : 'Publier le bien'}</button>`,
     };
   },
   'agence-form'({ id }) {
@@ -6154,6 +6231,19 @@ const ACTIONS = {
   },
   'new-avis': (d) => openOver('avis-form', null, null, d.imm || ui.immFilter || ''),
   'edit-avis': (d) => openOver('avis-form', d.id),
+  'new-bien': () => openOver('bien-form'),
+  'edit-bien': (d) => openOver('bien-form', d.id),
+  'bien-piece-add': () => { const box = $('#bienPieces'); if (box) box.insertAdjacentHTML('beforeend', String(pieceRow({ k: 'chambre' }))); },
+  'bien-piece-del': (d, el) => { el.closest('.piece-row')?.remove(); },
+  'bien-full': (d) => bienFull(d.id, d.n),
+  'car-move': (d, el) => { const car = el.parentElement.querySelector('.bien-car'); if (car) car.scrollBy({ left: car.clientWidth * (+d.dir || 1), behavior: 'smooth' }); },
+  async 'del-bien'(d) {
+    const b = vault.get('biens', d.id);
+    if (!b || !(await confirmBox('Supprimer ce bien ?', { ok: 'Supprimer', danger: true, detail: b.titre }))) return;
+    await vault.mutate((tx) => tx.remove('biens', d.id), 'Bien supprimé', b.titre);
+    for (const ph of b.photos || []) await vault.deleteFile(ph).catch(() => {});
+    goBack();
+  },
   'new-agence': () => openOver('agence-form'),
   'edit-agence': (d) => openOver('agence-form', d.id),
   async 'del-agence'(d) {
@@ -6817,6 +6907,32 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('avis', rec), id ? 'Annonce modifiée' : 'Annonce publiée', `${rec.nom} — jusqu'au ${fmtDate(rec.fin)}`, rec.immId);
     toast(rec.video && !videoEmbed(rec.video) ? (ttShort(rec.video) ? 'Annonce publiée — lien court TikTok non converti (hors ligne ?) : ouvrez la vidéo dans le navigateur et copiez le lien complet' : 'Annonce publiée — lien vidéo non reconnu : il s’affiche comme un bouton') : `Annonce publiée jusqu'au ${fmtDate(rec.fin)}`, rec.video && !videoEmbed(rec.video) ? { bad: true } : undefined);
     goBack();
+  },
+  async bien(fd) {
+    const id = fd.get('id'), g = (k) => String(fd.get(k) || '').trim(), n = (k) => (g(k) ? Math.max(0, num(g(k).replace(',', '.'))) : '');
+    const old = id ? vault.get('biens', id) : null;
+    const rec = { agenceId: g('agenceId'), titre: g('titre'), type: g('type') || 'autre', surface: n('surface'), adresse: g('adresse'), dispo: g('dispo'),
+      louer: !!fd.get('louer'), vendre: !!fd.get('vendre'), loyer: n('loyer'), charges: n('charges'), prix: n('prix'), description: g('description'),
+      pieces: fd.getAll('p_k').map((k, i) => ({ k, nom: String(fd.getAll('p_nom')[i] || '').trim(), m2: String(fd.getAll('p_m2')[i] || '').trim(), note: String(fd.getAll('p_note')[i] || '').trim() })),
+      cree: (old && old.cree) || today() };
+    if (!rec.titre) return;
+    if (!rec.louer && !rec.vendre) return toast('Cochez « À louer » et / ou « À vendre »', { bad: true });
+    if (rec.louer && !rec.loyer) return toast('Loyer mensuel manquant', { bad: true });
+    if (rec.vendre && !rec.prix) return toast('Prix de vente manquant', { bad: true });
+    const del = new Set(fd.getAll('delph'));
+    const files = fd.getAll('photos').filter((f) => f && f.size && f.type.startsWith('image/'));
+    const keep = ((old && old.photos) || []).filter((ph) => !del.has(ph));
+    if (keep.length + files.length > 20) return toast('20 photos au maximum', { bad: true });
+    if (files.length) toast('Chiffrement des photos…');
+    const added = [];
+    for (const f of files) { const pid = uid(); await vault.saveFile(pid, await compressPhoto(f)); added.push(pid); }
+    rec.photos = [...keep, ...added];
+    if (id) rec.id = id;
+    await vault.mutate((tx) => tx.put('biens', rec), id ? 'Bien modifié' : 'Nouveau bien publié', `${rec.titre} — ${BIEN_TYPES[rec.type] || ''}${rec.surface ? ' · ' + rec.surface + ' m²' : ''}`);
+    for (const ph of del) { await vault.deleteFile(ph).catch(() => {}); if (bienUrls.has(ph)) { URL.revokeObjectURL(bienUrls.get(ph)); bienUrls.delete(ph); } }
+    toast(id ? 'Bien enregistré' : 'Bien publié');
+    goBack();
+    if (ui.route !== 'agences') go('agences');
   },
   async agence(fd) {
     const id = fd.get('id'), g = (k) => String(fd.get(k) || '').trim();

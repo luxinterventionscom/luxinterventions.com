@@ -14003,5 +14003,241 @@ export default [
 [
 "BIC de la gérance : {0}",
 "BIC der Verwaltung: {0}"
+],
+[
+"Duplex",
+"Maisonette"
+],
+[
+"Local commercial",
+"Gewerberaum"
+],
+[
+"Entrepôt",
+"Lager"
+],
+[
+"Terrain",
+"Grundstück"
+],
+[
+"Parking / garage",
+"Parkplatz / Garage"
+],
+[
+"Salon",
+"Wohnzimmer"
+],
+[
+"Séjour",
+"Esszimmer"
+],
+[
+"Salle de douche",
+"Duschbad"
+],
+[
+"Dressing",
+"Ankleide"
+],
+[
+"Grenier",
+"Dachboden"
+],
+[
+"Balcon",
+"Balkon"
+],
+[
+"Jardin",
+"Garten"
+],
+[
+"Piscine",
+"Schwimmbad"
+],
+[
+"Box / parking",
+"Box / Stellplatz"
+],
+[
+"Vitrine",
+"Schaufenster"
+],
+[
+"Réserve",
+"Lager"
+],
+[
+"Local technique",
+"Technikraum"
+],
+[
+"précision (ex. chambre 2, côté jardin)",
+"Detail (z. B. Zimmer 2, Gartenseite)"
+],
+[
+"note",
+"Notiz"
+],
+[
+"{0} pièces",
+"{0} Räume"
+],
+[
+"à vendre",
+"zu verkaufen"
+],
+[
+"charges",
+"Nebenkosten"
+],
+[
+"disponible dès le",
+"verfügbar ab"
+],
+[
+"Photo précédente",
+"Vorheriges Foto"
+],
+[
+"Photo suivante",
+"Nächstes Foto"
+],
+[
+"Biens à louer / à vendre",
+"Objekte zur Miete / zum Kauf"
+],
+[
+"Aucun bien publié. ＋ Bien : type, m², pièces, photos, prix.",
+"Kein Objekt veröffentlicht. ＋ Objekt: Art, m², Räume, Fotos, Preis."
+],
+[
+"Modifier le bien",
+"Objekt bearbeiten"
+],
+[
+"Nouveau bien",
+"Neues Objekt"
+],
+[
+"— Nos biens (sans agence) —",
+"— Unsere Objekte (ohne Agentur) —"
+],
+[
+"Titre de l’annonce",
+"Titel der Anzeige"
+],
+[
+"ex. Bel appartement 2 chambres avec terrasse",
+"z. B. Schöne 3-Zimmer-Wohnung mit Terrasse"
+],
+[
+"Surface totale (m²)",
+"Gesamtfläche (m²)"
+],
+[
+"rue, n°, code postal, ville (pour la carte)",
+"Straße, Nr., PLZ, Ort (für die Karte)"
+],
+[
+"Disponible dès le",
+"Verfügbar ab"
+],
+[
+"Prix",
+"Preis"
+],
+[
+"À louer",
+"Zu vermieten"
+],
+[
+"À vendre",
+"Zu verkaufen"
+],
+[
+"Loyer (€ / mois)",
+"Miete (€ / Monat)"
+],
+[
+"Prix de vente (€)",
+"Kaufpreis (€)"
+],
+[
+"Pièces et espaces",
+"Räume und Flächen"
+],
+[
+"Chambres, cuisine, cave, balcon, piscine… choisissez dans la liste ou « ➕ Autre » ; m² et note facultatifs.",
+"Zimmer, Küche, Keller, Balkon, Pool… aus der Liste wählen oder „➕ Andere“; m² und Notiz optional."
+],
+[
+"Ajouter une pièce ou un espace",
+"Raum oder Fläche hinzufügen"
+],
+[
+"Photos de l’annonce",
+"Fotos der Anzeige"
+],
+[
+"Ajouter des photos (horizontales de préférence)",
+"Fotos hinzufügen (am besten quer)"
+],
+[
+"état, étage, ascenseur, chauffage, proximité…",
+"Zustand, Etage, Aufzug, Heizung, Umgebung…"
+],
+[
+"Publier le bien",
+"Objekt veröffentlichen"
+],
+[
+"Supprimer ce bien ?",
+"Dieses Objekt löschen?"
+],
+[
+"Bien supprimé",
+"Objekt gelöscht"
+],
+[
+"Bien modifié",
+"Objekt geändert"
+],
+[
+"Nouveau bien publié",
+"Neues Objekt veröffentlicht"
+],
+[
+"Bien enregistré",
+"Objekt gespeichert"
+],
+[
+"Bien publié",
+"Objekt veröffentlicht"
+],
+[
+"Cochez « À louer » et / ou « À vendre »",
+"„Zu vermieten“ und/oder „Zu verkaufen“ ankreuzen"
+],
+[
+"Loyer mensuel manquant",
+"Monatsmiete fehlt"
+],
+[
+"Prix de vente manquant",
+"Kaufpreis fehlt"
+],
+[
+"20 photos au maximum",
+"Höchstens 20 Fotos"
+],
+[
+"Bien immo.",
+"Objekt"
+],
+[
+"Aucun bien publié. ＋ Bien immo. : type, m², pièces, photos, prix.",
+"Kein Objekt veröffentlicht. ＋ Objekt: Art, m², Räume, Fotos, Preis."
 ]
 ];
