@@ -13775,5 +13775,113 @@ export default [
 [
 "Agences Immo.",
 "Agencias Inmo."
+],
+[
+"Nouveau client",
+"Nuevo cliente"
+],
+[
+"Client — chambre {0}",
+"Cliente — habitación {0}"
+],
+[
+"Personnes",
+"Personas"
+],
+[
+"N° de chambre",
+"N.º de habitación"
+],
+[
+"Clé / badge (n° ou code)",
+"Llave / tarjeta (n.º o código)"
+],
+[
+"ex. 204",
+"p. ej. 204"
+],
+[
+"ex. 2",
+"p. ej. 2"
+],
+[
+"ex. badge 17 ou code 4821",
+"p. ej. tarjeta 17 o código 4821"
+],
+[
+"ex. allergie, lit bébé, arrivée tardive…",
+"p. ej. alergia, cuna, llegada tardía…"
+],
+[
+"Supprimer ce client ?",
+"¿Eliminar este cliente?"
+],
+[
+"Hotel : client supprimé",
+"Hotel: cliente eliminado"
+],
+[
+"Hotel : client modifié",
+"Hotel: cliente modificado"
+],
+[
+"Hotel : nouveau client",
+"Hotel: nuevo cliente"
+],
+[
+"Client enregistré",
+"Cliente guardado"
+],
+[
+"Nom, chambre, arrivée et départ sont obligatoires",
+"Nombre, habitación, llegada y salida son obligatorios"
+],
+[
+"Le départ doit être après l’arrivée",
+"La salida debe ser posterior a la llegada"
+],
+[
+"Chambre {0} déjà occupée à ces dates",
+"Habitación {0} ya ocupada en estas fechas"
+],
+[
+"Enregistrer quand même",
+"Guardar igualmente"
+],
+[
+"Arrivées aujourd’hui",
+"Llegadas hoy"
+],
+[
+"Départs aujourd’hui",
+"Salidas hoy"
+],
+[
+"À l’hôtel",
+"En el hotel"
+],
+[
+"À venir",
+"Próximos"
+],
+[
+"Partis",
+"Se fueron"
+],
+[
+"Aucune arrivée aujourd’hui.",
+"Ninguna llegada hoy."
+],
+[
+"Aucun départ aujourd’hui.",
+"Ninguna salida hoy."
+],
+[
+"Aucun client à l’hôtel.",
+"Ningún cliente en el hotel."
+],
+[
+"À l’hôtel : {0} · Arrivées : {1} · Départs : {2}",
+"En el hotel: {0} · Llegadas: {1} · Salidas: {2}"
 ]
 ];
