@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.116.2';
+const VERSION = '2.116.3';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5171,7 +5171,7 @@ const SHEETS = {
           ${tel ? html`<a class="btn" href="tel:${tel}">${icon('phone')} Appeler</a><a class="btn" href="sms:${tel}">${icon('msg')} SMS</a>` : ''}
           ${l.mail ? html`<a class="btn" href="mailto:${l.mail}">${icon('mail')} Email</a>` : ''}
         </div>
-        ${!gone ? html`<div class="actions">
+        ${!gone ? html`<div class="actions loc-acts">
           <button class="btn sm" data-action="relance" data-id="${id}">${icon('msg')} Relancer</button>
           <button class="btn sm" data-action="index" data-id="${id}">${icon('chart')} Réviser le loyer</button>
           <button class="btn sm" data-action="renew" data-id="${id}">${icon('calendar')} Prolonger</button>
