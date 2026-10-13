@@ -84,6 +84,9 @@ async function route(request, env, ctx, headers) {
     // Code d'accès saisi dans l'app des locataires (empreinte du code seulement ; essais limités)
     if (url.pathname === "/api/esp-code" && request.method === "POST") return espaceCode(request, env, headers);
 
+    const bm = url.pathname.match(/^\/api\/biens(?:\/([a-z0-9]{6,40})\/(p[0-5]\.jpg))?$/);
+    if (bm && request.method === "GET") return biensPublic(request, env, bm[1], bm[2], headers);
+
     const tl = url.pathname.match(/^\/api\/tools(?:\/([0-9a-f]{16})(?:\/(p[0-2]\.jpg|contact))?)?$/);
     if (tl) return toolsPublic(request, env, tl[1], tl[2], headers);
 
@@ -234,6 +237,9 @@ const ARES_BOARD = "ares/board/"; // mini-chat de chaque logement : messages chi
 const BOARD_TTL_MS = 90 * 24 * 3600 * 1000; // messages effacés après 90 jours
 const BOARD_MAX = 150;
 // Annonces « Don · prêt · location » publiées par les locataires (approuvées par le gestionnaire)
+// « 🆕 Nouveau bien » : biens à louer / à vendre publiés par l'app de gestion (annonces publiques, sans données personnelles)
+const BIENS = "ares/biens/";
+const BIEN_MAX = 60, BIEN_PH = 6, BIEN_PH_MAX = 900 * 1024;
 const TOOLS = "tools/items/";
 const TOOL_DAYS = 90;
 const TOOL_KINDS = ["don", "pret", "loc"];
@@ -462,6 +468,16 @@ async function toolCreate(env, b, owner, status) {
   };
   await toolPut(env, it);
   return it;
+}
+async function biensPublic(request, env, id, sub, headers) {
+  if (id) {
+    const obj = await env.PHOTOS.get(BIENS + id + "/" + sub);
+    if (!obj) return aresJson({ error: "Introuvable" }, 404, headers);
+    return new Response(obj.body, { headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400", ...headers } });
+  }
+  const obj = await env.PHOTOS.get(BIENS + "list.json");
+  const j = obj ? await obj.json() : { items: [] };
+  return aresJson({ items: j.items || [], at: j.at || 0 }, 200, headers);
 }
 async function toolsPublic(request, env, id, sub, headers) {
   if (!id && request.method === "GET") {
@@ -716,6 +732,37 @@ async function handleAres(request, env, url, headers) {
       return aresJson({ ok: true }, 200, headers);
     }
     return (await espPushSave(env, "owner", b)) ? aresJson({ ok: true }, 200, headers) : aresJson({ error: "Abonnement invalide" }, 400, headers);
+  }
+  // « 🆕 Nouveau bien » : la liste (texte) puis les photos une à une ; les photos des biens retirés sont effacées
+  if (path === "biens" && method === "PUT") {
+    let b;
+    try { b = await request.json(); } catch { b = null; }
+    const s = (v, n) => String(v || "").slice(0, n), nb = (v) => (Number.isFinite(+v) && +v >= 0 ? Math.round(+v * 100) / 100 : 0);
+    const items = (b && Array.isArray(b.items) ? b.items : []).slice(0, BIEN_MAX).filter((x) => x && /^[a-z0-9]{6,40}$/.test(x.id || "") && x.titre).map((x) => ({
+      id: x.id, titre: s(x.titre, 120), type: s(x.type, 20), surface: nb(x.surface), adresse: s(x.adresse, 200), dispo: /^\d{4}-\d{2}-\d{2}$/.test(x.dispo || "") ? x.dispo : "",
+      louer: !!x.louer, vendre: !!x.vendre, loyer: nb(x.loyer), charges: nb(x.charges), prix: nb(x.prix), description: s(x.description, 2000),
+      pieces: (Array.isArray(x.pieces) ? x.pieces : []).slice(0, 40).map((p) => ({ k: s(p.k, 20), nom: s(p.nom, 80), m2: s(p.m2, 10) })),
+      cree: /^\d{4}-\d{2}-\d{2}$/.test(x.cree || "") ? x.cree : "", nph: Math.max(0, Math.min(BIEN_PH, parseInt(x.nph, 10) || 0)),
+      agence: { nom: s(x.agence && x.agence.nom, 120), tel: s(x.agence && x.agence.tel, 40), email: s(x.agence && x.agence.email, 120) },
+    }));
+    const keep = new Set(items.map((x) => x.id));
+    let cursor;
+    do {
+      const l = await env.PHOTOS.list({ prefix: BIENS, cursor });
+      const gone = l.objects.map((o) => o.key).filter((k) => k !== BIENS + "list.json" && !keep.has(k.slice(BIENS.length).split("/")[0]));
+      if (gone.length) await env.PHOTOS.delete(gone);
+      cursor = l.truncated ? l.cursor : undefined;
+    } while (cursor);
+    await env.PHOTOS.put(BIENS + "list.json", JSON.stringify({ items, at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
+    return aresJson({ ok: true, n: items.length }, 200, headers);
+  }
+  const bph = path.match(/^biens\/([a-z0-9]{6,40})\/(p[0-5]\.jpg)$/);
+  if (bph && method === "PUT") {
+    const buf = await request.arrayBuffer();
+    const u8 = new Uint8Array(buf);
+    if (!buf.byteLength || buf.byteLength > BIEN_PH_MAX || u8[0] !== 0xff || u8[1] !== 0xd8) return aresJson({ error: "Photo invalide (JPEG, 900 Ko max.)" }, 400, headers);
+    await env.PHOTOS.put(BIENS + bph[1] + "/" + bph[2], buf, { httpMetadata: { contentType: "image/jpeg" } });
+    return aresJson({ ok: true }, 200, headers);
   }
   if (path === "pubs" && method === "PUT") {
     let b;
