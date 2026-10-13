@@ -13927,5 +13927,245 @@ export default [
 [
 "BIC de la gérance : {0}",
 "BIC da gestora: {0}"
+],
+[
+"Villa",
+"Moradia"
+],
+[
+"Local commercial",
+"Espaço comercial"
+],
+[
+"Entrepôt",
+"Armazém"
+],
+[
+"Terrain",
+"Terreno"
+],
+[
+"Parking / garage",
+"Estacionamento / garagem"
+],
+[
+"Salon",
+"Sala de estar"
+],
+[
+"Séjour",
+"Sala de jantar"
+],
+[
+"Salle de douche",
+"Casa de banho com duche"
+],
+[
+"Dressing",
+"Closet"
+],
+[
+"Grenier",
+"Sótão"
+],
+[
+"Balcon",
+"Varanda"
+],
+[
+"Terrasse",
+"Terraço"
+],
+[
+"Jardin",
+"Jardim"
+],
+[
+"Piscine",
+"Piscina"
+],
+[
+"Box / parking",
+"Box / lugar"
+],
+[
+"Vitrine",
+"Montra"
+],
+[
+"Réserve",
+"Reserva"
+],
+[
+"Local technique",
+"Espaço técnico"
+],
+[
+"précision (ex. chambre 2, côté jardin)",
+"detalhe (ex. quarto 2, lado do jardim)"
+],
+[
+"note",
+"nota"
+],
+[
+"{0} pièces",
+"{0} divisões"
+],
+[
+"à vendre",
+"à venda"
+],
+[
+"charges",
+"despesas"
+],
+[
+"disponible dès le",
+"disponível a partir de"
+],
+[
+"Photo précédente",
+"Foto anterior"
+],
+[
+"Photo suivante",
+"Foto seguinte"
+],
+[
+"Biens à louer / à vendre",
+"Imóveis para arrendar / vender"
+],
+[
+"Aucun bien publié. ＋ Bien : type, m², pièces, photos, prix.",
+"Nenhum imóvel publicado. ＋ Imóvel: tipo, m², divisões, fotos, preço."
+],
+[
+"Modifier le bien",
+"Editar imóvel"
+],
+[
+"Nouveau bien",
+"Novo imóvel"
+],
+[
+"— Nos biens (sans agence) —",
+"— Os nossos imóveis (sem agência) —"
+],
+[
+"Titre de l’annonce",
+"Título do anúncio"
+],
+[
+"ex. Bel appartement 2 chambres avec terrasse",
+"ex. Belo apartamento T2 com terraço"
+],
+[
+"Surface totale (m²)",
+"Área total (m²)"
+],
+[
+"rue, n°, code postal, ville (pour la carte)",
+"rua, n.º, código postal, cidade (para o mapa)"
+],
+[
+"Disponible dès le",
+"Disponível a partir de"
+],
+[
+"Prix",
+"Preço"
+],
+[
+"À louer",
+"Para arrendar"
+],
+[
+"À vendre",
+"À venda"
+],
+[
+"Loyer (€ / mois)",
+"Renda (€ / mês)"
+],
+[
+"Prix de vente (€)",
+"Preço de venda (€)"
+],
+[
+"Pièces et espaces",
+"Divisões e espaços"
+],
+[
+"Chambres, cuisine, cave, balcon, piscine… choisissez dans la liste ou « ➕ Autre » ; m² et note facultatifs.",
+"Quartos, cozinha, cave, varanda, piscina… escolha na lista ou «➕ Outro»; m² e nota opcionais."
+],
+[
+"Ajouter une pièce ou un espace",
+"Adicionar uma divisão ou espaço"
+],
+[
+"Photos de l’annonce",
+"Fotos do anúncio"
+],
+[
+"Ajouter des photos (horizontales de préférence)",
+"Adicionar fotos (de preferência horizontais)"
+],
+[
+"état, étage, ascenseur, chauffage, proximité…",
+"estado, piso, elevador, aquecimento, proximidades…"
+],
+[
+"Publier le bien",
+"Publicar o imóvel"
+],
+[
+"Supprimer ce bien ?",
+"Eliminar este imóvel?"
+],
+[
+"Bien supprimé",
+"Imóvel eliminado"
+],
+[
+"Bien modifié",
+"Imóvel alterado"
+],
+[
+"Nouveau bien publié",
+"Novo imóvel publicado"
+],
+[
+"Bien enregistré",
+"Imóvel guardado"
+],
+[
+"Bien publié",
+"Imóvel publicado"
+],
+[
+"Cochez « À louer » et / ou « À vendre »",
+"Assinale «Para arrendar» e/ou «À venda»"
+],
+[
+"Loyer mensuel manquant",
+"Falta a renda mensal"
+],
+[
+"Prix de vente manquant",
+"Falta o preço de venda"
+],
+[
+"20 photos au maximum",
+"Máximo 20 fotos"
+],
+[
+"Bien immo.",
+"Imóvel"
+],
+[
+"Aucun bien publié. ＋ Bien immo. : type, m², pièces, photos, prix.",
+"Nenhum imóvel publicado. ＋ Imóvel: tipo, m², divisões, fotos, preço."
 ]
 ];

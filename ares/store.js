@@ -7,7 +7,7 @@
 
 import * as C from './crypto.js';
 
-export const COLLECTIONS = ['immeubles', 'logements', 'locataires', 'paiements', 'versements', 'depenses', 'frais', 'reglages', 'documents', 'historique', 'intervenants', 'taches', 'collectes', 'avis', 'devis', 'hotes', 'agences'];
+export const COLLECTIONS = ['immeubles', 'logements', 'locataires', 'paiements', 'versements', 'depenses', 'frais', 'reglages', 'documents', 'historique', 'intervenants', 'taches', 'collectes', 'avis', 'devis', 'hotes', 'agences', 'biens'];
 const HIST_MAX = 1000;
 const DATA_LABEL = 'ares-data-v2';
 const fileLabel = (id) => 'ares-file:' + id;

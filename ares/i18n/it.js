@@ -14015,5 +14015,245 @@ export default [
 [
 "BIC de la gérance : {0}",
 "BIC della gérance: {0}"
+],
+[
+"Penthouse",
+"Attico"
+],
+[
+"Local commercial",
+"Locale commerciale"
+],
+[
+"Entrepôt",
+"Magazzino"
+],
+[
+"Terrain",
+"Terreno"
+],
+[
+"Parking / garage",
+"Parcheggio / garage"
+],
+[
+"Salon",
+"Soggiorno"
+],
+[
+"Séjour",
+"Sala da pranzo"
+],
+[
+"Salle de douche",
+"Bagno con doccia"
+],
+[
+"Dressing",
+"Cabina armadio"
+],
+[
+"Grenier",
+"Soffitta"
+],
+[
+"Balcon",
+"Balcone"
+],
+[
+"Terrasse",
+"Terrazza"
+],
+[
+"Jardin",
+"Giardino"
+],
+[
+"Piscine",
+"Piscina"
+],
+[
+"Box / parking",
+"Box / posto auto"
+],
+[
+"Vitrine",
+"Vetrina"
+],
+[
+"Réserve",
+"Deposito"
+],
+[
+"Local technique",
+"Locale tecnico"
+],
+[
+"précision (ex. chambre 2, côté jardin)",
+"dettaglio (es. camera 2, lato giardino)"
+],
+[
+"note",
+"nota"
+],
+[
+"{0} pièces",
+"{0} vani"
+],
+[
+"à vendre",
+"in vendita"
+],
+[
+"charges",
+"spese"
+],
+[
+"disponible dès le",
+"disponibile dal"
+],
+[
+"Photo précédente",
+"Foto precedente"
+],
+[
+"Photo suivante",
+"Foto successiva"
+],
+[
+"Biens à louer / à vendre",
+"Immobili in affitto / in vendita"
+],
+[
+"Aucun bien publié. ＋ Bien : type, m², pièces, photos, prix.",
+"Nessun immobile pubblicato. ＋ Immobile: tipo, m², vani, foto, prezzo."
+],
+[
+"Modifier le bien",
+"Modifica immobile"
+],
+[
+"Nouveau bien",
+"Nuovo immobile"
+],
+[
+"— Nos biens (sans agence) —",
+"— I nostri immobili (senza agenzia) —"
+],
+[
+"Titre de l’annonce",
+"Titolo dell’annuncio"
+],
+[
+"ex. Bel appartement 2 chambres avec terrasse",
+"es. Bell’appartamento 2 camere con terrazza"
+],
+[
+"Surface totale (m²)",
+"Superficie totale (m²)"
+],
+[
+"rue, n°, code postal, ville (pour la carte)",
+"via, n°, CAP, città (per la mappa)"
+],
+[
+"Disponible dès le",
+"Disponibile dal"
+],
+[
+"Prix",
+"Prezzo"
+],
+[
+"À louer",
+"In affitto"
+],
+[
+"À vendre",
+"In vendita"
+],
+[
+"Loyer (€ / mois)",
+"Affitto (€ / mese)"
+],
+[
+"Prix de vente (€)",
+"Prezzo di vendita (€)"
+],
+[
+"Pièces et espaces",
+"Vani e spazi"
+],
+[
+"Chambres, cuisine, cave, balcon, piscine… choisissez dans la liste ou « ➕ Autre » ; m² et note facultatifs.",
+"Camere, cucina, cantina, balcone, piscina… scegliete dalla lista o «➕ Altro»; m² e nota facoltativi."
+],
+[
+"Ajouter une pièce ou un espace",
+"Aggiungi un vano o uno spazio"
+],
+[
+"Photos de l’annonce",
+"Foto dell’annuncio"
+],
+[
+"Ajouter des photos (horizontales de préférence)",
+"Aggiungi foto (meglio orizzontali)"
+],
+[
+"état, étage, ascenseur, chauffage, proximité…",
+"stato, piano, ascensore, riscaldamento, vicinanze…"
+],
+[
+"Publier le bien",
+"Pubblica l’immobile"
+],
+[
+"Supprimer ce bien ?",
+"Eliminare questo immobile?"
+],
+[
+"Bien supprimé",
+"Immobile eliminato"
+],
+[
+"Bien modifié",
+"Immobile modificato"
+],
+[
+"Nouveau bien publié",
+"Nuovo immobile pubblicato"
+],
+[
+"Bien enregistré",
+"Immobile salvato"
+],
+[
+"Bien publié",
+"Immobile pubblicato"
+],
+[
+"Cochez « À louer » et / ou « À vendre »",
+"Spuntate «In affitto» e/o «In vendita»"
+],
+[
+"Loyer mensuel manquant",
+"Affitto mensile mancante"
+],
+[
+"Prix de vente manquant",
+"Prezzo di vendita mancante"
+],
+[
+"20 photos au maximum",
+"Massimo 20 foto"
+],
+[
+"Bien immo.",
+"Immobile"
+],
+[
+"Aucun bien publié. ＋ Bien immo. : type, m², pièces, photos, prix.",
+"Nessun immobile pubblicato. ＋ Immobile: tipo, m², vani, foto, prezzo."
 ]
 ];

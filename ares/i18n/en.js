@@ -13751,5 +13751,233 @@ export default [
 [
 "BIC de la gérance : {0}",
 "Agency BIC: {0}"
+],
+[
+"Local commercial",
+"Commercial premises"
+],
+[
+"Entrepôt",
+"Warehouse"
+],
+[
+"Terrain",
+"Land"
+],
+[
+"Salon",
+"Living room"
+],
+[
+"Séjour",
+"Dining room"
+],
+[
+"Salle de douche",
+"Shower room"
+],
+[
+"Dressing",
+"Dressing room"
+],
+[
+"Grenier",
+"Attic"
+],
+[
+"Balcon",
+"Balcony"
+],
+[
+"Terrasse",
+"Terrace"
+],
+[
+"Jardin",
+"Garden"
+],
+[
+"Piscine",
+"Swimming pool"
+],
+[
+"Box / parking",
+"Box / parking space"
+],
+[
+"Vitrine",
+"Shop window"
+],
+[
+"Réserve",
+"Storeroom"
+],
+[
+"Local technique",
+"Plant room"
+],
+[
+"précision (ex. chambre 2, côté jardin)",
+"detail (e.g. bedroom 2, garden side)"
+],
+[
+"{0} pièces",
+"{0} rooms"
+],
+[
+"à vendre",
+"for sale"
+],
+[
+"charges",
+"service charges"
+],
+[
+"disponible dès le",
+"available from"
+],
+[
+"Photo précédente",
+"Previous photo"
+],
+[
+"Photo suivante",
+"Next photo"
+],
+[
+"Biens à louer / à vendre",
+"Properties to rent / for sale"
+],
+[
+"Aucun bien publié. ＋ Bien : type, m², pièces, photos, prix.",
+"No property published. ＋ Property: type, m², rooms, photos, price."
+],
+[
+"Modifier le bien",
+"Edit property"
+],
+[
+"Nouveau bien",
+"New property"
+],
+[
+"— Nos biens (sans agence) —",
+"— Our properties (no agency) —"
+],
+[
+"Titre de l’annonce",
+"Listing title"
+],
+[
+"ex. Bel appartement 2 chambres avec terrasse",
+"e.g. Lovely 2-bedroom flat with terrace"
+],
+[
+"Surface totale (m²)",
+"Total area (m²)"
+],
+[
+"rue, n°, code postal, ville (pour la carte)",
+"street, no., postcode, town (for the map)"
+],
+[
+"Disponible dès le",
+"Available from"
+],
+[
+"Prix",
+"Price"
+],
+[
+"À louer",
+"To rent"
+],
+[
+"À vendre",
+"For sale"
+],
+[
+"Loyer (€ / mois)",
+"Rent (€ / month)"
+],
+[
+"Prix de vente (€)",
+"Sale price (€)"
+],
+[
+"Pièces et espaces",
+"Rooms and spaces"
+],
+[
+"Chambres, cuisine, cave, balcon, piscine… choisissez dans la liste ou « ➕ Autre » ; m² et note facultatifs.",
+"Bedrooms, kitchen, cellar, balcony, pool… pick from the list or “➕ Other”; m² and note optional."
+],
+[
+"Ajouter une pièce ou un espace",
+"Add a room or space"
+],
+[
+"Photos de l’annonce",
+"Listing photos"
+],
+[
+"Ajouter des photos (horizontales de préférence)",
+"Add photos (landscape preferred)"
+],
+[
+"état, étage, ascenseur, chauffage, proximité…",
+"condition, floor, lift, heating, nearby…"
+],
+[
+"Publier le bien",
+"Publish the property"
+],
+[
+"Supprimer ce bien ?",
+"Delete this property?"
+],
+[
+"Bien supprimé",
+"Property deleted"
+],
+[
+"Bien modifié",
+"Property updated"
+],
+[
+"Nouveau bien publié",
+"New property published"
+],
+[
+"Bien enregistré",
+"Property saved"
+],
+[
+"Bien publié",
+"Property published"
+],
+[
+"Cochez « À louer » et / ou « À vendre »",
+"Tick “To rent” and/or “For sale”"
+],
+[
+"Loyer mensuel manquant",
+"Monthly rent missing"
+],
+[
+"Prix de vente manquant",
+"Sale price missing"
+],
+[
+"20 photos au maximum",
+"20 photos maximum"
+],
+[
+"Bien immo.",
+"Property"
+],
+[
+"Aucun bien publié. ＋ Bien immo. : type, m², pièces, photos, prix.",
+"No property published. ＋ Property: type, m², rooms, photos, price."
 ]
 ];
