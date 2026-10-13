@@ -10277,6 +10277,10 @@ export default [
 "Choose the agency"
 ],
 [
+"Client",
+"Guest"
+],
+[
 "Conseillé ({0} %)",
 "Suggested ({0} %)"
 ],
@@ -13527,5 +13531,113 @@ export default [
 [
 "Agences Immo.",
 "Real estate agencies"
+],
+[
+"Nouveau client",
+"New guest"
+],
+[
+"Client — chambre {0}",
+"Guest — room {0}"
+],
+[
+"Personnes",
+"People"
+],
+[
+"N° de chambre",
+"Room no."
+],
+[
+"Clé / badge (n° ou code)",
+"Key / badge (no. or code)"
+],
+[
+"ex. 204",
+"e.g. 204"
+],
+[
+"ex. 2",
+"e.g. 2"
+],
+[
+"ex. badge 17 ou code 4821",
+"e.g. badge 17 or code 4821"
+],
+[
+"ex. allergie, lit bébé, arrivée tardive…",
+"e.g. allergy, baby cot, late arrival…"
+],
+[
+"Supprimer ce client ?",
+"Delete this guest?"
+],
+[
+"Hotel : client supprimé",
+"Hotel: guest deleted"
+],
+[
+"Hotel : client modifié",
+"Hotel: guest updated"
+],
+[
+"Hotel : nouveau client",
+"Hotel: new guest"
+],
+[
+"Client enregistré",
+"Guest saved"
+],
+[
+"Nom, chambre, arrivée et départ sont obligatoires",
+"Name, room, arrival and departure are required"
+],
+[
+"Le départ doit être après l’arrivée",
+"Departure must be after arrival"
+],
+[
+"Chambre {0} déjà occupée à ces dates",
+"Room {0} already taken on these dates"
+],
+[
+"Enregistrer quand même",
+"Save anyway"
+],
+[
+"Arrivées aujourd’hui",
+"Arrivals today"
+],
+[
+"Départs aujourd’hui",
+"Departures today"
+],
+[
+"À l’hôtel",
+"In the hotel"
+],
+[
+"À venir",
+"Upcoming"
+],
+[
+"Partis",
+"Checked out"
+],
+[
+"Aucune arrivée aujourd’hui.",
+"No arrivals today."
+],
+[
+"Aucun départ aujourd’hui.",
+"No departures today."
+],
+[
+"Aucun client à l’hôtel.",
+"No guests in the hotel."
+],
+[
+"À l’hôtel : {0} · Arrivées : {1} · Départs : {2}",
+"In the hotel: {0} · Arrivals: {1} · Departures: {2}"
 ]
 ];

@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.117.0';
+const VERSION = '2.118.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -65,6 +65,7 @@ const ICONS = {
   history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
   trophy: '<path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M17 5h3a3 3 0 0 1-3 4M7 5H4a3 3 0 0 0 3 4"/>',
   briefcase: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18M10 13v2h4v-2"/>',
+  bed: '<path d="M3 7v13M21 13v7M3 16h18"/><path d="M3 13h18v-1a3 3 0 0 0-3-3h-7v4"/><circle cx="7" cy="11" r="1.6"/>',
   tool: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
 };
 const icon = (n) => new Raw(`<svg class="ic" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n] || ''}</svg>`);
@@ -2224,12 +2225,12 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase']] },
+  { group: 'Gestion', items: [['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 const MASKABLE = [['gerances', 'Gérances'], ['immeubles', 'Immeubles'], ['hotel', 'Hotel'], ['agences', 'Agences Immo.']];
 const masked = () => new Set((vault.get('reglages', 'masque') || {}).on || []);
@@ -3369,6 +3370,25 @@ dashboard() {
       })}</div>` : empty('building', 'Aucun immeuble enregistré.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Ajouter un immeuble</button>`)}`;
   },
 
+  // 🏨 Hotel — première étape : les clients (chambre, étage, clé, arrivée → départ)
+  hotel() {
+    const t = today(), all = vault.list('hotes');
+    const by = (a, b) => (a.arrivee || '').localeCompare(b.arrivee || '') || String(a.chambre).localeCompare(String(b.chambre), 'fr', { numeric: true });
+    const arr = all.filter((h) => h.arrivee === t).sort(by), dep = all.filter((h) => h.depart === t).sort(by);
+    const pres = all.filter((h) => h.arrivee <= t && h.depart > t).sort((a, b) => String(a.chambre).localeCompare(String(b.chambre), 'fr', { numeric: true }));
+    const next = all.filter((h) => h.arrivee > t).sort(by), past = all.filter((h) => h.depart < t).sort((a, b) => b.depart.localeCompare(a.depart));
+    const row = (h) => html`<button class="row" data-action="edit-hote" data-id="${h.id}"><span class="avatar" style="font-size:13px;font-weight:800">${h.chambre}</span>
+      <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.pers > 1 ? html` <span class="badge">👥 ${h.pers}</span>` : ''}</span>
+      <span class="meta">${h.etage ? html`<span>Étage</span> ${h.etage} · ` : ''}${h.cle ? html`🔑 ${h.cle} · ` : ''}${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}</span></span><span class="chev">›</span></button>`;
+    const sec = (title, list, empty) => html`<div class="section-label">${title}</div>${list.length ? html`<div class="list">${list.map(row)}</div>` : html`<p class="small muted" style="margin:0 0 12px">${empty}</p>`}`;
+    return html`${pageHead('🏨 Hotel', `À l’hôtel : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
+      <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button></div></div>
+      ${sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.')}
+      ${sec('🛫 Départs aujourd’hui', dep, 'Aucun départ aujourd’hui.')}
+      ${sec('🛏️ À l’hôtel', pres, 'Aucun client à l’hôtel.')}
+      ${next.length ? sec('📅 À venir', next, '') : ''}
+      ${past.length ? sec('🗂️ Partis', past.slice(0, 50), '') : ''}`;
+  },
   gerances() {
     const c = ptlConf();
     const portal = html`<a class="btn sm" href="/portail.html" target="_blank" rel="noopener">${icon('eye')} Ouvrir le portail</a>`;
@@ -4677,6 +4697,28 @@ const SHEETS = {
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-pub" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${exp ? 'Republier' : 'Publier'}</button>`,
+    };
+  },
+  'hote-form'({ id }) {
+    const h = id ? vault.get('hotes', id) : { arrivee: today(), depart: addDays(today(), 1), pers: 1, langue: 'fr' };
+    if (id && !h) return null;
+    const LG = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español', ar: 'العربية', autre: 'Autre' };
+    return {
+      title: id ? 'Client — chambre ' + h.chambre : 'Nouveau client',
+      narrow: true,
+      body: html`<form id="f" data-form="hote" class="fields">
+        <input type="hidden" name="id" value="${id || ''}">
+        ${field('Prénom', 'prenom', h.prenom)}${field('Nom', 'nom', h.nom, { required: true })}
+        ${field('Téléphone', 'tel', h.tel, { type: 'tel', placeholder: '+352 …' })}${field('Email', 'mail', h.mail, { type: 'email' })}
+        <label class="field">Langue<select name="langue">${Object.entries(LG).map(([k, l]) => html`<option value="${k}" ${h.langue === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+        ${field('Personnes', 'pers', h.pers, { type: 'number', attrs: 'min="1" max="20" inputmode="numeric"' })}
+        ${field('N° de chambre', 'chambre', h.chambre, { required: true, placeholder: 'ex. 204' })}${field('Étage', 'etage', h.etage, { placeholder: 'ex. 2' })}
+        ${field('Clé / badge (n° ou code)', 'cle', h.cle, { full: true, placeholder: 'ex. badge 17 ou code 4821' })}
+        ${field('Arrivée', 'arrivee', h.arrivee, { type: 'date', required: true })}${field('Départ', 'depart', h.depart, { type: 'date', required: true })}
+        <label class="field full">Notes<textarea name="notes" style="min-height:70px" placeholder="ex. allergie, lit bébé, arrivée tardive…">${h.notes || ''}</textarea></label>
+      </form>`,
+      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-hote" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
+        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
   'avis-form'({ id, preset }) {
@@ -6056,6 +6098,14 @@ const ACTIONS = {
   },
   'new-avis': (d) => openOver('avis-form', null, null, d.imm || ui.immFilter || ''),
   'edit-avis': (d) => openOver('avis-form', d.id),
+  'new-hote': () => openOver('hote-form'),
+  'edit-hote': (d) => openOver('hote-form', d.id),
+  async 'del-hote'(d) {
+    const h = vault.get('hotes', d.id);
+    if (!h || !(await confirmBox('Supprimer ce client ?', { ok: 'Supprimer', danger: true, detail: `${[h.prenom, h.nom].filter(Boolean).join(' ')} — chambre ${h.chambre}` }))) return;
+    await vault.mutate((tx) => tx.remove('hotes', d.id), 'Hotel : client supprimé', `${h.nom} — chambre ${h.chambre}`);
+    goBack();
+  },
   async 'del-avis'(d) {
     const a = vault.get('avis', d.id);
     if (!a || !(await confirmBox('Supprimer cet avis ?', { ok: 'Supprimer', danger: true, detail: a.texte.slice(0, 120) }))) return;
@@ -6702,6 +6752,20 @@ const FORMS = {
     if (rec.video && !videoEmbed(rec.video) && ttShort(rec.video)) { const full = await vault.videoLink(rec.video.trim()); if (full) rec.video = full; }
     await vault.mutate((tx) => tx.put('avis', rec), id ? 'Annonce modifiée' : 'Annonce publiée', `${rec.nom} — jusqu'au ${fmtDate(rec.fin)}`, rec.immId);
     toast(rec.video && !videoEmbed(rec.video) ? (ttShort(rec.video) ? 'Annonce publiée — lien court TikTok non converti (hors ligne ?) : ouvrez la vidéo dans le navigateur et copiez le lien complet' : 'Annonce publiée — lien vidéo non reconnu : il s’affiche comme un bouton') : `Annonce publiée jusqu'au ${fmtDate(rec.fin)}`, rec.video && !videoEmbed(rec.video) ? { bad: true } : undefined);
+    goBack();
+  },
+  async hote(fd) {
+    const id = fd.get('id');
+    const g = (k) => String(fd.get(k) || '').trim();
+    const rec = { prenom: g('prenom'), nom: g('nom'), tel: g('tel'), mail: g('mail'), langue: g('langue') || 'fr', pers: Math.max(1, parseInt(g('pers'), 10) || 1),
+      chambre: g('chambre'), etage: g('etage'), cle: g('cle'), arrivee: g('arrivee'), depart: g('depart'), notes: g('notes') };
+    if (!rec.nom || !rec.chambre || !rec.arrivee || !rec.depart) return toast('Nom, chambre, arrivée et départ sont obligatoires', { bad: true });
+    if (rec.depart <= rec.arrivee) return toast('Le départ doit être après l’arrivée', { bad: true });
+    const clash = vault.list('hotes').find((h) => h.id !== id && String(h.chambre) === rec.chambre && h.arrivee < rec.depart && rec.arrivee < h.depart);
+    if (clash && !(await confirmBox(`Chambre ${rec.chambre} déjà occupée à ces dates`, { ok: 'Enregistrer quand même', detail: `${[clash.prenom, clash.nom].filter(Boolean).join(' ')} : ${fmtDate(clash.arrivee)} → ${fmtDate(clash.depart)}` }))) return;
+    if (id) rec.id = id;
+    await vault.mutate((tx) => tx.put('hotes', rec), id ? 'Hotel : client modifié' : 'Hotel : nouveau client', `${[rec.prenom, rec.nom].filter(Boolean).join(' ')} — chambre ${rec.chambre} · ${fmtDate(rec.arrivee)} → ${fmtDate(rec.depart)}`);
+    toast('Client enregistré');
     goBack();
   },
   async avis(fd) {

@@ -1238,7 +1238,7 @@ export default [
 ],
 [
 "Départ",
-"Saída"
+"Partida"
 ],
 [
 "Départ de {0}",
@@ -5038,7 +5038,7 @@ export default [
 ],
 [
 "Étage",
-"Andar"
+"Piso"
 ],
 [
 "État des lieux, retenues éventuelles sur la caution, nouvelle adresse…",
@@ -13719,5 +13719,105 @@ export default [
 [
 "Agences Immo.",
 "Agências Imob."
+],
+[
+"Nouveau client",
+"Novo cliente"
+],
+[
+"Client — chambre {0}",
+"Cliente — quarto {0}"
+],
+[
+"Personnes",
+"Pessoas"
+],
+[
+"N° de chambre",
+"N.º do quarto"
+],
+[
+"Clé / badge (n° ou code)",
+"Chave / cartão (n.º ou código)"
+],
+[
+"ex. badge 17 ou code 4821",
+"ex. cartão 17 ou código 4821"
+],
+[
+"ex. allergie, lit bébé, arrivée tardive…",
+"ex. alergia, berço, chegada tardia…"
+],
+[
+"Supprimer ce client ?",
+"Eliminar este cliente?"
+],
+[
+"Hotel : client supprimé",
+"Hotel: cliente eliminado"
+],
+[
+"Hotel : client modifié",
+"Hotel: cliente alterado"
+],
+[
+"Hotel : nouveau client",
+"Hotel: novo cliente"
+],
+[
+"Client enregistré",
+"Cliente guardado"
+],
+[
+"Nom, chambre, arrivée et départ sont obligatoires",
+"Nome, quarto, chegada e partida são obrigatórios"
+],
+[
+"Le départ doit être après l’arrivée",
+"A partida tem de ser depois da chegada"
+],
+[
+"Chambre {0} déjà occupée à ces dates",
+"Quarto {0} já ocupado nestas datas"
+],
+[
+"Enregistrer quand même",
+"Guardar mesmo assim"
+],
+[
+"Arrivées aujourd’hui",
+"Chegadas hoje"
+],
+[
+"Départs aujourd’hui",
+"Partidas hoje"
+],
+[
+"À l’hôtel",
+"No hotel"
+],
+[
+"À venir",
+"A chegar"
+],
+[
+"Partis",
+"Partiram"
+],
+[
+"Aucune arrivée aujourd’hui.",
+"Nenhuma chegada hoje."
+],
+[
+"Aucun départ aujourd’hui.",
+"Nenhuma partida hoje."
+],
+[
+"Aucun client à l’hôtel.",
+"Nenhum cliente no hotel."
+],
+[
+"À l’hôtel : {0} · Arrivées : {1} · Départs : {2}",
+"No hotel: {0} · Chegadas: {1} · Partidas: {2}"
 ]
 ];

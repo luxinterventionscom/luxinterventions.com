@@ -1242,7 +1242,7 @@ export default [
 ],
 [
 "Départ",
-"Ende"
+"Abreise"
 ],
 [
 "Départ de {0}",
@@ -5054,7 +5054,7 @@ export default [
 ],
 [
 "Étage",
-"Stockwerk"
+"Etage"
 ],
 [
 "État des lieux, retenues éventuelles sur la caution, nouvelle adresse…",
@@ -7998,7 +7998,7 @@ export default [
 ],
 [
 "Arrivée",
-"Ankunft"
+"Anreise"
 ],
 [
 "1 nouveau message",
@@ -10494,7 +10494,7 @@ export default [
 ],
 [
 "Client",
-"Kunde"
+"Gast"
 ],
 [
 "Conseillé ({0} %)",
@@ -13783,5 +13783,113 @@ export default [
 [
 "Agences Immo.",
 "Immobilienagenturen"
+],
+[
+"Nouveau client",
+"Neuer Gast"
+],
+[
+"Client — chambre {0}",
+"Gast — Zimmer {0}"
+],
+[
+"Personnes",
+"Personen"
+],
+[
+"N° de chambre",
+"Zimmer-Nr."
+],
+[
+"Clé / badge (n° ou code)",
+"Schlüssel / Badge (Nr. oder Code)"
+],
+[
+"ex. 204",
+"z. B. 204"
+],
+[
+"ex. 2",
+"z. B. 2"
+],
+[
+"ex. badge 17 ou code 4821",
+"z. B. Badge 17 oder Code 4821"
+],
+[
+"ex. allergie, lit bébé, arrivée tardive…",
+"z. B. Allergie, Babybett, späte Anreise…"
+],
+[
+"Supprimer ce client ?",
+"Diesen Gast löschen?"
+],
+[
+"Hotel : client supprimé",
+"Hotel: Gast gelöscht"
+],
+[
+"Hotel : client modifié",
+"Hotel: Gast geändert"
+],
+[
+"Hotel : nouveau client",
+"Hotel: neuer Gast"
+],
+[
+"Client enregistré",
+"Gast gespeichert"
+],
+[
+"Nom, chambre, arrivée et départ sont obligatoires",
+"Name, Zimmer, Anreise und Abreise sind Pflicht"
+],
+[
+"Le départ doit être après l’arrivée",
+"Die Abreise muss nach der Anreise liegen"
+],
+[
+"Chambre {0} déjà occupée à ces dates",
+"Zimmer {0} ist zu diesen Daten belegt"
+],
+[
+"Enregistrer quand même",
+"Trotzdem speichern"
+],
+[
+"Arrivées aujourd’hui",
+"Anreisen heute"
+],
+[
+"Départs aujourd’hui",
+"Abreisen heute"
+],
+[
+"À l’hôtel",
+"Im Hotel"
+],
+[
+"À venir",
+"Kommende"
+],
+[
+"Partis",
+"Abgereist"
+],
+[
+"Aucune arrivée aujourd’hui.",
+"Heute keine Anreisen."
+],
+[
+"Aucun départ aujourd’hui.",
+"Heute keine Abreisen."
+],
+[
+"Aucun client à l’hôtel.",
+"Keine Gäste im Hotel."
+],
+[
+"À l’hôtel : {0} · Arrivées : {1} · Départs : {2}",
+"Im Hotel: {0} · Anreisen: {1} · Abreisen: {2}"
 ]
 ];
