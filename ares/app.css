@@ -433,6 +433,9 @@ dialog.sheet::backdrop { background: rgba(10, 10, 12, 0.5); backdrop-filter: blu
 .actions .btn { flex: 1; min-width: 0; }
 /* fiche locataire : Relancer · Réviser le loyer · Prolonger — chaque bouton garde la place de son texte, la ligne passe à la ligne si besoin */
 .loc-acts .btn { flex: 1 1 auto; min-width: fit-content; }
+/* Maintenance › Équipe : libellés longs → le texte passe sur deux lignes dans le bouton plutôt que de déborder */
+.acts-fit .btn { flex: 1 1 auto; min-width: 0; white-space: normal; height: auto; min-height: 44px; line-height: 1.2; padding-top: 8px; padding-bottom: 8px; text-align: center; }
+@media (max-width: 700px) { .acts-fit { display: grid; grid-template-columns: 1fr 1fr; } }
 .note { white-space: pre-wrap; background: var(--surface-2); padding: 12px; border-radius: var(--radius); font-size: 14px; }
 
 .fab {

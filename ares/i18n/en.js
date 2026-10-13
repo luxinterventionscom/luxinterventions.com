@@ -13487,5 +13487,21 @@ export default [
 [
 "💶 Gestion locataire — paiements des loyers : touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
 "💶 Tenant management — rent payments: tap an empty month to mark it paid; tap a paid month for the amount, the receipt or to cancel."
+],
+[
+"Nou. travail (nouvelle intervention)",
+"New job (new intervention)"
+],
+[
+"Affectation — quel ouvrier ?",
+"Assignment — which worker?"
+],
+[
+"Choisissez l’ouvrier, puis la demande d’intervention à lui confier.",
+"Choose the worker, then the intervention request to give them."
+],
+[
+"Aucun ouvrier. Ajoutez-en un avec ＋ Nouvel ouvrier.",
+"No workers. Add one with ＋ New worker."
 ]
 ];

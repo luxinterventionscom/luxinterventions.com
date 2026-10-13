@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.116.3';
+const VERSION = '2.116.4';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3104,7 +3104,7 @@ const VIEWS = {
     const chips = imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
       <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!f}">Tous</button>
       ${imms.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${f === im.id}">${im.adresse}</button>`)}</div>` : '';
-    const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions" style="margin:0"><button class="btn" data-action="go" data-to="champeq">🏆 Classement</button><button class="btn primary" data-action="new-interv">${icon('plus')} Nouvel ouvrier</button></div>`
+    const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions acts-fit" style="margin:0"><button class="btn" data-action="go" data-to="champeq">🏆 Classement</button><button class="btn" data-action="aff-pick">📌 Affectation (demandes d’intervention)</button><button class="btn" data-action="interv-job">📅 Nou. travail (nouvelle intervention)</button><button class="btn primary" data-action="new-interv">${icon('plus')} Nouvel ouvrier</button></div>`
       : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
       : tab === 'devis' ? html`<button class="btn primary" data-action="dev-new">${icon('plus')} Nouveau devis</button>`
       : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
@@ -4088,6 +4088,17 @@ const SHEETS = {
     };
   },
   // affectation depuis la fiche d'un ouvrier : les demandes d'intervention en cours
+  'aff-pick'() {
+    const ints = vault.list('intervenants').filter((i) => !i.archive).sort((a, b) => intervFull(a).localeCompare(intervFull(b)));
+    return {
+      title: '📌 Affectation — quel ouvrier ?',
+      narrow: true,
+      body: html`<p class="small muted" style="margin:0 0 10px">Choisissez l’ouvrier, puis la demande d’intervention à lui confier.</p>
+        ${ints.length ? html`<div class="list small">${ints.map((i) => html`<button class="row" data-action="interv-aff" data-id="${i.id}"><span class="avatar met-ic">${avW(i)}</span><span class="grow"><span class="title" style="display:block">${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || ''}</span></span><span class="chev">›</span></button>`)}</div>`
+        : html`<p class="muted">Aucun ouvrier. Ajoutez-en un avec ＋ Nouvel ouvrier.</p>`}`,
+      foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
+    };
+  },
   'ger-aff'({ id }) {
     const i = vault.get('intervenants', id);
     if (!i) return null;
@@ -4420,7 +4431,7 @@ const SHEETS = {
     const i = vault.get('intervenants', id);
     if (!i) return null;
     const jobs = vault.list('taches').filter((t) => t.intervenantId === id && !t.recur && t.statut !== 'fait' && t.date).sort((a, b) => (a.date + (a.heure || '')).localeCompare(b.date + (b.heure || '')));
-    const jobBtn = html`<button class="btn primary block" data-action="interv-aff" data-id="${id}" style="margin-bottom:8px">📌 Affectation (demandes d’intervention)</button><button class="btn block" data-action="interv-job" data-id="${id}" style="margin-bottom:12px">📅 Autre travail (sans demande)</button>`;
+    const jobBtn = html`<button class="btn primary block" data-action="interv-aff" data-id="${id}" style="margin-bottom:8px">📌 Affectation (demandes d’intervention)</button><button class="btn block" data-action="interv-job" data-id="${id}" style="margin-bottom:12px">📅 Nou. travail (nouvelle intervention)</button>`;
     const jobList = html`<div class="section-label">📅 Travail prévu (avec date)</div>
       ${jobs.length ? html`<div class="list small">${jobs.map((t) => html`<button class="row${t.urgent ? ' u-urgent' : ''}" data-action="edit-tache" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.urgent ? '🔴 ' : ''}${t.titre}</span><span class="meta">${placeName(t)}</span></span><span class="meta" style="text-align:right">${t.date < today() ? html`<b style="color:var(--red)">${fmtDate(t.date)}</b>` : fmtDate(t.date)}${t.heure ? html`<br>🕒 ${t.heure}${t.heureFin ? '–' + t.heureFin : ''}` : ''}</span></button>`)}</div>` : html`<p class="small muted">Rien de prévu en plus de l’horaire habituel.</p>`}`;
     tab = tab || 'fiche';
@@ -5959,7 +5970,9 @@ const ACTIONS = {
   'photo-del': (d, el) => { const box = el.closest('.photo-pick'); box.querySelector('[name=photo]').value = ''; setHtml(box.querySelector('.pp-circle'), '👤'); el.remove(); },
   'interv-aff': (d) => { ui.ptl.data = null; ui.ptl.err = ''; openOver('ger-aff', d.id); },
   'ger-aff-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; ptlLoad(); },
-  'interv-job': (d) => { const i = vault.get('intervenants', d.id); openOver('tache-form', null, null, { intervenantId: d.id, type: i && i.metier === 'menage' ? 'nettoyage' : 'reparation' }); },
+  'interv-job': (d) => { const i = d.id && vault.get('intervenants', d.id); openOver('tache-form', null, null, i ? { intervenantId: d.id, type: i.metier === 'menage' ? 'nettoyage' : 'reparation' } : { type: 'reparation' }); },
+  // Maintenance › Équipe : « 📌 Affectation » sans ouvrier → on choisit d'abord l'ouvrier
+  'aff-pick': () => openOver('aff-pick'),
   'open-signal': (d) => { const t = vault.get('taches', d.id); if (t && !t.vu) vault.mutate((tx) => tx.put('taches', { id: t.id, vu: true }), 'Message du locataire lu', t.titre, t.locId); openOver('tache-form', d.id); },
   'ics-all': (d) => { ui.icsAll = null; openOver('ics-all', d.id); },
   async 'ics-analyze'() {

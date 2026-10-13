@@ -13743,5 +13743,21 @@ export default [
 [
 "💶 Gestion locataire — paiements des loyers : touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
 "💶 Mieterverwaltung — Mietzahlungen: tippen Sie auf einen leeren Monat, um ihn als bezahlt zu markieren; auf einen bezahlten Monat für Betrag, Quittung oder Stornierung."
+],
+[
+"Nou. travail (nouvelle intervention)",
+"Neue Arbeit (neuer Einsatz)"
+],
+[
+"Affectation — quel ouvrier ?",
+"Zuweisung — welcher Arbeiter?"
+],
+[
+"Choisissez l’ouvrier, puis la demande d’intervention à lui confier.",
+"Wählen Sie den Arbeiter, dann die Einsatzanfrage, die Sie ihm übertragen."
+],
+[
+"Aucun ouvrier. Ajoutez-en un avec ＋ Nouvel ouvrier.",
+"Kein Arbeiter. Fügen Sie einen mit ＋ Neuer Arbeiter hinzu."
 ]
 ];
