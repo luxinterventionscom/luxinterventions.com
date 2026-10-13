@@ -14239,5 +14239,117 @@ export default [
 [
 "Aucun bien publié. ＋ Bien immo. : type, m², pièces, photos, prix.",
 "Kein Objekt veröffentlicht. ＋ Objekt: Art, m², Räume, Fotos, Preis."
+],
+[
+"Rechercher une rue, un immeuble, une résidence, un client…",
+"Straße, Gebäude, Residenz oder Kunde suchen…"
+],
+[
+"Aucun lieu choisi : touchez une ligne ci-dessous.",
+"Kein Ort gewählt: Tippen Sie unten auf eine Zeile."
+],
+[
+"Nos immeubles",
+"Unsere Gebäude"
+],
+[
+"{0} intervention",
+"{0} Einsatz"
+],
+[
+"Rien trouvé : ajoutez l’adresse ci-dessous.",
+"Nichts gefunden: Adresse unten hinzufügen."
+],
+[
+"Autre adresse (nouveau lieu)",
+"Andere Adresse (neuer Ort)"
+],
+[
+"Nom du lieu / client",
+"Name des Ortes / Kunden"
+],
+[
+"ex. Résidence Les Tilleuls, Café du Port",
+"z. B. Residenz Les Tilleuls, Café du Port"
+],
+[
+"ex. 12 rue de Hollerich, L-1740 Luxembourg",
+"z. B. 12 rue de Hollerich, L-1740 Luxemburg"
+],
+[
+"Nouveau lieu : remplissez le nom ou l’adresse.",
+"Neuer Ort: Name oder Adresse ausfüllen."
+],
+[
+"Choisissez le lieu",
+"Wählen Sie den Ort"
+],
+[
+"Logement / partie",
+"Wohnung / Bereich"
+],
+[
+"Clé numérique (code de la porte)",
+"Digitaler Schlüssel (Türcode)"
+],
+[
+"Code de la chambre",
+"Zimmercode"
+],
+[
+"Code proposé au hasard — vous pouvez le changer. Programmez-le dans la serrure (app du fabricant) avec les mêmes dates et heures : il marche seulement pendant le séjour, puis expire tout seul.",
+"Zufällig vorgeschlagener Code — Sie können ihn ändern. Programmieren Sie ihn im Schloss (App des Herstellers) mit denselben Daten und Uhrzeiten: Er gilt nur während des Aufenthalts und läuft dann von selbst ab."
+],
+[
+"Valable à partir de (heure d’arrivée)",
+"Gültig ab (Ankunftszeit)"
+],
+[
+"Expire à (heure de départ)",
+"Läuft ab um (Abreisezeit)"
+],
+[
+"Badge / clé physique (n°, facultatif)",
+"Badge / physischer Schlüssel (Nr., optional)"
+],
+[
+"ex. badge 17",
+"z. B. Badge 17"
+],
+[
+"Info pour le client (facultatif)",
+"Info für den Gast (optional)"
+],
+[
+"ex. Tapez le code puis ✓ ; porte de l’hôtel : 2580",
+"z. B. Code eingeben, dann ✓ ; Hoteltür: 2580"
+],
+[
+"Désactiver le code (clé perdue, départ anticipé…)",
+"Code deaktivieren (Schlüssel verloren, frühere Abreise…)"
+],
+[
+"Code désactivé",
+"Code deaktiviert"
+],
+[
+"Code expiré le",
+"Code abgelaufen am"
+],
+[
+"Code actif à partir du",
+"Code aktiv ab"
+],
+[
+"Code actif jusqu’au",
+"Code aktiv bis"
+],
+[
+"Envoyer le code au client (message dans sa langue).",
+"Code an den Gast senden (Nachricht in seiner Sprache)."
+],
+[
+"Historique des codes ({0})",
+"Code-Verlauf ({0})"
 ]
 ];
