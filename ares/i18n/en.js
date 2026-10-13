@@ -13503,5 +13503,29 @@ export default [
 [
 "Aucun ouvrier. Ajoutez-en un avec ＋ Nouvel ouvrier.",
 "No workers. Add one with ＋ New worker."
+],
+[
+"MASQUÉ",
+"HIDDEN"
+],
+[
+"Masqué dans les réglages",
+"Hidden in settings"
+],
+[
+"Rubrique cochée : dans le menu, son nom est remplacé par « 🔒 MASQUÉ » et elle ne s’ouvre plus. Décochez pour la retrouver.",
+"Ticked section: in the menu its name is replaced by “🔒 HIDDEN” and it no longer opens. Untick to get it back."
+],
+[
+"Menu : rubriques masquées",
+"Menu: hidden sections"
+],
+[
+"aucune",
+"none"
+],
+[
+"Agences Immo.",
+"Real estate agencies"
 ]
 ];
