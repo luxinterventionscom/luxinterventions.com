@@ -13755,5 +13755,21 @@ export default [
 [
 "💶 Gestion locataire — paiements des loyers : touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.",
 "💶 Gestione inquilini — pagamento degli affitti: tocca un mese vuoto per segnarlo pagato; tocca un mese pagato per l’importo, la ricevuta o l’annullamento."
+],
+[
+"Nou. travail (nouvelle intervention)",
+"Nuovo lavoro (nuovo intervento)"
+],
+[
+"Affectation — quel ouvrier ?",
+"Assegnazione — quale operaio?"
+],
+[
+"Choisissez l’ouvrier, puis la demande d’intervention à lui confier.",
+"Scegliete l’operaio, poi la richiesta d’intervento da affidargli."
+],
+[
+"Aucun ouvrier. Ajoutez-en un avec ＋ Nouvel ouvrier.",
+"Nessun operaio. Aggiungetene uno con ＋ Nuovo operaio."
 ]
 ];
