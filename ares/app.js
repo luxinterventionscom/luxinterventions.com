@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.116.5';
+const VERSION = '2.117.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2230,10 +2230,16 @@ const NAV_TREE = [
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
 const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+// Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
+const MASKABLE = [['gerances', 'Gérances'], ['immeubles', 'Immeubles'], ['hotel', 'Hotel'], ['agences', 'Agences Immo.']];
+const masked = () => new Set((vault.get('reglages', 'masque') || {}).on || []);
+// pages qui appartiennent à une rubrique (Locataires et Gestion locataire sont dans Immeubles)
+const maskOf = (route) => (['locataires', 'paiements'].includes(route) ? 'immeubles' : route);
 function sideNavHtml() {
   return NAV_TREE.map((x) => (x.group ? html`<div class="nav-group">${x.group}</div>${x.items.map((it) => navItem(it, true))}` : navItem(x)));
 }
 function navItem([id, label, ic, plus, sec], sub) {
+  if (masked().has(id)) return html`<span class="navbtn nav-masked${sub ? ' nav-sub' : ''}" aria-disabled="true" title="Masqué dans les réglages">${icon('lock')}<span>MASQUÉ</span></span>`;
   return html`<button class="navbtn${sub ? ' nav-sub' : ''}" data-action="go" data-to="${id}" ${sec ? new Raw(`data-sec="${sec}"`) : ''}>${icon(ic)}<span>${label}</span></button>${plus ? html`<button class="navbtn nav-plus" data-action="${plus[0]}">＋ <span>${plus[1]}</span></button>` : ''}`;
 }
 function renderShell() {
@@ -2271,7 +2277,7 @@ function renderSync() {
 }
 
 function go(route, replace) {
-  if (!VIEWS[route]) route = 'dashboard';
+  if (!VIEWS[route] || masked().has(maskOf(route))) route = 'dashboard';
   ui.route = route;
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
@@ -3709,6 +3715,10 @@ dashboard() {
         <button class="row" data-action="fact-set"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Facturation des interventions</span><span class="meta">${factConf().nom} — LuxInterventions · TVA ${factConf().taux} % · IBAN ${factConf().iban || 'à compléter'}</span></span></button>
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
       </div>
+
+      <div class="section-label">🔒 Masquer</div>
+      <p class="small muted" style="margin:0 0 8px">Rubrique cochée : dans le menu, son nom est remplacé par « 🔒 MASQUÉ » et elle ne s’ouvre plus. Décochez pour la retrouver.</p>
+      <div class="list settings">${MASKABLE.map(([k, l]) => html`<label class="row" style="cursor:pointer"><input type="checkbox" data-input="masque" value="${k}" ${masked().has(k) ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"><span class="grow title">${l}</span>${masked().has(k) ? html`<span class="badge">🔒 MASQUÉ</span>` : ''}</label>`)}</div>
 
       <div class="section-label">Gestion</div>
       <div class="list settings">
@@ -8060,6 +8070,11 @@ document.addEventListener('change', (e) => {
   // Formulaire de changement : l'entrée du nouveau locataire suit par défaut la date de sortie.
   const f = e.target.form;
   if (f && f.dataset.form === 'replace' && e.target.name === 'sortie' && e.target.value && f.n_debut) f.n_debut.value = addDays(e.target.value, 1);
+  if (k === 'masque') {
+    const on = [...document.querySelectorAll('[data-input=masque]:checked')].map((x) => x.value);
+    vault.mutate((tx) => tx.put('reglages', { id: 'masque', on }), 'Menu : rubriques masquées', on.length ? on.map((x) => (MASKABLE.find((m) => m[0] === x) || [x, x])[1]).join(', ') : 'aucune')
+      .then(() => { renderShell(); go(ui.route, true); });
+  }
   if (k === 'lockmin') { localStorage.setItem('aresLockMin', e.target.value); toast('Verrouillage après ' + e.target.value + ' min'); }
   if (e.target.id === 'importFile' && e.target.files[0]) { importFile(e.target.files[0]); e.target.value = ''; }
   if (k === 'tache-imm') $('#tacheLog').innerHTML = val(logOptions(e.target.value, ''));

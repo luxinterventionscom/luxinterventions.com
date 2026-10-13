@@ -13695,5 +13695,29 @@ export default [
 [
 "Aucun ouvrier. Ajoutez-en un avec ＋ Nouvel ouvrier.",
 "Nenhum operário. Adicione um com ＋ Novo operário."
+],
+[
+"MASQUÉ",
+"OCULTO"
+],
+[
+"Masqué dans les réglages",
+"Oculto nas definições"
+],
+[
+"Rubrique cochée : dans le menu, son nom est remplacé par « 🔒 MASQUÉ » et elle ne s’ouvre plus. Décochez pour la retrouver.",
+"Secção assinalada: no menu, o seu nome é substituído por «🔒 OCULTO» e já não abre. Desmarque para a voltar a ver."
+],
+[
+"Menu : rubriques masquées",
+"Menu: secções ocultas"
+],
+[
+"aucune",
+"nenhuma"
+],
+[
+"Agences Immo.",
+"Agências Imob."
 ]
 ];

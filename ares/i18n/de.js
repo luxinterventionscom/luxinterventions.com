@@ -13759,5 +13759,29 @@ export default [
 [
 "Aucun ouvrier. Ajoutez-en un avec ＋ Nouvel ouvrier.",
 "Kein Arbeiter. Fügen Sie einen mit ＋ Neuer Arbeiter hinzu."
+],
+[
+"MASQUÉ",
+"AUSGEBLENDET"
+],
+[
+"Masqué dans les réglages",
+"In den Einstellungen ausgeblendet"
+],
+[
+"Rubrique cochée : dans le menu, son nom est remplacé par « 🔒 MASQUÉ » et elle ne s’ouvre plus. Décochez pour la retrouver.",
+"Angehakter Bereich: Im Menü wird sein Name durch „🔒 AUSGEBLENDET“ ersetzt und er öffnet sich nicht mehr. Haken entfernen, um ihn wiederzufinden."
+],
+[
+"Menu : rubriques masquées",
+"Menü: ausgeblendete Bereiche"
+],
+[
+"aucune",
+"keine"
+],
+[
+"Agences Immo.",
+"Immobilienagenturen"
 ]
 ];

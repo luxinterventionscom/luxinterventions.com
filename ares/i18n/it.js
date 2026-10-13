@@ -13771,5 +13771,29 @@ export default [
 [
 "Aucun ouvrier. Ajoutez-en un avec ＋ Nouvel ouvrier.",
 "Nessun operaio. Aggiungetene uno con ＋ Nuovo operaio."
+],
+[
+"MASQUÉ",
+"NASCOSTO"
+],
+[
+"Masqué dans les réglages",
+"Nascosto nelle impostazioni"
+],
+[
+"Rubrique cochée : dans le menu, son nom est remplacé par « 🔒 MASQUÉ » et elle ne s’ouvre plus. Décochez pour la retrouver.",
+"Voce spuntata: nel menu il suo nome è sostituito da «🔒 NASCOSTO» e non si apre più. Togliete la spunta per ritrovarla."
+],
+[
+"Menu : rubriques masquées",
+"Menu: voci nascoste"
+],
+[
+"aucune",
+"nessuna"
+],
+[
+"Agences Immo.",
+"Agenzie Immo."
 ]
 ];
