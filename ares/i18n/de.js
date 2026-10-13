@@ -13891,5 +13891,117 @@ export default [
 [
 "À l’hôtel : {0} · Arrivées : {1} · Départs : {2}",
 "Im Hotel: {0} · Anreisen: {1} · Abreisen: {2}"
+],
+[
+"Agences",
+"Agenturen"
+],
+[
+"Agence Immo.",
+"Immobilienagentur"
+],
+[
+"{0} agence immobilière",
+"{0} Immobilienagentur"
+],
+[
+"{0} agences immobilières",
+"{0} Immobilienagenturen"
+],
+[
+"Les agences immobilières publient leurs biens (appartements, villas, locaux commerciaux). Leur directeur invitera ses agents.",
+"Immobilienagenturen veröffentlichen ihre Objekte (Wohnungen, Villen, Gewerberäume). Ihr Direktor lädt seine Makler ein."
+],
+[
+"Modifier l’agence",
+"Agentur bearbeiten"
+],
+[
+"Nouvelle agence immobilière",
+"Neue Immobilienagentur"
+],
+[
+"Agence immobilière",
+"Immobilienagentur"
+],
+[
+"ex. Immo Centre S.à r.l.",
+"z. B. Immo Centre S.à r.l."
+],
+[
+"N° TVA (facultatif)",
+"USt-IdNr. (optional)"
+],
+[
+"Banque de la gérance",
+"Bank der Verwaltung"
+],
+[
+"Banque de l’agence",
+"Bank der Agentur"
+],
+[
+"🕓 Compléter plus tard (IBAN / BIC)",
+"🕓 Später ergänzen (IBAN / BIC)"
+],
+[
+"Directeur de l’agence",
+"Direktor der Agentur"
+],
+[
+"Le directeur invitera ses agents ; leurs annonces seront publiées tout de suite (app des agents : prochaine étape).",
+"Der Direktor lädt seine Makler ein; ihre Anzeigen erscheinen sofort (Makler-App: nächster Schritt)."
+],
+[
+"Créer l’agence",
+"Agentur anlegen"
+],
+[
+"Supprimer cette agence ?",
+"Diese Agentur löschen?"
+],
+[
+"Agence immobilière supprimée",
+"Immobilienagentur gelöscht"
+],
+[
+"Agence immobilière modifiée",
+"Immobilienagentur geändert"
+],
+[
+"Agence immobilière créée",
+"Immobilienagentur angelegt"
+],
+[
+"Agence enregistrée",
+"Agentur gespeichert"
+],
+[
+"Agence créée",
+"Agentur angelegt"
+],
+[
+"RCS de la gérance obligatoire",
+"RCS der Verwaltung ist Pflicht"
+],
+[
+"RCS de l’agence obligatoire",
+"RCS der Agentur ist Pflicht"
+],
+[
+"IBAN de l’agence : {0}",
+"IBAN der Agentur: {0}"
+],
+[
+"BIC de l’agence : {0}",
+"BIC der Agentur: {0}"
+],
+[
+"IBAN de la gérance : {0}",
+"IBAN der Verwaltung: {0}"
+],
+[
+"BIC de la gérance : {0}",
+"BIC der Verwaltung: {0}"
 ]
 ];

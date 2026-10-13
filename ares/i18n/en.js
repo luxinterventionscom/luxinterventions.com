@@ -13639,5 +13639,117 @@ export default [
 [
 "À l’hôtel : {0} · Arrivées : {1} · Départs : {2}",
 "In the hotel: {0} · Arrivals: {1} · Departures: {2}"
+],
+[
+"Agences",
+"Agencies"
+],
+[
+"Agence Immo.",
+"Real estate agency"
+],
+[
+"{0} agence immobilière",
+"{0} real estate agency"
+],
+[
+"{0} agences immobilières",
+"{0} real estate agencies"
+],
+[
+"Les agences immobilières publient leurs biens (appartements, villas, locaux commerciaux). Leur directeur invitera ses agents.",
+"Real estate agencies publish their properties (flats, villas, commercial premises). Their director will invite their agents."
+],
+[
+"Modifier l’agence",
+"Edit agency"
+],
+[
+"Nouvelle agence immobilière",
+"New real estate agency"
+],
+[
+"Agence immobilière",
+"Real estate agency"
+],
+[
+"ex. Immo Centre S.à r.l.",
+"e.g. Immo Centre S.à r.l."
+],
+[
+"N° TVA (facultatif)",
+"VAT no. (optional)"
+],
+[
+"Banque de la gérance",
+"Agency bank"
+],
+[
+"Banque de l’agence",
+"Agency bank"
+],
+[
+"🕓 Compléter plus tard (IBAN / BIC)",
+"🕓 Complete later (IBAN / BIC)"
+],
+[
+"Directeur de l’agence",
+"Agency director"
+],
+[
+"Le directeur invitera ses agents ; leurs annonces seront publiées tout de suite (app des agents : prochaine étape).",
+"The director will invite their agents; their listings go live immediately (agents’ app: next step)."
+],
+[
+"Créer l’agence",
+"Create agency"
+],
+[
+"Supprimer cette agence ?",
+"Delete this agency?"
+],
+[
+"Agence immobilière supprimée",
+"Real estate agency deleted"
+],
+[
+"Agence immobilière modifiée",
+"Real estate agency updated"
+],
+[
+"Agence immobilière créée",
+"Real estate agency created"
+],
+[
+"Agence enregistrée",
+"Agency saved"
+],
+[
+"Agence créée",
+"Agency created"
+],
+[
+"RCS de la gérance obligatoire",
+"Agency RCS is required"
+],
+[
+"RCS de l’agence obligatoire",
+"Agency RCS is required"
+],
+[
+"IBAN de l’agence : {0}",
+"Agency IBAN: {0}"
+],
+[
+"BIC de l’agence : {0}",
+"Agency BIC: {0}"
+],
+[
+"IBAN de la gérance : {0}",
+"Agency IBAN: {0}"
+],
+[
+"BIC de la gérance : {0}",
+"Agency BIC: {0}"
 ]
 ];

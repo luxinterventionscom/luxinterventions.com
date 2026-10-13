@@ -13819,5 +13819,113 @@ export default [
 [
 "À l’hôtel : {0} · Arrivées : {1} · Départs : {2}",
 "No hotel: {0} · Chegadas: {1} · Partidas: {2}"
+],
+[
+"Agences",
+"Agências"
+],
+[
+"Agence Immo.",
+"Agência Imob."
+],
+[
+"{0} agence immobilière",
+"{0} agência imobiliária"
+],
+[
+"{0} agences immobilières",
+"{0} agências imobiliárias"
+],
+[
+"Les agences immobilières publient leurs biens (appartements, villas, locaux commerciaux). Leur directeur invitera ses agents.",
+"As agências imobiliárias publicam os seus imóveis (apartamentos, moradias, espaços comerciais). O diretor convidará os seus agentes."
+],
+[
+"Modifier l’agence",
+"Editar agência"
+],
+[
+"Nouvelle agence immobilière",
+"Nova agência imobiliária"
+],
+[
+"Agence immobilière",
+"Agência imobiliária"
+],
+[
+"N° TVA (facultatif)",
+"N.º IVA (opcional)"
+],
+[
+"Banque de la gérance",
+"Banco da gestora"
+],
+[
+"Banque de l’agence",
+"Banco da agência"
+],
+[
+"🕓 Compléter plus tard (IBAN / BIC)",
+"🕓 Completar mais tarde (IBAN / BIC)"
+],
+[
+"Directeur de l’agence",
+"Diretor da agência"
+],
+[
+"Le directeur invitera ses agents ; leurs annonces seront publiées tout de suite (app des agents : prochaine étape).",
+"O diretor convidará os seus agentes; os anúncios serão publicados de imediato (app dos agentes: próxima etapa)."
+],
+[
+"Créer l’agence",
+"Criar agência"
+],
+[
+"Supprimer cette agence ?",
+"Eliminar esta agência?"
+],
+[
+"Agence immobilière supprimée",
+"Agência imobiliária eliminada"
+],
+[
+"Agence immobilière modifiée",
+"Agência imobiliária alterada"
+],
+[
+"Agence immobilière créée",
+"Agência imobiliária criada"
+],
+[
+"Agence enregistrée",
+"Agência guardada"
+],
+[
+"Agence créée",
+"Agência criada"
+],
+[
+"RCS de la gérance obligatoire",
+"RCS da gestora obrigatório"
+],
+[
+"RCS de l’agence obligatoire",
+"RCS da agência obrigatório"
+],
+[
+"IBAN de l’agence : {0}",
+"IBAN da agência: {0}"
+],
+[
+"BIC de l’agence : {0}",
+"BIC da agência: {0}"
+],
+[
+"IBAN de la gérance : {0}",
+"IBAN da gestora: {0}"
+],
+[
+"BIC de la gérance : {0}",
+"BIC da gestora: {0}"
 ]
 ];
