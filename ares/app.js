@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.120.0';
+const VERSION = '2.121.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -353,7 +353,7 @@ function intervMonth(i, y, m) {
   return out;
 }
 const fmtH = (h) => { const r = Math.round(h * 60); return `${Math.floor(r / 60)} h${r % 60 ? String(r % 60).padStart(2, '0') : ''}`; };
-const placeName = (t) => (t.dev ? `📝 ${[t.dev.client, t.dev.adr].filter(Boolean).join(' — ')}` : t.ptl ? `🏢 ${t.ptl.res}${t.ptl.adr ? ' — ' + t.ptl.adr : ''}` : [t.logId ? logName(t.logId) : 'Parties communes', immName(t.immId)].join(' · '));
+const placeName = (t) => (t.lieu ? `📍 ${[t.lieu.nom, t.lieu.adr].filter(Boolean).join(' — ')}` : t.dev ? `📝 ${[t.dev.client, t.dev.adr].filter(Boolean).join(' — ')}` : t.ptl ? `🏢 ${t.ptl.res}${t.ptl.adr ? ' — ' + t.ptl.adr : ''}` : [t.logId ? logName(t.logId) : 'Parties communes', immName(t.immId)].join(' · '));
 
 // Agenda : tout ce qui se passe entre from et to (interventions + collectes), trié par jour
 function agenda(from, to, immId) {
@@ -415,8 +415,8 @@ function equipeData(i) {
     const l = t.locId ? vault.get('locataires', t.locId) : null;
     return {
       titre: t.titre, type: t.type, recur: t.recur ? RECURS[t.recur] : '', note: t.note || '', heure: t.heure || '', heureFin: t.heureFin || '', urgent: !!t.urgent,
-      adresse: t.dev ? [t.dev.client, t.dev.adr].filter(Boolean).join(' — ') : t.ptl ? [t.ptl.res, t.ptl.adr].filter(Boolean).join(' — ') : immName(t.immId), lieu: t.dev ? '' : t.ptl ? [t.ptl.lieu, t.ptl.interior].filter(Boolean).join(' · ') : t.logId ? logName(t.logId) : '', statut: t.statut,
-      contact: l ? { nom: l.prenom || fullName(l), tel: l.tel || '' } : t.dev && (t.dev.contact || t.dev.tel) ? { nom: t.dev.contact || '', tel: t.dev.tel || '' } : t.ptl && (t.ptl.contact || t.ptl.tel) ? { nom: t.ptl.contact || '', tel: t.ptl.tel || '' } : null,
+      adresse: t.lieu ? [t.lieu.nom, t.lieu.adr].filter(Boolean).join(' — ') : t.dev ? [t.dev.client, t.dev.adr].filter(Boolean).join(' — ') : t.ptl ? [t.ptl.res, t.ptl.adr].filter(Boolean).join(' — ') : immName(t.immId), lieu: t.dev || t.lieu ? '' : t.ptl ? [t.ptl.lieu, t.ptl.interior].filter(Boolean).join(' · ') : t.logId ? logName(t.logId) : '', statut: t.statut,
+      contact: l ? { nom: l.prenom || fullName(l), tel: l.tel || '' } : t.lieu && (t.lieu.contact || t.lieu.tel) ? { nom: t.lieu.contact || '', tel: t.lieu.tel || '' } : t.dev && (t.dev.contact || t.dev.tel) ? { nom: t.dev.contact || '', tel: t.dev.tel || '' } : t.ptl && (t.ptl.contact || t.ptl.tel) ? { nom: t.ptl.contact || '', tel: t.ptl.tel || '' } : null,
       // demande d'une gérance : codes, disponibilités, heure, gérance
       ...(t.ptl ? { ger: { org: t.ptl.org, ref: t.ptl.ref, acces: t.ptl.acces || t.ptl.codes || '', dispo: t.ptl.dispo || '', heure: t.heure || '' } } : {}),
       journal: (t.journal || []).slice(-20).map((x) => ({ d: x.d, st: x.st, note: x.note || '', at: x.at, h: x.h || '' })),
@@ -1675,6 +1675,41 @@ const metHints = (txt) => MET_HINT.filter(([rx]) => rx.test(txt || '')).map(([, 
 // lien demande ↔ intervention : infos utiles à l'ouvrier (adresse, lieu, codes, disponibilités, contact)
 const ptlLink = (d) => { const t = d.ticket, r = d.residence || {}; return { tid: t.id, ref: t.ref, orgId: t.org_id || '', org: r.org_name || '', res: r.name || '', adr: r.address || '', lieu: t.lieu || '', acces: t.acces || '', dispo: t.dispo || '', contact: t.contact_name || r.contact_name || '', tel: t.contact_phone || r.contact_phone || '', interior: r.interior || '', floors: r.floors || '', codes: ptlResCodes(r).join(' · ') }; };
 // fiche du lieu d'intervention (demande d'une gérance) : où, à quel étage, qui contacter, codes, disponibilités
+// lieux où nous avons déjà travaillé (interventions des gérances, des devis, adresses libres) : proposés quand on affecte un travail
+const lieuxHist = () => {
+  const m = new Map(), key = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
+  const add = (p, d) => {
+    if (!p || !(p.nom || p.adr)) return;
+    const k = key(p.adr || p.nom), o = m.get(k);
+    if (!o) m.set(k, { nom: p.nom || '', adr: p.adr || '', contact: p.contact || '', tel: p.tel || '', n: 1, d: d || '' });
+    else { o.n++; if ((d || '') > o.d) Object.assign(o, { nom: p.nom || o.nom, contact: p.contact || o.contact, tel: p.tel || o.tel, d }); }
+  };
+  for (const t of vault.list('taches')) add(t.lieu ? t.lieu : t.ptl ? { nom: t.ptl.res, adr: t.ptl.adr, contact: t.ptl.contact, tel: t.ptl.tel } : t.dev ? { nom: t.dev.client, adr: t.dev.adr, contact: t.dev.contact, tel: t.dev.tel } : null, t.date);
+  for (const v of vault.list('devis')) add({ nom: devClient(v), adr: v.chantier || (v.client || {}).adresse, contact: v.interloc, tel: (v.client || {}).tel }, v.date);
+  return [...m.values()].sort((a, b) => b.d.localeCompare(a.d) || b.n - a.n);
+};
+const lieuQ = (...x) => x.filter(Boolean).join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const lieuSelHtml = (t) => t.lieu ? html`✅ 📍 <b>${t.lieu.nom || t.lieu.adr}</b>${t.lieu.nom && t.lieu.adr ? html` — ${t.lieu.adr}` : ''}` : t.immId ? html`✅ 🏠 <b>${immName(t.immId)}</b>` : html`<span class="muted">Aucun lieu choisi : touchez une ligne ci-dessous.</span>`;
+// 🔑 clé numérique d'une chambre : comme le code de porte des locataires, mais valable seulement du jour d'arrivée (heure) au départ (heure)
+const hoteWin = (h) => [new Date(`${h.arrivee}T${h.hdeb || '15:00'}`), new Date(`${h.depart}T${h.hfin || '11:00'}`)];
+const hoteKey = (h) => {
+  if (!h || !h.code) return null;
+  const [a, b] = hoteWin(h), now = new Date();
+  if (h.codeOff) return { k: 'bad', h: html`⏸️ <span>Code désactivé</span>` };
+  if (now >= b) return { k: 'bad', h: html`⌛ <span>Code expiré le</span> ${fmtDate(h.depart)} · ${h.hfin || '11:00'}` };
+  if (now < a) return { k: 'warn', h: html`⏳ <span>Code actif à partir du</span> ${fmtDate(h.arrivee)} · ${h.hdeb || '15:00'}` };
+  return { k: 'ok', h: html`🟢 <span>Code actif jusqu’au</span> ${fmtDate(h.depart)} · ${h.hfin || '11:00'}` };
+};
+// message au client dans sa langue (WhatsApp / email)
+const HOTE_MSG = {
+  fr: ['Bonjour', 'chambre', 'code de la porte', 'valable du', 'au'], it: ['Buongiorno', 'camera', 'codice della porta', 'valido dal', 'al'],
+  de: ['Guten Tag', 'Zimmer', 'Türcode', 'gültig vom', 'bis'], en: ['Hello', 'room', 'door code', 'valid from', 'to'],
+  pt: ['Olá', 'quarto', 'código da porta', 'válido de', 'a'], es: ['Hola', 'habitación', 'código de la puerta', 'válido del', 'al'],
+};
+const hoteMsg = (h) => {
+  const w = HOTE_MSG[h.langue] || HOTE_MSG.en, d = (x) => x.split('-').reverse().join('/');
+  return `${w[0]} ${h.prenom || h.nom},\n${w[1]} ${h.chambre}${h.etage ? ' (' + h.etage + ')' : ''} — ${w[2]} : ${h.code}\n${w[3]} ${d(h.arrivee)} ${h.hdeb || '15:00'} ${w[4]} ${d(h.depart)} ${h.hfin || '11:00'}.${h.cinfo ? '\n' + h.cinfo : ''}`;
+};
 const ptlPlace = (p) => {
   const parts = (x) => String(x || '').split(' · ').filter(Boolean);
   const codes = parts(p.acces).length ? parts(p.acces) : parts(p.codes);
@@ -3454,7 +3489,7 @@ dashboard() {
     const next = all.filter((h) => h.arrivee > t).sort(by), past = all.filter((h) => h.depart < t).sort((a, b) => b.depart.localeCompare(a.depart));
     const row = (h) => html`<button class="row" data-action="edit-hote" data-id="${h.id}"><span class="avatar" style="font-size:13px;font-weight:800">${h.chambre}</span>
       <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.pers > 1 ? html` <span class="badge">👥 ${h.pers}</span>` : ''}</span>
-      <span class="meta">${h.etage ? html`<span>Étage</span> ${h.etage} · ` : ''}${h.cle ? html`🔑 ${h.cle} · ` : ''}${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}</span></span><span class="chev">›</span></button>`;
+      <span class="meta">${h.etage ? html`<span>Étage</span> ${h.etage} · ` : ''}${h.cle ? html`🪪 ${h.cle} · ` : ''}${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}</span>${hoteKey(h) ? html`<span style="display:block;margin-top:4px"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></span>` : ''}</span><span class="chev">›</span></button>`;
     const sec = (title, list, empty) => html`<div class="section-label">${title}</div>${list.length ? html`<div class="list">${list.map(row)}</div>` : html`<p class="small muted" style="margin:0 0 12px">${empty}</p>`}`;
     return html`${pageHead('🏨 Hotel', `À l’hôtel : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button></div></div>
@@ -4667,8 +4702,25 @@ const SHEETS = {
             <input type="hidden" name="dev" value="${JSON.stringify(t.dev)}"><input type="hidden" name="immId" value=""></div>`
           : t.ptl ? html`<div class="full ptl-box">${ptlPlace(t.ptl)}
             <input type="hidden" name="ptl" value="${JSON.stringify(t.ptl)}"><input type="hidden" name="immId" value=""></div>`
-          : html`<label class="field">Immeuble<select name="immId" data-input="tache-imm" required>${imms.map((im) => html`<option value="${im.id}" ${im.id === t.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
-        <label class="field">Où ?<select name="logId" id="tacheLog">${logOptions(t.immId || imms[0].id, t.logId)}</select></label>`}
+          : (() => { const hist = (ui.lieuH = lieuxHist()); return html`<div class="full lieu-pick">
+            <input type="hidden" name="immId" value="${t.lieu ? '' : t.immId || ''}"><input type="hidden" name="lieu" value="${t.lieu ? JSON.stringify(t.lieu) : ''}">
+            <div class="section-label" style="margin:0 0 6px">📍 Où ?</div>
+            <div class="search">${icon('search')}<input type="search" data-input="lieu-q" placeholder="Rechercher une rue, un immeuble, une résidence, un client…" autocomplete="off"></div>
+            <p class="small lieu-sel" id="lieuSel">${lieuSelHtml(t)}</p>
+            <div class="list small lieu-list" id="lieuList">
+              ${imms.map((im) => html`<button type="button" class="row" data-action="lieu-set" data-k="i:${im.id}" data-q="${lieuQ(im.adresse, im.nom, im.ville)}" aria-pressed="${!t.lieu && im.id === t.immId}"><span class="avatar">🏠</span><span class="grow"><span class="title" style="display:block">${im.adresse}</span><span class="meta">Nos immeubles</span></span></button>`)}
+              ${hist.map((h, n) => html`<button type="button" class="row" data-action="lieu-set" data-k="h:${n}" data-q="${lieuQ(h.nom, h.adr, h.contact)}" aria-pressed="${!!t.lieu && (t.lieu.adr || t.lieu.nom) === (h.adr || h.nom)}"><span class="avatar">🕘</span><span class="grow"><span class="title" style="display:block">${h.nom || h.adr}</span><span class="meta">${h.nom && h.adr ? h.adr + ' · ' : ''}${h.n} ${h.n > 1 ? 'interventions' : 'intervention'}${h.d ? ' · ' + fmtDate(h.d) : ''}</span></span></button>`)}
+              <p class="small muted lieu-none" hidden>Rien trouvé : ajoutez l’adresse ci-dessous.</p>
+            </div>
+            <button type="button" class="btn sm" data-action="lieu-new" style="margin-top:8px">✏️ Autre adresse (nouveau lieu)</button>
+            <div class="fields" id="lieuNew" hidden style="margin-top:8px">
+              ${field('Nom du lieu / client', 'lieuNom', '', { placeholder: 'ex. Résidence Les Tilleuls, Café du Port' })}
+              ${field('Adresse', 'lieuAdr', '', { placeholder: 'ex. 12 rue de Hollerich, L-1740 Luxembourg' })}
+              ${field('Contact sur place', 'lieuContact', '')}
+              ${field('Téléphone', 'lieuTel', '', { type: 'tel' })}
+            </div>
+          </div>
+        <label class="field" id="tacheLogF" ${t.immId && !t.lieu ? '' : new Raw('hidden')}>Logement / partie<select name="logId" id="tacheLog">${t.immId && !t.lieu ? logOptions(t.immId, t.logId) : ''}</select></label>`; })()}
         <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}${(t.refusBy || []).includes(i.id) ? ' (✋ a refusé)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
         ${hint.length ? html`<p class="tiny muted full" style="margin:-6px 0 0">⭐ = métier conseillé pour cette demande : ${[...new Set(hint)].map((m) => METIERS[m]).join(', ')}${ints.some(fits) ? '' : ' (personne de ce métier dans l’équipe)'}</p>` : ''}
         ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
@@ -4835,6 +4887,7 @@ const SHEETS = {
   'hote-form'({ id }) {
     const h = id ? vault.get('hotes', id) : { arrivee: today(), depart: addDays(today(), 1), pers: 1, langue: 'fr' };
     if (id && !h) return null;
+    const rnd = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
     const LG = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español', ar: 'العربية', autre: 'Autre' };
     return {
       title: id ? 'Client — chambre ' + h.chambre : 'Nouveau client',
@@ -4846,8 +4899,18 @@ const SHEETS = {
         <label class="field">Langue<select name="langue">${Object.entries(LG).map(([k, l]) => html`<option value="${k}" ${h.langue === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
         ${field('Personnes', 'pers', h.pers, { type: 'number', attrs: 'min="1" max="20" inputmode="numeric"' })}
         ${field('N° de chambre', 'chambre', h.chambre, { required: true, placeholder: 'ex. 204' })}${field('Étage', 'etage', h.etage, { placeholder: 'ex. 2' })}
-        ${field('Clé / badge (n° ou code)', 'cle', h.cle, { full: true, placeholder: 'ex. badge 17 ou code 4821' })}
         ${field('Arrivée', 'arrivee', h.arrivee, { type: 'date', required: true })}${field('Départ', 'depart', h.depart, { type: 'date', required: true })}
+        <div class="full section-label" style="margin:6px 0 0">🔑 Clé numérique (code de la porte)</div>
+        ${field('Code de la chambre', 'code', id ? h.code : rnd, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
+        <p class="tiny muted full" style="margin:0">Code proposé au hasard — vous pouvez le changer. Programmez-le dans la serrure (app du fabricant) avec les mêmes dates et heures : il marche seulement pendant le séjour, puis expire tout seul.</p>
+        ${field('Valable à partir de (heure d’arrivée)', 'hdeb', h.hdeb || '15:00', { type: 'time' })}${field('Expire à (heure de départ)', 'hfin', h.hfin || '11:00', { type: 'time' })}
+        ${field('Serrure (marque / modèle)', 'serrure', h.serrure, { placeholder: 'ex. Nuki, TTLock, igloohome…' })}${field('Badge / clé physique (n°, facultatif)', 'cle', h.cle, { placeholder: 'ex. badge 17' })}
+        ${field('Info pour le client (facultatif)', 'cinfo', h.cinfo, { full: true, placeholder: 'ex. Tapez le code puis ✓ ; porte de l’hôtel : 2580' })}
+        ${id && h.code ? html`<label class="full t-urg"><input type="checkbox" name="codeOff" value="1" ${h.codeOff ? new Raw('checked') : ''}> <span>⏸️ Désactiver le code (clé perdue, départ anticipé…)</span></label>` : ''}
+        ${id && hoteKey(h) ? html`<div class="full"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></div>
+          <div class="full actions" style="margin:0">${h.tel ? html`<a class="btn sm" href="https://wa.me/${h.tel.replace(/[^\d+]/g, '').replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(hoteMsg(h))}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}${h.mail ? html`<a class="btn sm" href="mailto:${h.mail}?subject=${encodeURIComponent('🔑 ' + h.chambre)}&body=${encodeURIComponent(hoteMsg(h))}">✉️ Email</a>` : ''}${h.tel ? html`<a class="btn sm" href="sms:${h.tel.replace(/[^\d+]/g, '')}?&body=${encodeURIComponent(hoteMsg(h))}">📱 SMS</a>` : ''}</div>
+          <p class="tiny muted full" style="margin:0">Envoyer le code au client (message dans sa langue).</p>` : ''}
+        ${(h.hist || []).length ? html`<details class="full"><summary class="small">Historique des codes (${h.hist.length})</summary><div class="list small">${[...h.hist].reverse().map((x) => html`<div class="row"><span class="grow">${fmtDate(x.d)} — ${'•'.repeat(Math.max(0, (x.code || '').length - 2))}${(x.code || '').slice(-2)}</span></div>`)}</div></details>` : ''}
         <label class="field full">Notes<textarea name="notes" style="min-height:70px" placeholder="ex. allergie, lit bébé, arrivée tardive…">${h.notes || ''}</textarea></label>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-hote" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
@@ -6158,6 +6221,20 @@ const ACTIONS = {
   'interv-job': (d) => { const i = d.id && vault.get('intervenants', d.id); openOver('tache-form', null, null, i ? { intervenantId: d.id, type: i.metier === 'menage' ? 'nettoyage' : 'reparation' } : { type: 'reparation' }); },
   // Maintenance › Équipe : « 📌 Affectation » sans ouvrier → on choisit d'abord l'ouvrier
   'aff-pick': () => openOver('aff-pick'),
+  'lieu-set': (d, el) => {
+    const f = el.form || $('#f'), [kind, v] = [d.k.slice(0, 1), d.k.slice(2)], lf = $('#tacheLogF');
+    el.parentNode.querySelectorAll('[aria-pressed]').forEach((r) => r.setAttribute('aria-pressed', String(r === el)));
+    $('#lieuNew').hidden = true;
+    if (kind === 'i') { f.immId.value = v; f.lieu.value = ''; $('#tacheLog').innerHTML = val(logOptions(v, '')); lf.hidden = false; setHtml($('#lieuSel'), lieuSelHtml({ immId: v })); }
+    else { const h = (ui.lieuH || [])[+v]; if (!h) return; const p = { nom: h.nom, adr: h.adr, contact: h.contact, tel: h.tel }; f.immId.value = ''; f.lieu.value = JSON.stringify(p); $('#tacheLog').innerHTML = ''; lf.hidden = true; setHtml($('#lieuSel'), lieuSelHtml({ lieu: p })); }
+    sheetDirty = true;
+  },
+  'lieu-new': (d, el) => {
+    const f = el.form || $('#f'); f.immId.value = ''; f.lieu.value = ''; $('#tacheLog').innerHTML = ''; $('#tacheLogF').hidden = true;
+    $('#lieuList').querySelectorAll('[aria-pressed]').forEach((r) => r.setAttribute('aria-pressed', 'false'));
+    setHtml($('#lieuSel'), html`✏️ <span>Nouveau lieu : remplissez le nom ou l’adresse.</span>`);
+    $('#lieuNew').hidden = false; f.lieuNom.focus();
+  },
   'open-signal': (d) => { const t = vault.get('taches', d.id); if (t && !t.vu) vault.mutate((tx) => tx.put('taches', { id: t.id, vu: true }), 'Message du locataire lu', t.titre, t.locId); openOver('tache-form', d.id); },
   'ics-all': (d) => { ui.icsAll = null; openOver('ics-all', d.id); },
   async 'ics-analyze'() {
@@ -6842,10 +6919,16 @@ const FORMS = {
     if (prev && prev.ptl && !rec.ptl) rec.ptl = prev.ptl;
     try { const dj = fd.get('dev'); if (dj) rec.dev = JSON.parse(dj); } catch { /* lien illisible */ }
     if (prev && prev.dev && !rec.dev) rec.dev = prev.dev;
+    try { const lj = fd.get('lieu'); if (lj && !rec.immId) rec.lieu = JSON.parse(lj); } catch { /* lieu illisible */ }
+    const nl = { nom: String(fd.get('lieuNom') || '').trim(), adr: String(fd.get('lieuAdr') || '').trim(), contact: String(fd.get('lieuContact') || '').trim(), tel: String(fd.get('lieuTel') || '').trim() };
+    if (!rec.immId && !rec.lieu && (nl.nom || nl.adr)) rec.lieu = nl;
+    if (rec.lieu) { rec.lieu = { nom: String(rec.lieu.nom || '').slice(0, 120), adr: String(rec.lieu.adr || '').slice(0, 200), contact: String(rec.lieu.contact || '').slice(0, 80), tel: String(rec.lieu.tel || '').slice(0, 40) }; rec.immId = ''; rec.logId = ''; }
+    else if (prev && prev.lieu && !rec.immId) rec.lieu = prev.lieu;
     const hh = (k) => (/^\d\d:\d\d$/.test(fd.get(k) || '') ? fd.get(k) : '');
     rec.heure = hh('heure'); rec.heureFin = rec.heure ? hh('heureFin') : ''; rec.urgent = fd.get('urgent') === '1';
     if (rec.ptl) rec.recur = '';
-    if (!rec.titre || (!rec.immId && !rec.ptl && !rec.dev)) return;
+    if (!rec.titre) return;
+    if (!rec.immId && !rec.ptl && !rec.dev && !rec.lieu) return toast('Choisissez le lieu', { bad: true });
     if (recur && !rec.date) return toast('Indiquez la date de la première fois', { bad: true });
     if (id) rec.id = id;
     if (!recur && rec.statut === 'fait' && !(prev && prev.statut === 'fait')) rec.doneDate = today();
@@ -6861,7 +6944,7 @@ const FORMS = {
           .then(() => toast('Portail gérance mis à jour : ' + PTL_ST[st])).catch((e) => toast('Portail gérance : ' + e.message, { bad: true }));
       }
     }
-    if (!recur && !saved.ptl && !saved.dev) await syncDepense(saved);
+    if (!recur && !saved.ptl && !saved.dev && !saved.lieu) await syncDepense(saved);
     // intervention née d'un devis : le devis la connaît, les photos du chantier vont dans l'app de l'ouvrier
     if (saved.dev && !prev) {
       const v = vault.get('devis', saved.dev.id), ph = v ? devPhotos(v.id).slice(0, 6) : [], docs = [];
@@ -6952,7 +7035,15 @@ const FORMS = {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
     const rec = { prenom: g('prenom'), nom: g('nom'), tel: g('tel'), mail: g('mail'), langue: g('langue') || 'fr', pers: Math.max(1, parseInt(g('pers'), 10) || 1),
-      chambre: g('chambre'), etage: g('etage'), cle: g('cle'), arrivee: g('arrivee'), depart: g('depart'), notes: g('notes') };
+      chambre: g('chambre'), etage: g('etage'), cle: g('cle'), arrivee: g('arrivee'), depart: g('depart'), notes: g('notes'),
+      code: g('code'), serrure: g('serrure'), cinfo: g('cinfo'), codeOff: fd.get('codeOff') === '1' };
+    const tm = (k, d) => (/^\d\d:\d\d$/.test(g(k)) ? g(k) : d);
+    rec.hdeb = tm('hdeb', '15:00'); rec.hfin = tm('hfin', '11:00');
+    if (rec.code && !/^[0-9A-Za-z#*]{3,16}$/.test(rec.code)) return toast('Code invalide (3 à 16 chiffres ou lettres)', { bad: true });
+    const prevH = id ? vault.get('hotes', id) : null;
+    rec.hist = [...((prevH && prevH.hist) || [])];
+    if (rec.code && (!prevH || prevH.code !== rec.code)) rec.hist = [...rec.hist, { d: today(), code: rec.code }].slice(-20);
+    if (!rec.code) rec.codeOff = false;
     if (!rec.nom || !rec.chambre || !rec.arrivee || !rec.depart) return toast('Nom, chambre, arrivée et départ sont obligatoires', { bad: true });
     if (rec.depart <= rec.arrivee) return toast('Le départ doit être après l’arrivée', { bad: true });
     const clash = vault.list('hotes').find((h) => h.id !== id && String(h.chambre) === rec.chambre && h.arrivee < rec.depart && rec.arrivee < h.depart);
@@ -8260,6 +8351,11 @@ document.addEventListener('input', (e) => {
   }
   const k = e.target.dataset.input;
   if (k === 'esp-search') filterEspList();
+  if (k === 'lieu-q') {
+    const ws = lieuQ(e.target.value).split(/\s+/).filter(Boolean), box = $('#lieuList');
+    let hit = 0; box.querySelectorAll('[data-q]').forEach((r) => { const ok = ws.every((w) => r.dataset.q.includes(w)); r.hidden = !ok; hit += ok; });
+    box.querySelector('.lieu-none').hidden = !!hit;
+  }
   if (k === 'vid-link') { const h = document.getElementById('vidHint'); if (h) h.textContent = vidHint(e.target.value); }
   if (k === 'bank-chk') bankMsgs(e.target.form);
   if (k === 'search') { ui.search = e.target.value; renderView(); }

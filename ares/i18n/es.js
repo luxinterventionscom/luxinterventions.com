@@ -14239,5 +14239,117 @@ export default [
 [
 "Aucun bien publié. ＋ Bien immo. : type, m², pièces, photos, prix.",
 "Ningún inmueble publicado. ＋ Inmueble: tipo, m², estancias, fotos, precio."
+],
+[
+"Rechercher une rue, un immeuble, une résidence, un client…",
+"Buscar una calle, un edificio, una residencia, un cliente…"
+],
+[
+"Aucun lieu choisi : touchez une ligne ci-dessous.",
+"Ningún lugar elegido: toque una línea abajo."
+],
+[
+"Nos immeubles",
+"Nuestros edificios"
+],
+[
+"{0} intervention",
+"{0} intervención"
+],
+[
+"Rien trouvé : ajoutez l’adresse ci-dessous.",
+"Nada encontrado: añada la dirección abajo."
+],
+[
+"Autre adresse (nouveau lieu)",
+"Otra dirección (nuevo lugar)"
+],
+[
+"Nom du lieu / client",
+"Nombre del lugar / cliente"
+],
+[
+"ex. Résidence Les Tilleuls, Café du Port",
+"ej. Residencia Les Tilleuls, Café du Port"
+],
+[
+"ex. 12 rue de Hollerich, L-1740 Luxembourg",
+"ej. 12 rue de Hollerich, L-1740 Luxemburgo"
+],
+[
+"Nouveau lieu : remplissez le nom ou l’adresse.",
+"Nuevo lugar: rellene el nombre o la dirección."
+],
+[
+"Choisissez le lieu",
+"Elija el lugar"
+],
+[
+"Logement / partie",
+"Vivienda / parte"
+],
+[
+"Clé numérique (code de la porte)",
+"Llave digital (código de la puerta)"
+],
+[
+"Code de la chambre",
+"Código de la habitación"
+],
+[
+"Code proposé au hasard — vous pouvez le changer. Programmez-le dans la serrure (app du fabricant) avec les mêmes dates et heures : il marche seulement pendant le séjour, puis expire tout seul.",
+"Código propuesto al azar — puede cambiarlo. Prográmelo en la cerradura (app del fabricante) con las mismas fechas y horas: solo funciona durante la estancia y luego caduca solo."
+],
+[
+"Valable à partir de (heure d’arrivée)",
+"Válido desde (hora de llegada)"
+],
+[
+"Expire à (heure de départ)",
+"Caduca a las (hora de salida)"
+],
+[
+"Badge / clé physique (n°, facultatif)",
+"Tarjeta / llave física (n.º, opcional)"
+],
+[
+"ex. badge 17",
+"ej. tarjeta 17"
+],
+[
+"Info pour le client (facultatif)",
+"Info para el cliente (opcional)"
+],
+[
+"ex. Tapez le code puis ✓ ; porte de l’hôtel : 2580",
+"ej. Teclee el código y luego ✓ ; puerta del hotel: 2580"
+],
+[
+"Désactiver le code (clé perdue, départ anticipé…)",
+"Desactivar el código (llave perdida, salida anticipada…)"
+],
+[
+"Code désactivé",
+"Código desactivado"
+],
+[
+"Code expiré le",
+"Código caducado el"
+],
+[
+"Code actif à partir du",
+"Código activo desde el"
+],
+[
+"Code actif jusqu’au",
+"Código activo hasta el"
+],
+[
+"Envoyer le code au client (message dans sa langue).",
+"Enviar el código al cliente (mensaje en su idioma)."
+],
+[
+"Historique des codes ({0})",
+"Historial de códigos ({0})"
 ]
 ];

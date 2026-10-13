@@ -13979,5 +13979,117 @@ export default [
 [
 "Aucun bien publié. ＋ Bien immo. : type, m², pièces, photos, prix.",
 "No property published. ＋ Property: type, m², rooms, photos, price."
+],
+[
+"Rechercher une rue, un immeuble, une résidence, un client…",
+"Search a street, a building, a residence, a client…"
+],
+[
+"Aucun lieu choisi : touchez une ligne ci-dessous.",
+"No place chosen: tap a line below."
+],
+[
+"Nos immeubles",
+"Our buildings"
+],
+[
+"{0} intervention",
+"{0} job"
+],
+[
+"Rien trouvé : ajoutez l’adresse ci-dessous.",
+"Nothing found: add the address below."
+],
+[
+"Autre adresse (nouveau lieu)",
+"Other address (new place)"
+],
+[
+"Nom du lieu / client",
+"Place / client name"
+],
+[
+"ex. Résidence Les Tilleuls, Café du Port",
+"e.g. Les Tilleuls residence, Café du Port"
+],
+[
+"ex. 12 rue de Hollerich, L-1740 Luxembourg",
+"e.g. 12 rue de Hollerich, L-1740 Luxembourg"
+],
+[
+"Nouveau lieu : remplissez le nom ou l’adresse.",
+"New place: fill in the name or the address."
+],
+[
+"Choisissez le lieu",
+"Choose the place"
+],
+[
+"Logement / partie",
+"Unit / area"
+],
+[
+"Clé numérique (code de la porte)",
+"Digital key (door code)"
+],
+[
+"Code de la chambre",
+"Room code"
+],
+[
+"Code proposé au hasard — vous pouvez le changer. Programmez-le dans la serrure (app du fabricant) avec les mêmes dates et heures : il marche seulement pendant le séjour, puis expire tout seul.",
+"Randomly suggested code — you can change it. Program it in the lock (maker’s app) with the same dates and times: it only works during the stay, then expires by itself."
+],
+[
+"Valable à partir de (heure d’arrivée)",
+"Valid from (arrival time)"
+],
+[
+"Expire à (heure de départ)",
+"Expires at (departure time)"
+],
+[
+"Badge / clé physique (n°, facultatif)",
+"Badge / physical key (no., optional)"
+],
+[
+"ex. badge 17",
+"e.g. badge 17"
+],
+[
+"Info pour le client (facultatif)",
+"Info for the guest (optional)"
+],
+[
+"ex. Tapez le code puis ✓ ; porte de l’hôtel : 2580",
+"e.g. Type the code then ✓ ; hotel door: 2580"
+],
+[
+"Désactiver le code (clé perdue, départ anticipé…)",
+"Disable the code (lost key, early departure…)"
+],
+[
+"Code désactivé",
+"Code disabled"
+],
+[
+"Code expiré le",
+"Code expired on"
+],
+[
+"Code actif à partir du",
+"Code active from"
+],
+[
+"Code actif jusqu’au",
+"Code active until"
+],
+[
+"Envoyer le code au client (message dans sa langue).",
+"Send the code to the guest (message in their language)."
+],
+[
+"Historique des codes ({0})",
+"Code history ({0})"
 ]
 ];
