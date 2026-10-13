@@ -435,7 +435,7 @@ dialog.sheet::backdrop { background: rgba(10, 10, 12, 0.5); backdrop-filter: blu
 .loc-acts .btn { flex: 1 1 auto; min-width: fit-content; }
 /* Maintenance › Équipe : libellés longs → le texte passe sur deux lignes dans le bouton plutôt que de déborder */
 .acts-fit .btn { flex: 1 1 auto; min-width: 0; white-space: normal; height: auto; min-height: 44px; line-height: 1.2; padding-top: 8px; padding-bottom: 8px; text-align: center; }
-@media (max-width: 700px) { .acts-fit { display: grid; grid-template-columns: 1fr 1fr; } }
+@media (max-width: 700px) { .acts-fit { display: grid; grid-template-columns: 1fr 1fr; } .acts-fit .btn.primary { grid-column: 1 / -1; } }
 .note { white-space: pre-wrap; background: var(--surface-2); padding: 12px; border-radius: var(--radius); font-size: 14px; }
 
 .fab {
