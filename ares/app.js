@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.118.0';
+const VERSION = '2.119.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2282,7 +2282,7 @@ function go(route, replace) {
   ui.route = route;
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
-  const navRoute = route === 'champeq' ? 'champions' : ['paiements', 'locataires'].includes(route) ? 'immeubles' : route;
+  const navRoute = route === 'champeq' ? 'champions' : ['paiements', 'locataires', 'agences'].includes(route) ? 'immeubles' : route;
   document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute && (!b.dataset.sec || b.dataset.sec === (ui.cpSec === 'abo' ? 'abo' : 'compta')) ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   bnavShow();
   const fab = $('#fab');
@@ -2681,8 +2681,8 @@ function eqScores(year) {
 }
 
 const immHead = (cur, sub) => html`${pageHead('🏢 Immeubles', sub)}
-  <div class="imm-row"><div class="tabs" role="tablist">${[['immeubles', '🏢 Immeubles'], ['locataires', '👥 Locataires'], ['paiements', '💶 Gestion locataire', '💶 Gestion loc.']].map(([r, l, sh]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${sh ? html`<span class="t-lg">${l}</span><span class="t-sm">${sh}</span>` : l}</button>`)}</div>
-    <div class="imm-btns"><button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button><button class="btn primary" data-action="new-loc">${icon('plus')} Ajout. locataire</button></div></div>`;
+  <div class="imm-row"><div class="tabs" role="tablist">${[['immeubles', '🏢 Immeubles'], ['locataires', '👥 Locataires'], ['paiements', '💶 Gestion locataire', '💶 Gestion loc.'], ['agences', '🏘️ Agences Immo.', '🏘️ Agences']].map(([r, l, sh]) => masked().has(r) ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${sh ? html`<span class="t-lg">${l}</span><span class="t-sm">${sh}</span>` : l}</button>`)}</div>
+    <div class="imm-btns"><button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button><button class="btn primary" data-action="new-loc">${icon('plus')} Ajout. locataire</button>${masked().has('agences') ? '' : html`<button class="btn primary" data-action="new-agence">${icon('plus')} Agence Immo.</button>`}</div></div>`;
 const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
 // Éditeur d'horaire sur 7 jours : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute.
 // slotsOf(j) : créneaux du jour j (0 = lundi) ; title(j) : nom du jour (avec la date pour une semaine précise)
@@ -2764,6 +2764,26 @@ function engForm(i) {
 const IBAN_LEN = { AD: 24, AL: 28, AT: 20, BA: 20, BE: 16, BG: 22, BR: 29, CH: 21, CY: 28, CZ: 24, DE: 22, DK: 18, EE: 20, ES: 24, FI: 18, FO: 18, FR: 27, GB: 22, GI: 23, GL: 18, GR: 27, HR: 21, HU: 28, IE: 22, IS: 26, IT: 27, LI: 21, LT: 20, LU: 20, LV: 21, MA: 28, MC: 27, MD: 24, ME: 22, MK: 19, MT: 31, NL: 18, NO: 15, PL: 28, PT: 25, RO: 24, RS: 22, SE: 24, SI: 19, SK: 24, SM: 27, TN: 24, TR: 26, UA: 29, VA: 22, XK: 20 };
 const ibanClean = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const ibanFmt = (v) => ibanClean(v).replace(/(.{4})/g, '$1 ').trim();
+// Banque d'une société (gérance, agence) : IBAN/BIC obligatoires, sauf « 🕓 Compléter plus tard » coché
+const bankBlock = (cl, who) => {
+  const later = cl.bankLater || (!cl.iban && !cl.bic && !!cl.rcs);
+  return html`<div class="section-label full" style="margin:4px 0 0">🏦 ${who}</div>
+    <label class="field full" style="flex-direction:row;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" name="bankLater" data-input="bank-later" ${later ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"><span>🕓 Compléter plus tard (IBAN / BIC)</span></label>
+    <label class="field">Nom de la banque<input name="banque" ${later ? '' : new Raw('required')} data-bank value="${cl.banque || ''}" placeholder="ex. POST Luxembourg, Spuerkeess…"></label>
+    <label class="field">Code BIC / SWIFT<input name="bic" ${later ? '' : new Raw('required')} data-bank value="${cl.bic || ''}" placeholder="ex. CCPLLULL" autocomplete="off" autocapitalize="characters" maxlength="14" data-input="bank-chk"><span class="bank-msg tiny" data-for="bic"></span></label>
+    <label class="field full">IBAN<input name="iban" ${later ? '' : new Raw('required')} data-bank value="${ibanFmt(cl.iban || '')}" placeholder="LU.. .... .... .... ...." autocomplete="off" autocapitalize="characters" maxlength="42" data-input="bank-chk"><span class="bank-msg tiny" data-for="iban"></span></label>`;
+};
+// contrôle : RCS toujours obligatoire ; N° TVA facultatif ; IBAN/BIC vérifiés s'ils sont obligatoires ou écrits
+function companyCheck(fd, who) {
+  const g = (k) => String(fd.get(k) || '').trim();
+  if (!g('rcs')) return `RCS ${who} obligatoire`;
+  const later = !!fd.get('bankLater');
+  if (later && !g('iban') && !g('bic')) return '';
+  const ib = ibanCheck(g('iban')), bc = bicCheck(g('bic'), ib.ok ? ib.cc : '');
+  if (!ib.ok) return `IBAN ${who} : ${ib.msg}`;
+  if (!bc.ok) return `BIC ${who} : ${bc.msg}`;
+  return '';
+}
 function ibanCheck(v) {
   const x = ibanClean(v), cc = x.slice(0, 2);
   if (!x) return { ok: false, msg: 'IBAN obligatoire' };
@@ -3370,6 +3390,17 @@ dashboard() {
       })}</div>` : empty('building', 'Aucun immeuble enregistré.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Ajouter un immeuble</button>`)}`;
   },
 
+  // 🏘️ Agences immobilières (dans Immeubles) : la fiche de chaque agence et de son directeur
+  agences() {
+    const list = vault.list('agences').sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+    const miss = (a) => [!a.tva && 'N° TVA', !a.banque && 'banque', !a.bic && 'BIC', !a.iban && 'IBAN'].filter(Boolean);
+    return html`${immHead('agences', `${list.length} agence${list.length > 1 ? 's' : ''} immobilière${list.length > 1 ? 's' : ''}`)}
+      ${list.length ? html`<div class="list">${list.map((a) => html`<button class="row" data-action="edit-agence" data-id="${a.id}"><span class="avatar">🏘️</span>
+        <span class="grow"><span class="title" style="display:block">${a.nom}</span>
+        <span class="meta">RCS ${a.rcs}${a.dir ? html` · ⭐ ${[a.dir.prenom, a.dir.nom].filter(Boolean).join(' ')}` : ''}</span>
+        ${miss(a).length ? html`<span class="tiny amber" style="display:block">⚠️ À compléter : ${miss(a).join(', ')}</span>` : ''}</span><span class="chev">›</span></button>`)}</div>`
+        : html`<div class="card" style="max-width:560px"><p style="margin-top:0">Les agences immobilières publient leurs biens (appartements, villas, locaux commerciaux). Leur directeur invitera ses agents.</p><button class="btn primary" data-action="new-agence">${icon('plus')} Agence Immo.</button></div>`}`;
+  },
   // 🏨 Hotel — première étape : les clients (chambre, étage, clé, arrivée → départ)
   hotel() {
     const t = today(), all = vault.list('hotes');
@@ -4163,12 +4194,9 @@ const SHEETS = {
         <label class="field full">Nom de la société<input name="name" required value="${o.name || ''}" placeholder="ex. Gérance du Centre S.A."></label>
         ${o.logo ? html`<div class="field full" style="display:flex;gap:10px;align-items:center"><img class="org-logo xl" src="${o.logo}" alt=""><span class="tiny muted">Logo ajouté par la gérance dans son portail (Ma société).</span></div>` : ''}
         <label class="field full">Adresse<textarea name="adresse" style="min-height:56px" placeholder="rue, n°, code postal, ville">${cl.adresse}</textarea></label>
-        <label class="field">RCS<input name="rcs" value="${cl.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
-        <label class="field">N° TVA<input name="tvaNum" value="${cl.tvaNum}" placeholder="LU12345678" autocapitalize="characters"></label>
-        <div class="section-label full" style="margin:4px 0 0">🏦 Banque de la gérance</div>
-        <label class="field">Nom de la banque<input name="banque" required value="${cl.banque || ''}" placeholder="ex. POST Luxembourg, Spuerkeess…"></label>
-        <label class="field">Code BIC / SWIFT<input name="bic" required value="${cl.bic || ''}" placeholder="ex. CCPLLULL" autocomplete="off" autocapitalize="characters" maxlength="14" data-input="bank-chk"><span class="bank-msg tiny" data-for="bic"></span></label>
-        <label class="field full">IBAN<input name="iban" required value="${ibanFmt(cl.iban || '')}" placeholder="LU.. .... .... .... ...." autocomplete="off" autocapitalize="characters" maxlength="42" data-input="bank-chk"><span class="bank-msg tiny" data-for="iban"></span></label>`; })()}
+        <label class="field">RCS *<input name="rcs" required value="${cl.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
+        <label class="field">N° TVA (facultatif)<input name="tvaNum" value="${cl.tvaNum}" placeholder="LU12345678" autocapitalize="characters"></label>
+        ${bankBlock(cl, 'Banque de la gérance')}`; })()}
         <label class="field">Email<input type="email" name="email" value="${o.email || ''}"></label>
         <label class="field">Téléphone<input type="tel" name="phone" value="${o.phone || ''}"></label>
         ${id ? '' : html`<div class="section-label full" style="margin:6px 0 0">⭐ Responsable de la gérance</div>
@@ -4697,6 +4725,34 @@ const SHEETS = {
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-pub" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${exp ? 'Republier' : 'Publier'}</button>`,
+    };
+  },
+  'agence-form'({ id }) {
+    const a = id ? vault.get('agences', id) : {};
+    if (id && !a) return null;
+    const d = a.dir || {};
+    return {
+      title: id ? 'Modifier l’agence' : 'Nouvelle agence immobilière',
+      narrow: true,
+      body: html`<form id="f" data-form="agence" class="fields">
+        <input type="hidden" name="id" value="${id || ''}">
+        <div class="section-label full" style="margin:0">🏘️ Agence immobilière</div>
+        <label class="field full">Nom de la société<input name="nom" required value="${a.nom || ''}" placeholder="ex. Immo Centre S.à r.l."></label>
+        <label class="field full">Adresse<textarea name="adresse" style="min-height:56px" placeholder="rue, n°, code postal, ville">${a.adresse || ''}</textarea></label>
+        <label class="field">RCS *<input name="rcs" required value="${a.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
+        <label class="field">N° TVA (facultatif)<input name="tvaNum" value="${a.tva || ''}" placeholder="LU12345678" autocapitalize="characters"></label>
+        <label class="field">Email<input type="email" name="email" value="${a.email || ''}"></label>
+        <label class="field">Téléphone<input type="tel" name="tel" value="${a.tel || ''}" placeholder="+352…"></label>
+        ${bankBlock({ banque: a.banque, bic: a.bic, iban: a.iban, rcs: a.rcs, bankLater: a.bankLater }, 'Banque de l’agence')}
+        <div class="section-label full" style="margin:6px 0 0">⭐ Directeur de l’agence</div>
+        <label class="field">Prénom<input name="dprenom" required value="${d.prenom || ''}" autocomplete="off"></label>
+        <label class="field">Nom<input name="dnom" required value="${d.nom || ''}" autocomplete="off"></label>
+        <label class="field">Email<input type="email" name="demail" required value="${d.email || ''}"></label>
+        <label class="field">Téléphone (WhatsApp)<input type="tel" name="dtel" value="${d.tel || ''}" placeholder="+352…"></label>
+        <p class="tiny muted full" style="margin:-4px 0 0">Le directeur invitera ses agents ; leurs annonces seront publiées tout de suite (app des agents : prochaine étape).</p>
+      </form>`,
+      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-agence" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
+        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${id ? 'Enregistrer' : 'Créer l’agence'}</button>`,
     };
   },
   'hote-form'({ id }) {
@@ -6098,6 +6154,14 @@ const ACTIONS = {
   },
   'new-avis': (d) => openOver('avis-form', null, null, d.imm || ui.immFilter || ''),
   'edit-avis': (d) => openOver('avis-form', d.id),
+  'new-agence': () => openOver('agence-form'),
+  'edit-agence': (d) => openOver('agence-form', d.id),
+  async 'del-agence'(d) {
+    const a = vault.get('agences', d.id);
+    if (!a || !(await confirmBox('Supprimer cette agence ?', { ok: 'Supprimer', danger: true, detail: `${a.nom} — RCS ${a.rcs}` }))) return;
+    await vault.mutate((tx) => tx.remove('agences', d.id), 'Agence immobilière supprimée', a.nom);
+    goBack();
+  },
   'new-hote': () => openOver('hote-form'),
   'edit-hote': (d) => openOver('hote-form', d.id),
   async 'del-hote'(d) {
@@ -6563,14 +6627,14 @@ const FORMS = {
   async ger(fd) {
     const id = fd.get('id'), b = { name: String(fd.get('name') || '').trim(), email: String(fd.get('email') || '').trim(), phone: String(fd.get('phone') || '').trim() };
     if (!b.name) return;
-    { const ib = ibanCheck(fd.get('iban')), bc = bicCheck(fd.get('bic'), ib.ok ? ib.cc : ''); if (!ib.ok) return toast('IBAN de la gérance : ' + ib.msg, { bad: true }); if (!bc.ok) return toast('BIC de la gérance : ' + bc.msg, { bad: true }); }
+    { const err = companyCheck(fd, 'de la gérance'); if (err) return toast(err, { bad: true }); }
     const gv = (k) => String(fd.get(k) || '').trim();
     Object.assign(b, { address: gv('adresse'), rcs: gv('rcs').toUpperCase().replace(/\s+/g, ''), tva: gv('tvaNum').toUpperCase().replace(/\s+/g, ''), banque: gv('banque'), bic: gv('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(gv('iban')) });
     let nid = id;
     try { if (id) await ptlApi('orgs/' + id, { method: 'PATCH', body: b }); else nid = (await ptlApi('orgs', { method: 'POST', body: b })).id; } catch (e) { return toast(e.message, { bad: true }); }
     const g = (k) => String(fd.get(k) || '').trim();
     const cur = (vault.get('reglages', 'factClients') || {}).list || {};
-    const list = { ...cur, [nid]: { regime: TVA_REG[g('regime')] ? g('regime') : 'normal', taux: g('taux'), tvaNum: g('tvaNum').toUpperCase().replace(/\s+/g, ''), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(g('iban')), adresse: g('adresse'), pays: (g('pays') || 'LU').toUpperCase().slice(0, 2), mention: g('mention') } };
+    const list = { ...cur, [nid]: { bankLater: !!fd.get('bankLater'), regime: TVA_REG[g('regime')] ? g('regime') : 'normal', taux: g('taux'), tvaNum: g('tvaNum').toUpperCase().replace(/\s+/g, ''), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(g('iban')), adresse: g('adresse'), pays: (g('pays') || 'LU').toUpperCase().slice(0, 2), mention: g('mention') } };
     await vault.mutate((tx) => { tx.put('reglages', { id: 'portail', lastOrg: b.name }); tx.put('reglages', { id: 'factClients', list }); }, id ? 'Gérance modifiée' : 'Gérance créée', b.name);
     toast(id ? 'Gérance enregistrée' : 'Gérance créée');
     // nouvelle gérance : on crée aussi l'accès du responsable et on montre son lien d'invitation
@@ -6753,6 +6817,20 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('avis', rec), id ? 'Annonce modifiée' : 'Annonce publiée', `${rec.nom} — jusqu'au ${fmtDate(rec.fin)}`, rec.immId);
     toast(rec.video && !videoEmbed(rec.video) ? (ttShort(rec.video) ? 'Annonce publiée — lien court TikTok non converti (hors ligne ?) : ouvrez la vidéo dans le navigateur et copiez le lien complet' : 'Annonce publiée — lien vidéo non reconnu : il s’affiche comme un bouton') : `Annonce publiée jusqu'au ${fmtDate(rec.fin)}`, rec.video && !videoEmbed(rec.video) ? { bad: true } : undefined);
     goBack();
+  },
+  async agence(fd) {
+    const id = fd.get('id'), g = (k) => String(fd.get(k) || '').trim();
+    if (!g('nom')) return;
+    const err = companyCheck(fd, 'de l’agence');
+    if (err) return toast(err, { bad: true });
+    const rec = { nom: g('nom'), adresse: g('adresse'), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), tva: g('tvaNum').toUpperCase().replace(/\s+/g, ''), email: g('email'), tel: g('tel'),
+      bankLater: !!fd.get('bankLater'), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(g('iban')),
+      dir: { prenom: g('dprenom'), nom: g('dnom'), email: g('demail'), tel: g('dtel') } };
+    if (id) rec.id = id;
+    await vault.mutate((tx) => tx.put('agences', rec), id ? 'Agence immobilière modifiée' : 'Agence immobilière créée', `${rec.nom} — RCS ${rec.rcs}`);
+    toast(id ? 'Agence enregistrée' : 'Agence créée');
+    goBack();
+    if (ui.route !== 'agences') go('agences');
   },
   async hote(fd) {
     const id = fd.get('id');
@@ -8134,6 +8212,8 @@ document.addEventListener('change', (e) => {
   // Formulaire de changement : l'entrée du nouveau locataire suit par défaut la date de sortie.
   const f = e.target.form;
   if (f && f.dataset.form === 'replace' && e.target.name === 'sortie' && e.target.value && f.n_debut) f.n_debut.value = addDays(e.target.value, 1);
+  // « 🕓 Compléter plus tard » : IBAN / BIC / banque ne sont plus obligatoires
+  if (k === 'bank-later') e.target.form.querySelectorAll('[data-bank]').forEach((x) => { x.required = !e.target.checked; });
   if (k === 'masque') {
     const on = [...document.querySelectorAll('[data-input=masque]:checked')].map((x) => x.value);
     vault.mutate((tx) => tx.put('reglages', { id: 'masque', on }), 'Menu : rubriques masquées', on.length ? on.map((x) => (MASKABLE.find((m) => m[0] === x) || [x, x])[1]).join(', ') : 'aucune')
