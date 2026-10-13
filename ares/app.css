@@ -431,6 +431,8 @@ dialog.sheet::backdrop { background: rgba(10, 10, 12, 0.5); backdrop-filter: blu
 .kv dd { font-weight: 550; text-align: right; overflow-wrap: anywhere; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
 .actions .btn { flex: 1; min-width: 0; }
+/* fiche locataire : Relancer · Réviser le loyer · Prolonger — chaque bouton garde la place de son texte, la ligne passe à la ligne si besoin */
+.loc-acts .btn { flex: 1 1 auto; min-width: fit-content; }
 .note { white-space: pre-wrap; background: var(--surface-2); padding: 12px; border-radius: var(--radius); font-size: 14px; }
 
 .fab {
