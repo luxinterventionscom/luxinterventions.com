@@ -7,6 +7,7 @@ import { startI18n, LOCALES, translate as T } from '/ares/i18n.js';
 import { PTL_INVITE } from '/ares/ptl-invite.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
+import { nbienInit, nbienBanner, colorLegend } from '/ares/nbien.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
 const VERSION = '1.18.0';
@@ -26,6 +27,7 @@ try { caches.open('ptl-pref').then((c) => c.put('/__ptl-lang', new Response(LANG
 const INVITE = PTL_INVITE;
 wxRadioInit({ app: 'ptl', lang: () => LANG, home: () => 'Luxembourg' });
 const API = document.querySelector('meta[name="ptl-api"]').content.replace(/\/$/, '') + '/api/portail/';
+nbienInit({ api: location.hash === '#demo' ? '' : API.replace(/\/api\/portail\/$/, ''), app: 'ptl', lang: () => LANG }); // démo du site : pas d'annonces réelles
 const $ = (s, r = document) => r.querySelector(s);
 
 // ───────────────────────── Gabarits HTML (échappement automatique) ─────────────────────────
@@ -714,6 +716,7 @@ const VIEWS = {
         ${pageHead(hello, 'Espace équipe LuxInterventions')}
         ${arrive}
         ${pubSlot('haut')}
+        ${new Raw(nbienBanner())}
         ${new Raw(wxRadioCard())}
         ${orgFilter()}
         <div class="metrics">
@@ -727,7 +730,7 @@ const VIEWS = {
         ${recue.length ? html`<div class="list">${recue.map(ticketRow)}</div>` : html`<div class="alert" style="background:var(--green-soft);color:var(--green)">${icon('check')}<div>Aucune nouvelle demande en attente.</div></div>`}
         <div class="section-label">En cours</div>
         ${others.length ? html`<div class="list">${others.map(ticketRow)}</div>` : html`<p class="muted small">Aucune intervention en cours.</p>`}
-        ${pubSlot('bas')}${tickerBar()}`;
+        ${pubSlot('bas')}${new Raw(colorLegend())}${tickerBar()}`;
     }
     return html`${pushCard}
       ${guideCard(stats)}
@@ -736,6 +739,7 @@ const VIEWS = {
       ${offerBanner()}
       ${arrive}
       ${pubSlot('haut')}
+        ${new Raw(nbienBanner())}
         ${new Raw(wxRadioCard())}
       <button class="big-cta" data-action="new-ticket">${icon('plus')}<span><b>Nouvelle demande de dépannage</b><small>Urgence, photos, accès — en 30 secondes</small></span></button>
       <div class="metrics" style="margin-top:14px">
@@ -748,7 +752,7 @@ const VIEWS = {
       <button class="btn block" style="margin-top:12px" data-action="go" data-to="stats">${icon('chart')} Statistiques de nos interventions</button>
       <div class="section-label">Mes demandes en cours</div>
       ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande de dépannage</button>`)}
-      ${pubSlot('bas')}${tickerBar()}`;
+      ${pubSlot('bas')}${new Raw(colorLegend())}${tickerBar()}`;
   },
 
   // Comptabilité : deux espaces séparés — Comptabilité (interventions terminées, par mois) | Statistiques

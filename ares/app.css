@@ -839,3 +839,11 @@ dialog.bien-full::backdrop { background: rgba(0,0,0,.9); }
 .lieu-pick { min-width: 0; }
 .lieu-list .row .grow { min-width: 0; }
 .lieu-list .row .title, .lieu-list .row .meta { white-space: normal; overflow-wrap: anywhere; }
+/* 🎨 légende des couleurs : pallini sous « Réglages » (bulle au survol ou au toucher) + liste dans Réglages */
+.leg-dots { display: flex; flex-wrap: wrap; gap: 7px; padding: 6px 12px 2px 14px; }
+.leg-dot { position: relative; width: 13px; height: 13px; padding: 0; border: 0; border-radius: 50%; background: var(--c); cursor: help; box-shadow: 0 0 0 2px var(--surface); }
+.leg-dot:hover, .leg-dot:focus-visible, .leg-dot.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--c); outline: none; }
+.leg-tip { display: none; position: absolute; bottom: calc(100% + 10px); left: -10px; transform: none; z-index: 50; width: max-content; max-width: 220px; padding: 8px 10px; border-radius: 10px;
+  background: var(--text); color: var(--surface); font-size: 12.5px; font-weight: 600; line-height: 1.35; text-align: left; white-space: normal; box-shadow: var(--shadow-lg); border-left: 5px solid var(--c); }
+.leg-dot:hover .leg-tip, .leg-dot:focus-visible .leg-tip, .leg-dot.on .leg-tip { display: block; }
+.leg-sw { flex: none; width: 26px; height: 8px; border-radius: 4px; }

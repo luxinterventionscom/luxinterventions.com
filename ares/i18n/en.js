@@ -14091,5 +14091,45 @@ export default [
 [
 "Historique des codes ({0})",
 "Code history ({0})"
+],
+[
+"Couleurs de nos activités",
+"Colours of our activities"
+],
+[
+"Les mêmes couleurs dans toutes les apps (locataires, équipe, portail gérance) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.",
+"The same colours in every app (tenants, team, managers’ portal): on a computer, hover over the coloured dots under “Settings”; in the apps, tap the small coloured lines at the bottom."
+],
+[
+"Interventions et maintenance : demandes, travaux, équipe",
+"Jobs and maintenance: requests, works, team"
+],
+[
+"Gérances : portail et demandes des gérances",
+"Property managers: portal and their requests"
+],
+[
+"Nouveau bien : biens à louer / à vendre des agences immobilières",
+"New property: estate agencies’ properties to rent / for sale"
+],
+[
+"Devis : offres de prix à signer",
+"Quotes: offers to sign"
+],
+[
+"Locataires et loyers : logements, contrats, paiements",
+"Tenants and rents: units, leases, payments"
+],
+[
+"Hotel : chambres, clients, clés",
+"Hotel: rooms, guests, keys"
+],
+[
+"Urgent : urgence, retard, expiré",
+"Urgent: emergency, late, expired"
+],
+[
+"Publicité : annonces des partenaires du quartier",
+"Advertising: ads from local partners"
 ]
 ];

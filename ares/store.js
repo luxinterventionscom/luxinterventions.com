@@ -600,6 +600,9 @@ export class Vault {
   pushSub(body) { return this.call('push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   async videoLink(u) { try { return (await (await this.call('video-link?u=' + encodeURIComponent(u))).json()).url || ''; } catch { return ''; } }
   async pubStats(days) { return (await (await this.call('pubstats?days=' + days)).json()).rows || []; }
+  // « 🆕 Nouveau bien » : annonces publiques (texte), puis photos JPEG une à une
+  biensPut(items) { return this.call('biens', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items }) }); }
+  biensPhoto(id, n, bytes) { return this.call(`biens/${id}/p${n}.jpg`, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: bytes }); }
   pubsPortail(items, offers = true) { return this.call('pubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, offers }) }); }
   espNotify(id) { return this.call('espace/' + id + '/notify', { method: 'POST' }); }
   async inboxList() { return (await (await this.call('inbox')).json()).items || []; }

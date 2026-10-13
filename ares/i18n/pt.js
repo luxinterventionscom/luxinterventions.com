@@ -14279,5 +14279,45 @@ export default [
 [
 "Historique des codes ({0})",
 "Histórico dos códigos ({0})"
+],
+[
+"Couleurs de nos activités",
+"Cores das nossas atividades"
+],
+[
+"Les mêmes couleurs dans toutes les apps (locataires, équipe, portail gérance) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.",
+"As mesmas cores em todas as apps (inquilinos, equipa, portal das gestoras): no computador passe o rato sobre os pontos coloridos em «Definições»; nas apps toque nas pequenas linhas coloridas em baixo."
+],
+[
+"Interventions et maintenance : demandes, travaux, équipe",
+"Intervenções e manutenção: pedidos, trabalhos, equipa"
+],
+[
+"Gérances : portail et demandes des gérances",
+"Gestoras: portal e pedidos das gestoras"
+],
+[
+"Nouveau bien : biens à louer / à vendre des agences immobilières",
+"Novo imóvel: imóveis das agências para arrendar / vender"
+],
+[
+"Devis : offres de prix à signer",
+"Orçamentos: propostas para assinar"
+],
+[
+"Locataires et loyers : logements, contrats, paiements",
+"Inquilinos e rendas: alojamentos, contratos, pagamentos"
+],
+[
+"Hotel : chambres, clients, clés",
+"Hotel: quartos, clientes, chaves"
+],
+[
+"Urgent : urgence, retard, expiré",
+"Urgente: urgência, atraso, expirado"
+],
+[
+"Publicité : annonces des partenaires du quartier",
+"Publicidade: anúncios dos parceiros do bairro"
 ]
 ];

@@ -7,6 +7,7 @@ import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
+import { nbienInit, nbienBanner, colorLegend } from '/ares/nbien.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'eqAccess';
 const RX = /^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/;
@@ -195,6 +196,7 @@ async function photoSquare(file) {
 }
 const ICONS = { nettoyage: '🧹', reparation: '🔧', gros: '🚚', autre: '📌', entretien: '🔧' };
 let data = null, lang = 'fr', loadErr = '', form = null, flash = '';
+nbienInit({ api: API, app: 'eq', lang: () => lang });
 wxRadioInit({ app: 'eq', lang: () => lang, home: () => (data && data.me && data.me.ville) || 'Luxembourg', radio: () => (data && data.radio) || null });
 const app = document.getElementById('app');
 const T = () => L[lang] || L.fr;
@@ -481,6 +483,7 @@ function render() {
   const eg = d.eng && !d.eng.signed && !sigSent ? ENGT[lang] || ENGT.fr : null;
   if (eg) out.push(`<div class="card warnc"><p style="margin:0 0 8px"><b>✍️ ${esc(eg.top)}</b></p><button class="btn sm" data-eng-open="1">${esc(eg.open)} ↓</button></div>`);
   if (d.eng && d.eng.assurTodo && !assurSent) out.push(assurCard());
+  out.push(nbienBanner()); // 🆕 Nouveau bien (bleu mer)
   // météo de la semaine + radio (comme dans l'app des locataires)
   out.push(wxRadioCard());
   const q = getJ(QK());
@@ -553,6 +556,7 @@ function render() {
   out.push(`<p class="meta" style="text-align:center">${esc(t.install)}</p>${iaBtn()}
     <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(t.rgpd)}</p><p class="meta" style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
   { const low = slot('bas'); if (low) out.push(adBox(low, t)); }
+  out.push(colorLegend());
   out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
   const keepMap = document.querySelector('#mapBox iframe');
   const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));

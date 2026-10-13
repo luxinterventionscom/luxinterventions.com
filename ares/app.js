@@ -12,7 +12,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.121.0';
+const VERSION = '2.122.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1255,7 +1255,7 @@ async function espaceSync(onlyId, loud) {
       if (loud) { toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
     }
   }
-  if (!onlyId) { await equipeSync(); await portailPubsSync(); }
+  if (!onlyId) { await equipeSync(); await portailPubsSync(); await biensSync(); }
   return true;
 }
 // Annonces pour le portail gérance : publiées en clair (publicité, aucune donnée personnelle), relues par le portail
@@ -1266,6 +1266,38 @@ async function portailPubsSync() {
   try { prev = localStorage.getItem('aresPubPtl') || ''; } catch { /* stockage indisponible */ }
   if (h === prev) return;
   try { await vault.pubsPortail(list, offers); localStorage.setItem('aresPubPtl', h); } catch { /* Worker pas encore à jour ou hors ligne : on réessaiera */ }
+}
+// « 🆕 Nouveau bien » : les biens à louer / à vendre sont publiés (annonces publiques) pour les apps des locataires,
+// de l'équipe et le portail gérance ; 6 photos max. par bien, envoyées seulement quand elles changent
+let biensBusy = false, biensAgain = false;
+async function biensSync() {
+  if (biensBusy) { biensAgain = true; return; }
+  if (!vault.unlocked) return;
+  biensBusy = true;
+  try {
+    const c = factConf(), items = vault.list('biens').sort((a, b) => (b.cree || '').localeCompare(a.cree || '')).slice(0, 60).map((b) => {
+      const ag = b.agenceId ? vault.get('agences', b.agenceId) : null;
+      return { id: b.id, titre: b.titre, type: b.type, surface: b.surface, adresse: b.adresse, dispo: b.dispo, louer: b.louer, vendre: b.vendre, loyer: b.loyer, charges: b.charges, prix: b.prix,
+        description: b.description, pieces: (b.pieces || []).map((p) => ({ k: p.k, nom: p.nom, m2: p.m2 })), cree: b.cree, nph: Math.min(6, (b.photos || []).length),
+        agence: ag ? { nom: ag.nom, tel: ag.tel || (ag.dir || {}).tel || '', email: ag.email || (ag.dir || {}).email || '' } : { nom: c.marque || c.nom || '', tel: c.tel || '', email: c.email || '' } };
+    });
+    let up = {};
+    try { up = JSON.parse(localStorage.getItem('aresBiensUp') || '{}'); } catch { /* illisible */ }
+    const h = await sha256Hex(JSON.stringify(items));
+    if (h === up._h) return;
+    for (const b of vault.list('biens')) {
+      const ph = (b.photos || []).slice(0, 6), k = ph.join(',');
+      if (up[b.id] === k) continue;
+      let ok = true;
+      for (let n = 0; n < ph.length; n++) { try { await vault.biensPhoto(b.id, n, await vault.readFile(ph[n])); } catch { ok = false; } }
+      if (ok) up[b.id] = k;
+    }
+    await vault.biensPut(items);
+    const ids = new Set(items.map((x) => x.id));
+    for (const k of Object.keys(up)) if (k !== '_h' && !ids.has(k)) delete up[k];
+    up._h = h;
+    try { localStorage.setItem('aresBiensUp', JSON.stringify(up)); } catch { /* stockage indisponible */ }
+  } catch { /* Worker pas encore à jour ou hors ligne : on réessaiera */ } finally { biensBusy = false; if (biensAgain) { biensAgain = false; setTimeout(biensSync, 0); } }
 }
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
@@ -2271,6 +2303,12 @@ const MASKABLE = [['gerances', 'Gérances'], ['immeubles', 'Immeubles'], ['hotel
 const masked = () => new Set((vault.get('reglages', 'masque') || {}).on || []);
 // pages qui appartiennent à une rubrique (Locataires et Gestion locataire sont dans Immeubles)
 const maskOf = (route) => (['locataires', 'paiements'].includes(route) ? 'immeubles' : route);
+// Légende des couleurs de nos activités (mêmes couleurs que dans les apps des locataires, de l'équipe et le portail)
+const COLOR_LEG = [['#F97316', 'Interventions et maintenance : demandes, travaux, équipe'], ['#1D4ED8', 'Gérances : portail et demandes des gérances'],
+  ['#0077BE', 'Nouveau bien : biens à louer / à vendre des agences immobilières'], ['#8B5CF6', 'Devis : offres de prix à signer'],
+  ['#16A34A', 'Locataires et loyers : logements, contrats, paiements'], ['#D4A017', 'Hotel : chambres, clients, clés'],
+  ['#DC2626', 'Urgent : urgence, retard, expiré'], ['#DB2777', 'Publicité : annonces des partenaires du quartier']];
+const legDots = () => html`<div class="leg-dots" aria-label="Légende des couleurs">${COLOR_LEG.map(([c, t]) => html`<button type="button" class="leg-dot" style="--c:${c}" data-action="leg-dot"><span class="leg-tip">${t}</span></button>`)}</div>`;
 function sideNavHtml() {
   return NAV_TREE.map((x) => (x.group ? html`<div class="nav-group">${x.group}</div>${x.items.map((it) => navItem(it, true))}` : navItem(x)));
 }
@@ -2285,6 +2323,7 @@ function renderShell() {
       <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>LuxInterventions<small>Gestion locative</small></span></div>
       ${sideNavHtml()}
       ${navBtn(['reglages', 'Réglages', 'gear'])}
+      ${legDots()}
       <div class="spacer"></div>
       <button class="navbtn" data-action="lock">${icon('lock')}<span>Verrouiller</span></button>
     </nav>
@@ -3849,6 +3888,10 @@ dashboard() {
       <div class="section-label">🔒 Masquer</div>
       <p class="small muted" style="margin:0 0 8px">Rubrique cochée : dans le menu, son nom est remplacé par « 🔒 MASQUÉ » et elle ne s’ouvre plus. Décochez pour la retrouver.</p>
       <div class="list settings">${MASKABLE.map(([k, l]) => html`<label class="row" style="cursor:pointer"><input type="checkbox" data-input="masque" value="${k}" ${masked().has(k) ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"><span class="grow title">${l}</span>${masked().has(k) ? html`<span class="badge">🔒 MASQUÉ</span>` : ''}</label>`)}</div>
+
+      <div class="section-label">🎨 Couleurs de nos activités</div>
+      <p class="small muted" style="margin:0 0 8px">Les mêmes couleurs dans toutes les apps (locataires, équipe, portail gérance) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.</p>
+      <div class="list settings">${COLOR_LEG.map(([c, t]) => html`<div class="row"><span class="leg-sw" style="background:${c}"></span><span class="grow">${t}</span></div>`)}</div>
 
       <div class="section-label">Gestion</div>
       <div class="list settings">
@@ -6221,6 +6264,8 @@ const ACTIONS = {
   'interv-job': (d) => { const i = d.id && vault.get('intervenants', d.id); openOver('tache-form', null, null, i ? { intervenantId: d.id, type: i.metier === 'menage' ? 'nettoyage' : 'reparation' } : { type: 'reparation' }); },
   // Maintenance › Équipe : « 📌 Affectation » sans ouvrier → on choisit d'abord l'ouvrier
   'aff-pick': () => openOver('aff-pick'),
+  // toucher un point de couleur (téléphone / tablette) : sa bulle reste ouverte ; toucher ailleurs la ferme
+  'leg-dot': (d, el) => { const on = !el.classList.contains('on'); document.querySelectorAll('.leg-dot.on').forEach((x) => x.classList.remove('on')); el.classList.toggle('on', on); },
   'lieu-set': (d, el) => {
     const f = el.form || $('#f'), [kind, v] = [d.k.slice(0, 1), d.k.slice(2)], lf = $('#tacheLogF');
     el.parentNode.querySelectorAll('[aria-pressed]').forEach((r) => r.setAttribute('aria-pressed', String(r === el)));
@@ -6319,6 +6364,7 @@ const ACTIONS = {
     if (!b || !(await confirmBox('Supprimer ce bien ?', { ok: 'Supprimer', danger: true, detail: b.titre }))) return;
     await vault.mutate((tx) => tx.remove('biens', d.id), 'Bien supprimé', b.titre);
     for (const ph of b.photos || []) await vault.deleteFile(ph).catch(() => {});
+    biensSync();
     goBack();
   },
   'new-agence': () => openOver('agence-form'),
@@ -7014,6 +7060,7 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('biens', rec), id ? 'Bien modifié' : 'Nouveau bien publié', `${rec.titre} — ${BIEN_TYPES[rec.type] || ''}${rec.surface ? ' · ' + rec.surface + ' m²' : ''}`);
     for (const ph of del) { await vault.deleteFile(ph).catch(() => {}); if (bienUrls.has(ph)) { URL.revokeObjectURL(bienUrls.get(ph)); bienUrls.delete(ph); } }
     toast(id ? 'Bien enregistré' : 'Bien publié');
+    biensSync();
     goBack();
     if (ui.route !== 'agences') go('agences');
   },
