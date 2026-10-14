@@ -14391,5 +14391,17 @@ export default [
 [
 "Publicité : annonces des partenaires du quartier",
 "Publicidad: anuncios de los socios del barrio"
+],
+[
+"Avis de l’immeuble : coupures, travaux dans les communs",
+"Avisos del edificio: cortes, obras en zonas comunes"
+],
+[
+"Planning du jour : ce qui est prévu aujourd’hui",
+"Plan del día: lo previsto hoy"
+],
+[
+"Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème",
+"Puntos que parpadean = semáforo: 🟢 hoy / todo bien · 🟡 pronto / mañana · 🔴 urgente / problema"
 ]
 ];

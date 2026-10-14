@@ -669,7 +669,7 @@ function pubSlot(k) {
   const list = ((state.cache.home && state.cache.home.pubs) || []).filter((a) => (a.slot || 'milieu') === k);
   if (!list.length) return '';
   const a = list[pubTurn % list.length], v = videoEmbed(a.video);
-  return html`<details class="card ptl-pub fold" style="margin:12px 0" data-pid="${a.id}"${pubShut.has(a.id) ? '' : ' open'}><summary><div class="small muted"><b class="pub-lbl">📣 Publicité</b> · ${PUB_ICON[a.cat] || '📌'}</div><b style="font-size:17px">${a.nom}</b></summary>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
+  return html`<details class="card ptl-pub fold mk mk-pub mk-on" style="margin:12px 0" data-pid="${a.id}"${pubShut.has(a.id) ? '' : ' open'}><summary><div class="small muted"><b class="pub-lbl">📣 Publicité</b> · ${PUB_ICON[a.cat] || '📌'}</div><b style="font-size:17px">${a.nom}</b></summary>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
       ${v ? html`<div class="vid${v.tall ? ' tall' : ''}${v.audio ? ' audio' : ''}" style="${v.audio ? `height:${v.audio}px` : ''}"><iframe src="${v.src}" loading="lazy" title="Vidéo" allow="encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
       <div class="small muted" style="margin-top:6px">📍 ${a.adresse}</div>
       <div class="actions" style="margin-top:8px;flex-wrap:wrap">

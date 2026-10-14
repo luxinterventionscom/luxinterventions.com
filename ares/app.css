@@ -840,10 +840,18 @@ dialog.bien-full::backdrop { background: rgba(0,0,0,.9); }
 .lieu-list .row .grow { min-width: 0; }
 .lieu-list .row .title, .lieu-list .row .meta { white-space: normal; overflow-wrap: anywhere; }
 /* 🎨 légende des couleurs : pallini sous « Réglages » (bulle au survol ou au toucher) + liste dans Réglages */
-.leg-dots { display: flex; flex-wrap: wrap; gap: 7px; padding: 6px 12px 2px 14px; }
-.leg-dot { position: relative; width: 13px; height: 13px; padding: 0; border: 0; border-radius: 50%; background: var(--c); cursor: help; box-shadow: 0 0 0 2px var(--surface); }
+.leg-dots { position: relative; display: flex; flex-wrap: wrap; gap: 7px; padding: 6px 12px 2px 14px; }
+.leg-dot { position: static; width: 13px; height: 13px; padding: 0; border: 0; border-radius: 50%; background: var(--c); cursor: help; box-shadow: 0 0 0 2px var(--surface); }
 .leg-dot:hover, .leg-dot:focus-visible, .leg-dot.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--c); outline: none; }
-.leg-tip { display: none; position: absolute; bottom: calc(100% + 10px); left: -10px; transform: none; z-index: 50; width: max-content; max-width: 220px; padding: 8px 10px; border-radius: 10px;
+.leg-tip { display: none; position: absolute; bottom: calc(100% + 4px); left: 6px; right: 6px; transform: none; z-index: 50; width: auto; padding: 8px 10px; border-radius: 10px;
   background: var(--text); color: var(--surface); font-size: 12.5px; font-weight: 600; line-height: 1.35; text-align: left; white-space: normal; box-shadow: var(--shadow-lg); border-left: 5px solid var(--c); }
 .leg-dot:hover .leg-tip, .leg-dot:focus-visible .leg-tip, .leg-dot.on .leg-tip { display: block; }
 .leg-sw { flex: none; width: 26px; height: 8px; border-radius: 4px; }
+/* contours de couleur par activité (mêmes couleurs que la légende) ; mk-on = clignote */
+.mk { border: 2px solid var(--mk) !important; }
+.mk-on { animation: mkGlow 1.5s ease-in-out infinite; }
+@keyframes mkGlow { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--mk) 55%, transparent); } 50% { box-shadow: 0 0 0 7px transparent, 0 0 18px 2px color-mix(in srgb, var(--mk) 35%, transparent); } }
+.mk-int { --mk: #F97316; } .mk-ger { --mk: #1D4ED8; } .mk-bien { --mk: #0077BE; } .mk-dev { --mk: #8B5CF6; } .mk-loc { --mk: #0D9488; } .mk-hot { --mk: #92400E; } .mk-pub { --mk: #DC2626; } .mk-avis { --mk: #475569; } .mk-plan { --mk: #4F46E5; }
+@media (prefers-reduced-motion: reduce) { .mk-on { animation: none; } }
+/* dans un banner de couleur (devis, contours d'activité) : une seule bordure, celle du banner — la section pliable intérieure ne s'allume pas en orange */
+.dev-banner details.dfold, .mk details.dfold { animation: none !important; box-shadow: none !important; border: 0 !important; background: transparent !important; padding: 2px 0 0 !important; }

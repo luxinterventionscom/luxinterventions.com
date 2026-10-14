@@ -2306,8 +2306,9 @@ const maskOf = (route) => (['locataires', 'paiements'].includes(route) ? 'immeub
 // Légende des couleurs de nos activités (mêmes couleurs que dans les apps des locataires, de l'équipe et le portail)
 const COLOR_LEG = [['#F97316', 'Interventions et maintenance : demandes, travaux, équipe'], ['#1D4ED8', 'Gérances : portail et demandes des gérances'],
   ['#0077BE', 'Nouveau bien : biens à louer / à vendre des agences immobilières'], ['#8B5CF6', 'Devis : offres de prix à signer'],
-  ['#16A34A', 'Locataires et loyers : logements, contrats, paiements'], ['#D4A017', 'Hotel : chambres, clients, clés'],
-  ['#DC2626', 'Urgent : urgence, retard, expiré'], ['#DB2777', 'Publicité : annonces des partenaires du quartier']];
+  ['#0D9488', 'Locataires et loyers : logements, contrats, paiements'], ['#92400E', 'Hotel : chambres, clients, clés'],
+  ['#DC2626', 'Publicité : annonces des partenaires du quartier'], ['#475569', 'Avis de l’immeuble : coupures, travaux dans les communs'],
+  ['#4F46E5', 'Planning du jour : ce qui est prévu aujourd’hui']];
 const legDots = () => html`<div class="leg-dots" aria-label="Légende des couleurs">${COLOR_LEG.map(([c, t]) => html`<button type="button" class="leg-dot" style="--c:${c}" data-action="leg-dot"><span class="leg-tip">${t}</span></button>`)}</div>`;
 function sideNavHtml() {
   return NAV_TREE.map((x) => (x.group ? html`<div class="nav-group">${x.group}</div>${x.items.map((it) => navItem(it, true))}` : navItem(x)));
@@ -3355,7 +3356,7 @@ dashboard() {
 
     const nudge = vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
     const sig = newSignals();
-    const sigBox = sig.length ? html`<div class="card" style="margin-bottom:14px;border:2px solid var(--red)">
+    const sigBox = sig.length ? html`<div class="card mk mk-int mk-on" style="margin-bottom:14px">
         <div class="card-title" style="margin-bottom:8px"><h3>📩 <span>${sig.length > 1 ? sig.length + " nouveaux messages" : "1 nouveau message"}${sig.every((t) => !t.byInterv) ? (sig.length > 1 ? ' de locataires' : ' de locataire') : ''}</span></h3></div>
         <div class="stack">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = t.byInterv ? vault.get('intervenants', t.byInterv) : null; const n = signalPhotos(t); return alertBtn('bad', 'msg', 'open-signal', t.id, html`<b>${w ? '👷 ' + intervFull(w) : fullName(l)}</b> · ${logName(l.logId) || immName(t.immId)} — ${t.titre.replace(/^Signalement : /, '').replace(/^Problème signalé par [^:]+ : /, '⚠️ ')}<div class="tiny">${fmtDateTime(t.sentAt)}${n ? ` · 📷 ${n} photo${n > 1 ? 's' : ''}` : ''} · touchez pour lire</div>`); })}</div>
       </div>` : '';
@@ -3892,6 +3893,7 @@ dashboard() {
       <div class="section-label">🎨 Couleurs de nos activités</div>
       <p class="small muted" style="margin:0 0 8px">Les mêmes couleurs dans toutes les apps (locataires, équipe, portail gérance) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.</p>
       <div class="list settings">${COLOR_LEG.map(([c, t]) => html`<div class="row"><span class="leg-sw" style="background:${c}"></span><span class="grow">${t}</span></div>`)}</div>
+      <p class="small" style="margin:8px 0 0">Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème</p>
 
       <div class="section-label">Gestion</div>
       <div class="list settings">
