@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.125.0';
+const VERSION = '2.126.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2360,7 +2360,7 @@ function go(route, replace) {
   ui.route = route;
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
-  const navRoute = route === 'champeq' ? 'champions' : route === 'rapports' ? 'reglages' : ['paiements', 'locataires', 'agences'].includes(route) ? 'immeubles' : route;
+  const navRoute = route === 'champeq' ? 'champions' : route === 'rapports' ? 'compta' : ['paiements', 'locataires', 'agences'].includes(route) ? 'immeubles' : route;
   document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute && (!b.dataset.sec || b.dataset.sec === (ui.cpSec === 'abo' ? 'abo' : 'compta')) ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   bnavShow();
   const fab = $('#fab');
@@ -3298,7 +3298,7 @@ function rptView() {
     : c.src === 'heures' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(INT_GENRES).map(([k]) => rptChk('genre', k, c.genre.includes(k), RPT_WHO[k]))}</div><div class="fields">${persSel}</div>`
     : c.src === 'retards' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(RPT_LATE).map(([k, l]) => rptChk('late', k, c.late.includes(k), l))}</div><div class="fields">${persSel}</div>`
     : html`<div class="fields">${persSel}</div>`;
-  return html`${pageHead('📊 Rapports & exports', 'Choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.')}
+  return html`<button class="btn sm ghost" style="margin-bottom:8px" data-action="rpt-back">← Statistiques</button>${pageHead('🖨️ Imprimer sur mesure', 'Statistiques : choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.')}
     <div class="chips" style="margin-bottom:12px">${Object.entries(RPT_SRC).map(([k, [l]]) => html`<button class="chip" data-action="rpt-src" data-id="${k}" aria-pressed="${c.src === k}">${l}</button>`)}</div>
     ${saved.length ? html`<div class="section-label">⭐ Mes listes</div><div class="chips" style="margin-bottom:12px">${saved.map((s) => html`<span class="chip" style="display:inline-flex;gap:6px;align-items:center"><button style="border:0;background:none;font:inherit;color:inherit;cursor:pointer;padding:0" data-action="rpt-load" data-id="${s.id}">${s.nom}</button><button style="border:0;background:none;cursor:pointer;padding:0" data-action="rpt-del" data-id="${s.id}" aria-label="Supprimer">✕</button></span>`)}</div>` : ''}
     <div class="card" style="margin-bottom:12px"><div class="section-label" style="margin-top:0">Filtres</div>${per}${filters}</div>
@@ -3970,7 +3970,7 @@ dashboard() {
     const origin = imms.map((im) => ({ im, b: bilan({ immId: im.id }) }));
     const tot = { encaisse: sum(origin, (x) => x.b.encaisse), verse: sum(origin, (x) => x.b.verse), depenses: sum(origin, (x) => x.b.depenses), net: sum(origin, (x) => x.b.net), occupants: sum(origin, (x) => x.b.occupants) };
     return html`
-      ${pageHead('Statistiques', 'Vue financière annuelle et depuis l’origine', html`<div style="display:flex;gap:8px">${yearSelect(y)}<button class="btn" data-action="print-global">${icon('download')} Imprimer</button></div>`)}
+      ${pageHead('Statistiques', 'Vue financière annuelle et depuis l’origine', html`<div style="display:flex;gap:8px;flex-wrap:wrap">${yearSelect(y)}<button class="btn" data-action="print-global">${icon('download')} Imprimer</button><button class="btn primary" data-action="open-rapports">🖨️ Imprimer sur mesure</button></div>`)}
       <div class="metrics">
         <div class="metric"><div class="lbl">Loyers encaissés</div><div class="val green">${money(paid)}</div><div class="sub">${pct(collected, due)}% des ${money(due)} échus</div></div>
         <div class="metric"><div class="lbl">Impayés à ce jour</div><div class="val ${manquant > 0.009 ? 'red' : ''}">${money(manquant)}</div></div>
@@ -4025,9 +4025,6 @@ dashboard() {
       <div class="section-label">🔒 Masquer</div>
       <p class="small muted" style="margin:0 0 8px">Rubrique cochée : dans le menu, son nom est remplacé par « 🔒 MASQUÉ » et elle ne s’ouvre plus. Décochez pour la retrouver.</p>
       <div class="list settings">${MASKABLE.map(([k, l]) => html`<label class="row" style="cursor:pointer"><input type="checkbox" data-input="masque" value="${k}" ${masked().has(k) ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"><span class="grow title">${l}</span>${masked().has(k) ? html`<span class="badge">🔒 MASQUÉ</span>` : ''}</label>`)}</div>
-
-      <div class="section-label">📊 Rapports & exports</div>
-      <div class="list settings"><button class="row" data-action="open-rapports"><span class="avatar">📊</span><span class="grow"><span class="title" style="display:block">Rapports & exports</span><span class="meta">Contacts, travaux, heures, retards, totaux — Excel ou PDF</span></span><span class="chev">›</span></button></div>
 
       <div class="section-label">🎨 Couleurs de nos activités</div>
       <p class="small muted" style="margin:0 0 8px">Les mêmes couleurs dans toutes les apps (locataires, équipe, portail gérance) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.</p>
@@ -6405,7 +6402,8 @@ const ACTIONS = {
   'interv-job': (d) => { const i = d.id && vault.get('intervenants', d.id); openOver('tache-form', null, null, i ? { intervenantId: d.id, type: i.metier === 'menage' ? 'nettoyage' : 'reparation' } : { type: 'reparation' }); },
   // Maintenance › Équipe : « 📌 Affectation » sans ouvrier → on choisit d'abord l'ouvrier
   'aff-pick': () => openOver('aff-pick'),
-  'open-rapports': () => go('rapports'),
+  'open-rapports': () => { ui.cpSec = 'stats'; go('rapports'); },
+  'rpt-back': () => { ui.cpSec = 'stats'; go('compta'); },
   'rpt-src': (d) => { rptCfg().src = d.id; renderView(); },
   'rpt-per': (d) => { const c = rptCfg(); c.from = d.f; c.to = d.t; renderView(); },
   'rpt-xlsx': () => { const c = rptCfg(), tb = rptTable(c); download(`${rptTitle(c).replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase()}.xlsx`, xlsxBlob(tb.head, tb.rows, RPT_SRC[c.src][0].replace(/^\S+\s/, '')), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); },
