@@ -14131,5 +14131,17 @@ export default [
 [
 "Publicité : annonces des partenaires du quartier",
 "Advertising: ads from local partners"
+],
+[
+"Avis de l’immeuble : coupures, travaux dans les communs",
+"Building notices: outages, works in common areas"
+],
+[
+"Planning du jour : ce qui est prévu aujourd’hui",
+"Today’s plan: what is planned today"
+],
+[
+"Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème",
+"Blinking dots = traffic light: 🟢 today / all good · 🟡 soon / tomorrow · 🔴 urgent / problem"
 ]
 ];

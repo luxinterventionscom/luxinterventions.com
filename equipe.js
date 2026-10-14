@@ -368,7 +368,7 @@ const pubShut = new Set((() => { try { return JSON.parse(localStorage.getItem('e
 const pickPub = (list) => (list.length ? list[pubTurn % list.length] : null);
 function adBox(x, t) {
   const v = x.video ? videoEmbed(x.video) : null;
-  return `<details class="card pub-box" data-pid="${esc(x.id)}"${pubShut.has(x.id) ? '' : ' open'}><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b> · ${esc(t.ad.cats[x.cat] || t.ad.cats.autre)}</div><b style="display:block;font-size:18px">${esc(x.nom)}</b></summary>${x.texte ? `<div>${esc(x.texte)}</div>` : ''}
+  return `<details class="card pub-box mk mk-pub mk-on" data-pid="${esc(x.id)}"${pubShut.has(x.id) ? '' : ' open'}><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b> · ${esc(t.ad.cats[x.cat] || t.ad.cats.autre)}</div><b style="display:block;font-size:18px">${esc(x.nom)}</b></summary>${x.texte ? `<div>${esc(x.texte)}</div>` : ''}
     ${v ? `<div class="vid${v.tall ? ' tall' : ''}${v.audio ? ' audio' : ''}"${v.audio ? ` style="height:${v.audio}px"` : ''} data-vsrc="${esc(v.src)}"></div>` : ''}<div class="meta" style="margin-top:6px">📍 ${esc(x.adresse)}</div>
     <div class="btns"><button class="btn sm" data-place="${esc(x.adresse)}" data-pev="map">${esc(t.ad.see)}</button>${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}${x.video && !v ? `<a class="btn sm sec" href="${esc(x.video)}" target="_blank" rel="noopener" data-pev="video">▶ Video</a>` : ''}</div></details>`;
 }
@@ -496,7 +496,7 @@ function render() {
   const hsToday = hOnDate(d, today);
   const hrow = (h) => `<div class="hday"><b>${esc(t.days[h.j])}</b><span class="hh">🕒 ${esc(t.w.arr)} <b>${esc(h.de)}</b> · ${esc(t.w.dep)} <b>${esc(h.a)}</b></span>${h.lieu ? `<button class="place" data-place="${esc(h.lieu)}" aria-pressed="${h.lieu === place}">📍 ${esc(h.lieu)}</button>` : ''}</div>`;
   const todayAt = out.length;
-  out.push(`<div class="card" id="todayCard"><h2>📅 ${esc(t.w.today)} · ${esc(fmtDay(today))}</h2>${hsToday.map(hrow).join('')}${todays.length ? todays.map(taskLine).join('') : hsToday.length ? '' : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}${hsToday.some((h) => h.lieu) || todays.length ? `<p class="meta" style="margin:8px 0 0">${esc(t.x.placesHint)}</p>` : ''}</div>`);
+  out.push(`<div class="card mk mk-plan${todays.length ? ' mk-on' : ''}" id="todayCard"><h2>📅 ${esc(t.w.today)} · ${esc(fmtDay(today))}</h2>${hsToday.map(hrow).join('')}${todays.length ? todays.map(taskLine).join('') : hsToday.length ? '' : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}${hsToday.some((h) => h.lieu) || todays.length ? `<p class="meta" style="margin:8px 0 0">${esc(t.x.placesHint)}</p>` : ''}</div>`);
   { const mid = slot('milieu'); if (mid) out.push(adBox(mid, t)); }
   const nexts = d.items.filter((x) => x.d > today).sort(byHour);
   const byDay = {};
@@ -937,7 +937,7 @@ function devCard() {
   const rows = [];
   for (const dr of Object.values(m)) if (!srv.some((x) => x.did === dr.did)) rows.push({ did: dr.did, no: '', nom: dr.c.nom, titre: dr.titre, st: dr.sent ? 'wait' : 'draft', ed: true, pend: (dr.ph || []).length });
   for (const x of srv) { const loc = m[x.did]; rows.push({ did: x.did, no: x.no, nom: x.c.nom, titre: x.titre, st: x.st, ed: x.st === 'prep', pend: loc ? (loc.ph || []).length : 0, dirty: loc && loc.dirty }); }
-  return `<div class="card" id="devCard"><h2>${esc(v.t)}</h2><p class="meta" style="margin:0 0 10px">${esc(v.hint)}</p>
+  return `<div class="card mk mk-dev" id="devCard"><h2>${esc(v.t)}</h2><p class="meta" style="margin:0 0 10px">${esc(v.hint)}</p>
     <button class="btn block" data-dv-new="1">${esc(v.new)}</button>
     <p style="margin:14px 0 4px"><b>${esc(v.mine)}</b></p>
     ${rows.length ? rows.map((r) => `<div class="row"><span class="grow"><b>${esc(r.nom || '—')}</b>${r.titre ? ` · ${esc(r.titre)}` : ''}${r.no ? `<div class="meta">${esc(r.no)}</div>` : ''}

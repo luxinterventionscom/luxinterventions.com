@@ -14391,5 +14391,17 @@ export default [
 [
 "Publicité : annonces des partenaires du quartier",
 "Werbung: Anzeigen der Partner im Viertel"
+],
+[
+"Avis de l’immeuble : coupures, travaux dans les communs",
+"Hinweise zum Gebäude: Unterbrechungen, Arbeiten im Gemeinschaftsbereich"
+],
+[
+"Planning du jour : ce qui est prévu aujourd’hui",
+"Tagesplan: was heute geplant ist"
+],
+[
+"Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème",
+"Blinkende Punkte = Ampel: 🟢 heute / alles gut · 🟡 bald / morgen · 🔴 dringend / Problem"
 ]
 ];
