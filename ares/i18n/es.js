@@ -14403,5 +14403,297 @@ export default [
 [
 "Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème",
 "Puntos que parpadean = semáforo: 🟢 hoy / todo bien · 🟡 pronto / mañana · 🔴 urgente / problema"
+],
+[
+"Rapports & exports",
+"Informes y exportaciones"
+],
+[
+"Choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.",
+"Elija qué, filtre, marque las columnas y luego Excel o PDF."
+],
+[
+"Contacts",
+"Contactos"
+],
+[
+"Travaux",
+"Trabajos"
+],
+[
+"Heures par personne",
+"Horas por persona"
+],
+[
+"Totaux",
+"Totales"
+],
+[
+"Société",
+"Empresa"
+],
+[
+"Détail",
+"Detalle"
+],
+[
+"Heure prévue",
+"Hora prevista"
+],
+[
+"Quoi",
+"Qué"
+],
+[
+"Qui",
+"Quién"
+],
+[
+"Gérance / demande",
+"Administradora / solicitud"
+],
+[
+"Personne",
+"Persona"
+],
+[
+"Travaux finis",
+"Trabajos terminados"
+],
+[
+"Nettoyages",
+"Limpiezas"
+],
+[
+"Gros travaux",
+"Grandes obras"
+],
+[
+"Autres",
+"Otros"
+],
+[
+"Arrivées en retard",
+"Llegadas con retraso"
+],
+[
+"Type de retard",
+"Tipo de retraso"
+],
+[
+"Date prévue / échéance",
+"Fecha prevista / vencimiento"
+],
+[
+"Quoi / où",
+"Qué / dónde"
+],
+[
+"Retard (jours)",
+"Retraso (días)"
+],
+[
+"Retard (minutes)",
+"Retraso (minutos)"
+],
+[
+"Montant (€)",
+"Importe (€)"
+],
+[
+"Indicateur",
+"Indicador"
+],
+[
+"Ouvriers internes",
+"Operarios internos"
+],
+[
+"Sociétés externes",
+"Empresas externas"
+],
+[
+"Collaborateurs occasionnels",
+"Colaboradores ocasionales"
+],
+[
+"Agences immobilières",
+"Agencias inmobiliarias"
+],
+[
+"Clients de l’hotel",
+"Clientes del hotel"
+],
+[
+"Loyers impayés",
+"Alquileres impagados"
+],
+[
+"Travaux pas finis (date passée)",
+"Trabajos sin terminar (fecha pasada)"
+],
+[
+"Travaux finis après la date prévue",
+"Trabajos terminados después de la fecha prevista"
+],
+[
+"Arrivées de l’ouvrier après l’heure prévue",
+"Llegadas del operario después de la hora prevista"
+],
+[
+"Factures pas payées à l’échéance",
+"Facturas impagadas al vencimiento"
+],
+[
+"Filtres",
+"Filtros"
+],
+[
+"Colonnes",
+"Columnas"
+],
+[
+"Ce mois",
+"Este mes"
+],
+[
+"Cette année",
+"Este año"
+],
+[
+"Depuis le début",
+"Desde el principio"
+],
+[
+"Seulement avec email",
+"Solo con email"
+],
+[
+"Seulement avec téléphone",
+"Solo con teléfono"
+],
+[
+"Gérances : ouvrez une fois la page Gérances pour charger leurs coordonnées.",
+"Administradoras: abra una vez la página Administradoras para cargar sus datos."
+],
+[
+"Toutes",
+"Todas"
+],
+[
+"Fini par l’ouvrier",
+"Terminado por el operario"
+],
+[
+"Où / quoi contient",
+"Dónde / qué contiene"
+],
+[
+"ex. rue de Hollerich",
+"ej. rue de Hollerich"
+],
+[
+"Nom de la liste (ex. Téléphones collaborateurs)",
+"Nombre de la lista (ej. Teléfonos colaboradores)"
+],
+[
+"Enregistrer dans Mes listes",
+"Guardar en Mis listas"
+],
+[
+"Mes listes",
+"Mis listas"
+],
+[
+"Aperçu : {0}",
+"Vista previa: {0}"
+],
+[
+"Rien avec ces filtres.",
+"Nada con estos filtros."
+],
+[
+"Aperçu limité à 300 lignes ; l’export contient tout.",
+"Vista previa limitada a 300 filas; la exportación lo contiene todo."
+],
+[
+"Contacts, travaux, heures, retards, totaux — Excel ou PDF",
+"Contactos, trabajos, horas, retrasos, totales — Excel o PDF"
+],
+[
+"Donnez un nom à la liste",
+"Dé un nombre a la lista"
+],
+[
+"Liste enregistrée",
+"Lista guardada"
+],
+[
+"Supprimer la liste « {0} » ?",
+"¿Eliminar la lista «{0}»?"
+],
+[
+"Travaux terminés (total)",
+"Trabajos terminados (total)"
+],
+[
+"Dépannages / réparations",
+"Averías / reparaciones"
+],
+[
+"Autres travaux",
+"Otros trabajos"
+],
+[
+"Demandes des gérances traitées",
+"Solicitudes de administradoras atendidas"
+],
+[
+"Interventions urgentes",
+"Intervenciones urgentes"
+],
+[
+"Heures réelles (total)",
+"Horas reales (total)"
+],
+[
+"Loyers impayés (mois)",
+"Alquileres impagados (meses)"
+],
+[
+"Loyers impayés (€)",
+"Alquileres impagados (€)"
+],
+[
+"Travaux pas finis en retard",
+"Trabajos sin terminar con retraso"
+],
+[
+"Factures en retard",
+"Facturas vencidas"
+],
+[
+"Factures en retard (€)",
+"Facturas vencidas (€)"
+],
+[
+"Devis émis",
+"Presupuestos emitidos"
+],
+[
+"Devis acceptés",
+"Presupuestos aceptados"
+],
+[
+"Aperçu : {0} lignes",
+"Vista previa: {0} filas"
+],
+[
+"Aperçu : {0} ligne",
+"Vista previa: {0} fila"
+],
+[
+"Aperçu — lignes : {0}",
+"Vista previa — filas: {0}"
 ]
 ];

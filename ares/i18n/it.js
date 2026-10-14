@@ -14419,5 +14419,297 @@ export default [
 [
 "Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème",
 "Pallini che lampeggiano = semaforo: 🟢 oggi / tutto ok · 🟡 presto / domani · 🔴 urgente / problema"
+],
+[
+"Rapports & exports",
+"Report ed esportazioni"
+],
+[
+"Choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.",
+"Scegli cosa, filtra, spunta le colonne, poi Excel o PDF."
+],
+[
+"Contacts",
+"Contatti"
+],
+[
+"Travaux",
+"Lavori"
+],
+[
+"Heures par personne",
+"Ore per persona"
+],
+[
+"Totaux",
+"Totali"
+],
+[
+"Société",
+"Società"
+],
+[
+"Détail",
+"Dettaglio"
+],
+[
+"Heure prévue",
+"Ora prevista"
+],
+[
+"Quoi",
+"Cosa"
+],
+[
+"Qui",
+"Chi"
+],
+[
+"Gérance / demande",
+"Gérance / richiesta"
+],
+[
+"Personne",
+"Persona"
+],
+[
+"Travaux finis",
+"Lavori finiti"
+],
+[
+"Nettoyages",
+"Pulizie"
+],
+[
+"Gros travaux",
+"Grandi lavori"
+],
+[
+"Autres",
+"Altri"
+],
+[
+"Arrivées en retard",
+"Arrivi in ritardo"
+],
+[
+"Type de retard",
+"Tipo di ritardo"
+],
+[
+"Date prévue / échéance",
+"Data prevista / scadenza"
+],
+[
+"Quoi / où",
+"Cosa / dove"
+],
+[
+"Retard (jours)",
+"Ritardo (giorni)"
+],
+[
+"Retard (minutes)",
+"Ritardo (minuti)"
+],
+[
+"Montant (€)",
+"Importo (€)"
+],
+[
+"Indicateur",
+"Indicatore"
+],
+[
+"Ouvriers internes",
+"Operai interni"
+],
+[
+"Sociétés externes",
+"Ditte esterne"
+],
+[
+"Collaborateurs occasionnels",
+"Collaboratori occasionali"
+],
+[
+"Agences immobilières",
+"Agenzie immobiliari"
+],
+[
+"Clients de l’hotel",
+"Clienti dell’hotel"
+],
+[
+"Loyers impayés",
+"Affitti non pagati"
+],
+[
+"Travaux pas finis (date passée)",
+"Lavori non finiti (data passata)"
+],
+[
+"Travaux finis après la date prévue",
+"Lavori finiti dopo la data prevista"
+],
+[
+"Arrivées de l’ouvrier après l’heure prévue",
+"Arrivi dell’operaio dopo l’ora prevista"
+],
+[
+"Factures pas payées à l’échéance",
+"Fatture non pagate alla scadenza"
+],
+[
+"Filtres",
+"Filtri"
+],
+[
+"Colonnes",
+"Colonne"
+],
+[
+"Ce mois",
+"Questo mese"
+],
+[
+"Cette année",
+"Quest’anno"
+],
+[
+"Depuis le début",
+"Dall’inizio"
+],
+[
+"Seulement avec email",
+"Solo con email"
+],
+[
+"Seulement avec téléphone",
+"Solo con telefono"
+],
+[
+"Gérances : ouvrez une fois la page Gérances pour charger leurs coordonnées.",
+"Gérance: apri una volta la pagina Gérances per caricare i loro dati."
+],
+[
+"Toutes",
+"Tutte"
+],
+[
+"Fini par l’ouvrier",
+"Finito dall’operaio"
+],
+[
+"Où / quoi contient",
+"Dove / cosa contiene"
+],
+[
+"ex. rue de Hollerich",
+"es. rue de Hollerich"
+],
+[
+"Nom de la liste (ex. Téléphones collaborateurs)",
+"Nome della lista (es. Telefoni collaboratori)"
+],
+[
+"Enregistrer dans Mes listes",
+"Salva in Le mie liste"
+],
+[
+"Mes listes",
+"Le mie liste"
+],
+[
+"Aperçu : {0}",
+"Anteprima: {0}"
+],
+[
+"Rien avec ces filtres.",
+"Niente con questi filtri."
+],
+[
+"Aperçu limité à 300 lignes ; l’export contient tout.",
+"Anteprima limitata a 300 righe; l’export contiene tutto."
+],
+[
+"Contacts, travaux, heures, retards, totaux — Excel ou PDF",
+"Contatti, lavori, ore, ritardi, totali — Excel o PDF"
+],
+[
+"Donnez un nom à la liste",
+"Dai un nome alla lista"
+],
+[
+"Liste enregistrée",
+"Lista salvata"
+],
+[
+"Supprimer la liste « {0} » ?",
+"Eliminare la lista «{0}»?"
+],
+[
+"Travaux terminés (total)",
+"Lavori finiti (totale)"
+],
+[
+"Dépannages / réparations",
+"Interventi / riparazioni"
+],
+[
+"Autres travaux",
+"Altri lavori"
+],
+[
+"Demandes des gérances traitées",
+"Richieste delle gérance evase"
+],
+[
+"Interventions urgentes",
+"Interventi urgenti"
+],
+[
+"Heures réelles (total)",
+"Ore effettive (totale)"
+],
+[
+"Loyers impayés (mois)",
+"Affitti non pagati (mesi)"
+],
+[
+"Loyers impayés (€)",
+"Affitti non pagati (€)"
+],
+[
+"Travaux pas finis en retard",
+"Lavori non finiti in ritardo"
+],
+[
+"Factures en retard",
+"Fatture in ritardo"
+],
+[
+"Factures en retard (€)",
+"Fatture in ritardo (€)"
+],
+[
+"Devis émis",
+"Preventivi emessi"
+],
+[
+"Devis acceptés",
+"Preventivi accettati"
+],
+[
+"Aperçu : {0} lignes",
+"Anteprima: {0} righe"
+],
+[
+"Aperçu : {0} ligne",
+"Anteprima: {0} riga"
+],
+[
+"Aperçu — lignes : {0}",
+"Anteprima — righe: {0}"
 ]
 ];

@@ -14143,5 +14143,293 @@ export default [
 [
 "Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème",
 "Blinking dots = traffic light: 🟢 today / all good · 🟡 soon / tomorrow · 🔴 urgent / problem"
+],
+[
+"Rapports & exports",
+"Reports & exports"
+],
+[
+"Choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.",
+"Choose what, filter, tick the columns, then Excel or PDF."
+],
+[
+"Travaux",
+"Jobs"
+],
+[
+"Heures par personne",
+"Hours per person"
+],
+[
+"Totaux",
+"Totals"
+],
+[
+"Société",
+"Company"
+],
+[
+"Détail",
+"Detail"
+],
+[
+"Heure prévue",
+"Planned time"
+],
+[
+"Quoi",
+"What"
+],
+[
+"Qui",
+"Who"
+],
+[
+"Gérance / demande",
+"Manager / request"
+],
+[
+"Personne",
+"Person"
+],
+[
+"Travaux finis",
+"Jobs done"
+],
+[
+"Nettoyages",
+"Cleanings"
+],
+[
+"Gros travaux",
+"Major works"
+],
+[
+"Autres",
+"Others"
+],
+[
+"Arrivées en retard",
+"Late arrivals"
+],
+[
+"Type de retard",
+"Type of delay"
+],
+[
+"Date prévue / échéance",
+"Planned date / due date"
+],
+[
+"Quoi / où",
+"What / where"
+],
+[
+"Retard (jours)",
+"Delay (days)"
+],
+[
+"Retard (minutes)",
+"Delay (minutes)"
+],
+[
+"Montant (€)",
+"Amount (€)"
+],
+[
+"Indicateur",
+"Indicator"
+],
+[
+"Ouvriers internes",
+"In-house workers"
+],
+[
+"Sociétés externes",
+"External companies"
+],
+[
+"Collaborateurs occasionnels",
+"Occasional helpers"
+],
+[
+"Agences immobilières",
+"Estate agencies"
+],
+[
+"Clients de l’hotel",
+"Hotel guests"
+],
+[
+"Loyers impayés",
+"Unpaid rents"
+],
+[
+"Travaux pas finis (date passée)",
+"Jobs not finished (date passed)"
+],
+[
+"Travaux finis après la date prévue",
+"Jobs finished after the planned date"
+],
+[
+"Arrivées de l’ouvrier après l’heure prévue",
+"Worker arrivals after the planned time"
+],
+[
+"Factures pas payées à l’échéance",
+"Invoices unpaid at the due date"
+],
+[
+"Filtres",
+"Filters"
+],
+[
+"Colonnes",
+"Columns"
+],
+[
+"Ce mois",
+"This month"
+],
+[
+"Cette année",
+"This year"
+],
+[
+"Depuis le début",
+"Since the start"
+],
+[
+"Seulement avec email",
+"Only with email"
+],
+[
+"Seulement avec téléphone",
+"Only with phone"
+],
+[
+"Gérances : ouvrez une fois la page Gérances pour charger leurs coordonnées.",
+"Property managers: open the Managers page once to load their details."
+],
+[
+"Toutes",
+"All"
+],
+[
+"Fini par l’ouvrier",
+"Finished by the worker"
+],
+[
+"Où / quoi contient",
+"Where / what contains"
+],
+[
+"ex. rue de Hollerich",
+"e.g. rue de Hollerich"
+],
+[
+"Nom de la liste (ex. Téléphones collaborateurs)",
+"List name (e.g. Helpers’ phones)"
+],
+[
+"Enregistrer dans Mes listes",
+"Save to My lists"
+],
+[
+"Mes listes",
+"My lists"
+],
+[
+"Aperçu : {0}",
+"Preview: {0}"
+],
+[
+"Rien avec ces filtres.",
+"Nothing with these filters."
+],
+[
+"Aperçu limité à 300 lignes ; l’export contient tout.",
+"Preview limited to 300 rows; the export contains everything."
+],
+[
+"Contacts, travaux, heures, retards, totaux — Excel ou PDF",
+"Contacts, jobs, hours, delays, totals — Excel or PDF"
+],
+[
+"Donnez un nom à la liste",
+"Give the list a name"
+],
+[
+"Liste enregistrée",
+"List saved"
+],
+[
+"Supprimer la liste « {0} » ?",
+"Delete the list “{0}”?"
+],
+[
+"Travaux terminés (total)",
+"Jobs done (total)"
+],
+[
+"Dépannages / réparations",
+"Call-outs / repairs"
+],
+[
+"Autres travaux",
+"Other jobs"
+],
+[
+"Demandes des gérances traitées",
+"Managers’ requests handled"
+],
+[
+"Interventions urgentes",
+"Urgent jobs"
+],
+[
+"Heures réelles (total)",
+"Actual hours (total)"
+],
+[
+"Loyers impayés (mois)",
+"Unpaid rents (months)"
+],
+[
+"Loyers impayés (€)",
+"Unpaid rents (€)"
+],
+[
+"Travaux pas finis en retard",
+"Unfinished jobs overdue"
+],
+[
+"Factures en retard",
+"Overdue invoices"
+],
+[
+"Factures en retard (€)",
+"Overdue invoices (€)"
+],
+[
+"Devis émis",
+"Quotes issued"
+],
+[
+"Devis acceptés",
+"Quotes accepted"
+],
+[
+"Aperçu : {0} lignes",
+"Preview: {0} rows"
+],
+[
+"Aperçu : {0} ligne",
+"Preview: {0} row"
+],
+[
+"Aperçu — lignes : {0}",
+"Preview — rows: {0}"
 ]
 ];
