@@ -14715,5 +14715,109 @@ export default [
 [
 "Statistiques sur mesure",
 "Estadísticas a medida"
+],
+[
+"Sociétés (gérances)",
+"Empresas (administradoras)"
+],
+[
+"Lieux",
+"Lugares"
+],
+[
+"Rechercher…",
+"Buscar…"
+],
+[
+"Tout cocher",
+"Marcar todo"
+],
+[
+"Tout décocher",
+"Desmarcar todo"
+],
+[
+"— sans personne —",
+"— sin persona —"
+],
+[
+"Sans personne",
+"Sin persona"
+],
+[
+"Nos immeubles et clients directs",
+"Nuestros edificios y clientes directos"
+],
+[
+"Graphiques",
+"Gráficos"
+],
+[
+"Rapport direction (PDF)",
+"Informe dirección (PDF)"
+],
+[
+"Rapport direction {0} – {1}",
+"Informe dirección {0} – {1}"
+],
+[
+"Arrivées à l’heure",
+"Llegadas puntuales"
+],
+[
+"Clients satisfaits",
+"Clientes satisfechos"
+],
+[
+"Travaux par type",
+"Trabajos por tipo"
+],
+[
+"Travaux finis par mois",
+"Trabajos terminados por mes"
+],
+[
+"Par personne (travaux · heures)",
+"Por persona (trabajos · horas)"
+],
+[
+"Ponctualité",
+"Puntualidad"
+],
+[
+"Fin des travaux",
+"Fin de los trabajos"
+],
+[
+"Arrivée de l’ouvrier",
+"Llegada del operario"
+],
+[
+"À temps",
+"A tiempo"
+],
+[
+"En retard",
+"Con retraso"
+],
+[
+"À l’heure",
+"Puntual"
+],
+[
+"Avis des clients (locataires)",
+"Opinión de los clientes (inquilinos)"
+],
+[
+"{0} avis",
+"{0} valoraciones"
+],
+[
+"moyenne {0} / 4",
+"media {0} / 4"
+],
+[
+"Filtres : {0}",
+"Filtros: {0}"
 ]
 ];

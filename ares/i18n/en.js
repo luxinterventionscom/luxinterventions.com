@@ -14451,5 +14451,109 @@ export default [
 [
 "Statistiques sur mesure",
 "Custom statistics"
+],
+[
+"Sociétés (gérances)",
+"Companies (managers)"
+],
+[
+"Lieux",
+"Places"
+],
+[
+"Rechercher…",
+"Search…"
+],
+[
+"Tout cocher",
+"Tick all"
+],
+[
+"Tout décocher",
+"Untick all"
+],
+[
+"— sans personne —",
+"— nobody —"
+],
+[
+"Sans personne",
+"Nobody"
+],
+[
+"Nos immeubles et clients directs",
+"Our buildings and direct clients"
+],
+[
+"Graphiques",
+"Charts"
+],
+[
+"Rapport direction (PDF)",
+"Management report (PDF)"
+],
+[
+"Rapport direction {0} – {1}",
+"Management report {0} – {1}"
+],
+[
+"Arrivées à l’heure",
+"On-time arrivals"
+],
+[
+"Clients satisfaits",
+"Satisfied clients"
+],
+[
+"Travaux par type",
+"Jobs by type"
+],
+[
+"Travaux finis par mois",
+"Jobs done per month"
+],
+[
+"Par personne (travaux · heures)",
+"Per person (jobs · hours)"
+],
+[
+"Ponctualité",
+"Punctuality"
+],
+[
+"Fin des travaux",
+"End of works"
+],
+[
+"Arrivée de l’ouvrier",
+"Worker arrival"
+],
+[
+"À temps",
+"On time"
+],
+[
+"En retard",
+"Late"
+],
+[
+"À l’heure",
+"On time"
+],
+[
+"Avis des clients (locataires)",
+"Client ratings (tenants)"
+],
+[
+"{0} avis",
+"{0} ratings"
+],
+[
+"moyenne {0} / 4",
+"average {0} / 4"
+],
+[
+"Filtres : {0}",
+"Filters: {0}"
 ]
 ];

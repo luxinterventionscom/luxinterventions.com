@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.126.1';
+const VERSION = '2.127.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3189,8 +3189,24 @@ const RPT_SRC = {
 };
 const RPT_WHO = { loc: 'Locataires', interne: 'Ouvriers internes', societe: 'Sociétés externes', prive: 'Collaborateurs occasionnels', agence: 'Agences immobilières', ger: 'Gérances', hote: 'Clients de l’hotel' };
 const RPT_LATE = { loyer: 'Loyers impayés', topen: 'Travaux pas finis (date passée)', tfin: 'Travaux finis après la date prévue', arr: 'Arrivées de l’ouvrier après l’heure prévue', fact: 'Factures pas payées à l’échéance' };
-const rptDef = () => ({ src: 'contacts', from: today().slice(0, 4) + '-01-01', to: today(), who: Object.keys(RPT_WHO), late: Object.keys(RPT_LATE), genre: Object.keys(INT_GENRES), withMail: false, withTel: false, ttype: '', tstat: '', person: '', q: '', cols: {} });
+const rptDef = () => ({ src: 'contacts', from: today().slice(0, 4) + '-01-01', to: today(), who: Object.keys(RPT_WHO), late: Object.keys(RPT_LATE), genre: Object.keys(INT_GENRES), withMail: false, withTel: false, ttype: '', tstat: '', persons: null, orgs: null, lieux: null, q: '', cols: {} });
 const rptCfg = () => (ui.rpt = ui.rpt || rptDef());
+// filtres à cocher : personnes, sociétés (gérances), lieux — null = tous
+const rptPlace = (t) => (t.immId && !t.lieu ? 'i:' + t.immId : 'l:' + String((t.lieu && (t.lieu.adr || t.lieu.nom)) || (t.ptl && (t.ptl.adr || t.ptl.res)) || (t.dev && (t.dev.adr || t.dev.client)) || '').toLowerCase().replace(/\s+/g, ' ').trim());
+const rptOrg = (t) => (t.ptl ? t.ptl.org || '' : '');
+const rptOk = (t, c) => (!c.persons || c.persons.includes(t.intervenantId || '')) && (!c.orgs || c.orgs.includes(rptOrg(t))) && (!c.lieux || c.lieux.includes(rptPlace(t)));
+const rptPickData = () => {
+  const T = vault.list('taches'), seen = new Map(), orgs = new Set();
+  for (const t of T) { const k = rptPlace(t); if (k.length > 2 && !seen.has(k)) seen.set(k, placeName(t).replace(/^[📍📝🏢]\s?/u, '')); orgs.add(rptOrg(t)); }
+  return {
+    persons: [['', '— sans personne —'], ...vault.list('intervenants').filter((i) => !i.archive || T.some((t) => t.intervenantId === i.id)).sort((a, b) => intervFull(a).localeCompare(intervFull(b))).map((i) => [i.id, `${intervFull(i)} · ${RPT_WHO[i.genre || 'interne']}`])],
+    orgs: [...orgs].sort().map((o) => [o, o || 'Nos immeubles et clients directs']),
+    lieux: [...seen].sort((a, b) => a[1].localeCompare(b[1])),
+  };
+};
+const rptPick = (k, title, items, sel) => html`<details class="rpt-pick" data-k="${k}" ${ui.rptOpen === k ? new Raw('open') : ''}><summary>${title} <b>(${sel ? sel.length : items.length}/${items.length})</b></summary>
+  <div class="rpt-pick-tools"><input type="search" data-input="rpt-pick-q" placeholder="Rechercher…" autocomplete="off"><button class="btn sm" data-action="rpt-all" data-k="${k}">Tout cocher</button><button class="btn sm" data-action="rpt-none" data-k="${k}">Tout décocher</button></div>
+  <div class="rpt-pick-list">${items.map(([v, l]) => html`<label data-q="${String(l).toLowerCase()}"><input type="checkbox" class="rpt-cb" data-input="rpt-set" data-k="${k}" value="${v}" ${!sel || sel.includes(v) ? new Raw('checked') : ''}>${l}</label>`)}</div></details>`;
 const rptCols = (c) => c.cols[c.src] || RPT_SRC[c.src][2] || RPT_SRC[c.src][1].map(([k]) => k);
 const daysBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5);
 // arrivée / départ notés par l'ouvrier ce jour-là (journal de l'app de l'équipe)
@@ -3205,8 +3221,8 @@ const jobQty = (t, d) => { const q = (t.fini && t.fini.qte ? t.fini : null) || [
 const jobDay = (t) => (t.statut === 'fait' ? t.doneDate || t.date : t.fini ? t.fini.d : t.date) || '';
 const inPer = (d, c) => d && d >= c.from && d <= c.to;
 function rptRetards(c) {
-  const out = [], T = today(), on = new Set(c.late), pers = (t) => !c.person || t.intervenantId === c.person;
-  if (on.has('loyer') && !c.person) {
+  const out = [], T = today(), on = new Set(c.late), pers = (t) => rptOk(t, c);
+  if (on.has('loyer') && !c.persons && !c.orgs && !c.lieux) {
     for (const l of currentLocs()) {
       for (let y = +c.from.slice(0, 4); y <= +c.to.slice(0, 4); y++) for (let m = 1; m <= 12; m++) {
         const d = `${y}-${String(m).padStart(2, '0')}-01`;
@@ -3241,26 +3257,26 @@ function rptRows(c) {
   }
   if (c.src === 'travaux') {
     const q = String(c.q || '').toLowerCase();
-    return vault.list('taches').filter((t) => !t.recur).map((t) => ({ t, d: jobDay(t) })).filter(({ t, d }) => inPer(d, c) && (!c.ttype || t.type === c.ttype) && (!c.tstat || (c.tstat === 'fini' ? t.statut !== 'fait' && t.fini : t.statut === c.tstat)) && (!c.person || t.intervenantId === c.person) && (!q || `${t.titre} ${placeName(t)}`.toLowerCase().includes(q)))
+    return vault.list('taches').filter((t) => !t.recur).map((t) => ({ t, d: jobDay(t) })).filter(({ t, d }) => inPer(d, c) && (!c.ttype || t.type === c.ttype) && (!c.tstat || (c.tstat === 'fini' ? t.statut !== 'fait' && t.fini : t.statut === c.tstat)) && rptOk(t, c) && (!q || `${t.titre} ${placeName(t)}`.toLowerCase().includes(q)))
       .map(({ t, d }) => { const w = vault.get('intervenants', t.intervenantId), k = jobTimes(t, d); return { date: d, heure: t.heure || '', type: (TACHE_TYPES[t.type] || t.type || '').replace(/^\S+\s/, ''), titre: t.titre, lieu: placeName(t).replace(/^[📍📝🏢]\s?/u, ''), qui: w ? intervFull(w) : '', statut: t.statut !== 'fait' && t.fini ? 'Fini par l’ouvrier' : STATUTS[t.statut] || '', urg: t.urgent ? 'oui' : '', arr: k.arr, dep: k.dep, h: k.h || '', ...jobQty(t, d), cout: t.cout || '', ger: t.ptl ? `${t.ptl.org} #${t.ptl.ref}` : '' }; })
       .sort((a, b) => a.date.localeCompare(b.date));
   }
   if (c.src === 'heures') {
     const by = new Map(), lateBy = new Map();
-    for (const r of rptRetards({ ...c, late: ['arr'], person: '' })) lateBy.set(r.qui, (lateBy.get(r.qui) || 0) + 1);
-    for (const t of vault.list('taches').filter((t) => !t.recur && (t.statut === 'fait' || t.fini) && t.intervenantId)) {
+    for (const r of rptRetards({ ...c, late: ['arr'] })) lateBy.set(r.qui, (lateBy.get(r.qui) || 0) + 1);
+    for (const t of vault.list('taches').filter((t) => !t.recur && (t.statut === 'fait' || t.fini) && t.intervenantId && rptOk(t, c))) {
       const d = jobDay(t); if (!inPer(d, c)) continue;
       const o = by.get(t.intervenantId) || { n: 0, h: 0, nettoyage: 0, reparation: 0, gros: 0, autre: 0 };
       o.n++; o.h += jobTimes(t, d).h; o[TACHE_TYPES[t.type] ? t.type : 'autre']++; by.set(t.intervenantId, o);
     }
-    return vault.list('intervenants').filter((i) => c.genre.includes(i.genre || 'interne') && (!c.person || i.id === c.person) && (!i.archive || by.has(i.id))).map((i) => {
+    return vault.list('intervenants').filter((i) => c.genre.includes(i.genre || 'interne') && (!c.persons || c.persons.includes(i.id)) && (!i.archive || by.has(i.id))).map((i) => {
       const o = by.get(i.id) || { n: 0, h: 0, nettoyage: 0, reparation: 0, gros: 0, autre: 0 };
       return { qui: intervFull(i), cat: RPT_WHO[i.genre || 'interne'], metier: METIERS[i.metier] || '', ...o, h: Math.round(o.h * 100) / 100, late: lateBy.get(intervFull(i)) || 0 };
     }).sort((a, b) => b.h - a.h || b.n - a.n || a.qui.localeCompare(b.qui));
   }
   if (c.src === 'retards') return rptRetards(c);
   // totaux de la période
-  const T = vault.list('taches').filter((t) => !t.recur && (!c.person || t.intervenantId === c.person));
+  const T = vault.list('taches').filter((t) => !t.recur && rptOk(t, c)), all = !c.persons && !c.orgs && !c.lieux;
   const done = T.filter((t) => (t.statut === 'fait' || t.fini) && inPer(jobDay(t), c)), cnt = (k) => done.filter((t) => (TACHE_TYPES[t.type] ? t.type : 'autre') === k).length;
   const R = rptRetards({ ...c, late: Object.keys(RPT_LATE) }), rc = (k) => R.filter((r) => r.type === RPT_LATE[k]);
   const dv = vault.list('devis').filter((v) => inPer(v.date || '', c));
@@ -3269,21 +3285,70 @@ function rptRows(c) {
     ['Demandes des gérances traitées', done.filter((t) => t.ptl).length], ['Interventions urgentes', done.filter((t) => t.urgent).length],
     ['Heures réelles (total)', Math.round(done.reduce((n, t) => n + jobTimes(t, jobDay(t)).h, 0) * 100) / 100],
     ...Object.entries(done.reduce((m, t) => { const q = jobQty(t, jobDay(t)); if (q.qte) { const u = (q.qu || 'pièces').toLowerCase(); m[u] = Math.round(((m[u] || 0) + q.qte) * 100) / 100; } return m; }, {})).sort().map(([u, n]) => [`Quantité faite — ${u}`, n]),
-    ...(c.person ? [] : [['Loyers impayés (mois)', rc('loyer').length], ['Loyers impayés (€)', Math.round(rc('loyer').reduce((n, r) => n + (+r.montant || 0), 0) * 100) / 100]]),
+    ...(!all ? [] : [['Loyers impayés (mois)', rc('loyer').length], ['Loyers impayés (€)', Math.round(rc('loyer').reduce((n, r) => n + (+r.montant || 0), 0) * 100) / 100]]),
     ['Travaux pas finis en retard', rc('topen').length], ['Travaux finis après la date prévue', rc('tfin').length], ['Arrivées en retard', rc('arr').length],
     ['Factures en retard', rc('fact').length], ['Factures en retard (€)', Math.round(rc('fact').reduce((n, r) => n + (+r.montant || 0), 0) * 100) / 100],
-    ...(c.person ? [] : [['Devis émis', dv.length], ['Devis acceptés', dv.filter((v) => v.st === 'accepte' || v.acc).length]]),
+    ...(!all ? [] : [['Devis émis', dv.length], ['Devis acceptés', dv.filter((v) => v.st === 'accepte' || v.acc).length]]),
   ].map(([ind, val]) => ({ ind, val }));
 }
 const rptVal = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v.split('-').reverse().join('/') : v ?? '');
 const rptTable = (c) => { const cols = rptCols(c), L = Object.fromEntries(RPT_SRC[c.src][1]); const rows = rptRows(c); return { head: cols.map((k) => L[k]), rows: rows.map((r) => cols.map((k) => rptVal(r[k]))), n: rows.length }; };
 const rptTitle = (c) => `${RPT_SRC[c.src][0].replace(/^\S+\s/, '')}${c.src === 'contacts' ? '' : ` ${fmtDate(c.from)} – ${fmtDate(c.to)}`}`;
 const rptChk = (k, v, on, label) => html`<label class="chip" style="cursor:pointer"><input type="checkbox" data-input="rpt-arr" data-k="${k}" value="${v}" ${on ? new Raw('checked') : ''} class="rpt-cb">${label}</label>`;
+// ── Graphiques (SVG, s'impriment) : chiffres clés, types, mois, personnes, ponctualité, avis des clients ──
+const VZ = { s: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100'], good: '#0ca30c', bad: '#d03b3b', blue: '#2a78d6', sat: ['#d03b3b', '#ec835a', '#86b6ef', '#2a78d6'] };
+function rptChartData(c) {
+  const T = vault.list('taches').filter((t) => !t.recur && rptOk(t, c));
+  const done = T.filter((t) => (t.statut === 'fait' || t.fini) && inPer(jobDay(t), c));
+  const types = Object.keys(TACHE_TYPES).map((k) => [TACHE_TYPES[k].replace(/^\S+\s/, ''), done.filter((t) => (TACHE_TYPES[t.type] ? t.type : 'autre') === k).length]);
+  const months = new Map();
+  for (const t of done) { const m = jobDay(t).slice(0, 7); months.set(m, (months.get(m) || 0) + 1); }
+  const mList = []; for (let d = new Date(c.from.slice(0, 7) + '-01T12:00:00'), end = c.to.slice(0, 7); ; d.setMonth(d.getMonth() + 1)) { const m = d.toISOString().slice(0, 7); if (m > end || mList.length > 36) break; mList.push(m); }
+  const byP = new Map();
+  for (const t of done) { const k = t.intervenantId || ''; const o = byP.get(k) || { n: 0, h: 0 }; o.n++; o.h += jobTimes(t, jobDay(t)).h; byP.set(k, o); }
+  const onTime = done.filter((t) => !t.date || jobDay(t) <= t.date).length;
+  let arrOk = 0, arrLate = 0;
+  for (const t of T) if (t.heure) for (const x of (t.journal || []).filter((x) => x.st === 'encours' && inPer(x.d, c))) { const h = x.h || (x.at || '').slice(11, 16); if (h) (hm(h) > hm(t.heure) ? arrLate++ : arrOk++); }
+  const ev = []; for (const i of vault.list('intervenants')) if (!c.persons || c.persons.includes(i.id)) for (const e of i.evals || []) if (inPer(e.d, c) && e.v >= 1 && e.v <= 4) ev.push(e.v);
+  return { n: done.length, h: Math.round(done.reduce((n, t) => n + jobTimes(t, jobDay(t)).h, 0) * 10) / 10, types,
+    months: (mList.length > 24 ? mList.slice(-24) : mList).map((m) => [m, months.get(m) || 0]),
+    persons: [...byP].map(([k, o]) => [k ? intervName(k) || '?' : 'Sans personne', o.n, Math.round(o.h * 10) / 10]).sort((a, b) => b[1] - a[1]).slice(0, 12),
+    fin: [onTime, done.length - onTime], arr: [arrOk, arrLate], ev: [1, 2, 3, 4].map((v) => ev.filter((x) => x === v).length) };
+}
+const svgDonut = (parts) => {
+  const tot = parts.reduce((n, p) => n + p[1], 0); if (!tot) return '';
+  let a = -Math.PI / 2; const R = 60, r = 36, cx = 70, cy = 70;
+  const arcs = parts.map(([l, v], i) => { if (!v) return ''; const b = a + (v / tot) * Math.PI * 2 - (v < tot ? 0.03 : 0); const big = b - a > Math.PI ? 1 : 0;
+    const P = (ang, rad) => `${(cx + rad * Math.cos(ang)).toFixed(2)} ${(cy + rad * Math.sin(ang)).toFixed(2)}`;
+    const d = v === tot ? `M ${P(-Math.PI / 2, R)} A ${R} ${R} 0 1 1 ${P(Math.PI * 1.4999, R)} L ${P(Math.PI * 1.4999, r)} A ${r} ${r} 0 1 0 ${P(-Math.PI / 2, r)} Z` : `M ${P(a, R)} A ${R} ${R} 0 ${big} 1 ${P(b, R)} L ${P(b, r)} A ${r} ${r} 0 ${big} 0 ${P(a, r)} Z`;
+    a = b + (v < tot ? 0.03 : 0); return `<path d="${d}" fill="${VZ.s[i % 4]}"><title>${esc(l)} : ${v} (${pct(v, tot)} %)</title></path>`; }).join('');
+  return `<svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="Répartition">${arcs}<text x="70" y="76" text-anchor="middle" font-size="18" font-weight="700" fill="currentColor">${tot}</text></svg>`;
+};
+const svgBars = (rows, color, unit = '') => {
+  const max = Math.max(1, ...rows.map((r) => r[1])), W = Math.max(rows.length * 34, 200), H = 150;
+  return `<svg viewBox="0 0 ${W} ${H + 34}" width="100%" style="max-width:${W}px" role="img">${rows.map(([l, v], i) => { const h = Math.round((v / max) * H), x = i * 34 + 6;
+    return `<g><title>${esc(l)} : ${v}${unit}</title><rect x="${x}" y="${H - h + 4}" width="22" height="${Math.max(h, v ? 2 : 0)}" rx="4" fill="${color}"/>${v ? `<text x="${x + 11}" y="${H - h}" text-anchor="middle" font-size="10" fill="currentColor">${v}</text>` : ''}<text x="${x + 11}" y="${H + 20}" text-anchor="middle" font-size="9" fill="currentColor" opacity=".7">${esc(l)}</text></g>`; }).join('')}<line x1="0" x2="${W}" y1="${H + 4}" y2="${H + 4}" stroke="currentColor" opacity=".25"/></svg>`;
+};
+const hBars = (rows) => { const max = Math.max(1, ...rows.map((r) => r[1])); return rows.map(([l, n, h]) => `<div class="vz-hb"><span class="vz-hl">${esc(l)}</span><span class="vz-ht"><i style="width:${Math.max(2, (n / max) * 100)}%;background:${VZ.blue}"></i></span><span class="vz-hv">${n} · ${String(h).replace('.', ',')} h</span></div>`).join(''); };
+const stack = (parts) => { const tot = parts.reduce((n, p) => n + p[1], 0); if (!tot) return '<p class="tiny muted">—</p>'; return `<div class="vz-stack">${parts.map(([l, v, col]) => (v ? `<i style="flex:${v};background:${col}" title="${esc(l)} : ${v} (${pct(v, tot)} %)"></i>` : '')).join('')}</div><div class="vz-leg">${parts.map(([l, v, col]) => `<span><i style="background:${col}"></i>${esc(l)} : <b>${v}</b> (${pct(v, tot)} %)</span>`).join('')}</div>`; };
+function rptChartsHtml(d) {
+  const evN = d.ev.reduce((a, b) => a + b, 0), sat = pct(d.ev[2] + d.ev[3], evN), arrN = d.arr[0] + d.arr[1];
+  const tiles = [['Travaux finis', d.n], ['Heures réelles', String(d.h).replace('.', ',')], ['Arrivées à l’heure', arrN ? pct(d.arr[0], arrN) + ' %' : '—'], ['Clients satisfaits', evN ? sat + ' %' : '—']];
+  return new Raw(`<div class="vz">
+    <div class="vz-tiles">${tiles.map(([l, v]) => `<div class="vz-tile"><div class="vz-tv">${v}</div><div class="vz-tl">${l}</div></div>`).join('')}</div>
+    <div class="vz-grid">
+      <div class="vz-card"><h4>Travaux par type</h4><div class="vz-donut">${svgDonut(d.types) || '<p class="tiny muted">—</p>'}<div class="vz-leg col">${d.types.map(([l, v], i) => `<span><i style="background:${VZ.s[i]}"></i>${l} : <b>${v}</b> (${pct(v, d.n)} %)</span>`).join('')}</div></div></div>
+      <div class="vz-card"><h4>Travaux finis par mois</h4>${svgBars(d.months.map(([m, v]) => [m.slice(5) + '/' + m.slice(2, 4), v]), VZ.blue)}</div>
+      <div class="vz-card"><h4>Par personne (travaux · heures)</h4>${d.persons.length ? hBars(d.persons) : '<p class="tiny muted">—</p>'}</div>
+      <div class="vz-card"><h4>Ponctualité</h4><p class="tiny" style="margin:0 0 4px">Fin des travaux</p>${stack([['✅ À temps', d.fin[0], VZ.good], ['⏰ En retard', d.fin[1], VZ.bad]])}<p class="tiny" style="margin:10px 0 4px">Arrivée de l’ouvrier</p>${stack([['✅ À l’heure', d.arr[0], VZ.good], ['⏰ En retard', d.arr[1], VZ.bad]])}</div>
+      <div class="vz-card"><h4>Avis des clients (locataires)</h4>${stack([1, 2, 3, 4].map((v, i) => [MEN_EVAL[v], d.ev[i], VZ.sat[i]]))}<p class="tiny muted" style="margin:6px 0 0">${evN} avis${evN ? ' · moyenne ' + (d.ev.reduce((n, x, i) => n + x * (i + 1), 0) / evN).toFixed(1).replace('.', ',') + ' / 4' : ''}</p></div>
+    </div></div>`);
+}
 function rptView() {
   const c = rptCfg(), L = RPT_SRC[c.src], cols = rptCols(c), tb = rptTable(c);
   const saved = ((vault.get('reglages', 'rapports') || {}).list) || [];
-  const people = vault.list('intervenants').filter((i) => !i.archive).sort((a, b) => intervFull(a).localeCompare(intervFull(b)));
-  const persSel = html`<label class="field">Personne<select data-input="rpt" data-k="person"><option value="">Toutes</option>${people.map((i) => html`<option value="${i.id}" ${c.person === i.id ? new Raw('selected') : ''}>${intervFull(i)}</option>`)}</select></label>`;
+  const pd = rptPickData();
+  const persSel = html`<div class="rpt-picks">${rptPick('persons', '👷 Personnes', pd.persons, c.persons)}${c.src === 'heures' ? '' : html`${rptPick('orgs', '🏢 Sociétés (gérances)', pd.orgs, c.orgs)}${rptPick('lieux', '📍 Lieux', pd.lieux, c.lieux)}`}</div>`;
   const y = +today().slice(0, 4), m = today().slice(0, 7);
   const per = c.src === 'contacts' ? '' : html`<div class="fields" style="margin-bottom:6px">
       <label class="field">Du<input type="date" data-input="rpt" data-k="from" value="${c.from}"></label><label class="field">Au<input type="date" data-input="rpt" data-k="to" value="${c.to}"></label></div>
@@ -3294,10 +3359,10 @@ function rptView() {
     : c.src === 'travaux' ? html`<div class="fields">
         <label class="field">Type<select data-input="rpt" data-k="ttype"><option value="">Tous</option>${Object.entries(TACHE_TYPES).map(([k, l]) => html`<option value="${k}" ${c.ttype === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
         <label class="field">Statut<select data-input="rpt" data-k="tstat"><option value="">Tous</option>${[...Object.entries(STATUTS), ['fini', 'Fini par l’ouvrier']].map(([k, l]) => html`<option value="${k}" ${c.tstat === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
-        ${persSel}<label class="field">Où / quoi contient<input type="search" data-input="rpt" data-k="q" value="${c.q || ''}" placeholder="ex. rue de Hollerich"></label></div>`
-    : c.src === 'heures' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(INT_GENRES).map(([k]) => rptChk('genre', k, c.genre.includes(k), RPT_WHO[k]))}</div><div class="fields">${persSel}</div>`
-    : c.src === 'retards' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(RPT_LATE).map(([k, l]) => rptChk('late', k, c.late.includes(k), l))}</div><div class="fields">${persSel}</div>`
-    : html`<div class="fields">${persSel}</div>`;
+        <label class="field">Où / quoi contient<input type="search" data-input="rpt" data-k="q" value="${c.q || ''}" placeholder="ex. rue de Hollerich"></label></div>${persSel}`
+    : c.src === 'heures' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(INT_GENRES).map(([k]) => rptChk('genre', k, c.genre.includes(k), RPT_WHO[k]))}</div>${persSel}`
+    : c.src === 'retards' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(RPT_LATE).map(([k, l]) => rptChk('late', k, c.late.includes(k), l))}</div>${persSel}`
+    : persSel;
   return html`<button class="btn sm ghost" style="margin-bottom:8px" data-action="rpt-back">← Statistiques</button>${pageHead('🖨️ Statistiques sur mesure', 'Statistiques : choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.')}
     <div class="chips" style="margin-bottom:12px">${Object.entries(RPT_SRC).map(([k, [l]]) => html`<button class="chip" data-action="rpt-src" data-id="${k}" aria-pressed="${c.src === k}">${l}</button>`)}</div>
     ${saved.length ? html`<div class="section-label">⭐ Mes listes</div><div class="chips" style="margin-bottom:12px">${saved.map((s) => html`<span class="chip" style="display:inline-flex;gap:6px;align-items:center"><button style="border:0;background:none;font:inherit;color:inherit;cursor:pointer;padding:0" data-action="rpt-load" data-id="${s.id}">${s.nom}</button><button style="border:0;background:none;cursor:pointer;padding:0" data-action="rpt-del" data-id="${s.id}" aria-label="Supprimer">✕</button></span>`)}</div>` : ''}
@@ -3308,7 +3373,9 @@ function rptView() {
       <button class="btn" data-action="rpt-print" ${tb.n && cols.length ? '' : new Raw('disabled')}>🖨️ Imprimer / PDF</button>
       <span class="rpt-save"><input id="rptName" placeholder="Nom de la liste (ex. Téléphones collaborateurs)" style="min-width:220px"><button class="btn" data-action="rpt-save">💾 Enregistrer dans Mes listes</button></span></div>
     <div class="section-label">Aperçu — lignes : ${tb.n}</div>
-    ${tb.n && cols.length ? html`<div style="overflow-x:auto"><table class="tbl rpt-tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.slice(0, 300).map((r) => html`<tr>${r.map((v) => html`<td>${v}</td>`)}</tr>`)}</tbody></table></div>${tb.n > 300 ? html`<p class="tiny muted">Aperçu limité à 300 lignes ; l’export contient tout.</p>` : ''}` : html`<p class="muted">Rien avec ces filtres.</p>`}`;
+    ${tb.n && cols.length ? html`<div style="overflow-x:auto"><table class="tbl rpt-tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.slice(0, 300).map((r) => html`<tr>${r.map((v) => html`<td>${v}</td>`)}</tr>`)}</tbody></table></div>${tb.n > 300 ? html`<p class="tiny muted">Aperçu limité à 300 lignes ; l’export contient tout.</p>` : ''}` : html`<p class="muted">Rien avec ces filtres.</p>`}
+    ${c.src === 'contacts' ? '' : html`<div class="section-label" style="margin-top:22px">📊 Graphiques</div>${rptChartsHtml(rptChartData(c))}
+      <button class="btn primary" style="margin-top:8px" data-action="rpt-dir">🖨️ Rapport direction (PDF)</button>`}`;
 }
 
 const VIEWS = {
@@ -6403,6 +6470,11 @@ const ACTIONS = {
   // Maintenance › Équipe : « 📌 Affectation » sans ouvrier → on choisit d'abord l'ouvrier
   'aff-pick': () => openOver('aff-pick'),
   'open-rapports': () => { ui.cpSec = 'stats'; go('rapports'); },
+  'rpt-all': (d) => { rptCfg()[d.k] = null; ui.rptOpen = d.k; renderView(); },
+  'rpt-none': (d) => { rptCfg()[d.k] = []; ui.rptOpen = d.k; renderView(); },
+  'rpt-dir': () => { const c = rptCfg(), d = rptChartData(c), tb = rptTable({ ...c, src: 'totaux', cols: {} });
+    const f = (k, l) => (c[k] ? `${l} : ${c[k].length}` : ''); const sel = [f('persons', 'personnes'), f('orgs', 'sociétés'), f('lieux', 'lieux')].filter(Boolean).join(' · ');
+    printDoc(`Rapport direction ${fmtDate(c.from)} – ${fmtDate(c.to)}`, html`${sel ? html`<p class="tiny">Filtres : ${sel}</p>` : ''}${rptChartsHtml(d)}<h3 style="margin-top:16px">Totaux</h3><table class="pr-tbl"><tbody>${tb.rows.map((r) => html`<tr><td>${r[0]}</td><td style="text-align:right">${r[1]}</td></tr>`)}</tbody></table>`); },
   'rpt-back': () => { ui.cpSec = 'stats'; go('compta'); },
   'rpt-src': (d) => { rptCfg().src = d.id; renderView(); },
   'rpt-per': (d) => { const c = rptCfg(); c.from = d.f; c.to = d.t; renderView(); },
@@ -6415,7 +6487,7 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('reglages', { id: 'rapports', list: [...list, { id: uid(), nom: nom.slice(0, 60), cfg: JSON.parse(JSON.stringify(rptCfg())) }].slice(-30) }), 'Rapports : liste enregistrée', nom);
     toast('Liste enregistrée'); renderView();
   },
-  'rpt-load': (d) => { const s = (((vault.get('reglages', 'rapports') || {}).list) || []).find((x) => x.id === d.id); if (s) { ui.rpt = { ...rptDef(), ...JSON.parse(JSON.stringify(s.cfg)) }; renderView(); } },
+  'rpt-load': (d) => { const s = (((vault.get('reglages', 'rapports') || {}).list) || []).find((x) => x.id === d.id); if (s) { ui.rpt = { ...rptDef(), ...JSON.parse(JSON.stringify(s.cfg)) }; if (ui.rpt.person) { ui.rpt.persons = [ui.rpt.person]; delete ui.rpt.person; } renderView(); } },
   async 'rpt-del'(d) {
     const r = vault.get('reglages', 'rapports') || {}, s = (r.list || []).find((x) => x.id === d.id);
     if (!s || !(await confirmBox('Supprimer la liste « ' + s.nom + ' » ?', { ok: 'Supprimer', danger: true }))) return;
@@ -8556,6 +8628,7 @@ document.addEventListener('input', (e) => {
   }
   const k = e.target.dataset.input;
   if (k === 'esp-search') filterEspList();
+  if (k === 'rpt-pick-q') { const q = e.target.value.trim().toLowerCase(); e.target.closest('.rpt-pick').querySelectorAll('.rpt-pick-list label').forEach((l) => { l.hidden = !!q && !l.dataset.q.includes(q); }); }
   if (k === 'lieu-q') {
     const ws = lieuQ(e.target.value).split(/\s+/).filter(Boolean), box = $('#lieuList');
     let hit = 0; box.querySelectorAll('[data-q]').forEach((r) => { const ok = ws.every((w) => r.dataset.q.includes(w)); r.hidden = !ok; hit += ok; });
@@ -8632,6 +8705,10 @@ document.addEventListener('change', (e) => {
   // « 🕓 Compléter plus tard » : IBAN / BIC / banque ne sont plus obligatoires
   if (k === 'bank-later') e.target.form.querySelectorAll('[data-bank]').forEach((x) => { x.required = !e.target.checked; });
   // 📊 Rapports : filtres, cases à cocher, colonnes
+  if (k === 'rpt-set') {
+    const c = rptCfg(), box = e.target.closest('.rpt-pick'), cbs = [...box.querySelectorAll('[data-input=rpt-set]')], on = cbs.filter((x) => x.checked).map((x) => x.value);
+    c[e.target.dataset.k] = on.length === cbs.length ? null : on; ui.rptOpen = e.target.dataset.k; renderView();
+  }
   if (k === 'rpt' || k === 'rpt-arr' || k === 'rpt-col') {
     const c = rptCfg(), t = e.target, key = t.dataset.k;
     if (k === 'rpt') c[key] = t.value;
