@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.126.0';
+const VERSION = '2.126.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3298,7 +3298,7 @@ function rptView() {
     : c.src === 'heures' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(INT_GENRES).map(([k]) => rptChk('genre', k, c.genre.includes(k), RPT_WHO[k]))}</div><div class="fields">${persSel}</div>`
     : c.src === 'retards' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(RPT_LATE).map(([k, l]) => rptChk('late', k, c.late.includes(k), l))}</div><div class="fields">${persSel}</div>`
     : html`<div class="fields">${persSel}</div>`;
-  return html`<button class="btn sm ghost" style="margin-bottom:8px" data-action="rpt-back">← Statistiques</button>${pageHead('🖨️ Imprimer sur mesure', 'Statistiques : choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.')}
+  return html`<button class="btn sm ghost" style="margin-bottom:8px" data-action="rpt-back">← Statistiques</button>${pageHead('🖨️ Statistiques sur mesure', 'Statistiques : choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.')}
     <div class="chips" style="margin-bottom:12px">${Object.entries(RPT_SRC).map(([k, [l]]) => html`<button class="chip" data-action="rpt-src" data-id="${k}" aria-pressed="${c.src === k}">${l}</button>`)}</div>
     ${saved.length ? html`<div class="section-label">⭐ Mes listes</div><div class="chips" style="margin-bottom:12px">${saved.map((s) => html`<span class="chip" style="display:inline-flex;gap:6px;align-items:center"><button style="border:0;background:none;font:inherit;color:inherit;cursor:pointer;padding:0" data-action="rpt-load" data-id="${s.id}">${s.nom}</button><button style="border:0;background:none;cursor:pointer;padding:0" data-action="rpt-del" data-id="${s.id}" aria-label="Supprimer">✕</button></span>`)}</div>` : ''}
     <div class="card" style="margin-bottom:12px"><div class="section-label" style="margin-top:0">Filtres</div>${per}${filters}</div>
@@ -3970,7 +3970,7 @@ dashboard() {
     const origin = imms.map((im) => ({ im, b: bilan({ immId: im.id }) }));
     const tot = { encaisse: sum(origin, (x) => x.b.encaisse), verse: sum(origin, (x) => x.b.verse), depenses: sum(origin, (x) => x.b.depenses), net: sum(origin, (x) => x.b.net), occupants: sum(origin, (x) => x.b.occupants) };
     return html`
-      ${pageHead('Statistiques', 'Vue financière annuelle et depuis l’origine', html`<div style="display:flex;gap:8px;flex-wrap:wrap">${yearSelect(y)}<button class="btn" data-action="print-global">${icon('download')} Imprimer</button><button class="btn primary" data-action="open-rapports">🖨️ Imprimer sur mesure</button></div>`)}
+      ${pageHead('Statistiques', 'Vue financière annuelle et depuis l’origine', html`<div style="display:flex;gap:8px;flex-wrap:wrap">${yearSelect(y)}<button class="btn" data-action="print-global">${icon('download')} Imprimer</button><button class="btn primary" data-action="open-rapports">🖨️ Statistiques sur mesure</button></div>`)}
       <div class="metrics">
         <div class="metric"><div class="lbl">Loyers encaissés</div><div class="val green">${money(paid)}</div><div class="sub">${pct(collected, due)}% des ${money(due)} échus</div></div>
         <div class="metric"><div class="lbl">Impayés à ce jour</div><div class="val ${manquant > 0.009 ? 'red' : ''}">${money(manquant)}</div></div>

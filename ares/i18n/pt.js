@@ -14635,5 +14635,9 @@ export default [
 [
 "Statistiques : choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.",
 "Estatísticas: escolha o quê, filtre, marque as colunas e depois Excel ou PDF."
+],
+[
+"Statistiques sur mesure",
+"Estatísticas à medida"
 ]
 ];
