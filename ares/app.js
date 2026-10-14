@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.127.0';
+const VERSION = '2.127.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -6027,10 +6027,11 @@ const tenantFromForm = (fd, p = '') => ({
 });
 
 // ───────────────────────── Rapports imprimables ─────────────────────────
-function printDoc(title, body) {
+// lux = true : document de LuxInterventions (statistiques des interventions), pas de la société cliente
+function printDoc(title, body, lux) {
   const el = $('#print');
-  const so = societe();
-  setHtml(el, html`<div class="pr-head"><div style="display:flex;align-items:center;gap:10px"><img src="${socLogo()}" alt="" style="height:34px;max-width:120px;object-fit:contain"><span><b>${socName()}</b> · ${title}${so.rcs || so.tvaNum ? html`<br><small>${[so.rcs ? 'RCS ' + so.rcs : '', so.tvaNum ? 'TVA ' + so.tvaNum : ''].filter(Boolean).join(' · ')}</small>` : ''}</span></div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
+  const fc = factConf(), so = lux ? { rcs: fc.rcs, tvaNum: fc.tva } : societe();
+  setHtml(el, html`<div class="pr-head"><div style="display:flex;align-items:center;gap:10px"><img src="${lux ? '/ares/icons/lux-192.png' : socLogo()}" alt="" style="height:34px;max-width:120px;object-fit:contain"><span><b>${lux ? fc.marque || 'LuxInterventions' : socName()}</b> · ${title}${so.rcs || so.tvaNum ? html`<br><small>${[so.rcs ? 'RCS ' + so.rcs : '', so.tvaNum ? 'TVA ' + so.tvaNum : ''].filter(Boolean).join(' · ')}</small>` : ''}</span></div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
   document.body.classList.add('printing');
   const done = () => { document.body.classList.remove('printing'); setHtml(el, ''); removeEventListener('afterprint', done); };
   addEventListener('afterprint', done);
@@ -6474,12 +6475,12 @@ const ACTIONS = {
   'rpt-none': (d) => { rptCfg()[d.k] = []; ui.rptOpen = d.k; renderView(); },
   'rpt-dir': () => { const c = rptCfg(), d = rptChartData(c), tb = rptTable({ ...c, src: 'totaux', cols: {} });
     const f = (k, l) => (c[k] ? `${l} : ${c[k].length}` : ''); const sel = [f('persons', 'personnes'), f('orgs', 'sociétés'), f('lieux', 'lieux')].filter(Boolean).join(' · ');
-    printDoc(`Rapport direction ${fmtDate(c.from)} – ${fmtDate(c.to)}`, html`${sel ? html`<p class="tiny">Filtres : ${sel}</p>` : ''}${rptChartsHtml(d)}<h3 style="margin-top:16px">Totaux</h3><table class="pr-tbl"><tbody>${tb.rows.map((r) => html`<tr><td>${r[0]}</td><td style="text-align:right">${r[1]}</td></tr>`)}</tbody></table>`); },
+    printDoc(`Rapport direction ${fmtDate(c.from)} – ${fmtDate(c.to)}`, html`${sel ? html`<p class="tiny">Filtres : ${sel}</p>` : ''}${rptChartsHtml(d)}<h3 style="margin-top:16px">Totaux</h3><table class="pr-tbl"><tbody>${tb.rows.map((r) => html`<tr><td>${r[0]}</td><td style="text-align:right">${r[1]}</td></tr>`)}</tbody></table>`, true); },
   'rpt-back': () => { ui.cpSec = 'stats'; go('compta'); },
   'rpt-src': (d) => { rptCfg().src = d.id; renderView(); },
   'rpt-per': (d) => { const c = rptCfg(); c.from = d.f; c.to = d.t; renderView(); },
   'rpt-xlsx': () => { const c = rptCfg(), tb = rptTable(c); download(`${rptTitle(c).replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase()}.xlsx`, xlsxBlob(tb.head, tb.rows, RPT_SRC[c.src][0].replace(/^\S+\s/, '')), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); },
-  'rpt-print': () => { const c = rptCfg(), tb = rptTable(c); printDoc(rptTitle(c), html`<table class="pr-tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.map((r) => html`<tr>${r.map((v) => html`<td>${v}</td>`)}</tr>`)}</tbody></table><p class="tiny">${plural(tb.n, 'ligne')}</p>`); },
+  'rpt-print': () => { const c = rptCfg(), tb = rptTable(c); printDoc(rptTitle(c), html`<table class="pr-tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.map((r) => html`<tr>${r.map((v) => html`<td>${v}</td>`)}</tr>`)}</tbody></table><p class="tiny">${plural(tb.n, 'ligne')}</p>`, true); },
   async 'rpt-save'() {
     const nom = ($('#rptName')?.value || '').trim();
     if (!nom) return toast('Donnez un nom à la liste', { bad: true });
