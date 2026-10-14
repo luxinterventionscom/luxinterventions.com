@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.127.2';
+const VERSION = '2.128.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3082,7 +3082,7 @@ async function factPdf(t, f, no, dateIso, c) {
   const logo = await sigJpeg('/ares/icons/lux-192.png').catch(() => null);
   if (logo) p.image(X, 40, 62, 62, logo.bytes, logo.w, logo.h);
   const ex = logo ? X + 78 : X;
-  p.text(ex, 52, c.nom, { size: 11, bold: true }).text(ex, 66, c.marque || '', { size: 9, color: G });
+  p.text(ex, 52, c.marque || c.nom, { size: 11, bold: true }).text(ex, 66, c.marque ? 'by ' + c.nom : '', { size: 9, color: G });
   p.text(ex, 80, c.adresse, { size: 9 }).text(ex, 92, c.ville, { size: 9 }).text(ex, 104, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8.5, color: G });
   if (c.tel || c.email) p.text(ex, 116, [c.tel, c.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
   // client
@@ -3134,7 +3134,7 @@ async function factPdf(t, f, no, dateIso, c) {
   const mention = regMention(f.reg || {});
   if (mention) y += p.wrap(X, y, mention, R - X, { size: 9, bold: true }) + 4;
   p.text(X, y, `Paiement à ${+c.delai || 30} jours, avant le ${fr(due)}.`, { size: 9, color: G });
-  p.text((X + R) / 2, 800, `${c.nom}${c.marque ? ' — ' + c.marque : ''} · ${c.adresse}, ${c.ville} · RCS Luxembourg ${c.rcs} · TVA ${c.tva}`, { size: 7.5, color: G, align: 'center' });
+  p.text((X + R) / 2, 800, `${c.marque ? c.marque + ' by ' : ''}${c.nom} · ${c.adresse}, ${c.ville} · RCS Luxembourg ${c.rcs} · TVA ${c.tva}`, { size: 7.5, color: G, align: 'center' });
   return { bytes: p.bytes(), k };
 }
 const factRead = (fm) => {
@@ -6028,11 +6028,12 @@ const tenantFromForm = (fd, p = '') => ({
 });
 
 // ───────────────────────── Rapports imprimables ─────────────────────────
-// lux = true : document de LuxInterventions (statistiques des interventions), pas de la société cliente
-function printDoc(title, body, lux) {
-  const el = $('#print');
+// Impressions de l'app : en-tête LuxInterventions by ARES INVEST S.A. ; client = true seulement pour les quittances
+// et reçus de caution, qui restent au nom de la société cliente (bailleur, son timbre)
+function printDoc(title, body, client) {
+  const el = $('#print'), lux = !client;
   const fc = factConf(), so = lux ? { rcs: fc.rcs, tvaNum: fc.tva } : societe();
-  setHtml(el, html`<div class="pr-head"><div style="display:flex;align-items:center;gap:10px"><img src="${lux ? '/ares/icons/lux-192.png' : socLogo()}" alt="" style="height:34px;max-width:120px;object-fit:contain"><span><b>${lux ? fc.marque || 'LuxInterventions' : socName()}</b> · ${title}${so.rcs || so.tvaNum ? html`<br><small>${[so.rcs ? 'RCS ' + so.rcs : '', so.tvaNum ? 'TVA ' + so.tvaNum : ''].filter(Boolean).join(' · ')}</small>` : ''}</span></div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
+  setHtml(el, html`<div class="pr-head"><div style="display:flex;align-items:center;gap:10px"><img src="${lux ? '/ares/icons/lux-192.png' : socLogo()}" alt="" style="height:34px;max-width:120px;object-fit:contain"><span><b>${lux ? fc.marque || 'LuxInterventions' : socName()}</b>${lux && fc.marque ? html` <small>by ${fc.nom}</small>` : ''} · ${title}${so.rcs || so.tvaNum ? html`<br><small>${[so.rcs ? 'RCS ' + so.rcs : '', so.tvaNum ? 'TVA ' + so.tvaNum : ''].filter(Boolean).join(' · ')}</small>` : ''}</span></div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
   document.body.classList.add('printing');
   const done = () => { document.body.classList.remove('printing'); setHtml(el, ''); removeEventListener('afterprint', done); };
   addEventListener('afterprint', done);
@@ -6063,7 +6064,7 @@ function printQuittance(locId, y, m) {
     <p style="font-size:12px;line-height:1.6">${full
       ? `Je soussigné(e), ${soc.nom || '……………………'}, locataire principal et bailleur, déclare avoir reçu de ${fullName(l)} la somme de ${money(st.paid)} au titre du loyer et des charges du logement ${[logName(l.logId), im.adresse].filter(Boolean).join(', ')}, pour la période du 1er au ${last} ${MONTHS_FULL[m - 1].toLowerCase()} ${y}, et lui en donne quittance, sous réserve de tous mes droits.`
       : `Je soussigné(e), ${soc.nom || '……………………'}, locataire principal et bailleur, déclare avoir reçu de ${fullName(l)} la somme de ${money(st.paid)} à titre d'acompte sur le loyer et les charges du logement ${[logName(l.logId), im.adresse].filter(Boolean).join(', ')} pour ${MONTHS_FULL[m - 1].toLowerCase()} ${y}. Il reste dû ${money(st.rest)}. Ce reçu ne vaut pas quittance.`}</p>
-    <div style="margin-top:36px;display:flex;justify-content:space-between"><div>Fait à Luxembourg, le ${fmtDate(today())}</div><div style="text-align:center;min-width:200px">Signature<div style="border-bottom:1px solid #999;height:60px"></div></div></div>`);
+    <div style="margin-top:36px;display:flex;justify-content:space-between"><div>Fait à Luxembourg, le ${fmtDate(today())}</div><div style="text-align:center;min-width:200px">Signature<div style="border-bottom:1px solid #999;height:60px"></div></div></div>`, true);
   vault.mutate(() => {}, full ? 'Quittance imprimée' : 'Reçu imprimé', `${fullName(l)} — ${MONTHS_FULL[m - 1]} ${y}`, l.id);
 }
 
@@ -6092,7 +6093,7 @@ function printCaution(locId) {
     <div style="margin-top:18px;display:flex;justify-content:space-between;gap:24px">
       <div style="text-align:center;min-width:200px">Le bailleur<div style="border-bottom:1px solid #999;height:60px"></div></div>
       <div style="text-align:center;min-width:200px">Le sous-locataire<div style="border-bottom:1px solid #999;height:60px"></div></div>
-    </div>`);
+    </div>`, true);
   vault.mutate(() => {}, 'Reçu de caution imprimé', `${fullName(l)} — ${money(l.caution)}`, l.id);
 }
 // Pièces du dossier d'entrée : ✓ présente / ✗ manquante (cliquable pour l'ajouter)
@@ -6476,12 +6477,12 @@ const ACTIONS = {
   'rpt-none': (d) => { rptCfg()[d.k] = []; ui.rptOpen = d.k; renderView(); },
   'rpt-dir': () => { const c = rptCfg(), d = rptChartData(c), tb = rptTable({ ...c, src: 'totaux', cols: {} });
     const f = (k, l) => (c[k] ? `${l} : ${c[k].length}` : ''); const sel = [f('persons', 'personnes'), f('orgs', 'sociétés'), f('lieux', 'lieux')].filter(Boolean).join(' · ');
-    printDoc(`Rapport direction ${fmtDate(c.from)} – ${fmtDate(c.to)}`, html`${sel ? html`<p class="tiny">Filtres : ${sel}</p>` : ''}${rptChartsHtml(d)}<h3 style="margin-top:16px">Totaux</h3><table class="pr-tbl"><tbody>${tb.rows.map((r) => html`<tr><td>${r[0]}</td><td style="text-align:right">${r[1]}</td></tr>`)}</tbody></table>`, true); },
+    printDoc(`Rapport direction ${fmtDate(c.from)} – ${fmtDate(c.to)}`, html`${sel ? html`<p class="tiny">Filtres : ${sel}</p>` : ''}${rptChartsHtml(d)}<h3 style="margin-top:16px">Totaux</h3><table class="pr-tbl"><tbody>${tb.rows.map((r) => html`<tr><td>${r[0]}</td><td style="text-align:right">${r[1]}</td></tr>`)}</tbody></table>`); },
   'rpt-back': () => { ui.cpSec = 'stats'; go('compta'); },
   'rpt-src': (d) => { rptCfg().src = d.id; renderView(); },
   'rpt-per': (d) => { const c = rptCfg(); c.from = d.f; c.to = d.t; renderView(); },
   'rpt-xlsx': () => { const c = rptCfg(), tb = rptTable(c); download(`${rptTitle(c).replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase()}.xlsx`, xlsxBlob(tb.head, tb.rows, RPT_SRC[c.src][0].replace(/^\S+\s/, '')), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); },
-  'rpt-print': () => { const c = rptCfg(), tb = rptTable(c); printDoc(rptTitle(c), html`<table class="pr-tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.map((r) => html`<tr>${r.map((v) => html`<td>${v}</td>`)}</tr>`)}</tbody></table><p class="tiny">${plural(tb.n, 'ligne')}</p>`, true); },
+  'rpt-print': () => { const c = rptCfg(), tb = rptTable(c); printDoc(rptTitle(c), html`<table class="pr-tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.map((r) => html`<tr>${r.map((v) => html`<td>${v}</td>`)}</tr>`)}</tbody></table><p class="tiny">${plural(tb.n, 'ligne')}</p>`); },
   async 'rpt-save'() {
     const nom = ($('#rptName')?.value || '').trim();
     if (!nom) return toast('Donnez un nom à la liste', { bad: true });
@@ -8267,7 +8268,7 @@ async function devPdf(d) {
   const head = () => {
     if (logo) p.image(X, 36, 56, 56, logo.bytes, logo.w, logo.h);
     const ex = logo ? X + 70 : X;
-    p.text(ex, 48, c.nom, { size: 11, bold: true }).text(ex, 61, c.marque || '', { size: 9, color: G });
+    p.text(ex, 48, c.marque || c.nom, { size: 11, bold: true }).text(ex, 61, c.marque ? 'by ' + c.nom : '', { size: 9, color: G });
     p.text(ex, 74, `${c.adresse}, ${c.ville}`, { size: 8.5 }).text(ex, 86, [c.tel ? 'Tél. ' + c.tel : '', c.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
     p.text(ex, 98, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8, color: G });
     if (c.autorisation) p.text(ex, 110, `Autorisation d’établissement n° ${c.autorisation}`, { size: 8, color: G });
@@ -8418,7 +8419,7 @@ async function devPdf(d) {
   }
   // pied de page : « N° … x/N »
   const N = p.count();
-  for (let i = 0; i < N; i++) p.onPage(i).text((X + R) / 2, 812, `${c.nom}${c.marque ? ' — ' + c.marque : ''} · Devis N° ${no} · ${i + 1}/${N}`, { size: 7.5, color: G, align: 'center' });
+  for (let i = 0; i < N; i++) p.onPage(i).text((X + R) / 2, 812, `${c.marque ? c.marque + ' by ' : ''}${c.nom} · Devis N° ${no} · ${i + 1}/${N}`, { size: 7.5, color: G, align: 'center' });
   return p.bytes();
 }
 // aperçu du PDF (imprimer / télécharger), comme les autres documents
