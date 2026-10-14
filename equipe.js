@@ -293,6 +293,13 @@ function hOnDate(d, iso) {
   const hs = d.jours && d.jours[iso] ? d.jours[iso].map((h) => ({ ...h, j })) : (d.horaires || []).filter((h) => h.j === j);
   return hs.slice().sort((a, b) => (a.de || '').localeCompare(b.de || ''));
 }
+// « Combien ? » quand le travail est fini (facultatif) : 12 vitres, 3 robinets, 40 m²… → statistiques du bureau
+const QT = {
+  fr: ['Combien ? (facultatif)', 'ex. vitres, robinets, m²'], it: ['Quanti? (facoltativo)', 'es. vetri, rubinetti, m²'], de: ['Wie viele? (optional)', 'z. B. Fenster, Wasserhähne, m²'],
+  pt: ['Quantos? (opcional)', 'ex. vidros, torneiras, m²'], en: ['How many? (optional)', 'e.g. windows, taps, m²'], es: ['¿Cuántos? (opcional)', 'ej. cristales, grifos, m²'],
+};
+const qtyHtml = () => { const q = QT[lang] || QT.fr; return `<div class="qty"><label>🔢 ${esc(q[0])}</label><div class="qty-r"><input type="number" name="qte" min="0" step="any" inputmode="decimal" placeholder="12"><input name="qu" maxlength="40" placeholder="${esc(q[1])}"></div></div>`; };
+const qtyOf = (f) => { const n = parseFloat(String(f.qte ? f.qte.value : '').replace(',', '.')); return n > 0 ? { qte: Math.round(n * 100) / 100, qu: String(f.qu ? f.qu.value : '').trim().slice(0, 40) } : {}; };
 function taskCard(it, withBtns) {
   const t = T(), x = data.tasks[it.tid];
   if (!x) return '';
@@ -305,7 +312,7 @@ function taskCard(it, withBtns) {
       <button class="btn ok" data-act="fait" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(t.done)}</button>
       <button class="btn warn" data-act="incomplet" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(t.inc)}</button></div>` : '';
   const fh = f && f.st !== 'refus' ? `<form class="act" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}" data-st="${f.st}"><b>${esc(t.st[f.st])}</b>
-      <label>${esc(f.st === 'incomplet' ? t.why : t.note)}</label><textarea name="note" placeholder="${esc(f.st === 'incomplet' ? t.whyPh : t.notePh)}" ${f.st === 'incomplet' ? 'required' : ''}></textarea>
+      ${f.st === 'fait' ? qtyHtml() : ''}<label>${esc(f.st === 'incomplet' ? t.why : t.note)}</label><textarea name="note" placeholder="${esc(f.st === 'incomplet' ? t.whyPh : t.notePh)}" ${f.st === 'incomplet' ? 'required' : ''}></textarea>
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>` : '';
   return `<div class="task ${done ? 'done' : ''}${x.urgent && !done ? ' urgent' : ''}">${notStarted && !done ? refusTop(it) : ''}
     <div class="tt">${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${it.late ? ` <span class="tag bad">${esc(t.late)}</span>` : ''}</div>
@@ -334,7 +341,7 @@ function stopCard(it, cur) {
   else if (!ended) act = `${phBlock(it, x)}${f ? `<form class="act" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}" data-st="${f.st}"><b>${esc(t.st[f.st])}</b>
       <label>${esc(t.why)}</label><textarea name="note" placeholder="${esc(t.whyPh)}" required></textarea>
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>`
-      : `<form class="pres" data-stop="fait" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}"><input type="time" name="h" value="${nowHM()}" required><button class="btn sm ok" type="submit">${esc(t.s.depBtn)}</button></form>
+      : `<form class="pres pres-fin" data-stop="fait" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}">${qtyHtml()}<input type="time" name="h" value="${nowHM()}" required><button class="btn sm ok" type="submit">${esc(t.s.depBtn)}</button></form>
       <button class="btn sm warn" style="margin-top:6px" data-act="incomplet" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(t.inc)}</button>`}`;
   return `<div class="stop${cur ? ' cur' : ''}${ended ? ' done' : ''}${x.urgent && !ended ? ' urgent' : ''}">${!tm.arr && !ended ? refusTop(it) : ''}
     <div class="tt">${cur ? '<span class="live" aria-hidden="true"></span>' : ''}${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${cur ? ` <span class="tag now">${esc(tm.arr ? t.s.now : t.s.next)}</span>` : ''}</div>
@@ -647,7 +654,7 @@ app.addEventListener('submit', async (e) => {
     const v = f.h.value;
     if (!/^\d{2}:\d{2}$/.test(v)) return;
     flash = '';
-    await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: f.dataset.stop, note: '', h: v, photos: [], at: new Date().toISOString() });
+    await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: f.dataset.stop, note: '', h: v, photos: [], ...(f.dataset.stop === 'fait' ? qtyOf(f) : {}), at: new Date().toISOString() });
     flash = t.sent;
     render();
     if (f.dataset.stop === 'fait') document.getElementById('presCard')?.scrollIntoView({ block: 'start' });
@@ -715,7 +722,7 @@ app.addEventListener('submit', async (e) => {
       const note = f.note.value.trim();
       if (f.dataset.st === 'incomplet' && !note) { alert(t.need); btn.disabled = false; btn.textContent = t.send; return; }
       form = null;
-      await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: f.dataset.st, note, photos: [], at: new Date().toISOString() });
+      await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: f.dataset.st, note, photos: [], ...(f.dataset.st === 'fait' ? qtyOf(f) : {}), at: new Date().toISOString() });
       flash = t.sent;
     } else if (f.id === 'absForm') {
       const photos = f.photo.files[0] ? [await compress(f.photo.files[0])] : [];
