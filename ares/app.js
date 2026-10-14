@@ -10,9 +10,10 @@ import { videoEmbed } from './video-embed.js';
 import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { makePdf } from './pdfmini.js';
+import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.123.0';
+const VERSION = '2.124.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2357,7 +2358,7 @@ function go(route, replace) {
   ui.route = route;
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
-  const navRoute = route === 'champeq' ? 'champions' : ['paiements', 'locataires', 'agences'].includes(route) ? 'immeubles' : route;
+  const navRoute = route === 'champeq' ? 'champions' : route === 'rapports' ? 'reglages' : ['paiements', 'locataires', 'agences'].includes(route) ? 'immeubles' : route;
   document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute && (!b.dataset.sec || b.dataset.sec === (ui.cpSec === 'abo' ? 'abo' : 'compta')) ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   bnavShow();
   const fab = $('#fab');
@@ -3176,7 +3177,137 @@ function intervLedger(from, to) {
 }
 const dayShort = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
+// ───────── 📊 Rapports & exports : contacts, travaux, heures, retards, totaux — filtres, colonnes au choix, Excel (.xlsx) ou PDF ─────────
+const RPT_SRC = {
+  contacts: ['👥 Contacts', [['cat', 'Catégorie'], ['nom', 'Nom'], ['prenom', 'Prénom'], ['soc', 'Société'], ['email', 'Email'], ['tel', 'Téléphone'], ['adr', 'Adresse'], ['info', 'Détail']], ['cat', 'nom', 'prenom', 'email', 'tel']],
+  travaux: ['🔧 Travaux', [['date', 'Date'], ['heure', 'Heure prévue'], ['type', 'Type'], ['titre', 'Quoi'], ['lieu', 'Où'], ['qui', 'Qui'], ['statut', 'Statut'], ['urg', 'Urgent'], ['arr', 'Arrivée'], ['dep', 'Départ'], ['h', 'Heures réelles'], ['cout', 'Coût (€)'], ['ger', 'Gérance / demande']], ['date', 'type', 'titre', 'lieu', 'qui', 'statut', 'h']],
+  heures: ['⏱️ Heures par personne', [['qui', 'Personne'], ['cat', 'Catégorie'], ['metier', 'Métier'], ['n', 'Travaux finis'], ['h', 'Heures réelles'], ['nettoyage', 'Nettoyages'], ['reparation', 'Réparations'], ['gros', 'Gros travaux'], ['autre', 'Autres'], ['late', 'Arrivées en retard']], null],
+  retards: ['⏰ Retards', [['type', 'Type de retard'], ['date', 'Date prévue / échéance'], ['qui', 'Qui'], ['quoi', 'Quoi / où'], ['j', 'Retard (jours)'], ['min', 'Retard (minutes)'], ['montant', 'Montant (€)']], null],
+  totaux: ['📈 Totaux', [['ind', 'Indicateur'], ['val', 'Valeur']], null],
+};
+const RPT_WHO = { loc: 'Locataires', interne: 'Ouvriers internes', societe: 'Sociétés externes', prive: 'Collaborateurs occasionnels', agence: 'Agences immobilières', ger: 'Gérances', hote: 'Clients de l’hotel' };
+const RPT_LATE = { loyer: 'Loyers impayés', topen: 'Travaux pas finis (date passée)', tfin: 'Travaux finis après la date prévue', arr: 'Arrivées de l’ouvrier après l’heure prévue', fact: 'Factures pas payées à l’échéance' };
+const rptDef = () => ({ src: 'contacts', from: today().slice(0, 4) + '-01-01', to: today(), who: Object.keys(RPT_WHO), late: Object.keys(RPT_LATE), genre: Object.keys(INT_GENRES), withMail: false, withTel: false, ttype: '', tstat: '', person: '', q: '', cols: {} });
+const rptCfg = () => (ui.rpt = ui.rpt || rptDef());
+const rptCols = (c) => c.cols[c.src] || RPT_SRC[c.src][2] || RPT_SRC[c.src][1].map(([k]) => k);
+const daysBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5);
+// arrivée / départ notés par l'ouvrier ce jour-là (journal de l'app de l'équipe)
+const jobTimes = (t, d) => {
+  const j = (t.journal || []).filter((x) => x.d === d).sort((a, b) => (a.at || '').localeCompare(b.at || ''));
+  const hOf = (x) => (x ? x.h || (x.at || '').slice(11, 16) : '');
+  const arr = hOf(j.find((x) => x.st === 'encours')), dep = hOf([...j].reverse().find((x) => x.st === 'fait'));
+  return { arr, dep, h: arr && dep ? Math.max(0, Math.round((hm(dep) - hm(arr)) * 100) / 100) : 0 };
+};
+const jobDay = (t) => (t.statut === 'fait' ? t.doneDate || t.date : t.fini ? t.fini.d : t.date) || '';
+const inPer = (d, c) => d && d >= c.from && d <= c.to;
+function rptRetards(c) {
+  const out = [], T = today(), on = new Set(c.late), pers = (t) => !c.person || t.intervenantId === c.person;
+  if (on.has('loyer') && !c.person) {
+    for (const l of currentLocs()) {
+      for (let y = +c.from.slice(0, 4); y <= +c.to.slice(0, 4); y++) for (let m = 1; m <= 12; m++) {
+        const d = `${y}-${String(m).padStart(2, '0')}-01`;
+        if (d > T || !inPer(d, c) || !isDue(l, y, m)) continue;
+        const st = payState(l, y, m);
+        if (st.rest > 0.009 && (y < +T.slice(0, 4) || m < +T.slice(5, 7))) out.push({ type: RPT_LATE.loyer, date: d, qui: fullName(l), quoi: [logName(l.logId), immName(l.immId)].filter(Boolean).join(' · '), j: daysBetween(d, T), min: '', montant: Math.round(st.rest * 100) / 100 });
+      }
+    }
+  }
+  for (const t of vault.list('taches')) {
+    if (!pers(t)) continue;
+    const w = vault.get('intervenants', t.intervenantId), qui = w ? intervFull(w) : '';
+    if (!t.recur && t.date && on.has('topen') && t.statut !== 'fait' && !t.fini && t.date < T && inPer(t.date, c)) out.push({ type: RPT_LATE.topen, date: t.date, qui, quoi: `${t.titre} — ${placeName(t)}`, j: daysBetween(t.date, T), min: '', montant: '' });
+    if (!t.recur && t.date && on.has('tfin')) { const d = jobDay(t); if ((t.statut === 'fait' || t.fini) && d > t.date && inPer(t.date, c)) out.push({ type: RPT_LATE.tfin, date: t.date, qui, quoi: `${t.titre} — ${placeName(t)}`, j: daysBetween(t.date, d), min: '', montant: '' }); }
+    if (on.has('arr') && t.heure) for (const x of (t.journal || []).filter((x) => x.st === 'encours' && inPer(x.d, c))) {
+      const h = x.h || (x.at || '').slice(11, 16), late = h ? Math.round((hm(h) - hm(t.heure)) * 60) : 0;
+      if (late > 0) out.push({ type: RPT_LATE.arr, date: x.d, qui: intervName(x.by || t.intervenantId) || qui, quoi: `${t.titre} — ${placeName(t)} (prévu ${t.heure}, arrivé ${h})`, j: '', min: late, montant: '' });
+    }
+    if (on.has('fact') && t.facture && !t.facture.paid && t.facture.date) { const ech = addDays(t.facture.date, 30); if (ech < T && inPer(ech, c)) out.push({ type: RPT_LATE.fact, date: ech, qui: t.ptl ? t.ptl.org : qui, quoi: `${t.facture.no} — ${t.titre}`, j: daysBetween(ech, T), min: '', montant: t.facture.ttc }); }
+  }
+  return out.sort((a, b) => a.type.localeCompare(b.type) || a.date.localeCompare(b.date));
+}
+function rptRows(c) {
+  if (c.src === 'contacts') {
+    const out = [], who = new Set(c.who), add = (cat, o) => out.push({ cat, ...o });
+    if (who.has('loc')) for (const l of currentLocs()) add(RPT_WHO.loc, { nom: l.nom || '', prenom: l.prenom || '', soc: '', email: l.mail || '', tel: l.tel || '', adr: [logName(l.logId), immName(l.immId)].filter(Boolean).join(' · '), info: '' });
+    for (const i of vault.list('intervenants').filter((i) => !i.archive)) { const g = i.genre || 'interne'; if (who.has(g)) add(RPT_WHO[g], { nom: i.nom || '', prenom: i.prenom || '', soc: g === 'societe' ? i.nom || '' : '', email: i.mail || '', tel: i.tel || '', adr: [i.adresse, i.ville].filter(Boolean).join(', '), info: METIERS[i.metier] || '' }); }
+    if (who.has('agence')) for (const a of vault.list('agences')) add(RPT_WHO.agence, { nom: (a.dir || {}).nom || '', prenom: (a.dir || {}).prenom || '', soc: a.nom, email: a.email || (a.dir || {}).email || '', tel: a.tel || (a.dir || {}).tel || '', adr: a.adresse || '', info: a.rcs ? 'RCS ' + a.rcs : '' });
+    if (who.has('ger')) for (const o of (ui.ptl.data && ui.ptl.data.orgs) || []) add(RPT_WHO.ger, { nom: '', prenom: '', soc: o.name || '', email: o.email || '', tel: o.phone || '', adr: '', info: '' });
+    if (who.has('hote')) for (const h of vault.list('hotes')) add(RPT_WHO.hote, { nom: h.nom || '', prenom: h.prenom || '', soc: '', email: h.mail || '', tel: h.tel || '', adr: '', info: `Chambre ${h.chambre} · ${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}` });
+    return out.filter((r) => (!c.withMail || r.email) && (!c.withTel || r.tel)).sort((a, b) => a.cat.localeCompare(b.cat) || (a.nom || a.soc).localeCompare(b.nom || b.soc));
+  }
+  if (c.src === 'travaux') {
+    const q = String(c.q || '').toLowerCase();
+    return vault.list('taches').filter((t) => !t.recur).map((t) => ({ t, d: jobDay(t) })).filter(({ t, d }) => inPer(d, c) && (!c.ttype || t.type === c.ttype) && (!c.tstat || (c.tstat === 'fini' ? t.statut !== 'fait' && t.fini : t.statut === c.tstat)) && (!c.person || t.intervenantId === c.person) && (!q || `${t.titre} ${placeName(t)}`.toLowerCase().includes(q)))
+      .map(({ t, d }) => { const w = vault.get('intervenants', t.intervenantId), k = jobTimes(t, d); return { date: d, heure: t.heure || '', type: (TACHE_TYPES[t.type] || t.type || '').replace(/^\S+\s/, ''), titre: t.titre, lieu: placeName(t).replace(/^[📍📝🏢]\s?/u, ''), qui: w ? intervFull(w) : '', statut: t.statut !== 'fait' && t.fini ? 'Fini par l’ouvrier' : STATUTS[t.statut] || '', urg: t.urgent ? 'oui' : '', arr: k.arr, dep: k.dep, h: k.h || '', cout: t.cout || '', ger: t.ptl ? `${t.ptl.org} #${t.ptl.ref}` : '' }; })
+      .sort((a, b) => a.date.localeCompare(b.date));
+  }
+  if (c.src === 'heures') {
+    const by = new Map(), lateBy = new Map();
+    for (const r of rptRetards({ ...c, late: ['arr'], person: '' })) lateBy.set(r.qui, (lateBy.get(r.qui) || 0) + 1);
+    for (const t of vault.list('taches').filter((t) => !t.recur && (t.statut === 'fait' || t.fini) && t.intervenantId)) {
+      const d = jobDay(t); if (!inPer(d, c)) continue;
+      const o = by.get(t.intervenantId) || { n: 0, h: 0, nettoyage: 0, reparation: 0, gros: 0, autre: 0 };
+      o.n++; o.h += jobTimes(t, d).h; o[TACHE_TYPES[t.type] ? t.type : 'autre']++; by.set(t.intervenantId, o);
+    }
+    return vault.list('intervenants').filter((i) => c.genre.includes(i.genre || 'interne') && (!c.person || i.id === c.person) && (!i.archive || by.has(i.id))).map((i) => {
+      const o = by.get(i.id) || { n: 0, h: 0, nettoyage: 0, reparation: 0, gros: 0, autre: 0 };
+      return { qui: intervFull(i), cat: RPT_WHO[i.genre || 'interne'], metier: METIERS[i.metier] || '', ...o, h: Math.round(o.h * 100) / 100, late: lateBy.get(intervFull(i)) || 0 };
+    }).sort((a, b) => b.h - a.h || b.n - a.n || a.qui.localeCompare(b.qui));
+  }
+  if (c.src === 'retards') return rptRetards(c);
+  // totaux de la période
+  const T = vault.list('taches').filter((t) => !t.recur && (!c.person || t.intervenantId === c.person));
+  const done = T.filter((t) => (t.statut === 'fait' || t.fini) && inPer(jobDay(t), c)), cnt = (k) => done.filter((t) => (TACHE_TYPES[t.type] ? t.type : 'autre') === k).length;
+  const R = rptRetards({ ...c, late: Object.keys(RPT_LATE) }), rc = (k) => R.filter((r) => r.type === RPT_LATE[k]);
+  const dv = vault.list('devis').filter((v) => inPer(v.date || '', c));
+  return [
+    ['Travaux terminés (total)', done.length], ['Dépannages / réparations', cnt('reparation')], ['Nettoyages', cnt('nettoyage')], ['Gros travaux', cnt('gros')], ['Autres travaux', cnt('autre')],
+    ['Demandes des gérances traitées', done.filter((t) => t.ptl).length], ['Interventions urgentes', done.filter((t) => t.urgent).length],
+    ['Heures réelles (total)', Math.round(done.reduce((n, t) => n + jobTimes(t, jobDay(t)).h, 0) * 100) / 100],
+    ...(c.person ? [] : [['Loyers impayés (mois)', rc('loyer').length], ['Loyers impayés (€)', Math.round(rc('loyer').reduce((n, r) => n + (+r.montant || 0), 0) * 100) / 100]]),
+    ['Travaux pas finis en retard', rc('topen').length], ['Travaux finis après la date prévue', rc('tfin').length], ['Arrivées en retard', rc('arr').length],
+    ['Factures en retard', rc('fact').length], ['Factures en retard (€)', Math.round(rc('fact').reduce((n, r) => n + (+r.montant || 0), 0) * 100) / 100],
+    ...(c.person ? [] : [['Devis émis', dv.length], ['Devis acceptés', dv.filter((v) => v.st === 'accepte' || v.acc).length]]),
+  ].map(([ind, val]) => ({ ind, val }));
+}
+const rptVal = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v.split('-').reverse().join('/') : v ?? '');
+const rptTable = (c) => { const cols = rptCols(c), L = Object.fromEntries(RPT_SRC[c.src][1]); const rows = rptRows(c); return { head: cols.map((k) => L[k]), rows: rows.map((r) => cols.map((k) => rptVal(r[k]))), n: rows.length }; };
+const rptTitle = (c) => `${RPT_SRC[c.src][0].replace(/^\S+\s/, '')}${c.src === 'contacts' ? '' : ` ${fmtDate(c.from)} – ${fmtDate(c.to)}`}`;
+const rptChk = (k, v, on, label) => html`<label class="chip" style="cursor:pointer"><input type="checkbox" data-input="rpt-arr" data-k="${k}" value="${v}" ${on ? new Raw('checked') : ''} class="rpt-cb">${label}</label>`;
+function rptView() {
+  const c = rptCfg(), L = RPT_SRC[c.src], cols = rptCols(c), tb = rptTable(c);
+  const saved = ((vault.get('reglages', 'rapports') || {}).list) || [];
+  const people = vault.list('intervenants').filter((i) => !i.archive).sort((a, b) => intervFull(a).localeCompare(intervFull(b)));
+  const persSel = html`<label class="field">Personne<select data-input="rpt" data-k="person"><option value="">Toutes</option>${people.map((i) => html`<option value="${i.id}" ${c.person === i.id ? new Raw('selected') : ''}>${intervFull(i)}</option>`)}</select></label>`;
+  const y = +today().slice(0, 4), m = today().slice(0, 7);
+  const per = c.src === 'contacts' ? '' : html`<div class="fields" style="margin-bottom:6px">
+      <label class="field">Du<input type="date" data-input="rpt" data-k="from" value="${c.from}"></label><label class="field">Au<input type="date" data-input="rpt" data-k="to" value="${c.to}"></label></div>
+    <div class="chips" style="margin-bottom:10px">${[['Ce mois', m + '-01', today()], ['Cette année', y + '-01-01', today()], ['Année ' + (y - 1), (y - 1) + '-01-01', (y - 1) + '-12-31'], ['Depuis le début', '2000-01-01', today()]].map(([l, f, t]) => html`<button class="chip" data-action="rpt-per" data-f="${f}" data-t="${t}" aria-pressed="${c.from === f && c.to === t}">${l}</button>`)}</div>`;
+  const filters = c.src === 'contacts' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(RPT_WHO).map(([k, l]) => rptChk('who', k, c.who.includes(k), l))}</div>
+      <div class="chips">${rptChk('withMail', '1', c.withMail, 'Seulement avec email')}${rptChk('withTel', '1', c.withTel, 'Seulement avec téléphone')}</div>
+      ${c.who.includes('ger') && !(ui.ptl.data && ui.ptl.data.orgs) ? html`<p class="tiny muted" style="margin:6px 0 0">Gérances : ouvrez une fois la page Gérances pour charger leurs coordonnées.</p>` : ''}`
+    : c.src === 'travaux' ? html`<div class="fields">
+        <label class="field">Type<select data-input="rpt" data-k="ttype"><option value="">Tous</option>${Object.entries(TACHE_TYPES).map(([k, l]) => html`<option value="${k}" ${c.ttype === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+        <label class="field">Statut<select data-input="rpt" data-k="tstat"><option value="">Tous</option>${[...Object.entries(STATUTS), ['fini', 'Fini par l’ouvrier']].map(([k, l]) => html`<option value="${k}" ${c.tstat === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+        ${persSel}<label class="field">Où / quoi contient<input type="search" data-input="rpt" data-k="q" value="${c.q || ''}" placeholder="ex. rue de Hollerich"></label></div>`
+    : c.src === 'heures' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(INT_GENRES).map(([k]) => rptChk('genre', k, c.genre.includes(k), RPT_WHO[k]))}</div><div class="fields">${persSel}</div>`
+    : c.src === 'retards' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(RPT_LATE).map(([k, l]) => rptChk('late', k, c.late.includes(k), l))}</div><div class="fields">${persSel}</div>`
+    : html`<div class="fields">${persSel}</div>`;
+  return html`${pageHead('📊 Rapports & exports', 'Choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.')}
+    <div class="chips" style="margin-bottom:12px">${Object.entries(RPT_SRC).map(([k, [l]]) => html`<button class="chip" data-action="rpt-src" data-id="${k}" aria-pressed="${c.src === k}">${l}</button>`)}</div>
+    ${saved.length ? html`<div class="section-label">⭐ Mes listes</div><div class="chips" style="margin-bottom:12px">${saved.map((s) => html`<span class="chip" style="display:inline-flex;gap:6px;align-items:center"><button style="border:0;background:none;font:inherit;color:inherit;cursor:pointer;padding:0" data-action="rpt-load" data-id="${s.id}">${s.nom}</button><button style="border:0;background:none;cursor:pointer;padding:0" data-action="rpt-del" data-id="${s.id}" aria-label="Supprimer">✕</button></span>`)}</div>` : ''}
+    <div class="card" style="margin-bottom:12px"><div class="section-label" style="margin-top:0">Filtres</div>${per}${filters}</div>
+    <div class="card" style="margin-bottom:12px"><div class="section-label" style="margin-top:0">Colonnes</div><div class="chips">${L[1].map(([k, l]) => html`<label class="chip" style="cursor:pointer"><input type="checkbox" data-input="rpt-col" value="${k}" ${cols.includes(k) ? new Raw('checked') : ''} class="rpt-cb">${l}</label>`)}</div></div>
+    <div class="rpt-acts">
+      <button class="btn primary" data-action="rpt-xlsx" ${tb.n && cols.length ? '' : new Raw('disabled')}>⬇️ Excel (.xlsx)</button>
+      <button class="btn" data-action="rpt-print" ${tb.n && cols.length ? '' : new Raw('disabled')}>🖨️ Imprimer / PDF</button>
+      <span class="rpt-save"><input id="rptName" placeholder="Nom de la liste (ex. Téléphones collaborateurs)" style="min-width:220px"><button class="btn" data-action="rpt-save">💾 Enregistrer dans Mes listes</button></span></div>
+    <div class="section-label">Aperçu — lignes : ${tb.n}</div>
+    ${tb.n && cols.length ? html`<div style="overflow-x:auto"><table class="tbl rpt-tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.slice(0, 300).map((r) => html`<tr>${r.map((v) => html`<td>${v}</td>`)}</tr>`)}</tbody></table></div>${tb.n > 300 ? html`<p class="tiny muted">Aperçu limité à 300 lignes ; l’export contient tout.</p>` : ''}` : html`<p class="muted">Rien avec ces filtres.</p>`}`;
+}
+
 const VIEWS = {
+  rapports() { return rptView(); },
   champeq() {
     const cy = new Date().getFullYear();
     const y = ui.champEqYear || cy;
@@ -3889,6 +4020,9 @@ dashboard() {
       <div class="section-label">🔒 Masquer</div>
       <p class="small muted" style="margin:0 0 8px">Rubrique cochée : dans le menu, son nom est remplacé par « 🔒 MASQUÉ » et elle ne s’ouvre plus. Décochez pour la retrouver.</p>
       <div class="list settings">${MASKABLE.map(([k, l]) => html`<label class="row" style="cursor:pointer"><input type="checkbox" data-input="masque" value="${k}" ${masked().has(k) ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"><span class="grow title">${l}</span>${masked().has(k) ? html`<span class="badge">🔒 MASQUÉ</span>` : ''}</label>`)}</div>
+
+      <div class="section-label">📊 Rapports & exports</div>
+      <div class="list settings"><button class="row" data-action="open-rapports"><span class="avatar">📊</span><span class="grow"><span class="title" style="display:block">Rapports & exports</span><span class="meta">Contacts, travaux, heures, retards, totaux — Excel ou PDF</span></span><span class="chev">›</span></button></div>
 
       <div class="section-label">🎨 Couleurs de nos activités</div>
       <p class="small muted" style="margin:0 0 8px">Les mêmes couleurs dans toutes les apps (locataires, équipe, portail gérance) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.</p>
@@ -6266,6 +6400,25 @@ const ACTIONS = {
   'interv-job': (d) => { const i = d.id && vault.get('intervenants', d.id); openOver('tache-form', null, null, i ? { intervenantId: d.id, type: i.metier === 'menage' ? 'nettoyage' : 'reparation' } : { type: 'reparation' }); },
   // Maintenance › Équipe : « 📌 Affectation » sans ouvrier → on choisit d'abord l'ouvrier
   'aff-pick': () => openOver('aff-pick'),
+  'open-rapports': () => go('rapports'),
+  'rpt-src': (d) => { rptCfg().src = d.id; renderView(); },
+  'rpt-per': (d) => { const c = rptCfg(); c.from = d.f; c.to = d.t; renderView(); },
+  'rpt-xlsx': () => { const c = rptCfg(), tb = rptTable(c); download(`${rptTitle(c).replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase()}.xlsx`, xlsxBlob(tb.head, tb.rows, RPT_SRC[c.src][0].replace(/^\S+\s/, '')), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); },
+  'rpt-print': () => { const c = rptCfg(), tb = rptTable(c); printDoc(rptTitle(c), html`<table class="pr-tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.map((r) => html`<tr>${r.map((v) => html`<td>${v}</td>`)}</tr>`)}</tbody></table><p class="tiny">${plural(tb.n, 'ligne')}</p>`); },
+  async 'rpt-save'() {
+    const nom = ($('#rptName')?.value || '').trim();
+    if (!nom) return toast('Donnez un nom à la liste', { bad: true });
+    const r = vault.get('reglages', 'rapports') || {}, list = (r.list || []).filter((x) => x.nom !== nom);
+    await vault.mutate((tx) => tx.put('reglages', { id: 'rapports', list: [...list, { id: uid(), nom: nom.slice(0, 60), cfg: JSON.parse(JSON.stringify(rptCfg())) }].slice(-30) }), 'Rapports : liste enregistrée', nom);
+    toast('Liste enregistrée'); renderView();
+  },
+  'rpt-load': (d) => { const s = (((vault.get('reglages', 'rapports') || {}).list) || []).find((x) => x.id === d.id); if (s) { ui.rpt = { ...rptDef(), ...JSON.parse(JSON.stringify(s.cfg)) }; renderView(); } },
+  async 'rpt-del'(d) {
+    const r = vault.get('reglages', 'rapports') || {}, s = (r.list || []).find((x) => x.id === d.id);
+    if (!s || !(await confirmBox('Supprimer la liste « ' + s.nom + ' » ?', { ok: 'Supprimer', danger: true }))) return;
+    await vault.mutate((tx) => tx.put('reglages', { id: 'rapports', list: r.list.filter((x) => x.id !== d.id) }), 'Rapports : liste supprimée', s.nom);
+    renderView();
+  },
   // toucher un point de couleur (téléphone / tablette) : sa bulle reste ouverte ; toucher ailleurs la ferme
   'leg-dot': (d, el) => { const on = !el.classList.contains('on'); document.querySelectorAll('.leg-dot.on').forEach((x) => x.classList.remove('on')); el.classList.toggle('on', on); },
   'lieu-set': (d, el) => {
@@ -8475,6 +8628,16 @@ document.addEventListener('change', (e) => {
   if (f && f.dataset.form === 'replace' && e.target.name === 'sortie' && e.target.value && f.n_debut) f.n_debut.value = addDays(e.target.value, 1);
   // « 🕓 Compléter plus tard » : IBAN / BIC / banque ne sont plus obligatoires
   if (k === 'bank-later') e.target.form.querySelectorAll('[data-bank]').forEach((x) => { x.required = !e.target.checked; });
+  // 📊 Rapports : filtres, cases à cocher, colonnes
+  if (k === 'rpt' || k === 'rpt-arr' || k === 'rpt-col') {
+    const c = rptCfg(), t = e.target, key = t.dataset.k;
+    if (k === 'rpt') c[key] = t.value;
+    else if (k === 'rpt-col') { const all = RPT_SRC[c.src][1].map(([x]) => x); c.cols[c.src] = all.filter((x) => document.querySelector(`[data-input=rpt-col][value="${x}"]`)?.checked); }
+    else if (key === 'withMail' || key === 'withTel') c[key] = t.checked;
+    else c[key] = t.checked ? [...new Set([...c[key], t.value])] : c[key].filter((x) => x !== t.value);
+    if (c.from > c.to) [c.from, c.to] = [c.to, c.from];
+    renderView();
+  }
   if (k === 'masque') {
     const on = [...document.querySelectorAll('[data-input=masque]:checked')].map((x) => x.value);
     vault.mutate((tx) => tx.put('reglages', { id: 'masque', on }), 'Menu : rubriques masquées', on.length ? on.map((x) => (MASKABLE.find((m) => m[0] === x) || [x, x])[1]).join(', ') : 'aucune')

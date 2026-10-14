@@ -855,3 +855,12 @@ dialog.bien-full::backdrop { background: rgba(0,0,0,.9); }
 @media (prefers-reduced-motion: reduce) { .mk-on { animation: none; } }
 /* dans un banner de couleur (devis, contours d'activité) : une seule bordure, celle du banner — la section pliable intérieure ne s'allume pas en orange */
 .dev-banner details.dfold, .mk details.dfold { animation: none !important; box-shadow: none !important; border: 0 !important; background: transparent !important; padding: 2px 0 0 !important; }
+/* 📊 Rapports : aperçu du tableau */
+.rpt-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.rpt-tbl th, .rpt-tbl td { padding: 6px 8px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+.rpt-tbl th { background: var(--surface-2); position: sticky; top: 0; }
+.rpt-cb { width: auto !important; display: inline-block !important; margin: 0 6px 0 0 !important; vertical-align: middle; min-height: 0 !important; }
+.rpt-acts { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+.rpt-acts .btn { flex: none; }
+.rpt-save { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; flex: 1 1 280px; }
+.rpt-save input { flex: 1 1 200px; min-width: 0; }

@@ -14331,5 +14331,293 @@ export default [
 [
 "Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème",
 "Pontos a piscar = semáforo: 🟢 hoje / tudo bem · 🟡 em breve / amanhã · 🔴 urgente / problema"
+],
+[
+"Rapports & exports",
+"Relatórios e exportações"
+],
+[
+"Choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.",
+"Escolha o quê, filtre, marque as colunas e depois Excel ou PDF."
+],
+[
+"Contacts",
+"Contactos"
+],
+[
+"Travaux",
+"Trabalhos"
+],
+[
+"Heures par personne",
+"Horas por pessoa"
+],
+[
+"Totaux",
+"Totais"
+],
+[
+"Société",
+"Empresa"
+],
+[
+"Détail",
+"Detalhe"
+],
+[
+"Heure prévue",
+"Hora prevista"
+],
+[
+"Quoi",
+"O quê"
+],
+[
+"Qui",
+"Quem"
+],
+[
+"Gérance / demande",
+"Gestora / pedido"
+],
+[
+"Personne",
+"Pessoa"
+],
+[
+"Travaux finis",
+"Trabalhos terminados"
+],
+[
+"Nettoyages",
+"Limpezas"
+],
+[
+"Gros travaux",
+"Grandes obras"
+],
+[
+"Autres",
+"Outros"
+],
+[
+"Arrivées en retard",
+"Chegadas atrasadas"
+],
+[
+"Type de retard",
+"Tipo de atraso"
+],
+[
+"Date prévue / échéance",
+"Data prevista / vencimento"
+],
+[
+"Quoi / où",
+"O quê / onde"
+],
+[
+"Retard (jours)",
+"Atraso (dias)"
+],
+[
+"Retard (minutes)",
+"Atraso (minutos)"
+],
+[
+"Montant (€)",
+"Montante (€)"
+],
+[
+"Indicateur",
+"Indicador"
+],
+[
+"Ouvriers internes",
+"Operários internos"
+],
+[
+"Sociétés externes",
+"Empresas externas"
+],
+[
+"Collaborateurs occasionnels",
+"Colaboradores ocasionais"
+],
+[
+"Agences immobilières",
+"Agências imobiliárias"
+],
+[
+"Clients de l’hotel",
+"Clientes do hotel"
+],
+[
+"Loyers impayés",
+"Rendas por pagar"
+],
+[
+"Travaux pas finis (date passée)",
+"Trabalhos não terminados (data passada)"
+],
+[
+"Travaux finis après la date prévue",
+"Trabalhos terminados depois da data prevista"
+],
+[
+"Arrivées de l’ouvrier après l’heure prévue",
+"Chegadas do operário depois da hora prevista"
+],
+[
+"Factures pas payées à l’échéance",
+"Faturas não pagas no vencimento"
+],
+[
+"Filtres",
+"Filtros"
+],
+[
+"Colonnes",
+"Colunas"
+],
+[
+"Ce mois",
+"Este mês"
+],
+[
+"Cette année",
+"Este ano"
+],
+[
+"Depuis le début",
+"Desde o início"
+],
+[
+"Seulement avec email",
+"Só com email"
+],
+[
+"Seulement avec téléphone",
+"Só com telefone"
+],
+[
+"Gérances : ouvrez une fois la page Gérances pour charger leurs coordonnées.",
+"Gestoras: abra uma vez a página Gestoras para carregar os contactos."
+],
+[
+"Toutes",
+"Todas"
+],
+[
+"Fini par l’ouvrier",
+"Terminado pelo operário"
+],
+[
+"Où / quoi contient",
+"Onde / o quê contém"
+],
+[
+"Nom de la liste (ex. Téléphones collaborateurs)",
+"Nome da lista (ex. Telefones colaboradores)"
+],
+[
+"Enregistrer dans Mes listes",
+"Guardar em As minhas listas"
+],
+[
+"Mes listes",
+"As minhas listas"
+],
+[
+"Aperçu : {0}",
+"Pré-visualização: {0}"
+],
+[
+"Rien avec ces filtres.",
+"Nada com estes filtros."
+],
+[
+"Aperçu limité à 300 lignes ; l’export contient tout.",
+"Pré-visualização limitada a 300 linhas; a exportação contém tudo."
+],
+[
+"Contacts, travaux, heures, retards, totaux — Excel ou PDF",
+"Contactos, trabalhos, horas, atrasos, totais — Excel ou PDF"
+],
+[
+"Donnez un nom à la liste",
+"Dê um nome à lista"
+],
+[
+"Liste enregistrée",
+"Lista guardada"
+],
+[
+"Supprimer la liste « {0} » ?",
+"Apagar a lista «{0}»?"
+],
+[
+"Travaux terminés (total)",
+"Trabalhos terminados (total)"
+],
+[
+"Dépannages / réparations",
+"Assistências / reparações"
+],
+[
+"Autres travaux",
+"Outros trabalhos"
+],
+[
+"Demandes des gérances traitées",
+"Pedidos das gestoras tratados"
+],
+[
+"Interventions urgentes",
+"Intervenções urgentes"
+],
+[
+"Heures réelles (total)",
+"Horas reais (total)"
+],
+[
+"Loyers impayés (mois)",
+"Rendas por pagar (meses)"
+],
+[
+"Loyers impayés (€)",
+"Rendas por pagar (€)"
+],
+[
+"Travaux pas finis en retard",
+"Trabalhos não terminados em atraso"
+],
+[
+"Factures en retard",
+"Faturas em atraso"
+],
+[
+"Factures en retard (€)",
+"Faturas em atraso (€)"
+],
+[
+"Devis émis",
+"Orçamentos emitidos"
+],
+[
+"Devis acceptés",
+"Orçamentos aceites"
+],
+[
+"Aperçu : {0} lignes",
+"Pré-visualização: {0} linhas"
+],
+[
+"Aperçu : {0} ligne",
+"Pré-visualização: {0} linha"
+],
+[
+"Aperçu — lignes : {0}",
+"Pré-visualização — linhas: {0}"
 ]
 ];
