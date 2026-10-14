@@ -14639,5 +14639,109 @@ export default [
 [
 "Statistiques sur mesure",
 "Estatísticas à medida"
+],
+[
+"Sociétés (gérances)",
+"Empresas (gestoras)"
+],
+[
+"Lieux",
+"Locais"
+],
+[
+"Rechercher…",
+"Procurar…"
+],
+[
+"Tout cocher",
+"Marcar tudo"
+],
+[
+"Tout décocher",
+"Desmarcar tudo"
+],
+[
+"— sans personne —",
+"— sem pessoa —"
+],
+[
+"Sans personne",
+"Sem pessoa"
+],
+[
+"Nos immeubles et clients directs",
+"Os nossos imóveis e clientes diretos"
+],
+[
+"Graphiques",
+"Gráficos"
+],
+[
+"Rapport direction (PDF)",
+"Relatório direção (PDF)"
+],
+[
+"Rapport direction {0} – {1}",
+"Relatório direção {0} – {1}"
+],
+[
+"Arrivées à l’heure",
+"Chegadas a horas"
+],
+[
+"Clients satisfaits",
+"Clientes satisfeitos"
+],
+[
+"Travaux par type",
+"Trabalhos por tipo"
+],
+[
+"Travaux finis par mois",
+"Trabalhos terminados por mês"
+],
+[
+"Par personne (travaux · heures)",
+"Por pessoa (trabalhos · horas)"
+],
+[
+"Ponctualité",
+"Pontualidade"
+],
+[
+"Fin des travaux",
+"Fim dos trabalhos"
+],
+[
+"Arrivée de l’ouvrier",
+"Chegada do operário"
+],
+[
+"À temps",
+"A tempo"
+],
+[
+"En retard",
+"Atrasado"
+],
+[
+"À l’heure",
+"A horas"
+],
+[
+"Avis des clients (locataires)",
+"Opinião dos clientes (inquilinos)"
+],
+[
+"{0} avis",
+"{0} avaliações"
+],
+[
+"moyenne {0} / 4",
+"média {0} / 4"
+],
+[
+"Filtres : {0}",
+"Filtros: {0}"
 ]
 ];

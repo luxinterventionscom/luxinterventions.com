@@ -14731,5 +14731,109 @@ export default [
 [
 "Statistiques sur mesure",
 "Statistiche su misura"
+],
+[
+"Sociétés (gérances)",
+"Società (gérance)"
+],
+[
+"Lieux",
+"Luoghi"
+],
+[
+"Rechercher…",
+"Cerca…"
+],
+[
+"Tout cocher",
+"Spunta tutto"
+],
+[
+"Tout décocher",
+"Togli tutto"
+],
+[
+"— sans personne —",
+"— senza persona —"
+],
+[
+"Sans personne",
+"Senza persona"
+],
+[
+"Nos immeubles et clients directs",
+"I nostri immobili e clienti diretti"
+],
+[
+"Graphiques",
+"Grafici"
+],
+[
+"Rapport direction (PDF)",
+"Rapporto direzione (PDF)"
+],
+[
+"Rapport direction {0} – {1}",
+"Rapporto direzione {0} – {1}"
+],
+[
+"Arrivées à l’heure",
+"Arrivi puntuali"
+],
+[
+"Clients satisfaits",
+"Clienti soddisfatti"
+],
+[
+"Travaux par type",
+"Lavori per tipo"
+],
+[
+"Travaux finis par mois",
+"Lavori finiti per mese"
+],
+[
+"Par personne (travaux · heures)",
+"Per persona (lavori · ore)"
+],
+[
+"Ponctualité",
+"Puntualità"
+],
+[
+"Fin des travaux",
+"Fine dei lavori"
+],
+[
+"Arrivée de l’ouvrier",
+"Arrivo dell’operaio"
+],
+[
+"À temps",
+"In tempo"
+],
+[
+"En retard",
+"In ritardo"
+],
+[
+"À l’heure",
+"Puntuale"
+],
+[
+"Avis des clients (locataires)",
+"Gradimento dei clienti (inquilini)"
+],
+[
+"{0} avis",
+"{0} voti"
+],
+[
+"moyenne {0} / 4",
+"media {0} / 4"
+],
+[
+"Filtres : {0}",
+"Filtri: {0}"
 ]
 ];

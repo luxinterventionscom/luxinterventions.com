@@ -864,3 +864,31 @@ dialog.bien-full::backdrop { background: rgba(0,0,0,.9); }
 .rpt-acts .btn { flex: none; }
 .rpt-save { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; flex: 1 1 280px; }
 .rpt-save input { flex: 1 1 200px; min-width: 0; }
+/* 🖨️ Statistiques sur mesure : listes à cocher + graphiques */
+.rpt-picks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; margin-top: 10px; }
+.rpt-pick { border: 1px solid var(--border); border-radius: 12px; padding: 8px 10px; background: var(--surface); min-width: 0; }
+.rpt-pick > summary { cursor: pointer; font-weight: 700; }
+.rpt-pick-tools { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.rpt-pick-tools input { flex: 1 1 120px; min-width: 0; }
+.rpt-pick-list { max-height: 220px; overflow-y: auto; display: grid; gap: 2px; }
+.rpt-pick-list label { display: flex; align-items: center; gap: 6px; font-size: 14px; padding: 3px 2px; cursor: pointer; }
+.vz { color: var(--text); }
+.vz-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-bottom: 10px; }
+.vz-tile { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; background: var(--surface); }
+.vz-tv { font-size: 26px; font-weight: 800; line-height: 1.1; }
+.vz-tl { font-size: 13px; color: var(--text-2); }
+.vz-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+.vz-card { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; background: var(--surface); min-width: 0; break-inside: avoid; }
+.vz-card h4 { margin: 0 0 8px; font-size: 14px; }
+.vz-donut { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.vz-leg { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 13px; margin-top: 6px; }
+.vz-leg.col { flex-direction: column; margin: 0; }
+.vz-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.vz-stack { display: flex; gap: 2px; height: 18px; border-radius: 6px; overflow: hidden; }
+.vz-stack i { display: block; min-width: 3px; }
+.vz-hb { display: grid; grid-template-columns: minmax(80px, 34%) 1fr auto; gap: 8px; align-items: center; font-size: 13px; margin: 3px 0; }
+.vz-hl { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vz-ht { background: var(--surface-2); border-radius: 4px; height: 10px; overflow: hidden; }
+.vz-ht i { display: block; height: 100%; border-radius: 4px; }
+.vz-hv { white-space: nowrap; color: var(--text-2); }
+@media print { .vz-stack i, .vz-ht i, .vz-leg i { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

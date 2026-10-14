@@ -14715,5 +14715,109 @@ export default [
 [
 "Statistiques sur mesure",
 "Statistiken nach Maß"
+],
+[
+"Sociétés (gérances)",
+"Firmen (Verwaltungen)"
+],
+[
+"Lieux",
+"Orte"
+],
+[
+"Rechercher…",
+"Suchen…"
+],
+[
+"Tout cocher",
+"Alle anhaken"
+],
+[
+"Tout décocher",
+"Alle abwählen"
+],
+[
+"— sans personne —",
+"— ohne Person —"
+],
+[
+"Sans personne",
+"Ohne Person"
+],
+[
+"Nos immeubles et clients directs",
+"Unsere Gebäude und Direktkunden"
+],
+[
+"Graphiques",
+"Diagramme"
+],
+[
+"Rapport direction (PDF)",
+"Bericht Geschäftsleitung (PDF)"
+],
+[
+"Rapport direction {0} – {1}",
+"Bericht Geschäftsleitung {0} – {1}"
+],
+[
+"Arrivées à l’heure",
+"Pünktliche Ankünfte"
+],
+[
+"Clients satisfaits",
+"Zufriedene Kunden"
+],
+[
+"Travaux par type",
+"Arbeiten nach Art"
+],
+[
+"Travaux finis par mois",
+"Erledigte Arbeiten pro Monat"
+],
+[
+"Par personne (travaux · heures)",
+"Pro Person (Arbeiten · Stunden)"
+],
+[
+"Ponctualité",
+"Pünktlichkeit"
+],
+[
+"Fin des travaux",
+"Arbeitsende"
+],
+[
+"Arrivée de l’ouvrier",
+"Ankunft des Arbeiters"
+],
+[
+"À temps",
+"Rechtzeitig"
+],
+[
+"En retard",
+"Verspätet"
+],
+[
+"À l’heure",
+"Pünktlich"
+],
+[
+"Avis des clients (locataires)",
+"Kundenbewertungen (Mieter)"
+],
+[
+"{0} avis",
+"{0} Bewertungen"
+],
+[
+"moyenne {0} / 4",
+"Durchschnitt {0} / 4"
+],
+[
+"Filtres : {0}",
+"Filter: {0}"
 ]
 ];
