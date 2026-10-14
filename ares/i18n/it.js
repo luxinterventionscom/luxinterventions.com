@@ -14715,5 +14715,17 @@ export default [
 [
 "Quantité faite — {0}",
 "Quantità fatta — {0}"
+],
+[
+"Imprimer sur mesure",
+"Stampa su misura"
+],
+[
+"← Statistiques",
+"← Statistiche"
+],
+[
+"Statistiques : choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.",
+"Statistiche: scegli cosa, filtra, spunta le colonne, poi Excel o PDF."
 ]
 ];
