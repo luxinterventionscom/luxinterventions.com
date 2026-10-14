@@ -14695,5 +14695,9 @@ export default [
 [
 "Aperçu — lignes : {0}",
 "Vista previa — filas: {0}"
+],
+[
+"Quantité faite — {0}",
+"Cantidad hecha — {0}"
 ]
 ];

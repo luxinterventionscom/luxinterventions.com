@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.124.0';
+const VERSION = '2.125.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -510,9 +510,11 @@ async function equipeInbox(w, msg) {
         const ph = photos.map((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'equipe', label: `${intervFull(w)} — ${t.titre} (${n + 1})`, date: d, mime: 'image/jpeg', size: Math.round(String(b).length * 0.75) }); files.push([doc.id, b]); return doc.id; });
         const entry = { d, st: it.st, note, at, by: w.id, ph };
         if (/^\d{2}:\d{2}$/.test(it.h || '')) entry.h = it.h;
+        // « Combien ? » : quantité faite (12 vitres, 3 robinets…), pour les statistiques
+        if (it.st === 'fait' && +it.qte > 0) { entry.qte = Math.min(99999, Math.round(+it.qte * 100) / 100); entry.qu = String(it.qu || '').trim().slice(0, 40); }
         const upd = { id: t.id, journal: [...(t.journal || []), entry].slice(-80) };
         // l'ouvrier a fini : c'est le bureau qui clôture le chantier (après contrôle des photos)
-        if (!t.recur && it.st === 'fait') Object.assign(upd, { fini: { d, by: w.id, h: entry.h || at.slice(11, 16), note } });
+        if (!t.recur && it.st === 'fait') Object.assign(upd, { fini: { d, by: w.id, h: entry.h || at.slice(11, 16), note, ...(entry.qte ? { qte: entry.qte, qu: entry.qu } : {}) } });
         if (!t.recur && it.st === 'incomplet') upd.fini = null;
         // ✋ « Je ne peux pas » (malade, pas disponible…) : le travail revient sans ouvrier, à réaffecter
         if (it.st === 'refus') {
@@ -522,7 +524,7 @@ async function equipeInbox(w, msg) {
           if (!t.recur) Object.assign(upd, { intervenantId: '', statut: 'afaire' });
         }
         tx.put('taches', upd);
-        feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note, ph: ph.length, h: entry.h || '' });
+        feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note: entry.qte ? `🔢 ${entry.qte} ${entry.qu}`.trim() + (note ? ' — ' + note : '') : note, ph: ph.length, h: entry.h || '' });
         fresh++;
       } else if (it.k === 'ph') {
         const t = vault.get('taches', String(it.tid || ''));
@@ -3180,7 +3182,7 @@ const dayShort = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR'
 // ───────── 📊 Rapports & exports : contacts, travaux, heures, retards, totaux — filtres, colonnes au choix, Excel (.xlsx) ou PDF ─────────
 const RPT_SRC = {
   contacts: ['👥 Contacts', [['cat', 'Catégorie'], ['nom', 'Nom'], ['prenom', 'Prénom'], ['soc', 'Société'], ['email', 'Email'], ['tel', 'Téléphone'], ['adr', 'Adresse'], ['info', 'Détail']], ['cat', 'nom', 'prenom', 'email', 'tel']],
-  travaux: ['🔧 Travaux', [['date', 'Date'], ['heure', 'Heure prévue'], ['type', 'Type'], ['titre', 'Quoi'], ['lieu', 'Où'], ['qui', 'Qui'], ['statut', 'Statut'], ['urg', 'Urgent'], ['arr', 'Arrivée'], ['dep', 'Départ'], ['h', 'Heures réelles'], ['cout', 'Coût (€)'], ['ger', 'Gérance / demande']], ['date', 'type', 'titre', 'lieu', 'qui', 'statut', 'h']],
+  travaux: ['🔧 Travaux', [['date', 'Date'], ['heure', 'Heure prévue'], ['type', 'Type'], ['titre', 'Quoi'], ['lieu', 'Où'], ['qui', 'Qui'], ['statut', 'Statut'], ['urg', 'Urgent'], ['arr', 'Arrivée'], ['dep', 'Départ'], ['h', 'Heures réelles'], ['qte', 'Quantité'], ['qu', 'Unité'], ['cout', 'Coût (€)'], ['ger', 'Gérance / demande']], ['date', 'type', 'titre', 'lieu', 'qui', 'statut', 'h', 'qte', 'qu']],
   heures: ['⏱️ Heures par personne', [['qui', 'Personne'], ['cat', 'Catégorie'], ['metier', 'Métier'], ['n', 'Travaux finis'], ['h', 'Heures réelles'], ['nettoyage', 'Nettoyages'], ['reparation', 'Réparations'], ['gros', 'Gros travaux'], ['autre', 'Autres'], ['late', 'Arrivées en retard']], null],
   retards: ['⏰ Retards', [['type', 'Type de retard'], ['date', 'Date prévue / échéance'], ['qui', 'Qui'], ['quoi', 'Quoi / où'], ['j', 'Retard (jours)'], ['min', 'Retard (minutes)'], ['montant', 'Montant (€)']], null],
   totaux: ['📈 Totaux', [['ind', 'Indicateur'], ['val', 'Valeur']], null],
@@ -3198,6 +3200,8 @@ const jobTimes = (t, d) => {
   const arr = hOf(j.find((x) => x.st === 'encours')), dep = hOf([...j].reverse().find((x) => x.st === 'fait'));
   return { arr, dep, h: arr && dep ? Math.max(0, Math.round((hm(dep) - hm(arr)) * 100) / 100) : 0 };
 };
+// quantité notée par l'ouvrier en finissant (« Combien ? »)
+const jobQty = (t, d) => { const q = (t.fini && t.fini.qte ? t.fini : null) || [...(t.journal || [])].reverse().find((x) => x.d === d && x.qte); return q ? { qte: q.qte, qu: q.qu || '' } : { qte: '', qu: '' }; };
 const jobDay = (t) => (t.statut === 'fait' ? t.doneDate || t.date : t.fini ? t.fini.d : t.date) || '';
 const inPer = (d, c) => d && d >= c.from && d <= c.to;
 function rptRetards(c) {
@@ -3238,7 +3242,7 @@ function rptRows(c) {
   if (c.src === 'travaux') {
     const q = String(c.q || '').toLowerCase();
     return vault.list('taches').filter((t) => !t.recur).map((t) => ({ t, d: jobDay(t) })).filter(({ t, d }) => inPer(d, c) && (!c.ttype || t.type === c.ttype) && (!c.tstat || (c.tstat === 'fini' ? t.statut !== 'fait' && t.fini : t.statut === c.tstat)) && (!c.person || t.intervenantId === c.person) && (!q || `${t.titre} ${placeName(t)}`.toLowerCase().includes(q)))
-      .map(({ t, d }) => { const w = vault.get('intervenants', t.intervenantId), k = jobTimes(t, d); return { date: d, heure: t.heure || '', type: (TACHE_TYPES[t.type] || t.type || '').replace(/^\S+\s/, ''), titre: t.titre, lieu: placeName(t).replace(/^[📍📝🏢]\s?/u, ''), qui: w ? intervFull(w) : '', statut: t.statut !== 'fait' && t.fini ? 'Fini par l’ouvrier' : STATUTS[t.statut] || '', urg: t.urgent ? 'oui' : '', arr: k.arr, dep: k.dep, h: k.h || '', cout: t.cout || '', ger: t.ptl ? `${t.ptl.org} #${t.ptl.ref}` : '' }; })
+      .map(({ t, d }) => { const w = vault.get('intervenants', t.intervenantId), k = jobTimes(t, d); return { date: d, heure: t.heure || '', type: (TACHE_TYPES[t.type] || t.type || '').replace(/^\S+\s/, ''), titre: t.titre, lieu: placeName(t).replace(/^[📍📝🏢]\s?/u, ''), qui: w ? intervFull(w) : '', statut: t.statut !== 'fait' && t.fini ? 'Fini par l’ouvrier' : STATUTS[t.statut] || '', urg: t.urgent ? 'oui' : '', arr: k.arr, dep: k.dep, h: k.h || '', ...jobQty(t, d), cout: t.cout || '', ger: t.ptl ? `${t.ptl.org} #${t.ptl.ref}` : '' }; })
       .sort((a, b) => a.date.localeCompare(b.date));
   }
   if (c.src === 'heures') {
@@ -3264,6 +3268,7 @@ function rptRows(c) {
     ['Travaux terminés (total)', done.length], ['Dépannages / réparations', cnt('reparation')], ['Nettoyages', cnt('nettoyage')], ['Gros travaux', cnt('gros')], ['Autres travaux', cnt('autre')],
     ['Demandes des gérances traitées', done.filter((t) => t.ptl).length], ['Interventions urgentes', done.filter((t) => t.urgent).length],
     ['Heures réelles (total)', Math.round(done.reduce((n, t) => n + jobTimes(t, jobDay(t)).h, 0) * 100) / 100],
+    ...Object.entries(done.reduce((m, t) => { const q = jobQty(t, jobDay(t)); if (q.qte) { const u = (q.qu || 'pièces').toLowerCase(); m[u] = Math.round(((m[u] || 0) + q.qte) * 100) / 100; } return m; }, {})).sort().map(([u, n]) => [`Quantité faite — ${u}`, n]),
     ...(c.person ? [] : [['Loyers impayés (mois)', rc('loyer').length], ['Loyers impayés (€)', Math.round(rc('loyer').reduce((n, r) => n + (+r.montant || 0), 0) * 100) / 100]]),
     ['Travaux pas finis en retard', rc('topen').length], ['Travaux finis après la date prévue', rc('tfin').length], ['Arrivées en retard', rc('arr').length],
     ['Factures en retard', rc('fact').length], ['Factures en retard (€)', Math.round(rc('fact').reduce((n, r) => n + (+r.montant || 0), 0) * 100) / 100],
@@ -4917,7 +4922,7 @@ const SHEETS = {
         ${pb.length || np ? html`<p class="tiny muted full" style="margin:-4px 0 0">✓ ${pb.length + np} photo(s) déjà jointe(s)${np ? ' (photos de la gérance)' : ''}</p>` : ''}
         ${np ? html`<input type="hidden" name="ptlPhotos" value="${t.ptlPhotos.join(',')}">` : ''}`; })()}
         ${t.depId ? html`<p class="tiny muted full" style="margin:0">✓ Coût enregistré dans les dépenses de l'immeuble.</p>` : ''}
-        ${(t.journal || []).length ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">👷 Suivi de l’équipe</div><div class="list small">${t.journal.slice().reverse().slice(0, 30).map((x) => html`<div class="row"><span class="grow" style="white-space:normal"><b>${EQ_ST[x.st] || x.st}${x.h ? ' 🕒 ' + x.h : ''}</b> · ${fmtDate(x.d)}${x.by ? ' · ' + intervName(x.by) : ''}<span class="meta" style="display:block">${fmtDateTime(x.at)}</span>${x.note ? html`<span class="small" style="display:block">📝 ${x.note}</span>` : ''}</span>${(x.ph || []).filter((pid) => vault.get('documents', pid)).map((pid) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${pid}">📷</button>`)}</div>`)}</div></div>` : ''}
+        ${(t.journal || []).length ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">👷 Suivi de l’équipe</div><div class="list small">${t.journal.slice().reverse().slice(0, 30).map((x) => html`<div class="row"><span class="grow" style="white-space:normal"><b>${EQ_ST[x.st] || x.st}${x.h ? ' 🕒 ' + x.h : ''}${x.qte ? ` · 🔢 ${x.qte} ${x.qu || ''}` : ''}</b> · ${fmtDate(x.d)}${x.by ? ' · ' + intervName(x.by) : ''}<span class="meta" style="display:block">${fmtDateTime(x.at)}</span>${x.note ? html`<span class="small" style="display:block">📝 ${x.note}</span>` : ''}</span>${(x.ph || []).filter((pid) => vault.get('documents', pid)).map((pid) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${pid}">📷</button>`)}</div>`)}</div></div>` : ''}
         ${t.locId ? html`<p class="tiny full" style="margin:0">📨 Signalé par <a href="#" data-action="open-loc" data-id="${t.locId}">${fullName(vault.get('locataires', t.locId) || { nom: '?' })}</a> — il voit l'avancement dans son espace.</p>` : ''}
         ${t.id && (eqPhotos(t.id, 'av').length || eqPhotos(t.id, 'ap').length) ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">📷 Avant / après les travaux</div><div class="edl-pair two">${Object.entries(EQ_PH).map(([ph, lb]) => html`<div><div class="tiny muted" style="margin-bottom:4px"><b>${lb}</b> · ${eqPhotos(t.id, ph).length} / ${EQ_PH_MAX}</div><div class="edl-grid sm">${eqPhotos(t.id, ph).map((x) => html`<figure class="edl"><button type="button" class="edl-img" data-action="open-doc" data-id="${x.id}" aria-label="Agrandir"><img alt="" data-edl="${x.id}"></button><figcaption><span>${fmtDate(x.date)}</span><button type="button" class="btn icon sm ghost danger" data-action="del-edl" data-id="${x.id}" aria-label="Retirer la photo">${icon('trash')}</button></figcaption></figure>`)}</div></div>`)}</div></div>` : ''}
         ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id && !x.phase).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id && !x.phase).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
