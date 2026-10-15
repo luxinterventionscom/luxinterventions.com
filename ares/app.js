@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.129.0';
+const VERSION = '2.130.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -589,11 +589,17 @@ async function equipeInbox(w, msg) {
           fresh++;
         }
       } else if (it.k === 'info') {
-        const clean = (v, n) => String(v || '').trim().slice(0, n);
-        const upd = { id: w.id };
-        // l'ouvrier ne fait que compléter ce qui manque : ce que le responsable a rempli ne change pas
-        for (const [f, n] of [['tel', 40], ['mail', 120], ['adresse', 160], ['ville', 80]]) if (clean(it[f], n) && !String((vault.get('intervenants', w.id) || w)[f] || '').trim() && !upd[f]) upd[f] = clean(it[f], n);
-        if (Object.keys(upd).length > 1) { tx.put('intervenants', upd); feed.push({ at, k: 'info', note: 'Coordonnées complétées : ' + Object.keys(upd).filter((k) => k !== 'id').map((k) => ({ tel: 'téléphone', mail: 'email', adresse: 'adresse', ville: 'code postal et ville' })[k]).join(', ') }); fresh++; }
+        // l'ouvrier tient lui-même à jour ses données (nom, prénom, adresse, téléphone, email) : on garde l'ancien → le nouveau dans l'activité
+        const clean = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
+        const now = vault.get('intervenants', w.id) || w, upd = { id: w.id }, chg = [];
+        const LBL = { prenom: 'Prénom', nom: 'Nom', tel: 'Téléphone', mail: 'Email', adresse: 'Adresse', ville: 'Code postal et ville' };
+        for (const [f, n] of [['prenom', 60], ['nom', 80], ['tel', 40], ['mail', 120], ['adresse', 160], ['ville', 80]]) {
+          if (!(f in it)) continue;
+          const v = clean(it[f], n), was = String(now[f] || '').trim();
+          if (!v || v === was || (f === 'mail' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))) continue; // on ne vide jamais un champ
+          upd[f] = v; chg.push(`${LBL[f]} : ${was || '—'} → ${v}`);
+        }
+        if (chg.length) { tx.put('intervenants', upd); feed.push({ at, k: 'info', note: '👤 Données mises à jour par l’ouvrier — ' + chg.join(' · ') }); fresh++; }
       } else if (it.k === 'abs') {
         const debut = /^\d{4}-\d{2}-\d{2}$/.test(it.debut || '') ? it.debut : at.slice(0, 10);
         const fin = /^\d{4}-\d{2}-\d{2}$/.test(it.fin || '') && it.fin >= debut ? it.fin : '';
