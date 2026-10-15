@@ -176,18 +176,25 @@ function assurCard() {
     <label>${esc(a.pol)}</label><input type="text" name="pol" maxlength="40" autocomplete="off" required>
     <button class="btn block" style="margin-top:10px" type="submit">${esc(a.send)}</button></form></div>`;
 }
-// mon icône (métier) : choisie dans l'app, visible chez le responsable
-const WORK_ICONS = ['🧹', '🧽', '🔨', '🪚', '⚡', '💡', '🔌', '🔧', '🪠', '🚰', '🔥', '🧱', '🖌️', '🎨', '🔑', '🔐', '🌿', '🌳', '✂️', '🪜', '🧰', '🛠️', '🚚', '👷', '👷‍♀️'];
-const ICT = { fr: 'Mon icône', it: 'La mia icona', de: 'Mein Symbol', en: 'My icon', pt: 'O meu ícone', es: 'Mi icono' };
+// ma photo : choisie en touchant le rond de l'avatar, visible chez le responsable
 const SETT = {
-  fr: { t: 'Réglages', ph: 'Ma photo', pick: '📷 Choisir une photo', del: 'Retirer', hint: 'Elle apparaît chez votre responsable, à côté de votre nom.', ok: 'Photo envoyée ✓' },
-  it: { t: 'Impostazioni', ph: 'La mia foto', pick: '📷 Scegli una foto', del: 'Togli', hint: 'Appare al tuo responsabile, accanto al tuo nome.', ok: 'Foto inviata ✓' },
-  de: { t: 'Einstellungen', ph: 'Mein Foto', pick: '📷 Foto wählen', del: 'Entfernen', hint: 'Es erscheint bei Ihrem Verantwortlichen neben Ihrem Namen.', ok: 'Foto gesendet ✓' },
-  en: { t: 'Settings', ph: 'My photo', pick: '📷 Choose a photo', del: 'Remove', hint: 'It shows up for your manager, next to your name.', ok: 'Photo sent ✓' },
-  pt: { t: 'Definições', ph: 'A minha foto', pick: '📷 Escolher uma foto', del: 'Retirar', hint: 'Aparece ao seu responsável, ao lado do seu nome.', ok: 'Foto enviada ✓' },
-  es: { t: 'Ajustes', ph: 'Mi foto', pick: '📷 Elegir una foto', del: 'Quitar', hint: 'Aparece a tu responsable, junto a tu nombre.', ok: 'Foto enviada ✓' },
+  fr: { pick: 'Changer ma photo', ok: 'Photo envoyée ✓' },
+  it: { pick: 'Cambia la mia foto', ok: 'Foto inviata ✓' },
+  de: { pick: 'Mein Foto ändern', ok: 'Foto gesendet ✓' },
+  en: { pick: 'Change my photo', ok: 'Photo sent ✓' },
+  pt: { pick: 'Mudar a minha foto', ok: 'Foto enviada ✓' },
+  es: { pick: 'Cambiar mi foto', ok: 'Foto enviada ✓' },
 };
-let icOpen = false, icMine = '', phMine = null;
+// mes coordonnées : les champs vides se complètent dans l'app
+const CINFO = {
+  fr: { fill: 'Complétez ce qui manque, puis envoyez :', n: (k) => `${k} à compléter` },
+  it: { fill: 'Completa quello che manca, poi invia:', n: (k) => `${k} da completare` },
+  de: { fill: 'Ergänzen Sie, was fehlt, und senden Sie es:', n: (k) => `${k} zu ergänzen` },
+  en: { fill: 'Fill in what is missing, then send:', n: (k) => `${k} to fill in` },
+  pt: { fill: 'Complete o que falta e envie:', n: (k) => `${k} por completar` },
+  es: { fill: 'Completa lo que falta y envía:', n: (k) => `${k} por completar` },
+};
+let phMine = null;
 // photo → carré 256 px (centre), JPEG léger
 async function photoSquare(file) {
   const bmp = await createImageBitmap(file), m = Math.min(bmp.width, bmp.height), c = document.createElement('canvas');
@@ -474,12 +481,9 @@ function render() {
     sigRestore(); hydrateDv();
     return;
   }
-  const myIc = icMine || d.icon || '👷', myPh = phMine !== null ? phMine : d.photo || '', st = SETT[lang] || SETT.fr;
-  out.push(`${top(d.societe.nom, d.societe.logo)}<h1 style="display:flex;align-items:center;gap:10px"><button class="gear-btn" data-ic-open="1" aria-label="${esc(st.t)}">⚙️</button><button class="av-btn" data-ic-open="1" aria-label="${esc(st.t)}">${myPh ? `<img src="${esc(myPh)}" alt="">` : esc(myIc)}</button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)} 👋</span></h1><p class="sub">${esc([d.metier, d.societe.nom].filter(Boolean).join(' · '))}</p>`);
-  if (icOpen) out.push(`<div class="card" id="settCard"><h2 style="margin:0 0 10px">⚙️ ${esc(st.t)}</h2><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span class="av-btn" style="width:72px;height:72px;font-size:30px">${myPh ? `<img src="${esc(myPh)}" alt="">` : esc(myIc)}</span>
-    <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${myPh ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
-    <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p><p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${WORK_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === myIc}">${esc(e)}</button>`).join('')}</div></div>`);
+  // l'icône (selon le métier) est choisie par le responsable ; ici on ne change que sa photo : on touche le rond
+  const myIc = d.icon || '👷', myPh = phMine !== null ? phMine : d.photo || '', st = SETT[lang] || SETT.fr;
+  out.push(`${top(d.societe.nom, d.societe.logo)}<h1 style="display:flex;align-items:center;gap:12px"><label class="av-wrap" title="${esc(st.pick)}" aria-label="${esc(st.pick)}"><span class="av-btn">${myPh ? `<img src="${esc(myPh)}" alt="">` : esc(myIc)}</span><span class="av-pen" aria-hidden="true">✏️</span><input type="file" accept="image/*" data-photo-pick="1" hidden></label><span>${esc(t.hello)} ${esc(d.prenom || d.nom)} 👋</span></h1><p class="sub">${esc([d.metier, d.societe.nom].filter(Boolean).join(' · '))}</p>`);
   const pls = placesOf(d);
   if (place && !pls.includes(place)) place = '';
   const pubs = (d.pubs || []).filter((x) => !x.fin || x.fin >= today);
@@ -556,9 +560,14 @@ function render() {
       <label>${esc(t.cert)}</label><input type="file" name="photo" accept="image/*">
       <button class="btn block" style="margin-top:12px" type="submit">${esc(t.send)}</button></form></details></div>`);
   if (d.eng) out.push(engCard(d));
-  out.push(`<div class="card"><details class="more"><summary>👤 ${esc(t.info)}</summary>
-      ${[[t.tel, d.me.tel], [t.mail, d.me.mail], [t.adr, d.me.adresse], [t.ville, d.me.ville]].map(([k, v]) => `<div class="row"><span class="meta" style="width:130px">${esc(k)}</span><b class="grow">${esc(v || '—')}</b></div>`).join('')}
+  { // mes coordonnées : ce que le responsable a déjà rempli est en lecture seule, l'ouvrier complète ce qui manque
+    const ci = CINFO[lang] || CINFO.fr, rows = [['tel', t.tel, d.me.tel, 'tel'], ['mail', t.mail, d.me.mail, 'email'], ['adresse', t.adr, d.me.adresse, 'text'], ['ville', t.ville, d.me.ville, 'text']];
+    const miss = rows.filter((r) => !r[2]);
+    out.push(`<div class="card"><details class="more"${miss.length ? ' open' : ''}><summary>👤 ${esc(t.info)}${miss.length ? ` <span class="meta">· ${esc(ci.n(miss.length))}</span>` : ''}</summary>
+      ${rows.filter((r) => r[2]).map(([, k, v]) => `<div class="row"><span class="meta" style="width:130px">${esc(k)}</span><b class="grow">${esc(v)}</b></div>`).join('')}
+      ${miss.length ? `<form id="infoForm"><p class="meta" style="margin:10px 0 0">${esc(ci.fill)}</p>${miss.map(([n, k, , ty]) => `<label>${esc(k)}</label><input name="${n}" type="${ty}" autocomplete="${ty === 'tel' ? 'tel' : ty === 'email' ? 'email' : n === 'ville' ? 'address-level2' : 'street-address'}">`).join('')}<button class="btn block" style="margin-top:12px" type="submit">${esc(t.save)}</button></form>` : ''}
       <p class="meta" style="margin:8px 0 0">${esc(t.x.infoRO)}</p></details></div>`);
+  }
   if (pushSt === 'on') out.push(notifCard(t));
   out.push(`<p class="meta" style="text-align:center">${esc(t.install)}</p>${iaBtn()}
     <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(t.rgpd)}</p><p class="meta" style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
@@ -600,9 +609,6 @@ app.addEventListener('toggle', (e) => {
 app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-ianim]')) { import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'ARES Équipe', icon: '/ares/icons/lux-192.png', lang })); return; }
   if (e.target.closest('[data-eng-open]')) { const c = document.getElementById('engCard'); if (c) { c.querySelector('details').open = true; c.scrollIntoView({ block: 'start', behavior: 'smooth' }); } return; }
-  if (e.target.closest('[data-ic-open]')) { icOpen = !icOpen; render(); if (icOpen) document.getElementById('settCard')?.scrollIntoView({ block: 'nearest' }); return; }
-  if (e.target.closest('[data-photo-del]')) { phMine = ''; render(); try { await queue({ k: 'photo', d: '', at: new Date().toISOString() }); } catch { /* renvoyé plus tard */ } return; }
-  { const ic = e.target.closest('[data-ic]'); if (ic) { icMine = ic.dataset.ic; icOpen = false; render(); try { await queue({ k: 'icon', e: icMine, at: new Date().toISOString() }); } catch { /* renvoyé plus tard */ } return; } }
   if (e.target.closest('[data-sig-clear]')) { const c = app.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); sigUrl = ''; return; }
   const lb = e.target.closest('[data-lang]');
   if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('eqLang', lang); } catch {} if (pushSt === 'on') pushRefresh('/equipe', pushPost); return render(); }
@@ -729,7 +735,8 @@ app.addEventListener('submit', async (e) => {
       await queue({ k: 'abs', type: f.type.value, debut: f.debut.value, fin: f.fin.value, note: f.note.value.trim(), photos, at: new Date().toISOString() });
       flash = t.sickOk;
     } else if (f.id === 'infoForm') {
-      await queue({ k: 'info', tel: f.tel.value, mail: f.mail.value, adresse: f.adresse.value, ville: f.ville.value, at: new Date().toISOString() });
+      const v = (n) => (f[n] ? f[n].value.trim() : '');
+      await queue({ k: 'info', tel: v('tel'), mail: v('mail'), adresse: v('adresse'), ville: v('ville'), at: new Date().toISOString() });
       flash = t.infoOk;
     }
   } catch (err) { alert('⚠ ' + (err.message || err)); }
