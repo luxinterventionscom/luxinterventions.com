@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.128.0';
+const VERSION = '2.129.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -591,10 +591,9 @@ async function equipeInbox(w, msg) {
       } else if (it.k === 'info') {
         const clean = (v, n) => String(v || '').trim().slice(0, n);
         const upd = { id: w.id };
-        for (const [f, n] of [['tel', 40], ['mail', 120], ['adresse', 160], ['ville', 80]]) if (clean(it[f], n)) upd[f] = clean(it[f], n);
-        tx.put('intervenants', upd);
-        feed.push({ at, k: 'info', note: 'Coordonnées mises à jour' });
-        fresh++;
+        // l'ouvrier ne fait que compléter ce qui manque : ce que le responsable a rempli ne change pas
+        for (const [f, n] of [['tel', 40], ['mail', 120], ['adresse', 160], ['ville', 80]]) if (clean(it[f], n) && !String((vault.get('intervenants', w.id) || w)[f] || '').trim() && !upd[f]) upd[f] = clean(it[f], n);
+        if (Object.keys(upd).length > 1) { tx.put('intervenants', upd); feed.push({ at, k: 'info', note: 'Coordonnées complétées : ' + Object.keys(upd).filter((k) => k !== 'id').map((k) => ({ tel: 'téléphone', mail: 'email', adresse: 'adresse', ville: 'code postal et ville' })[k]).join(', ') }); fresh++; }
       } else if (it.k === 'abs') {
         const debut = /^\d{4}-\d{2}-\d{2}$/.test(it.debut || '') ? it.debut : at.slice(0, 10);
         const fin = /^\d{4}-\d{2}-\d{2}$/.test(it.fin || '') && it.fin >= debut ? it.fin : '';
@@ -4283,7 +4282,7 @@ const vidHint = (v) => { v = String(v || '').trim(); if (!v) return ''; const e 
 const field = (label, name, value, opts = {}) => html`<label class="field ${opts.full ? 'full' : ''}">${label}
   <input name="${name}" type="${opts.type || 'text'}" value="${value ?? ''}" ${opts.required ? new Raw('required') : ''} ${opts.attrs ? new Raw(opts.attrs) : ''} placeholder="${opts.placeholder || ''}"></label>`;
 const money$ = 'inputmode="decimal" step="0.01" min="0"';
-const tabsBar = (tabs, cur) => html`<div class="tabs" role="tablist">${tabs.map(([k, label]) => html`<button class="tab" role="tab" aria-selected="${cur === k}" data-action="sheet-tab" data-id="${k}">${label}</button>`)}</div>`;
+const tabsBar = (tabs, cur) => html`<div class="tabs tabs-wrap" role="tablist">${tabs.map(([k, label]) => html`<button class="tab" role="tab" aria-selected="${cur === k}" data-action="sheet-tab" data-id="${k}">${label}</button>`)}</div>`;
 const kvRow = (k, v) => html`<dt>${k}</dt><dd>${v}</dd>`;
 const DEP_CATS = { reparation: '🔧 Réparation', assurance: '🛡️ Assurance', taxe: '🏛️ Taxe / impôt', entretien: '🧹 Entretien', autre: '📦 Autre' };
 
