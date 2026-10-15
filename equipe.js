@@ -185,15 +185,17 @@ const SETT = {
   pt: { pick: 'Mudar a minha foto', ok: 'Foto enviada ✓' },
   es: { pick: 'Cambiar mi foto', ok: 'Foto enviada ✓' },
 };
-// mes coordonnées : les champs vides se complètent dans l'app
+// « Mon profil » (✏️ sur l'avatar) : l'ouvrier tient lui-même à jour sa photo, son nom et ses coordonnées
 const CINFO = {
-  fr: { fill: 'Complétez ce qui manque, puis envoyez :', n: (k) => `${k} à compléter` },
-  it: { fill: 'Completa quello che manca, poi invia:', n: (k) => `${k} da completare` },
-  de: { fill: 'Ergänzen Sie, was fehlt, und senden Sie es:', n: (k) => `${k} zu ergänzen` },
-  en: { fill: 'Fill in what is missing, then send:', n: (k) => `${k} to fill in` },
-  pt: { fill: 'Complete o que falta e envie:', n: (k) => `${k} por completar` },
-  es: { fill: 'Completa lo que falta y envía:', n: (k) => `${k} por completar` },
+  fr: { t: 'Mon profil', n: (k) => `${k} à compléter`, go: '✏️ Compléter', first: 'Prénom', last: 'Nom', save: 'Enregistrer', ok: 'Enregistré ✓', hint: 'Vos données vont chez votre responsable. Changez-les ici dès qu’elles changent.', close: 'Fermer' },
+  it: { t: 'Il mio profilo', n: (k) => `${k} da completare`, go: '✏️ Completa', first: 'Nome', last: 'Cognome', save: 'Salva', ok: 'Salvato ✓', hint: 'I tuoi dati arrivano al tuo responsabile. Cambiali qui appena cambiano.', close: 'Chiudi' },
+  de: { t: 'Mein Profil', n: (k) => `${k} zu ergänzen`, go: '✏️ Ergänzen', first: 'Vorname', last: 'Nachname', save: 'Speichern', ok: 'Gespeichert ✓', hint: 'Ihre Daten gehen an Ihren Verantwortlichen. Ändern Sie sie hier, sobald sie sich ändern.', close: 'Schließen' },
+  en: { t: 'My profile', n: (k) => `${k} to fill in`, go: '✏️ Fill in', first: 'First name', last: 'Last name', save: 'Save', ok: 'Saved ✓', hint: 'Your details go to your manager. Change them here as soon as they change.', close: 'Close' },
+  pt: { t: 'O meu perfil', n: (k) => `${k} por completar`, go: '✏️ Completar', first: 'Nome próprio', last: 'Apelido', save: 'Guardar', ok: 'Guardado ✓', hint: 'Os seus dados vão para o seu responsável. Altere-os aqui assim que mudarem.', close: 'Fechar' },
+  es: { t: 'Mi perfil', n: (k) => `${k} por completar`, go: '✏️ Completar', first: 'Nombre', last: 'Apellidos', save: 'Guardar', ok: 'Guardado ✓', hint: 'Tus datos llegan a tu responsable. Cámbialos aquí en cuanto cambien.', close: 'Cerrar' },
 };
+let profOpen = false;
+const PF = ['prenom', 'nom', 'tel', 'mail', 'adresse', 'ville'];
 let phMine = null;
 // photo → carré 256 px (centre), JPEG léger
 async function photoSquare(file) {
@@ -481,9 +483,21 @@ function render() {
     sigRestore(); hydrateDv();
     return;
   }
-  // l'icône (selon le métier) est choisie par le responsable ; ici on ne change que sa photo : on touche le rond
-  const myIc = d.icon || '👷', myPh = phMine !== null ? phMine : d.photo || '', st = SETT[lang] || SETT.fr;
-  out.push(`${top(d.societe.nom, d.societe.logo)}<h1 style="display:flex;align-items:center;gap:12px"><label class="av-wrap" title="${esc(st.pick)}" aria-label="${esc(st.pick)}"><span class="av-btn">${myPh ? `<img src="${esc(myPh)}" alt="">` : esc(myIc)}</span><span class="av-pen" aria-hidden="true">✏️</span><input type="file" accept="image/*" data-photo-pick="1" hidden></label><span>${esc(t.hello)} ${esc(d.prenom || d.nom)} 👋</span></h1><p class="sub">${esc([d.metier, d.societe.nom].filter(Boolean).join(' · '))}</p>`);
+  // l'icône (selon le métier) est choisie par le responsable ; ✏️ sur l'avatar : « Mon profil » (photo, nom, coordonnées)
+  const myIc = d.icon || '👷', myPh = phMine !== null ? phMine : d.photo || '', st = SETT[lang] || SETT.fr, ci = CINFO[lang] || CINFO.fr;
+  const sent = (() => { const x = getJ(IK()); return x && !Array.isArray(x) ? x : {}; })(); // déjà envoyé : visible tout de suite, avant la synchro du responsable
+  { const dv = (f) => (f === 'prenom' || f === 'nom' ? d[f] : d.me[f]) || ''; let gone = false; for (const f of Object.keys(sent)) if (sent[f] === dv(f)) { delete sent[f]; gone = true; } if (gone) setJ(IK(), sent); } // reçu par le responsable
+  const me = (f) => sent[f] || (f === 'prenom' || f === 'nom' ? d[f] : d.me[f]) || '';
+  const miss = PF.filter((f) => f !== 'prenom' && !me(f)).length + (me('prenom') ? 0 : 1);
+  out.push(`${top(d.societe.nom, d.societe.logo)}<h1 style="display:flex;align-items:center;gap:12px"><button class="av-wrap" data-prof="1" aria-label="${esc(ci.t)}"><span class="av-btn">${myPh ? `<img src="${esc(myPh)}" alt="">` : esc(myIc)}</span><span class="av-pen" aria-hidden="true">✏️</span></button><span>${esc(t.hello)} ${esc(me('prenom') || me('nom'))} 👋</span></h1><p class="sub">${esc([d.metier, d.societe.nom].filter(Boolean).join(' · '))}</p>`);
+  if (profOpen) {
+    const L = { prenom: [ci.first, 'text', 'given-name'], nom: [ci.last, 'text', 'family-name'], tel: [t.tel, 'tel', 'tel'], mail: [t.mail, 'email', 'email'], adresse: [t.adr, 'text', 'street-address'], ville: [t.ville, 'text', 'address-level2'] };
+    out.push(`<div class="card" id="profCard"><h2 style="margin:0 0 10px">✏️ ${esc(ci.t)}</h2>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px"><span class="av-btn" style="width:72px;height:72px;font-size:32px">${myPh ? `<img src="${esc(myPh)}" alt="">` : esc(myIc)}</span><label class="btn sec sm" style="cursor:pointer">📷 ${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label></div>
+      <form id="infoForm">${PF.map((f) => `<label>${esc(L[f][0])}${me(f) ? '' : ' <span class="miss">•</span>'}</label><input name="${f}" type="${L[f][1]}" autocomplete="${L[f][2]}" value="${esc(me(f))}"${f === 'nom' ? ' required' : ''}${me(f) ? '' : ' class="miss-in"'}>`).join('')}
+      <button class="btn block" style="margin-top:12px" type="submit">${esc(ci.save)}</button></form>
+      <p class="meta" style="margin:8px 0 0">${esc(ci.hint)}</p><button class="btn sec sm" style="margin-top:8px" data-prof="1">${esc(ci.close)}</button></div>`);
+  } else if (miss) out.push(`<div class="card warnc" id="profNag"><p style="margin:0 0 8px"><b>👤 ${esc(t.info)} · ${esc(ci.n(miss))}</b></p><button class="btn sm" data-prof="1">${esc(ci.go)}</button></div>`);
   const pls = placesOf(d);
   if (place && !pls.includes(place)) place = '';
   const pubs = (d.pubs || []).filter((x) => !x.fin || x.fin >= today);
@@ -560,15 +574,6 @@ function render() {
       <label>${esc(t.cert)}</label><input type="file" name="photo" accept="image/*">
       <button class="btn block" style="margin-top:12px" type="submit">${esc(t.send)}</button></form></details></div>`);
   if (d.eng) out.push(engCard(d));
-  { // mes coordonnées : ce que le responsable a déjà rempli est en lecture seule, l'ouvrier complète ce qui manque
-    const sent = (() => { const x = getJ(IK()); return x && !Array.isArray(x) ? x : {}; })(); // déjà envoyé : affiché tout de suite, avant la synchro du responsable
-    const ci = CINFO[lang] || CINFO.fr, me = (f) => d.me[f] || sent[f] || '', rows = [['tel', t.tel, me('tel'), 'tel'], ['mail', t.mail, me('mail'), 'email'], ['adresse', t.adr, me('adresse'), 'text'], ['ville', t.ville, me('ville'), 'text']];
-    const miss = rows.filter((r) => !r[2]);
-    out.push(`<div class="card"><details class="more"${miss.length ? ' open' : ''}><summary>👤 ${esc(t.info)}${miss.length ? ` <span class="meta">· ${esc(ci.n(miss.length))}</span>` : ''}</summary>
-      ${rows.filter((r) => r[2]).map(([, k, v]) => `<div class="row"><span class="meta" style="width:130px">${esc(k)}</span><b class="grow">${esc(v)}</b></div>`).join('')}
-      ${miss.length ? `<form id="infoForm"><p class="meta" style="margin:10px 0 0">${esc(ci.fill)}</p>${miss.map(([n, k, , ty]) => `<label>${esc(k)}</label><input name="${n}" type="${ty}" autocomplete="${ty === 'tel' ? 'tel' : ty === 'email' ? 'email' : n === 'ville' ? 'address-level2' : 'street-address'}">`).join('')}<button class="btn block" style="margin-top:12px" type="submit">${esc(t.save)}</button></form>` : ''}
-      <p class="meta" style="margin:8px 0 0">${esc(t.x.infoRO)}</p></details></div>`);
-  }
   if (pushSt === 'on') out.push(notifCard(t));
   out.push(`<p class="meta" style="text-align:center">${esc(t.install)}</p>${iaBtn()}
     <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(t.rgpd)}</p><p class="meta" style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
@@ -610,6 +615,7 @@ app.addEventListener('toggle', (e) => {
 app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-ianim]')) { import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'ARES Équipe', icon: '/ares/icons/lux-192.png', lang })); return; }
   if (e.target.closest('[data-eng-open]')) { const c = document.getElementById('engCard'); if (c) { c.querySelector('details').open = true; c.scrollIntoView({ block: 'start', behavior: 'smooth' }); } return; }
+  if (e.target.closest('[data-prof]')) { profOpen = !profOpen; render(); if (profOpen) document.getElementById('profCard')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
   if (e.target.closest('[data-sig-clear]')) { const c = app.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); sigUrl = ''; return; }
   const lb = e.target.closest('[data-lang]');
   if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('eqLang', lang); } catch {} if (pushSt === 'on') pushRefresh('/equipe', pushPost); return render(); }
@@ -736,10 +742,13 @@ app.addEventListener('submit', async (e) => {
       await queue({ k: 'abs', type: f.type.value, debut: f.debut.value, fin: f.fin.value, note: f.note.value.trim(), photos, at: new Date().toISOString() });
       flash = t.sickOk;
     } else if (f.id === 'infoForm') {
-      const v = (n) => (f[n] ? f[n].value.trim() : '');
-      await queue({ k: 'info', tel: v('tel'), mail: v('mail'), adresse: v('adresse'), ville: v('ville'), at: new Date().toISOString() });
-      { const x = getJ(IK()), keep = x && !Array.isArray(x) ? x : {}; for (const n of ['tel', 'mail', 'adresse', 'ville']) if (v(n)) keep[n] = v(n); setJ(IK(), keep); }
-      flash = t.infoOk;
+      // seulement ce qui a changé ; un champ vidé n'efface rien chez le responsable
+      const x = getJ(IK()), keep = x && !Array.isArray(x) ? x : {}, cur = (n) => keep[n] || (n === 'prenom' || n === 'nom' ? data[n] : data.me[n]) || '';
+      const ch = {};
+      for (const n of PF) { const v = (f[n] ? f[n].value : '').replace(/\s+/g, ' ').trim(); if (v && v !== cur(n)) ch[n] = v; }
+      if (Object.keys(ch).length) { await queue({ k: 'info', ...ch, at: new Date().toISOString() }); setJ(IK(), { ...keep, ...ch }); }
+      profOpen = false;
+      flash = (CINFO[lang] || CINFO.fr).ok;
     }
   } catch (err) { alert('⚠ ' + (err.message || err)); }
   render();
