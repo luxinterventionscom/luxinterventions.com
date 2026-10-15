@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.130.0';
+const VERSION = '2.131.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -442,7 +442,7 @@ function equipeData(i) {
     v: 1, kind: 'equipe', lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i), photo: photoOk(i.photo) ? i.photo : '',
     // l'équipe travaille pour ARES INVEST S.A. (LuxInterventions) : son nom et son logo (casque) dans l'app des ouvriers
     societe: { nom: factConf().nom || 'ARES INVEST S.A.', tel: factConf().tel || soc.tel || '', logo: '/ares/icons/lux-192.png' },
-    me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '' },
+    me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '', ccss: i.ccss || '' },
     // intervenant occasionnel : il lit et signe sa fiche d'engagement dans son app
     eng: i.genre === 'prive' ? { assur: i.assur || '', police: i.police || '', assurTodo: !!i.assurTodo, signed: !!i.sign, signAt: i.signAt || '' } : null,
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
@@ -592,10 +592,11 @@ async function equipeInbox(w, msg) {
         // l'ouvrier tient lui-même à jour ses données (nom, prénom, adresse, téléphone, email) : on garde l'ancien → le nouveau dans l'activité
         const clean = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
         const now = vault.get('intervenants', w.id) || w, upd = { id: w.id }, chg = [];
-        const LBL = { prenom: 'Prénom', nom: 'Nom', tel: 'Téléphone', mail: 'Email', adresse: 'Adresse', ville: 'Code postal et ville' };
-        for (const [f, n] of [['prenom', 60], ['nom', 80], ['tel', 40], ['mail', 120], ['adresse', 160], ['ville', 80]]) {
+        const LBL = { prenom: 'Prénom', nom: 'Nom', tel: 'Téléphone', mail: 'Email', adresse: 'Adresse', ville: 'Code postal et ville', ccss: 'N° CCSS' };
+        for (const [f, n] of [['prenom', 60], ['nom', 80], ['tel', 40], ['mail', 120], ['adresse', 160], ['ville', 80], ['ccss', 20]]) {
           if (!(f in it)) continue;
-          const v = clean(it[f], n), was = String(now[f] || '').trim();
+          const v = f === 'ccss' ? clean(it[f], 30).replace(/\s/g, '') : clean(it[f], n), was = String(now[f] || '').trim();
+          if (f === 'ccss' && (was || !/^\d{13}$/.test(v))) continue; // n° CCSS : l'ouvrier le complète seulement s'il manque
           if (!v || v === was || (f === 'mail' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))) continue; // on ne vide jamais un champ
           upd[f] = v; chg.push(`${LBL[f]} : ${was || '—'} → ${v}`);
         }
@@ -4707,6 +4708,7 @@ const SHEETS = {
         ${field('Code postal et ville', 'ville', i.ville, { placeholder: 'L-1234 Luxembourg' })}
         ${field('Téléphone', 'tel', i.tel, { type: 'tel', placeholder: '+352 …' })}
         ${field('Email', 'mail', i.mail, { type: 'email', full: true })}
+        ${field('N° CCSS (matricule de sécurité sociale)', 'ccss', i.ccss, { placeholder: '13 chiffres — vide : l’ouvrier le complète dans son app', attrs: 'inputmode="numeric" autocomplete="off"' })}
         <label class="field soc-only" ${(i.genre || 'interne') === 'societe' ? '' : new Raw('hidden')}>RCS (société)<input name="rcs" value="${i.rcs || ''}" placeholder="ex. B123456"></label>
         <label class="field soc-only" ${(i.genre || 'interne') === 'societe' ? '' : new Raw('hidden')}>N° TVA (société)<input name="tva" value="${i.tva || ''}" placeholder="ex. LU12345678"></label>
         <label class="check full" style="margin:4px 0 0"><input type="checkbox" name="chefDevis" value="1" ${i.chefDevis ? new Raw('checked') : ''}> 🦺 <b>Chef de chantier — devis</b> : il prépare les devis dans son app (photos, rapport, travaux, signature « Vu et correct » du client), sans voir les prix</label>
@@ -4842,6 +4844,7 @@ const SHEETS = {
           ${i.adresse || i.ville ? kvRow('Adresse', [i.adresse, i.ville].filter(Boolean).join(', ')) : ''}
           ${i.tel ? kvRow('Téléphone', html`<a href="tel:${tel}">${i.tel}</a>`) : ''}
           ${i.mail ? kvRow('Email', html`<a href="mailto:${i.mail}">${i.mail}</a>`) : ''}
+          ${kvRow('N° CCSS', i.ccss || html`<span class="badge warn">à compléter</span> par l’ouvrier dans son app`)}
           ${i.rcs ? kvRow('RCS', i.rcs) : ''}${i.tva ? kvRow('N° TVA', i.tva) : ''}
           ${i.assurTodo ? kvRow('Assurance RC', html`<span class="badge warn">🛡️ à faire</span> pas encore fournie${i.assur || i.police ? ' — ' + [i.assur, i.police].filter(Boolean).join(' · ') : ''} (rappel dans son app)`) : i.assur || i.police ? kvRow('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')) : ''}${i.iban ? kvRow('Banque', [i.banque, i.bic ? 'BIC ' + i.bic : '', ibanFmt(i.iban)].filter(Boolean).join(' · ')) : ''}
           ${i.cash ? kvRow('Paiement', '💵 cash (en espèces)') : ''}
@@ -7168,7 +7171,7 @@ const FORMS = {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
     const prev = id ? vault.get('intervenants', id) || {} : {};
-    const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), note: g('note') };
+    const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), ccss: g('ccss').replace(/\s/g, ''), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), note: g('note') };
     rec.photo = photoOk(g('photo')) ? g('photo') : '';
     rec.chefDevis = fd.get('chefDevis') === '1';
     if (rec.genre === 'prive') { rec.rcs = ''; rec.tva = ''; } // occasionnel : ni RCS ni TVA
