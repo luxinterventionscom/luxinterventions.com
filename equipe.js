@@ -216,7 +216,7 @@ const pick = (d) => { const nav = (navigator.language || 'fr').slice(0, 2); retu
 try { const s = localStorage.getItem('eqLang'); if (s && L[s]) lang = s; } catch {}
 
 // ── File d'attente : les envois partent dès qu'il y a du réseau (et sont regroupés) ──
-const QK = () => 'eqQueue:' + id, LK = () => 'eqLocal:' + id;
+const QK = () => 'eqQueue:' + id, LK = () => 'eqLocal:' + id, IK = () => 'eqInfo:' + id;
 const getJ = (k) => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch { return []; } };
 const wkMap = () => { const m = getJ('eqWeeks'); return m && !Array.isArray(m) ? m : {}; };
 const setJ = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* stockage plein */ } };
@@ -561,7 +561,8 @@ function render() {
       <button class="btn block" style="margin-top:12px" type="submit">${esc(t.send)}</button></form></details></div>`);
   if (d.eng) out.push(engCard(d));
   { // mes coordonnées : ce que le responsable a déjà rempli est en lecture seule, l'ouvrier complète ce qui manque
-    const ci = CINFO[lang] || CINFO.fr, rows = [['tel', t.tel, d.me.tel, 'tel'], ['mail', t.mail, d.me.mail, 'email'], ['adresse', t.adr, d.me.adresse, 'text'], ['ville', t.ville, d.me.ville, 'text']];
+    const sent = (() => { const x = getJ(IK()); return x && !Array.isArray(x) ? x : {}; })(); // déjà envoyé : affiché tout de suite, avant la synchro du responsable
+    const ci = CINFO[lang] || CINFO.fr, me = (f) => d.me[f] || sent[f] || '', rows = [['tel', t.tel, me('tel'), 'tel'], ['mail', t.mail, me('mail'), 'email'], ['adresse', t.adr, me('adresse'), 'text'], ['ville', t.ville, me('ville'), 'text']];
     const miss = rows.filter((r) => !r[2]);
     out.push(`<div class="card"><details class="more"${miss.length ? ' open' : ''}><summary>👤 ${esc(t.info)}${miss.length ? ` <span class="meta">· ${esc(ci.n(miss.length))}</span>` : ''}</summary>
       ${rows.filter((r) => r[2]).map(([, k, v]) => `<div class="row"><span class="meta" style="width:130px">${esc(k)}</span><b class="grow">${esc(v)}</b></div>`).join('')}
@@ -612,7 +613,7 @@ app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-sig-clear]')) { const c = app.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); sigUrl = ''; return; }
   const lb = e.target.closest('[data-lang]');
   if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('eqLang', lang); } catch {} if (pushSt === 'on') pushRefresh('/equipe', pushPost); return render(); }
-  if (e.target.closest('[data-logout]')) { e.preventDefault(); try { localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; return render(); }
+  if (e.target.closest('[data-logout]')) { e.preventDefault(); try { localStorage.removeItem(IK()); localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; return render(); }
   if (e.target.closest('[data-retry]')) return flush();
   const pon = e.target.closest('[data-push-on]');
   if (pon) {
@@ -737,6 +738,7 @@ app.addEventListener('submit', async (e) => {
     } else if (f.id === 'infoForm') {
       const v = (n) => (f[n] ? f[n].value.trim() : '');
       await queue({ k: 'info', tel: v('tel'), mail: v('mail'), adresse: v('adresse'), ville: v('ville'), at: new Date().toISOString() });
+      { const x = getJ(IK()), keep = x && !Array.isArray(x) ? x : {}; for (const n of ['tel', 'mail', 'adresse', 'ville']) if (v(n)) keep[n] = v(n); setJ(IK(), keep); }
       flash = t.infoOk;
     }
   } catch (err) { alert('⚠ ' + (err.message || err)); }
