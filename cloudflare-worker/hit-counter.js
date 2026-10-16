@@ -706,7 +706,7 @@ async function handleAres(request, env, url, headers) {
       return aresJson({ ok: true }, 200, headers);
     }
     const body = await request.arrayBuffer();
-    if (!body.byteLength || body.byteLength > (espMatch[2] ? ARES_MAX_FILE : 2 * 1024 * 1024)) return aresJson({ error: "Taille invalide" }, 413, headers);
+    if (!body.byteLength || body.byteLength > (espMatch[2] ? ARES_MAX_FILE : 8 * 1024 * 1024)) return aresJson({ error: "Taille invalide" }, 413, headers);
     await env.PHOTOS.put(key, body, { httpMetadata: { contentType: "application/octet-stream" } });
     return aresJson({ ok: true }, 200, headers);
   }
