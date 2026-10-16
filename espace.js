@@ -1092,14 +1092,16 @@ function recap() {
     <table style="width:100%;border-collapse:collapse;margin:18px 0;font-size:13px"><thead><tr>${t.rc.cols.map((c, i) => `<th style="text-align:${i ? 'right' : 'left'};border-bottom:2px solid #333;padding:5px">${esc(c)}</th>`).join('')}</tr></thead><tbody>
     ${rows.map((r) => `<tr><td style="padding:5px;border-bottom:1px solid #ddd">${esc(per(r))}${r.paid < r.due - 0.009 ? ` <i>(${esc(t.rc.partial)})</i>` : ''}</td><td style="text-align:right;padding:5px;border-bottom:1px solid #ddd">${esc(money(r.due))}</td><td style="text-align:right;padding:5px;border-bottom:1px solid #ddd">${esc(money(r.paid))}</td><td style="text-align:right;padding:5px;border-bottom:1px solid #ddd">${esc(r.date ? fmt(r.date) : '—')}</td></tr>`).join('')}
     <tr><td style="padding:6px"><b>${esc(t.rc.total)}</b></td><td></td><td style="text-align:right;padding:6px"><b>${esc(money(tot))}</b></td><td></td></tr></tbody></table>
+    <div class="rc-end">
     ${(() => { const g = GAR[lang] || GAR.fr, c = d.caution && d.caution.montant ? d.caution : null; if (!c && !d.inclus) return '';
       return `<div style="margin:14px 0 0;padding:10px 12px;border:1.5px solid #333;border-radius:8px">${c ? `<b>🔐 ${esc(g.t)}</b><p style="margin:6px 0 0">${esc(g.txt(s.nom, money(c.montant)))}${c.date ? ` ${esc(g.on(fmt(c.date)))}` : ''}${c.mode && g.m[c.mode] ? ` (${esc(g.m[c.mode])})` : ''}.</p>` : ''}${d.inclus ? `<b style="display:block;${c ? 'margin-top:10px' : ''}">🏠 ${esc(g.ct)}</b><p style="margin:6px 0 0">${esc(g.cx)}</p>` : ''}</div>`; })()}
-    <div class="rc-end"><p style="margin-top:18px">${esc(t.rc.text(s.nom, name, money(tot), per(rows[0]), per(rows[rows.length - 1])))}</p>
+    <p style="margin-top:18px">${esc(t.rc.text(s.nom, name, money(tot), per(rows[0]), per(rows[rows.length - 1])))}</p>
     <p style="margin-top:24px">${esc(fmt(today))}</p>${s.sign ? `<img src="${esc(s.sign)}" alt="" style="display:block;width:${[6, 8, 10, 12].includes(+s.signW) ? +s.signW : 8}cm;max-width:100%;height:auto;margin:4mm 0 2mm">` : ''}<p><i>${esc(s.nom)}</i></p></div></div>`;
   document.body.classList.add('printing');
   const done = () => { document.body.classList.remove('printing'); removeEventListener('afterprint', done); };
   addEventListener('afterprint', done);
-  setTimeout(() => print(), 50);
+  // signature + timbre : on attend que l'image soit prête, sinon l'iPhone imprime avant (dernière page vide ou absente)
+  Promise.all([...q.querySelectorAll('img')].map((im) => (im.decode ? im.decode().catch(() => {}) : null))).then(() => setTimeout(() => print(), 300));
 }
 
 async function compress(file) {
