@@ -300,6 +300,15 @@ const TFT = {
   pt: { info: 'Mais informações', anim: 'Pôr o ícone no ecrã', lock: 'Os seus dados são cifrados e visíveis apenas pelo seu gestor.', out: 'Terminar sessão', call: 'Ligar' },
   es: { info: 'Más información', anim: 'Poner el icono en la pantalla', lock: 'Tus datos están cifrados y solo los ve tu gestor.', out: 'Cerrar sesión', call: 'Llamar' },
 };
+// 🔐 garantie locative (caution) sur le récapitulatif des loyers payés : qui la détient, combien, quand, comment
+const GAR = {
+  fr: { t: 'Garantie locative', txt: (n, m) => `${n} détient la garantie locative (caution) de ${m}`, on: (d) => `reçue le ${d}`, m: { especes: 'en espèces', virement: 'par virement', cheque: 'par chèque', garantie: 'garantie bancaire', autre: 'autre' } },
+  it: { t: 'Garanzia locativa', txt: (n, m) => `${n} detiene la garanzia locativa (cauzione) di ${m}`, on: (d) => `ricevuta il ${d}`, m: { especes: 'in contanti', virement: 'con bonifico', cheque: 'con assegno', garantie: 'garanzia bancaria', autre: 'altro' } },
+  de: { t: 'Mietkaution', txt: (n, m) => `${n} verwahrt die Mietkaution von ${m}`, on: (d) => `erhalten am ${d}`, m: { especes: 'bar', virement: 'per Überweisung', cheque: 'per Scheck', garantie: 'Bankgarantie', autre: 'sonstiges' } },
+  en: { t: 'Rental deposit', txt: (n, m) => `${n} holds the rental deposit of ${m}`, on: (d) => `received on ${d}`, m: { especes: 'in cash', virement: 'by bank transfer', cheque: 'by cheque', garantie: 'bank guarantee', autre: 'other' } },
+  pt: { t: 'Garantia de arrendamento', txt: (n, m) => `${n} detém a garantia de arrendamento (caução) de ${m}`, on: (d) => `recebida em ${d}`, m: { especes: 'em numerário', virement: 'por transferência', cheque: 'por cheque', garantie: 'garantia bancária', autre: 'outro' } },
+  es: { t: 'Fianza de alquiler', txt: (n, m) => `${n} tiene la fianza de alquiler de ${m}`, on: (d) => `recibida el ${d}`, m: { especes: 'en efectivo', virement: 'por transferencia', cheque: 'por cheque', garantie: 'garantía bancaria', autre: 'otro' } },
+};
 // « Se déconnecter » : on demande d'abord (fenêtre dans la page)
 const OUTQ = { fr: ['Voulez-vous vraiment vous déconnecter de l’app ?', 'Oui, me déconnecter', 'Annuler'], it: ['Vuoi davvero uscire dall’app?', 'Sì, esci', 'Annulla'], de: ['Möchten Sie sich wirklich von der App abmelden?', 'Ja, abmelden', 'Abbrechen'], en: ['Do you really want to log out of the app?', 'Yes, log out', 'Cancel'], pt: ['Quer mesmo terminar a sessão da app?', 'Sim, terminar sessão', 'Cancelar'], es: ['¿Seguro que quieres cerrar la sesión de la app?', 'Sí, cerrar sesión', 'Cancelar'] };
 const SETT = {
@@ -1083,6 +1092,7 @@ function recap() {
     <table style="width:100%;border-collapse:collapse;margin:18px 0;font-size:13px"><thead><tr>${t.rc.cols.map((c, i) => `<th style="text-align:${i ? 'right' : 'left'};border-bottom:2px solid #333;padding:5px">${esc(c)}</th>`).join('')}</tr></thead><tbody>
     ${rows.map((r) => `<tr><td style="padding:5px;border-bottom:1px solid #ddd">${esc(per(r))}${r.paid < r.due - 0.009 ? ` <i>(${esc(t.rc.partial)})</i>` : ''}</td><td style="text-align:right;padding:5px;border-bottom:1px solid #ddd">${esc(money(r.due))}</td><td style="text-align:right;padding:5px;border-bottom:1px solid #ddd">${esc(money(r.paid))}</td><td style="text-align:right;padding:5px;border-bottom:1px solid #ddd">${esc(r.date ? fmt(r.date) : '—')}</td></tr>`).join('')}
     <tr><td style="padding:6px"><b>${esc(t.rc.total)}</b></td><td></td><td style="text-align:right;padding:6px"><b>${esc(money(tot))}</b></td><td></td></tr></tbody></table>
+    ${d.caution && d.caution.montant ? (() => { const g = GAR[lang] || GAR.fr, c = d.caution; return `<div style="margin:14px 0 0;padding:10px 12px;border:1.5px solid #333;border-radius:8px"><b>🔐 ${esc(g.t)}</b><p style="margin:6px 0 0">${esc(g.txt(s.nom, money(c.montant)))}${c.date ? ` ${esc(g.on(fmt(c.date)))}` : ''}${c.mode && g.m[c.mode] ? ` (${esc(g.m[c.mode])})` : ''}.</p></div>`; })() : ''}
     <div class="rc-end"><p style="margin-top:18px">${esc(t.rc.text(s.nom, name, money(tot), per(rows[0]), per(rows[rows.length - 1])))}</p>
     <p style="margin-top:24px">${esc(fmt(today))}</p>${s.sign ? `<img src="${esc(s.sign)}" alt="" style="display:block;width:${[6, 8, 10, 12].includes(+s.signW) ? +s.signW : 8}cm;max-width:100%;height:auto;margin:4mm 0 2mm">` : ''}<p><i>${esc(s.nom)}</i></p></div></div>`;
   document.body.classList.add('printing');
