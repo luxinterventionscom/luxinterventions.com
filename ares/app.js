@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.135.0';
+const VERSION = '2.136.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -867,6 +867,8 @@ function espaceData(l) {
   }
   // code de la porte : seulement s'il est actif et pas expiré (date de fin choisie dans l'app de gestion)
   if (show.porte && g && g.porte && g.porte.code && !g.porte.off && (!g.porte.fin || g.porte.fin >= today())) out.porte = { code: g.porte.code, depuis: g.porte.maj || '', info: g.porte.info || '', fin: g.porte.fin || '' };
+  // garantie locative détenue par le bailleur : toujours sur le récapitulatif des loyers du locataire
+  if (l.caution) out.caution = { montant: l.caution, date: l.cautionDate || '', mode: CAUTION_MODES[l.cautionMode] ? l.cautionMode : '' };
   if (show.contrat) out.contrat = { debut: l.debut || '', fin: l.fin || '', revision: l.revision || '', caution: l.caution || 0, cautionDate: l.cautionDate || '', cautionMode: l.cautionMode || '' };
   if (show.docs) out.docs = vault.list('documents').filter((d) => d.locId === l.id && d.shared).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
     .map((d) => ({ id: d.id, label: d.label, dtype: d.dtype || '', pay: d.pay || '', date: d.date, mime: d.mime, size: d.size }));
