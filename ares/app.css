@@ -893,3 +893,4 @@ dialog.bien-full::backdrop { background: rgba(0,0,0,.9); }
 .vz-ht i { display: block; height: 100%; border-radius: 4px; }
 .vz-hv { white-space: nowrap; color: var(--text-2); }
 @media print { .vz-stack i, .vz-ht i, .vz-leg i { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+.nav-links { font-size: 13px; line-height: 1.6; } .nav-links a { white-space: nowrap; font-weight: 600; } /* 🧭 itinéraire : Google Maps · Waze · Plans */
