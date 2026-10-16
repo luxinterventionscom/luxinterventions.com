@@ -292,6 +292,8 @@ nbienInit({ api: API, app: 'esp', lang: () => lang });
 // mon icône (comme sur WhatsApp) : choisie ici, visible chez le gestionnaire
 const MY_ICONS = ['😀', '😊', '🙂', '😎', '🥰', '😇', '🤓', '🧐', '🤠', '🥳', '😺', '👩', '👨', '👧', '👦', '👵', '👴', '🧑‍💼', '👩‍🍳', '👨‍🎓', '🐶', '🐱', '🦊', '🐻', '🐼', '🦁', '🐯', '🐸', '🐵', '🐧', '🦄', '🐢', '🌸', '🌻', '🌈', '⚽', '🎵', '🎨', '🚗', '🏍️', '🏠', '⭐', '❤️', '🍕', '☕', '🌍'];
 const ICT = { fr: 'Mon icône', it: 'La mia icona', de: 'Mein Symbol', en: 'My icon', pt: 'O meu ícone', es: 'Mi icono' };
+// « Se déconnecter » : on demande d'abord (fenêtre dans la page)
+const OUTQ = { fr: ['Voulez-vous vraiment vous déconnecter de l’app ?', 'Oui, me déconnecter', 'Annuler'], it: ['Vuoi davvero uscire dall’app?', 'Sì, esci', 'Annulla'], de: ['Möchten Sie sich wirklich von der App abmelden?', 'Ja, abmelden', 'Abbrechen'], en: ['Do you really want to log out of the app?', 'Yes, log out', 'Cancel'], pt: ['Quer mesmo terminar a sessão da app?', 'Sim, terminar sessão', 'Cancelar'], es: ['¿Seguro que quieres cerrar la sesión de la app?', 'Sí, cerrar sesión', 'Cancelar'] };
 const SETT = {
   fr: { t: 'Mon profil', ph: 'Ma photo', pick: '📷 Choisir une photo', del: 'Retirer', hint: 'Elle apparaît chez votre gestionnaire, à côté de votre nom.', ok: 'Photo envoyée ✓' },
   it: { t: 'Il mio profilo', ph: 'La mia foto', pick: '📷 Scegli una foto', del: 'Togli', hint: 'Appare al tuo gestore, accanto al tuo nome.', ok: 'Foto inviata ✓' },
@@ -1245,7 +1247,7 @@ app.addEventListener('click', async (e) => {
     payOpen = false;
     return render();
   }
-  if (e.target.closest('[data-logout]')) { e.preventDefault(); try { localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; return render(); }
+  if (e.target.closest('[data-logout]')) { e.preventDefault(); const o = OUTQ[lang] || OUTQ.fr; const out = () => { try { localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; render(); }; if (!data) return out(); return import('/ares/confirm-box.js').then((m) => m.confirmBox(o[0], o[1], o[2], out)); }
   const lb = e.target.closest('[data-lang]');
   if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('espLang', lang); } catch {} if (pushSt === 'on') pushRefresh('/espace', pushPost); return render(); }
   if (e.target.closest('[data-recap]')) return recap();
