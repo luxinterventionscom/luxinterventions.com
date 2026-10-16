@@ -63,7 +63,13 @@ export function merge(a, b) {
   for (const c of COLLECTIONS) {
     const A = (a && a[c]) || {};
     const B = (b && b[c]) || {};
-    for (const id of new Set([...Object.keys(A), ...Object.keys(B)])) out[c][id] = newer(A[id], B[id]);
+    for (const id of new Set([...Object.keys(A), ...Object.keys(B)])) {
+      const w = newer(A[id], B[id]);
+      // réglages (société, signature + timbre, logo…) : un appareil resté ouvert avec une ancienne fiche ne doit pas
+      // effacer un champ qu'il n'a jamais vu ; on garde ce champ de l'autre version (un retrait volontaire met '' et gagne)
+      const o = w === A[id] ? B[id] : A[id];
+      out[c][id] = c === 'reglages' && w && o && !w.del && !o.del ? { ...o, ...w } : w;
+    }
   }
   const hist = Object.values(out.historique).sort((x, y) => y.t - x.t);
   if (hist.length > HIST_MAX) for (const h of hist.slice(HIST_MAX)) delete out.historique[h.id];
