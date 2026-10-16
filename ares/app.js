@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.132.0';
+const VERSION = '2.133.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3223,6 +3223,8 @@ const jobTimes = (t, d) => {
   return { arr, dep, h: arr && dep ? Math.max(0, Math.round((hm(dep) - hm(arr)) * 100) / 100) : 0 };
 };
 // quantité notée par l'ouvrier en finissant (« Combien ? »)
+// quantité du travail fini (« Combien ? ») envoyée au portail : « 3 robinets »
+const ptlQte = (t) => { const q = jobQty(t, (t.fini && t.fini.d) || t.doneDate || ''); return q.qte ? `${q.qte} ${q.qu}`.trim() : ''; };
 const jobQty = (t, d) => { const q = (t.fini && t.fini.qte ? t.fini : null) || [...(t.journal || [])].reverse().find((x) => x.d === d && x.qte); return q ? { qte: q.qte, qu: q.qu || '' } : { qte: '', qu: '' }; };
 const jobDay = (t) => (t.statut === 'fait' ? t.doneDate || t.date : t.fini ? t.fini.d : t.date) || '';
 const inPer = (d, c) => d && d >= c.from && d <= c.to;
@@ -6340,7 +6342,7 @@ const ACTIONS = {
     if (!(await confirmBox(`Émettre la facture ${no} ?`, { ok: 'Émettre et envoyer', detail: `${t.ptl.org} · ${eur(k.ttc)} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son portail.` }))) return;
     const { bytes } = await factPdf(t, f, no, date, c);
     try {
-      const r = await fetch(PTL_API + `tickets/${t.ptl.tid}/invoice`, { method: 'PUT', headers: { Authorization: 'Bearer ' + ptlConf().token, 'Content-Type': 'application/pdf', 'X-Invoice': encodeURIComponent(JSON.stringify({ no, ht: k.ht, tva: k.tva, ttc: k.ttc })) }, body: bytes });
+      const r = await fetch(PTL_API + `tickets/${t.ptl.tid}/invoice`, { method: 'PUT', headers: { Authorization: 'Bearer ' + ptlConf().token, 'Content-Type': 'application/pdf', 'X-Invoice': encodeURIComponent(JSON.stringify({ no, ht: k.ht, tva: k.tva, ttc: k.ttc, h: f.h, qte: ptlQte(t) })) }, body: bytes });
       if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Erreur ' + r.status);
     } catch (e) { return toast('Envoi impossible : ' + (e.message || 'connexion'), { bad: true }); }
     let docId = '';
@@ -6677,7 +6679,7 @@ const ACTIONS = {
     const fromSheet = ui.sheet && ui.sheet.kind === 'tache-form';
     const saved = await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: t.fini ? t.fini.d : today(), vu: true }), 'Chantier clôturé', `${t.titre} — ${placeName(t)}`, t.immId);
     toast(t.locId ? '✓ Réparé · le locataire voit « Terminé » dans son app' : '🟢 Chantier clôturé');
-    if (saved.ptl && ptlConf()) { const w = vault.get('intervenants', saved.intervenantId); ptlStatus(saved.ptl.tid, 'terminee', { technicien: w ? intervFull(w) : '', rapport: (saved.fini && saved.fini.note) || saved.note || 'Intervention terminée' }).then(() => toast('Portail gérance mis à jour : Terminée')).catch((e) => toast('Portail gérance : ' + e.message, { bad: true })); }
+    if (saved.ptl && ptlConf()) { const w = vault.get('intervenants', saved.intervenantId); ptlStatus(saved.ptl.tid, 'terminee', { technicien: w ? intervFull(w) : '', rapport: (saved.fini && saved.fini.note) || saved.note || 'Intervention terminée', qte: ptlQte(saved) }).then(() => toast('Portail gérance mis à jour : Terminée')).catch((e) => toast('Portail gérance : ' + e.message, { bad: true })); }
     if (fromSheet) goBack();
     await offerDepense(saved);
   },
@@ -7227,7 +7229,7 @@ const FORMS = {
       const was = prev ? [prev.intervenantId, prev.date, prev.heure, prev.statut].join('|') : '';
       if (key !== was) {
         const st = saved.statut === 'fait' ? 'terminee' : w && saved.date ? 'planifiee' : 'prise';
-        ptlStatus(saved.ptl.tid, st, { technicien: w ? intervFull(w) : '', planned_at: saved.date ? `${saved.date}T${saved.heure || '08:00'}` : '', text: w ? `👷 ${intervFull(w)}${saved.date ? ' — ' + fmtDate(saved.date) + (saved.heure ? ' ' + saved.heure : '') : ''}` : '', ...(st === 'terminee' ? { rapport: saved.note || 'Intervention terminée' } : {}) })
+        ptlStatus(saved.ptl.tid, st, { technicien: w ? intervFull(w) : '', planned_at: saved.date ? `${saved.date}T${saved.heure || '08:00'}` : '', text: w ? `👷 ${intervFull(w)}${saved.date ? ' — ' + fmtDate(saved.date) + (saved.heure ? ' ' + saved.heure : '') : ''}` : '', ...(st === 'terminee' ? { rapport: saved.note || 'Intervention terminée', qte: ptlQte(saved) } : {}) })
           .then(() => toast('Portail gérance mis à jour : ' + PTL_ST[st])).catch((e) => toast('Portail gérance : ' + e.message, { bad: true }));
       }
     }

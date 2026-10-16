@@ -185,8 +185,20 @@ export default [
 "Jahr"
 ],
 [
+"Année {0}",
+"Jahr {0}"
+],
+[
 "Août",
 "August"
+],
+[
+"Aperçu limité à 300 lignes ; l’export contient tout.",
+"Vorschau auf 300 Zeilen begrenzt; der Export enthält alles."
+],
+[
+"Aperçu — lignes : {0}",
+"Vorschau — Zeilen: {0}"
 ],
 [
 "App des locataires",
@@ -221,6 +233,10 @@ export default [
 "Aufzug"
 ],
 [
+"Au",
+"Bis"
+],
+[
 "Au moins 10 caractères",
 "Mindestens 10 Zeichen"
 ],
@@ -239,6 +255,10 @@ export default [
 [
 "Aucun utilisateur. Invitez le responsable de la gérance.",
 "Keine Benutzer. Laden Sie den Verantwortlichen der Verwaltung ein."
+],
+[
+"Aucune",
+"Keine"
 ],
 [
 "Aucune demande ce mois-ci.",
@@ -299,6 +319,10 @@ export default [
 [
 "Autre précision (facultatif)",
 "Weitere Angabe (optional)"
+],
+[
+"Autres",
+"Andere"
 ],
 [
 "Avant",
@@ -417,6 +441,10 @@ export default [
 "Dieses Angebot wurde bereits beantwortet"
 ],
 [
+"Ce mois",
+"Dieser Monat"
+],
+[
 "Ce navigateur n’a pas pu activer les notifications (navigation privée, ou iPhone : installez d’abord l’app sur l’écran d’accueil et ouvrez-la depuis l’icône).",
 "Dieser Browser konnte die Benachrichtigungen nicht aktivieren (privates Surfen, oder iPhone: installieren Sie zuerst die App auf dem Home-Bildschirm und öffnen Sie sie über das Symbol)."
 ],
@@ -431,6 +459,10 @@ export default [
 [
 "Ces données figurent sur les factures de LuxInterventions (ARES INVEST S.A.). Le nom de la société est modifié par LuxInterventions.",
 "Diese Daten stehen auf den Rechnungen von LuxInterventions (ARES INVEST S.A.). Den Firmennamen ändert LuxInterventions."
+],
+[
+"Cette année",
+"Dieses Jahr"
 ],
 [
 "Chambre",
@@ -483,6 +515,10 @@ export default [
 [
 "Choisissez le mois",
 "Monat wählen"
+],
+[
+"Choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF — pour votre direction.",
+"Wählen Sie aus, filtern Sie, haken Sie die Spalten an, dann Excel oder PDF — für Ihre Geschäftsleitung."
 ],
 [
 "Choisissez une note pour chaque critère et l’avis global.",
@@ -565,6 +601,10 @@ export default [
 "Link Ihres Radios einfügen (Website oder Audiostream)"
 ],
 [
+"Colonnes",
+"Spalten"
+],
+[
 "Comptabilité",
 "Buchhaltung"
 ],
@@ -615,6 +655,10 @@ export default [
 [
 "Contact sur place",
 "Kontakt vor Ort"
+],
+[
+"Contient",
+"Enthält"
 ],
 [
 "Contrat d’entretien des parties communes — Kirchberg Parc",
@@ -761,6 +805,10 @@ export default [
 "Anfragen und abgeschlossene Einsätze pro Monat"
 ],
 [
+"Demandes par type de travaux",
+"Anfragen nach Art der Arbeiten"
+],
+[
 "Demandes reçues",
 "Eingegangene Anfragen"
 ],
@@ -771,6 +819,14 @@ export default [
 [
 "Demandée",
 "Angefragt"
+],
+[
+"Demandée le",
+"Angefragt am"
+],
+[
+"Demandée par",
+"Angefragt von"
 ],
 [
 "Demandées",
@@ -835,6 +891,10 @@ export default [
 [
 "Dont urgentes",
 "Davon dringend"
+],
+[
+"Du",
+"Vom"
 ],
 [
 "Du étage",
@@ -961,6 +1021,10 @@ export default [
 "Senden Sie Ihre erste Einsatzanfrage"
 ],
 [
+"Envoyé",
+"Gesendet"
+],
+[
 "Erreur",
 "Fehler"
 ],
@@ -993,6 +1057,10 @@ export default [
 "Abgelaufen am"
 ],
 [
+"Facturation (délai)",
+"Rechnungsstellung (Frist)"
+],
+[
 "Facture",
 "Rechnung"
 ],
@@ -1007,6 +1075,10 @@ export default [
 [
 "Facturé TTC",
 "Fakturiert brutto"
+],
+[
+"Facturé TTC par résidence",
+"Brutto berechnet nach Wohnanlage"
 ],
 [
 "Facultatif",
@@ -1033,6 +1105,10 @@ export default [
 "Bewertungsbogen des Einsatzes"
 ],
 [
+"Filtres",
+"Filter"
+],
+[
 "Fin (h)",
 "Ende (Std.)"
 ],
@@ -1057,8 +1133,16 @@ export default [
 "Februar"
 ],
 [
+"Graphiques",
+"Diagramme"
+],
+[
 "Gratuit pour 1 immeuble · Pro dès 29 € / mois · données chiffrées",
 "Kostenlos für 1 Gebäude · Pro ab 29 € / Monat · verschlüsselte Daten"
+],
+[
+"Groupe",
+"Gruppe"
 ],
 [
 "Gérance",
@@ -1089,8 +1173,16 @@ export default [
 "Verwalten Sie auch Ihre eigenen Mieter"
 ],
 [
+"HT (€)",
+"Netto (€)"
+],
+[
 "Hall d’entrée",
 "Eingangshalle"
+],
+[
+"Heures facturées",
+"Berechnete Stunden"
 ],
 [
 "Historique des interventions",
@@ -1149,6 +1241,10 @@ export default [
 "Klingel « Syndic »"
 ],
 [
+"Intervenant",
+"Techniker"
+],
+[
 "Intervention",
 "Einsatz"
 ],
@@ -1183,6 +1279,10 @@ export default [
 [
 "Interventions terminées",
 "Abgeschlossene Einsätze"
+],
+[
+"Interventions terminées par mois",
+"Erledigte Einsätze pro Monat"
 ],
 [
 "Interventions terminées, par mois et par gérance",
@@ -1339,6 +1439,10 @@ export default [
 [
 "Lieu précis",
 "Genauer Ort"
+],
+[
+"Liste enregistrée ✓",
+"Liste gespeichert ✓"
 ],
 [
 "Local poubelles",
@@ -1549,6 +1653,10 @@ export default [
 "Name der Bank"
 ],
 [
+"Nom de la liste (ex. Rapport mensuel)",
+"Name der Liste (z. B. Monatsbericht)"
+],
+[
 "Nom de la résidence",
 "Name der Wohnanlage"
 ],
@@ -1673,6 +1781,10 @@ export default [
 "Nummern"
 ],
 [
+"N°",
+"Nr."
+],
+[
 "N° / nom",
 "Nr. / Name"
 ],
@@ -1683,6 +1795,10 @@ export default [
 [
 "N° TVA",
 "MwSt.-Nr."
+],
+[
+"Objet",
+"Betreff"
 ],
 [
 "Octobre",
@@ -1715,6 +1831,10 @@ export default [
 [
 "Par fonction du demandeur",
 "Nach Funktion des Anfragenden"
+],
+[
+"Par mois",
+"Nach Monat"
 ],
 [
 "Par résidence",
@@ -1775,6 +1895,10 @@ export default [
 [
 "Pas encore d’évaluation. Après chaque intervention terminée, la gérance peut remplir la fiche « ⭐ Évaluer l’intervention ».",
 "Noch keine Bewertung. Nach jedem abgeschlossenen Einsatz kann die Verwaltung das Formular „⭐ Einsatz bewerten“ ausfüllen."
+],
+[
+"Payé (€)",
+"Bezahlt (€)"
 ],
 [
 "Payée",
@@ -1965,12 +2089,20 @@ export default [
 "Übernommen"
 ],
 [
+"Prise en charge (délai)",
+"Übernahme (Frist)"
+],
+[
 "Prise en charge (h)",
 "Übernahme (Std.)"
 ],
 [
 "Prise en charge (moy.)",
 "Übernahme (Ø)"
+],
+[
+"Prise en charge (moyenne)",
+"Übernahme (Durchschnitt)"
 ],
 [
 "Prise en charge / fin",
@@ -1991,6 +2123,10 @@ export default [
 [
 "Période",
 "Zeitraum"
+],
+[
+"Quantité",
+"Menge"
 ],
 [
 "Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
@@ -2077,6 +2213,10 @@ export default [
 "Dieses Angebot ablehnen?"
 ],
 [
+"Regrouper",
+"Gruppieren"
+],
+[
 "Relation avec le personnel",
 "Umgang mit dem Personal"
 ],
@@ -2141,12 +2281,20 @@ export default [
 "Zurück"
 ],
 [
+"Reçu le",
+"Erhalten am"
+],
+[
 "Reçue",
 "Eingegangen"
 ],
 [
 "Reçus",
 "Erhalten"
+],
+[
+"Rien avec ces filtres.",
+"Nichts mit diesen Filtern."
 ],
 [
 "Rue, numéro, code postal, ville",
@@ -2185,6 +2333,10 @@ export default [
 "Reparieren"
 ],
 [
+"Réponse (délai)",
+"Antwort (Frist)"
+],
+[
 "Réservé au responsable de la gérance",
 "Nur für den Verantwortlichen der Verwaltung"
 ],
@@ -2217,6 +2369,10 @@ export default [
 "Erledigung"
 ],
 [
+"Résolution (délai)",
+"Erledigung (Frist)"
+],
+[
 "Résolution efficace de la panne",
 "Wirksame Behebung des Schadens"
 ],
@@ -2227,6 +2383,10 @@ export default [
 [
 "Révision demandée — LuxInterventions prépare une nouvelle version.",
 "Überarbeitung angefragt — LuxInterventions bereitet eine neue Version vor."
+],
+[
+"Révisions",
+"Überarbeitungen"
 ],
 [
 "Rôle",
@@ -2247,6 +2407,14 @@ export default [
 [
 "Satisfait",
 "Zufrieden"
+],
+[
+"Satisfaits",
+"Zufrieden"
+],
+[
+"Satisfaits (%)",
+"Zufrieden (%)"
 ],
 [
 "Se connecter",
@@ -2409,6 +2577,10 @@ export default [
 "Abgeschlossen"
 ],
 [
+"Terminée le",
+"Beendet am"
+],
+[
 "Terminées",
 "Abgeschlossen"
 ],
@@ -2427,6 +2599,10 @@ export default [
 [
 "Toiture / façade",
 "Dach / Fassade"
+],
+[
+"Tous",
+"Alle"
 ],
 [
 "Tout",
@@ -2531,6 +2707,10 @@ export default [
 [
 "Urgence, photos, accès — en 30 secondes",
 "Dringlichkeit, Fotos, Zugang — in 30 Sekunden"
+],
+[
+"Urgences",
+"Notfälle"
 ],
 [
 "Urgences ouvertes",
@@ -2697,6 +2877,10 @@ export default [
 "z. B. POST Luxembourg"
 ],
 [
+"ex. Plomberie, cave…",
+"z. B. Sanitär, Keller…"
+],
+[
 "ex. Pouvez-vous enlever la peinture du couloir et revoir le prix ?",
 "z. B. Können Sie den Anstrich des Flurs streichen und den Preis anpassen?"
 ],
@@ -2761,12 +2945,20 @@ export default [
 "persönlichen Link"
 ],
 [
+"non",
+"nein"
+],
+[
 "nouvelles demandes",
 "neue Anfragen"
 ],
 [
 "n° TVA (LU…)",
 "USt-IdNr. (LU…)"
+],
+[
+"oui",
+"ja"
 ],
 [
 "payée",
@@ -2925,6 +3117,10 @@ export default [
 "{0} · ausgestellt am {1}"
 ],
 [
+"{0} évaluation(s)",
+"{0} Bewertung(en)"
+],
+[
 "« Sur l’écran d’accueil »",
 "„Zum Home-Bildschirm“"
 ],
@@ -2985,6 +3181,10 @@ export default [
 "Offen"
 ],
 [
+"À payer (€)",
+"Offen (€)"
+],
+[
 "À traiter",
 "Zu bearbeiten"
 ],
@@ -2999,6 +3199,10 @@ export default [
 [
 "Écrivez ce qu’il faut revoir",
 "Schreiben Sie, was überarbeitet werden soll"
+],
+[
+"Écrivez d’abord un nom pour la liste",
+"Geben Sie zuerst einen Namen für die Liste ein"
 ],
 [
 "Écrivez d’abord votre email ci-dessus, puis touchez « Mot de passe oublié ? ».",
@@ -3109,6 +3313,10 @@ export default [
 "−10 % für Verwaltungen und ihre Bewohner"
 ],
 [
+"⏱️ Délais",
+"⏱️ Fristen"
+],
+[
 "⏱️ Réponse",
 "⏱️ Antwort"
 ],
@@ -3167,6 +3375,10 @@ export default [
 [
 "✅ Accepter",
 "✅ Annehmen"
+],
+[
+"✅ Accepté",
+"✅ Angenommen"
 ],
 [
 "✅ Acceptés",
@@ -3229,6 +3441,10 @@ export default [
 "❌ Ablehnen"
 ],
 [
+"❌ Refusé",
+"❌ Abgelehnt"
+],
+[
 "❌ Refusés",
 "❌ Abgelehnt"
 ],
@@ -3243,6 +3459,10 @@ export default [
 [
 "⭐ Envoyer l’évaluation",
 "⭐ Bewertung senden"
+],
+[
+"⭐ Mes listes",
+"⭐ Meine Listen"
 ],
 [
 "⭐ Satisfaction",
@@ -3281,12 +3501,20 @@ export default [
 "🏢 Meine Firma"
 ],
 [
+"💶 Totaux",
+"💶 Summen"
+],
+[
 "💼 Gérez aussi vos propres locataires",
 "💼 Verwalten Sie auch Ihre eigenen Mieter"
 ],
 [
 "💼 Nos abonnements",
 "💼 Unsere Abos"
+],
+[
+"💾 Enregistrer dans Mes listes",
+"💾 In Meine Listen speichern"
 ],
 [
 "📅 Disponibilités",
@@ -3297,8 +3525,20 @@ export default [
 "📊 Excel-Export (CSV)"
 ],
 [
+"📊 Graphiques",
+"📊 Diagramme"
+],
+[
 "📊 Statistiques",
 "📊 Statistiken"
+],
+[
+"📍 Résidences · toutes",
+"📍 Wohnanlagen · alle"
+],
+[
+"📍 Résidences · {0} / {1}",
+"📍 Wohnanlagen · {0} / {1}"
 ],
 [
 "📒 Comptabilité",
@@ -3365,6 +3605,10 @@ export default [
 "🔄 Neu verhandelt"
 ],
 [
+"🔄 Révision",
+"🔄 Überarbeitung"
+],
+[
 "🔎 Filtres — rien coché = tout",
 "🔎 Filter — nichts angekreuzt = alles"
 ],
@@ -3415,6 +3659,22 @@ export default [
 [
 "🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.",
 "🔒 Ihre Daten sind verschlüsselt: niemand sonst, nicht einmal LuxInterventions, kann sie lesen."
+],
+[
+"🔧 Travaux",
+"🔧 Arbeiten"
+],
+[
+"🖨️ Imprimer / PDF",
+"🖨️ Drucken / PDF"
+],
+[
+"🖨️ Statistiques sur mesure",
+"🖨️ Statistiken nach Maß"
+],
+[
+"🖨️ Sur mesure",
+"🖨️ Nach Maß"
 ],
 [
 "🚚 En route",

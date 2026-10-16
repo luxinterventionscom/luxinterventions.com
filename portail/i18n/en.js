@@ -189,8 +189,20 @@ export default [
 "Year"
 ],
 [
+"Année {0}",
+"Year {0}"
+],
+[
 "Août",
 "August"
+],
+[
+"Aperçu limité à 300 lignes ; l’export contient tout.",
+"Preview limited to 300 rows; the export contains everything."
+],
+[
+"Aperçu — lignes : {0}",
+"Preview — rows: {0}"
 ],
 [
 "App des locataires",
@@ -225,6 +237,10 @@ export default [
 "Lift"
 ],
 [
+"Au",
+"To"
+],
+[
 "Au moins 10 caractères",
 "At least 10 characters"
 ],
@@ -243,6 +259,10 @@ export default [
 [
 "Aucun utilisateur. Invitez le responsable de la gérance.",
 "No users. Invite the property manager’s lead contact."
+],
+[
+"Aucune",
+"None"
 ],
 [
 "Aucune demande ce mois-ci.",
@@ -303,6 +323,10 @@ export default [
 [
 "Autre précision (facultatif)",
 "Other detail (optional)"
+],
+[
+"Autres",
+"Others"
 ],
 [
 "Avant",
@@ -421,6 +445,10 @@ export default [
 "This quote already has an answer"
 ],
 [
+"Ce mois",
+"This month"
+],
+[
 "Ce navigateur n’a pas pu activer les notifications (navigation privée, ou iPhone : installez d’abord l’app sur l’écran d’accueil et ouvrez-la depuis l’icône).",
 "This browser could not turn on notifications (private browsing, or iPhone: first install the app on the home screen and open it from the icon)."
 ],
@@ -435,6 +463,10 @@ export default [
 [
 "Ces données figurent sur les factures de LuxInterventions (ARES INVEST S.A.). Le nom de la société est modifié par LuxInterventions.",
 "These details appear on LuxInterventions (ARES INVEST S.A.) invoices. The company name is changed by LuxInterventions."
+],
+[
+"Cette année",
+"This year"
 ],
 [
 "Chambre",
@@ -487,6 +519,10 @@ export default [
 [
 "Choisissez le mois",
 "Choose the month"
+],
+[
+"Choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF — pour votre direction.",
+"Choose what, filter, tick the columns, then Excel or PDF — for your management."
 ],
 [
 "Choisissez une note pour chaque critère et l’avis global.",
@@ -569,6 +605,10 @@ export default [
 "Paste your radio link (website or audio stream)"
 ],
 [
+"Colonnes",
+"Columns"
+],
+[
 "Comptabilité",
 "Accounting"
 ],
@@ -615,6 +655,10 @@ export default [
 [
 "Contact sur place",
 "On-site contact"
+],
+[
+"Contient",
+"Contains"
 ],
 [
 "Contrat d’entretien des parties communes — Kirchberg Parc",
@@ -753,6 +797,10 @@ export default [
 "Requests and completed jobs per month"
 ],
 [
+"Demandes par type de travaux",
+"Requests by type of work"
+],
+[
 "Demandes reçues",
 "Requests received"
 ],
@@ -763,6 +811,14 @@ export default [
 [
 "Demandée",
 "Requested"
+],
+[
+"Demandée le",
+"Requested on"
+],
+[
+"Demandée par",
+"Requested by"
 ],
 [
 "Demandées",
@@ -823,6 +879,10 @@ export default [
 [
 "Dont urgentes",
 "Of which urgent"
+],
+[
+"Du",
+"From"
 ],
 [
 "Du étage",
@@ -945,6 +1005,10 @@ export default [
 "Send your first job request"
 ],
 [
+"Envoyé",
+"Sent"
+],
+[
 "Erreur",
 "Error"
 ],
@@ -973,6 +1037,10 @@ export default [
 "Expired on"
 ],
 [
+"Facturation (délai)",
+"Invoicing (time)"
+],
+[
 "Facture",
 "Invoice"
 ],
@@ -987,6 +1055,10 @@ export default [
 [
 "Facturé TTC",
 "Invoiced incl. VAT"
+],
+[
+"Facturé TTC par résidence",
+"Invoiced incl. VAT by residence"
 ],
 [
 "Facultatif",
@@ -1013,6 +1085,10 @@ export default [
 "Job rating form"
 ],
 [
+"Filtres",
+"Filters"
+],
+[
 "Fin (h)",
 "End (h)"
 ],
@@ -1037,8 +1113,16 @@ export default [
 "February"
 ],
 [
+"Graphiques",
+"Charts"
+],
+[
 "Gratuit pour 1 immeuble · Pro dès 29 € / mois · données chiffrées",
 "Free for 1 building · Pro from €29 / month · encrypted data"
+],
+[
+"Groupe",
+"Group"
 ],
 [
 "Gérance",
@@ -1069,8 +1153,16 @@ export default [
 "Manage your own tenants too"
 ],
 [
+"HT (€)",
+"Excl. VAT (€)"
+],
+[
 "Hall d’entrée",
 "Entrance hall"
+],
+[
+"Heures facturées",
+"Billed hours"
 ],
 [
 "Historique des interventions",
@@ -1129,6 +1221,10 @@ export default [
 "Intercom « Syndic »"
 ],
 [
+"Intervenant",
+"Technician"
+],
+[
 "Intervention",
 "Job"
 ],
@@ -1163,6 +1259,10 @@ export default [
 [
 "Interventions terminées",
 "Finished interventions"
+],
+[
+"Interventions terminées par mois",
+"Jobs finished per month"
 ],
 [
 "Interventions terminées, par mois et par gérance",
@@ -1319,6 +1419,10 @@ export default [
 [
 "Lieu précis",
 "Exact location"
+],
+[
+"Liste enregistrée ✓",
+"List saved ✓"
 ],
 [
 "Local poubelles",
@@ -1525,6 +1629,10 @@ export default [
 "Bank name"
 ],
 [
+"Nom de la liste (ex. Rapport mensuel)",
+"List name (e.g. Monthly report)"
+],
+[
 "Nom de la résidence",
 "Residence name"
 ],
@@ -1641,6 +1749,10 @@ export default [
 "Numbers"
 ],
 [
+"N°",
+"No."
+],
+[
 "N° / nom",
 "No. / name"
 ],
@@ -1651,6 +1763,10 @@ export default [
 [
 "N° TVA",
 "VAT no."
+],
+[
+"Objet",
+"Subject"
 ],
 [
 "Octobre",
@@ -1683,6 +1799,10 @@ export default [
 [
 "Par fonction du demandeur",
 "By requester's role"
+],
+[
+"Par mois",
+"By month"
 ],
 [
 "Par résidence",
@@ -1743,6 +1863,10 @@ export default [
 [
 "Pas encore d’évaluation. Après chaque intervention terminée, la gérance peut remplir la fiche « ⭐ Évaluer l’intervention ».",
 "No ratings yet. After each completed job, the management company can fill in the “⭐ Rate the job” form."
+],
+[
+"Payé (€)",
+"Paid (€)"
 ],
 [
 "Payée",
@@ -1917,12 +2041,20 @@ export default [
 "Taken on"
 ],
 [
+"Prise en charge (délai)",
+"Pick-up (time)"
+],
+[
 "Prise en charge (h)",
 "Taken on (h)"
 ],
 [
 "Prise en charge (moy.)",
 "Taken on (avg.)"
+],
+[
+"Prise en charge (moyenne)",
+"Pick-up (average)"
 ],
 [
 "Prise en charge / fin",
@@ -1943,6 +2075,10 @@ export default [
 [
 "Période",
 "Period"
+],
+[
+"Quantité",
+"Quantity"
 ],
 [
 "Que se passe-t-il ? Depuis quand ? Risque de dégâts ?",
@@ -2029,6 +2165,10 @@ export default [
 "Decline this quote?"
 ],
 [
+"Regrouper",
+"Group"
+],
+[
 "Relation avec le personnel",
 "Relationship with the staff"
 ],
@@ -2093,12 +2233,20 @@ export default [
 "Back"
 ],
 [
+"Reçu le",
+"Received on"
+],
+[
 "Reçue",
 "Received"
 ],
 [
 "Reçus",
 "Received"
+],
+[
+"Rien avec ces filtres.",
+"Nothing with these filters."
 ],
 [
 "Rue, numéro, code postal, ville",
@@ -2137,6 +2285,10 @@ export default [
 "Repair"
 ],
 [
+"Réponse (délai)",
+"Answer (time)"
+],
+[
 "Réservé au responsable de la gérance",
 "Reserved for the agency manager"
 ],
@@ -2169,6 +2321,10 @@ export default [
 "Resolution"
 ],
 [
+"Résolution (délai)",
+"Resolution (time)"
+],
+[
 "Résolution efficace de la panne",
 "Effective fix of the problem"
 ],
@@ -2179,6 +2335,10 @@ export default [
 [
 "Révision demandée — LuxInterventions prépare une nouvelle version.",
 "Revision requested — LuxInterventions is preparing a new version."
+],
+[
+"Révisions",
+"Revisions"
 ],
 [
 "Rôle",
@@ -2195,6 +2355,14 @@ export default [
 [
 "Satisfait",
 "Satisfied"
+],
+[
+"Satisfaits",
+"Satisfied"
+],
+[
+"Satisfaits (%)",
+"Satisfied (%)"
 ],
 [
 "Se connecter",
@@ -2357,6 +2525,10 @@ export default [
 "Finished"
 ],
 [
+"Terminée le",
+"Finished on"
+],
+[
 "Terminées",
 "Finished"
 ],
@@ -2375,6 +2547,10 @@ export default [
 [
 "Toiture / façade",
 "Roof / façade"
+],
+[
+"Tous",
+"All"
 ],
 [
 "Tout",
@@ -2475,6 +2651,10 @@ export default [
 [
 "Urgence, photos, accès — en 30 secondes",
 "Urgency, photos, access — in 30 seconds"
+],
+[
+"Urgences",
+"Emergencies"
 ],
 [
 "Urgences ouvertes",
@@ -2637,6 +2817,10 @@ export default [
 "e.g. POST Luxembourg"
 ],
 [
+"ex. Plomberie, cave…",
+"e.g. Plumbing, cellar…"
+],
+[
 "ex. Pouvez-vous enlever la peinture du couloir et revoir le prix ?",
 "e.g. Could you remove the corridor painting and revise the price?"
 ],
@@ -2701,12 +2885,20 @@ export default [
 "personal link"
 ],
 [
+"non",
+"no"
+],
+[
 "nouvelles demandes",
 "new requests"
 ],
 [
 "n° TVA (LU…)",
 "VAT no. (LU…)"
+],
+[
+"oui",
+"yes"
 ],
 [
 "payée",
@@ -2857,6 +3049,10 @@ export default [
 "{0} · issued on {1}"
 ],
 [
+"{0} évaluation(s)",
+"{0} rating(s)"
+],
+[
 "« Sur l’écran d’accueil »",
 "“Add to Home Screen”"
 ],
@@ -2917,6 +3113,10 @@ export default [
 "To pay"
 ],
 [
+"À payer (€)",
+"To pay (€)"
+],
+[
 "À traiter",
 "To handle"
 ],
@@ -2931,6 +3131,10 @@ export default [
 [
 "Écrivez ce qu’il faut revoir",
 "Write what needs revising"
+],
+[
+"Écrivez d’abord un nom pour la liste",
+"First write a name for the list"
 ],
 [
 "Écrivez d’abord votre email ci-dessus, puis touchez « Mot de passe oublié ? ».",
@@ -3041,6 +3245,10 @@ export default [
 "−10 % for agencies and their residents"
 ],
 [
+"⏱️ Délais",
+"⏱️ Lead times"
+],
+[
 "⏱️ Réponse",
 "⏱️ Answer"
 ],
@@ -3099,6 +3307,10 @@ export default [
 [
 "✅ Accepter",
 "✅ Accept"
+],
+[
+"✅ Accepté",
+"✅ Accepted"
 ],
 [
 "✅ Acceptés",
@@ -3161,6 +3373,10 @@ export default [
 "❌ Decline"
 ],
 [
+"❌ Refusé",
+"❌ Refused"
+],
+[
 "❌ Refusés",
 "❌ Declined"
 ],
@@ -3175,6 +3391,10 @@ export default [
 [
 "⭐ Envoyer l’évaluation",
 "⭐ Send the rating"
+],
+[
+"⭐ Mes listes",
+"⭐ My lists"
 ],
 [
 "⭐ Évaluation",
@@ -3209,12 +3429,20 @@ export default [
 "🏢 My company"
 ],
 [
+"💶 Totaux",
+"💶 Totals"
+],
+[
 "💼 Gérez aussi vos propres locataires",
 "💼 Manage your own tenants too"
 ],
 [
 "💼 Nos abonnements",
 "💼 Our plans"
+],
+[
+"💾 Enregistrer dans Mes listes",
+"💾 Save to My lists"
 ],
 [
 "📅 Disponibilités",
@@ -3225,8 +3453,20 @@ export default [
 "📊 Excel export (CSV)"
 ],
 [
+"📊 Graphiques",
+"📊 Charts"
+],
+[
 "📊 Statistiques",
 "📊 Statistics"
+],
+[
+"📍 Résidences · toutes",
+"📍 Residences · all"
+],
+[
+"📍 Résidences · {0} / {1}",
+"📍 Residences · {0} / {1}"
 ],
 [
 "📒 Comptabilité",
@@ -3293,6 +3533,10 @@ export default [
 "🔄 Renegotiated"
 ],
 [
+"🔄 Révision",
+"🔄 Revision"
+],
+[
 "🔎 Filtres — rien coché = tout",
 "🔎 Filters — nothing ticked = everything"
 ],
@@ -3343,6 +3587,22 @@ export default [
 [
 "🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.",
 "🔒 Your data is encrypted: nobody else, not even LuxInterventions, can read it."
+],
+[
+"🔧 Travaux",
+"🔧 Jobs"
+],
+[
+"🖨️ Imprimer / PDF",
+"🖨️ Print / PDF"
+],
+[
+"🖨️ Statistiques sur mesure",
+"🖨️ Custom statistics"
+],
+[
+"🖨️ Sur mesure",
+"🖨️ Custom"
 ],
 [
 "🚚 En route",

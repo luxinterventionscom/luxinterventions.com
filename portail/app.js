@@ -491,8 +491,19 @@ function renderShell() {
         <button class="btn sm ghost" data-action="logout">Quitter</button></div>` : ''}
       <main class="main" id="view"></main>
     </div>
-    <nav class="bottomnav" style="grid-template-columns:repeat(${navItems().length - 1},1fr)" aria-label="Navigation">${navItems().filter((x) => x[0] !== 'stats').map(nb)}</nav>`);
+    <nav class="bottomnav" aria-label="Navigation">${navItems().map(nb)}</nav>`);
+  setTimeout(bnavShow, 0);
 }
+// barre du bas (téléphone) comme dans l'app de gestion : on la fait défiler au doigt, la rubrique ouverte reste visible,
+// un fondu indique qu'il y en a d'autres à gauche / à droite
+function bnavShow() {
+  const nav = $('.bottomnav'), cur = nav && nav.querySelector('[aria-current=page]');
+  if (!nav) return;
+  if (cur && nav.scrollWidth > nav.clientWidth) { const x = cur.offsetLeft - (nav.clientWidth - cur.offsetWidth) / 2; nav.scrollTo({ left: Math.max(0, x), behavior: 'smooth' }); }
+  bnavEdges(nav);
+}
+const bnavEdges = (nav) => { nav.classList.toggle('more-l', nav.scrollLeft > 4); nav.classList.toggle('more-r', nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 4); };
+document.addEventListener('scroll', (e) => { if (e.target.classList && e.target.classList.contains('bottomnav')) bnavEdges(e.target); }, true);
 
 async function go(route, replace) {
   const valid = navItems().map((x) => x[0]);
@@ -501,6 +512,7 @@ async function go(route, replace) {
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
   document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === route ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
+  bnavShow();
   const view = $('#view');
   if (!state.cache[route]) setHtml(view, html`<div class="empty"><div class="spinner accent" style="margin:0 auto"></div></div>`);
   scrollTo(0, 0);
@@ -551,6 +563,7 @@ async function loadRoute(route) {
   } else if (route === 'stats') {
     const [all, ev, dv] = await Promise.all([api('tickets?scope=all' + org), api('evals' + (org ? '?' + org.slice(1) : '')).catch(() => null), api('devis?all=1' + org).catch(() => null)]);
     state.cache.stats = { tickets: all.tickets, evals: ev ? ev.evals : null, devis: dv ? dv.devis || [] : null };
+    if (state.cpSec === 'mesure') await prLoad(); // statistiques sur mesure ouvertes : on recharge leurs données
   }
   if (isAdmin() && !state.cache.orgs) state.cache.orgs = (await api('orgs')).orgs;
   updateBadges();
@@ -696,6 +709,164 @@ document.addEventListener('keydown', (e) => {
   const boxes = [...e.target.closest('.code6').querySelectorAll('.c6')], p = boxes[boxes.indexOf(e.target) - 1];
   if (p) { p.value = ''; p.focus(); e.target.closest('.code6').querySelector('input[type=hidden]').value = boxes.map((b) => b.value).join(''); e.preventDefault(); }
 });
+// ── 🖨️ Statistiques sur mesure (gérance) : uniquement ses propres données — travaux, délais, totaux, devis ;
+// période, résidences, colonnes à cocher, aperçu, graphiques, Excel (.xlsx) et impression / PDF, listes enregistrées.
+// Intervenant : prénom seulement ; heures : celles de la facture (jamais les heures internes).
+const PR_SRC = {
+  travaux: ['🔧 Travaux', [['ref', 'Réf.'], ['org', 'Gérance'], ['dem', 'Demandée le'], ['res', 'Résidence'], ['adr', 'Adresse'], ['lieu', 'Lieu'], ['type', 'Type de travaux'], ['urg', 'Urgence'], ['st', 'Statut'], ['tech', 'Intervenant'], ['plan', 'Planifiée'], ['fin', 'Terminée le'], ['qte', 'Quantité'], ['h', 'Heures facturées'], ['fact', 'Facture'], ['ht', 'HT (€)'], ['ttc', 'TTC (€)'], ['paye', 'Payée'], ['sat', 'Satisfaction'], ['photos', 'Photos'], ['par', 'Demandée par']], ['ref', 'dem', 'res', 'type', 'urg', 'st', 'fin', 'ttc', 'sat']],
+  delais: ['⏱️ Délais', [['ref', 'Réf.'], ['org', 'Gérance'], ['res', 'Résidence'], ['type', 'Type de travaux'], ['urg', 'Urgence'], ['dem', 'Demandée le'], ['dPrise', 'Prise en charge (délai)'], ['dFin', 'Résolution (délai)'], ['dFact', 'Facturation (délai)'], ['sat', 'Satisfaction']], ['ref', 'res', 'type', 'urg', 'dem', 'dPrise', 'dFin', 'sat']],
+  totaux: ['💶 Totaux', [['k', 'Groupe'], ['n', 'Demandes'], ['f', 'Terminées'], ['u', 'Urgences'], ['h', 'Heures facturées'], ['ht', 'HT (€)'], ['ttc', 'TTC (€)'], ['paid', 'Payé (€)'], ['due', 'À payer (€)'], ['prise', 'Prise en charge (moyenne)'], ['sat', 'Satisfaits (%)']], ['k', 'n', 'f', 'h', 'ttc', 'due', 'sat']],
+  devis: ['📝 Devis', [['no', 'N°'], ['titre', 'Objet'], ['date', 'Reçu le'], ['ttc', 'TTC (€)'], ['st', 'Statut'], ['rep', 'Réponse (délai)'], ['revs', 'Révisions']], ['no', 'titre', 'date', 'ttc', 'st', 'rep']],
+};
+const PR_GROUP = { res: 'Par résidence', type: 'Par type de travaux', mois: 'Par mois' };
+const PR_DEV_ST = { envoye: 'Envoyé', accepte: '✅ Accepté', refuse: '❌ Refusé', revision: '🔄 Révision' };
+const PR_KEY = 'ptlRptLists';
+const prIso = (ms) => (ms ? new Date(ms).toISOString().slice(0, 10) : '');
+const prDate = (ms) => (ms ? new Date(ms).toLocaleDateString(LOC, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '');
+const prToday = () => new Date().toISOString().slice(0, 10);
+const prFirst = (s) => String(s || '').trim().split(/\s+/)[0] || ''; // intervenant : prénom seulement
+const prType = (t) => (t.categorie || 'Autre').split(' · ')[0];
+const prPct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+function prCfg() {
+  const y = new Date().getFullYear();
+  state.rpt ||= { src: 'travaux', from: y + '-01-01', to: prToday(), res: null, st: '', urg: '', q: '', g: 'res', cols: {} };
+  return state.rpt;
+}
+const prCols = (c) => { const def = PR_SRC[c.src][2], all = PR_SRC[c.src][1].map(([k]) => k); return (c.cols[c.src] || def).filter((k) => all.includes(k) && (k !== 'org' || isAdmin())); };
+const prIn = (ms, c) => { const d = prIso(ms); return !!d && d >= c.from && d <= c.to; };
+function prEvalOf() {
+  const m = new Map();
+  for (const e of (state.cache.stats && state.cache.stats.evals) || []) { const v = evalParse(e.text); if (v) m.set(e.ticket_id, v.global); }
+  return m;
+}
+function prTickets(c) {
+  const q = c.q.trim().toLowerCase();
+  return ((state.cache.rpt && state.cache.rpt.tickets) || []).filter((t) => t.status !== 'annulee' && prIn(t.created_at, c)
+    && (!c.res || c.res.includes(t.residence_id)) && (!c.st || t.status === c.st) && (!c.urg || t.urgence === c.urg)
+    && (!q || [t.categorie, t.lieu, t.residence_name, t.residence_address, t.description].join(' ').toLowerCase().includes(q)));
+}
+const prSat = (ev, id) => { const k = ev.get(id); return k ? (EVAL_GLOBAL.find(([x]) => x === k) || [])[1] || '' : ''; };
+function prRows(c) {
+  const ev = prEvalOf(), num = (v) => (v == null || v === '' ? '' : Math.round(+v * 100) / 100);
+  if (c.src === 'devis') {
+    return ((state.cache.stats && state.cache.stats.devis) || []).filter((v) => prIn(v.created_at, c)).sort((a, b) => b.created_at - a.created_at)
+      .map((v) => ({ no: v.no || '', titre: v.title || '', date: prDate(v.created_at), ttc: num(v.ttc), st: PR_DEV_ST[v.status] || v.status || '', rep: v.decided_at ? duration(v.decided_at - v.created_at) : '', revs: v.revs || 0 }));
+  }
+  const T = prTickets(c);
+  if (c.src === 'totaux') {
+    const key = (t) => (c.g === 'type' ? prType(t) : c.g === 'mois' ? prIso(t.created_at).slice(0, 7) : t.residence_name || '—');
+    const G = new Map();
+    for (const t of T) { const k = key(t); if (!G.has(k)) G.set(k, []); G.get(k).push(t); }
+    return [...G].sort((a, b) => (c.g === 'mois' ? a[0].localeCompare(b[0]) : b[1].length - a[1].length)).map(([k, L]) => {
+      const sum = (f) => L.reduce((n, t) => n + (+f(t) || 0), 0), tk = L.filter((t) => t.taken_at), evs = L.map((t) => ev.get(t.id)).filter(Boolean);
+      return { k: c.g === 'mois' ? k.slice(5) + '/' + k.slice(0, 4) : k, n: L.length, f: L.filter((t) => t.status === 'terminee').length, u: L.filter((t) => t.urgence === 'urgent').length,
+        h: num(sum((t) => t.inv_h)), ht: num(sum((t) => t.inv_ht)), ttc: num(sum((t) => t.inv_ttc)), paid: num(sum((t) => (t.inv_paid ? t.inv_ttc : 0))), due: num(sum((t) => (t.inv_no && !t.inv_paid ? t.inv_ttc : 0))),
+        prise: tk.length ? duration(tk.reduce((n, t) => n + (t.taken_at - t.created_at), 0) / tk.length) : '', sat: evs.length ? prPct(evs.filter((x) => x === 'ok').length, evs.length) : '' };
+    });
+  }
+  return T.sort((a, b) => b.created_at - a.created_at).map((t) => ({
+    ref: '#' + t.ref, org: t.org_name || '', dem: prDate(t.created_at), res: t.residence_name || '', adr: t.residence_address || '', lieu: t.lieu || '', type: t.categorie || '', urg: (URG[t.urgence] || {}).label || '',
+    st: (STATUS[t.status] || {}).label || t.status, tech: prFirst(t.technicien), plan: t.planned_at ? String(t.planned_at).replace('T', ' ') : '', fin: prDate(t.done_at), qte: t.qte || '', h: num(t.inv_h),
+    fact: t.inv_no || '', ht: num(t.inv_ht), ttc: num(t.inv_ttc), paye: t.inv_no ? (t.inv_paid ? 'oui' : 'non') : '', sat: prSat(ev, t.id), photos: t.photos || 0, par: t.created_by_name || '',
+    dPrise: t.taken_at ? duration(t.taken_at - t.created_at) : '', dFin: t.done_at ? duration(t.done_at - t.created_at) : '', dFact: t.inv_date && t.done_at ? duration(Math.max(0, t.inv_date - t.done_at)) : '',
+  }));
+}
+function prTable(c) {
+  const cols = prCols(c), L = Object.fromEntries(PR_SRC[c.src][1]);
+  if (c.src === 'totaux') L.k = PR_GROUP[c.g].replace(/^Par /, '').replace(/^./, (x) => x.toUpperCase());
+  const rows = prRows(c);
+  return { cols, head: cols.map((k) => L[k]), rows: rows.map((r) => cols.map((k) => r[k] ?? '')), n: rows.length };
+}
+const prPeriod = (c) => `${prDate(Date.parse(c.from + 'T12:00:00'))} → ${prDate(Date.parse(c.to + 'T12:00:00'))}`;
+const prTitle = (c) => `${PR_SRC[c.src][0].replace(/^\S+\s/, '')}${c.src === 'totaux' ? ' — ' + PR_GROUP[c.g].toLowerCase() : ''} · ${prPeriod(c)}`;
+// graphiques (SVG, s'impriment aussi)
+const PZ = { s: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#8b5cf6'], good: '#0ca30c', mid: '#eda100', bad: '#d03b3b', blue: '#2a78d6' };
+function prDonut(parts) {
+  const tot = parts.reduce((n, p) => n + p[1], 0); if (!tot) return '';
+  let a = -Math.PI / 2; const R = 60, r = 36, cx = 70, cy = 70, P = (ang, rad) => `${(cx + rad * Math.cos(ang)).toFixed(2)} ${(cy + rad * Math.sin(ang)).toFixed(2)}`;
+  const arcs = parts.map(([l, v], i) => { if (!v) return ''; if (v === tot) return `<circle cx="${cx}" cy="${cy}" r="${(R + r) / 2}" fill="none" stroke="${PZ.s[i % 5]}" stroke-width="${R - r}"><title>${esc(l)} : ${v}</title></circle>`;
+    const b = a + (v / tot) * Math.PI * 2 - 0.03, big = b - a > Math.PI ? 1 : 0, d = `M ${P(a, R)} A ${R} ${R} 0 ${big} 1 ${P(b, R)} L ${P(b, r)} A ${r} ${r} 0 ${big} 0 ${P(a, r)} Z`;
+    a = b + 0.03; return `<path d="${d}" fill="${PZ.s[i % 5]}"><title>${esc(l)} : ${v} (${prPct(v, tot)} %)</title></path>`; }).join('');
+  return `<svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="Répartition">${arcs}<text x="70" y="76" text-anchor="middle" font-size="18" font-weight="700" fill="currentColor">${tot}</text></svg>`;
+}
+function prBars(rows) {
+  const max = Math.max(1, ...rows.map((r) => r[1])), W = Math.max(rows.length * 34, 200), H = 150;
+  return `<svg viewBox="0 0 ${W} ${H + 34}" width="100%" style="max-width:${W}px" role="img">${rows.map(([l, v], i) => { const h = Math.round((v / max) * H), x = i * 34 + 6;
+    return `<g><title>${esc(l)} : ${v}</title><rect x="${x}" y="${H - h + 4}" width="22" height="${Math.max(h, v ? 2 : 0)}" rx="4" fill="${PZ.blue}"/>${v ? `<text x="${x + 11}" y="${H - h}" text-anchor="middle" font-size="10" fill="currentColor">${v}</text>` : ''}<text x="${x + 11}" y="${H + 20}" text-anchor="middle" font-size="9" fill="currentColor" opacity=".7">${esc(l)}</text></g>`; }).join('')}<line x1="0" x2="${W}" y1="${H + 4}" y2="${H + 4}" stroke="currentColor" opacity=".25"/></svg>`;
+}
+const prStack = (parts) => { const tot = parts.reduce((n, p) => n + p[1], 0); if (!tot) return '<p class="tiny muted">—</p>'; return `<div class="vz-stack">${parts.map(([l, v, col]) => (v ? `<i style="flex:${v};background:${col}" title="${esc(l)} : ${v}"></i>` : '')).join('')}</div><div class="vz-leg">${parts.map(([l, v, col]) => `<span><i style="background:${col}"></i>${esc(l)} : <b>${v}</b> (${prPct(v, tot)} %)</span>`).join('')}</div>`; };
+const prHBars = (rows, fmt) => { const max = Math.max(1, ...rows.map((r) => r[1])); return rows.map(([l, n]) => `<div class="vz-hb"><span class="vz-hl">${esc(l)}</span><span class="vz-ht"><i style="width:${Math.max(2, (n / max) * 100)}%;background:${PZ.blue}"></i></span><span class="vz-hv">${fmt(n)}</span></div>`).join(''); };
+function prCharts(c) {
+  const T = prTickets(c), done = T.filter((t) => t.status === 'terminee' && t.done_at), ev = prEvalOf();
+  const cnt = new Map(); for (const t of T) cnt.set(prType(t), (cnt.get(prType(t)) || 0) + 1);
+  const types = [...cnt].sort((a, b) => b[1] - a[1]); const top = types.slice(0, 4); if (types.length > 4) top.push(['Autres', types.slice(4).reduce((n, x) => n + x[1], 0)]);
+  const ms = []; for (let d = new Date(c.from.slice(0, 7) + '-01T12:00:00'); ; d.setMonth(d.getMonth() + 1)) { const m = d.toISOString().slice(0, 7); if (m > c.to.slice(0, 7) || ms.length > 36) break; ms.push(m); }
+  const months = (ms.length > 24 ? ms.slice(-24) : ms).map((m) => [m.slice(5) + '/' + m.slice(2, 4), done.filter((t) => prIso(t.done_at).slice(0, 7) === m).length]);
+  const H = 3600e3, tk = T.filter((t) => t.taken_at).map((t) => t.taken_at - t.created_at);
+  const evs = T.map((t) => ev.get(t.id)).filter(Boolean);
+  const byRes = new Map(); for (const t of T) if (t.inv_ttc) byRes.set(t.residence_name || '—', (byRes.get(t.residence_name || '—') || 0) + (+t.inv_ttc || 0));
+  const ttc = T.reduce((n, t) => n + (+t.inv_ttc || 0), 0), hrs = T.reduce((n, t) => n + (+t.inv_h || 0), 0);
+  const tiles = [['Demandes', T.length], ['Terminées', done.length], ['Prise en charge (moyenne)', tk.length ? duration(tk.reduce((a, b) => a + b, 0) / tk.length) : '—'], ['Satisfaits', evs.length ? prPct(evs.filter((x) => x === 'ok').length, evs.length) + ' %' : '—'], ['Facturé TTC', eurP(ttc)], ['Heures facturées', String(Math.round(hrs * 10) / 10).replace('.', ',')]];
+  return new Raw(`<div class="vz">
+    <div class="vz-tiles">${tiles.map(([l, v]) => `<div class="vz-tile"><div class="vz-tv">${esc(v)}</div><div class="vz-tl">${esc(l)}</div></div>`).join('')}</div>
+    <div class="vz-grid">
+      <div class="vz-card"><h4>Demandes par type de travaux</h4><div class="vz-donut">${prDonut(top) || '<p class="tiny muted">—</p>'}<div class="vz-leg col">${top.map(([l, v], i) => `<span><i style="background:${PZ.s[i % 5]}"></i>${esc(l)} : <b>${v}</b> (${prPct(v, T.length)} %)</span>`).join('')}</div></div></div>
+      <div class="vz-card"><h4>Interventions terminées par mois</h4>${prBars(months)}</div>
+      <div class="vz-card"><h4>Délai de prise en charge</h4>${prStack([['moins de 2 h', tk.filter((x) => x < 2 * H).length, PZ.good], ['2 h à 24 h', tk.filter((x) => x >= 2 * H && x < 24 * H).length, PZ.mid], ['plus de 24 h', tk.filter((x) => x >= 24 * H).length, PZ.bad]])}
+        <p class="tiny" style="margin:10px 0 4px">Urgences</p>${prStack(Object.keys(URG).map((k, i) => [URG[k].label, T.filter((t) => t.urgence === k).length, [PZ.bad, PZ.mid, PZ.good][i]]))}</div>
+      <div class="vz-card"><h4>⭐ Satisfaction</h4>${prStack(EVAL_GLOBAL.map(([k, l], i) => [l, evs.filter((x) => x === k).length, [PZ.good, PZ.mid, PZ.bad][i]]))}<p class="tiny muted" style="margin:6px 0 0">${evs.length} évaluation(s)</p></div>
+      <div class="vz-card"><h4>Facturé TTC par résidence</h4>${byRes.size ? prHBars([...byRes].sort((a, b) => b[1] - a[1]).slice(0, 10), eurP) : '<p class="tiny muted">—</p>'}</div>
+    </div></div>`);
+}
+const prLists = () => { try { const a = JSON.parse(localStorage.getItem(PR_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
+const prListsSave = (a) => { try { localStorage.setItem(PR_KEY, JSON.stringify(a.slice(-30))); } catch { /* stockage indisponible */ } };
+async function prLoad() {
+  if (state.cache.rpt) return;
+  const org = isAdmin() && state.filters.org ? '&org=' + state.filters.org : '';
+  const [t, r] = await Promise.all([api('tickets?scope=all&full=1' + org), api('residences').catch(() => ({ residences: [] }))]);
+  state.cache.rpt = { tickets: t.tickets || [], residences: r.residences || [] };
+}
+function prView() {
+  const c = prCfg(), L = PR_SRC[c.src], cols = prCols(c), tb = prTable(c), y = new Date().getFullYear(), m = prToday().slice(0, 7);
+  const R = ((state.cache.rpt && state.cache.rpt.residences) || []).slice().sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  const lists = prLists();
+  const chk = (k, v, on, l) => html`<label class="chip" style="cursor:pointer"><input type="checkbox" class="rpt-cb" data-input="pr-${k}" value="${v}" ${on ? new Raw('checked') : ''}>${l}</label>`;
+  return html`${pageHead('🖨️ Statistiques sur mesure', 'Choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF — pour votre direction.')}
+    <div class="chips" style="margin-bottom:12px">${Object.entries(PR_SRC).map(([k, [l]]) => html`<button class="chip" data-action="pr-src" data-id="${k}" aria-pressed="${c.src === k}">${l}</button>`)}</div>
+    ${lists.length ? html`<div class="section-label">⭐ Mes listes</div><div class="chips" style="margin-bottom:12px">${lists.map((s, i) => html`<span class="chip" style="display:inline-flex;gap:6px;align-items:center"><button style="border:0;background:none;font:inherit;color:inherit;cursor:pointer;padding:0" data-action="pr-load" data-id="${i}">${s.nom}</button><button style="border:0;background:none;cursor:pointer;padding:0" data-action="pr-del" data-id="${i}" aria-label="Supprimer">✕</button></span>`)}</div>` : ''}
+    <div class="card" style="margin-bottom:12px"><div class="section-label" style="margin-top:0">Filtres</div>
+      <div class="fields" style="margin-bottom:6px"><label class="field">Du<input type="date" data-input="pr" data-k="from" value="${c.from}"></label><label class="field">Au<input type="date" data-input="pr" data-k="to" value="${c.to}"></label></div>
+      <div class="chips" style="margin-bottom:10px">${[['Ce mois', m + '-01', prToday()], ['Cette année', y + '-01-01', prToday()], ['Année ' + (y - 1), (y - 1) + '-01-01', (y - 1) + '-12-31'], ['Depuis le début', '2000-01-01', prToday()]].map(([l, f, t]) => html`<button class="chip" data-action="pr-per" data-f="${f}" data-t="${t}" aria-pressed="${c.from === f && c.to === t}">${l}</button>`)}</div>
+      ${c.src === 'devis' ? '' : html`<div class="fields">
+        ${c.src === 'totaux' ? html`<label class="field">Regrouper<select data-input="pr" data-k="g">${Object.entries(PR_GROUP).map(([k, l]) => html`<option value="${k}" ${c.g === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>` : ''}
+        <label class="field">Statut<select data-input="pr" data-k="st"><option value="">Tous</option>${Object.entries(STATUS).filter(([k]) => k !== 'annulee').map(([k, s]) => html`<option value="${k}" ${c.st === k ? new Raw('selected') : ''}>${s.label}</option>`)}</select></label>
+        <label class="field">Urgence<select data-input="pr" data-k="urg"><option value="">Toutes</option>${Object.entries(URG).map(([k, u]) => html`<option value="${k}" ${c.urg === k ? new Raw('selected') : ''}>${u.dot} ${u.label}</option>`)}</select></label>
+        <label class="field">Contient<input type="search" data-input="pr" data-k="q" value="${c.q}" placeholder="ex. Plomberie, cave…"></label></div>
+        ${R.length ? html`<details class="rpt-pick" style="margin-top:10px" ${c.res ? new Raw('open') : ''}><summary>📍 Résidences · ${c.res ? c.res.length + ' / ' + R.length : 'toutes'}</summary>
+          <div class="rpt-pick-tools"><button class="btn sm" data-action="pr-res-all">Toutes</button><button class="btn sm" data-action="pr-res-none">Aucune</button></div>
+          <div class="rpt-pick-list">${R.map((r) => html`<label><input type="checkbox" class="rpt-cb" data-input="pr-res" value="${r.id}" ${!c.res || c.res.includes(r.id) ? new Raw('checked') : ''}>${r.name}</label>`)}</div></details>` : ''}`}
+    </div>
+    <div class="card" style="margin-bottom:12px"><div class="section-label" style="margin-top:0">Colonnes</div><div class="chips">${L[1].filter(([k]) => k !== 'org' || isAdmin()).map(([k, l]) => chk('col', k, cols.includes(k), c.src === 'totaux' && k === 'k' ? PR_GROUP[c.g].replace(/^Par /, '').replace(/^./, (x) => x.toUpperCase()) : l))}</div></div>
+    <div class="rpt-acts">
+      <button class="btn primary" data-action="pr-xlsx" ${tb.n && cols.length ? '' : new Raw('disabled')}>⬇️ Excel (.xlsx)</button>
+      <button class="btn" data-action="pr-print" ${tb.n && cols.length ? '' : new Raw('disabled')}>🖨️ Imprimer / PDF</button>
+      <span class="rpt-save"><input id="prName" placeholder="Nom de la liste (ex. Rapport mensuel)"><button class="btn" data-action="pr-save">💾 Enregistrer dans Mes listes</button></span></div>
+    <div class="section-label">Aperçu — lignes : ${tb.n}</div>
+    ${tb.n && cols.length ? html`<div style="overflow-x:auto"><table class="tbl rpt-tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.slice(0, 300).map((r) => html`<tr>${r.map((v) => html`<td>${typeof v === 'number' ? String(v).replace('.', ',') : v}</td>`)}</tr>`)}</tbody></table></div>${tb.n > 300 ? html`<p class="tiny muted">Aperçu limité à 300 lignes ; l’export contient tout.</p>` : ''}` : html`<p class="muted">Rien avec ces filtres.</p>`}
+    ${c.src === 'devis' ? '' : html`<div class="section-label" style="margin-top:22px">📊 Graphiques</div>${prCharts(c)}`}`;
+}
+function prPrint() {
+  const c = prCfg(), tb = prTable(c), org = isAdmin() ? (state.filters.org ? orgName(state.filters.org) : 'Toutes les gérances') : state.me.org_name || '';
+  setHtml($('#print'), html`<div class="pr-head"><div style="display:flex;align-items:center;gap:10px"><img src="/ares/icons/lux-192.png" alt="" style="height:34px"><span><b>LuxInterventions</b><br><small>by ARES INVEST S.A.</small></span></div><div style="text-align:right"><b>${org}</b><br>${prDate(Date.now())}</div></div>
+    <h1>📊 ${PR_SRC[c.src][0].replace(/^\S+\s/, '')}${c.src === 'totaux' ? ' — ' + PR_GROUP[c.g].toLowerCase() : ''}</h1><p class="pr-sub">${prPeriod(c)} · ${tb.n} ligne(s)</p>
+    <table class="tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.map((r) => html`<tr>${r.map((v) => html`<td>${typeof v === 'number' ? String(v).replace('.', ',') : v}</td>`)}</tr>`)}</tbody></table>
+    ${c.src === 'devis' ? '' : html`<h2 class="pr-page">Graphiques</h2>${prCharts(c)}`}`);
+  document.body.classList.add('printing');
+  const done = () => { document.body.classList.remove('printing'); setHtml($('#print'), ''); removeEventListener('afterprint', done); };
+  addEventListener('afterprint', done);
+  setTimeout(() => print(), 80);
+}
+
 const VIEWS = {
   home() {
     const { stats, tickets } = state.cache.home || { stats: {}, tickets: [] };
@@ -758,8 +929,8 @@ const VIEWS = {
   // Comptabilité : deux espaces séparés — Comptabilité (interventions terminées, par mois) | Statistiques
   stats() {
     const sec = state.cpSec || 'compta';
-    const tabs = html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['compta', '📒 Comptabilité'], ['stats', '📊 Statistiques']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sec === k}" data-action="cp-sec" data-id="${k}">${l}</button>`)}</div>`;
-    return html`${tabs}${sec === 'stats' ? VIEWS.statsBody() : VIEWS.comptaBody()}`;
+    const tabs = html`<div class="tabs tabs-wrap" role="tablist" style="max-width:640px;margin-bottom:16px">${[['compta', '📒 Comptabilité'], ['stats', '📊 Statistiques'], ['mesure', '🖨️ Sur mesure']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sec === k}" data-action="cp-sec" data-id="${k}">${l}</button>`)}</div>`;
+    return html`${tabs}${sec === 'stats' ? VIEWS.statsBody() : sec === 'mesure' ? prView() : VIEWS.comptaBody()}`;
   },
   comptaBody() {
     const { tickets, evals } = state.cache.stats || { tickets: [], evals: [] };
@@ -1833,7 +2004,28 @@ const ACTIONS = {
     for (let i = 0; i < times; i++) box.insertAdjacentHTML('beforeend', String(d.k === 'code' ? codeRow(n0 + i) : aptRow(n0 + i)));
     box.lastElementChild.querySelector('input').focus();
   },
-  'cp-sec': (d) => { state.cpSec = d.id; renderView(); },
+  async 'cp-sec'(d) {
+    state.cpSec = d.id;
+    if (d.id === 'mesure') { state.cache.rpt = null; try { await prLoad(); } catch (e) { return toast(e.message, { bad: true }); } }
+    renderView();
+  },
+  'pr-src': (d) => { prCfg().src = d.id; renderView(); },
+  'pr-per': (d) => { Object.assign(prCfg(), { from: d.f, to: d.t }); renderView(); },
+  'pr-res-all': () => { prCfg().res = null; renderView(); },
+  'pr-res-none': () => { prCfg().res = []; renderView(); },
+  async 'pr-xlsx'() {
+    const c = prCfg(), tb = prTable(c), { xlsxBlob } = await import('/ares/xlsx.js');
+    const a = document.createElement('a'); a.href = URL.createObjectURL(xlsxBlob(tb.head, tb.rows, PR_SRC[c.src][0].replace(/^\S+\s/, '')));
+    a.download = `statistiques-${c.src}-${c.from}_${c.to}.xlsx`; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  },
+  'pr-print': () => prPrint(),
+  'pr-save': () => {
+    const nom = ($('#prName') || {}).value || '', c = prCfg();
+    if (!nom.trim()) return toast('Écrivez d’abord un nom pour la liste', { bad: true });
+    prListsSave([...prLists().filter((x) => x.nom !== nom.trim()), { nom: nom.trim(), cfg: JSON.parse(JSON.stringify(c)) }]); toast('Liste enregistrée ✓'); renderView();
+  },
+  'pr-load': (d) => { const x = prLists()[+d.id]; if (x) { state.rpt = { ...prCfg(), ...x.cfg, cols: { ...(x.cfg.cols || {}) } }; renderView(); } },
+  'pr-del': (d) => { const a = prLists(); a.splice(+d.id, 1); prListsSave(a); renderView(); },
   'cp-csv': () => {
     const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
     const rows = [['Date', 'Réf.', 'Gérance', 'Résidence', 'Adresse', 'Catégorie', 'Lieu', 'Technicien', 'Urgence', 'Avis', 'Photos', 'Facture', 'TTC (€)', 'Payée'].map(q).join(';'), ...(state.cpRows || []).map((r) => [r.d, '#' + r.ref, r.org, r.res, r.adr, r.cat, r.lieu, r.tech, r.urg, r.avis, r.photos, r.fact, String(r.ttc).replace('.', ','), r.paye].map(q).join(';'))];
@@ -1841,7 +2033,7 @@ const ACTIONS = {
     a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' }));
     a.download = `interventions-${state.cpMonth || 'mois'}.csv`; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   },
-  'org-filter': (d) => { state.filters.org = d.id; state.filters.residence = ''; go(state.route, true); },
+  'org-filter': (d) => { state.cache.rpt = null; state.filters.org = d.id; state.filters.residence = ''; go(state.route, true); },
   'new-residence': async () => {
     if (isAdmin() && !state.cache.orgs) state.cache.orgs = (await api('orgs')).orgs;
     openSheet('residence-form');
@@ -2202,6 +2394,9 @@ document.addEventListener('change', (e) => {
   const k = e.target.dataset.input;
   if (k === 'residence') { state.filters.residence = e.target.value; go('demandes', true); }
   if (k === 'cp-month') { state.cpMonth = e.target.value; renderView(); }
+  if (k === 'pr') { prCfg()[e.target.dataset.k] = e.target.value; if (e.target.type !== 'search') renderView(); else { clearTimeout(state.prT); state.prT = setTimeout(() => { renderView(); const q = document.querySelector('[data-input=pr][data-k=q]'); if (q) { q.focus(); q.setSelectionRange(q.value.length, q.value.length); } }, 450); } }
+  if (k === 'pr-col') { const c = prCfg(); c.cols[c.src] = [...document.querySelectorAll('[data-input=pr-col]:checked')].map((x) => x.value); renderView(); }
+  if (k === 'pr-res') { const all = [...document.querySelectorAll('[data-input=pr-res]')], on = all.filter((x) => x.checked).map((x) => x.value); prCfg().res = on.length === all.length ? null : on; renderView(); }
   if (k === 'org-logo' && e.target.files[0]) logoShrink(e.target.files[0]).then(orgLogoSave).catch((err) => toast(err && err.message && !/decode|source/i.test(err.message) ? err.message : 'Image illisible : choisissez un PNG ou un JPG', { bad: true }));
   if (k === 'preview-files') {
     const box = $('#preview');
