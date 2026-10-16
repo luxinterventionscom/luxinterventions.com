@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.136.0';
+const VERSION = '2.137.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -867,7 +867,8 @@ function espaceData(l) {
   }
   // code de la porte : seulement s'il est actif et pas expiré (date de fin choisie dans l'app de gestion)
   if (show.porte && g && g.porte && g.porte.code && !g.porte.off && (!g.porte.fin || g.porte.fin >= today())) out.porte = { code: g.porte.code, depuis: g.porte.maj || '', info: g.porte.info || '', fin: g.porte.fin || '' };
-  // garantie locative détenue par le bailleur : toujours sur le récapitulatif des loyers du locataire
+  // garantie locative détenue par le bailleur + loyer tout compris : sur le récapitulatif des loyers du locataire
+  out.inclus = soc.toutCompris !== false;
   if (l.caution) out.caution = { montant: l.caution, date: l.cautionDate || '', mode: CAUTION_MODES[l.cautionMode] ? l.cautionMode : '' };
   if (show.contrat) out.contrat = { debut: l.debut || '', fin: l.fin || '', revision: l.revision || '', caution: l.caution || 0, cautionDate: l.cautionDate || '', cautionMode: l.cautionMode || '' };
   if (show.docs) out.docs = vault.list('documents').filter((d) => d.locId === l.id && d.shared).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
@@ -5888,6 +5889,7 @@ const SHEETS = {
         ${field('IBAN (relances + app des locataires)', 'iban', st.iban, { placeholder: 'LU28 0099 7800 0139 1929' })}
         ${field('BIC / SWIFT', 'bic', st.bic, { placeholder: 'CCRALULLXXX' })}
         ${field('Banque', 'banque', st.banque, { placeholder: 'Banque Raiffeisen' })}
+        <label class="check full"><input type="checkbox" name="toutCompris" value="1" ${st.toutCompris !== false ? new Raw('checked') : ''}> <span><b>Loyer tout compris</b> : électricité, chauffage, internet et déchets inclus — écrit sur le récapitulatif des loyers des locataires (demandé par les services sociaux et les ministères)</span></label>
         <div class="section-label full" style="margin:10px 0 0">Comptabilité et TVA</div>
         <label class="field">Assujetti à la TVA<select name="assujetti"><option value="1" ${st.assujetti !== false ? new Raw('selected') : ''}>Oui</option><option value="0" ${st.assujetti === false ? new Raw('selected') : ''}>Non</option></select></label>
         <label class="field">Déclaration de TVA<select name="periode">${[['m', 'Mensuelle'], ['t', 'Trimestrielle'], ['a', 'Annuelle']].map(([k, v]) => html`<option value="${k}" ${(st.periode || 't') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
@@ -7556,7 +7558,7 @@ const FORMS = {
     if (err) return (form.querySelector('.lock-err').textContent = err);
     const rec = { id: 'main', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), ville: fd.get('ville').trim(), tel: fd.get('tel').trim(), email: fd.get('email').trim(), iban: fd.get('iban').trim(), ...pay, associes,
       bic: g('bic').replace(/\s/g, '').toUpperCase(), banque: g('banque'),
-      pays: g('pays') || 'LU', web: g('web'), rcs: g('rcs'), tvaNum: g('tvaNum'), assujetti: g('assujetti') !== '0', periode: g('periode') || 't', taux: g('taux') };
+      pays: g('pays') || 'LU', toutCompris: fd.get('toutCompris') === '1', web: g('web'), rcs: g('rcs'), tvaNum: g('tvaNum'), assujetti: g('assujetti') !== '0', periode: g('periode') || 't', taux: g('taux') };
     await vault.mutate((tx) => tx.put('reglages', rec), 'Société & associés modifiés', rec.nom);
     applyBrand();
     toast('Enregistré');
