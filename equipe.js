@@ -122,6 +122,14 @@ const L = {
 // Fiche d'engagement (intervenant occasionnel) : il la lit et la signe ici, avec le doigt
 // « Je ne peux pas » : l'ouvrier refuse un travail pas encore commencé → le responsable en envoie un autre
 // ▶ petit dessin animé « mettre l'icône sur l'écran » (chargé seulement au toucher)
+const FT = {
+  fr: { info: 'Info supplémentaires', anim: 'Mettre l’icône sur l’écran', lock: 'Vos données sont chiffrées et visibles uniquement par la direction.', out: 'Se déconnecter', sure: 'Voulez-vous vraiment vous déconnecter de l’app ?', call: 'Appeler la centrale' },
+  it: { info: 'Info supplementari', anim: 'Mettere l’icona sullo schermo', lock: 'I tuoi dati sono cifrati e visibili solo alla direzione.', out: 'Esci', sure: 'Vuoi davvero uscire dall’app?', call: 'Chiama la centrale' },
+  de: { info: 'Weitere Infos', anim: 'Symbol auf den Bildschirm legen', lock: 'Ihre Daten sind verschlüsselt und nur für die Leitung sichtbar.', out: 'Abmelden', sure: 'Möchten Sie sich wirklich von der App abmelden?', call: 'Zentrale anrufen' },
+  en: { info: 'More info', anim: 'Put the icon on the screen', lock: 'Your data is encrypted and visible only to management.', out: 'Log out', sure: 'Do you really want to log out of the app?', call: 'Call the office' },
+  pt: { info: 'Mais informações', anim: 'Pôr o ícone no ecrã', lock: 'Os seus dados são cifrados e visíveis apenas pela direção.', out: 'Terminar sessão', sure: 'Quer mesmo terminar a sessão da app?', call: 'Ligar para a central' },
+  es: { info: 'Más información', anim: 'Poner el icono en la pantalla', lock: 'Tus datos están cifrados y solo los ve la dirección.', out: 'Cerrar sesión', sure: '¿Seguro que quieres cerrar la sesión de la app?', call: 'Llamar a la central' },
+};
 const IA_BTN = { fr: '▶ Voir comment (animation)', it: '▶ Guarda come (animazione)', de: '▶ So geht’s (Animation)', pt: '▶ Ver como (animação)', en: '▶ See how (animation)', es: '▶ Ver cómo (animación)' };
 const iaBtn = () => (matchMedia('(display-mode: standalone)').matches || navigator.standalone ? '' : `<p style="text-align:center;margin:-4px 0 12px"><button class="btn sm sec" data-ianim="1">${esc(IA_BTN[lang] || IA_BTN.fr)}</button></p>`);
 const REFT = {
@@ -588,8 +596,11 @@ function render() {
       <button class="btn block" style="margin-top:12px" type="submit">${esc(t.send)}</button></form></details></div>`);
   if (d.eng) out.push(engCard(d));
   if (pushSt === 'on') out.push(notifCard(t));
-  out.push(`<p class="meta" style="text-align:center">${esc(t.install)}</p>${iaBtn()}
-    <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(t.rgpd)}</p><p class="meta" style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
+  { // bas de page : ℹ️ infos (animation « icône sur l'écran »), 🔒 + Se déconnecter + 📞 la centrale (numéro non affiché : il vient de l'app de gestion)
+    const ft = FT[lang] || FT.fr;
+    out.push(`<div class="card"><h2>ℹ️ ${esc(ft.info)}</h2><button class="btn sec block" data-ianim="1">▶ ${esc(ft.anim)}</button></div>
+    <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn sec sm" data-logout="1">🚪 ${esc(ft.out)}</button>${d.societe.tel ? `<a class="btn sm" href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">📞 ${esc(ft.call)}</a><span class="meta">${esc(d.societe.nom)}</span>` : ''}</div></div>`);
+  }
   { const low = slot('bas'); if (low) out.push(adBox(low, t)); }
   out.push(colorLegend());
   out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
@@ -632,7 +643,7 @@ app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-sig-clear]')) { const c = app.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); sigUrl = ''; return; }
   const lb = e.target.closest('[data-lang]');
   if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('eqLang', lang); } catch {} if (pushSt === 'on') pushRefresh('/equipe', pushPost); return render(); }
-  if (e.target.closest('[data-logout]')) { e.preventDefault(); try { localStorage.removeItem(IK()); localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; return render(); }
+  if (e.target.closest('[data-logout]')) { e.preventDefault(); if (data && !confirm((FT[lang] || FT.fr).sure)) return; try { localStorage.removeItem(IK()); localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; return render(); }
   if (e.target.closest('[data-retry]')) return flush();
   const pon = e.target.closest('[data-push-on]');
   if (pon) {
