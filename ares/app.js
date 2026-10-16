@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.141.0';
+const VERSION = '2.142.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3954,7 +3954,7 @@ dashboard() {
     // Abonnements : rubrique à part dans le menu, sans les onglets de la comptabilité
     if (sec === 'abo') return html`${pageHead('💳 Abonnements', 'Abonnements des gérances et annonces publicitaires vendues')}${aboSection()}`;
     if (sec === 'stats') return html`${secTabs}${pageHead('📊 Statistiques', 'Loyers, occupation, dépenses, interventions, devis')}${VIEWS.stats()}${devStatsHtml(ui.year)}`;
-    const tabs = html`<div class="tabs" role="tablist" style="max-width:620px">${[['journal', 'Journal'], ['tva', 'TVA'], ['interv', '🔧 Interventions'], ['fact', '🧾 Factures'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
+    const tabs = html`<div class="tabs tabs-wrap" role="tablist" style="max-width:720px">${[['journal', 'Journal'], ['tva', 'TVA'], ['interv', '🔧 Interventions'], ['fact', '🧾 Factures'], ['frais', '💸 Frais fixes'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
     if (tab === 'stats') ui.cpTab = 'journal';
     const perSel = html`<select data-input="cp-per" style="width:auto" aria-label="Période"><option value="y" ${per === 'y' ? new Raw('selected') : ''}>Toute l’année</option>${[1, 2, 3, 4].map((q) => html`<option value="q${q}" ${per === 'q' + q ? new Raw('selected') : ''}>Trimestre ${q}</option>`)}${MONTHS_FULL.map((mn, i) => html`<option value="m${i + 1}" ${per === 'm' + (i + 1) ? new Raw('selected') : ''}>${mn}</option>`)}</select>`;
     const [from, to] = cpRange(y, per);
@@ -4036,6 +4036,14 @@ dashboard() {
               <span class="meta" style="white-space:normal">📍 ${x.lieu} · 👷 ${x.who || '—'}${x.min ? ' · 🕒 ' + fmtH(x.min / 60) : ''}${x.avis ? ' · ' + x.avis : ''}${x.state === 'fini' ? ' · ✅ à clôturer' : ''}</span></span>
             <b>${x.cout ? money(x.cout) : ''}</b></button>`)}</div>${moreBtn(L.length, ui.cpLim || 10)}` : html`<p class="muted">Aucune intervention terminée sur cette période.</p>`}
         <p class="tiny muted" style="margin-top:10px">Chaque ligne : où, quoi, qui, heures réelles (l’ouvrier note son arrivée et son départ), avis des locataires et coût. Les factures par intervention arrivent à l’étape suivante.</p>`;
+    } else if (tab === 'frais') {
+      // frais fixes (salaires, bureau, provisions…) : déduits du résultat, donc ici avec les comptes
+      // le formulaire reste dans la fenêtre : une synchro qui redessine la page n'efface pas ce qu'on tape
+      const fl = vault.list('frais').sort((a, b) => (a.libelle || '').localeCompare(b.libelle || '')), nowD = new Date();
+      body = html`<div class="card"><p class="small muted" style="margin-top:0">Coûts de gestion qui ne dépendent pas d’un immeuble (salaires, bureau, provisions…) : déduits du résultat.</p>
+        ${fl.length ? html`<div class="list">${fl.map((f) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${f.libelle}</span><span class="meta">${f.debut ? 'depuis ' + fmtDate(f.debut) : ''}${f.fin ? ' jusqu’au ' + fmtDate(f.fin) : ''}</span></span><span class="amount">${money(f.montant)}/mois</span></div>`)}</div>
+        <div class="totals"><span>Ce mois-ci</span><b>${money(fraisOfMonth(nowD.getFullYear(), nowD.getMonth() + 1))}</b></div>` : html`<p class="muted small">Aucun frais fixe.</p>`}
+        <button class="btn primary" style="margin-top:12px" data-action="open-frais">${icon('edit')} Ajouter / modifier les frais fixes</button></div>`;
     } else {
       body = html`<div class="card"><p style="margin-top:0">Téléchargez le <b>journal ${cpLabel(y, per)}</b> (recettes, dépenses, bailleurs, frais fixes, avec HT / TVA / TTC) pour votre comptable. Le fichier s’ouvre dans Excel, Numbers ou LibreOffice.</p>
         <button class="btn primary" data-action="cp-csv">${icon('download')} Télécharger le journal (Excel / CSV)</button>
@@ -4138,7 +4146,6 @@ dashboard() {
         <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
         <button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>
         <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
-        <button class="row" data-action="open-frais">${icon('receipt')}<span class="grow"><span class="title" style="display:block">Frais fixes mensuels</span><span class="meta">Salaires, provisions… · ${money(fraisOfMonth(new Date().getFullYear(), new Date().getMonth() + 1))} / mois</span></span></button>
       </div>
 
       ${!standalone ? html`<div class="section-label">Application</div>
