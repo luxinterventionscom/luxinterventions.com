@@ -980,7 +980,7 @@ const PTL_SCHEMA = [
      created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
 ];
 // Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
-const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT", "ALTER TABLE orgs ADD COLUMN logo TEXT", "ALTER TABLE devis ADD COLUMN revs INTEGER"];
+const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT", "ALTER TABLE orgs ADD COLUMN logo TEXT", "ALTER TABLE devis ADD COLUMN revs INTEGER", "ALTER TABLE tickets ADD COLUMN inv_h REAL", "ALTER TABLE tickets ADD COLUMN qte TEXT"];
 let ptlSchemaReady = false;
 
 // ── Utilità ──
@@ -1687,7 +1687,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       const full = url.searchParams.get("full") === "1"; // rapport : rapport d'intervention en plus
       const sql = `SELECT t.id, t.ref, t.org_id, t.residence_id, t.lieu, t.categorie, t.urgence, t.description, t.status, t.planned_at, t.technicien,
           t.created_at, t.updated_at, t.taken_at, t.done_at, r.name AS residence_name, r.address AS residence_address, o.name AS org_name, u.name AS created_by_name, u.title AS created_by_title,
-          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos, t.inv_no, t.inv_date, t.inv_ht, t.inv_tva, t.inv_ttc, t.inv_paid, t.inv_cont,${full ? " substr(t.rapport, 1, 2000) AS rapport," : ""}
+          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos, t.inv_no, t.inv_date, t.inv_ht, t.inv_tva, t.inv_ttc, t.inv_paid, t.inv_cont, t.inv_h, t.qte,${full ? " substr(t.rapport, 1, 2000) AS rapport," : ""}
           (SELECT COUNT(*) FROM events e WHERE e.ticket_id = t.id AND e.kind = 'comment') AS msgs,
           (SELECT COUNT(*) FROM events e JOIN users ue ON ue.id = e.user_id WHERE e.ticket_id = t.id AND e.kind = 'comment' AND ue.role != 'admin') AS msgs_ger
         FROM tickets t JOIN residences r ON r.id = t.residence_id JOIN orgs o ON o.id = t.org_id LEFT JOIN users u ON u.id = t.created_by
@@ -1776,8 +1776,8 @@ async function handlePortail(request, env, url, headers, ctx) {
         };
         const evId = ptlId();
         await env.DB.batch([
-          env.DB.prepare("UPDATE tickets SET status = ?, planned_at = ?, technicien = ?, rapport = ?, taken_at = ?, done_at = ?, updated_at = ? WHERE id = ?")
-            .bind(b.status, upd.planned_at, upd.technicien, upd.rapport, upd.taken_at, upd.done_at, now, t.id),
+          env.DB.prepare("UPDATE tickets SET status = ?, planned_at = ?, technicien = ?, rapport = ?, taken_at = ?, done_at = ?, qte = COALESCE(?, qte), updated_at = ? WHERE id = ?")
+            .bind(b.status, upd.planned_at, upd.technicien, upd.rapport, upd.taken_at, upd.done_at, b.qte != null ? clean(b.qte, 60) || null : null, now, t.id),
           env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'status', ?, ?, ?)")
             .bind(evId, t.id, me.id, b.status, clean(b.text || (b.status === "terminee" ? b.rapport : ""), 4000) || null, now),
         ]);
@@ -1813,7 +1813,8 @@ async function handlePortail(request, env, url, headers, ctx) {
         const n = (x) => (Number.isFinite(+x) ? Math.round(+x * 100) / 100 : 0);
         const ttc = n(meta.ttc);
         await env.DB.batch([
-          env.DB.prepare("UPDATE tickets SET inv_no = ?, inv_date = ?, inv_ht = ?, inv_tva = ?, inv_ttc = ?, inv_key = ?, inv_paid = 0, updated_at = ? WHERE id = ?").bind(no, now, n(meta.ht), n(meta.tva), ttc, key, now, t.id),
+          // heures facturées et quantité (« Combien ? ») : pour les statistiques de la gérance
+          env.DB.prepare("UPDATE tickets SET inv_no = ?, inv_date = ?, inv_ht = ?, inv_tva = ?, inv_ttc = ?, inv_key = ?, inv_paid = 0, inv_h = ?, qte = COALESCE(?, qte), updated_at = ? WHERE id = ?").bind(no, now, n(meta.ht), n(meta.tva), ttc, key, n(meta.h) || null, meta.qte ? clean(meta.qte, 60) || null : null, now, t.id),
           env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'invoice', NULL, ?, ?)").bind(ptlId(), t.id, me.id, `🧾 Facture ${no} · ${ttc.toFixed(2).replace(".", ",")} € TTC`, now),
         ]);
         ctx && ctx.waitUntil(notifyOther({ title: `#${t.ref} · 🧾 Facture ${no}`, body: `${ttc.toFixed(2).replace(".", ",")} € TTC — à télécharger dans le portail`, url: `/portail.html#/t/${t.id}`, tag: t.id }, false));
