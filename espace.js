@@ -293,12 +293,12 @@ nbienInit({ api: API, app: 'esp', lang: () => lang });
 const MY_ICONS = ['😀', '😊', '🙂', '😎', '🥰', '😇', '🤓', '🧐', '🤠', '🥳', '😺', '👩', '👨', '👧', '👦', '👵', '👴', '🧑‍💼', '👩‍🍳', '👨‍🎓', '🐶', '🐱', '🦊', '🐻', '🐼', '🦁', '🐯', '🐸', '🐵', '🐧', '🦄', '🐢', '🌸', '🌻', '🌈', '⚽', '🎵', '🎨', '🚗', '🏍️', '🏠', '⭐', '❤️', '🍕', '☕', '🌍'];
 const ICT = { fr: 'Mon icône', it: 'La mia icona', de: 'Mein Symbol', en: 'My icon', pt: 'O meu ícone', es: 'Mi icono' };
 const SETT = {
-  fr: { t: 'Réglages', ph: 'Ma photo', pick: '📷 Choisir une photo', del: 'Retirer', hint: 'Elle apparaît chez votre gestionnaire, à côté de votre nom.', ok: 'Photo envoyée ✓' },
-  it: { t: 'Impostazioni', ph: 'La mia foto', pick: '📷 Scegli una foto', del: 'Togli', hint: 'Appare al tuo gestore, accanto al tuo nome.', ok: 'Foto inviata ✓' },
-  de: { t: 'Einstellungen', ph: 'Mein Foto', pick: '📷 Foto wählen', del: 'Entfernen', hint: 'Es erscheint bei Ihrer Verwaltung neben Ihrem Namen.', ok: 'Foto gesendet ✓' },
-  en: { t: 'Settings', ph: 'My photo', pick: '📷 Choose a photo', del: 'Remove', hint: 'It shows up for your manager, next to your name.', ok: 'Photo sent ✓' },
-  pt: { t: 'Definições', ph: 'A minha foto', pick: '📷 Escolher uma foto', del: 'Retirar', hint: 'Aparece ao seu gestor, ao lado do seu nome.', ok: 'Foto enviada ✓' },
-  es: { t: 'Ajustes', ph: 'Mi foto', pick: '📷 Elegir una foto', del: 'Quitar', hint: 'Aparece a tu administrador, junto a tu nombre.', ok: 'Foto enviada ✓' },
+  fr: { t: 'Mon profil', ph: 'Ma photo', pick: '📷 Choisir une photo', del: 'Retirer', hint: 'Elle apparaît chez votre gestionnaire, à côté de votre nom.', ok: 'Photo envoyée ✓' },
+  it: { t: 'Il mio profilo', ph: 'La mia foto', pick: '📷 Scegli una foto', del: 'Togli', hint: 'Appare al tuo gestore, accanto al tuo nome.', ok: 'Foto inviata ✓' },
+  de: { t: 'Mein Profil', ph: 'Mein Foto', pick: '📷 Foto wählen', del: 'Entfernen', hint: 'Es erscheint bei Ihrer Verwaltung neben Ihrem Namen.', ok: 'Foto gesendet ✓' },
+  en: { t: 'My profile', ph: 'My photo', pick: '📷 Choose a photo', del: 'Remove', hint: 'It shows up for your manager, next to your name.', ok: 'Photo sent ✓' },
+  pt: { t: 'O meu perfil', ph: 'A minha foto', pick: '📷 Escolher uma foto', del: 'Retirar', hint: 'Aparece ao seu gestor, ao lado do seu nome.', ok: 'Foto enviada ✓' },
+  es: { t: 'Mi perfil', ph: 'Mi foto', pick: '📷 Elegir una foto', del: 'Quitar', hint: 'Aparece a tu administrador, junto a tu nombre.', ok: 'Foto enviada ✓' },
 };
 let icOpen = false, icMine = '', phMine = null;
 async function photoSquare(file) {
@@ -370,12 +370,12 @@ function installCard(t) {
 const HI = (x) => `<span class="hi">${x}</span>`;
 const ICON = '<img src="/ares/icons/ares-192.png" alt="">';
 const MK = {
-  bar: () => `<div class="mk"><div class="mk-page"></div><div class="mk-bar"><span>‹</span><span class="mk-url">luxinterventions.com</span>${HI('⋯')}</div></div>`,
-  menu: (items, h) => `<div class="mk mk-sheet">${items.map((x, i) => `<div class="mk-row${i === h ? ' hi-row' : ''}">${esc(x)}</div>`).join('')}</div>`,
-  dlg: (u) => `<div class="mk"><div class="mk-top"><span>${esc(u.cancel)}</span>${HI(esc(u.add))}</div><div class="mk-dlg">${ICON}<div><b>NOBIS Locataires</b><small>luxinterventions.com</small></div></div></div>`,
-  home: () => `<div class="mk mk-home">${'<i></i>'.repeat(6)}<span class="hi-app">${ICON}<small>NOBIS</small></span><i></i></div>`,
-  chrome: () => `<div class="mk"><div class="mk-bar"><span class="mk-url">luxinterventions.com</span>${HI('⋮')}</div><div class="mk-page"></div></div>`,
-  adlg: (u) => `<div class="mk mk-adlg">${ICON}<b>NOBIS Locataires</b><div class="mk-btns"><span>${esc(u.cancel)}</span>${HI(esc(u.ainstallBtn))}</div></div>`,
+  bar: () => `<div class="gmk"><div class="mk-page"></div><div class="mk-bar"><span>‹</span><span class="mk-url">luxinterventions.com</span>${HI('⋯')}</div></div>`,
+  menu: (items, h) => `<div class="gmk mk-sheet">${items.map((x, i) => `<div class="mk-row${i === h ? ' hi-row' : ''}">${esc(x)}</div>`).join('')}</div>`,
+  dlg: (u) => `<div class="gmk"><div class="mk-top"><span>${esc(u.cancel)}</span>${HI(esc(u.add))}</div><div class="mk-dlg">${ICON}<div><b>NOBIS Locataires</b><small>luxinterventions.com</small></div></div></div>`,
+  home: () => `<div class="gmk mk-home">${'<i></i>'.repeat(6)}<span class="hi-app">${ICON}<small>NOBIS</small></span><i></i></div>`,
+  chrome: () => `<div class="gmk"><div class="mk-bar"><span class="mk-url">luxinterventions.com</span>${HI('⋮')}</div><div class="mk-page"></div></div>`,
+  adlg: (u) => `<div class="gmk mk-adlg">${ICON}<b>NOBIS Locataires</b><div class="mk-btns"><span>${esc(u.cancel)}</span>${HI(esc(u.ainstallBtn))}</div></div>`,
 };
 let guideTab = IS_IOS ? 'ios' : 'and';
 function renderGuide() {
@@ -820,7 +820,7 @@ function render() {
   const out = [];
   // adresse complète : rue + code postal et localité (si renseignés dans l'app de gestion)
   const addrFull = [d.adresse, d.ville].filter(Boolean).join(', ');
-  out.push(`<div class="top"><span class="brandx"><img class="top-logo" src="${esc(d.societe.logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(d.societe.nom)}</b></span>${langs}</div><h1 style="display:flex;align-items:center;gap:10px"><button class="gear-btn" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}">⚙️</button><button class="av-btn" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}">${(phMine !== null ? phMine : d.photo) ? `<img src="${esc(phMine !== null ? phMine : d.photo)}" alt="">` : esc(icMine || d.avatar || '🙂')}</button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1>${icOpen ? (() => { const st = SETT[lang] || SETT.fr, ph = phMine !== null ? phMine : d.photo || ''; return `<div class="card" id="settCard"><h2 style="margin:0 0 10px">⚙️ ${esc(st.t)}</h2><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
+  out.push(`<div class="top"><span class="brandx"><img class="top-logo" src="${esc(d.societe.logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(d.societe.nom)}</b></span>${langs}</div><h1 style="display:flex;align-items:center;gap:12px"><button class="av-wrap" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}"><span class="av-btn">${(phMine !== null ? phMine : d.photo) ? `<img src="${esc(phMine !== null ? phMine : d.photo)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span><span class="av-pen" aria-hidden="true">✏️</span></button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1>${icOpen ? (() => { const st = SETT[lang] || SETT.fr, ph = phMine !== null ? phMine : d.photo || ''; return `<div class="card" id="settCard"><h2 style="margin:0 0 10px">✏️ ${esc(st.t)}</h2><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span class="av-btn" style="width:72px;height:72px;font-size:32px">${ph ? `<img src="${esc(ph)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span>
     <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${ph ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
     <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>`; })() + `<p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${MY_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === (icMine || d.avatar)}">${esc(e)}</button>`).join('')}</div></div>` : ''}<p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);
