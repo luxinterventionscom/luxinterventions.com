@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.138.0';
+const VERSION = '2.139.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -844,7 +844,7 @@ function espaceData(l) {
   const soc = societe();
   const out = {
     v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', avatar: emojiOk(l.avatar) ? l.avatar : '', photo: photoOk(l.photo) ? l.photo : '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
-    societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: soc.signature || '', signW: soc.signW || 8 },
+    societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: signLite.src === soc.signature && signLite.url ? signLite.url : soc.signature || '', signW: soc.signW || 8 },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : { nom: 'Seven Radio', url: 'https://sevenradio.lu/?proradio-popup=1' }; })(),
     annex: g ? annexOf(g) : {}, annexM2: (g && g.annexM2) || {}, surface: (g && g.surface) || '', maison: g && g.type === 'maison' ? g.maison || '' : '', unit: g ? g.type : '',
@@ -1238,6 +1238,26 @@ async function notifyNews(espId, raw) {
   if (Array.isArray(prev) && keys.some((x) => !prev.includes(x))) await vault.espNotify(espId).catch(() => {});
 }
 const espHashes = new Map(), espWarned = new Set();
+// timbre pour les apps des locataires : 1000 px de large au plus (≈ 300 dpi à 8 cm), sinon le PNG d'origine
+// (photo du timbre, jusqu'à 1400 px) peut faire dépasser la taille permise et l'app n'est plus mise à jour
+const signLite = { src: '', url: '' };
+async function signLiteReady() {
+  const src = societe().signature || '';
+  if (signLite.src === src) return;
+  let url = '';
+  try {
+    if (src) {
+      const im = new Image(); im.src = src; await im.decode();
+      const k = Math.min(1, 1000 / im.naturalWidth);
+      if (k < 1 || src.length > 400000) {
+        const c = document.createElement('canvas'); c.width = Math.round(im.naturalWidth * k); c.height = Math.round(im.naturalHeight * k);
+        c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+        const u = c.toDataURL('image/png'); if (u.length < src.length) url = u;
+      }
+    }
+  } catch { /* image illisible : on garde l'originale */ }
+  Object.assign(signLite, { src, url });
+}
 let espTimer = null;
 const scheduleEspaceSync = () => { clearTimeout(espTimer); espTimer = setTimeout(() => espaceSync(), 2500); };
 async function sha256Hex(s) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, '0')).join(''); }
@@ -1245,6 +1265,7 @@ async function sha256Hex(s) { return [...new Uint8Array(await crypto.subtle.dige
 async function espaceSync(onlyId, loud) {
   if (!vault.unlocked) return true;
   await chatSync();
+  await signLiteReady();
   for (const l of vault.list('locataires').filter((x) => x.espace && x.espace.on && x.espace.id && (!onlyId || x.id === onlyId))) {
     try {
       const data = espaceData(l);
