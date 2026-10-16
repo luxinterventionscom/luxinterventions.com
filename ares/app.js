@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.133.0';
+const VERSION = '2.134.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1730,7 +1730,12 @@ const lieuxHist = () => {
   return [...m.values()].sort((a, b) => b.d.localeCompare(a.d) || b.n - a.n);
 };
 const lieuQ = (...x) => x.filter(Boolean).join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-const lieuSelHtml = (t) => t.lieu ? html`✅ 📍 <b>${t.lieu.nom || t.lieu.adr}</b>${t.lieu.nom && t.lieu.adr ? html` — ${t.lieu.adr}` : ''}` : t.immId ? html`✅ 🏠 <b>${immName(t.immId)}</b>` : html`<span class="muted">Aucun lieu choisi : touchez une ligne ci-dessous.</span>`;
+// 🧭 itinéraire vers une adresse : Google Maps, Waze ou Plans (iPhone)
+const navQ = (a) => (/luxemb|lëtzebuerg|deutschland|germany|france|belgi/i.test(a) ? a : a + ', Luxembourg');
+const navLinks = (a) => { if (!String(a || '').trim()) return ''; const q = encodeURIComponent(navQ(String(a).trim()));
+  return html`<span class="nav-links">🧭 Itinéraire : <a href="https://www.google.com/maps/dir/?api=1&destination=${q}" target="_blank" rel="noopener">Google Maps</a> · <a href="https://waze.com/ul?q=${q}&navigate=yes" target="_blank" rel="noopener">Waze</a> · <a href="https://maps.apple.com/?daddr=${q}&dirflg=d" target="_blank" rel="noopener">Plans</a></span>`; };
+const lieuSelHtml = (t) => { const im = !t.lieu && t.immId ? vault.get('immeubles', t.immId) : null, adr = t.lieu ? t.lieu.adr : im ? im.adresse : '';
+  return html`${t.lieu ? html`✅ 📍 <b>${t.lieu.nom || t.lieu.adr}</b>${t.lieu.nom && t.lieu.adr ? html` — ${t.lieu.adr}` : ''}` : t.immId ? html`✅ 🏠 <b>${immName(t.immId)}</b>` : html`<span class="muted">Aucun lieu choisi : touchez une ligne ci-dessous.</span>`}${adr ? html`<br>${navLinks(adr)}` : ''}`; };
 // 🔑 clé numérique d'une chambre : comme le code de porte des locataires, mais valable seulement du jour d'arrivée (heure) au départ (heure)
 const hoteWin = (h) => [new Date(`${h.arrivee}T${h.hdeb || '15:00'}`), new Date(`${h.depart}T${h.hfin || '11:00'}`)];
 const hoteKey = (h) => {
@@ -1758,7 +1763,7 @@ const ptlPlace = (p) => {
   const q = encodeURIComponent([p.adr || p.res, 'Luxembourg'].join(', '));
   return html`<b>🏢 ${p.org} · Demande #${p.ref}</b>
     <dl class="kv small ptl-place">
-      <dt>📍 Adresse</dt><dd>${p.res}${p.adr ? html`<br>${p.adr}` : ''}${p.adr ? html` <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">🗺️ Plan</a>` : ''}</dd>
+      <dt>📍 Adresse</dt><dd>${p.res}${p.adr ? html`<br>${p.adr}` : ''}${p.adr ? html` <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">🗺️ Plan</a><br>${navLinks(p.adr)}` : ''}</dd>
       ${p.lieu ? html`<dt>🚪 Où exactement</dt><dd>${parts(p.lieu).join(' · ')}</dd>` : ''}
       ${p.interior || p.floors ? html`<dt>🏠 Intérieur</dt><dd>${[p.interior, p.floors ? 'étage(s) ' + p.floors : ''].filter(Boolean).join(' · ')}</dd>` : ''}
       ${p.contact || tel ? html`<dt>👤 Contact sur place</dt><dd>${p.contact || ''}${tel ? html` · <a href="tel:${tel}">${p.tel}</a>` : ''}</dd>` : ''}
@@ -3689,7 +3694,7 @@ dashboard() {
         <button class="tab" role="tab" aria-selected="${anciens}" data-action="imm-seg" data-id="anciens">Plus en gestion (${nGone})</button>
       </div>` : ''}
       ${ui.mapImm && vault.get('immeubles', ui.mapImm) ? (() => { const mi = vault.get('immeubles', ui.mapImm); const qq = encodeURIComponent(mi.adresse + ', Luxembourg'); return html`<div class="card map-card" style="margin-bottom:14px;padding:0;overflow:hidden">
-        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px"><b style="flex:1">📍 ${mi.adresse}</b><a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${qq}" target="_blank" rel="noopener">Ouvrir dans Google Maps</a><button class="btn sm ghost" data-action="imm-map" data-id="">✕</button></div>
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px"><b style="flex:1">📍 ${mi.adresse}</b><a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${qq}" target="_blank" rel="noopener">Ouvrir dans Google Maps</a><a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${qq}" target="_blank" rel="noopener">🧭 Itinéraire</a><button class="btn sm ghost" data-action="imm-map" data-id="">✕</button></div>
         <iframe src="https://maps.google.com/maps?q=${qq}&z=16&output=embed" title="Plan" loading="lazy" referrerpolicy="no-referrer" style="width:100%;height:260px;border:0;display:block"></iframe></div>`; })() : ''}
       ${imms.length ? html`<div class="grid cols-auto">${imms.map((im) => {
         const logs = logsOf(im.id);

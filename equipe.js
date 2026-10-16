@@ -392,6 +392,16 @@ function adBox(x, t) {
 }
 // Lieux de travail (adresses du planning et de l'horaire) ; la carte du lieu choisi s'affiche sous « Bonjour »
 let place = '';
+// itinéraire : Google Maps, Waze ou Plans (iPhone) — le choix est gardé sur ce téléphone
+const NAVT = { fr: ['🧭 Itinéraire avec :', 'Plans'], it: ['🧭 Percorso con:', 'Mappe'], de: ['🧭 Route mit:', 'Karten'], en: ['🧭 Directions with:', 'Apple Maps'], pt: ['🧭 Itinerário com:', 'Mapas'], es: ['🧭 Ruta con:', 'Mapas'] };
+const NAV_URL = { g: (q) => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(q)}`, w: (q) => `https://waze.com/ul?q=${encodeURIComponent(q)}&navigate=yes`, a: (q) => `https://maps.apple.com/?daddr=${encodeURIComponent(q)}&dirflg=d` };
+const navPref = () => { try { return localStorage.getItem('eqNav') || 'g'; } catch { return 'g'; } };
+function navBtns(q) {
+  const n = NAVT[lang] || NAVT.fr, me = navPref();
+  const b = (k, l) => `<a class="btn sm ${k === me ? '' : 'sec'}" style="flex:1 1 0;justify-content:center" href="${esc(NAV_URL[k](q))}" target="_blank" rel="noopener" data-nav="${k}">${l}</a>`;
+  return `<p class="meta" style="margin:10px 0 6px"><b>${esc(n[0])}</b></p><div style="display:flex;gap:6px;flex-wrap:wrap">${b('g', 'Google Maps')}${b('w', 'Waze')}${b('a', '🍎 ' + esc(n[1]))}</div>`;
+}
+document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('a[data-nav]'); if (a) { try { localStorage.setItem('eqNav', a.dataset.nav); } catch { /* stockage indisponible */ } } }, true);
 const mapQ = (a) => (/luxemb|lëtzebuerg|deutschland|germany|france|belgi|portugal|espa|ital/i.test(a) ? a : a + ', Luxembourg');
 function placesOf(d) {
   const seen = new Set(), outp = [];
@@ -505,7 +515,7 @@ function render() {
   if (place && !pls.includes(place)) place = '';
   const pubs = (d.pubs || []).filter((x) => !x.fin || x.fin >= today);
   const slot = (k) => pickPub(pubs.filter((x) => (x.slot || 'milieu') === k));
-  if (place) out.push(`<div class="card"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">📍 ${esc(place)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(place))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(mapQ(place))}" target="_blank" rel="noopener">${esc(t.x.route)}</a>${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
+  if (place) out.push(`<div class="card"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">📍 ${esc(place)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(place))}"></div>${navBtns(mapQ(place))}${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
   else { const top = slot('haut'); if (top) out.push(adBox(top, t)); }
   if (pushSt && pushSt !== 'on') out.push(notifCard(t)); // notifications coupées : rappel en haut (sous la carte)
   const eg = d.eng && !d.eng.signed && !sigSent ? ENGT[lang] || ENGT.fr : null;
