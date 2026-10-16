@@ -292,6 +292,14 @@ nbienInit({ api: API, app: 'esp', lang: () => lang });
 // mon icône (comme sur WhatsApp) : choisie ici, visible chez le gestionnaire
 const MY_ICONS = ['😀', '😊', '🙂', '😎', '🥰', '😇', '🤓', '🧐', '🤠', '🥳', '😺', '👩', '👨', '👧', '👦', '👵', '👴', '🧑‍💼', '👩‍🍳', '👨‍🎓', '🐶', '🐱', '🦊', '🐻', '🐼', '🦁', '🐯', '🐸', '🐵', '🐧', '🦄', '🐢', '🌸', '🌻', '🌈', '⚽', '🎵', '🎨', '🚗', '🏍️', '🏠', '⭐', '❤️', '🍕', '☕', '🌍'];
 const ICT = { fr: 'Mon icône', it: 'La mia icona', de: 'Mein Symbol', en: 'My icon', pt: 'O meu ícone', es: 'Mi icono' };
+const TFT = {
+  fr: { info: 'Info supplémentaires', anim: 'Mettre l’icône sur l’écran', lock: 'Vos données sont chiffrées et visibles uniquement par votre gestionnaire.', out: 'Se déconnecter', call: 'Appeler' },
+  it: { info: 'Info supplementari', anim: 'Mettere l’icona sullo schermo', lock: 'I tuoi dati sono cifrati e visibili solo al tuo gestore.', out: 'Esci', call: 'Chiama' },
+  de: { info: 'Weitere Infos', anim: 'Symbol auf den Bildschirm legen', lock: 'Ihre Daten sind verschlüsselt und nur für Ihre Verwaltung sichtbar.', out: 'Abmelden', call: 'Anrufen' },
+  en: { info: 'More info', anim: 'Put the icon on the screen', lock: 'Your data is encrypted and visible only to your property manager.', out: 'Log out', call: 'Call' },
+  pt: { info: 'Mais informações', anim: 'Pôr o ícone no ecrã', lock: 'Os seus dados são cifrados e visíveis apenas pelo seu gestor.', out: 'Terminar sessão', call: 'Ligar' },
+  es: { info: 'Más información', anim: 'Poner el icono en la pantalla', lock: 'Tus datos están cifrados y solo los ve tu gestor.', out: 'Cerrar sesión', call: 'Llamar' },
+};
 // « Se déconnecter » : on demande d'abord (fenêtre dans la page)
 const OUTQ = { fr: ['Voulez-vous vraiment vous déconnecter de l’app ?', 'Oui, me déconnecter', 'Annuler'], it: ['Vuoi davvero uscire dall’app?', 'Sì, esci', 'Annulla'], de: ['Möchten Sie sich wirklich von der App abmelden?', 'Ja, abmelden', 'Abbrechen'], en: ['Do you really want to log out of the app?', 'Yes, log out', 'Cancel'], pt: ['Quer mesmo terminar a sessão da app?', 'Sim, terminar sessão', 'Cancelar'], es: ['¿Seguro que quieres cerrar la sesión de la app?', 'Sí, cerrar sesión', 'Cancelar'] };
 const SETT = {
@@ -1019,7 +1027,11 @@ function render() {
   }
   if (pushSt === 'on') out.push(notifCard(t));
   out.push(installCard(t));
-  out.push(`<div class="card notice"><details><summary>🔒 ${esc(t.rgpdT)}</summary><p>${esc(t.rgpd(d.societe))}</p>${d.chat || d.regles ? `<p>${esc(t.hr.rgpd2)}</p>` : ''}</details><p style="margin:8px 0 0"><a href="#" data-logout="1">${esc(t.logout)}</a> · ${esc(t.personal)}${d.societe.tel ? ` · ${esc(d.societe.nom)} <a href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">${esc(d.societe.tel)}</a>` : ''}</p></div>`);
+  { // bas de page (comme l'app de l'équipe) : ℹ️ infos (icône sur l'écran), 🔒 phrase courte, 🚪 Se déconnecter, 📞 Appeler (numéro non affiché)
+    const ft = TFT[lang] || TFT.fr;
+    out.push(`<div class="card"><h2>ℹ️ ${esc(ft.info)}</h2><button class="btn sec block" data-guide="1">▶ ${esc(ft.anim)}</button></div>
+    <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn sec sm" data-logout="1">🚪 ${esc(ft.out)}</button>${d.societe.tel ? `<a class="btn sm" href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">📞 ${esc(ft.call)}</a><span class="meta">${esc(d.societe.nom)}</span>` : ''}</div></div>`);
+  }
   { const low = slot('bas'); if (low) out.push(adBox(low, t, d)); }
   out.push(colorLegend());
   // version de l'app de gestion qui a publié ces données (aide au dépannage)
