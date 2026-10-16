@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.137.0';
+const VERSION = '2.138.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1237,7 +1237,7 @@ async function notifyNews(espId, raw) {
   try { localStorage.setItem(k, JSON.stringify(keys)); } catch { /* stockage plein */ }
   if (Array.isArray(prev) && keys.some((x) => !prev.includes(x))) await vault.espNotify(espId).catch(() => {});
 }
-const espHashes = new Map();
+const espHashes = new Map(), espWarned = new Set();
 let espTimer = null;
 const scheduleEspaceSync = () => { clearTimeout(espTimer); espTimer = setTimeout(() => espaceSync(), 2500); };
 async function sha256Hex(s) { return [...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)))].map((b) => b.toString(16).padStart(2, '0')).join(''); }
@@ -1265,6 +1265,8 @@ async function espaceSync(onlyId, loud) {
       if (docsChanged) await vault.mutate((tx) => { const cur = vault.get('locataires', l.id); if (cur && cur.espace) tx.put('locataires', { id: l.id, espace: { ...cur.espace, docs: [...up] } }); }, 'Espace locataire : documents', fullName(l), l.id);
     } catch (e) {
       if (loud) { toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
+      // en arrière-plan : on le dit une fois (sinon l'app du locataire reste sur l'ancienne version sans que personne le sache)
+      if (navigator.onLine && !espWarned.has(l.id)) { espWarned.add(l.id); toast(`App de ${fullName(l)} pas mise à jour : ${e.message || 'erreur'}`, { bad: true }); }
     }
   }
   if (!onlyId) { await equipeSync(); await portailPubsSync(); await biensSync(); }
