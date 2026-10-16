@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.140.0';
+const VERSION = '2.141.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4133,14 +4133,10 @@ dashboard() {
       <p class="small muted" style="margin:0 0 8px">Rubrique cochée : dans le menu, son nom est remplacé par « 🔒 MASQUÉ » et elle ne s’ouvre plus. Décochez pour la retrouver.</p>
       <div class="list settings">${MASKABLE.map(([k, l]) => html`<label class="row" style="cursor:pointer"><input type="checkbox" data-input="masque" value="${k}" ${masked().has(k) ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"><span class="grow title">${l}</span>${masked().has(k) ? html`<span class="badge">🔒 MASQUÉ</span>` : ''}</label>`)}</div>
 
-      <div class="section-label">🎨 Couleurs de nos activités</div>
-      <p class="small muted" style="margin:0 0 8px">Les mêmes couleurs dans toutes les apps (locataires, équipe, portail gérance) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.</p>
-      <div class="list settings">${COLOR_LEG.map(([c, t]) => html`<div class="row"><span class="leg-sw" style="background:${c}"></span><span class="grow">${t}</span></div>`)}</div>
-      <p class="small" style="margin:8px 0 0">Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème</p>
-
       <div class="section-label">Gestion</div>
       <div class="list settings">
         <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
+        <button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>
         <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
         <button class="row" data-action="open-frais">${icon('receipt')}<span class="grow"><span class="title" style="display:block">Frais fixes mensuels</span><span class="meta">Salaires, provisions… · ${money(fraisOfMonth(new Date().getFullYear(), new Date().getMonth() + 1))} / mois</span></span></button>
       </div>
@@ -5934,6 +5930,14 @@ const SHEETS = {
     };
   },
 
+  couleurs() {
+    return {
+      title: '🎨 Couleurs de nos activités',
+      body: html`<p class="small muted" style="margin:0 0 8px">Les mêmes couleurs dans toutes les apps (locataires, équipe, portail gérance) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.</p>
+        <div class="list settings">${COLOR_LEG.map(([c, t]) => html`<div class="row"><span class="leg-sw" style="background:${c}"></span><span class="grow">${t}</span></div>`)}</div>
+        <p class="small" style="margin:8px 0 0">Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème</p>`,
+    };
+  },
   frais() {
     const list = vault.list('frais').sort((a, b) => (a.libelle || '').localeCompare(b.libelle || ''));
     const cats = { salaires: 'Salaires & cotisations', bureau: 'Bureau', provision: 'Provision charges', autre: 'Autre' };
@@ -6896,6 +6900,7 @@ const ACTIONS = {
   },
   'open-societe': () => openSheet('societe-form'),
   'open-frais': () => openSheet('frais'),
+  'open-couleurs': () => openSheet('couleurs'),
   async 'del-frais'(d) {
     const f = vault.get('frais', d.id);
     if (!(await confirmBox(`Supprimer « ${f.libelle} » ?`, { ok: 'Supprimer', danger: true, detail: 'Pour un frais qui s’arrête, préférez une date de fin en le recréant : les mois passés restent alors comptés.' }))) return;
