@@ -10,7 +10,9 @@ import { videoEmbed } from '/ares/video-embed.js';
 import { nbienInit, nbienBanner, colorLegend } from '/ares/nbien.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
-const VERSION = '1.18.0';
+// CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
+const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
+const VERSION = '1.19.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -1918,7 +1920,7 @@ const ACTIONS = {
   'rep-all': (d, el) => { const g = el.closest('.rep-grp'); g.querySelectorAll('.rep-checks label').forEach((l) => { if (!l.hidden) l.querySelector('input').checked = d.v === '1'; }); repCount(g); },
   async 'report-csv'(d, el) {
     const o = repOpts(new FormData(el.form)), { tickets, label } = await repData(o);
-    const q = (v) => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+    const q = (v) => '"' + csvSafe(v).replace(/"/g, '""') + '"';
     const rows = [['N°', 'Date', 'Gérance', 'Résidence', 'Adresse', 'Lieu', 'Type', 'Urgence', 'Statut', 'Demandé par', 'Fonction', 'Problème', 'Technicien', 'Planifiée', 'Prise en charge (h)', 'Fin (h)', 'Rapport', 'Photos', 'Messages', 'Facture', 'TTC', 'Payée'].map(q).join(';')];
     const h = (ms) => (ms ? String(Math.round((ms / 36e5) * 10) / 10).replace('.', ',') : '');
     for (const t of tickets) rows.push([t.ref, fmtDate(t.created_at), t.org_name, t.residence_name, t.residence_address, t.lieu, t.categorie, URG[t.urgence] ? URG[t.urgence].label : t.urgence, STATUS[t.status] ? STATUS[t.status].label : t.status, t.created_by_name, t.created_by_title, t.description, t.technicien, t.planned_at, t.taken_at ? h(t.taken_at - t.created_at) : '', t.done_at ? h(t.done_at - t.created_at) : '', t.rapport, t.photos, t.msgs, t.inv_no, t.inv_ttc ? String(t.inv_ttc).replace('.', ',') : '', t.inv_no ? (t.inv_paid ? 'oui' : 'non') : ''].map(q).join(';'));
@@ -2027,7 +2029,7 @@ const ACTIONS = {
   'pr-load': (d) => { const x = prLists()[+d.id]; if (x) { state.rpt = { ...prCfg(), ...x.cfg, cols: { ...(x.cfg.cols || {}) } }; renderView(); } },
   'pr-del': (d) => { const a = prLists(); a.splice(+d.id, 1); prListsSave(a); renderView(); },
   'cp-csv': () => {
-    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const q = (v) => `"${csvSafe(v).replace(/"/g, '""')}"`;
     const rows = [['Date', 'Réf.', 'Gérance', 'Résidence', 'Adresse', 'Catégorie', 'Lieu', 'Technicien', 'Urgence', 'Avis', 'Photos', 'Facture', 'TTC (€)', 'Payée'].map(q).join(';'), ...(state.cpRows || []).map((r) => [r.d, '#' + r.ref, r.org, r.res, r.adr, r.cat, r.lieu, r.tech, r.urg, r.avis, r.photos, r.fact, String(r.ttc).replace('.', ','), r.paye].map(q).join(';'))];
     const a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8' }));

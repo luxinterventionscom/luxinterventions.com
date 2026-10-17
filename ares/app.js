@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.149.0';
+const VERSION = '2.150.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1490,6 +1490,8 @@ const inviteMsg = (kind, lang, ...a) => { const t = INVITE[kind][lang] || INVITE
 
 // clé envoyée par un locataire / un ouvrier : seulement une vraie entrée de la liste
 const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
+// CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
+const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
 const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
 const duree = (months) => (months >= 12 ? `${Math.floor(months / 12)} an${months >= 24 ? 's' : ''}${months % 12 ? ' ' + (months % 12) + ' mois' : ''}` : `${months} mois`);
 
@@ -1965,7 +1967,7 @@ function journal(from, to) {
 }
 function journalCsv(rows) {
   const n = (x) => String(r2(x)).replace('.', ',');
-  const q = (x) => '"' + String(x ?? '').replace(/"/g, '""') + '"';
+  const q = (x) => '"' + csvSafe(x).replace(/"/g, '""') + '"';
   const head = ['Date', 'Sens', 'Catégorie', 'Libellé', 'Immeuble', 'HT', 'Taux TVA %', 'TVA', 'TTC', 'Pièce jointe'];
   const lines = rows.map((r) => [r.d, r.sens === 'R' ? 'Recette' : 'Dépense', r.cat, r.lib, r.imm, n(r.ttc - r.tva), n(r.taux), n(r.tva), n(r.ttc), r.piece ? 'oui' : ''].map(q).join(';'));
   return '\ufeff' + [head.map(q).join(';'), ...lines].join('\r\n');
@@ -6468,14 +6470,14 @@ const ACTIONS = {
   'cp-sec': (d) => { ui.cpSec = d.id; go('compta', true); },
   'cp-fact-csv': () => {
     const [from, to] = cpRange(ui.year, ui.cpPer || 'y');
-    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`, n2 = (v) => String(r2(v || 0)).replace('.', ',');
+    const q = (v) => `"${csvSafe(v).replace(/"/g, '""')}"`, n2 = (v) => String(r2(v || 0)).replace('.', ',');
     const rows = [['N° facture', 'Date', 'Client (gérance)', 'Demande', 'Intervention', 'HT', 'TVA', 'TTC', 'Payée le'].map(q).join(';')];
     for (const t of vault.list('taches').filter((t) => t.facture && t.facture.date >= from && t.facture.date <= to).sort((a, b) => a.facture.no.localeCompare(b.facture.no))) rows.push([t.facture.no, t.facture.date, t.ptl ? t.ptl.org : '', t.ptl ? '#' + t.ptl.ref : '', t.titre, n2(t.facture.ht), n2(t.facture.tva), n2(t.facture.ttc), t.facture.paid || ''].map(q).join(';'));
     download(`factures-${from}-${to}.csv`, '\ufeff' + rows.join('\r\n'), 'text/csv;charset=utf-8');
   },
   'cp-int-csv': () => {
     const [from, to] = cpRange(ui.year, ui.cpPer || 'y');
-    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const q = (v) => `"${csvSafe(v).replace(/"/g, '""')}"`;
     const rows = [['Date', 'Arrivée', 'Départ', 'Heures', 'Lieu', 'Travail', 'Type', 'Intervenant', 'Gérance / réf.', 'Avis', 'Coût (€)', 'État'].map(q).join(';')];
     for (const x of intervLedger(from, to)) rows.push([x.d, x.arr, x.dep, x.min ? (x.min / 60).toFixed(2).replace('.', ',') : '', x.lieu, x.t.titre, TACHE_TYPES[x.t.type] || x.t.type, x.who, x.ger, x.avis, x.cout ? String(x.cout).replace('.', ',') : '', x.state === 'fait' ? 'clôturée' : 'à clôturer'].map(q).join(';'));
     download(`interventions-${from}-${to}.csv`, '\ufeff' + rows.join('\r\n'), 'text/csv;charset=utf-8');
@@ -8577,7 +8579,7 @@ async function devSync() {
 Object.assign(ACTIONS, {
   'dev-new': () => openSheet('devis'),
   'dev-csv': (d) => {
-    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`, n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
+    const q = (v) => `"${csvSafe(v).replace(/"/g, '""')}"`, n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
     const L = vault.list('devis').filter((x) => x.st !== 'brouillon' && (x.date || '').startsWith(String(d.y))).sort((a, b) => (a.seq || 0) - (b.seq || 0));
     const rows = [['Numéro', 'Date', 'Client', 'Type', 'Objet', 'HT', 'TVA', 'TTC', 'Acompte', 'Statut', 'Envoyé le', 'Réponse le', 'Temps de réponse', 'Révisions'].map(q).join(';')];
     for (const x of L) { const k = devCalc(x), s0 = devSentAt(x), s1 = devDecAt(x); rows.push([devNo(x), x.date, devClient(x), DEV_TYPES[(x.client || {}).type] || '', x.titre || '', n2(k.ht), n2(k.tva), n2(k.ttc), n2(k.acompte), devState(x).lbl, s0 ? new Date(s0).toLocaleString('fr-FR') : '', s1 ? new Date(s1).toLocaleString('fr-FR') : '', s0 && s1 >= s0 ? durTxt(s1 - s0) : '', x.rev || 0].map(q).join(';')); }

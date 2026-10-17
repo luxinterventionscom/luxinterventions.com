@@ -362,11 +362,14 @@ async function espacePublic(request, env, id, sub, headers) {
     if (nIp >= 30 || nId >= 80) return aresJson({ error: "Trop d'envois, réessayez plus tard" }, 429, headers);
     const body = await request.arrayBuffer();
     if (body.byteLength < 100 || body.byteLength > 12 * 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
+    const kB = "sig-b:" + id, nB = parseInt((await env.HITS.get(kB)) || "0", 10); // 60 Mo par jour et par espace (documents, photos)
+    if (nB + body.byteLength > 60 * 1024 * 1024) return aresJson({ error: "Trop d'envois aujourd'hui, réessayez demain" }, 429, headers);
     const name = `${Date.now().toString(36)}-${id.slice(0, 12)}-${crypto.getRandomValues(new Uint32Array(1))[0].toString(36)}`;
     await env.PHOTOS.put(ARES_INBOX + name, body, { httpMetadata: { contentType: "application/octet-stream" } });
     try {
       await env.HITS.put(kIp, String(nIp + 1), { expirationTtl: 3600 });
       await env.HITS.put(kId, String(nId + 1), { expirationTtl: 86400 });
+      await env.HITS.put(kB, String(nB + body.byteLength), { expirationTtl: 86400 });
     } catch { /* quota KV */ }
     // le gestionnaire voit le numéro sur l'icône de son app (le contenu reste chiffré, la notification ne dit rien)
     await espPushSend(env, "owner", "inbox");
