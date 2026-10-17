@@ -895,12 +895,3 @@ dialog.bien-full::backdrop { background: rgba(0,0,0,.9); }
 .vz-hv { white-space: nowrap; color: var(--text-2); }
 @media print { .vz-stack i, .vz-ht i, .vz-leg i { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 .nav-links { font-size: 13px; line-height: 1.6; } .nav-links a { white-space: nowrap; font-weight: 600; } /* 🧭 itinéraire : Google Maps · Waze · Plans */
-
-/* Docs du locataire : visible (vert, œil ouvert) / privé (rouge, œil fermé) */
-.doc-vis { gap: 6px; border: 1.5px solid; background: var(--surface); }
-.doc-vis.on { border-color: #16a34a; color: #15803d; }
-.doc-vis.off { border-color: #dc2626; color: #b91c1c; }
-.doc-vis .dv-dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-.doc-vis.on .dv-dot { background: #16a34a; }
-.doc-vis.off .dv-dot { background: #dc2626; }
-.doc-vis svg { width: 16px; height: 16px; }

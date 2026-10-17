@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.146.0';
+const VERSION = '2.147.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -874,7 +874,7 @@ function espaceData(l) {
   out.logType = g ? g.type || '' : ''; // assurance habitation : conseillée (chambre) ou indispensable (studio, appartement, maison)
   if (l.caution) out.caution = { montant: l.caution, date: l.cautionDate || '', mode: CAUTION_MODES[l.cautionMode] ? l.cautionMode : '' };
   if (show.contrat) out.contrat = { debut: l.debut || '', fin: l.fin || '', revision: l.revision || '', caution: l.caution || 0, cautionDate: l.cautionDate || '', cautionMode: l.cautionMode || '' };
-  if (show.docs) out.docs = vault.list('documents').filter((d) => d.locId === l.id && d.shared).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
+  if (show.docs) out.docs = vault.list('documents').filter((d) => d.locId === l.id && !d.kind).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
     .map((d) => ({ id: d.id, label: d.label, dtype: d.dtype || '', pay: d.pay || '', date: d.date, mime: d.mime, size: d.size }));
   if (show.edl && g) {
     out.edl = EDL_ROOMS.map(([k]) => edlIn(g.id, k)).filter(Boolean).map((d) => ({ id: d.id, room: d.room, date: d.date }));
@@ -5775,7 +5775,6 @@ const SHEETS = {
         </form>
         ${docs.length ? html`<div class="list">${docs.map((doc) => html`<div class="row">${icon('file')}
           <span class="grow"><span class="title" style="display:block;white-space:normal;overflow-wrap:anywhere">${doc.label}</span><span class="meta" style="white-space:normal">${doc.dtype && doc.dtype !== 'autre' && !doc.label.startsWith(DOC_TYPES[doc.dtype].replace(/ \(.*\)$/, '')) ? DOC_TYPES[doc.dtype] + ' · ' : ''}${fmtDate(doc.date)} · ${Math.max(1, Math.round((doc.size || 0) / 1024))} Ko</span></span>
-          ${l.espace && l.espace.on ? html`<button class="btn sm doc-vis ${doc.shared ? 'on' : 'off'}" data-action="doc-share" data-id="${doc.id}" title="${doc.shared ? 'Visible dans l’app du locataire — touchez pour le rendre privé' : 'Privé : le locataire ne le voit pas — touchez pour le rendre visible'}"><span class="dv-dot"></span>${icon(doc.shared ? 'eye' : 'eyeOff')} ${doc.shared ? 'Visible' : 'Privé'}</button>` : ''}
           <button class="btn icon sm" data-action="open-doc" data-id="${doc.id}" aria-label="Ouvrir">${icon('eye')}</button>
           <button class="btn icon sm ghost danger" data-action="del-doc" data-id="${doc.id}" aria-label="Supprimer">${icon('trash')}</button></div>`)}</div>` : html`<p class="muted small">Aucun document.</p>`}`;
     } else if (tab === 'espace') {
@@ -6626,12 +6625,6 @@ const ACTIONS = {
   async 'esp-copy'(d) {
     const l = vault.get('locataires', d.id);
     try { await navigator.clipboard.writeText(espUrl(l)); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); }
-  },
-  async 'doc-share'(d) {
-    const doc = vault.get('documents', d.id);
-    if (!doc) return;
-    await vault.mutate((tx) => tx.put('documents', { id: doc.id, shared: !doc.shared }), doc.shared ? 'Document retiré de l’espace locataire' : 'Document visible par le locataire', doc.label, doc.locId);
-    toast(doc.shared ? 'Document privé' : 'Visible dans l’espace du locataire');
   },
   'pub-report': (d) => pubReport(d.id),
   'pub-stats-refresh': () => pubStatsLoad(true),
@@ -7715,7 +7708,7 @@ const FORMS = {
       const l = vault.get('locataires', locId);
       const dtype = fd.get('dtype') || 'autre';
       const label = String(fd.get('label') || '').trim() || (DOC_TYPES[dtype] || 'Document').replace(/ \(.*\)$/, '');
-      const doc = await vault.mutate((tx) => tx.put('documents', { locId, dtype, label, pay: fd.get('pay') || '', shared: true, date: today(), size: file.size, mime: file.type || 'application/octet-stream' }), 'Document ajouté', `${label} → ${fullName(l)}`, locId);
+      const doc = await vault.mutate((tx) => tx.put('documents', { locId, dtype, label, pay: fd.get('pay') || '', date: today(), size: file.size, mime: file.type || 'application/octet-stream' }), 'Document ajouté', `${label} → ${fullName(l)}`, locId);
       await vault.saveFile(doc.id, bytes);
       toast('Document ajouté');
     } catch (e) {
