@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.148.0';
+const VERSION = '2.149.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -505,7 +505,7 @@ async function equipeInbox(w, msg) {
       const photos = (Array.isArray(it.photos) ? it.photos : []).slice(0, 3);
       if (it.k === 'task') {
         const t = vault.get('taches', String(it.tid || ''));
-        if (!t || t.intervenantId !== w.id || !EQ_ST[it.st]) continue;
+        if (!t || t.intervenantId !== w.id || !own(EQ_ST, it.st)) continue;
         const d = /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10);
         const ph = photos.map((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'equipe', label: `${intervFull(w)} — ${t.titre} (${n + 1})`, date: d, mime: 'image/jpeg', size: Math.round(String(b).length * 0.75) }); files.push([doc.id, b]); return doc.id; });
         const entry = { d, st: it.st, note, at, by: w.id, ph };
@@ -529,7 +529,7 @@ async function equipeInbox(w, msg) {
       } else if (it.k === 'ph') {
         const t = vault.get('taches', String(it.tid || ''));
         const b = photos[0] || (typeof it.photo === 'string' ? it.photo : '');
-        if (!t || t.intervenantId !== w.id || !EQ_PH[it.phase] || !b) continue;
+        if (!t || t.intervenantId !== w.id || !own(EQ_PH, it.phase) || !b) continue;
         const nb = eqPhotos(t.id, it.phase).length;
         if (nb >= EQ_PH_MAX) continue;
         const d = /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10);
@@ -604,7 +604,7 @@ async function equipeInbox(w, msg) {
       } else if (it.k === 'abs') {
         const debut = /^\d{4}-\d{2}-\d{2}$/.test(it.debut || '') ? it.debut : at.slice(0, 10);
         const fin = /^\d{4}-\d{2}-\d{2}$/.test(it.fin || '') && it.fin >= debut ? it.fin : '';
-        const type = ABS_TYPES[it.type] ? it.type : 'maladie';
+        const type = own(ABS_TYPES, it.type) ? it.type : 'maladie';
         const a = { id: 'a' + Date.now().toString(36) + fresh, type, debut, fin, note: note || 'Envoyé depuis l’app', fromApp: true };
         if (photos[0]) { const doc = tx.put('documents', { intervId: w.id, kind: 'absence', label: `${ABS_TYPES[type].replace(/^\S+ /, '')} — ${intervFull(w)}`, date: debut, mime: 'image/jpeg', size: Math.round(String(photos[0]).length * 0.75) }); files.push([doc.id, photos[0]]); a.docId = doc.id; }
         cur = vault.get('intervenants', w.id);
@@ -1203,7 +1203,7 @@ const chatBubbles = (list, gid) => (list == null ? html`<p class="muted small">C
 // ───── Annonces « Don · prêt · location » publiées par les locataires (site public, après approbation) ─────
 const TOOL_KINDS = { don: '🎁 Don', pret: '🤝 Prêt gratuit', loc: '💶 Location' };
 const TOOL_UNITS = { h: '/ heure', j: '/ jour', we: '/ week-end', s: '/ semaine', u: '(prix unique)' };
-const toolPrice = (it) => (it.kind === 'loc' ? money(it.price) + ' ' + (TOOL_UNITS[it.unit] || '') : it.kind === 'don' ? 'gratuit (don)' : 'gratuit (prêt)');
+const toolPrice = (it) => (it.kind === 'loc' ? money(it.price) + ' ' + (own(TOOL_UNITS, it.unit) ? TOOL_UNITS[it.unit] : '') : it.kind === 'don' ? 'gratuit (don)' : 'gratuit (prêt)');
 function toolOwner(it) {
   if (it.owner === 'mgr') return societe().nom || 'NOBIS s.a.r.l.';
   const l = vault.list('locataires').find((x) => x.espace && 'e:' + x.espace.id === it.owner);
@@ -1347,7 +1347,7 @@ async function inboxSync() {
   inboxBusy = true;
   let n = 0;
   try {
-    for (const it of await vault.inboxList()) {
+    for (const it of await vault.inboxList()) try {
       let msg;
       try { msg = await openFromTenant(keys.priv, await vault.inboxGet(it.name)); } catch { continue; }
       const w = vault.list('intervenants').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
@@ -1359,7 +1359,7 @@ async function inboxSync() {
       const l = vault.list('locataires').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
       if (!l || !l.espace.on) { await vault.inboxDel(it.name); continue; }
       if (msg.type === 'paye') {
-        const vir = { t: String(msg.t || new Date().toISOString()).slice(0, 30), montant: Math.max(0, +msg.montant || 0), ref: String(msg.ref || '').slice(0, 140), via: PAY_VIA[msg.via] ? msg.via : 'vir' };
+        const vir = { t: String(msg.t || new Date().toISOString()).slice(0, 30), montant: Math.max(0, +msg.montant || 0), ref: String(msg.ref || '').slice(0, 140), via: own(PAY_VIA, msg.via) ? msg.via : 'vir' };
         await vault.mutate((tx) => tx.put('locataires', { id: l.id, virSignal: vir }), 'Virement signalé par le locataire', `${fullName(l)} — ${money(vir.montant)}`, l.id);
         await vault.inboxDel(it.name);
         n++;
@@ -1402,7 +1402,7 @@ async function inboxSync() {
       if (msg.type === 'doc-up') {
         // 📤 document envoyé depuis l'app du locataire : à vérifier (✅ ranger dans le dossier / ❌ refuser avec le motif)
         const b = typeof msg.b === 'string' && msg.b.length < 12e6 ? msg.b : '', pdf = msg.mime === 'application/pdf';
-        if (b && DOC_TYPES[msg.dtype] && (pdf || msg.mime === 'image/jpeg') && !vault.list('documents').some((x) => x.up === msg.k)) {
+        if (b && own(DOC_TYPES, msg.dtype) && (pdf || msg.mime === 'image/jpeg') && !vault.list('documents').some((x) => x.up === msg.k)) {
           let doc;
           await vault.mutate((tx) => { doc = tx.put('documents', { locId: l.id, kind: 'recu', up: String(msg.k || '').slice(0, 40), upAt: String(msg.t || '').slice(0, 30), st: 'wait', dtype: msg.dtype, label: DOC_TYPES[msg.dtype].replace(/ \(.*\)$/, ''), name: String(msg.name || '').slice(0, 80), date: String(msg.t || '').slice(0, 10) || today(), mime: pdf ? 'application/pdf' : 'image/jpeg', size: Math.round(b.length * 0.75) }); }, 'Document reçu du locataire (à vérifier)', `${fullName(l)} — ${DOC_TYPES[msg.dtype]}`, l.id);
           await vault.saveFile(doc.id, unb64u(b));
@@ -1414,7 +1414,7 @@ async function inboxSync() {
       if (msg.type === 'edl-out') {
         // Photos de sortie du locataire (une par pièce ; une nouvelle remplace la précédente de la même pièce)
         const g = vault.get('logements', l.logId);
-        const ph = (Array.isArray(msg.photos) ? msg.photos : []).filter((x) => x && EDL_ROOM[x.room] && typeof x.b === 'string' && x.b.length < 4e6).slice(0, EDL_ROOMS.length);
+        const ph = (Array.isArray(msg.photos) ? msg.photos : []).filter((x) => x && own(EDL_ROOM, x.room) && typeof x.b === 'string' && x.b.length < 4e6).slice(0, EDL_ROOMS.length);
         if (g && ph.length) {
           const olds = edlOf(g.id, 'edl-out').filter((d) => ph.some((x) => x.room === d.room));
           const files = [];
@@ -1443,6 +1443,13 @@ async function inboxSync() {
       });
       await vault.inboxDel(it.name);
       n++;
+    } catch (er) {
+      // un message mal formé ne doit pas bloquer les suivants : au 3e échec (en ligne), il est écarté
+      if (!navigator.onLine) break;
+      let f = {}; try { f = JSON.parse(localStorage.getItem('aresInboxFail') || '{}'); } catch { /* stockage indisponible */ }
+      f[it.name] = (f[it.name] || 0) + 1;
+      if (f[it.name] >= 3) { await vault.inboxDel(it.name).catch(() => {}); delete f[it.name]; console.warn('message écarté', it.name, er); }
+      try { localStorage.setItem('aresInboxFail', JSON.stringify(f)); } catch { /* stockage plein */ }
     }
   } catch { /* hors ligne : on réessaiera */ }
   inboxBusy = false;
@@ -1481,6 +1488,8 @@ const INVITE = {
 };
 const inviteMsg = (kind, lang, ...a) => { const t = INVITE[kind][lang] || INVITE[kind].fr; return { subj: t.subj, txt: t.txt(...a) }; };
 
+// clé envoyée par un locataire / un ouvrier : seulement une vraie entrée de la liste
+const own = (o, k) => typeof k === 'string' && Object.prototype.hasOwnProperty.call(o, k);
 const plural = (n, word) => `${n} ${word}${n > 1 ? 's' : ''}`;
 const duree = (months) => (months >= 12 ? `${Math.floor(months / 12)} an${months >= 24 ? 's' : ''}${months % 12 ? ' ' + (months % 12) + ' mois' : ''}` : `${months} mois`);
 
@@ -5467,7 +5476,7 @@ const SHEETS = {
     const card = (it) => html`<div class="row" style="align-items:flex-start">
       ${img(it) && img(it) !== 'loading' ? html`<img src="${img(it)}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;flex:0 0 64px">` : html`<span class="avatar">🧰</span>`}
       <span class="grow" style="min-width:0"><span class="title" style="display:block">${it.title}</span>
-        <span class="meta" style="display:block">${TOOL_KINDS[it.kind] || it.kind} · ${toolPrice(it)}${it.lieu ? ' · ' + it.lieu : ''}</span>
+        <span class="meta" style="display:block">${own(TOOL_KINDS, it.kind) ? TOOL_KINDS[it.kind] : it.kind} · ${toolPrice(it)}${it.lieu ? ' · ' + it.lieu : ''}</span>
         <span class="meta" style="display:block">${toolOwner(it)} · ${it.mail}</span>
         <span class="tiny muted" style="display:block">publiée le ${fmtDate(isoDate(new Date(it.created)))} · ${it.exp < now ? 'expirée' : 'en ligne jusqu’au ' + fmtDate(isoDate(new Date(it.exp)))} · 📩 ${it.clicks || 0} intéressé${(it.clicks || 0) > 1 ? 's' : ''}</span>
         ${it.desc ? html`<span class="small" style="display:block;margin-top:4px">${it.desc}</span>` : ''}
