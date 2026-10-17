@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.144.0';
+const VERSION = '2.145.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2799,8 +2799,13 @@ function eqScores(year) {
 }
 
 const immHead = (cur, sub) => html`${pageHead('🏢 Immeubles', sub)}
-  <div class="imm-row"><div class="tabs" role="tablist">${[['immeubles', '🏢 Immeubles'], ['locataires', '👥 Locataires'], ['paiements', '💶 Gestion locataire', '💶 Gestion loc.'], ['agences', '🏘️ Agences Immo.', '🏘️ Agences']].map(([r, l, sh]) => masked().has(r) ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${sh ? html`<span class="t-lg">${l}</span><span class="t-sm">${sh}</span>` : l}</button>`)}</div>
+  <div class="imm-row"><div class="tabs" role="tablist">${[['immeubles', '🏢 Immeubles'], ['locataires', '👥 Locataires'], ['agences', '🏘️ Agences Immo.', '🏘️ Agences']].map(([r, l, sh]) => masked().has(r) ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${sh ? html`<span class="t-lg">${l}</span><span class="t-sm">${sh}</span>` : l}</button>`)}</div>
     <div class="imm-btns"><button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button><button class="btn primary" data-action="new-loc">${icon('plus')} Ajout. locataire</button>${masked().has('agences') ? '' : html`<button class="btn primary" data-action="new-agence">${icon('plus')} Agence Immo.</button>`}</div></div>`;
+// 👥 Locataires : Actuels | Anciens | 💶 Gestion locataire (paiements des loyers)
+const locTabs = (cur, nGone) => html`<div class="tabs loc-tabs" role="tablist" style="max-width:560px">
+  <button class="tab" role="tab" aria-selected="${cur === 'actuels'}" data-action="loc-seg" data-id="actuels">Actuels</button>
+  <button class="tab" role="tab" aria-selected="${cur === 'anciens'}" data-action="loc-seg" data-id="anciens">Anciens (${nGone})</button>
+  ${masked().has('paiements') ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === 'paiements'}" data-action="go" data-to="paiements"><span class="t-lg">💶 Gestion locataire</span><span class="t-sm">💶 Gestion loc.</span></button>`}</div>`;
 const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
 // Éditeur d'horaire sur 7 jours : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute.
 // slotsOf(j) : créneaux du jour j (0 = lundi) ; title(j) : nom du jour (avec la date pour une semaine précise)
@@ -3870,10 +3875,7 @@ dashboard() {
     const nGone = all.filter(isGone).length;
     return html`
       ${immHead('locataires', `👥 ${all.length - nGone} locataires actuels · ${nGone} anciens`)}
-      <div class="tabs" role="tablist" style="max-width:360px">
-        <button class="tab" role="tab" aria-selected="${!anciens}" data-action="loc-seg" data-id="actuels">Actuels</button>
-        <button class="tab" role="tab" aria-selected="${anciens}" data-action="loc-seg" data-id="anciens">Anciens (${nGone})</button>
-      </div>
+      ${locTabs(anciens ? 'anciens' : 'actuels', nGone)}
       <div class="search">${icon('search')}<input type="search" name="search" placeholder="Rechercher un nom, un logement, un téléphone…" value="${ui.search}" data-input="search" autocomplete="off"></div>
       ${imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
         <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!ui.immFilter}">Tous</button>
@@ -3933,7 +3935,8 @@ dashboard() {
         <div class="totals"><span>Échu à ce jour <b>${money(due)}</b></span><span>Reçu <b class="green">${money(paid)}</b></span><span>Impayé <b class="${rest > 0.009 ? 'red' : 'green'}">${money(rest)}</b></span></div></div>`;
     }).filter(Boolean);
     return html`
-      ${immHead('paiements', '💶 Gestion locataire — paiements des loyers : touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.')}
+      ${immHead('locataires', '💶 Gestion locataire — paiements des loyers : touchez un mois vide pour le marquer payé ; touchez un mois payé pour le montant, la quittance ou l’annulation.')}
+      ${locTabs('paiements', vault.list('locataires').filter(isGone).length)}
       <div class="toolbar">
         ${yearSelect(y)}
         ${all.length > 1 ? html`<div class="chips pay-chips">
@@ -6789,7 +6792,7 @@ const ACTIONS = {
   'edit-log': (d) => openSheet('log-form', d.id),
   replace: (d) => openSheet('replace-form', d.id),
   'toggle-vers': (d) => toggleVers(d.imm, +d.y, +d.m),
-  'loc-seg': (d) => { ui.locSeg = d.id; renderView(); },
+  'loc-seg': (d) => { ui.locSeg = d.id; if (ui.route === 'locataires') renderView(); else go('locataires'); },
   'imm-seg': (d) => { ui.immSeg = d.id; renderView(); },
   'end-imm': (d) => openSheet('endimm-form', d.id),
   'close-sheet': async () => { if (await leaveSheetOk()) { sheetDirty = false; goBack(); } },
