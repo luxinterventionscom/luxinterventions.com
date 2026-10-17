@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.145.0';
+const VERSION = '2.146.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5768,14 +5768,14 @@ const SHEETS = {
           <div class="small">Dossier : ${dossierChips(id, docOf)}</div>
           <select name="dtype" aria-label="Type de document">${Object.entries(DOC_TYPES).map(([k, v]) => html`<option value="${k}" ${(String(preset || '').split('|')[0] || 'bail') === k ? new Raw('selected') : ''}>${v}</option>`)}</select>
           <input type="hidden" name="pay" value="${String(preset || '').split('|')[1] || ''}">
-          <input name="label" value="${payLabel(preset)}" placeholder="Précision (facultatif, ex. recto-verso, WhatsApp du 12/09)">
+          <input name="label" value="${payLabel(preset)}" placeholder="Votre titre du document (facultatif) — ex. signé le 01/12/2025, recto / verso">
           <input name="file" type="file" accept="application/pdf,image/*" required>
           <button class="btn primary block" type="submit">${icon('upload')} Ajouter le document</button>
           <p class="tiny muted">PDF ou photo · 10 Mo maximum · chiffré avant l'envoi. Reçu par WhatsApp ou par mail ? Enregistrez la photo ou le PDF sur le téléphone / l'ordinateur, puis choisissez-le ici.</p>
         </form>
         ${docs.length ? html`<div class="list">${docs.map((doc) => html`<div class="row">${icon('file')}
-          <span class="grow"><span class="title" style="display:block">${doc.label}</span><span class="meta">${doc.dtype && doc.dtype !== 'autre' && !doc.label.startsWith(DOC_TYPES[doc.dtype].replace(/ \(.*\)$/, '')) ? DOC_TYPES[doc.dtype] + ' · ' : ''}${fmtDate(doc.date)} · ${Math.max(1, Math.round((doc.size || 0) / 1024))} Ko</span></span>
-          ${l.espace && l.espace.on ? html`<button class="btn sm ${doc.shared ? 'primary' : ''}" data-action="doc-share" data-id="${doc.id}" title="Visible dans l'espace du locataire">👁 ${doc.shared ? 'Visible' : 'Privé'}</button>` : ''}
+          <span class="grow"><span class="title" style="display:block;white-space:normal;overflow-wrap:anywhere">${doc.label}</span><span class="meta" style="white-space:normal">${doc.dtype && doc.dtype !== 'autre' && !doc.label.startsWith(DOC_TYPES[doc.dtype].replace(/ \(.*\)$/, '')) ? DOC_TYPES[doc.dtype] + ' · ' : ''}${fmtDate(doc.date)} · ${Math.max(1, Math.round((doc.size || 0) / 1024))} Ko</span></span>
+          ${l.espace && l.espace.on ? html`<button class="btn sm doc-vis ${doc.shared ? 'on' : 'off'}" data-action="doc-share" data-id="${doc.id}" title="${doc.shared ? 'Visible dans l’app du locataire — touchez pour le rendre privé' : 'Privé : le locataire ne le voit pas — touchez pour le rendre visible'}"><span class="dv-dot"></span>${icon(doc.shared ? 'eye' : 'eyeOff')} ${doc.shared ? 'Visible' : 'Privé'}</button>` : ''}
           <button class="btn icon sm" data-action="open-doc" data-id="${doc.id}" aria-label="Ouvrir">${icon('eye')}</button>
           <button class="btn icon sm ghost danger" data-action="del-doc" data-id="${doc.id}" aria-label="Supprimer">${icon('trash')}</button></div>`)}</div>` : html`<p class="muted small">Aucun document.</p>`}`;
     } else if (tab === 'espace') {
