@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.142.0';
+const VERSION = '2.143.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -860,9 +860,11 @@ function espaceData(l) {
       for (const c of ['btc', 'eth', 'usdt', 'usdc']) if (soc[c]) x[c] = { a: soc[c], n: soc[c + 'Net'] || '' };
       if (Object.keys(x).length) out.payx = x;
     }
-    out.years = [cy, cy - 1].filter((y) => MONTHS.some((_, i) => isDue(l, y, i + 1) || payment(l.id, y, i + 1))).map((y) => {
+    // tous les ans depuis l'entrée (15 ans au plus) : récapitulatif des loyers sur toute la location
+    const y0 = Math.max(cy - 14, Math.min(cy - 1, +String(l.debut || '').slice(0, 4) || cy - 1));
+    out.years = Array.from({ length: cy - y0 + 1 }, (_, k) => cy - k).filter((y) => MONTHS.some((_, i) => isDue(l, y, i + 1) || payment(l.id, y, i + 1))).map((y) => {
       const s = yearStats(l, y);
-      return { y, rest: s.rest, upcoming: s.upcoming, paid: s.paid, months: MONTHS.map((_, i) => { const st = payState(l, y, i + 1); return [st.due, st.paid, st.p ? st.p.date || '' : '']; }) };
+      return { y, rest: y >= cy - 1 ? s.rest : 0, upcoming: y >= cy - 1 ? s.upcoming : 0, paid: s.paid, months: MONTHS.map((_, i) => { const st = payState(l, y, i + 1); return [st.due, st.paid, st.p ? st.p.date || '' : '']; }) };
     });
   }
   // code de la porte : seulement s'il est actif et pas expiré (date de fin choisie dans l'app de gestion)

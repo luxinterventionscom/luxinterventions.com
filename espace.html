@@ -175,9 +175,12 @@
     body.printing main { display: none; }
     /* A4 verticale ; marges dans la page (pas d'en-tête / pied de page du navigateur) */
     @page { size: A4 portrait; margin: 0; }
-    body.printing #quit { display: block; padding: 14mm 16mm; font-size: 11pt; color: #111; }
+    body.printing #quit { display: block; padding: 0; font-size: 11pt; line-height: 1.4; color: #111; }
+    body.printing .rc-page { position: relative; height: 296mm; padding: 12mm 16mm 0; box-sizing: border-box; overflow: hidden; break-after: page; page-break-after: always; }
+    body.printing .rc-page:last-child { break-after: auto; page-break-after: auto; }
+    body.printing .rc-pn { position: absolute; left: 16mm; right: 16mm; bottom: 9mm; text-align: center; font-size: 9pt; color: #555 !important; border-top: 1px solid #ccc; padding-top: 2mm; }
     body.printing #quit * { color: #111; }
-    body.printing #quit tr, body.printing #quit .rc-box, body.printing #quit .rc-end { break-inside: avoid; page-break-inside: avoid; }
+    body.printing #quit tr { break-inside: avoid; page-break-inside: avoid; }
     body.printing { background: #fff; }
   }
 .install-big { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; border: 0; border-radius: 18px; padding: 14px 16px; margin: 0 0 14px; background: #4f46e5; color: #fff; font: inherit; cursor: pointer; box-shadow: 0 6px 18px rgba(79,70,229,.3); }

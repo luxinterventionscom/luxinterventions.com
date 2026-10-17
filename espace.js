@@ -930,6 +930,7 @@ function render() {
     if (rows.length) {
       const tot = rows.reduce((x, r) => x + r.paid, 0), first = rows[rows.length - 1], last = rows[0];
       quitIn = `<div class="row"><div class="grow"><b>${esc(t.rc.paidN(rows.length))}</b><div class="meta">${esc(t.monthsFull[first.m])} ${first.y} → ${esc(t.monthsFull[last.m])} ${last.y}</div></div><b>${esc(money(tot))}</b></div>
+        ${(() => { const ys = [...new Set(rows.map((r) => r.y))]; return ys.length > 1 ? `<select id="rcYear" style="margin-top:10px;width:100%" aria-label="${esc(t.rc.title)}"><option value="">${esc(RCY[lang] || RCY.fr)} (${ys[ys.length - 1]} → ${ys[0]})</option>${ys.map((y) => `<option value="${y}">${y}</option>`).join('')}</select>` : ''; })()}
         <button class="btn block" style="margin-top:10px" data-recap="1">${esc(t.rc.btn)}</button>`;
       quitSum = t.rc.paidN(rows.length) + ' · ' + money(tot);
       if (!(s.contrat && d.contrat)) {
@@ -1076,32 +1077,73 @@ function render() {
 }
 
 // Récapitulatif imprimable de tous les loyers payés (un seul document au lieu d'une quittance par mois)
+const RCY = { fr: 'Toutes les années', it: 'Tutti gli anni', de: 'Alle Jahre', pt: 'Todos os anos', en: 'All years', es: 'Todos los años' };
 function recap() {
   const t = T(), d = data, s = d.societe, name = [d.prenom, d.nom].filter(Boolean).join(' ');
   const rows = [];
-  for (const y of d.years) y.months.forEach(([due, paid, date], i) => { if (paid > 0) rows.push({ y: y.y, m: i, due, paid, date }); });
+  const yr = +((document.getElementById('rcYear') || {}).value || 0); // année choisie (vide = toutes)
+  for (const y of d.years) if (!yr || y.y === yr) y.months.forEach(([due, paid, date], i) => { if (paid > 0) rows.push({ y: y.y, m: i, due, paid, date }); });
   rows.sort((a, b) => a.y - b.y || a.m - b.m);
   if (!rows.length) return;
   const tot = rows.reduce((x, r) => x + r.paid, 0);
   const per = (r) => `${t.monthsFull[r.m]} ${r.y}`;
   const q = document.getElementById('quit');
-  q.innerHTML = `<div style="max-width:700px;margin:0 auto">
-    <div style="display:flex;justify-content:space-between;gap:20px;margin-bottom:24px"><div><b>${esc(t.landlord)}</b><br>${esc(s.nom)}<br>${esc(s.adresse)}<br>${esc(s.ville)}<br>${esc(s.tel)}</div>
+  // A4 en vraies pages : on mesure chaque bloc, on remplit page par page (en-tête du tableau répété),
+  // tableau resserré si besoin pour tenir en 2 pages, « Page 1 / 2 » en bas de chaque page
+  const pg = ({ fr: 'Page', it: 'Pagina', de: 'Seite', pt: 'Página', en: 'Page', es: 'Página' })[lang] || 'Page';
+  const box = (() => { const g = GAR[lang] || GAR.fr, c = d.caution && d.caution.montant ? d.caution : null; if (!c && !d.inclus) return '';
+      return `<div class="rc-box" style="margin:14px 0 0;padding:10px 12px;border:1.5px solid #333;border-radius:8px">${c ? `<b>🔐 ${esc(g.t)}</b><p style="margin:6px 0 0">${esc(g.txt(s.nom, money(c.montant)))}${c.date ? ` ${esc(g.on(fmt(c.date)))}` : ''}${c.mode && g.m[c.mode] ? ` (${esc(g.m[c.mode])})` : ''}.</p>` : ''}${d.inclus ? `<b style="display:block;${c ? 'margin-top:10px' : ''}">🏠 ${esc(g.ct)}</b><p style="margin:6px 0 0">${esc(g.cx)}</p>` : ''}</div>`; })();
+  const signW = [6, 8, 10, 12].includes(+s.signW) ? +s.signW : 8;
+  const head = `<div class="rc-u" style="display:flow-root"><div style="display:flex;justify-content:space-between;gap:20px;margin-bottom:18px"><div><b>${esc(t.landlord)}</b><br>${esc(s.nom)}<br>${esc(s.adresse)}<br>${esc(s.ville)}<br>${esc(s.tel)}</div>
     <div style="text-align:right"><b>${esc(t.tenant)}</b><br>${esc(name)}<br>${esc(d.logement)}<br>${esc(d.adresse)}</div></div>
-    <h1 style="text-align:center">${esc(t.rc.title)}</h1><p style="text-align:center">${esc(per(rows[0]))} → ${esc(per(rows[rows.length - 1]))}</p>
-    <table style="width:100%;border-collapse:collapse;margin:18px 0;font-size:13px"><thead><tr>${t.rc.cols.map((c, i) => `<th style="text-align:${i ? 'right' : 'left'};border-bottom:2px solid #333;padding:5px">${esc(c)}</th>`).join('')}</tr></thead><tbody>
-    ${rows.map((r) => `<tr><td style="padding:5px;border-bottom:1px solid #ddd">${esc(per(r))}${r.paid < r.due - 0.009 ? ` <i>(${esc(t.rc.partial)})</i>` : ''}</td><td style="text-align:right;padding:5px;border-bottom:1px solid #ddd">${esc(money(r.due))}</td><td style="text-align:right;padding:5px;border-bottom:1px solid #ddd">${esc(money(r.paid))}</td><td style="text-align:right;padding:5px;border-bottom:1px solid #ddd">${esc(r.date ? fmt(r.date) : '—')}</td></tr>`).join('')}
-    <tr><td style="padding:6px"><b>${esc(t.rc.total)}</b></td><td></td><td style="text-align:right;padding:6px"><b>${esc(money(tot))}</b></td><td></td></tr></tbody></table>
-    ${(() => { const g = GAR[lang] || GAR.fr, c = d.caution && d.caution.montant ? d.caution : null; if (!c && !d.inclus) return '';
-      return `<div class="rc-box" style="margin:14px 0 0;padding:10px 12px;border:1.5px solid #333;border-radius:8px">${c ? `<b>🔐 ${esc(g.t)}</b><p style="margin:6px 0 0">${esc(g.txt(s.nom, money(c.montant)))}${c.date ? ` ${esc(g.on(fmt(c.date)))}` : ''}${c.mode && g.m[c.mode] ? ` (${esc(g.m[c.mode])})` : ''}.</p>` : ''}${d.inclus ? `<b style="display:block;${c ? 'margin-top:10px' : ''}">🏠 ${esc(g.ct)}</b><p style="margin:6px 0 0">${esc(g.cx)}</p>` : ''}</div>`; })()}
-    <div class="rc-end">
-    <p style="margin-top:18px">${esc(t.rc.text(s.nom, name, money(tot), per(rows[0]), per(rows[rows.length - 1])))}</p>
-    <p style="margin-top:24px">${esc(fmt(today))}</p>${s.sign ? `<img src="${esc(s.sign)}" alt="" style="display:block;width:${[6, 8, 10, 12].includes(+s.signW) ? +s.signW : 8}cm;max-width:100%;height:auto;margin:4mm 0 2mm">` : `<p><i>${esc(s.nom)}</i></p>`}</div></div>`;
+    <h1 style="text-align:center;margin:0 0 4px;font-size:20pt">${esc(t.rc.title)}</h1><p style="text-align:center;margin:0">${esc(per(rows[0]))} → ${esc(per(rows[rows.length - 1]))}</p></div>`;
+  const end = `<div class="rc-u" style="display:flow-root;padding-top:14px"><p style="margin:0">${esc(t.rc.text(s.nom, name, money(tot), per(rows[0]), per(rows[rows.length - 1])))}</p>
+    <p style="margin:16px 0 0">${esc(fmt(today))}</p>${s.sign ? `<img src="${esc(s.sign)}" alt="" style="display:block;width:${signW}cm;max-width:100%;height:auto;margin:3mm 0 0">` : `<p style="margin:8px 0 0"><i>${esc(s.nom)}</i></p>`}</div>`;
+  const boxU = box ? `<div class="rc-u" style="display:flow-root;padding-top:12px">${box.replace('margin:14px 0 0;', 'margin:0;')}</div>` : '';
+  const LV = [{ fs: 13, pd: 5, gp: 16 }, { fs: 12, pd: 3, gp: 10 }, { fs: 11, pd: 2, gp: 8 }];
+  const td = (L, al, x, b = '1px solid #ddd') => `<td style="text-align:${al};padding:${L.pd}px 5px;border-bottom:${b}">${x}</td>`;
+  const thead = (L) => `<tr>${t.rc.cols.map((c, i) => `<th style="text-align:${i ? 'right' : 'left'};border-bottom:2px solid #333;padding:${L.pd}px 5px">${esc(c)}</th>`).join('')}</tr>`;
+  const tr = (L, r) => `<tr>${td(L, 'left', esc(per(r)) + (r.paid < r.due - 0.009 ? ` <i>(${esc(t.rc.partial)})</i>` : ''))}${td(L, 'right', esc(money(r.due)))}${td(L, 'right', esc(money(r.paid)))}${td(L, 'right', esc(r.date ? fmt(r.date) : '—'))}</tr>`;
+  const totTr = (L) => `<tr>${td(L, 'left', `<b>${esc(t.rc.total)}</b>`, '0')}<td></td>${td(L, 'right', `<b>${esc(money(tot))}</b>`, '0')}<td></td></tr>`;
+  const table = (L, body) => `<table style="width:100%;border-collapse:collapse;margin:${L.gp}px 0 0;font-size:${L.fs}px"><thead>${thead(L)}</thead><tbody>${body}</tbody></table>`;
+  const mm = 96 / 25.4, H = (297 - 12 - 22) * mm; // hauteur utile : marge haute 12 mm, bas 22 mm (numéro de page)
+  const meas = document.createElement('div');
+  meas.style.cssText = 'position:absolute;left:-10000px;top:0;width:178mm;font-size:11pt;line-height:1.4;visibility:hidden';
+  document.body.appendChild(meas);
+  const layout = (L, cut = -1) => {
+    meas.innerHTML = head + `<div style="display:flow-root">${table(L, rows.map((r) => tr(L, r)).join('') + totTr(L))}</div>` + boxU + end;
+    const [hH] = [meas.children[0].offsetHeight], tb = meas.querySelector('table'), trs = [...tb.querySelectorAll('tr')];
+    const thH = trs[0].offsetHeight, rH = trs.slice(1).map((x) => x.offsetHeight), boxH = box ? meas.children[2].offsetHeight : 0, endH = meas.lastElementChild.offsetHeight;
+    const pages = []; let cur = null, used = 0, chunk = null;
+    const page = () => { cur = { html: [] }; pages.push(cur); used = 0; chunk = null; };
+    const put = (h, html) => { if (cur.html.length && used + h > H) page(); cur.html.push(html); used += h; };
+    page(); put(hH, head);
+    rows.map((r) => tr(L, r)).concat(totTr(L)).forEach((x, i) => {
+      const h = rH[i];
+      if (i > 0 && i % 12 === 0 && i < rows.length) page(); // 12 mois par page
+      else if (i === cut && chunk) page(); // dernières lignes avec la signature (pas de signature seule sur une page)
+      if (!chunk || used + h > H) { if (chunk && used + h > H) page(); chunk = []; cur.html.push(chunk); used += thH + L.gp; }
+      chunk.push(x); used += h;
+    });
+    if (box) put(boxH, boxU);
+    put(endH, end);
+    const last = pages[pages.length - 1];
+    if (cut < 0 && pages.length > 1 && !last.html.some(Array.isArray) && rows.length > 3) return layout(L, rows.length - 3);
+    return pages.map((p) => p.html.map((x) => (Array.isArray(x) ? table(L, x.join('')) : x)).join(''));
+  };
+  const go = () => {
+    // 1 page si un tableau un peu plus serré suffit, sinon 2 pages en taille normale, sinon le plus serré
+    const all = LV.map((L) => layout(L));
+    const pages = all.find((x) => x.length === 1) || all.find((x) => x.length <= 2) || all[all.length - 1];
+    meas.remove();
+    q.innerHTML = pages.map((h, i) => `<section class="rc-page">${h}<div class="rc-pn">${esc(t.rc.title)} — ${pg} ${i + 1} / ${pages.length}</div></section>`).join('');
+  };
   document.body.classList.add('printing');
   const done = () => { document.body.classList.remove('printing'); removeEventListener('afterprint', done); };
   addEventListener('afterprint', done);
-  // signature + timbre : on attend que l'image soit prête, sinon l'iPhone imprime avant (dernière page vide ou absente)
-  Promise.all([...q.querySelectorAll('img')].map((im) => (im.decode ? im.decode().catch(() => {}) : null))).then(() => setTimeout(() => print(), 300));
+  // signature + timbre : on attend que l'image soit prête (sa hauteur compte pour les pages), sinon l'iPhone imprime avant
+  const im = new Image(); im.src = s.sign || '';
+  (s.sign && im.decode ? im.decode().catch(() => {}) : Promise.resolve()).then(() => { go(); setTimeout(() => print(), 300); });
 }
 
 async function compress(file) {
