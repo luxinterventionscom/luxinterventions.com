@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.143.0';
+const VERSION = '2.144.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -871,6 +871,7 @@ function espaceData(l) {
   if (show.porte && g && g.porte && g.porte.code && !g.porte.off && (!g.porte.fin || g.porte.fin >= today())) out.porte = { code: g.porte.code, depuis: g.porte.maj || '', info: g.porte.info || '', fin: g.porte.fin || '' };
   // garantie locative détenue par le bailleur + loyer tout compris : sur le récapitulatif des loyers du locataire
   out.inclus = soc.toutCompris !== false;
+  out.logType = g ? g.type || '' : ''; // assurance habitation : conseillée (chambre) ou indispensable (studio, appartement, maison)
   if (l.caution) out.caution = { montant: l.caution, date: l.cautionDate || '', mode: CAUTION_MODES[l.cautionMode] ? l.cautionMode : '' };
   if (show.contrat) out.contrat = { debut: l.debut || '', fin: l.fin || '', revision: l.revision || '', caution: l.caution || 0, cautionDate: l.cautionDate || '', cautionMode: l.cautionMode || '' };
   if (show.docs) out.docs = vault.list('documents').filter((d) => d.locId === l.id && d.shared).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
