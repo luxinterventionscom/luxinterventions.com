@@ -293,12 +293,12 @@ nbienInit({ api: API, app: 'esp', lang: () => lang });
 const MY_ICONS = ['😀', '😊', '🙂', '😎', '🥰', '😇', '🤓', '🧐', '🤠', '🥳', '😺', '👩', '👨', '👧', '👦', '👵', '👴', '🧑‍💼', '👩‍🍳', '👨‍🎓', '🐶', '🐱', '🦊', '🐻', '🐼', '🦁', '🐯', '🐸', '🐵', '🐧', '🦄', '🐢', '🌸', '🌻', '🌈', '⚽', '🎵', '🎨', '🚗', '🏍️', '🏠', '⭐', '❤️', '🍕', '☕', '🌍'];
 const ICT = { fr: 'Mon icône', it: 'La mia icona', de: 'Mein Symbol', en: 'My icon', pt: 'O meu ícone', es: 'Mi icono' };
 const TFT = {
-  fr: { info: 'Info supplémentaires', anim: 'Mettre l’icône sur l’écran', lock: 'Vos données sont chiffrées et visibles uniquement par votre gestionnaire.', out: 'Se déconnecter', call: 'Appeler' },
-  it: { info: 'Info supplementari', anim: 'Mettere l’icona sullo schermo', lock: 'I tuoi dati sono cifrati e visibili solo al tuo gestore.', out: 'Esci', call: 'Chiama' },
-  de: { info: 'Weitere Infos', anim: 'Symbol auf den Bildschirm legen', lock: 'Ihre Daten sind verschlüsselt und nur für Ihre Verwaltung sichtbar.', out: 'Abmelden', call: 'Anrufen' },
-  en: { info: 'More info', anim: 'Put the icon on the screen', lock: 'Your data is encrypted and visible only to your property manager.', out: 'Log out', call: 'Call' },
-  pt: { info: 'Mais informações', anim: 'Pôr o ícone no ecrã', lock: 'Os seus dados são cifrados e visíveis apenas pelo seu gestor.', out: 'Terminar sessão', call: 'Ligar' },
-  es: { info: 'Más información', anim: 'Poner el icono en la pantalla', lock: 'Tus datos están cifrados y solo los ve tu gestor.', out: 'Cerrar sesión', call: 'Llamar' },
+  fr: { lock: 'Vos données sont chiffrées et visibles uniquement par votre gestionnaire.', out: 'Se déconnecter', call: 'Appeler' },
+  it: { lock: 'I tuoi dati sono cifrati e visibili solo al tuo gestore.', out: 'Esci', call: 'Chiama' },
+  de: { lock: 'Ihre Daten sind verschlüsselt und nur für Ihre Verwaltung sichtbar.', out: 'Abmelden', call: 'Anrufen' },
+  en: { lock: 'Your data is encrypted and visible only to your property manager.', out: 'Log out', call: 'Call' },
+  pt: { lock: 'Os seus dados são cifrados e visíveis apenas pelo seu gestor.', out: 'Terminar sessão', call: 'Ligar' },
+  es: { lock: 'Tus datos están cifrados y solo los ve tu gestor.', out: 'Cerrar sesión', call: 'Llamar' },
 };
 // 🔐 garantie locative (caution) sur le récapitulatif des loyers payés : qui la détient, combien, quand, comment
 const GAR = {
@@ -782,6 +782,14 @@ function upsMine() {
   return [...srv, ...left.map((x) => ({ ...x, st: 'wait' }))].sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 10);
 }
 const b64uOf = (u) => { let s = ''; for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode(...u.subarray(i, i + 32768)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const RGPDX = {
+  fr: { grp: 'groupe', close: 'Fermer', docs: 'Les documents que vous envoyez depuis l’app (pièce d’identité, justificatifs…) sont chiffrés sur votre téléphone, vérifiés par votre gestionnaire puis rangés dans votre dossier ; un document refusé est effacé.' },
+  it: { grp: 'gruppo', close: 'Chiudi', docs: 'I documenti che invii dall’app (documento d’identità, giustificativi…) sono cifrati sul tuo telefono, verificati dal tuo gestore e poi messi nella tua pratica; un documento rifiutato viene cancellato.' },
+  de: { grp: 'Gruppe', close: 'Schließen', docs: 'Die Unterlagen, die Sie aus der App senden (Ausweis, Nachweise…), werden auf Ihrem Telefon verschlüsselt, von Ihrem Verwalter geprüft und dann in Ihre Unterlagen gelegt; ein abgelehntes Dokument wird gelöscht.' },
+  pt: { grp: 'grupo', close: 'Fechar', docs: 'Os documentos que envia pela app (documento de identificação, comprovativos…) são cifrados no seu telemóvel, verificados pelo seu gestor e depois guardados no seu processo; um documento recusado é apagado.' },
+  en: { grp: 'group', close: 'Close', docs: 'Documents you send from the app (ID, proofs…) are encrypted on your phone, checked by your manager and then added to your file; a refused document is deleted.' },
+  es: { grp: 'grupo', close: 'Cerrar', docs: 'Los documentos que envía desde la app (documento de identidad, justificantes…) se cifran en su teléfono, los revisa su gestor y luego se guardan en su expediente; un documento rechazado se borra.' },
+};
 const UPL = {
   fr: { both: 'Mes loyers & mon dossier', hint: 'Vos documents enregistrés (touchez 👁 pour voir). Il en manque un ? Envoyez-le ci-dessous : nous le vérifions puis le rangeons dans votre dossier.', h: '📤 Envoyer un document', type: 'Type de document', signed: 'Contrat signé', recto: '(recto)', pick: '📎 Choisir le fichier', send: '📤 Envoyer', none: 'Aucun fichier choisi (photo ou PDF)', big: 'Fichier trop lourd : 8 Mo maximum (une photo passe toujours).', bad: 'Choisissez une photo ou un PDF.', err: 'Envoi impossible, réessayez (connexion ?).', sending: 'Envoi chiffré…', sent: 'Envoyé ✓ — nous le vérifions.', mine: 'Mes envois', wait: '⏳ en vérification', ok: '✅ accepté', ko: '❌ refusé' },
   it: { both: 'I miei affitti e la mia pratica', hint: 'I tuoi documenti registrati (tocca 👁 per vederli). Ne manca uno? Invialo qui sotto: lo verifichiamo e lo mettiamo nella tua pratica.', h: '📤 Invia un documento', type: 'Tipo di documento', signed: 'Contratto firmato', recto: '(fronte)', pick: '📎 Scegli il file', send: '📤 Invia', none: 'Nessun file scelto (foto o PDF)', big: 'File troppo pesante: 8 MB al massimo (una foto va sempre bene).', bad: 'Scegli una foto o un PDF.', err: 'Invio non riuscito, riprova (connessione?).', sending: 'Invio cifrato…', sent: 'Inviato ✓ — lo stiamo verificando.', mine: 'I miei invii', wait: '⏳ in verifica', ok: '✅ accettato', ko: '❌ rifiutato' },
@@ -1075,10 +1083,9 @@ function render() {
   }
   if (pushSt === 'on') out.push(notifCard(t));
   out.push(installCard(t));
-  { // bas de page (comme l'app de l'équipe) : ℹ️ infos (icône sur l'écran), 🔒 phrase courte, 🚪 Se déconnecter, 📞 Appeler (numéro non affiché)
+  { // bas de page : 🔒 phrase courte + RGPD, 🚪 Se déconnecter, 📞 Appeler (numéro non affiché) ; l'icône sur l'écran = le grand bouton violet plus haut
     const ft = TFT[lang] || TFT.fr;
-    out.push(`<div class="card"><h2>ℹ️ ${esc(ft.info)}</h2><button class="btn sec block" data-guide="1">▶ ${esc(ft.anim)}</button></div>
-    <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn sec sm" data-logout="1">🚪 ${esc(ft.out)}</button>${d.societe.tel ? `<a class="btn sm" href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">📞 ${esc(ft.call)}</a><span class="meta">${esc(d.societe.nom)}</span>` : ''}</div></div>`);
+    out.push(`<div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><button class="link-rgpd" data-rgpd="1">${esc(t.rgpdT)}</button><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn sec sm" data-logout="1">🚪 ${esc(ft.out)}</button>${d.societe.tel ? `<a class="btn sm" href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">📞 ${esc(ft.call)}</a><span class="meta">${esc(d.societe.nom)}</span>` : ''}</div></div>`);
   }
   { const low = slot('bas'); if (low) out.push(adBox(low, t, d)); }
   out.push(colorLegend());
@@ -1396,6 +1403,8 @@ app.addEventListener('click', async (e) => {
     payOpen = false;
     return render();
   }
+  // 🔒 Protection des données (RGPD) : qui traite les données, pourquoi, combien de temps, vos droits, la CNPD
+  if (e.target.closest('[data-rgpd]') && data) { const t = T(), g = RGPDX[lang] || RGPDX.fr, so = { ...data.societe, nom: `${data.societe.nom} (${g.grp} ARES INVEST S.A.)` }; return import('/ares/confirm-box.js').then((m) => m.infoBox(t.rgpdT, [t.rgpd(so), g.docs, t.hr.rgpd2], g.close)); }
   if (e.target.closest('[data-logout]')) { e.preventDefault(); const o = OUTQ[lang] || OUTQ.fr; const out = () => { try { localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; render(); }; if (!data) return out(); return import('/ares/confirm-box.js').then((m) => m.confirmBox(o[0], o[1], o[2], out)); }
   const lb = e.target.closest('[data-lang]');
   if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('espLang', lang); } catch {} if (pushSt === 'on') pushRefresh('/espace', pushPost); return render(); }
