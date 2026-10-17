@@ -1566,7 +1566,8 @@ async function load() {
       else if (r.status === 404) { try { localStorage.removeItem(ACC); } catch {} id = key = ''; loadErr = T().off; }
     } catch { loadErr = '⚠ offline'; }
   }
-  if (!localStorage.getItem('espLang')) lang = pick(data);
+  let chosen = ''; try { chosen = localStorage.getItem('espLang') || ''; } catch { /* stockage bloqué (navigation privée) */ }
+  if (!chosen) lang = pick(data);
   render();
   if (data) pushInit();
 }
