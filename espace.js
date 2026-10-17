@@ -1418,7 +1418,8 @@ app.addEventListener('click', async (e) => {
   }
   if (e.target.closest('[data-err]')) {
     const f = document.getElementById('sig');
-    if (f) { const fd = f.closest('details'); if (fd) fd.open = true; f.type.value = 'dossier'; f.scrollIntoView({ behavior: 'smooth', block: 'start' }); f.texte.focus({ preventScroll: true }); }
+    // ouvre toutes les cartes repliées autour du formulaire (carte Maintenance + « Signaler un problème »)
+    if (f) { for (let dd = f.closest('details'); dd; dd = dd.parentElement && dd.parentElement.closest('details')) dd.open = true; if ([...f.type.options].some((o) => o.value === 'dossier')) f.type.value = 'dossier'; f.scrollIntoView({ behavior: 'smooth', block: 'start' }); f.texte.focus({ preventScroll: true }); }
   }
 });
 // on mémorise tout de suite au toucher (l'événement « toggle » arrive un peu après)
