@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.147.0';
+const VERSION = '2.148.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -874,6 +874,8 @@ function espaceData(l) {
   out.logType = g ? g.type || '' : ''; // assurance habitation : conseillée (chambre) ou indispensable (studio, appartement, maison)
   if (l.caution) out.caution = { montant: l.caution, date: l.cautionDate || '', mode: CAUTION_MODES[l.cautionMode] ? l.cautionMode : '' };
   if (show.contrat) out.contrat = { debut: l.debut || '', fin: l.fin || '', revision: l.revision || '', caution: l.caution || 0, cautionDate: l.cautionDate || '', cautionMode: l.cautionMode || '' };
+  if (show.docs) out.ups = vault.list('documents').filter((d) => d.locId === l.id && d.up).sort((a, b) => (b.upAt || '').localeCompare(a.upAt || '')).slice(0, 10)
+    .map((d) => ({ k: d.up, dtype: d.dtype, at: d.upAt || d.date, st: d.kind === 'recu' ? 'wait' : d.kind === 'refus' ? 'ko' : 'ok', why: d.kind === 'refus' ? d.why || '' : '' }));
   if (show.docs) out.docs = vault.list('documents').filter((d) => d.locId === l.id && !d.kind).sort((a, b) => (b.date || '').localeCompare(a.date || ''))
     .map((d) => ({ id: d.id, label: d.label, dtype: d.dtype || '', pay: d.pay || '', date: d.date, mime: d.mime, size: d.size }));
   if (show.edl && g) {
@@ -1392,6 +1394,18 @@ async function inboxSync() {
           const extra = [tags.map((k) => MEN_TAGS[k]).join(' · '), note ? `« ${note} »` : ''].filter(Boolean).join(' — ');
           const feed = [...(w.feed || []), { at: String(msg.t || new Date().toISOString()).slice(0, 30), k: 'eval', note: `${MEN_EVAL[v]} — avis de ${fullName(l)} (${fmtDate(d)})${extra ? ' — ' + extra : ''}` }];
           await vault.mutate((tx) => tx.put('intervenants', { id: w.id, evals: evals.slice(-300), feed: feed.slice(-200), feedNew: (w.feedNew || 0) + 1 }), w.metier === 'menage' ? 'Avis sur le ménage' : 'Avis sur le passage', `${intervFull(w)} — ${MEN_EVAL[v]}`, w.id);
+          n++;
+        }
+        await vault.inboxDel(it.name);
+        continue;
+      }
+      if (msg.type === 'doc-up') {
+        // 📤 document envoyé depuis l'app du locataire : à vérifier (✅ ranger dans le dossier / ❌ refuser avec le motif)
+        const b = typeof msg.b === 'string' && msg.b.length < 12e6 ? msg.b : '', pdf = msg.mime === 'application/pdf';
+        if (b && DOC_TYPES[msg.dtype] && (pdf || msg.mime === 'image/jpeg') && !vault.list('documents').some((x) => x.up === msg.k)) {
+          let doc;
+          await vault.mutate((tx) => { doc = tx.put('documents', { locId: l.id, kind: 'recu', up: String(msg.k || '').slice(0, 40), upAt: String(msg.t || '').slice(0, 30), st: 'wait', dtype: msg.dtype, label: DOC_TYPES[msg.dtype].replace(/ \(.*\)$/, ''), name: String(msg.name || '').slice(0, 80), date: String(msg.t || '').slice(0, 10) || today(), mime: pdf ? 'application/pdf' : 'image/jpeg', size: Math.round(b.length * 0.75) }); }, 'Document reçu du locataire (à vérifier)', `${fullName(l)} — ${DOC_TYPES[msg.dtype]}`, l.id);
+          await vault.saveFile(doc.id, unb64u(b));
           n++;
         }
         await vault.inboxDel(it.name);
@@ -2497,10 +2511,12 @@ function renderView() {
 }
 
 // Numéro sur l'icône de l'app : tout ce qui attend une action (messages, virements signalés, photos de sortie, équipe, annonces…)
+// documents envoyés par les locataires, pas encore vérifiés
+const recusAll = () => vault.list('documents').filter((d) => d.kind === 'recu' && vault.get('locataires', d.locId));
 function pendingCount() {
   const chat = Object.entries(ui.chatNew || {}).filter(([imId, n]) => n && vault.get('immeubles', imId)).reduce((a, [, n]) => a + n, 0);
   return newSignals().length + vault.list('locataires').filter((l) => l.virSignal && !l.virSignal.vu).length + new Set(edlOutNew().map((d) => d.logId)).size
-    + sum(vault.list('intervenants'), (i) => i.feedNew || 0) + chat + (ui.toolsPending || 0);
+    + sum(vault.list('intervenants'), (i) => i.feedNew || 0) + chat + (ui.toolsPending || 0) + recusAll().length;
 }
 let badgeLast = -1;
 function updateBadge() {
@@ -3677,6 +3693,7 @@ dashboard() {
         ${outside.map((l) => alertBtn('warn', 'calendar', 'fix-dates', l.id, html`<b>${fullName(l)}</b> — ${plural(outsidePays(l).length, 'loyer')} payé${outsidePays(l).length > 1 ? 's' : ''} hors des dates du contrat : touchez pour corriger`))}
         ${late.slice(0, 6).map(({ l, months }) => alertBtn(months.length >= 2 ? 'bad' : 'warn', 'alert', 'open-loc', l.id, html`<b>${fullName(l)}</b> — ${months.length} mois impayé${months.length > 1 ? 's' : ''} (${months.map((x) => MONTHS[x - 1]).join(', ')})`))}
         ${leaving.map((l) => alertBtn('warn', 'calendar', 'open-loc', l.id, html`<b>${fullName(l)}</b> quitte ${logName(l.logId) || 'le logement'} le ${fmtDate(l.sortie)}`))}
+        ${[...new Set(recusAll().map((d) => d.locId))].map((lid) => { const l = vault.get('locataires', lid), n = recusAll().filter((d) => d.locId === lid).length; return alertBtn('info', 'file', 'open-loc-docs', lid, html`📥 <b>${fullName(l)}</b> a envoyé ${plural(n, 'document')} — à vérifier<div class="tiny">touchez pour voir, accepter ou refuser</div>`); })}
         ${arriving.map((l) => alertBtn('info', 'users', 'open-loc', l.id, html`<b>${fullName(l)}</b> arrive dans ${logName(l.logId) || immName(l.immId)} le ${fmtDate(l.debut)}`))}
         ${expiring.map(({ l, d }) => alertBtn('warn', 'calendar', 'renew', l.id, html`<b>${fullName(l)}</b> — fin de contrat ${d === 0 ? "aujourd'hui" : `dans ${plural(d, 'jour')}`} (${fmtDate(l.fin)}). Toucher pour prolonger.`))}
         ${revisions.map((l) => alertBtn('info', 'chart', 'index', l.id, html`<b>${fullName(l)}</b> — révision du loyer ${daysUntil(l.revision) < 0 ? 'prévue depuis le' : 'prévue le'} ${fmtDate(l.revision)} (${money(l.loyer)}). Toucher pour réviser.`))}
@@ -5712,7 +5729,8 @@ const SHEETS = {
     if (!l) return null;
     tab = tab || 'infos';
     const y = new Date().getFullYear();
-    const docs = vault.list('documents').filter((d) => d.locId === id).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const docs = vault.list('documents').filter((d) => d.locId === id && d.kind !== 'recu' && d.kind !== 'refus').sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    const recus = vault.list('documents').filter((d) => d.locId === id && d.kind === 'recu');
     const docOf = (k) => docs.find((d) => d.dtype === k);
     const hasDoc = (k) => !!docOf(k);
     const msgs = vault.list('taches').filter((t) => t.locId === id && t.sentAt).sort((a, b) => (b.sentAt || '').localeCompare(a.sentAt || ''));
@@ -5763,6 +5781,11 @@ const SHEETS = {
       })}<p class="tiny muted">Touchez un mois vide pour l'enregistrer payé. Touchez un mois payé pour modifier le montant (paiement partiel), imprimer la quittance ou annuler.</p>`;
     } else if (tab === 'docs') {
       body = html`
+        ${recus.length ? html`<div class="alert info" style="display:block;margin-bottom:14px"><b>📥 ${plural(recus.length, 'document')} reçu${recus.length > 1 ? 's' : ''} de ${l.prenom || fullName(l)} — à vérifier</b>
+          ${recus.map((doc) => html`<div class="recu-row"><div class="recu-top"><button class="btn sm" data-action="open-doc" data-id="${doc.id}">${icon('eye')} Voir</button><span class="grow small">${doc.name || doc.label} · ${fmtDate(doc.date)} · ${Math.max(1, Math.round((doc.size || 0) / 1024))} Ko</span></div>
+            <div class="recu-act"><select data-recu-type="${doc.id}" aria-label="Ranger comme">${Object.entries(DOC_TYPES).map(([k, v]) => html`<option value="${k}" ${doc.dtype === k ? new Raw('selected') : ''}>${v}</option>`)}</select>
+            <button class="btn sm primary" data-action="recu-ok" data-id="${doc.id}">✅ Accepter</button></div>
+            <div class="recu-act"><input data-recu-why="${doc.id}" placeholder="Motif du refus (le locataire le lit) — ex. photo floue, merci de la refaire" maxlength="140"><button class="btn sm danger" data-action="recu-ko" data-id="${doc.id}">❌ Refuser</button></div></div>`)}</div>` : ''}
         <form data-form="doc" class="stack" style="margin-bottom:16px">
           <input type="hidden" name="locId" value="${id}">
           <div class="small">Dossier : ${dossierChips(id, docOf)}</div>
@@ -6762,6 +6785,22 @@ const ACTIONS = {
   'new-loc': (d) => openSheet('loc-form', null, null, d.log),
   'edit-loc': (d) => openSheet('loc-form', d.id),
   'open-loc': (d) => openSheet('loc', d.id),
+  'open-loc-docs': (d) => openSheet('loc', d.id, 'docs'),
+  // ✅ document du locataire rangé dans son dossier (type choisi) ; ❌ refusé avec le motif, le fichier est effacé
+  async 'recu-ok'(d) {
+    const doc = vault.get('documents', d.id); if (!doc) return;
+    const sel = sheetEl.querySelector(`[data-recu-type="${d.id}"]`), dtype = sel && DOC_TYPES[sel.value] ? sel.value : doc.dtype;
+    await vault.mutate((tx) => tx.put('documents', { id: doc.id, kind: '', st: 'ok', dtype, label: DOC_TYPES[dtype].replace(/ \(.*\)$/, '') }), 'Document du locataire accepté', `${DOC_TYPES[dtype]} — ${fullName(vault.get('locataires', doc.locId) || {})}`, doc.locId);
+    toast('Rangé dans le dossier du locataire ✓');
+  },
+  async 'recu-ko'(d) {
+    const doc = vault.get('documents', d.id); if (!doc) return;
+    const inp = sheetEl.querySelector(`[data-recu-why="${d.id}"]`), why = String((inp && inp.value) || '').trim().slice(0, 140);
+    if (!why) { if (inp) inp.focus(); return toast('Écrivez le motif du refus : le locataire le lira', { bad: true }); }
+    await vault.mutate((tx) => tx.put('documents', { id: doc.id, kind: 'refus', st: 'ko', why, size: 0 }), 'Document du locataire refusé', `${DOC_TYPES[doc.dtype] || ''} — ${why}`, doc.locId);
+    await vault.deleteFile(doc.id).catch(() => {});
+    toast('Refusé — le locataire voit le motif');
+  },
   async 'open-vir'(d) {
     const l = vault.get('locataires', d.id);
     if (l && l.virSignal) await vault.mutate((tx) => tx.put('locataires', { id: l.id, virSignal: { ...l.virSignal, vu: true } }), 'Virement signalé : vu', fullName(l), l.id);

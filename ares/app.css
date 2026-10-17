@@ -895,3 +895,8 @@ dialog.bien-full::backdrop { background: rgba(0,0,0,.9); }
 .vz-hv { white-space: nowrap; color: var(--text-2); }
 @media print { .vz-stack i, .vz-ht i, .vz-leg i { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
 .nav-links { font-size: 13px; line-height: 1.6; } .nav-links a { white-space: nowrap; font-weight: 600; } /* 🧭 itinéraire : Google Maps · Waze · Plans */
+
+/* 📥 documents envoyés par le locataire, à vérifier */
+.recu-row { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border, #e5e2da); display: grid; gap: 6px; }
+.recu-top, .recu-act { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.recu-act select, .recu-act input { flex: 1 1 200px; min-width: 0; }
