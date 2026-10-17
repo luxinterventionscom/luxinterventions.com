@@ -361,7 +361,7 @@ async function espacePublic(request, env, id, sub, headers) {
     const nIp = parseInt((await env.HITS.get(kIp)) || "0", 10), nId = parseInt((await env.HITS.get(kId)) || "0", 10);
     if (nIp >= 30 || nId >= 80) return aresJson({ error: "Trop d'envois, réessayez plus tard" }, 429, headers);
     const body = await request.arrayBuffer();
-    if (body.byteLength < 100 || body.byteLength > 5 * 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
+    if (body.byteLength < 100 || body.byteLength > 12 * 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
     const name = `${Date.now().toString(36)}-${id.slice(0, 12)}-${crypto.getRandomValues(new Uint32Array(1))[0].toString(36)}`;
     await env.PHOTOS.put(ARES_INBOX + name, body, { httpMetadata: { contentType: "application/octet-stream" } });
     try {

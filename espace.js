@@ -768,6 +768,28 @@ const mapQ = (a) => (/luxemb|lëtzebuerg|deutschland|germany|france|belgi|portug
 const EDL_ROOMS = ['sdb', 'cuisine', 'chambre', 'cave', 'buanderie', 'parking'];
 const edlUrls = new Map();
 let edlPick = {}, edlMsg = '', adSel = '';
+// 📤 documents envoyés par le locataire (chiffrés pour le gestionnaire, vérifiés dans l'app de gestion)
+const UP_TYPES = ['identite', 'cns', 'caution', 'bail', 'assurance', 'revenus', 'autre'];
+let upSel = 'identite', upFile = null, upMsg = null;
+const upKey = () => 'espUps:' + id;
+// mes envois : ceux que le gestionnaire a vus (accepté / refusé / à vérifier) + ceux encore en route
+function upsMine() {
+  const srv = (data && data.ups) || [];
+  let loc = [];
+  try { loc = JSON.parse(localStorage.getItem(upKey()) || '[]'); } catch { /* stockage indisponible */ }
+  const left = loc.filter((x) => !srv.some((y) => y.k === x.k) && x.at > new Date(Date.now() - 30 * 864e5).toISOString());
+  if (left.length !== loc.length) { try { localStorage.setItem(upKey(), JSON.stringify(left)); } catch { /* stockage plein */ } }
+  return [...srv, ...left.map((x) => ({ ...x, st: 'wait' }))].sort((a, b) => String(b.at).localeCompare(String(a.at))).slice(0, 10);
+}
+const b64uOf = (u) => { let s = ''; for (let i = 0; i < u.length; i += 32768) s += String.fromCharCode(...u.subarray(i, i + 32768)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+const UPL = {
+  fr: { both: 'Mes loyers & mon dossier', hint: 'Vos documents enregistrés (touchez 👁 pour voir). Il en manque un ? Envoyez-le ci-dessous : nous le vérifions puis le rangeons dans votre dossier.', h: '📤 Envoyer un document', type: 'Type de document', signed: 'Contrat signé', recto: '(recto)', pick: '📎 Choisir le fichier', send: '📤 Envoyer', none: 'Aucun fichier choisi (photo ou PDF)', big: 'Fichier trop lourd : 8 Mo maximum (une photo passe toujours).', bad: 'Choisissez une photo ou un PDF.', err: 'Envoi impossible, réessayez (connexion ?).', sending: 'Envoi chiffré…', sent: 'Envoyé ✓ — nous le vérifions.', mine: 'Mes envois', wait: '⏳ en vérification', ok: '✅ accepté', ko: '❌ refusé' },
+  it: { both: 'I miei affitti e la mia pratica', hint: 'I tuoi documenti registrati (tocca 👁 per vederli). Ne manca uno? Invialo qui sotto: lo verifichiamo e lo mettiamo nella tua pratica.', h: '📤 Invia un documento', type: 'Tipo di documento', signed: 'Contratto firmato', recto: '(fronte)', pick: '📎 Scegli il file', send: '📤 Invia', none: 'Nessun file scelto (foto o PDF)', big: 'File troppo pesante: 8 MB al massimo (una foto va sempre bene).', bad: 'Scegli una foto o un PDF.', err: 'Invio non riuscito, riprova (connessione?).', sending: 'Invio cifrato…', sent: 'Inviato ✓ — lo stiamo verificando.', mine: 'I miei invii', wait: '⏳ in verifica', ok: '✅ accettato', ko: '❌ rifiutato' },
+  de: { both: 'Meine Mieten & Unterlagen', hint: 'Ihre gespeicherten Unterlagen (👁 zum Ansehen). Fehlt etwas? Senden Sie es unten: wir prüfen es und legen es in Ihre Unterlagen.', h: '📤 Dokument senden', type: 'Dokumentart', signed: 'Unterschriebener Vertrag', recto: '(Vorderseite)', pick: '📎 Datei wählen', send: '📤 Senden', none: 'Keine Datei gewählt (Foto oder PDF)', big: 'Datei zu groß: höchstens 8 MB (ein Foto geht immer).', bad: 'Wählen Sie ein Foto oder ein PDF.', err: 'Senden fehlgeschlagen, bitte erneut versuchen (Verbindung?).', sending: 'Verschlüsselt senden…', sent: 'Gesendet ✓ — wir prüfen es.', mine: 'Meine Sendungen', wait: '⏳ wird geprüft', ok: '✅ angenommen', ko: '❌ abgelehnt' },
+  pt: { both: 'As minhas rendas e o meu processo', hint: 'Os seus documentos registados (toque em 👁 para ver). Falta algum? Envie-o abaixo: verificamos e guardamos no seu processo.', h: '📤 Enviar um documento', type: 'Tipo de documento', signed: 'Contrato assinado', recto: '(frente)', pick: '📎 Escolher o ficheiro', send: '📤 Enviar', none: 'Nenhum ficheiro escolhido (foto ou PDF)', big: 'Ficheiro demasiado pesado: 8 MB no máximo (uma foto passa sempre).', bad: 'Escolha uma foto ou um PDF.', err: 'Envio impossível, tente de novo (ligação?).', sending: 'Envio cifrado…', sent: 'Enviado ✓ — estamos a verificar.', mine: 'Os meus envios', wait: '⏳ em verificação', ok: '✅ aceite', ko: '❌ recusado' },
+  en: { both: 'My rent & my file', hint: 'Your saved documents (tap 👁 to view). Something missing? Send it below: we check it and add it to your file.', h: '📤 Send a document', type: 'Document type', signed: 'Signed contract', recto: '(front)', pick: '📎 Choose the file', send: '📤 Send', none: 'No file chosen (photo or PDF)', big: 'File too large: 8 MB maximum (a photo always works).', bad: 'Choose a photo or a PDF.', err: 'Sending failed, try again (connection?).', sending: 'Encrypted sending…', sent: 'Sent ✓ — we are checking it.', mine: 'My uploads', wait: '⏳ being checked', ok: '✅ accepted', ko: '❌ refused' },
+  es: { both: 'Mis alquileres y mi expediente', hint: 'Sus documentos registrados (toque 👁 para verlos). ¿Falta alguno? Envíelo abajo: lo comprobamos y lo guardamos en su expediente.', h: '📤 Enviar un documento', type: 'Tipo de documento', signed: 'Contrato firmado', recto: '(anverso)', pick: '📎 Elegir el archivo', send: '📤 Enviar', none: 'Ningún archivo elegido (foto o PDF)', big: 'Archivo demasiado pesado: 8 MB como máximo (una foto siempre pasa).', bad: 'Elija una foto o un PDF.', err: 'No se pudo enviar, inténtelo de nuevo (¿conexión?).', sending: 'Envío cifrado…', sent: 'Enviado ✓ — lo estamos comprobando.', mine: 'Mis envíos', wait: '⏳ en revisión', ok: '✅ aceptado', ko: '❌ rechazado' },
+};
 const edlKey = () => 'espEdlOut:' + id;
 function edlSent() {
   const o = {};
@@ -901,7 +923,7 @@ function render() {
       <p style="margin:4px 0 0">${p.fin ? `${esc(t.dk.until)} <b>${esc(fmt(p.fin))}</b> — <b class="${n <= 7 ? 'warn' : ''}">⏳ ${esc(t.dk.left(n))}</b>` : `<span class="meta">${esc(t.dk.noEnd)}</span>`}</p>
       ${p.info ? `<p class="meta" style="margin:6px 0 0">${esc(p.info)}</p>` : ''}</div>`;
   })() : '';
-  let payAt = -1, payH = '', paySum = '';
+  let payAt = -1, payH = '', paySum = '', host = null; // host : carte où se range « Mon dossier » (loyers, sinon contrat, sinon quittances)
   if (s.pay && (d.years || []).length) {
     const cur = d.years[0];
     const rest = d.years.reduce((n, y) => n + y.rest, 0);
@@ -919,7 +941,8 @@ function render() {
       ${d.iban || d.payx ? payHtml() : ''}`;
     paySum = rest > 0.009 ? `<span class="bad">${esc(money(rest))}</span> ${esc(t.restNow)}` : `<span class="ok">${esc(t.allPaid)}</span>`;
     if (door) paySum += ' · 🔑';
-    out.push(foldCard(payH + door + '</div>', 'pay', paySum));
+    host = { at: out.length, body: payH + door + '</div>', key: 'pay', sum: paySum };
+    out.push(foldCard(host.body, 'pay', paySum));
   }
   // Quittances : une section de la carte « Mon contrat » (carte seule s'il n'y a pas de contrat)
   let quitIn = '', quitSum = '';
@@ -934,8 +957,8 @@ function render() {
         <button class="btn block" style="margin-top:10px" data-recap="1">${esc(t.rc.btn)}</button>`;
       quitSum = t.rc.paidN(rows.length) + ' · ' + money(tot);
       if (!(s.contrat && d.contrat)) {
-        if (payAt >= 0) out[payAt] = foldCard(`${payH}${door}<div class="ctr-quit"><h3>🧾 ${esc(t.quit)}</h3>${quitIn}</div></div>`, 'pay', paySum);
-        else out.push(foldCard(`<div class="card"><h2>🧾 ${esc(t.quit)}</h2>${quitIn}</div>`, 'quit', esc(quitSum)));
+        if (payAt >= 0) out[payAt] = foldCard(host.body = `${payH}${door}<div class="ctr-quit"><h3>🧾 ${esc(t.quit)}</h3>${quitIn}</div></div>`, 'pay', paySum);
+        else { host = { at: out.length, body: `<div class="card"><h2>🧾 ${esc(t.quit)}</h2>${quitIn}</div>`, key: 'quit', sum: esc(quitSum) }; out.push(foldCard(host.body, 'quit', host.sum)); }
       }
     }
   }
@@ -946,12 +969,27 @@ function render() {
     const ctr = `${[[t.entry, fmt(c.debut)], [t.end, c.fin ? fmt(c.fin) : '—'], [t.rent, money(d.loyer)], [ax.house, d.maison ? ax.maison[d.maison] || '' : ''], [ax.surf, d.surface ? d.surface + ' m²' : ''], [ax.inc, axList(d, ax).join(' · ')], [t.revision, c.revision ? fmt(c.revision) : ''], [t.caution, c.caution ? [money(c.caution), c.cautionDate ? t.recv + ' ' + fmt(c.cautionDate) : '', t.modes[c.cautionMode] || ''].filter(Boolean).join(' · ') + (proofOf('caution') ? ' ✓' : '') : '']].filter(([, v]) => v).map(([k, v]) => `<div class="row"><div class="grow meta">${esc(k)}</div><b>${esc(v)}</b></div>`).join('')}${(d.docs || []).filter((x) => x.dtype === 'bail').map((x) => `<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px"><button class="btn" style="flex:1 1 200px" data-docprint="${esc(x.id)}">${esc(CPR[lang] || CPR.fr)}</button><button class="btn sec" style="flex:1 1 200px" data-docdl="${esc(x.id)}">${esc(t.men.dl)}${x.date ? ' · ' + esc(fmt(x.date)) : ''}</button></div>`).join('')}`;
     const qs = quitIn ? `<div class="ctr-quit"><h3>🧾 ${esc(t.quit)}</h3>${quitIn}</div>` : '';
     const csum = t.rent + ' ' + money(d.loyer) + (c.fin ? ' · ' + t.end + ' ' + fmt(c.fin) : '') + (quitSum ? ' · 🧾 ' + quitSum : '');
-    if (payAt >= 0) out[payAt] = foldCard(`${payH}${door}<div class="ctr-quit"><h3>📄 ${esc(t.contrat)}</h3>${ctr}</div>${qs}</div>`, 'pay', paySum);
-    else out.push(foldCard(`<div class="card"><h2>📄 ${esc(t.contrat)}</h2>${ctr}${qs}</div>`, 'contrat', esc(csum)));
+    if (payAt >= 0) out[payAt] = foldCard(host.body = `${payH}${door}<div class="ctr-quit"><h3>📄 ${esc(t.contrat)}</h3>${ctr}</div>${qs}</div>`, 'pay', paySum);
+    else { host = { at: out.length, body: `<div class="card"><h2>📄 ${esc(t.contrat)}</h2>${ctr}${qs}</div>`, key: 'contrat', sum: esc(csum) }; out.push(foldCard(host.body, 'contrat', host.sum)); }
   }
   { const mid = slot('milieu'); if (mid) out.push(adBox(mid, t, d)); }
-  if (s.docs && (d.docs || []).length) out.push(foldCard(`<div class="card"><h2>📁 ${esc(t.docs)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.dossierHint)}</p><div class="chips">${['bail', 'identite', 'cns', 'caution'].map((k) => { const x = proofOf(k); return x ? `<button class="chip ok" data-doc="${esc(x.id)}">✓ ${esc(t.dt[k])} 👁</button>` : `<button class="chip no"${s.signal && d.signalKey ? ' data-err="1"' : ''}>✗ ${esc(t.dt[k])}</button>`; }).join('')}</div>${d.docs.map((x) => `<div class="row"><div class="grow"><b>${esc(t.dt[x.dtype] || x.label)}</b><div class="meta">${esc(docSub(x))}</div></div><button class="btn sm sec" data-doc="${esc(x.id)}" aria-label="👁">👁</button></div>`).join('')}
-    ${s.signal && d.signalKey ? `<button class="btn sec block" style="margin-top:10px" data-err="1">${esc(t.errBtn)}</button>` : ''}</div>`, 'docs', esc(['bail', 'identite', 'cns', 'caution'].map((k) => (proofOf(k) ? '✓ ' : '✗ ') + t.dt[k].split(' (')[0]).join(' · '))));
+  // 📁 Mon dossier : dans la carte des loyers (mêmes informations du locataire) ; envoi des documents qui manquent
+  if (s.docs && ((d.docs || []).length || (s.signal && d.signalKey))) {
+    const u = UPL[lang] || UPL.fr, canUp = s.signal && d.signalKey;
+    const dsum = ['bail', 'identite', 'cns', 'caution'].map((k) => (proofOf(k) ? '✓ ' : '✗ ') + t.dt[k].split(' (')[0]).join(' · ');
+    const mine = upsMine();
+    const dos = `<div class="ctr-quit" id="dosSec"><h3>📁 ${esc(t.docs)}</h3><p class="meta" style="margin:0 0 8px">${esc(canUp ? u.hint : t.dossierHint)}</p><div class="chips">${['bail', 'identite', 'cns', 'caution'].map((k) => { const x = proofOf(k); return x ? `<button class="chip ok" data-doc="${esc(x.id)}">✓ ${esc(t.dt[k])} 👁</button>` : `<button class="chip no"${canUp ? ` data-uptype="${k}"` : ''}>✗ ${esc(t.dt[k])}</button>`; }).join('')}</div>${(d.docs || []).map((x) => `<div class="row"><div class="grow"><b>${esc(t.dt[x.dtype] || x.label)}</b><div class="meta">${esc(docSub(x))}</div></div><button class="btn sm sec" data-doc="${esc(x.id)}" aria-label="👁">👁</button></div>`).join('')}
+      ${canUp ? `<div class="up-box"><b>${esc(u.h)}</b>
+        <select id="upType" aria-label="${esc(u.type)}">${UP_TYPES.map((k) => `<option value="${k}"${upSel === k ? ' selected' : ''}>${esc(k === 'bail' ? u.signed : t.dt[k] + (k === 'identite' ? ' ' + u.recto : ''))}</option>`).join('')}</select>
+        <div class="up-row"><label class="btn sec up-pick">${esc(u.pick)}<input type="file" id="upFile" accept="application/pdf,image/*" hidden></label><button class="btn" data-upsend="1"${upFile ? '' : ' disabled'}>${esc(u.send)}</button></div>
+        <p class="meta" id="upName" style="margin:6px 0 0">${esc(upFile ? upFile.name : u.none)}</p>${upMsg ? `<p class="${upMsg[0]}" style="margin:6px 0 0"><b>${esc(upMsg[1])}</b></p>` : ''}
+        ${mine.length ? `<h4 style="margin:12px 0 4px">${esc(u.mine)}</h4>${mine.map((x) => `<div class="row"><div class="grow"><b>${esc(t.dt[x.dtype] || x.dtype)}</b><div class="meta">${esc(fmt(String(x.at || '').slice(0, 10)))}${x.st === 'ko' && x.why ? ' — ' + esc(x.why) : ''}</div></div><span class="up-st ${x.st}">${esc(u[x.st] || u.wait)}</span></div>`).join('')}` : ''}</div>` : ''}
+      ${canUp ? `<button class="btn sec block" style="margin-top:10px" data-err="1">${esc(t.errBtn)}</button>` : ''}</div>`;
+    if (host) {
+      if (host.key === 'pay') host.body = host.body.replace(`💶 ${esc(t.pay)}</h2>`, `💶 ${esc(u.both)}</h2>`);
+      out[host.at] = foldCard(host.body.replace(/<\/div>$/, dos + '</div>'), host.key, host.sum + ' · 📁 ' + esc(dsum));
+    } else out.push(foldCard(`<div class="card">${dos.replace('<div class="ctr-quit" id="dosSec"><h3>', '<div id="dosSec"><h2 style="margin-top:0">').replace('</h3>', '</h2>')}</div>`, 'docs', esc(dsum)));
+  }
   if (d.chat) {
     const can = !d.regles || rulesDate(d);
     const solo = d.chat.solo, ax = AX[lang] || AX.fr;
@@ -1229,6 +1267,26 @@ app.addEventListener('click', async (e) => {
     if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: mb.dataset.w, d: today, v }) }); } catch { /* hors ligne */ } }
     return;
   }
+  const ut = e.target.closest('[data-uptype]');
+  if (ut) { upSel = ut.dataset.uptype; render(); const f = document.getElementById('upType'); if (f) f.closest('.up-box').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+  const us = e.target.closest('[data-upsend]');
+  if (us && upFile && data.signalKey) {
+    const u = UPL[lang] || UPL.fr, f = upFile, img = /^image\//.test(f.type), pdf = f.type === 'application/pdf' || /\.pdf$/i.test(f.name);
+    if (!img && !pdf) { upMsg = ['bad', u.bad]; render(); return; }
+    if (pdf && f.size > 8e6) { upMsg = ['bad', u.big]; render(); return; }
+    us.disabled = true; us.textContent = u.sending;
+    try {
+      const b = img ? await compress(f) : b64uOf(new Uint8Array(await f.arrayBuffer()));
+      const k = crypto.getRandomValues(new Uint32Array(2)).join('-'), at = new Date().toISOString();
+      const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: at, type: 'doc-up', k, dtype: upSel, name: String(f.name || '').slice(0, 80), mime: img ? 'image/jpeg' : 'application/pdf', b }) });
+      if (!r.ok) throw new Error(r.status === 413 ? 'big' : String(r.status));
+      let loc = []; try { loc = JSON.parse(localStorage.getItem(upKey()) || '[]'); } catch { /* stockage indisponible */ }
+      try { localStorage.setItem(upKey(), JSON.stringify([...loc, { k, dtype: upSel, at }].slice(-20))); } catch { /* stockage plein */ }
+      upFile = null; upMsg = ['ok', u.sent];
+    } catch (er) { upMsg = ['bad', er.message === 'big' ? u.big : u.err]; }
+    render();
+    return;
+  }
   // 🖨️ contrat signé : ouvert dans le lecteur PDF (ordinateur : fenêtre d'impression ; iPhone : Partager → Imprimer)
   const dp = e.target.closest('[data-docprint]');
   if (dp) {
@@ -1385,6 +1443,8 @@ app.addEventListener('toggle', (e) => {
   if (k === 'chat' && e.target.open) { chatSeen(); const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight; }
 }, true);
 app.addEventListener('change', async (e) => {
+  if (e.target.id === 'upType') { upSel = e.target.value; return; }
+  if (e.target.id === 'upFile') { upFile = e.target.files[0] || null; upMsg = null; render(); return; }
   if (e.target.dataset && e.target.dataset.pyearSel) { payYear = +e.target.value; return render(); }
   if (e.target.dataset && e.target.dataset.photoPick && e.target.files[0]) {
     try { phMine = await photoSquare(e.target.files[0]); render(); await sendOwner({ type: 'photo', d: phMine }); } catch { /* hors ligne ou image illisible */ }

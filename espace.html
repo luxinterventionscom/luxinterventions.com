@@ -170,6 +170,14 @@
   .notice { font-size: 13px; color: var(--muted); }
   details summary { cursor: pointer; font-weight: 700; }
   .err { text-align: center; color: var(--muted); padding: 40px 10px; }
+  /* 📤 envoi d'un document par le locataire */
+  .up-box { margin-top: 12px; padding: 12px; border: 1.5px dashed var(--line, #d6d3cc); border-radius: 12px; display: grid; gap: 8px; }
+  .up-box select { width: 100%; }
+  .up-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .up-row .btn { flex: 1 1 150px; }
+  .up-pick { cursor: pointer; text-align: center; }
+  .up-st { font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .up-st.ok { color: #15803d; } .up-st.ko { color: #b91c1c; } .up-st.wait { color: #a16207; }
   #quit { display: none; }
   @media print {
     body.printing main { display: none; }
