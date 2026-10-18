@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.150.0';
+const VERSION = '2.151.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -105,14 +105,7 @@ const photoField = (rec, fallback) => html`<div class="full photo-pick"><span cl
   <label class="btn sm" style="cursor:pointer">📷 ${photoOk(rec.photo) ? 'Changer la photo' : 'Ajouter une photo'}<input type="file" accept="image/*" data-input="photo-pick" hidden></label>
   ${photoOk(rec.photo) ? html`<button type="button" class="btn sm ghost" data-action="photo-del">Retirer</button>` : ''}
   <span class="tiny muted">Facultatif — la personne peut aussi la mettre elle-même dans son app (⚙️).</span></div>`;
-// photo choisie → carré 256 px (centre de l'image), JPEG léger
-async function photoSquare(file, size = 256) {
-  const bmp = await createImageBitmap(file);
-  const m = Math.min(bmp.width, bmp.height), c = document.createElement('canvas'); c.width = c.height = size;
-  c.getContext('2d').drawImage(bmp, (bmp.width - m) / 2, (bmp.height - m) / 2, m, m, 0, 0, size, size);
-  return c.toDataURL('image/jpeg', 0.82);
-}
-const initials = (l) => (l && emojiOk(l.avatar) ? l.avatar : (((l.prenom || '')[0] || '') + ((l.nom || '')[0] || '')).toUpperCase() || '?');
+const initials = (l) => (l && emojiOk(l.avatar) ? html`<span class="av-emo">${l.avatar}</span>` : (((l.prenom || '')[0] || '') + ((l.nom || '')[0] || '')).toUpperCase() || '?');
 const immName = (id) => (vault.get('immeubles', id) || {}).adresse || 'Sans immeuble';
 // Type de structure (immeuble) et type d'unité louée (logement / local)
 const IMM_TYPES = {
@@ -3477,7 +3470,7 @@ const VIEWS = {
         </div>`)}</div>` : html`<div class="alert info" style="margin-bottom:14px">${icon('trophy')}<div>Pas encore de points en ${y}. Le classement se remplit tout seul : travail fini dans l’app de l’équipe, photos après, avis des locataires.</div></div>`}
       ${rows.length ? html`<div class="section-label">Classement ${y}</div>
         <div class="list">${rows.map(([id, v], i) => html`<button class="row" data-action="open-interv" data-id="${id}">
-          <span class="avatar">${v.pts > 0 && i < 3 ? medal[i] : i + 1}</span>
+          <span class="avatar">${v.pts > 0 && i < 3 ? html`<span class="av-emo">${medal[i]}</span>` : i + 1}</span>
           <span class="grow"><span class="title" style="display:block">${intervFull(w(id))}</span><span class="meta">${detail(v) || '—'}</span></span>
           <b>${v.pts} pts</b></button>`)}</div>` : ''}
       <p class="tiny muted" style="margin-top:12px">✅ travail fini = 1 point · 📷 photos après = 1 · 🔴 urgence faite le jour prévu = 2 · avis des locataires : ⭐ Excellent 3, 🙂 Bien 2, 😞 Insuffisant −2 ; « à l’heure », « aimable », « bien nettoyé » +1 ; « en retard », « désagréable », « mal nettoyé » −1 · ⚠️ pas fini −1. Chacun voit sa place dans son app. Le classement repart de zéro chaque 1er janvier.</p>`;
@@ -3508,7 +3501,7 @@ const VIEWS = {
       })}</div>` : html`<div class="alert info" style="margin-bottom:14px">${icon('trophy')}<div>Pas encore de tours faits en ${y}. Le classement se remplit tout seul quand les locataires touchent « ✅ Fait » dans leur app (tour des poubelles, dans chaque immeuble → 💬 Messages).</div></div>`}
       ${rows.length ? html`<div class="section-label">Classement ${y}</div>
         <div class="list">${rows.map(([id, v], i) => html`<button class="row" data-action="open-loc" data-id="${id}">
-          <span class="avatar">${v.done > 0 && i < 3 ? medal[i] : i + 1}</span>
+          <span class="avatar">${v.done > 0 && i < 3 ? html`<span class="av-emo">${medal[i]}</span>` : i + 1}</span>
           <span class="grow"><span class="title" style="display:block">${fullName(who(id))}</span><span class="meta">${place(id, v.imId)}${isGone(who(id)) ? ' · parti' : ''}</span></span>
           <span style="text-align:right"><b>${v.done} ✅</b>${v.forgot ? html`<span class="tiny muted" style="display:block">${v.forgot} oubli${v.forgot > 1 ? 's' : ''}</span>` : ''}</span></button>`)}</div>` : ''}
       <p class="tiny muted" style="margin-top:12px">1 tour fait = 1 point (« ✅ Fait » ou « 🙋 Je l’ai fait à sa place »). À égalité, celui qui a le moins d’oublis passe devant. Le classement repart de zéro chaque 1er janvier ; l’année précédente reste consultable.</p>`;
@@ -8755,8 +8748,8 @@ document.addEventListener('change', (e) => {
   const k = e.target.dataset.input;
   // fiche d'une personne : horaire seulement pour le personnel régulier ; engagement pour occasionnels et sociétés
   if (k === 'photo-pick' && e.target.files[0]) {
-    const box = e.target.closest('.photo-pick');
-    photoSquare(e.target.files[0]).then((u) => { box.querySelector('[name=photo]').value = u; setHtml(box.querySelector('.pp-circle'), html`<img src="${u}" alt="">`); sheetDirty = true; }).catch(() => toast('Photo illisible', { bad: true }));
+    const box = e.target.closest('.photo-pick'), f = e.target.files[0]; e.target.value = '';
+    import('./photo-crop.js').then((m) => m.cropPhoto(f, getLang())).then((u) => { if (!u) return; box.querySelector('[name=photo]').value = u; setHtml(box.querySelector('.pp-circle'), html`<img src="${u}" alt="">`); sheetDirty = true; }).catch(() => toast('Photo illisible', { bad: true }));
   }
   if (k === 'interv-kind') {
     const f = e.target.form, g = f.genre.value, c = f.cat.value;
