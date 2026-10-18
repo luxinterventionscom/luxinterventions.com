@@ -216,12 +216,6 @@ const PF = ['prenom', 'nom', 'tel', 'mail', 'adresse', 'ville', 'ccss'];
 // n° CCSS (Luxembourg) : 13 chiffres ; l'ouvrier le complète seulement s'il manque
 const CCSS = { fr: ['N° CCSS (matricule de sécurité sociale)', '13 chiffres', 'Le n° CCSS doit avoir 13 chiffres.'], it: ['N° CCSS (matricola di sicurezza sociale)', '13 cifre', 'Il n° CCSS deve avere 13 cifre.'], de: ['CCSS-Nr. (Sozialversicherungsnummer)', '13 Ziffern', 'Die CCSS-Nr. hat 13 Ziffern.'], en: ['CCSS no. (social security number)', '13 digits', 'The CCSS number must have 13 digits.'], pt: ['N.º CCSS (número de segurança social)', '13 algarismos', 'O n.º CCSS deve ter 13 algarismos.'], es: ['N.º CCSS (número de seguridad social)', '13 cifras', 'El n.º CCSS debe tener 13 cifras.'] };
 let phMine = null;
-// photo → carré 256 px (centre), JPEG léger
-async function photoSquare(file) {
-  const bmp = await createImageBitmap(file), m = Math.min(bmp.width, bmp.height), c = document.createElement('canvas');
-  c.width = c.height = 256; c.getContext('2d').drawImage(bmp, (bmp.width - m) / 2, (bmp.height - m) / 2, m, m, 0, 0, 256, 256);
-  return c.toDataURL('image/jpeg', 0.82);
-}
 const ICONS = { nettoyage: '🧹', reparation: '🔧', gros: '🚚', autre: '📌', entretien: '🔧' };
 let data = null, lang = 'fr', loadErr = '', form = null, flash = '';
 nbienInit({ api: API, app: 'eq', lang: () => lang });
@@ -793,7 +787,8 @@ app.addEventListener('submit', async (e) => {
 app.addEventListener('input', (e) => { if (e.target.form && e.target.form.id === 'pbForm' && e.target.name === 'note') pbNote = e.target.value; });
 app.addEventListener('change', async (e) => {
   if (e.target.dataset && e.target.dataset.photoPick && e.target.files[0]) {
-    try { phMine = await photoSquare(e.target.files[0]); render(); await queue({ k: 'photo', d: phMine, at: new Date().toISOString() }); flash = (SETT[lang] || SETT.fr).ok; render(); } catch { alert('⚠'); }
+    const f = e.target.files[0]; e.target.value = '';
+    try { const u = await (await import('/ares/photo-crop.js')).cropPhoto(f, lang); if (!u) return; phMine = u; render(); await queue({ k: 'photo', d: phMine, at: new Date().toISOString() }); flash = (SETT[lang] || SETT.fr).ok; render(); } catch { alert('⚠'); }
     return;
   }
   if (e.target.dataset && e.target.dataset.pbPick) {

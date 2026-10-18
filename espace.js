@@ -320,11 +320,6 @@ const SETT = {
   es: { t: 'Mi perfil', ph: 'Mi foto', pick: '📷 Elegir una foto', del: 'Quitar', hint: 'Aparece a tu administrador, junto a tu nombre.', ok: 'Foto enviada ✓' },
 };
 let icOpen = false, icMine = '', phMine = null;
-async function photoSquare(file) {
-  const bmp = await createImageBitmap(file), m = Math.min(bmp.width, bmp.height), c = document.createElement('canvas');
-  c.width = c.height = 256; c.getContext('2d').drawImage(bmp, (bmp.width - m) / 2, (bmp.height - m) / 2, m, m, 0, 0, 256, 256);
-  return c.toDataURL('image/jpeg', 0.82);
-}
 async function sendOwner(o) { if (data && data.signalKey) await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) }); }
 const T = () => L[lang];
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -1457,7 +1452,8 @@ app.addEventListener('change', async (e) => {
   if (e.target.id === 'upFile') { upFile = e.target.files[0] || null; upMsg = null; render(); return; }
   if (e.target.dataset && e.target.dataset.pyearSel) { payYear = +e.target.value; return render(); }
   if (e.target.dataset && e.target.dataset.photoPick && e.target.files[0]) {
-    try { phMine = await photoSquare(e.target.files[0]); render(); await sendOwner({ type: 'photo', d: phMine }); } catch { /* hors ligne ou image illisible */ }
+    const f = e.target.files[0]; e.target.value = '';
+    try { const u = await (await import('/ares/photo-crop.js')).cropPhoto(f, lang); if (!u) return; phMine = u; render(); await sendOwner({ type: 'photo', d: phMine }); } catch { /* hors ligne ou image illisible */ }
     return;
   }
   if (e.target.dataset && e.target.dataset.wxCity) {
