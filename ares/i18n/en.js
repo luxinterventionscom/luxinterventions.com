@@ -13730,7 +13730,7 @@ export default [
 ],
 [
 "RCS de la gérance obligatoire",
-"Agency RCS is required"
+"Property manager’s RCS required"
 ],
 [
 "RCS de l’agence obligatoire",
@@ -14555,5 +14555,93 @@ export default [
 [
 "Filtres : {0}",
 "Filters: {0}"
+],
+[
+"Avec TVA",
+"With VAT"
+],
+[
+"Mention sur la facture (sans TVA)",
+"Note on the invoice (without VAT)"
+],
+[
+"ex. TVA non applicable — formule donnée par votre comptable",
+"e.g. VAT not applicable — wording given by your accountant"
+],
+[
+"Pour vos factures à cette gérance. Travaux sur un immeuble au Luxembourg : en principe avec TVA luxembourgeoise — en cas de doute, demandez à votre comptable.",
+"For your invoices to this property manager. Work on a building in Luxembourg: in principle with Luxembourg VAT — if in doubt, ask your accountant."
+],
+[
+"Pas encore rempli par la gérance",
+"Not yet filled in by the property manager"
+],
+[
+"(dans son portail → Ma société)",
+"(in its portal → My company)"
+],
+[
+"(reçoit le lien d’invitation)",
+"(receives the invitation link)"
+],
+[
+"Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).",
+"Address, VAT no., bank and logo: the property manager fills them in itself in its portal (My company)."
+],
+[
+"Un lien d’invitation est créé pour cet email (14 jours). La première personne qui l’ouvre devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis remplit les données de sa société (adresse, TVA, banque, logo) et ajoute ses collègues.",
+"An invitation link is created for this email (14 days). The first person who opens it becomes the manager: they enter their first and last name, choose a password, then fill in their company details (address, VAT, bank, logo) and add their colleagues."
+],
+[
+"Créer + lien d’invitation",
+"Create + invitation link"
+],
+[
+"La première personne qui ouvre le lien devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis ajoute ses collaborateurs.",
+"The first person who opens the link becomes the manager: they enter their first and last name, choose a password, then add their colleagues."
+],
+[
+"Créer le lien du responsable",
+"Create the manager’s link"
+],
+[
+"). Adresse, TVA et banque de la gérance : remplies par elle dans son portail.",
+"). Address, VAT and bank of the property manager: filled in by them in their portal."
+],
+[
+"Ici vous créez les gérances (nom, email, téléphone, RCS) et leur envoyez le lien d’invitation ; elles remplissent elles-mêmes leurs données et leurs résidences. Vous recevez leurs demandes et leur envoyez vos factures.",
+"Here you create the property managers (name, email, phone, RCS) and send them the invitation link; they fill in their own details and residences. You receive their requests and send them your invoices."
+],
+[
+"✅ Factures avec TVA",
+"✅ Invoices with VAT"
+],
+[
+"✅ Factures sans TVA",
+"✅ Invoices without VAT"
+],
+[
+"TVA de la gérance",
+"Property manager VAT"
+],
+[
+"avec TVA",
+"with VAT"
+],
+[
+"sans TVA",
+"without VAT"
+],
+[
+"({0}) : la personne ouvre le lien et choisit son mot de passe.",
+"({0}): the person opens the link and chooses a password."
+],
+[
+"la personne ouvre le lien, écrit son prénom et son nom et choisit son mot de passe.",
+"the person opens the link, enters their first and last name and chooses a password."
+],
+[
+"Par défaut : le choix fait pour la gérance (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.",
+"Default: the choice made for the property manager (Gérances → the property manager → 🧾 Billing). Work on a building located in Luxembourg: Luxembourg VAT applies in principle, even for a foreign client — to be confirmed with your accountant."
 ]
 ];

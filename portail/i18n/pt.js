@@ -3779,5 +3779,49 @@ export default [
 [
 "Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LuxInterventions. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).",
 "Os seus direitos: acesso, retificação, apagamento, limitação e oposição. A gestora corrige os seus dados diretamente no portal; para qualquer outro pedido, escreva à LuxInterventions. Pode também apresentar queixa à CNPD (Commission nationale pour la protection des données, Luxemburgo)."
+],
+[
+"Inviter le responsable",
+"Convidar o responsável"
+],
+[
+"La première personne qui ouvre le lien devient responsable : elle écrit son prénom et son nom, choisit son mot de passe et ajoute ses collègues. Valable 14 jours.",
+"A primeira pessoa que abrir o link torna-se responsável: escreve o nome e apelido, escolhe a palavra-passe e adiciona os colegas. Válido 14 dias."
+],
+[
+"Les collaborateurs sont ajoutés par le responsable dans son portail.",
+"Os colaboradores são adicionados pelo responsável no seu portal."
+],
+[
+"Adresse, TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).",
+"Morada, IVA, banco e logótipo: a gestora preenche-os ela própria no seu portal (A minha empresa)."
+],
+[
+"⭐ Prénom et nom (responsable de la gérance)",
+"⭐ Nome e apelido (responsável da gestora)"
+],
+[
+"🎉 Bienvenue !",
+"🎉 Bem-vindo!"
+],
+[
+"RCS",
+"RCS"
+],
+[
+"Écrivez votre prénom et votre nom",
+"Escreva o seu nome e apelido"
+],
+[
+"Les résidences sont gérées par la gérance dans son portail",
+"As residências são geridas pela gestora no seu portal"
+],
+[
+"Cette gérance a déjà un responsable",
+"Esta gestora já tem um responsável"
+],
+[
+"Les collaborateurs sont ajoutés par la gérance dans son portail",
+"Os colaboradores são adicionados pela gestora no seu portal"
 ]
 ];

@@ -3711,5 +3711,49 @@ export default [
 [
 "Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LuxInterventions. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).",
 "Your rights: access, rectification, erasure, restriction and objection. The property manager corrects its data directly in the portal; for any other request, write to LuxInterventions. You can also contact the CNPD (Commission nationale pour la protection des données, Luxembourg)."
+],
+[
+"Inviter le responsable",
+"Invite the manager"
+],
+[
+"La première personne qui ouvre le lien devient responsable : elle écrit son prénom et son nom, choisit son mot de passe et ajoute ses collègues. Valable 14 jours.",
+"The first person who opens the link becomes the manager: they enter their first and last name, choose a password and add their colleagues. Valid 14 days."
+],
+[
+"Les collaborateurs sont ajoutés par le responsable dans son portail.",
+"Colleagues are added by the manager in their portal."
+],
+[
+"Adresse, TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).",
+"Address, VAT, bank and logo: the property manager fills them in itself in its portal (My company)."
+],
+[
+"⭐ Prénom et nom (responsable de la gérance)",
+"⭐ First and last name (property manager’s lead)"
+],
+[
+"🎉 Bienvenue !",
+"🎉 Welcome!"
+],
+[
+"RCS",
+"RCS"
+],
+[
+"Écrivez votre prénom et votre nom",
+"Enter your first and last name"
+],
+[
+"Les résidences sont gérées par la gérance dans son portail",
+"Residences are managed by the property manager in its portal"
+],
+[
+"Cette gérance a déjà un responsable",
+"This property manager already has a lead"
+],
+[
+"Les collaborateurs sont ajoutés par la gérance dans son portail",
+"Colleagues are added by the property manager in its portal"
 ]
 ];

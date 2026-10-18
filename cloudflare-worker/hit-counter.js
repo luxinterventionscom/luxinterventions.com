@@ -1333,14 +1333,17 @@ async function handlePortail(request, env, url, headers, ctx) {
       await guard();
       const u = await env.DB.prepare("SELECT u.*, o.name AS org_name FROM users u LEFT JOIN orgs o ON o.id = u.org_id WHERE invite_hash = ?").bind(await sha256Hex(inviteMatch[1])).first();
       if (!u || u.invite_expires < now) { await ptlRecordFailure(env, ip); fail(404, "Lien d'invitation invalide ou expiré. Demandez un nouveau lien."); }
-      if (method === "GET") { const po = await env.PHOTOS.get(ARES_PUBS); const pj = po ? await po.json() : {}; return json({ name: u.name, email: u.email, org: u.org_name || "LuxInterventions", iter: PTL_ITER, offers: pj.offers !== false }); }
+      if (method === "GET") { const po = await env.PHOTOS.get(ARES_PUBS); const pj = po ? await po.json() : {}; return json({ name: u.name, email: u.email, org: u.org_name || "LuxInterventions", iter: PTL_ITER, offers: pj.offers !== false, needName: !clean(u.name) }); }
       if (method === "POST") {
         const b = await body();
         if (!/^[0-9a-f]{64}$/.test(b.authHash || "") || !b.salt) fail(400, "Données invalides");
+        // invitation créée par LuxInterventions avec l'email seulement : la personne écrit son prénom et son nom
+        const nm = clean(u.name) ? u.name : clean(b.name, 120);
+        if (!nm) fail(400, "Écrivez votre prénom et votre nom");
         const token = randHex(32);
         await env.DB.batch([
-          env.DB.prepare("UPDATE users SET salt = ?, iter = ?, auth_hash = ?, invite_hash = NULL, invite_expires = NULL, active = 1, last_login = ? WHERE id = ?")
-            .bind(clean(b.salt, 64), PTL_ITER, b.authHash, now, u.id),
+          env.DB.prepare("UPDATE users SET salt = ?, iter = ?, auth_hash = ?, invite_hash = NULL, invite_expires = NULL, active = 1, last_login = ?, name = ? WHERE id = ?")
+            .bind(clean(b.salt, 64), PTL_ITER, b.authHash, now, nm, u.id),
           env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(u.id),
           env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires, created_at) VALUES (?, ?, ?, ?)").bind(await sha256Hex(token), u.id, now + PTL_SESSION_MS, now),
         ]);
@@ -1529,12 +1532,13 @@ async function handlePortail(request, env, url, headers, ctx) {
       const b = await body();
       if (!clean(b.name)) fail(400, "Nom obligatoire");
       const id = ptlId();
-      await env.DB.prepare("INSERT INTO orgs (id, name, phone, email, created_at, address, rcs, tva, banque, bic, iban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .bind(id, clean(b.name, 120), clean(b.phone, 40), clean(b.email, 200), now, clean(b.address, 300), clean(b.rcs, 30), clean(b.tva, 30), clean(b.banque, 80), clean(b.bic, 14), clean(b.iban, 42)).run();
+      // LuxInterventions crée la gérance avec le nom, l'email, le téléphone et le RCS : adresse, TVA, banque et logo sont remplis par la gérance
+      await env.DB.prepare("INSERT INTO orgs (id, name, phone, email, created_at, rcs) VALUES (?, ?, ?, ?, ?, ?)")
+        .bind(id, clean(b.name, 120), clean(b.phone, 40), clean(b.email, 200), now, clean(b.rcs, 30)).run();
       return json({ id });
     }
     const orgMatch = path.match(/^orgs\/([a-z0-9]+)$/);
-    // données de la société : LuxInterventions, ou le responsable de la gérance pour la sienne (le nom reste réservé à LuxInterventions)
+    // données de la société : le responsable de la gérance pour la sienne ; LuxInterventions corrige seulement nom, email, téléphone et RCS
     if (orgMatch && method === "PATCH") {
       const own = me.role === "gerance_admin" && me.org_id === orgMatch[1];
       if (!isAdmin(me) && !own) fail(403, "Réservé à LuxInterventions ou au responsable de la gérance");
@@ -1550,7 +1554,7 @@ async function handlePortail(request, env, url, headers, ctx) {
         if (Object.keys(b).length === 1) return json({ ok: true });
       }
       await env.DB.prepare("UPDATE orgs SET name = COALESCE(?, name), phone = COALESCE(?, phone), email = COALESCE(?, email), address = COALESCE(?, address), rcs = COALESCE(?, rcs), tva = COALESCE(?, tva), banque = COALESCE(?, banque), bic = COALESCE(?, bic), iban = COALESCE(?, iban) WHERE id = ?")
-        .bind(isAdmin(me) ? v("name", 120) : null, v("phone", 40), v("email", 200), v("address", 300), v("rcs", 30), v("tva", 30), v("banque", 80), v("bic", 14), v("iban", 42), orgMatch[1]).run();
+        .bind(isAdmin(me) ? v("name", 120) : null, v("phone", 40), v("email", 200), own ? v("address", 300) : null, v("rcs", 30), own ? v("tva", 30) : null, own ? v("banque", 80) : null, own ? v("bic", 14) : null, own ? v("iban", 42) : null, orgMatch[1]).run();
       if (own) ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], { title: `🏢 ${me.org_name || "Gérance"} · données mises à jour`, body: "Adresse, RCS, TVA ou banque complétés dans le portail", url: "/portail.html", tag: "org-" + orgMatch[1] }, false));
       return json({ ok: true });
     }
@@ -1601,7 +1605,11 @@ async function handlePortail(request, env, url, headers, ctx) {
       const org = role === "admin" ? null : isAdmin(me) ? clean(b.org_id, 40) : me.org_id;
       if (role !== "admin" && !(await env.DB.prepare("SELECT id FROM orgs WHERE id = ?").bind(org).first())) fail(400, "Gérance inconnue");
       const email = clean(b.email, 200).toLowerCase();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !clean(b.name)) fail(400, "Nom et email valides obligatoires");
+      // LuxInterventions n'invite que le responsable d'une gérance qui n'en a pas (son nom est écrit par lui à l'ouverture du lien) ; les collaborateurs sont ajoutés par la gérance
+      const byLux = isAdmin(me) && role !== "admin";
+      if (byLux && role !== "gerance_admin") fail(403, "Les collaborateurs sont ajoutés par la gérance dans son portail");
+      if (byLux && (await env.DB.prepare("SELECT id FROM users WHERE org_id = ? AND role = 'gerance_admin' AND active = 1").bind(org).first())) fail(409, "Cette gérance a déjà un responsable");
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || (!byLux && !clean(b.name))) fail(400, "Nom et email valides obligatoires");
       if (await env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first()) fail(409, "Cet email a déjà un compte");
       const id = ptlId();
       await env.DB.prepare("INSERT INTO users (id, org_id, role, name, title, email, phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
@@ -1617,6 +1625,8 @@ async function handlePortail(request, env, url, headers, ctx) {
       if (!userMatch[2] && method === "PATCH") {
         const b = await body();
         if (target.id === me.id && b.active === false) fail(400, "Vous ne pouvez pas désactiver votre propre compte");
+        // utilisateur d'une gérance : LuxInterventions peut seulement le désactiver / réactiver
+        if (isAdmin(me) && target.role !== "admin") { b.name = null; b.phone = null; b.role = null; }
         const role = b.role && PTL_ROLES.includes(b.role) && (isAdmin(me) || b.role !== "admin") ? b.role : target.role;
         const ops = [env.DB.prepare("UPDATE users SET name = ?, phone = ?, role = ?, active = ? WHERE id = ?")
           .bind(b.name != null ? clean(b.name, 120) : target.name, b.phone != null ? clean(b.phone, 40) : target.phone, role, b.active === false ? 0 : b.active === true ? 1 : target.active, target.id)];
@@ -1643,7 +1653,9 @@ async function handlePortail(request, env, url, headers, ctx) {
     const resApts = (b) => jsonList(b.apts, 600, (x) => ({ b: clean(x && x.b, 30), n: clean(x && x.n, 40), e: clean(x && x.e, 20), p: clean(x && x.p, 20), c: clean(x && x.c, 40) }));
     const resFields = (b) => [clean(b.name, 160), clean(b.address, 300), clean(b.access, 500), clean(b.keys_info, 500), clean(b.contact_name, 120), clean(b.contact_phone, 40), clean(b.notes, 2000), parseInt(b.apartments, 10) || null,
       code6(b.alarm), code6(b.code_other), clean(b.interior, 120), clean(b.floors, 120), resCodes(b), resApts(b)];
+    const resLux = () => { if (isAdmin(me)) fail(403, "Les résidences sont gérées par la gérance dans son portail"); };
     if (path === "residences" && method === "POST") {
+      resLux();
       const b = await body();
       const org = isAdmin(me) ? clean(b.org_id, 40) : me.org_id;
       if (!(await env.DB.prepare("SELECT id FROM orgs WHERE id = ?").bind(org).first())) fail(400, "Gérance inconnue");
@@ -1655,6 +1667,7 @@ async function handlePortail(request, env, url, headers, ctx) {
     }
     const resMatch = path.match(/^residences\/([a-z0-9]+)$/);
     if (resMatch && method === "PATCH") {
+      resLux();
       const r = await env.DB.prepare("SELECT * FROM residences WHERE id = ?").bind(resMatch[1]).first();
       if (!r || (!isAdmin(me) && r.org_id !== me.org_id)) fail(404, "Résidence introuvable");
       const b = await body();

@@ -3783,5 +3783,49 @@ export default [
 [
 "Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LuxInterventions. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).",
 "Ihre Rechte: Auskunft, Berichtigung, Löschung, Einschränkung und Widerspruch. Die Hausverwaltung korrigiert ihre Daten direkt im Portal; für alle anderen Anfragen schreiben Sie an LuxInterventions. Sie können sich auch an die CNPD wenden (Commission nationale pour la protection des données, Luxemburg)."
+],
+[
+"Inviter le responsable",
+"Verantwortlichen einladen"
+],
+[
+"La première personne qui ouvre le lien devient responsable : elle écrit son prénom et son nom, choisit son mot de passe et ajoute ses collègues. Valable 14 jours.",
+"Die erste Person, die den Link öffnet, wird Verantwortliche: sie gibt Vor- und Nachnamen ein, wählt ihr Passwort und fügt ihre Kollegen hinzu. 14 Tage gültig."
+],
+[
+"Les collaborateurs sont ajoutés par le responsable dans son portail.",
+"Die Mitarbeiter werden vom Verantwortlichen in seinem Portal hinzugefügt."
+],
+[
+"Adresse, TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).",
+"Adresse, MwSt., Bank und Logo: füllt die Hausverwaltung selbst in ihrem Portal aus (Meine Firma)."
+],
+[
+"⭐ Prénom et nom (responsable de la gérance)",
+"⭐ Vor- und Nachname (Verantwortliche/r der Hausverwaltung)"
+],
+[
+"🎉 Bienvenue !",
+"🎉 Willkommen!"
+],
+[
+"RCS",
+"RCS"
+],
+[
+"Écrivez votre prénom et votre nom",
+"Geben Sie Vor- und Nachnamen ein"
+],
+[
+"Les résidences sont gérées par la gérance dans son portail",
+"Die Residenzen werden von der Hausverwaltung in ihrem Portal verwaltet"
+],
+[
+"Cette gérance a déjà un responsable",
+"Diese Hausverwaltung hat bereits eine/n Verantwortliche/n"
+],
+[
+"Les collaborateurs sont ajoutés par la gérance dans son portail",
+"Die Mitarbeiter werden von der Hausverwaltung in ihrem Portal hinzugefügt"
 ]
 ];

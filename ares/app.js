@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.152.0';
+const VERSION = '2.153.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3102,6 +3102,12 @@ const orgMissing = (cl) => [!cl.adresse && 'adresse', !cl.rcs && 'RCS (B…)', !
 const regTaux = (reg, c) => (reg.regime === 'autoliq' || reg.regime === 'exo' ? 0 : reg.regime === 'taux' ? num(reg.taux) : num(c.taux));
 const regMention = (reg) => (reg.regime === 'autoliq' || reg.regime === 'exo' ? reg.mention || TVA_REG[reg.regime][1] : reg.mention || '');
 const factConf = () => ({ ...FACT_DEF, ...(vault.get('reglages', 'facturation') || {}) });
+// TVA d'une gérance / d'une facture : une case « Avec TVA » ; sans TVA, la mention écrite sur la facture (anciens régimes « taux » / « autoliq » gardés)
+const tvaOn = (r) => !r || r.regime === 'normal' || r.regime === 'taux';
+const tvaBox = (r, c) => html`<label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin:0"><input type="checkbox" name="tva_on" value="1" data-input="tva-on" style="width:22px;height:22px;min-height:22px;flex:none;margin:0" ${tvaOn(r) ? new Raw('checked') : ''}> <span><b>Avec TVA</b> (${String(r && r.regime === 'taux' ? r.taux : c.taux).replace('.', ',')} %)</span></label>
+  <input type="hidden" name="reg_prev" value="${(r && r.regime) || 'normal'}"><input type="hidden" name="reg_taux" value="${(r && r.taux) || ''}">
+  <label class="field full tva-mention" style="margin-top:6px" ${tvaOn(r) ? new Raw('hidden') : ''}>Mention sur la facture (sans TVA)<input name="reg_mention" value="${(r && r.mention) || ''}" placeholder="ex. TVA non applicable — formule donnée par votre comptable"></label>`;
+const tvaRead = (fd) => { const prev = String(fd.get('reg_prev') || 'normal'), on = !!fd.get('tva_on'); return { regime: on ? (prev === 'taux' ? 'taux' : 'normal') : (prev === 'autoliq' ? 'autoliq' : 'exo'), taux: String(fd.get('reg_taux') || ''), mention: String(fd.get('reg_mention') || '').trim() }; };
 const factMissing = (c) => [['nom', 'raison sociale'], ['adresse', 'adresse'], ['rcs', 'RCS'], ['tva', 'n° TVA'], ['iban', 'IBAN']].filter(([k]) => !String(c[k] || '').trim()).map(([, l]) => l);
 const ymd = (iso) => iso.replace(/-/g, '');
 // brouillon d'une facture à partir de l'intervention clôturée : heures réelles × tarif, déplacement, matériel, remise / majoration
@@ -3206,7 +3212,7 @@ const factRead = (fm) => {
   const fd = new FormData(fm), mat = [];
   for (let n = 0; n < 30; n++) if (fd.has(`ml${n}`)) { const lib = String(fd.get(`ml${n}`) || '').trim(), ht = num(fd.get(`mh${n}`)); if (lib || ht) mat.push({ lib, ht }); }
   const cost = fd.has('cost_h') ? { h: num(fd.get('cost_h')), d: num(fd.get('cost_d')) } : null;
-  return { cost, reg: { regime: TVA_REG[fd.get('reg')] ? fd.get('reg') : 'normal', taux: String(fd.get('reg_taux') || ''), mention: String(fd.get('reg_mention') || '').trim() }, h: num(fd.get('h')), taux: num(fd.get('taux')), depl: num(fd.get('depl')), mat, adj: { type: fd.get('adj_type') === 'maj' ? 'maj' : 'remise', mode: fd.get('adj_mode') === '€' ? '€' : '%', val: num(fd.get('adj_val')), lib: String(fd.get('adj_lib') || '').trim() } };
+  return { cost, reg: tvaRead(fd), h: num(fd.get('h')), taux: num(fd.get('taux')), depl: num(fd.get('depl')), mat, adj: { type: fd.get('adj_type') === 'maj' ? 'maj' : 'remise', mode: fd.get('adj_mode') === '€' ? '€' : '%', val: num(fd.get('adj_val')), lib: String(fd.get('adj_lib') || '').trim() } };
 };
 const matRow = (n, m = {}) => html`<div class="fact-mat"><input name="ml${n}" value="${m.lib || ''}" placeholder="Matériel acheté (ex. disjoncteur 16 A)"><input name="mh${n}" type="number" ${new Raw(money$)} value="${m.ht ?? ''}" placeholder="€ HT" aria-label="Montant HT"></div>`;
 function factTotHtml(f) {
@@ -3818,7 +3824,7 @@ dashboard() {
         <div class="card" style="max-width:560px">
           <img src="/portail/icons/ptl-banner.webp" alt="" width="1100" height="283" style="display:block;width:100%;max-width:320px;height:auto;margin:0 auto 12px">
           <p style="margin-top:0">Les <b>gérances</b> sont les sociétés externes qui vous confient leurs réparations. Elles utilisent leur app, le <b>Portail gérance</b> : demandes avec photos, suivi, chat, photos avant / après, satisfaction, statistiques.</p>
-          <p class="small">Ici vous créez les gérances, invitez leurs responsables, gérez leurs résidences et pouvez les supprimer — comme pour l’app de l’équipe.</p>
+          <p class="small">Ici vous créez les gérances (nom, email, téléphone, RCS) et leur envoyez le lien d’invitation ; elles remplissent elles-mêmes leurs données et leurs résidences. Vous recevez leurs demandes et leur envoyez vos factures.</p>
           <div class="alert info" style="margin:12px 0">${icon('shield')}<div>Connectez une seule fois cette app au portail avec votre <b>compte LuxInterventions du portail</b>. Le mot de passe ne quitte pas l’appareil ; la session est gardée dans vos données chiffrées.</div></div>
           ${ui.ptl.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${ui.ptl.err}</div></div>` : ''}
           <form data-form="ptl-login" class="fields">
@@ -3832,7 +3838,7 @@ dashboard() {
     const d = ui.ptl.data;
     if ((!d && !ui.ptl.err) || (d && Date.now() - d.at > 60000)) !ui.ptl.loading && setTimeout(ptlLoad, 0);
     const head = pageHead('Gérances', d ? `${plural(d.orgs.length, 'gérance')} · Portail gérance` : 'Portail gérance', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Ajouter gérance</button>`);
-    const foot = html`<p class="tiny muted" style="margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">Connecté au portail : <b>${c.email || ''}</b> ${portal}
+    const foot = html`<p class="tiny muted" style="margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">Connecté au portail : <b>${c.email || ''}</b>
       <button class="btn sm ghost" data-action="ger-reload">${icon('sync')} Actualiser</button><button class="btn sm ghost" data-action="ptl-self-reset">🔑 Nouveau mot de passe du portail</button><button class="btn sm ghost danger" data-action="ptl-logout">Déconnecter</button></p>`;
     if (!d) return html`${head}${ui.ptl.err ? html`<div class="alert warn">${icon('alert')}<div>${ui.ptl.err} <button class="btn sm" data-action="ger-reload">Réessayer</button></div></div>` : html`<p class="muted">Chargement…</p>`}${foot}`;
     const of = ui.ptl.org || '', oSel = of && ptlOrg(of);
@@ -3858,7 +3864,7 @@ dashboard() {
       <div class="section-label">📥 Demandes d’intervention ${nRecue ? html`<span class="badge warn">${nRecue} nouvelle(s)</span>` : ''}</div>
       <p style="margin:0 0 8px;text-align:right"><button class="btn sm ghost" data-action="ger-done" aria-pressed="${!!ui.ptl.done}">${ui.ptl.done ? 'Voir les demandes en cours' : 'Voir les terminées'}</button></p>
       ${tks.length ? html`<div class="list" style="margin-bottom:18px">${tks.map(row)}</div>` : html`<p class="muted small" style="margin-bottom:18px">${ui.ptl.done ? 'Aucune demande terminée.' : 'Aucune demande en cours.'}</p>`}
-      <details class="ger-orgs"${d.orgs.length ? '' : ' open'}><summary class="section-label" style="cursor:pointer">🏢 Fiches des gérances (${d.orgs.length})</summary>
+      ${oSel ? '' : html`<details class="ger-orgs"${d.orgs.length ? '' : ' open'}><summary class="section-label" style="cursor:pointer">🏢 Fiches des gérances (${d.orgs.length})</summary>
       ${d.orgs.length ? html`<div class="grid cols-auto">${d.orgs.map((o) => {
         const us = d.users.filter((u) => u.org_id === o.id);
         const wait = us.filter((u) => u.active && !u.has_password).length;
@@ -3877,7 +3883,7 @@ dashboard() {
           </div>
         </div>`;
       })}</div>` : empty('briefcase', 'Aucune gérance pour l’instant.', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Ajouter une gérance</button>`)}
-      </details>
+      </details>`}
       ${foot}`;
   },
 
@@ -4579,6 +4585,7 @@ const SHEETS = {
       foot,
     };
   },
+  // gérance : LuxInterventions écrit seulement nom, email, téléphone et RCS ; adresse, TVA, banque, logo et responsable sont remplis par la gérance dans son portail
   'ger-form'({ id }) {
     const o = id ? ptlOrg(id) : {};
     if (id && !o) return null;
@@ -4587,29 +4594,13 @@ const SHEETS = {
       narrow: true,
       body: html`<form id="gerForm" data-form="ger" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        ${(() => { const cl = factClient(id || '', o.name); return html`<div class="section-label full" style="margin:0">🏢 Société de gestion</div>
         <label class="field full">Nom de la société<input name="name" required value="${o.name || ''}" placeholder="ex. Gérance du Centre S.A."></label>
-        ${o.logo ? html`<div class="field full" style="display:flex;gap:10px;align-items:center"><img class="org-logo xl" src="${o.logo}" alt=""><span class="tiny muted">Logo ajouté par la gérance dans son portail (Ma société).</span></div>` : ''}
-        <label class="field full">Adresse<textarea name="adresse" style="min-height:56px" placeholder="rue, n°, code postal, ville">${cl.adresse}</textarea></label>
-        <label class="field">RCS *<input name="rcs" required value="${cl.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
-        <label class="field">N° TVA (facultatif)<input name="tvaNum" value="${cl.tvaNum}" placeholder="LU12345678" autocapitalize="characters"></label>
-        ${bankBlock(cl, 'Banque de la gérance')}`; })()}
-        <label class="field">Email<input type="email" name="email" value="${o.email || ''}"></label>
-        <label class="field">Téléphone<input type="tel" name="phone" value="${o.phone || ''}"></label>
-        ${id ? '' : html`<div class="section-label full" style="margin:6px 0 0">⭐ Responsable de la gérance</div>
-        <label class="field">Prénom<input name="rprenom" required autocomplete="off"></label>
-        <label class="field">Nom<input name="rnom" required autocomplete="off"></label>
-        <label class="field">Email<input type="email" name="remail" required></label>
-        <label class="field">Téléphone (WhatsApp)<input type="tel" name="rphone" placeholder="+352…"></label>
-        <p class="tiny muted full" style="margin:-4px 0 0">Il reçoit un lien d’invitation (14 jours), choisit son mot de passe et ajoute lui-même ses collaborateurs dans son portail.</p>`}
-        ${(() => { const cl = factClient(id || '', o.name), c = factConf(); return html`<details class="full"><summary class="section-label" style="cursor:pointer">🧾 TVA sur vos factures (régime, pays)</summary><div class="fields" style="margin-top:8px">
-        <label class="field">Pays (code)<input name="pays" value="${cl.pays}" maxlength="2" placeholder="LU" style="text-transform:uppercase"></label>
-        <label class="field full">Régime de TVA<select name="regime">${Object.entries(TVA_REG).map(([k, v]) => html`<option value="${k}" ${cl.regime === k ? new Raw('selected') : ''}>${k === 'normal' ? `TVA normale (${String(c.taux).replace('.', ',')} %)` : v[0]}</option>`)}</select></label>
-        <label class="field">Taux particulier (%)<input name="taux" type="number" step="0.01" min="0" max="100" inputmode="decimal" value="${cl.taux}" placeholder="si « Taux particulier »"></label>
-        <label class="field">Mention sur la facture<input name="mention" value="${cl.mention}" placeholder="sinon la mention par défaut"></label>
-        <p class="tiny muted full" style="margin:0">Autoliquidation : client assujetti d’un autre pays de l’UE, avec son n° TVA (0 %, mention art. 196). Travaux sur un immeuble au Luxembourg : en principe TVA luxembourgeoise. Vérifiez avec votre comptable.</p></div></details>`; })()}
+        <label class="field full">Email${id ? '' : html` <span class="tiny muted">(reçoit le lien d’invitation)</span>`}<input type="email" name="email" ${id ? '' : new Raw('required')} value="${o.email || ''}"></label>
+        <label class="field">Téléphone (WhatsApp)<input type="tel" name="phone" value="${o.phone || ''}" placeholder="+352…"></label>
+        <label class="field">RCS *<input name="rcs" required value="${o.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
+        <p class="tiny muted full" style="margin:0">${id ? 'Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).' : 'Un lien d’invitation est créé pour cet email (14 jours). La première personne qui l’ouvre devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis remplit les données de sa société (adresse, TVA, banque, logo) et ajoute ses collègues.'}</p>
       </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="gerForm">${id ? 'Enregistrer' : 'Créer la gérance'}</button>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="gerForm">${id ? 'Enregistrer' : 'Créer + lien d’invitation'}</button>`,
     };
   },
   ger({ id, tab }) {
@@ -4619,7 +4610,7 @@ const SHEETS = {
     const tabs = html`<div class="tabs" role="tablist" style="margin-bottom:12px">
       <button class="tab" role="tab" aria-selected="${tab === 'acces'}" data-action="ger-open" data-id="${id}" data-tab="acces">${icon('users')} Accès</button>
       <button class="tab" role="tab" aria-selected="${tab === 'fact'}" data-action="ger-open" data-id="${id}" data-tab="fact">🧾 Facturation</button></div>`;
-    if (tab === 'res') tab = 'acces'; // les résidences sont créées par la gérance dans son portail
+    if (tab === 'res') tab = 'acces'; // les résidences sont gérées par la gérance dans son portail
     let body;
     if (tab === 'fact') {
       // liste des chantiers de la gérance : ouverts, en cours, fermés, contentieux (les montants, remises, TVA : Réglages + Comptabilité)
@@ -4639,7 +4630,16 @@ const SHEETS = {
           <span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">${t.inv_ttc ? html`<b>${eur(t.inv_ttc)}</b>` : ''}${st(t)}</span></button>`; };
         const grp = (title, list, cls = '') => list.length ? html`<div class="section-label ${cls}">${title} (${list.length})</div><div class="list" style="margin-bottom:14px">${list.map(line)}</div>` : '';
         const due = sum(all.filter((t) => t.inv_no && !t.inv_paid), (t) => +t.inv_ttc || 0), dueC = sum(cont, (t) => +t.inv_ttc || 0);
-        body = html`<div class="metrics" style="margin-bottom:14px">
+        const cl = factClient(id, o.name), c = factConf();
+        const sum0 = html`<div class="card" style="margin-bottom:12px;padding:12px">
+            <b>${o.logo ? html`<img class="org-logo xl" src="${o.logo}" alt="">` : '🏢 '}${o.name}</b>
+            <dl class="kv small" style="margin:6px 0 0">${cl.adresse ? html`<dt>Adresse</dt><dd style="white-space:pre-line">${cl.adresse}</dd>` : ''}${cl.rcs ? html`<dt>RCS</dt><dd>${cl.rcs}</dd>` : ''}${cl.tvaNum ? html`<dt>N° TVA</dt><dd>${cl.tvaNum}</dd>` : ''}${cl.banque ? html`<dt>Banque</dt><dd>${cl.banque}</dd>` : ''}${cl.iban ? html`<dt>IBAN</dt><dd>${cl.iban}</dd>` : ''}${cl.bic ? html`<dt>BIC</dt><dd>${cl.bic}</dd>` : ''}${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}</dl>
+            ${orgMissing(cl).length ? html`<p class="tiny amber" style="margin:6px 0 0">⏳ Pas encore rempli par la gérance : ${orgMissing(cl).join(', ')} <span class="muted">(dans son portail → Ma société)</span></p>` : ''}
+            <form data-form="ger-tva" class="fields" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px"><input type="hidden" name="org" value="${id}">
+              <div class="full">${tvaBox({ regime: cl.regime, taux: cl.taux, mention: cl.mention }, c)}</div>
+              <p class="tiny muted full" style="margin:0">Pour vos factures à cette gérance. Travaux sur un immeuble au Luxembourg : en principe avec TVA luxembourgeoise — en cas de doute, demandez à votre comptable.</p>
+              <button class="btn sm primary" type="submit">Enregistrer</button></form></div>`;
+        body = html`${sum0}<div class="metrics" style="margin-bottom:14px">
             <div class="metric"><div class="lbl">Ouverts / en cours</div><div class="val">${open.length + cours.length}</div></div>
             <div class="metric"><div class="lbl">À encaisser</div><div class="val red">${eur(due)}</div></div>
             <div class="metric ${cont.length ? 'cont-blink-box' : ''}"><div class="lbl">⚠️ Contentieux</div><div class="val ${cont.length ? 'red' : ''}">${cont.length ? eur(dueC) : '—'}</div></div></div>
@@ -4648,23 +4648,8 @@ const SHEETS = {
           ${grp('🔵 En cours', cours)}
           ${grp('✅ Fermés', done)}
           ${all.length ? '' : html`<p class="muted small">Aucune demande de cette gérance pour l’instant.</p>`}
-          <p class="tiny muted" style="margin-top:6px">Montants, TVA, remises, acomptes : réglés dans <b>Réglages → 🧾 Facturation</b> et dans chaque facture (<b>Comptabilité → Factures</b>). Données de facturation de la gérance : <a href="#" data-action="ger-edit" data-id="${id}">✏️ Modifier la gérance</a>.</p>`;
+          <p class="tiny muted" style="margin-top:6px">Montants, TVA, remises, acomptes : réglés dans <b>Réglages → 🧾 Facturation</b> et dans chaque facture (<b>Comptabilité → Factures</b>). Adresse, TVA et banque de la gérance : remplies par elle dans son portail.</p>`;
       }
-    } else
-    if (tab === 'res') {
-      const rs = d.residences.filter((r) => r.org_id === id);
-      body = html`${rs.length ? html`<div class="list" style="margin-bottom:14px">${rs.map((r) => html`<div class="row"><span class="avatar">🏠</span>
-          <span class="grow"><span class="title" style="display:block">${r.name}</span><span class="meta" style="white-space:normal">${r.address || ''}${r.apartments ? html` · <span>${r.apartments} appartements</span>` : ''}${r.open ? html` · <span>${r.open} demande(s) en cours</span>` : ''}</span></span>
-          <button class="btn sm ghost danger" data-action="ger-res-off" data-id="${r.id}" data-org="${id}">Retirer</button></div>`)}</div>` : html`<p class="muted small">Aucune résidence. La gérance peut aussi les ajouter elle-même dans son portail.</p>`}
-        <div class="section-label">Ajouter une résidence</div>
-        <form data-form="ger-res" class="fields">
-          <input type="hidden" name="org" value="${id}">
-          <label class="field full">Nom de la résidence<input name="name" required placeholder="ex. Résidence Les Tilleuls"></label>
-          <label class="field full">Adresse<input name="address" required placeholder="rue, n°, code postal, localité"></label>
-          <label class="field">Appartements<input type="number" name="apartments" min="0" inputmode="numeric"></label>
-          <label class="field">Contact sur place<input name="contact_name" placeholder="concierge…"></label>
-          <button class="btn primary full" type="submit">${icon('plus')} Ajouter la résidence</button>
-        </form>`;
     } else {
       // le responsable (créé par LuxInterventions) en premier, puis les collègues qu'il a ajoutés dans son portail
       const us = d.users.filter((u) => u.org_id === id).sort((a, b) => (a.role === 'gerance_admin' ? 0 : 1) - (b.role === 'gerance_admin' ? 0 : 1) || a.name.localeCompare(b.name));
@@ -4682,17 +4667,15 @@ const SHEETS = {
       body = html`<div class="card" style="margin-bottom:12px;padding:12px">
           <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>${o.logo ? html`<img class="org-logo xl" src="${o.logo}" alt="">` : '🏢 '}${o.name}</b><button class="btn sm ghost" data-action="ger-edit" data-id="${id}">${icon('edit')} Modifier</button></div>
           <dl class="kv small" style="margin:6px 0 0">${cl.adresse ? html`<dt>Adresse</dt><dd style="white-space:pre-line">${cl.adresse}</dd>` : ''}${cl.rcs ? html`<dt>RCS</dt><dd>${cl.rcs}</dd>` : ''}${cl.tvaNum ? html`<dt>N° TVA</dt><dd>${cl.tvaNum}</dd>` : ''}${cl.iban ? html`<dt>Banque</dt><dd>${[cl.banque, cl.bic ? 'BIC ' + cl.bic : '', ibanFmt(cl.iban)].filter(Boolean).join(' · ')}</dd>` : ''}${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}</dl>
-          ${orgMissing(cl).length ? html`<p class="tiny amber" style="margin:6px 0 0">⚠️ À compléter : ${orgMissing(cl).join(', ')} → ✏️ Modifier <span class="muted">(la gérance peut aussi les compléter dans son portail)</span></p>` : ''}</div>
+          ${orgMissing(cl).length ? html`<p class="tiny amber" style="margin:6px 0 0">⏳ Pas encore rempli par la gérance : ${orgMissing(cl).join(', ')} <span class="muted">(dans son portail → Ma société)</span></p>` : ''}</div>
         ${us.length ? html`<div class="section-label">Responsable et collaborateurs (${us.length})</div>${us.map(uRow)}<p class="tiny muted" style="margin:0 0 12px">Les collaborateurs sont ajoutés par le responsable dans son portail (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.</p>` : ''}
         ${hasResp ? '' : html`<div class="section-label">⭐ Responsable de la gérance</div>
-        <p class="small muted" style="margin:0 0 8px">Il reçoit un lien personnel, choisit son mot de passe, puis ajoute lui-même ses collaborateurs.</p>
+        <p class="small muted" style="margin:0 0 8px">La première personne qui ouvre le lien devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis ajoute ses collaborateurs.</p>
         <form data-form="ger-user" class="fields">
           <input type="hidden" name="org" value="${id}"><input type="hidden" name="role" value="gerance_admin">
-          <label class="field">Prénom<input name="prenom" required autocomplete="off"></label>
-          <label class="field">Nom<input name="nom" required autocomplete="off"></label>
-          <label class="field">Email<input type="email" name="email" required></label>
-          <label class="field">Téléphone (WhatsApp)<input type="tel" name="phone" placeholder="+352…"></label>
-          <button class="btn primary full" type="submit">${icon('plus')} Créer l’accès du responsable et le lien</button>
+          <label class="field">Email<input type="email" name="email" required value="${o.email || ''}"></label>
+          <label class="field">Téléphone (WhatsApp)<input type="tel" name="phone" placeholder="+352…" value="${o.phone || ''}"></label>
+          <button class="btn primary full" type="submit">${icon('plus')} Créer le lien du responsable</button>
         </form>`}`;
     }
     return {
@@ -4710,7 +4693,7 @@ const SHEETS = {
     return {
       title: 'Invitation au Portail gérance',
       narrow: true,
-      body: html`<p style="margin-top:0">Lien personnel pour <b>${u.name}</b> (${u.email}) : il/elle ouvre le lien et choisit son mot de passe. <b>Valable 14 jours</b>, une seule fois.</p>
+      body: html`<p style="margin-top:0">Lien personnel pour <b>${u.name || u.email}</b>${u.name ? ` (${u.email})` : ''} : la personne ouvre le lien${u.name ? '' : ', écrit son prénom et son nom'} et choisit son mot de passe. <b>Valable 14 jours</b>, une seule fois.</p>
         <p class="tiny muted" style="margin:-6px 0 10px">Rouvrir cette fenêtre redonne <b>le même lien</b> (aperçu, autre langue…) : celui déjà envoyé reste bon.</p>
         <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(link, 5)}</div>
         <div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => html`<button type="button" data-action="ger-inv-lang" data-id="${id}" data-l="${k}" aria-pressed="${lang === k}">${k.toUpperCase()}</button>`)}</div>
@@ -4841,9 +4824,8 @@ const SHEETS = {
             <input name="adj_val" type="number" ${new Raw(money$)} value="${f.adj.val || ''}" placeholder="0" aria-label="Valeur"><select name="adj_mode"><option value="%" ${f.adj.mode === '%' ? new Raw('selected') : ''}>%</option><option value="€" ${f.adj.mode === '€' ? new Raw('selected') : ''}>€</option></select></div>
           <input name="adj_lib" value="${f.adj.lib || ''}" placeholder="Motif (ex. client fidèle, urgence de nuit)" style="margin-top:6px"></div>
         <div class="full"><div class="section-label" style="margin:4px 0 6px">TVA de cette facture</div>
-          <select name="reg">${Object.entries(TVA_REG).map(([k, v]) => html`<option value="${k}" ${(f.reg || {}).regime === k ? new Raw('selected') : ''}>${k === 'normal' ? `TVA normale (${String(c.taux).replace('.', ',')} %)` : v[0]}</option>`)}</select>
-          <div class="fact-adj" style="grid-template-columns:110px minmax(0,1fr);margin-top:6px"><input name="reg_taux" type="number" step="0.01" min="0" max="100" inputmode="decimal" value="${(f.reg || {}).taux || ''}" placeholder="% particulier" aria-label="Taux particulier"><input name="reg_mention" value="${(f.reg || {}).mention || ''}" placeholder="Mention légale sur la facture (sinon celle par défaut)"></div>
-          <p class="tiny muted" style="margin:4px 0 0">Par défaut : le régime du client (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.</p></div>
+          ${tvaBox(f.reg || { regime: 'normal' }, c)}
+          <p class="tiny muted" style="margin:4px 0 0">Par défaut : le choix fait pour la gérance (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.</p></div>
         <div class="full" id="factTot">${factTotHtml(f)}</div>
       </form>`,
       foot: html`<button class="btn" type="submit" form="f">Enregistrer le brouillon</button><button class="btn primary" data-action="fact-emit" data-id="${id}" ${miss.length ? new Raw('disabled') : ''}>🧾 Émettre et envoyer</button>`,
@@ -6378,11 +6360,6 @@ const ACTIONS = {
     try { await ptlApi('users/' + d.id, { method: 'PATCH', body: { active: !on } }); } catch (e) { return toast(e.message, { bad: true }); }
     toast(on ? 'Accès désactivé' : 'Accès réactivé'); await ptlLoad();
   },
-  async 'ger-res-off'(d) {
-    if (!(await confirmBox('Retirer cette résidence ?', { ok: 'Retirer', danger: true, detail: 'Elle disparaît des choix de la gérance ; l’historique des demandes est gardé.' }))) return;
-    try { await ptlApi('residences/' + d.id, { method: 'PATCH', body: { active: false } }); } catch (e) { return toast(e.message, { bad: true }); }
-    toast('Résidence retirée'); await ptlLoad();
-  },
   'mt-tab': (d) => { ui.mtTab = d.id; renderView(); },
   'new-interv': () => openOver('interv-form'),
   // « + » : ajoute une ligne « Supplément » (dépannage, nettoyage en plus) à ce jour
@@ -7167,28 +7144,30 @@ const FORMS = {
     } catch (e) { ui.ptl.err = e.message; btn.disabled = false; renderView(); }
   },
   async ger(fd) {
-    const id = fd.get('id'), b = { name: String(fd.get('name') || '').trim(), email: String(fd.get('email') || '').trim(), phone: String(fd.get('phone') || '').trim() };
+    const g = (k) => String(fd.get(k) || '').trim();
+    const id = g('id'), b = { name: g('name'), email: g('email'), phone: g('phone'), rcs: g('rcs').toUpperCase().replace(/\s+/g, '') };
     if (!b.name) return;
-    { const err = companyCheck(fd, 'de la gérance'); if (err) return toast(err, { bad: true }); }
-    const gv = (k) => String(fd.get(k) || '').trim();
-    Object.assign(b, { address: gv('adresse'), rcs: gv('rcs').toUpperCase().replace(/\s+/g, ''), tva: gv('tvaNum').toUpperCase().replace(/\s+/g, ''), banque: gv('banque'), bic: gv('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(gv('iban')) });
+    if (!b.rcs) return toast('RCS de la gérance obligatoire', { bad: true });
     let nid = id;
     try { if (id) await ptlApi('orgs/' + id, { method: 'PATCH', body: b }); else nid = (await ptlApi('orgs', { method: 'POST', body: b })).id; } catch (e) { return toast(e.message, { bad: true }); }
-    const g = (k) => String(fd.get(k) || '').trim();
-    const cur = (vault.get('reglages', 'factClients') || {}).list || {};
-    const list = { ...cur, [nid]: { bankLater: !!fd.get('bankLater'), regime: TVA_REG[g('regime')] ? g('regime') : 'normal', taux: g('taux'), tvaNum: g('tvaNum').toUpperCase().replace(/\s+/g, ''), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(g('iban')), adresse: g('adresse'), pays: (g('pays') || 'LU').toUpperCase().slice(0, 2), mention: g('mention') } };
-    await vault.mutate((tx) => { tx.put('reglages', { id: 'portail', lastOrg: b.name }); tx.put('reglages', { id: 'factClients', list }); }, id ? 'Gérance modifiée' : 'Gérance créée', b.name);
+    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', lastOrg: b.name }), id ? 'Gérance modifiée' : 'Gérance créée', b.name);
     toast(id ? 'Gérance enregistrée' : 'Gérance créée');
-    // nouvelle gérance : on crée aussi l'accès du responsable et on montre son lien d'invitation
-    if (!id && g('remail')) {
-      const rb = { org_id: nid, name: `${g('rprenom')} ${g('rnom')}`.trim(), email: g('remail'), phone: g('rphone'), role: 'gerance_admin' };
-      try { const r = await ptlApi('users', { method: 'POST', body: rb }); ui.ptl.inv[r.id] = ptlInviteUrl(r.invite); await ptlInvSave(r.id, ui.ptl.inv[r.id]); await ptlLoad(); return openSheet('ger-invite', r.id); } catch (e) { toast(e.message, { bad: true }); }
+    // nouvelle gérance : lien d'invitation du responsable (il écrit son nom en l'ouvrant)
+    if (!id && b.email) {
+      try { const r = await ptlApi('users', { method: 'POST', body: { org_id: nid, name: '', email: b.email, phone: b.phone, role: 'gerance_admin' } }); ui.ptl.inv[r.id] = ptlInviteUrl(r.invite); await ptlInvSave(r.id, ui.ptl.inv[r.id]); await ptlLoad(); return openSheet('ger-invite', r.id); } catch (e) { toast(e.message, { bad: true }); }
     }
     await ptlLoad();
     openSheet('ger', nid, id ? null : 'acces');
   },
+  // 🧾 Facturation d'une gérance : avec ou sans TVA (le reste vient de la gérance)
+  async 'ger-tva'(fd) {
+    const org = String(fd.get('org') || ''), cur = (vault.get('reglages', 'factClients') || {}).list || {}, reg = tvaRead(fd);
+    const o = ptlOrg(org) || {};
+    await vault.mutate((tx) => tx.put('reglages', { id: 'factClients', list: { ...cur, [org]: { ...(cur[org] || {}), regime: reg.regime, taux: reg.taux, mention: reg.mention } } }), 'TVA de la gérance', `${o.name || ''} : ${tvaOn(reg) ? 'avec TVA' : 'sans TVA'}`);
+    toast(tvaOn(reg) ? '✅ Factures avec TVA' : '✅ Factures sans TVA');
+  },
   async 'ger-user'(fd, f) {
-    const nm = fd.get('prenom') != null ? `${String(fd.get('prenom') || '').trim()} ${String(fd.get('nom') || '').trim()}`.trim() : String(fd.get('name') || '').trim();
+    const nm = String(fd.get('name') || '').trim();
     const org = fd.get('org'), b = { org_id: org, name: nm, email: String(fd.get('email') || '').trim(), phone: String(fd.get('phone') || '').trim(), role: fd.get('role') };
     let r;
     try { r = await ptlApi('users', { method: 'POST', body: b }); } catch (e) { return toast(e.message, { bad: true }); }
@@ -7197,11 +7176,6 @@ const FORMS = {
     await ptlInvSave(r.id, ui.ptl.inv[r.id]);
     await ptlLoad();
     openSheet('ger-invite', r.id);
-  },
-  async 'ger-res'(fd, f) {
-    const b = { org_id: fd.get('org'), name: String(fd.get('name') || '').trim(), address: String(fd.get('address') || '').trim(), apartments: fd.get('apartments'), contact_name: String(fd.get('contact_name') || '').trim() };
-    try { await ptlApi('residences', { method: 'POST', body: b }); } catch (e) { return toast(e.message, { bad: true }); }
-    f.reset(); toast('Résidence ajoutée'); await ptlLoad();
   },
   async 'fact-set'(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
@@ -8746,6 +8720,7 @@ document.addEventListener('input', (e) => {
 });
 document.addEventListener('change', (e) => {
   const k = e.target.dataset.input;
+  if (k === 'tva-on') { const m = e.target.form && e.target.form.querySelector('.tva-mention'); if (m) m.hidden = e.target.checked; }
   // fiche d'une personne : horaire seulement pour le personnel régulier ; engagement pour occasionnels et sociétés
   if (k === 'photo-pick' && e.target.files[0]) {
     const box = e.target.closest('.photo-pick'), f = e.target.files[0]; e.target.value = '';

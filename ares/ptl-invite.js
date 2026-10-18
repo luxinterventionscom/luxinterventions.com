@@ -13,12 +13,12 @@ const L = {
 const escH = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const mk = (t) => ({
   subject: t.subject,
-  text: (n, l) => `${t.hello} ${n},\n\n🎉 ${t.welcome}\n${t.thanks}\n\n${t.intro}\n\n🔑 ${t.step.toUpperCase()} :\n${l}\n\n${t.stepHint}\n⏳ ${t.valid}\n\n${t.bye}\n${t.team}\n\n${SIGN}`,
-  wa: (n, l) => `${t.hello} ${n},\n\n🎉 *${t.welcome}*\n${t.thanks}\n\n${t.intro}\n\n🔑 *${t.step}* 👇\n${l}\n\n${t.stepHint}\n⏳ _${t.valid}_\n\n${t.bye}\n*${t.team}*\n\n${SIGN}`,
+  text: (n, l) => `${t.hello}${n ? " " + n : ""},\n\n🎉 ${t.welcome}\n${t.thanks}\n\n${t.intro}\n\n🔑 ${t.step.toUpperCase()} :\n${l}\n\n${t.stepHint}\n⏳ ${t.valid}\n\n${t.bye}\n${t.team}\n\n${SIGN}`,
+  wa: (n, l) => `${t.hello}${n ? " " + n : ""},\n\n🎉 *${t.welcome}*\n${t.thanks}\n\n${t.intro}\n\n🔑 *${t.step}* 👇\n${l}\n\n${t.stepHint}\n⏳ _${t.valid}_\n\n${t.bye}\n*${t.team}*\n\n${SIGN}`,
   html: (n, l) => `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.55;color:#1f1f1f;max-width:560px">
 <p style="margin:0 0 6px;text-align:center"><img src="https://luxinterventions.com/assets/email-4elements.jpg" alt="Terre · Eau · Feu · Air — LuxInterventions" width="260" style="display:block;width:260px;max-width:100%;height:auto;margin:0 auto"></p>
 <p style="margin:0 0 18px;text-align:center;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:26px;letter-spacing:1px"><span style="color:#1f1f1f">LUX</span><span style="color:${ORANGE}">INTERVENTIONS</span></p>
-<p style="margin:0 0 10px">${escH(t.hello)} ${escH(n)},</p>
+<p style="margin:0 0 10px">${escH(t.hello)}${n ? " " + escH(n) : ""},</p>
 <p style="margin:0 0 6px;font-size:20px;font-weight:bold;color:${ORANGE}">🎉 ${escH(t.welcome)}</p>
 <p style="margin:0 0 14px"><b>${escH(t.thanks)}</b></p>
 <p style="margin:0 0 18px">${escH(t.intro)}</p>
