@@ -12,7 +12,7 @@ import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.19.0';
+const VERSION = '1.20.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -352,6 +352,7 @@ function renderLock(mode, data = {}) {
     <button class="btn ghost block" type="button" data-action="forgot">🔑 Mot de passe oublié ?</button>
     <p class="tiny muted" style="text-align:center">Première fois ? Ouvrez le <b>lien personnel</b> reçu par email ou WhatsApp : vous y choisirez votre mot de passe.</p>
     <button class="btn ghost block" type="button" data-action="demo-start">${icon('eye')} Découvrir le portail en mode démo</button>
+    <button class="btn ghost block" type="button" data-action="rgpd">🔒 Protection des données (RGPD)</button>
     <p class="tiny muted" style="text-align:center"><a href="/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> · <a href="/mentions-legales.html" target="_blank" rel="noopener">Mentions légales</a></p>
   </form>`);
   setTimeout(() => lockEl.querySelector('[name=email]')?.focus(), 50);
@@ -1119,6 +1120,7 @@ const VIEWS = {
       <div class="list settings">
         ${isManager() && !isAdmin() ? html`<button class="row" data-action="org-edit">🏢<span class="grow title">Ma société${orgMissing(state.myOrg).length ? html` <span class="tiny red">⚠️ à compléter</span>` : ''}</span></button>` : ''}
         <button class="row" data-action="change-password">${icon('key')}<span class="grow title">Changer mon mot de passe</span></button>
+        <button class="row" data-action="rgpd">🔒<span class="grow title">Protection des données (RGPD)</span></button>
         <button class="row" data-action="logout">${icon('logout')}<span class="grow title red">Se déconnecter</span></button>
       </div>
       <p class="tiny muted" style="margin-top:28px;text-align:center">LuxInterventions · Portail gérance v${VERSION}</p>`;
@@ -1199,16 +1201,14 @@ let photoUrls = [];
 function revokePhotos() { photoUrls.forEach((u) => URL.revokeObjectURL(u)); photoUrls = []; }
 // codes nommés et appartements d'une résidence (enregistrés en JSON par le serveur)
 const jsonArr = (v) => { try { const a = JSON.parse(v || '[]'); return Array.isArray(a) ? a : []; } catch { return []; } };
-const CODE_LABELS = ['Porte de garage', 'Serrure digitale', 'Panneau de redémarrage', 'Ascenseur', 'Cave', 'Interphone', 'Local poubelles'];
 // 4 codes principaux d'une résidence : boîte à clés (dans « codes »), portes / portails, alarme, locaux techniques
 const KEYBOX = 'Boîte à clés';
 const keyboxOf = (r) => (jsonArr(r && r.codes).find((c) => c.l === KEYBOX) || {}).c || '';
-const codeRow = (n, c = {}) => html`<div class="code-row"><input name="cl${n}" value="${c.l || ''}" list="codeLabels" placeholder="Quoi ? (ex. Portail)"><input name="cc${n}" value="${c.c || ''}" placeholder="Code" autocomplete="off"></div>`;
-const aptRow = (n, a = {}) => html`<div class="apt-row"><input name="ab${n}" value="${a.b || ''}" placeholder="A"><input name="an${n}" value="${a.n || ''}" placeholder="App. 4B"><input name="ae${n}" value="${a.e || ''}" placeholder="2"><input name="ap${n}" value="${a.p || ''}" placeholder="12"><input name="ac${n}" value="${a.c || ''}" placeholder="Code" autocomplete="off"></div>`;
+const aptRow = (n, a = {}) => html`<div class="apt-row"><input name="ab${n}" value="${a.b || ''}" placeholder="A"><input name="an${n}" value="${a.n || ''}" placeholder="Prénom et nom"><input name="ae${n}" value="${a.e || ''}" placeholder="2"><input name="ap${n}" value="${a.p || ''}" placeholder="001"><input name="ac${n}" value="${a.c || ''}" placeholder="Code" autocomplete="off"></div>`;
 const aptOpts = (r) => {
   const groups = new Map();
   jsonArr(r && r.apts).forEach((a, i) => { const k = [a.b ? 'Bât. ' + a.b : '', a.e !== undefined && a.e !== '' ? (a.e === 'RDC' || a.e === '0' ? 'RDC' : 'Étage ' + a.e) : ''].filter(Boolean).join(' · ') || 'Appartements'; if (!groups.has(k)) groups.set(k, []); groups.get(k).push([a, i]); });
-  return html`<option value="">— Parties communes / autre —</option>${[...groups].map(([k, arr]) => html`<optgroup label="${k}">${arr.map(([a, i]) => html`<option value="${i}">${a.n || 'App.'}${a.p ? ' · porte ' + a.p : ''}</option>`)}</optgroup>`)}`;
+  return html`<option value="">— Parties communes / autre —</option>${[...groups].map(([k, arr]) => html`<optgroup label="${k}">${arr.map(([a, i]) => html`<option value="${i}">${[a.p ? 'Porte ' + a.p : '', a.n].filter(Boolean).join(' · ') || 'App.'}</option>`)}</optgroup>`)}`;
 };
 const eurP = (n) => (Math.round((+n || 0) * 100) / 100).toFixed(2).replace('.', ',') + ' €';
 async function loadPhotoInto(img) {
@@ -1379,7 +1379,23 @@ const orgLogoPick = () => {
 };
 const orgMissing = (o) => (o ? [!o.address && 'adresse', !o.rcs && 'RCS (B…)', !o.tva && 'n° TVA (LU…)', !o.banque && 'banque', !o.bic && 'BIC', !o.iban && 'IBAN'].filter(Boolean) : []);
 
+// RGPD du portail : la gérance est responsable de ses données ; ARES INVEST S.A. (LuxInterventions) les traite pour les interventions (sous-traitant)
+const RGPD_P = [
+  'Responsable du traitement : votre gérance, pour les données de ses résidences, de ses occupants et de ses demandes. ARES INVEST S.A. (nom commercial LuxInterventions) les traite uniquement pour réaliser les interventions demandées, en tant que sous-traitant (art. 28 RGPD).',
+  'Données : résidences et adresses, prénom et nom des occupants, n° de porte, étage, codes d’accès et de serrure, contacts sur place, demandes, photos des interventions, devis et factures.',
+  'Qui les voit : votre gérance et l’équipe LuxInterventions chargée de l’intervention (le technicien reçoit seulement ce qu’il faut pour sa mission). Aucune publicité, aucune revente.',
+  'Durée : les noms, codes et contacts sont effacés 3 mois après la fin du contrat avec la gérance ; les devis et factures sont gardés 10 ans (obligation comptable).',
+  'Sécurité : accès personnel par email et mot de passe, connexion chiffrée (HTTPS), données chez un hébergeur technique.',
+  'Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LuxInterventions. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).',
+];
 const SHEETS = {
+  rgpd() {
+    return {
+      title: '🔒 Protection des données (RGPD)',
+      body: html`${RGPD_P.map((t) => html`<p class="small" style="margin:0 0 10px;line-height:1.5">${t}</p>`)}`,
+      foot: html`<button class="btn primary" data-action="close-sheet">Fermer</button>`,
+    };
+  },
   'devis-rev'({ id, data }) {
     const no = (data && data.no) || '';
     return {
@@ -1605,7 +1621,7 @@ const SHEETS = {
           ${kv('🔑 Boîte à clés', codeShow(keyboxOf(r)))}${kv('🚪 Portes / portails d’entrée', codeShow(r.access))}${kv('🚨 Alarme', codeShow(r.alarm))}${kv('⚙️ Locaux techniques', codeShow(r.code_other))}${kv('Clés', r.keys_info)}${kv('Contact', [r.contact_name, r.contact_phone].filter(Boolean).join(' · '))}
         </dl>
         ${jsonArr(r.codes).filter((c) => c.l !== KEYBOX).length ? html`<div class="section-label" style="margin-top:0">🔐 Autres codes</div><dl class="kv small" style="margin-bottom:14px">${jsonArr(r.codes).filter((c) => c.l !== KEYBOX).map((c) => kv(c.l || 'Code', isCode(c.c) ? codeShow(c.c) : c.c))}</dl>` : ''}
-        ${jsonArr(r.apts).length ? html`<div class="section-label" style="margin-top:0">🚪 Appartements (${jsonArr(r.apts).length})</div><div class="card" style="padding:0;overflow:auto;margin-bottom:14px"><table class="tbl small"><thead><tr><th>Bât.</th><th>N°</th><th>Étage</th><th>Porte</th><th>Code serrure</th></tr></thead><tbody>${jsonArr(r.apts).map((a) => html`<tr><td>${a.b || ''}</td><td>${a.n || '—'}</td><td>${a.e || ''}</td><td>${a.p || ''}</td><td>${a.c ? (isCode(a.c) ? codeShow(a.c) : a.c) : ''}</td></tr>`)}</tbody></table></div>` : ''}
+        ${jsonArr(r.apts).length ? html`<div class="section-label" style="margin-top:0">🚪 Appartements (${jsonArr(r.apts).length})</div><div class="card" style="padding:0;overflow:auto;margin-bottom:14px"><table class="tbl small"><thead><tr><th>Bât.</th><th>Prénom et nom</th><th>Étage</th><th>N° porte</th><th>Code serrure</th></tr></thead><tbody>${jsonArr(r.apts).map((a) => html`<tr><td>${a.b || ''}</td><td>${a.n || '—'}</td><td>${a.e || ''}</td><td>${a.p || ''}</td><td>${a.c ? (isCode(a.c) ? codeShow(a.c) : a.c) : ''}</td></tr>`)}</tbody></table></div>` : ''}
         ${r.notes ? html`<div class="note" style="margin-bottom:14px">${r.notes}</div>` : ''}
         <button class="btn primary block" data-action="new-ticket" data-residence="${r.id}">${icon('plus')} Demande de dépannage pour cette résidence</button>
         <div class="section-label">Historique des interventions</div>
@@ -1616,8 +1632,8 @@ const SHEETS = {
 
   'residence-form'({ id }) {
     const rr = id ? (state.cache.residences || state.cache.residencesList || []).find((x) => x.id === id) || {} : {};
+    // les « Autres codes » d’avant (garage, ascenseur…) passent dans les Notes
     const codes = jsonArr(rr.codes).filter((c) => c.l !== KEYBOX), apts = jsonArr(rr.apts);
-    while (codes.length < 2) codes.push({});
     while (apts.length < 3) apts.push({});
     const r = id ? (state.cache.residences || state.cache.residencesList || []).find((x) => x.id === id) || {} : {};
     return {
@@ -1630,26 +1646,22 @@ const SHEETS = {
         ${field("Nombre d'appartements", 'apartments', r.apartments, { type: 'number', attrs: 'min="0" inputmode="numeric"' })}
         ${field('Contact sur place', 'contact_name', r.contact_name, { placeholder: 'Concierge, président du conseil…' })}
         ${field('Téléphone du contact', 'contact_phone', r.contact_phone, { type: 'tel' })}
-        ${field('Intérieur (dans l’immeuble)', 'interior', r.interior, { placeholder: 'ex. bâtiment B, app. 12, aile gauche' })}
-        ${field('Étage(s) de l’appartement / des appartements', 'floors', r.floors, { placeholder: 'ex. 2e, ou RDC à 4e' })}
+        ${field('Intérieur (dans l’immeuble) — seulement pour un dépannage', 'interior', r.interior, { placeholder: 'ex. bâtiment B, app. 12, aile gauche' })}
+        ${field('Étage(s) de l’appartement / des appartements — seulement pour un dépannage', 'floors', r.floors, { placeholder: 'ex. 2e, ou RDC à 4e' })}
         <div class="full section-label" style="margin:6px 0 0">🔐 Codes</div>
         ${code6('🔑 Code boîte à clés', 'keybox', keyboxOf(r))}
         ${code6('🚪 Code portes appartements / portails d’entrée', 'access', r.access)}
         ${code6('🚨 Code alarme', 'alarm', r.alarm)}
-        ${code6('⚙️ Code locaux techniques (panneaux électriques, machines)', 'code_other', r.code_other)}
-        <datalist id="codeLabels">${CODE_LABELS.map((l) => html`<option value="${l}"></option>`)}</datalist>
-        <div class="full"><div class="section-label" style="margin:6px 0">🔐 Autres codes (garage, serrure digitale, ascenseur, cave…)</div>
-          <div id="resCodes">${codes.map((c, n) => codeRow(n, c))}</div>
-          <button type="button" class="btn sm" data-action="res-row" data-k="code">${icon('plus')} Code</button></div>
+        ${code6('⚙️ Code locaux techniques / garage (panneaux électriques, machines)', 'code_other', r.code_other)}
         <div class="full"><div class="section-label" style="margin:6px 0">🚪 Appartements (n°, étage, n° de porte, code de la serrure)</div>
           <details class="apt-gen"><summary>⚡ Créer plusieurs appartements d’un coup</summary>
             <div class="apt-gen-grid"><label class="field">Bât. / escalier<input data-gen="b" placeholder="A"></label><label class="field">Du étage<input data-gen="from" type="number" value="0" inputmode="numeric"></label><label class="field">Au étage<input data-gen="to" type="number" value="5" inputmode="numeric"></label><label class="field">Par étage<input data-gen="per" type="number" value="4" min="1" max="30" inputmode="numeric"></label>
               <label class="field">Numéros<select data-gen="style"><option value="ef">Étage + n° (201, 202…)</option><option value="seq">À la suite (1, 2, 3…)</option></select></label></div>
             <button type="button" class="btn sm primary" data-action="apt-gen">Créer les appartements</button></details>
-          <div class="apt-head"><span>Bât.</span><span>N° / nom</span><span>Étage</span><span>Porte</span><span>Code serrure</span></div>
+          <div class="apt-head"><span>Bât.</span><span>Prénom et nom</span><span>Étage</span><span>N° porte</span><span>Code serrure</span></div>
           <div id="resApts">${apts.map((a, n) => aptRow(n, a))}</div>
           <button type="button" class="btn sm" data-action="res-row" data-k="apt">${icon('plus')} Appartement</button> <button type="button" class="btn sm" data-action="res-row" data-k="apt5">${icon('plus')} 5 appartements</button></div>
-        <label class="field full">Notes<textarea name="notes" placeholder="Badge, interphone, clés, compteurs, local technique, particularités…">${[r.notes, r.access && !isCode(r.access) ? 'Accès : ' + r.access : '', r.keys_info ? 'Clés : ' + r.keys_info : ''].filter(Boolean).join('\n')}</textarea></label>
+        <label class="field full">Notes<textarea name="notes" placeholder="Badge, interphone, clés, compteurs, local technique, particularités…">${[r.notes, r.access && !isCode(r.access) ? 'Accès : ' + r.access : '', r.keys_info ? 'Clés : ' + r.keys_info : '', ...codes.filter((c) => c.c && !String(r.notes || '').includes(c.c)).map((c) => `${c.l || 'Code'} : ${c.c}`)].filter(Boolean).join('\n')}</textarea></label>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -1915,6 +1927,7 @@ const ACTIONS = {
     inp.type = inp.type === 'password' ? 'text' : 'password';
     setHtml(el, icon(inp.type === 'password' ? 'eye' : 'eyeOff'));
   },
+  rgpd: () => openSheet('rgpd'),
   'close-sheet': async () => { if (await leaveSheetOk()) { sheetDirty = false; closeSheet(); } },
   'demo-start': () => startDemo(),
   'rep-all': (d, el) => { const g = el.closest('.rep-grp'); g.querySelectorAll('.rep-checks label').forEach((l) => { if (!l.hidden) l.querySelector('input').checked = d.v === '1'; }); repCount(g); },
@@ -1994,16 +2007,16 @@ const ACTIONS = {
     let n0 = Math.max(-1, ...[...box.querySelectorAll('[name^=an]')].map((i) => +i.name.slice(2))) + 1, k = 1;
     for (let e = from; e <= to; e++) for (let i = 1; i <= per; i++, k++) {
       const no = seq ? String(k) : (e < 0 ? 'S' + -e : String(e)) + String(i).padStart(2, '0');
-      box.insertAdjacentHTML('beforeend', String(aptRow(n0++, { b: bat, n: (bat ? bat + '-' : '') + no, e: e === 0 ? 'RDC' : String(e), p: no })));
+      box.insertAdjacentHTML('beforeend', String(aptRow(n0++, { b: bat, n: '', e: e === 0 ? 'RDC' : String(e), p: no })));
     }
     btn.closest('details').open = false;
-    toast(`${(to - from + 1) * per} appartements ajoutés — complétez les codes si besoin`);
+    toast(`${(to - from + 1) * per} appartements ajoutés — complétez les noms et les codes si besoin`);
   },
   'res-row': (d) => {
-    const box = $(d.k === 'code' ? '#resCodes' : '#resApts');
+    const box = $('#resApts');
     if (!box) return;
     const n0 = box.children.length, times = d.k === 'apt5' ? 5 : 1;
-    for (let i = 0; i < times; i++) box.insertAdjacentHTML('beforeend', String(d.k === 'code' ? codeRow(n0 + i) : aptRow(n0 + i)));
+    for (let i = 0; i < times; i++) box.insertAdjacentHTML('beforeend', String(aptRow(n0 + i)));
     box.lastElementChild.querySelector('input').focus();
   },
   async 'cp-sec'(d) {
@@ -2193,7 +2206,7 @@ const FORMS = {
       const plage = de && a ? `De ${de} à ${a}${a <= de ? ' (lendemain)' : ''}` : de ? `À partir de ${de}` : a ? `Jusqu’à ${a}` : '';
       body.dispo = [ds ? 'Date souhaitée : ' + ds : '', plage, body.dispo].filter(Boolean).join(' · ');
       const rs = (state.cache.residencesList || []).find((x) => x.id === body.residence_id) || {}, apt = body.apt !== '' && body.apt != null ? jsonArr(rs.apts)[+body.apt] : null;
-      const extra = [apt && apt.c ? `Serrure ${apt.n || 'appartement'} : ${apt.c}` : '', ...jsonArr(rs.codes).filter((c) => c.c && c.l !== KEYBOX).map((c) => `${c.l || 'Code'} : ${c.c}`)].filter((x) => x && !String(body.acces || '').includes(x));
+      const extra = [apt && apt.c ? `Serrure ${apt.p ? 'porte ' + apt.p : apt.n || 'appartement'} : ${apt.c}` : '', ...jsonArr(rs.codes).filter((c) => c.c && c.l !== KEYBOX).map((c) => `${c.l || 'Code'} : ${c.c}`)].filter((x) => x && !String(body.acces || '').includes(x));
       body.acces = [body.c_boite ? 'Boîte à clés : ' + body.c_boite : '', body.c_porte ? 'Porte : ' + body.c_porte : '', body.c_alarme ? 'Alarme : ' + body.c_alarme : '', body.c_panneaux ? 'Locaux techniques : ' + body.c_panneaux : '', ...extra, body.acces].filter(Boolean).join(' · ').slice(0, 500);
       for (const k of ['nature', 'zone', 'etage', 'date_souhaitee', 'h_de', 'h_a', 'c_boite', 'c_porte', 'c_alarme', 'c_panneaux', 'apt']) delete body[k];
       if (body.edit) {
@@ -2272,12 +2285,11 @@ const FORMS = {
     const b = fd2obj(fd);
     b.codes = []; b.apts = [];
     for (let n = 0; n < 400; n++) {
-      if (fd.has(`cl${n}`)) { const l = String(fd.get(`cl${n}`) || '').trim(), c = String(fd.get(`cc${n}`) || '').trim(); if (l || c) b.codes.push({ l, c }); }
       if (fd.has(`an${n}`)) { const a = { b: String(fd.get(`ab${n}`) || '').trim(), n: String(fd.get(`an${n}`) || '').trim(), e: String(fd.get(`ae${n}`) || '').trim(), p: String(fd.get(`ap${n}`) || '').trim(), c: String(fd.get(`ac${n}`) || '').trim() }; if (a.n || a.p || a.c) b.apts.push(a); }
     }
     if (b.keybox) b.codes.unshift({ l: KEYBOX, c: b.keybox });
     delete b.keybox;
-    for (const k of Object.keys(b)) if (/^(cl|cc|ab|an|ae|ap|ac)\d+$/.test(k)) delete b[k];
+    for (const k of Object.keys(b)) if (/^(ab|an|ae|ap|ac)\d+$/.test(k)) delete b[k];
     try {
       if (b.id) await api('residences/' + b.id, { method: 'PATCH', body: b });
       else await api('residences', { method: 'POST', body: b });

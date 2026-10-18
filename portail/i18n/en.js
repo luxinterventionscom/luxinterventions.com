@@ -3647,5 +3647,69 @@ export default [
 [
 "🧾 Facture",
 "🧾 Invoice"
+],
+[
+"Prénom et nom",
+"First and last name"
+],
+[
+"N° porte",
+"Door no."
+],
+[
+"Intérieur (dans l’immeuble) — seulement pour un dépannage",
+"Inside (in the building) — only for a repair call-out"
+],
+[
+"Étage(s) de l’appartement / des appartements — seulement pour un dépannage",
+"Floor(s) of the flat(s) — only for a repair call-out"
+],
+[
+"⚙️ Code locaux techniques / garage (panneaux électriques, machines)",
+"⚙️ Technical rooms / garage code (electrical panels, machines)"
+],
+[
+"⚙️ Code locaux techniques / garage (panneaux électriques, machines) {0}",
+"⚙️ Technical rooms / garage code (electrical panels, machines) {0}"
+],
+[
+"{0} appartements ajoutés — complétez les noms et les codes si besoin",
+"{0} flats added — complete the names and codes if needed"
+],
+[
+"🔒 Protection des données (RGPD)",
+"🔒 Data protection (GDPR)"
+],
+[
+"Protection des données (RGPD)",
+"Data protection (GDPR)"
+],
+[
+"Porte {0}",
+"Door {0}"
+],
+[
+"Responsable du traitement : votre gérance, pour les données de ses résidences, de ses occupants et de ses demandes. ARES INVEST S.A. (nom commercial LuxInterventions) les traite uniquement pour réaliser les interventions demandées, en tant que sous-traitant (art. 28 RGPD).",
+"Data controller: your property manager, for the data of its residences, occupants and requests. ARES INVEST S.A. (trading as LuxInterventions) processes it only to carry out the requested work, as a processor (Art. 28 GDPR)."
+],
+[
+"Données : résidences et adresses, prénom et nom des occupants, n° de porte, étage, codes d’accès et de serrure, contacts sur place, demandes, photos des interventions, devis et factures.",
+"Data: residences and addresses, first and last names of occupants, door no., floor, access and lock codes, on-site contacts, requests, photos of the work, quotes and invoices."
+],
+[
+"Qui les voit : votre gérance et l’équipe LuxInterventions chargée de l’intervention (le technicien reçoit seulement ce qu’il faut pour sa mission). Aucune publicité, aucune revente.",
+"Who sees it: your property manager and the LuxInterventions team in charge of the job (the technician only receives what is needed for the job). No advertising, no resale."
+],
+[
+"Durée : les noms, codes et contacts sont effacés 3 mois après la fin du contrat avec la gérance ; les devis et factures sont gardés 10 ans (obligation comptable).",
+"Retention: names, codes and contacts are deleted 3 months after the contract with the property manager ends; quotes and invoices are kept for 10 years (accounting obligation)."
+],
+[
+"Sécurité : accès personnel par email et mot de passe, connexion chiffrée (HTTPS), données chez un hébergeur technique.",
+"Security: personal access with email and password, encrypted connection (HTTPS), data stored with a technical hosting provider."
+],
+[
+"Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LuxInterventions. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).",
+"Your rights: access, rectification, erasure, restriction and objection. The property manager corrects its data directly in the portal; for any other request, write to LuxInterventions. You can also contact the CNPD (Commission nationale pour la protection des données, Luxembourg)."
 ]
 ];
