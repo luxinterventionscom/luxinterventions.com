@@ -12,7 +12,7 @@ import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.20.0';
+const VERSION = '1.20.1';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -425,7 +425,12 @@ async function startSession() {
   if (t) openTicket(t[1]);
   startPolling();
   initPush();
-  if (!isAdmin() && !state.demo && !t && !offerSeen()) api('pubs').then((r) => { state.offersOff = r.offers === false; if (!state.offersOff) setTimeout(() => { if (!state.sheet) openSheet('offer'); }, 600); }).catch(() => {});
+  // offres d'abonnement : toujours relire le réglage de LuxInterventions (même si on arrive sur « Plus » ou « Demandes »), puis la fenêtre une seule fois
+  if (!isAdmin() && !state.demo) api('pubs').then((r) => {
+    const off = r.offers === false;
+    if (off !== !!state.offersOff) { state.offersOff = off; renderView(); }
+    if (!off && !t && !offerSeen()) setTimeout(() => { if (!state.sheet) openSheet('offer'); }, 600);
+  }).catch(() => {});
   let want = ''; try { want = localStorage.getItem('ptlOfferWant') || ''; localStorage.removeItem('ptlOfferWant'); } catch { /* stockage indisponible */ }
   if (want && !isAdmin() && !state.demo) api('offer', { method: 'POST', body: { plan: want } }).catch(() => {});
   if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/portail-sw.js', { scope: '/portail' }).catch(() => {});
