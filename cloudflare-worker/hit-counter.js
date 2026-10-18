@@ -208,6 +208,7 @@ async function route(request, env, ctx, headers) {
  *   GET    /api/ares/key           chiave dati cifrata                 [auth]
  *   POST   /api/ares/rekey         cambio della chiave di accesso      [auth]
  *   POST   /api/ares/recovery      crea la chiave di secours           [auth principale]
+ *   GET|POST /api/ares/ops, DELETE /api/ares/ops/<id>  operatori della centrale (password personali) [auth principale]
  *   (la chiave di secours apre il coffre come la chiave di accesso e permette
  *    di sceglierne una nuova se è stata dimenticata)
  *   GET    /api/ares/data          database cifrato + ETag             [auth]
@@ -604,17 +605,18 @@ async function handleAres(request, env, url, headers) {
   if (!meta) return aresJson({ error: "Non configuré" }, 404, headers);
   const auth = request.headers.get("Authorization") || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-  // Due "serrature" possibili: la chiave di accesso (main) o la chiave di secours (recovery).
+  // "Serrature" possibili: la chiave di accesso (main), la chiave di secours (recovery) o la password personale di un operatore (op)
   const tokenHash = isHex64(token) ? await sha256Hex(token) : "";
+  const op = (meta.ops || []).find((o) => safeEqual(tokenHash, o.authHash)) || null;
   const slot = safeEqual(tokenHash, meta.authHash) ? "main"
-    : meta.recovery && safeEqual(tokenHash, meta.recovery.authHash) ? "recovery" : null;
+    : meta.recovery && safeEqual(tokenHash, meta.recovery.authHash) ? "recovery" : op ? "op" : null;
   if (!slot) {
     await aresRecordFail(env, ip);
     return aresJson({ error: "Clé d'accès incorrecte" }, 401, headers);
   }
 
   if (path === "key" && method === "GET") {
-    return aresJson({ wrappedKey: slot === "main" ? meta.wrappedKey : meta.recovery.wrappedKey, slot }, 200, headers);
+    return aresJson({ wrappedKey: slot === "main" ? meta.wrappedKey : slot === "op" ? op.wrappedKey : meta.recovery.wrappedKey, slot, op: op ? { id: op.id, name: op.name, role: op.role } : null }, 200, headers);
   }
 
   // ── Sessione esclusiva (un solo dispositivo connesso) ──
@@ -659,7 +661,35 @@ async function handleAres(request, env, url, headers) {
     return aresJson({ ok: true }, 200, headers);
   }
 
+  // Operatori della centrale (centralinista, contabile) : seconde enveloppe della chiave dati, aperta dalla loro password ; solo il responsabile li gestisce
+  if (path === "ops" || path.startsWith("ops/")) {
+    if (slot !== "main") return aresJson({ error: "Réservé au responsable (clé d'accès principale)" }, 403, headers);
+    const ops = meta.ops || [];
+    if (path === "ops" && method === "GET") return aresJson({ ops: ops.map((o) => ({ id: o.id, login: o.login, name: o.name, role: o.role, createdAt: o.createdAt })) }, 200, headers);
+    if (path === "ops" && method === "POST") {
+      let b;
+      try { b = await request.json(); } catch { b = null; }
+      const login = String((b && b.login) || "").toLowerCase();
+      if (!b || !/^[a-z0-9._-]{3,30}$/.test(login) || !isB64(b.wrappedKey, 256) || !isHex64(b.authHash) || !["centraliste", "comptable"].includes(b.role)) return aresJson({ error: "Données invalides" }, 400, headers);
+      const name = String(b.name || "").replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, 60);
+      if (!name) return aresJson({ error: "Nom obligatoire" }, 400, headers);
+      const keep = ops.filter((o) => o.login !== login);
+      if (keep.length >= 10) return aresJson({ error: "10 opérateurs au maximum" }, 400, headers);
+      const id = (ops.find((o) => o.login === login) || {}).id || crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+      keep.push({ id, login, name, role: b.role, wrappedKey: b.wrappedKey, authHash: b.authHash, createdAt: new Date().toISOString() });
+      await env.PHOTOS.put(ARES_META, JSON.stringify({ ...meta, ops: keep }));
+      return aresJson({ ok: true, id }, 200, headers);
+    }
+    const m = path.match(/^ops\/([a-f0-9]{16})$/);
+    if (m && method === "DELETE") {
+      await env.PHOTOS.put(ARES_META, JSON.stringify({ ...meta, ops: ops.filter((o) => o.id !== m[1]) }));
+      return aresJson({ ok: true }, 200, headers);
+    }
+    return aresJson({ error: "Not found" }, 404, headers);
+  }
+
   if (path === "rekey" && method === "POST") {
+    if (slot === "op") return aresJson({ error: "Réservé au responsable" }, 403, headers);
     let body;
     try { body = await request.json(); } catch { body = null; }
     if (!validKeyMaterial(body)) return aresJson({ error: "Données invalides" }, 400, headers);
@@ -777,7 +807,9 @@ async function handleAres(request, env, url, headers) {
       tel: s(a.tel, 40), web: url(a.web), video: url(a.video), fin: /^\d{4}-\d{2}-\d{2}$/.test(a.fin || "") ? a.fin : "",
     })).filter((a) => a.nom);
     // offers : bannière / fenêtre « Nos abonnements » dans le portail des gérances (activée par défaut)
-    await env.PHOTOS.put(ARES_PUBS, JSON.stringify({ items, offers: !(b && b.offers === false), at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
+    // contact : le responsable de la centrale LuxInterventions, affiché aux gérances dans leur portail
+    const c = b && b.contact ? { nom: s(b.contact.nom, 80), tel: s(b.contact.tel, 40), email: s(b.contact.email, 120) } : null;
+    await env.PHOTOS.put(ARES_PUBS, JSON.stringify({ items, offers: !(b && b.offers === false), contact: c && c.nom ? c : null, at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
     return aresJson({ ok: true, n: items.length }, 200, headers);
   }
   // Lien court TikTok (vm.tiktok.com/…, tiktok.com/t/…) → lien complet de la vidéo (pour le mini lecteur des annonces)
@@ -1377,7 +1409,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       const day = new Date().toISOString().slice(0, 10);
       const j = obj ? await obj.json() : {};
       const items = (j.items || []).filter((a) => !a.fin || a.fin >= day);
-      return json({ items, offers: j.offers !== false });
+      return json({ items, offers: j.offers !== false, contact: j.contact || null });
     }
 
     // « Je suis intéressé » (offre d'abonnement affichée à la gérance) : prévient LuxInterventions

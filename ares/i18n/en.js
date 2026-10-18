@@ -14643,5 +14643,185 @@ export default [
 [
 "Par défaut : le choix fait pour la gérance (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.",
 "Default: the choice made for the property manager (Gérances → the property manager → 🧾 Billing). Work on a building located in Luxembourg: Luxembourg VAT applies in principle, even for a foreign client — to be confirmed with your accountant."
+],
+[
+"👤 Connexion opérateur (centraliste, comptable)",
+"👤 Operator login (dispatcher, accountant)"
+],
+[
+"👤 Opérateur de la centrale",
+"👤 Central operator"
+],
+[
+"— votre identifiant et votre mot de passe personnels, donnés par le responsable.",
+"— your personal login and password, given by the manager."
+],
+[
+"Identifiant",
+"Login"
+],
+[
+"← Responsable (clé d'accès)",
+"← Manager (access key)"
+],
+[
+"Connexion requise pour un opérateur.",
+"Connection required for an operator."
+],
+[
+"Identifiant ou mot de passe incorrect",
+"Wrong login or password"
+],
+[
+"👥 Centrale",
+"👥 Central"
+],
+[
+"👤 Connecté :",
+"👤 Signed in:"
+],
+[
+"Responsable :",
+"Manager:"
+],
+[
+"👥 Centrale : responsable et opérateurs",
+"👥 Central: manager and operators"
+],
+[
+"⭐ Responsable de la centrale",
+"⭐ Central manager"
+],
+[
+"Affiché aux gérances dans leur portail (« Votre contact LuxInterventions ») et sur vos factures.",
+"Shown to property managers in their portal (“Your LuxInterventions contact”) and on your invoices."
+],
+[
+"👤 Opérateurs",
+"👤 Operators"
+],
+[
+"Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître votre clé d’accès. Le comptable voit tout mais n’affecte pas les travaux. Retirer un opérateur lui coupe l’accès tout de suite.",
+"Dispatcher or accountant: each one signs in with their login and password (“👤 Operator login” on the lock screen), without knowing your access key. The accountant sees everything but does not assign jobs. Removing an operator cuts their access immediately."
+],
+[
+"Aucun opérateur pour l’instant.",
+"No operator yet."
+],
+[
+"identifiant",
+"login"
+],
+[
+"Opérateur",
+"Operator"
+],
+[
+"Nom affiché",
+"Display name"
+],
+[
+"ex. Sara",
+"e.g. Sara"
+],
+[
+"Centraliste",
+"Dispatcher"
+],
+[
+"Comptable",
+"Accountant"
+],
+[
+"Au moins 10 caractères",
+"At least 10 characters"
+],
+[
+"Retapez le mot de passe",
+"Type the password again"
+],
+[
+"Votre clé d’accès vous sera demandée pour confirmer. Même identifiant = nouveau mot de passe.",
+"Your access key will be asked to confirm. Same login = new password."
+],
+[
+"Créer l’accès",
+"Create the access"
+],
+[
+"Réservé au responsable",
+"Manager only"
+],
+[
+"Le comptable n’affecte pas les travaux (responsable ou centraliste)",
+"The accountant does not assign jobs (manager or dispatcher)"
+],
+[
+"Le comptable n’affecte pas les travaux",
+"The accountant does not assign jobs"
+],
+[
+"Responsable enregistré",
+"Manager saved"
+],
+[
+"Mot de passe : au moins 10 caractères",
+"Password: at least 10 characters"
+],
+[
+"Les deux mots de passe ne correspondent pas",
+"The two passwords do not match"
+],
+[
+"Identifiant : 3 à 30 lettres ou chiffres (sans espace)",
+"Login: 3 to 30 letters or digits (no spaces)"
+],
+[
+"Confirmer avec votre clé d’accès",
+"Confirm with your access key"
+],
+[
+"Pour créer l’accès d’un opérateur.",
+"To create an operator’s access."
+],
+[
+"✅ Accès créé : donnez-lui son identifiant et son mot de passe",
+"✅ Access created: give them their login and password"
+],
+[
+"Accès retiré",
+"Access removed"
+],
+[
+"Retirer l’accès de {0} ?",
+"Remove {0}’s access?"
+],
+[
+"Il ne pourra plus ouvrir la centrale. Vos données ne changent pas.",
+"They will no longer be able to open the central. Your data does not change."
+],
+[
+"Opérateur retiré",
+"Operator removed"
+],
+[
+"Opérateur ajouté",
+"Operator added"
+],
+[
+"Responsable de la centrale",
+"Central manager"
+],
+[
+"(Responsable)",
+"(Manager)"
+],
+[
+"(Centraliste)",
+"(Dispatcher)"
+],
+[
+"(Comptable)",
+"(Accountant)"
 ]
 ];

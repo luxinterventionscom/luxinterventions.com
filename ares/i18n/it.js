@@ -14923,5 +14923,185 @@ export default [
 [
 "Par défaut : le choix fait pour la gérance (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.",
 "Predefinito: la scelta fatta per l’amministrazione (Gérances → l’amministrazione → 🧾 Fatturazione). Lavori su un immobile situato in Lussemburgo: in linea di principio si applica l’IVA lussemburghese, anche per un cliente straniero — da confermare con il vostro commercialista."
+],
+[
+"👤 Connexion opérateur (centraliste, comptable)",
+"👤 Accesso operatore (centralinista, contabile)"
+],
+[
+"👤 Opérateur de la centrale",
+"👤 Operatore della centrale"
+],
+[
+"— votre identifiant et votre mot de passe personnels, donnés par le responsable.",
+"— il vostro identificativo e la vostra password personali, dati dal responsabile."
+],
+[
+"Identifiant",
+"Identificativo"
+],
+[
+"← Responsable (clé d'accès)",
+"← Responsabile (chiave d’accesso)"
+],
+[
+"Connexion requise pour un opérateur.",
+"Connessione necessaria per un operatore."
+],
+[
+"Identifiant ou mot de passe incorrect",
+"Identificativo o password errati"
+],
+[
+"👥 Centrale",
+"👥 Centrale"
+],
+[
+"👤 Connecté :",
+"👤 Connesso:"
+],
+[
+"Responsable :",
+"Responsabile:"
+],
+[
+"👥 Centrale : responsable et opérateurs",
+"👥 Centrale: responsabile e operatori"
+],
+[
+"⭐ Responsable de la centrale",
+"⭐ Responsabile della centrale"
+],
+[
+"Affiché aux gérances dans leur portail (« Votre contact LuxInterventions ») et sur vos factures.",
+"Mostrato alle amministrazioni nel loro portale («Il vostro contatto LuxInterventions») e sulle vostre fatture."
+],
+[
+"👤 Opérateurs",
+"👤 Operatori"
+],
+[
+"Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître votre clé d’accès. Le comptable voit tout mais n’affecte pas les travaux. Retirer un opérateur lui coupe l’accès tout de suite.",
+"Centralinista o contabile: ognuno entra con il suo identificativo e la sua password («👤 Accesso operatore» sulla schermata di blocco), senza conoscere la vostra chiave d’accesso. Il contabile vede tutto ma non assegna i lavori. Rimuovere un operatore gli toglie subito l’accesso."
+],
+[
+"Aucun opérateur pour l’instant.",
+"Nessun operatore per ora."
+],
+[
+"identifiant",
+"identificativo"
+],
+[
+"Opérateur",
+"Operatore"
+],
+[
+"Nom affiché",
+"Nome visualizzato"
+],
+[
+"ex. Sara",
+"es. Sara"
+],
+[
+"Centraliste",
+"Centralinista"
+],
+[
+"Comptable",
+"Contabile"
+],
+[
+"Au moins 10 caractères",
+"Almeno 10 caratteri"
+],
+[
+"Retapez le mot de passe",
+"Riscrivete la password"
+],
+[
+"Votre clé d’accès vous sera demandée pour confirmer. Même identifiant = nouveau mot de passe.",
+"Vi verrà chiesta la vostra chiave d’accesso per confermare. Stesso identificativo = nuova password."
+],
+[
+"Créer l’accès",
+"Crea l’accesso"
+],
+[
+"Réservé au responsable",
+"Riservato al responsabile"
+],
+[
+"Le comptable n’affecte pas les travaux (responsable ou centraliste)",
+"Il contabile non assegna i lavori (responsabile o centralinista)"
+],
+[
+"Le comptable n’affecte pas les travaux",
+"Il contabile non assegna i lavori"
+],
+[
+"Responsable enregistré",
+"Responsabile salvato"
+],
+[
+"Mot de passe : au moins 10 caractères",
+"Password: almeno 10 caratteri"
+],
+[
+"Les deux mots de passe ne correspondent pas",
+"Le due password non corrispondono"
+],
+[
+"Identifiant : 3 à 30 lettres ou chiffres (sans espace)",
+"Identificativo: da 3 a 30 lettere o cifre (senza spazi)"
+],
+[
+"Confirmer avec votre clé d’accès",
+"Confermate con la vostra chiave d’accesso"
+],
+[
+"Pour créer l’accès d’un opérateur.",
+"Per creare l’accesso di un operatore."
+],
+[
+"✅ Accès créé : donnez-lui son identifiant et son mot de passe",
+"✅ Accesso creato: dategli il suo identificativo e la sua password"
+],
+[
+"Accès retiré",
+"Accesso rimosso"
+],
+[
+"Retirer l’accès de {0} ?",
+"Rimuovere l’accesso di {0}?"
+],
+[
+"Il ne pourra plus ouvrir la centrale. Vos données ne changent pas.",
+"Non potrà più aprire la centrale. I vostri dati non cambiano."
+],
+[
+"Opérateur retiré",
+"Operatore rimosso"
+],
+[
+"Opérateur ajouté",
+"Operatore aggiunto"
+],
+[
+"Responsable de la centrale",
+"Responsabile della centrale"
+],
+[
+"(Responsable)",
+"(Responsabile)"
+],
+[
+"(Centraliste)",
+"(Centralinista)"
+],
+[
+"(Comptable)",
+"(Contabile)"
 ]
 ];

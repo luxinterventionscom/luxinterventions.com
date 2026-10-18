@@ -3827,5 +3827,13 @@ export default [
 [
 "Les collaborateurs sont ajoutés par la gérance dans son portail",
 "I collaboratori sono aggiunti dall’amministrazione nel suo portale"
+],
+[
+"📞 Votre contact LuxInterventions",
+"📞 Il vostro contatto LuxInterventions"
+],
+[
+"Responsable de la centrale",
+"Responsabile della centrale"
 ]
 ];
