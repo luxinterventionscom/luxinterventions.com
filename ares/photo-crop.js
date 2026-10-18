@@ -24,15 +24,16 @@ export async function cropPhoto(file, lang = 'fr', size = 256) {
     const V = Math.max(200, Math.min(300, innerWidth - 72)), R = devicePixelRatio || 1, base = V / Math.min(W, H);
     const a0 = autoBox(W, H);
     let z = 1, ox = -a0.x * base, oy = -a0.y * base;
-    const d = document.createElement('div');
-    d.setAttribute('role', 'dialog'); d.setAttribute('aria-modal', 'true'); d.className = 'cbox pcrop';
-    d.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+    // <dialog> ouvert avec showModal : passe au-dessus d'une fiche déjà ouverte (elle-même un <dialog> modal, ex. « Modifier la fiche »)
+    const d = document.createElement('dialog');
+    d.setAttribute('aria-modal', 'true'); d.className = 'cbox pcrop';
+    d.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;max-width:none;max-height:none;margin:0;border:0;z-index:10000;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box';
     d.innerHTML = `<div style="background:#fff;color:#1a1a1a;border-radius:16px;padding:18px;max-width:360px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.35);font:inherit;text-align:center">
       <b style="display:block;font-size:17px;margin-bottom:6px">${esc(t[0])}</b>
       <p style="margin:0 0 12px;font-size:13px;line-height:1.4;color:#555">${esc(t[1])}</p>
       <canvas width="${V * R}" height="${V * R}" style="width:${V}px;height:${V}px;touch-action:none;cursor:grab;border-radius:12px;background:#222;display:block;margin:0 auto"></canvas>
       <label style="display:flex;align-items:center;gap:10px;margin:14px 4px 16px;font-size:14px">🔍<input type="range" min="100" max="400" value="100" aria-label="${esc(t[4])}" style="flex:1"></label>
-      <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn sec" data-pc="0" style="background:#fff;color:#1a1a1a;border:1px solid #ccc">${esc(t[2])}</button><button type="button" class="btn" data-pc="1">${esc(t[3])}</button></div></div>`;
+      <div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn sec" data-pc="0" style="background:#fff;color:#1a1a1a;border:1px solid #ccc">${esc(t[2])}</button><button type="button" class="btn primary" data-pc="1">${esc(t[3])}</button></div></div>`;
     const cv = d.querySelector('canvas'), g = cv.getContext('2d'), rg = d.querySelector('input[type=range]');
     const clamp = () => { const s = base * z; ox = Math.min(0, Math.max(V - W * s, ox)); oy = Math.min(0, Math.max(V - H * s, oy)); };
     const draw = () => {
@@ -64,7 +65,7 @@ export async function cropPhoto(file, lang = 'fr', size = 256) {
     rg.addEventListener('input', () => zoomTo(+rg.value / 100));
     const key = (e) => { if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); done(false); } };
     const done = (ok) => {
-      removeEventListener('keydown', key, true); d.remove();
+      removeEventListener('keydown', key, true); if (d.open && d.close) d.close(); d.remove();
       if (!ok) return resolve(null);
       const s = base * z;
       resolve(out(-ox / s, -oy / s, V / s));
@@ -72,7 +73,9 @@ export async function cropPhoto(file, lang = 'fr', size = 256) {
     d.addEventListener('click', (e) => { const b = e.target.closest('[data-pc]'); if (b) done(b.dataset.pc === '1'); });
     addEventListener('keydown', key, true);
     clamp(); draw();
+    d.addEventListener('cancel', (e) => { e.preventDefault(); done(false); });
     document.body.append(d);
+    try { d.showModal(); } catch { d.setAttribute('open', ''); }
     d.querySelector('[data-pc="1"]').focus();
   });
 }
