@@ -12,7 +12,7 @@ import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.20.1';
+const VERSION = '1.21.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -324,12 +324,13 @@ function renderLock(mode, data = {}) {
   }
   if (mode === 'invite') {
     setHtml(lockEl, html`<form class="lock-card" data-form="invite" autocomplete="off">${brandHead()}
-      <div class="inv-welcome"><p class="iw-t">🎉 Bienvenue ${data.name} !</p><p class="iw-org">${data.org}</p><p><b>Merci d’avoir choisi LuxInterventions.</b> Nous sommes très heureux de travailler avec vous.</p></div>
+      <div class="inv-welcome"><p class="iw-t">🎉 Bienvenue${data.name ? ' ' + data.name : ''} !</p><p class="iw-org">${data.org}</p><p><b>Merci d’avoir choisi LuxInterventions.</b> Nous sommes très heureux de travailler avec vous.</p></div>
       ${offerBanner()}
       <p class="iw-step">🔑 Choisissez votre mot de passe</p>
       <p class="small muted" style="margin:-4px 0 4px">Une seule fois : ensuite vous vous connecterez avec votre email et ce mot de passe.</p>
       <input type="hidden" name="token" value="${data.token}">
       <input type="text" name="username" value="${data.email}" autocomplete="username" readonly class="muted">
+      ${data.needName ? html`<label class="field">⭐ Prénom et nom (responsable de la gérance)<input name="name" required autocomplete="name" maxlength="120"></label>` : ''}
       <label class="field">Mot de passe ${pwField('pass', 'Au moins 10 caractères', 'new-password')}</label>
       <label class="field">Confirmer ${pwField('pass2', 'Retapez le mot de passe', 'new-password')}</label>
       <div class="lock-err" role="alert"></div>
@@ -1047,14 +1048,14 @@ const VIEWS = {
     if (q) list = list.filter((r) => [r.name, r.address, r.org_name].join(' ').toLowerCase().includes(q));
     const apts = list.reduce((a, r) => a + (r.apartments || 0), 0);
     return html`
-      ${pageHead('Résidences', `${list.length} résidence${list.length > 1 ? 's' : ''}${apts ? ' · ' + apts + ' appartements' : ''}`, html`<button class="btn primary" data-action="new-residence">${icon('plus')} Ajouter une résidence</button>`)}
+      ${pageHead('Résidences', `${list.length} résidence${list.length > 1 ? 's' : ''}${apts ? ' · ' + apts + ' appartements' : ''}`, isAdmin() ? '' : html`<button class="btn primary" data-action="new-residence">${icon('plus')} Ajouter une résidence</button>`)}
       ${orgFilter()}
       <div class="search">${icon('search')}<input type="search" data-input="rq" placeholder="Rechercher une résidence, une adresse…" value="${state.filters.rq || ''}" autocomplete="off"></div>
       ${list.length ? html`<div class="list">${list.map((r) => html`<button class="row" data-action="open-residence" data-id="${r.id}">
         <span class="avatar">${icon('building')}</span>
         <span class="grow"><span class="title" style="display:block">${r.name}</span><span class="meta">${r.address || '—'}${isAdmin() ? ' · ' + r.org_name : ''}</span></span>
         ${r.open ? html`<span class="badge warn">${r.open} en cours</span>` : html`<span class="tiny muted">${r.tickets} demande${r.tickets > 1 ? 's' : ''}</span>`}
-      </button>`)}</div>` : empty('building', q ? 'Aucun résultat.' : 'Aucune résidence enregistrée. Ajoutez vos résidences une seule fois : elles seront proposées à chaque demande.', !q ? html`<button class="btn primary" data-action="new-residence">${icon('plus')} Ajouter une résidence</button>` : '')}`;
+      </button>`)}</div>` : empty('building', q ? 'Aucun résultat.' : 'Aucune résidence enregistrée. Ajoutez vos résidences une seule fois : elles seront proposées à chaque demande.', !q && !isAdmin() ? html`<button class="btn primary" data-action="new-residence">${icon('plus')} Ajouter une résidence</button>` : '')}`;
   },
 
   gerances() {
@@ -1631,7 +1632,7 @@ const SHEETS = {
         <button class="btn primary block" data-action="new-ticket" data-residence="${r.id}">${icon('plus')} Demande de dépannage pour cette résidence</button>
         <div class="section-label">Historique des interventions</div>
         ${hist ? (hist.length ? html`<div class="list">${hist.map(ticketRow)}</div>` : html`<p class="muted small">Aucune demande pour cette résidence.</p>`) : html`<div class="spinner accent"></div>`}`,
-      foot: html`<button class="btn ghost danger" data-action="residence-archive" data-id="${r.id}">${icon('trash')}</button><button class="btn" data-action="edit-residence" data-id="${r.id}">${icon('edit')} Modifier</button>`,
+      foot: isAdmin() ? '' : html`<button class="btn ghost danger" data-action="residence-archive" data-id="${r.id}">${icon('trash')}</button><button class="btn" data-action="edit-residence" data-id="${r.id}">${icon('edit')} Modifier</button>`,
     };
   },
 
@@ -1703,7 +1704,7 @@ const SHEETS = {
         <dl class="kv small" style="margin-bottom:14px">${kv('Téléphone', o.phone)}${kv('Email', o.email)}${kv('Résidences', String(o.residences))}${kv('Demandes en cours', String(o.open))}</dl>
         <div class="section-label" style="margin-top:0">Utilisateurs</div>
         ${list.length ? html`<div class="list">${list.map(userRow)}</div>` : html`<p class="muted small">Aucun utilisateur. Invitez le responsable de la gérance.</p>`}
-        <button class="btn primary block" style="margin-top:12px" data-action="new-user" data-org="${id}" data-role="gerance_admin">${icon('plus')} Inviter un utilisateur</button>
+        ${list.some((u) => u.role === 'gerance_admin' && u.active) ? html`<p class="tiny muted" style="margin:10px 0 0">Les collaborateurs sont ajoutés par le responsable dans son portail.</p>` : html`<button class="btn primary block" style="margin-top:12px" data-action="new-user" data-org="${id}" data-role="gerance_admin">${icon('plus')} Inviter le responsable</button>`}
         <div class="actions" style="margin-top:12px">
           <button class="btn" data-action="org-residences" data-id="${id}">${icon('building')} Résidences</button>
           <button class="btn" data-action="org-tickets" data-id="${id}">${icon('wrench')} Demandes</button>
@@ -1719,12 +1720,22 @@ const SHEETS = {
       narrow: true,
       body: html`<form id="f" data-form="org" class="fields"><input type="hidden" name="id" value="${id || ''}">
         ${field('Nom', 'name', o.name, { full: true, required: true, placeholder: 'ex. Gérance Dupont SA' })}
-        ${field('Téléphone', 'phone', o.phone, { type: 'tel' })}${field('Email', 'email', o.email, { type: 'email' })}</form>`,
+        ${field('Téléphone', 'phone', o.phone, { type: 'tel' })}${field('Email', 'email', o.email, { type: 'email' })}${field('RCS', 'rcs', o.rcs, { placeholder: 'B123456' })}
+        <p class="tiny muted full" style="margin:0">Adresse, TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).</p></form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
 
   'user-form'({ data }) {
+    // LuxInterventions invite le responsable d'une gérance : email (+ téléphone) seulement, il écrit son nom en ouvrant le lien
+    if (isAdmin() && data.role !== 'admin') return {
+      title: 'Inviter le responsable', narrow: true,
+      body: html`<form id="f" data-form="user" class="fields"><input type="hidden" name="org_id" value="${data.org || ''}"><input type="hidden" name="role" value="gerance_admin">
+        ${field('Email', 'email', '', { full: true, type: 'email', required: true })}
+        ${field('Téléphone', 'phone', '', { full: true, type: 'tel' })}
+        <p class="tiny muted full">La première personne qui ouvre le lien devient responsable : elle écrit son prénom et son nom, choisit son mot de passe et ajoute ses collègues. Valable 14 jours.</p></form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Créer le lien</button>`,
+    };
     const roles = data.role === 'admin' ? [['admin', ROLES.admin]] : [['gerance_admin', 'Resp. (invite collègues)'], ['gerance_user', 'Collab. (demandes)']];
     return {
       title: data.role === 'admin' ? 'Inviter un membre de l’équipe' : 'Inviter un utilisateur',
@@ -2185,6 +2196,7 @@ const FORMS = {
     try {
       const d = await api('invite/' + fd.get('token'));
       const cred = await newCredentials(fd.get('pass'), d.iter);
+      if (fd.get('name')) cred.name = String(fd.get('name')).trim();
       const { token } = await api('invite/' + fd.get('token'), { method: 'POST', body: cred });
       state.lastEmail = d.email;
       saveToken(token);

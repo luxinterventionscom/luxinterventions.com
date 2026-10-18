@@ -13982,7 +13982,7 @@ export default [
 ],
 [
 "RCS de la gérance obligatoire",
-"RCS der Verwaltung ist Pflicht"
+"RCS der Hausverwaltung erforderlich"
 ],
 [
 "RCS de l’agence obligatoire",
@@ -14819,5 +14819,93 @@ export default [
 [
 "Filtres : {0}",
 "Filter: {0}"
+],
+[
+"Avec TVA",
+"Mit MwSt."
+],
+[
+"Mention sur la facture (sans TVA)",
+"Vermerk auf der Rechnung (ohne MwSt.)"
+],
+[
+"ex. TVA non applicable — formule donnée par votre comptable",
+"z. B. MwSt. nicht anwendbar — Formulierung von Ihrem Steuerberater"
+],
+[
+"Pour vos factures à cette gérance. Travaux sur un immeuble au Luxembourg : en principe avec TVA luxembourgeoise — en cas de doute, demandez à votre comptable.",
+"Für Ihre Rechnungen an diese Hausverwaltung. Arbeiten an einer Immobilie in Luxemburg: grundsätzlich mit luxemburgischer MwSt. — im Zweifel fragen Sie Ihren Steuerberater."
+],
+[
+"Pas encore rempli par la gérance",
+"Noch nicht von der Hausverwaltung ausgefüllt"
+],
+[
+"(dans son portail → Ma société)",
+"(in ihrem Portal → Meine Firma)"
+],
+[
+"(reçoit le lien d’invitation)",
+"(erhält den Einladungslink)"
+],
+[
+"Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).",
+"Adresse, MwSt.-Nr., Bank und Logo: füllt die Hausverwaltung selbst in ihrem Portal aus (Meine Firma)."
+],
+[
+"Un lien d’invitation est créé pour cet email (14 jours). La première personne qui l’ouvre devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis remplit les données de sa société (adresse, TVA, banque, logo) et ajoute ses collègues.",
+"Für diese E-Mail wird ein Einladungslink erstellt (14 Tage). Die erste Person, die ihn öffnet, wird Verantwortliche: sie gibt Vor- und Nachnamen ein, wählt ihr Passwort, füllt dann die Firmendaten aus (Adresse, MwSt., Bank, Logo) und fügt ihre Kollegen hinzu."
+],
+[
+"Créer + lien d’invitation",
+"Erstellen + Einladungslink"
+],
+[
+"La première personne qui ouvre le lien devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis ajoute ses collaborateurs.",
+"Die erste Person, die den Link öffnet, wird Verantwortliche: sie gibt Vor- und Nachnamen ein, wählt ihr Passwort und fügt dann ihre Mitarbeiter hinzu."
+],
+[
+"Créer le lien du responsable",
+"Link für den Verantwortlichen erstellen"
+],
+[
+"). Adresse, TVA et banque de la gérance : remplies par elle dans son portail.",
+"). Adresse, MwSt. und Bank der Hausverwaltung: von ihr selbst im Portal ausgefüllt."
+],
+[
+"Ici vous créez les gérances (nom, email, téléphone, RCS) et leur envoyez le lien d’invitation ; elles remplissent elles-mêmes leurs données et leurs résidences. Vous recevez leurs demandes et leur envoyez vos factures.",
+"Hier legen Sie die Hausverwaltungen an (Name, E-Mail, Telefon, RCS) und senden ihnen den Einladungslink; sie füllen ihre Daten und Residenzen selbst aus. Sie erhalten ihre Anfragen und senden ihnen Ihre Rechnungen."
+],
+[
+"✅ Factures avec TVA",
+"✅ Rechnungen mit MwSt."
+],
+[
+"✅ Factures sans TVA",
+"✅ Rechnungen ohne MwSt."
+],
+[
+"TVA de la gérance",
+"MwSt. der Hausverwaltung"
+],
+[
+"avec TVA",
+"mit MwSt."
+],
+[
+"sans TVA",
+"ohne MwSt."
+],
+[
+"({0}) : la personne ouvre le lien et choisit son mot de passe.",
+"({0}): die Person öffnet den Link und wählt ihr Passwort."
+],
+[
+"la personne ouvre le lien, écrit son prénom et son nom et choisit son mot de passe.",
+"die Person öffnet den Link, gibt Vor- und Nachnamen ein und wählt ihr Passwort."
+],
+[
+"Par défaut : le choix fait pour la gérance (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.",
+"Standard: die Wahl für die Hausverwaltung (Gérances → die Hausverwaltung → 🧾 Abrechnung). Arbeiten an einer Immobilie in Luxemburg: grundsätzlich gilt die luxemburgische MwSt., auch für einen ausländischen Kunden — mit Ihrem Steuerberater zu bestätigen."
 ]
 ];

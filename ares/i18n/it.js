@@ -13994,7 +13994,7 @@ export default [
 ],
 [
 "RCS de la gérance obligatoire",
-"RCS della gérance obbligatorio"
+"RCS dell’amministrazione obbligatorio"
 ],
 [
 "RCS de l’agence obligatoire",
@@ -14835,5 +14835,93 @@ export default [
 [
 "Filtres : {0}",
 "Filtri: {0}"
+],
+[
+"Avec TVA",
+"Con IVA"
+],
+[
+"Mention sur la facture (sans TVA)",
+"Dicitura sulla fattura (senza IVA)"
+],
+[
+"ex. TVA non applicable — formule donnée par votre comptable",
+"es. IVA non applicabile — formula indicata dal vostro commercialista"
+],
+[
+"Pour vos factures à cette gérance. Travaux sur un immeuble au Luxembourg : en principe avec TVA luxembourgeoise — en cas de doute, demandez à votre comptable.",
+"Per le vostre fatture a questa amministrazione. Lavori su un immobile in Lussemburgo: in linea di principio con IVA lussemburghese — in caso di dubbio, chiedete al vostro commercialista."
+],
+[
+"Pas encore rempli par la gérance",
+"Non ancora compilato dall’amministrazione"
+],
+[
+"(dans son portail → Ma société)",
+"(nel suo portale → La mia società)"
+],
+[
+"(reçoit le lien d’invitation)",
+"(riceve il link d’invito)"
+],
+[
+"Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).",
+"Indirizzo, n° IVA, banca e logo: li compila l’amministrazione stessa nel suo portale (La mia società)."
+],
+[
+"Un lien d’invitation est créé pour cet email (14 jours). La première personne qui l’ouvre devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis remplit les données de sa société (adresse, TVA, banque, logo) et ajoute ses collègues.",
+"Viene creato un link d’invito per questa email (14 giorni). La prima persona che lo apre diventa responsabile: scrive nome e cognome, sceglie la password, poi compila i dati della sua società (indirizzo, IVA, banca, logo) e aggiunge i colleghi."
+],
+[
+"Créer + lien d’invitation",
+"Crea + link d’invito"
+],
+[
+"La première personne qui ouvre le lien devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis ajoute ses collaborateurs.",
+"La prima persona che apre il link diventa responsabile: scrive nome e cognome, sceglie la password, poi aggiunge i suoi collaboratori."
+],
+[
+"Créer le lien du responsable",
+"Crea il link del responsabile"
+],
+[
+"). Adresse, TVA et banque de la gérance : remplies par elle dans son portail.",
+"). Indirizzo, IVA e banca dell’amministrazione: li compila lei nel suo portale."
+],
+[
+"Ici vous créez les gérances (nom, email, téléphone, RCS) et leur envoyez le lien d’invitation ; elles remplissent elles-mêmes leurs données et leurs résidences. Vous recevez leurs demandes et leur envoyez vos factures.",
+"Qui create le amministrazioni (nome, email, telefono, RCS) e inviate loro il link d’invito; compilano da sole i loro dati e le loro residenze. Ricevete le loro richieste e inviate loro le vostre fatture."
+],
+[
+"✅ Factures avec TVA",
+"✅ Fatture con IVA"
+],
+[
+"✅ Factures sans TVA",
+"✅ Fatture senza IVA"
+],
+[
+"TVA de la gérance",
+"IVA dell’amministrazione"
+],
+[
+"avec TVA",
+"con IVA"
+],
+[
+"sans TVA",
+"senza IVA"
+],
+[
+"({0}) : la personne ouvre le lien et choisit son mot de passe.",
+"({0}): la persona apre il link e sceglie la password."
+],
+[
+"la personne ouvre le lien, écrit son prénom et son nom et choisit son mot de passe.",
+"la persona apre il link, scrive nome e cognome e sceglie la password."
+],
+[
+"Par défaut : le choix fait pour la gérance (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.",
+"Predefinito: la scelta fatta per l’amministrazione (Gérances → l’amministrazione → 🧾 Fatturazione). Lavori su un immobile situato in Lussemburgo: in linea di principio si applica l’IVA lussemburghese, anche per un cliente straniero — da confermare con il vostro commercialista."
 ]
 ];
