@@ -3715,5 +3715,69 @@ export default [
 [
 "🧾 Facture",
 "🧾 Fatura"
+],
+[
+"Prénom et nom",
+"Nome e apelido"
+],
+[
+"N° porte",
+"N.º da porta"
+],
+[
+"Intérieur (dans l’immeuble) — seulement pour un dépannage",
+"Interior (no prédio) — só para uma reparação"
+],
+[
+"Étage(s) de l’appartement / des appartements — seulement pour un dépannage",
+"Andar(es) do(s) apartamento(s) — só para uma reparação"
+],
+[
+"⚙️ Code locaux techniques / garage (panneaux électriques, machines)",
+"⚙️ Código locais técnicos / garagem (quadros elétricos, máquinas)"
+],
+[
+"⚙️ Code locaux techniques / garage (panneaux électriques, machines) {0}",
+"⚙️ Código locais técnicos / garagem (quadros elétricos, máquinas) {0}"
+],
+[
+"{0} appartements ajoutés — complétez les noms et les codes si besoin",
+"{0} apartamentos adicionados — complete os nomes e os códigos se necessário"
+],
+[
+"🔒 Protection des données (RGPD)",
+"🔒 Proteção de dados (RGPD)"
+],
+[
+"Protection des données (RGPD)",
+"Proteção de dados (RGPD)"
+],
+[
+"Porte {0}",
+"Porta {0}"
+],
+[
+"Responsable du traitement : votre gérance, pour les données de ses résidences, de ses occupants et de ses demandes. ARES INVEST S.A. (nom commercial LuxInterventions) les traite uniquement pour réaliser les interventions demandées, en tant que sous-traitant (art. 28 RGPD).",
+"Responsável pelo tratamento: a sua gestora (gérance), pelos dados das suas residências, dos seus ocupantes e dos seus pedidos. A ARES INVEST S.A. (nome comercial LuxInterventions) trata-os apenas para realizar as intervenções pedidas, como subcontratante (art. 28.º RGPD)."
+],
+[
+"Données : résidences et adresses, prénom et nom des occupants, n° de porte, étage, codes d’accès et de serrure, contacts sur place, demandes, photos des interventions, devis et factures.",
+"Dados: residências e moradas, nome e apelido dos ocupantes, n.º da porta, andar, códigos de acesso e da fechadura, contactos no local, pedidos, fotos das intervenções, orçamentos e faturas."
+],
+[
+"Qui les voit : votre gérance et l’équipe LuxInterventions chargée de l’intervention (le technicien reçoit seulement ce qu’il faut pour sa mission). Aucune publicité, aucune revente.",
+"Quem os vê: a sua gestora e a equipa LuxInterventions encarregada da intervenção (o técnico recebe só o necessário para o trabalho). Nenhuma publicidade, nenhuma revenda."
+],
+[
+"Durée : les noms, codes et contacts sont effacés 3 mois après la fin du contrat avec la gérance ; les devis et factures sont gardés 10 ans (obligation comptable).",
+"Duração: os nomes, códigos e contactos são apagados 3 meses após o fim do contrato com a gestora; os orçamentos e faturas são guardados 10 anos (obrigação contabilística)."
+],
+[
+"Sécurité : accès personnel par email et mot de passe, connexion chiffrée (HTTPS), données chez un hébergeur technique.",
+"Segurança: acesso pessoal com email e palavra-passe, ligação cifrada (HTTPS), dados num fornecedor técnico de alojamento."
+],
+[
+"Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LuxInterventions. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).",
+"Os seus direitos: acesso, retificação, apagamento, limitação e oposição. A gestora corrige os seus dados diretamente no portal; para qualquer outro pedido, escreva à LuxInterventions. Pode também apresentar queixa à CNPD (Commission nationale pour la protection des données, Luxemburgo)."
 ]
 ];
