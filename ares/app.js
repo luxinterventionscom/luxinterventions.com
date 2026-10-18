@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.154.0';
+const VERSION = '2.155.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3134,36 +3134,23 @@ const factConf = () => ({ ...FACT_DEF, ...(vault.get('reglages', 'facturation') 
 const OP_ROLES = { centraliste: 'Centraliste', comptable: 'Comptable' };
 const centraleConf = () => vault.get('reglages', 'centrale') || {};
 const centraleResp = () => [centraleConf().prenom, centraleConf().nom].filter(Boolean).join(' ');
-const whoLabel = () => (vault.op ? `${vault.op.name} (${OP_ROLES[vault.op.role] || vault.op.role})` : centraleResp() ? `${centraleResp()} (Responsable)` : '');
+const whoLabel = () => (vault.op ? `${vault.op.name} (${OP_ROLES[vault.op.role] || vault.op.role})` : centraleResp() ? `${centraleResp()} (Directeur)` : '');
 const isCompta = () => !!(vault.op && vault.op.role === 'comptable');
+const opsListHtml = () => { const ops = ui.ops || []; return ops.length ? html`<div class="list" style="margin-bottom:10px">${ops.map((o) => html`<div class="row"><span class="avatar">👤</span><span class="grow"><span class="title" style="display:block">${o.name}</span><span class="meta">${OP_ROLES[o.role] || o.role} · <span>identifiant</span> ${o.login}</span></span>${vault.op && vault.op.id === o.id ? html`<span class="badge">vous</span>` : html`<button class="btn sm ghost danger" data-action="op-del" data-id="${o.id}">Retirer</button>`}</div>`)}</div>` : html`<p class="small muted" style="margin:0 0 10px">Aucun opérateur pour l’instant.</p>`; };
 function centraleSection() {
   const c = centraleConf();
-  if (vault.op) return html`<div class="section-label">👥 Centrale</div><div class="card" style="margin-bottom:14px"><p style="margin:0">👤 Connecté : <b>${vault.op.name}</b> · ${OP_ROLES[vault.op.role] || ''}</p>${centraleResp() ? html`<p class="small muted" style="margin:6px 0 0">Responsable : ${centraleResp()}</p>` : ''}</div>`;
-  if (ui.ops == null && navigator.onLine) { ui.ops = []; vault.operators().then((l) => { ui.ops = l; renderView(); }).catch(() => { ui.ops = null; }); }
-  const ops = ui.ops || [];
+  if (isCompta()) return html`<div class="section-label">👥 Centrale</div><div class="card" style="margin-bottom:14px"><p style="margin:0">👤 Connecté : <b>${vault.op.name}</b> · ${OP_ROLES[vault.op.role] || ''}</p>${centraleResp() ? html`<p class="small muted" style="margin:6px 0 0">Responsable : ${centraleResp()}</p>` : ''}</div>`;
+  // la liste arrive du serveur : on ne redessine que la liste (sinon ce qu'on est en train d'écrire serait effacé)
+  if (ui.ops == null && navigator.onLine) { ui.ops = []; vault.operators().then((l) => { ui.ops = l; const box = $('#opsList'); if (box) setHtml(box, opsListHtml()); }).catch(() => { ui.ops = null; }); }
   return html`<div class="section-label">👥 Centrale : responsable et opérateurs</div>
-    <div class="card" style="margin-bottom:12px">
-      <form data-form="centrale-resp" class="fields">
-        <div class="full"><b>⭐ Responsable de la centrale</b><p class="tiny muted" style="margin:2px 0 0">Affiché aux gérances dans leur portail (« Votre contact LuxInterventions ») et sur vos factures.</p></div>
-        <label class="field">Prénom<input name="prenom" value="${c.prenom || ''}" required></label>
-        <label class="field">Nom<input name="nom" value="${c.nom || ''}" required></label>
-        <label class="field">Téléphone<input type="tel" name="tel" value="${c.tel || ''}" placeholder="+352…"></label>
-        <label class="field">Email<input type="email" name="email" value="${c.email || ''}"></label>
-        <button class="btn primary full" type="submit">Enregistrer</button>
-      </form></div>
+    ${vault.op ? html`<p class="small" style="margin:0 0 8px">👤 Connecté : <b>${vault.op.name}</b> · ${OP_ROLES[vault.op.role] || ''}</p>` : ''}
+    <div class="list settings" style="margin-bottom:12px">
+      <button class="row" data-action="centrale-edit"><span class="avatar">⭐</span><span class="grow"><span class="title" style="display:block">Responsable de la centrale</span><span class="meta">${centraleResp() ? [centraleResp(), c.tel, c.email].filter(Boolean).join(' · ') : 'à compléter'}</span><span class="meta" style="display:block">Affiché aux gérances dans leur portail (« Votre contact LuxInterventions ») et sur vos factures.</span></span><span class="chev">›</span></button>
+    </div>
     <div class="card" style="margin-bottom:14px">
-      <b>👤 Opérateurs</b><p class="tiny muted" style="margin:2px 0 8px">Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître votre clé d’accès. Le comptable voit tout mais n’affecte pas les travaux. Retirer un opérateur lui coupe l’accès tout de suite.</p>
-      ${ops.length ? html`<div class="list" style="margin-bottom:10px">${ops.map((o) => html`<div class="row"><span class="avatar">👤</span><span class="grow"><span class="title" style="display:block">${o.name}</span><span class="meta">${OP_ROLES[o.role] || o.role} · <span>identifiant</span> ${o.login}</span></span><button class="btn sm ghost danger" data-action="op-del" data-id="${o.id}">Retirer</button></div>`)}</div>` : html`<p class="small muted" style="margin:0 0 10px">Aucun opérateur pour l’instant.</p>`}
-      <details><summary class="btn sm">${icon('plus')} Opérateur</summary>
-        <form data-form="op-save" class="fields" style="margin-top:10px" autocomplete="off">
-          <label class="field">Nom affiché<input name="name" required placeholder="ex. Sara"></label>
-          <label class="field">Rôle<select name="role">${Object.entries(OP_ROLES).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
-          <label class="field">Identifiant<input name="login" required pattern="[a-zA-Z0-9._-]{3,30}" placeholder="ex. sara" autocapitalize="none" spellcheck="false" autocomplete="off"></label>
-          <label class="field">Mot de passe ${pwField('pass', 'Au moins 10 caractères', 'new-password')}</label>
-          <label class="field full">Confirmer ${pwField('pass2', 'Retapez le mot de passe', 'new-password')}</label>
-          <p class="tiny muted full" style="margin:0">Votre clé d’accès vous sera demandée pour confirmer. Même identifiant = nouveau mot de passe.</p>
-          <button class="btn primary full" type="submit">Créer l’accès</button>
-        </form></details>
+      <b>👤 Opérateurs</b><p class="tiny muted" style="margin:2px 0 8px">Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître la clé d’accès du directeur. Le centraliste gère tout, y compris les accès des opérateurs. Le comptable voit tout, s’occupe des factures, mais n’affecte pas les travaux et ne gère pas les accès. Retirer un opérateur lui coupe l’accès tout de suite.</p>
+      <div id="opsList">${opsListHtml()}</div>
+      <button class="btn sm" data-action="op-new">${icon('plus')} Opérateur</button>
     </div>`;
 }
 // TVA d'une gérance / d'une facture : une case « Avec TVA » ; sans TVA, la mention écrite sur la facture (anciens régimes « taux » / « autoliq » gardés)
@@ -4649,6 +4636,32 @@ const SHEETS = {
           return html`<button class="row" data-action="ger-to-mt" data-id="${t.id}" data-iid="${id}"><span class="avatar">${fitT(t) ? '⭐' : u[0]}</span><span class="grow"><span class="title" style="display:block;white-space:normal">${u[0]} #${t.ref} · ${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted">— ${t.lieu}</span>` : ''}</span><span class="meta" style="white-space:normal">${orgLogo(t.org_id)} ${t.org_name} · ${t.residence_name}</span>${who.length ? html`<span class="meta" style="display:block">👷 déjà : ${who.join(', ')}</span>` : html`<span class="meta amber" style="display:block">⏸ pas encore affectée</span>`}</span><span class="badge">Affecter →</span></button>`;
         })}</div>` : html`<p class="muted">Aucune demande d’intervention en cours.</p>`}`,
       foot,
+    };
+  },
+  'centrale-form'() {
+    const c = centraleConf();
+    return {
+      title: '⭐ Responsable de la centrale', narrow: true,
+      body: html`<form id="f" data-form="centrale-resp" class="fields">
+        <label class="field">Prénom<input name="prenom" value="${c.prenom || ''}" required></label>
+        <label class="field">Nom<input name="nom" value="${c.nom || ''}" required></label>
+        <label class="field">Téléphone<input type="tel" name="tel" value="${c.tel || ''}" placeholder="+352…"></label>
+        <label class="field">Email<input type="email" name="email" value="${c.email || ''}"></label>
+        <p class="tiny muted full" style="margin:0">Affiché aux gérances dans leur portail (« Votre contact LuxInterventions ») et sur vos factures.</p></form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'op-form'() {
+    return {
+      title: '👤 Nouvel opérateur', narrow: true,
+      body: html`<form id="f" data-form="op-save" class="fields" autocomplete="off">
+        <label class="field">Nom affiché<input name="name" required placeholder="ex. Sara"></label>
+        <label class="field">Rôle<select name="role">${Object.entries(OP_ROLES).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
+        <label class="field">Identifiant<input name="login" required pattern="[a-zA-Z0-9._-]{3,30}" placeholder="ex. sara" autocapitalize="none" spellcheck="false" autocomplete="off"></label>
+        <label class="field">Mot de passe ${pwField('pass', 'Au moins 10 caractères', 'new-password')}</label>
+        <label class="field full">Confirmer ${pwField('pass2', 'Retapez le mot de passe', 'new-password')}</label>
+        <p class="tiny muted full" style="margin:0">${vault.op ? 'Votre mot de passe' : 'Votre clé d’accès'} vous sera demandé pour confirmer. Même identifiant = nouveau mot de passe.</p></form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Créer l’accès</button>`,
     };
   },
   // gérance : LuxInterventions écrit seulement nom, email, téléphone et RCS ; adresse, TVA, banque, logo et responsable sont remplis par la gérance dans son portail
@@ -7002,6 +7015,8 @@ const ACTIONS = {
   renew: (d) => openOver('renew-form', d.id),
   'renew-plus': (d) => { sheetEl.querySelector('[name=fin]').value = d.id; },
   'lock-mode': (d) => renderLock(d.id),
+  'centrale-edit': () => openSheet('centrale-form'),
+  'op-new': () => openSheet('op-form'),
   async 'op-del'(d) {
     const o = (ui.ops || []).find((x) => x.id === d.id);
     if (!(await confirmBox(`Retirer l’accès de ${o ? o.name : 'cet opérateur'} ?`, { ok: 'Retirer', danger: true, detail: 'Il ne pourra plus ouvrir la centrale. Vos données ne changent pas.' }))) return;
@@ -7535,19 +7550,20 @@ const FORMS = {
     const g = (k) => String(fd.get(k) || '').trim();
     await vault.mutate((tx) => tx.put('reglages', { id: 'centrale', prenom: g('prenom'), nom: g('nom'), tel: g('tel'), email: g('email') }), 'Responsable de la centrale', `${g('prenom')} ${g('nom')}`);
     vault.api.who = whoLabel();
-    toast('Responsable enregistré'); portailPubsSync().catch(() => {});
+    toast('Responsable enregistré'); closeSheet(); portailPubsSync().catch(() => {});
   },
   async 'op-save'(fd, f) {
     const g = (k) => String(fd.get(k) || '').trim(), pass = String(fd.get('pass') || '');
     if (pass.length < 10) return toast('Mot de passe : au moins 10 caractères', { bad: true });
     if (pass !== fd.get('pass2')) return toast('Les deux mots de passe ne correspondent pas', { bad: true });
     if (!/^[a-zA-Z0-9._-]{3,30}$/.test(g('login'))) return toast('Identifiant : 3 à 30 lettres ou chiffres (sans espace)', { bad: true });
-    const k = await promptKey('Confirmer avec votre clé d’accès', 'Pour créer l’accès d’un opérateur.');
+    if (isCompta()) return toast('Le comptable ne gère pas les accès', { bad: true });
+    const k = await promptKey(vault.op ? 'Confirmer avec votre mot de passe' : 'Confirmer avec votre clé d’accès', 'Pour créer l’accès d’un opérateur.');
     if (!k) return;
-    if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
+    if (!(vault.op ? await vault.verifyOperator(k) : await vault.verifyPassphrase(k))) return toast(vault.op ? 'Mot de passe incorrect' : "Clé d'accès incorrecte", { bad: true });
     try { await vault.saveOperator({ login: g('login'), name: g('name'), role: fd.get('role'), pass }); } catch (e) { return toast(e.message, { bad: true }); }
     await vault.mutate(() => {}, 'Opérateur ajouté', `${g('name')} (${OP_ROLES[fd.get('role')] || ''}) · ${g('login').toLowerCase()}`);
-    f.reset(); ui.ops = null; toast('✅ Accès créé : donnez-lui son identifiant et son mot de passe'); renderView();
+    ui.ops = null; closeSheet(); toast('✅ Accès créé : donnez-lui son identifiant et son mot de passe'); renderView();
   },
   'op-unlock': onOpUnlock,
   setup: onSetup,
@@ -7870,14 +7886,14 @@ async function importFile(file) {
 
 // ───────────────────────── Délégation d'événements ─────────────────────────
 // réservé au responsable (clé principale) ; le comptable n'affecte pas les travaux
-const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all', 'op-del']);
-const NO_COMPTA = new Set(['interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job']);
+const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all']);
+const NO_COMPTA = new Set(['interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job', 'op-del', 'op-new']);
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
   if (!el || !ACTIONS[el.dataset.action]) return;
   e.preventDefault();
-  if (vault.op && RESP_ONLY.has(el.dataset.action)) return toast('Réservé au responsable', { bad: true });
-  if (isCompta() && NO_COMPTA.has(el.dataset.action)) return toast('Le comptable n’affecte pas les travaux (responsable ou centraliste)', { bad: true });
+  if (vault.op && RESP_ONLY.has(el.dataset.action)) return toast('Réservé au directeur (clé d’accès principale)', { bad: true });
+  if (isCompta() && NO_COMPTA.has(el.dataset.action)) return toast(['op-del', 'op-new'].includes(el.dataset.action) ? 'Le comptable ne gère pas les accès' : 'Le comptable n’affecte pas les travaux (directeur ou centraliste)', { bad: true });
   ACTIONS[el.dataset.action](el.dataset, el, e);
 });
 document.addEventListener('submit', (e) => {

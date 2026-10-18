@@ -15103,5 +15103,57 @@ export default [
 [
 "(Comptable)",
 "(Contabile)"
+],
+[
+"Réservé au directeur (clé d’accès principale)",
+"Riservato al direttore (chiave d’accesso principale)"
+],
+[
+"Le comptable ne gère pas les accès",
+"Il contabile non gestisce gli accessi"
+],
+[
+"Le comptable n’affecte pas les travaux (directeur ou centraliste)",
+"Il contabile non assegna i lavori (direttore o centralinista)"
+],
+[
+"Confirmer avec votre mot de passe",
+"Confermate con la vostra password"
+],
+[
+"Mot de passe incorrect",
+"Password errata"
+],
+[
+"Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître la clé d’accès du directeur. Le centraliste gère tout, y compris les accès des opérateurs. Le comptable voit tout, s’occupe des factures, mais n’affecte pas les travaux et ne gère pas les accès. Retirer un opérateur lui coupe l’accès tout de suite.",
+"Centralinista o contabile: ognuno entra con il suo identificativo e la sua password («👤 Accesso operatore» sulla schermata di blocco), senza conoscere la chiave d’accesso del direttore. Il centralinista gestisce tutto, compresi gli accessi degli operatori. Il contabile vede tutto, si occupa delle fatture, ma non assegna i lavori e non gestisce gli accessi. Rimuovere un operatore gli toglie subito l’accesso."
+],
+[
+"vous",
+"voi"
+],
+[
+"(Directeur)",
+"(Direttore)"
+],
+[
+"Votre mot de passe vous sera demandé pour confirmer. Même identifiant = nouveau mot de passe.",
+"Vi verrà chiesta la vostra password per confermare. Stesso identificativo = nuova password."
+],
+[
+"👤 Nouvel opérateur",
+"👤 Nuovo operatore"
+],
+[
+"Réservé au directeur ou au centraliste",
+"Riservato al direttore o al centralinista"
+],
+[
+"Vous ne pouvez pas retirer votre propre accès",
+"Non potete rimuovere il vostro accesso"
+],
+[
+"Votre clé d’accès vous sera demandé pour confirmer. Même identifiant = nouveau mot de passe.",
+"Vi verrà chiesta la vostra chiave d’accesso per confermare. Stesso identificativo = nuova password."
 ]
 ];

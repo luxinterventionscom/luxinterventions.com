@@ -15087,5 +15087,57 @@ export default [
 [
 "(Comptable)",
 "(Buchhaltung)"
+],
+[
+"Réservé au directeur (clé d’accès principale)",
+"Nur für den Direktor (Hauptzugangsschlüssel)"
+],
+[
+"Le comptable ne gère pas les accès",
+"Die Buchhaltung verwaltet keine Zugänge"
+],
+[
+"Le comptable n’affecte pas les travaux (directeur ou centraliste)",
+"Die Buchhaltung weist keine Arbeiten zu (Direktor oder Zentrale)"
+],
+[
+"Confirmer avec votre mot de passe",
+"Mit Ihrem Passwort bestätigen"
+],
+[
+"Mot de passe incorrect",
+"Falsches Passwort"
+],
+[
+"Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître la clé d’accès du directeur. Le centraliste gère tout, y compris les accès des opérateurs. Le comptable voit tout, s’occupe des factures, mais n’affecte pas les travaux et ne gère pas les accès. Retirer un opérateur lui coupe l’accès tout de suite.",
+"Zentrale oder Buchhaltung: jede Person meldet sich mit ihrer Kennung und ihrem Passwort an („👤 Anmeldung Mitarbeiter“ auf dem Sperrbildschirm), ohne den Zugangsschlüssel des Direktors zu kennen. Die Zentrale verwaltet alles, auch die Zugänge der Mitarbeiter. Die Buchhaltung sieht alles, kümmert sich um die Rechnungen, weist aber keine Arbeiten zu und verwaltet keine Zugänge. Einen Mitarbeiter entfernen sperrt sofort seinen Zugang."
+],
+[
+"vous",
+"Sie"
+],
+[
+"(Directeur)",
+"(Direktor)"
+],
+[
+"Votre mot de passe vous sera demandé pour confirmer. Même identifiant = nouveau mot de passe.",
+"Zur Bestätigung wird Ihr Passwort abgefragt. Gleiche Kennung = neues Passwort."
+],
+[
+"👤 Nouvel opérateur",
+"👤 Neuer Mitarbeiter"
+],
+[
+"Réservé au directeur ou au centraliste",
+"Nur für den Direktor oder die Zentrale"
+],
+[
+"Vous ne pouvez pas retirer votre propre accès",
+"Sie können Ihren eigenen Zugang nicht entfernen"
+],
+[
+"Votre clé d’accès vous sera demandé pour confirmer. Même identifiant = nouveau mot de passe.",
+"Zur Bestätigung wird Ihr Zugangsschlüssel abgefragt. Gleiche Kennung = neues Passwort."
 ]
 ];

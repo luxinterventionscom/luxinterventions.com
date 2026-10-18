@@ -321,19 +321,34 @@ export class Vault {
     if (j.slot !== 'op' || !j.op) { this.api.token = null; throw new ApiError(401, 'Identifiant ou mot de passe incorrect'); }
     try { this.dek = await C.unwrapDataKey(j.wrappedKey, kek); } catch { this.api.token = null; throw new ApiError(401, 'Identifiant ou mot de passe incorrect'); }
     this.op = j.op;
+    this._opLogin = login; this._opMeta = { salt: meta.salt, iter: meta.iter }; this._opWrapped = j.wrappedKey; this._opKek = null;
     const cached = await idb.get('meta');
     if (cached && cached.salt !== meta.salt) await idb.clear(); // clé principale changée ailleurs : ancienne copie illisible
     await this.loadLocal();
     return { ok: true };
   }
 
-  // (responsable) crée ou remplace l'accès d'un opérateur — la clé principale vient d'être confirmée (verifyPassphrase)
+  // le centraliste confirme avec son propre mot de passe avant de gérer les accès
+  async verifyOperator(pass) {
+    if (!this.op || !this._opMeta) return false;
+    const { kek } = await C.deriveFromPassphrase(pass, await this.opSalt(this._opMeta.salt, this._opLogin), this._opMeta.iter);
+    try { await C.unwrapDataKey(this._opWrapped, kek); this._opKek = kek; return true; } catch { return false; }
+  }
+
+  // (directeur ou centraliste) crée ou remplace l'accès d'un opérateur — après confirmation (verifyPassphrase / verifyOperator)
   async saveOperator({ login, name, role, pass }) {
-    if (!this._kekForRewrap) throw new Error('Confirmez d’abord votre clé d’accès.');
-    const meta = await idb.get('meta');
+    let meta, dekX;
     login = String(login || '').trim().toLowerCase();
+    if (this.op) {
+      if (!this._opKek) throw new Error('Confirmez d’abord votre mot de passe.');
+      meta = this._opMeta;
+      dekX = await C.unwrapDataKey(this._opWrapped, this._opKek, true);
+    } else {
+      if (!this._kekForRewrap) throw new Error('Confirmez d’abord votre clé d’accès.');
+      meta = await idb.get('meta');
+      dekX = await C.unwrapDataKey(meta.wrappedKey, this._kekForRewrap, true);
+    }
     const o = await C.deriveFromPassphrase(pass, await this.opSalt(meta.salt, login), meta.iter);
-    const dekX = await C.unwrapDataKey(meta.wrappedKey, this._kekForRewrap, true);
     const wrappedKey = await C.wrapDataKey(dekX, o.kek);
     const r = await this.api.req('ops', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login, name, role, wrappedKey, authHash: o.authHash }) });
     if (!r.ok) throw new ApiError(r.status, await Api.err(r));
@@ -439,6 +454,7 @@ export class Vault {
     this.releaseSession();
     this.dek = null;
     this.op = null;
+    this._opKek = null; this._opWrapped = null;
     this.api.who = '';
     this.api.token = null;
     this._kekForRewrap = null;
