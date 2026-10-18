@@ -14907,5 +14907,185 @@ export default [
 [
 "Par défaut : le choix fait pour la gérance (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.",
 "Standard: die Wahl für die Hausverwaltung (Gérances → die Hausverwaltung → 🧾 Abrechnung). Arbeiten an einer Immobilie in Luxemburg: grundsätzlich gilt die luxemburgische MwSt., auch für einen ausländischen Kunden — mit Ihrem Steuerberater zu bestätigen."
+],
+[
+"👤 Connexion opérateur (centraliste, comptable)",
+"👤 Anmeldung Mitarbeiter (Zentrale, Buchhaltung)"
+],
+[
+"👤 Opérateur de la centrale",
+"👤 Mitarbeiter der Zentrale"
+],
+[
+"— votre identifiant et votre mot de passe personnels, donnés par le responsable.",
+"— Ihre persönliche Kennung und Ihr Passwort, vom Verantwortlichen erhalten."
+],
+[
+"Identifiant",
+"Kennung"
+],
+[
+"← Responsable (clé d'accès)",
+"← Verantwortlicher (Zugangsschlüssel)"
+],
+[
+"Connexion requise pour un opérateur.",
+"Verbindung für Mitarbeiter erforderlich."
+],
+[
+"Identifiant ou mot de passe incorrect",
+"Kennung oder Passwort falsch"
+],
+[
+"👥 Centrale",
+"👥 Zentrale"
+],
+[
+"👤 Connecté :",
+"👤 Angemeldet:"
+],
+[
+"Responsable :",
+"Verantwortlicher:"
+],
+[
+"👥 Centrale : responsable et opérateurs",
+"👥 Zentrale: Verantwortlicher und Mitarbeiter"
+],
+[
+"⭐ Responsable de la centrale",
+"⭐ Verantwortlicher der Zentrale"
+],
+[
+"Affiché aux gérances dans leur portail (« Votre contact LuxInterventions ») et sur vos factures.",
+"Wird den Hausverwaltungen in ihrem Portal angezeigt („Ihr Kontakt bei LuxInterventions“) und auf Ihren Rechnungen."
+],
+[
+"👤 Opérateurs",
+"👤 Mitarbeiter"
+],
+[
+"Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître votre clé d’accès. Le comptable voit tout mais n’affecte pas les travaux. Retirer un opérateur lui coupe l’accès tout de suite.",
+"Zentrale oder Buchhaltung: jede Person meldet sich mit ihrer Kennung und ihrem Passwort an („👤 Anmeldung Mitarbeiter“ auf dem Sperrbildschirm), ohne Ihren Zugangsschlüssel zu kennen. Die Buchhaltung sieht alles, weist aber keine Arbeiten zu. Einen Mitarbeiter entfernen sperrt sofort seinen Zugang."
+],
+[
+"Aucun opérateur pour l’instant.",
+"Noch keine Mitarbeiter."
+],
+[
+"identifiant",
+"Kennung"
+],
+[
+"Opérateur",
+"Mitarbeiter"
+],
+[
+"Nom affiché",
+"Angezeigter Name"
+],
+[
+"ex. Sara",
+"z. B. Sara"
+],
+[
+"Centraliste",
+"Zentrale"
+],
+[
+"Comptable",
+"Buchhaltung"
+],
+[
+"Au moins 10 caractères",
+"Mindestens 10 Zeichen"
+],
+[
+"Retapez le mot de passe",
+"Passwort erneut eingeben"
+],
+[
+"Votre clé d’accès vous sera demandée pour confirmer. Même identifiant = nouveau mot de passe.",
+"Zur Bestätigung wird Ihr Zugangsschlüssel abgefragt. Gleiche Kennung = neues Passwort."
+],
+[
+"Créer l’accès",
+"Zugang erstellen"
+],
+[
+"Réservé au responsable",
+"Nur für den Verantwortlichen"
+],
+[
+"Le comptable n’affecte pas les travaux (responsable ou centraliste)",
+"Die Buchhaltung weist keine Arbeiten zu (Verantwortlicher oder Zentrale)"
+],
+[
+"Le comptable n’affecte pas les travaux",
+"Die Buchhaltung weist keine Arbeiten zu"
+],
+[
+"Responsable enregistré",
+"Verantwortlicher gespeichert"
+],
+[
+"Mot de passe : au moins 10 caractères",
+"Passwort: mindestens 10 Zeichen"
+],
+[
+"Les deux mots de passe ne correspondent pas",
+"Die beiden Passwörter stimmen nicht überein"
+],
+[
+"Identifiant : 3 à 30 lettres ou chiffres (sans espace)",
+"Kennung: 3 bis 30 Buchstaben oder Ziffern (ohne Leerzeichen)"
+],
+[
+"Confirmer avec votre clé d’accès",
+"Mit Ihrem Zugangsschlüssel bestätigen"
+],
+[
+"Pour créer l’accès d’un opérateur.",
+"Um den Zugang eines Mitarbeiters zu erstellen."
+],
+[
+"✅ Accès créé : donnez-lui son identifiant et son mot de passe",
+"✅ Zugang erstellt: geben Sie ihm seine Kennung und sein Passwort"
+],
+[
+"Accès retiré",
+"Zugang entfernt"
+],
+[
+"Retirer l’accès de {0} ?",
+"Zugang von {0} entfernen?"
+],
+[
+"Il ne pourra plus ouvrir la centrale. Vos données ne changent pas.",
+"Die Person kann die Zentrale nicht mehr öffnen. Ihre Daten ändern sich nicht."
+],
+[
+"Opérateur retiré",
+"Mitarbeiter entfernt"
+],
+[
+"Opérateur ajouté",
+"Mitarbeiter hinzugefügt"
+],
+[
+"Responsable de la centrale",
+"Verantwortlicher der Zentrale"
+],
+[
+"(Responsable)",
+"(Verantwortlicher)"
+],
+[
+"(Centraliste)",
+"(Zentrale)"
+],
+[
+"(Comptable)",
+"(Buchhaltung)"
 ]
 ];

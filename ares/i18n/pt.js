@@ -14831,5 +14831,185 @@ export default [
 [
 "Par défaut : le choix fait pour la gérance (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.",
 "Por defeito: a escolha feita para a gestora (Gérances → a gestora → 🧾 Faturação). Obras num imóvel situado no Luxemburgo: aplica-se em princípio o IVA luxemburguês, mesmo para um cliente estrangeiro — a confirmar com o seu contabilista."
+],
+[
+"👤 Connexion opérateur (centraliste, comptable)",
+"👤 Acesso operador (central, contabilista)"
+],
+[
+"👤 Opérateur de la centrale",
+"👤 Operador da central"
+],
+[
+"— votre identifiant et votre mot de passe personnels, donnés par le responsable.",
+"— o seu identificador e a sua palavra-passe pessoais, dados pelo responsável."
+],
+[
+"Identifiant",
+"Identificador"
+],
+[
+"← Responsable (clé d'accès)",
+"← Responsável (chave de acesso)"
+],
+[
+"Connexion requise pour un opérateur.",
+"Ligação necessária para um operador."
+],
+[
+"Identifiant ou mot de passe incorrect",
+"Identificador ou palavra-passe incorretos"
+],
+[
+"👥 Centrale",
+"👥 Central"
+],
+[
+"👤 Connecté :",
+"👤 Ligado:"
+],
+[
+"Responsable :",
+"Responsável:"
+],
+[
+"👥 Centrale : responsable et opérateurs",
+"👥 Central: responsável e operadores"
+],
+[
+"⭐ Responsable de la centrale",
+"⭐ Responsável da central"
+],
+[
+"Affiché aux gérances dans leur portail (« Votre contact LuxInterventions ») et sur vos factures.",
+"Mostrado às gestoras no seu portal («O seu contacto LuxInterventions») e nas suas faturas."
+],
+[
+"👤 Opérateurs",
+"👤 Operadores"
+],
+[
+"Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître votre clé d’accès. Le comptable voit tout mais n’affecte pas les travaux. Retirer un opérateur lui coupe l’accès tout de suite.",
+"Central ou contabilista: cada um entra com o seu identificador e a sua palavra-passe («👤 Acesso operador» no ecrã de bloqueio), sem conhecer a sua chave de acesso. O contabilista vê tudo mas não atribui trabalhos. Retirar um operador corta-lhe o acesso imediatamente."
+],
+[
+"Aucun opérateur pour l’instant.",
+"Ainda nenhum operador."
+],
+[
+"identifiant",
+"identificador"
+],
+[
+"Opérateur",
+"Operador"
+],
+[
+"Nom affiché",
+"Nome apresentado"
+],
+[
+"ex. Sara",
+"ex. Sara"
+],
+[
+"Centraliste",
+"Central"
+],
+[
+"Comptable",
+"Contabilista"
+],
+[
+"Au moins 10 caractères",
+"Pelo menos 10 caracteres"
+],
+[
+"Retapez le mot de passe",
+"Repita a palavra-passe"
+],
+[
+"Votre clé d’accès vous sera demandée pour confirmer. Même identifiant = nouveau mot de passe.",
+"Ser-lhe-á pedida a chave de acesso para confirmar. Mesmo identificador = nova palavra-passe."
+],
+[
+"Créer l’accès",
+"Criar o acesso"
+],
+[
+"Réservé au responsable",
+"Reservado ao responsável"
+],
+[
+"Le comptable n’affecte pas les travaux (responsable ou centraliste)",
+"O contabilista não atribui trabalhos (responsável ou central)"
+],
+[
+"Le comptable n’affecte pas les travaux",
+"O contabilista não atribui trabalhos"
+],
+[
+"Responsable enregistré",
+"Responsável guardado"
+],
+[
+"Mot de passe : au moins 10 caractères",
+"Palavra-passe: pelo menos 10 caracteres"
+],
+[
+"Les deux mots de passe ne correspondent pas",
+"As duas palavras-passe não coincidem"
+],
+[
+"Identifiant : 3 à 30 lettres ou chiffres (sans espace)",
+"Identificador: 3 a 30 letras ou algarismos (sem espaços)"
+],
+[
+"Confirmer avec votre clé d’accès",
+"Confirme com a sua chave de acesso"
+],
+[
+"Pour créer l’accès d’un opérateur.",
+"Para criar o acesso de um operador."
+],
+[
+"✅ Accès créé : donnez-lui son identifiant et son mot de passe",
+"✅ Acesso criado: dê-lhe o identificador e a palavra-passe"
+],
+[
+"Accès retiré",
+"Acesso retirado"
+],
+[
+"Retirer l’accès de {0} ?",
+"Retirar o acesso de {0}?"
+],
+[
+"Il ne pourra plus ouvrir la centrale. Vos données ne changent pas.",
+"Já não poderá abrir a central. Os seus dados não mudam."
+],
+[
+"Opérateur retiré",
+"Operador retirado"
+],
+[
+"Opérateur ajouté",
+"Operador adicionado"
+],
+[
+"Responsable de la centrale",
+"Responsável da central"
+],
+[
+"(Responsable)",
+"(Responsável)"
+],
+[
+"(Centraliste)",
+"(Central)"
+],
+[
+"(Comptable)",
+"(Contabilista)"
 ]
 ];

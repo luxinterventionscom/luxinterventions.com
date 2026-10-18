@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.153.0';
+const VERSION = '2.154.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1293,12 +1293,12 @@ async function espaceSync(onlyId, loud) {
 }
 // Annonces pour le portail gérance : publiées en clair (publicité, aucune donnée personnelle), relues par le portail
 async function portailPubsSync() {
-  const list = pubsActives('', 'ptl').map(pubOut), offers = aboOffersOn();
-  const h = await sha256Hex(JSON.stringify([list, offers]));
+  const list = pubsActives('', 'ptl').map(pubOut), offers = aboOffersOn(), cc = centraleConf(), contact = centraleResp() ? { nom: centraleResp(), tel: cc.tel || '', email: cc.email || '' } : null;
+  const h = await sha256Hex(JSON.stringify([list, offers, contact]));
   let prev = '';
   try { prev = localStorage.getItem('aresPubPtl') || ''; } catch { /* stockage indisponible */ }
   if (h === prev) return;
-  try { await vault.pubsPortail(list, offers); localStorage.setItem('aresPubPtl', h); } catch { /* Worker pas encore à jour ou hors ligne : on réessaiera */ }
+  try { await vault.pubsPortail(list, offers, contact); localStorage.setItem('aresPubPtl', h); } catch { /* Worker pas encore à jour ou hors ligne : on réessaiera */ }
 }
 // « 🆕 Nouveau bien » : les biens à louer / à vendre sont publiés (annonces publiques) pour les apps des locataires,
 // de l'équipe et le portail gérance ; 6 photos max. par bien, envoyées seulement quand elles changent
@@ -2103,6 +2103,20 @@ function renderLock(mode, error = '') {
     setTimeout(() => lockEl.querySelector('[name=code]')?.focus(), 50);
     return;
   }
+  if (mode === 'op') {
+    setHtml(lockEl, html`<form class="lock-card" data-form="op-unlock">
+      ${head}
+      <p class="small" style="margin:0"><b>👤 Opérateur de la centrale</b> — votre identifiant et votre mot de passe personnels, donnés par le responsable.</p>
+      <label class="field">Identifiant<input name="login" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+      <label class="field">Mot de passe ${pwField('pass', '••••••••••', 'current-password')}</label>
+      <div class="lock-err" role="alert">${error}</div>
+      <button class="btn primary block" type="submit">Se connecter</button>
+      <button class="btn ghost block" type="button" data-action="lock-mode" data-id="unlock">← Responsable (clé d'accès)</button>
+      ${foot}
+    </form>`);
+    setTimeout(() => lockEl.querySelector('[name=login]')?.focus(), 50);
+    return;
+  }
   if (mode === 'newkey') {
     setHtml(lockEl, html`<form class="lock-card" data-form="newkey" autocomplete="off">
       ${head}
@@ -2125,6 +2139,7 @@ function renderLock(mode, error = '') {
     <div class="lock-err" role="alert">${error}</div>
     <button class="btn primary block" type="submit">Déverrouiller</button>
     <button class="btn ghost block" type="button" data-action="lock-mode" data-id="recover">Clé d'accès oubliée ?</button>
+    <button class="btn ghost block" type="button" data-action="lock-mode" data-id="op">👤 Connexion opérateur (centraliste, comptable)</button>
     ${!navigator.onLine ? html`<p class="tiny muted" style="text-align:center">Hors ligne : ouverture avec la copie chiffrée de cet appareil.</p>` : ''}
     ${foot}
   </form>`);
@@ -2198,6 +2213,18 @@ async function onNewKey(fd, form) {
   }
 }
 
+async function onOpUnlock(fd, form) {
+  setBusy(form, true, 'Vérification…');
+  try {
+    await vault.unlockOperator(fd.get('login'), fd.get('pass'));
+    if (!(await claimOrAsk())) { vault.lock(); return renderLock('op', 'Connexion annulée : LuxInterventions reste ouvert sur l’autre appareil.'); }
+    startSession();
+  } catch (e) {
+    setBusy(form, false);
+    form.querySelector('.lock-err').textContent = e.message || 'Erreur';
+  }
+}
+
 async function onUnlock(fd, form) {
   setBusy(form, true, 'Vérification…');
   try {
@@ -2250,6 +2277,7 @@ const lockMinutes = () => parseInt(localStorage.getItem('aresLockMin') || '15', 
 
 let lastInbox = 0;
 function startSession() {
+  vault.api.who = whoLabel();
   lockEl.hidden = true;
   setHtml(lockEl, '');
   appEl.hidden = false;
@@ -3102,6 +3130,42 @@ const orgMissing = (cl) => [!cl.adresse && 'adresse', !cl.rcs && 'RCS (B…)', !
 const regTaux = (reg, c) => (reg.regime === 'autoliq' || reg.regime === 'exo' ? 0 : reg.regime === 'taux' ? num(reg.taux) : num(c.taux));
 const regMention = (reg) => (reg.regime === 'autoliq' || reg.regime === 'exo' ? reg.mention || TVA_REG[reg.regime][1] : reg.mention || '');
 const factConf = () => ({ ...FACT_DEF, ...(vault.get('reglages', 'facturation') || {}) });
+// 👥 Centrale : le responsable (clé principale) et les opérateurs (centraliste, comptable — mot de passe personnel, voir store.js)
+const OP_ROLES = { centraliste: 'Centraliste', comptable: 'Comptable' };
+const centraleConf = () => vault.get('reglages', 'centrale') || {};
+const centraleResp = () => [centraleConf().prenom, centraleConf().nom].filter(Boolean).join(' ');
+const whoLabel = () => (vault.op ? `${vault.op.name} (${OP_ROLES[vault.op.role] || vault.op.role})` : centraleResp() ? `${centraleResp()} (Responsable)` : '');
+const isCompta = () => !!(vault.op && vault.op.role === 'comptable');
+function centraleSection() {
+  const c = centraleConf();
+  if (vault.op) return html`<div class="section-label">👥 Centrale</div><div class="card" style="margin-bottom:14px"><p style="margin:0">👤 Connecté : <b>${vault.op.name}</b> · ${OP_ROLES[vault.op.role] || ''}</p>${centraleResp() ? html`<p class="small muted" style="margin:6px 0 0">Responsable : ${centraleResp()}</p>` : ''}</div>`;
+  if (ui.ops == null && navigator.onLine) { ui.ops = []; vault.operators().then((l) => { ui.ops = l; renderView(); }).catch(() => { ui.ops = null; }); }
+  const ops = ui.ops || [];
+  return html`<div class="section-label">👥 Centrale : responsable et opérateurs</div>
+    <div class="card" style="margin-bottom:12px">
+      <form data-form="centrale-resp" class="fields">
+        <div class="full"><b>⭐ Responsable de la centrale</b><p class="tiny muted" style="margin:2px 0 0">Affiché aux gérances dans leur portail (« Votre contact LuxInterventions ») et sur vos factures.</p></div>
+        <label class="field">Prénom<input name="prenom" value="${c.prenom || ''}" required></label>
+        <label class="field">Nom<input name="nom" value="${c.nom || ''}" required></label>
+        <label class="field">Téléphone<input type="tel" name="tel" value="${c.tel || ''}" placeholder="+352…"></label>
+        <label class="field">Email<input type="email" name="email" value="${c.email || ''}"></label>
+        <button class="btn primary full" type="submit">Enregistrer</button>
+      </form></div>
+    <div class="card" style="margin-bottom:14px">
+      <b>👤 Opérateurs</b><p class="tiny muted" style="margin:2px 0 8px">Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître votre clé d’accès. Le comptable voit tout mais n’affecte pas les travaux. Retirer un opérateur lui coupe l’accès tout de suite.</p>
+      ${ops.length ? html`<div class="list" style="margin-bottom:10px">${ops.map((o) => html`<div class="row"><span class="avatar">👤</span><span class="grow"><span class="title" style="display:block">${o.name}</span><span class="meta">${OP_ROLES[o.role] || o.role} · <span>identifiant</span> ${o.login}</span></span><button class="btn sm ghost danger" data-action="op-del" data-id="${o.id}">Retirer</button></div>`)}</div>` : html`<p class="small muted" style="margin:0 0 10px">Aucun opérateur pour l’instant.</p>`}
+      <details><summary class="btn sm">${icon('plus')} Opérateur</summary>
+        <form data-form="op-save" class="fields" style="margin-top:10px" autocomplete="off">
+          <label class="field">Nom affiché<input name="name" required placeholder="ex. Sara"></label>
+          <label class="field">Rôle<select name="role">${Object.entries(OP_ROLES).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
+          <label class="field">Identifiant<input name="login" required pattern="[a-zA-Z0-9._-]{3,30}" placeholder="ex. sara" autocapitalize="none" spellcheck="false" autocomplete="off"></label>
+          <label class="field">Mot de passe ${pwField('pass', 'Au moins 10 caractères', 'new-password')}</label>
+          <label class="field full">Confirmer ${pwField('pass2', 'Retapez le mot de passe', 'new-password')}</label>
+          <p class="tiny muted full" style="margin:0">Votre clé d’accès vous sera demandée pour confirmer. Même identifiant = nouveau mot de passe.</p>
+          <button class="btn primary full" type="submit">Créer l’accès</button>
+        </form></details>
+    </div>`;
+}
 // TVA d'une gérance / d'une facture : une case « Avec TVA » ; sans TVA, la mention écrite sur la facture (anciens régimes « taux » / « autoliq » gardés)
 const tvaOn = (r) => !r || r.regime === 'normal' || r.regime === 'taux';
 const tvaBox = (r, c) => html`<label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin:0"><input type="checkbox" name="tva_on" value="1" data-input="tva-on" style="width:22px;height:22px;min-height:22px;flex:none;margin:0" ${tvaOn(r) ? new Raw('checked') : ''}> <span><b>Avec TVA</b> (${String(r && r.regime === 'taux' ? r.taux : c.taux).replace('.', ',')} %)</span></label>
@@ -3156,6 +3220,7 @@ async function factPdf(t, f, no, dateIso, c) {
   p.text(ex, 52, c.marque || c.nom, { size: 11, bold: true }).text(ex, 66, c.marque ? 'by ' + c.nom : '', { size: 9, color: G });
   p.text(ex, 80, c.adresse, { size: 9 }).text(ex, 92, c.ville, { size: 9 }).text(ex, 104, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8.5, color: G });
   if (c.tel || c.email) p.text(ex, 116, [c.tel, c.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
+  if (centraleResp()) p.text(ex, 128, 'Responsable : ' + centraleResp(), { size: 8.5, color: G });
   // client
   const CX = 330;
   let cy = 150;
@@ -4150,7 +4215,7 @@ dashboard() {
       </div>
       ${byCat.length ? html`<div class="section-label">Dépenses par catégorie — ${y}</div><div class="list">${byCat.map((c) => html`<div class="row"><span class="grow">${c.label}</span><span class="amount">${money(c.total)}</span></div>`)}</div>` : ''}
       <div class="section-label">Historique des modifications</div>
-      ${hist.length ? html`<div class="list">${hist.slice(0, ui.histShown).map((h) => html`<div class="row"><span class="grow"><span class="title" style="display:block;white-space:normal">${h.action}</span><span class="meta" style="white-space:normal">${h.detail}</span></span><span class="tiny muted" style="white-space:nowrap">${fmtDateTime(h.t)}</span></div>`)}</div>
+      ${hist.length ? html`<div class="list">${hist.slice(0, ui.histShown).map((h) => html`<div class="row"><span class="grow"><span class="title" style="display:block;white-space:normal">${h.action}</span><span class="meta" style="white-space:normal">${h.detail}</span>${h.by ? html`<span class="meta" style="display:block">👤 ${h.by}</span>` : ''}</span><span class="tiny muted" style="white-space:nowrap">${fmtDateTime(h.t)}</span></div>`)}</div>
         ${hist.length > ui.histShown ? html`<button class="btn block" style="margin-top:10px" data-action="more-hist">Afficher plus (${hist.length - ui.histShown})</button>` : ''}` : html`<p class="muted small">Aucune modification enregistrée.</p>`}`;
   },
 
@@ -4186,6 +4251,7 @@ dashboard() {
         <span class="meta" style="white-space:normal">${isIOS ? 'Safari : bouton Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône LuxInterventions sur l’écran d’accueil, fonctionne hors ligne.'}</span></span>
         ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}</div></div>` : ''}
 
+      ${centraleSection()}
       <div class="section-label">Sécurité</div>
       <div class="list settings">
         <div class="row">${icon('lock')}<span class="grow title">Verrouillage automatique</span>
@@ -5023,7 +5089,7 @@ const SHEETS = {
             </div>
           </div>
         <label class="field" id="tacheLogF" ${t.immId && !t.lieu ? '' : new Raw('hidden')}>Logement / partie<select name="logId" id="tacheLog">${t.immId && !t.lieu ? logOptions(t.immId, t.logId) : ''}</select></label>`; })()}
-        <label class="field full">Qui ?<select name="intervenantId"><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}${(t.refusBy || []).includes(i.id) ? ' (✋ a refusé)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
+        <label class="field full">Qui ?<select name="intervenantId" ${isCompta() ? new Raw('disabled title="Le comptable n’affecte pas les travaux"') : ''}><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}${(t.refusBy || []).includes(i.id) ? ' (✋ a refusé)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
         ${hint.length ? html`<p class="tiny muted full" style="margin:-6px 0 0">⭐ = métier conseillé pour cette demande : ${[...new Set(hint)].map((m) => METIERS[m]).join(', ')}${ints.some(fits) ? '' : ' (personne de ce métier dans l’équipe)'}</p>` : ''}
         ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
         ${field('Date', 'date', t.date, { type: 'date' })}
@@ -5826,7 +5892,7 @@ const SHEETS = {
       const name = fullName(l);
       const alt = [l.nom, l.prenom].filter(Boolean).join(' ');
       const hist = Object.values(vault.state.historique).filter((h) => !h.del && (h.ref === id || (!h.ref && (h.detail || '').includes(alt || name)))).sort((a, b) => b.t - a.t).slice(0, 100);
-      body = hist.length ? html`<div class="list">${hist.map((h) => html`<div class="row"><span class="grow"><span class="title" style="display:block;white-space:normal">${h.action}</span><span class="meta" style="white-space:normal">${h.detail}</span></span><span class="tiny muted">${fmtDateTime(h.t)}</span></div>`)}</div>` : html`<p class="muted small">Aucun historique.</p>`;
+      body = hist.length ? html`<div class="list">${hist.map((h) => html`<div class="row"><span class="grow"><span class="title" style="display:block;white-space:normal">${h.action}</span><span class="meta" style="white-space:normal">${h.detail}</span>${h.by ? html`<span class="meta" style="display:block">👤 ${h.by}</span>` : ''}</span><span class="tiny muted">${fmtDateTime(h.t)}</span></div>`)}</div>` : html`<p class="muted small">Aucun historique.</p>`;
     }
     return {
       title: fullName(l),
@@ -6936,6 +7002,13 @@ const ACTIONS = {
   renew: (d) => openOver('renew-form', d.id),
   'renew-plus': (d) => { sheetEl.querySelector('[name=fin]').value = d.id; },
   'lock-mode': (d) => renderLock(d.id),
+  async 'op-del'(d) {
+    const o = (ui.ops || []).find((x) => x.id === d.id);
+    if (!(await confirmBox(`Retirer l’accès de ${o ? o.name : 'cet opérateur'} ?`, { ok: 'Retirer', danger: true, detail: 'Il ne pourra plus ouvrir la centrale. Vos données ne changent pas.' }))) return;
+    try { await vault.deleteOperator(d.id); } catch (e) { return toast(e.message, { bad: true }); }
+    await vault.mutate(() => {}, 'Opérateur retiré', o ? `${o.name} (${OP_ROLES[o.role] || o.role})` : '');
+    ui.ops = null; toast('Accès retiré'); renderView();
+  },
   async 'make-recovery'() {
     if (!navigator.onLine) return toast('Connexion requise', { bad: true });
     const k = await promptKey('Clé de secours', (vault.hasRecovery ? 'Une nouvelle clé de secours remplacera l’ancienne, qui ne fonctionnera plus. ' : '') + 'Saisissez votre clé d’accès actuelle pour continuer.');
@@ -7260,7 +7333,7 @@ const FORMS = {
     const prev = id ? vault.get('taches', id) : null;
     const recur = fd.get('recur') || '';
     const rec = {
-      type: fd.get('type'), titre: fd.get('titre').trim(), immId: fd.get('immId'), logId: fd.get('logId') || '', intervenantId: fd.get('intervenantId') || '',
+      type: fd.get('type'), titre: fd.get('titre').trim(), immId: fd.get('immId'), logId: fd.get('logId') || '', intervenantId: isCompta() ? (prev && prev.intervenantId) || '' : fd.get('intervenantId') || '', // le comptable n'affecte pas
       date: fd.get('date'), recur, fin: fd.get('fin') || '', cout: fd.get('cout') === '' ? null : num(fd.get('cout')), note: fd.get('note').trim(),
       statut: recur ? 'planifie' : fd.get('statut') || 'afaire',
     };
@@ -7458,6 +7531,25 @@ const FORMS = {
     goBack();
   },
   unlock: onUnlock,
+  async 'centrale-resp'(fd) {
+    const g = (k) => String(fd.get(k) || '').trim();
+    await vault.mutate((tx) => tx.put('reglages', { id: 'centrale', prenom: g('prenom'), nom: g('nom'), tel: g('tel'), email: g('email') }), 'Responsable de la centrale', `${g('prenom')} ${g('nom')}`);
+    vault.api.who = whoLabel();
+    toast('Responsable enregistré'); portailPubsSync().catch(() => {});
+  },
+  async 'op-save'(fd, f) {
+    const g = (k) => String(fd.get(k) || '').trim(), pass = String(fd.get('pass') || '');
+    if (pass.length < 10) return toast('Mot de passe : au moins 10 caractères', { bad: true });
+    if (pass !== fd.get('pass2')) return toast('Les deux mots de passe ne correspondent pas', { bad: true });
+    if (!/^[a-zA-Z0-9._-]{3,30}$/.test(g('login'))) return toast('Identifiant : 3 à 30 lettres ou chiffres (sans espace)', { bad: true });
+    const k = await promptKey('Confirmer avec votre clé d’accès', 'Pour créer l’accès d’un opérateur.');
+    if (!k) return;
+    if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
+    try { await vault.saveOperator({ login: g('login'), name: g('name'), role: fd.get('role'), pass }); } catch (e) { return toast(e.message, { bad: true }); }
+    await vault.mutate(() => {}, 'Opérateur ajouté', `${g('name')} (${OP_ROLES[fd.get('role')] || ''}) · ${g('login').toLowerCase()}`);
+    f.reset(); ui.ops = null; toast('✅ Accès créé : donnez-lui son identifiant et son mot de passe'); renderView();
+  },
+  'op-unlock': onOpUnlock,
   setup: onSetup,
   recover: onRecover,
   newkey: onNewKey,
@@ -7777,10 +7869,15 @@ async function importFile(file) {
 }
 
 // ───────────────────────── Délégation d'événements ─────────────────────────
+// réservé au responsable (clé principale) ; le comptable n'affecte pas les travaux
+const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all', 'op-del']);
+const NO_COMPTA = new Set(['interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job']);
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
   if (!el || !ACTIONS[el.dataset.action]) return;
   e.preventDefault();
+  if (vault.op && RESP_ONLY.has(el.dataset.action)) return toast('Réservé au responsable', { bad: true });
+  if (isCompta() && NO_COMPTA.has(el.dataset.action)) return toast('Le comptable n’affecte pas les travaux (responsable ou centraliste)', { bad: true });
   ACTIONS[el.dataset.action](el.dataset, el, e);
 });
 document.addEventListener('submit', (e) => {

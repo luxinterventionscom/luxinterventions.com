@@ -12,7 +12,7 @@ import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.21.0';
+const VERSION = '1.22.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -429,6 +429,7 @@ async function startSession() {
   // offres d'abonnement : toujours relire le réglage de LuxInterventions (même si on arrive sur « Plus » ou « Demandes »), puis la fenêtre une seule fois
   if (!isAdmin() && !state.demo) api('pubs').then((r) => {
     const off = r.offers === false;
+    if (r.contact !== undefined && JSON.stringify(r.contact) !== JSON.stringify(state.contact || null)) { state.contact = r.contact; if (state.route === 'plus') renderView(); }
     if (off !== !!state.offersOff) { state.offersOff = off; renderView(); }
     if (!off && !t && !offerSeen()) setTimeout(() => { if (!state.sheet) openSheet('offer'); }, 600);
   }).catch(() => {});
@@ -547,6 +548,7 @@ async function loadRoute(route) {
   if (route === 'home') {
     const [stats, tickets, pubs] = await Promise.all([api('stats' + (org ? '?' + org.slice(1) : '')), api('tickets?scope=active' + org), api('pubs').catch(() => ({ items: [] }))]);
     state.cache.home = { stats, tickets: tickets.tickets, pubs: pubs.items || [] };
+    if (pubs.contact !== undefined) state.contact = pubs.contact;
     if (pubs.offers === false) state.offersOff = true; else if (pubs.items) state.offersOff = false; // offres d'abonnement masquées par LuxInterventions
     if (!isAdmin()) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; orgLogoRefresh(); } catch { /* hors ligne */ } }
     if (!isAdmin()) { try { state.cache.home.devis = (await api('devis')).devis || []; } catch { state.cache.home.devis = []; } }
@@ -1122,6 +1124,9 @@ const VIEWS = {
         <button class="btn" type="button" data-action="report-csv">📊 Export Excel (CSV)</button>
       </form>
       ${isAdmin() ? '' : offerBanner()}
+      ${!isAdmin() && state.contact && state.contact.nom ? html`<div class="section-label">📞 Votre contact LuxInterventions</div>
+      <div class="card" style="margin-bottom:14px"><b>${state.contact.nom}</b><span class="meta" style="display:block">Responsable de la centrale</span>
+        ${state.contact.tel ? html`<a class="btn sm" style="margin-top:8px" href="tel:${state.contact.tel.replace(/[^\d+]/g, '')}">📞 ${state.contact.tel}</a> ` : ''}${state.contact.email ? html`<a class="btn sm" style="margin-top:8px" href="mailto:${state.contact.email}">✉️ ${state.contact.email}</a>` : ''}</div>` : ''}
       <div class="section-label">Compte</div>
       <div class="list settings">
         ${isManager() && !isAdmin() ? html`<button class="row" data-action="org-edit">🏢<span class="grow title">Ma société${orgMissing(state.myOrg).length ? html` <span class="tiny red">⚠️ à compléter</span>` : ''}</span></button>` : ''}

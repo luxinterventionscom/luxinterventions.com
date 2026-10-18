@@ -3755,5 +3755,13 @@ export default [
 [
 "Les collaborateurs sont ajoutés par la gérance dans son portail",
 "Colleagues are added by the property manager in its portal"
+],
+[
+"📞 Votre contact LuxInterventions",
+"📞 Your LuxInterventions contact"
+],
+[
+"Responsable de la centrale",
+"Central manager"
 ]
 ];

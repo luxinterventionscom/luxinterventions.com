@@ -3823,5 +3823,13 @@ export default [
 [
 "Les collaborateurs sont ajoutés par la gérance dans son portail",
 "Os colaboradores são adicionados pela gestora no seu portal"
+],
+[
+"📞 Votre contact LuxInterventions",
+"📞 O seu contacto LuxInterventions"
+],
+[
+"Responsable de la centrale",
+"Responsável da central"
 ]
 ];

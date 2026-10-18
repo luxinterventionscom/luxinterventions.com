@@ -139,7 +139,7 @@ class Api {
     if (this.token) headers.Authorization = 'Bearer ' + this.token;
     if (this.sid) {
       headers['X-Ares-Session'] = this.sid;
-      headers['X-Ares-Device'] = deviceLabel();
+      headers['X-Ares-Device'] = deviceLabel() + (this.who ? ' · ' + this.who : '');
     }
     const r = await fetch(this.base + path, { ...opts, headers, cache: 'no-store' });
     return r;
@@ -174,6 +174,7 @@ export class Vault {
   constructor(apiBase) {
     this.api = new Api(apiBase);
     this.dek = null;
+    this.op = null; // opérateur connecté (centraliste, comptable) ; null = le responsable (clé d'accès principale)
     this.state = emptyState();
     this.etag = null;
     this.dirty = false;
@@ -293,8 +294,61 @@ export class Vault {
       await idb.clear();
     }
     await idb.set('meta', { salt: meta.salt, iter: meta.iter, wrappedKey });
+    this.op = null;
     await this.loadLocal();
     return { ok: true };
+  }
+
+  // ── Opérateurs de la centrale ──
+  // Chaque opérateur a sa propre enveloppe de la clé de données, ouverte par son identifiant + sa password ; il ne connaît pas la clé principale
+  // et le responsable peut le retirer à tout moment. Sel dérivé du sel du coffre et de l'identifiant (rien à publier).
+  async opSalt(metaSalt, login) {
+    const h = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(metaSalt + '|op|' + login)));
+    return C.b64.encode(h.slice(0, 16));
+  }
+
+  async unlockOperator(login, pass) {
+    this.newSession();
+    if (!navigator.onLine) throw new ApiError(0, 'Connexion requise pour un opérateur.');
+    login = String(login || '').trim().toLowerCase();
+    const meta = await this.remoteMeta();
+    if (!meta.configured) throw new ApiError(0, 'Coffre non configuré.');
+    const { kek, authToken } = await C.deriveFromPassphrase(pass, await this.opSalt(meta.salt, login), meta.iter);
+    this.api.token = authToken;
+    const r = await this.api.req('key');
+    if (!r.ok) { this.api.token = null; throw new ApiError(r.status, r.status === 401 ? 'Identifiant ou mot de passe incorrect' : await Api.err(r)); }
+    const j = await r.json();
+    if (j.slot !== 'op' || !j.op) { this.api.token = null; throw new ApiError(401, 'Identifiant ou mot de passe incorrect'); }
+    try { this.dek = await C.unwrapDataKey(j.wrappedKey, kek); } catch { this.api.token = null; throw new ApiError(401, 'Identifiant ou mot de passe incorrect'); }
+    this.op = j.op;
+    const cached = await idb.get('meta');
+    if (cached && cached.salt !== meta.salt) await idb.clear(); // clé principale changée ailleurs : ancienne copie illisible
+    await this.loadLocal();
+    return { ok: true };
+  }
+
+  // (responsable) crée ou remplace l'accès d'un opérateur — la clé principale vient d'être confirmée (verifyPassphrase)
+  async saveOperator({ login, name, role, pass }) {
+    if (!this._kekForRewrap) throw new Error('Confirmez d’abord votre clé d’accès.');
+    const meta = await idb.get('meta');
+    login = String(login || '').trim().toLowerCase();
+    const o = await C.deriveFromPassphrase(pass, await this.opSalt(meta.salt, login), meta.iter);
+    const dekX = await C.unwrapDataKey(meta.wrappedKey, this._kekForRewrap, true);
+    const wrappedKey = await C.wrapDataKey(dekX, o.kek);
+    const r = await this.api.req('ops', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ login, name, role, wrappedKey, authHash: o.authHash }) });
+    if (!r.ok) throw new ApiError(r.status, await Api.err(r));
+    return r.json();
+  }
+
+  async operators() {
+    const r = await this.api.req('ops');
+    if (!r.ok) throw new ApiError(r.status, await Api.err(r));
+    return (await r.json()).ops || [];
+  }
+
+  async deleteOperator(id) {
+    const r = await this.api.req('ops/' + id, { method: 'DELETE' });
+    if (!r.ok) throw new ApiError(r.status, await Api.err(r));
   }
 
   async changePassphrase(newPassphrase) {
@@ -384,6 +438,8 @@ export class Vault {
   lock() {
     this.releaseSession();
     this.dek = null;
+    this.op = null;
+    this.api.who = '';
     this.api.token = null;
     this._kekForRewrap = null;
     this._rewrapMeta = null;
@@ -453,7 +509,7 @@ export class Vault {
     const result = fn(tx);
     if (action) {
       const id = uid();
-      this.state.historique[id] = { id, t: now, action, detail: detail || '', ref: ref || '', u: now };
+      this.state.historique[id] = { id, t: now, action, detail: detail || '', ref: ref || '', u: now, by: this.api.who || '' };
     }
     this.dirty = true;
     await this.persist();
@@ -609,7 +665,7 @@ export class Vault {
   // « 🆕 Nouveau bien » : annonces publiques (texte), puis photos JPEG une à une
   biensPut(items) { return this.call('biens', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items }) }); }
   biensPhoto(id, n, bytes) { return this.call(`biens/${id}/p${n}.jpg`, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: bytes }); }
-  pubsPortail(items, offers = true) { return this.call('pubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, offers }) }); }
+  pubsPortail(items, offers = true, contact = null) { return this.call('pubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, offers, contact }) }); }
   espNotify(id) { return this.call('espace/' + id + '/notify', { method: 'POST' }); }
   async inboxList() { return (await (await this.call('inbox')).json()).items || []; }
   async inboxGet(name) { return new Uint8Array(await (await this.call('inbox/' + name)).arrayBuffer()); }
