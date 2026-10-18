@@ -661,9 +661,10 @@ async function handleAres(request, env, url, headers) {
     return aresJson({ ok: true }, 200, headers);
   }
 
-  // Operatori della centrale (centralinista, contabile) : seconde enveloppe della chiave dati, aperta dalla loro password ; solo il responsabile li gestisce
+  // Operatori della centrale (centralinista, contabile) : seconde enveloppe della chiave dati, aperta dalla loro password ;
+  // li gestiscono il direttore (chiave principale) e il centralinista ; il contabile no
   if (path === "ops" || path.startsWith("ops/")) {
-    if (slot !== "main") return aresJson({ error: "Réservé au responsable (clé d'accès principale)" }, 403, headers);
+    if (slot !== "main" && !(slot === "op" && op.role === "centraliste")) return aresJson({ error: "Réservé au directeur ou au centraliste" }, 403, headers);
     const ops = meta.ops || [];
     if (path === "ops" && method === "GET") return aresJson({ ops: ops.map((o) => ({ id: o.id, login: o.login, name: o.name, role: o.role, createdAt: o.createdAt })) }, 200, headers);
     if (path === "ops" && method === "POST") {
@@ -682,6 +683,7 @@ async function handleAres(request, env, url, headers) {
     }
     const m = path.match(/^ops\/([a-f0-9]{16})$/);
     if (m && method === "DELETE") {
+      if (op && op.id === m[1]) return aresJson({ error: "Vous ne pouvez pas retirer votre propre accès" }, 400, headers);
       await env.PHOTOS.put(ARES_META, JSON.stringify({ ...meta, ops: ops.filter((o) => o.id !== m[1]) }));
       return aresJson({ ok: true }, 200, headers);
     }

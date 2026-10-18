@@ -15087,5 +15087,57 @@ export default [
 [
 "(Comptable)",
 "(Contable)"
+],
+[
+"Réservé au directeur (clé d’accès principale)",
+"Reservado al director (clave de acceso principal)"
+],
+[
+"Le comptable ne gère pas les accès",
+"El contable no gestiona los accesos"
+],
+[
+"Le comptable n’affecte pas les travaux (directeur ou centraliste)",
+"El contable no asigna trabajos (director o centralita)"
+],
+[
+"Confirmer avec votre mot de passe",
+"Confirme con su contraseña"
+],
+[
+"Mot de passe incorrect",
+"Contraseña incorrecta"
+],
+[
+"Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître la clé d’accès du directeur. Le centraliste gère tout, y compris les accès des opérateurs. Le comptable voit tout, s’occupe des factures, mais n’affecte pas les travaux et ne gère pas les accès. Retirer un opérateur lui coupe l’accès tout de suite.",
+"Centralita o contable: cada uno entra con su identificador y su contraseña («👤 Acceso operador» en la pantalla de bloqueo), sin conocer la clave de acceso del director. La centralita lo gestiona todo, incluidos los accesos de los operadores. El contable lo ve todo y se ocupa de las facturas, pero no asigna trabajos ni gestiona accesos. Quitar un operador le corta el acceso al instante."
+],
+[
+"vous",
+"usted"
+],
+[
+"(Directeur)",
+"(Director)"
+],
+[
+"Votre mot de passe vous sera demandé pour confirmer. Même identifiant = nouveau mot de passe.",
+"Se le pedirá su contraseña para confirmar. Mismo identificador = nueva contraseña."
+],
+[
+"👤 Nouvel opérateur",
+"👤 Nuevo operador"
+],
+[
+"Réservé au directeur ou au centraliste",
+"Reservado al director o a la centralita"
+],
+[
+"Vous ne pouvez pas retirer votre propre accès",
+"No puede quitar su propio acceso"
+],
+[
+"Votre clé d’accès vous sera demandé pour confirmer. Même identifiant = nouveau mot de passe.",
+"Se le pedirá su clave de acceso para confirmar. Mismo identificador = nueva contraseña."
 ]
 ];

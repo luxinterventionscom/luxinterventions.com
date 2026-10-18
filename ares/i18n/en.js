@@ -14823,5 +14823,57 @@ export default [
 [
 "(Comptable)",
 "(Accountant)"
+],
+[
+"Réservé au directeur (clé d’accès principale)",
+"Director only (main access key)"
+],
+[
+"Le comptable ne gère pas les accès",
+"The accountant does not manage access"
+],
+[
+"Le comptable n’affecte pas les travaux (directeur ou centraliste)",
+"The accountant does not assign jobs (director or dispatcher)"
+],
+[
+"Confirmer avec votre mot de passe",
+"Confirm with your password"
+],
+[
+"Mot de passe incorrect",
+"Wrong password"
+],
+[
+"Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître la clé d’accès du directeur. Le centraliste gère tout, y compris les accès des opérateurs. Le comptable voit tout, s’occupe des factures, mais n’affecte pas les travaux et ne gère pas les accès. Retirer un opérateur lui coupe l’accès tout de suite.",
+"Dispatcher or accountant: each one signs in with their login and password (“👤 Operator login” on the lock screen), without knowing the director’s access key. The dispatcher manages everything, including the operators’ access. The accountant sees everything and handles the invoices, but does not assign jobs or manage access. Removing an operator cuts their access immediately."
+],
+[
+"vous",
+"you"
+],
+[
+"(Directeur)",
+"(Director)"
+],
+[
+"Votre mot de passe vous sera demandé pour confirmer. Même identifiant = nouveau mot de passe.",
+"Your password will be asked to confirm. Same login = new password."
+],
+[
+"👤 Nouvel opérateur",
+"👤 New operator"
+],
+[
+"Réservé au directeur ou au centraliste",
+"Director or dispatcher only"
+],
+[
+"Vous ne pouvez pas retirer votre propre accès",
+"You cannot remove your own access"
+],
+[
+"Votre clé d’accès vous sera demandé pour confirmer. Même identifiant = nouveau mot de passe.",
+"Your access key will be asked to confirm. Same login = new password."
 ]
 ];
