@@ -911,3 +911,6 @@ dialog.bien-full::backdrop { background: rgba(0,0,0,.9); }
 .dev-sec.dev-warn { border: 2px solid var(--amber); background: var(--amber-soft); border-radius: 14px; padding: 6px 10px 2px; margin-bottom: 14px; animation: aresWarm 2.4s ease-in-out infinite; }
 .dev-bulb { display: inline-block; animation: pulse 1.2s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .dev-sec.dev-warn, .dev-bulb { animation: none; } }
+
+/* le comptable ne supprime rien */
+body.compta [data-action^="del-"], body.compta [data-action$="-del"], body.compta [data-action*="wipe"] { display: none !important; }

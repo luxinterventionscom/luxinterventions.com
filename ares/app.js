@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.161.0';
+const VERSION = '2.162.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2278,6 +2278,7 @@ const lockMinutes = () => parseInt(localStorage.getItem('aresLockMin') || '15', 
 let lastInbox = 0;
 function startSession() {
   vault.api.who = whoLabel();
+  document.body.classList.toggle('compta', isCompta());
   lockEl.hidden = true;
   setHtml(lockEl, '');
   appEl.hidden = false;
@@ -7889,12 +7890,14 @@ async function importFile(file) {
 // ───────────────────────── Délégation d'événements ─────────────────────────
 // réservé au responsable (clé principale) ; le comptable n'affecte pas les travaux
 const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all']);
+const DEL_ACTION = /^del-|-del$|wipe/; // toute suppression
 const NO_COMPTA = new Set(['interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job', 'op-del', 'op-new']);
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
   if (!el || !ACTIONS[el.dataset.action]) return;
   e.preventDefault();
   if (vault.op && RESP_ONLY.has(el.dataset.action)) return toast('Réservé au directeur (clé d’accès principale)', { bad: true });
+  if (isCompta() && DEL_ACTION.test(el.dataset.action)) return toast('Le comptable ne supprime rien : voyez avec le directeur ou le centraliste', { bad: true });
   if (isCompta() && NO_COMPTA.has(el.dataset.action)) return toast(['op-del', 'op-new'].includes(el.dataset.action) ? 'Le comptable ne gère pas les accès' : 'Le comptable n’affecte pas les travaux (directeur ou centraliste)', { bad: true });
   ACTIONS[el.dataset.action](el.dataset, el, e);
 });
@@ -8031,6 +8034,8 @@ function devStatsHtml(y) {
 const devFini = (d) => !!d.fini || !!(d.st && d.st !== 'brouillon');
 const devBall = (d) => html`<span class="dball dball-${devState(d).k}" aria-hidden="true"></span>`;
 const devClient = (d) => (d.client && d.client.nom) || '—';
+// devis signé ou accepté : pièce à garder 10 ans → ni supprimé ni refait, seulement archivé
+const devLocked = (d) => !!(d.sign || d.st === 'accepte');
 const devOpen = () => vault.list('devis').filter((d) => devState(d).open).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 // qui l'a envoyé : rapport de visite du chef de chantier (app de l'équipe) ou devis créé dans la centrale (opérateur)
 // avis du client à la signature du rapport de visite (la visite et l'ouvrier)
@@ -8066,7 +8071,8 @@ function devBanner() {
 // onglet Maintenance → Devis
 function devTab() {
   devSyncSoon();
-  const all = vault.list('devis').sort((a, b) => (b.created || '').localeCompare(a.created || ''));
+  const every = vault.list('devis').sort((a, b) => (b.created || '').localeCompare(a.created || ''));
+  const all = every.filter((d) => !d.arch), arch = every.filter((d) => d.arch);
   const open = all.filter((d) => devState(d).open), prep = all.filter((d) => devState(d).k === 'prep'), drafts = all.filter((d) => devState(d).k === 'draft'), done = all.filter((d) => !devState(d).open && !['draft', 'prep'].includes(devState(d).k)).slice(0, ui.cpLim || 10);
   const c = factConf();
   return html`<p class="small muted" style="margin:0 0 10px">Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou portail de la gérance) et la signature du client.</p>
@@ -8076,7 +8082,8 @@ function devTab() {
     ${devSec('prep', html`<span class="dev-bulb">💡</span> 📋 Rapports de visite reçus — prix à mettre`, prep, html`<p class="tiny muted" style="margin:0 0 6px">Le chef de chantier peut encore les corriger. Mettez les prix puis touchez « ✅ Devis terminé » : ensuite seulement le devis part au client.</p>`, 'dev-warn')}
     ${devSec('drafts', '✅ Prêts à envoyer', drafts)}
     ${devSec('done', 'Terminés', done)}
-    ${!all.length ? empty('file', 'Aucun devis pour l’instant.', html`<button class="btn primary" data-action="dev-new">${icon('plus')} Nouveau devis</button>`) : ''}`;
+    ${devSec('arch', '🗄️ Archivés', arch)}
+    ${!every.length ? empty('file', 'Aucun devis pour l’instant.', html`<button class="btn primary" data-action="dev-new">${icon('plus')} Nouveau devis</button>`) : ''}`;
 }
 // formulaire : lignes du chef (métier · nombre d'ouvriers · heures par ouvrier)
 const devChefRow = (n, r = {}) => html`<div class="dev-crow" data-n="${n}"><select name="met${n}" data-input="dev-chef" aria-label="Métier"><option value="">— métier —</option>${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${r.met === k ? new Raw('selected') : ''}>${MET_ICON[k] || '👷'} ${v}</option>`)}</select>
@@ -8272,10 +8279,11 @@ Object.assign(SHEETS, {
           ${cl.type === 'ger' && cl.orgId && d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm" data-action="dev-ptl" data-id="${id}">📤 ${d.ptlSt ? 'Renvoyer' : 'Envoyer'} au portail de la gérance</button>` : ''}
           ${d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm primary" data-action="dev-sign" data-id="${id}">✍️ Faire signer le client</button><button class="btn sm" data-action="dev-acc" data-id="${id}">✅ Accepté</button><button class="btn sm ghost danger" data-action="dev-ref" data-id="${id}">❌ Refusé</button>` : ''}
           ${s.k === 'ok' ? html`<button class="btn sm primary" data-action="dev-tache" data-id="${id}">➡️ Créer l’intervention</button>` : ''}
-          ${d.st !== 'brouillon' && !d.tacheId ? html`<button class="btn sm ghost" data-action="dev-rev" data-id="${id}">🔄 Nouvelle version (R${(d.rev || 0) + 1})</button>` : ''}
+          ${d.st !== 'brouillon' && !d.tacheId && !devLocked(d) ? html`<button class="btn sm ghost" data-action="dev-rev" data-id="${id}">🔄 Nouvelle version (R${(d.rev || 0) + 1})</button>` : ''}
           ${d.tacheId && vault.get('taches', d.tacheId) ? html`<button class="btn sm ghost" data-action="edit-tache" data-id="${d.tacheId}">🛠️ Voir l’intervention</button>` : ''}
           ${d.st === 'brouillon' ? html`<button class="btn sm ghost" data-action="dev-unfini" data-id="${id}">↩️ Remettre en préparation</button>` : ''}
-          <button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button></div>`}</div>` : '';
+          ${devLocked(d) ? html`<button class="btn sm ghost" data-action="dev-arch" data-id="${id}">${d.arch ? '↩️ Sortir des archives' : '🗄️ Archiver'}</button>` : html`<button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button>`}</div>`}
+        ${devLocked(d) ? html`<p class="tiny muted" style="margin:8px 0 0">🔒 Devis ${d.sign ? 'signé' : 'accepté'} : il ne peut pas être supprimé (à conserver 10 ans).${d.arch ? ' Archivé le ' + fmtDate(d.arch) + '.' : ''}</p>` : ''}</div>` : '';
     return {
       title: id ? `📝 Devis ${devNo(d)}` : '📝 Nouveau devis',
       body: html`${acts}<form id="f" data-form="devis" class="fields" data-kind="${d.kind === 'contrat' ? 'contrat' : 'travaux'}"><input type="hidden" name="id" value="${id || ''}">
@@ -8768,8 +8776,14 @@ Object.assign(ACTIONS, {
     await vault.mutate((tx) => tx.put('devis', { id: v.id, rev: (v.rev || 0) + 1, st: 'brouillon', fini: null, date: today(), sign: null, acc: '', ...devH(v, 'R' + ((v.rev || 0) + 1)) }), 'Nouvelle version du devis', `${v.no}-R${(v.rev || 0) + 1}`);
     toast(`Version R${(v.rev || 0) + 1} : modifiez puis renvoyez`); ui.sheet.rendered = false; renderSheet();
   },
+  async 'dev-arch'(d) {
+    const v = vault.get('devis', d.id); if (!v || !devLocked(v)) return;
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, arch: v.arch ? '' : today() }), v.arch ? 'Devis sorti des archives' : 'Devis archivé', `${devNo(v)} — ${devClient(v)}`);
+    toast(v.arch ? 'Devis sorti des archives' : '🗄️ Devis archivé'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  },
   async 'dev-del'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
+    if (devLocked(v)) return toast('Devis signé ou accepté : il ne peut pas être supprimé (à conserver 10 ans). Archivez-le.', { bad: true });
     if (!(await confirmBox(`Supprimer le devis ${devNo(v)} ?`, { ok: 'Supprimer', danger: true, detail: 'Le devis et ses photos sont effacés. Le numéro n’est pas réutilisé.' }))) return;
     const ph = devPhotos(v.id);
     await vault.mutate((tx) => { tx.remove('devis', v.id); ph.forEach((x) => tx.remove('documents', x.id)); }, 'Devis supprimé', `${devNo(v)} — ${devClient(v)}`);
