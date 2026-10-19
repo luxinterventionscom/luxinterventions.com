@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.155.0';
+const VERSION = '2.156.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -8030,12 +8030,19 @@ const devFini = (d) => !!d.fini || !!(d.st && d.st !== 'brouillon');
 const devBall = (d) => html`<span class="dball dball-${devState(d).k}" aria-hidden="true"></span>`;
 const devClient = (d) => (d.client && d.client.nom) || '—';
 const devOpen = () => vault.list('devis').filter((d) => devState(d).open).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+// qui l'a envoyé : rapport de visite du chef de chantier (app de l'équipe) ou devis créé dans la centrale (opérateur)
+const devFrom = (d) => { const w = d.chefBy && vault.get('intervenants', d.chefBy); return d.chefBy ? `📋 Rapport de visite de 🦺 ${w ? intervFull(w) : 'chef de chantier'}${d.created ? ' · reçu le ' + fmtDateTime(d.created) : ''}` : d.creePar ? `✏️ Créé par ${d.creePar}${d.created ? ' · ' + fmtDateTime(d.created) : ''}` : ''; };
+// sections de la liste des devis : repliables (on se souvient de celles fermées)
+const devClosed = () => { try { return new Set(JSON.parse(localStorage.getItem('aresDevClosed') || '[]')); } catch { return new Set(); } };
+const devSec = (k, title, list, extra = '', cls = '') => list.length ? html`<details class="dev-sec ${cls}" data-sec="${k}" ${devClosed().has(k) ? '' : new Raw('open')}><summary class="section-label" style="cursor:pointer">${title} (${list.length})</summary>${extra}<div class="list" style="margin-bottom:14px">${list.map(devRow)}</div></details>` : '';
+document.addEventListener('toggle', (e) => { const d = e.target; if (!d.classList || !d.classList.contains('dev-sec')) return; const c = devClosed(); if (d.open) c.delete(d.dataset.sec); else c.add(d.dataset.sec); try { localStorage.setItem('aresDevClosed', JSON.stringify([...c])); } catch { /* stockage indisponible */ } }, true);
 function devRow(d) {
   const s = devState(d), k = devCalc(d);
   return html`<button class="row dev-row" data-action="dev-open" data-id="${d.id}">${devBall(d)}
     <span class="grow"><span class="title" style="display:block;white-space:normal">${devNo(d)}${d.titre ? html` <span class="muted small">— ${d.titre}</span>` : ''}</span>
       <span class="meta" style="white-space:normal">${d.client && d.client.type === 'ger' ? orgLogo(d.client.orgId) : d.client && d.client.type === 'pro' ? '🏢' : '👤'} ${devClient(d)}${d.chantier ? ' · ' + d.chantier : ''}</span>
-      <span class="meta" style="display:block;white-space:normal">${s.lbl}${d.ptlSt === 'envoye' && d.st !== 'accepte' ? ' · 📤 dans son portail' : ''}</span></span>
+      <span class="meta" style="display:block;white-space:normal">${s.lbl}${d.ptlSt === 'envoye' && d.st !== 'accepte' ? ' · 📤 dans son portail' : ''}</span>
+      ${devFrom(d) ? html`<span class="meta" style="display:block;white-space:normal">${devFrom(d)}</span>` : ''}</span>
     <b style="white-space:nowrap">${eur(k.ttc)}${k.ct ? html`<span class="tiny muted"> / mois</span>` : ''}</b></button>`;
 }
 // bandeau de l'accueil : « DEVIS EN COURS », violet qui clignote
@@ -8061,10 +8068,10 @@ function devTab() {
   return html`<p class="small muted" style="margin:0 0 10px">Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou portail de la gérance) et la signature du client.</p>
     ${c.autorisation ? '' : html`<div class="alert warn" style="margin-bottom:12px">⚠️<div>Ajoutez le <b>n° d’autorisation d’établissement</b> dans <a href="#" data-action="fact-set">🧾 Facturation</a> : il est imprimé sur chaque devis.</div></div>`}
     <p style="margin:0 0 6px"><span class="tiny muted">🟢 en attente · 🟡 expire bientôt (3 derniers jours) · 🔴 expiré à minuit · 🟣 particulier : délai de rétractation de 14 jours · ✅ accepté</span></p>
-    ${open.length ? html`<div class="section-label">En cours (${open.length})</div><div class="list" style="margin-bottom:14px">${open.map(devRow)}</div>` : ''}
-    ${prep.length ? html`<div class="section-label">🟡 En préparation (${prep.length})</div><p class="tiny muted" style="margin:-4px 0 6px">Le chef de chantier peut encore les corriger. Le directeur met les prix puis touche « ✅ Devis terminé » : ensuite seulement le devis part au client.</p><div class="list" style="margin-bottom:14px">${prep.map(devRow)}</div>` : ''}
-    ${drafts.length ? html`<div class="section-label">✅ Prêts à envoyer (${drafts.length})</div><div class="list" style="margin-bottom:14px">${drafts.map(devRow)}</div>` : ''}
-    ${done.length ? html`<div class="section-label">Terminés</div><div class="list">${done.map(devRow)}</div>` : ''}
+    ${devSec('open', 'En cours', open)}
+    ${devSec('prep', html`<span class="dev-bulb">💡</span> 📋 Rapports de visite reçus — prix à mettre`, prep, html`<p class="tiny muted" style="margin:0 0 6px">Le chef de chantier peut encore les corriger. Mettez les prix puis touchez « ✅ Devis terminé » : ensuite seulement le devis part au client.</p>`, 'dev-warn')}
+    ${devSec('drafts', '✅ Prêts à envoyer', drafts)}
+    ${devSec('done', 'Terminés', done)}
     ${!all.length ? empty('file', 'Aucun devis pour l’instant.', html`<button class="btn primary" data-action="dev-new">${icon('plus')} Nouveau devis</button>`) : ''}`;
 }
 // formulaire : lignes du chef (métier · nombre d'ouvriers · heures par ouvrier)
@@ -8411,7 +8418,7 @@ Object.assign(FORMS, {
       const c = factConf(), now = new Date(), hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
       seq = (+c.devSeq || 0) + 1;
       rec.no = ['DEV', devInitials(rec.client.nom), rec.client.type !== 'part' ? rec.client.rcs : '', ymd(today()), hhmm, String(seq).padStart(4, '0')].filter(Boolean).join('-');
-      Object.assign(rec, { seq, st: 'brouillon', date: today(), created: now.toISOString(), rev: 0 });
+      Object.assign(rec, { seq, st: 'brouillon', date: today(), created: now.toISOString(), rev: 0, creePar: vault.api.who || '' });
     } else rec.id = id;
     if (prev && prev.visa && devTravaux(prev) !== devTravaux(rec)) { rec.visa = null; toast('Rapport ou travaux modifiés : la signature « Vu et correct » est retirée (à refaire)', { bad: true }); }
     const docs = [];

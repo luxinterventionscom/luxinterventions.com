@@ -15063,5 +15063,25 @@ export default [
 [
 "Votre clé d’accès vous sera demandé pour confirmer. Même identifiant = nouveau mot de passe.",
 "Ser-lhe-á pedida a chave de acesso para confirmar. Mesmo identificador = nova palavra-passe."
+],
+[
+"📋 Rapports de visite reçus — prix à mettre",
+"📋 Relatórios de visita recebidos — preços a pôr"
+],
+[
+"Le chef de chantier peut encore les corriger. Mettez les prix puis touchez « ✅ Devis terminé » : ensuite seulement le devis part au client.",
+"O chefe de obra ainda os pode corrigir. Ponha os preços e toque em «✅ Devis terminé»: só então o orçamento vai para o cliente."
+],
+[
+"📋 Rapport de visite de 🦺 {0}",
+"📋 Relatório de visita de 🦺 {0}"
+],
+[
+"reçu le {0}",
+"recebido a {0}"
+],
+[
+"✏️ Créé par {0}",
+"✏️ Criado por {0}"
 ]
 ];
