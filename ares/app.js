@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.158.0';
+const VERSION = '2.159.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -8242,6 +8242,8 @@ function devTotHtml(d) {
     <span>Total HT</span><b>${eur(k.ht)}</b><span>TVA ${String(k.taux).replace('.', ',')} %</span><b>${eur(k.tva)}</b><span class="big">Total TTC</span><b class="big">${eur(k.ttc)}</b>
     <span>Acompte ${k.pct} %</span><b>${eur(k.acompte)}</b></div>${k.pct !== devAcompteConseil(k.ttc) ? html`<p class="tiny muted" style="margin:4px 0 0">Acompte conseillé pour ce montant : ${devAcompteConseil(k.ttc)} %</p>` : ''}`;
 }
+// signature du client (devis signé, « Vu et correct ») : l'image elle-même, pas seulement le nom
+const devSigImg = (sg) => (sg && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(sg.png || '') ? html`<img class="dev-sig" src="${sg.png}" alt="Signature de ${sg.nom || 'le client'}">` : '');
 Object.assign(SHEETS, {
   devis({ id }) {
     const d = id ? vault.get('devis', id) : { st: 'brouillon', client: { type: 'part' }, chef: { rows: [] }, dir: { rows: [], valid: 30 } };
@@ -8255,9 +8257,9 @@ Object.assign(SHEETS, {
     const acts = id ? html`<div class="card dev-acts" style="margin-bottom:12px;padding:12px">
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">${devBall(d)}<b class="grow">${s.lbl}</b></div>
         ${d.decision && d.decision.note ? html`<p class="small" style="margin:0 0 8px">💬 <b>${d.decision.by || 'La gérance'}</b> : ${d.decision.note}</p>` : ''}
-        ${d.sign ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ Signé par ${d.sign.nom || 'le client'} le ${fmtDateTime(Date.parse(d.sign.at) || 0)}${d.sign.early ? ' · début des travaux avant la fin du délai de rétractation demandé' : ''}</p>` : ''}
+        ${d.sign ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ Signé par ${d.sign.nom || 'le client'} le ${fmtDateTime(Date.parse(d.sign.at) || 0)}${d.sign.early ? ' · début des travaux avant la fin du délai de rétractation demandé' : ''}</p>${devSigImg(d.sign)}` : ''}
         ${chefW ? html`<p class="tiny muted" style="margin:0 0 8px">🦺 Préparé par <b>${intervFull(chefW)}</b> dans son app${d.chefAt ? ' · dernier envoi le ' + fmtDateTime(Date.parse(d.chefAt) || 0) : ''}</p>` : ''}
-        ${d.visa ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ « Vu et correct » signé par ${d.visa.nom || 'le client'} le ${fmtDateTime(Date.parse(d.visa.at) || 0)} (le rapport du chef correspond à sa demande — sans prix)</p>` : ''}
+        ${d.visa ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ « Vu et correct » signé par ${d.visa.nom || 'le client'} le ${fmtDateTime(Date.parse(d.visa.at) || 0)} (le rapport du chef correspond à sa demande — sans prix)</p>${devSigImg(d.visa)}` : ''}
         ${!devFini(d) ? html`<div class="alert info" style="margin:0 0 8px">🟡<div><b>En préparation.</b> Enregistrez autant de fois que vous voulez, sans signature. Le directeur met les prix puis touche <b>« ✅ Devis terminé »</b> : alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, portail) et la signature « Bon pour accord ».</div></div>
         <div class="dev-btns"><button class="btn sm primary" data-action="dev-fini" data-id="${id}">✅ Devis terminé</button>
           <button class="btn sm" data-action="dev-visa" data-id="${id}">✍️ ${d.visa ? 'Refaire' : 'Faire signer'} « Vu et correct »</button>
