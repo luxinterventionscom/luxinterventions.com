@@ -14875,5 +14875,25 @@ export default [
 [
 "Votre clé d’accès vous sera demandé pour confirmer. Même identifiant = nouveau mot de passe.",
 "Your access key will be asked to confirm. Same login = new password."
+],
+[
+"📋 Rapports de visite reçus — prix à mettre",
+"📋 Site visit reports received — prices to add"
+],
+[
+"Le chef de chantier peut encore les corriger. Mettez les prix puis touchez « ✅ Devis terminé » : ensuite seulement le devis part au client.",
+"The site manager can still correct them. Add the prices then tap “✅ Devis terminé”: only then does the quote go to the client."
+],
+[
+"📋 Rapport de visite de 🦺 {0}",
+"📋 Site visit report from 🦺 {0}"
+],
+[
+"reçu le {0}",
+"received on {0}"
+],
+[
+"✏️ Créé par {0}",
+"✏️ Created by {0}"
 ]
 ];
