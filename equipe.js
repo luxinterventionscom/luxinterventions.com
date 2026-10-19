@@ -914,13 +914,14 @@ const dvTxt = ['c', 'titre', 'chantier', 'interloc', 'rapport', 'jours', 'rows',
 const dvHash = (x) => JSON.stringify([String(x.rapport || '').trim(), (x.prest || []).map((p) => [p.k, p.l, p.q === '' || p.q == null ? '' : +p.q, p.u || '', p.det || ''])]);
 const dvSrv = (did) => ((data.devis && data.devis.mine) || []).find((x) => x.did === did) || null;
 let devEd = null, devRedraw = true, devBusy = false, devMsg = '';
-const devCats = new Set();
+const devCats = new Set(), devCatsShut = new Set(); // catégories ouvertes / fermées à la main (une catégorie fermée reste fermée, même avec des travaux cochés)
 function dvNew() {
   const r = crypto.getRandomValues(new Uint8Array(8));
   return { did: [...r].map((b) => b.toString(16).padStart(2, '0')).join(''), c: { type: 'part', nom: '', rcs: '', tva: '', adresse: '', tel: '', email: '' }, titre: '', chantier: '', interloc: '', rapport: '', jours: '', rows: [{ met: '', nb: 1, h: '' }], prest: [], visa: null, ph: [], nx: 1, phSent: 0, sent: false, dirty: true };
 }
 // ouvrir : le brouillon de ce téléphone, sinon la version reçue par le directeur
 function dvOpen(did) {
+  devCats.clear(); devCatsShut.clear();
   const loc = did ? dvAll()[did] : null, srv = did ? dvSrv(did) : null;
   if (srv && !['prep'].includes(srv.st) && !(loc && !loc.sent)) return;
   if (loc && (loc.dirty || loc.ph.length || !srv)) devEd = JSON.parse(JSON.stringify(loc));
@@ -1038,7 +1039,7 @@ function devEditor() {
       <p class="meta" style="margin:6px 0 0">${nPh} / 20</p></div>
     <div class="card"><h2>📝 ${esc(v.rapport)}</h2><textarea data-dv="rapport" maxlength="6000" style="min-height:140px" placeholder="${esc(v.rapportPh)}">${esc(dr.rapport)}</textarea></div>
     <div class="card"><h2>${esc(v.prest)}</h2><p class="meta" style="margin:0 0 8px">${esc(v.prestHint)}</p>
-      ${D.cat.map(([cat, items], ci) => { const n = items.filter((_, ii) => sel[`c${ci}i${ii}`]).length; return `<details class="dv-cat" data-dvcat="${ci}"${n || devCats.has(ci) ? ' open' : ''}><summary>${esc(cat)}${n ? ` <b class="dv-n">${n}</b>` : ''}</summary>
+      ${D.cat.map(([cat, items], ci) => { const n = items.filter((_, ii) => sel[`c${ci}i${ii}`]).length; return `<details class="dv-cat" data-dvcat="${ci}"${devCats.has(ci) || (n && !devCatsShut.has(ci)) ? ' open' : ''}><summary>${esc(cat)}${n ? ` <b class="dv-n">${n}</b>` : ''}</summary>
         ${items.map(([l, u, det], ii) => { const k = `c${ci}i${ii}`, p = sel[k]; return `<div class="dv-pi"><label class="dv-ck"><input type="checkbox" data-dvk="${k}"${p ? ' checked' : ''}> <span>${esc(l)}</span></label>${p ? pq(k, p, det ? v.det + ' : ' + det : '') : ''}</div>`; }).join('')}</details>`; }).join('')}
       <p style="margin:12px 0 4px"><b>${esc(v.free)}</b></p>
       ${free.map((p) => `<div class="dv-pi"><input type="text" placeholder="${esc(v.freePh)}" data-dvp="${esc(p.k)}" data-f="l" value="${esc(p.l)}" maxlength="200">${pq(p.k, p, '')}</div>`).join('')}
@@ -1106,7 +1107,7 @@ app.addEventListener('change', async (e) => {
   }
   if (ds.redraw || devRedraw) { dvSave(); devRedraw = true; render(); }
 });
-app.addEventListener('toggle', (e) => { const c = e.target.dataset && e.target.dataset.dvcat; if (c === undefined) return; if (e.target.open) devCats.add(+c); else devCats.delete(+c); }, true);
+app.addEventListener('toggle', (e) => { const c = e.target.dataset && e.target.dataset.dvcat; if (c === undefined) return; if (e.target.open) { devCats.add(+c); devCatsShut.delete(+c); } else { devCats.delete(+c); devCatsShut.add(+c); } }, true);
 app.addEventListener('click', async (e) => {
   const v = DV();
   if (e.target.closest('[data-dv-new]')) return dvOpen('');
