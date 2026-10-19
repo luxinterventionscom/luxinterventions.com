@@ -910,7 +910,7 @@ async function phIdb(mode, fn) { const db = await dvDb(); return new Promise((re
 const phPut = (k, v) => phIdb('readwrite', (s) => s.put(v, k));
 const phGet = (k) => phIdb('readonly', (s) => s.get(k));
 const phDel = (k) => phIdb('readwrite', (s) => s.delete(k));
-const dvTxt = ['c', 'titre', 'chantier', 'interloc', 'rapport', 'jours', 'rows', 'prest', 'visa'];
+const dvTxt = ['c', 'titre', 'chantier', 'interloc', 'rapport', 'jours', 'rows', 'prest', 'visa', 'sat'];
 const dvHash = (x) => JSON.stringify([String(x.rapport || '').trim(), (x.prest || []).map((p) => [p.k, p.l, p.q === '' || p.q == null ? '' : +p.q, p.u || '', p.det || ''])]);
 const dvSrv = (did) => ((data.devis && data.devis.mine) || []).find((x) => x.did === did) || null;
 let devEd = null, devRedraw = true, devBusy = false, devMsg = '';
@@ -928,6 +928,7 @@ function dvOpen(did) {
     const dr = dvNew();
     Object.assign(dr, { did: srv.did, c: { ...dr.c, ...srv.c }, titre: srv.titre, chantier: srv.chantier, interloc: srv.interloc, rapport: srv.rapport, jours: srv.jours, rows: srv.rows.length ? srv.rows : dr.rows, prest: srv.prest, nx: srv.nx || 1, phSent: srv.nph || 0, sent: true, dirty: false });
     if (srv.visa) dr.visa = { nom: srv.visa.nom, at: srv.visa.at, keep: true, h: dvHash(dr) };
+    if (srv.sat) dr.sat = srv.sat;
     dvPut(dr); devEd = JSON.parse(JSON.stringify(dr));
   } else { devEd = dvNew(); dvPut(devEd); }
   devMsg = ''; devRedraw = true; sigUrl = '';
@@ -943,7 +944,7 @@ function dvSave() {
   for (const k of ['ph', 'nx', 'phSent', 'sent']) nx[k] = cur[k] ?? devEd[k];
   dvPut(nx);
 }
-const dvItem = (dr) => ({ k: 'devis', did: dr.did, c: dr.c, titre: dr.titre, chantier: dr.chantier, interloc: dr.interloc, rapport: dr.rapport, jours: dr.jours, rows: dr.rows.filter((r) => r.met || +r.h), prest: dr.prest.filter((p) => p.l), visa: dr.visa && dr.visa.png ? { png: dr.visa.png, nom: dr.visa.nom, at: dr.visa.at } : null, visaKeep: !!(dr.visa && dr.visa.keep), at: new Date().toISOString() });
+const dvItem = (dr) => ({ k: 'devis', did: dr.did, c: dr.c, titre: dr.titre, chantier: dr.chantier, interloc: dr.interloc, rapport: dr.rapport, jours: dr.jours, rows: dr.rows.filter((r) => r.met || +r.h), prest: dr.prest.filter((p) => p.l), visa: dr.visa && dr.visa.png ? { png: dr.visa.png, nom: dr.visa.nom, at: dr.visa.at } : null, visaKeep: !!(dr.visa && dr.visa.keep), sat: ['top', 'moyen', 'mauvais'].includes(dr.sat) ? dr.sat : '', at: new Date().toISOString() });
 // envoi au directeur : le devis puis les photos, par paquets de ~2,5 Mo (chiffrés, comme le reste)
 async function devFlush() {
   if (!data || !data.signalKey || devBusy) return;
@@ -999,6 +1000,15 @@ function devCard() {
       <div class="meta">${esc(v.st[r.st] || r.st)}${r.pend ? ' · ' + esc(v.pend.replace('{n}', r.pend)) : ''}</div></span>
       ${r.ed ? `<button class="btn sm sec" data-dv-open="${esc(r.did)}">${esc(r.st === 'draft' ? v.open : v.edit)}</button>` : ''}</div>`).join('') : `<p class="meta" style="margin:0">${esc(v.none)}</p>`}</div>`;
 }
+// avis du client à la signature : la visite et l'ouvrier, en un geste (😃 🧐 😡)
+const SAT = {
+  fr: { q: 'Votre avis sur la visite et sur l’ouvrier', top: 'Très bien', moyen: 'Moyen', mauvais: 'Pas content' },
+  it: { q: 'Il vostro parere sulla visita e sull’operaio', top: 'Molto bene', moyen: 'Così così', mauvais: 'Non contento' },
+  de: { q: 'Ihre Meinung zum Besuch und zum Arbeiter', top: 'Sehr gut', moyen: 'Mittel', mauvais: 'Unzufrieden' },
+  en: { q: 'Your opinion of the visit and the worker', top: 'Very good', moyen: 'Average', mauvais: 'Not happy' },
+  pt: { q: 'A sua opinião sobre a visita e o trabalhador', top: 'Muito bem', moyen: 'Mais ou menos', mauvais: 'Insatisfeito' },
+  es: { q: 'Su opinión sobre la visita y el trabajador', top: 'Muy bien', moyen: 'Regular', mauvais: 'Descontento' },
+};
 const dvIn = (lbl, path, val, extra = '') => `<label>${esc(lbl)}</label><input type="text" data-dv="${path}" value="${esc(val)}" ${extra}>`;
 function devEditor() {
   const v = DV(), dr = devEd, D = data.devis, st = dvAll()[dr.did] || dr;
@@ -1040,6 +1050,8 @@ function devEditor() {
       <button class="btn sm sec" data-dv-row="1">${esc(v.addRow)}</button>
       ${dvIn(v.jours, 'jours', dr.jours, `maxlength="80" placeholder="${esc(v.joursPh)}"`)}</div>
     <div class="card"><h2>${esc(v.visaT)}</h2><p class="meta" style="margin:0 0 8px">${esc(v.visaHint)}</p>
+      <p style="margin:4px 0 6px"><b>${esc((SAT[lang] || SAT.fr).q)}</b></p>
+      <div class="sat-faces${dr.sat ? ' has' : ''}" role="radiogroup" aria-label="${esc((SAT[lang] || SAT.fr).q)}">${[['top', '😃'], ['moyen', '🧐'], ['mauvais', '😡']].map(([k, e]) => `<button type="button" class="sat-f${dr.sat === k ? ' on' : ''}" role="radio" aria-checked="${dr.sat === k}" data-dv-sat="${k}" aria-label="${esc((SAT[lang] || SAT.fr)[k])}"><span>${e}</span><small>${esc((SAT[lang] || SAT.fr)[k])}</small></button>`).join('')}</div>
       ${vs ? `<p class="ok" style="margin:0 0 8px"><b>${esc(v.visaOk.replace('{n}', vs.nom || '—').replace('{d}', new Date(vs.at).toLocaleString(T().loc, { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })))}</b></p><button class="btn sm sec" data-dv-visa-redo="1">${esc(v.visaRedo)}</button>`
         : `<label>${esc(v.visaNom)}</label><input type="text" id="dvVisaNom" maxlength="120" value="${esc(dr.interloc || dr.c.nom)}">
         <canvas class="sig-pad" width="600" height="220" style="display:block;width:100%;aspect-ratio:30/11;background:#fff;border:1.5px dashed #9aa5a0;border-radius:12px;touch-action:none;margin-top:8px"></canvas>
@@ -1114,6 +1126,7 @@ app.addEventListener('click', async (e) => {
     await phDel(devEd.did + ':' + n).catch(() => {});
     devRedraw = true; return render();
   }
+  if (e.target.closest('[data-dv-sat]')) { const k = e.target.closest('[data-dv-sat]').dataset.dvSat; devEd.sat = devEd.sat === k ? '' : k; dvSave(); devRedraw = true; return render(); }
   if (e.target.closest('[data-dv-visa-redo]')) { devEd.visa = null; dvSave(); devRedraw = true; return render(); }
   if (e.target.closest('[data-dv-visa]')) {
     const c = app.querySelector('canvas.sig-pad'), nom = (document.getElementById('dvVisaNom') || {}).value || '';
