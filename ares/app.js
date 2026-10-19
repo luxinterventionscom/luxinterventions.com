@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.159.0';
+const VERSION = '2.160.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -8259,10 +8259,9 @@ Object.assign(SHEETS, {
         ${d.decision && d.decision.note ? html`<p class="small" style="margin:0 0 8px">💬 <b>${d.decision.by || 'La gérance'}</b> : ${d.decision.note}</p>` : ''}
         ${d.sign ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ Signé par ${d.sign.nom || 'le client'} le ${fmtDateTime(Date.parse(d.sign.at) || 0)}${d.sign.early ? ' · début des travaux avant la fin du délai de rétractation demandé' : ''}</p>${devSigImg(d.sign)}` : ''}
         ${chefW ? html`<p class="tiny muted" style="margin:0 0 8px">🦺 Préparé par <b>${intervFull(chefW)}</b> dans son app${d.chefAt ? ' · dernier envoi le ' + fmtDateTime(Date.parse(d.chefAt) || 0) : ''}</p>` : ''}
-        ${d.visa ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ « Vu et correct » signé par ${d.visa.nom || 'le client'} le ${fmtDateTime(Date.parse(d.visa.at) || 0)} (le rapport du chef correspond à sa demande — sans prix)</p>${devSigImg(d.visa)}` : ''}
+        ${d.visa ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ « Vu et correct » signé par ${d.visa.nom || 'le client'} le ${fmtDateTime(Date.parse(d.visa.at) || 0)} (le rapport du chef correspond à sa demande — sans prix)</p>${devSigImg(d.visa)}<button class="btn sm ghost danger" style="margin:0 0 10px" data-action="dev-visa-del" data-id="${id}">🗑️ Retirer la signature</button>` : d.chefBy && !d.sign ? html`<p class="small" style="margin:0 0 8px;color:#b45309">⚠️ Rapport envoyé sans « Vu et correct » du client. Le client signera le devis final pour l’accepter.</p>` : ''}
         ${!devFini(d) ? html`<div class="alert info" style="margin:0 0 8px">🟡<div><b>En préparation.</b> Enregistrez autant de fois que vous voulez, sans signature. Le directeur met les prix puis touche <b>« ✅ Devis terminé »</b> : alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, portail) et la signature « Bon pour accord ».</div></div>
         <div class="dev-btns"><button class="btn sm primary" data-action="dev-fini" data-id="${id}">✅ Devis terminé</button>
-          <button class="btn sm" data-action="dev-visa" data-id="${id}">✍️ ${d.visa ? 'Refaire' : 'Faire signer'} « Vu et correct »</button>
           <button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button></div>` : html`
         <div class="dev-btns">
           <button class="btn sm" data-action="dev-pdf" data-id="${id}">📄 PDF / imprimer</button>
@@ -8353,28 +8352,10 @@ Object.assign(SHEETS, {
     };
   },
   // signature du client avec le doigt : « Bon pour accord »
-  'devis-sign'({ id, preset }) {
+  'devis-sign'({ id }) {
     const d = vault.get('devis', id);
     if (!d) return null;
     const k = devCalc(d), part = d.client && d.client.type === 'part';
-    // « Vu et correct » : le client confirme que le rapport du chef décrit sa demande (sans prix, sans engagement)
-    if (preset && preset.visa) {
-      const rap = String((d.chef && d.chef.rapport) || '').trim();
-      return {
-        title: `✍️ Vu et correct — ${devNo(d)}`,
-        narrow: true,
-        body: html`<form id="fs" data-form="devis-sign" class="fields"><input type="hidden" name="id" value="${id}"><input type="hidden" name="visa" value="1">
-          <div class="full card" style="padding:10px;margin:0"><b>${d.titre || 'Travaux demandés'}</b><div class="small">${devClient(d)}${d.chantier ? ' · ' + d.chantier : ''}</div>
-            ${rap ? html`<p class="small" style="margin:6px 0 0;white-space:pre-wrap">${rap}</p>` : ''}
-            ${(d.prest || []).length ? html`<ul class="small" style="margin:6px 0 0;padding-left:18px">${d.prest.map((p) => html`<li>${p.l} — ${devQty(p)} ${p.u || ''}${p.det ? ' · ' + p.det : ''}</li>`)}</ul>` : ''}</div>
-          <label class="field full">Nom du client<input name="nom" required value="${d.interloc || devClient(d)}"></label>
-          <p class="small full" style="margin:0"><b>Vu et correct</b> — je confirme que ce rapport décrit les travaux que je demande. Ce n’est pas une commande : le prix viendra dans le devis, que je signerai ensuite si je l’accepte.</p>
-          <canvas class="sig-pad full" width="600" height="220" style="display:block;width:100%;aspect-ratio:30/11;background:#fff;border:1.5px dashed #9aa5a0;border-radius:12px;touch-action:none"></canvas>
-          <div class="full" style="display:flex;gap:8px"><button type="button" class="btn sm" data-action="dev-sig-clear">Effacer</button></div>
-        </form>`,
-        foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="fs">✍️ Valider « Vu et correct »</button>`,
-      };
-    }
     return {
       title: `✍️ Bon pour accord — ${devNo(d)}`,
       narrow: true,
@@ -8442,12 +8423,6 @@ Object.assign(FORMS, {
     if (!d) return;
     if (devSigEmpty(c)) return toast('Le client doit signer dans le cadre blanc', { bad: true });
     const png = c.toDataURL('image/png'), at = new Date().toISOString();
-    if (fd.get('visa') === '1') {
-      await vault.mutate((tx) => tx.put('devis', { id: d.id, visa: { png, at, nom: String(fd.get('nom') || '').trim() } }), 'Devis : « Vu et correct » signé par le client', `${devNo(d)} — ${devClient(d)}`);
-      devSigUrl = ''; sheetDirty = false;
-      toast('✍️ « Vu et correct » signé');
-      return goBack();
-    }
     await vault.mutate((tx) => tx.put('devis', { id: d.id, st: 'accepte', acc: at, sign: { png, at, nom: String(fd.get('nom') || '').trim(), early: fd.get('early') === '1' }, ...devH(d, 'accepte') }), 'Devis signé par le client', `${devNo(d)} — ${devClient(d)}`);
     devSigUrl = ''; sheetDirty = false;
     toast('✍️ Devis signé — bon pour accord');
@@ -8701,7 +8676,13 @@ Object.assign(ACTIONS, {
   'dev-pend-del': (d) => { devPend.files.splice(+d.n, 1); const box = $('#devPend'); if (box) setHtml(box, devPendHtml()); },
   'dev-sig-clear': () => { const c = sheetEl.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); devSigUrl = ''; },
   'dev-sign': (d) => { if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true }); openOver('devis-sign', d.id); },
-  'dev-visa': (d) => { if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true }); openOver('devis-sign', d.id, null, { visa: true }); },
+  async 'dev-visa-del'(d) {
+    const v = vault.get('devis', d.id); if (!v || !v.visa) return;
+    if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
+    if (!(await confirmBox(`Retirer la signature « Vu et correct » de ${v.visa.nom || 'le client'} ?`, { ok: 'Retirer', danger: true, detail: 'L’ouvrier peut la faire refaire sur place ; le client signera de toute façon le devis final pour l’accepter.' }))) return;
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, visa: null }), 'Devis : signature « Vu et correct » retirée', `${devNo(v)} — ${devClient(v)}`);
+    toast('Signature retirée'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  },
   // le directeur a fini (prix compris) : le devis peut partir au client
   async 'dev-fini'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
