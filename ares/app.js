@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.160.0';
+const VERSION = '2.161.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4349,7 +4349,7 @@ function renderSheet() {
   if (!sheetDirty) sheetSnap = sheetSig();
   // dans les fiches : mêmes sections repliables, ouvertes par défaut
   enhanceFolds(sheetEl.querySelector('.sheet-body'), 'sheet:' + s.kind + ':' + (s.tab || ''), true);
-  if (s.kind === 'ger-ticket') setTimeout(ptlPhotos, 0);
+  if (sheetEl.querySelector('img[data-ptl-photo]')) setTimeout(ptlPhotos, 0);
   hydrateEdl();
 }
 
@@ -5117,7 +5117,8 @@ const SHEETS = {
           <p class="tiny muted" style="margin:6px 0 0">🔴 <b>À faire</b> : pas encore organisé · 🟡 <b>Planifiée</b> : jour et personne fixés · 🟢 <b>Terminée</b> : chantier clôturé par le bureau</p></fieldset>` : ''}
         <label class="field full">Notes<textarea name="note" placeholder="Accès, clés, pièces à acheter, ce qui a été fait…">${t.note || ''}</textarea></label>
         ${(() => { const pb = t.id ? eqPhotos(t.id, 'pb') : [], np = (t.ptlPhotos || []).length; return html`<label class="field full">📷 Photos du problème (envoyées dans l’app de la personne)<input type="file" name="pbphotos" accept="image/*" multiple></label>
-        ${pb.length || np ? html`<p class="tiny muted full" style="margin:-4px 0 0">✓ ${pb.length + np} photo(s) déjà jointe(s)${np ? ' (photos de la gérance)' : ''}</p>` : ''}
+        ${pb.length || np ? html`<div class="full"><p class="tiny muted" style="margin:-4px 0 6px">✓ ${pb.length + np} photo(s) déjà jointe(s)${np ? ' (photos de la gérance)' : ''}</p>
+          <div class="edl-grid sm">${pb.map((x) => html`<figure class="edl"><button type="button" class="edl-img" data-action="open-doc" data-id="${x.id}" aria-label="Agrandir"><img alt="" data-edl="${x.id}"></button></figure>`)}${(t.ptlPhotos || []).map((pid) => html`<figure class="edl"><a class="edl-img" target="_blank" rel="noopener" aria-label="Agrandir"><img alt="Photo de la gérance" data-ptl-photo="${pid}"></a></figure>`)}</div></div>` : ''}
         ${np ? html`<input type="hidden" name="ptlPhotos" value="${t.ptlPhotos.join(',')}">` : ''}`; })()}
         ${t.depId ? html`<p class="tiny muted full" style="margin:0">✓ Coût enregistré dans les dépenses de l'immeuble.</p>` : ''}
         ${(t.journal || []).length ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">👷 Suivi de l’équipe</div><div class="list small">${t.journal.slice().reverse().slice(0, 30).map((x) => html`<div class="row"><span class="grow" style="white-space:normal"><b>${EQ_ST[x.st] || x.st}${x.h ? ' 🕒 ' + x.h : ''}${x.qte ? ` · 🔢 ${x.qte} ${x.qu || ''}` : ''}</b> · ${fmtDate(x.d)}${x.by ? ' · ' + intervName(x.by) : ''}<span class="meta" style="display:block">${fmtDateTime(x.at)}</span>${x.note ? html`<span class="small" style="display:block">📝 ${x.note}</span>` : ''}</span>${(x.ph || []).filter((pid) => vault.get('documents', pid)).map((pid) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${pid}">📷</button>`)}</div>`)}</div></div>` : ''}
