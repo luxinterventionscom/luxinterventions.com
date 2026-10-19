@@ -632,24 +632,13 @@
 
   /* ── PORTAIL / ESPACE CLIENT ── */
   .portail-section { background: var(--off-white); }
-  .portail-clip { margin-top: 1.5rem; background: var(--white); border-radius: 18px; padding: 1.5rem; box-shadow: var(--shadow-md); display: grid; grid-template-columns: 1fr 1.6fr; gap: 1.5rem; align-items: center; }
+  .portail-clip { margin-top: 1.5rem; background: var(--white); border-radius: 18px; padding: 1.5rem; box-shadow: var(--shadow-md); display: grid; grid-template-columns: 1fr 1.6fr; gap: 1.5rem 2rem; align-items: start; }
   .portail-clip video { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; background: #0B1220; display: block; }
+  .portail-clip-tags { display: flex; flex-wrap: wrap; gap: 0.45rem; margin-top: 1.1rem; }
   .portail-clip-steps { margin: 0.9rem 0 0; padding-left: 1.2rem; color: var(--grey-600); font-size: 0.88rem; line-height: 1.7; }
   @media (max-width: 900px) { .portail-clip { grid-template-columns: 1fr; } }
-  .portail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem; }
-  .portail-card { background: var(--white); border-radius: 18px; padding: 2rem; box-shadow: var(--shadow-md); transition: transform 0.2s, box-shadow 0.2s; }
-  .portail-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-  .portail-card-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
-  .portail-card-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
   .portail-card-title { font-size: 1rem; font-weight: 700; color: var(--black); }
   .portail-card-sub { font-size: 0.8rem; color: var(--grey-400); }
-  .portail-stat-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-bottom: 1px solid var(--grey-100); font-size: 0.875rem; }
-  .portail-stat-row:last-child { border-bottom: none; }
-  .portail-stat-label { color: var(--grey-600); }
-  .portail-stat-val { font-weight: 700; color: var(--black); }
-  .portail-stat-val.green { color: var(--green); }
-  .portail-stat-val.orange { color: var(--accent); }
-  .portail-stat-val.blue { color: var(--blue); }
   .portail-badge { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.75rem; border-radius: 50px; font-size: 0.72rem; font-weight: 600; }
   .portail-badge.green { background: var(--green-light); color: var(--green); }
   .portail-badge.orange { background: var(--accent-light); color: var(--accent-dark); }
@@ -659,7 +648,6 @@
   .portail-btn.primary:hover { background: var(--accent-dark); transform: translateY(-1px); }
   .portail-btn.secondary { background: var(--white); color: var(--navy); border: 2px solid var(--grey-200); }
   .portail-btn.secondary:hover { border-color: var(--navy); }
-  @media (max-width: 900px) { .portail-grid { grid-template-columns: 1fr; } }
 
 
   /* ── SERVICE MODAL ── */
@@ -1634,38 +1622,6 @@
   <div style="margin-top:3rem">
     <!-- SYNDIC PANEL -->
     <div id="panel-syndic">
-      <div class="portail-grid">
-        <div class="portail-card reveal">
-          <div class="portail-card-header">
-            <div class="portail-card-icon" style="background:var(--navy-light)">🏗️</div>
-            <div>
-              <div class="portail-card-title">Votre portail d'interventions</div>
-              <div class="portail-card-sub">Réservé aux syndics et gérances partenaires</div>
-            </div>
-          </div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Immeubles suivis</span><span class="portail-stat-val">1 000+</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Appartements sous gestion technique</span><span class="portail-stat-val">4 000+</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Gérances partenaires</span><span class="portail-stat-val blue">4</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Disponibilité</span><span class="portail-badge green">7j/7 · 24h/24</span></div>
-        </div>
-
-        <div class="portail-card reveal">
-          <div class="portail-card-header">
-            <div class="portail-card-icon" style="background:var(--accent-light)">📲</div>
-            <div>
-              <div class="portail-card-title">Ce que vous pouvez faire</div>
-              <div class="portail-card-sub">Depuis le téléphone ou l'ordinateur</div>
-            </div>
-          </div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Demande d'intervention en 30 secondes</span><span class="portail-badge orange">Urgence · photos</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Alerte immédiate à notre équipe</span><span class="portail-badge orange">🔴 Urgent</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Suivi en temps réel</span><span class="portail-badge blue">Reçue → Terminée</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Messages et photos dans chaque demande</span><span class="portail-badge green">✓</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Rapport mensuel par résidence</span><span class="portail-badge green">📄 PDF</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Accès personnel pour chaque collaborateur</span><span class="portail-badge green">🔒</span></div>
-        </div>
-      </div>
-
       <div class="portail-clip reveal">
         <div>
           <div class="portail-card-title">Comment ça marche</div>
@@ -1676,6 +1632,13 @@
             <li>Vous suivez l'avancement en temps réel</li>
             <li>Vous recevez le rapport et la facture</li>
           </ol>
+          <div class="portail-clip-tags">
+            <span class="portail-badge orange">🔴 Urgence · photos</span>
+            <span class="portail-badge blue">Suivi en temps réel</span>
+            <span class="portail-badge green">💬 Messages</span>
+            <span class="portail-badge green">📄 Rapport PDF</span>
+            <span class="portail-badge green">🔒 Accès personnel</span>
+          </div>
         </div>
         <video controls playsinline preload="none" poster="/assets/demo-gerance-16x9.jpg" aria-label="Démo du portail gérance">
           <source src="/assets/demo-gerance-16x9.mp4" type="video/mp4">
