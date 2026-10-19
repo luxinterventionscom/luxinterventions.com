@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.157.0';
+const VERSION = '2.158.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -8261,7 +8261,7 @@ Object.assign(SHEETS, {
         ${!devFini(d) ? html`<div class="alert info" style="margin:0 0 8px">🟡<div><b>En préparation.</b> Enregistrez autant de fois que vous voulez, sans signature. Le directeur met les prix puis touche <b>« ✅ Devis terminé »</b> : alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, portail) et la signature « Bon pour accord ».</div></div>
         <div class="dev-btns"><button class="btn sm primary" data-action="dev-fini" data-id="${id}">✅ Devis terminé</button>
           <button class="btn sm" data-action="dev-visa" data-id="${id}">✍️ ${d.visa ? 'Refaire' : 'Faire signer'} « Vu et correct »</button>
-          <button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button></div></div>` : html`
+          <button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button></div>` : html`
         <div class="dev-btns">
           <button class="btn sm" data-action="dev-pdf" data-id="${id}">📄 PDF / imprimer</button>
           <button class="btn sm" data-action="dev-share" data-id="${id}" data-via="wa">💬 WhatsApp</button>
