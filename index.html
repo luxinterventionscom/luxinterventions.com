@@ -632,19 +632,10 @@
 
   /* ── PORTAIL / ESPACE CLIENT ── */
   .portail-section { background: var(--off-white); }
-  .portail-tabs {
-    display: flex; gap: 0.5rem; margin-bottom: 3rem;
-    background: var(--grey-200); border-radius: 50px; padding: 0.4rem;
-    width: fit-content;
-  }
-  .portail-tab {
-    padding: 0.6rem 1.6rem; border-radius: 50px; font-size: 0.875rem;
-    font-weight: 600; cursor: pointer; transition: all 0.25s;
-    border: none; background: transparent; color: var(--grey-600);
-  }
-  .portail-tab.active { background: var(--white); color: var(--navy); box-shadow: var(--shadow-sm); }
-  .portail-panel { display: none; }
-  .portail-panel.active { display: block; }
+  .portail-clip { margin-top: 1.5rem; background: var(--white); border-radius: 18px; padding: 1.5rem; box-shadow: var(--shadow-md); display: grid; grid-template-columns: 1fr 1.6fr; gap: 1.5rem; align-items: center; }
+  .portail-clip video { width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; background: #0B1220; display: block; }
+  .portail-clip-steps { margin: 0.9rem 0 0; padding-left: 1.2rem; color: var(--grey-600); font-size: 0.88rem; line-height: 1.7; }
+  @media (max-width: 900px) { .portail-clip { grid-template-columns: 1fr; } }
   .portail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 1rem; }
   .portail-card { background: var(--white); border-radius: 18px; padding: 2rem; box-shadow: var(--shadow-md); transition: transform 0.2s, box-shadow 0.2s; }
   .portail-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
@@ -1641,13 +1632,8 @@
   <p class="section-sub">Accédez à votre tableau de bord, suivez vos interventions en temps réel et téléchargez vos rapports — 24h/24, depuis n'importe quel appareil.</p>
 
   <div style="margin-top:3rem">
-    <div class="portail-tabs">
-      <button class="portail-tab active" onclick="switchTab('syndic')">🏢 Syndic / Gérance</button>
-      <button class="portail-tab" onclick="switchTab('bonus')">🎁 Bonus Partenaires</button>
-    </div>
-
     <!-- SYNDIC PANEL -->
-    <div class="portail-panel active" id="panel-syndic">
+    <div id="panel-syndic">
       <div class="portail-grid">
         <div class="portail-card reveal">
           <div class="portail-card-header">
@@ -1680,6 +1666,23 @@
         </div>
       </div>
 
+      <div class="portail-clip reveal">
+        <div>
+          <div class="portail-card-title">Comment ça marche</div>
+          <div class="portail-card-sub">Le portail gérance en vidéo</div>
+          <ol class="portail-clip-steps">
+            <li>Vous envoyez la demande, avec photos</li>
+            <li>Notre centrale l'attribue à un professionnel</li>
+            <li>Vous suivez l'avancement en temps réel</li>
+            <li>Vous recevez le rapport et la facture</li>
+          </ol>
+        </div>
+        <video controls playsinline preload="none" poster="/assets/demo-gerance-16x9.jpg" aria-label="Démo du portail gérance">
+          <source src="/assets/demo-gerance-16x9.mp4" type="video/mp4">
+          <source src="/assets/demo-gerance-16x9.webm" type="video/webm">
+        </video>
+      </div>
+
       <div style="margin-top:1.5rem;padding:1.5rem 2rem;background:var(--navy);border-radius:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem">
         <div>
           <div style="font-size:0.75rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,0.5);margin-bottom:0.3rem">Portail Syndic / Gérance</div>
@@ -1707,46 +1710,6 @@
 
     </div>
 
-    <!-- BONUS PANEL -->
-    <div class="portail-panel" id="panel-bonus">
-      <div class="portail-grid">
-        <div class="portail-card reveal">
-          <div class="portail-card-header">
-            <div class="portail-card-icon" style="background:#FFF8E1">🏆</div>
-            <div>
-              <div class="portail-card-title">Paliers partenaires</div>
-              <div class="portail-card-sub">Selon le chiffre d'affaires annuel confié à LuxInterventions</div>
-            </div>
-          </div>
-          <div class="portail-stat-row"><span class="portail-stat-label">🥉 Bronze</span><span class="portail-stat-val">Avantages de bienvenue</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">🥈 Silver</span><span class="portail-stat-val blue">Remise sur les interventions</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">🥇 Gold</span><span class="portail-stat-val green">Remise renforcée + cadeaux</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">🏅 Partenaire Premium</span><span class="portail-stat-val orange">Conditions sur mesure</span></div>
-          <div style="margin-top:1rem;font-size:0.8rem;color:var(--grey-600);line-height:1.55">Plus le chiffre d'affaires confié par votre syndic / gérance est élevé, plus les remises et cadeaux proposés par LuxInterventions sont importants. Seuils et avantages communiqués à chaque partenaire.</div>
-          <div style="margin-top:1.5rem">
-            <a href="#contact" class="portail-btn primary" style="width:100%;justify-content:center">Connaître mes conditions →</a>
-          </div>
-        </div>
-
-        <div class="portail-card reveal" style="transition-delay:0.1s">
-          <div class="portail-card-header">
-            <div class="portail-card-icon" style="background:var(--green-light)">📊</div>
-            <div>
-              <div class="portail-card-title">Tableau de bord bonus</div>
-              <div class="portail-card-sub">Bientôt dans votre portail</div>
-            </div>
-          </div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Chiffre d'affaires de l'année</span><span class="portail-stat-val blue">Suivi en temps réel</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Palier actuel</span><span class="portail-stat-val">Bronze → Premium</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Prochain palier</span><span class="portail-stat-val orange">Montant restant affiché</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Remises &amp; cadeaux obtenus</span><span class="portail-stat-val green">🎁 Historique complet</span></div>
-          <div class="portail-stat-row"><span class="portail-stat-label">Vous recommandez une gérance</span><span class="portail-stat-val"><span class="portail-badge green">Bonus parrainage</span></span></div>
-          <div style="margin-top:1.5rem">
-            <a href="/portail.html" class="portail-btn secondary" style="width:100%;justify-content:center">Accéder au portail →</a>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -1848,16 +1811,6 @@
 
 <script>
 
-  // Tab switcher portail
-  window.switchTab = function switchTab(tab) {
-    document.querySelectorAll('.portail-tab').forEach((btn, i) => {
-      const tabs = ['syndic','bonus'];
-      btn.classList.toggle('active', tabs[i] === tab);
-    });
-    document.querySelectorAll('.portail-panel').forEach(p => p.classList.remove('active'));
-    const panel = document.getElementById('panel-' + tab);
-    if (panel) panel.classList.add('active');
-  }
 
 
   // ── MODAL SERVICES ──
