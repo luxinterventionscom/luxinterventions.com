@@ -12,7 +12,7 @@ import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.22.0';
+const VERSION = '1.23.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -1416,8 +1416,9 @@ const SHEETS = {
         <p class="tiny muted full" style="margin:0"><span>Devis</span> ${no}</p>
         <p class="small full" style="margin:0">Dites à LuxInterventions ce qu’il faut revoir (travaux en plus ou en moins, délai, prix…). Vous recevrez une nouvelle version.</p>
         <label class="field full">Votre message<textarea name="note" required style="min-height:110px" placeholder="ex. Pouvez-vous enlever la peinture du couloir et revoir le prix ?"></textarea></label>
+        <div class="full" style="display:flex;justify-content:flex-end;margin-top:-4px"><button class="btn primary" type="submit">${icon('send')} Envoyer</button></div>
       </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Envoyer</button>`,
+      foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
     };
   },
   myorg() {
@@ -1538,8 +1539,9 @@ const SHEETS = {
           <textarea name="text" placeholder="${isAdmin() ? 'Message à la gérance…' : 'Message à LuxInterventions…'}" style="min-height:70px"></textarea>
           <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
             <label class="btn sm" style="cursor:pointer">${icon('camera')} Photo<input type="file" name="photos" accept="image/*" multiple hidden data-input="count-files"></label>
+            <button class="btn sm primary" type="submit">${icon('send')} Envoyer</button>
             <span class="tiny muted" data-files></span>
-            <button class="btn sm primary" type="submit" style="margin-left:auto">${icon('send')} Envoyer</button>
+            <button class="btn sm" type="button" data-action="close-sheet" style="margin-left:auto">Fermer</button>
           </div>
         </form>
         <button class="btn sm" style="margin-top:8px" data-action="open-ticket" data-id="${t.id}">🔄 Actualiser les messages</button>`,
