@@ -157,6 +157,17 @@
   .dv-sfx { display: flex; align-items: center; gap: 4px; } .dv-sfx i { font-style: normal; color: var(--muted); font-size: 13px; }
   @media (max-width: 380px) { .dv-pq { grid-template-columns: 70px 1fr; } .dv-pq input[type=text] { grid-column: 1 / -1; } .dv-row { grid-template-columns: 1fr 1fr; } .dv-row select { grid-column: 1 / -1; } }
   .link-rgpd { display: inline-block; margin: 6px 0 0; padding: 0; border: 0; background: none; color: var(--muted, #6b6b6b); font: inherit; font-size: 12px; text-decoration: underline; cursor: pointer; }
+  /* avis du client : 3 visages ; le choisi grandit, les autres s'éteignent en gris */
+  .sat-faces { display: flex; gap: 10px; justify-content: space-between; margin: 0 0 12px; }
+  .sat-f { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 4px; border-radius: 16px; border: 2px solid var(--line, #e3e1dc); background: var(--card, #fff); color: inherit; font: inherit; cursor: pointer; transition: transform .18s, filter .18s, opacity .18s, box-shadow .18s, border-color .18s; }
+  .sat-f span { font-size: 40px; line-height: 1; }
+  .sat-f small { font-size: 12px; font-weight: 700; }
+  .sat-faces.has .sat-f:not(.on) { filter: grayscale(1); opacity: .35; transform: scale(.92); }
+  .sat-f.on { transform: scale(1.06); border-color: var(--accent, #e8723a); box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+  .sat-f[data-dv-sat=top].on { border-color: #16a34a; background: rgba(22,163,74,.08); }
+  .sat-f[data-dv-sat=moyen].on { border-color: #d97706; background: rgba(217,119,6,.09); }
+  .sat-f[data-dv-sat=mauvais].on { border-color: #dc2626; background: rgba(220,38,38,.08); }
+  @media (prefers-reduced-motion: reduce) { .sat-f { transition: none; } }
 </style>
 </head>
 <body>

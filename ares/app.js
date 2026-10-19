@@ -13,7 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.156.0';
+const VERSION = '2.157.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4963,6 +4963,7 @@ const SHEETS = {
           ${kvRow('Type', INT_GENRES[i.genre || 'interne'])}
           ${kvRow('Catégorie', INT_CATS[i.cat || 'quotidien'])}
           ${kvRow('Métier', METIERS[i.metier] || i.metier || '—')}
+          ${(() => { const dv = vault.list('devis').filter((d) => d.chefBy === i.id && SAT_FACE[d.sat]); if (!dv.length) return ''; const n = (k) => dv.filter((d) => d.sat === k).length; return kvRow('Avis des clients (visites)', `😃 ${n('top')} · 🧐 ${n('moyen')} · 😡 ${n('mauvais')}`); })()}
           ${(i.evals || []).length ? kvRow('Avis des locataires', `${MEN_EVAL[Math.round(sum(i.evals, (e) => e.v) / i.evals.length)]} · ${(sum(i.evals, (e) => e.v) / i.evals.length).toFixed(1).replace('.', ',')} / 4 (${plural(i.evals.length, 'avis')})`) : ''}
           ${i.tarif ? kvRow('Tarif', i.tarif) : ''}
           ${i.adresse || i.ville ? kvRow('Adresse', [i.adresse, i.ville].filter(Boolean).join(', ')) : ''}
@@ -8031,6 +8032,8 @@ const devBall = (d) => html`<span class="dball dball-${devState(d).k}" aria-hidd
 const devClient = (d) => (d.client && d.client.nom) || '—';
 const devOpen = () => vault.list('devis').filter((d) => devState(d).open).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 // qui l'a envoyé : rapport de visite du chef de chantier (app de l'équipe) ou devis créé dans la centrale (opérateur)
+// avis du client à la signature du rapport de visite (la visite et l'ouvrier)
+const SAT_FACE = { top: '😃 Très bien', moyen: '🧐 Moyen', mauvais: '😡 Pas content' };
 const devFrom = (d) => { const w = d.chefBy && vault.get('intervenants', d.chefBy); return d.chefBy ? `📋 Rapport de visite de 🦺 ${w ? intervFull(w) : 'chef de chantier'}${d.created ? ' · reçu le ' + fmtDateTime(d.created) : ''}` : d.creePar ? `✏️ Créé par ${d.creePar}${d.created ? ' · ' + fmtDateTime(d.created) : ''}` : ''; };
 // sections de la liste des devis : repliables (on se souvient de celles fermées)
 const devClosed = () => { try { return new Set(JSON.parse(localStorage.getItem('aresDevClosed') || '[]')); } catch { return new Set(); } };
@@ -8042,7 +8045,7 @@ function devRow(d) {
     <span class="grow"><span class="title" style="display:block;white-space:normal">${devNo(d)}${d.titre ? html` <span class="muted small">— ${d.titre}</span>` : ''}</span>
       <span class="meta" style="white-space:normal">${d.client && d.client.type === 'ger' ? orgLogo(d.client.orgId) : d.client && d.client.type === 'pro' ? '🏢' : '👤'} ${devClient(d)}${d.chantier ? ' · ' + d.chantier : ''}</span>
       <span class="meta" style="display:block;white-space:normal">${s.lbl}${d.ptlSt === 'envoye' && d.st !== 'accepte' ? ' · 📤 dans son portail' : ''}</span>
-      ${devFrom(d) ? html`<span class="meta" style="display:block;white-space:normal">${devFrom(d)}</span>` : ''}</span>
+      ${devFrom(d) ? html`<span class="meta" style="display:block;white-space:normal">${devFrom(d)}</span>` : ''}${SAT_FACE[d.sat] ? html`<span class="meta" style="display:block">Avis du client : <b>${SAT_FACE[d.sat]}</b></span>` : ''}</span>
     <b style="white-space:nowrap">${eur(k.ttc)}${k.ct ? html`<span class="tiny muted"> / mois</span>` : ''}</b></button>`;
 }
 // bandeau de l'accueil : « DEVIS EN COURS », violet qui clignote
@@ -8134,7 +8137,7 @@ function devChefData(i) {
       titre: d.titre || '', chantier: d.chantier || '', interloc: d.interloc || '', rapport: (d.chef || {}).rapport || '', jours: (d.chef || {}).jours || '',
       rows: ((d.chef || {}).rows || []).map((r) => ({ met: r.met || '', nb: r.nb || 1, h: r.h || 0 })),
       prest: (d.prest || []).map((p) => ({ k: p.k, l: p.l, q: p.q ?? '', u: p.u || '', det: p.det || '' })),
-      visa: d.visa ? { nom: d.visa.nom || '', at: d.visa.at || '' } : null,
+      visa: d.visa ? { nom: d.visa.nom || '', at: d.visa.at || '' } : null, sat: d.sat || '',
     }));
   return {
     mine,
@@ -8170,7 +8173,7 @@ function devChefIn(tx, w, it, at) {
   let visa = v && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(v.png || '') && v.png.length < 400000 ? { png: v.png, nom: s(v.nom, 120), at: /^\d{4}-\d\d-\d\dT/.test(v.at || '') ? s(v.at, 30) : at } : null;
   // signature déjà reçue : gardée si le rapport et les travaux n'ont pas changé
   if (!visa && it.visaKeep && prev && prev.visa && devTravaux(prev) === devTravaux({ chef: { rapport: s(it.rapport, 6000) }, prest })) visa = prev.visa;
-  const rec = { client, titre: s(it.titre, 200), chantier: s(it.chantier, 300), interloc: s(it.interloc, 120), chef: { rapport: s(it.rapport, 6000), jours: s(it.jours, 80), rows }, prest, visa, chefAt: at, dir: { ...((prev && prev.dir) || { valid: 30 }), rows: dirRows } };
+  const rec = { client, titre: s(it.titre, 200), chantier: s(it.chantier, 300), interloc: s(it.interloc, 120), chef: { rapport: s(it.rapport, 6000), jours: s(it.jours, 80), rows }, prest, visa, sat: ['top', 'moyen', 'mauvais'].includes(it.sat) ? it.sat : '', chefAt: at, dir: { ...((prev && prev.dir) || { valid: 30 }), rows: dirRows } };
   if (prev) { tx.put('devis', { id: prev.id, ...rec }); return { note: `✏️ Devis ${devNo(prev)} corrigé par ${intervFull(w)} : ${client.nom}` }; }
   const conf = factConf(), now = new Date(), seq = (+conf.devSeq || 0) + 1;
   const hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');

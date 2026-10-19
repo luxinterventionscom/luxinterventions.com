@@ -14895,5 +14895,25 @@ export default [
 [
 "✏️ Créé par {0}",
 "✏️ Created by {0}"
+],
+[
+"Avis du client :",
+"Client’s opinion:"
+],
+[
+"😃 Très bien",
+"😃 Very good"
+],
+[
+"🧐 Moyen",
+"🧐 Average"
+],
+[
+"😡 Pas content",
+"😡 Not happy"
+],
+[
+"Avis des clients (visites)",
+"Client opinions (visits)"
 ]
 ];
