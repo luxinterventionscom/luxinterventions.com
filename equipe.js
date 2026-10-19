@@ -1026,7 +1026,7 @@ function devEditor() {
       <label>${esc(v.ctype)}</label><select data-dv="c.type" data-redraw="1"><option value="part">${esc(v.part)}</option><option value="pro"${dr.c.type === 'pro' ? ' selected' : ''}>${esc(v.pro)}</option></select>
       ${dvIn(v.nom, 'c.nom', dr.c.nom, 'maxlength="120" required')}
       ${dr.c.type === 'pro' ? dvIn(v.rcs, 'c.rcs', dr.c.rcs, 'maxlength="20" autocapitalize="characters" placeholder="B123456"') + dvIn(v.tva, 'c.tva', dr.c.tva, 'maxlength="20" autocapitalize="characters" placeholder="LU12345678"') : ''}
-      <label>${esc(v.adr)}</label><textarea data-dv="c.adresse" maxlength="300" style="min-height:60px">${esc(dr.c.adresse)}</textarea>
+      ${dvIn(v.adr, 'c.adresse', dr.c.adresse, 'maxlength="300" autocomplete="street-address"')}
       <label>${esc(v.tel)}</label><input type="tel" data-dv="c.tel" maxlength="40" value="${esc(dr.c.tel)}" placeholder="+352…">
       <label>${esc(v.mail)}</label><input type="email" data-dv="c.email" maxlength="120" value="${esc(dr.c.email)}">
       ${dvIn(v.titre, 'titre', dr.titre, `maxlength="200" placeholder="${esc(v.titrePh)}"`)}
