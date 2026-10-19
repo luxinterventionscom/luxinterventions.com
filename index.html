@@ -1690,7 +1690,6 @@
         </div>
         <div style="display:flex;gap:0.75rem;flex-wrap:wrap">
           <a href="/portail.html" class="portail-btn primary">Accéder au portail →</a>
-          <a href="/assets/demo-gerance-16x9.mp4" class="portail-btn ptl-demo" style="background:transparent;color:var(--white);border:1.5px solid rgba(255,255,255,0.45)">▶ Voir la démo</a>
           <a href="#contact" class="portail-btn" style="background:transparent;color:var(--white);border:1.5px solid rgba(255,255,255,0.45)">Demander un accès</a>
           <a href="/guides/portail-guide-fr-de.pdf" target="_blank" rel="noopener" class="portail-btn ptl-guide" style="background:transparent;color:var(--white);border:1.5px solid rgba(255,255,255,0.45)">📄 Guide FR · DE</a>
         </div>
@@ -2264,31 +2263,5 @@ fetch('https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev/api/h
 </script>
 <script src="/assets/mail.js" defer></script>
 <!-- Démo du portail gérance : vidéo (16:9 sur ordinateur, 9:16 sur téléphone) -->
-<dialog id="demoClip" aria-label="Démo du portail gérance" style="margin:auto;padding:0;border:0;border-radius:18px;background:#0B1220;max-width:min(94vw,1100px);max-height:92vh;overflow:hidden">
-  <button type="button" data-close aria-label="Fermer" style="position:absolute;top:8px;right:10px;z-index:2;width:40px;height:40px;border:0;border-radius:50%;background:rgba(255,255,255,0.9);font-size:1.3rem;cursor:pointer">✕</button>
-  <video controls playsinline preload="none" style="display:block;max-width:100%;max-height:92vh"></video>
-</dialog>
-<style>#demoClip::backdrop{background:rgba(5,10,20,0.8)}</style>
-<script>
-(() => {
-  const a = document.querySelector('#portail .ptl-demo'), d = document.getElementById('demoClip');
-  if (!a || !d || !d.showModal) return;
-  const v = d.querySelector('video');
-  a.addEventListener('click', (e) => {
-    e.preventDefault();
-    const tall = window.innerHeight > window.innerWidth;
-    const n = tall ? '9x16' : '16x9';
-    v.poster = '/assets/demo-gerance-' + n + '.jpg';
-    const ext = v.canPlayType('video/mp4; codecs="avc1.42E01E"') ? '.mp4' : '.webm';
-    if (!v.src.endsWith(n + ext)) v.src = '/assets/demo-gerance-' + n + ext;
-    d.showModal();
-    v.play().catch(() => {});
-  });
-  const close = () => { v.pause(); d.close(); };
-  d.querySelector('[data-close]').addEventListener('click', close);
-  d.addEventListener('click', (e) => { if (e.target === d) close(); });
-  d.addEventListener('close', () => v.pause());
-})();
-</script>
 </body>
 </html>
