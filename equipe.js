@@ -607,7 +607,7 @@ function render() {
     <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><button class="link-rgpd" data-rgpd="1">${esc((WRGPD[lang] || WRGPD.fr).t)}</button><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn sec sm" data-logout="1">🚪 ${esc(ft.out)}</button>${d.societe.tel ? `<a class="btn sm" href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">📞 ${esc(ft.call)}</a><span class="meta">${esc(d.societe.nom)}</span>` : ''}</div></div>`);
   }
   { const low = slot('bas'); if (low) out.push(adBox(low, t)); }
-  out.push(infoBox({ units: !!d.devis })); // unités des devis : seulement pour le chef de chantier
+  out.push(infoBox());
   out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
   const keepMap = document.querySelector('#mapBox iframe');
   const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
@@ -902,6 +902,7 @@ const DVT = {
     needNom: 'Escribe el nombre del cliente', needWork: 'Escribe el informe o marca al menos un trabajo', needSig: 'El cliente debe firmar en el recuadro blanco', saved: 'Borrador guardado en este teléfono', sentOk: '📤 Informe de visita enviado a la central. Todavía puedes corregirlo mientras el presupuesto no esté terminado.', locked: 'El director ha terminado este presupuesto: llámalo para una corrección.' },
 };
 const DV = () => DVT[lang] || DVT.fr;
+const FFT = { fr: 'forfait', it: 'forfait', de: 'Pauschale', en: 'flat rate', pt: 'forfait', es: 'tanto alzado' };
 // brouillons sur ce téléphone (texte) ; les photos attendent dans IndexedDB jusqu'à leur envoi
 const DK = () => 'eqDev:' + id;
 const dvAll = () => { try { const m = JSON.parse(localStorage.getItem(DK()) || '{}'); return m && typeof m === 'object' && !Array.isArray(m) ? m : {}; } catch { return {}; } };
@@ -1018,7 +1019,8 @@ function devEditor() {
   const sel = Object.fromEntries(dr.prest.filter((p) => /^c\d+i\d+$/.test(p.k)).map((p) => [p.k, p]));
   const free = dr.prest.filter((p) => /^f\d+$/.test(p.k));
   const pend = st.ph || [], nPh = (st.phSent || 0) + pend.length;
-  const unitSel = (k, u) => `<select data-dvp="${esc(k)}" data-f="u">${D.units.map((x) => `<option${x === u ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select>`;
+  // « fft » seul ne se comprend pas : dans la liste on écrit « forfait (fft) »
+  const unitSel = (k, u) => `<select data-dvp="${esc(k)}" data-f="u">${D.units.map((x) => `<option value="${esc(x)}"${x === u ? ' selected' : ''}>${esc(x === 'fft' ? (FFT[lang] || FFT.fr) + ' (fft)' : x)}</option>`).join('')}</select>`;
   const pq = (k, p, ph) => `<div class="dv-pq"><input type="number" step="0.01" min="0" inputmode="decimal" placeholder="${esc(v.q)}" data-dvp="${esc(k)}" data-f="q" value="${esc(p.q ?? '')}">${unitSel(k, p.u)}<input type="text" placeholder="${esc(ph || v.det)}" data-dvp="${esc(k)}" data-f="det" value="${esc(p.det || '')}"></div>`;
   const srv = dvSrv(dr.did), vs = dr.visa;
   return `<div id="devEd"><p style="margin:0 0 10px"><button class="btn sm sec" data-dv-back="1">${esc(v.back)}</button></p>
