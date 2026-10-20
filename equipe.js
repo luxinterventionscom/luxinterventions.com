@@ -8,6 +8,7 @@ import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
+import { pullRefreshInit } from '/ares/pull-refresh.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'eqAccess';
 const RX = /^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/;
@@ -1178,6 +1179,8 @@ async function load() {
   if (data) { pushInit(); devFlush(); }
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && id && key && !form && !devEd) load(); });
+// tirer vers le bas = recharger (pas pendant un formulaire en cours) ; hors ligne : on garde ce qu'on avait
+pullRefreshInit({ lang: () => lang, refresh: async () => { if (!id || !key || form || devEd) return; const prev = data; await load(); if (!data && prev && loadErr === '⚠ offline') { data = prev; render(); } } });
 addEventListener('online', () => { flush(); devFlush(); });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/equipe-sw.js', { scope: '/equipe' }).catch(() => {});
 lang = (() => { try { return localStorage.getItem('eqLang') || pick(null); } catch { return pick(null); } })();

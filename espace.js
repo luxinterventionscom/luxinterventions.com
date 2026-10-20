@@ -9,6 +9,7 @@ import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
+import { pullRefreshInit } from '/ares/pull-refresh.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 // Accès : lien direct (#id.clé) ou code personnel saisi une fois ; mémorisé sur ce téléphone
 const ACC = 'espAccess';
@@ -820,6 +821,8 @@ async function pushInit() {
   setBadge(0, '/espace');
   render();
 }
+// tirer vers le bas = recharger ; hors ligne : on garde ce qu'on avait
+pullRefreshInit({ lang: () => lang, refresh: async () => { if (!id || !key || !data) return; const prev = data; await load(); if (!data && prev && loadErr === '⚠ offline') { data = prev; render(); } } });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) { setBadge(0, '/espace'); if (data.chat) chatSeen(); } });
 function notifCard(t) {
   if (!pushSt || pushSt === 'unsupported' || (pushSt === 'on' && !pushJust)) return '';

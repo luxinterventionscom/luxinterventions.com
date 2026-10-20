@@ -10,11 +10,12 @@ import { videoEmbed } from '/ares/video-embed.js';
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 import { scrollHintInit } from '/ares/scroll-hint.js';
+import { pullRefreshInit } from '/ares/pull-refresh.js';
 scrollHintInit();
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.26.0';
+const VERSION = '1.27.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -464,6 +465,8 @@ function startPolling() {
 function stopPolling() { clearInterval(pollTimer); }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && state.me) refresh(true); });
 
+// tirer vers le bas en haut de la page = Actualiser
+pullRefreshInit({ lang: () => LANG, refresh: () => (state.me ? refresh(true) : Promise.resolve()) });
 async function refresh(silent) {
   try {
     await loadRoute(state.route);
