@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.169.0';
+const VERSION = '2.170.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -409,7 +409,49 @@ const eqUrl = (i) => `${location.origin}/equipe.html#${i.espace.id}.${i.espace.k
 const eqAppUrl = () => `${location.origin}/equipe.html`;
 const MEN_TAGS = { ok: '⏰ À l’heure', late: '⏰ En retard', nice: '😊 Aimable', rude: '😠 Désagréable', clean: '✨ Bien nettoyé', dirty: '🧹 Oublis / mal nettoyé', fait: '✅ Travail bien fait', pasfini: '⚠️ Pas fini', tidy: '🧽 Laissé propre', messy: '🗑️ Laissé sale' };
 const MEN_EVAL = { 1: '😞 Insuffisant', 2: '😐 Suffisant', 3: '🙂 Bien', 4: '⭐ Excellent' };
-const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini', refus: '✋ Refusé' };
+const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini', refus: '✋ Refusé', start: '🚕 Accepté (START)' };
+// 🚕 Mode taxi : l'ouvrier choisi doit appuyer sur START (5 min si urgent, 30 min sinon) ;
+// s'il refuse ou ne répond pas, la demande passe au suivant (3 ouvriers au plus), puis « personne n'a accepté »
+const TAXI_MAX = 3;
+const taxiCur = (t) => (t && t.taxi && t.taxi.st === 'wait' ? t.taxi.list[t.taxi.i] : '');
+const taxiUntil = (t) => t.taxi.at + t.taxi.lim * 60000;
+function taxiNext(t, why) {
+  const x = t.taxi, log = [...(x.log || []), { w: x.list[x.i], r: why, at: new Date().toISOString() }], i = x.i + 1;
+  if (i >= x.list.length) return { taxi: { ...x, i, log, st: 'none' }, intervenantId: '', statut: 'afaire' };
+  return { taxi: { ...x, i, log, at: Date.now() }, intervenantId: x.list[i] };
+}
+// les suivants : même métier, avec l'app, pas absents ce jour-là, pas déjà refusé ; les meilleurs points d'abord
+function taxiCandidates(t, first) {
+  const w0 = vault.get('intervenants', first), mets = (t.metiers || []).length ? t.metiers : w0 ? [w0.metier] : [], d = t.date || today();
+  const pts = Object.fromEntries(eqScores(today().slice(0, 4)).map(([id, v]) => [id, v.pts]));
+  return vault.list('intervenants').filter((i) => i.id !== first && !i.archive && i.espace && i.espace.on && mets.includes(i.metier) && !absOn(i, d) && !(t.refusBy || []).includes(i.id))
+    .sort((a, b) => (pts[b.id] || 0) - (pts[a.id] || 0) || intervFull(a).localeCompare(intervFull(b))).map((i) => i.id).slice(0, TAXI_MAX - 1);
+}
+let taxiBusy = false;
+async function taxiTick() {
+  if (!vault.unlocked || taxiBusy || !vault.list('taches').some(taxiCur)) return;
+  taxiBusy = true;
+  try {
+    // d'abord les réponses arrivées (un START juste avant la fin compte), puis les temps écoulés
+    if (Date.now() - lastInbox > 25000) { lastInbox = Date.now(); await inboxSync(); }
+    const late = vault.list('taches').filter((t) => taxiCur(t) && Date.now() > taxiUntil(t));
+    if (!late.length) return;
+    await vault.mutate((tx) => late.forEach((t) => tx.put('taches', { id: t.id, ...taxiNext(t, 'timeout') })), '🚕 Mode taxi : pas de réponse', late.map((t) => `${t.titre} — ${intervName(t.taxi.list[t.taxi.i])}`).join(' · '));
+    for (const t of late) { const n = vault.get('taches', t.id); toast(taxiCur(n) ? `🚕 ${t.titre} : pas de réponse → ${intervName(taxiCur(n))}` : `⏸ ${t.titre} : personne n’a accepté`, { bad: !taxiCur(n) }); }
+    scheduleEspaceSync();
+  } catch { /* hors ligne : au prochain tour */ } finally { taxiBusy = false; }
+}
+// petite étiquette dans les listes : en attente (compte à rebours), accepté, personne
+const taxiTag = (t) => {
+  if (!t.taxi || t.statut === 'fait') return '';
+  if (t.taxi.st === 'wait') return html` <span class="badge warn" data-taxi-until="${taxiUntil(t)}">🚕 attend ${intervName(taxiCur(t))} · ⏱ ${Math.max(0, Math.ceil((taxiUntil(t) - Date.now()) / 60000))} min</span>`;
+  if (t.taxi.st === 'ok') return html` <span class="badge ok">✅ accepté par ${intervName(t.intervenantId)}</span>`;
+  return html` <span class="badge bad">⏸ Personne n’a accepté</span>`;
+};
+const TAXI_R = { refus: '✋ a refusé', timeout: '⏱ pas de réponse', ok: '✅ START' };
+const taxiLog = (t) => (t.taxi.log || []).map((x) => `${intervName(x.w)} ${TAXI_R[x.r] || x.r} (${fmtDateTime(x.at).slice(-5)})`).join(' → ') || 'en attente';
+// minutes restantes sur les étiquettes, sans tout redessiner
+const taxiCount = () => document.querySelectorAll('[data-taxi-until]').forEach((el) => { el.textContent = el.textContent.replace(/⏱ \d+ min/, `⏱ ${Math.max(0, Math.ceil((+el.dataset.taxiUntil - Date.now()) / 60000))} min`); });
 // Dernier état donné par l'équipe pour une intervention un jour donné
 // Photos « avant » / « après » envoyées par l'équipe pour une intervention (6 + 6 maximum)
 const EQ_PH = { av: 'Avant', ap: 'Après' }, EQ_PH_MAX = 6;
@@ -423,12 +465,13 @@ function equipeData(i) {
   const out1 = (t) => {
     const l = t.locId ? vault.get('locataires', t.locId) : null;
     return {
-      titre: t.titre, type: t.type, recur: t.recur ? RECURS[t.recur] : '', note: t.note || '', heure: t.heure || '', heureFin: t.heureFin || '', urgent: !!t.urgent,
+      titre: t.titre, type: t.type, recur: t.recur ? RECURS[t.recur] : '', note: t.note || '', ...(t.taxi && t.taxi.st !== 'none' ? { taxi: t.taxi.st === 'ok' ? -1 : taxiUntil(t) } : {}), heure: t.heure || '', heureFin: t.heureFin || '', urgent: !!t.urgent,
       adresse: t.lieu ? [t.lieu.nom, t.lieu.adr].filter(Boolean).join(' — ') : t.dev ? [t.dev.client, t.dev.adr].filter(Boolean).join(' — ') : t.ptl ? [t.ptl.res, t.ptl.adr].filter(Boolean).join(' — ') : immName(t.immId), lieu: t.dev || t.lieu ? '' : t.ptl ? [t.ptl.lieu, t.ptl.interior].filter(Boolean).join(' · ') : t.logId ? logName(t.logId) : '', statut: t.statut,
       contact: l ? { nom: l.prenom || fullName(l), tel: l.tel || '' } : t.lieu && (t.lieu.contact || t.lieu.tel) ? { nom: t.lieu.contact || '', tel: t.lieu.tel || '' } : t.dev && (t.dev.contact || t.dev.tel) ? { nom: t.dev.contact || '', tel: t.dev.tel || '' } : t.ptl && (t.ptl.contact || t.ptl.tel) ? { nom: t.ptl.contact || '', tel: t.ptl.tel || '' } : null,
       // demande d'une gérance : codes, disponibilités, heure, gérance
       ...(t.ptl ? { ger: { org: t.ptl.org, ref: t.ptl.ref, acces: t.ptl.acces || t.ptl.codes || '', dispo: t.ptl.dispo || '', heure: t.heure || '' } } : {}),
-      journal: (t.journal || []).slice(-20).map((x) => ({ d: x.d, st: x.st, note: x.note || '', at: x.at, h: x.h || '' })),
+      // le refus d'un collègue ne le concerne pas (sinon le travail paraît « refusé » chez celui qui le reprend)
+      journal: (t.journal || []).filter((x) => !(x.st === 'refus' && x.by && x.by !== i.id)).slice(-20).map((x) => ({ d: x.d, st: x.st, note: x.note || '', at: x.at, h: x.h || '' })),
       ph: { av: eqPhotos(t.id, 'av').length, ap: eqPhotos(t.id, 'ap').length },
       pb: eqPhotos(t.id, 'pb').slice(0, 6).map((x) => x.id),
     };
@@ -564,6 +607,14 @@ async function equipeInbox(w, msg) {
       const photos = (Array.isArray(it.photos) ? it.photos : []).slice(0, 3);
       if (it.k === 'task') {
         const t = vault.get('taches', String(it.tid || ''));
+        // 🚕 START : seulement si c'est encore son tour
+        if (it.st === 'start') {
+          if (taxiCur(t) !== w.id) continue;
+          tx.put('taches', { id: t.id, taxi: { ...t.taxi, st: 'ok', okAt: at, log: [...(t.taxi.log || []), { w: w.id, r: 'ok', at }] }, ...(t.statut === 'afaire' ? { statut: 'planifie' } : {}) });
+          feed.push({ at, k: 'task', tid: t.id, d: /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10), st: 'start', note: '', ph: 0, h: '' });
+          fresh++;
+          continue;
+        }
         if (!t || t.intervenantId !== w.id || !own(EQ_ST, it.st)) continue;
         const d = /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10);
         const ph = photos.map((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'equipe', label: `${intervFull(w)} — ${t.titre} (${n + 1})`, date: d, mime: 'image/jpeg', size: Math.round(String(b).length * 0.75) }); files.push([doc.id, b]); return doc.id; });
@@ -580,7 +631,7 @@ async function equipeInbox(w, msg) {
           if (t.fini || t.statut === 'fait' || (t.journal || []).some((x) => x.d === d && x.by === w.id && x.st !== 'refus')) continue;
           upd.refus = { by: w.id, at, d, note };
           upd.refusBy = [...new Set([...(t.refusBy || []), w.id])];
-          if (!t.recur) Object.assign(upd, { intervenantId: '', statut: 'afaire' });
+          if (!t.recur) Object.assign(upd, taxiCur(t) === w.id ? taxiNext(t, 'refus') : { intervenantId: '', statut: 'afaire' });
         }
         tx.put('taches', upd);
         feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note: entry.qte ? `🔢 ${entry.qte} ${entry.qu}`.trim() + (note ? ' — ' + note : '') : note, ph: ph.length, h: entry.h || '' });
@@ -689,7 +740,8 @@ async function ptlFromTeam(w, msg) {
     if (it.k === 'ph' && it.phase === 'ap') { const b = (Array.isArray(it.photos) ? it.photos[0] : '') || it.photo; if (b) (after[t.id] ||= { t, ph: [] }).ph.push(b); }
     if (it.k !== 'task') continue;
     const who = intervFull(w), note = String(it.note || '').slice(0, 1000);
-    if (it.st === 'encours') await ptlApi(`tickets/${t.ptl.tid}/status`, { method: 'POST', body: { status: 'encours', technicien: who, text: `🚚 ${who} est sur place${note ? ' — ' + note : ''}` } });
+    if (it.st === 'start' && t.taxi && t.taxi.st === 'ok' && t.intervenantId === w.id) await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `✅ Un technicien a accepté l’intervention (${who}).` } });
+    else if (it.st === 'encours') await ptlApi(`tickets/${t.ptl.tid}/status`, { method: 'POST', body: { status: 'encours', technicien: who, text: `🚚 ${who} est sur place${note ? ' — ' + note : ''}` } });
     else if (it.st === 'fait') await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `✅ ${who} a fini le travail${note ? ' — ' + note : ''}. Clôture après contrôle par LuxInterventions.` } });
     else if (it.st === 'incomplet') await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `⚠️ ${who} : pas terminé${note ? ' — ' + note : ''}` } });
     else if (it.st === 'refus' && !t.intervenantId && t.refus && t.refus.by === w.id) await ptlStatus(t.ptl.tid, 'prise', { technicien: '', planned_at: '', text: '🔄 L’ouvrier prévu n’est pas disponible — LuxInterventions envoie un autre ouvrier.' });
@@ -996,7 +1048,7 @@ function espaceData(l) {
   if (show.signal || show.regles || show.edl) { const k = vault.get('reglages', 'signal'); out.signalKey = k ? k.pub : ''; }
   if (show.signal) {
     out.signals = vault.list('taches').filter((t) => t.locId === l.id).sort((a, b) => (b.sentAt || b.date || '').localeCompare(a.sentAt || a.date || '')).slice(0, 20)
-      .map((t) => ({ titre: t.titre.replace(/^(Signalement|Erreur signalée \(dossier \/ paiements\)) : /, ''), sent: t.sentAt || '', date: t.date || '', statut: t.statut, done: t.doneDate || '' }));
+      .map((t) => ({ titre: t.titre.replace(/^(Signalement|Erreur signalée \(dossier \/ paiements\)) : /, ''), sent: t.sentAt || '', date: t.date || '', statut: t.statut, done: t.doneDate || '', ...(t.taxi && t.taxi.st === 'ok' ? { acc: 1 } : {}) }));
   }
   return out;
 }
@@ -2355,7 +2407,7 @@ function startSession() {
   lastActive = Date.now();
   clearInterval(idleTimer);
   clearInterval(tripTimer);
-  tripTimer = setInterval(() => { tripPoll(); }, 30000); // 🚗 trajets en cours
+  tripTimer = setInterval(() => { tripPoll(); taxiTick(); taxiCount(); }, 30000); // 🚗 trajets en cours, 🚕 mode taxi
   setTimeout(tripPoll, 3000);
   idleTimer = setInterval(() => {
     if (!vault.unlocked) return;
@@ -2701,7 +2753,7 @@ function tacheRow(t, x = {}) {
   const due = t.statut === 'fait' ? '' : x.d || (t.recur ? recurDates(t.date, t.recur, today(), addDays(today(), 62), t.fin)[0] : t.date);
   return html`<div class="row">${t.statut === 'fait' ? '' : light(due)}
     <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="edit-tache" data-id="${t.id}">
-      ${t.fini && t.statut !== 'fait' ? html`<span class="badge ok" style="display:table;margin-bottom:4px">✅ Fini — à clôturer</span>` : ''}<span class="title" style="display:block">${t.urgent && t.statut !== 'fait' && !t.fini ? html`<span class="badge bad">🔴 Urgent</span> ` : ''}${tacheIcon(t.type)} ${t.titre}</span>
+      ${t.fini && t.statut !== 'fait' ? html`<span class="badge ok" style="display:table;margin-bottom:4px">✅ Fini — à clôturer</span>` : ''}<span class="title" style="display:block">${t.urgent && t.statut !== 'fait' && !t.fini ? html`<span class="badge bad">🔴 Urgent</span> ` : ''}${tacheIcon(t.type)} ${t.titre}${taxiTag(t)}</span>
       <span class="meta" style="white-space:normal">${placeName(t)}${who ? ' · ' + who : ' · intervenant à choisir'} · ${when}${t.heure ? ` · 🕒 ${t.heure}${t.heureFin ? '–' + t.heureFin : ''}` : ''}${t.cout ? ' · ' + money(t.cout) : ''}${!t.recur && t.statut !== 'fait' && t.intervenantId && due === today() ? html` ${tripSlot(t.id, due, 'tag')}` : ''}</span>
     </button>
     ${!t.recur && t.statut !== 'fait' ? html`<button class="btn sm${t.fini ? ' cloture' : ''}" data-action="tache-done" data-id="${t.id}">${t.fini ? '🟢 Clôturer' : html`${icon('check')} Fait`}</button>` : t.statut === 'fait' ? html`<span class="badge ok">✓</span>` : ''}
@@ -3779,8 +3831,8 @@ dashboard() {
     const fins = vault.list('taches').filter((t) => t.fini && !t.recur && t.statut !== 'fait').sort((a, b) => (a.fini.d + a.fini.h).localeCompare(b.fini.d + b.fini.h));
     const finBox = fins.length ? html`<div class="section-label" style="margin-top:0">🟢 ${plural(fins.length, 'chantier')} fini${fins.length > 1 ? 's' : ''} par l’équipe — à clôturer</div><div class="list fin-list" style="margin-bottom:14px">${fins.map((t) => tacheRow(t))}</div>` : '';
     // ✋ travaux refusés par l'ouvrier (malade, pas disponible…) : à donner à quelqu'un d'autre
-    const refs = vault.list('taches').filter((t) => t.refus && !t.intervenantId && !t.recur && t.statut !== 'fait').sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
-    const refBox = refs.length ? html`<div class="section-label" style="margin-top:0;color:var(--bad,#c0392b)">✋ ${refs.length} ${refs.length > 1 ? 'travaux' : 'travail'} refusé${refs.length > 1 ? 's' : ''} par l’ouvrier — à réaffecter</div><div class="list ref-list" style="margin-bottom:14px">${refs.map((t) => html`<div>${tacheRow(t)}<div class="tiny" style="padding:2px 12px 8px">✋ ${intervName(t.refus.by)} · ${fmtDateTime(t.refus.at)}${t.refus.note ? ' — ' + t.refus.note : ''}</div></div>`)}</div>` : '';
+    const refs = vault.list('taches').filter((t) => (t.refus || (t.taxi && t.taxi.st === 'none')) && !t.intervenantId && !t.recur && t.statut !== 'fait').sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
+    const refBox = refs.length ? html`<div class="section-label" style="margin-top:0;color:var(--bad,#c0392b)">✋ ${refs.length} ${refs.length > 1 ? 'travaux' : 'travail'} refusé${refs.length > 1 ? 's' : ''} par l’ouvrier — à réaffecter</div><div class="list ref-list" style="margin-bottom:14px">${refs.map((t) => html`<div>${tacheRow(t)}<div class="tiny" style="padding:2px 12px 8px">${t.taxi && t.taxi.st === 'none' ? html`🚕 ${taxiLog(t)}` : html`✋ ${intervName(t.refus.by)} · ${fmtDateTime(t.refus.at)}${t.refus.note ? ' — ' + t.refus.note : ''}`}</div></div>`)}</div>` : '';
     return html`
       ${pushNudge()}
       ${nudge}
@@ -5178,6 +5230,9 @@ const SHEETS = {
           </div>
         <label class="field" id="tacheLogF" ${t.immId && !t.lieu ? '' : new Raw('hidden')}>Logement / partie<select name="logId" id="tacheLog">${t.immId && !t.lieu ? logOptions(t.immId, t.logId) : ''}</select></label>`; })()}
         <label class="field full">Qui ?<select name="intervenantId" ${isCompta() ? new Raw('disabled title="Le comptable n’affecte pas les travaux"') : ''}><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}${(t.refusBy || []).includes(i.id) ? ' (✋ a refusé)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
+        ${isCompta() || t.recur ? '' : html`<div class="full taxi-box"><label class="t-urg"><input type="checkbox" name="taxi" value="1" ${t.taxi && t.taxi.st !== 'none' ? new Raw('checked') : ''}> <span>🚕 <b>Mode taxi</b> — la personne appuie sur START (5 min si urgent, 30 min sinon) ; sinon la demande passe au suivant</span></label>
+          <div class="taxi-more fields">${[2, 3].map((n) => { const cur = t.taxi && t.taxi.st === 'wait' ? t.taxi.list[t.taxi.i + n - 1] || '' : ''; return html`<label class="field">${n}e choix<select name="taxi${n}"><option value="">🤖 automatique (même métier, meilleurs points)</option><option value="-">— personne —</option>${ints.filter((i) => !i.archive && i.espace && i.espace.on).map((i) => html`<option value="${i.id}" ${i.id === cur ? new Raw('selected') : ''}>${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}</option>`)}</select></label>`; })}</div>
+          ${t.taxi ? html`<p class="tiny muted" style="margin:4px 0 0">🚕 ${taxiLog(t)}${t.taxi.st === 'wait' ? ` · attend ${intervName(taxiCur(t))} jusqu’à ${new Date(taxiUntil(t)).toTimeString().slice(0, 5)}` : ''}</p>` : ''}</div>`}
         ${hint.length ? html`<p class="tiny muted full" style="margin:-6px 0 0">⭐ = métier conseillé pour cette demande : ${[...new Set(hint)].map((m) => METIERS[m]).join(', ')}${ints.some(fits) ? '' : ' (personne de ce métier dans l’équipe)'}</p>` : ''}
         ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
         ${field('Date', 'date', t.date, { type: 'date' })}
@@ -7440,6 +7495,19 @@ const FORMS = {
     const hh = (k) => (/^\d\d:\d\d$/.test(fd.get(k) || '') ? fd.get(k) : '');
     rec.heure = hh('heure'); rec.heureFin = rec.heure ? hh('heureFin') : ''; rec.urgent = fd.get('urgent') === '1';
     if (rec.ptl) rec.recur = '';
+    // 🚕 mode taxi : on garde la chaîne en cours si la personne n'a pas changé, sinon on repart de celle choisie
+    if (!isCompta()) {
+      const on = fd.get('taxi') === '1' && !rec.recur && rec.intervenantId && rec.statut !== 'fait';
+      if (!on) rec.taxi = prev && prev.taxi && prev.taxi.st === 'ok' && prev.intervenantId === rec.intervenantId ? prev.taxi : null;
+      else if (prev && prev.taxi && prev.taxi.st !== 'none' && prev.intervenantId === rec.intervenantId) rec.taxi = prev.taxi;
+      else {
+        const pick = [2, 3].map((n) => fd.get('taxi' + n) || ''), auto = taxiCandidates({ ...(prev || {}), ...rec }, rec.intervenantId);
+        const list = [rec.intervenantId];
+        for (const p of pick) { const id = p === '' ? auto.find((x) => !list.includes(x)) : p === '-' ? '' : p; if (id && !list.includes(id)) list.push(id); }
+        rec.taxi = { list: list.slice(0, TAXI_MAX), i: 0, at: Date.now(), lim: rec.urgent ? 5 : 30, log: [], st: 'wait' };
+        if (!rec.date) rec.date = today();
+      }
+    }
     if (!rec.titre) return;
     if (!rec.immId && !rec.ptl && !rec.dev && !rec.lieu) return toast('Choisissez le lieu', { bad: true });
     if (recur && !rec.date) return toast('Indiquez la date de la première fois', { bad: true });
