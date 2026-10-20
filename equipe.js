@@ -258,7 +258,7 @@ function queue(item, later) {
   const q = getJ(QK());
   q.push(item);
   setJ(QK(), q);
-  if (item.k === 'task') { const loc = getJ(LK()).filter((x) => x.at > new Date(Date.now() - 30 * 864e5).toISOString()); loc.push({ tid: item.tid, d: item.d, st: item.st, note: item.note, at: item.at, h: item.h || '' }); setJ(LK(), loc); }
+  if (item.k === 'task' && item.st !== 'start') { const loc = getJ(LK()).filter((x) => x.at > new Date(Date.now() - 30 * 864e5).toISOString()); loc.push({ tid: item.tid, d: item.d, st: item.st, note: item.note, at: item.at, h: item.h || '' }); setJ(LK(), loc); }
   return later ? Promise.resolve() : flush();
 }
 // Dernier état connu d'une intervention un jour donné (serveur + ce téléphone)
@@ -308,7 +308,7 @@ function taskLine(it) {
   const x = data.tasks[it.tid];
   if (!x) return '';
   const done = stopTimes(it.tid, it.d).end;
-  return `<div class="tline${x.urgent && !done ? ' urgent' : ''}">${!done && !stateOf(it.tid, it.d) ? refusTop(it) : ''}${done ? '✅' : ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}<div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button></div></div>`;
+  return `<div class="tline${x.urgent && !done ? ' urgent' : ''}">${!done && !stateOf(it.tid, it.d) ? refusTop(it) : ''}${done ? '✅' : ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${(taxiGate(it, x) || {}).open ? ` <span class="tag urg">${esc((TX[lang] || TX.fr).tag)}</span>` : ''}<div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button></div></div>`;
 }
 // horaire d'un jour précis : le planning daté (fait par le responsable) remplace l'horaire habituel ce jour-là
 function hOnDate(d, iso) {
@@ -323,9 +323,39 @@ const QT = {
 };
 const qtyHtml = () => { const q = QT[lang] || QT.fr; return `<div class="qty"><label>🔢 ${esc(q[0])}</label><div class="qty-r"><input type="number" name="qte" min="0" step="any" inputmode="decimal" placeholder="12"><input name="qu" maxlength="40" placeholder="${esc(q[1])}"></div></div>`; };
 const qtyOf = (f) => { const n = parseFloat(String(f.qte ? f.qte.value : '').replace(',', '.')); return n > 0 ? { qte: Math.round(n * 100) / 100, qu: String(f.qu ? f.qu.value : '').trim().slice(0, 40) } : {}; };
+// 🚕 Mode taxi : la centrale attend START avant l'heure limite ; sinon la demande passe à un autre ouvrier
+const TX = {
+  fr: { t: '🚕 Nouvelle demande — répondez avant {h}', ok: '✅ START — j’accepte', gone: '⏱ Temps écoulé — la demande est passée à un autre ouvrier.', hint: 'Sans réponse, la demande passe à un collègue.', tag: '🚕 START ?' },
+  it: { t: '🚕 Nuova richiesta — rispondi entro le {h}', ok: '✅ START — accetto', gone: '⏱ Tempo scaduto — la richiesta è passata a un altro operaio.', hint: 'Senza risposta, la richiesta passa a un collega.', tag: '🚕 START ?' },
+  de: { t: '🚕 Neuer Auftrag — antworten Sie bis {h}', ok: '✅ START — ich nehme an', gone: '⏱ Zeit abgelaufen — der Auftrag ging an einen anderen Arbeiter.', hint: 'Ohne Antwort geht der Auftrag an einen Kollegen.', tag: '🚕 START ?' },
+  pt: { t: '🚕 Novo pedido — responda até às {h}', ok: '✅ START — aceito', gone: '⏱ Tempo esgotado — o pedido passou para outro operário.', hint: 'Sem resposta, o pedido passa para um colega.', tag: '🚕 START ?' },
+  en: { t: '🚕 New job — answer before {h}', ok: '✅ START — I accept', gone: '⏱ Time is up — the job went to another worker.', hint: 'Without an answer, the job goes to a colleague.', tag: '🚕 START ?' },
+  es: { t: '🚕 Nueva solicitud — responda antes de las {h}', ok: '✅ START — acepto', gone: '⏱ Tiempo agotado — la solicitud pasó a otro operario.', hint: 'Sin respuesta, la solicitud pasa a un compañero.', tag: '🚕 START ?' },
+};
+const TXK = () => 'eqTaxiOk:' + id;
+const taxiOk = (tid, d) => getJ(TXK()).includes(tid + '|' + d);
+const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+function taxiGate(it, x) {
+  if (!(x.taxi > 0) || taxiOk(it.tid, it.d)) return null;
+  const r = TX[lang] || TX.fr, left = x.taxi - Date.now();
+  if (left <= 0) return { open: false, html: `<div class="taxi-me gone">${esc(r.gone)}</div>` };
+  const h = new Date(x.taxi).toLocaleTimeString(T().loc, { hour: '2-digit', minute: '2-digit' });
+  return { open: true, html: `<div class="taxi-me"><b>${esc(r.t.replace('{h}', h))}</b> <span class="taxi-cd" data-taxi-until="${x.taxi}">⏱ ${mmss(left)}</span>
+    <button class="btn ok block taxi-go" data-taxi-ok="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(r.ok)}</button><p class="meta" style="margin:4px 0 0">${esc(r.hint)}</p></div>` };
+}
+// carte en attente de START : quoi, où, quand ; pas encore de boutons de travail ni « Je suis en route »
+function taxiCard(it, x, g) {
+  const t = T();
+  return `<div class="task taxi-card${g.open ? ' urgent' : ' done'}">${g.open ? refusTop(it) : ''}
+    <div class="tt">${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}</div>
+    <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}</div>
+    ${g.html}${g.open ? infoHtml(x, t) + refusUi(it) : ''}</div>`;
+}
 function taskCard(it, withBtns) {
   const t = T(), x = data.tasks[it.tid];
   if (!x) return '';
+  const g = taxiGate(it, x);
+  if (g) return taxiCard(it, x, g);
   const st = stateOf(it.tid, it.d);
   const tel = x.contact && x.contact.tel ? x.contact.tel.replace(/[^\d+]/g, '') : '';
   const done = st && st.st === 'fait';
@@ -380,6 +410,10 @@ async function tripGo(tk, adr, minutes) {
   await tripSend(tk, 'go', eta); tripWatch();
 }
 // pendant le trajet, app ouverte : l'heure se recalcule toutes les minutes (si le lieu est connu)
+// compte à rebours du mode taxi, chaque seconde ; à zéro la carte passe à « Temps écoulé »
+setInterval(() => {
+  for (const el of document.querySelectorAll('[data-taxi-until]')) { const left = +el.dataset.taxiUntil - Date.now(); if (left <= 0) return render(); el.textContent = '⏱ ' + mmss(left); }
+}, 1000);
 function tripWatch() {
   clearInterval(tripTimer);
   tripTimer = setInterval(async () => {
@@ -404,6 +438,8 @@ function tripUi(it, x) {
 function stopCard(it, cur) {
   const t = T(), x = data.tasks[it.tid];
   if (!x) return '';
+  const g = taxiGate(it, x);
+  if (g) return taxiCard(it, x, g);
   const tm = stopTimes(it.tid, it.d), f = form && form.tid === it.tid && form.d === it.d ? form : null;
   const refused = isRefused(it.tid, it.d), ended = !!tm.end || refused;
   let act = '';
@@ -712,6 +748,8 @@ app.addEventListener('click', async (e) => {
   const pdl = e.target.closest('[data-pb-del]');
   if (pdl) { const [x] = pbPhotos.splice(+pdl.dataset.pbDel, 1); if (x) URL.revokeObjectURL(x.url); return render(); }
   if (e.target.closest('[data-pubback]')) { place = ''; render(); scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  const txo = e.target.closest('[data-taxi-ok]');
+  if (txo) { txo.disabled = true; const k = txo.dataset.taxiOk + '|' + txo.dataset.d; setJ(TXK(), [...getJ(TXK()).filter((v) => v !== k), k].slice(-50)); render(); return queue({ k: 'task', tid: txo.dataset.taxiOk, d: txo.dataset.d, st: 'start', at: new Date().toISOString() }); }
   const tg = e.target.closest('[data-trip-go]');
   if (tg) { tg.disabled = true; return tripGo(tg.dataset.tripGo, tg.dataset.adr, +tg.dataset.tripMin || 0); }
   const ts = e.target.closest('[data-trip-stop]');
