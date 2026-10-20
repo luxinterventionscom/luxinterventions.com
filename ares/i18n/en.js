@@ -14915,5 +14915,73 @@ export default [
 [
 "Avis des clients (visites)",
 "Client opinions (visits)"
+],
+[
+"Mode taxi",
+"Taxi mode"
+],
+[
+"la personne appuie sur START (5 min si urgent, 30 min sinon) ; sinon la demande passe au suivant",
+"the person presses START (5 min if urgent, otherwise 30 min); if not, the job goes to the next one"
+],
+[
+"2e choix",
+"2nd choice"
+],
+[
+"3e choix",
+"3rd choice"
+],
+[
+"automatique (même métier, meilleurs points)",
+"automatic (same trade, best points)"
+],
+[
+"personne",
+"nobody"
+],
+[
+"🚕 attend {0} · ⏱ {1} min",
+"🚕 waiting for {0} · ⏱ {1} min"
+],
+[
+"✅ accepté par {0}",
+"✅ accepted by {0}"
+],
+[
+"Personne n’a accepté",
+"Nobody accepted"
+],
+[
+"{0} ⏱ pas de réponse ({1})",
+"{0} ⏱ no answer ({1})"
+],
+[
+"{0} ✋ a refusé ({1})",
+"{0} ✋ refused ({1})"
+],
+[
+"attend {0} — réponse avant {1}",
+"waiting for {0} — answer before {1}"
+],
+[
+"en attente",
+"waiting"
+],
+[
+"pas de réponse",
+"no answer"
+],
+[
+"{0} : pas de réponse → {1}",
+"{0}: no answer → {1}"
+],
+[
+"{0} : personne n’a accepté",
+"{0}: nobody accepted"
+],
+[
+"Accepté (START)",
+"Accepted (START)"
 ]
 ];
