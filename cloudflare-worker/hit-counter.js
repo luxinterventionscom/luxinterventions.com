@@ -105,6 +105,11 @@ async function route(request, env, ctx, headers) {
     const pub = url.pathname.match(/^\/api\/pub\/([0-9a-f]{32})\.(json|ics)$/);
     if (pub && request.method === "GET") return publicCollectes(env, pub[1], pub[2], url, headers);
 
+    // ── 🚗 Trajet de l'ouvrier (« Je pars » → heure d'arrivée) : lu par le locataire, la gérance, la central ──
+    const trip = url.pathname.match(/^\/api\/trip\/([0-9a-f]{32})$/);
+    if (trip) return tripPublic(request, env, trip[1], headers, ctx);
+    if (url.pathname === "/api/trips" && request.method === "POST") return tripsPublic(request, env, headers);
+
     // ── Portail Gérance / Syndic (vedi la sezione PORTAIL più sotto) ──
     if (url.pathname.startsWith("/api/portail/")) {
       return handlePortail(request, env, url, headers, ctx);
@@ -758,6 +763,21 @@ async function handleAres(request, env, url, headers) {
     return aresJson({ ok: true }, 200, headers);
   }
   // Notifications de l'app de gestion (badge sur l'icône) et des apps locataires / équipe
+  // 🚗 trajets du jour : la central enregistre qui prévenir (apps des locataires) et la demande de la gérance liée
+  if (path === "trip" && method === "POST") {
+    let b;
+    try { b = await request.json(); } catch { b = null; }
+    const items = Array.isArray(b && b.items) ? b.items.slice(0, 300) : [];
+    for (const it of items) {
+      if (!it || !/^[0-9a-f]{32}$/.test(it.tk || "")) continue;
+      const cur = (await tripGet(env, it.tk)) || {};
+      const to = (Array.isArray(it.to) ? it.to : []).filter((x) => /^[0-9a-f]{32}$/.test(x)).slice(0, 10);
+      const ptl = /^[a-z0-9]{8,40}$/.test(it.ptl || "") ? it.ptl : "";
+      await tripPut(env, it.tk, { ...cur, to, ptl });
+      if (ptl && env.DB) { try { await env.DB.prepare("UPDATE tickets SET trip = ? WHERE id = ?").bind(it.tk, ptl).run(); } catch { /* colonne pas encore créée : le portail l'ajoutera */ } }
+    }
+    return aresJson({ ok: true }, 200, headers);
+  }
   if (path === "push" && (method === "POST" || method === "DELETE")) {
     if (!(await espPushInit(env))) return aresJson({ error: "Notifications indisponibles" }, 503, headers);
     let b;
@@ -1017,7 +1037,7 @@ const PTL_SCHEMA = [
      created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
 ];
 // Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
-const PTL_ALTER = ["ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT", "ALTER TABLE orgs ADD COLUMN logo TEXT", "ALTER TABLE devis ADD COLUMN revs INTEGER", "ALTER TABLE tickets ADD COLUMN inv_h REAL", "ALTER TABLE tickets ADD COLUMN qte TEXT"];
+const PTL_ALTER = ["ALTER TABLE tickets ADD COLUMN trip TEXT", "ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT", "ALTER TABLE orgs ADD COLUMN logo TEXT", "ALTER TABLE devis ADD COLUMN revs INTEGER", "ALTER TABLE tickets ADD COLUMN inv_h REAL", "ALTER TABLE tickets ADD COLUMN qte TEXT"];
 let ptlSchemaReady = false;
 
 // ── Utilità ──
@@ -1204,6 +1224,7 @@ const PUSH_TXT = {
   ptlmsg: { fr: "🏢 Nouveau message d'une gérance", it: "🏢 Nuovo messaggio da un'agenzia", de: "🏢 Neue Nachricht einer Verwaltung", pt: "🏢 Nova mensagem de uma gestora", en: "🏢 New message from an agency", es: "🏢 Nuevo mensaje de una administración" },
   devis: { fr: "📝 Réponse d'une gérance à un devis", it: "📝 Risposta di una gérance a un preventivo", de: "📝 Antwort einer Verwaltung auf ein Angebot", pt: "📝 Resposta de uma gestora a um orçamento", en: "📝 A property manager answered a quote", es: "📝 Respuesta de una administradora a un presupuesto" },
   offer: { fr: "💼 Une gérance est intéressée par un abonnement", it: "💼 Una gérance è interessata a un abbonamento", de: "💼 Eine Verwaltung interessiert sich für ein Abo", pt: "💼 Uma gestora está interessada numa assinatura", en: "💼 A property manager is interested in a plan", es: "💼 Una administradora está interesada en una suscripción" },
+  trip: { fr: "🚗 Votre intervenant est en route", it: "🚗 Il tecnico è in arrivo", de: "🚗 Ihr Techniker ist unterwegs", pt: "🚗 O seu técnico está a caminho", en: "🚗 Your technician is on the way", es: "🚗 Su técnico está en camino" },
   news: { fr: "Du nouveau dans votre app", it: "Novità nella tua app", de: "Neues in Ihrer App", pt: "Novidades na sua app", en: "Something new in your app", es: "Novedades en tu app" },
 };
 async function espPushSave(env, target, b) {
@@ -1220,6 +1241,57 @@ async function espPushSave(env, target, b) {
   return true;
 }
 // target : "owner", un identifiant d'espace, ou "board:<id>" (habitants inscrits à ce fil, sauf l'expéditeur)
+// ── 🚗 Trajet : aucune position n'est envoyée ni gardée — seulement l'heure d'arrivée estimée sur le téléphone de l'ouvrier.
+// Jeton de 32 caractères (inconnaissable) par intervention et par jour, créé par la central ; effacé tout seul après 36 h.
+const TRIP_TTL = 36 * 3600;
+async function tripGet(env, tk) { try { return JSON.parse((await env.HITS.get("trip:" + tk)) || "null"); } catch { return null; } }
+async function tripPut(env, tk, rec) { await env.HITS.put("trip:" + tk, JSON.stringify(rec), { expirationTtl: TRIP_TTL }); }
+const tripOut = (r) => ({ st: (r && r.st) || "", eta: (r && r.eta) || 0, e0: (r && r.e0) || 0, start: (r && r.start) || 0, upd: (r && r.upd) || 0, n: (r && r.n) || "" });
+async function tripPublic(request, env, tk, headers, ctx) {
+  const rec = await tripGet(env, tk);
+  if (request.method === "GET") return aresJson(tripOut(rec), 200, headers, { "Cache-Control": "no-store" });
+  if (request.method !== "POST") return aresJson({ error: "Méthode non autorisée" }, 405, headers);
+  if (!rec) return aresJson({ error: "Trajet inconnu" }, 404, headers);
+  let b;
+  try { b = await request.json(); } catch { b = {}; }
+  const now = Date.now(), st = ["go", "here", "stop"].includes(b.st) ? b.st : "";
+  if (!st) return aresJson({ error: "Données invalides" }, 400, headers);
+  if (rec.upd && now - rec.upd < 5000 && st === rec.st) return aresJson(tripOut(rec), 200, headers); // pas plus d'une mise à jour toutes les 5 s
+  const eta = Number(b.eta);
+  const first = st === "go" && rec.st !== "go";
+  const next = { ...rec, st, upd: now, n: String(b.n || rec.n || "").slice(0, 40),
+    eta: st === "go" && eta > now - 5 * 60000 && eta < now + 6 * 3600000 ? Math.round(eta) : st === "go" ? rec.eta || now + 20 * 60000 : rec.eta || 0,
+    start: first ? now : rec.start || now };
+  next.e0 = first ? next.eta : rec.e0 || next.eta; // heure annoncée au départ : au-delà → « petit retard »
+  await tripPut(env, tk, next);
+  if (first) {
+    const jobs = (rec.to || []).map((espId) => espPushSend(env, espId, "trip"));
+    if (rec.ptl && env.DB) jobs.push((async () => {
+      try {
+        const t = await env.DB.prepare("SELECT id, ref, org_id, status FROM tickets WHERE id = ?").bind(rec.ptl).first();
+        if (!t) return;
+        const at = new Date(next.eta).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Luxembourg" });
+        const txt = `🚗 ${next.n || "L’intervenant"} est en route — arrivée vers ${at}`;
+        const stmts = [env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, NULL, ?, ?, ?, ?)").bind(ptlId(), t.id, ["prise", "planifiee"].includes(t.status) ? "status" : "comment", ["prise", "planifiee"].includes(t.status) ? "encours" : null, txt, now)];
+        if (["prise", "planifiee"].includes(t.status)) stmts.push(env.DB.prepare("UPDATE tickets SET status = 'encours', updated_at = ? WHERE id = ?").bind(now, t.id));
+        await env.DB.batch(stmts);
+        await ptlNotify(env, "u.org_id = ?", [t.org_id], { title: `#${t.ref} · 🚗 En route`, body: txt, url: `/portail.html#/t/${t.id}`, tag: t.id }, false);
+      } catch { /* portail indisponible : le trajet reste visible dans les apps */ }
+    })());
+    ctx && ctx.waitUntil(Promise.all(jobs));
+  }
+  return aresJson(tripOut(next), 200, headers);
+}
+// plusieurs trajets d'un coup (central, portail) — seulement ceux dont on connaît le jeton
+async function tripsPublic(request, env, headers) {
+  let b;
+  try { b = await request.json(); } catch { b = {}; }
+  const tks = (Array.isArray(b.tks) ? b.tks : []).filter((x) => /^[0-9a-f]{32}$/.test(x)).slice(0, 60);
+  const out = {};
+  for (const tk of tks) { const r = await tripGet(env, tk); if (r && r.st) out[tk] = tripOut(r); }
+  return aresJson({ items: out }, 200, headers, { "Cache-Control": "no-store" });
+}
+
 async function espPushSend(env, target, kind, except = "") {
   try {
     if (!(await espPushInit(env))) return;
@@ -1737,7 +1809,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       const full = url.searchParams.get("full") === "1"; // rapport : rapport d'intervention en plus
       const sql = `SELECT t.id, t.ref, t.org_id, t.residence_id, t.lieu, t.categorie, t.urgence, t.description, t.status, t.planned_at, t.technicien,
           t.created_at, t.updated_at, t.taken_at, t.done_at, r.name AS residence_name, r.address AS residence_address, o.name AS org_name, u.name AS created_by_name, u.title AS created_by_title,
-          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos, t.inv_no, t.inv_date, t.inv_ht, t.inv_tva, t.inv_ttc, t.inv_paid, t.inv_cont, t.inv_h, t.qte,${full ? " substr(t.rapport, 1, 2000) AS rapport," : ""}
+          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos, t.inv_no, t.inv_date, t.inv_ht, t.inv_tva, t.inv_ttc, t.inv_paid, t.inv_cont, t.inv_h, t.qte, t.trip,${full ? " substr(t.rapport, 1, 2000) AS rapport," : ""}
           (SELECT COUNT(*) FROM events e WHERE e.ticket_id = t.id AND e.kind = 'comment') AS msgs,
           (SELECT COUNT(*) FROM events e JOIN users ue ON ue.id = e.user_id WHERE e.ticket_id = t.id AND e.kind = 'comment' AND ue.role != 'admin') AS msgs_ger
         FROM tickets t JOIN residences r ON r.id = t.residence_id JOIN orgs o ON o.id = t.org_id LEFT JOIN users u ON u.id = t.created_by
