@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.170.0';
+const VERSION = '2.171.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -449,9 +449,10 @@ const taxiTag = (t) => {
   return html` <span class="badge bad">⏸ Personne n’a accepté</span>`;
 };
 const TAXI_R = { refus: '✋ a refusé', timeout: '⏱ pas de réponse', ok: '✅ START' };
-const taxiLog = (t) => (t.taxi.log || []).map((x) => `${intervName(x.w)} ${TAXI_R[x.r] || x.r} (${fmtDateTime(x.at).slice(-5)})`).join(' → ') || 'en attente';
+// un élément par étape : chaque étape se traduit à part
+const taxiLog = (t) => ((t.taxi.log || []).length ? html`${t.taxi.log.map((x, n) => html`<span>${n ? ' → ' : ''}${intervName(x.w)} ${TAXI_R[x.r] || x.r} (${fmtDateTime(x.at).slice(-5)})</span>`)}` : 'en attente');
 // minutes restantes sur les étiquettes, sans tout redessiner
-const taxiCount = () => document.querySelectorAll('[data-taxi-until]').forEach((el) => { el.textContent = el.textContent.replace(/⏱ \d+ min/, `⏱ ${Math.max(0, Math.ceil((+el.dataset.taxiUntil - Date.now()) / 60000))} min`); });
+const taxiCount = () => document.querySelectorAll('[data-taxi-until]').forEach((el) => { el.textContent = el.textContent.replace(/⏱ \d+/, `⏱ ${Math.max(0, Math.ceil((+el.dataset.taxiUntil - Date.now()) / 60000))}`); });
 // Dernier état donné par l'équipe pour une intervention un jour donné
 // Photos « avant » / « après » envoyées par l'équipe pour une intervention (6 + 6 maximum)
 const EQ_PH = { av: 'Avant', ap: 'Après' }, EQ_PH_MAX = 6;
@@ -5232,7 +5233,7 @@ const SHEETS = {
         <label class="field full">Qui ?<select name="intervenantId" ${isCompta() ? new Raw('disabled title="Le comptable n’affecte pas les travaux"') : ''}><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}${(t.refusBy || []).includes(i.id) ? ' (✋ a refusé)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
         ${isCompta() || t.recur ? '' : html`<div class="full taxi-box"><label class="t-urg"><input type="checkbox" name="taxi" value="1" ${t.taxi && t.taxi.st !== 'none' ? new Raw('checked') : ''}> <span>🚕 <b>Mode taxi</b> — la personne appuie sur START (5 min si urgent, 30 min sinon) ; sinon la demande passe au suivant</span></label>
           <div class="taxi-more fields">${[2, 3].map((n) => { const cur = t.taxi && t.taxi.st === 'wait' ? t.taxi.list[t.taxi.i + n - 1] || '' : ''; return html`<label class="field">${n}e choix<select name="taxi${n}"><option value="">🤖 automatique (même métier, meilleurs points)</option><option value="-">— personne —</option>${ints.filter((i) => !i.archive && i.espace && i.espace.on).map((i) => html`<option value="${i.id}" ${i.id === cur ? new Raw('selected') : ''}>${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}</option>`)}</select></label>`; })}</div>
-          ${t.taxi ? html`<p class="tiny muted" style="margin:4px 0 0">🚕 ${taxiLog(t)}${t.taxi.st === 'wait' ? ` · attend ${intervName(taxiCur(t))} jusqu’à ${new Date(taxiUntil(t)).toTimeString().slice(0, 5)}` : ''}</p>` : ''}</div>`}
+          ${t.taxi ? html`<p class="tiny muted" style="margin:4px 0 0">🚕 ${taxiLog(t)}${t.taxi.st === 'wait' ? ` · attend ${intervName(taxiCur(t))} — réponse avant ${new Date(taxiUntil(t)).toTimeString().slice(0, 5)}` : ''}</p>` : ''}</div>`}
         ${hint.length ? html`<p class="tiny muted full" style="margin:-6px 0 0">⭐ = métier conseillé pour cette demande : ${[...new Set(hint)].map((m) => METIERS[m]).join(', ')}${ints.some(fits) ? '' : ' (personne de ce métier dans l’équipe)'}</p>` : ''}
         ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
         ${field('Date', 'date', t.date, { type: 'date' })}

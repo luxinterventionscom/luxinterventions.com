@@ -15179,5 +15179,73 @@ export default [
 [
 "Avis des clients (visites)",
 "Kundenmeinungen (Besuche)"
+],
+[
+"Mode taxi",
+"Taxi-Modus"
+],
+[
+"la personne appuie sur START (5 min si urgent, 30 min sinon) ; sinon la demande passe au suivant",
+"die Person drückt START (5 Min. wenn dringend, sonst 30 Min.); sonst geht der Auftrag an den nächsten"
+],
+[
+"2e choix",
+"2. Wahl"
+],
+[
+"3e choix",
+"3. Wahl"
+],
+[
+"automatique (même métier, meilleurs points)",
+"automatisch (gleicher Beruf, beste Punkte)"
+],
+[
+"personne",
+"niemand"
+],
+[
+"🚕 attend {0} · ⏱ {1} min",
+"🚕 wartet auf {0} · ⏱ {1} Min."
+],
+[
+"✅ accepté par {0}",
+"✅ angenommen von {0}"
+],
+[
+"Personne n’a accepté",
+"Niemand hat angenommen"
+],
+[
+"{0} ⏱ pas de réponse ({1})",
+"{0} ⏱ keine Antwort ({1})"
+],
+[
+"{0} ✋ a refusé ({1})",
+"{0} ✋ hat abgelehnt ({1})"
+],
+[
+"attend {0} — réponse avant {1}",
+"wartet auf {0} — Antwort bis {1}"
+],
+[
+"en attente",
+"wartet"
+],
+[
+"pas de réponse",
+"keine Antwort"
+],
+[
+"{0} : pas de réponse → {1}",
+"{0}: keine Antwort → {1}"
+],
+[
+"{0} : personne n’a accepté",
+"{0}: niemand hat angenommen"
+],
+[
+"Accepté (START)",
+"Angenommen (START)"
 ]
 ];
