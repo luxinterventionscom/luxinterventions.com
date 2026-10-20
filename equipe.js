@@ -7,7 +7,7 @@ import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
-import { nbienInit, nbienBanner, colorLegend } from '/ares/nbien.js';
+import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'eqAccess';
 const RX = /^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/;
@@ -605,7 +605,7 @@ function render() {
     <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><button class="link-rgpd" data-rgpd="1">${esc((WRGPD[lang] || WRGPD.fr).t)}</button><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn sec sm" data-logout="1">🚪 ${esc(ft.out)}</button>${d.societe.tel ? `<a class="btn sm" href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">📞 ${esc(ft.call)}</a><span class="meta">${esc(d.societe.nom)}</span>` : ''}</div></div>`);
   }
   { const low = slot('bas'); if (low) out.push(adBox(low, t)); }
-  out.push(colorLegend());
+  out.push(infoBox({ units: !!d.devis })); // unités des devis : seulement pour le chef de chantier
   out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
   const keepMap = document.querySelector('#mapBox iframe');
   const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
