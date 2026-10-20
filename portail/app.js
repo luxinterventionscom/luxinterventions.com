@@ -9,10 +9,12 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { nbienInit, nbienBanner, colorLegend } from '/ares/nbien.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
+import { scrollHintInit } from '/ares/scroll-hint.js';
+scrollHintInit();
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.23.0';
+const VERSION = '1.24.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -505,15 +507,12 @@ function renderShell() {
   setTimeout(bnavShow, 0);
 }
 // barre du bas (téléphone) comme dans l'app de gestion : on la fait défiler au doigt, la rubrique ouverte reste visible,
-// un fondu indique qu'il y en a d'autres à gauche / à droite
+// les flèches ‹ › de scroll-hint.js montrent qu'il y en a d'autres
 function bnavShow() {
   const nav = $('.bottomnav'), cur = nav && nav.querySelector('[aria-current=page]');
   if (!nav) return;
   if (cur && nav.scrollWidth > nav.clientWidth) { const x = cur.offsetLeft - (nav.clientWidth - cur.offsetWidth) / 2; nav.scrollTo({ left: Math.max(0, x), behavior: 'smooth' }); }
-  bnavEdges(nav);
 }
-const bnavEdges = (nav) => { nav.classList.toggle('more-l', nav.scrollLeft > 4); nav.classList.toggle('more-r', nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 4); };
-document.addEventListener('scroll', (e) => { if (e.target.classList && e.target.classList.contains('bottomnav')) bnavEdges(e.target); }, true);
 
 async function go(route, replace) {
   const valid = navItems().map((x) => x[0]);
