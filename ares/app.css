@@ -245,9 +245,6 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
 /* barre du bas : 9 rubriques, environ 4 et demie visibles ; on fait défiler au doigt */
 .bottomnav::-webkit-scrollbar { display: none; }
 .bottomnav .navbtn { flex: 0 0 21.5%; min-width: 70px; scroll-snap-align: start; position: relative; white-space: nowrap; }
-.bottomnav.more-r { -webkit-mask-image: linear-gradient(to right, #000 82%, transparent); mask-image: linear-gradient(to right, #000 82%, transparent); }
-.bottomnav.more-l { -webkit-mask-image: linear-gradient(to left, #000 82%, transparent); mask-image: linear-gradient(to left, #000 82%, transparent); }
-.bottomnav.more-l.more-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 14%, #000 82%, transparent); mask-image: linear-gradient(to right, transparent, #000 14%, #000 82%, transparent); }
 .navbtn[aria-current='page'] { color: var(--accent); }
 .sidenav { display: none; }
 

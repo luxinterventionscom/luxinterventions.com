@@ -10,10 +10,12 @@ import { videoEmbed } from './video-embed.js';
 import { PTL_INVITE } from './ptl-invite.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { makePdf } from './pdfmini.js';
+import { scrollHintInit } from './scroll-hint.js';
+scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.162.0';
+const VERSION = '2.163.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2456,15 +2458,12 @@ function go(route, replace) {
   scrollTo(0, 0);
   if (route === 'gerances' && ui.ptl.data) setTimeout(ptlLoad, 0); // toujours les demandes du moment
 }
-// barre du bas : la rubrique ouverte reste visible ; un fondu indique qu'il y en a d'autres à gauche / à droite
+// barre du bas : la rubrique ouverte reste visible ; les flèches ‹ › de scroll-hint.js montrent qu'il y en a d'autres
 function bnavShow() {
   const nav = $('.bottomnav'), cur = nav && nav.querySelector('[aria-current=page]');
   if (!nav) return;
   if (cur && nav.scrollWidth > nav.clientWidth) { const x = cur.offsetLeft - (nav.clientWidth - cur.offsetWidth) / 2; nav.scrollTo({ left: Math.max(0, x), behavior: 'smooth' }); }
-  bnavEdges(nav);
 }
-const bnavEdges = (nav) => { nav.classList.toggle('more-l', nav.scrollLeft > 4); nav.classList.toggle('more-r', nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 4); };
-document.addEventListener('scroll', (e) => { if (e.target.classList && e.target.classList.contains('bottomnav')) bnavEdges(e.target); }, true);
 addEventListener('popstate', () => vault.unlocked && go(location.hash.slice(2) || 'dashboard', true));
 
 // ── Toutes les sections de l'app : un clic ouvre / ferme, ouvertes elles brillent (lumière chaude) ──
