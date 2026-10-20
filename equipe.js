@@ -483,9 +483,10 @@ function render() {
   const t = T();
   document.documentElement.lang = lang;
   const langs = `<div class="langs">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
-  const top = (name, logo) => `<div class="top"><span class="brandx"><img class="top-logo" src="${esc(logo || '/ares/icons/lux-192.png')}" alt="" width="76" height="32"><b>${esc(name)}</b></span>${langs}</div>`;
+  // langues : en haut seulement avant la connexion ; ensuite dans « ✏️ Mon profil »
+  const top = (name, logo, withLangs = false) => `<div class="top"><span class="brandx"><img class="top-logo" src="${esc(logo || '/ares/icons/lux-192.png')}" alt="" width="76" height="32"><b>${esc(name)}</b></span>${withLangs ? langs : ''}</div>`;
   if (!data) {
-    app.innerHTML = `${top('ARES INVEST S.A.')}
+    app.innerHTML = `${top('ARES INVEST S.A.', '', true)}
       <h1 style="text-align:center;margin-top:18px">👷 ${esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
       ${loadErr ? `<div class="card warnc"><p style="margin:0">${esc(loadErr)}</p></div>` : ''}
       <div class="card"><form id="codeForm"><label>${esc(t.code)}</label>
@@ -517,6 +518,7 @@ function render() {
     const cc = CCSS[lang] || CCSS.fr;
     const L = { prenom: [ci.first, 'text', 'given-name'], nom: [ci.last, 'text', 'family-name'], tel: [t.tel, 'tel', 'tel'], mail: [t.mail, 'email', 'email'], adresse: [t.adr, 'text', 'street-address'], ville: [t.ville, 'text', 'address-level2'], ccss: [cc[0], 'text', 'off'] };
     out.push(`<div class="card" id="profCard"><h2 style="margin:0 0 10px">✏️ ${esc(ci.t)}</h2>
+      <p style="display:flex;align-items:center;gap:8px;margin:0 0 12px">🌐 ${langs}</p>
       <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:8px"><span class="av-btn" style="width:72px;height:72px;font-size:32px">${myPh ? `<img src="${esc(myPh)}" alt="">` : esc(myIc)}</span><label class="btn sec sm" style="cursor:pointer">📷 ${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label></div>
       <form id="infoForm">${PF.map((f) => f === 'ccss' && me(f) ? `<label>${esc(L[f][0])}</label><div class="row"><b>${esc(me(f))}</b></div>` : `<label>${esc(L[f][0])}${me(f) ? '' : ' <span class="miss">•</span>'}</label><input name="${f}" type="${L[f][1]}" autocomplete="${L[f][2]}" value="${esc(me(f))}"${f === 'nom' ? ' required' : ''}${f === 'ccss' ? ` inputmode="numeric" placeholder="${esc(cc[1])}"` : ''}${me(f) ? '' : ' class="miss-in"'}>`).join('')}
       <button class="btn block" style="margin-top:12px" type="submit">${esc(ci.save)}</button></form>
