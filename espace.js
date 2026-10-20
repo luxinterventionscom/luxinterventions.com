@@ -10,6 +10,7 @@ import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
+import { tripView, tripFetch } from '/ares/trip.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 // Accès : lien direct (#id.clé) ou code personnel saisi une fois ; mémorisé sur ce téléphone
 const ACC = 'espAccess';
@@ -821,6 +822,17 @@ async function pushInit() {
   setBadge(0, '/espace');
   render();
 }
+// 🚗 l'ouvrier qui vient aujourd'hui : compte à rebours sous « Bonjour » (état relu toutes les 30 s, sans redessiner la page)
+let espTrips = {};
+const tripBoxes = () => ((data && data.trips) || []).filter((x) => x.d === today).map((x) => tripView(espTrips[x.tk], { lang })).join('');
+async function tripPoll() {
+  const tks = ((data && data.trips) || []).filter((x) => x.d === today).map((x) => x.tk);
+  if (!tks.length || document.visibilityState !== 'visible') return;
+  try { espTrips = await tripFetch(API + '/api/', tks); } catch { /* hors ligne */ }
+  const el = document.getElementById('tripSlot'), h = tripBoxes();
+  if (el && el.innerHTML !== h) el.innerHTML = h;
+}
+setInterval(tripPoll, 30000);
 // tirer vers le bas = recharger ; hors ligne : on garde ce qu'on avait
 pullRefreshInit({ lang: () => lang, refresh: async () => { if (!id || !key || !data) return; const prev = data; await load(); if (!data && prev && loadErr === '⚠ offline') { data = prev; render(); } } });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) { setBadge(0, '/espace'); if (data.chat) chatSeen(); } });
@@ -867,7 +879,7 @@ function render() {
   const out = [];
   // adresse complète : rue + code postal et localité (si renseignés dans l'app de gestion)
   const addrFull = [d.adresse, d.ville].filter(Boolean).join(', ');
-  out.push(`<div class="top"><span class="brandx"><img class="top-logo" src="${esc(d.societe.logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(d.societe.nom)}</b></span></div><h1 style="display:flex;align-items:center;gap:12px"><button class="av-wrap" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}"><span class="av-btn">${(phMine !== null ? phMine : d.photo) ? `<img src="${esc(phMine !== null ? phMine : d.photo)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span><span class="av-pen" aria-hidden="true">✏️</span></button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1>${icOpen ? (() => { const st = SETT[lang] || SETT.fr, ph = phMine !== null ? phMine : d.photo || ''; return `<div class="card" id="settCard"><h2 style="margin:0 0 10px">✏️ ${esc(st.t)}</h2><p style="display:flex;align-items:center;gap:8px;margin:0 0 12px">🌐 ${langs}</p><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
+  out.push(`<div class="top"><span class="brandx"><img class="top-logo" src="${esc(d.societe.logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(d.societe.nom)}</b></span></div><h1 style="display:flex;align-items:center;gap:12px"><button class="av-wrap" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}"><span class="av-btn">${(phMine !== null ? phMine : d.photo) ? `<img src="${esc(phMine !== null ? phMine : d.photo)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span><span class="av-pen" aria-hidden="true">✏️</span></button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1><div id="tripSlot">${tripBoxes()}</div>${icOpen ? (() => { const st = SETT[lang] || SETT.fr, ph = phMine !== null ? phMine : d.photo || ''; return `<div class="card" id="settCard"><h2 style="margin:0 0 10px">✏️ ${esc(st.t)}</h2><p style="display:flex;align-items:center;gap:8px;margin:0 0 12px">🌐 ${langs}</p><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span class="av-btn" style="width:72px;height:72px;font-size:32px">${ph ? `<img src="${esc(ph)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span>
     <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${ph ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
     <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>`; })() + `<p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${MY_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === (icMine || d.avatar)}">${esc(e)}</button>`).join('')}</div></div>` : ''}<p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);
@@ -1568,7 +1580,7 @@ async function load() {
   let chosen = ''; try { chosen = localStorage.getItem('espLang') || ''; } catch { /* stockage bloqué (navigation privée) */ }
   if (!chosen) lang = pick(data);
   render();
-  if (data) pushInit();
+  if (data) { pushInit(); tripPoll(); }
 }
 lang = pick(null);
 load();

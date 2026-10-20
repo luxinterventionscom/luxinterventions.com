@@ -13,6 +13,7 @@ import { makePdf } from './pdfmini.js';
 import { scrollHintInit } from './scroll-hint.js';
 import { infoBox } from './nbien.js';
 import { pullRefreshInit } from './pull-refresh.js';
+import { tripView, tripFetch } from './trip.js';
 // tirer vers le bas en haut de la page : synchronise et recharge tout ce que l'écran montre
 pullRefreshInit({
   lang: () => getLang(),
@@ -27,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.168.0';
+const VERSION = '2.169.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -462,12 +463,63 @@ function equipeData(i) {
     ...(i.chefDevis ? { devis: devChefData(i) } : {}),
   };
 }
+// ── 🚗 Trajet de l'ouvrier : un jeton secret par intervention et par jour (aujourd'hui, demain), le même dans l'app de
+// l'ouvrier, celle du locataire, le portail et ici ; le serveur ne garde que l'heure d'arrivée estimée (aucune position)
+let tripSec = '', tripTimer = 0;
+async function tripSecret() {
+  if (tripSec) return tripSec;
+  let r = vault.get('reglages', 'trip');
+  if (!r || !r.k) {
+    const k = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
+    await vault.mutate((tx) => tx.put('reglages', { id: 'trip', k }), 'Trajets : clé créée');
+    r = vault.get('reglages', 'trip');
+  }
+  return (tripSec = r.k);
+}
+const tripTk = async (tid, d) => (await sha256Hex((await tripSecret()) + '|' + tid + '|' + d)).slice(0, 32);
+// interventions ponctuelles d'aujourd'hui et de demain avec un ouvrier (pas les ménages réguliers)
+const tripTasks = () => agenda(today(), addDays(today(), 1)).filter((x) => x.kind === 'tache' && x.t.intervenantId && !x.t.recur && x.t.statut !== 'fait');
+async function tripRegister() {
+  const items = [];
+  for (const x of tripTasks()) {
+    const l = x.t.locId ? vault.get('locataires', x.t.locId) : null;
+    const tk = await tripTk(x.t.id, x.d);
+    ui.tripTks[x.t.id + '|' + x.d] = tk;
+    items.push({ tk, to: l && l.espace && l.espace.on && l.espace.id ? [l.espace.id] : [], ptl: (x.t.ptl && x.t.ptl.tid) || '' });
+  }
+  if (!items.length) return;
+  const sig = await sha256Hex(today() + JSON.stringify(items));
+  try { if (localStorage.getItem('aresTripReg') === sig) return; } catch { /* stockage indisponible */ }
+  await vault.tripReg(items);
+  try { localStorage.setItem('aresTripReg', sig); } catch { /* stockage plein */ }
+}
+// état des trajets d'aujourd'hui (toutes les 30 s) → étiquettes du planning et cadres des fiches, sans redessiner l'écran
+async function tripPoll() {
+  if (!vault.unlocked || document.visibilityState !== 'visible') return;
+  try {
+    for (const x of tripTasks().filter((x) => x.d === today())) ui.tripTks[x.t.id + '|' + x.d] ||= await tripTk(x.t.id, x.d);
+    const tks = Object.entries(ui.tripTks).filter(([k]) => k.endsWith('|' + today())).map(([, tk]) => tk);
+    ui.trips = await tripFetch(vault.api.base.replace(/ares\/$/, ''), tks.slice(0, 60));
+  } catch { /* hors ligne */ }
+  tripPaint();
+}
+function tripPaint() {
+  for (const el of document.querySelectorAll('[data-trip-key]')) {
+    const tk = ui.tripTks[el.dataset.tripKey], h = tk ? tripView(ui.trips[tk], { lang: getLang(), kind: el.dataset.tripKind || 'box' }) : '';
+    if (el.innerHTML !== h) el.innerHTML = h;
+  }
+}
+const tripSlot = (tid, d, kind = 'box') => html`<span data-trip-key="${tid}|${d}" data-trip-kind="${kind}" style="${kind === 'box' ? 'display:block' : ''}"></span>`;
+
 const eqHashes = new Map();
 async function equipeSync(onlyId, loud) {
   if (!vault.unlocked) return true;
+  await tripRegister().catch(() => {});
   for (const i of vault.list('intervenants').filter((x) => x.espace && x.espace.on && x.espace.id && (!onlyId || x.id === onlyId))) {
     try {
       const data = equipeData(i);
+      // 🚗 jeton du trajet pour les interventions d'aujourd'hui / demain
+      for (const it of data.items) if ((it.d === today() || it.d === addDays(today(), 1)) && !data.tasks[it.tid].recur && (vault.get('taches', it.tid) || {}).statut !== 'fait') it.tk = await tripTk(it.tid, it.d);
       const h = await sha256Hex(JSON.stringify(data));
       let stored = eqHashes.get(i.id);
       try { stored = stored || localStorage.getItem('aresEq:' + i.espace.id); } catch {}
@@ -1281,6 +1333,9 @@ async function espaceSync(onlyId, loud) {
   for (const l of vault.list('locataires').filter((x) => x.espace && x.espace.on && x.espace.id && (!onlyId || x.id === onlyId))) {
     try {
       const data = espaceData(l);
+      // 🚗 l'ouvrier qui vient chez ce locataire aujourd'hui / demain : jeton pour suivre son arrivée
+      const tt = tripTasks().filter((x) => x.t.locId === l.id);
+      if (tt.length) data.trips = await Promise.all(tt.map(async (x) => ({ tk: await tripTk(x.t.id, x.d), d: x.d })));
       const h = await sha256Hex(JSON.stringify(data));
       let stored = espHashes.get(l.id);
       try { stored = stored || localStorage.getItem('aresEsp:' + l.espace.id); } catch {}
@@ -1921,6 +1976,7 @@ function dataYears() {
 
 // ───────────────────────── État de l'interface ─────────────────────────
 const ui = {
+  tripTks: {}, trips: {}, // 🚗 jetons des trajets (intervention|jour) et leur état
   route: 'dashboard',
   year: new Date().getFullYear(),
   immFilter: '',
@@ -2298,6 +2354,9 @@ function startSession() {
   appEl.hidden = false;
   lastActive = Date.now();
   clearInterval(idleTimer);
+  clearInterval(tripTimer);
+  tripTimer = setInterval(() => { tripPoll(); }, 30000); // 🚗 trajets en cours
+  setTimeout(tripPoll, 3000);
   idleTimer = setInterval(() => {
     if (!vault.unlocked) return;
     if (Date.now() - lastActive > lockMinutes() * 60000) lockNow('Verrouillé après inactivité.');
@@ -2548,6 +2607,7 @@ function renderView() {
   setHtml(view, VIEWS[ui.route]());
   enhanceFolds(view, '', false);
   updateBadge();
+  tripPaint();
   if (keepSearch != null) {
     const s = view.querySelector('[name=search]');
     if (s) { s.focus(); s.setSelectionRange(keepSearch, keepSearch); }
@@ -2642,7 +2702,7 @@ function tacheRow(t, x = {}) {
   return html`<div class="row">${t.statut === 'fait' ? '' : light(due)}
     <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="edit-tache" data-id="${t.id}">
       ${t.fini && t.statut !== 'fait' ? html`<span class="badge ok" style="display:table;margin-bottom:4px">✅ Fini — à clôturer</span>` : ''}<span class="title" style="display:block">${t.urgent && t.statut !== 'fait' && !t.fini ? html`<span class="badge bad">🔴 Urgent</span> ` : ''}${tacheIcon(t.type)} ${t.titre}</span>
-      <span class="meta" style="white-space:normal">${placeName(t)}${who ? ' · ' + who : ' · intervenant à choisir'} · ${when}${t.heure ? ` · 🕒 ${t.heure}${t.heureFin ? '–' + t.heureFin : ''}` : ''}${t.cout ? ' · ' + money(t.cout) : ''}</span>
+      <span class="meta" style="white-space:normal">${placeName(t)}${who ? ' · ' + who : ' · intervenant à choisir'} · ${when}${t.heure ? ` · 🕒 ${t.heure}${t.heureFin ? '–' + t.heureFin : ''}` : ''}${t.cout ? ' · ' + money(t.cout) : ''}${!t.recur && t.statut !== 'fait' && t.intervenantId && due === today() ? html` ${tripSlot(t.id, due, 'tag')}` : ''}</span>
     </button>
     ${!t.recur && t.statut !== 'fait' ? html`<button class="btn sm${t.fini ? ' cloture' : ''}" data-action="tache-done" data-id="${t.id}">${t.fini ? '🟢 Clôturer' : html`${icon('check')} Fait`}</button>` : t.statut === 'fait' ? html`<span class="badge ok">✓</span>` : ''}
   </div>`;
@@ -4363,6 +4423,7 @@ function renderSheet() {
   enhanceFolds(sheetEl.querySelector('.sheet-body'), 'sheet:' + s.kind + ':' + (s.tab || ''), true);
   if (sheetEl.querySelector('img[data-ptl-photo]')) setTimeout(ptlPhotos, 0);
   hydrateEdl();
+  tripPaint();
 }
 
 // Déchiffre les vignettes d'état des lieux après l'affichage (gardées en mémoire jusqu'au verrouillage)
@@ -4560,6 +4621,7 @@ const SHEETS = {
     return {
       title: `#${t.ref} · ${r.name || ''}`,
       body: html`<div class="chips" style="margin-bottom:10px"><span class="badge ${u[2] === 'red' ? 'danger' : u[2] === 'amber' ? 'warn' : ''}">${u[0]} ${u[1]}</span><span class="badge">${PTL_ST[t.status]}</span><span class="badge">${orgLogo(t.org_id)} ${r.org_name || ''}</span></div>
+        ${linked.filter((x) => x.intervenantId && x.statut !== 'fait').map((x) => tripSlot(x.id, today()))}
         <div class="note" style="margin-bottom:12px;white-space:pre-wrap"><b>${t.categorie || 'Intervention'}</b>\n${t.description}</div>
         <dl class="kv small" style="margin-bottom:12px">
           ${kvRow('Résidence', `${r.name || ''}${r.address ? ' — ' + r.address : ''}`)}
@@ -5088,7 +5150,7 @@ const SHEETS = {
     const ints = vault.list('intervenants').filter((i) => !i.archive || i.id === t.intervenantId).sort((a, b) => fits(b) - fits(a) || intervFull(a).localeCompare(intervFull(b)));
     return {
       title: id ? "Modifier l'intervention" : 'Nouvelle intervention',
-      body: html`<form id="f" data-form="tache" class="fields">
+      body: html`${id && !t.recur && t.statut !== 'fait' && t.intervenantId ? tripSlot(t.id, today()) : ''}<form id="f" data-form="tache" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
         <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${(t.type === 'entretien' ? 'reparation' : t.type) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}

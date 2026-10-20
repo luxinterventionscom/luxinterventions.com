@@ -133,12 +133,12 @@ const FT = {
 };
 // 🔒 Protection des données (RGPD) de l'app de l'équipe : responsable = la société (ARES INVEST S.A., nom commercial LuxInterventions)
 const WRGPD = {
-  fr: { t: 'Protection des données (RGPD)', close: 'Fermer', p: (n) => [`Responsable du traitement : ${n} (nom commercial LuxInterventions).`, 'Données traitées : votre identité et vos coordonnées, votre n° CCSS, vos horaires et lieux de travail, vos arrivées et départs, vos rapports et photos de chantier, vos absences (dates et certificat), votre signature et, pour les collaborateurs occasionnels, vos coordonnées bancaires.', 'Pourquoi : organiser le travail, vous payer et respecter nos obligations légales (droit du travail, sécurité sociale, comptabilité). Base légale : votre contrat et ces obligations.', 'Vos données sont chiffrées : ni l’hébergeur ni personne d’autre ne peut les lire, seule la direction y a accès.', 'Durée : pendant toute la collaboration, puis la durée imposée par la loi (10 ans pour les pièces comptables et de salaire) ; le reste est effacé.', 'Vos droits : accès, rectification, effacement et opposition, en demandant à la direction (📞 Appeler la centrale). Réclamation possible auprès de la CNPD (cnpd.public.lu). Aucun cookie publicitaire, aucun suivi.'] },
-  it: { t: 'Protezione dei dati (GDPR)', close: 'Chiudi', p: (n) => [`Titolare del trattamento: ${n} (nome commerciale LuxInterventions).`, 'Dati trattati: identità e recapiti, numero CCSS, orari e luoghi di lavoro, arrivi e partenze, rapporti e foto dei cantieri, assenze (date e certificato), firma e, per i collaboratori occasionali, le coordinate bancarie.', 'Perché: organizzare il lavoro, pagarti e rispettare i nostri obblighi di legge (lavoro, previdenza sociale, contabilità). Base giuridica: il tuo contratto e questi obblighi.', 'I tuoi dati sono cifrati: né l’hosting né nessun altro può leggerli, solo la direzione vi ha accesso.', 'Durata: per tutta la collaborazione, poi per il tempo imposto dalla legge (10 anni per i documenti contabili e di paga); il resto viene cancellato.', 'I tuoi diritti: accesso, rettifica, cancellazione e opposizione, chiedendo alla direzione (📞 Chiama la centrale). Reclamo possibile presso la CNPD (cnpd.public.lu). Nessun cookie pubblicitario, nessun tracciamento.'] },
-  pt: { t: 'Proteção de dados (RGPD)', close: 'Fechar', p: (n) => [`Responsável pelo tratamento: ${n} (nome comercial LuxInterventions).`, 'Dados tratados: identidade e contactos, n.º CCSS, horários e locais de trabalho, chegadas e saídas, relatórios e fotos das obras, ausências (datas e atestado), assinatura e, para colaboradores ocasionais, dados bancários.', 'Porquê: organizar o trabalho, pagar-lhe e cumprir as nossas obrigações legais (trabalho, segurança social, contabilidade). Base legal: o seu contrato e estas obrigações.', 'Os seus dados são cifrados: nem o alojamento nem mais ninguém os pode ler, só a direção tem acesso.', 'Duração: durante toda a colaboração e depois o tempo imposto pela lei (10 anos para documentos contabilísticos e salariais); o resto é apagado.', 'Os seus direitos: acesso, retificação, apagamento e oposição, pedindo à direção (📞 Ligar à central). Reclamação possível junto da CNPD (cnpd.public.lu). Sem cookies publicitários, sem rastreio.'] },
-  de: { t: 'Datenschutz (DSGVO)', close: 'Schließen', p: (n) => [`Verantwortlicher: ${n} (Handelsname LuxInterventions).`, 'Verarbeitete Daten: Identität und Kontaktdaten, CCSS-Nummer, Arbeitszeiten und -orte, Ankunft und Abfahrt, Berichte und Baustellenfotos, Abwesenheiten (Daten und Attest), Unterschrift und bei Gelegenheitsmitarbeitern die Bankverbindung.', 'Wozu: die Arbeit organisieren, Sie bezahlen und unsere gesetzlichen Pflichten erfüllen (Arbeitsrecht, Sozialversicherung, Buchhaltung). Rechtsgrundlage: Ihr Vertrag und diese Pflichten.', 'Ihre Daten sind verschlüsselt: weder der Hoster noch sonst jemand kann sie lesen, nur die Leitung hat Zugriff.', 'Dauer: während der gesamten Zusammenarbeit, danach die gesetzliche Frist (10 Jahre für Buchhaltungs- und Lohnunterlagen); der Rest wird gelöscht.', 'Ihre Rechte: Auskunft, Berichtigung, Löschung und Widerspruch bei der Leitung (📞 Zentrale anrufen). Beschwerde möglich bei der CNPD (cnpd.public.lu). Keine Werbe-Cookies, kein Tracking.'] },
-  en: { t: 'Data protection (GDPR)', close: 'Close', p: (n) => [`Data controller: ${n} (trade name LuxInterventions).`, 'Data processed: your identity and contact details, CCSS number, working hours and places, arrivals and departures, job reports and photos, absences (dates and certificate), your signature and, for occasional workers, bank details.', 'Why: to organise the work, pay you and meet our legal obligations (labour law, social security, accounting). Legal basis: your contract and these obligations.', 'Your data is encrypted: neither the host nor anyone else can read it, only the management has access.', 'How long: for the whole collaboration, then the period required by law (10 years for accounting and payroll records); the rest is deleted.', 'Your rights: access, correction, erasure and objection, by asking the management (📞 Call the office). You may complain to the CNPD (cnpd.public.lu). No advertising cookies, no tracking.'] },
-  es: { t: 'Protección de datos (RGPD)', close: 'Cerrar', p: (n) => [`Responsable del tratamiento: ${n} (nombre comercial LuxInterventions).`, 'Datos tratados: identidad y contacto, n.º CCSS, horarios y lugares de trabajo, llegadas y salidas, informes y fotos de las obras, ausencias (fechas y certificado), firma y, para colaboradores ocasionales, datos bancarios.', 'Por qué: organizar el trabajo, pagarle y cumplir nuestras obligaciones legales (laboral, seguridad social, contabilidad). Base legal: su contrato y estas obligaciones.', 'Sus datos están cifrados: ni el alojamiento ni nadie más puede leerlos, solo la dirección tiene acceso.', 'Duración: durante toda la colaboración y después el plazo que impone la ley (10 años para documentos contables y de nómina); el resto se borra.', 'Sus derechos: acceso, rectificación, supresión y oposición, pidiéndolo a la dirección (📞 Llamar a la central). Puede reclamar ante la CNPD (cnpd.public.lu). Sin cookies publicitarias, sin seguimiento.'] },
+  fr: { t: 'Protection des données (RGPD)', close: 'Fermer', p: (n) => [`Responsable du traitement : ${n} (nom commercial LuxInterventions).`, 'Données traitées : votre identité et vos coordonnées, votre n° CCSS, vos horaires et lieux de travail, vos arrivées et départs, vos rapports et photos de chantier, vos absences (dates et certificat), votre signature et, pour les collaborateurs occasionnels, vos coordonnées bancaires.', 'Pourquoi : organiser le travail, vous payer et respecter nos obligations légales (droit du travail, sécurité sociale, comptabilité). Base légale : votre contrat et ces obligations.', 'Vos données sont chiffrées : ni l’hébergeur ni personne d’autre ne peut les lire, seule la direction y a accès.', 'Durée : pendant toute la collaboration, puis la durée imposée par la loi (10 ans pour les pièces comptables et de salaire) ; le reste est effacé.', '🚗 « Je suis en route » : votre position reste sur votre téléphone (pour calculer l’heure d’arrivée) ; seule l’heure d’arrivée estimée est envoyée au client et à la centrale, puis effacée après 36 h.', 'Vos droits : accès, rectification, effacement et opposition, en demandant à la direction (📞 Appeler la centrale). Réclamation possible auprès de la CNPD (cnpd.public.lu). Aucun cookie publicitaire, aucun suivi.'] },
+  it: { t: 'Protezione dei dati (GDPR)', close: 'Chiudi', p: (n) => [`Titolare del trattamento: ${n} (nome commerciale LuxInterventions).`, 'Dati trattati: identità e recapiti, numero CCSS, orari e luoghi di lavoro, arrivi e partenze, rapporti e foto dei cantieri, assenze (date e certificato), firma e, per i collaboratori occasionali, le coordinate bancarie.', 'Perché: organizzare il lavoro, pagarti e rispettare i nostri obblighi di legge (lavoro, previdenza sociale, contabilità). Base giuridica: il tuo contratto e questi obblighi.', 'I tuoi dati sono cifrati: né l’hosting né nessun altro può leggerli, solo la direzione vi ha accesso.', 'Durata: per tutta la collaborazione, poi per il tempo imposto dalla legge (10 anni per i documenti contabili e di paga); il resto viene cancellato.', '🚗 «Sono in viaggio»: la tua posizione resta sul tuo telefono (per calcolare l’ora di arrivo); solo l’ora di arrivo stimata va al cliente e alla centrale, poi viene cancellata dopo 36 h.', 'I tuoi diritti: accesso, rettifica, cancellazione e opposizione, chiedendo alla direzione (📞 Chiama la centrale). Reclamo possibile presso la CNPD (cnpd.public.lu). Nessun cookie pubblicitario, nessun tracciamento.'] },
+  pt: { t: 'Proteção de dados (RGPD)', close: 'Fechar', p: (n) => [`Responsável pelo tratamento: ${n} (nome comercial LuxInterventions).`, 'Dados tratados: identidade e contactos, n.º CCSS, horários e locais de trabalho, chegadas e saídas, relatórios e fotos das obras, ausências (datas e atestado), assinatura e, para colaboradores ocasionais, dados bancários.', 'Porquê: organizar o trabalho, pagar-lhe e cumprir as nossas obrigações legais (trabalho, segurança social, contabilidade). Base legal: o seu contrato e estas obrigações.', 'Os seus dados são cifrados: nem o alojamento nem mais ninguém os pode ler, só a direção tem acesso.', 'Duração: durante toda a colaboração e depois o tempo imposto pela lei (10 anos para documentos contabilísticos e salariais); o resto é apagado.', '🚗 «Estou a caminho»: a sua posição fica no seu telefone (para calcular a hora de chegada); só a hora de chegada estimada é enviada ao cliente e à central, e é apagada após 36 h.', 'Os seus direitos: acesso, retificação, apagamento e oposição, pedindo à direção (📞 Ligar à central). Reclamação possível junto da CNPD (cnpd.public.lu). Sem cookies publicitários, sem rastreio.'] },
+  de: { t: 'Datenschutz (DSGVO)', close: 'Schließen', p: (n) => [`Verantwortlicher: ${n} (Handelsname LuxInterventions).`, 'Verarbeitete Daten: Identität und Kontaktdaten, CCSS-Nummer, Arbeitszeiten und -orte, Ankunft und Abfahrt, Berichte und Baustellenfotos, Abwesenheiten (Daten und Attest), Unterschrift und bei Gelegenheitsmitarbeitern die Bankverbindung.', 'Wozu: die Arbeit organisieren, Sie bezahlen und unsere gesetzlichen Pflichten erfüllen (Arbeitsrecht, Sozialversicherung, Buchhaltung). Rechtsgrundlage: Ihr Vertrag und diese Pflichten.', 'Ihre Daten sind verschlüsselt: weder der Hoster noch sonst jemand kann sie lesen, nur die Leitung hat Zugriff.', 'Dauer: während der gesamten Zusammenarbeit, danach die gesetzliche Frist (10 Jahre für Buchhaltungs- und Lohnunterlagen); der Rest wird gelöscht.', '🚗 «Ich bin unterwegs»: Ihr Standort bleibt auf Ihrem Telefon (zur Berechnung der Ankunftszeit); nur die geschätzte Ankunftszeit geht an den Kunden und die Zentrale und wird nach 36 h gelöscht.', 'Ihre Rechte: Auskunft, Berichtigung, Löschung und Widerspruch bei der Leitung (📞 Zentrale anrufen). Beschwerde möglich bei der CNPD (cnpd.public.lu). Keine Werbe-Cookies, kein Tracking.'] },
+  en: { t: 'Data protection (GDPR)', close: 'Close', p: (n) => [`Data controller: ${n} (trade name LuxInterventions).`, 'Data processed: your identity and contact details, CCSS number, working hours and places, arrivals and departures, job reports and photos, absences (dates and certificate), your signature and, for occasional workers, bank details.', 'Why: to organise the work, pay you and meet our legal obligations (labour law, social security, accounting). Legal basis: your contract and these obligations.', 'Your data is encrypted: neither the host nor anyone else can read it, only the management has access.', 'How long: for the whole collaboration, then the period required by law (10 years for accounting and payroll records); the rest is deleted.', '🚗 «I’m on my way»: your location stays on your phone (to work out the arrival time); only the estimated arrival time is sent to the client and the office, then deleted after 36 h.', 'Your rights: access, correction, erasure and objection, by asking the management (📞 Call the office). You may complain to the CNPD (cnpd.public.lu). No advertising cookies, no tracking.'] },
+  es: { t: 'Protección de datos (RGPD)', close: 'Cerrar', p: (n) => [`Responsable del tratamiento: ${n} (nombre comercial LuxInterventions).`, 'Datos tratados: identidad y contacto, n.º CCSS, horarios y lugares de trabajo, llegadas y salidas, informes y fotos de las obras, ausencias (fechas y certificado), firma y, para colaboradores ocasionales, datos bancarios.', 'Por qué: organizar el trabajo, pagarle y cumplir nuestras obligaciones legales (laboral, seguridad social, contabilidad). Base legal: su contrato y estas obligaciones.', 'Sus datos están cifrados: ni el alojamiento ni nadie más puede leerlos, solo la dirección tiene acceso.', 'Duración: durante toda la colaboración y después el plazo que impone la ley (10 años para documentos contables y de nómina); el resto se borra.', '🚗 «Voy de camino»: su ubicación se queda en su teléfono (para calcular la hora de llegada); solo la hora de llegada estimada se envía al cliente y a la central, y se borra a las 36 h.', 'Sus derechos: acceso, rectificación, supresión y oposición, pidiéndolo a la dirección (📞 Llamar a la central). Puede reclamar ante la CNPD (cnpd.public.lu). Sin cookies publicitarias, sin seguimiento.'] },
 };
 const IA_BTN = { fr: '▶ Voir comment (animation)', it: '▶ Guarda come (animazione)', de: '▶ So geht’s (Animation)', pt: '▶ Ver como (animação)', en: '▶ See how (animation)', es: '▶ Ver cómo (animación)' };
 const iaBtn = () => (matchMedia('(display-mode: standalone)').matches || navigator.standalone ? '' : `<p style="text-align:center;margin:-4px 0 12px"><button class="btn sm sec" data-ianim="1">${esc(IA_BTN[lang] || IA_BTN.fr)}</button></p>`);
@@ -353,6 +353,54 @@ function stopTimes(tid, d) {
   return { arr: hOfE(a), dep: hOfE(z), end: z || null };
 }
 const nowHM = () => new Date().toTimeString().slice(0, 5);
+// ── 🚗 « Je suis en route » : l'app calcule l'heure d'arrivée (distance à vol d'oiseau × 1,4, ~25 km/h en ville) ou la personne
+// la choisit ; seule l'heure part au serveur, jamais la position. Le lieu est appris (sur ce téléphone) la 1re fois qu'on y pointe son arrivée.
+const TRIPT = {
+  fr: { go: '🚗 Je suis en route', q: 'Arrivée dans combien de minutes ?', on: '🚗 En route — arrivée prévue vers {h}', cancel: 'Annuler', hint: 'Le client voit le compte à rebours, pas votre position.' },
+  it: { go: '🚗 Sono in viaggio', q: 'Arrivo tra quanti minuti?', on: '🚗 In viaggio — arrivo previsto verso le {h}', cancel: 'Annulla', hint: 'Il cliente vede il conto alla rovescia, non la tua posizione.' },
+  de: { go: '🚗 Ich bin unterwegs', q: 'Ankunft in wie vielen Minuten?', on: '🚗 Unterwegs — Ankunft gegen {h}', cancel: 'Abbrechen', hint: 'Der Kunde sieht den Countdown, nicht Ihren Standort.' },
+  en: { go: '🚗 I’m on my way', q: 'Arriving in how many minutes?', on: '🚗 On the way — arriving around {h}', cancel: 'Cancel', hint: 'The client sees the countdown, not your location.' },
+  pt: { go: '🚗 Estou a caminho', q: 'Chega dentro de quantos minutos?', on: '🚗 A caminho — chegada prevista por volta das {h}', cancel: 'Cancelar', hint: 'O cliente vê a contagem decrescente, não a sua posição.' },
+  es: { go: '🚗 Voy de camino', q: '¿Llegas en cuántos minutos?', on: '🚗 De camino — llegada prevista hacia las {h}', cancel: 'Cancelar', hint: 'El cliente ve la cuenta atrás, no tu ubicación.' },
+};
+const TRP = () => TRIPT[lang] || TRIPT.fr;
+const tripLs = (tk, v) => { const k = 'eqTrip:' + tk; try { if (v === undefined) return JSON.parse(localStorage.getItem(k) || 'null'); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch { /* stockage indisponible */ } return null; };
+const geoGet = (adr) => { try { return JSON.parse(localStorage.getItem('eqGeo:' + String(adr).slice(0, 160)) || 'null'); } catch { return null; } };
+const geoSet = (adr, c) => { try { localStorage.setItem('eqGeo:' + String(adr).slice(0, 160), JSON.stringify(c)); } catch { /* stockage plein */ } };
+const hereNow = () => new Promise((ok) => { if (!navigator.geolocation) return ok(null); navigator.geolocation.getCurrentPosition((p) => ok([p.coords.latitude, p.coords.longitude]), () => ok(null), { enableHighAccuracy: false, timeout: 8000, maximumAge: 60000 }); });
+const kmBetween = ([a, b], [c, d]) => { const r = Math.PI / 180, x = Math.sin(((c - a) * r) / 2) ** 2 + Math.cos(a * r) * Math.cos(c * r) * Math.sin(((d - b) * r) / 2) ** 2; return 12742 * Math.asin(Math.sqrt(x)); };
+const etaFrom = (km) => Date.now() + Math.max(2, Math.round(((km * 1.4) / 25) * 60) + 2) * 60000;
+const tripSend = (tk, st, eta) => fetch(`${API}/api/trip/${tk}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ st, eta, n: (data && data.prenom) || '' }) }).catch(() => {});
+let tripAsk = '', tripTimer = 0;
+async function tripGo(tk, adr, minutes) {
+  let eta = minutes ? Date.now() + minutes * 60000 : 0;
+  if (!eta) { const dest = geoGet(adr), me = dest ? await hereNow() : null; if (dest && me) eta = etaFrom(kmBetween(me, dest)); }
+  if (!eta) { tripAsk = tk; return render(); } // lieu pas encore connu : la personne choisit les minutes
+  tripAsk = ''; tripLs(tk, { st: 'go', eta, adr }); render();
+  await tripSend(tk, 'go', eta); tripWatch();
+}
+// pendant le trajet, app ouverte : l'heure se recalcule toutes les minutes (si le lieu est connu)
+function tripWatch() {
+  clearInterval(tripTimer);
+  tripTimer = setInterval(async () => {
+    if (document.visibilityState !== 'visible' || !data) return;
+    const live = data.items.filter((it) => it.tk && (tripLs(it.tk) || {}).st === 'go');
+    if (!live.length) return clearInterval(tripTimer);
+    for (const it of live) {
+      const tr = tripLs(it.tk), dest = geoGet(tr.adr), me = dest ? await hereNow() : null;
+      if (!me) continue;
+      const eta = etaFrom(kmBetween(me, dest));
+      tripLs(it.tk, { ...tr, eta }); await tripSend(it.tk, 'go', eta);
+    }
+    if (!form && !devEd && !(document.activeElement && document.activeElement.matches('input, textarea, select'))) render();
+  }, 60000);
+}
+function tripUi(it, x) {
+  const r = TRP(), tr = tripLs(it.tk);
+  if (tr && tr.st === 'go') return `<div class="trip-me"><b>${esc(r.on.replace('{h}', new Date(tr.eta).toLocaleTimeString(T().loc, { hour: '2-digit', minute: '2-digit' })))}</b> <button class="btn sm sec" data-trip-stop="${esc(it.tk)}">${esc(r.cancel)}</button></div>`;
+  if (tripAsk === it.tk) return `<div class="trip-me"><b>${esc(r.q)}</b><div class="btns" style="margin-top:6px">${[10, 20, 30, 45, 60].map((m) => `<button class="btn sm" data-trip-min="${m}" data-trip-go="${esc(it.tk)}" data-adr="${esc(x.adresse)}">${m} min</button>`).join('')}</div></div>`;
+  return `<button class="btn block trip-go" data-trip-go="${esc(it.tk)}" data-adr="${esc(x.adresse)}">${esc(r.go)}</button><p class="meta" style="margin:4px 0 8px">${esc(r.hint)}</p>`;
+}
 function stopCard(it, cur) {
   const t = T(), x = data.tasks[it.tid];
   if (!x) return '';
@@ -369,7 +417,7 @@ function stopCard(it, cur) {
   return `<div class="stop${cur ? ' cur' : ''}${ended ? ' done' : ''}${x.urgent && !ended ? ' urgent' : ''}">${!tm.arr && !ended ? refusTop(it) : ''}
     <div class="tt">${cur ? '<span class="live" aria-hidden="true"></span>' : ''}${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${cur ? ` <span class="tag now">${esc(tm.arr ? t.s.now : t.s.next)}</span>` : ''}</div>
     <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}</div>
-    ${ended ? '' : infoHtml(x, T())}<div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
+    ${ended ? '' : infoHtml(x, T())}${it.tk && it.d === today && !tm.arr && !ended && !refused ? tripUi(it, x) : ''}<div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
     ${act}</div>`;
 }
 // Photos avant / après une intervention : 6 + 6, avec l'appareil photo ou la galerie
@@ -664,6 +712,10 @@ app.addEventListener('click', async (e) => {
   const pdl = e.target.closest('[data-pb-del]');
   if (pdl) { const [x] = pbPhotos.splice(+pdl.dataset.pbDel, 1); if (x) URL.revokeObjectURL(x.url); return render(); }
   if (e.target.closest('[data-pubback]')) { place = ''; render(); scrollTo({ top: 0, behavior: 'smooth' }); return; }
+  const tg = e.target.closest('[data-trip-go]');
+  if (tg) { tg.disabled = true; return tripGo(tg.dataset.tripGo, tg.dataset.adr, +tg.dataset.tripMin || 0); }
+  const ts = e.target.closest('[data-trip-stop]');
+  if (ts) { tripLs(ts.dataset.tripStop, null); tripSend(ts.dataset.tripStop, 'stop'); return render(); }
   const pb = e.target.closest('[data-place]');
   if (pb) { place = place === pb.dataset.place ? '' : pb.dataset.place; render(); if (place) scrollTo({ top: 0, behavior: 'smooth' }); return; }
   if (e.target.closest('[data-cancel]')) { form = null; return render(); }
@@ -699,6 +751,11 @@ app.addEventListener('submit', async (e) => {
     if (!/^\d{2}:\d{2}$/.test(v)) return;
     flash = '';
     await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: f.dataset.stop, note: '', h: v, photos: [], ...(f.dataset.stop === 'fait' ? qtyOf(f) : {}), at: new Date().toISOString() });
+    if (f.dataset.stop === 'encours') {
+      const it = data.items.find((x) => x.tid === f.dataset.tid && x.d === f.dataset.d), x = data.tasks[f.dataset.tid];
+      if (it && it.tk && tripLs(it.tk)) { tripLs(it.tk, null); tripSend(it.tk, 'here'); }
+      if (x && x.adresse && !geoGet(x.adresse)) hereNow().then((c) => c && geoSet(x.adresse, c));
+    }
     flash = t.sent;
     render();
     if (f.dataset.stop === 'fait') document.getElementById('presCard')?.scrollIntoView({ block: 'start' });
@@ -1176,7 +1233,7 @@ async function load() {
   if (data && data.devis) dvClean();
   render();
   flush();
-  if (data) { pushInit(); devFlush(); }
+  if (data) { pushInit(); devFlush(); if (data.items.some((it) => it.tk && (tripLs(it.tk) || {}).st === 'go')) tripWatch(); }
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && id && key && !form && !devEd) load(); });
 // tirer vers le bas = recharger (pas pendant un formulaire en cours) ; hors ligne : on garde ce qu'on avait

@@ -11,11 +11,12 @@ import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 import { scrollHintInit } from '/ares/scroll-hint.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
+import { tripView, tripFetch } from '/ares/trip.js';
 scrollHintInit();
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.27.0';
+const VERSION = '1.28.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -465,6 +466,19 @@ function startPolling() {
 function stopPolling() { clearInterval(pollTimer); }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && state.me) refresh(true); });
 
+// 🚗 l'ouvrier en route : étiquette dans la liste des demandes, cadre avec compte à rebours dans la demande (relu toutes les 30 s)
+let ptlTrips = {};
+function tripPaint() {
+  for (const el of document.querySelectorAll('[data-trip-tk]')) { const h = tripView(ptlTrips[el.dataset.tripTk], { lang: LANG, kind: el.dataset.tripKind }); if (el.innerHTML !== h) el.innerHTML = h; }
+}
+async function tripPoll() {
+  if (!state.me || state.demo || document.visibilityState !== 'visible') return;
+  const tks = [...new Set([...document.querySelectorAll('[data-trip-tk]')].map((el) => el.dataset.tripTk))];
+  if (!tks.length) return;
+  try { ptlTrips = await tripFetch(API.replace(/portail\/$/, ''), tks); } catch { /* hors ligne */ }
+  tripPaint();
+}
+setInterval(tripPoll, 30000);
 // tirer vers le bas en haut de la page = Actualiser
 pullRefreshInit({ lang: () => LANG, refresh: () => (state.me ? refresh(true) : Promise.resolve()) });
 async function refresh(silent) {
@@ -599,6 +613,7 @@ function renderView() {
   const keep = a && a.dataset && a.dataset.input === 'q' ? a.selectionStart : null;
   setHtml(view, VIEWS[state.route]());
   if (!state.demo) pubSeen(view);
+  tripPaint();
   if (keep != null) { const s = view.querySelector('[data-input=q]'); if (s) { s.focus(); s.setSelectionRange(keep, keep); } }
 }
 
@@ -622,6 +637,7 @@ function ticketRow(t) {
         ${isAdmin() ? html`<span>· ${t.org_name}</span>` : ''}
         ${t.status === 'planifiee' && t.planned_at ? html`<span>· ${fmtPlanned(t.planned_at)}</span>` : html`<span>· ${ago(t.status === 'recue' ? t.created_at : t.updated_at)}</span>`}
         ${t.photos ? html`<span>· ${icon('camera')}${t.photos}</span>` : ''}
+        ${t.trip && t.status !== 'terminee' && t.status !== 'annulee' ? html`<span data-trip-tk="${t.trip}" data-trip-kind="tag"></span>` : ''}
       </span>
     </span>
     ${t.urgence === 'urgent' && t.status !== 'terminee' && t.status !== 'annulee' ? html`<span class="badge bad">Urgent</span>` : ''}
@@ -1530,6 +1546,7 @@ const SHEETS = {
           : t.status === 'terminee' && !isAdmin() ? html`<div class="card eval-cta" style="margin-bottom:12px"><div><b>Votre avis compte</b><div class="small muted">Évaluez cette intervention en 30 secondes : rapidité, compétence, courtoisie, propreté.</div></div>
             <button class="btn primary" data-action="t-eval" data-id="${t.id}">⭐ Évaluer l’intervention</button></div>` : ''}
         ${d.ticket.inv_no ? html`<div class="alert ${d.ticket.inv_paid ? 'ok' : d.ticket.inv_cont ? 'bad cont-blink-box' : 'info'}" style="margin:0 0 12px;align-items:center">🧾<div style="flex:1"><b>Facture ${d.ticket.inv_no}</b> · ${eurP(d.ticket.inv_ttc)} TTC<br><span class="small">${d.ticket.inv_paid ? '✅ Payée' : d.ticket.inv_cont ? '⚠️ CONTENTIEUX — impayée' : '⏳ À payer'} · émise le ${new Date(d.ticket.inv_date).toLocaleDateString(LOC)}</span></div><button class="btn sm" data-action="inv-dl" data-id="${d.ticket.id}" data-no="${d.ticket.inv_no}">⬇️ PDF</button></div>` : ''}
+        ${t.trip && open ? html`<div data-trip-tk="${t.trip}" data-trip-kind="box"></div>` : ''}
         <div class="section-label">Suivi</div>
         <div class="timeline">${d.events.map((e) => html`<div class="tl ${e.kind} ${e.user_role === 'admin' ? 'staff' : ''}">
           <div class="tl-head"><b>${evLabel(e)}</b> <span class="muted">· ${e.user_name || '—'}${e.user_role === 'admin' ? ' (LuxInterventions)' : ''} · ${fmtDateTime(e.created_at)}</span></div>
@@ -1547,7 +1564,7 @@ const SHEETS = {
           </div>
         </form>
         <button class="btn sm" style="margin-top:8px" data-action="open-ticket" data-id="${t.id}">🔄 Actualiser les messages</button>`,
-      after: () => sheetEl.querySelectorAll('img[data-photo]').forEach(loadPhotoInto),
+      after: () => { sheetEl.querySelectorAll('img[data-photo]').forEach(loadPhotoInto); tripPoll(); },
     };
   },
 

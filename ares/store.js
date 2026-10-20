@@ -683,6 +683,8 @@ export class Vault {
   biensPhoto(id, n, bytes) { return this.call(`biens/${id}/p${n}.jpg`, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: bytes }); }
   pubsPortail(items, offers = true, contact = null) { return this.call('pubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, offers, contact }) }); }
   espNotify(id) { return this.call('espace/' + id + '/notify', { method: 'POST' }); }
+  // 🚗 trajets du jour : qui prévenir et quelle demande de gérance
+  tripReg(items) { return this.call('trip', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items }) }); }
   async inboxList() { return (await (await this.call('inbox')).json()).items || []; }
   async inboxGet(name) { return new Uint8Array(await (await this.call('inbox/' + name)).arrayBuffer()); }
   inboxDel(name) { return this.call('inbox/' + name, { method: 'DELETE' }); }
