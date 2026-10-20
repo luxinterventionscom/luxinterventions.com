@@ -12,11 +12,22 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js'
 import { makePdf } from './pdfmini.js';
 import { scrollHintInit } from './scroll-hint.js';
 import { infoBox } from './nbien.js';
+import { pullRefreshInit } from './pull-refresh.js';
+// tirer vers le bas en haut de la page : synchronise et recharge tout ce que l'écran montre
+pullRefreshInit({
+  lang: () => getLang(),
+  refresh: async () => {
+    if (!vault.unlocked) return;
+    await vault.sync();
+    await Promise.all([ptlWatch(), inboxSync(), chatPoll(), toolsLoad(true), ui.route === 'gerances' ? ptlLoad() : 0].map((p) => Promise.resolve(p).catch(() => {})));
+    renderView();
+  },
+});
 scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.167.0';
+const VERSION = '2.168.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
