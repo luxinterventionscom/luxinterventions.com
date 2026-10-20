@@ -8,7 +8,7 @@ import { openJson, sealJson, openBytes, sealForOwner, codeHash, unwrapWithCode }
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
-import { nbienInit, nbienBanner, colorLegend } from '/ares/nbien.js';
+import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 // Accès : lien direct (#id.clé) ou code personnel saisi une fois ; mémorisé sur ce téléphone
 const ACC = 'espAccess';
@@ -1083,7 +1083,7 @@ function render() {
     out.push(`<div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><button class="link-rgpd" data-rgpd="1">${esc(t.rgpdT)}</button><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn sec sm" data-logout="1">🚪 ${esc(ft.out)}</button>${d.societe.tel ? `<a class="btn sm" href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">📞 ${esc(ft.call)}</a><span class="meta">${esc(d.societe.nom)}</span>` : ''}</div></div>`);
   }
   { const low = slot('bas'); if (low) out.push(adBox(low, t, d)); }
-  out.push(colorLegend());
+  out.push(infoBox());
   // version de l'app de gestion qui a publié ces données (aide au dépannage)
   out.push(`<p class="meta" style="text-align:center;font-size:11px;margin:8px 0 0">NOBIS · ${esc(d.gv ? 'v' + d.gv : 'v < 2.57')}</p>`);
   out.push(TICKER);

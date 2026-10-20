@@ -79,14 +79,6 @@ const CSS = `.mk{border:2px solid var(--mk)!important}
 .nb-desc{white-space:pre-line;font-size:14px;margin:6px 0}
 .nb-ct{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;font-size:13px}
 .nb-ct a{display:inline-block;padding:8px 12px;border-radius:10px;background:#0077BE;color:#fff;text-decoration:none;font-weight:700}
-.nb-leg{margin:18px 0 8px;text-align:center;position:relative}
-.nb-bar{display:inline-flex;gap:5px;align-items:center;padding:6px 10px;border-radius:999px;background:var(--card,var(--surface,#fff));border:1px solid var(--line,var(--border,#e5e2da))}
-.nb-bar button{width:22px;height:6px;border:0;border-radius:3px;padding:0;cursor:pointer}
-.nb-bar button[aria-pressed=true]:not(.nb-lt){height:10px;outline:2px solid currentColor;outline-offset:1px}
-.nb-bar .nb-lt[aria-pressed=true]{text-decoration:underline;opacity:1}
-.nb-bar .nb-lt{border:0;background:none;font:inherit;font-size:12px;font-weight:700;opacity:.75;cursor:pointer;width:auto;height:auto;margin-left:4px;color:inherit}
-.nb-tip{margin:8px auto 0;max-width:340px;padding:8px 12px;border-radius:12px;font-size:13px;background:var(--card,var(--surface,#fff));border:1px solid var(--line,var(--border,#e5e2da));box-shadow:0 6px 20px rgba(0,0,0,.12);text-align:left}
-.nb-tip p{margin:4px 0;display:flex;gap:8px;align-items:baseline}.nb-tip i{flex:none;width:18px;height:6px;border-radius:3px;display:inline-block}
 @media (prefers-reduced-motion:reduce){.nb-ban.blink{animation:none}}`;
 
 async function load() {
@@ -148,21 +140,6 @@ function paint() {
 
 // La bannière (HTML) — à placer où l'on veut ; elle se remplit toute seule.
 export function nbienBanner() { setTimeout(() => (items ? paint() : load()), 0); return `<div data-nb-slot>${banHtml()}</div>`; }
-// Légende des couleurs : petites lignes colorées ; un toucher sur une couleur explique ce qu'elle veut dire
-export function colorLegend() {
-  const w = tx();
-  return `<div class="nb-leg"><div class="nb-bar">${PALETTE.map(([k, c]) => `<button type="button" data-nb-leg="${k}" style="background:${c};color:${c}" aria-pressed="false" title="${esc(w.L[k][0])}" aria-label="${esc(w.L[k][0])}"></button>`).join('')}<button type="button" class="nb-lt" data-nb-leg="*">ℹ️ ${esc(w.leg)}</button></div><div class="nb-tip" hidden></div></div>`;
-}
-function legTip(btn) {
-  const w = tx(), box = btn.closest('.nb-leg'), tip = box.querySelector('.nb-tip'), k = btn.dataset.nbLeg;
-  const was = btn.getAttribute('aria-pressed') === 'true';
-  box.querySelectorAll('[data-nb-leg]').forEach((b) => b.setAttribute('aria-pressed', 'false'));
-  if (was) { tip.hidden = true; return; }
-  btn.setAttribute('aria-pressed', 'true');
-  const row = ([kk, c]) => `<p><i style="background:${c}"></i><span><b>${esc(w.L[kk][0])}</b> — ${esc(w.L[kk][1])}</span></p>`;
-  tip.innerHTML = k === '*' ? `<b>${esc(w.legT)}</b>${PALETTE.map(row).join('')}<p style="margin-top:8px">${esc(w.sem)}</p>` : row(PALETTE.find((p) => p[0] === k));
-  tip.hidden = false;
-}
 // api : adresse du Worker ; app : préfixe de stockage ('esp', 'eq', 'ptl') ; lang : fonction
 export function nbienInit(opts) {
   cfg = { ...cfg, ...opts };
@@ -172,8 +149,40 @@ export function nbienInit(opts) {
   document.addEventListener('click', (e) => {
     if (e.target.closest('[data-nb-open]')) { e.preventDefault(); return openAll(); }
     if (e.target.closest('[data-nb-close]')) { const d = document.getElementById('nbDlg'); if (d) d.close(); return; }
-    const lg = e.target.closest('[data-nb-leg]');
-    if (lg) { e.preventDefault(); legTip(lg); }
   });
   setInterval(load, 10 * 60 * 1000);
+}
+
+// ℹ️ Infos : un seul cadre blanc repliable, le même dans toutes les apps (bas de page) — légende des couleurs
+// et, là où l'on fait des devis (central, portail gérance, chef de chantier), les unités des devis.
+const UNITS = ['fft', 'm²', 'ml', 'm³', 'pc', 'h', 'kg', 'exécution', 'mois'];
+const IB = {
+  fr: { t: 'Infos', u: 'Unités des devis', up: 'Prix d’une ligne = quantité × prix unitaire (ex. 45 m² × 22,00 € HT).', ex: 'ex.', U: [['forfait : prix fixe, tout compris (quantité 1)', 'visite technique, débouchage, nettoyage de fin de chantier'], ['mètre carré : une surface', 'peinture 45 m², carrelage 12 m²'], ['mètre linéaire : une longueur', 'plinthes 18 ml, gouttière 12 ml, joints silicone'], ['mètre cube : un volume', 'gravats 3 m³, débarras de cave'], ['pièce : un nombre d’éléments', '2 robinets, 4 prises, 3 portes'], ['heure de travail', 'travaux en régie 6 h, petites réparations'], ['kilogramme : un poids', 'matériel ou déchets au poids'], ['à chaque passage', 'déneigement, garage à l’autolaveuse'], ['par mois', 'contrat d’entretien, sortie des poubelles']] },
+  it: { t: 'Info', u: 'Unità dei preventivi', up: 'Prezzo di una riga = quantità × prezzo unitario (es. 45 m² × 22,00 € IVA escl.).', ex: 'es.', U: [['forfait: prezzo fisso, tutto compreso (quantità 1)', 'sopralluogo, sturatura, pulizia di fine cantiere'], ['metro quadro: una superficie', 'pittura 45 m², piastrelle 12 m²'], ['metro lineare: una lunghezza', 'battiscopa 18 ml, grondaia 12 ml, giunti in silicone'], ['metro cubo: un volume', 'macerie 3 m³, sgombero cantina'], ['pezzo: un numero di elementi', '2 rubinetti, 4 prese, 3 porte'], ['ora di lavoro', 'lavori in economia 6 h, piccole riparazioni'], ['chilogrammo: un peso', 'materiale o rifiuti a peso'], ['a ogni passaggio', 'sgombero neve, garage con lavasciuga'], ['al mese', 'contratto di manutenzione, uscita dei bidoni']] },
+  de: { t: 'Infos', u: 'Einheiten der Angebote', up: 'Preis einer Zeile = Menge × Einzelpreis (z. B. 45 m² × 22,00 € netto).', ex: 'z. B.', U: [['Pauschale: fester Preis, alles inklusive (Menge 1)', 'Besichtigung, Rohrreinigung, Endreinigung der Baustelle'], ['Quadratmeter: eine Fläche', 'Anstrich 45 m², Fliesen 12 m²'], ['Laufmeter: eine Länge', 'Sockelleisten 18 ml, Dachrinne 12 ml, Silikonfugen'], ['Kubikmeter: ein Volumen', 'Bauschutt 3 m³, Kellerräumung'], ['Stück: eine Anzahl', '2 Wasserhähne, 4 Steckdosen, 3 Türen'], ['Arbeitsstunde', 'Regiearbeiten 6 h, kleine Reparaturen'], ['Kilogramm: ein Gewicht', 'Material oder Abfall nach Gewicht'], ['pro Einsatz', 'Schneeräumung, Garage mit Scheuersaugmaschine'], ['pro Monat', 'Wartungsvertrag, Mülltonnen rausstellen']] },
+  pt: { t: 'Infos', u: 'Unidades dos orçamentos', up: 'Preço de uma linha = quantidade × preço unitário (ex. 45 m² × 22,00 € s/ IVA).', ex: 'ex.', U: [['forfait: preço fixo, tudo incluído (quantidade 1)', 'visita técnica, desentupimento, limpeza de fim de obra'], ['metro quadrado: uma superfície', 'pintura 45 m², azulejo 12 m²'], ['metro linear: um comprimento', 'rodapés 18 ml, caleira 12 ml, juntas de silicone'], ['metro cúbico: um volume', 'entulho 3 m³, limpeza da cave'], ['peça: um número de elementos', '2 torneiras, 4 tomadas, 3 portas'], ['hora de trabalho', 'trabalhos por administração 6 h, pequenas reparações'], ['quilograma: um peso', 'material ou resíduos ao peso'], ['por cada passagem', 'remoção de neve, garagem com lavadora'], ['por mês', 'contrato de manutenção, saída dos contentores']] },
+  en: { t: 'Info', u: 'Quote units', up: 'Price of a line = quantity × unit price (e.g. 45 m² × €22.00 excl. VAT).', ex: 'e.g.', U: [['flat rate: fixed price, all included (quantity 1)', 'site visit, unblocking, end-of-works cleaning'], ['square metre: an area', 'painting 45 m², tiling 12 m²'], ['linear metre: a length', 'skirting 18 ml, gutter 12 ml, silicone joints'], ['cubic metre: a volume', 'rubble 3 m³, cellar clearance'], ['piece: a number of items', '2 taps, 4 sockets, 3 doors'], ['hour of work', 'time-and-materials work 6 h, small repairs'], ['kilogram: a weight', 'material or waste by weight'], ['each visit', 'snow clearing, garage with a scrubber-dryer'], ['per month', 'maintenance contract, putting out the bins']] },
+  es: { t: 'Info', u: 'Unidades de los presupuestos', up: 'Precio de una línea = cantidad × precio unitario (ej. 45 m² × 22,00 € sin IVA).', ex: 'ej.', U: [['tanto alzado: precio fijo, todo incluido (cantidad 1)', 'visita técnica, desatasco, limpieza de fin de obra'], ['metro cuadrado: una superficie', 'pintura 45 m², alicatado 12 m²'], ['metro lineal: una longitud', 'rodapiés 18 ml, canalón 12 ml, juntas de silicona'], ['metro cúbico: un volumen', 'escombros 3 m³, vaciado de trastero'], ['pieza: un número de elementos', '2 grifos, 4 enchufes, 3 puertas'], ['hora de trabajo', 'trabajos por administración 6 h, pequeñas reparaciones'], ['kilogramo: un peso', 'material o residuos al peso'], ['en cada pasada', 'retirada de nieve, garaje con fregadora'], ['al mes', 'contrato de mantenimiento, sacar los contenedores']] },
+};
+const IB_CSS = `.ib{margin:14px 0;border:1px solid #e3ded3;border-radius:16px;background:#fff;color:#1d1b16;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.ib>summary{display:flex;align-items:center;gap:8px;padding:12px 14px;cursor:pointer;list-style:none;font-weight:700}
+.ib>summary::-webkit-details-marker{display:none}
+.ib>summary::after{content:'▾';margin-left:auto;color:#8a8478;transition:transform .15s}.ib[open]>summary::after{transform:rotate(180deg)}
+.ib-dots{display:inline-flex;gap:3px}.ib-dots i{width:14px;height:5px;border-radius:3px}
+.ib-sec{padding:4px 14px 12px;border-top:1px solid #eee9de}
+.ib-sec h4{margin:10px 0 6px;font-size:14px}
+.ib-sec p{margin:0 0 6px;font-size:13px;line-height:1.4;color:#3b382f}
+.ib-row{display:flex;gap:8px;align-items:baseline}.ib-row i{flex:0 0 18px;height:6px;border-radius:3px;transform:translateY(-2px)}
+.ib-grid{display:grid;grid-template-columns:78px 1fr;gap:6px 10px;font-size:13px;line-height:1.35}
+.ib-grid small{display:block;color:#7a7468}`;
+export function infoBox({ units = false, lang = '' } = {}) {
+  if (!document.getElementById('ibCss')) {
+    const st = document.createElement('style'); st.id = 'ibCss'; st.textContent = IB_CSS; document.head.appendChild(st);
+    // ouvert / fermé : gardé quand l'écran se redessine
+    document.addEventListener('toggle', (e) => { if (e.target.matches && e.target.matches('details[data-ib]')) ls.set(cfg.app + 'IbOpen', e.target.open ? '1' : ''); }, true);
+  }
+  const L = lang || cfg.lang(), w = TX[L] || TX.fr, b = IB[L] || IB.fr;
+  return `<details class="ib" data-ib="1" data-notr${ls.get(cfg.app + 'IbOpen') === '1' ? ' open' : ''}><summary>ℹ️ ${esc(b.t)} <span class="ib-dots" aria-hidden="true">${PALETTE.map(([, c]) => `<i style="background:${c}"></i>`).join('')}</span></summary>
+  <div class="ib-sec"><h4>🎨 ${esc(w.legT)}</h4>${PALETTE.map(([k, c]) => `<p class="ib-row"><i style="background:${c}"></i><span><b>${esc(w.L[k][0])}</b> — ${esc(w.L[k][1])}</span></p>`).join('')}<p>${esc(w.sem)}</p></div>
+  ${units ? `<div class="ib-sec"><h4>📏 ${esc(b.u)}</h4><p>${esc(b.up)}</p><div class="ib-grid">${UNITS.map((u, n) => `<b>${esc(u)}</b><span>${esc(b.U[n][0])}<small><i>${esc(b.ex)}</i> ${esc(b.U[n][1])}</small></span>`).join('')}</div></div>` : ''}</details>`;
 }
