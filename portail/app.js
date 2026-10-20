@@ -14,7 +14,7 @@ scrollHintInit();
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.25.0';
+const VERSION = '1.26.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -911,7 +911,7 @@ const VIEWS = {
         ${recue.length ? html`<div class="list">${recue.map(ticketRow)}</div>` : html`<div class="alert" style="background:var(--green-soft);color:var(--green)">${icon('check')}<div>Aucune nouvelle demande en attente.</div></div>`}
         <div class="section-label">En cours</div>
         ${others.length ? html`<div class="list">${others.map(ticketRow)}</div>` : html`<p class="muted small">Aucune intervention en cours.</p>`}
-        ${pubSlot('bas')}${new Raw(infoBox({ units: true }))}${tickerBar()}`;
+        ${pubSlot('bas')}${new Raw(infoBox())}${tickerBar()}`;
     }
     return html`${pushCard}
       ${guideCard(stats)}
@@ -933,7 +933,7 @@ const VIEWS = {
       <button class="btn block" style="margin-top:12px" data-action="go" data-to="stats">${icon('chart')} Statistiques de nos interventions</button>
       <div class="section-label">Mes demandes en cours</div>
       ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande de dépannage</button>`)}
-      ${pubSlot('bas')}${new Raw(infoBox({ units: true }))}${tickerBar()}`;
+      ${pubSlot('bas')}${new Raw(infoBox())}${tickerBar()}`;
   },
 
   // Comptabilité : deux espaces séparés — Comptabilité (interventions terminées, par mois) | Statistiques

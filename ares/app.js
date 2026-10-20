@@ -16,7 +16,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.164.0';
+const VERSION = '2.165.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3646,7 +3646,7 @@ const VIEWS = {
         </div>`;
       })}</div>` : empty('users', 'Aucun intervenant. Ajoutez la femme de ménage et les artisans (menuisier, électricien, plombier, chauffagiste, maçon…).', html`<button class="btn primary" data-action="new-interv">${icon('plus')} Ajouter un intervenant</button>`);
     }
-    return html`${pageHead('Maintenance', 'Nettoyage, réparations et collecte des déchets')}<div class="imm-row">${tabs}<div class="imm-btns">${add}</div></div>${tab !== 'intervenants' && tab !== 'devis' ? chips : ''}${body}${new Raw(infoBox({ units: true, lang: getLang() }))}`;
+    return html`${pageHead('Maintenance', 'Nettoyage, réparations et collecte des déchets')}<div class="imm-row">${tabs}<div class="imm-btns">${add}</div></div>${tab !== 'intervenants' && tab !== 'devis' ? chips : ''}${body}${new Raw(infoBox({ lang: getLang() }))}`;
   },
 
 dashboard() {
@@ -8203,7 +8203,7 @@ function devPendHtml() {
     <p class="tiny" style="margin:4px 0 0;color:var(--accent)">${L.length} photo(s) choisie(s) — touchez 💾 Enregistrer pour les ajouter au devis (les miniatures apparaissent ensuite)</p>`;
 }
 // cadre « Prestations » : catalogue par catégorie, cases à cocher, quantité + unité + détails (mesures en cm / mm…)
-const devPq = (key, p, ph) => html`<div class="dev-pq"><input name="pq_${key}" type="number" step="0.01" min="0" inputmode="decimal" value="${p.q ?? ''}" placeholder="Qté" aria-label="Quantité"><select name="pu_${key}" aria-label="Unité">${DEV_UNITS.map((u) => html`<option ${u === p.u ? new Raw('selected') : ''}>${u}</option>`)}</select><input name="pd_${key}" value="${p.det || ''}" placeholder="${ph || 'détails : mesures (cm), format, couleur, modèle…'}" aria-label="Détails"></div>`;
+const devPq = (key, p, ph) => html`<div class="dev-pq"><input name="pq_${key}" type="number" step="0.01" min="0" inputmode="decimal" value="${p.q ?? ''}" placeholder="Qté" aria-label="Quantité"><select name="pu_${key}" aria-label="Unité">${DEV_UNITS.map((u) => html`<option value="${u}" ${u === p.u ? new Raw('selected') : ''}>${u === 'fft' ? 'forfait (fft)' : u}</option>`)}</select><input name="pd_${key}" value="${p.det || ''}" placeholder="${ph || 'détails : mesures (cm), format, couleur, modèle…'}" aria-label="Détails"></div>`;
 const devFreeRow = (n, p = {}) => html`<div class="dev-pi dev-free"><input name="pl_f${n}" value="${p.l || ''}" placeholder="Autre prestation (ex. Pose d’une crédence en verre)" aria-label="Prestation">${devPq('f' + n, { q: p.q, u: p.u || 'fft', det: p.det }, '')}</div>`;
 const devProtoRow = (n, r = { f: {} }) => html`<div class="dev-proto-r">${r.base ? html`<span class="small">${r.l}</span><input type="hidden" name="frl${n}" value="${r.l}">` : html`<input name="frl${n}" value="${r.l || ''}" placeholder="Autre prestation d’entretien">`}${['h', 'm', 't', 'a'].map((x) => html`<input type="checkbox" name="fr${n}_${x}" value="1" ${r.f && r.f[x] ? new Raw('checked') : ''} aria-label="${({ h: 'Hebdomadaire', m: 'Mensuel', t: 'Trimestriel', a: 'Annuel' })[x]}">`)}</div>`;
 function devPrestBox(d) {
