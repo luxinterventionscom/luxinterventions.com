@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.172.0';
+const VERSION = '2.173.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -782,8 +782,10 @@ function eqTodayHtml() {
   return html`<div class="card" style="margin-bottom:14px"><div class="card-title" style="margin-bottom:6px"><h3>👷 Aujourd’hui</h3></div>
     <div class="list small">${its.map((x) => {
       const t = x.t, i = vault.get('intervenants', t.intervenantId) || {}, st = eqState(t, x.d);
-      return html`<button class="row" data-action="edit-tache" data-id="${t.id}" style="text-align:left"><span class="grow" style="white-space:normal">${miniW(i)}<b>${intervFull(i)}</b> — ${tacheIcon(t.type)} ${t.titre}<span class="meta" style="display:block">📍 ${placeName(t)}${st && st.note ? ' · 📝 ' + st.note : ''}</span></span>
-        <span class="badge ${st ? (st.st === 'fait' ? 'ok' : st.st === 'incomplet' ? 'bad' : 'warn') : ''}">${st ? EQ_ST[st.st] + ' ' + (st.h || (st.at || '').slice(11, 16)) : absOn(i, d0) ? '🤒 absent' : '⏳ pas encore'}</span></button>`;
+      // 🔄 changer d'ouvrier : tant qu'il n'est pas arrivé (pas encore commencé), pas pour le comptable
+      const swap = !st && !t.recur && t.statut !== 'fait' && !isCompta();
+      return html`<div class="row"><button class="grow" data-action="edit-tache" data-id="${t.id}" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0;white-space:normal">${miniW(i)}<b>${intervFull(i)}</b> — ${tacheIcon(t.type)} ${t.titre}<span class="meta" style="display:block">📍 ${placeName(t)}${st && st.note ? ' · 📝 ' + st.note : ''}</span></button>
+        <span class="badge ${st ? (st.st === 'fait' ? 'ok' : st.st === 'incomplet' ? 'bad' : 'warn') : ''}">${st ? EQ_ST[st.st] + ' ' + (st.h || (st.at || '').slice(11, 16)) : absOn(i, d0) ? '🤒 absent' : '⏳ pas encore'}</span>${swap ? html`<button class="btn sm" data-action="eq-swap" data-id="${t.id}" title="Changer d’ouvrier" aria-label="Changer d’ouvrier">🔄</button>` : ''}</div>`;
     })}
     ${pointes.map((i) => { const p = i.pres[d0]; return html`<div class="row"><span class="grow">${miniW(i)}<b>${intervFull(i)}</b> — 🕒 <span>Arrivée</span> <b>${p.arr || '—'}</b> · <span>Départ</span> <b>${p.dep || '—'}</b></span></div>`; })}
     ${absent.filter((i) => !its.some((x) => x.t.intervenantId === i.id)).map((i) => html`<div class="row"><span class="grow"><b>${intervFull(i)}</b> — ${ABS_TYPES[absOn(i, d0).type]}</span></div>`)}</div></div>`;
@@ -4765,6 +4767,21 @@ const SHEETS = {
       foot,
     };
   },
+  // 🔄 changer d'ouvrier (ou le retirer) en un tocco, avec le motif (court, obligatoire)
+  'eq-swap'({ id }) {
+    const t = vault.get('taches', id);
+    if (!t) return null;
+    const cur = t.intervenantId, hint = t.metiers && t.metiers.length ? t.metiers : [(vault.get('intervenants', cur) || {}).metier], d = t.date && t.date > today() ? t.date : today();
+    const ints = vault.list('intervenants').filter((i) => !i.archive && i.id !== cur).sort((a, b) => hint.includes(b.metier) - hint.includes(a.metier) || intervFull(a).localeCompare(intervFull(b)));
+    return {
+      title: '🔄 Changer d’ouvrier', narrow: true,
+      body: html`<p class="small" style="margin:0 0 10px">${tacheIcon(t.type)} <b>${t.titre}</b> · ${placeName(t)}<br>Aujourd’hui : <b>${intervName(cur)}</b></p>
+        <label class="field">Pourquoi ? (obligatoire)<input id="swapWhy" maxlength="40" placeholder="ex. plus près, erreur, urgence" autocomplete="off"></label>
+        <div class="section-label" style="margin:12px 0 6px">Donner le travail à… <span class="tiny muted">⭐ = même métier</span></div>
+        <div class="list small">${ints.map((i) => html`<button class="row" data-action="eq-swap-do" data-id="${id}" data-w="${i.id}"><span class="avatar met-ic">${avW(i)}</span><span class="grow"><span class="title" style="display:block">${hint.includes(i.metier) ? '⭐ ' : ''}${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || ''}${absOn(i, d) ? html` · <b class="red">absent</b>` : ''}${(t.refusBy || []).includes(i.id) ? ' · ✋ a refusé' : ''}${i.espace && i.espace.on ? '' : ' · sans app'}</span></span><span class="chev">›</span></button>`)}</div>`,
+      foot: html`<button class="btn danger" data-action="eq-swap-do" data-id="${id}" data-w="">⏹ Retirer l’ouvrier</button><button class="btn" data-action="close-sheet">Annuler</button>`,
+    };
+  },
   'centrale-form'() {
     const c = centraleConf();
     return {
@@ -5234,6 +5251,7 @@ const SHEETS = {
         ${isCompta() || t.recur ? '' : html`<div class="full taxi-box"><label class="t-urg"><input type="checkbox" name="taxi" value="1" ${t.taxi && t.taxi.st !== 'none' ? new Raw('checked') : ''}> <span>🚕 <b>Mode taxi</b> — la personne appuie sur START (5 min si urgent, 30 min sinon) ; sinon la demande passe au suivant</span></label>
           <div class="taxi-more fields">${[2, 3].map((n) => { const cur = t.taxi && t.taxi.st === 'wait' ? t.taxi.list[t.taxi.i + n - 1] || '' : ''; return html`<label class="field">${n}e choix<select name="taxi${n}"><option value="">🤖 automatique (même métier, meilleurs points)</option><option value="-">— personne —</option>${ints.filter((i) => !i.archive && i.espace && i.espace.on).map((i) => html`<option value="${i.id}" ${i.id === cur ? new Raw('selected') : ''}>${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}</option>`)}</select></label>`; })}</div>
           ${t.taxi ? html`<p class="tiny muted" style="margin:4px 0 0">🚕 ${taxiLog(t)}${t.taxi.st === 'wait' ? ` · attend ${intervName(taxiCur(t))} — réponse avant ${new Date(taxiUntil(t)).toTimeString().slice(0, 5)}` : ''}</p>` : ''}</div>`}
+        ${(t.swaps || []).length ? html`<p class="tiny muted full" style="margin:-6px 0 0">${t.swaps.slice(-3).map((x) => html`<span style="display:block">🔄 ${intervName(x.from) || '—'} → ${intervName(x.to) || 'à choisir'} · ${fmtDateTime(x.at)} · « ${x.why} »${x.by ? ' · ' + x.by : ''}</span>`)}</p>` : ''}
         ${hint.length ? html`<p class="tiny muted full" style="margin:-6px 0 0">⭐ = métier conseillé pour cette demande : ${[...new Set(hint)].map((m) => METIERS[m]).join(', ')}${ints.some(fits) ? '' : ' (personne de ce métier dans l’équipe)'}</p>` : ''}
         ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
         ${field('Date', 'date', t.date, { type: 'date' })}
@@ -6500,6 +6518,11 @@ const ACTIONS = {
   async 'ger-to-mt'(a) {
     if (a.id && (!ui.ptl.cur || !ui.ptl.cur.ticket || ui.ptl.cur.ticket.id !== a.id)) { try { ui.ptl.cur = await ptlApi('tickets/' + a.id); } catch (e) { return toast(e.message, { bad: true }); } }
     const d = ui.ptl.cur; if (!d) return;
+    const dup = vault.list('taches').find((x) => x.ptl && x.ptl.tid === d.ticket.id && x.statut !== 'fait');
+    if (dup) {
+      if (await confirmBox(`#${d.ticket.ref} a déjà une intervention${dup.intervenantId ? ' (' + intervName(dup.intervenantId) + ')' : ''}`, { ok: 'Ouvrir l’intervention', detail: 'Pour changer d’ouvrier, utilisez « Qui ? » ou 🔄. Pour un autre travail sur place, créez une nouvelle intervention.' })) openOver('tache-form', dup.id);
+      return;
+    }
     const L = ptlLink(d), w = a.iid ? vault.get('intervenants', a.iid) : null;
     openOver('tache-form', null, null, { ...(w ? { intervenantId: w.id, type: w.metier === 'menage' ? 'nettoyage' : 'reparation' } : {}), metiers: metHints(`${d.ticket.categorie || ''} ${d.ticket.description || ''}`), ptlPhotos: (d.photos || []).map((p) => p.id).slice(0, 6), ptl: L, titre: `#${L.ref} ${d.ticket.categorie || 'Intervention'}`.slice(0, 80), note: d.ticket.description || '' });
   },
@@ -6740,6 +6763,26 @@ const ACTIONS = {
   'occ-open': (d) => openOver('occ-fact', d.id),
   async 'occ-dl'(d) { const t = vault.get('taches', d.id), i = t && vault.get('intervenants', t.intervenantId); if (!t || !t.occ || !i) return; download(`Intervention occasionnelle ${t.occ.no}.pdf`, await occPdf(t, i, t.occ), 'application/pdf'); },
   'photo-del': (d, el) => { const box = el.closest('.photo-pick'); box.querySelector('[name=photo]').value = ''; setHtml(box.querySelector('.pp-circle'), '👤'); el.remove(); },
+  'eq-swap': (d) => openOver('eq-swap', d.id),
+  async 'eq-swap-do'(d) {
+    const t = vault.get('taches', d.id);
+    if (!t) return;
+    const inp = document.getElementById('swapWhy'), why = String((inp && inp.value) || '').trim();
+    if (why.length < 2) { if (inp) inp.focus(); return toast('Écrivez pourquoi (quelques mots)', { bad: true }); }
+    const old = t.intervenantId, w = d.w ? vault.get('intervenants', d.w) : null;
+    if (!w && !(await confirmBox(`Retirer ${intervName(old)} de ce travail ?`, { ok: '⏹ Retirer', danger: true, detail: `${t.titre} — il reste à choisir quelqu’un.` }))) return;
+    const upd = { id: t.id, intervenantId: w ? w.id : '', swaps: [...(t.swaps || []), { from: old, to: w ? w.id : '', why: why.slice(0, 40), at: new Date().toISOString(), by: whoLabel() }].slice(-20) };
+    if (t.taxi && t.taxi.st === 'wait') upd.taxi = null; // la chaîne du mode taxi s'arrête : c'est la centrale qui a choisi
+    if (!w && t.statut === 'planifie') upd.statut = 'afaire';
+    await vault.mutate((tx) => tx.put('taches', upd), w ? '🔄 Ouvrier changé' : '⏹ Ouvrier retiré', `${t.titre} — ${intervName(old)} → ${w ? intervFull(w) : 'à choisir'} (${why})`, t.immId);
+    // trajet de l'ancien ouvrier : le compte à rebours s'arrête ; le nouveau lance le sien avec « Je suis en route »
+    const tk = ui.tripTks[t.id + '|' + today()];
+    if (tk) fetch(vault.api.base.replace(/ares\/$/, '') + 'trip/' + tk, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ st: 'stop' }) }).catch(() => {});
+    if (t.ptl && ptlConf()) { const s2 = vault.get('taches', t.id); ptlStatus(t.ptl.tid, w && s2.date ? 'planifiee' : 'prise', { technicien: w ? intervFull(w) : '', planned_at: w && s2.date ? `${s2.date}T${s2.heure || '08:00'}` : '', text: w ? `🔄 Changement d’intervenant : ${intervFull(w)}` : '🔄 LuxInterventions envoie un autre intervenant.' }).catch(() => {}); }
+    closeSheet();
+    toast(w ? `🔄 ${t.titre} → ${intervFull(w)}` : `⏹ ${t.titre} : ouvrier retiré`);
+    renderView(); scheduleEspaceSync();
+  },
   'interv-aff': (d) => { ui.ptl.data = null; ui.ptl.err = ''; openOver('ger-aff', d.id); },
   'ger-aff-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; ptlLoad(); },
   'interv-job': (d) => { const i = d.id && vault.get('intervenants', d.id); openOver('tache-form', null, null, i ? { intervenantId: d.id, type: i.metier === 'menage' ? 'nettoyage' : 'reparation' } : { type: 'reparation' }); },
@@ -8033,7 +8076,7 @@ async function importFile(file) {
 // réservé au responsable (clé principale) ; le comptable n'affecte pas les travaux
 const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all']);
 const DEL_ACTION = /^del-|-del$|wipe/; // toute suppression
-const NO_COMPTA = new Set(['interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job', 'op-del', 'op-new']);
+const NO_COMPTA = new Set(['eq-swap', 'eq-swap-do', 'interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job', 'op-del', 'op-new']);
 document.addEventListener('click', (e) => {
   const el = e.target.closest('[data-action]');
   if (!el || !ACTIONS[el.dataset.action]) return;

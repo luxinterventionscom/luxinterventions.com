@@ -35,8 +35,9 @@
   .ibox .ic { flex: none; width: 22px; text-align: center; } .ibox .tx { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
   .ibox .call { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: var(--green, #15803d); text-decoration: none; font-size: 18px; margin-top: -6px; }
   .ibox .org { font-size: 12.5px; color: #8a7a66; }
-  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 0; } .duo > * { width: 100%; min-height: 52px; margin: 0; padding: 10px 6px; font-size: 15.5px; line-height: 1.2; }
-  .refus-top.in-duo { float: none; max-width: none; margin: 0; border-radius: 12px; font-size: 16px; }
+  .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0 0; } .duo > * { width: 100%; min-height: 56px; margin: 0; padding: 10px 6px !important; font-size: 15.5px !important; line-height: 1.2; }
+  .duo > * { margin: 0 !important; box-shadow: none !important; border-radius: 12px !important; display: flex; align-items: center; justify-content: center; text-align: center; box-sizing: border-box; }
+  .refus-top.in-duo { float: none; max-width: none; font-weight: 800; }
   .lbx { position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,.92); display: grid; place-items: center; } .lbx img { max-width: 100%; max-height: 100%; object-fit: contain; }
   .lbx span { position: absolute; top: calc(env(safe-area-inset-top) + 10px); right: 14px; color: #fff; font-size: 26px; }
   .trip-go { background: #F97316; border-color: #F97316; color: #fff; }

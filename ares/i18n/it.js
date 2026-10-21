@@ -15263,5 +15263,89 @@ export default [
 [
 "Accepté (START)",
 "Accettato (START)"
+],
+[
+"Changer d’ouvrier",
+"Cambia operaio"
+],
+[
+"Aujourd’hui",
+"Oggi"
+],
+[
+"Pourquoi ? (obligatoire)",
+"Perché? (obbligatorio)"
+],
+[
+"ex. plus près, erreur, urgence",
+"es. più vicino, errore, urgenza"
+],
+[
+"Donner le travail à…",
+"Dare il lavoro a…"
+],
+[
+"= même métier",
+"= stesso mestiere"
+],
+[
+"absent",
+"assente"
+],
+[
+"✋ a refusé",
+"✋ ha rifiutato"
+],
+[
+"sans app",
+"senza app"
+],
+[
+"Retirer l’ouvrier",
+"Togli l’operaio"
+],
+[
+"Écrivez pourquoi (quelques mots)",
+"Scrivi il perché (poche parole)"
+],
+[
+"Retirer {0} de ce travail ?",
+"Togliere {0} da questo lavoro?"
+],
+[
+"{0} — il reste à choisir quelqu’un.",
+"{0} — resta da scegliere qualcuno."
+],
+[
+"à choisir",
+"da scegliere"
+],
+[
+"Ouvrir l’intervention",
+"Apri l’intervento"
+],
+[
+"#{0} a déjà une intervention ({1})",
+"#{0} ha già un intervento ({1})"
+],
+[
+"#{0} a déjà une intervention",
+"#{0} ha già un intervento"
+],
+[
+"Pour changer d’ouvrier, utilisez « Qui ? » ou 🔄. Pour un autre travail sur place, créez une nouvelle intervention.",
+"Per cambiare operaio usa «Chi?» o 🔄. Per un altro lavoro sul posto crea un nuovo intervento."
+],
+[
+"Ouvrier changé",
+"Operaio cambiato"
+],
+[
+"Ouvrier retiré",
+"Operaio tolto"
+],
+[
+"ouvrier retiré",
+"operaio tolto"
 ]
 ];
