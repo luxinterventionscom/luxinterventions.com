@@ -83,6 +83,7 @@
   .btns .btn { flex: 1 1 30%; }
   .btn { display: inline-block; text-align: center; text-decoration: none; background: var(--accent); color: #fff; font: inherit; font-weight: 700; padding: 12px 14px; border-radius: 12px; border: 0; cursor: pointer; }
   .btn.sec { background: var(--card); color: var(--text); border: 1px solid var(--line); }
+  .btn.bad { background: var(--red, #c0392b); color: #fff; }
   .btn.ok { background: var(--green); } .btn.warn { background: #fff; color: var(--red); border: 1px solid #fca5a5; }
   .btn.sm { padding: 6px 10px; font-size: 14px; }
   .btn.block { display: block; width: 100%; }
@@ -108,7 +109,7 @@
   .qty label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
   .qty-r { display: flex; gap: 6px; }
   .qty-r input[name=qte] { flex: 0 0 84px; width: 84px; }
-  .qty-r input[name=qu] { flex: 1 1 auto; min-width: 0; }
+  .qty-r input[name=qu] { flex: 1 1 auto; min-width: 0; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: #fff; box-sizing: border-box; }
   .pres-ok { color: var(--green); font-weight: 700; }
   .notif .ok { color: var(--green); }
   .pub { border-top: 1px solid var(--line); padding: 10px 0; }
@@ -134,6 +135,7 @@
   .stop.done { opacity: .7; background: #f6fbf8; }
   .stop .tt { font-size: 17px; }
   .stop form.pres { border-top: 0; }
+  form.pres .duo { flex: 1 1 100%; margin-top: 2px; }
   .live { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 6px #4ade80; margin-right: 6px; vertical-align: middle; animation: blink 1s infinite; }
   .tag.now { background: #dcfce7; color: var(--green); }
   .pb-thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 6px; }
