@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.174.0';
+const VERSION = '2.175.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1927,20 +1927,27 @@ const hoteMsg = (h) => {
   const w = HOTE_MSG[h.langue] || HOTE_MSG.en, d = (x) => x.split('-').reverse().join('/');
   return `${w[0]} ${h.prenom || h.nom},\n${w[1]} ${h.chambre}${h.etage ? ' (' + h.etage + ')' : ''} — ${w[2]} : ${h.code}\n${w[3]} ${d(h.arrivee)} ${h.hdeb || '15:00'} ${w[4]} ${d(h.depart)} ${h.hfin || '11:00'}.${h.cinfo ? '\n' + h.cinfo : ''}`;
 };
+// lieu sans répétition : « Appartement · Étage 1 · Appartement 3 » → « Étage 1 · Appartement 3 »
+const lieuDedup = (v) => { const p = String(v || '').split(' · ').map((x) => x.trim()).filter(Boolean); return p.filter((x) => !p.some((q) => q !== x && q.toLowerCase().startsWith(x.toLowerCase() + ' '))).join(' · '); };
+// cadre orange d'une demande : problème, codes, quand, contact, (intérieur), gérance — une ligne par information
+function reqBox({ pb, codes = [], dispo = '', contact = '', tel = '', telShow = '', inside = '', org = '' }) {
+  const row = (ic, v, cls = '') => html`<div class="ir${cls}"><span class="ic">${ic}</span><div class="tx">${v}</div></div>`;
+  return html`<div class="reqbox">
+    ${pb ? row('⚠️', html`<b>Problème :</b> ${pb}`) : ''}
+    ${codes.map((c) => row('🔐', c))}
+    ${dispo ? row('🕗', String(dispo).split(' · ').filter(Boolean).join(' · ')) : ''}
+    ${contact || tel ? html`<div class="ir"><span class="ic">👤</span><div class="tx">${contact}${telShow ? html` <span class="muted small">${telShow}</span>` : ''}</div>${tel ? html`<a class="call" href="tel:${tel}" aria-label="Appeler">📞</a>` : ''}</div>` : ''}
+    ${inside ? row('🏠', inside) : ''}
+    ${org ? html`<div class="ir org">🏢 ${org}</div>` : ''}</div>`;
+}
 const ptlPlace = (p) => {
   const parts = (x) => String(x || '').split(' · ').filter(Boolean);
   const codes = parts(p.acces).length ? parts(p.acces) : parts(p.codes);
   const tel = String(p.tel || '').replace(/[^\d+]/g, '');
   const q = encodeURIComponent([p.adr || p.res, 'Luxembourg'].join(', '));
-  return html`<b>🏢 ${p.org} · Demande #${p.ref}</b>
-    <dl class="kv small ptl-place">
-      <dt>📍 Adresse</dt><dd>${p.res}${p.adr ? html`<br>${p.adr}` : ''}${p.adr ? html` <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">🗺️ Plan</a><br>${navLinks(p.adr)}` : ''}</dd>
-      ${p.lieu ? html`<dt>🚪 Où exactement</dt><dd>${parts(p.lieu).join(' · ')}</dd>` : ''}
-      ${p.interior || p.floors ? html`<dt>🏠 Intérieur</dt><dd>${[p.interior, p.floors ? 'étage(s) ' + p.floors : ''].filter(Boolean).join(' · ')}</dd>` : ''}
-      ${p.contact || tel ? html`<dt>👤 Contact sur place</dt><dd>${p.contact || ''}${tel ? html` · <a href="tel:${tel}">${p.tel}</a>` : ''}</dd>` : ''}
-      ${codes.length ? html`<dt>🔐 Accès / codes</dt><dd>${codes.map((x) => html`<div>${x}</div>`)}</dd>` : ''}
-      ${p.dispo ? html`<dt>📅 Disponibilités</dt><dd>${parts(p.dispo).map((x) => html`<div>${x}</div>`)}</dd>` : ''}
-    </dl>`;
+  return html`<div class="rq-top"><div>📍 <b>${p.res}</b>${p.adr ? html` — ${p.adr} <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">🗺️ Plan</a>` : ''}</div>
+      ${p.adr ? html`<div class="small">${navLinks(p.adr)}</div>` : ''}${p.lieu ? html`<div>🚪 ${lieuDedup(p.lieu)}</div>` : ''}</div>
+    ${reqBox({ codes, dispo: p.dispo, contact: p.contact, tel, telShow: p.tel, inside: [p.interior, p.floors ? 'étage(s) ' + p.floors : ''].filter(Boolean).join(' · '), org: `${p.org} · Demande #${p.ref}` })}`;
 };
 // codes d'une résidence du portail : boîte à clés, portes / portails, alarme, locaux techniques, puis les autres codes nommés
 const ptlResCodes = (r) => { let named = []; try { named = JSON.parse(r.codes || '[]'); } catch { /* illisible */ } if (!Array.isArray(named)) named = []; const kb = named.find((c) => c.l === 'Boîte à clés'); return [kb && kb.c ? 'Boîte à clés : ' + kb.c : '', r.access ? 'Porte : ' + r.access : '', r.alarm ? 'Alarme : ' + r.alarm : '', r.code_other ? 'Locaux techniques : ' + r.code_other : '', ...named.filter((c) => c.c && c !== kb).map((c) => `${c.l || 'Code'} : ${c.c}`)].filter(Boolean); };
@@ -4677,14 +4684,10 @@ const SHEETS = {
       title: `#${t.ref} · ${r.name || ''}`,
       body: html`<div class="chips" style="margin-bottom:10px"><span class="badge ${u[2] === 'red' ? 'danger' : u[2] === 'amber' ? 'warn' : ''}">${u[0]} ${u[1]}</span><span class="badge">${PTL_ST[t.status]}</span><span class="badge">${orgLogo(t.org_id)} ${r.org_name || ''}</span></div>
         ${linked.filter((x) => x.intervenantId && x.statut !== 'fait').map((x) => tripSlot(x.id, today()))}
-        <div class="note" style="margin-bottom:12px;white-space:pre-wrap"><b>${t.categorie || 'Intervention'}</b>\n${t.description}</div>
+        <div class="rq-top"><div class="rq-t">${t.categorie || 'Intervention'}</div>
+          <div>📍 <b>${r.name || ''}</b>${r.address ? ' — ' + r.address : ''}</div>${t.lieu ? html`<div>🚪 ${lieuDedup(t.lieu)}</div>` : ''}</div>
+        ${reqBox({ pb: t.description, codes: [...parts(t.acces), ...(!/(Boîte à clés|Porte|Alarme|Panneaux|Locaux techniques) : /.test(t.acces || '') ? ptlResCodes(r) : [])], dispo: t.dispo, contact: t.contact_name || r.contact_name || '', tel, telShow: t.contact_phone || r.contact_phone || '', inside: [r.interior, r.floors ? 'étage(s) ' + r.floors : ''].filter(Boolean).join(' · '), org: `${r.org_name || ''} · #${t.ref}` })}
         <dl class="kv small" style="margin-bottom:12px">
-          ${kvRow('Résidence', `${r.name || ''}${r.address ? ' — ' + r.address : ''}`)}
-          ${t.lieu ? kvRow('Où', t.lieu) : ''}${r.interior ? kvRow('Intérieur', r.interior) : ''}${r.floors ? kvRow('Étage(s)', r.floors) : ''}
-          ${t.acces ? html`<dt>Accès / codes</dt><dd>${parts(t.acces).map((x) => html`<div>${x}</div>`)}</dd>` : ''}
-          ${!/(Boîte à clés|Porte|Alarme|Panneaux|Locaux techniques) : /.test(t.acces || '') && ptlResCodes(r).length ? html`<dt>Codes de la résidence</dt><dd>${ptlResCodes(r).map((x) => html`<div>${x}</div>`)}</dd>` : ''}
-          ${t.dispo ? html`<dt>Disponibilités</dt><dd>${parts(t.dispo).map((x) => html`<div>${x}</div>`)}</dd>` : ''}
-          ${t.contact_name || r.contact_name ? html`<dt>Contact sur place</dt><dd>${t.contact_name || r.contact_name}${tel ? html` · <a href="tel:${tel}">${t.contact_phone || r.contact_phone}</a>` : ''}</dd>` : ''}
           ${t.technicien ? kvRow('Technicien', t.technicien) : ''}${t.planned_at ? kvRow('Planifiée', String(t.planned_at).replace('T', ' ')) : ''}
           ${kvRow('Demandée', ptlTime(t.created_at))}
         </dl>
@@ -5854,8 +5857,7 @@ const SHEETS = {
         <div class="edl-rooms">${EDL_ROOMS.map(([k, label]) => {
           const ph = edlIn(id, k), out = outs.filter((d) => d.room === k).pop();
           return html`<div class="edl-room"><div class="edl-room-h"><b>${label}</b>
-            <span class="edl-acts"><label class="btn sm ${ph ? '' : 'primary'}" title="Prendre une photo">${icon('camera')}<input type="file" accept="image/*" capture="environment" hidden data-input="edl-slot" data-log="${id}" data-room="${k}"></label>
-            <label class="btn sm" title="Choisir dans la galerie">${icon('image')}<input type="file" accept="image/*" hidden data-input="edl-slot" data-log="${id}" data-room="${k}"></label></span></div>
+            <span class="edl-acts"><label class="btn sm ${ph ? '' : 'primary'}" title="Photo (appareil ou galerie)">${icon('camera')}<input type="file" accept="image/*" hidden data-input="edl-slot" data-log="${id}" data-room="${k}"></label></span></div>
             <div class="edl-pair ${outs.length ? 'two' : ''}">${fig(ph, 'in', 'Entrée')}${outs.length ? fig(out, 'out', 'Sortie') : ''}</div></div>`;
         })}</div>
         <p class="tiny muted" style="margin:8px 0 0;text-align:center"><b>${edlOf(id).filter((d) => EDL_ROOM[d.room]).length} / ${EDL_ROOMS.length}</b> · <span>📷 appareil photo ou 🖼️ galerie</span> · <span>chiffrées avant l'envoi</span> · <span>une nouvelle photo remplace l'ancienne</span></p>
