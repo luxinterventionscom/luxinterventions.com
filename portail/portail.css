@@ -259,3 +259,7 @@ img.org-logo[hidden]{display:none}
 .act-big{font-size:clamp(30px,8vw,46px);font-weight:800;color:var(--accent,#E8723A);line-height:1.1;margin:4px 0 2px}
 .act-row{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:10px;font-size:15px}
 .act-row b{font-size:20px}
+
+/* fiche d'une demande : le bouton principal sur toute la largeur, le texte va à la ligne au lieu d'être coupé */
+.actions .btn { white-space: normal; line-height: 1.2; }
+@media (max-width: 640px) { .actions .btn.primary { flex: 1 1 100%; } }
