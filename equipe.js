@@ -345,11 +345,11 @@ function headHtml(x, extra = '', pre = '') {
     ${lieu || x.recur ? `<div class="meta">${lieu ? '🚪 ' + esc(lieu) : ''}${x.recur ? (lieu ? ' · ' : '') + '🔁 ' + esc(x.recur) : ''}</div>` : ''}
     ${!x.ger && x.note ? `<div class="cons"><b>${esc(t.consignes)}${colon()}</b>${esc(x.note)}</div>` : ''}`;
 }
-// sur place : problème (+ photo), codes, quand, contact, gérance — une ligne par information
+// sur place : problème, codes, quand, contact, gérance — une ligne par information
 function infoHtml(x, t) {
   const k = CK[lang] || CK.fr, g = x.ger, rows = [], tel = x.contact && x.contact.tel ? x.contact.tel.replace(/[^\d+]/g, '') : '';
   const row = (ic, v) => `<div class="ir"><span class="ic">${ic}</span><div class="tx">${esc(v)}</div></div>`;
-  if (g && x.note) rows.push(`<div class="ir"><span class="ic">⚠️</span><div class="tx"><b>${esc(k.pb)}${colon()}</b>${esc(x.note)}</div>${(x.pb || [])[0] ? `<a href="#" class="th" data-pb="${esc(x.pb[0])}"><img data-pb-img="${esc(x.pb[0])}" alt=""></a>` : ''}</div>`);
+  if (g && x.note) rows.push(`<div class="ir"><span class="ic">⚠️</span><div class="tx"><b>${esc(k.pb)}${colon()}</b>${esc(x.note)}</div></div>`); // les photos sont juste en dessous
   if (g) for (const c of String(g.acces || '').split(' · ').filter(Boolean)) rows.push(row('🔐', codeTr(c)));
   if (g) { const d = dispoTr(g.dispo); if (d.when) rows.push(row('🕗', d.when)); if (d.note) rows.push(row('📝', d.note)); }
   if (x.contact) rows.push(`<div class="ir"><span class="ic">👤</span><div class="tx">${esc(x.contact.nom)}</div>${tel ? `<a class="call" href="tel:${esc(tel)}" aria-label="${esc(t.call)}">📞</a>` : ''}</div>`);
