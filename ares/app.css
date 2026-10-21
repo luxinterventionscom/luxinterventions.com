@@ -921,5 +921,5 @@ body.compta [data-action^="del-"], body.compta [data-action$="-del"], body.compt
 .reqbox { margin: 0 0 12px; padding: 10px 12px; border-radius: 14px; background: #fff7ed; border: 1px solid #fed7aa; color: #1d1b16; font-size: 15px; line-height: 1.4; }
 .reqbox .ir { display: flex; align-items: flex-start; gap: 8px; padding: 5px 0; } .reqbox .ir + .ir { border-top: 1px dashed #fde3c5; }
 .reqbox .ic { flex: none; width: 22px; text-align: center; } .reqbox .tx { flex: 1; min-width: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
-.reqbox .call { flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: #15803d; text-decoration: none; font-size: 17px; margin-top: -5px; }
+.reqbox .call { text-decoration: none; font-size: 19px; line-height: 1; margin-left: 2px; }
 .reqbox .org { font-size: 12.5px; color: #8a7a66; }

@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.175.0';
+const VERSION = '2.176.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1936,7 +1936,7 @@ function reqBox({ pb, codes = [], dispo = '', contact = '', tel = '', telShow = 
     ${pb ? row('⚠️', html`<b>Problème :</b> ${pb}`) : ''}
     ${codes.map((c) => row('🔐', c))}
     ${dispo ? row('🕗', String(dispo).split(' · ').filter(Boolean).join(' · ')) : ''}
-    ${contact || tel ? html`<div class="ir"><span class="ic">👤</span><div class="tx">${contact}${telShow ? html` <span class="muted small">${telShow}</span>` : ''}</div>${tel ? html`<a class="call" href="tel:${tel}" aria-label="Appeler">📞</a>` : ''}</div>` : ''}
+    ${contact || tel ? html`<div class="ir"><span class="ic">👤</span><div class="tx">${contact}${tel ? html` <a class="call" href="tel:${tel}" aria-label="Appeler">📞</a>` : ''}${telShow ? html` <span class="muted small">${telShow}</span>` : ''}</div></div>` : ''}
     ${inside ? row('🏠', inside) : ''}
     ${org ? html`<div class="ir org">🏢 ${org}</div>` : ''}</div>`;
 }
