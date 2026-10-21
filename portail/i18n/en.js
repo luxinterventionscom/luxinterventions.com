@@ -3763,5 +3763,17 @@ export default [
 [
 "Responsable de la centrale",
 "Central manager"
+],
+[
+"Alarme",
+"Alarm"
+],
+[
+"Locaux techniques",
+"Technical rooms"
+],
+[
+"Portes / portails d’entrée",
+"Doors / entrance gates"
 ]
 ];

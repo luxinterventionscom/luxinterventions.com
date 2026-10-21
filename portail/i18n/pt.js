@@ -3831,5 +3831,17 @@ export default [
 [
 "Responsable de la centrale",
 "Responsável da central"
+],
+[
+"Alarme",
+"Alarme"
+],
+[
+"Locaux techniques",
+"Salas técnicas"
+],
+[
+"Portes / portails d’entrée",
+"Portas / portões de entrada"
 ]
 ];

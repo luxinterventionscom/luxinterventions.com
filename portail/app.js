@@ -16,7 +16,7 @@ scrollHintInit();
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.29.0';
+const VERSION = '1.30.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -1519,7 +1519,22 @@ const SHEETS = {
         ${t.status !== 'annulee' ? html`<ol class="stepper">${STEPS.map((k, i) => html`<li class="${i < st.step ? 'done' : i === st.step ? 'now' : ''}"><i></i><span>${STATUS[k].label}</span></li>`)}</ol>` : ''}
         ${t.status === 'planifiee' || t.planned_at ? html`<div class="alert info" style="margin-bottom:12px">${icon('calendar')}<div>Intervention prévue <b>${fmtPlanned(t.planned_at)}</b>${t.technicien ? html` — technicien : <b>${t.technicien}</b>` : ''}</div></div>` : ''}
         ${actions}
-        <div class="card" style="margin-bottom:12px"><div class="small muted" style="margin-bottom:6px">Description</div><div style="white-space:pre-wrap">${t.description}</div></div>
+        ${(() => {
+          // en haut l'essentiel (où, logement), puis un cadre orange : une ligne par information — comme dans l'app de l'équipe
+          const row = (ic, v) => (v ? html`<div class="ir"><span class="ic">${ic}</span><div class="tx">${v}</div></div>` : '');
+          const resCodes = /(Boîte à clés|Porte|Alarme|Panneaux|Locaux techniques) : /.test(t.acces || '') ? [] : [['🔑', 'Boîte à clés', keyboxOf(res)], ['🚪', 'Portes / portails d’entrée', res.access], ['🚨', 'Alarme', res.alarm], ['⚙️', 'Locaux techniques', res.code_other]].filter((c) => c[2]);
+          const inside = [res.interior, res.floors ? 'étage(s) ' + res.floors : ''].filter(Boolean).join(' · ');
+          return html`<div class="rq-top"><div>📍 <b>${res.name}</b>${res.address ? html` — ${res.address}` : ''}</div>${t.lieu ? html`<div>🚪 ${partsHtml(lieuClean(t.lieu))}</div>` : ''}</div>
+          <div class="reqbox">
+            ${row('⚠️', html`<b><span>Problème</span> :</b> ${t.description}`)}
+            ${t.acces ? (isCode(t.acces) ? row('🔐', codeShow(t.acces)) : String(t.acces).split(' · ').filter(Boolean).map((x) => row('🔐', partsHtml(x)))) : ''}
+            ${resCodes.map((c) => row(c[0], html`<span>${c[1]}</span> ${codeShow(c[2])}`))}
+            ${row('🔑', res.keys_info)}
+            ${row('🕗', t.dispo ? partsHtml(t.dispo) : '')}
+            ${t.contact_name || res.contact_name ? html`<div class="ir"><span class="ic">👤</span><div class="tx">${t.contact_name || res.contact_name}${tel ? html` <span class="muted small">${t.contact_phone || res.contact_phone}</span>` : ''}</div>${tel ? html`<a class="call" href="tel:${tel}" aria-label="Appeler">📞</a>` : ''}</div>` : ''}
+            ${row('🏠', inside)}
+            ${isAdmin() ? html`<div class="ir org">🏢 ${res.org_name} · #${t.ref}</div>` : ''}</div>`;
+        })()}
         ${(() => {
           // photos du dégât (gérance, à la demande) | photos après réparation (équipe LuxInterventions)
           const after = d.events.filter((e) => e !== firstEvent && e.user_role === 'admin').flatMap((e) => byEvent[e.id] || []);
@@ -1530,15 +1545,6 @@ const SHEETS = {
           </div></div>`;
         })()}
         <dl class="kv small">
-          ${kv('Résidence', html`${res.name}<div class="tiny muted">${res.address || ''}</div>`)}
-          ${kv('Lieu', t.lieu ? partsHtml(lieuClean(t.lieu)) : '')}
-          ${isAdmin() ? kv('Gérance', res.org_name) : ''}
-          ${kv('Contact sur place', t.contact_name || res.contact_name ? html`${t.contact_name || res.contact_name}${tel ? html` · <a href="tel:${tel}">${t.contact_phone || res.contact_phone}</a>` : ''}` : '')}
-          ${kv('Accès', t.acces ? (isCode(t.acces) ? codeShow(t.acces) : html`<div class="acc-lines">${String(t.acces).split(' · ').filter(Boolean).map((x) => html`<div>${partsHtml(x)}</div>`)}</div>`) : '')}
-          ${/(Boîte à clés|Porte|Alarme|Panneaux|Locaux techniques) : /.test(t.acces || '') ? '' : html`${kv('🔑 Boîte à clés', codeShow(keyboxOf(res)))}${kv('🚪 Portes / portails d’entrée', codeShow(res.access))}${kv('🚨 Alarme', codeShow(res.alarm))}${kv('⚙️ Locaux techniques', codeShow(res.code_other))}`}
-          ${kv('Intérieur', res.interior)}${kv('Étage(s)', res.floors)}
-          ${kv('Clés', res.keys_info)}
-          ${kv('Disponibilités', t.dispo ? partsHtml(t.dispo) : '')}
           ${kv('Demandée', fmtDateTime(t.created_at))}
           ${kv('Prise en charge', t.taken_at ? fmtDateTime(t.taken_at) + ' (' + duration(t.taken_at - t.created_at) + ')' : '')}
           ${kv('Terminée', t.done_at && t.status === 'terminee' ? fmtDateTime(t.done_at) : '')}
