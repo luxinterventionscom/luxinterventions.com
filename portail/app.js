@@ -16,7 +16,7 @@ scrollHintInit();
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.30.0';
+const VERSION = '1.31.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -1531,7 +1531,7 @@ const SHEETS = {
             ${resCodes.map((c) => row(c[0], html`<span>${c[1]}</span> ${codeShow(c[2])}`))}
             ${row('🔑', res.keys_info)}
             ${row('🕗', t.dispo ? partsHtml(t.dispo) : '')}
-            ${t.contact_name || res.contact_name ? html`<div class="ir"><span class="ic">👤</span><div class="tx">${t.contact_name || res.contact_name}${tel ? html` <span class="muted small">${t.contact_phone || res.contact_phone}</span>` : ''}</div>${tel ? html`<a class="call" href="tel:${tel}" aria-label="Appeler">📞</a>` : ''}</div>` : ''}
+            ${t.contact_name || res.contact_name ? html`<div class="ir"><span class="ic">👤</span><div class="tx">${t.contact_name || res.contact_name}${tel ? html` <a class="call" href="tel:${tel}" aria-label="Appeler">📞</a> <span class="muted small">${t.contact_phone || res.contact_phone}</span>` : ''}</div></div>` : ''}
             ${row('🏠', inside)}
             ${isAdmin() ? html`<div class="ir org">🏢 ${res.org_name} · #${t.ref}</div>` : ''}</div>`;
         })()}

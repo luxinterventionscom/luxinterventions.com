@@ -352,7 +352,7 @@ function infoHtml(x, t) {
   if (g && x.note) rows.push(`<div class="ir"><span class="ic">⚠️</span><div class="tx"><b>${esc(k.pb)}${colon()}</b>${esc(x.note)}</div></div>`); // les photos sont juste en dessous
   if (g) for (const c of String(g.acces || '').split(' · ').filter(Boolean)) rows.push(row('🔐', codeTr(c)));
   if (g) { const d = dispoTr(g.dispo); if (d.when) rows.push(row('🕗', d.when)); if (d.note) rows.push(row('📝', d.note)); }
-  if (x.contact) rows.push(`<div class="ir"><span class="ic">👤</span><div class="tx">${esc(x.contact.nom)}</div>${tel ? `<a class="call" href="tel:${esc(tel)}" aria-label="${esc(t.call)}">📞</a>` : ''}</div>`);
+  if (x.contact) rows.push(`<div class="ir"><span class="ic">👤</span><div class="tx">${esc(x.contact.nom)}${tel ? ` <a class="call" href="tel:${esc(tel)}" aria-label="${esc(t.call)}">📞</a>` : ''}</div></div>`);
   if (g) rows.push(`<div class="ir org">🏢 ${esc(g.org)} · #${esc(g.ref)}</div>`);
   return (rows.length ? `<div class="ibox">${rows.join('')}</div>` : '') + pbHtml(x);
 }
