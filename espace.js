@@ -20,6 +20,19 @@ else { try { [id, key] = ((localStorage.getItem(ACC) || '').match(/^([0-9a-f]{32
 let installEvt = null;
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; if (!/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || "")) render(); });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/espace-sw.js', { scope: '/espace' }).catch(() => {});
+
+// Nouvelle version publiée : l'app installée reste ouverte en mémoire (iPhone) — au retour dans l'app on compare
+// le service worker ; s'il a changé et que personne n'écrit, on recharge (sinon au prochain retour)
+let swSeen = '';
+const swCheck = async () => {
+  try {
+    const v = (await (await fetch('/espace-sw.js', { cache: 'no-store' })).text()).match(/CACHE = '([^']+)'/)?.[1] || '';
+    if (!swSeen) { swSeen = v; return; }
+    if (v && v !== swSeen && !(document.activeElement && document.activeElement.matches('input, textarea, select'))) location.reload();
+  } catch { /* hors ligne */ }
+};
+swCheck();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') swCheck(); });
 const app = document.getElementById('app');
 
 // Annexes comprises avec le logement, type de maison, fil avec le gestionnaire (personne seule)
