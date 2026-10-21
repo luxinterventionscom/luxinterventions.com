@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.173.0';
+const VERSION = '2.174.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5173,7 +5173,7 @@ const SHEETS = {
         const msgTxt = encodeURIComponent(inv.txt);
         body = html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code personnel</div>
             <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
-            <button class="btn sm" data-action="eq-code" data-id="${id}">${e.code ? 'Nouveau code' : 'Créer le code'}</button></div>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">${e.code ? html`<button class="btn sm" data-action="code-copy" data-code="${e.code}">📋 Copier le code</button>` : ''}<button class="btn sm" data-action="eq-code" data-id="${id}">${e.code ? 'Nouveau code' : 'Créer le code'}</button></div></div>
           <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(url, 5)}</div>
           <label class="field" style="margin:0 0 4px">Langue de son app<select data-input="eq-lang" data-id="${id}">${[['', 'Celle de son téléphone'], ['fr', 'Français'], ['it', 'Italiano'], ['pt', 'Português'], ['de', 'Deutsch'], ['en', 'English'], ['es', 'Español']].map(([k, v2]) => html`<option value="${k}" ${(e.lang || '') === k ? new Raw('selected') : ''}>${v2}</option>`)}</select></label>
           <p class="tiny muted" style="margin:0 0 10px">Le message d’invitation part dans cette langue (en français si « Celle de son téléphone »).</p>
@@ -6033,7 +6033,7 @@ const SHEETS = {
         body = html`<p style="margin-top:0">Espace actif. Donnez à <b>${fullName(l)}</b> son <b>code d'accès</b> (pour l'app installée depuis luxinterventions.com) ou envoyez-lui le lien direct.</p>
           <div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d'accès personnel</div>
             <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
-            <button class="btn sm" data-action="esp-code" data-id="${id}">${e.code ? 'Nouveau code' : 'Créer le code'}</button></div>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">${e.code ? html`<button class="btn sm" data-action="code-copy" data-code="${e.code}">📋 Copier le code</button>` : ''}<button class="btn sm" data-action="esp-code" data-id="${id}">${e.code ? 'Nouveau code' : 'Créer le code'}</button></div></div>
           <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(url, 5)}</div>
           <label class="field" style="margin:0 0 4px">Langue par défaut de son espace<select data-input="esp-lang" data-loc="${id}">${[['', 'Celle de son téléphone'], ['fr', 'Français'], ['it', 'Italiano'], ['de', 'Deutsch'], ['pt', 'Português'], ['en', 'English'], ['es', 'Español']].map(([k, v2]) => html`<option value="${k}" ${(e.lang || '') === k ? new Raw('selected') : ''}>${v2}</option>`)}</select></label>
           <p class="tiny muted" style="margin:0 0 10px">Le message d’invitation part dans cette langue (en français si « Celle de son téléphone »).</p>
@@ -6880,6 +6880,7 @@ const ACTIONS = {
     if (l.espace.code && !(await confirmBox('Nouveau code d’accès ?', { ok: 'Nouveau code', detail: 'L’ancien code ne fonctionnera plus pour une nouvelle installation (les téléphones déjà connectés restent connectés).' }))) return;
     try { await setAccessCode(l); toast('Nouveau code créé'); } catch (e) { toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
   },
+  async 'code-copy'(d) { try { await navigator.clipboard.writeText(d.code); toast('Code copié : ' + d.code); } catch { toast('Copie impossible', { bad: true }); } },
   async 'esp-copy'(d) {
     const l = vault.get('locataires', d.id);
     try { await navigator.clipboard.writeText(espUrl(l)); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); }
