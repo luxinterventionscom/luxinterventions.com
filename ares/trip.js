@@ -12,7 +12,12 @@ const LOC = { fr: 'fr-LU', it: 'it-IT', de: 'de-LU', en: 'en-GB', pt: 'pt-PT', e
 const CSS = `.trip-box{margin:0 0 12px;padding:12px 14px;border-radius:14px;border:2px solid #F97316;background:#FFF4EC;color:#1d1b16;animation:tripGlow 2.4s ease-in-out infinite}
 .trip-box.here{border-color:#15803d;background:#ECFDF3;animation:none}
 .trip-box b{font-weight:800}.trip-box .tm{display:block;margin-top:2px;font-size:14px}
-.trip-bar{height:8px;margin-top:8px;border-radius:6px;background:rgba(249,115,22,.18);overflow:hidden}.trip-bar i{display:block;height:100%;background:#F97316;border-radius:6px;transition:width .6s}
+.trip-line{position:relative;height:22px;margin:10px 14px 2px 8px}
+.trip-line::before{content:'';position:absolute;left:0;right:0;top:9px;border-top:4px dotted rgba(249,115,22,.45)}
+.trip-line .fill{position:absolute;left:0;top:9px;height:4px;border-radius:4px;background:#F97316;transition:width .6s}
+.trip-line .s{position:absolute;left:-6px;top:5px;width:12px;height:12px;border-radius:50%;background:#F97316}
+.trip-line .dot{position:absolute;top:2px;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:#dc2626;border:3px solid #fff;box-shadow:0 0 0 2px #dc2626;transition:left .6s}
+.trip-line .end{position:absolute;right:-14px;top:-1px;font-size:18px;line-height:1}
 .trip-late{color:#b45309;font-weight:700}
 .trip-tag{display:inline-block;padding:1px 8px;border-radius:999px;background:#FFF4EC;color:#c2410c;border:1px solid #F97316;font-size:12px;font-weight:700;white-space:nowrap}
 .trip-tag.here{background:#ECFDF3;color:#15803d;border-color:#15803d}
@@ -33,10 +38,16 @@ export function tripView(rec, { lang = 'fr', kind = 'box', now = Date.now() } = 
   const m = Math.max(0, Math.ceil((rec.eta - now) / 60000)), late = rec.e0 && rec.eta > rec.e0 + 3 * 60000;
   const h = new Date(rec.eta).toLocaleTimeString(LOC[lang] || 'fr-LU', { hour: '2-digit', minute: '2-digit' });
   if (kind === 'tag') return `<span class="trip-tag">🚗 ${esc(n)} · ${m ? esc(m + ' min') : '…'}${late ? ' ⏳' : ''}</span>`;
-  const pct = rec.start && rec.eta > rec.start ? Math.min(100, Math.max(4, Math.round(((now - rec.start) / (rec.eta - rec.start)) * 100))) : 50;
   return `<div class="trip-box" data-notr>🚗 <b>${esc(t.go.replace('{n}', n))}</b>
     <span class="tm">${m ? esc(t.inm.replace('{m}', m)) + ' (' + esc(t.at.replace('{h}', h)) + ')' : esc(t.soon)}${late ? ` · <span class="trip-late">${esc(t.late)}</span>` : ''}</span>
-    <div class="trip-bar"><i style="width:${pct}%"></i></div></div>`;
+    ${tripLine(rec, now)}</div>`;
+}
+// ●━━━━🔴┈┈┈┈✅ : départ, le point rouge « il est ici » avance avec le temps (pas le GPS), arrivée ;
+// en retard, il s'arrête avant la fin
+export function tripLine(rec, now = Date.now()) {
+  if (!cssDone && typeof document !== 'undefined') { const st = document.createElement('style'); st.textContent = CSS; document.head.appendChild(st); cssDone = true; }
+  const pct = rec.start && rec.eta > rec.start ? Math.min(94, Math.max(3, Math.round(((now - rec.start) / (rec.eta - rec.start)) * 100))) : 50;
+  return `<div class="trip-line" aria-hidden="true"><i class="s"></i><i class="fill" style="width:${pct}%"></i><i class="dot" style="left:${pct}%"></i><span class="end">✅</span></div>`;
 }
 // adresse du Worker : https://…/api/ares/ → https://…/api/
 export async function tripFetch(api, tks) {

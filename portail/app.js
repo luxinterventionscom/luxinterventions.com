@@ -16,7 +16,7 @@ scrollHintInit();
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.28.0';
+const VERSION = '1.29.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -114,6 +114,8 @@ const isCode = (v) => /^\d{0,6}$/.test(String(v || ''));
 const code6 = (label, name, value) => { const v = isCode(value) ? String(value || '') : ''; return html`<label class="field full code6-field">${label}
   <span class="code6" data-code6="${name}"><input type="hidden" name="${name}" value="${v}">${[0, 1, 2, 3, 4, 5].map((i) => html`<input class="c6" inputmode="numeric" autocomplete="off" aria-label="${label} ${i + 1}" value="${v[i] || ''}">`)}</span></label>`; };
 const codeShow = (v) => (v && isCode(v) ? html`<span class="code6-show">${String(v).split('').map((c) => html`<b>${c}</b>`)}</span>` : v || '');
+// « Appartement · Étage 1 · Appartement 3 » → « Étage 1 · Appartement 3 » (la zone répétée dans la précision)
+const lieuClean = (s) => { const p = String(s || '').split(' · ').filter(Boolean); return p.filter((x, i) => !(ZONES.includes(x) && p.some((q, j) => j !== i && q !== x && q.toLowerCase().startsWith(x.toLowerCase().split(' ')[0])))).join(' · '); };
 const partsHtml = (s) => String(s || '').split(' · ').filter(Boolean).map((x, i) => {
   const h = /^De (\d\d:\d\d) à (\d\d:\d\d)( \(lendemain\))?$/.exec(x), f = /^(À partir de|Jusqu’à) (\d\d:\d\d)$/.exec(x), m = /^(Étage|Date souhaitée :) (.+)$/.exec(x), c = /^(Boîte à clés|Porte|Alarme|Panneaux|Locaux techniques) : (\d{1,6})$/.exec(x);
   if (c) return html`${i ? ' · ' : ''}<span>${{ 'Boîte à clés': '🔑 Boîte à clés', Porte: '🚪 Portes / portails', Alarme: '🚨 Alarme', Panneaux: '⚙️ Locaux techniques', 'Locaux techniques': '⚙️ Locaux techniques' }[c[1]]}</span> ${codeShow(c[2])}`;
@@ -1529,7 +1531,7 @@ const SHEETS = {
         })()}
         <dl class="kv small">
           ${kv('Résidence', html`${res.name}<div class="tiny muted">${res.address || ''}</div>`)}
-          ${kv('Lieu', t.lieu ? partsHtml(t.lieu) : '')}
+          ${kv('Lieu', t.lieu ? partsHtml(lieuClean(t.lieu)) : '')}
           ${isAdmin() ? kv('Gérance', res.org_name) : ''}
           ${kv('Contact sur place', t.contact_name || res.contact_name ? html`${t.contact_name || res.contact_name}${tel ? html` · <a href="tel:${tel}">${t.contact_phone || res.contact_phone}</a>` : ''}` : '')}
           ${kv('Accès', t.acces ? (isCode(t.acces) ? codeShow(t.acces) : html`<div class="acc-lines">${String(t.acces).split(' · ').filter(Boolean).map((x) => html`<div>${partsHtml(x)}</div>`)}</div>`) : '')}

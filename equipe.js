@@ -9,6 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
+import { tripLine } from '/ares/trip.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'eqAccess';
 const RX = /^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/;
@@ -143,12 +144,12 @@ const WRGPD = {
 const IA_BTN = { fr: '▶ Voir comment (animation)', it: '▶ Guarda come (animazione)', de: '▶ So geht’s (Animation)', pt: '▶ Ver como (animação)', en: '▶ See how (animation)', es: '▶ Ver cómo (animación)' };
 const iaBtn = () => (matchMedia('(display-mode: standalone)').matches || navigator.standalone ? '' : `<p style="text-align:center;margin:-4px 0 12px"><button class="btn sm sec" data-ianim="1">${esc(IA_BTN[lang] || IA_BTN.fr)}</button></p>`);
 const REFT = {
-  fr: { needNote: 'Expliquez la raison (obligatoire pour « Autre »)', btn: '✋ Refuser ?', t: '✋ Refuser ce travail', why: 'Pourquoi ? (obligatoire)', r: { malade: '🤒 Je suis malade', dispo: '📅 Pas disponible ce jour-là', loin: '🚗 Trop loin / pas de transport', metier: '🛠️ Ce n’est pas mon métier', autre: '✏️ Autre raison' }, choose: '— choisir —', notePh: 'Un mot pour le responsable (facultatif)', send: '✋ Envoyer le refus', done: '✋ Refusé — le responsable envoie quelqu’un d’autre', ok: 'Refus envoyé. Merci de prévenir : le responsable envoie un autre ouvrier.' },
-  it: { needNote: 'Spiega il motivo (obbligatorio per «Altro»)', btn: '✋ Rifiutare?', t: '✋ Rifiutare questo lavoro', why: 'Perché? (obbligatorio)', r: { malade: '🤒 Sono malato', dispo: '📅 Non disponibile quel giorno', loin: '🚗 Troppo lontano / senza trasporto', metier: '🛠️ Non è il mio mestiere', autre: '✏️ Altro motivo' }, choose: '— scegliere —', notePh: 'Una parola per il responsabile (facoltativo)', send: '✋ Invia il rifiuto', done: '✋ Rifiutato — il responsabile manda un altro', ok: 'Rifiuto inviato. Grazie di aver avvisato: il responsabile manda un altro operaio.' },
-  pt: { needNote: 'Explique o motivo (obrigatório para «Outro»)', btn: '✋ Recusar?', t: '✋ Recusar este trabalho', why: 'Porquê? (obrigatório)', r: { malade: '🤒 Estou doente', dispo: '📅 Não disponível nesse dia', loin: '🚗 Muito longe / sem transporte', metier: '🛠️ Não é a minha profissão', autre: '✏️ Outro motivo' }, choose: '— escolher —', notePh: 'Uma palavra para o responsável (opcional)', send: '✋ Enviar a recusa', done: '✋ Recusado — o responsável envia outra pessoa', ok: 'Recusa enviada. Obrigado por avisar: o responsável envia outro trabalhador.' },
-  de: { needNote: 'Grund erklären (Pflicht bei „Anderer Grund“)', btn: '✋ Ablehnen?', t: '✋ Diesen Auftrag ablehnen', why: 'Warum? (Pflicht)', r: { malade: '🤒 Ich bin krank', dispo: '📅 An diesem Tag nicht verfügbar', loin: '🚗 Zu weit / kein Transport', metier: '🛠️ Nicht mein Beruf', autre: '✏️ Anderer Grund' }, choose: '— wählen —', notePh: 'Ein Wort für den Verantwortlichen (optional)', send: '✋ Ablehnung senden', done: '✋ Abgelehnt — der Verantwortliche schickt jemand anderen', ok: 'Ablehnung gesendet. Danke für die Info: der Verantwortliche schickt einen anderen Mitarbeiter.' },
-  en: { needNote: 'Explain the reason (required for “Other”)', btn: '✋ Refuse?', t: '✋ Refuse this job', why: 'Why? (required)', r: { malade: '🤒 I am sick', dispo: '📅 Not available that day', loin: '🚗 Too far / no transport', metier: '🛠️ Not my trade', autre: '✏️ Other reason' }, choose: '— choose —', notePh: 'A word for the manager (optional)', send: '✋ Send refusal', done: '✋ Refused — the manager sends someone else', ok: 'Refusal sent. Thanks for letting us know: the manager will send another worker.' },
-  es: { needNote: 'Explique el motivo (obligatorio para «Otro»)', btn: '✋ ¿Rechazar?', t: '✋ Rechazar este trabajo', why: '¿Por qué? (obligatorio)', r: { malade: '🤒 Estoy enfermo', dispo: '📅 No disponible ese día', loin: '🚗 Demasiado lejos / sin transporte', metier: '🛠️ No es mi oficio', autre: '✏️ Otro motivo' }, choose: '— elegir —', notePh: 'Una palabra para el responsable (opcional)', send: '✋ Enviar el rechazo', done: '✋ Rechazado — el responsable envía a otra persona', ok: 'Rechazo enviado. Gracias por avisar: el responsable envía a otro trabajador.' },
+  fr: { needNote: 'Expliquez la raison (obligatoire pour « Autre »)', btn: '✋ Refuser ?', t: '✋ Refuser ce travail', why: 'Pourquoi ? (obligatoire)', r: { malade: '🤒 Je suis malade', dispo: '📅 Pas disponible ce jour-là', loin: '🚗 Trop loin / pas de transport', metier: '🛠️ Ce n’est pas mon métier', incident: '🚧 Incident / accident', autre: '✏️ Autre raison' }, choose: '— choisir —', notePh: 'Un mot pour le responsable (facultatif)', send: '✋ Envoyer le refus', done: '✋ Refusé — le responsable envoie quelqu’un d’autre', ok: 'Refus envoyé. Merci de prévenir : le responsable envoie un autre ouvrier.' },
+  it: { needNote: 'Spiega il motivo (obbligatorio per «Altro»)', btn: '✋ Rifiutare?', t: '✋ Rifiutare questo lavoro', why: 'Perché? (obbligatorio)', r: { malade: '🤒 Sono malato', dispo: '📅 Non disponibile quel giorno', loin: '🚗 Troppo lontano / senza trasporto', metier: '🛠️ Non è il mio mestiere', incident: '🚧 Incidente / imprevisto', autre: '✏️ Altro motivo' }, choose: '— scegliere —', notePh: 'Una parola per il responsabile (facoltativo)', send: '✋ Invia il rifiuto', done: '✋ Rifiutato — il responsabile manda un altro', ok: 'Rifiuto inviato. Grazie di aver avvisato: il responsabile manda un altro operaio.' },
+  pt: { needNote: 'Explique o motivo (obrigatório para «Outro»)', btn: '✋ Recusar?', t: '✋ Recusar este trabalho', why: 'Porquê? (obrigatório)', r: { malade: '🤒 Estou doente', dispo: '📅 Não disponível nesse dia', loin: '🚗 Muito longe / sem transporte', metier: '🛠️ Não é a minha profissão', incident: '🚧 Acidente / imprevisto', autre: '✏️ Outro motivo' }, choose: '— escolher —', notePh: 'Uma palavra para o responsável (opcional)', send: '✋ Enviar a recusa', done: '✋ Recusado — o responsável envia outra pessoa', ok: 'Recusa enviada. Obrigado por avisar: o responsável envia outro trabalhador.' },
+  de: { needNote: 'Grund erklären (Pflicht bei „Anderer Grund“)', btn: '✋ Ablehnen?', t: '✋ Diesen Auftrag ablehnen', why: 'Warum? (Pflicht)', r: { malade: '🤒 Ich bin krank', dispo: '📅 An diesem Tag nicht verfügbar', loin: '🚗 Zu weit / kein Transport', metier: '🛠️ Nicht mein Beruf', incident: '🚧 Unfall / Zwischenfall', autre: '✏️ Anderer Grund' }, choose: '— wählen —', notePh: 'Ein Wort für den Verantwortlichen (optional)', send: '✋ Ablehnung senden', done: '✋ Abgelehnt — der Verantwortliche schickt jemand anderen', ok: 'Ablehnung gesendet. Danke für die Info: der Verantwortliche schickt einen anderen Mitarbeiter.' },
+  en: { needNote: 'Explain the reason (required for “Other”)', btn: '✋ Refuse?', t: '✋ Refuse this job', why: 'Why? (required)', r: { malade: '🤒 I am sick', dispo: '📅 Not available that day', loin: '🚗 Too far / no transport', metier: '🛠️ Not my trade', incident: '🚧 Accident / incident', autre: '✏️ Other reason' }, choose: '— choose —', notePh: 'A word for the manager (optional)', send: '✋ Send refusal', done: '✋ Refused — the manager sends someone else', ok: 'Refusal sent. Thanks for letting us know: the manager will send another worker.' },
+  es: { needNote: 'Explique el motivo (obligatorio para «Otro»)', btn: '✋ ¿Rechazar?', t: '✋ Rechazar este trabajo', why: '¿Por qué? (obligatorio)', r: { malade: '🤒 Estoy enfermo', dispo: '📅 No disponible ese día', loin: '🚗 Demasiado lejos / sin transporte', metier: '🛠️ No es mi oficio', incident: '🚧 Accidente / imprevisto', autre: '✏️ Otro motivo' }, choose: '— elegir —', notePh: 'Una palabra para el responsable (opcional)', send: '✋ Enviar el rechazo', done: '✋ Rechazado — el responsable envía a otra persona', ok: 'Rechazo enviado. Gracias por avisar: el responsable envía a otro trabajador.' },
 };
 const isRefused = (tid, d) => { const st = stateOf(tid, d); return !!st && st.st === 'refus'; };
 // bouton rouge en haut à droite de la carte du travail (pas encore commencé, pas encore refusé)
@@ -158,6 +159,8 @@ function refusTop(it) {
   return `<button class="refus-top" data-act="refus" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(r.btn)}</button>`;
 }
 // formulaire du motif / confirmation (travail pas encore commencé)
+// le même bouton, à côté de « Je suis en route » / « START » (deux boutons de même taille)
+const refusBtn = (it) => refusTop(it).replace('class="refus-top"', 'class="refus-top in-duo"');
 function refusUi(it) {
   const r = REFT[lang] || REFT.fr, t = T();
   if (isRefused(it.tid, it.d)) return `<div class="stline refus">${esc(r.done)}</div>`;
@@ -293,22 +296,72 @@ async function pbUrl(docId) {
   return pbUrls.get(docId);
 }
 const hydratePb = () => document.querySelectorAll('img[data-pb-img]').forEach((img) => { pbUrl(img.dataset.pbImg).then((u) => { img.src = u; }).catch(() => {}); });
-document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('[data-pb]'); if (!a) return; e.preventDefault(); pbUrl(a.dataset.pb).then((u) => window.open(u, '_blank')).catch(() => {}); });
+document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('[data-pb]'); if (!a) return; e.preventDefault(); pbUrl(a.dataset.pb).then((u) => { const o = document.createElement('div'); o.className = 'lbx'; o.innerHTML = `<img src="${u}" alt=""><span>✕</span>`; o.onclick = () => o.remove(); document.body.append(o); }).catch(() => {}); });
 // heure prévue (de → à) et urgence, mises par le responsable
 const whenTag = (x) => `${x.urgent ? ` <span class="tag urg">🔴 ${esc(T().urg)}</span>` : ''}${x.heure ? ` <span class="tag hr">🕒 ${esc(x.heure)}${x.heureFin ? '–' + esc(x.heureFin) : ''}</span>` : ''}`;
 const byHour = (a, b) => (a.d + ((data.tasks[a.tid] || {}).heure || '99')).localeCompare(b.d + ((data.tasks[b.tid] || {}).heure || '99'));
+// Listes fixes du portail des gérances (écrites en français) → langue de l'ouvrier ; le texte libre reste tel quel
+const FIXW = {
+  it: { Plomberie: 'Idraulica', 'Électricité': 'Elettricità', Chauffage: 'Riscaldamento', 'Chaudière': 'Caldaia', Radiateurs: 'Radiatori', Sanitaire: 'Sanitari', 'Maçonnerie': 'Muratura', Carrelage: 'Piastrelle', 'Pose de panneaux': 'Posa di pannelli', Peinture: 'Pittura', 'Panneaux solaires': 'Pannelli solari', Serrurerie: 'Serrature', 'Toiture / façade': 'Tetto / facciata', Vitrerie: 'Vetri', Menuiserie: 'Falegnameria', Nettoyage: 'Pulizia', 'Espaces verts': 'Aree verdi', Ascenseur: 'Ascensore', Autre: 'Altro', 'Réparer': 'Riparare', Nettoyer: 'Pulire', Refaire: 'Rifare', Remplacer: 'Sostituire', 'Installer / poser': 'Installare / posare', 'Contrôler': 'Controllare', Appartement: 'Appartamento', Chambre: 'Camera', Bureau: 'Ufficio', 'Box / garage': 'Box / garage', Cave: 'Cantina', 'Jardin commun': 'Giardino comune', 'Parties communes / hall': 'Parti comuni / atrio', 'Cage d’escalier': 'Vano scale', 'Chaufferie / local technique': 'Locale caldaia / tecnico', 'Parking / extérieur': 'Parcheggio / esterno', 'Étage': 'Piano', 'Bâtiment': 'Edificio', 'Boîte à clés': 'Cassetta chiavi', Porte: 'Porta', Alarme: 'Allarme', 'Locaux techniques': 'Locali tecnici', Serrure: 'Serratura', Code: 'Codice' },
+  de: { Plomberie: 'Sanitärinstallation', 'Électricité': 'Elektrik', Chauffage: 'Heizung', 'Chaudière': 'Heizkessel', Radiateurs: 'Heizkörper', Sanitaire: 'Sanitär', 'Maçonnerie': 'Mauerwerk', Carrelage: 'Fliesen', 'Pose de panneaux': 'Plattenmontage', Peinture: 'Malerarbeiten', 'Panneaux solaires': 'Solarmodule', Serrurerie: 'Schlosserei', 'Toiture / façade': 'Dach / Fassade', Vitrerie: 'Verglasung', Menuiserie: 'Schreinerei', Nettoyage: 'Reinigung', 'Espaces verts': 'Grünflächen', Ascenseur: 'Aufzug', Autre: 'Sonstiges', 'Réparer': 'Reparieren', Nettoyer: 'Reinigen', Refaire: 'Erneuern', Remplacer: 'Ersetzen', 'Installer / poser': 'Installieren / montieren', 'Contrôler': 'Prüfen', Appartement: 'Wohnung', Chambre: 'Zimmer', Bureau: 'Büro', 'Box / garage': 'Box / Garage', Cave: 'Keller', 'Jardin commun': 'Gemeinschaftsgarten', 'Parties communes / hall': 'Gemeinschaftsbereiche / Eingang', 'Cage d’escalier': 'Treppenhaus', 'Chaufferie / local technique': 'Heizraum / Technikraum', 'Parking / extérieur': 'Parkplatz / außen', 'Étage': 'Etage', 'Bâtiment': 'Gebäude', 'Boîte à clés': 'Schlüsselbox', Porte: 'Tür', Alarme: 'Alarm', 'Locaux techniques': 'Technikräume', Serrure: 'Schloss', Code: 'Code' },
+  en: { Plomberie: 'Plumbing', 'Électricité': 'Electricity', Chauffage: 'Heating', 'Chaudière': 'Boiler', Radiateurs: 'Radiators', Sanitaire: 'Sanitary', 'Maçonnerie': 'Masonry', Carrelage: 'Tiling', 'Pose de panneaux': 'Panel fitting', Peinture: 'Painting', 'Panneaux solaires': 'Solar panels', Serrurerie: 'Locksmith', 'Toiture / façade': 'Roof / façade', Vitrerie: 'Glazing', Menuiserie: 'Carpentry', Nettoyage: 'Cleaning', 'Espaces verts': 'Green spaces', Ascenseur: 'Lift', Autre: 'Other', 'Réparer': 'Repair', Nettoyer: 'Clean', Refaire: 'Redo', Remplacer: 'Replace', 'Installer / poser': 'Install / fit', 'Contrôler': 'Check', Appartement: 'Flat', Chambre: 'Room', Bureau: 'Office', 'Box / garage': 'Box / garage', Cave: 'Cellar', 'Jardin commun': 'Shared garden', 'Parties communes / hall': 'Common areas / hall', 'Cage d’escalier': 'Stairwell', 'Chaufferie / local technique': 'Boiler / plant room', 'Parking / extérieur': 'Car park / outside', 'Étage': 'Floor', 'Bâtiment': 'Building', 'Boîte à clés': 'Key box', Porte: 'Door', Alarme: 'Alarm', 'Locaux techniques': 'Technical rooms', Serrure: 'Lock', Code: 'Code' },
+  pt: { Plomberie: 'Canalização', 'Électricité': 'Eletricidade', Chauffage: 'Aquecimento', 'Chaudière': 'Caldeira', Radiateurs: 'Radiadores', Sanitaire: 'Sanitários', 'Maçonnerie': 'Alvenaria', Carrelage: 'Azulejos', 'Pose de panneaux': 'Colocação de painéis', Peinture: 'Pintura', 'Panneaux solaires': 'Painéis solares', Serrurerie: 'Serralharia', 'Toiture / façade': 'Telhado / fachada', Vitrerie: 'Vidros', Menuiserie: 'Carpintaria', Nettoyage: 'Limpeza', 'Espaces verts': 'Espaços verdes', Ascenseur: 'Elevador', Autre: 'Outro', 'Réparer': 'Reparar', Nettoyer: 'Limpar', Refaire: 'Refazer', Remplacer: 'Substituir', 'Installer / poser': 'Instalar / colocar', 'Contrôler': 'Verificar', Appartement: 'Apartamento', Chambre: 'Quarto', Bureau: 'Escritório', 'Box / garage': 'Box / garagem', Cave: 'Cave', 'Jardin commun': 'Jardim comum', 'Parties communes / hall': 'Partes comuns / entrada', 'Cage d’escalier': 'Escadaria', 'Chaufferie / local technique': 'Sala da caldeira / técnica', 'Parking / extérieur': 'Estacionamento / exterior', 'Étage': 'Piso', 'Bâtiment': 'Edifício', 'Boîte à clés': 'Caixa de chaves', Porte: 'Porta', Alarme: 'Alarme', 'Locaux techniques': 'Salas técnicas', Serrure: 'Fechadura', Code: 'Código' },
+  es: { Plomberie: 'Fontanería', 'Électricité': 'Electricidad', Chauffage: 'Calefacción', 'Chaudière': 'Caldera', Radiateurs: 'Radiadores', Sanitaire: 'Sanitarios', 'Maçonnerie': 'Albañilería', Carrelage: 'Alicatado', 'Pose de panneaux': 'Colocación de paneles', Peinture: 'Pintura', 'Panneaux solaires': 'Paneles solares', Serrurerie: 'Cerrajería', 'Toiture / façade': 'Tejado / fachada', Vitrerie: 'Cristalería', Menuiserie: 'Carpintería', Nettoyage: 'Limpieza', 'Espaces verts': 'Zonas verdes', Ascenseur: 'Ascensor', Autre: 'Otro', 'Réparer': 'Reparar', Nettoyer: 'Limpiar', Refaire: 'Rehacer', Remplacer: 'Sustituir', 'Installer / poser': 'Instalar / colocar', 'Contrôler': 'Revisar', Appartement: 'Piso', Chambre: 'Habitación', Bureau: 'Oficina', 'Box / garage': 'Trastero / garaje', Cave: 'Sótano', 'Jardin commun': 'Jardín común', 'Parties communes / hall': 'Zonas comunes / portal', 'Cage d’escalier': 'Escalera', 'Chaufferie / local technique': 'Sala de calderas / técnica', 'Parking / extérieur': 'Aparcamiento / exterior', 'Étage': 'Planta', 'Bâtiment': 'Edificio', 'Boîte à clés': 'Caja de llaves', Porte: 'Puerta', Alarme: 'Alarma', 'Locaux techniques': 'Salas técnicas', Serrure: 'Cerradura', Code: 'Código' },
+};
+const CK = { fr: { pb: 'Problème', today: 'aujourd’hui', tomorrow: 'demain' }, it: { pb: 'Problema', today: 'oggi', tomorrow: 'domani' }, de: { pb: 'Problem', today: 'heute', tomorrow: 'morgen' },
+  en: { pb: 'Problem', today: 'today', tomorrow: 'tomorrow' }, pt: { pb: 'Problema', today: 'hoje', tomorrow: 'amanhã' }, es: { pb: 'Problema', today: 'hoy', tomorrow: 'mañana' } };
+const colon = () => (lang === 'fr' ? ' : ' : ': '); // « Porte : » en français, « Porta: » ailleurs
+const FIXK = Object.keys(FIXW.it).sort((a, b) => b.length - a.length);
+// mot ou début connu (« Appartement 3 » → « Appartamento 3 ») ; le reste ne bouge pas
+const fxw = (v) => { const d = FIXW[lang]; if (!d) return v; if (d[v]) return d[v]; const k = FIXK.find((w) => v.startsWith(w + ' ')); return k ? d[k] + v.slice(k.length) : v; };
+// « #1007 Chauffage · Réparer » → « Riscaldamento · Riparare » (le n° est en bas, avec la gérance)
+const titleTr = (x) => (x.ger ? x.titre.replace(/^#\S+\s*/, '').split(' · ').map(fxw).join(' · ') : x.titre);
+const ZW = ['Appartement', 'Chambre', 'Bureau', 'Box / garage', 'Cave', 'Jardin commun', 'Parties communes / hall', 'Cage d’escalier', 'Toiture / façade', 'Chaufferie / local technique', 'Parking / extérieur', 'Autre'];
+// lieu : sans répétition (« Appartement · Étage 1 · Appartement 3 » → « Étage 1 · Appartement 3 »), traduit
+function lieuTr(v) {
+  const parts = String(v || '').split(' · ').map((x) => x.trim()).filter(Boolean);
+  const out = parts.filter((p, i) => !(ZW.includes(p) && parts.some((q, j) => j !== i && q.toLowerCase().startsWith(p.toLowerCase().split(' ')[0]) && q !== p)));
+  return out.map((p) => (p === 'Étage : autre' ? fxw('Étage') + ' ?' : fxw(p))).join(' · ');
+}
+// disponibilités de la gérance : « Date souhaitée : 21/10/2026 · De 08:00 à 18:00 · note » → quand + note
+function dispoTr(v) {
+  const k = CK[lang] || CK.fr, when = [], note = [];
+  for (const p of String(v || '').split(' · ').map((x) => x.trim()).filter(Boolean)) {
+    let m;
+    if ((m = /^Date souhaitée : (\d{2})\/(\d{2})\/(\d{4})$/.exec(p))) { const iso = `${m[3]}-${m[2]}-${m[1]}`; when.unshift(iso === today ? k.today + ' ' + m[1] + '/' + m[2] : iso === isoDay(new Date(Date.parse(today + 'T12:00:00') + 864e5)) ? k.tomorrow + ' ' + m[1] + '/' + m[2] : `${m[1]}/${m[2]}/${m[3]}`); }
+    else if ((m = /^De (\d{2}:\d{2}) à (\d{2}:\d{2})( \(lendemain\))?$/.exec(p))) when.push(`${m[1]}–${m[2]}${m[3] ? ' (+1)' : ''}`);
+    else if ((m = /^À partir de (\d{2}:\d{2})$/.exec(p))) when.push(m[1] + ' →');
+    else if ((m = /^Jusqu’à (\d{2}:\d{2})$/.exec(p))) when.push('→ ' + m[1]);
+    else note.push(p);
+  }
+  return { when: when.join(' · '), note: note.join(' · ') };
+}
+const codeTr = (c) => { const i = c.indexOf(' : '); return i > 0 ? fxw(c.slice(0, i)) + colon() + c.slice(i + 3) : c; };
+// en haut, à voir d'un coup d'œil : quoi (urgent ?), où, quel logement, consignes
+function headHtml(x, extra = '', pre = '') {
+  const t = T(), lieu = lieuTr(x.lieu) || (x.ger ? '' : t.commons);
+  return `<div class="tt">${pre}${ICONS[x.type] || '📌'} ${x.urgent ? `<span class="tag urg">🔴 ${esc(t.urg)}</span> ` : ''}<b>${esc(titleTr(x))}</b>${x.heure ? ` <span class="tag hr">🕒 ${esc(x.heure)}${x.heureFin ? '–' + esc(x.heureFin) : ''}</span>` : ''}${extra}</div>
+    <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button></div>
+    ${lieu || x.recur ? `<div class="meta">${lieu ? '🚪 ' + esc(lieu) : ''}${x.recur ? (lieu ? ' · ' : '') + '🔁 ' + esc(x.recur) : ''}</div>` : ''}
+    ${!x.ger && x.note ? `<div class="cons"><b>${esc(t.consignes)}${colon()}</b>${esc(x.note)}</div>` : ''}`;
+}
+// sur place : problème (+ photo), codes, quand, contact, gérance — une ligne par information
 function infoHtml(x, t) {
-  const tel = x.contact && x.contact.tel ? x.contact.tel.replace(/[^\d+]/g, '') : '';
-  return `${x.ger ? `<div class="ger-box"><b>🏢 ${esc(x.ger.org)} · #${esc(x.ger.ref)}</b>${x.ger.heure ? ` · 🕒 ${esc(x.ger.heure)}` : ''}${x.ger.acces ? `<div>🔐 ${x.ger.acces.split(' · ').map(esc).join('<br>')}</div>` : ''}${x.ger.dispo ? `<div>📅 ${esc(x.ger.dispo)}</div>` : ''}</div>` : ''}
-    ${x.note ? `<div class="cons"><b>${esc(t.consignes)} :</b> ${esc(x.note)}</div>` : ''}${pbHtml(x)}
-    ${x.contact ? `<div class="meta">👤 ${esc(t.contact)} : ${esc(x.contact.nom)}${tel ? ` · <a href="tel:${esc(tel)}">📞 ${esc(t.call)}</a>` : ''}</div>` : ''}`;
+  const k = CK[lang] || CK.fr, g = x.ger, rows = [], tel = x.contact && x.contact.tel ? x.contact.tel.replace(/[^\d+]/g, '') : '';
+  const row = (ic, v) => `<div class="ir"><span class="ic">${ic}</span><div class="tx">${esc(v)}</div></div>`;
+  if (g && x.note) rows.push(`<div class="ir"><span class="ic">⚠️</span><div class="tx"><b>${esc(k.pb)}${colon()}</b>${esc(x.note)}</div>${(x.pb || [])[0] ? `<a href="#" class="th" data-pb="${esc(x.pb[0])}"><img data-pb-img="${esc(x.pb[0])}" alt=""></a>` : ''}</div>`);
+  if (g) for (const c of String(g.acces || '').split(' · ').filter(Boolean)) rows.push(row('🔐', codeTr(c)));
+  if (g) { const d = dispoTr(g.dispo); if (d.when) rows.push(row('🕗', d.when)); if (d.note) rows.push(row('📝', d.note)); }
+  if (x.contact) rows.push(`<div class="ir"><span class="ic">👤</span><div class="tx">${esc(x.contact.nom)}</div>${tel ? `<a class="call" href="tel:${esc(tel)}" aria-label="${esc(t.call)}">📞</a>` : ''}</div>`);
+  if (g) rows.push(`<div class="ir org">🏢 ${esc(g.org)} · #${esc(g.ref)}</div>`);
+  return (rows.length ? `<div class="ibox">${rows.join('')}</div>` : '') + pbHtml(x);
 }
 // ligne courte (planning du jour) : le détail et les boutons sont dans « Mon horaire »
 function taskLine(it) {
   const x = data.tasks[it.tid];
   if (!x) return '';
   const done = stopTimes(it.tid, it.d).end;
-  return `<div class="tline${x.urgent && !done ? ' urgent' : ''}">${!done && !stateOf(it.tid, it.d) ? refusTop(it) : ''}${done ? '✅' : ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${(taxiGate(it, x) || {}).open ? ` <span class="tag urg">${esc((TX[lang] || TX.fr).tag)}</span>` : ''}<div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button></div></div>`;
+  return `<div class="tline${x.urgent && !done ? ' urgent' : ''}">${!done && !stateOf(it.tid, it.d) ? refusTop(it) : ''}${done ? '✅' : ICONS[x.type] || '📌'} <b>${esc(titleTr(x))}</b>${whenTag(x)}${(taxiGate(it, x) || {}).open ? ` <span class="tag urg">${esc((TX[lang] || TX.fr).tag)}</span>` : ''}<div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button></div></div>`;
 }
 // horaire d'un jour précis : le planning daté (fait par le responsable) remplace l'horaire habituel ce jour-là
 function hOnDate(d, iso) {
@@ -341,15 +394,13 @@ function taxiGate(it, x) {
   if (left <= 0) return { open: false, html: `<div class="taxi-me gone">${esc(r.gone)}</div>` };
   const h = new Date(x.taxi).toLocaleTimeString(T().loc, { hour: '2-digit', minute: '2-digit' });
   return { open: true, html: `<div class="taxi-me"><b>${esc(r.t.replace('{h}', h))}</b> <span class="taxi-cd" data-taxi-until="${x.taxi}">⏱ ${mmss(left)}</span>
-    <button class="btn ok block taxi-go" data-taxi-ok="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(r.ok)}</button><p class="meta" style="margin:4px 0 0">${esc(r.hint)}</p></div>` };
+    <div class="duo"><button class="btn ok taxi-go" data-taxi-ok="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(r.ok)}</button>${refusBtn(it)}</div><p class="meta" style="margin:4px 0 0">${esc(r.hint)}</p></div>` };
 }
 // carte en attente de START : quoi, où, quand ; pas encore de boutons de travail ni « Je suis en route »
 function taxiCard(it, x, g) {
   const t = T();
-  return `<div class="task taxi-card${g.open ? ' urgent' : ' done'}">${g.open ? refusTop(it) : ''}
-    <div class="tt">${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}</div>
-    <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}</div>
-    ${g.html}${g.open ? infoHtml(x, t) + refusUi(it) : ''}</div>`;
+  return `<div class="task taxi-card${g.open ? ' urgent' : ' done'}">${headHtml(x)}
+    ${g.html}${g.open ? refusUi(it) + infoHtml(x, t) : ''}</div>`;
 }
 function taskCard(it, withBtns) {
   const t = T(), x = data.tasks[it.tid];
@@ -368,8 +419,7 @@ function taskCard(it, withBtns) {
       ${f.st === 'fait' ? qtyHtml() : ''}<label>${esc(f.st === 'incomplet' ? t.why : t.note)}</label><textarea name="note" placeholder="${esc(f.st === 'incomplet' ? t.whyPh : t.notePh)}" ${f.st === 'incomplet' ? 'required' : ''}></textarea>
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>` : '';
   return `<div class="task ${done ? 'done' : ''}${x.urgent && !done ? ' urgent' : ''}">${notStarted && !done ? refusTop(it) : ''}
-    <div class="tt">${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${it.late ? ` <span class="tag bad">${esc(t.late)}</span>` : ''}</div>
-    <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}${x.recur ? ' · 🔁 ' + esc(x.recur) : ''}</div>
+    ${headHtml(x, it.late ? ` <span class="tag bad">${esc(t.late)}</span>` : '')}
     ${infoHtml(x, t)}
     ${st && st.st !== 'refus' ? `<div class="stline ${st.st}">${esc(t.st[st.st])} · ${esc(fmt(st.at))} ${esc(t.at)} ${esc(st.h || (st.at || '').slice(11, 16))}${st.note ? ' — ' + esc(st.note) : ''}</div>` : ''}
     ${btns}${fh}${notStarted && !done ? refusUi(it) : ''}${withBtns && !(st && st.st === 'refus') ? phBlock(it, x) : ''}</div>`;
@@ -406,7 +456,7 @@ async function tripGo(tk, adr, minutes) {
   let eta = minutes ? Date.now() + minutes * 60000 : 0;
   if (!eta) { const dest = geoGet(adr), me = dest ? await hereNow() : null; if (dest && me) eta = etaFrom(kmBetween(me, dest)); }
   if (!eta) { tripAsk = tk; return render(); } // lieu pas encore connu : la personne choisit les minutes
-  tripAsk = ''; tripLs(tk, { st: 'go', eta, adr }); render();
+  tripAsk = ''; tripLs(tk, { st: 'go', eta, adr, start: Date.now() }); render();
   await tripSend(tk, 'go', eta); tripWatch();
 }
 // pendant le trajet, app ouverte : l'heure se recalcule toutes les minutes (si le lieu est connu)
@@ -430,10 +480,10 @@ function tripWatch() {
   }, 60000);
 }
 function tripUi(it, x) {
-  const r = TRP(), tr = tripLs(it.tk);
-  if (tr && tr.st === 'go') return `<div class="trip-me"><b>${esc(r.on.replace('{h}', new Date(tr.eta).toLocaleTimeString(T().loc, { hour: '2-digit', minute: '2-digit' })))}</b> <button class="btn sm sec" data-trip-stop="${esc(it.tk)}">${esc(r.cancel)}</button></div>`;
-  if (tripAsk === it.tk) return `<div class="trip-me"><b>${esc(r.q)}</b><div class="btns" style="margin-top:6px">${[10, 20, 30, 45, 60].map((m) => `<button class="btn sm" data-trip-min="${m}" data-trip-go="${esc(it.tk)}" data-adr="${esc(x.adresse)}">${m} min</button>`).join('')}</div></div>`;
-  return `<button class="btn block trip-go" data-trip-go="${esc(it.tk)}" data-adr="${esc(x.adresse)}">${esc(r.go)}</button><p class="meta" style="margin:4px 0 8px">${esc(r.hint)}</p>`;
+  const r = TRP(), tr = tripLs(it.tk), rf = refusBtn(it), duo = (a) => `<div class="duo">${a}${rf}</div>`;
+  if (tr && tr.st === 'go') return `<div class="trip-me"><b>${esc(r.on.replace('{h}', new Date(tr.eta).toLocaleTimeString(T().loc, { hour: '2-digit', minute: '2-digit' })))}</b>${tripLine({ start: tr.start || tr.eta - 20 * 60000, eta: tr.eta })}</div>${duo(`<button class="btn sec" data-trip-stop="${esc(it.tk)}">${esc(r.cancel)}</button>`)}`;
+  if (tripAsk === it.tk) return `<div class="trip-me"><b>${esc(r.q)}</b><div class="btns" style="margin-top:6px">${[10, 20, 30, 45, 60].map((m) => `<button class="btn sm" data-trip-min="${m}" data-trip-go="${esc(it.tk)}" data-adr="${esc(x.adresse)}">${m} min</button>`).join('')}</div></div>${rf ? duo('') : ''}`;
+  return `${duo(`<button class="btn trip-go" data-trip-go="${esc(it.tk)}" data-adr="${esc(x.adresse)}">${esc(r.go)}</button>`)}<p class="meta" style="margin:4px 0 8px">${esc(r.hint)}</p>`;
 }
 function stopCard(it, cur) {
   const t = T(), x = data.tasks[it.tid];
@@ -450,10 +500,11 @@ function stopCard(it, cur) {
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>`
       : `<form class="pres pres-fin" data-stop="fait" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}">${qtyHtml()}<input type="time" name="h" value="${nowHM()}" required><button class="btn sm ok" type="submit">${esc(t.s.depBtn)}</button></form>
       <button class="btn sm warn" style="margin-top:6px" data-act="incomplet" data-tid="${esc(it.tid)}" data-d="${esc(it.d)}">${esc(t.inc)}</button>`}`;
-  return `<div class="stop${cur ? ' cur' : ''}${ended ? ' done' : ''}${x.urgent && !ended ? ' urgent' : ''}">${!tm.arr && !ended ? refusTop(it) : ''}
-    <div class="tt">${cur ? '<span class="live" aria-hidden="true"></span>' : ''}${ICONS[x.type] || '📌'} <b>${esc(x.titre)}</b>${whenTag(x)}${cur ? ` <span class="tag now">${esc(tm.arr ? t.s.now : t.s.next)}</span>` : ''}</div>
-    <div class="meta"><button class="linkb" data-place="${esc(x.adresse)}">📍 ${esc(x.adresse)}</button> · ${esc(x.lieu || t.commons)}</div>
-    ${ended ? '' : infoHtml(x, T())}${it.tk && it.d === today && !tm.arr && !ended && !refused ? tripUi(it, x) : ''}<div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
+  // « Je suis en route » et « Refuser ? » côte à côte, sous les informations
+  const trip = it.tk && it.d === today && !tm.arr && !ended && !refused;
+  return `<div class="stop${cur ? ' cur' : ''}${ended ? ' done' : ''}${x.urgent && !ended ? ' urgent' : ''}">${!tm.arr && !ended && !trip ? refusTop(it) : ''}
+    ${headHtml(x, cur ? ` <span class="tag now">${esc(tm.arr ? t.s.now : t.s.next)}</span>` : '', cur ? '<span class="live" aria-hidden="true"></span>' : '')}
+    ${ended ? (x.ger ? `<div class="meta">🏢 ${esc(x.ger.org)} · #${esc(x.ger.ref)}</div>` : '') : infoHtml(x, T())}${trip ? tripUi(it, x) : ''}<div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
     ${act}</div>`;
 }
 // Photos avant / après une intervention : 6 + 6, avec l'appareil photo ou la galerie
@@ -853,6 +904,8 @@ app.addEventListener('submit', async (e) => {
         const extra = f.note.value.trim();
         if (!r.r[why] || (why === 'autre' && extra.length < 3)) { alert(r.r[why] ? r.needNote : r.why); btn.disabled = false; btn.textContent = r.send; return; }
         form = null;
+        const ti = data.items.find((x) => x.tid === f.dataset.tid && x.d === f.dataset.d && x.tk);
+        if (ti && (tripLs(ti.tk) || {}).st === 'go') { tripLs(ti.tk, null); tripSend(ti.tk, 'stop'); }
         await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: 'refus', why, note: (REFT.fr.r[why] + (extra ? ' — ' + extra : '')).slice(0, 1000), at: new Date().toISOString() });
         flash = r.ok;
         render(); scrollTo(0, 0);
