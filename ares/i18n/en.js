@@ -14983,5 +14983,89 @@ export default [
 [
 "Accepté (START)",
 "Accepted (START)"
+],
+[
+"Changer d’ouvrier",
+"Change worker"
+],
+[
+"Aujourd’hui",
+"Today"
+],
+[
+"Pourquoi ? (obligatoire)",
+"Why? (required)"
+],
+[
+"ex. plus près, erreur, urgence",
+"e.g. closer, mistake, urgent"
+],
+[
+"Donner le travail à…",
+"Give the job to…"
+],
+[
+"= même métier",
+"= same trade"
+],
+[
+"absent",
+"absent"
+],
+[
+"✋ a refusé",
+"✋ refused"
+],
+[
+"sans app",
+"no app"
+],
+[
+"Retirer l’ouvrier",
+"Remove the worker"
+],
+[
+"Écrivez pourquoi (quelques mots)",
+"Write why (a few words)"
+],
+[
+"Retirer {0} de ce travail ?",
+"Remove {0} from this job?"
+],
+[
+"{0} — il reste à choisir quelqu’un.",
+"{0} — someone still has to be chosen."
+],
+[
+"à choisir",
+"to choose"
+],
+[
+"Ouvrir l’intervention",
+"Open the job"
+],
+[
+"#{0} a déjà une intervention ({1})",
+"#{0} already has a job ({1})"
+],
+[
+"#{0} a déjà une intervention",
+"#{0} already has a job"
+],
+[
+"Pour changer d’ouvrier, utilisez « Qui ? » ou 🔄. Pour un autre travail sur place, créez une nouvelle intervention.",
+"To change worker, use “Who?” or 🔄. For another job on site, create a new job."
+],
+[
+"Ouvrier changé",
+"Worker changed"
+],
+[
+"Ouvrier retiré",
+"Worker removed"
+],
+[
+"ouvrier retiré",
+"worker removed"
 ]
 ];
