@@ -15255,5 +15255,13 @@ export default [
 [
 "ouvrier retiré",
 "operário retirado"
+],
+[
+"Copier le code",
+"Copiar o código"
+],
+[
+"Code copié : {0}",
+"Código copiado: {0}"
 ]
 ];

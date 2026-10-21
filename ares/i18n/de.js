@@ -15331,5 +15331,13 @@ export default [
 [
 "ouvrier retiré",
 "Arbeiter entfernt"
+],
+[
+"Copier le code",
+"Code kopieren"
+],
+[
+"Code copié : {0}",
+"Code kopiert: {0}"
 ]
 ];
