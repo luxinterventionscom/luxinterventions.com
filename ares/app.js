@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.176.0';
+const VERSION = '2.177.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4370,7 +4370,7 @@ dashboard() {
       ${!standalone ? html`<div class="section-label">Application</div>
       <div class="list settings"><div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Installer sur ce téléphone</span>
         <span class="meta" style="white-space:normal">${isIOS ? 'Safari : bouton Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône LuxInterventions sur l’écran d’accueil, fonctionne hors ligne.'}</span></span>
-        ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}</div></div>` : ''}
+        ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}<button class="btn sm" data-action="install-anim">▶ Voir comment</button></div></div>` : ''}
 
       ${centraleSection()}
       <div class="section-label">Sécurité</div>
@@ -6765,6 +6765,8 @@ const ACTIONS = {
   'occ-open': (d) => openOver('occ-fact', d.id),
   async 'occ-dl'(d) { const t = vault.get('taches', d.id), i = t && vault.get('intervenants', t.intervenantId); if (!t || !t.occ || !i) return; download(`Intervention occasionnelle ${t.occ.no}.pdf`, await occPdf(t, i, t.occ), 'application/pdf'); },
   'photo-del': (d, el) => { const box = el.closest('.photo-pick'); box.querySelector('[name=photo]').value = ''; setHtml(box.querySelector('.pp-circle'), '👤'); el.remove(); },
+  // ▶ le même petit dessin animé que dans les autres apps (iPhone / Android / Samsung)
+  'install-anim': () => import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'LuxInterventions', icon: '/ares/icons/lux-192.png', lang: (() => { try { return localStorage.getItem('aresLang') || 'fr'; } catch { return 'fr'; } })() })),
   'eq-swap': (d) => openOver('eq-swap', d.id),
   async 'eq-swap-do'(d) {
     const t = vault.get('taches', d.id);
