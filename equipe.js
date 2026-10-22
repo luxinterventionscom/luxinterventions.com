@@ -354,7 +354,7 @@ function infoHtml(x, t) {
   if (g) { const d = dispoTr(g.dispo); if (d.when) rows.push(row('🕗', d.when)); if (d.note) rows.push(row('📝', d.note)); }
   if (x.contact) rows.push(`<div class="ir"><span class="ic">👤</span><div class="tx">${esc(x.contact.nom)}${tel ? ` <a class="call" href="tel:${esc(tel)}" aria-label="${esc(t.call)}">📞</a>` : ''}</div></div>`);
   if (g) rows.push(`<div class="ir org">🏢 ${esc(g.org)} · #${esc(g.ref)}</div>`);
-  return (rows.length ? `<div class="ibox">${rows.join('')}</div>` : '') + pbHtml(x);
+  return (rows.length ? `<div class="tbox">${rows.join('')}</div>` : '') + pbHtml(x);
 }
 // ligne courte (planning du jour) : le détail et les boutons sont dans « Mon horaire »
 function taskLine(it) {
@@ -739,11 +739,10 @@ function render() {
   if (pushSt === 'on') out.push(notifCard(t));
   { // bas de page : ℹ️ infos (animation « icône sur l'écran »), 🔒 + Se déconnecter + 📞 la centrale (numéro non affiché : il vient de l'app de gestion)
     const ft = FT[lang] || FT.fr;
-    out.push(`<div class="card"><h2>ℹ️ ${esc(ft.info)}</h2><button class="btn sec block" data-ianim="1">▶ ${esc(ft.anim)}</button></div>
-    <div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><button class="link-rgpd" data-rgpd="1">${esc((WRGPD[lang] || WRGPD.fr).t)}</button><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn sec sm" data-logout="1">🚪 ${esc(ft.out)}</button>${d.societe.tel ? `<a class="btn sm" href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">📞 ${esc(ft.call)}</a><span class="meta">${esc(d.societe.nom)}</span>` : ''}</div></div>`);
+    out.push(`<div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><button class="link-rgpd" data-rgpd="1">${esc((WRGPD[lang] || WRGPD.fr).t)}</button><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn sec sm" data-logout="1">🚪 ${esc(ft.out)}</button>${d.societe.tel ? `<a class="btn sm" href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">📞 ${esc(ft.call)}</a><span class="meta">${esc(d.societe.nom)}</span>` : ''}</div></div>`);
   }
   { const low = slot('bas'); if (low) out.push(adBox(low, t)); }
-  out.push(infoBox());
+  out.push(infoBox({ extra: `<button class="btn sec block" data-ianim="1">▶ ${esc((FT[lang] || FT.fr).anim)}</button>` }));
   out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
   const keepMap = document.querySelector('#mapBox iframe');
   const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));

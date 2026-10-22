@@ -171,7 +171,8 @@ const IB_CSS = `.ib{margin:14px 0;border:1px solid #e3ded3;border-radius:16px;ba
 .ib-sec h4{margin:10px 0 6px;font-size:14px}
 .ib-sec p{margin:0 0 6px;font-size:13px;line-height:1.4;color:#3b382f}
 .ib-row{display:flex;gap:8px;align-items:baseline}.ib-row i{flex:0 0 18px;height:6px;border-radius:3px;transform:translateY(-2px)}`;
-export function infoBox({ lang = '' } = {}) {
+// extra : une ligne de plus en haut du cadre (ex. ▶ Mettre l'icône sur l'écran), déjà traduite par l'app
+export function infoBox({ lang = '', extra = '' } = {}) {
   if (!document.getElementById('ibCss')) {
     const st = document.createElement('style'); st.id = 'ibCss'; st.textContent = IB_CSS; document.head.appendChild(st);
     // ouvert / fermé : gardé quand l'écran se redessine
@@ -179,6 +180,7 @@ export function infoBox({ lang = '' } = {}) {
   }
   const L = lang || cfg.lang(), w = TX[L] || TX.fr, b = IB[L] || IB.fr;
   return `<details class="ib" data-ib="1" data-notr${ls.get(cfg.app + 'IbOpen') === '1' ? ' open' : ''}><summary>ℹ️ ${esc(b.t)} <span class="ib-dots" aria-hidden="true">${PALETTE.map(([, c]) => `<i style="background:${c}"></i>`).join('')}</span></summary>
+  ${extra ? `<div class="ib-sec">${extra}</div>` : ''}
   <div class="ib-sec"><h4>🎨 ${esc(w.legT)}</h4>${PALETTE.map(([k, c]) => `<p class="ib-row"><i style="background:${c}"></i><span><b>${esc(w.L[k][0])}</b> — ${esc(w.L[k][1])}</span></p>`).join('')}<p>${esc(w.sem)}</p></div>
   </details>`;
 }
