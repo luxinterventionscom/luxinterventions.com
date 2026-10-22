@@ -390,6 +390,8 @@ const isStandalone = () => matchMedia('(display-mode: standalone)').matches || n
 const UA = navigator.userAgent;
 const IS_IOS = /iPhone|iPad|iPod/.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const IN_APP = /FBAN|FBAV|FB_IAB|Instagram|Line\/|Snapchat|musical_ly|TikTok|LinkedInApp|GSA\//.test(UA);
+// ℹ️ Infos : « ▶ Mettre l'icône sur l'écran » (le même dessin animé que dans le guide)
+const IA_T = { fr: 'Mettre l’icône sur l’écran', it: 'Mettere l’icona sullo schermo', de: 'Symbol auf den Bildschirm legen', pt: 'Pôr o ícone no ecrã', en: 'Put the icon on your screen', es: 'Poner el icono en la pantalla' };
 const IA_BTN = { fr: '▶ Voir comment (animation)', it: '▶ Guarda come (animazione)', de: '▶ So geht’s (Animation)', pt: '▶ Ver como (animação)', en: '▶ See how (animation)', es: '▶ Ver cómo (animación)' };
 function installCard(t) {
   if (isStandalone()) return '';
@@ -1111,7 +1113,7 @@ function render() {
     out.push(`<div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><button class="link-rgpd" data-rgpd="1">${esc(t.rgpdT)}</button><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn sec sm" data-logout="1">🚪 ${esc(ft.out)}</button>${d.societe.tel ? `<a class="btn sm" href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">📞 ${esc(ft.call)}</a><span class="meta">${esc(d.societe.nom)}</span>` : ''}</div></div>`);
   }
   { const low = slot('bas'); if (low) out.push(adBox(low, t, d)); }
-  out.push(infoBox());
+  out.push(infoBox({ extra: `<button class="btn sec block" data-ianim="1">▶ ${esc(IA_T[lang] || IA_T.fr)}</button>` }));
   // version de l'app de gestion qui a publié ces données (aide au dépannage)
   out.push(`<p class="meta" style="text-align:center;font-size:11px;margin:8px 0 0">NOBIS · ${esc(d.gv ? 'v' + d.gv : 'v < 2.57')}</p>`);
   out.push(TICKER);

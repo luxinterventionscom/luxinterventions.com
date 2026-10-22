@@ -16,7 +16,7 @@ scrollHintInit();
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.31.0';
+const VERSION = '1.32.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -24,6 +24,8 @@ const LANG = (() => {
   const n = (navigator.language || '').slice(0, 2).toLowerCase();
   return PTL_LANGS[n] ? n : 'fr';
 })();
+// ℹ️ Infos : « ▶ Mettre l'icône sur l'écran » (le cadre des infos n'est pas traduit par la page : texte déjà dans la langue)
+const IA_T = ({ fr: 'Mettre l’icône sur l’écran', it: 'Mettere l’icona sullo schermo', de: 'Symbol auf den Bildschirm legen', pt: 'Pôr o ícone no ecrã', en: 'Put the icon on your screen', es: 'Poner el icono en la pantalla' })[LANG] || 'Mettre l’icône sur l’écran';
 const LOC = LOCALES[LANG] || 'fr-LU';
 await startI18n(LANG, (l) => import(`./i18n/${l}.js`));
 // le service worker traduit les notifications push dans cette langue
@@ -932,7 +934,7 @@ const VIEWS = {
         ${recue.length ? html`<div class="list">${recue.map(ticketRow)}</div>` : html`<div class="alert" style="background:var(--green-soft);color:var(--green)">${icon('check')}<div>Aucune nouvelle demande en attente.</div></div>`}
         <div class="section-label">En cours</div>
         ${others.length ? html`<div class="list">${others.map(ticketRow)}</div>` : html`<p class="muted small">Aucune intervention en cours.</p>`}
-        ${pubSlot('bas')}${new Raw(infoBox())}${tickerBar()}`;
+        ${pubSlot('bas')}${new Raw(infoBox({ extra: `<button class="btn sec block" data-action="install-anim">▶ ${IA_T}</button>` }))}${tickerBar()}`;
     }
     return html`${pushCard}
       ${guideCard(stats)}
@@ -954,7 +956,7 @@ const VIEWS = {
       <button class="btn block" style="margin-top:12px" data-action="go" data-to="stats">${icon('chart')} Statistiques de nos interventions</button>
       <div class="section-label">Mes demandes en cours</div>
       ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande de dépannage</button>`)}
-      ${pubSlot('bas')}${new Raw(infoBox())}${tickerBar()}`;
+      ${pubSlot('bas')}${new Raw(infoBox({ extra: `<button class="btn sec block" data-action="install-anim">▶ ${IA_T}</button>` }))}${tickerBar()}`;
   },
 
   // Comptabilité : deux espaces séparés — Comptabilité (interventions terminées, par mois) | Statistiques
