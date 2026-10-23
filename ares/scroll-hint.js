@@ -1,8 +1,10 @@
 // Bandes qui défilent de côté (menu du bas, onglets, filtres, tableaux) : sur téléphone rien ne montre qu'il y a la suite.
 // Indice discret : une petite flèche ‹ › collée au bord tant qu'il reste du contenu de ce côté (tableaux : un fondu),
 // et la première fois une légère « poussée » de la bande (pas si l'appareil demande moins d'animations).
-const FLEX = '.bottomnav, .chips, .tabs';
+const FLEX = '.chips, .tabs';
+const NAV = '.bottomnav';
 const BLOCK = '.scroll-x, [style*="overflow-x:auto"], [style*="overflow:auto"]';
+const ARR = (c) => `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='22' height='22'%3E%3Ccircle cx='11' cy='11' r='11' fill='%23e7e4dc' fill-opacity='.92'/%3E%3Ctext x='11' y='16' font-size='16' font-weight='700' text-anchor='middle' fill='%2369655c' font-family='system-ui,sans-serif'%3E${c}%3C/text%3E%3C/svg%3E")`;
 const CSS = `
 :is(${FLEX}).hs-r::after, :is(${FLEX}).hs-l::before {
   position: sticky; z-index: 2; flex: 0 0 22px; width: 22px; height: 22px; align-self: center; pointer-events: none;
@@ -13,6 +15,9 @@ const CSS = `
 :is(${FLEX}).hs-l::before { content: '‹'; left: 2px; margin-right: -22px; }
 :is(${BLOCK}).hs-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent); }
 :is(${BLOCK}).hs-l { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to left, #000 calc(100% - 28px), transparent); }
+:is(${NAV}).hs-r { background-image: ${ARR('%E2%80%BA')}; background-repeat: no-repeat; background-position: right 2px top calc((var(--nav-h, 64px) - 22px) / 2); }
+:is(${NAV}).hs-l { background-image: ${ARR('%E2%80%B9')}; background-repeat: no-repeat; background-position: left 2px top calc((var(--nav-h, 64px) - 22px) / 2); }
+:is(${NAV}).hs-l.hs-r { background-image: ${ARR('%E2%80%B9')}, ${ARR('%E2%80%BA')}; background-position: left 2px top calc((var(--nav-h, 64px) - 22px) / 2), right 2px top calc((var(--nav-h, 64px) - 22px) / 2); }
 :is(${BLOCK}).hs-l.hs-r { -webkit-mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); mask-image: linear-gradient(to right, transparent, #000 28px, #000 calc(100% - 28px), transparent); }`;
 
 const peeked = new Set();
@@ -25,18 +30,18 @@ function mark(el) {
   // une seule « poussée » par sorte de bande et par session, pour montrer que ça glisse
   const kind = el.className.split(' ')[0] || 'x';
   let seen = false; try { seen = sessionStorage.getItem('hsPeek:' + kind) === '1'; } catch {}
-  if (el.scrollLeft < 2 && !seen && !peeked.has(kind) && !calm() && el.offsetParent !== null) {
+  if (el.scrollLeft < 2 && !el.matches(NAV) && !seen && !peeked.has(kind) && !calm() && el.offsetParent !== null) {
     peeked.add(kind); try { sessionStorage.setItem('hsPeek:' + kind, '1'); } catch {}
     setTimeout(() => { el.scrollBy({ left: 36, behavior: 'smooth' }); setTimeout(() => el.scrollBy({ left: -36, behavior: 'smooth' }), 450); }, 600);
   }
 }
-const all = () => document.querySelectorAll(`${FLEX}, ${BLOCK}`);
+const all = () => document.querySelectorAll(`${FLEX}, ${NAV}, ${BLOCK}`);
 let raf = 0;
 const scan = () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; all().forEach(mark); }); };
 
 export function scrollHintInit() {
   const st = document.createElement('style'); st.textContent = CSS; document.head.append(st);
-  document.addEventListener('scroll', (e) => { const el = e.target; if (el && el.nodeType === 1 && el.matches(`${FLEX}, ${BLOCK}`)) mark(el); }, true);
+  document.addEventListener('scroll', (e) => { const el = e.target; if (el && el.nodeType === 1 && el.matches(`${FLEX}, ${NAV}, ${BLOCK}`)) mark(el); }, true);
   addEventListener('resize', scan);
   new MutationObserver(scan).observe(document.body, { childList: true, subtree: true });
   scan();
