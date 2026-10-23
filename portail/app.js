@@ -16,7 +16,7 @@ scrollHintInit();
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.32.0';
+const VERSION = '1.33.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
