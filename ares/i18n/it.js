@@ -15415,5 +15415,25 @@ export default [
 [
 "Archivage",
 "Archiviazione"
+],
+[
+"Factures et devis",
+"Fatture e preventivi"
+],
+[
+"La numérotation repart de 0001 (prochaine facture {0})",
+"La numerazione riparte da 0001 (prossima fattura {0})"
+],
+[
+"Séjours terminés (départ passé) — {0} aujourd’hui",
+"Soggiorni finiti (partenza passata) — {0} oggi"
+],
+[
+"Agences Immo. — biens",
+"Agenzie immobiliari — immobili"
+],
+[
+"Annonces à louer / à vendre — {0} en tout",
+"Annunci in affitto / in vendita — {0} in tutto"
 ]
 ];

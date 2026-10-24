@@ -15135,5 +15135,25 @@ export default [
 [
 "Archivage",
 "Archiving"
+],
+[
+"Factures et devis",
+"Invoices and quotes"
+],
+[
+"La numérotation repart de 0001 (prochaine facture {0})",
+"Numbering restarts at 0001 (next invoice {0})"
+],
+[
+"Séjours terminés (départ passé) — {0} aujourd’hui",
+"Finished stays (departure passed) — {0} today"
+],
+[
+"Agences Immo. — biens",
+"Estate agencies — properties"
+],
+[
+"Annonces à louer / à vendre — {0} en tout",
+"Listings to rent / for sale — {0} in total"
 ]
 ];

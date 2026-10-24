@@ -28,14 +28,14 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.179.0';
+const VERSION = '2.180.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
 const vault = new Vault(API);
 // 🗄️ Nouveau départ : les données de test sont archivées (gardées, rien n'est effacé) et ne s'affichent plus
 // nulle part (listes, statistiques, apps) ; Réglages → « Voir les archives » les montre à nouveau
-const ARCH_COLS = new Set(['taches', 'devis']);
+const ARCH_COLS = new Set(['taches', 'devis', 'hotes', 'biens']);
 let showArch = false;
 { const list0 = vault.list.bind(vault); vault.list = (c) => { const r = list0(c); return ARCH_COLS.has(c) && !showArch ? r.filter((x) => !x.arch) : r; }; }
 const $ = (s, r = document) => r.querySelector(s);
@@ -4796,7 +4796,7 @@ const SHEETS = {
   // 🗄️ Archiver : on coche ce qu'on range (gardé, plus affiché), jusqu'à quelle date ; l'historique dit quand et qui
   'arch-form'() {
     const hist = ((vault.get('reglages', 'archives') || {}).list || []).slice().reverse();
-    const nT = vault.list('taches').filter((t) => !t.recur).length, nD = vault.list('devis').length;
+    const nT = vault.list('taches').filter((t) => !t.recur).length, nD = vault.list('devis').length, nH = vault.list('hotes').filter((h) => h.depart && h.depart <= today()).length, nB = vault.list('biens').length;
     const cb = (k, l, m, on = true) => html`<label class="row" style="cursor:pointer"><input type="checkbox" name="${k}" ${on ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none"><span class="grow"><span class="title" style="display:block">${l}</span><span class="meta" style="white-space:normal">${m}</span></span></label>`;
     return {
       title: '🗄️ Archiver', narrow: true,
@@ -4805,11 +4805,13 @@ const SHEETS = {
         <div class="list">
           ${cb('interv', '🔧 Interventions', `${nT} en tout — signalements, demandes des gérances, travaux, avec leurs photos et factures (les ménages réguliers restent)`)}
           ${cb('devis', '📝 Devis', `${nD} en tout`)}
+          ${masked().has('hotel') ? '' : cb('hotel', '🏨 Hotel', `Séjours terminés (départ passé) — ${nH} aujourd’hui`)}
+          ${masked().has('agences') ? '' : cb('biens', '🏘️ Agences Immo. — biens', `Annonces à louer / à vendre — ${nB} en tout`, false)}
           ${cb('team', '👷 Activité de l’équipe', 'Messages et nouvelles reçus des ouvriers')}
-          ${cb('num', '🔢 Numérotation', 'Les factures et les devis repartent de 0001')}
+          ${cb('num', '🧾 Factures et devis', `La numérotation repart de 0001 (prochaine facture ${ymd(today())}-INT0001)`)}
         </div>
         <label class="field">Archiver ce qui date de jusqu’au<input type="date" name="until" value="${today()}"></label>
-        ${hist.length ? html`<div class="section-label" style="margin:6px 0 4px">Historique</div><div class="list small">${hist.map((a) => html`<div class="row"><span class="grow"><b>${fmtDateTime(a.at)}</b> · 👤 ${a.by || '—'}<span class="meta" style="display:block">${a.taches} interventions · ${a.devis} devis${a.team ? ' · activité de l’équipe' : ''}${a.num ? ' · numéros à 0001' : ''}${a.until ? ' · jusqu’au ' + fmtDate(a.until) : ''}</span></span></div>`)}</div>` : ''}
+        ${hist.length ? html`<div class="section-label" style="margin:6px 0 4px">Historique</div><div class="list small">${hist.map((a) => html`<div class="row"><span class="grow"><b>${fmtDateTime(a.at)}</b> · 👤 ${a.by || '—'}<span class="meta" style="display:block">${a.taches} interventions · ${a.devis} devis${a.hotes ? ' · ' + a.hotes + ' séjours' : ''}${a.biens ? ' · ' + a.biens + ' biens' : ''}${a.team ? ' · activité de l’équipe' : ''}${a.num ? ' · numéros à 0001' : ''}${a.until ? ' · jusqu’au ' + fmtDate(a.until) : ''}</span></span></div>`)}</div>` : ''}
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" data-action="arch-do">🗄️ Archiver</button>`,
     };
@@ -7372,25 +7374,29 @@ const ACTIONS = {
     const f = document.getElementById('archF');
     if (!f) return;
     const on = (k) => !!(f.querySelector(`[name=${k}]`) || {}).checked, until = /^\d{4}-\d{2}-\d{2}$/.test(f.until.value) ? f.until.value : today();
-    const sel = { interv: on('interv'), devis: on('devis'), team: on('team'), num: on('num') };
+    const sel = { interv: on('interv'), devis: on('devis'), hotel: on('hotel'), biens: on('biens'), team: on('team'), num: on('num') };
     if (!Object.values(sel).some(Boolean)) return toast('Cochez au moins une case', { bad: true });
     const day = (x) => String(x || '').slice(0, 10);
     const ts = sel.interv ? vault.list('taches').filter((t) => !t.recur && (day(t.date || t.sentAt) || today()) <= until) : [];
     const dv = sel.devis ? vault.list('devis').filter((d) => (day(d.date) || today()) <= until) : [];
-    const k = await promptKey('🗄️ Archiver', `${sel.interv ? ts.length + ' interventions · ' : ''}${sel.devis ? dv.length + ' devis · ' : ''}${sel.team ? 'activité de l’équipe · ' : ''}${sel.num ? 'numéros de facture et de devis à 0001 · ' : ''}jusqu’au ${fmtDate(until)}. Rien n’est effacé. Saisissez votre clé d’accès pour confirmer.`);
+    const ho = sel.hotel ? vault.list('hotes').filter((h) => day(h.depart) && day(h.depart) <= until) : []; // ospiti già partiti
+    const bi = sel.biens ? vault.list('biens').filter((b) => (day(b.cree) || today()) <= until) : [];
+    const k = await promptKey('🗄️ Archiver', `${sel.interv ? ts.length + ' interventions · ' : ''}${sel.devis ? dv.length + ' devis · ' : ''}${sel.hotel ? ho.length + ' séjours · ' : ''}${sel.biens ? bi.length + ' biens · ' : ''}${sel.team ? 'activité de l’équipe · ' : ''}${sel.num ? 'numéros de facture et de devis à 0001 · ' : ''}jusqu’au ${fmtDate(until)}. Rien n’est effacé. Saisissez votre clé d’accès pour confirmer.`);
     if (!k) return;
     if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
     const at = new Date().toISOString(), fc = factConf();
     await vault.mutate((tx) => {
       for (const t of ts) tx.put('taches', { id: t.id, arch: at });
       for (const d of dv) tx.put('devis', { id: d.id, arch: at });
+      for (const h of ho) tx.put('hotes', { id: h.id, arch: at });
+      for (const b of bi) tx.put('biens', { id: b.id, arch: at });
       if (sel.team) for (const i of vault.list('intervenants')) if ((i.feed || []).length) tx.put('intervenants', { id: i.id, feedArch: [...(i.feedArch || []), ...i.feed].slice(-500), feed: [], feedNew: 0 });
       if (sel.num) tx.put('reglages', { id: 'facturation', seq: 0, devSeq: 0, archSeq: [...(fc.archSeq || []), { at, seq: +fc.seq || 0, devSeq: +fc.devSeq || 0 }] });
-      tx.put('reglages', { id: 'archives', list: [...((vault.get('reglages', 'archives') || {}).list || []), { at, by: whoLabel() || '⭐ Directeur', until, taches: ts.length, devis: dv.length, team: sel.team, num: sel.num }] });
+      tx.put('reglages', { id: 'archives', list: [...((vault.get('reglages', 'archives') || {}).list || []), { at, by: whoLabel() || '⭐ Directeur', until, taches: ts.length, devis: dv.length, hotes: ho.length, biens: bi.length, team: sel.team, num: sel.num }] });
     }, '🗄️ Archivage', `${ts.length} interventions · ${dv.length} devis · jusqu’au ${fmtDate(until)}`);
     closeSheet();
-    toast(`🗄️ Archivé : ${ts.length} interventions, ${dv.length} devis`);
-    renderView(); scheduleEspaceSync();
+    toast(`🗄️ Archivé : ${ts.length} interventions, ${dv.length} devis${ho.length ? ', ' + ho.length + ' séjours' : ''}${bi.length ? ', ' + bi.length + ' biens' : ''}`);
+    renderView(); scheduleEspaceSync(); if (bi.length) biensSync();
   },
   'arch-toggle': () => { showArch = !showArch; toast(showArch ? '👁 Archives affichées' : '🙈 Archives cachées'); renderView(); },
   async 'wipe-all'() {

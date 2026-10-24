@@ -15323,5 +15323,25 @@ export default [
 [
 "Archivage",
 "Arquivamento"
+],
+[
+"Factures et devis",
+"Faturas e orçamentos"
+],
+[
+"La numérotation repart de 0001 (prochaine facture {0})",
+"A numeração recomeça em 0001 (próxima fatura {0})"
+],
+[
+"Séjours terminés (départ passé) — {0} aujourd’hui",
+"Estadias terminadas (partida passada) — {0} hoje"
+],
+[
+"Agences Immo. — biens",
+"Agências imobiliárias — imóveis"
+],
+[
+"Annonces à louer / à vendre — {0} en tout",
+"Anúncios para arrendar / vender — {0} no total"
 ]
 ];
