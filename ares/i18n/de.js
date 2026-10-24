@@ -15339,5 +15339,65 @@ export default [
 [
 "Code copié : {0}",
 "Code kopiert: {0}"
+],
+[
+"Nouveau départ — archiver les données de test",
+"Neustart — Testdaten archivieren"
+],
+[
+"Interventions, devis et activité de l’équipe sont gardés mais plus affichés ; factures et devis repartent de 0001",
+"Einsätze, Kostenvoranschläge und Team-Aktivität bleiben gespeichert, werden aber nicht mehr angezeigt; Rechnungen und Kostenvoranschläge beginnen wieder bei 0001"
+],
+[
+"Voir les archives",
+"Archiv anzeigen"
+],
+[
+"Cacher les archives",
+"Archiv ausblenden"
+],
+[
+"affichées en ce moment",
+"gerade angezeigt"
+],
+[
+"Archives affichées",
+"Archiv angezeigt"
+],
+[
+"Archives cachées",
+"Archiv ausgeblendet"
+],
+[
+"Nouveau départ",
+"Neustart"
+],
+[
+"Archiver",
+"Archivieren"
+],
+[
+"Ranger les interventions, devis et activité terminés ou de test : gardés, plus affichés (vous choisissez quoi et jusqu’à quelle date)",
+"Erledigte oder Test-Einsätze, Kostenvoranschläge und Aktivität ablegen: gespeichert, nicht mehr angezeigt (Sie wählen was und bis zu welchem Datum)"
+],
+[
+"Messages et nouvelles reçus des ouvriers",
+"Nachrichten und Neuigkeiten der Arbeiter"
+],
+[
+"Les factures et les devis repartent de 0001",
+"Rechnungen und Kostenvoranschläge beginnen wieder bei 0001"
+],
+[
+"Archiver ce qui date de jusqu’au",
+"Archivieren, was datiert ist bis zum"
+],
+[
+"Cochez au moins une case",
+"Mindestens ein Kästchen ankreuzen"
+],
+[
+"Archivage",
+"Archivierung"
 ]
 ];
