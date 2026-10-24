@@ -15339,5 +15339,65 @@ export default [
 [
 "Code copié : {0}",
 "Código copiado: {0}"
+],
+[
+"Nouveau départ — archiver les données de test",
+"Nuevo comienzo — archivar los datos de prueba"
+],
+[
+"Interventions, devis et activité de l’équipe sont gardés mais plus affichés ; factures et devis repartent de 0001",
+"Intervenciones, presupuestos y actividad del equipo se conservan pero ya no se muestran; facturas y presupuestos vuelven a 0001"
+],
+[
+"Voir les archives",
+"Ver los archivos"
+],
+[
+"Cacher les archives",
+"Ocultar los archivos"
+],
+[
+"affichées en ce moment",
+"visibles ahora"
+],
+[
+"Archives affichées",
+"Archivos visibles"
+],
+[
+"Archives cachées",
+"Archivos ocultos"
+],
+[
+"Nouveau départ",
+"Nuevo comienzo"
+],
+[
+"Archiver",
+"Archivar"
+],
+[
+"Ranger les interventions, devis et activité terminés ou de test : gardés, plus affichés (vous choisissez quoi et jusqu’à quelle date)",
+"Guardar intervenciones, presupuestos y actividad terminados o de prueba: se conservan, ya no se muestran (usted elige qué y hasta qué fecha)"
+],
+[
+"Messages et nouvelles reçus des ouvriers",
+"Mensajes y novedades recibidos de los operarios"
+],
+[
+"Les factures et les devis repartent de 0001",
+"Facturas y presupuestos vuelven a 0001"
+],
+[
+"Archiver ce qui date de jusqu’au",
+"Archivar lo que es hasta el"
+],
+[
+"Cochez au moins une case",
+"Marque al menos una casilla"
+],
+[
+"Archivage",
+"Archivado"
 ]
 ];

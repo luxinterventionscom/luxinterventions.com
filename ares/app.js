@@ -28,11 +28,16 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.178.0';
+const VERSION = '2.179.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
 const vault = new Vault(API);
+// 🗄️ Nouveau départ : les données de test sont archivées (gardées, rien n'est effacé) et ne s'affichent plus
+// nulle part (listes, statistiques, apps) ; Réglages → « Voir les archives » les montre à nouveau
+const ARCH_COLS = new Set(['taches', 'devis']);
+let showArch = false;
+{ const list0 = vault.list.bind(vault); vault.list = (c) => { const r = list0(c); return ARCH_COLS.has(c) && !showArch ? r.filter((x) => !x.arch) : r; }; }
 const $ = (s, r = document) => r.querySelector(s);
 
 // ───────────────────────── Gabarits HTML (échappement automatique) ─────────────────────────
@@ -59,6 +64,7 @@ const ICONS = {
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
   check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>',
   eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>',
+  archive: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8"/><path d="M10 12h4"/>',
   eyeOff: '<path d="M3 3l18 18M10.6 5.1A10.6 10.6 0 0 1 12 5c6.4 0 10 7 10 7a17.7 17.7 0 0 1-3.2 4.2M6.6 6.6C3.8 8.4 2 12 2 12s3.6 7 10 7c1.7 0 3.2-.5 4.5-1.2"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/>',
   phone: '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2Z"/>',
   mail: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
@@ -4381,6 +4387,8 @@ dashboard() {
         <button class="row" data-action="make-recovery">${icon('shield')}<span class="grow"><span class="title" style="display:block">Clé de secours ${vault.hasRecovery ? html`<span class="badge ok">active</span>` : vault.hasRecovery === false ? html`<span class="badge warn">à créer</span>` : ''}</span><span class="meta">Pour retrouver l'accès si la clé d'accès est oubliée</span></span></button>
         <button class="row" data-action="change-key">${icon('key')}<span class="grow"><span class="title" style="display:block">Changer la clé d'accès</span><span class="meta">Les autres appareils devront utiliser la nouvelle clé</span></span></button>
         <button class="row" data-action="lock">${icon('lock')}<span class="grow title">Verrouiller maintenant</span></button>
+        ${vault.op ? '' : html`<button class="row" data-action="arch-start">${icon('archive')}<span class="grow"><span class="title" style="display:block">🗄️ Archiver</span><span class="meta">Ranger les interventions, devis et activité terminés ou de test : gardés, plus affichés (vous choisissez quoi et jusqu’à quelle date)</span></span></button>`}
+        ${((vault.get('reglages', 'archives') || {}).list || []).length ? html`<button class="row" data-action="arch-toggle">${icon('eye')}<span class="grow"><span class="title" style="display:block">${showArch ? '🙈 Cacher les archives' : '👁 Voir les archives'}</span><span class="meta">${(() => { const l = vault.get('reglages', 'archives').list, a = l[l.length - 1]; return `${l.length} archivage${l.length > 1 ? 's' : ''} · dernier : ${fmtDateTime(a.at)} · ${a.by || ''}`; })()}${showArch ? ' · affichées en ce moment' : ''}</span></span></button>` : ''}
         <button class="row" data-action="wipe-all">${icon('trash')}<span class="grow"><span class="title red" style="display:block">Effacer toutes les données</span><span class="meta">Immeubles, locataires, paiements, documents — sur tous les appareils</span></span></button>
         <button class="row" data-action="forget">${icon('trash')}<span class="grow"><span class="title red" style="display:block">Oublier cet appareil</span><span class="meta">Efface la copie chiffrée locale (les données restent sur le serveur)</span></span></button>
       </div>
@@ -4783,6 +4791,27 @@ const SHEETS = {
         <div class="section-label" style="margin:12px 0 6px">Donner le travail à… <span class="tiny muted">⭐ = même métier</span></div>
         <div class="list small">${ints.map((i) => html`<button class="row" data-action="eq-swap-do" data-id="${id}" data-w="${i.id}"><span class="avatar met-ic">${avW(i)}</span><span class="grow"><span class="title" style="display:block">${hint.includes(i.metier) ? '⭐ ' : ''}${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || ''}${absOn(i, d) ? html` · <b class="red">absent</b>` : ''}${(t.refusBy || []).includes(i.id) ? ' · ✋ a refusé' : ''}${i.espace && i.espace.on ? '' : ' · sans app'}</span></span><span class="chev">›</span></button>`)}</div>`,
       foot: html`<button class="btn danger" data-action="eq-swap-do" data-id="${id}" data-w="">⏹ Retirer l’ouvrier</button><button class="btn" data-action="close-sheet">Annuler</button>`,
+    };
+  },
+  // 🗄️ Archiver : on coche ce qu'on range (gardé, plus affiché), jusqu'à quelle date ; l'historique dit quand et qui
+  'arch-form'() {
+    const hist = ((vault.get('reglages', 'archives') || {}).list || []).slice().reverse();
+    const nT = vault.list('taches').filter((t) => !t.recur).length, nD = vault.list('devis').length;
+    const cb = (k, l, m, on = true) => html`<label class="row" style="cursor:pointer"><input type="checkbox" name="${k}" ${on ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none"><span class="grow"><span class="title" style="display:block">${l}</span><span class="meta" style="white-space:normal">${m}</span></span></label>`;
+    return {
+      title: '🗄️ Archiver', narrow: true,
+      body: html`<form id="archF" class="stack" onsubmit="return false">
+        <p class="small muted" style="margin:0">Ce qui est archivé est <b>gardé</b> (rien n’est effacé) mais ne s’affiche plus : listes, statistiques, apps de l’équipe et des locataires. « 👁 Voir les archives » le montre à nouveau.</p>
+        <div class="list">
+          ${cb('interv', '🔧 Interventions', `${nT} en tout — signalements, demandes des gérances, travaux, avec leurs photos et factures (les ménages réguliers restent)`)}
+          ${cb('devis', '📝 Devis', `${nD} en tout`)}
+          ${cb('team', '👷 Activité de l’équipe', 'Messages et nouvelles reçus des ouvriers')}
+          ${cb('num', '🔢 Numérotation', 'Les factures et les devis repartent de 0001')}
+        </div>
+        <label class="field">Archiver ce qui date de jusqu’au<input type="date" name="until" value="${today()}"></label>
+        ${hist.length ? html`<div class="section-label" style="margin:6px 0 4px">Historique</div><div class="list small">${hist.map((a) => html`<div class="row"><span class="grow"><b>${fmtDateTime(a.at)}</b> · 👤 ${a.by || '—'}<span class="meta" style="display:block">${a.taches} interventions · ${a.devis} devis${a.team ? ' · activité de l’équipe' : ''}${a.num ? ' · numéros à 0001' : ''}${a.until ? ' · jusqu’au ' + fmtDate(a.until) : ''}</span></span></div>`)}</div>` : ''}
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" data-action="arch-do">🗄️ Archiver</button>`,
     };
   },
   'centrale-form'() {
@@ -7338,6 +7367,32 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.remove('documents', d.id), 'Document supprimé', doc.label, doc.locId);
     await vault.deleteFile(d.id);
   },
+  'arch-start': () => openOver('arch-form'),
+  async 'arch-do'() {
+    const f = document.getElementById('archF');
+    if (!f) return;
+    const on = (k) => !!(f.querySelector(`[name=${k}]`) || {}).checked, until = /^\d{4}-\d{2}-\d{2}$/.test(f.until.value) ? f.until.value : today();
+    const sel = { interv: on('interv'), devis: on('devis'), team: on('team'), num: on('num') };
+    if (!Object.values(sel).some(Boolean)) return toast('Cochez au moins une case', { bad: true });
+    const day = (x) => String(x || '').slice(0, 10);
+    const ts = sel.interv ? vault.list('taches').filter((t) => !t.recur && (day(t.date || t.sentAt) || today()) <= until) : [];
+    const dv = sel.devis ? vault.list('devis').filter((d) => (day(d.date) || today()) <= until) : [];
+    const k = await promptKey('🗄️ Archiver', `${sel.interv ? ts.length + ' interventions · ' : ''}${sel.devis ? dv.length + ' devis · ' : ''}${sel.team ? 'activité de l’équipe · ' : ''}${sel.num ? 'numéros de facture et de devis à 0001 · ' : ''}jusqu’au ${fmtDate(until)}. Rien n’est effacé. Saisissez votre clé d’accès pour confirmer.`);
+    if (!k) return;
+    if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
+    const at = new Date().toISOString(), fc = factConf();
+    await vault.mutate((tx) => {
+      for (const t of ts) tx.put('taches', { id: t.id, arch: at });
+      for (const d of dv) tx.put('devis', { id: d.id, arch: at });
+      if (sel.team) for (const i of vault.list('intervenants')) if ((i.feed || []).length) tx.put('intervenants', { id: i.id, feedArch: [...(i.feedArch || []), ...i.feed].slice(-500), feed: [], feedNew: 0 });
+      if (sel.num) tx.put('reglages', { id: 'facturation', seq: 0, devSeq: 0, archSeq: [...(fc.archSeq || []), { at, seq: +fc.seq || 0, devSeq: +fc.devSeq || 0 }] });
+      tx.put('reglages', { id: 'archives', list: [...((vault.get('reglages', 'archives') || {}).list || []), { at, by: whoLabel() || '⭐ Directeur', until, taches: ts.length, devis: dv.length, team: sel.team, num: sel.num }] });
+    }, '🗄️ Archivage', `${ts.length} interventions · ${dv.length} devis · jusqu’au ${fmtDate(until)}`);
+    closeSheet();
+    toast(`🗄️ Archivé : ${ts.length} interventions, ${dv.length} devis`);
+    renderView(); scheduleEspaceSync();
+  },
+  'arch-toggle': () => { showArch = !showArch; toast(showArch ? '👁 Archives affichées' : '🙈 Archives cachées'); renderView(); },
   async 'wipe-all'() {
     const k = await promptKey('Effacer toutes les données ?', 'Tout sera supprimé sur tous les appareils : immeubles, logements, locataires, paiements, dépenses et documents. Faites d’abord une sauvegarde chiffrée si besoin. Saisissez votre clé d’accès pour confirmer.');
     if (!k) return;
@@ -8079,7 +8134,7 @@ async function importFile(file) {
 
 // ───────────────────────── Délégation d'événements ─────────────────────────
 // réservé au responsable (clé principale) ; le comptable n'affecte pas les travaux
-const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all']);
+const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do']);
 const DEL_ACTION = /^del-|-del$|wipe/; // toute suppression
 const NO_COMPTA = new Set(['eq-swap', 'eq-swap-do', 'interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job', 'op-del', 'op-new']);
 document.addEventListener('click', (e) => {

@@ -15075,5 +15075,65 @@ export default [
 [
 "Code copié : {0}",
 "Code copied: {0}"
+],
+[
+"Nouveau départ — archiver les données de test",
+"Fresh start — archive the test data"
+],
+[
+"Interventions, devis et activité de l’équipe sont gardés mais plus affichés ; factures et devis repartent de 0001",
+"Jobs, quotes and team activity are kept but no longer shown; invoices and quotes restart at 0001"
+],
+[
+"Voir les archives",
+"Show the archives"
+],
+[
+"Cacher les archives",
+"Hide the archives"
+],
+[
+"affichées en ce moment",
+"shown right now"
+],
+[
+"Archives affichées",
+"Archives shown"
+],
+[
+"Archives cachées",
+"Archives hidden"
+],
+[
+"Nouveau départ",
+"Fresh start"
+],
+[
+"Archiver",
+"Archive"
+],
+[
+"Ranger les interventions, devis et activité terminés ou de test : gardés, plus affichés (vous choisissez quoi et jusqu’à quelle date)",
+"Put away finished or test jobs, quotes and activity: kept, no longer shown (you choose what and up to which date)"
+],
+[
+"Messages et nouvelles reçus des ouvriers",
+"Messages and news from the workers"
+],
+[
+"Les factures et les devis repartent de 0001",
+"Invoices and quotes restart at 0001"
+],
+[
+"Archiver ce qui date de jusqu’au",
+"Archive what is dated up to"
+],
+[
+"Cochez au moins une case",
+"Tick at least one box"
+],
+[
+"Archivage",
+"Archiving"
 ]
 ];
