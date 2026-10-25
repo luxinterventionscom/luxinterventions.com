@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.182.0';
+const VERSION = '2.183.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5631,9 +5631,9 @@ const SHEETS = {
           ${alone.length ? html`<div class="list">${alone.map(row)}</div>` : ''}
           ${orphanRooms.length > 1 ? html`<p class="tiny muted" style="margin:6px 2px 0">ℹ️ ${plural(orphanRooms.length, 'chambre')} sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).</p>` : ''}`;
         })()}` : html`<p class="muted small">Aucun logement. Ajoutez les appartements, chambres, garages, bureaux ou locaux de cette structure pour suivre leurs occupants successifs.</p>`}
-        <div class="actions" style="margin-top:12px;flex-direction:column">
-          <button class="btn primary block" data-action="coloc-new" data-imm="${id}">🏠 Colocation : appartement de 2 à 10 chambres</button>
-          <button class="btn block" data-action="new-log" data-imm="${id}">${icon('plus')} Ajouter un logement / local</button></div>`;
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+          <button class="btn primary" data-action="new-log" data-imm="${id}" style="white-space:normal;line-height:1.2">＋ Logement / local</button>
+          <button class="btn primary" data-action="coloc-new" data-imm="${id}" style="white-space:normal;line-height:1.2">＋ Colocation<span style="display:block;font-size:11px;font-weight:500;opacity:.85">2 à 10 chambres</span></button></div>`;
     } else if (tab === 'chat') {
       const on = chatOn(im);
       const groups = Object.entries(im.chats || {});
