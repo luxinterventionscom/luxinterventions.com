@@ -15155,5 +15155,9 @@ export default [
 [
 "Annonces à louer / à vendre — {0} en tout",
 "Listings to rent / for sale — {0} in total"
+],
+[
+"🏠 Ajouter une colocation (2 à 10 ch.)",
+"🏠 Add a flat-share (2–10 rooms)"
 ]
 ];

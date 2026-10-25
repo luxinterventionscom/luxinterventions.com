@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.180.0';
+const VERSION = '2.181.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5632,7 +5632,7 @@ const SHEETS = {
           ${orphanRooms.length > 1 ? html`<p class="tiny muted" style="margin:6px 2px 0">ℹ️ ${plural(orphanRooms.length, 'chambre')} sans appartement indiqué : leurs habitants discutent ensemble. S’il y a plusieurs appartements, indiquez-le dans chaque chambre (« Fait partie de l’appartement »).</p>` : ''}`;
         })()}` : html`<p class="muted small">Aucun logement. Ajoutez les appartements, chambres, garages, bureaux ou locaux de cette structure pour suivre leurs occupants successifs.</p>`}
         <div class="actions" style="margin-top:12px;flex-direction:column">
-          <button class="btn primary block" data-action="coloc-new" data-imm="${id}">🏠 Ajouter un appartement en colocation (2 à 10 chambres)</button>
+          <button class="btn primary block" data-action="coloc-new" data-imm="${id}">🏠 Ajouter une colocation (2 à 10 ch.)</button>
           <button class="btn block" data-action="new-log" data-imm="${id}">${icon('plus')} Ajouter un logement / local</button></div>`;
     } else if (tab === 'chat') {
       const on = chatOn(im);

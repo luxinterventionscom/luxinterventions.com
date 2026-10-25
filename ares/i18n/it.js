@@ -15435,5 +15435,9 @@ export default [
 [
 "Annonces à louer / à vendre — {0} en tout",
 "Annunci in affitto / in vendita — {0} in tutto"
+],
+[
+"🏠 Ajouter une colocation (2 à 10 ch.)",
+"🏠 Aggiungi una coabitazione (2–10 camere)"
 ]
 ];
