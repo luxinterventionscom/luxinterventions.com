@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.184.0';
+const VERSION = '2.185.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2568,7 +2568,6 @@ function renderShell() {
       <main class="main" id="view"></main>
     </div>
     <nav class="bottomnav" aria-label="Navigation">${NAV_MOBILE.map((x) => navItem(x))}</nav>
-    <button class="fab" id="fab" data-action="fab" aria-label="Ajouter" hidden>${icon('plus')}</button>
   `);
   renderSync();
 }
@@ -2591,8 +2590,6 @@ function go(route, replace) {
   const navRoute = route === 'champeq' ? 'champions' : route === 'rapports' ? 'compta' : ['paiements', 'locataires', 'agences'].includes(route) ? 'immeubles' : route;
   document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute && (!b.dataset.sec || b.dataset.sec === (ui.cpSec === 'abo' ? 'abo' : 'compta')) ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   bnavShow();
-  const fab = $('#fab');
-  if (fab) fab.hidden = !['immeubles', 'locataires'].includes(route);
   renderView();
   scrollTo(0, 0);
   if (route === 'gerances' && ui.ptl.data) setTimeout(ptlLoad, 0); // toujours les demandes du moment
@@ -7050,7 +7047,6 @@ const ACTIONS = {
     inp.type = inp.type === 'password' ? 'text' : 'password';
     setHtml(el, icon(inp.type === 'password' ? 'eye' : 'eyeOff'));
   },
-  fab: () => (ui.route === 'immeubles' ? openSheet('imm-form') : openSheet('loc-form')),
   'new-imm': () => openSheet('imm-form'),
   'edit-imm': (d) => openSheet('imm-form', d.id),
   'new-loc': (d) => openSheet('loc-form', null, null, d.log),
