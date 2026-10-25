@@ -15451,5 +15451,86 @@ export default [
 [
 "Pièce / espace",
 "Raum / Bereich"
+],
+["Agences immo.",
+"Immobilienagenturen"
+],
+["Propriétaires",
+"Eigentümer"
+],
+["{0} propriétaire",
+"{0} Eigentümer"
+],
+["{0} propriétaires",
+"{0} Eigentümer"
+],
+["Agences et propriétaires",
+"Agenturen und Eigentümer"
+],
+["Propriétaire",
+"Eigentümer"
+],
+["{0} bien",
+"{0} Objekt"
+],
+["{0} biens",
+"{0} Objekte"
+],
+["Les agences immobilières et les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.",
+"Immobilienagenturen und Eigentümer (eine oder mehrere Wohnungen) veröffentlichen ihre Objekte und vertrauen Ihnen ihre Einsätze an."
+],
+["Nouvelle agence / propriétaire",
+"Neue Agentur / Eigentümer"
+],
+["Propriétaire (un ou plusieurs logements)",
+"Eigentümer (eine oder mehrere Wohnungen)"
+],
+["Nom (société ou propriétaire)",
+"Name (Firma oder Eigentümer)"
+],
+["RCS (obligatoire pour une agence)",
+"RCS (Pflicht für eine Agentur)"
+],
+["Directeur / contact",
+"Direktor / Kontakt"
+],
+["Pour une agence, prénom, nom et email du directeur sont obligatoires. Le directeur invitera ses agents (app des agents, prochaine étape).",
+"Für eine Agentur sind Vorname, Name und E-Mail des Direktors Pflicht. Der Direktor lädt seine Makler ein (App der Makler, nächster Schritt)."
+],
+["Pour une agence, prénom, nom et email du directeur sont obligatoires",
+"Für eine Agentur sind Vorname, Name und E-Mail des Direktors Pflicht"
+],
+["Propriétaire créé",
+"Eigentümer erstellt"
+],
+["Agence modifiée",
+"Agentur geändert"
+],
+["Hôtel",
+"Hotel"
+],
+["Présents",
+"Anwesend"
+],
+["Présents : {0} · Arrivées : {1} · Départs : {2}",
+"Anwesend: {0} · Ankünfte: {1} · Abreisen: {2}"
+],
+["Aucun client présent.",
+"Kein Gast anwesend."
+],
+["Airbnb / location courte",
+"Airbnb / Kurzzeitmiete"
+],
+["N° de chambre / logement",
+"Zimmer- / Wohnungsnr."
+],
+["Adresse (Airbnb)",
+"Adresse (Airbnb)"
+],
+["rue, n°, ville",
+"Straße, Nr., Ort"
+],
+["Agences — biens",
+"Agenturen — Objekte"
 ]
 ];

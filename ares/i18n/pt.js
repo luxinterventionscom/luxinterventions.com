@@ -15375,5 +15375,86 @@ export default [
 [
 "Pièce / espace",
 "Divisão / espaço"
+],
+["Agences immo.",
+"Agências imob."
+],
+["Propriétaires",
+"Proprietários"
+],
+["{0} propriétaire",
+"{0} proprietário"
+],
+["{0} propriétaires",
+"{0} proprietários"
+],
+["Agences et propriétaires",
+"Agências e proprietários"
+],
+["Propriétaire",
+"Proprietário"
+],
+["{0} bien",
+"{0} imóvel"
+],
+["{0} biens",
+"{0} imóveis"
+],
+["Les agences immobilières et les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.",
+"As agências imobiliárias e os proprietários (um ou vários alojamentos) publicam os seus imóveis e confiam-vos as suas intervenções."
+],
+["Nouvelle agence / propriétaire",
+"Nova agência / proprietário"
+],
+["Propriétaire (un ou plusieurs logements)",
+"Proprietário (um ou vários alojamentos)"
+],
+["Nom (société ou propriétaire)",
+"Nome (empresa ou proprietário)"
+],
+["RCS (obligatoire pour une agence)",
+"RCS (obrigatório para uma agência)"
+],
+["Directeur / contact",
+"Diretor / contacto"
+],
+["Pour une agence, prénom, nom et email du directeur sont obligatoires. Le directeur invitera ses agents (app des agents, prochaine étape).",
+"Para uma agência, nome, apelido e email do diretor são obrigatórios. O diretor convidará os seus agentes (app dos agentes, próxima etapa)."
+],
+["Pour une agence, prénom, nom et email du directeur sont obligatoires",
+"Para uma agência, nome, apelido e email do diretor são obrigatórios"
+],
+["Propriétaire créé",
+"Proprietário criado"
+],
+["Agence modifiée",
+"Agência modificada"
+],
+["Hôtel",
+"Hotel"
+],
+["Présents",
+"Presentes"
+],
+["Présents : {0} · Arrivées : {1} · Départs : {2}",
+"Presentes: {0} · Chegadas: {1} · Partidas: {2}"
+],
+["Aucun client présent.",
+"Nenhum cliente presente."
+],
+["Airbnb / location courte",
+"Airbnb / arrendamento curto"
+],
+["N° de chambre / logement",
+"N.º do quarto / alojamento"
+],
+["Adresse (Airbnb)",
+"Morada (Airbnb)"
+],
+["rue, n°, ville",
+"rua, n.º, cidade"
+],
+["Agences — biens",
+"Agências — imóveis"
 ]
 ];
