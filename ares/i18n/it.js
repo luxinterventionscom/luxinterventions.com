@@ -15467,5 +15467,86 @@ export default [
 [
 "Pièce / espace",
 "Stanza / spazio"
+],
+["Agences immo.",
+"Agenzie immo."
+],
+["Propriétaires",
+"Proprietari"
+],
+["{0} propriétaire",
+"{0} proprietario"
+],
+["{0} propriétaires",
+"{0} proprietari"
+],
+["Agences et propriétaires",
+"Agenzie e proprietari"
+],
+["Propriétaire",
+"Proprietario"
+],
+["{0} bien",
+"{0} immobile"
+],
+["{0} biens",
+"{0} immobili"
+],
+["Les agences immobilières et les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.",
+"Le agenzie immobiliari e i proprietari (uno o più alloggi) pubblicano i loro immobili e vi affidano i loro interventi."
+],
+["Nouvelle agence / propriétaire",
+"Nuova agenzia / proprietario"
+],
+["Propriétaire (un ou plusieurs logements)",
+"Proprietario (uno o più alloggi)"
+],
+["Nom (société ou propriétaire)",
+"Nome (società o proprietario)"
+],
+["RCS (obligatoire pour une agence)",
+"RCS (obbligatorio per un'agenzia)"
+],
+["Directeur / contact",
+"Direttore / contatto"
+],
+["Pour une agence, prénom, nom et email du directeur sont obligatoires. Le directeur invitera ses agents (app des agents, prochaine étape).",
+"Per un'agenzia, nome, cognome ed email del direttore sono obbligatori. Il direttore inviterà i suoi agenti (app degli agenti, prossima tappa)."
+],
+["Pour une agence, prénom, nom et email du directeur sont obligatoires",
+"Per un'agenzia, nome, cognome ed email del direttore sono obbligatori"
+],
+["Propriétaire créé",
+"Proprietario creato"
+],
+["Agence modifiée",
+"Agenzia modificata"
+],
+["Hôtel",
+"Hotel"
+],
+["Présents",
+"Presenti"
+],
+["Présents : {0} · Arrivées : {1} · Départs : {2}",
+"Presenti: {0} · Arrivi: {1} · Partenze: {2}"
+],
+["Aucun client présent.",
+"Nessun cliente presente."
+],
+["Airbnb / location courte",
+"Airbnb / affitto breve"
+],
+["N° de chambre / logement",
+"N° camera / alloggio"
+],
+["Adresse (Airbnb)",
+"Indirizzo (Airbnb)"
+],
+["rue, n°, ville",
+"via, n°, città"
+],
+["Agences — biens",
+"Agenzie — immobili"
 ]
 ];

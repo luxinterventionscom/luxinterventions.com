@@ -15187,5 +15187,86 @@ export default [
 [
 "Pièce / espace",
 "Room / space"
+],
+["Agences immo.",
+"Real estate agencies"
+],
+["Propriétaires",
+"Owners"
+],
+["{0} propriétaire",
+"{0} owner"
+],
+["{0} propriétaires",
+"{0} owners"
+],
+["Agences et propriétaires",
+"Agencies and owners"
+],
+["Propriétaire",
+"Owner"
+],
+["{0} bien",
+"{0} property"
+],
+["{0} biens",
+"{0} properties"
+],
+["Les agences immobilières et les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.",
+"Real estate agencies and owners (one or more homes) publish their properties and entrust you with their jobs."
+],
+["Nouvelle agence / propriétaire",
+"New agency / owner"
+],
+["Propriétaire (un ou plusieurs logements)",
+"Owner (one or more homes)"
+],
+["Nom (société ou propriétaire)",
+"Name (company or owner)"
+],
+["RCS (obligatoire pour une agence)",
+"RCS (required for an agency)"
+],
+["Directeur / contact",
+"Director / contact"
+],
+["Pour une agence, prénom, nom et email du directeur sont obligatoires. Le directeur invitera ses agents (app des agents, prochaine étape).",
+"For an agency, the director's first name, last name and email are required. The director will invite their agents (agents app, next step)."
+],
+["Pour une agence, prénom, nom et email du directeur sont obligatoires",
+"For an agency, the director's first name, last name and email are required"
+],
+["Propriétaire créé",
+"Owner created"
+],
+["Agence modifiée",
+"Agency updated"
+],
+["Hôtel",
+"Hotel"
+],
+["Présents",
+"Present"
+],
+["Présents : {0} · Arrivées : {1} · Départs : {2}",
+"Present: {0} · Arrivals: {1} · Departures: {2}"
+],
+["Aucun client présent.",
+"No guest present."
+],
+["Airbnb / location courte",
+"Airbnb / short stay"
+],
+["N° de chambre / logement",
+"Room / home no."
+],
+["Adresse (Airbnb)",
+"Address (Airbnb)"
+],
+["rue, n°, ville",
+"street, no., city"
+],
+["Agences — biens",
+"Agencies — properties"
 ]
 ];

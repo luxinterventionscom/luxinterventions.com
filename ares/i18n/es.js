@@ -15451,5 +15451,86 @@ export default [
 [
 "Pièce / espace",
 "Habitación / espacio"
+],
+["Agences immo.",
+"Agencias inmob."
+],
+["Propriétaires",
+"Propietarios"
+],
+["{0} propriétaire",
+"{0} propietario"
+],
+["{0} propriétaires",
+"{0} propietarios"
+],
+["Agences et propriétaires",
+"Agencias y propietarios"
+],
+["Propriétaire",
+"Propietario"
+],
+["{0} bien",
+"{0} inmueble"
+],
+["{0} biens",
+"{0} inmuebles"
+],
+["Les agences immobilières et les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.",
+"Las agencias inmobiliarias y los propietarios (una o varias viviendas) publican sus inmuebles y os confían sus intervenciones."
+],
+["Nouvelle agence / propriétaire",
+"Nueva agencia / propietario"
+],
+["Propriétaire (un ou plusieurs logements)",
+"Propietario (una o varias viviendas)"
+],
+["Nom (société ou propriétaire)",
+"Nombre (empresa o propietario)"
+],
+["RCS (obligatoire pour une agence)",
+"RCS (obligatorio para una agencia)"
+],
+["Directeur / contact",
+"Director / contacto"
+],
+["Pour une agence, prénom, nom et email du directeur sont obligatoires. Le directeur invitera ses agents (app des agents, prochaine étape).",
+"Para una agencia, nombre, apellido y email del director son obligatorios. El director invitará a sus agentes (app de los agentes, próxima etapa)."
+],
+["Pour une agence, prénom, nom et email du directeur sont obligatoires",
+"Para una agencia, nombre, apellido y email del director son obligatorios"
+],
+["Propriétaire créé",
+"Propietario creado"
+],
+["Agence modifiée",
+"Agencia modificada"
+],
+["Hôtel",
+"Hotel"
+],
+["Présents",
+"Presentes"
+],
+["Présents : {0} · Arrivées : {1} · Départs : {2}",
+"Presentes: {0} · Llegadas: {1} · Salidas: {2}"
+],
+["Aucun client présent.",
+"Ningún cliente presente."
+],
+["Airbnb / location courte",
+"Airbnb / alquiler corto"
+],
+["N° de chambre / logement",
+"N.º de habitación / vivienda"
+],
+["Adresse (Airbnb)",
+"Dirección (Airbnb)"
+],
+["rue, n°, ville",
+"calle, n.º, ciudad"
+],
+["Agences — biens",
+"Agencias — inmuebles"
 ]
 ];
