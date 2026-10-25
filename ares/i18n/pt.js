@@ -15351,5 +15351,17 @@ export default [
 [
 "🏠 Colocation : appartement de 2 à 10 chambres",
 "🏠 Partilha: apartamento de 2 a 10 quartos"
+],
+[
+"＋ Logement / local",
+"＋ Habitação / espaço"
+],
+[
+"＋ Colocation",
+"＋ Partilha de casa"
+],
+[
+"2 à 10 chambres",
+"2 a 10 quartos"
 ]
 ];

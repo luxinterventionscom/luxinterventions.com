@@ -15443,5 +15443,17 @@ export default [
 [
 "🏠 Colocation : appartement de 2 à 10 chambres",
 "🏠 Coabitazione: appartamento da 2 a 10 camere"
+],
+[
+"＋ Logement / local",
+"＋ Alloggio / locale"
+],
+[
+"＋ Colocation",
+"＋ Coabitazione"
+],
+[
+"2 à 10 chambres",
+"da 2 a 10 camere"
 ]
 ];

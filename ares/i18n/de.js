@@ -15427,5 +15427,17 @@ export default [
 [
 "🏠 Colocation : appartement de 2 à 10 chambres",
 "🏠 WG: Wohnung mit 2 bis 10 Zimmern"
+],
+[
+"＋ Logement / local",
+"＋ Wohnung / Gewerbe"
+],
+[
+"＋ Colocation",
+"＋ WG"
+],
+[
+"2 à 10 chambres",
+"2 bis 10 Zimmer"
 ]
 ];

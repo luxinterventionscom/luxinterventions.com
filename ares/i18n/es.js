@@ -15427,5 +15427,17 @@ export default [
 [
 "🏠 Colocation : appartement de 2 à 10 chambres",
 "🏠 Piso compartido: de 2 a 10 habitaciones"
+],
+[
+"＋ Logement / local",
+"＋ Vivienda / local"
+],
+[
+"＋ Colocation",
+"＋ Piso compartido"
+],
+[
+"2 à 10 chambres",
+"2 a 10 habitaciones"
 ]
 ];
