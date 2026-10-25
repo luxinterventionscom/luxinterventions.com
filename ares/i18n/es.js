@@ -15443,5 +15443,13 @@ export default [
 [
 "2ᵉ personne (couple, ami…)",
 "2.ª persona (pareja, amigo…)"
+],
+[
+"Absence",
+"Ausencia"
+],
+[
+"Pièce / espace",
+"Habitación / espacio"
 ]
 ];

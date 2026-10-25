@@ -16,7 +16,7 @@ scrollHintInit();
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.33.0';
+const VERSION = '1.34.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -955,7 +955,7 @@ const VIEWS = {
       ${pubSlot('milieu')}
       <button class="btn block" style="margin-top:12px" data-action="go" data-to="stats">${icon('chart')} Statistiques de nos interventions</button>
       <div class="section-label">Mes demandes en cours</div>
-      ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande de dépannage</button>`)}
+      ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Dépannage</button>`)}
       ${pubSlot('bas')}${new Raw(infoBox({ extra: `<button class="btn sec block" data-action="install-anim">▶ ${IA_T}</button>` }))}${tickerBar()}`;
   },
 
@@ -1050,7 +1050,7 @@ const VIEWS = {
     if (q) list = list.filter((t) => [t.ref, t.residence_name, t.residence_address, t.lieu, t.categorie, t.description, t.org_name, t.technicien].join(' ').toLowerCase().includes(q));
     const resList = (state.cache.residencesList || []).filter((r) => !f.org || r.org_id === f.org);
     return html`
-      ${pageHead('Demandes', `${list.length} demande${list.length > 1 ? 's' : ''}`, html`<button class="btn primary desk-only" data-action="new-ticket">${icon('plus')} Nouvelle demande de dépannage</button>`)}
+      ${pageHead('Demandes', `${list.length} demande${list.length > 1 ? 's' : ''}`, html`<button class="btn primary desk-only" data-action="new-ticket">${icon('plus')} Dépannage</button>`)}
       <div class="tabs" role="tablist" style="max-width:420px">
         ${[['active', 'En cours'], ['done', 'Terminées'], ['all', 'Toutes']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${f.scope === k}" data-action="scope" data-id="${k}">${l}</button>`)}
       </div>
@@ -1063,7 +1063,7 @@ const VIEWS = {
         <button class="chip" data-action="urg-filter" data-id="" aria-pressed="${!f.urg}">Toutes urgences</button>
         ${Object.entries(URG).map(([k, u]) => html`<button class="chip" data-action="urg-filter" data-id="${k}" aria-pressed="${f.urg === k}">${u.dot} ${u.label}</button>`)}
       </div>
-      ${list.length ? html`<div class="list">${list.map(ticketRow)}</div>` : empty('wrench', 'Aucune demande.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Nouvelle demande de dépannage</button>`)}`;
+      ${list.length ? html`<div class="list">${list.map(ticketRow)}</div>` : empty('wrench', 'Aucune demande.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Dépannage</button>`)}`;
   },
 
   residences() {
@@ -1072,25 +1072,25 @@ const VIEWS = {
     if (q) list = list.filter((r) => [r.name, r.address, r.org_name].join(' ').toLowerCase().includes(q));
     const apts = list.reduce((a, r) => a + (r.apartments || 0), 0);
     return html`
-      ${pageHead('Résidences', `${list.length} résidence${list.length > 1 ? 's' : ''}${apts ? ' · ' + apts + ' appartements' : ''}`, isAdmin() ? '' : html`<button class="btn primary" data-action="new-residence">${icon('plus')} Ajouter une résidence</button>`)}
+      ${pageHead('Résidences', `${list.length} résidence${list.length > 1 ? 's' : ''}${apts ? ' · ' + apts + ' appartements' : ''}`, isAdmin() ? '' : html`<button class="btn primary" data-action="new-residence">${icon('plus')} Résidence</button>`)}
       ${orgFilter()}
       <div class="search">${icon('search')}<input type="search" data-input="rq" placeholder="Rechercher une résidence, une adresse…" value="${state.filters.rq || ''}" autocomplete="off"></div>
       ${list.length ? html`<div class="list">${list.map((r) => html`<button class="row" data-action="open-residence" data-id="${r.id}">
         <span class="avatar">${icon('building')}</span>
         <span class="grow"><span class="title" style="display:block">${r.name}</span><span class="meta">${r.address || '—'}${isAdmin() ? ' · ' + r.org_name : ''}</span></span>
         ${r.open ? html`<span class="badge warn">${r.open} en cours</span>` : html`<span class="tiny muted">${r.tickets} demande${r.tickets > 1 ? 's' : ''}</span>`}
-      </button>`)}</div>` : empty('building', q ? 'Aucun résultat.' : 'Aucune résidence enregistrée. Ajoutez vos résidences une seule fois : elles seront proposées à chaque demande.', !q && !isAdmin() ? html`<button class="btn primary" data-action="new-residence">${icon('plus')} Ajouter une résidence</button>` : '')}`;
+      </button>`)}</div>` : empty('building', q ? 'Aucun résultat.' : 'Aucune résidence enregistrée. Ajoutez vos résidences une seule fois : elles seront proposées à chaque demande.', !q && !isAdmin() ? html`<button class="btn primary" data-action="new-residence">${icon('plus')} Résidence</button>` : '')}`;
   },
 
   gerances() {
     const { orgs, users } = state.cache.gerances || { orgs: [], users: [] };
     const staff = users.filter((u) => u.role === 'admin');
     return html`
-      ${pageHead('Gérances & accès', `${orgs.length} gérance${orgs.length > 1 ? 's' : ''} · ${users.filter((u) => u.active).length} utilisateurs actifs`, html`<button class="btn primary" data-action="new-org">${icon('plus')} Nouvelle gérance</button>`)}
+      ${pageHead('Gérances & accès', `${orgs.length} gérance${orgs.length > 1 ? 's' : ''} · ${users.filter((u) => u.active).length} utilisateurs actifs`, html`<button class="btn primary" data-action="new-org">${icon('plus')} Gérance</button>`)}
       ${orgs.length ? html`<div class="grid cols-auto">${orgs.map((o) => html`<button class="card" style="text-align:left;font:inherit;color:inherit;cursor:pointer;width:100%" data-action="open-org" data-id="${o.id}">
         <div class="card-title"><h3>${o.name}</h3>${o.open ? html`<span class="badge warn">${o.open} en cours</span>` : ''}</div>
         <div class="pay-foot"><span>${o.residences} résidence${o.residences > 1 ? 's' : ''}</span><span>${o.users} utilisateur${o.users > 1 ? 's' : ''}</span></div>
-      </button>`)}</div>` : empty('users', 'Aucune gérance. Créez la première, puis invitez ses utilisateurs.', html`<button class="btn primary" data-action="new-org">${icon('plus')} Nouvelle gérance</button>`)}
+      </button>`)}</div>` : empty('users', 'Aucune gérance. Créez la première, puis invitez ses utilisateurs.', html`<button class="btn primary" data-action="new-org">${icon('plus')} Gérance</button>`)}
       <div class="section-label">Équipe LuxInterventions</div>
       <div class="list">${staff.map(userRow)}</div>
       <button class="btn block" style="margin-top:10px" data-action="new-user" data-org="" data-role="admin">${icon('plus')} Inviter un membre de l'équipe</button>`;
@@ -1607,7 +1607,7 @@ const SHEETS = {
   'ticket-form'({ data = {} }) {
     const res = (state.cache.residencesList || []).filter((r) => !isAdmin() || !state.filters.org || r.org_id === state.filters.org);
     if (!res.length) {
-      return { title: 'Nouvelle demande de dépannage', narrow: true, body: empty('building', 'Ajoutez d’abord la résidence concernée : ses informations (accès, clés, contact) seront reprises automatiquement.', html`<button class="btn primary" data-action="new-residence">${icon('plus')} Ajouter une résidence</button>`) };
+      return { title: 'Nouvelle demande de dépannage', narrow: true, body: empty('building', 'Ajoutez d’abord la résidence concernée : ses informations (accès, clés, contact) seront reprises automatiquement.', html`<button class="btn primary" data-action="new-residence">${icon('plus')} Résidence</button>`) };
     }
     const ed = !!data.edit, v = (k, d = '') => (data[k] != null ? data[k] : d);
     return {

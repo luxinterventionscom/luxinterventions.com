@@ -15179,5 +15179,13 @@ export default [
 [
 "2ᵉ personne (couple, ami…)",
 "2nd person (couple, friend…)"
+],
+[
+"Absence",
+"Absence"
+],
+[
+"Pièce / espace",
+"Room / space"
 ]
 ];

@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.186.0';
+const VERSION = '2.187.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1170,7 +1170,7 @@ function pubSection(f = '') {
         <span class="badge ${a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
       return html`<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
         ${all.length ? html`<p class="tiny muted" style="margin:-4px 0 8px">📊 Statistiques anonymes : vues (une fois par jour et par téléphone) et clics. <a href="#" data-action="pub-stats-refresh">↻ Actualiser les statistiques</a></p>` : ''}
-        ${on.length ? html`<div class="list" style="margin-bottom:14px">${on.map(row)}</div>` : empty('msg', 'Aucune annonce en cours.', html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Nouvelle annonce</button>`)}
+        ${on.length ? html`<div class="list" style="margin-bottom:14px">${on.map(row)}</div>` : empty('msg', 'Aucune annonce en cours.', html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>`)}
         ${off.length ? html`<div class="section-label">Expirées (touchez pour republier)</div><div class="list">${off.map(row)}</div>` : ''}
         ${radioCard()}`;
 }
@@ -3710,9 +3710,9 @@ const VIEWS = {
     const chips = imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
       <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!f}">Tous</button>
       ${imms.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${f === im.id}">${im.adresse}</button>`)}</div>` : '';
-    const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions acts-fit" style="margin:0"><button class="btn" data-action="aff-pick">📌 Affectation (demandes d’intervention)</button><button class="btn" data-action="interv-job">📅 Nou. travail (nouvelle intervention)</button><button class="btn primary" data-action="new-interv">${icon('plus')} Nouvel ouvrier</button></div>`
+    const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions acts-fit" style="margin:0"><button class="btn" data-action="aff-pick">📌 Affectation (demandes d’intervention)</button><button class="btn" data-action="interv-job">📅 Nou. travail (nouvelle intervention)</button><button class="btn primary" data-action="new-interv">${icon('plus')} Ouvrier</button></div>`
       : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
-      : tab === 'devis' ? html`<button class="btn primary" data-action="dev-new">${icon('plus')} Nouveau devis</button>`
+      : tab === 'devis' ? html`<button class="btn primary" data-action="dev-new">${icon('plus')} Devis</button>`
       : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
     const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', html`<span>Réclamations</span> (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['intervenants', 'Équipe'], ['devis', html`📝 Devis${devOpen().length ? html` <b class="dev-n">${devOpen().length}</b>` : ''}`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
     let body;
@@ -3734,7 +3734,7 @@ const VIEWS = {
         <div class="section-label"><span>À faire + travaux</span> (${open.length})</div>${open.length ? list(open) : html`<p class="muted small">Rien à faire. 👍</p>`}
         ${recur.length ? html`<div class="section-label">Récurrentes (${recur.length})</div>${list(recur)}` : ''}
         ${done.length ? html`<div class="section-label">Terminées récemment</div>${list(done)}` : ''}${mtLegend()}`
-        : empty('tool', 'Aucune intervention.', html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Nouvelle intervention</button>`);
+        : empty('tool', 'Aucune intervention.', html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`);
       body = html`<p class="small muted" style="margin:0 0 10px">Ce que les locataires signalent depuis leur app (pannes, défauts, propreté, avertissements…) et les travaux à faire dans les logements et les parties communes.</p>${body}`;
     } else if (tab === 'avis') {
       const all = vault.list('avis').filter((a) => !isPub(a) && (!f || !a.immId || a.immId === f)).sort((a, b) => (b.debut || '').localeCompare(a.debut || ''));
@@ -3742,7 +3742,7 @@ const VIEWS = {
       const row = (a) => html`<button class="row" data-action="edit-avis" data-id="${a.id}"><span class="grow"><span class="title" style="display:block;white-space:normal">📢 ${a.texte.slice(0, 140)}</span>
         <span class="meta">${a.immId ? immName(a.immId) : 'Tous les immeubles'} · ${a.debut ? 'du ' + fmtDate(a.debut) : ''}${a.fin ? ' au ' + fmtDate(a.fin) : ''}</span></span></button>`;
       body = html`<p class="small muted" style="margin:0 0 10px">Messages affichés dans l'espace des locataires (coupure d'eau, travaux, nettoyage de la cave…).</p>
-        ${actifs.length ? html`<div class="list" style="margin-bottom:14px">${actifs.map(row)}</div>` : empty('msg', 'Aucun avis en cours.', html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Nouvel avis</button>`)}
+        ${actifs.length ? html`<div class="list" style="margin-bottom:14px">${actifs.map(row)}</div>` : empty('msg', 'Aucun avis en cours.', html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>`)}
         ${passes.length ? html`<div class="section-label">Terminés</div><div class="list">${passes.map(row)}</div>` : ''}`;
     } else if (tab === 'dechets') {
       const shown = f ? imms.filter((im) => im.id === f) : imms;
@@ -3780,7 +3780,7 @@ const VIEWS = {
           <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="open-interv" data-id="${i.id}"><span class="title" style="display:block">${intervFull(i)}${i.espace && i.espace.on ? ' 📱' : ''}${ab ? html` <span class="badge ${ab.type === 'maladie' ? 'bad' : 'warn'}">${ABS_TYPES[ab.type]}${ab.fin ? ' → ' + fmtDate(ab.fin) : ''}</span>` : ''}</span><span class="meta">${METIERS[i.metier] || i.metier} · ${{ interne: 'interne', societe: 'société', prive: 'privé' }[i.genre || 'interne']} · ${(i.cat || 'quotidien') === 'specialise' ? 'spécialisé' : 'quotidien'}${i.tarif ? ' · ' + i.tarif : ''}${n ? ' · ' + plural(n, 'intervention') + ' en cours' : ''}</span></button>
           ${tel ? html`<a class="btn icon sm" href="tel:${tel}" aria-label="Appeler">${icon('phone')}</a>` : ''}
         </div>`;
-      })}</div>` : empty('users', 'Aucun intervenant. Ajoutez la femme de ménage et les artisans (menuisier, électricien, plombier, chauffagiste, maçon…).', html`<button class="btn primary" data-action="new-interv">${icon('plus')} Ajouter un intervenant</button>`);
+      })}</div>` : empty('users', 'Aucun intervenant. Ajoutez la femme de ménage et les artisans (menuisier, électricien, plombier, chauffagiste, maçon…).', html`<button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button>`);
     }
     return html`${pageHead('Maintenance', 'Nettoyage, réparations et collecte des déchets')}<div class="imm-row">${tabs}<div class="imm-btns">${add}</div></div>${tab !== 'intervenants' && tab !== 'devis' ? chips : ''}${body}${new Raw(infoBox({ lang: getLang() }))}`;
   },
@@ -3816,7 +3816,7 @@ dashboard() {
 
     if (!imms.length && !locs.length) {
       return html`${pushNudge()}${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
-        ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Ajouter un immeuble</button>`)}`;
+        ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`;
     }
 
     const nudge = vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
@@ -3967,7 +3967,7 @@ dashboard() {
             <button class="btn sm" data-action="open-imm" data-id="${im.id}" data-tab="deps">${icon('receipt')} Dépenses</button>
           </div>
         </div>`;
-      })}</div>` : empty('building', 'Aucun immeuble enregistré.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Ajouter un immeuble</button>`)}`;
+      })}</div>` : empty('building', 'Aucun immeuble enregistré.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`;
   },
 
   // 🏘️ Agences immobilières (dans Immeubles) : la fiche de chaque agence et de son directeur
@@ -4026,7 +4026,7 @@ dashboard() {
     }
     const d = ui.ptl.data;
     if ((!d && !ui.ptl.err) || (d && Date.now() - d.at > 60000)) !ui.ptl.loading && setTimeout(ptlLoad, 0);
-    const head = pageHead('Gérances', d ? `${plural(d.orgs.length, 'gérance')} · Portail gérance` : 'Portail gérance', html`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-action="ger-reload">${icon('sync')} Actualiser</button><button class="btn primary" data-action="ger-new">${icon('plus')} Ajouter gérance</button></div>`);
+    const head = pageHead('Gérances', d ? `${plural(d.orgs.length, 'gérance')} · Portail gérance` : 'Portail gérance', html`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-action="ger-reload">${icon('sync')} Actualiser</button><button class="btn primary" data-action="ger-new">${icon('plus')} Gérance</button></div>`);
     const foot = html`<p class="tiny muted" style="margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">Connecté au portail : <b>${c.email || ''}</b>
       <button class="btn sm ghost" data-action="ptl-self-reset">🔑 Nouveau mot de passe du portail</button><button class="btn sm ghost danger" data-action="ptl-logout">Déconnecter</button></p>`;
     if (!d) return html`${head}${ui.ptl.err ? html`<div class="alert warn">${icon('alert')}<div>${ui.ptl.err} <button class="btn sm" data-action="ger-reload">Réessayer</button></div></div>` : html`<p class="muted">Chargement…</p>`}${foot}`;
@@ -4071,7 +4071,7 @@ dashboard() {
             <button class="btn sm" data-action="ger-open" data-id="${o.id}" data-tab="fact">🧾 Facturation</button>
           </div>
         </div>`;
-      })}</div>` : empty('briefcase', 'Aucune gérance pour l’instant.', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Ajouter une gérance</button>`)}
+      })}</div>` : empty('briefcase', 'Aucune gérance pour l’instant.', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Gérance</button>`)}
       </details>`}
       ${foot}`;
   },
@@ -4118,7 +4118,7 @@ dashboard() {
             </span>
             <span class="amount ${anciens ? 'muted' : ''}">${money(l.loyer)}</span>
           </button>`;
-        })}</div>`) : empty('users', q || ui.immFilter ? 'Aucun résultat.' : anciens ? 'Aucun ancien locataire pour le moment.' : 'Aucun locataire enregistré.', !q && !ui.immFilter && !anciens ? html`<button class="btn primary" data-action="new-loc">${icon('plus')} Ajouter un locataire</button>` : '')}`;
+        })}</div>`) : empty('users', q || ui.immFilter ? 'Aucun résultat.' : anciens ? 'Aucun ancien locataire pour le moment.' : 'Aucun locataire enregistré.', !q && !ui.immFilter && !anciens ? html`<button class="btn primary" data-action="new-loc">${icon('plus')} Locataire</button>` : '')}`;
   },
 
   paiements() {
@@ -4612,7 +4612,7 @@ function depensesPanel(immId) {
       <label class="field full">Facture (photo ou PDF)<input type="file" name="file" accept="image/*,application/pdf"></label>
       <label class="field">Catégorie<select name="cat">${Object.entries(DEP_CATS).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
       <label class="field">Concerne<select name="logId"><option value="">Tout l'immeuble</option>${logs.map((g) => html`<option value="${g.id}">${logLabel(g)}</option>`)}</select></label>
-      <button class="btn primary full" type="submit">${icon('plus')} Ajouter la dépense</button>
+      <button class="btn primary full" type="submit">${icon('plus')} Dépense</button>
     </form>
     ${deps.length ? html`<div class="list">${deps.map((d) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${d.desc}</span><span class="meta">${d.fournisseur ? d.fournisseur + ' · ' : ''}${d.numFacture ? 'n° ' + d.numFacture + ' · ' : ''}${d.tva ? 'TVA ' + String(d.tva).replace('.', ',') + ' % (' + money(d.montant - htOf(d.montant, d.tva)) + ') · ' : ''}${fmtDate(d.date)} · ${DEP_CATS[d.cat] || d.cat}${d.logId ? ' · ' + logName(d.logId) : ''}</span></span>
       ${d.docId && vault.get('documents', d.docId) ? html`<button class="btn sm" data-action="open-doc" data-id="${d.docId}" title="Voir la facture">📎</button>` : html`<label class="btn sm ghost" title="Joindre la facture" style="cursor:pointer">📎+<input type="file" accept="image/*,application/pdf" data-input="dep-file" data-id="${d.id}" hidden></label>`}
@@ -4700,7 +4700,7 @@ const SHEETS = {
         ${linked.length ? html`<div class="alert info" style="margin-bottom:12px">${icon('tool')}<div>Dans Maintenance : ${linked.map((x) => html`<a href="#" data-action="edit-tache" data-id="${x.id}">${x.titre}${x.intervenantId ? ' — 👷 ' + intervFull(vault.get('intervenants', x.intervenantId) || {}) : ''}${x.date ? ' · ' + fmtDate(x.date) : ''}</a>${x.statut === 'fait' ? html` <button class="btn sm" data-action="fact-open" data-id="${x.id}">🧾 ${x.facture ? x.facture.no : 'Faire la facture'}</button>` : ''} `)}</div></div>` : ''}
         ${open ? (() => {
           const hints = metHints(`${t.categorie || ''} ${t.description || ''}`), team = affTeam(hints), fit = team.filter((i) => hints.includes(i.metier));
-          const newBtn = html`<button class="btn sm" data-action="new-interv">${icon('plus')} Nouvel ouvrier</button>`;
+          const newBtn = html`<button class="btn sm" data-action="new-interv">${icon('plus')} Ouvrier</button>`;
           return html`<div class="section-label">👷 Affectation${linked.length ? ' — envoyer un autre ouvrier' : ' — qui envoyer ?'}</div>
           ${!team.length || (hints.length && !fit.length && !linked.length) ? html`<div class="alert warn" style="margin-bottom:10px">⏸<div><b>Stand-by</b> — ${team.length ? html`aucun ${hints.map((m) => METIERS[m]).join(' / ')} dans votre équipe` : 'aucun ouvrier dans votre équipe'}.<br><span class="small">Trouvez quelqu’un (ouvrier à engager, société externe ou privé occasionnel), créez-le avec « Nouvel ouvrier », puis affectez-le ici.</span></div></div>` : ''}
           ${team.length ? html`<div class="list small" style="margin-bottom:8px">${team.map((i) => affRow(i, hints, `data-action="ger-to-mt" data-id="${t.id}" data-iid="${i.id}"`))}</div>` : ''}
@@ -5226,7 +5226,7 @@ const SHEETS = {
           ${field('Au (inclus)', 'fin', '', { type: 'date' })}
           ${field('Note', 'note', '', { placeholder: 'ex. certificat reçu par WhatsApp' })}
           <label class="field full">Certificat / justificatif (photo ou PDF)<input type="file" name="file" accept="image/*,application/pdf"></label>
-          <button class="btn primary full" type="submit">${icon('plus')} Ajouter l’absence</button>
+          <button class="btn primary full" type="submit">${icon('plus')} Absence</button>
         </form>
         ${abs.length ? html`<div class="list small">${abs.map((a) => html`<div class="row"><span class="grow"><b>${ABS_TYPES[a.type] || a.type}</b> — ${fmtDate(a.debut)}${a.fin ? ' → ' + fmtDate(a.fin) : ' → ?'}${a.note ? html`<span class="meta" style="display:block">${a.note}</span>` : ''}</span>
           ${a.docId && vault.get('documents', a.docId) ? html`<button class="btn sm" data-action="open-doc" data-id="${a.docId}">👁 Certificat</button>` : ''}
@@ -5408,7 +5408,7 @@ const SHEETS = {
         <div class="section-label full" style="margin:6px 0 0">🚪 Pièces et espaces</div>
         <p class="tiny muted full" style="margin:-4px 0 0">Chambres, cuisine, cave, balcon, piscine… choisissez dans la liste ou « ➕ Autre » ; m² et note facultatifs.</p>
         <div class="full" id="bienPieces">${(b.pieces || []).map((p) => pieceRow(p))}</div>
-        <button type="button" class="btn sm full" data-action="bien-piece-add">${icon('plus')} Ajouter une pièce ou un espace</button>
+        <button type="button" class="btn sm full" data-action="bien-piece-add">${icon('plus')} Pièce / espace</button>
         <div class="section-label full" style="margin:6px 0 0">📷 Photos de l’annonce</div>
         ${(b.photos || []).length ? html`<div class="full bien-thumbs">${b.photos.map((ph) => html`<label class="bien-thumb"><img data-bph="${ph}" alt=""><span><input type="checkbox" name="delph" value="${ph}"> 🗑</span></label>`)}</div>` : ''}
         <label class="field full">Ajouter des photos (horizontales de préférence)<input type="file" name="photos" accept="image/*" multiple></label>
@@ -5930,7 +5930,7 @@ const SHEETS = {
       const g = vault.get('logements', preset);
       if (g) Object.assign(l, { logId: g.id, immId: g.immId, loyer: g.loyer || '' });
     }
-    if (!vault.list('immeubles').length) return { title: 'Nouveau locataire', body: empty('building', "Ajoutez d'abord un immeuble.", html`<button class="btn primary" data-action="new-imm">${icon('plus')} Ajouter un immeuble</button>`) };
+    if (!vault.list('immeubles').length) return { title: 'Nouveau locataire', body: empty('building', "Ajoutez d'abord un immeuble.", html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`) };
     return {
       title: id ? 'Modifier le locataire' : 'Nouveau locataire',
       body: html`<form id="f" data-form="loc" class="fields">
@@ -8323,7 +8323,7 @@ function devTab() {
     ${devSec('drafts', '✅ Prêts à envoyer', drafts)}
     ${devSec('done', 'Terminés', done)}
     ${devSec('arch', '🗄️ Archivés', arch)}
-    ${!every.length ? empty('file', 'Aucun devis pour l’instant.', html`<button class="btn primary" data-action="dev-new">${icon('plus')} Nouveau devis</button>`) : ''}`;
+    ${!every.length ? empty('file', 'Aucun devis pour l’instant.', html`<button class="btn primary" data-action="dev-new">${icon('plus')} Devis</button>`) : ''}`;
 }
 // formulaire : lignes du chef (métier · nombre d'ouvriers · heures par ouvrier)
 const devChefRow = (n, r = {}) => html`<div class="dev-crow" data-n="${n}"><select name="met${n}" data-input="dev-chef" aria-label="Métier"><option value="">— métier —</option>${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${r.met === k ? new Raw('selected') : ''}>${MET_ICON[k] || '👷'} ${v}</option>`)}</select>
