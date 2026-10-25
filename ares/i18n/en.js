@@ -15268,5 +15268,17 @@ export default [
 ],
 ["Agences — biens",
 "Agencies — properties"
+],
+["Nom (société ou personne)",
+"Name (company or person)"
+],
+["RCS (sauf propriétaire / Airbnb)",
+"RCS (except owner / Airbnb)"
+],
+["RCS obligatoire (sauf propriétaire / Airbnb)",
+"RCS required (except owner / Airbnb)"
+],
+["Fiches des clients ({0})",
+"Client records ({0})"
 ]
 ];

@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.188.0';
+const VERSION = '2.189.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2531,6 +2531,8 @@ const NAV_TREE = [
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
 const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['agences', 'Agences', 'homes'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
+// clients du portail (tous demandent leurs interventions à la centrale)
+const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
 const MASKABLE = [['gerances', 'Gérances'], ['immeubles', 'Immeubles'], ['hotel', 'Hotel'], ['agences', 'Agences']];
 const masked = () => new Set((vault.get('reglages', 'masque') || {}).on || []);
 // pages qui appartiennent à une rubrique (Locataires et Gestion locataire sont dans Immeubles)
@@ -4039,12 +4041,14 @@ dashboard() {
     const foot = html`<p class="tiny muted" style="margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">Connecté au portail : <b>${c.email || ''}</b>
       <button class="btn sm ghost" data-action="ptl-self-reset">🔑 Nouveau mot de passe du portail</button><button class="btn sm ghost danger" data-action="ptl-logout">Déconnecter</button></p>`;
     if (!d) return html`${head}${ui.ptl.err ? html`<div class="alert warn">${icon('alert')}<div>${ui.ptl.err} <button class="btn sm" data-action="ger-reload">Réessayer</button></div></div>` : html`<p class="muted">Chargement…</p>`}${foot}`;
-    const of = ui.ptl.org || '', oSel = of && ptlOrg(of);
-    const tks = d.tickets.filter((t) => !of || t.org_id === of);
+    const of = ui.ptl.org || '', oSel = of && ptlOrg(of), kf = ui.ptl.kind || '';
+    const kOf = (o) => (o && ORG_KINDS[o.kind] ? o.kind : 'gerance'), orgs = d.orgs.filter((o) => !kf || kOf(o) === kf);
+    const kinds = Object.keys(ORG_KINDS).filter((k) => d.orgs.some((o) => kOf(o) === k));
+    const tks = d.tickets.filter((t) => (!of || t.org_id === of) && (!kf || kOf(ptlOrg(t.org_id)) === kf));
     const nRecue = d.tickets.filter((t) => t.status === 'recue').length;
-    const chips = html`<div class="chips ger-chips" style="margin-bottom:10px">
+    const chips = html`${kinds.length > 1 ? html`<div class="tabs" role="tablist" style="margin-bottom:10px">${[['', 'Tous'], ...kinds.map((k) => [k, ORG_KINDS[k]])].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${kf === k}" data-action="ger-kind" data-k="${k}">${l}</button>`)}</div>` : ''}<div class="chips ger-chips" style="margin-bottom:10px">
       <button class="chip" data-action="ger-filter" data-id="" aria-pressed="${!of}">Toutes</button>
-      ${d.orgs.map((o) => html`<button class="chip" data-action="ger-filter" data-id="${o.id}" aria-pressed="${of === o.id}">${orgLogo(o.id)} ${o.name}${o.open ? html` <b class="ger-n">${o.open}</b>` : ''}</button>`)}</div>
+      ${orgs.map((o) => html`<button class="chip" data-action="ger-filter" data-id="${o.id}" aria-pressed="${of === o.id}">${orgLogo(o.id)} ${o.name}${o.open ? html` <b class="ger-n">${o.open}</b>` : ''}</button>`)}</div>
       ${oSel ? html`<div class="actions" style="margin:0 0 12px"><button class="btn sm" data-action="ger-open" data-id="${of}">${icon('users')} Accès</button><button class="btn sm" data-action="ger-open" data-id="${of}" data-tab="fact">🧾 Facturation</button><button class="btn sm ghost" data-action="ger-edit" data-id="${of}">${icon('edit')} Modifier</button></div>` : ''}`;
     const row = (t) => { const u = PTL_URG[t.urgence] || PTL_URG.planifie; return html`<button class="row ger-req ${t.status === 'recue' ? 'is-new' : ''} u-${t.urgence}" data-action="ger-ticket" data-id="${t.id}">
         <span class="avatar" style="background:var(--${u[2]}-soft, var(--surface-2))">${u[0]}</span>
@@ -4062,13 +4066,14 @@ dashboard() {
       <div class="section-label">📥 Demandes d’intervention ${nRecue ? html`<span class="badge warn">${nRecue} nouvelle(s)</span>` : ''}</div>
       <p style="margin:0 0 8px;text-align:right"><button class="btn sm ghost" data-action="ger-done" aria-pressed="${!!ui.ptl.done}">${ui.ptl.done ? 'Voir les demandes en cours' : 'Voir les terminées'}</button></p>
       ${tks.length ? html`<div class="list" style="margin-bottom:18px">${tks.map(row)}</div>` : html`<p class="muted small" style="margin-bottom:18px">${ui.ptl.done ? 'Aucune demande terminée.' : 'Aucune demande en cours.'}</p>`}
-      ${oSel ? '' : html`<details class="ger-orgs"${d.orgs.length ? '' : ' open'}><summary class="section-label" style="cursor:pointer">🏢 Fiches des gérances (${d.orgs.length})</summary>
-      ${d.orgs.length ? html`<div class="grid cols-auto">${d.orgs.map((o) => {
+      ${oSel ? '' : html`<details class="ger-orgs"${orgs.length ? '' : ' open'}><summary class="section-label" style="cursor:pointer">🏢 Fiches des clients (${orgs.length})</summary>
+      ${orgs.length ? html`<div class="grid cols-auto">${orgs.map((o) => {
         const us = d.users.filter((u) => u.org_id === o.id);
         const wait = us.filter((u) => u.active && !u.has_password).length;
         return html`<div class="card">
           <div class="card-title"><h3>${o.logo ? html`<img class="org-logo big" src="${o.logo}" alt="">` : html`<img src="/portail/icons/ptl-32.png" alt="" width="22" height="22" style="vertical-align:-4px;margin-right:6px;border-radius:5px">`}${o.name}</h3><button class="btn icon ghost sm" data-action="ger-edit" data-id="${o.id}" aria-label="Modifier">${icon('edit')}</button></div>
           <dl class="kv small">
+            <dt>Type</dt><dd>${ORG_KINDS[kOf(o)]}</dd>
             <dt>Accès</dt><dd>${us.filter((u) => u.active).length}${wait ? html` · <span class="amber">${wait} invitation(s) en attente</span>` : ''}</dd>
             <dt>Résidences</dt><dd>${o.residences || 0}</dd>
             <dt>Demandes en cours</dt><dd class="${o.open ? 'accent' : ''}">${o.open || 0}</dd>
@@ -4850,17 +4855,18 @@ const SHEETS = {
   },
   // gérance : LuxInterventions écrit seulement nom, email, téléphone et RCS ; adresse, TVA, banque, logo et responsable sont remplis par la gérance dans son portail
   'ger-form'({ id }) {
-    const o = id ? ptlOrg(id) : {};
+    const o = id ? ptlOrg(id) : { kind: ui.ptl.kind || 'gerance' };
     if (id && !o) return null;
     return {
       title: id ? 'Modifier la gérance' : 'Nouvelle gérance',
       narrow: true,
       body: html`<form id="gerForm" data-form="ger" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        <label class="field full">Nom de la société<input name="name" required value="${o.name || ''}" placeholder="ex. Gérance du Centre S.A."></label>
+        <label class="field full">Type de client<select name="kind">${Object.entries(ORG_KINDS).map(([k, l]) => html`<option value="${k}" ${(o.kind || 'gerance') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+        <label class="field full">Nom (société ou personne)<input name="name" required value="${o.name || ''}" placeholder="ex. Gérance du Centre S.A."></label>
         <label class="field full">Email${id ? '' : html` <span class="tiny muted">(reçoit le lien d’invitation)</span>`}<input type="email" name="email" ${id ? '' : new Raw('required')} value="${o.email || ''}"></label>
         <label class="field">Téléphone (WhatsApp)<input type="tel" name="phone" value="${o.phone || ''}" placeholder="+352…"></label>
-        <label class="field">RCS *<input name="rcs" required value="${o.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
+        <label class="field">RCS (sauf propriétaire / Airbnb)<input name="rcs" value="${o.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
         <p class="tiny muted full" style="margin:0">${id ? 'Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).' : 'Un lien d’invitation est créé pour cet email (14 jours). La première personne qui l’ouvre devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis remplit les données de sa société (adresse, TVA, banque, logo) et ajoute ses collègues.'}</p>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="gerForm">${id ? 'Enregistrer' : 'Créer + lien d’invitation'}</button>`,
@@ -6549,6 +6555,7 @@ const ACTIONS = {
     closeSheet(); toast('Abonnement supprimé');
   },
   'ger-new': () => openSheet('ger-form'),
+  'ger-kind': (d) => { ui.ptl.kind = d.k || ''; ui.ptl.org = ''; renderView(); },
   'ger-filter': (d) => { ui.ptl.org = d.id; renderView(); },
   'ger-done': () => { ui.ptl.done = !ui.ptl.done; ui.ptl.data = null; renderView(); },
   'ger-ticket': (d) => ptlTicketOpen(d.id),
@@ -7483,9 +7490,9 @@ const FORMS = {
   },
   async ger(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
-    const id = g('id'), b = { name: g('name'), email: g('email'), phone: g('phone'), rcs: g('rcs').toUpperCase().replace(/\s+/g, '') };
+    const id = g('id'), b = { kind: ORG_KINDS[g('kind')] ? g('kind') : 'gerance', name: g('name'), email: g('email'), phone: g('phone'), rcs: g('rcs').toUpperCase().replace(/\s+/g, '') };
     if (!b.name) return;
-    if (!b.rcs) return toast('RCS de la gérance obligatoire', { bad: true });
+    if (!b.rcs && !['proprio', 'airbnb'].includes(b.kind)) return toast('RCS obligatoire (sauf propriétaire / Airbnb)', { bad: true });
     let nid = id;
     try { if (id) await ptlApi('orgs/' + id, { method: 'PATCH', body: b }); else nid = (await ptlApi('orgs', { method: 'POST', body: b })).id; } catch (e) { return toast(e.message, { bad: true }); }
     await vault.mutate((tx) => tx.put('reglages', { id: 'portail', lastOrg: b.name }), id ? 'Gérance modifiée' : 'Gérance créée', b.name);
