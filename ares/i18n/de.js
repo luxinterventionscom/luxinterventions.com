@@ -15439,5 +15439,9 @@ export default [
 [
 "2 à 10 chambres",
 "2 bis 10 Zimmer"
+],
+[
+"2ᵉ personne (couple, ami…)",
+"2. Person (Paar, Freund…)"
 ]
 ];
