@@ -1037,7 +1037,9 @@ const PTL_SCHEMA = [
      created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
 ];
 // Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
-const PTL_ALTER = ["ALTER TABLE tickets ADD COLUMN trip TEXT", "ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT", "ALTER TABLE orgs ADD COLUMN logo TEXT", "ALTER TABLE devis ADD COLUMN revs INTEGER", "ALTER TABLE tickets ADD COLUMN inv_h REAL", "ALTER TABLE tickets ADD COLUMN qte TEXT"];
+// type de client du portail : gérance, agence immobilière, propriétaire, hôtel, Airbnb
+const orgKind = (k) => (["gerance", "agence", "proprio", "hotel", "airbnb"].includes(k) ? k : "gerance");
+const PTL_ALTER = ["ALTER TABLE tickets ADD COLUMN trip TEXT", "ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT", "ALTER TABLE orgs ADD COLUMN logo TEXT", "ALTER TABLE devis ADD COLUMN revs INTEGER", "ALTER TABLE tickets ADD COLUMN inv_h REAL", "ALTER TABLE tickets ADD COLUMN qte TEXT", "ALTER TABLE orgs ADD COLUMN kind TEXT"];
 let ptlSchemaReady = false;
 
 // ── Utilità ──
@@ -1639,8 +1641,8 @@ async function handlePortail(request, env, url, headers, ctx) {
       if (!clean(b.name)) fail(400, "Nom obligatoire");
       const id = ptlId();
       // LuxInterventions crée la gérance avec le nom, l'email, le téléphone et le RCS : adresse, TVA, banque et logo sont remplis par la gérance
-      await env.DB.prepare("INSERT INTO orgs (id, name, phone, email, created_at, rcs) VALUES (?, ?, ?, ?, ?, ?)")
-        .bind(id, clean(b.name, 120), clean(b.phone, 40), clean(b.email, 200), now, clean(b.rcs, 30)).run();
+      await env.DB.prepare("INSERT INTO orgs (id, name, phone, email, created_at, rcs, kind) VALUES (?, ?, ?, ?, ?, ?, ?)")
+        .bind(id, clean(b.name, 120), clean(b.phone, 40), clean(b.email, 200), now, clean(b.rcs, 30), orgKind(b.kind)).run();
       return json({ id });
     }
     const orgMatch = path.match(/^orgs\/([a-z0-9]+)$/);
@@ -1659,6 +1661,7 @@ async function handlePortail(request, env, url, headers, ctx) {
         if (own && lg) ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], { title: `🏢 ${me.org_name || "Gérance"} · nouveau logo`, body: "La gérance a ajouté son logo dans le portail", url: "/portail.html", tag: "org-" + orgMatch[1] }, false));
         if (Object.keys(b).length === 1) return json({ ok: true });
       }
+      if (isAdmin(me) && b.kind != null) await env.DB.prepare("UPDATE orgs SET kind = ? WHERE id = ?").bind(orgKind(b.kind), orgMatch[1]).run();
       await env.DB.prepare("UPDATE orgs SET name = COALESCE(?, name), phone = COALESCE(?, phone), email = COALESCE(?, email), address = COALESCE(?, address), rcs = COALESCE(?, rcs), tva = COALESCE(?, tva), banque = COALESCE(?, banque), bic = COALESCE(?, bic), iban = COALESCE(?, iban) WHERE id = ?")
         .bind(isAdmin(me) ? v("name", 120) : null, v("phone", 40), v("email", 200), own ? v("address", 300) : null, v("rcs", 30), own ? v("tva", 30) : null, own ? v("banque", 80) : null, own ? v("bic", 14) : null, own ? v("iban", 42) : null, orgMatch[1]).run();
       if (own) ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], { title: `🏢 ${me.org_name || "Gérance"} · données mises à jour`, body: "Adresse, RCS, TVA ou banque complétés dans le portail", url: "/portail.html", tag: "org-" + orgMatch[1] }, false));
