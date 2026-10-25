@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.185.0';
+const VERSION = '2.186.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2985,7 +2985,7 @@ function eqScores(year) {
 
 const immHead = (cur, sub) => html`${pageHead('🏢 Immeubles', sub)}
   <div class="imm-row"><div class="tabs" role="tablist">${[['immeubles', '🏢 Immeubles'], ['locataires', '👥 Locataires'], ['agences', '🏘️ Agences Immo.', '🏘️ Agences']].map(([r, l, sh]) => masked().has(r) ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${sh ? html`<span class="t-lg">${l}</span><span class="t-sm">${sh}</span>` : l}</button>`)}</div>
-    <div class="imm-btns"><button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button><button class="btn primary" data-action="new-loc">${icon('plus')} Ajout. locataire</button>${masked().has('agences') ? '' : html`<button class="btn primary" data-action="new-agence">${icon('plus')} Agence Immo.</button>`}</div></div>`;
+    <div class="imm-btns"><button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button><button class="btn primary" data-action="new-loc">${icon('plus')} Locataire</button>${masked().has('agences') ? '' : html`<button class="btn primary" data-action="new-agence">${icon('plus')} Agence Immo.</button>`}</div></div>`;
 // 👥 Locataires : Actuels | Anciens | 💶 Gestion locataire (paiements des loyers)
 const locTabs = (cur, nGone) => html`<div class="tabs loc-tabs" role="tablist" style="max-width:560px">
   <button class="tab" role="tab" aria-selected="${cur === 'actuels'}" data-action="loc-seg" data-id="actuels">Actuels</button>
@@ -3984,7 +3984,7 @@ dashboard() {
         <span class="grow"><span class="title" style="display:block">${a.nom}</span>
         <span class="meta">RCS ${a.rcs}${a.dir ? html` · ⭐ ${[a.dir.prenom, a.dir.nom].filter(Boolean).join(' ')}` : ''}</span>
         ${miss(a).length ? html`<span class="tiny amber" style="display:block">⚠️ À compléter : ${miss(a).join(', ')}</span>` : ''}</span><span class="chev">›</span></button>`)}</div>`
-        : html`<div class="card" style="max-width:560px"><p style="margin-top:0">Les agences immobilières publient leurs biens (appartements, villas, locaux commerciaux). Leur directeur invitera ses agents.</p><button class="btn primary" data-action="new-agence">${icon('plus')} Agence Immo.</button></div>`}`;
+        : html`<div class="card" style="max-width:560px"><p style="margin-top:0">Les agences immobilières publient leurs biens (appartements, villas, locaux commerciaux). Leur directeur invitera ses agents.</p></div>`}`;
   },
   // 🏨 Hotel — première étape : les clients (chambre, étage, clé, arrivée → départ)
   hotel() {
