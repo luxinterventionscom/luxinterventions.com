@@ -15423,5 +15423,9 @@ export default [
 [
 "🏠 Ajouter une colocation (2 à 10 ch.)",
 "🏠 WG hinzufügen (2–10 Zimmer)"
+],
+[
+"🏠 Colocation : appartement de 2 à 10 chambres",
+"🏠 WG: Wohnung mit 2 bis 10 Zimmern"
 ]
 ];

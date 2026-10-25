@@ -15159,5 +15159,9 @@ export default [
 [
 "🏠 Ajouter une colocation (2 à 10 ch.)",
 "🏠 Add a flat-share (2–10 rooms)"
+],
+[
+"🏠 Colocation : appartement de 2 à 10 chambres",
+"🏠 Flat-share: flat with 2 to 10 rooms"
 ]
 ];

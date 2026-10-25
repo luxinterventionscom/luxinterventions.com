@@ -15347,5 +15347,9 @@ export default [
 [
 "🏠 Ajouter une colocation (2 à 10 ch.)",
 "🏠 Adicionar partilha de casa (2–10 quartos)"
+],
+[
+"🏠 Colocation : appartement de 2 à 10 chambres",
+"🏠 Partilha: apartamento de 2 a 10 quartos"
 ]
 ];
