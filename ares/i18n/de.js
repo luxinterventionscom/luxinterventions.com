@@ -15670,5 +15670,107 @@ export default [
 ],
 ["Confié par {0}",
 "Anvertraut von {0}"
+],
+["Chambres",
+"Zimmer"
+],
+["Libre",
+"Frei"
+],
+["Économique",
+"Economy"
+],
+["Standard",
+"Standard"
+],
+["Supérieure",
+"Superior"
+],
+["Deluxe",
+"Deluxe"
+],
+["Suite",
+"Suite"
+],
+["Single",
+"Einzel"
+],
+["Double",
+"Doppel"
+],
+["Twin",
+"Twin (2 Betten)"
+],
+["Triple",
+"Dreibett"
+],
+["Familiale",
+"Familienzimmer"
+],
+["Personnes (max.)",
+"Personen (max.)"
+],
+["Présentation pour vos clients (visible dans leur app)",
+"Beschreibung für Ihre Gäste (in ihrer App sichtbar)"
+],
+["ex. Chambre calme côté jardin, lit 160, douche à l’italienne, wifi…",
+"z. B. Ruhiges Zimmer zum Garten, Bett 160, ebenerdige Dusche, WLAN…"
+],
+["ex. Appartement lumineux, cuisine équipée, wifi, parking privé…",
+"z. B. Helle Wohnung, Einbauküche, WLAN, privater Parkplatz…"
+],
+["photos d’entrée (7)",
+"Eingangsfotos (7)"
+],
+["État des lieux de sortie (au départ)",
+"Auszugsprotokoll (bei Abreise)"
+],
+["Dernières sorties (à comparer)",
+"Letzte Abreisen (zum Vergleich)"
+],
+["entrée / sortie",
+"Ein / Aus"
+],
+["Nouvelle chambre",
+"Neues Zimmer"
+],
+["Supprimer cette chambre ?",
+"Dieses Zimmer löschen?"
+],
+["Supprimer ce logement ?",
+"Diese Unterkunft löschen?"
+],
+["Chambre supprimée",
+"Zimmer gelöscht"
+],
+["Cette chambre existe déjà",
+"Dieses Zimmer gibt es schon"
+],
+["Ce logement existe déjà",
+"Diese Unterkunft gibt es schon"
+],
+["Enregistré — 📷 6 photos minimum conseillées",
+"Gespeichert — 📷 mindestens 6 Fotos empfohlen"
+],
+["État des lieux de sortie",
+"Auszugsprotokoll"
+],
+["Aucune chambre. ＋ Chambre : catégorie, type, personnes, m², photos, présentation pour vos clients.",
+"Kein Zimmer. ＋ Zimmer: Kategorie, Typ, Personen, m², Fotos, Beschreibung für Ihre Gäste."
+],
+["Aucun logement. ＋ Logement : type, personnes, m², photos, présentation pour vos clients.",
+"Keine Unterkunft. ＋ Unterkunft: Typ, Personen, m², Fotos, Beschreibung für Ihre Gäste."
+],
+["À comparer avec les photos d’entrée dans la fiche de la chambre.",
+"Mit den Eingangsfotos in der Zimmerkarte vergleichen."
+],
+["À comparer avec les photos d’entrée dans la fiche du logement.",
+"Mit den Eingangsfotos in der Unterkunftskarte vergleichen."
+],
+["L’état de la chambre avant chaque séjour : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Au départ, les photos de sortie se prennent dans la fiche du client.",
+"Zustand des Zimmers vor jedem Aufenthalt: Gebäude, Tür, Bad, Zimmer, Küche, Parkplatz (+ 1 nach Wahl). Bei Abreise macht man die Auszugsfotos in der Gastkarte."
+],
+["L’état du logement avant chaque séjour : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Au départ, les photos de sortie se prennent dans la fiche du client.",
+"Zustand der Unterkunft vor jedem Aufenthalt: Gebäude, Tür, Bad, Zimmer, Küche, Parkplatz (+ 1 nach Wahl). Bei Abreise macht man die Auszugsfotos in der Gastkarte."
 ]
 ];

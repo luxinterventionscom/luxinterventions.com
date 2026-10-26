@@ -15686,5 +15686,107 @@ export default [
 ],
 ["Confié par {0}",
 "Affidato da {0}"
+],
+["Chambres",
+"Camere"
+],
+["Libre",
+"Libera"
+],
+["Économique",
+"Economica"
+],
+["Standard",
+"Standard"
+],
+["Supérieure",
+"Superior"
+],
+["Deluxe",
+"Deluxe"
+],
+["Suite",
+"Suite"
+],
+["Single",
+"Singola"
+],
+["Double",
+"Doppia"
+],
+["Twin",
+"Twin (2 letti)"
+],
+["Triple",
+"Tripla"
+],
+["Familiale",
+"Familiare"
+],
+["Personnes (max.)",
+"Persone (max.)"
+],
+["Présentation pour vos clients (visible dans leur app)",
+"Presentazione per i vostri clienti (visibile nella loro app)"
+],
+["ex. Chambre calme côté jardin, lit 160, douche à l’italienne, wifi…",
+"es. Camera tranquilla lato giardino, letto 160, doccia a filo, wifi…"
+],
+["ex. Appartement lumineux, cuisine équipée, wifi, parking privé…",
+"es. Appartamento luminoso, cucina attrezzata, wifi, parcheggio privato…"
+],
+["photos d’entrée (7)",
+"foto d'entrata (7)"
+],
+["État des lieux de sortie (au départ)",
+"Stato dei luoghi d'uscita (alla partenza)"
+],
+["Dernières sorties (à comparer)",
+"Ultime uscite (da confrontare)"
+],
+["entrée / sortie",
+"entrata / uscita"
+],
+["Nouvelle chambre",
+"Nuova camera"
+],
+["Supprimer cette chambre ?",
+"Eliminare questa camera?"
+],
+["Supprimer ce logement ?",
+"Eliminare questo alloggio?"
+],
+["Chambre supprimée",
+"Camera eliminata"
+],
+["Cette chambre existe déjà",
+"Questa camera esiste già"
+],
+["Ce logement existe déjà",
+"Questo alloggio esiste già"
+],
+["Enregistré — 📷 6 photos minimum conseillées",
+"Salvato — 📷 consigliate almeno 6 foto"
+],
+["État des lieux de sortie",
+"Stato dei luoghi d'uscita"
+],
+["Aucune chambre. ＋ Chambre : catégorie, type, personnes, m², photos, présentation pour vos clients.",
+"Nessuna camera. ＋ Camera: categoria, tipo, persone, m², foto, presentazione per i vostri clienti."
+],
+["Aucun logement. ＋ Logement : type, personnes, m², photos, présentation pour vos clients.",
+"Nessun alloggio. ＋ Alloggio: tipo, persone, m², foto, presentazione per i vostri clienti."
+],
+["À comparer avec les photos d’entrée dans la fiche de la chambre.",
+"Da confrontare con le foto d'entrata nella scheda della camera."
+],
+["À comparer avec les photos d’entrée dans la fiche du logement.",
+"Da confrontare con le foto d'entrata nella scheda dell'alloggio."
+],
+["L’état de la chambre avant chaque séjour : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Au départ, les photos de sortie se prennent dans la fiche du client.",
+"Lo stato della camera prima di ogni soggiorno: edificio, porta, bagno, camera, cucina, parcheggio (+ 1 a scelta). Alla partenza, le foto d'uscita si fanno nella scheda del cliente."
+],
+["L’état du logement avant chaque séjour : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Au départ, les photos de sortie se prennent dans la fiche du client.",
+"Lo stato dell'alloggio prima di ogni soggiorno: edificio, porta, bagno, camera, cucina, parcheggio (+ 1 a scelta). Alla partenza, le foto d'uscita si fanno nella scheda del cliente."
 ]
 ];
