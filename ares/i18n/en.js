@@ -15379,5 +15379,38 @@ export default [
 ],
 ["Code personnel du client (aussi depuis l’étranger) : avec le lien de l’app il voit son logement, les photos, son code de porte et les infos du séjour. Le lien de téléchargement sera ajouté avec l’app des clients (prochaine étape).",
 "Guest's personal code (also from abroad): with the app link they see their home, the photos, their door code and the stay info. The download link will be added with the guest app (next step)."
+],
+["Garage",
+"Garage"
+],
+["Commerce / magasin",
+"Shop"
+],
+["Parking",
+"Parking"
+],
+["Agence / propriétaire",
+"Agency / owner"
+],
+["Propriété",
+"Ownership"
+],
+["Le bien est à nous",
+"The property is ours"
+],
+["Confié par un tiers",
+"Entrusted by a third party"
+],
+["Nom du propriétaire (si confié)",
+"Owner's name (if entrusted)"
+],
+["ex. M. Dupont",
+"e.g. Mr Smith"
+],
+["Nom du propriétaire manquant (bien confié par un tiers)",
+"Owner's name missing (entrusted property)"
+],
+["Confié par {0}",
+"Entrusted by {0}"
 ]
 ];
