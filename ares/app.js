@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.189.0';
+const VERSION = '2.190.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -52,6 +52,7 @@ const setHtml = (el, h) => { el.innerHTML = val(h); };
 
 const ICONS = {
   home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
+  luggage: '<rect x="5" y="7" width="14" height="12" rx="2"/><path d="M9 7V4h6v3M9 11v4M15 11v4"/><circle cx="8" cy="21" r="1"/><circle cx="16" cy="21" r="1"/>',
   homes: '<path d="M2 12 8 7l6 5"/><path d="M4 11v9h8v-9"/><path d="M12 9l5-4 5 4"/><path d="M14 20h6v-9.5"/><path d="M7 20v-3h2v3"/>',
   building: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1M10 21v-3h4v3"/>',
   users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.3-5.5 6.5-5.5s5.7 2 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c1.8.7 3 2.5 3.5 5.2"/>',
@@ -2524,16 +2525,16 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['agences', 'Agences', 'homes']] },
+  { group: 'Gestion', items: [['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Immeubles', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['agences', 'Agences', 'homes'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
-const MASKABLE = [['gerances', 'Gérances'], ['immeubles', 'Immeubles'], ['hotel', 'Hotel'], ['agences', 'Agences']];
+const MASKABLE = [['gerances', 'Gérances'], ['immeubles', 'Mes Propriétés'], ['hotel', 'Hotel'], ['airbnb', 'Airbnb'], ['agences', 'Agences'], ['proprios', 'Propriétaires']];
 const masked = () => new Set((vault.get('reglages', 'masque') || {}).on || []);
 // pages qui appartiennent à une rubrique (Locataires et Gestion locataire sont dans Immeubles)
 const maskOf = (route) => (['locataires', 'paiements'].includes(route) ? 'immeubles' : route);
@@ -2986,6 +2987,46 @@ function eqScores(year) {
   return Object.entries(sc).filter(([id]) => { const i = vault.get('intervenants', id); return i && !i.archive; }).sort((a, b) => b[1].pts - a[1].pts || a[1].bad - b[1].bad || b[1].fait - a[1].fait);
 }
 
+// 🏘️ Agences / 🔑 Propriétaires : même page, une rubrique chacun
+function agView(f) {
+    const nb = {};
+    for (const b of vault.list('biens')) if (b.agenceId) nb[b.agenceId] = (nb[b.agenceId] || 0) + 1;
+    const all = vault.list('agences'), typ = (a) => (a.type === 'proprio' ? 'proprio' : 'agence');
+    const list = all.filter((a) => typ(a) === f).sort((a, b) => (nb[b.id] || 0) - (nb[a.id] || 0) || (a.nom || '').localeCompare(b.nom || ''));
+    const ids = new Set(list.map((a) => a.id));
+    const miss = (a) => [!a.tva && 'N° TVA', !a.banque && 'banque', !a.bic && 'BIC', !a.iban && 'IBAN'].filter(Boolean);
+    const biens = vault.list('biens').filter((b) => ids.has(b.agenceId) || (f === 'agence' && !(b.agenceId && vault.get('agences', b.agenceId)))).sort((a, b) => (b.cree || '').localeCompare(a.cree || '') || (a.titre || '').localeCompare(b.titre || ''));
+    setTimeout(() => hydrateBiens($('#view')), 0);
+    return html`${pageHead(f === 'proprio' ? '🔑 Propriétaires' : '🏘️ Agences', f === 'proprio' ? plural(list.length, 'propriétaire') : `${list.length} ${list.length > 1 ? 'agences immobilières' : 'agence immobilière'}`)}
+      <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-agence">${icon('plus')} ${f === 'proprio' ? 'Propriétaire' : 'Agence'}</button></div></div>
+      <div class="section-label" style="display:flex;align-items:center;gap:10px">🏠 Biens à louer / à vendre <button class="btn sm primary" data-action="new-bien" style="margin-left:auto">${icon('plus')} Bien immo.</button></div>
+      ${biens.length ? html`<div class="bien-grid">${biens.map(bienAffiche)}</div>` : html`<p class="small muted" style="margin:0 0 14px">Aucun bien publié. ＋ Bien immo. : type, m², pièces, photos, prix.</p>`}
+      <div class="section-label">${f === 'proprio' ? '🔑 Propriétaires' : '🏘️ Agences immo.'}</div>
+      ${list.length ? html`<div class="list">${list.map((a) => html`<button class="row" data-action="edit-agence" data-id="${a.id}"><span class="avatar">${typ(a) === 'proprio' ? '🔑' : '🏘️'}</span>
+        <span class="grow"><span class="title" style="display:block">${a.nom}</span>
+        <span class="meta">${typ(a) === 'proprio' ? 'Propriétaire' : 'Agence immo.'}${a.rcs ? html` · RCS ${a.rcs}` : ''}${a.dir && (a.dir.prenom || a.dir.nom) ? html` · ⭐ ${[a.dir.prenom, a.dir.nom].filter(Boolean).join(' ')}` : ''} · 🏠 ${plural(nb[a.id] || 0, 'bien')}</span>
+        ${miss(a).length && !a.bankLater ? html`<span class="tiny amber" style="display:block">⚠️ À compléter : ${miss(a).join(', ')}</span>` : ''}</span><span class="chev">›</span></button>`)}</div>`
+        : html`<div class="card" style="max-width:560px"><p style="margin-top:0">${f === 'proprio' ? 'Les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.' : 'Les agences immobilières publient leurs biens et vous confient leurs interventions.'}</p></div>`}`;
+}
+// 🏨 Hotel / 🏠 Airbnb : les clients (chambre ou logement, clé, arrivée → départ), une rubrique chacun
+function hotView(hf) {
+    const t = today(), all = vault.list('hotes').filter((h) => (h.lieu === 'airbnb' ? 'airbnb' : 'hotel') === hf);
+    const by = (a, b) => (a.arrivee || '').localeCompare(b.arrivee || '') || String(a.chambre).localeCompare(String(b.chambre), 'fr', { numeric: true });
+    const arr = all.filter((h) => h.arrivee === t).sort(by), dep = all.filter((h) => h.depart === t).sort(by);
+    const pres = all.filter((h) => h.arrivee <= t && h.depart > t).sort((a, b) => String(a.chambre).localeCompare(String(b.chambre), 'fr', { numeric: true }));
+    const next = all.filter((h) => h.arrivee > t).sort(by), past = all.filter((h) => h.depart < t).sort((a, b) => b.depart.localeCompare(a.depart));
+    const row = (h) => html`<button class="row" data-action="edit-hote" data-id="${h.id}"><span class="avatar" style="font-size:13px;font-weight:800">${h.chambre}</span>
+      <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.pers > 1 ? html` <span class="badge">👥 ${h.pers}</span>` : ''}</span>
+      <span class="meta">${h.lieu === 'airbnb' && h.adresse ? html`🏠 ${h.adresse} · ` : ''}${h.etage ? html`<span>Étage</span> ${h.etage} · ` : ''}${h.cle ? html`🪪 ${h.cle} · ` : ''}${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}</span>${hoteKey(h) ? html`<span style="display:block;margin-top:4px"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></span>` : ''}</span><span class="chev">›</span></button>`;
+    const sec = (title, list, empty) => html`<div class="section-label">${title}</div>${list.length ? html`<div class="list">${list.map(row)}</div>` : html`<p class="small muted" style="margin:0 0 12px">${empty}</p>`}`;
+    return html`${pageHead(hf === 'airbnb' ? '🏠 Airbnb' : '🏨 Hotel', `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
+      <div class=\"imm-row\"><span></span><div class=\"imm-btns\"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button></div></div>
+      ${sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.')}
+      ${sec('🛫 Départs aujourd’hui', dep, 'Aucun départ aujourd’hui.')}
+      ${sec('🛏️ Présents', pres, 'Aucun client présent.')}
+      ${next.length ? sec('📅 À venir', next, '') : ''}
+      ${past.length ? sec('🗂️ Partis', past.slice(0, 50), '') : ''}`;
+}
 const immHead = (cur, sub) => html`${pageHead('🏢 Immeubles', sub)}
   <div class="imm-row"><div class="tabs" role="tablist">${[['immeubles', '🏢 Immeubles'], ['locataires', '👥 Locataires']].map(([r, l, sh]) => masked().has(r) ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${sh ? html`<span class="t-lg">${l}</span><span class="t-sm">${sh}</span>` : l}</button>`)}</div>
     <div class="imm-btns"><button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button><button class="btn primary" data-action="new-loc">${icon('plus')} Locataire</button></div></div>`;
@@ -3974,48 +4015,11 @@ dashboard() {
   },
 
   // 🏘️ Agences (rubrique du menu) : agences immobilières et propriétaires (1 ou plusieurs logements), avec leurs biens
-  agences() {
-    const f = ui.agF || '';
-    const nb = {};
-    for (const b of vault.list('biens')) if (b.agenceId) nb[b.agenceId] = (nb[b.agenceId] || 0) + 1;
-    const all = vault.list('agences'), typ = (a) => (a.type === 'proprio' ? 'proprio' : 'agence');
-    const list = all.filter((a) => !f || typ(a) === f).sort((a, b) => (nb[b.id] || 0) - (nb[a.id] || 0) || (a.nom || '').localeCompare(b.nom || ''));
-    const ids = new Set(list.map((a) => a.id));
-    const miss = (a) => [!a.tva && 'N° TVA', !a.banque && 'banque', !a.bic && 'BIC', !a.iban && 'IBAN'].filter(Boolean);
-    const biens = vault.list('biens').filter((b) => !f || ids.has(b.agenceId)).sort((a, b) => (b.cree || '').localeCompare(a.cree || '') || (a.titre || '').localeCompare(b.titre || ''));
-    const nA = all.filter((a) => typ(a) === 'agence').length, nP = all.length - nA;
-    setTimeout(() => hydrateBiens($('#view')), 0);
-    return html`${pageHead('🏘️ Agences', `${nA} ${nA > 1 ? 'agences immobilières' : 'agence immobilière'} · ${plural(nP, 'propriétaire')}`)}
-      <div class="imm-row"><div class="tabs" role="tablist">${[['', 'Tous'], ['agence', '🏘️ Agences immo.'], ['proprio', '🔑 Propriétaires']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${f === k}" data-action="ag-f" data-f="${k}">${l}</button>`)}</div>
-        <div class="imm-btns"><button class="btn primary" data-action="new-agence">${icon('plus')} Agence</button></div></div>
-      <div class="section-label" style="display:flex;align-items:center;gap:10px">🏠 Biens à louer / à vendre <button class="btn sm primary" data-action="new-bien" style="margin-left:auto">${icon('plus')} Bien immo.</button></div>
-      ${biens.length ? html`<div class="bien-grid">${biens.map(bienAffiche)}</div>` : html`<p class="small muted" style="margin:0 0 14px">Aucun bien publié. ＋ Bien immo. : type, m², pièces, photos, prix.</p>`}
-      <div class="section-label">${f === 'proprio' ? '🔑 Propriétaires' : f === 'agence' ? '🏘️ Agences immo.' : '🏘️ Agences et propriétaires'}</div>
-      ${list.length ? html`<div class="list">${list.map((a) => html`<button class="row" data-action="edit-agence" data-id="${a.id}"><span class="avatar">${typ(a) === 'proprio' ? '🔑' : '🏘️'}</span>
-        <span class="grow"><span class="title" style="display:block">${a.nom}</span>
-        <span class="meta">${typ(a) === 'proprio' ? 'Propriétaire' : 'Agence immo.'}${a.rcs ? html` · RCS ${a.rcs}` : ''}${a.dir && (a.dir.prenom || a.dir.nom) ? html` · ⭐ ${[a.dir.prenom, a.dir.nom].filter(Boolean).join(' ')}` : ''} · 🏠 ${plural(nb[a.id] || 0, 'bien')}</span>
-        ${miss(a).length && !a.bankLater ? html`<span class="tiny amber" style="display:block">⚠️ À compléter : ${miss(a).join(', ')}</span>` : ''}</span><span class="chev">›</span></button>`)}</div>`
-        : html`<div class="card" style="max-width:560px"><p style="margin-top:0">Les agences immobilières et les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.</p></div>`}`;
-  },
+  agences() { return agView('agence'); },
+  proprios() { return agView('proprio'); },
   // 🏨 Hotel — première étape : les clients (chambre, étage, clé, arrivée → départ)
-  hotel() {
-    const t = today(), hf = ui.hotF || '', all = vault.list('hotes').filter((h) => !hf || (h.lieu === 'airbnb' ? 'airbnb' : 'hotel') === hf);
-    const by = (a, b) => (a.arrivee || '').localeCompare(b.arrivee || '') || String(a.chambre).localeCompare(String(b.chambre), 'fr', { numeric: true });
-    const arr = all.filter((h) => h.arrivee === t).sort(by), dep = all.filter((h) => h.depart === t).sort(by);
-    const pres = all.filter((h) => h.arrivee <= t && h.depart > t).sort((a, b) => String(a.chambre).localeCompare(String(b.chambre), 'fr', { numeric: true }));
-    const next = all.filter((h) => h.arrivee > t).sort(by), past = all.filter((h) => h.depart < t).sort((a, b) => b.depart.localeCompare(a.depart));
-    const row = (h) => html`<button class="row" data-action="edit-hote" data-id="${h.id}"><span class="avatar" style="font-size:13px;font-weight:800">${h.chambre}</span>
-      <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.pers > 1 ? html` <span class="badge">👥 ${h.pers}</span>` : ''}</span>
-      <span class="meta">${h.lieu === 'airbnb' ? html`🏠 Airbnb${h.adresse ? ' · ' + h.adresse : ''} · ` : ''}${h.etage ? html`<span>Étage</span> ${h.etage} · ` : ''}${h.cle ? html`🪪 ${h.cle} · ` : ''}${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}</span>${hoteKey(h) ? html`<span style="display:block;margin-top:4px"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></span>` : ''}</span><span class="chev">›</span></button>`;
-    const sec = (title, list, empty) => html`<div class="section-label">${title}</div>${list.length ? html`<div class="list">${list.map(row)}</div>` : html`<p class="small muted" style="margin:0 0 12px">${empty}</p>`}`;
-    return html`${pageHead('🏨 Hotel · Airbnb', `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
-      <div class="imm-row"><div class="tabs" role="tablist">${[['', 'Tous'], ['hotel', '🏨 Hôtel'], ['airbnb', '🏠 Airbnb']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${hf === k}" data-action="hot-f" data-f="${k}">${l}</button>`)}</div><div class="imm-btns"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button></div></div>
-      ${sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.')}
-      ${sec('🛫 Départs aujourd’hui', dep, 'Aucun départ aujourd’hui.')}
-      ${sec('🛏️ Présents', pres, 'Aucun client présent.')}
-      ${next.length ? sec('📅 À venir', next, '') : ''}
-      ${past.length ? sec('🗂️ Partis', past.slice(0, 50), '') : ''}`;
-  },
+  hotel() { return hotView('hotel'); },
+  airbnb() { return hotView('airbnb'); },
   gerances() {
     const c = ptlConf();
     const portal = html`<a class="btn sm" href="/portail.html" target="_blank" rel="noopener">${icon('eye')} Ouvrir le portail</a>`;
@@ -5434,7 +5438,7 @@ const SHEETS = {
     };
   },
   'agence-form'({ id }) {
-    const a = id ? vault.get('agences', id) : {};
+    const a = id ? vault.get('agences', id) : { type: ui.route === 'proprios' ? 'proprio' : 'agence' };
     if (id && !a) return null;
     const d = a.dir || {};
     return {
@@ -5462,7 +5466,7 @@ const SHEETS = {
     };
   },
   'hote-form'({ id }) {
-    const h = id ? vault.get('hotes', id) : { arrivee: today(), depart: addDays(today(), 1), pers: 1, langue: 'fr', lieu: ui.hotF === 'airbnb' ? 'airbnb' : 'hotel' };
+    const h = id ? vault.get('hotes', id) : { arrivee: today(), depart: addDays(today(), 1), pers: 1, langue: 'fr', lieu: ui.route === 'airbnb' ? 'airbnb' : 'hotel' };
     if (id && !h) return null;
     const rnd = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
     const LG = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español', ar: 'العربية', autre: 'Autre' };
@@ -6962,8 +6966,6 @@ const ACTIONS = {
     goBack();
   },
   'new-agence': () => openOver('agence-form'),
-  'ag-f': (d) => { ui.agF = d.f || ''; renderView(); },
-  'hot-f': (d) => { ui.hotF = d.f || ''; renderView(); },
   'edit-agence': (d) => openOver('agence-form', d.id),
   async 'del-agence'(d) {
     const a = vault.get('agences', d.id);
@@ -7723,7 +7725,8 @@ const FORMS = {
     toast(id ? 'Bien enregistré' : 'Bien publié');
     biensSync();
     goBack();
-    if (ui.route !== 'agences') go('agences');
+    const to = (vault.get('agences', rec.agenceId) || {}).type === 'proprio' ? 'proprios' : 'agences';
+    if (ui.route !== to) go(to);
   },
   async agence(fd) {
     const id = fd.get('id'), g = (k) => String(fd.get(k) || '').trim();
@@ -7739,7 +7742,8 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('agences', rec), id ? 'Agence modifiée' : (type === 'proprio' ? 'Propriétaire créé' : 'Agence immobilière créée'), `${rec.nom}${rec.rcs ? ' — RCS ' + rec.rcs : ''}`);
     toast(id ? 'Enregistré' : (type === 'proprio' ? 'Propriétaire créé' : 'Agence créée'));
     goBack();
-    if (ui.route !== 'agences') go('agences');
+    const to = type === 'proprio' ? 'proprios' : 'agences';
+    if (ui.route !== to) go(to);
   },
   async hote(fd) {
     const id = fd.get('id');
@@ -7762,6 +7766,7 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('hotes', rec), id ? 'Hotel : client modifié' : 'Hotel : nouveau client', `${[rec.prenom, rec.nom].filter(Boolean).join(' ')} — chambre ${rec.chambre} · ${fmtDate(rec.arrivee)} → ${fmtDate(rec.depart)}`);
     toast('Client enregistré');
     goBack();
+    if (['hotel', 'airbnb'].includes(ui.route) && ui.route !== rec.lieu) go(rec.lieu);
   },
   async avis(fd) {
     const id = fd.get('id');

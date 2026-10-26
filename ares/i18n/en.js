@@ -15280,5 +15280,14 @@ export default [
 ],
 ["Fiches des clients ({0})",
 "Client records ({0})"
+],
+["Mes Propriétés",
+"My properties"
+],
+["Les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.",
+"Owners (one or more homes) publish their properties and entrust you with their jobs."
+],
+["Les agences immobilières publient leurs biens et vous confient leurs interventions.",
+"Real estate agencies publish their properties and entrust you with their jobs."
 ]
 ];

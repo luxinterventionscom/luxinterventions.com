@@ -15544,5 +15544,14 @@ export default [
 ],
 ["Fiches des clients ({0})",
 "Kundenkarten ({0})"
+],
+["Mes Propriétés",
+"Meine Immobilien"
+],
+["Les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.",
+"Eigentümer (eine oder mehrere Wohnungen) veröffentlichen ihre Objekte und vertrauen Ihnen ihre Einsätze an."
+],
+["Les agences immobilières publient leurs biens et vous confient leurs interventions.",
+"Immobilienagenturen veröffentlichen ihre Objekte und vertrauen Ihnen ihre Einsätze an."
 ]
 ];
