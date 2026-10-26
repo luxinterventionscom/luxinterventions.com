@@ -15514,5 +15514,86 @@ export default [
 ],
 ["L’état du logement avant chaque séjour : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Au départ, les photos de sortie se prennent dans la fiche du client.",
 "The home's condition before each stay: building, door, bathroom, room, kitchen, parking (+ 1 of your choice). At departure, check-out photos are taken in the guest record."
+],
+["Réglages Hotel",
+"Hotel settings"
+],
+["Établissement (en haut de l’app des clients)",
+"Property (at the top of the guest app)"
+],
+["Nom de l’hôtel / de l’établissement",
+"Hotel / property name"
+],
+["Téléphone de la réception",
+"Reception phone"
+],
+["WhatsApp (facultatif)",
+"WhatsApp (optional)"
+],
+["Tarifs du taxi (vus par le client avant de choisir)",
+"Taxi fares (seen by the guest before choosing)"
+],
+["Prise en charge (€)",
+"Pick-up fee (€)"
+],
+["Prix au km (€)",
+"Price per km (€)"
+],
+["Prix fixe aéroport (€, facultatif)",
+"Fixed airport price (€, optional)"
+],
+["Prix fixe gare (€, facultatif)",
+"Fixed station price (€, optional)"
+],
+["Chauffeurs / taxis",
+"Drivers / taxis"
+],
+["Voiture",
+"Car"
+],
+["Plaque",
+"Plate"
+],
+["Une ligne vide en plus apparaît après l’enregistrement. Le chauffeur n’installe rien : il reçoit un lien par WhatsApp / SMS.",
+"An extra empty line appears after saving. The driver installs nothing: they get a link by WhatsApp / SMS."
+],
+["Réglages enregistrés",
+"Settings saved"
+],
+["Arrivée pas encore choisie",
+"Arrival not chosen yet"
+],
+["le client a reçu le rappel dans son app",
+"the guest got the reminder in their app"
+],
+["Taxi demandé",
+"Taxi requested"
+],
+["Envoyer le taxi",
+"Send the taxi"
+],
+["Choisir le chauffeur",
+"Choose the driver"
+],
+["Aucun chauffeur. Ajoutez-les dans ⚙️ Réglages (page Hotel / Airbnb).",
+"No driver. Add them in ⚙️ Settings (Hotel / Airbnb page)."
+],
+["WhatsApp au chauffeur",
+"WhatsApp to the driver"
+],
+["Chauffeur choisi : envoyez-lui le lien",
+"Driver chosen: send them the link"
+],
+["Vient par ses propres moyens",
+"Coming on their own"
+],
+["Code personnel du client (aussi depuis l’étranger) : dans l’app il voit sa chambre, les photos, son code de porte, le menu, et choisit comment il arrive (taxi ou lui-même). L’app se remet à zéro le lendemain du départ.",
+"Guest's personal code (also from abroad): in the app they see their room, the photos, their door code, the menu, and choose how they arrive (taxi or on their own). The app resets the day after departure."
+],
+["Code personnel du client (aussi depuis l’étranger) : dans l’app il voit son logement, les photos, son code de porte, le menu, et choisit comment il arrive (taxi ou lui-même). L’app se remet à zéro le lendemain du départ.",
+"Guest's personal code (also from abroad): in the app they see their home, the photos, their door code, the menu, and choose how they arrive (taxi or on their own). The app resets the day after departure."
+],
+["Envoyer au client le lien de l’app et son code, dans sa langue.",
+"Send the guest the app link and their code, in their language."
 ]
 ];

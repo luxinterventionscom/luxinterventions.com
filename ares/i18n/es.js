@@ -15772,5 +15772,86 @@ export default [
 ],
 ["L’état du logement avant chaque séjour : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Au départ, les photos de sortie se prennent dans la fiche du client.",
 "El estado del alojamiento antes de cada estancia: edificio, puerta, baño, habitación, cocina, aparcamiento (+ 1 a elegir). A la salida, las fotos de salida se hacen en la ficha del cliente."
+],
+["Réglages Hotel",
+"Ajustes Hotel"
+],
+["Établissement (en haut de l’app des clients)",
+"Establecimiento (arriba en la app de los clientes)"
+],
+["Nom de l’hôtel / de l’établissement",
+"Nombre del hotel / establecimiento"
+],
+["Téléphone de la réception",
+"Teléfono de recepción"
+],
+["WhatsApp (facultatif)",
+"WhatsApp (opcional)"
+],
+["Tarifs du taxi (vus par le client avant de choisir)",
+"Tarifas del taxi (las ve el cliente antes de elegir)"
+],
+["Prise en charge (€)",
+"Bajada de bandera (€)"
+],
+["Prix au km (€)",
+"Precio por km (€)"
+],
+["Prix fixe aéroport (€, facultatif)",
+"Precio fijo aeropuerto (€, opcional)"
+],
+["Prix fixe gare (€, facultatif)",
+"Precio fijo estación (€, opcional)"
+],
+["Chauffeurs / taxis",
+"Conductores / taxis"
+],
+["Voiture",
+"Coche"
+],
+["Plaque",
+"Matrícula"
+],
+["Une ligne vide en plus apparaît après l’enregistrement. Le chauffeur n’installe rien : il reçoit un lien par WhatsApp / SMS.",
+"Tras guardar aparece una línea vacía más. El conductor no instala nada: recibe un enlace por WhatsApp / SMS."
+],
+["Réglages enregistrés",
+"Ajustes guardados"
+],
+["Arrivée pas encore choisie",
+"Llegada aún no elegida"
+],
+["le client a reçu le rappel dans son app",
+"el cliente recibió el recordatorio en su app"
+],
+["Taxi demandé",
+"Taxi solicitado"
+],
+["Envoyer le taxi",
+"Enviar el taxi"
+],
+["Choisir le chauffeur",
+"Elegir el conductor"
+],
+["Aucun chauffeur. Ajoutez-les dans ⚙️ Réglages (page Hotel / Airbnb).",
+"Ningún conductor. Añádalos en ⚙️ Ajustes (página Hotel / Airbnb)."
+],
+["WhatsApp au chauffeur",
+"WhatsApp al conductor"
+],
+["Chauffeur choisi : envoyez-lui le lien",
+"Conductor elegido: envíele el enlace"
+],
+["Vient par ses propres moyens",
+"Viene por sus medios"
+],
+["Code personnel du client (aussi depuis l’étranger) : dans l’app il voit sa chambre, les photos, son code de porte, le menu, et choisit comment il arrive (taxi ou lui-même). L’app se remet à zéro le lendemain du départ.",
+"Código personal del cliente (también desde el extranjero): en la app ve su habitación, las fotos, su código de puerta, el menú, y elige cómo llega (taxi o por su cuenta). La app se reinicia el día después de la salida."
+],
+["Code personnel du client (aussi depuis l’étranger) : dans l’app il voit son logement, les photos, son code de porte, le menu, et choisit comment il arrive (taxi ou lui-même). L’app se remet à zéro le lendemain du départ.",
+"Código personal del cliente (también desde el extranjero): en la app ve su alojamiento, las fotos, su código de puerta, el menú, y elige cómo llega (taxi o por su cuenta). La app se reinicia el día después de la salida."
+],
+["Envoyer au client le lien de l’app et son code, dans sa langue.",
+"Envíe al cliente el enlace de la app y su código, en su idioma."
 ]
 ];

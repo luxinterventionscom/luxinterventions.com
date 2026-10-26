@@ -1,0 +1,17 @@
+{
+  "name": "Mon séjour — Hotel · Airbnb",
+  "short_name": "Mon séjour",
+  "description": "Votre chambre ou logement, le code de la porte, le menu, le taxi et l'état des lieux de votre séjour",
+  "lang": "fr",
+  "start_url": "/hote.html",
+  "scope": "/hote",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f5f4",
+  "theme_color": "#92400E",
+  "icons": [
+    { "src": "/ares/icons/lux-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/ares/icons/lux-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/ares/icons/lux-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
