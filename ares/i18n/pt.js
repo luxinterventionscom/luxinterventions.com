@@ -15777,5 +15777,137 @@ export default [
 ],
 ["Envoyer au client le lien de l’app et son code, dans sa langue.",
 "Envie ao cliente o link da app e o código, na língua dele."
+],
+["Taxis",
+"Táxis"
+],
+["Société de taxi",
+"Empresa de táxis"
+],
+["Sociétés",
+"Empresas"
+],
+["Courses",
+"Corridas"
+],
+["{0} société",
+"{0} empresa"
+],
+["{0} sociétés",
+"{0} empresas"
+],
+["{0} course",
+"{0} corrida"
+],
+["{0} courses",
+"{0} corridas"
+],
+["{0} chauffeur",
+"{0} motorista"
+],
+["{0} chauffeurs",
+"{0} motoristas"
+],
+["{0} voiture",
+"{0} carro"
+],
+["{0} voitures",
+"{0} carros"
+],
+["Catalogue pas encore envoyé",
+"Catálogo ainda não enviado"
+],
+["Aucune course en cours.",
+"Nenhuma corrida em curso."
+],
+["Les sociétés de taxi et les chauffeurs privés reçoivent les courses de vos clients (hôtel, Airbnb) dans leur app : ils y mettent leurs chauffeurs, leurs voitures (💎 Luxe, 🚘 Confort, 🚕 Économique), leurs tarifs et leurs extras.",
+"As empresas de táxis e os motoristas privados recebem as corridas dos seus clientes (hotel, Airbnb) na app: lá põem motoristas, carros (💎 Luxo, 🚘 Conforto, 🚕 Económico), tarifas e extras."
+],
+["Nouvelle société de taxi",
+"Nova empresa de táxis"
+],
+["Nom de la société / du chauffeur",
+"Nome da empresa / do motorista"
+],
+["RCS (facultatif)",
+"RCS (opcional)"
+],
+["App de la société",
+"App da empresa"
+],
+["Dans son app, la société met ses chauffeurs, ses voitures (Luxe, Confort, Économique), ses tarifs (course, à l’heure, demi-journée, journée) et ses extras ; elle accepte ou refuse les courses que vous lui envoyez.",
+"Na app, a empresa põe motoristas, carros (Luxo, Conforto, Económico), tarifas (corrida, à hora, meio dia, dia) e extras; aceita ou recusa as corridas que lhe envia."
+],
+["Catalogue reçu",
+"Catálogo recebido"
+],
+["offert",
+"oferta"
+],
+["Supprimer cette société de taxi ?",
+"Eliminar esta empresa de táxis?"
+],
+["Société de taxi supprimée",
+"Empresa de táxis eliminada"
+],
+["Code : 4 à 16 chiffres ou lettres",
+"Código: 4 a 16 algarismos ou letras"
+],
+["Société créée : envoyez-lui le code",
+"Empresa criada: envie-lhe o código"
+],
+["Envoyer à une société de taxi",
+"Enviar a uma empresa de táxis"
+],
+["Chauffeur réservé",
+"Motorista reservado"
+],
+["Envoyer un chauffeur",
+"Enviar um motorista"
+],
+["en attente de sa réponse",
+"à espera da resposta"
+],
+["Course",
+"Corrida"
+],
+["Demi-journée",
+"Meio dia"
+],
+["Journée",
+"Dia inteiro"
+],
+["Tout le séjour",
+"Toda a estadia"
+],
+["Luxe",
+"Luxo"
+],
+["Confort",
+"Conforto"
+],
+["Garde du corps",
+"Guarda-costas"
+],
+["Boissons",
+"Bebidas"
+],
+["Friandises",
+"Guloseimas"
+],
+["Siège enfant",
+"Cadeira de criança"
+],
+["Pancarte à l’arrivée",
+"Placa à chegada"
+],
+["Aide bagages",
+"Ajuda bagagens"
+],
+["Acceptée",
+"Aceite"
+],
+["Refusée",
+"Recusada"
 ]
 ];

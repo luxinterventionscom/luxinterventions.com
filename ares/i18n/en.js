@@ -15595,5 +15595,137 @@ export default [
 ],
 ["Envoyer au client le lien de l’app et son code, dans sa langue.",
 "Send the guest the app link and their code, in their language."
+],
+["Taxis",
+"Taxis"
+],
+["Société de taxi",
+"Taxi company"
+],
+["Sociétés",
+"Companies"
+],
+["Courses",
+"Rides"
+],
+["{0} société",
+"{0} company"
+],
+["{0} sociétés",
+"{0} companies"
+],
+["{0} course",
+"{0} ride"
+],
+["{0} courses",
+"{0} rides"
+],
+["{0} chauffeur",
+"{0} driver"
+],
+["{0} chauffeurs",
+"{0} drivers"
+],
+["{0} voiture",
+"{0} car"
+],
+["{0} voitures",
+"{0} cars"
+],
+["Catalogue pas encore envoyé",
+"Catalogue not sent yet"
+],
+["Aucune course en cours.",
+"No ride in progress."
+],
+["Les sociétés de taxi et les chauffeurs privés reçoivent les courses de vos clients (hôtel, Airbnb) dans leur app : ils y mettent leurs chauffeurs, leurs voitures (💎 Luxe, 🚘 Confort, 🚕 Économique), leurs tarifs et leurs extras.",
+"Taxi companies and private drivers receive your guests' rides (hotel, Airbnb) in their app: they add their drivers, cars (💎 Luxury, 🚘 Comfort, 🚕 Economy), fares and extras."
+],
+["Nouvelle société de taxi",
+"New taxi company"
+],
+["Nom de la société / du chauffeur",
+"Company / driver name"
+],
+["RCS (facultatif)",
+"RCS (optional)"
+],
+["App de la société",
+"Company app"
+],
+["Dans son app, la société met ses chauffeurs, ses voitures (Luxe, Confort, Économique), ses tarifs (course, à l’heure, demi-journée, journée) et ses extras ; elle accepte ou refuse les courses que vous lui envoyez.",
+"In its app the company adds its drivers, cars (Luxury, Comfort, Economy), fares (ride, hourly, half day, full day) and extras; it accepts or declines the rides you send."
+],
+["Catalogue reçu",
+"Catalogue received"
+],
+["offert",
+"free"
+],
+["Supprimer cette société de taxi ?",
+"Delete this taxi company?"
+],
+["Société de taxi supprimée",
+"Taxi company deleted"
+],
+["Code : 4 à 16 chiffres ou lettres",
+"Code: 4 to 16 digits or letters"
+],
+["Société créée : envoyez-lui le code",
+"Company created: send it the code"
+],
+["Envoyer à une société de taxi",
+"Send to a taxi company"
+],
+["Chauffeur réservé",
+"Driver booked"
+],
+["Envoyer un chauffeur",
+"Send a driver"
+],
+["en attente de sa réponse",
+"waiting for their answer"
+],
+["Course",
+"Ride"
+],
+["Demi-journée",
+"Half day"
+],
+["Journée",
+"Full day"
+],
+["Tout le séjour",
+"Whole stay"
+],
+["Luxe",
+"Luxury"
+],
+["Confort",
+"Comfort"
+],
+["Garde du corps",
+"Bodyguard"
+],
+["Boissons",
+"Drinks"
+],
+["Friandises",
+"Sweets"
+],
+["Siège enfant",
+"Child seat"
+],
+["Pancarte à l’arrivée",
+"Name sign on arrival"
+],
+["Aide bagages",
+"Luggage help"
+],
+["Acceptée",
+"Accepted"
+],
+["Refusée",
+"Declined"
 ]
 ];

@@ -15853,5 +15853,137 @@ export default [
 ],
 ["Envoyer au client le lien de l’app et son code, dans sa langue.",
 "Senden Sie dem Gast den App-Link und seinen Code in seiner Sprache."
+],
+["Taxis",
+"Taxis"
+],
+["Société de taxi",
+"Taxiunternehmen"
+],
+["Sociétés",
+"Unternehmen"
+],
+["Courses",
+"Fahrten"
+],
+["{0} société",
+"{0} Unternehmen"
+],
+["{0} sociétés",
+"{0} Unternehmen"
+],
+["{0} course",
+"{0} Fahrt"
+],
+["{0} courses",
+"{0} Fahrten"
+],
+["{0} chauffeur",
+"{0} Fahrer"
+],
+["{0} chauffeurs",
+"{0} Fahrer"
+],
+["{0} voiture",
+"{0} Auto"
+],
+["{0} voitures",
+"{0} Autos"
+],
+["Catalogue pas encore envoyé",
+"Katalog noch nicht gesendet"
+],
+["Aucune course en cours.",
+"Keine laufende Fahrt."
+],
+["Les sociétés de taxi et les chauffeurs privés reçoivent les courses de vos clients (hôtel, Airbnb) dans leur app : ils y mettent leurs chauffeurs, leurs voitures (💎 Luxe, 🚘 Confort, 🚕 Économique), leurs tarifs et leurs extras.",
+"Taxiunternehmen und Privatfahrer erhalten die Fahrten Ihrer Gäste (Hotel, Airbnb) in ihrer App: dort tragen sie Fahrer, Autos (💎 Luxus, 🚘 Komfort, 🚕 Economy), Tarife und Extras ein."
+],
+["Nouvelle société de taxi",
+"Neues Taxiunternehmen"
+],
+["Nom de la société / du chauffeur",
+"Name des Unternehmens / Fahrers"
+],
+["RCS (facultatif)",
+"RCS (optional)"
+],
+["App de la société",
+"App des Unternehmens"
+],
+["Dans son app, la société met ses chauffeurs, ses voitures (Luxe, Confort, Économique), ses tarifs (course, à l’heure, demi-journée, journée) et ses extras ; elle accepte ou refuse les courses que vous lui envoyez.",
+"In seiner App trägt das Unternehmen Fahrer, Autos (Luxus, Komfort, Economy), Tarife (Fahrt, pro Stunde, halber Tag, ganzer Tag) und Extras ein; es nimmt die Fahrten an, die Sie senden, oder lehnt sie ab."
+],
+["Catalogue reçu",
+"Katalog erhalten"
+],
+["offert",
+"gratis"
+],
+["Supprimer cette société de taxi ?",
+"Dieses Taxiunternehmen löschen?"
+],
+["Société de taxi supprimée",
+"Taxiunternehmen gelöscht"
+],
+["Code : 4 à 16 chiffres ou lettres",
+"Code: 4 bis 16 Ziffern oder Buchstaben"
+],
+["Société créée : envoyez-lui le code",
+"Unternehmen erstellt: senden Sie ihm den Code"
+],
+["Envoyer à une société de taxi",
+"An ein Taxiunternehmen senden"
+],
+["Chauffeur réservé",
+"Fahrer gebucht"
+],
+["Envoyer un chauffeur",
+"Fahrer schicken"
+],
+["en attente de sa réponse",
+"wartet auf seine Antwort"
+],
+["Course",
+"Fahrt"
+],
+["Demi-journée",
+"Halber Tag"
+],
+["Journée",
+"Ganzer Tag"
+],
+["Tout le séjour",
+"Ganzer Aufenthalt"
+],
+["Luxe",
+"Luxus"
+],
+["Confort",
+"Komfort"
+],
+["Garde du corps",
+"Leibwächter"
+],
+["Boissons",
+"Getränke"
+],
+["Friandises",
+"Süßigkeiten"
+],
+["Siège enfant",
+"Kindersitz"
+],
+["Pancarte à l’arrivée",
+"Namensschild bei Ankunft"
+],
+["Aide bagages",
+"Gepäckhilfe"
+],
+["Acceptée",
+"Angenommen"
+],
+["Refusée",
+"Abgelehnt"
 ]
 ];
