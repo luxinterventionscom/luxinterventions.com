@@ -91,6 +91,16 @@ const L = {
     safe: '🔒 Sus datos están cifrados: solo el establecimiento puede leerlos.', notif: 'Notificaciones', notifHint: 'Código de la puerta, taxi, recordatorios: recíbalos en este teléfono.', notifOn: 'Activar', notifOk: 'Notificaciones activadas ✓',
     ad: { lbl: 'Publicidad', see: '🗺️ Ver', call: '📞 Llamar', web: '🌐 Web' }, thanks: '¡Gracias por su estancia!', lang: 'Idioma', reset: 'Cambiar de código' },
 };
+// 🚘 services, gammes et extras des chauffeurs du réseau
+const TX = {
+  fr: { srv: 'Service', S: { course: '🛣️ Une course', heures: '⏱️ À l’heure', demi: '🌗 Demi-journée', jour: '☀️ Journée', sejour: '📅 Tout le séjour' }, gam: 'Voiture', G: { luxe: '💎 Luxe', confort: '🚘 Confort', eco: '🚕 Économique' }, ext: 'Extras', E: { garde: '🛡️ Garde du corps', boissons: '🍾 Boissons', friandises: '🍫 Friandises', siege: '🍼 Siège enfant', pancarte: '🪧 Pancarte à votre nom', bagages: '🧳 Aide bagages' }, free: 'offert', hours: 'Combien d’heures ?', total: 'Total estimé', ask: 'prix sur demande', book: '🚘 Réserver un chauffeur', dest: 'Pour aller où ?', destPh: 'ex. Centre-ville, restaurant, Trier…', fromL: 'Départ', mine: 'Mes réservations', W: '⏳ en attente', O: '✅ confirmé', N: '❌ pas disponible' },
+  en: { srv: 'Service', S: { course: '🛣️ One ride', heures: '⏱️ By the hour', demi: '🌗 Half day', jour: '☀️ Full day', sejour: '📅 Whole stay' }, gam: 'Car', G: { luxe: '💎 Luxury', confort: '🚘 Comfort', eco: '🚕 Economy' }, ext: 'Extras', E: { garde: '🛡️ Bodyguard', boissons: '🍾 Drinks', friandises: '🍫 Sweets', siege: '🍼 Child seat', pancarte: '🪧 Name sign', bagages: '🧳 Luggage help' }, free: 'free', hours: 'How many hours?', total: 'Estimated total', ask: 'price on request', book: '🚘 Book a driver', dest: 'Where to?', destPh: 'e.g. City centre, restaurant, Trier…', fromL: 'From', mine: 'My bookings', W: '⏳ pending', O: '✅ confirmed', N: '❌ not available' },
+  de: { srv: 'Leistung', S: { course: '🛣️ Eine Fahrt', heures: '⏱️ Pro Stunde', demi: '🌗 Halber Tag', jour: '☀️ Ganzer Tag', sejour: '📅 Ganzer Aufenthalt' }, gam: 'Auto', G: { luxe: '💎 Luxus', confort: '🚘 Komfort', eco: '🚕 Economy' }, ext: 'Extras', E: { garde: '🛡️ Leibwächter', boissons: '🍾 Getränke', friandises: '🍫 Süßigkeiten', siege: '🍼 Kindersitz', pancarte: '🪧 Namensschild', bagages: '🧳 Gepäckhilfe' }, free: 'gratis', hours: 'Wie viele Stunden?', total: 'Geschätzter Gesamtpreis', ask: 'Preis auf Anfrage', book: '🚘 Fahrer buchen', dest: 'Wohin?', destPh: 'z. B. Zentrum, Restaurant, Trier…', fromL: 'Abfahrt', mine: 'Meine Buchungen', W: '⏳ wartet', O: '✅ bestätigt', N: '❌ nicht verfügbar' },
+  it: { srv: 'Servizio', S: { course: '🛣️ Una corsa', heures: '⏱️ A ore', demi: '🌗 Mezza giornata', jour: '☀️ Giornata intera', sejour: '📅 Tutto il soggiorno' }, gam: 'Auto', G: { luxe: '💎 Lusso', confort: '🚘 Comfort', eco: '🚕 Economica' }, ext: 'Extra', E: { garde: '🛡️ Guardia del corpo', boissons: '🍾 Bevande', friandises: '🍫 Dolcetti', siege: '🍼 Seggiolino bimbo', pancarte: '🪧 Cartello col suo nome', bagages: '🧳 Aiuto bagagli' }, free: 'offerto', hours: 'Quante ore?', total: 'Totale stimato', ask: 'prezzo su richiesta', book: '🚘 Prenota un autista', dest: 'Per andare dove?', destPh: 'es. Centro, ristorante, Trier…', fromL: 'Partenza', mine: 'Le mie prenotazioni', W: '⏳ in attesa', O: '✅ confermato', N: '❌ non disponibile' },
+  pt: { srv: 'Serviço', S: { course: '🛣️ Uma corrida', heures: '⏱️ À hora', demi: '🌗 Meio dia', jour: '☀️ Dia inteiro', sejour: '📅 Toda a estadia' }, gam: 'Carro', G: { luxe: '💎 Luxo', confort: '🚘 Conforto', eco: '🚕 Económico' }, ext: 'Extras', E: { garde: '🛡️ Guarda-costas', boissons: '🍾 Bebidas', friandises: '🍫 Guloseimas', siege: '🍼 Cadeira de criança', pancarte: '🪧 Placa com o nome', bagages: '🧳 Ajuda com bagagens' }, free: 'oferta', hours: 'Quantas horas?', total: 'Total estimado', ask: 'preço sob consulta', book: '🚘 Reservar um motorista', dest: 'Para onde?', destPh: 'ex. Centro, restaurante, Trier…', fromL: 'Partida', mine: 'As minhas reservas', W: '⏳ em espera', O: '✅ confirmado', N: '❌ indisponível' },
+  es: { srv: 'Servicio', S: { course: '🛣️ Un trayecto', heures: '⏱️ Por horas', demi: '🌗 Medio día', jour: '☀️ Día completo', sejour: '📅 Toda la estancia' }, gam: 'Coche', G: { luxe: '💎 Lujo', confort: '🚘 Confort', eco: '🚕 Económico' }, ext: 'Extras', E: { garde: '🛡️ Guardaespaldas', boissons: '🍾 Bebidas', friandises: '🍫 Golosinas', siege: '🍼 Silla infantil', pancarte: '🪧 Cartel con su nombre', bagages: '🧳 Ayuda con equipaje' }, free: 'gratis', hours: '¿Cuántas horas?', total: 'Total estimado', ask: 'precio a consultar', book: '🚘 Reservar un conductor', dest: '¿Adónde?', destPh: 'p. ej. Centro, restaurante, Trier…', fromL: 'Salida', mine: 'Mis reservas', W: '⏳ pendiente', O: '✅ confirmado', N: '❌ no disponible' },
+};
+const TXT = () => TX[lang] || TX.fr;
 // les 7 photos (mêmes cases que dans l'app de l'établissement)
 const PH = { immeuble: ['🏢', { fr: 'Bâtiment', en: 'Building', de: 'Gebäude', it: 'Edificio', pt: 'Edifício', es: 'Edificio' }], porte: ['🚪', { fr: 'Porte', en: 'Door', de: 'Tür', it: 'Porta', pt: 'Porta', es: 'Puerta' }],
   sdb: ['🛁', { fr: 'Salle de bain', en: 'Bathroom', de: 'Bad', it: 'Bagno', pt: 'Casa de banho', es: 'Baño' }], chambre: ['🛏️', { fr: 'Chambre', en: 'Room', de: 'Zimmer', it: 'Camera', pt: 'Quarto', es: 'Habitación' }],
@@ -144,19 +154,38 @@ async function geocode(q) {
 const cityOf = (a) => { const m = String(a || '').match(/(?:L-|\b)\d{4,5}\s+([^,\d]+)/i); return (m ? m[1] : String(a || '').split(',').pop()).trim() || 'Luxembourg'; };
 let stG = null;
 const stGeo = async () => stG || (stG = await geocode(cityOf(data.st.adresse)));
-let arrForm = { mode: '', spot: 'aero', other: '', quand: '', vol: '', est: null }, arrEdit = false;
+let arrForm = { mode: '', spot: 'aero', other: '', quand: '', vol: '', est: null, service: 'course', gamme: '', extras: [], heures: 3 }, arrEdit = false;
+let ride = { open: false, service: 'course', gamme: '', extras: [], heures: 3, quand: '', to: '', sent: '' };
+const nights = () => Math.max(1, Math.round((new Date(data.depart) - new Date(data.arrivee)) / 864e5));
+// prix : gamme choisie (tarifs du réseau) ou tarifs de l'établissement ; + extras
+function price(f, km) {
+  const tx = data.taxi || {}, g = (tx.gam || []).find((x) => x.k === f.gamme) || null;
+  let p = 0;
+  if (f.service === 'course') p = g ? (g.pc || 0) + (km || 0) * (g.km || 0) : (f.spot === 'aero' && tx.aero) || (f.spot === 'gare' && tx.gare) || (tx.km ? (tx.pc || 0) + (km || 0) * tx.km : 0);
+  else if (g) p = f.service === 'heures' ? Math.max(2, +f.heures || 2) * (g.h || 0) : f.service === 'demi' ? g.demi || 0 : f.service === 'jour' ? g.jour || 0 : (g.jour || 0) * nights();
+  if (!p) return 0;
+  for (const k of f.extras || []) p += +((tx.ext || []).find((x) => x.k === k) || {}).p || 0;
+  return Math.round(p);
+}
+// choix du service, de la gamme et des extras (taxi à l'arrivée et chauffeur pendant le séjour)
+function svcHtml(f, pfx) {
+  const tx = data.taxi || {}, w = TXT(), gam = tx.gam || [], ext = tx.ext || [];
+  return `${gam.length ? `<label>${esc(w.srv)}</label><select data-${pfx}-srv="1">${Object.entries(w.S).map(([k, l]) => `<option value="${k}" ${f.service === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>
+    ${f.service === 'heures' ? `<label>${esc(w.hours)}</label><input type="number" min="2" max="24" data-${pfx}-h="1" value="${esc(f.heures)}">` : ''}
+    <label>${esc(w.gam)}</label>${gam.map((g) => `<label class="radio"><input type="radio" name="${pfx}Gam" value="${g.k}" ${f.gamme === g.k ? 'checked' : ''}> ${esc(w.G[g.k])}</label>`).join('')}` : ''}
+    ${ext.length ? `<label>${esc(w.ext)}</label><div class="exts">${ext.map((x) => `<label class="chk"><input type="checkbox" data-${pfx}-ext="${x.k}" ${(f.extras || []).includes(x.k) ? 'checked' : ''}> ${esc(w.E[x.k])} <span class="meta">${x.p ? '+' + x.p + ' €' : esc(w.free)}</span></label>`).join('')}</div>` : ''}`;
+}
 async function estimate() {
   const s = await stGeo(), f = arrForm.spot === 'other' ? await geocode(arrForm.other) : SPOTS[arrForm.spot];
   if (!s || !f) { arrForm.est = null; return paintEst(); }
-  const km = roadKm(f, s), tx = data.taxi || {};
-  const fixed = arrForm.spot === 'aero' ? tx.aero : arrForm.spot === 'gare' ? tx.gare : 0;
-  const prix = fixed || (tx.km ? Math.round((tx.pc || 0) + km * tx.km) : 0);
+  const km = roadKm(f, s), prix = price(arrForm, km);
   arrForm.est = { km, min: Math.round(km / 0.75) + 5, prix, fg: f, sg: s };
   paintEst();
 }
 function paintEst() {
   const el = document.getElementById('estBox'), t = T(), e = arrForm.est;
-  if (el) el.innerHTML = e ? `<b>${esc(t.est)} :</b> ${e.km} km · ~${e.min} min${e.prix ? ` · <b>~${e.prix} €</b>` : ''}` : esc(t.calc);
+  if (e) e.prix = price(arrForm, e.km);
+  if (el) el.innerHTML = e ? `<b>${esc(t.est)} :</b> ${e.km} km · ~${e.min} min · <b>${e.prix ? '~' + e.prix + ' €' : esc(TXT().ask)}</b>` : esc(t.calc);
 }
 const arrSent = () => { try { return JSON.parse(ls.get('hoteArr:' + id) || 'null'); } catch { return null; } };
 // mon trajet (je viens moi-même) : heure d'arrivée envoyée au plus toutes les minutes ; position jamais envoyée
@@ -271,6 +300,7 @@ function render() {
     ${d.pref ? `<p class="meta" style="margin:6px 0 0">📝 ${esc(t.pref)} : ${esc(d.pref)}</p>` : ''}
     <div class="btns">${d.menu ? `<button class="btn sm" data-menu="1">${esc(t.menu)}</button>` : ''}${tel ? `<a class="btn sm sec" href="tel:${esc(tel)}">${esc(t.call)}</a>` : ''}${wa ? `<a class="btn sm sec" href="https://wa.me/${esc(wa)}" target="_blank" rel="noopener">${esc(t.wa)}</a>` : ''}</div></div>`);
   if (today <= d.arrivee) out.push(arrCard(t));
+  if (d.taxi && d.taxi.on && today >= d.arrivee && today <= d.depart) out.push(rideCard());
   // 8 · état des lieux de sortie (pendant le séjour)
   if (inStay || today === d.depart) {
     const done = new Set([...(d.edlSent || []), ...edlDone()]);
@@ -303,6 +333,20 @@ function render() {
   else paintEst();
   tripPoll();
 }
+// 🚘 réserver un chauffeur pendant le séjour (course, à l'heure, journée…) + mes réservations
+function rideCard() {
+  const w = TXT(), d = data, f = ride, mine = d.rides || [];
+  const p = price({ ...f, spot: 'other' }, 0);
+  return `<div class="card arr"><h2>${esc(w.book)}</h2>
+    ${mine.length ? `<p class="meta" style="margin:0 0 6px"><b>${esc(w.mine)}</b></p>${mine.map((r) => `<div class="drv" style="margin:0 0 6px;${r.st === 'wait' ? 'background:#fff7ed;border-color:#fed7aa' : r.st === 'no' ? 'background:#fef2f2;border-color:#fecaca' : ''}">${esc(w.S[r.service] || '')}${r.gamme ? ' · ' + esc(w.G[r.gamme]) : ''}${r.quand ? ' · 🕒 ' + esc(String(r.quand).replace('T', ' ')) : ''}${r.to ? ' → ' + esc(r.to) : ''}<br><b>${esc(r.st === 'wait' ? w.W : r.st === 'no' ? w.N : w.O)}</b>${r.drv ? ` · ${esc(r.drv.nom)} · 🚘 ${esc([r.drv.auto, r.drv.plaque].filter(Boolean).join(' '))}${r.drv.tel ? ` <a href="tel:${esc(String(r.drv.tel).replace(/[^\d+]/g, ''))}">📞</a>` : ''}` : ''}</div>`).join('')}` : ''}
+    ${f.open ? `${svcHtml(f, 'r')}
+      <label>${esc(T().when)}</label><input type="datetime-local" data-r-quand="1" value="${esc(f.quand || today + 'T10:00')}">
+      <label>${esc(w.dest)}</label><input data-r-to="1" value="${esc(f.to)}" placeholder="${esc(w.destPh)}">
+      <p class="est">${esc(w.total)} : <b>${p ? '~' + p + ' €' : esc(w.ask)}</b></p>
+      <button class="btn block" style="margin-top:10px" data-ride-send="1">${esc(T().send)}</button>`
+      : `<button class="btn block" data-ride-open="1">${esc(w.book)}</button>`}
+    ${f.sent ? `<p class="ok" style="margin:8px 0 0">${esc(f.sent)}</p>` : ''}</div>`;
+}
 // carte « Comment arrivez-vous ? » : choix → taxi (où, quand, km, prix) ou soi-même (« Je suis en route »)
 function arrCard(t) {
   const d = data, sent = d.arr || arrSent();
@@ -310,7 +354,7 @@ function arrCard(t) {
     if (sent.mode === 'taxi') {
       const tx = d.taxiOk;
       return `<div class="card arr"><h2>🚕 ${esc(t.chosenTaxi)}</h2><p style="margin:0">📍 ${esc(sent.from)}${sent.quand ? ' · 🕒 ' + esc(String(sent.quand).replace('T', ' ')) : ''}${sent.vol ? ' · ✈️ ' + esc(sent.vol) : ''}</p>
-        <p class="meta" style="margin:4px 0 0">${sent.km ? esc(sent.km + ' km') : ''}${sent.prix ? ` · ~${esc(sent.prix)} €` : ''}</p>
+        <p class="meta" style="margin:4px 0 0">${[sent.service && sent.service !== 'course' ? TXT().S[sent.service] : '', sent.gamme ? TXT().G[sent.gamme] : '', ...(sent.extras || []).map((k) => TXT().E[k]), sent.km ? sent.km + ' km' : '', sent.prix ? '~' + sent.prix + ' €' : ''].filter(Boolean).map(esc).join(' · ')}</p>
         ${tx ? `<div class="drv"><b>${esc(t.driver)} : ${esc(tx.nom)}</b><br>🚘 ${esc([tx.auto, tx.plaque].filter(Boolean).join(' · '))}${tx.tel ? `<div class="btns"><a class="btn sm" href="tel:${esc(String(tx.tel).replace(/[^\d+]/g, ''))}">${esc(t.call)}</a></div>` : ''}</div><div id="taxiTrip"></div>` : `<p class="meta" style="margin:8px 0 0">⏳ ${esc(t.wait)}</p>`}
         <button class="btn sm sec" style="margin-top:8px" data-arr-edit="1">${esc(t.change)}</button></div>`;
     }
@@ -330,6 +374,7 @@ function arrCard(t) {
       ${f.spot === 'other' ? `<input data-other="1" value="${esc(f.other)}" placeholder="${esc(t.otherPh)}" style="margin-top:6px">` : ''}
       <label>${esc(t.when)}</label><input type="datetime-local" data-quand="1" value="${esc(dq)}">
       <label>${esc(t.vol)}</label><input data-vol="1" value="${esc(f.vol)}">
+      ${svcHtml(f, 'a')}
       <p class="est" id="estBox"></p>` : ''}
     ${f.mode ? `<button class="btn block" style="margin-top:10px" data-arr-send="1">${esc(t.send)}</button>` : ''}</div>`;
 }
@@ -375,6 +420,16 @@ app.addEventListener('change', async (e) => {
   if (el.dataset.spot) { arrForm.spot = el.value; arrForm.est = null; return render(); }
   if (el.dataset.other) { arrForm.other = el.value; arrForm.est = null; paintEst(); return estimate(); }
   if (el.dataset.quand) { arrForm.quand = el.value; return; }
+  if (el.dataset.aSrv) { arrForm.service = el.value; return render(); }
+  if (el.dataset.aH) { arrForm.heures = el.value; return paintEst(); }
+  if (el.name === 'aGam') { arrForm.gamme = el.value; return paintEst(); }
+  if (el.dataset.aExt) { arrForm.extras = el.checked ? [...arrForm.extras, el.dataset.aExt] : arrForm.extras.filter((k) => k !== el.dataset.aExt); return paintEst(); }
+  if (el.dataset.rSrv) { ride.service = el.value; return render(); }
+  if (el.dataset.rH) { ride.heures = el.value; return render(); }
+  if (el.name === 'rGam') { ride.gamme = el.value; return render(); }
+  if (el.dataset.rExt) { ride.extras = el.checked ? [...ride.extras, el.dataset.rExt] : ride.extras.filter((k) => k !== el.dataset.rExt); return render(); }
+  if (el.dataset.rQuand) { ride.quand = el.value; return; }
+  if (el.dataset.rTo) { ride.to = el.value; return; }
   if (el.dataset.vol) { arrForm.vol = el.value; return; }
   if (el.dataset.edl && el.files && el.files[0]) {
     const f = el.files[0];
@@ -409,12 +464,22 @@ app.addEventListener('click', async (e) => {
     if (f.mode === 'taxi' && !f.est) await estimate();
     const e2 = f.est || {};
     const msg = f.mode === 'taxi'
-      ? { type: 'hote-arr', mode: 'taxi', from, quand: f.quand || `${data.arrivee}T${data.hdeb || '15:00'}`, vol: f.vol, km: e2.km || 0, prix: e2.prix || 0, fg: e2.fg ? { lat: e2.fg[0], lon: e2.fg[1] } : null, sg: e2.sg ? { lat: e2.sg[0], lon: e2.sg[1] } : null }
+      ? { type: 'hote-arr', mode: 'taxi', from, quand: f.quand || `${data.arrivee}T${data.hdeb || '15:00'}`, vol: f.vol, km: e2.km || 0, prix: price(f, e2.km) || 0, service: f.service, gamme: f.gamme, extras: f.extras, heures: f.service === 'heures' ? f.heures : 0, fg: e2.fg ? { lat: e2.fg[0], lon: e2.fg[1] } : null, sg: e2.sg ? { lat: e2.sg[0], lon: e2.sg[1] } : null }
       : { type: 'hote-arr', mode: 'self' };
     try {
       await sendOwner(msg);
       ls.set('hoteArr:' + id, JSON.stringify({ ...msg, at: Date.now() }));
       data.arr = null; arrEdit = false;
+    } catch { b.disabled = false; return; }
+    return render();
+  }
+  if (b.dataset.rideOpen) { ride.open = true; ride.sent = ''; return render(); }
+  if (b.dataset.rideSend) {
+    b.disabled = true;
+    const f = ride, prix = price({ ...f, spot: 'other' }, 0);
+    try {
+      await sendOwner({ type: 'hote-ride', rid: Date.now().toString(36), service: f.service, gamme: f.gamme, extras: f.extras, heures: f.service === 'heures' ? f.heures : 0, from: data.st.nom, to: f.to, quand: f.quand || today + 'T10:00', prix });
+      ride = { open: false, service: 'course', gamme: '', extras: [], heures: 3, quand: '', to: '', sent: TXT().W };
     } catch { b.disabled = false; return; }
     return render();
   }
