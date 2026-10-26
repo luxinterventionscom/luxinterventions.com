@@ -16181,5 +16181,59 @@ export default [
 ],
 ["Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.",
 "Il server (Worker) non è ancora aggiornato: la voce Rete funzionerà dopo la sua pubblicazione."
+],
+["Demandes",
+"Richieste"
+],
+["Demandes d’intervention",
+"Richieste d'intervento"
+],
+["Envoyées à LuxInterventions, qui envoie ses intervenants",
+"Inviate a LuxInterventions, che manda i suoi tecnici"
+],
+["Une fuite, une panne, des travaux ? ＋ Demande : LuxInterventions la reçoit tout de suite (chiffrée), la planifie et envoie un intervenant.",
+"Una perdita, un guasto, dei lavori? ＋ Richiesta: LuxInterventions la riceve subito (cifrata), la pianifica e manda un tecnico."
+],
+["Demande d’intervention",
+"Richiesta d'intervento"
+],
+["Urgence",
+"Urgenza"
+],
+["Normal",
+"Normale"
+],
+["Rapide (48 h)",
+"Rapida (48 h)"
+],
+["Chiffrée : seule la centrale LuxInterventions peut la lire.",
+"Cifrata: solo la centrale LuxInterventions può leggerla."
+],
+["Demande envoyée à LuxInterventions",
+"Richiesta inviata a LuxInterventions"
+],
+["Lecture seule : abonnement échu",
+"Sola lettura: abbonamento scaduto"
+],
+["Essai gratuit",
+"Prova gratuita"
+],
+["Lecture seule",
+"Sola lettura"
+],
+["Code d’invitation reçu",
+"Codice d'invito ricevuto"
+],
+["Centrale principale",
+"Centrale principale"
+],
+["Centrale bloquée.",
+"Centrale bloccata."
+],
+["L’abonnement est échu ou suspendu : contactez LuxInterventions pour la réactiver. Vos données restent chiffrées et intactes.",
+"L'abbonamento è scaduto o sospeso: contatti LuxInterventions per riattivarla. I suoi dati restano cifrati e intatti."
+],
+["réseau LuxInterventions",
+"rete LuxInterventions"
 ]
 ];

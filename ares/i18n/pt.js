@@ -16089,5 +16089,59 @@ export default [
 ],
 ["Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.",
 "O servidor (Worker) ainda não está atualizado: a rubrica Rede funcionará depois da publicação."
+],
+["Demandes",
+"Pedidos"
+],
+["Demandes d’intervention",
+"Pedidos de intervenção"
+],
+["Envoyées à LuxInterventions, qui envoie ses intervenants",
+"Enviados à LuxInterventions, que envia os seus técnicos"
+],
+["Une fuite, une panne, des travaux ? ＋ Demande : LuxInterventions la reçoit tout de suite (chiffrée), la planifie et envoie un intervenant.",
+"Uma fuga, uma avaria, obras? ＋ Pedido: a LuxInterventions recebe-o logo (cifrado), planeia-o e envia um técnico."
+],
+["Demande d’intervention",
+"Pedido de intervenção"
+],
+["Urgence",
+"Urgência"
+],
+["Normal",
+"Normal"
+],
+["Rapide (48 h)",
+"Rápido (48 h)"
+],
+["Chiffrée : seule la centrale LuxInterventions peut la lire.",
+"Cifrado: só a central LuxInterventions o pode ler."
+],
+["Demande envoyée à LuxInterventions",
+"Pedido enviado à LuxInterventions"
+],
+["Lecture seule : abonnement échu",
+"Só leitura: assinatura expirada"
+],
+["Essai gratuit",
+"Teste gratuito"
+],
+["Lecture seule",
+"Só leitura"
+],
+["Code d’invitation reçu",
+"Código de convite recebido"
+],
+["Centrale principale",
+"Central principal"
+],
+["Centrale bloquée.",
+"Central bloqueada."
+],
+["L’abonnement est échu ou suspendu : contactez LuxInterventions pour la réactiver. Vos données restent chiffrées et intactes.",
+"A assinatura expirou ou está suspensa: contacte a LuxInterventions para a reativar. Os seus dados ficam cifrados e intactos."
+],
+["réseau LuxInterventions",
+"rede LuxInterventions"
 ]
 ];

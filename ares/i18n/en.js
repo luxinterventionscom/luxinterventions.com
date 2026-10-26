@@ -15907,5 +15907,62 @@ export default [
 ],
 ["Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.",
 "The server (Worker) is not up to date yet: the Network section will work once it is published."
+],
+["Demandes",
+"Requests"
+],
+["Demandes d’intervention",
+"Job requests"
+],
+["Envoyées à LuxInterventions, qui envoie ses intervenants",
+"Sent to LuxInterventions, who sends its technicians"
+],
+["Une fuite, une panne, des travaux ? ＋ Demande : LuxInterventions la reçoit tout de suite (chiffrée), la planifie et envoie un intervenant.",
+"A leak, a breakdown, works? ＋ Request: LuxInterventions gets it right away (encrypted), plans it and sends a technician."
+],
+["Demande d’intervention",
+"Job request"
+],
+["Urgence",
+"Urgency"
+],
+["Normal",
+"Normal"
+],
+["Rapide (48 h)",
+"Fast (48 h)"
+],
+["Urgent",
+"Urgent"
+],
+["Chiffrée : seule la centrale LuxInterventions peut la lire.",
+"Encrypted: only the LuxInterventions central can read it."
+],
+["Demande envoyée à LuxInterventions",
+"Request sent to LuxInterventions"
+],
+["Lecture seule : abonnement échu",
+"Read-only: subscription expired"
+],
+["Essai gratuit",
+"Free trial"
+],
+["Lecture seule",
+"Read-only"
+],
+["Code d’invitation reçu",
+"Invitation code received"
+],
+["Centrale principale",
+"Main central"
+],
+["Centrale bloquée.",
+"Central blocked."
+],
+["L’abonnement est échu ou suspendu : contactez LuxInterventions pour la réactiver. Vos données restent chiffrées et intactes.",
+"The subscription has expired or is suspended: contact LuxInterventions to reactivate it. Your data stays encrypted and intact."
+],
+["réseau LuxInterventions",
+"LuxInterventions network"
 ]
 ];
