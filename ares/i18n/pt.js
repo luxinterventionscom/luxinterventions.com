@@ -15477,5 +15477,92 @@ export default [
 ],
 ["Les agences immobilières publient leurs biens et vous confient leurs interventions.",
 "As agências imobiliárias publicam os seus imóveis e confiam-vos as suas intervenções."
+],
+["Logement seul",
+"Só alojamento"
+],
+["Petit-déjeuner",
+"Pequeno-almoço"
+],
+["Demi-pension",
+"Meia pensão"
+],
+["Pension complète",
+"Pensão completa"
+],
+["Préférences / allergies",
+"Preferências / alergias"
+],
+["ex. sans gluten, oreiller ferme, étage bas…",
+"ex. sem glúten, almofada firme, andar baixo…"
+],
+["Menu du restaurant (PDF, le même pour tous les clients)",
+"Menu do restaurante (PDF, igual para todos os clientes)"
+],
+["Voir le menu",
+"Ver o menu"
+],
+["Remplacer le menu",
+"Substituir o menu"
+],
+["Ajouter le menu",
+"Adicionar o menu"
+],
+["Le logement",
+"O alojamento"
+],
+["La chambre",
+"O quarto"
+],
+["visible dans l’app du client",
+"visível na app do cliente"
+],
+["N° / nom du logement",
+"N.º / nome do alojamento"
+],
+["Nombre de pièces",
+"Número de divisões"
+],
+["Bâtiment",
+"Edifício"
+],
+["App du client",
+"App do cliente"
+],
+["Code d’accès à l’app",
+"Código de acesso à app"
+],
+["Menu : fichier PDF seulement",
+"Menu: apenas ficheiro PDF"
+],
+["Menu : 10 Mo maximum",
+"Menu: 10 MB no máximo"
+],
+["Menu du restaurant",
+"Menu do restaurante"
+],
+["Fiche de la chambre",
+"Ficha do quarto"
+],
+["Fiche du logement",
+"Ficha do alojamento"
+],
+["Client enregistré — 📷 ajoutez au moins 6 photos de cette chambre",
+"Cliente registado — 📷 adicione pelo menos 6 fotos deste quarto"
+],
+["Client enregistré — 📷 ajoutez au moins 6 photos de ce logement",
+"Cliente registado — 📷 adicione pelo menos 6 fotos deste alojamento"
+],
+["📷 6 photos minimum : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Elles restent pour les prochains clients de cette chambre.",
+"📷 Mínimo 6 fotos: edifício, porta, casa de banho, quarto, cozinha, estacionamento (+ 1 à escolha). Ficam para os próximos clientes deste quarto."
+],
+["📷 6 photos minimum : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Elles restent pour les prochains clients de ce logement.",
+"📷 Mínimo 6 fotos: edifício, porta, casa de banho, quarto, cozinha, estacionamento (+ 1 à escolha). Ficam para os próximos clientes deste alojamento."
+],
+["Code personnel du client (aussi depuis l’étranger) : avec le lien de l’app il voit sa chambre, les photos, son code de porte et le menu. Le lien de téléchargement sera ajouté avec l’app des clients (prochaine étape).",
+"Código pessoal do cliente (também do estrangeiro): com o link da app vê o seu quarto, as fotos, o código da porta e o menu. O link de download será adicionado com a app dos clientes (próxima etapa)."
+],
+["Code personnel du client (aussi depuis l’étranger) : avec le lien de l’app il voit son logement, les photos, son code de porte et les infos du séjour. Le lien de téléchargement sera ajouté avec l’app des clients (prochaine étape).",
+"Código pessoal do cliente (também do estrangeiro): com o link da app vê o seu alojamento, as fotos, o código da porta e as informações da estadia. O link de download será adicionado com a app dos clientes (próxima etapa)."
 ]
 ];

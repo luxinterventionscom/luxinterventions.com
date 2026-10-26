@@ -15569,5 +15569,92 @@ export default [
 ],
 ["Les agences immobilières publient leurs biens et vous confient leurs interventions.",
 "Le agenzie immobiliari pubblicano i loro immobili e vi affidano i loro interventi."
+],
+["Logement seul",
+"Solo pernottamento"
+],
+["Petit-déjeuner",
+"Colazione"
+],
+["Demi-pension",
+"Mezza pensione"
+],
+["Pension complète",
+"Pensione completa"
+],
+["Préférences / allergies",
+"Preferenze / allergie"
+],
+["ex. sans gluten, oreiller ferme, étage bas…",
+"es. senza glutine, cuscino rigido, piano basso…"
+],
+["Menu du restaurant (PDF, le même pour tous les clients)",
+"Menù del ristorante (PDF, uguale per tutti i clienti)"
+],
+["Voir le menu",
+"Vedi il menù"
+],
+["Remplacer le menu",
+"Sostituisci il menù"
+],
+["Ajouter le menu",
+"Aggiungi il menù"
+],
+["Le logement",
+"L'alloggio"
+],
+["La chambre",
+"La camera"
+],
+["visible dans l’app du client",
+"visibile nell'app del cliente"
+],
+["N° / nom du logement",
+"N° / nome dell'alloggio"
+],
+["Nombre de pièces",
+"Numero di locali"
+],
+["Bâtiment",
+"Edificio"
+],
+["App du client",
+"App del cliente"
+],
+["Code d’accès à l’app",
+"Codice di accesso all'app"
+],
+["Menu : fichier PDF seulement",
+"Menù: solo file PDF"
+],
+["Menu : 10 Mo maximum",
+"Menù: 10 MB massimo"
+],
+["Menu du restaurant",
+"Menù del ristorante"
+],
+["Fiche de la chambre",
+"Scheda della camera"
+],
+["Fiche du logement",
+"Scheda dell'alloggio"
+],
+["Client enregistré — 📷 ajoutez au moins 6 photos de cette chambre",
+"Cliente registrato — 📷 aggiungi almeno 6 foto di questa camera"
+],
+["Client enregistré — 📷 ajoutez au moins 6 photos de ce logement",
+"Cliente registrato — 📷 aggiungi almeno 6 foto di questo alloggio"
+],
+["📷 6 photos minimum : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Elles restent pour les prochains clients de cette chambre.",
+"📷 Minimo 6 foto: edificio, porta, bagno, camera, cucina, parcheggio (+ 1 a scelta). Restano per i prossimi clienti di questa camera."
+],
+["📷 6 photos minimum : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Elles restent pour les prochains clients de ce logement.",
+"📷 Minimo 6 foto: edificio, porta, bagno, camera, cucina, parcheggio (+ 1 a scelta). Restano per i prossimi clienti di questo alloggio."
+],
+["Code personnel du client (aussi depuis l’étranger) : avec le lien de l’app il voit sa chambre, les photos, son code de porte et le menu. Le lien de téléchargement sera ajouté avec l’app des clients (prochaine étape).",
+"Codice personale del cliente (anche dall'estero): con il link dell'app vede la sua camera, le foto, il codice della porta e il menù. Il link per scaricarla sarà aggiunto con l'app dei clienti (prossima tappa)."
+],
+["Code personnel du client (aussi depuis l’étranger) : avec le lien de l’app il voit son logement, les photos, son code de porte et les infos du séjour. Le lien de téléchargement sera ajouté avec l’app des clients (prochaine étape).",
+"Codice personale del cliente (anche dall'estero): con il link dell'app vede il suo alloggio, le foto, il codice della porta e le info del soggiorno. Il link per scaricarla sarà aggiunto con l'app dei clienti (prossima tappa)."
 ]
 ];

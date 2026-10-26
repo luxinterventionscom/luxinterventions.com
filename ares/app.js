@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.190.0';
+const VERSION = '2.191.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -347,6 +347,14 @@ const hm = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? +m
 // une ligne d'horaire sans durée (ex. 00:00–00:00) ne compte pas
 document.addEventListener('input', (e) => { const w = e.target.closest && e.target.closest('.tph'); if (w) w.classList.toggle('v', !!e.target.value); }, true);
 document.addEventListener('change', (e) => { const w = e.target.closest && e.target.closest('.tph'); if (w) w.classList.toggle('v', !!e.target.value); }, true);
+// case photo de la chambre : aperçu tout de suite
+document.addEventListener('change', (e) => {
+  const sl = e.target.closest && e.target.closest('.ch-slot'), f = sl && e.target.files && e.target.files[0];
+  if (!f) return;
+  const old = sl.querySelector('img, .ch-empty'), img = document.createElement('img');
+  img.src = URL.createObjectURL(f); img.alt = '';
+  old.replaceWith(img);
+}, true);
 const hors = (i) => (i.horaires || []).filter((h) => h.de && h.a && h.de !== h.a);
 const dowOf = (iso) => (new Date(iso + 'T12:00:00').getDay() + 6) % 7;
 const okSlot = (h) => h && h.de && h.a && h.de !== h.a;
@@ -1931,9 +1939,31 @@ const HOTE_MSG = {
   de: ['Guten Tag', 'Zimmer', 'Türcode', 'gültig vom', 'bis'], en: ['Hello', 'room', 'door code', 'valid from', 'to'],
   pt: ['Olá', 'quarto', 'código da porta', 'válido de', 'a'], es: ['Hola', 'habitación', 'código de la puerta', 'válido del', 'al'],
 };
+// 🏨 clients Hotel / Airbnb : pays (drapeau), formule, chambre ou logement (fiche gardée d'un séjour à l'autre, visible dans l'app du client)
+const HOTE_PAYS = ['LU', 'FR', 'BE', 'DE', 'NL', 'IT', 'PT', 'ES', 'CH', 'AT', 'GB', 'IE', 'DK', 'SE', 'NO', 'FI', 'PL', 'CZ', 'SK', 'HU', 'RO', 'BG', 'GR', 'HR', 'SI', 'RS', 'UA', 'TR', 'MA', 'DZ', 'TN', 'SN', 'CV', 'BR', 'US', 'CA', 'MX', 'AR', 'CN', 'JP', 'KR', 'IN', 'AE', 'IL', 'AU'];
+const flag = (cc) => String.fromCodePoint(...[...cc].map((c) => 0x1f1a5 + c.charCodeAt(0)));
+const paysNom = (cc) => { try { return new Intl.DisplayNames(['fr'], { type: 'region' }).of(cc); } catch { return cc; } };
+const FORMULES = { seul: 'Logement seul', pdj: 'Petit-déjeuner', demi: 'Demi-pension', complete: 'Pension complète' };
+const CH_PH = [['immeuble', '🏢 Bâtiment'], ['porte', '🚪 Porte'], ['sdb', '🛁 Salle de bain'], ['chambre', '🛏️ Chambre'], ['cuisine', '🍳 Cuisine'], ['parking', '🅿️ Parking'], ['autre', '📷 Autre']];
+const chKey = (lieu, num) => 'ch-' + (lieu === 'airbnb' ? 'airbnb' : 'hotel') + '-' + String(num || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+const chGet = (lieu, num) => (num ? vault.get('reglages', chKey(lieu, num)) : null) || {};
+// aperçu d'un PDF ou d'une image chiffrés (menu du restaurant…)
+async function filePreview(id, label, mime = 'application/pdf') {
+  try {
+    const url = URL.createObjectURL(new Blob([await vault.readFile(id)], { type: mime }));
+    const dlg = document.createElement('dialog');
+    dlg.className = 'pv';
+    setHtml(dlg, html`<div class="pv-bar"><b>${label}</b><a class="btn sm" href="${url}" download="${label}.pdf">${icon('download')}</a>
+      <button class="btn sm" type="button" data-pv-close="1">${icon('x')} Fermer</button></div><iframe src="${url}" title="${label}"></iframe>`);
+    dlg.addEventListener('click', (e) => { if (e.target.closest('[data-pv-close]')) dlg.close(); });
+    dlg.addEventListener('close', () => { dlg.remove(); URL.revokeObjectURL(url); });
+    document.body.append(dlg);
+    dlg.showModal();
+  } catch (e) { toast(e.message || 'Document indisponible', { bad: true }); }
+}
 const hoteMsg = (h) => {
   const w = HOTE_MSG[h.langue] || HOTE_MSG.en, d = (x) => x.split('-').reverse().join('/');
-  return `${w[0]} ${h.prenom || h.nom},\n${w[1]} ${h.chambre}${h.etage ? ' (' + h.etage + ')' : ''} — ${w[2]} : ${h.code}\n${w[3]} ${d(h.arrivee)} ${h.hdeb || '15:00'} ${w[4]} ${d(h.depart)} ${h.hfin || '11:00'}.${h.cinfo ? '\n' + h.cinfo : ''}`;
+  return `${w[0]} ${h.prenom || h.nom},\n${w[1]} ${h.chambre}${h.etage ? ' (' + h.etage + ')' : ''} — ${w[2]} : ${h.code}\n${w[3]} ${d(h.arrivee)} ${h.hdeb || '15:00'} ${w[4]} ${d(h.depart)} ${h.hfin || '11:00'}.`;
 };
 // lieu sans répétition : « Appartement · Étage 1 · Appartement 3 » → « Étage 1 · Appartement 3 »
 const lieuDedup = (v) => { const p = String(v || '').split(' · ').map((x) => x.trim()).filter(Boolean); return p.filter((x) => !p.some((q) => q !== x && q.toLowerCase().startsWith(x.toLowerCase() + ' '))).join(' · '); };
@@ -5466,34 +5496,47 @@ const SHEETS = {
     };
   },
   'hote-form'({ id }) {
-    const h = id ? vault.get('hotes', id) : { arrivee: today(), depart: addDays(today(), 1), pers: 1, langue: 'fr', lieu: ui.route === 'airbnb' ? 'airbnb' : 'hotel' };
+    const h = id ? vault.get('hotes', id) : { arrivee: today(), depart: addDays(today(), 1), pers: 1, langue: 'fr', lieu: ui.route === 'airbnb' ? 'airbnb' : 'hotel', appCode: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0') };
     if (id && !h) return null;
     const rnd = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
     const LG = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español', ar: 'العربية', autre: 'Autre' };
+    const bnb = h.lieu === 'airbnb', ch = chGet(h.lieu, h.chambre), menu = vault.get('reglages', 'hotelMenu');
+    setTimeout(() => hydrateBiens(sheetEl), 0);
     return {
-      title: id ? 'Client — chambre ' + h.chambre : 'Nouveau client',
+      title: id ? (bnb ? 'Client — ' : 'Client — chambre ') + h.chambre : 'Nouveau client',
       narrow: true,
       body: html`<form id="f" data-form="hote" class="fields">
-        <input type="hidden" name="id" value="${id || ''}">
-        <label class="field full">Où<select name="lieu"><option value="hotel">🏨 Hôtel</option><option value="airbnb" ${h.lieu === 'airbnb' ? new Raw('selected') : ''}>🏠 Airbnb / location courte</option></select></label>
+        <input type="hidden" name="id" value="${id || ''}"><input type="hidden" name="lieu" value="${bnb ? 'airbnb' : 'hotel'}">
         ${field('Prénom', 'prenom', h.prenom)}${field('Nom', 'nom', h.nom, { required: true })}
         ${field('Téléphone', 'tel', h.tel, { type: 'tel', placeholder: '+352 …' })}${field('Email', 'mail', h.mail, { type: 'email' })}
+        <label class="field">Pays<select name="pays"><option value="">—</option>${HOTE_PAYS.map((cc) => html`<option value="${cc}" ${h.pays === cc ? new Raw('selected') : ''}>${flag(cc)} ${paysNom(cc)}</option>`)}</select></label>
         <label class="field">Langue<select name="langue">${Object.entries(LG).map(([k, l]) => html`<option value="${k}" ${h.langue === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
         ${field('Personnes', 'pers', h.pers, { type: 'number', attrs: 'min="1" max="20" inputmode="numeric"' })}
-        ${field('N° de chambre / logement', 'chambre', h.chambre, { required: true, placeholder: 'ex. 204' })}${field('Étage', 'etage', h.etage, { placeholder: 'ex. 2' })}
-        ${field('Adresse (Airbnb)', 'adresse', h.adresse, { full: true, placeholder: 'rue, n°, ville' })}
         ${field('Arrivée', 'arrivee', h.arrivee, { type: 'date', required: true })}${field('Départ', 'depart', h.depart, { type: 'date', required: true })}
+        ${bnb ? '' : html`<label class="field full">Formule<select name="formule">${Object.entries(FORMULES).map(([k, l]) => html`<option value="${k}" ${(h.formule || 'seul') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>`}
+        <label class="field full">Préférences / allergies<textarea name="pref" style="min-height:56px" placeholder="ex. sans gluten, oreiller ferme, étage bas…">${h.pref || ''}</textarea></label>
+        ${bnb ? '' : html`<div class="full section-label" style="margin:6px 0 0">🍽️ Menu du restaurant (PDF, le même pour tous les clients)</div>
+          ${menu && menu.file ? html`<div class="full actions" style="margin:0"><button type="button" class="btn sm" data-action="hotel-menu-view">👁 Voir le menu</button><span class="tiny muted">${menu.name || ''} · ${fmtDate(menu.at)}</span></div>` : ''}
+          <label class="field full">${menu && menu.file ? 'Remplacer le menu' : 'Ajouter le menu'}<input type="file" name="menu" accept="application/pdf"></label>`}
+        <div class="full section-label" style="margin:6px 0 0">${bnb ? '🏠 Le logement' : '🛏️ La chambre'} — visible dans l’app du client</div>
+        ${field(bnb ? 'N° / nom du logement' : 'N° de chambre', 'chambre', h.chambre, { required: true, placeholder: bnb ? 'ex. Appart 3' : 'ex. 204' })}${field('Étage', 'etage', h.etage || ch.etage, { placeholder: 'ex. 2' })}
+        ${bnb ? field('Adresse', 'adresse', h.adresse || ch.adresse, { full: true, placeholder: 'rue, n°, ville' }) : ''}
+        ${field('Surface (m²)', 'm2', ch.m2, { attrs: 'inputmode="decimal"' })}${field('Nombre de pièces', 'npieces', ch.npieces, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' })}
+        <p class="tiny muted full" style="margin:0">📷 6 photos minimum : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Elles restent pour les prochains clients de ${bnb ? 'ce logement' : 'cette chambre'}.</p>
+        <div class="full ch-ph">${CH_PH.map(([k, l]) => html`<label class="ch-slot">${(ch.ph || {})[k] ? html`<img data-bph="${ch.ph[k]}" alt="">` : html`<span class="ch-empty">＋</span>`}<span class="tiny">${l}</span><input type="file" name="ph_${k}" accept="image/*"></label>`)}</div>
         <div class="full section-label" style="margin:6px 0 0">🔑 Clé numérique (code de la porte)</div>
         ${field('Code de la chambre', 'code', id ? h.code : rnd, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
         <p class="tiny muted full" style="margin:0">Code proposé au hasard — vous pouvez le changer. Programmez-le dans la serrure (app du fabricant) avec les mêmes dates et heures : il marche seulement pendant le séjour, puis expire tout seul.</p>
         ${field('Valable à partir de (heure d’arrivée)', 'hdeb', h.hdeb || '15:00', { type: 'time' })}${field('Expire à (heure de départ)', 'hfin', h.hfin || '11:00', { type: 'time' })}
-        ${field('Serrure (marque / modèle)', 'serrure', h.serrure, { placeholder: 'ex. Nuki, TTLock, igloohome…' })}${field('Badge / clé physique (n°, facultatif)', 'cle', h.cle, { placeholder: 'ex. badge 17' })}
-        ${field('Info pour le client (facultatif)', 'cinfo', h.cinfo, { full: true, placeholder: 'ex. Tapez le code puis ✓ ; porte de l’hôtel : 2580' })}
+        ${field('Badge / clé physique (n°, facultatif)', 'cle', h.cle, { full: true, placeholder: 'ex. badge 17' })}
         ${id && h.code ? html`<label class="full t-urg"><input type="checkbox" name="codeOff" value="1" ${h.codeOff ? new Raw('checked') : ''}> <span>⏸️ Désactiver le code (clé perdue, départ anticipé…)</span></label>` : ''}
         ${id && hoteKey(h) ? html`<div class="full"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></div>
           <div class="full actions" style="margin:0">${h.tel ? html`<a class="btn sm" href="https://wa.me/${h.tel.replace(/[^\d+]/g, '').replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(hoteMsg(h))}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}${h.mail ? html`<a class="btn sm" href="mailto:${h.mail}?subject=${encodeURIComponent('🔑 ' + h.chambre)}&body=${encodeURIComponent(hoteMsg(h))}">✉️ Email</a>` : ''}${h.tel ? html`<a class="btn sm" href="sms:${h.tel.replace(/[^\d+]/g, '')}?&body=${encodeURIComponent(hoteMsg(h))}">📱 SMS</a>` : ''}</div>
           <p class="tiny muted full" style="margin:0">Envoyer le code au client (message dans sa langue).</p>` : ''}
         ${(h.hist || []).length ? html`<details class="full"><summary class="small">Historique des codes (${h.hist.length})</summary><div class="list small">${[...h.hist].reverse().map((x) => html`<div class="row"><span class="grow">${fmtDate(x.d)} — ${'•'.repeat(Math.max(0, (x.code || '').length - 2))}${(x.code || '').slice(-2)}</span></div>`)}</div></details>` : ''}
+        <div class="full section-label" style="margin:6px 0 0">📱 App du client</div>
+        ${field('Code d’accès à l’app', 'appCode', h.appCode, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
+        <p class="tiny muted full" style="margin:0">Code personnel du client (aussi depuis l’étranger) : avec le lien de l’app il voit ${bnb ? 'son logement' : 'sa chambre'}, les photos, son code de porte et ${bnb ? 'les infos du séjour' : 'le menu'}. Le lien de téléchargement sera ajouté avec l’app des clients (prochaine étape).</p>
         <label class="field full">Notes<textarea name="notes" style="min-height:70px" placeholder="ex. allergie, lit bébé, arrivée tardive…">${h.notes || ''}</textarea></label>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-hote" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
@@ -6975,6 +7018,7 @@ const ACTIONS = {
   },
   'new-hote': () => openOver('hote-form'),
   'edit-hote': (d) => openOver('hote-form', d.id),
+  'hotel-menu-view': () => { const m = vault.get('reglages', 'hotelMenu'); if (m && m.file) filePreview(m.file, 'Menu'); },
   async 'del-hote'(d) {
     const h = vault.get('hotes', d.id);
     if (!h || !(await confirmBox('Supprimer ce client ?', { ok: 'Supprimer', danger: true, detail: `${[h.prenom, h.nom].filter(Boolean).join(' ')} — chambre ${h.chambre}` }))) return;
@@ -7748,9 +7792,9 @@ const FORMS = {
   async hote(fd) {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
-    const rec = { lieu: g('lieu') === 'airbnb' ? 'airbnb' : 'hotel', adresse: g('adresse'), prenom: g('prenom'), nom: g('nom'), tel: g('tel'), mail: g('mail'), langue: g('langue') || 'fr', pers: Math.max(1, parseInt(g('pers'), 10) || 1),
+    const rec = { lieu: g('lieu') === 'airbnb' ? 'airbnb' : 'hotel', adresse: g('adresse'), pays: g('pays'), formule: g('formule'), pref: g('pref'), appCode: g('appCode'), prenom: g('prenom'), nom: g('nom'), tel: g('tel'), mail: g('mail'), langue: g('langue') || 'fr', pers: Math.max(1, parseInt(g('pers'), 10) || 1),
       chambre: g('chambre'), etage: g('etage'), cle: g('cle'), arrivee: g('arrivee'), depart: g('depart'), notes: g('notes'),
-      code: g('code'), serrure: g('serrure'), cinfo: g('cinfo'), codeOff: fd.get('codeOff') === '1' };
+      code: g('code'), codeOff: fd.get('codeOff') === '1' };
     const tm = (k, d) => (/^\d\d:\d\d$/.test(g(k)) ? g(k) : d);
     rec.hdeb = tm('hdeb', '15:00'); rec.hfin = tm('hfin', '11:00');
     if (rec.code && !/^[0-9A-Za-z#*]{3,16}$/.test(rec.code)) return toast('Code invalide (3 à 16 chiffres ou lettres)', { bad: true });
@@ -7764,7 +7808,25 @@ const FORMS = {
     if (clash && !(await confirmBox(`Chambre ${rec.chambre} déjà occupée à ces dates`, { ok: 'Enregistrer quand même', detail: `${[clash.prenom, clash.nom].filter(Boolean).join(' ')} : ${fmtDate(clash.arrivee)} → ${fmtDate(clash.depart)}` }))) return;
     if (id) rec.id = id;
     await vault.mutate((tx) => tx.put('hotes', rec), id ? 'Hotel : client modifié' : 'Hotel : nouveau client', `${[rec.prenom, rec.nom].filter(Boolean).join(' ')} — chambre ${rec.chambre} · ${fmtDate(rec.arrivee)} → ${fmtDate(rec.depart)}`);
-    toast('Client enregistré');
+    // fiche de la chambre / du logement (m², pièces, photos) : gardée pour les prochains clients
+    const ck = chKey(rec.lieu, rec.chambre), ch = vault.get('reglages', ck) || {}, ph = { ...(ch.ph || {}) }, old = [];
+    for (const [k] of CH_PH) {
+      const f = fd.get('ph_' + k);
+      if (f && f.size && f.type.startsWith('image/')) { const pid = uid(); await vault.saveFile(pid, await compressPhoto(f)); if (ph[k]) old.push(ph[k]); ph[k] = pid; }
+    }
+    const nm = (k) => g(k).replace(',', '.');
+    await vault.mutate((tx) => tx.put('reglages', { id: ck, lieu: rec.lieu, num: rec.chambre, etage: rec.etage, adresse: rec.adresse || ch.adresse || '', m2: nm('m2') || ch.m2 || '', npieces: g('npieces') || ch.npieces || '', ph }), rec.lieu === 'airbnb' ? 'Fiche du logement' : 'Fiche de la chambre', rec.chambre);
+    for (const x of old) await vault.deleteFile(x).catch(() => {});
+    const mf = fd.get('menu');
+    if (mf && mf.size) {
+      if (mf.type !== 'application/pdf') return toast('Menu : fichier PDF seulement', { bad: true });
+      if (mf.size > 10e6) return toast('Menu : 10 Mo maximum', { bad: true });
+      const pm = vault.get('reglages', 'hotelMenu'), mid = uid();
+      await vault.saveFile(mid, new Uint8Array(await mf.arrayBuffer()));
+      await vault.mutate((tx) => tx.put('reglages', { id: 'hotelMenu', file: mid, name: mf.name, at: today() }), 'Menu du restaurant', mf.name);
+      if (pm && pm.file) await vault.deleteFile(pm.file).catch(() => {});
+    }
+    toast(Object.keys(ph).length < 6 ? 'Client enregistré — 📷 ajoutez au moins 6 photos de ' + (rec.lieu === 'airbnb' ? 'ce logement' : 'cette chambre') : 'Client enregistré');
     goBack();
     if (['hotel', 'airbnb'].includes(ui.route) && ui.route !== rec.lieu) go(rec.lieu);
   },

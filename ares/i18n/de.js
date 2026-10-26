@@ -15553,5 +15553,92 @@ export default [
 ],
 ["Les agences immobilières publient leurs biens et vous confient leurs interventions.",
 "Immobilienagenturen veröffentlichen ihre Objekte und vertrauen Ihnen ihre Einsätze an."
+],
+["Logement seul",
+"Nur Übernachtung"
+],
+["Petit-déjeuner",
+"Frühstück"
+],
+["Demi-pension",
+"Halbpension"
+],
+["Pension complète",
+"Vollpension"
+],
+["Préférences / allergies",
+"Vorlieben / Allergien"
+],
+["ex. sans gluten, oreiller ferme, étage bas…",
+"z. B. glutenfrei, festes Kissen, unteres Stockwerk…"
+],
+["Menu du restaurant (PDF, le même pour tous les clients)",
+"Restaurantkarte (PDF, für alle Gäste gleich)"
+],
+["Voir le menu",
+"Karte ansehen"
+],
+["Remplacer le menu",
+"Karte ersetzen"
+],
+["Ajouter le menu",
+"Karte hinzufügen"
+],
+["Le logement",
+"Die Unterkunft"
+],
+["La chambre",
+"Das Zimmer"
+],
+["visible dans l’app du client",
+"sichtbar in der App des Gastes"
+],
+["N° / nom du logement",
+"Nr. / Name der Unterkunft"
+],
+["Nombre de pièces",
+"Anzahl Zimmer"
+],
+["Bâtiment",
+"Gebäude"
+],
+["App du client",
+"App des Gastes"
+],
+["Code d’accès à l’app",
+"Zugangscode zur App"
+],
+["Menu : fichier PDF seulement",
+"Karte: nur PDF-Datei"
+],
+["Menu : 10 Mo maximum",
+"Karte: maximal 10 MB"
+],
+["Menu du restaurant",
+"Restaurantkarte"
+],
+["Fiche de la chambre",
+"Zimmerkarte"
+],
+["Fiche du logement",
+"Unterkunftskarte"
+],
+["Client enregistré — 📷 ajoutez au moins 6 photos de cette chambre",
+"Gast gespeichert — 📷 fügen Sie mindestens 6 Fotos dieses Zimmers hinzu"
+],
+["Client enregistré — 📷 ajoutez au moins 6 photos de ce logement",
+"Gast gespeichert — 📷 fügen Sie mindestens 6 Fotos dieser Unterkunft hinzu"
+],
+["📷 6 photos minimum : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Elles restent pour les prochains clients de cette chambre.",
+"📷 Mindestens 6 Fotos: Gebäude, Tür, Bad, Zimmer, Küche, Parkplatz (+ 1 nach Wahl). Sie bleiben für die nächsten Gäste dieses Zimmers."
+],
+["📷 6 photos minimum : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Elles restent pour les prochains clients de ce logement.",
+"📷 Mindestens 6 Fotos: Gebäude, Tür, Bad, Zimmer, Küche, Parkplatz (+ 1 nach Wahl). Sie bleiben für die nächsten Gäste dieser Unterkunft."
+],
+["Code personnel du client (aussi depuis l’étranger) : avec le lien de l’app il voit sa chambre, les photos, son code de porte et le menu. Le lien de téléchargement sera ajouté avec l’app des clients (prochaine étape).",
+"Persönlicher Code des Gastes (auch aus dem Ausland): mit dem App-Link sieht er sein Zimmer, die Fotos, seinen Türcode und die Karte. Der Download-Link kommt mit der Gäste-App (nächster Schritt)."
+],
+["Code personnel du client (aussi depuis l’étranger) : avec le lien de l’app il voit son logement, les photos, son code de porte et les infos du séjour. Le lien de téléchargement sera ajouté avec l’app des clients (prochaine étape).",
+"Persönlicher Code des Gastes (auch aus dem Ausland): mit dem App-Link sieht er seine Unterkunft, die Fotos, seinen Türcode und die Aufenthaltsinfos. Der Download-Link kommt mit der Gäste-App (nächster Schritt)."
 ]
 ];
