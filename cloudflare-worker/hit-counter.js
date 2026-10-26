@@ -222,6 +222,11 @@ async function route(request, env, ctx, headers) {
  *   POST   /api/ares/session       apre la sessione esclusiva (force: prende la mano) [auth]
  *   DELETE /api/ares/session       chiude la sessione                  [auth]
  *
+ * Centrali dei clienti (abbonamento, prova) : stessa API sotto /api/ares/t/<id>/… — cassaforte separata
+ * in ares/t/<id>/ (meta, dati, file, sessione, casella), registro in ares/tenants/<id>.json (gestito solo dalla
+ * centrale principale : /api/ares/tenants), spazi e codici delle app dei clienti marcati con il proprietario
+ * (ares/own/<espId>, ares/tidx/<id>/…) ; cancellazione completa con certificato (ares/tenants-deleted/<id>.json).
+ *
  * Sessione esclusiva: un solo dispositivo connesso alla volta. Ogni richiesta
  * porta l'header X-Ares-Session; se un altro dispositivo è attivo (ultima
  * richiesta da meno di 2 minuti) la risposta è 409 e l'app si blocca.
@@ -314,7 +319,7 @@ async function espaceCode(request, env, headers) {
     try { await env.HITS.put(k, String(fails + 1), { expirationTtl: 900 }); } catch { /* quota KV */ }
     return aresJson({ error: "Code inconnu" }, 404, headers);
   }
-  return aresJson(data, 200, headers);
+  return aresJson({ id: data.id, salt: data.salt, wk: data.wk }, 200, headers);
 }
 
 // ── Espace locataire public : lecture du contenu chiffré, documents partagés, envoi d'un signalement ──
@@ -371,14 +376,16 @@ async function espacePublic(request, env, id, sub, headers) {
     const kB = "sig-b:" + id, nB = parseInt((await env.HITS.get(kB)) || "0", 10); // 60 Mo par jour et par espace (documents, photos)
     if (nB + body.byteLength > 60 * 1024 * 1024) return aresJson({ error: "Trop d'envois aujourd'hui, réessayez demain" }, 429, headers);
     const name = `${Date.now().toString(36)}-${id.slice(0, 12)}-${crypto.getRandomValues(new Uint32Array(1))[0].toString(36)}`;
-    await env.PHOTOS.put(ARES_INBOX + name, body, { httpMetadata: { contentType: "application/octet-stream" } });
+    // dans la boîte de la centrale à qui appartient l'espace (principale ou client)
+    const own = await espOwner(env, id), OV = aresVault(own && own !== "main" ? own : "");
+    await env.PHOTOS.put(OV.INBOX + name, body, { httpMetadata: { contentType: "application/octet-stream" } });
     try {
       await env.HITS.put(kIp, String(nIp + 1), { expirationTtl: 3600 });
       await env.HITS.put(kId, String(nId + 1), { expirationTtl: 86400 });
       await env.HITS.put(kB, String(nB + body.byteLength), { expirationTtl: 86400 });
     } catch { /* quota KV */ }
     // le gestionnaire voit le numéro sur l'icône de son app (le contenu reste chiffré, la notification ne dit rien)
-    await espPushSend(env, "owner", "inbox");
+    await espPushSend(env, OV.owner, "inbox");
     return aresJson({ ok: true }, 200, headers);
   }
   return aresJson({ error: "Not found" }, 404, headers);
@@ -551,8 +558,8 @@ async function aresRecordFail(env, ip) {
   try { await env.HITS.put("ares-rl:" + ip, String(n), { expirationTtl: ARES_LOCK_SECONDS }); } catch { /* quota KV */ }
 }
 
-async function aresMeta(env) {
-  const obj = await env.PHOTOS.get(ARES_META);
+async function aresMeta(env, V) {
+  const obj = await env.PHOTOS.get(V ? V.META : ARES_META);
   return obj ? obj.json() : null;
 }
 
@@ -569,19 +576,89 @@ function validKeyMaterial(b) {
   );
 }
 
+// ── Centrali dei clienti (gérance, agence, propriétaire, hôtel, Airbnb) : casseforti separate ──
+const TENANT_FIL = ["gerance", "agence", "proprio", "hotel", "airbnb"];
+const tenantKey = (tid) => "ares/tenants/" + tid + ".json";
+async function tenantGet(env, tid) { const o = await env.PHOTOS.get(tenantKey(tid)); return o ? o.json() : null; }
+const tenantPut = (env, reg) => env.PHOTOS.put(tenantKey(reg.id), JSON.stringify(reg), { httpMetadata: { contentType: "application/json" } });
+const dayIso = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);
+// état : ok (prova / abbonamento in corso), ro (scaduto : sola lettura), blocked (sospeso, o oltre i giorni di sola lettura)
+function tenantState(reg) {
+  if (reg.st === "suspended") return "blocked";
+  if (!reg.until || reg.until >= dayIso()) return "ok";
+  if (Number.isInteger(reg.roDays) && reg.roDays >= 0 && (Date.parse(dayIso()) - Date.parse(reg.until)) / 864e5 > reg.roDays) return "blocked";
+  return "ro";
+}
+const tenantPub = (reg) => ({ id: reg.id, fil: reg.fil, nom: reg.nom, st: reg.st, until: reg.until || "", state: tenantState(reg) });
+function aresVault(tid) {
+  if (!tid) return { META: ARES_META, DATA: ARES_DATA, FILES: ARES_FILES, SESSION: ARES_SESSION, INBOX: ARES_INBOX, owner: "owner", me: "main" };
+  const pre = "ares/t/" + tid + "/";
+  return { META: pre + "meta.json", DATA: pre + "data.bin", FILES: pre + "files/", SESSION: pre + "session.json", INBOX: pre + "inbox/", owner: "owner:" + tid, me: tid };
+}
+// propriétaire d'un espace d'app (locataires, clients, taxis…) : "main" ou l'id du client ; absent = ancien espace de la centrale principale
+async function espOwner(env, id) {
+  const o = await env.PHOTOS.get("ares/own/" + id);
+  if (o) return o.text();
+  return (await env.PHOTOS.head(ARES_ESPACE + id + ".bin")) ? "main" : "";
+}
+// supprime tout ce qui commence par prefix ; rend [clés, octets]
+async function wipePrefix(env, prefix, keys) {
+  let cursor, bytes = 0;
+  do {
+    const l = await env.PHOTOS.list({ prefix, cursor });
+    for (const o of l.objects) { keys.push(o.key); bytes += o.size || 0; }
+    if (l.objects.length) await env.PHOTOS.delete(l.objects.map((o) => o.key));
+    cursor = l.truncated ? l.cursor : undefined;
+  } while (cursor);
+  return bytes;
+}
+async function tenantWipe(env, tid) {
+  const keys = [];
+  let bytes = 0;
+  // espaces et codes des apps de ce client
+  let cursor;
+  const idx = [];
+  do { const l = await env.PHOTOS.list({ prefix: "ares/tidx/" + tid + "/", cursor }); idx.push(...l.objects.map((o) => o.key)); cursor = l.truncated ? l.cursor : undefined; } while (cursor);
+  for (const k of idx) {
+    const rest = k.slice(("ares/tidx/" + tid + "/").length);
+    if (rest.startsWith("c/")) { const h = rest.slice(2); const o = await env.PHOTOS.head(ARES_ESPCODE + h + ".json"); if (o) { keys.push(ARES_ESPCODE + h + ".json"); bytes += o.size || 0; await env.PHOTOS.delete(ARES_ESPCODE + h + ".json"); } }
+    else if (/^[0-9a-f]{32}$/.test(rest) && (await env.PHOTOS.get("ares/own/" + rest).then((o) => (o ? o.text() : ""))) === tid) {
+      const o = await env.PHOTOS.head(ARES_ESPACE + rest + ".bin");
+      if (o) { keys.push(ARES_ESPACE + rest + ".bin"); bytes += o.size || 0; await env.PHOTOS.delete(ARES_ESPACE + rest + ".bin"); }
+      bytes += await wipePrefix(env, ARES_ESPACE + rest + "/", keys);
+      await env.PHOTOS.delete("ares/own/" + rest);
+    }
+  }
+  bytes += await wipePrefix(env, "ares/tidx/" + tid + "/", keys);
+  bytes += await wipePrefix(env, "ares/t/" + tid + "/", keys);
+  return { keys, bytes };
+}
+
 async function handleAres(request, env, url, headers) {
   if (!env.PHOTOS || !env.HITS) {
     return aresJson({ error: "Worker non configuré (bindings PHOTOS / HITS)" }, 503, headers);
   }
-  const path = url.pathname.slice("/api/ares/".length);
+  let path = url.pathname.slice("/api/ares/".length);
   const method = request.method;
   const ip = clientIp(request);
+  // centrale d'un client : /api/ares/t/<id>/… (même API, cassaforte séparée)
+  let tid = "", reg = null, ro = false;
+  const tm = path.match(/^t\/([a-z0-9]{12,24})\/(.*)$/);
+  if (tm) {
+    tid = tm[1]; path = tm[2];
+    reg = await tenantGet(env, tid);
+    if (!reg) return aresJson({ error: "Centrale inconnue" }, 404, headers);
+    const stt = tenantState(reg);
+    if (stt === "blocked") return aresJson({ error: "blocked", tenant: tenantPub(reg) }, 403, headers);
+    ro = stt === "ro";
+  }
+  const V = aresVault(tid);
 
   if (path === "meta" && method === "GET") {
-    const meta = await aresMeta(env);
-    if (!meta) return aresJson({ configured: false }, 404, headers);
+    const meta = await aresMeta(env, V);
+    if (!meta) return aresJson({ configured: false, ...(reg ? { tenant: tenantPub(reg) } : {}) }, 404, headers);
     const recovery = meta.recovery ? { salt: meta.recovery.salt, iter: meta.recovery.iter } : null;
-    return aresJson({ configured: true, salt: meta.salt, iter: meta.iter, recovery }, 200, headers);
+    return aresJson({ configured: true, salt: meta.salt, iter: meta.iter, recovery, ...(reg ? { tenant: tenantPub(reg) } : {}) }, 200, headers);
   }
 
   if ((await aresFails(env, ip)) >= ARES_MAX_FAILS) {
@@ -589,24 +666,28 @@ async function handleAres(request, env, url, headers) {
   }
 
   if (path === "setup" && method === "POST") {
-    if (!env.ARES_SETUP_CODE) {
+    if (!tid && !env.ARES_SETUP_CODE) {
       return aresJson({ error: "ARES_SETUP_CODE manquant dans le Worker" }, 503, headers);
     }
     let body;
     try { body = await request.json(); } catch { body = null; }
-    if (!body || !safeEqual(await sha256Hex(String(body.setupCode || "")), await sha256Hex(env.ARES_SETUP_CODE))) {
+    // client : le code d'invitation donné par la centrale principale (une seule fois, avant sa date limite)
+    const okCode = !body ? false : tid ? !!reg.setupHash && Date.now() < (reg.setupExp || 0) && safeEqual(await sha256Hex(String(body.setupCode || "")), reg.setupHash)
+      : safeEqual(await sha256Hex(String(body.setupCode || "")), await sha256Hex(env.ARES_SETUP_CODE));
+    if (!okCode) {
       await aresRecordFail(env, ip);
       return aresJson({ error: "Code de configuration incorrect" }, 403, headers);
     }
     if (!validKeyMaterial(body)) return aresJson({ error: "Données invalides" }, 400, headers);
     const meta = { v: 1, salt: body.salt, iter: body.iter, wrappedKey: body.wrappedKey, authHash: body.authHash, createdAt: new Date().toISOString() };
-    const res = await env.PHOTOS.put(ARES_META, JSON.stringify(meta), { onlyIf: { etagDoesNotMatch: "*" } });
+    const res = await env.PHOTOS.put(V.META, JSON.stringify(meta), { onlyIf: { etagDoesNotMatch: "*" } });
     if (!res) return aresJson({ error: "Déjà configuré" }, 409, headers);
+    if (tid) await tenantPut(env, { ...reg, setupHash: "", setupExp: 0, configuredAt: new Date().toISOString() });
     return aresJson({ ok: true }, 200, headers);
   }
 
   // ── Tutto il resto richiede il token derivato dalla chiave di accesso ──
-  const meta = await aresMeta(env);
+  const meta = await aresMeta(env, V);
   if (!meta) return aresJson({ error: "Non configuré" }, 404, headers);
   const auth = request.headers.get("Authorization") || "";
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
@@ -627,12 +708,12 @@ async function handleAres(request, env, url, headers) {
   // ── Sessione esclusiva (un solo dispositivo connesso) ──
   const sid = request.headers.get("X-Ares-Session") || "";
   if (!/^[a-zA-Z0-9-]{16,64}$/.test(sid)) return aresJson({ error: "Session manquante" }, 400, headers);
-  const leaseObj = await env.PHOTOS.get(ARES_SESSION);
+  const leaseObj = await env.PHOTOS.get(V.SESSION);
   const lease = leaseObj ? await leaseObj.json() : null;
   const now = Date.now();
   const otherActive = lease && lease.sid !== sid && now - lease.lastSeen < ARES_LEASE_MS;
   const device = String(request.headers.get("X-Ares-Device") || "").slice(0, 80);
-  const writeLease = () => env.PHOTOS.put(ARES_SESSION, JSON.stringify({
+  const writeLease = () => env.PHOTOS.put(V.SESSION, JSON.stringify({
     sid, device: device || (lease && lease.sid === sid ? lease.device : ""), since: lease && lease.sid === sid ? lease.since : now, lastSeen: now,
   }));
 
@@ -646,7 +727,7 @@ async function handleAres(request, env, url, headers) {
     return aresJson({ ok: true, replaced: otherActive ? lease.device : null }, 200, headers);
   }
   if (path === "session" && method === "DELETE") {
-    if (lease && lease.sid === sid) await env.PHOTOS.delete(ARES_SESSION);
+    if (lease && lease.sid === sid) await env.PHOTOS.delete(V.SESSION);
     return aresJson({ ok: true }, 200, headers);
   }
   if (otherActive) {
@@ -655,6 +736,107 @@ async function handleAres(request, env, url, headers) {
   // Rinnova la sessione (al massimo ogni 20 s, per limitare le scritture)
   if (!lease || lease.sid !== sid || now - lease.lastSeen > ARES_RENEW_MS) await writeLease();
 
+  // ── Centrale d'un client : pas de publicité / biens / annonces du réseau / registre ; scaduto = sola lettura ──
+  if (tid) {
+    if (/^(pubs|biens|pubstats|tools|tenants|demandes)(\/|$)/.test(path) || (path === "network-key" && method !== "GET")) return aresJson({ error: "Réservé à la centrale principale" }, 403, headers);
+    if (ro && method !== "GET") return aresJson({ error: "readonly", tenant: tenantPub(reg) }, 423, headers);
+    // demande d'intervention vers la centrale principale (contenu chiffré pour elle)
+    if (path === "demande" && method === "POST") {
+      const kd = "tdem-rl:" + tid, nd = parseInt((await env.HITS.get(kd)) || "0", 10);
+      if (nd >= 60) return aresJson({ error: "Trop d'envois aujourd'hui" }, 429, headers);
+      const body = await request.arrayBuffer();
+      if (body.byteLength < 100 || body.byteLength > 12 * 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
+      await env.PHOTOS.put("ares/tdem/" + Date.now().toString(36) + "-" + tid + "-" + randHex(4), body);
+      try { await env.HITS.put(kd, String(nd + 1), { expirationTtl: 86400 }); } catch { /* quota KV */ }
+      await espPushSend(env, "owner", "inbox");
+      return aresJson({ ok: true }, 200, headers);
+    }
+    if (path === "tenant" && method === "GET") return aresJson({ tenant: tenantPub(reg) }, 200, headers);
+  }
+  // clé publique de la centrale principale : les centrales des clients chiffrent pour elle leurs demandes
+  if (path === "network-key" && method === "PUT") {
+    let b;
+    try { b = await request.json(); } catch { b = null; }
+    if (!b || typeof b.pub !== "object" || JSON.stringify(b.pub).length > 2000) return aresJson({ error: "Données invalides" }, 400, headers);
+    await env.PHOTOS.put("ares/network-key.json", JSON.stringify({ pub: b.pub, at: Date.now() }));
+    return aresJson({ ok: true }, 200, headers);
+  }
+  if (path === "network-key" && method === "GET") {
+    const o = await env.PHOTOS.get("ares/network-key.json");
+    return o ? aresJson(await o.json(), 200, headers) : aresJson({ error: "Pas encore publiée" }, 404, headers);
+  }
+  // ── Registre des clients (centrale principale) : créer + essai, prolonger, suspendre, nouvel accès, supprimer avec certificat ──
+  if (path === "tenants" || path.startsWith("tenants/")) {
+    const canWrite = slot === "main" || (slot === "op" && op.role === "centraliste");
+    if (method !== "GET" && !canWrite) return aresJson({ error: "Réservé au directeur ou au centraliste" }, 403, headers);
+    const clean = (v, n) => String(v || "").replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, n);
+    const invite = () => { const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(10)); return [...r].map((x) => a[x % a.length]).join(""); };
+    if (path === "tenants" && method === "GET") {
+      const out = [];
+      let cursor;
+      do {
+        const l = await env.PHOTOS.list({ prefix: "ares/tenants/", cursor });
+        for (const o of l.objects) { const r = await (await env.PHOTOS.get(o.key)).json(); const ss = await env.PHOTOS.get("ares/t/" + r.id + "/session.json"); out.push({ ...r, setupHash: undefined, state: tenantState(r), configured: !!(await env.PHOTOS.head("ares/t/" + r.id + "/meta.json")), lastSeen: ss ? (await ss.json()).lastSeen || 0 : 0 }); }
+        cursor = l.truncated ? l.cursor : undefined;
+      } while (cursor);
+      return aresJson({ tenants: out }, 200, headers);
+    }
+    if (path === "tenants" && method === "POST") {
+      let b;
+      try { b = await request.json(); } catch { b = null; }
+      if (!b || !TENANT_FIL.includes(b.fil) || !clean(b.nom, 120)) return aresJson({ error: "Filière et nom obligatoires" }, 400, headers);
+      const days = Math.max(1, Math.min(3650, parseInt(b.days, 10) || 15)), id = randHex(8), code = invite();
+      const r = { id, fil: b.fil, nom: clean(b.nom, 120), st: "trial", until: dayIso(Date.now() + days * 864e5), roDays: null, createdAt: new Date().toISOString(), setupHash: await sha256Hex(code), setupExp: Date.now() + 30 * 864e5 };
+      await tenantPut(env, r);
+      return aresJson({ ok: true, id, code, tenant: tenantPub(r) }, 200, headers);
+    }
+    const tmm = path.match(/^tenants\/([a-z0-9]{12,24})(\/reset)?$/);
+    const r = tmm ? await tenantGet(env, tmm[1]) : null;
+    if (!r) return aresJson({ error: "Introuvable" }, 404, headers);
+    if (tmm[2] && method === "POST") {
+      // nouvel accès (clé oubliée, sans clé de secours) : la cassaforte est vidée, nouveau code d'invitation
+      const gone = { keys: [] };
+      await wipePrefix(env, "ares/t/" + r.id + "/", gone.keys);
+      const code = invite();
+      await tenantPut(env, { ...r, setupHash: await sha256Hex(code), setupExp: Date.now() + 30 * 864e5, configuredAt: null, resetAt: new Date().toISOString() });
+      return aresJson({ ok: true, code, wiped: gone.keys.length }, 200, headers);
+    }
+    if (method === "PATCH") {
+      let b;
+      try { b = await request.json(); } catch { b = {}; }
+      const n = { ...r };
+      if (b.nom != null) n.nom = clean(b.nom, 120) || r.nom;
+      if (TENANT_FIL.includes(b.fil)) n.fil = b.fil;
+      if (/^\d{4}-\d{2}-\d{2}$/.test(b.until || "")) n.until = b.until;
+      if (["trial", "active", "suspended"].includes(b.st)) n.st = b.st;
+      if (b.roDays === null || b.roDays === "") n.roDays = null; else if (b.roDays != null && Number.isInteger(+b.roDays) && +b.roDays >= 0 && +b.roDays <= 3650) n.roDays = +b.roDays;
+      let code;
+      if (b.newCode && !(await env.PHOTOS.head("ares/t/" + r.id + "/meta.json"))) { code = invite(); n.setupHash = await sha256Hex(code); n.setupExp = Date.now() + 30 * 864e5; }
+      await tenantPut(env, n);
+      return aresJson({ ok: true, tenant: tenantPub(n), ...(code ? { code } : {}) }, 200, headers);
+    }
+    if (method === "DELETE") {
+      if (slot !== "main") return aresJson({ error: "Réservé au directeur" }, 403, headers);
+      const at = new Date().toISOString(), w = await tenantWipe(env, r.id);
+      const cert = { v: 1, kind: "suppression-centrale", tenant: { id: r.id, nom: r.nom, fil: r.fil }, at, by: "directeur", objects: w.keys.length, bytes: w.bytes, digest: await sha256Hex(w.keys.sort().join("\n")) };
+      await env.PHOTOS.put("ares/tenants-deleted/" + r.id + ".json", JSON.stringify(cert), { httpMetadata: { contentType: "application/json" } });
+      await env.PHOTOS.delete(tenantKey(r.id));
+      return aresJson({ ok: true, certificate: cert }, 200, headers);
+    }
+    return aresJson({ error: "Not found" }, 404, headers);
+  }
+  // ── Demandes des centrales des clients (chiffrées pour la centrale principale) ──
+  if (path === "demandes" && method === "GET") {
+    const listed = await env.PHOTOS.list({ prefix: "ares/tdem/", limit: 100 });
+    return aresJson({ items: listed.objects.map((o) => ({ name: o.key.slice("ares/tdem/".length), size: o.size })) }, 200, headers);
+  }
+  const demMatch = path.match(/^demandes\/([a-z0-9-]{10,80})$/);
+  if (demMatch && method === "GET") {
+    const obj = await env.PHOTOS.get("ares/tdem/" + demMatch[1]);
+    return obj ? new Response(obj.body, { headers: { "Content-Type": "application/octet-stream", ...headers } }) : aresJson({ error: "Introuvable" }, 404, headers);
+  }
+  if (demMatch && method === "DELETE") { await env.PHOTOS.delete("ares/tdem/" + demMatch[1]); return aresJson({ ok: true }, 200, headers); }
+
   // Crea o sostituisce la chiave di secours (solo con la chiave di accesso principale)
   if (path === "recovery" && method === "POST") {
     if (slot !== "main") return aresJson({ error: "Clé d'accès principale requise" }, 403, headers);
@@ -662,7 +844,7 @@ async function handleAres(request, env, url, headers) {
     try { body = await request.json(); } catch { body = null; }
     if (!validKeyMaterial(body)) return aresJson({ error: "Données invalides" }, 400, headers);
     const next = { ...meta, recovery: { salt: body.salt, iter: body.iter, wrappedKey: body.wrappedKey, authHash: body.authHash, createdAt: new Date().toISOString() } };
-    await env.PHOTOS.put(ARES_META, JSON.stringify(next));
+    await env.PHOTOS.put(V.META, JSON.stringify(next));
     return aresJson({ ok: true }, 200, headers);
   }
 
@@ -683,13 +865,13 @@ async function handleAres(request, env, url, headers) {
       if (keep.length >= 10) return aresJson({ error: "10 opérateurs au maximum" }, 400, headers);
       const id = (ops.find((o) => o.login === login) || {}).id || crypto.randomUUID().replace(/-/g, "").slice(0, 16);
       keep.push({ id, login, name, role: b.role, wrappedKey: b.wrappedKey, authHash: b.authHash, createdAt: new Date().toISOString() });
-      await env.PHOTOS.put(ARES_META, JSON.stringify({ ...meta, ops: keep }));
+      await env.PHOTOS.put(V.META, JSON.stringify({ ...meta, ops: keep }));
       return aresJson({ ok: true, id }, 200, headers);
     }
     const m = path.match(/^ops\/([a-f0-9]{16})$/);
     if (m && method === "DELETE") {
       if (op && op.id === m[1]) return aresJson({ error: "Vous ne pouvez pas retirer votre propre accès" }, 400, headers);
-      await env.PHOTOS.put(ARES_META, JSON.stringify({ ...meta, ops: ops.filter((o) => o.id !== m[1]) }));
+      await env.PHOTOS.put(V.META, JSON.stringify({ ...meta, ops: ops.filter((o) => o.id !== m[1]) }));
       return aresJson({ ok: true }, 200, headers);
     }
     return aresJson({ error: "Not found" }, 404, headers);
@@ -701,13 +883,13 @@ async function handleAres(request, env, url, headers) {
     try { body = await request.json(); } catch { body = null; }
     if (!validKeyMaterial(body)) return aresJson({ error: "Données invalides" }, 400, headers);
     const next = { ...meta, salt: body.salt, iter: body.iter, wrappedKey: body.wrappedKey, authHash: body.authHash, rekeyedAt: new Date().toISOString() };
-    await env.PHOTOS.put(ARES_META, JSON.stringify(next));
+    await env.PHOTOS.put(V.META, JSON.stringify(next));
     return aresJson({ ok: true }, 200, headers);
   }
 
   if (path === "data" && method === "GET") {
     // If-None-Match: <etag> → 304 senza corpo se nulla è cambiato (sincronizzazione leggera)
-    const obj = await env.PHOTOS.get(ARES_DATA, { onlyIf: request.headers });
+    const obj = await env.PHOTOS.get(V.DATA, { onlyIf: request.headers });
     if (!obj) return aresJson({ empty: true }, 404, headers);
     if (!("body" in obj)) return new Response(null, { status: 304, headers: { ETag: obj.httpEtag, ...headers } });
     return new Response(obj.body, {
@@ -726,7 +908,7 @@ async function handleAres(request, env, url, headers) {
       return aresJson({ error: "Taille invalide" }, 413, headers);
     }
     const onlyIf = ifMatch ? { etagMatches: ifMatch.replace(/^W\//, "").replace(/"/g, "") } : { etagDoesNotMatch: "*" };
-    const res = await env.PHOTOS.put(ARES_DATA, body, { onlyIf, httpMetadata: { contentType: "application/octet-stream" } });
+    const res = await env.PHOTOS.put(V.DATA, body, { onlyIf, httpMetadata: { contentType: "application/octet-stream" } });
     if (!res) return aresJson({ error: "Conflit de version" }, 412, headers);
     return aresJson({ ok: true }, 200, headers, { ETag: res.httpEtag });
   }
@@ -736,6 +918,10 @@ async function handleAres(request, env, url, headers) {
   // Espace locataire : le gestionnaire publie le contenu chiffré et les documents partagés
   const espMatch = path.match(/^espace\/([0-9a-f]{32})(?:\/f\/([a-z0-9]{1,40}))?$/);
   if (espMatch && (method === "PUT" || method === "DELETE")) {
+    // chaque espace appartient à une seule centrale (la principale ou un client)
+    const own = await espOwner(env, espMatch[1]);
+    if (own && own !== V.me) return aresJson({ error: "Espace d'une autre centrale" }, 403, headers);
+    if (!own && method === "PUT" && !espMatch[2]) { await env.PHOTOS.put("ares/own/" + espMatch[1], V.me); if (tid) await env.PHOTOS.put("ares/tidx/" + tid + "/" + espMatch[1], "1"); }
     const key = ARES_ESPACE + espMatch[1] + (espMatch[2] ? "/f/" + espMatch[2] : ".bin");
     if (method === "DELETE") {
       if (!espMatch[2]) {
@@ -743,6 +929,7 @@ async function handleAres(request, env, url, headers) {
         await Promise.all(listed.objects.map((o) => env.PHOTOS.delete(o.key)));
       }
       await env.PHOTOS.delete(key);
+      if (!espMatch[2]) { await env.PHOTOS.delete("ares/own/" + espMatch[1]); if (tid) await env.PHOTOS.delete("ares/tidx/" + tid + "/" + espMatch[1]); }
       return aresJson({ ok: true }, 200, headers);
     }
     const body = await request.arrayBuffer();
@@ -755,11 +942,21 @@ async function handleAres(request, env, url, headers) {
     let b;
     try { b = await request.json(); } catch { b = null; }
     if (!b || !/^[0-9a-f]{32}$/.test(b.id || "") || !isB64u(b.salt, 40) || !isB64u(b.wk, 200)) return aresJson({ error: "Données invalides" }, 400, headers);
-    await env.PHOTOS.put(ARES_ESPCODE + codeMatch[1] + ".json", JSON.stringify({ id: b.id, salt: b.salt, wk: b.wk }), { httpMetadata: { contentType: "application/json" } });
+    // un code déjà pris par une autre centrale : refusé (l'app en propose un autre)
+    const prev = await env.PHOTOS.get(ARES_ESPCODE + codeMatch[1] + ".json");
+    if (prev && ((await prev.json()).own || "main") !== V.me) return aresJson({ error: "code-taken" }, 409, headers);
+    const eo = await espOwner(env, b.id);
+    if (eo && eo !== V.me) return aresJson({ error: "Espace d'une autre centrale" }, 403, headers);
+    if (!eo) { await env.PHOTOS.put("ares/own/" + b.id, V.me); if (tid) await env.PHOTOS.put("ares/tidx/" + tid + "/" + b.id, "1"); }
+    await env.PHOTOS.put(ARES_ESPCODE + codeMatch[1] + ".json", JSON.stringify({ id: b.id, salt: b.salt, wk: b.wk, own: V.me }), { httpMetadata: { contentType: "application/json" } });
+    if (tid) await env.PHOTOS.put("ares/tidx/" + tid + "/c/" + codeMatch[1], "1");
     return aresJson({ ok: true }, 200, headers);
   }
   if (codeMatch && method === "DELETE") {
+    const prev = await env.PHOTOS.get(ARES_ESPCODE + codeMatch[1] + ".json");
+    if (prev && ((await prev.json()).own || "main") !== V.me) return aresJson({ error: "Code d'une autre centrale" }, 403, headers);
     await env.PHOTOS.delete(ARES_ESPCODE + codeMatch[1] + ".json");
+    if (tid) await env.PHOTOS.delete("ares/tidx/" + tid + "/c/" + codeMatch[1]);
     return aresJson({ ok: true }, 200, headers);
   }
   // Notifications de l'app de gestion (badge sur l'icône) et des apps locataires / équipe
@@ -783,10 +980,10 @@ async function handleAres(request, env, url, headers) {
     let b;
     try { b = await request.json(); } catch { b = null; }
     if (method === "DELETE") {
-      if (b && b.endpoint) await env.DB.prepare("DELETE FROM esp_push WHERE endpoint = ? AND target = 'owner'").bind(String(b.endpoint).slice(0, 1000)).run();
+      if (b && b.endpoint) await env.DB.prepare("DELETE FROM esp_push WHERE endpoint = ? AND target = ?").bind(String(b.endpoint).slice(0, 1000), V.owner).run();
       return aresJson({ ok: true }, 200, headers);
     }
-    return (await espPushSave(env, "owner", b)) ? aresJson({ ok: true }, 200, headers) : aresJson({ error: "Abonnement invalide" }, 400, headers);
+    return (await espPushSave(env, V.owner, b)) ? aresJson({ ok: true }, 200, headers) : aresJson({ error: "Abonnement invalide" }, 400, headers);
   }
   // « 🆕 Nouveau bien » : la liste (texte) puis les photos une à une ; les photos des biens retirés sont effacées
   if (path === "biens" && method === "PUT") {
@@ -866,6 +1063,7 @@ async function handleAres(request, env, url, headers) {
   }
   const notifMatch = path.match(/^espace\/([0-9a-f]{32})\/notify$/);
   if (notifMatch && method === "POST") {
+    if ((await espOwner(env, notifMatch[1])) !== V.me) return aresJson({ error: "Espace d'une autre centrale" }, 403, headers);
     await espPushSend(env, notifMatch[1], "news");
     return aresJson({ ok: true }, 200, headers);
   }
@@ -905,17 +1103,17 @@ async function handleAres(request, env, url, headers) {
   }
   // Boîte de réception des signalements (chiffrés) : liste, lecture, suppression après import
   if (path === "inbox" && method === "GET") {
-    const listed = await env.PHOTOS.list({ prefix: ARES_INBOX, limit: 100 });
-    return aresJson({ items: listed.objects.map((o) => ({ name: o.key.slice(ARES_INBOX.length), size: o.size })) }, 200, headers);
+    const listed = await env.PHOTOS.list({ prefix: V.INBOX, limit: 100 });
+    return aresJson({ items: listed.objects.map((o) => ({ name: o.key.slice(V.INBOX.length), size: o.size })) }, 200, headers);
   }
   const inboxMatch = path.match(/^inbox\/([a-z0-9-]{10,80})$/);
   if (inboxMatch && method === "GET") {
-    const obj = await env.PHOTOS.get(ARES_INBOX + inboxMatch[1]);
+    const obj = await env.PHOTOS.get(V.INBOX + inboxMatch[1]);
     if (!obj) return aresJson({ error: "Introuvable" }, 404, headers);
     return new Response(obj.body, { headers: { "Content-Type": "application/octet-stream", ...headers } });
   }
   if (inboxMatch && method === "DELETE") {
-    await env.PHOTOS.delete(ARES_INBOX + inboxMatch[1]);
+    await env.PHOTOS.delete(V.INBOX + inboxMatch[1]);
     return aresJson({ ok: true }, 200, headers);
   }
 
@@ -958,7 +1156,7 @@ async function handleAres(request, env, url, headers) {
 
   const fileMatch = path.match(/^files\/([a-zA-Z0-9_-]{1,64})$/);
   if (fileMatch) {
-    const key = ARES_FILES + fileMatch[1];
+    const key = V.FILES + fileMatch[1];
     if (method === "GET") {
       const obj = await env.PHOTOS.get(key);
       if (!obj) return aresJson({ error: "Introuvable" }, 404, headers);
@@ -1235,9 +1433,10 @@ const PUSH_TXT = {
 async function espPushSave(env, target, b) {
   if (!b || !ptlPushHostOk(b.endpoint) || !isB64u(b.p256dh, 120) || !isB64u(b.auth, 40)) return false;
   const boards = (Array.isArray(b.boards) ? b.boards : []).filter((x) => /^[0-9a-f]{32}$/.test(x)).slice(0, 5).join(",");
-  const app = target === "owner" ? "ares" : b.app === "eq" ? "eq" : "esp";
+  const isOwner = target === "owner" || target.startsWith("owner:");
+  const app = isOwner ? "ares" : b.app === "eq" ? "eq" : "esp";
   const lang = PUSH_LANGS.includes(b.lang) ? b.lang : "fr";
-  if (target !== "owner") {
+  if (!isOwner) {
     const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM esp_push WHERE target = ?").bind(target).first();
     if (n && n.n >= 10) await env.DB.prepare("DELETE FROM esp_push WHERE endpoint IN (SELECT endpoint FROM esp_push WHERE target = ? ORDER BY created_at LIMIT 1)").bind(target).run();
   }
