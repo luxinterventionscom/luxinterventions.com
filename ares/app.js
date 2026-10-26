@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.191.0';
+const VERSION = '2.192.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1946,6 +1946,7 @@ const paysNom = (cc) => { try { return new Intl.DisplayNames(['fr'], { type: 're
 const FORMULES = { seul: 'Logement seul', pdj: 'Petit-déjeuner', demi: 'Demi-pension', complete: 'Pension complète' };
 const CH_PH = [['immeuble', '🏢 Bâtiment'], ['porte', '🚪 Porte'], ['sdb', '🛁 Salle de bain'], ['chambre', '🛏️ Chambre'], ['cuisine', '🍳 Cuisine'], ['parking', '🅿️ Parking'], ['autre', '📷 Autre']];
 const chKey = (lieu, num) => 'ch-' + (lieu === 'airbnb' ? 'airbnb' : 'hotel') + '-' + String(num || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
+const menuKey = (lieu) => (lieu === 'airbnb' ? 'airbnbMenu' : 'hotelMenu');
 const chGet = (lieu, num) => (num ? vault.get('reglages', chKey(lieu, num)) : null) || {};
 // aperçu d'un PDF ou d'une image chiffrés (menu du restaurant…)
 async function filePreview(id, label, mime = 'application/pdf') {
@@ -3147,7 +3148,7 @@ const IBAN_LEN = { AD: 24, AL: 28, AT: 20, BA: 20, BE: 16, BG: 22, BR: 29, CH: 2
 const ibanClean = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const ibanFmt = (v) => ibanClean(v).replace(/(.{4})/g, '$1 ').trim();
 // 🏠 Biens des agences : types, pièces (catalogue + libres), photos chiffrées, affiche horizontale à faire défiler
-const BIEN_TYPES = { appartement: 'Appartement', maison: 'Maison', villa: 'Villa', studio: 'Studio', chambre: 'Chambre', duplex: 'Duplex', penthouse: 'Penthouse', local: 'Local commercial', bureau: 'Bureau', entrepot: 'Entrepôt', terrain: 'Terrain', parking: 'Parking / garage', autre: 'Autre' };
+const BIEN_TYPES = { maison: 'Maison', garage: 'Garage', appartement: 'Appartement', studio: 'Studio', colocation: 'Colocation', local: 'Commerce / magasin', villa: 'Villa', chambre: 'Chambre', duplex: 'Duplex', penthouse: 'Penthouse', bureau: 'Bureau', entrepot: 'Entrepôt', terrain: 'Terrain', parking: 'Parking', autre: 'Autre' };
 const PIECES = { chambre: '🛏️ Chambre', salon: '🛋️ Salon', sejour: '🍽️ Séjour', cuisine: '🍳 Cuisine', sdb: '🛁 Salle de bain', douche: '🚿 Salle de douche', wc: '🚽 WC', bureau: '💼 Bureau', dressing: '👔 Dressing', buanderie: '🧺 Buanderie', cave: '🍷 Cave', grenier: '📦 Grenier', balcon: '🌇 Balcon', terrasse: '☀️ Terrasse', jardin: '🌳 Jardin', piscine: '🏊 Piscine', garage: '🚗 Garage', box: '🅿️ Box / parking', vitrine: '🪟 Vitrine', reserve: '📦 Réserve', technique: '⚙️ Local technique', autre: '➕ Autre' };
 const pieceRow = (p = {}) => html`<div class="piece-row"><select name="p_k">${Object.entries(PIECES).map(([k, l]) => html`<option value="${k}" ${p.k === k ? new Raw('selected') : ''}>${l}</option>`)}</select><input name="p_nom" value="${p.nom || ''}" placeholder="précision (ex. chambre 2, côté jardin)"><input name="p_m2" value="${p.m2 || ''}" inputmode="decimal" placeholder="m²"><input name="p_note" value="${p.note || ''}" placeholder="note"><button type="button" class="btn icon sm ghost" data-action="bien-piece-del" aria-label="Retirer">✕</button></div>`;
 const eur0 = (n) => (+n || 0).toLocaleString('fr-LU', { maximumFractionDigits: 0 }) + ' €';
@@ -3159,7 +3160,7 @@ const bienAffiche = (b) => html`<div class="bien-card" data-bien="${b.id}">
   <div class="bien-info" data-action="edit-bien" data-id="${b.id}"><span class="bien-new">🆕</span> <b>${b.titre}</b><br>
     <span class="small">${BIEN_TYPES[b.type] || ''}${b.surface ? ` · ${b.surface} m²` : ''}${(b.pieces || []).length ? ` · ${b.pieces.length} pièces` : ''}</span><br>
     <span class="small">${bienPrix(b).map((x, i) => html`${i ? ' · ' : ''}${x}`)}</span><br>
-    <span class="tiny muted">📍 ${b.adresse || '—'}${b.dispo ? html` · disponible dès le ${fmtDate(b.dispo)}` : ''}${b.agenceId ? html` · 🏘️ ${(vault.get('agences', b.agenceId) || {}).nom || ''}` : ''}</span></div>
+    <span class="tiny muted">📍 ${b.adresse || '—'}${b.dispo ? html` · disponible dès le ${fmtDate(b.dispo)}` : ''}${b.agenceId ? html` · 🏘️ ${(vault.get('agences', b.agenceId) || {}).nom || ''}` : ''}${b.propriete === 'tiers' ? html` · 🤝 Confié par ${b.tiersNom}` : ''}</span></div>
 </div>`;
 const bienUrls = new Map();
 function hydrateBiens(root = document) {
@@ -5443,7 +5444,9 @@ const SHEETS = {
       title: id ? 'Modifier le bien' : 'Nouveau bien',
       body: html`<form id="f" data-form="bien" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        <label class="field full">Agence<select name="agenceId"><option value="">— Nos biens (sans agence) —</option>${ags.map((a) => html`<option value="${a.id}" ${b.agenceId === a.id ? new Raw('selected') : ''}>${a.nom}</option>`)}</select></label>
+        <label class="field full">Agence / propriétaire<select name="agenceId"><option value="">— Nos biens (sans agence) —</option>${ags.map((a) => html`<option value="${a.id}" ${b.agenceId === a.id ? new Raw('selected') : ''}>${a.type === 'proprio' ? '🔑' : '🏘️'} ${a.nom}</option>`)}</select></label>
+        <label class="field">Propriété<select name="propriete"><option value="nous">Le bien est à nous</option><option value="tiers" ${b.propriete === 'tiers' ? new Raw('selected') : ''}>Confié par un tiers</option></select></label>
+        ${field('Nom du propriétaire (si confié)', 'tiersNom', b.tiersNom, { placeholder: 'ex. M. Dupont' })}
         <label class="field full">Titre de l’annonce<input name="titre" required value="${b.titre || ''}" placeholder="ex. Bel appartement 2 chambres avec terrasse"></label>
         <label class="field">Type<select name="type">${Object.entries(BIEN_TYPES).map(([k, l]) => html`<option value="${k}" ${b.type === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
         ${field('Surface totale (m²)', 'surface', b.surface, { attrs: 'inputmode="decimal"' })}
@@ -5500,7 +5503,7 @@ const SHEETS = {
     if (id && !h) return null;
     const rnd = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
     const LG = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español', ar: 'العربية', autre: 'Autre' };
-    const bnb = h.lieu === 'airbnb', ch = chGet(h.lieu, h.chambre), menu = vault.get('reglages', 'hotelMenu');
+    const bnb = h.lieu === 'airbnb', ch = chGet(h.lieu, h.chambre), menu = vault.get('reglages', menuKey(h.lieu));
     setTimeout(() => hydrateBiens(sheetEl), 0);
     return {
       title: id ? (bnb ? 'Client — ' : 'Client — chambre ') + h.chambre : 'Nouveau client',
@@ -5513,10 +5516,10 @@ const SHEETS = {
         <label class="field">Langue<select name="langue">${Object.entries(LG).map(([k, l]) => html`<option value="${k}" ${h.langue === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
         ${field('Personnes', 'pers', h.pers, { type: 'number', attrs: 'min="1" max="20" inputmode="numeric"' })}
         ${field('Arrivée', 'arrivee', h.arrivee, { type: 'date', required: true })}${field('Départ', 'depart', h.depart, { type: 'date', required: true })}
-        ${bnb ? '' : html`<label class="field full">Formule<select name="formule">${Object.entries(FORMULES).map(([k, l]) => html`<option value="${k}" ${(h.formule || 'seul') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>`}
+        ${html`<label class="field full">Formule<select name="formule">${Object.entries(FORMULES).map(([k, l]) => html`<option value="${k}" ${(h.formule || 'seul') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>`}
         <label class="field full">Préférences / allergies<textarea name="pref" style="min-height:56px" placeholder="ex. sans gluten, oreiller ferme, étage bas…">${h.pref || ''}</textarea></label>
-        ${bnb ? '' : html`<div class="full section-label" style="margin:6px 0 0">🍽️ Menu du restaurant (PDF, le même pour tous les clients)</div>
-          ${menu && menu.file ? html`<div class="full actions" style="margin:0"><button type="button" class="btn sm" data-action="hotel-menu-view">👁 Voir le menu</button><span class="tiny muted">${menu.name || ''} · ${fmtDate(menu.at)}</span></div>` : ''}
+        ${html`<div class="full section-label" style="margin:6px 0 0">🍽️ Menu du restaurant (PDF, le même pour tous les clients)</div>
+          ${menu && menu.file ? html`<div class="full actions" style="margin:0"><button type="button" class="btn sm" data-action="hotel-menu-view" data-lieu="${bnb ? 'airbnb' : 'hotel'}">👁 Voir le menu</button><span class="tiny muted">${menu.name || ''} · ${fmtDate(menu.at)}</span></div>` : ''}
           <label class="field full">${menu && menu.file ? 'Remplacer le menu' : 'Ajouter le menu'}<input type="file" name="menu" accept="application/pdf"></label>`}
         <div class="full section-label" style="margin:6px 0 0">${bnb ? '🏠 Le logement' : '🛏️ La chambre'} — visible dans l’app du client</div>
         ${field(bnb ? 'N° / nom du logement' : 'N° de chambre', 'chambre', h.chambre, { required: true, placeholder: bnb ? 'ex. Appart 3' : 'ex. 204' })}${field('Étage', 'etage', h.etage || ch.etage, { placeholder: 'ex. 2' })}
@@ -7018,7 +7021,7 @@ const ACTIONS = {
   },
   'new-hote': () => openOver('hote-form'),
   'edit-hote': (d) => openOver('hote-form', d.id),
-  'hotel-menu-view': () => { const m = vault.get('reglages', 'hotelMenu'); if (m && m.file) filePreview(m.file, 'Menu'); },
+  'hotel-menu-view': (d) => { const m = vault.get('reglages', menuKey(d.lieu)); if (m && m.file) filePreview(m.file, 'Menu'); },
   async 'del-hote'(d) {
     const h = vault.get('hotes', d.id);
     if (!h || !(await confirmBox('Supprimer ce client ?', { ok: 'Supprimer', danger: true, detail: `${[h.prenom, h.nom].filter(Boolean).join(' ')} — chambre ${h.chambre}` }))) return;
@@ -7747,12 +7750,13 @@ const FORMS = {
   async bien(fd) {
     const id = fd.get('id'), g = (k) => String(fd.get(k) || '').trim(), n = (k) => (g(k) ? Math.max(0, num(g(k).replace(',', '.'))) : '');
     const old = id ? vault.get('biens', id) : null;
-    const rec = { agenceId: g('agenceId'), titre: g('titre'), type: g('type') || 'autre', surface: n('surface'), adresse: g('adresse'), dispo: g('dispo'),
+    const rec = { agenceId: g('agenceId'), propriete: g('propriete') === 'tiers' ? 'tiers' : 'nous', tiersNom: g('propriete') === 'tiers' ? g('tiersNom') : '', titre: g('titre'), type: g('type') || 'autre', surface: n('surface'), adresse: g('adresse'), dispo: g('dispo'),
       louer: !!fd.get('louer'), vendre: !!fd.get('vendre'), loyer: n('loyer'), charges: n('charges'), prix: n('prix'), description: g('description'),
       pieces: fd.getAll('p_k').map((k, i) => ({ k, nom: String(fd.getAll('p_nom')[i] || '').trim(), m2: String(fd.getAll('p_m2')[i] || '').trim(), note: String(fd.getAll('p_note')[i] || '').trim() })),
       cree: (old && old.cree) || today() };
     if (!rec.titre) return;
     if (!rec.louer && !rec.vendre) return toast('Cochez « À louer » et / ou « À vendre »', { bad: true });
+    if (rec.propriete === 'tiers' && !rec.tiersNom) return toast('Nom du propriétaire manquant (bien confié par un tiers)', { bad: true });
     if (rec.louer && !rec.loyer) return toast('Loyer mensuel manquant', { bad: true });
     if (rec.vendre && !rec.prix) return toast('Prix de vente manquant', { bad: true });
     const del = new Set(fd.getAll('delph'));
@@ -7821,9 +7825,9 @@ const FORMS = {
     if (mf && mf.size) {
       if (mf.type !== 'application/pdf') return toast('Menu : fichier PDF seulement', { bad: true });
       if (mf.size > 10e6) return toast('Menu : 10 Mo maximum', { bad: true });
-      const pm = vault.get('reglages', 'hotelMenu'), mid = uid();
+      const pm = vault.get('reglages', menuKey(rec.lieu)), mid = uid();
       await vault.saveFile(mid, new Uint8Array(await mf.arrayBuffer()));
-      await vault.mutate((tx) => tx.put('reglages', { id: 'hotelMenu', file: mid, name: mf.name, at: today() }), 'Menu du restaurant', mf.name);
+      await vault.mutate((tx) => tx.put('reglages', { id: menuKey(rec.lieu), file: mid, name: mf.name, at: today() }), 'Menu du restaurant', mf.name);
       if (pm && pm.file) await vault.deleteFile(pm.file).catch(() => {});
     }
     toast(Object.keys(ph).length < 6 ? 'Client enregistré — 📷 ajoutez au moins 6 photos de ' + (rec.lieu === 'airbnb' ? 'ce logement' : 'cette chambre') : 'Client enregistré');

@@ -15656,5 +15656,35 @@ export default [
 ],
 ["Code personnel du client (aussi depuis l’étranger) : avec le lien de l’app il voit son logement, les photos, son code de porte et les infos du séjour. Le lien de téléchargement sera ajouté avec l’app des clients (prochaine étape).",
 "Codice personale del cliente (anche dall'estero): con il link dell'app vede il suo alloggio, le foto, il codice della porta e le info del soggiorno. Il link per scaricarla sarà aggiunto con l'app dei clienti (prossima tappa)."
+],
+["Garage",
+"Garage"
+],
+["Commerce / magasin",
+"Negozio"
+],
+["Agence / propriétaire",
+"Agenzia / proprietario"
+],
+["Propriété",
+"Proprietà"
+],
+["Le bien est à nous",
+"L'immobile è nostro"
+],
+["Confié par un tiers",
+"Affidato da terzi"
+],
+["Nom du propriétaire (si confié)",
+"Nome del proprietario (se affidato)"
+],
+["ex. M. Dupont",
+"es. Sig. Rossi"
+],
+["Nom du propriétaire manquant (bien confié par un tiers)",
+"Manca il nome del proprietario (immobile affidato da terzi)"
+],
+["Confié par {0}",
+"Affidato da {0}"
 ]
 ];
