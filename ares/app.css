@@ -933,3 +933,11 @@ body.compta [data-action^="del-"], body.compta [data-action$="-del"], body.compt
 .ch-slot img,.ch-slot .ch-empty{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;background:var(--surface-2)}
 .ch-slot .ch-empty{display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--muted)}
 .ch-slot input{position:absolute;inset:0;opacity:0;cursor:pointer}
+/* 🏠 patrimoine : type · quantité (menu) · nombre exact */
+.pat-row{display:grid;grid-template-columns:1fr 84px 84px;gap:6px;align-items:center;padding:3px 0}
+.pat-row span{font-size:14px}
+.pat-row select,.pat-row input{min-height:38px;padding:6px 8px}
+/* 🔑 licences : 3 forfaits côte à côte */
+.lic-packs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.lic-packs .btn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 6px;white-space:normal;line-height:1.2}
+.lic-packs .btn span{font-size:12.5px;font-weight:600}

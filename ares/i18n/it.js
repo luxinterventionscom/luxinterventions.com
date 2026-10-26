@@ -16235,5 +16235,143 @@ export default [
 ],
 ["réseau LuxInterventions",
 "rete LuxInterventions"
+],
+["Patrimoine (biens possédés ou gérés)",
+"Patrimonio (beni posseduti o gestiti)"
+],
+["Combien de chaque type ; si le client donne le nombre exact, écrivez-le à droite.",
+"Quanti per tipo; se il cliente dà il numero esatto, scrivetelo a destra."
+],
+["Véhicules",
+"Veicoli"
+],
+["Chambre (colocation)",
+"Camera (coabitazione)"
+],
+["Maison / villa",
+"Casa / villa"
+],
+["Garage / box",
+"Garage / box"
+],
+["Parking intérieur",
+"Parcheggio interno"
+],
+["Place de parking extérieure",
+"Posto auto esterno"
+],
+["Commerce / boutique",
+"Negozio / boutique"
+],
+["Restaurant / café / bar",
+"Ristorante / caffè / bar"
+],
+["Local artisanal / atelier",
+"Locale artigianale / laboratorio"
+],
+["Entrepôt / dépôt",
+"Magazzino / deposito"
+],
+["Cabinet (médical, libéral)",
+"Studio (medico, professionale)"
+],
+["Immeuble entier",
+"Intero edificio"
+],
+["Autre (précisez)",
+"Altro (precisare)"
+],
+["exact",
+"esatto"
+],
+["Travaille pour",
+"Lavora per"
+],
+["Son propre compte",
+"Per conto proprio"
+],
+["Des propriétaires",
+"Proprietari"
+],
+["Des fonds d’investissement",
+"Fondi d'investimento"
+],
+["Fonds d’investissement (noms, facultatif)",
+"Fondi d'investimento (nomi, facoltativo)"
+],
+["Nouveau propriétaire",
+"Nuovo proprietario"
+],
+["Modifier le propriétaire",
+"Modifica il proprietario"
+],
+["Licences",
+"Licenze"
+],
+["Licences — centrales des clients",
+"Licenze — centrali dei clienti"
+],
+["Essai 15 jours, abonnements 1 · 2 · 3 ans, tarifs et remises, factures, statistiques, registre",
+"Prova 15 giorni, abbonamenti 1 · 2 · 3 anni, tariffe e sconti, fatture, statistiche, registro"
+],
+["Clients",
+"Clienti"
+],
+["Registre",
+"Registro"
+],
+["tarif à fixer",
+"tariffa da fissare"
+],
+["Fixez d’abord les tarifs : 💶 Tarifs.",
+"Fissate prima le tariffe: 💶 Tariffe."
+],
+["Suspendre",
+"Sospendi"
+],
+["Tarifs des licences",
+"Tariffe delle licenze"
+],
+["1 an (€ HT)",
+"1 anno (€ IVA escl.)"
+],
+["Remise 2 ans (%)",
+"Sconto 2 anni (%)"
+],
+["Remise 3 ans (%)",
+"Sconto 3 anni (%)"
+],
+["Payée",
+"Pagata"
+],
+["Aucune facture de licence.",
+"Nessuna fattura di licenza."
+],
+["Échus / bloqués",
+"Scaduti / bloccati"
+],
+["Essai → abonnement",
+"Prova → abbonamento"
+],
+["Par filière",
+"Per filiera"
+],
+["Par forfait",
+"Per pacchetto"
+],
+["Renouvellements à venir",
+"Rinnovi in arrivo"
+],
+["Rien pour le moment.",
+"Niente per ora."
+],
+["Tarifs enregistrés",
+"Tariffe salvate"
+],
+["Centrale suspendue",
+"Centrale sospesa"
+],
+["Centrale réactivée",
+"Centrale riattivata"
 ]
 ];

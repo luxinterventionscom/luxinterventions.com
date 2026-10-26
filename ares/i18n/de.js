@@ -16222,5 +16222,143 @@ export default [
 ],
 ["réseau LuxInterventions",
 "LuxInterventions-Netzwerk"
+],
+["Patrimoine (biens possédés ou gérés)",
+"Bestand (eigene oder verwaltete Objekte)"
+],
+["Combien de chaque type ; si le client donne le nombre exact, écrivez-le à droite.",
+"Wie viele pro Typ; wenn der Kunde die genaue Zahl nennt, rechts eintragen."
+],
+["Véhicules",
+"Fahrzeuge"
+],
+["Chambre (colocation)",
+"Zimmer (WG)"
+],
+["Maison / villa",
+"Haus / Villa"
+],
+["Parking intérieur",
+"Tiefgaragenplatz"
+],
+["Place de parking extérieure",
+"Außenstellplatz"
+],
+["Commerce / boutique",
+"Geschäft / Laden"
+],
+["Restaurant / café / bar",
+"Restaurant / Café / Bar"
+],
+["Local artisanal / atelier",
+"Handwerksraum / Werkstatt"
+],
+["Entrepôt / dépôt",
+"Lager / Depot"
+],
+["Cabinet (médical, libéral)",
+"Praxis (Arzt, freie Berufe)"
+],
+["Immeuble entier",
+"Ganzes Gebäude"
+],
+["Autre (précisez)",
+"Andere (genauer)"
+],
+["exact",
+"genau"
+],
+["Travaille pour",
+"Arbeitet für"
+],
+["Son propre compte",
+"Auf eigene Rechnung"
+],
+["Des propriétaires",
+"Eigentümer"
+],
+["Des fonds d’investissement",
+"Investmentfonds"
+],
+["Fonds d’investissement (noms, facultatif)",
+"Investmentfonds (Namen, optional)"
+],
+["Nouveau propriétaire",
+"Neuer Eigentümer"
+],
+["Modifier le propriétaire",
+"Eigentümer ändern"
+],
+["Licences",
+"Lizenzen"
+],
+["Licences — centrales des clients",
+"Lizenzen — Zentralen der Kunden"
+],
+["Essai 15 jours, abonnements 1 · 2 · 3 ans, tarifs et remises, factures, statistiques, registre",
+"Testphase 15 Tage, Abos 1 · 2 · 3 Jahre, Tarife und Rabatte, Rechnungen, Statistiken, Register"
+],
+["Clients",
+"Kunden"
+],
+["Registre",
+"Register"
+],
+["Abonnement",
+"Abonnement"
+],
+["tarif à fixer",
+"Tarif festlegen"
+],
+["Fixez d’abord les tarifs : 💶 Tarifs.",
+"Legen Sie zuerst die Tarife fest: 💶 Tarife."
+],
+["Suspendre",
+"Aussetzen"
+],
+["Tarifs des licences",
+"Lizenztarife"
+],
+["1 an (€ HT)",
+"1 Jahr (€ netto)"
+],
+["Remise 2 ans (%)",
+"Rabatt 2 Jahre (%)"
+],
+["Remise 3 ans (%)",
+"Rabatt 3 Jahre (%)"
+],
+["Payée",
+"Bezahlt"
+],
+["Aucune facture de licence.",
+"Keine Lizenzrechnung."
+],
+["Échus / bloqués",
+"Abgelaufen / gesperrt"
+],
+["Essai → abonnement",
+"Test → Abo"
+],
+["Par filière",
+"Nach Branche"
+],
+["Par forfait",
+"Nach Paket"
+],
+["Renouvellements à venir",
+"Anstehende Verlängerungen"
+],
+["Rien pour le moment.",
+"Noch nichts."
+],
+["Tarifs enregistrés",
+"Tarife gespeichert"
+],
+["Centrale suspendue",
+"Zentrale ausgesetzt"
+],
+["Centrale réactivée",
+"Zentrale reaktiviert"
 ]
 ];

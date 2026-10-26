@@ -15964,5 +15964,143 @@ export default [
 ],
 ["réseau LuxInterventions",
 "LuxInterventions network"
+],
+["Patrimoine (biens possédés ou gérés)",
+"Portfolio (owned or managed properties)"
+],
+["Combien de chaque type ; si le client donne le nombre exact, écrivez-le à droite.",
+"How many of each type; if the client gives the exact number, write it on the right."
+],
+["Véhicules",
+"Vehicles"
+],
+["Chambre (colocation)",
+"Room (flatshare)"
+],
+["Duplex / penthouse",
+"Duplex / penthouse"
+],
+["Maison / villa",
+"House / villa"
+],
+["Parking intérieur",
+"Indoor parking"
+],
+["Place de parking extérieure",
+"Outdoor parking space"
+],
+["Commerce / boutique",
+"Shop / boutique"
+],
+["Restaurant / café / bar",
+"Restaurant / café / bar"
+],
+["Local artisanal / atelier",
+"Workshop"
+],
+["Entrepôt / dépôt",
+"Warehouse / depot"
+],
+["Cabinet (médical, libéral)",
+"Practice (medical, professional)"
+],
+["Immeuble entier",
+"Whole building"
+],
+["Autre (précisez)",
+"Other (specify)"
+],
+["exact",
+"exact"
+],
+["Travaille pour",
+"Works for"
+],
+["Son propre compte",
+"Its own account"
+],
+["Des propriétaires",
+"Owners"
+],
+["Des fonds d’investissement",
+"Investment funds"
+],
+["Fonds d’investissement (noms, facultatif)",
+"Investment funds (names, optional)"
+],
+["Nouveau propriétaire",
+"New owner"
+],
+["Modifier le propriétaire",
+"Edit the owner"
+],
+["Licences",
+"Licences"
+],
+["Licences — centrales des clients",
+"Licences — clients' centrals"
+],
+["Essai 15 jours, abonnements 1 · 2 · 3 ans, tarifs et remises, factures, statistiques, registre",
+"15-day trial, 1 · 2 · 3-year subscriptions, rates and discounts, invoices, statistics, log"
+],
+["Clients",
+"Clients"
+],
+["Registre",
+"Log"
+],
+["tarif à fixer",
+"rate to set"
+],
+["Fixez d’abord les tarifs : 💶 Tarifs.",
+"Set the rates first: 💶 Rates."
+],
+["Suspendre",
+"Suspend"
+],
+["Tarifs des licences",
+"Licence rates"
+],
+["1 an (€ HT)",
+"1 year (€ excl. VAT)"
+],
+["Remise 2 ans (%)",
+"2-year discount (%)"
+],
+["Remise 3 ans (%)",
+"3-year discount (%)"
+],
+["Payée",
+"Paid"
+],
+["Aucune facture de licence.",
+"No licence invoice."
+],
+["Échus / bloqués",
+"Expired / blocked"
+],
+["Essai → abonnement",
+"Trial → subscription"
+],
+["Par filière",
+"By sector"
+],
+["Par forfait",
+"By package"
+],
+["Renouvellements à venir",
+"Upcoming renewals"
+],
+["Rien pour le moment.",
+"Nothing yet."
+],
+["Tarifs enregistrés",
+"Rates saved"
+],
+["Centrale suspendue",
+"Central suspended"
+],
+["Centrale réactivée",
+"Central reactivated"
 ]
 ];
