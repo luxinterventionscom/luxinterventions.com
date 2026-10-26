@@ -15984,5 +15984,110 @@ export default [
 ],
 ["Menu du jour",
 "Menu do dia"
+],
+["{0} client",
+"{0} cliente"
+],
+["{0} clients",
+"{0} clientes"
+],
+["{0} demande",
+"{0} pedido"
+],
+["{0} demandes",
+"{0} pedidos"
+],
+["Demandes d’intervention des clients ({0})",
+"Pedidos de intervenção dos clientes ({0})"
+],
+["Créer l’intervention",
+"Criar a intervenção"
+],
+["Traitée",
+"Tratada"
+],
+["Clients du réseau",
+"Clientes da rede"
+],
+["Lecture seule (échu)",
+"Só leitura (expirado)"
+],
+["Bloqué",
+"Bloqueado"
+],
+["Essai",
+"Teste"
+],
+["Suspendu",
+"Suspenso"
+],
+["centrale configurée",
+"central configurada"
+],
+["Donnez à vos clients (gérances, agences, propriétaires, hôtels, Airbnb) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; vous ne voyez que leurs demandes d’intervention. ＋ Client → essai gratuit (15 jours par défaut).",
+"Dê aos seus clientes (gestoras, agências, proprietários, hotéis, Airbnb) a sua própria central: inquilinos ou clientes, apps, tudo cifrado; só vê os pedidos de intervenção. ＋ Cliente → teste gratuito (15 dias por defeito)."
+],
+["Certificats de suppression",
+"Certificados de eliminação"
+],
+["Nouveau client du réseau",
+"Novo cliente da rede"
+],
+["Filière",
+"Fileira"
+],
+["Nom de la société / du client",
+"Nome da empresa / do cliente"
+],
+["Durée de l’essai (jours)",
+"Duração do teste (dias)"
+],
+["Un code d’invitation est créé (valable 30 jours, une seule fois). Le client ouvre sa centrale, choisit sa clé d’accès (vous ne la connaissez pas) et commence son essai.",
+"É criado um código de convite (válido 30 dias, uma só vez). O cliente abre a central, escolhe a chave de acesso (que não conhece) e começa o teste."
+],
+["Accorder un essai",
+"Conceder um teste"
+],
+["Code d’invitation",
+"Código de convite"
+],
+["Copier l’invitation",
+"Copiar o convite"
+],
+["Jours en lecture seule après l’échéance (vide = jusqu’à votre décision)",
+"Dias de só leitura após o fim (vazio = até decidir)"
+],
+["Nouveau code d’invitation",
+"Novo código de convite"
+],
+["Nouvel accès (clé perdue)",
+"Novo acesso (chave perdida)"
+],
+["Supprimer avec certificat",
+"Eliminar com certificado"
+],
+["Certificat de suppression",
+"Certificado de eliminação"
+],
+["Objets effacés",
+"Objetos apagados"
+],
+["Empreinte",
+"Impressão digital"
+],
+["Prolongé de {0} jours",
+"Prolongado {0} dias"
+],
+["Essai accordé : envoyez l’invitation",
+"Teste concedido: envie o convite"
+],
+["Intervention créée dans Maintenance",
+"Intervenção criada em Maintenance"
+],
+["Nom différent : rien n’a été fait",
+"Nome diferente: nada foi feito"
+],
+["Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.",
+"O servidor (Worker) ainda não está atualizado: a rubrica Rede funcionará depois da publicação."
 ]
 ];
