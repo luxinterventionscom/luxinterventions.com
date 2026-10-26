@@ -15412,5 +15412,107 @@ export default [
 ],
 ["Confié par {0}",
 "Entrusted by {0}"
+],
+["Chambres",
+"Rooms"
+],
+["Libre",
+"Free"
+],
+["Économique",
+"Economy"
+],
+["Standard",
+"Standard"
+],
+["Supérieure",
+"Superior"
+],
+["Deluxe",
+"Deluxe"
+],
+["Suite",
+"Suite"
+],
+["Single",
+"Single"
+],
+["Double",
+"Double"
+],
+["Twin",
+"Twin"
+],
+["Triple",
+"Triple"
+],
+["Familiale",
+"Family"
+],
+["Personnes (max.)",
+"Guests (max.)"
+],
+["Présentation pour vos clients (visible dans leur app)",
+"Description for your guests (visible in their app)"
+],
+["ex. Chambre calme côté jardin, lit 160, douche à l’italienne, wifi…",
+"e.g. Quiet garden-side room, 160 bed, walk-in shower, wifi…"
+],
+["ex. Appartement lumineux, cuisine équipée, wifi, parking privé…",
+"e.g. Bright flat, equipped kitchen, wifi, private parking…"
+],
+["photos d’entrée (7)",
+"check-in photos (7)"
+],
+["État des lieux de sortie (au départ)",
+"Check-out inventory (at departure)"
+],
+["Dernières sorties (à comparer)",
+"Latest check-outs (to compare)"
+],
+["entrée / sortie",
+"in / out"
+],
+["Nouvelle chambre",
+"New room"
+],
+["Supprimer cette chambre ?",
+"Delete this room?"
+],
+["Supprimer ce logement ?",
+"Delete this home?"
+],
+["Chambre supprimée",
+"Room deleted"
+],
+["Cette chambre existe déjà",
+"This room already exists"
+],
+["Ce logement existe déjà",
+"This home already exists"
+],
+["Enregistré — 📷 6 photos minimum conseillées",
+"Saved — 📷 at least 6 photos recommended"
+],
+["État des lieux de sortie",
+"Check-out inventory"
+],
+["Aucune chambre. ＋ Chambre : catégorie, type, personnes, m², photos, présentation pour vos clients.",
+"No room. ＋ Room: category, type, guests, m², photos, description for your guests."
+],
+["Aucun logement. ＋ Logement : type, personnes, m², photos, présentation pour vos clients.",
+"No home. ＋ Home: type, guests, m², photos, description for your guests."
+],
+["À comparer avec les photos d’entrée dans la fiche de la chambre.",
+"Compare with the check-in photos in the room record."
+],
+["À comparer avec les photos d’entrée dans la fiche du logement.",
+"Compare with the check-in photos in the home record."
+],
+["L’état de la chambre avant chaque séjour : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Au départ, les photos de sortie se prennent dans la fiche du client.",
+"The room's condition before each stay: building, door, bathroom, room, kitchen, parking (+ 1 of your choice). At departure, check-out photos are taken in the guest record."
+],
+["L’état du logement avant chaque séjour : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Au départ, les photos de sortie se prennent dans la fiche du client.",
+"The home's condition before each stay: building, door, bathroom, room, kitchen, parking (+ 1 of your choice). At departure, check-out photos are taken in the guest record."
 ]
 ];
