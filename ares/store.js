@@ -17,12 +17,14 @@ export const emptyState = () => Object.fromEntries([['v', 2], ...COLLECTIONS.map
 export const payKey = (locId, y, m) => `${locId}-${y}-${m}`;
 
 // ───────────────────────── IndexedDB (clé/valeur) ─────────────────────────
+// une base par centrale : la principale (ares-v2) et celle de chaque client du réseau (ares-v2-t-<id>)
+let IDB_NAME = 'ares-v2';
 const idb = {
   _db: null,
   open() {
     if (this._db) return this._db;
     this._db = new Promise((resolve, reject) => {
-      const r = indexedDB.open('ares-v2', 1);
+      const r = indexedDB.open(IDB_NAME, 1);
       r.onupgradeneeded = () => r.result.createObjectStore('kv');
       r.onsuccess = () => resolve(r.result);
       r.onerror = () => reject(r.error);
@@ -130,8 +132,9 @@ function dataUrlToBytes(url) {
 
 // ───────────────────────── API du Worker ─────────────────────────
 class Api {
-  constructor(base) {
-    this.base = base.replace(/\/$/, '') + '/api/ares/';
+  constructor(base, tenant) {
+    this.root = base.replace(/\/$/, '') + '/api/';
+    this.base = this.root + 'ares/' + (tenant ? 't/' + tenant + '/' : '');
     this.token = null;
   }
   async req(path, opts = {}) {
@@ -171,8 +174,10 @@ export function deviceLabel() {
 
 // ───────────────────────── Coffre (Vault) ─────────────────────────
 export class Vault {
-  constructor(apiBase) {
-    this.api = new Api(apiBase);
+  constructor(apiBase, tenant) {
+    if (tenant) IDB_NAME = 'ares-v2-t-' + tenant;
+    this.tenant = tenant || '';
+    this.api = new Api(apiBase, tenant);
     this.dek = null;
     this.op = null; // opérateur connecté (centraliste, comptable) ; null = le responsable (clé d'accès principale)
     this.state = emptyState();
@@ -202,7 +207,8 @@ export class Vault {
   // ── Configuration & déverrouillage ──
   async remoteMeta() {
     const r = await this.api.req('meta');
-    if (r.status === 404) return { configured: false };
+    if (r.status === 404) return { configured: false, ...(await r.json().catch(() => ({}))) };
+    if (r.status === 403) { const j = await r.json().catch(() => ({})); throw new ApiError(403, j.error || 'blocked', j); }
     if (!r.ok) throw new ApiError(r.status, await Api.err(r));
     return r.json();
   }

@@ -16168,5 +16168,59 @@ export default [
 ],
 ["Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.",
 "Der Server (Worker) ist noch nicht aktuell: der Bereich Netzwerk funktioniert nach seiner Veröffentlichung."
+],
+["Demandes",
+"Anfragen"
+],
+["Demandes d’intervention",
+"Einsatzanfragen"
+],
+["Envoyées à LuxInterventions, qui envoie ses intervenants",
+"An LuxInterventions gesendet, die ihre Techniker schickt"
+],
+["Une fuite, une panne, des travaux ? ＋ Demande : LuxInterventions la reçoit tout de suite (chiffrée), la planifie et envoie un intervenant.",
+"Ein Leck, eine Panne, Arbeiten? ＋ Anfrage: LuxInterventions erhält sie sofort (verschlüsselt), plant sie und schickt einen Techniker."
+],
+["Demande d’intervention",
+"Einsatzanfrage"
+],
+["Urgence",
+"Dringlichkeit"
+],
+["Normal",
+"Normal"
+],
+["Rapide (48 h)",
+"Schnell (48 h)"
+],
+["Chiffrée : seule la centrale LuxInterventions peut la lire.",
+"Verschlüsselt: nur die LuxInterventions-Zentrale kann sie lesen."
+],
+["Demande envoyée à LuxInterventions",
+"Anfrage an LuxInterventions gesendet"
+],
+["Lecture seule : abonnement échu",
+"Nur Lesen: Abonnement abgelaufen"
+],
+["Essai gratuit",
+"Kostenlose Testphase"
+],
+["Lecture seule",
+"Nur Lesen"
+],
+["Code d’invitation reçu",
+"Erhaltener Einladungscode"
+],
+["Centrale principale",
+"Hauptzentrale"
+],
+["Centrale bloquée.",
+"Zentrale gesperrt."
+],
+["L’abonnement est échu ou suspendu : contactez LuxInterventions pour la réactiver. Vos données restent chiffrées et intactes.",
+"Das Abonnement ist abgelaufen oder ausgesetzt: kontaktieren Sie LuxInterventions zur Reaktivierung. Ihre Daten bleiben verschlüsselt und unversehrt."
+],
+["réseau LuxInterventions",
+"LuxInterventions-Netzwerk"
 ]
 ];

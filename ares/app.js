@@ -26,13 +26,36 @@ pullRefreshInit({
 });
 scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
-import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
+import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.197.0';
+const VERSION = '2.198.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
-const vault = new Vault(API);
+// 🌐 centrale d'un client du réseau : …/locataires.html?t=<id> (gardé sur cet appareil) ; ?t=main → centrale principale
+const TENANT = (() => {
+  const q = new URLSearchParams(location.search).get('t') || '';
+  try {
+    if (q === 'main') { localStorage.removeItem('aresTenant'); return ''; }
+    if (/^[a-z0-9]{12,24}$/.test(q)) { localStorage.setItem('aresTenant', q); return q; }
+    return localStorage.getItem('aresTenant') || '';
+  } catch { return /^[a-z0-9]{12,24}$/.test(q) ? q : ''; }
+})();
+let tenantInfo = (() => { try { return JSON.parse(localStorage.getItem('aresTenantInfo:' + TENANT) || '{}'); } catch { return {}; } })();
+const tenantSave = (t) => { if (!TENANT || !t) return; tenantInfo = t; try { localStorage.setItem('aresTenantInfo:' + TENANT, JSON.stringify(t)); } catch { /* stockage plein */ } };
+const T_FIL_LBL = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
+// rubriques de chaque filière (la centrale du client ne montre que les siennes)
+const TENANT_ROUTES = {
+  gerance: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'reglages'],
+  proprio: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'reglages'],
+  agence: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'agences', 'proprios', 'compta', 'rapports', 'reglages'],
+  hotel: ['hotel', 'demandes', 'compta', 'rapports', 'reglages'],
+  airbnb: ['airbnb', 'demandes', 'compta', 'rapports', 'reglages'],
+};
+const tRoutes = () => TENANT_ROUTES[tenantInfo.fil] || TENANT_ROUTES.gerance;
+const routeOk = (r) => (TENANT ? tRoutes().includes(r) : r !== 'demandes');
+const homeRoute = () => (TENANT ? tRoutes()[0] : 'dashboard');
+const vault = new Vault(API, TENANT);
 // 🗄️ Nouveau départ : les données de test sont archivées (gardées, rien n'est effacé) et ne s'affichent plus
 // nulle part (listes, statistiques, apps) ; Réglages → « Voir les archives » les montre à nouveau
 const ARCH_COLS = new Set(['taches', 'devis', 'hotes', 'biens']);
@@ -571,7 +594,7 @@ async function tripPoll() {
       ui.tripTks['hin:' + h.id + '|' + today()] = t.tin; ui.tripTks['tx1:' + h.id + '|' + today()] = t.t1; ui.tripTks['tx2:' + h.id + '|' + today()] = t.t2;
     }
     const tks = Object.entries(ui.tripTks).filter(([k]) => k.endsWith('|' + today())).map(([, tk]) => tk);
-    ui.trips = await tripFetch(vault.api.base.replace(/ares\/$/, ''), tks.slice(0, 60));
+    ui.trips = await tripFetch(vault.api.root, tks.slice(0, 60));
   } catch { /* hors ligne */ }
   tripPaint();
 }
@@ -893,6 +916,7 @@ function pubReport(id) {
     <p style="font-size:10pt;color:#555;margin-top:14px">Vues : nombre de téléphones qui ont affiché l’annonce, comptés une seule fois par jour. Clics : touchers sur les boutons de l’annonce (carte / itinéraire, appel, site web, vidéo). Statistiques entièrement anonymes : aucune donnée personnelle n’est collectée ni transmise (RGPD).</p>`);
 }
 async function pubStatsLoad(force) {
+  if (TENANT) return; // centrale d'un client : pas de portail, d'annonces ni de biens du réseau
   const st = ui.pubStats;
   if (!force && st && (st.loading || Date.now() - st.at < 15000)) return;
   ui.pubStats = { ...(st || { rows: [] }), loading: true, at: Date.now() };
@@ -986,7 +1010,7 @@ function espaceData(l) {
   const soc = societe();
   const out = {
     v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', avatar: emojiOk(l.avatar) ? l.avatar : '', photo: photoOk(l.photo) ? l.photo : '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
-    societe: { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'NOBIS s.a.r.l.', adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: signLite.src === soc.signature && signLite.url ? signLite.url : soc.signature || '', signW: soc.signW || 8 },
+    societe: { nom: soc.nom && (TENANT || !WRONG_ID.test(soc.nom)) ? soc.nom : DEF_SOC(), adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: signLite.src === soc.signature && signLite.url ? signLite.url : soc.signature || '', signW: soc.signW || 8 },
     loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : { nom: 'Seven Radio', url: 'https://sevenradio.lu/?proradio-popup=1' }; })(),
     annex: g ? annexOf(g) : {}, annexM2: (g && g.annexM2) || {}, surface: (g && g.surface) || '', maison: g && g.type === 'maison' ? g.maison || '' : '', unit: g ? g.type : '',
@@ -1209,6 +1233,19 @@ async function netLoad(force) {
   if (ui.route === 'reseau') renderView();
   if (ui.sheet && ui.sheet.kind && ui.sheet.kind.startsWith('net')) { ui.sheet.rendered = false; renderSheet(); }
 }
+// 🌐 centrale d'un client : bandeau essai / lecture seule ; demandes d'intervention vers LuxInterventions (chiffrées pour elle)
+function tenantBanner() {
+  if (!TENANT) return '';
+  const t = tenantInfo, dl = t.until ? Math.round((new Date(t.until + 'T12:00') - new Date(today() + 'T12:00')) / 864e5) : null;
+  if (t.state === 'ro') return html`<div class="alert warn" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — abonnement échu le ${fmtDate(t.until)}. Vos données restent visibles ; pour les modifier, contactez LuxInterventions.</div></div>`;
+  if (t.st === 'trial' && dl != null) return html`<div class="alert info" style="margin-bottom:12px">🎁<div><b>Essai gratuit</b> — ${dl > 0 ? `${dl} jour${dl > 1 ? 's' : ''} restant${dl > 1 ? 's' : ''}` : 'dernier jour'} (jusqu’au ${fmtDate(t.until)}).</div></div>`;
+  return '';
+}
+async function tenantRefresh() {
+  if (!TENANT || !vault.unlocked) return;
+  try { const j = await (await vault.call('tenant')).json(); if (j.tenant) { const prev = JSON.stringify(tenantInfo); tenantSave(j.tenant); if (JSON.stringify(j.tenant) !== prev) { renderShell(); go(ui.route, true); } } } catch { /* hors ligne */ }
+}
+const TDEM_URG = { normal: '🟢 Normal', rapide: '🟠 Rapide (48 h)', urgent: '🔴 Urgent' };
 // 🍽️ Annonceurs HORECA (restaurants, bars, discothèques…) : leur app (annonce.html) envoie annonces et événements,
 // LuxInterventions valide ; paiement en ligne pas encore connecté (le bouton est là, désactivé)
 const AN_TYPES = { annonce: '📣 Annonce', evenement: '🎉 Événement', menu: '🍽️ Menu du jour' };
@@ -1458,6 +1495,7 @@ function toolOwner(it) {
   return l ? fullName(l) + ' · ' + (logName(l.logId) || immName(l.immId)) : 'Locataire (espace fermé)';
 }
 async function toolsLoad(force) {
+  if (TENANT) return; // centrale d'un client : pas de portail, d'annonces ni de biens du réseau
   if (!vault.unlocked) return;
   if (!force && ui.toolsAt && Date.now() - ui.toolsAt < 15000) return;
   ui.toolsAt = Date.now();
@@ -1552,6 +1590,7 @@ async function espaceSync(onlyId, loud) {
 }
 // Annonces pour le portail gérance : publiées en clair (publicité, aucune donnée personnelle), relues par le portail
 async function portailPubsSync() {
+  if (TENANT) return;
   const list = pubsActives('', 'ptl').map(pubOut), offers = aboOffersOn(), cc = centraleConf(), contact = centraleResp() ? { nom: centraleResp(), tel: cc.tel || '', email: cc.email || '' } : null;
   const h = await sha256Hex(JSON.stringify([list, offers, contact]));
   let prev = '';
@@ -1563,6 +1602,7 @@ async function portailPubsSync() {
 // de l'équipe et le portail gérance ; 6 photos max. par bien, envoyées seulement quand elles changent
 let biensBusy = false, biensAgain = false;
 async function biensSync() {
+  if (TENANT) return; // centrale d'un client : pas de portail, d'annonces ni de biens du réseau
   if (biensBusy) { biensAgain = true; return; }
   if (!vault.unlocked) return;
   biensBusy = true;
@@ -2014,6 +2054,7 @@ function ptlBadge(tickets) {
   });
 }
 async function ptlWatch() {
+  if (TENANT) return; // centrale d'un client : pas de portail, d'annonces ni de biens du réseau
   if (!ptlConf() || ui.ptl.loading) return;
   const typing = sheetEl.contains(document.activeElement) && document.activeElement.matches('input, textarea, select');
   if (ui.route === 'gerances' && !typing) return ptlLoad();
@@ -2364,7 +2405,8 @@ const PAYS = { LU: ['Luxembourg', [17, 14, 8, 3]], FR: ['France', [20, 10, 5.5, 
 const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '').split(/[;, ]+/).map((x) => parseFloat(x.replace(',', '.'))).filter((x) => x > 0 && x < 100); return own.length ? own : (PAYS[s0.pays || 'LU'] || PAYS.LU)[1]; };
 // Marque de l'app de gestion (fixe, indépendante de la société cliente)
 const APP_BRAND = { nom: 'LuxInterventions', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
-const socName = () => societe().nom || 'NOBIS s.a.r.l.';
+const DEF_SOC = () => (TENANT ? tenantInfo.nom || 'Centrale' : 'NOBIS s.a.r.l.');
+const socName = () => societe().nom || DEF_SOC();
 const socLogo = () => societe().logo || '/ares/icons/nobis-logo.png';
 const htOf = (ttc, r) => (r ? ttc / (1 + r / 100) : ttc);
 const r2 = (x) => Math.round(x * 100) / 100;
@@ -2384,6 +2426,7 @@ function ibanOk(v) {
 }
 const WRONG_ID = /\bares\b|arest|invenst|ares invest|B\s*225\s*245|LU\s*30440727/i;
 async function fixIdentity() {
+  if (TENANT) return; // centrale d'un client : sa société, pas NOBIS
   const so = societe();
   const badIban = so.iban && (WRONG_ID.test(so.iban) || !ibanOk(so.iban));
   if (![so.nom, so.rcs, so.tvaNum].some((v) => WRONG_ID.test(v || '')) && !badIban) return;
@@ -2393,7 +2436,7 @@ async function fixIdentity() {
 }
 // L'en-tête de l'app montre la marque LuxInterventions ; le logo de la société (Réglages) sert aux quittances et à l'app des locataires
 function applyBrand() {
-  document.querySelectorAll('.brand-mark').forEach((img) => { img.src = APP_BRAND.logo; });
+  document.querySelectorAll('.brand-mark').forEach((img) => { img.src = TENANT && societe().logo ? societe().logo : APP_BRAND.logo; });
 }
 const associes = () => (societe().associes || []).filter((a) => a.nom && a.part > 0);
 
@@ -2569,8 +2612,12 @@ function renderLock(mode, error = '') {
   const legacy = legacyLocal();
   const head = html`
     <img class="lock-logo" src="${APP_BRAND.logo}" alt="" width="96" height="96">
-    <div class="lock-head"><h1>${APP_BRAND.nom}</h1><p>Gestion locative · Luxembourg</p><p class="tiny" data-notr="1">${APP_BRAND.legal}</p></div>`;
-  const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>`;
+    <div class="lock-head"><h1>${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</h1><p>${TENANT ? (T_FIL_LBL[tenantInfo.fil] || '') + ' · réseau LuxInterventions' : 'Gestion locative · Luxembourg'}</p><p class="tiny" data-notr="1">${TENANT ? '' : APP_BRAND.legal}</p></div>`;
+  const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>${TENANT ? html`<p class="tiny muted" style="text-align:center;margin:8px 0 0"><a href="?t=main">↩ Centrale principale</a></p>` : ''}`;
+  if (mode === 'blocked') {
+    setHtml(lockEl, html`<div class="lock-card">${head}<div class="alert warn">${icon('lock')}<div><b>Centrale bloquée.</b> L’abonnement est échu ou suspendu : contactez LuxInterventions pour la réactiver. Vos données restent chiffrées et intactes.</div></div>${foot}</div>`);
+    return;
+  }
 
   if (mode === 'checking') {
     setHtml(lockEl, html`<div class="lock-card">${head}<div style="display:flex;justify-content:center;padding:12px"><div class="spinner accent"></div></div>${foot}</div>`);
@@ -2580,8 +2627,8 @@ function renderLock(mode, error = '') {
     setHtml(lockEl, html`<form class="lock-card" data-form="setup" autocomplete="off">
       ${head}
       <div class="alert info">${icon('key')}<div><b>Première configuration.</b> Choisissez la clé d'accès : elle chiffre toutes les données et ne peut pas être récupérée si elle est perdue.</div></div>
-      <label class="field">Code de configuration
-        <input name="code" type="password" required placeholder="ARES_SETUP_CODE" autocomplete="off">
+      <label class="field">${TENANT ? 'Code d’invitation' : 'Code de configuration'}
+        <input name="code" type="password" required placeholder="${TENANT ? 'Code d’invitation reçu' : 'ARES_SETUP_CODE'}" autocomplete="off">
       </label>
       <label class="field">Nouvelle clé d'accès ${pwField('pass', 'Au moins 12 caractères', 'new-password')}</label>
       <div class="meter"><i id="meter"></i></div>
@@ -2656,8 +2703,10 @@ async function boot() {
   renderLock('checking');
   try {
     const meta = navigator.onLine ? await vault.remoteMeta() : null;
+    if (meta && meta.tenant) tenantSave(meta.tenant);
     renderLock(meta && !meta.configured ? 'setup' : 'unlock');
-  } catch {
+  } catch (e) {
+    if (e && e.status === 403 && TENANT) { tenantSave((e.info && e.info.tenant) || tenantInfo); return renderLock('blocked'); }
     renderLock('unlock');
   }
 }
@@ -2796,11 +2845,12 @@ function startSession() {
   idleTimer = setInterval(() => {
     if (!vault.unlocked) return;
     if (Date.now() - lastActive > lockMinutes() * 60000) lockNow('Verrouillé après inactivité.');
-    else if (document.visibilityState === 'visible') { vault.sync(); ptlWatch(); if (Date.now() - lastInbox > 180000) { lastInbox = Date.now(); inboxSync(); chatPoll(); toolsLoad(true); } }
+    else if (document.visibilityState === 'visible') { vault.sync(); ptlWatch(); if (TENANT && Math.random() < 0.1) tenantRefresh(); if (Date.now() - lastInbox > 180000) { lastInbox = Date.now(); inboxSync(); chatPoll(); toolsLoad(true); } }
   }, 30000);
   renderShell();
   applyBrand();
   fixIdentity().catch(() => {});
+  tenantRefresh();
   // à l'ouverture de l'app : toujours l'Accueil ; après un verrouillage automatique : la page où l'on était
   go(firstOpen ? 'dashboard' : location.hash.slice(2) || 'dashboard', true);
   firstOpen = false;
@@ -2891,12 +2941,12 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['reseau', 'Réseau', 'globe']] },
+  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['reseau', 'Réseau', 'globe']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['reseau', 'Réseau', 'globe'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['reseau', 'Réseau', 'globe'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
@@ -2911,8 +2961,9 @@ const COLOR_LEG = [['#F97316', 'Interventions et maintenance : demandes, travaux
   ['#DC2626', 'Publicité : annonces des partenaires du quartier'], ['#475569', 'Avis de l’immeuble : coupures, travaux dans les communs'],
   ['#4F46E5', 'Planning du jour : ce qui est prévu aujourd’hui']];
 const legDots = () => html`<div class="leg-dots" aria-label="Légende des couleurs">${COLOR_LEG.map(([c, t]) => html`<button type="button" class="leg-dot" style="--c:${c}" data-action="leg-dot"><span class="leg-tip">${t}</span></button>`)}</div>`;
+const navKeep = (it) => routeOk(it[0]) && !(TENANT && it[4] === 'abo');
 function sideNavHtml() {
-  return NAV_TREE.map((x) => (x.group ? html`<div class="nav-group">${x.group}</div>${x.items.map((it) => navItem(it, true))}` : navItem(x)));
+  return NAV_TREE.map((x) => (x.group ? (x.items.some(navKeep) ? html`<div class="nav-group">${x.group}</div>${x.items.filter(navKeep).map((it) => navItem(it, true))}` : '') : navKeep(x) ? navItem(x) : ''));
 }
 function navItem([id, label, ic, plus, sec], sub) {
   if (masked().has(id)) return html`<span class="navbtn nav-masked${sub ? ' nav-sub' : ''}" aria-disabled="true" title="Masqué dans les réglages">${icon('lock')}<span>MASQUÉ</span></span>`;
@@ -2922,7 +2973,7 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>LuxInterventions<small>Gestion locative</small></span></div>
+      <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>${TENANT ? tenantInfo.nom || 'Centrale' : 'LuxInterventions'}<small>${TENANT ? (T_FIL_LBL[tenantInfo.fil] || '') + ' · réseau LuxInterventions' : 'Gestion locative'}</small></span></div>
       ${sideNavHtml()}
       ${navBtn(['reglages', 'Réglages', 'gear'])}
       ${legDots()}
@@ -2931,13 +2982,13 @@ function renderShell() {
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>LuxInterventions</span></div>
+        <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>${TENANT ? tenantInfo.nom || 'Centrale' : 'LuxInterventions'}</span></div>
         <button class="sync" id="sync" data-action="sync-now" data-s="idle"><i></i><span>…</span></button>
         <button class="btn icon ghost" data-action="lock" aria-label="Verrouiller" title="Verrouiller">${icon('lock')}</button>
       </header>
       <main class="main" id="view"></main>
     </div>
-    <nav class="bottomnav" aria-label="Navigation">${NAV_MOBILE.map((x) => navItem(x))}</nav>
+    <nav class="bottomnav" aria-label="Navigation">${NAV_MOBILE.filter((x) => navKeep(x) || x[0] === 'reglages').map((x) => navItem(x))}</nav>
   `);
   renderSync();
 }
@@ -2953,7 +3004,7 @@ function renderSync() {
 }
 
 function go(route, replace) {
-  if (!VIEWS[route] || masked().has(maskOf(route))) route = 'dashboard';
+  if (!VIEWS[route] || masked().has(maskOf(route)) || !routeOk(route)) route = homeRoute();
   ui.route = route;
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
@@ -3039,7 +3090,7 @@ function renderView() {
   if (!view || !vault.unlocked) return;
   const active = document.activeElement;
   const keepSearch = active && active.name === 'search' ? active.selectionStart : null;
-  setHtml(view, VIEWS[ui.route]());
+  setHtml(view, html`${tenantBanner()}${VIEWS[ui.route]()}`);
   enhanceFolds(view, '', false);
   updateBadge();
   tripPaint();
@@ -4426,6 +4477,15 @@ dashboard() {
   // 🏨 Hotel — première étape : les clients (chambre, étage, clé, arrivée → départ)
   hotel() { return hotView('hotel'); },
   airbnb() { return hotView('airbnb'); },
+  // 🛠️ centrale d'un client : ses demandes d'intervention à LuxInterventions
+  demandes() {
+    const list = vault.list('reglages').filter((r) => r.id.startsWith('tdem-')).sort((a, b) => (b.t || '').localeCompare(a.t || ''));
+    return html`${pageHead('🛠️ Demandes d’intervention', 'Envoyées à LuxInterventions, qui envoie ses intervenants')}
+      <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="tdem-new">${icon('plus')} Demande</button></div></div>
+      ${list.length ? html`<div class="list">${list.map((d) => html`<div class="row" style="display:block"><b>${TDEM_URG[d.urgence] || ''} · ${d.titre}</b>
+        <div class="small" style="white-space:pre-wrap">${d.texte}</div><div class="tiny muted">${d.adresse ? '📍 ' + d.adresse + ' · ' : ''}Envoyée le ${fmtDateTime(d.t)}</div></div>`)}</div>`
+        : html`<div class="card" style="max-width:560px"><p style="margin-top:0">Une fuite, une panne, des travaux ? ＋ Demande : LuxInterventions la reçoit tout de suite (chiffrée), la planifie et envoie un intervenant.</p></div>`}`;
+  },
   reseau() {
     const n = ui.net;
     if (!n || Date.now() - n.at > 60000) setTimeout(() => netLoad(), 0);
@@ -5975,6 +6035,23 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" data-action="net-cert-pdf" data-id="${id}">⬇ PDF</button>`,
     };
   },
+  'tdem-form'() {
+    const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
+    const soc = societe();
+    return {
+      title: '🛠️ Demande d’intervention',
+      narrow: true,
+      body: html`<form id="f" data-form="tdem" class="fields">
+        ${field('Objet', 'titre', '', { full: true, required: true, placeholder: 'ex. Fuite d’eau salle de bain, panne de chauffage…' })}
+        <label class="field full">Urgence<select name="urgence">${Object.entries(TDEM_URG).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
+        <label class="field full">Adresse${imms.length ? html`<select name="imm"><option value="">— autre adresse —</option>${imms.map((im) => html`<option value="${im.adresse}">${im.adresse}</option>`)}</select>` : ''}<input name="adresse" placeholder="rue, n°, ville, étage, appartement"></label>
+        <label class="field full">Description<textarea name="texte" required style="min-height:100px" placeholder="Que se passe-t-il ? Depuis quand ? Accès (code, clé, gardien)…"></textarea></label>
+        ${field('Contact sur place', 'contact', '', { placeholder: 'ex. locataire M. Dupont' })}${field('Téléphone', 'tel', soc.tel || '', { type: 'tel' })}
+        <p class="tiny muted full" style="margin:0">Chiffrée : seule la centrale LuxInterventions peut la lire.</p>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Envoyer</button>`,
+    };
+  },
   'net-new'() {
     return {
       title: '🌐 Nouveau client du réseau',
@@ -6721,7 +6798,7 @@ const SHEETS = {
       } else {
         const url = espUrl(l);
         const tel = (l.tel || '').replace(/[^\d+]/g, '');
-        const inv = inviteMsg('loc', e.lang, l.prenom || '', appUrl(), e.code || '—', url, 'NOBIS s.a.r.l.');
+        const inv = inviteMsg('loc', e.lang, l.prenom || '', appUrl(), e.code || '—', url, socName());
         const msg = encodeURIComponent(inv.txt);
         body = html`<p style="margin-top:0">Espace actif. Donnez à <b>${fullName(l)}</b> son <b>code d'accès</b> (pour l'app installée depuis luxinterventions.com) ou envoyez-lui le lien direct.</p>
           <div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d'accès personnel</div>
@@ -7473,7 +7550,7 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('taches', upd), w ? '🔄 Ouvrier changé' : '⏹ Ouvrier retiré', `${t.titre} — ${intervName(old)} → ${w ? intervFull(w) : 'à choisir'} (${why})`, t.immId);
     // trajet de l'ancien ouvrier : le compte à rebours s'arrête ; le nouveau lance le sien avec « Je suis en route »
     const tk = ui.tripTks[t.id + '|' + today()];
-    if (tk) fetch(vault.api.base.replace(/ares\/$/, '') + 'trip/' + tk, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ st: 'stop' }) }).catch(() => {});
+    if (tk) fetch(vault.api.root + 'trip/' + tk, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ st: 'stop' }) }).catch(() => {});
     if (t.ptl && ptlConf()) { const s2 = vault.get('taches', t.id); ptlStatus(t.ptl.tid, w && s2.date ? 'planifiee' : 'prise', { technicien: w ? intervFull(w) : '', planned_at: w && s2.date ? `${s2.date}T${s2.heure || '08:00'}` : '', text: w ? `🔄 Changement d’intervenant : ${intervFull(w)}` : '🔄 LuxInterventions envoie un autre intervenant.' }).catch(() => {}); }
     closeSheet();
     toast(w ? `🔄 ${t.titre} → ${intervFull(w)}` : `⏹ ${t.titre} : ouvrier retiré`);
@@ -7621,6 +7698,7 @@ const ACTIONS = {
   'hote-conf': () => openOver('hote-conf'),
   'new-txco': () => openOver('txco-form'),
   'new-annc': () => openOver('annc-form'),
+  'tdem-new': () => openOver('tdem-form'),
   'net-new': () => openOver('net-new'),
   'net-reload': () => netLoad(true),
   'net-open': (d) => openOver('net-client', d.id),
@@ -8532,6 +8610,19 @@ const FORMS = {
     goBack();
     const to = type === 'proprio' ? 'proprios' : 'agences';
     if (ui.route !== to) go(to);
+  },
+  async tdem(fd) {
+    const g = (k) => String(fd.get(k) || '').trim();
+    const d = { titre: g('titre'), urgence: TDEM_URG[g('urgence')] ? g('urgence') : 'normal', adresse: [g('imm'), g('adresse')].filter(Boolean).join(' — '), texte: g('texte'), contact: g('contact'), tel: g('tel'), t: new Date().toISOString() };
+    if (!d.titre || !d.texte) return;
+    try {
+      const k = await (await vault.call('network-key')).json();
+      const body = await sealForOwner(k.pub, { type: 'demande', client: socName(), fil: tenantInfo.fil || '', ...d });
+      await vault.call('demande', { method: 'POST', body });
+    } catch (e) { return toast(e.status === 423 ? 'Lecture seule : abonnement échu' : e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
+    await vault.mutate((tx) => tx.put('reglages', { id: 'tdem-' + uid(), ...d }), '🛠️ Demande d’intervention envoyée', d.titre);
+    toast('Demande envoyée à LuxInterventions');
+    goBack();
   },
   async 'net-new'(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
