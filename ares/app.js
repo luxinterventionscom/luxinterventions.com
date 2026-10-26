@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.198.0';
+const VERSION = '2.199.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1202,11 +1202,85 @@ async function binDaily() {
   }
   try { localStorage.setItem('aresBinDay', today()); } catch {}
 }
+// 🏠 Patrimoine (biens possédés ou gérés) : par type, combien (menu 1…10, 10+) et, si connu, le nombre exact
+const PAT_TYPES = [
+  ['🏠 Habitation', { chambre: 'Chambre (colocation)', studio: 'Studio', appartement: 'Appartement', duplex: 'Duplex / penthouse', maison: 'Maison / villa' }],
+  ['🚗 Véhicules', { garage: 'Garage / box', parkint: 'Parking intérieur', parkext: 'Place de parking extérieure' }],
+  ['🏢 Professionnel', { bureau: 'Bureau', commerce: 'Commerce / boutique', resto: 'Restaurant / café / bar', atelier: 'Local artisanal / atelier', entrepot: 'Entrepôt / dépôt', cabinet: 'Cabinet (médical, libéral)' }],
+  ['🏗️ Autre', { immeuble: 'Immeuble entier', terrain: 'Terrain', cave: 'Cave / débarras', autre: 'Autre' }],
+];
+const PAT_Q = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '10+'];
+const AG_POUR = { soi: 'Son propre compte', proprios: 'Des propriétaires', fonds: 'Des fonds d’investissement' };
+function patBlock(pat = {}) {
+  return html`<div class="full section-label" style="margin:6px 0 0">🏠 Patrimoine (biens possédés ou gérés)</div>
+    <p class="tiny muted full" style="margin:0">Combien de chaque type ; si le client donne le nombre exact, écrivez-le à droite.</p>
+    ${PAT_TYPES.map(([g, types]) => html`<div class="full"><div class="small" style="font-weight:700;margin:6px 0 2px">${g}</div>${Object.entries(types).map(([k, l]) => { const v = pat[k] || {}; return html`<div class="pat-row"><span>${l}</span>
+      <select name="pq_${k}" aria-label="${l}"><option value="">—</option>${PAT_Q.map((q) => html`<option value="${q}" ${v.q === q ? new Raw('selected') : ''}>${q}</option>`)}</select>
+      <input name="pn_${k}" inputmode="numeric" placeholder="exact" value="${v.n || ''}" aria-label="${l} : nombre exact"></div>`; })}</div>`)}
+    ${field('Autre (précisez)', 'pat_autre', pat._autre || '', { full: true, placeholder: 'ex. 2 hangars, 1 salle de sport' })}`;
+}
+function patRead(fd) {
+  const out = {};
+  for (const [, types] of PAT_TYPES) for (const k of Object.keys(types)) {
+    const q = String(fd.get('pq_' + k) || ''), n = String(fd.get('pn_' + k) || '').replace(/\D/g, '').slice(0, 6);
+    if (PAT_Q.includes(q) || n) out[k] = { ...(PAT_Q.includes(q) ? { q } : {}), ...(n ? { n } : {}) };
+  }
+  const a = String(fd.get('pat_autre') || '').trim().slice(0, 200);
+  if (a) out._autre = a;
+  return out;
+}
+// résumé : « 🏠 4 · 🚗 6 · 🏢 1 » (nombre exact sinon quantité du menu)
+function patSum(pat) {
+  if (!pat) return '';
+  return PAT_TYPES.map(([g, types]) => {
+    let n = 0, plus = false;
+    for (const k of Object.keys(types)) { const v = pat[k]; if (!v) continue; if (v.n) n += +v.n; else if (v.q === '10+') { n += 10; plus = true; } else n += +v.q || 0; }
+    return n ? `${g.split(' ')[0]} ${n}${plus ? '+' : ''}` : '';
+  }).filter(Boolean).join(' · ');
+}
+const patList = (pat) => PAT_TYPES.flatMap(([, types]) => Object.entries(types).filter(([k]) => pat && pat[k]).map(([k, l]) => `${pat[k].n || pat[k].q} × ${l}`)).concat(pat && pat._autre ? [pat._autre] : []);
 // 🌐 Réseau : centrales des clients (gérance, agence, propriétaire, hôtel, Airbnb), chacune avec sa cassaforte ;
 // ici : essai, échéance, lecture seule / blocage, nouvel accès, suppression avec certificat, demandes d'intervention reçues
 const NET_FIL = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
 const NET_STATE = { ok: ['🟢', 'Actif'], ro: ['🟠', 'Lecture seule (échu)'], blocked: ['🔴', 'Bloqué'] };
 const NET_ST = { trial: '🎁 Essai', active: '✅ Abonnement', suspended: '⏸ Suspendu' };
+// 🔑 Licences : tarifs par filière (prix 1 an HT, remises 2 et 3 ans), factures, registre
+const LIC_ESSAI = 15;
+const licTarifs = () => vault.get('reglages', 'licTarifs') || {};
+function licPrice(fil, years) {
+  const t = licTarifs()[fil] || {}, an = num(t.an1), r = years === 2 ? num(t.r2) : years === 3 ? num(t.r3) : 0, c = factConf();
+  const base = r2(an * years), remise = r2(base * r / 100), ht = r2(base - remise), taux = num(c.taux), tva = r2(ht * taux / 100);
+  return { an, years, base, r, remise, ht, taux, tva, ttc: r2(ht + tva) };
+}
+const licFacts = () => vault.list('reglages').filter((r) => r.id.startsWith('licfac-')).sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.no || '').localeCompare(a.no || ''));
+const licLog = () => (vault.get('reglages', 'liclog') || {}).list || [];
+async function licLogAdd(t, act, detail = '') {
+  const e = { at: new Date().toISOString(), by: whoLabel() || '⭐ Directeur', tid: t.id, nom: t.nom, fil: t.fil, act, detail };
+  await vault.mutate((tx) => tx.put('reglages', { id: 'liclog', list: [e, ...licLog()].slice(0, 1000) }), '🔑 ' + act, `${t.nom}${detail ? ' · ' + detail : ''}`);
+}
+const addYears = (d, n) => { const x = new Date(d + 'T12:00'); x.setFullYear(x.getFullYear() + n); return x.toISOString().slice(0, 10); };
+async function licInvoicePdf(f) {
+  const c = factConf(), p = makePdf().page(), X = 48, R = 547, G = [0.42, 0.42, 0.42], inf = netInfo(f.tid);
+  const logo = await sigJpeg('/ares/icons/lux-192.png').catch(() => null);
+  if (logo) p.image(X, 40, 62, 62, logo.bytes, logo.w, logo.h);
+  const ex = logo ? X + 78 : X;
+  p.text(ex, 52, c.marque || c.nom, { size: 11, bold: true }).text(ex, 66, c.marque ? 'by ' + c.nom : '', { size: 9, color: G });
+  p.text(ex, 80, c.adresse, { size: 9 }).text(ex, 92, c.ville, { size: 9 }).text(ex, 104, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8.5, color: G });
+  p.text(R, 52, 'FACTURE', { size: 18, bold: true, align: 'right' }).text(R, 72, 'N° ' + f.no, { size: 10, align: 'right' }).text(R, 86, 'Date : ' + fmtDate(f.date), { size: 9, align: 'right' }).text(R, 98, 'Échéance : ' + fmtDate(addDays(f.date, +c.delai || 30)), { size: 9, align: 'right' });
+  p.text(X, 150, 'Client', { size: 9, color: G }).text(X, 164, f.nom, { size: 11, bold: true });
+  if (inf.email || inf.tel) p.text(X, 178, [inf.email, inf.tel].filter(Boolean).join(' · '), { size: 9 });
+  p.rect(X, 210, R - X, 22, { fill: [0.94, 0.94, 0.94] }).text(X + 8, 225, 'Désignation', { size: 9, bold: true }).text(R - 8, 225, 'Montant HT', { size: 9, bold: true, align: 'right' });
+  let y = 250;
+  p.text(X + 8, y, `Licence centrale ${c.marque || c.nom} — ${(NET_FIL[f.fil] || '').replace(/^\S+ /, '')} — ${f.years} an${f.years > 1 ? 's' : ''}`, { size: 10 }).text(R - 8, y, money(f.base), { size: 10, align: 'right' }); y += 14;
+  p.text(X + 8, y, `Période : du ${fmtDate(f.du)} au ${fmtDate(f.au)} · ${f.years} × ${money(f.an)} HT`, { size: 8.5, color: G }); y += 20;
+  if (f.remise) { p.text(X + 8, y, `Remise forfait ${f.years} ans (−${f.r} %)`, { size: 10 }).text(R - 8, y, '−' + money(f.remise), { size: 10, align: 'right' }); y += 20; }
+  p.line(X, y, R, y); y += 18;
+  p.text(R - 120, y, 'Total HT', { size: 10 }).text(R - 8, y, money(f.ht), { size: 10, align: 'right' }); y += 16;
+  p.text(R - 120, y, `TVA ${String(f.taux).replace('.', ',')} %`, { size: 10 }).text(R - 8, y, money(f.tva), { size: 10, align: 'right' }); y += 18;
+  p.text(R - 120, y, 'Total TTC', { size: 12, bold: true }).text(R - 8, y, money(f.ttc), { size: 12, bold: true, align: 'right' }); y += 34;
+  if (c.iban) p.text(X, y, `Paiement par virement : ${c.banque ? c.banque + ' · ' : ''}IBAN ${c.iban}${c.bic ? ' · BIC ' + c.bic : ''} · communication : ${f.no}`, { size: 9 });
+  return p.bytes();
+}
 const netUrl = (tid) => `${location.origin}/locataires.html?t=${tid}`;
 async function netApi(path, method = 'GET', body) {
   const r = await vault.call(path, { method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
@@ -1214,8 +1288,27 @@ async function netApi(path, method = 'GET', body) {
 }
 const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
 const netInvite = (t, code) => `🌐 ${t.nom} — votre centrale ${societe().nom || 'LuxInterventions'} (${NET_FIL[t.fil] || ''}) : ${netUrl(t.id)}\nCode d’invitation : ${code}\nÀ la première ouverture, choisissez votre clé d’accès (elle chiffre vos données : personne d’autre ne la connaît, gardez aussi la clé de secours).`;
+// 🛠️ demandes d'intervention des centrales des clients → directement dans Maintenance (comme les signalements)
+let netDemBusy = false;
+async function netDemSync(list) {
+  if (TENANT || netDemBusy || !vault.unlocked || isCompta()) return;
+  const keys = vault.get('reglages', 'signal');
+  if (!keys || !keys.priv) return;
+  netDemBusy = true;
+  try {
+    const items = ((await netApi('demandes')).items || []).slice(0, 50);
+    for (const it of items) {
+      let m;
+      try { m = await openFromTenant(keys.priv, new Uint8Array(await (await vault.call('demandes/' + it.name)).arrayBuffer())); } catch { continue; }
+      const tid = it.name.split('-')[1] || '', cl = ((list || (ui.net && ui.net.list) || []).find((t) => t.id === tid) || {}).nom || m.client || 'Client du réseau';
+      await vault.mutate((tx) => tx.put('taches', { type: 'reparation', titre: `🌐 ${cl} : ${String(m.titre || 'Intervention').slice(0, 80)}`, immId: '', logId: '', locId: '', intervenantId: '', date: today(), recur: '', statut: 'afaire', sentAt: m.t || new Date().toISOString(), urgent: m.urgence === 'urgent',
+        net: { tid, nom: cl, urgence: m.urgence || 'normal' }, adresse: String(m.adresse || '').slice(0, 200), note: `${String(m.texte || '').slice(0, 3000)}${m.adresse ? '\n📍 ' + m.adresse : ''}${m.contact ? '\n👤 ' + m.contact : ''}${m.tel ? ' · 📞 ' + m.tel : ''}\n\n— Demande de ${cl} (centrale du client) le ${fmtDateTime(m.t || Date.now())}` }), '🌐 Demande d’un client → Maintenance', `${cl} — ${m.titre || ''}`);
+      await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
+    }
+  } catch { /* Worker pas encore à jour ou hors ligne */ } finally { netDemBusy = false; }
+}
 async function netLoad(force) {
-  if (!vault.unlocked || vault.op && vault.op.role === 'comptable' && false) return;
+  if (!vault.unlocked) return;
   if (ui.net && ui.net.loading) return;
   if (!force && ui.net && Date.now() - ui.net.at < 60000) return;
   ui.net = { ...(ui.net || { list: [], dem: [] }), loading: true };
@@ -1224,11 +1317,8 @@ async function netLoad(force) {
     // clé publique de la centrale principale : les centrales des clients chiffrent pour elle leurs demandes
     if (keys && keys.pub && !(vault.get('reglages', 'netKey') || {}).done) { await netApi('network-key', 'PUT', { pub: keys.pub }); await vault.mutate((tx) => tx.put('reglages', { id: 'netKey', done: today() }), 'Réseau : clé publiée', ''); }
     const list = (await netApi('tenants')).tenants || [];
-    const dem = [];
-    for (const it of ((await netApi('demandes')).items || []).slice(0, 50)) {
-      try { const msg = await openFromTenant(keys.priv, new Uint8Array(await (await vault.call('demandes/' + it.name)).arrayBuffer())); dem.push({ name: it.name, tid: it.name.split('-')[1] || '', ...msg }); } catch { /* illisible */ }
-    }
-    ui.net = { list, dem, at: Date.now(), err: '' };
+    ui.net = { list, dem: [], at: Date.now(), err: '' };
+    await netDemSync(list);
   } catch (e) { ui.net = { list: (ui.net || {}).list || [], dem: (ui.net || {}).dem || [], at: Date.now(), err: e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.' : e.message || 'Connexion impossible' }; }
   if (ui.route === 'reseau') renderView();
   if (ui.sheet && ui.sheet.kind && ui.sheet.kind.startsWith('net')) { ui.sheet.rendered = false; renderSheet(); }
@@ -1669,6 +1759,7 @@ async function hoteInbox(h, msg) {
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
 async function inboxSync() {
+  netDemSync();
   const keys = vault.get('reglages', 'signal');
   if (!keys || !keys.priv || inboxBusy || !vault.unlocked) return;
   inboxBusy = true;
@@ -2941,12 +3032,12 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['reseau', 'Réseau', 'globe']] },
+  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['reseau', 'Réseau', 'globe'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
@@ -3421,7 +3512,8 @@ function agView(f) {
       <div class="section-label">${f === 'proprio' ? '🔑 Propriétaires' : '🏘️ Agences immo.'}</div>
       ${list.length ? html`<div class="list">${list.map((a) => html`<button class="row" data-action="edit-agence" data-id="${a.id}"><span class="avatar">${typ(a) === 'proprio' ? '🔑' : '🏘️'}</span>
         <span class="grow"><span class="title" style="display:block">${a.nom}</span>
-        <span class="meta">${typ(a) === 'proprio' ? 'Propriétaire' : 'Agence immo.'}${a.rcs ? html` · RCS ${a.rcs}` : ''}${a.dir && (a.dir.prenom || a.dir.nom) ? html` · ⭐ ${[a.dir.prenom, a.dir.nom].filter(Boolean).join(' ')}` : ''} · 🏠 ${plural(nb[a.id] || 0, 'bien')}</span>
+        <span class="meta">${typ(a) === 'proprio' ? 'Propriétaire' : 'Agence immo.'}${a.rcs ? html` · RCS ${a.rcs}` : ''}${a.dir && (a.dir.prenom || a.dir.nom) ? html` · ⭐ ${[a.dir.prenom, a.dir.nom].filter(Boolean).join(' ')}` : ''} · 📣 ${plural(nb[a.id] || 0, 'annonce')}</span>
+        ${patSum(a.pat) || (a.pour || []).length ? html`<span class="tiny" style="display:block">${patSum(a.pat)}${(a.pour || []).length ? `${patSum(a.pat) ? ' · ' : ''}pour : ${a.pour.map((k) => AG_POUR[k].toLowerCase()).join(', ')}${a.fonds ? ' (' + a.fonds + ')' : ''}` : ''}</span>` : ''}
         ${miss(a).length && !a.bankLater ? html`<span class="tiny amber" style="display:block">⚠️ À compléter : ${miss(a).join(', ')}</span>` : ''}</span><span class="chev">›</span></button>`)}</div>`
         : html`<div class="card" style="max-width:560px"><p style="margin-top:0">${f === 'proprio' ? 'Les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.' : 'Les agences immobilières publient leurs biens et vous confient leurs interventions.'}</p></div>`}`;
 }
@@ -4489,25 +4581,53 @@ dashboard() {
   reseau() {
     const n = ui.net;
     if (!n || Date.now() - n.at > 60000) setTimeout(() => netLoad(), 0);
-    const list = (n && n.list) || [], dem = (n && n.dem) || [], certs = vault.list('reglages').filter((r) => r.id.startsWith('netcert-')).sort((a, b) => (b.at || '').localeCompare(a.at || ''));
-    const days = (u) => (u ? Math.round((new Date(u + 'T12:00') - new Date(today() + 'T12:00')) / 864e5) : null);
-    return html`${pageHead('🌐 Réseau', `${plural(list.length, 'client')} · ${plural(dem.length, 'demande')}`)}
-      <div class="imm-row"><span></span><div class="imm-btns">${isCompta() ? '' : html`<button class="btn primary" data-action="net-new">${icon('plus')} Client</button>`}<button class="btn" data-action="net-reload">${icon('sync')} Actualiser</button></div></div>
-      ${n && n.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${n.err}</div></div>` : ''}
-      ${!n || (n.loading && !list.length) ? html`<p class="muted">Chargement…</p>` : ''}
-      ${dem.length ? html`<div class="section-label">📥 Demandes d’intervention des clients (${dem.length})</div><div class="list" style="margin-bottom:14px">${dem.map((d) => html`<div class="row" style="display:block">
-        <b>${(list.find((t) => t.id === d.tid) || {}).nom || d.client || d.tid}</b> · ${d.urgence === 'urgent' ? html`<span class="badge bad">🔴 Urgent</span> · ` : ''}${d.titre || 'Intervention'}
-        <div class="small" style="white-space:pre-wrap">${d.texte || ''}</div><div class="tiny muted">${d.adresse ? '📍 ' + d.adresse + ' · ' : ''}${d.contact ? '👤 ' + d.contact + ' · ' : ''}${d.tel ? '📞 ' + d.tel + ' · ' : ''}${d.t ? fmtDateTime(d.t) : ''}</div>
-        <div class="actions" style="margin:6px 0 0">${isCompta() ? '' : html`<button class="btn sm primary" data-action="net-dem-task" data-id="${d.name}">📋 Créer l’intervention</button>`}<button class="btn sm ghost" data-action="net-dem-done" data-id="${d.name}">✅ Traitée</button></div></div>`)}</div>` : ''}
-      <div class="section-label">🏢 Clients du réseau</div>
+    const list = (n && n.list) || [], certs = vault.list('reglages').filter((r) => r.id.startsWith('netcert-')).sort((a, b) => (b.at || '').localeCompare(a.at || ''));
+    const facts = licFacts(), log = licLog(), y = String(new Date().getFullYear()), t0 = today();
+    const days = (u) => (u ? Math.round((new Date(u + 'T12:00') - new Date(t0 + 'T12:00')) / 864e5) : null);
+    const tab = ui.licTab || 'clients';
+    const tabs = html`<div class="tabs" role="tablist" style="margin-bottom:14px">${[['clients', '🏢 Clients'], ['factures', '🧾 Factures'], ['stats', '📊 Statistiques'], ['registre', '📜 Registre']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="lic-tab" data-id="${k}">${l}</button>`)}</div>`;
+    const head = html`${pageHead('🔑 Licences', `${plural(list.length, 'client')} · essai ${LIC_ESSAI} jours · abonnements 1 · 2 · 3 ans`)}
+      <div class="imm-row"><span></span><div class="imm-btns">${isCompta() ? '' : html`<button class="btn primary" data-action="net-new">${icon('plus')} Client</button><button class="btn" data-action="lic-tarifs">💶 Tarifs</button>`}<button class="btn" data-action="net-reload">${icon('sync')} Actualiser</button></div></div>
+      ${n && n.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${n.err}</div></div>` : ''}${tabs}`;
+    if (tab === 'factures') {
+      const due = facts.filter((f) => !f.paid);
+      return html`${head}<p class="small" style="margin:0 0 10px">À encaisser : <b>${money(sum(due, (f) => f.ttc))}</b> (${plural(due.length, 'facture')}) · Encaissé ${y} : <b>${money(sum(facts.filter((f) => f.paid && (f.paidAt || f.date).startsWith(y)), (f) => f.ttc))}</b>
+        <button class="btn sm" data-action="lic-csv" style="margin-left:8px">⬇ CSV</button></p>
+        ${facts.length ? html`<div class="list">${facts.map((f) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${f.no} · ${f.nom}</span><span class="meta">${fmtDate(f.date)} · ${f.years} an${f.years > 1 ? 's' : ''}${f.r ? ` (−${f.r} %)` : ''} · ${money(f.ht)} HT · <b>${money(f.ttc)} TTC</b></span></span>
+          <button class="btn sm" data-action="lic-pdf" data-id="${f.id}">⬇ PDF</button><button class="btn sm ${f.paid ? '' : 'primary'}" data-action="lic-paid" data-id="${f.id}" ${isCompta() ? '' : ''}>${f.paid ? '✅ Payée' : '💶 À payer'}</button></div>`)}</div>` : html`<p class="small muted">Aucune facture de licence.</p>`}`;
+    }
+    if (tab === 'stats') {
+      const byFil = Object.keys(NET_FIL).map((k) => [k, list.filter((t) => t.fil === k)]).filter(([, l]) => l.length);
+      const yrs = [...new Set(facts.map((f) => f.date.slice(0, 4)))].sort().reverse();
+      const months = Array.from({ length: 12 }, (_, i) => `${y}-${String(i + 1).padStart(2, '0')}`);
+      const mx = Math.max(1, ...months.map((m) => sum(facts.filter((f) => f.date.startsWith(m)), (f) => f.ht)));
+      const essais = log.filter((e) => e.act === 'Essai accordé').map((e) => e.tid), payes = new Set(facts.map((f) => f.tid));
+      const conv = essais.length ? Math.round((essais.filter((x) => payes.has(x)).length / essais.length) * 100) : 0;
+      const ren = (a, b) => list.filter((t) => t.st === 'active' && days(t.until) != null && days(t.until) >= a && days(t.until) <= b);
+      return html`${head}<div class="metrics" style="margin-bottom:14px">
+          <div class="metric"><div class="lbl">Clients</div><div class="val">${list.length}</div><div class="sub">🎁 ${list.filter((t) => t.st === 'trial').length} essai · ✅ ${list.filter((t) => t.st === 'active' && t.state === 'ok').length} actifs</div></div>
+          <div class="metric"><div class="lbl">Échus / bloqués</div><div class="val">${list.filter((t) => t.state !== 'ok').length}</div><div class="sub">🟠 ${list.filter((t) => t.state === 'ro').length} · 🔴 ${list.filter((t) => t.state === 'blocked').length}</div></div>
+          <div class="metric"><div class="lbl">Chiffre ${y} (HT)</div><div class="val">${money(sum(facts.filter((f) => f.date.startsWith(y)), (f) => f.ht))}</div><div class="sub">${plural(facts.filter((f) => f.date.startsWith(y)).length, 'licence')} vendue(s)</div></div>
+          <div class="metric"><div class="lbl">Essai → abonnement</div><div class="val">${conv} %</div><div class="sub">${essais.filter((x) => payes.has(x)).length} / ${essais.length}</div></div></div>
+        <div class="section-label">Par filière</div><div class="list" style="margin-bottom:14px">${byFil.map(([k, l]) => html`<div class="row"><span class="grow">${NET_FIL[k]}</span><span class="meta">${l.length} · 🎁 ${l.filter((t) => t.st === 'trial').length} · ✅ ${l.filter((t) => t.st === 'active').length} · ${money(sum(facts.filter((f) => f.fil === k), (f) => f.ht))} HT</span></div>`)}</div>
+        <div class="section-label">Ventes ${y} par mois (HT)</div><div class="bars" style="display:flex;gap:4px;align-items:flex-end;height:110px;margin-bottom:6px">${months.map((m) => { const v = sum(facts.filter((f) => f.date.startsWith(m)), (f) => f.ht); return html`<div title="${m} : ${money(v)}" style="flex:1;background:var(--accent);opacity:${v ? 1 : 0.15};height:${Math.max(3, Math.round((v / mx) * 100))}%;border-radius:4px 4px 0 0"></div>`; })}</div>
+        <div class="tiny muted" style="display:flex;justify-content:space-between;margin-bottom:14px"><span>janv.</span><span>déc.</span></div>
+        <div class="section-label">Par forfait</div><div class="list" style="margin-bottom:14px">${[1, 2, 3].map((n2) => html`<div class="row"><span class="grow">🔑 ${n2} an${n2 > 1 ? 's' : ''}</span><span class="meta">${facts.filter((f) => f.years === n2).length} · ${money(sum(facts.filter((f) => f.years === n2), (f) => f.ht))} HT</span></div>`)}</div>
+        ${yrs.length > 1 ? html`<div class="section-label">Par année (HT)</div><div class="list" style="margin-bottom:14px">${yrs.map((yy) => html`<div class="row"><span class="grow">${yy}</span><span class="meta">${money(sum(facts.filter((f) => f.date.startsWith(yy)), (f) => f.ht))}</span></div>`)}</div>` : ''}
+        <div class="section-label">Renouvellements à venir</div><div class="list">${[[0, 30], [31, 60], [61, 90]].map(([a, b]) => html`<div class="row"><span class="grow">${a}–${b} jours</span><span class="meta">${ren(a, b).map((t) => t.nom).join(', ') || '—'}</span></div>`)}</div>`;
+    }
+    if (tab === 'registre') {
+      return html`${head}<p style="margin:0 0 10px"><button class="btn sm" data-action="lic-csv" data-k="log">⬇ CSV</button></p>
+        ${log.length ? html`<div class="list">${log.slice(0, 200).map((e) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${e.act} · ${e.nom}</span><span class="meta">${fmtDateTime(e.at)} · ${e.by}${e.detail ? ' · ' + e.detail : ''}</span></span></div>`)}</div>` : html`<p class="small muted">Rien pour le moment.</p>`}
+        ${certs.length ? html`<div class="section-label" style="margin-top:16px">🧾 Certificats de suppression</div><div class="list">${certs.map((c) => html`<button class="row" data-action="net-cert" data-id="${c.id}"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">${c.tenant.nom}</span><span class="meta">${fmtDateTime(c.at)} · ${plural(c.objects, 'objet')} effacés</span></span><span class="chev">›</span></button>`)}</div>` : ''}`;
+    }
+    return html`${head}${!n || (n.loading && !list.length) ? html`<p class="muted">Chargement…</p>` : ''}
       ${list.length ? html`<div class="list">${list.map((t) => { const st = NET_STATE[t.state] || NET_STATE.ok, dl = days(t.until); return html`<button class="row" data-action="net-open" data-id="${t.id}"><span class="avatar">${(NET_FIL[t.fil] || '🌐').split(' ')[0]}</span>
         <span class="grow"><span class="title" style="display:block">${t.nom}</span><span class="meta">${NET_FIL[t.fil] || ''} · ${NET_ST[t.st] || ''}${t.until ? html` · jusqu’au ${fmtDate(t.until)}${dl != null && dl >= 0 ? ` (${dl} j)` : ''}` : ''}</span>
         <span class="tiny" style="display:block">${t.configured ? (t.lastSeen ? '🖥️ dernière connexion ' + fmtDateTime(t.lastSeen) : '🔐 centrale configurée') : '✉️ invitation envoyée, pas encore ouverte'}</span></span>
         <span class="badge ${t.state === 'ok' ? 'ok' : t.state === 'ro' ? 'warn' : 'bad'}">${st[0]} ${st[1]}</span></button>`; })}</div>`
-        : n && !n.loading && !n.err ? html`<div class="card" style="max-width:560px"><p style="margin-top:0">Donnez à vos clients (gérances, agences, propriétaires, hôtels, Airbnb) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; vous ne voyez que leurs demandes d’intervention. ＋ Client → essai gratuit (15 jours par défaut).</p></div>` : ''}
-      ${certs.length ? html`<div class="section-label" style="margin-top:16px">🧾 Certificats de suppression</div><div class="list">${certs.map((c) => html`<button class="row" data-action="net-cert" data-id="${c.id}"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">${c.tenant.nom}</span><span class="meta">${fmtDateTime(c.at)} · ${plural(c.objects, 'objet')} effacés</span></span><span class="chev">›</span></button>`)}</div>` : ''}`;
+        : n && !n.loading && !n.err ? html`<div class="card" style="max-width:560px"><p style="margin-top:0">Donnez à vos clients (gérances, agences, propriétaires, hôtels, Airbnb) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; leurs demandes d’intervention arrivent dans Maintenance. ＋ Client → essai gratuit de ${LIC_ESSAI} jours, puis abonnement 1, 2 ou 3 ans.</p></div>` : ''}`;
   },
-  // 🚕 Taxis : sociétés de taxi / chauffeurs privés du réseau (chacune a son app) et les courses du moment
   taxis() {
     const cos = txCos(), t = today();
     const rides = vault.list('hotes').filter((h) => h.depart >= t).flatMap((h) => [...(h.taxi && h.taxi.co && h.arr ? [[h, 'arr', h.arr, h.taxi]] : []), ...(h.rides || []).filter((r) => r.taxi && r.taxi.co).map((r) => [h, r.id, r, r.taxi])]);
@@ -4582,6 +4702,7 @@ dashboard() {
           <div class="card-title"><h3>${o.logo ? html`<img class="org-logo big" src="${o.logo}" alt="">` : html`<img src="/portail/icons/ptl-32.png" alt="" width="22" height="22" style="vertical-align:-4px;margin-right:6px;border-radius:5px">`}${o.name}</h3><button class="btn icon ghost sm" data-action="ger-edit" data-id="${o.id}" aria-label="Modifier">${icon('edit')}</button></div>
           <dl class="kv small">
             <dt>Type</dt><dd>${ORG_KINDS[kOf(o)]}</dd>
+            ${patSum((vault.get('reglages', 'gerpat-' + o.id) || {}).pat) ? html`<dt>Patrimoine</dt><dd>${patSum(vault.get('reglages', 'gerpat-' + o.id).pat)}</dd>` : ''}
             <dt>Accès</dt><dd>${us.filter((u) => u.active).length}${wait ? html` · <span class="amber">${wait} invitation(s) en attente</span>` : ''}</dd>
             <dt>Résidences</dt><dd>${o.residences || 0}</dd>
             <dt>Demandes en cours</dt><dd class="${o.open ? 'accent' : ''}">${o.open || 0}</dd>
@@ -4696,7 +4817,8 @@ dashboard() {
     const sec = ui.cpSec || 'compta';
     const secTabs = html`<div class="tabs" role="tablist" style="max-width:640px;margin-bottom:16px">${[['compta', html`📒 <span class="tab-long">Comptabilité</span><span class="tab-short">Compta</span>`], ['stats', html`📊 <span class="tab-long">Statistiques</span><span class="tab-short">Stats</span>`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sec === k}" data-action="cp-sec" data-id="${k}">${l}</button>`)}</div>`;
     // Abonnements : rubrique à part dans le menu, sans les onglets de la comptabilité
-    if (sec === 'abo') return html`${pageHead('💳 Abonnements', 'Abonnements des gérances et annonces publicitaires vendues')}${aboSection()}`;
+    if (sec === 'abo') { const lf = licFacts(), yy = String(new Date().getFullYear()); return html`${pageHead('💳 Abonnements', 'Abonnements des gérances et annonces publicitaires vendues')}
+      ${TENANT ? '' : html`<button class="card row" data-action="go" data-to="reseau" style="width:100%;margin-bottom:14px;text-align:left"><span class="avatar">🔑</span><span class="grow"><span class="title" style="display:block">Licences des centrales clients</span><span class="meta">${yy} : ${money(sum(lf.filter((f) => f.date.startsWith(yy)), (f) => f.ht))} HT · à encaisser ${money(sum(lf.filter((f) => !f.paid), (f) => f.ttc))} TTC</span></span><span class="chev">›</span></button>`}${aboSection()}`; }
     if (sec === 'stats') return html`${secTabs}${pageHead('📊 Statistiques', 'Loyers, occupation, dépenses, interventions, devis')}${VIEWS.stats()}${devStatsHtml(ui.year)}`;
     const tabs = html`<div class="tabs tabs-wrap" role="tablist" style="max-width:720px">${[['journal', 'Journal'], ['tva', 'TVA'], ['interv', '🔧 Interventions'], ['fact', '🧾 Factures'], ['frais', '💸 Frais fixes'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
     if (tab === 'stats') ui.cpTab = 'journal';
@@ -4877,6 +4999,7 @@ dashboard() {
       <div class="list settings">
         <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
           <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
+        ${TENANT ? '' : html`<button class="row" data-action="go" data-to="reseau"><span class="avatar">🔑</span><span class="grow"><span class="title" style="display:block">Licences — centrales des clients</span><span class="meta">Essai 15 jours, abonnements 1 · 2 · 3 ans, tarifs et remises, factures, statistiques, registre</span></span><span class="chev">›</span></button>`}
         <button class="row" data-action="fact-set"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Facturation des interventions</span><span class="meta">${factConf().nom} — LuxInterventions · TVA ${factConf().taux} % · IBAN ${factConf().iban || 'à compléter'}</span></span></button>
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
       </div>
@@ -5375,6 +5498,7 @@ const SHEETS = {
         <label class="field full">Email${id ? '' : html` <span class="tiny muted">(reçoit le lien d’invitation)</span>`}<input type="email" name="email" ${id ? '' : new Raw('required')} value="${o.email || ''}"></label>
         <label class="field">Téléphone (WhatsApp)<input type="tel" name="phone" value="${o.phone || ''}" placeholder="+352…"></label>
         <label class="field">RCS (sauf propriétaire / Airbnb)<input name="rcs" value="${o.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
+        ${patBlock((vault.get('reglages', 'gerpat-' + id) || {}).pat)}
         <p class="tiny muted full" style="margin:0">${id ? 'Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).' : 'Un lien d’invitation est créé pour cet email (14 jours). La première personne qui l’ouvre devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis remplit les données de sa société (adresse, TVA, banque, logo) et ajoute ses collègues.'}</p>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="gerForm">${id ? 'Enregistrer' : 'Créer + lien d’invitation'}</button>`,
@@ -5948,11 +6072,12 @@ const SHEETS = {
     if (id && !a) return null;
     const d = a.dir || {};
     return {
-      title: id ? 'Modifier l’agence' : 'Nouvelle agence / propriétaire',
+      title: a.type === 'proprio' ? (id ? 'Modifier le propriétaire' : 'Nouveau propriétaire') : (id ? 'Modifier l’agence' : 'Nouvelle agence immobilière'),
       narrow: true,
       body: html`<form id="f" data-form="agence" class="fields">
-        <input type="hidden" name="id" value="${id || ''}">
-        <label class="field full">Type<select name="type"><option value="agence">🏘️ Agence immobilière</option><option value="proprio" ${a.type === 'proprio' ? new Raw('selected') : ''}>🔑 Propriétaire (un ou plusieurs logements)</option></select></label>
+        <input type="hidden" name="id" value="${id || ''}"><input type="hidden" name="type" value="${a.type === 'proprio' ? 'proprio' : 'agence'}">
+        ${a.type === 'proprio' ? '' : html`<div class="field full">Travaille pour<div class="chips" style="margin-top:6px">${Object.entries(AG_POUR).map(([k, v]) => html`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="pour_${k}" value="1" ${(a.pour || []).includes(k) ? new Raw('checked') : ''}> ${v}</label>`)}</div></div>
+          ${field('Fonds d’investissement (noms, facultatif)', 'fonds', a.fonds, { full: true, placeholder: 'ex. Fonds Alpha SICAV, Beta Real Estate' })}`}
         <label class="field full">Nom (société ou propriétaire)<input name="nom" required value="${a.nom || ''}" placeholder="ex. Immo Centre S.à r.l."></label>
         <label class="field full">Adresse<textarea name="adresse" style="min-height:56px" placeholder="rue, n°, code postal, ville">${a.adresse || ''}</textarea></label>
         <label class="field">RCS (obligatoire pour une agence)<input name="rcs" value="${a.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
@@ -5966,6 +6091,7 @@ const SHEETS = {
         <label class="field">Email<input type="email" name="demail" value="${d.email || ''}"></label>
         <label class="field">Téléphone (WhatsApp)<input type="tel" name="dtel" value="${d.tel || ''}" placeholder="+352…"></label>
         <p class="tiny muted full" style="margin:-4px 0 0">Pour une agence, prénom, nom et email du directeur sont obligatoires. Le directeur invitera ses agents (app des agents, prochaine étape).</p>
+        ${patBlock(a.pat)}
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-agence" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${id ? 'Enregistrer' : 'Créer'}</button>`,
@@ -6052,6 +6178,19 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Envoyer</button>`,
     };
   },
+  'lic-tarifs'() {
+    const t = licTarifs();
+    return {
+      title: '💶 Tarifs des licences',
+      narrow: true,
+      body: html`<form id="f" data-form="lic-tarifs" class="fields">
+        <p class="tiny muted full" style="margin:0">Prix d’un an (HT) par filière et remise pour 2 et 3 ans payés ensemble. La TVA est celle de la facturation (Réglages → Facturation : ${factConf().taux} %). Essai : ${LIC_ESSAI} jours gratuits.</p>
+        ${Object.entries(NET_FIL).map(([k, v]) => { const x = t[k] || {}; return html`<div class="full section-label" style="margin:8px 0 0">${v}</div>
+          ${field('1 an (€ HT)', 'an1_' + k, x.an1, { attrs: money$ })}${field('Remise 2 ans (%)', 'r2_' + k, x.r2, { attrs: 'inputmode="decimal" min="0" max="90"' })}${field('Remise 3 ans (%)', 'r3_' + k, x.r3, { attrs: 'inputmode="decimal" min="0" max="90"' })}`; })}
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
   'net-new'() {
     return {
       title: '🌐 Nouveau client du réseau',
@@ -6060,8 +6199,7 @@ const SHEETS = {
         <label class="field full">Filière<select name="fil">${Object.entries(NET_FIL).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
         ${field('Nom de la société / du client', 'nom', '', { full: true, required: true })}
         ${field('Téléphone (WhatsApp)', 'tel', '', { type: 'tel', placeholder: '+352…' })}${field('Email', 'email', '', { type: 'email' })}
-        ${field('Durée de l’essai (jours)', 'days', 15, { type: 'number', attrs: 'min="1" max="365" inputmode="numeric"' })}
-        <p class="tiny muted full" style="margin:0">Un code d’invitation est créé (valable 30 jours, une seule fois). Le client ouvre sa centrale, choisit sa clé d’accès (vous ne la connaissez pas) et commence son essai.</p>
+        <p class="tiny muted full" style="margin:0">Essai gratuit de ${LIC_ESSAI} jours. Un code d’invitation est créé (valable 30 jours, une seule fois). Le client ouvre sa centrale, choisit sa clé d’accès (vous ne la connaissez pas) et commence son essai.</p>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">🎁 Accorder un essai</button>`,
     };
@@ -6077,12 +6215,14 @@ const SHEETS = {
       body: html`<div class="alert ${t.state === 'ok' ? 'info' : 'warn'}" style="margin-bottom:12px">${st[0]}<div><b>${st[1]}</b> · ${NET_ST[t.st] || ''}${t.until ? ' · jusqu’au ' + fmtDate(t.until) : ''}<div class="tiny">${t.configured ? (t.lastSeen ? 'Dernière connexion : ' + fmtDateTime(t.lastSeen) : 'Centrale configurée') : 'Invitation pas encore utilisée'}</div></div></div>
         ${code ? html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d’invitation</div><div style="font-family:var(--mono);font-size:24px;font-weight:800;letter-spacing:.08em">${code}</div>
           <div class="actions" style="justify-content:center;flex-wrap:wrap">${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}${inf.email ? html`<a class="btn sm" href="mailto:${inf.email}?subject=${encodeURIComponent('🌐 Votre centrale')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}<button class="btn sm" data-action="code-copy" data-code="${inv}">📋 Copier l’invitation</button></div></div>` : ''}
-        ${isCompta() ? '' : html`<form id="f" data-form="net-edit" class="fields">
+        ${isCompta() ? '' : html`<div class="section-label">🔑 Abonnement</div>
+          <div class="lic-packs">${[1, 2, 3].map((n2) => { const pr = licPrice(t.fil, n2); return html`<button class="btn ${n2 === 1 ? '' : 'primary'}" data-action="lic-buy" data-id="${id}" data-y="${n2}" ${pr.an ? '' : new Raw('disabled')}><b>🔑 ${n2} an${n2 > 1 ? 's' : ''}</b><span>${pr.an ? money(pr.ht) + ' HT' : 'tarif à fixer'}</span>${pr.r ? html`<span class="tiny">−${pr.r} %</span>` : ''}</button>`; })}</div>
+          <p class="tiny muted" style="margin:6px 0 12px">${licPrice(t.fil, 1).an ? `L’abonnement commence ${t.until && t.until > today() ? 'à la fin de la période en cours (' + fmtDate(t.until) + ')' : 'aujourd’hui'} ; une facture est créée.` : 'Fixez d’abord les tarifs : 💶 Tarifs.'}</p>
+          <div class="actions" style="margin:0 0 12px;flex-wrap:wrap">${t.st === 'suspended' ? html`<button class="btn sm" data-action="lic-susp" data-id="${id}" data-on="0">▶ Réactiver</button>` : html`<button class="btn sm" data-action="lic-susp" data-id="${id}" data-on="1">⏸ Suspendre</button>`}</div>
+          <form id="f" data-form="net-edit" class="fields">
           <input type="hidden" name="id" value="${id}">
           ${field('Nom', 'nom', t.nom, { full: true, required: true })}
-          <label class="field">Statut<select name="st">${Object.entries(NET_ST).map(([k, v]) => html`<option value="${k}" ${t.st === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-          ${field('Valable jusqu’au', 'until', t.until, { type: 'date' })}
-          <div class="full actions" style="margin:0;flex-wrap:wrap">${[15, 30, 365].map((d) => html`<button type="button" class="btn sm" data-action="net-plus" data-id="${id}" data-d="${d}">＋ ${d} j</button>`)}</div>
+          <label class="field full">Filière<select name="fil">${Object.entries(NET_FIL).map(([k, v]) => html`<option value="${k}" ${t.fil === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
           ${field('Jours en lecture seule après l’échéance (vide = jusqu’à votre décision)', 'roDays', t.roDays ?? '', { full: true, type: 'number', attrs: 'min="0" max="3650" inputmode="numeric"' })}
           <p class="tiny muted full" style="margin:0">Échu : le client lit ses données mais ne peut plus les modifier ; après ces jours, sa centrale est bloquée (durées à fixer avec votre avocat). Ses données ne sont jamais effacées sans votre décision.</p>
         </form>
@@ -7700,18 +7840,55 @@ const ACTIONS = {
   'new-annc': () => openOver('annc-form'),
   'tdem-new': () => openOver('tdem-form'),
   'net-new': () => openOver('net-new'),
-  'net-reload': () => netLoad(true),
-  'net-open': (d) => openOver('net-client', d.id),
-  async 'net-plus'(d) {
+  'lic-tab': (d) => { ui.licTab = d.id; renderView(); },
+  'lic-tarifs': () => openOver('lic-tarifs'),
+  async 'lic-buy'(d) {
+    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id), y = +d.y;
+    if (!t || ![1, 2, 3].includes(y)) return;
+    const pr = licPrice(t.fil, y);
+    if (!pr.an) return toast('Fixez d’abord le tarif de cette filière (💶 Tarifs)', { bad: true });
+    const du = t.until && t.until > today() ? t.until : today(), au = addYears(du, y);
+    if (!(await confirmBox(`Abonnement ${y} an${y > 1 ? 's' : ''} pour « ${t.nom} » ?`, { ok: `🔑 ${money(pr.ttc)} TTC`, detail: `${y} × ${money(pr.an)} HT${pr.r ? ` − ${pr.r} % = ${money(pr.ht)} HT` : ''} · TVA ${pr.taux} % · du ${fmtDate(du)} au ${fmtDate(au)}. Une facture est créée.` }))) return;
+    try { await netApi('tenants/' + t.id, 'PATCH', { until: au, st: 'active' }); } catch (e) { return toast(e.message, { bad: true }); }
+    const c = factConf(), seq = ((vault.get('reglages', 'licSeq') || {}).n || 0) + 1, no = `${today().replace(/-/g, '')}-LIC${String(seq).padStart(4, '0')}`;
+    const f = { id: 'licfac-' + no, no, date: today(), tid: t.id, nom: t.nom, fil: t.fil, years: y, du, au, ...pr, paid: false, by: whoLabel() || '⭐ Directeur' };
+    await vault.mutate((tx) => { tx.put('reglages', { id: 'licSeq', n: seq }); tx.put('reglages', f); }, '🧾 Facture de licence ' + no, `${t.nom} · ${y} an(s) · ${money(pr.ttc)} TTC`);
+    await licLogAdd(t, `Abonnement ${y} an${y > 1 ? 's' : ''}`, `${fmtDate(du)} → ${fmtDate(au)} · ${money(pr.ht)} HT${pr.r ? ` (−${pr.r} %)` : ''} · facture ${no}`);
+    toast('Abonnement activé · facture ' + no);
+    await netLoad(true);
+    const bytes = await licInvoicePdf(f);
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); a.download = `facture-${no}.pdf`; a.click();
+  },
+  async 'lic-susp'(d) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
     if (!t) return;
-    const base = t.until && t.until > today() ? t.until : today();
-    try { await netApi('tenants/' + t.id, 'PATCH', { until: addDays(base, +d.d), ...(t.st === 'suspended' ? { st: 'active' } : {}) }); toast('Prolongé de ' + d.d + ' jours'); } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate((tx) => tx.put('historique', { at: new Date().toISOString(), action: '🌐 Client du réseau prolongé', detail: `${t.nom} : +${d.d} j` }), '🌐 Client prolongé', `${t.nom} : +${d.d} j`).catch(() => {});
+    const on = d.on === '1';
+    try { await netApi('tenants/' + t.id, 'PATCH', { st: on ? 'suspended' : (licFacts().some((f) => f.tid === t.id) ? 'active' : 'trial') }); } catch (e) { return toast(e.message, { bad: true }); }
+    await licLogAdd(t, on ? 'Suspendu' : 'Réactivé', '');
+    toast(on ? 'Centrale suspendue' : 'Centrale réactivée');
     netLoad(true);
   },
+  async 'lic-paid'(d) {
+    const f = vault.get('reglages', d.id);
+    if (!f || isCompta() && false) return;
+    await vault.mutate((tx) => tx.put('reglages', { id: f.id, paid: !f.paid, paidAt: f.paid ? '' : today() }), f.paid ? '🧾 Facture de licence : à payer' : '🧾 Facture de licence payée', `${f.no} · ${f.nom}`);
+    renderView();
+  },
+  async 'lic-pdf'(d) {
+    const f = vault.get('reglages', d.id);
+    if (!f) return;
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([await licInvoicePdf(f)], { type: 'application/pdf' })); a.download = `facture-${f.no}.pdf`; a.click();
+  },
+  'lic-csv'(d) {
+    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const rows = d.k === 'log' ? [['Date', 'Action', 'Client', 'Filière', 'Par', 'Détail'], ...licLog().map((e) => [e.at, e.act, e.nom, NET_FIL[e.fil] || e.fil, e.by, e.detail])]
+      : [['N°', 'Date', 'Client', 'Filière', 'Années', 'Du', 'Au', 'Prix 1 an HT', 'Remise %', 'Remise', 'HT', 'TVA %', 'TVA', 'TTC', 'Payée', 'Payée le'], ...licFacts().map((f) => [f.no, f.date, f.nom, NET_FIL[f.fil] || f.fil, f.years, f.du, f.au, f.an, f.r, f.remise, f.ht, f.taux, f.tva, f.ttc, f.paid ? 'oui' : 'non', f.paidAt || ''])];
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.map((r) => r.map(q).join(';')).join('\n')], { type: 'text/csv' })); a.download = d.k === 'log' ? 'licences-registre.csv' : 'licences-factures.csv'; a.click();
+  },
+  'net-reload': () => netLoad(true),
+  'net-open': (d) => openOver('net-client', d.id),
   async 'net-code'(d) {
-    try { const r = await netApi('tenants/' + d.id, 'PATCH', { newCode: true }); if (r.code) await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + d.id, code: r.code }), '🌐 Nouveau code d’invitation', (r.tenant || {}).nom || ''); toast('Nouveau code créé'); } catch (e) { return toast(e.message, { bad: true }); }
+    try { const r = await netApi('tenants/' + d.id, 'PATCH', { newCode: true }); if (r.code) { await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + d.id, ...netInfo(d.id), code: r.code }), '🌐 Nouveau code d’invitation', (r.tenant || {}).nom || ''); await licLogAdd(r.tenant || { id: d.id }, 'Nouveau code d’invitation', 'échéance inchangée'); } toast('Nouveau code créé'); } catch (e) { return toast(e.message, { bad: true }); }
     netLoad(true);
   },
   async 'net-reset'(d) {
@@ -7720,7 +7897,7 @@ const ACTIONS = {
     const v = await promptText('Nouvel accès pour « ' + t.nom + ' » ?', 'Sa centrale sera VIDÉE (sans sa clé, personne ne peut lire ses données) et un nouveau code d’invitation sera créé. Si le client a sa clé de secours, qu’il l’utilise plutôt. Tapez le nom pour confirmer.', t.nom);
     if (v == null) return;
     if (v.trim() !== t.nom) return toast('Nom différent : rien n’a été fait', { bad: true });
-    try { const r = await netApi('tenants/' + t.id + '/reset', 'POST'); await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + t.id, code: r.code }), '🌐 Nouvel accès (centrale vidée)', t.nom); toast('Nouvel accès : envoyez le nouveau code'); } catch (e) { return toast(e.message, { bad: true }); }
+    try { const r = await netApi('tenants/' + t.id + '/reset', 'POST'); await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + t.id, ...netInfo(t.id), code: r.code }), '🌐 Nouvel accès (centrale vidée)', t.nom); await licLogAdd(t, 'Nouvel accès (clé perdue)', 'centrale vidée, échéance inchangée'); toast('Nouvel accès : envoyez le nouveau code'); } catch (e) { return toast(e.message, { bad: true }); }
     netLoad(true);
   },
   async 'net-del'(d) {
@@ -7732,6 +7909,7 @@ const ACTIONS = {
     let cert;
     try { cert = (await netApi('tenants/' + t.id, 'DELETE')).certificate; } catch (e) { return toast(e.message, { bad: true }); }
     await vault.mutate((tx) => { tx.put('reglages', { id: 'netcert-' + t.id, ...cert, by: whoLabel() || '⭐ Directeur' }); tx.remove('reglages', 'netc-' + t.id); }, '🧾 Client du réseau supprimé (certificat)', `${t.nom} · ${cert.objects} objets`);
+    await licLogAdd(t, 'Supprimé avec certificat', `${cert.objects} objets · ${cert.digest.slice(0, 12)}…`);
     goBack();
     netLoad(true);
     openOver('net-cert', 'netcert-' + t.id);
@@ -7759,21 +7937,6 @@ const ACTIONS = {
     line('Les factures et documents comptables de la centrale principale ne sont pas concernés.', 10);
     const blob = new Blob([p.bytes()], { type: 'application/pdf' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `certificat-suppression-${c.tenant.id}.pdf`; a.click();
-  },
-  async 'net-dem-done'(d) {
-    try { await vault.call('demandes/' + d.id, { method: 'DELETE' }); } catch (e) { return toast(e.message, { bad: true }); }
-    ui.net.dem = ui.net.dem.filter((x) => x.name !== d.id); renderView();
-  },
-  async 'net-dem-task'(d) {
-    const m = (ui.net.dem || []).find((x) => x.name === d.id);
-    if (!m) return;
-    const cl = (ui.net.list.find((t) => t.id === m.tid) || {}).nom || m.client || 'Client du réseau';
-    await vault.mutate((tx) => tx.put('taches', { type: 'reparation', titre: `🌐 ${cl} : ${String(m.titre || 'Intervention').slice(0, 80)}`, immId: '', logId: '', locId: '', intervenantId: '', date: today(), recur: '', statut: 'afaire', sentAt: m.t || new Date().toISOString(), urgent: m.urgence === 'urgent',
-      net: { tid: m.tid, nom: cl }, note: `${String(m.texte || '').slice(0, 3000)}${m.adresse ? '\n📍 ' + m.adresse : ''}${m.contact ? '\n👤 ' + m.contact : ''}${m.tel ? ' · 📞 ' + m.tel : ''}\n\n— Demande de ${cl} (réseau) le ${fmtDateTime(m.t || Date.now())}` }), '🌐 Demande du réseau → intervention', `${cl} — ${m.titre || ''}`);
-    try { await vault.call('demandes/' + d.id, { method: 'DELETE' }); } catch { /* reste dans la liste */ }
-    ui.net.dem = ui.net.dem.filter((x) => x.name !== d.id);
-    toast('Intervention créée dans Maintenance');
-    renderView();
   },
   'edit-annc': (d) => openOver('annc-form', d.id),
   'ann-tarifs': () => openOver('ann-tarifs'),
@@ -8362,7 +8525,7 @@ const FORMS = {
     if (!b.rcs && !['proprio', 'airbnb'].includes(b.kind)) return toast('RCS obligatoire (sauf propriétaire / Airbnb)', { bad: true });
     let nid = id;
     try { if (id) await ptlApi('orgs/' + id, { method: 'PATCH', body: b }); else nid = (await ptlApi('orgs', { method: 'POST', body: b })).id; } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', lastOrg: b.name }), id ? 'Gérance modifiée' : 'Gérance créée', b.name);
+    await vault.mutate((tx) => { tx.put('reglages', { id: 'portail', lastOrg: b.name }); tx.put('reglages', { id: 'gerpat-' + nid, pat: patRead(fd) }); }, id ? 'Gérance modifiée' : 'Gérance créée', b.name);
     toast(id ? 'Gérance enregistrée' : 'Gérance créée');
     // nouvelle gérance : lien d'invitation du responsable (il écrit son nom en l'ouvrant)
     if (!id && b.email) {
@@ -8603,7 +8766,8 @@ const FORMS = {
     if (err) return toast(err, { bad: true });
     const rec = { type, nom: g('nom'), adresse: g('adresse'), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), tva: g('tvaNum').toUpperCase().replace(/\s+/g, ''), email: g('email'), tel: g('tel'),
       bankLater: !!fd.get('bankLater'), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(g('iban')),
-      dir: { prenom: g('dprenom'), nom: g('dnom'), email: g('demail'), tel: g('dtel') } };
+      dir: { prenom: g('dprenom'), nom: g('dnom'), email: g('demail'), tel: g('dtel') }, pat: patRead(fd),
+      pour: type === 'agence' ? Object.keys(AG_POUR).filter((k) => fd.get('pour_' + k)) : [], fonds: type === 'agence' ? g('fonds').slice(0, 300) : '' };
     if (id) rec.id = id;
     await vault.mutate((tx) => tx.put('agences', rec), id ? 'Agence modifiée' : (type === 'proprio' ? 'Propriétaire créé' : 'Agence immobilière créée'), `${rec.nom}${rec.rcs ? ' — RCS ' + rec.rcs : ''}`);
     toast(id ? 'Enregistré' : (type === 'proprio' ? 'Propriétaire créé' : 'Agence créée'));
@@ -8624,12 +8788,21 @@ const FORMS = {
     toast('Demande envoyée à LuxInterventions');
     goBack();
   },
+  async 'lic-tarifs'(fd) {
+    const v = (k) => { const x = String(fd.get(k) || '').trim().replace(',', '.'); return x === '' ? '' : Math.max(0, num(x)); };
+    const rec = { id: 'licTarifs' };
+    for (const k of Object.keys(NET_FIL)) rec[k] = { an1: v('an1_' + k), r2: v('r2_' + k) === '' ? '' : Math.min(90, v('r2_' + k)), r3: v('r3_' + k) === '' ? '' : Math.min(90, v('r3_' + k)) };
+    await vault.mutate((tx) => tx.put('reglages', rec), '💶 Tarifs des licences', Object.keys(NET_FIL).filter((k) => rec[k].an1).map((k) => `${NET_FIL[k].split(' ')[0]} ${rec[k].an1} €`).join(' · '));
+    toast('Tarifs enregistrés');
+    goBack();
+  },
   async 'net-new'(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
     if (!g('nom')) return;
     let r;
-    try { r = await netApi('tenants', 'POST', { fil: g('fil'), nom: g('nom'), days: +g('days') || 15 }); } catch (e) { return toast(e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : publiez-le d’abord' : e.message, { bad: true }); }
+    try { r = await netApi('tenants', 'POST', { fil: g('fil'), nom: g('nom'), days: LIC_ESSAI }); } catch (e) { return toast(e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : publiez-le d’abord' : e.message, { bad: true }); }
     await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + r.id, code: r.code, tel: g('tel'), email: g('email') }), '🎁 Essai accordé (réseau)', `${g('nom')} · ${NET_FIL[g('fil')] || ''} · jusqu’au ${fmtDate(r.tenant.until)}`);
+    await licLogAdd({ id: r.id, nom: g('nom'), fil: g('fil') }, 'Essai accordé', `${LIC_ESSAI} jours · jusqu’au ${fmtDate(r.tenant.until)}`);
     toast('Essai accordé : envoyez l’invitation');
     goBack();
     await netLoad(true);
@@ -8637,8 +8810,10 @@ const FORMS = {
   },
   async 'net-edit'(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), id = g('id');
-    try { await netApi('tenants/' + id, 'PATCH', { nom: g('nom'), st: g('st'), until: g('until'), roDays: g('roDays') === '' ? '' : +g('roDays') }); } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + id, ...netInfo(id), nomLocal: g('nom') }), '🌐 Client du réseau modifié', `${g('nom')} · ${NET_ST[g('st')] || ''}${g('until') ? ' · jusqu’au ' + fmtDate(g('until')) : ''}`);
+    const t0 = ((ui.net && ui.net.list) || []).find((x) => x.id === id) || {};
+    try { await netApi('tenants/' + id, 'PATCH', { nom: g('nom'), fil: g('fil'), roDays: g('roDays') === '' ? '' : +g('roDays') }); } catch (e) { return toast(e.message, { bad: true }); }
+    if (t0.fil && t0.fil !== g('fil')) await licLogAdd({ id, nom: g('nom'), fil: g('fil') }, 'Filière changée', `${NET_FIL[t0.fil]} → ${NET_FIL[g('fil')]}`);
+    else await licLogAdd({ id, nom: g('nom'), fil: g('fil') }, 'Fiche modifiée', g('roDays') !== '' ? `lecture seule : ${g('roDays')} j` : '');
     toast('Enregistré');
     goBack();
     netLoad(true);
