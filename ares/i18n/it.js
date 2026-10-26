@@ -15788,5 +15788,86 @@ export default [
 ],
 ["L’état du logement avant chaque séjour : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Au départ, les photos de sortie se prennent dans la fiche du client.",
 "Lo stato dell'alloggio prima di ogni soggiorno: edificio, porta, bagno, camera, cucina, parcheggio (+ 1 a scelta). Alla partenza, le foto d'uscita si fanno nella scheda del cliente."
+],
+["Réglages Hotel",
+"Impostazioni Hotel"
+],
+["Établissement (en haut de l’app des clients)",
+"Struttura (in alto nell'app dei clienti)"
+],
+["Nom de l’hôtel / de l’établissement",
+"Nome dell'hotel / della struttura"
+],
+["Téléphone de la réception",
+"Telefono della reception"
+],
+["WhatsApp (facultatif)",
+"WhatsApp (facoltativo)"
+],
+["Tarifs du taxi (vus par le client avant de choisir)",
+"Tariffe del taxi (viste dal cliente prima di scegliere)"
+],
+["Prise en charge (€)",
+"Presa in carico (€)"
+],
+["Prix au km (€)",
+"Prezzo al km (€)"
+],
+["Prix fixe aéroport (€, facultatif)",
+"Prezzo fisso aeroporto (€, facoltativo)"
+],
+["Prix fixe gare (€, facultatif)",
+"Prezzo fisso stazione (€, facoltativo)"
+],
+["Chauffeurs / taxis",
+"Autisti / taxi"
+],
+["Voiture",
+"Auto"
+],
+["Plaque",
+"Targa"
+],
+["Une ligne vide en plus apparaît après l’enregistrement. Le chauffeur n’installe rien : il reçoit un lien par WhatsApp / SMS.",
+"Dopo il salvataggio appare una riga vuota in più. L'autista non installa niente: riceve un link via WhatsApp / SMS."
+],
+["Réglages enregistrés",
+"Impostazioni salvate"
+],
+["Arrivée pas encore choisie",
+"Arrivo non ancora scelto"
+],
+["le client a reçu le rappel dans son app",
+"il cliente ha ricevuto il promemoria nella sua app"
+],
+["Taxi demandé",
+"Taxi richiesto"
+],
+["Envoyer le taxi",
+"Manda il taxi"
+],
+["Choisir le chauffeur",
+"Scegli l'autista"
+],
+["Aucun chauffeur. Ajoutez-les dans ⚙️ Réglages (page Hotel / Airbnb).",
+"Nessun autista. Aggiungili in ⚙️ Impostazioni (pagina Hotel / Airbnb)."
+],
+["WhatsApp au chauffeur",
+"WhatsApp all'autista"
+],
+["Chauffeur choisi : envoyez-lui le lien",
+"Autista scelto: mandagli il link"
+],
+["Vient par ses propres moyens",
+"Viene con i suoi mezzi"
+],
+["Code personnel du client (aussi depuis l’étranger) : dans l’app il voit sa chambre, les photos, son code de porte, le menu, et choisit comment il arrive (taxi ou lui-même). L’app se remet à zéro le lendemain du départ.",
+"Codice personale del cliente (anche dall'estero): nell'app vede la sua camera, le foto, il codice della porta, il menù, e sceglie come arriva (taxi o da solo). L'app si azzera il giorno dopo la partenza."
+],
+["Code personnel du client (aussi depuis l’étranger) : dans l’app il voit son logement, les photos, son code de porte, le menu, et choisit comment il arrive (taxi ou lui-même). L’app se remet à zéro le lendemain du départ.",
+"Codice personale del cliente (anche dall'estero): nell'app vede il suo alloggio, le foto, il codice della porta, il menù, e sceglie come arriva (taxi o da solo). L'app si azzera il giorno dopo la partenza."
+],
+["Envoyer au client le lien de l’app et son code, dans sa langue.",
+"Manda al cliente il link dell'app e il suo codice, nella sua lingua."
 ]
 ];

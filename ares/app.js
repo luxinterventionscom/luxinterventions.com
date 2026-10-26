@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.193.0';
+const VERSION = '2.194.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -547,6 +547,12 @@ async function tripRegister() {
     ui.tripTks[x.t.id + '|' + x.d] = tk;
     items.push({ tk, to: l && l.espace && l.espace.on && l.espace.id ? [l.espace.id] : [], ptl: (x.t.ptl && x.t.ptl.tid) || '' });
   }
+  // 🏨 clients qui arrivent aujourd'hui / demain : leur trajet (vers nous) et celui du taxi (vers eux, puis vers nous)
+  for (const h of vault.list('hotes').filter((x) => x.espace && x.espace.id && (x.arrivee === today() || x.arrivee === addDays(today(), 1)))) {
+    const t = await hoteTks(h);
+    ui.hoteTks[h.id] = t;
+    items.push({ tk: t.tin, to: [] }, { tk: t.t1, to: [h.espace.id] }, { tk: t.t2, to: [] });
+  }
   if (!items.length) return;
   const sig = await sha256Hex(today() + JSON.stringify(items));
   try { if (localStorage.getItem('aresTripReg') === sig) return; } catch { /* stockage indisponible */ }
@@ -558,6 +564,10 @@ async function tripPoll() {
   if (!vault.unlocked || document.visibilityState !== 'visible') return;
   try {
     for (const x of tripTasks().filter((x) => x.d === today())) ui.tripTks[x.t.id + '|' + x.d] ||= await tripTk(x.t.id, x.d);
+    for (const h of vault.list('hotes').filter((x) => x.arrivee === today() && x.espace && x.espace.id)) {
+      const t = ui.hoteTks[h.id] || (ui.hoteTks[h.id] = await hoteTks(h));
+      ui.tripTks['hin:' + h.id + '|' + today()] = t.tin; ui.tripTks['tx1:' + h.id + '|' + today()] = t.t1; ui.tripTks['tx2:' + h.id + '|' + today()] = t.t2;
+    }
     const tks = Object.entries(ui.tripTks).filter(([k]) => k.endsWith('|' + today())).map(([, tk]) => tk);
     ui.trips = await tripFetch(vault.api.base.replace(/ares\/$/, ''), tks.slice(0, 60));
   } catch { /* hors ligne */ }
@@ -1428,6 +1438,7 @@ async function espaceSync(onlyId, loud) {
       if (navigator.onLine && !espWarned.has(l.id)) { espWarned.add(l.id); toast(`App de ${fullName(l)} pas mise à jour : ${e.message || 'erreur'}`, { bad: true }); }
     }
   }
+  if (!onlyId) await hotesSync();
   if (!onlyId) { await equipeSync(); await portailPubsSync(); await biensSync(); }
   return true;
 }
@@ -1472,6 +1483,29 @@ async function biensSync() {
     try { localStorage.setItem('aresBiensUp', JSON.stringify(up)); } catch { /* stockage indisponible */ }
   } catch { /* Worker pas encore à jour ou hors ligne : on réessaiera */ } finally { biensBusy = false; if (biensAgain) { biensAgain = false; setTimeout(biensSync, 0); } }
 }
+// 🏨 messages de l'app du client : comment il arrive (lui-même / taxi), photos de sortie
+async function hoteInbox(h, msg) {
+  const who = `${[h.prenom, h.nom].filter(Boolean).join(' ')} — ${h.chambre}`;
+  if (msg.type === 'hote-arr') {
+    const mode = msg.mode === 'taxi' ? 'taxi' : 'self', num = (v, m) => Math.max(0, Math.min(m, +v || 0));
+    const geo = (g) => (g && isFinite(+g.lat) && isFinite(+g.lon) ? { lat: +(+g.lat).toFixed(5), lon: +(+g.lon).toFixed(5) } : null);
+    const arr = { mode, at: String(msg.t || new Date().toISOString()).slice(0, 30), from: String(msg.from || '').slice(0, 120), quand: String(msg.quand || '').slice(0, 16), vol: String(msg.vol || '').slice(0, 30), km: num(msg.km, 2000), prix: num(msg.prix, 100000), fg: geo(msg.fg), sg: geo(msg.sg) };
+    await vault.mutate((tx) => tx.put('hotes', { id: h.id, arr, ...(mode === 'self' ? { taxi: null } : {}) }), mode === 'taxi' ? '🚕 Taxi demandé par le client' : '🚗 Le client vient par ses propres moyens', `${who}${mode === 'taxi' ? ` · ${arr.from} · ${arr.km} km${arr.prix ? ' · ~' + arr.prix + ' €' : ''}` : ''}`);
+    hotesSync(h.id);
+    return true;
+  }
+  if (msg.type === 'hote-edl') {
+    const ph = (Array.isArray(msg.photos) ? msg.photos : []).filter((x) => x && CH_PH.some(([k]) => k === x.k) && typeof x.b === 'string' && x.b.length < 4e6).slice(0, CH_PH.length);
+    if (!ph.length) return false;
+    const cur = (h.edlOut && h.edlOut.ph) || {}, nph = { ...cur }, old = [];
+    for (const x of ph) { const pid = uid(); await vault.saveFile(pid, unb64u(x.b)); if (nph[x.k]) old.push(nph[x.k]); nph[x.k] = pid; }
+    await vault.mutate((tx) => tx.put('hotes', { id: h.id, edlOut: { ph: nph, at: today(), byGuest: true } }), '📋 Photos de sortie envoyées par le client', `${who} — ${plural(ph.length, 'photo')}`);
+    for (const x of old) await vault.deleteFile(x).catch(() => {});
+    hotesSync(h.id);
+    return true;
+  }
+  return false;
+}
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
 async function inboxSync() {
@@ -1489,6 +1523,8 @@ async function inboxSync() {
         await vault.inboxDel(it.name);
         continue;
       }
+      const hc = vault.list('hotes').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
+      if (hc) { if (await hoteInbox(hc, msg)) n++; await vault.inboxDel(it.name); continue; }
       const l = vault.list('locataires').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
       if (!l || !l.espace.on) { await vault.inboxDel(it.name); continue; }
       if (msg.type === 'paye') {
@@ -1950,6 +1986,89 @@ const CH_CAT = { eco: 'Économique', standard: 'Standard', sup: 'Supérieure', d
 const CH_TYPE = { single: 'Single', double: 'Double', twin: 'Twin', triple: 'Triple', famille: 'Familiale', studio: 'Studio', appartement: 'Appartement', maison: 'Maison', colocation: 'Colocation' };
 const menuKey = (lieu) => (lieu === 'airbnb' ? 'airbnbMenu' : 'hotelMenu');
 const chGet = (lieu, num) => (num ? vault.get('reglages', chKey(lieu, num)) : null) || {};
+// 📱 App des clients (Hotel / Airbnb) : réglages de l'établissement, données chiffrées publiées pour l'app, code d'accès
+const hoteConf = () => vault.get('reglages', 'hoteConf') || {};
+const HOTE_URL = () => `${location.origin}/hote.html`;
+const hoteTks = async (h) => ({ tin: await tripTk('hin:' + h.id, h.arrivee), t1: await tripTk('tx1:' + h.id, h.arrivee), t2: await tripTk('tx2:' + h.id, h.arrivee) });
+const HOTE_LG = ['fr', 'it', 'de', 'en', 'pt', 'es'];
+// message d'invitation (lien + code), dans la langue du client
+const HOTE_INV = {
+  fr: (p, s, u, c) => `Bonjour ${p}, bienvenue chez ${s} ! Votre app de séjour (chambre, photos, code de la porte, menu, taxi) : ${u}\nVotre code personnel : ${c}`,
+  it: (p, s, u, c) => `Buongiorno ${p}, benvenuto da ${s}! La sua app del soggiorno (camera, foto, codice della porta, menù, taxi): ${u}\nIl suo codice personale: ${c}`,
+  de: (p, s, u, c) => `Guten Tag ${p}, willkommen bei ${s}! Ihre Aufenthalts-App (Zimmer, Fotos, Türcode, Speisekarte, Taxi): ${u}\nIhr persönlicher Code: ${c}`,
+  en: (p, s, u, c) => `Hello ${p}, welcome to ${s}! Your stay app (room, photos, door code, menu, taxi): ${u}\nYour personal code: ${c}`,
+  pt: (p, s, u, c) => `Olá ${p}, bem-vindo a ${s}! A sua app da estadia (quarto, fotos, código da porta, menu, táxi): ${u}\nO seu código pessoal: ${c}`,
+  es: (p, s, u, c) => `Hola ${p}, ¡bienvenido a ${s}! Su app de estancia (habitación, fotos, código de la puerta, menú, taxi): ${u}\nSu código personal: ${c}`,
+};
+const hoteInvite = (h) => (HOTE_INV[h.langue] || HOTE_INV.en)(h.prenom || h.nom, hoteConf().nom || societe().nom || 'LuxInterventions', HOTE_URL(), h.appCode);
+function hoteData(h, tks) {
+  const c = hoteConf(), soc = societe(), ch = chGet(h.lieu, h.chambre), menu = vault.get('reglages', menuKey(h.lieu)), sig = vault.get('reglages', 'signal');
+  return {
+    v: 1, kind: 'hote', gv: VERSION, lang: HOTE_LG.includes(h.langue) ? h.langue : '', lieu: h.lieu === 'airbnb' ? 'airbnb' : 'hotel',
+    prenom: h.prenom || '', nom: h.nom || '', pers: h.pers || 1, arrivee: h.arrivee, depart: h.depart, hdeb: h.hdeb || '15:00', hfin: h.hfin || '11:00',
+    formule: h.formule || '', pref: h.pref || '', porte: h.code && !h.codeOff ? h.code : '', cle: h.cle || '',
+    ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: ch.persMax || '', m2: ch.m2 || '', npieces: ch.npieces || '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
+    st: { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LuxInterventions'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '' },
+    menu: menu && menu.file ? menu.file : '', taxi: { pc: +c.txPc || 0, km: +c.txKm || 0, aero: +c.txAero || 0, gare: +c.txGare || 0, on: !!(c.drivers || []).length },
+    arr: h.arr || null, taxiOk: h.taxi ? { nom: h.taxi.nom, tel: h.taxi.tel, auto: h.taxi.auto, plaque: h.taxi.plaque } : null,
+    edlSent: h.edlOut ? Object.keys(h.edlOut.ph || {}) : [], ...tks, signalKey: sig ? sig.pub : '',
+    radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
+    pubs: pubsActives(null).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut),
+  };
+}
+// le client a son app : accès (id + clé) et code personnel enregistré sur le serveur (empreinte seulement)
+async function hoteEspace(h) {
+  let e = h.espace;
+  if (!e || !e.id) {
+    e = { id: newEspaceId(), key: newEspaceKey(), docs: [] };
+    await vault.mutate((tx) => tx.put('hotes', { id: h.id, espace: e }), 'App du client : accès créé', `${h.nom} — ${h.chambre}`);
+  }
+  if (h.appCode && e.code !== h.appCode) {
+    if (e.codeHash) await vault.espCodeDel(e.codeHash).catch(() => {});
+    const hh = await codeHash(h.appCode);
+    await vault.espCodePut(hh, { id: e.id, ...(await wrapWithCode(h.appCode, e.key)) });
+    e = { ...e, code: h.appCode, codeHash: hh };
+    await vault.mutate((tx) => tx.put('hotes', { id: h.id, espace: e }), 'App du client : code', `${h.nom} — ${h.chambre}`);
+  }
+  return e;
+}
+// publie les séjours en cours et à venir ; un jour après le départ, l'app du client est remise à zéro (données et code effacés)
+const hoteHashes = new Map();
+async function hotesSync(onlyId, loud) {
+  if (!vault.unlocked) return true;
+  const lim = addDays(today(), -1);
+  for (const h0 of vault.list('hotes').filter((x) => !onlyId || x.id === onlyId)) {
+    try {
+      if (h0.depart < lim) {
+        if (h0.espace && h0.espace.id) {
+          await vault.espaceDel(h0.espace.id).catch(() => {});
+          if (h0.espace.codeHash) await vault.espCodeDel(h0.espace.codeHash).catch(() => {});
+          await vault.mutate((tx) => tx.put('hotes', { id: h0.id, espace: null }), 'App du client remise à zéro (séjour terminé)', `${h0.nom} — ${h0.chambre}`);
+        }
+        continue;
+      }
+      if (!h0.appCode) continue;
+      await ownerKeys();
+      const e = await hoteEspace(h0), h = vault.get('hotes', h0.id);
+      const data = hoteData(h, await hoteTks(h));
+      const hs = await sha256Hex(JSON.stringify(data));
+      if (!loud && hoteHashes.get(e.id) === hs) continue;
+      const files = [...Object.values(data.ch.ph), ...(data.menu ? [data.menu] : [])];
+      const up = new Set(e.docs || []);
+      let ch = false;
+      for (const f of files) if (!up.has(f)) { const b = await vault.readFile(f).catch(() => null); if (b) { await vault.espacePut(e.id, await sealBytes(e.key, b), f); up.add(f); ch = true; } }
+      for (const f of [...up]) if (!files.includes(f)) { await vault.espaceDel(e.id, f).catch(() => {}); up.delete(f); ch = true; }
+      await vault.espacePut(e.id, await sealJson(e.key, data));
+      hoteHashes.set(e.id, hs);
+      const ask = !data.arr && (h.arrivee === today() || h.arrivee === addDays(today(), 1));
+      await notifyNews(e.id, [...(data.porte ? ['k:' + data.porte] : []), ...(data.taxiOk ? ['tx:' + data.taxiOk.nom] : []), ...(ask ? ['arr:' + h.arrivee] : [])]);
+      if (ch) await vault.mutate((tx) => { const cur = vault.get('hotes', h.id); if (cur && cur.espace) tx.put('hotes', { id: h.id, espace: { ...cur.espace, docs: [...up] } }); }, 'App du client : photos', `${h.nom} — ${h.chambre}`);
+    } catch (err) {
+      if (loud) { toast(err.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
+    }
+  }
+  return true;
+}
 // aperçu d'un PDF ou d'une image chiffrés (menu du restaurant…)
 async function filePreview(id, label, mime = 'application/pdf') {
   try {
@@ -2080,6 +2199,7 @@ function dataYears() {
 // ───────────────────────── État de l'interface ─────────────────────────
 const ui = {
   tripTks: {}, trips: {}, // 🚗 jetons des trajets (intervention|jour) et leur état
+  hoteTks: {}, // 🏨 trajets des clients (vers nous) et de leur taxi
   route: 'dashboard',
   year: new Date().getFullYear(),
   immFilter: '',
@@ -3050,16 +3170,39 @@ function hotView(hf) {
     const next = all.filter((h) => h.arrivee > t).sort(by), past = all.filter((h) => h.depart < t).sort((a, b) => b.depart.localeCompare(a.depart));
     const row = (h) => html`<button class="row" data-action="edit-hote" data-id="${h.id}"><span class="avatar" style="font-size:13px;font-weight:800">${h.chambre}</span>
       <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.pers > 1 ? html` <span class="badge">👥 ${h.pers}</span>` : ''}</span>
-      <span class="meta">${h.lieu === 'airbnb' && h.adresse ? html`🏠 ${h.adresse} · ` : ''}${h.etage ? html`<span>Étage</span> ${h.etage} · ` : ''}${h.cle ? html`🪪 ${h.cle} · ` : ''}${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}</span>${hoteKey(h) ? html`<span style="display:block;margin-top:4px"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></span>` : ''}</span><span class="chev">›</span></button>`;
+      <span class="meta">${h.lieu === 'airbnb' && h.adresse ? html`🏠 ${h.adresse} · ` : ''}${h.etage ? html`<span>Étage</span> ${h.etage} · ` : ''}${h.cle ? html`🪪 ${h.cle} · ` : ''}${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}</span>${h.appCode && h.arrivee >= t ? html`<span class="tiny" style="display:block">${!h.arr ? '❓ Arrivée pas encore choisie' : h.arr.mode === 'taxi' ? `🚕 Taxi${h.taxi ? ' · ' + h.taxi.nom : ' demandé'}` : '🚗 Vient par ses propres moyens'}</span>` : ''}${hoteKey(h) ? html`<span style="display:block;margin-top:4px"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></span>` : ''}</span><span class="chev">›</span></button>`;
     const sec = (title, list, empty) => html`<div class="section-label">${title}</div>${list.length ? html`<div class="list">${list.map(row)}</div>` : html`<p class="small muted" style="margin:0 0 12px">${empty}</p>`}`;
     return html`${pageHead(hf === 'airbnb' ? '🏠 Airbnb' : '🏨 Hotel', `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
-      <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button><button class="btn primary" data-action="new-chambre">${icon('plus')} ${hf === 'airbnb' ? 'Logement' : 'Chambre'}</button></div></div>
+      <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button><button class="btn primary" data-action="new-chambre">${icon('plus')} ${hf === 'airbnb' ? 'Logement' : 'Chambre'}</button><button class="btn" data-action="hote-conf">${icon('gear')} Réglages</button></div></div>
+      ${hoteAlerts(all, t)}
       ${sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.')}
       ${sec('🛫 Départs aujourd’hui', dep, 'Aucun départ aujourd’hui.')}
       ${sec('🛏️ Présents', pres, 'Aucun client présent.')}
       ${next.length ? sec('📅 À venir', next, '') : ''}
       ${past.length ? sec('🗂️ Partis', past.slice(0, 50), '') : ''}
       ${chList(hf, pres)}`;
+}
+// lien du chauffeur : tout est dans le lien (rien à installer) ; 2 trajets : vers le client, puis client à bord → vers nous
+function hoteDrvLink(h) {
+  const t = ui.hoteTks[h.id] || {}, c = hoteConf(), a = h.arr || {};
+  const info = { t1: t.t1, t2: t.t2, n: [h.prenom, h.nom].filter(Boolean).join(' '), gt: h.tel || '', f: a.from || '', fg: a.fg || null, q: a.quand || '', v: a.vol || '', s: c.nom || '', sa: h.lieu === 'airbnb' ? h.adresse || chGet(h.lieu, h.chambre).adresse || '' : c.adresse || '', sg: a.sg || null, d: (h.taxi || {}).nom || '' };
+  return `${location.origin}/chauffeur.html#${b64u(new TextEncoder().encode(JSON.stringify(info)))}`;
+}
+function hoteDrvBtns(h) {
+  const d = h.taxi || {}, tel = String(d.tel || '').replace(/[^\d+]/g, ''), a = h.arr || {};
+  const msg = `🚕 ${[h.prenom, h.nom].filter(Boolean).join(' ')} · ${a.from || ''}${a.quand ? ' · ' + String(a.quand).replace('T', ' ') : ''}${a.vol ? ' · ✈️ ' + a.vol : ''}\n${hoteDrvLink(h)}`;
+  return html`${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">💬 WhatsApp au chauffeur</a><a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(msg)}">📱 SMS</a>` : ''}<button type="button" class="btn sm" data-action="code-copy" data-code="${hoteDrvLink(h)}">📋 Copier le lien</button>`;
+}
+// en haut de la page : arrivées à préparer (choix pas fait, taxi à envoyer) et trajets en cours (client ou taxi en route)
+function hoteAlerts(all, t) {
+  const soon = all.filter((h) => h.appCode && (h.arrivee === t || h.arrivee === addDays(t, 1)));
+  const nm = (h) => `${[h.prenom, h.nom].filter(Boolean).join(' ')} (${h.chambre})`;
+  const ask = soon.filter((h) => !h.arr), taxi = soon.filter((h) => h.arr && h.arr.mode === 'taxi' && !h.taxi);
+  const live = all.filter((h) => h.arrivee === t && h.espace && h.espace.id);
+  return html`${ask.length ? html`<div class="alert warn" style="margin-bottom:10px">${icon('alert')}<div><b>Arrivée pas encore choisie</b>${ask.map((h) => html`<div class="small">❓ ${nm(h)} · ${fmtDate(h.arrivee)} — le client a reçu le rappel dans son app</div>`)}</div></div>` : ''}
+    ${taxi.map((h) => html`<div class="alert info" style="margin-bottom:10px">🚕<div><b>Taxi demandé · ${nm(h)}</b><div class="small">${h.arr.from}${h.arr.quand ? ' · ' + String(h.arr.quand).replace('T', ' ') : ''}${h.arr.vol ? ' · ✈️ ' + h.arr.vol : ''} · ${h.arr.km} km${h.arr.prix ? ' · ~' + h.arr.prix + ' €' : ''}</div>
+      <button class="btn sm primary" style="margin-top:6px" data-action="hote-taxi" data-id="${h.id}">🚕 Envoyer le taxi</button></div></div>`)}
+    ${live.map((h) => html`<div data-trip-key="hin:${h.id}|${t}"></div><div data-trip-key="tx2:${h.id}|${t}"></div>`)}`;
 }
 // 🛏️ chambres de l'hôtel / 🏠 logements Airbnb : fiche (catégorie, type, personnes, m², photos, présentation) et occupation du jour
 const chambres = (lieu) => vault.list('reglages').filter((r) => r.id.startsWith('ch-' + (lieu === 'airbnb' ? 'airbnb' : 'hotel') + '-')).sort((a, b) => String(a.num).localeCompare(String(b.num), 'fr', { numeric: true }));
@@ -5557,11 +5700,49 @@ const SHEETS = {
           <p class="tiny muted full" style="margin:0">À comparer avec les photos d’entrée dans la fiche ${bnb ? 'du logement' : 'de la chambre'}.</p>` : ''}
         <div class="full section-label" style="margin:6px 0 0">📱 App du client</div>
         ${field('Code d’accès à l’app', 'appCode', h.appCode, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
-        <p class="tiny muted full" style="margin:0">Code personnel du client (aussi depuis l’étranger) : avec le lien de l’app il voit ${bnb ? 'son logement' : 'sa chambre'}, les photos, son code de porte et ${bnb ? 'les infos du séjour' : 'le menu'}. Le lien de téléchargement sera ajouté avec l’app des clients (prochaine étape).</p>
+        <p class="tiny muted full" style="margin:0">Code personnel du client (aussi depuis l’étranger) : dans l’app il voit ${bnb ? 'son logement' : 'sa chambre'}, les photos, son code de porte, le menu, et choisit comment il arrive (taxi ou lui-même). L’app se remet à zéro le lendemain du départ.</p>
+        ${id && h.appCode ? html`<div class="full actions" style="margin:0">${h.tel ? html`<a class="btn sm" href="https://wa.me/${h.tel.replace(/[^\d+]/g, '').replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(hoteInvite(h))}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm" href="sms:${h.tel.replace(/[^\d+]/g, '')}?&body=${encodeURIComponent(hoteInvite(h))}">📱 SMS</a>` : ''}${h.mail ? html`<a class="btn sm" href="mailto:${h.mail}?subject=${encodeURIComponent('📱 ' + (hoteConf().nom || 'App'))}&body=${encodeURIComponent(hoteInvite(h))}">✉️ Email</a>` : ''}<button type="button" class="btn sm" data-action="code-copy" data-code="${h.appCode}">📋 Copier le code</button></div>
+          <p class="tiny muted full" style="margin:0">Envoyer au client le lien de l’app et son code, dans sa langue.</p>` : ''}
         <label class="field full">Notes<textarea name="notes" style="min-height:70px" placeholder="ex. allergie, lit bébé, arrivée tardive…">${h.notes || ''}</textarea></label>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-hote" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'hote-conf'() {
+    const c = hoteConf(), dr = [...(c.drivers || []), {}, {}].slice(0, Math.max(3, (c.drivers || []).length + 1));
+    return {
+      title: '⚙️ Réglages Hotel · Airbnb',
+      narrow: true,
+      body: html`<form id="f" data-form="hote-conf" class="fields">
+        <div class="full section-label" style="margin:0">🏨 Établissement (en haut de l’app des clients)</div>
+        ${field('Nom de l’hôtel / de l’établissement', 'nom', c.nom, { full: true })}
+        ${field('Adresse', 'adresse', c.adresse, { full: true, placeholder: 'rue, n°, code postal, ville' })}
+        ${field('Téléphone de la réception', 'tel', c.tel, { type: 'tel', placeholder: '+352…' })}${field('WhatsApp (facultatif)', 'wa', c.wa, { type: 'tel', placeholder: '+352…' })}
+        <div class="full section-label" style="margin:6px 0 0">🚕 Tarifs du taxi (vus par le client avant de choisir)</div>
+        ${field('Prise en charge (€)', 'txPc', c.txPc, { attrs: money$ })}${field('Prix au km (€)', 'txKm', c.txKm, { attrs: money$ })}
+        ${field('Prix fixe aéroport (€, facultatif)', 'txAero', c.txAero, { attrs: money$ })}${field('Prix fixe gare (€, facultatif)', 'txGare', c.txGare, { attrs: money$ })}
+        <div class="full section-label" style="margin:6px 0 0">🚘 Chauffeurs / taxis</div>
+        ${dr.map((d, i) => html`<div class="full fields" style="border:1px solid var(--line);border-radius:12px;padding:8px">
+          ${field('Nom', 'd_nom', d.nom, { placeholder: i ? '' : 'ex. Marco / Taxi Lux' })}${field('Téléphone (WhatsApp)', 'd_tel', d.tel, { type: 'tel', placeholder: '+352…' })}
+          ${field('Voiture', 'd_auto', d.auto, { placeholder: 'ex. Mercedes grise' })}${field('Plaque', 'd_plaque', d.plaque, { placeholder: 'ex. LU-1234' })}</div>`)}
+        <p class="tiny muted full" style="margin:0">Une ligne vide en plus apparaît après l’enregistrement. Le chauffeur n’installe rien : il reçoit un lien par WhatsApp / SMS.</p>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'hote-taxi'({ id }) {
+    const h = vault.get('hotes', id);
+    if (!h) return null;
+    const c = hoteConf(), dr = c.drivers || [], a = h.arr || {};
+    return {
+      title: '🚕 Taxi — ' + [h.prenom, h.nom].filter(Boolean).join(' '),
+      narrow: true,
+      body: html`<div class="small" style="margin-bottom:10px">📍 ${a.from || '—'}${a.quand ? html` · 🕒 ${String(a.quand).replace('T', ' ')}` : ''}${a.vol ? html` · ✈️ ${a.vol}` : ''} · ${a.km || 0} km${a.prix ? html` · ~${a.prix} €` : ''}</div>
+        ${h.taxi ? html`<div class="alert info" style="margin-bottom:10px">🚘<div><b>${h.taxi.nom}</b> · ${h.taxi.auto || ''} ${h.taxi.plaque || ''}<div class="actions" style="margin:6px 0 0;flex-wrap:wrap">${hoteDrvBtns(h)}</div></div></div>` : ''}
+        ${dr.length ? html`<div class="section-label">Choisir le chauffeur</div><div class="list">${dr.map((d, i) => html`<button class="row" data-action="hote-taxi-set" data-id="${id}" data-i="${i}"><span class="avatar">🚘</span><span class="grow"><span class="title" style="display:block">${d.nom}</span><span class="meta">${[d.auto, d.plaque, d.tel].filter(Boolean).join(' · ')}</span></span><span class="chev">›</span></button>`)}</div>`
+          : html`<p class="small">Aucun chauffeur. Ajoutez-les dans ⚙️ Réglages (page Hotel / Airbnb).</p>`}`,
+      foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
     };
   },
   'chambre-form'({ id }) {
@@ -7068,6 +7249,18 @@ const ACTIONS = {
   'new-hote': () => openOver('hote-form'),
   'edit-hote': (d) => openOver('hote-form', d.id),
   'new-chambre': () => openOver('chambre-form'),
+  'hote-conf': () => openOver('hote-conf'),
+  'hote-taxi': async (d) => { const h = vault.get('hotes', d.id); if (h) ui.hoteTks[h.id] ||= await hoteTks(h); openOver('hote-taxi', d.id); },
+  async 'hote-taxi-set'(d) {
+    const h = vault.get('hotes', d.id), dr = (hoteConf().drivers || [])[+d.i];
+    if (!h || !dr) return;
+    ui.hoteTks[h.id] ||= await hoteTks(h);
+    await vault.mutate((tx) => tx.put('hotes', { id: h.id, taxi: { nom: dr.nom, tel: dr.tel, auto: dr.auto, plaque: dr.plaque, at: new Date().toISOString() } }), '🚕 Taxi envoyé', `${h.nom} — ${dr.nom}`);
+    await tripRegister().catch(() => {});
+    hotesSync(h.id);
+    toast('Chauffeur choisi : envoyez-lui le lien');
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  },
   'edit-chambre': (d) => openOver('chambre-form', d.id),
   async 'del-chambre'(d) {
     const c = vault.get('reglages', d.id);
@@ -7848,6 +8041,14 @@ const FORMS = {
     const to = type === 'proprio' ? 'proprios' : 'agences';
     if (ui.route !== to) go(to);
   },
+  async 'hote-conf'(fd) {
+    const g = (k) => String(fd.get(k) || '').trim(), m = (k) => (g(k) ? Math.max(0, num(g(k).replace(',', '.'))) : '');
+    const N = fd.getAll('d_nom'), drivers = N.map((n, i) => ({ nom: String(n).trim(), tel: String(fd.getAll('d_tel')[i] || '').trim(), auto: String(fd.getAll('d_auto')[i] || '').trim(), plaque: String(fd.getAll('d_plaque')[i] || '').trim().toUpperCase() })).filter((d) => d.nom);
+    await vault.mutate((tx) => tx.put('reglages', { id: 'hoteConf', nom: g('nom'), adresse: g('adresse'), tel: g('tel'), wa: g('wa'), txPc: m('txPc'), txKm: m('txKm'), txAero: m('txAero'), txGare: m('txGare'), drivers }), 'Réglages Hotel · Airbnb', `${g('nom')} · ${plural(drivers.length, 'chauffeur')}`);
+    toast('Réglages enregistrés');
+    goBack();
+    hotesSync(null, false);
+  },
   async chambre(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), id = g('id'), lieu = g('lieu') === 'airbnb' ? 'airbnb' : 'hotel';
     const old = id ? vault.get('reglages', id) : null, num = old ? old.num : g('num');
@@ -7914,6 +8115,8 @@ const FORMS = {
     }
     toast(Object.keys(ph).length < 6 ? 'Client enregistré — 📷 ajoutez au moins 6 photos de ' + (rec.lieu === 'airbnb' ? 'ce logement' : 'cette chambre') : 'Client enregistré');
     goBack();
+    const saved = vault.list('hotes').find((x) => x.id === id) || vault.list('hotes').filter((x) => x.nom === rec.nom && x.chambre === rec.chambre && x.arrivee === rec.arrivee).pop();
+    if (saved) hotesSync(saved.id).then(() => tripRegister().catch(() => {}));
     if (['hotel', 'airbnb'].includes(ui.route) && ui.route !== rec.lieu) go(rec.lieu);
   },
   async avis(fd) {
