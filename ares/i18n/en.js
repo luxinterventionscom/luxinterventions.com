@@ -15727,5 +15727,80 @@ export default [
 ],
 ["Refusée",
 "Declined"
+],
+["Annonceurs (HORECA)",
+"Advertisers (HORECA)"
+],
+["Annonceur",
+"Advertiser"
+],
+["Nouvel annonceur",
+"New advertiser"
+],
+["À valider ({0})",
+"To approve ({0})"
+],
+["Voir",
+"View"
+],
+["Refuser",
+"Decline"
+],
+["Aucun annonceur.",
+"No advertiser."
+],
+["{0} annonce en ligne",
+"{0} ad online"
+],
+["{0} annonces en ligne",
+"{0} ads online"
+],
+["non connecté",
+"not connected"
+],
+["App de l’annonceur",
+"Advertiser app"
+],
+["Dans son app, il crée ses annonces, menus et événements (dates, jours, heures, emplacement, apps), voit le prix et ses statistiques ; vous validez chaque annonce avant publication.",
+"In their app they create ads, menus and events (dates, days, hours, position, apps), see the price and their statistics; you approve each ad before it goes live."
+],
+["Tarifs des annonces",
+"Ad rates"
+],
+["Note pour les annonceurs (facultatif)",
+"Note for advertisers (optional)"
+],
+["Tarifs enregistrés",
+"Rates saved"
+],
+["Refuser l’annonce ?",
+"Decline the ad?"
+],
+["Motif (envoyé à l’annonceur dans son app)",
+"Reason (sent to the advertiser in their app)"
+],
+["Supprimer cet annonceur ?",
+"Delete this advertiser?"
+],
+["Annonceur supprimé",
+"Advertiser deleted"
+],
+["Annonceur créé : envoyez-lui le code",
+"Advertiser created: send them the code"
+],
+["à valider",
+"to approve"
+],
+["refusée",
+"declined"
+],
+["Clients hôtel / Airbnb",
+"Hotel / Airbnb guests"
+],
+["Événement",
+"Event"
+],
+["Menu du jour",
+"Daily menu"
 ]
 ];

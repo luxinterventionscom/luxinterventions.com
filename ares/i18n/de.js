@@ -15985,5 +15985,80 @@ export default [
 ],
 ["Refusée",
 "Abgelehnt"
+],
+["Annonceurs (HORECA)",
+"Werbekunden (HORECA)"
+],
+["Annonceur",
+"Werbekunde"
+],
+["Nouvel annonceur",
+"Neuer Werbekunde"
+],
+["À valider ({0})",
+"Freizugeben ({0})"
+],
+["Voir",
+"Ansehen"
+],
+["Refuser",
+"Ablehnen"
+],
+["Aucun annonceur.",
+"Kein Werbekunde."
+],
+["{0} annonce en ligne",
+"{0} Anzeige online"
+],
+["{0} annonces en ligne",
+"{0} Anzeigen online"
+],
+["non connecté",
+"nicht verbunden"
+],
+["App de l’annonceur",
+"App des Werbekunden"
+],
+["Dans son app, il crée ses annonces, menus et événements (dates, jours, heures, emplacement, apps), voit le prix et ses statistiques ; vous validez chaque annonce avant publication.",
+"In seiner App erstellt er Anzeigen, Menüs und Events (Daten, Tage, Uhrzeiten, Platz, Apps), sieht den Preis und seine Statistiken; Sie geben jede Anzeige vor der Veröffentlichung frei."
+],
+["Tarifs des annonces",
+"Anzeigentarife"
+],
+["Note pour les annonceurs (facultatif)",
+"Hinweis für Werbekunden (optional)"
+],
+["Tarifs enregistrés",
+"Tarife gespeichert"
+],
+["Refuser l’annonce ?",
+"Anzeige ablehnen?"
+],
+["Motif (envoyé à l’annonceur dans son app)",
+"Grund (wird dem Werbekunden in seiner App angezeigt)"
+],
+["Supprimer cet annonceur ?",
+"Diesen Werbekunden löschen?"
+],
+["Annonceur supprimé",
+"Werbekunde gelöscht"
+],
+["Annonceur créé : envoyez-lui le code",
+"Werbekunde erstellt: senden Sie ihm den Code"
+],
+["à valider",
+"freizugeben"
+],
+["refusée",
+"abgelehnt"
+],
+["Clients hôtel / Airbnb",
+"Hotel- / Airbnb-Gäste"
+],
+["Événement",
+"Event"
+],
+["Menu du jour",
+"Tagesmenü"
 ]
 ];

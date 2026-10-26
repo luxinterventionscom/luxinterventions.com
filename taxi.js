@@ -82,6 +82,7 @@ async function sendOwner(o) {
 let pushSt = '', pushJust = false;
 const pushPost = (b) => fetch(`${API}/api/esp/${id}/push`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...b, app: 'taxi', lang, boards: [] }) }).then((r) => { if (!r.ok) throw new Error(r.status); });
 async function pushInit() { pushSt = await pushStatus('/taxi'); if (pushSt === 'on') pushRefresh('/taxi', pushPost); setBadge(0, '/taxi'); render(); }
+const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
 function adBox(x, t) {
   const v = x.video ? videoEmbed(x.video) : null;
   return `<div class="card pub-box" data-pid="${esc(x.id)}"><div class="meta"><b>📣 ${esc(t.ad.lbl)}</b></div><b style="display:block">${esc(x.nom)}</b><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p>${v ? `<div class="vid" data-vsrc="${esc(v.src)}"></div>` : ''}
@@ -131,7 +132,7 @@ function render() {
       <div class="card"><form id="codeForm"><label>${esc(t.code)}</label><input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" style="font-size:24px;letter-spacing:.1em;text-align:center"><button class="btn block" style="margin-top:12px" type="submit">${esc(t.enter)}</button></form></div>`;
     return;
   }
-  const d = data, out = [], pubs = (d.pubs || []).filter((x) => !x.fin || x.fin >= new Date().toISOString().slice(0, 10));
+  const d = data, out = [], pubs = (d.pubs || []).filter((x) => (!x.fin || x.fin >= new Date().toISOString().slice(0, 10)) && pubNow(x));
   const slot = (k) => pubs.find((x) => (x.slot || 'milieu') === k);
   document.title = `🚕 ${d.nom}`;
   // 1 en-tête · 2 pub · 3 notifications · 4 météo/radio · 5 courses · 6 pub · 7 chauffeurs, voitures, tarifs · 8 🔒 · 9 pub · 10 infos · 11 cours

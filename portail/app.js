@@ -16,7 +16,7 @@ scrollHintInit();
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.34.0';
+const VERSION = '1.35.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -711,8 +711,10 @@ document.addEventListener('toggle', (e) => {
   }
 }, true);
 // une annonce par emplacement (haut sous « Bonjour », milieu, bas au-dessus de la barre crypto) ; plusieurs → une autre à chaque ouverture
+// annonce limitée à certains jours / heures (ex. happy hour 17:00–19:00, le samedi)
+const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
 function pubSlot(k) {
-  const list = ((state.cache.home && state.cache.home.pubs) || []).filter((a) => (a.slot || 'milieu') === k);
+  const list = ((state.cache.home && state.cache.home.pubs) || []).filter((a) => (a.slot || 'milieu') === k && pubNow(a));
   if (!list.length) return '';
   const a = list[pubTurn % list.length], v = videoEmbed(a.video);
   return html`<details class="card ptl-pub fold mk mk-pub mk-on" style="margin:12px 0" data-pid="${a.id}"${pubShut.has(a.id) ? '' : ' open'}><summary><div class="small muted"><b class="pub-lbl">📣 Publicité</b> · ${PUB_ICON[a.cat] || '📌'}</div><b style="font-size:17px">${a.nom}</b></summary>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
