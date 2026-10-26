@@ -1,0 +1,17 @@
+{
+  "name": "Mes annonces — LuxInterventions",
+  "short_name": "Annonces",
+  "description": "Annonces, menus et événements des commerces (HORECA) dans les apps du réseau",
+  "lang": "fr",
+  "start_url": "/annonce.html",
+  "scope": "/annonce",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f5f4",
+  "theme_color": "#DC2626",
+  "icons": [
+    { "src": "/ares/icons/lux-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/ares/icons/lux-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/ares/icons/lux-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

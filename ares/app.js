@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.195.0';
+const VERSION = '2.196.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -843,7 +843,7 @@ const PUB_CATS = { social: '📱 Annonce réseaux sociaux (TikTok, Instagram, Fa
 const PUB_TTL = [7, 14, 30, 60, 90, 180, 365];
 const isPub = (a) => a.kind === 'pub';
 // À qui s'adresse l'annonce : locataires (par défaut), équipe, portail gérance
-const PUB_AUD = { loc: '🏠 Locataires', eq: '👷 Équipe', ptl: '🏢 Portail gérance' };
+const PUB_AUD = { loc: '🏠 Locataires', eq: '👷 Équipe', ptl: '🏢 Portail gérance', hote: '🏨 Clients hôtel / Airbnb', taxi: '🚕 Taxis' };
 // Trois emplacements payants dans les apps (locataires, équipe, portail) — du plus cher au moins cher
 const PUB_SLOTS = { haut: '🔝 Haut — sous « Bonjour », visible à l’ouverture (prix élevé)', milieu: '⏺ Milieu — au centre de l’app (prix moyen)', bas: '🔽 Bas — en fin de page, au-dessus de la barre crypto (prix bas)' };
 const pubSlot = (a) => (PUB_SLOTS[a.slot] ? a.slot : 'milieu');
@@ -910,8 +910,8 @@ function pubStatsFor(id, from = '0000', to = '9999') {
   r.ctr = r.v ? Math.round((r.taps / r.v) * 1000) / 10 : 0;
   return r;
 }
-const pubOut = (a) => ({ id: a.id, slot: pubSlot(a), cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '' });
-const pubsActives = (immId, aud = 'loc') => vault.list('avis').filter((a) => isPub(a) && pubAud(a).includes(aud) && (aud === 'ptl' || !immId || !a.immId || (Array.isArray(immId) ? immId.includes(a.immId) : a.immId === immId)) && (!a.debut || a.debut <= today()) && (!a.fin || a.fin >= today()));
+const pubOut = (a) => ({ id: a.id, slot: pubSlot(a), cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '', ...(a.jours && a.jours.length ? { jours: a.jours } : {}), ...(a.h1 && a.h2 ? { h1: a.h1, h2: a.h2 } : {}), ...(a.type ? { type: a.type } : {}) });
+const pubsActives = (immId, aud = 'loc') => vault.list('avis').filter((a) => isPub(a) && (!a.st || a.st === 'ok') && pubAud(a).includes(aud) && (aud === 'ptl' || !immId || !a.immId || (Array.isArray(immId) ? immId.includes(a.immId) : a.immId === immId)) && (!a.debut || a.debut <= today()) && (!a.fin || a.fin >= today()));
 const avisActifs = (immId) => vault.list('avis').filter((a) => !isPub(a) && (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
   .sort((a, b) => (a.debut || '').localeCompare(b.debut || ''));
 async function ownerKeys() {
@@ -1177,6 +1177,81 @@ async function binDaily() {
   }
   try { localStorage.setItem('aresBinDay', today()); } catch {}
 }
+// 🍽️ Annonceurs HORECA (restaurants, bars, discothèques…) : leur app (annonce.html) envoie annonces et événements,
+// LuxInterventions valide ; paiement en ligne pas encore connecté (le bouton est là, désactivé)
+const AN_TYPES = { annonce: '📣 Annonce', evenement: '🎉 Événement', menu: '🍽️ Menu du jour' };
+const anCos = () => vault.list('reglages').filter((r) => r.id.startsWith('annc-')).sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+const anTarifs = () => vault.get('reglages', 'annTarifs') || {};
+const PUB_JOURS = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
+const anHashes = new Map();
+async function annSync(onlyId, loud) {
+  if (!vault.unlocked) return true;
+  for (const an0 of anCos().filter((x) => x.appCode && (!onlyId || x.id === onlyId))) {
+    try {
+      await ownerKeys();
+      let an = an0, e = an.espace;
+      if (!e || !e.id) { e = { id: newEspaceId(), key: newEspaceKey() }; await vault.mutate((tx) => tx.put('reglages', { id: an.id, espace: e }), 'App annonceur : accès créé', an.nom); }
+      if (e.code !== an.appCode) {
+        if (e.codeHash) await vault.espCodeDel(e.codeHash).catch(() => {});
+        const hh = await codeHash(an.appCode);
+        await vault.espCodePut(hh, { id: e.id, ...(await wrapWithCode(an.appCode, e.key)) });
+        e = { ...e, code: an.appCode, codeHash: hh };
+        await vault.mutate((tx) => tx.put('reglages', { id: an.id, espace: e }), 'App annonceur : code', an.nom);
+      }
+      an = vault.get('reglages', an.id);
+      const sig = vault.get('reglages', 'signal'), t = anTarifs();
+      const ads = vault.list('avis').filter((a) => isPub(a) && a.annId === an.id).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map((a) => {
+        const st = pubStatsFor(a.id, a.debut || '0000');
+        return { id: a.id, type: a.type || 'annonce', nom: a.nom, texte: a.texte || '', adresse: a.adresse || '', tel: a.tel || '', web: a.web || '', video: a.video || '', slot: pubSlot(a), aud: pubAud(a), debut: a.debut, fin: a.fin, jours: a.jours || [], h1: a.h1 || '', h2: a.h2 || '', st: a.st || 'ok', motif: a.motif || '', prix: a.prix || 0, v: st.v, taps: st.taps };
+      });
+      const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: societe().nom || 'LuxInterventions',
+        tarifs: { haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, note: t.note || '' }, pay: false };
+      const hs = await sha256Hex(JSON.stringify(data));
+      if (!loud && anHashes.get(e.id) === hs) continue;
+      await vault.espacePut(e.id, await sealJson(e.key, data));
+      anHashes.set(e.id, hs);
+      await notifyNews(e.id, ads.filter((a) => a.st !== 'wait').map((a) => 'a:' + a.id + ':' + a.st));
+    } catch (err) { if (loud) { toast(err.message || 'Publication impossible (connexion ?)', { bad: true }); return false; } }
+  }
+  return true;
+}
+// annonce envoyée par l'app de l'annonceur : nouvelle ou modifiée → à valider ; arrêt demandé
+async function annInbox(an, msg) {
+  const S = (v, n) => String(v ?? '').trim().slice(0, n);
+  if (msg.type === 'an-ad') {
+    const a = msg.ad || {}, id = S(a.id, 40), old = id ? vault.get('avis', id) : null;
+    if (old && old.annId !== an.id) return false;
+    const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d : ''), hm = (v) => (/^\d\d:\d\d$/.test(v || '') ? v : '');
+    const debut = day(a.debut) || today(), fin = day(a.fin) && day(a.fin) >= debut ? day(a.fin) : addDays(debut, 30);
+    const rec = { kind: 'pub', annId: an.id, st: 'wait', motif: '', type: AN_TYPES[a.type] ? a.type : 'annonce', cat: an.cat || 'resto', nom: S(a.nom, 80) || an.nom, texte: S(a.texte, 600), adresse: S(a.adresse, 160) || an.adresse || '',
+      tel: S(a.tel, 30), web: /^https?:\/\//.test(S(a.web, 300)) ? S(a.web, 300) : '', video: /^https?:\/\//.test(S(a.video, 400)) ? S(a.video, 400) : '', slot: PUB_SLOTS[a.slot] ? a.slot : 'milieu',
+      aud: (Array.isArray(a.aud) ? a.aud : []).filter((k) => PUB_AUD[k]).slice(0, 5), debut, fin, ttl: Math.round((new Date(fin) - new Date(debut)) / 864e5) + 1,
+      jours: (Array.isArray(a.jours) ? a.jours : []).map(Number).filter((n) => n >= 0 && n <= 6).slice(0, 7), h1: hm(a.h1), h2: hm(a.h2), immId: '', pay: 'none' };
+    if (!rec.aud.length) rec.aud = ['loc'];
+    const t = anTarifs(); rec.prix = Math.round((+t[rec.slot] || 0) * rec.ttl);
+    if (old) rec.id = old.id;
+    await vault.mutate((tx) => tx.put('avis', rec), old ? '📣 Annonce modifiée par l’annonceur (à valider)' : '📣 Nouvelle annonce à valider', `${an.nom} · ${AN_TYPES[rec.type]} · ${fmtDate(rec.debut)} → ${fmtDate(rec.fin)}`);
+    annSync(an.id); return true;
+  }
+  if (msg.type === 'an-stop') {
+    const a = vault.get('avis', S(msg.id, 40));
+    if (!a || a.annId !== an.id) return false;
+    await vault.mutate((tx) => tx.put('avis', { id: a.id, fin: addDays(today(), -1), st: a.st === 'wait' ? 'no' : a.st }), '📣 Annonce arrêtée par l’annonceur', `${an.nom} · ${a.nom}`);
+    annSync(an.id); return true;
+  }
+  return false;
+}
+function annBlock() {
+  const cos = anCos(), wait = vault.list('avis').filter((a) => isPub(a) && a.st === 'wait').sort((a, b) => (a.debut || '').localeCompare(b.debut || '')), t = anTarifs();
+  const nm = (a) => (vault.get('reglages', a.annId) || {}).nom || a.nom;
+  return html`<div class="card" style="margin-bottom:14px"><div class="card-title"><h3>🍽️ Annonceurs (HORECA)</h3><div class="actions" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-action="ann-tarifs">💶 Tarifs</button><button class="btn sm primary" data-action="new-annc">${icon('plus')} Annonceur</button></div></div>
+    <p class="tiny muted" style="margin:0 0 8px">Restaurants, bistrots, bars, discothèques… publient eux-mêmes leurs annonces, menus et événements dans leur app ; vous validez. Tarifs / jour : 🔝 ${t.haut ? t.haut + ' €' : '—'} · ⏺ ${t.milieu ? t.milieu + ' €' : '—'} · 🔽 ${t.bas ? t.bas + ' €' : '—'} · 💳 paiement en ligne : <b>non connecté</b></p>
+    ${wait.length ? html`<div class="section-label">⏳ À valider (${wait.length})</div><div class="list" style="margin-bottom:10px">${wait.map((a) => html`<div class="row" style="display:block">
+      <b>${nm(a)}</b> · ${AN_TYPES[a.type] || ''} — ${a.nom}<div class="small">${a.texte}</div>
+      <div class="tiny muted">${PUB_SLOTS[pubSlot(a)].split(' — ')[0]} · ${pubAud(a).map((k) => PUB_AUD[k]).join(' · ')} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}${a.jours && a.jours.length ? ' · ' + a.jours.map((j) => PUB_JOURS[j]).join(' ') : ''}${a.h1 ? ` · ${a.h1}–${a.h2}` : ''}${a.prix ? ' · ' + a.prix + ' €' : ''}</div>
+      <div class="actions" style="margin:6px 0 0"><button class="btn sm primary" data-action="pub-ok" data-id="${a.id}">✅ Publier</button><button class="btn sm" data-action="edit-pub" data-id="${a.id}">✏️ Voir</button><button class="btn sm ghost danger" data-action="pub-no" data-id="${a.id}">❌ Refuser</button></div></div>`)}</div>` : ''}
+    ${cos.length ? html`<div class="list">${cos.map((an) => { const n = vault.list('avis').filter((a) => isPub(a) && a.annId === an.id && (!a.fin || a.fin >= today()) && a.st === 'ok').length; return html`<button class="row" data-action="edit-annc" data-id="${an.id}"><span class="avatar">${(PUB_CATS[an.cat] || '📣').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${an.nom}</span><span class="meta">${plural(n, 'annonce')} en ligne${an.tel ? ' · ' + an.tel : ''}</span></span><span class="chev">›</span></button>`; })}</div>` : html`<p class="small muted" style="margin:0">Aucun annonceur.</p>`}</div>`;
+}
 // 📣 annonces publicitaires des partenaires (vendues) : dans Comptabilité → Abonnements
 function pubSection(f = '') {
       pubStatsLoad();
@@ -1188,8 +1263,8 @@ function pubSection(f = '') {
         <span class="meta" style="display:block"><b>${PUB_SLOTS[pubSlot(a)].split(' — ')[0]}</b> · ${pubAud(a).map((k) => html`<span>${PUB_AUD[k]}</span>`).reduce((x, y) => html`${x} · ${y}`)}</span>
         <span class="meta"><span>${a.immId ? immName(a.immId) : 'Tous les immeubles'}</span>${a.fin ? html` · <span>${fmtDate(a.debut)} → ${fmtDate(a.fin)}</span>` : ''}</span>
         ${(() => { const st = pubStatsFor(a.id, a.debut || '0000'); return st.v || st.taps ? html`<span class="meta" style="display:block">📊 <b>${st.v}</b> <span>vues</span> · <b>${st.taps}</b> <span>clics</span>${st.v ? html` · <span>${String(st.ctr).replace('.', ',')} %</span>` : ''}</span>` : ''; })()}</span>
-        <span class="badge ${a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
-      return html`<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
+        <span class="badge ${a.st === 'wait' ? 'warn' : a.st === 'no' ? 'bad' : a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.st === 'wait' ? '⏳ à valider' : a.st === 'no' ? '❌ refusée' : a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
+      return html`${f ? '' : annBlock()}<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
         ${all.length ? html`<p class="tiny muted" style="margin:-4px 0 8px">📊 Statistiques anonymes : vues (une fois par jour et par téléphone) et clics. <a href="#" data-action="pub-stats-refresh">↻ Actualiser les statistiques</a></p>` : ''}
         ${on.length ? html`<div class="list" style="margin-bottom:14px">${on.map(row)}</div>` : empty('msg', 'Aucune annonce en cours.', html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>`)}
         ${off.length ? html`<div class="section-label">Expirées (touchez pour republier)</div><div class="list">${off.map(row)}</div>` : ''}
@@ -1439,7 +1514,7 @@ async function espaceSync(onlyId, loud) {
       if (navigator.onLine && !espWarned.has(l.id)) { espWarned.add(l.id); toast(`App de ${fullName(l)} pas mise à jour : ${e.message || 'erreur'}`, { bad: true }); }
     }
   }
-  if (!onlyId) { await hotesSync(); await txcoSync(); }
+  if (!onlyId) { await hotesSync(); await txcoSync(); await annSync(); }
   if (!onlyId) { await equipeSync(); await portailPubsSync(); await biensSync(); }
   return true;
 }
@@ -1540,6 +1615,8 @@ async function inboxSync() {
       if (hc) { if (await hoteInbox(hc, msg)) n++; await vault.inboxDel(it.name); continue; }
       const tco = txCos().find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
       if (tco) { if (await txInbox(tco, msg)) n++; await vault.inboxDel(it.name); continue; }
+      const anc = anCos().find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
+      if (anc) { if (await annInbox(anc, msg)) n++; await vault.inboxDel(it.name); continue; }
       const l = vault.list('locataires').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
       if (!l || !l.espace.on) { await vault.inboxDel(it.name); continue; }
       if (msg.type === 'paye') {
@@ -2069,7 +2146,7 @@ async function txcoSync(onlyId, loud) {
       co = vault.get('reglages', co.id);
       const sig = vault.get('reglages', 'signal');
       const data = { v: 1, kind: 'taxi', gv: VERSION, nom: co.nom, tel: co.tel || '', cat: co.cat || {}, rides: await txRides(co), signalKey: sig ? sig.pub : '', reseau: hoteConf().nom || societe().nom || 'LuxInterventions',
-        pubs: pubsActives(null).map(pubOut) };
+        pubs: pubsActives(null, 'taxi').map(pubOut) };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && txHashes.get(e.id) === hs) continue;
       await vault.espacePut(e.id, await sealJson(e.key, data));
@@ -2117,7 +2194,7 @@ function hoteData(h, tks) {
     arr: h.arr || null, taxiOk: h.taxi && h.taxi.st !== 'wait' && h.taxi.st !== 'no' ? { nom: h.taxi.nom, tel: h.taxi.tel, auto: h.taxi.auto, plaque: h.taxi.plaque } : null,
     edlSent: h.edlOut ? Object.keys(h.edlOut.ph || {}) : [], ...tks, signalKey: sig ? sig.pub : '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
-    pubs: pubsActives(null).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut),
+    pubs: pubsActives(null, 'hote').sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut),
   };
 }
 // le client a son app : accès (id + clé) et code personnel enregistré sur le serveur (empreinte seulement)
@@ -5834,6 +5911,40 @@ const SHEETS = {
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
+  'annc-form'({ id }) {
+    const an = id ? vault.get('reglages', id) : { cat: 'resto', appCode: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0') };
+    if (id && !an) return null;
+    const inv = `📣 ${an.nom || ''} — app des annonces ${societe().nom || 'LuxInterventions'} : ${location.origin}/annonce.html\nCode : ${an.appCode}`, tel = String(an.tel || '').replace(/[^\d+]/g, '');
+    return {
+      title: id ? an.nom : 'Nouvel annonceur',
+      narrow: true,
+      body: html`<form id="f" data-form="annc" class="fields">
+        <input type="hidden" name="id" value="${id || ''}">
+        ${field('Nom du commerce', 'nom', an.nom, { full: true, required: true, placeholder: 'ex. Bistrot du Marché' })}
+        <label class="field full">Catégorie<select name="cat">${Object.entries(PUB_CATS).map(([k, v]) => html`<option value="${k}" ${an.cat === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field('Adresse', 'adresse', an.adresse, { full: true })}${field('Téléphone (WhatsApp)', 'tel', an.tel, { type: 'tel' })}${field('Email', 'email', an.email, { type: 'email' })}
+        <div class="full section-label" style="margin:6px 0 0">📱 App de l’annonceur</div>
+        ${field('Code d’accès à l’app', 'appCode', an.appCode, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
+        <p class="tiny muted full" style="margin:0">Dans son app, il crée ses annonces, menus et événements (dates, jours, heures, emplacement, apps), voit le prix et ses statistiques ; vous validez chaque annonce avant publication.</p>
+        ${id ? html`<div class="full actions" style="margin:0;flex-wrap:wrap">${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}${an.email ? html`<a class="btn sm" href="mailto:${an.email}?subject=${encodeURIComponent('📣 App des annonces')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}<button type="button" class="btn sm" data-action="code-copy" data-code="${an.appCode}">📋 Copier le code</button></div>` : ''}
+      </form>`,
+      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-annc" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
+        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'ann-tarifs'() {
+    const t = anTarifs();
+    return {
+      title: '💶 Tarifs des annonces',
+      narrow: true,
+      body: html`<form id="f" data-form="ann-tarifs" class="fields">
+        ${field('🔝 Haut — prix par jour (€)', 'haut', t.haut, { attrs: money$ })}${field('⏺ Milieu — prix par jour (€)', 'milieu', t.milieu, { attrs: money$ })}${field('🔽 Bas — prix par jour (€)', 'bas', t.bas, { attrs: money$ })}
+        <label class="field full">Note pour les annonceurs (facultatif)<textarea name="note" style="min-height:60px" placeholder="ex. −20 % à partir de 30 jours">${t.note || ''}</textarea></label>
+        <p class="tiny muted full" style="margin:0">L’annonceur voit le prix (jours × tarif de l’emplacement) avant d’envoyer. 💳 Paiement en ligne : pas encore connecté — le bouton est affiché, désactivé, avec une info.</p>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
   'txco-form'({ id }) {
     const co = id ? vault.get('reglages', id) : { appCode: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0') };
     if (id && !co) return null;
@@ -7405,6 +7516,31 @@ const ACTIONS = {
   'new-chambre': () => openOver('chambre-form'),
   'hote-conf': () => openOver('hote-conf'),
   'new-txco': () => openOver('txco-form'),
+  'new-annc': () => openOver('annc-form'),
+  'edit-annc': (d) => openOver('annc-form', d.id),
+  'ann-tarifs': () => openOver('ann-tarifs'),
+  async 'del-annc'(d) {
+    const an = vault.get('reglages', d.id);
+    if (!an || !(await confirmBox('Supprimer cet annonceur ?', { ok: 'Supprimer', danger: true, detail: `${an.nom} — son app ne fonctionnera plus ; ses annonces restent jusqu’à leur fin` }))) return;
+    if (an.espace && an.espace.id) { await vault.espaceDel(an.espace.id).catch(() => {}); if (an.espace.codeHash) await vault.espCodeDel(an.espace.codeHash).catch(() => {}); }
+    await vault.mutate((tx) => tx.remove('reglages', d.id), 'Annonceur supprimé', an.nom);
+    goBack();
+  },
+  async 'pub-ok'(d) {
+    const a = vault.get('avis', d.id);
+    if (!a) return;
+    await vault.mutate((tx) => tx.put('avis', { id: a.id, st: 'ok', motif: '' }), '📣 Annonce validée et publiée', `${a.nom} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}`);
+    toast('Annonce publiée');
+    annSync(a.annId); renderView();
+  },
+  async 'pub-no'(d) {
+    const a = vault.get('avis', d.id);
+    if (!a) return;
+    const m = await promptText('Refuser l’annonce ?', 'Motif (envoyé à l’annonceur dans son app)', 'ex. vidéo non conforme, dates à changer…');
+    if (m == null) return;
+    await vault.mutate((tx) => tx.put('avis', { id: a.id, st: 'no', motif: String(m).trim().slice(0, 200) }), '📣 Annonce refusée', `${a.nom}${m ? ' — ' + m : ''}`);
+    annSync(a.annId); renderView();
+  },
   'edit-txco': (d) => openOver('txco-form', d.id),
   async 'del-txco'(d) {
     const co = vault.get('reglages', d.id);
@@ -8216,6 +8352,24 @@ const FORMS = {
     goBack();
     const to = type === 'proprio' ? 'proprios' : 'agences';
     if (ui.route !== to) go(to);
+  },
+  async annc(fd) {
+    const g = (k) => String(fd.get(k) || '').trim(), id = g('id');
+    if (!g('nom')) return;
+    if (!/^[0-9A-Za-z]{4,16}$/.test(g('appCode'))) return toast('Code : 4 à 16 chiffres ou lettres', { bad: true });
+    const rid = id || 'annc-' + uid();
+    await vault.mutate((tx) => tx.put('reglages', { id: rid, nom: g('nom'), cat: PUB_CATS[g('cat')] ? g('cat') : 'autre', adresse: g('adresse'), tel: g('tel'), email: g('email'), appCode: g('appCode') }), id ? 'Annonceur modifié' : 'Annonceur créé', g('nom'));
+    toast(id ? 'Enregistré' : 'Annonceur créé : envoyez-lui le code');
+    goBack();
+    await annSync(rid, true);
+    if (!id) openOver('annc-form', rid);
+  },
+  async 'ann-tarifs'(fd) {
+    const m = (k) => { const v = String(fd.get(k) || '').trim().replace(',', '.'); return v ? Math.max(0, num(v)) : ''; };
+    await vault.mutate((tx) => tx.put('reglages', { id: 'annTarifs', haut: m('haut'), milieu: m('milieu'), bas: m('bas'), note: String(fd.get('note') || '').trim().slice(0, 300) }), 'Tarifs des annonces', `🔝 ${m('haut')} · ⏺ ${m('milieu')} · 🔽 ${m('bas')} € / jour`);
+    toast('Tarifs enregistrés');
+    goBack();
+    annSync(null, true);
   },
   async txco(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), id = g('id');

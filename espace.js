@@ -766,6 +766,8 @@ try { pubTurn = (+localStorage.getItem('espPubTurn') || 0) + 1; localStorage.set
 // annonce repliée d'un toucher sur son titre (mémorisé sur l'appareil), rouverte de la même façon
 const pubShut = new Set((() => { try { return JSON.parse(localStorage.getItem('espPubShut') || '[]'); } catch { return []; } })());
 const pickPub = (list) => (list.length ? list[pubTurn % list.length] : null);
+// annonce limitée à certains jours / heures (ex. happy hour 17:00–19:00, le samedi)
+const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
 function adBox(x, t, d, top) {
   const v = x.video ? videoEmbed(x.video) : null;
   return `<details class="card pub-box mk mk-pub mk-on${top ? ' pub-top' : ''}" data-pid="${esc(x.id)}"${pubShut.has(x.id) ? '' : ' open'}><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b> · ${esc(t.ad.cats[x.cat] || t.ad.cats.autre)}</div><b class="pub-name">${esc(x.nom)}</b></summary>${x.texte ? `<div class="pub-txt">${esc(x.texte)}</div>` : ''}
@@ -898,7 +900,7 @@ function render() {
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span class="av-btn" style="width:72px;height:72px;font-size:32px">${ph ? `<img src="${esc(ph)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span>
     <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${ph ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
     <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>`; })() + `<p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${MY_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === (icMine || d.avatar)}">${esc(e)}</button>`).join('')}</div></div>` : ''}<p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);
-  const pubs = s.pub ? (d.pubs || []).filter((x) => !x.fin || x.fin >= today) : [];
+  const pubs = s.pub ? (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x)) : [];
   const ad = pubs.find((x) => x.id === adSel);
   if (!ad) adSel = '';
   // trois emplacements payants : haut (à la place de la carte, à l'ouverture), milieu, bas (au-dessus de la barre crypto)
@@ -1591,6 +1593,7 @@ async function load() {
       if (data && data.kind === 'equipe') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/equipe.html#${id}.${key}`); return; }
       if (data && data.kind === 'hote') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/hote.html#${id}.${key}`); return; }
       if (data && data.kind === 'taxi') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/taxi.html#${id}.${key}`); return; }
+      if (data && data.kind === 'annonce') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/annonce.html#${id}.${key}`); return; }
       else if (r.status === 404) { try { localStorage.removeItem(ACC); } catch {} id = key = ''; loadErr = T().off; }
     } catch { loadErr = '⚠ offline'; }
   }

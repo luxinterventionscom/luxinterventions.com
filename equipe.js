@@ -531,6 +531,8 @@ try { pubTurn = (+localStorage.getItem('eqPubTurn') || 0) + 1; localStorage.setI
 // annonce repliée / rouverte d'un toucher sur son titre (mémorisé sur ce téléphone)
 const pubShut = new Set((() => { try { return JSON.parse(localStorage.getItem('eqPubShut') || '[]'); } catch { return []; } })());
 const pickPub = (list) => (list.length ? list[pubTurn % list.length] : null);
+// annonce limitée à certains jours / heures (ex. happy hour 17:00–19:00, le samedi)
+const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
 function adBox(x, t) {
   const v = x.video ? videoEmbed(x.video) : null;
   return `<details class="card pub-box mk mk-pub mk-on" data-pid="${esc(x.id)}"${pubShut.has(x.id) ? '' : ' open'}><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b> · ${esc(t.ad.cats[x.cat] || t.ad.cats.autre)}</div><b style="display:block;font-size:18px">${esc(x.nom)}</b></summary>${x.texte ? `<div>${esc(x.texte)}</div>` : ''}
@@ -662,7 +664,7 @@ function render() {
   } else if (miss) out.push(`<div class="card warnc" id="profNag"><p style="margin:0 0 8px"><b>👤 ${esc(t.info)} · ${esc(ci.n(miss))}</b></p><button class="btn sm" data-prof="1">${esc(ci.go)}</button></div>`);
   const pls = placesOf(d);
   if (place && !pls.includes(place)) place = '';
-  const pubs = (d.pubs || []).filter((x) => !x.fin || x.fin >= today);
+  const pubs = (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x));
   const slot = (k) => pickPub(pubs.filter((x) => (x.slot || 'milieu') === k));
   if (place) out.push(`<div class="card"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">📍 ${esc(place)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(place))}"></div>${navBtns(mapQ(place))}${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
   else { const top = slot('haut'); if (top) out.push(adBox(top, t)); }

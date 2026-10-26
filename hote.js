@@ -245,6 +245,7 @@ async function pushInit() {
 let pubTurn = 0;
 try { pubTurn = (+ls.get('hotePubTurn') || 0) + 1; ls.set('hotePubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
 const pickPub = (list) => (list.length ? list[pubTurn % list.length] : null);
+const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
 function adBox(x, t) {
   const v = x.video ? videoEmbed(x.video) : null;
   return `<details class="card pub-box" data-pid="${esc(x.id)}" open><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b></div><b style="display:block;font-size:17px">${esc(x.nom)}</b><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p></summary>
@@ -273,7 +274,7 @@ function render() {
     <h1>${bnb ? '🏠' : '🏨'} ${esc(t.hi)} ${esc(d.prenom || d.nom)}</h1>
     <p class="sub">${esc(t.from)} ${esc(fmt(d.arrivee))} · ${esc(t.to)} ${esc(fmt(d.depart))}${d.pers > 1 ? ` · 👥 ${d.pers} ${esc(t.pers)}` : ''}</p>`);
   if (today > d.depart) out.push(`<div class="card okc"><p style="margin:0">🙏 ${esc(t.thanks)}</p></div>`);
-  const pubs = (d.pubs || []).filter((x) => !x.fin || x.fin >= today), slot = (k) => pickPub(pubs.filter((x) => (x.slot || 'milieu') === k));
+  const pubs = (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x)), slot = (k) => pickPub(pubs.filter((x) => (x.slot || 'milieu') === k));
   // 2 · publicité (haut)
   { const p = slot('haut'); if (p) out.push(adBox(p, t)); }
   // 3 · notifications

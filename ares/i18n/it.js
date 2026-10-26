@@ -16001,5 +16001,80 @@ export default [
 ],
 ["Refusée",
 "Rifiutata"
+],
+["Annonceurs (HORECA)",
+"Inserzionisti (HORECA)"
+],
+["Annonceur",
+"Inserzionista"
+],
+["Nouvel annonceur",
+"Nuovo inserzionista"
+],
+["À valider ({0})",
+"Da approvare ({0})"
+],
+["Voir",
+"Vedi"
+],
+["Refuser",
+"Rifiuta"
+],
+["Aucun annonceur.",
+"Nessun inserzionista."
+],
+["{0} annonce en ligne",
+"{0} annuncio online"
+],
+["{0} annonces en ligne",
+"{0} annunci online"
+],
+["non connecté",
+"non collegato"
+],
+["App de l’annonceur",
+"App dell'inserzionista"
+],
+["Dans son app, il crée ses annonces, menus et événements (dates, jours, heures, emplacement, apps), voit le prix et ses statistiques ; vous validez chaque annonce avant publication.",
+"Nella sua app crea annunci, menù ed eventi (date, giorni, orari, posizione, app), vede il prezzo e le statistiche; voi approvate ogni annuncio prima della pubblicazione."
+],
+["Tarifs des annonces",
+"Tariffe degli annunci"
+],
+["Note pour les annonceurs (facultatif)",
+"Nota per gli inserzionisti (facoltativo)"
+],
+["Tarifs enregistrés",
+"Tariffe salvate"
+],
+["Refuser l’annonce ?",
+"Rifiutare l'annuncio?"
+],
+["Motif (envoyé à l’annonceur dans son app)",
+"Motivo (inviato all'inserzionista nella sua app)"
+],
+["Supprimer cet annonceur ?",
+"Eliminare questo inserzionista?"
+],
+["Annonceur supprimé",
+"Inserzionista eliminato"
+],
+["Annonceur créé : envoyez-lui le code",
+"Inserzionista creato: mandagli il codice"
+],
+["à valider",
+"da approvare"
+],
+["refusée",
+"rifiutato"
+],
+["Clients hôtel / Airbnb",
+"Clienti hotel / Airbnb"
+],
+["Événement",
+"Evento"
+],
+["Menu du jour",
+"Menù del giorno"
 ]
 ];
