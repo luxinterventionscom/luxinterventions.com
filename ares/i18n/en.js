@@ -15289,5 +15289,95 @@ export default [
 ],
 ["Les agences immobilières publient leurs biens et vous confient leurs interventions.",
 "Real estate agencies publish their properties and entrust you with their jobs."
+],
+["Logement seul",
+"Room only"
+],
+["Petit-déjeuner",
+"Breakfast"
+],
+["Demi-pension",
+"Half board"
+],
+["Pension complète",
+"Full board"
+],
+["Préférences / allergies",
+"Preferences / allergies"
+],
+["ex. sans gluten, oreiller ferme, étage bas…",
+"e.g. gluten-free, firm pillow, low floor…"
+],
+["Menu du restaurant (PDF, le même pour tous les clients)",
+"Restaurant menu (PDF, the same for all guests)"
+],
+["Voir le menu",
+"View the menu"
+],
+["Remplacer le menu",
+"Replace the menu"
+],
+["Ajouter le menu",
+"Add the menu"
+],
+["Le logement",
+"The home"
+],
+["La chambre",
+"The room"
+],
+["visible dans l’app du client",
+"visible in the guest's app"
+],
+["N° / nom du logement",
+"Home no. / name"
+],
+["Nombre de pièces",
+"Number of rooms"
+],
+["Bâtiment",
+"Building"
+],
+["Parking",
+"Parking"
+],
+["App du client",
+"Guest app"
+],
+["Code d’accès à l’app",
+"App access code"
+],
+["Menu : fichier PDF seulement",
+"Menu: PDF file only"
+],
+["Menu : 10 Mo maximum",
+"Menu: 10 MB maximum"
+],
+["Menu du restaurant",
+"Restaurant menu"
+],
+["Fiche de la chambre",
+"Room record"
+],
+["Fiche du logement",
+"Home record"
+],
+["Client enregistré — 📷 ajoutez au moins 6 photos de cette chambre",
+"Guest saved — 📷 add at least 6 photos of this room"
+],
+["Client enregistré — 📷 ajoutez au moins 6 photos de ce logement",
+"Guest saved — 📷 add at least 6 photos of this home"
+],
+["📷 6 photos minimum : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Elles restent pour les prochains clients de cette chambre.",
+"📷 At least 6 photos: building, door, bathroom, room, kitchen, parking (+ 1 of your choice). They stay for the next guests of this room."
+],
+["📷 6 photos minimum : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Elles restent pour les prochains clients de ce logement.",
+"📷 At least 6 photos: building, door, bathroom, room, kitchen, parking (+ 1 of your choice). They stay for the next guests of this home."
+],
+["Code personnel du client (aussi depuis l’étranger) : avec le lien de l’app il voit sa chambre, les photos, son code de porte et le menu. Le lien de téléchargement sera ajouté avec l’app des clients (prochaine étape).",
+"Guest's personal code (also from abroad): with the app link they see their room, the photos, their door code and the menu. The download link will be added with the guest app (next step)."
+],
+["Code personnel du client (aussi depuis l’étranger) : avec le lien de l’app il voit son logement, les photos, son code de porte et les infos du séjour. Le lien de téléchargement sera ajouté avec l’app des clients (prochaine étape).",
+"Guest's personal code (also from abroad): with the app link they see their home, the photos, their door code and the stay info. The download link will be added with the guest app (next step)."
 ]
 ];

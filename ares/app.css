@@ -927,3 +927,9 @@ body.compta [data-action^="del-"], body.compta [data-action$="-del"], body.compt
 
 /* bouton sur toute la largeur : le texte va à la ligne au lieu de sortir de l'écran */
 .btn.block { white-space: normal; line-height: 1.25; }
+/* 🏨 fiche chambre / logement : 7 cases photo (toucher = choisir ou prendre la photo) */
+.ch-ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.ch-slot{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;padding:6px;border:1px dashed var(--line);border-radius:12px;cursor:pointer;text-align:center}
+.ch-slot img,.ch-slot .ch-empty{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;background:var(--surface-2)}
+.ch-slot .ch-empty{display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--muted)}
+.ch-slot input{position:absolute;inset:0;opacity:0;cursor:pointer}
