@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.196.0';
+const VERSION = '2.197.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -53,6 +53,7 @@ const setHtml = (el, h) => { el.innerHTML = val(h); };
 const ICONS = {
   home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
   car: '<path d="M5 17h14M3 17v-4l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v4"/><path d="M3 13h18"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
   luggage: '<rect x="5" y="7" width="14" height="12" rx="2"/><path d="M9 7V4h6v3M9 11v4M15 11v4"/><circle cx="8" cy="21" r="1"/><circle cx="16" cy="21" r="1"/>',
   homes: '<path d="M2 12 8 7l6 5"/><path d="M4 11v9h8v-9"/><path d="M12 9l5-4 5 4"/><path d="M14 20h6v-9.5"/><path d="M7 20v-3h2v3"/>',
   building: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 7h1M14 7h1M9 11h1M14 11h1M9 15h1M14 15h1M10 21v-3h4v3"/>',
@@ -1176,6 +1177,37 @@ async function binDaily() {
     for (const [gk, g] of Object.entries(im.chats || {})) { try { await binRecord(vault.get('immeubles', im.id), gk, g, await chatRead(g)); } catch { /* hors ligne */ } }
   }
   try { localStorage.setItem('aresBinDay', today()); } catch {}
+}
+// 🌐 Réseau : centrales des clients (gérance, agence, propriétaire, hôtel, Airbnb), chacune avec sa cassaforte ;
+// ici : essai, échéance, lecture seule / blocage, nouvel accès, suppression avec certificat, demandes d'intervention reçues
+const NET_FIL = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
+const NET_STATE = { ok: ['🟢', 'Actif'], ro: ['🟠', 'Lecture seule (échu)'], blocked: ['🔴', 'Bloqué'] };
+const NET_ST = { trial: '🎁 Essai', active: '✅ Abonnement', suspended: '⏸ Suspendu' };
+const netUrl = (tid) => `${location.origin}/locataires.html?t=${tid}`;
+async function netApi(path, method = 'GET', body) {
+  const r = await vault.call(path, { method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
+  return r.json();
+}
+const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
+const netInvite = (t, code) => `🌐 ${t.nom} — votre centrale ${societe().nom || 'LuxInterventions'} (${NET_FIL[t.fil] || ''}) : ${netUrl(t.id)}\nCode d’invitation : ${code}\nÀ la première ouverture, choisissez votre clé d’accès (elle chiffre vos données : personne d’autre ne la connaît, gardez aussi la clé de secours).`;
+async function netLoad(force) {
+  if (!vault.unlocked || vault.op && vault.op.role === 'comptable' && false) return;
+  if (ui.net && ui.net.loading) return;
+  if (!force && ui.net && Date.now() - ui.net.at < 60000) return;
+  ui.net = { ...(ui.net || { list: [], dem: [] }), loading: true };
+  try {
+    const keys = vault.get('reglages', 'signal') || (await ownerKeys());
+    // clé publique de la centrale principale : les centrales des clients chiffrent pour elle leurs demandes
+    if (keys && keys.pub && !(vault.get('reglages', 'netKey') || {}).done) { await netApi('network-key', 'PUT', { pub: keys.pub }); await vault.mutate((tx) => tx.put('reglages', { id: 'netKey', done: today() }), 'Réseau : clé publiée', ''); }
+    const list = (await netApi('tenants')).tenants || [];
+    const dem = [];
+    for (const it of ((await netApi('demandes')).items || []).slice(0, 50)) {
+      try { const msg = await openFromTenant(keys.priv, new Uint8Array(await (await vault.call('demandes/' + it.name)).arrayBuffer())); dem.push({ name: it.name, tid: it.name.split('-')[1] || '', ...msg }); } catch { /* illisible */ }
+    }
+    ui.net = { list, dem, at: Date.now(), err: '' };
+  } catch (e) { ui.net = { list: (ui.net || {}).list || [], dem: (ui.net || {}).dem || [], at: Date.now(), err: e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.' : e.message || 'Connexion impossible' }; }
+  if (ui.route === 'reseau') renderView();
+  if (ui.sheet && ui.sheet.kind && ui.sheet.kind.startsWith('net')) { ui.sheet.rendered = false; renderSheet(); }
 }
 // 🍽️ Annonceurs HORECA (restaurants, bars, discothèques…) : leur app (annonce.html) envoie annonces et événements,
 // LuxInterventions valide ; paiement en ligne pas encore connecté (le bouton est là, désactivé)
@@ -2859,12 +2891,12 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key']] },
+  { group: 'Gestion', items: [['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['reseau', 'Réseau', 'globe']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['reseau', 'Réseau', 'globe'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
@@ -4394,6 +4426,27 @@ dashboard() {
   // 🏨 Hotel — première étape : les clients (chambre, étage, clé, arrivée → départ)
   hotel() { return hotView('hotel'); },
   airbnb() { return hotView('airbnb'); },
+  reseau() {
+    const n = ui.net;
+    if (!n || Date.now() - n.at > 60000) setTimeout(() => netLoad(), 0);
+    const list = (n && n.list) || [], dem = (n && n.dem) || [], certs = vault.list('reglages').filter((r) => r.id.startsWith('netcert-')).sort((a, b) => (b.at || '').localeCompare(a.at || ''));
+    const days = (u) => (u ? Math.round((new Date(u + 'T12:00') - new Date(today() + 'T12:00')) / 864e5) : null);
+    return html`${pageHead('🌐 Réseau', `${plural(list.length, 'client')} · ${plural(dem.length, 'demande')}`)}
+      <div class="imm-row"><span></span><div class="imm-btns">${isCompta() ? '' : html`<button class="btn primary" data-action="net-new">${icon('plus')} Client</button>`}<button class="btn" data-action="net-reload">${icon('sync')} Actualiser</button></div></div>
+      ${n && n.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${n.err}</div></div>` : ''}
+      ${!n || (n.loading && !list.length) ? html`<p class="muted">Chargement…</p>` : ''}
+      ${dem.length ? html`<div class="section-label">📥 Demandes d’intervention des clients (${dem.length})</div><div class="list" style="margin-bottom:14px">${dem.map((d) => html`<div class="row" style="display:block">
+        <b>${(list.find((t) => t.id === d.tid) || {}).nom || d.client || d.tid}</b> · ${d.urgence === 'urgent' ? html`<span class="badge bad">🔴 Urgent</span> · ` : ''}${d.titre || 'Intervention'}
+        <div class="small" style="white-space:pre-wrap">${d.texte || ''}</div><div class="tiny muted">${d.adresse ? '📍 ' + d.adresse + ' · ' : ''}${d.contact ? '👤 ' + d.contact + ' · ' : ''}${d.tel ? '📞 ' + d.tel + ' · ' : ''}${d.t ? fmtDateTime(d.t) : ''}</div>
+        <div class="actions" style="margin:6px 0 0">${isCompta() ? '' : html`<button class="btn sm primary" data-action="net-dem-task" data-id="${d.name}">📋 Créer l’intervention</button>`}<button class="btn sm ghost" data-action="net-dem-done" data-id="${d.name}">✅ Traitée</button></div></div>`)}</div>` : ''}
+      <div class="section-label">🏢 Clients du réseau</div>
+      ${list.length ? html`<div class="list">${list.map((t) => { const st = NET_STATE[t.state] || NET_STATE.ok, dl = days(t.until); return html`<button class="row" data-action="net-open" data-id="${t.id}"><span class="avatar">${(NET_FIL[t.fil] || '🌐').split(' ')[0]}</span>
+        <span class="grow"><span class="title" style="display:block">${t.nom}</span><span class="meta">${NET_FIL[t.fil] || ''} · ${NET_ST[t.st] || ''}${t.until ? html` · jusqu’au ${fmtDate(t.until)}${dl != null && dl >= 0 ? ` (${dl} j)` : ''}` : ''}</span>
+        <span class="tiny" style="display:block">${t.configured ? (t.lastSeen ? '🖥️ dernière connexion ' + fmtDateTime(t.lastSeen) : '🔐 centrale configurée') : '✉️ invitation envoyée, pas encore ouverte'}</span></span>
+        <span class="badge ${t.state === 'ok' ? 'ok' : t.state === 'ro' ? 'warn' : 'bad'}">${st[0]} ${st[1]}</span></button>`; })}</div>`
+        : n && !n.loading && !n.err ? html`<div class="card" style="max-width:560px"><p style="margin-top:0">Donnez à vos clients (gérances, agences, propriétaires, hôtels, Airbnb) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; vous ne voyez que leurs demandes d’intervention. ＋ Client → essai gratuit (15 jours par défaut).</p></div>` : ''}
+      ${certs.length ? html`<div class="section-label" style="margin-top:16px">🧾 Certificats de suppression</div><div class="list">${certs.map((c) => html`<button class="row" data-action="net-cert" data-id="${c.id}"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">${c.tenant.nom}</span><span class="meta">${fmtDateTime(c.at)} · ${plural(c.objects, 'objet')} effacés</span></span><span class="chev">›</span></button>`)}</div>` : ''}`;
+  },
   // 🚕 Taxis : sociétés de taxi / chauffeurs privés du réseau (chacune a son app) et les courses du moment
   taxis() {
     const cos = txCos(), t = today();
@@ -5909,6 +5962,57 @@ const SHEETS = {
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-hote" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'net-cert'({ id }) {
+    const c = vault.get('reglages', id);
+    if (!c) return null;
+    return {
+      title: '🧾 Certificat de suppression',
+      narrow: true,
+      body: html`<dl class="kv small"><dt>Client</dt><dd>${c.tenant.nom} · ${NET_FIL[c.tenant.fil] || ''}</dd><dt>Centrale</dt><dd>${c.tenant.id}</dd><dt>Date</dt><dd>${fmtDateTime(c.at)}</dd><dt>Par</dt><dd>${c.by || ''}</dd>
+        <dt>Objets effacés</dt><dd>${c.objects} (${Math.round((c.bytes || 0) / 1024)} Ko)</dd><dt>Empreinte</dt><dd style="font-family:var(--mono);font-size:11px;overflow-wrap:anywhere">${c.digest}</dd></dl>`,
+      foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" data-action="net-cert-pdf" data-id="${id}">⬇ PDF</button>`,
+    };
+  },
+  'net-new'() {
+    return {
+      title: '🌐 Nouveau client du réseau',
+      narrow: true,
+      body: html`<form id="f" data-form="net-new" class="fields">
+        <label class="field full">Filière<select name="fil">${Object.entries(NET_FIL).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
+        ${field('Nom de la société / du client', 'nom', '', { full: true, required: true })}
+        ${field('Téléphone (WhatsApp)', 'tel', '', { type: 'tel', placeholder: '+352…' })}${field('Email', 'email', '', { type: 'email' })}
+        ${field('Durée de l’essai (jours)', 'days', 15, { type: 'number', attrs: 'min="1" max="365" inputmode="numeric"' })}
+        <p class="tiny muted full" style="margin:0">Un code d’invitation est créé (valable 30 jours, une seule fois). Le client ouvre sa centrale, choisit sa clé d’accès (vous ne la connaissez pas) et commence son essai.</p>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">🎁 Accorder un essai</button>`,
+    };
+  },
+  'net-client'({ id }) {
+    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === id);
+    if (!t) return null;
+    const inf = netInfo(id), code = inf.code && !t.configured ? inf.code : '', st = NET_STATE[t.state] || NET_STATE.ok;
+    const inv = code ? netInvite(t, code) : '', tel = String(inf.tel || '').replace(/[^\d+]/g, '');
+    return {
+      title: `${(NET_FIL[t.fil] || '').split(' ')[0]} ${t.nom}`,
+      narrow: true,
+      body: html`<div class="alert ${t.state === 'ok' ? 'info' : 'warn'}" style="margin-bottom:12px">${st[0]}<div><b>${st[1]}</b> · ${NET_ST[t.st] || ''}${t.until ? ' · jusqu’au ' + fmtDate(t.until) : ''}<div class="tiny">${t.configured ? (t.lastSeen ? 'Dernière connexion : ' + fmtDateTime(t.lastSeen) : 'Centrale configurée') : 'Invitation pas encore utilisée'}</div></div></div>
+        ${code ? html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d’invitation</div><div style="font-family:var(--mono);font-size:24px;font-weight:800;letter-spacing:.08em">${code}</div>
+          <div class="actions" style="justify-content:center;flex-wrap:wrap">${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}${inf.email ? html`<a class="btn sm" href="mailto:${inf.email}?subject=${encodeURIComponent('🌐 Votre centrale')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}<button class="btn sm" data-action="code-copy" data-code="${inv}">📋 Copier l’invitation</button></div></div>` : ''}
+        ${isCompta() ? '' : html`<form id="f" data-form="net-edit" class="fields">
+          <input type="hidden" name="id" value="${id}">
+          ${field('Nom', 'nom', t.nom, { full: true, required: true })}
+          <label class="field">Statut<select name="st">${Object.entries(NET_ST).map(([k, v]) => html`<option value="${k}" ${t.st === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+          ${field('Valable jusqu’au', 'until', t.until, { type: 'date' })}
+          <div class="full actions" style="margin:0;flex-wrap:wrap">${[15, 30, 365].map((d) => html`<button type="button" class="btn sm" data-action="net-plus" data-id="${id}" data-d="${d}">＋ ${d} j</button>`)}</div>
+          ${field('Jours en lecture seule après l’échéance (vide = jusqu’à votre décision)', 'roDays', t.roDays ?? '', { full: true, type: 'number', attrs: 'min="0" max="3650" inputmode="numeric"' })}
+          <p class="tiny muted full" style="margin:0">Échu : le client lit ses données mais ne peut plus les modifier ; après ces jours, sa centrale est bloquée (durées à fixer avec votre avocat). Ses données ne sont jamais effacées sans votre décision.</p>
+        </form>
+        <div class="section-label" style="margin-top:14px">Accès</div>
+        <div class="actions" style="flex-wrap:wrap;margin:0">${!t.configured ? html`<button class="btn sm" data-action="net-code" data-id="${id}">🔁 Nouveau code d’invitation</button>` : ''}<button class="btn sm" data-action="net-reset" data-id="${id}">🗝️ Nouvel accès (clé perdue)</button>${vault.op ? '' : html`<button class="btn sm ghost danger" data-action="net-del" data-id="${id}">🗑 Supprimer avec certificat</button>`}</div>
+        <p class="tiny muted" style="margin:6px 0 0">Nouvel accès : la centrale du client est vidée (sans sa clé personne ne peut lire ses données) et un nouveau code est créé. S’il a sa clé de secours, il rentre seul sans rien perdre.</p>`}`,
+      foot: html`<button class="btn" data-action="close-sheet">Fermer</button>${isCompta() ? '' : html`<button class="btn primary" type="submit" form="f">Enregistrer</button>`}`,
     };
   },
   'annc-form'({ id }) {
@@ -7517,6 +7621,82 @@ const ACTIONS = {
   'hote-conf': () => openOver('hote-conf'),
   'new-txco': () => openOver('txco-form'),
   'new-annc': () => openOver('annc-form'),
+  'net-new': () => openOver('net-new'),
+  'net-reload': () => netLoad(true),
+  'net-open': (d) => openOver('net-client', d.id),
+  async 'net-plus'(d) {
+    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
+    if (!t) return;
+    const base = t.until && t.until > today() ? t.until : today();
+    try { await netApi('tenants/' + t.id, 'PATCH', { until: addDays(base, +d.d), ...(t.st === 'suspended' ? { st: 'active' } : {}) }); toast('Prolongé de ' + d.d + ' jours'); } catch (e) { return toast(e.message, { bad: true }); }
+    await vault.mutate((tx) => tx.put('historique', { at: new Date().toISOString(), action: '🌐 Client du réseau prolongé', detail: `${t.nom} : +${d.d} j` }), '🌐 Client prolongé', `${t.nom} : +${d.d} j`).catch(() => {});
+    netLoad(true);
+  },
+  async 'net-code'(d) {
+    try { const r = await netApi('tenants/' + d.id, 'PATCH', { newCode: true }); if (r.code) await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + d.id, code: r.code }), '🌐 Nouveau code d’invitation', (r.tenant || {}).nom || ''); toast('Nouveau code créé'); } catch (e) { return toast(e.message, { bad: true }); }
+    netLoad(true);
+  },
+  async 'net-reset'(d) {
+    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
+    if (!t) return;
+    const v = await promptText('Nouvel accès pour « ' + t.nom + ' » ?', 'Sa centrale sera VIDÉE (sans sa clé, personne ne peut lire ses données) et un nouveau code d’invitation sera créé. Si le client a sa clé de secours, qu’il l’utilise plutôt. Tapez le nom pour confirmer.', t.nom);
+    if (v == null) return;
+    if (v.trim() !== t.nom) return toast('Nom différent : rien n’a été fait', { bad: true });
+    try { const r = await netApi('tenants/' + t.id + '/reset', 'POST'); await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + t.id, code: r.code }), '🌐 Nouvel accès (centrale vidée)', t.nom); toast('Nouvel accès : envoyez le nouveau code'); } catch (e) { return toast(e.message, { bad: true }); }
+    netLoad(true);
+  },
+  async 'net-del'(d) {
+    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
+    if (!t) return;
+    const v = await promptText('Supprimer « ' + t.nom + ' » ?', 'Sa centrale, ses apps (locataires, clients…), ses codes et ses fichiers sont effacés définitivement. Vous recevez un certificat de suppression. Tapez le nom pour confirmer.', t.nom);
+    if (v == null) return;
+    if (v.trim() !== t.nom) return toast('Nom différent : rien n’a été fait', { bad: true });
+    let cert;
+    try { cert = (await netApi('tenants/' + t.id, 'DELETE')).certificate; } catch (e) { return toast(e.message, { bad: true }); }
+    await vault.mutate((tx) => { tx.put('reglages', { id: 'netcert-' + t.id, ...cert, by: whoLabel() || '⭐ Directeur' }); tx.remove('reglages', 'netc-' + t.id); }, '🧾 Client du réseau supprimé (certificat)', `${t.nom} · ${cert.objects} objets`);
+    goBack();
+    netLoad(true);
+    openOver('net-cert', 'netcert-' + t.id);
+  },
+  'net-cert': (d) => openOver('net-cert', d.id),
+  async 'net-cert-pdf'(d) {
+    const c = vault.get('reglages', d.id);
+    if (!c) return;
+    const p = makePdf().page(), soc = societe();
+    let y = 60;
+    const line = (t, size = 11, bold = false) => { p.text(48, y, t, { size, bold }); y += size + 8; };
+    line('Certificat de suppression des données', 18, true); y += 6;
+    line(`${soc.nom || 'LuxInterventions'}${soc.rcs ? ' · RCS ' + soc.rcs : ''}`, 10);
+    y += 10;
+    line(`Client : ${c.tenant.nom} (${(NET_FIL[c.tenant.fil] || '').replace(/^\S+ /, '')})`, 12, true);
+    line(`Identifiant de la centrale : ${c.tenant.id}`);
+    line(`Date et heure de la suppression : ${new Date(c.at).toLocaleString('fr-LU')}`);
+    line(`Demandée par : ${c.by || 'Directeur'}`);
+    line(`Objets effacés : ${c.objects} (${Math.round((c.bytes || 0) / 1024)} Ko)`);
+    line('Empreinte SHA-256 de la liste des objets effacés :');
+    line(c.digest, 9);
+    y += 10;
+    line('Sont effacés : la centrale chiffrée du client (données, fichiers, sessions, messages),', 10);
+    line('ses apps (espaces chiffrés, documents, photos) et leurs codes d’accès.', 10);
+    line('Les factures et documents comptables de la centrale principale ne sont pas concernés.', 10);
+    const blob = new Blob([p.bytes()], { type: 'application/pdf' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `certificat-suppression-${c.tenant.id}.pdf`; a.click();
+  },
+  async 'net-dem-done'(d) {
+    try { await vault.call('demandes/' + d.id, { method: 'DELETE' }); } catch (e) { return toast(e.message, { bad: true }); }
+    ui.net.dem = ui.net.dem.filter((x) => x.name !== d.id); renderView();
+  },
+  async 'net-dem-task'(d) {
+    const m = (ui.net.dem || []).find((x) => x.name === d.id);
+    if (!m) return;
+    const cl = (ui.net.list.find((t) => t.id === m.tid) || {}).nom || m.client || 'Client du réseau';
+    await vault.mutate((tx) => tx.put('taches', { type: 'reparation', titre: `🌐 ${cl} : ${String(m.titre || 'Intervention').slice(0, 80)}`, immId: '', logId: '', locId: '', intervenantId: '', date: today(), recur: '', statut: 'afaire', sentAt: m.t || new Date().toISOString(), urgent: m.urgence === 'urgent',
+      net: { tid: m.tid, nom: cl }, note: `${String(m.texte || '').slice(0, 3000)}${m.adresse ? '\n📍 ' + m.adresse : ''}${m.contact ? '\n👤 ' + m.contact : ''}${m.tel ? ' · 📞 ' + m.tel : ''}\n\n— Demande de ${cl} (réseau) le ${fmtDateTime(m.t || Date.now())}` }), '🌐 Demande du réseau → intervention', `${cl} — ${m.titre || ''}`);
+    try { await vault.call('demandes/' + d.id, { method: 'DELETE' }); } catch { /* reste dans la liste */ }
+    ui.net.dem = ui.net.dem.filter((x) => x.name !== d.id);
+    toast('Intervention créée dans Maintenance');
+    renderView();
+  },
   'edit-annc': (d) => openOver('annc-form', d.id),
   'ann-tarifs': () => openOver('ann-tarifs'),
   async 'del-annc'(d) {
@@ -8353,6 +8533,25 @@ const FORMS = {
     const to = type === 'proprio' ? 'proprios' : 'agences';
     if (ui.route !== to) go(to);
   },
+  async 'net-new'(fd) {
+    const g = (k) => String(fd.get(k) || '').trim();
+    if (!g('nom')) return;
+    let r;
+    try { r = await netApi('tenants', 'POST', { fil: g('fil'), nom: g('nom'), days: +g('days') || 15 }); } catch (e) { return toast(e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : publiez-le d’abord' : e.message, { bad: true }); }
+    await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + r.id, code: r.code, tel: g('tel'), email: g('email') }), '🎁 Essai accordé (réseau)', `${g('nom')} · ${NET_FIL[g('fil')] || ''} · jusqu’au ${fmtDate(r.tenant.until)}`);
+    toast('Essai accordé : envoyez l’invitation');
+    goBack();
+    await netLoad(true);
+    openOver('net-client', r.id);
+  },
+  async 'net-edit'(fd) {
+    const g = (k) => String(fd.get(k) || '').trim(), id = g('id');
+    try { await netApi('tenants/' + id, 'PATCH', { nom: g('nom'), st: g('st'), until: g('until'), roDays: g('roDays') === '' ? '' : +g('roDays') }); } catch (e) { return toast(e.message, { bad: true }); }
+    await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + id, ...netInfo(id), nomLocal: g('nom') }), '🌐 Client du réseau modifié', `${g('nom')} · ${NET_ST[g('st')] || ''}${g('until') ? ' · jusqu’au ' + fmtDate(g('until')) : ''}`);
+    toast('Enregistré');
+    goBack();
+    netLoad(true);
+  },
   async annc(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), id = g('id');
     if (!g('nom')) return;
@@ -8855,7 +9054,7 @@ async function importFile(file) {
 
 // ───────────────────────── Délégation d'événements ─────────────────────────
 // réservé au responsable (clé principale) ; le comptable n'affecte pas les travaux
-const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do']);
+const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del']);
 const DEL_ACTION = /^del-|-del$|wipe/; // toute suppression
 const NO_COMPTA = new Set(['eq-swap', 'eq-swap-do', 'interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job', 'op-del', 'op-new']);
 document.addEventListener('click', (e) => {

@@ -16060,5 +16060,113 @@ export default [
 ],
 ["Menu du jour",
 "Tagesmenü"
+],
+["{0} client",
+"{0} Kunde"
+],
+["{0} clients",
+"{0} Kunden"
+],
+["{0} demande",
+"{0} Anfrage"
+],
+["{0} demandes",
+"{0} Anfragen"
+],
+["Demandes d’intervention des clients ({0})",
+"Einsatzanfragen der Kunden ({0})"
+],
+["Créer l’intervention",
+"Einsatz erstellen"
+],
+["Traitée",
+"Erledigt"
+],
+["Clients du réseau",
+"Kunden des Netzwerks"
+],
+["Lecture seule (échu)",
+"Nur Lesen (abgelaufen)"
+],
+["Bloqué",
+"Gesperrt"
+],
+["Essai",
+"Testphase"
+],
+["Abonnement",
+"Abonnement"
+],
+["Suspendu",
+"Ausgesetzt"
+],
+["centrale configurée",
+"Zentrale eingerichtet"
+],
+["Donnez à vos clients (gérances, agences, propriétaires, hôtels, Airbnb) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; vous ne voyez que leurs demandes d’intervention. ＋ Client → essai gratuit (15 jours par défaut).",
+"Geben Sie Ihren Kunden (Hausverwaltungen, Agenturen, Eigentümer, Hotels, Airbnb) ihre eigene Zentrale: ihre Mieter oder Gäste, ihre Apps, alles verschlüsselt; Sie sehen nur ihre Einsatzanfragen. ＋ Kunde → kostenlose Testphase (standardmäßig 15 Tage)."
+],
+["Certificats de suppression",
+"Löschzertifikate"
+],
+["Nouveau client du réseau",
+"Neuer Netzwerkkunde"
+],
+["Filière",
+"Branche"
+],
+["Nom de la société / du client",
+"Name des Unternehmens / Kunden"
+],
+["Durée de l’essai (jours)",
+"Dauer der Testphase (Tage)"
+],
+["Un code d’invitation est créé (valable 30 jours, une seule fois). Le client ouvre sa centrale, choisit sa clé d’accès (vous ne la connaissez pas) et commence son essai.",
+"Ein Einladungscode wird erstellt (30 Tage gültig, einmalig). Der Kunde öffnet seine Zentrale, wählt seinen Zugangsschlüssel (Sie kennen ihn nicht) und beginnt die Testphase."
+],
+["Accorder un essai",
+"Testphase gewähren"
+],
+["Code d’invitation",
+"Einladungscode"
+],
+["Copier l’invitation",
+"Einladung kopieren"
+],
+["Jours en lecture seule après l’échéance (vide = jusqu’à votre décision)",
+"Tage nur Lesen nach Ablauf (leer = bis zu Ihrer Entscheidung)"
+],
+["Nouveau code d’invitation",
+"Neuer Einladungscode"
+],
+["Nouvel accès (clé perdue)",
+"Neuer Zugang (Schlüssel verloren)"
+],
+["Supprimer avec certificat",
+"Mit Zertifikat löschen"
+],
+["Certificat de suppression",
+"Löschzertifikat"
+],
+["Objets effacés",
+"Gelöschte Objekte"
+],
+["Empreinte",
+"Fingerabdruck"
+],
+["Prolongé de {0} jours",
+"Um {0} Tage verlängert"
+],
+["Essai accordé : envoyez l’invitation",
+"Testphase gewährt: Einladung senden"
+],
+["Intervention créée dans Maintenance",
+"Einsatz in Maintenance erstellt"
+],
+["Nom différent : rien n’a été fait",
+"Anderer Name: nichts wurde gemacht"
+],
+["Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.",
+"Der Server (Worker) ist noch nicht aktuell: der Bereich Netzwerk funktioniert nach seiner Veröffentlichung."
 ]
 ];

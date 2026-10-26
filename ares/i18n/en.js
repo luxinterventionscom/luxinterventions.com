@@ -15802,5 +15802,110 @@ export default [
 ],
 ["Menu du jour",
 "Daily menu"
+],
+["{0} client",
+"{0} client"
+],
+["{0} clients",
+"{0} clients"
+],
+["{0} demande",
+"{0} request"
+],
+["{0} demandes",
+"{0} requests"
+],
+["Demandes d’intervention des clients ({0})",
+"Clients' job requests ({0})"
+],
+["Créer l’intervention",
+"Create the job"
+],
+["Traitée",
+"Handled"
+],
+["Clients du réseau",
+"Network clients"
+],
+["Lecture seule (échu)",
+"Read-only (expired)"
+],
+["Bloqué",
+"Blocked"
+],
+["Essai",
+"Trial"
+],
+["Suspendu",
+"Suspended"
+],
+["centrale configurée",
+"central set up"
+],
+["Donnez à vos clients (gérances, agences, propriétaires, hôtels, Airbnb) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; vous ne voyez que leurs demandes d’intervention. ＋ Client → essai gratuit (15 jours par défaut).",
+"Give your clients (property managers, agencies, owners, hotels, Airbnb) their own central: their tenants or guests, their apps, all encrypted; you only see their job requests. ＋ Client → free trial (15 days by default)."
+],
+["Certificats de suppression",
+"Deletion certificates"
+],
+["Nouveau client du réseau",
+"New network client"
+],
+["Filière",
+"Sector"
+],
+["Nom de la société / du client",
+"Company / client name"
+],
+["Durée de l’essai (jours)",
+"Trial length (days)"
+],
+["Un code d’invitation est créé (valable 30 jours, une seule fois). Le client ouvre sa centrale, choisit sa clé d’accès (vous ne la connaissez pas) et commence son essai.",
+"An invitation code is created (valid 30 days, single use). The client opens their central, chooses their access key (you don't know it) and starts the trial."
+],
+["Accorder un essai",
+"Grant a trial"
+],
+["Code d’invitation",
+"Invitation code"
+],
+["Copier l’invitation",
+"Copy the invitation"
+],
+["Jours en lecture seule après l’échéance (vide = jusqu’à votre décision)",
+"Read-only days after expiry (empty = until you decide)"
+],
+["Nouveau code d’invitation",
+"New invitation code"
+],
+["Nouvel accès (clé perdue)",
+"New access (lost key)"
+],
+["Supprimer avec certificat",
+"Delete with certificate"
+],
+["Certificat de suppression",
+"Deletion certificate"
+],
+["Objets effacés",
+"Deleted objects"
+],
+["Empreinte",
+"Fingerprint"
+],
+["Prolongé de {0} jours",
+"Extended by {0} days"
+],
+["Essai accordé : envoyez l’invitation",
+"Trial granted: send the invitation"
+],
+["Intervention créée dans Maintenance",
+"Job created in Maintenance"
+],
+["Nom différent : rien n’a été fait",
+"Different name: nothing was done"
+],
+["Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.",
+"The server (Worker) is not up to date yet: the Network section will work once it is published."
 ]
 ];

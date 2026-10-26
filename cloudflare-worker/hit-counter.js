@@ -757,7 +757,7 @@ async function handleAres(request, env, url, headers) {
   if (path === "network-key" && method === "PUT") {
     let b;
     try { b = await request.json(); } catch { b = null; }
-    if (!b || typeof b.pub !== "object" || JSON.stringify(b.pub).length > 2000) return aresJson({ error: "Données invalides" }, 400, headers);
+    if (!b || !isB64u(b.pub, 200)) return aresJson({ error: "Données invalides" }, 400, headers);
     await env.PHOTOS.put("ares/network-key.json", JSON.stringify({ pub: b.pub, at: Date.now() }));
     return aresJson({ ok: true }, 200, headers);
   }

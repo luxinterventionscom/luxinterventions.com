@@ -16076,5 +16076,110 @@ export default [
 ],
 ["Menu du jour",
 "Menù del giorno"
+],
+["{0} client",
+"{0} cliente"
+],
+["{0} clients",
+"{0} clienti"
+],
+["{0} demande",
+"{0} richiesta"
+],
+["{0} demandes",
+"{0} richieste"
+],
+["Demandes d’intervention des clients ({0})",
+"Richieste d'intervento dei clienti ({0})"
+],
+["Créer l’intervention",
+"Crea l'intervento"
+],
+["Traitée",
+"Trattata"
+],
+["Clients du réseau",
+"Clienti della rete"
+],
+["Lecture seule (échu)",
+"Sola lettura (scaduto)"
+],
+["Bloqué",
+"Bloccato"
+],
+["Essai",
+"Prova"
+],
+["Suspendu",
+"Sospeso"
+],
+["centrale configurée",
+"centrale configurata"
+],
+["Donnez à vos clients (gérances, agences, propriétaires, hôtels, Airbnb) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; vous ne voyez que leurs demandes d’intervention. ＋ Client → essai gratuit (15 jours par défaut).",
+"Date ai vostri clienti (gérance, agenzie, proprietari, hotel, Airbnb) la loro centrale: i loro inquilini o clienti, le loro app, tutto cifrato; voi vedete solo le loro richieste d'intervento. ＋ Cliente → prova gratuita (15 giorni di default)."
+],
+["Certificats de suppression",
+"Certificati di cancellazione"
+],
+["Nouveau client du réseau",
+"Nuovo cliente della rete"
+],
+["Filière",
+"Filiera"
+],
+["Nom de la société / du client",
+"Nome della società / del cliente"
+],
+["Durée de l’essai (jours)",
+"Durata della prova (giorni)"
+],
+["Un code d’invitation est créé (valable 30 jours, une seule fois). Le client ouvre sa centrale, choisit sa clé d’accès (vous ne la connaissez pas) et commence son essai.",
+"Viene creato un codice d'invito (valido 30 giorni, una sola volta). Il cliente apre la sua centrale, sceglie la sua chiave d'accesso (voi non la conoscete) e inizia la prova."
+],
+["Accorder un essai",
+"Concedi una prova"
+],
+["Code d’invitation",
+"Codice d'invito"
+],
+["Copier l’invitation",
+"Copia l'invito"
+],
+["Jours en lecture seule après l’échéance (vide = jusqu’à votre décision)",
+"Giorni di sola lettura dopo la scadenza (vuoto = fino a vostra decisione)"
+],
+["Nouveau code d’invitation",
+"Nuovo codice d'invito"
+],
+["Nouvel accès (clé perdue)",
+"Nuovo accesso (chiave persa)"
+],
+["Supprimer avec certificat",
+"Elimina con certificato"
+],
+["Certificat de suppression",
+"Certificato di cancellazione"
+],
+["Objets effacés",
+"Oggetti cancellati"
+],
+["Empreinte",
+"Impronta"
+],
+["Prolongé de {0} jours",
+"Prolungato di {0} giorni"
+],
+["Essai accordé : envoyez l’invitation",
+"Prova concessa: invia l'invito"
+],
+["Intervention créée dans Maintenance",
+"Intervento creato in Maintenance"
+],
+["Nom différent : rien n’a été fait",
+"Nome diverso: non è stato fatto niente"
+],
+["Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.",
+"Il server (Worker) non è ancora aggiornato: la voce Rete funzionerà dopo la sua pubblicazione."
 ]
 ];
