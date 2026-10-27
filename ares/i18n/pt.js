@@ -16281,5 +16281,29 @@ export default [
 ],
 ["Centrale réactivée",
 "Central reativada"
-]
+],
+[
+"{0} jour{1} restant{2}",
+"{0} dia(s) restante(s)"
+],
+[
+"abonnement échu le",
+"assinatura expirada em"
+],
+[
+"Vos données restent visibles ; pour les modifier, contactez LuxInterventions.",
+"Os seus dados continuam visíveis; para os alterar, contacte a LuxInterventions."
+],
+[
+"{0} an{1}",
+"{0} ano(s)"
+],
+[
+"{0} annonce{1}",
+"{0} anúncio(s)"
+],
+[
+"{0} client{1}",
+"{0} cliente(s)"
+],
 ];
