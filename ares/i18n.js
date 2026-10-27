@@ -24,8 +24,9 @@ function build(rows) {
     let re = '^', key = '';
     const order = [];
     for (let i = 0; i < parts.length; i++) {
-      // collé à un mot (ex. « demande{1} » pour le pluriel) : la partie variable peut être vide
-      if (i % 2 === 0) { re += escRe(parts[i]); if (parts[i].trim().length > key.length) key = parts[i].trim(); } else { re += /[A-Za-zÀ-ÿ)]$/.test(parts[i - 1]) ? '(.*?)' : '(.+?)'; order.push(+parts[i]); }
+      // collé à un mot (ex. « demande{1} » pour le pluriel) : la partie variable peut être vide, mais finit le mot
+      // (sinon « {0} an{1}{2} » prendrait « 0 annonce » pour « 0 an » + « nonce »)
+      if (i % 2 === 0) { re += escRe(parts[i]); if (parts[i].trim().length > key.length) key = parts[i].trim(); } else { re += /[A-Za-zÀ-ÿ)]$/.test(parts[i - 1]) ? '(.*?)(?![A-Za-zÀ-ÿ])' : '(.+?)'; order.push(+parts[i]); }
     }
     // modèle court d'un seul mot (ex. « {0} mois ») : la partie variable doit contenir un chiffre, sinon on ne traduit pas
     pats.push({ re: new RegExp(re + '$'), order, tr, key, num: key.length < 14 && !/\s/.test(key) });
