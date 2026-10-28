@@ -1,12 +1,12 @@
 // Manuel — français (langue de référence ; les autres langues suivent les mêmes clés)
 export default {
-  title: 'Manuel LuxInterventions',
+  title: 'Manuel de l’application INTERVENTIONS',
   sub: 'La centrale et ses applications — guide illustré',
   toc: 'Sommaire',
   shotsNote: 'Les captures montrent des données d’exemple fictives.',
   sec: {
     intro: ['Vue d’ensemble', `
-<p>LuxInterventions réunit dans une seule <b>centrale</b> tout ce qu’il faut pour gérer des biens : interventions techniques, locataires, loyers, hôtels, Airbnb, taxis, agences, propriétaires et comptabilité. Autour de la centrale, chaque personne reçoit sa propre application, sans mot de passe à retenir : un simple <b>code d’accès</b> suffit.</p>
+<p>L’application réunit dans une seule <b>centrale</b> tout ce qu’il faut pour gérer des biens : interventions techniques, locataires, loyers, hôtels, Airbnb, taxis, agences, propriétaires et comptabilité. Autour de la centrale, chaque personne reçoit sa propre application, sans mot de passe à retenir : un simple <b>code d’accès</b> suffit.</p>
 <table><tr><th>Application</th><th>Pour qui</th><th>Ce qu’elle fait</th></tr>
 <tr><td>🏢 Centrale</td><td>Vous (gestionnaire)</td><td>Tout gérer, créer les accès des autres applications</td></tr>
 <tr><td>🏠 Espace locataire</td><td>Locataires</td><td>Demandes d’intervention, documents, loyers, messages</td></tr>
@@ -69,7 +69,7 @@ export default {
 <li>À l’échéance, la centrale du client passe en <b>lecture seule</b> ; vous pouvez la <b>bloquer</b>, créer un nouvel accès ou la <b>supprimer</b> (un certificat de suppression est délivré).</li></ol>
 <p>La page Licences montre aussi statistiques, registre et export CSV.</p>`],
     client: ['La centrale du client', `
-<p>Le client ouvre sa centrale avec son code et choisit sa propre clé. Il ne voit que les rubriques de sa filière, avec un bandeau d’essai ou d’échéance. Il gère ses biens lui-même ; les <b>interventions</b> restent faites par LuxInterventions : ses <b>demandes</b> arrivent chiffrées directement dans votre <b>Maintenance</b>.</p>`],
+<p>Le client ouvre sa centrale avec son code et choisit sa propre clé. Il ne voit que les rubriques de sa filière, avec un bandeau d’essai ou d’échéance. Il gère ses biens lui-même ; les <b>interventions</b> restent faites par la centrale principale : ses <b>demandes</b> arrivent chiffrées directement dans votre <b>Maintenance</b>.</p>`],
     appLoc: ['Application Espace locataire', `
 <p>Le locataire voit son logement, ses loyers et documents. Il envoie une <b>demande d’intervention</b> avec photos et suit son avancement. Il reçoit vos messages et avis.</p>`],
     appEq: ['Application Équipe', `

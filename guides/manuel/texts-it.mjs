@@ -1,12 +1,12 @@
 // Manuale — italiano
 export default {
-  title: 'Manuale LuxInterventions',
+  title: 'Manuale dell’applicazione INTERVENTI',
   sub: 'La centrale e le sue applicazioni — guida illustrata',
   toc: 'Indice',
   shotsNote: 'Le schermate mostrano dati di esempio fittizi.',
   sec: {
     intro: ['Panoramica', `
-<p>LuxInterventions riunisce in una sola <b>centrale</b> tutto ciò che serve per gestire immobili: interventi tecnici, inquilini, affitti, hotel, Airbnb, taxi, agenzie, proprietari e contabilità. Intorno alla centrale ogni persona riceve la propria applicazione, senza password da ricordare: basta un <b>codice di accesso</b>.</p>
+<p>L’applicazione riunisce in una sola <b>centrale</b> tutto ciò che serve per gestire immobili: interventi tecnici, inquilini, affitti, hotel, Airbnb, taxi, agenzie, proprietari e contabilità. Intorno alla centrale ogni persona riceve la propria applicazione, senza password da ricordare: basta un <b>codice di accesso</b>.</p>
 <table><tr><th>Applicazione</th><th>Per chi</th><th>Cosa fa</th></tr>
 <tr><td>🏢 Centrale</td><td>Voi (gestore)</td><td>Gestire tutto, creare gli accessi delle altre applicazioni</td></tr>
 <tr><td>🏠 Spazio inquilino</td><td>Inquilini</td><td>Richieste di intervento, documenti, affitti, messaggi</td></tr>
@@ -69,7 +69,7 @@ export default {
 <li>Alla scadenza la centrale del cliente passa in <b>sola lettura</b>; potete <b>bloccarla</b>, creare un nuovo accesso o <b>cancellarla</b> (viene rilasciato un certificato di cancellazione).</li></ol>
 <p>La pagina Licenze mostra anche statistiche, registro ed export CSV.</p>`],
     client: ['La centrale del cliente', `
-<p>Il cliente apre la sua centrale con il codice e sceglie la propria chiave. Vede solo le sezioni della sua filiera, con un banner di prova o di scadenza. Gestisce da sé i suoi beni; gli <b>interventi</b> restano fatti da LuxInterventions: le sue <b>richieste</b> arrivano cifrate direttamente nella vostra <b>Manutenzione</b>.</p>`],
+<p>Il cliente apre la sua centrale con il codice e sceglie la propria chiave. Vede solo le sezioni della sua filiera, con un banner di prova o di scadenza. Gestisce da sé i suoi beni; gli <b>interventi</b> restano fatti dalla centrale principale: le sue <b>richieste</b> arrivano cifrate direttamente nella vostra <b>Manutenzione</b>.</p>`],
     appLoc: ['Applicazione Spazio inquilino', `
 <p>L’inquilino vede il suo alloggio, gli affitti e i documenti. Invia una <b>richiesta di intervento</b> con foto e ne segue l’avanzamento. Riceve i vostri messaggi e avvisi.</p>`],
     appEq: ['Applicazione Squadra', `
