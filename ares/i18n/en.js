@@ -16715,4 +16715,12 @@ export default [
 "Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.",
 "The guest sees the detail and the total. 💳 « Pay for the stay »: not connected yet (button shown, disabled). At the hotel the guest pays at reception."
 ],
+[
+"Affectation d’interv.",
+"Job assignment"
+],
+[
+"Nouv. intervention",
+"New job"
+],
 ];

@@ -16967,4 +16967,12 @@ export default [
 "Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.",
 "El cliente ve el detalle y el total. 💳 « Pagar la estancia »: aún no conectado (botón visible, desactivado). En el hotel el cliente paga en recepción."
 ],
+[
+"Affectation d’interv.",
+"Asignación de interv."
+],
+[
+"Nouv. intervention",
+"Nueva intervención"
+],
 ];

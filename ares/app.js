@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.205.0';
+const VERSION = '2.205.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4625,7 +4625,7 @@ const VIEWS = {
     const chips = imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
       <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!f}">Tous</button>
       ${imms.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${f === im.id}">${im.adresse}</button>`)}</div>` : '';
-    const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions acts-fit" style="margin:0"><button class="btn" data-action="aff-pick">📌 Affectation (demandes d’intervention)</button><button class="btn" data-action="interv-job">📅 Nou. travail (nouvelle intervention)</button><button class="btn primary" data-action="new-interv">${icon('plus')} Ouvrier</button></div>`
+    const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions acts-fit" style="margin:0"><button class="btn" data-action="aff-pick">📌 Affectation d’interv.</button><button class="btn" data-action="interv-job">📅 Nouv. intervention</button><button class="btn primary" data-action="new-interv">${icon('plus')} Ouvrier</button></div>`
       : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
       : tab === 'devis' ? html`<button class="btn primary" data-action="dev-new">${icon('plus')} Devis</button>`
       : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
@@ -6104,7 +6104,7 @@ const SHEETS = {
     const i = vault.get('intervenants', id);
     if (!i) return null;
     const jobs = vault.list('taches').filter((t) => t.intervenantId === id && !t.recur && t.statut !== 'fait' && t.date).sort((a, b) => (a.date + (a.heure || '')).localeCompare(b.date + (b.heure || '')));
-    const jobBtn = html`<button class="btn primary block" data-action="interv-aff" data-id="${id}" style="margin-bottom:8px">📌 Affectation (demandes d’intervention)</button><button class="btn block" data-action="interv-job" data-id="${id}" style="margin-bottom:12px">📅 Nou. travail (nouvelle intervention)</button>`;
+    const jobBtn = html`<button class="btn primary block" data-action="interv-aff" data-id="${id}" style="margin-bottom:8px">📌 Affectation d’interv.</button><button class="btn block" data-action="interv-job" data-id="${id}" style="margin-bottom:12px">📅 Nouv. intervention</button>`;
     const jobList = html`<div class="section-label">📅 Travail prévu (avec date)</div>
       ${jobs.length ? html`<div class="list small">${jobs.map((t) => html`<button class="row${t.urgent ? ' u-urgent' : ''}" data-action="edit-tache" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.urgent ? '🔴 ' : ''}${t.titre}</span><span class="meta">${placeName(t)}</span></span><span class="meta" style="text-align:right">${t.date < today() ? html`<b style="color:var(--red)">${fmtDate(t.date)}</b>` : fmtDate(t.date)}${t.heure ? html`<br>🕒 ${t.heure}${t.heureFin ? '–' + t.heureFin : ''}` : ''}</span></button>`)}</div>` : html`<p class="small muted">Rien de prévu en plus de l’horaire habituel.</p>`}`;
     tab = tab || 'fiche';

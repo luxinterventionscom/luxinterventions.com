@@ -16986,4 +16986,12 @@ export default [
 "Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.",
 "Il cliente vede il dettaglio e il totale. 💳 « Paga il pernottamento »: non ancora collegato (pulsante visibile, disattivato). In hotel il cliente paga alla reception."
 ],
+[
+"Affectation d’interv.",
+"Assegnazione interv."
+],
+[
+"Nouv. intervention",
+"Nuovo intervento"
+],
 ];
