@@ -16385,4 +16385,116 @@ export default [
 "{0} client{1}",
 "{0} Kunde(n)"
 ],
+[
+"Messages entre",
+"Nachrichten zwischen"
+],
+[
+"et la centrale, chiffrés. Lui seul et la centrale les lisent.",
+"und der Zentrale, verschlüsselt. Nur er und die Zentrale lesen sie."
+],
+[
+"Son app n’est pas active : activez-la dans l’onglet",
+"Seine App ist nicht aktiv: aktivieren Sie sie im Reiter"
+],
+[
+"pour qu’il reçoive vos messages.",
+"damit er Ihre Nachrichten erhält."
+],
+[
+"Message spécial",
+"Sondernachricht"
+],
+[
+"Centrale",
+"Zentrale"
+],
+[
+"Aucun message pour l’instant.",
+"Noch keine Nachrichten."
+],
+[
+"Écrire à {0}…",
+"An {0} schreiben…"
+],
+[
+"touchez pour lire et répondre",
+"tippen zum Lesen und Antworten"
+],
+[
+"Message spécial à l’équipe",
+"Sondernachricht an das Team"
+],
+[
+"Groupe de l’équipe (messages spéciaux)",
+"Team-Gruppe (Sondernachrichten)"
+],
+[
+"{0} ouvrier{1} dans le groupe",
+"{0} Arbeiter in der Gruppe"
+],
+[
+"les autres messages restent entre chaque ouvrier et la centrale",
+"andere Nachrichten bleiben zwischen jedem Arbeiter und der Zentrale"
+],
+[
+"Groupe de l’équipe",
+"Team-Gruppe"
+],
+[
+"Cochez les ouvriers qui reçoivent les",
+"Markieren Sie die Arbeiter, die diese erhalten:"
+],
+[
+"messages spéciaux",
+"Sondernachrichten"
+],
+[
+"Les autres messages restent toujours entre chaque ouvrier et la centrale.",
+"Andere Nachrichten bleiben immer zwischen jedem Arbeiter und der Zentrale."
+],
+[
+"Aucun ouvrier avec l’app active.",
+"Kein Arbeiter mit aktiver App."
+],
+[
+"ex. Réunion demain à 8 h au bureau",
+"z. B. Besprechung morgen um 8 Uhr im Büro"
+],
+[
+"Pour qui ? (le groupe est coché ; modifiez-le dans Réglages → 💬 Groupe de l’équipe)",
+"Für wen? (die Gruppe ist markiert; ändern Sie sie in Einstellungen → 💬 Team-Gruppe)"
+],
+[
+"Message envoyé",
+"Nachricht gesendet"
+],
+[
+"Groupe enregistré",
+"Gruppe gespeichert"
+],
+[
+"Choisissez au moins un ouvrier",
+"Wählen Sie mindestens einen Arbeiter"
+],
+[
+"Message envoyé à {0} ouvrier{1}",
+"Nachricht an {0} Arbeiter gesendet"
+],
+[
+"Envoi impossible (connexion ?)",
+"Senden nicht möglich (Verbindung?)"
+],
+[
+"Messages lus",
+"Nachrichten gelesen"
+],
+[
+"Message à un ouvrier",
+"Nachricht an einen Arbeiter"
+],
+[
+"{0} ouvrier{1}",
+"{0} Arbeiter"
+],
 ];
