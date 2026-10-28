@@ -366,11 +366,11 @@ async function espacePublic(request, env, id, sub, headers) {
     return (await espPushSave(env, id, b)) ? aresJson({ ok: true }, 200, headers) : aresJson({ error: "Abonnement invalide" }, 400, headers);
   }
   if (request.method === "POST" && sub === "signal") {
-    // Limites : 30 envois / heure par adresse IP, 80 / jour par espace (l'équipe envoie arrivée, départ, photos…)
+    // Limites : 30 envois / heure par adresse IP, 200 / jour par espace (l'équipe envoie arrivée, départ, photos, messages…)
     const ip = clientIp(request);
     const kIp = "sig-rl:" + ip, kId = "sig-id:" + id;
     const nIp = parseInt((await env.HITS.get(kIp)) || "0", 10), nId = parseInt((await env.HITS.get(kId)) || "0", 10);
-    if (nIp >= 30 || nId >= 80) return aresJson({ error: "Trop d'envois, réessayez plus tard" }, 429, headers);
+    if (nIp >= 30 || nId >= 200) return aresJson({ error: "Trop d'envois, réessayez plus tard" }, 429, headers);
     const body = await request.arrayBuffer();
     if (body.byteLength < 100 || body.byteLength > 12 * 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
     const kB = "sig-b:" + id, nB = parseInt((await env.HITS.get(kB)) || "0", 10); // 60 Mo par jour et par espace (documents, photos)

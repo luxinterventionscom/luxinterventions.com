@@ -16,7 +16,7 @@ scrollHintInit();
 
 // CSV : une cellule texte qui commence par = + - @ deviendrait une formule dans Excel → précédée d'une apostrophe (les nombres restent des nombres)
 const csvSafe = (v) => { const s = String(v ?? ''); return /^[=+\-@\t\r]/.test(s) && !/^-?\d+([.,]\d+)?$/.test(s) ? "'" + s : s; };
-const VERSION = '1.35.0';
+const VERSION = '1.36.0';
 // Langue du portail : choisie par l'utilisateur, sinon celle du téléphone (français par défaut)
 const PTL_LANGS = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español' };
 const LANG = (() => {
@@ -813,7 +813,6 @@ function prTable(c) {
   return { cols, head: cols.map((k) => L[k]), rows: rows.map((r) => cols.map((k) => r[k] ?? '')), n: rows.length };
 }
 const prPeriod = (c) => `${prDate(Date.parse(c.from + 'T12:00:00'))} → ${prDate(Date.parse(c.to + 'T12:00:00'))}`;
-const prTitle = (c) => `${PR_SRC[c.src][0].replace(/^\S+\s/, '')}${c.src === 'totaux' ? ' — ' + PR_GROUP[c.g].toLowerCase() : ''} · ${prPeriod(c)}`;
 // graphiques (SVG, s'impriment aussi)
 const PZ = { s: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#8b5cf6'], good: '#0ca30c', mid: '#eda100', bad: '#d03b3b', blue: '#2a78d6' };
 function prDonut(parts) {

@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.201.0';
+const VERSION = '2.202.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -509,7 +509,7 @@ async function eqChatSend(ids, x, g) {
   await vault.mutate((tx) => {
     for (const wid of ids) {
       const cur = vault.get('intervenants', wid);
-      if (cur) tx.put('intervenants', { id: wid, chat: [...(cur.chat || []), { id: mid + wid.slice(-4), at, from: 'mgr', x, ...(g ? { g: 1 } : {}) }].slice(-EQ_CHAT_MAX), chatNew: 0 });
+      if (cur) tx.put('intervenants', { id: wid, chat: [...(cur.chat || []), { id: mid + wid.slice(-4), at, from: 'mgr', x, ...(g ? { g: 1 } : {}) }].slice(-EQ_CHAT_MAX), ...(g ? {} : { chatNew: 0 }) });
     }
   }, g ? '📣 Message spécial à l’équipe' : '💬 Message à un ouvrier', g ? plural(ids.length, 'ouvrier') : intervFull(vault.get('intervenants', ids[0])), ids.length === 1 ? ids[0] : '');
   for (const wid of ids) await equipeSync(wid, true);
@@ -807,6 +807,7 @@ async function equipeInbox(w, msg) {
       chat.push({ id: mid || 'e' + Date.now().toString(36) + nMsg, at: String(it.at || at0).slice(0, 30), from: 'eq', x });
       nMsg++;
     }
+    if (nMsg) chat.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
     tx.put('intervenants', { id: w.id, feed: feed.slice(-200), feedNew: (cur.feedNew || 0) + fresh, ...(nMsg ? { chat: chat.slice(-EQ_CHAT_MAX), chatNew: (now2.chatNew || 0) + nMsg } : {}) });
   }, 'Nouvelles de l’équipe', intervFull(w), w.id);
   for (const [id, b] of files) await vault.saveFile(id, unb64u(b));
@@ -1270,7 +1271,6 @@ function patSum(pat) {
     return n ? `${g.split(' ')[0]} ${n}${plus ? '+' : ''}` : '';
   }).filter(Boolean).join(' · ');
 }
-const patList = (pat) => PAT_TYPES.flatMap(([, types]) => Object.entries(types).filter(([k]) => pat && pat[k]).map(([k, l]) => `${pat[k].n || pat[k].q} × ${l}`)).concat(pat && pat._autre ? [pat._autre] : []);
 // 🌐 Réseau : centrales des clients (gérance, agence, propriétaire, hôtel, Airbnb), chacune avec sa cassaforte ;
 // ici : essai, échéance, lecture seule / blocage, nouvel accès, suppression avec certificat, demandes d'intervention reçues
 const NET_FIL = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
@@ -4800,8 +4800,6 @@ dashboard() {
 
   paiements() {
     const y = ui.year;
-    const now = new Date();
-    const cy = now.getFullYear(), cm = now.getMonth() + 1;
     let imms = vault.list('immeubles').sort(byAddr);
     const all = imms;
     if (ui.immFilter) imms = imms.filter((im) => im.id === ui.immFilter);
@@ -4865,7 +4863,6 @@ dashboard() {
       && (!q || [r.lib, r.cat, r.imm, r.d, fmtDate(r.d), money(r.ttc), String(r2(r.ttc))].join(' ').toLowerCase().includes(q)));
     const R = rows.filter((r) => r.sens === 'R'), D = rows.filter((r) => r.sens === 'D');
     const tR = sum(R, (r) => r.ttc), tD = sum(D, (r) => r.ttc);
-    const tvaC = sum(R, (r) => r.tva), tvaD = sum(D, (r) => r.tva);
     const tools = html`<div class="toolbar">${yearSelect(y)}${perSel}</div>`;
     let body;
     if (tab === 'journal') {
@@ -4901,7 +4898,6 @@ dashboard() {
     } else if (tab === 'tva') {
       const perT = soc.periode || 't';
       const periods = perT === 'm' ? MONTHS_FULL.map((_, i) => 'm' + (i + 1)) : perT === 'a' ? ['y'] : ['q1', 'q2', 'q3', 'q4'];
-      const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
       // TVA des factures d'interventions (ARES INVEST S.A. — LuxInterventions) : pas de TVA sur les loyers
       const inv = (a, b) => vault.list('taches').filter((t) => t.facture && t.facture.date >= a && t.facture.date <= b);
       const c0 = factConf();
@@ -5674,7 +5670,6 @@ const SHEETS = {
   'interv-form'({ id }) {
     const i = id ? vault.get('intervenants', id) : { metier: '', genre: 'interne', cat: 'quotidien' };
     if (id && !i) return null;
-    const sel = (name, opts, cur) => html`<select name="${name}">${Object.entries(opts).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</select>`;
     return {
       title: id ? 'Modifier la fiche' : 'Nouvelle personne',
       body: html`<form id="f" data-form="interv" class="fields">
@@ -7912,7 +7907,7 @@ const ACTIONS = {
     const du = t.until && t.until > today() ? t.until : today(), au = addYears(du, y);
     if (!(await confirmBox(`Abonnement ${y} an${y > 1 ? 's' : ''} pour « ${t.nom} » ?`, { ok: `🔑 ${money(pr.ttc)} TTC`, detail: `${y} × ${money(pr.an)} HT${pr.r ? ` − ${pr.r} % = ${money(pr.ht)} HT` : ''} · TVA ${pr.taux} % · du ${fmtDate(du)} au ${fmtDate(au)}. Une facture est créée.` }))) return;
     try { await netApi('tenants/' + t.id, 'PATCH', { until: au, st: 'active' }); } catch (e) { return toast(e.message, { bad: true }); }
-    const c = factConf(), seq = ((vault.get('reglages', 'licSeq') || {}).n || 0) + 1, no = `${today().replace(/-/g, '')}-LIC${String(seq).padStart(4, '0')}`;
+    const seq = ((vault.get('reglages', 'licSeq') || {}).n || 0) + 1, no = `${today().replace(/-/g, '')}-LIC${String(seq).padStart(4, '0')}`;
     const f = { id: 'licfac-' + no, no, date: today(), tid: t.id, nom: t.nom, fil: t.fil, years: y, du, au, ...pr, paid: false, by: whoLabel() || '⭐ Directeur' };
     await vault.mutate((tx) => { tx.put('reglages', { id: 'licSeq', n: seq }); tx.put('reglages', f); }, '🧾 Facture de licence ' + no, `${t.nom} · ${y} an(s) · ${money(pr.ttc)} TTC`);
     await licLogAdd(t, `Abonnement ${y} an${y > 1 ? 's' : ''}`, `${fmtDate(du)} → ${fmtDate(au)} · ${money(pr.ht)} HT${pr.r ? ` (−${pr.r} %)` : ''} · facture ${no}`);
@@ -8669,7 +8664,6 @@ const FORMS = {
   async interv(fd) {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
-    const prev = id ? vault.get('intervenants', id) || {} : {};
     const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), ccss: g('ccss').replace(/\s/g, ''), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), note: g('note') };
     rec.photo = photoOk(g('photo')) ? g('photo') : '';
     rec.chefDevis = fd.get('chefDevis') === '1';
@@ -9888,7 +9882,7 @@ Object.assign(SHEETS, {
   },
 });
 // pavé de signature (doigt / souris)
-let devSig = null, devSigUrl = '';
+let devSig = null;
 document.addEventListener('pointerdown', (ev) => {
   const c = ev.target.closest && ev.target.closest('canvas.sig-pad'); if (!c || !sheetEl.contains(c)) return;
   ev.preventDefault(); c.setPointerCapture(ev.pointerId);
@@ -9899,7 +9893,7 @@ document.addEventListener('pointerdown', (ev) => {
   devSig = { c, x, pt };
 });
 document.addEventListener('pointermove', (ev) => { if (!devSig) return; const [a, b] = devSig.pt(ev); devSig.x.lineTo(a, b); devSig.x.stroke(); });
-const devSigUp = () => { if (!devSig) return; devSigUrl = devSig.c.toDataURL('image/png'); devSig = null; };
+const devSigUp = () => { devSig = null; }; // l'image est lue sur le canevas à l'enregistrement
 document.addEventListener('pointerup', devSigUp); document.addEventListener('pointercancel', devSigUp);
 // la signature est-elle vide ? (aucun pixel dessiné)
 const devSigEmpty = (c) => !c || !c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some((v, i) => i % 4 === 3 && v > 0);
@@ -9938,7 +9932,7 @@ Object.assign(FORMS, {
     if (devSigEmpty(c)) return toast('Le client doit signer dans le cadre blanc', { bad: true });
     const png = c.toDataURL('image/png'), at = new Date().toISOString();
     await vault.mutate((tx) => tx.put('devis', { id: d.id, st: 'accepte', acc: at, sign: { png, at, nom: String(fd.get('nom') || '').trim(), early: fd.get('early') === '1' }, ...devH(d, 'accepte') }), 'Devis signé par le client', `${devNo(d)} — ${devClient(d)}`);
-    devSigUrl = ''; sheetDirty = false;
+    sheetDirty = false;
     toast('✍️ Devis signé — bon pour accord');
     goBack();
   },
@@ -10188,7 +10182,7 @@ Object.assign(ACTIONS, {
   'dev-proto-add': () => { const box = $('#devProto'); if (!box) return; const n = 1 + Math.max(-1, ...[...box.querySelectorAll('[name^=frl]')].map((x) => +x.name.slice(3))); box.insertAdjacentHTML('beforeend', String(devProtoRow(n, { f: { m: 1 } }))); box.lastElementChild.querySelector('input').focus(); },
   'dev-row-add': () => { const box = $('#devRows'); if (box) box.insertAdjacentHTML('beforeend', String(devChefRow(box.children.length))); },
   'dev-pend-del': (d) => { devPend.files.splice(+d.n, 1); const box = $('#devPend'); if (box) setHtml(box, devPendHtml()); },
-  'dev-sig-clear': () => { const c = sheetEl.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); devSigUrl = ''; },
+  'dev-sig-clear': () => { const c = sheetEl.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); },
   'dev-sign': (d) => { if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true }); openOver('devis-sign', d.id); },
   async 'dev-visa-del'(d) {
     const v = vault.get('devis', d.id); if (!v || !v.visa) return;

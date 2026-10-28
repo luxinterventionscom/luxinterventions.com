@@ -18,7 +18,7 @@ const app = document.getElementById('app');
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* stockage plein */ } } };
 const LANGS = ['fr', 'en', 'de', 'it', 'pt', 'es'];
-const GK = ['luxe', 'confort', 'eco'], EK = ['garde', 'boissons', 'friandises', 'siege', 'pancarte', 'bagages'], SK = ['course', 'heures', 'demi', 'jour', 'sejour'];
+const GK = ['luxe', 'confort', 'eco'], EK = ['garde', 'boissons', 'friandises', 'siege', 'pancarte', 'bagages'];
 const L = {
   fr: { app: 'Courses', welcome: 'Entrez le code reçu de l’établissement.', code: 'Code d’accès', enter: 'Entrer', bad: 'Code inconnu.', off: 'Accès désactivé.',
     rides: '🛣️ Courses', none: 'Aucune course pour le moment.', newR: 'Nouvelle course', accept: '✅ Accepter', refuse: '❌ Refuser', drv: 'Chauffeur', car: 'Voiture', send: 'Envoyer', W: '⏳ À répondre', O: '✅ Acceptée', N: '❌ Refusée',

@@ -1,5 +1,5 @@
 // App des annonceurs : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'annonce-shell-v1.0.0';
+const CACHE = 'annonce-shell-v1.0.1';
 const SHELL = ['/annonce.html', '/annonce.js', '/ares/espace-crypto.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/reqmark.js', '/ares/nbien.js', '/annonce.webmanifest', '/ares/icons/lux-192.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
