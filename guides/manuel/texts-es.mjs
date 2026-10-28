@@ -1,12 +1,12 @@
 // Manual — español
 export default {
-  title: 'Manual LuxInterventions',
+  title: 'Manual de la aplicación INTERVENTIONS',
   sub: 'La central y sus aplicaciones — guía ilustrada',
   toc: 'Índice',
   shotsNote: 'Las capturas muestran datos de ejemplo ficticios.',
   sec: {
     intro: ['Visión general', `
-<p>LuxInterventions reúne en una sola <b>central</b> todo lo necesario para gestionar inmuebles: intervenciones técnicas, inquilinos, alquileres, hoteles, Airbnb, taxis, agencias, propietarios y contabilidad. Alrededor de la central, cada persona recibe su propia aplicación, sin contraseña: basta un <b>código de acceso</b>.</p>
+<p>La aplicación reúne en una sola <b>central</b> todo lo necesario para gestionar inmuebles: intervenciones técnicas, inquilinos, alquileres, hoteles, Airbnb, taxis, agencias, propietarios y contabilidad. Alrededor de la central, cada persona recibe su propia aplicación, sin contraseña: basta un <b>código de acceso</b>.</p>
 <table><tr><th>Aplicación</th><th>Para quién</th><th>Qué hace</th></tr>
 <tr><td>🏢 Central</td><td>Usted (gestor)</td><td>Gestionarlo todo, crear los accesos de las otras aplicaciones</td></tr>
 <tr><td>🏠 Espacio del inquilino</td><td>Inquilinos</td><td>Solicitudes de intervención, documentos, alquileres, mensajes</td></tr>
@@ -69,7 +69,7 @@ export default {
 <li>Al vencer, la central del cliente pasa a <b>solo lectura</b>; puede <b>bloquearla</b>, crear un nuevo acceso o <b>borrarla</b> (se emite un certificado de borrado).</li></ol>
 <p>La página Licencias muestra también estadísticas, registro y exportación CSV.</p>`],
     client: ['La central del cliente', `
-<p>El cliente abre su central con su código y elige su propia clave. Solo ve las secciones de su sector, con un aviso de prueba o de vencimiento. Gestiona él mismo sus bienes; las <b>intervenciones</b> las sigue haciendo LuxInterventions: sus <b>solicitudes</b> llegan cifradas directamente a su <b>Mantenimiento</b>.</p>`],
+<p>El cliente abre su central con su código y elige su propia clave. Solo ve las secciones de su sector, con un aviso de prueba o de vencimiento. Gestiona él mismo sus bienes; las <b>intervenciones</b> las sigue haciendo la central principal: sus <b>solicitudes</b> llegan cifradas directamente a su <b>Mantenimiento</b>.</p>`],
     appLoc: ['Aplicación Espacio del inquilino', `
 <p>El inquilino ve su vivienda, alquileres y documentos. Envía una <b>solicitud de intervención</b> con fotos y sigue su avance. Recibe sus mensajes y avisos.</p>`],
     appEq: ['Aplicación Equipo', `

@@ -1,12 +1,12 @@
 // Manual — português
 export default {
-  title: 'Manual LuxInterventions',
+  title: 'Manual da aplicação INTERVENTIONS',
   sub: 'A central e as suas aplicações — guia ilustrado',
   toc: 'Índice',
   shotsNote: 'As capturas mostram dados de exemplo fictícios.',
   sec: {
     intro: ['Visão geral', `
-<p>A LuxInterventions reúne numa única <b>central</b> tudo o que é preciso para gerir imóveis: intervenções técnicas, inquilinos, rendas, hotéis, Airbnb, táxis, agências, proprietários e contabilidade. À volta da central, cada pessoa recebe a sua própria aplicação, sem palavra-passe: basta um <b>código de acesso</b>.</p>
+<p>A aplicação reúne numa única <b>central</b> tudo o que é preciso para gerir imóveis: intervenções técnicas, inquilinos, rendas, hotéis, Airbnb, táxis, agências, proprietários e contabilidade. À volta da central, cada pessoa recebe a sua própria aplicação, sem palavra-passe: basta um <b>código de acesso</b>.</p>
 <table><tr><th>Aplicação</th><th>Para quem</th><th>O que faz</th></tr>
 <tr><td>🏢 Central</td><td>Você (gestor)</td><td>Gerir tudo, criar os acessos das outras aplicações</td></tr>
 <tr><td>🏠 Espaço do inquilino</td><td>Inquilinos</td><td>Pedidos de intervenção, documentos, rendas, mensagens</td></tr>
@@ -69,7 +69,7 @@ export default {
 <li>No fim do prazo, a central do cliente passa a <b>só leitura</b>; pode <b>bloqueá-la</b>, criar um novo acesso ou <b>apagá-la</b> (é emitido um certificado de eliminação).</li></ol>
 <p>A página Licenças mostra também estatísticas, registo e exportação CSV.</p>`],
     client: ['A central do cliente', `
-<p>O cliente abre a sua central com o código e escolhe a sua própria chave. Só vê as secções do seu setor, com uma faixa de teste ou de prazo. Gere ele próprio os seus bens; as <b>intervenções</b> continuam a ser feitas pela LuxInterventions: os seus <b>pedidos</b> chegam cifrados diretamente à sua <b>Manutenção</b>.</p>`],
+<p>O cliente abre a sua central com o código e escolhe a sua própria chave. Só vê as secções do seu setor, com uma faixa de teste ou de prazo. Gere ele próprio os seus bens; as <b>intervenções</b> continuam a ser feitas pela central principal: os seus <b>pedidos</b> chegam cifrados diretamente à sua <b>Manutenção</b>.</p>`],
     appLoc: ['Aplicação Espaço do inquilino', `
 <p>O inquilino vê a sua casa, rendas e documentos. Envia um <b>pedido de intervenção</b> com fotos e acompanha o seu andamento. Recebe as suas mensagens e avisos.</p>`],
     appEq: ['Aplicação Equipa', `

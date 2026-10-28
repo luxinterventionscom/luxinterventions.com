@@ -22,7 +22,15 @@ const b = await chromium.launch();
 const errors = [];
 const watch = (p, who) => p.on('pageerror', (e) => errors.push(`${who}: ${e.message}`));
 const wait = (p, ms = 700) => p.waitForTimeout(ms);
-const shot = async (p, name, opts = {}) => { await wait(p, opts.wait || 500); await p.addStyleTag({ content: '#toasts{display:none!important}' }).catch(() => {}); await p.screenshot({ path: OUT + name + '.jpg', type: 'jpeg', quality: 78, fullPage: !!opts.full }); console.log('📸', name); };
+// manuel sans noms de société : noms et logos neutralisés sur la capture seulement
+const neutral = (p) => p.evaluate(() => {
+  const fix = (t) => t.replace(/NOBIS\s*s\.?\s*a\.?\s*r\.?\s*l\.?/gi, 'Société Démo').replace(/ARES\s+INVEST\s+S\.?\s*A\.?/gi, 'Société Démo').replace(/LuxInterventions/gi, 'INTERVENTIONS').replace(/NOBIS|ALJADY\s*R?\.?/g, 'Démo');
+  const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT); let n;
+  while ((n = w.nextNode())) { const v = fix(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; }
+  document.querySelectorAll('input,textarea').forEach((i) => { const v = fix(i.value || ''); if (v !== i.value) i.value = v; });
+  document.querySelectorAll('img').forEach((i) => { if (!i.src.startsWith('data:') && /icon|logo|nobis|ares|lux|aljady/i.test(i.src)) i.style.visibility = 'hidden'; });
+}).catch(() => {});
+const shot = async (p, name, opts = {}) => { await wait(p, opts.wait || 500); await p.addStyleTag({ content: '#toasts{display:none!important}' }).catch(() => {}); await neutral(p); await p.screenshot({ path: OUT + name + '.jpg', type: 'jpeg', quality: 78, fullPage: !!opts.full }); console.log('📸', name); };
 const go = async (p, route) => { await p.evaluate((r) => { location.hash = '#/' + r; }, route); await wait(p, 900); await p.evaluate(() => scrollTo(0, 0)); };
 // déclenche une action de la central comme un toucher sur un bouton
 const act = (p, action, data = {}) => p.evaluate(([a, d]) => { const el = document.createElement('button'); el.dataset.action = a; Object.assign(el.dataset, d); el.hidden = true; document.body.append(el); el.click(); el.remove(); }, [action, data]);

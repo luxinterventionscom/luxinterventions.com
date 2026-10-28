@@ -1,12 +1,12 @@
 // Manual — English
 export default {
-  title: 'LuxInterventions Manual',
+  title: 'INTERVENTIONS application manual',
   sub: 'The central app and its companion apps — illustrated guide',
   toc: 'Contents',
   shotsNote: 'Screenshots show fictitious sample data.',
   sec: {
     intro: ['Overview', `
-<p>LuxInterventions brings together in one <b>central app</b> everything needed to manage property: technical jobs, tenants, rents, hotels, Airbnb, taxis, agencies, owners and accounting. Around the central app, each person gets their own app, with no password to remember: an <b>access code</b> is enough.</p>
+<p>The application brings together in one <b>central app</b> everything needed to manage property: technical jobs, tenants, rents, hotels, Airbnb, taxis, agencies, owners and accounting. Around the central app, each person gets their own app, with no password to remember: an <b>access code</b> is enough.</p>
 <table><tr><th>App</th><th>For whom</th><th>What it does</th></tr>
 <tr><td>🏢 Central</td><td>You (manager)</td><td>Manage everything, create access for the other apps</td></tr>
 <tr><td>🏠 Tenant space</td><td>Tenants</td><td>Repair requests, documents, rents, messages</td></tr>
@@ -69,7 +69,7 @@ export default {
 <li>When it expires, the client’s central becomes <b>read-only</b>; you can <b>block</b> it, create new access or <b>delete</b> it (a deletion certificate is issued).</li></ol>
 <p>The Licences page also shows statistics, a register and CSV export.</p>`],
     client: ['The client’s central', `
-<p>The client opens their central with their code and chooses their own key. They only see the sections of their line of business, with a trial or expiry banner. They manage their properties themselves; <b>jobs</b> are still carried out by LuxInterventions: their <b>requests</b> arrive encrypted directly in your <b>Maintenance</b>.</p>`],
+<p>The client opens their central with their code and chooses their own key. They only see the sections of their line of business, with a trial or expiry banner. They manage their properties themselves; <b>jobs</b> are still carried out by the main central: their <b>requests</b> arrive encrypted directly in your <b>Maintenance</b>.</p>`],
     appLoc: ['Tenant space app', `
 <p>The tenant sees their home, rents and documents. They send a <b>repair request</b> with photos and follow its progress. They receive your messages and notices.</p>`],
     appEq: ['Team app', `

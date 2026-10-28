@@ -1,12 +1,12 @@
 // Handbuch — Deutsch
 export default {
-  title: 'Handbuch LuxInterventions',
+  title: 'Handbuch der Anwendung INTERVENTIONS',
   sub: 'Die Zentrale und ihre Apps — bebilderte Anleitung',
   toc: 'Inhalt',
   shotsNote: 'Die Bildschirmfotos zeigen erfundene Beispieldaten.',
   sec: {
     intro: ['Überblick', `
-<p>LuxInterventions vereint in einer einzigen <b>Zentrale</b> alles, was Sie für die Verwaltung von Immobilien brauchen: technische Einsätze, Mieter, Mieten, Hotels, Airbnb, Taxis, Agenturen, Eigentümer und Buchhaltung. Rund um die Zentrale erhält jede Person ihre eigene App, ohne Passwort: ein <b>Zugangscode</b> genügt.</p>
+<p>Die Anwendung vereint in einer einzigen <b>Zentrale</b> alles, was Sie für die Verwaltung von Immobilien brauchen: technische Einsätze, Mieter, Mieten, Hotels, Airbnb, Taxis, Agenturen, Eigentümer und Buchhaltung. Rund um die Zentrale erhält jede Person ihre eigene App, ohne Passwort: ein <b>Zugangscode</b> genügt.</p>
 <table><tr><th>App</th><th>Für wen</th><th>Was sie tut</th></tr>
 <tr><td>🏢 Zentrale</td><td>Sie (Verwalter)</td><td>Alles verwalten, Zugänge der anderen Apps erstellen</td></tr>
 <tr><td>🏠 Mieterbereich</td><td>Mieter</td><td>Einsatzanfragen, Dokumente, Mieten, Nachrichten</td></tr>
@@ -69,7 +69,7 @@ export default {
 <li>Bei Ablauf wechselt die Zentrale des Kunden auf <b>Nur Lesen</b>; Sie können sie <b>sperren</b>, einen neuen Zugang erstellen oder sie <b>löschen</b> (mit Löschbescheinigung).</li></ol>
 <p>Die Seite Lizenzen zeigt auch Statistiken, Register und CSV-Export.</p>`],
     client: ['Die Zentrale des Kunden', `
-<p>Der Kunde öffnet seine Zentrale mit seinem Code und wählt seinen eigenen Schlüssel. Er sieht nur die Bereiche seiner Sparte, mit einem Hinweis zu Testphase oder Ablauf. Seine Immobilien verwaltet er selbst; die <b>Einsätze</b> führt weiterhin LuxInterventions aus: Seine <b>Anfragen</b> kommen verschlüsselt direkt in Ihrer <b>Wartung</b> an.</p>`],
+<p>Der Kunde öffnet seine Zentrale mit seinem Code und wählt seinen eigenen Schlüssel. Er sieht nur die Bereiche seiner Sparte, mit einem Hinweis zu Testphase oder Ablauf. Seine Immobilien verwaltet er selbst; die <b>Einsätze</b> führt weiterhin die Hauptzentrale aus: Seine <b>Anfragen</b> kommen verschlüsselt direkt in Ihrer <b>Wartung</b> an.</p>`],
     appLoc: ['App Mieterbereich', `
 <p>Der Mieter sieht seine Wohnung, Mieten und Dokumente. Er sendet eine <b>Einsatzanfrage</b> mit Fotos und verfolgt den Fortschritt. Er erhält Ihre Nachrichten und Hinweise.</p>`],
     appEq: ['Team-App', `
