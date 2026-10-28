@@ -16814,4 +16814,84 @@ export default [
 "Facture du taxi payée",
 "Fatura do táxi paga"
 ],
+[
+"💶 À encaisser ({0})",
+"💶 A receber ({0})"
+],
+[
+"payé selon l’annonceur",
+"pago segundo o anunciante"
+],
+[
+"en attente du paiement",
+"a aguardar o pagamento"
+],
+[
+"💶 à payer",
+"💶 a pagar"
+],
+[
+"Paiement reçu ?",
+"Pagamento recebido?"
+],
+[
+"✅ Reçu",
+"✅ Recebido"
+],
+[
+"Validée : en ligne dès le paiement reçu",
+"Aprovado: online assim que o pagamento for recebido"
+],
+[
+"🔝 Haut — prix HT par jour (€)",
+"🔝 Topo — preço s/ IVA por dia (€)"
+],
+[
+"⏺ Milieu — prix HT par jour (€)",
+"⏺ Meio — preço s/ IVA por dia (€)"
+],
+[
+"🔽 Bas — prix HT par jour (€)",
+"🔽 Fundo — preço s/ IVA por dia (€)"
+],
+[
+"L’annonceur voit le prix HT (jours × tarif de l’emplacement) avant d’envoyer. Après votre validation il paie par virement (QR, TVA de 🧾 Facturation) ; vous confirmez « Paiement reçu » : facture et mise en ligne. 💳 Paiement en ligne : pas encore connecté.",
+"O anunciante vê o preço s/ IVA (dias × tarifa do espaço) antes de enviar. Após a sua aprovação paga por transferência (QR, IVA de 🧾 Faturação); confirma « Pagamento recebido »: fatura e publicação. 💳 Pagamento online: ainda não ligado."
+],
+[
+"💶 Prix du séjour — visible dans l’app du client",
+"💶 Preço da estadia — visível na app do cliente"
+],
+[
+"Pas affiché",
+"Não mostrado"
+],
+[
+"a) Total",
+"a) Total"
+],
+[
+"b) Nuits × prix + ménage + taxe",
+"b) Noites × preço + limpeza + taxa"
+],
+[
+"a) Total du séjour (€)",
+"a) Total da estadia (€)"
+],
+[
+"b) Prix par nuit (€)",
+"b) Preço por noite (€)"
+],
+[
+"b) Ménage (€)",
+"b) Limpeza (€)"
+],
+[
+"b) Taxe de séjour (€ / personne / nuit)",
+"b) Taxa turística (€ / pessoa / noite)"
+],
+[
+"Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.",
+"O cliente vê o detalhe e o total. 💳 « Pagar a estadia »: ainda não ligado (botão visível, desativado). No hotel o cliente paga na receção."
+],
 ];

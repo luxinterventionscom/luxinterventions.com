@@ -16906,4 +16906,84 @@ export default [
 "Facture du taxi payée",
 "Fattura del taxi pagata"
 ],
+[
+"💶 À encaisser ({0})",
+"💶 Da incassare ({0})"
+],
+[
+"payé selon l’annonceur",
+"pagato secondo l’inserzionista"
+],
+[
+"en attente du paiement",
+"in attesa del pagamento"
+],
+[
+"💶 à payer",
+"💶 da pagare"
+],
+[
+"Paiement reçu ?",
+"Pagamento ricevuto?"
+],
+[
+"✅ Reçu",
+"✅ Ricevuto"
+],
+[
+"Validée : en ligne dès le paiement reçu",
+"Approvato: online appena ricevuto il pagamento"
+],
+[
+"🔝 Haut — prix HT par jour (€)",
+"🔝 Alto — prezzo IVA esclusa al giorno (€)"
+],
+[
+"⏺ Milieu — prix HT par jour (€)",
+"⏺ Centro — prezzo IVA esclusa al giorno (€)"
+],
+[
+"🔽 Bas — prix HT par jour (€)",
+"🔽 Basso — prezzo IVA esclusa al giorno (€)"
+],
+[
+"L’annonceur voit le prix HT (jours × tarif de l’emplacement) avant d’envoyer. Après votre validation il paie par virement (QR, TVA de 🧾 Facturation) ; vous confirmez « Paiement reçu » : facture et mise en ligne. 💳 Paiement en ligne : pas encore connecté.",
+"L’inserzionista vede il prezzo IVA esclusa (giorni × tariffa dello spazio) prima di inviare. Dopo la sua approvazione paga con bonifico (QR, IVA di 🧾 Fatturazione); lei conferma « Pagamento ricevuto »: fattura e messa online. 💳 Pagamento online: non ancora collegato."
+],
+[
+"💶 Prix du séjour — visible dans l’app du client",
+"💶 Prezzo del soggiorno — visibile nell’app del cliente"
+],
+[
+"Pas affiché",
+"Non mostrato"
+],
+[
+"a) Total",
+"a) Totale"
+],
+[
+"b) Nuits × prix + ménage + taxe",
+"b) Notti × prezzo + pulizia + tassa"
+],
+[
+"a) Total du séjour (€)",
+"a) Totale del soggiorno (€)"
+],
+[
+"b) Prix par nuit (€)",
+"b) Prezzo per notte (€)"
+],
+[
+"b) Ménage (€)",
+"b) Pulizia (€)"
+],
+[
+"b) Taxe de séjour (€ / personne / nuit)",
+"b) Tassa di soggiorno (€ / persona / notte)"
+],
+[
+"Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.",
+"Il cliente vede il dettaglio e il totale. 💳 « Paga il pernottamento »: non ancora collegato (pulsante visibile, disattivato). In hotel il cliente paga alla reception."
+],
 ];

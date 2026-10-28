@@ -294,6 +294,8 @@ function render() {
     ${st.adresse ? `<p class="meta" style="margin:8px 0 0">📍 ${esc(st.adresse)}</p><div class="btns"><a class="btn sm sec" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(st.adresse)}" target="_blank" rel="noopener">${esc(t.way)}</a></div>` : ''}</div>`);
   // 6 · publicité (milieu)
   { const p = slot('milieu'); if (p) out.push(adBox(p, t)); }
+  // 6b · prix du séjour (Airbnb)
+  if (bnb && today <= d.depart) out.push(sejourHtml(d.sejour));
   // 7 · cœur : mon séjour (formule, menu, préférences, contact) + arrivée (taxi ou soi-même)
   out.push(`<div class="card"><h2>🧳 ${esc(t.stay)}</h2>
     <p style="margin:0">🛬 ${esc(t.from)} : <b>${esc(fmt(d.arrivee))}</b> ${esc(t.after)} ${esc(d.hdeb)}<br>🛫 ${esc(t.to)} : <b>${esc(fmt(d.depart))}</b> ${esc(t.before)} ${esc(d.hfin)}</p>
@@ -343,6 +345,26 @@ const RT = {
   pt: { q: '⭐ Como foi a corrida?', ph: 'Um comentário (opcional)', send: 'Enviar', thanks: 'Obrigado pela sua avaliação!' },
   es: { q: '⭐ ¿Qué tal la carrera?', ph: 'Un comentario (opcional)', send: 'Enviar', thanks: '¡Gracias por su nota!' },
 };
+// 💶 prix du séjour (Airbnb) : détail + bouton « Payer » affiché mais pas encore connecté
+const PJ = {
+  fr: { h: '💶 Prix du séjour', nights: 'nuits', clean: 'Ménage', tax: 'Taxe de séjour', pp: 'pers.', tot: 'Total', pay: '💳 Payer le séjour', info: 'Paiement en ligne pas encore connecté : réglez selon les indications de votre hôte.' },
+  en: { h: '💶 Price of your stay', nights: 'nights', clean: 'Cleaning', tax: 'Tourist tax', pp: 'pers.', tot: 'Total', pay: '💳 Pay for the stay', info: 'Online payment not connected yet: pay as your host tells you.' },
+  de: { h: '💶 Preis des Aufenthalts', nights: 'Nächte', clean: 'Reinigung', tax: 'Kurtaxe', pp: 'Pers.', tot: 'Gesamt', pay: '💳 Aufenthalt bezahlen', info: 'Online-Zahlung noch nicht verbunden: zahlen Sie nach Angabe Ihres Gastgebers.' },
+  it: { h: '💶 Prezzo del soggiorno', nights: 'notti', clean: 'Pulizia', tax: 'Tassa di soggiorno', pp: 'pers.', tot: 'Totale', pay: '💳 Paga il pernottamento', info: 'Pagamento online non ancora collegato: paghi secondo le indicazioni del suo host.' },
+  pt: { h: '💶 Preço da estadia', nights: 'noites', clean: 'Limpeza', tax: 'Taxa turística', pp: 'pess.', tot: 'Total', pay: '💳 Pagar a estadia', info: 'Pagamento online ainda não ligado: pague segundo as indicações do seu anfitrião.' },
+  es: { h: '💶 Precio de la estancia', nights: 'noches', clean: 'Limpieza', tax: 'Tasa turística', pp: 'pers.', tot: 'Total', pay: '💳 Pagar la estancia', info: 'Pago en línea aún no conectado: pague según las indicaciones de su anfitrión.' },
+};
+const eur2 = (n) => (Math.round((+n || 0) * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+let sejInfo = false;
+function sejourHtml(x) {
+  if (!x) return '';
+  const w = PJ[lang] || PJ.fr;
+  const rows = x.mode === 'detail' ? [[`${x.n} ${w.nights} × ${eur2(x.nuit)}`, x.nuits], x.menage ? [w.clean, x.menage] : null, x.taxe ? [`${w.tax} (${x.p} ${w.pp} × ${x.n} × ${eur2(x.taxeU)})`, x.taxe] : null].filter(Boolean) : [];
+  return `<div class="card"><h2>${esc(w.h)}</h2>${rows.map(([l, v]) => `<p style="margin:0 0 4px;display:flex;justify-content:space-between;gap:8px"><span>${esc(l)}</span><span>${esc(eur2(v))}</span></p>`).join('')}
+    <p style="margin:6px 0 0;display:flex;justify-content:space-between;gap:8px"><b>${esc(w.tot)}</b><b>${esc(eur2(x.tot))}</b></p>
+    <div class="btns"><button class="btn sm" disabled aria-disabled="true" style="opacity:.45;cursor:not-allowed">${esc(w.pay)}</button><button class="btn sm sec" data-sejinfo="1" aria-label="Info">ℹ️</button></div>
+    ${sejInfo ? `<p class="meta" style="margin:8px 0 0">ℹ️ ${esc(w.info)}</p>` : ''}</div>`;
+}
 const rated = (rid, v) => { const k = 'hoteRate:' + id + ':' + rid; if (v) ls.set(k, String(v)); return +(ls.get(k) || 0); };
 const rateSel = {};
 function rateHtml(rid, done, already) {
@@ -464,6 +486,7 @@ app.addEventListener('click', async (e) => {
   const b = e.target.closest('button, [data-lb]');
   if (!b) return;
   const t = T();
+  if (b.dataset.sejinfo) { sejInfo = !sejInfo; return render(); }
   if (b.dataset.lang) { lang = b.dataset.lang; ls.set('hoteLang', lang); if (pushSt === 'on') pushRefresh('/hote', pushPost); return render(); }
   if (b.dataset.push) { if (await pushEnable({ api: API, swUrl: '/hote-sw.js', scope: '/hote', post: pushPost })) { pushSt = 'on'; pushJust = true; } else pushSt = await pushStatus('/hote'); return render(); }
   if (b.dataset.reset) { ls.set(ACC, null); id = key = ''; data = null; return render(); }

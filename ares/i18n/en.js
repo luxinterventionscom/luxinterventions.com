@@ -16635,4 +16635,84 @@ export default [
 "Facture du taxi payée",
 "Taxi invoice paid"
 ],
+[
+"💶 À encaisser ({0})",
+"💶 To collect ({0})"
+],
+[
+"payé selon l’annonceur",
+"paid according to the advertiser"
+],
+[
+"en attente du paiement",
+"awaiting payment"
+],
+[
+"💶 à payer",
+"💶 to pay"
+],
+[
+"Paiement reçu ?",
+"Payment received?"
+],
+[
+"✅ Reçu",
+"✅ Received"
+],
+[
+"Validée : en ligne dès le paiement reçu",
+"Approved: online once payment is received"
+],
+[
+"🔝 Haut — prix HT par jour (€)",
+"🔝 Top — price excl. VAT per day (€)"
+],
+[
+"⏺ Milieu — prix HT par jour (€)",
+"⏺ Middle — price excl. VAT per day (€)"
+],
+[
+"🔽 Bas — prix HT par jour (€)",
+"🔽 Bottom — price excl. VAT per day (€)"
+],
+[
+"L’annonceur voit le prix HT (jours × tarif de l’emplacement) avant d’envoyer. Après votre validation il paie par virement (QR, TVA de 🧾 Facturation) ; vous confirmez « Paiement reçu » : facture et mise en ligne. 💳 Paiement en ligne : pas encore connecté.",
+"The advertiser sees the price excl. VAT (days × slot rate) before sending. After your approval they pay by bank transfer (QR, VAT from 🧾 Invoicing); you confirm « Payment received »: invoice and goes online. 💳 Online payment: not connected yet."
+],
+[
+"💶 Prix du séjour — visible dans l’app du client",
+"💶 Price of the stay — visible in the guest’s app"
+],
+[
+"Pas affiché",
+"Not shown"
+],
+[
+"a) Total",
+"a) Total"
+],
+[
+"b) Nuits × prix + ménage + taxe",
+"b) Nights × price + cleaning + tax"
+],
+[
+"a) Total du séjour (€)",
+"a) Total of the stay (€)"
+],
+[
+"b) Prix par nuit (€)",
+"b) Price per night (€)"
+],
+[
+"b) Ménage (€)",
+"b) Cleaning (€)"
+],
+[
+"b) Taxe de séjour (€ / personne / nuit)",
+"b) Tourist tax (€ / person / night)"
+],
+[
+"Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.",
+"The guest sees the detail and the total. 💳 « Pay for the stay »: not connected yet (button shown, disabled). At the hotel the guest pays at reception."
+],
 ];

@@ -191,8 +191,9 @@ function printInv(no) {
     <h1>${esc(u.fact2)} ${esc(f.no)}</h1><p>${esc(dayFmt(f.date))}</p>
     <table><tr><th></th><th>${esc(u.code)}</th><th>€</th></tr>${rows.map((r) => `<tr><td>${esc(dayFmt(r.done && r.done.at))} · ${esc(r.n)} · ${esc([r.from || r.s, r.to || r.sa].filter(Boolean).join(' → '))}${r.done && r.done.note ? ' · ' + esc(r.done.note) : ''}</td><td>${esc(r.code || '')}</td><td>${esc(eur(r.done && r.done.prix))}</td></tr>`).join('')}</table>
     <p style="text-align:right">${esc(u.ht)} ${esc(eur(f.ht))}<br>TVA ${esc(String(f.taux))} % ${esc(eur(f.tva))}<br><b>${esc(u.total)} ${esc(eur(f.ttc))}</b></p>
-    <p>${p.pay === 'iban' ? esc(`${u.payIban} : IBAN ${p.iban || ''}${p.bic ? ' · BIC ' + p.bic : ''} · ${f.no}`) : p.pay === 'lien' ? esc(`${u.payLink} : ${p.lien || ''}`) : esc(u.payDrv)}</p><script>print()<\/script>`);
+    <p>${p.pay === 'iban' ? esc(`${u.payIban} : IBAN ${p.iban || ''}${p.bic ? ' · BIC ' + p.bic : ''} · ${f.no}`) : p.pay === 'lien' ? esc(`${u.payLink} : ${p.lien || ''}`) : esc(u.payDrv)}</p>`);
   w.document.close();
+  w.print();
 }
 function render() {
   const t = T();

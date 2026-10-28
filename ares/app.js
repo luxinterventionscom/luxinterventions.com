@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.204.0';
+const VERSION = '2.205.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1334,8 +1334,8 @@ async function netBoxSend(tid, obj) {
   const r = await vault.call(`tenants/${tid}/box`, { method: 'POST', body: await sealForOwner(t.pub, obj) });
   if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Erreur ' + r.status);
 }
-// facture d'une ou plusieurs interventions (mode « chaque intervention » ou « facture du mois »)
-async function netFactPdf(items, client, no, dateIso, due, c) {
+// facture de la centrale : lignes { titre, sub, tx, ht, tva } (interventions, annonces HORECA…)
+async function netFactPdf(items, client, no, dateIso, due, c, what = 'Interventions') {
   const p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42];
   const logo = await sigJpeg('/ares/icons/lux-192.png').catch(() => null);
   if (logo) p.image(X, 40, 62, 62, logo.bytes, logo.w, logo.h);
@@ -1346,20 +1346,18 @@ async function netFactPdf(items, client, no, dateIso, due, c) {
   p.text(330, 150, client, { size: 11, bold: true });
   let y = 236;
   p.text(X, y, `Facture ${no}`, { size: 20, bold: true, color: [0.2, 0.2, 0.2] }); y += 26;
-  [['Date de facturation', fr(dateIso)], ['Date d’échéance', fr(due)], ['Interventions', String(items.length)], ['Référence', no]].forEach(([l, v], i) => { const xx = X + i * 125; p.text(xx, y, l, { size: 8.5, color: G }).text(xx, y + 13, v, { size: 10 }); });
+  [['Date de facturation', fr(dateIso)], ['Date d’échéance', fr(due)], [what, String(items.length)], ['Référence', no]].forEach(([l, v], i) => { const xx = X + i * 125; p.text(xx, y, l, { size: 8.5, color: G }).text(xx, y + 13, v, { size: 10 }); });
   y += 40;
   p.text(X + 6, y, 'Description', { size: 9.5, bold: true }).text(470, y, 'TVA', { size: 9.5, bold: true, align: 'right' }).text(R - 6, y, 'Montant HT', { size: 9.5, bold: true, align: 'right' });
   y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
-  for (const { t, f, k, tx } of items) {
+  for (const { titre, sub, tx, ht } of items) {
     if (y > 700) { p.page(); y = 60; }
-    const w = vault.get('intervenants', t.intervenantId) || {};
-    const sub = [fr(t.doneDate || t.date), intervFull(w), `${String(num(f.h)).replace('.', ',')} h × ${eur(num(f.taux))}`, k.dep ? 'déplacement ' + eur(k.dep) : '', k.mat ? 'matériel ' + eur(k.mat) : '', k.adj ? (k.adj < 0 ? 'remise ' : 'majoration ') + eur(Math.abs(k.adj)) : ''].filter(Boolean).join(' · ');
-    p.text(470, y, String(tx).replace('.', ',') + '%', { size: 9.5, align: 'right' }).text(R - 6, y, eur(k.ht), { size: 9.5, align: 'right' });
-    let hh = p.wrap(X + 6, y, String(t.titre || 'Intervention').replace(/^🌐 [^:]*:\s*/, ''), 360, { size: 9.5 });
+    p.text(470, y, String(tx).replace('.', ',') + '%', { size: 9.5, align: 'right' }).text(R - 6, y, eur(ht), { size: 9.5, align: 'right' });
+    let hh = p.wrap(X + 6, y, titre, 360, { size: 9.5 });
     hh += p.wrap(X + 6, y + hh, sub, 360, { size: 8.5, color: G });
     y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
   }
-  const ht = r2(sum(items, (i) => i.k.ht)), tva = r2(sum(items, (i) => i.k.tva)), ttc = r2(ht + tva);
+  const ht = r2(sum(items, (i) => i.ht)), tva = r2(sum(items, (i) => i.tva)), ttc = r2(ht + tva);
   y += 10;
   if (y > 640) { p.page(); y = 60; }
   const TX = 330, ty = y;
@@ -1383,7 +1381,12 @@ async function netFactEmit(tid, tasks) {
   const zero = items.filter((i) => !(i.k.ht > 0));
   if (zero.length) throw new Error(`Montant à 0 € : ouvrez la facture de ${zero.map((i) => '« ' + String(i.t.titre || '').replace(/^🌐 [^:]*:\s*/, '') + ' »').join(', ')} (Comptabilité → 🧾 Factures) et indiquez heures et tarif.`);
   const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-INT${String(seq).padStart(4, '0')}`, due = addDays(date, +c.delai || 30);
-  const { bytes, ht, tva, ttc } = await netFactPdf(items, client, no, date, due, c);
+  const rows = items.map(({ t, f, k, tx }) => {
+    const w = vault.get('intervenants', t.intervenantId) || {}, fr = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const sub = [fr(t.doneDate || t.date), intervFull(w), `${String(num(f.h)).replace('.', ',')} h × ${eur(num(f.taux))}`, k.dep ? 'déplacement ' + eur(k.dep) : '', k.mat ? 'matériel ' + eur(k.mat) : '', k.adj ? (k.adj < 0 ? 'remise ' : 'majoration ') + eur(Math.abs(k.adj)) : ''].filter(Boolean).join(' · ');
+    return { titre: String(t.titre || 'Intervention').replace(/^🌐 [^:]*:\s*/, ''), sub, tx, ht: k.ht, tva: k.tva };
+  });
+  const { bytes, ht, tva, ttc } = await netFactPdf(rows, client, no, date, due, c);
   const d = payDays();
   await netBoxSend(tid, { type: 'facture', no, date, due, ht, tva, ttc, from: c.marque || c.nom, lignes: items.map((i) => ({ titre: String(i.t.titre || '').replace(/^🌐 [^:]*:\s*/, ''), d: i.t.doneDate || i.t.date, ht: i.k.ht })), pay: { nom: c.nom, iban: c.iban, bic: c.bic, banque: c.banque }, avv: d.avv, ro: d.ro, pdf: b64big(bytes) });
   let docId = '';
@@ -1518,6 +1521,27 @@ const anCos = () => vault.list('reglages').filter((r) => r.id.startsWith('annc-'
 const anTarifs = () => vault.get('reglages', 'annTarifs') || {};
 const PUB_JOURS = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
 const anHashes = new Map();
+// 💶 annonce validée → l'annonceur paie la centrale (virement QR + « J'ai payé ») → « Paiement reçu » : facture et mise en ligne.
+// Les tarifs des emplacements sont HT ; la TVA est celle de 🧾 Facturation.
+const annDue = (a) => { const c = factConf(), tx = factTaux({}, c), ht = r2(+a.prix || 0), tva = r2((ht * tx) / 100), ttc = r2(ht + tva); return { tx, ht, tva, ttc, epc: c.iban ? epcText(c.nom, c.iban, c.bic, ttc, 'Annonce ' + String(a.id).slice(0, 8)) : '' }; };
+const annFrom = () => { const c = factConf(); return { from: { nom: c.nom, marque: c.marque, adresse: c.adresse, ville: c.ville, rcs: c.rcs, tva: c.tva, iban: c.iban, bic: c.bic, banque: c.banque } }; };
+async function annFactEmit(a) {
+  const c = factConf(), miss = factMissing(c);
+  if (miss.length) throw new Error('Complétez : ' + miss.join(', ') + ' (Réglages → 🧾 Facturation)');
+  const an = vault.get('reglages', a.annId) || {}, client = an.nom || a.nom, d = annDue(a), t = anTarifs();
+  if (!(d.ht > 0)) throw new Error('Montant à 0 € : indiquez les 💶 Tarifs des annonces.');
+  const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-ANN${String(seq).padStart(4, '0')}`;
+  const sub = [PUB_SLOTS[pubSlot(a)].split(' — ')[0], `${fmtDate(a.debut)} → ${fmtDate(a.fin)}`, `${a.ttl || 1} j${+t[pubSlot(a)] ? ' × ' + eur(+t[pubSlot(a)]) : ''}`, pubAud(a).map((k) => PUB_AUD[k]).join(', ')].join(' · ');
+  const { bytes } = await netFactPdf([{ titre: `${AN_TYPES[a.type] || 'Annonce'} — ${a.nom}`, sub, tx: d.tx, ht: d.ht, tva: d.tva }], client, no, date, date, c, 'Annonces');
+  let docId = '';
+  await vault.mutate((tx) => {
+    tx.put('reglages', { id: 'facturation', seq });
+    docId = tx.put('documents', { kind: 'facture-ann', label: `Facture ${no} — ${client}`, date, mime: 'application/pdf', size: bytes.length }).id;
+    tx.put('avis', { id: a.id, st: 'ok', motif: '', pay: 'ok', fact: { no, date, ht: d.ht, tva: d.tva, ttc: d.ttc, tx: d.tx, paid: date, docId } });
+  }, '📣 Annonce payée : facture et mise en ligne', `${no} — ${client} · ${eur(d.ttc)}`);
+  await vault.saveFile(docId, bytes);
+  return no;
+}
 async function annSync(onlyId, loud) {
   if (!vault.unlocked) return true;
   for (const an0 of anCos().filter((x) => x.appCode && (!onlyId || x.id === onlyId))) {
@@ -1536,10 +1560,11 @@ async function annSync(onlyId, loud) {
       const sig = vault.get('reglages', 'signal'), t = anTarifs();
       const ads = vault.list('avis').filter((a) => isPub(a) && a.annId === an.id).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map((a) => {
         const st = pubStatsFor(a.id, a.debut || '0000');
-        return { id: a.id, type: a.type || 'annonce', nom: a.nom, texte: a.texte || '', adresse: a.adresse || '', tel: a.tel || '', web: a.web || '', video: a.video || '', slot: pubSlot(a), aud: pubAud(a), debut: a.debut, fin: a.fin, jours: a.jours || [], h1: a.h1 || '', h2: a.h2 || '', st: a.st || 'ok', motif: a.motif || '', prix: a.prix || 0, v: st.v, taps: st.taps };
+        return { id: a.id, type: a.type || 'annonce', nom: a.nom, texte: a.texte || '', adresse: a.adresse || '', tel: a.tel || '', web: a.web || '', video: a.video || '', slot: pubSlot(a), aud: pubAud(a), debut: a.debut, fin: a.fin, jours: a.jours || [], h1: a.h1 || '', h2: a.h2 || '', st: a.st || 'ok', motif: a.motif || '', prix: a.prix || 0, v: st.v, taps: st.taps,
+          claim: a.payClaim || '', fact: a.fact ? { no: a.fact.no, date: a.fact.date, ht: a.fact.ht, tva: a.fact.tva, ttc: a.fact.ttc, tx: a.fact.tx } : null, ...(a.st === 'pay' ? annDue(a) : {}) };
       });
       const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: societe().nom || 'LuxInterventions',
-        tarifs: { haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, note: t.note || '' }, pay: false };
+        tarifs: { haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, note: t.note || '' }, pay: false, ...annFrom() };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && anHashes.get(e.id) === hs) continue;
       await vault.espacePut(e.id, await sealJson(e.key, data));
@@ -1567,23 +1592,33 @@ async function annInbox(an, msg) {
     await vault.mutate((tx) => tx.put('avis', rec), old ? '📣 Annonce modifiée par l’annonceur (à valider)' : '📣 Nouvelle annonce à valider', `${an.nom} · ${AN_TYPES[rec.type]} · ${fmtDate(rec.debut)} → ${fmtDate(rec.fin)}`);
     annSync(an.id); return true;
   }
+  if (msg.type === 'an-paid') {
+    const a = vault.get('avis', S(msg.id, 40));
+    if (!a || a.annId !== an.id || a.st !== 'pay' || a.payClaim) return false;
+    await vault.mutate((tx) => tx.put('avis', { id: a.id, payClaim: today() }), '💶 L’annonceur dit avoir payé', `${an.nom} · ${a.nom} · ${eur(annDue(a).ttc)}`);
+    annSync(an.id); return true;
+  }
   if (msg.type === 'an-stop') {
     const a = vault.get('avis', S(msg.id, 40));
     if (!a || a.annId !== an.id) return false;
-    await vault.mutate((tx) => tx.put('avis', { id: a.id, fin: addDays(today(), -1), st: a.st === 'wait' ? 'no' : a.st }), '📣 Annonce arrêtée par l’annonceur', `${an.nom} · ${a.nom}`);
+    await vault.mutate((tx) => tx.put('avis', { id: a.id, fin: addDays(today(), -1), st: a.st === 'wait' || a.st === 'pay' ? 'no' : a.st }), '📣 Annonce arrêtée par l’annonceur', `${an.nom} · ${a.nom}`);
     annSync(an.id); return true;
   }
   return false;
 }
 function annBlock() {
   const cos = anCos(), wait = vault.list('avis').filter((a) => isPub(a) && a.st === 'wait').sort((a, b) => (a.debut || '').localeCompare(b.debut || '')), t = anTarifs();
-  const nm = (a) => (vault.get('reglages', a.annId) || {}).nom || a.nom;
+  const nm = (a) => (vault.get('reglages', a.annId) || {}).nom || a.nom, topay = vault.list('avis').filter((a) => isPub(a) && a.st === 'pay').sort((a, b) => (b.payClaim || '').localeCompare(a.payClaim || ''));
   return html`<div class="card" style="margin-bottom:14px"><div class="card-title"><h3>🍽️ Annonceurs (HORECA)</h3><div class="actions" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-action="ann-tarifs">💶 Tarifs</button><button class="btn sm primary" data-action="new-annc">${icon('plus')} Annonceur</button></div></div>
-    <p class="tiny muted" style="margin:0 0 8px">Restaurants, bistrots, bars, discothèques… publient eux-mêmes leurs annonces, menus et événements dans leur app ; vous validez. Tarifs / jour : 🔝 ${t.haut ? t.haut + ' €' : '—'} · ⏺ ${t.milieu ? t.milieu + ' €' : '—'} · 🔽 ${t.bas ? t.bas + ' €' : '—'} · 💳 paiement en ligne : <b>non connecté</b></p>
+    <p class="tiny muted" style="margin:0 0 8px">Restaurants, bistrots, bars, discothèques… publient eux-mêmes leurs annonces, menus et événements dans leur app ; vous validez. Tarifs HT / jour : 🔝 ${t.haut ? t.haut + ' €' : '—'} · ⏺ ${t.milieu ? t.milieu + ' €' : '—'} · 🔽 ${t.bas ? t.bas + ' €' : '—'} · 💶 virement (QR) puis « Paiement reçu » · 💳 en ligne : <b>non connecté</b></p>
     ${wait.length ? html`<div class="section-label">⏳ À valider (${wait.length})</div><div class="list" style="margin-bottom:10px">${wait.map((a) => html`<div class="row" style="display:block">
       <b>${nm(a)}</b> · ${AN_TYPES[a.type] || ''} — ${a.nom}<div class="small">${a.texte}</div>
       <div class="tiny muted">${PUB_SLOTS[pubSlot(a)].split(' — ')[0]} · ${pubAud(a).map((k) => PUB_AUD[k]).join(' · ')} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}${a.jours && a.jours.length ? ' · ' + a.jours.map((j) => PUB_JOURS[j]).join(' ') : ''}${a.h1 ? ` · ${a.h1}–${a.h2}` : ''}${a.prix ? ' · ' + a.prix + ' €' : ''}</div>
       <div class="actions" style="margin:6px 0 0"><button class="btn sm primary" data-action="pub-ok" data-id="${a.id}">✅ Publier</button><button class="btn sm" data-action="edit-pub" data-id="${a.id}">✏️ Voir</button><button class="btn sm ghost danger" data-action="pub-no" data-id="${a.id}">❌ Refuser</button></div></div>`)}</div>` : ''}
+    ${topay.length ? html`<div class="section-label">💶 À encaisser (${topay.length})</div><div class="list" style="margin-bottom:10px">${topay.map((a) => html`<div class="row" style="display:block">
+      <b>${nm(a)}</b> · ${AN_TYPES[a.type] || ''} — ${a.nom} · <b>${eur(annDue(a).ttc)}</b> <span>TTC</span> ${a.payClaim ? html`<span class="badge warn">💶 <span>payé selon l’annonceur</span> · ${fmtDate(a.payClaim)}</span>` : html`<span class="badge">⏳ <span>en attente du paiement</span></span>`}
+      <div class="tiny muted">${fmtDate(a.debut)} → ${fmtDate(a.fin)}</div>
+      <div class="actions" style="margin:6px 0 0"><button class="btn sm primary" data-action="pub-paid" data-id="${a.id}">✅ Paiement reçu</button><button class="btn sm" data-action="edit-pub" data-id="${a.id}">✏️ Voir</button></div></div>`)}</div>` : ''}
     ${cos.length ? html`<div class="list">${cos.map((an) => { const n = vault.list('avis').filter((a) => isPub(a) && a.annId === an.id && (!a.fin || a.fin >= today()) && a.st === 'ok').length; return html`<button class="row" data-action="edit-annc" data-id="${an.id}"><span class="avatar">${(PUB_CATS[an.cat] || '📣').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${an.nom}</span><span class="meta">${plural(n, 'annonce')} en ligne${an.tel ? ' · ' + an.tel : ''}</span></span><span class="chev">›</span></button>`; })}</div>` : html`<p class="small muted" style="margin:0">Aucun annonceur.</p>`}</div>`;
 }
 // 📣 annonces publicitaires des partenaires (vendues) : dans Comptabilité → Abonnements
@@ -1597,7 +1632,7 @@ function pubSection(f = '') {
         <span class="meta" style="display:block"><b>${PUB_SLOTS[pubSlot(a)].split(' — ')[0]}</b> · ${pubAud(a).map((k) => html`<span>${PUB_AUD[k]}</span>`).reduce((x, y) => html`${x} · ${y}`)}</span>
         <span class="meta"><span>${a.immId ? immName(a.immId) : 'Tous les immeubles'}</span>${a.fin ? html` · <span>${fmtDate(a.debut)} → ${fmtDate(a.fin)}</span>` : ''}</span>
         ${(() => { const st = pubStatsFor(a.id, a.debut || '0000'); return st.v || st.taps ? html`<span class="meta" style="display:block">📊 <b>${st.v}</b> <span>vues</span> · <b>${st.taps}</b> <span>clics</span>${st.v ? html` · <span>${String(st.ctr).replace('.', ',')} %</span>` : ''}</span>` : ''; })()}</span>
-        <span class="badge ${a.st === 'wait' ? 'warn' : a.st === 'no' ? 'bad' : a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.st === 'wait' ? '⏳ à valider' : a.st === 'no' ? '❌ refusée' : a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
+        <span class="badge ${a.st === 'wait' || a.st === 'pay' ? 'warn' : a.st === 'no' ? 'bad' : a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.st === 'wait' ? '⏳ à valider' : a.st === 'pay' ? '💶 à payer' : a.st === 'no' ? '❌ refusée' : a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
       return html`${f ? '' : annBlock()}<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
         ${all.length ? html`<p class="tiny muted" style="margin:-4px 0 8px">📊 Statistiques anonymes : vues (une fois par jour et par téléphone) et clics. <a href="#" data-action="pub-stats-refresh">↻ Actualiser les statistiques</a></p>` : ''}
         ${on.length ? html`<div class="list" style="margin-bottom:14px">${on.map(row)}</div>` : empty('msg', 'Aucune annonce en cours.', html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>`)}
@@ -2622,6 +2657,15 @@ async function txInbox(co, msg) {
   }
   return false;
 }
+// 💶 prix du séjour Airbnb : a) total écrit par l'hôte, b) nuits × prix + ménage + taxe de séjour (personnes × nuits)
+function hoteSejour(h) {
+  const x = h.lieu === 'airbnb' && h.prix ? h.prix : {};
+  if (x.mode === 'total') return +x.tot > 0 ? { mode: 'total', tot: r2(+x.tot) } : null;
+  if (x.mode !== 'detail' || !(+x.nuit > 0)) return null;
+  const n = Math.max(1, Math.round((Date.parse(h.depart) - Date.parse(h.arrivee)) / 864e5)), p = Math.max(1, +h.pers || 1);
+  const nuits = r2(n * +x.nuit), menage = r2(+x.menage || 0), taxe = r2((+x.taxe || 0) * p * n);
+  return { mode: 'detail', n, p, nuit: +x.nuit, nuits, menage, taxeU: +x.taxe || 0, taxe, tot: r2(nuits + menage + taxe) };
+}
 function hoteData(h, tks) {
   const c = hoteConf(), soc = societe(), ch = chGet(h.lieu, h.chambre), menu = vault.get('reglages', menuKey(h.lieu)), sig = vault.get('reglages', 'signal');
   return {
@@ -2634,7 +2678,7 @@ function hoteData(h, tks) {
     rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, done: !!(r.taxi && r.taxi.done), rated: r.taxi && r.taxi.rate ? r.taxi.rate.s : 0, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
     arrDone: !!(h.taxi && h.taxi.done), arrRated: h.taxi && h.taxi.rate ? h.taxi.rate.s : 0,
     arr: h.arr || null, taxiOk: h.taxi && h.taxi.st !== 'wait' && h.taxi.st !== 'no' ? { nom: h.taxi.nom, tel: h.taxi.tel, auto: h.taxi.auto, plaque: h.taxi.plaque } : null,
-    edlSent: h.edlOut ? Object.keys(h.edlOut.ph || {}) : [], ...tks, signalKey: sig ? sig.pub : '',
+    edlSent: h.edlOut ? Object.keys(h.edlOut.ph || {}) : [], sejour: hoteSejour(h), ...tks, signalKey: sig ? sig.pub : '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
     pubs: pubsActives(null, 'hote').sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut),
   };
@@ -6409,6 +6453,11 @@ const SHEETS = {
         ${field('Personnes', 'pers', h.pers, { type: 'number', attrs: 'min="1" max="20" inputmode="numeric"' })}
         ${field('Arrivée', 'arrivee', h.arrivee, { type: 'date', required: true })}${field('Départ', 'depart', h.depart, { type: 'date', required: true })}
         ${html`<label class="field full">Formule<select name="formule">${Object.entries(FORMULES).map(([k, l]) => html`<option value="${k}" ${(h.formule || 'seul') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>`}
+        ${bnb ? (() => { const x = h.prix || {}; return html`<div class="full section-label" style="margin:6px 0 0">💶 Prix du séjour — visible dans l’app du client</div>
+          <div class="full" style="display:flex;gap:14px;flex-wrap:wrap">${[['', 'Pas affiché'], ['total', 'a) Total'], ['detail', 'b) Nuits × prix + ménage + taxe']].map(([k, l]) => html`<label class="small"><input type="radio" name="prixMode" value="${k}" ${(x.mode || '') === k ? new Raw('checked') : ''}> ${l}</label>`)}</div>
+          ${field('a) Total du séjour (€)', 'prixTot', x.tot, { attrs: money$ })}${field('b) Prix par nuit (€)', 'prixNuit', x.nuit, { attrs: money$ })}
+          ${field('b) Ménage (€)', 'prixMenage', x.menage, { attrs: money$ })}${field('b) Taxe de séjour (€ / personne / nuit)', 'prixTaxe', x.taxe, { attrs: money$ })}
+          <p class="tiny muted full" style="margin:0">Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.</p>`; })() : ''}
         <label class="field full">Préférences / allergies<textarea name="pref" style="min-height:56px" placeholder="ex. sans gluten, oreiller ferme, étage bas…">${h.pref || ''}</textarea></label>
         ${html`<div class="full section-label" style="margin:6px 0 0">🍽️ Menu du restaurant (PDF, le même pour tous les clients)</div>
           ${menu && menu.file ? html`<div class="full actions" style="margin:0"><button type="button" class="btn sm" data-action="hotel-menu-view" data-lieu="${bnb ? 'airbnb' : 'hotel'}">👁 Voir le menu</button><span class="tiny muted">${menu.name || ''} · ${fmtDate(menu.at)}</span></div>` : ''}
@@ -6560,9 +6609,9 @@ const SHEETS = {
       title: '💶 Tarifs des annonces',
       narrow: true,
       body: html`<form id="f" data-form="ann-tarifs" class="fields">
-        ${field('🔝 Haut — prix par jour (€)', 'haut', t.haut, { attrs: money$ })}${field('⏺ Milieu — prix par jour (€)', 'milieu', t.milieu, { attrs: money$ })}${field('🔽 Bas — prix par jour (€)', 'bas', t.bas, { attrs: money$ })}
+        ${field('🔝 Haut — prix HT par jour (€)', 'haut', t.haut, { attrs: money$ })}${field('⏺ Milieu — prix HT par jour (€)', 'milieu', t.milieu, { attrs: money$ })}${field('🔽 Bas — prix HT par jour (€)', 'bas', t.bas, { attrs: money$ })}
         <label class="field full">Note pour les annonceurs (facultatif)<textarea name="note" style="min-height:60px" placeholder="ex. −20 % à partir de 30 jours">${t.note || ''}</textarea></label>
-        <p class="tiny muted full" style="margin:0">L’annonceur voit le prix (jours × tarif de l’emplacement) avant d’envoyer. 💳 Paiement en ligne : pas encore connecté — le bouton est affiché, désactivé, avec une info.</p>
+        <p class="tiny muted full" style="margin:0">L’annonceur voit le prix HT (jours × tarif de l’emplacement) avant d’envoyer. Après votre validation il paie par virement (QR, TVA de 🧾 Facturation) ; vous confirmez « Paiement reçu » : facture et mise en ligne. 💳 Paiement en ligne : pas encore connecté.</p>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -8380,9 +8429,17 @@ const ACTIONS = {
   async 'pub-ok'(d) {
     const a = vault.get('avis', d.id);
     if (!a) return;
-    await vault.mutate((tx) => tx.put('avis', { id: a.id, st: 'ok', motif: '' }), '📣 Annonce validée et publiée', `${a.nom} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}`);
-    toast('Annonce publiée');
+    const pay = a.annId && +a.prix > 0 && !(a.fact && a.fact.paid);
+    await vault.mutate((tx) => tx.put('avis', { id: a.id, st: pay ? 'pay' : 'ok', motif: '' }), pay ? '📣 Annonce validée : en attente du paiement' : '📣 Annonce validée et publiée', `${a.nom} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}`);
+    toast(pay ? 'Validée : en ligne dès le paiement reçu' : 'Annonce publiée');
     annSync(a.annId); renderView();
+  },
+  async 'pub-paid'(d) {
+    const a = vault.get('avis', d.id);
+    if (!a || a.st !== 'pay') return;
+    if (!(await confirmBox('Paiement reçu ?', { ok: '✅ Reçu', detail: `${a.nom} · ${eur(annDue(a).ttc)} — la facture est créée et l’annonce passe en ligne` }))) return;
+    try { toast('Facture ' + (await annFactEmit(a)) + ' · annonce en ligne'); } catch (e) { return toast(e.message, { bad: true }); }
+    annSync(a.annId, true); renderView();
   },
   async 'pub-no'(d) {
     const a = vault.get('avis', d.id);
@@ -9306,7 +9363,8 @@ const FORMS = {
     const rec = { lieu: g('lieu') === 'airbnb' ? 'airbnb' : 'hotel', adresse: g('adresse'), pays: g('pays'), formule: g('formule'), pref: g('pref'), appCode: g('appCode'), prenom: g('prenom'), nom: g('nom'), tel: g('tel'), mail: g('mail'), langue: g('langue') || 'fr', pers: Math.max(1, parseInt(g('pers'), 10) || 1),
       chambre: g('chambre'), etage: g('etage'), cle: g('cle'), arrivee: g('arrivee'), depart: g('depart'), notes: g('notes'),
       code: g('code'), codeOff: fd.get('codeOff') === '1' };
-    const tm = (k, d) => (/^\d\d:\d\d$/.test(g(k)) ? g(k) : d);
+    const tm = (k, d) => (/^\d\d:\d\d$/.test(g(k)) ? g(k) : d), mo = (k) => { const v = g(k).replace(',', '.'); return v ? Math.max(0, num(v)) : ''; };
+    if (rec.lieu === 'airbnb') rec.prix = { mode: ['total', 'detail'].includes(g('prixMode')) ? g('prixMode') : '', tot: mo('prixTot'), nuit: mo('prixNuit'), menage: mo('prixMenage'), taxe: mo('prixTaxe') };
     rec.hdeb = tm('hdeb', '15:00'); rec.hfin = tm('hfin', '11:00');
     if (rec.code && !/^[0-9A-Za-z#*]{3,16}$/.test(rec.code)) return toast('Code invalide (3 à 16 chiffres ou lettres)', { bad: true });
     const prevH = id ? vault.get('hotes', id) : null;

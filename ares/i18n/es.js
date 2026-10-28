@@ -16887,4 +16887,84 @@ export default [
 "Facture du taxi payée",
 "Factura del taxi pagada"
 ],
+[
+"💶 À encaisser ({0})",
+"💶 Por cobrar ({0})"
+],
+[
+"payé selon l’annonceur",
+"pagado según el anunciante"
+],
+[
+"en attente du paiement",
+"pendiente de pago"
+],
+[
+"💶 à payer",
+"💶 a pagar"
+],
+[
+"Paiement reçu ?",
+"¿Pago recibido?"
+],
+[
+"✅ Reçu",
+"✅ Recibido"
+],
+[
+"Validée : en ligne dès le paiement reçu",
+"Aprobado: en línea en cuanto se reciba el pago"
+],
+[
+"🔝 Haut — prix HT par jour (€)",
+"🔝 Arriba — precio sin IVA por día (€)"
+],
+[
+"⏺ Milieu — prix HT par jour (€)",
+"⏺ Centro — precio sin IVA por día (€)"
+],
+[
+"🔽 Bas — prix HT par jour (€)",
+"🔽 Abajo — precio sin IVA por día (€)"
+],
+[
+"L’annonceur voit le prix HT (jours × tarif de l’emplacement) avant d’envoyer. Après votre validation il paie par virement (QR, TVA de 🧾 Facturation) ; vous confirmez « Paiement reçu » : facture et mise en ligne. 💳 Paiement en ligne : pas encore connecté.",
+"El anunciante ve el precio sin IVA (días × tarifa del espacio) antes de enviar. Tras su aprobación paga por transferencia (QR, IVA de 🧾 Facturación); usted confirma « Pago recibido »: factura y publicación. 💳 Pago en línea: aún no conectado."
+],
+[
+"💶 Prix du séjour — visible dans l’app du client",
+"💶 Precio de la estancia — visible en la app del cliente"
+],
+[
+"Pas affiché",
+"No se muestra"
+],
+[
+"a) Total",
+"a) Total"
+],
+[
+"b) Nuits × prix + ménage + taxe",
+"b) Noches × precio + limpieza + tasa"
+],
+[
+"a) Total du séjour (€)",
+"a) Total de la estancia (€)"
+],
+[
+"b) Prix par nuit (€)",
+"b) Precio por noche (€)"
+],
+[
+"b) Ménage (€)",
+"b) Limpieza (€)"
+],
+[
+"b) Taxe de séjour (€ / personne / nuit)",
+"b) Tasa turística (€ / persona / noche)"
+],
+[
+"Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.",
+"El cliente ve el detalle y el total. 💳 « Pagar la estancia »: aún no conectado (botón visible, desactivado). En el hotel el cliente paga en recepción."
+],
 ];

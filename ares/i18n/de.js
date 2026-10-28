@@ -16893,4 +16893,84 @@ export default [
 "Facture du taxi payée",
 "Taxi-Rechnung bezahlt"
 ],
+[
+"💶 À encaisser ({0})",
+"💶 Zu kassieren ({0})"
+],
+[
+"payé selon l’annonceur",
+"laut Werbekunde bezahlt"
+],
+[
+"en attente du paiement",
+"Zahlung ausstehend"
+],
+[
+"💶 à payer",
+"💶 zu bezahlen"
+],
+[
+"Paiement reçu ?",
+"Zahlung erhalten?"
+],
+[
+"✅ Reçu",
+"✅ Erhalten"
+],
+[
+"Validée : en ligne dès le paiement reçu",
+"Genehmigt: online, sobald die Zahlung eingegangen ist"
+],
+[
+"🔝 Haut — prix HT par jour (€)",
+"🔝 Oben — Nettopreis pro Tag (€)"
+],
+[
+"⏺ Milieu — prix HT par jour (€)",
+"⏺ Mitte — Nettopreis pro Tag (€)"
+],
+[
+"🔽 Bas — prix HT par jour (€)",
+"🔽 Unten — Nettopreis pro Tag (€)"
+],
+[
+"L’annonceur voit le prix HT (jours × tarif de l’emplacement) avant d’envoyer. Après votre validation il paie par virement (QR, TVA de 🧾 Facturation) ; vous confirmez « Paiement reçu » : facture et mise en ligne. 💳 Paiement en ligne : pas encore connecté.",
+"Der Werbekunde sieht den Nettopreis (Tage × Tarif des Platzes) vor dem Senden. Nach Ihrer Genehmigung zahlt er per Überweisung (QR, MwSt. aus 🧾 Rechnungsstellung); Sie bestätigen « Zahlung erhalten »: Rechnung und Veröffentlichung. 💳 Online-Zahlung: noch nicht verbunden."
+],
+[
+"💶 Prix du séjour — visible dans l’app du client",
+"💶 Preis des Aufenthalts — in der App des Gastes sichtbar"
+],
+[
+"Pas affiché",
+"Nicht angezeigt"
+],
+[
+"a) Total",
+"a) Gesamt"
+],
+[
+"b) Nuits × prix + ménage + taxe",
+"b) Nächte × Preis + Reinigung + Kurtaxe"
+],
+[
+"a) Total du séjour (€)",
+"a) Gesamtpreis des Aufenthalts (€)"
+],
+[
+"b) Prix par nuit (€)",
+"b) Preis pro Nacht (€)"
+],
+[
+"b) Ménage (€)",
+"b) Reinigung (€)"
+],
+[
+"b) Taxe de séjour (€ / personne / nuit)",
+"b) Kurtaxe (€ / Person / Nacht)"
+],
+[
+"Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.",
+"Der Gast sieht Details und Gesamtbetrag. 💳 « Aufenthalt bezahlen »: noch nicht verbunden (Knopf sichtbar, deaktiviert). Im Hotel zahlt der Gast an der Rezeption."
+],
 ];
