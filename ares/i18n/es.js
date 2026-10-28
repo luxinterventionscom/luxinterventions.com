@@ -16379,4 +16379,116 @@ export default [
 "{0} client{1}",
 "{0} cliente(s)"
 ],
+[
+"Messages entre",
+"Mensajes entre"
+],
+[
+"et la centrale, chiffrés. Lui seul et la centrale les lisent.",
+"y la central, cifrados. Solo él y la central los leen."
+],
+[
+"Son app n’est pas active : activez-la dans l’onglet",
+"Su app no está activa: actívela en la pestaña"
+],
+[
+"pour qu’il reçoive vos messages.",
+"para que reciba sus mensajes."
+],
+[
+"Message spécial",
+"Mensaje especial"
+],
+[
+"Centrale",
+"Central"
+],
+[
+"Aucun message pour l’instant.",
+"Ningún mensaje por ahora."
+],
+[
+"Écrire à {0}…",
+"Escribir a {0}…"
+],
+[
+"touchez pour lire et répondre",
+"toque para leer y responder"
+],
+[
+"Message spécial à l’équipe",
+"Mensaje especial al equipo"
+],
+[
+"Groupe de l’équipe (messages spéciaux)",
+"Grupo del equipo (mensajes especiales)"
+],
+[
+"{0} ouvrier{1} dans le groupe",
+"{0} operario(s) en el grupo"
+],
+[
+"les autres messages restent entre chaque ouvrier et la centrale",
+"los demás mensajes quedan entre cada operario y la central"
+],
+[
+"Groupe de l’équipe",
+"Grupo del equipo"
+],
+[
+"Cochez les ouvriers qui reçoivent les",
+"Marque los operarios que reciben los"
+],
+[
+"messages spéciaux",
+"mensajes especiales"
+],
+[
+"Les autres messages restent toujours entre chaque ouvrier et la centrale.",
+"Los demás mensajes quedan siempre entre cada operario y la central."
+],
+[
+"Aucun ouvrier avec l’app active.",
+"Ningún operario con la app activa."
+],
+[
+"ex. Réunion demain à 8 h au bureau",
+"p. ej. Reunión mañana a las 8 en la oficina"
+],
+[
+"Pour qui ? (le groupe est coché ; modifiez-le dans Réglages → 💬 Groupe de l’équipe)",
+"¿Para quién? (el grupo está marcado; cámbielo en Ajustes → 💬 Grupo del equipo)"
+],
+[
+"Message envoyé",
+"Mensaje enviado"
+],
+[
+"Groupe enregistré",
+"Grupo guardado"
+],
+[
+"Choisissez au moins un ouvrier",
+"Elija al menos un operario"
+],
+[
+"Message envoyé à {0} ouvrier{1}",
+"Mensaje enviado a {0} operario(s)"
+],
+[
+"Envoi impossible (connexion ?)",
+"Envío imposible (¿conexión?)"
+],
+[
+"Messages lus",
+"Mensajes leídos"
+],
+[
+"Message à un ouvrier",
+"Mensaje a un operario"
+],
+[
+"{0} ouvrier{1}",
+"{0} operario(s)"
+],
 ];

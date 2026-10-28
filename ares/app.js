@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.200.0';
+const VERSION = '2.201.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -499,6 +499,28 @@ const taxiCount = () => document.querySelectorAll('[data-taxi-until]').forEach((
 const EQ_PH = { av: 'Avant', ap: 'Après' }, EQ_PH_MAX = 6;
 const eqPhotos = (tid, phase) => vault.list('documents').filter((x) => x.tacheId === tid && x.phase === phase).sort((a, b) => (a.u || 0) - (b.u || 0));
 const eqState = (t, d) => { const j = (t.journal || []).filter((x) => x.d === d); return j.length ? j[j.length - 1] : null; };
+// 💬 Chat ouvrier ↔ centrale : ses messages arrivent comme ses autres nouvelles (chiffrés pour la centrale), les réponses
+// partent dans les données de son app (notification « du nouveau »). 📣 Message spécial : aux ouvriers du groupe choisi dans Réglages.
+const EQ_CHAT_MAX = 300;
+const eqChatOut = (i) => (i.chat || []).slice(-60).map((m) => ({ id: m.id, at: m.at, from: m.from, x: m.x, ...(m.g ? { g: 1 } : {}) }));
+const eqGroup = () => ((vault.get('reglages', 'eqGroup') || {}).ids || []).filter((wid) => { const w = vault.get('intervenants', wid); return w && w.espace && w.espace.on; });
+async function eqChatSend(ids, x, g) {
+  const at = new Date().toISOString(), mid = 'c' + Date.now().toString(36);
+  await vault.mutate((tx) => {
+    for (const wid of ids) {
+      const cur = vault.get('intervenants', wid);
+      if (cur) tx.put('intervenants', { id: wid, chat: [...(cur.chat || []), { id: mid + wid.slice(-4), at, from: 'mgr', x, ...(g ? { g: 1 } : {}) }].slice(-EQ_CHAT_MAX), chatNew: 0 });
+    }
+  }, g ? '📣 Message spécial à l’équipe' : '💬 Message à un ouvrier', g ? plural(ids.length, 'ouvrier') : intervFull(vault.get('intervenants', ids[0])), ids.length === 1 ? ids[0] : '');
+  for (const wid of ids) await equipeSync(wid, true);
+}
+const eqChatHtml = (i) => {
+  const msgs = (i.chat || []).slice(-80);
+  return html`<p class="tiny muted" style="margin:0 0 8px">Messages entre <b>${intervFull(i)}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</p>
+    ${!(i.espace && i.espace.on) ? html`<div class="alert warn" style="margin-bottom:10px">📱<div>Son app n’est pas active : activez-la dans l’onglet <b>📱 App</b> pour qu’il reçoive vos messages.</div></div>` : ''}
+    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? (m.g ? '📣 Message spécial' : '🛡️ Centrale') : '👷 ' + (i.prenom || intervFull(i))} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}</div>${m.x}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
+    <form data-form="eq-chat" class="eq-chat-f"><input type="hidden" name="id" value="${i.id}"><textarea name="x" required maxlength="1500" placeholder="Écrire à ${i.prenom || intervFull(i)}…"></textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
+};
 function equipeData(i) {
   const soc = societe();
   // jusqu'à la fin du mois suivant au plus tard : l'app de l'équipe montre le planning du mois, semaine par semaine
@@ -544,7 +566,7 @@ function equipeData(i) {
     pres: Object.fromEntries(Object.entries(i.pres || {}).filter(([d]) => d >= addDays(today(), -7))),
     pubs: pubsActives([...imIds], 'eq').map(pubOut),
     rank: (() => { const y = new Date().getFullYear(), r = eqScores(y), n = r.findIndex(([wid]) => wid === i.id), v = n >= 0 ? r[n][1] : null; return v ? { y, pos: n + 1, of: r.length, pts: v.pts, fait: v.fait, ph: v.ph, urg: v.urg, good: v.good } : null; })(),
-    tasks, items: items.sort((a, b) => a.d.localeCompare(b.d)), signalKey: k ? k.pub : '',
+    tasks, items: items.sort((a, b) => a.d.localeCompare(b.d)), signalKey: k ? k.pub : '', chat: eqChatOut(i),
     ...(i.chefDevis ? { devis: devChefData(i) } : {}),
   };
 }
@@ -627,7 +649,7 @@ async function equipeSync(onlyId, loud) {
       await vault.espacePut(i.espace.id, await sealJson(i.espace.key, data));
       eqHashes.set(i.id, h);
       if (filesChanged) await vault.mutate((tx) => { const cur = vault.get('intervenants', i.id); if (cur && cur.espace) tx.put('intervenants', { id: i.id, espace: { ...cur.espace, files: [...up] } }); }, 'App de l’équipe : photos', intervFull(i), i.id);
-      await notifyNews(i.espace.id, [...data.items.filter((x) => x.d >= today()).map((x) => 'i:' + x.tid + ':' + x.d), ...(i.assurTodo ? ['assur'] : [])]); // 🛡️ assurance « à faire » → notification sur son téléphone
+      await notifyNews(i.espace.id, [...data.items.filter((x) => x.d >= today()).map((x) => 'i:' + x.tid + ':' + x.d), ...(i.assurTodo ? ['assur'] : []), ...data.chat.filter((m) => m.from === 'mgr').map((m) => 'm:' + m.id)]); // 💬 réponse de la centrale ; 🛡️ assurance « à faire » → notification sur son téléphone
       try { localStorage.setItem('aresEq:' + i.espace.id, h); } catch {}
     } catch (e) {
       if (loud) { toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
@@ -775,7 +797,17 @@ async function equipeInbox(w, msg) {
         fresh++;
       }
     }
-    tx.put('intervenants', { id: w.id, feed: feed.slice(-200), feedNew: (cur.feedNew || 0) + fresh });
+    // 💬 messages de l'ouvrier à la centrale
+    const now2 = vault.get('intervenants', w.id) || cur, chat = [...(now2.chat || [])];
+    let nMsg = 0;
+    for (const it of (Array.isArray(msg.items) ? msg.items : []).slice(0, 30)) {
+      if (it.k !== 'msg') continue;
+      const x = String(it.x || '').replace(/\s+$/, '').slice(0, 1500).trim(), mid = String(it.id || '').replace(/[^a-z0-9]/gi, '').slice(0, 24);
+      if (!x || (mid && chat.some((m) => m.id === mid))) continue;
+      chat.push({ id: mid || 'e' + Date.now().toString(36) + nMsg, at: String(it.at || at0).slice(0, 30), from: 'eq', x });
+      nMsg++;
+    }
+    tx.put('intervenants', { id: w.id, feed: feed.slice(-200), feedNew: (cur.feedNew || 0) + fresh, ...(nMsg ? { chat: chat.slice(-EQ_CHAT_MAX), chatNew: (now2.chatNew || 0) + nMsg } : {}) });
   }, 'Nouvelles de l’équipe', intervFull(w), w.id);
   for (const [id, b] of files) await vault.saveFile(id, unb64u(b));
   for (const it of (Array.isArray(msg.items) ? msg.items : [])) if (it.k === 'task' && it.st === 'fait' && !(vault.get('taches', String(it.tid || '')) || {}).ptl) await syncDepense({ id: String(it.tid || '') }, true);
@@ -4365,7 +4397,7 @@ const VIEWS = {
     } else {
       const ints = vault.list('intervenants').sort((a, b) => (a.cat === 'specialise') - (b.cat === 'specialise') || Object.keys(METIERS).indexOf(a.metier) - Object.keys(METIERS).indexOf(b.metier) || intervFull(a).localeCompare(intervFull(b)));
       const nNew = sum(ints, (i) => i.feedNew || 0);
-      body = ints.length ? html`${eqTodayHtml()}<button class="btn block" style="margin-bottom:12px" data-action="eq-feed">📋 Activité de l’équipe${nNew ? html` <span class="badge bad">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}</button><div class="list">${ints.map((i) => {
+      body = ints.length ? html`${eqTodayHtml()}<button class="btn block" style="margin-bottom:8px" data-action="eq-feed">📋 Activité de l’équipe${nNew ? html` <span class="badge bad">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}</button><button class="btn block" style="margin-bottom:12px" data-action="eq-special">📣 Message spécial à l’équipe</button><div class="list">${ints.map((i) => {
         const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length;
         const tel = (i.tel || '').replace(/[^\d+]/g, '');
         const ab = absOn(i, today());
@@ -4425,6 +4457,8 @@ dashboard() {
     const edlBox = edlNew.length ? html`<div class="stack" style="margin-bottom:14px">${edlNew.map((id) => { const ph = edlOutNew().filter((d) => d.logId === id), w = vault.get('locataires', ph[0].locId); return alertBtn('info', 'camera', 'open-edl-out', id, html`📷 <b>${plural(ph.length, 'photo')} de sortie</b> à contrôler — ${logName(id)}${w ? ' · ' + fullName(w) : ''}<div class="tiny">touchez pour comparer avec vos photos d’entrée</div>`); })}</div>` : '';
     const virBox = virs.length ? html`<div class="stack" style="margin-bottom:14px">${virs.map((l) => alertBtn('info', 'wallet', 'open-vir', l.id, html`💳 <b>${fullName(l)}</b> dit avoir payé${l.virSignal.montant ? html` <b>${money(l.virSignal.montant)}</b>` : ''} par ${PAY_VIA[l.virSignal.via || 'vir']} — ${l.virSignal.ref}<div class="tiny">${fmtDateTime(l.virSignal.t)} · vérifiez la réception, puis cochez le mois payé</div>`))}</div>` : '';
     const eqNew = sum(vault.list('intervenants'), (i) => i.feedNew || 0);
+    const eqChats = vault.list('intervenants').filter((i) => i.chatNew);
+    const eqChatBox = eqChats.length ? html`<div class="stack" style="margin-bottom:14px">${eqChats.map((i) => alertBtn('info', 'msg', 'open-eq-chat', i.id, html`💬 <b>${i.chatNew} nouveau${i.chatNew > 1 ? 'x' : ''} message${i.chatNew > 1 ? 's' : ''}</b> — ${intervFull(i)}<div class="tiny">touchez pour lire et répondre</div>`))}</div>` : '';
     const eqBox = eqNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'eq-feed', '', html`👷 <b>${eqNew} nouvelle${eqNew > 1 ? 's' : ''} de l’équipe</b> (commencé, fini, pas fini, notes, photos…)<div class="tiny">touchez pour voir qui fait quoi, où et quand</div>`)}</div>` : '';
     const assurTodo = vault.list('intervenants').filter((i) => i.genre === 'prive' && i.assurTodo && !i.archive);
     const assurBox = assurTodo.length ? html`<div class="stack" style="margin-bottom:14px">${assurTodo.map((i) => alertBtn('warn', 'alert', 'open-interv', i.id, html`🛡️ <b>Assurance RC à faire</b> : ${intervFull(i)} (occasionnel) n’a pas encore donné son assurance<div class="tiny">rappel affiché dans son app · touchez pour ouvrir sa fiche</div>`))}</div>` : '';
@@ -4450,7 +4484,7 @@ dashboard() {
       ${chatBox}
       ${virBox}
       ${edlBox}
-      ${eqBox}
+      ${eqChatBox}${eqBox}
       ${absBox}
       ${toolsBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
@@ -5011,6 +5045,7 @@ dashboard() {
       <div class="section-label">Gestion</div>
       <div class="list settings">
         <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
+        <button class="row" data-action="eq-group"><span class="avatar">💬</span><span class="grow"><span class="title" style="display:block">Groupe de l’équipe (messages spéciaux)</span><span class="meta">${plural(eqGroup().length, 'ouvrier')} dans le groupe · les autres messages restent entre chaque ouvrier et la centrale</span></span>${icon('chevron')}</button>
         <button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>
         <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
       </div>
@@ -5834,6 +5869,9 @@ const SHEETS = {
         <div class="section-label">Heures par mois (horaire − absences)</div>
         <div class="list small">${months.map(([yy, mm]) => { const r = intervMonth(i, yy, mm); return html`<div class="row"><span class="grow"><b>${MONTHS_FULL[mm - 1]} ${yy}</b><span class="meta" style="display:block">prévu ${fmtH(r.prevu)}${r.jm ? ` · 🤒 ${r.jm} j (−${fmtH(r.maladie)})` : ''}${r.jc ? ` · 🏖️ ${r.jc} j (−${fmtH(r.conges)})` : ''}${r.ja ? ` · 📌 ${r.ja} j (−${fmtH(r.autre)})` : ''}</span></span><b>${fmtH(r.net)}</b></div>`; })}</div>
         <p class="tiny muted">Calcul sur l’horaire habituel : pour les heures en plus ou en moins, ajoutez une note.</p>`;
+    } else if (tab === 'chat') {
+      if (i.chatNew) setTimeout(() => vault.mutate((tx) => tx.put('intervenants', { id: i.id, chatNew: 0 }), 'Messages lus', intervFull(i), i.id), 0);
+      body = eqChatHtml(i);
     } else if (tab === 'act') {
       if (i.feedNew) setTimeout(() => vault.mutate((tx) => tx.put('intervenants', { id: i.id, feedNew: 0 }), 'Activité lue', intervFull(i), i.id), 0);
       body = eqFeedHtml(id, 120);
@@ -5881,7 +5919,7 @@ const SHEETS = {
     }
     return {
       title: intervFull(i),
-      body: html`<p class="small muted" style="margin:0 0 10px">${METIERS[i.metier] || ''} · ${INT_GENRES[i.genre || 'interne']}${i.espace && i.espace.on ? ' · 📱 app active' : ''}</p>${tabsBar([['fiche', 'Fiche'], ['heures', 'Horaires'], ['abs', `Absences${cur ? ' 🔴' : ''}`], ['act', `Activité${i.feedNew ? ' (' + i.feedNew + ')' : ''}`], ['app', '📱 App']], tab)}${body}`,
+      body: html`<p class="small muted" style="margin:0 0 10px">${METIERS[i.metier] || ''} · ${INT_GENRES[i.genre || 'interne']}${i.espace && i.espace.on ? ' · 📱 app active' : ''}</p>${tabsBar([['fiche', 'Fiche'], ['heures', 'Horaires'], ['abs', `Absences${cur ? ' 🔴' : ''}`], ['act', `Activité${i.feedNew ? ' (' + i.feedNew + ')' : ''}`], ['chat', `💬 Chat${i.chatNew ? ' (' + i.chatNew + ')' : ''}`], ['app', '📱 App']], tab)}${body}`,
       foot: html`${tel ? html`<a class="btn" href="tel:${tel}">${icon('phone')} Appeler</a>` : ''}<button class="btn primary" data-action="edit-interv" data-id="${id}">Modifier</button>`,
     };
   },
@@ -6311,6 +6349,27 @@ const SHEETS = {
         <p class="tiny muted full" style="margin:0">Une ligne vide en plus apparaît après l’enregistrement. Le chauffeur n’installe rien : il reçoit un lien par WhatsApp / SMS.</p>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'eq-group'() {
+    const ws = vault.list('intervenants').filter((w) => w.espace && w.espace.on).sort((a, b) => intervFull(a).localeCompare(intervFull(b))), cur = new Set(eqGroup());
+    return {
+      title: '💬 Groupe de l’équipe',
+      narrow: true,
+      body: html`<form id="f" data-form="eq-group"><p class="small" style="margin:0 0 10px">Cochez les ouvriers qui reçoivent les <b>📣 messages spéciaux</b>. Les autres messages restent toujours entre chaque ouvrier et la centrale.</p>
+        ${ws.length ? html`<div class="list">${ws.map((w) => html`<label class="row"><input type="checkbox" name="w" value="${w.id}" ${cur.has(w.id) ? new Raw('checked') : ''}><span class="grow">${intervFull(w)}<span class="meta" style="display:block">${METIERS[w.metier] || ''}</span></span></label>`)}</div>` : html`<p class="small muted">Aucun ouvrier avec l’app active.</p>`}</form>`,
+      foot: html`<button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'eq-special'() {
+    const ws = vault.list('intervenants').filter((w) => w.espace && w.espace.on).sort((a, b) => intervFull(a).localeCompare(intervFull(b))), grp = new Set(eqGroup());
+    return {
+      title: '📣 Message spécial',
+      narrow: true,
+      body: html`<form id="f" data-form="eq-special" class="fields"><label class="field full">Message<textarea name="x" required maxlength="1500" placeholder="ex. Réunion demain à 8 h au bureau"></textarea></label>
+        <div class="full section-label" style="margin:0">Pour qui ? (le groupe est coché ; modifiez-le dans Réglages → 💬 Groupe de l’équipe)</div>
+        ${ws.length ? html`<div class="list full">${ws.map((w) => html`<label class="row"><input type="checkbox" name="w" value="${w.id}" ${grp.has(w.id) ? new Raw('checked') : ''}><span class="grow">${intervFull(w)}</span></label>`)}</div>` : html`<p class="small muted full">Aucun ouvrier avec l’app active.</p>`}</form>`,
+      foot: html`<button class="btn primary" type="submit" form="f">Envoyer</button>`,
     };
   },
   'hote-taxi'({ id, preset }) {
@@ -7580,6 +7639,9 @@ const ACTIONS = {
     toast('Semaine remise à l’horaire habituel');
   },
   'open-interv': (d) => openSheet('interv', d.id),
+  'open-eq-chat': (d) => openSheet('interv', d.id, 'chat'),
+  'eq-group': () => openOver('eq-group'),
+  'eq-special': () => openOver('eq-special'),
   'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
   'cp-tab': (d) => { ui.cpTab = d.id; ui.cpLim = 10; renderView(); },
   'cp-sec': (d) => { ui.cpSec = d.id; go('compta', true); },
@@ -9227,6 +9289,25 @@ const FORMS = {
       setBusy(form, false);
       toast(e.message || 'Envoi impossible', { bad: true });
     }
+  },
+  async 'eq-chat'(fd, form) {
+    const i = vault.get('intervenants', fd.get('id')), x = String(fd.get('x') || '').trim().slice(0, 1500);
+    if (!i || !x) return;
+    setBusy(form, true, 'Envoi…');
+    try { await eqChatSend([i.id], x, false); toast('Message envoyé'); renderSheet(); } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
+  },
+  async 'eq-group'(fd) {
+    const ids = fd.getAll('w').map(String).filter((wid) => vault.get('intervenants', wid));
+    await vault.mutate((tx) => tx.put('reglages', { id: 'eqGroup', ids }), 'Groupe de l’équipe', plural(ids.length, 'ouvrier'));
+    toast('Groupe enregistré');
+    goBack();
+  },
+  async 'eq-special'(fd, form) {
+    const ids = fd.getAll('w').map(String).filter((wid) => vault.get('intervenants', wid)), x = String(fd.get('x') || '').trim().slice(0, 1500);
+    if (!x) return;
+    if (!ids.length) return toast('Choisissez au moins un ouvrier', { bad: true });
+    setBusy(form, true, 'Envoi…');
+    try { await eqChatSend(ids, x, true); toast(`Message envoyé à ${plural(ids.length, 'ouvrier')}`); goBack(); } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
   async absence(fd, form) {
     const id = fd.get('id');

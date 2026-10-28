@@ -124,6 +124,40 @@ const L = {
 // Fiche d'engagement (intervenant occasionnel) : il la lit et la signe ici, avec le doigt
 // « Je ne peux pas » : l'ouvrier refuse un travail pas encore commencé → le responsable en envoie un autre
 // ▶ petit dessin animé « mettre l'icône sur l'écran » (chargé seulement au toucher)
+// 💬 Messages avec la centrale (seule la centrale les lit) ; 📣 message spécial = envoyé par la centrale à un groupe
+const CH = {
+  fr: { t: '💬 Messages avec la centrale', ph: 'Écrire à la centrale…', send: 'Envoyer', me: 'Moi', ctr: 'Centrale', sp: '📣 Message spécial', wait: '⏳ envoi…', none: 'Aucun message. Écrivez ici à la centrale.', hint: 'Seule la centrale lit vos messages.', nw: 'nouveau' },
+  it: { t: '💬 Messaggi con la centrale', ph: 'Scrivi alla centrale…', send: 'Invia', me: 'Io', ctr: 'Centrale', sp: '📣 Messaggio speciale', wait: '⏳ invio…', none: 'Nessun messaggio. Scrivi qui alla centrale.', hint: 'Solo la centrale legge i tuoi messaggi.', nw: 'nuovo' },
+  de: { t: '💬 Nachrichten mit der Zentrale', ph: 'An die Zentrale schreiben…', send: 'Senden', me: 'Ich', ctr: 'Zentrale', sp: '📣 Sondernachricht', wait: '⏳ wird gesendet…', none: 'Keine Nachrichten. Schreiben Sie hier an die Zentrale.', hint: 'Nur die Zentrale liest Ihre Nachrichten.', nw: 'neu' },
+  pt: { t: '💬 Mensagens com a central', ph: 'Escrever à central…', send: 'Enviar', me: 'Eu', ctr: 'Central', sp: '📣 Mensagem especial', wait: '⏳ a enviar…', none: 'Sem mensagens. Escreva aqui à central.', hint: 'Só a central lê as suas mensagens.', nw: 'nova' },
+  en: { t: '💬 Messages with the office', ph: 'Write to the office…', send: 'Send', me: 'Me', ctr: 'Office', sp: '📣 Special message', wait: '⏳ sending…', none: 'No messages yet. Write to the office here.', hint: 'Only the office reads your messages.', nw: 'new' },
+  es: { t: '💬 Mensajes con la central', ph: 'Escribir a la central…', send: 'Enviar', me: 'Yo', ctr: 'Central', sp: '📣 Mensaje especial', wait: '⏳ enviando…', none: 'Ningún mensaje. Escriba aquí a la central.', hint: 'Solo la central lee sus mensajes.', nw: 'nuevo' },
+};
+const CHK = () => 'eqChat:' + id, CSK = () => 'eqChatSeen:' + id;
+let chatDraft = '';
+function chatCard() {
+  const c = CH[lang] || CH.fr, list = data.chat || [], known = new Set(list.map((m) => m.id));
+  const pend = getJ(CHK()).filter((m) => !known.has(m.id));
+  if (pend.length !== getJ(CHK()).length) setJ(CHK(), pend);
+  const all = [...list, ...pend.map((m) => ({ ...m, from: 'eq', wait: 1 }))].slice(-40);
+  let seen = '';
+  try { seen = localStorage.getItem(CSK()) || ''; } catch { /* stockage indisponible */ }
+  const nw = list.filter((m) => m.from === 'mgr' && m.at > seen).length;
+  const tm = (m) => `${esc(fmt(m.at))} ${esc(String(m.at).slice(11, 16))}`;
+  return `<div class="card" id="chatCard"><h2>${esc(c.t)}${nw ? ` <span class="tag bad">${nw} ${esc(c.nw)}</span>` : ''}</h2><p class="meta" style="margin:0 0 8px">🔒 ${esc(c.hint)}</p>
+    <div class="chat">${all.length ? all.map((m) => `<div class="bub ${m.from === 'eq' ? 'me' : 'mgr'}"><div class="bub-h"><b>${esc(m.from === 'eq' ? c.me : m.g ? c.sp : c.ctr)}</b> · ${m.wait ? esc(c.wait) : tm(m)}</div><div class="bub-x">${esc(m.x)}</div></div>`).join('') : `<p class="meta" style="margin:0">${esc(c.none)}</p>`}</div>
+    <form id="chatForm" class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(c.ph)}">${esc(chatDraft)}</textarea><button class="btn" type="submit">${esc(c.send)}</button></form></div>`;
+}
+// la centrale a répondu : vu dès que la carte est à l'écran
+function chatSeen() {
+  const el = document.getElementById('chatCard');
+  if (!el || !data || !(data.chat || []).length) return;
+  const last = data.chat[data.chat.length - 1].at;
+  const mark = () => { try { if ((localStorage.getItem(CSK()) || '') < last) localStorage.setItem(CSK(), last); } catch { /* stockage indisponible */ } };
+  if (!('IntersectionObserver' in window)) return mark();
+  const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { io.disconnect(); setTimeout(mark, 1500); } });
+  io.observe(el);
+}
 const FT = {
   fr: { info: 'Info supplémentaires', anim: 'Mettre l’icône sur l’écran', lock: 'Vos données sont chiffrées et visibles uniquement par la direction.', out: 'Se déconnecter', sure: 'Voulez-vous vraiment vous déconnecter de l’app ?', call: 'Appeler la centrale', yes: 'Oui, me déconnecter', no: 'Annuler' },
   it: { info: 'Info supplementari', anim: 'Mettere l’icona sullo schermo', lock: 'I tuoi dati sono cifrati e visibili solo alla direzione.', out: 'Esci', sure: 'Vuoi davvero uscire dall’app?', call: 'Chiama la centrale', yes: 'Sì, esci', no: 'Annulla' },
@@ -721,6 +755,7 @@ function render() {
       <button class="btn block" style="margin-top:10px" type="submit"${pbPhotos.length < 3 ? ' disabled' : ''}>${esc(pp.sendPb)}</button></form></details></div>`);
   // « Mon horaire » se range dans la carte « Planning du jour », juste en dessous
   out[todayAt] = out[todayAt].replace(/<\/div>$/, presH + '</div>');
+  out.splice(todayAt + 1, 0, chatCard());
   const absList = (d.absences || []).filter((a) => !a.fin || a.fin >= today);
   // classement de l'année : sa place et ses points (les autres ne sont pas montrés)
   if (d.rank && d.rank.pts > 0) {
@@ -751,6 +786,8 @@ function render() {
   app.innerHTML = out.join('');
   sigRestore();
   hydratePb();
+  chatSeen();
+  { const cb = document.querySelector('#chatCard .chat'); if (cb) cb.scrollTop = cb.scrollHeight; }
   document.querySelectorAll('.vid[data-vsrc], .ticker[data-vsrc]').forEach((v) => {
     const src = v.dataset.vsrc, old = keepVid.get(src);
     if (old) return v.append(old);
@@ -834,6 +871,16 @@ app.addEventListener('submit', async (e) => {
       loadErr = '';
       await load();
     } catch (err) { loadErr = err.message || String(err); render(); }
+    return;
+  }
+  if (f.id === 'chatForm') {
+    const x = String(f.x.value || '').trim().slice(0, 1500);
+    if (!x) return;
+    const m = { id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: new Date().toISOString(), x };
+    setJ(CHK(), [...getJ(CHK()), m].slice(-30));
+    chatDraft = '';
+    await queue({ k: 'msg', id: m.id, x, at: m.at });
+    render();
     return;
   }
   if (f.dataset.stop) {
@@ -936,7 +983,7 @@ app.addEventListener('submit', async (e) => {
   scrollTo(0, 0);
 });
 
-app.addEventListener('input', (e) => { if (e.target.form && e.target.form.id === 'pbForm' && e.target.name === 'note') pbNote = e.target.value; });
+app.addEventListener('input', (e) => { if (e.target.form && e.target.form.id === 'pbForm' && e.target.name === 'note') pbNote = e.target.value; if (e.target.form && e.target.form.id === 'chatForm') chatDraft = e.target.value; });
 app.addEventListener('change', async (e) => {
   if (e.target.dataset && e.target.dataset.photoPick && e.target.files[0]) {
     const f = e.target.files[0]; e.target.value = '';

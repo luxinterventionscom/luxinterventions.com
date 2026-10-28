@@ -16398,4 +16398,116 @@ export default [
 "{0} client{1}",
 "{0} cliente/i"
 ],
+[
+"Messages entre",
+"Messaggi tra"
+],
+[
+"et la centrale, chiffrés. Lui seul et la centrale les lisent.",
+"e la centrale, cifrati. Solo lui e la centrale li leggono."
+],
+[
+"Son app n’est pas active : activez-la dans l’onglet",
+"La sua app non è attiva: attivatela nella scheda"
+],
+[
+"pour qu’il reçoive vos messages.",
+"perché riceva i vostri messaggi."
+],
+[
+"Message spécial",
+"Messaggio speciale"
+],
+[
+"Centrale",
+"Centrale"
+],
+[
+"Aucun message pour l’instant.",
+"Nessun messaggio per ora."
+],
+[
+"Écrire à {0}…",
+"Scrivi a {0}…"
+],
+[
+"touchez pour lire et répondre",
+"tocca per leggere e rispondere"
+],
+[
+"Message spécial à l’équipe",
+"Messaggio speciale alla squadra"
+],
+[
+"Groupe de l’équipe (messages spéciaux)",
+"Gruppo della squadra (messaggi speciali)"
+],
+[
+"{0} ouvrier{1} dans le groupe",
+"{0} operaio/i nel gruppo"
+],
+[
+"les autres messages restent entre chaque ouvrier et la centrale",
+"gli altri messaggi restano tra ogni operaio e la centrale"
+],
+[
+"Groupe de l’équipe",
+"Gruppo della squadra"
+],
+[
+"Cochez les ouvriers qui reçoivent les",
+"Spuntate gli operai che ricevono i"
+],
+[
+"messages spéciaux",
+"messaggi speciali"
+],
+[
+"Les autres messages restent toujours entre chaque ouvrier et la centrale.",
+"Gli altri messaggi restano sempre tra ogni operaio e la centrale."
+],
+[
+"Aucun ouvrier avec l’app active.",
+"Nessun operaio con l’app attiva."
+],
+[
+"ex. Réunion demain à 8 h au bureau",
+"es. Riunione domani alle 8 in ufficio"
+],
+[
+"Pour qui ? (le groupe est coché ; modifiez-le dans Réglages → 💬 Groupe de l’équipe)",
+"Per chi? (il gruppo è spuntato; modificatelo in Impostazioni → 💬 Gruppo della squadra)"
+],
+[
+"Message envoyé",
+"Messaggio inviato"
+],
+[
+"Groupe enregistré",
+"Gruppo salvato"
+],
+[
+"Choisissez au moins un ouvrier",
+"Scegliete almeno un operaio"
+],
+[
+"Message envoyé à {0} ouvrier{1}",
+"Messaggio inviato a {0} operaio/i"
+],
+[
+"Envoi impossible (connexion ?)",
+"Invio impossibile (connessione?)"
+],
+[
+"Messages lus",
+"Messaggi letti"
+],
+[
+"Message à un ouvrier",
+"Messaggio a un operaio"
+],
+[
+"{0} ouvrier{1}",
+"{0} operaio/i"
+],
 ];

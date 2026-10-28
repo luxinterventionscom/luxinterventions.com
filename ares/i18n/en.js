@@ -16127,4 +16127,116 @@ export default [
 "{0} client{1}",
 "{0} client(s)"
 ],
+[
+"Messages entre",
+"Messages between"
+],
+[
+"et la centrale, chiffrés. Lui seul et la centrale les lisent.",
+"and the office, encrypted. Only they and the office can read them."
+],
+[
+"Son app n’est pas active : activez-la dans l’onglet",
+"Their app is not active: switch it on in the tab"
+],
+[
+"pour qu’il reçoive vos messages.",
+"so that they receive your messages."
+],
+[
+"Message spécial",
+"Special message"
+],
+[
+"Centrale",
+"Office"
+],
+[
+"Aucun message pour l’instant.",
+"No messages yet."
+],
+[
+"Écrire à {0}…",
+"Write to {0}…"
+],
+[
+"touchez pour lire et répondre",
+"tap to read and reply"
+],
+[
+"Message spécial à l’équipe",
+"Special message to the team"
+],
+[
+"Groupe de l’équipe (messages spéciaux)",
+"Team group (special messages)"
+],
+[
+"{0} ouvrier{1} dans le groupe",
+"{0} worker(s) in the group"
+],
+[
+"les autres messages restent entre chaque ouvrier et la centrale",
+"other messages stay between each worker and the office"
+],
+[
+"Groupe de l’équipe",
+"Team group"
+],
+[
+"Cochez les ouvriers qui reçoivent les",
+"Tick the workers who receive the"
+],
+[
+"messages spéciaux",
+"special messages"
+],
+[
+"Les autres messages restent toujours entre chaque ouvrier et la centrale.",
+"Other messages always stay between each worker and the office."
+],
+[
+"Aucun ouvrier avec l’app active.",
+"No worker with an active app."
+],
+[
+"ex. Réunion demain à 8 h au bureau",
+"e.g. Meeting tomorrow at 8 am at the office"
+],
+[
+"Pour qui ? (le groupe est coché ; modifiez-le dans Réglages → 💬 Groupe de l’équipe)",
+"For whom? (the group is ticked; change it in Settings → 💬 Team group)"
+],
+[
+"Message envoyé",
+"Message sent"
+],
+[
+"Groupe enregistré",
+"Group saved"
+],
+[
+"Choisissez au moins un ouvrier",
+"Choose at least one worker"
+],
+[
+"Message envoyé à {0} ouvrier{1}",
+"Message sent to {0} worker(s)"
+],
+[
+"Envoi impossible (connexion ?)",
+"Cannot send (connection?)"
+],
+[
+"Messages lus",
+"Messages read"
+],
+[
+"Message à un ouvrier",
+"Message to a worker"
+],
+[
+"{0} ouvrier{1}",
+"{0} worker(s)"
+],
 ];
