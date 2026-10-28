@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.202.0';
+const VERSION = '2.203.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1320,6 +1320,101 @@ async function netApi(path, method = 'GET', body) {
 }
 const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
 const netInvite = (t, code) => `🌐 ${t.nom} — votre centrale ${societe().nom || 'LuxInterventions'} (${NET_FIL[t.fil] || ''}) : ${netUrl(t.id)}\nCode d’invitation : ${code}\nÀ la première ouverture, choisissez votre clé d’accès (elle chiffre vos données : personne d’autre ne la connaît, gardez aussi la clé de secours).`;
+// 🧾 Fatture della CENTRAL-APP alle UTENTI-APP (centrali dei clienti) : cifrate per la chiave pubblica del client, nella sua
+// casella ; bonifico con QR + « Ho pagato » (Stripe : pas encore connecté). Avviso puis sola lettura après les jours de 🧾 Facturation.
+const payDays = () => { const c = factConf(); return { avv: c.avv === '' || c.avv == null ? 7 : Math.max(0, +c.avv), ro: Math.max(1, +c.rog || 30) }; };
+const netFacts = (tid) => vault.list('reglages').filter((r) => r.id.startsWith('nfact-') && (!tid || r.tid === tid)).sort((a, b) => (b.no || '').localeCompare(a.no || ''));
+const netPayMode = (tid) => (netInfo(tid).payMode === 'month' ? 'month' : 'each');
+const netToBill = (tid) => vault.list('taches').filter((t) => t.net && t.net.tid === tid && t.statut === 'fait' && !t.facture);
+const lateDays = (due) => Math.floor((Date.parse(today()) - Date.parse(due)) / 864e5);
+const b64big = (bytes) => { let bin = ''; const u = new Uint8Array(bytes); for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(bin); };
+async function netBoxSend(tid, obj) {
+  const t = ((ui.net && ui.net.list) || []).find((x) => x.id === tid);
+  if (!t || !t.pub) throw new Error('Le client n’a pas encore ouvert sa centrale (mise à jour) : réessayez après.');
+  const r = await vault.call(`tenants/${tid}/box`, { method: 'POST', body: await sealForOwner(t.pub, obj) });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Erreur ' + r.status);
+}
+// facture d'une ou plusieurs interventions (mode « chaque intervention » ou « facture du mois »)
+async function netFactPdf(items, client, no, dateIso, due, c) {
+  const p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42];
+  const logo = await sigJpeg('/ares/icons/lux-192.png').catch(() => null);
+  if (logo) p.image(X, 40, 62, 62, logo.bytes, logo.w, logo.h);
+  const ex = logo ? X + 78 : X, fr = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  p.text(ex, 52, c.marque || c.nom, { size: 11, bold: true }).text(ex, 66, c.marque ? 'by ' + c.nom : '', { size: 9, color: G });
+  p.text(ex, 80, c.adresse, { size: 9 }).text(ex, 92, c.ville, { size: 9 }).text(ex, 104, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8.5, color: G });
+  if (c.tel || c.email) p.text(ex, 116, [c.tel, c.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
+  p.text(330, 150, client, { size: 11, bold: true });
+  let y = 236;
+  p.text(X, y, `Facture ${no}`, { size: 20, bold: true, color: [0.2, 0.2, 0.2] }); y += 26;
+  [['Date de facturation', fr(dateIso)], ['Date d’échéance', fr(due)], ['Interventions', String(items.length)], ['Référence', no]].forEach(([l, v], i) => { const xx = X + i * 125; p.text(xx, y, l, { size: 8.5, color: G }).text(xx, y + 13, v, { size: 10 }); });
+  y += 40;
+  p.text(X + 6, y, 'Description', { size: 9.5, bold: true }).text(470, y, 'TVA', { size: 9.5, bold: true, align: 'right' }).text(R - 6, y, 'Montant HT', { size: 9.5, bold: true, align: 'right' });
+  y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
+  for (const { t, f, k, tx } of items) {
+    if (y > 700) { p.page(); y = 60; }
+    const w = vault.get('intervenants', t.intervenantId) || {};
+    const sub = [fr(t.doneDate || t.date), intervFull(w), `${String(num(f.h)).replace('.', ',')} h × ${eur(num(f.taux))}`, k.dep ? 'déplacement ' + eur(k.dep) : '', k.mat ? 'matériel ' + eur(k.mat) : '', k.adj ? (k.adj < 0 ? 'remise ' : 'majoration ') + eur(Math.abs(k.adj)) : ''].filter(Boolean).join(' · ');
+    p.text(470, y, String(tx).replace('.', ',') + '%', { size: 9.5, align: 'right' }).text(R - 6, y, eur(k.ht), { size: 9.5, align: 'right' });
+    let hh = p.wrap(X + 6, y, String(t.titre || 'Intervention').replace(/^🌐 [^:]*:\s*/, ''), 360, { size: 9.5 });
+    hh += p.wrap(X + 6, y + hh, sub, 360, { size: 8.5, color: G });
+    y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
+  }
+  const ht = r2(sum(items, (i) => i.k.ht)), tva = r2(sum(items, (i) => i.k.tva)), ttc = r2(ht + tva);
+  y += 10;
+  if (y > 640) { p.page(); y = 60; }
+  const TX = 330, ty = y;
+  const trow = (l, v, b, bg) => { if (bg) p.rect(TX, y - 12, R - TX, 20, { fill: [0.94, 0.94, 0.94] }); p.text(TX + 8, y, l, { size: b ? 11 : 9.5, bold: b }).text(R - 8, y, v, { size: b ? 11 : 9.5, bold: b, align: 'right' }); y += 22; };
+  trow('Montant hors taxes', eur(ht), false, true); trow('TVA', eur(tva), false, false); trow('Total', eur(ttc), true, true);
+  let py = ty;
+  p.text(X, py, `Communication de paiement : ${no}`, { size: 9.5, bold: true }); py += 13;
+  p.text(X, py, `sur ce compte : ${c.iban}${c.banque ? ' - ' + c.banque : ''}`, { size: 9.5 }); py += 12;
+  if (c.bic) { p.text(X, py, 'BIC : ' + c.bic, { size: 9, color: G }); py += 12; }
+  if (c.iban) { qrPdf(p, X, py + 6, 92, epcText(c.nom, c.iban, c.bic, ttc, no)); p.text(X + 102, py + 30, 'Scanner le code QR avec', { size: 8.5, color: G }).text(X + 102, py + 42, 'votre application bancaire', { size: 8.5, color: G }); py += 104; }
+  y = Math.max(y, py) + 10;
+  p.text(X, y, `Paiement à ${+c.delai || 30} jours, avant le ${fr(due)}.`, { size: 9, color: G });
+  p.text((X + R) / 2, 800, `${c.marque ? c.marque + ' by ' : ''}${c.nom} · ${c.adresse}, ${c.ville} · RCS Luxembourg ${c.rcs} · TVA ${c.tva}`, { size: 7.5, color: G, align: 'center' });
+  return { bytes: p.bytes(), ht, tva, ttc };
+}
+async function netFactEmit(tid, tasks) {
+  const c = factConf(), miss = factMissing(c);
+  if (miss.length) throw new Error('Complétez : ' + miss.join(', ') + ' (Réglages → 🧾 Facturation)');
+  const cl = ((ui.net && ui.net.list) || []).find((x) => x.id === tid) || {}, client = cl.nom || tasks[0].net.nom;
+  const items = tasks.map((t) => { const f = factDraft(t), tx = factTaux(f, c); return { t, f, tx, k: factCalc(f, tx) }; });
+  const zero = items.filter((i) => !(i.k.ht > 0));
+  if (zero.length) throw new Error(`Montant à 0 € : ouvrez la facture de ${zero.map((i) => '« ' + String(i.t.titre || '').replace(/^🌐 [^:]*:\s*/, '') + ' »').join(', ')} (Comptabilité → 🧾 Factures) et indiquez heures et tarif.`);
+  const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-INT${String(seq).padStart(4, '0')}`, due = addDays(date, +c.delai || 30);
+  const { bytes, ht, tva, ttc } = await netFactPdf(items, client, no, date, due, c);
+  const d = payDays();
+  await netBoxSend(tid, { type: 'facture', no, date, due, ht, tva, ttc, from: c.marque || c.nom, lignes: items.map((i) => ({ titre: String(i.t.titre || '').replace(/^🌐 [^:]*:\s*/, ''), d: i.t.doneDate || i.t.date, ht: i.k.ht })), pay: { nom: c.nom, iban: c.iban, bic: c.bic, banque: c.banque }, avv: d.avv, ro: d.ro, pdf: b64big(bytes) });
+  let docId = '';
+  await vault.mutate((tx) => {
+    tx.put('reglages', { id: 'facturation', seq });
+    docId = tx.put('documents', { kind: 'facture-int', label: `Facture ${no} — ${client}`, date, mime: 'application/pdf', size: bytes.length }).id;
+    tx.put('reglages', { id: 'nfact-' + no, tid, nom: client, no, date, due, ht, tva, ttc, docId, tasks: tasks.map((t) => t.id), paid: '', claim: '' });
+    for (const i of items) tx.put('taches', { id: i.t.id, factDraft: i.f, facture: { no, date, ht: i.k.ht, tva: i.k.tva, ttc: i.k.ttc, paid: '', docId, net: tid } });
+  }, 'Facture émise', `${no} — ${client} · ${eur(ttc)}`);
+  await vault.saveFile(docId, bytes);
+  return no;
+}
+async function netFactPaid(no) {
+  const f = vault.get('reglages', 'nfact-' + no);
+  if (!f || f.paid) return;
+  await netBoxSend(f.tid, { type: 'paid', no });
+  await vault.mutate((tx) => {
+    tx.put('reglages', { id: f.id, paid: today() });
+    for (const tid of f.tasks || []) { const t = vault.get('taches', tid); if (t && t.facture) tx.put('taches', { id: tid, facture: { ...t.facture, paid: today() } }); }
+  }, 'Facture payée', `${no} — ${f.nom} · ${eur(f.ttc)}`);
+}
+// impayés : sola lettura de la centrale du client après les jours choisis, levée quand tout est payé
+async function netHoldSync(list) {
+  if (TENANT || isCompta() || !vault.unlocked) return;
+  const d = payDays();
+  for (const t of list || []) {
+    const late = netFacts(t.id).filter((f) => !f.paid && lateDays(f.due) >= d.ro);
+    const want = late.length ? 'ro' : '';
+    if ((t.hold || '') !== want) { try { await netApi('tenants/' + t.id, 'PATCH', { hold: want }); t.hold = want; } catch { /* hors ligne */ } }
+  }
+}
 // 🛠️ demandes d'intervention des centrales des clients → directement dans Maintenance (comme les signalements)
 let netDemBusy = false;
 async function netDemSync(list) {
@@ -1333,6 +1428,12 @@ async function netDemSync(list) {
       let m;
       try { m = await openFromTenant(keys.priv, new Uint8Array(await (await vault.call('demandes/' + it.name)).arrayBuffer())); } catch { continue; }
       const tid = it.name.split('-')[1] || '', cl = ((list || (ui.net && ui.net.list) || []).find((t) => t.id === tid) || {}).nom || m.client || 'Client du réseau';
+      if (m.type === 'paid' || m.type === 'conf') {
+        if (m.type === 'paid') { const f = vault.get('reglages', 'nfact-' + String(m.no || '')); if (f && f.tid === tid && !f.paid) await vault.mutate((tx) => tx.put('reglages', { id: f.id, claim: today() }), '💳 Le client dit avoir payé', `${f.no} — ${cl}`); }
+        else await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + tid, ...netInfo(tid), payMode: m.payMode === 'month' ? 'month' : 'each' }), '💳 Mode de paiement du client', `${cl} : ${m.payMode === 'month' ? 'facture mensuelle' : 'chaque intervention'}`);
+        await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
+        continue;
+      }
       await vault.mutate((tx) => tx.put('taches', { type: 'reparation', titre: `🌐 ${cl} : ${String(m.titre || 'Intervention').slice(0, 80)}`, immId: '', logId: '', locId: '', intervenantId: '', date: today(), recur: '', statut: 'afaire', sentAt: m.t || new Date().toISOString(), urgent: m.urgence === 'urgent',
         net: { tid, nom: cl, urgence: m.urgence || 'normal' }, adresse: String(m.adresse || '').slice(0, 200), note: `${String(m.texte || '').slice(0, 3000)}${m.adresse ? '\n📍 ' + m.adresse : ''}${m.contact ? '\n👤 ' + m.contact : ''}${m.tel ? ' · 📞 ' + m.tel : ''}\n\n— Demande de ${cl} (centrale du client) le ${fmtDateTime(m.t || Date.now())}` }), '🌐 Demande d’un client → Maintenance', `${cl} — ${m.titre || ''}`);
       await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
@@ -1351,6 +1452,7 @@ async function netLoad(force) {
     const list = (await netApi('tenants')).tenants || [];
     ui.net = { list, dem: [], at: Date.now(), err: '' };
     await netDemSync(list);
+    await netHoldSync(list);
   } catch (e) { ui.net = { list: (ui.net || {}).list || [], dem: (ui.net || {}).dem || [], at: Date.now(), err: e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.' : e.message || 'Connexion impossible' }; }
   if (ui.route === 'reseau') renderView();
   if (ui.sheet && ui.sheet.kind && ui.sheet.kind.startsWith('net')) { ui.sheet.rendered = false; renderSheet(); }
@@ -1359,10 +1461,51 @@ async function netLoad(force) {
 function tenantBanner() {
   if (!TENANT) return '';
   const t = tenantInfo, dl = t.until ? Math.round((new Date(t.until + 'T12:00') - new Date(today() + 'T12:00')) / 864e5) : null;
+  const late = tFactLate();
+  if (t.hold === 'ro' && t.state === 'ro') return html`<div class="alert bad" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>facture non payée.</span> <a href="#/demandes">🧾 Payer</a> <span>: la centrale se débloque dès que le paiement est reçu.</span></div></div>`;
+  if (late.length) return html`<div class="alert warn" style="margin-bottom:12px">🧾<div><b>${plural(late.length, 'facture')} en retard</b> — <a href="#/demandes">payer maintenant</a> <span>pour éviter la lecture seule.</span></div></div>`;
   if (t.state === 'ro') return html`<div class="alert warn" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>abonnement échu le</span> <span data-notr>${fmtDate(t.until)}</span>. <span>Vos données restent visibles ; pour les modifier, contactez LuxInterventions.</span></div></div>`;
   if (t.st === 'trial' && dl != null) return html`<div class="alert info" style="margin-bottom:12px">🎁<div><b>Essai gratuit</b> — <span>${dl > 0 ? `${dl} jour${dl > 1 ? 's' : ''} restant${dl > 1 ? 's' : ''}` : 'dernier jour'}</span> (<span>jusqu’au</span> <span data-notr>${fmtDate(t.until)}</span>).</div></div>`;
   return '';
 }
+// 🧾 centrale d'un client : fatture della CENTRAL-APP (casella cifrata per la nostra chiave), bonifico con QR, « Ho pagato »
+let tboxBusy = false;
+const tfMem = () => (ui.tfacts ||= {}); // fatture tenute in memoria (centrale in sola lettura)
+const tFacts = () => { const m = { ...Object.fromEntries(vault.list('reglages').filter((r) => r.id.startsWith('tfact-')).map((r) => [r.no, r])), ...tfMem() }; return Object.values(m).sort((a, b) => (b.no || '').localeCompare(a.no || '')); };
+const tClaim = (no, v) => { const k = 'aresTClaim:' + TENANT + ':' + no; try { if (v) localStorage.setItem(k, v); return localStorage.getItem(k) || ''; } catch { return ''; } };
+async function tenantBoxSync() {
+  if (!TENANT || tboxBusy || !vault.unlocked) return;
+  tboxBusy = true;
+  try {
+    const keys = await ownerKeys();
+    if ((vault.get('reglages', 'tboxPub') || {}).pub !== keys.pub) { await vault.call('tenant-key', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pub: keys.pub }) }); if (tenantInfo.state !== 'ro') await vault.mutate((tx) => tx.put('reglages', { id: 'tboxPub', pub: keys.pub }), 'Clé des factures publiée', ''); }
+    const items = (await (await vault.call('box')).json()).items || [];
+    const ro = tenantInfo.state === 'ro';
+    for (const it of items) {
+      let m;
+      try { m = await openFromTenant(keys.priv, b64d(it.d)); } catch { continue; }
+      if (m.type === 'facture' && m.no) {
+        const rec = { no: m.no, date: m.date, due: m.due, ht: m.ht, tva: m.tva, ttc: m.ttc, from: m.from || '', lignes: m.lignes || [], pay: m.pay || {}, avv: m.avv, ro: m.ro, paid: '' };
+        if (ro) { tfMem()[m.no] = { ...rec, pdf: m.pdf }; continue; } // sola lettura : on garde la casella telle quelle
+        const bytes = b64d(m.pdf || '');
+        let docId = '';
+        await vault.mutate((tx) => { docId = bytes.length ? tx.put('documents', { kind: 'facture-recue', label: `Facture ${m.no} — ${rec.from}`, date: m.date, mime: 'application/pdf', size: bytes.length }).id : ''; tx.put('reglages', { id: 'tfact-' + m.no, ...rec, docId }); }, '🧾 Facture reçue', `${m.no} · ${eur(m.ttc)}`);
+        if (docId) await vault.saveFile(docId, bytes);
+      } else if (m.type === 'paid' && m.no) {
+        if (ro) { const mem = tfMem(); if (mem[m.no]) mem[m.no].paid = today(); else { const r = vault.get('reglages', 'tfact-' + m.no); if (r) mem[m.no] = { ...r, paid: today() }; } continue; }
+        const r = vault.get('reglages', 'tfact-' + m.no);
+        if (r) await vault.mutate((tx) => tx.put('reglages', { id: r.id, paid: today() }), '✅ Facture payée', m.no);
+      }
+      await vault.call('box/' + it.name, { method: 'DELETE' }).catch(() => {});
+    }
+  } catch { /* Worker pas encore à jour ou hors ligne */ } finally { tboxBusy = false; }
+  if (['demandes', 'dashboard'].includes(ui.route) || tFacts().length) renderShell();
+}
+async function tenantSend(obj) {
+  const k = await (await vault.call('network-key')).json();
+  await vault.call('demande', { method: 'POST', body: await sealForOwner(k.pub, { client: socName(), fil: tenantInfo.fil || '', t: new Date().toISOString(), ...obj }) });
+}
+const tFactLate = () => tFacts().filter((f) => !f.paid && lateDays(f.due) >= (f.avv ?? 7));
 async function tenantRefresh() {
   if (!TENANT || !vault.unlocked) return;
   try { const j = await (await vault.call('tenant')).json(); if (j.tenant) { const prev = JSON.stringify(tenantInfo); tenantSave(j.tenant); if (JSON.stringify(j.tenant) !== prev) { renderShell(); go(ui.route, true); } } } catch { /* hors ligne */ }
@@ -1791,7 +1934,7 @@ async function hoteInbox(h, msg) {
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
 async function inboxSync() {
-  netDemSync();
+  if (TENANT) tenantBoxSync(); else { netDemSync(); netLoad(); }
   const keys = vault.get('reglages', 'signal');
   if (!keys || !keys.priv || inboxBusy || !vault.unlocked) return;
   inboxBusy = true;
@@ -4457,6 +4600,8 @@ dashboard() {
     const edlBox = edlNew.length ? html`<div class="stack" style="margin-bottom:14px">${edlNew.map((id) => { const ph = edlOutNew().filter((d) => d.logId === id), w = vault.get('locataires', ph[0].locId); return alertBtn('info', 'camera', 'open-edl-out', id, html`📷 <b>${plural(ph.length, 'photo')} de sortie</b> à contrôler — ${logName(id)}${w ? ' · ' + fullName(w) : ''}<div class="tiny">touchez pour comparer avec vos photos d’entrée</div>`); })}</div>` : '';
     const virBox = virs.length ? html`<div class="stack" style="margin-bottom:14px">${virs.map((l) => alertBtn('info', 'wallet', 'open-vir', l.id, html`💳 <b>${fullName(l)}</b> dit avoir payé${l.virSignal.montant ? html` <b>${money(l.virSignal.montant)}</b>` : ''} par ${PAY_VIA[l.virSignal.via || 'vir']} — ${l.virSignal.ref}<div class="tiny">${fmtDateTime(l.virSignal.t)} · vérifiez la réception, puis cochez le mois payé</div>`))}</div>` : '';
     const eqNew = sum(vault.list('intervenants'), (i) => i.feedNew || 0);
+    const nClaims = TENANT ? [] : netFacts().filter((f) => f.claim && !f.paid);
+    const nClaimBox = nClaims.length ? html`<div class="stack" style="margin-bottom:14px">${nClaims.map((f) => alertBtn('info', 'wallet', 'net-open', f.tid, html`💳 <b>${f.nom}</b> dit avoir payé la facture <b>${f.no}</b> (${eur(f.ttc)})<div class="tiny">vérifiez sur le compte, puis « ✅ Reçu » dans sa fiche</div>`))}</div>` : '';
     const eqChats = vault.list('intervenants').filter((i) => i.chatNew);
     const eqChatBox = eqChats.length ? html`<div class="stack" style="margin-bottom:14px">${eqChats.map((i) => alertBtn('info', 'msg', 'open-eq-chat', i.id, html`💬 <b>${i.chatNew} nouveau${i.chatNew > 1 ? 'x' : ''} message${i.chatNew > 1 ? 's' : ''}</b> — ${intervFull(i)}<div class="tiny">touchez pour lire et répondre</div>`))}</div>` : '';
     const eqBox = eqNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'eq-feed', '', html`👷 <b>${eqNew} nouvelle${eqNew > 1 ? 's' : ''} de l’équipe</b> (commencé, fini, pas fini, notes, photos…)<div class="tiny">touchez pour voir qui fait quoi, où et quand</div>`)}</div>` : '';
@@ -4484,7 +4629,7 @@ dashboard() {
       ${chatBox}
       ${virBox}
       ${edlBox}
-      ${eqChatBox}${eqBox}
+      ${nClaimBox}${eqChatBox}${eqBox}
       ${absBox}
       ${toolsBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
@@ -4606,7 +4751,9 @@ dashboard() {
   // 🛠️ centrale d'un client : ses demandes d'intervention à LuxInterventions
   demandes() {
     const list = vault.list('reglages').filter((r) => r.id.startsWith('tdem-')).sort((a, b) => (b.t || '').localeCompare(a.t || ''));
-    return html`${pageHead('🛠️ Demandes d’intervention', 'Envoyées à LuxInterventions, qui envoie ses intervenants')}
+    const F = tFacts();
+    const fRows = F.length ? html`<div class="section-label">🧾 Factures des interventions</div><div class="list" style="margin-bottom:16px">${F.map((f) => { const late = !f.paid ? lateDays(f.due) : 0, cl = tClaim(f.no); return html`<button class="row" data-action="tfact-open" data-id="${f.no}"><span class="grow"><span class="title" style="display:block">${f.no} · ${eur(f.ttc)}</span><span class="meta">${f.paid ? '✅ payée' : cl ? '⏳ paiement envoyé — en vérification' : late > 0 ? `🔴 ${late} j de retard` : '💳 à payer avant le ' + fmtDate(f.due)}</span></span>${f.paid ? '' : html`<span class="badge ${late > 0 && !cl ? 'bad' : 'warn'}">${cl ? 'envoyé' : 'à payer'}</span>`}</button>`; })}</div>` : '';
+    return html`${pageHead('🛠️ Demandes d’intervention', 'Envoyées à LuxInterventions, qui envoie ses intervenants')}${fRows}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="tdem-new">${icon('plus')} Demande</button></div></div>
       ${list.length ? html`<div class="list">${list.map((d) => html`<div class="row" style="display:block"><b>${TDEM_URG[d.urgence] || ''} · ${d.titre}</b>
         <div class="small" style="white-space:pre-wrap">${d.texte}</div><div class="tiny muted">${d.adresse ? '📍 ' + d.adresse + ' · ' : ''}Envoyée le ${fmtDateTime(d.t)}</div></div>`)}</div>`
@@ -4909,7 +5056,7 @@ dashboard() {
         <p class="tiny muted">Taux normal : ${String(c0.taux).replace('.', ',')} % (Réglages → 🧾 Facturation) ; régime par client (autoliquidation, non applicable…) dans Gérances → la gérance → 🧾 Facturation. Détail facture par facture : onglet 🧾 Factures. Aide à la déclaration, à faire vérifier par votre comptable.</p>`;
     } else if (tab === 'fact') {
       const F = vault.list('taches').filter((t) => t.facture && t.facture.date >= from && t.facture.date <= to).sort((a, b) => b.facture.no.localeCompare(a.facture.no));
-      const todo = vault.list('taches').filter((t) => t.ptl && t.statut === 'fait' && !t.facture);
+      const todo = vault.list('taches').filter((t) => (t.ptl || (t.net && netPayMode(t.net.tid) === 'each')) && t.statut === 'fait' && !t.facture);
       const c = factConf();
       body = html`<div class="metrics" style="margin-bottom:14px">
           <div class="metric"><div class="lbl">Factures</div><div class="val">${F.length}</div><div class="sub">${cpLabel(y, per)}</div></div>
@@ -5040,6 +5187,7 @@ dashboard() {
 
       <div class="section-label">Gestion</div>
       <div class="list settings">
+        ${TENANT ? html`<button class="row" data-action="tpay-conf"><span class="avatar">💳</span><span class="grow"><span class="title" style="display:block">Paiements</span><span class="meta">${(vault.get('reglages', 'tpayConf') || {}).payMode === 'month' ? 'Factures des interventions : une par mois' : 'Factures des interventions : à chaque intervention'}</span></span>${icon('chevron')}</button>` : ''}
         <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
         <button class="row" data-action="eq-group"><span class="avatar">💬</span><span class="grow"><span class="title" style="display:block">Groupe de l’équipe (messages spéciaux)</span><span class="meta">${plural(eqGroup().length, 'ouvrier')} dans le groupe · les autres messages restent entre chaque ouvrier et la centrale</span></span>${icon('chevron')}</button>
         <button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>
@@ -5715,6 +5863,9 @@ const SHEETS = {
         <datalist id="tvaRates">${[17, 16, 14, 8, 3, 0, 20, 21, 19, 22, 10, 5.5].map((r) => html`<option value="${r}"></option>`)}</datalist>
         <p class="tiny muted full" style="margin:-6px 0 0">Taux appliqué par défaut (17 % = taux normal au Luxembourg ; tout autre taux possible). Chaque client peut avoir son propre régime : Gérances → la gérance → 🧾 Facturation.</p>
         ${field('Paiement à (jours)', 'delai', c.delai, { type: 'number', attrs: 'min="0" max="120" inputmode="numeric"' })}
+        <div class="full section-label" style="margin:4px 0 0">💳 Paiements des clients (centrales du réseau)</div>
+        ${field('Avis de retard après (jours)', 'avv', c.avv ?? 7, { type: 'number', attrs: 'min="0" max="365" inputmode="numeric"' })}${field('Lecture seule après (jours)', 'rog', c.rog ?? 30, { type: 'number', attrs: 'min="1" max="365" inputmode="numeric"' })}
+        <p class="tiny muted full" style="margin:-6px 0 0">Comptés depuis l’échéance de la facture. Le client paie par virement (QR code) et touche « J’ai payé » ; vous confirmez à réception. 💳 Stripe (carte, Apple / Google Pay) : <b>non connecté</b> pour l’instant.</p>
         ${sfx('Ma marge par défaut sur les ouvriers', 'marge', c.marge, '%', 'step="1" min="0" max="500" inputmode="decimal"')}
         <p class="tiny muted full" style="margin:-6px 0 0">Ex. 25 % : ouvrier payé 40 €/h → facturé 50 €/h à la gérance (si la fiche de l’ouvrier n’a pas de tarif « facturé à la gérance »). Modifiable dans chaque facture, avec remise ou majoration.</p>
         <p class="tiny muted full" style="margin:0">Taux de TVA à confirmer avec votre comptable. Prochain numéro : ${ymd(today())}-INT${String((+c.seq || 0) + 1).padStart(4, '0')} · prochain devis n° …-${String((+c.devSeq || 0) + 1).padStart(4, '0')}</p>
@@ -5731,7 +5882,7 @@ const SHEETS = {
       return {
         title: `🧾 Facture ${F.no}`,
         body: html`${F.cont && !F.paid ? html`<div class="alert bad cont-blink-box" style="margin-bottom:10px">⚠️<div><b>CONTENTIEUX</b> depuis le ${fmtDate(F.cont)} — facture impayée en litige. La gérance le voit en rouge dans son portail.</div></div>` : ''}<dl class="kv">${kvRow('Intervention', `${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`)}${kvRow('Gérance', t.ptl ? t.ptl.org : '—')}${kvRow('Date', fmtDate(F.date))}${kvRow('Total HT', eur(F.ht))}${kvRow('TVA', eur(F.tva))}${kvRow('Total TTC', html`<b>${eur(F.ttc)}</b>`)}${kvRow('Paiement', F.paid ? `✅ payée le ${fmtDate(F.paid)}` : '⏳ à payer')}</dl>
-          <p class="small muted">La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).</p>`,
+          <p class="small muted">${F.net ? 'Le client la voit et la paie dans sa centrale (🧾 Factures).' : 'La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).'}</p>`,
         foot: html`${F.docId ? html`<button class="btn" data-action="open-doc" data-id="${F.docId}">⬇️ PDF</button>` : ''}${F.paid ? '' : html`<button class="btn ${F.cont ? '' : 'danger'}" data-action="fact-cont" data-id="${id}">${F.cont ? '↩️ Sortir du contentieux' : '⚠️ Contentieux'}</button>`}<button class="btn ${F.paid ? '' : 'primary'}" data-action="fact-paid" data-id="${id}">${F.paid ? '↩️ Marquer à payer' : '✅ Marquer payée'}</button>`,
       };
     }
@@ -5741,7 +5892,8 @@ const SHEETS = {
       title: `🧾 Facture — ${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`,
       body: html`<form id="f" data-form="facture" class="fields"><input type="hidden" name="id" value="${id}">
         ${miss.length ? html`<div class="full alert warn" style="margin:0">⚠️<div>Avant d’émettre : complétez ${miss.join(', ')} dans <a href="#" data-action="fact-set">🧾 Facturation</a>.</div></div>` : ''}
-        <p class="small muted full" style="margin:0">Client : <b>${t.ptl ? t.ptl.org : '—'}</b> · émise par ${c.nom} (${c.marque}). Rien n’est envoyé avant « Émettre ».</p>
+        <p class="small muted full" style="margin:0">Client : <b>${t.ptl ? t.ptl.org : t.net ? t.net.nom : '—'}</b> · émise par ${c.nom} (${c.marque}). Rien n’est envoyé avant « Émettre ».</p>
+        ${t.net && netPayMode(t.net.tid) === 'month' ? html`<div class="full alert info" style="margin:0">📅<div>Ce client paie par <b>facture mensuelle</b> : enregistrez le brouillon, l’intervention entrera dans la facture du mois (Réglages → 🔑 Licences → le client).</div></div>` : ''}
         ${field('Heures (réelles, arrondies au ¼ h)', 'h', f.h, { type: 'number', attrs: 'step="0.25" min="0" inputmode="decimal"' })}
         ${(() => { const w = vault.get('intervenants', t.intervenantId) || {}; return w.payeH || w.payeDepl ? html`<div class="full note small" style="margin:0"><input type="hidden" name="cost_h" value="${w.payeH || 0}"><input type="hidden" name="cost_d" value="${w.payeDepl || 0}">
           👷 Coût ${intervFull(w)} : <b>${eur(w.payeH || 0)}/h</b>${w.payeDepl ? html` · déplacement <b>${eur(w.payeDepl)}</b>` : ''}
@@ -5986,7 +6138,7 @@ const SHEETS = {
         ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id && !x.phase).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id && !x.phase).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
-        ${id && t.ptl && t.statut === 'fait' ? html`<button class="btn" data-action="fact-open" data-id="${id}">🧾 ${t.facture ? 'Facture ' + t.facture.no : 'Facture'}</button>` : ''}
+        ${id && (t.ptl || t.net) && t.statut === 'fait' ? html`<button class="btn" data-action="fact-open" data-id="${id}">🧾 ${t.facture ? 'Facture ' + t.facture.no : 'Facture'}</button>` : ''}
         ${id && t.locId && !t.recur && t.statut !== 'fait' ? html`<button class="btn" style="background:var(--green-soft);color:var(--green)" data-action="tache-done" data-id="${id}">${icon('check')} Réparé</button>` : html`<button class="btn" data-action="close-sheet">Annuler</button>`}
         <button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -6259,6 +6411,14 @@ const SHEETS = {
           ${field('Jours en lecture seule après l’échéance (vide = jusqu’à votre décision)', 'roDays', t.roDays ?? '', { full: true, type: 'number', attrs: 'min="0" max="3650" inputmode="numeric"' })}
           <p class="tiny muted full" style="margin:0">Échu : le client lit ses données mais ne peut plus les modifier ; après ces jours, sa centrale est bloquée (durées à fixer avec votre avocat). Ses données ne sont jamais effacées sans votre décision.</p>
         </form>
+        ${(() => {
+          const F = netFacts(id), bill = netToBill(id), d = payDays();
+          return html`<div class="section-label" style="margin-top:14px">🧾 Factures des interventions · ${netPayMode(id) === 'month' ? '📅 facture mensuelle' : 'à chaque intervention'}</div>
+            ${t.hold === 'ro' ? html`<div class="alert bad" style="margin-bottom:8px">🔒<div><b>Lecture seule pour impayé</b> (plus de ${d.ro} jours de retard) — levée dès que tout est payé.</div></div>` : ''}
+            ${bill.length && !isCompta() ? html`<button class="btn block" style="margin-bottom:8px" data-action="nfact-bill" data-id="${id}">🧾 Facturer ${plural(bill.length, 'intervention')} terminée${bill.length > 1 ? 's' : ''}</button>` : ''}
+            ${F.length ? html`<div class="list small" style="margin-bottom:8px">${F.slice(0, 20).map((f) => { const late = !f.paid ? lateDays(f.due) : 0; return html`<div class="row"><span class="grow"><b>${f.no}</b> · ${eur(f.ttc)}<span class="meta" style="display:block">${f.paid ? '✅ payée le ' + fmtDate(f.paid) : f.claim ? '💳 le client dit avoir payé (' + fmtDate(f.claim) + ')' : late > 0 ? `🔴 ${late} j de retard` : '⏳ échéance ' + fmtDate(f.due)}</span></span>
+              ${f.docId ? html`<button class="btn sm" data-action="open-doc" data-id="${f.docId}">⬇️ PDF</button>` : ''}${f.paid || isCompta() ? '' : html`<button class="btn sm primary" data-action="nfact-paid" data-id="${f.no}">✅ Reçu</button>`}</div>`; })}</div>` : html`<p class="tiny muted">Aucune facture.</p>`}`;
+        })()}
         <div class="section-label" style="margin-top:14px">Accès</div>
         <div class="actions" style="flex-wrap:wrap;margin:0">${!t.configured ? html`<button class="btn sm" data-action="net-code" data-id="${id}">🔁 Nouveau code d’invitation</button>` : ''}<button class="btn sm" data-action="net-reset" data-id="${id}">🗝️ Nouvel accès (clé perdue)</button>${vault.op ? '' : html`<button class="btn sm ghost danger" data-action="net-del" data-id="${id}">🗑 Supprimer avec certificat</button>`}</div>
         <p class="tiny muted" style="margin:6px 0 0">Nouvel accès : la centrale du client est vidée (sans sa clé personne ne peut lire ses données) et un nouveau code est créé. S’il a sa clé de secours, il rentre seul sans rien perdre.</p>`}`,
@@ -6342,6 +6502,43 @@ const SHEETS = {
           ${field('Nom', 'd_nom', d.nom, { placeholder: i ? '' : 'ex. Marco / Taxi Lux' })}${field('Téléphone (WhatsApp)', 'd_tel', d.tel, { type: 'tel', placeholder: '+352…' })}
           ${field('Voiture', 'd_auto', d.auto, { placeholder: 'ex. Mercedes grise' })}${field('Plaque', 'd_plaque', d.plaque, { placeholder: 'ex. LU-1234' })}</div>`)}
         <p class="tiny muted full" style="margin:0">Une ligne vide en plus apparaît après l’enregistrement. Le chauffeur n’installe rien : il reçoit un lien par WhatsApp / SMS.</p>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'tfact'({ id }) {
+    const f = tFacts().find((x) => x.no === id);
+    if (!f) return null;
+    const p = f.pay || {}, cl = tClaim(f.no), late = !f.paid ? lateDays(f.due) : 0;
+    return {
+      title: '🧾 Facture ' + f.no,
+      narrow: true,
+      body: html`<p class="small" style="margin:0 0 8px">${f.from} · ${fmtDate(f.date)} · échéance ${fmtDate(f.due)}${late > 0 && !f.paid ? html` · <b style="color:var(--red,#b91c1c)">${late} j de retard</b>` : ''}</p>
+        <div class="list small" style="margin-bottom:10px">${(f.lignes || []).map((l) => html`<div class="row"><span class="grow">${l.titre}<span class="meta" style="display:block">${fmtDate(l.d)}</span></span><b>${eur(l.ht)}</b></div>`)}</div>
+        <p style="margin:0 0 12px">HT ${eur(f.ht)} · TVA ${eur(f.tva)} · <b>Total ${eur(f.ttc)}</b></p>
+        ${f.paid ? html`<div class="alert info">✅<div><b>Payée</b> — merci !</div></div>` : html`
+        <button class="btn block" disabled title="Paiement en ligne pas encore connecté" style="margin-bottom:4px">💳 Payer par carte / Apple Pay / Google Pay</button>
+        <p class="tiny muted" style="margin:0 0 12px">ℹ️ Paiement en ligne pas encore connecté : payez par virement ci-dessous.</p>
+        <div class="card" style="margin-bottom:10px"><div class="section-label" style="margin-top:0">🏦 Virement</div>
+          ${p.iban ? html`<div class="qr" style="width:150px;margin:0 auto 10px">${qrSvg(epcText(p.nom, p.iban, p.bic, f.ttc, f.no), 4)}</div>` : ''}
+          <div><dl class="kv" style="margin:0">${kvRow('Bénéficiaire', p.nom || '')}${kvRow('IBAN', p.iban || '')}${p.bic ? kvRow('BIC', p.bic) : ''}${kvRow('Montant', eur(f.ttc))}${kvRow('Communication', f.no)}</dl></div>
+          <p class="tiny muted" style="margin:8px 0 0">Scannez le QR code avec l’app de votre banque : tout est déjà rempli.</p></div>
+        ${cl ? html`<div class="alert info">⏳<div><b>Paiement signalé le ${fmtDate(cl)}</b> — ${f.from} confirme dès réception.</div></div>` : html`<button class="btn primary block" data-action="tfact-claim" data-id="${f.no}">✅ J’ai payé</button>`}`}`,
+      foot: html`${f.docId ? html`<button class="btn" data-action="open-doc" data-id="${f.docId}">⬇️ PDF</button>` : f.pdf ? html`<button class="btn" data-action="tfact-pdf" data-id="${f.no}">⬇️ PDF</button>` : ''}<button class="btn" data-action="close-sheet">Fermer</button>`,
+    };
+  },
+  'tpay-conf'() {
+    const c = vault.get('reglages', 'tpayConf') || {}, hb = ['hotel', 'airbnb'].includes(tenantInfo.fil);
+    return {
+      title: '💳 Paiements',
+      narrow: true,
+      body: html`<form id="f" data-form="tpay-conf" class="fields">
+        <div class="full section-label" style="margin:0">Factures des interventions</div>
+        <label class="row full"><input type="radio" name="payMode" value="each" ${c.payMode !== 'month' ? new Raw('checked') : ''}><span class="grow">À chaque intervention</span></label>
+        <label class="row full"><input type="radio" name="payMode" value="month" ${c.payMode === 'month' ? new Raw('checked') : ''}><span class="grow">Une facture par mois (récapitulatif)</span></label>
+        ${hb ? html`<div class="full section-label" style="margin:8px 0 0">🛏️ Paiement des nuitées par vos clients (bientôt)</div>
+          ${field('IBAN pour les nuitées', 'iban', c.iban || '', { full: true, attrs: 'autocapitalize="characters" autocomplete="off"' })}${field('Lien de paiement (Stripe, PayPal…)', 'lien', c.lien || '', { full: true, type: 'url', placeholder: 'https://…' })}
+          <p class="tiny muted full" style="margin:0">Le bouton « Payer la nuitée » dans l’app de vos clients sera activé plus tard.</p>` : ''}
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -7583,6 +7780,13 @@ const ACTIONS = {
   async 'fact-emit'(d) {
     const t = vault.get('taches', d.id), fm = sheetEl.querySelector('form[data-form=facture]');
     if (!t || !fm || t.facture) return;
+    if (t.net) {
+      if (!(await confirmBox(`Émettre la facture de cette intervention ?`, { ok: 'Émettre et envoyer', detail: `${t.net.nom} — la facture arrive dans sa centrale (💳 virement avec QR code).` }))) return;
+      await vault.mutate((tx) => tx.put('taches', { id: t.id, factDraft: factRead(fm) }), 'Brouillon de facture', t.titre);
+      try { const no = await netFactEmit(t.net.tid, [vault.get('taches', t.id)]); toast(`🧾 Facture ${no} envoyée à ${t.net.nom}`); } catch (e) { return toast(e.message || 'Envoi impossible', { bad: true }); }
+      sheetDirty = false; ui.sheet.rendered = false; renderSheet();
+      return;
+    }
     if (!t.ptl || !ptlConf()) return toast('Facture : intervention liée à une gérance et portail connecté nécessaires', { bad: true });
     const f = factRead(fm), c = factConf(), miss = factMissing(c);
     if (miss.length) return toast('Complétez : ' + miss.join(', '), { bad: true });
@@ -7611,6 +7815,7 @@ const ACTIONS = {
   async 'fact-cont'(d) {
     const t = vault.get('taches', d.id);
     if (!t || !t.facture || t.facture.paid) return;
+    if (t.facture.net) return toast('Client du réseau : sa centrale passe en lecture seule tout seule après les jours choisis (🧾 Facturation)', { bad: true });
     const on = !t.facture.cont;
     if (on && !(await confirmBox('Mettre cette facture en contentieux ?', { ok: '⚠️ Contentieux', danger: true, detail: `${t.facture.no} · ${eur(t.facture.ttc)} — la gérance reçoit un message et voit la facture en rouge dans son portail.` }))) return;
     try { await ptlApi(`tickets/${t.ptl.tid}/invoice-paid`, { method: 'POST', body: { cont: on } }); } catch (e) { return toast(e.message, { bad: true }); }
@@ -7620,6 +7825,7 @@ const ACTIONS = {
   async 'fact-paid'(d) {
     const t = vault.get('taches', d.id);
     if (!t || !t.facture) return;
+    if (t.facture.net) { if (t.facture.paid) return; try { await netFactPaid(t.facture.no); toast('✅ Facture payée'); } catch (e) { toast(e.message, { bad: true }); } if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } return; }
     const paid = t.facture.paid ? '' : today();
     try { await ptlApi(`tickets/${t.ptl.tid}/invoice-paid`, { method: 'POST', body: { paid: !!paid } }); } catch (e) { return toast(e.message, { bad: true }); }
     await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, paid, ...(paid ? { cont: '' } : {}) } }), paid ? 'Facture payée' : 'Facture à payer', t.facture.no, t.immId);
@@ -7635,6 +7841,19 @@ const ACTIONS = {
   },
   'open-interv': (d) => openSheet('interv', d.id),
   'open-eq-chat': (d) => openSheet('interv', d.id, 'chat'),
+  'tfact-open': (d) => openOver('tfact', d.id),
+  'tpay-conf': () => openOver('tpay-conf'),
+  'tfact-pdf': (d) => { const f = tfMem()[d.id]; if (!f || !f.pdf) return; const u = URL.createObjectURL(new Blob([b64d(f.pdf)], { type: 'application/pdf' })); window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000); },
+  async 'tfact-claim'(d) {
+    const f = tFacts().find((x) => x.no === d.id);
+    if (!f || f.paid) return;
+    if (!(await confirmBox('Vous avez payé cette facture ?', { ok: '✅ J’ai payé', detail: `${f.no} · ${eur(f.ttc)} — ${f.from} vérifie le virement et confirme.` }))) return;
+    try { await tenantSend({ type: 'paid', no: f.no }); } catch (e) { return toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
+    tClaim(f.no, today());
+    toast('Merci : paiement signalé');
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+    renderView();
+  },
   'eq-group': () => openOver('eq-group'),
   'eq-special': () => openOver('eq-special'),
   'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
@@ -7944,6 +8163,21 @@ const ACTIONS = {
   },
   'net-reload': () => netLoad(true),
   'net-open': (d) => openOver('net-client', d.id),
+  async 'nfact-bill'(d) {
+    const tasks = netToBill(d.id), t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id) || {};
+    if (!tasks.length) return;
+    if (!(await confirmBox(`Facturer ${plural(tasks.length, 'intervention')} ?`, { ok: 'Émettre et envoyer', detail: `${t.nom || ''} — une seule facture, envoyée dans sa centrale (💳 virement avec QR code).` }))) return;
+    try { const no = await netFactEmit(d.id, tasks); toast(`🧾 Facture ${no} envoyée`); } catch (e) { return toast(e.message || 'Envoi impossible', { bad: true }); }
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } else renderView();
+  },
+  async 'nfact-paid'(d) {
+    const f = vault.get('reglages', 'nfact-' + d.id);
+    if (!f || f.paid) return;
+    if (!(await confirmBox(`Paiement reçu pour ${f.no} ?`, { ok: '✅ Payée', detail: `${f.nom} · ${eur(f.ttc)} — vérifiez d’abord sur le compte. Le client le voit dans sa centrale.` }))) return;
+    try { await netFactPaid(f.no); toast('✅ Facture payée'); } catch (e) { return toast(e.message || 'Envoi impossible', { bad: true }); }
+    await netHoldSync((ui.net && ui.net.list) || []);
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } else renderView();
+  },
   async 'net-code'(d) {
     try { const r = await netApi('tenants/' + d.id, 'PATCH', { newCode: true }); if (r.code) { await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + d.id, ...netInfo(d.id), code: r.code }), '🌐 Nouveau code d’invitation', (r.tenant || {}).nom || ''); await licLogAdd(r.tenant || { id: d.id }, 'Nouveau code d’invitation', 'échéance inchangée'); } toast('Nouveau code créé'); } catch (e) { return toast(e.message, { bad: true }); }
     netLoad(true);
@@ -8613,7 +8847,7 @@ const FORMS = {
     const g = (k) => String(fd.get(k) || '').trim();
     { const ib = ibanCheck(g('iban')), bc = bicCheck(g('bic'), ib.ok ? ib.cc : ''); if (!ib.ok) return toast('IBAN : ' + ib.msg, { bad: true }); if (!bc.ok) return toast('BIC : ' + bc.msg, { bad: true }); }
     const iban = g('iban').toUpperCase().replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
-    await vault.mutate((tx) => tx.put('reglages', { id: 'facturation', nom: g('nom'), marque: g('marque'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), tel: g('tel'), email: g('email'), autorisation: g('autorisation'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), taux: num(fd.get('taux')), delai: Math.max(0, Math.round(num(fd.get('delai')))) || 30, marge: num(fd.get('marge')) }), 'Facturation des interventions', g('nom'));
+    await vault.mutate((tx) => tx.put('reglages', { id: 'facturation', nom: g('nom'), marque: g('marque'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), tel: g('tel'), email: g('email'), autorisation: g('autorisation'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), taux: num(fd.get('taux')), delai: Math.max(0, Math.round(num(fd.get('delai')))) || 30, marge: num(fd.get('marge')), avv: Math.max(0, Math.round(num(fd.get('avv')))), rog: Math.max(1, Math.round(num(fd.get('rog')))) || 30 }), 'Facturation des interventions', g('nom'));
     toast('Facturation enregistrée'); goBack();
   },
   async facture(fd, fm) {
@@ -9289,6 +9523,12 @@ const FORMS = {
     if (!i || !x) return;
     setBusy(form, true, 'Envoi…');
     try { await eqChatSend([i.id], x, false); toast('Message envoyé'); renderSheet(); } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
+  },
+  async 'tpay-conf'(fd) {
+    const g = (k) => String(fd.get(k) || '').trim(), payMode = fd.get('payMode') === 'month' ? 'month' : 'each';
+    try { await tenantSend({ type: 'conf', payMode }); } catch (e) { return toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
+    await vault.mutate((tx) => tx.put('reglages', { id: 'tpayConf', payMode, iban: g('iban').toUpperCase(), lien: g('lien') }), '💳 Paiements', payMode === 'month' ? 'facture mensuelle' : 'chaque intervention');
+    toast('Enregistré'); goBack();
   },
   async 'eq-group'(fd) {
     const ids = fd.getAll('w').map(String).filter((wid) => vault.get('intervenants', wid));

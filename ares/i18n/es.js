@@ -16491,4 +16491,268 @@ export default [
 "{0} ouvrier{1}",
 "{0} operario(s)"
 ],
+[
+"Ce client paie par",
+"Este cliente paga con"
+],
+[
+"facture mensuelle",
+"factura mensual"
+],
+[
+": enregistrez le brouillon, l’intervention entrera dans la facture du mois (Réglages → 🔑 Licences → le client).",
+": guarde el borrador, la intervención entrará en la factura del mes (Ajustes → 🔑 Licencias → el cliente)."
+],
+[
+"Le client la voit et la paie dans sa centrale (🧾 Factures).",
+"El cliente la ve y la paga en su central (🧾 Facturas)."
+],
+[
+"Émettre la facture de cette intervention ?",
+"¿Emitir la factura de esta intervención?"
+],
+[
+"la facture arrive dans sa centrale (💳 virement avec QR code).",
+"la factura llega a su central (💳 transferencia con código QR)."
+],
+[
+"Client du réseau : sa centrale passe en lecture seule tout seule après les jours choisis (🧾 Facturation)",
+"Cliente de la red: su central pasa sola a solo lectura tras los días elegidos (🧾 Facturación)"
+],
+[
+"Paiements des clients (centrales du réseau)",
+"Pagos de los clientes (centrales de la red)"
+],
+[
+"Avis de retard après (jours)",
+"Aviso de retraso tras (días)"
+],
+[
+"Lecture seule après (jours)",
+"Solo lectura tras (días)"
+],
+[
+"Comptés depuis l’échéance de la facture. Le client paie par virement (QR code) et touche « J’ai payé » ; vous confirmez à réception. 💳 Stripe (carte, Apple / Google Pay) :",
+"Contados desde el vencimiento de la factura. El cliente paga por transferencia (código QR) y toca «He pagado»; usted confirma al recibirla. 💳 Stripe (tarjeta, Apple / Google Pay):"
+],
+[
+"non connecté",
+"no conectado"
+],
+[
+"pour l’instant.",
+"por ahora."
+],
+[
+"Factures des interventions",
+"Facturas de las intervenciones"
+],
+[
+"à chaque intervention",
+"en cada intervención"
+],
+[
+"Lecture seule pour impayé",
+"Solo lectura por impago"
+],
+[
+"(plus de {0} jours de retard) — levée dès que tout est payé.",
+"(más de {0} días de retraso) — se levanta en cuanto todo esté pagado."
+],
+[
+"Facturer {0} intervention{1} terminée{2}",
+"Facturar {0} intervención(es) terminada(s)"
+],
+[
+"payée le {0}",
+"pagada el {0}"
+],
+[
+"le client dit avoir payé ({0})",
+"el cliente dice haber pagado ({0})"
+],
+[
+"{0} j de retard",
+"{0} d de retraso"
+],
+[
+"échéance {0}",
+"vencimiento {0}"
+],
+[
+"Aucune facture.",
+"Ninguna factura."
+],
+[
+"Facturer {0} intervention{1} ?",
+"¿Facturar {0} intervención(es)?"
+],
+[
+"une seule facture, envoyée dans sa centrale (💳 virement avec QR code).",
+"una sola factura, enviada a su central (💳 transferencia con código QR)."
+],
+[
+"Paiement reçu pour {0} ?",
+"¿Pago recibido para {0}?"
+],
+[
+"vérifiez d’abord sur le compte. Le client le voit dans sa centrale.",
+"compruebe primero en la cuenta. El cliente lo ve en su central."
+],
+[
+"Payée",
+"Pagada"
+],
+[
+"Facture {0} envoyée",
+"Factura {0} enviada"
+],
+[
+"Facture {0} envoyée à {1}",
+"Factura {0} enviada a {1}"
+],
+[
+"Le client n’a pas encore ouvert sa centrale (mise à jour) : réessayez après.",
+"El cliente aún no ha abierto su central (actualizada): inténtelo después."
+],
+[
+"Montant à 0 € : ouvrez la facture de {0} (Comptabilité → 🧾 Factures) et indiquez heures et tarif.",
+"Importe 0 €: abra la factura de {0} (Contabilidad → 🧾 Facturas) e indique horas y tarifa."
+],
+[
+"dit avoir payé la facture",
+"dice haber pagado la factura"
+],
+[
+"vérifiez sur le compte, puis « ✅ Reçu » dans sa fiche",
+"compruebe en la cuenta y luego «✅ Recibido» en su ficha"
+],
+[
+"facture non payée.",
+"factura no pagada."
+],
+[
+"Payer",
+"Pagar"
+],
+[
+": la centrale se débloque dès que le paiement est reçu.",
+": la central se desbloquea en cuanto se recibe el pago."
+],
+[
+"{0} facture{1} en retard",
+"{0} factura(s) con retraso"
+],
+[
+"payer maintenant",
+"pagar ahora"
+],
+[
+"pour éviter la lecture seule.",
+"para evitar el modo solo lectura."
+],
+[
+"payée",
+"pagada"
+],
+[
+"paiement envoyé — en vérification",
+"pago enviado — en verificación"
+],
+[
+"à payer avant le {0}",
+"a pagar antes del {0}"
+],
+[
+"envoyé",
+"enviado"
+],
+[
+"— merci !",
+"— ¡gracias!"
+],
+[
+"Payer par carte / Apple Pay / Google Pay",
+"Pagar con tarjeta / Apple Pay / Google Pay"
+],
+[
+"Paiement en ligne pas encore connecté : payez par virement ci-dessous.",
+"Pago en línea aún no conectado: pague por transferencia abajo."
+],
+[
+"Bénéficiaire",
+"Beneficiario"
+],
+[
+"Communication",
+"Concepto"
+],
+[
+"Scannez le QR code avec l’app de votre banque : tout est déjà rempli.",
+"Escanee el código QR con la app de su banco: todo está ya rellenado."
+],
+[
+"Paiement signalé le {0}",
+"Pago comunicado el {0}"
+],
+[
+"{0} confirme dès réception.",
+"{0} confirma al recibirlo."
+],
+[
+"J’ai payé",
+"He pagado"
+],
+[
+"Vous avez payé cette facture ?",
+"¿Ha pagado esta factura?"
+],
+[
+"{0} vérifie le virement et confirme.",
+"{0} verifica la transferencia y confirma."
+],
+[
+"Merci : paiement signalé",
+"Gracias: pago comunicado"
+],
+[
+"À chaque intervention",
+"En cada intervención"
+],
+[
+"Une facture par mois (récapitulatif)",
+"Una factura al mes (resumen)"
+],
+[
+"Paiement des nuitées par vos clients (bientôt)",
+"Pago de las noches por sus clientes (pronto)"
+],
+[
+"IBAN pour les nuitées",
+"IBAN para las noches"
+],
+[
+"Lien de paiement (Stripe, PayPal…)",
+"Enlace de pago (Stripe, PayPal…)"
+],
+[
+"Le bouton « Payer la nuitée » dans l’app de vos clients sera activé plus tard.",
+"El botón «Pagar la noche» en la app de sus clientes se activará más adelante."
+],
+[
+"Factures des interventions : une par mois",
+"Facturas de las intervenciones: una al mes"
+],
+[
+"Factures des interventions : à chaque intervention",
+"Facturas de las intervenciones: en cada intervención"
+],
+[
+"Le client dit avoir payé",
+"El cliente dice haber pagado"
+],
+[
+"Mode de paiement du client",
+"Modo de pago del cliente"
+],
 ];

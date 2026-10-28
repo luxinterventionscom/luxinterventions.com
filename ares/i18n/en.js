@@ -16239,4 +16239,268 @@ export default [
 "{0} ouvrier{1}",
 "{0} worker(s)"
 ],
+[
+"Ce client paie par",
+"This client pays by"
+],
+[
+"facture mensuelle",
+"monthly invoice"
+],
+[
+": enregistrez le brouillon, l’intervention entrera dans la facture du mois (Réglages → 🔑 Licences → le client).",
+": save the draft, the job will go into the monthly invoice (Settings → 🔑 Licences → the client)."
+],
+[
+"Le client la voit et la paie dans sa centrale (🧾 Factures).",
+"The client sees and pays it in their central (🧾 Invoices)."
+],
+[
+"Émettre la facture de cette intervention ?",
+"Issue the invoice for this job?"
+],
+[
+"la facture arrive dans sa centrale (💳 virement avec QR code).",
+"the invoice arrives in their central (💳 bank transfer with QR code)."
+],
+[
+"Client du réseau : sa centrale passe en lecture seule tout seule après les jours choisis (🧾 Facturation)",
+"Network client: their central becomes read-only by itself after the chosen days (🧾 Invoicing)"
+],
+[
+"Paiements des clients (centrales du réseau)",
+"Client payments (network centrals)"
+],
+[
+"Avis de retard après (jours)",
+"Late notice after (days)"
+],
+[
+"Lecture seule après (jours)",
+"Read-only after (days)"
+],
+[
+"Comptés depuis l’échéance de la facture. Le client paie par virement (QR code) et touche « J’ai payé » ; vous confirmez à réception. 💳 Stripe (carte, Apple / Google Pay) :",
+"Counted from the invoice due date. The client pays by bank transfer (QR code) and taps “I have paid”; you confirm on receipt. 💳 Stripe (card, Apple / Google Pay):"
+],
+[
+"non connecté",
+"not connected"
+],
+[
+"pour l’instant.",
+"for now."
+],
+[
+"Factures des interventions",
+"Job invoices"
+],
+[
+"à chaque intervention",
+"for each job"
+],
+[
+"Lecture seule pour impayé",
+"Read-only for non-payment"
+],
+[
+"(plus de {0} jours de retard) — levée dès que tout est payé.",
+"(more than {0} days late) — lifted as soon as everything is paid."
+],
+[
+"Facturer {0} intervention{1} terminée{2}",
+"Invoice {0} finished job(s)"
+],
+[
+"payée le {0}",
+"paid on {0}"
+],
+[
+"le client dit avoir payé ({0})",
+"the client says they paid ({0})"
+],
+[
+"{0} j de retard",
+"{0} d late"
+],
+[
+"échéance {0}",
+"due {0}"
+],
+[
+"Aucune facture.",
+"No invoices."
+],
+[
+"Facturer {0} intervention{1} ?",
+"Invoice {0} job(s)?"
+],
+[
+"une seule facture, envoyée dans sa centrale (💳 virement avec QR code).",
+"one single invoice, sent to their central (💳 bank transfer with QR code)."
+],
+[
+"Paiement reçu pour {0} ?",
+"Payment received for {0}?"
+],
+[
+"vérifiez d’abord sur le compte. Le client le voit dans sa centrale.",
+"check the account first. The client sees it in their central."
+],
+[
+"Payée",
+"Paid"
+],
+[
+"Facture {0} envoyée",
+"Invoice {0} sent"
+],
+[
+"Facture {0} envoyée à {1}",
+"Invoice {0} sent to {1}"
+],
+[
+"Le client n’a pas encore ouvert sa centrale (mise à jour) : réessayez après.",
+"The client hasn’t opened their (updated) central yet: try again later."
+],
+[
+"Montant à 0 € : ouvrez la facture de {0} (Comptabilité → 🧾 Factures) et indiquez heures et tarif.",
+"Amount 0 €: open the invoice of {0} (Accounting → 🧾 Invoices) and enter hours and rate."
+],
+[
+"dit avoir payé la facture",
+"says they paid the invoice"
+],
+[
+"vérifiez sur le compte, puis « ✅ Reçu » dans sa fiche",
+"check the account, then “✅ Received” in their card"
+],
+[
+"facture non payée.",
+"unpaid invoice."
+],
+[
+"Payer",
+"Pay"
+],
+[
+": la centrale se débloque dès que le paiement est reçu.",
+": the central unlocks as soon as the payment is received."
+],
+[
+"{0} facture{1} en retard",
+"{0} invoice(s) overdue"
+],
+[
+"payer maintenant",
+"pay now"
+],
+[
+"pour éviter la lecture seule.",
+"to avoid read-only mode."
+],
+[
+"payée",
+"paid"
+],
+[
+"paiement envoyé — en vérification",
+"payment sent — being checked"
+],
+[
+"à payer avant le {0}",
+"to pay before {0}"
+],
+[
+"envoyé",
+"sent"
+],
+[
+"— merci !",
+"— thank you!"
+],
+[
+"Payer par carte / Apple Pay / Google Pay",
+"Pay by card / Apple Pay / Google Pay"
+],
+[
+"Paiement en ligne pas encore connecté : payez par virement ci-dessous.",
+"Online payment not connected yet: pay by bank transfer below."
+],
+[
+"Bénéficiaire",
+"Beneficiary"
+],
+[
+"Communication",
+"Reference"
+],
+[
+"Scannez le QR code avec l’app de votre banque : tout est déjà rempli.",
+"Scan the QR code with your banking app: everything is already filled in."
+],
+[
+"Paiement signalé le {0}",
+"Payment reported on {0}"
+],
+[
+"{0} confirme dès réception.",
+"{0} confirms on receipt."
+],
+[
+"J’ai payé",
+"I have paid"
+],
+[
+"Vous avez payé cette facture ?",
+"Have you paid this invoice?"
+],
+[
+"{0} vérifie le virement et confirme.",
+"{0} checks the transfer and confirms."
+],
+[
+"Merci : paiement signalé",
+"Thank you: payment reported"
+],
+[
+"À chaque intervention",
+"For each job"
+],
+[
+"Une facture par mois (récapitulatif)",
+"One invoice per month (summary)"
+],
+[
+"Paiement des nuitées par vos clients (bientôt)",
+"Payment of nights by your guests (soon)"
+],
+[
+"IBAN pour les nuitées",
+"IBAN for the nights"
+],
+[
+"Lien de paiement (Stripe, PayPal…)",
+"Payment link (Stripe, PayPal…)"
+],
+[
+"Le bouton « Payer la nuitée » dans l’app de vos clients sera activé plus tard.",
+"The “Pay for the night” button in your guests’ app will be switched on later."
+],
+[
+"Factures des interventions : une par mois",
+"Job invoices: one per month"
+],
+[
+"Factures des interventions : à chaque intervention",
+"Job invoices: for each job"
+],
+[
+"Le client dit avoir payé",
+"The client says they paid"
+],
+[
+"Mode de paiement du client",
+"Client payment mode"
+],
 ];
