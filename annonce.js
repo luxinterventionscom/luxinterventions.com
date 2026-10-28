@@ -5,6 +5,7 @@ import '/ares/reqmark.js';
 import { openJson, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { infoBox } from '/ares/nbien.js';
+import qrcode from '/ares/qrcode.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'annAccess';
 let [id, key] = (location.hash.slice(1).match(/^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/) || []).slice(1);
@@ -71,6 +72,38 @@ const L = {
 };
 let data = null, loadErr = '', lang = ls.get('annLang') || '', form = null, msg = '', payOpen = '';
 const T = () => L[lang] || L.fr;
+// 💶 paiement d'une annonce validée : virement (QR EPC) + « J'ai payé » ; facture de la centrale après réception
+const P = {
+  fr: { st: '💶 Validée — à payer', due: 'À payer', ht: 'HT', vat: 'TVA', ttc: 'TTC', how: 'Virement : scannez le code QR avec votre application bancaire.', ref: 'Communication', paid: '✅ J’ai payé', claimed: 'Paiement signalé ✓ — en ligne dès sa réception.', noIban: 'Coordonnées bancaires bientôt disponibles : nous vous contactons.', inv: '🧾 Facture', card: 'Paiement par carte pas encore connecté : payez par virement (QR).', paidOn: 'Payée le', total: 'Total' },
+  en: { st: '💶 Approved — to pay', due: 'To pay', ht: 'excl. VAT', vat: 'VAT', ttc: 'incl. VAT', how: 'Bank transfer: scan the QR code with your banking app.', ref: 'Reference', paid: '✅ I have paid', claimed: 'Payment reported ✓ — online as soon as it is received.', noIban: 'Bank details coming soon: we will contact you.', inv: '🧾 Invoice', card: 'Card payment not connected yet: pay by bank transfer (QR).', paidOn: 'Paid on', total: 'Total' },
+  de: { st: '💶 Genehmigt — zu bezahlen', due: 'Zu bezahlen', ht: 'netto', vat: 'MwSt.', ttc: 'brutto', how: 'Überweisung: QR-Code mit Ihrer Banking-App scannen.', ref: 'Verwendungszweck', paid: '✅ Ich habe bezahlt', claimed: 'Zahlung gemeldet ✓ — online, sobald sie eingegangen ist.', noIban: 'Bankverbindung folgt: wir kontaktieren Sie.', inv: '🧾 Rechnung', card: 'Kartenzahlung noch nicht verbunden: bitte per Überweisung (QR).', paidOn: 'Bezahlt am', total: 'Gesamt' },
+  it: { st: '💶 Approvato — da pagare', due: 'Da pagare', ht: 'IVA esclusa', vat: 'IVA', ttc: 'IVA inclusa', how: 'Bonifico: scansioni il codice QR con l’app della sua banca.', ref: 'Causale', paid: '✅ Ho pagato', claimed: 'Pagamento segnalato ✓ — online appena ricevuto.', noIban: 'Coordinate bancarie in arrivo: la contattiamo noi.', inv: '🧾 Fattura', card: 'Pagamento con carta non ancora collegato: paghi con bonifico (QR).', paidOn: 'Pagata il', total: 'Totale' },
+  pt: { st: '💶 Aprovado — a pagar', due: 'A pagar', ht: 's/ IVA', vat: 'IVA', ttc: 'c/ IVA', how: 'Transferência: leia o código QR com a app do seu banco.', ref: 'Referência', paid: '✅ Já paguei', claimed: 'Pagamento assinalado ✓ — online assim que for recebido.', noIban: 'Dados bancários em breve: nós contactamo-lo.', inv: '🧾 Fatura', card: 'Pagamento com cartão ainda não ligado: pague por transferência (QR).', paidOn: 'Paga em', total: 'Total' },
+  es: { st: '💶 Aprobado — a pagar', due: 'A pagar', ht: 'sin IVA', vat: 'IVA', ttc: 'IVA incl.', how: 'Transferencia: escanee el código QR con la app de su banco.', ref: 'Concepto', paid: '✅ He pagado', claimed: 'Pago comunicado ✓ — en línea en cuanto se reciba.', noIban: 'Datos bancarios próximamente: le contactamos.', inv: '🧾 Factura', card: 'Pago con tarjeta aún no conectado: pague por transferencia (QR).', paidOn: 'Pagada el', total: 'Total' },
+};
+const TP = () => P[lang] || P.fr;
+const eur = (n) => (Math.round((+n || 0) * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+const qr = (text) => { const q = qrcode(0, 'M'); q.addData(text); q.make(); return q.createSvgTag(4, 2); };
+function payHtml(a) {
+  const u = TP(), f = (data && data.from) || {};
+  return `<div class="bubble"><b>${esc(u.due)} : ${esc(eur(a.ttc))} ${esc(u.ttc)}</b> <span class="meta">(${esc(eur(a.ht))} ${esc(u.ht)} + ${esc(u.vat)} ${esc(a.tx)} % ${esc(eur(a.tva))})</span>
+    ${a.epc && f.iban ? `<div style="text-align:center;margin:8px 0">${qr(a.epc)}</div><p class="meta" style="margin:0">${esc(u.how)}<br>${esc(f.nom || '')} · IBAN <b>${esc(f.iban)}</b>${f.bic ? ' · BIC ' + esc(f.bic) : ''}<br>${esc(u.ref)} : <b>${esc('Annonce ' + String(a.id).slice(0, 8))}</b></p>` : `<p class="meta" style="margin:6px 0 0">${esc(u.noIban)}</p>`}
+    ${a.claim ? `<p class="ok" style="margin:8px 0 0">${esc(u.claimed)}</p>` : `<button class="btn sm" style="margin-top:8px" data-paid="${esc(a.id)}">${esc(u.paid)}</button>`}</div>`;
+}
+function printInv(id) {
+  const u = TP(), a = (data.ads || []).find((x) => x.id === id), f = data.from || {}, x = a && a.fact;
+  if (!x) return;
+  const w = window.open('', '_blank');
+  if (!w) return;
+  const t = T();
+  w.document.write(`<!doctype html><meta charset="utf-8"><title>${esc(u.inv)} ${esc(x.no)}</title><style>body{font:14px system-ui,sans-serif;margin:32px;color:#1d1b16}td,th{padding:6px 8px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:last-child{text-align:right}table{width:100%;border-collapse:collapse;margin:16px 0}h1{font-size:22px}</style>
+    <div style="display:flex;justify-content:space-between;gap:24px"><div><b>${esc(f.marque || f.nom || '')}</b>${f.marque ? '<br>by ' + esc(f.nom || '') : ''}<br>${esc(f.adresse || '')}<br>${esc(f.ville || '')}<br>${esc(['RCS ' + (f.rcs || ''), 'TVA ' + (f.tva || '')].join(' · '))}</div><div><b>${esc(data.nom)}</b><br>${esc(data.adresse || '')}</div></div>
+    <h1>${esc(u.inv.replace('🧾 ', ''))} ${esc(x.no)}</h1><p>${esc(x.date)}</p>
+    <table><tr><th></th><th>€ ${esc(u.ht)}</th></tr><tr><td>${esc(t.Ty[a.type] || '')} — ${esc(a.nom)}<br><small>${esc(t.Sl[a.slot] || '')} · ${esc(a.debut)} → ${esc(a.fin)}</small></td><td>${esc(eur(x.ht))}</td></tr></table>
+    <p style="text-align:right">${esc(u.ht)} ${esc(eur(x.ht))}<br>${esc(u.vat)} ${esc(String(x.tx))} % ${esc(eur(x.tva))}<br><b>${esc(u.total)} ${esc(eur(x.ttc))}</b></p><p>${esc(u.paidOn)} ${esc(x.date)}</p>`);
+  w.document.close();
+  w.print();
+}
 const blank = () => ({ id: '', type: 'annonce', nom: data ? data.nom : '', texte: '', adresse: data ? data.adresse : '', tel: data ? data.tel : '', web: '', video: '', slot: 'milieu', aud: ['loc', 'hote'], debut: today, fin: plusDays(today, 13), jours: [], h1: '', h2: '' });
 const days = (f) => Math.max(1, Math.round((new Date(f.fin) - new Date(f.debut)) / 864e5) + 1);
 const priceOf = (f) => { const r = +((data && data.tarifs) || {})[f.slot] || 0; return r ? Math.round(r * days(f)) : 0; };
@@ -95,19 +128,21 @@ function formHtml(t) {
     <div class="two"><div><label>${esc(t.from)}</label><input type="date" data-k="debut" value="${esc(f.debut)}"></div><div><label>${esc(t.to)}</label><input type="date" data-k="fin" value="${esc(f.fin)}"></div></div>
     <label>${esc(t.days)}</label><div class="chips">${t.D.map((d, i) => `<label class="chip"><input type="checkbox" data-day="${i}" ${f.jours.includes(i) ? 'checked' : ''}> ${esc(d)}</label>`).join('')}</div>
     <label>${esc(t.hours)}</label><div class="two"><div><span class="meta">${esc(t.h1)}</span><input type="time" data-k="h1" value="${esc(f.h1)}"></div><div><span class="meta">${esc(t.h2)}</span><input type="time" data-k="h2" value="${esc(f.h2)}"></div></div>
-    <p class="est">${esc(t.price)} : <b>${p ? p + ' €' : esc(t.quote)}</b> <span class="meta">(${days(f)} j)</span>${tr.note ? `<br><span class="meta">${esc(tr.note)}</span>` : ''}</p>
+    <p class="est">${esc(t.price)} : <b>${p ? p + ' € ' + esc(TP().ht) : esc(t.quote)}</b> <span class="meta">(${days(f)} j)</span>${tr.note ? `<br><span class="meta">${esc(tr.note)}</span>` : ''}</p>
     <div class="duo"><button class="btn sec" data-cancel="1">${esc(t.cancel)}</button><button class="btn" data-send="1">${esc(t.send)}</button></div></div>`;
 }
 function adHtml(a, t) {
-  const st = a.st === 'ok' && a.fin && a.fin < today ? 'end' : a.st;
-  return `<div class="ad ${st}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(t.Ty[a.type] || '')} · ${esc(a.nom)}</b><span class="tag">${esc(t.St[st] || '')}</span></div>
+  const st = a.st === 'ok' && a.fin && a.fin < today ? 'end' : a.st, u = TP();
+  return `<div class="ad ${st === 'pay' ? 'wait' : st}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(t.Ty[a.type] || '')} · ${esc(a.nom)}</b><span class="tag">${esc(st === 'pay' ? u.st : t.St[st] || '')}</span></div>
     <p style="margin:4px 0 0;white-space:pre-wrap">${esc(a.texte)}</p>
-    <p class="meta" style="margin:4px 0 0">${esc(t.Sl[a.slot] || '')} · ${(a.aud || []).map((k) => esc(t.Au[k] || '')).join(' · ')}<br>📅 ${esc(a.debut)} → ${esc(a.fin)}${a.jours && a.jours.length ? ' · ' + a.jours.map((j) => esc(t.D[j])).join(' ') : ''}${a.h1 ? ` · ${esc(a.h1)}–${esc(a.h2)}` : ''}${a.prix ? ' · ' + esc(a.prix) + ' €' : ''}</p>
+    <p class="meta" style="margin:4px 0 0">${esc(t.Sl[a.slot] || '')} · ${(a.aud || []).map((k) => esc(t.Au[k] || '')).join(' · ')}<br>📅 ${esc(a.debut)} → ${esc(a.fin)}${a.jours && a.jours.length ? ' · ' + a.jours.map((j) => esc(t.D[j])).join(' ') : ''}${a.h1 ? ` · ${esc(a.h1)}–${esc(a.h2)}` : ''}${a.prix ? ' · ' + esc(a.prix) + ' € ' + esc(u.ht) : ''}</p>
+    ${st === 'pay' ? payHtml(a) : ''}
     ${a.st === 'no' && a.motif ? `<p class="warnt">${esc(t.motif)} : ${esc(a.motif)}</p>` : ''}
     ${a.st === 'ok' ? `<p class="meta" style="margin:4px 0 0">📊 <b>${esc(a.v || 0)}</b> ${esc(t.views)} · <b>${esc(a.taps || 0)}</b> ${esc(t.clicks)}</p>` : ''}
     <div class="btns">${st !== 'end' ? `<button class="btn sm sec" data-edit="${esc(a.id)}">${esc(t.edit)}</button><button class="btn sm sec" data-stop="${esc(a.id)}">${esc(t.stop)}</button>` : ''}
-      ${a.prix && st !== 'no' ? `<span class="paywrap"><button class="btn sm" disabled aria-disabled="true">${esc(t.pay)}</button><button class="info-dot" data-payinfo="${esc(a.id)}" aria-label="Info">ℹ️</button></span>` : ''}</div>
-    ${payOpen === a.id ? `<p class="bubble">ℹ️ ${esc(t.payInfo)}</p>` : ''}</div>`;
+      ${a.fact ? `<button class="btn sm sec" data-inv="${esc(a.id)}">${esc(u.inv)}</button>` : ''}
+      ${st === 'pay' ? `<span class="paywrap"><button class="btn sm" disabled aria-disabled="true">${esc(t.pay)}</button><button class="info-dot" data-payinfo="${esc(a.id)}" aria-label="Info">ℹ️</button></span>` : ''}</div>
+    ${payOpen === a.id ? `<p class="bubble">ℹ️ ${esc(u.card)}</p>` : ''}</div>`;
 }
 function render() {
   const t = T();
@@ -175,6 +210,8 @@ app.addEventListener('click', async (e) => {
   if (b.dataset.reset) { ls.set(ACC, null); id = key = ''; data = null; return render(); }
   if (b.dataset.new) { form = blank(); msg = ''; return render(); }
   if (b.dataset.cancel) { form = null; return render(); }
+  if (b.dataset.inv) return printInv(b.dataset.inv);
+  if (b.dataset.paid) { b.disabled = true; try { await sendOwner({ type: 'an-paid', id: b.dataset.paid }); const a = (data.ads || []).find((x) => x.id === b.dataset.paid); if (a) a.claim = today; } catch { b.disabled = false; return; } return render(); }
   if (b.dataset.payinfo) { payOpen = payOpen === b.dataset.payinfo ? '' : b.dataset.payinfo; return render(); }
   if (b.dataset.edit) { const a = (data.ads || []).find((x) => x.id === b.dataset.edit); if (a) { form = { ...blank(), ...a, jours: [...(a.jours || [])], aud: [...(a.aud || [])] }; msg = ''; render(); scrollTo(0, 0); } return; }
   if (b.dataset.stop) { b.disabled = true; try { await sendOwner({ type: 'an-stop', id: b.dataset.stop }); const a = (data.ads || []).find((x) => x.id === b.dataset.stop); if (a) a.fin = plusDays(today, -1); } catch { b.disabled = false; return; } return render(); }

@@ -16418,4 +16418,480 @@ export default [
 "{0} ouvrier{1}",
 "{0} operário(s)"
 ],
+[
+"Ce client paie par",
+"Este cliente paga por"
+],
+[
+"facture mensuelle",
+"fatura mensal"
+],
+[
+": enregistrez le brouillon, l’intervention entrera dans la facture du mois (Réglages → 🔑 Licences → le client).",
+": guarde o rascunho, a intervenção entra na fatura do mês (Definições → 🔑 Licenças → o cliente)."
+],
+[
+"Le client la voit et la paie dans sa centrale (🧾 Factures).",
+"O cliente vê-a e paga-a na sua central (🧾 Faturas)."
+],
+[
+"Émettre la facture de cette intervention ?",
+"Emitir a fatura desta intervenção?"
+],
+[
+"la facture arrive dans sa centrale (💳 virement avec QR code).",
+"a fatura chega à sua central (💳 transferência com código QR)."
+],
+[
+"Client du réseau : sa centrale passe en lecture seule tout seule après les jours choisis (🧾 Facturation)",
+"Cliente da rede: a sua central passa sozinha a só leitura após os dias escolhidos (🧾 Faturação)"
+],
+[
+"Paiements des clients (centrales du réseau)",
+"Pagamentos dos clientes (centrais da rede)"
+],
+[
+"Avis de retard après (jours)",
+"Aviso de atraso após (dias)"
+],
+[
+"Lecture seule après (jours)",
+"Só leitura após (dias)"
+],
+[
+"Comptés depuis l’échéance de la facture. Le client paie par virement (QR code) et touche « J’ai payé » ; vous confirmez à réception. 💳 Stripe (carte, Apple / Google Pay) :",
+"Contados a partir do vencimento da fatura. O cliente paga por transferência (código QR) e toca «Já paguei»; confirma ao receber. 💳 Stripe (cartão, Apple / Google Pay):"
+],
+[
+"non connecté",
+"não ligado"
+],
+[
+"pour l’instant.",
+"por agora."
+],
+[
+"Factures des interventions",
+"Faturas das intervenções"
+],
+[
+"à chaque intervention",
+"a cada intervenção"
+],
+[
+"Lecture seule pour impayé",
+"Só leitura por falta de pagamento"
+],
+[
+"(plus de {0} jours de retard) — levée dès que tout est payé.",
+"(mais de {0} dias de atraso) — levantada assim que tudo estiver pago."
+],
+[
+"Facturer {0} intervention{1} terminée{2}",
+"Faturar {0} intervenção(ões) terminada(s)"
+],
+[
+"payée le {0}",
+"paga em {0}"
+],
+[
+"le client dit avoir payé ({0})",
+"o cliente diz ter pago ({0})"
+],
+[
+"{0} j de retard",
+"{0} d de atraso"
+],
+[
+"échéance {0}",
+"vencimento {0}"
+],
+[
+"Aucune facture.",
+"Nenhuma fatura."
+],
+[
+"Facturer {0} intervention{1} ?",
+"Faturar {0} intervenção(ões)?"
+],
+[
+"une seule facture, envoyée dans sa centrale (💳 virement avec QR code).",
+"uma só fatura, enviada para a sua central (💳 transferência com código QR)."
+],
+[
+"Paiement reçu pour {0} ?",
+"Pagamento recebido para {0}?"
+],
+[
+"vérifiez d’abord sur le compte. Le client le voit dans sa centrale.",
+"verifique primeiro na conta. O cliente vê-o na sua central."
+],
+[
+"Payée",
+"Paga"
+],
+[
+"Facture {0} envoyée",
+"Fatura {0} enviada"
+],
+[
+"Facture {0} envoyée à {1}",
+"Fatura {0} enviada a {1}"
+],
+[
+"Le client n’a pas encore ouvert sa centrale (mise à jour) : réessayez après.",
+"O cliente ainda não abriu a sua central (atualizada): tente depois."
+],
+[
+"Montant à 0 € : ouvrez la facture de {0} (Comptabilité → 🧾 Factures) et indiquez heures et tarif.",
+"Montante 0 €: abra a fatura de {0} (Contabilidade → 🧾 Faturas) e indique horas e tarifa."
+],
+[
+"dit avoir payé la facture",
+"diz ter pago a fatura"
+],
+[
+"vérifiez sur le compte, puis « ✅ Reçu » dans sa fiche",
+"verifique na conta e depois «✅ Recebido» na ficha"
+],
+[
+"facture non payée.",
+"fatura não paga."
+],
+[
+"Payer",
+"Pagar"
+],
+[
+": la centrale se débloque dès que le paiement est reçu.",
+": a central desbloqueia-se assim que o pagamento for recebido."
+],
+[
+"{0} facture{1} en retard",
+"{0} fatura(s) em atraso"
+],
+[
+"payer maintenant",
+"pagar agora"
+],
+[
+"pour éviter la lecture seule.",
+"para evitar a só leitura."
+],
+[
+"payée",
+"paga"
+],
+[
+"paiement envoyé — en vérification",
+"pagamento enviado — em verificação"
+],
+[
+"à payer avant le {0}",
+"a pagar até {0}"
+],
+[
+"envoyé",
+"enviado"
+],
+[
+"— merci !",
+"— obrigado!"
+],
+[
+"Payer par carte / Apple Pay / Google Pay",
+"Pagar com cartão / Apple Pay / Google Pay"
+],
+[
+"Paiement en ligne pas encore connecté : payez par virement ci-dessous.",
+"Pagamento online ainda não ligado: pague por transferência abaixo."
+],
+[
+"Bénéficiaire",
+"Beneficiário"
+],
+[
+"Communication",
+"Referência"
+],
+[
+"Scannez le QR code avec l’app de votre banque : tout est déjà rempli.",
+"Leia o código QR com a app do seu banco: está tudo preenchido."
+],
+[
+"Paiement signalé le {0}",
+"Pagamento comunicado em {0}"
+],
+[
+"{0} confirme dès réception.",
+"{0} confirma ao receber."
+],
+[
+"J’ai payé",
+"Já paguei"
+],
+[
+"Vous avez payé cette facture ?",
+"Pagou esta fatura?"
+],
+[
+"{0} vérifie le virement et confirme.",
+"{0} verifica a transferência e confirma."
+],
+[
+"Merci : paiement signalé",
+"Obrigado: pagamento comunicado"
+],
+[
+"À chaque intervention",
+"A cada intervenção"
+],
+[
+"Une facture par mois (récapitulatif)",
+"Uma fatura por mês (resumo)"
+],
+[
+"Paiement des nuitées par vos clients (bientôt)",
+"Pagamento das noites pelos seus clientes (em breve)"
+],
+[
+"IBAN pour les nuitées",
+"IBAN para as noites"
+],
+[
+"Lien de paiement (Stripe, PayPal…)",
+"Link de pagamento (Stripe, PayPal…)"
+],
+[
+"Le bouton « Payer la nuitée » dans l’app de vos clients sera activé plus tard.",
+"O botão «Pagar a estadia» na app dos seus clientes será ativado mais tarde."
+],
+[
+"Factures des interventions : une par mois",
+"Faturas das intervenções: uma por mês"
+],
+[
+"Factures des interventions : à chaque intervention",
+"Faturas das intervenções: a cada intervenção"
+],
+[
+"Le client dit avoir payé",
+"O cliente diz ter pago"
+],
+[
+"Mode de paiement du client",
+"Modo de pagamento do cliente"
+],
+[
+"Virement (IBAN)",
+"Transferência (IBAN)"
+],
+[
+"Lien de paiement",
+"Link de pagamento"
+],
+[
+"Au chauffeur (espèces / carte)",
+"Ao motorista (dinheiro / cartão)"
+],
+[
+"Prix de la grille (estimation)",
+"Preço da tabela (estimativa)"
+],
+[
+"Confirmé à l’acceptation",
+"Confirmado ao aceitar"
+],
+[
+"Corrigé après la course (attente, péages)",
+"Corrigido após a corrida (espera, portagens)"
+],
+[
+"Une facture par course",
+"Uma fatura por corrida"
+],
+[
+"Récapitulatif mensuel",
+"Resumo mensal"
+],
+[
+"90 j : {0} course{1}",
+"90 d: {0} corrida(s)"
+],
+[
+"{0} sans réponse",
+"{0} sem resposta"
+],
+[
+"à payer {0}",
+"a pagar {0}"
+],
+[
+"Fiche de facturation pas encore remplie dans son app",
+"Ficha de faturação ainda não preenchida na sua app"
+],
+[
+"Factures des taxis (à payer directement à la société)",
+"Faturas dos táxis (a pagar diretamente à empresa)"
+],
+[
+"{0} course{1}",
+"{0} corrida(s)"
+],
+[
+"reçue par la société le {0}",
+"recebida pela empresa em {0}"
+],
+[
+"confirmation attendue",
+"confirmação pendente"
+],
+[
+"Vous payez",
+"Paga"
+],
+[
+"directement la société",
+"diretamente à empresa"
+],
+[
+": rien ne passe par nous.",
+": nada passa por nós."
+],
+[
+"TVA {0} % : {1}",
+"IVA {0} %: {1}"
+],
+[
+"Payer en ligne (lien de la société)",
+"Pagar online (link da empresa)"
+],
+[
+"La société se fait payer",
+"A empresa é paga"
+],
+[
+"par le chauffeur",
+"pelo motorista"
+],
+[
+"(espèces ou carte).",
+"(dinheiro ou cartão)."
+],
+[
+"Après le paiement, touchez « ✅ Payée » : la société le voit dans son app et confirme la réception.",
+"Após o pagamento, toque em «✅ Paga»: a empresa vê-o na sua app e confirma a receção."
+],
+[
+"la société confirme la réception dans son app",
+"a empresa confirma a receção na sua app"
+],
+[
+"Fiche de facturation de la société de taxi",
+"Ficha de faturação da empresa de táxi"
+],
+[
+"Course terminée",
+"Corrida terminada"
+],
+[
+"Facture du taxi",
+"Fatura do táxi"
+],
+[
+"Facture de la société de taxi",
+"Fatura da empresa de táxi"
+],
+[
+"La société de taxi a reçu le paiement",
+"A empresa de táxi recebeu o pagamento"
+],
+[
+"Note du client sur la course",
+"Avaliação do cliente sobre a corrida"
+],
+[
+"Facture du taxi payée",
+"Fatura do táxi paga"
+],
+[
+"💶 À encaisser ({0})",
+"💶 A receber ({0})"
+],
+[
+"payé selon l’annonceur",
+"pago segundo o anunciante"
+],
+[
+"en attente du paiement",
+"a aguardar o pagamento"
+],
+[
+"💶 à payer",
+"💶 a pagar"
+],
+[
+"Paiement reçu ?",
+"Pagamento recebido?"
+],
+[
+"✅ Reçu",
+"✅ Recebido"
+],
+[
+"Validée : en ligne dès le paiement reçu",
+"Aprovado: online assim que o pagamento for recebido"
+],
+[
+"🔝 Haut — prix HT par jour (€)",
+"🔝 Topo — preço s/ IVA por dia (€)"
+],
+[
+"⏺ Milieu — prix HT par jour (€)",
+"⏺ Meio — preço s/ IVA por dia (€)"
+],
+[
+"🔽 Bas — prix HT par jour (€)",
+"🔽 Fundo — preço s/ IVA por dia (€)"
+],
+[
+"L’annonceur voit le prix HT (jours × tarif de l’emplacement) avant d’envoyer. Après votre validation il paie par virement (QR, TVA de 🧾 Facturation) ; vous confirmez « Paiement reçu » : facture et mise en ligne. 💳 Paiement en ligne : pas encore connecté.",
+"O anunciante vê o preço s/ IVA (dias × tarifa do espaço) antes de enviar. Após a sua aprovação paga por transferência (QR, IVA de 🧾 Faturação); confirma « Pagamento recebido »: fatura e publicação. 💳 Pagamento online: ainda não ligado."
+],
+[
+"💶 Prix du séjour — visible dans l’app du client",
+"💶 Preço da estadia — visível na app do cliente"
+],
+[
+"Pas affiché",
+"Não mostrado"
+],
+[
+"a) Total",
+"a) Total"
+],
+[
+"b) Nuits × prix + ménage + taxe",
+"b) Noites × preço + limpeza + taxa"
+],
+[
+"a) Total du séjour (€)",
+"a) Total da estadia (€)"
+],
+[
+"b) Prix par nuit (€)",
+"b) Preço por noite (€)"
+],
+[
+"b) Ménage (€)",
+"b) Limpeza (€)"
+],
+[
+"b) Taxe de séjour (€ / personne / nuit)",
+"b) Taxa turística (€ / pessoa / noite)"
+],
+[
+"Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.",
+"O cliente vê o detalhe e o total. 💳 « Pagar a estadia »: ainda não ligado (botão visível, desativado). No hotel o cliente paga na receção."
+],
 ];

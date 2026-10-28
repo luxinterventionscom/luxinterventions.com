@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.202.0';
+const VERSION = '2.205.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1320,6 +1320,104 @@ async function netApi(path, method = 'GET', body) {
 }
 const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
 const netInvite = (t, code) => `🌐 ${t.nom} — votre centrale ${societe().nom || 'LuxInterventions'} (${NET_FIL[t.fil] || ''}) : ${netUrl(t.id)}\nCode d’invitation : ${code}\nÀ la première ouverture, choisissez votre clé d’accès (elle chiffre vos données : personne d’autre ne la connaît, gardez aussi la clé de secours).`;
+// 🧾 Fatture della CENTRAL-APP alle UTENTI-APP (centrali dei clienti) : cifrate per la chiave pubblica del client, nella sua
+// casella ; bonifico con QR + « Ho pagato » (Stripe : pas encore connecté). Avviso puis sola lettura après les jours de 🧾 Facturation.
+const payDays = () => { const c = factConf(); return { avv: c.avv === '' || c.avv == null ? 7 : Math.max(0, +c.avv), ro: Math.max(1, +c.rog || 30) }; };
+const netFacts = (tid) => vault.list('reglages').filter((r) => r.id.startsWith('nfact-') && (!tid || r.tid === tid)).sort((a, b) => (b.no || '').localeCompare(a.no || ''));
+const netPayMode = (tid) => (netInfo(tid).payMode === 'month' ? 'month' : 'each');
+const netToBill = (tid) => vault.list('taches').filter((t) => t.net && t.net.tid === tid && t.statut === 'fait' && !t.facture);
+const lateDays = (due) => Math.floor((Date.parse(today()) - Date.parse(due)) / 864e5);
+const b64big = (bytes) => { let bin = ''; const u = new Uint8Array(bytes); for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(bin); };
+async function netBoxSend(tid, obj) {
+  const t = ((ui.net && ui.net.list) || []).find((x) => x.id === tid);
+  if (!t || !t.pub) throw new Error('Le client n’a pas encore ouvert sa centrale (mise à jour) : réessayez après.');
+  const r = await vault.call(`tenants/${tid}/box`, { method: 'POST', body: await sealForOwner(t.pub, obj) });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Erreur ' + r.status);
+}
+// facture de la centrale : lignes { titre, sub, tx, ht, tva } (interventions, annonces HORECA…)
+async function netFactPdf(items, client, no, dateIso, due, c, what = 'Interventions') {
+  const p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42];
+  const logo = await sigJpeg('/ares/icons/lux-192.png').catch(() => null);
+  if (logo) p.image(X, 40, 62, 62, logo.bytes, logo.w, logo.h);
+  const ex = logo ? X + 78 : X, fr = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  p.text(ex, 52, c.marque || c.nom, { size: 11, bold: true }).text(ex, 66, c.marque ? 'by ' + c.nom : '', { size: 9, color: G });
+  p.text(ex, 80, c.adresse, { size: 9 }).text(ex, 92, c.ville, { size: 9 }).text(ex, 104, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8.5, color: G });
+  if (c.tel || c.email) p.text(ex, 116, [c.tel, c.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
+  p.text(330, 150, client, { size: 11, bold: true });
+  let y = 236;
+  p.text(X, y, `Facture ${no}`, { size: 20, bold: true, color: [0.2, 0.2, 0.2] }); y += 26;
+  [['Date de facturation', fr(dateIso)], ['Date d’échéance', fr(due)], [what, String(items.length)], ['Référence', no]].forEach(([l, v], i) => { const xx = X + i * 125; p.text(xx, y, l, { size: 8.5, color: G }).text(xx, y + 13, v, { size: 10 }); });
+  y += 40;
+  p.text(X + 6, y, 'Description', { size: 9.5, bold: true }).text(470, y, 'TVA', { size: 9.5, bold: true, align: 'right' }).text(R - 6, y, 'Montant HT', { size: 9.5, bold: true, align: 'right' });
+  y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
+  for (const { titre, sub, tx, ht } of items) {
+    if (y > 700) { p.page(); y = 60; }
+    p.text(470, y, String(tx).replace('.', ',') + '%', { size: 9.5, align: 'right' }).text(R - 6, y, eur(ht), { size: 9.5, align: 'right' });
+    let hh = p.wrap(X + 6, y, titre, 360, { size: 9.5 });
+    hh += p.wrap(X + 6, y + hh, sub, 360, { size: 8.5, color: G });
+    y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
+  }
+  const ht = r2(sum(items, (i) => i.ht)), tva = r2(sum(items, (i) => i.tva)), ttc = r2(ht + tva);
+  y += 10;
+  if (y > 640) { p.page(); y = 60; }
+  const TX = 330, ty = y;
+  const trow = (l, v, b, bg) => { if (bg) p.rect(TX, y - 12, R - TX, 20, { fill: [0.94, 0.94, 0.94] }); p.text(TX + 8, y, l, { size: b ? 11 : 9.5, bold: b }).text(R - 8, y, v, { size: b ? 11 : 9.5, bold: b, align: 'right' }); y += 22; };
+  trow('Montant hors taxes', eur(ht), false, true); trow('TVA', eur(tva), false, false); trow('Total', eur(ttc), true, true);
+  let py = ty;
+  p.text(X, py, `Communication de paiement : ${no}`, { size: 9.5, bold: true }); py += 13;
+  p.text(X, py, `sur ce compte : ${c.iban}${c.banque ? ' - ' + c.banque : ''}`, { size: 9.5 }); py += 12;
+  if (c.bic) { p.text(X, py, 'BIC : ' + c.bic, { size: 9, color: G }); py += 12; }
+  if (c.iban) { qrPdf(p, X, py + 6, 92, epcText(c.nom, c.iban, c.bic, ttc, no)); p.text(X + 102, py + 30, 'Scanner le code QR avec', { size: 8.5, color: G }).text(X + 102, py + 42, 'votre application bancaire', { size: 8.5, color: G }); py += 104; }
+  y = Math.max(y, py) + 10;
+  p.text(X, y, `Paiement à ${+c.delai || 30} jours, avant le ${fr(due)}.`, { size: 9, color: G });
+  p.text((X + R) / 2, 800, `${c.marque ? c.marque + ' by ' : ''}${c.nom} · ${c.adresse}, ${c.ville} · RCS Luxembourg ${c.rcs} · TVA ${c.tva}`, { size: 7.5, color: G, align: 'center' });
+  return { bytes: p.bytes(), ht, tva, ttc };
+}
+async function netFactEmit(tid, tasks) {
+  const c = factConf(), miss = factMissing(c);
+  if (miss.length) throw new Error('Complétez : ' + miss.join(', ') + ' (Réglages → 🧾 Facturation)');
+  const cl = ((ui.net && ui.net.list) || []).find((x) => x.id === tid) || {}, client = cl.nom || tasks[0].net.nom;
+  const items = tasks.map((t) => { const f = factDraft(t), tx = factTaux(f, c); return { t, f, tx, k: factCalc(f, tx) }; });
+  const zero = items.filter((i) => !(i.k.ht > 0));
+  if (zero.length) throw new Error(`Montant à 0 € : ouvrez la facture de ${zero.map((i) => '« ' + String(i.t.titre || '').replace(/^🌐 [^:]*:\s*/, '') + ' »').join(', ')} (Comptabilité → 🧾 Factures) et indiquez heures et tarif.`);
+  const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-INT${String(seq).padStart(4, '0')}`, due = addDays(date, +c.delai || 30);
+  const rows = items.map(({ t, f, k, tx }) => {
+    const w = vault.get('intervenants', t.intervenantId) || {}, fr = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const sub = [fr(t.doneDate || t.date), intervFull(w), `${String(num(f.h)).replace('.', ',')} h × ${eur(num(f.taux))}`, k.dep ? 'déplacement ' + eur(k.dep) : '', k.mat ? 'matériel ' + eur(k.mat) : '', k.adj ? (k.adj < 0 ? 'remise ' : 'majoration ') + eur(Math.abs(k.adj)) : ''].filter(Boolean).join(' · ');
+    return { titre: String(t.titre || 'Intervention').replace(/^🌐 [^:]*:\s*/, ''), sub, tx, ht: k.ht, tva: k.tva };
+  });
+  const { bytes, ht, tva, ttc } = await netFactPdf(rows, client, no, date, due, c);
+  const d = payDays();
+  await netBoxSend(tid, { type: 'facture', no, date, due, ht, tva, ttc, from: c.marque || c.nom, lignes: items.map((i) => ({ titre: String(i.t.titre || '').replace(/^🌐 [^:]*:\s*/, ''), d: i.t.doneDate || i.t.date, ht: i.k.ht })), pay: { nom: c.nom, iban: c.iban, bic: c.bic, banque: c.banque }, avv: d.avv, ro: d.ro, pdf: b64big(bytes) });
+  let docId = '';
+  await vault.mutate((tx) => {
+    tx.put('reglages', { id: 'facturation', seq });
+    docId = tx.put('documents', { kind: 'facture-int', label: `Facture ${no} — ${client}`, date, mime: 'application/pdf', size: bytes.length }).id;
+    tx.put('reglages', { id: 'nfact-' + no, tid, nom: client, no, date, due, ht, tva, ttc, docId, tasks: tasks.map((t) => t.id), paid: '', claim: '' });
+    for (const i of items) tx.put('taches', { id: i.t.id, factDraft: i.f, facture: { no, date, ht: i.k.ht, tva: i.k.tva, ttc: i.k.ttc, paid: '', docId, net: tid } });
+  }, 'Facture émise', `${no} — ${client} · ${eur(ttc)}`);
+  await vault.saveFile(docId, bytes);
+  return no;
+}
+async function netFactPaid(no) {
+  const f = vault.get('reglages', 'nfact-' + no);
+  if (!f || f.paid) return;
+  await netBoxSend(f.tid, { type: 'paid', no });
+  await vault.mutate((tx) => {
+    tx.put('reglages', { id: f.id, paid: today() });
+    for (const tid of f.tasks || []) { const t = vault.get('taches', tid); if (t && t.facture) tx.put('taches', { id: tid, facture: { ...t.facture, paid: today() } }); }
+  }, 'Facture payée', `${no} — ${f.nom} · ${eur(f.ttc)}`);
+}
+// impayés : sola lettura de la centrale du client après les jours choisis, levée quand tout est payé
+async function netHoldSync(list) {
+  if (TENANT || isCompta() || !vault.unlocked) return;
+  const d = payDays();
+  for (const t of list || []) {
+    const late = netFacts(t.id).filter((f) => !f.paid && lateDays(f.due) >= d.ro);
+    const want = late.length ? 'ro' : '';
+    if ((t.hold || '') !== want) { try { await netApi('tenants/' + t.id, 'PATCH', { hold: want }); t.hold = want; } catch { /* hors ligne */ } }
+  }
+}
 // 🛠️ demandes d'intervention des centrales des clients → directement dans Maintenance (comme les signalements)
 let netDemBusy = false;
 async function netDemSync(list) {
@@ -1333,6 +1431,12 @@ async function netDemSync(list) {
       let m;
       try { m = await openFromTenant(keys.priv, new Uint8Array(await (await vault.call('demandes/' + it.name)).arrayBuffer())); } catch { continue; }
       const tid = it.name.split('-')[1] || '', cl = ((list || (ui.net && ui.net.list) || []).find((t) => t.id === tid) || {}).nom || m.client || 'Client du réseau';
+      if (m.type === 'paid' || m.type === 'conf') {
+        if (m.type === 'paid') { const f = vault.get('reglages', 'nfact-' + String(m.no || '')); if (f && f.tid === tid && !f.paid) await vault.mutate((tx) => tx.put('reglages', { id: f.id, claim: today() }), '💳 Le client dit avoir payé', `${f.no} — ${cl}`); }
+        else await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + tid, ...netInfo(tid), payMode: m.payMode === 'month' ? 'month' : 'each' }), '💳 Mode de paiement du client', `${cl} : ${m.payMode === 'month' ? 'facture mensuelle' : 'chaque intervention'}`);
+        await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
+        continue;
+      }
       await vault.mutate((tx) => tx.put('taches', { type: 'reparation', titre: `🌐 ${cl} : ${String(m.titre || 'Intervention').slice(0, 80)}`, immId: '', logId: '', locId: '', intervenantId: '', date: today(), recur: '', statut: 'afaire', sentAt: m.t || new Date().toISOString(), urgent: m.urgence === 'urgent',
         net: { tid, nom: cl, urgence: m.urgence || 'normal' }, adresse: String(m.adresse || '').slice(0, 200), note: `${String(m.texte || '').slice(0, 3000)}${m.adresse ? '\n📍 ' + m.adresse : ''}${m.contact ? '\n👤 ' + m.contact : ''}${m.tel ? ' · 📞 ' + m.tel : ''}\n\n— Demande de ${cl} (centrale du client) le ${fmtDateTime(m.t || Date.now())}` }), '🌐 Demande d’un client → Maintenance', `${cl} — ${m.titre || ''}`);
       await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
@@ -1351,6 +1455,7 @@ async function netLoad(force) {
     const list = (await netApi('tenants')).tenants || [];
     ui.net = { list, dem: [], at: Date.now(), err: '' };
     await netDemSync(list);
+    await netHoldSync(list);
   } catch (e) { ui.net = { list: (ui.net || {}).list || [], dem: (ui.net || {}).dem || [], at: Date.now(), err: e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.' : e.message || 'Connexion impossible' }; }
   if (ui.route === 'reseau') renderView();
   if (ui.sheet && ui.sheet.kind && ui.sheet.kind.startsWith('net')) { ui.sheet.rendered = false; renderSheet(); }
@@ -1359,10 +1464,51 @@ async function netLoad(force) {
 function tenantBanner() {
   if (!TENANT) return '';
   const t = tenantInfo, dl = t.until ? Math.round((new Date(t.until + 'T12:00') - new Date(today() + 'T12:00')) / 864e5) : null;
+  const late = tFactLate();
+  if (t.hold === 'ro' && t.state === 'ro') return html`<div class="alert bad" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>facture non payée.</span> <a href="#/demandes">🧾 Payer</a> <span>: la centrale se débloque dès que le paiement est reçu.</span></div></div>`;
+  if (late.length) return html`<div class="alert warn" style="margin-bottom:12px">🧾<div><b>${plural(late.length, 'facture')} en retard</b> — <a href="#/demandes">payer maintenant</a> <span>pour éviter la lecture seule.</span></div></div>`;
   if (t.state === 'ro') return html`<div class="alert warn" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>abonnement échu le</span> <span data-notr>${fmtDate(t.until)}</span>. <span>Vos données restent visibles ; pour les modifier, contactez LuxInterventions.</span></div></div>`;
   if (t.st === 'trial' && dl != null) return html`<div class="alert info" style="margin-bottom:12px">🎁<div><b>Essai gratuit</b> — <span>${dl > 0 ? `${dl} jour${dl > 1 ? 's' : ''} restant${dl > 1 ? 's' : ''}` : 'dernier jour'}</span> (<span>jusqu’au</span> <span data-notr>${fmtDate(t.until)}</span>).</div></div>`;
   return '';
 }
+// 🧾 centrale d'un client : fatture della CENTRAL-APP (casella cifrata per la nostra chiave), bonifico con QR, « Ho pagato »
+let tboxBusy = false;
+const tfMem = () => (ui.tfacts ||= {}); // fatture tenute in memoria (centrale in sola lettura)
+const tFacts = () => { const m = { ...Object.fromEntries(vault.list('reglages').filter((r) => r.id.startsWith('tfact-')).map((r) => [r.no, r])), ...tfMem() }; return Object.values(m).sort((a, b) => (b.no || '').localeCompare(a.no || '')); };
+const tClaim = (no, v) => { const k = 'aresTClaim:' + TENANT + ':' + no; try { if (v) localStorage.setItem(k, v); return localStorage.getItem(k) || ''; } catch { return ''; } };
+async function tenantBoxSync() {
+  if (!TENANT || tboxBusy || !vault.unlocked) return;
+  tboxBusy = true;
+  try {
+    const keys = await ownerKeys();
+    if ((vault.get('reglages', 'tboxPub') || {}).pub !== keys.pub) { await vault.call('tenant-key', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pub: keys.pub }) }); if (tenantInfo.state !== 'ro') await vault.mutate((tx) => tx.put('reglages', { id: 'tboxPub', pub: keys.pub }), 'Clé des factures publiée', ''); }
+    const items = (await (await vault.call('box')).json()).items || [];
+    const ro = tenantInfo.state === 'ro';
+    for (const it of items) {
+      let m;
+      try { m = await openFromTenant(keys.priv, b64d(it.d)); } catch { continue; }
+      if (m.type === 'facture' && m.no) {
+        const rec = { no: m.no, date: m.date, due: m.due, ht: m.ht, tva: m.tva, ttc: m.ttc, from: m.from || '', lignes: m.lignes || [], pay: m.pay || {}, avv: m.avv, ro: m.ro, paid: '' };
+        if (ro) { tfMem()[m.no] = { ...rec, pdf: m.pdf }; continue; } // sola lettura : on garde la casella telle quelle
+        const bytes = b64d(m.pdf || '');
+        let docId = '';
+        await vault.mutate((tx) => { docId = bytes.length ? tx.put('documents', { kind: 'facture-recue', label: `Facture ${m.no} — ${rec.from}`, date: m.date, mime: 'application/pdf', size: bytes.length }).id : ''; tx.put('reglages', { id: 'tfact-' + m.no, ...rec, docId }); }, '🧾 Facture reçue', `${m.no} · ${eur(m.ttc)}`);
+        if (docId) await vault.saveFile(docId, bytes);
+      } else if (m.type === 'paid' && m.no) {
+        if (ro) { const mem = tfMem(); if (mem[m.no]) mem[m.no].paid = today(); else { const r = vault.get('reglages', 'tfact-' + m.no); if (r) mem[m.no] = { ...r, paid: today() }; } continue; }
+        const r = vault.get('reglages', 'tfact-' + m.no);
+        if (r) await vault.mutate((tx) => tx.put('reglages', { id: r.id, paid: today() }), '✅ Facture payée', m.no);
+      }
+      await vault.call('box/' + it.name, { method: 'DELETE' }).catch(() => {});
+    }
+  } catch { /* Worker pas encore à jour ou hors ligne */ } finally { tboxBusy = false; }
+  if (['demandes', 'dashboard'].includes(ui.route) || tFacts().length) renderShell();
+}
+async function tenantSend(obj) {
+  const k = await (await vault.call('network-key')).json();
+  await vault.call('demande', { method: 'POST', body: await sealForOwner(k.pub, { client: socName(), fil: tenantInfo.fil || '', t: new Date().toISOString(), ...obj }) });
+}
+const tFactLate = () => tFacts().filter((f) => !f.paid && lateDays(f.due) >= (f.avv ?? 7));
 async function tenantRefresh() {
   if (!TENANT || !vault.unlocked) return;
   try { const j = await (await vault.call('tenant')).json(); if (j.tenant) { const prev = JSON.stringify(tenantInfo); tenantSave(j.tenant); if (JSON.stringify(j.tenant) !== prev) { renderShell(); go(ui.route, true); } } } catch { /* hors ligne */ }
@@ -1375,6 +1521,27 @@ const anCos = () => vault.list('reglages').filter((r) => r.id.startsWith('annc-'
 const anTarifs = () => vault.get('reglages', 'annTarifs') || {};
 const PUB_JOURS = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
 const anHashes = new Map();
+// 💶 annonce validée → l'annonceur paie la centrale (virement QR + « J'ai payé ») → « Paiement reçu » : facture et mise en ligne.
+// Les tarifs des emplacements sont HT ; la TVA est celle de 🧾 Facturation.
+const annDue = (a) => { const c = factConf(), tx = factTaux({}, c), ht = r2(+a.prix || 0), tva = r2((ht * tx) / 100), ttc = r2(ht + tva); return { tx, ht, tva, ttc, epc: c.iban ? epcText(c.nom, c.iban, c.bic, ttc, 'Annonce ' + String(a.id).slice(0, 8)) : '' }; };
+const annFrom = () => { const c = factConf(); return { from: { nom: c.nom, marque: c.marque, adresse: c.adresse, ville: c.ville, rcs: c.rcs, tva: c.tva, iban: c.iban, bic: c.bic, banque: c.banque } }; };
+async function annFactEmit(a) {
+  const c = factConf(), miss = factMissing(c);
+  if (miss.length) throw new Error('Complétez : ' + miss.join(', ') + ' (Réglages → 🧾 Facturation)');
+  const an = vault.get('reglages', a.annId) || {}, client = an.nom || a.nom, d = annDue(a), t = anTarifs();
+  if (!(d.ht > 0)) throw new Error('Montant à 0 € : indiquez les 💶 Tarifs des annonces.');
+  const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-ANN${String(seq).padStart(4, '0')}`;
+  const sub = [PUB_SLOTS[pubSlot(a)].split(' — ')[0], `${fmtDate(a.debut)} → ${fmtDate(a.fin)}`, `${a.ttl || 1} j${+t[pubSlot(a)] ? ' × ' + eur(+t[pubSlot(a)]) : ''}`, pubAud(a).map((k) => PUB_AUD[k]).join(', ')].join(' · ');
+  const { bytes } = await netFactPdf([{ titre: `${AN_TYPES[a.type] || 'Annonce'} — ${a.nom}`, sub, tx: d.tx, ht: d.ht, tva: d.tva }], client, no, date, date, c, 'Annonces');
+  let docId = '';
+  await vault.mutate((tx) => {
+    tx.put('reglages', { id: 'facturation', seq });
+    docId = tx.put('documents', { kind: 'facture-ann', label: `Facture ${no} — ${client}`, date, mime: 'application/pdf', size: bytes.length }).id;
+    tx.put('avis', { id: a.id, st: 'ok', motif: '', pay: 'ok', fact: { no, date, ht: d.ht, tva: d.tva, ttc: d.ttc, tx: d.tx, paid: date, docId } });
+  }, '📣 Annonce payée : facture et mise en ligne', `${no} — ${client} · ${eur(d.ttc)}`);
+  await vault.saveFile(docId, bytes);
+  return no;
+}
 async function annSync(onlyId, loud) {
   if (!vault.unlocked) return true;
   for (const an0 of anCos().filter((x) => x.appCode && (!onlyId || x.id === onlyId))) {
@@ -1393,10 +1560,11 @@ async function annSync(onlyId, loud) {
       const sig = vault.get('reglages', 'signal'), t = anTarifs();
       const ads = vault.list('avis').filter((a) => isPub(a) && a.annId === an.id).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map((a) => {
         const st = pubStatsFor(a.id, a.debut || '0000');
-        return { id: a.id, type: a.type || 'annonce', nom: a.nom, texte: a.texte || '', adresse: a.adresse || '', tel: a.tel || '', web: a.web || '', video: a.video || '', slot: pubSlot(a), aud: pubAud(a), debut: a.debut, fin: a.fin, jours: a.jours || [], h1: a.h1 || '', h2: a.h2 || '', st: a.st || 'ok', motif: a.motif || '', prix: a.prix || 0, v: st.v, taps: st.taps };
+        return { id: a.id, type: a.type || 'annonce', nom: a.nom, texte: a.texte || '', adresse: a.adresse || '', tel: a.tel || '', web: a.web || '', video: a.video || '', slot: pubSlot(a), aud: pubAud(a), debut: a.debut, fin: a.fin, jours: a.jours || [], h1: a.h1 || '', h2: a.h2 || '', st: a.st || 'ok', motif: a.motif || '', prix: a.prix || 0, v: st.v, taps: st.taps,
+          claim: a.payClaim || '', fact: a.fact ? { no: a.fact.no, date: a.fact.date, ht: a.fact.ht, tva: a.fact.tva, ttc: a.fact.ttc, tx: a.fact.tx } : null, ...(a.st === 'pay' ? annDue(a) : {}) };
       });
       const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: societe().nom || 'LuxInterventions',
-        tarifs: { haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, note: t.note || '' }, pay: false };
+        tarifs: { haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, note: t.note || '' }, pay: false, ...annFrom() };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && anHashes.get(e.id) === hs) continue;
       await vault.espacePut(e.id, await sealJson(e.key, data));
@@ -1424,23 +1592,33 @@ async function annInbox(an, msg) {
     await vault.mutate((tx) => tx.put('avis', rec), old ? '📣 Annonce modifiée par l’annonceur (à valider)' : '📣 Nouvelle annonce à valider', `${an.nom} · ${AN_TYPES[rec.type]} · ${fmtDate(rec.debut)} → ${fmtDate(rec.fin)}`);
     annSync(an.id); return true;
   }
+  if (msg.type === 'an-paid') {
+    const a = vault.get('avis', S(msg.id, 40));
+    if (!a || a.annId !== an.id || a.st !== 'pay' || a.payClaim) return false;
+    await vault.mutate((tx) => tx.put('avis', { id: a.id, payClaim: today() }), '💶 L’annonceur dit avoir payé', `${an.nom} · ${a.nom} · ${eur(annDue(a).ttc)}`);
+    annSync(an.id); return true;
+  }
   if (msg.type === 'an-stop') {
     const a = vault.get('avis', S(msg.id, 40));
     if (!a || a.annId !== an.id) return false;
-    await vault.mutate((tx) => tx.put('avis', { id: a.id, fin: addDays(today(), -1), st: a.st === 'wait' ? 'no' : a.st }), '📣 Annonce arrêtée par l’annonceur', `${an.nom} · ${a.nom}`);
+    await vault.mutate((tx) => tx.put('avis', { id: a.id, fin: addDays(today(), -1), st: a.st === 'wait' || a.st === 'pay' ? 'no' : a.st }), '📣 Annonce arrêtée par l’annonceur', `${an.nom} · ${a.nom}`);
     annSync(an.id); return true;
   }
   return false;
 }
 function annBlock() {
   const cos = anCos(), wait = vault.list('avis').filter((a) => isPub(a) && a.st === 'wait').sort((a, b) => (a.debut || '').localeCompare(b.debut || '')), t = anTarifs();
-  const nm = (a) => (vault.get('reglages', a.annId) || {}).nom || a.nom;
+  const nm = (a) => (vault.get('reglages', a.annId) || {}).nom || a.nom, topay = vault.list('avis').filter((a) => isPub(a) && a.st === 'pay').sort((a, b) => (b.payClaim || '').localeCompare(a.payClaim || ''));
   return html`<div class="card" style="margin-bottom:14px"><div class="card-title"><h3>🍽️ Annonceurs (HORECA)</h3><div class="actions" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-action="ann-tarifs">💶 Tarifs</button><button class="btn sm primary" data-action="new-annc">${icon('plus')} Annonceur</button></div></div>
-    <p class="tiny muted" style="margin:0 0 8px">Restaurants, bistrots, bars, discothèques… publient eux-mêmes leurs annonces, menus et événements dans leur app ; vous validez. Tarifs / jour : 🔝 ${t.haut ? t.haut + ' €' : '—'} · ⏺ ${t.milieu ? t.milieu + ' €' : '—'} · 🔽 ${t.bas ? t.bas + ' €' : '—'} · 💳 paiement en ligne : <b>non connecté</b></p>
+    <p class="tiny muted" style="margin:0 0 8px">Restaurants, bistrots, bars, discothèques… publient eux-mêmes leurs annonces, menus et événements dans leur app ; vous validez. Tarifs HT / jour : 🔝 ${t.haut ? t.haut + ' €' : '—'} · ⏺ ${t.milieu ? t.milieu + ' €' : '—'} · 🔽 ${t.bas ? t.bas + ' €' : '—'} · 💶 virement (QR) puis « Paiement reçu » · 💳 en ligne : <b>non connecté</b></p>
     ${wait.length ? html`<div class="section-label">⏳ À valider (${wait.length})</div><div class="list" style="margin-bottom:10px">${wait.map((a) => html`<div class="row" style="display:block">
       <b>${nm(a)}</b> · ${AN_TYPES[a.type] || ''} — ${a.nom}<div class="small">${a.texte}</div>
       <div class="tiny muted">${PUB_SLOTS[pubSlot(a)].split(' — ')[0]} · ${pubAud(a).map((k) => PUB_AUD[k]).join(' · ')} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}${a.jours && a.jours.length ? ' · ' + a.jours.map((j) => PUB_JOURS[j]).join(' ') : ''}${a.h1 ? ` · ${a.h1}–${a.h2}` : ''}${a.prix ? ' · ' + a.prix + ' €' : ''}</div>
       <div class="actions" style="margin:6px 0 0"><button class="btn sm primary" data-action="pub-ok" data-id="${a.id}">✅ Publier</button><button class="btn sm" data-action="edit-pub" data-id="${a.id}">✏️ Voir</button><button class="btn sm ghost danger" data-action="pub-no" data-id="${a.id}">❌ Refuser</button></div></div>`)}</div>` : ''}
+    ${topay.length ? html`<div class="section-label">💶 À encaisser (${topay.length})</div><div class="list" style="margin-bottom:10px">${topay.map((a) => html`<div class="row" style="display:block">
+      <b>${nm(a)}</b> · ${AN_TYPES[a.type] || ''} — ${a.nom} · <b>${eur(annDue(a).ttc)}</b> <span>TTC</span> ${a.payClaim ? html`<span class="badge warn">💶 <span>payé selon l’annonceur</span> · ${fmtDate(a.payClaim)}</span>` : html`<span class="badge">⏳ <span>en attente du paiement</span></span>`}
+      <div class="tiny muted">${fmtDate(a.debut)} → ${fmtDate(a.fin)}</div>
+      <div class="actions" style="margin:6px 0 0"><button class="btn sm primary" data-action="pub-paid" data-id="${a.id}">✅ Paiement reçu</button><button class="btn sm" data-action="edit-pub" data-id="${a.id}">✏️ Voir</button></div></div>`)}</div>` : ''}
     ${cos.length ? html`<div class="list">${cos.map((an) => { const n = vault.list('avis').filter((a) => isPub(a) && a.annId === an.id && (!a.fin || a.fin >= today()) && a.st === 'ok').length; return html`<button class="row" data-action="edit-annc" data-id="${an.id}"><span class="avatar">${(PUB_CATS[an.cat] || '📣').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${an.nom}</span><span class="meta">${plural(n, 'annonce')} en ligne${an.tel ? ' · ' + an.tel : ''}</span></span><span class="chev">›</span></button>`; })}</div>` : html`<p class="small muted" style="margin:0">Aucun annonceur.</p>`}</div>`;
 }
 // 📣 annonces publicitaires des partenaires (vendues) : dans Comptabilité → Abonnements
@@ -1454,7 +1632,7 @@ function pubSection(f = '') {
         <span class="meta" style="display:block"><b>${PUB_SLOTS[pubSlot(a)].split(' — ')[0]}</b> · ${pubAud(a).map((k) => html`<span>${PUB_AUD[k]}</span>`).reduce((x, y) => html`${x} · ${y}`)}</span>
         <span class="meta"><span>${a.immId ? immName(a.immId) : 'Tous les immeubles'}</span>${a.fin ? html` · <span>${fmtDate(a.debut)} → ${fmtDate(a.fin)}</span>` : ''}</span>
         ${(() => { const st = pubStatsFor(a.id, a.debut || '0000'); return st.v || st.taps ? html`<span class="meta" style="display:block">📊 <b>${st.v}</b> <span>vues</span> · <b>${st.taps}</b> <span>clics</span>${st.v ? html` · <span>${String(st.ctr).replace('.', ',')} %</span>` : ''}</span>` : ''; })()}</span>
-        <span class="badge ${a.st === 'wait' ? 'warn' : a.st === 'no' ? 'bad' : a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.st === 'wait' ? '⏳ à valider' : a.st === 'no' ? '❌ refusée' : a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
+        <span class="badge ${a.st === 'wait' || a.st === 'pay' ? 'warn' : a.st === 'no' ? 'bad' : a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.st === 'wait' ? '⏳ à valider' : a.st === 'pay' ? '💶 à payer' : a.st === 'no' ? '❌ refusée' : a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
       return html`${f ? '' : annBlock()}<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
         ${all.length ? html`<p class="tiny muted" style="margin:-4px 0 8px">📊 Statistiques anonymes : vues (une fois par jour et par téléphone) et clics. <a href="#" data-action="pub-stats-refresh">↻ Actualiser les statistiques</a></p>` : ''}
         ${on.length ? html`<div class="list" style="margin-bottom:14px">${on.map(row)}</div>` : empty('msg', 'Aucune annonce en cours.', html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>`)}
@@ -1776,6 +1954,14 @@ async function hoteInbox(h, msg) {
     hotesSync(h.id);
     return true;
   }
+  if (msg.type === 'hote-rate') {
+    const rid = String(msg.r || '').slice(0, 20), x = txRideOf(h, rid), s0 = Math.round(+msg.s);
+    if (!x || !x.t.done || x.t.rate || !(s0 >= 1 && s0 <= 5)) return false;
+    const rate = { s: s0, txt: String(msg.txt || '').trim().slice(0, 500), at: new Date().toISOString() };
+    await vault.mutate((tx) => { if (rid === 'arr') tx.put('hotes', { id: h.id, taxi: { ...h.taxi, rate } }); else tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === rid ? { ...r, taxi: { ...r.taxi, rate } } : r)) }); }, '⭐ Note du client sur la course', `${who} · ${'⭐'.repeat(s0)}`);
+    hotesSync(h.id); if (x.t.co) txcoSync(x.t.co);
+    return true;
+  }
   if (msg.type === 'hote-edl') {
     const ph = (Array.isArray(msg.photos) ? msg.photos : []).filter((x) => x && CH_PH.some(([k]) => k === x.k) && typeof x.b === 'string' && x.b.length < 4e6).slice(0, CH_PH.length);
     if (!ph.length) return false;
@@ -1791,7 +1977,7 @@ async function hoteInbox(h, msg) {
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
 async function inboxSync() {
-  netDemSync();
+  if (TENANT) tenantBoxSync(); else { netDemSync(); netLoad(); }
   const keys = vault.get('reglages', 'signal');
   if (!keys || !keys.priv || inboxBusy || !vault.unlocked) return;
   inboxBusy = true;
@@ -2294,6 +2480,52 @@ const TX_GAM = { luxe: '💎 Luxe', confort: '🚘 Confort', eco: '🚕 Économi
 const TX_SRV = { course: '🛣️ Course', heures: '⏱️ À l’heure', demi: '🌗 Demi-journée', jour: '☀️ Journée', sejour: '📅 Tout le séjour' };
 const TX_EXT = { garde: '🛡️ Garde du corps', boissons: '🍾 Boissons', friandises: '🍫 Friandises', siege: '🍼 Siège enfant', pancarte: '🪧 Pancarte à l’arrivée', bagages: '🧳 Aide bagages' };
 const txCos = () => vault.list('reglages').filter((r) => r.id.startsWith('txco-')).sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+// 🧾 la société de taxi se fait payer directement par l'hôtel / l'Airbnb (nous n'encaissons rien) : sa fiche, ses factures, ses statistiques
+const TX_PAY = { iban: '🏦 Virement (IBAN)', lien: '🔗 Lien de paiement', chauffeur: '💵 Au chauffeur (espèces / carte)' };
+const TX_PRIX = { fixe: 'Prix de la grille (estimation)', conf: 'Confirmé à l’acceptation', corr: 'Corrigé après la course (attente, péages)' };
+const TX_FACT = { each: 'Une facture par course', month: 'Récapitulatif mensuel' };
+const txRideOf = (h, r) => (r === 'arr' ? (h.taxi && h.arr ? { a: h.arr, t: h.taxi } : null) : ((x) => (x && x.taxi ? { a: x, t: x.taxi } : null))((h.rides || []).find((x) => x.id === r)));
+const txAll = (coId, from) => vault.list('hotes').flatMap((h) => [...(h.taxi && h.taxi.co && h.arr ? [{ h, r: 'arr', a: h.arr, t: h.taxi }] : []), ...(h.rides || []).filter((x) => x.taxi && x.taxi.co).map((x) => ({ h, r: x.id, a: x, t: x.taxi }))])
+  .filter((x) => (!coId || x.t.co === coId) && (!from || (x.a.at || x.t.at || '9') >= from));
+const txInvs = (coId) => vault.list('reglages').filter((r) => r.id.startsWith('txinv-') && (!coId || r.co === coId)).sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.no || '').localeCompare(a.no || ''));
+function txStats(coId) {
+  const R = txAll(coId, addDays(today(), -90)), ok = R.filter((x) => x.t.st === 'ok'), no = R.filter((x) => x.t.st === 'no');
+  const lost = R.filter((x) => x.t.st === 'wait' && x.a.quand && x.a.quand.slice(0, 10) < today());
+  const resp = [...ok, ...no].map((x) => (Date.parse(x.t.at) - Date.parse(x.a.at)) / 60000).filter((m) => m >= 0 && m < 7 * 1440);
+  const notes = R.map((x) => x.t.rate && x.t.rate.s).filter(Boolean), inv = txInvs(coId);
+  return { n: R.length, ok: ok.length, no: no.length, lost: lost.length, done: R.filter((x) => x.t.done).length, resp: resp.length ? Math.round(sum(resp, (m) => m) / resp.length) : null,
+    note: notes.length ? Math.round((sum(notes, (v) => v) / notes.length) * 10) / 10 : null, nNote: notes.length, du: sum(inv.filter((f) => !f.paid), (f) => f.ttc), paye: sum(inv.filter((f) => f.paid), (f) => f.ttc) };
+}
+// facture d'une société de taxi (émise par elle, à l'hôtel / l'Airbnb) : une course ou le récapitulatif du mois
+async function txInvPdf(f) {
+  const co = vault.get('reglages', f.co) || {}, pr = co.prof || {}, hc = hoteConf(), soc = societe();
+  const p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42], fr = (iso) => fmtDate(String(iso).slice(0, 10));
+  p.text(X, 52, pr.nom || co.nom || '', { size: 12, bold: true }).text(X, 66, [pr.adresse, pr.ville].filter(Boolean).join(', '), { size: 9 }).text(X, 78, [pr.rcs && 'RCS ' + pr.rcs, pr.tva && 'TVA ' + pr.tva].filter(Boolean).join(' · '), { size: 8.5, color: G });
+  p.text(X, 90, [pr.tel, pr.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
+  p.text(330, 130, hc.nom || soc.nom || '', { size: 11, bold: true }).text(330, 144, hc.adresse || soc.adresse || '', { size: 9 });
+  let y = 200;
+  p.text(X, y, `Facture ${f.no}`, { size: 20, bold: true }); y += 24;
+  p.text(X, y, `Date : ${fr(f.date)}`, { size: 10 }); y += 26;
+  p.text(X + 6, y, 'Course', { size: 9.5, bold: true }).text(R - 6, y, 'Montant TTC', { size: 9.5, bold: true, align: 'right' }); y += 8; p.line(X, y, R, y); y += 15;
+  for (const k of f.keys || []) {
+    const [hid, rid] = k.split(':'), h = vault.get('hotes', hid), x = h && txRideOf(h, rid);
+    if (!x) continue;
+    if (y > 720) { p.page(); y = 60; }
+    const lib = `${fr((x.t.done && x.t.done.at) || x.a.quand || x.a.at)} · ${[x.a.from, x.a.to || hc.nom].filter(Boolean).join(' → ')}`;
+    const sub = [`Client : ${[h.prenom, h.nom].filter(Boolean).join(' ')}`, x.t.code ? 'Chauffeur ' + x.t.code : x.t.nom, TX_SRV[x.a.service], x.t.done && x.t.done.note].filter(Boolean).join(' · ');
+    p.text(R - 6, y, eur((x.t.done && x.t.done.prix) || 0), { size: 9.5, align: 'right' });
+    let hh = p.wrap(X + 6, y, lib, 380, { size: 9.5 }); hh += p.wrap(X + 6, y + hh, sub, 380, { size: 8.5, color: G });
+    y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
+  }
+  y += 8;
+  p.text(330, y, 'Montant HT', { size: 9.5 }).text(R - 6, y, eur(f.ht), { size: 9.5, align: 'right' }); y += 15;
+  p.text(330, y, `TVA ${String(f.taux).replace('.', ',')} %`, { size: 9.5 }).text(R - 6, y, eur(f.tva), { size: 9.5, align: 'right' }); y += 17;
+  p.text(330, y, 'Total TTC', { size: 11, bold: true }).text(R - 6, y, eur(f.ttc), { size: 11, bold: true, align: 'right' }); y += 30;
+  if (pr.pay === 'iban' && pr.iban) { p.text(X, y, `Paiement par virement : IBAN ${pr.iban}${pr.bic ? ' · BIC ' + pr.bic : ''} · communication ${f.no}`, { size: 9 }); qrPdf(p, X, y + 10, 92, epcText(pr.nom || co.nom, pr.iban, pr.bic, f.ttc, f.no)); }
+  else if (pr.pay === 'lien' && pr.lien) p.text(X, y, 'Paiement en ligne : ' + pr.lien, { size: 9 });
+  else p.text(X, y, 'Paiement au chauffeur (espèces ou carte).', { size: 9 });
+  return p.bytes();
+}
 // ce que voit le client : par gamme, le prix le plus bas proposé par une société ; extras proposés (prix le plus bas)
 function txOffers() {
   const gam = {}, ext = {};
@@ -2310,17 +2542,19 @@ function txOffers() {
   }
   return { gam: Object.keys(gam).map((k) => ({ k, ...gam[k] })), ext: Object.entries(ext).map(([k, p]) => ({ k, p })) };
 }
-// courses envoyées à une société : à l'arrivée (h.taxi) et pendant le séjour (h.rides)
+// ce que la société voit de plus sur une course : code du chauffeur, prix confirmé, fin, facture, note du client
+const txOut = (t) => ({ code: t.code || '', prixConf: t.prixConf || 0, done: t.done || null, inv: t.inv || '', rate: t.rate ? { s: t.rate.s, txt: t.rate.txt || '' } : null });
+// courses envoyées à une société : à l'arrivée (h.taxi) et pendant le séjour (h.rides), et celles des 2 derniers mois (factures)
 async function txRides(co) {
   const out = [], hc = hoteConf();
-  for (const h of vault.list('hotes').filter((x) => x.depart >= today())) {
+  for (const h of vault.list('hotes').filter((x) => x.depart >= addDays(today(), -62))) {
     const base = { h: h.id, n: [h.prenom, h.nom].filter(Boolean).join(' '), gt: h.tel || '', lg: h.langue || '', s: hc.nom || '', sa: h.lieu === 'airbnb' ? h.adresse || chGet(h.lieu, h.chambre).adresse || '' : hc.adresse || '' };
     if (h.taxi && h.taxi.co === co.id && h.arr) {
       ui.hoteTks[h.id] ||= await hoteTks(h);
       const a = h.arr;
-      out.push({ ...base, r: 'arr', from: a.from, quand: a.quand, vol: a.vol, km: a.km, prix: a.prix, service: a.service || 'course', gamme: a.gamme || '', extras: a.extras || [], heures: a.heures || 0, st: h.taxi.st || 'wait', drv: h.taxi.st === 'ok' ? { nom: h.taxi.nom, tel: h.taxi.tel, auto: h.taxi.auto, plaque: h.taxi.plaque } : null, link: h.taxi.st === 'ok' ? hoteDrvLink(h) : '' });
+      out.push({ ...base, ...txOut(h.taxi), r: 'arr', from: a.from, quand: a.quand, vol: a.vol, km: a.km, prix: a.prix, service: a.service || 'course', gamme: a.gamme || '', extras: a.extras || [], heures: a.heures || 0, st: h.taxi.st || 'wait', drv: h.taxi.st === 'ok' ? { nom: h.taxi.nom, tel: h.taxi.tel, auto: h.taxi.auto, plaque: h.taxi.plaque } : null, link: h.taxi.st === 'ok' ? hoteDrvLink(h) : '' });
     }
-    for (const r of h.rides || []) if (r.taxi && r.taxi.co === co.id) out.push({ ...base, r: r.id, from: r.from, to: r.to, quand: r.quand, prix: r.prix, service: r.service, gamme: r.gamme, extras: r.extras || [], heures: r.heures || 0, st: r.taxi.st || 'wait', drv: r.taxi.st === 'ok' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null, link: '' });
+    for (const r of h.rides || []) if (r.taxi && r.taxi.co === co.id) out.push({ ...base, ...txOut(r.taxi), r: r.id, from: r.from, to: r.to, quand: r.quand, prix: r.prix, service: r.service, gamme: r.gamme, extras: r.extras || [], heures: r.heures || 0, st: r.taxi.st || 'wait', drv: r.taxi.st === 'ok' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null, link: '' });
   }
   return out;
 }
@@ -2341,13 +2575,16 @@ async function txcoSync(onlyId, loud) {
       }
       co = vault.get('reglages', co.id);
       const sig = vault.get('reglages', 'signal');
-      const data = { v: 1, kind: 'taxi', gv: VERSION, nom: co.nom, tel: co.tel || '', cat: co.cat || {}, rides: await txRides(co), signalKey: sig ? sig.pub : '', reseau: hoteConf().nom || societe().nom || 'LuxInterventions',
+      const hcf = hoteConf();
+      const data = { v: 1, kind: 'taxi', gv: VERSION, nom: co.nom, tel: co.tel || '', cat: co.cat || {}, rides: await txRides(co), signalKey: sig ? sig.pub : '', reseau: hcf.nom || societe().nom || 'LuxInterventions',
+        prof: co.prof || null, cli: { nom: hcf.nom || societe().nom || '', adresse: hcf.adresse || societe().adresse || '' },
+        invs: txInvs(co.id).slice(0, 40).map((f) => ({ no: f.no, date: f.date, ht: f.ht, tva: f.tva, ttc: f.ttc, taux: f.taux, keys: f.keys, paid: f.paid || '', recv: f.recv || '' })),
         pubs: pubsActives(null, 'taxi').map(pubOut) };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && txHashes.get(e.id) === hs) continue;
       await vault.espacePut(e.id, await sealJson(e.key, data));
       txHashes.set(e.id, hs);
-      await notifyNews(e.id, data.rides.filter((r) => r.st === 'wait').map((r) => 'r:' + r.h + ':' + r.r));
+      await notifyNews(e.id, [...data.rides.filter((r) => r.st === 'wait').map((r) => 'r:' + r.h + ':' + r.r), ...data.invs.filter((f) => f.paid).map((f) => 'p:' + f.no)]);
     } catch (err) { if (loud) { toast(err.message || 'Publication impossible (connexion ?)', { bad: true }); return false; } }
   }
   return true;
@@ -2359,16 +2596,59 @@ async function txInbox(co, msg) {
     const c = msg.cat || {}, gammes = {};
     for (const k of Object.keys(TX_GAM)) { const g = (c.gammes || {})[k] || {}; gammes[k] = { on: !!g.on, pc: N(g.pc), km: N(g.km), h: N(g.h), demi: N(g.demi), jour: N(g.jour) }; }
     const extras = {}; for (const k of Object.keys(TX_EXT)) if ((c.extras || {})[k] !== undefined && (c.extras || {})[k] !== '') extras[k] = N(c.extras[k]);
-    const cat = { gammes, extras, drivers: (Array.isArray(c.drivers) ? c.drivers : []).slice(0, 40).map((d) => ({ nom: S(d.nom, 60), tel: S(d.tel, 30), lg: S(d.lg, 40) })).filter((d) => d.nom),
+    const cat = { gammes, extras, drivers: (Array.isArray(c.drivers) ? c.drivers : []).slice(0, 40).map((d) => ({ nom: S(d.nom, 60), tel: S(d.tel, 30), lg: S(d.lg, 40), code: S(d.code, 8).toUpperCase() })).filter((d) => d.nom),
       cars: (Array.isArray(c.cars) ? c.cars : []).slice(0, 40).map((x) => ({ modele: S(x.modele, 60), plaque: S(x.plaque, 20).toUpperCase(), gamme: TX_GAM[x.gamme] ? x.gamme : 'eco', places: N(x.places) })).filter((x) => x.modele) };
     await vault.mutate((tx) => tx.put('reglages', { id: co.id, cat, catAt: new Date().toISOString() }), '🚕 Catalogue de la société de taxi', `${co.nom} · ${plural(cat.drivers.length, 'chauffeur')} · ${plural(cat.cars.length, 'voiture')}`);
     hotesSync(); return true;
+  }
+  if (msg.type === 'tx-prof') {
+    const q = msg.prof || {};
+    const prof = { nom: S(q.nom, 120), adresse: S(q.adresse, 160), ville: S(q.ville, 80), rcs: S(q.rcs, 30), tva: S(q.tva, 30), tel: S(q.tel, 40), email: S(q.email, 120), pay: TX_PAY[q.pay] ? q.pay : 'iban',
+      iban: S(q.iban, 42).toUpperCase(), bic: S(q.bic, 14).toUpperCase(), lien: /^https:\/\//.test(String(q.lien || '')) ? S(q.lien, 300) : '', prix: TX_PRIX[q.prix] ? q.prix : 'fixe', fact: TX_FACT[q.fact] ? q.fact : 'each', taux: Math.max(0, Math.min(30, +q.taux || 0)) };
+    await vault.mutate((tx) => tx.put('reglages', { id: co.id, prof, profAt: new Date().toISOString() }), '🚕 Fiche de facturation de la société de taxi', `${co.nom} · ${TX_PAY[prof.pay]} · ${TX_FACT[prof.fact]}`);
+    txcoSync(co.id); return true;
+  }
+  // fin de course (prix final selon sa règle), facture d'une course ou du mois, paiement reçu
+  const setRide = (h, r, patch) => vault.mutate((tx) => { const cur = vault.get('hotes', h.id); if (r === 'arr') tx.put('hotes', { id: h.id, taxi: { ...cur.taxi, ...patch } }); else tx.put('hotes', { id: h.id, rides: (cur.rides || []).map((x) => (x.id === r ? { ...x, taxi: { ...x.taxi, ...patch } } : x)) }); }, patch.done ? '🏁 Course terminée' : '🧾 Facture du taxi', `${[h.prenom, h.nom].filter(Boolean).join(' ')} — ${co.nom}`);
+  const invNo = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 30);
+  const addInv = async (no, keys) => {
+    const pr = (vault.get('reglages', co.id) || {}).prof || {}, taux = +pr.taux || 0;
+    const ttc = r2(sum(keys, (k) => { const [hid, rid] = k.split(':'), h = vault.get('hotes', hid), x = h && txRideOf(h, rid); return x && x.t.done ? +x.t.done.prix || 0 : 0; }));
+    const ht = r2(ttc / (1 + taux / 100));
+    await vault.mutate((tx) => {
+      tx.put('reglages', { id: `txinv-${co.id}-${no}`, co: co.id, coNom: co.nom, no, date: today(), ttc, ht, tva: r2(ttc - ht), taux, keys, paid: '', recv: '' });
+      for (const k of keys) { const [hid, rid] = k.split(':'), h = vault.get('hotes', hid); if (!h) continue; if (rid === 'arr') tx.put('hotes', { id: hid, taxi: { ...h.taxi, inv: no } }); else tx.put('hotes', { id: hid, rides: (h.rides || []).map((x) => (x.id === rid ? { ...x, taxi: { ...x.taxi, inv: no } } : x)) }); }
+    }, '🧾 Facture de la société de taxi', `${co.nom} · ${no} · ${eur(ttc)}`);
+  };
+  if (msg.type === 'tx-done') {
+    const h = vault.get('hotes', S(msg.h, 40)), x = h && txRideOf(h, S(msg.r, 20));
+    if (!x || x.t.co !== co.id || x.t.st !== 'ok' || x.t.done) return false;
+    const pr = (vault.get('reglages', co.id) || {}).prof || {};
+    const prix = pr.prix === 'corr' && N(msg.prix) ? N(msg.prix) : x.t.prixConf || x.a.prix || N(msg.prix);
+    await setRide(h, S(msg.r, 20), { done: { at: new Date().toISOString(), prix, note: S(msg.note, 300) } });
+    const no = invNo(msg.inv);
+    if (pr.fact !== 'month' && no && !vault.get('reglages', `txinv-${co.id}-${no}`)) await addInv(no, [h.id + ':' + S(msg.r, 20)]);
+    hotesSync(h.id); txcoSync(co.id); return true;
+  }
+  if (msg.type === 'tx-inv') {
+    const no = invNo(msg.no);
+    if (!no || vault.get('reglages', `txinv-${co.id}-${no}`)) return false;
+    const keys = (Array.isArray(msg.keys) ? msg.keys : []).map((k) => S(k, 70)).filter((k) => { const [hid, rid] = k.split(':'), h = vault.get('hotes', hid), x = h && txRideOf(h, rid); return x && x.t.co === co.id && x.t.done && !x.t.inv; }).slice(0, 300);
+    if (!keys.length) return false;
+    await addInv(no, keys);
+    txcoSync(co.id); return true;
+  }
+  if (msg.type === 'tx-recv') {
+    const f = vault.get('reglages', `txinv-${co.id}-${invNo(msg.no)}`);
+    if (!f || f.recv) return false;
+    await vault.mutate((tx) => tx.put('reglages', { id: f.id, recv: today(), paid: f.paid || today() }), '✅ La société de taxi a reçu le paiement', `${co.nom} · ${f.no}`);
+    txcoSync(co.id); return true;
   }
   if (msg.type === 'tx-ride') {
     const h = vault.get('hotes', S(msg.h, 40));
     if (!h) return false;
     const ok = msg.act === 'ok', d = msg.drv || {}, car = msg.car || {};
-    const t = ok ? { co: co.id, st: 'ok', nom: S(d.nom, 60), tel: S(d.tel, 30), auto: S(car.modele, 60), plaque: S(car.plaque, 20).toUpperCase(), at: new Date().toISOString() } : { co: co.id, st: 'no', nom: co.nom, at: new Date().toISOString() };
+    const t = ok ? { co: co.id, st: 'ok', nom: S(d.nom, 60), tel: S(d.tel, 30), code: S(d.code, 8).toUpperCase(), auto: S(car.modele, 60), plaque: S(car.plaque, 20).toUpperCase(), ...(N(msg.prix) ? { prixConf: N(msg.prix) } : {}), at: new Date().toISOString() } : { co: co.id, st: 'no', nom: co.nom, at: new Date().toISOString() };
     const who = `${[h.prenom, h.nom].filter(Boolean).join(' ')} — ${co.nom}`;
     if (msg.r === 'arr') await vault.mutate((tx) => tx.put('hotes', { id: h.id, taxi: t }), ok ? '🚕 Course acceptée par la société' : '🚕 Course refusée par la société', who);
     else await vault.mutate((tx) => tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === msg.r ? { ...r, taxi: t } : r)) }), ok ? '🚘 Chauffeur accepté par la société' : '🚘 Chauffeur refusé par la société', who);
@@ -2376,6 +2656,15 @@ async function txInbox(co, msg) {
     hotesSync(h.id); txcoSync(co.id); return true;
   }
   return false;
+}
+// 💶 prix du séjour Airbnb : a) total écrit par l'hôte, b) nuits × prix + ménage + taxe de séjour (personnes × nuits)
+function hoteSejour(h) {
+  const x = h.lieu === 'airbnb' && h.prix ? h.prix : {};
+  if (x.mode === 'total') return +x.tot > 0 ? { mode: 'total', tot: r2(+x.tot) } : null;
+  if (x.mode !== 'detail' || !(+x.nuit > 0)) return null;
+  const n = Math.max(1, Math.round((Date.parse(h.depart) - Date.parse(h.arrivee)) / 864e5)), p = Math.max(1, +h.pers || 1);
+  const nuits = r2(n * +x.nuit), menage = r2(+x.menage || 0), taxe = r2((+x.taxe || 0) * p * n);
+  return { mode: 'detail', n, p, nuit: +x.nuit, nuits, menage, taxeU: +x.taxe || 0, taxe, tot: r2(nuits + menage + taxe) };
 }
 function hoteData(h, tks) {
   const c = hoteConf(), soc = societe(), ch = chGet(h.lieu, h.chambre), menu = vault.get('reglages', menuKey(h.lieu)), sig = vault.get('reglages', 'signal');
@@ -2386,9 +2675,10 @@ function hoteData(h, tks) {
     ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: ch.persMax || '', m2: ch.m2 || '', npieces: ch.npieces || '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
     st: { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LuxInterventions'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '' },
     menu: menu && menu.file ? menu.file : '', taxi: { pc: +c.txPc || 0, km: +c.txKm || 0, aero: +c.txAero || 0, gare: +c.txGare || 0, on: !!(c.drivers || []).length || !!txOffers().gam.length, ...txOffers() },
-    rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
+    rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, done: !!(r.taxi && r.taxi.done), rated: r.taxi && r.taxi.rate ? r.taxi.rate.s : 0, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
+    arrDone: !!(h.taxi && h.taxi.done), arrRated: h.taxi && h.taxi.rate ? h.taxi.rate.s : 0,
     arr: h.arr || null, taxiOk: h.taxi && h.taxi.st !== 'wait' && h.taxi.st !== 'no' ? { nom: h.taxi.nom, tel: h.taxi.tel, auto: h.taxi.auto, plaque: h.taxi.plaque } : null,
-    edlSent: h.edlOut ? Object.keys(h.edlOut.ph || {}) : [], ...tks, signalKey: sig ? sig.pub : '',
+    edlSent: h.edlOut ? Object.keys(h.edlOut.ph || {}) : [], sejour: hoteSejour(h), ...tks, signalKey: sig ? sig.pub : '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
     pubs: pubsActives(null, 'hote').sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut),
   };
@@ -4457,6 +4747,8 @@ dashboard() {
     const edlBox = edlNew.length ? html`<div class="stack" style="margin-bottom:14px">${edlNew.map((id) => { const ph = edlOutNew().filter((d) => d.logId === id), w = vault.get('locataires', ph[0].locId); return alertBtn('info', 'camera', 'open-edl-out', id, html`📷 <b>${plural(ph.length, 'photo')} de sortie</b> à contrôler — ${logName(id)}${w ? ' · ' + fullName(w) : ''}<div class="tiny">touchez pour comparer avec vos photos d’entrée</div>`); })}</div>` : '';
     const virBox = virs.length ? html`<div class="stack" style="margin-bottom:14px">${virs.map((l) => alertBtn('info', 'wallet', 'open-vir', l.id, html`💳 <b>${fullName(l)}</b> dit avoir payé${l.virSignal.montant ? html` <b>${money(l.virSignal.montant)}</b>` : ''} par ${PAY_VIA[l.virSignal.via || 'vir']} — ${l.virSignal.ref}<div class="tiny">${fmtDateTime(l.virSignal.t)} · vérifiez la réception, puis cochez le mois payé</div>`))}</div>` : '';
     const eqNew = sum(vault.list('intervenants'), (i) => i.feedNew || 0);
+    const nClaims = TENANT ? [] : netFacts().filter((f) => f.claim && !f.paid);
+    const nClaimBox = nClaims.length ? html`<div class="stack" style="margin-bottom:14px">${nClaims.map((f) => alertBtn('info', 'wallet', 'net-open', f.tid, html`💳 <b>${f.nom}</b> dit avoir payé la facture <b>${f.no}</b> (${eur(f.ttc)})<div class="tiny">vérifiez sur le compte, puis « ✅ Reçu » dans sa fiche</div>`))}</div>` : '';
     const eqChats = vault.list('intervenants').filter((i) => i.chatNew);
     const eqChatBox = eqChats.length ? html`<div class="stack" style="margin-bottom:14px">${eqChats.map((i) => alertBtn('info', 'msg', 'open-eq-chat', i.id, html`💬 <b>${i.chatNew} nouveau${i.chatNew > 1 ? 'x' : ''} message${i.chatNew > 1 ? 's' : ''}</b> — ${intervFull(i)}<div class="tiny">touchez pour lire et répondre</div>`))}</div>` : '';
     const eqBox = eqNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'eq-feed', '', html`👷 <b>${eqNew} nouvelle${eqNew > 1 ? 's' : ''} de l’équipe</b> (commencé, fini, pas fini, notes, photos…)<div class="tiny">touchez pour voir qui fait quoi, où et quand</div>`)}</div>` : '';
@@ -4484,7 +4776,7 @@ dashboard() {
       ${chatBox}
       ${virBox}
       ${edlBox}
-      ${eqChatBox}${eqBox}
+      ${nClaimBox}${eqChatBox}${eqBox}
       ${absBox}
       ${toolsBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
@@ -4606,7 +4898,9 @@ dashboard() {
   // 🛠️ centrale d'un client : ses demandes d'intervention à LuxInterventions
   demandes() {
     const list = vault.list('reglages').filter((r) => r.id.startsWith('tdem-')).sort((a, b) => (b.t || '').localeCompare(a.t || ''));
-    return html`${pageHead('🛠️ Demandes d’intervention', 'Envoyées à LuxInterventions, qui envoie ses intervenants')}
+    const F = tFacts();
+    const fRows = F.length ? html`<div class="section-label">🧾 Factures des interventions</div><div class="list" style="margin-bottom:16px">${F.map((f) => { const late = !f.paid ? lateDays(f.due) : 0, cl = tClaim(f.no); return html`<button class="row" data-action="tfact-open" data-id="${f.no}"><span class="grow"><span class="title" style="display:block">${f.no} · ${eur(f.ttc)}</span><span class="meta">${f.paid ? '✅ payée' : cl ? '⏳ paiement envoyé — en vérification' : late > 0 ? `🔴 ${late} j de retard` : '💳 à payer avant le ' + fmtDate(f.due)}</span></span>${f.paid ? '' : html`<span class="badge ${late > 0 && !cl ? 'bad' : 'warn'}">${cl ? 'envoyé' : 'à payer'}</span>`}</button>`; })}</div>` : '';
+    return html`${pageHead('🛠️ Demandes d’intervention', 'Envoyées à LuxInterventions, qui envoie ses intervenants')}${fRows}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="tdem-new">${icon('plus')} Demande</button></div></div>
       ${list.length ? html`<div class="list">${list.map((d) => html`<div class="row" style="display:block"><b>${TDEM_URG[d.urgence] || ''} · ${d.titre}</b>
         <div class="small" style="white-space:pre-wrap">${d.texte}</div><div class="tiny muted">${d.adresse ? '📍 ' + d.adresse + ' · ' : ''}Envoyée le ${fmtDateTime(d.t)}</div></div>`)}</div>`
@@ -4671,12 +4965,17 @@ dashboard() {
       <div class="section-label">🏢 Sociétés</div>
       ${cos.length ? html`<div class="list">${cos.map((co) => { const c = co.cat || {}; return html`<button class="row" data-action="edit-txco" data-id="${co.id}"><span class="avatar">🚕</span>
         <span class="grow"><span class="title" style="display:block">${co.nom}</span><span class="meta">${Object.keys(TX_GAM).filter((k) => (c.gammes || {})[k] && c.gammes[k].on).map((k) => TX_GAM[k]).join(' · ') || 'Catalogue pas encore envoyé'} · ${plural((c.drivers || []).length, 'chauffeur')} · ${plural((c.cars || []).length, 'voiture')}</span>
-        ${Object.keys(c.extras || {}).length ? html`<span class="tiny" style="display:block">${Object.keys(c.extras).map((k) => TX_EXT[k]).join(' ')}</span>` : ''}</span><span class="chev">›</span></button>`; })}</div>`
+        ${Object.keys(c.extras || {}).length ? html`<span class="tiny" style="display:block">${Object.keys(c.extras).map((k) => TX_EXT[k]).join(' ')}</span>` : ''}
+        ${(() => { const st = txStats(co.id); return st.n ? html`<span class="tiny" style="display:block">📊 90 j : ${plural(st.n, 'course')} · ✅ ${st.ok} · ❌ ${st.no}${st.lost ? html` · ⚠️ ${st.lost} sans réponse` : ''}${st.resp != null ? html` · ⏱ ${st.resp} min` : ''}${st.note != null ? html` · ⭐ ${String(st.note).replace('.', ',')} (${st.nNote})` : ''}${st.du ? html` · 🧾 à payer ${eur(st.du)}` : ''}</span>` : ''; })()}
+        ${co.prof ? '' : html`<span class="tiny" style="display:block;color:var(--warn,#b45309)">📋 Fiche de facturation pas encore remplie dans son app</span>`}</span><span class="chev">›</span></button>`; })}</div>`
         : html`<div class="card" style="max-width:560px"><p style="margin-top:0">Les sociétés de taxi et les chauffeurs privés reçoivent les courses de vos clients (hôtel, Airbnb) dans leur app : ils y mettent leurs chauffeurs, leurs voitures (💎 Luxe, 🚘 Confort, 🚕 Économique), leurs tarifs et leurs extras.</p></div>`}
+      ${(() => { const F = txInvs(); return F.length ? html`<div class="section-label">🧾 Factures des taxis (à payer directement à la société)</div><div class="list" style="margin-bottom:14px">${F.slice(0, 30).map((f) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${f.coNom} · ${f.no} · ${eur(f.ttc)}</span><span class="meta">${plural((f.keys || []).length, 'course')} · ${fmtDate(f.date)} · ${f.recv ? '✅ reçue par la société le ' + fmtDate(f.recv) : f.paid ? '💳 payée le ' + fmtDate(f.paid) + ' — confirmation attendue' : '⏳ à payer'}</span></span>
+        <button class="btn sm" data-action="txinv-pdf" data-id="${f.id}">🖨️ PDF</button>${f.paid ? '' : html`<button class="btn sm primary" data-action="txinv-pay" data-id="${f.id}">💳 Payer</button>`}</div>`)}</div>` : ''; })()}
       <div class="section-label">🛣️ Courses</div>
       ${rides.length ? html`<div class="list">${rides.map(([h, rid, a, tx]) => html`<button class="row" data-action="hote-taxi" data-id="${h.id}" data-r="${rid === 'arr' ? '' : rid}"><span class="avatar">${rid === 'arr' ? '🛬' : '🚘'}</span>
-        <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')} · ${tx.nom}</span><span class="meta">${[TX_SRV[a.service], TX_GAM[a.gamme], a.quand ? String(a.quand).replace('T', ' ') : '', a.from, a.prix ? '~' + a.prix + ' €' : ''].filter(Boolean).join(' · ')}</span></span>
-        <span class="badge ${tx.st === 'ok' ? 'ok' : tx.st === 'no' ? 'bad' : 'warn'}">${ST[tx.st] || ST.ok}</span></button>`)}</div>` : html`<p class="small muted">Aucune course en cours.</p>`}`;
+        <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')} · ${tx.nom}</span><span class="meta">${[TX_SRV[a.service], TX_GAM[a.gamme], a.quand ? String(a.quand).replace('T', ' ') : '', a.from, a.prix ? '~' + a.prix + ' €' : ''].filter(Boolean).join(' · ')}</span>
+        ${tx.code || tx.done || tx.rate ? html`<span class="tiny" style="display:block">${tx.code ? '🪪 ' + tx.code + ' · ' : ''}${tx.done ? '🏁 ' + eur(tx.done.prix || 0) + (tx.inv ? ' · 🧾 ' + tx.inv : '') : ''}${tx.rate ? ' · ' + '⭐'.repeat(tx.rate.s) : ''}</span>` : ''}</span>
+        <span class="badge ${tx.done ? 'ok' : tx.st === 'ok' ? 'ok' : tx.st === 'no' ? 'bad' : 'warn'}">${tx.done ? '🏁 Terminée' : ST[tx.st] || ST.ok}</span></button>`)}</div>` : html`<p class="small muted">Aucune course en cours.</p>`}`;
   },
   gerances() {
     const c = ptlConf();
@@ -4909,7 +5208,7 @@ dashboard() {
         <p class="tiny muted">Taux normal : ${String(c0.taux).replace('.', ',')} % (Réglages → 🧾 Facturation) ; régime par client (autoliquidation, non applicable…) dans Gérances → la gérance → 🧾 Facturation. Détail facture par facture : onglet 🧾 Factures. Aide à la déclaration, à faire vérifier par votre comptable.</p>`;
     } else if (tab === 'fact') {
       const F = vault.list('taches').filter((t) => t.facture && t.facture.date >= from && t.facture.date <= to).sort((a, b) => b.facture.no.localeCompare(a.facture.no));
-      const todo = vault.list('taches').filter((t) => t.ptl && t.statut === 'fait' && !t.facture);
+      const todo = vault.list('taches').filter((t) => (t.ptl || (t.net && netPayMode(t.net.tid) === 'each')) && t.statut === 'fait' && !t.facture);
       const c = factConf();
       body = html`<div class="metrics" style="margin-bottom:14px">
           <div class="metric"><div class="lbl">Factures</div><div class="val">${F.length}</div><div class="sub">${cpLabel(y, per)}</div></div>
@@ -5040,6 +5339,7 @@ dashboard() {
 
       <div class="section-label">Gestion</div>
       <div class="list settings">
+        ${TENANT ? html`<button class="row" data-action="tpay-conf"><span class="avatar">💳</span><span class="grow"><span class="title" style="display:block">Paiements</span><span class="meta">${(vault.get('reglages', 'tpayConf') || {}).payMode === 'month' ? 'Factures des interventions : une par mois' : 'Factures des interventions : à chaque intervention'}</span></span>${icon('chevron')}</button>` : ''}
         <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
         <button class="row" data-action="eq-group"><span class="avatar">💬</span><span class="grow"><span class="title" style="display:block">Groupe de l’équipe (messages spéciaux)</span><span class="meta">${plural(eqGroup().length, 'ouvrier')} dans le groupe · les autres messages restent entre chaque ouvrier et la centrale</span></span>${icon('chevron')}</button>
         <button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>
@@ -5715,6 +6015,9 @@ const SHEETS = {
         <datalist id="tvaRates">${[17, 16, 14, 8, 3, 0, 20, 21, 19, 22, 10, 5.5].map((r) => html`<option value="${r}"></option>`)}</datalist>
         <p class="tiny muted full" style="margin:-6px 0 0">Taux appliqué par défaut (17 % = taux normal au Luxembourg ; tout autre taux possible). Chaque client peut avoir son propre régime : Gérances → la gérance → 🧾 Facturation.</p>
         ${field('Paiement à (jours)', 'delai', c.delai, { type: 'number', attrs: 'min="0" max="120" inputmode="numeric"' })}
+        <div class="full section-label" style="margin:4px 0 0">💳 Paiements des clients (centrales du réseau)</div>
+        ${field('Avis de retard après (jours)', 'avv', c.avv ?? 7, { type: 'number', attrs: 'min="0" max="365" inputmode="numeric"' })}${field('Lecture seule après (jours)', 'rog', c.rog ?? 30, { type: 'number', attrs: 'min="1" max="365" inputmode="numeric"' })}
+        <p class="tiny muted full" style="margin:-6px 0 0">Comptés depuis l’échéance de la facture. Le client paie par virement (QR code) et touche « J’ai payé » ; vous confirmez à réception. 💳 Stripe (carte, Apple / Google Pay) : <b>non connecté</b> pour l’instant.</p>
         ${sfx('Ma marge par défaut sur les ouvriers', 'marge', c.marge, '%', 'step="1" min="0" max="500" inputmode="decimal"')}
         <p class="tiny muted full" style="margin:-6px 0 0">Ex. 25 % : ouvrier payé 40 €/h → facturé 50 €/h à la gérance (si la fiche de l’ouvrier n’a pas de tarif « facturé à la gérance »). Modifiable dans chaque facture, avec remise ou majoration.</p>
         <p class="tiny muted full" style="margin:0">Taux de TVA à confirmer avec votre comptable. Prochain numéro : ${ymd(today())}-INT${String((+c.seq || 0) + 1).padStart(4, '0')} · prochain devis n° …-${String((+c.devSeq || 0) + 1).padStart(4, '0')}</p>
@@ -5731,7 +6034,7 @@ const SHEETS = {
       return {
         title: `🧾 Facture ${F.no}`,
         body: html`${F.cont && !F.paid ? html`<div class="alert bad cont-blink-box" style="margin-bottom:10px">⚠️<div><b>CONTENTIEUX</b> depuis le ${fmtDate(F.cont)} — facture impayée en litige. La gérance le voit en rouge dans son portail.</div></div>` : ''}<dl class="kv">${kvRow('Intervention', `${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`)}${kvRow('Gérance', t.ptl ? t.ptl.org : '—')}${kvRow('Date', fmtDate(F.date))}${kvRow('Total HT', eur(F.ht))}${kvRow('TVA', eur(F.tva))}${kvRow('Total TTC', html`<b>${eur(F.ttc)}</b>`)}${kvRow('Paiement', F.paid ? `✅ payée le ${fmtDate(F.paid)}` : '⏳ à payer')}</dl>
-          <p class="small muted">La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).</p>`,
+          <p class="small muted">${F.net ? 'Le client la voit et la paie dans sa centrale (🧾 Factures).' : 'La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).'}</p>`,
         foot: html`${F.docId ? html`<button class="btn" data-action="open-doc" data-id="${F.docId}">⬇️ PDF</button>` : ''}${F.paid ? '' : html`<button class="btn ${F.cont ? '' : 'danger'}" data-action="fact-cont" data-id="${id}">${F.cont ? '↩️ Sortir du contentieux' : '⚠️ Contentieux'}</button>`}<button class="btn ${F.paid ? '' : 'primary'}" data-action="fact-paid" data-id="${id}">${F.paid ? '↩️ Marquer à payer' : '✅ Marquer payée'}</button>`,
       };
     }
@@ -5741,7 +6044,8 @@ const SHEETS = {
       title: `🧾 Facture — ${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`,
       body: html`<form id="f" data-form="facture" class="fields"><input type="hidden" name="id" value="${id}">
         ${miss.length ? html`<div class="full alert warn" style="margin:0">⚠️<div>Avant d’émettre : complétez ${miss.join(', ')} dans <a href="#" data-action="fact-set">🧾 Facturation</a>.</div></div>` : ''}
-        <p class="small muted full" style="margin:0">Client : <b>${t.ptl ? t.ptl.org : '—'}</b> · émise par ${c.nom} (${c.marque}). Rien n’est envoyé avant « Émettre ».</p>
+        <p class="small muted full" style="margin:0">Client : <b>${t.ptl ? t.ptl.org : t.net ? t.net.nom : '—'}</b> · émise par ${c.nom} (${c.marque}). Rien n’est envoyé avant « Émettre ».</p>
+        ${t.net && netPayMode(t.net.tid) === 'month' ? html`<div class="full alert info" style="margin:0">📅<div>Ce client paie par <b>facture mensuelle</b> : enregistrez le brouillon, l’intervention entrera dans la facture du mois (Réglages → 🔑 Licences → le client).</div></div>` : ''}
         ${field('Heures (réelles, arrondies au ¼ h)', 'h', f.h, { type: 'number', attrs: 'step="0.25" min="0" inputmode="decimal"' })}
         ${(() => { const w = vault.get('intervenants', t.intervenantId) || {}; return w.payeH || w.payeDepl ? html`<div class="full note small" style="margin:0"><input type="hidden" name="cost_h" value="${w.payeH || 0}"><input type="hidden" name="cost_d" value="${w.payeDepl || 0}">
           👷 Coût ${intervFull(w)} : <b>${eur(w.payeH || 0)}/h</b>${w.payeDepl ? html` · déplacement <b>${eur(w.payeDepl)}</b>` : ''}
@@ -5986,7 +6290,7 @@ const SHEETS = {
         ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id && !x.phase).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id && !x.phase).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
-        ${id && t.ptl && t.statut === 'fait' ? html`<button class="btn" data-action="fact-open" data-id="${id}">🧾 ${t.facture ? 'Facture ' + t.facture.no : 'Facture'}</button>` : ''}
+        ${id && (t.ptl || t.net) && t.statut === 'fait' ? html`<button class="btn" data-action="fact-open" data-id="${id}">🧾 ${t.facture ? 'Facture ' + t.facture.no : 'Facture'}</button>` : ''}
         ${id && t.locId && !t.recur && t.statut !== 'fait' ? html`<button class="btn" style="background:var(--green-soft);color:var(--green)" data-action="tache-done" data-id="${id}">${icon('check')} Réparé</button>` : html`<button class="btn" data-action="close-sheet">Annuler</button>`}
         <button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -6149,6 +6453,11 @@ const SHEETS = {
         ${field('Personnes', 'pers', h.pers, { type: 'number', attrs: 'min="1" max="20" inputmode="numeric"' })}
         ${field('Arrivée', 'arrivee', h.arrivee, { type: 'date', required: true })}${field('Départ', 'depart', h.depart, { type: 'date', required: true })}
         ${html`<label class="field full">Formule<select name="formule">${Object.entries(FORMULES).map(([k, l]) => html`<option value="${k}" ${(h.formule || 'seul') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>`}
+        ${bnb ? (() => { const x = h.prix || {}; return html`<div class="full section-label" style="margin:6px 0 0">💶 Prix du séjour — visible dans l’app du client</div>
+          <div class="full" style="display:flex;gap:14px;flex-wrap:wrap">${[['', 'Pas affiché'], ['total', 'a) Total'], ['detail', 'b) Nuits × prix + ménage + taxe']].map(([k, l]) => html`<label class="small"><input type="radio" name="prixMode" value="${k}" ${(x.mode || '') === k ? new Raw('checked') : ''}> ${l}</label>`)}</div>
+          ${field('a) Total du séjour (€)', 'prixTot', x.tot, { attrs: money$ })}${field('b) Prix par nuit (€)', 'prixNuit', x.nuit, { attrs: money$ })}
+          ${field('b) Ménage (€)', 'prixMenage', x.menage, { attrs: money$ })}${field('b) Taxe de séjour (€ / personne / nuit)', 'prixTaxe', x.taxe, { attrs: money$ })}
+          <p class="tiny muted full" style="margin:0">Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.</p>`; })() : ''}
         <label class="field full">Préférences / allergies<textarea name="pref" style="min-height:56px" placeholder="ex. sans gluten, oreiller ferme, étage bas…">${h.pref || ''}</textarea></label>
         ${html`<div class="full section-label" style="margin:6px 0 0">🍽️ Menu du restaurant (PDF, le même pour tous les clients)</div>
           ${menu && menu.file ? html`<div class="full actions" style="margin:0"><button type="button" class="btn sm" data-action="hotel-menu-view" data-lieu="${bnb ? 'airbnb' : 'hotel'}">👁 Voir le menu</button><span class="tiny muted">${menu.name || ''} · ${fmtDate(menu.at)}</span></div>` : ''}
@@ -6259,6 +6568,14 @@ const SHEETS = {
           ${field('Jours en lecture seule après l’échéance (vide = jusqu’à votre décision)', 'roDays', t.roDays ?? '', { full: true, type: 'number', attrs: 'min="0" max="3650" inputmode="numeric"' })}
           <p class="tiny muted full" style="margin:0">Échu : le client lit ses données mais ne peut plus les modifier ; après ces jours, sa centrale est bloquée (durées à fixer avec votre avocat). Ses données ne sont jamais effacées sans votre décision.</p>
         </form>
+        ${(() => {
+          const F = netFacts(id), bill = netToBill(id), d = payDays();
+          return html`<div class="section-label" style="margin-top:14px">🧾 Factures des interventions · ${netPayMode(id) === 'month' ? '📅 facture mensuelle' : 'à chaque intervention'}</div>
+            ${t.hold === 'ro' ? html`<div class="alert bad" style="margin-bottom:8px">🔒<div><b>Lecture seule pour impayé</b> (plus de ${d.ro} jours de retard) — levée dès que tout est payé.</div></div>` : ''}
+            ${bill.length && !isCompta() ? html`<button class="btn block" style="margin-bottom:8px" data-action="nfact-bill" data-id="${id}">🧾 Facturer ${plural(bill.length, 'intervention')} terminée${bill.length > 1 ? 's' : ''}</button>` : ''}
+            ${F.length ? html`<div class="list small" style="margin-bottom:8px">${F.slice(0, 20).map((f) => { const late = !f.paid ? lateDays(f.due) : 0; return html`<div class="row"><span class="grow"><b>${f.no}</b> · ${eur(f.ttc)}<span class="meta" style="display:block">${f.paid ? '✅ payée le ' + fmtDate(f.paid) : f.claim ? '💳 le client dit avoir payé (' + fmtDate(f.claim) + ')' : late > 0 ? `🔴 ${late} j de retard` : '⏳ échéance ' + fmtDate(f.due)}</span></span>
+              ${f.docId ? html`<button class="btn sm" data-action="open-doc" data-id="${f.docId}">⬇️ PDF</button>` : ''}${f.paid || isCompta() ? '' : html`<button class="btn sm primary" data-action="nfact-paid" data-id="${f.no}">✅ Reçu</button>`}</div>`; })}</div>` : html`<p class="tiny muted">Aucune facture.</p>`}`;
+        })()}
         <div class="section-label" style="margin-top:14px">Accès</div>
         <div class="actions" style="flex-wrap:wrap;margin:0">${!t.configured ? html`<button class="btn sm" data-action="net-code" data-id="${id}">🔁 Nouveau code d’invitation</button>` : ''}<button class="btn sm" data-action="net-reset" data-id="${id}">🗝️ Nouvel accès (clé perdue)</button>${vault.op ? '' : html`<button class="btn sm ghost danger" data-action="net-del" data-id="${id}">🗑 Supprimer avec certificat</button>`}</div>
         <p class="tiny muted" style="margin:6px 0 0">Nouvel accès : la centrale du client est vidée (sans sa clé personne ne peut lire ses données) et un nouveau code est créé. S’il a sa clé de secours, il rentre seul sans rien perdre.</p>`}`,
@@ -6292,9 +6609,9 @@ const SHEETS = {
       title: '💶 Tarifs des annonces',
       narrow: true,
       body: html`<form id="f" data-form="ann-tarifs" class="fields">
-        ${field('🔝 Haut — prix par jour (€)', 'haut', t.haut, { attrs: money$ })}${field('⏺ Milieu — prix par jour (€)', 'milieu', t.milieu, { attrs: money$ })}${field('🔽 Bas — prix par jour (€)', 'bas', t.bas, { attrs: money$ })}
+        ${field('🔝 Haut — prix HT par jour (€)', 'haut', t.haut, { attrs: money$ })}${field('⏺ Milieu — prix HT par jour (€)', 'milieu', t.milieu, { attrs: money$ })}${field('🔽 Bas — prix HT par jour (€)', 'bas', t.bas, { attrs: money$ })}
         <label class="field full">Note pour les annonceurs (facultatif)<textarea name="note" style="min-height:60px" placeholder="ex. −20 % à partir de 30 jours">${t.note || ''}</textarea></label>
-        <p class="tiny muted full" style="margin:0">L’annonceur voit le prix (jours × tarif de l’emplacement) avant d’envoyer. 💳 Paiement en ligne : pas encore connecté — le bouton est affiché, désactivé, avec une info.</p>
+        <p class="tiny muted full" style="margin:0">L’annonceur voit le prix HT (jours × tarif de l’emplacement) avant d’envoyer. Après votre validation il paie par virement (QR, TVA de 🧾 Facturation) ; vous confirmez « Paiement reçu » : facture et mise en ligne. 💳 Paiement en ligne : pas encore connecté.</p>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -6342,6 +6659,60 @@ const SHEETS = {
           ${field('Nom', 'd_nom', d.nom, { placeholder: i ? '' : 'ex. Marco / Taxi Lux' })}${field('Téléphone (WhatsApp)', 'd_tel', d.tel, { type: 'tel', placeholder: '+352…' })}
           ${field('Voiture', 'd_auto', d.auto, { placeholder: 'ex. Mercedes grise' })}${field('Plaque', 'd_plaque', d.plaque, { placeholder: 'ex. LU-1234' })}</div>`)}
         <p class="tiny muted full" style="margin:0">Une ligne vide en plus apparaît après l’enregistrement. Le chauffeur n’installe rien : il reçoit un lien par WhatsApp / SMS.</p>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'txinv-pay'({ id }) {
+    const f = vault.get('reglages', id);
+    if (!f) return null;
+    const co = vault.get('reglages', f.co) || {}, pr = co.prof || {};
+    return {
+      title: `💳 ${f.coNom} · ${f.no}`,
+      narrow: true,
+      body: html`<p class="small" style="margin:0 0 4px">${plural((f.keys || []).length, 'course')} · <b>${eur(f.ttc)}</b> TTC · TVA ${String(f.taux).replace('.', ',')} % : ${eur(f.tva)}</p>
+        <p class="small" style="margin:0 0 10px"><span>Vous payez</span> <b>directement la société</b><span> : rien ne passe par nous.</span></p>
+        ${pr.pay === 'iban' && pr.iban ? html`<div class="card" style="margin-bottom:10px"><div class="section-label" style="margin-top:0">🏦 Virement</div><div class="qr" style="width:150px;margin:0 auto 10px">${qrSvg(epcText(pr.nom || co.nom, pr.iban, pr.bic, f.ttc, f.no), 4)}</div>
+          <dl class="kv" style="margin:0">${kvRow('Bénéficiaire', pr.nom || co.nom)}${kvRow('IBAN', pr.iban)}${pr.bic ? kvRow('BIC', pr.bic) : ''}${kvRow('Montant', eur(f.ttc))}${kvRow('Communication', f.no)}</dl></div>`
+        : pr.pay === 'lien' && pr.lien ? html`<a class="btn block" href="${pr.lien}" target="_blank" rel="noopener" style="margin-bottom:10px">🔗 Payer en ligne (lien de la société)</a>`
+        : html`<div class="alert info" style="margin-bottom:10px">💵<div>La société se fait payer <b>par le chauffeur</b> (espèces ou carte).</div></div>`}
+        <p class="tiny muted" style="margin:0">Après le paiement, touchez « ✅ Payée » : la société le voit dans son app et confirme la réception.</p>`,
+      foot: html`<button class="btn" data-action="txinv-pdf" data-id="${f.id}">🖨️ PDF</button><button class="btn primary" data-action="txinv-paid" data-id="${f.id}">✅ Payée</button>`,
+    };
+  },
+  'tfact'({ id }) {
+    const f = tFacts().find((x) => x.no === id);
+    if (!f) return null;
+    const p = f.pay || {}, cl = tClaim(f.no), late = !f.paid ? lateDays(f.due) : 0;
+    return {
+      title: '🧾 Facture ' + f.no,
+      narrow: true,
+      body: html`<p class="small" style="margin:0 0 8px">${f.from} · ${fmtDate(f.date)} · échéance ${fmtDate(f.due)}${late > 0 && !f.paid ? html` · <b style="color:var(--red,#b91c1c)">${late} j de retard</b>` : ''}</p>
+        <div class="list small" style="margin-bottom:10px">${(f.lignes || []).map((l) => html`<div class="row"><span class="grow">${l.titre}<span class="meta" style="display:block">${fmtDate(l.d)}</span></span><b>${eur(l.ht)}</b></div>`)}</div>
+        <p style="margin:0 0 12px">HT ${eur(f.ht)} · TVA ${eur(f.tva)} · <b>Total ${eur(f.ttc)}</b></p>
+        ${f.paid ? html`<div class="alert info">✅<div><b>Payée</b> — merci !</div></div>` : html`
+        <button class="btn block" disabled title="Paiement en ligne pas encore connecté" style="margin-bottom:4px">💳 Payer par carte / Apple Pay / Google Pay</button>
+        <p class="tiny muted" style="margin:0 0 12px">ℹ️ Paiement en ligne pas encore connecté : payez par virement ci-dessous.</p>
+        <div class="card" style="margin-bottom:10px"><div class="section-label" style="margin-top:0">🏦 Virement</div>
+          ${p.iban ? html`<div class="qr" style="width:150px;margin:0 auto 10px">${qrSvg(epcText(p.nom, p.iban, p.bic, f.ttc, f.no), 4)}</div>` : ''}
+          <div><dl class="kv" style="margin:0">${kvRow('Bénéficiaire', p.nom || '')}${kvRow('IBAN', p.iban || '')}${p.bic ? kvRow('BIC', p.bic) : ''}${kvRow('Montant', eur(f.ttc))}${kvRow('Communication', f.no)}</dl></div>
+          <p class="tiny muted" style="margin:8px 0 0">Scannez le QR code avec l’app de votre banque : tout est déjà rempli.</p></div>
+        ${cl ? html`<div class="alert info">⏳<div><b>Paiement signalé le ${fmtDate(cl)}</b> — ${f.from} confirme dès réception.</div></div>` : html`<button class="btn primary block" data-action="tfact-claim" data-id="${f.no}">✅ J’ai payé</button>`}`}`,
+      foot: html`${f.docId ? html`<button class="btn" data-action="open-doc" data-id="${f.docId}">⬇️ PDF</button>` : f.pdf ? html`<button class="btn" data-action="tfact-pdf" data-id="${f.no}">⬇️ PDF</button>` : ''}<button class="btn" data-action="close-sheet">Fermer</button>`,
+    };
+  },
+  'tpay-conf'() {
+    const c = vault.get('reglages', 'tpayConf') || {}, hb = ['hotel', 'airbnb'].includes(tenantInfo.fil);
+    return {
+      title: '💳 Paiements',
+      narrow: true,
+      body: html`<form id="f" data-form="tpay-conf" class="fields">
+        <div class="full section-label" style="margin:0">Factures des interventions</div>
+        <label class="row full"><input type="radio" name="payMode" value="each" ${c.payMode !== 'month' ? new Raw('checked') : ''}><span class="grow">À chaque intervention</span></label>
+        <label class="row full"><input type="radio" name="payMode" value="month" ${c.payMode === 'month' ? new Raw('checked') : ''}><span class="grow">Une facture par mois (récapitulatif)</span></label>
+        ${hb ? html`<div class="full section-label" style="margin:8px 0 0">🛏️ Paiement des nuitées par vos clients (bientôt)</div>
+          ${field('IBAN pour les nuitées', 'iban', c.iban || '', { full: true, attrs: 'autocapitalize="characters" autocomplete="off"' })}${field('Lien de paiement (Stripe, PayPal…)', 'lien', c.lien || '', { full: true, type: 'url', placeholder: 'https://…' })}
+          <p class="tiny muted full" style="margin:0">Le bouton « Payer la nuitée » dans l’app de vos clients sera activé plus tard.</p>` : ''}
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -7583,6 +7954,13 @@ const ACTIONS = {
   async 'fact-emit'(d) {
     const t = vault.get('taches', d.id), fm = sheetEl.querySelector('form[data-form=facture]');
     if (!t || !fm || t.facture) return;
+    if (t.net) {
+      if (!(await confirmBox(`Émettre la facture de cette intervention ?`, { ok: 'Émettre et envoyer', detail: `${t.net.nom} — la facture arrive dans sa centrale (💳 virement avec QR code).` }))) return;
+      await vault.mutate((tx) => tx.put('taches', { id: t.id, factDraft: factRead(fm) }), 'Brouillon de facture', t.titre);
+      try { const no = await netFactEmit(t.net.tid, [vault.get('taches', t.id)]); toast(`🧾 Facture ${no} envoyée à ${t.net.nom}`); } catch (e) { return toast(e.message || 'Envoi impossible', { bad: true }); }
+      sheetDirty = false; ui.sheet.rendered = false; renderSheet();
+      return;
+    }
     if (!t.ptl || !ptlConf()) return toast('Facture : intervention liée à une gérance et portail connecté nécessaires', { bad: true });
     const f = factRead(fm), c = factConf(), miss = factMissing(c);
     if (miss.length) return toast('Complétez : ' + miss.join(', '), { bad: true });
@@ -7611,6 +7989,7 @@ const ACTIONS = {
   async 'fact-cont'(d) {
     const t = vault.get('taches', d.id);
     if (!t || !t.facture || t.facture.paid) return;
+    if (t.facture.net) return toast('Client du réseau : sa centrale passe en lecture seule tout seule après les jours choisis (🧾 Facturation)', { bad: true });
     const on = !t.facture.cont;
     if (on && !(await confirmBox('Mettre cette facture en contentieux ?', { ok: '⚠️ Contentieux', danger: true, detail: `${t.facture.no} · ${eur(t.facture.ttc)} — la gérance reçoit un message et voit la facture en rouge dans son portail.` }))) return;
     try { await ptlApi(`tickets/${t.ptl.tid}/invoice-paid`, { method: 'POST', body: { cont: on } }); } catch (e) { return toast(e.message, { bad: true }); }
@@ -7620,6 +7999,7 @@ const ACTIONS = {
   async 'fact-paid'(d) {
     const t = vault.get('taches', d.id);
     if (!t || !t.facture) return;
+    if (t.facture.net) { if (t.facture.paid) return; try { await netFactPaid(t.facture.no); toast('✅ Facture payée'); } catch (e) { toast(e.message, { bad: true }); } if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } return; }
     const paid = t.facture.paid ? '' : today();
     try { await ptlApi(`tickets/${t.ptl.tid}/invoice-paid`, { method: 'POST', body: { paid: !!paid } }); } catch (e) { return toast(e.message, { bad: true }); }
     await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, paid, ...(paid ? { cont: '' } : {}) } }), paid ? 'Facture payée' : 'Facture à payer', t.facture.no, t.immId);
@@ -7635,6 +8015,33 @@ const ACTIONS = {
   },
   'open-interv': (d) => openSheet('interv', d.id),
   'open-eq-chat': (d) => openSheet('interv', d.id, 'chat'),
+  'tfact-open': (d) => openOver('tfact', d.id),
+  'txinv-pay': (d) => openOver('txinv-pay', d.id),
+  async 'txinv-pdf'(d) {
+    const f = vault.get('reglages', d.id);
+    if (!f) return;
+    const u = URL.createObjectURL(new Blob([await txInvPdf(f)], { type: 'application/pdf' }));
+    window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000);
+  },
+  async 'txinv-paid'(d) {
+    const f = vault.get('reglages', d.id);
+    if (!f || f.paid) return;
+    await vault.mutate((tx) => tx.put('reglages', { id: f.id, paid: today() }), '💳 Facture du taxi payée', `${f.coNom} · ${f.no} · ${eur(f.ttc)}`);
+    txcoSync(f.co); toast('✅ Payée — la société confirme la réception dans son app');
+    if (ui.sheet) goBack(); else renderView();
+  },
+  'tpay-conf': () => openOver('tpay-conf'),
+  'tfact-pdf': (d) => { const f = tfMem()[d.id]; if (!f || !f.pdf) return; const u = URL.createObjectURL(new Blob([b64d(f.pdf)], { type: 'application/pdf' })); window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000); },
+  async 'tfact-claim'(d) {
+    const f = tFacts().find((x) => x.no === d.id);
+    if (!f || f.paid) return;
+    if (!(await confirmBox('Vous avez payé cette facture ?', { ok: '✅ J’ai payé', detail: `${f.no} · ${eur(f.ttc)} — ${f.from} vérifie le virement et confirme.` }))) return;
+    try { await tenantSend({ type: 'paid', no: f.no }); } catch (e) { return toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
+    tClaim(f.no, today());
+    toast('Merci : paiement signalé');
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+    renderView();
+  },
   'eq-group': () => openOver('eq-group'),
   'eq-special': () => openOver('eq-special'),
   'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
@@ -7944,6 +8351,21 @@ const ACTIONS = {
   },
   'net-reload': () => netLoad(true),
   'net-open': (d) => openOver('net-client', d.id),
+  async 'nfact-bill'(d) {
+    const tasks = netToBill(d.id), t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id) || {};
+    if (!tasks.length) return;
+    if (!(await confirmBox(`Facturer ${plural(tasks.length, 'intervention')} ?`, { ok: 'Émettre et envoyer', detail: `${t.nom || ''} — une seule facture, envoyée dans sa centrale (💳 virement avec QR code).` }))) return;
+    try { const no = await netFactEmit(d.id, tasks); toast(`🧾 Facture ${no} envoyée`); } catch (e) { return toast(e.message || 'Envoi impossible', { bad: true }); }
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } else renderView();
+  },
+  async 'nfact-paid'(d) {
+    const f = vault.get('reglages', 'nfact-' + d.id);
+    if (!f || f.paid) return;
+    if (!(await confirmBox(`Paiement reçu pour ${f.no} ?`, { ok: '✅ Payée', detail: `${f.nom} · ${eur(f.ttc)} — vérifiez d’abord sur le compte. Le client le voit dans sa centrale.` }))) return;
+    try { await netFactPaid(f.no); toast('✅ Facture payée'); } catch (e) { return toast(e.message || 'Envoi impossible', { bad: true }); }
+    await netHoldSync((ui.net && ui.net.list) || []);
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } else renderView();
+  },
   async 'net-code'(d) {
     try { const r = await netApi('tenants/' + d.id, 'PATCH', { newCode: true }); if (r.code) { await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + d.id, ...netInfo(d.id), code: r.code }), '🌐 Nouveau code d’invitation', (r.tenant || {}).nom || ''); await licLogAdd(r.tenant || { id: d.id }, 'Nouveau code d’invitation', 'échéance inchangée'); } toast('Nouveau code créé'); } catch (e) { return toast(e.message, { bad: true }); }
     netLoad(true);
@@ -8007,9 +8429,17 @@ const ACTIONS = {
   async 'pub-ok'(d) {
     const a = vault.get('avis', d.id);
     if (!a) return;
-    await vault.mutate((tx) => tx.put('avis', { id: a.id, st: 'ok', motif: '' }), '📣 Annonce validée et publiée', `${a.nom} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}`);
-    toast('Annonce publiée');
+    const pay = a.annId && +a.prix > 0 && !(a.fact && a.fact.paid);
+    await vault.mutate((tx) => tx.put('avis', { id: a.id, st: pay ? 'pay' : 'ok', motif: '' }), pay ? '📣 Annonce validée : en attente du paiement' : '📣 Annonce validée et publiée', `${a.nom} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}`);
+    toast(pay ? 'Validée : en ligne dès le paiement reçu' : 'Annonce publiée');
     annSync(a.annId); renderView();
+  },
+  async 'pub-paid'(d) {
+    const a = vault.get('avis', d.id);
+    if (!a || a.st !== 'pay') return;
+    if (!(await confirmBox('Paiement reçu ?', { ok: '✅ Reçu', detail: `${a.nom} · ${eur(annDue(a).ttc)} — la facture est créée et l’annonce passe en ligne` }))) return;
+    try { toast('Facture ' + (await annFactEmit(a)) + ' · annonce en ligne'); } catch (e) { return toast(e.message, { bad: true }); }
+    annSync(a.annId, true); renderView();
   },
   async 'pub-no'(d) {
     const a = vault.get('avis', d.id);
@@ -8613,7 +9043,7 @@ const FORMS = {
     const g = (k) => String(fd.get(k) || '').trim();
     { const ib = ibanCheck(g('iban')), bc = bicCheck(g('bic'), ib.ok ? ib.cc : ''); if (!ib.ok) return toast('IBAN : ' + ib.msg, { bad: true }); if (!bc.ok) return toast('BIC : ' + bc.msg, { bad: true }); }
     const iban = g('iban').toUpperCase().replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
-    await vault.mutate((tx) => tx.put('reglages', { id: 'facturation', nom: g('nom'), marque: g('marque'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), tel: g('tel'), email: g('email'), autorisation: g('autorisation'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), taux: num(fd.get('taux')), delai: Math.max(0, Math.round(num(fd.get('delai')))) || 30, marge: num(fd.get('marge')) }), 'Facturation des interventions', g('nom'));
+    await vault.mutate((tx) => tx.put('reglages', { id: 'facturation', nom: g('nom'), marque: g('marque'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), tel: g('tel'), email: g('email'), autorisation: g('autorisation'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), taux: num(fd.get('taux')), delai: Math.max(0, Math.round(num(fd.get('delai')))) || 30, marge: num(fd.get('marge')), avv: Math.max(0, Math.round(num(fd.get('avv')))), rog: Math.max(1, Math.round(num(fd.get('rog')))) || 30 }), 'Facturation des interventions', g('nom'));
     toast('Facturation enregistrée'); goBack();
   },
   async facture(fd, fm) {
@@ -8933,7 +9363,8 @@ const FORMS = {
     const rec = { lieu: g('lieu') === 'airbnb' ? 'airbnb' : 'hotel', adresse: g('adresse'), pays: g('pays'), formule: g('formule'), pref: g('pref'), appCode: g('appCode'), prenom: g('prenom'), nom: g('nom'), tel: g('tel'), mail: g('mail'), langue: g('langue') || 'fr', pers: Math.max(1, parseInt(g('pers'), 10) || 1),
       chambre: g('chambre'), etage: g('etage'), cle: g('cle'), arrivee: g('arrivee'), depart: g('depart'), notes: g('notes'),
       code: g('code'), codeOff: fd.get('codeOff') === '1' };
-    const tm = (k, d) => (/^\d\d:\d\d$/.test(g(k)) ? g(k) : d);
+    const tm = (k, d) => (/^\d\d:\d\d$/.test(g(k)) ? g(k) : d), mo = (k) => { const v = g(k).replace(',', '.'); return v ? Math.max(0, num(v)) : ''; };
+    if (rec.lieu === 'airbnb') rec.prix = { mode: ['total', 'detail'].includes(g('prixMode')) ? g('prixMode') : '', tot: mo('prixTot'), nuit: mo('prixNuit'), menage: mo('prixMenage'), taxe: mo('prixTaxe') };
     rec.hdeb = tm('hdeb', '15:00'); rec.hfin = tm('hfin', '11:00');
     if (rec.code && !/^[0-9A-Za-z#*]{3,16}$/.test(rec.code)) return toast('Code invalide (3 à 16 chiffres ou lettres)', { bad: true });
     const prevH = id ? vault.get('hotes', id) : null;
@@ -9289,6 +9720,12 @@ const FORMS = {
     if (!i || !x) return;
     setBusy(form, true, 'Envoi…');
     try { await eqChatSend([i.id], x, false); toast('Message envoyé'); renderSheet(); } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
+  },
+  async 'tpay-conf'(fd) {
+    const g = (k) => String(fd.get(k) || '').trim(), payMode = fd.get('payMode') === 'month' ? 'month' : 'each';
+    try { await tenantSend({ type: 'conf', payMode }); } catch (e) { return toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
+    await vault.mutate((tx) => tx.put('reglages', { id: 'tpayConf', payMode, iban: g('iban').toUpperCase(), lien: g('lien') }), '💳 Paiements', payMode === 'month' ? 'facture mensuelle' : 'chaque intervention');
+    toast('Enregistré'); goBack();
   },
   async 'eq-group'(fd) {
     const ids = fd.getAll('w').map(String).filter((wid) => vault.get('intervenants', wid));

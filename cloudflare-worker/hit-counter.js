@@ -585,11 +585,19 @@ const dayIso = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);
 // état : ok (prova / abbonamento in corso), ro (scaduto : sola lettura), blocked (sospeso, o oltre i giorni di sola lettura)
 function tenantState(reg) {
   if (reg.st === "suspended") return "blocked";
+  // facture impayée au-delà du délai choisi par la centrale principale : sola lettura
+  if (reg.hold === "ro" && (!reg.until || reg.until >= dayIso())) return "ro";
   if (!reg.until || reg.until >= dayIso()) return "ok";
   if (Number.isInteger(reg.roDays) && reg.roDays >= 0 && (Date.parse(dayIso()) - Date.parse(reg.until)) / 864e5 > reg.roDays) return "blocked";
   return "ro";
 }
-const tenantPub = (reg) => ({ id: reg.id, fil: reg.fil, nom: reg.nom, st: reg.st, until: reg.until || "", state: tenantState(reg) });
+const tenantPub = (reg) => ({ id: reg.id, fil: reg.fil, nom: reg.nom, st: reg.st, until: reg.until || "", state: tenantState(reg), hold: reg.hold || "" });
+// 🧾 casella della centrale d'un client : fatture e avvisi della centrale principale, cifrati per la chiave pubblica del client
+const TBOX = (tid) => "ares/tbox/" + tid + "/";
+async function tboxList(env, tid) {
+  const l = await env.PHOTOS.list({ prefix: TBOX(tid), limit: 50 });
+  return Promise.all(l.objects.map(async (o) => { const u = new Uint8Array(await (await env.PHOTOS.get(o.key)).arrayBuffer()); let bin = ""; for (let i = 0; i < u.length; i++) bin += String.fromCharCode(u[i]); return { name: o.key.slice(TBOX(tid).length), d: btoa(bin) }; }));
+}
 function aresVault(tid) {
   if (!tid) return { META: ARES_META, DATA: ARES_DATA, FILES: ARES_FILES, SESSION: ARES_SESSION, INBOX: ARES_INBOX, owner: "owner", me: "main" };
   const pre = "ares/t/" + tid + "/";
@@ -631,6 +639,7 @@ async function tenantWipe(env, tid) {
   }
   bytes += await wipePrefix(env, "ares/tidx/" + tid + "/", keys);
   bytes += await wipePrefix(env, "ares/t/" + tid + "/", keys);
+  bytes += await wipePrefix(env, TBOX(tid), keys);
   return { keys, bytes };
 }
 
@@ -739,7 +748,17 @@ async function handleAres(request, env, url, headers) {
   // ── Centrale d'un client : pas de publicité / biens / annonces du réseau / registre ; scaduto = sola lettura ──
   if (tid) {
     if (/^(pubs|biens|pubstats|tools|tenants|demandes)(\/|$)/.test(path) || (path === "network-key" && method !== "GET")) return aresJson({ error: "Réservé à la centrale principale" }, 403, headers);
-    if (ro && method !== "GET") return aresJson({ error: "readonly", tenant: tenantPub(reg) }, 423, headers);
+    if (path === "tenant-key" && method === "PUT") {
+      let b;
+      try { b = await request.json(); } catch { b = null; }
+      if (!b || !isB64u(b.pub, 200)) return aresJson({ error: "Données invalides" }, 400, headers);
+      if (reg.pub !== b.pub) await tenantPut(env, { ...reg, pub: b.pub });
+      return aresJson({ ok: true }, 200, headers);
+    }
+    if (path === "box" && method === "GET") return aresJson({ items: await tboxList(env, tid) }, 200, headers, { "Cache-Control": "no-store" });
+    const boxDel = path.match(/^box\/([a-z0-9-]{6,40})$/);
+    if (boxDel && method === "DELETE") { await env.PHOTOS.delete(TBOX(tid) + boxDel[1]); return aresJson({ ok: true }, 200, headers); }
+    if (ro && method !== "GET" && path !== "demande") return aresJson({ error: "readonly", tenant: tenantPub(reg) }, 423, headers);
     // demande d'intervention vers la centrale principale (contenu chiffré pour elle)
     if (path === "demande" && method === "POST") {
       const kd = "tdem-rl:" + tid, nd = parseInt((await env.HITS.get(kd)) || "0", 10);
@@ -790,6 +809,16 @@ async function handleAres(request, env, url, headers) {
       await tenantPut(env, r);
       return aresJson({ ok: true, id, code, tenant: tenantPub(r) }, 200, headers);
     }
+    const tbm = path.match(/^tenants\/([a-z0-9]{12,24})\/box$/);
+    if (tbm && method === "POST") {
+      if (!(await env.PHOTOS.head(tenantKey(tbm[1])))) return aresJson({ error: "Introuvable" }, 404, headers);
+      const body = await request.arrayBuffer();
+      if (body.byteLength < 100 || body.byteLength > 4 * 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
+      const n = (await env.PHOTOS.list({ prefix: TBOX(tbm[1]), limit: 60 })).objects.length;
+      if (n >= 50) return aresJson({ error: "Casella piena : il client deve aprire la sua centrale" }, 429, headers);
+      await env.PHOTOS.put(TBOX(tbm[1]) + Date.now().toString(36) + "-" + randHex(4), body);
+      return aresJson({ ok: true }, 200, headers);
+    }
     const tmm = path.match(/^tenants\/([a-z0-9]{12,24})(\/reset)?$/);
     const r = tmm ? await tenantGet(env, tmm[1]) : null;
     if (!r) return aresJson({ error: "Introuvable" }, 404, headers);
@@ -809,6 +838,7 @@ async function handleAres(request, env, url, headers) {
       if (TENANT_FIL.includes(b.fil)) n.fil = b.fil;
       if (/^\d{4}-\d{2}-\d{2}$/.test(b.until || "")) n.until = b.until;
       if (["trial", "active", "suspended"].includes(b.st)) n.st = b.st;
+      if (b.hold === "ro" || b.hold === "") n.hold = b.hold;
       if (b.roDays === null || b.roDays === "") n.roDays = null; else if (b.roDays != null && Number.isInteger(+b.roDays) && +b.roDays >= 0 && +b.roDays <= 3650) n.roDays = +b.roDays;
       let code;
       if (b.newCode && !(await env.PHOTOS.head("ares/t/" + r.id + "/meta.json"))) { code = invite(); n.setupHash = await sha256Hex(code); n.setupExp = Date.now() + 30 * 864e5; }

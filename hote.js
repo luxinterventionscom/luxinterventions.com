@@ -294,6 +294,8 @@ function render() {
     ${st.adresse ? `<p class="meta" style="margin:8px 0 0">📍 ${esc(st.adresse)}</p><div class="btns"><a class="btn sm sec" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(st.adresse)}" target="_blank" rel="noopener">${esc(t.way)}</a></div>` : ''}</div>`);
   // 6 · publicité (milieu)
   { const p = slot('milieu'); if (p) out.push(adBox(p, t)); }
+  // 6b · prix du séjour (Airbnb)
+  if (bnb && today <= d.depart) out.push(sejourHtml(d.sejour));
   // 7 · cœur : mon séjour (formule, menu, préférences, contact) + arrivée (taxi ou soi-même)
   out.push(`<div class="card"><h2>🧳 ${esc(t.stay)}</h2>
     <p style="margin:0">🛬 ${esc(t.from)} : <b>${esc(fmt(d.arrivee))}</b> ${esc(t.after)} ${esc(d.hdeb)}<br>🛫 ${esc(t.to)} : <b>${esc(fmt(d.depart))}</b> ${esc(t.before)} ${esc(d.hfin)}</p>
@@ -334,12 +336,51 @@ function render() {
   else paintEst();
   tripPoll();
 }
+// ⭐ note de la course (une fois terminée) : vue par l'établissement et par la société de taxi
+const RT = {
+  fr: { q: '⭐ Comment était la course ?', ph: 'Un commentaire (facultatif)', send: 'Envoyer', thanks: 'Merci pour votre note !' },
+  en: { q: '⭐ How was the ride?', ph: 'A comment (optional)', send: 'Send', thanks: 'Thank you for your rating!' },
+  de: { q: '⭐ Wie war die Fahrt?', ph: 'Ein Kommentar (optional)', send: 'Senden', thanks: 'Danke für Ihre Bewertung!' },
+  it: { q: '⭐ Com’è andata la corsa?', ph: 'Un commento (facoltativo)', send: 'Invia', thanks: 'Grazie per il suo voto!' },
+  pt: { q: '⭐ Como foi a corrida?', ph: 'Um comentário (opcional)', send: 'Enviar', thanks: 'Obrigado pela sua avaliação!' },
+  es: { q: '⭐ ¿Qué tal la carrera?', ph: 'Un comentario (opcional)', send: 'Enviar', thanks: '¡Gracias por su nota!' },
+};
+// 💶 prix du séjour (Airbnb) : détail + bouton « Payer » affiché mais pas encore connecté
+const PJ = {
+  fr: { h: '💶 Prix du séjour', nights: 'nuits', clean: 'Ménage', tax: 'Taxe de séjour', pp: 'pers.', tot: 'Total', pay: '💳 Payer le séjour', info: 'Paiement en ligne pas encore connecté : réglez selon les indications de votre hôte.' },
+  en: { h: '💶 Price of your stay', nights: 'nights', clean: 'Cleaning', tax: 'Tourist tax', pp: 'pers.', tot: 'Total', pay: '💳 Pay for the stay', info: 'Online payment not connected yet: pay as your host tells you.' },
+  de: { h: '💶 Preis des Aufenthalts', nights: 'Nächte', clean: 'Reinigung', tax: 'Kurtaxe', pp: 'Pers.', tot: 'Gesamt', pay: '💳 Aufenthalt bezahlen', info: 'Online-Zahlung noch nicht verbunden: zahlen Sie nach Angabe Ihres Gastgebers.' },
+  it: { h: '💶 Prezzo del soggiorno', nights: 'notti', clean: 'Pulizia', tax: 'Tassa di soggiorno', pp: 'pers.', tot: 'Totale', pay: '💳 Paga il pernottamento', info: 'Pagamento online non ancora collegato: paghi secondo le indicazioni del suo host.' },
+  pt: { h: '💶 Preço da estadia', nights: 'noites', clean: 'Limpeza', tax: 'Taxa turística', pp: 'pess.', tot: 'Total', pay: '💳 Pagar a estadia', info: 'Pagamento online ainda não ligado: pague segundo as indicações do seu anfitrião.' },
+  es: { h: '💶 Precio de la estancia', nights: 'noches', clean: 'Limpieza', tax: 'Tasa turística', pp: 'pers.', tot: 'Total', pay: '💳 Pagar la estancia', info: 'Pago en línea aún no conectado: pague según las indicaciones de su anfitrión.' },
+};
+const eur2 = (n) => (Math.round((+n || 0) * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+let sejInfo = false;
+function sejourHtml(x) {
+  if (!x) return '';
+  const w = PJ[lang] || PJ.fr;
+  const rows = x.mode === 'detail' ? [[`${x.n} ${w.nights} × ${eur2(x.nuit)}`, x.nuits], x.menage ? [w.clean, x.menage] : null, x.taxe ? [`${w.tax} (${x.p} ${w.pp} × ${x.n} × ${eur2(x.taxeU)})`, x.taxe] : null].filter(Boolean) : [];
+  return `<div class="card"><h2>${esc(w.h)}</h2>${rows.map(([l, v]) => `<p style="margin:0 0 4px;display:flex;justify-content:space-between;gap:8px"><span>${esc(l)}</span><span>${esc(eur2(v))}</span></p>`).join('')}
+    <p style="margin:6px 0 0;display:flex;justify-content:space-between;gap:8px"><b>${esc(w.tot)}</b><b>${esc(eur2(x.tot))}</b></p>
+    <div class="btns"><button class="btn sm" disabled aria-disabled="true" style="opacity:.45;cursor:not-allowed">${esc(w.pay)}</button><button class="btn sm sec" data-sejinfo="1" aria-label="Info">ℹ️</button></div>
+    ${sejInfo ? `<p class="meta" style="margin:8px 0 0">ℹ️ ${esc(w.info)}</p>` : ''}</div>`;
+}
+const rated = (rid, v) => { const k = 'hoteRate:' + id + ':' + rid; if (v) ls.set(k, String(v)); return +(ls.get(k) || 0); };
+const rateSel = {};
+function rateHtml(rid, done, already) {
+  if (!done) return '';
+  const w = RT[lang] || RT.fr, s0 = already || rated(rid);
+  if (s0) return `<p class="meta" style="margin:6px 0 0">${'⭐'.repeat(s0)} · ${esc(w.thanks)}</p>`;
+  const cur = rateSel[rid] || 0;
+  return `<div class="rate" style="margin-top:8px"><p class="meta" style="margin:0 0 4px"><b>${esc(w.q)}</b></p><div class="btns">${[1, 2, 3, 4, 5].map((n) => `<button class="btn sm ${n <= cur ? '' : 'sec'}" data-rate="${esc(rid)}" data-s="${n}">${n <= cur ? '⭐' : '☆'}</button>`).join('')}</div>
+    ${cur ? `<input data-rate-txt="${esc(rid)}" placeholder="${esc(w.ph)}" maxlength="500"><button class="btn block" style="margin-top:6px" data-rate-send="${esc(rid)}">${esc(w.send)}</button>` : ''}</div>`;
+}
 // 🚘 réserver un chauffeur pendant le séjour (course, à l'heure, journée…) + mes réservations
 function rideCard() {
   const w = TXT(), d = data, f = ride, mine = d.rides || [];
   const p = price({ ...f, spot: 'other' }, 0);
   return `<div class="card arr"><h2>${esc(w.book)}</h2>
-    ${mine.length ? `<p class="meta" style="margin:0 0 6px"><b>${esc(w.mine)}</b></p>${mine.map((r) => `<div class="drv" style="margin:0 0 6px;${r.st === 'wait' ? 'background:#fff7ed;border-color:#fed7aa' : r.st === 'no' ? 'background:#fef2f2;border-color:#fecaca' : ''}">${esc(w.S[r.service] || '')}${r.gamme ? ' · ' + esc(w.G[r.gamme]) : ''}${r.quand ? ' · 🕒 ' + esc(String(r.quand).replace('T', ' ')) : ''}${r.to ? ' → ' + esc(r.to) : ''}<br><b>${esc(r.st === 'wait' ? w.W : r.st === 'no' ? w.N : w.O)}</b>${r.drv ? ` · ${esc(r.drv.nom)} · 🚘 ${esc([r.drv.auto, r.drv.plaque].filter(Boolean).join(' '))}${r.drv.tel ? ` <a href="tel:${esc(String(r.drv.tel).replace(/[^\d+]/g, ''))}">📞</a>` : ''}` : ''}</div>`).join('')}` : ''}
+    ${mine.length ? `<p class="meta" style="margin:0 0 6px"><b>${esc(w.mine)}</b></p>${mine.map((r) => `<div class="drv" style="margin:0 0 6px;${r.st === 'wait' ? 'background:#fff7ed;border-color:#fed7aa' : r.st === 'no' ? 'background:#fef2f2;border-color:#fecaca' : ''}">${esc(w.S[r.service] || '')}${r.gamme ? ' · ' + esc(w.G[r.gamme]) : ''}${r.quand ? ' · 🕒 ' + esc(String(r.quand).replace('T', ' ')) : ''}${r.to ? ' → ' + esc(r.to) : ''}<br><b>${esc(r.st === 'wait' ? w.W : r.st === 'no' ? w.N : w.O)}</b>${r.drv ? ` · ${esc(r.drv.nom)} · 🚘 ${esc([r.drv.auto, r.drv.plaque].filter(Boolean).join(' '))}${r.drv.tel ? ` <a href="tel:${esc(String(r.drv.tel).replace(/[^\d+]/g, ''))}">📞</a>` : ''}` : ''}${rateHtml(r.id, r.done, r.rated)}</div>`).join('')}` : ''}
     ${f.open ? `${svcHtml(f, 'r')}
       <label>${esc(T().when)}</label><input type="datetime-local" data-r-quand="1" value="${esc(f.quand || today + 'T10:00')}">
       <label>${esc(w.dest)}</label><input data-r-to="1" value="${esc(f.to)}" placeholder="${esc(w.destPh)}">
@@ -357,7 +398,8 @@ function arrCard(t) {
       return `<div class="card arr"><h2>🚕 ${esc(t.chosenTaxi)}</h2><p style="margin:0">📍 ${esc(sent.from)}${sent.quand ? ' · 🕒 ' + esc(String(sent.quand).replace('T', ' ')) : ''}${sent.vol ? ' · ✈️ ' + esc(sent.vol) : ''}</p>
         <p class="meta" style="margin:4px 0 0">${[sent.service && sent.service !== 'course' ? TXT().S[sent.service] : '', sent.gamme ? TXT().G[sent.gamme] : '', ...(sent.extras || []).map((k) => TXT().E[k]), sent.km ? sent.km + ' km' : '', sent.prix ? '~' + sent.prix + ' €' : ''].filter(Boolean).map(esc).join(' · ')}</p>
         ${tx ? `<div class="drv"><b>${esc(t.driver)} : ${esc(tx.nom)}</b><br>🚘 ${esc([tx.auto, tx.plaque].filter(Boolean).join(' · '))}${tx.tel ? `<div class="btns"><a class="btn sm" href="tel:${esc(String(tx.tel).replace(/[^\d+]/g, ''))}">${esc(t.call)}</a></div>` : ''}</div><div id="taxiTrip"></div>` : `<p class="meta" style="margin:8px 0 0">⏳ ${esc(t.wait)}</p>`}
-        <button class="btn sm sec" style="margin-top:8px" data-arr-edit="1">${esc(t.change)}</button></div>`;
+        ${rateHtml('arr', d.arrDone, d.arrRated)}
+        ${d.arrDone ? '' : `<button class="btn sm sec" style="margin-top:8px" data-arr-edit="1">${esc(t.change)}</button>`}</div>`;
     }
     const tr = myTrip || (() => { try { return JSON.parse(ls.get('hoteTrip:' + id) || 'null'); } catch { return null; } })();
     const isDay = d.arrivee === today;
@@ -444,6 +486,7 @@ app.addEventListener('click', async (e) => {
   const b = e.target.closest('button, [data-lb]');
   if (!b) return;
   const t = T();
+  if (b.dataset.sejinfo) { sejInfo = !sejInfo; return render(); }
   if (b.dataset.lang) { lang = b.dataset.lang; ls.set('hoteLang', lang); if (pushSt === 'on') pushRefresh('/hote', pushPost); return render(); }
   if (b.dataset.push) { if (await pushEnable({ api: API, swUrl: '/hote-sw.js', scope: '/hote', post: pushPost })) { pushSt = 'on'; pushJust = true; } else pushSt = await pushStatus('/hote'); return render(); }
   if (b.dataset.reset) { ls.set(ACC, null); id = key = ''; data = null; return render(); }
@@ -482,6 +525,14 @@ app.addEventListener('click', async (e) => {
       await sendOwner({ type: 'hote-ride', rid: Date.now().toString(36), service: f.service, gamme: f.gamme, extras: f.extras, heures: f.service === 'heures' ? f.heures : 0, from: data.st.nom, to: f.to, quand: f.quand || today + 'T10:00', prix });
       ride = { open: false, service: 'course', gamme: '', extras: [], heures: 3, quand: '', to: '', sent: TXT().W };
     } catch { b.disabled = false; return; }
+    return render();
+  }
+  if (b.dataset.rate) { rateSel[b.dataset.rate] = +b.dataset.s; return render(); }
+  if (b.dataset.rateSend) {
+    const rid = b.dataset.rateSend, s0 = rateSel[rid] || 0, inp = app.querySelector(`[data-rate-txt="${CSS.escape(rid)}"]`);
+    if (!s0) return;
+    b.disabled = true;
+    try { await sendOwner({ type: 'hote-rate', r: rid, s: s0, txt: inp ? inp.value.trim().slice(0, 500) : '' }); rated(rid, s0); } catch { b.disabled = false; return; }
     return render();
   }
   if (b.dataset.tripGo) return tripStart();
