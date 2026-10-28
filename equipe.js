@@ -136,9 +136,9 @@ const CH = {
 const CHK = () => 'eqChat:' + id, CSK = () => 'eqChatSeen:' + id;
 let chatDraft = '';
 function chatCard() {
-  const c = CH[lang] || CH.fr, list = data.chat || [], known = new Set(list.map((m) => m.id));
-  const pend = getJ(CHK()).filter((m) => !known.has(m.id));
-  if (pend.length !== getJ(CHK()).length) setJ(CHK(), pend);
+  const c = CH[lang] || CH.fr, list = data.chat || [], known = new Set(list.map((m) => m.id)), stored = getJ(CHK());
+  const pend = stored.filter((m) => !known.has(m.id));
+  if (pend.length !== stored.length) setJ(CHK(), pend);
   const all = [...list, ...pend.map((m) => ({ ...m, from: 'eq', wait: 1 }))].slice(-40);
   let seen = '';
   try { seen = localStorage.getItem(CSK()) || ''; } catch { /* stockage indisponible */ }
@@ -149,14 +149,17 @@ function chatCard() {
     <form id="chatForm" class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(c.ph)}">${esc(chatDraft)}</textarea><button class="btn" type="submit">${esc(c.send)}</button></form></div>`;
 }
 // la centrale a répondu : vu dès que la carte est à l'écran
+let chatIO = null;
 function chatSeen() {
-  const el = document.getElementById('chatCard');
-  if (!el || !data || !(data.chat || []).length) return;
-  const last = data.chat[data.chat.length - 1].at;
-  const mark = () => { try { if ((localStorage.getItem(CSK()) || '') < last) localStorage.setItem(CSK(), last); } catch { /* stockage indisponible */ } };
+  if (chatIO) { chatIO.disconnect(); chatIO = null; }
+  const el = document.getElementById('chatCard'), last = data && (data.chat || []).length ? data.chat[data.chat.length - 1].at : '';
+  let seen = '';
+  try { seen = localStorage.getItem(CSK()) || ''; } catch { /* stockage indisponible */ }
+  if (!el || !last || seen >= last) return;
+  const mark = () => { try { localStorage.setItem(CSK(), last); } catch { /* stockage indisponible */ } };
   if (!('IntersectionObserver' in window)) return mark();
-  const io = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { io.disconnect(); setTimeout(mark, 1500); } });
-  io.observe(el);
+  chatIO = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { chatIO.disconnect(); chatIO = null; setTimeout(mark, 1500); } });
+  chatIO.observe(el);
 }
 const FT = {
   fr: { info: 'Info supplémentaires', anim: 'Mettre l’icône sur l’écran', lock: 'Vos données sont chiffrées et visibles uniquement par la direction.', out: 'Se déconnecter', sure: 'Voulez-vous vraiment vous déconnecter de l’app ?', call: 'Appeler la centrale', yes: 'Oui, me déconnecter', no: 'Annuler' },
@@ -442,7 +445,6 @@ function taskCard(it, withBtns) {
   const g = taxiGate(it, x);
   if (g) return taxiCard(it, x, g);
   const st = stateOf(it.tid, it.d);
-  const tel = x.contact && x.contact.tel ? x.contact.tel.replace(/[^\d+]/g, '') : '';
   const done = st && st.st === 'fait';
   const f = form && form.tid === it.tid && form.d === it.d ? form : null;
   const notStarted = !st || st.st === 'refus';

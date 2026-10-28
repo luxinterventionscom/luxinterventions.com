@@ -34,7 +34,6 @@ export function createDemo() {
     delete t.history;
     return t;
   }
-  const org = (rid) => residences.find((r) => r.id === rid).org_id;
   seed({ residence_id: 'r1', org_id: 'demo-org', urgence: 'urgent', categorie: 'Plomberie', lieu: 'App. 3B, cuisine', description: 'Fuite sous l’évier, l’eau coule dans l’appartement du dessous.', status: 'recue', created_by: 'demo-sophie', created_at: now - 20 * 60000, contact_name: 'Mme Rossi (locataire)', contact_phone: '+352 621 333 444' });
   seed({ residence_id: 'r2', org_id: 'demo-org', urgence: '24h', categorie: 'Électricité', lieu: 'Hall d’entrée', description: 'Plusieurs spots du hall ne fonctionnent plus.', status: 'planifiee', created_by: 'demo-marc', created_at: now - 26 * H, taken_at: now - 25.5 * H,
     planned_at: new Date(now + 3 * H).toISOString().slice(0, 16), technicien: 'Luca', updated_at: now - 25 * H,

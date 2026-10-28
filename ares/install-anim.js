@@ -91,8 +91,6 @@ export function showInstallAnim({ name = 'App', icon = '', lang = 'fr', host = l
   const ico = `<img src="${esc(icon)}" alt="">`;
   const site = `<div class="ia-site">${ico}${esc(name)}</div>`;
   const tap = (x, y) => `<span class="ia-tap" style="left:${x}%;top:${y}px"></span><span class="ia-fing" style="left:${x}%;top:${y}px">👆</span>`;
-  const page = `<div class="ia-site" style="top:40px">${ico}${esc(name)}</div><div style="position:absolute;left:14px;right:14px;top:150px;display:grid;gap:7px"><div class="i-bar" style="height:10px;width:80%"></div><div class="i-bar" style="height:10px;width:60%"></div><div class="i-bar"></div><div class="i-bar" style="width:90%"></div><div class="i-bar" style="width:70%"></div></div>`;
-  const pill = `<div class="i-pill"><span class="b">‹</span><span class="u">≡ ${esc(host.replace(/^www\./, ''))} ⟳</span><span class="b">•••</span></div>`;
   const home = `<div class="ia-home">${Array.from({ length: 7 }, () => '<div class="ia-app"><i></i></div>').join('')}<div class="ia-app">${ico}${esc(name).slice(0, 12)}</div></div>`;
   const short = host.replace(/^www\./, '').slice(-14);
   const stop = `<div class="ia-top s-top"><span>☆🔒</span><span class="ia-url">${esc(host.replace(/^www\./, ''))}</span><span>⬇ ⟳</span></div>`;
