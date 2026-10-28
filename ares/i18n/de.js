@@ -16761,4 +16761,136 @@ export default [
 "Mode de paiement du client",
 "Zahlungsart des Kunden"
 ],
+[
+"Virement (IBAN)",
+"Überweisung (IBAN)"
+],
+[
+"Lien de paiement",
+"Zahlungslink"
+],
+[
+"Au chauffeur (espèces / carte)",
+"Beim Fahrer (bar / Karte)"
+],
+[
+"Prix de la grille (estimation)",
+"Preis laut Tarif (Schätzung)"
+],
+[
+"Confirmé à l’acceptation",
+"Bei Annahme bestätigt"
+],
+[
+"Corrigé après la course (attente, péages)",
+"Nach der Fahrt korrigiert (Wartezeit, Maut)"
+],
+[
+"Une facture par course",
+"Eine Rechnung pro Fahrt"
+],
+[
+"Récapitulatif mensuel",
+"Monatsübersicht"
+],
+[
+"90 j : {0} course{1}",
+"90 T: {0} Fahrt(en)"
+],
+[
+"{0} sans réponse",
+"{0} ohne Antwort"
+],
+[
+"à payer {0}",
+"offen {0}"
+],
+[
+"Fiche de facturation pas encore remplie dans son app",
+"Rechnungsdaten in seiner App noch nicht ausgefüllt"
+],
+[
+"Factures des taxis (à payer directement à la société)",
+"Taxi-Rechnungen (direkt an das Unternehmen zu zahlen)"
+],
+[
+"{0} course{1}",
+"{0} Fahrt(en)"
+],
+[
+"reçue par la société le {0}",
+"vom Unternehmen erhalten am {0}"
+],
+[
+"confirmation attendue",
+"Bestätigung ausstehend"
+],
+[
+"Vous payez",
+"Sie zahlen"
+],
+[
+"directement la société",
+"direkt an das Unternehmen"
+],
+[
+": rien ne passe par nous.",
+": nichts läuft über uns."
+],
+[
+"TVA {0} % : {1}",
+"MwSt. {0} %: {1}"
+],
+[
+"Payer en ligne (lien de la société)",
+"Online bezahlen (Link des Unternehmens)"
+],
+[
+"La société se fait payer",
+"Das Unternehmen wird bezahlt"
+],
+[
+"par le chauffeur",
+"über den Fahrer"
+],
+[
+"(espèces ou carte).",
+"(bar oder Karte)."
+],
+[
+"Après le paiement, touchez « ✅ Payée » : la société le voit dans son app et confirme la réception.",
+"Nach der Zahlung auf „✅ Bezahlt“ tippen: das Unternehmen sieht es in seiner App und bestätigt den Eingang."
+],
+[
+"la société confirme la réception dans son app",
+"das Unternehmen bestätigt den Eingang in seiner App"
+],
+[
+"Fiche de facturation de la société de taxi",
+"Rechnungsdaten des Taxiunternehmens"
+],
+[
+"Course terminée",
+"Fahrt beendet"
+],
+[
+"Facture du taxi",
+"Taxi-Rechnung"
+],
+[
+"Facture de la société de taxi",
+"Rechnung des Taxiunternehmens"
+],
+[
+"La société de taxi a reçu le paiement",
+"Das Taxiunternehmen hat die Zahlung erhalten"
+],
+[
+"Note du client sur la course",
+"Bewertung des Gastes zur Fahrt"
+],
+[
+"Facture du taxi payée",
+"Taxi-Rechnung bezahlt"
+],
 ];

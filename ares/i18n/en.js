@@ -16503,4 +16503,136 @@ export default [
 "Mode de paiement du client",
 "Client payment mode"
 ],
+[
+"Virement (IBAN)",
+"Bank transfer (IBAN)"
+],
+[
+"Lien de paiement",
+"Payment link"
+],
+[
+"Au chauffeur (espèces / carte)",
+"To the driver (cash / card)"
+],
+[
+"Prix de la grille (estimation)",
+"Price from the rates (estimate)"
+],
+[
+"Confirmé à l’acceptation",
+"Confirmed on acceptance"
+],
+[
+"Corrigé après la course (attente, péages)",
+"Corrected after the ride (waiting, tolls)"
+],
+[
+"Une facture par course",
+"One invoice per ride"
+],
+[
+"Récapitulatif mensuel",
+"Monthly summary"
+],
+[
+"90 j : {0} course{1}",
+"90 d: {0} ride(s)"
+],
+[
+"{0} sans réponse",
+"{0} without answer"
+],
+[
+"à payer {0}",
+"to pay {0}"
+],
+[
+"Fiche de facturation pas encore remplie dans son app",
+"Billing details not yet filled in their app"
+],
+[
+"Factures des taxis (à payer directement à la société)",
+"Taxi invoices (to be paid directly to the company)"
+],
+[
+"{0} course{1}",
+"{0} ride(s)"
+],
+[
+"reçue par la société le {0}",
+"received by the company on {0}"
+],
+[
+"confirmation attendue",
+"confirmation pending"
+],
+[
+"Vous payez",
+"You pay"
+],
+[
+"directement la société",
+"the company directly"
+],
+[
+": rien ne passe par nous.",
+": nothing goes through us."
+],
+[
+"TVA {0} % : {1}",
+"VAT {0} %: {1}"
+],
+[
+"Payer en ligne (lien de la société)",
+"Pay online (company link)"
+],
+[
+"La société se fait payer",
+"The company is paid"
+],
+[
+"par le chauffeur",
+"through the driver"
+],
+[
+"(espèces ou carte).",
+"(cash or card)."
+],
+[
+"Après le paiement, touchez « ✅ Payée » : la société le voit dans son app et confirme la réception.",
+"After paying, tap “✅ Paid”: the company sees it in its app and confirms receipt."
+],
+[
+"la société confirme la réception dans son app",
+"the company confirms receipt in its app"
+],
+[
+"Fiche de facturation de la société de taxi",
+"Taxi company billing details"
+],
+[
+"Course terminée",
+"Ride finished"
+],
+[
+"Facture du taxi",
+"Taxi invoice"
+],
+[
+"Facture de la société de taxi",
+"Taxi company invoice"
+],
+[
+"La société de taxi a reçu le paiement",
+"The taxi company received the payment"
+],
+[
+"Note du client sur la course",
+"Guest rating of the ride"
+],
+[
+"Facture du taxi payée",
+"Taxi invoice paid"
+],
 ];

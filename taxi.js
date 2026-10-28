@@ -71,6 +71,29 @@ const L = {
 };
 let data = null, loadErr = '', lang = ls.get('taxiLang') || '';
 const T = () => L[lang] || L.fr;
+// 📋 fiche de facturation (remplie à la première ouverture), fin de course, factures, paiement par l'établissement
+const L2 = {
+  fr: { prof: '📋 Notre société et nos factures', profHint: 'À remplir une fois : l’établissement vous paie directement, avec ces données.', nom: 'Raison sociale', adr: 'Adresse', ville: 'Code postal et ville', rcs: 'RCS', tvaN: 'N° TVA', mail: 'Email', pay: 'Comment être payé ?', P: { iban: '🏦 Virement (IBAN)', lien: '🔗 Lien de paiement (Stripe, PayPal…)', chauffeur: '💵 Au chauffeur (espèces / carte)' }, iban: 'IBAN', bic: 'BIC', lien: 'Lien de paiement', prix: 'Prix de la course', X: { fixe: 'Prix de la grille (estimation)', conf: 'Je confirme le prix en acceptant', corr: 'Je corrige le prix après la course (attente, péages)' }, fact: 'Factures', F: { each: 'Une facture par course', month: 'Un récapitulatif par mois' }, taux: 'TVA (%)', tauxHint: 'Taux à confirmer avec votre comptable.', save: 'Enregistrer et envoyer', saved: 'Envoyé ✓', edit: '✏️ Modifier', need: 'Raison sociale et TVA obligatoires', prixC: 'Prix confirmé (€)', done: '🏁 Course terminée', doneT: 'Fin de course', prixF: 'Prix final (€)', note: 'Note (attente, péages…)', fin: '🏁 terminée', invs: '🧾 Nos factures', invNone: 'Aucune facture.', W: '⏳ à payer', paidBy: '💳 payée par l’établissement le', recv: '✅ Reçu', recvd: '✅ reçue', print: '🖨️ Imprimer', month: '🧾 Récapitulatif de', stats: '📊 90 jours', rate: 'Note du client', code: 'Code', fact2: 'Facture', client: 'Client', total: 'Total TTC', ht: 'HT', payIban: 'Paiement par virement', payDrv: 'Paiement au chauffeur', payLink: 'Paiement en ligne' },
+  it: { prof: '📋 La nostra società e le fatture', profHint: 'Da compilare una volta: la struttura vi paga direttamente, con questi dati.', nom: 'Ragione sociale', adr: 'Indirizzo', ville: 'CAP e città', rcs: 'RCS', tvaN: 'Partita IVA', mail: 'Email', pay: 'Come volete essere pagati?', P: { iban: '🏦 Bonifico (IBAN)', lien: '🔗 Link di pagamento (Stripe, PayPal…)', chauffeur: '💵 All’autista (contanti / carta)' }, iban: 'IBAN', bic: 'BIC', lien: 'Link di pagamento', prix: 'Prezzo della corsa', X: { fixe: 'Prezzo del listino (stima)', conf: 'Confermo il prezzo quando accetto', corr: 'Correggo il prezzo dopo la corsa (attese, pedaggi)' }, fact: 'Fatture', F: { each: 'Una fattura per corsa', month: 'Un riepilogo al mese' }, taux: 'IVA (%)', tauxHint: 'Aliquota da confermare con il vostro commercialista.', save: 'Salva e invia', saved: 'Inviato ✓', edit: '✏️ Modifica', need: 'Ragione sociale e IVA obbligatorie', prixC: 'Prezzo confermato (€)', done: '🏁 Corsa terminata', doneT: 'Fine corsa', prixF: 'Prezzo finale (€)', note: 'Nota (attese, pedaggi…)', fin: '🏁 terminata', invs: '🧾 Le nostre fatture', invNone: 'Nessuna fattura.', W: '⏳ da pagare', paidBy: '💳 pagata dalla struttura il', recv: '✅ Ricevuto', recvd: '✅ ricevuta', print: '🖨️ Stampa', month: '🧾 Riepilogo di', stats: '📊 90 giorni', rate: 'Voto del cliente', code: 'Codice', fact2: 'Fattura', client: 'Cliente', total: 'Totale IVA inclusa', ht: 'Imponibile', payIban: 'Pagamento con bonifico', payDrv: 'Pagamento all’autista', payLink: 'Pagamento online' },
+  de: { prof: '📋 Unser Unternehmen und Rechnungen', profHint: 'Einmal ausfüllen: Der Betrieb bezahlt Sie direkt mit diesen Daten.', nom: 'Firmenname', adr: 'Adresse', ville: 'PLZ und Ort', rcs: 'RCS', tvaN: 'USt-IdNr.', mail: 'E-Mail', pay: 'Wie möchten Sie bezahlt werden?', P: { iban: '🏦 Überweisung (IBAN)', lien: '🔗 Zahlungslink (Stripe, PayPal…)', chauffeur: '💵 Beim Fahrer (bar / Karte)' }, iban: 'IBAN', bic: 'BIC', lien: 'Zahlungslink', prix: 'Fahrpreis', X: { fixe: 'Preis laut Tarif (Schätzung)', conf: 'Ich bestätige den Preis bei Annahme', corr: 'Ich korrigiere den Preis nach der Fahrt (Wartezeit, Maut)' }, fact: 'Rechnungen', F: { each: 'Eine Rechnung pro Fahrt', month: 'Eine Monatsübersicht' }, taux: 'MwSt. (%)', tauxHint: 'Satz mit Ihrem Steuerberater klären.', save: 'Speichern und senden', saved: 'Gesendet ✓', edit: '✏️ Ändern', need: 'Firmenname und MwSt. erforderlich', prixC: 'Bestätigter Preis (€)', done: '🏁 Fahrt beendet', doneT: 'Fahrtende', prixF: 'Endpreis (€)', note: 'Notiz (Wartezeit, Maut…)', fin: '🏁 beendet', invs: '🧾 Unsere Rechnungen', invNone: 'Keine Rechnung.', W: '⏳ offen', paidBy: '💳 vom Betrieb bezahlt am', recv: '✅ Erhalten', recvd: '✅ erhalten', print: '🖨️ Drucken', month: '🧾 Übersicht', stats: '📊 90 Tage', rate: 'Bewertung des Gastes', code: 'Code', fact2: 'Rechnung', client: 'Kunde', total: 'Gesamt inkl. MwSt.', ht: 'Netto', payIban: 'Zahlung per Überweisung', payDrv: 'Zahlung beim Fahrer', payLink: 'Online-Zahlung' },
+  en: { prof: '📋 Our company and invoices', profHint: 'Fill in once: the property pays you directly, with these details.', nom: 'Company name', adr: 'Address', ville: 'Postcode and town', rcs: 'Company reg. no.', tvaN: 'VAT no.', mail: 'Email', pay: 'How do you want to be paid?', P: { iban: '🏦 Bank transfer (IBAN)', lien: '🔗 Payment link (Stripe, PayPal…)', chauffeur: '💵 To the driver (cash / card)' }, iban: 'IBAN', bic: 'BIC', lien: 'Payment link', prix: 'Ride price', X: { fixe: 'Price from the rates (estimate)', conf: 'I confirm the price when accepting', corr: 'I correct the price after the ride (waiting, tolls)' }, fact: 'Invoices', F: { each: 'One invoice per ride', month: 'One monthly summary' }, taux: 'VAT (%)', tauxHint: 'Rate to confirm with your accountant.', save: 'Save and send', saved: 'Sent ✓', edit: '✏️ Edit', need: 'Company name and VAT required', prixC: 'Confirmed price (€)', done: '🏁 Ride finished', doneT: 'End of ride', prixF: 'Final price (€)', note: 'Note (waiting, tolls…)', fin: '🏁 finished', invs: '🧾 Our invoices', invNone: 'No invoices.', W: '⏳ to be paid', paidBy: '💳 paid by the property on', recv: '✅ Received', recvd: '✅ received', print: '🖨️ Print', month: '🧾 Summary for', stats: '📊 90 days', rate: 'Guest rating', code: 'Code', fact2: 'Invoice', client: 'Client', total: 'Total incl. VAT', ht: 'Net', payIban: 'Payment by bank transfer', payDrv: 'Payment to the driver', payLink: 'Online payment' },
+  pt: { prof: '📋 A nossa empresa e faturas', profHint: 'A preencher uma vez: o estabelecimento paga-lhe diretamente, com estes dados.', nom: 'Denominação social', adr: 'Morada', ville: 'Código postal e localidade', rcs: 'RCS', tvaN: 'N.º IVA', mail: 'Email', pay: 'Como quer ser pago?', P: { iban: '🏦 Transferência (IBAN)', lien: '🔗 Link de pagamento (Stripe, PayPal…)', chauffeur: '💵 Ao motorista (dinheiro / cartão)' }, iban: 'IBAN', bic: 'BIC', lien: 'Link de pagamento', prix: 'Preço da corrida', X: { fixe: 'Preço da tabela (estimativa)', conf: 'Confirmo o preço ao aceitar', corr: 'Corrijo o preço após a corrida (espera, portagens)' }, fact: 'Faturas', F: { each: 'Uma fatura por corrida', month: 'Um resumo por mês' }, taux: 'IVA (%)', tauxHint: 'Taxa a confirmar com o seu contabilista.', save: 'Guardar e enviar', saved: 'Enviado ✓', edit: '✏️ Alterar', need: 'Denominação e IVA obrigatórios', prixC: 'Preço confirmado (€)', done: '🏁 Corrida terminada', doneT: 'Fim da corrida', prixF: 'Preço final (€)', note: 'Nota (espera, portagens…)', fin: '🏁 terminada', invs: '🧾 As nossas faturas', invNone: 'Nenhuma fatura.', W: '⏳ a pagar', paidBy: '💳 paga pelo estabelecimento em', recv: '✅ Recebido', recvd: '✅ recebida', print: '🖨️ Imprimir', month: '🧾 Resumo de', stats: '📊 90 dias', rate: 'Avaliação do cliente', code: 'Código', fact2: 'Fatura', client: 'Cliente', total: 'Total c/ IVA', ht: 'Sem IVA', payIban: 'Pagamento por transferência', payDrv: 'Pagamento ao motorista', payLink: 'Pagamento online' },
+  es: { prof: '📋 Nuestra empresa y facturas', profHint: 'A rellenar una vez: el establecimiento le paga directamente, con estos datos.', nom: 'Razón social', adr: 'Dirección', ville: 'Código postal y ciudad', rcs: 'RCS', tvaN: 'N.º IVA', mail: 'Email', pay: '¿Cómo quiere cobrar?', P: { iban: '🏦 Transferencia (IBAN)', lien: '🔗 Enlace de pago (Stripe, PayPal…)', chauffeur: '💵 Al conductor (efectivo / tarjeta)' }, iban: 'IBAN', bic: 'BIC', lien: 'Enlace de pago', prix: 'Precio de la carrera', X: { fixe: 'Precio de la tarifa (estimación)', conf: 'Confirmo el precio al aceptar', corr: 'Corrijo el precio tras la carrera (espera, peajes)' }, fact: 'Facturas', F: { each: 'Una factura por carrera', month: 'Un resumen al mes' }, taux: 'IVA (%)', tauxHint: 'Tipo a confirmar con su gestor.', save: 'Guardar y enviar', saved: 'Enviado ✓', edit: '✏️ Modificar', need: 'Razón social e IVA obligatorios', prixC: 'Precio confirmado (€)', done: '🏁 Carrera terminada', doneT: 'Fin de la carrera', prixF: 'Precio final (€)', note: 'Nota (espera, peajes…)', fin: '🏁 terminada', invs: '🧾 Nuestras facturas', invNone: 'Ninguna factura.', W: '⏳ por pagar', paidBy: '💳 pagada por el establecimiento el', recv: '✅ Recibido', recvd: '✅ recibida', print: '🖨️ Imprimir', month: '🧾 Resumen de', stats: '📊 90 días', rate: 'Nota del cliente', code: 'Código', fact2: 'Factura', client: 'Cliente', total: 'Total IVA incl.', ht: 'Base', payIban: 'Pago por transferencia', payDrv: 'Pago al conductor', payLink: 'Pago en línea' },
+};
+const T2 = () => L2[lang] || L2.fr;
+const drvCode = () => 'D' + [...crypto.getRandomValues(new Uint8Array(4))].map((x) => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[x % 32]).join('');
+const eur = (n) => (Math.round((+n || 0) * 100) / 100).toFixed(2).replace('.', ',') + ' €';
+const dayFmt = (iso) => (iso ? new Date(String(iso).slice(0, 10) + 'T12:00:00').toLocaleDateString(lang || 'fr', { day: 'numeric', month: 'short', year: 'numeric' }) : '');
+// numéro de facture : TX-AAAA-0001, suite des numéros déjà connus (toutes les factures reviennent de l'établissement)
+function nextInvNo() {
+  const y = String(new Date().getFullYear()), pre = `TX-${y}-`, k = 'taxiInvSeq:' + id;
+  const known = (data.invs || []).filter((f) => f.no.startsWith(pre)).map((f) => +f.no.slice(pre.length) || 0);
+  const [ly, ln] = String(ls.get(k) || '').split(':');
+  const n = Math.max(0, ...known, ly === y ? +ln || 0 : 0) + 1;
+  ls.set(k, y + ':' + n);
+  return pre + String(n).padStart(4, '0');
+}
+let prof = null, profOpen = false, profMsg = '', doneK = '';
 // réponses déjà envoyées (visibles tout de suite, avant la synchro de l'établissement)
 const sentK = () => 'taxiSent:' + id;
 const sent = () => { try { return JSON.parse(ls.get(sentK()) || '{}'); } catch { return {}; } };
@@ -100,9 +123,13 @@ function rideHtml(r, t) {
     ${r.km || r.prix ? `<p class="meta" style="margin:4px 0 0">${r.km ? esc(r.km + ' km') + ' · ' : ''}${esc(t.price)} : ${r.prix ? '~' + esc(r.prix) + ' €' : '—'}</p>` : ''}
     ${st === 'wait' ? (acc === k ? `<div class="acc"><label>${esc(t.drv)}</label><select data-acc-d="1">${drivers.map((d, i) => `<option value="${i}">${esc(d.nom)}</option>`).join('')}</select>
         <label>${esc(t.car)}</label><select data-acc-c="1">${cars.filter((x) => !r.gamme || x.gamme === r.gamme).concat(r.gamme ? cars.filter((x) => x.gamme !== r.gamme) : []).map((x) => `<option value="${esc(x.plaque)}">${esc(x.modele)} · ${esc(x.plaque)} · ${esc(t.G[x.gamme] || '')}</option>`).join('')}</select>
+        ${(data.prof || {}).prix === 'conf' ? `<label>${esc(T2().prixC)}</label><input data-acc-p="1" inputmode="decimal" value="${esc(r.prix || '')}">` : ''}
         <button class="btn block" style="margin-top:8px" data-acc-send="${esc(k)}" ${drivers.length && cars.length ? '' : 'disabled'}>${esc(t.send)}</button></div>`
       : `<div class="duo"><button class="btn" data-acc="${esc(k)}">${esc(t.accept)}</button><button class="btn sec" data-ref="${esc(k)}">${esc(t.refuse)}</button></div>`) : ''}
-    ${st === 'ok' && r.drv ? `<p style="margin:8px 0 0">👤 ${esc(r.drv.nom)} · 🚘 ${esc([r.drv.auto, r.drv.plaque].filter(Boolean).join(' '))}</p>` : ''}
+    ${st === 'ok' && r.drv ? `<p style="margin:8px 0 0">👤 ${esc(r.drv.nom)}${r.code ? ' · 🪪 ' + esc(r.code) : ''} · 🚘 ${esc([r.drv.auto, r.drv.plaque].filter(Boolean).join(' '))}${r.prixConf ? ' · ' + esc(eur(r.prixConf)) : ''}</p>` : ''}
+    ${r.done || (sent()[k] || {}).done ? `<p class="meta" style="margin:6px 0 0">${esc(T2().fin)} · ${esc(eur((r.done || sent()[k].done).prix))}${r.inv ? ' · 🧾 ' + esc(r.inv) : ''}${r.rate ? ` · ${'⭐'.repeat(r.rate.s)}${r.rate.txt ? ' « ' + esc(r.rate.txt) + ' »' : ''}` : ''}</p>`
+      : st === 'ok' && r.st === 'ok' ? (doneK === k ? `<div class="acc">${(data.prof || {}).prix === 'corr' ? `<label>${esc(T2().prixF)}</label><input data-done-p="1" inputmode="decimal" value="${esc(r.prixConf || r.prix || '')}">` : `<p class="meta" style="margin:0">${esc(T2().prixF)} : <b>${esc(eur(r.prixConf || r.prix))}</b></p>`}
+          <label>${esc(T2().note)}</label><input data-done-n="1"><button class="btn block" style="margin-top:8px" data-done-send="${esc(k)}">${esc(T2().done)}</button></div>` : `<div class="btns"><button class="btn sm" data-done="${esc(k)}">${esc(T2().done)}</button></div>`) : ''}
     ${st === 'ok' && r.link ? `<div class="btns"><a class="btn sm" href="${esc(r.link)}">${esc(t.open)}</a>${drvTel ? `<a class="btn sm sec" href="https://wa.me/${esc(drvTel.replace(/^\+/, '').replace(/^00/, ''))}?text=${encodeURIComponent('🚕 ' + r.n + '\n' + r.link)}" target="_blank" rel="noopener">${esc(t.toDrv)}</a>` : ''}</div>` : ''}</div>`;
 }
 function catHtml(t) {
@@ -110,7 +137,7 @@ function catHtml(t) {
   cat = c;
   const g = (k) => c.gammes[k] || (c.gammes[k] = { on: false });
   return `<div class="card"><h2>${esc(t.team)}</h2>
-    ${c.drivers.map((d, i) => `<div class="line"><input data-cd="${i}" data-f="nom" value="${esc(d.nom)}" placeholder="${esc(t.name)}"><input data-cd="${i}" data-f="tel" value="${esc(d.tel)}" placeholder="${esc(t.tel)}" type="tel"><input data-cd="${i}" data-f="lg" value="${esc(d.lg)}" placeholder="${esc(t.lg)}"></div>`).join('')}
+    ${c.drivers.map((d, i) => `<div class="line">${d.code || (d.code = drvCode()) ? `<span class="tag" title="${esc(T2().code)}">🪪 ${esc(d.code)}</span>` : ''}<input data-cd="${i}" data-f="nom" value="${esc(d.nom)}" placeholder="${esc(t.name)}"><input data-cd="${i}" data-f="tel" value="${esc(d.tel)}" placeholder="${esc(t.tel)}" type="tel"><input data-cd="${i}" data-f="lg" value="${esc(d.lg)}" placeholder="${esc(t.lg)}"></div>`).join('')}
     <button class="btn sm sec" data-add-d="1">${esc(t.addD)}</button>
     ${c.cars.map((x, i) => `<div class="line"><input data-cc="${i}" data-f="modele" value="${esc(x.modele)}" placeholder="${esc(t.model)}"><input data-cc="${i}" data-f="plaque" value="${esc(x.plaque)}" placeholder="${esc(t.plate)}"><select data-cc="${i}" data-f="gamme">${GK.map((k) => `<option value="${k}" ${x.gamme === k ? 'selected' : ''}>${esc(t.G[k])}</option>`).join('')}</select></div>`).join('')}
     <button class="btn sm sec" data-add-c="1">${esc(t.addC)}</button></div>
@@ -121,6 +148,51 @@ function catHtml(t) {
     <div class="grid">${EK.map((k) => `<label>${esc(t.E[k])}<input inputmode="decimal" data-e="${k}" value="${esc(c.extras[k] ?? '')}"></label>`).join('')}</div>
     <button class="btn block" style="margin-top:12px" data-cat-save="1">${esc(t.save)}</button>
     ${catMsg ? `<p class="ok" style="margin:8px 0 0">${esc(catMsg)}</p>` : ''}</div>`;
+}
+function profHtml() {
+  const u = T2(), p0 = data.prof || {}, open = !data.prof || profOpen;
+  if (!open) return `<div class="card"><h2>${esc(u.prof)}</h2><p class="meta" style="margin:0">${esc([p0.nom, u.P[p0.pay], u.X[p0.prix], u.F[p0.fact], p0.taux !== '' ? u.taux + ' ' + p0.taux : ''].filter(Boolean).join(' · '))}</p><button class="btn sm sec" style="margin-top:8px" data-prof-edit="1">${esc(u.edit)}</button></div>`;
+  const p = prof || (prof = { nom: data.nom || '', adresse: '', ville: '', rcs: '', tva: '', tel: data.tel || '', email: '', pay: 'iban', iban: '', bic: '', lien: '', prix: 'fixe', fact: 'each', taux: '', ...p0 });
+  const inp = (k, lbl, type = 'text') => `<label>${esc(lbl)}</label><input data-p="${k}" type="${type}" value="${esc(p[k] ?? '')}">`;
+  const radios = (k, opts) => Object.entries(opts).map(([v, l]) => `<label class="chk"><input type="radio" name="p_${k}" data-pr="${k}" value="${v}" ${p[k] === v ? 'checked' : ''}> ${esc(l)}</label>`).join('');
+  return `<div class="card" id="profCard"><h2>${esc(u.prof)}</h2><p class="meta" style="margin:0 0 8px">${esc(u.profHint)}</p>
+    ${inp('nom', u.nom)}${inp('adresse', u.adr)}${inp('ville', u.ville)}${inp('rcs', u.rcs)}${inp('tva', u.tvaN)}${inp('tel', T().tel, 'tel')}${inp('email', u.mail, 'email')}
+    <p class="meta" style="margin:10px 0 4px"><b>${esc(u.pay)}</b></p>${radios('pay', u.P)}
+    ${p.pay === 'iban' ? inp('iban', u.iban) + inp('bic', u.bic) : p.pay === 'lien' ? inp('lien', u.lien, 'url') : ''}
+    <p class="meta" style="margin:10px 0 4px"><b>${esc(u.prix)}</b></p>${radios('prix', u.X)}
+    <p class="meta" style="margin:10px 0 4px"><b>${esc(u.fact)}</b></p>${radios('fact', u.F)}
+    ${inp('taux', u.taux)}<p class="meta" style="margin:2px 0 0">${esc(u.tauxHint)}</p>
+    <button class="btn block" style="margin-top:12px" data-prof-save="1">${esc(u.save)}</button>${profMsg ? `<p class="ok" style="margin:8px 0 0">${esc(profMsg)}</p>` : ''}</div>`;
+}
+const rKey = (r) => r.h + ':' + r.r;
+function invHtml() {
+  const u = T2(), invs = data.invs || [], rides = data.rides || [];
+  const since = new Date(Date.now() - 90 * 864e5).toISOString(), R90 = rides.filter((r) => (r.at || r.quand || '') >= since.slice(0, 10) || r.st === 'wait');
+  const rates = R90.map((r) => r.rate && r.rate.s).filter(Boolean);
+  const stats = `${u.stats} : ${R90.length} · ✅ ${R90.filter((r) => r.st === 'ok').length} · ❌ ${R90.filter((r) => r.st === 'no').length} · ${u.fin} ${R90.filter((r) => r.done).length}${rates.length ? ` · ⭐ ${(rates.reduce((a, b) => a + b, 0) / rates.length).toFixed(1)}` : ''}`;
+  // récapitulatif mensuel : les mois passés avec des courses terminées sans facture
+  const thisM = new Date().toISOString().slice(0, 7), months = {};
+  if ((data.prof || {}).fact === 'month') for (const r of rides) if (r.done && !r.inv && r.done.at.slice(0, 7) < thisM) (months[r.done.at.slice(0, 7)] ||= []).push(rKey(r));
+  return `<div class="card"><h2>${esc(u.invs)}</h2><p class="meta" style="margin:0 0 8px">${esc(stats)}</p>
+    ${Object.entries(months).map(([m, keys]) => `<button class="btn block sec" style="margin-bottom:8px" data-month="${m}">${esc(u.month)} ${esc(new Date(m + '-15').toLocaleDateString(lang, { month: 'long', year: 'numeric' }))} (${keys.length})</button>`).join('')}
+    ${invs.length ? invs.map((f) => `<div class="ride ${f.recv ? 'ok' : ''}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(f.no)} · ${esc(eur(f.ttc))}</b><span class="tag">${esc(f.recv ? u.recvd : f.paid ? '💳' : u.W)}</span></div>
+      <p class="meta" style="margin:4px 0 0">${esc([dayFmt(f.date), '🛣️ ' + (f.keys || []).length, f.paid && !f.recv ? u.paidBy + ' ' + dayFmt(f.paid) : ''].filter(Boolean).join(' · '))}</p>
+      <div class="btns"><button class="btn sm sec" data-print="${esc(f.no)}">${esc(u.print)}</button>${f.paid && !f.recv ? `<button class="btn sm" data-recv="${esc(f.no)}">${esc(u.recv)}</button>` : ''}</div></div>`).join('') : `<p class="meta" style="margin:0">${esc(u.invNone)}</p>`}</div>`;
+}
+// facture imprimable (fenêtre à part) : émise par la société, au nom de l'établissement
+function printInv(no) {
+  const u = T2(), f = (data.invs || []).find((x) => x.no === no), p = data.prof || {}, c = data.cli || {};
+  if (!f) return;
+  const rows = (f.keys || []).map((k) => (data.rides || []).find((r) => rKey(r) === k)).filter(Boolean);
+  const w = window.open('', '_blank');
+  if (!w) return;
+  w.document.write(`<!doctype html><meta charset="utf-8"><title>${esc(u.fact2)} ${esc(f.no)}</title><style>body{font:14px system-ui,sans-serif;margin:32px;color:#1d1b16}td,th{padding:6px 8px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:last-child{text-align:right}table{width:100%;border-collapse:collapse;margin:18px 0}</style>
+    <div style="display:flex;justify-content:space-between;gap:24px"><div><b>${esc(p.nom || data.nom)}</b><br>${esc(p.adresse || '')}<br>${esc(p.ville || '')}<br>${esc([p.rcs && 'RCS ' + p.rcs, p.tva && 'TVA ' + p.tva].filter(Boolean).join(' · '))}<br>${esc([p.tel, p.email].filter(Boolean).join(' · '))}</div><div><b>${esc(u.client)}</b><br>${esc(c.nom || '')}<br>${esc(c.adresse || '')}</div></div>
+    <h1>${esc(u.fact2)} ${esc(f.no)}</h1><p>${esc(dayFmt(f.date))}</p>
+    <table><tr><th></th><th>${esc(u.code)}</th><th>€</th></tr>${rows.map((r) => `<tr><td>${esc(dayFmt(r.done && r.done.at))} · ${esc(r.n)} · ${esc([r.from || r.s, r.to || r.sa].filter(Boolean).join(' → '))}${r.done && r.done.note ? ' · ' + esc(r.done.note) : ''}</td><td>${esc(r.code || '')}</td><td>${esc(eur(r.done && r.done.prix))}</td></tr>`).join('')}</table>
+    <p style="text-align:right">${esc(u.ht)} ${esc(eur(f.ht))}<br>TVA ${esc(String(f.taux))} % ${esc(eur(f.tva))}<br><b>${esc(u.total)} ${esc(eur(f.ttc))}</b></p>
+    <p>${p.pay === 'iban' ? esc(`${u.payIban} : IBAN ${p.iban || ''}${p.bic ? ' · BIC ' + p.bic : ''} · ${f.no}`) : p.pay === 'lien' ? esc(`${u.payLink} : ${p.lien || ''}`) : esc(u.payDrv)}</p><script>print()<\/script>`);
+  w.document.close();
 }
 function render() {
   const t = T();
@@ -140,9 +212,12 @@ function render() {
   { const p = slot('haut'); if (p) out.push(adBox(p, t)); }
   if (pushSt && pushSt !== 'unsupported' && (pushSt !== 'on' || pushJust)) out.push(`<div class="card"><h2>${esc(t.notif)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.notifHint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0">${esc(t.notifOk)}</p>` : `<button class="btn sm" data-push="1">${esc(t.notifOn)}</button>`}</div>`);
   out.push(wxRadioCard());
+  if (!d.prof) out.push(profHtml());
   const rides = d.rides || [];
   out.push(`<div class="card"><h2>${esc(t.rides)}</h2>${rides.length ? rides.map((r) => rideHtml(r, t)).join('') : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}</div>`);
+  out.push(invHtml());
   { const p = slot('milieu'); if (p) out.push(adBox(p, t)); }
+  if (d.prof) out.push(profHtml());
   out.push(catHtml(t));
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
   { const p = slot('bas'); if (p) out.push(adBox(p, t)); }
@@ -164,7 +239,7 @@ async function load() {
   }
   if (!lang) { const n = (navigator.language || 'fr').slice(0, 2); lang = LANGS.includes(n) ? n : 'fr'; }
   // réponses déjà prises en compte par l'établissement : on oublie la copie locale
-  if (data) { const s0 = sent(); for (const r of data.rides || []) if (r.st !== 'wait') delete s0[r.h + ':' + r.r]; ls.set(sentK(), JSON.stringify(s0)); }
+  if (data) { const s0 = sent(); for (const r of data.rides || []) { const k = r.h + ':' + r.r; if (r.st !== 'wait' && (!s0[k] || !s0[k].done || r.done)) delete s0[k]; } ls.set(sentK(), JSON.stringify(s0)); }
   render();
   if (data) pushInit();
 }
@@ -182,6 +257,7 @@ app.addEventListener('submit', async (e) => {
 });
 app.addEventListener('input', (e) => {
   const el = e.target;
+  if (el.dataset.p && prof) { prof[el.dataset.p] = el.value; return; }
   if (!cat) return;
   if (el.dataset.cd) cat.drivers[+el.dataset.cd][el.dataset.f] = el.value;
   else if (el.dataset.cc) cat.cars[+el.dataset.cc][el.dataset.f] = el.value;
@@ -190,6 +266,7 @@ app.addEventListener('input', (e) => {
 });
 app.addEventListener('change', (e) => {
   const el = e.target;
+  if (el.dataset.pr && prof) { prof[el.dataset.pr] = el.value; profMsg = ''; return render(); }
   if (cat && el.dataset.g && el.dataset.f === 'on') { cat.gammes[el.dataset.g].on = el.checked; catMsg = ''; return render(); }
   if (cat && el.dataset.cc && el.dataset.f === 'gamme') cat.cars[+el.dataset.cc].gamme = el.value;
 });
@@ -201,7 +278,7 @@ app.addEventListener('click', async (e) => {
   if (b.dataset.lang) { lang = b.dataset.lang; ls.set('taxiLang', lang); return render(); }
   if (b.dataset.push) { if (await pushEnable({ api: API, swUrl: '/taxi-sw.js', scope: '/taxi', post: pushPost })) { pushSt = 'on'; pushJust = true; } else pushSt = await pushStatus('/taxi'); return render(); }
   if (b.dataset.reset) { ls.set(ACC, null); id = key = ''; data = null; return render(); }
-  if (b.dataset.addD) { cat.drivers.push({ nom: '', tel: '', lg: '' }); return render(); }
+  if (b.dataset.addD) { cat.drivers.push({ nom: '', tel: '', lg: '', code: drvCode() }); return render(); }
   if (b.dataset.addC) { cat.cars.push({ modele: '', plaque: '', gamme: 'confort' }); return render(); }
   if (b.dataset.catSave) {
     b.disabled = true;
@@ -209,6 +286,35 @@ app.addEventListener('click', async (e) => {
     return render();
   }
   if (b.dataset.acc) { acc = b.dataset.acc; return render(); }
+  const u = T2();
+  if (b.dataset.profEdit) { profOpen = true; profMsg = ''; return render(); }
+  if (b.dataset.profSave) {
+    if (!prof || !String(prof.nom).trim() || String(prof.taux).trim() === '') { profMsg = u.need; return render(); }
+    b.disabled = true;
+    try { await sendOwner({ type: 'tx-prof', prof }); data.prof = { ...prof }; profMsg = u.saved; profOpen = false; } catch { b.disabled = false; return; }
+    return render();
+  }
+  if (b.dataset.done) { doneK = b.dataset.done; return render(); }
+  if (b.dataset.doneSend) {
+    const k = b.dataset.doneSend, box = b.closest('.acc'), r = (data.rides || []).find((y) => rKey(y) === k);
+    if (!r) return;
+    const pi = box.querySelector('[data-done-p]'), prix = pi ? Math.max(0, +String(pi.value).replace(',', '.') || 0) : +(r.prixConf || r.prix || 0), note = String(box.querySelector('[data-done-n]').value || '').trim().slice(0, 300);
+    const inv = (data.prof || {}).fact === 'month' ? '' : nextInvNo();
+    b.disabled = true;
+    try { await sendOwner({ type: 'tx-done', h: r.h, r: r.r, prix, note, inv }); } catch { b.disabled = false; return; }
+    const s0 = sent(); s0[k] = { ...(s0[k] || { act: 'ok' }), done: { prix, at: new Date().toISOString() } }; ls.set(sentK(), JSON.stringify(s0));
+    doneK = ''; return render();
+  }
+  if (b.dataset.month) {
+    const m = b.dataset.month, keys = (data.rides || []).filter((r) => r.done && !r.inv && r.done.at.slice(0, 7) === m).map(rKey);
+    if (!keys.length) return;
+    b.disabled = true;
+    try { await sendOwner({ type: 'tx-inv', no: nextInvNo(), keys }); } catch { b.disabled = false; return; }
+    for (const r of data.rides || []) if (keys.includes(rKey(r))) r.inv = '…';
+    return render();
+  }
+  if (b.dataset.recv) { b.disabled = true; try { await sendOwner({ type: 'tx-recv', no: b.dataset.recv }); const f = (data.invs || []).find((x) => x.no === b.dataset.recv); if (f) f.recv = new Date().toISOString().slice(0, 10); } catch { b.disabled = false; return; } return render(); }
+  if (b.dataset.print) return printInv(b.dataset.print);
   const reply = async (k, act, extra = {}) => {
     const [h, r] = k.split(':');
     await sendOwner({ type: 'tx-ride', h, r, act, ...extra });
@@ -221,7 +327,8 @@ app.addEventListener('click', async (e) => {
     const box = b.closest('.acc'), c = cat || data.cat || {}, drv = (c.drivers || [])[+box.querySelector('[data-acc-d]').value], car = (c.cars || []).find((x) => x.plaque === box.querySelector('[data-acc-c]').value);
     if (!drv || !car) return;
     b.disabled = true;
-    try { await reply(b.dataset.accSend, 'ok', { drv: { nom: drv.nom, tel: drv.tel }, car: { modele: car.modele, plaque: car.plaque } }); } catch { b.disabled = false; }
+    const pc = box.querySelector('[data-acc-p]'), prix = pc ? Math.max(0, +String(pc.value).replace(',', '.') || 0) : 0;
+    try { await reply(b.dataset.accSend, 'ok', { drv: { nom: drv.nom, tel: drv.tel, code: drv.code || '' }, car: { modele: car.modele, plaque: car.plaque }, ...(prix ? { prix } : {}) }); } catch { b.disabled = false; }
   }
 });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) { setBadge(0, '/taxi'); load(); } });

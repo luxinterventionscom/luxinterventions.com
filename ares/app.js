@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.203.0';
+const VERSION = '2.204.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1919,6 +1919,14 @@ async function hoteInbox(h, msg) {
     hotesSync(h.id);
     return true;
   }
+  if (msg.type === 'hote-rate') {
+    const rid = String(msg.r || '').slice(0, 20), x = txRideOf(h, rid), s0 = Math.round(+msg.s);
+    if (!x || !x.t.done || x.t.rate || !(s0 >= 1 && s0 <= 5)) return false;
+    const rate = { s: s0, txt: String(msg.txt || '').trim().slice(0, 500), at: new Date().toISOString() };
+    await vault.mutate((tx) => { if (rid === 'arr') tx.put('hotes', { id: h.id, taxi: { ...h.taxi, rate } }); else tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === rid ? { ...r, taxi: { ...r.taxi, rate } } : r)) }); }, '⭐ Note du client sur la course', `${who} · ${'⭐'.repeat(s0)}`);
+    hotesSync(h.id); if (x.t.co) txcoSync(x.t.co);
+    return true;
+  }
   if (msg.type === 'hote-edl') {
     const ph = (Array.isArray(msg.photos) ? msg.photos : []).filter((x) => x && CH_PH.some(([k]) => k === x.k) && typeof x.b === 'string' && x.b.length < 4e6).slice(0, CH_PH.length);
     if (!ph.length) return false;
@@ -2437,6 +2445,52 @@ const TX_GAM = { luxe: '💎 Luxe', confort: '🚘 Confort', eco: '🚕 Économi
 const TX_SRV = { course: '🛣️ Course', heures: '⏱️ À l’heure', demi: '🌗 Demi-journée', jour: '☀️ Journée', sejour: '📅 Tout le séjour' };
 const TX_EXT = { garde: '🛡️ Garde du corps', boissons: '🍾 Boissons', friandises: '🍫 Friandises', siege: '🍼 Siège enfant', pancarte: '🪧 Pancarte à l’arrivée', bagages: '🧳 Aide bagages' };
 const txCos = () => vault.list('reglages').filter((r) => r.id.startsWith('txco-')).sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
+// 🧾 la société de taxi se fait payer directement par l'hôtel / l'Airbnb (nous n'encaissons rien) : sa fiche, ses factures, ses statistiques
+const TX_PAY = { iban: '🏦 Virement (IBAN)', lien: '🔗 Lien de paiement', chauffeur: '💵 Au chauffeur (espèces / carte)' };
+const TX_PRIX = { fixe: 'Prix de la grille (estimation)', conf: 'Confirmé à l’acceptation', corr: 'Corrigé après la course (attente, péages)' };
+const TX_FACT = { each: 'Une facture par course', month: 'Récapitulatif mensuel' };
+const txRideOf = (h, r) => (r === 'arr' ? (h.taxi && h.arr ? { a: h.arr, t: h.taxi } : null) : ((x) => (x && x.taxi ? { a: x, t: x.taxi } : null))((h.rides || []).find((x) => x.id === r)));
+const txAll = (coId, from) => vault.list('hotes').flatMap((h) => [...(h.taxi && h.taxi.co && h.arr ? [{ h, r: 'arr', a: h.arr, t: h.taxi }] : []), ...(h.rides || []).filter((x) => x.taxi && x.taxi.co).map((x) => ({ h, r: x.id, a: x, t: x.taxi }))])
+  .filter((x) => (!coId || x.t.co === coId) && (!from || (x.a.at || x.t.at || '9') >= from));
+const txInvs = (coId) => vault.list('reglages').filter((r) => r.id.startsWith('txinv-') && (!coId || r.co === coId)).sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.no || '').localeCompare(a.no || ''));
+function txStats(coId) {
+  const R = txAll(coId, addDays(today(), -90)), ok = R.filter((x) => x.t.st === 'ok'), no = R.filter((x) => x.t.st === 'no');
+  const lost = R.filter((x) => x.t.st === 'wait' && x.a.quand && x.a.quand.slice(0, 10) < today());
+  const resp = [...ok, ...no].map((x) => (Date.parse(x.t.at) - Date.parse(x.a.at)) / 60000).filter((m) => m >= 0 && m < 7 * 1440);
+  const notes = R.map((x) => x.t.rate && x.t.rate.s).filter(Boolean), inv = txInvs(coId);
+  return { n: R.length, ok: ok.length, no: no.length, lost: lost.length, done: R.filter((x) => x.t.done).length, resp: resp.length ? Math.round(sum(resp, (m) => m) / resp.length) : null,
+    note: notes.length ? Math.round((sum(notes, (v) => v) / notes.length) * 10) / 10 : null, nNote: notes.length, du: sum(inv.filter((f) => !f.paid), (f) => f.ttc), paye: sum(inv.filter((f) => f.paid), (f) => f.ttc) };
+}
+// facture d'une société de taxi (émise par elle, à l'hôtel / l'Airbnb) : une course ou le récapitulatif du mois
+async function txInvPdf(f) {
+  const co = vault.get('reglages', f.co) || {}, pr = co.prof || {}, hc = hoteConf(), soc = societe();
+  const p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42], fr = (iso) => fmtDate(String(iso).slice(0, 10));
+  p.text(X, 52, pr.nom || co.nom || '', { size: 12, bold: true }).text(X, 66, [pr.adresse, pr.ville].filter(Boolean).join(', '), { size: 9 }).text(X, 78, [pr.rcs && 'RCS ' + pr.rcs, pr.tva && 'TVA ' + pr.tva].filter(Boolean).join(' · '), { size: 8.5, color: G });
+  p.text(X, 90, [pr.tel, pr.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
+  p.text(330, 130, hc.nom || soc.nom || '', { size: 11, bold: true }).text(330, 144, hc.adresse || soc.adresse || '', { size: 9 });
+  let y = 200;
+  p.text(X, y, `Facture ${f.no}`, { size: 20, bold: true }); y += 24;
+  p.text(X, y, `Date : ${fr(f.date)}`, { size: 10 }); y += 26;
+  p.text(X + 6, y, 'Course', { size: 9.5, bold: true }).text(R - 6, y, 'Montant TTC', { size: 9.5, bold: true, align: 'right' }); y += 8; p.line(X, y, R, y); y += 15;
+  for (const k of f.keys || []) {
+    const [hid, rid] = k.split(':'), h = vault.get('hotes', hid), x = h && txRideOf(h, rid);
+    if (!x) continue;
+    if (y > 720) { p.page(); y = 60; }
+    const lib = `${fr((x.t.done && x.t.done.at) || x.a.quand || x.a.at)} · ${[x.a.from, x.a.to || hc.nom].filter(Boolean).join(' → ')}`;
+    const sub = [`Client : ${[h.prenom, h.nom].filter(Boolean).join(' ')}`, x.t.code ? 'Chauffeur ' + x.t.code : x.t.nom, TX_SRV[x.a.service], x.t.done && x.t.done.note].filter(Boolean).join(' · ');
+    p.text(R - 6, y, eur((x.t.done && x.t.done.prix) || 0), { size: 9.5, align: 'right' });
+    let hh = p.wrap(X + 6, y, lib, 380, { size: 9.5 }); hh += p.wrap(X + 6, y + hh, sub, 380, { size: 8.5, color: G });
+    y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
+  }
+  y += 8;
+  p.text(330, y, 'Montant HT', { size: 9.5 }).text(R - 6, y, eur(f.ht), { size: 9.5, align: 'right' }); y += 15;
+  p.text(330, y, `TVA ${String(f.taux).replace('.', ',')} %`, { size: 9.5 }).text(R - 6, y, eur(f.tva), { size: 9.5, align: 'right' }); y += 17;
+  p.text(330, y, 'Total TTC', { size: 11, bold: true }).text(R - 6, y, eur(f.ttc), { size: 11, bold: true, align: 'right' }); y += 30;
+  if (pr.pay === 'iban' && pr.iban) { p.text(X, y, `Paiement par virement : IBAN ${pr.iban}${pr.bic ? ' · BIC ' + pr.bic : ''} · communication ${f.no}`, { size: 9 }); qrPdf(p, X, y + 10, 92, epcText(pr.nom || co.nom, pr.iban, pr.bic, f.ttc, f.no)); }
+  else if (pr.pay === 'lien' && pr.lien) p.text(X, y, 'Paiement en ligne : ' + pr.lien, { size: 9 });
+  else p.text(X, y, 'Paiement au chauffeur (espèces ou carte).', { size: 9 });
+  return p.bytes();
+}
 // ce que voit le client : par gamme, le prix le plus bas proposé par une société ; extras proposés (prix le plus bas)
 function txOffers() {
   const gam = {}, ext = {};
@@ -2453,17 +2507,19 @@ function txOffers() {
   }
   return { gam: Object.keys(gam).map((k) => ({ k, ...gam[k] })), ext: Object.entries(ext).map(([k, p]) => ({ k, p })) };
 }
-// courses envoyées à une société : à l'arrivée (h.taxi) et pendant le séjour (h.rides)
+// ce que la société voit de plus sur une course : code du chauffeur, prix confirmé, fin, facture, note du client
+const txOut = (t) => ({ code: t.code || '', prixConf: t.prixConf || 0, done: t.done || null, inv: t.inv || '', rate: t.rate ? { s: t.rate.s, txt: t.rate.txt || '' } : null });
+// courses envoyées à une société : à l'arrivée (h.taxi) et pendant le séjour (h.rides), et celles des 2 derniers mois (factures)
 async function txRides(co) {
   const out = [], hc = hoteConf();
-  for (const h of vault.list('hotes').filter((x) => x.depart >= today())) {
+  for (const h of vault.list('hotes').filter((x) => x.depart >= addDays(today(), -62))) {
     const base = { h: h.id, n: [h.prenom, h.nom].filter(Boolean).join(' '), gt: h.tel || '', lg: h.langue || '', s: hc.nom || '', sa: h.lieu === 'airbnb' ? h.adresse || chGet(h.lieu, h.chambre).adresse || '' : hc.adresse || '' };
     if (h.taxi && h.taxi.co === co.id && h.arr) {
       ui.hoteTks[h.id] ||= await hoteTks(h);
       const a = h.arr;
-      out.push({ ...base, r: 'arr', from: a.from, quand: a.quand, vol: a.vol, km: a.km, prix: a.prix, service: a.service || 'course', gamme: a.gamme || '', extras: a.extras || [], heures: a.heures || 0, st: h.taxi.st || 'wait', drv: h.taxi.st === 'ok' ? { nom: h.taxi.nom, tel: h.taxi.tel, auto: h.taxi.auto, plaque: h.taxi.plaque } : null, link: h.taxi.st === 'ok' ? hoteDrvLink(h) : '' });
+      out.push({ ...base, ...txOut(h.taxi), r: 'arr', from: a.from, quand: a.quand, vol: a.vol, km: a.km, prix: a.prix, service: a.service || 'course', gamme: a.gamme || '', extras: a.extras || [], heures: a.heures || 0, st: h.taxi.st || 'wait', drv: h.taxi.st === 'ok' ? { nom: h.taxi.nom, tel: h.taxi.tel, auto: h.taxi.auto, plaque: h.taxi.plaque } : null, link: h.taxi.st === 'ok' ? hoteDrvLink(h) : '' });
     }
-    for (const r of h.rides || []) if (r.taxi && r.taxi.co === co.id) out.push({ ...base, r: r.id, from: r.from, to: r.to, quand: r.quand, prix: r.prix, service: r.service, gamme: r.gamme, extras: r.extras || [], heures: r.heures || 0, st: r.taxi.st || 'wait', drv: r.taxi.st === 'ok' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null, link: '' });
+    for (const r of h.rides || []) if (r.taxi && r.taxi.co === co.id) out.push({ ...base, ...txOut(r.taxi), r: r.id, from: r.from, to: r.to, quand: r.quand, prix: r.prix, service: r.service, gamme: r.gamme, extras: r.extras || [], heures: r.heures || 0, st: r.taxi.st || 'wait', drv: r.taxi.st === 'ok' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null, link: '' });
   }
   return out;
 }
@@ -2484,13 +2540,16 @@ async function txcoSync(onlyId, loud) {
       }
       co = vault.get('reglages', co.id);
       const sig = vault.get('reglages', 'signal');
-      const data = { v: 1, kind: 'taxi', gv: VERSION, nom: co.nom, tel: co.tel || '', cat: co.cat || {}, rides: await txRides(co), signalKey: sig ? sig.pub : '', reseau: hoteConf().nom || societe().nom || 'LuxInterventions',
+      const hcf = hoteConf();
+      const data = { v: 1, kind: 'taxi', gv: VERSION, nom: co.nom, tel: co.tel || '', cat: co.cat || {}, rides: await txRides(co), signalKey: sig ? sig.pub : '', reseau: hcf.nom || societe().nom || 'LuxInterventions',
+        prof: co.prof || null, cli: { nom: hcf.nom || societe().nom || '', adresse: hcf.adresse || societe().adresse || '' },
+        invs: txInvs(co.id).slice(0, 40).map((f) => ({ no: f.no, date: f.date, ht: f.ht, tva: f.tva, ttc: f.ttc, taux: f.taux, keys: f.keys, paid: f.paid || '', recv: f.recv || '' })),
         pubs: pubsActives(null, 'taxi').map(pubOut) };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && txHashes.get(e.id) === hs) continue;
       await vault.espacePut(e.id, await sealJson(e.key, data));
       txHashes.set(e.id, hs);
-      await notifyNews(e.id, data.rides.filter((r) => r.st === 'wait').map((r) => 'r:' + r.h + ':' + r.r));
+      await notifyNews(e.id, [...data.rides.filter((r) => r.st === 'wait').map((r) => 'r:' + r.h + ':' + r.r), ...data.invs.filter((f) => f.paid).map((f) => 'p:' + f.no)]);
     } catch (err) { if (loud) { toast(err.message || 'Publication impossible (connexion ?)', { bad: true }); return false; } }
   }
   return true;
@@ -2502,16 +2561,59 @@ async function txInbox(co, msg) {
     const c = msg.cat || {}, gammes = {};
     for (const k of Object.keys(TX_GAM)) { const g = (c.gammes || {})[k] || {}; gammes[k] = { on: !!g.on, pc: N(g.pc), km: N(g.km), h: N(g.h), demi: N(g.demi), jour: N(g.jour) }; }
     const extras = {}; for (const k of Object.keys(TX_EXT)) if ((c.extras || {})[k] !== undefined && (c.extras || {})[k] !== '') extras[k] = N(c.extras[k]);
-    const cat = { gammes, extras, drivers: (Array.isArray(c.drivers) ? c.drivers : []).slice(0, 40).map((d) => ({ nom: S(d.nom, 60), tel: S(d.tel, 30), lg: S(d.lg, 40) })).filter((d) => d.nom),
+    const cat = { gammes, extras, drivers: (Array.isArray(c.drivers) ? c.drivers : []).slice(0, 40).map((d) => ({ nom: S(d.nom, 60), tel: S(d.tel, 30), lg: S(d.lg, 40), code: S(d.code, 8).toUpperCase() })).filter((d) => d.nom),
       cars: (Array.isArray(c.cars) ? c.cars : []).slice(0, 40).map((x) => ({ modele: S(x.modele, 60), plaque: S(x.plaque, 20).toUpperCase(), gamme: TX_GAM[x.gamme] ? x.gamme : 'eco', places: N(x.places) })).filter((x) => x.modele) };
     await vault.mutate((tx) => tx.put('reglages', { id: co.id, cat, catAt: new Date().toISOString() }), '🚕 Catalogue de la société de taxi', `${co.nom} · ${plural(cat.drivers.length, 'chauffeur')} · ${plural(cat.cars.length, 'voiture')}`);
     hotesSync(); return true;
+  }
+  if (msg.type === 'tx-prof') {
+    const q = msg.prof || {};
+    const prof = { nom: S(q.nom, 120), adresse: S(q.adresse, 160), ville: S(q.ville, 80), rcs: S(q.rcs, 30), tva: S(q.tva, 30), tel: S(q.tel, 40), email: S(q.email, 120), pay: TX_PAY[q.pay] ? q.pay : 'iban',
+      iban: S(q.iban, 42).toUpperCase(), bic: S(q.bic, 14).toUpperCase(), lien: /^https:\/\//.test(String(q.lien || '')) ? S(q.lien, 300) : '', prix: TX_PRIX[q.prix] ? q.prix : 'fixe', fact: TX_FACT[q.fact] ? q.fact : 'each', taux: Math.max(0, Math.min(30, +q.taux || 0)) };
+    await vault.mutate((tx) => tx.put('reglages', { id: co.id, prof, profAt: new Date().toISOString() }), '🚕 Fiche de facturation de la société de taxi', `${co.nom} · ${TX_PAY[prof.pay]} · ${TX_FACT[prof.fact]}`);
+    txcoSync(co.id); return true;
+  }
+  // fin de course (prix final selon sa règle), facture d'une course ou du mois, paiement reçu
+  const setRide = (h, r, patch) => vault.mutate((tx) => { const cur = vault.get('hotes', h.id); if (r === 'arr') tx.put('hotes', { id: h.id, taxi: { ...cur.taxi, ...patch } }); else tx.put('hotes', { id: h.id, rides: (cur.rides || []).map((x) => (x.id === r ? { ...x, taxi: { ...x.taxi, ...patch } } : x)) }); }, patch.done ? '🏁 Course terminée' : '🧾 Facture du taxi', `${[h.prenom, h.nom].filter(Boolean).join(' ')} — ${co.nom}`);
+  const invNo = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 30);
+  const addInv = async (no, keys) => {
+    const pr = (vault.get('reglages', co.id) || {}).prof || {}, taux = +pr.taux || 0;
+    const ttc = r2(sum(keys, (k) => { const [hid, rid] = k.split(':'), h = vault.get('hotes', hid), x = h && txRideOf(h, rid); return x && x.t.done ? +x.t.done.prix || 0 : 0; }));
+    const ht = r2(ttc / (1 + taux / 100));
+    await vault.mutate((tx) => {
+      tx.put('reglages', { id: `txinv-${co.id}-${no}`, co: co.id, coNom: co.nom, no, date: today(), ttc, ht, tva: r2(ttc - ht), taux, keys, paid: '', recv: '' });
+      for (const k of keys) { const [hid, rid] = k.split(':'), h = vault.get('hotes', hid); if (!h) continue; if (rid === 'arr') tx.put('hotes', { id: hid, taxi: { ...h.taxi, inv: no } }); else tx.put('hotes', { id: hid, rides: (h.rides || []).map((x) => (x.id === rid ? { ...x, taxi: { ...x.taxi, inv: no } } : x)) }); }
+    }, '🧾 Facture de la société de taxi', `${co.nom} · ${no} · ${eur(ttc)}`);
+  };
+  if (msg.type === 'tx-done') {
+    const h = vault.get('hotes', S(msg.h, 40)), x = h && txRideOf(h, S(msg.r, 20));
+    if (!x || x.t.co !== co.id || x.t.st !== 'ok' || x.t.done) return false;
+    const pr = (vault.get('reglages', co.id) || {}).prof || {};
+    const prix = pr.prix === 'corr' && N(msg.prix) ? N(msg.prix) : x.t.prixConf || x.a.prix || N(msg.prix);
+    await setRide(h, S(msg.r, 20), { done: { at: new Date().toISOString(), prix, note: S(msg.note, 300) } });
+    const no = invNo(msg.inv);
+    if (pr.fact !== 'month' && no && !vault.get('reglages', `txinv-${co.id}-${no}`)) await addInv(no, [h.id + ':' + S(msg.r, 20)]);
+    hotesSync(h.id); txcoSync(co.id); return true;
+  }
+  if (msg.type === 'tx-inv') {
+    const no = invNo(msg.no);
+    if (!no || vault.get('reglages', `txinv-${co.id}-${no}`)) return false;
+    const keys = (Array.isArray(msg.keys) ? msg.keys : []).map((k) => S(k, 70)).filter((k) => { const [hid, rid] = k.split(':'), h = vault.get('hotes', hid), x = h && txRideOf(h, rid); return x && x.t.co === co.id && x.t.done && !x.t.inv; }).slice(0, 300);
+    if (!keys.length) return false;
+    await addInv(no, keys);
+    txcoSync(co.id); return true;
+  }
+  if (msg.type === 'tx-recv') {
+    const f = vault.get('reglages', `txinv-${co.id}-${invNo(msg.no)}`);
+    if (!f || f.recv) return false;
+    await vault.mutate((tx) => tx.put('reglages', { id: f.id, recv: today(), paid: f.paid || today() }), '✅ La société de taxi a reçu le paiement', `${co.nom} · ${f.no}`);
+    txcoSync(co.id); return true;
   }
   if (msg.type === 'tx-ride') {
     const h = vault.get('hotes', S(msg.h, 40));
     if (!h) return false;
     const ok = msg.act === 'ok', d = msg.drv || {}, car = msg.car || {};
-    const t = ok ? { co: co.id, st: 'ok', nom: S(d.nom, 60), tel: S(d.tel, 30), auto: S(car.modele, 60), plaque: S(car.plaque, 20).toUpperCase(), at: new Date().toISOString() } : { co: co.id, st: 'no', nom: co.nom, at: new Date().toISOString() };
+    const t = ok ? { co: co.id, st: 'ok', nom: S(d.nom, 60), tel: S(d.tel, 30), code: S(d.code, 8).toUpperCase(), auto: S(car.modele, 60), plaque: S(car.plaque, 20).toUpperCase(), ...(N(msg.prix) ? { prixConf: N(msg.prix) } : {}), at: new Date().toISOString() } : { co: co.id, st: 'no', nom: co.nom, at: new Date().toISOString() };
     const who = `${[h.prenom, h.nom].filter(Boolean).join(' ')} — ${co.nom}`;
     if (msg.r === 'arr') await vault.mutate((tx) => tx.put('hotes', { id: h.id, taxi: t }), ok ? '🚕 Course acceptée par la société' : '🚕 Course refusée par la société', who);
     else await vault.mutate((tx) => tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === msg.r ? { ...r, taxi: t } : r)) }), ok ? '🚘 Chauffeur accepté par la société' : '🚘 Chauffeur refusé par la société', who);
@@ -2529,7 +2631,8 @@ function hoteData(h, tks) {
     ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: ch.persMax || '', m2: ch.m2 || '', npieces: ch.npieces || '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
     st: { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LuxInterventions'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '' },
     menu: menu && menu.file ? menu.file : '', taxi: { pc: +c.txPc || 0, km: +c.txKm || 0, aero: +c.txAero || 0, gare: +c.txGare || 0, on: !!(c.drivers || []).length || !!txOffers().gam.length, ...txOffers() },
-    rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
+    rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, done: !!(r.taxi && r.taxi.done), rated: r.taxi && r.taxi.rate ? r.taxi.rate.s : 0, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
+    arrDone: !!(h.taxi && h.taxi.done), arrRated: h.taxi && h.taxi.rate ? h.taxi.rate.s : 0,
     arr: h.arr || null, taxiOk: h.taxi && h.taxi.st !== 'wait' && h.taxi.st !== 'no' ? { nom: h.taxi.nom, tel: h.taxi.tel, auto: h.taxi.auto, plaque: h.taxi.plaque } : null,
     edlSent: h.edlOut ? Object.keys(h.edlOut.ph || {}) : [], ...tks, signalKey: sig ? sig.pub : '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
@@ -4818,12 +4921,17 @@ dashboard() {
       <div class="section-label">🏢 Sociétés</div>
       ${cos.length ? html`<div class="list">${cos.map((co) => { const c = co.cat || {}; return html`<button class="row" data-action="edit-txco" data-id="${co.id}"><span class="avatar">🚕</span>
         <span class="grow"><span class="title" style="display:block">${co.nom}</span><span class="meta">${Object.keys(TX_GAM).filter((k) => (c.gammes || {})[k] && c.gammes[k].on).map((k) => TX_GAM[k]).join(' · ') || 'Catalogue pas encore envoyé'} · ${plural((c.drivers || []).length, 'chauffeur')} · ${plural((c.cars || []).length, 'voiture')}</span>
-        ${Object.keys(c.extras || {}).length ? html`<span class="tiny" style="display:block">${Object.keys(c.extras).map((k) => TX_EXT[k]).join(' ')}</span>` : ''}</span><span class="chev">›</span></button>`; })}</div>`
+        ${Object.keys(c.extras || {}).length ? html`<span class="tiny" style="display:block">${Object.keys(c.extras).map((k) => TX_EXT[k]).join(' ')}</span>` : ''}
+        ${(() => { const st = txStats(co.id); return st.n ? html`<span class="tiny" style="display:block">📊 90 j : ${plural(st.n, 'course')} · ✅ ${st.ok} · ❌ ${st.no}${st.lost ? html` · ⚠️ ${st.lost} sans réponse` : ''}${st.resp != null ? html` · ⏱ ${st.resp} min` : ''}${st.note != null ? html` · ⭐ ${String(st.note).replace('.', ',')} (${st.nNote})` : ''}${st.du ? html` · 🧾 à payer ${eur(st.du)}` : ''}</span>` : ''; })()}
+        ${co.prof ? '' : html`<span class="tiny" style="display:block;color:var(--warn,#b45309)">📋 Fiche de facturation pas encore remplie dans son app</span>`}</span><span class="chev">›</span></button>`; })}</div>`
         : html`<div class="card" style="max-width:560px"><p style="margin-top:0">Les sociétés de taxi et les chauffeurs privés reçoivent les courses de vos clients (hôtel, Airbnb) dans leur app : ils y mettent leurs chauffeurs, leurs voitures (💎 Luxe, 🚘 Confort, 🚕 Économique), leurs tarifs et leurs extras.</p></div>`}
+      ${(() => { const F = txInvs(); return F.length ? html`<div class="section-label">🧾 Factures des taxis (à payer directement à la société)</div><div class="list" style="margin-bottom:14px">${F.slice(0, 30).map((f) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${f.coNom} · ${f.no} · ${eur(f.ttc)}</span><span class="meta">${plural((f.keys || []).length, 'course')} · ${fmtDate(f.date)} · ${f.recv ? '✅ reçue par la société le ' + fmtDate(f.recv) : f.paid ? '💳 payée le ' + fmtDate(f.paid) + ' — confirmation attendue' : '⏳ à payer'}</span></span>
+        <button class="btn sm" data-action="txinv-pdf" data-id="${f.id}">🖨️ PDF</button>${f.paid ? '' : html`<button class="btn sm primary" data-action="txinv-pay" data-id="${f.id}">💳 Payer</button>`}</div>`)}</div>` : ''; })()}
       <div class="section-label">🛣️ Courses</div>
       ${rides.length ? html`<div class="list">${rides.map(([h, rid, a, tx]) => html`<button class="row" data-action="hote-taxi" data-id="${h.id}" data-r="${rid === 'arr' ? '' : rid}"><span class="avatar">${rid === 'arr' ? '🛬' : '🚘'}</span>
-        <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')} · ${tx.nom}</span><span class="meta">${[TX_SRV[a.service], TX_GAM[a.gamme], a.quand ? String(a.quand).replace('T', ' ') : '', a.from, a.prix ? '~' + a.prix + ' €' : ''].filter(Boolean).join(' · ')}</span></span>
-        <span class="badge ${tx.st === 'ok' ? 'ok' : tx.st === 'no' ? 'bad' : 'warn'}">${ST[tx.st] || ST.ok}</span></button>`)}</div>` : html`<p class="small muted">Aucune course en cours.</p>`}`;
+        <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')} · ${tx.nom}</span><span class="meta">${[TX_SRV[a.service], TX_GAM[a.gamme], a.quand ? String(a.quand).replace('T', ' ') : '', a.from, a.prix ? '~' + a.prix + ' €' : ''].filter(Boolean).join(' · ')}</span>
+        ${tx.code || tx.done || tx.rate ? html`<span class="tiny" style="display:block">${tx.code ? '🪪 ' + tx.code + ' · ' : ''}${tx.done ? '🏁 ' + eur(tx.done.prix || 0) + (tx.inv ? ' · 🧾 ' + tx.inv : '') : ''}${tx.rate ? ' · ' + '⭐'.repeat(tx.rate.s) : ''}</span>` : ''}</span>
+        <span class="badge ${tx.done ? 'ok' : tx.st === 'ok' ? 'ok' : tx.st === 'no' ? 'bad' : 'warn'}">${tx.done ? '🏁 Terminée' : ST[tx.st] || ST.ok}</span></button>`)}</div>` : html`<p class="small muted">Aucune course en cours.</p>`}`;
   },
   gerances() {
     const c = ptlConf();
@@ -6506,6 +6614,23 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
+  'txinv-pay'({ id }) {
+    const f = vault.get('reglages', id);
+    if (!f) return null;
+    const co = vault.get('reglages', f.co) || {}, pr = co.prof || {};
+    return {
+      title: `💳 ${f.coNom} · ${f.no}`,
+      narrow: true,
+      body: html`<p class="small" style="margin:0 0 4px">${plural((f.keys || []).length, 'course')} · <b>${eur(f.ttc)}</b> TTC · TVA ${String(f.taux).replace('.', ',')} % : ${eur(f.tva)}</p>
+        <p class="small" style="margin:0 0 10px"><span>Vous payez</span> <b>directement la société</b><span> : rien ne passe par nous.</span></p>
+        ${pr.pay === 'iban' && pr.iban ? html`<div class="card" style="margin-bottom:10px"><div class="section-label" style="margin-top:0">🏦 Virement</div><div class="qr" style="width:150px;margin:0 auto 10px">${qrSvg(epcText(pr.nom || co.nom, pr.iban, pr.bic, f.ttc, f.no), 4)}</div>
+          <dl class="kv" style="margin:0">${kvRow('Bénéficiaire', pr.nom || co.nom)}${kvRow('IBAN', pr.iban)}${pr.bic ? kvRow('BIC', pr.bic) : ''}${kvRow('Montant', eur(f.ttc))}${kvRow('Communication', f.no)}</dl></div>`
+        : pr.pay === 'lien' && pr.lien ? html`<a class="btn block" href="${pr.lien}" target="_blank" rel="noopener" style="margin-bottom:10px">🔗 Payer en ligne (lien de la société)</a>`
+        : html`<div class="alert info" style="margin-bottom:10px">💵<div>La société se fait payer <b>par le chauffeur</b> (espèces ou carte).</div></div>`}
+        <p class="tiny muted" style="margin:0">Après le paiement, touchez « ✅ Payée » : la société le voit dans son app et confirme la réception.</p>`,
+      foot: html`<button class="btn" data-action="txinv-pdf" data-id="${f.id}">🖨️ PDF</button><button class="btn primary" data-action="txinv-paid" data-id="${f.id}">✅ Payée</button>`,
+    };
+  },
   'tfact'({ id }) {
     const f = tFacts().find((x) => x.no === id);
     if (!f) return null;
@@ -7842,6 +7967,20 @@ const ACTIONS = {
   'open-interv': (d) => openSheet('interv', d.id),
   'open-eq-chat': (d) => openSheet('interv', d.id, 'chat'),
   'tfact-open': (d) => openOver('tfact', d.id),
+  'txinv-pay': (d) => openOver('txinv-pay', d.id),
+  async 'txinv-pdf'(d) {
+    const f = vault.get('reglages', d.id);
+    if (!f) return;
+    const u = URL.createObjectURL(new Blob([await txInvPdf(f)], { type: 'application/pdf' }));
+    window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000);
+  },
+  async 'txinv-paid'(d) {
+    const f = vault.get('reglages', d.id);
+    if (!f || f.paid) return;
+    await vault.mutate((tx) => tx.put('reglages', { id: f.id, paid: today() }), '💳 Facture du taxi payée', `${f.coNom} · ${f.no} · ${eur(f.ttc)}`);
+    txcoSync(f.co); toast('✅ Payée — la société confirme la réception dans son app');
+    if (ui.sheet) goBack(); else renderView();
+  },
   'tpay-conf': () => openOver('tpay-conf'),
   'tfact-pdf': (d) => { const f = tfMem()[d.id]; if (!f || !f.pdf) return; const u = URL.createObjectURL(new Blob([b64d(f.pdf)], { type: 'application/pdf' })); window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000); },
   async 'tfact-claim'(d) {

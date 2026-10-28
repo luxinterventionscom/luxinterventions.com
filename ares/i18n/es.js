@@ -16755,4 +16755,136 @@ export default [
 "Mode de paiement du client",
 "Modo de pago del cliente"
 ],
+[
+"Virement (IBAN)",
+"Transferencia (IBAN)"
+],
+[
+"Lien de paiement",
+"Enlace de pago"
+],
+[
+"Au chauffeur (espèces / carte)",
+"Al conductor (efectivo / tarjeta)"
+],
+[
+"Prix de la grille (estimation)",
+"Precio de la tarifa (estimación)"
+],
+[
+"Confirmé à l’acceptation",
+"Confirmado al aceptar"
+],
+[
+"Corrigé après la course (attente, péages)",
+"Corregido tras la carrera (espera, peajes)"
+],
+[
+"Une facture par course",
+"Una factura por carrera"
+],
+[
+"Récapitulatif mensuel",
+"Resumen mensual"
+],
+[
+"90 j : {0} course{1}",
+"90 d: {0} carrera(s)"
+],
+[
+"{0} sans réponse",
+"{0} sin respuesta"
+],
+[
+"à payer {0}",
+"por pagar {0}"
+],
+[
+"Fiche de facturation pas encore remplie dans son app",
+"Ficha de facturación aún no rellenada en su app"
+],
+[
+"Factures des taxis (à payer directement à la société)",
+"Facturas de los taxis (a pagar directamente a la empresa)"
+],
+[
+"{0} course{1}",
+"{0} carrera(s)"
+],
+[
+"reçue par la société le {0}",
+"recibida por la empresa el {0}"
+],
+[
+"confirmation attendue",
+"confirmación pendiente"
+],
+[
+"Vous payez",
+"Usted paga"
+],
+[
+"directement la société",
+"directamente a la empresa"
+],
+[
+": rien ne passe par nous.",
+": nada pasa por nosotros."
+],
+[
+"TVA {0} % : {1}",
+"IVA {0} %: {1}"
+],
+[
+"Payer en ligne (lien de la société)",
+"Pagar en línea (enlace de la empresa)"
+],
+[
+"La société se fait payer",
+"La empresa cobra"
+],
+[
+"par le chauffeur",
+"a través del conductor"
+],
+[
+"(espèces ou carte).",
+"(efectivo o tarjeta)."
+],
+[
+"Après le paiement, touchez « ✅ Payée » : la société le voit dans son app et confirme la réception.",
+"Tras el pago, toque «✅ Pagada»: la empresa lo ve en su app y confirma la recepción."
+],
+[
+"la société confirme la réception dans son app",
+"la empresa confirma la recepción en su app"
+],
+[
+"Fiche de facturation de la société de taxi",
+"Ficha de facturación de la empresa de taxi"
+],
+[
+"Course terminée",
+"Carrera terminada"
+],
+[
+"Facture du taxi",
+"Factura del taxi"
+],
+[
+"Facture de la société de taxi",
+"Factura de la empresa de taxi"
+],
+[
+"La société de taxi a reçu le paiement",
+"La empresa de taxi ha recibido el pago"
+],
+[
+"Note du client sur la course",
+"Nota del cliente sobre la carrera"
+],
+[
+"Facture du taxi payée",
+"Factura del taxi pagada"
+],
 ];
