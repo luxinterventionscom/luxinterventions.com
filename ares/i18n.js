@@ -13,7 +13,27 @@ export function setLang(l) {
 }
 
 const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-let exact = null, pats = [];
+let exact = null, pats = [], LNG = 'fr';
+// pluriels écrits « mese/i », « anúncio(s) », « Einsatz/Einsätze » dans les traductions : on choisit la bonne forme
+// d'après le dernier nombre qui précède (1 → singulier, sinon pluriel)
+function itPl(b, x) {
+  if (x === 'i' && /io$/.test(b)) return b.slice(0, -1);
+  if (x === 'e' && /[cg]a$/.test(b)) return b.slice(0, -1) + 'he';
+  if (x === 'e' && /[^aeiou][cg]ia$/.test(b)) return b.slice(0, -2) + 'e';
+  return /[aeiou]$/.test(b) ? b.slice(0, -1) + x : b + x;
+}
+function rmAcc(b) { return b.replace(/([áéíóú])(n|s)$/, (m, v, c) => 'aeiou'['áéíóú'.indexOf(v)] + c); }
+function plForms(t) {
+  return t.replace(/([A-Za-zÀ-ÿ]+)(\(([a-zà-ÿ]{1,4})\)|\/([A-Za-zÀ-ÿ]+))(?![A-Za-zÀ-ÿ(/])/g, (all, b, _x, par, sl, off) => {
+    const nums = t.slice(0, off).match(/\d+/g), n = nums ? +nums[nums.length - 1] : null;
+    if (n == null) return all;
+    const one = n === 1 || (n === 0 && LNG === 'fr');
+    if (par != null) { if (one) return b; if (/ão$/.test(b) && /^õ/.test(par)) return b.slice(0, -2) + par; return LNG === 'es' ? rmAcc(b) + par : b + par; }
+    if (LNG === 'it' && /^[a-zà-ù]{1,2}$/.test(sl)) return one ? b : itPl(b, sl);
+    if (sl.length > 2 && /^[A-ZÀ-Ý]/.test(b) === /^[A-ZÀ-Ý]/.test(sl)) return one ? b : sl;
+    return all;
+  });
+}
 function build(rows) {
   exact = new Map();
   pats = [];
@@ -24,12 +44,12 @@ function build(rows) {
     let re = '^', key = '';
     const order = [];
     for (let i = 0; i < parts.length; i++) {
-      // collé à un mot (ex. « demande{1} » pour le pluriel) : la partie variable peut être vide, mais finit le mot
+      // collé à un mot (ex. « demande{1} » pour le pluriel) : seulement des lettres (peut être vide), et finit le mot
       // (sinon « {0} an{1}{2} » prendrait « 0 annonce » pour « 0 an » + « nonce »)
-      if (i % 2 === 0) { re += escRe(parts[i]); if (parts[i].trim().length > key.length) key = parts[i].trim(); } else { re += /[A-Za-zÀ-ÿ)]$/.test(parts[i - 1]) ? '(.*?)(?![A-Za-zÀ-ÿ])' : '(.+?)'; order.push(+parts[i]); }
+      if (i % 2 === 0) { re += escRe(parts[i]); if (parts[i].trim().length > key.length) key = parts[i].trim(); } else { re += /[a-zà-ÿ)]$/.test(parts[i - 1]) ? '([A-Za-zÀ-ÿ]*?)(?![A-Za-zÀ-ÿ])' : /[A-ZÀ-Ý]$/.test(parts[i - 1]) ? '(.*?)(?![A-Za-zÀ-ÿ])' : '(.+?)'; order.push(+parts[i]); }
     }
     // modèle court d'un seul mot (ex. « {0} mois ») : la partie variable doit contenir un chiffre, sinon on ne traduit pas
-    pats.push({ re: new RegExp(re + '$'), order, tr, key, num: key.length < 14 && !/\s/.test(key) });
+    pats.push({ re: new RegExp(re + '$'), order, tr, key, num: key.length < 14 && !/\s/.test(key), pl: /[a-zà-ÿ)]\{\d+\}/.test(fr) });
   }
   // les modèles les plus précis d'abord
   pats.sort((a, b) => b.key.length - a.key.length);
@@ -45,7 +65,8 @@ function tr1(s) {
     if (p.num && (!m.slice(1).some((v) => /\d/.test(v)) || m.slice(1).some((v) => v.length > 12))) continue;
     const vals = {};
     p.order.forEach((ph, i) => { const v = m[i + 1]; vals[ph] = (v.trim() && exact.get(v.trim())) ?? v; });
-    return p.tr.replace(/\{(\d+)\}/g, (_, k) => vals[k] ?? '');
+    const out = p.tr.replace(/\{(\d+)\}/g, (_, k) => vals[k] ?? '');
+    return p.pl ? plForms(out) : out;
   }
   return null;
 }
@@ -109,6 +130,7 @@ function walk(root) {
 // load : autre dictionnaire que celui de l'app de gestion (ex. le portail gérance)
 export async function startI18n(lang, load) {
   document.documentElement.lang = lang;
+  LNG = lang;
   if (lang === 'fr') return;
   try { build((await (load ? load(lang) : import(`./i18n/${lang}.js`))).default); } catch { return; }
   walk(document.body);

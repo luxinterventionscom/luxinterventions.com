@@ -55,7 +55,7 @@ log('centrale: ✅ sul posto e ⚠️ a 2,2 km');
 await p.keyboard.press('Escape'); await p.waitForTimeout(400);
 await act(p, 'open-interv', { id: 'w3' }); await p.waitForTimeout(700); await act(p, 'sheet-tab', { id: 'act' }); await p.waitForTimeout(800);
 const at = await p.$eval('.sheet', (e) => e.innerText);
-assert(/2 passagg/.test(at) || /2 passage/.test(at), 'oggi 2 passaggi raggruppati');
+assert(/2 giri/.test(at) || /2 visites/.test(at), 'oggi 2 giri raggruppati');
 await act(p, 'pres-wk', { id: 'w3', d: '-1' }); await p.waitForTimeout(500); await act(p, 'pres-wk', { id: 'w3', d: '1' }); await p.waitForTimeout(500);
 const wtxt = await p.$eval('.sheet', (e) => e.innerText);
 const ieriIn = new Date(Date.now() - 864e5).getDay() !== 0;
