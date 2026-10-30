@@ -8,7 +8,7 @@ import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 const HERE = new URL('./', import.meta.url).pathname, TMP = HERE + 'shots/build/';
 await mkdir(TMP, { recursive: true });
-const VER = '2.200';
+const VER = '2.205';
 const META = {
   it: ['Italiano', 'Manuale dell’applicazione INTERVENTI', 'Chi lo usa e perché', 'pagine'],
   fr: ['Français', 'Manuel de l’application INTERVENTIONS', 'Qui l’utilise et pourquoi', 'pages'],
