@@ -48,7 +48,7 @@ await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2500);
 log('demande envoyée');
 // la centrale reçoit, termine, facture
 let tk = '';
-for (let k = 0; k < 4 && !tk; k++) { await act(p, 'net-reload'); await p.waitForTimeout(3000); await p.evaluate(() => { location.hash = '#/maintenance'; }); await p.waitForTimeout(800); tk = await p.evaluate(() => { const el = [...document.querySelectorAll('[data-action=edit-tache]')].find((x) => x.textContent.includes(D[0])); return el ? el.dataset.id : ''; }); }
+for (let k = 0; k < 4 && !tk; k++) { await act(p, 'net-reload'); await p.waitForTimeout(3000); await p.evaluate(() => { location.hash = '#/maintenance'; }); await p.waitForTimeout(800); tk = await p.evaluate((d0) => { const el = [...document.querySelectorAll('[data-action=edit-tache]')].find((x) => x.textContent.includes(d0)); return el ? el.dataset.id : ''; }, D[0]); }
 if (!tk) console.log('DEBUG', [...store.keys()].filter((k) => k.includes('tdem') || k.includes('network')), errs, (await body(p)).slice(0, 400));
 assert(tk, 'demande arrivée dans Maintenance');
 await act(p, 'tache-done', { id: tk }); await p.waitForTimeout(1500);

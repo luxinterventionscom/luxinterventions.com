@@ -2,7 +2,7 @@
 // invio → validazione → bonifico QR + « J'ai payé » → « Paiement reçu » : fattura e messa online
 import { chromium } from 'playwright';
 import { phone, centralSetup, assert, log, lg, snap } from './harness.mjs';
-const L = lg('it'), A = { fr: ['Menu du jour', 'Pâtes fraîches 14 €'], it: ['Menu del giorno', 'Pasta fresca 14 €'], de: ['Tagesmenü', 'Frische Pasta 14 €'], en: ['Menu of the day', 'Fresh pasta 14 €'], pt: ['Menu do dia', 'Massa fresca 14 €'], es: ['Menú del día', A[1]] }[L];
+const L = lg('it'), A = { fr: ['Menu du jour', 'Pâtes fraîches 14 €'], it: ['Menu del giorno', 'Pasta fresca 14 €'], de: ['Tagesmenü', 'Frische Pasta 14 €'], en: ['Menu of the day', 'Fresh pasta 14 €'], pt: ['Menu do dia', 'Massa fresca 14 €'], es: ['Menú del día', 'Pasta fresca 14 €'] }[L];
 const b = await chromium.launch(), errs = [];
 const act = (p, a, d = {}) => p.evaluate(([a, d]) => { const el = document.createElement('button'); el.dataset.action = a; Object.assign(el.dataset, d); el.hidden = true; document.body.append(el); el.click(); el.remove(); }, [a, d]);
 const ok = async (p) => { await p.waitForTimeout(500); const c = await p.$('#confirm button[type=submit]:not([disabled]), #confirm .btn.primary:not([disabled])'); if (c) await c.click(); await p.waitForTimeout(3000); };
