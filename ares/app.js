@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.205.1';
+const VERSION = '2.206.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -383,6 +383,48 @@ document.addEventListener('change', (e) => {
 const hors = (i) => (i.horaires || []).filter((h) => h.de && h.a && h.de !== h.a);
 const dowOf = (iso) => (new Date(iso + 'T12:00:00').getDay() + 6) % 7;
 const okSlot = (h) => h && h.de && h.a && h.de !== h.a;
+// 📍 pointage de l'équipe : la position est prise par l'app seulement au toucher d'Arrivée / Départ ; on la compare
+// à la position du lieu (immeuble : OpenStreetMap à partir de l'adresse, ou « je suis sur place ») — 150 m = sur place
+const GEO_OK = 150;
+const geoOk = (g) => g && Number.isFinite(+g.la) && Number.isFinite(+g.lo) && Math.abs(+g.la) <= 90 && Math.abs(+g.lo) <= 180;
+const geoIn = (g) => (geoOk(g) ? { la: Math.round(+g.la * 1e6) / 1e6, lo: Math.round(+g.lo * 1e6) / 1e6, acc: Math.max(0, Math.min(99999, Math.round(+g.acc || 0))) } : null);
+const geoM = (a, b) => { const r = Math.PI / 180, x = Math.sin(((b[0] - a[0]) * r) / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(((b[1] - a[1]) * r) / 2) ** 2; return Math.round(12742000 * Math.asin(Math.sqrt(x))); };
+// le lieu le plus proche parmi ceux prévus : { m, imm } (m = null si aucun de ces lieux n'a encore de position)
+function geoNear(g, immIds) {
+  let best = null;
+  for (const id of new Set(immIds.filter(Boolean))) { const im = vault.get('immeubles', id); if (im && Array.isArray(im.geo)) { const m = geoM([g.la, g.lo], im.geo); if (!best || m < best.m) best = { m, imm: id }; } }
+  return best || { m: null, imm: immIds.find(Boolean) || '' };
+}
+const geoDist = (m) => (m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : m + ' m');
+const geoTxt = (g) => (!g ? '' : html`${g.m == null ? html`📍 <span>position reçue</span>${g.imm ? html` — ${immName(g.imm)} : <span>lieu sans position</span>` : ''}` : g.m <= GEO_OK ? html`✅ <span>sur place</span> (${g.m} m) — ${immName(g.imm)}` : html`⚠️ <span>loin du lieu</span> : ${geoDist(g.m)} — ${immName(g.imm)}`}${g.acc ? ` · ±${g.acc} m` : ''}`);
+function geoFill(f, g, src, acc) {
+  f.geoLa.value = g[0]; f.geoLo.value = g[1];
+  let s = f.querySelector('[name=geoSrc]');
+  if (!s) { s = document.createElement('input'); s.type = 'hidden'; s.name = 'geoSrc'; f.append(s); }
+  s.value = src;
+  const p = document.getElementById('geoNow');
+  if (p) p.textContent = `✓ ${g[0]}, ${g[1]} ${src === 'ici' ? '(sur place' + (acc ? ', ±' + acc + ' m' : '') + ')' : '(OpenStreetMap)'} — touchez Enregistrer`;
+}
+async function osmGeo(adr) {
+  const q = /luxemb|lëtzebuerg|deutschland|france|belgi/i.test(adr) ? adr : adr + ', Luxembourg';
+  const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' } });
+  const j = r.ok ? await r.json() : [];
+  return j && j[0] ? [Math.round(+j[0].lat * 1e6) / 1e6, Math.round(+j[0].lon * 1e6) / 1e6] : null;
+}
+// immeubles de l'horaire de l'équipe encore sans position : une recherche OpenStreetMap par seconde, une fois par session
+let geoAutoDone = false;
+async function geoAuto() {
+  if (geoAutoDone || TENANT || isCompta() || !vault.unlocked) return;
+  geoAutoDone = true;
+  const ids = new Set();
+  for (const i of vault.list('intervenants')) { for (const h of hors(i)) ids.add(h.immId); for (const hs of Object.values(i.plan || {})) for (const h of hs || []) ids.add(h.immId); }
+  for (const id of ids) {
+    const im = id && vault.get('immeubles', id);
+    if (!im || Array.isArray(im.geo) || !im.adresse) continue;
+    try { const g = await osmGeo([im.adresse, im.ville].filter(Boolean).join(', ')); if (g) await vault.mutate((tx) => tx.put('immeubles', { id, geo: g, geoSrc: 'osm' }), '📍 Position du lieu (OpenStreetMap)', im.adresse); } catch { /* hors ligne */ }
+    await new Promise((ok) => setTimeout(ok, 1100));
+  }
+}
 const horsOn = (i, iso) => (i.plan && Array.isArray(i.plan[iso]) ? i.plan[iso].filter(okSlot) : hors(i).filter((h) => h.j === dowOf(iso))).slice().sort((a, b) => a.de.localeCompare(b.de));
 const slotsHours = (hs) => hs.reduce((n, h) => { const a = hm(h.de), b = hm(h.a); return n + (a != null && b != null && b > a ? b - a : 0); }, 0);
 const mondayOf = (iso) => addDays(iso, -dowOf(iso));
@@ -563,7 +605,7 @@ function equipeData(i) {
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
     horaires: hors(i).map((h) => ({ j: h.j, de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })), jours,
     absences: (i.absences || []).filter((a) => !a.fin || a.fin >= addDays(today(), -30)).map((a) => ({ type: a.type, debut: a.debut, fin: a.fin || '' })),
-    pres: Object.fromEntries(Object.entries(i.pres || {}).filter(([d]) => d >= addDays(today(), -7))),
+    pres: Object.fromEntries(Object.entries(i.pres || {}).filter(([d]) => d >= addDays(today(), -7)).map(([d, p]) => [d, { ...(p.arr ? { arr: p.arr } : {}), ...(p.dep ? { dep: p.dep } : {}) }])),
     pubs: pubsActives([...imIds], 'eq').map(pubOut),
     rank: (() => { const y = new Date().getFullYear(), r = eqScores(y), n = r.findIndex(([wid]) => wid === i.id), v = n >= 0 ? r[n][1] : null; return v ? { y, pos: n + 1, of: r.length, pts: v.pts, fait: v.fait, ph: v.ph, urg: v.urg, good: v.good } : null; })(),
     tasks, items: items.sort((a, b) => a.d.localeCompare(b.d)), signalKey: k ? k.pub : '', chat: eqChatOut(i),
@@ -694,6 +736,7 @@ async function equipeInbox(w, msg) {
         const ph = photos.map((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'equipe', label: `${intervFull(w)} — ${t.titre} (${n + 1})`, date: d, mime: 'image/jpeg', size: Math.round(String(b).length * 0.75) }); files.push([doc.id, b]); return doc.id; });
         const entry = { d, st: it.st, note, at, by: w.id, ph };
         if (/^\d{2}:\d{2}$/.test(it.h || '')) entry.h = it.h;
+        { const gi = geoIn(it.geo); if (gi) entry.geo = { ...gi, ...geoNear(gi, [t.immId]) }; }
         // « Combien ? » : quantité faite (12 vitres, 3 robinets…), pour les statistiques
         if (it.st === 'fait' && +it.qte > 0) { entry.qte = Math.min(99999, Math.round(+it.qte * 100) / 100); entry.qu = String(it.qu || '').trim().slice(0, 40); }
         const upd = { id: t.id, journal: [...(t.journal || []), entry].slice(-80) };
@@ -708,7 +751,7 @@ async function equipeInbox(w, msg) {
           if (!t.recur) Object.assign(upd, taxiCur(t) === w.id ? taxiNext(t, 'refus') : { intervenantId: '', statut: 'afaire' });
         }
         tx.put('taches', upd);
-        feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note: entry.qte ? `🔢 ${entry.qte} ${entry.qu}`.trim() + (note ? ' — ' + note : '') : note, ph: ph.length, h: entry.h || '' });
+        feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note: entry.qte ? `🔢 ${entry.qte} ${entry.qu}`.trim() + (note ? ' — ' + note : '') : note, ph: ph.length, h: entry.h || '', ...(entry.geo ? { geo: entry.geo } : {}) });
         fresh++;
       } else if (it.k === 'ph') {
         const t = vault.get('taches', String(it.tid || ''));
@@ -730,10 +773,11 @@ async function equipeInbox(w, msg) {
         if (!arr && !dep) continue;
         cur = vault.get('intervenants', w.id);
         const pres = { ...(cur.pres || {}) };
-        pres[d] = { ...(pres[d] || {}), ...(arr ? { arr } : {}), ...(dep ? { dep } : {}) };
+        const gi = geoIn(it.geo), g = gi ? { ...gi, ...geoNear(gi, horsOn(cur, d).map((h) => h.immId)) } : null;
+        pres[d] = { ...(pres[d] || {}), ...(arr ? { arr } : {}), ...(dep ? { dep } : {}), ...(g ? { [arr ? 'arrGeo' : 'depGeo']: g } : {}) };
         for (const k of Object.keys(pres).sort().slice(0, -60)) delete pres[k];
         tx.put('intervenants', { id: w.id, pres });
-        feed.push({ at, k: 'pres', d, note: arr ? `🟢 Arrivée ${arr}` : `🔴 Départ ${dep}` });
+        feed.push({ at, k: 'pres', d, note: arr ? `🟢 Arrivée ${arr}` : `🔴 Départ ${dep}`, ...(g ? { geo: g } : {}) });
         fresh++;
       } else if (it.k === 'pb') {
         // « Quelque chose ne va pas » : devient une intervention à faire, avec les photos
@@ -850,7 +894,7 @@ function eqFeedHtml(onlyId, max = 80) {
     const t = f.tid ? vault.get('taches', f.tid) : null;
     const what = f.k === 'eval' ? html`<b>${f.note}</b>` : f.k === 'pres' ? html`<b>${f.note}</b>` : f.k === 'pb' ? html`<b>${f.note}</b>` : f.k === 'task' || f.k === 'ph' ? html`<b>${f.k === 'ph' ? '📷 ' + EQ_PH[f.phase] : EQ_ST[f.st] || f.st}${f.h ? ' 🕒 ' + f.h : ''}</b> · ${t ? t.titre : '(intervention supprimée)'}${t ? html`<span class="meta" style="display:block">📍 ${placeName(t)} · ${fmtDate(f.d)}</span>` : ''}` : f.k === 'abs' ? html`<b>${f.note}</b>` : html`<b>✏️ ${f.note}</b>`;
     return html`<button class="row" ${t ? html`data-action="edit-tache" data-id="${t.id}"` : html`data-action="open-interv" data-id="${i.id}"`} style="text-align:left">
-      <span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDateTime(f.at)} · ${miniW(i)}${intervFull(i)}</span>${what}${f.k === 'task' && f.note ? html`<span class="small" style="display:block;margin-top:2px">📝 ${f.note}</span>` : ''}</span>
+      <span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDateTime(f.at)} · ${miniW(i)}${intervFull(i)}</span>${what}${f.geo ? html`<span class="small" style="display:block;margin-top:2px;color:${f.geo.m != null && f.geo.m <= GEO_OK ? 'var(--ok, #15803d)' : 'var(--warn, #b45309)'}">${geoTxt(f.geo)} <span data-action="geo-map" style="text-decoration:underline;cursor:pointer" data-la="${f.geo.la}" data-lo="${f.geo.lo}">🗺️ <span>carte</span></span></span>` : ''}${f.k === 'task' && f.note ? html`<span class="small" style="display:block;margin-top:2px">📝 ${f.note}</span>` : ''}</span>
       ${f.ph ? html`<span class="badge">📷 ${f.ph}</span>` : ''}</button>`;
   })}</div>`;
 }
@@ -871,7 +915,7 @@ function eqTodayHtml() {
       return html`<div class="row"><button class="grow" data-action="edit-tache" data-id="${t.id}" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0;white-space:normal">${miniW(i)}<b>${intervFull(i)}</b> — ${tacheIcon(t.type)} ${t.titre}<span class="meta" style="display:block">📍 ${placeName(t)}${st && st.note ? ' · 📝 ' + st.note : ''}</span></button>
         <span class="badge ${st ? (st.st === 'fait' ? 'ok' : st.st === 'incomplet' ? 'bad' : 'warn') : ''}">${st ? EQ_ST[st.st] + ' ' + (st.h || (st.at || '').slice(11, 16)) : absOn(i, d0) ? '🤒 absent' : '⏳ pas encore'}</span>${swap ? html`<button class="btn sm" data-action="eq-swap" data-id="${t.id}" title="Changer d’ouvrier" aria-label="Changer d’ouvrier">🔄</button>` : ''}</div>`;
     })}
-    ${pointes.map((i) => { const p = i.pres[d0]; return html`<div class="row"><span class="grow">${miniW(i)}<b>${intervFull(i)}</b> — 🕒 <span>Arrivée</span> <b>${p.arr || '—'}</b> · <span>Départ</span> <b>${p.dep || '—'}</b></span></div>`; })}
+    ${pointes.map((i) => { const p = i.pres[d0]; return html`<div class="row"><span class="grow">${miniW(i)}<b>${intervFull(i)}</b> — 🕒 <span>Arrivée</span> <b>${p.arr || '—'}</b> · <span>Départ</span> <b>${p.dep || '—'}</b>${[['🟢', p.arrGeo], ['🔴', p.depGeo]].filter(([, g]) => g).map(([k, g]) => html`<span class="small" style="display:block">${k} ${geoTxt(g)}</span>`)}</span></div>`; })}
     ${absent.filter((i) => !its.some((x) => x.t.intervenantId === i.id)).map((i) => html`<div class="row"><span class="grow"><b>${intervFull(i)}</b> — ${ABS_TYPES[absOn(i, d0).type]}</span></div>`)}</div></div>`;
 }
 
@@ -1977,7 +2021,7 @@ async function hoteInbox(h, msg) {
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
 async function inboxSync() {
-  if (TENANT) tenantBoxSync(); else { netDemSync(); netLoad(); }
+  if (TENANT) tenantBoxSync(); else { netDemSync(); netLoad(); geoAuto(); }
   const keys = vault.get('reglages', 'signal');
   if (!keys || !keys.priv || inboxBusy || !vault.unlocked) return;
   inboxBusy = true;
@@ -6889,6 +6933,11 @@ const SHEETS = {
         ${field('Début du bail principal', 'bailDebut', im.bailDebut, { type: 'date' })}
         ${field('Fin du bail principal', 'bailFin', im.bailFin, { type: 'date' })}
         <label class="field full">Notes<textarea name="note" placeholder="Travaux, assurance, syndic…">${im.note || ''}</textarea></label>
+        <div class="section-label full" style="margin:6px 0 0">📍 Position du lieu — contrôle de l’arrivée et du départ de l’équipe</div>
+        <input type="hidden" name="geoLa" value="${Array.isArray(im.geo) ? im.geo[0] : ''}"><input type="hidden" name="geoLo" value="${Array.isArray(im.geo) ? im.geo[1] : ''}">
+        <p class="small full" id="geoNow" style="margin:0">${Array.isArray(im.geo) ? `✓ ${im.geo[0]}, ${im.geo[1]}${im.geoSrc === 'ici' ? ' (enregistrée sur place)' : ' (OpenStreetMap)'}` : 'Pas encore de position.'}</p>
+        <div class="full actions" style="margin:0;flex-wrap:wrap"><button type="button" class="btn sm" data-action="imm-geo-osm">🔎 Chercher l’adresse (OpenStreetMap)</button><button type="button" class="btn sm" data-action="imm-geo-here">📍 Je suis sur place : enregistrer</button></div>
+        <p class="tiny muted full" style="margin:0">Quand un ouvrier touche Arrivée / Départ, son app envoie sa position (seulement à ce moment) : vous voyez « ✅ sur place » (moins de 150 m) ou « ⚠️ à … km ». OpenStreetMap ne reçoit que l’adresse de l’immeuble.</p>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-imm" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
@@ -8585,6 +8634,23 @@ const ACTIONS = {
     setHtml(el, icon(inp.type === 'password' ? 'eye' : 'eyeOff'));
   },
   'new-imm': () => openSheet('imm-form'),
+  async 'imm-geo-osm'() {
+    const f = document.getElementById('f');
+    if (!f) return;
+    const adr = [f.adresse.value, f.ville.value].map((x) => String(x || '').trim()).filter(Boolean).join(', ');
+    if (!adr) return toast('Écrivez d’abord l’adresse', { bad: true });
+    let g = null;
+    try { g = await osmGeo(adr); } catch { /* hors ligne */ }
+    if (!g) return toast('Adresse introuvable sur OpenStreetMap : vérifiez-la, ou enregistrez la position sur place', { bad: true });
+    geoFill(f, g, 'osm');
+  },
+  'imm-geo-here'() {
+    const f = document.getElementById('f');
+    if (!f || !navigator.geolocation) return toast('Position non disponible sur cet appareil', { bad: true });
+    navigator.geolocation.getCurrentPosition((p) => geoFill(f, [Math.round(p.coords.latitude * 1e6) / 1e6, Math.round(p.coords.longitude * 1e6) / 1e6], 'ici', Math.round(p.coords.accuracy)),
+      () => toast('Position refusée ou introuvable : autorisez la localisation pour ce site', { bad: true }), { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  },
+  'geo-map'(d) { window.open(`https://www.google.com/maps?q=${encodeURIComponent(d.la + ',' + d.lo)}`, '_blank', 'noopener'); },
   'edit-imm': (d) => openSheet('imm-form', d.id),
   'new-loc': (d) => openSheet('loc-form', null, null, d.log),
   'edit-loc': (d) => openSheet('loc-form', d.id),
@@ -9496,6 +9562,7 @@ const FORMS = {
       adresse: fd.get('adresse').trim(), ville: String(fd.get('ville') || '').trim(), type: fd.get('type') || 'immeuble', proprietaire: fd.get('proprietaire').trim(), loyer: num(fd.get('loyer')), charges: num(fd.get('charges')),
       bailDebut: fd.get('bailDebut'), bailFin: fd.get('bailFin'), note: fd.get('note').trim(),
     };
+    { const g = geoIn({ la: fd.get('geoLa'), lo: fd.get('geoLo') }); const old = id ? (vault.get('immeubles', id) || {}).geo : null; if (g && fd.get('geoLa') !== '' && (!Array.isArray(old) || old[0] !== g.la || old[1] !== g.lo)) { rec.geo = [g.la, g.lo]; rec.geoSrc = fd.get('geoSrc') || 'osm'; } }
     if (id) rec.id = id;
     const saved = await vault.mutate((tx) => tx.put('immeubles', rec), id ? 'Immeuble modifié' : 'Immeuble ajouté', rec.adresse);
     toast(id ? 'Immeuble enregistré' : 'Immeuble ajouté');

@@ -125,6 +125,29 @@ const L = {
 // « Je ne peux pas » : l'ouvrier refuse un travail pas encore commencé → le responsable en envoie un autre
 // ▶ petit dessin animé « mettre l'icône sur l'écran » (chargé seulement au toucher)
 // 💬 Messages avec la centrale (seule la centrale les lit) ; 📣 message spécial = envoyé par la centrale à un groupe
+// 📍 Arrivée / Départ : la position est prise seulement à ce moment (une fois) et envoyée chiffrée au responsable.
+// Sans position, le pointage ne part pas.
+const GEO = {
+  fr: { wait: '📍 Position…', hint: '📍 Votre position est prise seulement quand vous touchez Arrivée ou Départ.', need: '📍 Pour pointer l’arrivée ou le départ, la position est obligatoire.', how: 'Activez-la puis réessayez. iPhone : Réglages → Confidentialité → Service de localisation → activé, puis Safari (ou l’app) → « Lorsque l’app est active ». Android : touchez le cadenas à côté de l’adresse → Autorisations → Position → Autoriser, et activez la position du téléphone.' },
+  it: { wait: '📍 Posizione…', hint: '📍 La tua posizione viene presa solo quando tocchi Arrivo o Partenza.', need: '📍 Per segnare l’arrivo o la partenza la posizione è obbligatoria.', how: 'Attivala e riprova. iPhone: Impostazioni → Privacy → Localizzazione → attiva, poi Safari (o l’app) → «Mentre usi l’app». Android: tocca il lucchetto accanto all’indirizzo → Autorizzazioni → Posizione → Consenti, e accendi la posizione del telefono.' },
+  de: { wait: '📍 Standort…', hint: '📍 Ihr Standort wird nur erfasst, wenn Sie Ankunft oder Ende antippen.', need: '📍 Um Ankunft oder Ende zu melden, ist der Standort Pflicht.', how: 'Aktivieren Sie ihn und versuchen Sie es erneut. iPhone: Einstellungen → Datenschutz → Ortungsdienste → ein, dann Safari (oder die App) → „Beim Verwenden der App“. Android: auf das Schloss neben der Adresse tippen → Berechtigungen → Standort → Zulassen, und den Standort des Telefons einschalten.' },
+  en: { wait: '📍 Location…', hint: '📍 Your location is taken only when you tap Arrival or Departure.', need: '📍 To record arrival or departure, location is required.', how: 'Turn it on and try again. iPhone: Settings → Privacy → Location Services → on, then Safari (or the app) → “While Using the App”. Android: tap the padlock next to the address → Permissions → Location → Allow, and turn on the phone’s location.' },
+  pt: { wait: '📍 Localização…', hint: '📍 A sua localização só é obtida quando toca em Chegada ou Saída.', need: '📍 Para registar a chegada ou a saída, a localização é obrigatória.', how: 'Ative-a e tente de novo. iPhone: Definições → Privacidade → Serviços de localização → ativo, depois Safari (ou a app) → «Ao usar a app». Android: toque no cadeado ao lado do endereço → Permissões → Localização → Permitir, e ligue a localização do telemóvel.' },
+  es: { wait: '📍 Ubicación…', hint: '📍 Tu ubicación solo se toma cuando tocas Llegada o Salida.', need: '📍 Para marcar la llegada o la salida, la ubicación es obligatoria.', how: 'Actívala y vuelve a intentarlo. iPhone: Ajustes → Privacidad → Localización → activada, luego Safari (o la app) → «Cuando se use la app». Android: toca el candado junto a la dirección → Permisos → Ubicación → Permitir, y activa la ubicación del teléfono.' },
+};
+const GT = () => GEO[lang] || GEO.fr;
+let geoFail = false;
+const geoNeed = () => new Promise((ok) => { if (!navigator.geolocation) return ok(null); navigator.geolocation.getCurrentPosition((p) => ok({ la: Math.round(p.coords.latitude * 1e6) / 1e6, lo: Math.round(p.coords.longitude * 1e6) / 1e6, acc: Math.round(p.coords.accuracy) }), () => ok(null), { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }); });
+// position obligatoire : null → le bouton ne fait rien d'autre qu'expliquer comment l'activer
+async function geoForm(btn) {
+  const old = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = GT().wait; }
+  const g = await geoNeed();
+  if (btn) { btn.disabled = false; btn.textContent = old; }
+  geoFail = !g;
+  if (!g) { render(); document.getElementById('geoWarn')?.scrollIntoView({ block: 'center' }); }
+  return g;
+}
 const CH = {
   fr: { t: '💬 Messages avec la centrale', ph: 'Écrire à la centrale…', send: 'Envoyer', me: 'Moi', ctr: 'Centrale', sp: '📣 Message spécial', wait: '⏳ envoi…', none: 'Aucun message. Écrivez ici à la centrale.', hint: 'Seule la centrale lit vos messages.', nw: 'nouveau' },
   it: { t: '💬 Messaggi con la centrale', ph: 'Scrivi alla centrale…', send: 'Invia', me: 'Io', ctr: 'Centrale', sp: '📣 Messaggio speciale', wait: '⏳ invio…', none: 'Nessun messaggio. Scrivi qui alla centrale.', hint: 'Solo la centrale legge i tuoi messaggi.', nw: 'nuovo' },
@@ -746,6 +769,7 @@ function render() {
   // Mon horaire : la personne écrit son arrivée / son départ, et signale ce qui ne va pas (3 photos minimum)
   const pr = presOf(today), pp = t.p;
   const presH = (`<div id="presCard" class="pres-in"><h2>🕒 ${esc(pp.me)} · ${esc(fmtDay(today))}</h2><p class="meta" style="margin:0 0 8px">${esc(todays.length ? t.s.hint : pp.hint)}</p>
+    ${geoFail ? `<div class="card warnc" id="geoWarn" style="margin:0 0 8px"><p style="margin:0 0 6px"><b>${esc(GT().need)}</b></p><p class="meta" style="margin:0">${esc(GT().how)}</p></div>` : ''}<p class="meta" style="margin:0 0 8px">${esc(GT().hint)}</p>
     ${hsToday.length ? `<p class="meta" style="margin:0 0 8px">${esc(pp.planned)} : ${hsToday.map((h) => `${esc(h.de)}–${esc(h.a)}`).join(' · ')}</p>` : ''}
     ${todays.length ? (() => { const ci = todays.findIndex((x) => !stopTimes(x.tid, x.d).end && !isRefused(x.tid, x.d)); return todays.map((x, i) => stopCard(x, i === ci)).join(''); })() : `<p style="margin:0"><b>${esc(t.s.day)}</b></p>` + ['arr', 'dep'].map((k) => `<form class="pres" data-pres="${k}"><span class="pres-l">${k === 'arr' ? '🟢' : '🔴'} ${esc(pp[k])}</span><input type="time" name="h" value="${esc(pr[k] || (k === 'dep' && !pr.arr ? '' : nowHM()))}" required><button class="btn sm${pr[k] ? ' sec' : ''}" type="submit">${esc(pp.send)}</button>${pr[k] ? `<span class="pres-ok">✓ ${esc(pr[k])}</span>` : ''}</form>`).join('')}
     <details class="more"${pbPhotos.length ? ' open' : ''}><summary>${esc(pp.pb)}</summary><form id="pbForm">
@@ -889,7 +913,9 @@ app.addEventListener('submit', async (e) => {
     const v = f.h.value;
     if (!/^\d{2}:\d{2}$/.test(v)) return;
     flash = '';
-    await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: f.dataset.stop, note: '', h: v, photos: [], ...(f.dataset.stop === 'fait' ? qtyOf(f) : {}), at: new Date().toISOString() });
+    const geo = await geoForm(btn);
+    if (!geo) return;
+    await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: f.dataset.stop, note: '', h: v, photos: [], ...(f.dataset.stop === 'fait' ? qtyOf(f) : {}), geo, at: new Date().toISOString() });
     if (f.dataset.stop === 'encours') {
       const it = data.items.find((x) => x.tid === f.dataset.tid && x.d === f.dataset.d), x = data.tasks[f.dataset.tid];
       if (it && it.tk && tripLs(it.tk)) { tripLs(it.tk, null); tripSend(it.tk, 'here'); }
@@ -903,11 +929,13 @@ app.addEventListener('submit', async (e) => {
   if (f.dataset.pres) {
     const v = f.h.value;
     if (!/^\d{2}:\d{2}$/.test(v)) return;
+    const geo = await geoForm(btn);
+    if (!geo) return;
     let m = {}; try { m = JSON.parse(localStorage.getItem(PRK()) || '{}'); } catch { /* stockage indisponible */ }
     m[today] = { ...(m[today] || {}), [f.dataset.pres]: v };
     for (const k of Object.keys(m).sort().slice(0, -10)) delete m[k];
     try { localStorage.setItem(PRK(), JSON.stringify(m)); } catch { /* stockage plein */ }
-    await queue({ k: 'pres', d: today, [f.dataset.pres]: v, at: new Date().toISOString() });
+    await queue({ k: 'pres', d: today, [f.dataset.pres]: v, geo, at: new Date().toISOString() });
     flash = t.sent;
     render();
     return;
@@ -963,8 +991,10 @@ app.addEventListener('submit', async (e) => {
       }
       const note = f.note.value.trim();
       if (f.dataset.st === 'incomplet' && !note) { alert(t.need); btn.disabled = false; btn.textContent = t.send; return; }
+      const geo = ['fait', 'incomplet', 'encours'].includes(f.dataset.st) ? await geoForm(btn) : null;
+      if (['fait', 'incomplet', 'encours'].includes(f.dataset.st) && !geo) { btn.disabled = false; btn.textContent = t.send; return; }
       form = null;
-      await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: f.dataset.st, note, photos: [], ...(f.dataset.st === 'fait' ? qtyOf(f) : {}), at: new Date().toISOString() });
+      await queue({ k: 'task', tid: f.dataset.tid, d: f.dataset.d, st: f.dataset.st, note, photos: [], ...(f.dataset.st === 'fait' ? qtyOf(f) : {}), ...(geo ? { geo } : {}), at: new Date().toISOString() });
       flash = t.sent;
     } else if (f.id === 'absForm') {
       const photos = f.photo.files[0] ? [await compress(f.photo.files[0])] : [];

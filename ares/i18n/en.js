@@ -16723,4 +16723,60 @@ export default [
 "Nouv. intervention",
 "New job"
 ],
+[
+"sur place",
+"on site"
+],
+[
+"loin du lieu",
+"away from the place"
+],
+[
+"position reçue",
+"location received"
+],
+[
+"lieu sans position",
+"place without a location"
+],
+[
+"carte",
+"map"
+],
+[
+"📍 Position du lieu — contrôle de l’arrivée et du départ de l’équipe",
+"📍 Location of the place — check of the team’s arrival and departure"
+],
+[
+"Pas encore de position.",
+"No location yet."
+],
+[
+"🔎 Chercher l’adresse (OpenStreetMap)",
+"🔎 Look up the address (OpenStreetMap)"
+],
+[
+"📍 Je suis sur place : enregistrer",
+"📍 I’m on site: save"
+],
+[
+"Quand un ouvrier touche Arrivée / Départ, son app envoie sa position (seulement à ce moment) : vous voyez « ✅ sur place » (moins de 150 m) ou « ⚠️ à … km ». OpenStreetMap ne reçoit que l’adresse de l’immeuble.",
+"When a worker taps Arrival / Departure, their app sends the location (only at that moment): you see “✅ on site” (under 150 m) or “⚠️ away from the place”. OpenStreetMap only receives the building’s address."
+],
+[
+"Écrivez d’abord l’adresse",
+"Write the address first"
+],
+[
+"Adresse introuvable sur OpenStreetMap : vérifiez-la, ou enregistrez la position sur place",
+"Address not found on OpenStreetMap: check it, or save the location on site"
+],
+[
+"Position non disponible sur cet appareil",
+"Location not available on this device"
+],
+[
+"Position refusée ou introuvable : autorisez la localisation pour ce site",
+"Location refused or not found: allow location for this site"
+],
 ];

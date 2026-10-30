@@ -16994,4 +16994,60 @@ export default [
 "Nouv. intervention",
 "Nuovo intervento"
 ],
+[
+"sur place",
+"sul posto"
+],
+[
+"loin du lieu",
+"lontano dal luogo"
+],
+[
+"position reçue",
+"posizione ricevuta"
+],
+[
+"lieu sans position",
+"luogo senza posizione"
+],
+[
+"carte",
+"mappa"
+],
+[
+"📍 Position du lieu — contrôle de l’arrivée et du départ de l’équipe",
+"📍 Posizione del luogo — controllo dell’arrivo e della partenza della squadra"
+],
+[
+"Pas encore de position.",
+"Ancora nessuna posizione."
+],
+[
+"🔎 Chercher l’adresse (OpenStreetMap)",
+"🔎 Cerca l’indirizzo (OpenStreetMap)"
+],
+[
+"📍 Je suis sur place : enregistrer",
+"📍 Sono qui: salva la posizione"
+],
+[
+"Quand un ouvrier touche Arrivée / Départ, son app envoie sa position (seulement à ce moment) : vous voyez « ✅ sur place » (moins de 150 m) ou « ⚠️ à … km ». OpenStreetMap ne reçoit que l’adresse de l’immeuble.",
+"Quando un operaio tocca Arrivo / Partenza, la sua app manda la posizione (solo in quel momento): vedete «✅ sul posto» (meno di 150 m) o «⚠️ lontano dal luogo». OpenStreetMap riceve solo l’indirizzo del palazzo."
+],
+[
+"Écrivez d’abord l’adresse",
+"Scrivi prima l’indirizzo"
+],
+[
+"Adresse introuvable sur OpenStreetMap : vérifiez-la, ou enregistrez la position sur place",
+"Indirizzo non trovato su OpenStreetMap: controllalo, o salva la posizione sul posto"
+],
+[
+"Position non disponible sur cet appareil",
+"Posizione non disponibile su questo dispositivo"
+],
+[
+"Position refusée ou introuvable : autorisez la localisation pour ce site",
+"Posizione rifiutata o non trovata: autorizza la localizzazione per questo sito"
+],
 ];
