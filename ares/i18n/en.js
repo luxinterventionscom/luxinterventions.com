@@ -16871,4 +16871,12 @@ export default [
 "Passage retiré",
 "Visit removed"
 ],
+[
+"{0} visite",
+"{0} visit"
+],
+[
+"{0} visites",
+"{0} visits"
+],
 ];

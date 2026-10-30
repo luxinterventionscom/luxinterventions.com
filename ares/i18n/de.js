@@ -16567,7 +16567,7 @@ export default [
 ],
 [
 "Facturer {0} intervention{1} terminée{2}",
-"{0} abgeschlossene(n) Einsatz/Einsätze abrechnen"
+"Abgeschlossene Einsätze abrechnen ({0})"
 ],
 [
 "payée le {0}",
@@ -17128,5 +17128,13 @@ export default [
 [
 "Passage retiré",
 "Einsatz entfernt"
+],
+[
+"{0} visite",
+"{0} Einsatz"
+],
+[
+"{0} visites",
+"{0} Einsätze"
 ],
 ];

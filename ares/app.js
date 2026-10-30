@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.207.0';
+const VERSION = '2.207.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -922,7 +922,7 @@ function presHtml(i) {
     <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button class="btn sm" data-action="pres-wk" data-id="${i.id}" data-d="-1" aria-label="Semaine précédente">◀</button>
       <b class="grow" style="text-align:center">Semaine du ${dayShort(mon)} au ${dayShort(addDays(mon, 6))}</b><button class="btn sm" data-action="pres-wk" data-id="${i.id}" data-d="1" aria-label="Semaine suivante">▶</button></div>
     <p class="small" style="margin:0 0 8px"><span>Semaine</span> : <b>${tot(wk)}</b> · ${MONTHS_FULL[+ym.slice(5) - 1]} : <b>${tot(md)}</b></p>
-    ${wk.length ? html`<div class="stack" style="gap:6px;margin-bottom:12px">${wk.slice().reverse().map((d) => { const L = days[d]; return html`<details class="card" style="padding:8px 12px" ${d === today() || wk.length === 1 ? new Raw('open') : ''}><summary><b>${dowOfIso(d)} ${dayShort(d)}</b> · ${plural(L.length, 'passage')} · <b>${fmtH(dayMin(L) / 60)}</b>${L.some((p) => !p.dep) ? html` <span class="badge warn">départ manquant</span>` : ''}${L.some((p) => [p.arrGeo, p.depGeo].some((g) => g && g.m != null && g.m > GEO_OK)) ? html` <span class="badge bad">⚠️ hors du lieu</span>` : ''}</summary>
+    ${wk.length ? html`<div class="stack" style="gap:6px;margin-bottom:12px">${wk.slice().reverse().map((d) => { const L = days[d]; return html`<details class="card" style="padding:8px 12px" ${d === today() || wk.length === 1 ? new Raw('open') : ''}><summary><b>${dowOfIso(d)} ${dayShort(d)}</b> · ${plural(L.length, 'visite')} · <b>${fmtH(dayMin(L) / 60)}</b>${L.some((p) => !p.dep) ? html` <span class="badge warn">départ manquant</span>` : ''}${L.some((p) => [p.arrGeo, p.depGeo].some((g) => g && g.m != null && g.m > GEO_OK)) ? html` <span class="badge bad">⚠️ hors du lieu</span>` : ''}</summary>
       <div class="list small" style="margin-top:6px">${L.map((p) => html`<div class="row" style="display:block"><b>🟢 ${p.arr || '—'} → 🔴 ${p.dep || '—'}</b>${passMin(p) ? html` · ${fmtH(passMin(p) / 60)}` : ''}<span class="small" style="display:block;margin-top:2px">${passPlace(i, d, p)}</span></div>`)}</div></details>`; })}</div>` : html`<p class="small muted">Aucune arrivée ni départ cette semaine.</p>`}`;
 }
 // Journal de l'équipe (toutes les personnes, ou une seule), le plus récent d'abord ; noPres : sans les arrivées / départs (groupés à part)
@@ -956,7 +956,7 @@ function eqTodayHtml() {
       return html`<div class="row"><button class="grow" data-action="edit-tache" data-id="${t.id}" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0;white-space:normal">${miniW(i)}<b>${intervFull(i)}</b> — ${tacheIcon(t.type)} ${t.titre}<span class="meta" style="display:block">📍 ${placeName(t)}${st && st.note ? ' · 📝 ' + st.note : ''}</span></button>
         <span class="badge ${st ? (st.st === 'fait' ? 'ok' : st.st === 'incomplet' ? 'bad' : 'warn') : ''}">${st ? EQ_ST[st.st] + ' ' + (st.h || (st.at || '').slice(11, 16)) : absOn(i, d0) ? '🤒 absent' : '⏳ pas encore'}</span>${swap ? html`<button class="btn sm" data-action="eq-swap" data-id="${t.id}" title="Changer d’ouvrier" aria-label="Changer d’ouvrier">🔄</button>` : ''}</div>`;
     })}
-    ${pointes.map((i) => { const L = passDays(i)[d0] || []; return html`<button class="row" data-action="open-interv" data-id="${i.id}" style="text-align:left"><span class="grow" style="white-space:normal">${miniW(i)}<b>${intervFull(i)}</b> — ${plural(L.length, 'passage')} · ${fmtH(dayMin(L) / 60)}${L.map((p) => html`<span class="small" style="display:block">🟢 ${p.arr || '—'} → 🔴 ${p.dep || '—'} · ${passPlace(i, d0, p)}</span>`)}</span></button>`; })}
+    ${pointes.map((i) => { const L = passDays(i)[d0] || []; return html`<button class="row" data-action="open-interv" data-id="${i.id}" style="text-align:left"><span class="grow" style="white-space:normal">${miniW(i)}<b>${intervFull(i)}</b> — ${plural(L.length, 'visite')} · ${fmtH(dayMin(L) / 60)}${L.map((p) => html`<span class="small" style="display:block">🟢 ${p.arr || '—'} → 🔴 ${p.dep || '—'} · ${passPlace(i, d0, p)}</span>`)}</span></button>`; })}
     ${absent.filter((i) => !its.some((x) => x.t.intervenantId === i.id)).map((i) => html`<div class="row"><span class="grow"><b>${intervFull(i)}</b> — ${ABS_TYPES[absOn(i, d0).type]}</span></div>`)}</div></div>`;
 }
 

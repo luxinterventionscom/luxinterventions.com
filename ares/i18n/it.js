@@ -17142,4 +17142,12 @@ export default [
 "Passage retiré",
 "Giro tolto"
 ],
+[
+"{0} visite",
+"{0} giro"
+],
+[
+"{0} visites",
+"{0} giri"
+],
 ];
