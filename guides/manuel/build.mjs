@@ -8,7 +8,7 @@ import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 const HERE = new URL('./', import.meta.url).pathname, TMP = HERE + 'shots/build/';
 await mkdir(TMP, { recursive: true });
-const VER = '2.200';
+const VER = '2.205';
 const META = {
   it: ['Italiano', 'Manuale dell’applicazione INTERVENTI', 'Chi lo usa e perché', 'pagine'],
   fr: ['Français', 'Manuel de l’application INTERVENTIONS', 'Qui l’utilise et pourquoi', 'pages'],
@@ -45,23 +45,26 @@ for (const l of langs) {
 // 2) page de chaque chapitre dans le PDF de sa langue
 await writeFile(`${TMP}chap.json`, JSON.stringify(Object.fromEntries(langs.map((l) => [l, { pdf: `${TMP}${l}.pdf`, titles: chapters[l] }]))));
 const pages = JSON.parse(execFileSync('/usr/bin/python3', [HERE + 'pages.py', `${TMP}chap.json`]));
-let at = 3;
-const toc = {};
-for (const l of langs) { toc[l] = chapters[l].map((t, i) => [t, at + pages[l].starts[i]]); at += pages[l].count; }
-const total = at - 1;
+// copertina + sommario : di solito 2 pagine, con 6 lingue il sommario può prenderne di più → si ricalcola
+let front = 2, toc = {}, total = 0;
+const plan = () => { let at = front + 1; toc = {}; for (const l of langs) { toc[l] = chapters[l].map((t, i) => [t, at + pages[l].starts[i]]); at += pages[l].count; } total = at - 1; };
+plan();
 // 3) couverture + sommaire
-const cover = `<div style="height:265mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+const cover = () => `<div style="height:265mm;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
   <img src="assets/logo-cover.jpg" style="width:150mm;border-radius:3mm">
   <div style="color:#b7791f;font-weight:700;font-size:20pt;letter-spacing:4pt;margin-top:7mm">ALJADY R.</div>
   <div style="font-weight:700;font-size:13pt;letter-spacing:5pt;color:#1b2e4a">I N T E R V E N T I O N S</div>
   <div style="font-size:9.5pt;color:#64748b;margin-top:1.5mm">Gérance · Immobiliari · Hotel · Airbnb · Taxi</div>
   <div style="font-size:21pt;font-weight:700;color:#1b2e4a;margin-top:12mm">GESTIONE LOCATIVA &amp; INTERVENTI</div>
   <div style="font-size:15pt;color:#4e45e4;margin-top:3mm">${META.it[1]}</div>
-  <div style="font-size:10pt;color:#334155;margin-top:5mm">Gestione · Inquilini · Squadra · Gérance · Preventivi · Hotel · Airbnb · Taxi · Annunci · Licenze</div>
+  <div style="font-size:10pt;color:#334155;margin-top:5mm">Gestione · Inquilini · Squadra · Gérance · Preventivi · Hotel · Airbnb · Taxi · Annunci · Licenze · Chat · Pagamenti</div>
   <div style="font-size:10pt;color:#b7791f;margin-top:4mm">${langs.map((l) => META[l][0]).join(' · ')}</div>
   <div style="font-size:9.5pt;color:#64748b;margin-top:2mm">v${VER}.0 · 10/2026 · ${total} ${META.it[3]}</div></div>`;
-const tocHtml = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:7mm 9mm;font-size:8.8pt;line-height:1.35">${langs.map((l) => `<div><div style="font-weight:700;font-size:11pt;color:#4338ca;border-bottom:1.5px solid #c7d2fe;margin-bottom:1.5mm">${META[l][0]}</div>${toc[l].map(([t, p]) => `<div style="display:flex;justify-content:space-between;gap:3mm;margin:1.2mm 0"><span>${t}</span><span>${p}</span></div>`).join('')}</div>`).join('')}</div>`;
-await toPdf(`${cover}<div style="break-before:page"></div>${tocHtml}`, `${TMP}front.pdf`);
+const tocHtml = () => `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4mm 8mm;font-size:8pt;line-height:1.22">${langs.map((l) => `<div><div style="font-weight:700;font-size:11pt;color:#4338ca;border-bottom:1.5px solid #c7d2fe;margin-bottom:1.5mm">${META[l][0]}</div>${toc[l].map(([t, p]) => `<div style="display:flex;justify-content:space-between;gap:3mm;margin:0.6mm 0"><span>${t}</span><span>${p}</span></div>`).join('')}</div>`).join('')}</div>`;
+const frontPdf = () => toPdf(`${cover()}<div style="break-before:page"></div>${tocHtml()}`, `${TMP}front.pdf`);
+await frontPdf();
+const fp = +execFileSync('/usr/bin/python3', ['-c', 'import sys,fitz;print(fitz.open(sys.argv[1]).page_count)', `${TMP}front.pdf`]).toString().trim();
+if (fp !== front) { front = fp; plan(); await frontPdf(); }
 await b.close();
 // 4) assemblage + pieds de page
 const out = new URL(`../ALJADY_R_INTERVENTIONS_Manuale_${langs.length === 6 ? '6_lingue' : langs.join('-')}_v${VER}.pdf`, import.meta.url).pathname;

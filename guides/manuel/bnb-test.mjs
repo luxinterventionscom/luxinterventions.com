@@ -2,12 +2,13 @@
 import { chromium } from 'playwright';
 import { writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
-import { phone, centralSetup, assert, log } from './harness.mjs';
+import { phone, centralSetup, assert, log, lg, snap } from './harness.mjs';
+const L = lg('it');
 const b = await chromium.launch(), errs = [];
 const act = (p, a, d = {}) => p.evaluate(([a, d]) => { const el = document.createElement('button'); el.dataset.action = a; Object.assign(el.dataset, d); el.hidden = true; document.body.append(el); el.click(); el.remove(); }, [a, d]);
 const demo = new URL('./shots/demo.json', import.meta.url).pathname;
 await writeFile(demo, execFileSync('node', [new URL('./demo-data.mjs', import.meta.url).pathname]));
-const c1 = await phone(b, 'fr'), p = await c1.newPage(); p.on('pageerror', (e) => errs.push('central: ' + e.message));
+const c1 = await phone(b, L), p = await c1.newPage(); p.on('pageerror', (e) => errs.push('central: ' + e.message));
 await centralSetup(p);
 await p.evaluate(() => { location.hash = '#/reglages'; }); await p.waitForTimeout(900);
 const [fc] = await Promise.all([p.waitForEvent('filechooser'), act(p, 'import')]);
@@ -16,9 +17,10 @@ await p.evaluate(() => { location.hash = '#/airbnb'; }); await p.waitForTimeout(
 await act(p, 'edit-hote', { id: 'h2' }); await p.waitForTimeout(900);
 await p.check('#f input[name=prixMode][value=detail]');
 await p.fill('#f [name=prixNuit]', '90'); await p.fill('#f [name=prixMenage]', '40'); await p.fill('#f [name=prixTaxe]', '3');
+await p.evaluate(() => { const el = document.querySelector('#f input[name=prixMode]'); if (el) el.scrollIntoView({ block: 'center' }); }); await snap(p, 'bnb-form');
 await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3500);
 log('prezzo inserito');
-const cg = await phone(b, 'it'), g = await cg.newPage(); g.on('pageerror', (e) => errs.push('ospite: ' + e.message));
+const cg = await phone(b, L), g = await cg.newPage(); g.on('pageerror', (e) => errs.push('ospite: ' + e.message));
 await g.goto('http://localhost:8765/hote.html'); await g.waitForTimeout(1200); await g.fill('input[name=code]', '440987'); await g.click('form button[type=submit]'); await g.waitForTimeout(3500);
 const t = await g.evaluate(() => document.body.innerText);
 // 4 notti × 90 + 40 + 3 × 1 × 4 = 412
@@ -26,8 +28,8 @@ assert(/Prezzo del soggiorno/i.test(t) && /412,00 €/.test(t), 'dettaglio e tot
 assert(await g.$('button[disabled]'), 'pulsante « Paga il pernottamento » disattivato');
 await g.click('[data-sejinfo]'); await g.waitForTimeout(300);
 assert(/non ancora collegato/.test(await g.evaluate(() => document.body.innerText)), 'info « non collegato »');
-await g.evaluate(() => { const h = [...document.querySelectorAll('h2')].find((x) => x.textContent.includes('Prezzo')); h.scrollIntoView(); });
-await g.screenshot({ path: new URL('./shots/bnb-prix.png', import.meta.url).pathname });
+await g.evaluate(() => document.querySelector('[data-sejinfo]').closest('.card').scrollIntoView());
+await snap(g, 'bnb-prix');
 log('ospite: prezzo + pulsante non collegato');
 console.log('ERRORS', errs.length ? errs : 'none');
 await b.close();
