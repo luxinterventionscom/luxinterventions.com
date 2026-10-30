@@ -16981,4 +16981,60 @@ export default [
 "Nouv. intervention",
 "Neuer Einsatz"
 ],
+[
+"sur place",
+"vor Ort"
+],
+[
+"loin du lieu",
+"nicht am Ort"
+],
+[
+"position reçue",
+"Standort erhalten"
+],
+[
+"lieu sans position",
+"Ort ohne Standort"
+],
+[
+"carte",
+"Karte"
+],
+[
+"📍 Position du lieu — contrôle de l’arrivée et du départ de l’équipe",
+"📍 Standort des Ortes — Kontrolle von Ankunft und Ende des Teams"
+],
+[
+"Pas encore de position.",
+"Noch kein Standort."
+],
+[
+"🔎 Chercher l’adresse (OpenStreetMap)",
+"🔎 Adresse suchen (OpenStreetMap)"
+],
+[
+"📍 Je suis sur place : enregistrer",
+"📍 Ich bin vor Ort: speichern"
+],
+[
+"Quand un ouvrier touche Arrivée / Départ, son app envoie sa position (seulement à ce moment) : vous voyez « ✅ sur place » (moins de 150 m) ou « ⚠️ à … km ». OpenStreetMap ne reçoit que l’adresse de l’immeuble.",
+"Wenn ein Arbeiter Ankunft / Ende antippt, sendet seine App den Standort (nur in diesem Moment): Sie sehen „✅ vor Ort“ (unter 150 m) oder „⚠️ nicht am Ort“. OpenStreetMap erhält nur die Adresse des Gebäudes."
+],
+[
+"Écrivez d’abord l’adresse",
+"Zuerst die Adresse eingeben"
+],
+[
+"Adresse introuvable sur OpenStreetMap : vérifiez-la, ou enregistrez la position sur place",
+"Adresse auf OpenStreetMap nicht gefunden: prüfen oder den Standort vor Ort speichern"
+],
+[
+"Position non disponible sur cet appareil",
+"Standort auf diesem Gerät nicht verfügbar"
+],
+[
+"Position refusée ou introuvable : autorisez la localisation pour ce site",
+"Standort abgelehnt oder nicht gefunden: Ortung für diese Seite erlauben"
+],
 ];
