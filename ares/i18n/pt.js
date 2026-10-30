@@ -16958,4 +16958,96 @@ export default [
 "Position refusée ou introuvable : autorisez la localisation pour ce site",
 "Localização recusada ou não encontrada: autorize a localização para este site"
 ],
+[
+"🔁 Routine chaque semaine",
+"🔁 Rotina semanal"
+],
+[
+"Son travail fixe, qui se répète chaque semaine : jour, heures et immeuble. Il/elle le voit dans son app avec l’itinéraire, et sa position à l’arrivée est comparée à cet immeuble.",
+"O trabalho fixo, que se repete todas as semanas: dia, horas e imóvel. Vê-o na sua app com o itinerário, e a localização à chegada é comparada com este imóvel."
+],
+[
+"✏️ Ajouter ou modifier des passages",
+"✏️ Adicionar ou alterar passagens"
+],
+[
+"➕ Créer la routine (jour, heures, immeuble)",
+"➕ Criar a rotina (dia, horas, imóvel)"
+],
+[
+"sans immeuble",
+"sem imóvel"
+],
+[
+"Pas encore de routine : sans routine, le jour, l’heure et le lieu se donnent à chaque travail (plus bas).",
+"Ainda sem rotina: sem rotina, o dia, a hora e o local dão-se em cada trabalho (mais abaixo)."
+],
+[
+"📅 Semaine par semaine (avec les dates)",
+"📅 Semana a semana (com as datas)"
+],
+[
+"Pour changer",
+"Para mudar"
+],
+[
+"une seule semaine",
+"uma só semana"
+],
+[
+"(congé, jour en plus, autre immeuble) : ✏️ Planifier cette semaine. Les autres semaines suivent la routine.",
+"(férias, dia a mais, outro imóvel): ✏️ Planear esta semana. As outras semanas seguem a rotina."
+],
+[
+"🧰 Travaux à part",
+"🧰 Trabalhos à parte"
+],
+[
+"📌 lui donner une demande déjà reçue (locataire, gérance) · 📅 un nouveau travail, une seule fois ou répété (Répétition : chaque semaine, toutes les 2 semaines, chaque mois).",
+"📌 dar-lhe um pedido já recebido (inquilino, gestora) · 📅 um trabalho novo, uma só vez ou repetido (Repetição: todas as semanas, de 2 em 2 semanas, todos os meses)."
+],
+[
+"🕒 Arrivées et départs, jour par jour",
+"🕒 Chegadas e saídas, dia a dia"
+],
+[
+"Semaine",
+"Semana"
+],
+[
+"départ manquant",
+"saída em falta"
+],
+[
+"⚠️ hors du lieu",
+"⚠️ fora do local"
+],
+[
+"Aucune arrivée ni départ cette semaine.",
+"Nenhuma chegada nem saída esta semana."
+],
+[
+"prévu dans l’horaire",
+"previsto no horário"
+],
+[
+"lieu inconnu (pas de position, rien dans l’horaire)",
+"local desconhecido (sem localização, nada no horário)"
+],
+[
+"📋 Autres nouvelles de son app",
+"📋 Outras notícias da app"
+],
+[
+"Arrivées et départs des autres jours, groupés par jour avec les heures : fiche de la personne → Activité.",
+"Chegadas e saídas dos outros dias, agrupadas por dia com as horas: ficha da pessoa → Atividade."
+],
+[
+"Retirer ce passage de la routine ?",
+"Retirar esta passagem da rotina?"
+],
+[
+"Passage retiré",
+"Passagem retirada"
+],
 ];

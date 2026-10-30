@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.206.0';
+const VERSION = '2.207.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -773,11 +773,15 @@ async function equipeInbox(w, msg) {
         if (!arr && !dep) continue;
         cur = vault.get('intervenants', w.id);
         const pres = { ...(cur.pres || {}) };
-        const gi = geoIn(it.geo), g = gi ? { ...gi, ...geoNear(gi, horsOn(cur, d).map((h) => h.immId)) } : null;
+        const prevu = horsOn(cur, d).map((h) => h.immId).filter(Boolean);
+        const gi = geoIn(it.geo), g = gi ? { ...gi, ...geoNear(gi, prevu.length ? prevu : vault.list('immeubles').map((x) => x.id)) } : null;
+        const pass = { ...(cur.pass || {}) };
+        pass[d] = passAdd(pass[d] || passDays(cur)[d] || [], arr ? 'arr' : 'dep', arr || dep, g);
+        for (const k of Object.keys(pass).sort().slice(0, -400)) delete pass[k];
         pres[d] = { ...(pres[d] || {}), ...(arr ? { arr } : {}), ...(dep ? { dep } : {}), ...(g ? { [arr ? 'arrGeo' : 'depGeo']: g } : {}) };
         for (const k of Object.keys(pres).sort().slice(0, -60)) delete pres[k];
-        tx.put('intervenants', { id: w.id, pres });
-        feed.push({ at, k: 'pres', d, note: arr ? `🟢 Arrivée ${arr}` : `🔴 Départ ${dep}`, ...(g ? { geo: g } : {}) });
+        tx.put('intervenants', { id: w.id, pres, pass });
+        feed.push({ at, k: 'pres', d, note: arr ? `🟢 Arrivée ${arr}` : `🔴 Départ ${dep}`, ...(arr ? { arr } : { dep }), ...(g ? { geo: g } : {}) });
         fresh++;
       } else if (it.k === 'pb') {
         // « Quelque chose ne va pas » : devient une intervention à faire, avec les photos
@@ -884,10 +888,47 @@ async function ptlFromTeam(w, msg) {
   }
   if (ui.ptl) ui.ptl.data = null;
 }
-// Journal de l'équipe (toutes les personnes, ou une seule), le plus récent d'abord
-function eqFeedHtml(onlyId, max = 80) {
+// 🕒 Passages (arrivée → départ) de chaque jour : enregistrés à la réception (i.pass), sinon reconstruits depuis l'activité
+const hm2m = (v) => (/^\d\d:\d\d$/.test(v || '') ? +v.slice(0, 2) * 60 + +v.slice(3) : null);
+function passAdd(list, k, h, g) {
+  const L = list.map((x) => ({ ...x }));
+  if (k === 'arr') L.push({ arr: h, ...(g ? { arrGeo: g } : {}) });
+  else { const o = [...L].reverse().find((x) => x.arr && !x.dep); if (o) { o.dep = h; if (g) o.depGeo = g; } else L.push({ dep: h, ...(g ? { depGeo: g } : {}) }); }
+  return L;
+}
+function passDays(i) {
+  const out = {};
+  for (const f of [...(i.feedArch || []), ...(i.feed || [])].filter((x) => x.k === 'pres' && x.d).sort((a, b) => (a.at || '').localeCompare(b.at || ''))) {
+    const m = String(f.note || '').match(/(\d\d:\d\d)\s*$/), k = f.arr ? 'arr' : f.dep ? 'dep' : /🟢/.test(f.note || '') ? 'arr' : 'dep', h = f.arr || f.dep || (m && m[1]);
+    if (h) out[f.d] = passAdd(out[f.d] || [], k, h, f.geo);
+  }
+  return { ...out, ...(i.pass || {}) };
+}
+const passMin = (p) => { const a = hm2m(p.arr), b = hm2m(p.dep); return a != null && b != null && b > a ? b - a : 0; };
+const dayMin = (L) => sum(L || [], passMin);
+// où : la position (si envoyée), sinon l'immeuble prévu à cette heure dans son horaire
+function passPlace(i, d, p) {
+  const g = p.arrGeo || p.depGeo;
+  if (g) return html`${p.arrGeo && p.depGeo ? html`🟢 ${geoTxt(p.arrGeo)}<br>🔴 ${geoTxt(p.depGeo)}` : geoTxt(g)}`;
+  const t = hm2m(p.arr || p.dep), slot = horsOn(i, d).find((h) => h.immId && t != null && hm2m(h.de) - 30 <= t && t <= hm2m(h.a));
+  return slot ? html`📍 ${immName(slot.immId)} <span class="muted">(<span>prévu dans l’horaire</span>)</span>` : html`<span class="muted">📍 <span>lieu inconnu (pas de position, rien dans l’horaire)</span></span>`;
+}
+function presHtml(i) {
+  const off = (ui.presOff || {})[i.id] || 0, mon = addDays(mondayOf(today()), off * 7), days = passDays(i);
+  const wk = [0, 1, 2, 3, 4, 5, 6].map((j) => addDays(mon, j)).filter((d) => (days[d] || []).length);
+  const tot = (ds) => fmtH(sum(ds, (d) => dayMin(days[d])) / 60);
+  const ym = mon.slice(0, 7), md = Object.keys(days).filter((d) => d.startsWith(ym));
+  return html`<div class="section-label">🕒 Arrivées et départs, jour par jour</div>
+    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button class="btn sm" data-action="pres-wk" data-id="${i.id}" data-d="-1" aria-label="Semaine précédente">◀</button>
+      <b class="grow" style="text-align:center">Semaine du ${dayShort(mon)} au ${dayShort(addDays(mon, 6))}</b><button class="btn sm" data-action="pres-wk" data-id="${i.id}" data-d="1" aria-label="Semaine suivante">▶</button></div>
+    <p class="small" style="margin:0 0 8px"><span>Semaine</span> : <b>${tot(wk)}</b> · ${MONTHS_FULL[+ym.slice(5) - 1]} : <b>${tot(md)}</b></p>
+    ${wk.length ? html`<div class="stack" style="gap:6px;margin-bottom:12px">${wk.slice().reverse().map((d) => { const L = days[d]; return html`<details class="card" style="padding:8px 12px" ${d === today() || wk.length === 1 ? new Raw('open') : ''}><summary><b>${dowOfIso(d)} ${dayShort(d)}</b> · ${plural(L.length, 'passage')} · <b>${fmtH(dayMin(L) / 60)}</b>${L.some((p) => !p.dep) ? html` <span class="badge warn">départ manquant</span>` : ''}${L.some((p) => [p.arrGeo, p.depGeo].some((g) => g && g.m != null && g.m > GEO_OK)) ? html` <span class="badge bad">⚠️ hors du lieu</span>` : ''}</summary>
+      <div class="list small" style="margin-top:6px">${L.map((p) => html`<div class="row" style="display:block"><b>🟢 ${p.arr || '—'} → 🔴 ${p.dep || '—'}</b>${passMin(p) ? html` · ${fmtH(passMin(p) / 60)}` : ''}<span class="small" style="display:block;margin-top:2px">${passPlace(i, d, p)}</span></div>`)}</div></details>`; })}</div>` : html`<p class="small muted">Aucune arrivée ni départ cette semaine.</p>`}`;
+}
+// Journal de l'équipe (toutes les personnes, ou une seule), le plus récent d'abord ; noPres : sans les arrivées / départs (groupés à part)
+function eqFeedHtml(onlyId, max = 80, noPres = false) {
   const rows = [];
-  for (const i of vault.list('intervenants')) if (!onlyId || i.id === onlyId) for (const f of i.feed || []) rows.push([i, f]);
+  for (const i of vault.list('intervenants')) if (!onlyId || i.id === onlyId) for (const f of i.feed || []) if (!noPres || f.k !== 'pres') rows.push([i, f]);
   rows.sort((a, b) => (b[1].at || '').localeCompare(a[1].at || ''));
   if (!rows.length) return html`<p class="small muted">Rien pour le moment. Ce que l’équipe envoie depuis son app (commencé, fini, pas fini, notes, photos, maladie) arrive ici.</p>`;
   return html`<div class="list small">${rows.slice(0, max).map(([i, f]) => {
@@ -915,7 +956,7 @@ function eqTodayHtml() {
       return html`<div class="row"><button class="grow" data-action="edit-tache" data-id="${t.id}" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0;white-space:normal">${miniW(i)}<b>${intervFull(i)}</b> — ${tacheIcon(t.type)} ${t.titre}<span class="meta" style="display:block">📍 ${placeName(t)}${st && st.note ? ' · 📝 ' + st.note : ''}</span></button>
         <span class="badge ${st ? (st.st === 'fait' ? 'ok' : st.st === 'incomplet' ? 'bad' : 'warn') : ''}">${st ? EQ_ST[st.st] + ' ' + (st.h || (st.at || '').slice(11, 16)) : absOn(i, d0) ? '🤒 absent' : '⏳ pas encore'}</span>${swap ? html`<button class="btn sm" data-action="eq-swap" data-id="${t.id}" title="Changer d’ouvrier" aria-label="Changer d’ouvrier">🔄</button>` : ''}</div>`;
     })}
-    ${pointes.map((i) => { const p = i.pres[d0]; return html`<div class="row"><span class="grow">${miniW(i)}<b>${intervFull(i)}</b> — 🕒 <span>Arrivée</span> <b>${p.arr || '—'}</b> · <span>Départ</span> <b>${p.dep || '—'}</b>${[['🟢', p.arrGeo], ['🔴', p.depGeo]].filter(([, g]) => g).map(([k, g]) => html`<span class="small" style="display:block">${k} ${geoTxt(g)}</span>`)}</span></div>`; })}
+    ${pointes.map((i) => { const L = passDays(i)[d0] || []; return html`<button class="row" data-action="open-interv" data-id="${i.id}" style="text-align:left"><span class="grow" style="white-space:normal">${miniW(i)}<b>${intervFull(i)}</b> — ${plural(L.length, 'passage')} · ${fmtH(dayMin(L) / 60)}${L.map((p) => html`<span class="small" style="display:block">🟢 ${p.arr || '—'} → 🔴 ${p.dep || '—'} · ${passPlace(i, d0, p)}</span>`)}</span></button>`; })}
     ${absent.filter((i) => !its.some((x) => x.t.intervenantId === i.id)).map((i) => html`<div class="row"><span class="grow"><b>${intervFull(i)}</b> — ${ABS_TYPES[absOn(i, d0).type]}</span></div>`)}</div></div>`;
 }
 
@@ -6140,7 +6181,7 @@ const SHEETS = {
     };
   },
   'eq-feed'() {
-    return { title: 'Activité de l’équipe', body: html`${eqTodayHtml()}${eqFeedHtml('', 150)}`, foot: html`<button class="btn primary" data-action="close-sheet">OK</button>` };
+    return { title: 'Activité de l’équipe', body: html`${eqTodayHtml()}<p class="tiny muted" style="margin:0 0 8px">Arrivées et départs des autres jours, groupés par jour avec les heures : fiche de la personne → Activité.</p>${eqFeedHtml('', 150, true)}`, foot: html`<button class="btn primary" data-action="close-sheet">OK</button>` };
   },
   // Travail daté d'une personne (hors horaire habituel) : en retard, aujourd'hui, à venir
   // Fiche d'une personne : infos · horaire et heures du mois · absences (maladie avec certificat, congés…)
@@ -6205,10 +6246,16 @@ const SHEETS = {
           <div class="actions" style="margin-top:8px"><button class="btn primary" data-action="plan-edit" data-id="${id}" data-d="${mon}">✏️ Planifier cette semaine</button>
             ${wkDays.some((iso) => i.plan && i.plan[iso]) ? html`<button class="btn ghost" data-action="plan-reset" data-id="${id}" data-d="${mon}">↩️ Revenir à l’horaire habituel</button>` : ''}</div>
           <p class="tiny muted" style="margin:6px 0 0">Les jours sans modification suivent l’horaire habituel (plus bas). La personne voit ce planning, avec les dates, dans son app.</p></div>`;
-      body = html`${jobBtn}${jobList}${horFixed(i) || hs.length ? html`${planHtml}<div class="section-label">🔁 Routine chaque semaine</div>
-        <button class="btn block" data-action="hor-std" data-id="${id}" style="margin-bottom:8px">✏️ ${hs.length ? 'Modifier la routine' : 'Créer la routine (ménage, contrôles…)'}</button>
-        ${hs.length ? html`<div class="list small">${hs.map((h) => html`<div class="row"><span class="grow"><b>${SEMAINE[h.j]}</b> <span>${HOR_P[horP(h)]}</span> ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : ''}</span><span class="meta">${fmtH(dayHours({ horaires: [h] }, h.j))}</span></div>`)}</div>
-          <p class="tiny muted">Total par semaine : <b>${fmtH([0, 1, 2, 3, 4, 5, 6].reduce((n, j) => n + dayHours(i, j), 0))}</b></p>` : html`<p class="small muted">Pas encore de routine.</p>`}` : html`<p class="small muted">Pas de routine pour cette personne : le jour, l’heure et le lieu se donnent à chaque travail (📌 Affectation / 📅 Autre travail).</p>`}
+      body = html`<div class="section-label">🔁 Routine chaque semaine</div>
+        <p class="small muted" style="margin:0 0 8px">Son travail fixe, qui se répète chaque semaine : jour, heures et immeuble. Il/elle le voit dans son app avec l’itinéraire, et sa position à l’arrivée est comparée à cet immeuble.</p>
+        <button class="btn primary block" data-action="hor-std" data-id="${id}" style="margin-bottom:8px">${hs.length ? '✏️ Ajouter ou modifier des passages' : '➕ Créer la routine (jour, heures, immeuble)'}</button>
+        ${hs.length ? html`<div class="list small">${hs.map((h, n) => html`<div class="row"><span class="grow"><b>${SEMAINE[h.j]}</b> <span>${HOR_P[horP(h)]}</span> ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : html` · <span class="badge warn">sans immeuble</span>`}</span><span class="meta">${fmtH(dayHours({ horaires: [h] }, h.j))}</span><button class="btn sm ghost danger" data-action="hor-del" data-id="${id}" data-n="${n}" aria-label="Retirer">🗑️</button></div>`)}</div>
+          <p class="tiny muted">Total par semaine : <b>${fmtH([0, 1, 2, 3, 4, 5, 6].reduce((n, j) => n + dayHours(i, j), 0))}</b></p>` : html`<p class="small muted">Pas encore de routine${horFixed(i) ? '' : ' : sans routine, le jour, l’heure et le lieu se donnent à chaque travail (plus bas)'}.</p>`}
+        ${horFixed(i) || hs.length ? html`<div class="section-label">📅 Semaine par semaine (avec les dates)</div>
+        <p class="small muted" style="margin:0 0 8px">Pour changer <b>une seule semaine</b> (congé, jour en plus, autre immeuble) : ✏️ Planifier cette semaine. Les autres semaines suivent la routine.</p>${planHtml}` : ''}
+        <div class="section-label">🧰 Travaux à part</div>
+        <p class="small muted" style="margin:0 0 8px">📌 lui donner une demande déjà reçue (locataire, gérance) · 📅 un nouveau travail, une seule fois ou répété (Répétition : chaque semaine, toutes les 2 semaines, chaque mois).</p>
+        ${jobBtn}${jobList}
         <div class="section-label">Heures par mois (horaire − absences)</div>
         <div class="list small">${months.map(([yy, mm]) => { const r = intervMonth(i, yy, mm); return html`<div class="row"><span class="grow"><b>${MONTHS_FULL[mm - 1]} ${yy}</b><span class="meta" style="display:block">prévu ${fmtH(r.prevu)}${r.jm ? ` · 🤒 ${r.jm} j (−${fmtH(r.maladie)})` : ''}${r.jc ? ` · 🏖️ ${r.jc} j (−${fmtH(r.conges)})` : ''}${r.ja ? ` · 📌 ${r.ja} j (−${fmtH(r.autre)})` : ''}</span></span><b>${fmtH(r.net)}</b></div>`; })}</div>
         <p class="tiny muted">Calcul sur l’horaire habituel : pour les heures en plus ou en moins, ajoutez une note.</p>`;
@@ -6217,7 +6264,7 @@ const SHEETS = {
       body = eqChatHtml(i);
     } else if (tab === 'act') {
       if (i.feedNew) setTimeout(() => vault.mutate((tx) => tx.put('intervenants', { id: i.id, feedNew: 0 }), 'Activité lue', intervFull(i), i.id), 0);
-      body = eqFeedHtml(id, 120);
+      body = html`${presHtml(i)}<div class="section-label">📋 Autres nouvelles de son app</div>${eqFeedHtml(id, 120, true)}`;
     } else if (tab === 'app') {
       const e = i.espace || {};
       if (!e.on) {
@@ -7996,6 +8043,15 @@ const ACTIONS = {
   'edit-interv': (d) => openOver('interv-form', d.id),
   'plan-wk': (d) => { ui.planWk ||= {}; const cur = ui.planWk[d.id] || mondayOf(today()); ui.planWk[d.id] = addDays(cur, +d.d); ui.sheet.rendered = false; renderSheet(); },
   'hor-std': (d) => openOver('hor-std', d.id),
+  'pres-wk'(d) { ui.presOff = { ...(ui.presOff || {}), [d.id]: ((ui.presOff || {})[d.id] || 0) + (+d.d || 0) }; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } else renderView(); },
+  async 'hor-del'(d) {
+    const i = vault.get('intervenants', d.id);
+    if (!i) return;
+    const hs = hors(i).slice().sort((a, b) => a.j - b.j || (a.de || '').localeCompare(b.de || '')), h = hs[+d.n];
+    if (!h || !(await confirmBox('Retirer ce passage de la routine ?', { ok: 'Retirer', danger: true, detail: `${SEMAINE[h.j]} ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : ''} — les semaines suivantes ne l’auront plus` }))) return;
+    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, horaires: (i.horaires || []).filter((x) => x !== h && !(x.j === h.j && x.de === h.de && x.a === h.a && (x.immId || '') === (h.immId || ''))) }), 'Routine : passage retiré', `${intervFull(i)} — ${SEMAINE[h.j]} ${h.de}–${h.a}`, i.id);
+    toast('Passage retiré');
+  },
   'plan-edit': (d) => openOver('plan-week', d.id, null, d.d),
   'fact-set': () => openOver('fact-set'),
   'fact-open': (d) => openOver('facture', d.id),

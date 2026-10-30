@@ -17037,4 +17037,96 @@ export default [
 "Position refusée ou introuvable : autorisez la localisation pour ce site",
 "Standort abgelehnt oder nicht gefunden: Ortung für diese Seite erlauben"
 ],
+[
+"🔁 Routine chaque semaine",
+"🔁 Wöchentliche Routine"
+],
+[
+"Son travail fixe, qui se répète chaque semaine : jour, heures et immeuble. Il/elle le voit dans son app avec l’itinéraire, et sa position à l’arrivée est comparée à cet immeuble.",
+"Die feste Arbeit, die sich jede Woche wiederholt: Tag, Uhrzeiten und Gebäude. Die Person sieht sie in ihrer App mit Route, und ihr Standort bei der Ankunft wird mit diesem Gebäude verglichen."
+],
+[
+"✏️ Ajouter ou modifier des passages",
+"✏️ Einsätze hinzufügen oder ändern"
+],
+[
+"➕ Créer la routine (jour, heures, immeuble)",
+"➕ Routine anlegen (Tag, Uhrzeiten, Gebäude)"
+],
+[
+"sans immeuble",
+"ohne Gebäude"
+],
+[
+"Pas encore de routine : sans routine, le jour, l’heure et le lieu se donnent à chaque travail (plus bas).",
+"Noch keine Routine: ohne Routine werden Tag, Uhrzeit und Ort bei jedem Auftrag angegeben (weiter unten)."
+],
+[
+"📅 Semaine par semaine (avec les dates)",
+"📅 Woche für Woche (mit Datum)"
+],
+[
+"Pour changer",
+"Um"
+],
+[
+"une seule semaine",
+"nur eine Woche zu ändern"
+],
+[
+"(congé, jour en plus, autre immeuble) : ✏️ Planifier cette semaine. Les autres semaines suivent la routine.",
+"(Urlaub, zusätzlicher Tag, anderes Gebäude): ✏️ Diese Woche planen. Die anderen Wochen folgen der Routine."
+],
+[
+"🧰 Travaux à part",
+"🧰 Einzelne Aufträge"
+],
+[
+"📌 lui donner une demande déjà reçue (locataire, gérance) · 📅 un nouveau travail, une seule fois ou répété (Répétition : chaque semaine, toutes les 2 semaines, chaque mois).",
+"📌 eine bereits erhaltene Anfrage zuweisen (Mieter, Verwaltung) · 📅 ein neuer Auftrag, einmalig oder wiederholt (Wiederholung: jede Woche, alle 2 Wochen, jeden Monat)."
+],
+[
+"🕒 Arrivées et départs, jour par jour",
+"🕒 Ankünfte und Abfahrten, Tag für Tag"
+],
+[
+"Semaine",
+"Woche"
+],
+[
+"départ manquant",
+"Abfahrt fehlt"
+],
+[
+"⚠️ hors du lieu",
+"⚠️ nicht am Ort"
+],
+[
+"Aucune arrivée ni départ cette semaine.",
+"Keine Ankunft und keine Abfahrt diese Woche."
+],
+[
+"prévu dans l’horaire",
+"laut Plan"
+],
+[
+"lieu inconnu (pas de position, rien dans l’horaire)",
+"Ort unbekannt (kein Standort, nichts im Plan)"
+],
+[
+"📋 Autres nouvelles de son app",
+"📋 Weitere Neuigkeiten aus der App"
+],
+[
+"Arrivées et départs des autres jours, groupés par jour avec les heures : fiche de la personne → Activité.",
+"Ankünfte und Abfahrten der anderen Tage, nach Tag gruppiert mit Stunden: Karte der Person → Aktivität."
+],
+[
+"Retirer ce passage de la routine ?",
+"Diesen Einsatz aus der Routine entfernen?"
+],
+[
+"Passage retiré",
+"Einsatz entfernt"
+],
 ];
