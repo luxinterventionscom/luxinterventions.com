@@ -16779,4 +16779,96 @@ export default [
 "Position refusée ou introuvable : autorisez la localisation pour ce site",
 "Location refused or not found: allow location for this site"
 ],
+[
+"🔁 Routine chaque semaine",
+"🔁 Weekly routine"
+],
+[
+"Son travail fixe, qui se répète chaque semaine : jour, heures et immeuble. Il/elle le voit dans son app avec l’itinéraire, et sa position à l’arrivée est comparée à cet immeuble.",
+"Their fixed work, repeated every week: day, hours and building. They see it in their app with directions, and their location on arrival is compared with this building."
+],
+[
+"✏️ Ajouter ou modifier des passages",
+"✏️ Add or change visits"
+],
+[
+"➕ Créer la routine (jour, heures, immeuble)",
+"➕ Create the routine (day, hours, building)"
+],
+[
+"sans immeuble",
+"no building"
+],
+[
+"Pas encore de routine : sans routine, le jour, l’heure et le lieu se donnent à chaque travail (plus bas).",
+"No routine yet: without a routine, day, time and place are given with each job (below)."
+],
+[
+"📅 Semaine par semaine (avec les dates)",
+"📅 Week by week (with dates)"
+],
+[
+"Pour changer",
+"To change"
+],
+[
+"une seule semaine",
+"just one week"
+],
+[
+"(congé, jour en plus, autre immeuble) : ✏️ Planifier cette semaine. Les autres semaines suivent la routine.",
+"(holiday, extra day, other building): ✏️ Plan this week. The other weeks follow the routine."
+],
+[
+"🧰 Travaux à part",
+"🧰 Separate jobs"
+],
+[
+"📌 lui donner une demande déjà reçue (locataire, gérance) · 📅 un nouveau travail, une seule fois ou répété (Répétition : chaque semaine, toutes les 2 semaines, chaque mois).",
+"📌 give them a request already received (tenant, manager) · 📅 a new job, once or repeated (Repeat: every week, every 2 weeks, every month)."
+],
+[
+"🕒 Arrivées et départs, jour par jour",
+"🕒 Arrivals and departures, day by day"
+],
+[
+"Semaine",
+"Week"
+],
+[
+"départ manquant",
+"departure missing"
+],
+[
+"⚠️ hors du lieu",
+"⚠️ off site"
+],
+[
+"Aucune arrivée ni départ cette semaine.",
+"No arrivals or departures this week."
+],
+[
+"prévu dans l’horaire",
+"planned in the schedule"
+],
+[
+"lieu inconnu (pas de position, rien dans l’horaire)",
+"place unknown (no location, nothing in the schedule)"
+],
+[
+"📋 Autres nouvelles de son app",
+"📋 Other news from their app"
+],
+[
+"Arrivées et départs des autres jours, groupés par jour avec les heures : fiche de la personne → Activité.",
+"Arrivals and departures on other days, grouped by day with the hours: person’s card → Activity."
+],
+[
+"Retirer ce passage de la routine ?",
+"Remove this visit from the routine?"
+],
+[
+"Passage retiré",
+"Visit removed"
+],
 ];
