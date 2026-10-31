@@ -17207,4 +17207,36 @@ export default [
 "Message privé impossible : l’app de cet habitant n’est pas active.",
 "Mensaje privado imposible: la app de este habitante no está activa."
 ],
+[
+"⚠️ ATTENTION",
+"⚠️ ATENCIÓN"
+],
+[
+"Ce qui est coché disparaît des listes, des statistiques et des apps de l’équipe et des locataires. Rien n’est effacé : « 👁 Voir les archives » le montre à nouveau.",
+"Lo marcado desaparece de las listas, de las estadísticas y de las apps del equipo y de los inquilinos. No se borra nada: «👁 Ver los archivos» lo muestra de nuevo."
+],
+[
+"La numérotation des factures et des devis repart de 0001. À faire seulement en début d’année ou après les tests : sinon deux factures risquent d’avoir le même numéro.",
+"La numeración de facturas y presupuestos vuelve a 0001. Hacerlo solo a principio de año o tras las pruebas: si no, dos facturas pueden tener el mismo número."
+],
+[
+"Si vous cochez « 🧾 Factures et devis », la numérotation repart de 0001 : à faire seulement en début d’année ou après les tests, sinon deux factures risquent d’avoir le même numéro.",
+"Si marca «🧾 Facturas y presupuestos», la numeración vuelve a 0001: solo a principio de año o tras las pruebas, si no, dos facturas pueden tener el mismo número."
+],
+[
+"⚠️ La numérotation repart de 0001 (prochaine facture {0}-INT0001)",
+"⚠️ La numeración vuelve a 0001 (próxima factura {0}-INT0001)"
+],
+[
+"⚠️ La numérotation repart de 0001 (prochaine facture {0})",
+"⚠️ La numeración vuelve a 0001 (próxima factura {0})"
+],
+[
+"{0} en tout — signalements, demandes des gérances, travaux, avec leurs photos et factures (les ménages réguliers restent)",
+"{0} en total — avisos, solicitudes de las administraciones, trabajos, con sus fotos y facturas (las limpiezas regulares se quedan)"
+],
+[
+"{0} en tout",
+"{0} en total"
+],
 ];

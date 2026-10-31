@@ -16955,4 +16955,36 @@ export default [
 "Message privé impossible : l’app de cet habitant n’est pas active.",
 "Private message not possible: this resident’s app is not active."
 ],
+[
+"⚠️ ATTENTION",
+"⚠️ WARNING"
+],
+[
+"Ce qui est coché disparaît des listes, des statistiques et des apps de l’équipe et des locataires. Rien n’est effacé : « 👁 Voir les archives » le montre à nouveau.",
+"What is ticked disappears from the lists, the statistics and the team and tenant apps. Nothing is deleted: “👁 Show archives” shows it again."
+],
+[
+"La numérotation des factures et des devis repart de 0001. À faire seulement en début d’année ou après les tests : sinon deux factures risquent d’avoir le même numéro.",
+"Invoice and quote numbering restarts at 0001. Only do this at the start of the year or after testing: otherwise two invoices may get the same number."
+],
+[
+"Si vous cochez « 🧾 Factures et devis », la numérotation repart de 0001 : à faire seulement en début d’année ou après les tests, sinon deux factures risquent d’avoir le même numéro.",
+"If you tick “🧾 Invoices and quotes”, numbering restarts at 0001: only at the start of the year or after testing, otherwise two invoices may get the same number."
+],
+[
+"⚠️ La numérotation repart de 0001 (prochaine facture {0}-INT0001)",
+"⚠️ Numbering restarts at 0001 (next invoice {0}-INT0001)"
+],
+[
+"⚠️ La numérotation repart de 0001 (prochaine facture {0})",
+"⚠️ Numbering restarts at 0001 (next invoice {0})"
+],
+[
+"{0} en tout — signalements, demandes des gérances, travaux, avec leurs photos et factures (les ménages réguliers restent)",
+"{0} in total — reports, property manager requests, jobs, with their photos and invoices (regular cleaning stays)"
+],
+[
+"{0} en tout",
+"{0} in total"
+],
 ];

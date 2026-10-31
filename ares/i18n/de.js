@@ -17213,4 +17213,36 @@ export default [
 "Message privé impossible : l’app de cet habitant n’est pas active.",
 "Private Nachricht nicht möglich: Die App dieses Bewohners ist nicht aktiv."
 ],
+[
+"⚠️ ATTENTION",
+"⚠️ ACHTUNG"
+],
+[
+"Ce qui est coché disparaît des listes, des statistiques et des apps de l’équipe et des locataires. Rien n’est effacé : « 👁 Voir les archives » le montre à nouveau.",
+"Was angekreuzt ist, verschwindet aus den Listen, den Statistiken und den Apps des Teams und der Mieter. Nichts wird gelöscht: „👁 Archiv anzeigen“ zeigt es wieder."
+],
+[
+"La numérotation des factures et des devis repart de 0001. À faire seulement en début d’année ou après les tests : sinon deux factures risquent d’avoir le même numéro.",
+"Die Nummerierung der Rechnungen und Angebote beginnt wieder bei 0001. Nur zu Jahresbeginn oder nach den Tests: sonst können zwei Rechnungen dieselbe Nummer haben."
+],
+[
+"Si vous cochez « 🧾 Factures et devis », la numérotation repart de 0001 : à faire seulement en début d’année ou après les tests, sinon deux factures risquent d’avoir le même numéro.",
+"Wenn Sie „🧾 Rechnungen und Angebote“ ankreuzen, beginnt die Nummerierung wieder bei 0001: nur zu Jahresbeginn oder nach den Tests, sonst können zwei Rechnungen dieselbe Nummer haben."
+],
+[
+"⚠️ La numérotation repart de 0001 (prochaine facture {0}-INT0001)",
+"⚠️ Die Nummerierung beginnt wieder bei 0001 (nächste Rechnung {0}-INT0001)"
+],
+[
+"⚠️ La numérotation repart de 0001 (prochaine facture {0})",
+"⚠️ Die Nummerierung beginnt wieder bei 0001 (nächste Rechnung {0})"
+],
+[
+"{0} en tout — signalements, demandes des gérances, travaux, avec leurs photos et factures (les ménages réguliers restent)",
+"{0} insgesamt — Meldungen, Anfragen der Verwaltungen, Arbeiten, mit Fotos und Rechnungen (regelmäßige Reinigungen bleiben)"
+],
+[
+"{0} en tout",
+"{0} insgesamt"
+],
 ];
