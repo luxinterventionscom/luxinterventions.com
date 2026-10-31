@@ -819,7 +819,7 @@ function render() {
     if (old) return v.append(old);
     const f = document.createElement('iframe');
     f.src = src; f.dataset.src = src; f.loading = 'lazy'; f.title = 'Video';
-    f.allow = 'encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true; f.referrerPolicy = 'strict-origin-when-cross-origin';
+    f.allow = 'encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share'; f.allowFullscreen = true; f.referrerPolicy = 'strict-origin-when-cross-origin';
     v.append(f);
   });
   pubSeen(app);

@@ -327,7 +327,7 @@ function render() {
     const src = v.dataset.vsrc, old = keep.get(src);
     if (old) return v.append(old);
     const f = document.createElement('iframe');
-    f.src = src; f.dataset.src = src; f.loading = 'lazy'; f.title = 'Video'; f.allow = 'encrypted-media; picture-in-picture; fullscreen'; f.allowFullscreen = true;
+    f.src = src; f.dataset.src = src; f.loading = 'lazy'; f.title = 'Video'; f.allow = 'encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share'; f.allowFullscreen = true;
     v.append(f);
   });
   hydrate();
