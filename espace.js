@@ -3,7 +3,8 @@
 import '/ares/reqmark.js';
 import qrcode from '/ares/qrcode.js';
 import { binPlan } from '/ares/binplan.js';
-import { openJson, sealJson, openBytes, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
+import { openJson, sealJson, openBytes, sealForOwner, codeHash, unwrapWithCode, b64u, unb64u } from '/ares/espace-crypto.js';
+import { chatResolve, chatOpen, editable, tick, newMsgId } from '/ares/chatops.js';
 
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
@@ -37,6 +38,16 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 const app = document.getElementById('app');
 
 // Annexes comprises avec le logement, type de maison, fil avec le gestionnaire (personne seule)
+// Messages privés 🔒, modifier / supprimer (15 min), accusés de lecture
+const CX = {
+  fr: { priv: '🔒 Privé — seulement pour la centrale', tag: '🔒 privé', edited: 'modifié', menu: 'Options du message', edit: '✏️ Modifier', mkPriv: '🔒 Rendre privé', mkPub: '🔓 Rendre public', del: '🗑️ Supprimer', delQ: 'Supprimer ce message ?', editing: '✏️ Vous modifiez votre message', cancel: 'Annuler', late: 'Plus possible : 15 minutes sont passées.', ticks: '✓ envoyé · ✓✓ arrivé à la centrale · ✓✓ bleu : lu par la centrale' },
+  it: { priv: '🔒 Privato — solo per la centrale', tag: '🔒 privato', edited: 'modificato', menu: 'Opzioni del messaggio', edit: '✏️ Modifica', mkPriv: '🔒 Rendi privato', mkPub: '🔓 Rendi pubblico', del: '🗑️ Elimina', delQ: 'Eliminare questo messaggio?', editing: '✏️ Stai modificando il tuo messaggio', cancel: 'Annulla', late: 'Non più possibile: sono passati 15 minuti.', ticks: '✓ inviato · ✓✓ arrivato alla centrale · ✓✓ blu: letto dalla centrale' },
+  de: { priv: '🔒 Privat — nur für die Zentrale', tag: '🔒 privat', edited: 'bearbeitet', menu: 'Nachrichtenoptionen', edit: '✏️ Bearbeiten', mkPriv: '🔒 Privat machen', mkPub: '🔓 Öffentlich machen', del: '🗑️ Löschen', delQ: 'Diese Nachricht löschen?', editing: '✏️ Sie bearbeiten Ihre Nachricht', cancel: 'Abbrechen', late: 'Nicht mehr möglich: 15 Minuten sind vorbei.', ticks: '✓ gesendet · ✓✓ bei der Zentrale angekommen · ✓✓ blau: von der Zentrale gelesen' },
+  pt: { priv: '🔒 Privado — só para a central', tag: '🔒 privado', edited: 'editado', menu: 'Opções da mensagem', edit: '✏️ Editar', mkPriv: '🔒 Tornar privado', mkPub: '🔓 Tornar público', del: '🗑️ Apagar', delQ: 'Apagar esta mensagem?', editing: '✏️ Está a editar a sua mensagem', cancel: 'Cancelar', late: 'Já não é possível: passaram 15 minutos.', ticks: '✓ enviada · ✓✓ chegou à central · ✓✓ azul: lida pela central' },
+  en: { priv: '🔒 Private — only for the office', tag: '🔒 private', edited: 'edited', menu: 'Message options', edit: '✏️ Edit', mkPriv: '🔒 Make private', mkPub: '🔓 Make public', del: '🗑️ Delete', delQ: 'Delete this message?', editing: '✏️ You are editing your message', cancel: 'Cancel', late: 'No longer possible: 15 minutes have passed.', ticks: '✓ sent · ✓✓ reached the office · ✓✓ blue: read by the office' },
+  es: { priv: '🔒 Privado — solo para la central', tag: '🔒 privado', edited: 'editado', menu: 'Opciones del mensaje', edit: '✏️ Editar', mkPriv: '🔒 Hacer privado', mkPub: '🔓 Hacer público', del: '🗑️ Eliminar', delQ: '¿Eliminar este mensaje?', editing: '✏️ Estás editando tu mensaje', cancel: 'Cancelar', late: 'Ya no es posible: han pasado 15 minutos.', ticks: '✓ enviado · ✓✓ llegó a la central · ✓✓ azul: leído por la central' },
+};
+const cx = () => CX[lang] || CX.fr;
 const AX = {
   fr: { wx: { pl: 'lecteur officiel', t: 'Météo', r: 'Radio', now: 'Maintenant', change: 'Changer de radio', ph: 'Collez le lien de votre radio (site ou flux audio)', save: 'Enregistrer', back: 'Revenir à', on: 'en écoute', site: 'Ouvrir le site de la radio', none: 'Météo indisponible pour le moment.', ext: 'Cette radio s’ouvre sur son site.' }, newMsg: (n) => n > 1 ? n + ' nouveaux messages' : '1 nouveau message', surf: 'Surface', inc: 'Compris', house: 'Maison', cave: '🍷 Cave', mans: { hab: '🏠 Mansarde habitable', non: '🏠 Grenier (rangement)' }, garage: { semi: '🚗 Garage au sous-sol', ext: '🚗 Garage extérieur', box: '🚗 Box' }, parking: '🅿️ Place de parking', jardin: '🌿 Jardin', balcon: '🌇 Balcon / terrasse', maison: { isolee: 'individuelle', jumelee: 'jumelée', rangee: 'mitoyenne' }, solo: 'Messages avec votre gestionnaire', soloHint: 'Écrivez ici à votre gestionnaire : il vous répond dans l’app.' },
   it: { wx: { pl: 'lettore ufficiale', t: 'Meteo', r: 'Radio', now: 'Adesso', change: 'Cambia radio', ph: 'Incolla il link della tua radio (sito o flusso audio)', save: 'Salva', back: 'Torna a', on: 'in ascolto', site: 'Apri il sito della radio', none: 'Meteo non disponibile al momento.', ext: 'Questa radio si apre sul suo sito.' }, newMsg: (n) => n > 1 ? n + ' messaggi nuovi' : '1 messaggio nuovo', surf: 'Superficie', inc: 'Compreso', house: 'Casa', cave: '🍷 Cantina', mans: { hab: '🏠 Mansarda abitabile', non: '🏠 Soffitta (deposito)' }, garage: { semi: '🚗 Garage nel seminterrato', ext: '🚗 Garage esterno', box: '🚗 Box' }, parking: '🅿️ Posto auto', jardin: '🌿 Giardino', balcon: '🌇 Balcone / terrazza', maison: { isolee: 'indipendente', jumelee: 'bifamiliare', rangee: 'a schiera' }, solo: 'Messaggi con il tuo gestore', soloHint: 'Scrivi qui al tuo gestore: ti risponde nell’app.' },
@@ -492,14 +503,15 @@ async function binAct(act, dte) {
 }
 
 // ── Messages de la maison : lecture (déchiffrée sur le téléphone), envoi, rafraîchissement ──
-let chatMsgs = null, chatTimer = null, chatLoading = false;
+let chatMsgs = null, chatTimer = null, chatLoading = false, chatView = [], chatMark = { dl: '', rd: '' }, chatMenu = '';
 const b64d = (x) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
 function chatHtml() {
   const t = T();
   if (chatMsgs == null) return '<p class="meta" style="margin:0">…</p>';
   const forgot = data.bins ? binPlanNow().filter((e) => e.forgot && e.p >= addDays(today, -60)).map((e) => ({ k: 'bin', act: 'forgot', m: e.who, a: data.bins.names[e.who] || '?', d: e.p, cats: e.cats, t: e.d + 'T23:59:00' })) : [];
-  if (!chatMsgs.length && !forgot.length) return `<p class="meta" style="margin:0">${esc(t.hr.boardEmpty)}</p>`;
-  return [...chatMsgs, ...forgot].sort((a, b) => (a.t || '').localeCompare(b.t || '')).map((m) => {
+  if (!chatView.some((m) => !m.del && m.x != null) && !forgot.length) return `<p class="meta" style="margin:0">${esc(t.hr.boardEmpty)}</p>`;
+  const c9 = cx();
+  return [...chatView.filter((m) => !m.del && m.x != null), ...forgot].sort((a, b) => (a.t || '').localeCompare(b.t || '')).map((m) => {
     if (m.k === 'bin') {
       const c = (m.cats || []).map((k) => CATS[lang][k] || k).join(' + '), n = m.m === data.chat.mid ? t.bn.me : m.a;
       if (m.act === 'instead') { const w = m.w === data.chat.mid ? t.bn.meObj || t.bn.me : (data.bins && data.bins.names[m.w]) || '?'; return `<div class="bub sys">${esc(m.m === data.chat.mid && t.bn.insteadMe ? t.bn.insteadMe(w, c) : t.bn.insteadMsg(n, w, c))}</div>`; }
@@ -508,15 +520,18 @@ function chatHtml() {
     }
     const mine = m.m === data.chat.mid, mgr = m.m === 'mgr';
     const when = new Date(m.t).toLocaleString(t.loc, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-    return `<div class="bub${mine ? ' me' : ''}${mgr ? ' mgr' : ''}"><div class="bub-h"><b>${esc(mgr ? '🛡️ ' + t.hr.mgr : m.a)}</b> ${esc(when)}</div><div class="bub-x">${esc(m.x)}</div></div>`;
+    const ed = mine && editable(m), open = ed && chatMenu === m.id;
+    return `<div class="bub${mine ? ' me' : ''}${mgr ? ' mgr' : ''}${m.p ? ' pv' : ''}"><div class="bub-h"><b>${esc(mgr ? '🛡️ ' + t.hr.mgr : m.a)}</b> ${esc(when)}${m.p ? ` <span class="bub-pv">${esc(c9.tag)}</span>` : ''}${ed ? `<button type="button" class="bub-mn" data-cmenu="${esc(m.id)}" aria-label="${esc(c9.menu)}">⋯</button>` : ''}</div><div class="bub-x">${esc(m.x)}</div>`
+      + `${m.et || mine ? `<div class="bub-f">${m.et ? esc(c9.edited) : ''}${mine ? ' ' + tick(m, chatMark.dl, chatMark.rd) : ''}</div>` : ''}`
+      + `${open ? `<div class="bub-menu"><button type="button" data-cop="edit" data-id="${esc(m.id)}">${esc(c9.edit)}</button>${data.signalKey && !data.chat.solo ? `<button type="button" data-cop="${m.p ? 'pub' : 'priv'}" data-id="${esc(m.id)}">${esc(m.p ? c9.mkPub : c9.mkPriv)}</button>` : ''}<button type="button" data-cop="del" data-id="${esc(m.id)}">${esc(c9.del)}</button></div>` : ''}</div>`;
   }).join('');
 }
 const seenKey = () => 'espChatSeen:' + id;
-const chatUnread = () => { let seen = ''; try { seen = localStorage.getItem(seenKey()) || ''; } catch {} return (chatMsgs || []).filter((m) => m.t > seen && m.m !== data.chat.mid && m.k !== 'bin').length; };
+const chatUnread = () => { let seen = ''; try { seen = localStorage.getItem(seenKey()) || ''; } catch {} return chatView.filter((m) => m.t > seen && m.m !== data.chat.mid && m.k !== 'bin' && !m.del && m.x != null).length; };
 function chatSeen() {
   const c = document.querySelector('details[data-fold=chat]');
   if (!c || !c.open || document.visibilityState !== 'visible' || !chatMsgs || !chatMsgs.length) return chatBadge();
-  try { localStorage.setItem(seenKey(), chatMsgs[chatMsgs.length - 1].t || ''); } catch { /* stockage indisponible */ }
+  try { localStorage.setItem(seenKey(), chatMsgs.reduce((a, m) => (m.t > a ? m.t : a), '')); } catch { /* stockage indisponible */ }
   chatBadge();
 }
 function chatBadge() {
@@ -532,8 +547,12 @@ async function chatFetch() {
     const r = await fetch(`${API}/api/board/${data.chat.id}`, { cache: 'no-store' });
     if (r.ok) {
       const out = [];
-      for (const it of (await r.json()).items || []) { try { out.push(await openJson(data.chat.key, b64d(it.d))); } catch { /* illisible */ } }
-      chatMsgs = out.sort((a, b) => (a.t || '').localeCompare(b.t || ''));
+      for (const it of (await r.json()).items || []) { try { out.push({ ...(await openJson(data.chat.key, b64d(it.d))), n: it.n }); } catch { /* illisible */ } }
+      chatMsgs = out.filter((m) => !m.k || m.k === 'bin').sort((a, b) => (a.t || '').localeCompare(b.t || ''));
+      const rs = chatResolve(out);
+      chatMark = { dl: rs.dl, rd: rs.rd };
+      // un message privé ne se lit que par son habitant (et la centrale) ; les autres ne le voient pas
+      chatView = await chatOpen(rs.list, async (rec) => (rec.p === data.chat.mid && rec.e ? (await openJson(key, unb64u(rec.e))).x : null));
       const bb = document.getElementById('binBox');
       if (bb) bb.innerHTML = binHtml();
       const bd = document.getElementById('binBoardBox');
@@ -544,6 +563,39 @@ async function chatFetch() {
     }
   } catch { /* hors ligne */ }
   chatLoading = false;
+}
+// Envoi dans le fil : X-Push « none » = sans notification ; « owner » = notification seulement à la centrale
+async function chatPost(o, push) {
+  const h = { 'X-Esp': id };
+  if (push) h['X-Push'] = push;
+  const r = await fetch(`${API}/api/board/${data.chat.id}`, { method: 'POST', headers: h, body: await sealJson(data.chat.key, o) });
+  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
+}
+// texte privé : un exemplaire scellé pour la centrale, un pour moi (clé de mon espace) ; rien de lisible pour les autres
+const chatPriv = async (x) => ({ p: data.chat.mid, o: b64u(await sealForOwner(data.signalKey, { x })), e: b64u(await sealJson(key, { x })) });
+function chatEditEnd() { const f = document.getElementById('chatf'); if (!f) return; delete f.dataset.edit; const b = document.getElementById('chatEd'); if (b) b.hidden = true; const pv = f.querySelector('.chat-pv'); if (pv) pv.hidden = false; }
+async function chatOp(op, mid) {
+  const f = document.getElementById('chatf');
+  if (op === 'cancel') { if (f) f.x.value = ''; return chatEditEnd(); }
+  const m = chatView.find((x) => x.id === mid);
+  chatMenu = '';
+  if (!m || m.m !== data.chat.mid) return;
+  if (!editable(m)) { alert(cx().late); return chatFetch(); }
+  if (op === 'edit') {
+    if (!f) return;
+    f.dataset.edit = mid; f.x.value = m.x || '';
+    const b = document.getElementById('chatEd'); if (b) b.hidden = false;
+    const pv = f.querySelector('.chat-pv'); if (pv) pv.hidden = true;
+    f.x.focus();
+    const box = document.getElementById('chat'); if (box) box.innerHTML = chatHtml();
+    return;
+  }
+  try {
+    if (op === 'del') { if (!confirm(cx().delQ)) return chatFetch(); await chatPost({ k: 'del', r: mid, m: data.chat.mid, t: new Date().toISOString() }, 'none'); }
+    else if (op === 'priv') await chatPost({ k: 'ed', r: mid, m: data.chat.mid, t: new Date().toISOString(), ...(await chatPriv(m.x || '')) }, 'owner');
+    else if (op === 'pub') await chatPost({ k: 'ed', r: mid, m: data.chat.mid, t: new Date().toISOString(), x: m.x || '' }, '');
+  } catch (err) { alert('⚠ ' + (err.message || err)); }
+  await chatFetch();
 }
 function chatStart() {
   clearInterval(chatTimer);
@@ -1031,7 +1083,7 @@ function render() {
     const solo = d.chat.solo, ax = AX[lang] || AX.fr;
     out.push(foldCard(`<div class="card" id="chatCard"><h2>${solo ? '✉️' : '💬'} ${esc(solo ? ax.solo : t.hr.board)}</h2><p class="meta" style="margin:0 0 8px">${esc(solo ? ax.soloHint : t.hr.boardHint)}</p>
       <div class="chat" id="chat">${chatHtml()}</div>
-      ${can ? `<form id="chatf" class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(t.hr.boardPh)}"></textarea><button class="btn" type="submit">➤</button></form>`
+      ${can ? `<form id="chatf"><div id="chatEd" class="chat-ed" hidden><span>${esc(cx().editing)}</span><button type="button" class="pill" data-cop="cancel">${esc(cx().cancel)}</button></div><div class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(t.hr.boardPh)}"></textarea><button class="btn" type="submit">➤</button></div>${d.signalKey && !solo ? `<label class="chat-pv"><input type="checkbox" name="pv"> ${esc(cx().priv)}</label>` : ''}<p class="meta chat-tk">${esc(cx().ticks)}</p></form>`
         : `<p class="meta"><a href="#rules" data-goto-rules="1">${esc(t.hr.boardFirst)}</a></p>`}
       <button class="btn sm sec" style="margin-top:8px" data-chat-refresh="1">${esc(t.hr.refresh)}</button></div>`, 'chat', '<span id="chatNew"></span>'));
   }
@@ -1240,6 +1292,10 @@ app.addEventListener('click', pubTap, true);
 app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-ianim]')) { import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'NOBIS', icon: '/ares/icons/ares-192.png', lang })); return; }
   if (e.target.closest('[data-chat-refresh]')) return chatFetch();
+  const cmn = e.target.closest('[data-cmenu]');
+  if (cmn) { chatMenu = chatMenu === cmn.dataset.cmenu ? '' : cmn.dataset.cmenu; const box = document.getElementById('chat'); if (box) { const st = box.scrollTop; box.innerHTML = chatHtml(); box.scrollTop = st; } return; }
+  const cop = e.target.closest('[data-cop]');
+  if (cop) return chatOp(cop.dataset.cop, cop.dataset.id);
   if (e.target.closest('[data-radio-play]')) return radioToggle();
   if (e.target.closest('[data-radio-save]')) {
     const v = (document.getElementById('radioUrl') || {}).value || '';
@@ -1539,11 +1595,14 @@ app.addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = e.target, x = f.x.value.trim().slice(0, 1500);
     if (!x) return;
-    const btn = f.querySelector('button'); btn.disabled = true;
+    const btn = f.querySelector('button[type=submit]'); btn.disabled = true;
     try {
-      const r = await fetch(`${API}/api/board/${data.chat.id}`, { method: 'POST', headers: { 'X-Esp': id }, body: await sealJson(data.chat.key, { a: data.chat.me, m: data.chat.mid, x, t: new Date().toISOString() }) });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
-      f.x.value = '';
+      const edId = f.dataset.edit || '', old = edId && chatView.find((m) => m.id === edId);
+      if (old && !editable(old)) throw new Error(cx().late);
+      const pv = old ? !!old.p : !!(f.pv && f.pv.checked);
+      const body = pv ? await chatPriv(x) : { x };
+      await chatPost(old ? { k: 'ed', r: edId, m: data.chat.mid, t: new Date().toISOString(), ...body } : { id: newMsgId(), a: data.chat.me, m: data.chat.mid, t: new Date().toISOString(), ...body }, old ? 'none' : pv ? 'owner' : '');
+      f.x.value = ''; chatEditEnd();
       await chatFetch();
       const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight;
     } catch (err) { alert('⚠ ' + (err.message || err)); }
