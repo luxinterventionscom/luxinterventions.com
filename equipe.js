@@ -157,20 +157,38 @@ const CH = {
   en: { t: '💬 Messages with the office', ph: 'Write to the office…', send: 'Send', me: 'Me', ctr: 'Office', sp: '📣 Special message', wait: '⏳ sending…', none: 'No messages yet. Write to the office here.', hint: 'Only the office reads your messages.', nw: 'new' },
   es: { t: '💬 Mensajes con la central', ph: 'Escribir a la central…', send: 'Enviar', me: 'Yo', ctr: 'Central', sp: '📣 Mensaje especial', wait: '⏳ enviando…', none: 'Ningún mensaje. Escriba aquí a la central.', hint: 'Solo la central lee sus mensajes.', nw: 'nuevo' },
 };
-const CHK = () => 'eqChat:' + id, CSK = () => 'eqChatSeen:' + id;
-let chatDraft = '';
+// modifier / supprimer son message (15 min) et accusés ✓ ✓✓ ✓✓ bleu
+const CX = {
+  fr: { edited: 'modifié', menu: 'Options du message', edit: '✏️ Modifier', del: '🗑️ Supprimer', delQ: 'Supprimer ce message ?', editing: '✏️ Vous modifiez votre message', cancel: 'Annuler', late: 'Plus possible : 15 minutes sont passées.', ticks: '✓ envoyé · ✓✓ arrivé à la centrale · ✓✓ bleu : lu par la centrale' },
+  it: { edited: 'modificato', menu: 'Opzioni del messaggio', edit: '✏️ Modifica', del: '🗑️ Elimina', delQ: 'Eliminare questo messaggio?', editing: '✏️ Stai modificando il tuo messaggio', cancel: 'Annulla', late: 'Non più possibile: sono passati 15 minuti.', ticks: '✓ inviato · ✓✓ arrivato alla centrale · ✓✓ blu: letto dalla centrale' },
+  de: { edited: 'bearbeitet', menu: 'Nachrichtenoptionen', edit: '✏️ Bearbeiten', del: '🗑️ Löschen', delQ: 'Diese Nachricht löschen?', editing: '✏️ Sie bearbeiten Ihre Nachricht', cancel: 'Abbrechen', late: 'Nicht mehr möglich: 15 Minuten sind vorbei.', ticks: '✓ gesendet · ✓✓ bei der Zentrale angekommen · ✓✓ blau: von der Zentrale gelesen' },
+  pt: { edited: 'editado', menu: 'Opções da mensagem', edit: '✏️ Editar', del: '🗑️ Apagar', delQ: 'Apagar esta mensagem?', editing: '✏️ Está a editar a sua mensagem', cancel: 'Cancelar', late: 'Já não é possível: passaram 15 minutos.', ticks: '✓ enviada · ✓✓ chegou à central · ✓✓ azul: lida pela central' },
+  en: { edited: 'edited', menu: 'Message options', edit: '✏️ Edit', del: '🗑️ Delete', delQ: 'Delete this message?', editing: '✏️ You are editing your message', cancel: 'Cancel', late: 'No longer possible: 15 minutes have passed.', ticks: '✓ sent · ✓✓ reached the office · ✓✓ blue: read by the office' },
+  es: { edited: 'editado', menu: 'Opciones del mensaje', edit: '✏️ Editar', del: '🗑️ Eliminar', delQ: '¿Eliminar este mensaje?', editing: '✏️ Estás editando tu mensaje', cancel: 'Cancelar', late: 'Ya no es posible: han pasado 15 minutos.', ticks: '✓ enviado · ✓✓ llegó a la central · ✓✓ azul: leído por la central' },
+};
+const CHK = () => 'eqChat:' + id, CSK = () => 'eqChatSeen:' + id, CEK = () => 'eqChatEd:' + id;
+let chatDraft = '', chatMenu = '', chatEdit = '';
+const EQ_EDIT_MS = 15 * 60000;
+const eqEditable = (m) => m.from === 'eq' && !m.wait && Date.now() - Date.parse(m.at) < EQ_EDIT_MS;
 function chatCard() {
   const c = CH[lang] || CH.fr, list = data.chat || [], known = new Set(list.map((m) => m.id)), stored = getJ(CHK());
   const pend = stored.filter((m) => !known.has(m.id));
   if (pend.length !== stored.length) setJ(CHK(), pend);
-  const all = [...list, ...pend.map((m) => ({ ...m, from: 'eq', wait: 1 }))].slice(-40);
+  // modifications / suppressions envoyées mais pas encore revenues de la centrale
+  const eds = getJ(CEK()).filter((e) => { const m = list.find((x) => x.id === e.id); return e.del ? !!m : m && (m.ed || '') < e.at; });
+  if (eds.length !== getJ(CEK()).length) setJ(CEK(), eds);
+  const all = [...list, ...pend.map((m) => ({ ...m, from: 'eq', wait: 1 }))].map((m) => { const e = eds.find((z) => z.id === m.id); return !e ? m : e.del ? null : { ...m, x: e.x, ed: e.at }; }).filter(Boolean).slice(-40);
+  const x9 = CX[lang] || CX.fr, rd = data.chatRd || '';
+  const tk = (m) => (m.from !== 'eq' ? '' : m.wait ? '<span class="tk">✓</span>' : `<span class="tk${rd && m.at <= rd ? ' rd' : ''}">✓✓</span>`);
   let seen = '';
   try { seen = localStorage.getItem(CSK()) || ''; } catch { /* stockage indisponible */ }
   const nw = list.filter((m) => m.from === 'mgr' && m.at > seen).length;
   const tm = (m) => `${esc(fmt(m.at))} ${esc(String(m.at).slice(11, 16))}`;
   return `<div class="card" id="chatCard"><h2>${esc(c.t)}${nw ? ` <span class="tag bad">${nw} ${esc(c.nw)}</span>` : ''}</h2><p class="meta" style="margin:0 0 8px">🔒 ${esc(c.hint)}</p>
-    <div class="chat">${all.length ? all.map((m) => `<div class="bub ${m.from === 'eq' ? 'me' : 'mgr'}"><div class="bub-h"><b>${esc(m.from === 'eq' ? c.me : m.g ? c.sp : c.ctr)}</b> · ${m.wait ? esc(c.wait) : tm(m)}</div><div class="bub-x">${esc(m.x)}</div></div>`).join('') : `<p class="meta" style="margin:0">${esc(c.none)}</p>`}</div>
-    <form id="chatForm" class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(c.ph)}">${esc(chatDraft)}</textarea><button class="btn" type="submit">${esc(c.send)}</button></form></div>`;
+    <div class="chat">${all.length ? all.map((m) => { const ed = eqEditable(m); return `<div class="bub ${m.from === 'eq' ? 'me' : 'mgr'}"><div class="bub-h"><b>${esc(m.from === 'eq' ? c.me : m.g ? c.sp : c.ctr)}</b> · ${m.wait ? esc(c.wait) : tm(m)}${ed ? `<button type="button" class="bub-mn" data-emenu="${esc(m.id)}" aria-label="${esc(x9.menu)}">⋯</button>` : ''}</div><div class="bub-x">${esc(m.x)}</div>`
+      + `${m.ed || m.from === 'eq' ? `<div class="bub-f">${m.ed ? esc(x9.edited) : ''} ${tk(m)}</div>` : ''}`
+      + `${ed && chatMenu === m.id ? `<div class="bub-menu"><button type="button" data-eop="edit" data-id="${esc(m.id)}">${esc(x9.edit)}</button><button type="button" data-eop="del" data-id="${esc(m.id)}">${esc(x9.del)}</button></div>` : ''}</div>`; }).join('') : `<p class="meta" style="margin:0">${esc(c.none)}</p>`}</div>
+    <form id="chatForm">${chatEdit ? `<div class="chat-ed"><span>${esc(x9.editing)}</span><button type="button" class="pill" data-eop="cancel">${esc(x9.cancel)}</button></div>` : ''}<div class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(c.ph)}">${esc(chatDraft)}</textarea><button class="btn" type="submit">${esc(c.send)}</button></div><p class="meta chat-tk">${esc(x9.ticks)}</p></form></div>`;
 }
 // la centrale a répondu : vu dès que la carte est à l'écran
 let chatIO = null;
@@ -836,6 +854,31 @@ function render() {
 pubStatInit(API, 'eq', () => lang);
 pubSocialInit(API, () => lang);
 document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
+// 💬 ⋯ sur son message : ✏️ modifier / 🗑️ supprimer (15 min)
+document.addEventListener('click', async (e) => {
+  const mn = e.target.closest && e.target.closest('[data-emenu]');
+  if (mn) { chatMenu = chatMenu === mn.dataset.emenu ? '' : mn.dataset.emenu; return render(); }
+  const op = e.target.closest && e.target.closest('[data-eop]');
+  if (!op) return;
+  const x9 = CX[lang] || CX.fr;
+  chatMenu = '';
+  if (op.dataset.eop === 'cancel') { chatEdit = ''; chatDraft = ''; return render(); }
+  const m = (data.chat || []).find((z) => z.id === op.dataset.id);
+  if (!m || !eqEditable(m)) { alert(x9.late); return render(); }
+  if (op.dataset.eop === 'edit') {
+    chatEdit = m.id; chatDraft = m.x;
+    render();
+    const ta = document.querySelector('#chatForm textarea'); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+    return;
+  }
+  if (op.dataset.eop === 'del') {
+    if (!confirm(x9.delQ)) return render();
+    const at = new Date().toISOString();
+    setJ(CEK(), [...getJ(CEK()).filter((z) => z.id !== m.id), { id: m.id, del: 1, at }]);
+    await queue({ k: 'msg-del', id: m.id, at });
+    render();
+  }
+});
 app.addEventListener('click', pubTap, true);
 app.addEventListener('toggle', (e) => {
   const wk = e.target.dataset && e.target.dataset.wk;
@@ -906,6 +949,16 @@ app.addEventListener('submit', async (e) => {
   if (f.id === 'chatForm') {
     const x = String(f.x.value || '').trim().slice(0, 1500);
     if (!x) return;
+    if (chatEdit) {
+      const old = (data.chat || []).find((z) => z.id === chatEdit);
+      const eid = chatEdit; chatEdit = ''; chatDraft = '';
+      if (!old || !eqEditable(old)) { alert((CX[lang] || CX.fr).late); render(); return; }
+      const at = new Date().toISOString();
+      setJ(CEK(), [...getJ(CEK()).filter((z) => z.id !== eid), { id: eid, x, at }]);
+      await queue({ k: 'msg-ed', id: eid, x, at });
+      render();
+      return;
+    }
     const m = { id: 'e' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), at: new Date().toISOString(), x };
     setJ(CHK(), [...getJ(CHK()), m].slice(-30));
     chatDraft = '';

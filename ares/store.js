@@ -697,7 +697,8 @@ export class Vault {
   // Mini-chat d'un logement (messages chiffrés avec la clé du logement)
   boardOn(id) { return this.call('board/' + id, { method: 'PUT' }); }
   async boardList(id) { return (await (await this.call('board/' + id)).json()).items || []; }
-  boardPost(id, bytes) { return this.call('board/' + id, { method: 'POST', body: bytes }); }
+  // push : « none » = sans notification ; un identifiant d'espace = notifier seulement cet habitant
+  boardPost(id, bytes, push) { return this.call('board/' + id, { method: 'POST', body: bytes, ...(push ? { headers: { 'X-Push': push } } : {}) }); }
   boardDelMsg(id, name) { return this.call('board/' + id + '/' + name, { method: 'DELETE' }); }
   boardDel(id) { return this.call('board/' + id, { method: 'DELETE' }); }
   // Annonces « Don · prêt · location » des locataires (approbation, publication, retrait)

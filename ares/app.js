@@ -4,6 +4,7 @@ import './reqmark.js';
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
 import { passphraseStrength } from './crypto.js';
 import { binPlan } from './binplan.js';
+import { chatResolve, chatOpen, newMsgId } from './chatops.js';
 import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { videoEmbed } from './video-embed.js';
@@ -28,7 +29,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.208.0';
+const VERSION = '2.209.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -544,7 +545,9 @@ const eqState = (t, d) => { const j = (t.journal || []).filter((x) => x.d === d)
 // 💬 Chat ouvrier ↔ centrale : ses messages arrivent comme ses autres nouvelles (chiffrés pour la centrale), les réponses
 // partent dans les données de son app (notification « du nouveau »). 📣 Message spécial : aux ouvriers du groupe choisi dans Réglages.
 const EQ_CHAT_MAX = 300;
-const eqChatOut = (i) => (i.chat || []).slice(-60).map((m) => ({ id: m.id, at: m.at, from: m.from, x: m.x, ...(m.g ? { g: 1 } : {}) }));
+const EQ_EDIT_MS = 15 * 60000;
+// pour son app : sans les messages supprimés ni les anciennes versions (« modifié » seulement)
+const eqChatOut = (i) => (i.chat || []).filter((m) => !m.del).slice(-60).map((m) => ({ id: m.id, at: m.at, from: m.from, x: m.x, ...(m.g ? { g: 1 } : {}), ...(m.ed ? { ed: m.ed } : {}) }));
 const eqGroup = () => ((vault.get('reglages', 'eqGroup') || {}).ids || []).filter((wid) => { const w = vault.get('intervenants', wid); return w && w.espace && w.espace.on; });
 async function eqChatSend(ids, x, g) {
   const at = new Date().toISOString(), mid = 'c' + Date.now().toString(36);
@@ -560,7 +563,7 @@ const eqChatHtml = (i) => {
   const msgs = (i.chat || []).slice(-80);
   return html`<p class="tiny muted" style="margin:0 0 8px">Messages entre <b>${intervFull(i)}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</p>
     ${!(i.espace && i.espace.on) ? html`<div class="alert warn" style="margin-bottom:10px">📱<div>Son app n’est pas active : activez-la dans l’onglet <b>📱 App</b> pour qu’il reçoive vos messages.</div></div>` : ''}
-    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? (m.g ? '📣 Message spécial' : '🛡️ Centrale') : '👷 ' + (i.prenom || intervFull(i))} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}</div>${m.x}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
+    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? (m.g ? '📣 Message spécial' : '🛡️ Centrale') : '👷 ' + (i.prenom || intervFull(i))} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé par l’ouvrier</div>` : m.x}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
     <form data-form="eq-chat" class="eq-chat-f"><input type="hidden" name="id" value="${i.id}"><textarea name="x" required maxlength="1500" placeholder="Écrire à ${i.prenom || intervFull(i)}…"></textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
 };
 function equipeData(i) {
@@ -608,7 +611,7 @@ function equipeData(i) {
     pres: Object.fromEntries(Object.entries(i.pres || {}).filter(([d]) => d >= addDays(today(), -7)).map(([d, p]) => [d, { ...(p.arr ? { arr: p.arr } : {}), ...(p.dep ? { dep: p.dep } : {}) }])),
     pubs: pubsActives([...imIds], 'eq').map(pubOut),
     rank: (() => { const y = new Date().getFullYear(), r = eqScores(y), n = r.findIndex(([wid]) => wid === i.id), v = n >= 0 ? r[n][1] : null; return v ? { y, pos: n + 1, of: r.length, pts: v.pts, fait: v.fait, ph: v.ph, urg: v.urg, good: v.good } : null; })(),
-    tasks, items: items.sort((a, b) => a.d.localeCompare(b.d)), signalKey: k ? k.pub : '', chat: eqChatOut(i),
+    tasks, items: items.sort((a, b) => a.d.localeCompare(b.d)), signalKey: k ? k.pub : '', chat: eqChatOut(i), chatRd: i.chatRd || '',
     ...(i.chefDevis ? { devis: devChefData(i) } : {}),
   };
 }
@@ -847,8 +850,20 @@ async function equipeInbox(w, msg) {
     }
     // 💬 messages de l'ouvrier à la centrale
     const now2 = vault.get('intervenants', w.id) || cur, chat = [...(now2.chat || [])];
-    let nMsg = 0;
+    let nMsg = 0, nEd = 0;
     for (const it of (Array.isArray(msg.items) ? msg.items : []).slice(0, 30)) {
+      if (it.k === 'msg-ed' || it.k === 'msg-del') {
+        // l'ouvrier modifie / supprime son message dans les 15 minutes ; vous gardez le texte d'avant
+        const j = chat.findIndex((m) => m.id === String(it.id || '') && m.from === 'eq');
+        const when = String(it.at || at0).slice(0, 30);
+        if (j < 0 || chat[j].del || Date.parse(when) - Date.parse(chat[j].at) > EQ_EDIT_MS + 120000) continue;
+        const m = chat[j], nx = String(it.x || '').replace(/\s+$/, '').slice(0, 1500).trim();
+        if (it.k === 'msg-del') chat[j] = { ...m, del: when };
+        else if (nx && nx !== m.x) chat[j] = { ...m, x: nx, ed: when, old: [...(m.old || []), { x: m.x, at: m.ed || m.at }].slice(-10) };
+        else continue;
+        nEd++;
+        continue;
+      }
       if (it.k !== 'msg') continue;
       const x = String(it.x || '').replace(/\s+$/, '').slice(0, 1500).trim(), mid = String(it.id || '').replace(/[^a-z0-9]/gi, '').slice(0, 24);
       if (!x || (mid && chat.some((m) => m.id === mid))) continue;
@@ -856,7 +871,7 @@ async function equipeInbox(w, msg) {
       nMsg++;
     }
     if (nMsg) chat.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
-    tx.put('intervenants', { id: w.id, feed: feed.slice(-200), feedNew: (cur.feedNew || 0) + fresh, ...(nMsg ? { chat: chat.slice(-EQ_CHAT_MAX), chatNew: (now2.chatNew || 0) + nMsg } : {}) });
+    tx.put('intervenants', { id: w.id, feed: feed.slice(-200), feedNew: (cur.feedNew || 0) + fresh, ...(nMsg || nEd ? { chat: chat.slice(-EQ_CHAT_MAX), chatNew: (now2.chatNew || 0) + nMsg } : {}) });
   }, 'Nouvelles de l’équipe', intervFull(w), w.id);
   for (const [id, b] of files) await vault.saveFile(id, unb64u(b));
   for (const it of (Array.isArray(msg.items) ? msg.items : [])) if (it.k === 'task' && it.st === 'fait' && !(vault.get('taches', String(it.tid || '')) || {}).ptl) await syncDepense({ id: String(it.tid || '') }, true);
@@ -1801,7 +1816,7 @@ async function chatSync() {
         await vault.boardOn(g.id);
         if (old) {
           let last = '';
-          for (const m of await chatRead(old).catch(() => [])) { const { n, ...msg } = m; last = (await (await vault.boardPost(g.id, await sealJson(g.key, msg))).json()).n || last; }
+          for (const m of await chatRead(old).catch(() => [])) { const { n, ...msg } = m; last = (await (await vault.boardPost(g.id, await sealJson(g.key, msg), 'none')).json()).n || last; }
           setSeen(g.id, last);
           await vault.boardDel(old.id).catch(() => {});
         }
@@ -1816,7 +1831,7 @@ async function chatSync() {
         // les habitants changent de groupe (ex. attribués à des chambres) : la conversation les suit
         const dest = Object.values(next).map((n) => ({ n, k: n.members.filter((m) => g.members.includes(m)).length })).sort((a, b) => b.k - a.k)[0];
         if (msgs && msgs.length && dest && dest.k >= 2) {
-          for (const m of msgs) { const { n, ...msg } = m; await vault.boardPost(dest.n.id, await sealJson(dest.n.key, msg)).catch(() => {}); }
+          for (const m of msgs) { const { n, ...msg } = m; await vault.boardPost(dest.n.id, await sealJson(dest.n.key, msg), 'none').catch(() => {}); }
         }
         await vault.boardDel(g.id).catch(() => {});
         changed = true;
@@ -1834,8 +1849,10 @@ async function chatPoll() {
     try {
       let seen = '';
       try { seen = localStorage.getItem(chatSeenKey(g.id)) || ''; } catch {}
-      const n = (await vault.boardList(g.id)).filter((it) => it.n > seen).length;
+      const raw = await chatRead(g), rs = chatResolve(raw);
+      const n = rs.list.filter((m) => m.n > seen && m.m !== 'mgr' && !m.del && m.k !== 'bin').length;
       if (n) res[im.id] = (res[im.id] || 0) + n;
+      await chatMarkPost(g, raw, rs, false); // ✓✓ : arrivé à la centrale
     } catch { /* hors ligne */ }
   }
   ui.chatNew = res;
@@ -1849,9 +1866,11 @@ async function chatLoad(imId, force) {
   if (!force && ui.chatAt[imId] && Date.now() - ui.chatAt[imId] < 15000) return;
   ui.chatAt[imId] = Date.now();
   for (const g of Object.values(im.chats || {})) {
-    try { ui.chatCache[g.id] = await chatRead(g); binRecord(vault.get('immeubles', imId), Object.entries(im.chats || {}).find(([, x]) => x.id === g.id)?.[0], g, ui.chatCache[g.id]).catch(() => {}); } catch { ui.chatCache[g.id] = ui.chatCache[g.id] || []; }
+    try { ui.chatCache[g.id] = await chatRead(g); await chatTidy(g, ui.chatCache[g.id]).then((again) => (again ? chatRead(g).then((r) => { ui.chatCache[g.id] = r; }) : 0)); binRecord(vault.get('immeubles', imId), Object.entries(im.chats || {}).find(([, x]) => x.id === g.id)?.[0], g, ui.chatCache[g.id]).catch(() => {}); } catch { ui.chatCache[g.id] = ui.chatCache[g.id] || []; }
     const c = ui.chatCache[g.id];
-    if (c.length) setSeen(g.id, c[c.length - 1].n);
+    if (c.length) setSeen(g.id, c.reduce((a, m) => (m.n > a ? m.n : a), ''));
+    await chatViewSet(g, c).catch(() => {});
+    if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.id === imId && ui.sheet.tab === 'chat') await chatMarkPost(g, c, chatResolve(c), true).catch(() => {}); // ✓✓ bleu : lu
   }
   if (ui.chatNew) delete ui.chatNew[imId];
   if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.id === imId && ui.sheet.tab === 'chat') { ui.sheet.rendered = false; renderSheet(); }
@@ -1871,9 +1890,59 @@ function binsTable(im, g) {
       ${e.done ? html`<span class="badge ok">✅ ${nm(e.done)}</span>` : e.forgot ? html`<span class="badge bad">❌ oublié</span>` : e.d < today() ? html`<span class="badge">…</span>` : html`<span class="badge">à venir</span>`}</div>`)}</div>
     ${sc.length ? html`<p class="tiny muted" style="margin:0 0 10px">🏆 ${y} : ${sc.map(([id, v]) => `${nm(id)} ${v.done} ✅${v.forgot ? ` · ${v.forgot} oubli${v.forgot > 1 ? 's' : ''}` : ''}`).join(' — ')}</p>` : ''}`;
 }
-const chatBubbles = (list, gid) => (list == null ? html`<p class="muted small">Chargement…</p>` : !list.length ? html`<p class="muted small">Aucun message pour le moment.</p>`
-  : html`${list.map((m) => html`<div class="bub ${m.m === 'mgr' ? 'mgr' : ''}"><div class="bub-h"><b>${m.m === 'mgr' ? '🛡️ Gestionnaire' : m.a}</b><span>${fmtDateTime(m.t)}</span>
-    <button class="bub-del" data-action="chat-del" data-id="${gid}" data-n="${m.n}" aria-label="Supprimer ce message">${icon('trash')}</button></div><div class="bub-x">${m.x}</div></div>`)}`);
+// Messages privés 🔒 : la centrale les ouvre avec sa clé ; ses réponses privées sont scellées pour elle et pour l'habitant
+const chatOpenPriv = async (rec) => { const k = vault.get('reglages', 'signal'); return rec.o && k && k.priv ? (await openFromTenant(k.priv, unb64u(rec.o))).x : null; };
+async function chatViewSet(g, raw) {
+  const rs = chatResolve(raw);
+  await chatOpen(rs.list, chatOpenPriv);
+  const k = vault.get('reglages', 'signal');
+  for (const m of rs.list) if (m.oh && k && k.priv) { try { m.hist = [...((await openFromTenant(k.priv, unb64u(m.oh))).hist || []), ...(m.hist || [])]; } catch { /* illisible */ } }
+  ui.chatView = ui.chatView || {};
+  ui.chatView[g.id] = rs;
+  return rs;
+}
+// Accusé de lecture dans le fil (sans notification) : dl = reçu jusqu'au n°, rd = lu jusqu'au n° ; l'ancien accusé est effacé
+async function chatMarkPost(g, raw, rs, read) {
+  const top = raw.filter((m) => m.m !== 'mgr' && m.k !== 'rd').reduce((a, m) => (m.n > a ? m.n : a), '');
+  if (!top) return;
+  const dl = top > (rs.dl || '') ? top : rs.dl, rd = read ? top : rs.rd || '';
+  if (dl === rs.dl && rd === (rs.rd || '')) return;
+  await vault.boardPost(g.id, await sealJson(g.key, { k: 'rd', m: 'mgr', dl, rd, t: new Date().toISOString() }), 'none');
+  for (const m of raw.filter((x) => x.k === 'rd')) await vault.boardDelMsg(g.id, m.n).catch(() => {});
+}
+// Rangement : un message supprimé par son auteur disparaît vraiment du fil ; un message rendu privé n'y laisse
+// plus de texte lisible par les autres habitants (on le réécrit en privé, avec ses anciennes versions pour vous seul)
+async function chatTidy(g, raw) {
+  const k = vault.get('reglages', 'signal');
+  const rs = chatResolve(raw), byN = new Map(raw.map((m) => [m.n, m]));
+  let did = false;
+  for (const m of rs.list) {
+    if (m.del && m.m !== 'mgr') { for (const n of m.recs) await vault.boardDelMsg(g.id, n).catch(() => {}); did = true; continue; }
+    if (!m.p || !k || !k.pub || !m.recs.some((n) => { const r = byN.get(n); return r && r.x != null && !r.p; })) continue;
+    await chatOpen([m], chatOpenPriv);
+    const hist = (m.hist || []).map((h) => ({ x: h.x, t: h.t }));
+    const rec = { ...m };
+    for (const f of ['recs', 'n', 'hist', 'x', 'oh']) delete rec[f];
+    await vault.boardPost(g.id, await sealJson(g.key, { ...rec, oh: b64u(await sealForOwner(k.pub, { hist })) }), 'none');
+    for (const r of m.recs) await vault.boardDelMsg(g.id, r).catch(() => {});
+    did = true;
+  }
+  return did;
+}
+const chatBubbles = (rs, gid) => {
+  const list = rs && rs.list;
+  if (list == null) return html`<p class="muted small">Chargement…</p>`;
+  const vis = list.filter((m) => !(m.del && m.m === 'mgr'));
+  if (!vis.length) return html`<p class="muted small">Aucun message pour le moment.</p>`;
+  const who = (id) => shortName(vault.get('locataires', id) || {});
+  return html`${vis.map((m) => html`<div class="bub ${m.m === 'mgr' ? 'mgr' : ''} ${m.p ? 'pv' : ''}"><div class="bub-h"><b>${m.m === 'mgr' ? '🛡️ Gestionnaire' : m.a}</b><span>${fmtDateTime(m.t)}</span>
+    ${m.p ? html`<span class="bub-pv">🔒 privé${m.m === 'mgr' ? ' — à ' + who(m.p) : ''}</span>` : ''}
+    <button class="bub-del" data-action="chat-del" data-id="${gid}" data-n="${m.recs.join(',')}" aria-label="Supprimer ce message">${icon('trash')}</button></div>
+    <div class="bub-x">${m.del ? html`<s>${m.x ?? ''}</s>` : m.x == null ? html`<i class="muted">🔒 illisible</i>` : m.x}</div>
+    ${m.del ? html`<div class="bub-f">🗑️ supprimé par l’auteur</div>` : ''}
+    ${m.hist && m.hist.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.hist.map((h) => html`<div><span class="tiny muted">${fmtDateTime(h.t)}${h.p ? ' · 🔒' : ''}</span> ${h.x ?? '🔒'}</div>`)}</details>` : ''}
+    ${m.p && m.m !== 'mgr' ? html`<button class="btn sm" style="margin-top:4px" data-action="chat-reply-priv" data-id="${gid}" data-loc="${m.p}">🔒 Répondre en privé</button>` : ''}</div>`)}`;
+};
 
 // ───── Annonces « Don · prêt · location » publiées par les locataires (site public, après approbation) ─────
 const TOOL_KINDS = { don: '🎁 Don', pret: '🤝 Prêt gratuit', loc: '💶 Location' };
@@ -6287,7 +6356,9 @@ const SHEETS = {
         <div class="list small">${months.map(([yy, mm]) => { const r = intervMonth(i, yy, mm); return html`<div class="row"><span class="grow"><b>${MONTHS_FULL[mm - 1]} ${yy}</b><span class="meta" style="display:block">prévu ${fmtH(r.prevu)}${r.jm ? ` · 🤒 ${r.jm} j (−${fmtH(r.maladie)})` : ''}${r.jc ? ` · 🏖️ ${r.jc} j (−${fmtH(r.conges)})` : ''}${r.ja ? ` · 📌 ${r.ja} j (−${fmtH(r.autre)})` : ''}</span></span><b>${fmtH(r.net)}</b></div>`; })}</div>
         <p class="tiny muted">Calcul sur l’horaire habituel : pour les heures en plus ou en moins, ajoutez une note.</p>`;
     } else if (tab === 'chat') {
-      if (i.chatNew) setTimeout(() => vault.mutate((tx) => tx.put('intervenants', { id: i.id, chatNew: 0 }), 'Messages lus', intervFull(i), i.id), 0);
+      // ✓✓ bleu dans son app : lu par la centrale jusqu'à son dernier message
+      const lastEq = (i.chat || []).filter((m) => m.from === 'eq').reduce((a, m) => (m.at > a ? m.at : a), '');
+      if (i.chatNew || (lastEq && lastEq > (i.chatRd || ''))) setTimeout(() => { vault.mutate((tx) => tx.put('intervenants', { id: i.id, chatNew: 0, ...(lastEq ? { chatRd: lastEq } : {}) }), 'Messages lus', intervFull(i), i.id); if (lastEq > (i.chatRd || '')) equipeSync(i.id, true); }, 0);
       body = eqChatHtml(i);
     } else if (tab === 'act') {
       if (i.feedNew) setTimeout(() => vault.mutate((tx) => tx.put('intervenants', { id: i.id, feedNew: 0 }), 'Activité lue', intervFull(i), i.id), 0);
@@ -7071,9 +7142,11 @@ const SHEETS = {
             <span class="grow"><b>🗑️ Tour des poubelles</b><span class="meta" style="display:block">À tour de rôle entre les habitants de chaque fil, automatiquement (le nouveau locataire prend la place de celui qui part). Dans leur app : « Ce soir c’est ton tour », ✅ Fait, 🔁 Je ne peux pas.</span></span></label>
           ${groups.length ? groups.map(([gk, g]) => html`<div class="section-label">💬 ${chatLabel(gk)}${g.members.length < 2 ? html` <span class="badge">✉️ seul·e — écrit au gestionnaire</span>` : ''} <span class="muted small">· ${g.members.map((m) => shortName(vault.get('locataires', m) || {})).join(', ')}</span></div>
             ${binsTable(im, g)}
-            <div class="chat">${chatBubbles((ui.chatCache || {})[g.id], g.id)}</div>
+            <div class="chat">${chatBubbles((ui.chatView || {})[g.id], g.id)}</div>
             <form data-form="chatpost" class="chat-form"><input type="hidden" name="imm" value="${id}"><input type="hidden" name="gk" value="${gk}">
-              <textarea name="x" required maxlength="1500" placeholder="Écrire aux habitants (en tant que gestionnaire)…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>
+              <textarea name="x" required maxlength="1500" placeholder="Écrire aux habitants (en tant que gestionnaire)…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button>
+              ${g.members.length > 1 ? html`<label class="field chat-to">À<select name="to" data-gid="${g.id}"><option value="">👥 Tous les habitants du fil</option>${g.members.map((mid) => html`<option value="${mid}" ${(ui.chatTo || {})[g.id] === mid ? new Raw('selected') : ''}>🔒 Privé — ${shortName(vault.get('locataires', mid) || {})}</option>`)}</select></label>` : ''}</form>
+            <p class="tiny muted" style="margin:2px 0 6px">🔒 = message privé entre un habitant et vous (les autres ne le voient pas). Dans leur app : ✓ envoyé · ✓✓ arrivé ici · ✓✓ bleu lu par vous. Chacun peut modifier, rendre privé / public ou supprimer son message pendant 15 minutes ; vous voyez le texte d’avant.</p>
             <button class="btn sm" style="margin:6px 0 4px" data-action="chat-refresh" data-id="${id}">${icon('sync')} Actualiser</button>`)
           : html`<p class="muted small">Aucun fil pour le moment : un fil se crée tout seul dès que 2 personnes habitent le même appartement (ou le même groupe choisi ci-dessus).</p>`}
           <button class="btn sm" style="margin-top:8px" data-action="chat-refresh" data-id="${id}">${icon('sync')} Actualiser</button>` : ''}
@@ -8872,10 +8945,15 @@ const ACTIONS = {
   },
   'open-chat': (d) => { openSheet('imm', d.id, 'chat'); chatLoad(d.id, true); },
   'chat-refresh': (d) => chatLoad(d.id, true),
+  'chat-reply-priv': (d) => {
+    ui.chatTo = { ...(ui.chatTo || {}), [d.id]: d.loc };
+    const sel = document.querySelector(`select[name="to"][data-gid="${d.id}"]`);
+    if (sel) { sel.value = d.loc; const ta = sel.closest('form').querySelector('textarea'); if (ta) ta.focus(); }
+  },
   async 'chat-del'(d) {
     if (!(await confirmBox('Supprimer ce message ?', { ok: 'Supprimer', danger: true, detail: 'Il disparaît pour tous les habitants.' }))) return;
     const im = vault.list('immeubles').find((x) => Object.values(x.chats || {}).some((g) => g.id === d.id));
-    try { await vault.boardDelMsg(d.id, d.n); } catch (e) { return toast(e.message || 'Suppression impossible', { bad: true }); }
+    try { for (const n of String(d.n).split(',').filter(Boolean)) await vault.boardDelMsg(d.id, n); } catch (e) { return toast(e.message || 'Suppression impossible', { bad: true }); }
     vault.mutate(() => {}, 'Message supprimé (modération)', im ? im.adresse : '', im ? im.id : '');
     toast('Message supprimé');
     if (im) chatLoad(im.id, true);
@@ -9859,7 +9937,15 @@ const FORMS = {
     if (!g || !x) return;
     setBusy(form, true, 'Envoi…');
     try {
-      await vault.boardPost(g.id, await sealJson(g.key, { a: societe().nom || 'Gestionnaire', m: 'mgr', x, t: new Date().toISOString() }));
+      const to = String(fd.get('to') || '');
+      ui.chatTo = { ...(ui.chatTo || {}), [g.id]: to };
+      const l = to && g.members.includes(to) ? vault.get('locataires', to) : null, k = vault.get('reglages', 'signal');
+      const msg = { id: newMsgId(), a: societe().nom || 'Gestionnaire', m: 'mgr', t: new Date().toISOString() };
+      if (to) {
+        // réponse privée : scellée pour l'habitant (clé de son espace) et pour vous ; notification à lui seul
+        if (!l || !l.espace || !l.espace.key || !k || !k.pub) throw new Error('Message privé impossible : l’app de cet habitant n’est pas active.');
+        await vault.boardPost(g.id, await sealJson(g.key, { ...msg, p: l.id, o: b64u(await sealForOwner(k.pub, { x })), e: b64u(await sealJson(l.espace.key, { x })) }), l.espace.id);
+      } else await vault.boardPost(g.id, await sealJson(g.key, { ...msg, x }));
       await chatLoad(im.id, true);
     } catch (e) {
       setBusy(form, false);

@@ -40,7 +40,7 @@ function corsHeaders(origin) {
   return {
     "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGIN,
     "Access-Control-Allow-Methods": "GET, PUT, POST, PATCH, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization, If-Match, If-None-Match, X-Ares-Session, X-Ares-Device, X-Esp, X-Event-Id, X-Invoice, X-Devis",
+    "Access-Control-Allow-Headers": "Content-Type, Authorization, If-Match, If-None-Match, X-Ares-Session, X-Ares-Device, X-Esp, X-Event-Id, X-Invoice, X-Devis, X-Push",
     "Access-Control-Expose-Headers": "ETag",
     "Access-Control-Max-Age": "86400",
     "Cache-Control": "no-store",
@@ -435,8 +435,10 @@ async function boardPublic(request, env, id, headers) {
       await env.HITS.put(kIp, String(nIp + 1), { expirationTtl: 3600 });
       await env.HITS.put(kId, String(nId + 1), { expirationTtl: 86400 });
     } catch { /* quota KV */ }
-    const from = String(request.headers.get("X-Esp") || "");
-    await espPushSend(env, "board:" + id, "msg", /^[0-9a-f]{32}$/.test(from) ? from : "");
+    // X-Push : « none » (modification, suppression, accusé de lecture) ; « owner » (message privé, seulement au gestionnaire)
+    const from = String(request.headers.get("X-Esp") || ""), xp = String(request.headers.get("X-Push") || "");
+    if (xp === "owner") await espPushSend(env, "owner", "msg");
+    else if (xp !== "none") await espPushSend(env, "board:" + id, "msg", /^[0-9a-f]{32}$/.test(from) ? from : "");
     return aresJson({ ok: true, n: name }, 200, headers);
   }
   return aresJson({ error: "Not found" }, 404, headers);
@@ -1124,7 +1126,11 @@ async function handleAres(request, env, url, headers) {
     const base = ARES_BOARD + brdMatch[1];
     if (!brdMatch[2] && method === "PUT") { await env.PHOTOS.put(base + "/on", "1"); return aresJson({ ok: true }, 200, headers); }
     if (!brdMatch[2] && method === "GET") return aresJson({ items: await boardList(env, brdMatch[1]) }, 200, headers);
-    if (!brdMatch[2] && method === "POST") { const n = await boardSave(env, brdMatch[1], request); if (n) await espPushSend(env, "board:" + brdMatch[1], "msg"); return n ? aresJson({ ok: true, n }, 200, headers) : aresJson({ error: "Taille invalide" }, 413, headers); }
+    if (!brdMatch[2] && method === "POST") {
+      // X-Push : « none » (accusé de lecture, rangement), ou l'espace d'un seul habitant (réponse privée)
+      const n = await boardSave(env, brdMatch[1], request), xp = String(request.headers.get("X-Push") || "");
+      if (n && xp !== "none") await espPushSend(env, /^[0-9a-f]{32}$/.test(xp) ? xp : "board:" + brdMatch[1], "msg");
+      return n ? aresJson({ ok: true, n }, 200, headers) : aresJson({ error: "Taille invalide" }, 413, headers); }
     if (!brdMatch[2] && method === "DELETE") {
       const listed = await env.PHOTOS.list({ prefix: base + "/" });
       await Promise.all(listed.objects.map((o) => env.PHOTOS.delete(o.key)));

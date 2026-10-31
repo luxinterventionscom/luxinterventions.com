@@ -17159,4 +17159,52 @@ export default [
 "Pas encore de j’aime, de partages ni de vues cette année.",
 "Aún sin me gusta, compartidos ni vistas este año."
 ],
+[
+"🔒 privé",
+"🔒 privado"
+],
+[
+"🔒 privé — à {0}",
+"🔒 privado — para {0}"
+],
+[
+"🔒 illisible",
+"🔒 ilegible"
+],
+[
+"🗑️ supprimé par l’auteur",
+"🗑️ eliminado por el autor"
+],
+[
+"🗑️ supprimé par l’ouvrier",
+"🗑️ eliminado por el operario"
+],
+[
+"modifié · voir avant",
+"editado · ver antes"
+],
+[
+"🔒 Répondre en privé",
+"🔒 Responder en privado"
+],
+[
+"À",
+"Para"
+],
+[
+"👥 Tous les habitants du fil",
+"👥 Todos los habitantes del chat"
+],
+[
+"🔒 Privé — {0}",
+"🔒 Privado — {0}"
+],
+[
+"🔒 = message privé entre un habitant et vous (les autres ne le voient pas). Dans leur app : ✓ envoyé · ✓✓ arrivé ici · ✓✓ bleu lu par vous. Chacun peut modifier, rendre privé / public ou supprimer son message pendant 15 minutes ; vous voyez le texte d’avant.",
+"🔒 = mensaje privado entre un habitante y usted (los demás no lo ven). En su app: ✓ enviado · ✓✓ llegado aquí · ✓✓ azul leído por usted. Cada uno puede editar, hacer privado / público o eliminar su mensaje durante 15 minutos; usted ve el texto anterior."
+],
+[
+"Message privé impossible : l’app de cet habitant n’est pas active.",
+"Mensaje privado imposible: la app de este habitante no está activa."
+],
 ];
