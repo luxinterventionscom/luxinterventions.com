@@ -1,5 +1,5 @@
 // App des clients (Hotel / Airbnb) : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'hote-shell-v1.4.0';
+const CACHE = 'hote-shell-v1.4.1';
 const SHELL = ['/hote.html', '/hote.js', '/ares/espace-crypto.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/pubstat.js', '/ares/reqmark.js', '/ares/wxradio.js', '/ares/nbien.js', '/ares/trip.js', '/hote.webmanifest', '/ares/icons/lux-192.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
