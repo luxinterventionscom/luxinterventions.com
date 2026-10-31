@@ -15,6 +15,13 @@ const PHOTOS = {
 };
 const kv = new Map();
 export const env = { PHOTOS, HITS: { async get(k) { return kv.get(k) ?? null; }, async put(k, v) { kv.set(k, v); } }, ARES_SETUP_CODE: 'x' };
+// D1=1 : base D1 simulée (SQLite de Node) pour les statistiques des annonces (vues, 👍 👎 👉)
+if (process.env.D1) {
+  const { DatabaseSync } = await import('node:sqlite');
+  const db = new DatabaseSync(':memory:');
+  const st = (q, a = []) => ({ bind: (...b) => st(q, b), async all() { return { results: db.prepare(q).all(...a) }; }, async first() { return db.prepare(q).get(...a) ?? null; }, async run() { db.prepare(q).run(...a); return { success: true }; }, q, a });
+  env.DB = { prepare: (q) => st(q), async batch(list) { const out = []; for (const x of list) { if (/^\s*(select|insert[\s\S]*returning)/i.test(x.q)) out.push({ results: db.prepare(x.q).all(...x.a) }); else { db.prepare(x.q).run(...x.a); out.push({ success: true }); } } return out; }, exec: async (q) => db.exec(q) };
+}
 export async function start(vp = { width: 1100, height: 900 }) {
   const b = await chromium.launch(); const ctx = await b.newContext({ viewport: vp });
   await routeCtx(ctx);

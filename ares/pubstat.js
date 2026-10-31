@@ -13,6 +13,8 @@ const flush = () => {
   if (queue.length) timer = setTimeout(flush, 300);
 };
 const push = (id, ev) => { if (!cfg || !id) return; queue.push({ id, ev }); if (!timer) timer = setTimeout(flush, ev === 'v' ? 1500 : 0); };
+// 👍 👎 👉 (ares/pubsocial.js) : envoyés tout de suite
+export const pubEv = (id, ev) => push(id, ev);
 // base : adresse du Worker ; app : 'loc' | 'eq' | 'ptl' ; lang : fonction qui rend la langue affichée
 export function pubStatInit(base, app, lang) { cfg = { base: base.replace(/\/$/, ''), app, lang }; }
 export function pubSeen(root) {

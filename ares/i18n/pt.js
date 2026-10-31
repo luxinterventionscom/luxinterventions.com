@@ -17058,4 +17058,32 @@ export default [
 "{0} visites",
 "{0} passagens"
 ],
+[
+"📣 Annonces de l’année",
+"📣 Anúncios do ano"
+],
+[
+"Les annonces les plus aimées dans les apps (locataires, équipe, clients hôtel / Airbnb, taxis, portail) : 👍 j’aime, 👎 je n’aime pas, 👉 partages, vues et clics.",
+"Os anúncios mais apreciados nas apps (inquilinos, equipa, clientes hotel / Airbnb, táxis, portal): 👍 gosto, 👎 não gosto, 👉 partilhas, visualizações e cliques."
+],
+[
+"J’aime",
+"Gosto"
+],
+[
+"Je n’aime pas",
+"Não gosto"
+],
+[
+"Partages",
+"Partilhas"
+],
+[
+"j’aime · je n’aime pas · partages",
+"gosto · não gosto · partilhas"
+],
+[
+"Pas encore de j’aime, de partages ni de vues cette année.",
+"Ainda sem gostos, partilhas nem visualizações este ano."
+],
 ];

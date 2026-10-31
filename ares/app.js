@@ -28,7 +28,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.207.1';
+const VERSION = '2.208.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -992,6 +992,8 @@ const pubSlot = (a) => (PUB_SLOTS[a.slot] ? a.slot : 'milieu');
 const pubAud = (a) => (Array.isArray(a.aud) && a.aud.length ? a.aud : ['loc']);
 // Statistiques anonymes des annonces (vues : une fois par jour et par téléphone ; clics : carte, appel, site, vidéo)
 const PUB_EV = { map: '🗺️ Carte / itinéraire', call: '📞 Appels', web: '🌐 Site web', video: '▶ Vidéo' };
+// 👍 👎 👉 des apps (ares/pubsocial.js) : un avis par téléphone, retirable (unl / und)
+const PUB_SOC = { like: 1, unl: 1, dis: 1, und: 1, share: 1 };
 const PUB_LANGS = { fr: 'Français', it: 'Italiano', de: 'Deutsch', pt: 'Português', en: 'English', es: 'Español' };
 function pubStatsBlock(a) {
   const st = pubStatsFor(a.id, a.debut || '0000'), last = pubStatsFor(a.id, addDays(today(), -29));
@@ -1000,6 +1002,7 @@ function pubStatsBlock(a) {
     <div class="metrics">
       <div class="metric"><div class="lbl">Vues</div><div class="val">${st.v}</div><div class="sub">depuis le ${fmtDate(a.debut)}</div></div>
       <div class="metric"><div class="lbl">Clics</div><div class="val">${st.taps}</div><div class="sub">taux de clic ${String(st.ctr).replace('.', ',')} %</div></div>
+      <div class="metric"><div class="lbl">👍 · 👎 · 👉</div><div class="val">${st.like} · ${st.dis} · ${st.sh}</div><div class="sub"><span>j’aime · je n’aime pas · partages</span></div></div>
     </div>
     <p class="small" style="margin:8px 0 0">${Object.entries(PUB_EV).map(([k, v]) => html`<span>${v}</span> <b>${st.ev[k] || 0}</b>`).reduce((x, y) => html`${x} · ${y}`)}</p>
     <p class="small muted" style="margin:4px 0 0">${Object.entries(PUB_AUD).filter(([k]) => st.app[k]).map(([k, v]) => html`<span>${v}</span> ${st.app[k].v}/${st.app[k].t}`).reduce((x, y) => html`${x} · ${y}`, '')}</p>
@@ -1039,18 +1042,20 @@ async function pubStatsLoad(force) {
   if (!force && st && (st.loading || Date.now() - st.at < 15000)) return;
   ui.pubStats = { ...(st || { rows: [] }), loading: true, at: Date.now() };
   try { ui.pubStats = { rows: await vault.pubStats(400), at: Date.now() }; } catch { ui.pubStats = { rows: (st && st.rows) || [], at: Date.now(), err: true }; }
-  if (ui.route === 'maintenance') renderView();
+  if (ui.route === 'maintenance' || ui.route === 'champpub') renderView();
   if (ui.sheet && ui.sheet.kind === 'pub-form') { ui.sheet.rendered = false; renderSheet(); }
 }
 function pubStatsFor(id, from = '0000', to = '9999') {
-  const r = { v: 0, taps: 0, ev: {}, app: {}, lang: {}, day: {} };
+  const r = { v: 0, taps: 0, ev: {}, app: {}, lang: {}, day: {}, soc: {} };
   for (const x of (ui.pubStats && ui.pubStats.rows) || []) {
     if (x.ad !== id || x.day < from || x.day > to) continue;
     const d = (r.day[x.day] ||= { v: 0, t: 0 });
     if (x.ev === 'v') { r.v += x.n; d.v += x.n; (r.app[x.app] ||= { v: 0, t: 0 }).v += x.n; r.lang[x.lang] = (r.lang[x.lang] || 0) + x.n; }
+    else if (PUB_SOC[x.ev]) r.soc[x.ev] = (r.soc[x.ev] || 0) + x.n;
     else { r.taps += x.n; d.t += x.n; r.ev[x.ev] = (r.ev[x.ev] || 0) + x.n; (r.app[x.app] ||= { v: 0, t: 0 }).t += x.n; }
   }
   r.ctr = r.v ? Math.round((r.taps / r.v) * 1000) / 10 : 0;
+  r.like = Math.max(0, (r.soc.like || 0) - (r.soc.unl || 0)); r.dis = Math.max(0, (r.soc.dis || 0) - (r.soc.und || 0)); r.sh = r.soc.share || 0;
   return r;
 }
 const pubOut = (a) => ({ id: a.id, slot: pubSlot(a), cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '', ...(a.jours && a.jours.length ? { jours: a.jours } : {}), ...(a.h1 && a.h2 ? { h1: a.h1, h2: a.h2 } : {}), ...(a.type ? { type: a.type } : {}) });
@@ -1716,7 +1721,7 @@ function pubSection(f = '') {
         <span class="meta" style="display:block;white-space:normal">📍 ${a.adresse}${a.texte ? ' · ' + a.texte.slice(0, 90) : ''}${a.video ? ' · ▶ ' + (videoEmbed(a.video) ? videoEmbed(a.video).name : 'vidéo') : ''}</span>
         <span class="meta" style="display:block"><b>${PUB_SLOTS[pubSlot(a)].split(' — ')[0]}</b> · ${pubAud(a).map((k) => html`<span>${PUB_AUD[k]}</span>`).reduce((x, y) => html`${x} · ${y}`)}</span>
         <span class="meta"><span>${a.immId ? immName(a.immId) : 'Tous les immeubles'}</span>${a.fin ? html` · <span>${fmtDate(a.debut)} → ${fmtDate(a.fin)}</span>` : ''}</span>
-        ${(() => { const st = pubStatsFor(a.id, a.debut || '0000'); return st.v || st.taps ? html`<span class="meta" style="display:block">📊 <b>${st.v}</b> <span>vues</span> · <b>${st.taps}</b> <span>clics</span>${st.v ? html` · <span>${String(st.ctr).replace('.', ',')} %</span>` : ''}</span>` : ''; })()}</span>
+        ${(() => { const st = pubStatsFor(a.id, a.debut || '0000'); return st.v || st.taps || st.like || st.dis || st.sh ? html`<span class="meta" style="display:block">📊 <b>${st.v}</b> <span>vues</span> · <b>${st.taps}</b> <span>clics</span> · 👍 <b>${st.like}</b> · 👎 <b>${st.dis}</b> · 👉 <b>${st.sh}</b>${st.v ? html` · <span>${String(st.ctr).replace('.', ',')} %</span>` : ''}</span>` : ''; })()}</span>
         <span class="badge ${a.st === 'wait' || a.st === 'pay' ? 'warn' : a.st === 'no' ? 'bad' : a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.st === 'wait' ? '⏳ à valider' : a.st === 'pay' ? '💶 à payer' : a.st === 'no' ? '❌ refusée' : a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
       return html`${f ? '' : annBlock()}<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
         ${all.length ? html`<p class="tiny muted" style="margin:-4px 0 8px">📊 Statistiques anonymes : vues (une fois par jour et par téléphone) et clics. <a href="#" data-action="pub-stats-refresh">↻ Actualiser les statistiques</a></p>` : ''}
@@ -3506,7 +3511,7 @@ function go(route, replace) {
   ui.route = route;
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
-  const navRoute = route === 'champeq' ? 'champions' : route === 'rapports' ? 'compta' : ['paiements', 'locataires'].includes(route) ? 'immeubles' : route;
+  const navRoute = route === 'champeq' || route === 'champpub' ? 'champions' : route === 'rapports' ? 'compta' : ['paiements', 'locataires'].includes(route) ? 'immeubles' : route;
   document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute && (!b.dataset.sec || b.dataset.sec === (ui.cpSec === 'abo' ? 'abo' : 'compta')) ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   bnavShow();
   renderView();
@@ -3991,7 +3996,7 @@ const locTabs = (cur, nGone) => html`<div class="tabs loc-tabs" role="tablist" s
   <button class="tab" role="tab" aria-selected="${cur === 'actuels'}" data-action="loc-seg" data-id="actuels">Actuels</button>
   <button class="tab" role="tab" aria-selected="${cur === 'anciens'}" data-action="loc-seg" data-id="anciens">Anciens (${nGone})</button>
   ${masked().has('paiements') ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === 'paiements'}" data-action="go" data-to="paiements"><span class="t-lg">💶 Gestion locataire</span><span class="t-sm">💶 Gestion loc.</span></button>`}</div>`;
-const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
+const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année'], ['champpub', '📣 Annonces de l’année']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
 // Éditeur d'horaire sur 7 jours : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute.
 // slotsOf(j) : créneaux du jour j (0 = lundi) ; title(j) : nom du jour (avec la date pour une semaine précise)
 function horWeekEditor(slotsOf, title) {
@@ -4642,6 +4647,28 @@ function rptView() {
 
 const VIEWS = {
   rapports() { return rptView(); },
+  // 📣 les annonces les plus aimées de l'année : 👍 👎 👉 (apps) + vues et clics, podium
+  champpub() {
+    pubStatsLoad();
+    const cy = new Date().getFullYear(), y = ui.champPubYear || cy, from = y + '-01-01', to = y + '-12-31';
+    const rows = vault.list('avis').filter(isPub).map((a) => [a, pubStatsFor(a.id, from, to)]).filter(([, st]) => st.v || st.taps || st.like || st.dis || st.sh)
+      .sort((p, q) => q[1].like - p[1].like || q[1].sh - p[1].sh || q[1].v - p[1].v);
+    const tot = (k) => sum(rows, ([, st]) => st[k]), medal = ['🥇', '🥈', '🥉'];
+    const nm = (a) => (a.annId && (vault.get('reglages', a.annId) || {}).nom) || a.nom;
+    return html`
+      ${champTabs('champpub')}${pageHead('📣 Annonces de l’année', 'Les annonces les plus aimées dans les apps (locataires, équipe, clients hôtel / Airbnb, taxis, portail) : 👍 j’aime, 👎 je n’aime pas, 👉 partages, vues et clics.')}
+      <div class="chips" style="margin-bottom:14px">${[cy, cy - 1].map((yy) => html`<button class="chip" data-action="champpub-year" data-id="${yy}" aria-pressed="${yy === y}">${yy}</button>`)}</div>
+      <div class="metrics" style="margin-bottom:14px">
+        <div class="metric"><div class="lbl">👍 <span>J’aime</span></div><div class="val">${tot('like')}</div></div>
+        <div class="metric"><div class="lbl">👎 <span>Je n’aime pas</span></div><div class="val">${tot('dis')}</div></div>
+        <div class="metric"><div class="lbl">👉 <span>Partages</span></div><div class="val">${tot('sh')}</div></div>
+        <div class="metric"><div class="lbl">👁 <span>Vues</span></div><div class="val">${tot('v')}</div></div>
+        <div class="metric"><div class="lbl">👆 <span>Clics</span></div><div class="val">${tot('taps')}</div></div>
+      </div>
+      ${rows.length ? html`<div class="list">${rows.map(([a, st], i) => html`<button class="row" data-action="edit-pub" data-id="${a.id}"><span class="avatar">${medal[i] || i + 1}</span><span class="grow"><span class="title" style="display:block">${nm(a)}</span><span class="meta">${AN_TYPES[a.type] || ''} ${a.nom !== nm(a) ? '· ' + a.nom : ''}</span><span class="meta" style="display:block">👍 <b>${st.like}</b> · 👎 <b>${st.dis}</b> · 👉 <b>${st.sh}</b> · 👁 ${st.v} · 👆 ${st.taps}</span></span><span class="chev">›</span></button>`)}</div>`
+        : html`<p class="small muted">Pas encore de j’aime, de partages ni de vues cette année.</p>`}
+      ${ui.pubStats && ui.pubStats.err ? html`<p class="tiny muted">⚠ Statistiques indisponibles (connexion ?)</p>` : ''}`;
+  },
   champeq() {
     const cy = new Date().getFullYear();
     const y = ui.champEqYear || cy;
@@ -8814,6 +8841,7 @@ const ACTIONS = {
   },
   'champ-year': (d) => { ui.champYear = +d.id; renderView(); },
   'champeq-year': (d) => { ui.champEqYear = +d.id; renderView(); },
+  'champpub-year': (d) => { ui.champPubYear = +d.id; renderView(); },
   async 'champeq-prize'(d) {
     const y = ui.champEqYear || new Date().getFullYear();
     const cur = vault.get('reglages', 'champions') || {};

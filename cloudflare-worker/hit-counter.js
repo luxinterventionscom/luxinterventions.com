@@ -73,6 +73,7 @@ async function route(request, env, ctx, headers) {
 
     // Statistiques anonymes des annonces (vues / clics) envoyées par les apps : aucun nom, aucune donnée personnelle
     if (url.pathname === "/api/pubstat" && request.method === "POST") return pubStatPost(request, env, headers);
+    if (url.pathname === "/api/publikes" && request.method === "GET") return pubLikesGet(url, env, headers);
 
     // ── Archivio cifrato Ares (gestion locataires) ──
     if (url.pathname.startsWith("/api/ares/")) {
@@ -1397,7 +1398,8 @@ async function pubStatInit(env) {
   if (!pubStatReady) { await env.DB.batch(PUBSTAT_SCHEMA.map((q) => env.DB.prepare(q))); pubStatReady = true; }
   return true;
 }
-const PUBSTAT_EV = ["v", "map", "call", "web", "video"];
+// v = vue ; map / call / web / video = touchers ; like / unl, dis / und = 👍 👎 et leur retrait ; share = 👉 partagé
+const PUBSTAT_EV = ["v", "map", "call", "web", "video", "like", "unl", "dis", "und", "share"];
 async function pubStatPost(request, env, headers) {
   try {
     if (!(await pubStatInit(env))) return new Response(null, { status: 204, headers });
@@ -1405,7 +1407,7 @@ async function pubStatPost(request, env, headers) {
     if (len > 4000) return new Response(null, { status: 413, headers });
     let b;
     try { b = JSON.parse(await request.text()); } catch { b = null; }
-    const app = ["loc", "eq", "ptl"].includes(b && b.app) ? b.app : "";
+    const app = ["loc", "eq", "ptl", "hote", "taxi", "ann"].includes(b && b.app) ? b.app : "";
     const lang = ["fr", "it", "de", "pt", "en", "es"].includes(b && b.lang) ? b.lang : "fr";
     const items = (b && Array.isArray(b.items) ? b.items : []).filter((x) => x && /^[a-z0-9]{6,40}$/i.test(x.id || "") && PUBSTAT_EV.includes(x.ev)).slice(0, 10);
     if (!app || !items.length) return new Response(null, { status: 204, headers });
@@ -1419,6 +1421,20 @@ async function pubStatPost(request, env, headers) {
     if (Math.random() < 0.02) await env.DB.prepare("DELETE FROM pub_rl WHERE k < ?").bind(hour).run().catch(() => {}); // heures passées
     return new Response(null, { status: 204, headers });
   } catch { return new Response(null, { status: 204, headers }); }
+}
+
+// 👍 de chaque annonce (likes − retraits), pour toutes les apps ; les 👎 ne sont pas publics (centrale seulement)
+async function pubLikesGet(url, env, headers) {
+  const h = { ...headers, "Content-Type": "application/json", "Cache-Control": "public, max-age=30" };
+  try {
+    const ids = String(url.searchParams.get("ids") || "").split(",").filter((x) => /^[a-z0-9]{6,40}$/i.test(x)).slice(0, 30);
+    if (!ids.length || !(await pubStatInit(env))) return new Response("{}", { headers: h });
+    const r = await env.DB.prepare(`SELECT ad, ev, SUM(n) AS n FROM pub_stats WHERE ev IN ('like', 'unl') AND ad IN (${ids.map(() => "?").join(",")}) GROUP BY ad, ev`).bind(...ids).all();
+    const out = {};
+    for (const x of r.results || []) out[x.ad] = (out[x.ad] || 0) + (x.ev === "like" ? 1 : -1) * (x.n || 0);
+    for (const k of Object.keys(out)) out[k] = Math.max(0, out[k]);
+    return new Response(JSON.stringify(out), { headers: h });
+  } catch { return new Response("{}", { headers: h }); }
 }
 
 const TICKER_SYMBOLS = "BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,BINANCE:USDTUSD,BINANCE:BNBUSD,BINANCE:SOLUSD,BITSTAMP:XRPUSD,BINANCE:USDCUSD,BINANCE:ADAUSD,BINANCE:AVAXUSD,BINANCE:DOGEUSD,BINANCE:TRXUSD,BINANCE:DOTUSD,BINANCE:LINKUSD,BINANCE:SUIUSD,BINANCE:NEARUSD,BINANCE:LTCUSD,BINANCE:BCHUSD,BINANCE:PEPEUSD,BINANCE:UNIUSD,BINANCE:APTUSD";

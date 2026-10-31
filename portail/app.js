@@ -9,6 +9,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
+import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from '/ares/pubsocial.js';
 import { scrollHintInit } from '/ares/scroll-hint.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
 import { tripView, tripFetch } from '/ares/trip.js';
@@ -616,7 +617,7 @@ function renderView() {
   const a = document.activeElement;
   const keep = a && a.dataset && a.dataset.input === 'q' ? a.selectionStart : null;
   setHtml(view, VIEWS[state.route]());
-  if (!state.demo) pubSeen(view);
+  if (!state.demo) { pubSeen(view); pubSocialLoad(view); }
   tripPaint();
   if (keep != null) { const s = view.querySelector('[data-input=q]'); if (s) { s.focus(); s.setSelectionRange(keep, keep); } }
 }
@@ -689,6 +690,8 @@ function guideCard(stats) {
 const PUB_ICON = { musique: '🎵', resto: '🍕', bar: '🍺', horeca: '☕', bricolage: '🔨', meubles: '🛋️', courses: '🛒', proxi: '🏪', bureau: '🏢', social: '📱', services: '🧰', autre: '📌' };
 pubStatInit(API.replace(/\/api\/portail\/$/, ''), 'ptl', () => LANG);
 document.addEventListener('click', (e) => { if (!state.demo) pubTap(e); }, true);
+pubSocialInit(API.replace(/\/api\/portail\/$/, ''), () => LANG);
+document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
 const TICKER_BASE = API.replace(/\/api\/portail\/$/, '');
 // la barra crypto (servie par le Worker) annonce sa hauteur réelle : le cadre s'adapte (PC, téléphone)
 addEventListener('message', (e) => {
@@ -724,7 +727,7 @@ function pubSlot(k) {
         <a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener" data-pev="map">🧭 Itinéraire</a>
         ${a.tel ? html`<a class="btn sm" href="tel:${a.tel.replace(/[^\d+]/g, '')}" data-pev="call">📞 Appeler</a>` : ''}
         ${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener" data-pev="web">🌐 Site web</a>` : ''}
-        ${a.video && !v ? html`<a class="btn sm" href="${a.video}" target="_blank" rel="noopener" data-pev="video">▶ Vidéo</a>` : ''}</div></details>`;
+        ${a.video && !v ? html`<a class="btn sm" href="${a.video}" target="_blank" rel="noopener" data-pev="video">▶ Vidéo</a>` : ''}</div>${state.demo ? '' : new Raw(pubSocialBar(a))}</details>`;
 }
 // barre des cours crypto (TradingView) : servie par le Worker sur un autre domaine, isolée du portail
 const tickerBar = () => html`<div class="ticker"><iframe src="${API.replace(/api\/portail\/$/, '')}ticker" title="Crypto" loading="lazy" referrerpolicy="no-referrer" scrolling="no"></iframe></div>`;

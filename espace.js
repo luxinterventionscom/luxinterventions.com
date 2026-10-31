@@ -7,6 +7,7 @@ import { openJson, sealJson, openBytes, sealForOwner, codeHash, unwrapWithCode }
 
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
+import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from '/ares/pubsocial.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
@@ -772,7 +773,7 @@ function adBox(x, t, d, top) {
   const v = x.video ? videoEmbed(x.video) : null;
   return `<details class="card pub-box mk mk-pub mk-on${top ? ' pub-top' : ''}" data-pid="${esc(x.id)}"${pubShut.has(x.id) ? '' : ' open'}><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b> · ${esc(t.ad.cats[x.cat] || t.ad.cats.autre)}</div><b class="pub-name">${esc(x.nom)}</b></summary>${x.texte ? `<div class="pub-txt">${esc(x.texte)}</div>` : ''}
     ${v ? `<div class="vid${v.tall ? ' tall' : ''}${v.audio ? ' audio' : ''}"${v.audio ? ` style="height:${v.audio}px"` : ''} data-vsrc="${esc(v.src)}"></div>` : ''}<div class="meta" style="margin-top:6px">📍 ${esc(x.adresse)}</div>
-    <div class="pub-acts"><button class="btn sm" data-ad="${esc(x.id)}" data-pev="map">${esc(t.ad.see)}</button>${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}${x.video && !v ? `<a class="btn sm sec" href="${esc(x.video)}" target="_blank" rel="noopener" data-pev="video">▶ Video</a>` : ''}${top && d.adresse ? `<button class="btn sm sec" data-home="1">${esc(t.ad.home)}</button>` : ''}</div></details>`;
+    <div class="pub-acts"><button class="btn sm" data-ad="${esc(x.id)}" data-pev="map">${esc(t.ad.see)}</button>${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}${x.video && !v ? `<a class="btn sm sec" href="${esc(x.video)}" target="_blank" rel="noopener" data-pev="video">▶ Video</a>` : ''}${top && d.adresse ? `<button class="btn sm sec" data-home="1">${esc(t.ad.home)}</button>` : ''}</div>${pubSocialBar(x)}</details>`;
 }
 // Barre des cours crypto (TradingView), servie par le Worker sur un autre domaine : elle ne voit rien de l'app
 const TICKER = `<div class="ticker" data-vsrc="${API}/ticker"></div>`;
@@ -1144,6 +1145,7 @@ function render() {
   }
   hydrateEdl();
   pubSeen(app);
+  pubSocialLoad(app);
   if (s.tools && myTools == null) toolsFetch();
   if (d.chat) { const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight; if (!chatTimer) chatStart(); chatSeen(); }
 }
@@ -1232,6 +1234,8 @@ async function compress(file) {
 }
 
 pubStatInit(API, 'loc', () => lang);
+pubSocialInit(API, () => lang);
+document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
 app.addEventListener('click', pubTap, true);
 app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-ianim]')) { import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'NOBIS', icon: '/ares/icons/ares-192.png', lang })); return; }
