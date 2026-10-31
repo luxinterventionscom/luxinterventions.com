@@ -1,5 +1,5 @@
-<div class="bar" style="background:#0e7490"><b>7 · 🆕 Neuheiten (v2.205)</b></div>
-<h1>🆕 <b>Neuheiten der Version 2.205</b></h1>
+<div class="bar" style="background:#0e7490"><b>7 · 🆕 Neuheiten (v2.210)</b></div>
+<h1>🆕 <b>Neuheiten der Version 2.210</b></h1>
 <p>Was sich seit Version 2.150 geändert hat. Die neuen Bereiche (Hotel und Airbnb, Taxi, Agenturen und Eigentümer, Anzeigen, Lizenzen) haben ihren eigenen Teil, von 8 bis 12; der <b>Team-Chat</b> und die <b>Zahlungen</b> stehen in Teil 13.</p>
 <h3>🗂️ <b>Verwaltungs-App</b></h3>
 <ol>
@@ -154,6 +154,13 @@
 <h3><b>4. Die Zentrale des Kunden</b></h3>
 <p>Der Kunde sieht oben seinen Namen, die Bereiche seiner Branche und ein Test- oder Ablauf-Banner. Seine Objekte verwaltet er selbst; die <b>Einsätze</b> macht weiterhin die Haupt-Zentrale: unter <b>Anfragen → ＋ Anfrage</b> schreibt er Betreff, Dringlichkeit, Adresse, Beschreibung und Kontakt. Die Anfrage kommt <b>verschlüsselt</b> direkt in Ihrer <b>Wartung</b> an.</p>
 <div class="shots"><img src="shots/de/t-centrale.jpg" style="width:52mm"><img src="shots/de/t-demande.jpg" style="width:52mm"></div>
+<h3><b>5. Die Daten des Kunden gehören ihm (DSGVO, Bedingungen)</b></h3>
+<p>Die Daten der Zentrale eines Kunden (Gäste, Mieter, Zahlungen, Rechnungen, Nachrichten) sind <b>mit seinem Schlüssel verschlüsselt</b>. Weder Sie noch sonst jemand kann sie lesen: Auf dem Server liegen nur unlesbare Bytes. Sie erhalten nur, was der Kunde schicken will: seine <b>Einsatzanfragen</b> und die Zahlung <b>Ihrer</b> Rechnungen.</p>
+<table><tr><th>Phase</th><th>Was mit den Daten geschieht</th></tr>
+<tr><td>🟠 <b>Nur Lesen</b></td><td>Rechnung über die gewählte Frist hinaus unbezahlt (<b>Nur Lesen nach</b>, Standard 30 Tage) oder Abo abgelaufen: Der Kunde <b>sieht</b> alles und kann seine <b>verschlüsselte Sicherung</b> machen, aber nichts ändern. Er zahlt → automatisch entsperrt.</td></tr>
+<tr><td>🔴 <b>Gesperrt</b></td><td>Er kommt nicht mehr hinein, die Daten bleiben aber <b>unversehrt und verschlüsselt</b>. Reaktiviert → alles ist wieder da.</td></tr>
+<tr><td>🗑️ <b>Löschen mit Zertifikat</b></td><td>Nur der Direktor, durch Eintippen des Kundennamens. Alles wird endgültig gelöscht; es bleibt das <b>Zertifikat</b> (Datum, Objekte, Fingerabdruck).</td></tr></table>
+<div class="box"><p>📜 In die <b>AGB</b> schreiben: Der Kunde ist für seine Sicherungen verantwortlich · bei Nichtzahlung: Nur Lesen → Frist (z. B. 30 Tage) zum Herunterladen → Löschung mit Zertifikat · auf Wunsch erhält er eine <b>verschlüsselte Kopie</b> (nur er kann sie öffnen) · Schlüssel verloren = Daten für niemanden wiederherstellbar · bei Verkauf des Geschäfts übernimmt der Käufer die Pflichten gegenüber den Kunden. Lassen Sie den Text von einem Anwalt oder Steuerberater des Landes prüfen.</p></div>
 
 <div class="bar" style="background:#047857"><b>13 · 💬 Team-Chat und 💶 Zahlungen</b></div>
 <h1><b>Team-Chat</b></h1>
@@ -168,6 +175,11 @@
 <li><b>Wartung → Team → 📣 Sondernachricht an das Team</b>: die Gruppe ist schon angehakt, Sie können nur für diese Nachricht jemanden entfernen oder hinzufügen.</li>
 <li>Schreiben und senden: jeder Empfänger sieht sie in seinem Chat mit dem Etikett <b>📣 Sondernachricht</b>. Wer nicht in der Gruppe ist, sieht sie nicht.</li></ol>
 <div class="shots"><img src="shots/de/chat-special.jpg" style="width:52mm"><img src="shots/de/chat-eq-special.jpg" style="width:52mm"></div>
+<h3><b>Nachrichten im Haus: 🔒 privat, ✓✓ blau, bearbeiten</b></h3>
+<ol><li><b>🔒 Privat — nur für die Zentrale</b>: Der Mieter kreuzt das Feld vor dem Senden an. Nur er und die Zentrale lesen sie; die anderen sehen sie nicht. In der Zentrale: <b>🔒 Privat antworten</b> oder „An: 🔒 Privat — Name“.</li>
+<li><b>Haken</b> an den eigenen Nachrichten: ✓ gesendet · ✓✓ bei der Zentrale angekommen · ✓✓ <b>blau</b> von der Zentrale gelesen. Auch im Team-Chat.</li>
+<li><b>⋯</b> an der eigenen Nachricht, <b>15 Minuten</b> lang: ✏️ Bearbeiten · 🔒 Privat machen / 🔓 Öffentlich machen · 🗑️ Löschen. Die anderen sehen „bearbeitet“; die Zentrale sieht den vorherigen Text (<b>bearbeitet · vorher ansehen</b>).</li></ol>
+<div class="box"><p>⚠️ <b>Archivieren</b>: Ein roter Rahmen <b>ACHTUNG</b> erklärt, was aus den Listen verschwindet, und dass die Rechnungsnummerierung nur dann wieder bei 0001 beginnt, wenn Sie „🧾 Rechnungen und Angebote“ ankreuzen (jetzt standardmäßig nicht angekreuzt).</p></div>
 
 <h1><b>Zahlungen</b></h1>
 <h2>Wer zahlt wem</h2>

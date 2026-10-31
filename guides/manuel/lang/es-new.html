@@ -1,5 +1,5 @@
-<div class="bar" style="background:#0e7490"><b>7 · 🆕 Novedades (v2.205)</b></div>
-<h1>🆕 <b>Novedades de la versión 2.205</b></h1>
+<div class="bar" style="background:#0e7490"><b>7 · 🆕 Novedades (v2.210)</b></div>
+<h1>🆕 <b>Novedades de la versión 2.210</b></h1>
 <p>Lo que ha cambiado desde la versión 2.150. Las nuevas secciones (Hotel y Airbnb, Taxi, Agencias y propietarios, Anuncios, Licencias) tienen su parte, de la 8 a la 12; el <b>chat del equipo</b> y los <b>pagos</b> están en la parte 13.</p>
 <h3>🗂️ <b>App de gestión</b></h3>
 <ol>
@@ -154,6 +154,13 @@
 <h3><b>4. La central del cliente</b></h3>
 <p>El cliente ve su nombre arriba, las secciones de su sector y una franja de prueba o de vencimiento. Gestiona solo sus bienes; las <b>intervenciones</b> las sigue haciendo la central principal: en <b>Solicitudes → ＋ Solicitud</b> escribe asunto, urgencia, dirección, descripción y contacto. La solicitud llega <b>cifrada</b> directamente a su <b>Mantenimiento</b>.</p>
 <div class="shots"><img src="shots/es/t-centrale.jpg" style="width:52mm"><img src="shots/es/t-demande.jpg" style="width:52mm"></div>
+<h3><b>5. Los datos del cliente son suyos (RGPD, condiciones)</b></h3>
+<p>Los datos de la central de un cliente (huéspedes, inquilinos, pagos, facturas, mensajes) están <b>cifrados con su clave</b>. Ni ustedes ni nadie puede leerlos: en el servidor solo hay bytes ilegibles. Solo reciben lo que el cliente decide enviar: sus <b>solicitudes de intervención</b> y el pago de <b>sus</b> facturas.</p>
+<table><tr><th>Fase</th><th>Qué pasa con los datos</th></tr>
+<tr><td>🟠 <b>Solo lectura</b></td><td>Factura impagada más allá del plazo elegido (<b>Solo lectura tras</b>, 30 días por defecto) o suscripción vencida: el cliente <b>ve</b> todo y puede hacer su <b>Copia cifrada</b>, pero no modifica nada. Paga → se desbloquea solo.</td></tr>
+<tr><td>🔴 <b>Bloqueado</b></td><td>Ya no entra, pero los datos quedan <b>intactos y cifrados</b>. Reactivado → lo recupera todo.</td></tr>
+<tr><td>🗑️ <b>Eliminar con certificado</b></td><td>Solo el Director, escribiendo el nombre del cliente. Todo se borra para siempre; queda el <b>certificado</b> (fecha, objetos, huella).</td></tr></table>
+<div class="box"><p>📜 A escribir en las <b>condiciones generales</b>: el cliente es responsable de sus copias · si no paga: solo lectura → preaviso (p. ej. 30 días) para descargar → eliminación con certificado · a petición se le entrega una <b>copia cifrada</b> (solo él puede abrirla) · clave perdida = datos irrecuperables por nadie · en caso de venta del negocio, el comprador asume las obligaciones con los clientes. Hagan revisar el texto por un abogado o asesor del país.</p></div>
 
 <div class="bar" style="background:#047857"><b>13 · 💬 Chat del equipo y 💶 Pagos</b></div>
 <h1><b>Chat del equipo</b></h1>
@@ -168,6 +175,11 @@
 <li><b>Mantenimiento → equipo → 📣 Mensaje especial al equipo</b>: el grupo ya está marcado; puede quitar o añadir a alguien solo para este mensaje.</li>
 <li>Escriba y envíe: cada destinatario lo ve en su chat con la etiqueta <b>📣 Mensaje especial</b>. Quien no está en el grupo no lo ve.</li></ol>
 <div class="shots"><img src="shots/es/chat-special.jpg" style="width:52mm"><img src="shots/es/chat-eq-special.jpg" style="width:52mm"></div>
+<h3><b>Mensajes de la casa: 🔒 privado, ✓✓ azul, editar</b></h3>
+<ol><li><b>🔒 Privado — solo para la central</b>: el inquilino marca la casilla antes de enviar. Solo él y la central lo leen; los demás no lo ven. Desde la central: <b>🔒 Responder en privado</b> o «Para: 🔒 Privado — nombre».</li>
+<li><b>Marcas</b> en los propios mensajes: ✓ enviado · ✓✓ llegó a la central · ✓✓ <b>azul</b> leído por la central. También en el chat del equipo.</li>
+<li><b>⋯</b> en el propio mensaje, durante <b>15 minutos</b>: ✏️ Editar · 🔒 Hacer privado / 🔓 Hacer público · 🗑️ Eliminar. Los demás ven «editado»; la central ve el texto anterior (<b>editado · ver antes</b>).</li></ol>
+<div class="box"><p>⚠️ <b>Archivar</b>: un recuadro rojo <b>ATENCIÓN</b> explica lo que desaparece de las listas, y que la numeración de las facturas vuelve a 0001 solo si marca «🧾 Facturas y presupuestos» (ahora desmarcado por defecto).</p></div>
 
 <h1><b>Pagos</b></h1>
 <h2>Quién paga a quién</h2>

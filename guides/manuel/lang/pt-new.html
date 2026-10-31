@@ -1,5 +1,5 @@
-<div class="bar" style="background:#0e7490"><b>7 · 🆕 Novidades (v2.205)</b></div>
-<h1>🆕 <b>Novidades da versão 2.205</b></h1>
+<div class="bar" style="background:#0e7490"><b>7 · 🆕 Novidades (v2.210)</b></div>
+<h1>🆕 <b>Novidades da versão 2.210</b></h1>
 <p>O que mudou desde a versão 2.150. As novas secções (Hotel e Airbnb, Táxi, Agências e proprietários, Anúncios, Licenças) têm a sua parte, de 8 a 12; o <b>chat da equipa</b> e os <b>pagamentos</b> estão na parte 13.</p>
 <h3>🗂️ <b>App de gestão</b></h3>
 <ol>
@@ -154,6 +154,13 @@
 <h3><b>4. A central do cliente</b></h3>
 <p>O cliente vê o seu nome em cima, as secções do seu setor e uma faixa de teste ou de vencimento. Gere sozinho os seus bens; as <b>intervenções</b> continuam a ser feitas pela central principal: em <b>Pedidos → ＋ Pedido</b> escreve assunto, urgência, morada, descrição e contacto. O pedido chega <b>cifrado</b> diretamente à sua <b>Manutenção</b>.</p>
 <div class="shots"><img src="shots/pt/t-centrale.jpg" style="width:52mm"><img src="shots/pt/t-demande.jpg" style="width:52mm"></div>
+<h3><b>5. Os dados do cliente são dele (RGPD, condições)</b></h3>
+<p>Os dados da central de um cliente (hóspedes, inquilinos, pagamentos, faturas, mensagens) estão <b>cifrados com a chave dele</b>. Nem vocês nem ninguém os pode ler: no servidor só há bytes ilegíveis. Só recebem o que o cliente decide enviar: os <b>pedidos de intervenção</b> e o pagamento das <b>vossas</b> faturas.</p>
+<table><tr><th>Fase</th><th>O que acontece aos dados</th></tr>
+<tr><td>🟠 <b>Só leitura</b></td><td>Fatura por pagar além do prazo escolhido (<b>Só leitura após</b>, 30 dias por defeito) ou assinatura expirada: o cliente <b>vê</b> tudo e pode fazer a sua <b>Cópia cifrada</b>, mas não altera nada. Paga → desbloqueia sozinho.</td></tr>
+<tr><td>🔴 <b>Bloqueado</b></td><td>Já não entra, mas os dados ficam <b>intactos e cifrados</b>. Reativado → reencontra tudo.</td></tr>
+<tr><td>🗑️ <b>Apagar com certificado</b></td><td>Só o Diretor, escrevendo o nome do cliente. Tudo é apagado de vez; fica o <b>certificado</b> (data, objetos, impressão digital).</td></tr></table>
+<div class="box"><p>📜 A escrever nas <b>condições gerais</b>: o cliente é responsável pelas suas cópias · se não pagar: só leitura → pré-aviso (ex. 30 dias) para descarregar → eliminação com certificado · a pedido, entrega-se uma <b>cópia cifrada</b> (só ele a abre) · chave perdida = dados irrecuperáveis por qualquer pessoa · em caso de venda da atividade, o comprador assume as obrigações perante os clientes. Peçam a revisão do texto a um advogado ou contabilista do país.</p></div>
 
 <div class="bar" style="background:#047857"><b>13 · 💬 Chat da equipa e 💶 Pagamentos</b></div>
 <h1><b>Chat da equipa</b></h1>
@@ -168,6 +175,11 @@
 <li><b>Manutenção → equipa → 📣 Mensagem especial à equipa</b>: o grupo já está marcado; pode tirar ou acrescentar alguém só para esta mensagem.</li>
 <li>Escreva e envie: cada destinatário vê-a no seu chat com a etiqueta <b>📣 Mensagem especial</b>. Quem não está no grupo não a vê.</li></ol>
 <div class="shots"><img src="shots/pt/chat-special.jpg" style="width:52mm"><img src="shots/pt/chat-eq-special.jpg" style="width:52mm"></div>
+<h3><b>Mensagens da casa: 🔒 privado, ✓✓ azul, editar</b></h3>
+<ol><li><b>🔒 Privado — só para a central</b>: o inquilino assinala a caixa antes de enviar. Só ele e a central a leem; os outros não a veem. Na central: <b>🔒 Responder em privado</b> ou «Para: 🔒 Privado — nome».</li>
+<li><b>Vistos</b> nas próprias mensagens: ✓ enviada · ✓✓ chegou à central · ✓✓ <b>azul</b> lida pela central. Também no chat da equipa.</li>
+<li><b>⋯</b> na própria mensagem, durante <b>15 minutos</b>: ✏️ Editar · 🔒 Tornar privado / 🔓 Tornar público · 🗑️ Apagar. Os outros veem «editado»; a central vê o texto anterior (<b>editado · ver antes</b>).</li></ol>
+<div class="box"><p>⚠️ <b>Arquivar</b>: uma caixa vermelha <b>ATENÇÃO</b> explica o que desaparece das listas, e que a numeração das faturas só recomeça em 0001 se assinalar «🧾 Faturas e orçamentos» (agora desmarcado por defeito).</p></div>
 
 <h1><b>Pagamentos</b></h1>
 <h2>Quem paga a quem</h2>

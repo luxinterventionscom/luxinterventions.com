@@ -1,5 +1,5 @@
-<div class="bar" style="background:#0e7490"><b>7 · 🆕 Novità (v2.205)</b></div>
-<h1>🆕 <b>Novità della versione 2.205</b></h1>
+<div class="bar" style="background:#0e7490"><b>7 · 🆕 Novità (v2.210)</b></div>
+<h1>🆕 <b>Novità della versione 2.210</b></h1>
 <p>Cosa è cambiato dalla versione 2.150. Le nuove sezioni (Hotel e Airbnb, Taxi, Agenzie e proprietari, Annunci, Licenze) hanno la loro parte, da 8 a 12; la <b>chat della squadra</b> e i <b>pagamenti</b> sono nella parte 13.</p>
 <h3>🗂️ <b>App di gestione</b></h3>
 <ol>
@@ -154,6 +154,13 @@
 <h3><b>4. La centrale del cliente</b></h3>
 <p>Il cliente vede il suo nome in alto, le voci della sua filiera e un banner di prova o di scadenza. Gestisce da solo i suoi beni; gli <b>interventi</b> restano fatti dalla centrale principale: in <b>Richieste → ＋ Richiesta</b> scrive oggetto, urgenza, indirizzo, descrizione e contatto. La richiesta arriva <b>cifrata</b> direttamente nella vostra <b>Manutenzione</b>.</p>
 <div class="shots"><img src="shots/it/t-centrale.jpg" style="width:52mm"><img src="shots/it/t-demande.jpg" style="width:52mm"></div>
+<h3><b>5. I dati del cliente: sono suoi (privacy / GDPR, condizioni)</b></h3>
+<p>I dati della centrale di un cliente (ospiti, inquilini, pagamenti, fatture, chat) sono <b>cifrati con la sua chiave</b>. Né voi né nessun altro può leggerli: sul server ci sono solo byte illeggibili. A voi arriva solo ciò che il cliente decide di mandare: le <b>richieste d’intervento</b> e i pagamenti delle <b>vostre</b> fatture.</p>
+<table><tr><th>Fase</th><th>Cosa succede ai dati</th></tr>
+<tr><td>🟠 <b>Sola lettura</b></td><td>Fattura non pagata oltre i giorni scelti (<b>Lettura sola dopo</b>, 30 di default) o abbonamento scaduto: il cliente <b>vede</b> tutto e può fare la sua <b>Backup cifrato</b>, ma non modifica. Paga → si sblocca da solo.</td></tr>
+<tr><td>🔴 <b>Bloccato</b></td><td>Non entra più, ma i dati restano <b>intatti e cifrati</b>. Riattivato → ritrova tutto.</td></tr>
+<tr><td>🗑️ <b>Cancella con certificato</b></td><td>Solo il Direttore, scrivendo il nome del cliente. Tutto viene cancellato per sempre; resta il <b>certificato</b> (data, oggetti, impronta).</td></tr></table>
+<div class="box"><p>📜 Da scrivere nelle <b>condizioni (CGV)</b>: il cliente è responsabile dei suoi backup · se non paga: sola lettura → preavviso (es. 30 giorni) per scaricare → cancellazione con certificato · su richiesta gli si consegna una <b>copia cifrata</b> (solo lui la apre) · chiave persa = dati non recuperabili da nessuno · in caso di vendita dell’attività, il compratore subentra negli obblighi verso i clienti. Fate rivedere il testo da un avvocato o commercialista del paese.</p></div>
 
 <div class="bar" style="background:#047857"><b>13 · 💬 Chat della squadra e 💶 Pagamenti</b></div>
 <h1><b>Chat della squadra</b></h1>
@@ -168,6 +175,11 @@
 <li><b>Manutenzione → squadra → 📣 Messaggio speciale alla squadra</b>: il gruppo è già spuntato, potete togliere o aggiungere qualcuno solo per questo messaggio.</li>
 <li>Scrivete e inviate: ognuno dei destinatari lo vede nella sua chat con l’etichetta <b>📣 Messaggio speciale</b>. Chi non è nel gruppo non lo vede.</li></ol>
 <div class="shots"><img src="shots/it/chat-special.jpg" style="width:52mm"><img src="shots/it/chat-eq-special.jpg" style="width:52mm"></div>
+<h3><b>Messaggi della casa: 🔒 privato, ✓✓ blu, modifica</b></h3>
+<ol><li><b>🔒 Privato — solo per la centrale</b>: l’inquilino spunta la casella prima di inviare. Lo leggono solo lui e la centrale; gli altri non lo vedono. Dalla centrale: <b>🔒 Rispondi in privato</b> o «A: 🔒 Privato — nome».</li>
+<li><b>Spunte</b> sui propri messaggi: ✓ inviato · ✓✓ arrivato alla centrale · ✓✓ <b>blu</b> letto dalla centrale. Anche nella chat della squadra.</li>
+<li><b>⋯</b> sul proprio messaggio, per <b>15 minuti</b>: ✏️ Modifica · 🔒 Rendi privato / 🔓 Rendi pubblico · 🗑️ Elimina. Gli altri vedono «modificato»; la centrale vede il testo di prima (<b>modificato · vedi prima</b>).</li></ol>
+<div class="box"><p>⚠️ <b>Archivia</b>: un riquadro rosso <b>ATTENZIONE</b> spiega cosa sparisce dalle liste e che la numerazione delle fatture riparte da 0001 solo se spuntate «🧾 Fatture e preventivi» (ora non spuntato di default).</p></div>
 
 <h1><b>Pagamenti</b></h1>
 <h2>Chi paga chi</h2>
