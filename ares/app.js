@@ -29,7 +29,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.209.0';
+const VERSION = '2.210.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3125,12 +3125,16 @@ function choiceBox(message, detail, choices) {
 const confirmBox = async (message, { ok = 'Confirmer', danger = false, detail = '' } = {}) =>
   (await choiceBox(message, detail, [{ value: 'yes', label: ok, cls: danger ? 'danger solid' : 'primary' }])) === 'yes';
 
-function promptKey(title, detail) {
+const ARCH_W1 = 'Ce qui est coché disparaît des listes, des statistiques et des apps de l’équipe et des locataires. Rien n’est effacé : « 👁 Voir les archives » le montre à nouveau.';
+const ARCH_W2 = 'La numérotation des factures et des devis repart de 0001. À faire seulement en début d’année ou après les tests : sinon deux factures risquent d’avoir le même numéro.';
+const ARCH_W3 = 'Si vous cochez « 🧾 Factures et devis », la numérotation repart de 0001 : à faire seulement en début d’année ou après les tests, sinon deux factures risquent d’avoir le même numéro.';
+function promptKey(title, detail, warn = []) {
   const dlg = $('#confirm');
   setHtml(dlg, html`
     <form class="sheet-body stack" method="dialog">
       <h2 style="font-size:18px">${title}</h2>
       ${detail ? html`<p class="muted small">${detail}</p>` : ''}
+      ${warn.length ? html`<div class="warn-box"><b class="warn-t">⚠️ ATTENTION</b>${warn.map((w) => html`<p>${w}</p>`)}</div>` : ''}
       <input type="password" name="k" autocomplete="current-password" required placeholder="Clé d'accès">
       <div class="sheet-foot" style="padding:0;border:0;margin-top:16px">
         <button class="btn" value="no" type="button">Annuler</button>
@@ -5955,14 +5959,14 @@ const SHEETS = {
     return {
       title: '🗄️ Archiver', narrow: true,
       body: html`<form id="archF" class="stack" onsubmit="return false">
-        <p class="small muted" style="margin:0">Ce qui est archivé est <b>gardé</b> (rien n’est effacé) mais ne s’affiche plus : listes, statistiques, apps de l’équipe et des locataires. « 👁 Voir les archives » le montre à nouveau.</p>
+        <div class="warn-box"><b class="warn-t">⚠️ ATTENTION</b><p>${ARCH_W1}</p><p>${ARCH_W3}</p></div>
         <div class="list">
           ${cb('interv', '🔧 Interventions', `${nT} en tout — signalements, demandes des gérances, travaux, avec leurs photos et factures (les ménages réguliers restent)`)}
           ${cb('devis', '📝 Devis', `${nD} en tout`)}
           ${masked().has('hotel') ? '' : cb('hotel', '🏨 Hotel', `Séjours terminés (départ passé) — ${nH} aujourd’hui`)}
           ${masked().has('agences') ? '' : cb('biens', '🏘️ Agences — biens', `Annonces à louer / à vendre — ${nB} en tout`, false)}
           ${cb('team', '👷 Activité de l’équipe', 'Messages et nouvelles reçus des ouvriers')}
-          ${cb('num', '🧾 Factures et devis', `La numérotation repart de 0001 (prochaine facture ${ymd(today())}-INT0001)`)}
+          ${cb('num', '🧾 Factures et devis', `⚠️ La numérotation repart de 0001 (prochaine facture ${ymd(today())}-INT0001)`, false)}
         </div>
         <label class="field">Archiver ce qui date de jusqu’au<input type="date" name="until" value="${today()}"></label>
         ${hist.length ? html`<div class="section-label" style="margin:6px 0 4px">Historique</div><div class="list small">${hist.map((a) => html`<div class="row"><span class="grow"><b>${fmtDateTime(a.at)}</b> · 👤 ${a.by || '—'}<span class="meta" style="display:block">${a.taches} interventions · ${a.devis} devis${a.hotes ? ' · ' + a.hotes + ' séjours' : ''}${a.biens ? ' · ' + a.biens + ' biens' : ''}${a.team ? ' · activité de l’équipe' : ''}${a.num ? ' · numéros à 0001' : ''}${a.until ? ' · jusqu’au ' + fmtDate(a.until) : ''}</span></span></div>`)}</div>` : ''}
@@ -9142,7 +9146,7 @@ const ACTIONS = {
     const dv = sel.devis ? vault.list('devis').filter((d) => (day(d.date) || today()) <= until) : [];
     const ho = sel.hotel ? vault.list('hotes').filter((h) => day(h.depart) && day(h.depart) <= until) : []; // ospiti già partiti
     const bi = sel.biens ? vault.list('biens').filter((b) => (day(b.cree) || today()) <= until) : [];
-    const k = await promptKey('🗄️ Archiver', `${sel.interv ? ts.length + ' interventions · ' : ''}${sel.devis ? dv.length + ' devis · ' : ''}${sel.hotel ? ho.length + ' séjours · ' : ''}${sel.biens ? bi.length + ' biens · ' : ''}${sel.team ? 'activité de l’équipe · ' : ''}${sel.num ? 'numéros de facture et de devis à 0001 · ' : ''}jusqu’au ${fmtDate(until)}. Rien n’est effacé. Saisissez votre clé d’accès pour confirmer.`);
+    const k = await promptKey('🗄️ Archiver', `${sel.interv ? ts.length + ' interventions · ' : ''}${sel.devis ? dv.length + ' devis · ' : ''}${sel.hotel ? ho.length + ' séjours · ' : ''}${sel.biens ? bi.length + ' biens · ' : ''}${sel.team ? 'activité de l’équipe · ' : ''}${sel.num ? 'numéros de facture et de devis à 0001 · ' : ''}jusqu’au ${fmtDate(until)}. Rien n’est effacé. Saisissez votre clé d’accès pour confirmer.`, [...(sel.interv || sel.devis || sel.hotel || sel.biens || sel.team ? [ARCH_W1] : []), ...(sel.num ? [ARCH_W2] : [])]);
     if (!k) return;
     if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
     const at = new Date().toISOString(), fc = factConf();

@@ -17134,4 +17134,36 @@ export default [
 "Message privé impossible : l’app de cet habitant n’est pas active.",
 "Mensagem privada impossível: a app deste morador não está ativa."
 ],
+[
+"⚠️ ATTENTION",
+"⚠️ ATENÇÃO"
+],
+[
+"Ce qui est coché disparaît des listes, des statistiques et des apps de l’équipe et des locataires. Rien n’est effacé : « 👁 Voir les archives » le montre à nouveau.",
+"O que está assinalado desaparece das listas, das estatísticas e das apps da equipa e dos inquilinos. Nada é apagado: «👁 Ver os arquivos» mostra-o de novo."
+],
+[
+"La numérotation des factures et des devis repart de 0001. À faire seulement en début d’année ou après les tests : sinon deux factures risquent d’avoir le même numéro.",
+"A numeração das faturas e orçamentos recomeça em 0001. Fazer só no início do ano ou depois dos testes: senão duas faturas arriscam ter o mesmo número."
+],
+[
+"Si vous cochez « 🧾 Factures et devis », la numérotation repart de 0001 : à faire seulement en début d’année ou après les tests, sinon deux factures risquent d’avoir le même numéro.",
+"Se assinalar «🧾 Faturas e orçamentos», a numeração recomeça em 0001: fazer só no início do ano ou depois dos testes, senão duas faturas arriscam ter o mesmo número."
+],
+[
+"⚠️ La numérotation repart de 0001 (prochaine facture {0}-INT0001)",
+"⚠️ A numeração recomeça em 0001 (próxima fatura {0}-INT0001)"
+],
+[
+"⚠️ La numérotation repart de 0001 (prochaine facture {0})",
+"⚠️ A numeração recomeça em 0001 (próxima fatura {0})"
+],
+[
+"{0} en tout — signalements, demandes des gérances, travaux, avec leurs photos et factures (les ménages réguliers restent)",
+"{0} no total — ocorrências, pedidos das gestoras, trabalhos, com fotos e faturas (as limpezas regulares ficam)"
+],
+[
+"{0} en tout",
+"{0} no total"
+],
 ];
