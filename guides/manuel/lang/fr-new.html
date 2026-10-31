@@ -1,5 +1,5 @@
-<div class="bar" style="background:#0e7490"><b>7 · 🆕 Nouveautés (v2.205)</b></div>
-<h1>🆕 <b>Nouveautés de la version 2.205</b></h1>
+<div class="bar" style="background:#0e7490"><b>7 · 🆕 Nouveautés (v2.210)</b></div>
+<h1>🆕 <b>Nouveautés de la version 2.210</b></h1>
 <p>Ce qui a changé depuis la version 2.150. Les nouvelles rubriques (Hôtel et Airbnb, Taxi, Agences et propriétaires, Annonces, Licences) ont leur partie, de 8 à 12 ; le <b>chat de l’équipe</b> et les <b>paiements</b> sont dans la partie 13.</p>
 <h3>🗂️ <b>App de gestion</b></h3>
 <ol>
@@ -154,6 +154,13 @@
 <h3><b>4. La centrale du client</b></h3>
 <p>Le client voit son nom en haut, les rubriques de sa filière et une bannière d’essai ou d’échéance. Il gère seul ses biens ; les <b>interventions</b> restent faites par la centrale principale : dans <b>Demandes → ＋ Demande</b> il écrit l’objet, l’urgence, l’adresse, la description et le contact. La demande arrive <b>chiffrée</b> directement dans votre <b>Maintenance</b>.</p>
 <div class="shots"><img src="shots/fr/t-centrale.jpg" style="width:52mm"><img src="shots/fr/t-demande.jpg" style="width:52mm"></div>
+<h3><b>5. Les données du client lui appartiennent (RGPD, conditions)</b></h3>
+<p>Les données de la centrale d’un client (clients, locataires, paiements, factures, messages) sont <b>chiffrées avec sa clé</b>. Ni vous ni personne ne peut les lire : le serveur ne garde que des octets illisibles. Vous ne recevez que ce que le client décide d’envoyer : ses <b>demandes d’intervention</b> et le paiement de <b>vos</b> factures.</p>
+<table><tr><th>Étape</th><th>Ce qui arrive aux données</th></tr>
+<tr><td>🟠 <b>Lecture seule</b></td><td>Facture impayée au-delà du délai choisi (<b>Lecture seule après</b>, 30 jours par défaut) ou abonnement échu : le client <b>voit</b> tout et peut faire sa <b>Sauvegarde chiffrée</b>, mais ne modifie rien. Il paie → déblocage automatique.</td></tr>
+<tr><td>🔴 <b>Bloqué</b></td><td>Il n’entre plus, mais les données restent <b>intactes et chiffrées</b>. Réactivé → il retrouve tout.</td></tr>
+<tr><td>🗑️ <b>Supprimer avec certificat</b></td><td>Seulement le Directeur, en tapant le nom du client. Tout est effacé définitivement ; il reste le <b>certificat</b> (date, objets, empreinte).</td></tr></table>
+<div class="box"><p>📜 À écrire dans les <b>conditions générales (CGV)</b> : le client est responsable de ses sauvegardes · en cas d’impayé : lecture seule → préavis (ex. 30 jours) pour télécharger → suppression avec certificat · sur demande, on lui remet une <b>copie chiffrée</b> (lui seul peut l’ouvrir) · clé perdue = données irrécupérables par quiconque · en cas de vente de l’activité, l’acheteur reprend les obligations envers les clients. Faites relire le texte par un avocat ou un fiduciaire du pays.</p></div>
 
 <div class="bar" style="background:#047857"><b>13 · 💬 Chat de l’équipe et 💶 Paiements</b></div>
 <h1><b>Chat de l’équipe</b></h1>
@@ -168,6 +175,11 @@
 <li><b>Maintenance → équipe → 📣 Message spécial à l’équipe</b> : le groupe est déjà coché, vous pouvez retirer ou ajouter quelqu’un juste pour ce message.</li>
 <li>Écrivez et envoyez : chaque destinataire le voit dans son chat avec l’étiquette <b>📣 Message spécial</b>. Ceux qui ne sont pas dans le groupe ne le voient pas.</li></ol>
 <div class="shots"><img src="shots/fr/chat-special.jpg" style="width:52mm"><img src="shots/fr/chat-eq-special.jpg" style="width:52mm"></div>
+<h3><b>Messages de la maison : 🔒 privé, ✓✓ bleu, modifier</b></h3>
+<ol><li><b>🔒 Privé — seulement pour la centrale</b> : le locataire coche la case avant d’envoyer. Seuls lui et la centrale le lisent ; les autres ne le voient pas. Depuis la centrale : <b>🔒 Répondre en privé</b> ou « À : 🔒 Privé — nom ».</li>
+<li><b>Coches</b> sur ses messages : ✓ envoyé · ✓✓ arrivé à la centrale · ✓✓ <b>bleu</b> lu par la centrale. Aussi dans la chat de l’équipe.</li>
+<li><b>⋯</b> sur son message, pendant <b>15 minutes</b> : ✏️ Modifier · 🔒 Rendre privé / 🔓 Rendre public · 🗑️ Supprimer. Les autres voient « modifié » ; la centrale voit le texte d’avant (<b>modifié · voir avant</b>).</li></ol>
+<div class="box"><p>⚠️ <b>Archiver</b> : un cadre rouge <b>ATTENTION</b> explique ce qui disparaît des listes, et que la numérotation des factures repart de 0001 seulement si vous cochez « 🧾 Factures et devis » (désormais décoché par défaut).</p></div>
 
 <h1><b>Paiements</b></h1>
 <h2>Qui paie qui</h2>

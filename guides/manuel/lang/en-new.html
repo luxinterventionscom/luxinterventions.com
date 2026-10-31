@@ -1,5 +1,5 @@
-<div class="bar" style="background:#0e7490"><b>7 · 🆕 What’s new (v2.205)</b></div>
-<h1>🆕 <b>What’s new in version 2.205</b></h1>
+<div class="bar" style="background:#0e7490"><b>7 · 🆕 What’s new (v2.210)</b></div>
+<h1>🆕 <b>What’s new in version 2.210</b></h1>
 <p>What has changed since version 2.150. The new sections (Hotel and Airbnb, Taxi, Agencies and owners, Ads, Licences) have their own part, from 8 to 12; the <b>team chat</b> and <b>payments</b> are in part 13.</p>
 <h3>🗂️ <b>Management app</b></h3>
 <ol>
@@ -154,6 +154,13 @@
 <h3><b>4. The client’s office</b></h3>
 <p>The client sees their name at the top, the sections of their sector and a trial or expiry banner. They manage their own properties; the <b>jobs</b> are still done by the main office: in <b>Requests → ＋ Request</b> they write subject, urgency, address, description and contact. The request arrives <b>encrypted</b> directly in your <b>Maintenance</b>.</p>
 <div class="shots"><img src="shots/en/t-centrale.jpg" style="width:52mm"><img src="shots/en/t-demande.jpg" style="width:52mm"></div>
+<h3><b>5. The client’s data belongs to the client (GDPR, terms)</b></h3>
+<p>The data in a client’s central (guests, tenants, payments, invoices, messages) is <b>encrypted with the client’s key</b>. Neither you nor anyone else can read it: the server only holds unreadable bytes. You only receive what the client chooses to send: <b>intervention requests</b> and payment of <b>your</b> invoices.</p>
+<table><tr><th>Stage</th><th>What happens to the data</th></tr>
+<tr><td>🟠 <b>Read-only</b></td><td>Invoice unpaid beyond the chosen delay (<b>Read-only after</b>, 30 days by default) or subscription expired: the client <b>sees</b> everything and can make an <b>Encrypted backup</b>, but cannot change anything. Pays → unlocked automatically.</td></tr>
+<tr><td>🔴 <b>Blocked</b></td><td>Can no longer log in, but the data stays <b>intact and encrypted</b>. Reactivated → everything is back.</td></tr>
+<tr><td>🗑️ <b>Delete with certificate</b></td><td>Director only, by typing the client’s name. Everything is deleted for good; the <b>certificate</b> remains (date, objects, fingerprint).</td></tr></table>
+<div class="box"><p>📜 To write in the <b>terms and conditions</b>: the client is responsible for their backups · if unpaid: read-only → notice (e.g. 30 days) to download → deletion with certificate · on request we hand over an <b>encrypted copy</b> (only they can open it) · lost key = data unrecoverable by anyone · if the business is sold, the buyer takes over the obligations towards clients. Have the text checked by a local lawyer or accountant.</p></div>
 
 <div class="bar" style="background:#047857"><b>13 · 💬 Team chat and 💶 Payments</b></div>
 <h1><b>Team chat</b></h1>
@@ -168,6 +175,11 @@
 <li><b>Maintenance → team → 📣 Special message to the team</b>: the group is already ticked; you can remove or add someone just for this message.</li>
 <li>Write and send: each recipient sees it in their chat with the label <b>📣 Special message</b>. Those not in the group don’t see it.</li></ol>
 <div class="shots"><img src="shots/en/chat-special.jpg" style="width:52mm"><img src="shots/en/chat-eq-special.jpg" style="width:52mm"></div>
+<h3><b>House messages: 🔒 private, ✓✓ blue, edit</b></h3>
+<ol><li><b>🔒 Private — only for the office</b>: the tenant ticks the box before sending. Only they and the office read it; the others don’t see it. From the central: <b>🔒 Reply privately</b> or “To: 🔒 Private — name”.</li>
+<li><b>Ticks</b> on your own messages: ✓ sent · ✓✓ reached the office · ✓✓ <b>blue</b> read by the office. Also in the team chat.</li>
+<li><b>⋯</b> on your own message, for <b>15 minutes</b>: ✏️ Edit · 🔒 Make private / 🔓 Make public · 🗑️ Delete. Others see “edited”; the office sees the previous text (<b>edited · see before</b>).</li></ol>
+<div class="box"><p>⚠️ <b>Archive</b>: a red <b>WARNING</b> box explains what disappears from the lists, and that invoice numbering restarts at 0001 only if you tick “🧾 Invoices and quotes” (now unticked by default).</p></div>
 
 <h1><b>Payments</b></h1>
 <h2>Who pays whom</h2>
