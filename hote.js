@@ -5,6 +5,7 @@ import '/ares/reqmark.js';
 import { openJson, openBytes, sealForOwner, codeHash, unwrapWithCode, b64u } from '/ares/espace-crypto.js';
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
+import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from '/ares/pubsocial.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { infoBox } from '/ares/nbien.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
@@ -250,7 +251,7 @@ function adBox(x, t) {
   const v = x.video ? videoEmbed(x.video) : null;
   return `<details class="card pub-box" data-pid="${esc(x.id)}" open><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b></div><b style="display:block;font-size:17px">${esc(x.nom)}</b><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p></summary>
     ${v ? `<div class="vid${v.tall ? ' tall' : ''}" data-vsrc="${esc(v.src)}"></div>` : ''}${x.adresse ? `<div class="meta" style="margin-top:6px">📍 ${esc(x.adresse)}</div>` : ''}
-    <div class="btns">${x.adresse ? `<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.adresse)}" target="_blank" rel="noopener" data-pev="map">${esc(t.ad.see)}</a>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(/^https?:/.test(x.web) ? x.web : 'https://' + x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}</div></details>`;
+    <div class="btns">${x.adresse ? `<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.adresse)}" target="_blank" rel="noopener" data-pev="map">${esc(t.ad.see)}</a>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(/^https?:/.test(x.web) ? x.web : 'https://' + x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}</div>${pubSocialBar(x)}</details>`;
 }
 
 function render() {
@@ -332,6 +333,7 @@ function render() {
   });
   hydrate();
   pubSeen(app);
+  pubSocialLoad(app);
   if (arrForm.mode === 'taxi' && !arrForm.est) estimate();
   else paintEst();
   tripPoll();
@@ -441,6 +443,8 @@ async function load() {
 }
 wxRadioInit({ app: 'hote', lang: () => lang, home: () => (data ? cityOf(data.st.adresse) : 'Luxembourg'), radio: () => (data && data.radio) || null });
 pubStatInit(API, 'hote', () => lang);
+pubSocialInit(API, () => lang);
+document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
 
 app.addEventListener('submit', async (e) => {
   if (e.target.id !== 'codeForm') return;

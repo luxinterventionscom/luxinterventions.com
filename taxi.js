@@ -4,6 +4,7 @@
 import '/ares/reqmark.js';
 import { openJson, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
+import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from '/ares/pubsocial.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { infoBox } from '/ares/nbien.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
@@ -109,7 +110,7 @@ const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart
 function adBox(x, t) {
   const v = x.video ? videoEmbed(x.video) : null;
   return `<div class="card pub-box" data-pid="${esc(x.id)}"><div class="meta"><b>📣 ${esc(t.ad.lbl)}</b></div><b style="display:block">${esc(x.nom)}</b><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p>${v ? `<div class="vid" data-vsrc="${esc(v.src)}"></div>` : ''}
-    <div class="btns">${x.adresse ? `<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.adresse)}" target="_blank" rel="noopener" data-pev="map">${esc(t.ad.see)}</a>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}</div></div>`;
+    <div class="btns">${x.adresse ? `<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.adresse)}" target="_blank" rel="noopener" data-pev="map">${esc(t.ad.see)}</a>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}</div>${pubSocialBar(x)}</div>`;
 }
 const blankCat = () => ({ gammes: Object.fromEntries(GK.map((k) => [k, { on: false, pc: '', km: '', h: '', demi: '', jour: '' }])), extras: {}, drivers: [], cars: [] });
 function rideHtml(r, t) {
@@ -228,6 +229,7 @@ function render() {
   app.innerHTML = out.join('');
   document.querySelectorAll('.vid[data-vsrc], .ticker[data-vsrc]').forEach((v) => { const src = v.dataset.vsrc, old = keep.get(src); if (old) return v.append(old); const f = document.createElement('iframe'); f.src = src; f.dataset.src = src; f.loading = 'lazy'; f.title = 'Video'; f.allow = 'encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share'; f.allowFullscreen = true; v.append(f); });
   pubSeen(app);
+  pubSocialLoad(app);
 }
 async function load() {
   data = null;
@@ -246,6 +248,8 @@ async function load() {
 }
 wxRadioInit({ app: 'taxi', lang: () => lang, home: () => 'Luxembourg', radio: () => null });
 pubStatInit(API, 'taxi', () => lang);
+pubSocialInit(API, () => lang);
+document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
 app.addEventListener('submit', async (e) => {
   if (e.target.id !== 'codeForm') return;
   e.preventDefault();

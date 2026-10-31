@@ -5,6 +5,7 @@ import { openJson, openBytes, sealForOwner, codeHash, unwrapWithCode } from '/ar
 
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
+import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from '/ares/pubsocial.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
@@ -596,7 +597,7 @@ function adBox(x, t) {
   const v = x.video ? videoEmbed(x.video) : null;
   return `<details class="card pub-box mk mk-pub mk-on" data-pid="${esc(x.id)}"${pubShut.has(x.id) ? '' : ' open'}><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b> · ${esc(t.ad.cats[x.cat] || t.ad.cats.autre)}</div><b style="display:block;font-size:18px">${esc(x.nom)}</b></summary>${x.texte ? `<div>${esc(x.texte)}</div>` : ''}
     ${v ? `<div class="vid${v.tall ? ' tall' : ''}${v.audio ? ' audio' : ''}"${v.audio ? ` style="height:${v.audio}px"` : ''} data-vsrc="${esc(v.src)}"></div>` : ''}<div class="meta" style="margin-top:6px">📍 ${esc(x.adresse)}</div>
-    <div class="btns"><button class="btn sm" data-place="${esc(x.adresse)}" data-pev="map">${esc(t.ad.see)}</button>${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}${x.video && !v ? `<a class="btn sm sec" href="${esc(x.video)}" target="_blank" rel="noopener" data-pev="video">▶ Video</a>` : ''}</div></details>`;
+    <div class="btns"><button class="btn sm" data-place="${esc(x.adresse)}" data-pev="map">${esc(t.ad.see)}</button>${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}${x.video && !v ? `<a class="btn sm sec" href="${esc(x.video)}" target="_blank" rel="noopener" data-pev="video">▶ Video</a>` : ''}</div>${pubSocialBar(x)}</details>`;
 }
 // Lieux de travail (adresses du planning et de l'horaire) ; la carte du lieu choisi s'affiche sous « Bonjour »
 let place = '';
@@ -823,6 +824,7 @@ function render() {
     v.append(f);
   });
   pubSeen(app);
+  pubSocialLoad(app);
   const mb = document.getElementById('mapBox');
   if (mb) {
     const src = `https://maps.google.com/maps?q=${encodeURIComponent(mb.dataset.q)}&hl=${lang}&z=16&output=embed`;
@@ -832,6 +834,8 @@ function render() {
 }
 
 pubStatInit(API, 'eq', () => lang);
+pubSocialInit(API, () => lang);
+document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
 app.addEventListener('click', pubTap, true);
 app.addEventListener('toggle', (e) => {
   const wk = e.target.dataset && e.target.dataset.wk;
