@@ -42,6 +42,7 @@ const refresh = async (q) => { await q.click('[data-chat-refresh]'); await q.wai
 const anna = await tenant(codes.lc1, 'anna'), paulo = await tenant(codes.lc2, 'paulo');
 assert(await anna.$('#chatf'), 'chat della casa nell’app di Anna');
 assert(await anna.$('#chatf input[name=pv]'), 'interruttore 🔒 Privato');
+assert(await anna.$eval('#chatEd', (e) => getComputedStyle(e).display === 'none'), 'barra modifica nascosta all’inizio');
 // 1. messaggio pubblico + messaggio privato
 await anna.fill('#chatf textarea', 'Ciao a tutti, stasera lavatrice libera?'); await anna.click('#chatf button[type=submit]'); await anna.waitForTimeout(1500);
 await anna.fill('#chatf textarea', 'Segreto: il vicino fa rumore la notte'); await anna.check('#chatf input[name=pv]'); await anna.click('#chatf button[type=submit]'); await anna.waitForTimeout(1500);
@@ -73,8 +74,9 @@ await paulo.fill('#chatf textarea', 'Domani passa il tecnico'); await paulo.clic
 const pid = await paulo.$eval('#chat .bub.me:last-of-type [data-cmenu]', (e) => e.dataset.cmenu);
 await paulo.click(`[data-cmenu="${pid}"]`); await paulo.waitForTimeout(200);
 await paulo.click(`[data-cop=edit][data-id="${pid}"]`); await paulo.waitForTimeout(200);
-assert(await paulo.$eval('#chatEd', (e) => !e.hidden), 'barra «stai modificando»');
+assert(await paulo.$eval('#chatEd', (e) => getComputedStyle(e).display !== 'none'), 'barra «stai modificando» visibile');
 await paulo.fill('#chatf textarea', 'Domani alle 9 passa il tecnico'); await paulo.click('#chatf button[type=submit]'); await paulo.waitForTimeout(1500);
+assert(await paulo.$eval('#chatEd', (e) => getComputedStyle(e).display === 'none'), 'barra chiusa dopo l’invio');
 tp = await chatTxt(paulo);
 assert(tp.includes('alle 9') && tp.includes('modificato'), 'messaggio modificato con «modificato»');
 await refresh(anna); ta = await chatTxt(anna);
