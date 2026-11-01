@@ -17341,4 +17341,12 @@ export default [
 "privé — à {0}",
 "privat — an {0}"
 ],
+[
+"🗑️ Tour des poubelles — {0}",
+"🗑️ Mülldienst — {0}"
+],
+[
+"💬 Messages — {0}",
+"💬 Nachrichten — {0}"
+],
 ];

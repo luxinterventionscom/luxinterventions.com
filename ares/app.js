@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.213.3';
+const VERSION = '2.213.5';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -567,7 +567,7 @@ const eqChatHtml = (i) => {
   return html`<p class="tiny muted" style="margin:0 0 8px;display:flex;align-items:center;gap:8px"><span>Messages entre <b>${intervFull(i)}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</span>${new Raw(trButton())}</p>
     ${!(i.espace && i.espace.on) ? html`<div class="alert warn" style="margin-bottom:10px">📱<div>Son app n’est pas active : activez-la dans l’onglet <b>📱 App</b> pour qu’il reçoive vos messages.</div></div>` : ''}
     <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? (m.g ? '📣 Message spécial' : '🛡️ Centrale') : '👷 ' + (i.prenom || intervFull(i))} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}${m.from === 'mgr' && !m.del ? html`<button class="bub-mn" data-action="eqc-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : ''}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé par l’ouvrier</div>` : m.from === 'mgr' ? m.x : html`<span data-trx="${m.x}">${m.x}</span>`}${m.from === 'mgr' && ui.eqcMn === m.id && !m.del ? html`<div class="bub-menu">${Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<button class="btn sm" data-action="eqc-edit" data-w="${i.id}" data-id="${m.id}">✏️ Modifier</button>` : ''}<button class="btn sm danger" data-action="eqc-del" data-w="${i.id}" data-id="${m.id}">🗑️ Supprimer</button></div>` : ''}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
-    <form data-form="eq-chat" class="eq-chat-f"><input type="hidden" name="id" value="${i.id}"><textarea name="x" required maxlength="1500" placeholder="Écrire à ${i.prenom || intervFull(i)}…"></textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
+    <form data-form="eq-chat" class="eq-chat-f"><input type="hidden" name="id" value="${i.id}"><textarea name="x" required maxlength="1500" placeholder="Écrire à ${i.prenom || intervFull(i)}…" data-draft="w:${i.id}">${(ui.drafts || {})['w:' + i.id] || ''}</textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
 };
 function equipeData(i) {
   const soc = societe();
@@ -1876,7 +1876,10 @@ async function chatLoad(imId, force) {
     if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.id === imId && ui.sheet.tab === 'chat') await chatMarkPost(g, c, chatResolve(c), true).catch(() => {}); // ✓✓ bleu : lu
   }
   if (ui.chatNew) delete ui.chatNew[imId];
-  if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.id === imId && ui.sheet.tab === 'chat') { ui.sheet.rendered = false; renderSheet(); }
+  const sig = JSON.stringify(Object.values(im.chats || {}).map((g) => (((ui.chatView || {})[g.id] || {}).list || []).map((m) => [m.id, m.x, m.del, m.p, m.et, m.recs.length])));
+  const changed = sig !== (ui.chatSig || {})[imId];
+  ui.chatSig = { ...(ui.chatSig || {}), [imId]: sig };
+  if (changed && ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.id === imId && ui.sheet.tab === 'chat') { ui.sheet.rendered = false; renderSheet(); }
 }
 // Prochains tours des poubelles d'un fil, avec qui et si c'est fait
 function binsTable(im, g) {
@@ -3656,6 +3659,8 @@ addEventListener('popstate', () => vault.unlocked && go(location.hash.slice(2) |
 // Les longues listes démarrent fermées (avec le nombre de lignes) ; le choix est mémorisé sur cet appareil.
 const foldPref = (() => { try { return JSON.parse(localStorage.getItem('aresFolds2') || '{}'); } catch { return {}; } })();
 let foldScope = '', foldAllOpen = false;
+// repli écrit à la main (dans les fiches) : ouvert par défaut, sinon le dernier choix sur cet appareil
+const foldIsOpen = (k) => (k in foldPref ? foldPref[k] : true);
 const foldKey = (label) => (foldScope || ui.route) + '|' + label.replace(/[\d.,€%]+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 60);
 document.addEventListener('toggle', (e) => {
   const d = e.target;
@@ -5676,10 +5681,14 @@ function closeSheet() {
   ui.sheet = null;
   if (sheetEl.open) sheetEl.close();
 }
-sheetEl.addEventListener('close', () => (ui.sheet = null));
+sheetEl.addEventListener('close', () => { ui.sheet = null; delete sheetEl.dataset.key; });
 sheetEl.addEventListener('click', async (e) => { if (e.target === sheetEl && (await leaveSheetOk())) closeSheet(); });
 sheetEl.addEventListener('cancel', (e) => { if (!sheetDirty) return; e.preventDefault(); leaveSheetOk().then((ok) => ok && closeSheet()); });
 
+// brouillons des chats : gardés en mémoire si on ferme la fiche et qu'on revient (jusqu'au verrouillage)
+document.addEventListener('input', (e) => { const t = e.target; if (t && t.dataset && t.dataset.draft) ui.drafts = { ...(ui.drafts || {}), [t.dataset.draft]: t.value }; });
+// cases de réponse des chats : le texte en cours est gardé quand la fiche se redessine
+const DRAFT_TA = '.chat-form textarea, .eq-chat-f textarea';
 function renderSheet() {
   if (!ui.sheet || (!sheetEl.open && ui.sheet.rendered)) return;
   const s = ui.sheet;
@@ -5688,12 +5697,25 @@ function renderSheet() {
   // Ne pas écraser une saisie en cours lors d'une mise à jour en arrière-plan.
   const focused = document.activeElement;
   if (s.rendered && (s.kind.endsWith('-form') || s.kind === 'relance' || (sheetEl.contains(focused) && focused.matches('input, textarea, select')))) return;
+  // même fiche redessinée (messages qui arrivent…) : on garde la position de lecture et le texte en cours de saisie
+  const key = [s.kind, s.id, s.tab].join('|'), same = sheetEl.open && sheetEl.dataset.key === key;
+  const keep = same ? { top: [...sheetEl.querySelectorAll('.sheet-body, .chat, .eq-chat')].map((e) => e.scrollTop), outer: sheetEl.scrollTop, vals: [...sheetEl.querySelectorAll(DRAFT_TA)].map((t) => t.value), sel: [...sheetEl.querySelectorAll('select')].map((x) => x.value), foc: [...sheetEl.querySelectorAll(DRAFT_TA)].indexOf(focused), pos: focused && focused.selectionStart } : null;
   sheetEl.className = 'sheet' + (r.narrow ? ' narrow' : '');
   setHtml(sheetEl, html`
     <div class="sheet-head"><h2>${r.title}</h2><button class="btn icon ghost" data-action="close-sheet" aria-label="Fermer">${icon('x')}</button></div>
     <div class="sheet-body">${r.body}</div>
     ${r.foot ? html`<div class="sheet-foot">${r.foot}</div>` : ''}`);
   s.rendered = true;
+  sheetEl.dataset.key = key;
+  if (keep) {
+    const tas = [...sheetEl.querySelectorAll(DRAFT_TA)], sels = [...sheetEl.querySelectorAll('select')];
+    if (tas.length === keep.vals.length) tas.forEach((t, i) => { if (keep.vals[i] && !t.value) t.value = keep.vals[i]; });
+    if (sels.length === keep.sel.length) sels.forEach((x, i) => { if (keep.sel[i] !== undefined) x.value = keep.sel[i]; });
+    const scs = [...sheetEl.querySelectorAll('.sheet-body, .chat, .eq-chat')];
+    if (scs.length === keep.top.length) scs.forEach((e, i) => { e.scrollTop = keep.top[i]; });
+    sheetEl.scrollTop = keep.outer;
+    if (keep.foc >= 0 && tas[keep.foc]) { tas[keep.foc].focus({ preventScroll: true }); try { tas[keep.foc].setSelectionRange(keep.pos, keep.pos); } catch { /* champ sans curseur */ } }
+  }
   if (!sheetDirty) sheetSnap = sheetSig();
   // dans les fiches : mêmes sections repliables, ouvertes par défaut
   enhanceFolds(sheetEl.querySelector('.sheet-body'), 'sheet:' + s.kind + ':' + (s.tab || ''), true);
@@ -7192,13 +7214,14 @@ const SHEETS = {
         ${on ? html`<label class="field" style="margin-bottom:6px">Qui discute ensemble ?<select data-input="chat-scope" data-id="${id}">${Object.entries(CHAT_SCOPES).map(([k, v]) => html`<option value="${k}" ${chatScope(im) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
           <label class="row" style="cursor:pointer;margin:6px 0"><input type="checkbox" data-input="bins-on" data-id="${id}" ${binsOn(im) ? new Raw('checked') : ''} style="width:22px;min-height:22px">
             <span class="grow"><b>🗑️ Tour des poubelles</b><span class="meta" style="display:block">À tour de rôle entre les habitants de chaque fil, automatiquement (le nouveau locataire prend la place de celui qui part). Dans leur app : « Ce soir c’est ton tour », ✅ Fait, 🔁 Je ne peux pas.</span></span></label>
-          ${groups.length ? html`<p style="margin:4px 0;display:flex">${new Raw(trButton())}</p>` : ''}${groups.length ? groups.map(([gk, g]) => html`<div class="section-label">💬 ${chatLabel(gk)}${g.members.length < 2 ? html` <span class="badge">✉️ seul·e — écrit au gestionnaire</span>` : ''} <span class="muted small">· ${g.members.map((m) => shortName(vault.get('locataires', m) || {})).join(', ')}</span></div>
-            ${binsTable(im, g)}
+          ${groups.length ? html`<p style="margin:4px 0;display:flex">${new Raw(trButton())}</p>` : ''}${groups.length ? groups.map(([gk, g]) => html`<div class="section-label" data-nofold="1">👥 ${chatLabel(gk)}${g.members.length < 2 ? html` <span class="badge">✉️ seul·e — écrit au gestionnaire</span>` : ''} <span class="muted small">· ${g.members.map((m) => shortName(vault.get('locataires', m) || {})).join(', ')}</span></div>
+            ${binsTable(im, g) ? html`<details class="card dfold gfold" data-gk="chatfold|bins|${g.id}" ${foldIsOpen('chatfold|bins|' + g.id) ? new Raw('open') : ''}><summary><h3>🗑️ Tour des poubelles — ${chatLabel(gk)}</h3></summary><div class="dfold-body">${binsTable(im, g)}</div></details>` : ''}
+            <details class="card dfold gfold" data-gk="chatfold|msg|${g.id}" ${foldIsOpen('chatfold|msg|' + g.id) ? new Raw('open') : ''}><summary><h3>💬 Messages — ${chatLabel(gk)}</h3></summary><div class="dfold-body">
             <div class="chat">${chatBubbles((ui.chatView || {})[g.id], g.id)}</div>
             <form data-form="chatpost" class="chat-form"><input type="hidden" name="imm" value="${id}"><input type="hidden" name="gk" value="${gk}">
-              <textarea name="x" required maxlength="1500" placeholder="Écrire aux habitants (en tant que gestionnaire)…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button>
+              <textarea name="x" required maxlength="1500" placeholder="Écrire aux habitants (en tant que gestionnaire)…" data-draft="h:${g.id}">${(ui.drafts || {})['h:' + g.id] || ''}</textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button>
               ${g.members.length > 1 ? html`<label class="field chat-to">À<select name="to" data-gid="${g.id}"><option value="">👥 Tous les habitants du fil</option>${g.members.map((mid) => html`<option value="${mid}" ${(ui.chatTo || {})[g.id] === mid ? new Raw('selected') : ''}>✋ Privé — ${shortName(vault.get('locataires', mid) || {})}</option>`)}</select></label>` : ''}</form>
-            <p class="tiny muted" style="margin:2px 0 6px">✋ = message privé entre un habitant et vous (les autres ne le voient pas). Dans leur app : ✓ envoyé · ✓✓ arrivé ici · ✓✓ bleu lu par vous. Chacun peut modifier, rendre privé / public ou supprimer son message pendant 15 minutes ; vous voyez le texte d’avant.</p>`)
+            <p class="tiny muted" style="margin:2px 0 6px">✋ = message privé entre un habitant et vous (les autres ne le voient pas). Dans leur app : ✓ envoyé · ✓✓ arrivé ici · ✓✓ bleu lu par vous. Chacun peut modifier, rendre privé / public ou supprimer son message pendant 15 minutes ; vous voyez le texte d’avant.</p></div></details>`)
           : html`<p class="muted small">Aucun fil pour le moment : un fil se crée tout seul dès que 2 personnes habitent le même appartement (ou le même groupe choisi ci-dessus).</p>`}` : ''}
         <div class="section-label">📜 Règles propres à cet immeuble</div>
         <form data-form="regles" class="stack"><input type="hidden" name="id" value="${id}">
@@ -10038,6 +10061,8 @@ const FORMS = {
         if (!l || !l.espace || !l.espace.key || !k || !k.pub) throw new Error('Message privé impossible : l’app de cet habitant n’est pas active.');
         await vault.boardPost(g.id, await sealJson(g.key, { ...msg, p: l.id, o: b64u(await sealForOwner(k.pub, { x })), e: b64u(await sealJson(l.espace.key, { x })) }), l.espace.id);
       } else await vault.boardPost(g.id, await sealJson(g.key, { ...msg, x }));
+      form.x.value = '';
+      if (ui.drafts) delete ui.drafts['h:' + g.id];
       await chatLoad(im.id, true);
     } catch (e) {
       setBusy(form, false);
@@ -10048,7 +10073,10 @@ const FORMS = {
     const i = vault.get('intervenants', fd.get('id')), x = String(fd.get('x') || '').trim().slice(0, 1500);
     if (!i || !x) return;
     setBusy(form, true, 'Envoi…');
-    try { await eqChatSend([i.id], x, false); toast('Message envoyé'); renderSheet(); } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
+    const draft = form.x.value;
+    form.x.value = ''; // sinon le texte envoyé revient quand la fiche se redessine
+    if (ui.drafts) delete ui.drafts['w:' + i.id];
+    try { await eqChatSend([i.id], x, false); toast('Message envoyé'); renderSheet(); } catch (e) { form.x.value = draft; setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
   async 'tpay-conf'(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), payMode = fd.get('payMode') === 'month' ? 'month' : 'each';

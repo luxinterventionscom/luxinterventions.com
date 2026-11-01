@@ -17354,4 +17354,12 @@ export default [
 "privé — à {0}",
 "privato — a {0}"
 ],
+[
+"🗑️ Tour des poubelles — {0}",
+"🗑️ Turno della spazzatura — {0}"
+],
+[
+"💬 Messages — {0}",
+"💬 Messaggi — {0}"
+],
 ];
