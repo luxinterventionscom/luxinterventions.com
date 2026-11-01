@@ -14,7 +14,8 @@ const T = {
 const EDIT_MS = 15 * 60000;
 let cfg = null, menu = '', editing = '', draft = '', busy = false;
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-const tx = () => T[cfg.lang()] || T.fr;
+// cfg.labels(lang) peut remplacer les titres (ex. « Messages avec la réception » pour les clients d'un hôtel)
+const tx = () => ({ ...(T[cfg.lang()] || T.fr), ...((cfg.labels && cfg.labels(cfg.lang())) || {}) });
 const getJ = (k) => { try { return JSON.parse(localStorage.getItem(k) || '[]'); } catch { return []; } };
 const setJ = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* plein */ } };
 const PK = () => 'pc:' + cfg.id(), EK = () => 'pcE:' + cfg.id(), SK = () => 'pcS:' + cfg.id();

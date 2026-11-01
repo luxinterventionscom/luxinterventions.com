@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.214.0';
+const VERSION = '2.215.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -566,8 +566,11 @@ async function eqChatSend(ids, x, g) {
 // leurs messages arrivent chiffrés dans la boîte ; les nôtres partent dans leur app (publiée chiffrée)
 const PCHAT_MAX = 300;
 const pchatOut = (r) => (r.chat || []).filter((m) => !m.del).slice(-60).map((m) => ({ id: m.id, at: m.at, from: m.from, x: m.x, ...(m.ed ? { ed: m.ed } : {}) }));
-const pchatSync = (id) => (String(id).startsWith('txco-') ? txcoSync(id, true) : annSync(id, true));
-const pchatKind = (r) => (String(r.id).startsWith('txco-') ? '🚕' : '🍽️');
+// les clients d'un hôtel / Airbnb (collection « hotes ») ont la même chat avec la réception
+const pchatColl = (r) => (vault.get('hotes', r.id) ? 'hotes' : 'reglages');
+const pchatSync = (id) => (vault.get('hotes', id) ? hotesSync(id, true) : String(id).startsWith('txco-') ? txcoSync(id, true) : annSync(id, true));
+const pchatKind = (r) => (vault.get('hotes', r.id) ? '🛎️' : String(r.id).startsWith('txco-') ? '🚕' : '🍽️');
+const pchatName = (r) => (vault.get('hotes', r.id) ? `${[r.prenom, r.nom].filter(Boolean).join(' ') || 'Client'}${r.chambre ? ' — ' + r.chambre : ''}` : r.nom);
 async function pchatIn(r, msg) {
   const chat = [...(r.chat || [])], at0 = String(msg.t || new Date().toISOString()).slice(0, 30);
   let n = 0, ed = 0;
@@ -587,17 +590,17 @@ async function pchatIn(r, msg) {
   }
   if (!n && !ed) return false;
   chat.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
-  const cur = vault.get('reglages', r.id) || r;
-  await vault.mutate((tx) => tx.put('reglages', { id: r.id, chat: chat.slice(-PCHAT_MAX), chatNew: (cur.chatNew || 0) + n }), n ? `💬 Message de ${r.nom}` : `💬 Message modifié par ${r.nom}`, r.nom);
+  const co = pchatColl(r), cur = vault.get(co, r.id) || r;
+  await vault.mutate((tx) => tx.put(co, { id: r.id, chat: chat.slice(-PCHAT_MAX), chatNew: (cur.chatNew || 0) + n }), n ? `💬 Message de ${pchatName(r)}` : `💬 Message modifié par ${pchatName(r)}`, pchatName(r));
   await pchatSync(r.id);
   return true;
 }
 const pchatHtml = (r) => {
   const msgs = (r.chat || []).slice(-80), on = r.espace && r.espace.id;
-  return html`<p class="tiny muted" style="margin:0 0 8px;display:flex;align-items:center;gap:8px"><span>Messages entre <b>${r.nom}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</span>${new Raw(trButton())}</p>
+  return html`<p class="tiny muted" style="margin:0 0 8px;display:flex;align-items:center;gap:8px"><span>Messages entre <b>${pchatName(r)}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</span>${new Raw(trButton())}</p>
     ${!on ? html`<div class="alert warn" style="margin-bottom:10px">📱<div>Son app n’est pas encore active : il ne recevra vos messages qu’après sa première connexion.</div></div>` : ''}
-    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? '🛡️ Centrale' : pchatKind(r) + ' ' + r.nom} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}${m.from === 'mgr' && !m.del ? html`<button class="bub-mn" data-action="pc-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : ''}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé</div>` : m.from === 'mgr' ? m.x : html`<span data-trx="${m.x}">${m.x}</span>`}${m.from === 'mgr' && ui.pcMn === m.id && !m.del ? html`<div class="bub-menu">${Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<button class="btn sm" data-action="pc-edit" data-r="${r.id}" data-id="${m.id}">✏️ Modifier</button>` : ''}<button class="btn sm danger" data-action="pc-del" data-r="${r.id}" data-id="${m.id}">🗑️ Supprimer</button></div>` : ''}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
-    <form data-form="pchat" class="eq-chat-f"><input type="hidden" name="id" value="${r.id}"><textarea name="x" required maxlength="1500" placeholder="Écrire à ${r.nom}…" data-draft="p:${r.id}">${(ui.drafts || {})['p:' + r.id] || ''}</textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
+    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? '🛡️ Centrale' : pchatKind(r) + ' ' + pchatName(r)} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}${m.from === 'mgr' && !m.del ? html`<button class="bub-mn" data-action="pc-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : ''}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé</div>` : m.from === 'mgr' ? m.x : html`<span data-trx="${m.x}">${m.x}</span>`}${m.from === 'mgr' && ui.pcMn === m.id && !m.del ? html`<div class="bub-menu">${Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<button class="btn sm" data-action="pc-edit" data-r="${r.id}" data-id="${m.id}">✏️ Modifier</button>` : ''}<button class="btn sm danger" data-action="pc-del" data-r="${r.id}" data-id="${m.id}">🗑️ Supprimer</button></div>` : ''}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
+    <form data-form="pchat" class="eq-chat-f"><input type="hidden" name="id" value="${r.id}"><textarea name="x" required maxlength="1500" placeholder="Écrire à ${pchatName(r)}…" data-draft="p:${r.id}">${(ui.drafts || {})['p:' + r.id] || ''}</textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
 };
 const eqChatHtml = (i) => {
   const msgs = (i.chat || []).slice(-80);
@@ -2143,6 +2146,7 @@ async function biensSync() {
 // 🏨 messages de l'app du client : comment il arrive (lui-même / taxi), photos de sortie
 async function hoteInbox(h, msg) {
   const who = `${[h.prenom, h.nom].filter(Boolean).join(' ')} — ${h.chambre}`;
+  if (msg.type === 'pchat') return pchatIn(h, msg);
   if (msg.type === 'hote-arr') {
     const mode = msg.mode === 'taxi' ? 'taxi' : 'self', num = (v, m) => Math.max(0, Math.min(m, +v || 0));
     const geo = (g) => (g && isFinite(+g.lat) && isFinite(+g.lon) ? { lat: +(+g.lat).toFixed(5), lon: +(+g.lon).toFixed(5) } : null);
@@ -2319,10 +2323,13 @@ function centralinoHtml() {
   const eqs = vault.list('intervenants').filter((i) => !i.archive && ((i.chat || []).length || (i.espace && i.espace.on)))
     .map((i) => ({ i, last: (i.chat || []).filter((m) => !m.del).slice(-1)[0] }))
     .sort((a, b) => (b.i.chatNew || 0) - (a.i.chatNew || 0) || ((b.last || {}).at || '').localeCompare((a.last || {}).at || ''));
+  const guests = vault.list('hotes').filter((h) => h.espace && h.espace.id && ((h.chat || []).length || (h.arrivee <= addDays(today(), 1) && (h.depart || '') >= today())))
+    .map((h) => ({ r: h, last: (h.chat || []).filter((m) => !m.del).slice(-1)[0] })).sort((a, b) => (b.r.chatNew || 0) - (a.r.chatNew || 0) || ((b.last || {}).at || '').localeCompare((a.last || {}).at || ''));
+  const nGuest = guests.reduce((a, p) => a + (p.r.chatNew || 0), 0);
   const parts = [...txCos(), ...anCos()].filter((r) => r.espace && r.espace.id).map((r) => ({ r, last: (r.chat || []).filter((m) => !m.del).slice(-1)[0] }))
     .sort((a, b) => (b.r.chatNew || 0) - (a.r.chatNew || 0) || ((b.last || {}).at || '').localeCompare((a.last || {}).at || ''));
   const nPart = parts.reduce((a, p) => a + (p.r.chatNew || 0), 0);
-  const nHouse = imms.reduce((a, im) => a + houseN(im), 0), nEq = eqs.reduce((a, e) => a + (e.i.chatNew || 0), 0), tot = sig.length + nHouse + nEq + nPart;
+  const nHouse = imms.reduce((a, im) => a + houseN(im), 0), nEq = eqs.reduce((a, e) => a + (e.i.chatNew || 0), 0), tot = sig.length + nHouse + nEq + nPart + nGuest;
   const open = ui.centOpen ?? tot > 0;
   const badge = (n) => (n ? html`<span class="badge bad">${n}</span>` : '');
   const row = (action, id, title, sub, n) => html`<button class="row" data-action="${action}" data-id="${id}"><span class="grow"><span class="title" style="display:block">${title}</span><span class="meta">${sub}</span></span>${badge(n)}</button>`;
@@ -2338,6 +2345,7 @@ function centralinoHtml() {
     ${imms.length ? html`<div class="list">${imms.map((im) => row('open-chat', im.id, immName(im.id), houseN(im) ? `${houseN(im)} nouveau${houseN(im) > 1 ? 'x messages' : ' message'} — touchez pour lire` : `${plural(Object.keys(im.chats || {}).length, 'fil')} · touchez pour ouvrir`, houseN(im)))}</div>` : html`<p class="small muted">Aucun fil de messages entre habitants.</p>`}
     <div class="section-label">👷 Messages des Équipes ${badge(nEq)}</div>
     ${eqs.length ? html`<div class="list">${eqs.map(({ i, last }) => row('open-eq-chat', i.id, intervFull(i), last ? `${last.from === 'mgr' ? '🛡️ ' : '👷 '}${String(last.x || '').slice(0, 60)} · ${fmtDateTime(last.at)}` : 'Pas encore de message', i.chatNew || 0))}</div>` : html`<p class="small muted">Aucun ouvrier avec l’app active.</p>`}
+    ${guests.length ? html`<div class="section-label">🛎️ Messages des clients (hôtel / Airbnb) ${badge(nGuest)}</div><div class="list">${guests.map(({ r, last }) => row('open-pchat', r.id, `🛎️ ${pchatName(r)}`, last ? `${last.from === 'mgr' ? '🛡️ ' : ''}${String(last.x || '').slice(0, 60)} · ${fmtDateTime(last.at)}` : `${fmtDate(r.arrivee)} → ${fmtDate(r.depart)} · pas encore de message`, r.chatNew || 0))}</div>` : ''}
     ${parts.length ? html`<div class="section-label">🚕 Taxis · 🍽️ Annonceurs ${badge(nPart)}</div><div class="list">${parts.map(({ r, last }) => row('open-pchat', r.id, `${pchatKind(r)} ${r.nom}`, last ? `${last.from === 'mgr' ? '🛡️ ' : ''}${String(last.x || '').slice(0, 60)} · ${fmtDateTime(last.at)}` : 'Pas encore de message', r.chatNew || 0))}</div>` : ''}
   </details>`;
 }
@@ -2924,6 +2932,7 @@ function hoteData(h, tks) {
     edlSent: h.edlOut ? Object.keys(h.edlOut.ph || {}) : [], sejour: hoteSejour(h), ...tks, signalKey: sig ? sig.pub : '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
     pubs: pubsActives(null, 'hote').sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut),
+    chat: pchatOut(h), chatRd: h.chatRd || '',
   };
 }
 // le client a son app : accès (id + clé) et code personnel enregistré sur le serveur (empreinte seulement)
@@ -2971,7 +2980,7 @@ async function hotesSync(onlyId, loud) {
       await vault.espacePut(e.id, await sealJson(e.key, data));
       hoteHashes.set(e.id, hs);
       const ask = !data.arr && (h.arrivee === today() || h.arrivee === addDays(today(), 1));
-      await notifyNews(e.id, [...(data.porte ? ['k:' + data.porte] : []), ...(data.taxiOk ? ['tx:' + data.taxiOk.nom] : []), ...(ask ? ['arr:' + h.arrivee] : [])]);
+      await notifyNews(e.id, [...(data.porte ? ['k:' + data.porte] : []), ...(data.taxiOk ? ['tx:' + data.taxiOk.nom] : []), ...(ask ? ['arr:' + h.arrivee] : []), ...data.chat.filter((m) => m.from === 'mgr').map((m) => 'c:' + m.id + (m.ed || ''))]);
       if (ch) await vault.mutate((tx) => { const cur = vault.get('hotes', h.id); if (cur && cur.espace) tx.put('hotes', { id: h.id, espace: { ...cur.espace, docs: [...up] } }); }, 'App du client : photos', `${h.nom} — ${h.chambre}`);
     } catch (err) {
       if (loud) { toast(err.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
@@ -5964,12 +5973,12 @@ const SHEETS = {
     return { title: '🗂️ Annonces envoyées', narrow: true, body: html`<div class="list">${annLog().slice().reverse().map((a) => html`<div class="row" style="align-items:flex-start"><span class="grow"><span class="title" style="display:block;white-space:pre-wrap">${a.x}</span><span class="meta">${fmtDateTime(a.at)} · ${a.to} · 👤 ${a.by || '—'}</span></span></div>`)}</div>` };
   },
   pchat({ id }) {
-    const r = vault.get('reglages', id);
+    const r = vault.get('reglages', id) || vault.get('hotes', id);
     if (!r) return null;
     // lu : ✓✓ bleu dans son app
     const lastP = (r.chat || []).filter((m) => m.from === 'p').reduce((a, m) => (m.at > a ? m.at : a), '');
-    if (r.chatNew || (lastP && lastP > (r.chatRd || ''))) setTimeout(async () => { await vault.mutate((tx) => tx.put('reglages', { id: r.id, chatNew: 0, ...(lastP ? { chatRd: lastP } : {}) }), 'Messages lus', r.nom); pchatSync(r.id); }, 0);
-    return { title: `💬 ${pchatKind(r)} ${r.nom}`, narrow: true, body: pchatHtml(r) };
+    if (r.chatNew || (lastP && lastP > (r.chatRd || ''))) setTimeout(async () => { await vault.mutate((tx) => tx.put(pchatColl(r), { id: r.id, chatNew: 0, ...(lastP ? { chatRd: lastP } : {}) }), 'Messages lus', pchatName(r)); pchatSync(r.id); }, 0);
+    return { title: `💬 ${pchatKind(r)} ${pchatName(r)}`, narrow: true, body: pchatHtml(r) };
   },
   // 💼 abonnement d'une gérance : formule, prix, période, payé jusqu'au, paiements reçus
   abo({ id }) {
@@ -9117,21 +9126,22 @@ const ACTIONS = {
   'pc-mn': (d) => { ui.pcMn = ui.pcMn === d.id ? '' : d.id; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
   async 'pc-edit'(d) {
     ui.pcMn = '';
-    const r = vault.get('reglages', d.r), m = r && (r.chat || []).find((x) => x.id === d.id);
+    const r = vault.get('reglages', d.r) || vault.get('hotes', d.r), m = r && (r.chat || []).find((x) => x.id === d.id);
     if (!m || m.from !== 'mgr') return;
     if (Date.now() - Date.parse(m.at) >= EQ_EDIT_MS) return toast('Plus possible : 15 minutes sont passées.', { bad: true });
     const x = await promptEdit('✏️ Modifier le message', m.x);
     if (x == null || x === m.x) return;
-    const at = new Date().toISOString();
-    await vault.mutate((tx) => tx.put('reglages', { id: r.id, chat: (vault.get('reglages', r.id).chat || []).map((z) => (z.id === m.id ? { ...z, x, ed: at, old: [...(z.old || []), { x: z.x, at: z.ed || z.at }].slice(-10) } : z)) }), '💬 Message modifié', r.nom);
+    const at = new Date().toISOString(), co = pchatColl(r);
+    await vault.mutate((tx) => tx.put(co, { id: r.id, chat: (vault.get(co, r.id).chat || []).map((z) => (z.id === m.id ? { ...z, x, ed: at, old: [...(z.old || []), { x: z.x, at: z.ed || z.at }].slice(-10) } : z)) }), '💬 Message modifié', pchatName(r));
     await pchatSync(r.id);
   },
   async 'pc-del'(d) {
     ui.pcMn = '';
-    const r = vault.get('reglages', d.r), m = r && (r.chat || []).find((x) => x.id === d.id);
+    const r = vault.get('reglages', d.r) || vault.get('hotes', d.r), m = r && (r.chat || []).find((x) => x.id === d.id);
     if (!m || m.from !== 'mgr') return;
     if (!(await confirmBox('Supprimer ce message ?', { ok: 'Supprimer', danger: true, detail: 'Il disparaît de son app.' }))) return;
-    await vault.mutate((tx) => tx.put('reglages', { id: r.id, chat: (vault.get('reglages', r.id).chat || []).map((z) => (z.id === m.id ? { ...z, del: new Date().toISOString() } : z)) }), '💬 Message supprimé', r.nom);
+    const co = pchatColl(r);
+    await vault.mutate((tx) => tx.put(co, { id: r.id, chat: (vault.get(co, r.id).chat || []).map((z) => (z.id === m.id ? { ...z, del: new Date().toISOString() } : z)) }), '💬 Message supprimé', pchatName(r));
     await pchatSync(r.id);
   },
   'eqc-mn': (d) => { ui.eqcMn = ui.eqcMn === d.id ? '' : d.id; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
@@ -10216,14 +10226,14 @@ const FORMS = {
     } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
   async pchat(fd, form) {
-    const r = vault.get('reglages', fd.get('id')), x = String(fd.get('x') || '').trim().slice(0, 1500);
+    const r = vault.get('reglages', fd.get('id')) || vault.get('hotes', fd.get('id')), x = String(fd.get('x') || '').trim().slice(0, 1500);
     if (!r || !x) return;
-    const draft = form.x.value;
+    const draft = form.x.value, co = pchatColl(r);
     form.x.value = '';
     if (ui.drafts) delete ui.drafts['p:' + r.id];
     setBusy(form, true, 'Envoi…');
     try {
-      await vault.mutate((tx) => tx.put('reglages', { id: r.id, chat: [...(vault.get('reglages', r.id).chat || []), { id: 'c' + Date.now().toString(36), at: new Date().toISOString(), from: 'mgr', x }].slice(-PCHAT_MAX), chatNew: 0 }), `💬 Message à ${r.nom}`, r.nom);
+      await vault.mutate((tx) => tx.put(co, { id: r.id, chat: [...(vault.get(co, r.id).chat || []), { id: 'c' + Date.now().toString(36), at: new Date().toISOString(), from: 'mgr', x }].slice(-PCHAT_MAX), chatNew: 0 }), `💬 Message à ${pchatName(r)}`, pchatName(r));
       await pchatSync(r.id);
       toast('Message envoyé');
     } catch (e) { form.x.value = draft; setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }

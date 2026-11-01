@@ -10,6 +10,8 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client
 import { infoBox } from '/ares/nbien.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { tripView, tripFetch } from '/ares/trip.js';
+import { pchatInit, pchatCard } from '/ares/pchat.js';
+import { trInit } from '/ares/chattr.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'hoteAccess';
 let [id, key] = (location.hash.slice(1).match(/^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/) || []).slice(1);
@@ -313,6 +315,8 @@ function render() {
       ${Object.keys(edl).length ? `<button class="btn block" style="margin-top:10px" data-edl-send="1">${esc(t.edlSend)} (${Object.keys(edl).length})</button>` : ''}
       ${edlMsg ? `<p class="ok" style="margin:8px 0 0">${esc(edlMsg)}</p>` : done.size ? `<p class="meta" style="margin:8px 0 0">✅ ${done.size} ${esc(t.edlOk)}</p>` : ''}</div>`);
   }
+  // 💬 messages avec la réception (hôtel) ou l'hôte (Airbnb), pendant tout le séjour
+  out.push(pchatCard());
   // 9 · données chiffrées
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
   // 10 · publicité (bas)
@@ -443,6 +447,14 @@ async function load() {
 }
 wxRadioInit({ app: 'hote', lang: () => lang, home: () => (data ? cityOf(data.st.adresse) : 'Luxembourg'), radio: () => (data && data.radio) || null });
 pubStatInit(API, 'hote', () => lang);
+const GUEST_CHAT = {
+  hotel: { fr: ['💬 Messages avec la réception', 'Réception', 'Seule la réception lit vos messages.', 'Écrire à la réception…'], it: ['💬 Messaggi con la reception', 'Reception', 'Solo la reception legge i tuoi messaggi.', 'Scrivi alla reception…'], de: ['💬 Nachrichten an die Rezeption', 'Rezeption', 'Nur die Rezeption liest Ihre Nachrichten.', 'An die Rezeption schreiben…'], pt: ['💬 Mensagens com a receção', 'Receção', 'Só a receção lê as suas mensagens.', 'Escrever à receção…'], en: ['💬 Messages with reception', 'Reception', 'Only reception reads your messages.', 'Write to reception…'], es: ['💬 Mensajes con la recepción', 'Recepción', 'Solo la recepción lee sus mensajes.', 'Escribir a la recepción…'] },
+  airbnb: { fr: ['💬 Messages avec votre hôte', 'Hôte', 'Seul votre hôte lit vos messages.', 'Écrire à votre hôte…'], it: ['💬 Messaggi con il tuo host', 'Host', 'Solo il tuo host legge i tuoi messaggi.', 'Scrivi al tuo host…'], de: ['💬 Nachrichten an Ihren Gastgeber', 'Gastgeber', 'Nur Ihr Gastgeber liest Ihre Nachrichten.', 'An Ihren Gastgeber schreiben…'], pt: ['💬 Mensagens com o seu anfitrião', 'Anfitrião', 'Só o seu anfitrião lê as suas mensagens.', 'Escrever ao seu anfitrião…'], en: ['💬 Messages with your host', 'Host', 'Only your host reads your messages.', 'Write to your host…'], es: ['💬 Mensajes con su anfitrión', 'Anfitrión', 'Solo su anfitrión lee sus mensajes.', 'Escribir a su anfitrión…'] },
+};
+const guestLabels = (l) => { const g = GUEST_CHAT[(data && data.lieu) === 'airbnb' ? 'airbnb' : 'hotel'], v = g[l] || g.en; return { t: v[0], ctr: v[1], hint: v[2], ph: v[3], none: v[3] }; };
+trInit(API, () => lang);
+const quietData = async () => { const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' }); if (!r.ok) return null; const x = await openJson(key, await r.arrayBuffer()); return x && x.kind === 'hote' ? x : null; };
+pchatInit({ id: () => id, data: () => data, send: (o) => sendOwner(o), lang: () => lang || 'en', refresh: quietData, quick: null, labels: guestLabels });
 pubSocialInit(API, () => lang);
 document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
 

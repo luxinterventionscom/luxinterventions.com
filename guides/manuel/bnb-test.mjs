@@ -31,5 +31,18 @@ assert(/non ancora collegato/.test(await g.evaluate(() => document.body.innerTex
 await g.evaluate(() => document.querySelector('[data-sejinfo]').closest('.card').scrollIntoView());
 await snap(g, 'bnb-prix');
 log('ospite: prezzo + pulsante non collegato');
+// 💬 chat ospite ↔ host (Airbnb)
+assert(await g.$('#pcCard') && /host/i.test(await g.$eval('#pcCard h2', (e) => e.textContent)), 'ospite: chat con il suo host');
+await g.fill('#pcForm textarea', 'Manca un asciugamano'); await g.click('#pcForm button[type=submit]'); await g.waitForTimeout(2000);
+await p.evaluate(() => { const o = Date.now; Date.now = () => o() + 181000; }); await p.waitForTimeout(36000);
+await p.evaluate(() => { location.hash = '#/dashboard'; }); await p.waitForTimeout(1500);
+await p.evaluate(() => { const d = document.querySelector('.centralino'); if (d) d.open = true; });
+await p.click('.centralino [data-action=open-pchat][data-id=h2]'); await p.waitForTimeout(2000);
+assert((await p.$eval('.sheet', (e) => e.textContent)).includes('asciugamano'), 'centrale: legge il messaggio dell’ospite');
+await p.fill('.sheet form[data-form=pchat] textarea', 'Arriva subito'); await p.click('.sheet form[data-form=pchat] button[type=submit]'); await p.waitForTimeout(4000);
+await g.reload(); await g.waitForTimeout(3500);
+const gc = await g.$eval('#pcCard', (e) => e.innerHTML);
+assert(gc.includes('Arriva subito') && gc.includes('tk rd'), 'ospite: risposta ricevuta e ✓✓ blu');
+log('chat ospite ok');
 console.log('ERRORS', errs.length ? errs : 'none');
 await b.close();
