@@ -86,6 +86,18 @@ assert(await anna.$('#chat .tk.rd'), 'Anna vede ✓✓ blu (letto dalla centrale
 await refresh(paulo); tp = await chatTxt(paulo);
 assert(!tp.includes('vicino'), 'Paulo NON vede la risposta privata');
 log('risposta privata + spunte blu');
+// la centrale scrive una risposta mentre arriva un messaggio: niente salto in alto, il testo resta
+await p.fill('.sheet form[data-form=chatpost] textarea', 'bozza in corso');
+await p.evaluate(() => { const ta = document.querySelector('.sheet form[data-form=chatpost] textarea'); ta.scrollIntoView({ block: 'end' }); ta.focus(); });
+const pos0 = await p.evaluate(() => [...document.querySelectorAll('.sheet, .sheet .sheet-body')].map((e) => e.scrollTop));
+await anna.fill('#chatf textarea', 'Arriva mentre scrivi'); await anna.click('#chatf button[type=submit]'); await anna.waitForTimeout(1200);
+await act(p, 'chat-refresh', { id: 'im1' }); await p.waitForTimeout(5000);
+const pos1 = await p.evaluate(() => [...document.querySelectorAll('.sheet, .sheet .sheet-body')].map((e) => e.scrollTop));
+assert((await p.$eval('.sheet form[data-form=chatpost] textarea', (e) => e.value)) === 'bozza in corso', 'centrale: il testo in scrittura resta');
+assert((await p.$eval('.sheet', (e) => e.textContent)).includes('Arriva mentre scrivi'), 'centrale: il nuovo messaggio compare');
+assert(pos1.every((v, i) => Math.abs(v - pos0[i]) < 40) && pos0.some((v) => v > 0), 'centrale: la pagina non risale in alto ' + JSON.stringify([pos0, pos1]));
+await p.fill('.sheet form[data-form=chatpost] textarea', '');
+log('centrale: niente salto mentre si scrive');
 // 3. Paulo modifica il suo messaggio, poi lo rende privato; Anna elimina il suo pubblico
 await paulo.fill('#chatf textarea', 'Domani passa il tecnico'); await paulo.click('#chatf button[type=submit]'); await paulo.waitForTimeout(1500);
 const pid = await paulo.$eval('#chat .bub.me:last-of-type [data-cmenu]', (e) => e.dataset.cmenu);

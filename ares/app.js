@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.213.3';
+const VERSION = '2.213.4';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1876,7 +1876,10 @@ async function chatLoad(imId, force) {
     if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.id === imId && ui.sheet.tab === 'chat') await chatMarkPost(g, c, chatResolve(c), true).catch(() => {}); // ✓✓ bleu : lu
   }
   if (ui.chatNew) delete ui.chatNew[imId];
-  if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.id === imId && ui.sheet.tab === 'chat') { ui.sheet.rendered = false; renderSheet(); }
+  const sig = JSON.stringify(Object.values(im.chats || {}).map((g) => (((ui.chatView || {})[g.id] || {}).list || []).map((m) => [m.id, m.x, m.del, m.p, m.et, m.recs.length])));
+  const changed = sig !== (ui.chatSig || {})[imId];
+  ui.chatSig = { ...(ui.chatSig || {}), [imId]: sig };
+  if (changed && ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.id === imId && ui.sheet.tab === 'chat') { ui.sheet.rendered = false; renderSheet(); }
 }
 // Prochains tours des poubelles d'un fil, avec qui et si c'est fait
 function binsTable(im, g) {
@@ -5676,10 +5679,12 @@ function closeSheet() {
   ui.sheet = null;
   if (sheetEl.open) sheetEl.close();
 }
-sheetEl.addEventListener('close', () => (ui.sheet = null));
+sheetEl.addEventListener('close', () => { ui.sheet = null; delete sheetEl.dataset.key; });
 sheetEl.addEventListener('click', async (e) => { if (e.target === sheetEl && (await leaveSheetOk())) closeSheet(); });
 sheetEl.addEventListener('cancel', (e) => { if (!sheetDirty) return; e.preventDefault(); leaveSheetOk().then((ok) => ok && closeSheet()); });
 
+// cases de réponse des chats : le texte en cours est gardé quand la fiche se redessine
+const DRAFT_TA = '.chat-form textarea, .eq-chat-f textarea';
 function renderSheet() {
   if (!ui.sheet || (!sheetEl.open && ui.sheet.rendered)) return;
   const s = ui.sheet;
@@ -5688,12 +5693,25 @@ function renderSheet() {
   // Ne pas écraser une saisie en cours lors d'une mise à jour en arrière-plan.
   const focused = document.activeElement;
   if (s.rendered && (s.kind.endsWith('-form') || s.kind === 'relance' || (sheetEl.contains(focused) && focused.matches('input, textarea, select')))) return;
+  // même fiche redessinée (messages qui arrivent…) : on garde la position de lecture et le texte en cours de saisie
+  const key = [s.kind, s.id, s.tab].join('|'), same = sheetEl.open && sheetEl.dataset.key === key;
+  const keep = same ? { top: [...sheetEl.querySelectorAll('.sheet-body, .chat, .eq-chat')].map((e) => e.scrollTop), outer: sheetEl.scrollTop, vals: [...sheetEl.querySelectorAll(DRAFT_TA)].map((t) => t.value), sel: [...sheetEl.querySelectorAll('select')].map((x) => x.value), foc: [...sheetEl.querySelectorAll(DRAFT_TA)].indexOf(focused), pos: focused && focused.selectionStart } : null;
   sheetEl.className = 'sheet' + (r.narrow ? ' narrow' : '');
   setHtml(sheetEl, html`
     <div class="sheet-head"><h2>${r.title}</h2><button class="btn icon ghost" data-action="close-sheet" aria-label="Fermer">${icon('x')}</button></div>
     <div class="sheet-body">${r.body}</div>
     ${r.foot ? html`<div class="sheet-foot">${r.foot}</div>` : ''}`);
   s.rendered = true;
+  sheetEl.dataset.key = key;
+  if (keep) {
+    const tas = [...sheetEl.querySelectorAll(DRAFT_TA)], sels = [...sheetEl.querySelectorAll('select')];
+    if (tas.length === keep.vals.length) tas.forEach((t, i) => { if (keep.vals[i] && !t.value) t.value = keep.vals[i]; });
+    if (sels.length === keep.sel.length) sels.forEach((x, i) => { if (keep.sel[i] !== undefined) x.value = keep.sel[i]; });
+    const scs = [...sheetEl.querySelectorAll('.sheet-body, .chat, .eq-chat')];
+    if (scs.length === keep.top.length) scs.forEach((e, i) => { e.scrollTop = keep.top[i]; });
+    sheetEl.scrollTop = keep.outer;
+    if (keep.foc >= 0 && tas[keep.foc]) { tas[keep.foc].focus({ preventScroll: true }); try { tas[keep.foc].setSelectionRange(keep.pos, keep.pos); } catch { /* champ sans curseur */ } }
+  }
   if (!sheetDirty) sheetSnap = sheetSig();
   // dans les fiches : mêmes sections repliables, ouvertes par défaut
   enhanceFolds(sheetEl.querySelector('.sheet-body'), 'sheet:' + s.kind + ':' + (s.tab || ''), true);
@@ -10038,6 +10056,7 @@ const FORMS = {
         if (!l || !l.espace || !l.espace.key || !k || !k.pub) throw new Error('Message privé impossible : l’app de cet habitant n’est pas active.');
         await vault.boardPost(g.id, await sealJson(g.key, { ...msg, p: l.id, o: b64u(await sealForOwner(k.pub, { x })), e: b64u(await sealJson(l.espace.key, { x })) }), l.espace.id);
       } else await vault.boardPost(g.id, await sealJson(g.key, { ...msg, x }));
+      form.x.value = '';
       await chatLoad(im.id, true);
     } catch (e) {
       setBusy(form, false);
@@ -10048,7 +10067,9 @@ const FORMS = {
     const i = vault.get('intervenants', fd.get('id')), x = String(fd.get('x') || '').trim().slice(0, 1500);
     if (!i || !x) return;
     setBusy(form, true, 'Envoi…');
-    try { await eqChatSend([i.id], x, false); toast('Message envoyé'); renderSheet(); } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
+    const draft = form.x.value;
+    form.x.value = ''; // sinon le texte envoyé revient quand la fiche se redessine
+    try { await eqChatSend([i.id], x, false); toast('Message envoyé'); renderSheet(); } catch (e) { form.x.value = draft; setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
   async 'tpay-conf'(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), payMode = fd.get('payMode') === 'month' ? 'month' : 'each';
