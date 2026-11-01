@@ -103,7 +103,7 @@ await p.fill('.sheet form[data-form=chatpost] textarea', 'bozza da ritrovare'); 
 await p.keyboard.press('Escape'); await p.waitForTimeout(500);
 await act(p, 'open-imm', { id: 'im1' }); await p.waitForTimeout(600); await act(p, 'sheet-tab', { id: 'chat' }); await p.waitForTimeout(1200);
 assert((await p.$eval('.sheet form[data-form=chatpost] textarea', (e) => e.value)) === 'bozza da ritrovare', 'centrale: bozza ritrovata dopo aver chiuso');
-assert(await p.$('.sheet details.dfold h3') && (await p.$$eval('.sheet details.dfold h3', (hs) => hs.map((h) => h.textContent).join('|'))).match(/Messaggi/), 'centrale: sezioni «Messaggi» richiudibili');
+assert(await p.$('.sheet details.dfold h3') && (await p.$$eval('.sheet details.dfold h3', (hs) => hs.map((h) => h.textContent).join('|'))).match(/Messaggi tra loro/), 'centrale: sezioni «Messaggi» richiudibili');
 await p.fill('.sheet form[data-form=chatpost] textarea', ''); await p.dispatchEvent('.sheet form[data-form=chatpost] textarea', 'input');
 // 3. Paulo modifica il suo messaggio, poi lo rende privato; Anna elimina il suo pubblico
 await paulo.fill('#chatf textarea', 'Domani passa il tecnico'); await paulo.click('#chatf button[type=submit]'); await paulo.waitForTimeout(1500);

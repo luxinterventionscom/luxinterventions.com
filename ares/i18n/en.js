@@ -17091,4 +17091,16 @@ export default [
 "💬 Messages — {0}",
 "💬 Messages — {0}"
 ],
+[
+"· vivent ensemble ({0})",
+"· live together ({0})"
+],
+[
+"🗑️ Poubelles : qui les sort et quand",
+"🗑️ Bins: who puts them out and when"
+],
+[
+"💬 Messages entre eux et avec vous",
+"💬 Messages among them and with you"
+],
 ];
