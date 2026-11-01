@@ -103,6 +103,9 @@ async function route(request, env, ctx, headers) {
     const board = url.pathname.match(/^\/api\/board\/([0-9a-f]{32})$/);
     if (board) return boardPublic(request, env, board[1], headers);
 
+    // 🌐 traduction des messages des chats (textes courts) : DeepL si la clé DEEPL_KEY existe, sinon le traducteur gratuit de Google
+    if (url.pathname === "/api/tr" && request.method === "POST") return chatTranslate(request, env, headers);
+
     const pub = url.pathname.match(/^\/api\/pub\/([0-9a-f]{32})\.(json|ics)$/);
     if (pub && request.method === "GET") return publicCollectes(env, pub[1], pub[2], url, headers);
 
@@ -394,6 +397,41 @@ async function espacePublic(request, env, id, sub, headers) {
 
 // ── Mini-chat du logement : lecture (messages chiffrés, les plus récents) et envoi ──
 // Le serveur ne voit que des octets illisibles ; il efface les messages de plus de 90 jours.
+// ── 🌐 Traduction des messages : { q: [textes], to: "it" } → { t: [{ t: traduction, s: langue d'origine }] } ──
+// Rien n'est gardé ni journalisé ici ; limite simple par adresse IP (en mémoire, sans écriture KV)
+const TR_LANGS = new Set(["fr", "it", "de", "pt", "en", "es"]);
+const trHits = new Map();
+async function chatTranslate(request, env, headers) {
+  let b;
+  try { b = await request.json(); } catch { return aresJson({ error: "JSON" }, 400, headers); }
+  const to = String((b && b.to) || "");
+  const q = (Array.isArray(b && b.q) ? b.q : []).slice(0, 20).map((x) => String(x || "").slice(0, 1500));
+  if (!TR_LANGS.has(to) || !q.length) return aresJson({ error: "Requête invalide" }, 400, headers);
+  const ip = clientIp(request), hr = Math.floor(Date.now() / 3600000), k = ip + ":" + hr, n = (trHits.get(k) || 0) + q.length;
+  if (trHits.size > 5000) trHits.clear();
+  trHits.set(k, n);
+  if (n > 600) return aresJson({ error: "Trop de traductions, réessayez plus tard" }, 429, headers);
+  try {
+    if (env.DEEPL_KEY) {
+      const host = String(env.DEEPL_KEY).endsWith(":fx") ? "api-free.deepl.com" : "api.deepl.com";
+      const tl = to === "en" ? "EN-GB" : to === "pt" ? "PT-PT" : to.toUpperCase();
+      const r = await fetch(`https://${host}/v2/translate`, { method: "POST", headers: { Authorization: "DeepL-Auth-Key " + env.DEEPL_KEY, "Content-Type": "application/json" }, body: JSON.stringify({ text: q, target_lang: tl }) });
+      if (!r.ok) throw new Error("deepl " + r.status);
+      const j = await r.json();
+      return aresJson({ t: (j.translations || []).map((x) => ({ t: x.text || "", s: String(x.detected_source_language || "").slice(0, 2).toLowerCase() })) }, 200, headers);
+    }
+    const out = await Promise.all(q.map(async (x) => {
+      if (!x.trim()) return { t: x, s: to };
+      const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=auto&tl=" + to + "&q=" + encodeURIComponent(x));
+      if (!r.ok) throw new Error("tr " + r.status);
+      const j = await r.json();
+      return { t: (j[0] || []).map((seg) => seg[0] || "").join(""), s: String(j[2] || "").slice(0, 2) };
+    }));
+    return aresJson({ t: out }, 200, headers);
+  } catch (e) {
+    return aresJson({ error: "Traduction indisponible" }, 502, headers);
+  }
+}
 async function boardList(env, id) {
   const listed = await env.PHOTOS.list({ prefix: ARES_BOARD + id + "/m/" });
   const now = Date.now(), keep = [];

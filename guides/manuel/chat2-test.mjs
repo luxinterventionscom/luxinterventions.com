@@ -53,6 +53,20 @@ await refresh(paulo);
 let tp = await chatTxt(paulo);
 assert(tp.includes('lavatrice') && !tp.includes('Segreto'), 'Paulo vede il pubblico, NON il privato');
 log('privato invisibile agli altri');
+// 🌐 traduzione: Paulo sceglie lo spagnolo (servizio simulato)
+await paulo.route('**/api/tr', async (r) => { const b = JSON.parse(r.request().postData()); await r.fulfill({ contentType: 'application/json', body: JSON.stringify({ t: b.q.map((x) => ({ t: '[ES] ' + x, s: 'it' })) }) }); });
+await paulo.click('#chatCard [data-trpick]'); await paulo.waitForTimeout(300);
+await paulo.click('.tr-sh [data-l=es]'); await paulo.waitForTimeout(1500);
+tp = await chatTxt(paulo);
+assert(tp.includes('[ES] Ciao a tutti') && (await paulo.$('#chat .tr-o')), '🌐 messaggio di Anna tradotto con «vedi originale»');
+assert((await paulo.$eval('#chatCard [data-trpick]', (e) => e.textContent)).includes('ES'), '🌐 lingua scelta mostrata');
+await paulo.click('#chat .tr-o'); await paulo.waitForTimeout(300);
+assert(!(await chatTxt(paulo)).includes('[ES] Ciao'), '🌐 «vedi originale» mostra il testo vero');
+await refresh(paulo);
+assert(!(await chatTxt(paulo)).includes('[ES] Ciao'), '🌐 originale resta dopo il refresh');
+await paulo.click('#chat .tr-o'); await paulo.waitForTimeout(300);
+assert((await chatTxt(paulo)).includes('[ES] Ciao'), '🌐 di nuovo tradotto');
+log('traduzione ok');
 // 2. la centrale legge (✓✓ blu) e risponde in privato
 await act(p, 'open-imm', { id: 'im1' }); await p.waitForTimeout(600); await act(p, 'sheet-tab', { id: 'chat' }); await p.waitForTimeout(800);
 await act(p, 'chat-refresh', { id: 'im1' }); await p.waitForTimeout(5000);
