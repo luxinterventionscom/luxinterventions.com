@@ -29,7 +29,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.212.2';
+const VERSION = '2.212.3';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2276,9 +2276,9 @@ function centralinoHtml() {
     <summary data-action="cent-tog"><span class="cent-ic">${icon('headset')}</span><b>Centralino</b><span class="grow"></span>${tot ? html`<span class="badge bad">${tot} nouveau${tot > 1 ? 'x' : ''}</span>` : html`<span class="muted small">rien de nouveau</span>`}</summary>
     <div class="section-label">📩 Signalements des locataires ${badge(sig.length)}</div>
     ${sig.length ? html`<div class="list">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = t.byInterv ? vault.get('intervenants', t.byInterv) : null; return row('open-signal', t.id, html`${w ? '👷 ' + intervFull(w) : fullName(l)} — ${t.titre.replace(/^Signalement : /, '')}`, `${logName(l.logId) || immName(t.immId)} · ${fmtDateTime(t.sentAt)}`, 0); })}</div>` : html`<p class="small muted">Aucun nouveau signalement.</p>`}
-    <div class="section-label">🏠 Messages de la maison ${badge(nHouse)}</div>
+    <div class="section-label">🏠 Messages des Locataires ${badge(nHouse)}</div>
     ${imms.length ? html`<div class="list">${imms.map((im) => row('open-chat', im.id, immName(im.id), houseN(im) ? `${houseN(im)} nouveau${houseN(im) > 1 ? 'x messages' : ' message'} — touchez pour lire` : `${plural(Object.keys(im.chats || {}).length, 'fil')} · touchez pour ouvrir`, houseN(im)))}</div>` : html`<p class="small muted">Aucun fil de messages entre habitants.</p>`}
-    <div class="section-label">👷 Équipe ${badge(nEq)}</div>
+    <div class="section-label">👷 Messages des Équipes ${badge(nEq)}</div>
     ${eqs.length ? html`<div class="list">${eqs.map(({ i, last }) => row('open-eq-chat', i.id, intervFull(i), last ? `${last.from === 'mgr' ? '🛡️ ' : '👷 '}${String(last.x || '').slice(0, 60)} · ${fmtDateTime(last.at)}` : 'Pas encore de message', i.chatNew || 0))}</div>` : html`<p class="small muted">Aucun ouvrier avec l’app active.</p>`}
   </details>`;
 }

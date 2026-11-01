@@ -17317,4 +17317,12 @@ export default [
 "Options du message",
 "Nachrichtenoptionen"
 ],
+[
+"🏠 Messages des Locataires",
+"🏠 Nachrichten der Mieter"
+],
+[
+"👷 Messages des Équipes",
+"👷 Nachrichten der Teams"
+],
 ];

@@ -17311,4 +17311,12 @@ export default [
 "Options du message",
 "Opciones del mensaje"
 ],
+[
+"🏠 Messages des Locataires",
+"🏠 Mensajes de los Inquilinos"
+],
+[
+"👷 Messages des Équipes",
+"👷 Mensajes de los Equipos"
+],
 ];
