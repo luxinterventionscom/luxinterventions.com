@@ -17374,4 +17374,108 @@ export default [
 "💬 Messages entre eux et avec vous",
 "💬 Messaggi tra loro e con voi"
 ],
+[
+"📣 Annonce",
+"📣 Annuncio"
+],
+[
+"🗂️ Annonces envoyées ({0})",
+"🗂️ Annunci inviati ({0})"
+],
+[
+"🗂️ Annonces envoyées",
+"🗂️ Annunci inviati"
+],
+[
+"📣 Annonces reçues de la centrale",
+"📣 Annunci ricevuti dalla centrale"
+],
+[
+"↪️ Transférer aux miens",
+"↪️ Inoltra ai miei"
+],
+[
+"✓ Lu",
+"✓ Letto"
+],
+[
+"🚕 Taxis · 🍽️ Annonceurs",
+"🚕 Taxi · 🍽️ Annunciatori"
+],
+[
+"Son app n’est pas encore active : il ne recevra vos messages qu’après sa première connexion.",
+"La sua app non è ancora attiva: riceverà i vostri messaggi solo dopo il primo accesso."
+],
+[
+"🗑️ supprimé",
+"🗑️ eliminato"
+],
+[
+"📣 Nouvelle annonce",
+"📣 Nuovo annuncio"
+],
+[
+"À qui ?",
+"A chi?"
+],
+[
+"🏠 Habitants",
+"🏠 Abitanti"
+],
+[
+"— personne —",
+"— nessuno —"
+],
+[
+"Tous les habitants de tous les immeubles",
+"Tutti gli abitanti di tutti gli immobili"
+],
+[
+"{0} — tous",
+"{0} — tutti"
+],
+[
+"Tous les ouvriers ({0})",
+"Tutti gli operai ({0})"
+],
+[
+"Groupe de l’équipe ({0})",
+"Gruppo della squadra ({0})"
+],
+[
+"🏢 Clients du réseau",
+"🏢 Clienti della rete"
+],
+[
+"Tous les clients ({0})",
+"Tutti i clienti ({0})"
+],
+[
+"🚕 Sociétés de taxi ({0})",
+"🚕 Ditte taxi ({0})"
+],
+[
+"🍽️ Annonceurs ({0})",
+"🍽️ Annunciatori ({0})"
+],
+[
+"dans leur chat avec vous",
+"nella loro chat con voi"
+],
+[
+"Chacun le reçoit dans sa chat avec vous, avec « 📣 » devant et une notification ; chacun peut le traduire avec 🌐.",
+"Ognuno lo riceve nella sua chat con voi, con « 📣 » davanti e una notifica; ognuno può tradurlo con 🌐."
+],
+[
+"Chacun le reçoit dans sa chat avec vous, avec « 📣 » devant et une notification ; chacun peut le traduire avec 🌐. Les clients du réseau le reçoivent dans leur 🎧 Centralino et peuvent le transférer aux leurs.",
+"Ognuno lo riceve nella sua chat con voi, con « 📣 » davanti e una notifica; ognuno può tradurlo con 🌐. I clienti della rete lo ricevono nel loro 🎧 Centralino e possono inoltrarlo ai loro."
+],
+[
+"📣 Envoyer",
+"📣 Invia"
+],
+[
+"Choisissez au moins un destinataire",
+"Scegliete almeno un destinatario"
+],
 ];

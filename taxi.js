@@ -9,6 +9,8 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client
 import { infoBox } from '/ares/nbien.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { videoEmbed } from '/ares/video-embed.js';
+import { pchatInit, pchatCard } from '/ares/pchat.js';
+import { trInit } from '/ares/chattr.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'taxiAccess';
 let [id, key] = (location.hash.slice(1).match(/^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/) || []).slice(1);
@@ -217,6 +219,7 @@ function render() {
   if (!d.prof) out.push(profHtml());
   const rides = d.rides || [];
   out.push(`<div class="card"><h2>${esc(t.rides)}</h2>${rides.length ? rides.map((r) => rideHtml(r, t)).join('') : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}</div>`);
+  out.push(pchatCard());
   out.push(invHtml());
   { const p = slot('milieu'); if (p) out.push(adBox(p, t)); }
   if (d.prof) out.push(profHtml());
@@ -249,6 +252,10 @@ async function load() {
 wxRadioInit({ app: 'taxi', lang: () => lang, home: () => 'Luxembourg', radio: () => null });
 pubStatInit(API, 'taxi', () => lang);
 pubSocialInit(API, () => lang);
+trInit(API, () => lang);
+// 💬 chat avec la centrale, réponses rapides (le chauffeur ne tape pas en conduisant : un seul toucher)
+const quietData = async () => { const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' }); if (!r.ok) return null; const x = await openJson(key, await r.arrayBuffer()); return x && x.kind === 'taxi' ? x : null; };
+pchatInit({ id: () => id, data: () => data, send: (o) => sendOwner(o), lang: () => lang || 'fr', refresh: quietData, quick: [['✅', { fr: 'Reçu', it: 'Ricevuto', de: 'Erhalten', pt: 'Recebido', en: 'Received', es: 'Recibido' }], ['🚗', { fr: 'J’arrive', it: 'Sto arrivando', de: 'Ich komme', pt: 'Estou a chegar', en: 'On my way', es: 'Voy para allá' }], ['📍', { fr: 'Je suis arrivé', it: 'Sono arrivato', de: 'Ich bin da', pt: 'Cheguei', en: 'I have arrived', es: 'He llegado' }], ['⏱', { fr: '5 minutes de retard', it: '5 minuti di ritardo', de: '5 Minuten Verspätung', pt: '5 minutos de atraso', en: '5 minutes late', es: '5 minutos de retraso' }]] });
 document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
 app.addEventListener('submit', async (e) => {
   if (e.target.id !== 'codeForm') return;

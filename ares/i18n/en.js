@@ -17103,4 +17103,108 @@ export default [
 "💬 Messages entre eux et avec vous",
 "💬 Messages among them and with you"
 ],
+[
+"📣 Annonce",
+"📣 Announcement"
+],
+[
+"🗂️ Annonces envoyées ({0})",
+"🗂️ Sent announcements ({0})"
+],
+[
+"🗂️ Annonces envoyées",
+"🗂️ Sent announcements"
+],
+[
+"📣 Annonces reçues de la centrale",
+"📣 Announcements from the central office"
+],
+[
+"↪️ Transférer aux miens",
+"↪️ Forward to my people"
+],
+[
+"✓ Lu",
+"✓ Read"
+],
+[
+"🚕 Taxis · 🍽️ Annonceurs",
+"🚕 Taxis · 🍽️ Advertisers"
+],
+[
+"Son app n’est pas encore active : il ne recevra vos messages qu’après sa première connexion.",
+"Their app is not active yet: they will only get your messages after their first login."
+],
+[
+"🗑️ supprimé",
+"🗑️ deleted"
+],
+[
+"📣 Nouvelle annonce",
+"📣 New announcement"
+],
+[
+"À qui ?",
+"To whom?"
+],
+[
+"🏠 Habitants",
+"🏠 Residents"
+],
+[
+"— personne —",
+"— nobody —"
+],
+[
+"Tous les habitants de tous les immeubles",
+"All residents of all buildings"
+],
+[
+"{0} — tous",
+"{0} — all"
+],
+[
+"Tous les ouvriers ({0})",
+"All workers ({0})"
+],
+[
+"Groupe de l’équipe ({0})",
+"Team group ({0})"
+],
+[
+"🏢 Clients du réseau",
+"🏢 Network clients"
+],
+[
+"Tous les clients ({0})",
+"All clients ({0})"
+],
+[
+"🚕 Sociétés de taxi ({0})",
+"🚕 Taxi companies ({0})"
+],
+[
+"🍽️ Annonceurs ({0})",
+"🍽️ Advertisers ({0})"
+],
+[
+"dans leur chat avec vous",
+"in their chat with you"
+],
+[
+"Chacun le reçoit dans sa chat avec vous, avec « 📣 » devant et une notification ; chacun peut le traduire avec 🌐.",
+"Everyone gets it in their chat with you, with “📣” in front and a notification; everyone can translate it with 🌐."
+],
+[
+"Chacun le reçoit dans sa chat avec vous, avec « 📣 » devant et une notification ; chacun peut le traduire avec 🌐. Les clients du réseau le reçoivent dans leur 🎧 Centralino et peuvent le transférer aux leurs.",
+"Everyone gets it in their chat with you, with “📣” in front and a notification; everyone can translate it with 🌐. Network clients get it in their 🎧 Centralino and can forward it to their people."
+],
+[
+"📣 Envoyer",
+"📣 Send"
+],
+[
+"Choisissez au moins un destinataire",
+"Choose at least one recipient"
+],
 ];

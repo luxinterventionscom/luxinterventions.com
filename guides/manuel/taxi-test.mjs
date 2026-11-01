@@ -80,5 +80,21 @@ await x.evaluate(() => { const el = document.querySelector('[data-print], [data-
 await p.evaluate(() => scrollTo(0, 0)); await snap(p, 'taxi-central');
 await g.evaluate(() => { const el = document.querySelector('.rate, .arr'); if (el) el.scrollIntoView({ block: 'center' }); }); await snap(g, 'taxi-note');
 log('note vue par la centrale et la société');
+// 💬 chat taxi ↔ centrale : risposta rapida dalla ditta, la centrale legge e risponde
+await x.reload(); await x.waitForTimeout(3500);
+assert(await x.$('#pcCard'), 'taxi: carta messaggi con la centrale');
+await x.click('#pcCard [data-pcq]'); await x.waitForTimeout(2000);
+assert((await x.$eval('#pcCard', (e) => e.textContent)).includes('✅') && (await x.$('#pcCard [data-pcmenu]')), 'taxi: risposta rapida inviata, con ⋯');
+await relog(p);
+await p.evaluate(() => { location.hash = '#/dashboard'; }); await p.waitForTimeout(1500);
+assert(await p.$('.centralino [data-action=open-pchat]'), 'centrale: il taxi è nel Centralino');
+await p.evaluate(() => { const d = document.querySelector('.centralino'); if (d) d.open = true; }); await p.click('.centralino [data-action=open-pchat]'); await p.waitForTimeout(2000);
+assert((await p.$eval('.sheet', (e) => e.textContent)).includes('✅'), 'centrale: legge il messaggio del taxi');
+await p.fill('.sheet form[data-form=pchat] textarea', 'Perfetto, grazie'); await p.click('.sheet form[data-form=pchat] button[type=submit]'); await p.waitForTimeout(4000);
+await x.reload(); await x.waitForTimeout(3500);
+const xc = await x.$eval('#pcCard', (e) => e.innerHTML);
+assert(xc.includes('Perfetto, grazie') && xc.includes('tk rd'), 'taxi: riceve la risposta e vede ✓✓ blu');
+await x.evaluate(() => document.getElementById('pcCard').scrollIntoView()); await snap(x, 'taxi-chat');
+log('chat taxi ok');
 console.log('ERRORS', errs.length ? errs : 'none');
 await b.close();

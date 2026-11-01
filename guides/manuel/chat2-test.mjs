@@ -162,5 +162,18 @@ await luc.reload(); await luc.waitForTimeout(3500);
 lt = await luc.$eval('#chatCard', (e) => e.innerHTML);
 assert(lt.includes('tk rd') && lt.includes('modificato'), 'operaio: ✓✓ blu (letto) + «modificato»');
 log('chat operai ok');
+// 📣 annuncio dalla centrale: inquilini dell'immobile + tutti gli operai
+await p.keyboard.press('Escape'); await p.waitForTimeout(400);
+await act(p, 'ann-new'); await p.waitForTimeout(800);
+await p.fill('#f textarea[name=x]', 'Domani acqua chiusa dalle 9 alle 12');
+await p.selectOption('#f select[name=loc]', 'i:im1'); await p.selectOption('#f select[name=eq]', 'all');
+await p.click('button[type=submit][form=f]'); await p.waitForTimeout(6000);
+await refresh(anna);
+assert((await chatTxt(anna)).includes('📣 Domani acqua chiusa'), 'annuncio arrivato agli inquilini');
+await luc.reload(); await luc.waitForTimeout(3500);
+assert((await luc.$eval('#chatCard', (e) => e.textContent)).includes('Domani acqua chiusa'), 'annuncio arrivato agli operai');
+await act(p, 'ann-log'); await p.waitForTimeout(600);
+assert((await p.$eval('.sheet', (e) => e.textContent)).includes('Domani acqua chiusa'), 'annuncio nello storico');
+log('annuncio ok');
 console.log('ERRORS', errs.length ? errs : 'none');
 await b.close();

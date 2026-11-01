@@ -6,6 +6,8 @@ import { openJson, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-c
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { infoBox } from '/ares/nbien.js';
 import qrcode from '/ares/qrcode.js';
+import { pchatInit, pchatCard } from '/ares/pchat.js';
+import { trInit } from '/ares/chattr.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'annAccess';
 let [id, key] = (location.hash.slice(1).match(/^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/) || []).slice(1);
@@ -163,6 +165,7 @@ function render() {
   const pend = (() => { try { return JSON.parse(ls.get('annPend:' + id) || '[]'); } catch { return []; } })();
   const ads = [...pend.filter((p) => !(d.ads || []).some((a) => a.id === p.id && p.id)), ...(d.ads || [])];
   out.push(`<div class="card"><h2>${esc(t.mine)}</h2>${ads.length ? ads.map((a) => adHtml(a, t)).join('') : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}</div>`);
+  out.push(pchatCard()); // 💬 service après-vente 24 h / 24 : messages avec la centrale
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
   out.push(infoBox({ lang }));
   out.push(`<p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);
@@ -229,5 +232,8 @@ app.addEventListener('click', async (e) => {
     return render();
   }
 });
+trInit(API, () => lang || 'fr');
+const quietData = async () => { const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' }); if (!r.ok) return null; const x = await openJson(key, await r.arrayBuffer()); return x && x.kind === 'annonce' ? x : null; };
+pchatInit({ id: () => id, data: () => data, send: (o) => sendOwner(o), lang: () => lang || 'fr', refresh: quietData, quick: null });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data && !form) { setBadge(0, '/annonce'); load(); } });
 load();

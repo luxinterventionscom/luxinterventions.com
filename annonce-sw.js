@@ -1,6 +1,6 @@
 // App des annonceurs : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'annonce-shell-v1.1.0';
-const SHELL = ['/annonce.html', '/annonce.js', '/ares/espace-crypto.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/reqmark.js', '/ares/nbien.js', '/ares/qrcode.js', '/annonce.webmanifest', '/ares/icons/lux-192.png', '/assets/fonts/fonts.css'];
+const CACHE = 'annonce-shell-v1.2.0';
+const SHELL = ['/annonce.html', '/annonce.js', '/ares/espace-crypto.js', '/ares/pchat.js', '/ares/chattr.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/reqmark.js', '/ares/nbien.js', '/ares/qrcode.js', '/annonce.webmanifest', '/ares/icons/lux-192.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
@@ -32,6 +32,7 @@ self.addEventListener('push', (e) => {
     const n = (await badgeGet()) + 1;
     await badgeSet(n);
     await self.registration.showNotification('📣 Mes annonces', { body: m.body || '', icon: '/ares/icons/lux-192.png', badge: '/ares/icons/favicon-32.png', tag: m.tag || 'app', renotify: true, data: { url: '/annonce.html' } });
+    for (const c of await self.clients.matchAll({ type: 'window', includeUncontrolled: true })) c.postMessage({ k: 'push', tag: m.tag || '' });
   })());
 });
 self.addEventListener('notificationclick', (e) => {
