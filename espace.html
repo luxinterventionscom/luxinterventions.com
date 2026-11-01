@@ -247,8 +247,10 @@
 .bub-mn { float: right; border: 0; background: none; font: 700 16px system-ui, sans-serif; line-height: 1; padding: 0 2px 4px 10px; cursor: pointer; color: #6b6557; }
 .bub-menu { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .bub-menu button { border: 0; border-radius: 999px; padding: 6px 10px; font: 600 13px system-ui, sans-serif; background: #fff; box-shadow: 0 0 0 1px #d6d3cb; cursor: pointer; }
-.chat-pv { display: flex; gap: 8px; align-items: center; margin: 8px 0 0; font-size: 14px; font-weight: 600; cursor: pointer; }
-.chat-pv input { width: 20px; height: 20px; min-height: 0; margin: 0; }
+.chat-pv { display: inline-flex; gap: 8px; align-items: center; margin: 8px 0 0; padding: 6px 12px 6px 8px; border: 1px solid #e5e2da; border-radius: 999px; background: #fff; font: 600 14px system-ui, sans-serif; color: #9ca3af; cursor: pointer; }
+.chat-pv .hand { filter: grayscale(1); opacity: .45; }
+.chat-pv[aria-pressed="true"] { border-color: #fca5a5; background: #fef2f2; color: #b91c1c; }
+.chat-pv[aria-pressed="true"] .hand { filter: none; opacity: 1; }
 .chat-ed { display: flex; gap: 8px; align-items: center; justify-content: space-between; font-size: 13px; font-weight: 700; color: #6d28d9; margin-bottom: 6px; }
 .chat-tk { margin: 6px 0 0; font-size: 11px; }
 .chat-ed[hidden], .chat-pv[hidden] { display: none; }

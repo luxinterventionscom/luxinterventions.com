@@ -38,14 +38,16 @@ const tenant = async (code, who) => {
   return q;
 };
 const chatTxt = (q) => q.$eval('#chat', (e) => e.textContent);
-const refresh = async (q) => { await q.click('[data-chat-refresh]'); await q.waitForTimeout(1500); };
+// plus de bouton « Actualiser » : la chat se relit toute seule (20 s) ; dans le test on simule l'arrivée d'une notification
+const refresh = async (q) => { await q.evaluate(() => navigator.serviceWorker && navigator.serviceWorker.dispatchEvent(new MessageEvent('message', { data: { k: 'push' } }))); await q.waitForTimeout(1500); };
 const anna = await tenant(codes.lc1, 'anna'), paulo = await tenant(codes.lc2, 'paulo');
 assert(await anna.$('#chatf'), 'chat della casa nell’app di Anna');
 assert(await anna.$('#chatf input[name=pv]'), 'interruttore 🔒 Privato');
 assert(await anna.$eval('#chatEd', (e) => getComputedStyle(e).display === 'none'), 'barra modifica nascosta all’inizio');
 // 1. messaggio pubblico + messaggio privato
 await anna.fill('#chatf textarea', 'Ciao a tutti, stasera lavatrice libera?'); await anna.click('#chatf button[type=submit]'); await anna.waitForTimeout(1500);
-await anna.fill('#chatf textarea', 'Segreto: il vicino fa rumore la notte'); await anna.check('#chatf input[name=pv]'); await anna.click('#chatf button[type=submit]'); await anna.waitForTimeout(1500);
+await anna.fill('#chatf textarea', 'Segreto: il vicino fa rumore la notte'); await anna.click('#chatf [data-pvtog]'); await anna.click('#chatf button[type=submit]'); await anna.waitForTimeout(1500);
+assert(await anna.$eval('#chatf [data-pvtog]', (e) => e.getAttribute('aria-pressed') === 'false'), '✋ torna spenta dopo l’invio');
 let ta = await chatTxt(anna);
 assert(ta.includes('lavatrice') && ta.includes('Segreto') && (await anna.$('#chat .bub.bub-priv .bub-pv svg.hand')), 'Anna vede i suoi 2 messaggi, uno 🔒');
 assert(!(await anna.$('#chat .tk.rd')), 'nessuna spunta blu prima della lettura');
