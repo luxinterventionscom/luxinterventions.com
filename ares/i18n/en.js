@@ -17083,4 +17083,12 @@ export default [
 "privé — à {0}",
 "private — to {0}"
 ],
+[
+"🗑️ Tour des poubelles — {0}",
+"🗑️ Bin rota — {0}"
+],
+[
+"💬 Messages — {0}",
+"💬 Messages — {0}"
+],
 ];

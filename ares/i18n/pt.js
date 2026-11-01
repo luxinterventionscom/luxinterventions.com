@@ -17262,4 +17262,12 @@ export default [
 "privé — à {0}",
 "privado — para {0}"
 ],
+[
+"🗑️ Tour des poubelles — {0}",
+"🗑️ Turno do lixo — {0}"
+],
+[
+"💬 Messages — {0}",
+"💬 Mensagens — {0}"
+],
 ];

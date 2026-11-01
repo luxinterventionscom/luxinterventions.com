@@ -98,6 +98,13 @@ assert((await p.$eval('.sheet', (e) => e.textContent)).includes('Arriva mentre s
 assert(pos1.every((v, i) => Math.abs(v - pos0[i]) < 40) && pos0.some((v) => v > 0), 'centrale: la pagina non risale in alto ' + JSON.stringify([pos0, pos1]));
 await p.fill('.sheet form[data-form=chatpost] textarea', '');
 log('centrale: niente salto mentre si scrive');
+// bozza ricordata anche chiudendo e riaprendo la fiche
+await p.fill('.sheet form[data-form=chatpost] textarea', 'bozza da ritrovare'); await p.dispatchEvent('.sheet form[data-form=chatpost] textarea', 'input');
+await p.keyboard.press('Escape'); await p.waitForTimeout(500);
+await act(p, 'open-imm', { id: 'im1' }); await p.waitForTimeout(600); await act(p, 'sheet-tab', { id: 'chat' }); await p.waitForTimeout(1200);
+assert((await p.$eval('.sheet form[data-form=chatpost] textarea', (e) => e.value)) === 'bozza da ritrovare', 'centrale: bozza ritrovata dopo aver chiuso');
+assert(await p.$('.sheet details.dfold h3') && (await p.$$eval('.sheet details.dfold h3', (hs) => hs.map((h) => h.textContent).join('|'))).match(/Messaggi/), 'centrale: sezioni «Messaggi» richiudibili');
+await p.fill('.sheet form[data-form=chatpost] textarea', ''); await p.dispatchEvent('.sheet form[data-form=chatpost] textarea', 'input');
 // 3. Paulo modifica il suo messaggio, poi lo rende privato; Anna elimina il suo pubblico
 await paulo.fill('#chatf textarea', 'Domani passa il tecnico'); await paulo.click('#chatf button[type=submit]'); await paulo.waitForTimeout(1500);
 const pid = await paulo.$eval('#chat .bub.me:last-of-type [data-cmenu]', (e) => e.dataset.cmenu);
