@@ -47,8 +47,9 @@ assert(await anna.$eval('#chatEd', (e) => getComputedStyle(e).display === 'none'
 await anna.fill('#chatf textarea', 'Ciao a tutti, stasera lavatrice libera?'); await anna.click('#chatf button[type=submit]'); await anna.waitForTimeout(1500);
 await anna.fill('#chatf textarea', 'Segreto: il vicino fa rumore la notte'); await anna.check('#chatf input[name=pv]'); await anna.click('#chatf button[type=submit]'); await anna.waitForTimeout(1500);
 let ta = await chatTxt(anna);
-assert(ta.includes('lavatrice') && ta.includes('Segreto') && ta.includes('🔒 privato'), 'Anna vede i suoi 2 messaggi, uno 🔒');
+assert(ta.includes('lavatrice') && ta.includes('Segreto') && (await anna.$('#chat .bub.bub-priv .bub-pv svg.hand')), 'Anna vede i suoi 2 messaggi, uno 🔒');
 assert(!(await anna.$('#chat .tk.rd')), 'nessuna spunta blu prima della lettura');
+if (process.env.OUT) { const id9 = await anna.$eval('#chat .bub.bub-priv [data-cmenu]', (e) => e.dataset.cmenu); await anna.click(`[data-cmenu="${id9}"]`); await anna.waitForTimeout(300); await anna.evaluate(() => document.getElementById('chatCard').scrollIntoView({ block: 'end' })); await anna.screenshot({ path: process.env.OUT + '/hand-chat.png' }); await anna.click(`[data-cmenu="${id9}"]`); }
 await refresh(paulo);
 let tp = await chatTxt(paulo);
 assert(tp.includes('lavatrice') && !tp.includes('Segreto'), 'Paulo vede il pubblico, NON il privato');
@@ -72,7 +73,7 @@ await act(p, 'open-imm', { id: 'im1' }); await p.waitForTimeout(600); await act(
 await act(p, 'chat-refresh', { id: 'im1' }); await p.waitForTimeout(5000);
 const cs = await p.$eval('.sheet', (e) => e.textContent);
 if (!cs.includes('Segreto')) console.log('SHEET', cs.slice(0, 1500), errs);
-assert(cs.includes('Segreto') && await p.$('.sheet .bub.pv'), 'la centrale legge il privato');
+assert(cs.includes('Segreto') && await p.$('.sheet .bub.bub-priv'), 'la centrale legge il privato');
 await act(p, 'chat-reply-priv', { id: await p.$eval('select[name=to]', (e) => e.dataset.gid), loc: 'lc1' }); await p.waitForTimeout(300);
 await p.fill('.sheet form[data-form=chatpost] textarea', 'Grazie Anna, ne parlo io col vicino');
 await p.click('.sheet form[data-form=chatpost] button[type=submit]'); await p.waitForTimeout(5000);

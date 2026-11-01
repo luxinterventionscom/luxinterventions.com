@@ -17319,4 +17319,20 @@ export default [
 "👷 Messages des Équipes",
 "👷 Mensajes de los Equipos"
 ],
+[
+"✋ = message privé entre un habitant et vous (les autres ne le voient pas). Dans leur app : ✓ envoyé · ✓✓ arrivé ici · ✓✓ bleu lu par vous. Chacun peut modifier, rendre privé / public ou supprimer son message pendant 15 minutes ; vous voyez le texte d’avant.",
+"✋ = mensaje privado entre un habitante y usted (los demás no lo ven). En su app: ✓ enviado · ✓✓ llegado aquí · ✓✓ azul leído por usted. Cada uno puede editar, hacer privado / público o eliminar su mensaje durante 15 minutos; usted ve el texto anterior."
+],
+[
+"✋ Privé — {0}",
+"✋ Privado — {0}"
+],
+[
+"Répondre en privé",
+"Responder en privado"
+],
+[
+"privé — à {0}",
+"privado — para {0}"
+],
 ];
