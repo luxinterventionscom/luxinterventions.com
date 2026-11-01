@@ -29,7 +29,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.212.1';
+const VERSION = '2.212.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -75,7 +75,7 @@ const html = (strings, ...vals) => new Raw(strings.reduce((out, s, i) => out + v
 const setHtml = (el, h) => { el.innerHTML = val(h); };
 
 const ICONS = {
-  headset: '<circle cx="12" cy="10" r="3.5"/><path d="M5 22c0-3.9 3.1-6 7-6s7 2.1 7 6"/><path d="M5.8 10a6.2 6.2 0 0 1 12.4 0"/><rect x="4.3" y="9" width="2.6" height="4.4" rx="1.2"/><rect x="17.1" y="9" width="2.6" height="4.4" rx="1.2"/><path d="M18.4 13.4c0 1.5-1.6 2.3-4.2 2.3"/><circle cx="13.4" cy="15.7" r="1"/>',
+  headset: '<path d="M4 13.5V12a8 8 0 0 1 16 0v1.5"/><rect x="2.5" y="12" width="3.5" height="6" rx="1.6"/><rect x="18" y="12" width="3.5" height="6" rx="1.6"/><path d="M19.75 18v.4c0 1.8-1.6 3.1-3.6 3.1H14"/><path d="M12 8.8a4.3 4.3 0 1 1-2.2 8l-2 .7.7-1.9A4.3 4.3 0 0 1 12 8.8z"/><circle cx="10.3" cy="13.1" r=".55" style="fill:currentColor;stroke:none"/><circle cx="12" cy="13.1" r=".55" style="fill:currentColor;stroke:none"/><circle cx="13.7" cy="13.1" r=".55" style="fill:currentColor;stroke:none"/>',
   home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
   car: '<path d="M5 17h14M3 17v-4l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v4"/><path d="M3 13h18"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
