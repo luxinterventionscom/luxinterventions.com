@@ -17478,4 +17478,12 @@ export default [
 "Choisissez au moins un destinataire",
 "Scegliete almeno un destinatario"
 ],
+[
+"🛎️ Messages des clients (hôtel / Airbnb)",
+"🛎️ Messaggi degli ospiti (hotel / Airbnb)"
+],
+[
+"{0} → {1} · pas encore de message",
+"{0} → {1} · ancora nessun messaggio"
+],
 ];
