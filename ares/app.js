@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.213.5';
+const VERSION = '2.213.6';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -7214,9 +7214,9 @@ const SHEETS = {
         ${on ? html`<label class="field" style="margin-bottom:6px">Qui discute ensemble ?<select data-input="chat-scope" data-id="${id}">${Object.entries(CHAT_SCOPES).map(([k, v]) => html`<option value="${k}" ${chatScope(im) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
           <label class="row" style="cursor:pointer;margin:6px 0"><input type="checkbox" data-input="bins-on" data-id="${id}" ${binsOn(im) ? new Raw('checked') : ''} style="width:22px;min-height:22px">
             <span class="grow"><b>🗑️ Tour des poubelles</b><span class="meta" style="display:block">À tour de rôle entre les habitants de chaque fil, automatiquement (le nouveau locataire prend la place de celui qui part). Dans leur app : « Ce soir c’est ton tour », ✅ Fait, 🔁 Je ne peux pas.</span></span></label>
-          ${groups.length ? html`<p style="margin:4px 0;display:flex">${new Raw(trButton())}</p>` : ''}${groups.length ? groups.map(([gk, g]) => html`<div class="section-label" data-nofold="1">👥 ${chatLabel(gk)}${g.members.length < 2 ? html` <span class="badge">✉️ seul·e — écrit au gestionnaire</span>` : ''} <span class="muted small">· ${g.members.map((m) => shortName(vault.get('locataires', m) || {})).join(', ')}</span></div>
-            ${binsTable(im, g) ? html`<details class="card dfold gfold" data-gk="chatfold|bins|${g.id}" ${foldIsOpen('chatfold|bins|' + g.id) ? new Raw('open') : ''}><summary><h3>🗑️ Tour des poubelles — ${chatLabel(gk)}</h3></summary><div class="dfold-body">${binsTable(im, g)}</div></details>` : ''}
-            <details class="card dfold gfold" data-gk="chatfold|msg|${g.id}" ${foldIsOpen('chatfold|msg|' + g.id) ? new Raw('open') : ''}><summary><h3>💬 Messages — ${chatLabel(gk)}</h3></summary><div class="dfold-body">
+          ${groups.length ? html`<p style="margin:4px 0;display:flex">${new Raw(trButton())}</p>` : ''}${groups.length ? groups.map(([gk, g]) => html`<div class="section-label" data-nofold="1">👥 ${g.members.map((m) => shortName(vault.get('locataires', m) || {})).join(', ')}${g.members.length < 2 ? html` <span class="badge">✉️ seul·e — écrit au gestionnaire</span>` : html` <span class="muted small">· vivent ensemble (${chatLabel(gk)})</span>`}</div>
+            ${binsTable(im, g) ? html`<details class="card dfold gfold" data-gk="chatfold|bins|${g.id}" ${foldIsOpen('chatfold|bins|' + g.id) ? new Raw('open') : ''}><summary><h3>🗑️ Poubelles : qui les sort et quand</h3></summary><div class="dfold-body">${binsTable(im, g)}</div></details>` : ''}
+            <details class="card dfold gfold" data-gk="chatfold|msg|${g.id}" ${foldIsOpen('chatfold|msg|' + g.id) ? new Raw('open') : ''}><summary><h3>💬 Messages entre eux et avec vous</h3></summary><div class="dfold-body">
             <div class="chat">${chatBubbles((ui.chatView || {})[g.id], g.id)}</div>
             <form data-form="chatpost" class="chat-form"><input type="hidden" name="imm" value="${id}"><input type="hidden" name="gk" value="${gk}">
               <textarea name="x" required maxlength="1500" placeholder="Écrire aux habitants (en tant que gestionnaire)…" data-draft="h:${g.id}">${(ui.drafts || {})['h:' + g.id] || ''}</textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button>

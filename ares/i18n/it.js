@@ -17362,4 +17362,16 @@ export default [
 "💬 Messages — {0}",
 "💬 Messaggi — {0}"
 ],
+[
+"· vivent ensemble ({0})",
+"· vivono insieme ({0})"
+],
+[
+"🗑️ Poubelles : qui les sort et quand",
+"🗑️ Spazzatura: chi la porta fuori e quando"
+],
+[
+"💬 Messages entre eux et avec vous",
+"💬 Messaggi tra loro e con voi"
+],
 ];
