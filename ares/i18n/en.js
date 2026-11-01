@@ -17059,4 +17059,12 @@ export default [
 "Options du message",
 "Message options"
 ],
+[
+"🏠 Messages des Locataires",
+"🏠 Tenant messages"
+],
+[
+"👷 Messages des Équipes",
+"👷 Team messages"
+],
 ];
