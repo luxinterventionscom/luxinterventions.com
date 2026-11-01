@@ -960,3 +960,6 @@ body.compta [data-action^="del-"], body.compta [data-action$="-del"], body.compt
 .warn-box { border: 2px solid #dc2626; background: #fef2f2; color: #7f1d1d; border-radius: 12px; padding: 10px 12px; font-size: 13px; }
 .warn-box p { margin: 6px 0 0; }
 .warn-t { display: block; color: #dc2626; font-size: 16px; font-weight: 800; letter-spacing: .3px; }
+.bub-mn { margin-left: auto; border: 0; background: none; font: 700 18px system-ui, sans-serif; line-height: 1; padding: 0 4px; cursor: pointer; color: inherit; opacity: .7; }
+.bub-menu { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.eq-msg-h { display: flex; align-items: center; gap: 6px; }

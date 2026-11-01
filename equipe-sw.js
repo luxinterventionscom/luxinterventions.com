@@ -1,5 +1,5 @@
 // App de l'équipe ARES INVEST S.A. (ARES Équipe) : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'equipe-shell-v1.69.0';
+const CACHE = 'equipe-shell-v1.70.0';
 const SHELL = ['/equipe.html', '/equipe.js', '/ares/espace-crypto.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/pubstat.js', '/ares/pubsocial.js', '/ares/reqmark.js', '/ares/wxradio.js', '/ares/nbien.js', '/ares/confirm-box.js', '/ares/photo-crop.js', '/ares/pull-refresh.js', '/ares/trip.js', '/equipe.webmanifest', '/ares/icons/ares-192.png', '/ares/icons/nobis-logo.png', '/ares/icons/lux-192.png', '/ares/icons/lux-apple-touch-icon.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -32,6 +32,8 @@ self.addEventListener('push', (e) => {
     const n = (await badgeGet()) + 1;
     await badgeSet(n);
     await self.registration.showNotification(m.title || 'ARES Équipe', { body: m.body || '', icon: '/ares/icons/lux-192.png', badge: '/ares/icons/favicon-32.png', tag: m.tag || 'app', renotify: true, data: { url: m.url || '/equipe.html' } });
+    // app ouverte : elle se met à jour tout de suite (nouveau message…)
+    for (const c of await self.clients.matchAll({ type: 'window', includeUncontrolled: true })) c.postMessage({ k: 'push', tag: m.tag || '' });
   })());
 });
 self.addEventListener('notificationclick', (e) => {

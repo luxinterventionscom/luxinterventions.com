@@ -169,13 +169,13 @@ const CX = {
 const CHK = () => 'eqChat:' + id, CSK = () => 'eqChatSeen:' + id, CEK = () => 'eqChatEd:' + id;
 let chatDraft = '', chatMenu = '', chatEdit = '';
 const EQ_EDIT_MS = 15 * 60000;
-const eqEditable = (m) => m.from === 'eq' && !m.wait && Date.now() - Date.parse(m.at) < EQ_EDIT_MS;
+const eqEditable = (m) => m.from === 'eq' && Date.now() - Date.parse(m.at) < EQ_EDIT_MS; // aussi pendant l'envoi (⏳)
 function chatCard() {
   const c = CH[lang] || CH.fr, list = data.chat || [], known = new Set(list.map((m) => m.id)), stored = getJ(CHK());
   const pend = stored.filter((m) => !known.has(m.id));
   if (pend.length !== stored.length) setJ(CHK(), pend);
   // modifications / suppressions envoyées mais pas encore revenues de la centrale
-  const eds = getJ(CEK()).filter((e) => { const m = list.find((x) => x.id === e.id); return e.del ? !!m : m && (m.ed || '') < e.at; });
+  const eds = getJ(CEK()).filter((e) => { const m = list.find((x) => x.id === e.id); return pend.some((x) => x.id === e.id) || (e.del ? !!m : m && (m.ed || '') < e.at); });
   if (eds.length !== getJ(CEK()).length) setJ(CEK(), eds);
   const all = [...list, ...pend.map((m) => ({ ...m, from: 'eq', wait: 1 }))].map((m) => { const e = eds.find((z) => z.id === m.id); return !e ? m : e.del ? null : { ...m, x: e.x, ed: e.at }; }).filter(Boolean).slice(-40);
   const x9 = CX[lang] || CX.fr, rd = data.chatRd || '';
@@ -863,10 +863,10 @@ document.addEventListener('click', async (e) => {
   const x9 = CX[lang] || CX.fr;
   chatMenu = '';
   if (op.dataset.eop === 'cancel') { chatEdit = ''; chatDraft = ''; return render(); }
-  const m = (data.chat || []).find((z) => z.id === op.dataset.id);
+  const m = [...(data.chat || []), ...getJ(CHK()).map((z) => ({ ...z, from: 'eq' }))].find((z) => z.id === op.dataset.id);
   if (!m || !eqEditable(m)) { alert(x9.late); return render(); }
   if (op.dataset.eop === 'edit') {
-    chatEdit = m.id; chatDraft = m.x;
+    chatEdit = m.id; chatDraft = (getJ(CEK()).find((z) => z.id === m.id && z.x) || m).x;
     render();
     const ta = document.querySelector('#chatForm textarea'); if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
     return;
@@ -950,7 +950,7 @@ app.addEventListener('submit', async (e) => {
     const x = String(f.x.value || '').trim().slice(0, 1500);
     if (!x) return;
     if (chatEdit) {
-      const old = (data.chat || []).find((z) => z.id === chatEdit);
+      const old = [...(data.chat || []), ...getJ(CHK()).map((z) => ({ ...z, from: 'eq' }))].find((z) => z.id === chatEdit);
       const eid = chatEdit; chatEdit = ''; chatDraft = '';
       if (!old || !eqEditable(old)) { alert((CX[lang] || CX.fr).late); render(); return; }
       const at = new Date().toISOString();
@@ -1464,6 +1464,36 @@ async function load() {
   if (data) { pushInit(); devFlush(); if (data.items.some((it) => it.tk && (tripLs(it.tk) || {}).st === 'go')) tripWatch(); }
 }
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && id && key && !form && !devEd) load(); });
+// 💬 chat à l'écran : relue toutes les 20 s (et tout de suite à l'arrivée d'une notification), sans recharger la page
+let chatQBusy = false;
+async function chatQuiet() {
+  if (chatQBusy || !data || !id || !key || form || devEd || document.visibilityState !== 'visible') return;
+  const card = document.getElementById('chatCard');
+  if (!card) return;
+  chatQBusy = true;
+  try {
+    flush();
+    const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' });
+    if (r.ok) {
+      const x = await openJson(key, await r.arrayBuffer());
+      if (x && x.kind === 'equipe' && JSON.stringify([x.chat, x.chatRd]) !== JSON.stringify([data.chat, data.chatRd])) {
+        data.chat = x.chat; data.chatRd = x.chatRd;
+        const cur = document.getElementById('chatCard');
+        if (cur) {
+          const ta = cur.querySelector('textarea'), foc = document.activeElement === ta, pos = ta ? ta.selectionStart : 0;
+          const box = cur.querySelector('.chat'), atEnd = box && box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+          cur.outerHTML = chatCard();
+          const nb = document.querySelector('#chatCard .chat'); if (nb && atEnd) nb.scrollTop = nb.scrollHeight;
+          const nt = document.querySelector('#chatCard textarea'); if (nt && foc) { nt.focus(); nt.setSelectionRange(pos, pos); }
+          chatSeen();
+        }
+      }
+    }
+  } catch { /* hors ligne */ }
+  chatQBusy = false;
+}
+setInterval(() => { const c = document.getElementById('chatCard'); if (!c) return; const r = c.getBoundingClientRect(); if (r.bottom > 0 && r.top < innerHeight) chatQuiet(); }, 20000);
+if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.k === 'push') chatQuiet(); });
 // tirer vers le bas = recharger (pas pendant un formulaire en cours) ; hors ligne : on garde ce qu'on avait
 pullRefreshInit({ lang: () => lang, refresh: async () => { if (!id || !key || form || devEd) return; const prev = data; await load(); if (!data && prev && loadErr === '⚠ offline') { data = prev; render(); } } });
 addEventListener('online', () => { flush(); devFlush(); });

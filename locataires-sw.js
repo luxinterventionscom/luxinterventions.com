@@ -1,7 +1,7 @@
 // Service worker Ares : met l'application en cache pour l'ouvrir hors ligne.
 // Les données ne passent jamais par ce cache (elles sont chiffrées dans IndexedDB
 // et les appels à l'API ne sont pas interceptés).
-const CACHE = 'ares-shell-v2.210.0';
+const CACHE = 'ares-shell-v2.211.0';
 const SHELL = [
   '/locataires.html',
   '/ares/app.css',
@@ -82,6 +82,8 @@ self.addEventListener('push', (e) => {
     const n = (await badgeGet()) + 1;
     await badgeSet(n);
     await self.registration.showNotification(m.title || 'LuxInterventions', { body: m.body || '', icon: '/ares/icons/lux-192.png', badge: '/ares/icons/favicon-32.png', tag: m.tag || 'app', renotify: true, data: { url: m.url || '/locataires.html' } });
+    // app ouverte : elle se met à jour tout de suite (nouveau message…)
+    for (const c of await self.clients.matchAll({ type: 'window', includeUncontrolled: true })) c.postMessage({ k: 'push', tag: m.tag || '' });
   })());
 });
 self.addEventListener('notificationclick', (e) => {
