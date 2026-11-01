@@ -377,6 +377,9 @@ async function startDemo(role) {
   await startSession();
 }
 
+// dernier réglage connu des offres (pour ne pas faire clignoter la bannière à l'ouverture)
+function offersMem(v) { try { localStorage.setItem('ptlOffersOff', v ? '1' : '0'); } catch { /* stockage indisponible */ } }
+try { const v = localStorage.getItem('ptlOffersOff'); if (v === '0' || v === '1') state.offersOff = v === '1'; } catch { /* stockage indisponible */ }
 async function boot() {
   renderLock('checking');
   if (location.hash === '#demo') return startDemo();
@@ -439,7 +442,7 @@ async function startSession() {
   if (!isAdmin() && !state.demo) api('pubs').then((r) => {
     const off = r.offers === false;
     if (r.contact !== undefined && JSON.stringify(r.contact) !== JSON.stringify(state.contact || null)) { state.contact = r.contact; if (state.route === 'plus') renderView(); }
-    if (off !== !!state.offersOff) { state.offersOff = off; renderView(); }
+    if (off !== state.offersOff) { state.offersOff = off; offersMem(off); renderView(); }
     if (!off && !t && !offerSeen()) setTimeout(() => { if (!state.sheet) openSheet('offer'); }, 600);
   }).catch(() => {});
   let want = ''; try { want = localStorage.getItem('ptlOfferWant') || ''; localStorage.removeItem('ptlOfferWant'); } catch { /* stockage indisponible */ }
@@ -570,7 +573,7 @@ async function loadRoute(route) {
     const [stats, tickets, pubs] = await Promise.all([api('stats' + (org ? '?' + org.slice(1) : '')), api('tickets?scope=active' + org), api('pubs').catch(() => ({ items: [] }))]);
     state.cache.home = { stats, tickets: tickets.tickets, pubs: pubs.items || [] };
     if (pubs.contact !== undefined) state.contact = pubs.contact;
-    if (pubs.offers === false) state.offersOff = true; else if (pubs.items) state.offersOff = false; // offres d'abonnement masquées par LuxInterventions
+    if (pubs.offers === false) { state.offersOff = true; offersMem(true); } else if (pubs.items) { state.offersOff = false; offersMem(false); } // offres d'abonnement masquées par LuxInterventions
     if (!isAdmin()) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; orgLogoRefresh(); } catch { /* hors ligne */ } }
     if (!isAdmin()) { try { state.cache.home.devis = (await api('devis')).devis || []; } catch { state.cache.home.devis = []; } }
   } else if (route === 'demandes') {
@@ -1369,7 +1372,8 @@ function devisBanner() {
           : v.status === 'envoye' ? html`<span class="tiny muted">Le responsable de votre gérance accepte ou refuse le devis.</span>` : ''}</div></div>`; })}
     ${done.map((v) => html`<p class="small" style="margin:6px 0 0">${st[v.status]} — ${v.no}${v.decided_by_name ? ' · ' + v.decided_by_name : ''} · ${fmtDateTime(v.decided_at)}</p>`)}</div>`;
 }
-const offerBanner = () => state.offersOff ? '' : html`<button type="button" class="offer-banner" data-action="offer-open"><span class="ob-ic">💼</span><span class="grow"><b>Gérez aussi vos propres locataires</b><span class="tiny muted" style="display:block">Gratuit pour 1 immeuble · Pro dès 29 € / mois · données chiffrées</span></span><span class="ob-go">Voir les offres ›</span></button>`;
+// montrée seulement quand on SAIT que les offres sont activées (sinon elle apparaissait puis disparaissait)
+const offerBanner = () => state.offersOff !== false ? '' : html`<button type="button" class="offer-banner" data-action="offer-open"><span class="ob-ic">💼</span><span class="grow"><b>Gérez aussi vos propres locataires</b><span class="tiny muted" style="display:block">Gratuit pour 1 immeuble · Pro dès 29 € / mois · données chiffrées</span></span><span class="ob-go">Voir les offres ›</span></button>`;
 const offerSeen = () => { try { return localStorage.getItem(OFFER_KEY) === '1'; } catch { return true; } };
 const offerMark = () => { try { localStorage.setItem(OFFER_KEY, '1'); } catch { /* stockage indisponible */ } };
 
