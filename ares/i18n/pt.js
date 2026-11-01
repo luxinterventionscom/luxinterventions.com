@@ -17282,4 +17282,108 @@ export default [
 "💬 Messages entre eux et avec vous",
 "💬 Mensagens entre eles e convosco"
 ],
+[
+"📣 Annonce",
+"📣 Anúncio"
+],
+[
+"🗂️ Annonces envoyées ({0})",
+"🗂️ Anúncios enviados ({0})"
+],
+[
+"🗂️ Annonces envoyées",
+"🗂️ Anúncios enviados"
+],
+[
+"📣 Annonces reçues de la centrale",
+"📣 Anúncios recebidos da central"
+],
+[
+"↪️ Transférer aux miens",
+"↪️ Reencaminhar aos meus"
+],
+[
+"✓ Lu",
+"✓ Lido"
+],
+[
+"🚕 Taxis · 🍽️ Annonceurs",
+"🚕 Táxis · 🍽️ Anunciantes"
+],
+[
+"Son app n’est pas encore active : il ne recevra vos messages qu’après sa première connexion.",
+"A app dele ainda não está ativa: só receberá as vossas mensagens depois do primeiro acesso."
+],
+[
+"🗑️ supprimé",
+"🗑️ apagado"
+],
+[
+"📣 Nouvelle annonce",
+"📣 Novo anúncio"
+],
+[
+"À qui ?",
+"A quem?"
+],
+[
+"🏠 Habitants",
+"🏠 Moradores"
+],
+[
+"— personne —",
+"— ninguém —"
+],
+[
+"Tous les habitants de tous les immeubles",
+"Todos os moradores de todos os imóveis"
+],
+[
+"{0} — tous",
+"{0} — todos"
+],
+[
+"Tous les ouvriers ({0})",
+"Todos os funcionários ({0})"
+],
+[
+"Groupe de l’équipe ({0})",
+"Grupo da equipa ({0})"
+],
+[
+"🏢 Clients du réseau",
+"🏢 Clientes da rede"
+],
+[
+"Tous les clients ({0})",
+"Todos os clientes ({0})"
+],
+[
+"🚕 Sociétés de taxi ({0})",
+"🚕 Empresas de táxi ({0})"
+],
+[
+"🍽️ Annonceurs ({0})",
+"🍽️ Anunciantes ({0})"
+],
+[
+"dans leur chat avec vous",
+"no chat deles convosco"
+],
+[
+"Chacun le reçoit dans sa chat avec vous, avec « 📣 » devant et une notification ; chacun peut le traduire avec 🌐.",
+"Cada um recebe-o no seu chat convosco, com « 📣 » à frente e uma notificação; cada um pode traduzi-lo com 🌐."
+],
+[
+"Chacun le reçoit dans sa chat avec vous, avec « 📣 » devant et une notification ; chacun peut le traduire avec 🌐. Les clients du réseau le reçoivent dans leur 🎧 Centralino et peuvent le transférer aux leurs.",
+"Cada um recebe-o no seu chat convosco, com « 📣 » à frente e uma notificação; cada um pode traduzi-lo com 🌐. Os clientes da rede recebem-no no seu 🎧 Centralino e podem reencaminhá-lo aos seus."
+],
+[
+"📣 Envoyer",
+"📣 Enviar"
+],
+[
+"Choisissez au moins un destinataire",
+"Escolha pelo menos um destinatário"
+],
 ];

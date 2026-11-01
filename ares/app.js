@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.213.6';
+const VERSION = '2.214.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -562,6 +562,43 @@ async function eqChatSend(ids, x, g) {
   }, g ? '📣 Message spécial à l’équipe' : '💬 Message à un ouvrier', g ? plural(ids.length, 'ouvrier') : intervFull(vault.get('intervenants', ids[0])), ids.length === 1 ? ids[0] : '');
   for (const wid of ids) await equipeSync(wid, true);
 }
+// 💬 Chat centrale ↔ partenaires du réseau (sociétés de taxi, annonceurs HORECA) — comme celle des ouvriers :
+// leurs messages arrivent chiffrés dans la boîte ; les nôtres partent dans leur app (publiée chiffrée)
+const PCHAT_MAX = 300;
+const pchatOut = (r) => (r.chat || []).filter((m) => !m.del).slice(-60).map((m) => ({ id: m.id, at: m.at, from: m.from, x: m.x, ...(m.ed ? { ed: m.ed } : {}) }));
+const pchatSync = (id) => (String(id).startsWith('txco-') ? txcoSync(id, true) : annSync(id, true));
+const pchatKind = (r) => (String(r.id).startsWith('txco-') ? '🚕' : '🍽️');
+async function pchatIn(r, msg) {
+  const chat = [...(r.chat || [])], at0 = String(msg.t || new Date().toISOString()).slice(0, 30);
+  let n = 0, ed = 0;
+  for (const it of (Array.isArray(msg.items) ? msg.items : []).slice(0, 30)) {
+    const mid = String(it.id || '').replace(/[^a-z0-9]/gi, '').slice(0, 24), when = String(it.at || at0).slice(0, 30), x = String(it.x || '').replace(/\s+$/, '').slice(0, 1500).trim();
+    if (it.k === 'msg-ed' || it.k === 'msg-del') {
+      const j = chat.findIndex((m) => m.id === mid && m.from === 'p');
+      if (j < 0 || chat[j].del || Date.parse(when) - Date.parse(chat[j].at) > EQ_EDIT_MS + 120000) continue;
+      if (it.k === 'msg-del') chat[j] = { ...chat[j], del: when };
+      else if (x && x !== chat[j].x) chat[j] = { ...chat[j], x, ed: when, old: [...(chat[j].old || []), { x: chat[j].x, at: chat[j].ed || chat[j].at }].slice(-10) };
+      else continue;
+      ed++; continue;
+    }
+    if (it.k !== 'msg' || !x || (mid && chat.some((m) => m.id === mid))) continue;
+    chat.push({ id: mid || 'p' + Date.now().toString(36) + n, at: when, from: 'p', x });
+    n++;
+  }
+  if (!n && !ed) return false;
+  chat.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
+  const cur = vault.get('reglages', r.id) || r;
+  await vault.mutate((tx) => tx.put('reglages', { id: r.id, chat: chat.slice(-PCHAT_MAX), chatNew: (cur.chatNew || 0) + n }), n ? `💬 Message de ${r.nom}` : `💬 Message modifié par ${r.nom}`, r.nom);
+  await pchatSync(r.id);
+  return true;
+}
+const pchatHtml = (r) => {
+  const msgs = (r.chat || []).slice(-80), on = r.espace && r.espace.id;
+  return html`<p class="tiny muted" style="margin:0 0 8px;display:flex;align-items:center;gap:8px"><span>Messages entre <b>${r.nom}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</span>${new Raw(trButton())}</p>
+    ${!on ? html`<div class="alert warn" style="margin-bottom:10px">📱<div>Son app n’est pas encore active : il ne recevra vos messages qu’après sa première connexion.</div></div>` : ''}
+    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? '🛡️ Centrale' : pchatKind(r) + ' ' + r.nom} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}${m.from === 'mgr' && !m.del ? html`<button class="bub-mn" data-action="pc-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : ''}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé</div>` : m.from === 'mgr' ? m.x : html`<span data-trx="${m.x}">${m.x}</span>`}${m.from === 'mgr' && ui.pcMn === m.id && !m.del ? html`<div class="bub-menu">${Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<button class="btn sm" data-action="pc-edit" data-r="${r.id}" data-id="${m.id}">✏️ Modifier</button>` : ''}<button class="btn sm danger" data-action="pc-del" data-r="${r.id}" data-id="${m.id}">🗑️ Supprimer</button></div>` : ''}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
+    <form data-form="pchat" class="eq-chat-f"><input type="hidden" name="id" value="${r.id}"><textarea name="x" required maxlength="1500" placeholder="Écrire à ${r.nom}…" data-draft="p:${r.id}">${(ui.drafts || {})['p:' + r.id] || ''}</textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
+};
 const eqChatHtml = (i) => {
   const msgs = (i.chat || []).slice(-80);
   return html`<p class="tiny muted" style="margin:0 0 8px;display:flex;align-items:center;gap:8px"><span>Messages entre <b>${intervFull(i)}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</span>${new Raw(trButton())}</p>
@@ -1602,6 +1639,9 @@ async function tenantBoxSync() {
         let docId = '';
         await vault.mutate((tx) => { docId = bytes.length ? tx.put('documents', { kind: 'facture-recue', label: `Facture ${m.no} — ${rec.from}`, date: m.date, mime: 'application/pdf', size: bytes.length }).id : ''; tx.put('reglages', { id: 'tfact-' + m.no, ...rec, docId }); }, '🧾 Facture reçue', `${m.no} · ${eur(m.ttc)}`);
         if (docId) await vault.saveFile(docId, bytes);
+      } else if (m.type === 'annonce' && m.x) {
+        const rid = 'tann-' + String(m.id || Date.now().toString(36)).replace(/[^a-z0-9]/gi, '').slice(0, 24);
+        if (!vault.get('reglages', rid)) await vault.mutate((tx) => tx.put('reglages', { id: rid, x: String(m.x).slice(0, 1500), at: String(m.at || new Date().toISOString()).slice(0, 30), from: String(m.from || '').slice(0, 80) }), '📣 Annonce reçue de la centrale', String(m.from || ''));
       } else if (m.type === 'paid' && m.no) {
         if (ro) { const mem = tfMem(); if (mem[m.no]) mem[m.no].paid = today(); else { const r = vault.get('reglages', 'tfact-' + m.no); if (r) mem[m.no] = { ...r, paid: today() }; } continue; }
         const r = vault.get('reglages', 'tfact-' + m.no);
@@ -1672,12 +1712,12 @@ async function annSync(onlyId, loud) {
           claim: a.payClaim || '', fact: a.fact ? { no: a.fact.no, date: a.fact.date, ht: a.fact.ht, tva: a.fact.tva, ttc: a.fact.ttc, tx: a.fact.tx } : null, ...(a.st === 'pay' ? annDue(a) : {}) };
       });
       const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: societe().nom || 'LuxInterventions',
-        tarifs: { haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, note: t.note || '' }, pay: false, ...annFrom() };
+        tarifs: { haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, note: t.note || '' }, pay: false, ...annFrom(), chat: pchatOut(an), chatRd: an.chatRd || '' };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && anHashes.get(e.id) === hs) continue;
       await vault.espacePut(e.id, await sealJson(e.key, data));
       anHashes.set(e.id, hs);
-      await notifyNews(e.id, ads.filter((a) => a.st !== 'wait').map((a) => 'a:' + a.id + ':' + a.st));
+      await notifyNews(e.id, [...ads.filter((a) => a.st !== 'wait').map((a) => 'a:' + a.id + ':' + a.st), ...data.chat.filter((m) => m.from === 'mgr').map((m) => 'c:' + m.id + (m.ed || ''))]);
     } catch (err) { if (loud) { toast(err.message || 'Publication impossible (connexion ?)', { bad: true }); return false; } }
   }
   return true;
@@ -1685,6 +1725,7 @@ async function annSync(onlyId, loud) {
 // annonce envoyée par l'app de l'annonceur : nouvelle ou modifiée → à valider ; arrêt demandé
 async function annInbox(an, msg) {
   const S = (v, n) => String(v ?? '').trim().slice(0, n);
+  if (msg.type === 'pchat') return pchatIn(an, msg);
   if (msg.type === 'an-ad') {
     const a = msg.ad || {}, id = S(a.id, 40), old = id ? vault.get('avis', id) : null;
     if (old && old.annId !== an.id) return false;
@@ -2267,6 +2308,9 @@ async function inboxSync() {
 }
 
 // Messages envoyés par les locataires depuis leur app, pas encore ouverts dans Ares
+// 📣 Annonce de la centrale : un seul message, envoyé dans la chat de chacun (habitants, équipe, taxis, annonceurs)
+// et dans la boîte chiffrée des clients du réseau (qui peuvent le transférer aux leurs)
+const annLog = () => (vault.get('reglages', 'annLog') || {}).list || [];
 // 🎧 Centralino : tous les messages reçus, par catégorie, avec un lien direct vers la conversation
 function centralinoHtml() {
   const sig = newSignals();
@@ -2275,18 +2319,26 @@ function centralinoHtml() {
   const eqs = vault.list('intervenants').filter((i) => !i.archive && ((i.chat || []).length || (i.espace && i.espace.on)))
     .map((i) => ({ i, last: (i.chat || []).filter((m) => !m.del).slice(-1)[0] }))
     .sort((a, b) => (b.i.chatNew || 0) - (a.i.chatNew || 0) || ((b.last || {}).at || '').localeCompare((a.last || {}).at || ''));
-  const nHouse = imms.reduce((a, im) => a + houseN(im), 0), nEq = eqs.reduce((a, e) => a + (e.i.chatNew || 0), 0), tot = sig.length + nHouse + nEq;
+  const parts = [...txCos(), ...anCos()].filter((r) => r.espace && r.espace.id).map((r) => ({ r, last: (r.chat || []).filter((m) => !m.del).slice(-1)[0] }))
+    .sort((a, b) => (b.r.chatNew || 0) - (a.r.chatNew || 0) || ((b.last || {}).at || '').localeCompare((a.last || {}).at || ''));
+  const nPart = parts.reduce((a, p) => a + (p.r.chatNew || 0), 0);
+  const nHouse = imms.reduce((a, im) => a + houseN(im), 0), nEq = eqs.reduce((a, e) => a + (e.i.chatNew || 0), 0), tot = sig.length + nHouse + nEq + nPart;
   const open = ui.centOpen ?? tot > 0;
   const badge = (n) => (n ? html`<span class="badge bad">${n}</span>` : '');
   const row = (action, id, title, sub, n) => html`<button class="row" data-action="${action}" data-id="${id}"><span class="grow"><span class="title" style="display:block">${title}</span><span class="meta">${sub}</span></span>${badge(n)}</button>`;
-  return html`<details class="card centralino" ${open ? new Raw('open') : ''} style="margin-bottom:14px">
-    <summary data-action="cent-tog"><span class="cent-ic">${icon('headset')}</span><b>Centralino</b><span class="grow"></span>${tot ? html`<span class="badge bad">${tot} nouveau${tot > 1 ? 'x' : ''}</span>` : html`<span class="muted small">rien de nouveau</span>`}</summary>
+  const recv = TENANT ? vault.list('reglages').filter((r) => r.id.startsWith('tann-')).sort((a, b) => (b.at || '').localeCompare(a.at || '')).slice(0, 10) : [];
+  const nRecv = recv.filter((r) => !r.vu).length, tot2 = tot + nRecv;
+  return html`<details class="card centralino" ${open || nRecv ? new Raw('open') : ''} style="margin-bottom:14px">
+    <summary data-action="cent-tog"><span class="cent-ic">${icon('headset')}</span><b>Centralino</b><span class="grow"></span>${tot2 ? html`<span class="badge bad">${tot2} nouveau${tot2 > 1 ? 'x' : ''}</span>` : html`<span class="muted small">rien de nouveau</span>`}</summary>
+    <p style="margin:10px 0 0"><button class="btn primary sm" data-action="ann-new">📣 Annonce</button>${annLog().length ? html` <button class="btn sm" data-action="ann-log">🗂️ Annonces envoyées (${annLog().length})</button>` : ''}</p>
+    ${recv.length ? html`<div class="section-label">📣 Annonces reçues de la centrale ${badge(nRecv)}</div><div class="list">${recv.map((r) => html`<div class="row" style="align-items:flex-start"><span class="grow"><span class="title" style="display:block;white-space:pre-wrap">${r.x}</span><span class="meta">${r.from || ''} · ${fmtDateTime(r.at)}</span></span><span style="display:flex;flex-direction:column;gap:6px"><button class="btn sm primary" data-action="ann-fwd" data-id="${r.id}">↪️ Transférer aux miens</button>${r.vu ? '' : html`<button class="btn sm" data-action="ann-vu" data-id="${r.id}">✓ Lu</button>`}</span></div>`)}</div>` : ''}
     <div class="section-label">📩 Signalements des locataires ${badge(sig.length)}</div>
     ${sig.length ? html`<div class="list">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = t.byInterv ? vault.get('intervenants', t.byInterv) : null; return row('open-signal', t.id, html`${w ? '👷 ' + intervFull(w) : fullName(l)} — ${t.titre.replace(/^Signalement : /, '')}`, `${logName(l.logId) || immName(t.immId)} · ${fmtDateTime(t.sentAt)}`, 0); })}</div>` : html`<p class="small muted">Aucun nouveau signalement.</p>`}
     <div class="section-label">🏠 Messages des Locataires ${badge(nHouse)}</div>
     ${imms.length ? html`<div class="list">${imms.map((im) => row('open-chat', im.id, immName(im.id), houseN(im) ? `${houseN(im)} nouveau${houseN(im) > 1 ? 'x messages' : ' message'} — touchez pour lire` : `${plural(Object.keys(im.chats || {}).length, 'fil')} · touchez pour ouvrir`, houseN(im)))}</div>` : html`<p class="small muted">Aucun fil de messages entre habitants.</p>`}
     <div class="section-label">👷 Messages des Équipes ${badge(nEq)}</div>
     ${eqs.length ? html`<div class="list">${eqs.map(({ i, last }) => row('open-eq-chat', i.id, intervFull(i), last ? `${last.from === 'mgr' ? '🛡️ ' : '👷 '}${String(last.x || '').slice(0, 60)} · ${fmtDateTime(last.at)}` : 'Pas encore de message', i.chatNew || 0))}</div>` : html`<p class="small muted">Aucun ouvrier avec l’app active.</p>`}
+    ${parts.length ? html`<div class="section-label">🚕 Taxis · 🍽️ Annonceurs ${badge(nPart)}</div><div class="list">${parts.map(({ r, last }) => row('open-pchat', r.id, `${pchatKind(r)} ${r.nom}`, last ? `${last.from === 'mgr' ? '🛡️ ' : ''}${String(last.x || '').slice(0, 60)} · ${fmtDateTime(last.at)}` : 'Pas encore de message', r.chatNew || 0))}</div>` : ''}
   </details>`;
 }
 const newSignals = () => vault.list('taches').filter((t) => t.sentAt && !t.vu).sort((a, b) => (b.sentAt || '').localeCompare(a.sentAt || ''));
@@ -2769,12 +2821,12 @@ async function txcoSync(onlyId, loud) {
       const data = { v: 1, kind: 'taxi', gv: VERSION, nom: co.nom, tel: co.tel || '', cat: co.cat || {}, rides: await txRides(co), signalKey: sig ? sig.pub : '', reseau: hcf.nom || societe().nom || 'LuxInterventions',
         prof: co.prof || null, cli: { nom: hcf.nom || societe().nom || '', adresse: hcf.adresse || societe().adresse || '' },
         invs: txInvs(co.id).slice(0, 40).map((f) => ({ no: f.no, date: f.date, ht: f.ht, tva: f.tva, ttc: f.ttc, taux: f.taux, keys: f.keys, paid: f.paid || '', recv: f.recv || '' })),
-        pubs: pubsActives(null, 'taxi').map(pubOut) };
+        pubs: pubsActives(null, 'taxi').map(pubOut), chat: pchatOut(co), chatRd: co.chatRd || '' };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && txHashes.get(e.id) === hs) continue;
       await vault.espacePut(e.id, await sealJson(e.key, data));
       txHashes.set(e.id, hs);
-      await notifyNews(e.id, [...data.rides.filter((r) => r.st === 'wait').map((r) => 'r:' + r.h + ':' + r.r), ...data.invs.filter((f) => f.paid).map((f) => 'p:' + f.no)]);
+      await notifyNews(e.id, [...data.rides.filter((r) => r.st === 'wait').map((r) => 'r:' + r.h + ':' + r.r), ...data.invs.filter((f) => f.paid).map((f) => 'p:' + f.no), ...data.chat.filter((m) => m.from === 'mgr').map((m) => 'c:' + m.id + (m.ed || ''))]);
     } catch (err) { if (loud) { toast(err.message || 'Publication impossible (connexion ?)', { bad: true }); return false; } }
   }
   return true;
@@ -2782,6 +2834,7 @@ async function txcoSync(onlyId, loud) {
 // message de l'app taxi : catalogue (chauffeurs, voitures, tarifs, extras) ou réponse à une course
 async function txInbox(co, msg) {
   const S = (v, n) => String(v ?? '').trim().slice(0, n), N = (v) => Math.max(0, Math.min(100000, +v || 0));
+  if (msg.type === 'pchat') return pchatIn(co, msg);
   if (msg.type === 'tx-cat') {
     const c = msg.cat || {}, gammes = {};
     for (const k of Object.keys(TX_GAM)) { const g = (c.gammes || {})[k] || {}; gammes[k] = { on: !!g.on, pc: N(g.pc), km: N(g.km), h: N(g.h), demi: N(g.demi), jour: N(g.jour) }; }
@@ -4070,7 +4123,7 @@ function hotView(hf) {
       <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.pers > 1 ? html` <span class="badge">👥 ${h.pers}</span>` : ''}</span>
       <span class="meta">${h.lieu === 'airbnb' && h.adresse ? html`🏠 ${h.adresse} · ` : ''}${h.etage ? html`<span>Étage</span> ${h.etage} · ` : ''}${h.cle ? html`🪪 ${h.cle} · ` : ''}${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}</span>${h.appCode && h.arrivee >= t ? html`<span class="tiny" style="display:block">${!h.arr ? '❓ Arrivée pas encore choisie' : h.arr.mode === 'taxi' ? `🚕 Taxi${h.taxi ? (h.taxi.st === 'wait' ? ' · ⏳ ' + h.taxi.nom : h.taxi.st === 'no' ? ' · ❌ ' + h.taxi.nom : ' · ' + h.taxi.nom) : ' demandé'}` : '🚗 Vient par ses propres moyens'}</span>` : ''}${hoteKey(h) ? html`<span style="display:block;margin-top:4px"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></span>` : ''}</span><span class="chev">›</span></button>`;
     const sec = (title, list, empty) => html`<div class="section-label">${title}</div>${list.length ? html`<div class="list">${list.map(row)}</div>` : html`<p class="small muted" style="margin:0 0 12px">${empty}</p>`}`;
-    return html`${pageHead(hf === 'airbnb' ? '🏠 Airbnb' : '🏨 Hotel', `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
+    return html`${TENANT ? centralinoHtml() : ''}${pageHead(hf === 'airbnb' ? '🏠 Airbnb' : '🏨 Hotel', `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button><button class="btn primary" data-action="new-chambre">${icon('plus')} ${hf === 'airbnb' ? 'Logement' : 'Chambre'}</button><button class="btn" data-action="hote-conf">${icon('gear')} Réglages</button></div></div>
       ${hoteAlerts(all, t)}
       ${sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.')}
@@ -4972,7 +5025,7 @@ dashboard() {
     const alertBtn = (cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`;
 
     if (!imms.length && !locs.length) {
-      return html`${pushNudge()}${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
+      return html`${pushNudge()}${centralinoHtml()}${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`;
     }
 
@@ -5886,6 +5939,38 @@ function relanceText(l, lang) {
 }
 
 const SHEETS = {
+  'ann-new'({ preset }) {
+    const imms = vault.list('immeubles').filter((im) => !immGone(im) && Object.keys(im.chats || {}).length).sort(byAddr);
+    const ws = vault.list('intervenants').filter((w) => w.espace && w.espace.on && !w.archive), grp = eqGroup();
+    const nets = TENANT ? [] : ((ui.net && ui.net.list) || []).filter((t) => t.pub);
+    const fils = [...new Set(nets.map((t) => t.fil).filter(Boolean))];
+    const tx = TENANT ? [] : txCos().filter((r) => r.espace && r.espace.id), an = TENANT ? [] : anCos().filter((r) => r.espace && r.espace.id);
+    const cb = (name, label, sub) => html`<label class="row" style="cursor:pointer"><input type="checkbox" name="${name}" style="width:20px;height:20px;flex:none"><span class="grow"><span class="title" style="display:block">${label}</span><span class="meta">${sub}</span></span></label>`;
+    return {
+      title: '📣 Nouvelle annonce', narrow: true,
+      body: html`<form id="f" data-form="annsend" class="stack">
+        <label class="field">Message<textarea name="x" required maxlength="1500" style="min-height:120px" placeholder="ex. Mardi de 9 h à 12 h : coupure d’eau dans tout le quartier.">${preset || ''}</textarea></label>
+        <div class="section-label" style="margin:4px 0">À qui ?</div>
+        <label class="field">🏠 Habitants<select name="loc"><option value="">— personne —</option>${imms.length ? html`<option value="all">Tous les habitants de tous les immeubles</option>` : ''}${imms.map((im) => html`<option value="i:${im.id}">${im.adresse} — tous</option>${Object.entries(im.chats || {}).length > 1 ? Object.entries(im.chats || {}).map(([gk, g]) => html`<option value="g:${g.id}">&nbsp;&nbsp;${im.adresse} — ${chatLabel(gk)}</option>`) : ''}`)}</select></label>
+        ${ws.length ? html`<label class="field">👷 Équipe<select name="eq"><option value="">— personne —</option><option value="all">Tous les ouvriers (${ws.length})</option>${grp.length ? html`<option value="grp">Groupe de l’équipe (${grp.length})</option>` : ''}</select></label>` : ''}
+        ${nets.length ? html`<label class="field">🏢 Clients du réseau<select name="net"><option value="">— personne —</option><option value="all">Tous les clients (${nets.length})</option>${fils.map((f) => html`<option value="${f}">${NET_FIL[f] || f} (${nets.filter((t) => t.fil === f).length})</option>`)}</select></label>` : ''}
+        ${tx.length || an.length ? html`<div class="list">${tx.length ? cb('tx', `🚕 Sociétés de taxi (${tx.length})`, 'dans leur chat avec vous') : ''}${an.length ? cb('an', `🍽️ Annonceurs (${an.length})`, 'dans leur chat avec vous') : ''}</div>` : ''}
+        <p class="tiny muted" style="margin:0">Chacun le reçoit dans sa chat avec vous, avec « 📣 » devant et une notification ; chacun peut le traduire avec 🌐.${nets.length ? ' Les clients du réseau le reçoivent dans leur 🎧 Centralino et peuvent le transférer aux leurs.' : ''}</p>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">📣 Envoyer</button>`,
+    };
+  },
+  'ann-log'() {
+    return { title: '🗂️ Annonces envoyées', narrow: true, body: html`<div class="list">${annLog().slice().reverse().map((a) => html`<div class="row" style="align-items:flex-start"><span class="grow"><span class="title" style="display:block;white-space:pre-wrap">${a.x}</span><span class="meta">${fmtDateTime(a.at)} · ${a.to} · 👤 ${a.by || '—'}</span></span></div>`)}</div>` };
+  },
+  pchat({ id }) {
+    const r = vault.get('reglages', id);
+    if (!r) return null;
+    // lu : ✓✓ bleu dans son app
+    const lastP = (r.chat || []).filter((m) => m.from === 'p').reduce((a, m) => (m.at > a ? m.at : a), '');
+    if (r.chatNew || (lastP && lastP > (r.chatRd || ''))) setTimeout(async () => { await vault.mutate((tx) => tx.put('reglages', { id: r.id, chatNew: 0, ...(lastP ? { chatRd: lastP } : {}) }), 'Messages lus', r.nom); pchatSync(r.id); }, 0);
+    return { title: `💬 ${pchatKind(r)} ${r.nom}`, narrow: true, body: pchatHtml(r) };
+  },
   // 💼 abonnement d'une gérance : formule, prix, période, payé jusqu'au, paiements reçus
   abo({ id }) {
     const o = ptlOrg(id);
@@ -9024,6 +9109,31 @@ const ACTIONS = {
     const sel = document.querySelector(`select[name="to"][data-gid="${d.id}"]`);
     if (sel) { sel.value = d.loc; const ta = sel.closest('form').querySelector('textarea'); if (ta) ta.focus(); }
   },
+  'open-pchat': (d) => openSheet('pchat', d.id),
+  'ann-new': () => { if (!TENANT) netLoad(); openSheet('ann-new'); },
+  'ann-log': () => openSheet('ann-log'),
+  'ann-fwd': (d) => { const r = vault.get('reglages', d.id); if (!r) return; if (!r.vu) vault.mutate((tx) => tx.put('reglages', { id: r.id, vu: true }), '📣 Annonce lue', ''); openSheet('ann-new', null, null, r.x); },
+  'ann-vu': (d) => vault.mutate((tx) => tx.put('reglages', { id: d.id, vu: true }), '📣 Annonce lue', ''),
+  'pc-mn': (d) => { ui.pcMn = ui.pcMn === d.id ? '' : d.id; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
+  async 'pc-edit'(d) {
+    ui.pcMn = '';
+    const r = vault.get('reglages', d.r), m = r && (r.chat || []).find((x) => x.id === d.id);
+    if (!m || m.from !== 'mgr') return;
+    if (Date.now() - Date.parse(m.at) >= EQ_EDIT_MS) return toast('Plus possible : 15 minutes sont passées.', { bad: true });
+    const x = await promptEdit('✏️ Modifier le message', m.x);
+    if (x == null || x === m.x) return;
+    const at = new Date().toISOString();
+    await vault.mutate((tx) => tx.put('reglages', { id: r.id, chat: (vault.get('reglages', r.id).chat || []).map((z) => (z.id === m.id ? { ...z, x, ed: at, old: [...(z.old || []), { x: z.x, at: z.ed || z.at }].slice(-10) } : z)) }), '💬 Message modifié', r.nom);
+    await pchatSync(r.id);
+  },
+  async 'pc-del'(d) {
+    ui.pcMn = '';
+    const r = vault.get('reglages', d.r), m = r && (r.chat || []).find((x) => x.id === d.id);
+    if (!m || m.from !== 'mgr') return;
+    if (!(await confirmBox('Supprimer ce message ?', { ok: 'Supprimer', danger: true, detail: 'Il disparaît de son app.' }))) return;
+    await vault.mutate((tx) => tx.put('reglages', { id: r.id, chat: (vault.get('reglages', r.id).chat || []).map((z) => (z.id === m.id ? { ...z, del: new Date().toISOString() } : z)) }), '💬 Message supprimé', r.nom);
+    await pchatSync(r.id);
+  },
   'eqc-mn': (d) => { ui.eqcMn = ui.eqcMn === d.id ? '' : d.id; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
   async 'eqc-edit'(d) {
     ui.eqcMn = '';
@@ -10068,6 +10178,55 @@ const FORMS = {
       setBusy(form, false);
       toast(e.message || 'Envoi impossible', { bad: true });
     }
+  },
+  async annsend(fd, form) {
+    const x0 = String(fd.get('x') || '').trim().slice(0, 1480), loc = String(fd.get('loc') || ''), eq = String(fd.get('eq') || ''), net = String(fd.get('net') || ''), sendTx = !!fd.get('tx'), sendAn = !!fd.get('an');
+    if (!x0) return;
+    if (!loc && !eq && !net && !sendTx && !sendAn) return toast('Choisissez au moins un destinataire', { bad: true });
+    const x = '📣 ' + x0, at = new Date().toISOString(), done = [];
+    setBusy(form, true, 'Envoi…');
+    try {
+      if (loc) {
+        const gs = [];
+        for (const im of vault.list('immeubles').filter((z) => !immGone(z))) for (const g of Object.values(im.chats || {})) if (loc === 'all' || loc === 'i:' + im.id || loc === 'g:' + g.id) gs.push(g);
+        for (const g of gs) await vault.boardPost(g.id, await sealJson(g.key, { id: newMsgId(), a: societe().nom || 'Gestionnaire', m: 'mgr', x, t: at, an: 1 }));
+        done.push(`🏠 ${plural(gs.length, 'fil')}`);
+      }
+      if (eq) {
+        const ids = eq === 'grp' ? eqGroup() : vault.list('intervenants').filter((w) => w.espace && w.espace.on && !w.archive).map((w) => w.id);
+        if (ids.length) { await eqChatSend(ids, x, true); done.push(`👷 ${plural(ids.length, 'ouvrier')}`); }
+      }
+      const parts = [...(sendTx ? txCos() : []), ...(sendAn ? anCos() : [])].filter((r) => r.espace && r.espace.id);
+      if (parts.length) {
+        await vault.mutate((tx) => { for (const r of parts) tx.put('reglages', { id: r.id, chat: [...(vault.get('reglages', r.id).chat || []), { id: 'c' + Date.now().toString(36) + r.id.slice(-3), at, from: 'mgr', x, an: 1 }].slice(-PCHAT_MAX) }); }, '📣 Annonce aux partenaires', plural(parts.length, 'partenaire'));
+        for (const r of parts) await pchatSync(r.id);
+        done.push(`🚕🍽️ ${plural(parts.length, 'partenaire')}`);
+      }
+      if (net) {
+        const list = ((ui.net && ui.net.list) || []).filter((t) => t.pub && (net === 'all' || t.fil === net));
+        let n = 0;
+        for (const t of list) { try { await netBoxSend(t.id, { type: 'annonce', id: newMsgId(), x: x0, at, from: societe().nom || 'LuxInterventions' }); n++; } catch { /* client pas encore prêt */ } }
+        done.push(`🏢 ${plural(n, 'client')}${n < list.length ? ` (${list.length - n} pas encore prêts)` : ''}`);
+      }
+      const log = [...annLog(), { at, x: x0, to: done.join(' · '), by: whoLabel() || '⭐ Directeur' }].slice(-100);
+      await vault.mutate((tx) => tx.put('reglages', { id: 'annLog', list: log }), '📣 Annonce envoyée', done.join(' · '));
+      closeSheet();
+      toast('📣 Annonce envoyée : ' + done.join(' · '));
+      for (const im of vault.list('immeubles')) if ((ui.chatAt || {})[im.id]) chatLoad(im.id, true);
+    } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
+  },
+  async pchat(fd, form) {
+    const r = vault.get('reglages', fd.get('id')), x = String(fd.get('x') || '').trim().slice(0, 1500);
+    if (!r || !x) return;
+    const draft = form.x.value;
+    form.x.value = '';
+    if (ui.drafts) delete ui.drafts['p:' + r.id];
+    setBusy(form, true, 'Envoi…');
+    try {
+      await vault.mutate((tx) => tx.put('reglages', { id: r.id, chat: [...(vault.get('reglages', r.id).chat || []), { id: 'c' + Date.now().toString(36), at: new Date().toISOString(), from: 'mgr', x }].slice(-PCHAT_MAX), chatNew: 0 }), `💬 Message à ${r.nom}`, r.nom);
+      await pchatSync(r.id);
+      toast('Message envoyé');
+    } catch (e) { form.x.value = draft; setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
   async 'eq-chat'(fd, form) {
     const i = vault.get('intervenants', fd.get('id')), x = String(fd.get('x') || '').trim().slice(0, 1500);

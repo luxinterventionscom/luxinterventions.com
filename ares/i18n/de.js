@@ -17361,4 +17361,108 @@ export default [
 "💬 Messages entre eux et avec vous",
 "💬 Nachrichten untereinander und mit Ihnen"
 ],
+[
+"📣 Annonce",
+"📣 Ankündigung"
+],
+[
+"🗂️ Annonces envoyées ({0})",
+"🗂️ Gesendete Ankündigungen ({0})"
+],
+[
+"🗂️ Annonces envoyées",
+"🗂️ Gesendete Ankündigungen"
+],
+[
+"📣 Annonces reçues de la centrale",
+"📣 Ankündigungen der Zentrale"
+],
+[
+"↪️ Transférer aux miens",
+"↪️ An meine weiterleiten"
+],
+[
+"✓ Lu",
+"✓ Gelesen"
+],
+[
+"🚕 Taxis · 🍽️ Annonceurs",
+"🚕 Taxis · 🍽️ Inserenten"
+],
+[
+"Son app n’est pas encore active : il ne recevra vos messages qu’après sa première connexion.",
+"Seine App ist noch nicht aktiv: Er erhält Ihre Nachrichten erst nach der ersten Anmeldung."
+],
+[
+"🗑️ supprimé",
+"🗑️ gelöscht"
+],
+[
+"📣 Nouvelle annonce",
+"📣 Neue Ankündigung"
+],
+[
+"À qui ?",
+"An wen?"
+],
+[
+"🏠 Habitants",
+"🏠 Bewohner"
+],
+[
+"— personne —",
+"— niemand —"
+],
+[
+"Tous les habitants de tous les immeubles",
+"Alle Bewohner aller Gebäude"
+],
+[
+"{0} — tous",
+"{0} — alle"
+],
+[
+"Tous les ouvriers ({0})",
+"Alle Mitarbeiter ({0})"
+],
+[
+"Groupe de l’équipe ({0})",
+"Teamgruppe ({0})"
+],
+[
+"🏢 Clients du réseau",
+"🏢 Kunden des Netzwerks"
+],
+[
+"Tous les clients ({0})",
+"Alle Kunden ({0})"
+],
+[
+"🚕 Sociétés de taxi ({0})",
+"🚕 Taxiunternehmen ({0})"
+],
+[
+"🍽️ Annonceurs ({0})",
+"🍽️ Inserenten ({0})"
+],
+[
+"dans leur chat avec vous",
+"in ihrem Chat mit Ihnen"
+],
+[
+"Chacun le reçoit dans sa chat avec vous, avec « 📣 » devant et une notification ; chacun peut le traduire avec 🌐.",
+"Jeder erhält sie in seinem Chat mit Ihnen, mit „📣“ davor und einer Benachrichtigung; jeder kann sie mit 🌐 übersetzen."
+],
+[
+"Chacun le reçoit dans sa chat avec vous, avec « 📣 » devant et une notification ; chacun peut le traduire avec 🌐. Les clients du réseau le reçoivent dans leur 🎧 Centralino et peuvent le transférer aux leurs.",
+"Jeder erhält sie in seinem Chat mit Ihnen, mit „📣“ davor und einer Benachrichtigung; jeder kann sie mit 🌐 übersetzen. Die Kunden des Netzwerks erhalten sie in ihrem 🎧 Centralino und können sie an ihre Leute weiterleiten."
+],
+[
+"📣 Envoyer",
+"📣 Senden"
+],
+[
+"Choisissez au moins un destinataire",
+"Wählen Sie mindestens einen Empfänger"
+],
 ];
