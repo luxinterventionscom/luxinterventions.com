@@ -971,3 +971,9 @@ body.compta [data-action^="del-"], body.compta [data-action$="-del"], body.compt
 .centralino:not([open]) > summary::after { content: '▸'; }
 .cent-ic { width: 44px; height: 44px; border-radius: 50%; background: var(--accent, #4f46e5); color: #fff; display: inline-flex; align-items: center; justify-content: center; flex: none; }
 .cent-ic .ic { width: 28px; height: 28px; }
+.cent-sec { margin-top: 12px; }
+.cent-sec > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-2); padding: 6px 0; }
+.cent-sec > summary::-webkit-details-marker { display: none; }
+.cent-sec > summary::after { content: '▾'; margin-left: auto; font-size: 14px; opacity: .6; }
+.cent-sec:not([open]) > summary::after { content: '▸'; }
+.cent-sec > .list, .cent-sec > p { margin-top: 4px; }
