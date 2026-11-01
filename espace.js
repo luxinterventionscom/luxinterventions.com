@@ -5,6 +5,7 @@ import qrcode from '/ares/qrcode.js';
 import { binPlan } from '/ares/binplan.js';
 import { openJson, sealJson, openBytes, sealForOwner, codeHash, unwrapWithCode, b64u, unb64u } from '/ares/espace-crypto.js';
 import { chatResolve, chatOpen, editable, tick, newMsgId } from '/ares/chatops.js';
+import { trInit, trButton } from '/ares/chattr.js';
 
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
@@ -521,7 +522,7 @@ function chatHtml() {
     const mine = m.m === data.chat.mid, mgr = m.m === 'mgr';
     const when = new Date(m.t).toLocaleString(t.loc, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     const ed = mine && editable(m), open = ed && chatMenu === m.id;
-    return `<div class="bub${mine ? ' me' : ''}${mgr ? ' mgr' : ''}${m.p ? ' pv' : ''}"><div class="bub-h"><b>${esc(mgr ? '🛡️ ' + t.hr.mgr : m.a)}</b> ${esc(when)}${m.p ? ` <span class="bub-pv">${esc(c9.tag)}</span>` : ''}${ed ? `<button type="button" class="bub-mn" data-cmenu="${esc(m.id)}" aria-label="${esc(c9.menu)}">⋯</button>` : ''}</div><div class="bub-x">${esc(m.x)}</div>`
+    return `<div class="bub${mine ? ' me' : ''}${mgr ? ' mgr' : ''}${m.p ? ' pv' : ''}"><div class="bub-h"><b>${esc(mgr ? '🛡️ ' + t.hr.mgr : m.a)}</b> ${esc(when)}${m.p ? ` <span class="bub-pv">${esc(c9.tag)}</span>` : ''}${ed ? `<button type="button" class="bub-mn" data-cmenu="${esc(m.id)}" aria-label="${esc(c9.menu)}">⋯</button>` : ''}</div><div class="bub-x"${mine ? '' : ` data-trx="${esc(m.x)}"`}>${esc(m.x)}</div>`
       + `${m.et || mine ? `<div class="bub-f">${m.et ? esc(c9.edited) : ''}${mine ? ' ' + tick(m, chatMark.dl, chatMark.rd) : ''}</div>` : ''}`
       + `${open ? `<div class="bub-menu"><button type="button" data-cop="edit" data-id="${esc(m.id)}">${esc(c9.edit)}</button>${data.signalKey && !data.chat.solo ? `<button type="button" data-cop="${m.p ? 'pub' : 'priv'}" data-id="${esc(m.id)}">${esc(m.p ? c9.mkPub : c9.mkPriv)}</button>` : ''}<button type="button" data-cop="del" data-id="${esc(m.id)}">${esc(c9.del)}</button></div>` : ''}</div>`;
   }).join('');
@@ -1083,7 +1084,7 @@ function render() {
   if (d.chat) {
     const can = !d.regles || rulesDate(d);
     const solo = d.chat.solo, ax = AX[lang] || AX.fr;
-    out.push(foldCard(`<div class="card" id="chatCard"><h2>${solo ? '✉️' : '💬'} ${esc(solo ? ax.solo : t.hr.board)}</h2><p class="meta" style="margin:0 0 8px">${esc(solo ? ax.soloHint : t.hr.boardHint)}</p>
+    out.push(foldCard(`<div class="card" id="chatCard"><h2 style="display:flex;align-items:center;gap:8px">${solo ? '✉️' : '💬'} ${esc(solo ? ax.solo : t.hr.board)}${trButton()}</h2><p class="meta" style="margin:0 0 8px">${esc(solo ? ax.soloHint : t.hr.boardHint)}</p>
       <div class="chat" id="chat">${chatHtml()}</div>
       ${can ? `<form id="chatf"><div id="chatEd" class="chat-ed" hidden><span>${esc(cx().editing)}</span><button type="button" class="pill" data-cop="cancel">${esc(cx().cancel)}</button></div><div class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(t.hr.boardPh)}"></textarea><button class="btn" type="submit">➤</button></div>${d.signalKey && !solo ? `<label class="chat-pv"><input type="checkbox" name="pv"> ${esc(cx().priv)}</label>` : ''}<p class="meta chat-tk">${esc(cx().ticks)}</p></form>`
         : `<p class="meta"><a href="#rules" data-goto-rules="1">${esc(t.hr.boardFirst)}</a></p>`}
@@ -1289,6 +1290,7 @@ async function compress(file) {
 
 pubStatInit(API, 'loc', () => lang);
 pubSocialInit(API, () => lang);
+trInit(API, () => lang); // 🌐 traduction des messages du chat
 document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
 app.addEventListener('click', pubTap, true);
 app.addEventListener('click', async (e) => {

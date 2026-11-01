@@ -6,6 +6,7 @@ import { openJson, openBytes, sealForOwner, codeHash, unwrapWithCode } from '/ar
 import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from '/ares/pubsocial.js';
+import { trInit, trButton } from '/ares/chattr.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
@@ -184,8 +185,8 @@ function chatCard() {
   try { seen = localStorage.getItem(CSK()) || ''; } catch { /* stockage indisponible */ }
   const nw = list.filter((m) => m.from === 'mgr' && m.at > seen).length;
   const tm = (m) => `${esc(fmt(m.at))} ${esc(String(m.at).slice(11, 16))}`;
-  return `<div class="card" id="chatCard"><h2>${esc(c.t)}${nw ? ` <span class="tag bad">${nw} ${esc(c.nw)}</span>` : ''}</h2><p class="meta" style="margin:0 0 8px">🔒 ${esc(c.hint)}</p>
-    <div class="chat">${all.length ? all.map((m) => { const ed = eqEditable(m); return `<div class="bub ${m.from === 'eq' ? 'me' : 'mgr'}"><div class="bub-h"><b>${esc(m.from === 'eq' ? c.me : m.g ? c.sp : c.ctr)}</b> · ${m.wait ? esc(c.wait) : tm(m)}${ed ? `<button type="button" class="bub-mn" data-emenu="${esc(m.id)}" aria-label="${esc(x9.menu)}">⋯</button>` : ''}</div><div class="bub-x">${esc(m.x)}</div>`
+  return `<div class="card" id="chatCard"><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(c.t)}${nw ? ` <span class="tag bad">${nw} ${esc(c.nw)}</span>` : ''}${trButton()}</h2><p class="meta" style="margin:0 0 8px">🔒 ${esc(c.hint)}</p>
+    <div class="chat">${all.length ? all.map((m) => { const ed = eqEditable(m); return `<div class="bub ${m.from === 'eq' ? 'me' : 'mgr'}"><div class="bub-h"><b>${esc(m.from === 'eq' ? c.me : m.g ? c.sp : c.ctr)}</b> · ${m.wait ? esc(c.wait) : tm(m)}${ed ? `<button type="button" class="bub-mn" data-emenu="${esc(m.id)}" aria-label="${esc(x9.menu)}">⋯</button>` : ''}</div><div class="bub-x"${m.from === 'eq' ? '' : ` data-trx="${esc(m.x)}"`}>${esc(m.x)}</div>`
       + `${m.ed || m.from === 'eq' ? `<div class="bub-f">${m.ed ? esc(x9.edited) : ''} ${tk(m)}</div>` : ''}`
       + `${ed && chatMenu === m.id ? `<div class="bub-menu"><button type="button" data-eop="edit" data-id="${esc(m.id)}">${esc(x9.edit)}</button><button type="button" data-eop="del" data-id="${esc(m.id)}">${esc(x9.del)}</button></div>` : ''}</div>`; }).join('') : `<p class="meta" style="margin:0">${esc(c.none)}</p>`}</div>
     <form id="chatForm">${chatEdit ? `<div class="chat-ed"><span>${esc(x9.editing)}</span><button type="button" class="pill" data-eop="cancel">${esc(x9.cancel)}</button></div>` : ''}<div class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(c.ph)}">${esc(chatDraft)}</textarea><button class="btn" type="submit">${esc(c.send)}</button></div><p class="meta chat-tk">${esc(x9.ticks)}</p></form></div>`;
@@ -853,6 +854,7 @@ function render() {
 
 pubStatInit(API, 'eq', () => lang);
 pubSocialInit(API, () => lang);
+trInit(API, () => lang); // 🌐 traduction des messages du chat
 document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
 // 💬 ⋯ sur son message : ✏️ modifier / 🗑️ supprimer (15 min)
 document.addEventListener('click', async (e) => {

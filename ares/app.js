@@ -5,6 +5,7 @@ import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js'
 import { passphraseStrength } from './crypto.js';
 import { binPlan } from './binplan.js';
 import { chatResolve, chatOpen, newMsgId, editable } from './chatops.js';
+import { trInit, trButton } from './chattr.js';
 import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { videoEmbed } from './video-embed.js';
@@ -29,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.212.3';
+const VERSION = '2.213.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -57,6 +58,7 @@ const tRoutes = () => TENANT_ROUTES[tenantInfo.fil] || TENANT_ROUTES.gerance;
 const routeOk = (r) => (TENANT ? tRoutes().includes(r) : r !== 'demandes');
 const homeRoute = () => (TENANT ? tRoutes()[0] : 'dashboard');
 const vault = new Vault(API, TENANT);
+trInit(API, () => getLang()); // 🌐 traduction des messages des chats
 // 🗄️ Nouveau départ : les données de test sont archivées (gardées, rien n'est effacé) et ne s'affichent plus
 // nulle part (listes, statistiques, apps) ; Réglages → « Voir les archives » les montre à nouveau
 const ARCH_COLS = new Set(['taches', 'devis', 'hotes', 'biens']);
@@ -562,9 +564,9 @@ async function eqChatSend(ids, x, g) {
 }
 const eqChatHtml = (i) => {
   const msgs = (i.chat || []).slice(-80);
-  return html`<p class="tiny muted" style="margin:0 0 8px">Messages entre <b>${intervFull(i)}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</p>
+  return html`<p class="tiny muted" style="margin:0 0 8px;display:flex;align-items:center;gap:8px"><span>Messages entre <b>${intervFull(i)}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</span>${new Raw(trButton())}</p>
     ${!(i.espace && i.espace.on) ? html`<div class="alert warn" style="margin-bottom:10px">📱<div>Son app n’est pas active : activez-la dans l’onglet <b>📱 App</b> pour qu’il reçoive vos messages.</div></div>` : ''}
-    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? (m.g ? '📣 Message spécial' : '🛡️ Centrale') : '👷 ' + (i.prenom || intervFull(i))} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}${m.from === 'mgr' && !m.del && Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<button class="bub-mn" data-action="eqc-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : ''}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé par l’ouvrier</div>` : m.x}${m.from === 'mgr' && ui.eqcMn === m.id && !m.del && Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<div class="bub-menu"><button class="btn sm" data-action="eqc-edit" data-w="${i.id}" data-id="${m.id}">✏️ Modifier</button><button class="btn sm danger" data-action="eqc-del" data-w="${i.id}" data-id="${m.id}">🗑️ Supprimer</button></div>` : ''}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
+    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? (m.g ? '📣 Message spécial' : '🛡️ Centrale') : '👷 ' + (i.prenom || intervFull(i))} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}${m.from === 'mgr' && !m.del && Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<button class="bub-mn" data-action="eqc-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : ''}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé par l’ouvrier</div>` : m.from === 'mgr' ? m.x : html`<span data-trx="${m.x}">${m.x}</span>`}${m.from === 'mgr' && ui.eqcMn === m.id && !m.del && Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<div class="bub-menu"><button class="btn sm" data-action="eqc-edit" data-w="${i.id}" data-id="${m.id}">✏️ Modifier</button><button class="btn sm danger" data-action="eqc-del" data-w="${i.id}" data-id="${m.id}">🗑️ Supprimer</button></div>` : ''}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
     <form data-form="eq-chat" class="eq-chat-f"><input type="hidden" name="id" value="${i.id}"><textarea name="x" required maxlength="1500" placeholder="Écrire à ${i.prenom || intervFull(i)}…"></textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
 };
 function equipeData(i) {
@@ -1940,7 +1942,7 @@ const chatBubbles = (rs, gid) => {
     ${m.p ? html`<span class="bub-pv">🔒 privé${m.m === 'mgr' ? ' — à ' + who(m.p) : ''}</span>` : ''}
     ${m.m === 'mgr' && editable(m) ? html`<button class="bub-mn" data-action="chat-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : html`<button class="bub-del" data-action="chat-del" data-id="${gid}" data-n="${m.recs.join(',')}" aria-label="Supprimer ce message">${icon('trash')}</button>`}</div>
     ${m.m === 'mgr' && editable(m) && ui.chatMn === m.id ? html`<div class="bub-menu"><button class="btn sm" data-action="chat-edit" data-id="${gid}" data-mid="${m.id}">✏️ Modifier</button><button class="btn sm danger" data-action="chat-del" data-id="${gid}" data-n="${m.recs.join(',')}">🗑️ Supprimer</button></div>` : ''}
-    <div class="bub-x">${m.del ? html`<s>${m.x ?? ''}</s>` : m.x == null ? html`<i class="muted">🔒 illisible</i>` : m.x}</div>
+    ${m.del || m.x == null || m.m === 'mgr' ? html`<div class="bub-x">${m.del ? html`<s>${m.x ?? ''}</s>` : m.x == null ? html`<i class="muted">🔒 illisible</i>` : m.x}</div>` : html`<div class="bub-x" data-trx="${m.x}">${m.x}</div>`}
     ${m.del ? html`<div class="bub-f">🗑️ supprimé par l’auteur</div>` : ''}
     ${m.hist && m.hist.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.hist.map((h) => html`<div><span class="tiny muted">${fmtDateTime(h.t)}${h.p ? ' · 🔒' : ''}</span> ${h.x ?? '🔒'}</div>`)}</details>` : ''}
     ${m.p && m.m !== 'mgr' ? html`<button class="btn sm" style="margin-top:4px" data-action="chat-reply-priv" data-id="${gid}" data-loc="${m.p}">🔒 Répondre en privé</button>` : ''}</div>`)}`;
@@ -7188,7 +7190,7 @@ const SHEETS = {
         ${on ? html`<label class="field" style="margin-bottom:6px">Qui discute ensemble ?<select data-input="chat-scope" data-id="${id}">${Object.entries(CHAT_SCOPES).map(([k, v]) => html`<option value="${k}" ${chatScope(im) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
           <label class="row" style="cursor:pointer;margin:6px 0"><input type="checkbox" data-input="bins-on" data-id="${id}" ${binsOn(im) ? new Raw('checked') : ''} style="width:22px;min-height:22px">
             <span class="grow"><b>🗑️ Tour des poubelles</b><span class="meta" style="display:block">À tour de rôle entre les habitants de chaque fil, automatiquement (le nouveau locataire prend la place de celui qui part). Dans leur app : « Ce soir c’est ton tour », ✅ Fait, 🔁 Je ne peux pas.</span></span></label>
-          ${groups.length ? groups.map(([gk, g]) => html`<div class="section-label">💬 ${chatLabel(gk)}${g.members.length < 2 ? html` <span class="badge">✉️ seul·e — écrit au gestionnaire</span>` : ''} <span class="muted small">· ${g.members.map((m) => shortName(vault.get('locataires', m) || {})).join(', ')}</span></div>
+          ${groups.length ? html`<p style="margin:4px 0;display:flex">${new Raw(trButton())}</p>` : ''}${groups.length ? groups.map(([gk, g]) => html`<div class="section-label">💬 ${chatLabel(gk)}${g.members.length < 2 ? html` <span class="badge">✉️ seul·e — écrit au gestionnaire</span>` : ''} <span class="muted small">· ${g.members.map((m) => shortName(vault.get('locataires', m) || {})).join(', ')}</span></div>
             ${binsTable(im, g)}
             <div class="chat">${chatBubbles((ui.chatView || {})[g.id], g.id)}</div>
             <form data-form="chatpost" class="chat-form"><input type="hidden" name="imm" value="${id}"><input type="hidden" name="gk" value="${gk}">
