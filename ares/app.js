@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.213.0';
+const VERSION = '2.213.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -566,7 +566,7 @@ const eqChatHtml = (i) => {
   const msgs = (i.chat || []).slice(-80);
   return html`<p class="tiny muted" style="margin:0 0 8px;display:flex;align-items:center;gap:8px"><span>Messages entre <b>${intervFull(i)}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</span>${new Raw(trButton())}</p>
     ${!(i.espace && i.espace.on) ? html`<div class="alert warn" style="margin-bottom:10px">📱<div>Son app n’est pas active : activez-la dans l’onglet <b>📱 App</b> pour qu’il reçoive vos messages.</div></div>` : ''}
-    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? (m.g ? '📣 Message spécial' : '🛡️ Centrale') : '👷 ' + (i.prenom || intervFull(i))} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}${m.from === 'mgr' && !m.del && Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<button class="bub-mn" data-action="eqc-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : ''}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé par l’ouvrier</div>` : m.from === 'mgr' ? m.x : html`<span data-trx="${m.x}">${m.x}</span>`}${m.from === 'mgr' && ui.eqcMn === m.id && !m.del && Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<div class="bub-menu"><button class="btn sm" data-action="eqc-edit" data-w="${i.id}" data-id="${m.id}">✏️ Modifier</button><button class="btn sm danger" data-action="eqc-del" data-w="${i.id}" data-id="${m.id}">🗑️ Supprimer</button></div>` : ''}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
+    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? (m.g ? '📣 Message spécial' : '🛡️ Centrale') : '👷 ' + (i.prenom || intervFull(i))} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}${m.from === 'mgr' && !m.del ? html`<button class="bub-mn" data-action="eqc-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : ''}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé par l’ouvrier</div>` : m.from === 'mgr' ? m.x : html`<span data-trx="${m.x}">${m.x}</span>`}${m.from === 'mgr' && ui.eqcMn === m.id && !m.del ? html`<div class="bub-menu">${Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<button class="btn sm" data-action="eqc-edit" data-w="${i.id}" data-id="${m.id}">✏️ Modifier</button>` : ''}<button class="btn sm danger" data-action="eqc-del" data-w="${i.id}" data-id="${m.id}">🗑️ Supprimer</button></div>` : ''}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
     <form data-form="eq-chat" class="eq-chat-f"><input type="hidden" name="id" value="${i.id}"><textarea name="x" required maxlength="1500" placeholder="Écrire à ${i.prenom || intervFull(i)}…"></textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
 };
 function equipeData(i) {
@@ -1893,6 +1893,8 @@ function binsTable(im, g) {
       ${e.done ? html`<span class="badge ok">✅ ${nm(e.done)}</span>` : e.forgot ? html`<span class="badge bad">❌ oublié</span>` : e.d < today() ? html`<span class="badge">…</span>` : html`<span class="badge">à venir</span>`}</div>`)}</div>
     ${sc.length ? html`<p class="tiny muted" style="margin:0 0 10px">🏆 ${y} : ${sc.map(([id, v]) => `${nm(id)} ${v.done} ✅${v.forgot ? ` · ${v.forgot} oubli${v.forgot > 1 ? 's' : ''}` : ''}`).join(' — ')}</p>` : ''}`;
 }
+// ✋ main rouge « stop » = message seulement entre un habitant et la centrale
+const HANDR = new Raw('<svg class="hand" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><g fill="#dc2626"><rect x="6.2" y="10.5" width="12.8" height="11.5" rx="5.2"/><rect x="6.2" y="5" width="2.9" height="10" rx="1.45"/><rect x="9.5" y="2.4" width="2.9" height="11" rx="1.45"/><rect x="12.8" y="2.9" width="2.9" height="11" rx="1.45"/><rect x="16.1" y="5.4" width="2.9" height="10" rx="1.45"/><rect x="2.6" y="10.6" width="2.9" height="8" rx="1.45" transform="rotate(-38 4 14.6)"/></g></svg>');
 // Messages privés 🔒 : la centrale les ouvre avec sa clé ; ses réponses privées sont scellées pour elle et pour l'habitant
 const chatOpenPriv = async (rec) => { const k = vault.get('reglages', 'signal'); return rec.o && k && k.priv ? (await openFromTenant(k.priv, unb64u(rec.o))).x : null; };
 async function chatViewSet(g, raw) {
@@ -1938,14 +1940,14 @@ const chatBubbles = (rs, gid) => {
   const vis = list.filter((m) => !(m.del && m.m === 'mgr'));
   if (!vis.length) return html`<p class="muted small">Aucun message pour le moment.</p>`;
   const who = (id) => shortName(vault.get('locataires', id) || {});
-  return html`${vis.map((m) => html`<div class="bub ${m.m === 'mgr' ? 'mgr' : ''} ${m.p ? 'pv' : ''}"><div class="bub-h"><b>${m.m === 'mgr' ? '🛡️ Gestionnaire' : m.a}</b><span>${fmtDateTime(m.t)}</span>
-    ${m.p ? html`<span class="bub-pv">🔒 privé${m.m === 'mgr' ? ' — à ' + who(m.p) : ''}</span>` : ''}
-    ${m.m === 'mgr' && editable(m) ? html`<button class="bub-mn" data-action="chat-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : html`<button class="bub-del" data-action="chat-del" data-id="${gid}" data-n="${m.recs.join(',')}" aria-label="Supprimer ce message">${icon('trash')}</button>`}</div>
-    ${m.m === 'mgr' && editable(m) && ui.chatMn === m.id ? html`<div class="bub-menu"><button class="btn sm" data-action="chat-edit" data-id="${gid}" data-mid="${m.id}">✏️ Modifier</button><button class="btn sm danger" data-action="chat-del" data-id="${gid}" data-n="${m.recs.join(',')}">🗑️ Supprimer</button></div>` : ''}
+  return html`${vis.map((m) => html`<div class="bub ${m.m === 'mgr' ? 'mgr' : ''} ${m.p ? 'bub-priv' : ''}"><div class="bub-h"><b>${m.m === 'mgr' ? '🛡️ Gestionnaire' : m.a}</b><span>${fmtDateTime(m.t)}</span>
+    ${m.p ? html`<span class="bub-pv">${HANDR} ${m.m === 'mgr' ? 'privé — à ' + who(m.p) : 'privé'}</span>` : ''}
+    ${m.m === 'mgr' ? html`<button class="bub-mn" data-action="chat-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : html`<button class="bub-del" data-action="chat-del" data-id="${gid}" data-n="${m.recs.join(',')}" aria-label="Supprimer ce message">${icon('trash')}</button>`}</div>
+    ${m.m === 'mgr' && ui.chatMn === m.id ? html`<div class="bub-menu">${editable(m) ? html`<button class="btn sm" data-action="chat-edit" data-id="${gid}" data-mid="${m.id}">✏️ Modifier</button>` : ''}<button class="btn sm danger" data-action="chat-del" data-id="${gid}" data-n="${m.recs.join(',')}">🗑️ Supprimer</button></div>` : ''}
     ${m.del || m.x == null || m.m === 'mgr' ? html`<div class="bub-x">${m.del ? html`<s>${m.x ?? ''}</s>` : m.x == null ? html`<i class="muted">🔒 illisible</i>` : m.x}</div>` : html`<div class="bub-x" data-trx="${m.x}">${m.x}</div>`}
     ${m.del ? html`<div class="bub-f">🗑️ supprimé par l’auteur</div>` : ''}
     ${m.hist && m.hist.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.hist.map((h) => html`<div><span class="tiny muted">${fmtDateTime(h.t)}${h.p ? ' · 🔒' : ''}</span> ${h.x ?? '🔒'}</div>`)}</details>` : ''}
-    ${m.p && m.m !== 'mgr' ? html`<button class="btn sm" style="margin-top:4px" data-action="chat-reply-priv" data-id="${gid}" data-loc="${m.p}">🔒 Répondre en privé</button>` : ''}</div>`)}`;
+    ${m.p && m.m !== 'mgr' ? html`<button class="btn sm" style="margin-top:4px" data-action="chat-reply-priv" data-id="${gid}" data-loc="${m.p}">${HANDR} Répondre en privé</button>` : ''}</div>`)}`;
 };
 
 // ───── Annonces « Don · prêt · location » publiées par les locataires (site public, après approbation) ─────
@@ -7195,8 +7197,8 @@ const SHEETS = {
             <div class="chat">${chatBubbles((ui.chatView || {})[g.id], g.id)}</div>
             <form data-form="chatpost" class="chat-form"><input type="hidden" name="imm" value="${id}"><input type="hidden" name="gk" value="${gk}">
               <textarea name="x" required maxlength="1500" placeholder="Écrire aux habitants (en tant que gestionnaire)…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button>
-              ${g.members.length > 1 ? html`<label class="field chat-to">À<select name="to" data-gid="${g.id}"><option value="">👥 Tous les habitants du fil</option>${g.members.map((mid) => html`<option value="${mid}" ${(ui.chatTo || {})[g.id] === mid ? new Raw('selected') : ''}>🔒 Privé — ${shortName(vault.get('locataires', mid) || {})}</option>`)}</select></label>` : ''}</form>
-            <p class="tiny muted" style="margin:2px 0 6px">🔒 = message privé entre un habitant et vous (les autres ne le voient pas). Dans leur app : ✓ envoyé · ✓✓ arrivé ici · ✓✓ bleu lu par vous. Chacun peut modifier, rendre privé / public ou supprimer son message pendant 15 minutes ; vous voyez le texte d’avant.</p>
+              ${g.members.length > 1 ? html`<label class="field chat-to">À<select name="to" data-gid="${g.id}"><option value="">👥 Tous les habitants du fil</option>${g.members.map((mid) => html`<option value="${mid}" ${(ui.chatTo || {})[g.id] === mid ? new Raw('selected') : ''}>✋ Privé — ${shortName(vault.get('locataires', mid) || {})}</option>`)}</select></label>` : ''}</form>
+            <p class="tiny muted" style="margin:2px 0 6px">✋ = message privé entre un habitant et vous (les autres ne le voient pas). Dans leur app : ✓ envoyé · ✓✓ arrivé ici · ✓✓ bleu lu par vous. Chacun peut modifier, rendre privé / public ou supprimer son message pendant 15 minutes ; vous voyez le texte d’avant.</p>
             <button class="btn sm" style="margin:6px 0 4px" data-action="chat-refresh" data-id="${id}">${icon('sync')} Actualiser</button>`)
           : html`<p class="muted small">Aucun fil pour le moment : un fil se crée tout seul dès que 2 personnes habitent le même appartement (ou le même groupe choisi ci-dessus).</p>`}
           <button class="btn sm" style="margin-top:8px" data-action="chat-refresh" data-id="${id}">${icon('sync')} Actualiser</button>` : ''}
