@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.213.2';
+const VERSION = '2.213.3';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -7198,10 +7198,8 @@ const SHEETS = {
             <form data-form="chatpost" class="chat-form"><input type="hidden" name="imm" value="${id}"><input type="hidden" name="gk" value="${gk}">
               <textarea name="x" required maxlength="1500" placeholder="Écrire aux habitants (en tant que gestionnaire)…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button>
               ${g.members.length > 1 ? html`<label class="field chat-to">À<select name="to" data-gid="${g.id}"><option value="">👥 Tous les habitants du fil</option>${g.members.map((mid) => html`<option value="${mid}" ${(ui.chatTo || {})[g.id] === mid ? new Raw('selected') : ''}>✋ Privé — ${shortName(vault.get('locataires', mid) || {})}</option>`)}</select></label>` : ''}</form>
-            <p class="tiny muted" style="margin:2px 0 6px">✋ = message privé entre un habitant et vous (les autres ne le voient pas). Dans leur app : ✓ envoyé · ✓✓ arrivé ici · ✓✓ bleu lu par vous. Chacun peut modifier, rendre privé / public ou supprimer son message pendant 15 minutes ; vous voyez le texte d’avant.</p>
-            <button class="btn sm" style="margin:6px 0 4px" data-action="chat-refresh" data-id="${id}">${icon('sync')} Actualiser</button>`)
-          : html`<p class="muted small">Aucun fil pour le moment : un fil se crée tout seul dès que 2 personnes habitent le même appartement (ou le même groupe choisi ci-dessus).</p>`}
-          <button class="btn sm" style="margin-top:8px" data-action="chat-refresh" data-id="${id}">${icon('sync')} Actualiser</button>` : ''}
+            <p class="tiny muted" style="margin:2px 0 6px">✋ = message privé entre un habitant et vous (les autres ne le voient pas). Dans leur app : ✓ envoyé · ✓✓ arrivé ici · ✓✓ bleu lu par vous. Chacun peut modifier, rendre privé / public ou supprimer son message pendant 15 minutes ; vous voyez le texte d’avant.</p>`)
+          : html`<p class="muted small">Aucun fil pour le moment : un fil se crée tout seul dès que 2 personnes habitent le même appartement (ou le même groupe choisi ci-dessus).</p>`}` : ''}
         <div class="section-label">📜 Règles propres à cet immeuble</div>
         <form data-form="regles" class="stack"><input type="hidden" name="id" value="${id}">
           <textarea name="regles" style="min-height:90px" placeholder="ex. Machine à laver jusqu'à 21 h. Vélos dans la cour, pas dans le couloir.">${im.regles || ''}</textarea>

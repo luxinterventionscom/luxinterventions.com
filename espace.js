@@ -1088,9 +1088,9 @@ function render() {
     const solo = d.chat.solo, ax = AX[lang] || AX.fr;
     out.push(foldCard(`<div class="card" id="chatCard"><h2 style="display:flex;align-items:center;gap:8px">${solo ? '✉️' : '💬'} ${esc(solo ? ax.solo : t.hr.board)}${trButton()}</h2><p class="meta" style="margin:0 0 8px">${esc(solo ? ax.soloHint : t.hr.boardHint)}</p>
       <div class="chat" id="chat">${chatHtml()}</div>
-      ${can ? `<form id="chatf"><div id="chatEd" class="chat-ed" hidden><span>${esc(cx().editing)}</span><button type="button" class="pill" data-cop="cancel">${esc(cx().cancel)}</button></div><div class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(t.hr.boardPh)}"></textarea><button class="btn" type="submit">➤</button></div>${d.signalKey && !solo ? `<label class="chat-pv"><input type="checkbox" name="pv"> ${HAND(18)} ${esc(cx().priv)}</label>` : ''}</form>`
+      ${can ? `<form id="chatf"><div id="chatEd" class="chat-ed" hidden><span>${esc(cx().editing)}</span><button type="button" class="pill" data-cop="cancel">${esc(cx().cancel)}</button></div><div class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(t.hr.boardPh)}"></textarea><button class="btn" type="submit">➤</button></div>${d.signalKey && !solo ? `<input type="hidden" name="pv" value=""><button type="button" class="chat-pv" data-pvtog="1" aria-pressed="false">${HAND(20)} <span>${esc(cx().priv)}</span></button>` : ''}</form>`
         : `<p class="meta"><a href="#rules" data-goto-rules="1">${esc(t.hr.boardFirst)}</a></p>`}
-      <button class="btn sm sec" style="margin-top:8px" data-chat-refresh="1">${esc(t.hr.refresh)}</button></div>`, 'chat', '<span id="chatNew"></span>'));
+</div>`, 'chat', '<span id="chatNew"></span>'));
   }
   if (s.tools) {
     const tl = t.tl;
@@ -1302,6 +1302,9 @@ app.addEventListener('click', async (e) => {
   if (cmn) { chatMenu = chatMenu === cmn.dataset.cmenu ? '' : cmn.dataset.cmenu; const box = document.getElementById('chat'); if (box) { const st = box.scrollTop; box.innerHTML = chatHtml(); box.scrollTop = st; } return; }
   const cop = e.target.closest('[data-cop]');
   if (cop) return chatOp(cop.dataset.cop, cop.dataset.id);
+  // ✋ touchée = le prochain message part seulement à la centrale (rouge) ; touchée encore = pour tous
+  const pvt = e.target.closest('[data-pvtog]');
+  if (pvt) { const f = pvt.closest('form'), on = f.pv.value !== '1'; f.pv.value = on ? '1' : ''; pvt.setAttribute('aria-pressed', String(on)); return; }
   if (e.target.closest('[data-radio-play]')) return radioToggle();
   if (e.target.closest('[data-radio-save]')) {
     const v = (document.getElementById('radioUrl') || {}).value || '';
@@ -1605,10 +1608,11 @@ app.addEventListener('submit', async (e) => {
     try {
       const edId = f.dataset.edit || '', old = edId && chatView.find((m) => m.id === edId);
       if (old && !editable(old)) throw new Error(cx().late);
-      const pv = old ? !!old.p : !!(f.pv && f.pv.checked);
+      const pv = old ? !!old.p : !!(f.pv && f.pv.value === '1');
       const body = pv ? await chatPriv(x) : { x };
       await chatPost(old ? { k: 'ed', r: edId, m: data.chat.mid, t: new Date().toISOString(), ...body } : { id: newMsgId(), a: data.chat.me, m: data.chat.mid, t: new Date().toISOString(), ...body }, old ? 'none' : pv ? 'owner' : '');
       f.x.value = ''; chatEditEnd();
+      if (f.pv) { f.pv.value = ''; const b = f.querySelector('[data-pvtog]'); if (b) b.setAttribute('aria-pressed', 'false'); }
       await chatFetch();
       const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight;
     } catch (err) { alert('⚠ ' + (err.message || err)); }
