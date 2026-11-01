@@ -17166,4 +17166,76 @@ export default [
 "{0} en tout",
 "{0} no total"
 ],
+[
+"rien de nouveau",
+"nada de novo"
+],
+[
+"📩 Signalements des locataires",
+"📩 Ocorrências dos inquilinos"
+],
+[
+"Aucun nouveau signalement.",
+"Nenhuma ocorrência nova."
+],
+[
+"🏠 Messages de la maison",
+"🏠 Mensagens da casa"
+],
+[
+"{0} nouveau message — touchez pour lire",
+"{0} mensagem nova — toque para ler"
+],
+[
+"{0} nouveaux messages — touchez pour lire",
+"{0} mensagens novas — toque para ler"
+],
+[
+"{0} fil · touchez pour ouvrir",
+"{0} conversa · toque para abrir"
+],
+[
+"{0} fils · touchez pour ouvrir",
+"{0} conversas · toque para abrir"
+],
+[
+"Aucun fil de messages entre habitants.",
+"Nenhuma conversa entre moradores."
+],
+[
+"👷 Équipe",
+"👷 Equipa"
+],
+[
+"Pas encore de message",
+"Ainda sem mensagens"
+],
+[
+"✏️ Modifier le message",
+"✏️ Editar a mensagem"
+],
+[
+"Message modifié",
+"Mensagem editada"
+],
+[
+"Plus possible : 15 minutes sont passées.",
+"Já não é possível: passaram 15 minutos."
+],
+[
+"Il disparaît de son app.",
+"Desaparece da app dele."
+],
+[
+"✏️ Modifier",
+"✏️ Editar"
+],
+[
+"🗑️ Supprimer",
+"🗑️ Apagar"
+],
+[
+"Options du message",
+"Opções da mensagem"
+],
 ];

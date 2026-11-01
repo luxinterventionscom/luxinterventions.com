@@ -17245,4 +17245,76 @@ export default [
 "{0} en tout",
 "{0} insgesamt"
 ],
+[
+"rien de nouveau",
+"nichts Neues"
+],
+[
+"📩 Signalements des locataires",
+"📩 Meldungen der Mieter"
+],
+[
+"Aucun nouveau signalement.",
+"Keine neue Meldung."
+],
+[
+"🏠 Messages de la maison",
+"🏠 Nachrichten im Haus"
+],
+[
+"{0} nouveau message — touchez pour lire",
+"{0} neue Nachricht — zum Lesen tippen"
+],
+[
+"{0} nouveaux messages — touchez pour lire",
+"{0} neue Nachrichten — zum Lesen tippen"
+],
+[
+"{0} fil · touchez pour ouvrir",
+"{0} Chat · zum Öffnen tippen"
+],
+[
+"{0} fils · touchez pour ouvrir",
+"{0} Chats · zum Öffnen tippen"
+],
+[
+"Aucun fil de messages entre habitants.",
+"Kein Chat zwischen Bewohnern."
+],
+[
+"👷 Équipe",
+"👷 Team"
+],
+[
+"Pas encore de message",
+"Noch keine Nachricht"
+],
+[
+"✏️ Modifier le message",
+"✏️ Nachricht bearbeiten"
+],
+[
+"Message modifié",
+"Nachricht bearbeitet"
+],
+[
+"Plus possible : 15 minutes sont passées.",
+"Nicht mehr möglich: 15 Minuten sind vorbei."
+],
+[
+"Il disparaît de son app.",
+"Sie verschwindet aus seiner App."
+],
+[
+"✏️ Modifier",
+"✏️ Bearbeiten"
+],
+[
+"🗑️ Supprimer",
+"🗑️ Löschen"
+],
+[
+"Options du message",
+"Nachrichtenoptionen"
+],
 ];

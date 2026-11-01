@@ -29,7 +29,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.211.0';
+const VERSION = '2.212.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -75,6 +75,7 @@ const html = (strings, ...vals) => new Raw(strings.reduce((out, s, i) => out + v
 const setHtml = (el, h) => { el.innerHTML = val(h); };
 
 const ICONS = {
+  headset: '<path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="3" y="13" width="4" height="6" rx="1.5"/><rect x="17" y="13" width="4" height="6" rx="1.5"/><path d="M19 19c0 1.8-2.2 3-5 3h-2"/><circle cx="11" cy="22" r="1"/>',
   home: '<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/>',
   car: '<path d="M5 17h14M3 17v-4l2-5a2 2 0 0 1 2-1h10a2 2 0 0 1 2 1l2 5v4"/><path d="M3 13h18"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/>',
@@ -2259,6 +2260,28 @@ async function inboxSync() {
 }
 
 // Messages envoyés par les locataires depuis leur app, pas encore ouverts dans Ares
+// 🎧 Centralino : tous les messages reçus, par catégorie, avec un lien direct vers la conversation
+function centralinoHtml() {
+  const sig = newSignals();
+  const imms = vault.list('immeubles').filter((im) => Object.keys(im.chats || {}).length && !immGone(im));
+  const houseN = (im) => (ui.chatNew || {})[im.id] || 0;
+  const eqs = vault.list('intervenants').filter((i) => !i.archive && ((i.chat || []).length || (i.espace && i.espace.on)))
+    .map((i) => ({ i, last: (i.chat || []).filter((m) => !m.del).slice(-1)[0] }))
+    .sort((a, b) => (b.i.chatNew || 0) - (a.i.chatNew || 0) || ((b.last || {}).at || '').localeCompare((a.last || {}).at || ''));
+  const nHouse = imms.reduce((a, im) => a + houseN(im), 0), nEq = eqs.reduce((a, e) => a + (e.i.chatNew || 0), 0), tot = sig.length + nHouse + nEq;
+  const open = ui.centOpen ?? tot > 0;
+  const badge = (n) => (n ? html`<span class="badge bad">${n}</span>` : '');
+  const row = (action, id, title, sub, n) => html`<button class="row" data-action="${action}" data-id="${id}"><span class="grow"><span class="title" style="display:block">${title}</span><span class="meta">${sub}</span></span>${badge(n)}</button>`;
+  return html`<details class="card centralino" ${open ? new Raw('open') : ''} style="margin-bottom:14px">
+    <summary data-action="cent-tog"><span class="cent-ic">${icon('headset')}</span><b>Centralino</b><span class="grow"></span>${tot ? html`<span class="badge bad">${tot} nouveau${tot > 1 ? 'x' : ''}</span>` : html`<span class="muted small">rien de nouveau</span>`}</summary>
+    <div class="section-label">📩 Signalements des locataires ${badge(sig.length)}</div>
+    ${sig.length ? html`<div class="list">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = t.byInterv ? vault.get('intervenants', t.byInterv) : null; return row('open-signal', t.id, html`${w ? '👷 ' + intervFull(w) : fullName(l)} — ${t.titre.replace(/^Signalement : /, '')}`, `${logName(l.logId) || immName(t.immId)} · ${fmtDateTime(t.sentAt)}`, 0); })}</div>` : html`<p class="small muted">Aucun nouveau signalement.</p>`}
+    <div class="section-label">🏠 Messages de la maison ${badge(nHouse)}</div>
+    ${imms.length ? html`<div class="list">${imms.map((im) => row('open-chat', im.id, immName(im.id), houseN(im) ? `${houseN(im)} nouveau${houseN(im) > 1 ? 'x messages' : ' message'} — touchez pour lire` : `${plural(Object.keys(im.chats || {}).length, 'fil')} · touchez pour ouvrir`, houseN(im)))}</div>` : html`<p class="small muted">Aucun fil de messages entre habitants.</p>`}
+    <div class="section-label">👷 Équipe ${badge(nEq)}</div>
+    ${eqs.length ? html`<div class="list">${eqs.map(({ i, last }) => row('open-eq-chat', i.id, intervFull(i), last ? `${last.from === 'mgr' ? '🛡️ ' : '👷 '}${String(last.x || '').slice(0, 60)} · ${fmtDateTime(last.at)}` : 'Pas encore de message', i.chatNew || 0))}</div>` : html`<p class="small muted">Aucun ouvrier avec l’app active.</p>`}
+  </details>`;
+}
 const newSignals = () => vault.list('taches').filter((t) => t.sentAt && !t.vu).sort((a, b) => (b.sentAt || '').localeCompare(a.sentAt || ''));
 const signalPhotos = (t) => vault.list('documents').filter((x) => x.tacheId === t.id).length;
 const tacheToDo = () => vault.list('taches').filter((t) => !t.recur && t.statut !== 'fait');
@@ -4950,8 +4973,6 @@ dashboard() {
         <div class="card-title" style="margin-bottom:8px"><h3>📩 <span>${sig.length > 1 ? sig.length + " nouveaux messages" : "1 nouveau message"}${sig.every((t) => !t.byInterv) ? (sig.length > 1 ? ' de locataires' : ' de locataire') : ''}</span></h3></div>
         <div class="stack">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = t.byInterv ? vault.get('intervenants', t.byInterv) : null; const n = signalPhotos(t); return alertBtn('bad', 'msg', 'open-signal', t.id, html`<b>${w ? '👷 ' + intervFull(w) : fullName(l)}</b> · ${logName(l.logId) || immName(t.immId)} — ${t.titre.replace(/^Signalement : /, '').replace(/^Problème signalé par [^:]+ : /, '⚠️ ')}<div class="tiny">${fmtDateTime(t.sentAt)}${n ? ` · 📷 ${n} photo${n > 1 ? 's' : ''}` : ''} · touchez pour lire</div>`); })}</div>
       </div>` : '';
-    const chatNew = Object.entries(ui.chatNew || {}).filter(([imId, n]) => n && vault.get('immeubles', imId));
-    const chatBox = chatNew.length ? html`<div class="stack" style="margin-bottom:14px">${chatNew.map(([imId, n]) => alertBtn('info', 'msg', 'open-chat', imId, html`💬 <b>${n} nouveau${n > 1 ? 'x' : ''} message${n > 1 ? 's' : ''}</b> entre les habitants — ${immName(imId)}<div class="tiny">touchez pour lire</div>`))}</div>` : '';
     const virs = vault.list('locataires').filter((l) => l.virSignal && !l.virSignal.vu);
     const edlNew = [...new Set(edlOutNew().map((d) => d.logId))].filter((id) => vault.get('logements', id));
     const edlBox = edlNew.length ? html`<div class="stack" style="margin-bottom:14px">${edlNew.map((id) => { const ph = edlOutNew().filter((d) => d.logId === id), w = vault.get('locataires', ph[0].locId); return alertBtn('info', 'camera', 'open-edl-out', id, html`📷 <b>${plural(ph.length, 'photo')} de sortie</b> à contrôler — ${logName(id)}${w ? ' · ' + fullName(w) : ''}<div class="tiny">touchez pour comparer avec vos photos d’entrée</div>`); })}</div>` : '';
@@ -4959,8 +4980,6 @@ dashboard() {
     const eqNew = sum(vault.list('intervenants'), (i) => i.feedNew || 0);
     const nClaims = TENANT ? [] : netFacts().filter((f) => f.claim && !f.paid);
     const nClaimBox = nClaims.length ? html`<div class="stack" style="margin-bottom:14px">${nClaims.map((f) => alertBtn('info', 'wallet', 'net-open', f.tid, html`💳 <b>${f.nom}</b> dit avoir payé la facture <b>${f.no}</b> (${eur(f.ttc)})<div class="tiny">vérifiez sur le compte, puis « ✅ Reçu » dans sa fiche</div>`))}</div>` : '';
-    const eqChats = vault.list('intervenants').filter((i) => i.chatNew);
-    const eqChatBox = eqChats.length ? html`<div class="stack" style="margin-bottom:14px">${eqChats.map((i) => alertBtn('info', 'msg', 'open-eq-chat', i.id, html`💬 <b>${i.chatNew} nouveau${i.chatNew > 1 ? 'x' : ''} message${i.chatNew > 1 ? 's' : ''}</b> — ${intervFull(i)}<div class="tiny">touchez pour lire et répondre</div>`))}</div>` : '';
     const eqBox = eqNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'eq-feed', '', html`👷 <b>${eqNew} nouvelle${eqNew > 1 ? 's' : ''} de l’équipe</b> (commencé, fini, pas fini, notes, photos…)<div class="tiny">touchez pour voir qui fait quoi, où et quand</div>`)}</div>` : '';
     const assurTodo = vault.list('intervenants').filter((i) => i.genre === 'prive' && i.assurTodo && !i.archive);
     const assurBox = assurTodo.length ? html`<div class="stack" style="margin-bottom:14px">${assurTodo.map((i) => alertBtn('warn', 'alert', 'open-interv', i.id, html`🛡️ <b>Assurance RC à faire</b> : ${intervFull(i)} (occasionnel) n’a pas encore donné son assurance<div class="tiny">rappel affiché dans son app · touchez pour ouvrir sa fiche</div>`))}</div>` : '';
@@ -4983,10 +5002,10 @@ dashboard() {
       ${assurBox}
       ${finBox}
       ${sigBox}
-      ${chatBox}
+      ${centralinoHtml()}
       ${virBox}
       ${edlBox}
-      ${nClaimBox}${eqChatBox}${eqBox}
+      ${nClaimBox}${eqBox}
       ${absBox}
       ${toolsBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
@@ -8249,6 +8268,7 @@ const ACTIONS = {
   },
   'open-interv': (d) => openSheet('interv', d.id),
   'open-eq-chat': (d) => openSheet('interv', d.id, 'chat'),
+  'cent-tog': (d, el) => { const dt = el.closest('details'); dt.open = !dt.open; ui.centOpen = dt.open; },
   'tfact-open': (d) => openOver('tfact', d.id),
   'txinv-pay': (d) => openOver('txinv-pay', d.id),
   async 'txinv-pdf'(d) {
