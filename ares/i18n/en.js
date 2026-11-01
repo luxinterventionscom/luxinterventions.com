@@ -16987,4 +16987,76 @@ export default [
 "{0} en tout",
 "{0} in total"
 ],
+[
+"rien de nouveau",
+"nothing new"
+],
+[
+"📩 Signalements des locataires",
+"📩 Tenant reports"
+],
+[
+"Aucun nouveau signalement.",
+"No new reports."
+],
+[
+"🏠 Messages de la maison",
+"🏠 House messages"
+],
+[
+"{0} nouveau message — touchez pour lire",
+"{0} new message — tap to read"
+],
+[
+"{0} nouveaux messages — touchez pour lire",
+"{0} new messages — tap to read"
+],
+[
+"{0} fil · touchez pour ouvrir",
+"{0} chat · tap to open"
+],
+[
+"{0} fils · touchez pour ouvrir",
+"{0} chats · tap to open"
+],
+[
+"Aucun fil de messages entre habitants.",
+"No chat between residents."
+],
+[
+"👷 Équipe",
+"👷 Team"
+],
+[
+"Pas encore de message",
+"No messages yet"
+],
+[
+"✏️ Modifier le message",
+"✏️ Edit the message"
+],
+[
+"Message modifié",
+"Message edited"
+],
+[
+"Plus possible : 15 minutes sont passées.",
+"No longer possible: 15 minutes have passed."
+],
+[
+"Il disparaît de son app.",
+"It disappears from their app."
+],
+[
+"✏️ Modifier",
+"✏️ Edit"
+],
+[
+"🗑️ Supprimer",
+"🗑️ Delete"
+],
+[
+"Options du message",
+"Message options"
+],
 ];

@@ -61,6 +61,7 @@ assert(cs.includes('Segreto') && await p.$('.sheet .bub.pv'), 'la centrale legge
 await act(p, 'chat-reply-priv', { id: await p.$eval('select[name=to]', (e) => e.dataset.gid), loc: 'lc1' }); await p.waitForTimeout(300);
 await p.fill('.sheet form[data-form=chatpost] textarea', 'Grazie Anna, ne parlo io col vicino');
 await p.click('.sheet form[data-form=chatpost] button[type=submit]'); await p.waitForTimeout(5000);
+assert(await p.$('.sheet [data-action=chat-mn]'), 'centrale: ⋯ sul proprio messaggio');
 await refresh(anna); ta = await chatTxt(anna);
 assert(ta.includes('ne parlo io col vicino'), 'Anna riceve la risposta privata');
 assert(await anna.$('#chat .tk.rd'), 'Anna vede ✓✓ blu (letto dalla centrale)');
@@ -102,6 +103,7 @@ await p.keyboard.press('Escape'); await p.waitForTimeout(400);
 const luc = await app('/equipe.html', wcode, 'luc');
 await luc.fill('#chatForm textarea', 'La chiave del 12 non va'); await luc.click('#chatForm button[type=submit]'); await luc.waitForTimeout(2500);
 assert((await luc.$eval('#chatCard', (e) => e.innerHTML)).includes('class="tk"'), 'operaio: ✓ inviato');
+assert(await luc.$('#chatCard [data-emenu]'), 'operaio: ⋯ subito dopo l’invio');
 // la centrale rilegge la posta ogni 3 min : avanziamo l'orologio della pagina
 const inbox = async () => { await p.evaluate(() => { const o = Date.now; Date.now = () => o() + 181000; }); await p.waitForTimeout(36000); };
 await inbox();

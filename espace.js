@@ -503,7 +503,7 @@ async function binAct(act, dte) {
 }
 
 // ── Messages de la maison : lecture (déchiffrée sur le téléphone), envoi, rafraîchissement ──
-let chatMsgs = null, chatTimer = null, chatLoading = false, chatView = [], chatMark = { dl: '', rd: '' }, chatMenu = '';
+let chatSwOn = false, chatMsgs = null, chatTimer = null, chatLoading = false, chatView = [], chatMark = { dl: '', rd: '' }, chatMenu = '';
 const b64d = (x) => Uint8Array.from(atob(x), (c) => c.charCodeAt(0));
 function chatHtml() {
   const t = T();
@@ -602,6 +602,8 @@ function chatStart() {
   if (!data || !data.chat) return;
   chatFetch();
   chatTimer = setInterval(() => { if (document.visibilityState === 'visible') chatFetch(); }, 20000);
+  // une notification arrive pendant que l'app est ouverte : messages relus tout de suite
+  if ('serviceWorker' in navigator && !chatSwOn) { chatSwOn = true; navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.k === 'push' && data && data.chat) chatFetch(); }); }
 }
 // ── Mes annonces « Don · prêt · location » ──
 let myTools = null, toolMsg = '';
