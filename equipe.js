@@ -329,7 +329,7 @@ async function flush() {
     for (const it of q) { const n = JSON.stringify(it).length; if (batch.length && size + n > 3e6) break; batch.push(it); size += n; }
     try {
       const body = await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'equipe', items: batch });
-      const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body });
+      const r = await fetch(`${API}/api/esp/${id}/signal?app=eq`, { method: 'POST', body });
       if (!r.ok) break;
     } catch { break; }
     q = q.slice(batch.length);
@@ -1258,7 +1258,7 @@ async function devFlush() {
         }
         if (items.length) {
           const body = await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'equipe', items });
-          const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body });
+          const r = await fetch(`${API}/api/esp/${id}/signal?app=eq`, { method: 'POST', body });
           if (!r.ok) throw new Error(r.status);
         }
         for (const n of done) await phDel(did + ':' + n).catch(() => {});
