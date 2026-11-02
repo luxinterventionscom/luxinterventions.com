@@ -3844,4 +3844,12 @@ export default [
 "Portes / portails d’entrée",
 "Portas / portões de entrada"
 ]
+[
+"Avec l’abonnement, vos locataires vous écrivent depuis leur app et vous nous transmettez la panne en un geste, photos comprises — puis ils suivent l’intervention.",
+"Com a assinatura, os seus inquilinos escrevem-lhe pela app e reencaminha-nos a avaria num gesto, com fotos — depois acompanham a intervenção."
+],
+[
+"Voir ›",
+"Ver ›"
+],
 ];

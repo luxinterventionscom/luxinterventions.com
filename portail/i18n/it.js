@@ -3848,4 +3848,12 @@ export default [
 "Portes / portails d’entrée",
 "Porte / portoni d’ingresso"
 ]
+[
+"Avec l’abonnement, vos locataires vous écrivent depuis leur app et vous nous transmettez la panne en un geste, photos comprises — puis ils suivent l’intervention.",
+"Con l’abbonamento i vostri inquilini vi scrivono dalla loro app e voi ci inoltrate il guasto con un gesto, foto comprese — poi seguono l’intervento."
+],
+[
+"Voir ›",
+"Vedi ›"
+],
 ];

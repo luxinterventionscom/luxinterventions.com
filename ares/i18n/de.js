@@ -17545,4 +17545,64 @@ export default [
 "🛎️ Clients hôtel / Airbnb",
 "🛎️ Gäste Hotel / Airbnb"
 ],
+[
+"↪️ Envoyer à LuxInterventions",
+"↪️ An LuxInterventions senden"
+],
+[
+"Envoyé à LuxInterventions",
+"An LuxInterventions gesendet"
+],
+[
+"👤 Joindre le nom et le téléphone du locataire",
+"👤 Name und Telefon des Mieters beifügen"
+],
+[
+"🚪 Code / accès de l’entrée de l’immeuble",
+"🚪 Code / Zugang zum Hauseingang"
+],
+[
+"🔑 J’autorise l’accès au logement en l’absence du locataire (urgence)",
+"🔑 Ich erlaube den Zutritt zur Wohnung in Abwesenheit des Mieters (Notfall)"
+],
+[
+"Inutile si le locataire est présent. Votre nom et la date figureront sur l’intervention et sur la facture.",
+"Unnötig, wenn der Mieter da ist. Ihr Name und das Datum stehen auf dem Einsatz und auf der Rechnung."
+],
+[
+"Code ou instructions d’accès au logement",
+"Code oder Anweisungen für den Zutritt zur Wohnung"
+],
+[
+"Message pour LuxInterventions (facultatif)",
+"Nachricht an LuxInterventions (optional)"
+],
+[
+"↪️ Envoyer",
+"↪️ Senden"
+],
+[
+"Indiquez le code ou les instructions d’accès au logement (ou décochez 🔑)",
+"Geben Sie Code oder Zutrittsanweisungen an (oder 🔑 abwählen)"
+],
+[
+"🎁 6 mois offerts (accès complet)",
+"🎁 6 Monate geschenkt (voller Zugang)"
+],
+[
+"🎁 Offrir",
+"🎁 Schenken"
+],
+[
+"bon moment pour proposer l’abonnement",
+"guter Moment, das Abo anzubieten"
+],
+[
+"Pour garder la centrale, l’app de vos locataires / clients et l’envoi automatique des demandes, choisissez votre abonnement avec LuxInterventions.",
+"Um die Zentrale, die App Ihrer Mieter / Kunden und den automatischen Versand der Anfragen zu behalten, wählen Sie Ihr Abo bei LuxInterventions."
+],
+[
+"état :",
+"Status:"
+],
 ];
