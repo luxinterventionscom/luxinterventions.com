@@ -263,3 +263,5 @@ img.org-logo[hidden]{display:none}
 /* fiche d'une demande : le bouton principal sur toute la largeur, le texte va à la ligne au lieu d'être coupé */
 .actions .btn { white-space: normal; line-height: 1.2; }
 @media (max-width: 640px) { .actions .btn.primary { flex: 1 1 100%; } }
+.offer-line { display: flex; gap: 8px; align-items: flex-start; width: 100%; text-align: left; font: inherit; font-size: 13px; cursor: pointer; margin: -6px 0 14px; padding: 10px 12px; border-radius: 12px; border: 1px dashed var(--accent); background: none; color: var(--text-2, var(--text)); }
+.offer-line b { color: var(--accent); white-space: nowrap; margin-left: auto; }

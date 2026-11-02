@@ -3776,4 +3776,12 @@ export default [
 "Portes / portails d’entrée",
 "Doors / entrance gates"
 ]
+[
+"Avec l’abonnement, vos locataires vous écrivent depuis leur app et vous nous transmettez la panne en un geste, photos comprises — puis ils suivent l’intervention.",
+"With the subscription, your tenants write to you from their app and you pass the fault on to us in one tap, photos included — then they follow the job."
+],
+[
+"Voir ›",
+"See ›"
+],
 ];

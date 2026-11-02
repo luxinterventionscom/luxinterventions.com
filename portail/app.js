@@ -953,6 +953,7 @@ const VIEWS = {
         ${new Raw(nbienBanner())}
         ${new Raw(wxRadioCard())}
       <button class="big-cta" data-action="new-ticket">${icon('plus')}<span><b>Nouvelle demande de dépannage</b><small>Urgence, photos, accès — en 30 secondes</small></span></button>
+      ${state.offersOff === false && !isAdmin() ? html`<button type="button" class="offer-line" data-action="offer-open">💎 <span>Avec l’abonnement, vos locataires vous écrivent depuis leur app et vous nous transmettez la panne en un geste, photos comprises — puis ils suivent l’intervention.</span> <b>Voir ›</b></button>` : ''}
       <div class="metrics" style="margin-top:14px">
         <div class="metric"><div class="lbl">En cours</div><div class="val">${stats.open || 0}</div><div class="sub">${stats.urgent ? html`<span class="red">${stats.urgent} urgente(s)</span>` : 'demandes ouvertes'}</div></div>
         <div class="metric"><div class="lbl">Terminées ce mois</div><div class="val green">${stats.doneMonth || 0}</div><div class="sub">${stats.createdMonth || 0} demandée(s)</div></div>
