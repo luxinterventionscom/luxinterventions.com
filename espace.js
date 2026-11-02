@@ -350,7 +350,7 @@ const SETT = {
   es: { t: 'Mi perfil', ph: 'Mi foto', pick: '📷 Elegir una foto', del: 'Quitar', hint: 'Aparece a tu administrador, junto a tu nombre.', ok: 'Foto enviada ✓' },
 };
 let icOpen = false, icMine = '', phMine = null;
-async function sendOwner(o) { if (data && data.signalKey) await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) }); }
+async function sendOwner(o) { if (data && data.signalKey) await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) }); }
 const T = () => L[lang];
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -1330,7 +1330,7 @@ app.addEventListener('click', async (e) => {
     const v = +rv.dataset.rv;
     ratePut(rv.dataset.k, { v });
     render();
-    if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: rv.dataset.w, d: rv.dataset.d, v }) }); } catch { /* hors ligne */ } }
+    if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: rv.dataset.w, d: rv.dataset.d, v }) }); } catch { /* hors ligne */ } }
     return;
   }
   const rn = e.target.closest('[data-rv-next]');
@@ -1342,7 +1342,7 @@ app.addEventListener('click', async (e) => {
     rs.disabled = true;
     try {
       const k = rs.dataset.rvSend, cur = rateAll()[k] || {};
-      const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: rs.dataset.w, d: rs.dataset.d, v: cur.v, tags: [...menTags], note: menNote }) });
+      const r = await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: rs.dataset.w, d: rs.dataset.d, v: cur.v, tags: [...menTags], note: menNote }) });
       if (!r.ok) throw new Error();
       menTags.clear(); menNote = '';
       // « Commentaire envoyé » un instant, puis le passage suivant
@@ -1367,7 +1367,7 @@ app.addEventListener('click', async (e) => {
     for (const k of Object.keys(m).sort().slice(0, -30)) delete m[k];
     try { localStorage.setItem(menKey(), JSON.stringify(m)); } catch { /* stockage plein */ }
     render();
-    if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: mb.dataset.w, d: today, v }) }); } catch { /* hors ligne */ } }
+    if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: mb.dataset.w, d: today, v }) }); } catch { /* hors ligne */ } }
     return;
   }
   const ut = e.target.closest('[data-uptype]');
@@ -1381,7 +1381,7 @@ app.addEventListener('click', async (e) => {
     try {
       const b = img ? await compress(f) : b64uOf(new Uint8Array(await f.arrayBuffer()));
       const k = crypto.getRandomValues(new Uint32Array(2)).join('-'), at = new Date().toISOString();
-      const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: at, type: 'doc-up', k, dtype: upSel, name: String(f.name || '').slice(0, 80), mime: img ? 'image/jpeg' : 'application/pdf', b }) });
+      const r = await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: at, type: 'doc-up', k, dtype: upSel, name: String(f.name || '').slice(0, 80), mime: img ? 'image/jpeg' : 'application/pdf', b }) });
       if (!r.ok) throw new Error(r.status === 413 ? 'big' : String(r.status));
       let loc = []; try { loc = JSON.parse(localStorage.getItem(upKey()) || '[]'); } catch { /* stockage indisponible */ }
       try { localStorage.setItem(upKey(), JSON.stringify([...loc, { k, dtype: upSel, at }].slice(-20))); } catch { /* stockage plein */ }
@@ -1449,7 +1449,7 @@ app.addEventListener('click', async (e) => {
       for (let i = 0; i < rooms.length; i += 3) {
         const part = rooms.slice(i, i + 3);
         const body = await sealForOwner(data.signalKey, { espace: id, t: now, type: 'edl-out', photos: part.map((r) => ({ room: r, b: edlPick[r].b })) });
-        const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body });
+        const r = await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body });
         if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
         for (const rm of part) { sentL[rm] = now.slice(0, 10); URL.revokeObjectURL(edlPick[rm].url); delete edlPick[rm]; }
         try { localStorage.setItem(edlKey(), JSON.stringify(sentL)); } catch { /* stockage indisponible */ }
@@ -1477,7 +1477,7 @@ app.addEventListener('click', async (e) => {
     ro.disabled = true;
     const now = new Date().toISOString();
     try { localStorage.setItem(rulesKey(), JSON.stringify({ v: data.regles.v, d: now.slice(0, 10) })); } catch {}
-    if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: now, type: 'regles', v: data.regles.v }) }); } catch { /* le gestionnaire le verra plus tard */ } }
+    if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: now, type: 'regles', v: data.regles.v }) }); } catch { /* le gestionnaire le verra plus tard */ } }
     scrollTo(0, 0);
     render();
     return;
@@ -1494,7 +1494,7 @@ app.addEventListener('click', async (e) => {
   if (pdb) {
     if (!confirm(T().pv.doneQ)) return;
     const now = new Date().toISOString(), { amt, ref } = payInfo();
-    if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: now, type: 'paye', montant: amt, ref, via: pdb.dataset.paydone }) }); } catch { /* hors ligne */ } }
+    if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: now, type: 'paye', montant: amt, ref, via: pdb.dataset.paydone }) }); } catch { /* hors ligne */ } }
     try { localStorage.setItem(paidKey(), now); } catch {}
     payOpen = false;
     return render();
@@ -1507,7 +1507,7 @@ app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-recap]')) return recap();
   if (e.target.closest('[data-ic-open]')) { icOpen = !icOpen; render(); return; }
   if (e.target.closest('[data-photo-del]')) { phMine = ''; render(); try { await sendOwner({ type: 'photo', d: '' }); } catch { /* hors ligne */ } return; }
-  { const ic = e.target.closest('[data-ic]'); if (ic) { icMine = ic.dataset.ic; icOpen = false; render(); if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'avatar', e: icMine }) }); } catch { /* hors ligne */ } } return; } }
+  { const ic = e.target.closest('[data-ic]'); if (ic) { icMine = ic.dataset.ic; icOpen = false; render(); if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'avatar', e: icMine }) }); } catch { /* hors ligne */ } } return; } }
   const db = e.target.closest('[data-doc]');
   if (db) {
     const doc = data.docs.find((x) => x.id === db.dataset.doc);
@@ -1644,7 +1644,7 @@ app.addEventListener('submit', async (e) => {
     const texte = f.texte.value.trim();
     const msg = { espace: id, t: new Date().toISOString(), type: f.type.value, titre: texte.split('\n')[0].slice(0, 80), texte, tel: f.tel.value.trim(), dispo: f.dispo.value.trim(), photos };
     const body = await sealForOwner(data.signalKey, msg);
-    const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body });
+    const r = await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body });
     if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
     sentOk = true;
     data.signals = [{ titre: msg.titre, sent: msg.t, statut: 'afaire' }, ...(data.signals || [])];

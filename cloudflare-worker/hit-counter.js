@@ -389,7 +389,9 @@ async function espacePublic(request, env, id, sub, headers) {
       await env.HITS.put(kB, String(nB + body.byteLength), { expirationTtl: 86400 });
     } catch { /* quota KV */ }
     // le gestionnaire voit le numéro sur l'icône de son app (le contenu reste chiffré, la notification ne dit rien)
-    await espPushSend(env, OV.owner, "inbox");
+    // qui écrit (l'app l'indique, sans rien dire du contenu) : la notification de la centrale dit « un ouvrier », « un client de l'hôtel »…
+    const fromApp = new URL(request.url).searchParams.get("app") || "";
+    await espPushSend(env, OV.owner, ["esp", "eq", "hote", "taxi", "ann"].includes(fromApp) ? "in_" + fromApp : "inbox");
     return aresJson({ ok: true }, 200, headers);
   }
   return aresJson({ error: "Not found" }, 404, headers);
@@ -475,7 +477,7 @@ async function boardPublic(request, env, id, headers) {
     } catch { /* quota KV */ }
     // X-Push : « none » (modification, suppression, accusé de lecture) ; « owner » (message privé, seulement au gestionnaire)
     const from = String(request.headers.get("X-Esp") || ""), xp = String(request.headers.get("X-Push") || "");
-    if (xp === "owner") await espPushSend(env, "owner", "msg");
+    if (xp === "owner") await espPushSend(env, "owner", "pmsg");
     else if (xp !== "none") await espPushSend(env, "board:" + id, "msg", /^[0-9a-f]{32}$/.test(from) ? from : "");
     return aresJson({ ok: true, n: name }, 200, headers);
   }
@@ -1518,13 +1520,23 @@ const PUSH_TXT = {
   devis: { fr: "📝 Réponse d'une gérance à un devis", it: "📝 Risposta di una gérance a un preventivo", de: "📝 Antwort einer Verwaltung auf ein Angebot", pt: "📝 Resposta de uma gestora a um orçamento", en: "📝 A property manager answered a quote", es: "📝 Respuesta de una administradora a un presupuesto" },
   offer: { fr: "💼 Une gérance est intéressée par un abonnement", it: "💼 Una gérance è interessata a un abbonamento", de: "💼 Eine Verwaltung interessiert sich für ein Abo", pt: "💼 Uma gestora está interessada numa assinatura", en: "💼 A property manager is interested in a plan", es: "💼 Una administradora está interesada en una suscripción" },
   trip: { fr: "🚗 Votre intervenant est en route", it: "🚗 Il tecnico è in arrivo", de: "🚗 Ihr Techniker ist unterwegs", pt: "🚗 O seu técnico está a caminho", en: "🚗 Your technician is on the way", es: "🚗 Su técnico está en camino" },
+  in_esp: { fr: "🏠 Un locataire vous a écrit (message, signalement, paiement…)", it: "🏠 Un inquilino vi ha scritto (messaggio, segnalazione, pagamento…)", de: "🏠 Ein Mieter hat geschrieben (Nachricht, Meldung, Zahlung…)", pt: "🏠 Um inquilino escreveu (mensagem, ocorrência, pagamento…)", en: "🏠 A tenant wrote to you (message, report, payment…)", es: "🏠 Un inquilino le ha escrito (mensaje, aviso, pago…)" },
+  in_eq: { fr: "👷 Nouvelles de l’équipe (message, arrivée, travail fini…)", it: "👷 Novità dalla squadra (messaggio, arrivo, lavoro finito…)", de: "👷 Neues vom Team (Nachricht, Ankunft, Arbeit fertig…)", pt: "👷 Novidades da equipa (mensagem, chegada, trabalho feito…)", en: "👷 News from the team (message, arrival, job done…)", es: "👷 Novedades del equipo (mensaje, llegada, trabajo hecho…)" },
+  in_hote: { fr: "🛎️ Un client de l’hôtel / Airbnb vous a écrit", it: "🛎️ Un ospite dell’hotel / Airbnb vi ha scritto", de: "🛎️ Ein Gast (Hotel / Airbnb) hat geschrieben", pt: "🛎️ Um hóspede (hotel / Airbnb) escreveu", en: "🛎️ A hotel / Airbnb guest wrote to you", es: "🛎️ Un huésped (hotel / Airbnb) le ha escrito" },
+  in_taxi: { fr: "🚕 Une société de taxi vous a écrit", it: "🚕 Una ditta taxi vi ha scritto", de: "🚕 Ein Taxiunternehmen hat geschrieben", pt: "🚕 Uma empresa de táxi escreveu", en: "🚕 A taxi company wrote to you", es: "🚕 Una empresa de taxi le ha escrito" },
+  in_ann: { fr: "🍽️ Un annonceur vous a écrit", it: "🍽️ Un annunciatore vi ha scritto", de: "🍽️ Ein Inserent hat geschrieben", pt: "🍽️ Um anunciante escreveu", en: "🍽️ An advertiser wrote to you", es: "🍽️ Un anunciante le ha escrito" },
+  pmsg: { fr: "✋ Message privé d’un locataire (seulement pour vous)", it: "✋ Messaggio privato di un inquilino (solo per voi)", de: "✋ Private Nachricht eines Mieters (nur für Sie)", pt: "✋ Mensagem privada de um inquilino (só para si)", en: "✋ Private message from a tenant (only for you)", es: "✋ Mensaje privado de un inquilino (solo para usted)" },
+  news_eq: { fr: "👷 Nouveau travail ou message de la centrale", it: "👷 Nuovo lavoro o messaggio dalla centrale", de: "👷 Neue Arbeit oder Nachricht der Zentrale", pt: "👷 Novo trabalho ou mensagem da central", en: "👷 New job or message from the office", es: "👷 Nuevo trabajo o mensaje de la central" },
+  news_hote: { fr: "🛎️ Nouveau message ou info sur votre séjour", it: "🛎️ Nuovo messaggio o info sul tuo soggiorno", de: "🛎️ Neue Nachricht oder Info zu Ihrem Aufenthalt", pt: "🛎️ Nova mensagem ou info sobre a sua estadia", en: "🛎️ New message or info about your stay", es: "🛎️ Nuevo mensaje o info sobre su estancia" },
+  news_taxi: { fr: "🚕 Nouvelle course ou nouveau message", it: "🚕 Nuova corsa o nuovo messaggio", de: "🚕 Neue Fahrt oder neue Nachricht", pt: "🚕 Nova viagem ou nova mensagem", en: "🚕 New ride or new message", es: "🚕 Nuevo viaje o nuevo mensaje" },
+  news_ann: { fr: "📣 Du nouveau sur vos annonces ou un message", it: "📣 Novità sui tuoi annunci o un messaggio", de: "📣 Neues zu Ihren Anzeigen oder eine Nachricht", pt: "📣 Novidades nos seus anúncios ou uma mensagem", en: "📣 News about your ads or a message", es: "📣 Novedades en sus anuncios o un mensaje" },
   news: { fr: "Du nouveau dans votre app", it: "Novità nella tua app", de: "Neues in Ihrer App", pt: "Novidades na sua app", en: "Something new in your app", es: "Novedades en tu app" },
 };
 async function espPushSave(env, target, b) {
   if (!b || !ptlPushHostOk(b.endpoint) || !isB64u(b.p256dh, 120) || !isB64u(b.auth, 40)) return false;
   const boards = (Array.isArray(b.boards) ? b.boards : []).filter((x) => /^[0-9a-f]{32}$/.test(x)).slice(0, 5).join(",");
   const isOwner = target === "owner" || target.startsWith("owner:");
-  const app = isOwner ? "ares" : b.app === "eq" ? "eq" : "esp";
+  const app = isOwner ? "ares" : ["eq", "hote", "taxi", "ann"].includes(b.app) ? b.app : "esp";
   const lang = PUSH_LANGS.includes(b.lang) ? b.lang : "fr";
   if (!isOwner) {
     const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM esp_push WHERE target = ?").bind(target).first();
@@ -1594,8 +1606,11 @@ async function espPushSend(env, target, kind, except = "") {
       : await env.DB.prepare("SELECT * FROM esp_push WHERE target = ?").bind(target).all();
     await Promise.all((subs.results || []).map(async (s) => {
       if (!ptlPushHostOk(s.endpoint)) return;
-      const url = s.app === "ares" ? "/locataires.html" : s.app === "eq" ? "/equipe.html" : "/espace.html";
-      const msg = { title: s.app === "ares" ? "LuxInterventions" : s.app === "eq" ? "ARES Équipe" : "NOBIS s.a.r.l.", body: (PUSH_TXT[kind] || PUSH_TXT.news)[s.lang] || PUSH_TXT.news.fr, url, tag: kind };
+      // chaque app ouvre sa propre page ; « du nouveau » dit de quoi il s'agit selon l'app
+      const url = { ares: "/locataires.html", eq: "/equipe.html", hote: "/hote.html", taxi: "/taxi.html", ann: "/annonce.html" }[s.app] || "/espace.html";
+      const title = { ares: "LuxInterventions", eq: "ARES Équipe", hote: "🛎️ Séjour", taxi: "🚕 Courses", ann: "📣 Annonces" }[s.app] || "NOBIS s.a.r.l.";
+      const k2 = kind === "news" && PUSH_TXT["news_" + s.app] ? "news_" + s.app : kind;
+      const msg = { title, body: (PUSH_TXT[k2] || PUSH_TXT.news)[s.lang] || (PUSH_TXT[k2] || PUSH_TXT.news).fr, url, tag: k2 };
       try {
         const r = await fetch(s.endpoint, {
           method: "POST",

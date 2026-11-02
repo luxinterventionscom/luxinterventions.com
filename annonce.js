@@ -110,7 +110,7 @@ const blank = () => ({ id: '', type: 'annonce', nom: data ? data.nom : '', texte
 const days = (f) => Math.max(1, Math.round((new Date(f.fin) - new Date(f.debut)) / 864e5) + 1);
 const priceOf = (f) => { const r = +((data && data.tarifs) || {})[f.slot] || 0; return r ? Math.round(r * days(f)) : 0; };
 async function sendOwner(o) {
-  const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) });
+  const r = await fetch(`${API}/api/esp/${id}/signal?app=ann`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) });
   if (!r.ok) throw new Error(r.status);
 }
 let pushSt = '', pushJust = false;

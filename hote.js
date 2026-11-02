@@ -121,7 +121,7 @@ const pick = (d) => { if (d && LANGS.includes(d.lang)) return d.lang; const n = 
 const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* stockage plein */ } } };
 async function sendOwner(o) {
   if (!data || !data.signalKey) throw new Error('signal');
-  const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) });
+  const r = await fetch(`${API}/api/esp/${id}/signal?app=hote`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) });
   if (!r.ok) throw new Error(r.status);
 }
 // fichiers chiffrés (photos de la chambre, menu)

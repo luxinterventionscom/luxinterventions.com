@@ -102,7 +102,7 @@ const sentK = () => 'taxiSent:' + id;
 const sent = () => { try { return JSON.parse(ls.get(sentK()) || '{}'); } catch { return {}; } };
 let cat = null, catMsg = '', acc = '';
 async function sendOwner(o) {
-  const r = await fetch(`${API}/api/esp/${id}/signal`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) });
+  const r = await fetch(`${API}/api/esp/${id}/signal?app=taxi`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) });
   if (!r.ok) throw new Error(r.status);
 }
 let pushSt = '', pushJust = false;
