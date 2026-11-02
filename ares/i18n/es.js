@@ -17467,4 +17467,76 @@ export default [
 "{0} → {1} · pas encore de message",
 "{0} → {1} · aún no hay mensajes"
 ],
+[
+"⭐ Vrai",
+"⭐ Real"
+],
+[
+"☆ Test ?",
+"☆ ¿Prueba?"
+],
+[
+"⭐ Vrai — à conserver",
+"⭐ Real — conservar"
+],
+[
+"⭐ Gardé pour toujours : « Supprimer les données de test » n’y touchera pas",
+"⭐ Guardado para siempre: «Eliminar datos de prueba» no lo tocará"
+],
+[
+"☆ Plus protégé",
+"☆ Ya no protegido"
+],
+[
+"🧹 Supprimer les données de test",
+"🧹 Eliminar los datos de prueba"
+],
+[
+"Garde tout ce qui est marqué ⭐ « Vrai » (et ce qui en dépend) ; sauvegarde chiffrée automatique avant",
+"Conserva todo lo marcado ⭐ «Real» (y lo que depende de ello); copia cifrada automática antes"
+],
+[
+"Tout ce qui n’est pas marqué ⭐ « Vrai » (et n’est pas lié à une fiche ⭐) sera effacé. Avant, une sauvegarde chiffrée est téléchargée automatiquement.",
+"Todo lo que no esté marcado ⭐ «Real» (y no esté ligado a una ficha ⭐) se borrará. Antes se descarga automáticamente una copia cifrada."
+],
+[
+"Pour protéger une fiche : ouvrez-la et touchez « ☆ Test ? » à côté du nom → « ⭐ Vrai ».",
+"Para proteger una ficha: ábrala y toque «☆ ¿Prueba?» junto al nombre → «⭐ Real»."
+],
+[
+"⭐ Gardé ({0})",
+"⭐ Guardado ({0})"
+],
+[
+"🧹 À effacer ({0})",
+"🧹 A borrar ({0})"
+],
+[
+"Aucune fiche ⭐ :",
+"Ninguna ficha ⭐:"
+],
+[
+"tout serait effacé. Marquez d’abord vos vraies fiches.",
+"se borraría todo. Marque primero sus fichas reales."
+],
+[
+"voir les noms",
+"ver los nombres"
+],
+[
+"🧹 Sauvegarder puis supprimer",
+"🧹 Guardar y luego borrar"
+],
+[
+"Rien à supprimer",
+"Nada que borrar"
+],
+[
+"Seules les fiches ⭐ « Vrai » et ce qui leur est lié restent. Vérifiez la liste avant de confirmer : cette suppression ne se défait qu’en réimportant la sauvegarde.",
+"Solo quedan las fichas ⭐ «Real» y lo ligado a ellas. Revise la lista antes de confirmar: solo se deshace reimportando la copia."
+],
+[
+"🛎️ Clients hôtel / Airbnb",
+"🛎️ Huéspedes hotel / Airbnb"
+],
 ];
