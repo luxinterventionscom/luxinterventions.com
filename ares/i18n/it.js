@@ -17486,4 +17486,76 @@ export default [
 "{0} → {1} · pas encore de message",
 "{0} → {1} · ancora nessun messaggio"
 ],
+[
+"⭐ Vrai",
+"⭐ Vero"
+],
+[
+"☆ Test ?",
+"☆ Prova?"
+],
+[
+"⭐ Vrai — à conserver",
+"⭐ Vero — da conservare"
+],
+[
+"⭐ Gardé pour toujours : « Supprimer les données de test » n’y touchera pas",
+"⭐ Conservato per sempre: «Elimina i dati di prova» non lo toccherà"
+],
+[
+"☆ Plus protégé",
+"☆ Non più protetto"
+],
+[
+"🧹 Supprimer les données de test",
+"🧹 Elimina i dati di prova"
+],
+[
+"Garde tout ce qui est marqué ⭐ « Vrai » (et ce qui en dépend) ; sauvegarde chiffrée automatique avant",
+"Tiene tutto ciò che è segnato ⭐ «Vero» (e ciò che ne dipende); backup cifrato automatico prima"
+],
+[
+"Tout ce qui n’est pas marqué ⭐ « Vrai » (et n’est pas lié à une fiche ⭐) sera effacé. Avant, une sauvegarde chiffrée est téléchargée automatiquement.",
+"Tutto ciò che non è segnato ⭐ «Vero» (e non è legato a una scheda ⭐) sarà cancellato. Prima viene scaricato automaticamente un backup cifrato."
+],
+[
+"Pour protéger une fiche : ouvrez-la et touchez « ☆ Test ? » à côté du nom → « ⭐ Vrai ».",
+"Per proteggere una scheda: aprila e tocca «☆ Prova?» accanto al nome → «⭐ Vero»."
+],
+[
+"⭐ Gardé ({0})",
+"⭐ Conservato ({0})"
+],
+[
+"🧹 À effacer ({0})",
+"🧹 Da cancellare ({0})"
+],
+[
+"Aucune fiche ⭐ :",
+"Nessuna scheda ⭐:"
+],
+[
+"tout serait effacé. Marquez d’abord vos vraies fiches.",
+"verrebbe cancellato tutto. Segna prima le tue schede vere."
+],
+[
+"voir les noms",
+"vedi i nomi"
+],
+[
+"🧹 Sauvegarder puis supprimer",
+"🧹 Salva e poi elimina"
+],
+[
+"Rien à supprimer",
+"Niente da eliminare"
+],
+[
+"Seules les fiches ⭐ « Vrai » et ce qui leur est lié restent. Vérifiez la liste avant de confirmer : cette suppression ne se défait qu’en réimportant la sauvegarde.",
+"Restano solo le schede ⭐ «Vero» e ciò che è legato a loro. Controlla la lista prima di confermare: questa eliminazione si annulla solo reimportando il backup."
+],
+[
+"🛎️ Clients hôtel / Airbnb",
+"🛎️ Ospiti hotel / Airbnb"
+],
 ];

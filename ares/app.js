@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.215.1';
+const VERSION = '2.216.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2314,6 +2314,35 @@ async function inboxSync() {
 // Messages envoyés par les locataires depuis leur app, pas encore ouverts dans Ares
 // 📣 Annonce de la centrale : un seul message, envoyé dans la chat de chacun (habitants, équipe, taxis, annonceurs)
 // et dans la boîte chiffrée des clients du réseau (qui peuvent le transférer aux leurs)
+// Plan du nettoyage : ce qui est ⭐ (ou lié à du ⭐) reste, le reste part
+function testPlan() {
+  const L = (c) => vault.list(c), keepImm = new Set(), keepLog = new Set(), keepLoc = new Set(), keepW = new Set();
+  for (const im of L('immeubles')) if (im.vrai) keepImm.add(im.id);
+  for (const l of L('locataires')) if (l.vrai) { keepLoc.add(l.id); if (l.immId) keepImm.add(l.immId); if (l.logId) keepLog.add(l.logId); }
+  for (const w of L('intervenants')) if (w.vrai) keepW.add(w.id);
+  for (const g of L('logements')) if (keepImm.has(g.immId)) keepLog.add(g.id);
+  const tKeep = (t) => keepImm.has(t.immId) || keepLoc.has(t.locId) || keepW.has(t.intervenantId) || (!t.immId && !t.locId && !t.intervenantId);
+  const del = {
+    immeubles: L('immeubles').filter((x) => !keepImm.has(x.id)),
+    logements: L('logements').filter((x) => !keepLog.has(x.id) && !keepImm.has(x.immId)),
+    locataires: L('locataires').filter((x) => !keepLoc.has(x.id)),
+    intervenants: L('intervenants').filter((x) => !keepW.has(x.id)),
+    hotes: L('hotes').filter((x) => !x.vrai),
+    paiements: L('paiements').filter((x) => x.locId && !keepLoc.has(x.locId)),
+    documents: L('documents').filter((x) => (x.locId || x.immId || x.intervId) && !keepLoc.has(x.locId) && !keepImm.has(x.immId) && !keepW.has(x.intervId)),
+    taches: L('taches').filter((x) => !tKeep(x)),
+    collectes: L('collectes').filter((x) => x.immId && !keepImm.has(x.immId)),
+    depenses: L('depenses').filter((x) => x.immId && !keepImm.has(x.immId)),
+  };
+  del.total = Object.values(del).reduce((a, v) => a + (Array.isArray(v) ? v.length : 0), 0);
+  const keep = { immeubles: L('immeubles').filter((x) => keepImm.has(x.id)), locataires: L('locataires').filter((x) => keepLoc.has(x.id)), intervenants: L('intervenants').filter((x) => keepW.has(x.id)), hotes: L('hotes').filter((x) => x.vrai) };
+  keep.total = keep.immeubles.length + keep.locataires.length + keep.intervenants.length + keep.hotes.length;
+  return { del, keep };
+}
+// ⭐ « Vrai — à conserver » : posé à la main sur les vraies fiches ; « 🧹 Supprimer les données de test » ne touche jamais
+// à une fiche ⭐ ni à ce qui en dépend (son logement, son immeuble, ses paiements, documents, travaux).
+// Chaque personne (locataire, ouvrier, client) se marque une à une : un faux locataire dans un vrai immeuble part.
+const vraiBtn = (c, r) => (r && r.id ? html`<button type="button" class="vrai ${r.vrai ? 'on' : ''}" data-action="vrai-tog" data-c="${c}" data-id="${r.id}" title="⭐ Vrai — à conserver">${r.vrai ? '⭐ Vrai' : '☆ Test ?'}</button>` : '');
 const annLog = () => (vault.get('reglages', 'annLog') || {}).list || [];
 // 🎧 Centralino : tous les messages reçus, par catégorie, avec un lien direct vers la conversation
 function centralinoHtml() {
@@ -5662,6 +5691,7 @@ dashboard() {
         <button class="row" data-action="lock">${icon('lock')}<span class="grow title">Verrouiller maintenant</span></button>
         ${vault.op ? '' : html`<button class="row" data-action="arch-start">${icon('archive')}<span class="grow"><span class="title" style="display:block">🗄️ Archiver</span><span class="meta">Ranger les interventions, devis et activité terminés ou de test : gardés, plus affichés (vous choisissez quoi et jusqu’à quelle date)</span></span></button>`}
         ${((vault.get('reglages', 'archives') || {}).list || []).length ? html`<button class="row" data-action="arch-toggle">${icon('eye')}<span class="grow"><span class="title" style="display:block">${showArch ? '🙈 Cacher les archives' : '👁 Voir les archives'}</span><span class="meta">${(() => { const l = vault.get('reglages', 'archives').list, a = l[l.length - 1]; return `${l.length} archivage${l.length > 1 ? 's' : ''} · dernier : ${fmtDateTime(a.at)} · ${a.by || ''}`; })()}${showArch ? ' · affichées en ce moment' : ''}</span></span></button>` : ''}
+        ${vault.op ? '' : html`<button class="row" data-action="test-clean">${icon('trash')}<span class="grow"><span class="title" style="display:block">🧹 Supprimer les données de test</span><span class="meta">Garde tout ce qui est marqué ⭐ « Vrai » (et ce qui en dépend) ; sauvegarde chiffrée automatique avant</span></span></button>`}
         <button class="row" data-action="wipe-all">${icon('trash')}<span class="grow"><span class="title red" style="display:block">Effacer toutes les données</span><span class="meta">Immeubles, locataires, paiements, documents — sur tous les appareils</span></span></button>
         <button class="row" data-action="forget">${icon('trash')}<span class="grow"><span class="title red" style="display:block">Oublier cet appareil</span><span class="meta">Efface la copie chiffrée locale (les données restent sur le serveur)</span></span></button>
       </div>
@@ -5948,6 +5978,20 @@ function relanceText(l, lang) {
 }
 
 const SHEETS = {
+  'test-clean'() {
+    const p = testPlan(), lab = { immeubles: '🏢 Immeubles', logements: '🚪 Logements', locataires: '👤 Locataires', intervenants: '👷 Ouvriers', hotes: '🛎️ Clients hôtel / Airbnb', paiements: '💶 Paiements', documents: '📎 Documents', taches: '🔧 Travaux', collectes: '🗑️ Collectes', depenses: '🧾 Dépenses' };
+    const nm = (c, r) => (c === 'locataires' ? fullName(r) : c === 'intervenants' ? intervFull(r) : c === 'immeubles' ? r.adresse : c === 'logements' ? logName(r.id) : c === 'hotes' ? [r.prenom, r.nom].filter(Boolean).join(' ') + (r.chambre ? ' — ' + r.chambre : '') : r.id);
+    return {
+      title: '🧹 Supprimer les données de test', narrow: true,
+      body: html`<div class="warn-box"><b class="warn-t">⚠️ ATTENTION</b><p>Tout ce qui n’est pas marqué ⭐ « Vrai » (et n’est pas lié à une fiche ⭐) sera effacé. Avant, une sauvegarde chiffrée est téléchargée automatiquement.</p><p>Pour protéger une fiche : ouvrez-la et touchez « ☆ Test ? » à côté du nom → « ⭐ Vrai ».</p></div>
+        <div class="section-label">⭐ Gardé (${p.keep.total})</div>
+        ${p.keep.total ? html`<div class="list small">${['immeubles', 'locataires', 'intervenants', 'hotes'].flatMap((c) => p.keep[c].map((r) => html`<div class="row"><span class="grow">⭐ ${nm(c, r)}</span><span class="muted tiny">${lab[c]}</span></div>`))}</div>` : html`<p class="small" style="color:#b91c1c"><b>Aucune fiche ⭐ :</b> tout serait effacé. Marquez d’abord vos vraies fiches.</p>`}
+        <div class="section-label">🧹 À effacer (${p.del.total})</div>
+        <div class="list small">${Object.entries(lab).filter(([c]) => p.del[c].length).map(([c, l]) => html`<div class="row"><span class="grow">${l}</span><b>${p.del[c].length}</b></div>`)}</div>
+        ${['locataires', 'intervenants', 'immeubles', 'hotes'].some((c) => p.del[c].length) ? html`<details class="bub-old" style="margin-top:8px"><summary>voir les noms</summary>${['immeubles', 'locataires', 'intervenants', 'hotes'].flatMap((c) => p.del[c].map((r) => html`<div class="tiny">${lab[c]} — ${nm(c, r)}</div>`))}</details>` : ''}`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn danger solid" data-action="test-clean-do" ${p.del.total && p.keep.total ? '' : new Raw('disabled')}>🧹 Sauvegarder puis supprimer</button>`,
+    };
+  },
   'ann-new'({ preset }) {
     const imms = vault.list('immeubles').filter((im) => !immGone(im) && Object.keys(im.chats || {}).length).sort(byAddr);
     const ws = vault.list('intervenants').filter((w) => w.espace && w.espace.on && !w.archive), grp = eqGroup();
@@ -6574,7 +6618,7 @@ const SHEETS = {
           <button class="btn icon sm ghost" data-action="del-absence" data-id="${id}" data-aid="${a.id}" aria-label="Supprimer">${icon('trash')}</button></div>`)}</div>` : html`<p class="small muted">Aucune absence enregistrée.</p>`}`;
     }
     return {
-      title: intervFull(i),
+      title: html`${intervFull(i)} ${vraiBtn('intervenants', i)}`,
       body: html`<p class="small muted" style="margin:0 0 10px">${METIERS[i.metier] || ''} · ${INT_GENRES[i.genre || 'interne']}${i.espace && i.espace.on ? ' · 📱 app active' : ''}</p>${tabsBar([['fiche', 'Fiche'], ['heures', 'Horaires'], ['abs', `Absences${cur ? ' 🔴' : ''}`], ['act', `Activité${i.feedNew ? ' (' + i.feedNew + ')' : ''}`], ['chat', `💬 Chat${i.chatNew ? ' (' + i.chatNew + ')' : ''}`], ['app', '📱 App']], tab)}${body}`,
       foot: html`${tel ? html`<a class="btn" href="tel:${tel}">${icon('phone')} Appeler</a>` : ''}<button class="btn primary" data-action="edit-interv" data-id="${id}">Modifier</button>`,
     };
@@ -6799,7 +6843,7 @@ const SHEETS = {
     const bnb = h.lieu === 'airbnb', ch = chGet(h.lieu, h.chambre), menu = vault.get('reglages', menuKey(h.lieu));
     setTimeout(() => hydrateBiens(sheetEl), 0);
     return {
-      title: id ? (bnb ? 'Client — ' : 'Client — chambre ') + h.chambre : 'Nouveau client',
+      title: id ? html`${(bnb ? 'Client — ' : 'Client — chambre ') + h.chambre} ${vraiBtn('hotes', h)}` : 'Nouveau client',
       narrow: true,
       body: html`<form id="f" data-form="hote" class="fields">
         <input type="hidden" name="id" value="${id || ''}"><input type="hidden" name="lieu" value="${bnb ? 'airbnb' : 'hotel'}">
@@ -7368,7 +7412,7 @@ const SHEETS = {
         })}</div>` : ''}`;
     }
     return {
-      title: im.adresse,
+      title: html`${im.adresse} ${vraiBtn('immeubles', im)}`,
       body: html`${immGone(im) ? html`<div class="alert info" style="margin-bottom:12px">${icon('history')}<div><b>Plus en gestion</b> depuis le ${fmtDate(im.finGestion)}${im.finNote ? ' — ' + im.finNote : ''}. Tout l'historique reste consultable et compte dans les statistiques.</div></div>` : ''}${tabsBar([['logs', 'Logements'], ['chat', `💬 Messages${(ui.chatNew || {})[id] ? ' (' + ui.chatNew[id] + ')' : ''}`], ['proprio', 'Bailleur'], ['deps', 'Dépenses'], ['bilan', 'Bilan']], tab)}${body}`,
       foot: html`${immGone(im) ? html`<button class="btn" data-action="reopen-imm" data-id="${id}">${icon('sync')} Réactiver</button>` : html`<button class="btn" data-action="end-imm" data-id="${id}">${icon('history')} Fin de gestion</button>`}<button class="btn icon" data-action="print-imm" data-id="${id}" aria-label="Imprimer">${icon('download')}</button><button class="btn" data-action="edit-imm" data-id="${id}">${icon('edit')} Modifier</button>`,
     };
@@ -7756,7 +7800,7 @@ const SHEETS = {
       body = hist.length ? html`<div class="list">${hist.map((h) => html`<div class="row"><span class="grow"><span class="title" style="display:block;white-space:normal">${h.action}</span><span class="meta" style="white-space:normal">${h.detail}</span>${h.by ? html`<span class="meta" style="display:block">👤 ${h.by}</span>` : ''}</span><span class="tiny muted">${fmtDateTime(h.t)}</span></div>`)}</div>` : html`<p class="muted small">Aucun historique.</p>`;
     }
     return {
-      title: fullName(l),
+      title: html`${fullName(l)} ${vraiBtn('locataires', l)}`,
       body: html`${tabsBar([['infos', 'Infos'], ['pay', 'Loyers'], ['docs', 'Docs'], ['espace', l.espace && l.espace.on ? 'Espace ✓' : 'Espace'], ['notes', 'Notes'], ['hist', 'Journal']], tab)}${body}`,
       foot: tab === 'infos' ? html`<button class="btn ghost danger" data-action="del-loc" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>
         ${!gone ? html`<button class="btn" data-action="replace" data-id="${id}">${icon('sync')} Départ</button>` : ''}
@@ -9119,6 +9163,32 @@ const ACTIONS = {
     if (sel) { sel.value = d.loc; const ta = sel.closest('form').querySelector('textarea'); if (ta) ta.focus(); }
   },
   'open-pchat': (d) => openSheet('pchat', d.id),
+  async 'vrai-tog'(d, el) {
+    const r = vault.get(d.c, d.id);
+    if (!r) return;
+    const on = !r.vrai;
+    await vault.mutate((tx) => tx.put(d.c, { id: r.id, vrai: on }), on ? '⭐ Marqué « vrai — à conserver »' : '☆ Plus marqué « vrai »', d.c + ' ' + r.id, r.id);
+    if (el) { el.classList.toggle('on', on); el.textContent = on ? '⭐ Vrai' : '☆ Test ?'; }
+    toast(on ? '⭐ Gardé pour toujours : « Supprimer les données de test » n’y touchera pas' : '☆ Plus protégé');
+  },
+  'test-clean': () => openSheet('test-clean'),
+  async 'test-clean-do'() {
+    const plan = testPlan();
+    if (!plan.del.total) return toast('Rien à supprimer');
+    // 1) sauvegarde chiffrée automatique d'abord (au cas où)
+    const backup = await vault.exportEncrypted();
+    download(`ares_sauvegarde_avant_nettoyage_${today()}.ares`, JSON.stringify(backup), 'application/octet-stream');
+    const k = await promptKey('🧹 Supprimer les données de test', `${plan.del.total} fiches de test seront effacées. ${plan.keep.total} fiches ⭐ (et tout ce qui en dépend) restent. Une sauvegarde chiffrée vient d’être téléchargée. Saisissez votre clé d’accès pour confirmer.`, ['Seules les fiches ⭐ « Vrai » et ce qui leur est lié restent. Vérifiez la liste avant de confirmer : cette suppression ne se défait qu’en réimportant la sauvegarde.']);
+    if (!k) return;
+    if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
+    const espaces = [...plan.del.locataires, ...plan.del.intervenants, ...plan.del.hotes].map((r) => r.espace && r.espace.id).filter(Boolean);
+    await vault.mutate((tx) => { for (const [c, rows] of Object.entries(plan.del)) if (Array.isArray(rows)) for (const r of rows) tx.remove(c, r.id); }, '🧹 Données de test supprimées', Object.entries(plan.del).filter(([, v]) => Array.isArray(v) && v.length).map(([c, v]) => `${c} ${v.length}`).join(' · '));
+    for (const d of plan.del.documents) await vault.deleteFile(d.id).catch(() => {});
+    for (const e of espaces) await vault.espaceDel(e).catch(() => {});
+    closeSheet();
+    toast(`🧹 ${plan.del.total} fiches de test supprimées · ${plan.keep.total} ⭐ gardées`);
+    go('dashboard', true);
+  },
   'ann-new': () => { if (!TENANT) netLoad(); openSheet('ann-new'); },
   'ann-log': () => openSheet('ann-log'),
   'ann-fwd': (d) => { const r = vault.get('reglages', d.id); if (!r) return; if (!r.vu) vault.mutate((tx) => tx.put('reglages', { id: r.id, vu: true }), '📣 Annonce lue', ''); openSheet('ann-new', null, null, r.x); },
@@ -10358,7 +10428,7 @@ async function importFile(file) {
 
 // ───────────────────────── Délégation d'événements ─────────────────────────
 // réservé au responsable (clé principale) ; le comptable n'affecte pas les travaux
-const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del']);
+const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del', 'test-clean', 'test-clean-do']);
 const DEL_ACTION = /^del-|-del$|wipe/; // toute suppression
 const NO_COMPTA = new Set(['eq-swap', 'eq-swap-do', 'interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job', 'op-del', 'op-new']);
 document.addEventListener('click', (e) => {

@@ -17215,4 +17215,76 @@ export default [
 "{0} → {1} · pas encore de message",
 "{0} → {1} · no messages yet"
 ],
+[
+"⭐ Vrai",
+"⭐ Real"
+],
+[
+"☆ Test ?",
+"☆ Test?"
+],
+[
+"⭐ Vrai — à conserver",
+"⭐ Real — keep"
+],
+[
+"⭐ Gardé pour toujours : « Supprimer les données de test » n’y touchera pas",
+"⭐ Kept forever: “Delete test data” won’t touch it"
+],
+[
+"☆ Plus protégé",
+"☆ No longer protected"
+],
+[
+"🧹 Supprimer les données de test",
+"🧹 Delete test data"
+],
+[
+"Garde tout ce qui est marqué ⭐ « Vrai » (et ce qui en dépend) ; sauvegarde chiffrée automatique avant",
+"Keeps everything marked ⭐ “Real” (and what depends on it); automatic encrypted backup first"
+],
+[
+"Tout ce qui n’est pas marqué ⭐ « Vrai » (et n’est pas lié à une fiche ⭐) sera effacé. Avant, une sauvegarde chiffrée est téléchargée automatiquement.",
+"Everything not marked ⭐ “Real” (and not linked to a ⭐ record) will be deleted. An encrypted backup is downloaded automatically first."
+],
+[
+"Pour protéger une fiche : ouvrez-la et touchez « ☆ Test ? » à côté du nom → « ⭐ Vrai ».",
+"To protect a record: open it and tap “☆ Test?” next to the name → “⭐ Real”."
+],
+[
+"⭐ Gardé ({0})",
+"⭐ Kept ({0})"
+],
+[
+"🧹 À effacer ({0})",
+"🧹 To delete ({0})"
+],
+[
+"Aucune fiche ⭐ :",
+"No ⭐ record:"
+],
+[
+"tout serait effacé. Marquez d’abord vos vraies fiches.",
+"everything would be deleted. Mark your real records first."
+],
+[
+"voir les noms",
+"see the names"
+],
+[
+"🧹 Sauvegarder puis supprimer",
+"🧹 Back up, then delete"
+],
+[
+"Rien à supprimer",
+"Nothing to delete"
+],
+[
+"Seules les fiches ⭐ « Vrai » et ce qui leur est lié restent. Vérifiez la liste avant de confirmer : cette suppression ne se défait qu’en réimportant la sauvegarde.",
+"Only ⭐ “Real” records and what is linked to them remain. Check the list before confirming: it can only be undone by re-importing the backup."
+],
+[
+"🛎️ Clients hôtel / Airbnb",
+"🛎️ Hotel / Airbnb guests"
+],
 ];

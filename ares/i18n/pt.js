@@ -17394,4 +17394,76 @@ export default [
 "{0} → {1} · pas encore de message",
 "{0} → {1} · ainda sem mensagens"
 ],
+[
+"⭐ Vrai",
+"⭐ Verdadeiro"
+],
+[
+"☆ Test ?",
+"☆ Teste?"
+],
+[
+"⭐ Vrai — à conserver",
+"⭐ Verdadeiro — a conservar"
+],
+[
+"⭐ Gardé pour toujours : « Supprimer les données de test » n’y touchera pas",
+"⭐ Guardado para sempre: «Apagar os dados de teste» não lhe toca"
+],
+[
+"☆ Plus protégé",
+"☆ Já não protegido"
+],
+[
+"🧹 Supprimer les données de test",
+"🧹 Apagar os dados de teste"
+],
+[
+"Garde tout ce qui est marqué ⭐ « Vrai » (et ce qui en dépend) ; sauvegarde chiffrée automatique avant",
+"Mantém tudo o que está marcado ⭐ «Verdadeiro» (e o que dele depende); cópia cifrada automática antes"
+],
+[
+"Tout ce qui n’est pas marqué ⭐ « Vrai » (et n’est pas lié à une fiche ⭐) sera effacé. Avant, une sauvegarde chiffrée est téléchargée automatiquement.",
+"Tudo o que não está marcado ⭐ «Verdadeiro» (e não está ligado a uma ficha ⭐) será apagado. Antes, é descarregada automaticamente uma cópia cifrada."
+],
+[
+"Pour protéger une fiche : ouvrez-la et touchez « ☆ Test ? » à côté du nom → « ⭐ Vrai ».",
+"Para proteger uma ficha: abra-a e toque em «☆ Teste?» ao lado do nome → «⭐ Verdadeiro»."
+],
+[
+"⭐ Gardé ({0})",
+"⭐ Guardado ({0})"
+],
+[
+"🧹 À effacer ({0})",
+"🧹 A apagar ({0})"
+],
+[
+"Aucune fiche ⭐ :",
+"Nenhuma ficha ⭐:"
+],
+[
+"tout serait effacé. Marquez d’abord vos vraies fiches.",
+"tudo seria apagado. Marque primeiro as suas fichas verdadeiras."
+],
+[
+"voir les noms",
+"ver os nomes"
+],
+[
+"🧹 Sauvegarder puis supprimer",
+"🧹 Guardar e depois apagar"
+],
+[
+"Rien à supprimer",
+"Nada a apagar"
+],
+[
+"Seules les fiches ⭐ « Vrai » et ce qui leur est lié restent. Vérifiez la liste avant de confirmer : cette suppression ne se défait qu’en réimportant la sauvegarde.",
+"Só ficam as fichas ⭐ «Verdadeiro» e o que lhes está ligado. Verifique a lista antes de confirmar: só se desfaz reimportando a cópia."
+],
+[
+"🛎️ Clients hôtel / Airbnb",
+"🛎️ Hóspedes hotel / Airbnb"
+],
 ];

@@ -17473,4 +17473,76 @@ export default [
 "{0} → {1} · pas encore de message",
 "{0} → {1} · noch keine Nachricht"
 ],
+[
+"⭐ Vrai",
+"⭐ Echt"
+],
+[
+"☆ Test ?",
+"☆ Test?"
+],
+[
+"⭐ Vrai — à conserver",
+"⭐ Echt — aufbewahren"
+],
+[
+"⭐ Gardé pour toujours : « Supprimer les données de test » n’y touchera pas",
+"⭐ Für immer behalten: „Testdaten löschen“ rührt es nicht an"
+],
+[
+"☆ Plus protégé",
+"☆ Nicht mehr geschützt"
+],
+[
+"🧹 Supprimer les données de test",
+"🧹 Testdaten löschen"
+],
+[
+"Garde tout ce qui est marqué ⭐ « Vrai » (et ce qui en dépend) ; sauvegarde chiffrée automatique avant",
+"Behält alles mit ⭐ „Echt“ (und was dazugehört); verschlüsselte Sicherung vorher automatisch"
+],
+[
+"Tout ce qui n’est pas marqué ⭐ « Vrai » (et n’est pas lié à une fiche ⭐) sera effacé. Avant, une sauvegarde chiffrée est téléchargée automatiquement.",
+"Alles, was nicht mit ⭐ „Echt“ markiert (und mit keiner ⭐-Karte verbunden) ist, wird gelöscht. Vorher wird automatisch eine verschlüsselte Sicherung heruntergeladen."
+],
+[
+"Pour protéger une fiche : ouvrez-la et touchez « ☆ Test ? » à côté du nom → « ⭐ Vrai ».",
+"Um eine Karte zu schützen: öffnen und neben dem Namen „☆ Test?“ antippen → „⭐ Echt“."
+],
+[
+"⭐ Gardé ({0})",
+"⭐ Behalten ({0})"
+],
+[
+"🧹 À effacer ({0})",
+"🧹 Zu löschen ({0})"
+],
+[
+"Aucune fiche ⭐ :",
+"Keine ⭐-Karte:"
+],
+[
+"tout serait effacé. Marquez d’abord vos vraies fiches.",
+"alles würde gelöscht. Markieren Sie zuerst Ihre echten Karten."
+],
+[
+"voir les noms",
+"Namen ansehen"
+],
+[
+"🧹 Sauvegarder puis supprimer",
+"🧹 Sichern, dann löschen"
+],
+[
+"Rien à supprimer",
+"Nichts zu löschen"
+],
+[
+"Seules les fiches ⭐ « Vrai » et ce qui leur est lié restent. Vérifiez la liste avant de confirmer : cette suppression ne se défait qu’en réimportant la sauvegarde.",
+"Nur ⭐-„Echt“-Karten und was dazugehört bleiben. Prüfen Sie die Liste vor dem Bestätigen: Rückgängig nur durch Reimport der Sicherung."
+],
+[
+"🛎️ Clients hôtel / Airbnb",
+"🛎️ Gäste Hotel / Airbnb"
+],
 ];
