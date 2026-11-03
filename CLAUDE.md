@@ -12,6 +12,7 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 - **I dati veri non si perdono**: ogni modifica aggiunge, non cancella. Prima di operazioni rischiose: Sauvegarde chiffrée.
 - Nessun identificativo di modello nei commit o nelle PR.
 - Il manuale si chiama «**ALJADY R. INTERVENTIONS — Manuale dell'applicazione INTERVENTI**», con il logo e senza nomi di società.
+- **Il manuale va aggiornato ad ogni novità** (6 lingue, `guides/manuel`), nello stesso giro di lavoro: serve da memoria al titolare e all'assistente. Il PDF vecchio si toglie, resta nella storia git.
 - Oggi l'app gira per un primo cliente di prova; in futuro passerà ad **ALJADY R. INTERVENTIONS** (altro GitHub/server). Il trasloco **non** va preparato finché non lo chiede.
 
 ## Worker Cloudflare
@@ -44,6 +45,12 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 - Ovunque: ✓ / ✓✓ / ✓✓ blu, ⋯ modifica/elimina 15 min (la centrale elimina sempre), 🌐 traduzione.
 - ✋ mano rossa = messaggio solo per la centrale (inquilini). La centrale vede il testo di prima dei messaggi modificati.
 - 🎧 **Centralino** in Accueil: tutte le categorie, richiudibili (scelta ricordata), 📣 Annunci con storico.
+
+## Clienti della rete: gratis o abbonamento
+- 🆓 Portale gérance gratis: richieste scritte a mano; riga 💎 di invito (solo se le offerte sono attive).
+- 💎 Abbonamento / 🎁 6 mesi offerti / prova 15 giorni (sempre completa): centrale del cliente con i suoi inquilini;
+  «↪️ Envoyer à LuxInterventions» con foto, contatto, entrata del palazzo e 🔑 accesso autorizzato (scritto su intervento e fattura);
+  lo stato torna al cliente e al suo inquilino. Avviso 30 giorni prima della fine.
 
 ## Dati veri e dati di prova
 - ⭐ «Vrai — à conserver» accanto al nome (inquilini, operai, immobili, ospiti).
