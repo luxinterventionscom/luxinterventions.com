@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.218.8';
+const VERSION = '2.218.9';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5284,7 +5284,7 @@ dashboard() {
     return html`${pageHead('🛠️ Demandes d’intervention', 'Envoyées à LuxInterventions, qui envoie ses intervenants')}${fRows}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="tdem-new">${icon('plus')} Demande</button></div></div>
       ${list.length ? html`<div class="list">${list.map((d) => html`<div class="row" style="display:block"><b>${TDEM_URG[d.urgence] || ''} · ${d.titre}</b>
-        <div class="small" style="white-space:pre-wrap">${d.texte}</div><div class="tiny muted">${d.adresse ? '📍 ' + d.adresse + ' · ' : ''}Envoyée le ${fmtDateTime(d.t)}</div></div>`)}</div>`
+        <div class="small" style="white-space:pre-wrap">${d.texte}</div><div class="tiny muted" style="display:flex;align-items:center;gap:8px"><span class="grow">${d.adresse ? '📍 ' + d.adresse + ' · ' : ''}Envoyée le ${fmtDateTime(d.t)}</span><button class="btn icon sm ghost danger" data-action="tdem-del" data-id="${d.id}" aria-label="Supprimer">${icon('trash')}</button></div></div>`)}</div>`
         : html`<div class="card" style="max-width:560px"><p style="margin-top:0">Une fuite, une panne, des travaux ? ＋ Demande : LuxInterventions la reçoit tout de suite (chiffrée), la planifie et envoie un intervenant.</p></div>`}`;
   },
   reseau() {
@@ -7050,7 +7050,7 @@ const SHEETS = {
               ${f.docId ? html`<button class="btn sm" data-action="open-doc" data-id="${f.docId}">⬇️ PDF</button>` : ''}${f.paid || isCompta() ? '' : html`<button class="btn sm primary" data-action="nfact-paid" data-id="${f.no}">✅ Reçu</button>`}</div>`; })}</div>` : html`<p class="tiny muted">Aucune facture.</p>`}`;
         })()}
         <div class="section-label" style="margin-top:14px">Accès</div>
-        <div class="actions" style="flex-wrap:wrap;margin:0">${!t.configured ? html`<button class="btn sm" data-action="net-code" data-id="${id}">🔁 Nouveau code d’invitation</button>` : ''}<button class="btn sm" data-action="net-reset" data-id="${id}">🗝️ Nouvel accès (clé perdue)</button>${vault.op ? '' : html`<button class="btn sm ghost danger" data-action="net-del" data-id="${id}">🗑 Supprimer avec certificat</button>`}</div>
+        <div class="actions" style="flex-wrap:wrap;margin:0">${!t.configured ? html`<button class="btn sm" data-action="net-code" data-id="${id}">🔁 Nouveau code d’invitation</button>` : ''}<button class="btn sm ghost danger" data-action="net-reset" data-id="${id}" style="flex-basis:100%;justify-content:flex-start">🗑️ Vider la centrale (clé perdue)</button>${vault.op ? '' : html`<button class="btn sm ghost danger" data-action="net-del" data-id="${id}">🗑 Supprimer avec certificat</button>`}</div>
         <p class="tiny muted" style="margin:6px 0 0">Nouvel accès : la centrale du client est vidée (sans sa clé personne ne peut lire ses données) et un nouveau code est créé. S’il a sa clé de secours, il rentre seul sans rien perdre.</p>`}`,
       foot: html`<button class="btn" data-action="close-sheet">Fermer</button>${isCompta() ? '' : html`<button class="btn primary" type="submit" form="f">Enregistrer</button>`}`,
     };
@@ -8806,6 +8806,11 @@ const ACTIONS = {
   'new-txco': () => openOver('txco-form'),
   'new-annc': () => openOver('annc-form'),
   'tdem-new': () => openOver('tdem-form'),
+  async 'tdem-del'(d) {
+    const r = vault.get('reglages', d.id);
+    if (!r || !(await confirmBox('Supprimer cette demande de votre liste ?', { ok: 'Supprimer', danger: true, detail: (r.titre || '') + ' — si LuxInterventions l’a déjà reçue, appelez-nous pour l’annuler.' }))) return;
+    await vault.mutate((tx) => tx.remove('reglages', d.id), '🗑️ Demande supprimée de la liste', r.titre || '');
+  },
   'net-new': () => openOver('net-new'),
   'lic-tab': (d) => { ui.licTab = d.id; renderView(); },
   'lic-tarifs': () => openOver('lic-tarifs'),
@@ -8892,9 +8897,10 @@ const ACTIONS = {
   async 'net-reset'(d) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
     if (!t) return;
-    const v = await promptText('Nouvel accès pour « ' + t.nom + ' » ?', 'Sa centrale sera VIDÉE (sans sa clé, personne ne peut lire ses données) et un nouveau code d’invitation sera créé. Si le client a sa clé de secours, qu’il l’utilise plutôt. Tapez le nom pour confirmer.', t.nom);
+    const v = await promptText('🗑️ Vider la centrale de « ' + t.nom + ' » ?', 'TOUT sera EFFACÉ : immeubles, locataires, paiements, documents, demandes. Impossible de revenir en arrière. Seulement si le client a perdu sa clé ET n’a pas de clé de secours. Pour un simple nouveau code, ce n’est PAS ce bouton. Tapez le nom pour confirmer.', t.nom);
     if (v == null) return;
     if (v.trim() !== t.nom) return toast('Nom différent : rien n’a été fait', { bad: true });
+    if (!(await confirmBox('Dernière confirmation : tout effacer ?', { ok: '🗑️ Tout effacer', danger: true, detail: 'La centrale de « ' + t.nom + ' » sera vide. Irréversible.' }))) return;
     try { const r = await netApi('tenants/' + t.id + '/reset', 'POST'); await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + t.id, ...netInfo(t.id), code: r.code }), '🌐 Nouvel accès (centrale vidée)', t.nom); await licLogAdd(t, 'Nouvel accès (clé perdue)', 'centrale vidée, échéance inchangée'); toast('Nouvel accès : envoyez le nouveau code'); } catch (e) { return toast(e.message, { bad: true }); }
     netLoad(true);
   },
@@ -10564,7 +10570,7 @@ async function importFile(file) {
 
 // ───────────────────────── Délégation d'événements ─────────────────────────
 // réservé au responsable (clé principale) ; le comptable n'affecte pas les travaux
-const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del', 'test-clean', 'test-clean-do']);
+const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del', 'net-reset', 'test-clean', 'test-clean-do']);
 const DEL_ACTION = /^del-|-del$|wipe/; // toute suppression
 const NO_COMPTA = new Set(['eq-swap', 'eq-swap-do', 'interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job', 'op-del', 'op-new']);
 document.addEventListener('click', (e) => {

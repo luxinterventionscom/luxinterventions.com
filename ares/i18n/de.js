@@ -17785,4 +17785,40 @@ export default [
 "🖼️ Mettez votre logo : vos locataires le voient dans leur app",
 "🖼️ Laden Sie Ihr Logo hoch: Ihre Mieter sehen es in ihrer App"
 ],
+[
+"🗑️ Vider la centrale (clé perdue)",
+"🗑️ Zentrale leeren (Schlüssel verloren)"
+],
+[
+"🗑️ Vider la centrale de « {0} » ?",
+"🗑️ Zentrale von „{0}“ leeren?"
+],
+[
+"TOUT sera EFFACÉ : immeubles, locataires, paiements, documents, demandes. Impossible de revenir en arrière. Seulement si le client a perdu sa clé ET n’a pas de clé de secours. Pour un simple nouveau code, ce n’est PAS ce bouton. Tapez le nom pour confirmer.",
+"ALLES wird GELÖSCHT: Gebäude, Mieter, Zahlungen, Dokumente, Anfragen. Kein Zurück. Nur wenn der Kunde seinen Schlüssel verloren hat UND keinen Notfallschlüssel hat. Für einen neuen Code ist es NICHT diese Schaltfläche. Namen eingeben zur Bestätigung."
+],
+[
+"Dernière confirmation : tout effacer ?",
+"Letzte Bestätigung: alles löschen?"
+],
+[
+"🗑️ Tout effacer",
+"🗑️ Alles löschen"
+],
+[
+"La centrale de « {0} » sera vide. Irréversible.",
+"Die Zentrale von „{0}“ wird leer sein. Unwiderruflich."
+],
+[
+"Supprimer cette demande de votre liste ?",
+"Diese Anfrage aus Ihrer Liste löschen?"
+],
+[
+"{0} — si LuxInterventions l’a déjà reçue, appelez-nous pour l’annuler.",
+"{0} — falls LuxInterventions sie schon erhalten hat, rufen Sie uns zum Stornieren an."
+],
+[
+"— si LuxInterventions l’a déjà reçue, appelez-nous pour l’annuler.",
+"— falls LuxInterventions sie schon erhalten hat, rufen Sie uns zum Stornieren an."
+],
 ];
