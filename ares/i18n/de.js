@@ -17757,4 +17757,8 @@ export default [
 "Indiquez dans quel appartement se trouve la chambre (ou choisissez « Entier »)",
 "Geben Sie an, in welcher Wohnung das Zimmer liegt (oder wählen Sie „Ganz“)"
 ],
+[
+"🔗 Copier le lien",
+"🔗 Link kopieren"
+],
 ];

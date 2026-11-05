@@ -17678,4 +17678,8 @@ export default [
 "Indiquez dans quel appartement se trouve la chambre (ou choisissez « Entier »)",
 "Indique em que apartamento fica o quarto (ou escolha «Inteiro»)"
 ],
+[
+"🔗 Copier le lien",
+"🔗 Copiar o link"
+],
 ];

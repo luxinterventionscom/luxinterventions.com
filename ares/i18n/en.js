@@ -17499,4 +17499,8 @@ export default [
 "Indiquez dans quel appartement se trouve la chambre (ou choisissez « Entier »)",
 "Say which apartment the room is in (or choose “Whole”)"
 ],
+[
+"🔗 Copier le lien",
+"🔗 Copy link"
+],
 ];

@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.218.2';
+const VERSION = '2.218.3';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -7860,14 +7860,13 @@ const SHEETS = {
         body = html`<p style="margin-top:0">Espace actif. Donnez à <b>${fullName(l)}</b> son <b>code d'accès</b> (pour l'app installée depuis luxinterventions.com) ou envoyez-lui le lien direct.</p>
           <div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d'accès personnel</div>
             <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
-            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">${e.code ? html`<button class="btn sm" data-action="code-copy" data-code="${e.code}">📋 Copier le code</button>` : ''}<button class="btn sm" data-action="esp-code" data-id="${id}">${e.code ? 'Nouveau code' : 'Créer le code'}</button></div></div>
+            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn sm" data-action="esp-copy" data-id="${id}">🔗 Copier le lien</button>${e.code ? html`<button class="btn sm" data-action="code-copy" data-code="${e.code}">📋 Copier le code</button>` : ''}<button class="btn sm ${e.code ? 'danger' : ''}" data-action="esp-code" data-id="${id}">${e.code ? 'Nouveau code' : 'Créer le code'}</button></div></div>
           <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(url, 5)}</div>
           <label class="field" style="margin:0 0 4px">Langue par défaut de son espace<select data-input="esp-lang" data-loc="${id}">${[['', 'Celle de son téléphone'], ['fr', 'Français'], ['it', 'Italiano'], ['de', 'Deutsch'], ['pt', 'Português'], ['en', 'English'], ['es', 'Español']].map(([k, v2]) => html`<option value="${k}" ${(e.lang || '') === k ? new Raw('selected') : ''}>${v2}</option>`)}</select></label>
           <p class="tiny muted" style="margin:0 0 10px">Le message d’invitation part dans cette langue (en français si « Celle de son téléphone »).</p>
           <div class="actions" style="flex-direction:column">
             ${tel ? html`<a class="btn" href="https://wa.me/${tel.replace(/^\+/, '')}?text=${msg}" target="_blank" rel="noopener">${icon('msg')} Envoyer par WhatsApp</a><a class="btn" href="sms:${tel}?&body=${msg}">${icon('msg')} Envoyer par SMS</a>` : ''}
             ${l.mail ? html`<a class="btn" href="mailto:${l.mail}?subject=${encodeURIComponent(inv.subj)}&body=${msg}">${icon('mail')} Envoyer par email</a>` : ''}
-            <button class="btn" data-action="esp-copy" data-id="${id}">${icon('file')} Copier le lien</button>
             <a class="btn" href="${url}" target="_blank" rel="noopener">${icon('eye')} Voir son espace</a>
           </div>
           <div class="section-label">Ce qu'il voit</div>${boxes}${mtPreview(l)}
