@@ -17689,4 +17689,32 @@ export default [
 "hauteur max {0} m",
 "max. Höhe {0} m"
 ],
+[
+"Colocation : appartement dont cette chambre fait partie",
+"WG: Wohnung, zu der dieses Zimmer gehört"
+],
+[
+"Laisser vide si le logement est loué entier",
+"Leer lassen, wenn die Wohnung als Ganzes vermietet ist"
+],
+[
+"Loué entier",
+"Ganz vermietet"
+],
+[
+"(famille, couple, une personne) :",
+"(Familie, Paar, eine Person):"
+],
+[
+"laisser vide",
+"leer lassen"
+],
+[
+"Chambre louée à part",
+"Einzeln vermietetes Zimmer"
+],
+[
+"dans un appartement partagé : écrire le nom de l’appartement (ex. « Appartement 2e étage »), le même pour toutes ses chambres — pas le nom du locataire. Plus simple : le bouton ＋ Colocation.",
+"in einer geteilten Wohnung: den Namen der Wohnung schreiben (z. B. „Wohnung 2. Stock“), für alle ihre Zimmer gleich — nicht den Namen des Mieters. Einfacher: die Schaltfläche ＋ Colocation."
+],
 ];

@@ -17702,4 +17702,32 @@ export default [
 "hauteur max {0} m",
 "altezza max {0} m"
 ],
+[
+"Colocation : appartement dont cette chambre fait partie",
+"Colocation: appartamento di cui fa parte questa camera"
+],
+[
+"Laisser vide si le logement est loué entier",
+"Lasciare vuoto se l’alloggio è affittato intero"
+],
+[
+"Loué entier",
+"Affittato intero"
+],
+[
+"(famille, couple, une personne) :",
+"(famiglia, coppia, una persona):"
+],
+[
+"laisser vide",
+"lasciare vuoto"
+],
+[
+"Chambre louée à part",
+"Camera affittata a parte"
+],
+[
+"dans un appartement partagé : écrire le nom de l’appartement (ex. « Appartement 2e étage »), le même pour toutes ses chambres — pas le nom du locataire. Plus simple : le bouton ＋ Colocation.",
+"in un appartamento condiviso: scrivere il nome dell’appartamento (es. «Appartamento 2º piano»), lo stesso per tutte le sue camere — non il nome dell’inquilino. Più semplice: il bottone ＋ Colocation."
+],
 ];

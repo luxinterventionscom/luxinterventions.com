@@ -17610,4 +17610,32 @@ export default [
 "hauteur max {0} m",
 "altura máx. {0} m"
 ],
+[
+"Colocation : appartement dont cette chambre fait partie",
+"Partilha de casa: apartamento de que este quarto faz parte"
+],
+[
+"Laisser vide si le logement est loué entier",
+"Deixar vazio se o alojamento é arrendado inteiro"
+],
+[
+"Loué entier",
+"Arrendado inteiro"
+],
+[
+"(famille, couple, une personne) :",
+"(família, casal, uma pessoa):"
+],
+[
+"laisser vide",
+"deixar vazio"
+],
+[
+"Chambre louée à part",
+"Quarto arrendado à parte"
+],
+[
+"dans un appartement partagé : écrire le nom de l’appartement (ex. « Appartement 2e étage »), le même pour toutes ses chambres — pas le nom du locataire. Plus simple : le bouton ＋ Colocation.",
+"num apartamento partilhado: escrever o nome do apartamento (ex. «Apartamento 2.º andar»), o mesmo para todos os seus quartos — não o nome do inquilino. Mais simples: o botão ＋ Colocation."
+],
 ];

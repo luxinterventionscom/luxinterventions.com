@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.218.0';
+const VERSION = '2.218.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -7606,9 +7606,9 @@ const SHEETS = {
         </fieldset>
         ${field('Surface (m²)', 'surface', g.surface, { type: 'number', attrs: 'inputmode="decimal" min="0" step="0.1"' })}
         ${field('Étage', 'etage', g.etage, { placeholder: 'ex. RDC, 1er, sous-sol' })}
-        <label class="field full">Fait partie de l’appartement (colocation)<input name="partie" value="${g.partie || ''}" list="colocList" autocomplete="off" placeholder="ex. Appartement 1er étage — vide si logement indépendant">
+        <label class="field full">Colocation : appartement dont cette chambre fait partie<input name="partie" value="${g.partie || ''}" list="colocList" autocomplete="off" placeholder="Laisser vide si le logement est loué entier">
           <datalist id="colocList">${colocsOf(g.immId).map((c) => html`<option value="${c.nom}">`)}</datalist>
-          <span class="tiny muted">Pour une chambre : l’appartement où elle se trouve. Les habitants des chambres d’un même appartement ont leur chat ensemble.</span></label>
+          <span class="tiny muted"><b>Loué entier</b> (famille, couple, une personne) : <b>laisser vide</b>.<br><b>Chambre louée à part</b> dans un appartement partagé : écrire le nom de l’appartement (ex. « Appartement 2e étage »), le même pour toutes ses chambres — pas le nom du locataire. Plus simple : le bouton ＋ Colocation.</span></label>
         ${field('Loyer indicatif (€)', 'loyer', g.loyer, { type: 'number', attrs: money$ })}
         <label class="field full">Notes<textarea name="note" placeholder="Équipements, compteurs, état…">${g.note || ''}</textarea></label>
       </form>`,
