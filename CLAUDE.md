@@ -33,6 +33,7 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 - Un file nuovo in `ares/` usato da un'app va aggiunto alla `SHELL` del suo service worker.
 
 ## Struttura (in breve)
+- Indirizzi «parlanti» (operai.html, ospiti.html, centrale.html…) → vedi `LIENS.md`: rimandano alla pagina vera.
 - `locataires.html` + `ares/app.js`: la **centrale** (anche le centrali dei clienti della rete, con `?t=<id>`).
 - App: `espace.js` (inquilini), `equipe.js` (operai), `hote.js` (ospiti hotel/Airbnb), `taxi.js` (ditte taxi),
   `annonce.js` (annunciatori HORECA), `portail/` (gérances).
