@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.218.9';
+const VERSION = '2.218.10';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1668,10 +1668,12 @@ const tClaim = (no, v) => { const k = 'aresTClaim:' + TENANT + ':' + no; try { i
 async function tenantBoxSync() {
   if (!TENANT || tboxBusy || !vault.unlocked) return;
   tboxBusy = true;
+  let got = 0;
   try {
     const keys = await ownerKeys();
     if ((vault.get('reglages', 'tboxPub') || {}).pub !== keys.pub) { await vault.call('tenant-key', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pub: keys.pub }) }); if (tenantInfo.state !== 'ro') await vault.mutate((tx) => tx.put('reglages', { id: 'tboxPub', pub: keys.pub }), 'Clé des factures publiée', ''); }
     const items = (await (await vault.call('box')).json()).items || [];
+    got = items.length;
     const ro = tenantInfo.state === 'ro';
     for (const it of items) {
       let m;
@@ -1702,7 +1704,8 @@ async function tenantBoxSync() {
       await vault.call('box/' + it.name, { method: 'DELETE' }).catch(() => {});
     }
   } catch { /* Worker pas encore à jour ou hors ligne */ } finally { tboxBusy = false; }
-  if (['demandes', 'dashboard'].includes(ui.route) || tFacts().length) renderShell();
+  // cadre + page ensemble (redessiner seulement le cadre laissait la page vide : « puff »)
+  if (got && vault.unlocked && (['demandes', 'dashboard'].includes(ui.route) || tFacts().length)) { const y = scrollY; renderShell(); go(ui.route, true); scrollTo(0, y); }
 }
 async function tenantSend(obj) {
   const k = await (await vault.call('network-key')).json();
