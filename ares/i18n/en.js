@@ -17503,4 +17503,24 @@ export default [
 "🔗 Copier le lien",
 "🔗 Copy link"
 ],
+[
+"Aucune facture pour le moment",
+"No invoices yet"
+],
+[
+"{0} factures de LuxInterventions · {1} à payer",
+"{0} invoices from LuxInterventions · {1} to pay"
+],
+[
+"{0} facture de LuxInterventions · {1} à payer",
+"{0} invoice from LuxInterventions · {1} to pay"
+],
+[
+"{0} factures de LuxInterventions · tout est payé",
+"{0} invoices from LuxInterventions · all paid"
+],
+[
+"{0} facture de LuxInterventions · tout est payé",
+"{0} invoice from LuxInterventions · all paid"
+],
 ];

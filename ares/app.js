@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.218.3';
+const VERSION = '2.218.4';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5708,20 +5708,20 @@ dashboard() {
         <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
           <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
         ${TENANT ? '' : html`<button class="row" data-action="go" data-to="reseau"><span class="avatar">🔑</span><span class="grow"><span class="title" style="display:block">Licences — centrales des clients</span><span class="meta">Essai 15 jours, abonnements 1 · 2 · 3 ans, tarifs et remises, factures, statistiques, registre</span></span><span class="chev">›</span></button>`}
-        <button class="row" data-action="fact-set"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Facturation des interventions</span><span class="meta">${factConf().nom} — LuxInterventions · TVA ${factConf().taux} % · IBAN ${factConf().iban || 'à compléter'}</span></span></button>
+        ${TENANT ? (() => { const F = tFacts(), due = F.filter((f) => !f.paid).length; return html`<button class="row" data-action="go" data-to="demandes"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Factures des interventions</span><span class="meta">${F.length ? `${plural(F.length, 'facture')} de LuxInterventions${due ? ` · ${due} à payer` : ' · tout est payé'}` : 'Aucune facture pour le moment'}</span></span>${icon('chevron')}</button>`; })() : html`<button class="row" data-action="fact-set"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Facturation des interventions</span><span class="meta">${factConf().nom} — LuxInterventions · TVA ${factConf().taux} % · IBAN ${factConf().iban || 'à compléter'}</span></span></button>`}
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
       </div>
 
-      <div class="section-label">🔒 Masquer</div>
+      ${TENANT ? '' : html`<div class="section-label">🔒 Masquer</div>
       <p class="small muted" style="margin:0 0 8px">Rubrique cochée : dans le menu, son nom est remplacé par « 🔒 MASQUÉ » et elle ne s’ouvre plus. Décochez pour la retrouver.</p>
-      <div class="list settings">${MASKABLE.map(([k, l]) => html`<label class="row" style="cursor:pointer"><input type="checkbox" data-input="masque" value="${k}" ${masked().has(k) ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"><span class="grow title">${l}</span>${masked().has(k) ? html`<span class="badge">🔒 MASQUÉ</span>` : ''}</label>`)}</div>
+      <div class="list settings">${MASKABLE.map(([k, l]) => html`<label class="row" style="cursor:pointer"><input type="checkbox" data-input="masque" value="${k}" ${masked().has(k) ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"><span class="grow title">${l}</span>${masked().has(k) ? html`<span class="badge">🔒 MASQUÉ</span>` : ''}</label>`)}</div>`}
 
       <div class="section-label">Gestion</div>
       <div class="list settings">
         ${TENANT ? html`<button class="row" data-action="tpay-conf"><span class="avatar">💳</span><span class="grow"><span class="title" style="display:block">Paiements</span><span class="meta">${(vault.get('reglages', 'tpayConf') || {}).payMode === 'month' ? 'Factures des interventions : une par mois' : 'Factures des interventions : à chaque intervention'}</span></span>${icon('chevron')}</button>` : ''}
         <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
-        <button class="row" data-action="eq-group"><span class="avatar">💬</span><span class="grow"><span class="title" style="display:block">Groupe de l’équipe (messages spéciaux)</span><span class="meta">${plural(eqGroup().length, 'ouvrier')} dans le groupe · les autres messages restent entre chaque ouvrier et la centrale</span></span>${icon('chevron')}</button>
-        <button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>
+        ${TENANT ? '' : html`<button class="row" data-action="eq-group"><span class="avatar">💬</span><span class="grow"><span class="title" style="display:block">Groupe de l’équipe (messages spéciaux)</span><span class="meta">${plural(eqGroup().length, 'ouvrier')} dans le groupe · les autres messages restent entre chaque ouvrier et la centrale</span></span>${icon('chevron')}</button>`}
+        ${TENANT ? '' : html`<button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>`}
         <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
       </div>
 
