@@ -17431,4 +17431,32 @@ export default [
 "hauteur max {0} m",
 "max height {0} m"
 ],
+[
+"Colocation : appartement dont cette chambre fait partie",
+"Flat-share: apartment this room belongs to"
+],
+[
+"Laisser vide si le logement est loué entier",
+"Leave empty if the home is let as a whole"
+],
+[
+"Loué entier",
+"Let as a whole"
+],
+[
+"(famille, couple, une personne) :",
+"(family, couple, one person):"
+],
+[
+"laisser vide",
+"leave empty"
+],
+[
+"Chambre louée à part",
+"Room let separately"
+],
+[
+"dans un appartement partagé : écrire le nom de l’appartement (ex. « Appartement 2e étage »), le même pour toutes ses chambres — pas le nom du locataire. Plus simple : le bouton ＋ Colocation.",
+"in a shared apartment: write the apartment’s name (e.g. “Apartment 2nd floor”), the same for all its rooms — not the tenant’s name. Easier: the ＋ Colocation button."
+],
 ];
