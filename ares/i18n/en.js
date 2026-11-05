@@ -17459,4 +17459,44 @@ export default [
 "dans un appartement partagé : écrire le nom de l’appartement (ex. « Appartement 2e étage »), le même pour toutes ses chambres — pas le nom du locataire. Plus simple : le bouton ＋ Colocation.",
 "in a shared apartment: write the apartment’s name (e.g. “Apartment 2nd floor”), the same for all its rooms — not the tenant’s name. Easier: the ＋ Colocation button."
 ],
+[
+"Comment se loue-t-il ?",
+"How is it let?"
+],
+[
+"Entier",
+"Whole"
+],
+[
+"— famille, couple ou personne seule",
+"— family, couple or single person"
+],
+[
+"Chambre en colocation",
+"Room in a flat-share"
+],
+[
+"— dans un appartement partagé",
+"— in a shared apartment"
+],
+[
+"Dans quel appartement ?",
+"In which apartment?"
+],
+[
+"➕ Nouvel appartement partagé",
+"➕ New shared apartment"
+],
+[
+"Nom du nouvel appartement",
+"Name of the new apartment"
+],
+[
+"Les chambres d’un même appartement sont reliées : chat des colocataires, tour des poubelles, loyers chambre par chambre, entrées et sorties, pannes des parties communes.",
+"Rooms in the same apartment are linked: flatmates’ chat, bin rota, rent room by room, move-ins and move-outs, faults in shared areas."
+],
+[
+"Indiquez dans quel appartement se trouve la chambre (ou choisissez « Entier »)",
+"Say which apartment the room is in (or choose “Whole”)"
+],
 ];
