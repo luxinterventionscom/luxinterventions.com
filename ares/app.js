@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.218.7';
+const VERSION = '2.218.8';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -10580,8 +10580,16 @@ document.addEventListener('submit', (e) => {
   const f = e.target;
   if (!FORMS[f.dataset.form]) return;
   e.preventDefault();
+  // un seul envoi à la fois : un double clic (ou Entrée + clic) ne crée pas deux demandes, deux paiements…
+  if (f.dataset.busy) return;
+  f.dataset.busy = '1';
+  const subs = [...f.querySelectorAll('button[type=submit]'), ...(f.id ? document.querySelectorAll(`button[type=submit][form="${f.id}"]`) : [])].filter((b) => !b.disabled);
+  subs.forEach((b) => { b.disabled = true; });
+  const done = () => { delete f.dataset.busy; subs.forEach((b) => { b.disabled = false; }); };
   if (sheetEl.contains(f)) sheetDirty = false;
-  FORMS[f.dataset.form](new FormData(f), f);
+  let r;
+  try { r = FORMS[f.dataset.form](new FormData(f), f); } catch (err) { done(); throw err; }
+  Promise.resolve(r).finally(done);
 });
 // Filtre de la liste « App des locataires » : recherche + avec / sans accès, sans recharger la fenêtre
 function filterEspList() {
