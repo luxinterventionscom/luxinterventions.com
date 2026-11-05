@@ -17751,4 +17751,8 @@ export default [
 "Indiquez dans quel appartement se trouve la chambre (ou choisissez « Entier »)",
 "Indique en qué piso está la habitación (o elija «Entero»)"
 ],
+[
+"🔗 Copier le lien",
+"🔗 Copiar el enlace"
+],
 ];
