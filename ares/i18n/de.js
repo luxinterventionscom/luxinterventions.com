@@ -17761,4 +17761,24 @@ export default [
 "🔗 Copier le lien",
 "🔗 Link kopieren"
 ],
+[
+"Aucune facture pour le moment",
+"Noch keine Rechnung"
+],
+[
+"{0} factures de LuxInterventions · {1} à payer",
+"{0} Rechnungen von LuxInterventions · {1} offen"
+],
+[
+"{0} facture de LuxInterventions · {1} à payer",
+"{0} Rechnung von LuxInterventions · {1} offen"
+],
+[
+"{0} factures de LuxInterventions · tout est payé",
+"{0} Rechnungen von LuxInterventions · alles bezahlt"
+],
+[
+"{0} facture de LuxInterventions · tout est payé",
+"{0} Rechnung von LuxInterventions · alles bezahlt"
+],
 ];
