@@ -1,7 +1,7 @@
 {
-  "name": "NOBIS s.a.r.l. — App des locataires",
-  "short_name": "NOBIS Locataires",
-  "description": "Loyers, quittances, documents, collectes des déchets et signalements pour les locataires NOBIS s.a.r.l.",
+  "name": "App des locataires",
+  "short_name": "Locataires",
+  "description": "Loyers, quittances, documents, collectes des déchets et signalements pour les locataires.",
   "lang": "fr",
   "start_url": "/espace.html",
   "scope": "/espace",
@@ -10,8 +10,23 @@
   "background_color": "#f5f4f0",
   "theme_color": "#4f46e5",
   "icons": [
-    { "src": "/ares/icons/ares-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/ares/icons/ares-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/ares/icons/ares-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "/ares/icons/ares-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ares/icons/ares-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ares/icons/ares-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

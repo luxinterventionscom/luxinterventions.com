@@ -1608,7 +1608,7 @@ async function espPushSend(env, target, kind, except = "") {
       if (!ptlPushHostOk(s.endpoint)) return;
       // chaque app ouvre sa propre page ; « du nouveau » dit de quoi il s'agit selon l'app
       const url = { ares: "/locataires.html", eq: "/equipe.html", hote: "/hote.html", taxi: "/taxi.html", ann: "/annonce.html" }[s.app] || "/espace.html";
-      const title = { ares: "LuxInterventions", eq: "ARES Équipe", hote: "🛎️ Séjour", taxi: "🚕 Courses", ann: "📣 Annonces" }[s.app] || "NOBIS s.a.r.l.";
+      const title = { ares: "LuxInterventions", eq: "ARES Équipe", hote: "🛎️ Séjour", taxi: "🚕 Courses", ann: "📣 Annonces" }[s.app] || "🏠 Locataires";
       const k2 = kind === "news" && PUSH_TXT["news_" + s.app] ? "news_" + s.app : kind;
       const msg = { title, body: (PUSH_TXT[k2] || PUSH_TXT.news)[s.lang] || (PUSH_TXT[k2] || PUSH_TXT.news).fr, url, tag: k2 };
       try {
