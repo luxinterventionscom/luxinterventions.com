@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.217.0';
+const VERSION = '2.218.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -175,6 +175,13 @@ const LOG_TYPES = Object.assign({}, ...LOG_GROUPS.map(([, t]) => t));
 const logLabel = (g) => { const n = String((g && g.nom) || '').trim(), t = g && LOG_TYPES[g.type]; return t && g.type !== 'autre' && /^[0-9][0-9A-Za-z.-]{0,3}$/.test(n) ? `${t.split(' ')[0]} ${n}` : n; };
 const logTypeSelect = (name, cur) => html`<label class="field">Type<select name="${name}">${LOG_GROUPS.map(([g, t]) => html`<optgroup label="${g}">${Object.entries(t).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</optgroup>`)}</select></label>`;
 const LOG_ROOMS = ['appartement', 'duplex', 'maison'];
+// 🅿️ Parking / garage / box : pour quel véhicule (au lieu des m²), ouvert ou fermé, hauteur — mesures indicatives
+const PARK_TYPES = ['parking', 'garage', 'box'];
+const PARK_SIZE = { moto: '🏍️ Moto / scooter (~2,50 × 1,00 m)', std: '🚗 Voiture standard (5,00 × 2,50 m)', long: '🚙 Voiture longue / SUV (~5,50 × 2,70 m)', pmr: '♿ Place PMR — personne handicapée (~5,00 × 3,30 m)', van: '🚐 Camionnette / utilitaire (~6,50 × 3,00 m)' };
+const PARK_KIND = { ouvert: 'Place ouverte (à l’air libre)', couvert: 'Place couverte', ferme: 'Box / garage fermé' };
+// chaque morceau dans son propre texte (traduisible)
+const parkHtml = (g) => { const k = g.park || {}, parts = [k.taille ? PARK_SIZE[k.taille].split(' (')[0] : '', k.genre ? PARK_KIND[k.genre].split(' (')[0] : '', k.h ? `hauteur max ${String(k.h).replace('.', ',')} m` : ''].filter(Boolean); return html`${parts.map((x, i) => html`${i ? ' · ' : ''}<span>${x}</span>`)}`; };
+const parkTxt = (g) => { const k = g.park || {}; return [k.taille ? PARK_SIZE[k.taille].split(' (')[0] : '', k.genre ? PARK_KIND[k.genre].split(' (')[0] : '', k.h ? 'hauteur max ' + String(k.h).replace('.', ',') + ' m' : ''].filter(Boolean).join(' · '); };
 // Annexes comprises avec le logement (cave, mansarde, garage…) et type de maison
 const ANNEX = { cave: '🍷 Cave', mans: '🏠 Mansarde / grenier', garage: '🚗 Garage', parking: '🅿️ Place de parking', jardin: '🌿 Jardin', balcon: '🌇 Balcon / terrasse' };
 const ANNEX_OPT = { mans: { hab: 'habitable', non: 'non habitable (rangement)' }, garage: { semi: 'au sous-sol / semi-enterré', ext: 'extérieur', box: 'box' } };
@@ -7580,6 +7587,13 @@ const SHEETS = {
         ${field('Nom / numéro', 'nom', g.nom, { full: true, required: true, placeholder: 'ex. Appartement 2B, Chambre 3, Garage 12, Bureau 1' })}
         <label class="field full">Immeuble<select name="immId" required>${vault.list('immeubles').filter((im) => !immGone(im) || im.id === g.immId).sort(byAddr).map((im) => html`<option value="${im.id}" ${im.id === g.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         ${logTypeSelect('type', g.type)}
+        <fieldset class="field full park-set" ${PARK_TYPES.includes(g.type) ? '' : new Raw('hidden')} style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:0">
+          <legend class="small" style="padding:0 6px;font-weight:700">🅿️ Place : pour quel véhicule</legend>
+          <label class="field">Taille<select name="pk_taille"><option value="">—</option>${Object.entries(PARK_SIZE).map(([k, v]) => html`<option value="${k}" ${(g.park || {}).taille === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+          <label class="field">Ouvert ou fermé<select name="pk_genre"><option value="">—</option>${Object.entries(PARK_KIND).map(([k, v]) => html`<option value="${k}" ${(g.park || {}).genre === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+          <label class="field">Hauteur maximale (m, facultatif)<input type="number" name="pk_h" value="${(g.park || {}).h || ''}" min="1" max="6" step="0.05" inputmode="decimal" placeholder="ex. 2,10"></label>
+          <p class="tiny muted" style="margin:4px 0 0">Mesures indicatives (elles varient selon la commune). La surface en m² reste facultative.</p>
+        </fieldset>
         <label class="field">Chambres (appartement, maison)<select name="ch"><option value="">—</option>${[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => html`<option value="${n}" ${+g.ch === n ? new Raw('selected') : ''}>${n}</option>`)}</select></label>
         <label class="field">Type de maison<select name="maison"><option value="">—</option>${Object.entries(MAISON_T).map(([k, v]) => html`<option value="${k}" ${g.maison === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <fieldset class="field full annex-set" style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:0">
@@ -7619,6 +7633,7 @@ const SHEETS = {
           ${kvRow('Type', logKind(g) || '—')}
           ${g.type === 'maison' && g.maison ? kvRow('Maison', MAISON_T[g.maison]) : ''}
           ${annexText(g) ? kvRow('Compris', annexText(g)) : ''}
+          ${PARK_TYPES.includes(g.type) && parkTxt(g) ? kvRow('🅿️ Place', parkHtml(g)) : ''}
           ${g.surface ? kvRow('Surface', g.surface + ' m²') : ''}
           ${g.etage ? kvRow('Étage', g.etage) : ''}
           ${g.partie ? kvRow('Situé dans', g.partie) : ''}
@@ -8249,7 +8264,7 @@ function reportLogement(logId) {
   const o = occupancy(logId);
   return html`
     <h1>${logLabel(g)} — ${immName(g.immId)}</h1>
-    <p class="pr-sub">${logKind(g)}${g.surface ? ' · ' + g.surface + ' m²' : ''}${o ? ` · occupé ${pct(o.occupied, o.total)}% du temps, ${duree(o.vacant)} de vacance` : ''}</p>
+    <p class="pr-sub">${logKind(g)}${PARK_TYPES.includes(g.type) && parkTxt(g) ? html` · ${parkHtml(g)}` : ''}${g.surface ? ' · ' + g.surface + ' m²' : ''}${o ? ` · occupé ${pct(o.occupied, o.total)}% du temps, ${duree(o.vacant)} de vacance` : ''}</p>
     <h2>Bilan depuis l'origine</h2>${prBilan({ ...b, verse: null, net: b.encaisse - b.depenses }, true)}
     <h2>Par année</h2>${bilanTable(yearsWithData((yy) => bilan({ logId, y: yy })))}
     <h2>Occupants successifs</h2>${occupantsTable(tenantsOfLog(logId))}`;
@@ -10138,6 +10153,7 @@ const FORMS = {
       etage: fd.get('etage').trim(), partie: fd.get('partie').trim(), loyer: num(fd.get('loyer')), note: fd.get('note').trim(),
       ch: LOG_ROOMS.includes(fd.get('type')) ? +fd.get('ch') || '' : '', mans: false, maison: fd.get('type') === 'maison' ? fd.get('maison') || '' : '',
       annex: Object.fromEntries(Object.keys(ANNEX).map((k) => [k, ANNEX_OPT[k] ? fd.get('ax_' + k) || '' : fd.get('ax_' + k) === 'on' ? 1 : '']).filter(([, v]) => v)),
+      park: PARK_TYPES.includes(fd.get('type')) ? { taille: PARK_SIZE[fd.get('pk_taille')] ? fd.get('pk_taille') : '', genre: PARK_KIND[fd.get('pk_genre')] ? fd.get('pk_genre') : '', h: fd.get('pk_h') ? num(fd.get('pk_h')) : '' } : null,
     };
     rec.annexM2 = Object.fromEntries(Object.keys(rec.annex).map((k) => [k, num(fd.get('m2_' + k))]).filter(([, v]) => v > 0));
     if (id) rec.id = id;
@@ -11485,6 +11501,7 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', (e) => {
   const k = e.target.dataset.input;
   if (k === 'tva-on') { const m = e.target.form && e.target.form.querySelector('.tva-mention'); if (m) m.hidden = e.target.checked; }
+  if (e.target.name === 'type' && e.target.form && e.target.form.dataset.form === 'log') { const ps = e.target.form.querySelector('.park-set'); if (ps) ps.hidden = !PARK_TYPES.includes(e.target.value); }
   if (k === 'tfwd-acc') { const b = document.getElementById('tfwdAcc'); if (b) b.hidden = !e.target.checked; }
   // fiche d'une personne : horaire seulement pour le personnel régulier ; engagement pour occasionnels et sociétés
   if (k === 'photo-pick' && e.target.files[0]) {

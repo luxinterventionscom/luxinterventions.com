@@ -17347,4 +17347,88 @@ export default [
 "état :",
 "status:"
 ],
+[
+"🅿️ Place : pour quel véhicule",
+"🅿️ Space: for which vehicle"
+],
+[
+"Taille",
+"Size"
+],
+[
+"🏍️ Moto / scooter (~2,50 × 1,00 m)",
+"🏍️ Motorbike / scooter (~2.50 × 1.00 m)"
+],
+[
+"🚗 Voiture standard (5,00 × 2,50 m)",
+"🚗 Standard car (5.00 × 2.50 m)"
+],
+[
+"🚙 Voiture longue / SUV (~5,50 × 2,70 m)",
+"🚙 Long car / SUV (~5.50 × 2.70 m)"
+],
+[
+"♿ Place PMR — personne handicapée (~5,00 × 3,30 m)",
+"♿ Disabled parking space (~5.00 × 3.30 m)"
+],
+[
+"🚐 Camionnette / utilitaire (~6,50 × 3,00 m)",
+"🚐 Van / utility vehicle (~6.50 × 3.00 m)"
+],
+[
+"Ouvert ou fermé",
+"Open or closed"
+],
+[
+"Place ouverte (à l’air libre)",
+"Open space (outdoors)"
+],
+[
+"Place couverte",
+"Covered space"
+],
+[
+"Box / garage fermé",
+"Lock-up / closed garage"
+],
+[
+"Hauteur maximale (m, facultatif)",
+"Maximum height (m, optional)"
+],
+[
+"Mesures indicatives (elles varient selon la commune). La surface en m² reste facultative.",
+"Indicative sizes (they vary by municipality). Area in m² stays optional."
+],
+[
+"🅿️ Place",
+"🅿️ Space"
+],
+[
+"🏍️ Moto / scooter",
+"🏍️ Motorbike / scooter"
+],
+[
+"🚗 Voiture standard",
+"🚗 Standard car"
+],
+[
+"🚙 Voiture longue / SUV",
+"🚙 Long car / SUV"
+],
+[
+"♿ Place PMR — personne handicapée",
+"♿ Disabled parking space"
+],
+[
+"🚐 Camionnette / utilitaire",
+"🚐 Van / utility vehicle"
+],
+[
+"Place ouverte",
+"Open space"
+],
+[
+"hauteur max {0} m",
+"max height {0} m"
+],
 ];

@@ -17599,4 +17599,88 @@ export default [
 "état :",
 "estado:"
 ],
+[
+"🅿️ Place : pour quel véhicule",
+"🅿️ Plaza: para qué vehículo"
+],
+[
+"Taille",
+"Tamaño"
+],
+[
+"🏍️ Moto / scooter (~2,50 × 1,00 m)",
+"🏍️ Moto / scooter (~2,50 × 1,00 m)"
+],
+[
+"🚗 Voiture standard (5,00 × 2,50 m)",
+"🚗 Coche estándar (5,00 × 2,50 m)"
+],
+[
+"🚙 Voiture longue / SUV (~5,50 × 2,70 m)",
+"🚙 Coche largo / SUV (~5,50 × 2,70 m)"
+],
+[
+"♿ Place PMR — personne handicapée (~5,00 × 3,30 m)",
+"♿ Plaza para personas con discapacidad (~5,00 × 3,30 m)"
+],
+[
+"🚐 Camionnette / utilitaire (~6,50 × 3,00 m)",
+"🚐 Furgoneta (~6,50 × 3,00 m)"
+],
+[
+"Ouvert ou fermé",
+"Abierto o cerrado"
+],
+[
+"Place ouverte (à l’air libre)",
+"Plaza abierta (al aire libre)"
+],
+[
+"Place couverte",
+"Plaza cubierta"
+],
+[
+"Box / garage fermé",
+"Box / garaje cerrado"
+],
+[
+"Hauteur maximale (m, facultatif)",
+"Altura máxima (m, opcional)"
+],
+[
+"Mesures indicatives (elles varient selon la commune). La surface en m² reste facultative.",
+"Medidas orientativas (varían según el municipio). La superficie en m² sigue siendo opcional."
+],
+[
+"🅿️ Place",
+"🅿️ Plaza"
+],
+[
+"🏍️ Moto / scooter",
+"🏍️ Moto / scooter"
+],
+[
+"🚗 Voiture standard",
+"🚗 Coche estándar"
+],
+[
+"🚙 Voiture longue / SUV",
+"🚙 Coche largo / SUV"
+],
+[
+"♿ Place PMR — personne handicapée",
+"♿ Plaza para personas con discapacidad"
+],
+[
+"🚐 Camionnette / utilitaire",
+"🚐 Furgoneta"
+],
+[
+"Place ouverte",
+"Plaza abierta"
+],
+[
+"hauteur max {0} m",
+"altura máx. {0} m"
+],
 ];
