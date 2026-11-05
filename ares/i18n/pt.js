@@ -17638,4 +17638,44 @@ export default [
 "dans un appartement partagé : écrire le nom de l’appartement (ex. « Appartement 2e étage »), le même pour toutes ses chambres — pas le nom du locataire. Plus simple : le bouton ＋ Colocation.",
 "num apartamento partilhado: escrever o nome do apartamento (ex. «Apartamento 2.º andar»), o mesmo para todos os seus quartos — não o nome do inquilino. Mais simples: o botão ＋ Colocation."
 ],
+[
+"Comment se loue-t-il ?",
+"Como é arrendado?"
+],
+[
+"Entier",
+"Inteiro"
+],
+[
+"— famille, couple ou personne seule",
+"— família, casal ou pessoa sozinha"
+],
+[
+"Chambre en colocation",
+"Quarto em casa partilhada"
+],
+[
+"— dans un appartement partagé",
+"— num apartamento partilhado"
+],
+[
+"Dans quel appartement ?",
+"Em que apartamento?"
+],
+[
+"➕ Nouvel appartement partagé",
+"➕ Novo apartamento partilhado"
+],
+[
+"Nom du nouvel appartement",
+"Nome do novo apartamento"
+],
+[
+"Les chambres d’un même appartement sont reliées : chat des colocataires, tour des poubelles, loyers chambre par chambre, entrées et sorties, pannes des parties communes.",
+"Os quartos do mesmo apartamento estão ligados: chat dos colegas de casa, turnos do lixo, rendas quarto a quarto, entradas e saídas, avarias das zonas comuns."
+],
+[
+"Indiquez dans quel appartement se trouve la chambre (ou choisissez « Entier »)",
+"Indique em que apartamento fica o quarto (ou escolha «Inteiro»)"
+],
 ];

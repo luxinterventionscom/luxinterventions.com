@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.218.1';
+const VERSION = '2.218.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -7606,9 +7606,16 @@ const SHEETS = {
         </fieldset>
         ${field('Surface (m²)', 'surface', g.surface, { type: 'number', attrs: 'inputmode="decimal" min="0" step="0.1"' })}
         ${field('Étage', 'etage', g.etage, { placeholder: 'ex. RDC, 1er, sous-sol' })}
-        <label class="field full">Colocation : appartement dont cette chambre fait partie<input name="partie" value="${g.partie || ''}" list="colocList" autocomplete="off" placeholder="Laisser vide si le logement est loué entier">
-          <datalist id="colocList">${colocsOf(g.immId).map((c) => html`<option value="${c.nom}">`)}</datalist>
-          <span class="tiny muted"><b>Loué entier</b> (famille, couple, une personne) : <b>laisser vide</b>.<br><b>Chambre louée à part</b> dans un appartement partagé : écrire le nom de l’appartement (ex. « Appartement 2e étage »), le même pour toutes ses chambres — pas le nom du locataire. Plus simple : le bouton ＋ Colocation.</span></label>
+        <fieldset class="field full" style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:0">
+          <legend class="small" style="padding:0 6px;font-weight:700">Comment se loue-t-il ?</legend>
+          <label class="row" style="cursor:pointer;padding:6px 0"><input type="radio" name="louemode" value="entier" ${g.partie ? '' : new Raw('checked')} style="width:20px;height:20px;flex:none"><span class="grow">🏠 <b>Entier</b> — famille, couple ou personne seule</span></label>
+          <label class="row" style="cursor:pointer;padding:6px 0"><input type="radio" name="louemode" value="chambre" ${g.partie ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none"><span class="grow">🛏️ <b>Chambre en colocation</b> — dans un appartement partagé</span></label>
+          <div class="coloc-pick" ${g.partie ? '' : new Raw('hidden')}>
+            <label class="field">Dans quel appartement ?<select name="partieSel">${colocsOf(g.immId).map((c) => html`<option value="${c.nom}" ${c.nom === g.partie ? new Raw('selected') : ''}>${c.nom}</option>`)}<option value="__new" ${colocsOf(g.immId).length ? '' : new Raw('selected')}>➕ Nouvel appartement partagé</option></select></label>
+            <label class="field coloc-new" ${colocsOf(g.immId).length ? new Raw('hidden') : ''}>Nom du nouvel appartement<input name="partieNew" autocomplete="off" placeholder="ex. Appartement 2e étage"></label>
+            <p class="tiny muted" style="margin:4px 0 0">Les chambres d’un même appartement sont reliées : chat des colocataires, tour des poubelles, loyers chambre par chambre, entrées et sorties, pannes des parties communes.</p>
+          </div>
+        </fieldset>
         ${field('Loyer indicatif (€)', 'loyer', g.loyer, { type: 'number', attrs: money$ })}
         <label class="field full">Notes<textarea name="note" placeholder="Équipements, compteurs, état…">${g.note || ''}</textarea></label>
       </form>`,
@@ -10150,11 +10157,12 @@ const FORMS = {
     const id = fd.get('id');
     const rec = {
       nom: fd.get('nom').trim(), immId: fd.get('immId'), type: fd.get('type'), surface: fd.get('surface') ? num(fd.get('surface')) : '',
-      etage: fd.get('etage').trim(), partie: fd.get('partie').trim(), loyer: num(fd.get('loyer')), note: fd.get('note').trim(),
+      etage: fd.get('etage').trim(), partie: fd.get('louemode') === 'chambre' ? (fd.get('partieSel') === '__new' || !fd.get('partieSel') ? String(fd.get('partieNew') || '').trim() : fd.get('partieSel')) : '', loyer: num(fd.get('loyer')), note: fd.get('note').trim(),
       ch: LOG_ROOMS.includes(fd.get('type')) ? +fd.get('ch') || '' : '', mans: false, maison: fd.get('type') === 'maison' ? fd.get('maison') || '' : '',
       annex: Object.fromEntries(Object.keys(ANNEX).map((k) => [k, ANNEX_OPT[k] ? fd.get('ax_' + k) || '' : fd.get('ax_' + k) === 'on' ? 1 : '']).filter(([, v]) => v)),
       park: PARK_TYPES.includes(fd.get('type')) ? { taille: PARK_SIZE[fd.get('pk_taille')] ? fd.get('pk_taille') : '', genre: PARK_KIND[fd.get('pk_genre')] ? fd.get('pk_genre') : '', h: fd.get('pk_h') ? num(fd.get('pk_h')) : '' } : null,
     };
+    if (fd.get('louemode') === 'chambre' && !rec.partie) return toast('Indiquez dans quel appartement se trouve la chambre (ou choisissez « Entier »)', { bad: true });
     rec.annexM2 = Object.fromEntries(Object.keys(rec.annex).map((k) => [k, num(fd.get('m2_' + k))]).filter(([, v]) => v > 0));
     if (id) rec.id = id;
     const saved = await vault.mutate((tx) => {
@@ -11501,6 +11509,8 @@ document.addEventListener('input', (e) => {
 document.addEventListener('change', (e) => {
   const k = e.target.dataset.input;
   if (k === 'tva-on') { const m = e.target.form && e.target.form.querySelector('.tva-mention'); if (m) m.hidden = e.target.checked; }
+  if (e.target.form && e.target.form.dataset.form === 'log' && e.target.name === 'louemode') { const cp = e.target.form.querySelector('.coloc-pick'); if (cp) cp.hidden = e.target.value !== 'chambre'; }
+  if (e.target.form && e.target.form.dataset.form === 'log' && e.target.name === 'partieSel') { const cn = e.target.form.querySelector('.coloc-new'); if (cn) cn.hidden = e.target.value !== '__new'; }
   if (e.target.name === 'type' && e.target.form && e.target.form.dataset.form === 'log') { const ps = e.target.form.querySelector('.park-set'); if (ps) ps.hidden = !PARK_TYPES.includes(e.target.value); }
   if (k === 'tfwd-acc') { const b = document.getElementById('tfwdAcc'); if (b) b.hidden = !e.target.checked; }
   // fiche d'une personne : horaire seulement pour le personnel régulier ; engagement pour occasionnels et sociétés
