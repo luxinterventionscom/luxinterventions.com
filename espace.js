@@ -353,6 +353,8 @@ let icOpen = false, icMine = '', phMine = null;
 async function sendOwner(o) { if (data && data.signalKey) await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) }); }
 const T = () => L[lang];
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+// logo du gestionnaire ; sans logo : son initiale dans un rond (jamais le logo d'un autre)
+const socLogoHtml = (s) => { const lg = (s && s.logo) || (/nobis/i.test((s && s.nom) || '') ? '/ares/icons/nobis-logo.png' : ''); return lg ? `<img class="top-logo" src="${esc(lg)}" alt="" width="76" height="32">` : `<span class="top-ini" aria-hidden="true">${esc(String((s && s.nom) || '?').trim().charAt(0).toUpperCase())}</span>`; };
 const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 const today = iso(new Date());
 const addDays = (s, n) => { const d = new Date(s + 'T00:00:00'); d.setDate(d.getDate() + n); return iso(d); };
@@ -942,7 +944,7 @@ function render() {
   document.title = `${t.title} — ${d.societe.nom}`;
   if (d.regles && !rulesDate(d)) {
     const changed = d.regles.lu && d.regles.lv !== d.regles.v;
-    app.innerHTML = `<div class="top"><span class="brandx"><img class="top-logo" src="${esc(d.societe.logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(d.societe.nom)}</b></span>${langs}</div><h1>${esc(t.hello)} ${esc(d.prenom || d.nom)}</h1>
+    app.innerHTML = `<div class="top"><span class="brandx">${socLogoHtml(d.societe)}<b>${esc(d.societe.nom)}</b></span>${langs}</div><h1>${esc(t.hello)} ${esc(d.prenom || d.nom)}</h1>
       <div class="card" id="rules"><h2>📜 ${esc(t.hr.rulesT)}</h2><p class="${changed ? 'ok' : 'meta'}" style="margin:0 0 10px">${esc(changed ? t.hr.changed : t.hr.gate)}</p>
         <ol class="steps">${t.hr.R.map((r) => `<li>${esc(r)}</li>`).join('')}</ol>
         ${d.regles.extra ? `<p style="margin:8px 0 4px"><b>${esc(t.hr.rulesExtra)}</b></p><p class="pre" style="margin:0">${esc(d.regles.extra)}</p>` : ''}
@@ -954,7 +956,7 @@ function render() {
   const out = [];
   // adresse complète : rue + code postal et localité (si renseignés dans l'app de gestion)
   const addrFull = [d.adresse, d.ville].filter(Boolean).join(', ');
-  out.push(`<div class="top"><span class="brandx"><img class="top-logo" src="${esc(d.societe.logo || '/ares/icons/nobis-logo.png')}" alt="" width="76" height="32"><b>${esc(d.societe.nom)}</b></span></div><h1 style="display:flex;align-items:center;gap:12px"><button class="av-wrap" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}"><span class="av-btn">${(phMine !== null ? phMine : d.photo) ? `<img src="${esc(phMine !== null ? phMine : d.photo)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span><span class="av-pen" aria-hidden="true">✏️</span></button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1><div id="tripSlot">${tripBoxes()}</div>${icOpen ? (() => { const st = SETT[lang] || SETT.fr, ph = phMine !== null ? phMine : d.photo || ''; return `<div class="card" id="settCard"><h2 style="margin:0 0 10px">✏️ ${esc(st.t)}</h2><p style="display:flex;align-items:center;gap:8px;margin:0 0 12px">🌐 ${langs}</p><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
+  out.push(`<div class="top"><span class="brandx">${socLogoHtml(d.societe)}<b>${esc(d.societe.nom)}</b></span></div><h1 style="display:flex;align-items:center;gap:12px"><button class="av-wrap" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}"><span class="av-btn">${(phMine !== null ? phMine : d.photo) ? `<img src="${esc(phMine !== null ? phMine : d.photo)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span><span class="av-pen" aria-hidden="true">✏️</span></button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1><div id="tripSlot">${tripBoxes()}</div>${icOpen ? (() => { const st = SETT[lang] || SETT.fr, ph = phMine !== null ? phMine : d.photo || ''; return `<div class="card" id="settCard"><h2 style="margin:0 0 10px">✏️ ${esc(st.t)}</h2><p style="display:flex;align-items:center;gap:8px;margin:0 0 12px">🌐 ${langs}</p><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span class="av-btn" style="width:72px;height:72px;font-size:32px">${ph ? `<img src="${esc(ph)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span>
     <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${ph ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
     <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>`; })() + `<p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${MY_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === (icMine || d.avatar)}">${esc(e)}</button>`).join('')}</div></div>` : ''}<p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);

@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.218.4';
+const VERSION = '2.218.5';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3170,7 +3170,7 @@ const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '')
 const APP_BRAND = { nom: 'LuxInterventions', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
 const DEF_SOC = () => (TENANT ? tenantInfo.nom || 'Centrale' : 'NOBIS s.a.r.l.');
 const socName = () => societe().nom || DEF_SOC();
-const socLogo = () => societe().logo || '/ares/icons/nobis-logo.png';
+const socLogo = () => societe().logo || (TENANT ? '' : '/ares/icons/nobis-logo.png');
 const htOf = (ttc, r) => (r ? ttc / (1 + r / 100) : ttc);
 const r2 = (x) => Math.round(x * 100) / 100;
 // Logo et nom partout dans l'app (et sur l'écran de verrouillage, mémorisés sur cet appareil)
@@ -5722,7 +5722,7 @@ dashboard() {
         <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
         ${TENANT ? '' : html`<button class="row" data-action="eq-group"><span class="avatar">💬</span><span class="grow"><span class="title" style="display:block">Groupe de l’équipe (messages spéciaux)</span><span class="meta">${plural(eqGroup().length, 'ouvrier')} dans le groupe · les autres messages restent entre chaque ouvrier et la centrale</span></span>${icon('chevron')}</button>`}
         ${TENANT ? '' : html`<button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>`}
-        <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
+        <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${TENANT && !societe().logo ? html`<b style="color:var(--amber,#b45309)">🖼️ Mettez votre logo : vos locataires le voient dans leur app</b><br>` : ''}${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
       </div>
 
       ${!standalone ? html`<div class="section-label">Application</div>
@@ -7966,13 +7966,13 @@ const SHEETS = {
       title: 'Société & associés',
       body: html`<form id="f" data-form="societe" class="fields">
         <div class="section-label full" style="margin:0">Votre société — locataire principal (apparaît sur les quittances et les relances)</div>
-        <div class="full" style="display:flex;align-items:center;gap:12px"><img src="${socLogo()}" alt="" style="height:48px;max-width:140px;object-fit:contain;background:#fff;border-radius:8px;padding:4px;border:1px solid var(--border)">
+        <div class="full" style="display:flex;align-items:center;gap:12px">${socLogo() ? html`<img src="${socLogo()}" alt="" style="height:48px;max-width:140px;object-fit:contain;background:#fff;border-radius:8px;padding:4px;border:1px solid var(--border)">` : html`<span style="width:48px;height:48px;border-radius:50%;background:var(--accent,#4f46e5);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex:none">${String(societe().nom || DEF_SOC()).trim().charAt(0).toUpperCase()}</span>`}
           <label class="btn sm" style="cursor:pointer">🖼️ ${st.logo ? 'Changer le logo' : 'Mettre votre logo'}<input type="file" accept="image/*" data-input="soc-logo" hidden></label>
           ${st.logo ? html`<button class="btn sm ghost" type="button" data-action="soc-logo-del">Retirer</button>` : ''}</div>
         <p class="tiny muted full" style="margin:0">Le logo apparaît dans l’app, les apps des locataires et de l’équipe, les quittances et les impressions.</p>
         <div class="section-label full" style="margin:8px 0 0">✍️ Signature + timbre (récapitulatif des loyers des locataires)</div>
         <div class="full" id="signWrap">${signBlock(st)}</div>
-        ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: 'ex. NOBIS s.a.r.l.' })}
+        ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: TENANT ? 'ex. ' + DEF_SOC() : 'ex. NOBIS s.a.r.l.' })}
         ${field('Adresse', 'adresse', st.adresse, { full: true })}
         ${field('Code postal et ville', 'ville', st.ville, { placeholder: 'L-1234 Luxembourg' })}
         ${field('Téléphone', 'tel', st.tel, { type: 'tel' })}

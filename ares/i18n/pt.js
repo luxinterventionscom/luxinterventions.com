@@ -17702,4 +17702,8 @@ export default [
 "{0} facture de LuxInterventions · tout est payé",
 "{0} fatura da LuxInterventions · tudo pago"
 ],
+[
+"🖼️ Mettez votre logo : vos locataires le voient dans leur app",
+"🖼️ Coloque o seu logótipo: os seus inquilinos veem-no na app deles"
+],
 ];
