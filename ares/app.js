@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.218.5';
+const VERSION = '2.218.6';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3720,7 +3720,7 @@ const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', '
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
 const MASKABLE = [['gerances', 'Gérances'], ['immeubles', 'Mes Propriétés'], ['hotel', 'Hotel'], ['airbnb', 'Airbnb'], ['taxis', 'Taxis'], ['agences', 'Agences'], ['proprios', 'Propriétaires']];
-const masked = () => new Set((vault.get('reglages', 'masque') || {}).on || []);
+const masked = () => new Set(TENANT ? [] : (vault.get('reglages', 'masque') || {}).on || []); // centrale d'un client : rien de masqué (le réglage n'existe que chez nous)
 // pages qui appartiennent à une rubrique (Locataires et Gestion locataire sont dans Immeubles)
 const maskOf = (route) => (['locataires', 'paiements'].includes(route) ? 'immeubles' : route);
 // Légende des couleurs de nos activités (mêmes couleurs que dans les apps des locataires, de l'équipe et le portail)
