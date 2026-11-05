@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.218.6';
+const VERSION = '2.218.7';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -40,7 +40,9 @@ const TENANT = (() => {
   try {
     if (q === 'main') { localStorage.removeItem('aresTenant'); return ''; }
     if (/^[a-z0-9]{12,24}$/.test(q)) { localStorage.setItem('aresTenant', q); return q; }
-    return localStorage.getItem('aresTenant') || '';
+    // sans ?t= : dans un onglet du navigateur c'est TOUJOURS notre centrale ; seule l'app installée d'un client se souvient de la sienne
+    const inst = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    return inst ? localStorage.getItem('aresTenant') || '' : '';
   } catch { return /^[a-z0-9]{12,24}$/.test(q) ? q : ''; }
 })();
 let tenantInfo = (() => { try { return JSON.parse(localStorage.getItem('aresTenantInfo:' + TENANT) || '{}'); } catch { return {}; } })();
