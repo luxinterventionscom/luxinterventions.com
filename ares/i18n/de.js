@@ -17925,4 +17925,104 @@ export default [
 "🗑️ Déchets",
 "🗑️ Müll"
 ],
+[
+"Une fois",
+"Einmalig"
+],
+[
+"Régulier",
+"Regelmäßig"
+],
+[
+"— réparation, panne, travaux",
+"— Reparatur, Panne, Arbeiten"
+],
+[
+"— ménage, jardin, entretien… (passage à jours fixes)",
+"— Reinigung, Garten, Wartung… (an festen Tagen)"
+],
+[
+"Service",
+"Dienst"
+],
+[
+"Fréquence",
+"Häufigkeit"
+],
+[
+"Jours souhaités",
+"Gewünschte Tage"
+],
+[
+"Heure souhaitée (de)",
+"Gewünschte Uhrzeit (von)"
+],
+[
+"Où (qui verra le passage dans son app)",
+"Wo (wer den Besuch in seiner App sieht)"
+],
+[
+"— préciser plus tard —",
+"— später angeben —"
+],
+[
+"🏢 Parties communes — tout l’immeuble",
+"🏢 Gemeinschaftsflächen — ganzes Gebäude"
+],
+[
+"ex. Chambre 12 · Hall · Couloir 2e étage · Cuisine",
+"z. B. Zimmer 12 · Halle · Flur 2. Stock · Küche"
+],
+[
+"🧹 Ménage",
+"🧹 Reinigung"
+],
+[
+"🔧 Entretien",
+"🔧 Wartung"
+],
+[
+"📋 Autre",
+"📋 Sonstiges"
+],
+[
+"⏹️ Arrêter",
+"⏹️ Beenden"
+],
+[
+"Arrêter ce service régulier ?",
+"Diesen regelmäßigen Dienst beenden?"
+],
+[
+"Choisissez au moins un jour souhaité",
+"Wählen Sie mindestens einen Tag"
+],
+[
+"Demande d’arrêt envoyée",
+"Beendigung angefragt"
+],
+[
+"⏹️ Arrêt demandé — en attente de LuxInterventions",
+"⏹️ Beendigung angefragt — wartet auf LuxInterventions"
+],
+[
+"📨 Reçue par LuxInterventions",
+"📨 Von LuxInterventions erhalten"
+],
+[
+"📨 Reçue",
+"📨 Erhalten"
+],
+[
+"📅 Planifiée",
+"📅 Geplant"
+],
+[
+"🔧 En cours",
+"🔧 In Arbeit"
+],
+[
+"✅ Terminée",
+"✅ Erledigt"
+],
 ];
