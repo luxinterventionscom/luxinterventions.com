@@ -18043,4 +18043,12 @@ export default [
 "Nouveau code : touchez « Enregistrer » (l’ancien ne marchera plus)",
 "Nuevo código: toque «Guardar» (el antiguo dejará de funcionar)"
 ],
+[
+"Demande spéciale",
+"Petición especial"
+],
+[
+"répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)",
+"responda por los 💬 mensajes del anunciante (precio con presupuesto si hace falta)"
+],
 ];

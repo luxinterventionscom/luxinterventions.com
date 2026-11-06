@@ -17970,4 +17970,12 @@ export default [
 "Nouveau code : touchez « Enregistrer » (l’ancien ne marchera plus)",
 "Novo código: toque em «Guardar» (o antigo deixa de funcionar)"
 ],
+[
+"Demande spéciale",
+"Pedido especial"
+],
+[
+"répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)",
+"responda pela 💬 mensagem do anunciante (preço sob orçamento se necessário)"
+],
 ];

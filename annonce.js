@@ -130,10 +130,10 @@ function formHtml(t) {
     <div class="two"><div><label>${esc(t.tel)}</label><input data-k="tel" type="tel" value="${esc(f.tel)}"></div><div><label>${esc(t.web)}</label><input data-k="web" type="url" value="${esc(f.web)}" placeholder="https://…"></div></div>
     <label>${esc(t.video)}</label><input data-k="video" type="url" value="${esc(f.video)}" placeholder="https://…">
     <label>${esc(t.slot)}</label>${SLOTS.map((k) => `<label class="radio"><input type="radio" name="slot" value="${k}" ${f.slot === k ? 'checked' : ''}> ${esc(t.Sl[k])}<span class="meta">${tr[k] ? tr[k] + ' € ' + esc(t.perDay) : esc(t.quote)}</span></label>`).join('')}
-    <label>${esc(t.aud)}</label><div class="chips">${AUD.map((k) => `<label class="chip"><input type="checkbox" data-aud="${k}" ${f.aud.includes(k) ? 'checked' : ''}> ${esc(t.Au[k])}</label>`).join('')}</div>
     <div class="two"><div><label>${esc(t.from)}</label><input type="date" data-k="debut" value="${esc(f.debut)}"></div><div><label>${esc(t.to)}</label><input type="date" data-k="fin" value="${esc(f.fin)}"></div></div>
     <label>${esc(t.days)}</label><div class="chips">${t.D.map((d, i) => `<label class="chip"><input type="checkbox" data-day="${i}" ${f.jours.includes(i) ? 'checked' : ''}> ${esc(d)}</label>`).join('')}</div>
     <label>${esc(t.hours)}</label><div class="two"><div><span class="meta">${esc(t.h1)}</span><input type="time" data-k="h1" value="${esc(f.h1)}"></div><div><span class="meta">${esc(t.h2)}</span><input type="time" data-k="h2" value="${esc(f.h2)}"></div></div>
+    <label>✍️ ${esc(SPX[lang] ? SPX[lang][0] : SPX.fr[0])}</label><textarea data-k="special" rows="2" placeholder="${esc(SPX[lang] ? SPX[lang][1] : SPX.fr[1])}">${esc(f.special || '')}</textarea>
     <p class="est">${esc(t.price)} : <b>${p ? p + ' € ' + esc(TP().ht) : esc(t.quote)}</b> <span class="meta">(${days(f)} j)</span>${tr.note ? `<br><span class="meta">${esc(tr.note)}</span>` : ''}</p>
     <div class="duo"><button class="btn sec" data-cancel="1">${esc(t.cancel)}</button><button class="btn" data-send="1">${esc(t.send)}</button></div></div>`;
 }
@@ -159,6 +159,8 @@ function adBox(x) {
   return `<div class="card pub-box" data-pid="${esc(x.id)}"><div class="meta"><b>📣 ${esc(t.lbl)}</b></div><b style="display:block">${esc(x.nom)}</b><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p>${v ? `<div class="vid" data-vsrc="${esc(v.src)}"></div>` : ''}
     <div class="btns">${x.adresse ? `<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.adresse)}" target="_blank" rel="noopener" data-pev="map">${esc(t.see)}</a>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.call)}</a>` : ''}</div>${pubSocialBar(x)}</div>`;
 }
+// ✍️ demande spéciale (hors des prix affichés) : LuxInterventions répond, avec un prix sur devis si besoin
+const SPX = { fr: ['Demande spéciale (facultatif)', 'ex. plusieurs emplacements, une semaine précise, un prix pour 3 mois…'], it: ['Richiesta speciale (facoltativa)', 'es. più posizioni, una settimana precisa, un prezzo per 3 mesi…'], de: ['Sonderwunsch (freiwillig)', 'z. B. mehrere Plätze, eine bestimmte Woche, ein Preis für 3 Monate…'], pt: ['Pedido especial (facultativo)', 'ex. várias posições, uma semana precisa, um preço para 3 meses…'], en: ['Special request (optional)', 'e.g. several positions, a given week, a price for 3 months…'], es: ['Petición especial (opcional)', 'ej. varias posiciones, una semana concreta, un precio para 3 meses…'] };
 function render() {
   const t = T();
   document.documentElement.lang = lang;

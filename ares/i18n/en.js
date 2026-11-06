@@ -17795,4 +17795,12 @@ export default [
 "Nouveau code : touchez « Enregistrer » (l’ancien ne marchera plus)",
 "New code: tap “Save” (the old one will stop working)"
 ],
+[
+"Demande spéciale",
+"Special request"
+],
+[
+"répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)",
+"reply via the advertiser’s 💬 messages (quote if needed)"
+],
 ];
