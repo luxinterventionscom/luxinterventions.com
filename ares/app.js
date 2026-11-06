@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.222.4';
+const VERSION = '2.222.5';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5249,6 +5249,8 @@ dashboard() {
     // ⏳ clients du réseau dont l'accès (abonnement ou 6 mois offerts) se termine dans 30 jours : c'est le moment d'appeler
     const netSoon = TENANT ? [] : ((ui.net && ui.net.list) || []).filter((t) => t.until && t.until >= today() && t.until <= addDays(today(), 30) && t.st !== 'suspended');
     const netStopBox = TENANT ? '' : (() => { const l = vault.list('taches').filter((t) => t.net && t.net.stopAsk && !t.fin); return l.length ? html`<div class="stack" style="margin-bottom:14px">${l.map((t) => alertBtn('warn', 'calendar', 'edit-tache', t.id, html`⏹️ <b>${t.net.nom}</b> demande l’arrêt du service : ${t.titre}<div class="tiny">mettez la date de fin dans la tâche</div>`))}</div>` : ''; })();
+    const annWait = TENANT ? [] : vault.list('avis').filter((a) => isPub(a) && a.st === 'wait' && a.annId);
+    const annBox = annWait.length ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('warn', 'alert', 'ann-open', '', html`📣 <b>${plural(annWait.length, 'annonce')} à valider</b> — ${[...new Set(annWait.map((a) => (vault.get('reglages', a.annId) || {}).nom || a.nom))].join(', ')}${annWait.some((a) => a.special) ? ' · ✍️ demande spéciale' : ''}<div class="tiny">touchez pour voir, accepter ou refuser</div>`)}</div>` : '';
     const bailBox = (() => {
       const al = imms0().map((im) => [im, bailAlert(im)]).filter(([, a]) => a).sort((x, y) => x[1].left - y[1].left);
       const revB = imms0().filter((im) => isBailPrincipal(im) && im.bailRev && daysUntil(im.bailRev) >= -15 && daysUntil(im.bailRev) <= 60);
@@ -5285,7 +5287,7 @@ dashboard() {
       ${centralinoHtml()}
       ${virBox}
       ${edlBox}
-      ${nClaimBox}${netSoonBox}${netStopBox}${bailBox}${eqBox}
+      ${annBox}${nClaimBox}${netSoonBox}${netStopBox}${bailBox}${eqBox}
       ${absBox}
       ${toolsBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
@@ -8468,6 +8470,7 @@ addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installProm
 const ACTIONS = {
   'abo-edit': (d) => openSheet('abo', d.id),
   'abo-tab': (d) => { ui.aboTab = d.id; renderView(); },
+  'ann-open': () => { ui.cpSec = 'abo'; ui.aboTab = 'pub'; go('compta'); },
   async 'abo-offers'() {
     const on = !aboOffersOn();
     await vault.mutate((tx) => tx.put('reglages', { id: 'abos', offers: on }), on ? 'Offres d’abonnement activées' : 'Offres d’abonnement désactivées', 'Portail gérance');

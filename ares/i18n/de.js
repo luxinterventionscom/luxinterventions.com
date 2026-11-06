@@ -18057,4 +18057,12 @@ export default [
 "répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)",
 "antworten Sie über die 💬 Nachrichten des Inserenten (Preis auf Angebot)"
 ],
+[
+"à valider",
+"zu prüfen"
+],
+[
+"touchez pour voir, accepter ou refuser",
+"tippen zum Ansehen, Annehmen oder Ablehnen"
+],
 ];

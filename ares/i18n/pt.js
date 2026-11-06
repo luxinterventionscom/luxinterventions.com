@@ -17978,4 +17978,12 @@ export default [
 "répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)",
 "responda pela 💬 mensagem do anunciante (preço sob orçamento se necessário)"
 ],
+[
+"à valider",
+"a validar"
+],
+[
+"touchez pour voir, accepter ou refuser",
+"toque para ver, aceitar ou recusar"
+],
 ];

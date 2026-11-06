@@ -151,6 +151,55 @@ function adHtml(a, t) {
       ${st === 'pay' ? `<span class="paywrap"><button class="btn sm" disabled aria-disabled="true">${esc(t.pay)}</button><button class="info-dot" data-payinfo="${esc(a.id)}" aria-label="Info">ℹ️</button></span>` : ''}</div>
     ${payOpen === a.id ? `<p class="bubble">ℹ️ ${esc(u.card)}</p>` : ''}</div>`;
 }
+// 📬 Réponses de LuxInterventions sur mes annonces (acceptée / à payer / refusée), en haut de l'app jusqu'à « Vu »
+const RPT = { fr: { t: '📬 Réponse de LuxInterventions', pay: 'acceptée — à payer', ok: 'acceptée et en ligne', no: 'non retenue', seen: '👍 Vu' }, it: { t: '📬 Risposta di LuxInterventions', pay: 'accettato — da pagare', ok: 'accettato e online', no: 'non idoneo', seen: '👍 Visto' }, de: { t: '📬 Antwort von LuxInterventions', pay: 'angenommen — zu bezahlen', ok: 'angenommen und online', no: 'nicht angenommen', seen: '👍 Gesehen' }, pt: { t: '📬 Resposta da LuxInterventions', pay: 'aceite — a pagar', ok: 'aceite e online', no: 'não aceite', seen: '👍 Visto' }, en: { t: '📬 Reply from LuxInterventions', pay: 'accepted — to pay', ok: 'accepted and online', no: 'not accepted', seen: '👍 Seen' }, es: { t: '📬 Respuesta de LuxInterventions', pay: 'aceptado — a pagar', ok: 'aceptado y en línea', no: 'no aceptado', seen: '👍 Visto' } };
+const seenGet = () => { try { return JSON.parse(ls.get('annSeen:' + id) || '{}'); } catch { return {}; } };
+function repliesCard() {
+  const r = RPT[lang] || RPT.fr, seen = seenGet();
+  const news = (data.ads || []).filter((a) => ['pay', 'ok', 'no'].includes(a.st) && seen[a.id] !== a.st && !(a.st === 'ok' && a.fin && a.fin < today));
+  if (!news.length) return '';
+  return `<div class="card" style="border-left:5px solid #2563eb"><h2 style="margin-top:0">${esc(r.t)}</h2>${news.map((a) => `<p style="margin:6px 0">${a.st === 'no' ? '❌' : '✅'} <b>«&nbsp;${esc(a.nom)}&nbsp;»</b> ${esc(r[a.st])}${a.st === 'pay' && a.ttc ? ` : <b>${esc(eur(a.ttc))}</b>` : ''}${a.st === 'no' && a.motif ? ` — ${esc(a.motif)}` : ''}</p>`).join('')}<button class="btn sm sec" data-seen="1">${esc(r.seen)}</button></div>`;
+}
+// 🧾 Récapitulatif de mes annonces (n°, aperçu, dates, horaires, emplacement, état, prix) + solde, imprimable en A4
+const RCT = {
+  fr: { t: '🧾 Récapitulatif de mes annonces', n: 'annonce(s)', paid: 'Payé', due: 'Reste à payer', wait: 'En attente de prix', print: '🖨️ Imprimer (A4)', cols: ['N°', 'Aperçu', 'Annonce', 'Emplacement', 'Dates', 'Jours / heures', 'État', 'Prix TTC'], every: 'tous les jours', tot: 'Total facturé', saldo: 'Solde', on: 'Imprimé le' },
+  it: { t: '🧾 Riepilogo dei miei annunci', n: 'annuncio/i', paid: 'Pagato', due: 'Da pagare', wait: 'In attesa di prezzo', print: '🖨️ Stampa (A4)', cols: ['N°', 'Anteprima', 'Annuncio', 'Posizione', 'Date', 'Giorni / ore', 'Stato', 'Prezzo IVA incl.'], every: 'tutti i giorni', tot: 'Totale fatturato', saldo: 'Saldo', on: 'Stampato il' },
+  de: { t: '🧾 Übersicht meiner Anzeigen', n: 'Anzeige(n)', paid: 'Bezahlt', due: 'Offen', wait: 'Preis ausstehend', print: '🖨️ Drucken (A4)', cols: ['Nr.', 'Vorschau', 'Anzeige', 'Platz', 'Daten', 'Tage / Uhrzeit', 'Status', 'Preis brutto'], every: 'jeden Tag', tot: 'Gesamt berechnet', saldo: 'Saldo', on: 'Gedruckt am' },
+  pt: { t: '🧾 Resumo dos meus anúncios', n: 'anúncio(s)', paid: 'Pago', due: 'Por pagar', wait: 'A aguardar preço', print: '🖨️ Imprimir (A4)', cols: ['N.º', 'Pré-visualização', 'Anúncio', 'Posição', 'Datas', 'Dias / horas', 'Estado', 'Preço c/ IVA'], every: 'todos os dias', tot: 'Total faturado', saldo: 'Saldo', on: 'Impresso em' },
+  en: { t: '🧾 Summary of my ads', n: 'ad(s)', paid: 'Paid', due: 'To pay', wait: 'Awaiting price', print: '🖨️ Print (A4)', cols: ['No.', 'Preview', 'Ad', 'Position', 'Dates', 'Days / hours', 'Status', 'Price incl. VAT'], every: 'every day', tot: 'Total invoiced', saldo: 'Balance', on: 'Printed on' },
+  es: { t: '🧾 Resumen de mis anuncios', n: 'anuncio(s)', paid: 'Pagado', due: 'Por pagar', wait: 'Esperando precio', print: '🖨️ Imprimir (A4)', cols: ['N.º', 'Vista', 'Anuncio', 'Posición', 'Fechas', 'Días / horas', 'Estado', 'Precio IVA incl.'], every: 'todos los días', tot: 'Total facturado', saldo: 'Saldo', on: 'Impreso el' },
+};
+function recapRows() {
+  const t = T(), r = RCT[lang] || RCT.fr, logo = ls.get('annLogo:' + id) || '';
+  const ads = [...(data.ads || [])].sort((a, b) => String(a.debut || '').localeCompare(String(b.debut || '')));
+  return ads.map((a, i) => {
+    const st = a.st === 'ok' && a.fin && a.fin < today ? 'end' : a.st;
+    const amt = a.fact ? +a.fact.ttc || 0 : a.st === 'pay' ? +a.ttc || 0 : 0;
+    return { n: i + 1, a, st, logo, amt, paid: a.fact ? amt : 0, due: a.st === 'pay' ? amt : 0, when: `${a.debut || ''} → ${a.fin || ''}`, hrs: `${a.jours && a.jours.length ? a.jours.map((j) => t.D[j]).join(' ') : r.every}${a.h1 && a.h2 ? ' · ' + a.h1 + '–' + a.h2 : ''}`, stLbl: st === 'pay' ? TP().st : t.St[st] || '' };
+  });
+}
+function recapCard() {
+  const r = RCT[lang] || RCT.fr, rows = recapRows();
+  if (!rows.length) return '';
+  const paid = rows.reduce((x, y) => x + y.paid, 0), due = rows.reduce((x, y) => x + y.due, 0), nw = rows.filter((y) => y.st === 'wait').length;
+  return `<div class="card"><h2>${esc(r.t)}</h2><p style="margin:0 0 6px"><b>${rows.length}</b> ${esc(r.n)} · ${esc(r.paid)} <b>${esc(eur(paid))}</b> · ${esc(r.due)} <b style="color:${due ? '#b91c1c' : 'inherit'}">${esc(eur(due))}</b>${nw ? ` · ${esc(r.wait)} : ${nw}` : ''}</p>
+    <button class="btn block sec" data-recap-print="1">${esc(r.print)}</button></div>`;
+}
+function recapPrint() {
+  const t = T(), r = RCT[lang] || RCT.fr, rows = recapRows(), d = data;
+  const paid = rows.reduce((x, y) => x + y.paid, 0), due = rows.reduce((x, y) => x + y.due, 0), tot = paid + due;
+  const thumb = (y) => `<div style="width:64px;height:48px;border:1px solid #ccc;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:22px;background:#fafafa">${y.logo ? `<img src="${esc(y.logo)}" style="max-width:60px;max-height:44px;object-fit:contain">` : esc((t.Ty[y.a.type] || '📣').split(' ')[0])}</div>`;
+  const html = `<!doctype html><html lang="${lang}"><head><meta charset="utf-8"><title>${esc(r.t)}</title><style>@page{size:A4;margin:14mm}body{font:11pt system-ui,sans-serif;color:#111}h1{font-size:16pt;margin:0 0 4px}table{width:100%;border-collapse:collapse;margin-top:10px}th,td{border-bottom:1px solid #ddd;padding:6px 5px;text-align:left;vertical-align:top;font-size:9.5pt}th{background:#f3f4f6}td.r,th.r{text-align:right}.tot td{border:0;font-weight:700}</style></head><body>
+    <h1>${esc(r.t.replace('🧾 ', ''))}</h1><div>${esc(d.nom || '')}${d.adresse ? ' · ' + esc(d.adresse) : ''} — ${esc(d.reseau || '')}</div><div style="color:#666;font-size:9pt">${esc(r.on)} ${esc(new Date().toLocaleDateString(lang))}</div>
+    <table><tr>${r.cols.map((c, i) => `<th${i === 7 ? ' class="r"' : ''}>${esc(c)}</th>`).join('')}</tr>
+    ${rows.map((y) => `<tr><td>${y.n}</td><td>${thumb(y)}</td><td><b>${esc(t.Ty[y.a.type] || '')}</b><br>${esc(y.a.nom)}${y.a.fact ? `<br><span style="color:#666">🧾 ${esc(y.a.fact.no || '')}</span>` : ''}</td><td>${esc(t.Sl[y.a.slot] || '')}</td><td>${esc(y.when)}</td><td>${esc(y.hrs)}</td><td>${esc(y.stLbl)}</td><td class="r">${y.amt ? esc(eur(y.amt)) : '—'}</td></tr>`).join('')}
+    <tr class="tot"><td colspan="7" class="r">${esc(r.tot)}</td><td class="r">${esc(eur(tot))}</td></tr>
+    <tr class="tot"><td colspan="7" class="r">${esc(r.paid)}</td><td class="r">${esc(eur(paid))}</td></tr>
+    <tr class="tot"><td colspan="7" class="r">${esc(r.saldo)} (${esc(r.due)})</td><td class="r" style="color:${due ? '#b91c1c' : '#111'}">${esc(eur(due))}</td></tr></table>
+    <script>onload=()=>setTimeout(()=>print(),300)<\/script></body></html>`;
+  const w = window.open('', '_blank');
+  if (w) { w.document.write(html); w.document.close(); }
+}
 // 📣 les annonces des AUTRES annonceurs, aux 3 emplacements (comme les locataires les voient)
 const ADT = { fr: { lbl: 'Annonce', see: '📍 Voir', call: '📞 Appeler', why: 'Votre annonce peut être ici aussi : elle passe dans les apps des locataires, des clients et de tous les annonceurs.' }, it: { lbl: 'Annuncio', see: '📍 Vedi', call: '📞 Chiama', why: 'Il vostro annuncio può stare qui: passa nelle app di inquilini, clienti e di tutti gli annunciatori.' }, de: { lbl: 'Anzeige', see: '📍 Ansehen', call: '📞 Anrufen', why: 'Ihre Anzeige kann auch hier stehen: in den Apps der Mieter, Kunden und aller Inserenten.' }, pt: { lbl: 'Anúncio', see: '📍 Ver', call: '📞 Ligar', why: 'O seu anúncio pode estar aqui: aparece nas apps dos inquilinos, clientes e de todos os anunciantes.' }, en: { lbl: 'Ad', see: '📍 See', call: '📞 Call', why: 'Your ad can be here too: it shows in the apps of tenants, clients and all advertisers.' }, es: { lbl: 'Anuncio', see: '📍 Ver', call: '📞 Llamar', why: 'Su anuncio puede estar aquí: aparece en las apps de inquilinos, clientes y todos los anunciantes.' } };
 let others = [];
@@ -179,6 +228,7 @@ function render() {
   out.push(`<div class="top"><span class="brandx"><b>📣 ${esc(d.nom)}</b></span>${langs}</div><p class="sub">${esc(t.app)} · ${esc(d.reseau)}</p>`);
   { const p = slot('haut'); if (p) out.push(adBox(p) + `<p class="meta" style="margin:-4px 0 12px">💡 ${esc((ADT[lang] || ADT.fr).why)}</p>`); }
   if (pushSt && pushSt !== 'unsupported' && (pushSt !== 'on' || pushJust)) out.push(`<div class="card"><h2>${esc(t.notif)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.notifHint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0">${esc(t.notifOk)}</p>` : `<button class="btn sm" data-push="1">${esc(t.notifOn)}</button>`}</div>`);
+  out.push(repliesCard());
   if (msg) out.push(`<div class="card okc"><p style="margin:0">${esc(msg)}</p></div>`);
   out.push(form ? formHtml(t) : `<button class="btn block big" data-new="1">${esc(t.newA)}</button>`);
   const pend = (() => { try { return JSON.parse(ls.get('annPend:' + id) || '[]'); } catch { return []; } })();
@@ -187,6 +237,7 @@ function render() {
   { const p = slot('milieu'); if (p) out.push(adBox(p)); }
   out.push(pchatCard()); // 💬 service après-vente 24 h / 24 : messages avec la centrale
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
+  out.push(recapCard());
   { const p = slot('bas'); if (p) out.push(adBox(p)); }
   out.push(infoBox({ lang }));
   out.push(`<p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);
@@ -254,6 +305,8 @@ app.addEventListener('click', async (e) => {
   if (b.dataset.push) { if (await pushEnable({ api: API, swUrl: '/annonce-sw.js', scope: '/annonce', post: pushPost })) { pushSt = 'on'; pushJust = true; } else pushSt = await pushStatus('/annonce'); return render(); }
   if (b.dataset.reset) { ls.set(ACC, null); id = key = ''; data = null; return render(); }
   if (b.dataset.new) { form = blank(); msg = ''; return render(); }
+  if (b.dataset.recapPrint) return recapPrint();
+  if (b.dataset.seen) { const m = seenGet(); for (const a of data.ads || []) m[a.id] = a.st; ls.set('annSeen:' + id, JSON.stringify(m)); return render(); }
   if (b.dataset.cancel) { form = null; return render(); }
   if (b.dataset.logoDel && form) { e.preventDefault(); form.logo = ''; ls.set('annLogo:' + id, ''); return render(); }
   if (b.dataset.inv) return printInv(b.dataset.inv);
