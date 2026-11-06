@@ -17919,4 +17919,104 @@ export default [
 "🗑️ Déchets",
 "🗑️ Basura"
 ],
+[
+"Une fois",
+"Una vez"
+],
+[
+"Régulier",
+"Regular"
+],
+[
+"— réparation, panne, travaux",
+"— reparación, avería, obras"
+],
+[
+"— ménage, jardin, entretien… (passage à jours fixes)",
+"— limpieza, jardín, mantenimiento… (días fijos)"
+],
+[
+"Service",
+"Servicio"
+],
+[
+"Fréquence",
+"Frecuencia"
+],
+[
+"Jours souhaités",
+"Días deseados"
+],
+[
+"Heure souhaitée (de)",
+"Hora deseada (desde)"
+],
+[
+"Où (qui verra le passage dans son app)",
+"Dónde (quién verá la visita en su app)"
+],
+[
+"— préciser plus tard —",
+"— precisar más tarde —"
+],
+[
+"🏢 Parties communes — tout l’immeuble",
+"🏢 Zonas comunes — todo el edificio"
+],
+[
+"ex. Chambre 12 · Hall · Couloir 2e étage · Cuisine",
+"ej. Habitación 12 · Vestíbulo · Pasillo 2.ª planta · Cocina"
+],
+[
+"🧹 Ménage",
+"🧹 Limpieza"
+],
+[
+"🔧 Entretien",
+"🔧 Mantenimiento"
+],
+[
+"📋 Autre",
+"📋 Otro"
+],
+[
+"⏹️ Arrêter",
+"⏹️ Detener"
+],
+[
+"Arrêter ce service régulier ?",
+"¿Detener este servicio regular?"
+],
+[
+"Choisissez au moins un jour souhaité",
+"Elija al menos un día"
+],
+[
+"Demande d’arrêt envoyée",
+"Solicitud de parada enviada"
+],
+[
+"⏹️ Arrêt demandé — en attente de LuxInterventions",
+"⏹️ Parada solicitada — esperando a LuxInterventions"
+],
+[
+"📨 Reçue par LuxInterventions",
+"📨 Recibida por LuxInterventions"
+],
+[
+"📨 Reçue",
+"📨 Recibida"
+],
+[
+"📅 Planifiée",
+"📅 Planificada"
+],
+[
+"🔧 En cours",
+"🔧 En curso"
+],
+[
+"✅ Terminée",
+"✅ Terminada"
+],
 ];

@@ -17667,4 +17667,108 @@ export default [
 "🗑️ Déchets",
 "🗑️ Waste"
 ],
+[
+"Type",
+"Type"
+],
+[
+"Une fois",
+"One-off"
+],
+[
+"Régulier",
+"Regular"
+],
+[
+"— réparation, panne, travaux",
+"— repair, breakdown, works"
+],
+[
+"— ménage, jardin, entretien… (passage à jours fixes)",
+"— cleaning, garden, upkeep… (on fixed days)"
+],
+[
+"Service",
+"Service"
+],
+[
+"Fréquence",
+"Frequency"
+],
+[
+"Jours souhaités",
+"Preferred days"
+],
+[
+"Heure souhaitée (de)",
+"Preferred time (from)"
+],
+[
+"Où (qui verra le passage dans son app)",
+"Where (who will see the visit in their app)"
+],
+[
+"— préciser plus tard —",
+"— specify later —"
+],
+[
+"🏢 Parties communes — tout l’immeuble",
+"🏢 Common areas — whole building"
+],
+[
+"ex. Chambre 12 · Hall · Couloir 2e étage · Cuisine",
+"e.g. Room 12 · Lobby · 2nd floor corridor · Kitchen"
+],
+[
+"🧹 Ménage",
+"🧹 Cleaning"
+],
+[
+"🔧 Entretien",
+"🔧 Upkeep"
+],
+[
+"📋 Autre",
+"📋 Other"
+],
+[
+"⏹️ Arrêter",
+"⏹️ Stop"
+],
+[
+"Arrêter ce service régulier ?",
+"Stop this regular service?"
+],
+[
+"Choisissez au moins un jour souhaité",
+"Choose at least one day"
+],
+[
+"Demande d’arrêt envoyée",
+"Stop request sent"
+],
+[
+"⏹️ Arrêt demandé — en attente de LuxInterventions",
+"⏹️ Stop requested — waiting for LuxInterventions"
+],
+[
+"📨 Reçue par LuxInterventions",
+"📨 Received by LuxInterventions"
+],
+[
+"📨 Reçue",
+"📨 Received"
+],
+[
+"📅 Planifiée",
+"📅 Scheduled"
+],
+[
+"🔧 En cours",
+"🔧 In progress"
+],
+[
+"✅ Terminée",
+"✅ Done"
+],
 ];
