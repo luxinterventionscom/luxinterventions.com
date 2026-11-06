@@ -1105,6 +1105,7 @@ async function handleAres(request, env, url, headers) {
     const items = (b && Array.isArray(b.items) ? b.items : []).slice(0, 200).map((a) => ({
       id: s(a.id, 40), slot: ["haut", "milieu", "bas"].includes(a.slot) ? a.slot : "milieu", cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
       tel: s(a.tel, 40), web: url(a.web), video: url(a.video), type: s(a.type, 20), debut: d10(a.debut), fin: d10(a.fin), zone: s(a.zone, 200), annId: s(a.annId, 40),
+      logo: /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.logo || "") && String(a.logo).length < 60000 ? a.logo : "",
       aud: (Array.isArray(a.aud) ? a.aud : []).map((x) => s(x, 8)).slice(0, 8),
       jours: (Array.isArray(a.jours) ? a.jours : []).map(Number).filter((n) => n >= 0 && n <= 6).slice(0, 7),
       h1: /^\d\d:\d\d$/.test(a.h1 || "") ? a.h1 : "", h2: /^\d\d:\d\d$/.test(a.h2 || "") ? a.h2 : "",
@@ -1120,6 +1121,7 @@ async function handleAres(request, env, url, headers) {
     const items = (b && Array.isArray(b.items) ? b.items : []).slice(0, 50).map((a) => ({
       id: s(a.id, 40), slot: ["haut", "milieu", "bas"].includes(a.slot) ? a.slot : "milieu", cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
       tel: s(a.tel, 40), web: url(a.web), video: url(a.video), fin: /^\d{4}-\d{2}-\d{2}$/.test(a.fin || "") ? a.fin : "",
+      logo: /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.logo || "") && String(a.logo).length < 60000 ? a.logo : "",
       // jours (0 = dimanche) et heures d'affichage (ex. happy hour) : facultatifs
       jours: (Array.isArray(a.jours) ? a.jours : []).map(Number).filter((n) => n >= 0 && n <= 6).slice(0, 7),
       h1: /^\d\d:\d\d$/.test(a.h1 || "") ? a.h1 : "", h2: /^\d\d:\d\d$/.test(a.h2 || "") ? a.h2 : "",

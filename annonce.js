@@ -110,7 +110,7 @@ function printInv(id) {
   w.document.close();
   w.print();
 }
-const blank = () => ({ id: '', type: 'annonce', nom: data ? data.nom : '', texte: '', adresse: data ? data.adresse : '', tel: data ? data.tel : '', web: '', video: '', slot: 'milieu', aud: ['loc', 'hote'], debut: today, fin: plusDays(today, 13), jours: [], h1: '', h2: '' });
+const blank = () => ({ logo: ls.get('annLogo:' + id) || '', id: '', type: 'annonce', nom: data ? data.nom : '', texte: '', adresse: data ? data.adresse : '', tel: data ? data.tel : '', web: '', video: '', slot: 'milieu', aud: ['loc', 'hote'], debut: today, fin: plusDays(today, 13), jours: [], h1: '', h2: '' });
 const days = (f) => Math.max(1, Math.round((new Date(f.fin) - new Date(f.debut)) / 864e5) + 1);
 const priceOf = (f) => { const r = +((data && data.tarifs) || {})[f.slot] || 0; return r ? Math.round(r * days(f)) : 0; };
 async function sendOwner(o) {
@@ -124,6 +124,7 @@ function formHtml(t) {
   const f = form, tr = (data && data.tarifs) || {}, p = priceOf(f);
   return `<div class="card frm"><h2>${esc(f.id ? t.edit : t.newA)}</h2>
     <label>${esc(t.type)}</label><select data-k="type">${TYPES.map((k) => `<option value="${k}" ${f.type === k ? 'selected' : ''}>${esc(t.Ty[k])}</option>`).join('')}</select>
+    <label>🖼️ Logo</label><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">${f.logo ? `<img src="${esc(f.logo)}" alt="" style="max-height:48px;max-width:110px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid #ddd">` : ''}<label class="btn sec sm" style="cursor:pointer;margin:0">${f.logo ? '🔄' : '➕'} Logo<input type="file" accept="image/*" data-logo="1" hidden></label>${f.logo ? '<button class="btn sec sm" data-logo-del="1">✖</button>' : ''}</div>
     <label>${esc(t.title)}</label><input data-k="nom" value="${esc(f.nom)}">
     <label>${esc(t.text)}</label><textarea data-k="texte" rows="4">${esc(f.texte)}</textarea>
     <label>${esc(t.addr)}</label><input data-k="adresse" value="${esc(f.adresse)}">
@@ -154,9 +155,10 @@ function adHtml(a, t) {
 const ADT = { fr: { lbl: 'Annonce', see: '📍 Voir', call: '📞 Appeler', why: 'Votre annonce peut être ici aussi : elle passe dans les apps des locataires, des clients et de tous les annonceurs.' }, it: { lbl: 'Annuncio', see: '📍 Vedi', call: '📞 Chiama', why: 'Il vostro annuncio può stare qui: passa nelle app di inquilini, clienti e di tutti gli annunciatori.' }, de: { lbl: 'Anzeige', see: '📍 Ansehen', call: '📞 Anrufen', why: 'Ihre Anzeige kann auch hier stehen: in den Apps der Mieter, Kunden und aller Inserenten.' }, pt: { lbl: 'Anúncio', see: '📍 Ver', call: '📞 Ligar', why: 'O seu anúncio pode estar aqui: aparece nas apps dos inquilinos, clientes e de todos os anunciantes.' }, en: { lbl: 'Ad', see: '📍 See', call: '📞 Call', why: 'Your ad can be here too: it shows in the apps of tenants, clients and all advertisers.' }, es: { lbl: 'Anuncio', see: '📍 Ver', call: '📞 Llamar', why: 'Su anuncio puede estar aquí: aparece en las apps de inquilinos, clientes y todos los anunciantes.' } };
 let others = [];
 const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
+const pubLogo = (x) => (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(x.logo || '') && x.logo.length < 60000 ? `<img src="${x.logo}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''); // logo de l'annonceur
 function adBox(x) {
   const t = ADT[lang] || ADT.fr, v = x.video ? videoEmbed(x.video) : null;
-  return `<div class="card pub-box" data-pid="${esc(x.id)}"><div class="meta"><b>📣 ${esc(t.lbl)}</b></div><b style="display:block">${esc(x.nom)}</b><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p>${v ? `<div class="vid" data-vsrc="${esc(v.src)}"></div>` : ''}
+  return `<div class="card pub-box" data-pid="${esc(x.id)}"><div class="meta"><b>📣 ${esc(t.lbl)}</b></div>${pubLogo(x)}<b style="display:block">${esc(x.nom)}</b><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p>${v ? `<div class="vid" data-vsrc="${esc(v.src)}"></div>` : ''}
     <div class="btns">${x.adresse ? `<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.adresse)}" target="_blank" rel="noopener" data-pev="map">${esc(t.see)}</a>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.call)}</a>` : ''}</div>${pubSocialBar(x)}</div>`;
 }
 // ✍️ demande spéciale (hors des prix affichés) : LuxInterventions répond, avec un prix sur devis si besoin
@@ -219,6 +221,19 @@ app.addEventListener('submit', async (e) => {
     const j = await r.json(); id = j.id; key = await unwrapWithCode(code, j.salt, j.wk); ls.set(ACC, id + '.' + key); loadErr = ''; load();
   } catch { loadErr = T().bad; render(); }
 });
+// 🖼️ logo : réduit à 160 px (petit, il voyage avec l'annonce dans toutes les apps) et gardé pour les annonces suivantes
+app.addEventListener('change', async (e) => {
+  const el = e.target;
+  if (!form || !el.dataset.logo || !el.files[0]) return;
+  try {
+    const bmp = await createImageBitmap(el.files[0]), k = Math.min(1, 160 / Math.max(bmp.width, bmp.height));
+    const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    let u = c.toDataURL('image/png'); if (u.length > 40000) u = c.toDataURL('image/jpeg', 0.8);
+    if (u.length > 55000) return;
+    form.logo = u; ls.set('annLogo:' + id, u); render();
+  } catch { /* image illisible */ }
+});
 app.addEventListener('input', (e) => { const el = e.target; if (form && el.dataset.k) { form[el.dataset.k] = el.value; if (['debut', 'fin'].includes(el.dataset.k)) render(); } });
 app.addEventListener('change', (e) => {
   const el = e.target;
@@ -240,6 +255,7 @@ app.addEventListener('click', async (e) => {
   if (b.dataset.reset) { ls.set(ACC, null); id = key = ''; data = null; return render(); }
   if (b.dataset.new) { form = blank(); msg = ''; return render(); }
   if (b.dataset.cancel) { form = null; return render(); }
+  if (b.dataset.logoDel && form) { e.preventDefault(); form.logo = ''; ls.set('annLogo:' + id, ''); return render(); }
   if (b.dataset.inv) return printInv(b.dataset.inv);
   if (b.dataset.paid) { b.disabled = true; try { await sendOwner({ type: 'an-paid', id: b.dataset.paid }); const a = (data.ads || []).find((x) => x.id === b.dataset.paid); if (a) a.claim = today; } catch { b.disabled = false; return; } return render(); }
   if (b.dataset.payinfo) { payOpen = payOpen === b.dataset.payinfo ? '' : b.dataset.payinfo; return render(); }

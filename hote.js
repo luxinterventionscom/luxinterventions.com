@@ -250,9 +250,10 @@ let pubTurn = 0;
 try { pubTurn = (+ls.get('hotePubTurn') || 0) + 1; ls.set('hotePubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
 const pickPub = (list) => (list.length ? list[pubTurn % list.length] : null);
 const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
+const pubLogo = (x) => (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(x.logo || '') && x.logo.length < 60000 ? `<img src="${x.logo}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''); // logo de l'annonceur
 function adBox(x, t) {
   const v = x.video ? videoEmbed(x.video) : null;
-  return `<details class="card pub-box" data-pid="${esc(x.id)}" open><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b></div><b style="display:block;font-size:17px">${esc(x.nom)}</b><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p></summary>
+  return `<details class="card pub-box" data-pid="${esc(x.id)}" open><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b></div>${pubLogo(x)}<b style="display:block;font-size:17px">${esc(x.nom)}</b><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p></summary>
     ${v ? `<div class="vid${v.tall ? ' tall' : ''}" data-vsrc="${esc(v.src)}"></div>` : ''}${x.adresse ? `<div class="meta" style="margin-top:6px">📍 ${esc(x.adresse)}</div>` : ''}
     <div class="btns">${x.adresse ? `<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.adresse)}" target="_blank" rel="noopener" data-pev="map">${esc(t.ad.see)}</a>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(/^https?:/.test(x.web) ? x.web : 'https://' + x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}</div>${pubSocialBar(x)}</details>`;
 }

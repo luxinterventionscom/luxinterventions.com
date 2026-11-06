@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.222.3';
+const VERSION = '2.222.4';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1125,7 +1125,7 @@ function pubStatsFor(id, from = '0000', to = '9999') {
   r.like = Math.max(0, (r.soc.like || 0) - (r.soc.unl || 0)); r.dis = Math.max(0, (r.soc.dis || 0) - (r.soc.und || 0)); r.sh = r.soc.share || 0;
   return r;
 }
-const pubOut = (a) => ({ id: a.id, ...(a.zone ? { zone: a.zone } : {}), slot: pubSlot(a), cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '', ...(a.jours && a.jours.length ? { jours: a.jours } : {}), ...(a.h1 && a.h2 ? { h1: a.h1, h2: a.h2 } : {}), ...(a.type ? { type: a.type } : {}) });
+const pubOut = (a) => ({ id: a.id, ...(a.zone ? { zone: a.zone } : {}), ...(a.logo ? { logo: a.logo } : {}), slot: pubSlot(a), cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '', ...(a.jours && a.jours.length ? { jours: a.jours } : {}), ...(a.h1 && a.h2 ? { h1: a.h1, h2: a.h2 } : {}), ...(a.type ? { type: a.type } : {}) });
 const pubsActives = (immId, aud = 'loc') => vault.list('avis').filter((a) => isPub(a) && (!a.st || a.st === 'ok') && pubAud(a).includes(aud) && (aud === 'ptl' || !immId || !a.immId || (Array.isArray(immId) ? immId.includes(a.immId) : a.immId === immId)) && (!a.debut || a.debut <= today()) && (!a.fin || a.fin >= today()));
 const avisActifs = (immId) => vault.list('avis').filter((a) => !isPub(a) && (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
   .sort((a, b) => (a.debut || '').localeCompare(b.debut || ''));
@@ -1829,6 +1829,7 @@ async function annInbox(an, msg) {
       jours: (Array.isArray(a.jours) ? a.jours : []).map(Number).filter((n) => n >= 0 && n <= 6).slice(0, 7), h1: hm(a.h1), h2: hm(a.h2), immId: '', pay: 'none' };
     rec.aud = old && Array.isArray(old.aud) && old.aud.length ? old.aud : Object.keys(PUB_AUD); // les apps : c'est la centrale qui choisit (par défaut : toutes)
     rec.special = S(a.special, 600);
+    rec.logo = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.logo || '') && a.logo.length < 60000 ? a.logo : '';
     const t = anTarifs(); rec.prix = Math.round((+t[rec.slot] || 0) * rec.ttl);
     if (old) rec.id = old.id;
     await vault.mutate((tx) => tx.put('avis', rec), old ? '📣 Annonce modifiée par l’annonceur (à valider)' : '📣 Nouvelle annonce à valider', `${an.nom} · ${AN_TYPES[rec.type]} · ${fmtDate(rec.debut)} → ${fmtDate(rec.fin)}`);
