@@ -124,7 +124,6 @@ function formHtml(t) {
   const f = form, tr = (data && data.tarifs) || {}, p = priceOf(f);
   return `<div class="card frm"><h2>${esc(f.id ? t.edit : t.newA)}</h2>
     <label>${esc(t.type)}</label><select data-k="type">${TYPES.map((k) => `<option value="${k}" ${f.type === k ? 'selected' : ''}>${esc(t.Ty[k])}</option>`).join('')}</select>
-    <label>🖼️ Logo</label><div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">${f.logo ? `<img src="${esc(f.logo)}" alt="" style="max-height:48px;max-width:110px;object-fit:contain;border-radius:8px;background:#fff;border:1px solid #ddd">` : ''}<label class="btn sec sm" style="cursor:pointer;margin:0">${f.logo ? '🔄' : '➕'} Logo<input type="file" accept="image/*" data-logo="1" hidden></label>${f.logo ? '<button class="btn sec sm" data-logo-del="1">✖</button>' : ''}</div>
     <label>${esc(t.title)}</label><input data-k="nom" value="${esc(f.nom)}">
     <label>${esc(t.text)}</label><textarea data-k="texte" rows="4">${esc(f.texte)}</textarea>
     <label>${esc(t.addr)}</label><input data-k="adresse" value="${esc(f.adresse)}">
@@ -212,6 +211,8 @@ function adBox(x) {
 }
 // ✍️ demande spéciale (hors des prix affichés) : LuxInterventions répond, avec un prix sur devis si besoin
 const SPX = { fr: ['Demande spéciale (facultatif)', 'ex. plusieurs emplacements, une semaine précise, un prix pour 3 mois…'], it: ['Richiesta speciale (facoltativa)', 'es. più posizioni, una settimana precisa, un prezzo per 3 mesi…'], de: ['Sonderwunsch (freiwillig)', 'z. B. mehrere Plätze, eine bestimmte Woche, ein Preis für 3 Monate…'], pt: ['Pedido especial (facultativo)', 'ex. várias posições, uma semana precisa, um preço para 3 meses…'], en: ['Special request (optional)', 'e.g. several positions, a given week, a price for 3 months…'], es: ['Petición especial (opcional)', 'ej. varias posiciones, una semana concreta, un precio para 3 meses…'] };
+let logoOpen = false;
+const LGT = { fr: 'Votre logo apparaît dans vos annonces, dans toutes les apps (locataires, clients, équipes…).', it: 'Il vostro logo compare nei vostri annunci, in tutte le app (inquilini, clienti, squadre…).', de: 'Ihr Logo erscheint in Ihren Anzeigen, in allen Apps (Mieter, Kunden, Teams…).', pt: 'O seu logótipo aparece nos seus anúncios, em todas as apps (inquilinos, clientes, equipas…).', en: 'Your logo appears in your ads, in every app (tenants, clients, teams…).', es: 'Su logo aparece en sus anuncios, en todas las apps (inquilinos, clientes, equipos…).' };
 function render() {
   const t = T();
   document.documentElement.lang = lang;
@@ -225,7 +226,9 @@ function render() {
   const d = data, out = [], today = new Date().toISOString().slice(0, 10);
   const pubs = others.filter((x) => (!x.fin || x.fin >= today) && (!x.debut || x.debut <= today) && pubNow(x)), slot = (k) => { const l = pubs.filter((x) => (x.slot || 'milieu') === k); return l.length ? l[Math.floor(Date.now() / 60000) % l.length] : null; };
   document.title = `📣 ${d.nom}`;
-  out.push(`<div class="top"><span class="brandx"><b>📣 ${esc(d.nom)}</b></span>${langs}</div><p class="sub">${esc(t.app)} · ${esc(d.reseau)}</p>`);
+  const lg = ls.get('annLogo:' + id) || '';
+  out.push(`<div class="top"><span class="brandx" style="display:flex;align-items:center;gap:10px"><button class="av-wrap" data-logo-open="1" aria-label="Logo"><span class="av-btn">${lg ? `<img src="${esc(lg)}" alt="" style="object-fit:contain;background:#fff">` : '📣'}</span><span class="av-pen" aria-hidden="true">✏️</span></button><b>${esc(d.nom)}</b></span>${langs}</div><p class="sub">${esc(t.app)} · ${esc(d.reseau)}</p>`);
+  if (logoOpen) out.push(`<div class="card"><h2 style="margin-top:0">🖼️ Logo</h2><p class="meta" style="margin:0 0 10px">${esc((LGT[lang] || LGT.fr))}</p><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn sec sm" style="cursor:pointer;margin:0">${lg ? '🔄' : '➕'} Logo<input type="file" accept="image/*" data-logo="1" hidden></label>${lg ? '<button class="btn sec sm" data-logo-del="1">✖</button>' : ''}<button class="btn sm" data-logo-open="1">OK</button></div></div>`);
   { const p = slot('haut'); if (p) out.push(adBox(p) + `<p class="meta" style="margin:-4px 0 12px">💡 ${esc((ADT[lang] || ADT.fr).why)}</p>`); }
   if (pushSt && pushSt !== 'unsupported' && (pushSt !== 'on' || pushJust)) out.push(`<div class="card"><h2>${esc(t.notif)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.notifHint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0">${esc(t.notifOk)}</p>` : `<button class="btn sm" data-push="1">${esc(t.notifOn)}</button>`}</div>`);
   out.push(repliesCard());
@@ -275,14 +278,14 @@ app.addEventListener('submit', async (e) => {
 // 🖼️ logo : réduit à 160 px (petit, il voyage avec l'annonce dans toutes les apps) et gardé pour les annonces suivantes
 app.addEventListener('change', async (e) => {
   const el = e.target;
-  if (!form || !el.dataset.logo || !el.files[0]) return;
+  if (!el.dataset.logo || !el.files[0]) return;
   try {
     const bmp = await createImageBitmap(el.files[0]), k = Math.min(1, 160 / Math.max(bmp.width, bmp.height));
     const c = document.createElement('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
     c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
     let u = c.toDataURL('image/png'); if (u.length > 40000) u = c.toDataURL('image/jpeg', 0.8);
     if (u.length > 55000) return;
-    form.logo = u; ls.set('annLogo:' + id, u); render();
+    if (form) form.logo = u; ls.set('annLogo:' + id, u); render();
   } catch { /* image illisible */ }
 });
 app.addEventListener('input', (e) => { const el = e.target; if (form && el.dataset.k) { form[el.dataset.k] = el.value; if (['debut', 'fin'].includes(el.dataset.k)) render(); } });
@@ -308,7 +311,8 @@ app.addEventListener('click', async (e) => {
   if (b.dataset.recapPrint) return recapPrint();
   if (b.dataset.seen) { const m = seenGet(); for (const a of data.ads || []) m[a.id] = a.st; ls.set('annSeen:' + id, JSON.stringify(m)); return render(); }
   if (b.dataset.cancel) { form = null; return render(); }
-  if (b.dataset.logoDel && form) { e.preventDefault(); form.logo = ''; ls.set('annLogo:' + id, ''); return render(); }
+  if (b.dataset.logoDel) { e.preventDefault(); if (form) form.logo = ''; ls.set('annLogo:' + id, ''); return render(); }
+  if (b.dataset.logoOpen) { logoOpen = !logoOpen; return render(); }
   if (b.dataset.inv) return printInv(b.dataset.inv);
   if (b.dataset.paid) { b.disabled = true; try { await sendOwner({ type: 'an-paid', id: b.dataset.paid }); const a = (data.ads || []).find((x) => x.id === b.dataset.paid); if (a) a.claim = today; } catch { b.disabled = false; return; } return render(); }
   if (b.dataset.payinfo) { payOpen = payOpen === b.dataset.payinfo ? '' : b.dataset.payinfo; return render(); }
@@ -319,7 +323,7 @@ app.addEventListener('click', async (e) => {
     if (!f.nom.trim() || !f.texte.trim()) { msg = t.need; return render(); }
     b.disabled = true;
     try {
-      await sendOwner({ type: 'an-ad', ad: f });
+      await sendOwner({ type: 'an-ad', ad: { ...f, logo: ls.get('annLogo:' + id) || '' } });
       const pend = (() => { try { return JSON.parse(ls.get('annPend:' + id) || '[]'); } catch { return []; } })();
       if (!f.id) { pend.push({ ...f, id: '', st: 'wait', prix: priceOf(f), at: Date.now() }); ls.set('annPend:' + id, JSON.stringify(pend)); }
       else { const a = (data.ads || []).find((x) => x.id === f.id); if (a) Object.assign(a, f, { st: 'wait', prix: priceOf(f) }); }
