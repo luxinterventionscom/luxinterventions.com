@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.220.0';
+const VERSION = '2.220.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3921,6 +3921,26 @@ function enhanceFolds(root, scope = '', allOpen = false) {
     makeFold(label, kids, extra, card, style);
   }
 }
+// 🗑️ Collectes d'un immeuble (Maintenance → Déchets, et onglet « 🗑️ Déchets » de la fiche, aussi dans la centrale d'un client)
+function collCard(im) {
+  const y = new Date().getFullYear();
+          const cs = vault.list('collectes').filter((c) => c.immId === im.id).sort((a, b) => Object.keys(DECHETS).indexOf(a.cat) - Object.keys(DECHETS).indexOf(b.cat));
+  const next = agenda(today(), addDays(today(), 30), im.id).filter((x) => x.kind === 'collecte')[0];
+  return html`<div class="card" style="margin-bottom:12px">
+    <div class="card-title"><h3>${im.adresse}</h3><button class="btn sm" data-action="new-collecte" data-imm="${im.id}" aria-label="Ajouter une collecte">${icon('plus')}</button></div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 10px">
+      <button class="btn sm ${cs.length ? '' : 'primary'}" data-action="ics-all" data-id="${im.id}">${icon('upload')} Calendrier de la commune</button>
+    ${cs.length ? html`
+      <button class="btn sm" data-action="print-collectes" data-id="${im.id}" data-y="${y}">${icon('download')} Affiche ${y}</button>
+      <button class="btn sm ${im.pubToken ? '' : 'primary'}" data-action="share-coll" data-id="${im.id}">${icon('users')} Locataires${im.pubToken ? ' ✓' : ''}</button>` : ''}</div>
+    ${next ? html`<p class="small" style="margin:0 0 8px">Prochaine : <b>${DECHETS[next.c.cat].short}</b> — ${fmtDay(next.d)}</p>` : ''}
+    ${cs.length ? html`<div class="list">${cs.map((c) => html`<button class="row" data-action="edit-collecte" data-id="${c.id}">
+      <span class="dot" style="background:${DECHETS[c.cat].color}"></span>
+      <span class="grow"><span class="title" style="display:block;white-space:normal">${DECHETS[c.cat].label}</span><span class="meta" style="white-space:normal">passage ${collecteRule(c)} · sortir ${sortieRule(c).toLowerCase()} · ${LIEUX[c.lieu] || ''}${c.note ? ' · ' + c.note : ''}</span></span>
+      ${c.mode === 'dates' && c.icsUrl ? (c.icsErr ? html`<span class="badge bad">lien en erreur</span>` : html`<span class="badge ok">🔗 auto</span>`) : c.mode === 'dates' && !(c.dates || []).some((d) => d >= today()) ? html`<span class="badge warn">à mettre à jour</span>` : ''}
+    </button>`)}</div>` : html`<p class="muted small">Aucune collecte enregistrée.</p>`}
+  </div>`;
+}
 function renderView() {
   const view = $('#view');
   if (!view || !vault.unlocked) return;
@@ -5106,26 +5126,8 @@ const VIEWS = {
         ${passes.length ? html`<div class="section-label">Terminés</div><div class="list">${passes.map(row)}</div>` : ''}`;
     } else if (tab === 'dechets') {
       const shown = f ? imms.filter((im) => im.id === f) : imms;
-      const y = new Date().getFullYear();
       body = html`<p class="small muted" style="margin:0 0 10px">Jours de collecte de chaque immeuble (à mettre à jour chaque année avec le calendrier de la commune). Imprimez l'affiche pour les locataires.</p>
-        ${shown.map((im) => {
-          const cs = vault.list('collectes').filter((c) => c.immId === im.id).sort((a, b) => Object.keys(DECHETS).indexOf(a.cat) - Object.keys(DECHETS).indexOf(b.cat));
-          const next = agenda(today(), addDays(today(), 30), im.id).filter((x) => x.kind === 'collecte')[0];
-          return html`<div class="card" style="margin-bottom:12px">
-            <div class="card-title"><h3>${im.adresse}</h3><button class="btn sm" data-action="new-collecte" data-imm="${im.id}" aria-label="Ajouter une collecte">${icon('plus')}</button></div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 10px">
-              <button class="btn sm ${cs.length ? '' : 'primary'}" data-action="ics-all" data-id="${im.id}">${icon('upload')} Calendrier de la commune</button>
-            ${cs.length ? html`
-              <button class="btn sm" data-action="print-collectes" data-id="${im.id}" data-y="${y}">${icon('download')} Affiche ${y}</button>
-              <button class="btn sm ${im.pubToken ? '' : 'primary'}" data-action="share-coll" data-id="${im.id}">${icon('users')} Locataires${im.pubToken ? ' ✓' : ''}</button>` : ''}</div>
-            ${next ? html`<p class="small" style="margin:0 0 8px">Prochaine : <b>${DECHETS[next.c.cat].short}</b> — ${fmtDay(next.d)}</p>` : ''}
-            ${cs.length ? html`<div class="list">${cs.map((c) => html`<button class="row" data-action="edit-collecte" data-id="${c.id}">
-              <span class="dot" style="background:${DECHETS[c.cat].color}"></span>
-              <span class="grow"><span class="title" style="display:block;white-space:normal">${DECHETS[c.cat].label}</span><span class="meta" style="white-space:normal">passage ${collecteRule(c)} · sortir ${sortieRule(c).toLowerCase()} · ${LIEUX[c.lieu] || ''}${c.note ? ' · ' + c.note : ''}</span></span>
-              ${c.mode === 'dates' && c.icsUrl ? (c.icsErr ? html`<span class="badge bad">lien en erreur</span>` : html`<span class="badge ok">🔗 auto</span>`) : c.mode === 'dates' && !(c.dates || []).some((d) => d >= today()) ? html`<span class="badge warn">à mettre à jour</span>` : ''}
-            </button>`)}</div>` : html`<p class="muted small">Aucune collecte enregistrée.</p>`}
-          </div>`;
-        })}`;
+        ${shown.map(collCard)}`;
       if (!shown.length) body = empty('building', 'Ajoutez d’abord un immeuble.');
     } else if (tab === 'devis') {
       body = devTab();
@@ -7517,6 +7519,8 @@ const SHEETS = {
           <textarea name="regles" style="min-height:90px" placeholder="ex. Machine à laver jusqu'à 21 h. Vélos dans la cour, pas dans le couloir.">${im.regles || ''}</textarea>
           <button class="btn" type="submit">Enregistrer les règles</button></form>
         <p class="tiny muted">Elles s'ajoutent au règlement général (calme, propreté, évacuations, déchets, tabac, visiteurs, sécurité, énergie, respect) affiché dans l'app de chaque locataire, dans sa langue. À sa première ouverture de l'app, chaque locataire doit toucher « J'ai lu et j'accepte » avant de voir le reste ; la date apparaît dans sa fiche. Si vous modifiez ces règles, tous les locataires de l'immeuble doivent les accepter à nouveau.</p>`;
+    } else if (tab === 'dechets') {
+      body = html`<p class="small muted" style="margin:0 0 10px">Jours de collecte (jours fixes ou calendrier de la commune) : vos locataires les voient dans leur app (« Collectes des déchets » coché dans leur Espace).</p>${collCard(im)}`;
     } else if (tab === 'proprio') {
       const rent = ownerRent(im);
       const cy = y, cm = new Date().getMonth() + 1;
@@ -7566,7 +7570,7 @@ const SHEETS = {
     }
     return {
       title: html`${im.adresse} ${vraiBtn('immeubles', im)}`,
-      body: html`${immGone(im) ? html`<div class="alert info" style="margin-bottom:12px">${icon('history')}<div><b>Plus en gestion</b> depuis le ${fmtDate(im.finGestion)}${im.finNote ? ' — ' + im.finNote : ''}. Tout l'historique reste consultable et compte dans les statistiques.</div></div>` : ''}${tabsBar([['logs', 'Logements'], ['chat', `💬 Messages${(ui.chatNew || {})[id] ? ' (' + ui.chatNew[id] + ')' : ''}`], ['proprio', 'Bailleur'], ['deps', 'Dépenses'], ['bilan', 'Bilan']], tab)}${body}`,
+      body: html`${immGone(im) ? html`<div class="alert info" style="margin-bottom:12px">${icon('history')}<div><b>Plus en gestion</b> depuis le ${fmtDate(im.finGestion)}${im.finNote ? ' — ' + im.finNote : ''}. Tout l'historique reste consultable et compte dans les statistiques.</div></div>` : ''}${tabsBar([['logs', 'Logements'], ['chat', `💬 Messages${(ui.chatNew || {})[id] ? ' (' + ui.chatNew[id] + ')' : ''}`], ['proprio', 'Bailleur'], ['dechets', '🗑️ Déchets'], ['deps', 'Dépenses'], ['bilan', 'Bilan']], tab)}${body}`,
       foot: html`${immGone(im) ? html`<button class="btn" data-action="reopen-imm" data-id="${id}">${icon('sync')} Réactiver</button>` : html`<button class="btn" data-action="end-imm" data-id="${id}">${icon('history')} Fin de gestion</button>`}<button class="btn icon" data-action="print-imm" data-id="${id}" aria-label="Imprimer">${icon('download')}</button><button class="btn" data-action="edit-imm" data-id="${id}">${icon('edit')} Modifier</button>`,
     };
   },

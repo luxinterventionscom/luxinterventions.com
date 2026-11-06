@@ -17930,4 +17930,12 @@ export default [
 "Aucune révision future enregistrée (bouton « Réviser le loyer »)",
 "Nessuna revisione futura registrata (bottone «Rivedi l’affitto»)"
 ],
+[
+"Jours de collecte (jours fixes ou calendrier de la commune) : vos locataires les voient dans leur app (« Collectes des déchets » coché dans leur Espace).",
+"Giorni di raccolta (giorni fissi o calendario del comune): i vostri inquilini li vedono nella loro app («Raccolta dei rifiuti» spuntato nel loro Spazio)."
+],
+[
+"🗑️ Déchets",
+"🗑️ Rifiuti"
+],
 ];

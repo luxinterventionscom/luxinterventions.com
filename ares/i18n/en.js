@@ -17659,4 +17659,12 @@ export default [
 "Aucune révision future enregistrée (bouton « Réviser le loyer »)",
 "No future review recorded (“Review rent” button)"
 ],
+[
+"Jours de collecte (jours fixes ou calendrier de la commune) : vos locataires les voient dans leur app (« Collectes des déchets » coché dans leur Espace).",
+"Collection days (fixed days or the town calendar): your tenants see them in their app (“Waste collections” ticked in their space)."
+],
+[
+"🗑️ Déchets",
+"🗑️ Waste"
+],
 ];
