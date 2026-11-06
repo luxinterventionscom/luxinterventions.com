@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.222.1';
+const VERSION = '2.222.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3739,6 +3739,7 @@ function startSession() {
   firstOpen = false;
   vault.sync();
   setTimeout(ptlWatch, 1500);
+  setTimeout(() => netPubsSync().catch(() => {}), 5000); // 📣 liste publique des annonces du réseau, à chaque ouverture
   pushInit(); // rappel « notifications coupées » dès l'Accueil
   setTimeout(async () => {
     await refreshIcs(false);
