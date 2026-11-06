@@ -18062,4 +18062,12 @@ export default [
 "Nouveau code : touchez « Enregistrer » (l’ancien ne marchera plus)",
 "Nuovo codice: toccate «Salva» (il vecchio non funzionerà più)"
 ],
+[
+"Demande spéciale",
+"Richiesta speciale"
+],
+[
+"répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)",
+"rispondete con la 💬 messaggistica dell’annunciatore (prezzo su preventivo se serve)"
+],
 ];

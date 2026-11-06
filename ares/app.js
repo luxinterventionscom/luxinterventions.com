@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.222.2';
+const VERSION = '2.222.3';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1827,7 +1827,8 @@ async function annInbox(an, msg) {
       tel: S(a.tel, 30), web: /^https?:\/\//.test(S(a.web, 300)) ? S(a.web, 300) : '', video: /^https?:\/\//.test(S(a.video, 400)) ? S(a.video, 400) : '', slot: PUB_SLOTS[a.slot] ? a.slot : 'milieu',
       aud: (Array.isArray(a.aud) ? a.aud : []).filter((k) => PUB_AUD[k]).slice(0, 5), debut, fin, ttl: Math.round((new Date(fin) - new Date(debut)) / 864e5) + 1,
       jours: (Array.isArray(a.jours) ? a.jours : []).map(Number).filter((n) => n >= 0 && n <= 6).slice(0, 7), h1: hm(a.h1), h2: hm(a.h2), immId: '', pay: 'none' };
-    if (!rec.aud.length) rec.aud = ['loc'];
+    rec.aud = old && Array.isArray(old.aud) && old.aud.length ? old.aud : Object.keys(PUB_AUD); // les apps : c'est la centrale qui choisit (par défaut : toutes)
+    rec.special = S(a.special, 600);
     const t = anTarifs(); rec.prix = Math.round((+t[rec.slot] || 0) * rec.ttl);
     if (old) rec.id = old.id;
     await vault.mutate((tx) => tx.put('avis', rec), old ? '📣 Annonce modifiée par l’annonceur (à valider)' : '📣 Nouvelle annonce à valider', `${an.nom} · ${AN_TYPES[rec.type]} · ${fmtDate(rec.debut)} → ${fmtDate(rec.fin)}`);
@@ -1853,7 +1854,7 @@ function annBlock() {
   return html`<div class="card" style="margin-bottom:14px"><div class="card-title"><h3>🍽️ Annonceurs (HORECA)</h3><div class="actions" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-action="ann-tarifs">💶 Tarifs</button><button class="btn sm primary" data-action="new-annc">${icon('plus')} Annonceur</button></div></div>
     <p class="tiny muted" style="margin:0 0 8px">Restaurants, bistrots, bars, discothèques… publient eux-mêmes leurs annonces, menus et événements dans leur app ; vous validez. Tarifs HT / jour : 🔝 ${t.haut ? t.haut + ' €' : '—'} · ⏺ ${t.milieu ? t.milieu + ' €' : '—'} · 🔽 ${t.bas ? t.bas + ' €' : '—'} · 💶 virement (QR) puis « Paiement reçu » · 💳 en ligne : <b>non connecté</b></p>
     ${wait.length ? html`<div class="section-label">⏳ À valider (${wait.length})</div><div class="list" style="margin-bottom:10px">${wait.map((a) => html`<div class="row" style="display:block">
-      <b>${nm(a)}</b> · ${AN_TYPES[a.type] || ''} — ${a.nom}<div class="small">${a.texte}</div>
+      <b>${nm(a)}</b> · ${AN_TYPES[a.type] || ''} — ${a.nom}<div class="small">${a.texte}</div>${a.special ? html`<div class="alert warn" style="margin:6px 0">✍️<div><b>Demande spéciale</b> : ${a.special}<div class="tiny">répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)</div></div></div>` : ''}
       <div class="tiny muted">${PUB_SLOTS[pubSlot(a)].split(' — ')[0]} · ${pubAud(a).map((k) => PUB_AUD[k]).join(' · ')} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}${a.jours && a.jours.length ? ' · ' + a.jours.map((j) => PUB_JOURS[j]).join(' ') : ''}${a.h1 ? ` · ${a.h1}–${a.h2}` : ''}${a.prix ? ' · ' + a.prix + ' €' : ''}</div>
       <div class="actions" style="margin:6px 0 0"><button class="btn sm primary" data-action="pub-ok" data-id="${a.id}">✅ Publier</button><button class="btn sm" data-action="edit-pub" data-id="${a.id}">✏️ Voir</button><button class="btn sm ghost danger" data-action="pub-no" data-id="${a.id}">❌ Refuser</button></div></div>`)}</div>` : ''}
     ${topay.length ? html`<div class="section-label">💶 À encaisser (${topay.length})</div><div class="list" style="margin-bottom:10px">${topay.map((a) => html`<div class="row" style="display:block">

@@ -18049,4 +18049,12 @@ export default [
 "Nouveau code : touchez « Enregistrer » (l’ancien ne marchera plus)",
 "Neuer Code: „Speichern“ tippen (der alte gilt nicht mehr)"
 ],
+[
+"Demande spéciale",
+"Sonderwunsch"
+],
+[
+"répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)",
+"antworten Sie über die 💬 Nachrichten des Inserenten (Preis auf Angebot)"
+],
 ];
