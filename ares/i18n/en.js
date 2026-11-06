@@ -17831,4 +17831,12 @@ export default [
 "Vide = « sur devis » (réponse sous 3 jours max).",
 "Empty = “on quote” (reply within 3 days max)."
 ],
+[
+"Rempli par l’annonceur",
+"Filled in by the advertiser"
+],
+[
+"IBAN (remboursements) :",
+"IBAN (refunds):"
+],
 ];

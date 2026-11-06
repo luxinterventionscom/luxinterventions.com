@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.222.6';
+const VERSION = '2.222.7';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1803,7 +1803,7 @@ async function annSync(onlyId, loud) {
         return { id: a.id, type: a.type || 'annonce', nom: a.nom, texte: a.texte || '', adresse: a.adresse || '', tel: a.tel || '', web: a.web || '', video: a.video || '', slot: pubSlot(a), aud: pubAud(a), debut: a.debut, fin: a.fin, jours: a.jours || [], h1: a.h1 || '', h2: a.h2 || '', st: a.st || 'ok', motif: a.motif || '', prix: a.prix || 0, v: st.v, taps: st.taps,
           claim: a.payClaim || '', fact: a.fact ? { no: a.fact.no, date: a.fact.date, ht: a.fact.ht, tva: a.fact.tva, ttc: a.fact.ttc, tx: a.fact.tx } : null, ...(a.st === 'pay' ? annDue(a) : {}) };
       });
-      const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: societe().nom || 'LuxInterventions',
+      const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', prof: { email: an.email || '', web: an.web || '', tva: an.tvaNum || '', iban: an.iban || '', banque: an.banque || '' }, recs: vault.list('reglages').filter((r) => r.id.startsWith('anrec-') && r.annId === an.id).map((r) => ({ t: r.t, motif: r.motif, texte: r.texte, rep: r.rep || '' })), adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: societe().nom || 'LuxInterventions',
         tarifs: { haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, crea_simple: +t.crea_simple || 0, crea_moyen: +t.crea_moyen || 0, crea_max: +t.crea_max || 0, note: t.note || '' }, pay: false, ...annFrom(), chat: pchatOut(an), chatRd: an.chatRd || '' };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && anHashes.get(e.id) === hs) continue;
@@ -1841,6 +1841,20 @@ async function annInbox(an, msg) {
     if (!a || a.annId !== an.id || a.st !== 'pay' || a.payClaim) return false;
     await vault.mutate((tx) => tx.put('avis', { id: a.id, payClaim: today() }), '💶 L’annonceur dit avoir payé', `${an.nom} · ${a.nom} · ${eur(annDue(a).ttc)}`);
     annSync(an.id); return true;
+  }
+  // ✏️ profil modifié par l'annonceur (société, mail, site, TVA, IBAN pour les remboursements)
+  if (msg.type === 'an-prof') {
+    const q = msg.prof || {}, iban = S(q.iban, 42).replace(/\s/g, '').toUpperCase();
+    const upd = { id: an.id, nom: S(q.nom, 80) || an.nom, email: S(q.email, 120), web: /^https?:\/\//.test(S(q.web, 300)) ? S(q.web, 300) : '', tvaNum: S(q.tva, 30), iban: /^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(iban) ? iban : '', banque: S(q.banque, 80) };
+    await vault.mutate((tx) => tx.put('reglages', upd), '✏️ L’annonceur a modifié son profil', `${upd.nom}${upd.iban ? ' · IBAN ' + upd.iban.slice(0, 4) + '…' + upd.iban.slice(-4) : ''}`);
+    annSync(an.id); return true;
+  }
+  // ⚠️ réclamation de l'annonceur (et pourquoi)
+  if (msg.type === 'an-rec') {
+    const r = { id: 'anrec-' + uid(), annId: an.id, motif: S(msg.motif, 60), texte: S(msg.texte, 1500), t: new Date().toISOString(), vu: false };
+    if (!r.texte) return false;
+    await vault.mutate((tx) => tx.put('reglages', r), '⚠️ Réclamation d’un annonceur', `${an.nom} · ${r.motif}`);
+    return true;
   }
   if (msg.type === 'an-stop') {
     const a = vault.get('avis', S(msg.id, 40));
@@ -3994,6 +4008,14 @@ function collCard(im) {
     </button>`)}</div>` : html`<p class="muted small">Aucune collecte enregistrée.</p>`}
   </div>`;
 }
+// 📣 / ⚠️ annonces à valider et réclamations des annonceurs (Accueil, même vide)
+function annAlerts(alertBtn) {
+    const annWait = TENANT ? [] : vault.list('avis').filter((a) => isPub(a) && a.st === 'wait' && a.annId);
+    const anRecs = TENANT ? [] : vault.list('reglages').filter((r) => r.id.startsWith('anrec-') && !r.vu);
+    const anRecBox = anRecs.length ? html`<div class="stack" style="margin-bottom:14px">${anRecs.map((r) => alertBtn('bad', 'alert', 'anrec-open', r.id, html`⚠️ <b>Réclamation — ${(vault.get('reglages', r.annId) || {}).nom || '?'}</b> · ${r.motif}<div class="tiny">${r.texte.slice(0, 140)}</div>`))}</div>` : '';
+    const annBox = annWait.length ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('warn', 'alert', 'ann-open', '', html`📣 <b>${plural(annWait.length, 'annonce')} à valider</b> — ${[...new Set(annWait.map((a) => (vault.get('reglages', a.annId) || {}).nom || a.nom))].join(', ')}${annWait.some((a) => a.special) ? ' · ✍️ demande spéciale' : ''}<div class="tiny">touchez pour voir, accepter ou refuser</div>`)}</div>` : '';
+  return { anRecBox, annBox };
+}
 function renderView() {
   const view = $('#view');
   if (!view || !vault.unlocked) return;
@@ -5230,7 +5252,8 @@ dashboard() {
     const alertBtn = (cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`;
 
     if (!imms.length && !locs.length) {
-      return html`${pushNudge()}${centralinoHtml()}${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
+      const { anRecBox: rb0, annBox: ab0 } = annAlerts((cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`);
+      return html`${pushNudge()}${rb0}${ab0}${centralinoHtml()}${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`;
     }
 
@@ -5250,8 +5273,7 @@ dashboard() {
     // ⏳ clients du réseau dont l'accès (abonnement ou 6 mois offerts) se termine dans 30 jours : c'est le moment d'appeler
     const netSoon = TENANT ? [] : ((ui.net && ui.net.list) || []).filter((t) => t.until && t.until >= today() && t.until <= addDays(today(), 30) && t.st !== 'suspended');
     const netStopBox = TENANT ? '' : (() => { const l = vault.list('taches').filter((t) => t.net && t.net.stopAsk && !t.fin); return l.length ? html`<div class="stack" style="margin-bottom:14px">${l.map((t) => alertBtn('warn', 'calendar', 'edit-tache', t.id, html`⏹️ <b>${t.net.nom}</b> demande l’arrêt du service : ${t.titre}<div class="tiny">mettez la date de fin dans la tâche</div>`))}</div>` : ''; })();
-    const annWait = TENANT ? [] : vault.list('avis').filter((a) => isPub(a) && a.st === 'wait' && a.annId);
-    const annBox = annWait.length ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('warn', 'alert', 'ann-open', '', html`📣 <b>${plural(annWait.length, 'annonce')} à valider</b> — ${[...new Set(annWait.map((a) => (vault.get('reglages', a.annId) || {}).nom || a.nom))].join(', ')}${annWait.some((a) => a.special) ? ' · ✍️ demande spéciale' : ''}<div class="tiny">touchez pour voir, accepter ou refuser</div>`)}</div>` : '';
+    const { anRecBox, annBox } = annAlerts(alertBtn);
     const bailBox = (() => {
       const al = imms0().map((im) => [im, bailAlert(im)]).filter(([, a]) => a).sort((x, y) => x[1].left - y[1].left);
       const revB = imms0().filter((im) => isBailPrincipal(im) && im.bailRev && daysUntil(im.bailRev) >= -15 && daysUntil(im.bailRev) <= 60);
@@ -5288,7 +5310,7 @@ dashboard() {
       ${centralinoHtml()}
       ${virBox}
       ${edlBox}
-      ${annBox}${nClaimBox}${netSoonBox}${netStopBox}${bailBox}${eqBox}
+      ${anRecBox}${annBox}${nClaimBox}${netSoonBox}${netStopBox}${bailBox}${eqBox}
       ${absBox}
       ${toolsBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
@@ -7214,6 +7236,7 @@ const SHEETS = {
         ${field('Nom du commerce', 'nom', an.nom, { full: true, required: true, placeholder: 'ex. Bistrot du Marché' })}
         <label class="field full">Catégorie<select name="cat">${Object.entries(PUB_CATS).map(([k, v]) => html`<option value="${k}" ${an.cat === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Adresse', 'adresse', an.adresse, { full: true })}${field('Téléphone (WhatsApp)', 'tel', an.tel, { type: 'tel' })}${field('Email', 'email', an.email, { type: 'email' })}
+        ${id && (an.web || an.tvaNum || an.iban || an.banque) ? html`<div class="full small" style="margin:0;padding:8px 10px;border:1px dashed var(--border);border-radius:10px">✏️ <b>Rempli par l’annonceur</b>${an.web ? html`<br>🌐 <a href="${an.web}" target="_blank" rel="noopener">${an.web}</a>` : ''}${an.tvaNum ? html`<br>N° TVA : ${an.tvaNum}` : ''}${an.iban ? html`<br>🏦 IBAN (remboursements) : <span style="font-family:var(--mono)">${an.iban}</span>${an.banque ? ' · ' + an.banque : ''}` : ''}</div>` : ''}
         <div class="full section-label" style="margin:6px 0 0">📱 App de l’annonceur</div>
         ${field('Code d’accès à l’app', 'appCode', an.appCode, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
         ${id ? html`<div class="full card" style="text-align:center;margin:0"><div class="tiny muted">Lien de son app</div>
@@ -8475,6 +8498,15 @@ const ACTIONS = {
   'abo-edit': (d) => openSheet('abo', d.id),
   'abo-tab': (d) => { ui.aboTab = d.id; renderView(); },
   'ann-open': () => { ui.cpSec = 'abo'; ui.aboTab = 'pub'; go('compta'); },
+  async 'anrec-open'(d) {
+    const r = vault.get('reglages', d.id);
+    if (!r) return;
+    const an = vault.get('reglages', r.annId) || {};
+    const rep = await promptText(`⚠️ ${an.nom || ''} — ${r.motif}`, `${r.texte}\n\nVotre réponse (elle apparaît dans son app ; vide = marquer comme vu) :`, 'ex. Nous avons corrigé l’annonce et prolongé de 2 jours.');
+    if (rep == null) return;
+    await vault.mutate((tx) => tx.put('reglages', { id: r.id, vu: true, rep: String(rep).trim().slice(0, 800) }), '⚠️ Réclamation traitée', `${an.nom || ''} · ${r.motif}`);
+    annSync(r.annId, true);
+  },
   async 'abo-offers'() {
     const on = !aboOffersOn();
     await vault.mutate((tx) => tx.put('reglages', { id: 'abos', offers: on }), on ? 'Offres d’abonnement activées' : 'Offres d’abonnement désactivées', 'Portail gérance');

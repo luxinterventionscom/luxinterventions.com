@@ -18085,4 +18085,12 @@ export default [
 "Vide = « sur devis » (réponse sous 3 jours max).",
 "Leer = „auf Anfrage“ (Antwort in max. 3 Tagen)."
 ],
+[
+"Rempli par l’annonceur",
+"Vom Inserenten ausgefüllt"
+],
+[
+"IBAN (remboursements) :",
+"IBAN (Rückerstattungen):"
+],
 ];
