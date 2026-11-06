@@ -962,6 +962,8 @@ function render() {
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span class="av-btn" style="width:72px;height:72px;font-size:32px">${ph ? `<img src="${esc(ph)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span>
     <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${ph ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
     <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>`; })() + `<p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${MY_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === (icMine || d.avatar)}">${esc(e)}</button>`).join('')}</div></div>` : ''}<p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);
+  // 🔄 révision du loyer annoncée par le gestionnaire
+  if (d.revis && d.revis.from && (s.pay || s.contrat)) { const rv = REVT[lang] || REVT.fr; out.push(`<div class="card notice" style="border-left:4px solid #2563eb"><p style="margin:0"><b>🔄 ${esc(rv.t)}</b></p><p style="margin:6px 0 0">${esc(rv.from)} <b>${esc(fmt(d.revis.from))}</b> : ${esc(money(d.revis.ancien))} → <b>${esc(money(d.revis.nouveau))}</b> ${esc(rv.m)}</p></div>`); }
   const pubs = s.pub ? (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x)) : [];
   const ad = pubs.find((x) => x.id === adSel);
   if (!ad) adSel = '';
@@ -1213,6 +1215,7 @@ function render() {
 
 // Récapitulatif imprimable de tous les loyers payés (un seul document au lieu d'une quittance par mois)
 const CPR = { fr: '🖨️ Imprimer mon contrat', it: '🖨️ Stampa il mio contratto', de: '🖨️ Meinen Vertrag drucken', pt: '🖨️ Imprimir o meu contrato', en: '🖨️ Print my contract', es: '🖨️ Imprimir mi contrato' };
+const REVT = { fr: { t: 'Révision du loyer', from: 'À partir du', m: '/ mois' }, it: { t: 'Revisione dell’affitto', from: 'A partire dal', m: '/ mese' }, de: { t: 'Mietanpassung', from: 'Ab dem', m: '/ Monat' }, pt: { t: 'Revisão da renda', from: 'A partir de', m: '/ mês' }, en: { t: 'Rent review', from: 'From', m: '/ month' }, es: { t: 'Revisión del alquiler', from: 'A partir del', m: '/ mes' } };
 const RCY = { fr: 'Toutes les années', it: 'Tutti gli anni', de: 'Alle Jahre', pt: 'Todos os anos', en: 'All years', es: 'Todos los años' };
 function recap() {
   const t = T(), d = data, s = d.societe, name = [d.prenom, d.nom].filter(Boolean).join(' ');

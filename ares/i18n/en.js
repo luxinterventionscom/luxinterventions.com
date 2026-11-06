@@ -17639,4 +17639,24 @@ export default [
 "Un appartement avec plusieurs chambres louées séparément : chaque chambre a son locataire, ses loyers et ses quittances ; les habitants de l’appartement ont leurs messages en commun (💬 messagerie).",
 "An apartment with several rooms let separately: each room has its tenant, rents and receipts; the residents share their messages (💬 messages)."
 ],
+[
+"🔄 Révision annoncée",
+"🔄 Announced review"
+],
+[
+"📄 Lettre A4",
+"📄 A4 letter"
+],
+[
+"Révision du loyer au bailleur",
+"Rent review to the landlord"
+],
+[
+"App du locataire : code et lien",
+"Tenant app: code and link"
+],
+[
+"Aucune révision future enregistrée (bouton « Réviser le loyer »)",
+"No future review recorded (“Review rent” button)"
+],
 ];
