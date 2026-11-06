@@ -17803,4 +17803,12 @@ export default [
 "répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)",
 "reply via the advertiser’s 💬 messages (quote if needed)"
 ],
+[
+"à valider",
+"to approve"
+],
+[
+"touchez pour voir, accepter ou refuser",
+"tap to see, accept or refuse"
+],
 ];
