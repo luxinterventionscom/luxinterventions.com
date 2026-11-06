@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.219.0';
+const VERSION = '2.219.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -7618,10 +7618,10 @@ const SHEETS = {
     return {
       title: 'Appartement en colocation',
       narrow: true,
-      body: html`<p class="small" style="margin-top:0">Un appartement avec plusieurs chambres louées séparément : chaque chambre a son locataire, ses loyers et ses quittances ; les habitants de l’appartement ont leur chat ensemble.</p>
+      body: html`<p class="small" style="margin-top:0">Un appartement avec plusieurs chambres louées séparément : chaque chambre a son locataire, ses loyers et ses quittances ; les habitants de l’appartement ont leurs messages en commun (💬 messagerie).</p>
         <form id="fColoc" data-form="coloc" class="fields">
           <input type="hidden" name="immId" value="${im.id}">
-          ${field('Nom de l’appartement', 'nom', '', { full: true, required: true, placeholder: 'ex. Appartement 1er étage, Appartement A' })}
+          ${field('Nom ou indication', 'nom', '', { full: true, required: true, placeholder: 'ex. Résidence Les Lilas ; Escalier A ; Porte C' })}
           ${field('Étage', 'etage', '', { placeholder: 'ex. RDC, 1er' })}
           <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="mans" style="width:22px;min-height:22px"> + une mansarde (chambre sous les toits)</label>
           <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="cave" style="width:22px;min-height:22px"> 🍷 Cave commune</label>

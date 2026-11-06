@@ -17885,4 +17885,16 @@ export default [
 "📄 lettre A4 dans la fiche",
 "📄 A4-Brief in der Karte"
 ],
+[
+"Nom ou indication",
+"Name oder Angabe"
+],
+[
+"ex. Résidence Les Lilas ; Escalier A ; Porte C",
+"z. B. Residenz Les Lilas; Treppe A; Tür C"
+],
+[
+"Un appartement avec plusieurs chambres louées séparément : chaque chambre a son locataire, ses loyers et ses quittances ; les habitants de l’appartement ont leurs messages en commun (💬 messagerie).",
+"Eine Wohnung mit mehreren separat vermieteten Zimmern: jedes Zimmer hat seinen Mieter, seine Mieten und Quittungen; die Bewohner der Wohnung haben gemeinsame Nachrichten (💬 Nachrichten)."
+],
 ];
