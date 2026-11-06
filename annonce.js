@@ -112,7 +112,7 @@ function printInv(id) {
 }
 const blank = () => ({ logo: ls.get('annLogo:' + id) || '', id: '', type: 'annonce', nom: data ? data.nom : '', texte: '', adresse: data ? data.adresse : '', tel: data ? data.tel : '', web: '', video: '', slot: 'milieu', aud: ['loc', 'hote'], debut: today, fin: plusDays(today, 13), jours: [], h1: '', h2: '' });
 const days = (f) => Math.max(1, Math.round((new Date(f.fin) - new Date(f.debut)) / 864e5) + 1);
-const priceOf = (f) => { const r = +((data && data.tarifs) || {})[f.slot] || 0; return r ? Math.round(r * days(f)) : 0; };
+const priceOf = (f) => { const tr = (data && data.tarifs) || {}, r = +tr[f.slot] || 0, c = f.crea ? +tr['crea_' + f.crea] || 0 : 0; return r && (!f.crea || c) ? Math.round(r * days(f)) + c : 0; };
 async function sendOwner(o) {
   const r = await fetch(`${API}/api/esp/${id}/signal?app=ann`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) });
   if (!r.ok) throw new Error(r.status);
@@ -134,7 +134,8 @@ function formHtml(t) {
     <label>${esc(t.days)}</label><div class="chips">${t.D.map((d, i) => `<label class="chip"><input type="checkbox" data-day="${i}" ${f.jours.includes(i) ? 'checked' : ''}> ${esc(d)}</label>`).join('')}</div>
     <label>${esc(t.hours)}</label><div class="two"><div><span class="meta">${esc(t.h1)}</span><input type="time" data-k="h1" value="${esc(f.h1)}"></div><div><span class="meta">${esc(t.h2)}</span><input type="time" data-k="h2" value="${esc(f.h2)}"></div></div>
     <label>✍️ ${esc(SPX[lang] ? SPX[lang][0] : SPX.fr[0])}</label><textarea data-k="special" rows="2" placeholder="${esc(SPX[lang] ? SPX[lang][1] : SPX.fr[1])}">${esc(f.special || '')}</textarea>
-    <p class="est">${esc(t.price)} : <b>${p ? p + ' € ' + esc(TP().ht) : esc(t.quote)}</b> <span class="meta">(${days(f)} j)</span>${tr.note ? `<br><span class="meta">${esc(tr.note)}</span>` : ''}</p>
+    <label>🎬 ${esc((CRT[lang] || CRT.fr).t)}</label><select data-k="crea">${['', 'simple', 'moyen', 'max'].map((k) => `<option value="${k}" ${(f.crea || '') === k ? 'selected' : ''}>${esc((CRT[lang] || CRT.fr)[k || 'none'])}${k ? ' — ' + (+tr['crea_' + k] ? esc(eur(+tr['crea_' + k])) + ' ' + esc(TP().ht) : esc(t.quote)) : ''}</option>`).join('')}</select>
+    <p class="est">${esc(t.price)} : <b>${p ? p + ' € ' + esc(TP().ht) : esc(t.quote) + ' — ' + esc((CRT[lang] || CRT.fr).q3)}</b> <span class="meta">(${days(f)} ${esc((CRT[lang] || CRT.fr).d)})</span>${tr.note ? `<br><span class="meta">${esc(tr.note)}</span>` : ''}</p>
     <div class="duo"><button class="btn sec" data-cancel="1">${esc(t.cancel)}</button><button class="btn" data-send="1">${esc(t.send)}</button></div></div>`;
 }
 function adHtml(a, t) {
@@ -212,6 +213,15 @@ function adBox(x) {
 // ✍️ demande spéciale (hors des prix affichés) : LuxInterventions répond, avec un prix sur devis si besoin
 const SPX = { fr: ['Demande spéciale (facultatif)', 'ex. plusieurs emplacements, une semaine précise, un prix pour 3 mois…'], it: ['Richiesta speciale (facoltativa)', 'es. più posizioni, una settimana precisa, un prezzo per 3 mesi…'], de: ['Sonderwunsch (freiwillig)', 'z. B. mehrere Plätze, eine bestimmte Woche, ein Preis für 3 Monate…'], pt: ['Pedido especial (facultativo)', 'ex. várias posições, uma semana precisa, um preço para 3 meses…'], en: ['Special request (optional)', 'e.g. several positions, a given week, a price for 3 months…'], es: ['Petición especial (opcional)', 'ej. varias posiciones, una semana concreta, un precio para 3 meses…'] };
 let logoOpen = false;
+// 🎬 création de l'annonce par LuxInterventions (prix fixés par la centrale, ou sur devis en 3 jours max)
+const CRT = {
+  fr: { t: 'Création de votre annonce par nous', none: 'Non merci — j’envoie mon texte tel quel', simple: 'SIMPLE — page fixe avec votre texte, graphisme surprise', moyen: 'MOYEN — clip animé avec votre texte, surprise', max: 'MAX — vidéo-clip, surprise', q3: 'réponse sous 3 jours max', d: 'jours de diffusion' },
+  it: { t: 'Creazione del vostro annuncio da parte nostra', none: 'No grazie — mando il mio testo così com’è', simple: 'SEMPLICE — pagina fissa con il vostro testo, grafica a sorpresa', moyen: 'MEDIO — clip animata con il vostro testo, a sorpresa', max: 'MAX — video-clip, a sorpresa', q3: 'risposta entro 3 giorni max', d: 'giorni di diffusione' },
+  de: { t: 'Gestaltung Ihrer Anzeige durch uns', none: 'Nein danke — ich sende meinen Text so', simple: 'EINFACH — feste Seite mit Ihrem Text, Überraschungsgrafik', moyen: 'MITTEL — animierter Clip mit Ihrem Text, Überraschung', max: 'MAX — Videoclip, Überraschung', q3: 'Antwort in max. 3 Tagen', d: 'Tage Ausstrahlung' },
+  pt: { t: 'Criação do seu anúncio por nós', none: 'Não, obrigado — envio o meu texto assim', simple: 'SIMPLES — página fixa com o seu texto, grafismo surpresa', moyen: 'MÉDIO — clip animado com o seu texto, surpresa', max: 'MAX — videoclip, surpresa', q3: 'resposta em 3 dias no máx.', d: 'dias de difusão' },
+  en: { t: 'We create your ad', none: 'No thanks — I send my text as is', simple: 'SIMPLE — static page with your text, surprise design', moyen: 'MEDIUM — animated clip with your text, surprise', max: 'MAX — video clip, surprise', q3: 'reply within 3 days max', d: 'days on air' },
+  es: { t: 'Creación de su anuncio por nosotros', none: 'No gracias — envío mi texto tal cual', simple: 'SIMPLE — página fija con su texto, diseño sorpresa', moyen: 'MEDIO — clip animado con su texto, sorpresa', max: 'MAX — videoclip, sorpresa', q3: 'respuesta en 3 días máx.', d: 'días de difusión' },
+};
 const LGT = { fr: 'Votre logo apparaît dans vos annonces, dans toutes les apps (locataires, clients, équipes…).', it: 'Il vostro logo compare nei vostri annunci, in tutte le app (inquilini, clienti, squadre…).', de: 'Ihr Logo erscheint in Ihren Anzeigen, in allen Apps (Mieter, Kunden, Teams…).', pt: 'O seu logótipo aparece nos seus anúncios, em todas as apps (inquilinos, clientes, equipas…).', en: 'Your logo appears in your ads, in every app (tenants, clients, teams…).', es: 'Su logo aparece en sus anuncios, en todas las apps (inquilinos, clientes, equipos…).' };
 function render() {
   const t = T();
@@ -288,7 +298,7 @@ app.addEventListener('change', async (e) => {
     if (form) form.logo = u; ls.set('annLogo:' + id, u); render();
   } catch { /* image illisible */ }
 });
-app.addEventListener('input', (e) => { const el = e.target; if (form && el.dataset.k) { form[el.dataset.k] = el.value; if (['debut', 'fin'].includes(el.dataset.k)) render(); } });
+app.addEventListener('input', (e) => { const el = e.target; if (form && el.dataset.k) { form[el.dataset.k] = el.value; if (['debut', 'fin', 'crea'].includes(el.dataset.k)) render(); } });
 app.addEventListener('change', (e) => {
   const el = e.target;
   if (!form) return;

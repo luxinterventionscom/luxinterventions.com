@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.222.5';
+const VERSION = '2.222.6';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1804,7 +1804,7 @@ async function annSync(onlyId, loud) {
           claim: a.payClaim || '', fact: a.fact ? { no: a.fact.no, date: a.fact.date, ht: a.fact.ht, tva: a.fact.tva, ttc: a.fact.ttc, tx: a.fact.tx } : null, ...(a.st === 'pay' ? annDue(a) : {}) };
       });
       const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: societe().nom || 'LuxInterventions',
-        tarifs: { haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, note: t.note || '' }, pay: false, ...annFrom(), chat: pchatOut(an), chatRd: an.chatRd || '' };
+        tarifs: { haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, crea_simple: +t.crea_simple || 0, crea_moyen: +t.crea_moyen || 0, crea_max: +t.crea_max || 0, note: t.note || '' }, pay: false, ...annFrom(), chat: pchatOut(an), chatRd: an.chatRd || '' };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && anHashes.get(e.id) === hs) continue;
       await vault.espacePut(e.id, await sealJson(e.key, data));
@@ -1830,7 +1830,8 @@ async function annInbox(an, msg) {
     rec.aud = old && Array.isArray(old.aud) && old.aud.length ? old.aud : Object.keys(PUB_AUD); // les apps : c'est la centrale qui choisit (par défaut : toutes)
     rec.special = S(a.special, 600);
     rec.logo = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.logo || '') && a.logo.length < 60000 ? a.logo : '';
-    const t = anTarifs(); rec.prix = Math.round((+t[rec.slot] || 0) * rec.ttl);
+    rec.crea = ['simple', 'moyen', 'max'].includes(a.crea) ? a.crea : '';
+    const t = anTarifs(); rec.prix = Math.round((+t[rec.slot] || 0) * rec.ttl) + (rec.crea ? +t['crea_' + rec.crea] || 0 : 0);
     if (old) rec.id = old.id;
     await vault.mutate((tx) => tx.put('avis', rec), old ? '📣 Annonce modifiée par l’annonceur (à valider)' : '📣 Nouvelle annonce à valider', `${an.nom} · ${AN_TYPES[rec.type]} · ${fmtDate(rec.debut)} → ${fmtDate(rec.fin)}`);
     annSync(an.id); return true;
@@ -1855,7 +1856,7 @@ function annBlock() {
   return html`<div class="card" style="margin-bottom:14px"><div class="card-title"><h3>🍽️ Annonceurs (HORECA)</h3><div class="actions" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-action="ann-tarifs">💶 Tarifs</button><button class="btn sm primary" data-action="new-annc">${icon('plus')} Annonceur</button></div></div>
     <p class="tiny muted" style="margin:0 0 8px">Restaurants, bistrots, bars, discothèques… publient eux-mêmes leurs annonces, menus et événements dans leur app ; vous validez. Tarifs HT / jour : 🔝 ${t.haut ? t.haut + ' €' : '—'} · ⏺ ${t.milieu ? t.milieu + ' €' : '—'} · 🔽 ${t.bas ? t.bas + ' €' : '—'} · 💶 virement (QR) puis « Paiement reçu » · 💳 en ligne : <b>non connecté</b></p>
     ${wait.length ? html`<div class="section-label">⏳ À valider (${wait.length})</div><div class="list" style="margin-bottom:10px">${wait.map((a) => html`<div class="row" style="display:block">
-      <b>${nm(a)}</b> · ${AN_TYPES[a.type] || ''} — ${a.nom}<div class="small">${a.texte}</div>${a.special ? html`<div class="alert warn" style="margin:6px 0">✍️<div><b>Demande spéciale</b> : ${a.special}<div class="tiny">répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)</div></div></div>` : ''}
+      <b>${nm(a)}</b> · ${AN_TYPES[a.type] || ''} — ${a.nom}<div class="small">${a.texte}</div>${a.crea ? html`<div class="alert info" style="margin:6px 0">🎬<div><b>Création demandée : ${({ simple: 'SIMPLE — page fixe', moyen: 'MOYEN — clip animé', max: 'MAX — vidéo-clip' })[a.crea]}</b>${+anTarifs()['crea_' + a.crea] ? ` · ${eur(+anTarifs()['crea_' + a.crea])} HT` : ' · sur devis (réponse sous 3 jours)'}</div></div>` : ''}${a.special ? html`<div class="alert warn" style="margin:6px 0">✍️<div><b>Demande spéciale</b> : ${a.special}<div class="tiny">répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)</div></div></div>` : ''}
       <div class="tiny muted">${PUB_SLOTS[pubSlot(a)].split(' — ')[0]} · ${pubAud(a).map((k) => PUB_AUD[k]).join(' · ')} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}${a.jours && a.jours.length ? ' · ' + a.jours.map((j) => PUB_JOURS[j]).join(' ') : ''}${a.h1 ? ` · ${a.h1}–${a.h2}` : ''}${a.prix ? ' · ' + a.prix + ' €' : ''}</div>
       <div class="actions" style="margin:6px 0 0"><button class="btn sm primary" data-action="pub-ok" data-id="${a.id}">✅ Publier</button><button class="btn sm" data-action="edit-pub" data-id="${a.id}">✏️ Voir</button><button class="btn sm ghost danger" data-action="pub-no" data-id="${a.id}">❌ Refuser</button></div></div>`)}</div>` : ''}
     ${topay.length ? html`<div class="section-label">💶 À encaisser (${topay.length})</div><div class="list" style="margin-bottom:10px">${topay.map((a) => html`<div class="row" style="display:block">
@@ -7233,6 +7234,9 @@ const SHEETS = {
       narrow: true,
       body: html`<form id="f" data-form="ann-tarifs" class="fields">
         ${field('🔝 Haut — prix HT par jour (€)', 'haut', t.haut, { attrs: money$ })}${field('⏺ Milieu — prix HT par jour (€)', 'milieu', t.milieu, { attrs: money$ })}${field('🔽 Bas — prix HT par jour (€)', 'bas', t.bas, { attrs: money$ })}
+        <div class="section-label full" style="margin:6px 0 0">🎬 Création de l’annonce par LuxInterventions — prix HT, une fois</div>
+        ${field('SIMPLE — page fixe avec leur texte, graphisme surprise (€)', 'crea_simple', t.crea_simple, { attrs: money$ })}${field('MOYEN — clip animé avec leur texte, surprise (€)', 'crea_moyen', t.crea_moyen, { attrs: money$ })}${field('MAX — vidéo-clip, surprise (€)', 'crea_max', t.crea_max, { attrs: money$ })}
+        <p class="tiny muted full" style="margin:0">Vide = « sur devis » (réponse sous 3 jours max).</p>
         <label class="field full">Note pour les annonceurs (facultatif)<textarea name="note" style="min-height:60px" placeholder="ex. −20 % à partir de 30 jours">${t.note || ''}</textarea></label>
         <p class="tiny muted full" style="margin:0">L’annonceur voit le prix HT (jours × tarif de l’emplacement) avant d’envoyer. Après votre validation il paie par virement (QR, TVA de 🧾 Facturation) ; vous confirmez « Paiement reçu » : facture et mise en ligne. 💳 Paiement en ligne : pas encore connecté.</p>
       </form>`,
@@ -10139,7 +10143,7 @@ const FORMS = {
   },
   async 'ann-tarifs'(fd) {
     const m = (k) => { const v = String(fd.get(k) || '').trim().replace(',', '.'); return v ? Math.max(0, num(v)) : ''; };
-    await vault.mutate((tx) => tx.put('reglages', { id: 'annTarifs', haut: m('haut'), milieu: m('milieu'), bas: m('bas'), note: String(fd.get('note') || '').trim().slice(0, 300) }), 'Tarifs des annonces', `🔝 ${m('haut')} · ⏺ ${m('milieu')} · 🔽 ${m('bas')} € / jour`);
+    await vault.mutate((tx) => tx.put('reglages', { id: 'annTarifs', haut: m('haut'), milieu: m('milieu'), bas: m('bas'), crea_simple: m('crea_simple'), crea_moyen: m('crea_moyen'), crea_max: m('crea_max'), note: String(fd.get('note') || '').trim().slice(0, 300) }), 'Tarifs des annonces', `🔝 ${m('haut')} · ⏺ ${m('milieu')} · 🔽 ${m('bas')} € / jour`);
     toast('Tarifs enregistrés');
     goBack();
     annSync(null, true);
