@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.221.0';
+const VERSION = '2.222.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1125,7 +1125,7 @@ function pubStatsFor(id, from = '0000', to = '9999') {
   r.like = Math.max(0, (r.soc.like || 0) - (r.soc.unl || 0)); r.dis = Math.max(0, (r.soc.dis || 0) - (r.soc.und || 0)); r.sh = r.soc.share || 0;
   return r;
 }
-const pubOut = (a) => ({ id: a.id, slot: pubSlot(a), cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '', ...(a.jours && a.jours.length ? { jours: a.jours } : {}), ...(a.h1 && a.h2 ? { h1: a.h1, h2: a.h2 } : {}), ...(a.type ? { type: a.type } : {}) });
+const pubOut = (a) => ({ id: a.id, ...(a.zone ? { zone: a.zone } : {}), slot: pubSlot(a), cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '', ...(a.jours && a.jours.length ? { jours: a.jours } : {}), ...(a.h1 && a.h2 ? { h1: a.h1, h2: a.h2 } : {}), ...(a.type ? { type: a.type } : {}) });
 const pubsActives = (immId, aud = 'loc') => vault.list('avis').filter((a) => isPub(a) && (!a.st || a.st === 'ok') && pubAud(a).includes(aud) && (aud === 'ptl' || !immId || !a.immId || (Array.isArray(immId) ? immId.includes(a.immId) : a.immId === immId)) && (!a.debut || a.debut <= today()) && (!a.fin || a.fin >= today()));
 const avisActifs = (immId) => vault.list('avis').filter((a) => !isPub(a) && (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
   .sort((a, b) => (a.debut || '').localeCompare(b.debut || ''));
@@ -1201,7 +1201,7 @@ function espaceData(l) {
   const out = {
     v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', avatar: emojiOk(l.avatar) ? l.avatar : '', photo: photoOk(l.photo) ? l.photo : '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
     societe: { nom: soc.nom && (TENANT || !WRONG_ID.test(soc.nom)) ? soc.nom : DEF_SOC(), adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: signLite.src === soc.signature && signLite.url ? signLite.url : soc.signature || '', signW: soc.signW || 8 },
-    loyer: loyerAt(l, new Date().getFullYear(), new Date().getMonth() + 1) || l.loyer || 0, revis: revNext(l), parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
+    loyer: loyerAt(l, new Date().getFullYear(), new Date().getMonth() + 1) || l.loyer || 0, revis: revNext(l), ...(TENANT ? { netPubs: 1 } : {}), parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : { nom: 'Seven Radio', url: 'https://sevenradio.lu/?proradio-popup=1' }; })(),
     annex: g ? annexOf(g) : {}, annexM2: (g && g.annexM2) || {}, surface: (g && g.surface) || '', maison: g && g.type === 'maison' ? g.maison || '' : '', unit: g ? g.type : '',
   };
@@ -1283,7 +1283,7 @@ function espaceData(l) {
     out.visits = visits.filter((v) => v.d >= today());
     out.done = visits.filter((v) => v.d < today() && !v.off).map((v) => ({ d: v.d, w: v.w, nom: v.nom, m: v.m, de: v.de, a: v.a }));
   }
-  if (show.pub) out.pubs = pubsActives(l.immId).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut);
+  if (show.pub) out.pubs = (TENANT ? [] : pubsActives(l.immId).filter((a) => zoneOk(a, im ? `${im.adresse} ${im.ville || ''}` : ''))).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut);
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
   if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '', lv: l.reglesV || '', v: rulesVersion(im) };
   if (show.chat && chatOn(im) && isCurrent(l)) {
@@ -2186,10 +2186,22 @@ async function espaceSync(onlyId, loud) {
     }
   }
   if (!onlyId) { await hotesSync(); await txcoSync(); await annSync(); }
-  if (!onlyId) { await equipeSync(); await portailPubsSync(); await biensSync(); }
+  if (!onlyId) { await equipeSync(); await portailPubsSync(); await netPubsSync(); await biensSync(); }
   return true;
 }
 // Annonces pour le portail gérance : publiées en clair (publicité, aucune donnée personnelle), relues par le portail
+// 📍 Zone d'une annonce : vide = tout le Luxembourg ; sinon une des localités doit être dans l'adresse
+const zoneOk = (a, where) => { const z = String(a.zone || '').toLowerCase().split(',').map((x) => x.trim()).filter(Boolean); if (!z.length) return true; const w = String(where || '').toLowerCase(); return z.some((x) => w.includes(x)); };
+// 🌐 Annonces validées → liste publique du réseau (apps des centrales des clients et des annonceurs)
+async function netPubsSync() {
+  if (TENANT) return;
+  const list = vault.list('avis').filter((a) => isPub(a) && (!a.st || a.st === 'ok') && (!a.fin || a.fin >= today())).map((a) => ({ ...pubOut(a), aud: pubAud(a), debut: a.debut || '', annId: a.annId || '' }));
+  const h = await sha256Hex(JSON.stringify(list));
+  let prev = '';
+  try { prev = localStorage.getItem('aresNetPubs') || ''; } catch { /* stockage indisponible */ }
+  if (h === prev) return;
+  try { await vault.call('netpubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: list }) }); localStorage.setItem('aresNetPubs', h); } catch { /* Worker pas encore à jour : on réessaiera */ }
+}
 async function portailPubsSync() {
   if (TENANT) return;
   const list = pubsActives('', 'ptl').map(pubOut), offers = aboOffersOn(), cc = centraleConf(), contact = centraleResp() ? { nom: centraleResp(), tel: cc.tel || '', email: cc.email || '' } : null;
@@ -3109,7 +3121,7 @@ function hoteData(h, tks) {
     arr: h.arr || null, taxiOk: h.taxi && h.taxi.st !== 'wait' && h.taxi.st !== 'no' ? { nom: h.taxi.nom, tel: h.taxi.tel, auto: h.taxi.auto, plaque: h.taxi.plaque } : null,
     edlSent: h.edlOut ? Object.keys(h.edlOut.ph || {}) : [], sejour: hoteSejour(h), ...tks, signalKey: sig ? sig.pub : '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
-    pubs: pubsActives(null, 'hote').sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut),
+    pubs: TENANT ? [] : pubsActives(null, 'hote').sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut), ...(TENANT ? { netPubs: 1 } : {}),
     chat: pchatOut(h), chatRd: h.chatRd || '',
   };
 }
@@ -6946,6 +6958,8 @@ const SHEETS = {
         <p class="tiny muted full" style="margin:0">Collez le lien de la vidéo ou du morceau : il s’affiche dans l’annonce comme un petit écran ou un petit lecteur audio, on le regarde ou l’écoute sans quitter l’app. <b id="vidHint">${vidHint(a.video)}</b></p>
         <label class="field full">Emplacement<select name="slot">${Object.entries(PUB_SLOTS).map(([k, v]) => html`<option value="${k}" ${(a.slot ? pubSlot(a) : 'haut') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <div class="field full">Visible pour<div class="chips" style="margin-top:6px">${Object.entries(PUB_AUD).map(([k, v]) => html`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="aud_${k}" ${pubAud(a).includes(k) ? new Raw('checked') : ''} style="width:18px;min-height:18px;margin:0">${v}</label>`)}</div></div>
+        ${field('Zone — localités, séparées par des virgules (vide = tout le Luxembourg)', 'zone', a.zone, { full: true, placeholder: 'ex. Esch-sur-Alzette, Belval' })}
+        <p class="tiny muted full" style="margin:0">🌐 Les annonces validées vont aussi dans les apps des locataires et clients des <b>centrales des clients</b> et dans l’app des <b>annonceurs</b>, selon la zone.</p>
         <label class="field full">Immeuble (locataires et équipe)<select name="immId"><option value="">Tous les immeubles</option>${imms.map((im) => html`<option value="${im.id}" ${im.id === a.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
         ${field('Publier à partir du', 'debut', exp ? today() : a.debut, { type: 'date', required: true })}
         <label class="field">Durée (TTL)<select name="ttl">${PUB_TTL.map((n) => html`<option value="${n}" ${+(a.ttl || 30) === n ? new Raw('selected') : ''}>${n} jours</option>`)}</select></label>
@@ -9995,6 +10009,7 @@ const FORMS = {
     const debut = fd.get('debut') || today();
     const rec = { kind: 'pub', cat: PUB_CATS[fd.get('cat')] ? fd.get('cat') : 'autre', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), texte: fd.get('texte').trim(), tel: fd.get('tel').trim(), web: /^https?:\/\//.test(fd.get('web').trim()) ? fd.get('web').trim() : '', video: /^https?:\/\//.test(String(fd.get('video') || '').trim()) ? String(fd.get('video')).trim().slice(0, 500) : '', aud: Object.keys(PUB_AUD).filter((k) => fd.get('aud_' + k)), slot: PUB_SLOTS[fd.get('slot')] ? fd.get('slot') : 'haut', immId: fd.get('immId') || '', debut, ttl, fin: addDays(debut, ttl - 1) };
     if (!rec.nom || !rec.adresse) return;
+    rec.zone = String(fd.get('zone') || '').trim().slice(0, 200);
     if (!rec.aud.length) rec.aud = ['loc'];
     if (id) rec.id = id;
     // lien court TikTok (bouton « Partager » du téléphone) → lien complet, sinon pas de mini écran

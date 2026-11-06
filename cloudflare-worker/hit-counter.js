@@ -74,6 +74,12 @@ async function route(request, env, ctx, headers) {
     // Statistiques anonymes des annonces (vues / clics) envoyées par les apps : aucun nom, aucune donnée personnelle
     if (url.pathname === "/api/pubstat" && request.method === "POST") return pubStatPost(request, env, headers);
     if (url.pathname === "/api/publikes" && request.method === "GET") return pubLikesGet(url, env, headers);
+    // 📣 Annonces du réseau (lecture publique) : apps des locataires et clients des centrales des clients, apps des annonceurs
+    if (url.pathname === "/api/netpubs" && request.method === "GET") {
+      const obj = await env.PHOTOS.get(ARES_NETPUBS);
+      const day = new Date().toISOString().slice(0, 10), j = obj ? await obj.json() : {};
+      return aresJson({ items: (j.items || []).filter((a) => !a.fin || a.fin >= day) }, 200, headers, { "Cache-Control": "public, max-age=120" });
+    }
 
     // ── Archivio cifrato Ares (gestion locataires) ──
     if (url.pathname.startsWith("/api/ares/")) {
@@ -247,6 +253,7 @@ const ARES_SESSION = "ares/session.json";
 const ARES_PUBLIC = "ares/public/";
 const ARES_ESPACE = "ares/espace/"; // espaces locataires : données chiffrées avec une clé que seul le lien du locataire contient
 const ARES_INBOX = "ares/inbox/";
+const ARES_NETPUBS = "ares/pubs-reseau.json"; // 📣 annonces validées par la centrale principale, pour TOUTES les apps du réseau (publicité, en clair)
 const ARES_PUBS = "ares/pubs-portail.json"; // annonces des partenaires pour le portail gérance (publicité, en clair)
 const ARES_BOARD = "ares/board/"; // mini-chat de chaque logement : messages chiffrés avec une clé que seuls les habitants et le gestionnaire ont
 const BOARD_TTL_MS = 90 * 24 * 3600 * 1000; // messages effacés après 90 jours
@@ -791,7 +798,7 @@ async function handleAres(request, env, url, headers) {
 
   // ── Centrale d'un client : pas de publicité / biens / annonces du réseau / registre ; scaduto = sola lettura ──
   if (tid) {
-    if (/^(pubs|biens|pubstats|tools|tenants|demandes)(\/|$)/.test(path) || (path === "network-key" && method !== "GET")) return aresJson({ error: "Réservé à la centrale principale" }, 403, headers);
+    if (/^(pubs|netpubs|biens|pubstats|tools|tenants|demandes)(\/|$)/.test(path) || (path === "network-key" && method !== "GET")) return aresJson({ error: "Réservé à la centrale principale" }, 403, headers);
     if (path === "tenant-key" && method === "PUT") {
       let b;
       try { b = await request.json(); } catch { b = null; }
@@ -1089,6 +1096,21 @@ async function handleAres(request, env, url, headers) {
     if (!buf.byteLength || buf.byteLength > BIEN_PH_MAX || u8[0] !== 0xff || u8[1] !== 0xd8) return aresJson({ error: "Photo invalide (JPEG, 900 Ko max.)" }, 400, headers);
     await env.PHOTOS.put(BIENS + bph[1] + "/" + bph[2], buf, { httpMetadata: { contentType: "image/jpeg" } });
     return aresJson({ ok: true }, 200, headers);
+  }
+  if (path === "netpubs" && method === "PUT") {
+    let b;
+    try { b = await request.json(); } catch { b = null; }
+    const s = (v, n) => String(v || "").slice(0, n), d10 = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v || "") ? v : "");
+    const url = (v) => (/^https?:\/\//.test(String(v || "")) ? s(v, 500) : "");
+    const items = (b && Array.isArray(b.items) ? b.items : []).slice(0, 200).map((a) => ({
+      id: s(a.id, 40), slot: ["haut", "milieu", "bas"].includes(a.slot) ? a.slot : "milieu", cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
+      tel: s(a.tel, 40), web: url(a.web), video: url(a.video), type: s(a.type, 20), debut: d10(a.debut), fin: d10(a.fin), zone: s(a.zone, 200), annId: s(a.annId, 40),
+      aud: (Array.isArray(a.aud) ? a.aud : []).map((x) => s(x, 8)).slice(0, 8),
+      jours: (Array.isArray(a.jours) ? a.jours : []).map(Number).filter((n) => n >= 0 && n <= 6).slice(0, 7),
+      h1: /^\d\d:\d\d$/.test(a.h1 || "") ? a.h1 : "", h2: /^\d\d:\d\d$/.test(a.h2 || "") ? a.h2 : "",
+    })).filter((a) => a.id && a.nom);
+    await env.PHOTOS.put(ARES_NETPUBS, JSON.stringify({ items, at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
+    return aresJson({ ok: true, n: items.length }, 200, headers);
   }
   if (path === "pubs" && method === "PUT") {
     let b;

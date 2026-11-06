@@ -8,6 +8,10 @@ import { infoBox } from '/ares/nbien.js';
 import qrcode from '/ares/qrcode.js';
 import { pchatInit, pchatCard } from '/ares/pchat.js';
 import { trInit } from '/ares/chattr.js';
+import { videoEmbed } from '/ares/video-embed.js';
+import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
+import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from '/ares/pubsocial.js';
+import { netPubsGet, netPubsFor } from '/ares/netpubs.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'annAccess';
 let [id, key] = (location.hash.slice(1).match(/^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/) || []).slice(1);
@@ -146,6 +150,15 @@ function adHtml(a, t) {
       ${st === 'pay' ? `<span class="paywrap"><button class="btn sm" disabled aria-disabled="true">${esc(t.pay)}</button><button class="info-dot" data-payinfo="${esc(a.id)}" aria-label="Info">ℹ️</button></span>` : ''}</div>
     ${payOpen === a.id ? `<p class="bubble">ℹ️ ${esc(u.card)}</p>` : ''}</div>`;
 }
+// 📣 les annonces des AUTRES annonceurs, aux 3 emplacements (comme les locataires les voient)
+const ADT = { fr: { lbl: 'Annonce', see: '📍 Voir', call: '📞 Appeler', why: 'Votre annonce peut être ici aussi : elle passe dans les apps des locataires, des clients et de tous les annonceurs.' }, it: { lbl: 'Annuncio', see: '📍 Vedi', call: '📞 Chiama', why: 'Il vostro annuncio può stare qui: passa nelle app di inquilini, clienti e di tutti gli annunciatori.' }, de: { lbl: 'Anzeige', see: '📍 Ansehen', call: '📞 Anrufen', why: 'Ihre Anzeige kann auch hier stehen: in den Apps der Mieter, Kunden und aller Inserenten.' }, pt: { lbl: 'Anúncio', see: '📍 Ver', call: '📞 Ligar', why: 'O seu anúncio pode estar aqui: aparece nas apps dos inquilinos, clientes e de todos os anunciantes.' }, en: { lbl: 'Ad', see: '📍 See', call: '📞 Call', why: 'Your ad can be here too: it shows in the apps of tenants, clients and all advertisers.' }, es: { lbl: 'Anuncio', see: '📍 Ver', call: '📞 Llamar', why: 'Su anuncio puede estar aquí: aparece en las apps de inquilinos, clientes y todos los anunciantes.' } };
+let others = [];
+const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
+function adBox(x) {
+  const t = ADT[lang] || ADT.fr, v = x.video ? videoEmbed(x.video) : null;
+  return `<div class="card pub-box" data-pid="${esc(x.id)}"><div class="meta"><b>📣 ${esc(t.lbl)}</b></div><b style="display:block">${esc(x.nom)}</b><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p>${v ? `<div class="vid" data-vsrc="${esc(v.src)}"></div>` : ''}
+    <div class="btns">${x.adresse ? `<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.adresse)}" target="_blank" rel="noopener" data-pev="map">${esc(t.see)}</a>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.call)}</a>` : ''}</div>${pubSocialBar(x)}</div>`;
+}
 function render() {
   const t = T();
   document.documentElement.lang = lang;
@@ -156,27 +169,35 @@ function render() {
       <div class="card"><form id="codeForm"><label>${esc(t.code)}</label><input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" style="font-size:24px;letter-spacing:.1em;text-align:center"><button class="btn block" style="margin-top:12px" type="submit">${esc(t.enter)}</button></form></div>`;
     return;
   }
-  const d = data, out = [];
+  const d = data, out = [], today = new Date().toISOString().slice(0, 10);
+  const pubs = others.filter((x) => (!x.fin || x.fin >= today) && (!x.debut || x.debut <= today) && pubNow(x)), slot = (k) => { const l = pubs.filter((x) => (x.slot || 'milieu') === k); return l.length ? l[Math.floor(Date.now() / 60000) % l.length] : null; };
   document.title = `📣 ${d.nom}`;
   out.push(`<div class="top"><span class="brandx"><b>📣 ${esc(d.nom)}</b></span>${langs}</div><p class="sub">${esc(t.app)} · ${esc(d.reseau)}</p>`);
+  { const p = slot('haut'); if (p) out.push(adBox(p) + `<p class="meta" style="margin:-4px 0 12px">💡 ${esc((ADT[lang] || ADT.fr).why)}</p>`); }
   if (pushSt && pushSt !== 'unsupported' && (pushSt !== 'on' || pushJust)) out.push(`<div class="card"><h2>${esc(t.notif)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.notifHint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0">${esc(t.notifOk)}</p>` : `<button class="btn sm" data-push="1">${esc(t.notifOn)}</button>`}</div>`);
   if (msg) out.push(`<div class="card okc"><p style="margin:0">${esc(msg)}</p></div>`);
   out.push(form ? formHtml(t) : `<button class="btn block big" data-new="1">${esc(t.newA)}</button>`);
   const pend = (() => { try { return JSON.parse(ls.get('annPend:' + id) || '[]'); } catch { return []; } })();
   const ads = [...pend.filter((p) => !(d.ads || []).some((a) => a.id === p.id && p.id)), ...(d.ads || [])];
   out.push(`<div class="card"><h2>${esc(t.mine)}</h2>${ads.length ? ads.map((a) => adHtml(a, t)).join('') : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}</div>`);
+  { const p = slot('milieu'); if (p) out.push(adBox(p)); }
   out.push(pchatCard()); // 💬 service après-vente 24 h / 24 : messages avec la centrale
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
+  { const p = slot('bas'); if (p) out.push(adBox(p)); }
   out.push(infoBox({ lang }));
   out.push(`<p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);
+  const keep = new Map([...document.querySelectorAll('.vid iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');
+  document.querySelectorAll('.vid[data-vsrc]').forEach((v) => { const src = v.dataset.vsrc, old = keep.get(src); if (old) return v.append(old); const f = document.createElement('iframe'); f.src = src; f.dataset.src = src; f.loading = 'lazy'; f.allow = 'autoplay; encrypted-media; picture-in-picture'; f.setAttribute('allowfullscreen', ''); v.append(f); });
+  pubSeen(app);
+  pubSocialLoad(app);
 }
 async function load() {
   data = null;
   if (id && key) {
     try {
       const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' });
-      if (r.ok) { const x = await openJson(key, await r.arrayBuffer()); if (x && x.kind === 'annonce') data = x; else { ls.set(ACC, null); location.replace(`/espace.html#${id}.${key}`); return; } }
+      if (r.ok) { const x = await openJson(key, await r.arrayBuffer()); if (x && x.kind === 'annonce') { data = x; netPubsGet(API).then((it) => { others = netPubsFor(it, '', x.adresse || '', (x.ads || []).map((a) => a.id)); if (data === x) render(); }); } else { ls.set(ACC, null); location.replace(`/espace.html#${id}.${key}`); return; } }
       else if (r.status === 404) { ls.set(ACC, null); id = key = ''; loadErr = T().off; }
     } catch { loadErr = '⚠ offline'; }
   }
@@ -204,7 +225,11 @@ app.addEventListener('change', (e) => {
   if (el.dataset.aud) { form.aud = el.checked ? [...form.aud, el.dataset.aud] : form.aud.filter((k) => k !== el.dataset.aud); return; }
   if (el.dataset.day) { const n = +el.dataset.day; form.jours = el.checked ? [...form.jours, n].sort() : form.jours.filter((x) => x !== n); return; }
 });
+pubStatInit(API, 'ann', () => lang);
+pubSocialInit(API, () => lang);
+document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
 app.addEventListener('click', async (e) => {
+  pubTap(e);
   const b = e.target.closest('button');
   if (!b) return;
   const t = T();
