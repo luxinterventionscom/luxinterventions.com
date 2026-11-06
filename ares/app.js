@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.222.7';
+const VERSION = '2.222.8';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4008,6 +4008,23 @@ function collCard(im) {
     </button>`)}</div>` : html`<p class="muted small">Aucune collecte enregistrée.</p>`}
   </div>`;
 }
+// 📣 Centrale d'un client : les annonces du réseau (validées par LuxInterventions) aux 3 emplacements de l'Accueil
+let netAdsCache = null, netAdsAt = 0;
+function netAdsLoad() {
+  if (!TENANT || Date.now() - netAdsAt < 10 * 60000) return;
+  netAdsAt = Date.now();
+  fetch(API.replace(/\/$/, '') + '/api/netpubs').then((r) => (r.ok ? r.json() : { items: [] })).then((j) => { netAdsCache = Array.isArray(j.items) ? j.items : []; if (ui.route === 'dashboard' && vault.unlocked) renderView(); }).catch(() => {});
+}
+function netAd(slot) {
+  if (!TENANT) return '';
+  netAdsLoad();
+  const t0 = today(), where = imms0().map((im) => `${im.adresse} ${im.ville || ''}`).join(' ');
+  const l = (netAdsCache || []).filter((a) => (a.slot || 'milieu') === slot && (!a.fin || a.fin >= t0) && (!a.debut || a.debut <= t0) && zoneOk(a, where));
+  if (!l.length) return '';
+  const a = l[Math.floor(Date.now() / 60000) % l.length], lg = /^data:image\/(png|jpeg|webp);base64,/.test(a.logo || '') ? a.logo : '';
+  return html`<div class="card" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="tiny muted"><b>📣 Publicité</b></div>${lg ? html`<img src="${lg}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''}<b style="display:block;font-size:16px">${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
+    <div class="actions" style="margin:8px 0 0;flex-wrap:wrap">${a.adresse ? html`<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener">📍 Voir</a>` : ''}${a.tel ? html`<a class="btn sm" href="tel:${String(a.tel).replace(/[^\d+]/g, '')}">📞 Appeler</a>` : ''}${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener">🌐 Site</a>` : ''}</div></div>`;
+}
 // 📣 / ⚠️ annonces à valider et réclamations des annonceurs (Accueil, même vide)
 function annAlerts(alertBtn) {
     const annWait = TENANT ? [] : vault.list('avis').filter((a) => isPub(a) && a.st === 'wait' && a.annId);
@@ -5253,7 +5270,7 @@ dashboard() {
 
     if (!imms.length && !locs.length) {
       const { anRecBox: rb0, annBox: ab0 } = annAlerts((cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`);
-      return html`${pushNudge()}${rb0}${ab0}${centralinoHtml()}${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
+      return html`${pushNudge()}${netAd('haut')}${rb0}${ab0}${centralinoHtml()}${netAd('milieu')}${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`;
     }
 
@@ -5301,6 +5318,7 @@ dashboard() {
     const refBox = refs.length ? html`<div class="section-label" style="margin-top:0;color:var(--bad,#c0392b)">✋ ${refs.length} ${refs.length > 1 ? 'travaux' : 'travail'} refusé${refs.length > 1 ? 's' : ''} par l’ouvrier — à réaffecter</div><div class="list ref-list" style="margin-bottom:14px">${refs.map((t) => html`<div>${tacheRow(t)}<div class="tiny" style="padding:2px 12px 8px">${t.taxi && t.taxi.st === 'none' ? html`🚕 ${taxiLog(t)}` : html`✋ ${intervName(t.refus.by)} · ${fmtDateTime(t.refus.at)}${t.refus.note ? ' — ' + t.refus.note : ''}`}</div></div>`)}</div>` : '';
     return html`
       ${pushNudge()}
+      ${netAd('haut')}
       ${nudge}
       ${devBanner()}
       ${refBox}
@@ -5308,6 +5326,7 @@ dashboard() {
       ${finBox}
       ${sigBox}
       ${centralinoHtml()}
+      ${netAd('milieu')}
       ${virBox}
       ${edlBox}
       ${anRecBox}${annBox}${nClaimBox}${netSoonBox}${netStopBox}${bailBox}${eqBox}
@@ -5381,7 +5400,7 @@ dashboard() {
           <div class="progress ${level(pp)}"><i style="width:${Math.min(pp, 100)}%"></i></div>
           <div class="pay-foot"><span>${im.type && im.type !== 'immeuble' ? (IMM_TYPES[im.type] || '') + ' · ' : ''}${plural(ls.length, 'locataire')}</span><span class="num">${money(rec)} / ${money(exp)}</span></div>
         </button>`;
-      })}</div>`, 'margin-top:14px')}`;
+      })}</div>`, 'margin-top:14px')}${netAd('bas')}`;
   },
 
   immeubles() {
