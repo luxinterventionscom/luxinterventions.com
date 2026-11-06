@@ -18038,4 +18038,12 @@ export default [
 "✅ Terminée",
 "✅ Terminata"
 ],
+[
+"Zone — localités, séparées par des virgules (vide = tout le Luxembourg)",
+"Zona — località, separate da virgole (vuoto = tutto il Lussemburgo)"
+],
+[
+"ex. Esch-sur-Alzette, Belval",
+"es. Esch-sur-Alzette, Belval"
+],
 ];

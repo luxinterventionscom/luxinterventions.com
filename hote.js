@@ -12,6 +12,7 @@ import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { tripView, tripFetch } from '/ares/trip.js';
 import { pchatInit, pchatCard } from '/ares/pchat.js';
 import { trInit } from '/ares/chattr.js';
+import { netPubsGet, netPubsFor } from '/ares/netpubs.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'hoteAccess';
 let [id, key] = (location.hash.slice(1).match(/^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/) || []).slice(1);
@@ -435,7 +436,7 @@ async function load() {
       const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' });
       if (r.ok) {
         const x = await openJson(key, await r.arrayBuffer());
-        if (x && x.kind === 'hote') data = x;
+        if (x && x.kind === 'hote') { data = x; if (x.netPubs) netPubsGet(API).then((it) => { if (data === x) { x.pubs = netPubsFor(it, 'hote', (x.st && x.st.adresse) || (x.ch && x.ch.adresse) || ''); render(); } }); }
         else { ls.set(ACC, null); location.replace(`/espace.html#${id}.${key}`); return; }
       } else if (r.status === 404) { ls.set(ACC, null); id = key = ''; loadErr = T().off; }
     } catch { loadErr = '⚠ offline'; }
