@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.222.0';
+const VERSION = '2.222.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -7199,7 +7199,7 @@ const SHEETS = {
   'annc-form'({ id }) {
     const an = id ? vault.get('reglages', id) : { cat: 'resto', appCode: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0') };
     if (id && !an) return null;
-    const inv = `📣 ${an.nom || ''} — app des annonces ${societe().nom || 'LuxInterventions'} : ${location.origin}/annonce.html\nCode : ${an.appCode}`, tel = String(an.tel || '').replace(/[^\d+]/g, '');
+    const inv = `📣 ${an.nom || ''} — app des annonces ${societe().nom || 'LuxInterventions'} : ${location.origin}/annunci.html\nCode : ${an.appCode}`, tel = String(an.tel || '').replace(/[^\d+]/g, '');
     return {
       title: id ? an.nom : 'Nouvel annonceur',
       narrow: true,
@@ -7210,6 +7210,10 @@ const SHEETS = {
         ${field('Adresse', 'adresse', an.adresse, { full: true })}${field('Téléphone (WhatsApp)', 'tel', an.tel, { type: 'tel' })}${field('Email', 'email', an.email, { type: 'email' })}
         <div class="full section-label" style="margin:6px 0 0">📱 App de l’annonceur</div>
         ${field('Code d’accès à l’app', 'appCode', an.appCode, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
+        ${id ? html`<div class="full card" style="text-align:center;margin:0"><div class="tiny muted">Lien de son app</div>
+          <p style="margin:4px 0 8px;word-break:break-all"><a href="${location.origin}/annunci.html" target="_blank" rel="noopener">${location.host}/annunci.html</a></p>
+          <div class="qr" style="max-width:150px;margin:0 auto 8px">${qrSvg(location.origin + '/annunci.html', 4)}</div>
+          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn sm" type="button" data-action="copy-url" data-url="${location.origin}/annunci.html">🔗 Copier le lien</button><button class="btn sm" type="button" data-action="code-copy" data-code="${an.appCode}">📋 Copier le code</button><button class="btn sm danger" type="button" data-action="annc-newcode">🔁 Nouveau code</button></div></div>` : ''}
         <p class="tiny muted full" style="margin:0">Dans son app, il crée ses annonces, menus et événements (dates, jours, heures, emplacement, apps), voit le prix et ses statistiques ; vous validez chaque annonce avant publication.</p>
         ${id ? html`<div class="full actions" style="margin:0;flex-wrap:wrap">${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}${an.email ? html`<a class="btn sm" href="mailto:${an.email}?subject=${encodeURIComponent('📣 App des annonces')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}<button type="button" class="btn sm" data-action="code-copy" data-code="${an.appCode}">📋 Copier le code</button></div>` : ''}
       </form>`,
@@ -8910,6 +8914,8 @@ const ACTIONS = {
     if (l.espace.code && !(await confirmBox('Nouveau code d’accès ?', { ok: 'Nouveau code', detail: 'L’ancien code ne fonctionnera plus pour une nouvelle installation (les téléphones déjà connectés restent connectés).' }))) return;
     try { await setAccessCode(l); toast('Nouveau code créé'); } catch (e) { toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
   },
+  'annc-newcode'() { const i = sheetEl.querySelector('#f [name=appCode]'); if (!i) return; i.value = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0'); i.focus(); sheetDirty = true; toast('Nouveau code : touchez « Enregistrer » (l’ancien ne marchera plus)'); },
+  async 'copy-url'(d) { try { await navigator.clipboard.writeText(d.url); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); } },
   async 'code-copy'(d) { try { await navigator.clipboard.writeText(d.code); toast('Code copié : ' + d.code); } catch { toast('Copie impossible', { bad: true }); } },
   async 'esp-copy'(d) {
     const l = vault.get('locataires', d.id);
