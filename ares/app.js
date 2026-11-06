@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.218.10';
+const VERSION = '2.219.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2594,6 +2594,45 @@ function isOwnerDue(im, y, m) {
   return true;
 }
 const versement = (immId, y, m) => vault.get('versements', payKey(immId, y, m));
+// 📅 Bail principal (vous êtes locataire principal, le bailleur est le propriétaire) : fin proche et préavis
+const isBailPrincipal = (im) => !!(im && (im.proprietaire || ownerRent(im))) && !immGone(im);
+const BAIL_DEC = { '': 'À décider', renouv: 'Nous renouvelons', stop: 'Nous ne renouvelons pas', ok: 'Réponse du bailleur reçue' };
+function bailAlert(im) {
+  if (!isBailPrincipal(im) || !im.bailFin || im.bailDec === 'ok') return null;
+  const left = daysUntil(im.bailFin);
+  if (left == null || left < -30 || left > 183) return null; // de 6 mois avant à 1 mois après
+  const pm = num(im.preavis) || 0, lim = pm ? addMonths(im.bailFin, -pm) : '';
+  return { left, pm, lim, limLeft: lim ? daysUntil(lim) : null };
+}
+// 💶 Rentabilité du mois : loyers des locataires actuels − loyer et charges au bailleur − dépenses de l'année réparties par mois
+function rentaMois(im) {
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth() + 1;
+  const locs = tenantsOfImm(im.id).filter((l) => isCurrent(l) && !isFuture(l));
+  const loyers = sum(locs, (l) => loyerAt(l, y, m)), bail = ownerRent(im), dep = Math.round(sum(depensesOf(im.id, y), (d) => d.montant) / m);
+  const vides = logsOf(im.id).filter((g) => !occupantsNow(g.id).length).length;
+  return { loyers, bail, dep, net: loyers - bail - dep, nLocs: locs.length, vides };
+}
+const rentaLine = (r) => html`<span class="num">${money(r.loyers)}</span> − <span class="num">${money(r.bail)}</span>${r.dep ? html` − <span class="num">${money(r.dep)}</span>` : ''} = <b class="num ${r.net < 0 ? 'red' : 'green'}">${r.net < 0 ? '🔴' : '🟢'} ${r.net >= 0 ? '+' : ''}${money(r.net)} / mois</b>`;
+function bailLetter(id) {
+  const im = vault.get('immeubles', id);
+  if (!im) return;
+  const box = (t) => html`<p style="margin:6px 0">☐ ${t}</p>`, ln = '_______________________________';
+  printDoc('Bail principal — renouvellement', html`<div style="font-size:12pt;line-height:1.55">
+    <p style="text-align:right">${socName()}<br>${[societe().adresse, societe().ville].filter(Boolean).join(', ')}</p>
+    <p><b>À l’attention de :</b> ${im.proprietaire || ln}</p>
+    <p><b>Objet :</b> bail principal — ${im.adresse}${im.ville ? ', ' + im.ville : ''}${im.bailFin ? html` — fin prévue le <b>${fmtDate(im.bailFin)}</b>` : ''}</p>
+    <p>Madame, Monsieur,</p>
+    <p>Le bail principal du bien ci-dessus${im.bailDebut ? html`, commencé le ${fmtDate(im.bailDebut)},` : ''} arrive à son terme${im.bailFin ? html` le ${fmtDate(im.bailFin)}` : ''}. Nous vous informons de notre décision :</p>
+    ${box('Nous souhaitons renouveler le bail.')}${box('Nous ne renouvelons pas le bail.')}
+    <p>Merci de nous retourner ce document complété et signé${bailAlert(im) && bailAlert(im).lim ? html` avant le <b>${fmtDate(bailAlert(im).lim)}</b>` : ''}.</p>
+    <p style="margin-top:18px">Fait à ${ln}, le ${ln}</p>
+    <p>Signature du locataire principal : ${ln}</p>
+    <div style="border:1.5px solid #333;border-radius:8px;padding:10px 14px;margin-top:22px"><p style="margin:0 0 6px"><b>Réponse du bailleur</b></p>
+      ${box('J’accepte le renouvellement')}${box('Je refuse le renouvellement')}
+      <p style="margin:6px 0">Conditions éventuelles (loyer, durée…) : ${ln}${ln}</p>
+      <p style="margin:6px 0">Fait à ${ln}, le ${ln}</p><p style="margin:6px 0">Signature du bailleur : ${ln}</p></div>
+    <p style="font-size:9pt;color:#666;margin-top:14px">Document à envoyer selon le délai de préavis prévu au contrat (recommandé avec accusé de réception conseillé).</p></div>`, true);
+}
 const versementsOf = (immId, y) => vault.list('versements').filter((v) => v.immId === immId && (!y || v.y === y));
 
 // Bilan d'un immeuble (ou d'un logement) — une année, ou depuis l'origine si y est vide
@@ -5134,6 +5173,14 @@ dashboard() {
     const nClaimBox = nClaims.length ? html`<div class="stack" style="margin-bottom:14px">${nClaims.map((f) => alertBtn('info', 'wallet', 'net-open', f.tid, html`💳 <b>${f.nom}</b> dit avoir payé la facture <b>${f.no}</b> (${eur(f.ttc)})<div class="tiny">vérifiez sur le compte, puis « ✅ Reçu » dans sa fiche</div>`))}</div>` : '';
     // ⏳ clients du réseau dont l'accès (abonnement ou 6 mois offerts) se termine dans 30 jours : c'est le moment d'appeler
     const netSoon = TENANT ? [] : ((ui.net && ui.net.list) || []).filter((t) => t.until && t.until >= today() && t.until <= addDays(today(), 30) && t.st !== 'suspended');
+    const bailBox = (() => {
+      const al = imms0().map((im) => [im, bailAlert(im)]).filter(([, a]) => a).sort((x, y) => x[1].left - y[1].left);
+      const lose = imms0().filter((im) => isBailPrincipal(im) && ownerRent(im)).map((im) => [im, rentaMois(im)]).filter(([, r]) => r.net < 0);
+      if (!al.length && !lose.length) return '';
+      return html`<div class="stack" style="margin-bottom:14px">${al.map(([im, a]) => alertBtn(a.limLeft != null && a.limLeft <= 30 ? 'bad' : 'warn', 'calendar', 'bail-open', im.id, html`📅 <b>${im.adresse}</b> : bail principal ${a.left >= 0 ? html`jusqu’au <b>${fmtDate(im.bailFin)}</b> (${plural(a.left, 'jour')})` : html`terminé le ${fmtDate(im.bailFin)}`}
+        <div class="tiny">${a.lim ? (a.limLeft >= 0 ? html`✉️ Préavis de ${a.pm} mois : recommandé à envoyer <b>avant le ${fmtDate(a.lim)}</b> (${plural(a.limLeft, 'jour')})` : html`⚠️ Date du préavis (${fmtDate(a.lim)}) dépassée — vérifiez le contrat`) : 'Indiquez le préavis du contrat (mois) dans la fiche de l’immeuble'} · ${BAIL_DEC[im.bailDec || '']} · 📄 lettre A4 dans la fiche</div>`))}
+        ${lose.map(([im, r]) => alertBtn('bad', 'alert', 'bail-open', im.id, html`🔴 <b>${im.adresse}</b> : perd <b>${money(-r.net)} / mois</b><div class="tiny">${rentaLine(r)}${r.vides ? html` · <span>${r.vides} logement(s) vide(s)</span>` : ''}</div>`))}</div>`;
+    })();
     const netSoonBox = netSoon.length ? html`<div class="stack" style="margin-bottom:14px">${netSoon.map((t) => alertBtn('warn', 'calendar', 'net-open', t.id, html`⏳ <b>${t.nom}</b> : accès jusqu’au ${fmtDate(t.until)}${(vault.list('reglages').find((f) => f.id.startsWith('licfac-') && f.tid === t.id && f.au === t.until) || {}).gift ? ' (🎁 6 mois offerts)' : ''}<div class="tiny">bon moment pour proposer l’abonnement</div>`))}</div>` : '';
     const eqBox = eqNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'eq-feed', '', html`👷 <b>${eqNew} nouvelle${eqNew > 1 ? 's' : ''} de l’équipe</b> (commencé, fini, pas fini, notes, photos…)<div class="tiny">touchez pour voir qui fait quoi, où et quand</div>`)}</div>` : '';
     const assurTodo = vault.list('intervenants').filter((i) => i.genre === 'prive' && i.assurTodo && !i.archive);
@@ -5160,7 +5207,7 @@ dashboard() {
       ${centralinoHtml()}
       ${virBox}
       ${edlBox}
-      ${nClaimBox}${netSoonBox}${eqBox}
+      ${nClaimBox}${netSoonBox}${bailBox}${eqBox}
       ${absBox}
       ${toolsBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
@@ -5259,7 +5306,8 @@ dashboard() {
             ${immGone(im) ? html`<dt>Fin de gestion</dt><dd>${fmtDate(im.finGestion)}</dd>` : ''}
             <dt>Logements</dt><dd>${logs.length ? html`${occ} occupé${occ > 1 ? 's' : ''} / ${logs.length}` : '—'}</dd>
             <dt>Locataires actuels</dt><dd>${tenantsOfImm(im.id).filter(isCurrent).length}</dd>
-            ${ownerRent(im) ? html`<dt>Bail principal</dt><dd class="num">${money(ownerRent(im))} / mois</dd>` : ''}
+            ${ownerRent(im) ? html`<dt>Bail principal</dt><dd class="num">${money(ownerRent(im))} / mois${im.bailFin ? html` · fin ${fmtDate(im.bailFin)}` : ''}</dd>` : ''}
+            ${ownerRent(im) && !immGone(im) ? html`<dt>Rentabilité / mois</dt><dd>${rentaLine(rentaMois(im))}</dd>` : ''}
             <dt>Encaissé ${y}</dt><dd class="num green">${money(b.encaisse)}</dd>
             ${b.verse ? html`<dt>Versé bailleur</dt><dd class="num">−${money(b.verse)}</dd>` : ''}
             <dt>Dépenses ${y}</dt><dd class="num ${b.depenses ? 'red' : ''}">${b.depenses ? '−' + money(b.depenses) : money(0)}</dd>
@@ -7364,6 +7412,9 @@ const SHEETS = {
         ${field('Charges (€ / mois)', 'charges', im.charges, { type: 'number', attrs: money$ })}
         ${field('Début du bail principal', 'bailDebut', im.bailDebut, { type: 'date' })}
         ${field('Fin du bail principal', 'bailFin', im.bailFin, { type: 'date' })}
+        ${field('Préavis du contrat (mois)', 'preavis', im.preavis, { type: 'number', placeholder: 'ex. 3 — voir le contrat', attrs: 'inputmode="numeric" min="0" max="24" step="1"' })}
+        <label class="field">Renouvellement<select name="bailDec">${Object.entries(BAIL_DEC).map(([k, v]) => html`<option value="${k}" ${(im.bailDec || '') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        <p class="tiny muted full" style="margin:0">📅 Alerte sur l’Accueil 6 mois avant la fin du bail principal, avec la date limite du préavis (les mois écrits dans votre contrat) et une lettre A4 « renouvellement oui / non » à faire signer au bailleur.</p>
         <label class="field full">Notes<textarea name="note" placeholder="Travaux, assurance, syndic…">${im.note || ''}</textarea></label>
         <div class="section-label full" style="margin:6px 0 0">📍 Position du lieu — contrôle de l’arrivée et du départ de l’équipe</div>
         <input type="hidden" name="geoLa" value="${Array.isArray(im.geo) ? im.geo[0] : ''}"><input type="hidden" name="geoLo" value="${Array.isArray(im.geo) ? im.geo[1] : ''}">
@@ -7448,11 +7499,13 @@ const SHEETS = {
         <dl class="kv" style="margin-bottom:16px">
           ${kvRow('Structure', IMM_TYPES[im.type] || IMM_TYPES.immeuble)}
           ${kvRow('Bailleur (propriétaire)', im.proprietaire || '—')}
-          ${kvRow('Locataire principal', html`${societe().nom || 'NOBIS s.a.r.l.'} (vous)`)}
+          ${kvRow('Locataire principal', html`${societe().nom || DEF_SOC()} (vous)`)}
           ${kvRow('Loyer + charges', rent ? money(rent) + ' / mois' : '—')}
-          ${kvRow('Bail principal', html`${im.bailDebut ? fmtDate(im.bailDebut) : '?'} → ${im.bailFin ? fmtDate(im.bailFin) : 'indéterminé'}`)}
+          ${kvRow('Bail principal', html`${im.bailDebut ? fmtDate(im.bailDebut) : '?'} → ${im.bailFin ? fmtDate(im.bailFin) : 'indéterminé'}${im.preavis ? html` · préavis ${im.preavis} mois${im.bailFin ? html` (avant le <b>${fmtDate(addMonths(im.bailFin, -num(im.preavis)))}</b>)` : ''}` : ''}${im.bailDec ? html` · ${BAIL_DEC[im.bailDec] || ''}` : ''}`)}
+          ${rent ? kvRow('Rentabilité ce mois', html`${rentaLine(rentaMois(im))}<div class="tiny muted"><span>loyers des locataires − bailleur (loyer + charges)</span>${rentaMois(im).dep ? html`<span> − dépenses (moyenne du mois)</span>` : ''}${rentaMois(im).vides ? html` · <span>${rentaMois(im).vides} logement(s) vide(s)</span>` : ''}</div>`) : ''}
           ${kvRow('Total versé', html`<span class="num">${money(sum(versementsOf(id), (v) => v.montant))}</span>`)}
         </dl>
+        ${isBailPrincipal(im) ? html`<div class="actions" style="margin:-6px 0 14px;flex-wrap:wrap"><button class="btn sm" data-action="bail-letter" data-id="${id}">📄 Lettre A4 — renouvellement oui / non</button></div>` : ''}
         ${rent ? [cy, cy - 1].map((yy) => html`<div class="section-label" style="margin-top:4px">${yy} · versé ${money(sum(versementsOf(id, yy), (v) => v.montant))}</div>
           ${monthGrid(yy, MONTHS.map((mn, i) => {
             const m = i + 1;
@@ -8809,6 +8862,8 @@ const ACTIONS = {
   'new-txco': () => openOver('txco-form'),
   'new-annc': () => openOver('annc-form'),
   'tdem-new': () => openOver('tdem-form'),
+  'bail-letter': (d) => bailLetter(d.id),
+  'bail-open': (d) => openSheet('imm', d.id, 'proprio'),
   async 'tdem-del'(d) {
     const r = vault.get('reglages', d.id);
     if (!r || !(await confirmBox('Supprimer cette demande de votre liste ?', { ok: 'Supprimer', danger: true, detail: (r.titre || '') + ' — si LuxInterventions l’a déjà reçue, appelez-nous pour l’annuler.' }))) return;
@@ -10139,7 +10194,7 @@ const FORMS = {
     const id = fd.get('id');
     const rec = {
       adresse: fd.get('adresse').trim(), ville: String(fd.get('ville') || '').trim(), type: fd.get('type') || 'immeuble', proprietaire: fd.get('proprietaire').trim(), loyer: num(fd.get('loyer')), charges: num(fd.get('charges')),
-      bailDebut: fd.get('bailDebut'), bailFin: fd.get('bailFin'), note: fd.get('note').trim(),
+      bailDebut: fd.get('bailDebut'), bailFin: fd.get('bailFin'), preavis: fd.get('preavis') === '' ? '' : Math.max(0, Math.min(24, num(fd.get('preavis')))), bailDec: String(fd.get('bailDec') || ''), note: fd.get('note').trim(),
     };
     { const g = geoIn({ la: fd.get('geoLa'), lo: fd.get('geoLo') }); const old = id ? (vault.get('immeubles', id) || {}).geo : null; if (g && fd.get('geoLa') !== '' && (!Array.isArray(old) || old[0] !== g.la || old[1] !== g.lo)) { rec.geo = [g.la, g.lo]; rec.geoSrc = fd.get('geoSrc') || 'osm'; } }
     if (id) rec.id = id;

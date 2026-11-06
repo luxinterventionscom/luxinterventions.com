@@ -17821,4 +17821,68 @@ export default [
 "— si LuxInterventions l’a déjà reçue, appelez-nous pour l’annuler.",
 "— falls LuxInterventions sie schon erhalten hat, rufen Sie uns zum Stornieren an."
 ],
+[
+"À décider",
+"Zu entscheiden"
+],
+[
+"Nous renouvelons",
+"Wir verlängern"
+],
+[
+"Nous ne renouvelons pas",
+"Wir verlängern nicht"
+],
+[
+"Réponse du bailleur reçue",
+"Antwort des Vermieters erhalten"
+],
+[
+"Préavis du contrat (mois)",
+"Kündigungsfrist laut Vertrag (Monate)"
+],
+[
+"ex. 3 — voir le contrat",
+"z. B. 3 — siehe Vertrag"
+],
+[
+"Renouvellement",
+"Verlängerung"
+],
+[
+"📅 Alerte sur l’Accueil 6 mois avant la fin du bail principal, avec la date limite du préavis (les mois écrits dans votre contrat) et une lettre A4 « renouvellement oui / non » à faire signer au bailleur.",
+"📅 Hinweis auf der Startseite 6 Monate vor Ende des Hauptmietvertrags, mit der Frist (Monate laut Ihrem Vertrag) und einem A4-Brief „Verlängerung ja / nein“ zur Unterschrift des Vermieters."
+],
+[
+"Rentabilité ce mois",
+"Rentabilität diesen Monat"
+],
+[
+"Rentabilité / mois",
+"Rentabilität / Monat"
+],
+[
+"loyers des locataires − bailleur (loyer + charges)",
+"Mieten der Mieter − Vermieter (Miete + Nebenkosten)"
+],
+[
+"− dépenses (moyenne du mois)",
+"− Ausgaben (Monatsdurchschnitt)"
+],
+[
+"{0} logement(s) vide(s)",
+"{0} leere Wohnung(en)"
+],
+[
+"📄 Lettre A4 — renouvellement oui / non",
+"📄 A4-Brief — Verlängerung ja / nein"
+],
+[
+"Indiquez le préavis du contrat (mois) dans la fiche de l’immeuble",
+"Kündigungsfrist (Monate) in der Gebäudekarte angeben"
+],
+[
+"📄 lettre A4 dans la fiche",
+"📄 A4-Brief in der Karte"
+],
 ];

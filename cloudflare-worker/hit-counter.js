@@ -786,7 +786,8 @@ async function handleAres(request, env, url, headers) {
     return aresJson({ error: "session-taken", device: lease.device }, 409, headers);
   }
   // Rinnova la sessione (al massimo ogni 20 s, per limitare le scritture)
-  if (!lease || lease.sid !== sid || now - lease.lastSeen > ARES_RENEW_MS) await writeLease();
+  // un rinnovo mancato (due richieste nello stesso istante sullo stesso file) non è un errore: si rinnova alla prossima
+  if (!lease || lease.sid !== sid || now - lease.lastSeen > ARES_RENEW_MS) await writeLease().catch(() => {});
 
   // ── Centrale d'un client : pas de publicité / biens / annonces du réseau / registre ; scaduto = sola lettura ──
   if (tid) {

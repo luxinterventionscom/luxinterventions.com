@@ -17834,4 +17834,68 @@ export default [
 "— si LuxInterventions l’a déjà reçue, appelez-nous pour l’annuler.",
 "— se LuxInterventions l’ha già ricevuta, chiamateci per annullarla."
 ],
+[
+"À décider",
+"Da decidere"
+],
+[
+"Nous renouvelons",
+"Rinnoviamo"
+],
+[
+"Nous ne renouvelons pas",
+"Non rinnoviamo"
+],
+[
+"Réponse du bailleur reçue",
+"Risposta del proprietario ricevuta"
+],
+[
+"Préavis du contrat (mois)",
+"Preavviso del contratto (mesi)"
+],
+[
+"ex. 3 — voir le contrat",
+"es. 3 — vedi il contratto"
+],
+[
+"Renouvellement",
+"Rinnovo"
+],
+[
+"📅 Alerte sur l’Accueil 6 mois avant la fin du bail principal, avec la date limite du préavis (les mois écrits dans votre contrat) et une lettre A4 « renouvellement oui / non » à faire signer au bailleur.",
+"📅 Avviso in Home 6 mesi prima della fine del contratto principale, con la data limite del preavviso (i mesi scritti nel vostro contratto) e una lettera A4 «rinnovo sì / no» da far firmare al proprietario."
+],
+[
+"Rentabilité ce mois",
+"Redditività questo mese"
+],
+[
+"Rentabilité / mois",
+"Redditività / mese"
+],
+[
+"loyers des locataires − bailleur (loyer + charges)",
+"affitti degli inquilini − proprietario (affitto + spese)"
+],
+[
+"− dépenses (moyenne du mois)",
+"− spese (media del mese)"
+],
+[
+"{0} logement(s) vide(s)",
+"{0} alloggio/i vuoto/i"
+],
+[
+"📄 Lettre A4 — renouvellement oui / non",
+"📄 Lettera A4 — rinnovo sì / no"
+],
+[
+"Indiquez le préavis du contrat (mois) dans la fiche de l’immeuble",
+"Indicate il preavviso del contratto (mesi) nella scheda dell’immobile"
+],
+[
+"📄 lettre A4 dans la fiche",
+"📄 lettera A4 nella scheda"
+],
 ];

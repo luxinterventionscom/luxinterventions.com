@@ -17563,4 +17563,68 @@ export default [
 "— si LuxInterventions l’a déjà reçue, appelez-nous pour l’annuler.",
 "— if LuxInterventions already received it, call us to cancel it."
 ],
+[
+"À décider",
+"To decide"
+],
+[
+"Nous renouvelons",
+"We renew"
+],
+[
+"Nous ne renouvelons pas",
+"We do not renew"
+],
+[
+"Réponse du bailleur reçue",
+"Landlord’s reply received"
+],
+[
+"Préavis du contrat (mois)",
+"Contract notice period (months)"
+],
+[
+"ex. 3 — voir le contrat",
+"e.g. 3 — see the contract"
+],
+[
+"Renouvellement",
+"Renewal"
+],
+[
+"📅 Alerte sur l’Accueil 6 mois avant la fin du bail principal, avec la date limite du préavis (les mois écrits dans votre contrat) et une lettre A4 « renouvellement oui / non » à faire signer au bailleur.",
+"📅 Alert on Home 6 months before the main lease ends, with the notice deadline (months written in your contract) and an A4 letter “renewal yes / no” for the landlord to sign."
+],
+[
+"Rentabilité ce mois",
+"Profitability this month"
+],
+[
+"Rentabilité / mois",
+"Profitability / month"
+],
+[
+"loyers des locataires − bailleur (loyer + charges)",
+"tenants’ rents − landlord (rent + charges)"
+],
+[
+"− dépenses (moyenne du mois)",
+"− expenses (monthly average)"
+],
+[
+"{0} logement(s) vide(s)",
+"{0} empty unit(s)"
+],
+[
+"📄 Lettre A4 — renouvellement oui / non",
+"📄 A4 letter — renewal yes / no"
+],
+[
+"Indiquez le préavis du contrat (mois) dans la fiche de l’immeuble",
+"Enter the contract notice period (months) in the building card"
+],
+[
+"📄 lettre A4 dans la fiche",
+"📄 A4 letter in the card"
+],
 ];
