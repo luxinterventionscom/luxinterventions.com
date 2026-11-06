@@ -18059,4 +18059,24 @@ export default [
 "touchez pour voir, accepter ou refuser",
 "toque para ver, aceptar o rechazar"
 ],
+[
+"🎬 Création de l’annonce par LuxInterventions — prix HT, une fois",
+"🎬 Creación del anuncio por LuxInterventions — precio sin IVA, una vez"
+],
+[
+"SIMPLE — page fixe avec leur texte, graphisme surprise (€)",
+"SIMPLE — página fija con su texto, diseño sorpresa (€)"
+],
+[
+"MOYEN — clip animé avec leur texte, surprise (€)",
+"MEDIO — clip animado con su texto, sorpresa (€)"
+],
+[
+"MAX — vidéo-clip, surprise (€)",
+"MAX — videoclip, sorpresa (€)"
+],
+[
+"Vide = « sur devis » (réponse sous 3 jours max).",
+"Vacío = «a presupuesto» (respuesta en 3 días máx.)."
+],
 ];
