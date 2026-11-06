@@ -17627,4 +17627,16 @@ export default [
 "📄 lettre A4 dans la fiche",
 "📄 A4 letter in the card"
 ],
+[
+"Nom ou indication",
+"Name or description"
+],
+[
+"ex. Résidence Les Lilas ; Escalier A ; Porte C",
+"e.g. Les Lilas residence; Staircase A; Door C"
+],
+[
+"Un appartement avec plusieurs chambres louées séparément : chaque chambre a son locataire, ses loyers et ses quittances ; les habitants de l’appartement ont leurs messages en commun (💬 messagerie).",
+"An apartment with several rooms let separately: each room has its tenant, rents and receipts; the residents share their messages (💬 messages)."
+],
 ];
