@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.219.1';
+const VERSION = '2.220.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1201,7 +1201,7 @@ function espaceData(l) {
   const out = {
     v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', avatar: emojiOk(l.avatar) ? l.avatar : '', photo: photoOk(l.photo) ? l.photo : '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
     societe: { nom: soc.nom && (TENANT || !WRONG_ID.test(soc.nom)) ? soc.nom : DEF_SOC(), adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: signLite.src === soc.signature && signLite.url ? signLite.url : soc.signature || '', signW: soc.signW || 8 },
-    loyer: l.loyer || 0, parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
+    loyer: loyerAt(l, new Date().getFullYear(), new Date().getMonth() + 1) || l.loyer || 0, revis: revNext(l), parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : { nom: 'Seven Radio', url: 'https://sevenradio.lu/?proradio-popup=1' }; })(),
     annex: g ? annexOf(g) : {}, annexM2: (g && g.annexM2) || {}, surface: (g && g.surface) || '', maison: g && g.type === 'maison' ? g.maison || '' : '', unit: g ? g.type : '',
   };
@@ -2494,6 +2494,27 @@ function loyerAt(l, y, m) {
   let v = hist[0].prev != null ? hist[0].prev : l.loyer;
   for (const h of hist) if (ym(y, m) >= ymOf(h.from)) v = h.loyer;
   return v || 0;
+}
+// 🔄 Révision annoncée : prochaine hausse enregistrée (date future) — { from, ancien, nouveau }
+const revNext = (l) => { const h = (l.loyerHist || []).filter((x) => x.from > today()).sort((a, b) => a.from.localeCompare(b.from))[0]; return h ? { from: h.from, ancien: h.prev != null ? h.prev : loyerAt(l, new Date().getFullYear(), new Date().getMonth() + 1), nouveau: h.loyer } : null; };
+function revLetter(id) {
+  const l = vault.get('locataires', id), r = l && revNext(l);
+  if (!r) return toast('Aucune révision future enregistrée (bouton « Réviser le loyer »)', { bad: true });
+  const ln = '_______________________________';
+  printDoc('Avis de révision du loyer', html`<div style="font-size:12pt;line-height:1.55">
+    <p style="text-align:right">${socName()}<br>${[societe().adresse, societe().ville].filter(Boolean).join(', ')}</p>
+    <p><b>À l’attention de :</b> ${fullName(l)}<br>${whereOf(l)}</p>
+    <p><b>Objet :</b> révision du loyer</p>
+    <p>Madame, Monsieur,</p>
+    <p>Nous vous informons que le loyer de votre logement est révisé à partir du <b>${fmtDate(r.from)}</b> :</p>
+    <table style="border-collapse:collapse;margin:8px 0 14px"><tr><td style="padding:4px 18px 4px 0">Loyer actuel</td><td style="text-align:right"><b>${money(r.ancien)}</b> / mois</td></tr>
+      <tr><td style="padding:4px 18px 4px 0">Nouveau loyer</td><td style="text-align:right"><b>${money(r.nouveau)}</b> / mois</td></tr>
+      <tr><td style="padding:4px 18px 4px 0">Différence</td><td style="text-align:right">${r.nouveau >= r.ancien ? '+' : ''}${money(r.nouveau - r.ancien)} / mois</td></tr></table>
+    <p>Les autres conditions de votre contrat restent inchangées. Le nouveau montant apparaît aussi dans votre app.</p>
+    <p style="margin-top:18px">Fait à ${ln}, le ${fmtDate(today())}</p>
+    <p>Pour ${socName()} : ${ln}</p>
+    <div style="border:1.5px solid #333;border-radius:8px;padding:10px 14px;margin-top:22px"><p style="margin:0 0 6px"><b>Bien reçu — le locataire</b></p>
+      <p style="margin:6px 0">Nom : ${fullName(l)}</p><p style="margin:6px 0">Date : ${ln}</p><p style="margin:6px 0">Signature : ${ln}</p></div></div>`, true);
 }
 const dueAmount = (l, y, m) => (isDue(l, y, m) ? loyerAt(l, y, m) : 0);
 const paidAmount = (p, l) => (p.montant != null ? p.montant : loyerAt(l, p.y, p.m)) || 0;
@@ -5133,7 +5154,7 @@ dashboard() {
     const expected = sum(due, (l) => dueAmount(l, y, m));
     const received = sum(vault.list('locataires'), (l) => { const p = payment(l.id, y, m); return p ? paidAmount(p, l) : 0; });
     const todo = due.filter((l) => payState(l, y, m).rest > 0.009);
-    const revisions = locs.filter((l) => l.revision && daysUntil(l.revision) <= 30).sort((a, b) => a.revision.localeCompare(b.revision));
+    const revisions = locs.filter((l) => l.revision && daysUntil(l.revision) <= 60).sort((a, b) => a.revision.localeCompare(b.revision));
     const ownerDueMonth = sum(imms0().filter((im) => isOwnerDue(im, y, m)), ownerRent);
     const fraisMois = fraisOfMonth(y, m);
     const verseMois = sum(vault.list('versements').filter((v) => v.y === y && v.m === m), (v) => v.montant);
@@ -5175,10 +5196,12 @@ dashboard() {
     const netSoon = TENANT ? [] : ((ui.net && ui.net.list) || []).filter((t) => t.until && t.until >= today() && t.until <= addDays(today(), 30) && t.st !== 'suspended');
     const bailBox = (() => {
       const al = imms0().map((im) => [im, bailAlert(im)]).filter(([, a]) => a).sort((x, y) => x[1].left - y[1].left);
+      const revB = imms0().filter((im) => isBailPrincipal(im) && im.bailRev && daysUntil(im.bailRev) >= -15 && daysUntil(im.bailRev) <= 60);
       const lose = imms0().filter((im) => isBailPrincipal(im) && ownerRent(im)).map((im) => [im, rentaMois(im)]).filter(([, r]) => r.net < 0);
-      if (!al.length && !lose.length) return '';
+      if (!al.length && !lose.length && !revB.length) return '';
       return html`<div class="stack" style="margin-bottom:14px">${al.map(([im, a]) => alertBtn(a.limLeft != null && a.limLeft <= 30 ? 'bad' : 'warn', 'calendar', 'bail-open', im.id, html`📅 <b>${im.adresse}</b> : bail principal ${a.left >= 0 ? html`jusqu’au <b>${fmtDate(im.bailFin)}</b> (${plural(a.left, 'jour')})` : html`terminé le ${fmtDate(im.bailFin)}`}
         <div class="tiny">${a.lim ? (a.limLeft >= 0 ? html`✉️ Préavis de ${a.pm} mois : recommandé à envoyer <b>avant le ${fmtDate(a.lim)}</b> (${plural(a.limLeft, 'jour')})` : html`⚠️ Date du préavis (${fmtDate(a.lim)}) dépassée — vérifiez le contrat`) : 'Indiquez le préavis du contrat (mois) dans la fiche de l’immeuble'} · ${BAIL_DEC[im.bailDec || '']} · 📄 lettre A4 dans la fiche</div>`))}
+        ${revB.map((im) => alertBtn('info', 'chart', 'edit-imm', im.id, html`🔄 <b>${im.adresse}</b> : révision du loyer au bailleur le <b>${fmtDate(im.bailRev)}</b> (${plural(Math.max(0, daysUntil(im.bailRev)), 'jour')})<div class="tiny">Loyer actuel ${money(ownerRent(im))} / mois · mettez le nouveau loyer dans la fiche : la rentabilité se recalcule</div>`))}
         ${lose.map(([im, r]) => alertBtn('bad', 'alert', 'bail-open', im.id, html`🔴 <b>${im.adresse}</b> : perd <b>${money(-r.net)} / mois</b><div class="tiny">${rentaLine(r)}${r.vides ? html` · <span>${r.vides} logement(s) vide(s)</span>` : ''}</div>`))}</div>`;
     })();
     const netSoonBox = netSoon.length ? html`<div class="stack" style="margin-bottom:14px">${netSoon.map((t) => alertBtn('warn', 'calendar', 'net-open', t.id, html`⏳ <b>${t.nom}</b> : accès jusqu’au ${fmtDate(t.until)}${(vault.list('reglages').find((f) => f.id.startsWith('licfac-') && f.tid === t.id && f.au === t.until) || {}).gift ? ' (🎁 6 mois offerts)' : ''}<div class="tiny">bon moment pour proposer l’abonnement</div>`))}</div>` : '';
@@ -5524,6 +5547,7 @@ dashboard() {
               <span class="title" style="display:block">${fullName(l)}</span>
               <span class="meta" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${l.logId ? html`<span>${logName(l.logId)}</span>` : ''}${badges}</span>
             </span>
+            ${anciens ? '' : html`<span class="btn sm" role="button" data-action="open-esp" data-id="${l.id}" title="App du locataire : code et lien">📲 ${l.espace && l.espace.on ? '✓' : 'App'}</span>`}
             <span class="amount ${anciens ? 'muted' : ''}">${money(l.loyer)}</span>
           </button>`;
         })}</div>`) : empty('users', q || ui.immFilter ? 'Aucun résultat.' : anciens ? 'Aucun ancien locataire pour le moment.' : 'Aucun locataire enregistré.', !q && !ui.immFilter && !anciens ? html`<button class="btn primary" data-action="new-loc">${icon('plus')} Locataire</button>` : '')}`;
@@ -7412,6 +7436,7 @@ const SHEETS = {
         ${field('Charges (€ / mois)', 'charges', im.charges, { type: 'number', attrs: money$ })}
         ${field('Début du bail principal', 'bailDebut', im.bailDebut, { type: 'date' })}
         ${field('Fin du bail principal', 'bailFin', im.bailFin, { type: 'date' })}
+        ${field('Révision du loyer au bailleur', 'bailRev', im.bailRev, { type: 'date' })}
         ${field('Préavis du contrat (mois)', 'preavis', im.preavis, { type: 'number', placeholder: 'ex. 3 — voir le contrat', attrs: 'inputmode="numeric" min="0" max="24" step="1"' })}
         <label class="field">Renouvellement<select name="bailDec">${Object.entries(BAIL_DEC).map(([k, v]) => html`<option value="${k}" ${(im.bailDec || '') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <p class="tiny muted full" style="margin:0">📅 Alerte sur l’Accueil 6 mois avant la fin du bail principal, avec la date limite du préavis (les mois écrits dans votre contrat) et une lettre A4 « renouvellement oui / non » à faire signer au bailleur.</p>
@@ -7709,7 +7734,7 @@ const SHEETS = {
         ${occ.length ? html`<div class="list" style="margin-bottom:12px">${occ.map((l) => html`<div class="row">
           <button class="avatar" style="border:0;cursor:pointer" data-action="open-loc" data-id="${l.id}">${avIn(l)}</button>
           <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="open-loc" data-id="${l.id}"><span class="title" style="display:block">${fullName(l)}</span><span class="meta">depuis ${fmtDate(l.debut) || '?'}${l.sortie ? ' · départ le ' + fmtDate(l.sortie) : ''}</span></button>
-          <button class="btn sm" data-action="replace" data-id="${l.id}">${icon('sync')} Changer</button>
+          <button class="btn sm" data-action="open-esp" data-id="${l.id}" title="App du locataire : code et lien">📲 ${l.espace && l.espace.on ? '✓' : 'App'}</button><button class="btn sm" data-action="replace" data-id="${l.id}">${icon('sync')} Changer</button>
         </div>`)}</div>` : html`<div class="alert warn" style="margin-bottom:12px">${icon('home')}<div><b>Logement vacant</b>${last ? html` depuis le départ de ${fullName(last)} (${fmtDate(last.sortie)})` : ''}.</div></div>`}
         ${future.length ? html`<div class="section-label">Arrivée prévue</div><div class="list" style="margin-bottom:12px">${future.map((l) => html`<button class="row" data-action="open-loc" data-id="${l.id}"><span class="avatar">${avIn(l)}</span><span class="grow"><span class="title" style="display:block">${fullName(l)}</span><span class="meta">le ${fmtDate(l.debut)}</span></span></button>`)}</div>` : ''}
         <button class="btn block ${occ.length ? '' : 'primary'}" data-action="new-loc" data-log="${id}">${icon('plus')} ${occ.length ? '2ᵉ personne (couple, ami…)' : 'Locataire'}</button>`;
@@ -7859,6 +7884,7 @@ const SHEETS = {
           ${kvRow('Logement', l.logId ? html`<a href="#" data-action="open-log" data-id="${l.logId}">${logName(l.logId)}</a>` : '—')}
           ${kvRow('Loyer', html`<span class="num">${money(l.loyer)} / mois</span>${(l.loyerHist || []).length ? html`<div class="tiny muted">révisé le ${fmtDate([...l.loyerHist].sort((a, b) => b.from.localeCompare(a.from))[0].from)}</div>` : ''}`)}
           ${l.revision ? kvRow('Prochaine révision', fmtDate(l.revision)) : ''}
+          ${revNext(l) ? kvRow('🔄 Révision annoncée', html`${money(revNext(l).ancien)} → <b>${money(revNext(l).nouveau)}</b> à partir du ${fmtDate(revNext(l).from)} <button class="btn sm" type="button" data-action="rev-letter" data-id="${l.id}">📄 Lettre A4</button>`) : ''}
           ${kvRow('Téléphone', l.tel || '—')}
           ${kvRow('Email', l.mail || '—')}
           ${kvRow('Caution', html`<span class="num">${l.caution ? money(l.caution) : '—'}</span>${l.cautionDate || l.cautionMode ? html`<div class="tiny muted">reçue${l.cautionDate ? ' le ' + fmtDate(l.cautionDate) : ''}${l.cautionMode ? ' · ' + (CAUTION_MODES[l.cautionMode] || l.cautionMode).toLowerCase() : ''}</div>` : ''}${l.cautionNote ? html`<div class="tiny muted">${l.cautionNote}</div>` : ''}
@@ -9189,6 +9215,8 @@ const ACTIONS = {
   'new-loc': (d) => openSheet('loc-form', null, null, d.log),
   'edit-loc': (d) => openSheet('loc-form', d.id),
   'open-loc': (d) => openSheet('loc', d.id),
+  'open-esp': (d) => openSheet('loc', d.id, 'espace'),
+  'rev-letter': (d) => revLetter(d.id),
   'open-loc-docs': (d) => openSheet('loc', d.id, 'docs'),
   // ✅ document du locataire rangé dans son dossier (type choisi) ; ❌ refusé avec le motif, le fichier est effacé
   async 'recu-ok'(d) {
@@ -10194,7 +10222,7 @@ const FORMS = {
     const id = fd.get('id');
     const rec = {
       adresse: fd.get('adresse').trim(), ville: String(fd.get('ville') || '').trim(), type: fd.get('type') || 'immeuble', proprietaire: fd.get('proprietaire').trim(), loyer: num(fd.get('loyer')), charges: num(fd.get('charges')),
-      bailDebut: fd.get('bailDebut'), bailFin: fd.get('bailFin'), preavis: fd.get('preavis') === '' ? '' : Math.max(0, Math.min(24, num(fd.get('preavis')))), bailDec: String(fd.get('bailDec') || ''), note: fd.get('note').trim(),
+      bailDebut: fd.get('bailDebut'), bailFin: fd.get('bailFin'), bailRev: fd.get('bailRev') || '', preavis: fd.get('preavis') === '' ? '' : Math.max(0, Math.min(24, num(fd.get('preavis')))), bailDec: String(fd.get('bailDec') || ''), note: fd.get('note').trim(),
     };
     { const g = geoIn({ la: fd.get('geoLa'), lo: fd.get('geoLo') }); const old = id ? (vault.get('immeubles', id) || {}).geo : null; if (g && fd.get('geoLa') !== '' && (!Array.isArray(old) || old[0] !== g.la || old[1] !== g.lo)) { rec.geo = [g.la, g.lo]; rec.geoSrc = fd.get('geoSrc') || 'osm'; } }
     if (id) rec.id = id;

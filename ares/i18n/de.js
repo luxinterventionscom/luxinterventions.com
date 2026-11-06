@@ -17897,4 +17897,24 @@ export default [
 "Un appartement avec plusieurs chambres louées séparément : chaque chambre a son locataire, ses loyers et ses quittances ; les habitants de l’appartement ont leurs messages en commun (💬 messagerie).",
 "Eine Wohnung mit mehreren separat vermieteten Zimmern: jedes Zimmer hat seinen Mieter, seine Mieten und Quittungen; die Bewohner der Wohnung haben gemeinsame Nachrichten (💬 Nachrichten)."
 ],
+[
+"🔄 Révision annoncée",
+"🔄 Angekündigte Anpassung"
+],
+[
+"📄 Lettre A4",
+"📄 A4-Brief"
+],
+[
+"Révision du loyer au bailleur",
+"Mietanpassung an den Vermieter"
+],
+[
+"App du locataire : code et lien",
+"App des Mieters: Code und Link"
+],
+[
+"Aucune révision future enregistrée (bouton « Réviser le loyer »)",
+"Keine künftige Anpassung erfasst (Schaltfläche „Miete anpassen“)"
+],
 ];

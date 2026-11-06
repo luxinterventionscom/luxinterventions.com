@@ -17910,4 +17910,24 @@ export default [
 "Un appartement avec plusieurs chambres louées séparément : chaque chambre a son locataire, ses loyers et ses quittances ; les habitants de l’appartement ont leurs messages en commun (💬 messagerie).",
 "Un appartamento con più camere affittate separatamente: ogni camera ha il suo inquilino, i suoi affitti e le sue ricevute; gli abitanti dell’appartamento hanno i messaggi in comune (💬 messaggi)."
 ],
+[
+"🔄 Révision annoncée",
+"🔄 Revisione annunciata"
+],
+[
+"📄 Lettre A4",
+"📄 Lettera A4"
+],
+[
+"Révision du loyer au bailleur",
+"Revisione dell’affitto al proprietario"
+],
+[
+"App du locataire : code et lien",
+"App dell’inquilino: codice e link"
+],
+[
+"Aucune révision future enregistrée (bouton « Réviser le loyer »)",
+"Nessuna revisione futura registrata (bottone «Rivedi l’affitto»)"
+],
 ];
