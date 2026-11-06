@@ -17917,4 +17917,12 @@ export default [
 "Aucune révision future enregistrée (bouton « Réviser le loyer »)",
 "Keine künftige Anpassung erfasst (Schaltfläche „Miete anpassen“)"
 ],
+[
+"Jours de collecte (jours fixes ou calendrier de la commune) : vos locataires les voient dans leur app (« Collectes des déchets » coché dans leur Espace).",
+"Abholtage (feste Tage oder Gemeindekalender): Ihre Mieter sehen sie in ihrer App („Müllabfuhr“ in ihrem Bereich angekreuzt)."
+],
+[
+"🗑️ Déchets",
+"🗑️ Müll"
+],
 ];
