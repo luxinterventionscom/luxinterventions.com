@@ -135,13 +135,13 @@ function formHtml(t) {
     <label>${esc(t.hours)}</label><div class="two"><div><span class="meta">${esc(t.h1)}</span><input type="time" data-k="h1" value="${esc(f.h1)}"></div><div><span class="meta">${esc(t.h2)}</span><input type="time" data-k="h2" value="${esc(f.h2)}"></div></div>
     <label>✍️ ${esc(SPX[lang] ? SPX[lang][0] : SPX.fr[0])}</label><textarea data-k="special" rows="2" placeholder="${esc(SPX[lang] ? SPX[lang][1] : SPX.fr[1])}">${esc(f.special || '')}</textarea>
     <label>🎬 ${esc((CRT[lang] || CRT.fr).t)}</label><select data-k="crea">${['', 'simple', 'moyen', 'max'].map((k) => `<option value="${k}" ${(f.crea || '') === k ? 'selected' : ''}>${esc((CRT[lang] || CRT.fr)[k || 'none'])}${k ? ' — ' + (+tr['crea_' + k] ? esc(eur(+tr['crea_' + k])) + ' ' + esc(TP().ht) : esc(t.quote)) : ''}</option>`).join('')}</select>
-    <p class="est">${esc(t.price)} : <b>${p ? p + ' € ' + esc(TP().ht) : esc(t.quote) + ' — ' + esc((CRT[lang] || CRT.fr).q3)}</b> <span class="meta">(${days(f)} ${esc((CRT[lang] || CRT.fr).d)})</span>${tr.note ? `<br><span class="meta">${esc(tr.note)}</span>` : ''}</p>
+    <p class="est">${esc(t.price)} : <b>${p ? p + ' € ' + esc(TP().ht) : esc(t.quote) + ' — ' + esc((CRT[lang] || CRT.fr).q3)}</b>${tr.note ? `<br><span class="meta">${esc(tr.note)}</span>` : ''}</p>
     <div class="duo"><button class="btn sec" data-cancel="1">${esc(t.cancel)}</button><button class="btn" data-send="1">${esc(t.send)}</button></div></div>`;
 }
 function adHtml(a, t) {
   const st = a.st === 'ok' && a.fin && a.fin < today ? 'end' : a.st, u = TP();
   return `<div class="ad ${st === 'pay' ? 'wait' : st}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(t.Ty[a.type] || '')} · ${esc(a.nom)}</b><span class="tag">${esc(st === 'pay' ? u.st : t.St[st] || '')}</span></div>
-    <p style="margin:4px 0 0;white-space:pre-wrap">${esc(a.texte)}</p>
+    <p style="margin:4px 0 0;white-space:pre-wrap">${esc(a.texte)}</p>${a.crea ? `<p class="meta" style="margin:4px 0 0">🎬 ${esc((CRT[lang] || CRT.fr)[a.crea] || '')}</p>` : ''}
     <p class="meta" style="margin:4px 0 0">${esc(t.Sl[a.slot] || '')} · ${(a.aud || []).map((k) => esc(t.Au[k] || '')).join(' · ')}<br>📅 ${esc(a.debut)} → ${esc(a.fin)}${a.jours && a.jours.length ? ' · ' + a.jours.map((j) => esc(t.D[j])).join(' ') : ''}${a.h1 ? ` · ${esc(a.h1)}–${esc(a.h2)}` : ''}${a.prix ? ' · ' + esc(a.prix) + ' € ' + esc(u.ht) : ''}</p>
     ${st === 'pay' ? payHtml(a) : ''}
     ${a.st === 'no' && a.motif ? `<p class="warnt">${esc(t.motif)} : ${esc(a.motif)}</p>` : ''}
@@ -212,7 +212,28 @@ function adBox(x) {
 }
 // ✍️ demande spéciale (hors des prix affichés) : LuxInterventions répond, avec un prix sur devis si besoin
 const SPX = { fr: ['Demande spéciale (facultatif)', 'ex. plusieurs emplacements, une semaine précise, un prix pour 3 mois…'], it: ['Richiesta speciale (facoltativa)', 'es. più posizioni, una settimana precisa, un prezzo per 3 mesi…'], de: ['Sonderwunsch (freiwillig)', 'z. B. mehrere Plätze, eine bestimmte Woche, ein Preis für 3 Monate…'], pt: ['Pedido especial (facultativo)', 'ex. várias posições, uma semana precisa, um preço para 3 meses…'], en: ['Special request (optional)', 'e.g. several positions, a given week, a price for 3 months…'], es: ['Petición especial (opcional)', 'ej. varias posiciones, una semana concreta, un precio para 3 meses…'] };
-let logoOpen = false;
+let logoOpen = false, profMsg = '', recMsg = '';
+// ✏️ profil (société, mail, site, TVA, IBAN + banque pour les remboursements) et ⚠️ réclamations
+const PFT = {
+  fr: { p: '🏢 Ma société', nom: 'Nom de la société', mail: 'E-mail', web: 'Site web', tva: 'N° TVA', iban: 'IBAN (pour un remboursement)', bq: 'Banque', save: '💾 Enregistrer', ok: 'Enregistré ✓ — envoyé à LuxInterventions', r: '⚠️ Réclamation', why: 'Pourquoi ?', M: ['Mon annonce ne se voit pas', 'Erreur dans mon annonce', 'Facture / paiement', 'Demande de remboursement', 'Autre'], txt: 'Expliquez le problème', send: 'Envoyer la réclamation', sent: 'Réclamation envoyée ✓ — réponse sous 3 jours max', rep: 'Réponse' },
+  it: { p: '🏢 La mia società', nom: 'Nome della società', mail: 'E-mail', web: 'Sito web', tva: 'N° IVA', iban: 'IBAN (per un rimborso)', bq: 'Banca', save: '💾 Salva', ok: 'Salvato ✓ — inviato a LuxInterventions', r: '⚠️ Reclamo', why: 'Perché?', M: ['Il mio annuncio non si vede', 'Errore nel mio annuncio', 'Fattura / pagamento', 'Richiesta di rimborso', 'Altro'], txt: 'Spiegate il problema', send: 'Invia il reclamo', sent: 'Reclamo inviato ✓ — risposta entro 3 giorni max', rep: 'Risposta' },
+  de: { p: '🏢 Meine Firma', nom: 'Firmenname', mail: 'E-Mail', web: 'Website', tva: 'USt-IdNr.', iban: 'IBAN (für eine Rückerstattung)', bq: 'Bank', save: '💾 Speichern', ok: 'Gespeichert ✓ — an LuxInterventions gesendet', r: '⚠️ Reklamation', why: 'Warum?', M: ['Meine Anzeige ist nicht sichtbar', 'Fehler in meiner Anzeige', 'Rechnung / Zahlung', 'Rückerstattung', 'Sonstiges'], txt: 'Beschreiben Sie das Problem', send: 'Reklamation senden', sent: 'Reklamation gesendet ✓ — Antwort in max. 3 Tagen', rep: 'Antwort' },
+  pt: { p: '🏢 A minha empresa', nom: 'Nome da empresa', mail: 'E-mail', web: 'Site', tva: 'N.º IVA', iban: 'IBAN (para um reembolso)', bq: 'Banco', save: '💾 Guardar', ok: 'Guardado ✓ — enviado à LuxInterventions', r: '⚠️ Reclamação', why: 'Porquê?', M: ['O meu anúncio não aparece', 'Erro no meu anúncio', 'Fatura / pagamento', 'Pedido de reembolso', 'Outro'], txt: 'Explique o problema', send: 'Enviar a reclamação', sent: 'Reclamação enviada ✓ — resposta em 3 dias no máx.', rep: 'Resposta' },
+  en: { p: '🏢 My company', nom: 'Company name', mail: 'E-mail', web: 'Website', tva: 'VAT no.', iban: 'IBAN (for a refund)', bq: 'Bank', save: '💾 Save', ok: 'Saved ✓ — sent to LuxInterventions', r: '⚠️ Complaint', why: 'Why?', M: ['My ad is not showing', 'Mistake in my ad', 'Invoice / payment', 'Refund request', 'Other'], txt: 'Explain the problem', send: 'Send the complaint', sent: 'Complaint sent ✓ — reply within 3 days max', rep: 'Reply' },
+  es: { p: '🏢 Mi empresa', nom: 'Nombre de la empresa', mail: 'E-mail', web: 'Sitio web', tva: 'N.º IVA', iban: 'IBAN (para un reembolso)', bq: 'Banco', save: '💾 Guardar', ok: 'Guardado ✓ — enviado a LuxInterventions', r: '⚠️ Reclamación', why: '¿Por qué?', M: ['Mi anuncio no se ve', 'Error en mi anuncio', 'Factura / pago', 'Solicitud de reembolso', 'Otro'], txt: 'Explique el problema', send: 'Enviar la reclamación', sent: 'Reclamación enviada ✓ — respuesta en 3 días máx.', rep: 'Respuesta' },
+};
+function profCard() {
+  const u = PFT[lang] || PFT.fr, pr = { nom: data.nom || '', ...(data.prof || {}) };
+  const inp = (k, lbl, type = 'text') => `<label>${esc(lbl)}</label><input data-pf="${k}" type="${type}" value="${esc(pr[k] || '')}">`;
+  return `<div class="card"><h2 style="margin-top:0">${esc(u.p)}</h2>${inp('nom', u.nom)}${inp('email', u.mail, 'email')}${inp('web', u.web, 'url')}${inp('tva', u.tva)}${inp('iban', u.iban)}${inp('banque', u.bq)}
+    <button class="btn block" style="margin-top:10px" data-pf-save="1">${esc(u.save)}</button>${profMsg ? `<p class="ok" style="margin:8px 0 0">${esc(profMsg)}</p>` : ''}</div>`;
+}
+function recCard() {
+  const u = PFT[lang] || PFT.fr;
+  return `<div class="card"><h2 style="margin-top:0">${esc(u.r)}</h2><label>${esc(u.why)}</label><select data-rc-m="1">${u.M.map((m) => `<option>${esc(m)}</option>`).join('')}</select>
+    <label>${esc(u.txt)}</label><textarea data-rc-t="1" rows="3"></textarea><button class="btn block" style="margin-top:10px" data-rc-send="1">${esc(u.send)}</button>${recMsg ? `<p class="ok" style="margin:8px 0 0">${esc(recMsg)}</p>` : ''}
+    ${(data.recs || []).slice().reverse().map((r) => `<div class="ad" style="margin-top:10px"><b>${esc(r.motif)}</b> <span class="meta">${esc(String(r.t || '').slice(0, 10))}</span><p style="margin:4px 0 0;white-space:pre-wrap">${esc(r.texte)}</p>${r.rep ? `<p class="ok" style="margin:6px 0 0">💬 ${esc(u.rep)} : ${esc(r.rep)}</p>` : ''}</div>`).join('')}</div>`;
+}
 // 🎬 création de l'annonce par LuxInterventions (prix fixés par la centrale, ou sur devis en 3 jours max)
 const CRT = {
   fr: { t: 'Création de votre annonce par nous', none: 'Non merci — j’envoie mon texte tel quel', simple: 'SIMPLE — page fixe avec votre texte, graphisme surprise', moyen: 'MOYEN — clip animé avec votre texte, surprise', max: 'MAX — vidéo-clip, surprise', q3: 'réponse sous 3 jours max', d: 'jours de diffusion' },
@@ -238,7 +259,7 @@ function render() {
   document.title = `📣 ${d.nom}`;
   const lg = ls.get('annLogo:' + id) || '';
   out.push(`<div class="top"><span class="brandx" style="display:flex;align-items:center;gap:10px"><button class="av-wrap" data-logo-open="1" aria-label="Logo"><span class="av-btn">${lg ? `<img src="${esc(lg)}" alt="" style="object-fit:contain;background:#fff">` : '📣'}</span><span class="av-pen" aria-hidden="true">✏️</span></button><b>${esc(d.nom)}</b></span>${langs}</div><p class="sub">${esc(t.app)} · ${esc(d.reseau)}</p>`);
-  if (logoOpen) out.push(`<div class="card"><h2 style="margin-top:0">🖼️ Logo</h2><p class="meta" style="margin:0 0 10px">${esc((LGT[lang] || LGT.fr))}</p><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn sec sm" style="cursor:pointer;margin:0">${lg ? '🔄' : '➕'} Logo<input type="file" accept="image/*" data-logo="1" hidden></label>${lg ? '<button class="btn sec sm" data-logo-del="1">✖</button>' : ''}<button class="btn sm" data-logo-open="1">OK</button></div></div>`);
+  if (logoOpen) out.push(`<div class="card"><h2 style="margin-top:0">🖼️ Logo</h2><p class="meta" style="margin:0 0 10px">${esc((LGT[lang] || LGT.fr))}</p><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn sec sm" style="cursor:pointer;margin:0">${lg ? '🔄' : '➕'} Logo<input type="file" accept="image/*" data-logo="1" hidden></label>${lg ? '<button class="btn sec sm" data-logo-del="1">✖</button>' : ''}<button class="btn sm" data-logo-open="1">OK</button></div></div>${profCard()}${recCard()}`);
   { const p = slot('haut'); if (p) out.push(adBox(p) + `<p class="meta" style="margin:-4px 0 12px">💡 ${esc((ADT[lang] || ADT.fr).why)}</p>`); }
   if (pushSt && pushSt !== 'unsupported' && (pushSt !== 'on' || pushJust)) out.push(`<div class="card"><h2>${esc(t.notif)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.notifHint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0">${esc(t.notifOk)}</p>` : `<button class="btn sm" data-push="1">${esc(t.notifOn)}</button>`}</div>`);
   out.push(repliesCard());
@@ -322,7 +343,21 @@ app.addEventListener('click', async (e) => {
   if (b.dataset.seen) { const m = seenGet(); for (const a of data.ads || []) m[a.id] = a.st; ls.set('annSeen:' + id, JSON.stringify(m)); return render(); }
   if (b.dataset.cancel) { form = null; return render(); }
   if (b.dataset.logoDel) { e.preventDefault(); if (form) form.logo = ''; ls.set('annLogo:' + id, ''); return render(); }
-  if (b.dataset.logoOpen) { logoOpen = !logoOpen; return render(); }
+  if (b.dataset.logoOpen) { logoOpen = !logoOpen; profMsg = recMsg = ''; return render(); }
+  if (b.dataset.pfSave) {
+    const g = (k) => (app.querySelector(`[data-pf="${k}"]`) || {}).value || '';
+    const prof = { nom: g('nom').trim(), email: g('email').trim(), web: g('web').trim(), tva: g('tva').trim(), iban: g('iban').trim(), banque: g('banque').trim() };
+    b.disabled = true;
+    try { await sendOwner({ type: 'an-prof', prof }); data.nom = prof.nom || data.nom; data.prof = { ...prof, iban: prof.iban.replace(/\s/g, '').toUpperCase() }; profMsg = (PFT[lang] || PFT.fr).ok; } catch { b.disabled = false; return; }
+    return render();
+  }
+  if (b.dataset.rcSend) {
+    const m = (app.querySelector('[data-rc-m]') || {}).value || '', tx = ((app.querySelector('[data-rc-t]') || {}).value || '').trim();
+    if (!tx) return;
+    b.disabled = true;
+    try { await sendOwner({ type: 'an-rec', motif: m, texte: tx }); recMsg = (PFT[lang] || PFT.fr).sent; data.recs = [...(data.recs || []), { t: new Date().toISOString(), motif: m, texte: tx, rep: '' }]; } catch { b.disabled = false; return; }
+    return render();
+  }
   if (b.dataset.inv) return printInv(b.dataset.inv);
   if (b.dataset.paid) { b.disabled = true; try { await sendOwner({ type: 'an-paid', id: b.dataset.paid }); const a = (data.ads || []).find((x) => x.id === b.dataset.paid); if (a) a.claim = today; } catch { b.disabled = false; return; } return render(); }
   if (b.dataset.payinfo) { payOpen = payOpen === b.dataset.payinfo ? '' : b.dataset.payinfo; return render(); }
