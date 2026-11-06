@@ -18033,4 +18033,20 @@ export default [
 "ex. Esch-sur-Alzette, Belval",
 "z. B. Esch-sur-Alzette, Belval"
 ],
+[
+"Lien de son app",
+"Link zu seiner App"
+],
+[
+"📋 Copier le code",
+"📋 Code kopieren"
+],
+[
+"🔁 Nouveau code",
+"🔁 Neuer Code"
+],
+[
+"Nouveau code : touchez « Enregistrer » (l’ancien ne marchera plus)",
+"Neuer Code: „Speichern“ tippen (der alte gilt nicht mehr)"
+],
 ];

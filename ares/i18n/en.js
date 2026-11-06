@@ -17779,4 +17779,20 @@ export default [
 "ex. Esch-sur-Alzette, Belval",
 "e.g. Esch-sur-Alzette, Belval"
 ],
+[
+"Lien de son app",
+"Link to their app"
+],
+[
+"📋 Copier le code",
+"📋 Copy code"
+],
+[
+"🔁 Nouveau code",
+"🔁 New code"
+],
+[
+"Nouveau code : touchez « Enregistrer » (l’ancien ne marchera plus)",
+"New code: tap “Save” (the old one will stop working)"
+],
 ];
