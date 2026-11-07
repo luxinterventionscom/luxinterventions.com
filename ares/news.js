@@ -45,5 +45,5 @@ export function newsHtml(api) {
   load('lux'); load('all');
   setTimeout(paint, 0);
   const h = inner();
-  return `<div class="newsbar card" style="padding:0;margin:14px 0 0;overflow:hidden;border-left:4px solid #DC2626"${h ? '' : ' hidden'}>${h}</div>`;
+  return `<div class="newsbar card" style="padding:0;margin:0 0 14px;overflow:hidden;border-left:4px solid #DC2626"${h ? '' : ' hidden'}>${h}</div>`;
 }
