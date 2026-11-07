@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.223.6';
+const VERSION = '2.223.7';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1052,7 +1052,7 @@ const PUB_CATS = { social: '📱 Annonce réseaux sociaux (TikTok, Instagram, Fa
 const PUB_TTL = [7, 14, 30, 60, 90, 180, 365];
 const isPub = (a) => a.kind === 'pub';
 // À qui s'adresse l'annonce : locataires (par défaut), équipe, portail gérance
-const PUB_AUD = { loc: '🏠 Locataires', eq: '👷 Équipe', ptl: '🏢 Portail gérance', hote: '🏨 Clients hôtel / Airbnb', taxi: '🚕 Taxis' };
+const PUB_AUD = { loc: '🏠 Locataires', eq: '👷 Équipe', ptl: '🏢 Portail gérance', cli: '🌐 Centrales des clients (gérances, agences, propriétaires, hôtels, Airbnb)', hote: '🏨 Clients hôtel / Airbnb', taxi: '🚕 Taxis', ann: '📣 Annonceurs' };
 // Trois emplacements payants dans les apps (locataires, équipe, portail) — du plus cher au moins cher
 const PUB_SLOTS = { haut: '🔝 Haut — sous « Bonjour », visible à l’ouverture (prix élevé)', milieu: '⏺ Milieu — au centre de l’app (prix moyen)', bas: '🔽 Bas — en fin de page, au-dessus de la barre crypto (prix bas)' };
 const pubSlot = (a) => (PUB_SLOTS[a.slot] ? a.slot : 'milieu');
@@ -1825,7 +1825,7 @@ async function annInbox(an, msg) {
     const debut = day(a.debut) || today(), fin = day(a.fin) && day(a.fin) >= debut ? day(a.fin) : addDays(debut, 30);
     const rec = { kind: 'pub', annId: an.id, st: 'wait', motif: '', type: AN_TYPES[a.type] ? a.type : 'annonce', cat: an.cat || 'resto', nom: S(a.nom, 80) || an.nom, texte: S(a.texte, 600), adresse: S(a.adresse, 160) || an.adresse || '',
       tel: S(a.tel, 30), web: /^https?:\/\//.test(S(a.web, 300)) ? S(a.web, 300) : '', video: /^https?:\/\//.test(S(a.video, 400)) ? S(a.video, 400) : '', slot: PUB_SLOTS[a.slot] ? a.slot : 'milieu',
-      aud: (Array.isArray(a.aud) ? a.aud : []).filter((k) => PUB_AUD[k]).slice(0, 5), debut, fin, ttl: Math.round((new Date(fin) - new Date(debut)) / 864e5) + 1,
+      aud: (Array.isArray(a.aud) ? a.aud : []).filter((k) => PUB_AUD[k]).slice(0, 8), debut, fin, ttl: Math.round((new Date(fin) - new Date(debut)) / 864e5) + 1,
       jours: (Array.isArray(a.jours) ? a.jours : []).map(Number).filter((n) => n >= 0 && n <= 6).slice(0, 7), h1: hm(a.h1), h2: hm(a.h2), immId: '', pay: 'none' };
     rec.aud = old && Array.isArray(old.aud) && old.aud.length ? old.aud : Object.keys(PUB_AUD); // les apps : c'est la centrale qui choisit (par défaut : toutes)
     rec.special = S(a.special, 600);
@@ -4061,7 +4061,7 @@ function netAd(slot) {
   if (!TENANT) return '';
   netAdsLoad();
   const t0 = today(), where = imms0().map((im) => `${im.adresse} ${im.ville || ''}`).join(' ');
-  const l = (netAdsCache || []).filter((a) => (a.slot || 'milieu') === slot && (!a.fin || a.fin >= t0) && (!a.debut || a.debut <= t0) && zoneOk(a, where));
+  const l = (netAdsCache || []).filter((a) => (a.aud || []).includes('cli') && (a.slot || 'milieu') === slot && (!a.fin || a.fin >= t0) && (!a.debut || a.debut <= t0) && zoneOk(a, where));
   if (!l.length) return '';
   const a = l[Math.floor(Date.now() / 60000) % l.length], lg = /^data:image\/(png|jpeg|webp);base64,/.test(a.logo || '') ? a.logo : '';
   return html`<div class="card" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="tiny muted"><b>📣 Publicité</b></div>${lg ? html`<img src="${lg}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''}<b style="display:block;font-size:16px">${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}

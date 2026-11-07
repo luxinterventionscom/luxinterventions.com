@@ -286,7 +286,7 @@ async function load() {
   if (id && key) {
     try {
       const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' });
-      if (r.ok) { const x = await openJson(key, await r.arrayBuffer()); if (x && x.kind === 'annonce') { data = x; netPubsGet(API).then((it) => { others = netPubsFor(it, '', x.adresse || '', (x.ads || []).map((a) => a.id)); if (data === x) render(); }); } else { ls.set(ACC, null); location.replace(`/espace.html#${id}.${key}`); return; } }
+      if (r.ok) { const x = await openJson(key, await r.arrayBuffer()); if (x && x.kind === 'annonce') { data = x; netPubsGet(API).then((it) => { others = netPubsFor(it, 'ann', x.adresse || '', (x.ads || []).map((a) => a.id)); if (data === x) render(); }); } else { ls.set(ACC, null); location.replace(`/espace.html#${id}.${key}`); return; } }
       else if (r.status === 404) { ls.set(ACC, null); id = key = ''; loadErr = T().off; }
     } catch { loadErr = '⚠ offline'; }
   }
