@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.223.8';
+const VERSION = '2.224.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2148,6 +2148,17 @@ async function notifyNews(espId, raw) {
   if (Array.isArray(prev) && keys.some((x) => !prev.includes(x))) await vault.espNotify(espId).catch(() => {});
 }
 const espHashes = new Map(), espWarned = new Set();
+// 🔄 toutes les apps (locataires, équipe, ospiti, taxis, annonceurs) : on oublie ce qui a déjà été envoyé et on republie tout
+async function appsRefreshAll() {
+  espHashes.clear(); espWarned.clear();
+  try { for (const k of Object.keys(localStorage)) if (k.startsWith('aresEsp:') || k.startsWith('aresNews:') === false && /^ares(Hote|Tx|Ann|Eq)/.test(k)) localStorage.removeItem(k); } catch { /* stockage */ }
+  try { localStorage.removeItem('aresNetPubs2'); } catch { /* stockage */ }
+  if (typeof anHashes !== 'undefined') anHashes.clear();
+  await espaceSync();
+  try { localStorage.setItem('aresAppsVer', VERSION.split('.').slice(0, 2).join('.')); } catch { /* stockage */ }
+  const n = vault.list('locataires').filter((x) => x.espace && x.espace.on).length;
+  toast(espWarned.size ? `Apps mises à jour · ⚠️ ${espWarned.size} en erreur (voir les messages)` : `✓ Toutes les apps sont à jour (${plural(n, 'locataire')}, équipe, clients, partenaires)`, espWarned.size ? { bad: true } : {});
+}
 // timbre pour les apps des locataires : 1000 px de large au plus (≈ 300 dpi à 8 cm), sinon le PNG d'origine
 // (photo du timbre, jusqu'à 1400 px) peut faire dépasser la taille permise et l'app n'est plus mise à jour
 const signLite = { src: '', url: '' };
@@ -5358,8 +5369,11 @@ dashboard() {
     // ✋ travaux refusés par l'ouvrier (malade, pas disponible…) : à donner à quelqu'un d'autre
     const refs = vault.list('taches').filter((t) => (t.refus || (t.taxi && t.taxi.st === 'none')) && !t.intervenantId && !t.recur && t.statut !== 'fait').sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
     const refBox = refs.length ? html`<div class="section-label" style="margin-top:0;color:var(--bad,#c0392b)">✋ ${refs.length} ${refs.length > 1 ? 'travaux' : 'travail'} refusé${refs.length > 1 ? 's' : ''} par l’ouvrier — à réaffecter</div><div class="list ref-list" style="margin-bottom:14px">${refs.map((t) => html`<div>${tacheRow(t)}<div class="tiny" style="padding:2px 12px 8px">${t.taxi && t.taxi.st === 'none' ? html`🚕 ${taxiLog(t)}` : html`✋ ${intervName(t.refus.by)} · ${fmtDateTime(t.refus.at)}${t.refus.note ? ' — ' + t.refus.note : ''}`}</div></div>`)}</div>` : '';
+    const appsVer = (() => { try { return localStorage.getItem('aresAppsVer') || ''; } catch { return 'x'; } })(), verMM = VERSION.split('.').slice(0, 2).join('.');
+    const appsBox = appsVer !== verMM && vault.list('locataires').some((x) => x.espace && x.espace.on) ? html`<div class="alert info" style="margin-bottom:14px;align-items:center">🆕<div style="flex:1"><b>Mise à jour importante (v${verMM})</b> : mettez à jour toutes les apps (locataires, équipe, clients, partenaires) pour qu’elles reçoivent les nouveautés.</div><button class="btn sm primary" data-action="apps-refresh-all">🔄 Tout mettre à jour</button></div>` : '';
     return html`
       ${pushNudge()}
+      ${appsBox}
       ${netAd('haut')}
       ${nudge}
       ${devBanner()}
@@ -5688,7 +5702,7 @@ dashboard() {
               <span class="title" style="display:block">${fullName(l)}</span>
               <span class="meta" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">${l.logId ? html`<span>${logName(l.logId)}</span>` : ''}${badges}</span>
             </span>
-            ${anciens ? '' : html`<span class="btn sm" role="button" data-action="open-esp" data-id="${l.id}" title="App du locataire : code et lien">📲 ${l.espace && l.espace.on ? '✓' : 'App'}</span>`}
+            ${!anciens && l.espace && l.espace.on ? html`<span class="btn sm ghost" role="button" data-action="esp-refresh" data-id="${l.id}" title="Mettre à jour son app maintenant">🔄</span>` : ''}${anciens ? '' : html`<span class="btn sm" role="button" data-action="open-esp" data-id="${l.id}" title="App du locataire : code et lien">📲 ${l.espace && l.espace.on ? '✓' : 'App'}</span>`}
             <span class="amount ${anciens ? 'muted' : ''}">${money(l.loyer)}</span>
           </button>`;
         })}</div>`) : empty('users', q || ui.immFilter ? 'Aucun résultat.' : anciens ? 'Aucun ancien locataire pour le moment.' : 'Aucun locataire enregistré.', !q && !ui.immFilter && !anciens ? html`<button class="btn primary" data-action="new-loc">${icon('plus')} Locataire</button>` : '')}`;
@@ -5949,6 +5963,8 @@ dashboard() {
         ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}<button class="btn sm" data-action="install-anim">▶ Voir comment</button></div></div>` : ''}
 
       ${centraleSection()}
+      <div class="section-label">Apps</div>
+      <div class="list settings"><button class="row" data-action="apps-refresh-all"><span class="avatar">🔄</span><span class="grow"><span class="title" style="display:block">Mettre à jour toutes les apps maintenant</span><span class="meta">Locataires, équipe, clients hôtel / Airbnb, taxis, annonceurs : après une grosse mise à jour ou si une app ne montre pas une nouveauté</span></span></button></div>
       <div class="section-label">Sécurité</div>
       <div class="list settings">
         <div class="row">${icon('lock')}<span class="grow title">Verrouillage automatique</span>
@@ -9024,6 +9040,7 @@ const ACTIONS = {
     }
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+  async 'apps-refresh-all'() { toast('Mise à jour de toutes les apps…'); try { await appsRefreshAll(); } catch (e) { toast('Mise à jour impossible : ' + (e.message || e), { bad: true }); } if (['dashboard', 'reglages'].includes(ui.route)) renderView(); },
   async 'esp-refresh'(d) {
     const l = vault.get('locataires', d.id);
     if (!l || !l.espace || !l.espace.on) return;
