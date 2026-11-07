@@ -17911,4 +17911,92 @@ export default [
 "📰 Journal / magazine",
 "📰 Newspaper / magazine"
 ],
+[
+"📍 Adresse du commerce",
+"📍 Business address"
+],
+[
+"N°",
+"No."
+],
+[
+"Rue",
+"Street"
+],
+[
+"Ville",
+"City"
+],
+[
+"Code postal (chiffres, facultatif)",
+"Postcode (digits, optional)"
+],
+[
+"ex. 12",
+"e.g. 12"
+],
+[
+"ex. 1741",
+"e.g. 1741"
+],
+[
+"ex. Luxembourg",
+"e.g. Luxembourg"
+],
+[
+"Qui la voit ?",
+"Who sees it?"
+],
+[
+"🌍 Partout",
+"🌍 Everywhere"
+],
+[
+"🏳️ Même pays",
+"🏳️ Same country"
+],
+[
+"🏙️ Même ville",
+"🏙️ Same city"
+],
+[
+"📍 À moins de 1 km",
+"📍 Within 1 km"
+],
+[
+"📍 À moins de 5 km",
+"📍 Within 5 km"
+],
+[
+"📍 À moins de 10 km",
+"📍 Within 10 km"
+],
+[
+"📍 À moins de 25 km",
+"📍 Within 25 km"
+],
+[
+"📍 À moins de 50 km",
+"📍 Within 50 km"
+],
+[
+"Comparé à l’adresse de l’annonce et à l’immeuble de chaque locataire (ville, pays, position). Si l’immeuble n’a pas de ville, de pays ou de position, le locataire voit l’annonce. 🌐 Les annonces validées vont aussi dans les apps des ",
+"Compared with the ad’s address and each tenant’s building (city, country, position). If the building has no city, country or position, the tenant sees the ad. 🌐 Approved ads also go to the apps of the "
+],
+[
+"N° : seulement des chiffres (ex. 12) — « bis », lettre… dans la rue",
+"No.: digits only (e.g. 12) — “bis”, letter… in the street"
+],
+[
+"Code postal : seulement des chiffres (ex. 1741), ou vide",
+"Postcode: digits only (e.g. 1741), or empty"
+],
+[
+"Nom, rue et ville obligatoires",
+"Name, street and city required"
+],
+[
+"Adresse introuvable sur la carte (OpenStreetMap) : vérifiez-la, ou choisissez « Même ville »",
+"Address not found on the map (OpenStreetMap): check it, or choose “Same city”"
+],
 ];

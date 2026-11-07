@@ -18086,4 +18086,96 @@ export default [
 "📰 Journal / magazine",
 "📰 Jornal / revista"
 ],
+[
+"📍 Adresse du commerce",
+"📍 Morada do comércio"
+],
+[
+"N°",
+"N.º"
+],
+[
+"Rue",
+"Rua"
+],
+[
+"Ville",
+"Cidade"
+],
+[
+"Code postal (chiffres, facultatif)",
+"Código postal (algarismos, opcional)"
+],
+[
+"ex. 12",
+"ex. 12"
+],
+[
+"ex. rue de Hollerich",
+"ex. rue de Hollerich"
+],
+[
+"ex. 1741",
+"ex. 1741"
+],
+[
+"ex. Luxembourg",
+"ex. Luxemburgo"
+],
+[
+"Qui la voit ?",
+"Quem a vê?"
+],
+[
+"🌍 Partout",
+"🌍 Em todo o lado"
+],
+[
+"🏳️ Même pays",
+"🏳️ Mesmo país"
+],
+[
+"🏙️ Même ville",
+"🏙️ Mesma cidade"
+],
+[
+"📍 À moins de 1 km",
+"📍 A menos de 1 km"
+],
+[
+"📍 À moins de 5 km",
+"📍 A menos de 5 km"
+],
+[
+"📍 À moins de 10 km",
+"📍 A menos de 10 km"
+],
+[
+"📍 À moins de 25 km",
+"📍 A menos de 25 km"
+],
+[
+"📍 À moins de 50 km",
+"📍 A menos de 50 km"
+],
+[
+"Comparé à l’adresse de l’annonce et à l’immeuble de chaque locataire (ville, pays, position). Si l’immeuble n’a pas de ville, de pays ou de position, le locataire voit l’annonce. 🌐 Les annonces validées vont aussi dans les apps des ",
+"Comparado com a morada do anúncio e o imóvel de cada inquilino (cidade, país, posição). Se o imóvel não tiver cidade, país ou posição, o inquilino vê o anúncio. 🌐 Os anúncios validados vão também para as apps das "
+],
+[
+"N° : seulement des chiffres (ex. 12) — « bis », lettre… dans la rue",
+"N.º: só algarismos (ex. 12) — «bis», letra… na rua"
+],
+[
+"Code postal : seulement des chiffres (ex. 1741), ou vide",
+"Código postal: só algarismos (ex. 1741), ou vazio"
+],
+[
+"Nom, rue et ville obligatoires",
+"Nome, rua e cidade obrigatórios"
+],
+[
+"Adresse introuvable sur la carte (OpenStreetMap) : vérifiez-la, ou choisissez « Même ville »",
+"Morada não encontrada no mapa (OpenStreetMap): verifique-a, ou escolha «Mesma cidade»"
+],
 ];
