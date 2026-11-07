@@ -18111,4 +18111,20 @@ export default [
 ": vous recevrez un nouveau code d'invitation et repartirez d'une centrale vide.",
 ": recibirá un nuevo código de invitación y empezará con una central vacía."
 ],
+[
+"Les locataires entrent dans leur app avec le",
+"Los inquilinos entran en su app con el"
+],
+[
+"ou le",
+"o el"
+],
+[
+"que vous leur donnez ici (📲 dans la fiche de chaque locataire). Sans code, personne n'entre.",
+"que les da aquí (📲 en la ficha de cada inquilino). Sin código nadie entra."
+],
+[
+"ou envoyez-lui le lien direct.",
+"o envíele el enlace directo."
+],
 ];
