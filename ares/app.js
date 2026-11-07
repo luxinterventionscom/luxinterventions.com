@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.224.0';
+const VERSION = '2.224.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1048,7 +1048,7 @@ const ESP_ALL = Object.fromEntries(Object.keys(ESP_SHOW).map((k) => [k, k !== 'p
 const espUrl = (l) => `${location.origin}/espace.html#${l.espace.id}.${l.espace.key}`;
 // Publicité des partenaires du quartier (pizzerias, bars, bricolage, meubles…) : rangée avec les avis (kind « pub »),
 // visible dans l'app des locataires jusqu'à sa date de fin (durée choisie à la publication)
-const PUB_CATS = { social: '📱 Annonce réseaux sociaux (TikTok, Instagram, Facebook…)', musique: '🎵 Musique (nouveautés, clips)', resto: '🍕 Pizzeria / restaurant', bar: '🍺 Bar / pub', horeca: '☕ Café / snack (Horeca)', courses: '🛒 Supermarché', proxi: '🏪 Commerce de proximité (boulangerie, épicerie, pharmacie…)', bricolage: '🔨 Bricolage / jardinage', meubles: '🛋️ Meubles / décoration', bureau: '🏢 Bureaux (agence, cabinet, fiduciaire…)', services: '🧰 Services', autre: '📌 Autre' };
+const PUB_CATS = { social: '📱 Annonce réseaux sociaux (TikTok, Instagram, Facebook…)', musique: '🎵 Musique (nouveautés, clips)', journal: '📰 Journal / magazine', resto: '🍕 Pizzeria / restaurant', bar: '🍺 Bar / pub', horeca: '☕ Café / snack (Horeca)', courses: '🛒 Supermarché', proxi: '🏪 Commerce de proximité (boulangerie, épicerie, pharmacie…)', bricolage: '🔨 Bricolage / jardinage', meubles: '🛋️ Meubles / décoration', bureau: '🏢 Bureaux (agence, cabinet, fiduciaire…)', services: '🧰 Services', autre: '📌 Autre' };
 const PUB_TTL = [7, 14, 30, 60, 90, 180, 365];
 const isPub = (a) => a.kind === 'pub';
 // À qui s'adresse l'annonce : locataires (par défaut), équipe, portail gérance
