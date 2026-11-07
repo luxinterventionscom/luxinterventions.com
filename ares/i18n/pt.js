@@ -18082,4 +18082,8 @@ export default [
 "Apps",
 "Apps"
 ],
+[
+"📰 Journal / magazine",
+"📰 Jornal / revista"
+],
 ];
