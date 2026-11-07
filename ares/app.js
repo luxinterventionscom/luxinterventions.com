@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.223.5';
+const VERSION = '2.223.6';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1868,6 +1868,7 @@ function annBlock() {
   const cos = anCos(), wait = vault.list('avis').filter((a) => isPub(a) && a.st === 'wait').sort((a, b) => (a.debut || '').localeCompare(b.debut || '')), t = anTarifs();
   const nm = (a) => (vault.get('reglages', a.annId) || {}).nom || a.nom, topay = vault.list('avis').filter((a) => isPub(a) && a.st === 'pay').sort((a, b) => (b.payClaim || '').localeCompare(a.payClaim || ''));
   return html`<div class="card" style="margin-bottom:14px"><div class="card-title"><h3>🍽️ Annonceurs (HORECA)</h3><div class="actions" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-action="ann-tarifs">💶 Tarifs</button><button class="btn sm primary" data-action="new-annc">${icon('plus')} Annonceur</button></div></div>
+    ${(() => { let i = null; try { i = JSON.parse(localStorage.getItem('aresNetPubsInfo') || 'null'); } catch { /* rien */ } const enl = vault.list('avis').filter((a) => isPub(a) && (!a.st || a.st === 'ok') && (!a.fin || a.fin >= today())).length; return html`<p class="small" style="margin:0 0 8px;padding:6px 10px;border-radius:10px;background:${i && i.err ? 'rgba(220,38,38,.08)' : 'rgba(37,99,235,.06)'}">🌐 <b>Réseau</b> (centrales des clients, leurs locataires, annonceurs) : <b>${enl}</b> annonce(s) en ligne aujourd’hui${i ? (i.err ? html` · ⚠️ envoi refusé : ${i.err}` : html` · envoyées le ${fmtDateTime(i.at)} (${i.n})`) : ' · pas encore envoyées'} <button class="btn sm" type="button" data-action="netpubs-now">🔄 Envoyer maintenant</button></p>`; })()}
     <p class="tiny muted" style="margin:0 0 8px">Restaurants, bistrots, bars, discothèques… publient eux-mêmes leurs annonces, menus et événements dans leur app ; vous validez. Tarifs HT / jour : 🔝 ${t.haut ? t.haut + ' €' : '—'} · ⏺ ${t.milieu ? t.milieu + ' €' : '—'} · 🔽 ${t.bas ? t.bas + ' €' : '—'} · 💶 virement (QR) puis « Paiement reçu » · 💳 en ligne : <b>non connecté</b></p>
     ${wait.length ? html`<div class="section-label">⏳ À valider (${wait.length})</div><div class="list" style="margin-bottom:10px">${wait.map((a) => html`<div class="row" style="display:block">
       <b>${nm(a)}</b> · ${AN_TYPES[a.type] || ''} — ${a.nom}<div class="small">${a.texte}</div>${a.crea ? html`<div class="alert info" style="margin:6px 0">🎬<div><b>Création demandée : ${({ simple: 'SIMPLE — page fixe', moyen: 'MOYEN — clip animé', max: 'MAX — vidéo-clip' })[a.crea]}</b>${+anTarifs()['crea_' + a.crea] ? ` · ${eur(+anTarifs()['crea_' + a.crea])} HT` : ' · sur devis (réponse sous 3 jours)'}</div></div>` : ''}${a.special ? html`<div class="alert warn" style="margin:6px 0">✍️<div><b>Demande spéciale</b> : ${a.special}<div class="tiny">répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)</div></div></div>` : ''}
@@ -2218,7 +2219,8 @@ async function netPubsSync() {
   try { prev = localStorage.getItem('aresNetPubs2') || ''; } catch { /* stockage indisponible */ }
   if (h === prev) return;
   // envoi réussi seulement si le serveur répond OK (sinon on réessaie à la prochaine ouverture / modification)
-  try { const r = await vault.call('netpubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: list }) }); if (r && r.ok) localStorage.setItem('aresNetPubs2', h); } catch { /* Worker pas encore à jour : on réessaiera */ }
+  const info = (o) => { try { localStorage.setItem('aresNetPubsInfo', JSON.stringify({ ...o, at: new Date().toISOString() })); } catch { /* stockage */ } };
+  try { const r = await vault.call('netpubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: list }) }); if (r && r.ok) { localStorage.setItem('aresNetPubs2', h); info({ n: list.length, all: vault.list('avis').filter(isPub).length }); } } catch (e) { info({ err: e.message || String(e) }); /* on réessaiera */ }
 }
 async function portailPubsSync() {
   if (TENANT) return;
@@ -8576,6 +8578,7 @@ addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installProm
 const ACTIONS = {
   'abo-edit': (d) => openSheet('abo', d.id),
   'abo-tab': (d) => { ui.aboTab = d.id; renderView(); },
+  async 'netpubs-now'() { try { localStorage.removeItem('aresNetPubs2'); } catch { /* rien */ } await netPubsSync(); renderView(); toast('Liste du réseau envoyée'); },
   'ann-open': () => { ui.cpSec = 'abo'; ui.aboTab = 'pub'; go('compta'); },
   async 'anrec-open'(d) {
     const r = vault.get('reglages', d.id);
