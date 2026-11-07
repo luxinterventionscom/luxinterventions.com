@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.223.1';
+const VERSION = '2.223.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3268,7 +3268,7 @@ function promptEdit(title, value) {
     f.t.value = value || '';
     dlg.querySelector('button[value=no]').onclick = () => { dlg.close(); resolve(null); };
     f.onsubmit = (e) => { e.preventDefault(); const v = f.t.value.trim().slice(0, 1500); dlg.close(); resolve(v || null); };
-    dlg.onclose = () => resolve(null);
+    dlg.onclose = null; setTimeout(() => { if (dlg.open) dlg.onclose = () => resolve(null); }, 0); // la fermeture de la fenêtre précédente (même <dialog>) arrive un instant après : elle ne doit pas annuler celle-ci
     dlg.showModal();
     f.t.focus();
   });
@@ -3289,7 +3289,7 @@ function promptText(title, detail, placeholder) {
     const f = dlg.querySelector('form');
     dlg.querySelector('button[value=no]').onclick = () => { dlg.close(); resolve(null); };
     f.onsubmit = (e) => { e.preventDefault(); const v = f.t.value; dlg.close(); resolve(v); };
-    dlg.onclose = () => resolve(null);
+    dlg.onclose = null; setTimeout(() => { if (dlg.open) dlg.onclose = () => resolve(null); }, 0); // la fermeture de la fenêtre précédente (même <dialog>) arrive un instant après : elle ne doit pas annuler celle-ci
     dlg.showModal();
     f.t.focus();
   });
@@ -3439,7 +3439,7 @@ function choiceBox(message, detail, choices) {
     </div>`);
   return new Promise((resolve) => {
     dlg.querySelectorAll('button').forEach((b) => (b.onclick = () => { dlg.close(); resolve(b.dataset.v || null); }));
-    dlg.onclose = () => resolve(null);
+    dlg.onclose = null; setTimeout(() => { if (dlg.open) dlg.onclose = () => resolve(null); }, 0); // la fermeture de la fenêtre précédente (même <dialog>) arrive un instant après : elle ne doit pas annuler celle-ci
     dlg.showModal();
   });
 }
@@ -3467,7 +3467,7 @@ function promptKey(title, detail, warn = []) {
     const f = dlg.querySelector('form');
     dlg.querySelector('button[value=no]').onclick = () => { dlg.close(); resolve(null); };
     f.onsubmit = (e) => { e.preventDefault(); const v = f.k.value; dlg.close(); resolve(v); };
-    dlg.onclose = () => resolve(null);
+    dlg.onclose = null; setTimeout(() => { if (dlg.open) dlg.onclose = () => resolve(null); }, 0); // la fermeture de la fenêtre précédente (même <dialog>) arrive un instant après : elle ne doit pas annuler celle-ci
     dlg.showModal();
     f.k.focus();
   });
