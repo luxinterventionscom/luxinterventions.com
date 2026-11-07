@@ -260,7 +260,7 @@ function render() {
   document.title = `📣 ${d.nom}`;
   const lg = ls.get('annLogo:' + id) || '';
   out.push(`<div class="top"><span class="brandx" style="display:flex;align-items:center;gap:10px"><button class="av-wrap" data-logo-open="1" aria-label="Logo"><span class="av-btn">${lg ? `<img src="${esc(lg)}" alt="" style="object-fit:contain;background:#fff">` : '📣'}</span><span class="av-pen" aria-hidden="true">✏️</span></button><b>${esc(d.nom)}</b></span>${langs}</div><p class="sub">${esc(t.app)} · ${esc(d.reseau)}</p>`);
-  if (logoOpen) out.push(`<div class="card"><h2 style="margin-top:0">🖼️ Logo</h2><p class="meta" style="margin:0 0 10px">${esc((LGT[lang] || LGT.fr))}</p><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn sec sm" style="cursor:pointer;margin:0">${lg ? '🔄' : '➕'} Logo<input type="file" accept="image/*" data-logo="1" hidden></label>${lg ? '<button class="btn sec sm" data-logo-del="1">✖</button>' : ''}<button class="btn sm" data-logo-open="1">OK</button></div></div>${profCard()}${recCard()}`);
+  if (logoOpen) out.push(`<div class="card"><h2 style="margin-top:0">🖼️ Logo</h2><p class="meta" style="margin:0 0 10px">${esc((LGT[lang] || LGT.fr))}</p><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn sec sm" style="cursor:pointer;margin:0">${lg ? '🔄' : '➕'} Logo<input type="file" accept="image/*" data-logo="1" hidden></label>${lg ? '<button class="btn sec sm" data-logo-del="1">✖</button>' : ''}<button class="btn sm" data-logo-open="1">OK</button></div></div>${profCard()}${recCard()}<div class="card"><button class="btn sec block" data-reset="1">🔑 ${esc(t.reset)}</button></div>`);
   { const p = slot('haut'); if (p) out.push(adBox(p) + `<p class="meta" style="margin:-4px 0 12px">💡 ${esc((ADT[lang] || ADT.fr).why)}</p>`); }
   if (pushSt && pushSt !== 'unsupported' && (pushSt !== 'on' || pushJust)) out.push(`<div class="card"><h2>${esc(t.notif)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.notifHint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0">${esc(t.notifOk)}</p>` : `<button class="btn sm" data-push="1">${esc(t.notifOn)}</button>`}</div>`);
   out.push(repliesCard());
@@ -276,7 +276,6 @@ function render() {
   { const p = slot('bas'); if (p) out.push(adBox(p)); }
   out.push(newsHtml(API));
   out.push(infoBox({ lang }));
-  out.push(`<p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);
   const keep = new Map([...document.querySelectorAll('.vid iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');
   document.querySelectorAll('.vid[data-vsrc]').forEach((v) => { const src = v.dataset.vsrc, old = keep.get(src); if (old) return v.append(old); const f = document.createElement('iframe'); f.src = src; f.dataset.src = src; f.loading = 'lazy'; f.allow = 'autoplay; encrypted-media; picture-in-picture'; f.setAttribute('allowfullscreen', ''); f.referrerPolicy = 'strict-origin-when-cross-origin'; v.append(f); });
