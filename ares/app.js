@@ -12,6 +12,8 @@ import { videoEmbed } from './video-embed.js';
 import { PTL_INVITE } from './ptl-invite.js';
 import { zoneOk, visParse, visZone } from './netpubs.js';
 import { newsHtml } from './news.js';
+import { pubStatInit, pubSeen, pubTap } from './pubstat.js';
+import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from './pubsocial.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { makePdf } from './pdfmini.js';
 import { scrollHintInit } from './scroll-hint.js';
@@ -32,7 +34,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.227.0';
+const VERSION = '2.228.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4074,15 +4076,26 @@ function netAdsLoad() {
   netAdsAt = Date.now();
   fetch(API.replace(/\/$/, '') + '/api/netpubs').then((r) => (r.ok ? r.json() : { items: [] })).then((j) => { netAdsCache = Array.isArray(j.items) ? j.items : []; if (ui.route === 'dashboard' && vault.unlocked) renderView(); }).catch(() => {});
 }
+// 📣 annonces du réseau dans la centrale d'un client : même carte que dans les apps (logo, vidéo / musique, 👍 👎 👉, vues et clics)
+let netSocOn = false;
 function netAd(slot) {
   if (!TENANT) return '';
   netAdsLoad();
   const t0 = today(), ims = imms0();
   const l = (netAdsCache || []).filter((a) => (a.aud || []).includes('cli') && (a.slot || 'milieu') === slot && (!a.fin || a.fin >= t0) && (!a.debut || a.debut <= t0) && (!ims.length || ims.some((im) => zoneOk(a, placeOf(im)))));
   if (!l.length) return '';
-  const a = l[Math.floor(Date.now() / 60000) % l.length], lg = /^data:image\/(png|jpeg|webp);base64,/.test(a.logo || '') ? a.logo : '';
-  return html`<div class="card" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="tiny muted"><b>📣 Publicité</b></div>${lg ? html`<img src="${lg}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''}<b style="display:block;font-size:16px">${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
-    <div class="actions" style="margin:8px 0 0;flex-wrap:wrap">${a.adresse ? html`<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener">📍 Voir</a>` : ''}${a.tel ? html`<a class="btn sm" href="tel:${String(a.tel).replace(/[^\d+]/g, '')}">📞 Appeler</a>` : ''}${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener">🌐 Site</a>` : ''}</div></div>`;
+  if (!netSocOn) {
+    netSocOn = true;
+    pubStatInit(API, 'cli', () => getLang());
+    pubSocialInit(API, () => getLang());
+    document.addEventListener('click', (e) => { if (!e.target.closest || !e.target.closest('.net-ad')) return; if (pubSocialClick(e)) { e.stopPropagation(); return; } pubTap(e); }, true);
+  }
+  setTimeout(() => { const r = document.querySelector('.net-ad'); if (r) { pubSocialLoad(document); pubSeen(document); } }, 0);
+  const a = l[Math.floor(Date.now() / 60000) % l.length], lg = /^data:image\/(png|jpeg|webp);base64,/.test(a.logo || '') ? a.logo : '', v = a.video ? videoEmbed(a.video) : null;
+  return html`<div class="card net-ad" data-pid="${a.id}" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="tiny muted"><b>📣 Publicité</b>${PUB_CATS[a.cat] ? ' · ' + PUB_CATS[a.cat] : ''}</div>${lg ? html`<img src="${lg}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''}<b style="display:block;font-size:16px">${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
+    ${v ? html`<div style="clear:both;margin-top:8px;border-radius:12px;overflow:hidden;background:#000;${v.audio ? `height:${v.audio}px` : 'aspect-ratio:' + (v.tall ? '9/16;max-height:520px;max-width:300px' : '16/9')}"><iframe src="${v.src}" title="${v.name}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="width:100%;height:100%;border:0;display:block"></iframe></div>` : a.video ? html`<p style="margin:8px 0 0"><a class="btn sm" href="${a.video}" target="_blank" rel="noopener">▶ Vidéo</a></p>` : ''}
+    ${a.adresse ? html`<div class="meta" style="margin-top:6px">📍 ${a.adresse}</div>` : ''}
+    <div class="actions" style="margin:8px 0 0;flex-wrap:wrap">${a.adresse ? html`<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener" data-pev="map">📍 Voir</a>` : ''}${a.tel ? html`<a class="btn sm" href="tel:${String(a.tel).replace(/[^\d+]/g, '')}" data-pev="call">📞 Appeler</a>` : ''}${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener" data-pev="web">🌐 Site</a>` : ''}</div>${new Raw(pubSocialBar(a))}</div>`;
 }
 // 📣 / ⚠️ annonces à valider et réclamations des annonceurs (Accueil, même vide)
 function annAlerts(alertBtn) {

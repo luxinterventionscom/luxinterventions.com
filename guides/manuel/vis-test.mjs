@@ -70,5 +70,8 @@ await a2.goto('http://localhost:8765/espace.html'); await a2.waitForTimeout(1200
 await a2.fill('input[name=code]', lCode); await a2.click('form button[type=submit]'); await a2.waitForTimeout(4500);
 if (await a2.$('[data-rules-ok]')) { await a2.click('[data-rules-ok]'); await a2.waitForTimeout(1500); }
 assert((await body(a2)).includes('Bäckerei Trier'), 'inquilino: annuncio «Partout» visibile');
+await relog(q, CPASS); await q.evaluate(() => { location.hash = '#/dashboard'; }); await q.waitForTimeout(2500);
+const na = await q.evaluate(() => { const e = document.querySelector('.net-ad'); return e ? { t: e.innerText.slice(0, 60), soc: !!e.querySelector('.psoc') } : null; });
+assert(na && na.soc && /Bäckerei/.test(na.t), 'centrale del cliente: annuncio come nelle app ' + JSON.stringify(na));
 assert(!errs.length, 'nessun errore JS: ' + errs.join(' / '));
 log('OK'); await b.close();

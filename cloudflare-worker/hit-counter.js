@@ -1494,7 +1494,7 @@ async function pubStatPost(request, env, headers) {
     if (len > 4000) return new Response(null, { status: 413, headers });
     let b;
     try { b = JSON.parse(await request.text()); } catch { b = null; }
-    const app = ["loc", "eq", "ptl", "hote", "taxi", "ann"].includes(b && b.app) ? b.app : "";
+    const app = ["loc", "eq", "ptl", "cli", "hote", "taxi", "ann"].includes(b && b.app) ? b.app : "";
     const lang = ["fr", "it", "de", "pt", "en", "es"].includes(b && b.lang) ? b.lang : "fr";
     const items = (b && Array.isArray(b.items) ? b.items : []).filter((x) => x && /^[a-z0-9]{6,40}$/i.test(x.id || "") && PUBSTAT_EV.includes(x.ev)).slice(0, 10);
     if (!app || !items.length) return new Response(null, { status: 204, headers });
