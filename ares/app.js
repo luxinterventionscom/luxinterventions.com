@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.223.0';
+const VERSION = '2.223.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -9199,7 +9199,7 @@ const ACTIONS = {
     if (v == null) return;
     if (v.trim() !== t.nom) return toast('Nom différent : rien n’a été fait', { bad: true });
     if (!(await confirmBox('Dernière confirmation : tout effacer ?', { ok: '🗑️ Tout effacer', danger: true, detail: 'La centrale de « ' + t.nom + ' » sera vide. Irréversible.' }))) return;
-    try { const r = await netApi('tenants/' + t.id + '/reset', 'POST'); await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + t.id, ...netInfo(t.id), code: r.code }), '🌐 Nouvel accès (centrale vidée)', t.nom); await licLogAdd(t, 'Nouvel accès (clé perdue)', 'centrale vidée, échéance inchangée'); toast('Nouvel accès : envoyez le nouveau code'); } catch (e) { return toast(e.message, { bad: true }); }
+    try { const r = await netApi('tenants/' + t.id + '/reset', 'POST'); if (!r || !r.code) return toast('Remise à zéro impossible : ' + ((r && r.error) || 'le serveur n’a pas répondu') + ' — rien n’a été effacé', { bad: true }); await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + t.id, ...netInfo(t.id), code: r.code }), '🌐 Nouvel accès (centrale vidée)', t.nom); await licLogAdd(t, 'Nouvel accès (clé perdue)', 'centrale vidée, échéance inchangée'); toast('Nouvel accès : envoyez le nouveau code'); } catch (e) { return toast(e.message, { bad: true }); }
     await netLoad(true);
     openOver('net-client', t.id); // le nouveau code d'invitation, tout de suite
   },
