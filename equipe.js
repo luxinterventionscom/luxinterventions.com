@@ -1,5 +1,6 @@
 // App de l'équipe : planning personnel (quoi, où, quand), « commencé / fini / pas fini » avec note et photos,
 // horaire, absences, coordonnées. Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
+import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { openJson, openBytes, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
 
@@ -827,7 +828,7 @@ function render() {
   }
   { const low = slot('bas'); if (low) out.push(adBox(low, t)); }
   out.push(infoBox({ extra: `<button class="btn sec block" data-ianim="1">▶ ${esc((FT[lang] || FT.fr).anim)}</button>` }));
-  out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
+  out.push(newsHtml(API)); out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
   const keepMap = document.querySelector('#mapBox iframe');
   const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');

@@ -1,5 +1,6 @@
 // Espace locataire : page personnelle, en lecture seule (+ signaler un problème).
 // Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
+import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import qrcode from '/ares/qrcode.js';
 import { binPlan } from '/ares/binplan.js';
@@ -1184,7 +1185,7 @@ function render() {
   out.push(infoBox({ extra: `<button class="btn sec block" data-ianim="1">▶ ${esc(IA_T[lang] || IA_T.fr)}</button>` }));
   // version de l'app de gestion qui a publié ces données (aide au dépannage)
   out.push(`<p class="meta" style="text-align:center;font-size:11px;margin:8px 0 0">${esc(d.gv ? 'v' + d.gv : 'v < 2.57')}</p>`);
-  out.push(TICKER);
+  out.push(newsHtml(API)); out.push(TICKER);
   const keepMap = document.querySelector('#mapBox iframe');
   const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');

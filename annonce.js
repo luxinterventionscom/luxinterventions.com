@@ -1,6 +1,7 @@
 // 📣 App des annonceurs HORECA (restaurants, bistrots, bars, discothèques…) : annonces, menus du jour et événements,
 // avec dates, jours, heures, emplacement et apps visées ; prix affiché ; validation par LuxInterventions ; statistiques.
 // 💳 Paiement en ligne : pas encore connecté (bouton affiché, désactivé, avec une info).
+import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { openJson, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
@@ -274,6 +275,7 @@ function render() {
   out.push(recapCard());
   { const p = slot('bas'); if (p) out.push(adBox(p)); }
   out.push(infoBox({ lang }));
+  out.push(newsHtml(API));
   out.push(`<p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);
   const keep = new Map([...document.querySelectorAll('.vid iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');

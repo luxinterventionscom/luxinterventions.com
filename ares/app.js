@@ -11,6 +11,7 @@ import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { videoEmbed } from './video-embed.js';
 import { PTL_INVITE } from './ptl-invite.js';
 import { zoneOk, visParse, visZone } from './netpubs.js';
+import { newsHtml } from './news.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { makePdf } from './pdfmini.js';
 import { scrollHintInit } from './scroll-hint.js';
@@ -31,7 +32,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.225.0';
+const VERSION = '2.226.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1908,7 +1909,7 @@ const aboState = (a) => (!a ? 'none' : a.plan === 'decouverte' ? 'free' : a.paid
 const aboOffersOn = () => (vault.get('reglages', 'abos') || {}).offers !== false;
 function aboSection() {
   const sub = ui.aboTab || 'ger';
-  const tabs = html`<div class="tabs" role="tablist" style="max-width:560px;margin-bottom:14px">${[['ger', html`💼 <span class="tab-long">Abonnements </span>gérances`], ['pub', html`📣 Annonces<span class="tab-long"> publicitaires</span>`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sub === k}" data-action="abo-tab" data-id="${k}">${l}</button>`)}</div>`;
+  const tabs = html`<div class="tabs" role="tablist" style="max-width:560px;margin-bottom:14px">${[['ger', html`💼 <span class="tab-long">Abonnements </span>gérances`], ['pub', html`📣 Annonces<span class="tab-long"> publicitaires</span>`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sub === k}" data-action="abo-tab" data-id="${k}">${l}</button>`)}</div><div style="max-width:560px;margin:-4px 0 14px">${new Raw(newsHtml(API))}</div>`;
   if (sub === 'pub') return html`${tabs}<p style="margin:0 0 10px"><button class="btn primary" data-action="new-pub" data-imm="">${icon('plus')} Annonce</button></p>${pubSection('')}`;
   const on = aboOffersOn();
   const sw = html`<div class="card" style="margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="grow"><b>Offres d’abonnement dans le portail des gérances</b><span class="meta" style="display:block">${on ? 'Les gérances voient « 💼 Nos abonnements » et « Voir les offres ».' : 'Masquées : les gérances ne voient aucune offre d’abonnement.'}</span></span>
