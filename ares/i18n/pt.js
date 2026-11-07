@@ -18014,4 +18014,28 @@ export default [
 "IBAN (remboursements) :",
 "IBAN (reembolsos):"
 ],
+[
+"Seulement si vous aviez créé une",
+"Só se tiver criado uma"
+],
+[
+"(Réglages → Sécurité, 24 caractères, ex. ABCD-EFGH-…) : saisissez-la ici, puis choisissez une nouvelle clé d'accès.",
+"(Definições → Segurança, 24 caracteres, ex. ABCD-EFGH-…): escreva-a aqui e escolha uma nova chave de acesso."
+],
+[
+"Pas de clé de secours ?",
+"Sem chave de socorro?"
+],
+[
+"Vos données ne peuvent pas être récupérées (elles sont chiffrées, personne d'autre n'a la clé). Demandez à LuxInterventions de",
+"Os seus dados não podem ser recuperados (estão cifrados, mais ninguém tem a chave). Peça à LuxInterventions para"
+],
+[
+"remettre votre centrale à zéro",
+"repor a sua central a zero"
+],
+[
+": vous recevrez un nouveau code d'invitation et repartirez d'une centrale vide.",
+": receberá um novo código de convite e recomeçará com uma central vazia."
+],
 ];

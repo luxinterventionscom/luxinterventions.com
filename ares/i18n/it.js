@@ -18106,4 +18106,28 @@ export default [
 "IBAN (remboursements) :",
 "IBAN (rimborsi):"
 ],
+[
+"Seulement si vous aviez créé une",
+"Solo se avevate creato una"
+],
+[
+"(Réglages → Sécurité, 24 caractères, ex. ABCD-EFGH-…) : saisissez-la ici, puis choisissez une nouvelle clé d'accès.",
+"(Impostazioni → Sicurezza, 24 caratteri, es. ABCD-EFGH-…): scrivetela qui, poi scegliete una nuova chiave d'accesso."
+],
+[
+"Pas de clé de secours ?",
+"Niente chiave di riserva?"
+],
+[
+"Vos données ne peuvent pas être récupérées (elles sont chiffrées, personne d'autre n'a la clé). Demandez à LuxInterventions de",
+"I vostri dati non si possono recuperare (sono cifrati, nessun altro ha la chiave). Chiedete a LuxInterventions di"
+],
+[
+"remettre votre centrale à zéro",
+"azzerare la vostra centrale"
+],
+[
+": vous recevrez un nouveau code d'invitation et repartirez d'une centrale vide.",
+": riceverete un nuovo codice d'invito e ripartirete da una centrale vuota."
+],
 ];
