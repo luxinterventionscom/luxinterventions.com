@@ -18146,4 +18146,12 @@ export default [
 "ou envoyez-lui le lien direct.",
 "oppure mandategli il link diretto."
 ],
+[
+"🌐 Centrales des clients (gérances, agences, propriétaires, hôtels, Airbnb)",
+"🌐 Centrali dei clienti (gérance, agenzie, proprietari, hotel, Airbnb)"
+],
+[
+"📣 Annonceurs",
+"📣 Annunciatori"
+],
 ];
