@@ -34,7 +34,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.228.0';
+const VERSION = '2.229.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4088,15 +4088,18 @@ function netAd(slot) {
     netSocOn = true;
     pubStatInit(API, 'cli', () => getLang());
     pubSocialInit(API, () => getLang());
+    // 🔽 annonce repliée / ouverte : gardé sur cet appareil
+    document.addEventListener('toggle', (e) => { const d = e.target; if (!d.classList || !d.classList.contains('net-ad')) return; const sh = netAdShut(); if (d.open) sh.delete(d.dataset.pid); else sh.add(d.dataset.pid); try { localStorage.setItem('netAdShut', JSON.stringify([...sh].slice(-50))); } catch { /* stockage indisponible */ } }, true);
     document.addEventListener('click', (e) => { if (!e.target.closest || !e.target.closest('.net-ad')) return; if (pubSocialClick(e)) { e.stopPropagation(); return; } pubTap(e); }, true);
   }
   setTimeout(() => { const r = document.querySelector('.net-ad'); if (r) { pubSocialLoad(document); pubSeen(document); } }, 0);
   const a = l[Math.floor(Date.now() / 60000) % l.length], lg = /^data:image\/(png|jpeg|webp);base64,/.test(a.logo || '') ? a.logo : '', v = a.video ? videoEmbed(a.video) : null;
-  return html`<div class="card net-ad" data-pid="${a.id}" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="tiny muted"><b>📣 Publicité</b>${PUB_CATS[a.cat] ? ' · ' + PUB_CATS[a.cat] : ''}</div>${lg ? html`<img src="${lg}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''}<b style="display:block;font-size:16px">${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
+  return html`<details class="card net-ad" data-pid="${a.id}" style="margin-bottom:14px;border-left:4px solid #DC2626" ${netAdShut().has(a.id) ? '' : new Raw('open')}><summary style="cursor:pointer;list-style:none;display:flex;gap:10px;align-items:center"><span style="flex:1;min-width:0"><span class="tiny muted" style="display:block"><b>📣 Publicité</b>${PUB_CATS[a.cat] ? ' · ' + PUB_CATS[a.cat] : ''}</span><b style="display:block;font-size:16px">${a.nom}</b></span>${lg ? html`<img src="${lg}" alt="" style="max-height:40px;max-width:80px;object-fit:contain;border-radius:8px;background:#fff">` : ''}<span class="muted" aria-hidden="true">▾</span></summary>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
     ${v ? html`<div style="clear:both;margin-top:8px;border-radius:12px;overflow:hidden;background:#000;${v.audio ? `height:${v.audio}px` : 'aspect-ratio:' + (v.tall ? '9/16;max-height:520px;max-width:300px' : '16/9')}"><iframe src="${v.src}" title="${v.name}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="width:100%;height:100%;border:0;display:block"></iframe></div>` : a.video ? html`<p style="margin:8px 0 0"><a class="btn sm" href="${a.video}" target="_blank" rel="noopener">▶ Vidéo</a></p>` : ''}
     ${a.adresse ? html`<div class="meta" style="margin-top:6px">📍 ${a.adresse}</div>` : ''}
-    <div class="actions" style="margin:8px 0 0;flex-wrap:wrap">${a.adresse ? html`<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener" data-pev="map">📍 Voir</a>` : ''}${a.tel ? html`<a class="btn sm" href="tel:${String(a.tel).replace(/[^\d+]/g, '')}" data-pev="call">📞 Appeler</a>` : ''}${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener" data-pev="web">🌐 Site</a>` : ''}</div>${new Raw(pubSocialBar(a))}</div>`;
+    <div class="actions" style="margin:8px 0 0;flex-wrap:wrap">${a.adresse ? html`<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener" data-pev="map">📍 Voir</a>` : ''}${a.tel ? html`<a class="btn sm" href="tel:${String(a.tel).replace(/[^\d+]/g, '')}" data-pev="call">📞 Appeler</a>` : ''}${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener" data-pev="web">🌐 Site</a>` : ''}</div>${new Raw(pubSocialBar(a))}</details>`;
 }
+function netAdShut() { try { return new Set(JSON.parse(localStorage.getItem('netAdShut') || '[]')); } catch { return new Set(); } }
 // 📣 / ⚠️ annonces à valider et réclamations des annonceurs (Accueil, même vide)
 function annAlerts(alertBtn) {
     const annWait = TENANT ? [] : vault.list('avis').filter((a) => isPub(a) && a.st === 'wait' && a.annId);
