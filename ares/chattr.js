@@ -22,9 +22,13 @@ const cacheSet = (l, c) => { const ks = Object.keys(c); if (ks.length > 400) for
 // le bouton 🌐 à mettre en haut de chaque chat
 export const trButton = () => { const l = trLang(); return `<button type="button" class="trpick" data-trpick="1" aria-label="🌐">🌐${l ? ' ' + l.toUpperCase() : ''}</button>`; };
 
+let inited = false;
+export const trReady = () => inited;
 export function trInit(apiBase, uiLang) {
   api = String(apiBase || '').replace(/\/$/, '');
   ui = uiLang;
+  if (inited) return; // déjà en route (ex. barre News puis chat) : on ne garde que la nouvelle adresse et langue
+  inited = true;
   if (!document.getElementById('trCss')) {
     const st = document.createElement('style');
     st.id = 'trCss';
