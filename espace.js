@@ -1672,7 +1672,7 @@ async function load() {
       const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' });
       if (r.ok) data = await openJson(key, await r.arrayBuffer());
       // 📣 centrale d'un client : les annonces validées par LuxInterventions (liste publique du réseau, filtrée par zone)
-      if (data && data.netPubs) { const dd = data; netPubsGet(API).then((it) => { if (data === dd) { dd.pubs = netPubsFor(it, 'loc', `${dd.adresse || ''} ${dd.ville || ''}`); render(); } }); }
+      if (data && data.netPubs) { const dd = data; netPubsGet(API).then((it) => { if (data === dd) { dd.pubs = netPubsFor(it, 'loc', { txt: `${dd.adresse || ''} ${dd.ville || ''}`, ville: dd.ville || '', pays: dd.pays || '', geo: dd.geo || null }); render(); } }); }
       if (data && data.societe) { try { const lg = String(data.societe.logo || ''); localStorage.setItem('espBrand', JSON.stringify({ nom: data.societe.nom || '', logo: lg.length < 200000 ? lg : '' })); } catch { /* plein */ } }
       // code de l'app de l'équipe tapé ici par erreur : on ouvre la bonne app
       if (data && data.kind === 'equipe') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/equipe.html#${id}.${key}`); return; }

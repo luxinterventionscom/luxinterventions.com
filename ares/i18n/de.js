@@ -18165,4 +18165,92 @@ export default [
 "📰 Journal / magazine",
 "📰 Zeitung / Magazin"
 ],
+[
+"📍 Adresse du commerce",
+"📍 Adresse des Geschäfts"
+],
+[
+"N°",
+"Nr."
+],
+[
+"Rue",
+"Straße"
+],
+[
+"Ville",
+"Stadt"
+],
+[
+"Code postal (chiffres, facultatif)",
+"Postleitzahl (Ziffern, optional)"
+],
+[
+"ex. 12",
+"z. B. 12"
+],
+[
+"ex. 1741",
+"z. B. 1741"
+],
+[
+"ex. Luxembourg",
+"z. B. Luxemburg"
+],
+[
+"Qui la voit ?",
+"Wer sieht sie?"
+],
+[
+"🌍 Partout",
+"🌍 Überall"
+],
+[
+"🏳️ Même pays",
+"🏳️ Gleiches Land"
+],
+[
+"🏙️ Même ville",
+"🏙️ Gleiche Stadt"
+],
+[
+"📍 À moins de 1 km",
+"📍 Weniger als 1 km"
+],
+[
+"📍 À moins de 5 km",
+"📍 Weniger als 5 km"
+],
+[
+"📍 À moins de 10 km",
+"📍 Weniger als 10 km"
+],
+[
+"📍 À moins de 25 km",
+"📍 Weniger als 25 km"
+],
+[
+"📍 À moins de 50 km",
+"📍 Weniger als 50 km"
+],
+[
+"Comparé à l’adresse de l’annonce et à l’immeuble de chaque locataire (ville, pays, position). Si l’immeuble n’a pas de ville, de pays ou de position, le locataire voit l’annonce. 🌐 Les annonces validées vont aussi dans les apps des ",
+"Verglichen mit der Adresse der Anzeige und dem Gebäude jedes Mieters (Stadt, Land, Position). Hat das Gebäude keine Stadt, kein Land oder keine Position, sieht der Mieter die Anzeige. 🌐 Freigegebene Anzeigen gehen auch in die Apps der "
+],
+[
+"N° : seulement des chiffres (ex. 12) — « bis », lettre… dans la rue",
+"Nr.: nur Ziffern (z. B. 12) — „bis“, Buchstabe… in der Straße"
+],
+[
+"Code postal : seulement des chiffres (ex. 1741), ou vide",
+"Postleitzahl: nur Ziffern (z. B. 1741) oder leer"
+],
+[
+"Nom, rue et ville obligatoires",
+"Name, Straße und Stadt erforderlich"
+],
+[
+"Adresse introuvable sur la carte (OpenStreetMap) : vérifiez-la, ou choisissez « Même ville »",
+"Adresse nicht auf der Karte gefunden (OpenStreetMap): prüfen oder „Gleiche Stadt“ wählen"
+],
 ];

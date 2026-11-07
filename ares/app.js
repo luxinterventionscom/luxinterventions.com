@@ -10,6 +10,7 @@ import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { videoEmbed } from './video-embed.js';
 import { PTL_INVITE } from './ptl-invite.js';
+import { zoneOk, visParse, visZone } from './netpubs.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { makePdf } from './pdfmini.js';
 import { scrollHintInit } from './scroll-hint.js';
@@ -30,7 +31,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.224.1';
+const VERSION = '2.225.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -418,9 +419,9 @@ function geoFill(f, g, src, acc) {
   const p = document.getElementById('geoNow');
   if (p) p.textContent = `✓ ${g[0]}, ${g[1]} ${src === 'ici' ? '(sur place' + (acc ? ', ±' + acc + ' m' : '') + ')' : '(OpenStreetMap)'} — touchez Enregistrer`;
 }
-async function osmGeo(adr) {
-  const q = /luxemb|lëtzebuerg|deutschland|france|belgi/i.test(adr) ? adr : adr + ', Luxembourg';
-  const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' } });
+async function osmGeo(adr, cc) {
+  const q = cc || /luxemb|lëtzebuerg|deutschland|france|belgi/i.test(adr) ? adr : adr + ', Luxembourg';
+  const r = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q) + (cc ? '&countrycodes=' + String(cc).toLowerCase() : ''), { headers: { Accept: 'application/json' } });
   const j = r.ok ? await r.json() : [];
   return j && j[0] ? [Math.round(+j[0].lat * 1e6) / 1e6, Math.round(+j[0].lon * 1e6) / 1e6] : null;
 }
@@ -434,7 +435,7 @@ async function geoAuto() {
   for (const id of ids) {
     const im = id && vault.get('immeubles', id);
     if (!im || Array.isArray(im.geo) || !im.adresse) continue;
-    try { const g = await osmGeo([im.adresse, im.ville].filter(Boolean).join(', ')); if (g) await vault.mutate((tx) => tx.put('immeubles', { id, geo: g, geoSrc: 'osm' }), '📍 Position du lieu (OpenStreetMap)', im.adresse); } catch { /* hors ligne */ }
+    try { const g = await osmGeo([im.adresse, im.ville].filter(Boolean).join(', '), im.pays); if (g) await vault.mutate((tx) => tx.put('immeubles', { id, geo: g, geoSrc: 'osm' }), '📍 Position du lieu (OpenStreetMap)', im.adresse); } catch { /* hors ligne */ }
     await new Promise((ok) => setTimeout(ok, 1100));
   }
 }
@@ -1054,6 +1055,7 @@ const isPub = (a) => a.kind === 'pub';
 // À qui s'adresse l'annonce : locataires (par défaut), équipe, portail gérance
 const PUB_AUD = { loc: '🏠 Locataires', eq: '👷 Équipe', ptl: '🏢 Portail gérance', cli: '🌐 Centrales des clients (gérances, agences, propriétaires, hôtels, Airbnb)', hote: '🏨 Clients hôtel / Airbnb', taxi: '🚕 Taxis', ann: '📣 Annonceurs' };
 // Trois emplacements payants dans les apps (locataires, équipe, portail) — du plus cher au moins cher
+const PUB_VIS = [['', '🌍 Partout'], ['pays', '🏳️ Même pays'], ['ville', '🏙️ Même ville'], ['km1', '📍 À moins de 1 km'], ['km5', '📍 À moins de 5 km'], ['km10', '📍 À moins de 10 km'], ['km25', '📍 À moins de 25 km'], ['km50', '📍 À moins de 50 km']];
 const PUB_SLOTS = { haut: '🔝 Haut — sous « Bonjour », visible à l’ouverture (prix élevé)', milieu: '⏺ Milieu — au centre de l’app (prix moyen)', bas: '🔽 Bas — en fin de page, au-dessus de la barre crypto (prix bas)' };
 const pubSlot = (a) => (PUB_SLOTS[a.slot] ? a.slot : 'milieu');
 const pubAud = (a) => (Array.isArray(a.aud) && a.aud.length ? a.aud : ['loc']);
@@ -1199,7 +1201,7 @@ function espaceData(l) {
   const g = vault.get('logements', l.logId), im = vault.get('immeubles', l.immId);
   const soc = societe();
   const out = {
-    v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', avatar: emojiOk(l.avatar) ? l.avatar : '', photo: photoOk(l.photo) ? l.photo : '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', show,
+    v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', avatar: emojiOk(l.avatar) ? l.avatar : '', photo: photoOk(l.photo) ? l.photo : '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', ...(im ? { pays: im.pays || societe().pays || 'LU', ...(Array.isArray(im.geo) ? { geo: im.geo } : {}) } : {}), show,
     societe: { nom: soc.nom && (TENANT || !WRONG_ID.test(soc.nom)) ? soc.nom : DEF_SOC(), adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: signLite.src === soc.signature && signLite.url ? signLite.url : soc.signature || '', signW: soc.signW || 8 },
     loyer: loyerAt(l, new Date().getFullYear(), new Date().getMonth() + 1) || l.loyer || 0, revis: revNext(l), ...(TENANT ? { netPubs: 1 } : {}), parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : { nom: 'Seven Radio', url: 'https://sevenradio.lu/?proradio-popup=1' }; })(),
@@ -1283,7 +1285,7 @@ function espaceData(l) {
     out.visits = visits.filter((v) => v.d >= today());
     out.done = visits.filter((v) => v.d < today() && !v.off).map((v) => ({ d: v.d, w: v.w, nom: v.nom, m: v.m, de: v.de, a: v.a }));
   }
-  if (show.pub) out.pubs = (TENANT ? [] : pubsActives(l.immId).filter((a) => zoneOk(a, im ? `${im.adresse} ${im.ville || ''}` : ''))).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut);
+  if (show.pub) out.pubs = (TENANT ? [] : pubsActives(l.immId).filter((a) => zoneOk(a, placeOf(im)))).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut);
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
   if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '', lv: l.reglesV || '', v: rulesVersion(im) };
   if (show.chat && chatOn(im) && isCurrent(l)) {
@@ -2219,8 +2221,8 @@ async function espaceSync(onlyId, loud) {
   return true;
 }
 // Annonces pour le portail gérance : publiées en clair (publicité, aucune donnée personnelle), relues par le portail
-// 📍 Zone d'une annonce : vide = tout le Luxembourg ; sinon une des localités doit être dans l'adresse
-const zoneOk = (a, where) => { const z = String(a.zone || '').toLowerCase().split(',').map((x) => x.trim()).filter(Boolean); if (!z.length) return true; const w = String(where || '').toLowerCase(); return z.some((x) => w.includes(x)); };
+// 📍 Lieu d'un immeuble pour « Qui voit l'annonce ? » (zoneOk dans netpubs.js) : ville, pays (celui de la société par défaut), position
+const placeOf = (im) => (im ? { ville: im.ville || '', pays: im.pays || societe().pays || 'LU', geo: Array.isArray(im.geo) ? im.geo : null, txt: `${im.adresse || ''} ${im.ville || ''}` } : {});
 // 🌐 Annonces validées → liste publique du réseau (apps des centrales des clients et des annonceurs)
 async function netPubsSync() {
   if (TENANT) return;
@@ -2924,6 +2926,9 @@ const HOTE_MSG = {
 const HOTE_PAYS = ['LU', 'FR', 'BE', 'DE', 'NL', 'IT', 'PT', 'ES', 'CH', 'AT', 'GB', 'IE', 'DK', 'SE', 'NO', 'FI', 'PL', 'CZ', 'SK', 'HU', 'RO', 'BG', 'GR', 'HR', 'SI', 'RS', 'UA', 'TR', 'MA', 'DZ', 'TN', 'SN', 'CV', 'BR', 'US', 'CA', 'MX', 'AR', 'CN', 'JP', 'KR', 'IN', 'AE', 'IL', 'AU'];
 const flag = (cc) => String.fromCodePoint(...[...cc].map((c) => 0x1f1a5 + c.charCodeAt(0)));
 const paysNom = (cc) => { try { return new Intl.DisplayNames(['fr'], { type: 'region' }).of(cc); } catch { return cc; } };
+// 🌍 tous les pays (adresse des annonces, pays des immeubles), triés par nom
+const WORLD = 'AD AE AF AG AL AM AO AR AT AU AZ BA BB BD BE BF BG BH BI BJ BN BO BR BS BT BW BY BZ CA CD CF CG CH CI CL CM CN CO CR CU CV CY CZ DE DJ DK DM DO DZ EC EE EG ER ES ET FI FJ FR GA GB GD GE GH GM GN GQ GR GT GW GY HK HN HR HT HU ID IE IL IN IQ IR IS IT JM JO JP KE KG KH KM KN KR KW KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MG MK ML MM MN MO MR MT MU MV MW MX MY MZ NA NE NG NI NL NO NP NZ OM PA PE PG PH PK PL PS PT PY QA RE RO RS RU RW SA SC SD SE SG SI SK SL SM SN SO SR SS SV SY SZ TD TG TH TJ TL TM TN TR TT TW TZ UA UG US UY UZ VA VE VN YE ZA ZM ZW'.split(' ');
+const paysOptions = (sel) => WORLD.map((cc) => [cc, paysNom(cc)]).sort((a, b) => a[1].localeCompare(b[1], 'fr')).map(([cc, n]) => html`<option value="${cc}" ${cc === sel ? new Raw('selected') : ''}>${flag(cc)} ${n}</option>`);
 const FORMULES = { seul: 'Logement seul', pdj: 'Petit-déjeuner', demi: 'Demi-pension', complete: 'Pension complète' };
 const CH_PH = [['immeuble', '🏢 Bâtiment'], ['porte', '🚪 Porte'], ['sdb', '🛁 Salle de bain'], ['chambre', '🛏️ Chambre'], ['cuisine', '🍳 Cuisine'], ['parking', '🅿️ Parking'], ['autre', '📷 Autre']];
 const chKey = (lieu, num) => 'ch-' + (lieu === 'airbnb' ? 'airbnb' : 'hotel') + '-' + String(num || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
@@ -3145,14 +3150,14 @@ function hoteData(h, tks) {
     prenom: h.prenom || '', nom: h.nom || '', pers: h.pers || 1, arrivee: h.arrivee, depart: h.depart, hdeb: h.hdeb || '15:00', hfin: h.hfin || '11:00',
     formule: h.formule || '', pref: h.pref || '', porte: h.code && !h.codeOff ? h.code : '', cle: h.cle || '',
     ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: ch.persMax || '', m2: ch.m2 || '', npieces: ch.npieces || '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
-    st: { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LuxInterventions'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '' },
+    st: { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LuxInterventions'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '', pays: soc.pays || 'LU' },
     menu: menu && menu.file ? menu.file : '', taxi: { pc: +c.txPc || 0, km: +c.txKm || 0, aero: +c.txAero || 0, gare: +c.txGare || 0, on: !!(c.drivers || []).length || !!txOffers().gam.length, ...txOffers() },
     rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, done: !!(r.taxi && r.taxi.done), rated: r.taxi && r.taxi.rate ? r.taxi.rate.s : 0, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
     arrDone: !!(h.taxi && h.taxi.done), arrRated: h.taxi && h.taxi.rate ? h.taxi.rate.s : 0,
     arr: h.arr || null, taxiOk: h.taxi && h.taxi.st !== 'wait' && h.taxi.st !== 'no' ? { nom: h.taxi.nom, tel: h.taxi.tel, auto: h.taxi.auto, plaque: h.taxi.plaque } : null,
     edlSent: h.edlOut ? Object.keys(h.edlOut.ph || {}) : [], sejour: hoteSejour(h), ...tks, signalKey: sig ? sig.pub : '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
-    pubs: TENANT ? [] : pubsActives(null, 'hote').sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut), ...(TENANT ? { netPubs: 1 } : {}),
+    pubs: TENANT ? [] : pubsActives(null, 'hote').filter((a) => zoneOk(a, { txt: h.adresse || ch.adresse || c.adresse || soc.adresse || '', pays: soc.pays || 'LU' })).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut), ...(TENANT ? { netPubs: 1 } : {}),
     chat: pchatOut(h), chatRd: h.chatRd || '',
   };
 }
@@ -4071,8 +4076,8 @@ function netAdsLoad() {
 function netAd(slot) {
   if (!TENANT) return '';
   netAdsLoad();
-  const t0 = today(), where = imms0().map((im) => `${im.adresse} ${im.ville || ''}`).join(' ');
-  const l = (netAdsCache || []).filter((a) => (a.aud || []).includes('cli') && (a.slot || 'milieu') === slot && (!a.fin || a.fin >= t0) && (!a.debut || a.debut <= t0) && zoneOk(a, where));
+  const t0 = today(), ims = imms0();
+  const l = (netAdsCache || []).filter((a) => (a.aud || []).includes('cli') && (a.slot || 'milieu') === slot && (!a.fin || a.fin >= t0) && (!a.debut || a.debut <= t0) && (!ims.length || ims.some((im) => zoneOk(a, placeOf(im)))));
   if (!l.length) return '';
   const a = l[Math.floor(Date.now() / 60000) % l.length], lg = /^data:image\/(png|jpeg|webp);base64,/.test(a.logo || '') ? a.logo : '';
   return html`<div class="card" style="margin-bottom:14px;border-left:4px solid #DC2626"><div class="tiny muted"><b>📣 Publicité</b></div>${lg ? html`<img src="${lg}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''}<b style="display:block;font-size:16px">${a.nom}</b>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
@@ -7046,7 +7051,8 @@ const SHEETS = {
     if (id) pubStatsLoad();
     const a = id ? vault.get('avis', id) : { immId: preset || '', debut: today(), ttl: 30, cat: 'resto' };
     if (id && !a) return null;
-    const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === a.immId).sort(byAddr);
+    const ad = { pays: societe().pays || 'LU', ...(a.adr || (a.adresse ? { rue: a.adresse } : {})) }, v0 = visParse(a.zone);
+    const vis0 = v0.m === 'km' ? 'km' + v0.k : v0.m;
     const exp = a.fin && a.fin < today();
     return {
       title: id ? "Modifier l'annonce" : 'Nouvelle annonce (publicité)',
@@ -7055,7 +7061,12 @@ const SHEETS = {
         <input type="hidden" name="id" value="${id || ''}">
         <label class="field full">Catégorie<select name="cat">${Object.entries(PUB_CATS).map(([k, v]) => html`<option value="${k}" ${a.cat === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Nom du commerce', 'nom', a.nom, { full: true, required: true, placeholder: 'ex. Pizzeria Da Mario' })}
-        ${field('Adresse (pour la carte)', 'adresse', a.adresse, { full: true, required: true, placeholder: 'ex. 12, rue de Hollerich, Luxembourg' })}
+        <div class="section-label full" style="margin:6px 0 0">📍 Adresse du commerce</div>
+        ${field('N°', 'adr_n', ad.n, { attrs: 'inputmode="numeric" pattern="[0-9]*" maxlength="6"', placeholder: 'ex. 12' })}
+        ${field('Rue', 'adr_rue', ad.rue, { required: true, placeholder: 'ex. rue de Hollerich' })}
+        ${field('Code postal (chiffres, facultatif)', 'adr_cp', ad.cp, { attrs: 'inputmode="numeric" pattern="[0-9]*" maxlength="10"', placeholder: 'ex. 1741' })}
+        ${field('Ville', 'adr_ville', ad.ville, { required: true, placeholder: 'ex. Luxembourg' })}
+        <label class="field full">Pays<select name="adr_pays">${paysOptions(ad.pays)}</select></label>
         <label class="field full">Message / offre<textarea name="texte" style="min-height:80px" placeholder="ex. −10 % pour les locataires sur présentation de l'app">${a.texte || ''}</textarea></label>
         ${field('Téléphone', 'tel', a.tel, { type: 'tel' })}
         ${field('Site web', 'web', a.web, { type: 'url', placeholder: 'https://…' })}
@@ -7063,9 +7074,8 @@ const SHEETS = {
         <p class="tiny muted full" style="margin:0">Collez le lien de la vidéo ou du morceau : il s’affiche dans l’annonce comme un petit écran ou un petit lecteur audio, on le regarde ou l’écoute sans quitter l’app. <b id="vidHint">${vidHint(a.video)}</b></p>
         <label class="field full">Emplacement<select name="slot">${Object.entries(PUB_SLOTS).map(([k, v]) => html`<option value="${k}" ${(a.slot ? pubSlot(a) : 'haut') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <div class="field full">Visible pour<div class="chips" style="margin-top:6px">${Object.entries(PUB_AUD).map(([k, v]) => html`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="aud_${k}" ${pubAud(a).includes(k) ? new Raw('checked') : ''} style="width:18px;min-height:18px;margin:0">${v}</label>`)}</div></div>
-        ${field('Zone — localités, séparées par des virgules (vide = tout le Luxembourg)', 'zone', a.zone, { full: true, placeholder: 'ex. Esch-sur-Alzette, Belval' })}
-        <p class="tiny muted full" style="margin:0">🌐 Les annonces validées vont aussi dans les apps des locataires et clients des <b>centrales des clients</b> et dans l’app des <b>annonceurs</b>, selon la zone.</p>
-        <label class="field full">Immeuble (locataires et équipe)<select name="immId"><option value="">Tous les immeubles</option>${imms.map((im) => html`<option value="${im.id}" ${im.id === a.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
+        <label class="field full">Qui la voit ?<select name="vis">${PUB_VIS.map(([k, v]) => html`<option value="${k}" ${vis0 === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        <p class="tiny muted full" style="margin:0">Comparé à l’adresse de l’annonce et à l’immeuble de chaque locataire (ville, pays, position). Si l’immeuble n’a pas de ville, de pays ou de position, le locataire voit l’annonce. 🌐 Les annonces validées vont aussi dans les apps des <b>centrales des clients</b> et des <b>annonceurs</b>.</p>
         ${field('Publier à partir du', 'debut', exp ? today() : a.debut, { type: 'date', required: true })}
         <label class="field">Durée (TTL)<select name="ttl">${PUB_TTL.map((n) => html`<option value="${n}" ${+(a.ttl || 30) === n ? new Raw('selected') : ''}>${n} jours</option>`)}</select></label>
         ${id ? pubStatsBlock(a) : ''}
@@ -7608,6 +7618,7 @@ const SHEETS = {
         <input type="hidden" name="id" value="${id || ''}">
         ${field('Adresse complète', 'adresse', im.adresse, { full: true, required: true, placeholder: 'ex. 34, rue Josy Haendel' })}
         ${field('Code postal et localité', 'ville', im.ville, { full: true, placeholder: 'ex. L-1840 Luxembourg' })}
+        <label class="field full">Pays<select name="pays">${paysOptions(im.pays || societe().pays || 'LU')}</select></label>
         <label class="field full">Type de structure<select name="type">${Object.entries(IMM_TYPES).map(([k, v]) => html`<option value="${k}" ${(im.type || 'immeuble') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <div class="section-label full" style="margin:6px 0 0">Bail principal — vous êtes locataire principal, le bailleur est le propriétaire</div>
         ${field('Bailleur (propriétaire)', 'proprietaire', im.proprietaire, { full: true, placeholder: 'Nom du bailleur / propriétaire (vide si l’immeuble vous appartient)' })}
@@ -9448,7 +9459,7 @@ const ACTIONS = {
     const adr = [f.adresse.value, f.ville.value].map((x) => String(x || '').trim()).filter(Boolean).join(', ');
     if (!adr) return toast('Écrivez d’abord l’adresse', { bad: true });
     let g = null;
-    try { g = await osmGeo(adr); } catch { /* hors ligne */ }
+    try { g = await osmGeo(adr, f.pays && f.pays.value); } catch { /* hors ligne */ }
     if (!g) return toast('Adresse introuvable sur OpenStreetMap : vérifiez-la, ou enregistrez la position sur place', { bad: true });
     geoFill(f, g, 'osm');
   },
@@ -10182,9 +10193,24 @@ const FORMS = {
     const id = fd.get('id');
     const ttl = PUB_TTL.includes(+fd.get('ttl')) ? +fd.get('ttl') : 30;
     const debut = fd.get('debut') || today();
-    const rec = { kind: 'pub', cat: PUB_CATS[fd.get('cat')] ? fd.get('cat') : 'autre', nom: fd.get('nom').trim(), adresse: fd.get('adresse').trim(), texte: fd.get('texte').trim(), tel: fd.get('tel').trim(), web: /^https?:\/\//.test(fd.get('web').trim()) ? fd.get('web').trim() : '', video: /^https?:\/\//.test(String(fd.get('video') || '').trim()) ? String(fd.get('video')).trim().slice(0, 500) : '', aud: Object.keys(PUB_AUD).filter((k) => fd.get('aud_' + k)), slot: PUB_SLOTS[fd.get('slot')] ? fd.get('slot') : 'haut', immId: fd.get('immId') || '', debut, ttl, fin: addDays(debut, ttl - 1) };
-    if (!rec.nom || !rec.adresse) return;
-    rec.zone = String(fd.get('zone') || '').trim().slice(0, 200);
+    const rec = { kind: 'pub', cat: PUB_CATS[fd.get('cat')] ? fd.get('cat') : 'autre', nom: fd.get('nom').trim(), texte: fd.get('texte').trim(), tel: fd.get('tel').trim(), web: /^https?:\/\//.test(fd.get('web').trim()) ? fd.get('web').trim() : '', video: /^https?:\/\//.test(String(fd.get('video') || '').trim()) ? String(fd.get('video')).trim().slice(0, 500) : '', aud: Object.keys(PUB_AUD).filter((k) => fd.get('aud_' + k)), slot: PUB_SLOTS[fd.get('slot')] ? fd.get('slot') : 'haut', immId: '', debut, ttl, fin: addDays(debut, ttl - 1) };
+    const g = (k) => String(fd.get(k) || '').trim().replace(/\s+/g, ' ');
+    const adr = { n: g('adr_n'), rue: g('adr_rue'), cp: g('adr_cp'), ville: g('adr_ville'), pays: WORLD.includes(g('adr_pays')) ? g('adr_pays') : societe().pays || 'LU' };
+    if (adr.n && !/^\d{1,6}$/.test(adr.n)) return toast('N° : seulement des chiffres (ex. 12) — « bis », lettre… dans la rue', { bad: true });
+    if (adr.cp && !/^\d{3,10}$/.test(adr.cp)) return toast('Code postal : seulement des chiffres (ex. 1741), ou vide', { bad: true });
+    if (!rec.nom || !adr.rue || !adr.ville) return toast('Nom, rue et ville obligatoires', { bad: true });
+    rec.adr = adr;
+    rec.adresse = `${adr.n ? adr.n + ' ' : ''}${adr.rue}, ${adr.cp ? adr.cp + ' ' : ''}${adr.ville}, ${paysNom(adr.pays)}`;
+    const vis = String(fd.get('vis') || ''), km = /^km(\d+)$/.exec(vis);
+    let geo = null;
+    if (km) {
+      const old = id ? vault.get('avis', id) : null;
+      geo = old && old.adresse === rec.adresse && Array.isArray(old.geo) ? old.geo : null;
+      if (!geo) { try { geo = await osmGeo(rec.adresse, adr.pays); } catch { /* hors ligne */ } }
+      if (!geo) return toast('Adresse introuvable sur la carte (OpenStreetMap) : vérifiez-la, ou choisissez « Même ville »', { bad: true });
+      rec.geo = geo;
+    }
+    rec.zone = visZone(km ? 'km' : ['pays', 'ville'].includes(vis) ? vis : '', adr.pays, adr.ville, km ? +km[1] : 0, geo);
     if (!rec.aud.length) rec.aud = ['loc'];
     if (id) rec.id = id;
     // lien court TikTok (bouton « Partager » du téléphone) → lien complet, sinon pas de mini écran
@@ -10478,7 +10504,7 @@ const FORMS = {
   async imm(fd) {
     const id = fd.get('id');
     const rec = {
-      adresse: fd.get('adresse').trim(), ville: String(fd.get('ville') || '').trim(), type: fd.get('type') || 'immeuble', proprietaire: fd.get('proprietaire').trim(), loyer: num(fd.get('loyer')), charges: num(fd.get('charges')),
+      adresse: fd.get('adresse').trim(), ville: String(fd.get('ville') || '').trim(), pays: WORLD.includes(String(fd.get('pays') || '')) ? String(fd.get('pays')) : societe().pays || 'LU', type: fd.get('type') || 'immeuble', proprietaire: fd.get('proprietaire').trim(), loyer: num(fd.get('loyer')), charges: num(fd.get('charges')),
       bailDebut: fd.get('bailDebut'), bailFin: fd.get('bailFin'), bailRev: fd.get('bailRev') || '', preavis: fd.get('preavis') === '' ? '' : Math.max(0, Math.min(24, num(fd.get('preavis')))), bailDec: String(fd.get('bailDec') || ''), note: fd.get('note').trim(),
     };
     { const g = geoIn({ la: fd.get('geoLa'), lo: fd.get('geoLo') }); const old = id ? (vault.get('immeubles', id) || {}).geo : null; if (g && fd.get('geoLa') !== '' && (!Array.isArray(old) || old[0] !== g.la || old[1] !== g.lo)) { rec.geo = [g.la, g.lo]; rec.geoSrc = fd.get('geoSrc') || 'osm'; } }

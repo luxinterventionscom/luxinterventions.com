@@ -334,7 +334,7 @@ function render() {
     const src = v.dataset.vsrc, old = keep.get(src);
     if (old) return v.append(old);
     const f = document.createElement('iframe');
-    f.src = src; f.dataset.src = src; f.loading = 'lazy'; f.title = 'Video'; f.allow = 'encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share'; f.allowFullscreen = true;
+    f.src = src; f.dataset.src = src; f.loading = 'lazy'; f.title = 'Video'; f.allow = 'encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share'; f.allowFullscreen = true; f.referrerPolicy = 'strict-origin-when-cross-origin';
     v.append(f);
   });
   hydrate();
@@ -437,7 +437,7 @@ async function load() {
       const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' });
       if (r.ok) {
         const x = await openJson(key, await r.arrayBuffer());
-        if (x && x.kind === 'hote') { data = x; if (x.netPubs) netPubsGet(API).then((it) => { if (data === x) { x.pubs = netPubsFor(it, 'hote', (x.st && x.st.adresse) || (x.ch && x.ch.adresse) || ''); render(); } }); }
+        if (x && x.kind === 'hote') { data = x; if (x.netPubs) netPubsGet(API).then((it) => { if (data === x) { x.pubs = netPubsFor(it, 'hote', { txt: (x.ch && x.ch.adresse) || (x.st && x.st.adresse) || '', pays: (x.st && x.st.pays) || '' }); render(); } }); }
         else { ls.set(ACC, null); location.replace(`/espace.html#${id}.${key}`); return; }
       } else if (r.status === 404) { ls.set(ACC, null); id = key = ''; loadErr = T().off; }
     } catch { loadErr = '⚠ offline'; }

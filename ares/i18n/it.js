@@ -18178,4 +18178,92 @@ export default [
 "📰 Journal / magazine",
 "📰 Giornale / rivista"
 ],
+[
+"📍 Adresse du commerce",
+"📍 Indirizzo dell'attività"
+],
+[
+"N°",
+"N°"
+],
+[
+"Rue",
+"Via"
+],
+[
+"Ville",
+"Città"
+],
+[
+"Code postal (chiffres, facultatif)",
+"CAP (cifre, facoltativo)"
+],
+[
+"ex. 12",
+"es. 12"
+],
+[
+"ex. 1741",
+"es. 1741"
+],
+[
+"ex. Luxembourg",
+"es. Lussemburgo"
+],
+[
+"Qui la voit ?",
+"Chi la vede?"
+],
+[
+"🌍 Partout",
+"🌍 Ovunque"
+],
+[
+"🏳️ Même pays",
+"🏳️ Stesso paese"
+],
+[
+"🏙️ Même ville",
+"🏙️ Stessa città"
+],
+[
+"📍 À moins de 1 km",
+"📍 Entro 1 km"
+],
+[
+"📍 À moins de 5 km",
+"📍 Entro 5 km"
+],
+[
+"📍 À moins de 10 km",
+"📍 Entro 10 km"
+],
+[
+"📍 À moins de 25 km",
+"📍 Entro 25 km"
+],
+[
+"📍 À moins de 50 km",
+"📍 Entro 50 km"
+],
+[
+"Comparé à l’adresse de l’annonce et à l’immeuble de chaque locataire (ville, pays, position). Si l’immeuble n’a pas de ville, de pays ou de position, le locataire voit l’annonce. 🌐 Les annonces validées vont aussi dans les apps des ",
+"Confrontato con l’indirizzo dell’annuncio e con l’immobile di ogni inquilino (città, paese, posizione). Se l’immobile non ha città, paese o posizione, l’inquilino vede l’annuncio. 🌐 Gli annunci convalidati vanno anche nelle app delle "
+],
+[
+"N° : seulement des chiffres (ex. 12) — « bis », lettre… dans la rue",
+"N°: solo cifre (es. 12) — «bis», lettera… nella via"
+],
+[
+"Code postal : seulement des chiffres (ex. 1741), ou vide",
+"CAP: solo cifre (es. 1741), o vuoto"
+],
+[
+"Nom, rue et ville obligatoires",
+"Nome, via e città obbligatori"
+],
+[
+"Adresse introuvable sur la carte (OpenStreetMap) : vérifiez-la, ou choisissez « Même ville »",
+"Indirizzo non trovato sulla mappa (OpenStreetMap): controllalo, o scegli «Stessa città»"
+],
 ];
