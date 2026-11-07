@@ -806,6 +806,13 @@ async function handleAres(request, env, url, headers) {
       if (reg.pub !== b.pub) await tenantPut(env, { ...reg, pub: b.pub });
       return aresJson({ ok: true }, 200, headers);
     }
+    // 🧩 moitié B de la clé de secours du client, chiffrée pour la centrale principale (le serveur ne peut pas la lire)
+    if (path === "recb" && method === "PUT") {
+      const body = await request.arrayBuffer();
+      if (body.byteLength < 100 || body.byteLength > 8192) return aresJson({ error: "Taille invalide" }, 413, headers);
+      await env.PHOTOS.put("ares/t/" + tid + "/recb", body);
+      return aresJson({ ok: true }, 200, headers);
+    }
     if (path === "box" && method === "GET") return aresJson({ items: await tboxList(env, tid) }, 200, headers, { "Cache-Control": "no-store" });
     const boxDel = path.match(/^box\/([a-z0-9-]{6,40})$/);
     if (boxDel && method === "DELETE") { await env.PHOTOS.delete(TBOX(tid) + boxDel[1]); return aresJson({ ok: true }, 200, headers); }
@@ -869,6 +876,13 @@ async function handleAres(request, env, url, headers) {
       if (n >= 50) return aresJson({ error: "Casella piena : il client deve aprire la sua centrale" }, 429, headers);
       await env.PHOTOS.put(TBOX(tbm[1]) + Date.now().toString(36) + "-" + randHex(4), body);
       return aresJson({ ok: true }, 200, headers);
+    }
+    // 🧩 la centrale principale lit la moitié B (chiffrée pour elle) quand un client a oublié sa clé
+    const trb = path.match(/^tenants\/([a-z0-9]{12,24})\/recb$/);
+    if (trb && method === "GET") {
+      const o = await env.PHOTOS.get("ares/t/" + trb[1] + "/recb");
+      if (!o) return aresJson({ error: "Pas de moitié B" }, 404, headers);
+      return new Response(o.body, { status: 200, headers: { "Content-Type": "application/octet-stream", "Cache-Control": "no-store", ...headers } });
     }
     const tmm = path.match(/^tenants\/([a-z0-9]{12,24})(\/reset)?$/);
     const r = tmm ? await tenantGet(env, tmm[1]) : null;

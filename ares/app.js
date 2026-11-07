@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.222.9';
+const VERSION = '2.223.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3544,7 +3544,10 @@ function renderLock(mode, error = '') {
     setHtml(lockEl, html`<form class="lock-card" data-form="recover" autocomplete="off">
       ${head}
       <div class="alert info">${icon('key')}<div><b>Clé d'accès oubliée ?</b> Seulement si vous aviez créé une <b>clé de secours</b> (Réglages → Sécurité, 24 caractères, ex. ABCD-EFGH-…) : saisissez-la ici, puis choisissez une nouvelle clé d'accès.${TENANT ? html`<br><br><b>Pas de clé de secours ?</b> Vos données ne peuvent pas être récupérées (elles sont chiffrées, personne d'autre n'a la clé). Demandez à LuxInterventions de <b>remettre votre centrale à zéro</b> : vous recevrez un nouveau code d'invitation et repartirez d'une centrale vide.` : ''}</div></div>
-      <label class="field">Clé de secours <input name="code" required placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono);letter-spacing:.05em"></label>
+      ${TENANT ? html`<label class="field">🧩 Moitié A <span class="tiny muted">(votre e-mail, la feuille imprimée, ou cet appareil)</span><input name="ra" value="${(() => { try { return localStorage.getItem(recAKey()) || ''; } catch { return ''; } })()}" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono)"></label>
+      <label class="field">🧩 Moitié B <span class="tiny muted">(donnée par LuxInterventions au téléphone)</span><input name="rb" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono)"></label>
+      <p class="tiny muted" style="margin:0">Ou, si vous avez une clé de secours complète (ancienne version) :</p>` : ''}
+      <label class="field">Clé de secours <input name="code" ${TENANT ? '' : new Raw('required')} placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono);letter-spacing:.05em"></label>
       <div class="lock-err" role="alert">${error}</div>
       <button class="btn primary block" type="submit">Ouvrir avec la clé de secours</button>
       <button class="btn ghost block" type="button" data-action="lock-mode" data-id="unlock">Retour</button>
@@ -3640,7 +3643,9 @@ async function claimOrAsk() {
 async function onRecover(fd, form) {
   setBusy(form, true, 'Vérification…');
   try {
-    const r = await vault.unlockWithRecovery(fd.get('code'));
+    const full = String(fd.get('code') || '').trim() || rcJoin(fd.get('ra'), fd.get('rb'));
+    if (!full) throw new Error('Écrivez la moitié A et la moitié B (24 caractères chacune), ou la clé de secours complète.');
+    const r = await vault.unlockWithRecovery(full);
     if (r.setup) return renderLock('setup');
     if (!(await claimOrAsk())) { vault.lock(); return renderLock('unlock', 'Connexion annulée.'); }
     renderLock('newkey');
@@ -3710,6 +3715,7 @@ async function onSetup(fd, form) {
     return;
   }
   startSession();
+  if (TENANT) setTimeout(async () => { try { if (await vault.verifyPassphrase(pass)) await recActivate(); } catch { /* l'avis rouge de l'Accueil le proposera */ } }, 1500);
   const legacy = fd.get('legacy') && legacyLocal();
   if (legacy) {
     try {
@@ -4007,6 +4013,37 @@ function collCard(im) {
       ${c.mode === 'dates' && c.icsUrl ? (c.icsErr ? html`<span class="badge bad">lien en erreur</span>` : html`<span class="badge ok">🔗 auto</span>`) : c.mode === 'dates' && !(c.dates || []).some((d) => d >= today()) ? html`<span class="badge warn">à mettre à jour</span>` : ''}
     </button>`)}</div>` : html`<p class="muted small">Aucune collecte enregistrée.</p>`}
   </div>`;
+}
+// 🧩 Clé de secours en deux moitiés (centrale d'un client) : A chez le client (e-mail, papier, cet appareil), B chiffrée pour la centrale
+// LuxInterventions. Aucune moitié seule n'ouvre quoi que ce soit : A + B = la clé de secours (addition lettre par lettre, modulo 32).
+const RCA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+const rcNorm = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/O/g, '0').replace(/I/g, '1');
+const rcFmt = (x) => x.match(/.{1,4}/g).join('-');
+function rcSplit(code) {
+  const r = rcNorm(code), rnd = crypto.getRandomValues(new Uint8Array(r.length));
+  let a = '', b = '';
+  for (let i = 0; i < r.length; i++) { const ai = rnd[i] % 32; a += RCA[ai]; b += RCA[(RCA.indexOf(r[i]) - ai + 32) % 32]; }
+  return { a: rcFmt(a), b: rcFmt(b) };
+}
+function rcJoin(a, b) {
+  a = rcNorm(a); b = rcNorm(b);
+  if (a.length !== 24 || b.length !== 24) return '';
+  let r = '';
+  for (let i = 0; i < 24; i++) { const x = RCA.indexOf(a[i]), y = RCA.indexOf(b[i]); if (x < 0 || y < 0) return ''; r += RCA[(x + y) % 32]; }
+  return rcFmt(r);
+}
+const recAKey = () => 'aresRecA:' + TENANT;
+// crée la clé de secours, la coupe en deux, confie B (chiffrée) à LuxInterventions, montre A au client
+async function recActivate() {
+  const code = await vault.createRecovery();
+  const { a, b } = rcSplit(code);
+  const k = await (await vault.call('network-key')).json();
+  const sealed = await sealForOwner(k.pub, { type: 'recb', b, tid: TENANT, t: new Date().toISOString() });
+  const r = await vault.call('recb', { method: 'PUT', body: sealed });
+  if (!r.ok) throw new Error('Envoi de la moitié B impossible (connexion ?)');
+  try { localStorage.setItem(recAKey(), a); } catch { /* stockage indisponible */ }
+  await vault.mutate((tx) => tx.put('reglages', { id: 'recSplit', at: today() }), '🧩 Récupération de clé activée', '');
+  openSheet('rec-split', null, null, a);
 }
 // 📣 Centrale d'un client : les annonces du réseau (validées par LuxInterventions) aux 3 emplacements de l'Accueil
 let netAdsCache = null, netAdsAt = 0;
@@ -5274,7 +5311,7 @@ dashboard() {
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`;
     }
 
-    const nudge = vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
+    const nudge = TENANT && !vault.get('reglages', 'recSplit') ? html`<div class="alert bad" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>🧩 Activez la récupération de votre clé.</b> Sans elle, une clé d'accès oubliée = toutes vos données perdues. 1 minute, et LuxInterventions ne peut pas lire vos données.</div><button class="btn sm primary" data-action="make-recovery">Activer</button></div>` : vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
     const sig = newSignals();
     const sigBox = sig.length ? html`<div class="card mk mk-int mk-on" style="margin-bottom:14px">
         <div class="card-title" style="margin-bottom:8px"><h3>📩 <span>${sig.length > 1 ? sig.length + " nouveaux messages" : "1 nouveau message"}${sig.every((t) => !t.byInterv) ? (sig.length > 1 ? ' de locataires' : ' de locataire') : ''}</span></h3></div>
@@ -7238,7 +7275,7 @@ const SHEETS = {
               ${f.docId ? html`<button class="btn sm" data-action="open-doc" data-id="${f.docId}">⬇️ PDF</button>` : ''}${f.paid || isCompta() ? '' : html`<button class="btn sm primary" data-action="nfact-paid" data-id="${f.no}">✅ Reçu</button>`}</div>`; })}</div>` : html`<p class="tiny muted">Aucune facture.</p>`}`;
         })()}
         <div class="section-label" style="margin-top:14px">Accès</div>
-        <div class="actions" style="flex-wrap:wrap;margin:0">${!t.configured ? html`<button class="btn sm" data-action="net-code" data-id="${id}">🔁 Nouveau code d’invitation</button>` : ''}<button class="btn sm ghost danger" data-action="net-reset" data-id="${id}" style="flex-basis:100%;justify-content:flex-start">🗑️ Vider la centrale (clé perdue)</button>${vault.op ? '' : html`<button class="btn sm ghost danger" data-action="net-del" data-id="${id}">🗑 Supprimer avec certificat</button>`}</div>
+        <div class="actions" style="flex-wrap:wrap;margin:0">${!t.configured ? html`<button class="btn sm" data-action="net-code" data-id="${id}">🔁 Nouveau code d’invitation</button>` : ''}<button class="btn sm" data-action="net-recb" data-id="${id}" style="flex-basis:100%;justify-content:flex-start">🧩 Clé oubliée : donner la moitié B</button><button class="btn sm ghost danger" data-action="net-reset" data-id="${id}" style="flex-basis:100%;justify-content:flex-start">🗑️ Vider la centrale (clé perdue)</button>${vault.op ? '' : html`<button class="btn sm ghost danger" data-action="net-del" data-id="${id}">🗑 Supprimer avec certificat</button>`}</div>
         <p class="tiny muted" style="margin:6px 0 0">Nouvel accès : la centrale du client est vidée (sans sa clé personne ne peut lire ses données) et un nouveau code est créé. S’il a sa clé de secours, il rentre seul sans rien perdre.</p>`}`,
       foot: html`<button class="btn" data-action="close-sheet">Fermer</button>${isCompta() ? '' : html`<button class="btn primary" type="submit" form="f">Enregistrer</button>`}`,
     };
@@ -8099,6 +8136,26 @@ const SHEETS = {
     };
   },
 
+  'rec-split'({ preset: a }) {
+    const mail = societe().email || '';
+    const txt = `Kit de récupération — centrale ${socName()} (LuxInterventions)\n\nMoitié A de ma clé de secours :\n${a}\n\nSi j'oublie ma clé d'accès : luxinterventions.com/locataires.html?t=${TENANT} → « Clé d'accès oubliée ? » → moitié A (ci-dessus) + moitié B (donnée par LuxInterventions au téléphone).`;
+    return {
+      title: '🧩 Votre kit de récupération',
+      narrow: true,
+      body: html`<div class="alert info" style="margin-bottom:12px">${icon('shield')}<div>Votre clé de secours est coupée en <b>deux moitiés</b>. <b>Moitié A</b> : chez vous (ci-dessous). <b>Moitié B</b> : gardée fermée pour LuxInterventions. Aucune moitié seule n'ouvre vos données — <b>LuxInterventions ne peut pas les lire</b>. Si vous oubliez votre clé d'accès : vous appelez, on vous donne la moitié B, vous ajoutez votre moitié A, et vous ne perdez rien.</div></div>
+        <div class="tiny muted">Votre moitié A</div>
+        <div style="font-family:var(--mono);font-size:21px;font-weight:700;letter-spacing:.05em;text-align:center;padding:16px 8px;background:var(--surface-2);border-radius:var(--radius);word-break:break-all" id="rcode">${a}</div>
+        <p class="small" style="margin:12px 0 6px"><b>Gardez-la à au moins 2 endroits :</b></p>
+        <div class="actions" style="flex-direction:column">
+          <a class="btn" href="mailto:${mail}?subject=${encodeURIComponent('Kit de récupération — ' + socName())}&body=${encodeURIComponent(txt)}">📧 M'envoyer par e-mail</a>
+          <button class="btn" data-action="print-reckit" data-id="${a}">🖨️ Imprimer le kit (A4)</button>
+          <a class="btn" href="https://wa.me/?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">📲 WhatsApp à moi-même</a>
+          <button class="btn" data-action="copy-recovery">📋 Copier</button>
+        </div>
+        <p class="tiny muted">✓ Cet appareil s'en souvient aussi. Ne la donnez à personne : avec la moitié B elle ouvre votre centrale.</p>`,
+      foot: html`<button class="btn primary" data-action="close-sheet">J'ai gardé ma moitié A</button>`,
+    };
+  },
   recovery({ preset: code }) {
     const body = encodeURIComponent(`Clé de secours LuxInterventions :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : https://luxinterventions.com/locataires.html → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
     return {
@@ -9120,6 +9177,21 @@ const ACTIONS = {
     try { const r = await netApi('tenants/' + d.id, 'PATCH', { newCode: true }); if (r.code) { await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + d.id, ...netInfo(d.id), code: r.code }), '🌐 Nouveau code d’invitation', (r.tenant || {}).nom || ''); await licLogAdd(r.tenant || { id: d.id }, 'Nouveau code d’invitation', 'échéance inchangée'); } toast('Nouveau code créé'); } catch (e) { return toast(e.message, { bad: true }); }
     netLoad(true);
   },
+  async 'net-recb'(d) {
+    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id) || {};
+    const keys = vault.get('reglages', 'signal');
+    if (!keys || !keys.priv) return toast('Clé de la centrale introuvable', { bad: true });
+    let m;
+    try {
+      const r = await vault.call('tenants/' + d.id + '/recb');
+      if (r.status === 404) return confirmBox('Pas de moitié B', { ok: 'OK', detail: `${t.nom || 'Ce client'} n'a pas encore activé la récupération de clé. Sans elle, seule la remise à zéro est possible.` });
+      m = await openFromTenant(keys.priv, new Uint8Array(await r.arrayBuffer()));
+    } catch (e) { return toast(e.message || 'Lecture impossible (connexion ?)', { bad: true }); }
+    if (!m || !m.b) return toast('Moitié B illisible', { bad: true });
+    await vault.mutate(() => {}, '🧩 Moitié B donnée au client (clé oubliée)', t.nom || d.id);
+    const tel = String(netInfo(d.id).tel || '').replace(/[^\d+]/g, '');
+    await choiceBox(`🧩 Moitié B — ${t.nom || ''}`, `${m.b}\n\nDictez-la au client (vérifiez d'abord que c'est bien lui). Il l'ajoute à sa moitié A dans « Clé d'accès oubliée ? » et choisit une nouvelle clé : il ne perd rien. Seule, cette moitié n'ouvre rien.`, tel ? [{ value: 'wa', label: '📲 Envoyer par WhatsApp', cls: 'primary' }] : []).then((v) => { if (v === 'wa') window.open(`https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent('Moitié B de votre clé de secours : ' + m.b)}`, '_blank'); });
+  },
   async 'net-reset'(d) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
     if (!t) return;
@@ -9128,7 +9200,8 @@ const ACTIONS = {
     if (v.trim() !== t.nom) return toast('Nom différent : rien n’a été fait', { bad: true });
     if (!(await confirmBox('Dernière confirmation : tout effacer ?', { ok: '🗑️ Tout effacer', danger: true, detail: 'La centrale de « ' + t.nom + ' » sera vide. Irréversible.' }))) return;
     try { const r = await netApi('tenants/' + t.id + '/reset', 'POST'); await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + t.id, ...netInfo(t.id), code: r.code }), '🌐 Nouvel accès (centrale vidée)', t.nom); await licLogAdd(t, 'Nouvel accès (clé perdue)', 'centrale vidée, échéance inchangée'); toast('Nouvel accès : envoyez le nouveau code'); } catch (e) { return toast(e.message, { bad: true }); }
-    netLoad(true);
+    await netLoad(true);
+    openOver('net-client', t.id); // le nouveau code d'invitation, tout de suite
   },
   async 'net-del'(d) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
@@ -9644,6 +9717,7 @@ const ACTIONS = {
     if (!k) return;
     if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
     try {
+      if (TENANT) { await recActivate(); if (ui.route === 'reglages' || ui.route === 'dashboard') renderView(); return; }
       const code = await vault.createRecovery();
       openSheet('recovery', null, null, code);
       if (ui.route === 'reglages' || ui.route === 'dashboard') renderView();
@@ -9655,6 +9729,7 @@ const ACTIONS = {
     try { await navigator.clipboard.writeText($('#rcode').textContent.trim()); toast('Clé copiée'); } catch { toast('Copie impossible : notez-la à la main', { bad: true }); }
   },
   'print-recovery': () => printDoc('Clé de secours', html`<h1>Clé de secours</h1><p class="pr-sub">À conserver en lieu sûr. En cas d'oubli de la clé d'accès : luxinterventions.com/locataires.html → « Clé d'accès oubliée ? »</p><div style="font:700 26px/1.4 monospace;letter-spacing:.08em;border:2px solid #000;padding:24px;text-align:center;margin-top:24px">${ui.sheet && ui.sheet.preset}</div>`),
+  'print-reckit': (d) => printDoc('Kit de récupération', html`<h1>🧩 Kit de récupération</h1><p class="pr-sub">Centrale ${socName()} — à garder avec les documents de la société.</p><p>Moitié A de votre clé de secours :</p><div style="font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:.06em;border:2px solid #333;border-radius:10px;padding:16px;text-align:center">${d.id}</div><h3>Clé d'accès oubliée ?</h3><ol><li>Ouvrez luxinterventions.com/locataires.html?t=${TENANT} → « Clé d'accès oubliée ? ».</li><li>Écrivez la <b>moitié A</b> (ci-dessus).</li><li>Appelez LuxInterventions : on vous donne la <b>moitié B</b>.</li><li>Choisissez une nouvelle clé d'accès : vos données sont intactes.</li></ol><p class="pr-sub">Les deux moitiés sont nécessaires : LuxInterventions ne peut pas ouvrir votre centrale avec la moitié B seule.</p>`, true),
   'print-imm': (d) => printDoc('Rapport immeuble', reportImmeuble(d.id, ui.year)),
   'print-log': (d) => printDoc('Rapport logement', reportLogement(d.id)),
   async 'print-global'() {
