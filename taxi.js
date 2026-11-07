@@ -228,8 +228,9 @@ function render() {
   out.push(catHtml(t));
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
   { const p = slot('bas'); if (p) out.push(adBox(p, t)); }
+  out.push(newsHtml(API));
   out.push(infoBox({ lang }));
-  out.push(newsHtml(API)); out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div><p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);
+  out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div><p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);
   const keep = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');
   document.querySelectorAll('.vid[data-vsrc], .ticker[data-vsrc]').forEach((v) => { const src = v.dataset.vsrc, old = keep.get(src); if (old) return v.append(old); const f = document.createElement('iframe'); f.src = src; f.dataset.src = src; f.loading = 'lazy'; f.title = 'Video'; f.allow = 'encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share'; f.allowFullscreen = true; f.referrerPolicy = 'strict-origin-when-cross-origin'; v.append(f); });

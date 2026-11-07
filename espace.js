@@ -1168,6 +1168,9 @@ function render() {
   // dedans, chaque avertissement garde sa propre pastille
   const mtL = [binSoon && binSoon.c, mtLight].includes('red') ? 'red' : [binSoon && binSoon.c, mtLight].includes('yellow') ? 'yellow' : mtLight;
   if (mtCard || collHtml || sigHtml || legHtml || binSoon || binTop) out[mtAt] = foldCard(`<div class="card" id="mtCard"${binSoon || mtLight || binTop ? ' data-alert="red"' : ''}><h2>${mtL || binTop ? `<span class="light l-${binTop ? 'red' : mtL} blink"></span> ` : ''}🛠️ ${esc(t.mt.t)}</h2>${binSoon ? binSoon.html : ''}${d.bins && d.chat ? `<div id="binBox">${binTop}</div>` : ''}${mtCard}${collHtml}${sigHtml}${legHtml}</div>`, 'mt', '');
+  // 📣 annonce du bas + 📰 News : juste sous l'état des lieux
+  { const low = slot('bas'); if (low) out.push(adBox(low, t, d)); }
+  out.push(newsHtml(API));
   if (d.regles) {
     const lu = rulesDate(d);
     out.push(`<div class="card" id="rules"><details${lu ? '' : ' open'}><summary><h2 style="display:inline">📜 ${esc(t.hr.rulesT)}</h2>${lu ? ` <span class="meta">✓ ${esc(fmt(lu))}</span>` : ''}</summary>
@@ -1181,11 +1184,10 @@ function render() {
     const ft = TFT[lang] || TFT.fr;
     out.push(`<div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><button class="link-rgpd" data-rgpd="1">${esc(t.rgpdT)}</button><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn sec sm" data-logout="1">🚪 ${esc(ft.out)}</button>${d.societe.tel ? `<a class="btn sm" href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">📞 ${esc(ft.call)}</a><span class="meta">${esc(d.societe.nom)}</span>` : ''}</div></div>`);
   }
-  { const low = slot('bas'); if (low) out.push(adBox(low, t, d)); }
   out.push(infoBox({ extra: `<button class="btn sec block" data-ianim="1">▶ ${esc(IA_T[lang] || IA_T.fr)}</button>` }));
   // version de l'app de gestion qui a publié ces données (aide au dépannage)
   out.push(`<p class="meta" style="text-align:center;font-size:11px;margin:8px 0 0">${esc(d.gv ? 'v' + d.gv : 'v < 2.57')}</p>`);
-  out.push(newsHtml(API)); out.push(TICKER);
+  out.push(TICKER);
   const keepMap = document.querySelector('#mapBox iframe');
   const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');

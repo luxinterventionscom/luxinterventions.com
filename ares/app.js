@@ -34,7 +34,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.229.0';
+const VERSION = '2.230.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5395,6 +5395,7 @@ dashboard() {
     const appsBox = appsVer !== verMM && vault.list('locataires').some((x) => x.espace && x.espace.on) ? html`<div class="alert info" style="margin-bottom:14px;align-items:center">🆕<div style="flex:1"><b>Mise à jour importante (v${verMM})</b> : mettez à jour toutes les apps (locataires, équipe, clients, partenaires) pour qu’elles reçoivent les nouveautés.</div><button class="btn sm primary" data-action="apps-refresh-all">🔄 Tout mettre à jour</button></div>` : '';
     return html`
       ${pushNudge()}
+      ${bailBox}
       ${appsBox}
       ${netAd('haut')}
       ${nudge}
@@ -5407,7 +5408,7 @@ dashboard() {
       ${netAd('milieu')}
       ${virBox}
       ${edlBox}
-      ${anRecBox}${annBox}${nClaimBox}${netSoonBox}${netStopBox}${bailBox}${eqBox}
+      ${anRecBox}${annBox}${nClaimBox}${netSoonBox}${netStopBox}${eqBox}
       ${absBox}
       ${toolsBox}
       ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}

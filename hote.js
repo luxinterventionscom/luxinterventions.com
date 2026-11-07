@@ -324,10 +324,11 @@ function render() {
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
   // 10 · publicité (bas)
   { const p = slot('bas'); if (p) out.push(adBox(p, t)); }
+  out.push(newsHtml(API)); // 📰 News : sous l'annonce du bas, au-dessus de « icône sur l'écran » / se déconnecter
   // 11 · infos
   out.push(infoBox({ lang }));
   // 12 · barre des cours (servie par le Worker)
-  out.push(newsHtml(API)); out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
+  out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
   out.push(`<p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);
   const keep = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');

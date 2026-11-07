@@ -274,8 +274,8 @@ function render() {
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
   out.push(recapCard());
   { const p = slot('bas'); if (p) out.push(adBox(p)); }
-  out.push(infoBox({ lang }));
   out.push(newsHtml(API));
+  out.push(infoBox({ lang }));
   out.push(`<p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);
   const keep = new Map([...document.querySelectorAll('.vid iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');

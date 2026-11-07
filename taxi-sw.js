@@ -1,5 +1,5 @@
 // App des sociétés de taxi : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'taxi-shell-v1.9.0';
+const CACHE = 'taxi-shell-v1.10.0';
 const SHELL = ['/taxi.html', '/taxi.js', '/ares/espace-crypto.js', '/ares/pchat.js', '/ares/chattr.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/news.js', '/ares/pubstat.js', '/ares/pubsocial.js', '/ares/reqmark.js', '/ares/wxradio.js', '/ares/nbien.js', '/ares/trip.js', '/taxi.webmanifest', '/ares/icons/lux-192.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
