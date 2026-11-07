@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.223.3';
+const VERSION = '2.223.4';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2215,9 +2215,10 @@ async function netPubsSync() {
   const list = vault.list('avis').filter((a) => isPub(a) && (!a.st || a.st === 'ok') && (!a.fin || a.fin >= today())).map((a) => ({ ...pubOut(a), aud: pubAud(a), debut: a.debut || '', annId: a.annId || '' }));
   const h = await sha256Hex(JSON.stringify(list));
   let prev = '';
-  try { prev = localStorage.getItem('aresNetPubs') || ''; } catch { /* stockage indisponible */ }
+  try { prev = localStorage.getItem('aresNetPubs2') || ''; } catch { /* stockage indisponible */ }
   if (h === prev) return;
-  try { await vault.call('netpubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: list }) }); localStorage.setItem('aresNetPubs', h); } catch { /* Worker pas encore à jour : on réessaiera */ }
+  // envoi réussi seulement si le serveur répond OK (sinon on réessaie à la prochaine ouverture / modification)
+  try { const r = await vault.call('netpubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: list }) }); if (r && r.ok) localStorage.setItem('aresNetPubs2', h); } catch { /* Worker pas encore à jour : on réessaiera */ }
 }
 async function portailPubsSync() {
   if (TENANT) return;
