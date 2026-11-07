@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.223.2';
+const VERSION = '2.223.3';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1486,7 +1486,7 @@ async function netApi(path, method = 'GET', body) {
   return r.json();
 }
 const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
-const netInvite = (t, code) => `🌐 ${t.nom} — votre centrale ${societe().nom || 'LuxInterventions'} (${NET_FIL[t.fil] || ''}) : ${netUrl(t.id)}\nCode d’invitation : ${code}\nÀ la première ouverture, choisissez votre clé d’accès (elle chiffre vos données : personne d’autre ne la connaît, gardez aussi la clé de secours).`;
+const netInvite = (t, code) => `🌐 ${t.nom} — votre centrale LuxInterventions (${NET_FIL[t.fil] || ''}) : ${netUrl(t.id)}\nCode d’invitation : ${code}\nÀ la première ouverture, choisissez votre clé d’accès (elle chiffre vos données : personne d’autre ne la connaît, gardez aussi la clé de secours).`;
 // 🧾 Fatture della CENTRAL-APP alle UTENTI-APP (centrali dei clienti) : cifrate per la chiave pubblica del client, nella sua
 // casella ; bonifico con QR + « Ho pagato » (Stripe : pas encore connecté). Avviso puis sola lettura après les jours de 🧾 Facturation.
 const payDays = () => { const c = factConf(); return { avv: c.avv === '' || c.avv == null ? 7 : Math.max(0, +c.avv), ro: Math.max(1, +c.rog || 30) }; };
@@ -1803,7 +1803,7 @@ async function annSync(onlyId, loud) {
         return { id: a.id, type: a.type || 'annonce', nom: a.nom, texte: a.texte || '', adresse: a.adresse || '', tel: a.tel || '', web: a.web || '', video: a.video || '', slot: pubSlot(a), aud: pubAud(a), debut: a.debut, fin: a.fin, jours: a.jours || [], h1: a.h1 || '', h2: a.h2 || '', st: a.st || 'ok', motif: a.motif || '', prix: a.prix || 0, v: st.v, taps: st.taps,
           claim: a.payClaim || '', fact: a.fact ? { no: a.fact.no, date: a.fact.date, ht: a.fact.ht, tva: a.fact.tva, ttc: a.fact.ttc, tx: a.fact.tx } : null, ...(a.st === 'pay' ? annDue(a) : {}) };
       });
-      const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', prof: { email: an.email || '', web: an.web || '', tva: an.tvaNum || '', iban: an.iban || '', banque: an.banque || '' }, recs: vault.list('reglages').filter((r) => r.id.startsWith('anrec-') && r.annId === an.id).map((r) => ({ t: r.t, motif: r.motif, texte: r.texte, rep: r.rep || '' })), adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: societe().nom || 'LuxInterventions',
+      const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', prof: { email: an.email || '', web: an.web || '', tva: an.tvaNum || '', iban: an.iban || '', banque: an.banque || '' }, recs: vault.list('reglages').filter((r) => r.id.startsWith('anrec-') && r.annId === an.id).map((r) => ({ t: r.t, motif: r.motif, texte: r.texte, rep: r.rep || '' })), adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: 'LuxInterventions',
         tarifs: { haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, crea_simple: +t.crea_simple || 0, crea_moyen: +t.crea_moyen || 0, crea_max: +t.crea_max || 0, note: t.note || '' }, pay: false, ...annFrom(), chat: pchatOut(an), chatRd: an.chatRd || '' };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && anHashes.get(e.id) === hs) continue;
@@ -2108,7 +2108,7 @@ const TOOL_KINDS = { don: '🎁 Don', pret: '🤝 Prêt gratuit', loc: '💶 Loc
 const TOOL_UNITS = { h: '/ heure', j: '/ jour', we: '/ week-end', s: '/ semaine', u: '(prix unique)' };
 const toolPrice = (it) => (it.kind === 'loc' ? money(it.price) + ' ' + (own(TOOL_UNITS, it.unit) ? TOOL_UNITS[it.unit] : '') : it.kind === 'don' ? 'gratuit (don)' : 'gratuit (prêt)');
 function toolOwner(it) {
-  if (it.owner === 'mgr') return societe().nom || 'NOBIS s.a.r.l.';
+  if (it.owner === 'mgr') return netBrand();
   const l = vault.list('locataires').find((x) => x.espace && 'e:' + x.espace.id === it.owner);
   return l ? fullName(l) + ' · ' + (logName(l.logId) || immName(l.immId)) : 'Locataire (espace fermé)';
 }
@@ -2931,7 +2931,7 @@ const HOTE_INV = {
   pt: (p, s, u, c) => `Olá ${p}, bem-vindo a ${s}! A sua app da estadia (quarto, fotos, código da porta, menu, táxi): ${u}\nO seu código pessoal: ${c}`,
   es: (p, s, u, c) => `Hola ${p}, ¡bienvenido a ${s}! Su app de estancia (habitación, fotos, código de la puerta, menú, taxi): ${u}\nSu código personal: ${c}`,
 };
-const hoteInvite = (h) => (HOTE_INV[h.langue] || HOTE_INV.en)(h.prenom || h.nom, hoteConf().nom || societe().nom || 'LuxInterventions', HOTE_URL(), h.appCode);
+const hoteInvite = (h) => (HOTE_INV[h.langue] || HOTE_INV.en)(h.prenom || h.nom, hoteConf().nom || netBrand(), HOTE_URL(), h.appCode);
 // 🚕 Sociétés de taxi / chauffeurs (réseau) : chacune a son app (taxi.html) ; catalogue envoyé par la société
 const TX_GAM = { luxe: '💎 Luxe', confort: '🚘 Confort', eco: '🚕 Économique' };
 const TX_SRV = { course: '🛣️ Course', heures: '⏱️ À l’heure', demi: '🌗 Demi-journée', jour: '☀️ Journée', sejour: '📅 Tout le séjour' };
@@ -3033,8 +3033,8 @@ async function txcoSync(onlyId, loud) {
       co = vault.get('reglages', co.id);
       const sig = vault.get('reglages', 'signal');
       const hcf = hoteConf();
-      const data = { v: 1, kind: 'taxi', gv: VERSION, nom: co.nom, tel: co.tel || '', cat: co.cat || {}, rides: await txRides(co), signalKey: sig ? sig.pub : '', reseau: hcf.nom || societe().nom || 'LuxInterventions',
-        prof: co.prof || null, cli: { nom: hcf.nom || societe().nom || '', adresse: hcf.adresse || societe().adresse || '' },
+      const data = { v: 1, kind: 'taxi', gv: VERSION, nom: co.nom, tel: co.tel || '', cat: co.cat || {}, rides: await txRides(co), signalKey: sig ? sig.pub : '', reseau: hcf.nom || netBrand() || 'LuxInterventions',
+        prof: co.prof || null, cli: { nom: hcf.nom || netBrand(), adresse: hcf.adresse || '' },
         invs: txInvs(co.id).slice(0, 40).map((f) => ({ no: f.no, date: f.date, ht: f.ht, tva: f.tva, ttc: f.ttc, taux: f.taux, keys: f.keys, paid: f.paid || '', recv: f.recv || '' })),
         pubs: pubsActives(null, 'taxi').map(pubOut), chat: pchatOut(co), chatRd: co.chatRd || '' };
       const hs = await sha256Hex(JSON.stringify(data));
@@ -3301,6 +3301,8 @@ const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '')
 const APP_BRAND = { nom: 'LuxInterventions', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
 const DEF_SOC = () => (TENANT ? tenantInfo.nom || 'Centrale' : 'NOBIS s.a.r.l.');
 const socName = () => societe().nom || DEF_SOC();
+// nom affiché aux clients, locataires, ospiti, taxis, annonceurs : la marque LuxInterventions (la centrale d'un client : son propre nom)
+const netBrand = () => (TENANT ? socName() : 'LuxInterventions');
 const socLogo = () => societe().logo || (TENANT ? '' : '/ares/icons/nobis-logo.png');
 const htOf = (ttc, r) => (r ? ttc / (1 + r / 100) : ttc);
 const r2 = (x) => Math.round(x * 100) / 100;
@@ -4197,7 +4199,7 @@ function reportCollectes(immId, y) {
     ${im.pubToken ? html`<div style="display:flex;gap:16px;align-items:center;margin-top:16px;border:1px solid #ccc;border-radius:10px;padding:10px 14px">
       <div class="qr" style="width:120px;flex:0 0 120px">${qrSvg(pubUrl(im), 4)}</div>
       <div><b>📱 Scannez : calendrier sur votre téléphone, rappel la veille.</b><br>Scansiona: calendario sul telefono, promemoria la sera prima.<br>Scannen: Kalender auf Ihrem Handy, Erinnerung am Vorabend.<br>Digitalize: calendário no telemóvel, aviso na véspera.<br>Scan: calendar on your phone, reminder the evening before.</div></div>` : ''}
-    <p class="pr-sub" style="margin-top:14px">Une question ? ${societe().nom || 'NOBIS s.a.r.l.'}${societe().tel ? ' · ' + societe().tel : ''}</p>`;
+    <p class="pr-sub" style="margin-top:14px">Une question ? ${netBrand()}${societe().tel ? ' · ' + societe().tel : ''}</p>`;
 }
 const logOptions = (immId, sel) => html`<option value="">Parties communes / tout l'immeuble</option>${logsOf(immId).map((g) => html`<option value="${g.id}" ${g.id === sel ? new Raw('selected') : ''}>${logLabel(g)}</option>`)}`;
 // Intervention terminée avec un coût : proposer de l'ajouter aux dépenses de l'immeuble (une seule fois)
@@ -6229,7 +6231,7 @@ function relanceText(l, lang) {
   };
   const list = months.map((x) => `${NAMES[lang][x.m - 1]} ${x.y} (${money(payState(l, x.y, x.m).rest)})`).join(', ') || '—';
   const where = [logName(l.logId), immName(l.immId)].filter(Boolean).join(', ');
-  const sign = st.nom || 'NOBIS s.a.r.l.';
+  const sign = st.nom || netBrand();
   const iban = st.iban ? { fr: `\nIBAN : ${st.iban}`, it: `\nIBAN: ${st.iban}`, en: `\nIBAN: ${st.iban}`, pt: `\nIBAN: ${st.iban}` }[lang] : '';
   const T = {
     fr: `Bonjour ${fullName(l)},\n\nSauf erreur de notre part, nous n'avons pas encore reçu le loyer de ${list} pour ${where}, soit ${money(total)} au total.\n\nMerci de procéder au règlement dès que possible, ou de nous contacter si le paiement a déjà été effectué.${iban}\n\nCordialement,\n${sign}`,
@@ -6984,7 +6986,7 @@ const SHEETS = {
     const on = ls.filter((l) => l.espace && l.espace.on).length;
     return {
       title: 'App des locataires',
-      body: html`<p style="margin-top:0">Les locataires téléchargent l'app depuis <b>luxinterventions.com</b> (« Télécharger l'app des locataires NOBIS s.a.r.l. ») et entrent avec le <b>code personnel</b> que vous leur donnez ici. Sans code, personne n'entre.</p>
+      body: html`<p style="margin-top:0">Les locataires téléchargent l'app depuis <b>luxinterventions.com</b> (« Télécharger l'app des locataires ») et entrent avec le <b>code personnel</b> que vous leur donnez ici. Sans code, personne n'entre.</p>
         <div class="search" style="margin-bottom:8px">${icon('search')}<input type="search" data-input="esp-search" placeholder="Rechercher un nom, un logement, un immeuble, un code…" autocomplete="off"></div>
         <div class="chips" style="margin-bottom:10px">
           <button class="chip" data-action="esp-filter" data-id="" aria-pressed="true">Tous (${ls.length})</button>
@@ -7283,7 +7285,7 @@ const SHEETS = {
   'annc-form'({ id }) {
     const an = id ? vault.get('reglages', id) : { cat: 'resto', appCode: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0') };
     if (id && !an) return null;
-    const inv = `📣 ${an.nom || ''} — app des annonces ${societe().nom || 'LuxInterventions'} : ${location.origin}/annunci.html\nCode : ${an.appCode}`, tel = String(an.tel || '').replace(/[^\d+]/g, '');
+    const inv = `📣 ${an.nom || ''} — app des annonces LuxInterventions : ${location.origin}/annunci.html\nCode : ${an.appCode}`, tel = String(an.tel || '').replace(/[^\d+]/g, '');
     return {
       title: id ? an.nom : 'Nouvel annonceur',
       narrow: true,
@@ -7325,7 +7327,7 @@ const SHEETS = {
   'txco-form'({ id }) {
     const co = id ? vault.get('reglages', id) : { appCode: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0') };
     if (id && !co) return null;
-    const inv = `🚕 ${co.nom || ''} — app des courses ${hoteConf().nom || societe().nom || 'LuxInterventions'} : ${location.origin}/taxi.html\nCode : ${co.appCode}`, tel = String(co.tel || '').replace(/[^\d+]/g, '');
+    const inv = `🚕 ${co.nom || ''} — app des courses ${hoteConf().nom || 'LuxInterventions'} : ${location.origin}/taxi.html\nCode : ${co.appCode}`, tel = String(co.tel || '').replace(/[^\d+]/g, '');
     return {
       title: id ? co.nom : 'Nouvelle société de taxi',
       narrow: true,
@@ -7756,13 +7758,13 @@ const SHEETS = {
           <div class="section-label">À approuver (${pend.length})</div>${pend.length ? html`<div class="list">${pend.map(card)}</div>` : html`<p class="muted small">Aucune annonce en attente.</p>`}
           <div class="section-label">En ligne (${live.length})</div>${live.length ? html`<div class="list">${live.map(card)}</div>` : html`<p class="muted small">Aucune annonce en ligne.</p>`}
           ${old.length ? html`<div class="section-label">Expirées (${old.length})</div><div class="list">${old.map(card)}</div>` : ''}`}`,
-      foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" data-action="tool-new">${icon('plus')} Publier un objet (NOBIS)</button>`,
+      foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" data-action="tool-new">${icon('plus')} Publier un objet</button>`,
     };
   },
 
   'tool-form'() {
     return {
-      title: 'Publier un objet (NOBIS)',
+      title: 'Publier un objet',
       narrow: true,
       body: html`<form id="f" data-form="tool" class="fields">
         <label class="field full">Photos (1 à 3)<input type="file" name="photos" accept="image/*" multiple required></label>
@@ -7976,7 +7978,7 @@ const SHEETS = {
       body: html`<form id="f" data-form="loc" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
         ${photoField(l, id ? initials(l) : '👤')}
-        ${id ? '' : html`<p class="tiny muted full" style="margin:0">Bailleur (propriétaire) → <b>${societe().nom || 'NOBIS s.a.r.l.'}</b> (locataire principal) → <b>sous-locataire</b> que vous ajoutez ici.</p>`}
+        ${id ? '' : html`<p class="tiny muted full" style="margin:0">Bailleur (propriétaire) → <b>${societe().nom || 'vous'}</b> (locataire principal) → <b>sous-locataire</b> que vous ajoutez ici.</p>`}
         ${logementSelect(l.logId, l.immId)}
         ${tenantFields(l)}
         ${id ? field('Date de sortie', 'sortie', l.sortie, { type: 'date' }) : ''}
@@ -10647,7 +10649,7 @@ const FORMS = {
       const photos = [];
       for (const f of files) photos.push(b64u(await compressPhoto(f)));
       await vault.toolsCreate({ kind: fd.get('kind'), title: fd.get('title'), price: num(fd.get('price')), unit: fd.get('unit'), lieu: fd.get('lieu'), mail: fd.get('mail'), name: societe().nom || 'NOBIS s.a.r.l.', desc: fd.get('desc'), rules: fd.get('rules'), photos });
-      vault.mutate(() => {}, 'Annonce publiée (NOBIS)', fd.get('title'), '');
+      vault.mutate(() => {}, 'Annonce publiée (don · prêt · location)', fd.get('title'), '');
       toast('Annonce publiée sur le site');
       await toolsLoad(true);
       goBack();
@@ -10666,7 +10668,7 @@ const FORMS = {
       const to = String(fd.get('to') || '');
       ui.chatTo = { ...(ui.chatTo || {}), [g.id]: to };
       const l = to && g.members.includes(to) ? vault.get('locataires', to) : null, k = vault.get('reglages', 'signal');
-      const msg = { id: newMsgId(), a: societe().nom || 'Gestionnaire', m: 'mgr', t: new Date().toISOString() };
+      const msg = { id: newMsgId(), a: netBrand(), m: 'mgr', t: new Date().toISOString() };
       if (to) {
         // réponse privée : scellée pour l'habitant (clé de son espace) et pour vous ; notification à lui seul
         if (!l || !l.espace || !l.espace.key || !k || !k.pub) throw new Error('Message privé impossible : l’app de cet habitant n’est pas active.');
@@ -10721,7 +10723,7 @@ const FORMS = {
       if (loc) {
         const gs = [];
         for (const im of vault.list('immeubles').filter((z) => !immGone(z))) for (const g of Object.values(im.chats || {})) if (loc === 'all' || loc === 'i:' + im.id || loc === 'g:' + g.id) gs.push(g);
-        for (const g of gs) await vault.boardPost(g.id, await sealJson(g.key, { id: newMsgId(), a: societe().nom || 'Gestionnaire', m: 'mgr', x, t: at, an: 1 }));
+        for (const g of gs) await vault.boardPost(g.id, await sealJson(g.key, { id: newMsgId(), a: netBrand(), m: 'mgr', x, t: at, an: 1 }));
         done.push(`🏠 ${plural(gs.length, 'fil')}`);
       }
       if (eq) {
@@ -10737,7 +10739,7 @@ const FORMS = {
       if (net) {
         const list = ((ui.net && ui.net.list) || []).filter((t) => t.pub && (net === 'all' || t.fil === net));
         let n = 0;
-        for (const t of list) { try { await netBoxSend(t.id, { type: 'annonce', id: newMsgId(), x: x0, at, from: societe().nom || 'LuxInterventions' }); n++; } catch { /* client pas encore prêt */ } }
+        for (const t of list) { try { await netBoxSend(t.id, { type: 'annonce', id: newMsgId(), x: x0, at, from: netBrand() }); n++; } catch { /* client pas encore prêt */ } }
         done.push(`🏢 ${plural(n, 'client')}${n < list.length ? ` (${list.length - n} pas encore prêts)` : ''}`);
       }
       const log = [...annLog(), { at, x: x0, to: done.join(' · '), by: whoLabel() || '⭐ Directeur' }].slice(-100);
