@@ -734,7 +734,8 @@ function pubSlot(k) {
         ${a.video && !v ? html`<a class="btn sm" href="${a.video}" target="_blank" rel="noopener" data-pev="video">▶ Vidéo</a>` : ''}</div>${state.demo ? '' : new Raw(pubSocialBar(a))}</details>`;
 }
 // barre des cours crypto (TradingView) : servie par le Worker sur un autre domaine, isolée du portail
-const tickerBar = () => html`${new Raw(newsHtml(API.replace(/\/api\/portail\/$/, '')))}<div class="ticker"><iframe src="${API.replace(/api\/portail\/$/, '')}ticker" title="Crypto" loading="lazy" referrerpolicy="no-referrer" scrolling="no"></iframe></div>`;
+const newsBar = () => new Raw(newsHtml(API.replace(/\/api\/portail\/$/, '')));
+const tickerBar = () => html`<div class="ticker"><iframe src="${API.replace(/api\/portail\/$/, '')}ticker" title="Crypto" loading="lazy" referrerpolicy="no-referrer" scrolling="no"></iframe></div>`;
 
 // cases des codes : un chiffre par case, on passe à la suivante, coller « 123456 » remplit tout
 document.addEventListener('input', (e) => {
@@ -942,7 +943,7 @@ const VIEWS = {
         ${recue.length ? html`<div class="list">${recue.map(ticketRow)}</div>` : html`<div class="alert" style="background:var(--green-soft);color:var(--green)">${icon('check')}<div>Aucune nouvelle demande en attente.</div></div>`}
         <div class="section-label">En cours</div>
         ${others.length ? html`<div class="list">${others.map(ticketRow)}</div>` : html`<p class="muted small">Aucune intervention en cours.</p>`}
-        ${pubSlot('bas')}${new Raw(infoBox({ extra: `<button class="btn sec block" data-action="install-anim">▶ ${IA_T}</button>` }))}${tickerBar()}`;
+        ${pubSlot('bas')}${newsBar()}${new Raw(infoBox({ extra: `<button class="btn sec block" data-action="install-anim">▶ ${IA_T}</button>` }))}${tickerBar()}`;
     }
     return html`${pushCard}
       ${guideCard(stats)}
@@ -965,7 +966,7 @@ const VIEWS = {
       <button class="btn block" style="margin-top:12px" data-action="go" data-to="stats">${icon('chart')} Statistiques de nos interventions</button>
       <div class="section-label">Mes demandes en cours</div>
       ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Dépannage</button>`)}
-      ${pubSlot('bas')}${new Raw(infoBox({ extra: `<button class="btn sec block" data-action="install-anim">▶ ${IA_T}</button>` }))}${tickerBar()}`;
+      ${pubSlot('bas')}${newsBar()}${new Raw(infoBox({ extra: `<button class="btn sec block" data-action="install-anim">▶ ${IA_T}</button>` }))}${tickerBar()}`;
   },
 
   // Comptabilité : deux espaces séparés — Comptabilité (interventions terminées, par mois) | Statistiques
