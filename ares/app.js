@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.223.4';
+const VERSION = '2.223.5';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -6987,7 +6987,7 @@ const SHEETS = {
     const on = ls.filter((l) => l.espace && l.espace.on).length;
     return {
       title: 'App des locataires',
-      body: html`<p style="margin-top:0">Les locataires téléchargent l'app depuis <b>luxinterventions.com</b> (« Télécharger l'app des locataires ») et entrent avec le <b>code personnel</b> que vous leur donnez ici. Sans code, personne n'entre.</p>
+      body: html`<p style="margin-top:0">Les locataires entrent dans leur app avec le <b>lien</b> ou le <b>code personnel</b> que vous leur donnez ici (📲 dans la fiche de chaque locataire). Sans code, personne n'entre.</p>
         <div class="search" style="margin-bottom:8px">${icon('search')}<input type="search" data-input="esp-search" placeholder="Rechercher un nom, un logement, un immeuble, un code…" autocomplete="off"></div>
         <div class="chips" style="margin-bottom:10px">
           <button class="chip" data-action="esp-filter" data-id="" aria-pressed="true">Tous (${ls.length})</button>
@@ -8104,7 +8104,7 @@ const SHEETS = {
         const tel = (l.tel || '').replace(/[^\d+]/g, '');
         const inv = inviteMsg('loc', e.lang, l.prenom || '', appUrl(), e.code || '—', url, socName());
         const msg = encodeURIComponent(inv.txt);
-        body = html`<p style="margin-top:0">Espace actif. Donnez à <b>${fullName(l)}</b> son <b>code d'accès</b> (pour l'app installée depuis luxinterventions.com) ou envoyez-lui le lien direct.</p>
+        body = html`<p style="margin-top:0">Espace actif. Donnez à <b>${fullName(l)}</b> son <b>code d'accès</b> ou envoyez-lui le lien direct.</p>
           <div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d'accès personnel</div>
             <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
             <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn sm" data-action="esp-copy" data-id="${id}">🔗 Copier le lien</button>${e.code ? html`<button class="btn sm" data-action="code-copy" data-code="${e.code}">📋 Copier le code</button>` : ''}<button class="btn sm ${e.code ? 'danger' : ''}" data-action="esp-code" data-id="${id}">${e.code ? 'Nouveau code' : 'Créer le code'}</button></div></div>
