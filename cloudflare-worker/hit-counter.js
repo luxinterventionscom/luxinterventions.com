@@ -74,6 +74,8 @@ async function route(request, env, ctx, headers) {
     // Statistiques anonymes des annonces (vues / clics) envoyées par les apps : aucun nom, aucune donnée personnelle
     if (url.pathname === "/api/pubstat" && request.method === "POST") return pubStatPost(request, env, headers);
     if (url.pathname === "/api/publikes" && request.method === "GET") return pubLikesGet(url, env, headers);
+    // 📰 Titres de L'essentiel (flux RSS publics) pour la barre « News » des apps : titre, lien, heure — gardés 15 min
+    if (url.pathname === "/api/news" && request.method === "GET") return newsGet(url, ctx, headers);
     // 📣 Annonces du réseau (lecture publique) : apps des locataires et clients des centrales des clients, apps des annonceurs
     if (url.pathname === "/api/netpubs" && request.method === "GET") {
       const obj = await env.PHOTOS.get(ARES_NETPUBS);
@@ -1523,6 +1525,29 @@ async function pubLikesGet(url, env, headers) {
 }
 
 const TICKER_SYMBOLS = "BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,BINANCE:USDTUSD,BINANCE:BNBUSD,BINANCE:SOLUSD,BITSTAMP:XRPUSD,BINANCE:USDCUSD,BINANCE:ADAUSD,BINANCE:AVAXUSD,BINANCE:DOGEUSD,BINANCE:TRXUSD,BINANCE:DOTUSD,BINANCE:LINKUSD,BINANCE:SUIUSD,BINANCE:NEARUSD,BINANCE:LTCUSD,BINANCE:BCHUSD,BINANCE:PEPEUSD,BINANCE:UNIUSD,BINANCE:APTUSD";
+const NEWS_FEEDS = { all: "", lux: "/luxembourg", monde: "/monde", sport: "/sports", foot: "/sports/football" };
+async function newsGet(url, ctx, headers) {
+  const f = Object.prototype.hasOwnProperty.call(NEWS_FEEDS, url.searchParams.get("f")) ? url.searchParams.get("f") : "all";
+  const key = new Request("https://news-cache.local/" + f), cache = caches.default;
+  const hit = await cache.match(key).catch(() => null);
+  if (hit) { const j = await hit.json().catch(() => null); if (j) return aresJson(j, 200, headers, { "Cache-Control": "public, max-age=300" }); }
+  let items = [];
+  try {
+    const r = await fetch("https://partner-feeds.lessentiel.lu/rss/lessentiel-fr" + NEWS_FEEDS[f], { headers: { Accept: "application/rss+xml, application/xml, text/xml" }, cf: { cacheTtl: 900 } });
+    const xml = r.ok ? await r.text() : "";
+    const dec = (x) => String(x || "").replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]+>/g, "").replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16))).replace(/&quot;/g, '"').replace(/&apos;|&#39;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").trim();
+    const tag = (it, t) => { const m = it.match(new RegExp("<" + t + "(?:\\s[^>]*)?>([\\s\\S]*?)</" + t + ">", "i")); return m ? dec(m[1]) : ""; };
+    for (const m of xml.matchAll(/<item\b[\s\S]*?<\/item>/gi)) {
+      const it = m[0], link = tag(it, "link"), title = tag(it, "title"), d = Date.parse(tag(it, "pubDate"));
+      if (!title || !/^https:\/\/([a-z0-9-]+\.)*lessentiel\.lu\//i.test(link)) continue;
+      items.push({ t: title.slice(0, 200), u: link.slice(0, 400), d: Number.isFinite(d) ? new Date(d).toISOString() : "" });
+      if (items.length >= 15) break;
+    }
+  } catch { items = []; }
+  const out = { src: "L'essentiel", f, items };
+  if (items.length) ctx.waitUntil(cache.put(key, new Response(JSON.stringify(out), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=900" } })));
+  return aresJson(out, 200, headers, { "Cache-Control": "public, max-age=300" });
+}
 function tickerPage() {
   const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ticker</title>
 <style>html,body{margin:0;padding:0;background:transparent;overflow-x:hidden}</style>

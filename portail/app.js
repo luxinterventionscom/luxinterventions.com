@@ -2,6 +2,7 @@
 // Plusieurs utilisateurs et plusieurs gérances : chacun voit uniquement ses résidences et ses demandes,
 // l'équipe LuxInterventions (rôle « admin ») voit tout et traite les demandes.
 
+import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { startI18n, LOCALES, translate as T } from '/ares/i18n.js';
 import { PTL_INVITE } from '/ares/ptl-invite.js';
@@ -733,7 +734,7 @@ function pubSlot(k) {
         ${a.video && !v ? html`<a class="btn sm" href="${a.video}" target="_blank" rel="noopener" data-pev="video">▶ Vidéo</a>` : ''}</div>${state.demo ? '' : new Raw(pubSocialBar(a))}</details>`;
 }
 // barre des cours crypto (TradingView) : servie par le Worker sur un autre domaine, isolée du portail
-const tickerBar = () => html`<div class="ticker"><iframe src="${API.replace(/api\/portail\/$/, '')}ticker" title="Crypto" loading="lazy" referrerpolicy="no-referrer" scrolling="no"></iframe></div>`;
+const tickerBar = () => html`${new Raw(newsHtml(API.replace(/\/api\/portail\/$/, '')))}<div class="ticker"><iframe src="${API.replace(/api\/portail\/$/, '')}ticker" title="Crypto" loading="lazy" referrerpolicy="no-referrer" scrolling="no"></iframe></div>`;
 
 // cases des codes : un chiffre par case, on passe à la suivante, coller « 123456 » remplit tout
 document.addEventListener('input', (e) => {

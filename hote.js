@@ -1,6 +1,7 @@
 // 🏨 App des clients (Hotel / Airbnb) : séjour, chambre ou logement, code de la porte, menu, arrivée (taxi ou soi-même),
 // état des lieux de sortie. Données chiffrées par l'établissement ; la clé ne quitte pas le téléphone.
 // L'app se remet à zéro le lendemain du départ (l'établissement efface les données et le code).
+import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { openJson, openBytes, sealForOwner, codeHash, unwrapWithCode, b64u } from '/ares/espace-crypto.js';
 import { videoEmbed } from '/ares/video-embed.js';
@@ -326,7 +327,7 @@ function render() {
   // 11 · infos
   out.push(infoBox({ lang }));
   // 12 · barre des cours (servie par le Worker)
-  out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
+  out.push(newsHtml(API)); out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
   out.push(`<p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);
   const keep = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');
