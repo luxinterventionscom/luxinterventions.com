@@ -18135,4 +18135,24 @@ export default [
 "📣 Annonceurs",
 "📣 Anunciantes"
 ],
+[
+"Mettre à jour toutes les apps maintenant",
+"Actualizar todas las apps ahora"
+],
+[
+"Locataires, équipe, clients hôtel / Airbnb, taxis, annonceurs : après une grosse mise à jour ou si une app ne montre pas une nouveauté",
+"Inquilinos, equipo, clientes hotel / Airbnb, taxis, anunciantes: tras una gran actualización o si una app no muestra una novedad"
+],
+[
+"🔄 Tout mettre à jour",
+"🔄 Actualizar todo"
+],
+[
+"Mettre à jour son app maintenant",
+"Actualizar su app ahora"
+],
+[
+"Apps",
+"Apps"
+],
 ];
