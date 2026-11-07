@@ -30,7 +30,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.223.7';
+const VERSION = '2.223.8';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -8117,6 +8117,7 @@ const SHEETS = {
             ${tel ? html`<a class="btn" href="https://wa.me/${tel.replace(/^\+/, '')}?text=${msg}" target="_blank" rel="noopener">${icon('msg')} Envoyer par WhatsApp</a><a class="btn" href="sms:${tel}?&body=${msg}">${icon('msg')} Envoyer par SMS</a>` : ''}
             ${l.mail ? html`<a class="btn" href="mailto:${l.mail}?subject=${encodeURIComponent(inv.subj)}&body=${msg}">${icon('mail')} Envoyer par email</a>` : ''}
             <a class="btn" href="${url}" target="_blank" rel="noopener">${icon('eye')} Voir son espace</a>
+            <button class="btn" data-action="esp-refresh" data-id="${id}">🔄 Mettre à jour son app maintenant</button>
           </div>
           <div class="section-label">Ce qu'il voit</div>${boxes}${mtPreview(l)}
           <p class="tiny muted">Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.</p>
@@ -9022,6 +9023,15 @@ const ACTIONS = {
       try { await setAccessCode(vault.get('locataires', l.id)); toast('Espace locataire prêt'); } catch (e) { toast(e.message || 'Code impossible (connexion ?)', { bad: true }); }
     }
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
+  },
+  async 'esp-refresh'(d) {
+    const l = vault.get('locataires', d.id);
+    if (!l || !l.espace || !l.espace.on) return;
+    toast('Mise à jour de l’app…');
+    try { localStorage.removeItem('aresEsp:' + l.espace.id); } catch { /* rien */ }
+    try {
+      if (await espaceSync(l.id, true)) toast(`App de ${fullName(l)} à jour ✓ · ${(espaceData(l).pubs || []).length} annonce(s)`);
+    } catch (e) { toast('Mise à jour impossible : ' + (e.message || e), { bad: true }); }
   },
   async 'esp-off'(d) {
     const l = vault.get('locataires', d.id);
