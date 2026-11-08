@@ -35,7 +35,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.234.3';
+const VERSION = '2.234.4';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2229,7 +2229,7 @@ async function espaceSync(onlyId, loud) {
     } catch (e) {
       if (loud) { toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
       // en arrière-plan : on le dit une fois (sinon l'app du locataire reste sur l'ancienne version sans que personne le sache)
-      if (navigator.onLine && !espWarned.has(l.id)) { espWarned.add(l.id); toast(`App de ${fullName(l)} pas mise à jour : ${e.message || 'erreur'}`, { bad: true }); }
+      if (navigator.onLine && !espWarned.has(l.id)) { espWarned.add(l.id); toast(e.message === 'session-taken' ? `App de ${fullName(l)} pas mise à jour : cette centrale est ouverte sur un autre appareil${e.info && e.info.device ? ' (' + e.info.device + ')' : ''}. Un seul appareil à la fois peut enregistrer : fermez-la là-bas, puis rechargez cette page.` : `App de ${fullName(l)} pas mise à jour : ${e.message || 'erreur'}`, { bad: true }); }
     }
   }
   if (!onlyId) { await hotesSync(); await txcoSync(); await annSync(); }
