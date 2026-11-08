@@ -64,7 +64,10 @@ function onClick(e) {
     for (const x of document.querySelectorAll('[data-trpick]')) x.outerHTML = trButton();
     paintAll(); trApply();
   });
-  document.body.append(bg);
+  // une fenêtre ouverte (feuille de la centrale = <dialog> au premier plan) : la liste va DEDANS, sinon elle resterait derrière
+  document.querySelectorAll('.tr-bg').forEach((x) => x.remove());
+  const dlgs = [...document.querySelectorAll('dialog[open]')];
+  (dlgs[dlgs.length - 1] || document.body).append(bg);
 }
 
 // remet chaque message dans la bonne version (traduit / original) sans requête

@@ -34,7 +34,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.231.0';
+const VERSION = '2.231.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -6100,11 +6100,13 @@ function renderSheet() {
   const key = [s.kind, s.id, s.tab].join('|'), same = sheetEl.open && sheetEl.dataset.key === key;
   const keep = same ? { top: [...sheetEl.querySelectorAll('.sheet-body, .chat, .eq-chat')].map((e) => e.scrollTop), outer: sheetEl.scrollTop, vals: [...sheetEl.querySelectorAll(DRAFT_TA)].map((t) => t.value), sel: [...sheetEl.querySelectorAll('select')].map((x) => x.value), foc: [...sheetEl.querySelectorAll(DRAFT_TA)].indexOf(focused), pos: focused && focused.selectionStart } : null;
   sheetEl.className = 'sheet' + (r.narrow ? ' narrow' : '');
+  const popups = [...sheetEl.querySelectorAll(':scope > .tr-bg, :scope > .psoc-bg')]; // 🌐 liste des langues ouverte : elle reste
   setHtml(sheetEl, html`
     <div class="sheet-head"><h2>${r.title}</h2><button class="btn icon ghost" data-action="close-sheet" aria-label="Fermer">${icon('x')}</button></div>
     <div class="sheet-body">${r.body}</div>
     ${r.foot ? html`<div class="sheet-foot">${r.foot}</div>` : ''}`);
   s.rendered = true;
+  if (popups.length) sheetEl.append(...popups);
   sheetEl.dataset.key = key;
   if (keep) {
     const tas = [...sheetEl.querySelectorAll(DRAFT_TA)], sels = [...sheetEl.querySelectorAll('select')];
