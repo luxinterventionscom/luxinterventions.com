@@ -1615,6 +1615,12 @@ async function espPushSave(env, target, b) {
     const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM esp_push WHERE target = ?").bind(target).first();
     if (n && n.n >= 10) await env.DB.prepare("DELETE FROM esp_push WHERE endpoint IN (SELECT endpoint FROM esp_push WHERE target = ? ORDER BY created_at LIMIT 1)").bind(target).run();
   }
+  // même téléphone / PC que notre centrale principale (même abonnement) : la centrale d'un client ne la remplace jamais,
+  // sinon ses messages (locataires, hôtes, taxis… du client) sonneraient chez nous et les nôtres n'arriveraient plus
+  if (target.startsWith("owner:")) {
+    const cur = await env.DB.prepare("SELECT target FROM esp_push WHERE endpoint = ?").bind(String(b.endpoint)).first();
+    if (cur && cur.target === "owner") return true;
+  }
   await env.DB.prepare("INSERT OR REPLACE INTO esp_push (endpoint, target, boards, app, lang, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
     .bind(String(b.endpoint), target, boards, app, lang, b.p256dh, b.auth, Date.now()).run();
   return true;
