@@ -712,9 +712,10 @@ function foldSet(k, open) {
   try { localStorage.setItem('espFolds', JSON.stringify([...openFolds])); } catch { /* stockage indisponible */ }
 }
 function foldCard(h, key, sum) {
-  const m = h.match(/^<div class="card"([^>]*)><h2>([\s\S]*?)<\/h2>([\s\S]*)<\/div>$/);
+  // le titre peut avoir un style (ex. chat : 🌐 à droite) : il est gardé
+  const m = h.match(/^<div class="card"([^>]*)><h2([^>]*)>([\s\S]*?)<\/h2>([\s\S]*)<\/div>$/);
   if (!m) return h;
-  return `<details class="card fold"${m[1]} data-fold="${key}"${foldIsOpen(key) ? ' open' : ''}><summary><h2>${m[2]}</h2>${sum ? `<span class="sum">${sum}</span>` : ''}</summary><div class="fold-body">${m[3]}</div></details>`;
+  return `<details class="card fold"${m[1]} data-fold="${key}"${foldIsOpen(key) ? ' open' : ''}><summary><h2${m[2]}>${m[3]}</h2>${sum ? `<span class="sum">${sum}</span>` : ''}</summary><div class="fold-body">${m[4]}</div></details>`;
 }
 const rulesKey = () => 'espRules:' + id;
 const rulesLocal = () => { try { return JSON.parse(localStorage.getItem(rulesKey()) || 'null') || {}; } catch { return {}; } };
