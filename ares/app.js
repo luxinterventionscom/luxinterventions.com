@@ -35,7 +35,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.233.0';
+const VERSION = '2.234.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5492,7 +5492,7 @@ dashboard() {
           <div class="progress ${level(pp)}"><i style="width:${Math.min(pp, 100)}%"></i></div>
           <div class="pay-foot"><span>${im.type && im.type !== 'immeuble' ? (IMM_TYPES[im.type] || '') + ' · ' : ''}${plural(ls.length, 'locataire')}</span><span class="num">${money(rec)} / ${money(exp)}</span></div>
         </button>`;
-      })}</div>`, 'margin-top:14px')}${netAd('bas')}`;
+      })}</div>`, 'margin-top:14px')}${netAd('bas')}${TENANT ? html`<div style="margin-top:14px">${new Raw(newsHtml(API))}</div>` : ''}`;
   },
 
   immeubles() {

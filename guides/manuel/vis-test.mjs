@@ -75,5 +75,6 @@ const na = await q.evaluate(() => { const e = document.querySelector('.net-ad');
 assert(na && na.soc && /Bäckerei/.test(na.t), 'centrale del cliente: annuncio come nelle app ' + JSON.stringify(na));
 await q.click('.net-ad summary'); await q.waitForTimeout(400); await relog(q, CPASS); await q.evaluate(() => { location.hash = '#/dashboard'; }); await q.waitForTimeout(2500);
 assert(await q.$eval('.net-ad', (e) => !e.open), 'annuncio ripiegato e ricordato');
+assert(await q.$('.newsbar'), 'centrale del cliente: barra News presente');
 assert(!errs.length, 'nessun errore JS: ' + errs.join(' / '));
 log('OK'); await b.close();
