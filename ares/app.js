@@ -35,7 +35,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.234.0';
+const VERSION = '2.234.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -6273,6 +6273,8 @@ function bilanTable(rows) {
 const yearsWithData = (f) => dataYears().filter((y) => y <= new Date().getFullYear()).map((y) => ({ y, ...f(y) })).filter((r) => r.encaisse || r.depenses || r.verse).reverse();
 
 // Texte de relance : mois échus impayés (+ mois en cours après le 5)
+// les 6 langues des apps
+const RELANG = [['fr', '🇫🇷 Français'], ['it', '🇮🇹 Italiano'], ['de', '🇩🇪 Deutsch'], ['pt', '🇵🇹 Português'], ['en', '🇬🇧 English'], ['es', '🇪🇸 Español']];
 function relanceText(l, lang) {
   const d = new Date();
   const y = d.getFullYear(), cm = d.getMonth() + 1;
@@ -6286,17 +6288,20 @@ function relanceText(l, lang) {
     en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
     pt: ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'],
   };
-  const list = months.map((x) => `${NAMES[lang][x.m - 1]} ${x.y} (${money(payState(l, x.y, x.m).rest)})`).join(', ') || '—';
+  const mName = (m) => (NAMES[lang] ? NAMES[lang][m - 1] : new Date(2026, m - 1, 15).toLocaleDateString(lang, { month: 'long' }));
+  const list = months.map((x) => `${mName(x.m)} ${x.y} (${money(payState(l, x.y, x.m).rest)})`).join(', ') || '—';
   const where = [logName(l.logId), immName(l.immId)].filter(Boolean).join(', ');
   const sign = st.nom || netBrand();
-  const iban = st.iban ? { fr: `\nIBAN : ${st.iban}`, it: `\nIBAN: ${st.iban}`, en: `\nIBAN: ${st.iban}`, pt: `\nIBAN: ${st.iban}` }[lang] : '';
+  const iban = st.iban ? (lang === 'fr' ? `\nIBAN : ${st.iban}` : `\nIBAN: ${st.iban}`) : '';
   const T = {
     fr: `Bonjour ${fullName(l)},\n\nSauf erreur de notre part, nous n'avons pas encore reçu le loyer de ${list} pour ${where}, soit ${money(total)} au total.\n\nMerci de procéder au règlement dès que possible, ou de nous contacter si le paiement a déjà été effectué.${iban}\n\nCordialement,\n${sign}`,
     it: `Buongiorno ${fullName(l)},\n\nsalvo errori, non abbiamo ancora ricevuto l'affitto di ${list} per ${where}, per un totale di ${money(total)}.\n\nLa preghiamo di effettuare il pagamento al più presto, o di contattarci se ha già pagato.${iban}\n\nCordiali saluti,\n${sign}`,
     en: `Hello ${fullName(l)},\n\nUnless we are mistaken, we have not yet received the rent for ${list} for ${where}, i.e. ${money(total)} in total.\n\nPlease make the payment as soon as possible, or contact us if it has already been made.${iban}\n\nKind regards,\n${sign}`,
     pt: `Olá ${fullName(l)},\n\nSalvo erro, ainda não recebemos a renda de ${list} referente a ${where}, num total de ${money(total)}.\n\nPedimos que efetue o pagamento o mais rapidamente possível, ou que nos contacte se já o fez.${iban}\n\nCom os melhores cumprimentos,\n${sign}`,
+    de: `Guten Tag ${fullName(l)},\n\nsofern wir uns nicht irren, haben wir die Miete für ${list} für ${where} noch nicht erhalten, insgesamt ${money(total)}.\n\nBitte überweisen Sie den Betrag so bald wie möglich oder melden Sie sich bei uns, falls die Zahlung bereits erfolgt ist.${iban}\n\nMit freundlichen Grüßen\n${sign}`,
+    es: `Hola ${fullName(l)},\n\nsalvo error por nuestra parte, aún no hemos recibido el alquiler de ${list} para ${where}, es decir ${money(total)} en total.\n\nLe rogamos que efectúe el pago lo antes posible, o que se ponga en contacto con nosotros si ya lo ha realizado.${iban}\n\nAtentamente,\n${sign}`,
   };
-  return { body: T[lang], total };
+  return { body: T[lang] || T.fr, total };
 }
 
 const SHEETS = {
@@ -8269,13 +8274,13 @@ const SHEETS = {
   relance({ id }) {
     const l = vault.get('locataires', id);
     if (!l) return null;
-    const lang = ui.relLang || 'fr';
+    const lang = ui.relLang || (RELANG.some(([k]) => k === ((l.espace || {}).lang || '')) ? l.espace.lang : 'fr'); // langue de son app par défaut
     const text = relanceText(l, lang);
     const tel = (l.tel || '').replace(/[^\d+]/g, '');
     return {
       title: 'Relancer ' + fullName(l),
       body: html`
-        <div class="chips" style="margin-bottom:12px">${[['fr', 'Français'], ['it', 'Italiano'], ['en', 'English'], ['pt', 'Português']].map(([k, v]) => html`<button class="chip" data-action="rel-lang" data-id="${k}" aria-pressed="${lang === k}">${v}</button>`)}</div>
+        <div class="chips" style="margin-bottom:12px">${RELANG.map(([k, v]) => html`<button class="chip" data-action="rel-lang" data-id="${k}" aria-pressed="${lang === k}">${v}</button>`)}</div>
         ${text.total ? '' : html`<div class="alert info" style="margin-bottom:12px">${icon('check')}<div>Aucun impayé pour ce locataire : le message reste modifiable.</div></div>`}
         <textarea id="relText" style="min-height:230px">${text.body}</textarea>
         <div class="actions" style="margin-top:12px">
@@ -9760,7 +9765,7 @@ const ACTIONS = {
     const tel = (l.tel || '').replace(/[^\d+]/g, '');
     const url = d.ch === 'sms' ? `sms:${tel}?&body=${encodeURIComponent(text)}`
       : d.ch === 'wa' ? `https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(text)}`
-      : `mailto:${l.mail}?subject=${encodeURIComponent({ fr: 'Rappel de loyer', it: 'Promemoria affitto', en: 'Rent reminder', pt: 'Lembrete de renda' }[ui.relLang || 'fr'])}&body=${encodeURIComponent(text)}`;
+      : `mailto:${l.mail}?subject=${encodeURIComponent(({ fr: 'Rappel de loyer', it: 'Promemoria affitto', en: 'Rent reminder', pt: 'Lembrete de renda', de: 'Mietzahlungserinnerung', es: 'Recordatorio de alquiler' }[ui.relLang || 'fr'] || 'Rappel de loyer'))}&body=${encodeURIComponent(text)}`;
     if (d.ch === 'wa') open(url, '_blank'); else location.href = url;
     await vault.mutate(() => {}, 'Relance envoyée', `${fullName(l)} (${{ sms: 'SMS', wa: 'WhatsApp', mail: 'email' }[d.ch]})`, l.id);
   },
