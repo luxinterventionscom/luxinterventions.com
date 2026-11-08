@@ -492,7 +492,8 @@ async function boardPublic(request, env, id, headers) {
     } catch { /* quota KV */ }
     // X-Push : « none » (modification, suppression, accusé de lecture) ; « owner » (message privé, seulement au gestionnaire)
     const from = String(request.headers.get("X-Esp") || ""), xp = String(request.headers.get("X-Push") || "");
-    if (xp === "owner") await espPushSend(env, "owner", "pmsg");
+    // message privé : à la centrale qui gère CE locataire (la nôtre ou celle d'un client du réseau)
+    if (xp === "owner") { const ow = /^[0-9a-f]{32}$/.test(from) ? await espOwner(env, from).catch(() => "") : ""; await espPushSend(env, ow && ow !== "main" ? "owner:" + ow : "owner", "pmsg"); }
     else if (xp !== "none") await espPushSend(env, "board:" + id, "msg", /^[0-9a-f]{32}$/.test(from) ? from : "");
     return aresJson({ ok: true, n: name }, 200, headers);
   }
@@ -1679,7 +1680,9 @@ async function espPushSend(env, target, kind, except = "") {
     await Promise.all((subs.results || []).map(async (s) => {
       if (!ptlPushHostOk(s.endpoint)) return;
       // chaque app ouvre sa propre page ; « du nouveau » dit de quoi il s'agit selon l'app
-      const url = { ares: "/locataires.html", eq: "/equipe.html", hote: "/hote.html", taxi: "/taxi.html", ann: "/annonce.html" }[s.app] || "/espace.html";
+      // centrale d'un client du réseau (owner:<id>) : le toucher ouvre SA centrale, pas la nôtre
+      const tOw = String(s.target || "").startsWith("owner:") ? String(s.target).slice(6) : "";
+      const url = s.app === "ares" && /^[a-z0-9]{6,40}$/.test(tOw) ? "/locataires.html?t=" + tOw : { ares: "/locataires.html", eq: "/equipe.html", hote: "/hote.html", taxi: "/taxi.html", ann: "/annonce.html" }[s.app] || "/espace.html";
       const title = { ares: "LuxInterventions", eq: "ARES Équipe", hote: "🛎️ Séjour", taxi: "🚕 Courses", ann: "📣 Annonces" }[s.app] || "🏠 Locataires";
       const k2 = kind === "news" && PUSH_TXT["news_" + s.app] ? "news_" + s.app : kind;
       const msg = { title, body: (PUSH_TXT[k2] || PUSH_TXT.news)[s.lang] || (PUSH_TXT[k2] || PUSH_TXT.news).fr, url, tag: k2 };
