@@ -1,6 +1,7 @@
 // 📣 App des annonceurs HORECA (restaurants, bistrots, bars, discothèques…) : annonces, menus du jour et événements,
 // avec dates, jours, heures, emplacement et apps visées ; prix affiché ; validation par LuxInterventions ; statistiques.
 // 💳 Paiement en ligne : pas encore connecté (bouton affiché, désactivé, avec une info).
+import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { openJson, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
@@ -388,3 +389,4 @@ const quietData = async () => { const r = await fetch(`${API}/api/esp/${id}`, { 
 pchatInit({ id: () => id, data: () => data, send: (o) => sendOwner(o), lang: () => lang || 'fr', refresh: quietData, quick: null });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data && !form) { setBadge(0, '/annonce'); load(); } });
 load();
+emojiInit(); // 😊 bouton émojis dans les chats

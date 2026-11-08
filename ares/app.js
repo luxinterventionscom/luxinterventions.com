@@ -12,6 +12,7 @@ import { videoEmbed } from './video-embed.js';
 import { PTL_INVITE } from './ptl-invite.js';
 import { zoneOk, visParse, visZone } from './netpubs.js';
 import { newsHtml } from './news.js';
+import { emojiInit } from './emoji.js';
 import { pubStatInit, pubSeen, pubTap } from './pubstat.js';
 import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from './pubsocial.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
@@ -34,7 +35,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.232.1';
+const VERSION = '2.233.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -65,6 +66,7 @@ const routeOk = (r) => (TENANT ? tRoutes().includes(r) : r !== 'demandes');
 const homeRoute = () => (TENANT ? tRoutes()[0] : 'dashboard');
 const vault = new Vault(API, TENANT);
 trInit(API, () => getLang()); // 🌐 traduction des messages des chats
+emojiInit(); // 😊 bouton émojis dans les chats
 // 🗄️ Nouveau départ : les données de test sont archivées (gardées, rien n'est effacé) et ne s'affichent plus
 // nulle part (listes, statistiques, apps) ; Réglages → « Voir les archives » les montre à nouveau
 const ARCH_COLS = new Set(['taches', 'devis', 'hotes', 'biens']);
@@ -6111,7 +6113,7 @@ function renderSheet() {
   const key = [s.kind, s.id, s.tab].join('|'), same = sheetEl.open && sheetEl.dataset.key === key;
   const keep = same ? { top: [...sheetEl.querySelectorAll('.sheet-body, .chat, .eq-chat')].map((e) => e.scrollTop), outer: sheetEl.scrollTop, vals: [...sheetEl.querySelectorAll(DRAFT_TA)].map((t) => t.value), sel: [...sheetEl.querySelectorAll('select')].map((x) => x.value), foc: [...sheetEl.querySelectorAll(DRAFT_TA)].indexOf(focused), pos: focused && focused.selectionStart } : null;
   sheetEl.className = 'sheet' + (r.narrow ? ' narrow' : '');
-  const popups = [...sheetEl.querySelectorAll(':scope > .tr-bg, :scope > .psoc-bg')]; // 🌐 liste des langues ouverte : elle reste
+  const popups = [...sheetEl.querySelectorAll(':scope > .tr-bg, :scope > .psoc-bg, :scope > .emo-pop')]; // 🌐 liste des langues ouverte : elle reste
   setHtml(sheetEl, html`
     <div class="sheet-head"><h2>${r.title}</h2><button class="btn icon ghost" data-action="close-sheet" aria-label="Fermer">${icon('x')}</button></div>
     <div class="sheet-body">${r.body}</div>

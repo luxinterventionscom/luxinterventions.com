@@ -1,5 +1,6 @@
 // Espace locataire : page personnelle, en lecture seule (+ signaler un problème).
 // Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
+import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import qrcode from '/ares/qrcode.js';
@@ -1692,3 +1693,4 @@ async function load() {
 }
 lang = pick(null);
 load();
+emojiInit(); // 😊 bouton émojis dans les chats
