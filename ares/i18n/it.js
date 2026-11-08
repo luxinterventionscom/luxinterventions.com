@@ -18266,4 +18266,40 @@ export default [
 "Adresse introuvable sur la carte (OpenStreetMap) : vérifiez-la, ou choisissez « Même ville »",
 "Indirizzo non trovato sulla mappa (OpenStreetMap): controllalo, o scegli «Stessa città»"
 ],
+[
+"Chat de la maison absente de son app",
+"Chat della casa assente dalla sua app"
+],
+[
+"Chat de la maison active",
+"Chat della casa attiva"
+],
+[
+"la case « 💬 » ci-dessus est décochée",
+"la casella «💬» qui sopra non è spuntata"
+],
+[
+"aucun immeuble n’est indiqué dans sa fiche",
+"nella sua scheda non è indicato nessun immobile"
+],
+[
+"l’immeuble n’est plus en gestion (archivé)",
+"l’immobile non è più in gestione (archiviato)"
+],
+[
+"les « Messages de la maison » sont désactivés dans l’immeuble (Immeuble → 💬 Messages)",
+"i «Messaggi della casa» sono disattivati nell’immobile (Immobile → 💬 Messaggi)"
+],
+[
+"sa date de sortie est passée : il n’est plus locataire actuel",
+"la sua data di uscita è passata: non è più inquilino attuale"
+],
+[
+"son groupe n’est pas encore créé : ouvrez l’immeuble → 💬 Messages, il se crée tout seul",
+"il suo gruppo non è ancora creato: apri l’immobile → 💬 Messaggi, si crea da solo"
+],
+[
+" (seul : il écrit au gestionnaire)",
+" (da solo: scrive al gestore)"
+],
 ];

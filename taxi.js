@@ -111,10 +111,13 @@ const pushPost = (b) => fetch(`${API}/api/esp/${id}/push`, { method: 'POST', hea
 async function pushInit() { pushSt = await pushStatus('/taxi'); if (pushSt === 'on') pushRefresh('/taxi', pushPost); setBadge(0, '/taxi'); render(); }
 const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
 const pubLogo = (x) => (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(x.logo || '') && x.logo.length < 60000 ? `<img src="${x.logo}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''); // logo de l'annonceur
+// 🔽 annonces repliables : celles fermées restent fermées sur ce téléphone
+const adShut = () => { try { return new Set(JSON.parse(localStorage.getItem('adShut') || '[]')); } catch { return new Set(); } };
+document.addEventListener('toggle', (e) => { const d = e.target; if (!d.classList || !d.classList.contains('pub-box')) return; const s = adShut(); if (d.open) s.delete(d.dataset.pid); else s.add(d.dataset.pid); try { localStorage.setItem('adShut', JSON.stringify([...s].slice(-60))); } catch { /* stockage plein */ } }, true);
 function adBox(x, t) {
   const v = x.video ? videoEmbed(x.video) : null;
-  return `<div class="card pub-box" data-pid="${esc(x.id)}"><div class="meta"><b>📣 ${esc(t.ad.lbl)}</b></div>${pubLogo(x)}<b style="display:block">${esc(x.nom)}</b><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p>${v ? `<div class="vid" data-vsrc="${esc(v.src)}"></div>` : ''}
-    <div class="btns">${x.adresse ? `<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.adresse)}" target="_blank" rel="noopener" data-pev="map">${esc(t.ad.see)}</a>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}</div>${pubSocialBar(x)}</div>`;
+  return `<details class="card pub-box" data-pid="${esc(x.id)}"${adShut().has(x.id) ? '' : ' open'}><summary style="cursor:pointer;list-style:none"><div class="meta"><b>📣 ${esc(t.ad.lbl)}</b> <span style="float:right" aria-hidden="true">▾</span></div>${pubLogo(x)}<b style="display:block">${esc(x.nom)}</b></summary><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p>${v ? `<div class="vid" data-vsrc="${esc(v.src)}"></div>` : ''}
+    <div class="btns">${x.adresse ? `<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.adresse)}" target="_blank" rel="noopener" data-pev="map">${esc(t.ad.see)}</a>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}</div>${pubSocialBar(x)}</details>`;
 }
 const blankCat = () => ({ gammes: Object.fromEntries(GK.map((k) => [k, { on: false, pc: '', km: '', h: '', demi: '', jour: '' }])), extras: {}, drivers: [], cars: [] });
 function rideHtml(r, t) {

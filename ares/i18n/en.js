@@ -17999,4 +17999,40 @@ export default [
 "Adresse introuvable sur la carte (OpenStreetMap) : vérifiez-la, ou choisissez « Même ville »",
 "Address not found on the map (OpenStreetMap): check it, or choose “Same city”"
 ],
+[
+"Chat de la maison absente de son app",
+"House chat missing from their app"
+],
+[
+"Chat de la maison active",
+"House chat active"
+],
+[
+"la case « 💬 » ci-dessus est décochée",
+"the “💬” box above is unticked"
+],
+[
+"aucun immeuble n’est indiqué dans sa fiche",
+"no building is set in their record"
+],
+[
+"l’immeuble n’est plus en gestion (archivé)",
+"the building is no longer managed (archived)"
+],
+[
+"les « Messages de la maison » sont désactivés dans l’immeuble (Immeuble → 💬 Messages)",
+"“House messages” are turned off in the building (Building → 💬 Messages)"
+],
+[
+"sa date de sortie est passée : il n’est plus locataire actuel",
+"their move-out date has passed: no longer a current tenant"
+],
+[
+"son groupe n’est pas encore créé : ouvrez l’immeuble → 💬 Messages, il se crée tout seul",
+"their group isn’t created yet: open the building → 💬 Messages, it creates itself"
+],
+[
+" (seul : il écrit au gestionnaire)",
+" (alone: writes to the manager)"
+],
 ];
