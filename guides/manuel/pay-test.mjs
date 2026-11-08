@@ -44,7 +44,12 @@ await act(q, 'tpay-conf'); await q.waitForTimeout(600); await q.check('#f input[
 await q.evaluate(() => { location.hash = '#/demandes'; }); await q.waitForTimeout(800);
 await act(q, 'tdem-new'); await q.waitForTimeout(600);
 await q.fill('#f [name=titre]', D[0]); await q.fill('#f [name=texte]', D[1]);
-await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2500);
+await q.fill('#f [name=adresse]', '1 rue Test, 1234 Luxembourg'); await q.fill('#f [name=acces]', '3e étage, porte droite');
+await q.setInputFiles('#f [name=photos]', '/tmp/claude-0/-home-user-luxinterventions-com/8ca9f513-906b-59c7-ab95-4bf4a371e616/scratchpad/leak.jpg');
+await q.click('button[type=submit][form=f]'); await q.waitForTimeout(500);
+const tq = await q.evaluate(() => [...document.querySelectorAll('.toast')].map((e) => e.textContent).join(' | '));
+await q.waitForTimeout(2000);
+assert(/photo|foto/i.test(tq), 'demande envoyée avec la photo : ' + tq);
 log('demande envoyée');
 // la centrale reçoit, termine, facture
 let tk = '';

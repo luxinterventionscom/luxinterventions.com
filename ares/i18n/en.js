@@ -18035,4 +18035,28 @@ export default [
 " (seul : il écrit au gestionnaire)",
 " (alone: writes to the manager)"
 ],
+[
+"Étage, appartement, accès",
+"Floor, flat, access"
+],
+[
+"ex. 3e étage, porte droite · code porte 1234 · clé chez le gardien",
+"e.g. 3rd floor, right door · door code 1234 · key with the caretaker"
+],
+[
+"Adresse — seulement si ce n’est pas un de vos immeubles",
+"Address — only if it is not one of your buildings"
+],
+[
+"📷 Photos de ce qui est cassé (5 au plus)",
+"📷 Photos of what is broken (5 max)"
+],
+[
+"Dites où : choisissez l’immeuble dans « Où », ou écrivez l’adresse",
+"Say where: pick the building in “Where”, or write the address"
+],
+[
+"Préparation des photos…",
+"Preparing photos…"
+],
 ];
