@@ -34,7 +34,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.232.0';
+const VERSION = '2.232.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1331,7 +1331,7 @@ function chatWhy(l, show) {
         : !chatOn(im) ? 'les « Messages de la maison » sont désactivés dans l’immeuble (Immeuble → 💬 Messages)'
           : !isCurrent(l) ? 'sa date de sortie est passée : il n’est plus locataire actuel'
             : !g || !g.members.includes(l.id) ? 'son groupe n’est pas encore créé : ouvrez l’immeuble → 💬 Messages, il se crée tout seul' : '';
-  return html`<div class="alert ${why ? 'warn' : 'info'}" style="margin:-4px 0 12px">💬<div>${why ? html`<b>Chat de la maison absente de son app</b> : ${why}.` : html`<b>Chat de la maison active</b>${g.members.length > 1 ? html` avec ${plural(g.members.length - 1, 'autre habitant')}` : ' (seul : il écrit au gestionnaire)'}.`}</div></div>`;
+  return html`<span class="tiny" style="display:block;margin-top:2px;color:${why ? 'var(--bad, #c0392b)' : 'var(--good, #15803d)'}">${why ? html`⚠️ <b>Chat de la maison absente de son app</b> : ${why}.` : html`✅ <b>Chat de la maison active</b>${g.members.length > 1 ? html` avec ${plural(g.members.length - 1, 'autre habitant')}` : ' (seul : il écrit au gestionnaire)'}.`}</span>`;
 }
 const chatOn = (im) => !!im && !(im.chat && im.chat.on === false) && !immGone(im);
 function chatGroupKey(im, l) {
@@ -8153,7 +8153,7 @@ const SHEETS = {
       const e = l.espace || {};
       const show = { ...ESP_ALL, ...(e.show || {}) };
       const boxes = html`<div class="list" style="margin-bottom:12px">${Object.entries(ESP_SHOW).map(([k, v]) => html`<label class="row" style="cursor:pointer">
-        <input type="checkbox" data-input="esp-show" data-loc="${id}" data-k="${k}" ${show[k] ? new Raw('checked') : ''} style="width:22px;min-height:22px"><span class="grow">${v}</span></label>`)}</div>${e.on ? chatWhy(l, show) : ''}`;
+        <input type="checkbox" data-input="esp-show" data-loc="${id}" data-k="${k}" ${show[k] ? new Raw('checked') : ''} style="width:22px;min-height:22px"><span class="grow">${v}${k === 'chat' && e.on ? chatWhy(l, show) : ''}</span></label>`)}</div>`;
       if (!e.on) {
         body = html`<p style="margin-top:0">Donnez à <b>${fullName(l)}</b> un <b>espace personnel</b> (lien ou QR code, sans mot de passe à retenir) où il voit <b>seulement</b> ce que vous cochez :</p>
           ${boxes}
