@@ -35,7 +35,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.234.4';
+const VERSION = '2.234.5';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2515,7 +2515,7 @@ function centralinoHtml() {
   const recv = TENANT ? vault.list('reglages').filter((r) => r.id.startsWith('tann-')).sort((a, b) => (b.at || '').localeCompare(a.at || '')).slice(0, 10) : [];
   const nRecv = recv.filter((r) => !r.vu).length, tot2 = tot + nRecv;
   // la lumière suit l'horloge : quand l'accueil se redessine, elle continue sans repartir de zéro (pas de sautillement)
-  return html`<details class="card centralino${tot2 ? ' cent-new' : ''}" ${open || nRecv ? new Raw('open') : ''} style="margin-bottom:14px;animation-delay:-${Date.now() % 1600}ms">
+  return html`<details class="card centralino${tot2 ? ' cent-new' : ''}" ${open || nRecv ? new Raw('open') : ''} style="margin-bottom:14px;animation-delay:-${Date.now() % (tot2 ? 1600 : 3200)}ms">
     <summary data-action="cent-tog"><span class="cent-ic">${icon('headset')}</span><b>Centralino</b><span class="grow"></span>${tot2 ? html`<span class="badge bad">${tot2} nouveau${tot2 > 1 ? 'x' : ''}</span>` : html`<span class="muted small">rien de nouveau</span>`}</summary>
     <p style="margin:10px 0 0"><button class="btn primary sm" data-action="ann-new">📣 Annonce</button>${annLog().length ? html` <button class="btn sm" data-action="ann-log">🗂️ Annonces envoyées (${annLog().length})</button>` : ''}</p>
     ${recv.length ? html`<details class="cent-sec gfold" data-gk="cent|recv" ${foldIsOpen('cent|recv') ? new Raw('open') : ''}><summary>📣 Annonces reçues de la centrale ${badge(nRecv)}</summary><div class="list">${recv.map((r) => html`<div class="row" style="align-items:flex-start"><span class="grow"><span class="title" style="display:block;white-space:pre-wrap">${r.x}</span><span class="meta">${r.from || ''} · ${fmtDateTime(r.at)}</span></span><span style="display:flex;flex-direction:column;gap:6px"><button class="btn sm primary" data-action="ann-fwd" data-id="${r.id}">↪️ Transférer aux miens</button>${r.vu ? '' : html`<button class="btn sm" data-action="ann-vu" data-id="${r.id}">✓ Lu</button>`}</span></div>`)}</div></details>` : ''}
