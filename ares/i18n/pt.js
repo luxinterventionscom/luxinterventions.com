@@ -18238,4 +18238,32 @@ export default [
 "Préparation des photos…",
 "A preparar as fotos…"
 ],
+[
+"☑️ Droits certifiés par l’annonceur",
+"☑️ Direitos certificados pelo anunciante"
+],
+[
+" (vidéo / musique / images à lui ou autorisées).",
+" (vídeo / música / imagens dele ou autorizados)."
+],
+[
+"⚠️ Droits NON certifiés",
+"⚠️ Direitos NÃO certificados"
+],
+[
+" pour la vidéo / musique : demandez-lui avant de publier.",
+" para o vídeo / música: pergunte-lhe antes de publicar."
+],
+[
+"Aucune vidéo ni fichier envoyé.",
+"Nenhum vídeo nem ficheiro enviado."
+],
+[
+"exemple pour la création",
+"exemplo para a criação"
+],
+[
+"pub à publier telle quelle",
+"publicidade a publicar tal como está"
+],
 ];

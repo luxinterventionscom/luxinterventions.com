@@ -18059,4 +18059,32 @@ export default [
 "Préparation des photos…",
 "Preparing photos…"
 ],
+[
+"☑️ Droits certifiés par l’annonceur",
+"☑️ Rights certified by the advertiser"
+],
+[
+" (vidéo / musique / images à lui ou autorisées).",
+" (video / music / images his own or authorised)."
+],
+[
+"⚠️ Droits NON certifiés",
+"⚠️ Rights NOT certified"
+],
+[
+" pour la vidéo / musique : demandez-lui avant de publier.",
+" for the video / music: ask before publishing."
+],
+[
+"Aucune vidéo ni fichier envoyé.",
+"No video or file sent."
+],
+[
+"exemple pour la création",
+"example for the design"
+],
+[
+"pub à publier telle quelle",
+"ad to publish as is"
+],
 ];

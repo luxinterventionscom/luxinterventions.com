@@ -123,6 +123,43 @@ async function sendOwner(o) {
 let pushSt = '', pushJust = false;
 const pushPost = (b) => fetch(`${API}/api/esp/${id}/push`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...b, app: 'ann', lang, boards: [] }) }).then((r) => { if (!r.ok) throw new Error(r.status); });
 async function pushInit() { pushSt = await pushStatus('/annonce'); if (pushSt === 'on') pushRefresh('/annonce', pushPost); setBadge(0, '/annonce'); render(); }
+// 📎 images / clip envoyés à LuxInterventions (pub à publier telle quelle, ou exemple pour la création) + ☑️ droits sur la vidéo / musique
+const MDT = {
+  fr: { t: '📎 Images ou clip pour LuxInterventions', h: 'Jusqu’à 5 images et 1 clip vidéo (30 Mo au plus). Chiffrés : seule LuxInterventions les voit.', use: 'À quoi servent-ils ?', pub: 'C’est ma pub : à publier telle quelle', ex: 'C’est un exemple pour la création (SIMPLE / MOYEN / MAX)', rights: 'Je certifie que la vidéo / musique / les images sont à moi ou que j’ai le droit de les utiliser', need: 'Cochez la case des droits pour la vidéo ou la musique', jingle: '🎬 Pas de vidéo ? Demandez-nous un clip ou un jingle : choisissez une création ci-dessous (sur devis).', big: 'Clip trop lourd (30 Mo au plus)', sending: 'Envoi des fichiers…' },
+  it: { t: '📎 Immagini o clip per LuxInterventions', h: 'Fino a 5 immagini e 1 clip video (massimo 30 MB). Cifrati: solo LuxInterventions li vede.', use: 'A cosa servono?', pub: 'È la mia pubblicità: da pubblicare così', ex: 'È un esempio per la creazione (SEMPLICE / MEDIO / MAX)', rights: 'Certifico che il video / la musica / le immagini sono miei o che ho il diritto di usarli', need: 'Spunta la casella dei diritti per il video o la musica', jingle: '🎬 Niente video? Chiedici un clip o un jingle: scegli una creazione qui sotto (su preventivo).', big: 'Clip troppo pesante (massimo 30 MB)', sending: 'Invio dei file…' },
+  de: { t: '📎 Bilder oder Clip für LuxInterventions', h: 'Bis zu 5 Bilder und 1 Videoclip (höchstens 30 MB). Verschlüsselt: nur LuxInterventions sieht sie.', use: 'Wofür?', pub: 'Das ist meine Werbung: so veröffentlichen', ex: 'Das ist ein Beispiel für die Gestaltung (EINFACH / MITTEL / MAX)', rights: 'Ich bestätige, dass Video / Musik / Bilder mir gehören oder ich sie nutzen darf', need: 'Bitte das Kästchen zu den Rechten für Video oder Musik anhaken', jingle: '🎬 Kein Video? Fragen Sie uns nach einem Clip oder Jingle: wählen Sie unten eine Gestaltung (auf Angebot).', big: 'Clip zu groß (höchstens 30 MB)', sending: 'Dateien werden gesendet…' },
+  pt: { t: '📎 Imagens ou clip para a LuxInterventions', h: 'Até 5 imagens e 1 clip de vídeo (30 MB no máximo). Cifrados: só a LuxInterventions os vê.', use: 'Para que servem?', pub: 'É a minha publicidade: publicar tal como está', ex: 'É um exemplo para a criação (SIMPLES / MÉDIO / MAX)', rights: 'Certifico que o vídeo / a música / as imagens são meus ou que tenho o direito de os usar', need: 'Marque a caixa dos direitos para o vídeo ou a música', jingle: '🎬 Sem vídeo? Peça-nos um clip ou um jingle: escolha uma criação abaixo (sob orçamento).', big: 'Clip demasiado pesado (30 MB no máximo)', sending: 'A enviar os ficheiros…' },
+  en: { t: '📎 Images or clip for LuxInterventions', h: 'Up to 5 images and 1 video clip (30 MB max). Encrypted: only LuxInterventions sees them.', use: 'What are they for?', pub: 'This is my ad: publish it as is', ex: 'This is an example for the design (SIMPLE / MEDIUM / MAX)', rights: 'I certify that the video / music / images are mine or that I have the right to use them', need: 'Tick the rights box for the video or music', jingle: '🎬 No video? Ask us for a clip or a jingle: pick a design option below (on quote).', big: 'Clip too large (30 MB max)', sending: 'Sending files…' },
+  es: { t: '📎 Imágenes o clip para LuxInterventions', h: 'Hasta 5 imágenes y 1 clip de vídeo (30 MB como máximo). Cifrados: solo LuxInterventions los ve.', use: '¿Para qué sirven?', pub: 'Es mi publicidad: publicar tal cual', ex: 'Es un ejemplo para la creación (SIMPLE / MEDIO / MAX)', rights: 'Certifico que el vídeo / la música / las imágenes son míos o que tengo derecho a usarlos', need: 'Marque la casilla de derechos para el vídeo o la música', jingle: '🎬 ¿Sin vídeo? Pídanos un clip o un jingle: elija una creación abajo (bajo presupuesto).', big: 'Clip demasiado pesado (30 MB como máximo)', sending: 'Enviando archivos…' },
+};
+const MD = () => MDT[lang] || MDT.fr;
+let mFiles = []; // fichiers choisis (gardés ici : le formulaire se redessine)
+const CLIP_MAX = 30 * 1024 * 1024, PART = 6 * 1024 * 1024;
+const b64 = (u8) => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode(...u8.subarray(i, i + 0x8000)); return btoa(s); };
+async function shrinkImg(file) {
+  const bmp = await createImageBitmap(file).catch(() => null);
+  if (!bmp) return new Uint8Array(await file.arrayBuffer());
+  const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(bmp, 0, 0, c.width, c.height);
+  return new Uint8Array(await (await new Promise((ok) => c.toBlob(ok, 'image/jpeg', 0.82))).arrayBuffer());
+}
+// chaque fichier part à part (un clip en morceaux de 6 Mo) ; la centrale les rassemble avec la référence de l'annonce
+async function sendMedia(ref) {
+  for (const f of mFiles) {
+    const img = /^image\//.test(f.type), u8 = img ? await shrinkImg(f) : new Uint8Array(await f.arrayBuffer());
+    const parts = Math.max(1, Math.ceil(u8.length / PART)), fid = Math.random().toString(36).slice(2, 10);
+    for (let i = 0; i < parts; i++) await sendOwner({ type: 'an-media', ref, fid, name: String(f.name || '').slice(0, 80), mime: img ? 'image/jpeg' : f.type || 'video/mp4', i, parts, b: b64(u8.subarray(i * PART, (i + 1) * PART)) });
+  }
+}
+function mediaHtml(f) {
+  const u = MD();
+  return `<label>${esc(u.t)}</label><p class="meta" style="margin:0 0 6px">${esc(u.h)}</p>
+    <input type="file" data-media="1" accept="image/*,video/*" multiple>
+    ${mFiles.length ? `<div class="chips" style="margin:6px 0">${mFiles.map((x, i) => `<span class="chip">${/^video\//.test(x.type) ? '🎬' : '🖼️'} ${esc(String(x.name || '').slice(0, 24))} · ${Math.max(1, Math.round(x.size / 1048576))} Mo <button type="button" class="linkb" data-mdel="${i}" aria-label="✖">✖</button></span>`).join('')}</div>
+      <label>${esc(u.use)}</label><label class="radio"><input type="radio" name="muse" value="pub" ${f.muse !== 'ex' ? 'checked' : ''}> ${esc(u.pub)}</label><label class="radio"><input type="radio" name="muse" value="ex" ${f.muse === 'ex' ? 'checked' : ''}> ${esc(u.ex)}</label>` : ''}
+    <label class="radio" style="margin-top:8px"><input type="checkbox" data-rights="1" ${f.droits ? 'checked' : ''}> ☑️ ${esc(u.rights)}</label>`;
+}
 function formHtml(t) {
   const f = form, tr = (data && data.tarifs) || {}, p = priceOf(f);
   return `<div class="card frm"><h2>${esc(f.id ? t.edit : t.newA)}</h2>
@@ -132,11 +169,13 @@ function formHtml(t) {
     <label>${esc(t.addr)}</label><input data-k="adresse" value="${esc(f.adresse)}">
     <div class="two"><div><label>${esc(t.tel)}</label><input data-k="tel" type="tel" value="${esc(f.tel)}"></div><div><label>${esc(t.web)}</label><input data-k="web" type="url" value="${esc(f.web)}" placeholder="https://…"></div></div>
     <label>${esc(t.video)}</label><input data-k="video" type="url" value="${esc(f.video)}" placeholder="https://…">
+    ${mediaHtml(f)}
     <label>${esc(t.slot)}</label>${SLOTS.map((k) => `<label class="radio"><input type="radio" name="slot" value="${k}" ${f.slot === k ? 'checked' : ''}> ${esc(t.Sl[k])}<span class="meta">${tr[k] ? tr[k] + ' € ' + esc(t.perDay) : esc(t.quote)}</span></label>`).join('')}
     <div class="two"><div><label>${esc(t.from)}</label><input type="date" data-k="debut" value="${esc(f.debut)}"></div><div><label>${esc(t.to)}</label><input type="date" data-k="fin" value="${esc(f.fin)}"></div></div>
     <label>${esc(t.days)}</label><div class="chips">${t.D.map((d, i) => `<label class="chip"><input type="checkbox" data-day="${i}" ${f.jours.includes(i) ? 'checked' : ''}> ${esc(d)}</label>`).join('')}</div>
     <label>${esc(t.hours)}</label><div class="two"><div><span class="meta">${esc(t.h1)}</span><input type="time" data-k="h1" value="${esc(f.h1)}"></div><div><span class="meta">${esc(t.h2)}</span><input type="time" data-k="h2" value="${esc(f.h2)}"></div></div>
     <label>✍️ ${esc(SPX[lang] ? SPX[lang][0] : SPX.fr[0])}</label><textarea data-k="special" rows="2" placeholder="${esc(SPX[lang] ? SPX[lang][1] : SPX.fr[1])}">${esc(f.special || '')}</textarea>
+    <p class="meta" style="margin:10px 0 0">${esc(MD().jingle)}</p>
     <label>🎬 ${esc((CRT[lang] || CRT.fr).t)}</label><select data-k="crea">${['', 'simple', 'moyen', 'max'].map((k) => `<option value="${k}" ${(f.crea || '') === k ? 'selected' : ''}>${esc((CRT[lang] || CRT.fr)[k || 'none'])}${k ? ' — ' + (+tr['crea_' + k] ? esc(eur(+tr['crea_' + k])) + ' ' + esc(TP().ht) : esc(t.quote)) : ''}</option>`).join('')}</select>
     <p class="est">${esc(t.price)} : <b>${p ? p + ' € ' + esc(TP().ht) : esc(t.quote) + ' — ' + esc((CRT[lang] || CRT.fr).q3)}</b>${tr.note ? `<br><span class="meta">${esc(tr.note)}</span>` : ''}</p>
     <div class="duo"><button class="btn sec" data-cancel="1">${esc(t.cancel)}</button><button class="btn" data-send="1">${esc(t.send)}</button></div></div>`;
@@ -331,6 +370,14 @@ app.addEventListener('change', (e) => {
   const el = e.target;
   if (!form) return;
   if (el.name === 'slot') { form.slot = el.value; return render(); }
+  if (el.name === 'muse') { form.muse = el.value; return; }
+  if (el.dataset.rights) { form.droits = el.checked; return; }
+  if (el.dataset.media) {
+    const add = [...(el.files || [])].filter((x) => /^(image|video)\//.test(x.type));
+    const imgs = [...mFiles, ...add].filter((x) => /^image\//.test(x.type)).slice(0, 5), clip = [...mFiles, ...add].filter((x) => /^video\//.test(x.type)).slice(-1);
+    if (clip[0] && clip[0].size > CLIP_MAX) { msg = MD().big; mFiles = imgs; return render(); }
+    mFiles = [...imgs, ...clip]; return render();
+  }
   if (el.dataset.aud) { form.aud = el.checked ? [...form.aud, el.dataset.aud] : form.aud.filter((k) => k !== el.dataset.aud); return; }
   if (el.dataset.day) { const n = +el.dataset.day; form.jours = el.checked ? [...form.jours, n].sort() : form.jours.filter((x) => x !== n); return; }
 });
@@ -348,7 +395,7 @@ app.addEventListener('click', async (e) => {
   if (b.dataset.new) { form = blank(); msg = ''; return render(); }
   if (b.dataset.recapPrint) return recapPrint();
   if (b.dataset.seen) { const m = seenGet(); for (const a of data.ads || []) m[a.id] = a.st; ls.set('annSeen:' + id, JSON.stringify(m)); return render(); }
-  if (b.dataset.cancel) { form = null; return render(); }
+  if (b.dataset.cancel) { form = null; mFiles = []; return render(); }
   if (b.dataset.logoDel) { e.preventDefault(); if (form) form.logo = ''; ls.set('annLogo:' + id, ''); return render(); }
   if (b.dataset.logoOpen) { logoOpen = !logoOpen; profMsg = recMsg = ''; return render(); }
   if (b.dataset.pfSave) {
@@ -370,12 +417,16 @@ app.addEventListener('click', async (e) => {
   if (b.dataset.payinfo) { payOpen = payOpen === b.dataset.payinfo ? '' : b.dataset.payinfo; return render(); }
   if (b.dataset.edit) { const a = (data.ads || []).find((x) => x.id === b.dataset.edit); if (a) { form = { ...blank(), ...a, jours: [...(a.jours || [])], aud: [...(a.aud || [])] }; msg = ''; render(); scrollTo(0, 0); } return; }
   if (b.dataset.stop) { b.disabled = true; try { await sendOwner({ type: 'an-stop', id: b.dataset.stop }); const a = (data.ads || []).find((x) => x.id === b.dataset.stop); if (a) a.fin = plusDays(today, -1); } catch { b.disabled = false; return; } return render(); }
+  if (b.dataset.mdel) { mFiles.splice(+b.dataset.mdel, 1); return render(); }
   if (b.dataset.send) {
     const f = form;
     if (!f.nom.trim() || !f.texte.trim()) { msg = t.need; return render(); }
+    if ((f.video || mFiles.length) && !f.droits) { msg = MD().need; return render(); }
     b.disabled = true;
     try {
-      await sendOwner({ type: 'an-ad', ad: { ...f, logo: ls.get('annLogo:' + id) || '' } });
+      const mref = Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
+      await sendOwner({ type: 'an-ad', ad: { ...f, mref: mFiles.length ? mref : f.mref || '', mn: mFiles.length, logo: ls.get('annLogo:' + id) || '' } });
+      if (mFiles.length) { b.textContent = MD().sending; await sendMedia(mref); mFiles = []; }
       const pend = (() => { try { return JSON.parse(ls.get('annPend:' + id) || '[]'); } catch { return []; } })();
       if (!f.id) { pend.push({ ...f, id: '', st: 'wait', prix: priceOf(f), at: Date.now() }); ls.set('annPend:' + id, JSON.stringify(pend)); }
       else { const a = (data.ads || []).find((x) => x.id === f.id); if (a) Object.assign(a, f, { st: 'wait', prix: priceOf(f) }); }
