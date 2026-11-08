@@ -18326,4 +18326,32 @@ export default [
 "Préparation des photos…",
 "Preparazione delle foto…"
 ],
+[
+"☑️ Droits certifiés par l’annonceur",
+"☑️ Diritti certificati dall’inserzionista"
+],
+[
+" (vidéo / musique / images à lui ou autorisées).",
+" (video / musica / immagini suoi o autorizzati)."
+],
+[
+"⚠️ Droits NON certifiés",
+"⚠️ Diritti NON certificati"
+],
+[
+" pour la vidéo / musique : demandez-lui avant de publier.",
+" per il video / la musica: chiedeteglielo prima di pubblicare."
+],
+[
+"Aucune vidéo ni fichier envoyé.",
+"Nessun video né file inviato."
+],
+[
+"exemple pour la création",
+"esempio per la creazione"
+],
+[
+"pub à publier telle quelle",
+"pubblicità da pubblicare così"
+],
 ];

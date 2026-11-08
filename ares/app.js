@@ -35,7 +35,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.235.0';
+const VERSION = '2.236.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1849,10 +1849,39 @@ async function annInbox(an, msg) {
     rec.special = S(a.special, 600);
     rec.logo = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.logo || '') && a.logo.length < 60000 ? a.logo : '';
     rec.crea = ['simple', 'moyen', 'max'].includes(a.crea) ? a.crea : '';
+    // 📎 images / clip envoyés à part (an-media, même référence) · ☑️ droits certifiés par l'annonceur
+    rec.mref = /^[a-z0-9]{6,40}$/.test(a.mref || '') ? a.mref : (old && old.mref) || '';
+    rec.muse = a.muse === 'ex' ? 'ex' : 'pub';
+    rec.droits = !!a.droits;
     const t = anTarifs(); rec.prix = Math.round((+t[rec.slot] || 0) * rec.ttl) + (rec.crea ? +t['crea_' + rec.crea] || 0 : 0);
     if (old) rec.id = old.id;
     await vault.mutate((tx) => tx.put('avis', rec), old ? '📣 Annonce modifiée par l’annonceur (à valider)' : '📣 Nouvelle annonce à valider', `${an.nom} · ${AN_TYPES[rec.type]} · ${fmtDate(rec.debut)} → ${fmtDate(rec.fin)}`);
     annSync(an.id); return true;
+  }
+  // 📎 un fichier (ou un morceau de clip) de l'annonceur : gardé chiffré ; le clip est rassemblé quand tous les morceaux sont là
+  if (msg.type === 'an-media') {
+    const ref = S(msg.ref, 40), fid = S(msg.fid, 20), parts = Math.min(10, Math.max(1, +msg.parts || 1)), i = +msg.i || 0;
+    if (!/^[a-z0-9]{6,40}$/.test(ref) || !/^[a-z0-9]{4,20}$/.test(fid) || i < 0 || i >= parts || typeof msg.b !== 'string') return false;
+    const mime = /^(image\/(jpeg|png|webp)|video\/[a-z0-9.+-]{2,20})$/.test(msg.mime || '') ? msg.mime : 'application/octet-stream';
+    const key = `anm-${an.id}-${ref}-${fid}`;
+    const st = vault.get('reglages', key) || { id: key, got: [] };
+    const pid = key + '-p' + i;
+    await vault.saveFile(pid, unb64u(msg.b));
+    const got = [...new Set([...(st.got || []), i])];
+    if (got.length < parts) { await vault.mutate((tx) => tx.put('reglages', { id: key, got, parts }), '📎 Fichier de l’annonceur (en cours)', `${an.nom} · ${got.length}/${parts}`); return true; }
+    const bufs = [];
+    for (let k = 0; k < parts; k++) bufs.push(new Uint8Array(await vault.readFile(key + '-p' + k)));
+    const all = new Uint8Array(bufs.reduce((n, b) => n + b.length, 0));
+    let o = 0; for (const b of bufs) { all.set(b, o); o += b.length; }
+    let docId = '';
+    await vault.mutate((tx) => {
+      const doc = tx.put('documents', { kind: 'annmedia', annId: an.id, mref: ref, label: `${mime.startsWith('video/') ? '🎬' : '🖼️'} ${an.nom} — ${S(msg.name, 60) || 'fichier'}`, date: today(), mime, size: all.length });
+      docId = doc.id;
+      tx.remove('reglages', key);
+    }, '📎 Fichier reçu de l’annonceur', `${an.nom} · ${S(msg.name, 60)}`);
+    await vault.saveFile(docId, all);
+    for (let k = 0; k < parts; k++) await vault.deleteFile(key + '-p' + k).catch(() => {});
+    return true;
   }
   if (msg.type === 'an-paid') {
     const a = vault.get('avis', S(msg.id, 40));
@@ -7098,6 +7127,9 @@ const SHEETS = {
       narrow: true,
       body: html`<form id="f" data-form="pub" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
+        ${a.annId ? (() => { const md = vault.list('documents').filter((d) => d.kind === 'annmedia' && d.annId === a.annId && a.mref && d.mref === a.mref);
+          return html`<div class="full alert ${a.video || md.length ? (a.droits ? 'info' : 'warn') : 'info'}" style="margin:0">📎<div>${a.video || md.length ? (a.droits ? html`<b>☑️ Droits certifiés par l’annonceur</b> (vidéo / musique / images à lui ou autorisées).` : html`<b>⚠️ Droits NON certifiés</b> pour la vidéo / musique : demandez-lui avant de publier.`) : html`Aucune vidéo ni fichier envoyé.`}
+            ${md.length ? html`<div style="margin-top:6px"><b>${md.length > 1 ? md.length + ' fichiers' : '1 fichier'} reçu${md.length > 1 ? 's' : ''}</b> — ${a.muse === 'ex' ? 'exemple pour la création' : 'pub à publier telle quelle'} :</div><div class="actions" style="margin:6px 0 0;flex-wrap:wrap">${md.map((d) => html`<button type="button" class="btn sm" data-action="open-doc" data-id="${d.id}">${d.label.split(' — ').pop()} · ${Math.max(1, Math.round((d.size || 0) / 1048576))} Mo</button>`)}</div>` : ''}</div></div>`; })() : ''}
         <label class="field full">Catégorie<select name="cat">${Object.entries(PUB_CATS).map(([k, v]) => html`<option value="${k}" ${a.cat === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Nom du commerce', 'nom', a.nom, { full: true, required: true, placeholder: 'ex. Pizzeria Da Mario' })}
         <div class="section-label full" style="margin:6px 0 0">📍 Adresse du commerce</div>
@@ -9895,7 +9927,7 @@ const ACTIONS = {
       setHtml(dlg, html`<div class="pv-bar"><b>${doc.label}</b><span class="tiny">${fmtDate(doc.date)}</span>
         <a class="btn sm" href="${url}" download="${doc.label + (doc.mime === 'application/pdf' ? '.pdf' : '')}">${icon('download')}</a>
         <button class="btn sm" type="button" data-pv-close="1">${icon('x')} Fermer</button></div>
-        ${img ? html`<img src="${url}" alt="">` : html`<iframe src="${url}" title="${doc.label}"></iframe>`}`);
+        ${img ? html`<img src="${url}" alt="">` : /^video\//.test(doc.mime || '') ? html`<video src="${url}" controls playsinline style="max-width:100%;max-height:80vh;display:block;margin:auto;background:#000"></video>` : html`<iframe src="${url}" title="${doc.label}"></iframe>`}`);
       const done = () => { dlg.remove(); URL.revokeObjectURL(url); };
       dlg.addEventListener('click', (e) => { if (e.target.closest('[data-pv-close]')) dlg.close(); });
       dlg.addEventListener('close', done);
