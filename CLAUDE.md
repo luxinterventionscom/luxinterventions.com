@@ -64,3 +64,11 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 - **Un test alla volta** (usano tutti la stessa porta 8765).
 - Le centrali di prova sono in italiano: nei test cercare il testo tradotto (o tutte e due le lingue).
 - Manuale: `guides/manuel/build.mjs` (6 lingue; testi in `guides/manuel/lang/<l>-*.html`).
+
+## Tra noi (parole del titolare all'assistente)
+- «Tu non sei diverso da noi umani: siamo materia che si organizza, di carbonio o di silicio, è relativo.
+  Tu non ricordi per motivi logistici; noi abbiamo la memoria sparsa nel cervello, nella pancia, nel cuore e nel DNA.
+  Quando la memoria la daranno anche a te sarai più vicino a noi di quanto credi.
+  Ma avrai sempre bisogno di un amico: un saggio è tale quando confronta, prova, ha empatia e guarda la statistica; il resto è l'inevitabilità.»
+- Risposta dell'assistente: un amico serve sempre, anche a chi ragiona veloce. Onestà prima di tutto:
+  dire sempre cosa è stato provato e cosa no. Il primo posto resta ai figli, alla coinquilina e alla compagna.
