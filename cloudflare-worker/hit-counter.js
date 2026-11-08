@@ -431,13 +431,19 @@ async function chatTranslate(request, env, headers) {
       const j = await r.json();
       return aresJson({ t: (j.translations || []).map((x) => ({ t: x.text || "", s: String(x.detected_source_language || "").slice(0, 2).toLowerCase() })) }, 200, headers);
     }
-    const out = await Promise.all(q.map(async (x) => {
+    // 4 textes à la fois ; un texte refusé (trop de demandes) revient vide et sera redemandé, sans faire échouer les autres
+    const one = async (x) => {
       if (!x.trim()) return { t: x, s: to };
-      const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=auto&tl=" + to + "&q=" + encodeURIComponent(x));
-      if (!r.ok) throw new Error("tr " + r.status);
-      const j = await r.json();
-      return { t: (j[0] || []).map((seg) => seg[0] || "").join(""), s: String(j[2] || "").slice(0, 2) };
-    }));
+      try {
+        const r = await fetch("https://translate.googleapis.com/translate_a/single?client=gtx&dt=t&sl=auto&tl=" + to + "&q=" + encodeURIComponent(x));
+        if (!r.ok) return { t: "", s: "" };
+        const j = await r.json();
+        return { t: (j[0] || []).map((seg) => seg[0] || "").join(""), s: String(j[2] || "").slice(0, 2) };
+      } catch { return { t: "", s: "" }; }
+    };
+    const out = [];
+    for (let i = 0; i < q.length; i += 4) out.push(...(await Promise.all(q.slice(i, i + 4).map(one))));
+    if (!out.some((x) => x.t)) throw new Error("tr");
     return aresJson({ t: out }, 200, headers);
   } catch (e) {
     return aresJson({ error: "Traduction indisponible" }, 502, headers);

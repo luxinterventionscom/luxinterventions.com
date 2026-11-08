@@ -18178,4 +18178,40 @@ export default [
 "Adresse introuvable sur la carte (OpenStreetMap) : vérifiez-la, ou choisissez « Même ville »",
 "Morada não encontrada no mapa (OpenStreetMap): verifique-a, ou escolha «Mesma cidade»"
 ],
+[
+"Chat de la maison absente de son app",
+"Chat da casa ausente da sua app"
+],
+[
+"Chat de la maison active",
+"Chat da casa ativo"
+],
+[
+"la case « 💬 » ci-dessus est décochée",
+"a caixa «💬» acima não está marcada"
+],
+[
+"aucun immeuble n’est indiqué dans sa fiche",
+"nenhum imóvel indicado na sua ficha"
+],
+[
+"l’immeuble n’est plus en gestion (archivé)",
+"o imóvel já não está em gestão (arquivado)"
+],
+[
+"les « Messages de la maison » sont désactivés dans l’immeuble (Immeuble → 💬 Messages)",
+"as «Mensagens da casa» estão desativadas no imóvel (Imóvel → 💬 Mensagens)"
+],
+[
+"sa date de sortie est passée : il n’est plus locataire actuel",
+"a data de saída já passou: já não é inquilino atual"
+],
+[
+"son groupe n’est pas encore créé : ouvrez l’immeuble → 💬 Messages, il se crée tout seul",
+"o seu grupo ainda não foi criado: abra o imóvel → 💬 Mensagens, cria-se sozinho"
+],
+[
+" (seul : il écrit au gestionnaire)",
+" (sozinho: escreve ao gestor)"
+],
 ];

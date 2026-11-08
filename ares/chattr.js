@@ -87,15 +87,16 @@ export async function trApply() {
   const l = trLang();
   if (!l || busy || !api || Date.now() - failAt < 60000) return;
   const c = cacheGet(l);
-  const miss = [...new Set([...document.querySelectorAll('[data-trx]')].map((el) => el.dataset.trx).filter((x) => x && x.trim() && !c[x]))].slice(0, 20);
+  const miss = [...new Set([...document.querySelectorAll('[data-trx]')].map((el) => el.dataset.trx).filter((x) => x && x.trim() && !c[x]))].slice(0, 8);
   if (!miss.length) return;
   busy = true;
   try {
     const r = await fetch(api + '/api/tr', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ q: miss, to: l }) });
     if (r.ok) {
       const j = await r.json(), c2 = cacheGet(l);
-      miss.forEach((x, i) => { const v = (j.t || [])[i]; if (v) c2[x] = { t: String(v.t || ''), s: String(v.s || '') }; });
+      miss.forEach((x, i) => { const v = (j.t || [])[i]; if (v && v.t) c2[x] = { t: String(v.t), s: String(v.s || '') }; }); // vide = refusé : redemandé plus tard
       cacheSet(l, c2);
+      if (miss.length === 8 || miss.some((x) => !c2[x])) setTimeout(trApply, 2500); // la suite (titres des 📰 News…)
     } else failAt = Date.now();
   } catch { failAt = Date.now(); /* hors ligne : on réessaiera dans 1 min */ }
   busy = false;

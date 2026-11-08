@@ -18253,4 +18253,40 @@ export default [
 "Adresse introuvable sur la carte (OpenStreetMap) : vérifiez-la, ou choisissez « Même ville »",
 "Adresse nicht auf der Karte gefunden (OpenStreetMap): prüfen oder „Gleiche Stadt“ wählen"
 ],
+[
+"Chat de la maison absente de son app",
+"Hauschat fehlt in seiner App"
+],
+[
+"Chat de la maison active",
+"Hauschat aktiv"
+],
+[
+"la case « 💬 » ci-dessus est décochée",
+"das Kästchen „💬“ oben ist nicht angehakt"
+],
+[
+"aucun immeuble n’est indiqué dans sa fiche",
+"in seiner Karte ist kein Gebäude angegeben"
+],
+[
+"l’immeuble n’est plus en gestion (archivé)",
+"das Gebäude wird nicht mehr verwaltet (archiviert)"
+],
+[
+"les « Messages de la maison » sont désactivés dans l’immeuble (Immeuble → 💬 Messages)",
+"die „Hausnachrichten“ sind im Gebäude deaktiviert (Gebäude → 💬 Nachrichten)"
+],
+[
+"sa date de sortie est passée : il n’est plus locataire actuel",
+"sein Auszugsdatum ist vorbei: er ist kein aktueller Mieter mehr"
+],
+[
+"son groupe n’est pas encore créé : ouvrez l’immeuble → 💬 Messages, il se crée tout seul",
+"seine Gruppe ist noch nicht angelegt: Gebäude → 💬 Nachrichten öffnen, sie entsteht von selbst"
+],
+[
+" (seul : il écrit au gestionnaire)",
+" (allein: schreibt dem Verwalter)"
+],
 ];
