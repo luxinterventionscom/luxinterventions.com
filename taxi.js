@@ -1,6 +1,7 @@
 // 🚕 App des sociétés de taxi / chauffeurs privés du réseau : courses reçues (accepter avec un chauffeur et une voiture, ou refuser),
 // chauffeurs, voitures (Luxe / Confort / Économique), tarifs (course, heure, demi-journée, journée) et extras.
 // Données chiffrées ; la clé ne quitte pas le téléphone. Les réponses partent chiffrées pour l'établissement.
+import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { openJson, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
@@ -351,3 +352,4 @@ app.addEventListener('click', async (e) => {
 });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) { setBadge(0, '/taxi'); load(); } });
 load();
+emojiInit(); // 😊 bouton émojis dans les chats

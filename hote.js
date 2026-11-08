@@ -1,6 +1,7 @@
 // 🏨 App des clients (Hotel / Airbnb) : séjour, chambre ou logement, code de la porte, menu, arrivée (taxi ou soi-même),
 // état des lieux de sortie. Données chiffrées par l'établissement ; la clé ne quitte pas le téléphone.
 // L'app se remet à zéro le lendemain du départ (l'établissement efface les données et le code).
+import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { openJson, openBytes, sealForOwner, codeHash, unwrapWithCode, b64u } from '/ares/espace-crypto.js';
@@ -575,3 +576,4 @@ app.addEventListener('click', async (e) => {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) { setBadge(0, '/hote'); tripPoll(); } });
 lang = lang || pick(null);
 load();
+emojiInit(); // 😊 bouton émojis dans les chats

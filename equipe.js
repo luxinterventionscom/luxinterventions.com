@@ -1,5 +1,6 @@
 // App de l'équipe : planning personnel (quoi, où, quand), « commencé / fini / pas fini » avec note et photos,
 // horaire, absences, coordonnées. Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
+import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { openJson, openBytes, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
@@ -1518,3 +1519,4 @@ swCheck();
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') swCheck(); });
 lang = (() => { try { return localStorage.getItem('eqLang') || pick(null); } catch { return pick(null); } })();
 load();
+emojiInit(); // 😊 bouton émojis dans les chats
