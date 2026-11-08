@@ -18283,4 +18283,28 @@ export default [
 " (seul : il écrit au gestionnaire)",
 " (solo: escribe al gestor)"
 ],
+[
+"Étage, appartement, accès",
+"Planta, piso, acceso"
+],
+[
+"ex. 3e étage, porte droite · code porte 1234 · clé chez le gardien",
+"ej. 3.ª planta, puerta derecha · código 1234 · llave con el portero"
+],
+[
+"Adresse — seulement si ce n’est pas un de vos immeubles",
+"Dirección — solo si no es uno de sus edificios"
+],
+[
+"📷 Photos de ce qui est cassé (5 au plus)",
+"📷 Fotos de lo que está roto (5 como máximo)"
+],
+[
+"Dites où : choisissez l’immeuble dans « Où », ou écrivez l’adresse",
+"Diga dónde: elija el edificio en «Dónde», o escriba la dirección"
+],
+[
+"Préparation des photos…",
+"Preparando las fotos…"
+],
 ];

@@ -18302,4 +18302,28 @@ export default [
 " (seul : il écrit au gestionnaire)",
 " (da solo: scrive al gestore)"
 ],
+[
+"Étage, appartement, accès",
+"Piano, appartamento, accesso"
+],
+[
+"ex. 3e étage, porte droite · code porte 1234 · clé chez le gardien",
+"es. 3° piano, porta a destra · codice portone 1234 · chiave dal portinaio"
+],
+[
+"Adresse — seulement si ce n’est pas un de vos immeubles",
+"Indirizzo — solo se non è uno dei vostri immobili"
+],
+[
+"📷 Photos de ce qui est cassé (5 au plus)",
+"📷 Foto di ciò che è rotto (massimo 5)"
+],
+[
+"Dites où : choisissez l’immeuble dans « Où », ou écrivez l’adresse",
+"Dite dove: scegliete l’immobile in «Dove», o scrivete l’indirizzo"
+],
+[
+"Préparation des photos…",
+"Preparazione delle foto…"
+],
 ];

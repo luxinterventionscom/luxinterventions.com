@@ -35,7 +35,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.234.6';
+const VERSION = '2.235.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -7279,7 +7279,9 @@ const SHEETS = {
         <label class="field full">Urgence<select name="urgence">${Object.entries(TDEM_URG).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
         ${tenantInfo.fil === 'hotel' ? field('Où', 'ouTxt', '', { full: true, placeholder: 'ex. Chambre 12 · Hall · Couloir 2e étage · Cuisine' })
           : imms.length ? html`<label class="field full">Où (qui verra le passage dans son app)<select name="ou"><option value="">— préciser plus tard —</option>${imms.map((im) => html`<optgroup label="${im.adresse}"><option value="c:${im.id}">🏢 Parties communes — tout l’immeuble</option>${logsOf(im.id).map((g) => { const oc = occupantsNow(g.id).map(fullName).join(', '); return html`<option value="l:${g.id}">🚪 ${logLabel(g)}${oc ? ' — ' + oc : ''}</option>`; })}</optgroup>`)}</select></label>` : ''}
-        <label class="field full">Adresse${imms.length ? html`<select name="imm"><option value="">— autre adresse —</option>${imms.map((im) => html`<option value="${im.adresse}">${im.adresse}</option>`)}</select>` : ''}<input name="adresse" placeholder="rue, n°, ville, étage, appartement"></label>
+        ${field('Étage, appartement, accès', 'acces', '', { full: true, placeholder: 'ex. 3e étage, porte droite · code porte 1234 · clé chez le gardien' })}
+        ${field(imms.length ? 'Adresse — seulement si ce n’est pas un de vos immeubles' : 'Adresse', 'adresse', '', { full: true, placeholder: 'rue, n°, code postal, ville' })}
+        <label class="field full">📷 Photos de ce qui est cassé (5 au plus)<input type="file" name="photos" accept="image/*" multiple></label>
         <label class="field full">Description<textarea name="texte" required style="min-height:100px" placeholder="Que se passe-t-il ? Depuis quand ? Accès (code, clé, gardien)…"></textarea></label>
         ${field('Contact sur place', 'contact', '', { placeholder: 'ex. locataire M. Dupont' })}${field('Téléphone', 'tel', soc.tel || '', { type: 'tel' })}
         <p class="tiny muted full" style="margin:0">Chiffrée : seule la centrale LuxInterventions peut la lire.</p>
@@ -10310,18 +10312,24 @@ const FORMS = {
     const ou = g('ou'), lg = ou.startsWith('l:') ? vault.get('logements', ou.slice(2)) : null, imO = ou.startsWith('c:') ? vault.get('immeubles', ou.slice(2)) : lg ? vault.get('immeubles', lg.immId) : null;
     const reg = g('kind') === 'reg' && tenantInfo.fil !== 'hotel';
     const id = 'tdem-' + uid();
-    const d = { ref: id, titre: g('titre'), urgence: TDEM_URG[g('urgence')] ? g('urgence') : 'normal', adresse: [g('imm') || (imO ? imO.adresse + (imO.ville ? ', ' + imO.ville : '') : ''), g('adresse')].filter(Boolean).join(' — '), texte: g('texte'), contact: g('contact'), tel: g('tel'), t: new Date().toISOString(),
+    const d = { ref: id, titre: g('titre'), urgence: TDEM_URG[g('urgence')] ? g('urgence') : 'normal', adresse: [imO ? imO.adresse + (imO.ville ? ', ' + imO.ville : '') : g('adresse'), lg ? logLabel(lg) : '', g('acces')].filter(Boolean).join(' — '), texte: g('texte'), contact: g('contact'), tel: g('tel'), t: new Date().toISOString(),
       kind: reg ? 'reg' : 'once', ou: lg ? `${logLabel(lg)}${occupantsNow(lg.id).length ? ' (' + occupantsNow(lg.id).map(fullName).join(', ') + ')' : ''}` : imO ? 'Parties communes' : g('ouTxt'),
       ...(reg ? { reg: { svc: TDEM_SVC[g('svc')] ? g('svc') : 'autre', freq: RECURS[g('freq')] && g('freq') ? g('freq') : 'hebdo', jours: fd.getAll('jours').map(Number).filter((x) => x >= 1 && x <= 7), de: g('hde'), a: g('ha'), debut: g('debut') || today() } } : {}) };
     if (!d.titre || !d.texte) return;
     if (reg && !d.reg.jours.length) return toast('Choisissez au moins un jour souhaité', { bad: true });
+    if (!ou && !g('adresse') && !g('ouTxt')) return toast('Dites où : choisissez l’immeuble dans « Où », ou écrivez l’adresse', { bad: true });
+    // 📷 photos réduites (1600 px), chiffrées avec la demande : seule la centrale LuxInterventions les voit
+    const files = fd.getAll('photos').filter((f) => f && f.size && /^image\//.test(f.type)).slice(0, 5), photos = [];
+    let size = 0;
+    if (files.length) toast('Préparation des photos…');
+    for (const f of files) { const b = await compressPhoto(f).catch(() => null); if (!b || size + b.byteLength > 7e6) continue; size += b.byteLength; photos.push({ b: b64u(b) }); }
     try {
       const k = await (await vault.call('network-key')).json();
-      const body = await sealForOwner(k.pub, { type: 'demande', client: socName(), fil: tenantInfo.fil || '', ...d });
+      const body = await sealForOwner(k.pub, { type: 'demande', client: socName(), fil: tenantInfo.fil || '', ...d, photos });
       await vault.call('demande', { method: 'POST', body });
     } catch (e) { return toast(e.status === 423 ? 'Lecture seule : abonnement échu' : e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
     await vault.mutate((tx) => tx.put('reglages', { id, ...d, immId: imO ? imO.id : '', logId: lg ? lg.id : '', st: 'afaire' }), '🛠️ Demande d’intervention envoyée', d.titre);
-    toast('Demande envoyée à LuxInterventions');
+    toast(`Demande envoyée à LuxInterventions${photos.length ? ` avec ${plural(photos.length, 'photo')}` : ''}`);
     goBack();
   },
   async 'lic-tarifs'(fd) {
