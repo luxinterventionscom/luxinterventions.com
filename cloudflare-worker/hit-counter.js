@@ -69,7 +69,7 @@ async function route(request, env, ctx, headers) {
 
     // ── Barre des cours crypto (TradingView) pour le bas des apps : servie ici, sur un autre domaine que le site,
     // pour que le script de TradingView ne puisse rien lire des apps (données chiffrées, clés) ──
-    if (url.pathname === "/ticker" && request.method === "GET") return tickerPage();
+    if (url.pathname === "/ticker" && request.method === "GET") return tickerPage(url.searchParams.get("m"));
 
     // Statistiques anonymes des annonces (vues / clics) envoyées par les apps : aucun nom, aucune donnée personnelle
     if (url.pathname === "/api/pubstat" && request.method === "POST") return pubStatPost(request, env, headers);
@@ -1548,11 +1548,13 @@ async function newsGet(url, ctx, headers) {
   if (items.length) ctx.waitUntil(cache.put(key, new Response(JSON.stringify(out), { headers: { "Content-Type": "application/json", "Cache-Control": "public, max-age=900" } })));
   return aresJson(out, 200, headers, { "Cache-Control": "public, max-age=300" });
 }
-function tickerPage() {
+// 📈 Bourses européennes (dans la barre 📰 News) : DAX, CAC 40, Euro Stoxx 50, AEX, IBEX 35, BEL 20, SMI, euro / dollar
+const TICKER_EU = "XETR:DAX,EURONEXT:PX1,TVC:SX5E,EURONEXT:AEX,BME:IBC,EURONEXT:BEL20,SIX:SMI,FX:EURUSD";
+function tickerPage(m) {
   const page = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Ticker</title>
 <style>html,body{margin:0;padding:0;background:transparent;overflow-x:hidden}</style>
 <script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-ticker-tape.js"></script></head>
-<body><tv-ticker-tape symbols="${TICKER_SYMBOLS}"></tv-ticker-tape><script>new ResizeObserver(function(){var h=Math.ceil(document.body.scrollHeight);if(h>10)parent.postMessage({tickerH:h},'*')}).observe(document.body);</script></body></html>`;
+<body><tv-ticker-tape symbols="${m === "eu" ? TICKER_EU : TICKER_SYMBOLS}"></tv-ticker-tape><script>new ResizeObserver(function(){var h=Math.ceil(document.body.scrollHeight);if(h>10)parent.postMessage({tickerH:h},'*')}).observe(document.body);</script></body></html>`;
   return new Response(page, { headers: {
     "Content-Type": "text/html; charset=utf-8",
     "Cache-Control": "public, max-age=3600",

@@ -34,7 +34,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.230.1';
+const VERSION = '2.231.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5807,10 +5807,10 @@ dashboard() {
         </div>
         ${noPiece ? html`<div class="alert warn" style="margin-bottom:12px">${icon('file')}<div><b>${plural(noPiece, 'dépense')} sans facture jointe</b> — ajoutez-la avec 📎+ dans Immeuble → Dépenses.</div></div>` : ''}
         <div class="cp-filter">
-          <div class="search" style="flex:1 1 220px">${icon('search')}<input type="search" name="search" data-input="cp-q" value="${ui.cpQ || ''}" placeholder="Rechercher : nom, libellé, immeuble, montant, date…" autocomplete="off"></div>
-          <label class="field" style="margin:0">Du<input type="date" data-input="cp-from" value="${ui.cpFrom || ''}"></label>
-          <label class="field" style="margin:0">Au<input type="date" data-input="cp-to" value="${ui.cpTo || ''}"></label>
-          ${q || ui.cpFrom || ui.cpTo ? html`<button class="btn sm ghost" data-action="cp-clear">✕ Effacer</button>` : ''}
+          <div class="search">${icon('search')}<input type="search" name="search" data-input="cp-q" value="${ui.cpQ || ''}" placeholder="Rechercher : nom, libellé, immeuble, montant, date…" autocomplete="off"></div>
+          <div class="cp-dates"><label class="field" style="margin:0">Du<input type="date" data-input="cp-from" value="${ui.cpFrom || ''}"></label>
+          <label class="field" style="margin:0">Au<input type="date" data-input="cp-to" value="${ui.cpTo || ''}"></label></div>
+          ${q || ui.cpFrom || ui.cpTo ? html`<button class="btn sm ghost" data-action="cp-clear" style="align-self:flex-start">✕ Effacer</button>` : ''}
         </div>
         ${q || ui.cpFrom || ui.cpTo ? html`<p class="small muted" style="margin:0 0 8px">${plural(rows.length, 'résultat')}</p>` : ''}
         ${(() => {
