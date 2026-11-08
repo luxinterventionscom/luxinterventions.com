@@ -22,6 +22,7 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.se
 const app = document.getElementById('app');
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* stockage plein */ } } };
+document.addEventListener('toggle', (e) => { if (e.target.dataset && e.target.dataset.mineFold) ls.set('annMineShut', e.target.open ? null : '1'); }, true);
 const iso = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 const today = iso(new Date());
 const plusDays = (d, n) => { const x = new Date(d + 'T12:00'); x.setDate(x.getDate() + n); return iso(x); };
@@ -268,7 +269,8 @@ function render() {
   out.push(form ? formHtml(t) : `<button class="btn block big" data-new="1">${esc(t.newA)}</button>`);
   const pend = (() => { try { return JSON.parse(ls.get('annPend:' + id) || '[]'); } catch { return []; } })();
   const ads = [...pend.filter((p) => !(d.ads || []).some((a) => a.id === p.id && p.id)), ...(d.ads || [])];
-  out.push(`<div class="card"><h2>${esc(t.mine)}</h2>${ads.length ? ads.map((a) => adHtml(a, t)).join('') : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}</div>`);
+  // 🔽 « Mes annonces » repliable (choix gardé sur ce téléphone)
+  out.push(`<details class="card" data-mine-fold="1"${ls.get('annMineShut') ? '' : ' open'}><summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:8px"><h2 style="margin:0;flex:1">${esc(t.mine)}${ads.length ? ` <span class="meta">(${ads.length})</span>` : ''}</h2><span class="meta" aria-hidden="true">▾</span></summary><div style="margin-top:10px">${ads.length ? ads.map((a) => adHtml(a, t)).join('') : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}</div></details>`);
   { const p = slot('milieu'); if (p) out.push(adBox(p)); }
   out.push(pchatCard()); // 💬 service après-vente 24 h / 24 : messages avec la centrale
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
