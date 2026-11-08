@@ -208,6 +208,9 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
 }
 .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 17px; margin-right: auto; }
 .brand-mark { width: auto; height: 36px; border-radius: 6px; background: #fff; padding: 2px 4px; flex: none; }
+/* logo de la centrale (la nôtre et celles des clients) plus grand : barre de gauche et barre du haut */
+.sidenav .brand-mark { height: 64px; max-width: 110px; object-fit: contain; border-radius: 10px; }
+.topbar .brand-mark, header .brand-mark { height: 44px; max-width: 96px; object-fit: contain; border-radius: 8px; }
 .brand small { display: block; font-size: 11px; font-weight: 500; color: var(--text-3); letter-spacing: 0.02em; }
 .sync {
   display: inline-flex; align-items: center; gap: 7px;
