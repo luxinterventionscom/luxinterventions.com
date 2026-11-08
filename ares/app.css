@@ -599,8 +599,12 @@ details.dfold[open] { animation: aresWarm 2.8s ease-in-out infinite; box-shadow:
 .pr-tbl th, .pr-tbl td { border-bottom: 1px solid #ccc; padding: 4px 6px; text-align: left; }
 
 /* Comptabilité : filtre et mois */
-.cp-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-bottom: 10px; }
-.cp-filter .field input { width: auto; }
+.cp-filter { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.cp-filter .search { width: 100%; }
+.cp-dates { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; max-width: 520px; }
+.cp-dates .field input { width: 100%; }
+/* dates étroites : le jour (« samedi ») passe sous la case au lieu de chevaucher la date */
+.cp-dates .dwrap .dow { position: static; transform: none; display: block; margin-top: 4px; font-size: 12px; }
 .tbl tr.cp-month td { background: var(--surface-2); position: sticky; top: 0; }
 @media (max-width: 600px) {
   .tbl.cp-tbl th:nth-child(3), .tbl.cp-tbl td:nth-child(3), .tbl.cp-tbl th:nth-child(4), .tbl.cp-tbl td:nth-child(4) { display: none; }
