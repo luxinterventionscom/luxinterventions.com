@@ -15,7 +15,7 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 - Il manuale si chiama «**ALJADY R. INTERVENTIONS — Manuale dell'applicazione INTERVENTI**», con il logo e senza nomi di società.
 - **Il manuale va aggiornato a fine pacchetto di novità** (non a ogni piccola modifica; 6 lingue, `guides/manuel`): serve da memoria al titolare e all'assistente. Tenere una lista delle novità non ancora nel manuale. Il PDF vecchio si toglie, resta nella storia git.
 - **Modalità risparmio** (limiti di utilizzo): risposte corte, foto di controllo solo se servono o richieste, solo il test della parte toccata, richieste raggruppate.
-- Oggi l'app gira per un primo cliente di prova; in futuro passerà ad **ALJADY R. INTERVENTIONS** (altro GitHub/server). Il trasloco **non** va preparato finché non lo chiede.
+- Oggi tutto è sul GitHub **luxinterventions.com** (indirizzo luxinterventions.com). Più avanti trasloco su un nuovo GitHub **AJRINTERVENTIONS** (nome app «AJR INTERVENTIONS»). Il trasloco **non** va preparato finché non lo chiede.
 
 ## Worker Cloudflare
 - File: `cloudflare-worker/hit-counter.js`. **Lo pubblica il titolare a mano, alla fine.**
