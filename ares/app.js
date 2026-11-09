@@ -36,7 +36,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.243.0';
+const VERSION = '2.243.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -9416,7 +9416,7 @@ const ACTIONS = {
   async 'esp-off'(d) {
     const l = vault.get('locataires', d.id);
     if (!l || !l.espace || !(await confirmBox('Désactiver l’espace locataire ?', { ok: 'Désactiver', danger: true, detail: 'Son lien ne fonctionnera plus. Vous pourrez créer un nouvel espace (nouveau lien) plus tard.' }))) return;
-    try { await vault.espaceDel(l.espace.id); if (l.espace.codeHash) await vault.espCodeDel(l.espace.codeHash); } catch (e) { return toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
+    try { await vault.espaceDel(l.espace.id); if (l.espace.codeHash) await vault.espCodeDel(l.espace.codeHash); } catch (e) { if (e.status !== 403) return toast(e.message || 'Impossible (connexion ?)', { bad: true }); } // 403 : l'espace appartient encore à une autre centrale → on le lâche ici, un nouveau lien est possible
     try { localStorage.removeItem('aresEsp:' + l.espace.id); } catch {}
     espHashes.delete(l.id);
     await vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: { on: false, show: l.espace.show } }), 'Espace locataire désactivé', fullName(l), l.id);
