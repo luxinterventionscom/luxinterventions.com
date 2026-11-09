@@ -1,6 +1,7 @@
 // 🏨 App des clients (Hotel / Airbnb) : séjour, chambre ou logement, code de la porte, menu, arrivée (taxi ou soi-même),
 // état des lieux de sortie. Données chiffrées par l'établissement ; la clé ne quitte pas le téléphone.
 // L'app se remet à zéro le lendemain du départ (l'établissement efface les données et le code).
+import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
@@ -250,7 +251,7 @@ async function pushInit() {
 // ── publicités (3 emplacements, comme les autres apps) ──
 let pubTurn = 0;
 try { pubTurn = (+ls.get('hotePubTurn') || 0) + 1; ls.set('hotePubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
-const pickPub = (list) => (list.length ? list[pubTurn % list.length] : null);
+const pickPub = (list) => pubPickNow(list); // tour de 3 minutes chacune
 const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
 const pubLogo = (x) => (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(x.logo || '') && x.logo.length < 60000 ? `<img src="${x.logo}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''); // logo de l'annonceur
 // 🔽 annonces repliables : celles fermées restent fermées sur ce téléphone
@@ -284,7 +285,7 @@ function render() {
     <h1>${bnb ? '🏠' : '🏨'} ${esc(t.hi)} ${esc(d.prenom || d.nom)}</h1>
     <p class="sub">${esc(t.from)} ${esc(fmt(d.arrivee))} · ${esc(t.to)} ${esc(fmt(d.depart))}${d.pers > 1 ? ` · 👥 ${d.pers} ${esc(t.pers)}` : ''}</p>`);
   if (today > d.depart) out.push(`<div class="card okc"><p style="margin:0">🙏 ${esc(t.thanks)}</p></div>`);
-  const pubs = (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x)), slot = (k) => pickPub(pubs.filter((x) => (x.slot || 'milieu') === k));
+  const pubs = (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x) && pubLive(x)), slot = (k) => pickPub(pubs.filter((x) => pubSlotNow(x) === k));
   // 2 · publicité (haut)
   { const p = slot('haut'); if (p) out.push(adBox(p, t)); }
   // 3 · notifications

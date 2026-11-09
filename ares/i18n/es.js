@@ -18335,4 +18335,124 @@ export default [
 "pub à publier telle quelle",
 "publicidad a publicar tal cual"
 ],
+[
+"Mode de prix",
+"Modo de precio"
+],
+[
+"🚀 Lancement : pacchetti par mois (Start / Plus / Max)",
+"🚀 Lanzamiento: paquetes por mes (Start / Plus / Max)"
+],
+[
+"📅 Prix au jour par fascia (plus tard)",
+"📅 Precio por día por franja (más adelante)"
+],
+[
+"🚀 Pacchetti — € HT par mois (position Milieu)",
+"🚀 Paquetes — € sin IVA al mes (posición Medio)"
+],
+[
+"🟢 Start — 1 fascia",
+"🟢 Start — 1 franja"
+],
+[
+"🟡 Plus — 3 fasce",
+"🟡 Plus — 3 franjas"
+],
+[
+"🔴 Max — toutes",
+"🔴 Max — todas"
+],
+[
+"📍 Position et remises (%)",
+"📍 Posición y descuentos (%)"
+],
+[
+"🔝 Haut fixe : + %",
+"🔝 Arriba fijo: + %"
+],
+[
+"🔽 Bas fixe : − %",
+"🔽 Abajo fijo: − %"
+],
+[
+"Remise en semaines − %",
+"Descuento en semanas − %"
+],
+[
+"Remise en mois − %",
+"Descuento en meses − %"
+],
+[
+"Remise en années − %",
+"Descuento en años − %"
+],
+[
+"Annonces max. par position et par fascia",
+"Anuncios máx. por posición y franja"
+],
+[
+"📅 Prix au jour par fascia (€ HT) — utilisés en mode « fascia »",
+"📅 Precio por día por franja (€ sin IVA) — usados en modo «franja»"
+],
+[
+"Prix = base × position (Haut + / Bas −) × (week-end : 3 jours sur 7) × durée − remise. Rotation et Milieu = prix de base.",
+"Precio = base × posición (Arriba + / Abajo −) × (fin de semana: 3 días de 7) × duración − descuento. Rotación y Medio = precio base."
+],
+[
+"🕒 Fasce horaires (aucune = toute la journée)",
+"🕒 Franjas horarias (ninguna = todo el día)"
+],
+[
+"🎉 Seulement le week-end (jeudi, vendredi, samedi)",
+"🎉 Solo el fin de semana (jueves, viernes, sábado)"
+],
+[
+"📅 Planning des annonces",
+"📅 Planificación de anuncios"
+],
+[
+"places occupées par fascia et par position · rouge = complet",
+"plazas ocupadas por franja y posición · rojo = lleno"
+],
+[
+"Fascia",
+"Franja"
+],
+[
+"🔄 Rotation",
+"🔄 Rotación"
+],
+[
+"Chaque annonce reste 3 minutes, puis cède sa place ; elle revient au moins toutes les 30 minutes tant que la position n’est pas complète. Les annonces « rotation » comptent pour un tiers dans chaque position.",
+"Cada anuncio dura 3 minutos y luego cede su lugar; vuelve al menos cada 30 minutos mientras la posición no esté llena. Los anuncios «rotación» cuentan un tercio en cada posición."
+],
+[
+"(vues / clics par fascia)",
+"(vistas / clics por franja)"
+],
+[
+"☀️ Matin +",
+"☀️ Media mañana"
+],
+[
+"🌤️ Après-midi",
+"🌤️ Tarde"
+],
+[
+"🌇 Après-midi +",
+"🌇 Última tarde"
+],
+[
+"🌆 Soir",
+"🌆 Noche"
+],
+[
+"🌙 Nuit",
+"🌙 Madrugada"
+],
+[
+"🔄 Rotation — Haut, Milieu, Bas à tour de rôle (prix de base)",
+"🔄 Rotación — Arriba, Medio, Abajo por turnos (precio base)"
+],
 ];

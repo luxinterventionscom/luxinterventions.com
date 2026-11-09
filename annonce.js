@@ -1,6 +1,7 @@
 // 📣 App des annonceurs HORECA (restaurants, bistrots, bars, discothèques…) : annonces, menus du jour et événements,
 // avec dates, jours, heures, emplacement et apps visées ; prix affiché ; validation par LuxInterventions ; statistiques.
 // 💳 Paiement en ligne : pas encore connecté (bouton affiché, désactivé, avec une info).
+import { pubLive, pubSlotNow, pubPickNow, BANDS, BAND_KEYS, PACK_N, adPrice, durDays } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
@@ -113,9 +114,20 @@ function printInv(id) {
   w.document.close();
   w.print();
 }
-const blank = () => ({ logo: ls.get('annLogo:' + id) || '', id: '', type: 'annonce', nom: data ? data.nom : '', texte: '', adresse: data ? data.adresse : '', tel: data ? data.tel : '', web: '', video: '', slot: 'milieu', aud: ['loc', 'hote'], debut: today, fin: plusDays(today, 13), jours: [], h1: '', h2: '' });
-const days = (f) => Math.max(1, Math.round((new Date(f.fin) - new Date(f.debut)) / 864e5) + 1);
-const priceOf = (f) => { const tr = (data && data.tarifs) || {}, r = +tr[f.slot] || 0, c = f.crea ? +tr['crea_' + f.crea] || 0 : 0; return r && (!f.crea || c) ? Math.round(r * days(f)) + c : 0; };
+const blank = () => ({ logo: ls.get('annLogo:' + id) || '', id: '', type: 'annonce', nom: data ? data.nom : '', texte: '', adresse: data ? data.adresse : '', tel: data ? data.tel : '', web: '', video: '', slot: 'rot', aud: ['loc', 'hote'], debut: today, fin: plusDays(today, 29), jours: [], h1: '', h2: '', pack: 'start', bands: [], we: false, dn: 1, du: 'm', down: false });
+// 📅 pacchetto, fasce, semaine / week-end, position (fixe ou rotation), durée — prix calculé comme dans la centrale
+const PST = {
+  fr: { pack: 'Formule', pk: { start: '🟢 Start — 1 fascia', plus: '🟡 Plus — 3 fasce', max: '🔴 Max — toutes les fasce' }, bands: 'Fasce horaires', bt: { m: '🌅 Matin', m2: '☀️ Matin +', a: '🌤️ Après-midi', a2: '🌇 Après-midi +', s: '🌆 Soir', n: '🌙 Nuit' }, choose: (n) => `choisissez ${n}`, per: 'Période', week: '📅 Toute la semaine (7 jours)', we: '🎉 Week-end (jeudi, vendredi, samedi)', pos: 'Position dans les apps', ps: { rot: '🔄 Rotation — Haut, Milieu, Bas à tour de rôle (prix de base)', haut: '🔝 Haut fixe — vue dès l’ouverture (+33 %)', milieu: '⏺ Milieu fixe (prix de base)', bas: '🔽 Bas fixe (−33 %)' }, down: 'Si Haut est complet, j’accepte Milieu (au prix de Milieu)', dur: 'Durée', du: { d: 'jours', w: 'semaines', m: 'mois', y: 'années' }, disc: 'Remises : semaines −13 %, mois −23 %, années −33 %', month: '/ mois', need: (n) => `Choisissez ${n} fascia(s)` },
+  it: { pack: 'Formula', pk: { start: '🟢 Start — 1 fascia', plus: '🟡 Plus — 3 fasce', max: '🔴 Max — tutte le fasce' }, bands: 'Fasce orarie', bt: { m: '🌅 Mattina', m2: '☀️ Mattina +', a: '🌤️ Pomeriggio', a2: '🌇 Pomeriggio +', s: '🌆 Sera', n: '🌙 Notte' }, choose: (n) => `scegline ${n}`, per: 'Periodo', week: '📅 Tutta la settimana (7 giorni)', we: '🎉 Week-end (giovedì, venerdì, sabato)', pos: 'Posizione nelle app', ps: { rot: '🔄 Rotazione — Alto, Centro, Basso a turno (prezzo base)', haut: '🔝 Alto fisso — visto all’apertura (+33 %)', milieu: '⏺ Centro fisso (prezzo base)', bas: '🔽 Basso fisso (−33 %)' }, down: 'Se Alto è pieno, accetto Centro (al prezzo di Centro)', dur: 'Durata', du: { d: 'giorni', w: 'settimane', m: 'mesi', y: 'anni' }, disc: 'Sconti: settimane −13 %, mesi −23 %, anni −33 %', month: '/ mese', need: (n) => `Scegli ${n} fascia/e` },
+  de: { pack: 'Paket', pk: { start: '🟢 Start — 1 Zeitfenster', plus: '🟡 Plus — 3 Zeitfenster', max: '🔴 Max — alle Zeitfenster' }, bands: 'Zeitfenster', bt: { m: '🌅 Morgen', m2: '☀️ Vormittag', a: '🌤️ Nachmittag', a2: '🌇 Spätnachmittag', s: '🌆 Abend', n: '🌙 Nacht' }, choose: (n) => `${n} wählen`, per: 'Zeitraum', week: '📅 Ganze Woche (7 Tage)', we: '🎉 Wochenende (Do, Fr, Sa)', pos: 'Position in den Apps', ps: { rot: '🔄 Rotation — Oben, Mitte, Unten abwechselnd (Grundpreis)', haut: '🔝 Oben fest — beim Öffnen sichtbar (+33 %)', milieu: '⏺ Mitte fest (Grundpreis)', bas: '🔽 Unten fest (−33 %)' }, down: 'Wenn Oben voll ist, nehme ich Mitte (zum Preis von Mitte)', dur: 'Dauer', du: { d: 'Tage', w: 'Wochen', m: 'Monate', y: 'Jahre' }, disc: 'Rabatte: Wochen −13 %, Monate −23 %, Jahre −33 %', month: '/ Monat', need: (n) => `${n} Zeitfenster wählen` },
+  pt: { pack: 'Fórmula', pk: { start: '🟢 Start — 1 faixa', plus: '🟡 Plus — 3 faixas', max: '🔴 Max — todas as faixas' }, bands: 'Faixas horárias', bt: { m: '🌅 Manhã', m2: '☀️ Manhã +', a: '🌤️ Tarde', a2: '🌇 Tarde +', s: '🌆 Noite (serão)', n: '🌙 Madrugada' }, choose: (n) => `escolha ${n}`, per: 'Período', week: '📅 Semana inteira (7 dias)', we: '🎉 Fim de semana (quinta, sexta, sábado)', pos: 'Posição nas apps', ps: { rot: '🔄 Rotação — Cima, Meio, Baixo à vez (preço base)', haut: '🔝 Cima fixo — visto ao abrir (+33 %)', milieu: '⏺ Meio fixo (preço base)', bas: '🔽 Baixo fixo (−33 %)' }, down: 'Se Cima estiver cheio, aceito Meio (ao preço de Meio)', dur: 'Duração', du: { d: 'dias', w: 'semanas', m: 'meses', y: 'anos' }, disc: 'Descontos: semanas −13 %, meses −23 %, anos −33 %', month: '/ mês', need: (n) => `Escolha ${n} faixa(s)` },
+  en: { pack: 'Package', pk: { start: '🟢 Start — 1 time slot', plus: '🟡 Plus — 3 time slots', max: '🔴 Max — all time slots' }, bands: 'Time slots', bt: { m: '🌅 Morning', m2: '☀️ Late morning', a: '🌤️ Afternoon', a2: '🌇 Late afternoon', s: '🌆 Evening', n: '🌙 Night' }, choose: (n) => `pick ${n}`, per: 'Period', week: '📅 Whole week (7 days)', we: '🎉 Weekend (Thu, Fri, Sat)', pos: 'Position in the apps', ps: { rot: '🔄 Rotation — Top, Middle, Bottom in turn (base price)', haut: '🔝 Fixed top — seen on opening (+33 %)', milieu: '⏺ Fixed middle (base price)', bas: '🔽 Fixed bottom (−33 %)' }, down: 'If Top is full, I accept Middle (at the Middle price)', dur: 'Duration', du: { d: 'days', w: 'weeks', m: 'months', y: 'years' }, disc: 'Discounts: weeks −13 %, months −23 %, years −33 %', month: '/ month', need: (n) => `Pick ${n} time slot(s)` },
+  es: { pack: 'Fórmula', pk: { start: '🟢 Start — 1 franja', plus: '🟡 Plus — 3 franjas', max: '🔴 Max — todas las franjas' }, bands: 'Franjas horarias', bt: { m: '🌅 Mañana', m2: '☀️ Media mañana', a: '🌤️ Tarde', a2: '🌇 Última tarde', s: '🌆 Noche (cena)', n: '🌙 Madrugada' }, choose: (n) => `elija ${n}`, per: 'Periodo', week: '📅 Toda la semana (7 días)', we: '🎉 Fin de semana (jueves, viernes, sábado)', pos: 'Posición en las apps', ps: { rot: '🔄 Rotación — Arriba, Medio, Abajo por turnos (precio base)', haut: '🔝 Arriba fijo — visto al abrir (+33 %)', milieu: '⏺ Medio fijo (precio base)', bas: '🔽 Abajo fijo (−33 %)' }, down: 'Si Arriba está lleno, acepto Medio (al precio de Medio)', dur: 'Duración', du: { d: 'días', w: 'semanas', m: 'meses', y: 'años' }, disc: 'Descuentos: semanas −13 %, meses −23 %, años −33 %', month: '/ mes', need: (n) => `Elija ${n} franja(s)` },
+};
+const PS = () => PST[lang] || PST.fr;
+const fBands = (f) => (f.pack === 'max' ? [...BAND_KEYS] : (f.bands || []).filter((k) => BAND_KEYS.includes(k)));
+const days = (f) => (f.du ? durDays(f.dn, f.du) : Math.max(1, Math.round((new Date(f.fin) - new Date(f.debut)) / 864e5) + 1));
+const priceOf = (f) => { const tr = (data && data.tarifs) || {}, c = f.crea ? +tr['crea_' + f.crea] || 0 : 0; if (f.du) { const p = adPrice({ ...f, bands: fBands(f) }, tr); return p && (!f.crea || c) ? Math.round((p + c) * 100) / 100 : 0; } const r = +tr[f.slot] || 0; return r && (!f.crea || c) ? Math.round(r * days(f)) + c : 0; };
 async function sendOwner(o) {
   const r = await fetch(`${API}/api/esp/${id}/signal?app=ann`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) });
   if (!r.ok) throw new Error(r.status);
@@ -160,6 +172,17 @@ function mediaHtml(f) {
       <label>${esc(u.use)}</label><label class="radio"><input type="radio" name="muse" value="pub" ${f.muse !== 'ex' ? 'checked' : ''}> ${esc(u.pub)}</label><label class="radio"><input type="radio" name="muse" value="ex" ${f.muse === 'ex' ? 'checked' : ''}> ${esc(u.ex)}</label>` : ''}
     <label class="radio" style="margin-top:8px"><input type="checkbox" data-rights="1" ${f.droits ? 'checked' : ''}> ☑️ ${esc(u.rights)}</label>`;
 }
+function planHtml(f) {
+  const u = PS(), tr = (data && data.tarifs) || {}, nB = PACK_N[f.pack] || 1, bs = fBands(f);
+  const r = (name, val, cur, txt, extra = '') => `<label class="radio"><input type="radio" name="${name}" value="${val}" ${cur === val ? 'checked' : ''}> ${esc(txt)}${extra}</label>`;
+  return `<label>${esc(u.pack)}</label>${['start', 'plus', 'max'].map((k) => r('pack', k, f.pack, u.pk[k], tr['pk_' + k] && tr.mode !== 'band' ? `<span class="meta">${esc(String(tr['pk_' + k]))} € ${esc(TP().ht)} ${esc(u.month)}</span>` : '')).join('')}
+    <label>${esc(u.bands)} <span class="meta">(${esc(f.pack === 'max' ? u.pk.max : u.choose(nB))})</span></label><div class="chips">${BANDS.map(([k, a, b]) => `<label class="chip"><input type="checkbox" data-band="${k}" ${bs.includes(k) ? 'checked' : ''} ${f.pack === 'max' ? 'disabled' : ''}> ${esc(u.bt[k])} <span class="meta">${a}–${b}</span></label>`).join('')}</div>
+    <label>${esc(u.per)}</label>${r('per', 'week', f.we ? 'we' : 'week', u.week)}${r('per', 'we', f.we ? 'we' : 'week', u.we)}
+    <label>${esc(u.pos)}</label>${['rot', 'haut', 'milieu', 'bas'].map((k) => r('pslot', k, f.slot, u.ps[k])).join('')}
+    ${f.slot === 'haut' ? `<label class="radio"><input type="checkbox" data-down="1" ${f.down ? 'checked' : ''}> ${esc(u.down)}</label>` : ''}
+    <div class="two"><div><label>${esc(T().from || 'Début')}</label><input type="date" data-k="debut" value="${esc(f.debut)}"></div><div><label>${esc(u.dur)}</label><div style="display:flex;gap:6px"><input type="number" min="1" max="365" data-k="dn" value="${esc(String(f.dn || 1))}" style="width:80px"><select data-k="du">${['d', 'w', 'm', 'y'].map((k) => `<option value="${k}" ${(f.du || 'm') === k ? 'selected' : ''}>${esc(u.du[k])}</option>`).join('')}</select></div></div></div>
+    <p class="meta" style="margin:4px 0 0">${esc(u.disc)}</p>`;
+}
 function formHtml(t) {
   const f = form, tr = (data && data.tarifs) || {}, p = priceOf(f);
   return `<div class="card frm"><h2>${esc(f.id ? t.edit : t.newA)}</h2>
@@ -170,10 +193,7 @@ function formHtml(t) {
     <div class="two"><div><label>${esc(t.tel)}</label><input data-k="tel" type="tel" value="${esc(f.tel)}"></div><div><label>${esc(t.web)}</label><input data-k="web" type="url" value="${esc(f.web)}" placeholder="https://…"></div></div>
     <label>${esc(t.video)}</label><input data-k="video" type="url" value="${esc(f.video)}" placeholder="https://…">
     ${mediaHtml(f)}
-    <label>${esc(t.slot)}</label>${SLOTS.map((k) => `<label class="radio"><input type="radio" name="slot" value="${k}" ${f.slot === k ? 'checked' : ''}> ${esc(t.Sl[k])}<span class="meta">${tr[k] ? tr[k] + ' € ' + esc(t.perDay) : esc(t.quote)}</span></label>`).join('')}
-    <div class="two"><div><label>${esc(t.from)}</label><input type="date" data-k="debut" value="${esc(f.debut)}"></div><div><label>${esc(t.to)}</label><input type="date" data-k="fin" value="${esc(f.fin)}"></div></div>
-    <label>${esc(t.days)}</label><div class="chips">${t.D.map((d, i) => `<label class="chip"><input type="checkbox" data-day="${i}" ${f.jours.includes(i) ? 'checked' : ''}> ${esc(d)}</label>`).join('')}</div>
-    <label>${esc(t.hours)}</label><div class="two"><div><span class="meta">${esc(t.h1)}</span><input type="time" data-k="h1" value="${esc(f.h1)}"></div><div><span class="meta">${esc(t.h2)}</span><input type="time" data-k="h2" value="${esc(f.h2)}"></div></div>
+    ${planHtml(f)}
     <label>✍️ ${esc(SPX[lang] ? SPX[lang][0] : SPX.fr[0])}</label><textarea data-k="special" rows="2" placeholder="${esc(SPX[lang] ? SPX[lang][1] : SPX.fr[1])}">${esc(f.special || '')}</textarea>
     <p class="meta" style="margin:10px 0 0">${esc(MD().jingle)}</p>
     <label>🎬 ${esc((CRT[lang] || CRT.fr).t)}</label><select data-k="crea">${['', 'simple', 'moyen', 'max'].map((k) => `<option value="${k}" ${(f.crea || '') === k ? 'selected' : ''}>${esc((CRT[lang] || CRT.fr)[k || 'none'])}${k ? ' — ' + (+tr['crea_' + k] ? esc(eur(+tr['crea_' + k])) + ' ' + esc(TP().ht) : esc(t.quote)) : ''}</option>`).join('')}</select>
@@ -184,7 +204,7 @@ function adHtml(a, t) {
   const st = a.st === 'ok' && a.fin && a.fin < today ? 'end' : a.st, u = TP();
   return `<div class="ad ${st === 'pay' ? 'wait' : st}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(t.Ty[a.type] || '')} · ${esc(a.nom)}</b><span class="tag">${esc(st === 'pay' ? u.st : t.St[st] || '')}</span></div>
     <p style="margin:4px 0 0;white-space:pre-wrap">${esc(a.texte)}</p>${a.crea ? `<p class="meta" style="margin:4px 0 0">🎬 ${esc((CRT[lang] || CRT.fr)[a.crea] || '')}</p>` : ''}
-    <p class="meta" style="margin:4px 0 0">${esc(t.Sl[a.slot] || '')} · ${(a.aud || []).map((k) => esc(t.Au[k] || '')).join(' · ')}<br>📅 ${esc(a.debut)} → ${esc(a.fin)}${a.jours && a.jours.length ? ' · ' + a.jours.map((j) => esc(t.D[j])).join(' ') : ''}${a.h1 ? ` · ${esc(a.h1)}–${esc(a.h2)}` : ''}${a.prix ? ' · ' + esc(a.prix) + ' € ' + esc(u.ht) : ''}</p>
+    <p class="meta" style="margin:4px 0 0">${esc(t.Sl[a.slot] || (PS().ps[a.slot] || '').split(' — ')[0])}${a.bands && a.bands.length ? ' · ' + a.bands.map((k) => esc(PS().bt[k] || k)).join(', ') : ''}${a.we ? ' · 🎉' : ''} · ${(a.aud || []).map((k) => esc(t.Au[k] || '')).join(' · ')}<br>📅 ${esc(a.debut)} → ${esc(a.fin)}${a.jours && a.jours.length ? ' · ' + a.jours.map((j) => esc(t.D[j])).join(' ') : ''}${a.h1 ? ` · ${esc(a.h1)}–${esc(a.h2)}` : ''}${a.prix ? ' · ' + esc(a.prix) + ' € ' + esc(u.ht) : ''}</p>
     ${st === 'pay' ? payHtml(a) : ''}
     ${a.st === 'no' && a.motif ? `<p class="warnt">${esc(t.motif)} : ${esc(a.motif)}</p>` : ''}
     ${a.st === 'ok' ? `<p class="meta" style="margin:4px 0 0">📊 <b>${esc(a.v || 0)}</b> ${esc(t.views)} · <b>${esc(a.taps || 0)}</b> ${esc(t.clicks)}</p>` : ''}
@@ -300,7 +320,7 @@ function render() {
     return;
   }
   const d = data, out = [], today = new Date().toISOString().slice(0, 10);
-  const pubs = others.filter((x) => (!x.fin || x.fin >= today) && (!x.debut || x.debut <= today) && pubNow(x)), slot = (k) => { const l = pubs.filter((x) => (x.slot || 'milieu') === k); return l.length ? l[Math.floor(Date.now() / 60000) % l.length] : null; };
+  const pubs = others.filter((x) => (!x.fin || x.fin >= today) && (!x.debut || x.debut <= today) && pubNow(x) && pubLive(x)), slot = (k) => { const l = pubs.filter((x) => pubSlotNow(x) === k); return pubPickNow(l); };
   document.title = `📣 ${d.nom}`;
   const lg = ls.get('annLogo:' + id) || '';
   out.push(`<div class="top"><span class="brandx" style="display:flex;align-items:center;gap:10px"><button class="av-wrap" data-logo-open="1" aria-label="Logo"><span class="av-btn">${lg ? `<img src="${esc(lg)}" alt="" style="object-fit:contain;background:#fff">` : '📣'}</span><span class="av-pen" aria-hidden="true">✏️</span></button><b>${esc(d.nom)}</b></span>${langs}</div><p class="sub">${esc(t.app)} · ${esc(d.reseau)}</p>`);
@@ -365,11 +385,16 @@ app.addEventListener('change', async (e) => {
     if (form) form.logo = u; ls.set('annLogo:' + id, u); render();
   } catch { /* image illisible */ }
 });
-app.addEventListener('input', (e) => { const el = e.target; if (form && el.dataset.k) { form[el.dataset.k] = el.value; if (['debut', 'fin', 'crea'].includes(el.dataset.k)) render(); } });
+app.addEventListener('input', (e) => { const el = e.target; if (form && el.dataset.k) { form[el.dataset.k] = el.value; if (['debut', 'fin', 'crea', 'du'].includes(el.dataset.k)) render(); else if (el.dataset.k === 'dn') { const p = app.querySelector('.est b'); if (p) { const v = priceOf(form); p.textContent = v ? v + ' € ' + TP().ht : p.textContent; } } } });
 app.addEventListener('change', (e) => {
   const el = e.target;
   if (!form) return;
   if (el.name === 'slot') { form.slot = el.value; return render(); }
+  if (el.name === 'pack') { form.pack = el.value; form.bands = fBands(form).slice(0, PACK_N[el.value] || 1); return render(); }
+  if (el.name === 'per') { form.we = el.value === 'we'; return render(); }
+  if (el.name === 'pslot') { form.slot = el.value; if (el.value !== 'haut') form.down = false; return render(); }
+  if (el.dataset.down) { form.down = el.checked; return; }
+  if (el.dataset.band) { const k = el.dataset.band, n = PACK_N[form.pack] || 1; let b = (form.bands || []).filter((x) => x !== k); if (el.checked) b = [...b, k].slice(-n); form.bands = b; return render(); }
   if (el.name === 'muse') { form.muse = el.value; return; }
   if (el.dataset.rights) { form.droits = el.checked; return; }
   if (el.dataset.media) {
@@ -422,6 +447,7 @@ app.addEventListener('click', async (e) => {
     const f = form;
     if (!f.nom.trim() || !f.texte.trim()) { msg = t.need; return render(); }
     if ((f.video || mFiles.length) && !f.droits) { msg = MD().need; return render(); }
+    if (f.du && f.pack !== 'max' && fBands(f).length !== (PACK_N[f.pack] || 1)) { msg = PS().need(PACK_N[f.pack] || 1); return render(); }
     b.disabled = true;
     try {
       const mref = Math.random().toString(36).slice(2, 12) + Date.now().toString(36);

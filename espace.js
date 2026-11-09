@@ -1,5 +1,6 @@
 // Espace locataire : page personnelle, en lecture seule (+ signaler un problème).
 // Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
+import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
@@ -831,7 +832,7 @@ let homeMap = false, pubTurn = 0, topPubId = '';
 try { pubTurn = (+localStorage.getItem('espPubTurn') || 0) + 1; localStorage.setItem('espPubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
 // annonce repliée d'un toucher sur son titre (mémorisé sur l'appareil), rouverte de la même façon
 const pubShut = new Set((() => { try { return JSON.parse(localStorage.getItem('espPubShut') || '[]'); } catch { return []; } })());
-const pickPub = (list) => (list.length ? list[pubTurn % list.length] : null);
+const pickPub = (list) => pubPickNow(list); // tour de 3 minutes chacune
 // annonce limitée à certains jours / heures (ex. happy hour 17:00–19:00, le samedi)
 const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
 const pubLogo = (x) => (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(x.logo || '') && x.logo.length < 60000 ? `<img src="${x.logo}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''); // logo de l'annonceur
@@ -969,11 +970,11 @@ function render() {
     <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>`; })() + `<p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${MY_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === (icMine || d.avatar)}">${esc(e)}</button>`).join('')}</div></div>` : ''}<p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);
   // 🔄 révision du loyer annoncée par le gestionnaire
   if (d.revis && d.revis.from && (s.pay || s.contrat)) { const rv = REVT[lang] || REVT.fr; out.push(`<div class="card notice" style="border-left:4px solid #2563eb"><p style="margin:0"><b>🔄 ${esc(rv.t)}</b></p><p style="margin:6px 0 0">${esc(rv.from)} <b>${esc(fmt(d.revis.from))}</b> : ${esc(money(d.revis.ancien))} → <b>${esc(money(d.revis.nouveau))}</b> ${esc(rv.m)}</p></div>`); }
-  const pubs = s.pub ? (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x)) : [];
+  const pubs = s.pub ? (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x) && pubLive(x)) : [];
   const ad = pubs.find((x) => x.id === adSel);
   if (!ad) adSel = '';
   // trois emplacements payants : haut (à la place de la carte, à l'ouverture), milieu, bas (au-dessus de la barre crypto)
-  const slot = (k) => pickPub(pubs.filter((x) => (x.slot || 'milieu') === k));
+  const slot = (k) => pickPub(pubs.filter((x) => pubSlotNow(x) === k));
   const topAd = !ad && !homeMap ? slot('haut') : null;
   topPubId = (slot('haut') || {}).id || '';
   if (topAd) out.push(adBox(topAd, t, d, true));

@@ -1,5 +1,6 @@
 // Statistiques anonymes des annonces : « vue » (une fois par jour et par téléphone) et toucher (carte, appel, site, vidéo).
 // Rien d'autre n'est envoyé : ni nom, ni adresse, ni identifiant du téléphone.
+import { bandNow } from '/ares/pubsched.js';
 const queue = [];
 let timer = null, cfg = null;
 const flush = () => {
@@ -12,7 +13,8 @@ const flush = () => {
   } catch { /* hors ligne */ }
   if (queue.length) timer = setTimeout(flush, 300);
 };
-const push = (id, ev) => { if (!cfg || !id) return; queue.push({ id, ev }); if (!timer) timer = setTimeout(flush, ev === 'v' ? 1500 : 0); };
+// b : fascia horaire du moment (🌅 matin… 🌙 nuit), pour savoir quelles heures rapportent le plus
+const push = (id, ev) => { if (!cfg || !id) return; queue.push({ id, ev, b: bandNow() }); if (!timer) timer = setTimeout(flush, ev === 'v' ? 1500 : 0); };
 // 👍 👎 👉 (ares/pubsocial.js) : envoyés tout de suite
 export const pubEv = (id, ev) => push(id, ev);
 // base : adresse du Worker ; app : 'loc' | 'eq' | 'ptl' ; lang : fonction qui rend la langue affichée
@@ -22,9 +24,11 @@ export function pubSeen(root) {
   let seen = {};
   try { seen = JSON.parse(localStorage.getItem(k) || '{}'); } catch { /* stockage indisponible */ }
   if (seen.d !== day) seen = { d: day, ids: [] };
+  const bk = bandNow();
   for (const el of (root || document).querySelectorAll('[data-pid]')) {
     const id = el.dataset.pid;
-    if (!seen.ids.includes(id)) { seen.ids.push(id); push(id, 'v'); }
+    // « v » : une fois par jour (vues de l'annonce) ; « vb » : première vue dans une AUTRE fascia ce jour-là (statistique par fascia seulement)
+    if (!seen.ids.includes(id)) { seen.ids.push(id, id + '|' + bk); push(id, 'v'); } else if (!seen.ids.includes(id + '|' + bk)) { seen.ids.push(id + '|' + bk); push(id, 'vb'); }
   }
   try { localStorage.setItem(k, JSON.stringify(seen)); } catch { /* stockage plein */ }
 }

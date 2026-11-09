@@ -18341,4 +18341,124 @@ export default [
 "pub à publier telle quelle",
 "Werbung so veröffentlichen"
 ],
+[
+"Mode de prix",
+"Preismodell"
+],
+[
+"🚀 Lancement : pacchetti par mois (Start / Plus / Max)",
+"🚀 Start: Monatspakete (Start / Plus / Max)"
+],
+[
+"📅 Prix au jour par fascia (plus tard)",
+"📅 Tagespreis pro Zeitfenster (später)"
+],
+[
+"🚀 Pacchetti — € HT par mois (position Milieu)",
+"🚀 Pakete — € netto pro Monat (Position Mitte)"
+],
+[
+"🟢 Start — 1 fascia",
+"🟢 Start — 1 Zeitfenster"
+],
+[
+"🟡 Plus — 3 fasce",
+"🟡 Plus — 3 Zeitfenster"
+],
+[
+"🔴 Max — toutes",
+"🔴 Max — alle"
+],
+[
+"📍 Position et remises (%)",
+"📍 Position und Rabatte (%)"
+],
+[
+"🔝 Haut fixe : + %",
+"🔝 Oben fest: + %"
+],
+[
+"🔽 Bas fixe : − %",
+"🔽 Unten fest: − %"
+],
+[
+"Remise en semaines − %",
+"Rabatt in Wochen − %"
+],
+[
+"Remise en mois − %",
+"Rabatt in Monaten − %"
+],
+[
+"Remise en années − %",
+"Rabatt in Jahren − %"
+],
+[
+"Annonces max. par position et par fascia",
+"Max. Anzeigen pro Position und Zeitfenster"
+],
+[
+"📅 Prix au jour par fascia (€ HT) — utilisés en mode « fascia »",
+"📅 Tagespreis pro Zeitfenster (€ netto) — im Modus „Zeitfenster“"
+],
+[
+"Prix = base × position (Haut + / Bas −) × (week-end : 3 jours sur 7) × durée − remise. Rotation et Milieu = prix de base.",
+"Preis = Basis × Position (Oben + / Unten −) × (Wochenende: 3 von 7 Tagen) × Dauer − Rabatt. Rotation und Mitte = Grundpreis."
+],
+[
+"🕒 Fasce horaires (aucune = toute la journée)",
+"🕒 Zeitfenster (keins = ganzer Tag)"
+],
+[
+"🎉 Seulement le week-end (jeudi, vendredi, samedi)",
+"🎉 Nur am Wochenende (Do, Fr, Sa)"
+],
+[
+"📅 Planning des annonces",
+"📅 Anzeigenplanung"
+],
+[
+"places occupées par fascia et par position · rouge = complet",
+"belegte Plätze pro Zeitfenster und Position · rot = voll"
+],
+[
+"Fascia",
+"Zeitfenster"
+],
+[
+"🔄 Rotation",
+"🔄 Rotation"
+],
+[
+"Chaque annonce reste 3 minutes, puis cède sa place ; elle revient au moins toutes les 30 minutes tant que la position n’est pas complète. Les annonces « rotation » comptent pour un tiers dans chaque position.",
+"Jede Anzeige bleibt 3 Minuten und macht dann Platz; sie kommt mindestens alle 30 Minuten wieder, solange die Position nicht voll ist. „Rotation“-Anzeigen zählen in jeder Position zu einem Drittel."
+],
+[
+"(vues / clics par fascia)",
+"(Aufrufe / Klicks pro Zeitfenster)"
+],
+[
+"☀️ Matin +",
+"☀️ Vormittag"
+],
+[
+"🌤️ Après-midi",
+"🌤️ Nachmittag"
+],
+[
+"🌇 Après-midi +",
+"🌇 Spätnachmittag"
+],
+[
+"🌆 Soir",
+"🌆 Abend"
+],
+[
+"🌙 Nuit",
+"🌙 Nacht"
+],
+[
+"🔄 Rotation — Haut, Milieu, Bas à tour de rôle (prix de base)",
+"🔄 Rotation — Oben, Mitte, Unten abwechselnd (Grundpreis)"
+],
 ];

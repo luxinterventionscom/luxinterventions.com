@@ -18087,4 +18087,124 @@ export default [
 "pub à publier telle quelle",
 "ad to publish as is"
 ],
+[
+"Mode de prix",
+"Pricing mode"
+],
+[
+"🚀 Lancement : pacchetti par mois (Start / Plus / Max)",
+"🚀 Launch: monthly packages (Start / Plus / Max)"
+],
+[
+"📅 Prix au jour par fascia (plus tard)",
+"📅 Daily price per time slot (later)"
+],
+[
+"🚀 Pacchetti — € HT par mois (position Milieu)",
+"🚀 Packages — € excl. VAT per month (Middle position)"
+],
+[
+"🟢 Start — 1 fascia",
+"🟢 Start — 1 time slot"
+],
+[
+"🟡 Plus — 3 fasce",
+"🟡 Plus — 3 time slots"
+],
+[
+"🔴 Max — toutes",
+"🔴 Max — all"
+],
+[
+"📍 Position et remises (%)",
+"📍 Position and discounts (%)"
+],
+[
+"🔝 Haut fixe : + %",
+"🔝 Fixed top: + %"
+],
+[
+"🔽 Bas fixe : − %",
+"🔽 Fixed bottom: − %"
+],
+[
+"Remise en semaines − %",
+"Discount in weeks − %"
+],
+[
+"Remise en mois − %",
+"Discount in months − %"
+],
+[
+"Remise en années − %",
+"Discount in years − %"
+],
+[
+"Annonces max. par position et par fascia",
+"Max ads per position and time slot"
+],
+[
+"📅 Prix au jour par fascia (€ HT) — utilisés en mode « fascia »",
+"📅 Daily price per time slot (€ excl. VAT) — used in “time slot” mode"
+],
+[
+"Prix = base × position (Haut + / Bas −) × (week-end : 3 jours sur 7) × durée − remise. Rotation et Milieu = prix de base.",
+"Price = base × position (Top + / Bottom −) × (weekend: 3 days out of 7) × duration − discount. Rotation and Middle = base price."
+],
+[
+"🕒 Fasce horaires (aucune = toute la journée)",
+"🕒 Time slots (none = all day)"
+],
+[
+"🎉 Seulement le week-end (jeudi, vendredi, samedi)",
+"🎉 Weekend only (Thu, Fri, Sat)"
+],
+[
+"📅 Planning des annonces",
+"📅 Ads planning"
+],
+[
+"places occupées par fascia et par position · rouge = complet",
+"places taken per slot and position · red = full"
+],
+[
+"Fascia",
+"Time slot"
+],
+[
+"🔄 Rotation",
+"🔄 Rotation"
+],
+[
+"Chaque annonce reste 3 minutes, puis cède sa place ; elle revient au moins toutes les 30 minutes tant que la position n’est pas complète. Les annonces « rotation » comptent pour un tiers dans chaque position.",
+"Each ad stays 3 minutes, then gives way; it comes back at least every 30 minutes while the position isn’t full. “Rotation” ads count as one third in each position."
+],
+[
+"(vues / clics par fascia)",
+"(views / clicks per time slot)"
+],
+[
+"☀️ Matin +",
+"☀️ Late morning"
+],
+[
+"🌤️ Après-midi",
+"🌤️ Afternoon"
+],
+[
+"🌇 Après-midi +",
+"🌇 Late afternoon"
+],
+[
+"🌆 Soir",
+"🌆 Evening"
+],
+[
+"🌙 Nuit",
+"🌙 Night"
+],
+[
+"🔄 Rotation — Haut, Milieu, Bas à tour de rôle (prix de base)",
+"🔄 Rotation — Top, Middle, Bottom in turn (base price)"
+],
 ];

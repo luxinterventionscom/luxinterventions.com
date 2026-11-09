@@ -12,6 +12,7 @@ import { videoEmbed } from './video-embed.js';
 import { PTL_INVITE } from './ptl-invite.js';
 import { zoneOk, visParse, visZone } from './netpubs.js';
 import { newsHtml } from './news.js';
+import { BANDS, BAND_KEYS, TARIF_DEF, PACK_N, adPrice, durDays, pubLive, pubSlotNow, pubPickNow, bandNow } from './pubsched.js';
 import { emojiInit } from './emoji.js';
 import { pubStatInit, pubSeen, pubTap } from './pubstat.js';
 import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from './pubsocial.js';
@@ -35,7 +36,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.236.0';
+const VERSION = '2.237.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1061,7 +1062,7 @@ const isPub = (a) => a.kind === 'pub';
 const PUB_AUD = { loc: '🏠 Locataires', eq: '👷 Équipe', ptl: '🏢 Portail gérance', cli: '🌐 Centrales des clients (gérances, agences, propriétaires, hôtels, Airbnb)', hote: '🏨 Clients hôtel / Airbnb', taxi: '🚕 Taxis', ann: '📣 Annonceurs' };
 // Trois emplacements payants dans les apps (locataires, équipe, portail) — du plus cher au moins cher
 const PUB_VIS = [['', '🌍 Partout'], ['pays', '🏳️ Même pays'], ['ville', '🏙️ Même ville'], ['km1', '📍 À moins de 1 km'], ['km5', '📍 À moins de 5 km'], ['km10', '📍 À moins de 10 km'], ['km25', '📍 À moins de 25 km'], ['km50', '📍 À moins de 50 km']];
-const PUB_SLOTS = { haut: '🔝 Haut — sous « Bonjour », visible à l’ouverture (prix élevé)', milieu: '⏺ Milieu — au centre de l’app (prix moyen)', bas: '🔽 Bas — en fin de page, au-dessus de la barre crypto (prix bas)' };
+const PUB_SLOTS = { rot: '🔄 Rotation — Haut, Milieu, Bas à tour de rôle (prix de base)', haut: '🔝 Haut — sous « Bonjour », visible à l’ouverture (prix élevé)', milieu: '⏺ Milieu — au centre de l’app (prix moyen)', bas: '🔽 Bas — en fin de page, au-dessus de la barre crypto (prix bas)' };
 const pubSlot = (a) => (PUB_SLOTS[a.slot] ? a.slot : 'milieu');
 const pubAud = (a) => (Array.isArray(a.aud) && a.aud.length ? a.aud : ['loc']);
 // Statistiques anonymes des annonces (vues : une fois par jour et par téléphone ; clics : carte, appel, site, vidéo)
@@ -1079,6 +1080,7 @@ function pubStatsBlock(a) {
       <div class="metric"><div class="lbl">👍 · 👎 · 👉</div><div class="val">${st.like} · ${st.dis} · ${st.sh}</div><div class="sub"><span>j’aime · je n’aime pas · partages</span></div></div>
     </div>
     <p class="small" style="margin:8px 0 0">${Object.entries(PUB_EV).map(([k, v]) => html`<span>${v}</span> <b>${st.ev[k] || 0}</b>`).reduce((x, y) => html`${x} · ${y}`)}</p>
+    ${Object.keys(st.band).length ? html`<p class="small" style="margin:4px 0 0">🕒 ${BANDS.filter(([k]) => st.band[k]).map(([k]) => html`<span>${BAND_LBL[k]}</span> <b>${st.band[k].v}</b>/${st.band[k].t}`).reduce((x, y) => html`${x} · ${y}`)} <span class="tiny muted">(vues / clics par fascia)</span></p>` : ''}
     <p class="small muted" style="margin:4px 0 0">${Object.entries(PUB_AUD).filter(([k]) => st.app[k]).map(([k, v]) => html`<span>${v}</span> ${st.app[k].v}/${st.app[k].t}`).reduce((x, y) => html`${x} · ${y}`, '')}</p>
     <div class="pub-bars" title="Vues par jour (30 jours)">${days.map((d) => html`<i style="height:${Math.round((((last.day[d] || {}).v || 0) / max) * 100)}%" title="${fmtDate(d)} : ${(last.day[d] || {}).v || 0}"></i>`)}</div>
     <p class="tiny muted" style="margin:2px 0 0">Vues par jour — 30 derniers jours${ui.pubStats && ui.pubStats.err ? ' · ⚠ statistiques indisponibles (connexion ?)' : ''}</p>
@@ -1115,7 +1117,7 @@ async function pubStatsLoad(force) {
   const st = ui.pubStats;
   if (!force && st && (st.loading || Date.now() - st.at < 15000)) return;
   ui.pubStats = { ...(st || { rows: [] }), loading: true, at: Date.now() };
-  try { ui.pubStats = { rows: await vault.pubStats(400), at: Date.now() }; } catch { ui.pubStats = { rows: (st && st.rows) || [], at: Date.now(), err: true }; }
+  try { ui.pubStats = { ...(await vault.pubStatsAll(400)), at: Date.now() }; } catch { ui.pubStats = { rows: (st && st.rows) || [], bands: (st && st.bands) || [], at: Date.now(), err: true }; }
   if (ui.route === 'maintenance' || ui.route === 'champpub') renderView();
   if (ui.sheet && ui.sheet.kind === 'pub-form') { ui.sheet.rendered = false; renderSheet(); }
 }
@@ -1128,11 +1130,13 @@ function pubStatsFor(id, from = '0000', to = '9999') {
     else if (PUB_SOC[x.ev]) r.soc[x.ev] = (r.soc[x.ev] || 0) + x.n;
     else { r.taps += x.n; d.t += x.n; r.ev[x.ev] = (r.ev[x.ev] || 0) + x.n; (r.app[x.app] ||= { v: 0, t: 0 }).t += x.n; }
   }
+  r.band = {};
+  for (const x of (ui.pubStats && ui.pubStats.bands) || []) { if (x.ad !== id || x.day < from || x.day > to) continue; const b = (r.band[x.band] ||= { v: 0, t: 0 }); if (x.ev === 'v') b.v += x.n; else if (!PUB_SOC[x.ev]) b.t += x.n; }
   r.ctr = r.v ? Math.round((r.taps / r.v) * 1000) / 10 : 0;
   r.like = Math.max(0, (r.soc.like || 0) - (r.soc.unl || 0)); r.dis = Math.max(0, (r.soc.dis || 0) - (r.soc.und || 0)); r.sh = r.soc.share || 0;
   return r;
 }
-const pubOut = (a) => ({ id: a.id, ...(a.zone ? { zone: a.zone } : {}), ...(a.logo ? { logo: a.logo } : {}), slot: pubSlot(a), cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '', ...(a.jours && a.jours.length ? { jours: a.jours } : {}), ...(a.h1 && a.h2 ? { h1: a.h1, h2: a.h2 } : {}), ...(a.type ? { type: a.type } : {}) });
+const pubOut = (a) => ({ id: a.id, ...(a.bands && a.bands.length ? { bands: a.bands } : {}), ...(a.we ? { we: 1 } : {}), ...(a.zone ? { zone: a.zone } : {}), ...(a.logo ? { logo: a.logo } : {}), slot: pubSlot(a), cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '', ...(a.jours && a.jours.length ? { jours: a.jours } : {}), ...(a.h1 && a.h2 ? { h1: a.h1, h2: a.h2 } : {}), ...(a.type ? { type: a.type } : {}) });
 const pubsActives = (immId, aud = 'loc') => vault.list('avis').filter((a) => isPub(a) && (!a.st || a.st === 'ok') && pubAud(a).includes(aud) && (aud === 'ptl' || !immId || !a.immId || (Array.isArray(immId) ? immId.includes(a.immId) : a.immId === immId)) && (!a.debut || a.debut <= today()) && (!a.fin || a.fin >= today()));
 const avisActifs = (immId) => vault.list('avis').filter((a) => !isPub(a) && (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
   .sort((a, b) => (a.debut || '').localeCompare(b.debut || ''));
@@ -1777,6 +1781,11 @@ const TDEM_URG = { normal: '🟢 Normal', rapide: '🟠 Rapide (48 h)', urgent: 
 const AN_TYPES = { annonce: '📣 Annonce', evenement: '🎉 Événement', menu: '🍽️ Menu du jour' };
 const anCos = () => vault.list('reglages').filter((r) => r.id.startsWith('annc-')).sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
 const anTarifs = () => vault.get('reglages', 'annTarifs') || {};
+// tarifs complets (valeurs de lancement si rien n'est réglé) : pacchetti, posizioni, remises, fasce, capacité
+const anTarifsFull = () => { const t = anTarifs(), o = { ...TARIF_DEF }; for (const k of Object.keys(TARIF_DEF)) if (t[k] !== undefined && t[k] !== '') o[k] = k === 'mode' ? (t[k] === 'band' ? 'band' : 'pack') : +t[k]; return o; };
+const BAND_LBL = { m: '🌅 Matin', m2: '☀️ Matin +', a: '🌤️ Après-midi', a2: '🌇 Après-midi +', s: '🌆 Soir', n: '🌙 Nuit' };
+const bandTxt = (k) => { const b = BANDS.find((x) => x[0] === k); return b ? `${BAND_LBL[k]} ${b[1]}–${b[2]}` : k; };
+const PACK_LBL = { start: '🟢 Start — 1 fascia', plus: '🟡 Plus — 3 fasce', max: '🔴 Max — toutes les fasce' };
 const PUB_JOURS = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
 const anHashes = new Map();
 // 💶 annonce validée → l'annonceur paie la centrale (virement QR + « J'ai payé ») → « Paiement reçu » : facture et mise en ligne.
@@ -1818,11 +1827,11 @@ async function annSync(onlyId, loud) {
       const sig = vault.get('reglages', 'signal'), t = anTarifs();
       const ads = vault.list('avis').filter((a) => isPub(a) && a.annId === an.id).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map((a) => {
         const st = pubStatsFor(a.id, a.debut || '0000');
-        return { id: a.id, type: a.type || 'annonce', nom: a.nom, texte: a.texte || '', adresse: a.adresse || '', tel: a.tel || '', web: a.web || '', video: a.video || '', slot: pubSlot(a), aud: pubAud(a), debut: a.debut, fin: a.fin, jours: a.jours || [], h1: a.h1 || '', h2: a.h2 || '', st: a.st || 'ok', motif: a.motif || '', prix: a.prix || 0, v: st.v, taps: st.taps,
+        return { id: a.id, type: a.type || 'annonce', nom: a.nom, texte: a.texte || '', adresse: a.adresse || '', tel: a.tel || '', web: a.web || '', video: a.video || '', slot: pubSlot(a), aud: pubAud(a), debut: a.debut, fin: a.fin, jours: a.jours || [], h1: a.h1 || '', h2: a.h2 || '', bands: a.bands || [], we: !!a.we, pack: a.pack || '', dn: a.dn || '', du: a.du || '', down: !!a.down, st: a.st || 'ok', motif: a.motif || '', prix: a.prix || 0, v: st.v, taps: st.taps,
           claim: a.payClaim || '', fact: a.fact ? { no: a.fact.no, date: a.fact.date, ht: a.fact.ht, tva: a.fact.tva, ttc: a.fact.ttc, tx: a.fact.tx } : null, ...(a.st === 'pay' ? annDue(a) : {}) };
       });
       const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', prof: { email: an.email || '', web: an.web || '', tva: an.tvaNum || '', iban: an.iban || '', banque: an.banque || '' }, recs: vault.list('reglages').filter((r) => r.id.startsWith('anrec-') && r.annId === an.id).map((r) => ({ t: r.t, motif: r.motif, texte: r.texte, rep: r.rep || '' })), adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: 'LuxInterventions',
-        tarifs: { haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, crea_simple: +t.crea_simple || 0, crea_moyen: +t.crea_moyen || 0, crea_max: +t.crea_max || 0, note: t.note || '' }, pay: false, ...annFrom(), chat: pchatOut(an), chatRd: an.chatRd || '' };
+        tarifs: { ...anTarifsFull(), haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, crea_simple: +t.crea_simple || 0, crea_moyen: +t.crea_moyen || 0, crea_max: +t.crea_max || 0, note: t.note || '' }, pay: false, ...annFrom(), chat: pchatOut(an), chatRd: an.chatRd || '' };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && anHashes.get(e.id) === hs) continue;
       await vault.espacePut(e.id, await sealJson(e.key, data));
@@ -1853,7 +1862,17 @@ async function annInbox(an, msg) {
     rec.mref = /^[a-z0-9]{6,40}$/.test(a.mref || '') ? a.mref : (old && old.mref) || '';
     rec.muse = a.muse === 'ex' ? 'ex' : 'pub';
     rec.droits = !!a.droits;
-    const t = anTarifs(); rec.prix = Math.round((+t[rec.slot] || 0) * rec.ttl) + (rec.crea ? +t['crea_' + rec.crea] || 0 : 0);
+    const t = anTarifs();
+    if (['d', 'w', 'm', 'y'].includes(a.du)) {
+      // 📅 nouveau modèle : pacchetto + fasce + position (fixe ou rotation) + semaine / week-end + durée
+      rec.pack = PACK_N[a.pack] ? a.pack : 'start';
+      rec.bands = rec.pack === 'max' ? [...BAND_KEYS] : (Array.isArray(a.bands) ? a.bands : []).filter((k) => BAND_KEYS.includes(k)).slice(0, PACK_N[rec.pack]);
+      rec.we = !!a.we; rec.du = a.du; rec.dn = Math.min(a.du === 'y' ? 5 : a.du === 'm' ? 24 : a.du === 'w' ? 52 : 365, Math.max(1, Math.round(+a.dn || 1)));
+      rec.slot = ['haut', 'milieu', 'bas', 'rot'].includes(a.slot) ? a.slot : 'rot';
+      rec.down = rec.slot === 'haut' && !!a.down;
+      rec.fin = addDays(debut, durDays(rec.dn, rec.du) - 1); rec.ttl = durDays(rec.dn, rec.du); rec.jours = []; rec.h1 = rec.h2 = '';
+      rec.prix = Math.round((adPrice(rec, anTarifsFull()) + (rec.crea ? +t['crea_' + rec.crea] || 0 : 0)) * 100) / 100;
+    } else rec.prix = Math.round((+t[rec.slot] || 0) * rec.ttl) + (rec.crea ? +t['crea_' + rec.crea] || 0 : 0);
     if (old) rec.id = old.id;
     await vault.mutate((tx) => tx.put('avis', rec), old ? '📣 Annonce modifiée par l’annonceur (à valider)' : '📣 Nouvelle annonce à valider', `${an.nom} · ${AN_TYPES[rec.type]} · ${fmtDate(rec.debut)} → ${fmtDate(rec.fin)}`);
     annSync(an.id); return true;
@@ -1954,7 +1973,7 @@ const aboOffersOn = () => (vault.get('reglages', 'abos') || {}).offers !== false
 function aboSection() {
   const sub = ui.aboTab || 'ger';
   const tabs = html`<div class="tabs" role="tablist" style="max-width:560px;margin-bottom:14px">${[['ger', html`💼 <span class="tab-long">Abonnements </span>gérances`], ['pub', html`📣 Annonces<span class="tab-long"> publicitaires</span>`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sub === k}" data-action="abo-tab" data-id="${k}">${l}</button>`)}</div><div style="max-width:560px;margin:-4px 0 14px">${new Raw(newsHtml(API))}</div>`;
-  if (sub === 'pub') return html`${tabs}<p style="margin:0 0 10px"><button class="btn primary" data-action="new-pub" data-imm="">${icon('plus')} Annonce</button></p>${pubSection('')}`;
+  if (sub === 'pub') return html`${tabs}<p style="margin:0 0 10px"><button class="btn primary" data-action="new-pub" data-imm="">${icon('plus')} Annonce</button></p>${pubPlanning()}${pubSection('')}`;
   const on = aboOffersOn();
   const sw = html`<div class="card" style="margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="grow"><b>Offres d’abonnement dans le portail des gérances</b><span class="meta" style="display:block">${on ? 'Les gérances voient « 💼 Nos abonnements » et « Voir les offres ».' : 'Masquées : les gérances ne voient aucune offre d’abonnement.'}</span></span>
     <button class="btn ${on ? 'primary' : ''}" data-action="abo-offers" aria-pressed="${on}">${on ? '🟢 Activé' : '⚪ Désactivé'}</button></div>`;
@@ -4121,11 +4140,35 @@ function netAdsLoad() {
 }
 // 📣 annonces du réseau dans la centrale d'un client : même carte que dans les apps (logo, vidéo / musique, 👍 👎 👉, vues et clics)
 let netSocOn = false;
+// 📅 occupation : par fascia et par position, annonces en cours (fixes + un tiers des « rotation »), capacité réglée dans les tarifs
+function pubLoad(excludeId) {
+  const t0 = today(), occ = {};
+  for (const a of vault.list('avis').filter((x) => isPub(x) && (!x.st || x.st === 'ok' || x.st === 'pay') && x.id !== excludeId && (!x.fin || x.fin >= t0))) {
+    for (const k of a.bands && a.bands.length ? a.bands : BAND_KEYS) {
+      const o = (occ[k] ||= { haut: 0, milieu: 0, bas: 0, rot: 0 });
+      o[a.slot === 'rot' ? 'rot' : pubSlot(a) === 'rot' ? 'rot' : pubSlot(a)] += 1;
+    }
+  }
+  return occ;
+}
+const pubUsed = (o, p) => (o ? o[p] + Math.ceil(o.rot / 3) : 0);
+function pubFull(a) {
+  const cap = anTarifsFull().cap || 10, occ = pubLoad(a.id), ps = a.slot === 'rot' ? ['haut', 'milieu', 'bas'] : [pubSlot(a)];
+  return (a.bands && a.bands.length ? a.bands : BAND_KEYS).filter((k) => ps.some((p) => pubUsed(occ[k], p) + (a.slot === 'rot' ? 1 / 3 : 1) > cap));
+}
+function pubPlanning() {
+  const cap = anTarifsFull().cap || 10, occ = pubLoad(''), now = bandNow();
+  const cell = (o, p) => { const n = pubUsed(o, p); return html`<td style="text-align:center;font-weight:600;color:${n >= cap ? 'var(--bad,#c0392b)' : n >= cap * 0.7 ? 'var(--amber,#b45309)' : 'inherit'}">${n} / ${cap}</td>`; };
+  return html`<details class="card gfold" data-gk="pub|plan" ${foldIsOpen('pub|plan') ? new Raw('open') : ''} style="margin-bottom:14px"><summary><b>📅 Planning des annonces</b> <span class="tiny muted">places occupées par fascia et par position · rouge = complet</span></summary>
+    <div style="overflow-x:auto;margin-top:8px"><table class="pr-table" style="width:100%"><tr><th style="text-align:left">Fascia</th><th>🔝 Haut</th><th>⏺ Milieu</th><th>🔽 Bas</th><th>🔄 Rotation</th></tr>
+    ${BANDS.map(([k]) => { const o = occ[k]; return html`<tr${k === now ? new Raw(' style="background:rgba(59,130,246,.08)"') : ''}><td>${bandTxt(k)}${k === now ? ' ◀' : ''}</td>${cell(o, 'haut')}${cell(o, 'milieu')}${cell(o, 'bas')}<td style="text-align:center">${o ? o.rot : 0}</td></tr>`; })}</table></div>
+    <p class="tiny muted" style="margin:6px 0 0">Chaque annonce reste 3 minutes, puis cède sa place ; elle revient au moins toutes les 30 minutes tant que la position n’est pas complète. Les annonces « rotation » comptent pour un tiers dans chaque position.</p></details>`;
+}
 function netAd(slot) {
   if (!TENANT) return '';
   netAdsLoad();
   const t0 = today(), ims = imms0();
-  const l = (netAdsCache || []).filter((a) => (a.aud || []).includes('cli') && (a.slot || 'milieu') === slot && (!a.fin || a.fin >= t0) && (!a.debut || a.debut <= t0) && (!ims.length || ims.some((im) => zoneOk(a, placeOf(im)))));
+  const l = (netAdsCache || []).filter((a) => (a.aud || []).includes('cli') && pubSlotNow(a) === slot && pubLive(a) && (!a.fin || a.fin >= t0) && (!a.debut || a.debut <= t0) && (!ims.length || ims.some((im) => zoneOk(a, placeOf(im)))));
   if (!l.length) return '';
   if (!netSocOn) {
     netSocOn = true;
@@ -4136,7 +4179,7 @@ function netAd(slot) {
     document.addEventListener('click', (e) => { if (!e.target.closest || !e.target.closest('.net-ad')) return; if (pubSocialClick(e)) { e.stopPropagation(); return; } pubTap(e); }, true);
   }
   setTimeout(() => { const r = document.querySelector('.net-ad'); if (r) { pubSocialLoad(document); pubSeen(document); } }, 0);
-  const a = l[Math.floor(Date.now() / 60000) % l.length], lg = /^data:image\/(png|jpeg|webp);base64,/.test(a.logo || '') ? a.logo : '', v = a.video ? videoEmbed(a.video) : null;
+  const a = pubPickNow(l), lg = /^data:image\/(png|jpeg|webp);base64,/.test(a.logo || '') ? a.logo : '', v = a.video ? videoEmbed(a.video) : null;
   return html`<details class="card net-ad" data-pid="${a.id}" style="margin-bottom:14px;border-left:4px solid #DC2626" ${netAdShut().has(a.id) ? '' : new Raw('open')}><summary style="cursor:pointer;list-style:none;display:flex;gap:10px;align-items:center"><span style="flex:1;min-width:0"><span class="tiny muted" style="display:block"><b>📣 Publicité</b>${PUB_CATS[a.cat] ? ' · ' + PUB_CATS[a.cat] : ''}</span><b style="display:block;font-size:16px">${a.nom}</b></span>${lg ? html`<img src="${lg}" alt="" style="max-height:40px;max-width:80px;object-fit:contain;border-radius:8px;background:#fff">` : ''}<span class="muted" aria-hidden="true">▾</span></summary>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
     ${v ? html`<div style="clear:both;margin-top:8px;border-radius:12px;overflow:hidden;background:#000;${v.audio ? `height:${v.audio}px` : 'aspect-ratio:' + (v.tall ? '9/16;max-height:520px;max-width:300px' : '16/9')}"><iframe src="${v.src}" title="${v.name}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="width:100%;height:100%;border:0;display:block"></iframe></div>` : a.video ? html`<p style="margin:8px 0 0"><a class="btn sm" href="${a.video}" target="_blank" rel="noopener">▶ Vidéo</a></p>` : ''}
     ${a.adresse ? html`<div class="meta" style="margin-top:6px">📍 ${a.adresse}</div>` : ''}
@@ -7145,6 +7188,8 @@ const SHEETS = {
         <p class="tiny muted full" style="margin:0">Collez le lien de la vidéo ou du morceau : il s’affiche dans l’annonce comme un petit écran ou un petit lecteur audio, on le regarde ou l’écoute sans quitter l’app. <b id="vidHint">${vidHint(a.video)}</b></p>
         <label class="field full">Emplacement<select name="slot">${Object.entries(PUB_SLOTS).map(([k, v]) => html`<option value="${k}" ${(a.slot ? pubSlot(a) : 'haut') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <div class="field full">Visible pour<div class="chips" style="margin-top:6px">${Object.entries(PUB_AUD).map(([k, v]) => html`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="aud_${k}" ${pubAud(a).includes(k) ? new Raw('checked') : ''} style="width:18px;min-height:18px;margin:0">${v}</label>`)}</div></div>
+        <div class="field full">🕒 Fasce horaires (aucune = toute la journée)<div class="chips" style="margin-top:6px">${BANDS.map(([k]) => html`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="band_${k}" ${(a.bands || []).includes(k) ? new Raw('checked') : ''} style="width:18px;min-height:18px;margin:0">${bandTxt(k)}</label>`)}</div></div>
+        <label class="row full" style="cursor:pointer"><input type="checkbox" name="we" ${a.we ? new Raw('checked') : ''}><span class="grow">🎉 Seulement le week-end (jeudi, vendredi, samedi)</span></label>
         <label class="field full">Qui la voit ?<select name="vis">${PUB_VIS.map(([k, v]) => html`<option value="${k}" ${vis0 === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         <p class="tiny muted full" style="margin:0">Comparé à l’adresse de l’annonce et à l’immeuble de chaque locataire (ville, pays, position). Si l’immeuble n’a pas de ville, de pays ou de position, le locataire voit l’annonce. 🌐 Les annonces validées vont aussi dans les apps des <b>centrales des clients</b> et des <b>annonceurs</b>.</p>
         ${field('Publier à partir du', 'debut', exp ? today() : a.debut, { type: 'date', required: true })}
@@ -7411,12 +7456,21 @@ const SHEETS = {
     };
   },
   'ann-tarifs'() {
-    const t = anTarifs();
+    const t = anTarifs(), tf = anTarifsFull();
     return {
       title: '💶 Tarifs des annonces',
       narrow: true,
       body: html`<form id="f" data-form="ann-tarifs" class="fields">
-        ${field('🔝 Haut — prix HT par jour (€)', 'haut', t.haut, { attrs: money$ })}${field('⏺ Milieu — prix HT par jour (€)', 'milieu', t.milieu, { attrs: money$ })}${field('🔽 Bas — prix HT par jour (€)', 'bas', t.bas, { attrs: money$ })}
+        <label class="field full">Mode de prix<select name="mode"><option value="pack" ${tf.mode !== 'band' ? new Raw('selected') : ''}>🚀 Lancement : pacchetti par mois (Start / Plus / Max)</option><option value="band" ${tf.mode === 'band' ? new Raw('selected') : ''}>📅 Prix au jour par fascia (plus tard)</option></select></label>
+        <div class="section-label full" style="margin:6px 0 0">🚀 Pacchetti — € HT par mois (position Milieu)</div>
+        ${field('🟢 Start — 1 fascia', 'pk_start', tf.pk_start, { attrs: money$ })}${field('🟡 Plus — 3 fasce', 'pk_plus', tf.pk_plus, { attrs: money$ })}${field('🔴 Max — toutes', 'pk_max', tf.pk_max, { attrs: money$ })}
+        <div class="section-label full" style="margin:6px 0 0">📍 Position et remises (%)</div>
+        ${field('🔝 Haut fixe : + %', 'pos_h', tf.pos_h, { attrs: 'inputmode="decimal"' })}${field('🔽 Bas fixe : − %', 'pos_b', tf.pos_b, { attrs: 'inputmode="decimal"' })}
+        ${field('Remise en semaines − %', 'd_w', tf.d_w, { attrs: 'inputmode="decimal"' })}${field('Remise en mois − %', 'd_m', tf.d_m, { attrs: 'inputmode="decimal"' })}${field('Remise en années − %', 'd_y', tf.d_y, { attrs: 'inputmode="decimal"' })}
+        ${field('Annonces max. par position et par fascia', 'cap', tf.cap, { attrs: 'inputmode="numeric"' })}
+        <div class="section-label full" style="margin:6px 0 0">📅 Prix au jour par fascia (€ HT) — utilisés en mode « fascia »</div>
+        ${BANDS.map(([k]) => field(bandTxt(k), 'b_' + k, tf['b_' + k], { attrs: money$ }))}
+        <p class="tiny muted full" style="margin:0">Prix = base × position (Haut + / Bas −) × (week-end : 3 jours sur 7) × durée − remise. Rotation et Milieu = prix de base.</p>
         <div class="section-label full" style="margin:6px 0 0">🎬 Création de l’annonce par LuxInterventions — prix HT, une fois</div>
         ${field('SIMPLE — page fixe avec leur texte, graphisme surprise (€)', 'crea_simple', t.crea_simple, { attrs: money$ })}${field('MOYEN — clip animé avec leur texte, surprise (€)', 'crea_moyen', t.crea_moyen, { attrs: money$ })}${field('MAX — vidéo-clip, surprise (€)', 'crea_max', t.crea_max, { attrs: money$ })}
         <p class="tiny muted full" style="margin:0">Vide = « sur devis » (réponse sous 3 jours max).</p>
@@ -9368,8 +9422,17 @@ const ACTIONS = {
     goBack();
   },
   async 'pub-ok'(d) {
-    const a = vault.get('avis', d.id);
+    let a = vault.get('avis', d.id);
     if (!a) return;
+    // 📅 fascia complète pour sa position : passer en Milieu (s'il l'accepte) ou le dire avant de valider
+    const full = pubFull(a);
+    if (full.length) {
+      if (a.slot === 'haut' && a.down && !pubFull({ ...a, slot: 'milieu' }).length) {
+        if (!(await confirmBox(`Haut complet (${full.map(bandTxt).join(', ')}). L’annonceur accepte Milieu : la passer en Milieu ?`))) return;
+        await vault.mutate((tx) => tx.put('avis', { id: a.id, slot: 'milieu', prix: Math.round((adPrice({ ...a, slot: 'milieu' }, anTarifsFull()) + (a.crea ? +anTarifs()['crea_' + a.crea] || 0 : 0)) * 100) / 100 }), '📅 Haut complet : annonce passée en Milieu', a.nom);
+        a = vault.get('avis', a.id);
+      } else if (!(await confirmBox(`⏳ Complet : ${full.map(bandTxt).join(', ')} (${PUB_SLOTS[pubSlot(a)].split(' — ')[0]}). Valider quand même ? Sinon elle reste en liste d’attente.`))) return;
+    }
     const pay = a.annId && +a.prix > 0 && !(a.fact && a.fact.paid);
     await vault.mutate((tx) => tx.put('avis', { id: a.id, st: pay ? 'pay' : 'ok', motif: '' }), pay ? '📣 Annonce validée : en attente du paiement' : '📣 Annonce validée et publiée', `${a.nom} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}`);
     toast(pay ? 'Validée : en ligne dès le paiement reçu' : 'Annonce publiée');
@@ -10283,6 +10346,8 @@ const FORMS = {
       if (!geo) return toast('Adresse introuvable sur la carte (OpenStreetMap) : vérifiez-la, ou choisissez « Même ville »', { bad: true });
       rec.geo = geo;
     }
+    rec.bands = BAND_KEYS.filter((k) => fd.get('band_' + k));
+    rec.we = !!fd.get('we');
     rec.zone = visZone(km ? 'km' : ['pays', 'ville'].includes(vis) ? vis : '', adr.pays, adr.ville, km ? +km[1] : 0, geo);
     if (!rec.aud.length) rec.aud = ['loc'];
     if (id) rec.id = id;
@@ -10407,7 +10472,9 @@ const FORMS = {
   },
   async 'ann-tarifs'(fd) {
     const m = (k) => { const v = String(fd.get(k) || '').trim().replace(',', '.'); return v ? Math.max(0, num(v)) : ''; };
-    await vault.mutate((tx) => tx.put('reglages', { id: 'annTarifs', haut: m('haut'), milieu: m('milieu'), bas: m('bas'), crea_simple: m('crea_simple'), crea_moyen: m('crea_moyen'), crea_max: m('crea_max'), note: String(fd.get('note') || '').trim().slice(0, 300) }), 'Tarifs des annonces', `🔝 ${m('haut')} · ⏺ ${m('milieu')} · 🔽 ${m('bas')} € / jour`);
+    const nt = { mode: fd.get('mode') === 'band' ? 'band' : 'pack' };
+    for (const k of Object.keys(TARIF_DEF)) if (k !== 'mode') nt[k] = m(k);
+    await vault.mutate((tx) => tx.put('reglages', { id: 'annTarifs', ...nt, crea_simple: m('crea_simple'), crea_moyen: m('crea_moyen'), crea_max: m('crea_max'), note: String(fd.get('note') || '').trim().slice(0, 300) }), 'Tarifs des annonces', nt.mode === 'band' ? 'Prix au jour par fascia' : `Pacchetti ${m('pk_start')} / ${m('pk_plus')} / ${m('pk_max')} € par mois`);
     toast('Tarifs enregistrés');
     goBack();
     annSync(null, true);
