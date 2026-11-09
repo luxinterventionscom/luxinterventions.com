@@ -18581,4 +18581,8 @@ export default [
 "Indiquez le propriétaire réel (nom et prénom, ou société)",
 "Tatsächlichen Eigentümer angeben (Name oder Firma)"
 ],
+[
+"Aucun bien publié. ＋ Bien immo. sur la ligne du propriétaire ou de l’agence : type, m², pièces, photos, prix.",
+"Keine Immobilie veröffentlicht. ＋ Immobilie in der Zeile des Eigentümers oder der Agentur: Typ, m², Zimmer, Fotos, Preis."
+],
 ];

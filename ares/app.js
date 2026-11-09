@@ -36,7 +36,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.239.0';
+const VERSION = '2.239.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4568,8 +4568,8 @@ function agView(f) {
     setTimeout(() => hydrateBiens($('#view')), 0);
     return html`${pageHead(f === 'proprio' ? '🔑 Propriétaires' : '🏘️ Agences', f === 'proprio' ? plural(list.length, 'propriétaire') : `${list.length} ${list.length > 1 ? 'agences immobilières' : 'agence immobilière'}`)}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-agence">${icon('plus')} ${f === 'proprio' ? 'Propriétaire' : 'Agence'}</button></div></div>
-      <div class="section-label" style="display:flex;align-items:center;gap:10px">🏠 Biens à louer / à vendre <button class="btn sm primary" data-action="new-bien" style="margin-left:auto">${icon('plus')} Bien immo.</button></div>
-      ${biens.length ? html`<div class="bien-grid">${biens.map(bienAffiche)}</div>` : html`<p class="small muted" style="margin:0 0 14px">Aucun bien publié. ＋ Bien immo. : type, m², pièces, photos, prix.</p>`}
+      <div class="section-label">🏠 Biens à louer / à vendre</div>
+      ${biens.length ? html`<div class="bien-grid">${biens.map(bienAffiche)}</div>` : html`<p class="small muted" style="margin:0 0 14px">Aucun bien publié. ＋ Bien immo. sur la ligne du propriétaire ou de l’agence : type, m², pièces, photos, prix.</p>`}
       <div class="section-label">${f === 'proprio' ? '🔑 Propriétaires' : '🏘️ Agences immo.'}</div>
       ${list.length ? html`<div class="list">${list.map((a) => html`<button class="row" data-action="edit-agence" data-id="${a.id}"><span class="avatar">${typ(a) === 'proprio' ? '🔑' : '🏘️'}</span>
         <span class="grow"><span class="title" style="display:block">${a.nom}</span>

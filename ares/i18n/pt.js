@@ -18506,4 +18506,8 @@ export default [
 "Indiquez le propriétaire réel (nom et prénom, ou société)",
 "Indique o proprietário real (nome, ou empresa)"
 ],
+[
+"Aucun bien publié. ＋ Bien immo. sur la ligne du propriétaire ou de l’agence : type, m², pièces, photos, prix.",
+"Nenhum imóvel publicado. ＋ Imóvel na linha do proprietário ou da agência: tipo, m², divisões, fotos, preço."
+],
 ];

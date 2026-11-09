@@ -18594,4 +18594,8 @@ export default [
 "Indiquez le propriétaire réel (nom et prénom, ou société)",
 "Indicate il proprietario reale (nome e cognome, o società)"
 ],
+[
+"Aucun bien publié. ＋ Bien immo. sur la ligne du propriétaire ou de l’agence : type, m², pièces, photos, prix.",
+"Nessun immobile pubblicato. ＋ Immobile sulla riga del proprietario o dell’agenzia: tipo, m², locali, foto, prezzo."
+],
 ];
