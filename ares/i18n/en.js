@@ -18287,4 +18287,44 @@ export default [
 "Agence, propriétaire ou bailleur principal",
 "Agency, owner or head landlord"
 ],
+[
+"Qui loue ce bien ?",
+"Who rents out this property?"
+],
+[
+"🔑 Le propriétaire lui-même",
+"🔑 The owner himself"
+],
+[
+"🔁 Un bailleur principal (sous-location)",
+"🔁 A head landlord (subletting)"
+],
+[
+"Propriétaire réel (nom et prénom, ou société)",
+"Actual owner (full name, or company)"
+],
+[
+"📎 Contrat de bail principal autorisant la sous-location (PDF ou photo — jamais publié)",
+"📎 Head lease allowing subletting (PDF or photo — never published)"
+],
+[
+"✅ Contrat enregistré",
+"✅ Contract saved"
+],
+[
+"⚠️ Contrat manquant : le bien est publié quand même, le manque est signalé.",
+"⚠️ Contract missing: the property is published anyway, the gap is flagged."
+],
+[
+"☑️ Je certifie que la sous-location est autorisée par écrit par le propriétaire",
+"☑️ I certify that subletting is authorised in writing by the owner"
+],
+[
+"Fin du bail principal (facultatif)",
+"End of the head lease (optional)"
+],
+[
+"Indiquez le propriétaire réel (nom et prénom, ou société)",
+"Enter the actual owner (full name, or company)"
+],
 ];

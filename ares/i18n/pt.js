@@ -18466,4 +18466,44 @@ export default [
 "Agence, propriétaire ou bailleur principal",
 "Agência, proprietário ou senhorio principal"
 ],
+[
+"Qui loue ce bien ?",
+"Quem arrenda este imóvel?"
+],
+[
+"🔑 Le propriétaire lui-même",
+"🔑 O próprio proprietário"
+],
+[
+"🔁 Un bailleur principal (sous-location)",
+"🔁 Um senhorio principal (subarrendamento)"
+],
+[
+"Propriétaire réel (nom et prénom, ou société)",
+"Proprietário real (nome e apelido, ou empresa)"
+],
+[
+"📎 Contrat de bail principal autorisant la sous-location (PDF ou photo — jamais publié)",
+"📎 Contrato de arrendamento principal que autoriza o subarrendamento (PDF ou foto — nunca publicado)"
+],
+[
+"✅ Contrat enregistré",
+"✅ Contrato registado"
+],
+[
+"⚠️ Contrat manquant : le bien est publié quand même, le manque est signalé.",
+"⚠️ Contrato em falta: o imóvel é publicado na mesma, a falta é assinalada."
+],
+[
+"☑️ Je certifie que la sous-location est autorisée par écrit par le propriétaire",
+"☑️ Certifico que o subarrendamento é autorizado por escrito pelo proprietário"
+],
+[
+"Fin du bail principal (facultatif)",
+"Fim do arrendamento principal (facultativo)"
+],
+[
+"Indiquez le propriétaire réel (nom et prénom, ou société)",
+"Indique o proprietário real (nome, ou empresa)"
+],
 ];
