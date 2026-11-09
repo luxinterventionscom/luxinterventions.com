@@ -18546,4 +18546,56 @@ export default [
 "🔑 Propriétaire / bailleur principal",
 "🔑 Proprietário / senhorio principal"
 ],
+[
+"Qui est-ce ?",
+"Quem é?"
+],
+[
+"🔑 Le propriétaire des biens",
+"🔑 O proprietário dos imóveis"
+],
+[
+"🔁 Un bailleur principal (il sous-loue : chambres, colocations…)",
+"🔁 Um senhorio principal (subarrenda: quartos, coabitações…)"
+],
+[
+"Propriétaire principal / réel (nom et prénom, ou société)",
+"Proprietário principal / real (nome, ou empresa)"
+],
+[
+"📎 Bail principal / contrat autorisant la sous-location (PDF ou photo — chiffré, jamais publié)",
+"📎 Arrendamento principal / contrato que autoriza o subarrendamento (PDF ou foto — cifrado, nunca publicado)"
+],
+[
+"S’il manque, la centrale est créée quand même : « ⚠️ bail manquant » reste affiché sur sa fiche.",
+"Se faltar, a central é criada na mesma: «⚠️ contrato em falta» fica escrito na ficha."
+],
+[
+"🔑 Propriétaire ou bailleur principal ?",
+"🔑 Proprietário ou senhorio principal?"
+],
+[
+"à préciser",
+"a precisar"
+],
+[
+"🔁 Bailleur principal · propriétaire réel :",
+"🔁 Senhorio principal · proprietário real:"
+],
+[
+"⚠️ bail manquant",
+"⚠️ contrato em falta"
+],
+[
+"📎 Ajouter",
+"📎 Adicionar"
+],
+[
+"📎 Bail",
+"📎 Contrato"
+],
+[
+"Indiquez le propriétaire principal / réel (nom et prénom, ou société)",
+"Indique o proprietário principal / real"
+],
 ];

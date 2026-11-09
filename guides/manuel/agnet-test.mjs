@@ -3,14 +3,24 @@ import { chromium } from 'playwright';
 import { phone, centralSetup, assert, log } from './harness.mjs';
 const b = await chromium.launch(), errs = [];
 const act = (p, a, d = {}) => p.evaluate(([a, d]) => { const el = document.createElement('button'); el.dataset.action = a; Object.assign(el.dataset, d); el.hidden = true; document.body.append(el); el.click(); el.remove(); }, [a, d]);
-const c = await phone(b, 'fr', { width: 1100, height: 900 }), p = await c.newPage(); p.on('pageerror', (e) => errs.push(e.message));
+const c = await phone(b, 'fr', { width: 1100, height: 900 }), p = await c.newPage(); p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text().slice(0, 200)); });
 await centralSetup(p);
 assert(await p.$('[data-to=reseau]'), 'Réseau nel menu');
 // centrale déjà créée côté réseau
 await p.evaluate(() => { location.hash = '#/reseau'; }); await p.waitForTimeout(1200);
 await act(p, 'net-new'); await p.waitForTimeout(600);
 await p.selectOption('#f [name=fil]', 'proprio'); await p.fill('#f [name=nom]', 'Ares Invest S.A.');
-await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3000); await p.keyboard.press('Escape'); await p.waitForTimeout(400); await p.keyboard.press('Escape');
+assert(!(await p.$eval('#f .net-proprio', (e) => e.hidden)), 'proprietario: «Qui est-ce ?» visibile');
+await p.click('#f [name=loueur][value=sous]'); await p.waitForTimeout(200);
+await p.fill('#f [name=realOwner]', 'Jean Dupont');
+await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3000);
+const tid0 = await p.evaluate(() => { const el = document.querySelector('.sheet [data-input=net-bail]'); return el ? el.dataset.id : ''; });
+const sh0 = await p.$eval('.sheet', (e) => e.innerText);
+assert(/Jean Dupont/.test(sh0) && /bail manquant/.test(sh0) && tid0, 'scheda: proprietario reale + ⚠️ bail manquant');
+await p.setInputFiles(`.sheet [data-input=net-bail][data-id="${tid0}"]`, '/tmp/claude-0/-home-user-luxinterventions-com/8ca9f513-906b-59c7-ab95-4bf4a371e616/scratchpad/leak.jpg'); await p.waitForTimeout(2500);
+log('toasts: ' + (await p.evaluate(() => [...document.querySelectorAll('.toast')].map((x) => x.textContent).join(' | '))) + ' apres: ' + (await p.$eval('.sheet', (e) => e.innerText)).slice(0, 300).replace(/\n/g, ' / ') + ' errs ' + errs.join(' | '));
+assert(/📎 Bail/.test(await p.$eval('.sheet', (e) => e.innerText)) && !/bail manquant/.test(await p.$eval('.sheet', (e) => e.innerText)), 'bail aggiunto dalla scheda');
+await p.keyboard.press('Escape'); await p.waitForTimeout(400); await p.keyboard.press('Escape');
 // fiche propriétaire du même nom → reliée toute seule
 const mk = async (nom) => { await p.evaluate(() => { location.hash = '#/proprios'; }); await p.waitForTimeout(800); await act(p, 'new-agence'); await p.waitForTimeout(600); await p.fill('#f [name=nom]', nom); await p.fill('#f [name=tel]', '+352 691 000 222'); const bl = await p.$('#f [name=bankLater]'); if (bl) await bl.check(); await p.click('button[type=submit][form=f]'); await p.waitForTimeout(1500); };
 await mk('ARES INVEST S.A.'); await mk('PIETRO');

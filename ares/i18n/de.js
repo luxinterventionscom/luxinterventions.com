@@ -18621,4 +18621,56 @@ export default [
 "🔑 Propriétaire / bailleur principal",
 "🔑 Eigentümer / Hauptvermieter"
 ],
+[
+"Qui est-ce ?",
+"Wer ist es?"
+],
+[
+"🔑 Le propriétaire des biens",
+"🔑 Der Eigentümer der Immobilien"
+],
+[
+"🔁 Un bailleur principal (il sous-loue : chambres, colocations…)",
+"🔁 Ein Hauptvermieter (vermietet unter: Zimmer, WGs…)"
+],
+[
+"Propriétaire principal / réel (nom et prénom, ou société)",
+"Haupt- / tatsächlicher Eigentümer (Name oder Firma)"
+],
+[
+"📎 Bail principal / contrat autorisant la sous-location (PDF ou photo — chiffré, jamais publié)",
+"📎 Hauptmietvertrag / Vertrag mit Erlaubnis zur Untervermietung (PDF oder Foto — verschlüsselt, nie veröffentlicht)"
+],
+[
+"S’il manque, la centrale est créée quand même : « ⚠️ bail manquant » reste affiché sur sa fiche.",
+"Fehlt er, wird die Zentrale trotzdem erstellt: „⚠️ Mietvertrag fehlt“ bleibt auf ihrer Karte sichtbar."
+],
+[
+"🔑 Propriétaire ou bailleur principal ?",
+"🔑 Eigentümer oder Hauptvermieter?"
+],
+[
+"à préciser",
+"anzugeben"
+],
+[
+"🔁 Bailleur principal · propriétaire réel :",
+"🔁 Hauptvermieter · tatsächlicher Eigentümer:"
+],
+[
+"⚠️ bail manquant",
+"⚠️ Mietvertrag fehlt"
+],
+[
+"📎 Ajouter",
+"📎 Hinzufügen"
+],
+[
+"📎 Bail",
+"📎 Mietvertrag"
+],
+[
+"Indiquez le propriétaire principal / réel (nom et prénom, ou société)",
+"Haupt- / tatsächlichen Eigentümer angeben"
+],
 ];
