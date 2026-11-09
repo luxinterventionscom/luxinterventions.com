@@ -18531,4 +18531,8 @@ export default [
 "Candidature supprimée",
 "Candidatura eliminada"
 ],
+[
+"Agence, propriétaire ou bailleur principal",
+"Agencia, propietario o arrendador principal"
+],
 ];
