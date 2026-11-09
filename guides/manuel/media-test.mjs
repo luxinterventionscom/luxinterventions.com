@@ -15,7 +15,7 @@ await centralSetup(p);
 await act(p, 'fact-set'); await p.waitForTimeout(700);
 await p.fill('#f [name=iban]', 'LU28 0019 4006 4475 0000'); await p.fill('#f [name=bic]', 'BCEELULL');
 await p.click('button[type=submit][form=f]'); await p.waitForTimeout(1500);
-await act(p, 'ann-tarifs'); await p.waitForTimeout(600); await p.fill('#f [name=milieu]', '10'); await p.click('button[type=submit][form=f]'); await p.waitForTimeout(1500);
+await act(p, 'ann-tarifs'); await p.waitForTimeout(600); await p.fill('#f [name=pk_start]', '19'); await p.click('button[type=submit][form=f]'); await p.waitForTimeout(1500);
 await pubTab(p);
 await act(p, 'new-annc'); await p.waitForTimeout(500); await p.fill('#f [name=nom]', 'Restaurant Démo');
 const code = await p.$eval('#f [name=appCode]', (e) => e.value); await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3500); await p.keyboard.press('Escape'); await p.waitForTimeout(400);

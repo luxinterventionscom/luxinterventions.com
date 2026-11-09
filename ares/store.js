@@ -684,6 +684,8 @@ export class Vault {
   pushSub(body) { return this.call('push', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); }
   async videoLink(u) { try { return (await (await this.call('video-link?u=' + encodeURIComponent(u))).json()).url || ''; } catch { return ''; } }
   async pubStats(days) { return (await (await this.call('pubstats?days=' + days)).json()).rows || []; }
+  // mêmes statistiques avec le détail par fascia horaire (vide avec un ancien Worker)
+  async pubStatsAll(days) { const j = await (await this.call('pubstats?days=' + days)).json(); return { rows: j.rows || [], bands: j.bands || [] }; }
   // « 🆕 Nouveau bien » : annonces publiques (texte), puis photos JPEG une à une
   biensPut(items) { return this.call('biens', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items }) }); }
   biensPhoto(id, n, bytes) { return this.call(`biens/${id}/p${n}.jpg`, { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: bytes }); }

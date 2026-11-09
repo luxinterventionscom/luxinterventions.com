@@ -1,6 +1,7 @@
 // 🚕 App des sociétés de taxi / chauffeurs privés du réseau : courses reçues (accepter avec un chauffeur et une voiture, ou refuser),
 // chauffeurs, voitures (Luxe / Confort / Économique), tarifs (course, heure, demi-journée, journée) et extras.
 // Données chiffrées ; la clé ne quitte pas le téléphone. Les réponses partent chiffrées pour l'établissement.
+import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
@@ -214,8 +215,8 @@ function render() {
       <div class="card"><form id="codeForm"><label>${esc(t.code)}</label><input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" style="font-size:24px;letter-spacing:.1em;text-align:center"><button class="btn block" style="margin-top:12px" type="submit">${esc(t.enter)}</button></form></div>`;
     return;
   }
-  const d = data, out = [], pubs = (d.pubs || []).filter((x) => (!x.fin || x.fin >= new Date().toISOString().slice(0, 10)) && pubNow(x));
-  const slot = (k) => pubs.find((x) => (x.slot || 'milieu') === k);
+  const d = data, out = [], pubs = (d.pubs || []).filter((x) => (!x.fin || x.fin >= new Date().toISOString().slice(0, 10)) && pubNow(x) && pubLive(x));
+  const slot = (k) => pubPickNow(pubs.filter((x) => pubSlotNow(x) === k));
   document.title = `🚕 ${d.nom}`;
   // 1 en-tête · 2 pub · 3 notifications · 4 météo/radio · 5 courses · 6 pub · 7 chauffeurs, voitures, tarifs · 8 🔒 · 9 pub · 10 infos · 11 cours
   out.push(`<div class="top"><span class="brandx"><b>🚕 ${esc(d.nom)}</b></span>${langs}</div><p class="sub">${esc(t.app)} · ${esc(d.reseau)}</p>`);

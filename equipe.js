@@ -1,5 +1,6 @@
 // App de l'équipe : planning personnel (quoi, où, quand), « commencé / fini / pas fini » avec note et photos,
 // horaire, absences, coordonnées. Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
+import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
@@ -611,7 +612,7 @@ let pubTurn = 0;
 try { pubTurn = (+localStorage.getItem('eqPubTurn') || 0) + 1; localStorage.setItem('eqPubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
 // annonce repliée / rouverte d'un toucher sur son titre (mémorisé sur ce téléphone)
 const pubShut = new Set((() => { try { return JSON.parse(localStorage.getItem('eqPubShut') || '[]'); } catch { return []; } })());
-const pickPub = (list) => (list.length ? list[pubTurn % list.length] : null);
+const pickPub = (list) => pubPickNow(list); // tour de 3 minutes chacune
 // annonce limitée à certains jours / heures (ex. happy hour 17:00–19:00, le samedi)
 const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
 const pubLogo = (x) => (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(x.logo || '') && x.logo.length < 60000 ? `<img src="${x.logo}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''); // logo de l'annonceur
@@ -746,8 +747,8 @@ function render() {
   } else if (miss) out.push(`<div class="card warnc" id="profNag"><p style="margin:0 0 8px"><b>👤 ${esc(t.info)} · ${esc(ci.n(miss))}</b></p><button class="btn sm" data-prof="1">${esc(ci.go)}</button></div>`);
   const pls = placesOf(d);
   if (place && !pls.includes(place)) place = '';
-  const pubs = (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x));
-  const slot = (k) => pickPub(pubs.filter((x) => (x.slot || 'milieu') === k));
+  const pubs = (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x) && pubLive(x));
+  const slot = (k) => pickPub(pubs.filter((x) => pubSlotNow(x) === k));
   if (place) out.push(`<div class="card"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">📍 ${esc(place)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(place))}"></div>${navBtns(mapQ(place))}${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
   else { const top = slot('haut'); if (top) out.push(adBox(top, t)); }
   if (pushSt && pushSt !== 'on') out.push(notifCard(t)); // notifications coupées : rappel en haut (sous la carte)

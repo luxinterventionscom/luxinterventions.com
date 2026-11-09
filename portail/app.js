@@ -2,6 +2,7 @@
 // Plusieurs utilisateurs et plusieurs gérances : chacun voit uniquement ses résidences et ses demandes,
 // l'équipe LuxInterventions (rôle « admin ») voit tout et traite les demandes.
 
+import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { startI18n, LOCALES, translate as T } from '/ares/i18n.js';
@@ -721,9 +722,9 @@ document.addEventListener('toggle', (e) => {
 // annonce limitée à certains jours / heures (ex. happy hour 17:00–19:00, le samedi)
 const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
 function pubSlot(k) {
-  const list = ((state.cache.home && state.cache.home.pubs) || []).filter((a) => (a.slot || 'milieu') === k && pubNow(a));
+  const list = ((state.cache.home && state.cache.home.pubs) || []).filter((a) => pubSlotNow(a) === k && pubNow(a) && pubLive(a));
   if (!list.length) return '';
-  const a = list[pubTurn % list.length], v = videoEmbed(a.video);
+  const a = pubPickNow(list), v = videoEmbed(a.video);
   return html`<details class="card ptl-pub fold mk mk-pub mk-on" style="margin:12px 0" data-pid="${a.id}"${pubShut.has(a.id) ? '' : ' open'}><summary><div class="small muted"><b class="pub-lbl">📣 Publicité</b> · ${PUB_ICON[a.cat] || '📌'}</div><b style="font-size:17px">${a.nom}</b></summary>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
       ${v ? html`<div class="vid${v.tall ? ' tall' : ''}${v.audio ? ' audio' : ''}" style="${v.audio ? `height:${v.audio}px` : ''}"><iframe src="${v.src}" loading="lazy" title="Vidéo" allow="encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
       <div class="small muted" style="margin-top:6px">📍 ${a.adresse}</div>

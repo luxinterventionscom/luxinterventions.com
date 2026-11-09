@@ -1126,7 +1126,7 @@ async function handleAres(request, env, url, headers) {
     const s = (v, n) => String(v || "").slice(0, n), d10 = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v || "") ? v : "");
     const url = (v) => (/^https?:\/\//.test(String(v || "")) ? s(v, 500) : "");
     const items = (b && Array.isArray(b.items) ? b.items : []).slice(0, 200).map((a) => ({
-      id: s(a.id, 40), slot: ["haut", "milieu", "bas"].includes(a.slot) ? a.slot : "milieu", cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
+      id: s(a.id, 40), slot: ["haut", "milieu", "bas", "rot"].includes(a.slot) ? a.slot : "milieu", ...(Array.isArray(a.bands) && a.bands.length ? { bands: a.bands.filter((k) => PUB_BANDS.includes(k)).slice(0, 6) } : {}), ...(a.we ? { we: 1 } : {}), cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
       tel: s(a.tel, 40), web: url(a.web), video: url(a.video), type: s(a.type, 20), debut: d10(a.debut), fin: d10(a.fin), zone: s(a.zone, 200), annId: s(a.annId, 40),
       logo: /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.logo || "") && String(a.logo).length < 60000 ? a.logo : "",
       aud: (Array.isArray(a.aud) ? a.aud : []).map((x) => s(x, 8)).slice(0, 8),
@@ -1142,7 +1142,7 @@ async function handleAres(request, env, url, headers) {
     const s = (v, n) => String(v || "").slice(0, n);
     const url = (v) => (/^https?:\/\//.test(String(v || "")) ? s(v, 500) : "");
     const items = (b && Array.isArray(b.items) ? b.items : []).slice(0, 50).map((a) => ({
-      id: s(a.id, 40), slot: ["haut", "milieu", "bas"].includes(a.slot) ? a.slot : "milieu", cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
+      id: s(a.id, 40), slot: ["haut", "milieu", "bas", "rot"].includes(a.slot) ? a.slot : "milieu", ...(Array.isArray(a.bands) && a.bands.length ? { bands: a.bands.filter((k) => PUB_BANDS.includes(k)).slice(0, 6) } : {}), ...(a.we ? { we: 1 } : {}), cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
       tel: s(a.tel, 40), web: url(a.web), video: url(a.video), fin: /^\d{4}-\d{2}-\d{2}$/.test(a.fin || "") ? a.fin : "",
       logo: /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.logo || "") && String(a.logo).length < 60000 ? a.logo : "",
       // jours (0 = dimanche) et heures d'affichage (ex. happy hour) : facultatifs
@@ -1180,7 +1180,9 @@ async function handleAres(request, env, url, headers) {
     const from = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
     await env.DB.prepare("DELETE FROM pub_stats WHERE day < ?").bind(new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10)).run();
     const r = await env.DB.prepare("SELECT day, ad, app, lang, ev, n FROM pub_stats WHERE day >= ?").bind(from).all();
-    return aresJson({ rows: r.results || [] }, 200, headers);
+    await env.DB.prepare("DELETE FROM pub_band WHERE day < ?").bind(new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10)).run();
+    const rb = await env.DB.prepare("SELECT day, ad, band, ev, n FROM pub_band WHERE day >= ?").bind(from).all();
+    return aresJson({ rows: r.results || [], bands: rb.results || [] }, 200, headers);
   }
   const notifMatch = path.match(/^espace\/([0-9a-f]{32})\/notify$/);
   if (notifMatch && method === "POST") {
@@ -1485,6 +1487,8 @@ async function ptlNotify(env, where, binds, message, urgent) {
 const PUBSTAT_SCHEMA = [
   `CREATE TABLE IF NOT EXISTS pub_stats (day TEXT NOT NULL, ad TEXT NOT NULL, app TEXT NOT NULL, lang TEXT NOT NULL, ev TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, ad, app, lang, ev))`,
   `CREATE TABLE IF NOT EXISTS pub_rl (k TEXT PRIMARY KEY, n INTEGER NOT NULL DEFAULT 0)`,
+  // 🕒 mêmes compteurs par fascia horaire (vues : « v » et « vb » = première vue dans une autre fascia du même jour)
+  `CREATE TABLE IF NOT EXISTS pub_band (day TEXT NOT NULL, ad TEXT NOT NULL, band TEXT NOT NULL, ev TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, ad, band, ev))`,
 ];
 let pubStatReady = false;
 async function pubStatInit(env) {
@@ -1493,7 +1497,8 @@ async function pubStatInit(env) {
   return true;
 }
 // v = vue ; map / call / web / video = touchers ; like / unl, dis / und = 👍 👎 et leur retrait ; share = 👉 partagé
-const PUBSTAT_EV = ["v", "map", "call", "web", "video", "like", "unl", "dis", "und", "share"];
+const PUBSTAT_EV = ["v", "vb", "map", "call", "web", "video", "like", "unl", "dis", "und", "share"];
+const PUB_BANDS = ["m", "m2", "a", "a2", "s", "n"]; // fasce horaires (ares/pubsched.js)
 async function pubStatPost(request, env, headers) {
   try {
     if (!(await pubStatInit(env))) return new Response(null, { status: 204, headers });
@@ -1511,7 +1516,9 @@ async function pubStatPost(request, env, headers) {
     const rl = await env.DB.prepare("INSERT INTO pub_rl (k, n) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET n = n + excluded.n RETURNING n").bind(rlKey, items.length).first();
     if (rl && rl.n > 300) return new Response(null, { status: 429, headers });
     const day = new Date().toISOString().slice(0, 10);
-    await env.DB.batch(items.map((x) => env.DB.prepare("INSERT INTO pub_stats (day, ad, app, lang, ev, n) VALUES (?, ?, ?, ?, ?, 1) ON CONFLICT(day, ad, app, lang, ev) DO UPDATE SET n = n + 1").bind(day, x.id, app, lang, x.ev)));
+    const q1 = items.filter((x) => x.ev !== "vb").map((x) => env.DB.prepare("INSERT INTO pub_stats (day, ad, app, lang, ev, n) VALUES (?, ?, ?, ?, ?, 1) ON CONFLICT(day, ad, app, lang, ev) DO UPDATE SET n = n + 1").bind(day, x.id, app, lang, x.ev));
+    const q2 = items.filter((x) => PUB_BANDS.includes(x.b)).map((x) => env.DB.prepare("INSERT INTO pub_band (day, ad, band, ev, n) VALUES (?, ?, ?, ?, 1) ON CONFLICT(day, ad, band, ev) DO UPDATE SET n = n + 1").bind(day, x.id, x.b, x.ev === "vb" ? "v" : x.ev));
+    if (q1.length || q2.length) await env.DB.batch([...q1, ...q2]);
     if (Math.random() < 0.02) await env.DB.prepare("DELETE FROM pub_rl WHERE k < ?").bind(hour).run().catch(() => {}); // heures passées
     return new Response(null, { status: 204, headers });
   } catch { return new Response(null, { status: 204, headers }); }
