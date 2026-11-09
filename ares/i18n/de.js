@@ -18461,4 +18461,80 @@ export default [
 "🔄 Rotation — Haut, Milieu, Bas à tour de rôle (prix de base)",
 "🔄 Rotation — Oben, Mitte, Unten abwechselnd (Grundpreis)"
 ],
+[
+"🙋‍♀️🙋🏾 Candidats « Je cherche du travail »",
+"🙋‍♀️🙋🏾 Bewerber „Ich suche Arbeit“"
+],
+[
+"Envoyés depuis les apps (locataires, clients hôtel / Airbnb, taxis — aussi ceux des centrales des clients). Chiffrés : seule cette centrale les lit. Effacés tout seuls après 12 mois sans mise à jour (RGPD).",
+"Aus den Apps gesendet (Mieter, Hotel- / Airbnb-Gäste, Taxis — auch die der Kunden-Zentralen). Verschlüsselt: nur diese Zentrale liest sie. Nach 12 Monaten ohne Aktualisierung automatisch gelöscht (DSGVO)."
+],
+[
+"Aucune candidature pour le moment.",
+"Noch keine Bewerbung."
+],
+[
+"Disponibilité",
+"Verfügbarkeit"
+],
+[
+"Expérience",
+"Erfahrung"
+],
+[
+"🧰 Outils",
+"🧰 Werkzeug"
+],
+[
+"Langues",
+"Sprachen"
+],
+[
+"Tarif souhaité",
+"Gewünschter Satz"
+],
+[
+"Origine",
+"Herkunft"
+],
+[
+"18+ / droit",
+"18+ / Recht"
+],
+[
+"Tout de suite",
+"Sofort"
+],
+[
+"Pas de CV.",
+"Kein Lebenslauf."
+],
+[
+"Notes (test de compétences, essai sur le terrain…)",
+"Notizen (Kompetenztest, Probeeinsatz…)"
+],
+[
+"Enregistrer la note",
+"Notiz speichern"
+],
+[
+"➕ Créer l’ouvrier",
+"➕ Arbeiter anlegen"
+],
+[
+"intéressé(e) par la valise d’outils",
+"Interesse am Werkzeugkoffer"
+],
+[
+"touchez pour voir les profils et les CV",
+"tippen, um Profile und Lebensläufe zu sehen"
+],
+[
+"Note enregistrée",
+"Notiz gespeichert"
+],
+[
+"Candidature supprimée",
+"Bewerbung gelöscht"
+],
 ];

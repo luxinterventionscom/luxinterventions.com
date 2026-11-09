@@ -18207,4 +18207,80 @@ export default [
 "🔄 Rotation — Haut, Milieu, Bas à tour de rôle (prix de base)",
 "🔄 Rotation — Top, Middle, Bottom in turn (base price)"
 ],
+[
+"🙋‍♀️🙋🏾 Candidats « Je cherche du travail »",
+"🙋‍♀️🙋🏾 “I’m looking for work” applicants"
+],
+[
+"Envoyés depuis les apps (locataires, clients hôtel / Airbnb, taxis — aussi ceux des centrales des clients). Chiffrés : seule cette centrale les lit. Effacés tout seuls après 12 mois sans mise à jour (RGPD).",
+"Sent from the apps (tenants, hotel / Airbnb guests, taxis — also those of the clients’ centrals). Encrypted: only this central reads them. Deleted automatically after 12 months without update (GDPR)."
+],
+[
+"Aucune candidature pour le moment.",
+"No applications yet."
+],
+[
+"Disponibilité",
+"Availability"
+],
+[
+"Expérience",
+"Experience"
+],
+[
+"🧰 Outils",
+"🧰 Tools"
+],
+[
+"Langues",
+"Languages"
+],
+[
+"Tarif souhaité",
+"Desired rate"
+],
+[
+"Origine",
+"Origin"
+],
+[
+"18+ / droit",
+"18+ / right"
+],
+[
+"Tout de suite",
+"Right away"
+],
+[
+"Pas de CV.",
+"No CV."
+],
+[
+"Notes (test de compétences, essai sur le terrain…)",
+"Notes (skills test, trial on site…)"
+],
+[
+"Enregistrer la note",
+"Save the note"
+],
+[
+"➕ Créer l’ouvrier",
+"➕ Create the worker"
+],
+[
+"intéressé(e) par la valise d’outils",
+"interested in the tool case"
+],
+[
+"touchez pour voir les profils et les CV",
+"tap to see the profiles and CVs"
+],
+[
+"Note enregistrée",
+"Note saved"
+],
+[
+"Candidature supprimée",
+"Application deleted"
+],
 ];

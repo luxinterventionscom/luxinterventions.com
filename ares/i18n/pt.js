@@ -18386,4 +18386,80 @@ export default [
 "🔄 Rotation — Haut, Milieu, Bas à tour de rôle (prix de base)",
 "🔄 Rotação — Cima, Meio, Baixo à vez (preço base)"
 ],
+[
+"🙋‍♀️🙋🏾 Candidats « Je cherche du travail »",
+"🙋‍♀️🙋🏾 Candidatos «Procuro trabalho»"
+],
+[
+"Envoyés depuis les apps (locataires, clients hôtel / Airbnb, taxis — aussi ceux des centrales des clients). Chiffrés : seule cette centrale les lit. Effacés tout seuls après 12 mois sans mise à jour (RGPD).",
+"Enviados pelas apps (inquilinos, clientes hotel / Airbnb, táxis — também os das centrais dos clientes). Cifrados: só esta central os lê. Apagados sozinhos após 12 meses sem atualização (RGPD)."
+],
+[
+"Aucune candidature pour le moment.",
+"Nenhuma candidatura por agora."
+],
+[
+"Disponibilité",
+"Disponibilidade"
+],
+[
+"Expérience",
+"Experiência"
+],
+[
+"🧰 Outils",
+"🧰 Ferramentas"
+],
+[
+"Langues",
+"Línguas"
+],
+[
+"Tarif souhaité",
+"Tarifa desejada"
+],
+[
+"Origine",
+"Origem"
+],
+[
+"18+ / droit",
+"18+ / direito"
+],
+[
+"Tout de suite",
+"Já"
+],
+[
+"Pas de CV.",
+"Sem CV."
+],
+[
+"Notes (test de compétences, essai sur le terrain…)",
+"Notas (teste de competências, teste no terreno…)"
+],
+[
+"Enregistrer la note",
+"Guardar a nota"
+],
+[
+"➕ Créer l’ouvrier",
+"➕ Criar o operário"
+],
+[
+"intéressé(e) par la valise d’outils",
+"interessado(a) na mala de ferramentas"
+],
+[
+"touchez pour voir les profils et les CV",
+"toque para ver os perfis e os CV"
+],
+[
+"Note enregistrée",
+"Nota guardada"
+],
+[
+"Candidature supprimée",
+"Candidatura apagada"
+],
 ];

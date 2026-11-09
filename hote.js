@@ -1,6 +1,7 @@
 // 🏨 App des clients (Hotel / Airbnb) : séjour, chambre ou logement, code de la porte, menu, arrivée (taxi ou soi-même),
 // état des lieux de sortie. Données chiffrées par l'établissement ; la clé ne quitte pas le téléphone.
 // L'app se remet à zéro le lendemain du départ (l'établissement efface les données et le code).
+import { jobHtml, jobInit } from '/ares/jobform.js';
 import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
@@ -329,6 +330,7 @@ function render() {
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
   // 10 · publicité (bas)
   { const p = slot('bas'); if (p) out.push(adBox(p, t)); }
+  out.push(`<div class="card">${jobHtml()}</div>`); // 🙋‍♀️🙋🏾 « Je cherche du travail » → candidature chiffrée pour LuxInterventions
   out.push(newsHtml(API)); // 📰 News : sous l'annonce du bas, au-dessus de « icône sur l'écran » / se déconnecter
   // 11 · infos
   out.push(infoBox({ lang }));
@@ -462,6 +464,7 @@ const GUEST_CHAT = {
 };
 const guestLabels = (l) => { const g = GUEST_CHAT[(data && data.lieu) === 'airbnb' ? 'airbnb' : 'hotel'], v = g[l] || g.en; return { t: v[0], ctr: v[1], hint: v[2], ph: v[3], none: v[3] }; };
 trInit(API, () => lang);
+jobInit({ api: API, app: 'hote', lang: () => lang, who: () => (data ? { nom: [data.prenom, data.nom].filter(Boolean).join(' ') } : {}) });
 const quietData = async () => { const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' }); if (!r.ok) return null; const x = await openJson(key, await r.arrayBuffer()); return x && x.kind === 'hote' ? x : null; };
 pchatInit({ id: () => id, data: () => data, send: (o) => sendOwner(o), lang: () => lang || 'en', refresh: quietData, quick: null, labels: guestLabels });
 pubSocialInit(API, () => lang);

@@ -1,6 +1,7 @@
 // 🚕 App des sociétés de taxi / chauffeurs privés du réseau : courses reçues (accepter avec un chauffeur et une voiture, ou refuser),
 // chauffeurs, voitures (Luxe / Confort / Économique), tarifs (course, heure, demi-journée, journée) et extras.
 // Données chiffrées ; la clé ne quitte pas le téléphone. Les réponses partent chiffrées pour l'établissement.
+import { jobHtml, jobInit } from '/ares/jobform.js';
 import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
@@ -233,6 +234,7 @@ function render() {
   out.push(catHtml(t));
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
   { const p = slot('bas'); if (p) out.push(adBox(p, t)); }
+  out.push(`<div class="card">${jobHtml()}</div>`); // 🙋‍♀️🙋🏾 « Je cherche du travail » → candidature chiffrée pour LuxInterventions
   out.push(newsHtml(API));
   out.push(infoBox({ lang }));
   out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div><p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);
@@ -261,6 +263,7 @@ wxRadioInit({ app: 'taxi', lang: () => lang, home: () => 'Luxembourg', radio: ()
 pubStatInit(API, 'taxi', () => lang);
 pubSocialInit(API, () => lang);
 trInit(API, () => lang);
+jobInit({ api: API, app: 'taxi', lang: () => lang, who: () => (data ? { nom: data.nom || '', tel: data.tel || '' } : {}) });
 // 💬 chat avec la centrale, réponses rapides (le chauffeur ne tape pas en conduisant : un seul toucher)
 const quietData = async () => { const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' }); if (!r.ok) return null; const x = await openJson(key, await r.arrayBuffer()); return x && x.kind === 'taxi' ? x : null; };
 pchatInit({ id: () => id, data: () => data, send: (o) => sendOwner(o), lang: () => lang || 'fr', refresh: quietData, quick: [['✅', { fr: 'Reçu', it: 'Ricevuto', de: 'Erhalten', pt: 'Recebido', en: 'Received', es: 'Recibido' }], ['🚗', { fr: 'J’arrive', it: 'Sto arrivando', de: 'Ich komme', pt: 'Estou a chegar', en: 'On my way', es: 'Voy para allá' }], ['📍', { fr: 'Je suis arrivé', it: 'Sono arrivato', de: 'Ich bin da', pt: 'Cheguei', en: 'I have arrived', es: 'He llegado' }], ['⏱', { fr: '5 minutes de retard', it: '5 minuti di ritardo', de: '5 Minuten Verspätung', pt: '5 minutos de atraso', en: '5 minutes late', es: '5 minutos de retraso' }]] });
