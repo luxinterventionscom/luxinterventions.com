@@ -18611,4 +18611,8 @@ export default [
 "Centrale activée : envoyez le code d’invitation",
 "Central activada: envíe el código de invitación"
 ],
+[
+"🔑 Propriétaire / bailleur principal",
+"🔑 Propietario / arrendador principal"
+],
 ];
