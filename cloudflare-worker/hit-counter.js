@@ -910,6 +910,28 @@ async function handleAres(request, env, url, headers) {
       if (!o) return aresJson({ error: "Pas de moitié B" }, 404, headers);
       return new Response(o.body, { status: 200, headers: { "Content-Type": "application/octet-stream", "Cache-Control": "no-store", ...headers } });
     }
+    // 📦 transfert : les apps des locataires (espaces + codes) passent de la centrale principale à la centrale du client
+    const tad = path.match(/^tenants\/([a-z0-9]{12,24})\/adopt$/);
+    if (tad && method === "POST") {
+      if (!(await env.PHOTOS.head(tenantKey(tad[1])))) return aresJson({ error: "Introuvable" }, 404, headers);
+      let b;
+      try { b = await request.json(); } catch { b = {}; }
+      const to = tad[1], out = { moved: 0, codes: 0, skipped: 0 };
+      for (const id of (Array.isArray(b.ids) ? b.ids : []).filter((x) => /^[0-9a-f]{32}$/.test(x)).slice(0, 1000)) {
+        const own = await espOwner(env, id);
+        if (own && own !== "main") { if (own !== to) out.skipped++; continue; }
+        await env.PHOTOS.put("ares/own/" + id, to); await env.PHOTOS.put("ares/tidx/" + to + "/" + id, "1"); out.moved++;
+      }
+      for (const h of (Array.isArray(b.codes) ? b.codes : []).filter((x) => /^[0-9a-f]{64}$/.test(x)).slice(0, 1000)) {
+        const prev = await env.PHOTOS.get(ARES_ESPCODE + h + ".json");
+        if (!prev) continue;
+        const pj = await prev.json();
+        if ((pj.own || "main") !== "main") continue;
+        await env.PHOTOS.put(ARES_ESPCODE + h + ".json", JSON.stringify({ ...pj, own: to }), { httpMetadata: { contentType: "application/json" } });
+        await env.PHOTOS.put("ares/tidx/" + to + "/c/" + h, "1"); out.codes++;
+      }
+      return aresJson({ ok: true, ...out }, 200, headers);
+    }
     const tmm = path.match(/^tenants\/([a-z0-9]{12,24})(\/reset)?$/);
     const r = tmm ? await tenantGet(env, tmm[1]) : null;
     if (!r) return aresJson({ error: "Introuvable" }, 404, headers);

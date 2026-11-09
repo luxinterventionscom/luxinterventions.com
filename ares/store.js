@@ -755,6 +755,16 @@ export class Vault {
     return { format: 'ares-backup', v: 1, date: new Date().toISOString(), salt: meta.salt, iter: meta.iter, wrappedKey: meta.wrappedKey, data };
   }
 
+  // 📦 paquet de transfert vers une autre centrale : chiffré avec un code à usage unique (même forme qu'une sauvegarde)
+  static async sealTransfer(obj, code, info = {}) {
+    const salt = C.b64.encode(C.randomBytes(16)), iter = C.PBKDF2_ITER;
+    const { kek } = await C.deriveFromPassphrase(code, salt, iter);
+    const dek = await C.newDataKey();
+    const data = C.b64.encode(await C.encryptJson(dek, obj, DATA_LABEL));
+    return { format: 'ares-transfer', v: 1, date: new Date().toISOString(), ...info, salt, iter, wrappedKey: await C.wrapDataKey(dek, kek), data };
+  }
+  static newTransferCode() { return C.newRecoveryCode().split('-').slice(0, 4).join('-'); }
+
   static async openBackup(backup, passphrase) {
     const { kek } = await C.deriveFromPassphrase(passphrase, backup.salt, backup.iter);
     let dek;
