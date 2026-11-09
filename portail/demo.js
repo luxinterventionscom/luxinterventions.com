@@ -9,7 +9,7 @@ export function createDemo() {
   const users = {
     sophie: { id: 'demo-sophie', org_id: 'demo-org', org_name: 'Gérance Démo', role: 'gerance_admin', name: 'Sophie (démo)', email: 'sophie@gerance-demo.lu', phone: '+352 621 000 000', active: 1, has_password: 1, last_login: now - 2 * H },
     marc: { id: 'demo-marc', org_id: 'demo-org', org_name: 'Gérance Démo', role: 'gerance_user', name: 'Marc (démo)', email: 'marc@gerance-demo.lu', phone: '', active: 1, has_password: 0, last_login: null },
-    lux: { id: 'demo-lux', org_id: null, org_name: null, role: 'admin', name: 'Équipe LuxInterventions', email: 'equipe@luxinterventions.com', phone: '', active: 1, has_password: 1, last_login: now - H },
+    lux: { id: 'demo-lux', org_id: null, org_name: null, role: 'admin', name: 'Équipe LA CENTRAL', email: 'equipe@luxinterventions.com', phone: '', active: 1, has_password: 1, last_login: now - H },
   };
   const orgs = [
     { id: 'demo-org', name: 'Gérance Démo', phone: '+352 20 00 00', email: 'contact@gerance-demo.lu', created_at: now - 90 * 24 * H, address: '1, place de la Gare, L-1616 Luxembourg', rcs: 'B000000', tva: 'LU00000000', banque: 'Banque Démo', bic: 'DEMOLULL', iban: 'LU00 0000 0000 0000 0000', logo: '' },
@@ -100,7 +100,7 @@ export function createDemo() {
   };
   const fail = (status, message) => { const e = new Error(message); e.status = status; throw e; };
   const notify = (text) => notices.push(text);
-  // petit PDF d'exemple (devis, facture) : en réel, c'est le document complet envoyé par LuxInterventions
+  // petit PDF d'exemple (devis, facture) : en réel, c'est le document complet envoyé par LA CENTRAL
   const pdfOf = (lines) => {
     const esc = (t) => [...t.replace(/[’‘]/g, "'").replace(/[\\()]/g, (m) => '\\' + m)].map((ch) => (ch === '€' ? '\\200' : ch.charCodeAt(0) > 255 ? '?' : ch.charCodeAt(0) > 126 ? '\\' + ch.charCodeAt(0).toString(8) : ch)).join('');
     const txt = lines.map((l, i) => `BT /F1 ${i ? 12 : 18} Tf 60 ${770 - i * 26} Td (${esc(l)}) Tj ET`).join('\n');
@@ -162,7 +162,7 @@ export function createDemo() {
       if (!r) fail(400, 'Résidence inconnue');
       if (!b.urgence) fail(400, 'Urgence obligatoire');
       const t = seed({ residence_id: r.id, org_id: r.org_id, urgence: b.urgence, categorie: b.categorie, lieu: b.lieu, description: b.description, contact_name: b.contact_name, contact_phone: b.contact_phone, acces: b.acces, dispo: b.dispo, status: 'recue', created_by: me.id, created_at: Date.now() });
-      if (!isAdmin()) notify(b.urgence === 'urgent' ? '📲 En réel, l’équipe LuxInterventions reçoit maintenant une alerte URGENTE sur son téléphone.' : '📲 En réel, l’équipe LuxInterventions reçoit maintenant une notification.');
+      if (!isAdmin()) notify(b.urgence === 'urgent' ? '📲 En réel, l’équipe LA CENTRAL reçoit maintenant une alerte URGENTE sur son téléphone.' : '📲 En réel, l’équipe LA CENTRAL reçoit maintenant une notification.');
       return { id: t.id, ref: t.ref };
     }
     if (p === 'devis' && method === 'GET') {
@@ -175,19 +175,19 @@ export function createDemo() {
     if (dm) {
       const v = devis.find((x) => x.id === dm[1] && (isAdmin() || x.org_id === me.org_id));
       if (!v) fail(404, 'Devis introuvable');
-      if (dm[2] === 'pdf') return pdfOf([`Devis ${v.no}`, v.title || '', `Total : ${eur(v.ttc)} TTC`, v.pct ? `Acompte ${v.pct} % : ${eur(v.acompte)}` : '', `Valable jusqu'au ${v.valid_until}`, '', 'Exemple (mode demo) : en reel, le devis complet de LuxInterventions.']);
+      if (dm[2] === 'pdf') return pdfOf([`Devis ${v.no}`, v.title || '', `Total : ${eur(v.ttc)} TTC`, v.pct ? `Acompte ${v.pct} % : ${eur(v.acompte)}` : '', `Valable jusqu'au ${v.valid_until}`, '', 'Exemple (mode demo) : en reel, le devis complet de LA CENTRAL.']);
       if (me.role !== 'gerance_admin' && !isAdmin()) fail(403, 'Réservé au responsable de la gérance');
       if (!['envoye', 'revision'].includes(v.status)) fail(409, 'Ce devis a déjà une réponse');
       if (b.status === 'revision' && !b.note) fail(400, 'Écrivez ce qu’il faut revoir');
       Object.assign(v, { status: b.status, note: b.note || null, decided_at: Date.now(), decided_by: me.id, decided_by_name: me.name, updated_at: Date.now() });
-      notify('📲 En réel, LuxInterventions reçoit maintenant votre réponse au devis.');
+      notify('📲 En réel, LA CENTRAL reçoit maintenant votre réponse au devis.');
       return { ok: true };
     }
     const im = p.match(/^tickets\/([^/]+)\/invoice$/);
     if (im) {
       const t = tickets.find((x) => x.id === im[1]);
       if (!t || !visible(t) || !t.inv_no) fail(404, 'Pas encore de facture');
-      return pdfOf([`Facture ${t.inv_no}`, `Intervention #${t.ref} - ${t.categorie}`, `Montant HT : ${eur(t.inv_ht)}`, `TVA : ${eur(t.inv_tva)}`, `Total TTC : ${eur(t.inv_ttc)}`, '', 'Exemple (mode demo) : en reel, la facture PDF de LuxInterventions.']);
+      return pdfOf([`Facture ${t.inv_no}`, `Intervention #${t.ref} - ${t.categorie}`, `Montant HT : ${eur(t.inv_ht)}`, `TVA : ${eur(t.inv_tva)}`, `Total TTC : ${eur(t.inv_ttc)}`, '', 'Exemple (mode demo) : en reel, la facture PDF de LA CENTRAL.']);
     }
     const tm = p.match(/^tickets\/([^/]+)(?:\/(status|comments|photos))?$/);
     if (tm) {
@@ -209,7 +209,7 @@ export function createDemo() {
           photos: photos.filter((x) => x.ticket_id === t.id).map(({ blob, ...x }) => x) };
       }
       if (tm[2] === 'status') {
-        if (!isAdmin() && !(b.status === 'annulee' && t.status === 'recue')) fail(403, 'Seul LuxInterventions peut changer le statut');
+        if (!isAdmin() && !(b.status === 'annulee' && t.status === 'recue')) fail(403, 'Seul LA CENTRAL peut changer le statut');
         const e = { id: id(), ticket_id: t.id, user_id: me.id, kind: 'status', status: b.status, text: b.text || (b.status === 'terminee' ? b.rapport : null) || null, created_at: Date.now() };
         events.push(e);
         Object.assign(t, { status: b.status, updated_at: Date.now(), planned_at: b.planned_at ?? t.planned_at, technicien: b.technicien ?? t.technicien, rapport: b.rapport ?? t.rapport,
@@ -221,7 +221,7 @@ export function createDemo() {
         const e = { id: id(), ticket_id: t.id, user_id: me.id, kind: 'comment', status: null, text: b.text || null, created_at: Date.now() };
         events.push(e);
         t.updated_at = Date.now();
-        if (b.text) notify(isAdmin() ? '📲 En réel, la gérance est prévenue de votre message.' : '📲 En réel, LuxInterventions est prévenu de votre message.');
+        if (b.text) notify(isAdmin() ? '📲 En réel, la gérance est prévenue de votre message.' : '📲 En réel, LA CENTRAL est prévenu de votre message.');
         return { ok: true, event_id: e.id };
       }
       if (tm[2] === 'photos') {
@@ -274,7 +274,7 @@ export function createDemo() {
     }
     if (om) {
       const o = orgs.find((x) => x.id === om[1]), own = me.role === 'gerance_admin' && me.org_id === o.id;
-      if (!isAdmin() && !own) fail(403, 'Réservé à LuxInterventions ou au responsable de la gérance');
+      if (!isAdmin() && !own) fail(403, 'Réservé à LA CENTRAL ou au responsable de la gérance');
       if (b.logo != null) { if (!own) fail(403, 'Le logo est ajouté par la gérance dans son portail'); o.logo = String(b.logo); }
       for (const k of ['phone', 'email', 'address', 'rcs', 'tva', 'banque', 'bic', 'iban']) if (b[k] != null) o[k] = b[k];
       if (isAdmin() && b.name != null) o.name = b.name;

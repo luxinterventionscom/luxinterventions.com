@@ -234,7 +234,7 @@ function render() {
   out.push(catHtml(t));
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
   { const p = slot('bas'); if (p) out.push(adBox(p, t)); }
-  out.push(`<div class="card">${jobHtml()}</div>`); // 🙋‍♀️🙋🏾 « Je cherche du travail » → candidature chiffrée pour LuxInterventions
+  out.push(`<div class="card">${jobHtml()}</div>`); // 🙋‍♀️🙋🏾 « Je cherche du travail » → candidature chiffrée pour LA CENTRAL
   out.push(newsHtml(API));
   out.push(infoBox({ lang }));
   out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div><p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);

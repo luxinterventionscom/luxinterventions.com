@@ -7621,44 +7621,44 @@ export default [
 "A mensagem de convite segue nesta língua (em francês se « A do telemóvel »)."
 ],
 [
-": LuxInterventions le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.",
-": o LuxInterventions separa-o sozinho por tipo de resíduo (vidro, papel, indiferenciado…) e cria uma recolha para cada um."
+": LA CENTRAL le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.",
+": o LA CENTRAL separa-o sozinho por tipo de resíduo (vidro, papel, indiferenciado…) e cria uma recolha para cada um."
 ],
 [
-"Ajoute l’icône LuxInterventions sur l’écran d’accueil, fonctionne hors ligne.",
-"Coloca o ícone LuxInterventions no ecrã inicial, funciona sem rede."
+"Ajoute l’icône LA CENTRAL sur l’écran d’accueil, fonctionne hors ligne.",
+"Coloca o ícone LA CENTRAL no ecrã inicial, funciona sem rede."
 ],
 [
-"Connexion annulée : LuxInterventions reste ouvert sur l’autre appareil.",
-"Ligação cancelada: o LuxInterventions continua aberto no outro dispositivo."
+"Connexion annulée : LA CENTRAL reste ouvert sur l’autre appareil.",
+"Ligação cancelada: o LA CENTRAL continua aberto no outro dispositivo."
 ],
 [
-"Le contrat de {0} commence le {1}. Pour que les totaux restent justes, LuxInterventions va avancer l'entrée au {2}, puis enregistrer le paiement.",
-"O contrato de {0} começa a {1}. Para os totais ficarem certos, o LuxInterventions antecipa a entrada para {2} e depois regista o pagamento."
+"Le contrat de {0} commence le {1}. Pour que les totaux restent justes, LA CENTRAL va avancer l'entrée au {2}, puis enregistrer le paiement.",
+"O contrato de {0} começa a {1}. Para os totais ficarem certos, o LA CENTRAL antecipa a entrada para {2} e depois regista o pagamento."
 ],
 [
-"LuxInterventions a été ouvert sur {0} : cet appareil a été déconnecté.",
-"O LuxInterventions foi aberto em {0}: este dispositivo foi desligado."
+"LA CENTRAL a été ouvert sur {0} : cet appareil a été déconnecté.",
+"O LA CENTRAL foi aberto em {0}: este dispositivo foi desligado."
 ],
 [
-"LuxInterventions est ouvert sur un autre appareil",
-"O LuxInterventions está aberto noutro dispositivo"
+"LA CENTRAL est ouvert sur un autre appareil",
+"O LA CENTRAL está aberto noutro dispositivo"
 ],
 [
-"Publier un objet (LuxInterventions)",
-"Publicar um objeto (LuxInterventions)"
+"Publier un objet (LA CENTRAL)",
+"Publicar um objeto (LA CENTRAL)"
 ],
 [
-"du camion (comme sur le calendrier de la commune). LuxInterventions calcule quand sortir les poubelles.",
-"do camião (como no calendário do município). O LuxInterventions calcula quando pôr o lixo fora."
+"du camion (comme sur le calendrier de la commune). LA CENTRAL calcule quand sortir les poubelles.",
+"do camião (como no calendário do município). O LA CENTRAL calcula quando pôr o lixo fora."
 ],
 [
-"Annonce publiée (LuxInterventions)",
-"Anúncio publicado (LuxInterventions)"
+"Annonce publiée (LA CENTRAL)",
+"Anúncio publicado (LA CENTRAL)"
 ],
 [
-"Le contrat de {0} {1}. Pour que les totaux restent justes, LuxInterventions va {2}, puis enregistrer le paiement.",
-"O contrato de {0} {1}. Para que os totais fiquem certos, o LuxInterventions vai {2} e depois registar o pagamento."
+"Le contrat de {0} {1}. Pour que les totaux restent justes, LA CENTRAL va {2}, puis enregistrer le paiement.",
+"O contrato de {0} {1}. Para que os totais fiquem certos, o LA CENTRAL vai {2} e depois registar o pagamento."
 ],
 [
 "Gestion locative",
@@ -8517,8 +8517,8 @@ export default [
 "Nenhuma residência. A gestora também as pode adicionar no seu portal."
 ],
 [
-"Ce compte est celui d’une gérance : connectez le compte LuxInterventions.",
-"Esta conta é de uma gestora: ligue a conta LuxInterventions."
+"Ce compte est celui d’une gérance : connectez le compte LA CENTRAL.",
+"Esta conta é de uma gestora: ligue a conta LA CENTRAL."
 ],
 [
 "Collaborateur",
@@ -8537,8 +8537,8 @@ export default [
 "Ligue esta app ao portal uma única vez com a sua"
 ],
 [
-"compte LuxInterventions du portail",
-"conta LuxInterventions do portal"
+"compte LA CENTRAL du portail",
+"conta LA CENTRAL do portal"
 ],
 [
 "Connecté au Portail gérance",
@@ -8585,8 +8585,8 @@ export default [
 "Desaparece das opções da gestora; o histórico dos pedidos é mantido."
 ],
 [
-"Email du compte LuxInterventions",
-"Email da conta LuxInterventions"
+"Email du compte LA CENTRAL",
+"Email da conta LA CENTRAL"
 ],
 [
 "Gérance créée",
@@ -8697,8 +8697,8 @@ export default [
 "Sem ligação à internet"
 ],
 [
-"Pas encore de compte ? Ouvrez le portail : la « Première configuration » crée le compte LuxInterventions.",
-"Ainda sem conta? Abra o portal: a «Primeira configuração» cria a conta LuxInterventions."
+"Pas encore de compte ? Ouvrez le portail : la « Première configuration » crée le compte LA CENTRAL.",
+"Ainda sem conta? Abra o portal: a «Primeira configuração» cria a conta LA CENTRAL."
 ],
 [
 "Personne n’a encore accès. Ajoutez le responsable de la gérance : il reçoit un lien personnel et choisit son mot de passe.",
@@ -9793,8 +9793,8 @@ export default [
 "Tudo mostrado ({0})"
 ],
 [
-"TVA des factures d’interventions émises par {0} (LuxInterventions). Les loyers ne sont pas soumis à la TVA.",
-"IVA das faturas de intervenção emitidas por {0} (LuxInterventions). As rendas não estão sujeitas a IVA."
+"TVA des factures d’interventions émises par {0} (LA CENTRAL). Les loyers ne sont pas soumis à la TVA.",
+"IVA das faturas de intervenção emitidas por {0} (LA CENTRAL). As rendas não estão sujeitas a IVA."
 ],
 [
 "TVA collectée",
@@ -12469,8 +12469,8 @@ export default [
 "⚙️ Emitente: {0}"
 ],
 [
-"Émetteur des factures envoyées aux gérances (marque LuxInterventions). Les factures des loyers (NOBIS s.a.r.l.) ne changent pas.",
-"Emitente das faturas enviadas às gestoras (marca LuxInterventions). As faturas das rendas (NOBIS s.a.r.l.) não mudam."
+"Émetteur des factures envoyées aux gérances (marque LA CENTRAL). Les factures des loyers (NOBIS s.a.r.l.) ne changent pas.",
+"Emitente das faturas enviadas às gestoras (marca LA CENTRAL). As faturas das rendas (NOBIS s.a.r.l.) não mudam."
 ],
 [
 "Émettre la facture {0} ?",
@@ -12557,8 +12557,8 @@ export default [
 "faturas de intervenções"
 ],
 [
-"émises par ARES INVEST S.A. (LuxInterventions). Les loyers ne sont pas soumis à la TVA.",
-"emitidas por ARES INVEST S.A. (LuxInterventions). As rendas não estão sujeitas a IVA."
+"émises par ARES INVEST S.A. (LA CENTRAL). Les loyers ne sont pas soumis à la TVA.",
+"emitidas por ARES INVEST S.A. (LA CENTRAL). As rendas não estão sujeitas a IVA."
 ],
 [
 "Avant d’émettre : complétez {0} dans",
@@ -12925,8 +12925,8 @@ export default [
 "{0} terminou o trabalho"
 ],
 [
-"✅ {0} a fini le travail{1}. Clôture après contrôle par LuxInterventions.",
-"✅ {0} terminou o trabalho{1}. Encerramento após controlo pela LuxInterventions."
+"✅ {0} a fini le travail{1}. Clôture après contrôle par LA CENTRAL.",
+"✅ {0} terminou o trabalho{1}. Encerramento após controlo pela LA CENTRAL."
 ],
 [
 "Vérifiez (photos après, travail fait), puis choisissez 🟢",
@@ -12957,8 +12957,8 @@ export default [
 "(✋ recusou)"
 ],
 [
-"🔄 L’ouvrier prévu n’est pas disponible — LuxInterventions envoie un autre ouvrier.",
-"🔄 O operário previsto não está disponível — a LuxInterventions envia outro operário."
+"🔄 L’ouvrier prévu n’est pas disponible — LA CENTRAL envoie un autre ouvrier.",
+"🔄 O operário previsto não está disponível — a LA CENTRAL envia outro operário."
 ],
 [
 "👷 Affectation{0}",
@@ -14881,8 +14881,8 @@ export default [
 "⭐ Responsável da central"
 ],
 [
-"Affiché aux gérances dans leur portail (« Votre contact LuxInterventions ») et sur vos factures.",
-"Mostrado às gestoras no seu portal («O seu contacto LuxInterventions») e nas suas faturas."
+"Affiché aux gérances dans leur portail (« Votre contact LA CENTRAL ») et sur vos factures.",
+"Mostrado às gestoras no seu portal («O seu contacto LA CENTRAL») e nas suas faturas."
 ],
 [
 "👤 Opérateurs",
@@ -16096,11 +16096,11 @@ export default [
 ["Demandes d’intervention",
 "Pedidos de intervenção"
 ],
-["Envoyées à LuxInterventions, qui envoie ses intervenants",
-"Enviados à LuxInterventions, que envia os seus técnicos"
+["Envoyées à LA CENTRAL, qui envoie ses intervenants",
+"Enviados à LA CENTRAL, que envia os seus técnicos"
 ],
-["Une fuite, une panne, des travaux ? ＋ Demande : LuxInterventions la reçoit tout de suite (chiffrée), la planifie et envoie un intervenant.",
-"Uma fuga, uma avaria, obras? ＋ Pedido: a LuxInterventions recebe-o logo (cifrado), planeia-o e envia um técnico."
+["Une fuite, une panne, des travaux ? ＋ Demande : LA CENTRAL la reçoit tout de suite (chiffrée), la planifie et envoie un intervenant.",
+"Uma fuga, uma avaria, obras? ＋ Pedido: a LA CENTRAL recebe-o logo (cifrado), planeia-o e envia um técnico."
 ],
 ["Demande d’intervention",
 "Pedido de intervenção"
@@ -16114,11 +16114,11 @@ export default [
 ["Rapide (48 h)",
 "Rápido (48 h)"
 ],
-["Chiffrée : seule la centrale LuxInterventions peut la lire.",
-"Cifrado: só a central LuxInterventions o pode ler."
+["Chiffrée : seule la centrale LA CENTRAL peut la lire.",
+"Cifrado: só a central LA CENTRAL o pode ler."
 ],
-["Demande envoyée à LuxInterventions",
-"Pedido enviado à LuxInterventions"
+["Demande envoyée à LA CENTRAL",
+"Pedido enviado à LA CENTRAL"
 ],
 ["Lecture seule : abonnement échu",
 "Só leitura: assinatura expirada"
@@ -16138,11 +16138,11 @@ export default [
 ["Centrale bloquée.",
 "Central bloqueada."
 ],
-["L’abonnement est échu ou suspendu : contactez LuxInterventions pour la réactiver. Vos données restent chiffrées et intactes.",
-"A assinatura expirou ou está suspensa: contacte a LuxInterventions para a reativar. Os seus dados ficam cifrados e intactos."
+["L’abonnement est échu ou suspendu : contactez LA CENTRAL pour la réactiver. Vos données restent chiffrées et intactes.",
+"A assinatura expirou ou está suspensa: contacte a LA CENTRAL para a reativar. Os seus dados ficam cifrados e intactos."
 ],
-["réseau LuxInterventions",
-"rede LuxInterventions"
+["réseau LA CENTRAL",
+"rede LA CENTRAL"
 ],
 ["Patrimoine (biens possédés ou gérés)",
 "Património (bens próprios ou geridos)"
@@ -16291,8 +16291,8 @@ export default [
 "assinatura expirada em"
 ],
 [
-"Vos données restent visibles ; pour les modifier, contactez LuxInterventions.",
-"Os seus dados continuam visíveis; para os alterar, contacte a LuxInterventions."
+"Vos données restent visibles ; pour les modifier, contactez LA CENTRAL.",
+"Os seus dados continuam visíveis; para os alterar, contacte a LA CENTRAL."
 ],
 [
 "{0} an{1}",
@@ -17467,12 +17467,12 @@ export default [
 "🛎️ Hóspedes hotel / Airbnb"
 ],
 [
-"↪️ Envoyer à LuxInterventions",
-"↪️ Enviar à LuxInterventions"
+"↪️ Envoyer à LA CENTRAL",
+"↪️ Enviar à LA CENTRAL"
 ],
 [
-"Envoyé à LuxInterventions",
-"Enviado à LuxInterventions"
+"Envoyé à LA CENTRAL",
+"Enviado à LA CENTRAL"
 ],
 [
 "👤 Joindre le nom et le téléphone du locataire",
@@ -17495,8 +17495,8 @@ export default [
 "Código ou instruções de acesso ao alojamento"
 ],
 [
-"Message pour LuxInterventions (facultatif)",
-"Mensagem para LuxInterventions (opcional)"
+"Message pour LA CENTRAL (facultatif)",
+"Mensagem para LA CENTRAL (opcional)"
 ],
 [
 "↪️ Envoyer",
@@ -17519,8 +17519,8 @@ export default [
 "bom momento para propor a assinatura"
 ],
 [
-"Pour garder la centrale, l’app de vos locataires / clients et l’envoi automatique des demandes, choisissez votre abonnement avec LuxInterventions.",
-"Para manter a central, a app dos seus inquilinos / clientes e o envio automático dos pedidos, escolha a sua assinatura com a LuxInterventions."
+"Pour garder la centrale, l’app de vos locataires / clients et l’envoi automatique des demandes, choisissez votre abonnement avec LA CENTRAL.",
+"Para manter a central, a app dos seus inquilinos / clientes e o envio automático dos pedidos, escolha a sua assinatura com a LA CENTRAL."
 ],
 [
 "état :",
@@ -17687,20 +17687,20 @@ export default [
 "Nenhuma fatura por agora"
 ],
 [
-"{0} factures de LuxInterventions · {1} à payer",
-"{0} faturas da LuxInterventions · {1} por pagar"
+"{0} factures de LA CENTRAL · {1} à payer",
+"{0} faturas da LA CENTRAL · {1} por pagar"
 ],
 [
-"{0} facture de LuxInterventions · {1} à payer",
-"{0} fatura da LuxInterventions · {1} por pagar"
+"{0} facture de LA CENTRAL · {1} à payer",
+"{0} fatura da LA CENTRAL · {1} por pagar"
 ],
 [
-"{0} factures de LuxInterventions · tout est payé",
-"{0} faturas da LuxInterventions · tudo pago"
+"{0} factures de LA CENTRAL · tout est payé",
+"{0} faturas da LA CENTRAL · tudo pago"
 ],
 [
-"{0} facture de LuxInterventions · tout est payé",
-"{0} fatura da LuxInterventions · tudo pago"
+"{0} facture de LA CENTRAL · tout est payé",
+"{0} fatura da LA CENTRAL · tudo pago"
 ],
 [
 "🖼️ Mettez votre logo : vos locataires le voient dans leur app",
@@ -17735,12 +17735,12 @@ export default [
 "Eliminar este pedido da sua lista?"
 ],
 [
-"{0} — si LuxInterventions l’a déjà reçue, appelez-nous pour l’annuler.",
-"{0} — se a LuxInterventions já o recebeu, ligue-nos para o cancelar."
+"{0} — si LA CENTRAL l’a déjà reçue, appelez-nous pour l’annuler.",
+"{0} — se a LA CENTRAL já o recebeu, ligue-nos para o cancelar."
 ],
 [
-"— si LuxInterventions l’a déjà reçue, appelez-nous pour l’annuler.",
-"— se a LuxInterventions já o recebeu, ligue-nos para o cancelar."
+"— si LA CENTRAL l’a déjà reçue, appelez-nous pour l’annuler.",
+"— se a LA CENTRAL já o recebeu, ligue-nos para o cancelar."
 ],
 [
 "À décider",
@@ -17923,12 +17923,12 @@ export default [
 "Pedido de paragem enviado"
 ],
 [
-"⏹️ Arrêt demandé — en attente de LuxInterventions",
-"⏹️ Paragem pedida — a aguardar a LuxInterventions"
+"⏹️ Arrêt demandé — en attente de LA CENTRAL",
+"⏹️ Paragem pedida — a aguardar a LA CENTRAL"
 ],
 [
-"📨 Reçue par LuxInterventions",
-"📨 Recebido pela LuxInterventions"
+"📨 Reçue par LA CENTRAL",
+"📨 Recebido pela LA CENTRAL"
 ],
 [
 "📨 Reçue",
@@ -17987,8 +17987,8 @@ export default [
 "toque para ver, aceitar ou recusar"
 ],
 [
-"🎬 Création de l’annonce par LuxInterventions — prix HT, une fois",
-"🎬 Criação do anúncio pela LuxInterventions — preço s/ IVA, uma vez"
+"🎬 Création de l’annonce par LA CENTRAL — prix HT, une fois",
+"🎬 Criação do anúncio pela LA CENTRAL — preço s/ IVA, uma vez"
 ],
 [
 "SIMPLE — page fixe avec leur texte, graphisme surprise (€)",
@@ -18027,8 +18027,8 @@ export default [
 "Sem chave de socorro?"
 ],
 [
-"Vos données ne peuvent pas être récupérées (elles sont chiffrées, personne d'autre n'a la clé). Demandez à LuxInterventions de",
-"Os seus dados não podem ser recuperados (estão cifrados, mais ninguém tem a chave). Peça à LuxInterventions para"
+"Vos données ne peuvent pas être récupérées (elles sont chiffrées, personne d'autre n'a la clé). Demandez à LA CENTRAL de",
+"Os seus dados não podem ser recuperados (estão cifrados, mais ninguém tem a chave). Peça à LA CENTRAL para"
 ],
 [
 "remettre votre centrale à zéro",

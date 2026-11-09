@@ -1,4 +1,4 @@
-// 📣 Annonces du réseau : validées par la centrale LuxInterventions, publiées sur une liste publique (publicité, rien de personnel).
+// 📣 Annonces du réseau : validées par la centrale LA CENTRAL, publiées sur une liste publique (publicité, rien de personnel).
 // Lues par les apps des locataires et clients des centrales des clients, et par l'app des annonceurs (les annonces des autres).
 let cache = null, at = 0, busy = null;
 export function netPubsGet(api) {

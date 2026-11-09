@@ -330,7 +330,7 @@ function render() {
   out.push(`<p class="meta safe">${esc(t.safe)}</p>`);
   // 10 · publicité (bas)
   { const p = slot('bas'); if (p) out.push(adBox(p, t)); }
-  out.push(`<div class="card">${jobHtml()}</div>`); // 🙋‍♀️🙋🏾 « Je cherche du travail » → candidature chiffrée pour LuxInterventions
+  out.push(`<div class="card">${jobHtml()}</div>`); // 🙋‍♀️🙋🏾 « Je cherche du travail » → candidature chiffrée pour LA CENTRAL
   out.push(newsHtml(API)); // 📰 News : sous l'annonce du bas, au-dessus de « icône sur l'écran » / se déconnecter
   // 11 · infos
   out.push(infoBox({ lang }));

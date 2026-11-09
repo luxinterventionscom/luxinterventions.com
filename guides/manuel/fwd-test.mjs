@@ -1,4 +1,4 @@
-// Catena gérance (abbonamento): inquilino → centrale della gérance → ↪️ LuxInterventions → stato che torna — WORKER_MJS=… node fwd-test.mjs
+// Catena gérance (abbonamento): inquilino → centrale della gérance → ↪️ LA CENTRAL → stato che torna — WORKER_MJS=… node fwd-test.mjs
 import { chromium } from 'playwright';
 import { writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
@@ -57,14 +57,14 @@ await q.evaluate(() => { location.hash = '#/dashboard'; }); await q.waitForTimeo
 const sid = await q.evaluate(() => { const el = document.querySelector('[data-action=open-signal]'); return el ? el.dataset.id : ''; });
 assert(sid, 'gérance: segnalazione arrivata');
 await act(q, 'open-signal', { id: sid }); await q.waitForTimeout(1000);
-assert(await q.$('[data-action=tfwd]'), 'gérance: bottone «↪️ Envoyer à LuxInterventions»');
+assert(await q.$('[data-action=tfwd]'), 'gérance: bottone «↪️ Envoyer à LA CENTRAL»');
 await act(q, 'tfwd', { id: sid }); await q.waitForTimeout(800);
 await q.fill('#f [name=entree]', 'Portone A, codice 1234');
 await q.check('#f [name=acces]'); await q.waitForTimeout(200);
 await q.fill('#f [name=accesTxt]', 'Cassetta chiavi n. 3, codice 5678');
 await q.click('button[type=submit][form=f]'); await q.waitForTimeout(4000);
 await act(q, 'open-signal', { id: sid }); await q.waitForTimeout(800);
-assert(/Inviato a LuxInterventions|Envoyé à LuxInterventions/.test(await body(q)), 'gérance: «inviato a LuxInterventions»');
+assert(/Inviato a LA CENTRAL|Envoyé à LA CENTRAL/.test(await body(q)), 'gérance: «inviato a LA CENTRAL»');
 await q.keyboard.press('Escape'); await q.waitForTimeout(300);
 log('inoltrata con foto, entrata e accesso');
 // 5) la centrale la riceve con foto e accessi, la chiude
@@ -83,7 +83,7 @@ log('centrale: ricevuta e chiusa');
 await relog(q, CPASS);
 await act(q, 'open-signal', { id: sid }); await q.waitForTimeout(800);
 await q.evaluate(() => { location.hash = '#/maintenance'; }); await q.waitForTimeout(1200);
-assert(/(Inviato a LuxInterventions|Envoyé à LuxInterventions)[^\n]*(Terminato|Terminée)/.test(await body(q)) || /Terminato|Terminée/.test(await body(q)), 'gérance: stato «terminato» tornato da noi');
+assert(/(Inviato a LA CENTRAL|Envoyé à LA CENTRAL)[^\n]*(Terminato|Terminée)/.test(await body(q)) || /Terminato|Terminée/.test(await body(q)), 'gérance: stato «terminato» tornato da noi');
 await q.keyboard.press('Escape'); await q.waitForTimeout(300);
 await q.waitForTimeout(4000);
 await a.reload(); await a.waitForTimeout(3500);

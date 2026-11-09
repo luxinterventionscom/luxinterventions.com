@@ -1,5 +1,5 @@
 /**
- * LuxInterventions — Worker Cloudflare (contatore + upload foto rapport d'expert)
+ * LA CENTRAL — Worker Cloudflare (contatore + upload foto rapport d'expert)
  *
  * Account dedicato, slegato dal dominio luxinterventions.com — DNS e posta
  * restano su Gandi, invariati. Questo Worker gestisce due funzioni:
@@ -1167,7 +1167,7 @@ async function handleAres(request, env, url, headers) {
       h1: /^\d\d:\d\d$/.test(a.h1 || "") ? a.h1 : "", h2: /^\d\d:\d\d$/.test(a.h2 || "") ? a.h2 : "",
     })).filter((a) => a.nom);
     // offers : bannière / fenêtre « Nos abonnements » dans le portail des gérances (activée par défaut)
-    // contact : le responsable de la centrale LuxInterventions, affiché aux gérances dans leur portail
+    // contact : le responsable de la centrale LA CENTRAL, affiché aux gérances dans leur portail
     const c = b && b.contact ? { nom: s(b.contact.nom, 80), tel: s(b.contact.tel, 40), email: s(b.contact.email, 120) } : null;
     await env.PHOTOS.put(ARES_PUBS, JSON.stringify({ items, offers: !(b && b.offers === false), contact: c && c.nom ? c : null, at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
     return aresJson({ ok: true, n: items.length }, 200, headers);
@@ -1327,7 +1327,7 @@ async function handleAres(request, env, url, headers) {
  * PORTAIL GÉRANCE / SYNDIC — portail.html
  *
  * Più utenti, più gérance: ognuno vede solo i dati della propria gérance,
- * lo staff LuxInterventions (ruolo "admin") vede tutto.
+ * lo staff LA CENTRAL (ruolo "admin") vede tutto.
  *
  * Binding: D1 "DB" (database luxinterventions-geranceportail), R2 "PHOTOS"
  *          (foto in portail/photos/…), KV "HITS" (limite tentativi).
@@ -1714,7 +1714,7 @@ async function espPushSend(env, target, kind, except = "") {
       // centrale d'un client du réseau (owner:<id>) : le toucher ouvre SA centrale, pas la nôtre
       const tOw = String(s.target || "").startsWith("owner:") ? String(s.target).slice(6) : "";
       const url = s.app === "ares" && /^[a-z0-9]{6,40}$/.test(tOw) ? "/locataires.html?t=" + tOw : { ares: "/locataires.html", eq: "/equipe.html", hote: "/hote.html", taxi: "/taxi.html", ann: "/annonce.html" }[s.app] || "/espace.html";
-      const title = { ares: "LuxInterventions", eq: "ARES Équipe", hote: "🛎️ Séjour", taxi: "🚕 Courses", ann: "📣 Annonces" }[s.app] || "🏠 Locataires";
+      const title = { ares: "LA CENTRAL", eq: "ARES Équipe", hote: "🛎️ Séjour", taxi: "🚕 Courses", ann: "📣 Annonces" }[s.app] || "🏠 Locataires";
       const k2 = kind === "news" && PUSH_TXT["news_" + s.app] ? "news_" + s.app : kind;
       const msg = { title, body: (PUSH_TXT[k2] || PUSH_TXT.news)[s.lang] || (PUSH_TXT[k2] || PUSH_TXT.news).fr, url, tag: k2 };
       try {
@@ -1778,7 +1778,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       return json(u ? { salt: u.salt, iter: u.iter } : { salt: await fakeSalt(env, email), iter: PTL_ITER });
     }
 
-    // Mot de passe oublié : la demande arrive à LuxInterventions (et au responsable de la gérance), qui envoie un nouveau lien.
+    // Mot de passe oublié : la demande arrive à LA CENTRAL (et au responsable de la gérance), qui envoie un nouveau lien.
     // Réponse toujours identique : on ne révèle pas quels emails ont un compte.
     if (path === "forgot" && method === "POST") {
       await guard();
@@ -1823,7 +1823,7 @@ async function handlePortail(request, env, url, headers, ctx) {
     if (pubMatch) {
       await guard();
       const dp = await env.DB.prepare("SELECT * FROM devis_pub WHERE token_hash = ?").bind(await sha256Hex(pubMatch[1])).first();
-      if (!dp) { await ptlRecordFailure(env, ip); fail(404, "Lien de devis invalide. Demandez un nouveau lien à LuxInterventions."); }
+      if (!dp) { await ptlRecordFailure(env, ip); fail(404, "Lien de devis invalide. Demandez un nouveau lien à LA CENTRAL."); }
       const expired = dp.valid_until && dp.valid_until < new Date(now).toISOString().slice(0, 10);
       if (!pubMatch[2] && method === "GET") return json({ no: dp.no, title: dp.title, client: dp.client, ttc: dp.ttc, acompte: dp.acompte, pct: dp.pct, valid_until: dp.valid_until, part: !!dp.part, kind: dp.kind, status: dp.status, expired: !!expired, sign_name: dp.sign_name, decided_at: dp.decided_at });
       if (pubMatch[2] === "pdf" && method === "GET") {
@@ -1833,7 +1833,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       }
       if (pubMatch[2] === "sign" && method === "POST") {
         if (dp.status !== "envoye") fail(409, "Ce devis a déjà une réponse");
-        if (expired) fail(410, "Ce devis a expiré : demandez une nouvelle offre à LuxInterventions");
+        if (expired) fail(410, "Ce devis a expiré : demandez une nouvelle offre à LA CENTRAL");
         const b = await body(), st = b.status === "refuse" ? "refuse" : "accepte", nom = clean(b.nom, 120), png = String(b.png || "");
         if (st === "accepte") {
           if (!nom) fail(400, "Indiquez votre nom");
@@ -1854,11 +1854,11 @@ async function handlePortail(request, env, url, headers, ctx) {
       await guard();
       const u = await env.DB.prepare("SELECT u.*, o.name AS org_name FROM users u LEFT JOIN orgs o ON o.id = u.org_id WHERE invite_hash = ?").bind(await sha256Hex(inviteMatch[1])).first();
       if (!u || u.invite_expires < now) { await ptlRecordFailure(env, ip); fail(404, "Lien d'invitation invalide ou expiré. Demandez un nouveau lien."); }
-      if (method === "GET") { const po = await env.PHOTOS.get(ARES_PUBS); const pj = po ? await po.json() : {}; return json({ name: u.name, email: u.email, org: u.org_name || "LuxInterventions", iter: PTL_ITER, offers: pj.offers !== false, needName: !clean(u.name) }); }
+      if (method === "GET") { const po = await env.PHOTOS.get(ARES_PUBS); const pj = po ? await po.json() : {}; return json({ name: u.name, email: u.email, org: u.org_name || "LA CENTRAL", iter: PTL_ITER, offers: pj.offers !== false, needName: !clean(u.name) }); }
       if (method === "POST") {
         const b = await body();
         if (!/^[0-9a-f]{64}$/.test(b.authHash || "") || !b.salt) fail(400, "Données invalides");
-        // invitation créée par LuxInterventions avec l'email seulement : la personne écrit son prénom et son nom
+        // invitation créée par LA CENTRAL avec l'email seulement : la personne écrit son prénom et son nom
         const nm = clean(u.name) ? u.name : clean(b.name, 120);
         if (!nm) fail(400, "Écrivez votre prénom et votre nom");
         const token = randHex(32);
@@ -1901,7 +1901,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       return json({ items, offers: j.offers !== false, contact: j.contact || null });
     }
 
-    // « Je suis intéressé » (offre d'abonnement affichée à la gérance) : prévient LuxInterventions
+    // « Je suis intéressé » (offre d'abonnement affichée à la gérance) : prévient LA CENTRAL
     if (path === "offer" && method === "POST") {
       const pb = (await body()).plan, plan = ["decouverte", "pro", "agence", "mesure"].includes(pb) ? pb : "pro";
       const k = "offer:" + me.id;
@@ -1917,7 +1917,7 @@ async function handlePortail(request, env, url, headers, ctx) {
     // ── Devis (PDF émis par l'app de gestion) : la gérance accepte, refuse ou demande une révision ──
     // lien public d'un devis (client externe) : publié par l'app de gestion, réponses relues par elle
     if (path === "devis-pub" && method === "PUT") {
-      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
       if ((request.headers.get("Content-Type") || "") !== "application/pdf") fail(415, "PDF attendu");
       let meta = {};
       try { meta = JSON.parse(decodeURIComponent(request.headers.get("X-Devis") || "{}")); } catch { fail(400, "Devis illisible"); }
@@ -1937,19 +1937,19 @@ async function handlePortail(request, env, url, headers, ctx) {
       return json({ ok: true, id, token: tok });
     }
     if (path === "devis-pub" && method === "GET") {
-      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
       const rows = await env.DB.prepare("SELECT id, no, status, sign_name, sign_png, sign_early, decided_at FROM devis_pub WHERE decided_at IS NOT NULL ORDER BY decided_at DESC LIMIT 300").all();
       return json({ devis: rows.results || [] });
     }
     const dpMatch = path.match(/^devis-pub\/([a-z0-9]+)$/);
     if (dpMatch && method === "DELETE") {
-      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
       const dp = await env.DB.prepare("SELECT pdf_key FROM devis_pub WHERE id = ?").bind(dpMatch[1]).first();
       if (dp) { await env.PHOTOS.delete(dp.pdf_key); await env.DB.prepare("DELETE FROM devis_pub WHERE id = ?").bind(dpMatch[1]).run(); }
       return json({ ok: true });
     }
     if (path === "devis" && method === "PUT") {
-      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
       if ((request.headers.get("Content-Type") || "") !== "application/pdf") fail(415, "PDF attendu");
       let meta = {};
       try { meta = JSON.parse(decodeURIComponent(request.headers.get("X-Devis") || "{}")); } catch { fail(400, "Devis illisible"); }
@@ -2002,7 +2002,7 @@ async function handlePortail(request, env, url, headers, ctx) {
         return json({ ok: true });
       }
       if (!devMatch[2] && method === "DELETE") {
-        if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+        if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
         await env.PHOTOS.delete(dv.pdf_key);
         await env.DB.prepare("DELETE FROM devis WHERE id = ?").bind(dv.id).run();
         return json({ ok: true });
@@ -2034,7 +2034,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       return json({ ok: true });
     }
     if (path === "push/test" && method === "POST") {
-      ctx && ctx.waitUntil(ptlNotify(env, "u.id = ?", [me.id], { title: "LuxInterventions", body: "Les notifications fonctionnent ✓", url: "/portail.html" }, false));
+      ctx && ctx.waitUntil(ptlNotify(env, "u.id = ?", [me.id], { title: "LA CENTRAL", body: "Les notifications fonctionnent ✓", url: "/portail.html" }, false));
       return json({ ok: true });
     }
 
@@ -2049,20 +2049,20 @@ async function handlePortail(request, env, url, headers, ctx) {
       return json({ orgs: rows.results || [] });
     }
     if (path === "orgs" && method === "POST") {
-      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
       const b = await body();
       if (!clean(b.name)) fail(400, "Nom obligatoire");
       const id = ptlId();
-      // LuxInterventions crée la gérance avec le nom, l'email, le téléphone et le RCS : adresse, TVA, banque et logo sont remplis par la gérance
+      // LA CENTRAL crée la gérance avec le nom, l'email, le téléphone et le RCS : adresse, TVA, banque et logo sont remplis par la gérance
       await env.DB.prepare("INSERT INTO orgs (id, name, phone, email, created_at, rcs, kind) VALUES (?, ?, ?, ?, ?, ?, ?)")
         .bind(id, clean(b.name, 120), clean(b.phone, 40), clean(b.email, 200), now, clean(b.rcs, 30), orgKind(b.kind)).run();
       return json({ id });
     }
     const orgMatch = path.match(/^orgs\/([a-z0-9]+)$/);
-    // données de la société : le responsable de la gérance pour la sienne ; LuxInterventions corrige seulement nom, email, téléphone et RCS
+    // données de la société : le responsable de la gérance pour la sienne ; LA CENTRAL corrige seulement nom, email, téléphone et RCS
     if (orgMatch && method === "PATCH") {
       const own = me.role === "gerance_admin" && me.org_id === orgMatch[1];
-      if (!isAdmin(me) && !own) fail(403, "Réservé à LuxInterventions ou au responsable de la gérance");
+      if (!isAdmin(me) && !own) fail(403, "Réservé à LA CENTRAL ou au responsable de la gérance");
       const b = await body();
       const v = (k, n) => (b[k] != null ? clean(b[k], n) : null);
       // logo de l'agence (uniquement par son responsable, dans le portail) : petite image (data URL PNG/JPEG/WebP, ≤ 256 px, réduite par l'app), "" = retirer
@@ -2081,9 +2081,9 @@ async function handlePortail(request, env, url, headers, ctx) {
       return json({ ok: true });
     }
 
-    // Supprimer une gérance (réservé à LuxInterventions) : utilisateurs, résidences, demandes, suivi et photos — irréversible
+    // Supprimer une gérance (réservé à LA CENTRAL) : utilisateurs, résidences, demandes, suivi et photos — irréversible
     if (orgMatch && method === "DELETE") {
-      if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+      if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
       const o = await env.DB.prepare("SELECT * FROM orgs WHERE id = ?").bind(orgMatch[1]).first();
       if (!o) fail(404, "Gérance introuvable");
       const b = await body();
@@ -2127,7 +2127,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       const org = role === "admin" ? null : isAdmin(me) ? clean(b.org_id, 40) : me.org_id;
       if (role !== "admin" && !(await env.DB.prepare("SELECT id FROM orgs WHERE id = ?").bind(org).first())) fail(400, "Gérance inconnue");
       const email = clean(b.email, 200).toLowerCase();
-      // LuxInterventions n'invite que le responsable d'une gérance qui n'en a pas (son nom est écrit par lui à l'ouverture du lien) ; les collaborateurs sont ajoutés par la gérance
+      // LA CENTRAL n'invite que le responsable d'une gérance qui n'en a pas (son nom est écrit par lui à l'ouverture du lien) ; les collaborateurs sont ajoutés par la gérance
       const byLux = isAdmin(me) && role !== "admin";
       if (byLux && role !== "gerance_admin") fail(403, "Les collaborateurs sont ajoutés par la gérance dans son portail");
       if (byLux && (await env.DB.prepare("SELECT id FROM users WHERE org_id = ? AND role = 'gerance_admin' AND active = 1").bind(org).first())) fail(409, "Cette gérance a déjà un responsable");
@@ -2147,7 +2147,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       if (!userMatch[2] && method === "PATCH") {
         const b = await body();
         if (target.id === me.id && b.active === false) fail(400, "Vous ne pouvez pas désactiver votre propre compte");
-        // utilisateur d'une gérance : LuxInterventions peut seulement le désactiver / réactiver
+        // utilisateur d'une gérance : LA CENTRAL peut seulement le désactiver / réactiver
         if (isAdmin(me) && target.role !== "admin") { b.name = null; b.phone = null; b.role = null; }
         const role = b.role && PTL_ROLES.includes(b.role) && (isAdmin(me) || b.role !== "admin") ? b.role : target.role;
         const ops = [env.DB.prepare("UPDATE users SET name = ?, phone = ?, role = ?, active = ? WHERE id = ?")
@@ -2252,7 +2252,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       ]);
       const msg = { title: `${URG_LABEL[b.urgence]} · #${refRow.ref} ${r.name}`, body: `${clean(b.categorie, 60) || "Intervention"}${b.lieu ? " — " + clean(b.lieu, 80) : ""} : ${clean(b.description, 140)}`, url: `/portail.html#/t/${id}`, tag: id };
       ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin' AND u.id != ?", [me.id], msg, b.urgence === "urgent"));
-      // l'app de gestion (LuxInterventions) : pastille sur l'icône + notification
+      // l'app de gestion (LA CENTRAL) : pastille sur l'icône + notification
       if (!isAdmin(me)) ctx && ctx.waitUntil(espPushSend(env, "owner", "ptl"));
       return json({ id, ref: refRow.ref });
     }
@@ -2269,7 +2269,7 @@ async function handlePortail(request, env, url, headers, ctx) {
         ]);
         return json({ ticket: t, events: ev.results || [], photos: ph.results || [], residence: res });
       }
-      // Modifier la demande : la gérance tant qu'elle n'est pas prise en charge, LuxInterventions toujours (sauf terminée / annulée)
+      // Modifier la demande : la gérance tant qu'elle n'est pas prise en charge, LA CENTRAL toujours (sauf terminée / annulée)
       if (!sub && method === "PATCH") {
         if (["terminee", "annulee"].includes(t.status)) fail(400, "Demande terminée ou annulée : elle ne peut plus être modifiée");
         if (!isAdmin(me) && t.status !== "recue") fail(403, "Demande déjà prise en charge : écrivez la correction dans un message");
@@ -2304,7 +2304,7 @@ async function handlePortail(request, env, url, headers, ctx) {
       if (sub === "status" && method === "POST") {
         const b = await body();
         if (!PTL_STATUSES.includes(b.status)) fail(400, "Statut invalide");
-        if (!isAdmin(me) && !(b.status === "annulee" && t.status === "recue")) fail(403, "Seul LuxInterventions peut changer le statut (vous pouvez annuler une demande pas encore prise en charge)");
+        if (!isAdmin(me) && !(b.status === "annulee" && t.status === "recue")) fail(403, "Seul LA CENTRAL peut changer le statut (vous pouvez annuler une demande pas encore prise en charge)");
         const upd = {
           planned_at: b.planned_at != null ? clean(b.planned_at, 40) : t.planned_at,
           technicien: b.technicien != null ? clean(b.technicien, 120) : t.technicien,
@@ -2336,9 +2336,9 @@ async function handlePortail(request, env, url, headers, ctx) {
         if (!isAdmin(me)) ctx && ctx.waitUntil(espPushSend(env, "owner", "ptlmsg"));
         return json({ ok: true, event_id: evId });
       }
-      // Facture (PDF émis par l'app de gestion de LuxInterventions) : la gérance la télécharge
+      // Facture (PDF émis par l'app de gestion de LA CENTRAL) : la gérance la télécharge
       if (sub === "invoice" && method === "PUT") {
-        if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+        if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
         if ((request.headers.get("Content-Type") || "") !== "application/pdf") fail(415, "PDF attendu");
         let meta = {};
         try { meta = JSON.parse(decodeURIComponent(request.headers.get("X-Invoice") || "{}")); } catch { fail(400, "Facture illisible"); }
@@ -2365,14 +2365,14 @@ async function handlePortail(request, env, url, headers, ctx) {
         return new Response(obj.body, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="Facture-${t.inv_no}.pdf"`, "Cache-Control": "private, no-store", ...headers } });
       }
       if (sub === "invoice-paid" && method === "POST") {
-        if (!isAdmin(me)) fail(403, "Réservé à LuxInterventions");
+        if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
         const b = await body();
         // payée / à payer ; « contentieux » = facture impayée en litige (une facture payée sort du contentieux)
         const paid = "paid" in b ? (b.paid ? now : 0) : t.inv_paid || 0;
         const cont = paid ? 0 : "cont" in b ? (b.cont ? now : 0) : t.inv_cont || 0;
         await env.DB.prepare("UPDATE tickets SET inv_paid = ?, inv_cont = ?, updated_at = ? WHERE id = ?").bind(paid, cont, now, t.id).run();
         if ("cont" in b && !!cont !== !!t.inv_cont) {
-          const txt = cont ? `⚠️ Facture ${t.inv_no || ""} en CONTENTIEUX : impayée. Merci de régulariser ou de contacter LuxInterventions.` : `✅ Facture ${t.inv_no || ""} : contentieux levé.`;
+          const txt = cont ? `⚠️ Facture ${t.inv_no || ""} en CONTENTIEUX : impayée. Merci de régulariser ou de contacter LA CENTRAL.` : `✅ Facture ${t.inv_no || ""} : contentieux levé.`;
           await env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'comment', NULL, ?, ?)").bind(ptlId(), t.id, me.id, txt, now).run();
           ctx && ctx.waitUntil(notifyOther({ title: `#${t.ref} · ${cont ? "⚠️ Contentieux" : "Contentieux levé"}`, body: txt.slice(0, 140), url: `/portail.html#/t/${t.id}`, tag: t.id }, !!cont));
         }
