@@ -36,7 +36,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.241.0';
+const VERSION = '2.241.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1525,13 +1525,13 @@ async function netBailSave(tid, file, nom) {
   await vault.mutate((tx) => { tx.put('documents', { id: cid, kind: 'netbail', tid, label: `📎 Bail principal — ${nom}`, date: today(), mime, size: file.size }); tx.put('reglages', { id: 'netc-' + tid, bailDoc: cid }); }, '📎 Bail principal du client', nom);
 }
 const netBailLine = (tid) => { const i = netInfo(tid); return i.loueur === 'sous' ? html`<p class="small" style="margin:6px 0">🔁 Bailleur principal · propriétaire réel : <b>${i.realOwner || '—'}</b> · ${i.bailDoc ? html`<button type="button" class="btn sm" data-action="open-doc" data-id="${i.bailDoc}">📎 Bail</button>` : html`<b style="color:var(--amber,#b45309)">⚠️ bail manquant</b> <label class="btn sm" style="cursor:pointer">📎 Ajouter<input type="file" hidden accept="application/pdf,image/*" data-input="net-bail" data-id="${tid}"></label>`}</p>` : ''; };
-const netInvite = (t, code) => `🌐 ${t.nom} — votre centrale de gestion (${NET_FIL[t.fil] || ''}), réseau LuxInterventions
+const netInvite = (t, code) => `🌐 ${t.nom} — votre centrale de gestion (${NET_FIL[t.fil] || ''})
 👉 Ouvrir : ${netUrl(t.id, t.fil)}
 🔑 Code d’invitation : ${code}
 
-1️⃣ À la première ouverture : entrez le code, puis choisissez votre clé d’accès (votre mot de passe). Elle chiffre vos données : personne d’autre ne la connaît, pas même LuxInterventions.
-2️⃣ Juste après, la centrale vous montre votre kit de secours : la « moitié A » de votre clé de secours. Envoyez-la-vous par e-mail ou imprimez-la (boutons 📧 et 🖨️) et gardez-la à 2 endroits. La « moitié B » est gardée fermée par LuxInterventions : il faut les deux pour rouvrir votre centrale si vous oubliez votre clé d’accès.
-3️⃣ Vous n’avez pas vu ou pas gardé le kit ? Dans la centrale : l’avis rouge 🧩 de l’Accueil, ou Réglages → Sécurité → « Clé de secours » (une nouvelle moitié A est créée). Clé d’accès oubliée et moitié A perdue : contactez LuxInterventions.`;
+1️⃣ À la première ouverture : entrez le code, puis choisissez votre clé d’accès (votre mot de passe). Elle chiffre vos données : personne d’autre ne la connaît, pas même la centrale.
+2️⃣ Juste après, la centrale vous montre votre kit de secours : la « moitié A » de votre clé de secours. Envoyez-la-vous par e-mail ou imprimez-la (boutons 📧 et 🖨️) et gardez-la à 2 endroits. La « moitié B » est gardée fermée par la centrale : il faut les deux pour rouvrir votre centrale si vous oubliez votre clé d’accès.
+3️⃣ Vous n’avez pas vu ou pas gardé le kit ? Dans la centrale : l’avis rouge 🧩 de l’Accueil, ou Réglages → Sécurité → « Clé de secours » (une nouvelle moitié A est créée). Clé d’accès oubliée et moitié A perdue : contactez la centrale.`;
 // 🧾 Fatture della CENTRAL-APP alle UTENTI-APP (centrali dei clienti) : cifrate per la chiave pubblica del client, nella sua
 // casella ; bonifico con QR + « Ho pagato » (Stripe : pas encore connecté). Avviso puis sola lettura après les jours de 🧾 Facturation.
 const payDays = () => { const c = factConf(); return { avv: c.avv === '' || c.avv == null ? 7 : Math.max(0, +c.avv), ro: Math.max(1, +c.rog || 30) }; };
@@ -8453,11 +8453,11 @@ const SHEETS = {
 
   'rec-split'({ preset: a }) {
     const mail = societe().email || '';
-    const txt = `Kit de récupération — centrale ${socName()} (LuxInterventions)\n\nMoitié A de ma clé de secours :\n${a}\n\nSi j'oublie ma clé d'accès : ${netUrl(TENANT, tenantInfo.fil).replace(/^https?:\/\//, '')} → « Clé d'accès oubliée ? » → moitié A (ci-dessus) + moitié B (donnée par LuxInterventions au téléphone).`;
+    const txt = `Kit de récupération — centrale ${socName()}\n\nMoitié A de ma clé de secours :\n${a}\n\nSi j'oublie ma clé d'accès : ${netUrl(TENANT, tenantInfo.fil).replace(/^https?:\/\//, '')} → « Clé d'accès oubliée ? » → moitié A (ci-dessus) + moitié B (donnée par la centrale au téléphone).`;
     return {
       title: '🧩 Votre kit de récupération',
       narrow: true,
-      body: html`<div class="alert info" style="margin-bottom:12px">${icon('shield')}<div>Votre clé de secours est coupée en <b>deux moitiés</b>. <b>Moitié A</b> : chez vous (ci-dessous). <b>Moitié B</b> : gardée fermée pour LuxInterventions. Aucune moitié seule n'ouvre vos données — <b>LuxInterventions ne peut pas les lire</b>. Si vous oubliez votre clé d'accès : vous appelez, on vous donne la moitié B, vous ajoutez votre moitié A, et vous ne perdez rien.</div></div>
+      body: html`<div class="alert info" style="margin-bottom:12px">${icon('shield')}<div>Votre clé de secours est coupée en <b>deux moitiés</b>. <b>Moitié A</b> : chez vous (ci-dessous). <b>Moitié B</b> : gardée fermée par la centrale. Aucune moitié seule n'ouvre vos données — <b>la centrale ne peut pas les lire</b>. Si vous oubliez votre clé d'accès : vous appelez, on vous donne la moitié B, vous ajoutez votre moitié A, et vous ne perdez rien.</div></div>
         <div class="tiny muted">Votre moitié A</div>
         <div style="font-family:var(--mono);font-size:21px;font-weight:700;letter-spacing:.05em;text-align:center;padding:16px 8px;background:var(--surface-2);border-radius:var(--radius);word-break:break-all" id="rcode">${a}</div>
         <p class="small" style="margin:12px 0 6px"><b>Gardez-la à au moins 2 endroits :</b></p>
@@ -10097,7 +10097,7 @@ const ACTIONS = {
     try { await navigator.clipboard.writeText($('#rcode').textContent.trim()); toast('Clé copiée'); } catch { toast('Copie impossible : notez-la à la main', { bad: true }); }
   },
   'print-recovery': () => printDoc('Clé de secours', html`<h1>Clé de secours</h1><p class="pr-sub">À conserver en lieu sûr. En cas d'oubli de la clé d'accès : luxinterventions.com/locataires.html → « Clé d'accès oubliée ? »</p><div style="font:700 26px/1.4 monospace;letter-spacing:.08em;border:2px solid #000;padding:24px;text-align:center;margin-top:24px">${ui.sheet && ui.sheet.preset}</div>`),
-  'print-reckit': (d) => printDoc('Kit de récupération', html`<h1>🧩 Kit de récupération</h1><p class="pr-sub">Centrale ${socName()} — à garder avec les documents de la société.</p><p>Moitié A de votre clé de secours :</p><div style="font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:.06em;border:2px solid #333;border-radius:10px;padding:16px;text-align:center">${d.id}</div><h3>Clé d'accès oubliée ?</h3><ol><li>Ouvrez ${netUrl(TENANT, tenantInfo.fil)} → « Clé d'accès oubliée ? ».</li><li>Écrivez la <b>moitié A</b> (ci-dessus).</li><li>Appelez LuxInterventions : on vous donne la <b>moitié B</b>.</li><li>Choisissez une nouvelle clé d'accès : vos données sont intactes.</li></ol><p class="pr-sub">Les deux moitiés sont nécessaires : LuxInterventions ne peut pas ouvrir votre centrale avec la moitié B seule.</p>`, true),
+  'print-reckit': (d) => printDoc('Kit de récupération', html`<h1>🧩 Kit de récupération</h1><p class="pr-sub">Centrale ${socName()} — à garder avec les documents de la société.</p><p>Moitié A de votre clé de secours :</p><div style="font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:.06em;border:2px solid #333;border-radius:10px;padding:16px;text-align:center">${d.id}</div><h3>Clé d'accès oubliée ?</h3><ol><li>Ouvrez ${netUrl(TENANT, tenantInfo.fil)} → « Clé d'accès oubliée ? ».</li><li>Écrivez la <b>moitié A</b> (ci-dessus).</li><li>Appelez la centrale : elle vous donne la <b>moitié B</b>.</li><li>Choisissez une nouvelle clé d'accès : vos données sont intactes.</li></ol><p class="pr-sub">Les deux moitiés sont nécessaires : la centrale ne peut pas ouvrir la vôtre avec la moitié B seule.</p>`, true),
   'print-imm': (d) => printDoc('Rapport immeuble', reportImmeuble(d.id, ui.year)),
   'print-log': (d) => printDoc('Rapport logement', reportLogement(d.id)),
   async 'print-global'() {
