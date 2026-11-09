@@ -655,6 +655,12 @@ function validKeyMaterial(b) {
 // ── Centrali dei clienti (gérance, agence, propriétaire, hôtel, Airbnb) : casseforti separate ──
 const TENANT_FIL = ["gerance", "agence", "proprio", "hotel", "airbnb"];
 const tenantKey = (tid) => "ares/tenants/" + tid + ".json";
+const PACK = (tid) => "ares/t/" + tid + "/pack/", PACKM = (tid) => "ares/t/" + tid + "/packm/";
+async function packList(env, tid) {
+  const l = await env.PHOTOS.list({ prefix: PACKM(tid), limit: 100 }), out = [];
+  for (const o of l.objects) { const r = await env.PHOTOS.get(o.key); if (r) out.push(await r.json()); }
+  return out.sort((a, b) => b.at - a.at);
+}
 async function tenantGet(env, tid) { const o = await env.PHOTOS.get(tenantKey(tid)); return o ? o.json() : null; }
 const tenantPut = (env, reg) => env.PHOTOS.put(tenantKey(reg.id), JSON.stringify(reg), { httpMetadata: { contentType: "application/json" } });
 const dayIso = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);
@@ -840,6 +846,17 @@ async function handleAres(request, env, url, headers) {
       return aresJson({ ok: true }, 200, headers);
     }
     if (path === "box" && method === "GET") return aresJson({ items: await tboxList(env, tid) }, 200, headers, { "Cache-Control": "no-store" });
+    // 🏗️ ANGAR : paquets (chiffrés) envoyés par la centrale principale — liste, lecture, « ouvert »
+    if (path === "packs" && method === "GET") return aresJson({ items: await packList(env, tid) }, 200, headers, { "Cache-Control": "no-store" });
+    const pkm = path.match(/^pack\/([a-z0-9]{6,40})(\/done)?$/);
+    if (pkm && method === "GET" && !pkm[2]) { const o = await env.PHOTOS.get(PACK(tid) + pkm[1]); return o ? new Response(o.body, { headers: { "Content-Type": "application/octet-stream", "Cache-Control": "no-store", ...headers } }) : aresJson({ error: "Introuvable" }, 404, headers); }
+    if (pkm && method === "POST" && pkm[2]) {
+      const m = await env.PHOTOS.get(PACKM(tid) + pkm[1] + ".json");
+      if (!m) return aresJson({ error: "Introuvable" }, 404, headers);
+      await env.PHOTOS.put(PACKM(tid) + pkm[1] + ".json", JSON.stringify({ ...(await m.json()), opened: Date.now() }));
+      await env.PHOTOS.delete(PACK(tid) + pkm[1]); // reçu : le paquet est effacé du serveur (l'historique reste)
+      return aresJson({ ok: true }, 200, headers);
+    }
     const boxDel = path.match(/^box\/([a-z0-9-]{6,40})$/);
     if (boxDel && method === "DELETE") { await env.PHOTOS.delete(TBOX(tid) + boxDel[1]); return aresJson({ ok: true }, 200, headers); }
     if (ro && method !== "GET" && path !== "demande") return aresJson({ error: "readonly", tenant: tenantPub(reg) }, 423, headers);
@@ -909,6 +926,22 @@ async function handleAres(request, env, url, headers) {
       const o = await env.PHOTOS.get("ares/t/" + trb[1] + "/recb");
       if (!o) return aresJson({ error: "Pas de moitié B" }, 404, headers);
       return new Response(o.body, { status: 200, headers: { "Content-Type": "application/octet-stream", "Cache-Control": "no-store", ...headers } });
+    }
+    // 🏗️ ANGAR : la centrale principale dépose un paquet chiffré dans le « container » du client (et voit s'il a été ouvert)
+    const tpk = path.match(/^tenants\/([a-z0-9]{12,24})\/packs?(?:\/([a-z0-9]{6,40}))?$/);
+    if (tpk && (await env.PHOTOS.head(tenantKey(tpk[1])))) {
+      const T = tpk[1];
+      if (!tpk[2] && method === "GET") return aresJson({ items: await packList(env, T) }, 200, headers, { "Cache-Control": "no-store" });
+      if (!tpk[2] && method === "POST") {
+        const body = await request.arrayBuffer();
+        if (body.byteLength < 100 || body.byteLength > 95 * 1024 * 1024) return aresJson({ error: "Taille invalide (95 Mo maximum)" }, 413, headers);
+        const id = Date.now().toString(36) + randHex(3), info = (() => { try { return JSON.parse(decodeURIComponent(url.searchParams.get("info") || "{}")); } catch { return {}; } })();
+        const counts = {}; for (const [k, v] of Object.entries(info.counts || {})) if (/^[a-z]{2,12}$/.test(k)) counts[k] = Math.max(0, parseInt(v, 10) || 0);
+        await env.PHOTOS.put(PACK(T) + id, body, { httpMetadata: { contentType: "application/octet-stream" } });
+        await env.PHOTOS.put(PACKM(T) + id + ".json", JSON.stringify({ id, at: Date.now(), size: body.byteLength, counts, label: clean(info.label, 120) }));
+        return aresJson({ ok: true, id }, 200, headers);
+      }
+      if (tpk[2] && method === "DELETE") { await env.PHOTOS.delete(PACK(T) + tpk[2]); await env.PHOTOS.delete(PACKM(T) + tpk[2] + ".json"); return aresJson({ ok: true }, 200, headers); }
     }
     // 📦 transfert : les apps des locataires (espaces + codes) passent de la centrale principale à la centrale du client
     const tad = path.match(/^tenants\/([a-z0-9]{12,24})\/adopt$/);
