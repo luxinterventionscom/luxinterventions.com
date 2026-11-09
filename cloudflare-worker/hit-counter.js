@@ -74,6 +74,23 @@ async function route(request, env, ctx, headers) {
     // Statistiques anonymes des annonces (vues / clics) envoyées par les apps : aucun nom, aucune donnée personnelle
     if (url.pathname === "/api/pubstat" && request.method === "POST") return pubStatPost(request, env, headers);
     if (url.pathname === "/api/publikes" && request.method === "GET") return pubLikesGet(url, env, headers);
+    // 🙋‍♀️🙋🏾 Candidatures « Je cherche du travail » : clé publique de la centrale principale (publique par nature) et dépôt chiffré
+    // (locataires, hôtes, taxis — aussi ceux des centrales des clients : la candidature va directement chez nous)
+    if (url.pathname === "/api/netkey" && request.method === "GET") {
+      const o = await env.PHOTOS.get("ares/network-key.json");
+      const j = o ? await o.json().catch(() => null) : null;
+      return aresJson(j && j.pub ? { pub: j.pub } : { error: "Pas encore de clé" }, j && j.pub ? 200 : 404, headers, { "Cache-Control": "public, max-age=600" });
+    }
+    if (url.pathname === "/api/job" && request.method === "POST") {
+      const ip = clientIp(request), kIp = "job-rl:" + ip, nIp = parseInt((await env.HITS.get(kIp)) || "0", 10);
+      if (nIp >= 12) return aresJson({ error: "Trop d'envois, réessayez plus tard" }, 429, headers);
+      const body = await request.arrayBuffer();
+      if (body.byteLength < 100 || body.byteLength > 12 * 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
+      await env.PHOTOS.put("ares/tdem/" + Date.now().toString(36) + "-job-" + randHex(4), body);
+      try { await env.HITS.put(kIp, String(nIp + 1), { expirationTtl: 3600 }); } catch { /* quota KV */ }
+      ctx && ctx.waitUntil(espPushSend(env, "owner", "job"));
+      return aresJson({ ok: true }, 200, headers);
+    }
     // 📰 Titres de L'essentiel (flux RSS publics) pour la barre « News » des apps : titre, lien, heure — gardés 15 min
     if (url.pathname === "/api/news" && request.method === "GET") return newsGet(url, ctx, headers);
     // 📣 Annonces du réseau (lecture publique) : apps des locataires et clients des centrales des clients, apps des annonceurs
@@ -1605,6 +1622,7 @@ const PUSH_TXT = {
   in_hote: { fr: "🛎️ Un client de l’hôtel / Airbnb vous a écrit", it: "🛎️ Un ospite dell’hotel / Airbnb vi ha scritto", de: "🛎️ Ein Gast (Hotel / Airbnb) hat geschrieben", pt: "🛎️ Um hóspede (hotel / Airbnb) escreveu", en: "🛎️ A hotel / Airbnb guest wrote to you", es: "🛎️ Un huésped (hotel / Airbnb) le ha escrito" },
   in_taxi: { fr: "🚕 Une société de taxi vous a écrit", it: "🚕 Una ditta taxi vi ha scritto", de: "🚕 Ein Taxiunternehmen hat geschrieben", pt: "🚕 Uma empresa de táxi escreveu", en: "🚕 A taxi company wrote to you", es: "🚕 Una empresa de taxi le ha escrito" },
   in_ann: { fr: "📣 Annonceur : nouvelle annonce à valider ou message", it: "📣 Annunciatore: nuovo annuncio da validare o messaggio", de: "📣 Inserent: neue Anzeige zur Prüfung oder Nachricht", pt: "📣 Anunciante: novo anúncio a validar ou mensagem", en: "📣 Advertiser: new ad to approve or a message", es: "📣 Anunciante: nuevo anuncio por validar o mensaje" },
+  job: { fr: "🙋 Nouvelle candidature « Je cherche du travail »", it: "🙋 Nuova candidatura «Cerco lavoro»", de: "🙋 Neue Bewerbung „Ich suche Arbeit“", pt: "🙋 Nova candidatura «Procuro trabalho»", en: "🙋 New “I’m looking for work” application", es: "🙋 Nueva candidatura «Busco trabajo»" },
   pmsg: { fr: "✋ Message privé d’un locataire (seulement pour vous)", it: "✋ Messaggio privato di un inquilino (solo per voi)", de: "✋ Private Nachricht eines Mieters (nur für Sie)", pt: "✋ Mensagem privada de um inquilino (só para si)", en: "✋ Private message from a tenant (only for you)", es: "✋ Mensaje privado de un inquilino (solo para usted)" },
   news_eq: { fr: "👷 Nouveau travail ou message de la centrale", it: "👷 Nuovo lavoro o messaggio dalla centrale", de: "👷 Neue Arbeit oder Nachricht der Zentrale", pt: "👷 Novo trabalho ou mensagem da central", en: "👷 New job or message from the office", es: "👷 Nuevo trabajo o mensaje de la central" },
   news_hote: { fr: "🛎️ Nouveau message ou info sur votre séjour", it: "🛎️ Nuovo messaggio o info sul tuo soggiorno", de: "🛎️ Neue Nachricht oder Info zu Ihrem Aufenthalt", pt: "🛎️ Nova mensagem ou info sobre a sua estadia", en: "🛎️ New message or info about your stay", es: "🛎️ Nuevo mensaje o info sobre su estancia" },
