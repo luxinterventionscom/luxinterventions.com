@@ -36,7 +36,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.242.0';
+const VERSION = '2.243.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -56,9 +56,9 @@ const tenantSave = (t) => { if (!TENANT || !t) return; tenantInfo = t; try { loc
 const T_FIL_LBL = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
 // rubriques de chaque filière (la centrale du client ne montre que les siennes)
 const TENANT_ROUTES = {
-  gerance: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'reglages'],
-  proprio: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'reglages'],
-  agence: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'agences', 'proprios', 'compta', 'rapports', 'reglages'],
+  gerance: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'champions', 'reglages'],
+  proprio: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'champions', 'reglages'],
+  agence: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'agences', 'proprios', 'compta', 'rapports', 'champions', 'reglages'],
   hotel: ['hotel', 'demandes', 'compta', 'rapports', 'reglages'],
   airbnb: ['airbnb', 'demandes', 'compta', 'rapports', 'reglages'],
 };
@@ -1510,6 +1510,30 @@ async function netApi(path, method = 'GET', body) {
   return r.json();
 }
 const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
+// 📦 Transfert d'immeubles (et de tout ce qui va avec) vers la centrale d'un client du réseau : copie chiffrée, rien n'est effacé ici
+const bytesUrl = (b, mime) => 'data:' + (mime || 'application/octet-stream') + ';base64,' + b64big(b);
+async function xferPack(immIds) {
+  const S = new Set(immIds), st = { v: 2 }, files = {}, miss = [];
+  const pick = (c, f, map = (r) => r) => { st[c] = {}; for (const r of vault.list(c)) if (f(r)) { const { u, ...x } = map(r); st[c][r.id] = x; } };
+  pick('immeubles', (r) => S.has(r.id), ({ xfer, ...r }) => r);
+  pick('logements', (r) => S.has(r.immId));
+  const G = new Set(Object.keys(st.logements));
+  pick('locataires', (r) => S.has(r.immId) || G.has(r.logId), ({ xfer, ...r }) => (r.espace && xfer ? { ...r, espace: { ...r.espace, on: !!xfer.on } } : r));
+  const L = new Set(Object.keys(st.locataires));
+  pick('paiements', (r) => L.has(r.locId));
+  pick('versements', (r) => S.has(r.immId));
+  pick('depenses', (r) => S.has(r.immId) || G.has(r.logId));
+  pick('collectes', (r) => S.has(r.immId));
+  pick('avis', (r) => !isPub(r) && S.has(r.immId));
+  const D = new Set(Object.values(st.depenses).map((x) => x.docId).filter(Boolean));
+  pick('documents', (r) => L.has(r.locId) || S.has(r.immId) || G.has(r.logId) || D.has(r.id));
+  for (const d of Object.values(st.documents)) { try { files[d.id] = bytesUrl(await vault.readFile(d.id), d.mime); } catch { miss.push(d.label || d.id); } }
+  const n = (c) => Object.keys(st[c]).length;
+  const counts = { immeubles: n('immeubles'), logements: n('logements'), locataires: n('locataires'), paiements: n('paiements'), documents: Object.keys(files).length, apps: Object.values(st.locataires).filter((l) => l.espace && l.espace.on && l.espace.id).length };
+  return { state: { ...st, files }, counts, miss };
+}
+const XFER_LBL = { immeubles: 'immeubles', logements: 'logements', locataires: 'locataires', paiements: 'paiements', documents: 'documents', apps: 'apps des locataires' };
+const xferTxt = (c) => Object.entries(XFER_LBL).map(([k, v]) => `${c[k] || 0} ${v}`).join(' · ');
 // 🔑 client « propriétaire / bailleur principal » : qui est-il, propriétaire réel, bail principal (facultatif : s'il manque, on le signale)
 const netBailFields = (x = {}) => html`<div class="field full">Qui est-ce ?<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
     <label class="row" style="cursor:pointer"><input type="radio" name="loueur" value="proprio" data-input="net-loueur" ${x.loueur !== 'sous' ? new Raw('checked') : ''}><span class="grow">🔑 Le propriétaire des biens</span></label>
@@ -2105,7 +2129,7 @@ async function chatSync() {
   if (!vault.unlocked || chatBusy) return;
   chatBusy = true;
   try {
-    for (const im of vault.list('immeubles')) {
+    for (const im of vault.list('immeubles').filter((x) => !x.xfer)) { // 📦 transféré : le fil appartient à l'autre centrale
       const cur = im.chats || {};
       const groups = {};
       if (chatOn(im)) for (const l of tenantsOfImm(im.id).filter(isCurrent)) (groups[chatGroupKey(im, l)] ||= []).push(l.id);
@@ -4535,7 +4559,7 @@ async function champLoad(force) {
   if (!force && ui.champAt && Date.now() - ui.champAt < 60000) return;
   ui.champBusy = true;
   ui.chatCache = ui.chatCache || {};
-  for (const im of vault.list('immeubles').filter(binsOn)) {
+  for (const im of vault.list('immeubles').filter((x) => binsOn(x) && !x.xfer)) {
     for (const [gk, g] of Object.entries(im.chats || {})) {
       try { ui.chatCache[g.id] = await chatRead(g); await binRecord(vault.get('immeubles', im.id), gk, g, ui.chatCache[g.id]); } catch { /* hors ligne */ }
     }
@@ -4547,7 +4571,7 @@ async function champLoad(force) {
 function champScores(year) {
   const sc = {};
   const add = (id, k, imId) => { const x = sc[id] || (sc[id] = { done: 0, forgot: 0, imId }); x[k]++; };
-  for (const im of vault.list('immeubles')) {
+  for (const im of vault.list('immeubles').filter((x) => !x.xfer)) { // 📦 transféré : classé dans l'autre centrale
     const logs = im.binLog || {};
     const seen = new Set();
     for (const [gk, g] of Object.entries(im.chats || {})) {
@@ -4700,7 +4724,7 @@ const locTabs = (cur, nGone) => html`<div class="tabs loc-tabs" role="tablist" s
   <button class="tab" role="tab" aria-selected="${cur === 'actuels'}" data-action="loc-seg" data-id="actuels">Actuels</button>
   <button class="tab" role="tab" aria-selected="${cur === 'anciens'}" data-action="loc-seg" data-id="anciens">Anciens (${nGone})</button>
   ${masked().has('paiements') ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === 'paiements'}" data-action="go" data-to="paiements"><span class="t-lg">💶 Gestion locataire</span><span class="t-sm">💶 Gestion loc.</span></button>`}</div>`;
-const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année'], ['champpub', '📣 Annonces de l’année']].map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
+const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:520px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année'], ['champpub', '📣 Annonces de l’année']].filter(([r]) => !TENANT || r === 'champions').map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
 // Éditeur d'horaire sur 7 jours : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute.
 // slotsOf(j) : créneaux du jour j (0 = lundi) ; title(j) : nom du jour (avec la date pour une semaine précise)
 function horWeekEditor(slotsOf, title) {
@@ -6195,7 +6219,8 @@ dashboard() {
       <div class="list settings">
         <button class="row" data-action="export-enc">${icon('shield')}<span class="grow"><span class="title" style="display:block">Sauvegarde chiffrée</span><span class="meta">Fichier .ares, lisible uniquement avec la clé</span></span></button>
         <button class="row" data-action="export-json">${icon('download')}<span class="grow"><span class="title" style="display:block">Export lisible (JSON)</span><span class="meta">Non chiffré — à conserver en lieu sûr</span></span></button>
-        <button class="row" data-action="import">${icon('upload')}<span class="grow"><span class="title" style="display:block">Importer</span><span class="meta">Sauvegarde .ares ou export JSON (ancienne version incluse)</span></span></button>
+        <button class="row" data-action="my-data">${icon('download')}<span class="grow"><span class="title" style="display:block">📦 Récupérer toutes mes données</span><span class="meta">Un fichier complet avec les documents (réimportable) + tableaux CSV des locataires et des paiements</span></span></button>
+        <button class="row" data-action="import">${icon('upload')}<span class="grow"><span class="title" style="display:block">Importer</span><span class="meta">Sauvegarde .ares, 📦 transfert reçu ou export JSON (ancienne version incluse)</span></span></button>
         <button class="row" data-action="print">${icon('file')}<span class="grow title">Imprimer la page Paiements</span></button>
       </div>
 
@@ -7578,10 +7603,37 @@ const SHEETS = {
             ${F.length ? html`<div class="list small" style="margin-bottom:8px">${F.slice(0, 20).map((f) => { const late = !f.paid ? lateDays(f.due) : 0; return html`<div class="row"><span class="grow"><b>${f.no}</b> · ${eur(f.ttc)}<span class="meta" style="display:block">${f.paid ? '✅ payée le ' + fmtDate(f.paid) : f.claim ? '💳 le client dit avoir payé (' + fmtDate(f.claim) + ')' : late > 0 ? `🔴 ${late} j de retard` : '⏳ échéance ' + fmtDate(f.due)}</span></span>
               ${f.docId ? html`<button class="btn sm" data-action="open-doc" data-id="${f.docId}">⬇️ PDF</button>` : ''}${f.paid || isCompta() ? '' : html`<button class="btn sm primary" data-action="nfact-paid" data-id="${f.no}">✅ Reçu</button>`}</div>`; })}</div>` : html`<p class="tiny muted">Aucune facture.</p>`}`;
         })()}
+        ${['gerance', 'agence', 'proprio'].includes(t.fil) && !vault.op ? html`<div class="section-label" style="margin-top:14px">📦 Transfert</div>
+          <button class="btn block" data-action="xfer-open" data-id="${id}">📦 Transférer des immeubles et leurs locataires vers cette centrale</button>
+          ${(() => { const n = vault.list('immeubles').filter((x) => x.xfer && x.xfer.to === id).length; return n ? html`<p class="tiny muted" style="margin:4px 0 0">✅ ${plural(n, 'immeuble')} déjà transféré${n > 1 ? 's' : ''} (gardé${n > 1 ? 's' : ''} ici en archive).</p>` : ''; })()}` : ''}
         <div class="section-label" style="margin-top:14px">Accès</div>
         <div class="actions" style="flex-wrap:wrap;margin:0">${!t.configured ? html`<button class="btn sm" data-action="net-code" data-id="${id}">🔁 Nouveau code d’invitation</button>` : ''}<button class="btn sm" data-action="net-recb" data-id="${id}" style="flex-basis:100%;justify-content:flex-start">🧩 Clé oubliée : donner la moitié B</button><button class="btn sm ghost danger" data-action="net-reset" data-id="${id}" style="flex-basis:100%;justify-content:flex-start">🗑️ Vider la centrale (clé perdue)</button>${vault.op ? '' : html`<button class="btn sm ghost danger" data-action="net-del" data-id="${id}">🗑 Supprimer avec certificat</button>`}</div>
         <p class="tiny muted" style="margin:6px 0 0">Nouvel accès : la centrale du client est vidée (sans sa clé personne ne peut lire ses données) et un nouveau code est créé. S’il a sa clé de secours, il rentre seul sans rien perdre.</p>`}`,
       foot: html`<button class="btn" data-action="close-sheet">Fermer</button>${isCompta() ? '' : html`<button class="btn primary" type="submit" form="f">Enregistrer</button>`}`,
+    };
+  },
+  'xfer'({ id }) {
+    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === id);
+    if (!t) return null;
+    const done = ui.xferDone && ui.xferDone.tid === id ? ui.xferDone : null;
+    if (done) return {
+      title: `📦 Transfert vers ${t.nom}`, narrow: true,
+      body: html`<div class="alert info" style="margin-bottom:12px">✅<div><b>Paquet prêt et téléchargé</b><div class="tiny">${xferTxt(done.counts)}</div></div></div>
+        <div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code du transfert (à usage unique, il n’est gardé nulle part)</div><div style="font-family:var(--mono);font-size:24px;font-weight:800;letter-spacing:.08em">${done.code}</div>
+          <div class="actions" style="justify-content:center"><button class="btn sm" data-action="code-copy" data-code="${done.code}">📋 Copier</button><button class="btn sm" data-action="xfer-dl" data-id="${id}">⬇️ Télécharger encore le fichier</button></div></div>
+        ${done.miss.length ? html`<div class="alert warn" style="margin-bottom:12px">⚠️<div>${plural(done.miss.length, 'document')} illisible${done.miss.length > 1 ? 's' : ''} (pas dans le paquet) : ${done.miss.slice(0, 5).join(', ')}</div></div>` : ''}
+        <ol class="small" style="margin:0;padding-left:20px;line-height:1.6"><li>Ouvrez la centrale de <b>${t.nom}</b>.</li><li>Réglages → <b>Importer</b> → choisissez le fichier <b>${done.file}</b>.</li><li>Tapez le code ci-dessus, vérifiez les chiffres, confirmez.</li><li>Les apps des locataires passent à cette centrale : mêmes codes, mêmes liens, rien à réinstaller.</li></ol>
+        <p class="tiny muted" style="margin:10px 0 0">Ici rien n’est effacé : les immeubles restent en archive (marqués 📦), sans app. Vous pouvez les masquer avec 🔒 Masquer.</p>`,
+      foot: html`<button class="btn primary" data-action="close-sheet">Terminé</button>`,
+    };
+    const ims = vault.list('immeubles').slice().sort((a2, b2) => String(a2.adresse || '').localeCompare(String(b2.adresse || '')));
+    return {
+      title: `📦 Transfert vers ${t.nom}`, narrow: true,
+      body: html`<p class="small muted" style="margin:0 0 10px">Choisissez les immeubles : ils partent avec leurs logements, locataires (et leurs apps), paiements, dépenses, collectes, avis, chats, classement des poubelles et documents. Les interventions et la comptabilité de la centrale restent ici.</p>
+        ${t.configured ? '' : html`<div class="alert warn" style="margin-bottom:10px">⚠️<div>La centrale de ${t.nom} n’est pas encore configurée : faites-la d’abord ouvrir avec le code d’invitation.</div></div>`}
+        <div class="list small" style="margin-bottom:10px">${ims.map((im) => { const nl = tenantsOfImm(im.id).length, x = im.xfer; return html`<label class="row" style="cursor:pointer"><input type="checkbox" data-xfer-imm value="${im.id}" ${x ? '' : new Raw('checked')}><span class="grow"><b>${im.adresse || 'Sans adresse'}</b><span class="meta" style="display:block">${plural(nl, 'locataire')}${x ? ` · 📦 déjà transféré${x.nom ? ' à ' + x.nom : ''} le ${fmtDate(x.at)}` : ''}</span></span></label>`; })}</div>
+        <p class="tiny muted" style="margin:0">Avant : une sauvegarde chiffrée est téléchargée. Puis un fichier chiffré et un code à usage unique : le fichier seul ne sert à rien.</p>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" data-action="xfer-do" data-id="${id}" ${t.configured ? '' : new Raw('disabled')}>📦 Transférer</button>`,
     };
   },
   'annc-form'({ id }) {
@@ -8405,7 +8457,9 @@ const SHEETS = {
       const show = { ...ESP_ALL, ...(e.show || {}) };
       const boxes = html`<div class="list" style="margin-bottom:12px">${Object.entries(ESP_SHOW).map(([k, v]) => html`<label class="row" style="cursor:pointer">
         <input type="checkbox" data-input="esp-show" data-loc="${id}" data-k="${k}" ${show[k] ? new Raw('checked') : ''} style="width:22px;min-height:22px"><span class="grow">${v}${k === 'chat' && e.on ? chatWhy(l, show) : ''}</span></label>`)}</div>`;
-      if (!e.on) {
+      if (l.xfer) {
+        body = html`<div class="alert info">📦<div><b>Transféré à ${l.xfer.nom || 'une autre centrale'}</b> le ${fmtDate(l.xfer.at)}. Son app est maintenant gérée par cette centrale ; ici la fiche reste en archive.</div></div>`;
+      } else if (!e.on) {
         body = html`<p style="margin-top:0">Donnez à <b>${fullName(l)}</b> un <b>espace personnel</b> (lien ou QR code, sans mot de passe à retenir) où il voit <b>seulement</b> ce que vous cochez :</p>
           ${boxes}
           <div class="alert info">${icon('shield')}<div>Ses données sont chiffrées : seule la clé contenue dans son lien peut les ouvrir. Il ne voit jamais les autres locataires, les bailleurs, vos dépenses ni vos notes. Vous pouvez désactiver le lien à tout moment.</div></div>
@@ -9517,6 +9571,35 @@ const ACTIONS = {
   },
   'net-reload': () => netLoad(true),
   'net-open': (d) => openOver('net-client', d.id),
+  'xfer-open': (d) => { ui.xferDone = null; openOver('xfer', d.id); },
+  'xfer-dl'(d) { const x = ui.xferDone; if (x && x.tid === d.id) download(x.file, x.blob, 'application/octet-stream'); },
+  async 'xfer-do'(d, btn) {
+    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
+    const ids = [...sheetEl.querySelectorAll('[data-xfer-imm]:checked')].map((c) => c.value);
+    if (!t || !ids.length) return toast('Choisissez au moins un immeuble', { bad: true });
+    if (!(await confirmBox(`Transférer ${plural(ids.length, 'immeuble')} vers ${t.nom} ?`, { ok: '📦 Transférer', detail: 'Une sauvegarde chiffrée est d’abord téléchargée. Les apps des locataires passent à sa centrale ; ici tout reste en archive.' }))) return;
+    if (btn) btn.disabled = true;
+    try {
+      await ACTIONS['export-enc']();
+      toast('Préparation du paquet…');
+      const { state, counts, miss } = await xferPack(ids);
+      const locs = Object.values(state.locataires), apps = locs.filter((l) => l.espace && l.espace.id);
+      if (apps.length) {
+        const r = await vault.call('tenants/' + t.id + '/adopt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: apps.map((l) => l.espace.id), codes: apps.map((l) => l.espace.codeHash).filter(Boolean) }) });
+        if (!r.ok) throw new Error(r.status === 404 ? 'Publiez d’abord le nouveau Worker (transfert des apps) — rien n’a été changé' : 'Serveur : ' + r.status);
+      }
+      const at = today();
+      await vault.mutate((tx) => {
+        for (const id of ids) tx.put('immeubles', { id, xfer: { to: t.id, nom: t.nom, at } });
+        for (const l of locs) { const cur = vault.get('locataires', l.id); tx.put('locataires', { id: l.id, xfer: { to: t.id, nom: t.nom, at, on: !!(l.espace && l.espace.on) }, ...(cur.espace ? { espace: { ...cur.espace, on: false } } : {}) }); }
+      }, '📦 Transfert vers ' + t.nom, xferTxt(counts));
+      const code = Vault.newTransferCode(), file = `transfert_${normNom(t.nom).replace(/\s+/g, '-') || t.id}_${at}.ares`;
+      const blob = JSON.stringify(await Vault.sealTransfer(state, code, { to: t.id, nom: t.nom, counts }));
+      download(file, blob, 'application/octet-stream');
+      ui.xferDone = { tid: t.id, code, file, blob, counts, miss };
+      openOver('xfer', t.id);
+    } catch (e) { toast(e.message || 'Transfert impossible', { bad: true }); if (btn) btn.disabled = false; }
+  },
   async 'nfact-bill'(d) {
     const tasks = netToBill(d.id), t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id) || {};
     if (!tasks.length) return;
@@ -10269,6 +10352,19 @@ const ACTIONS = {
     download(`ares_export_${today()}.json`, JSON.stringify(vault.state, null, 2), 'application/json');
   },
   import: () => $('#importFile').click(),
+  // 📦 portabilité : toutes les données du client, lisibles et réimportables (avec les documents)
+  async 'my-data'() {
+    if (!(await confirmBox('Récupérer toutes vos données ?', { ok: '📦 Télécharger', detail: 'Fichiers NON chiffrés (noms, adresses, paiements, documents) : gardez-les en lieu sûr. Le grand fichier se réimporte dans n’importe quelle centrale (Réglages → Importer).' }))) return;
+    toast('Préparation…');
+    const { u, ...st } = vault.state, files = {};
+    let miss = 0;
+    for (const d of vault.list('documents')) { try { files[d.id] = bytesUrl(await vault.readFile(d.id), d.mime); } catch { miss++; } }
+    const at = today(), q = (v) => `"${csvSafe(v).replace(/"/g, '""')}"`, csv = (rows) => '﻿' + rows.map((r) => r.map(q).join(';')).join('\r\n');
+    download(`mes_donnees_${at}.json`, JSON.stringify({ ...st, v: 2, files }), 'application/json');
+    download(`locataires_${at}.csv`, csv([['Nom', 'Prénom', 'Immeuble', 'Logement', 'Entrée', 'Sortie', 'Loyer', 'Charges', 'Téléphone', 'Email'], ...vault.list('locataires').map((l) => [l.nom, l.prenom, immName(l.immId), logName(l.logId), l.debut, l.sortie, l.loyer, l.charges, l.tel, l.mail || l.email])]), 'text/csv;charset=utf-8');
+    download(`paiements_${at}.csv`, csv([['Locataire', 'Année', 'Mois', 'Montant', 'Date', 'Mode'], ...vault.list('paiements').map((p) => { const l = vault.get('locataires', p.locId) || {}; return [fullName(l), p.y, p.m, p.montant ?? p.amount, p.date, p.mode]; })]), 'text/csv;charset=utf-8');
+    toast(`📦 3 fichiers téléchargés · ${Object.keys(files).length} document(s)${miss ? ` · ${miss} illisible(s)` : ''}`);
+  },
   async 'legacy-import'() {
     const r = await vault.importLegacy(legacyLocal());
     toast(`Import : ${r.immeubles} immeubles, ${r.locataires} locataires, ${r.documents} documents`);
@@ -11292,6 +11388,18 @@ async function importFile(file) {
       const state = await Vault.openBackup(obj, k);
       if (!(await confirmBox('Fusionner cette sauvegarde ?', { ok: 'Fusionner', detail: 'Les éléments les plus récents sont conservés, rien n’est supprimé.' }))) return;
       await vault.mergeIn(state);
+    } else if (obj && obj.format === 'ares-transfer') {
+      const k = await promptKey('📦 Code du transfert', `Paquet du ${fmtDate(String(obj.date || '').slice(0, 10))}${obj.nom ? ' pour ' + obj.nom : ''} : tapez le code donné par la centrale.`);
+      if (!k) return;
+      const state = await Vault.openBackup(obj, k.trim().toUpperCase()).catch(() => { throw new Error('Code du transfert incorrect'); });
+      const c = obj.counts || {};
+      if (!(await confirmBox('Recevoir ce transfert ?', { ok: '📦 Recevoir', detail: `${xferTxt(c)}. Fusion avec vos données : rien n’est supprimé. Les apps des locataires sont ensuite publiées par votre centrale.` }))) return;
+      toast('Import du transfert…');
+      await vault.importState(state);
+      const got = Object.keys(state.locataires || {}).filter((id) => vault.get('locataires', id)).length;
+      await ownerKeys();
+      await espaceSync(undefined, true).catch(() => {});
+      return toast(`📦 Transfert reçu ✓ · ${got} locataire(s) · ${Object.keys(state.immeubles || {}).length} immeuble(s)`);
     } else if (isLegacy(obj)) {
       if (!(await confirmBox('Importer ces données ?', { ok: 'Importer', detail: `${obj.immeubles.length} immeubles, ${obj.locataires.length} locataires (ancienne version). Fusion avec les données actuelles.` }))) return;
       await vault.importLegacy(obj);
@@ -11307,7 +11415,7 @@ async function importFile(file) {
 
 // ───────────────────────── Délégation d'événements ─────────────────────────
 // réservé au responsable (clé principale) ; le comptable n'affecte pas les travaux
-const RESP_ONLY = new Set(['change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del', 'net-reset', 'test-clean', 'test-clean-do']);
+const RESP_ONLY = new Set(['xfer-do', 'change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del', 'net-reset', 'test-clean', 'test-clean-do']);
 const DEL_ACTION = /^del-|-del$|wipe/; // toute suppression
 const NO_COMPTA = new Set(['eq-swap', 'eq-swap-do', 'interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job', 'op-del', 'op-new']);
 document.addEventListener('click', (e) => {
