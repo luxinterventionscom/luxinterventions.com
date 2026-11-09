@@ -36,7 +36,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.238.1';
+const VERSION = '2.239.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4739,7 +4739,7 @@ const bienAffiche = (b) => html`<div class="bien-card" data-bien="${b.id}">
   <div class="bien-info" data-action="edit-bien" data-id="${b.id}"><span class="bien-new">🆕</span> <b>${b.titre}</b><br>
     <span class="small">${BIEN_TYPES[b.type] || ''}${b.surface ? ` · ${b.surface} m²` : ''}${(b.pieces || []).length ? ` · ${b.pieces.length} pièces` : ''}</span><br>
     <span class="small">${bienPrix(b).map((x, i) => html`${i ? ' · ' : ''}${x}`)}</span><br>
-    <span class="tiny muted">📍 ${b.adresse || '—'}${b.dispo ? html` · disponible dès le ${fmtDate(b.dispo)}` : ''}${b.agenceId ? html` · 🏘️ ${(vault.get('agences', b.agenceId) || {}).nom || ''}` : ''}${b.propriete === 'tiers' ? html` · 🤝 Confié par ${b.tiersNom}` : ''}</span></div>
+    <span class="tiny muted">📍 ${b.adresse || '—'}${b.dispo ? html` · disponible dès le ${fmtDate(b.dispo)}` : ''}${b.agenceId ? html` · 🏘️ ${(vault.get('agences', b.agenceId) || {}).nom || ''}` : ''}${b.loueur === 'sous' ? (b.contrat ? html` · 🔁 sous-location (📎 contrat)` : html` · <b style="color:var(--amber,#b45309)">⚠️ sous-location : contrat manquant</b>`) : ''}${b.propriete === 'tiers' ? html` · 🤝 Confié par ${b.tiersNom}` : ''}</span></div>
 </div>`;
 const bienUrls = new Map();
 function hydrateBiens(root = document) {
@@ -7293,9 +7293,20 @@ const SHEETS = {
       title: id ? 'Modifier le bien' : 'Nouveau bien',
       body: html`<form id="f" data-form="bien" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        <label class="field full">Agence, propriétaire ou bailleur principal<select name="agenceId"><option value="">— Nos biens (sans agence) —</option>${ags.map((a) => html`<option value="${a.id}" ${b.agenceId === a.id ? new Raw('selected') : ''}>${a.type === 'proprio' ? '🔑' : '🏘️'} ${a.nom}</option>`)}</select></label>
-        <label class="field">Propriété<select name="propriete"><option value="nous">Le bien est à nous</option><option value="tiers" ${b.propriete === 'tiers' ? new Raw('selected') : ''}>Confié par un tiers</option></select></label>
-        ${field('Nom du propriétaire (si confié)', 'tiersNom', b.tiersNom, { placeholder: 'ex. M. Dupont' })}
+        <label class="field full">Agence, propriétaire ou bailleur principal<select name="agenceId" data-input="bien-ag"><option value="">— Nos biens (sans agence) —</option>${ags.map((a) => html`<option value="${a.id}" ${b.agenceId === a.id ? new Raw('selected') : ''}>${a.type === 'proprio' ? '🔑' : '🏘️'} ${a.nom}</option>`)}</select></label>
+        <div class="full fields bien-nous" style="margin:0" ${b.agenceId ? new Raw('hidden') : ''}>        <label class="field">Propriété<select name="propriete"><option value="nous">Le bien est à nous</option><option value="tiers" ${b.propriete === 'tiers' ? new Raw('selected') : ''}>Confié par un tiers</option></select></label>
+        ${field('Nom du propriétaire (si confié)', 'tiersNom', b.tiersNom, { placeholder: 'ex. M. Dupont' })}</div>
+        <div class="full fields bien-ag" style="margin:0" ${b.agenceId ? '' : new Raw('hidden')}>
+          <div class="field full">Qui loue ce bien ?<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+            <label class="row" style="cursor:pointer"><input type="radio" name="loueur" value="proprio" data-input="bien-loueur" ${b.loueur !== 'sous' ? new Raw('checked') : ''}><span class="grow">🔑 Le propriétaire lui-même</span></label>
+            <label class="row" style="cursor:pointer"><input type="radio" name="loueur" value="sous" data-input="bien-loueur" ${b.loueur === 'sous' ? new Raw('checked') : ''}><span class="grow">🔁 Un bailleur principal (sous-location)</span></label></div></div>
+          <div class="full fields bien-sous" style="margin:0" ${b.loueur === 'sous' ? '' : new Raw('hidden')}>
+            ${field('Propriétaire réel (nom et prénom, ou société)', 'realOwner', b.realOwner, { full: true, placeholder: 'ex. Jean Dupont' })}
+            <label class="field full">📎 Contrat de bail principal autorisant la sous-location (PDF ou photo — jamais publié)<input type="file" name="contrat" accept="application/pdf,image/*"></label>
+            ${b.contrat ? html`<p class="tiny full" style="margin:0">✅ Contrat enregistré <button type="button" class="btn sm" data-action="open-doc" data-id="${b.contrat}">📎 Voir</button></p>` : html`<p class="tiny full" style="margin:0;color:var(--amber,#b45309)">⚠️ Contrat manquant : le bien est publié quand même, le manque est signalé.</p>`}
+            <label class="row full" style="cursor:pointer"><input type="checkbox" name="sousOk" ${b.sousOk ? new Raw('checked') : ''}><span class="grow">☑️ Je certifie que la sous-location est autorisée par écrit par le propriétaire</span></label>
+            ${field('Fin du bail principal (facultatif)', 'bailFin', b.bailFin, { type: 'date' })}
+          </div></div>
         <label class="field full">Titre de l’annonce<input name="titre" required value="${b.titre || ''}" placeholder="ex. Bel appartement 2 chambres avec terrasse"></label>
         <label class="field">Type<select name="type">${Object.entries(BIEN_TYPES).map(([k, l]) => html`<option value="${k}" ${b.type === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
         ${field('Surface totale (m²)', 'surface', b.surface, { attrs: 'inputmode="decimal"' })}
@@ -10465,7 +10476,22 @@ const FORMS = {
       cree: (old && old.cree) || today() };
     if (!rec.titre) return;
     if (!rec.louer && !rec.vendre) return toast('Cochez « À louer » et / ou « À vendre »', { bad: true });
-    if (rec.propriete === 'tiers' && !rec.tiersNom) return toast('Nom du propriétaire manquant (bien confié par un tiers)', { bad: true });
+    if (!rec.agenceId && rec.propriete === 'tiers' && !rec.tiersNom) return toast('Nom du propriétaire manquant (bien confié par un tiers)', { bad: true });
+    // 🔁 bien d'un propriétaire / bailleur principal : qui loue, propriétaire réel, contrat (facultatif : s'il manque, on le signale)
+    rec.loueur = rec.agenceId && g('loueur') === 'sous' ? 'sous' : 'proprio';
+    rec.realOwner = rec.loueur === 'sous' ? g('realOwner') : '';
+    rec.sousOk = rec.loueur === 'sous' && !!fd.get('sousOk');
+    rec.bailFin = rec.loueur === 'sous' && /^\d{4}-\d{2}-\d{2}$/.test(g('bailFin')) ? g('bailFin') : '';
+    if (rec.agenceId) { rec.propriete = 'tiers'; rec.tiersNom = rec.loueur === 'sous' ? rec.realOwner : (vault.get('agences', rec.agenceId) || {}).nom || ''; }
+    if (rec.loueur === 'sous' && !rec.realOwner) return toast('Indiquez le propriétaire réel (nom et prénom, ou société)', { bad: true });
+    const cf = fd.get('contrat');
+    if (rec.loueur === 'sous' && cf && cf.size) {
+      if (cf.size > 15e6) return toast('Contrat trop lourd (15 Mo au plus)', { bad: true });
+      const cid = uid(), mime = /^image\//.test(cf.type) ? 'image/jpeg' : 'application/pdf';
+      await vault.saveFile(cid, mime === 'image/jpeg' ? await compressPhoto(cf) : new Uint8Array(await cf.arrayBuffer()));
+      await vault.mutate((tx) => tx.put('documents', { id: cid, kind: 'souscontrat', label: `📎 Contrat de bail principal — ${rec.titre}`, date: today(), mime, size: cf.size }), '📎 Contrat de sous-location', rec.titre);
+      rec.contrat = cid;
+    } else if (old && old.contrat && rec.loueur === 'sous') rec.contrat = old.contrat;
     if (rec.louer && !rec.loyer) return toast('Loyer mensuel manquant', { bad: true });
     if (rec.vendre && !rec.prix) return toast('Prix de vente manquant', { bad: true });
     const del = new Set(fd.getAll('delph'));
@@ -10479,7 +10505,7 @@ const FORMS = {
     if (id) rec.id = id;
     await vault.mutate((tx) => tx.put('biens', rec), id ? 'Bien modifié' : 'Nouveau bien publié', `${rec.titre} — ${BIEN_TYPES[rec.type] || ''}${rec.surface ? ' · ' + rec.surface + ' m²' : ''}`);
     for (const ph of del) { await vault.deleteFile(ph).catch(() => {}); if (bienUrls.has(ph)) { URL.revokeObjectURL(bienUrls.get(ph)); bienUrls.delete(ph); } }
-    toast(id ? 'Bien enregistré' : 'Bien publié');
+    toast(`${id ? 'Bien enregistré' : 'Bien publié'}${rec.loueur === 'sous' && !rec.contrat ? ' — ⚠️ contrat de sous-location manquant' : ''}`, rec.loueur === 'sous' && !rec.contrat ? { bad: true } : undefined);
     biensSync();
     goBack();
     const to = (vault.get('agences', rec.agenceId) || {}).type === 'proprio' ? 'proprios' : 'agences';
@@ -12230,6 +12256,8 @@ document.addEventListener('change', (e) => {
   if (k === 'tache-imm') $('#tacheLog').innerHTML = val(logOptions(e.target.value, ''));
   if (k === 'col-mode') sheetEl.querySelectorAll('[data-mode]').forEach((el) => { el.hidden = el.dataset.mode !== e.target.value; });
   if (k === 'door-reason') { const w = $('#doorWarn'); if (w) w.hidden = e.target.value !== 'Impayé'; }
+  if (k === 'bien-ag') { const f = e.target.form; if (f) { const on = !!e.target.value; f.querySelectorAll('.bien-nous').forEach((x) => { x.hidden = on; }); f.querySelectorAll('.bien-ag').forEach((x) => { x.hidden = !on; }); } }
+  if (k === 'bien-loueur') { const f = e.target.form; if (f) f.querySelectorAll('.bien-sous').forEach((x) => { x.hidden = e.target.value !== 'sous'; }); }
   if (k === 'bins-on') {
     const im = vault.get('immeubles', e.target.dataset.id);
     if (im) vault.mutate((tx) => tx.put('immeubles', { id: im.id, bins: e.target.checked }), e.target.checked ? 'Tour des poubelles activé' : 'Tour des poubelles désactivé', im.adresse, im.id);

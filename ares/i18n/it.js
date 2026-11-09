@@ -18554,4 +18554,44 @@ export default [
 "Agence, propriétaire ou bailleur principal",
 "Agenzia, proprietario o locatore principale"
 ],
+[
+"Qui loue ce bien ?",
+"Chi affitta questo bene?"
+],
+[
+"🔑 Le propriétaire lui-même",
+"🔑 Il proprietario stesso"
+],
+[
+"🔁 Un bailleur principal (sous-location)",
+"🔁 Un locatore principale (subaffitto)"
+],
+[
+"Propriétaire réel (nom et prénom, ou société)",
+"Proprietario reale (nome e cognome, o società)"
+],
+[
+"📎 Contrat de bail principal autorisant la sous-location (PDF ou photo — jamais publié)",
+"📎 Contratto di locazione principale che autorizza il subaffitto (PDF o foto — mai pubblicato)"
+],
+[
+"✅ Contrat enregistré",
+"✅ Contratto registrato"
+],
+[
+"⚠️ Contrat manquant : le bien est publié quand même, le manque est signalé.",
+"⚠️ Contratto mancante: il bene è pubblicato lo stesso, la mancanza è segnalata."
+],
+[
+"☑️ Je certifie que la sous-location est autorisée par écrit par le propriétaire",
+"☑️ Certifico che il subaffitto è autorizzato per iscritto dal proprietario"
+],
+[
+"Fin du bail principal (facultatif)",
+"Fine della locazione principale (facoltativo)"
+],
+[
+"Indiquez le propriétaire réel (nom et prénom, ou société)",
+"Indicate il proprietario reale (nome e cognome, o società)"
+],
 ];
