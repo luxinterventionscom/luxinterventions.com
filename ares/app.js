@@ -36,7 +36,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.239.1';
+const VERSION = '2.240.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1710,6 +1710,27 @@ async function netStatusSync() {
     }
   } catch { /* hors ligne */ } finally { netStBusy = false; }
 }
+// 🌐 fiche Agence / Propriétaire ↔ sa centrale du réseau : même nom (et même filière) → reliées toutes seules ; sinon on choisit à la main
+const normNom = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+const agFil = (a) => (a.type === 'proprio' ? 'proprio' : 'agence');
+async function agNetAutoLink(list) {
+  if (TENANT) return;
+  const used = new Set(vault.list('agences').map((a) => a.netId).filter(Boolean));
+  for (const a of vault.list('agences').filter((x) => !x.netId)) {
+    const t = list.find((x) => !used.has(x.id) && x.fil === agFil(a) && normNom(x.nom) === normNom(a.nom));
+    if (!t) continue;
+    used.add(t.id);
+    await vault.mutate((tx) => tx.put('agences', { id: a.id, netId: t.id }), '🌐 Fiche reliée à sa centrale', a.nom);
+  }
+}
+const agNet = (a) => (a && a.netId ? ((ui.net && ui.net.list) || []).find((t) => t.id === a.netId) || { id: a.netId, nom: a.nom, st: '?', state: 'ok' } : null);
+// créer la centrale d'un client (aussi depuis sa fiche) : essai gratuit, code d'invitation
+async function netCreate(fil, nom, tel = '', email = '') {
+  const r = await netApi('tenants', 'POST', { fil, nom, days: LIC_ESSAI });
+  await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + r.id, code: r.code, tel, email }), '🎁 Essai accordé (réseau)', `${nom} · ${NET_FIL[fil] || ''} · jusqu’au ${fmtDate(r.tenant.until)}`);
+  await licLogAdd({ id: r.id, nom, fil }, 'Essai accordé', `${LIC_ESSAI} jours · jusqu’au ${fmtDate(r.tenant.until)}`);
+  return r;
+}
 async function netLoad(force) {
   if (!vault.unlocked) return;
   if (ui.net && ui.net.loading) return;
@@ -1721,6 +1742,7 @@ async function netLoad(force) {
     if (keys && keys.pub && !(vault.get('reglages', 'netKey') || {}).done) { await netApi('network-key', 'PUT', { pub: keys.pub }); await vault.mutate((tx) => tx.put('reglages', { id: 'netKey', done: today() }), 'Réseau : clé publiée', ''); }
     const list = (await netApi('tenants')).tenants || [];
     ui.net = { list, dem: [], at: Date.now(), err: '' };
+    await agNetAutoLink(list).catch(() => {});
     await netDemSync(list);
     await netHoldSync(list);
     await netStatusSync();
@@ -3977,12 +3999,12 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key']] },
+  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['reseau', 'Réseau (centrales)', 'globe']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['reseau', 'Réseau', 'globe'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
@@ -4557,6 +4579,16 @@ function eqScores(year) {
 }
 
 // 🏘️ Agences / 🔑 Propriétaires : même page, une rubrique chacun
+// 🌐 « Sa centrale » dans la fiche d'une agence / d'un propriétaire : activer, voir l'état, ouvrir la fiche réseau, ou relier
+function agNetBlock(a) {
+  const t = agNet(a), free = ((ui.net && ui.net.list) || []).filter((x) => x.fil === agFil(a) && !vault.list('agences').some((y) => y.netId === x.id));
+  return html`<div class="full card" style="margin:0 0 6px;padding:12px;border-left:4px solid var(--accent,#4f46e5)"><b>🌐 Sa centrale</b>
+    ${t ? html`<p class="small" style="margin:4px 0 8px">${NET_FIL[t.fil] || ''} · ${NET_ST[t.st] || t.st || ''}${t.until ? html` · jusqu’au ${fmtDate(t.until)}` : ''}</p>
+      <div class="actions" style="margin:0;flex-wrap:wrap"><button type="button" class="btn sm primary" data-action="net-open" data-id="${t.id}">🌐 Ouvrir : code, licence, 6 mois offerts…</button><button type="button" class="btn sm ghost" data-action="ag-net-unlink" data-id="${a.id}">Délier</button></div>`
+    : html`<p class="small muted" style="margin:4px 0 8px">Pas encore de centrale : son espace à lui (ses immeubles, ses locataires et leurs apps, ses demandes d’intervention), avec un code d’invitation.</p>
+      <div class="actions" style="margin:0;flex-wrap:wrap"><button type="button" class="btn sm primary" data-action="ag-net-on" data-id="${a.id}">🌐 Activer sa centrale (essai ${LIC_ESSAI} jours)</button>
+      ${free.length ? html`<select data-input="ag-net-link" data-id="${a.id}" style="width:auto"><option value="">… ou la relier à une centrale existante</option>${free.map((x) => html`<option value="${x.id}">${x.nom}</option>`)}</select>` : ''}</div>`}</div>`;
+}
 function agView(f) {
     const nb = {};
     for (const b of vault.list('biens')) if (b.agenceId) nb[b.agenceId] = (nb[b.agenceId] || 0) + 1;
@@ -4573,7 +4605,7 @@ function agView(f) {
       <div class="section-label">${f === 'proprio' ? '🔑 Propriétaires' : '🏘️ Agences immo.'}</div>
       ${list.length ? html`<div class="list">${list.map((a) => html`<button class="row" data-action="edit-agence" data-id="${a.id}"><span class="avatar">${typ(a) === 'proprio' ? '🔑' : '🏘️'}</span>
         <span class="grow"><span class="title" style="display:block">${a.nom}</span>
-        <span class="meta">${typ(a) === 'proprio' ? 'Propriétaire' : 'Agence immo.'}${a.rcs ? html` · RCS ${a.rcs}` : ''}${a.dir && (a.dir.prenom || a.dir.nom) ? html` · ⭐ ${[a.dir.prenom, a.dir.nom].filter(Boolean).join(' ')}` : ''} · 📣 ${plural(nb[a.id] || 0, 'annonce')}</span>
+        <span class="meta">${typ(a) === 'proprio' ? 'Propriétaire' : 'Agence immo.'}${a.rcs ? html` · RCS ${a.rcs}` : ''}${a.dir && (a.dir.prenom || a.dir.nom) ? html` · ⭐ ${[a.dir.prenom, a.dir.nom].filter(Boolean).join(' ')}` : ''} · 📣 ${plural(nb[a.id] || 0, 'annonce')} · ${a.netId ? html`<b>🌐 centrale ${(NET_ST[(agNet(a) || {}).st] || '').toLowerCase()}</b>` : html`<span class="muted">— pas de centrale</span>`}</span>
         ${patSum(a.pat) || (a.pour || []).length ? html`<span class="tiny" style="display:block">${patSum(a.pat)}${(a.pour || []).length ? `${patSum(a.pat) ? ' · ' : ''}pour : ${a.pour.map((k) => AG_POUR[k].toLowerCase()).join(', ')}${a.fonds ? ' (' + a.fonds + ')' : ''}` : ''}</span>` : ''}
         ${miss(a).length && !a.bankLater ? html`<span class="tiny amber" style="display:block">⚠️ À compléter : ${miss(a).join(', ')}</span>` : ''}</span><span class="btn sm primary" role="button" data-action="new-bien" data-ag="${a.id}" style="flex:none">${icon('plus')} Bien immo.</span><span class="chev">›</span></button>`)}</div>`
         : html`<div class="card" style="max-width:560px"><p style="margin-top:0">${f === 'proprio' ? 'Les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.' : 'Les agences immobilières publient leurs biens et vous confient leurs interventions.'}</p></div>`}`;
@@ -7331,6 +7363,7 @@ const SHEETS = {
     };
   },
   'agence-form'({ id }) {
+    if (id && !TENANT) netLoad();
     const a = id ? vault.get('agences', id) : { type: ui.route === 'proprios' ? 'proprio' : 'agence' };
     if (id && !a) return null;
     const d = a.dir || {};
@@ -7339,6 +7372,7 @@ const SHEETS = {
       narrow: true,
       body: html`<form id="f" data-form="agence" class="fields">
         <input type="hidden" name="id" value="${id || ''}"><input type="hidden" name="type" value="${a.type === 'proprio' ? 'proprio' : 'agence'}">
+        ${id && !TENANT ? agNetBlock(a) : ''}
         ${a.type === 'proprio' ? '' : html`<div class="field full">Travaille pour<div class="chips" style="margin-top:6px">${Object.entries(AG_POUR).map(([k, v]) => html`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="pour_${k}" value="1" ${(a.pour || []).includes(k) ? new Raw('checked') : ''}> ${v}</label>`)}</div></div>
           ${field('Fonds d’investissement (noms, facultatif)', 'fonds', a.fonds, { full: true, placeholder: 'ex. Fonds Alpha SICAV, Beta Real Estate' })}`}
         <label class="field full">Nom (société ou propriétaire)<input name="nom" required value="${a.nom || ''}" placeholder="ex. Immo Centre S.à r.l."></label>
@@ -9347,6 +9381,23 @@ const ACTIONS = {
     goBack();
   },
   'new-agence': () => openOver('agence-form'),
+  async 'ag-net-on'(d) {
+    const a = vault.get('agences', d.id);
+    if (!a || a.netId) return;
+    if (!(await confirmBox(`Activer la centrale de ${a.nom} ?`, { ok: '🌐 Activer', detail: `Essai gratuit de ${LIC_ESSAI} jours, puis 🎁 6 mois offerts ou abonnement. Vous recevez le code d’invitation à lui envoyer.` }))) return;
+    let r;
+    try { r = await netCreate(agFil(a), a.nom, a.tel || '', a.email || ''); } catch (e) { return toast(e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : publiez-le d’abord' : e.message, { bad: true }); }
+    await vault.mutate((tx) => tx.put('agences', { id: a.id, netId: r.id }), '🌐 Centrale activée depuis la fiche', a.nom);
+    toast('Centrale activée : envoyez le code d’invitation');
+    await netLoad(true);
+    openOver('net-client', r.id);
+  },
+  async 'ag-net-unlink'(d) {
+    const a = vault.get('agences', d.id);
+    if (!a || !(await confirmBox(`Délier la fiche de ${a.nom} de sa centrale ?`, { detail: 'La centrale continue d’exister (rien n’est effacé) : seul le lien entre les deux est retiré.' }))) return;
+    await vault.mutate((tx) => tx.put('agences', { id: a.id, netId: '' }), '🌐 Fiche déliée de sa centrale', a.nom);
+    ui.sheet.rendered = false; renderSheet();
+  },
   'edit-agence': (d) => openOver('agence-form', d.id),
   async 'del-agence'(d) {
     const a = vault.get('agences', d.id);
@@ -10572,9 +10623,7 @@ const FORMS = {
     const g = (k) => String(fd.get(k) || '').trim();
     if (!g('nom')) return;
     let r;
-    try { r = await netApi('tenants', 'POST', { fil: g('fil'), nom: g('nom'), days: LIC_ESSAI }); } catch (e) { return toast(e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : publiez-le d’abord' : e.message, { bad: true }); }
-    await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + r.id, code: r.code, tel: g('tel'), email: g('email') }), '🎁 Essai accordé (réseau)', `${g('nom')} · ${NET_FIL[g('fil')] || ''} · jusqu’au ${fmtDate(r.tenant.until)}`);
-    await licLogAdd({ id: r.id, nom: g('nom'), fil: g('fil') }, 'Essai accordé', `${LIC_ESSAI} jours · jusqu’au ${fmtDate(r.tenant.until)}`);
+    try { r = await netCreate(g('fil'), g('nom'), g('tel'), g('email')); } catch (e) { return toast(e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : publiez-le d’abord' : e.message, { bad: true }); }
     toast('Essai accordé : envoyez l’invitation');
     goBack();
     await netLoad(true);
@@ -12256,6 +12305,10 @@ document.addEventListener('change', (e) => {
   if (k === 'tache-imm') $('#tacheLog').innerHTML = val(logOptions(e.target.value, ''));
   if (k === 'col-mode') sheetEl.querySelectorAll('[data-mode]').forEach((el) => { el.hidden = el.dataset.mode !== e.target.value; });
   if (k === 'door-reason') { const w = $('#doorWarn'); if (w) w.hidden = e.target.value !== 'Impayé'; }
+  if (k === 'ag-net-link' && e.target.value) {
+    const a = vault.get('agences', e.target.dataset.id), tid = e.target.value;
+    if (a) vault.mutate((tx) => tx.put('agences', { id: a.id, netId: tid }), '🌐 Fiche reliée à sa centrale', a.nom).then(() => { ui.sheet.rendered = false; renderSheet(); });
+  }
   if (k === 'bien-ag') { const f = e.target.form; if (f) { const on = !!e.target.value; f.querySelectorAll('.bien-nous').forEach((x) => { x.hidden = on; }); f.querySelectorAll('.bien-ag').forEach((x) => { x.hidden = !on; }); } }
   if (k === 'bien-loueur') { const f = e.target.form; if (f) f.querySelectorAll('.bien-sous').forEach((x) => { x.hidden = e.target.value !== 'sous'; }); }
   if (k === 'bins-on') {

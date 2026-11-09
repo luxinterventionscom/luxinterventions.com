@@ -18585,4 +18585,36 @@ export default [
 "Aucun bien publié. ＋ Bien immo. sur la ligne du propriétaire ou de l’agence : type, m², pièces, photos, prix.",
 "Keine Immobilie veröffentlicht. ＋ Immobilie in der Zeile des Eigentümers oder der Agentur: Typ, m², Zimmer, Fotos, Preis."
 ],
+[
+"Réseau (centrales)",
+"Netzwerk (Zentralen)"
+],
+[
+"🌐 Sa centrale",
+"🌐 Seine Zentrale"
+],
+[
+"🌐 Ouvrir : code, licence, 6 mois offerts…",
+"🌐 Öffnen: Code, Lizenz, 6 Monate gratis…"
+],
+[
+"Délier",
+"Trennen"
+],
+[
+"Pas encore de centrale : son espace à lui (ses immeubles, ses locataires et leurs apps, ses demandes d’intervention), avec un code d’invitation.",
+"Noch keine Zentrale: sein eigener Bereich (seine Gebäude, seine Mieter und deren Apps, seine Einsatzanfragen), mit einem Einladungscode."
+],
+[
+"… ou la relier à une centrale existante",
+"… oder mit einer bestehenden Zentrale verbinden"
+],
+[
+"— pas de centrale",
+"— keine Zentrale"
+],
+[
+"Centrale activée : envoyez le code d’invitation",
+"Zentrale aktiviert: Einladungscode senden"
+],
 ];
