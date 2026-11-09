@@ -36,7 +36,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.240.0';
+const VERSION = '2.240.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1461,7 +1461,7 @@ function patSum(pat) {
 }
 // 🌐 Réseau : centrales des clients (gérance, agence, propriétaire, hôtel, Airbnb), chacune avec sa cassaforte ;
 // ici : essai, échéance, lecture seule / blocage, nouvel accès, suppression avec certificat, demandes d'intervention reçues
-const NET_FIL = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
+const NET_FIL = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire / bailleur principal', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
 const NET_STATE = { ok: ['🟢', 'Actif'], ro: ['🟠', 'Lecture seule (échu)'], blocked: ['🔴', 'Bloqué'] };
 const NET_ST = { trial: '🎁 Essai', active: '✅ Abonnement', suspended: '⏸ Suspendu' };
 // 🔑 Licences : tarifs par filière (prix 1 an HT, remises 2 et 3 ans), factures, registre
@@ -1502,13 +1502,21 @@ async function licInvoicePdf(f) {
   if (c.iban) p.text(X, y, `Paiement par virement : ${c.banque ? c.banque + ' · ' : ''}IBAN ${c.iban}${c.bic ? ' · BIC ' + c.bic : ''} · communication : ${f.no}`, { size: 9 });
   return p.bytes();
 }
-const netUrl = (tid) => `${location.origin}/locataires.html?t=${tid}`;
+// adresse « parlante » selon le client (voir LIENS.md) : propriétaire, agence, gestionnaire ; hôtel / Airbnb → centrale.html
+const NET_PAGE = { proprio: 'proprietaire', agence: 'agence', gerance: 'gestionnaire' };
+const netUrl = (tid, fil) => `${location.origin}/${NET_PAGE[fil] || 'centrale'}.html?t=${tid}`;
 async function netApi(path, method = 'GET', body) {
   const r = await vault.call(path, { method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
   return r.json();
 }
 const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
-const netInvite = (t, code) => `🌐 ${t.nom} — votre centrale LuxInterventions (${NET_FIL[t.fil] || ''}) : ${netUrl(t.id)}\nCode d’invitation : ${code}\nÀ la première ouverture, choisissez votre clé d’accès (elle chiffre vos données : personne d’autre ne la connaît, gardez aussi la clé de secours).`;
+const netInvite = (t, code) => `🌐 ${t.nom} — votre centrale de gestion (${NET_FIL[t.fil] || ''}), réseau LuxInterventions
+👉 Ouvrir : ${netUrl(t.id, t.fil)}
+🔑 Code d’invitation : ${code}
+
+1️⃣ À la première ouverture : entrez le code, puis choisissez votre clé d’accès (votre mot de passe). Elle chiffre vos données : personne d’autre ne la connaît, pas même LuxInterventions.
+2️⃣ Juste après, la centrale vous montre votre kit de secours : la « moitié A » de votre clé de secours. Envoyez-la-vous par e-mail ou imprimez-la (boutons 📧 et 🖨️) et gardez-la à 2 endroits. La « moitié B » est gardée fermée par LuxInterventions : il faut les deux pour rouvrir votre centrale si vous oubliez votre clé d’accès.
+3️⃣ Vous n’avez pas vu ou pas gardé le kit ? Dans la centrale : l’avis rouge 🧩 de l’Accueil, ou Réglages → Sécurité → « Clé de secours » (une nouvelle moitié A est créée). Clé d’accès oubliée et moitié A perdue : contactez LuxInterventions.`;
 // 🧾 Fatture della CENTRAL-APP alle UTENTI-APP (centrali dei clienti) : cifrate per la chiave pubblica del client, nella sua
 // casella ; bonifico con QR + « Ho pagato » (Stripe : pas encore connecté). Avviso puis sola lettura après les jours de 🧾 Facturation.
 const payDays = () => { const c = factConf(); return { avv: c.avv === '' || c.avv == null ? 7 : Math.max(0, +c.avv), ro: Math.max(1, +c.rog || 30) }; };
@@ -8426,7 +8434,7 @@ const SHEETS = {
 
   'rec-split'({ preset: a }) {
     const mail = societe().email || '';
-    const txt = `Kit de récupération — centrale ${socName()} (LuxInterventions)\n\nMoitié A de ma clé de secours :\n${a}\n\nSi j'oublie ma clé d'accès : luxinterventions.com/locataires.html?t=${TENANT} → « Clé d'accès oubliée ? » → moitié A (ci-dessus) + moitié B (donnée par LuxInterventions au téléphone).`;
+    const txt = `Kit de récupération — centrale ${socName()} (LuxInterventions)\n\nMoitié A de ma clé de secours :\n${a}\n\nSi j'oublie ma clé d'accès : ${netUrl(TENANT, tenantInfo.fil).replace(/^https?:\/\//, '')} → « Clé d'accès oubliée ? » → moitié A (ci-dessus) + moitié B (donnée par LuxInterventions au téléphone).`;
     return {
       title: '🧩 Votre kit de récupération',
       narrow: true,
@@ -10070,7 +10078,7 @@ const ACTIONS = {
     try { await navigator.clipboard.writeText($('#rcode').textContent.trim()); toast('Clé copiée'); } catch { toast('Copie impossible : notez-la à la main', { bad: true }); }
   },
   'print-recovery': () => printDoc('Clé de secours', html`<h1>Clé de secours</h1><p class="pr-sub">À conserver en lieu sûr. En cas d'oubli de la clé d'accès : luxinterventions.com/locataires.html → « Clé d'accès oubliée ? »</p><div style="font:700 26px/1.4 monospace;letter-spacing:.08em;border:2px solid #000;padding:24px;text-align:center;margin-top:24px">${ui.sheet && ui.sheet.preset}</div>`),
-  'print-reckit': (d) => printDoc('Kit de récupération', html`<h1>🧩 Kit de récupération</h1><p class="pr-sub">Centrale ${socName()} — à garder avec les documents de la société.</p><p>Moitié A de votre clé de secours :</p><div style="font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:.06em;border:2px solid #333;border-radius:10px;padding:16px;text-align:center">${d.id}</div><h3>Clé d'accès oubliée ?</h3><ol><li>Ouvrez luxinterventions.com/locataires.html?t=${TENANT} → « Clé d'accès oubliée ? ».</li><li>Écrivez la <b>moitié A</b> (ci-dessus).</li><li>Appelez LuxInterventions : on vous donne la <b>moitié B</b>.</li><li>Choisissez une nouvelle clé d'accès : vos données sont intactes.</li></ol><p class="pr-sub">Les deux moitiés sont nécessaires : LuxInterventions ne peut pas ouvrir votre centrale avec la moitié B seule.</p>`, true),
+  'print-reckit': (d) => printDoc('Kit de récupération', html`<h1>🧩 Kit de récupération</h1><p class="pr-sub">Centrale ${socName()} — à garder avec les documents de la société.</p><p>Moitié A de votre clé de secours :</p><div style="font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:.06em;border:2px solid #333;border-radius:10px;padding:16px;text-align:center">${d.id}</div><h3>Clé d'accès oubliée ?</h3><ol><li>Ouvrez ${netUrl(TENANT, tenantInfo.fil)} → « Clé d'accès oubliée ? ».</li><li>Écrivez la <b>moitié A</b> (ci-dessus).</li><li>Appelez LuxInterventions : on vous donne la <b>moitié B</b>.</li><li>Choisissez une nouvelle clé d'accès : vos données sont intactes.</li></ol><p class="pr-sub">Les deux moitiés sont nécessaires : LuxInterventions ne peut pas ouvrir votre centrale avec la moitié B seule.</p>`, true),
   'print-imm': (d) => printDoc('Rapport immeuble', reportImmeuble(d.id, ui.year)),
   'print-log': (d) => printDoc('Rapport logement', reportLogement(d.id)),
   async 'print-global'() {

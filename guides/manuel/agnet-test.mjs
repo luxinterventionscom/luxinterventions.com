@@ -12,7 +12,7 @@ await act(p, 'net-new'); await p.waitForTimeout(600);
 await p.selectOption('#f [name=fil]', 'proprio'); await p.fill('#f [name=nom]', 'Ares Invest S.A.');
 await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3000); await p.keyboard.press('Escape'); await p.waitForTimeout(400); await p.keyboard.press('Escape');
 // fiche propriétaire du même nom → reliée toute seule
-const mk = async (nom) => { await p.evaluate(() => { location.hash = '#/proprios'; }); await p.waitForTimeout(800); await act(p, 'new-agence'); await p.waitForTimeout(600); await p.fill('#f [name=nom]', nom); const bl = await p.$('#f [name=bankLater]'); if (bl) await bl.check(); await p.click('button[type=submit][form=f]'); await p.waitForTimeout(1500); };
+const mk = async (nom) => { await p.evaluate(() => { location.hash = '#/proprios'; }); await p.waitForTimeout(800); await act(p, 'new-agence'); await p.waitForTimeout(600); await p.fill('#f [name=nom]', nom); await p.fill('#f [name=tel]', '+352 691 000 222'); const bl = await p.$('#f [name=bankLater]'); if (bl) await bl.check(); await p.click('button[type=submit][form=f]'); await p.waitForTimeout(1500); };
 await mk('ARES INVEST S.A.'); await mk('PIETRO');
 await act(p, 'net-reload'); await p.waitForTimeout(3000);
 await p.evaluate(() => { location.hash = '#/proprios'; }); await p.waitForTimeout(1000);
@@ -27,6 +27,10 @@ assert(/Sa centrale/.test(await p.$eval('#f', (e) => e.innerText)), 'scheda: sez
 await p.click('[data-action=ag-net-on]'); await p.waitForTimeout(600); await p.click('#confirm button[type=submit], #confirm .btn.primary'); await p.waitForTimeout(4000);
 const sheet = await p.$eval('.sheet', (e) => e.innerText).catch(() => '');
 log('dopo attivazione: ' + sheet.slice(0, 160).replace(/\n/g, ' / '));
+const inv = await p.evaluate(() => decodeURIComponent([...document.querySelectorAll('.sheet a[href*="wa.me"], .sheet a[href^="sms:"], .sheet a[href^="mailto:"]')].map((x) => x.getAttribute('href')).join(' ')));
+assert(/proprietaire\.html\?t=/.test(inv) && /moitié A/.test(inv), 'invito: indirizzo proprietaire.html + spiegazione chiave di soccorso');
+const r = await (await c.newPage()).goto('http://localhost:8765/proprietaire.html?t=abc123').then((x) => x.url());
+log('redirect → ' + r);
 await p.keyboard.press('Escape'); await p.waitForTimeout(400); await p.keyboard.press('Escape'); await p.waitForTimeout(400);
 await p.evaluate(() => { location.hash = '#/proprios'; }); await p.waitForTimeout(1000);
 await p.evaluate(() => document.querySelectorAll('#view details').forEach((d) => { d.open = true; }));
