@@ -18327,4 +18327,8 @@ export default [
 "Indiquez le propriétaire réel (nom et prénom, ou société)",
 "Enter the actual owner (full name, or company)"
 ],
+[
+"Aucun bien publié. ＋ Bien immo. sur la ligne du propriétaire ou de l’agence : type, m², pièces, photos, prix.",
+"No property published. ＋ Property on the owner’s or agency’s line: type, m², rooms, photos, price."
+],
 ];
