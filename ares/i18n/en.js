@@ -18283,4 +18283,8 @@ export default [
 "Candidature supprimée",
 "Application deleted"
 ],
+[
+"Agence, propriétaire ou bailleur principal",
+"Agency, owner or head landlord"
+],
 ];

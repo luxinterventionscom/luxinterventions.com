@@ -36,7 +36,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.238.0';
+const VERSION = '2.238.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4575,7 +4575,7 @@ function agView(f) {
         <span class="grow"><span class="title" style="display:block">${a.nom}</span>
         <span class="meta">${typ(a) === 'proprio' ? 'Propriétaire' : 'Agence immo.'}${a.rcs ? html` · RCS ${a.rcs}` : ''}${a.dir && (a.dir.prenom || a.dir.nom) ? html` · ⭐ ${[a.dir.prenom, a.dir.nom].filter(Boolean).join(' ')}` : ''} · 📣 ${plural(nb[a.id] || 0, 'annonce')}</span>
         ${patSum(a.pat) || (a.pour || []).length ? html`<span class="tiny" style="display:block">${patSum(a.pat)}${(a.pour || []).length ? `${patSum(a.pat) ? ' · ' : ''}pour : ${a.pour.map((k) => AG_POUR[k].toLowerCase()).join(', ')}${a.fonds ? ' (' + a.fonds + ')' : ''}` : ''}</span>` : ''}
-        ${miss(a).length && !a.bankLater ? html`<span class="tiny amber" style="display:block">⚠️ À compléter : ${miss(a).join(', ')}</span>` : ''}</span><span class="chev">›</span></button>`)}</div>`
+        ${miss(a).length && !a.bankLater ? html`<span class="tiny amber" style="display:block">⚠️ À compléter : ${miss(a).join(', ')}</span>` : ''}</span><span class="btn sm primary" role="button" data-action="new-bien" data-ag="${a.id}" style="flex:none">${icon('plus')} Bien immo.</span><span class="chev">›</span></button>`)}</div>`
         : html`<div class="card" style="max-width:560px"><p style="margin-top:0">${f === 'proprio' ? 'Les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.' : 'Les agences immobilières publient leurs biens et vous confient leurs interventions.'}</p></div>`}`;
 }
 // 🏨 Hotel / 🏠 Airbnb : les clients (chambre ou logement, clé, arrivée → départ), une rubrique chacun
@@ -7284,8 +7284,8 @@ const SHEETS = {
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${exp ? 'Republier' : 'Publier'}</button>`,
     };
   },
-  'bien-form'({ id }) {
-    const b = id ? vault.get('biens', id) : { louer: true, pieces: [{ k: 'chambre' }, { k: 'salon' }, { k: 'cuisine' }, { k: 'sdb' }] };
+  'bien-form'({ id, preset }) {
+    const b = id ? vault.get('biens', id) : { louer: true, agenceId: typeof preset === 'string' && vault.get('agences', preset) ? preset : '', pieces: [{ k: 'chambre' }, { k: 'salon' }, { k: 'cuisine' }, { k: 'sdb' }] };
     if (id && !b) return null;
     const ags = vault.list('agences').sort((a, x) => (a.nom || '').localeCompare(x.nom || ''));
     setTimeout(() => hydrateBiens(sheetEl), 0);
@@ -7293,7 +7293,7 @@ const SHEETS = {
       title: id ? 'Modifier le bien' : 'Nouveau bien',
       body: html`<form id="f" data-form="bien" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
-        <label class="field full">Agence / propriétaire<select name="agenceId"><option value="">— Nos biens (sans agence) —</option>${ags.map((a) => html`<option value="${a.id}" ${b.agenceId === a.id ? new Raw('selected') : ''}>${a.type === 'proprio' ? '🔑' : '🏘️'} ${a.nom}</option>`)}</select></label>
+        <label class="field full">Agence, propriétaire ou bailleur principal<select name="agenceId"><option value="">— Nos biens (sans agence) —</option>${ags.map((a) => html`<option value="${a.id}" ${b.agenceId === a.id ? new Raw('selected') : ''}>${a.type === 'proprio' ? '🔑' : '🏘️'} ${a.nom}</option>`)}</select></label>
         <label class="field">Propriété<select name="propriete"><option value="nous">Le bien est à nous</option><option value="tiers" ${b.propriete === 'tiers' ? new Raw('selected') : ''}>Confié par un tiers</option></select></label>
         ${field('Nom du propriétaire (si confié)', 'tiersNom', b.tiersNom, { placeholder: 'ex. M. Dupont' })}
         <label class="field full">Titre de l’annonce<input name="titre" required value="${b.titre || ''}" placeholder="ex. Bel appartement 2 chambres avec terrasse"></label>
@@ -9321,7 +9321,7 @@ const ACTIONS = {
   },
   'new-avis': (d) => openOver('avis-form', null, null, d.imm || ui.immFilter || ''),
   'edit-avis': (d) => openOver('avis-form', d.id),
-  'new-bien': () => openOver('bien-form'),
+  'new-bien': (d) => openOver('bien-form', null, null, d.ag || ''), // depuis la ligne d'une agence / d'un propriétaire : déjà choisi
   'edit-bien': (d) => openOver('bien-form', d.id),
   'bien-piece-add': () => { const box = $('#bienPieces'); if (box) box.insertAdjacentHTML('beforeend', String(pieceRow({ k: 'chambre' }))); },
   'bien-piece-del': (d, el) => { el.closest('.piece-row')?.remove(); },

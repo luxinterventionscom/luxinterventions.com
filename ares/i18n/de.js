@@ -18537,4 +18537,8 @@ export default [
 "Candidature supprimée",
 "Bewerbung gelöscht"
 ],
+[
+"Agence, propriétaire ou bailleur principal",
+"Agentur, Eigentümer oder Hauptvermieter"
+],
 ];
