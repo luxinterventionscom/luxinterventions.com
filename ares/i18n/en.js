@@ -18331,4 +18331,36 @@ export default [
 "Aucun bien publié. ＋ Bien immo. sur la ligne du propriétaire ou de l’agence : type, m², pièces, photos, prix.",
 "No property published. ＋ Property on the owner’s or agency’s line: type, m², rooms, photos, price."
 ],
+[
+"Réseau (centrales)",
+"Network (centrals)"
+],
+[
+"🌐 Sa centrale",
+"🌐 Their central"
+],
+[
+"🌐 Ouvrir : code, licence, 6 mois offerts…",
+"🌐 Open: code, licence, 6 months free…"
+],
+[
+"Délier",
+"Unlink"
+],
+[
+"Pas encore de centrale : son espace à lui (ses immeubles, ses locataires et leurs apps, ses demandes d’intervention), avec un code d’invitation.",
+"No central yet: their own space (their buildings, their tenants and their apps, their work requests), with an invitation code."
+],
+[
+"… ou la relier à une centrale existante",
+"… or link it to an existing central"
+],
+[
+"— pas de centrale",
+"— no central"
+],
+[
+"Centrale activée : envoyez le code d’invitation",
+"Central activated: send the invitation code"
+],
 ];
