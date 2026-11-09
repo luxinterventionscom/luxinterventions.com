@@ -18367,4 +18367,56 @@ export default [
 "🔑 Propriétaire / bailleur principal",
 "🔑 Owner / head landlord"
 ],
+[
+"Qui est-ce ?",
+"Who is it?"
+],
+[
+"🔑 Le propriétaire des biens",
+"🔑 The owner of the properties"
+],
+[
+"🔁 Un bailleur principal (il sous-loue : chambres, colocations…)",
+"🔁 A head landlord (sublets: rooms, flat-shares…)"
+],
+[
+"Propriétaire principal / réel (nom et prénom, ou société)",
+"Main / actual owner (full name, or company)"
+],
+[
+"📎 Bail principal / contrat autorisant la sous-location (PDF ou photo — chiffré, jamais publié)",
+"📎 Head lease / contract allowing subletting (PDF or photo — encrypted, never published)"
+],
+[
+"S’il manque, la centrale est créée quand même : « ⚠️ bail manquant » reste affiché sur sa fiche.",
+"If missing, the central is created anyway: “⚠️ lease missing” stays shown on its record."
+],
+[
+"🔑 Propriétaire ou bailleur principal ?",
+"🔑 Owner or head landlord?"
+],
+[
+"à préciser",
+"to be specified"
+],
+[
+"🔁 Bailleur principal · propriétaire réel :",
+"🔁 Head landlord · actual owner:"
+],
+[
+"⚠️ bail manquant",
+"⚠️ lease missing"
+],
+[
+"📎 Ajouter",
+"📎 Add"
+],
+[
+"📎 Bail",
+"📎 Lease"
+],
+[
+"Indiquez le propriétaire principal / réel (nom et prénom, ou société)",
+"Enter the main / actual owner"
+],
 ];

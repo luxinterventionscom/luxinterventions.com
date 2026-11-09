@@ -36,7 +36,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.240.1';
+const VERSION = '2.241.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1510,6 +1510,21 @@ async function netApi(path, method = 'GET', body) {
   return r.json();
 }
 const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
+// 🔑 client « propriétaire / bailleur principal » : qui est-il, propriétaire réel, bail principal (facultatif : s'il manque, on le signale)
+const netBailFields = (x = {}) => html`<div class="field full">Qui est-ce ?<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
+    <label class="row" style="cursor:pointer"><input type="radio" name="loueur" value="proprio" data-input="net-loueur" ${x.loueur !== 'sous' ? new Raw('checked') : ''}><span class="grow">🔑 Le propriétaire des biens</span></label>
+    <label class="row" style="cursor:pointer"><input type="radio" name="loueur" value="sous" data-input="net-loueur" ${x.loueur === 'sous' ? new Raw('checked') : ''}><span class="grow">🔁 Un bailleur principal (il sous-loue : chambres, colocations…)</span></label></div></div>
+  <div class="full fields net-sous" style="margin:0" ${x.loueur === 'sous' ? '' : new Raw('hidden')}>
+    ${field('Propriétaire principal / réel (nom et prénom, ou société)', 'realOwner', x.realOwner || '', { full: true, placeholder: 'ex. Jean Dupont' })}
+    <label class="field full">📎 Bail principal / contrat autorisant la sous-location (PDF ou photo — chiffré, jamais publié)<input type="file" name="bail" accept="application/pdf,image/*"></label>
+    <p class="tiny full" style="margin:0;color:var(--amber,#b45309)">S’il manque, la centrale est créée quand même : « ⚠️ bail manquant » reste affiché sur sa fiche.</p></div>`;
+function netFilShow(f) { f.querySelectorAll('.net-proprio').forEach((x) => { x.hidden = f.fil.value !== 'proprio'; }); }
+async function netBailSave(tid, file, nom) {
+  const cid = uid(), mime = /^image\//.test(file.type) ? 'image/jpeg' : 'application/pdf';
+  await vault.saveFile(cid, mime === 'image/jpeg' ? await compressPhoto(file) : new Uint8Array(await file.arrayBuffer()));
+  await vault.mutate((tx) => { tx.put('documents', { id: cid, kind: 'netbail', tid, label: `📎 Bail principal — ${nom}`, date: today(), mime, size: file.size }); tx.put('reglages', { id: 'netc-' + tid, bailDoc: cid }); }, '📎 Bail principal du client', nom);
+}
+const netBailLine = (tid) => { const i = netInfo(tid); return i.loueur === 'sous' ? html`<p class="small" style="margin:6px 0">🔁 Bailleur principal · propriétaire réel : <b>${i.realOwner || '—'}</b> · ${i.bailDoc ? html`<button type="button" class="btn sm" data-action="open-doc" data-id="${i.bailDoc}">📎 Bail</button>` : html`<b style="color:var(--amber,#b45309)">⚠️ bail manquant</b> <label class="btn sm" style="cursor:pointer">📎 Ajouter<input type="file" hidden accept="application/pdf,image/*" data-input="net-bail" data-id="${tid}"></label>`}</p>` : ''; };
 const netInvite = (t, code) => `🌐 ${t.nom} — votre centrale de gestion (${NET_FIL[t.fil] || ''}), réseau LuxInterventions
 👉 Ouvrir : ${netUrl(t.id, t.fil)}
 🔑 Code d’invitation : ${code}
@@ -4591,7 +4606,7 @@ function eqScores(year) {
 function agNetBlock(a) {
   const t = agNet(a), free = ((ui.net && ui.net.list) || []).filter((x) => x.fil === agFil(a) && !vault.list('agences').some((y) => y.netId === x.id));
   return html`<div class="full card" style="margin:0 0 6px;padding:12px;border-left:4px solid var(--accent,#4f46e5)"><b>🌐 Sa centrale</b>
-    ${t ? html`<p class="small" style="margin:4px 0 8px">${NET_FIL[t.fil] || ''} · ${NET_ST[t.st] || t.st || ''}${t.until ? html` · jusqu’au ${fmtDate(t.until)}` : ''}</p>
+    ${t ? html`<p class="small" style="margin:4px 0 8px">${NET_FIL[t.fil] || ''} · ${NET_ST[t.st] || t.st || ''}${t.until ? html` · jusqu’au ${fmtDate(t.until)}` : ''}</p>${netBailLine(t.id)}
       <div class="actions" style="margin:0;flex-wrap:wrap"><button type="button" class="btn sm primary" data-action="net-open" data-id="${t.id}">🌐 Ouvrir : code, licence, 6 mois offerts…</button><button type="button" class="btn sm ghost" data-action="ag-net-unlink" data-id="${a.id}">Délier</button></div>`
     : html`<p class="small muted" style="margin:4px 0 8px">Pas encore de centrale : son espace à lui (ses immeubles, ses locataires et leurs apps, ses demandes d’intervention), avec un code d’invitation.</p>
       <div class="actions" style="margin:0;flex-wrap:wrap"><button type="button" class="btn sm primary" data-action="ag-net-on" data-id="${a.id}">🌐 Activer sa centrale (essai ${LIC_ESSAI} jours)</button>
@@ -7516,12 +7531,14 @@ const SHEETS = {
     };
   },
   'net-new'() {
+    setTimeout(() => { const f = document.getElementById('f'); if (f && f.fil) netFilShow(f); }, 0);
     return {
       title: '🌐 Nouveau client du réseau',
       narrow: true,
       body: html`<form id="f" data-form="net-new" class="fields">
-        <label class="field full">Filière<select name="fil">${Object.entries(NET_FIL).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
+        <label class="field full">Filière<select name="fil" data-input="net-fil">${Object.entries(NET_FIL).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
         ${field('Nom de la société / du client', 'nom', '', { full: true, required: true })}
+        <div class="full fields net-proprio" style="margin:0" hidden>${netBailFields()}</div>
         ${field('Téléphone (WhatsApp)', 'tel', '', { type: 'tel', placeholder: '+352…' })}${field('Email', 'email', '', { type: 'email' })}
         <p class="tiny muted full" style="margin:0">Essai gratuit de ${LIC_ESSAI} jours. Un code d’invitation est créé (valable 30 jours, une seule fois). Le client ouvre sa centrale, choisit sa clé d’accès (vous ne la connaissez pas) et commence son essai.</p>
       </form>`,
@@ -7537,6 +7554,8 @@ const SHEETS = {
       title: `${(NET_FIL[t.fil] || '').split(' ')[0]} ${t.nom}`,
       narrow: true,
       body: html`<div class="alert ${t.state === 'ok' ? 'info' : 'warn'}" style="margin-bottom:12px">${st[0]}<div><b>${st[1]}</b> · ${NET_ST[t.st] || ''}${t.until ? ' · jusqu’au ' + fmtDate(t.until) : ''}<div class="tiny">${t.configured ? (t.lastSeen ? 'Dernière connexion : ' + fmtDateTime(t.lastSeen) : 'Centrale configurée') : 'Invitation pas encore utilisée'}</div></div></div>
+        ${t.fil === 'proprio' ? html`${netBailLine(id)}<details class="card" style="margin-bottom:12px" ${netInfo(id).loueur ? '' : new Raw('open')}><summary><b>🔑 Propriétaire ou bailleur principal ?</b>${netInfo(id).loueur ? '' : html` <span class="tiny" style="color:var(--amber,#b45309)">à préciser</span>`}</summary>
+          <form data-form="net-bail-set" class="fields" style="margin-top:8px"><input type="hidden" name="tid" value="${id}">${netBailFields(netInfo(id))}<button class="btn sm primary full" type="submit">Enregistrer</button></form></details>` : ''}
         ${code ? html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d’invitation</div><div style="font-family:var(--mono);font-size:24px;font-weight:800;letter-spacing:.08em">${code}</div>
           <div class="actions" style="justify-content:center;flex-wrap:wrap">${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}${inf.email ? html`<a class="btn sm" href="mailto:${inf.email}?subject=${encodeURIComponent('🌐 Votre centrale')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}<button class="btn sm" data-action="code-copy" data-code="${inv}">📋 Copier l’invitation</button></div></div>` : ''}
         ${isCompta() ? '' : html`<div class="section-label">🔑 Abonnement</div>
@@ -10588,6 +10607,15 @@ const FORMS = {
     const to = type === 'proprio' ? 'proprios' : 'agences';
     if (ui.route !== to) go(to);
   },
+  async 'net-bail-set'(fd) {
+    const tid = String(fd.get('tid') || ''), g = (k) => String(fd.get(k) || '').trim(), sous = g('loueur') === 'sous', t = ((ui.net && ui.net.list) || []).find((x) => x.id === tid) || {};
+    if (sous && !g('realOwner')) return toast('Indiquez le propriétaire principal / réel (nom et prénom, ou société)', { bad: true });
+    await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + tid, loueur: sous ? 'sous' : 'proprio', realOwner: sous ? g('realOwner') : '' }), '🔑 Client propriétaire / bailleur principal', t.nom || '');
+    const bf = fd.get('bail');
+    if (sous && bf && bf.size) await netBailSave(tid, bf, t.nom || '');
+    toast(sous && !(bf && bf.size) && !netInfo(tid).bailDoc ? '⚠️ Enregistré — bail principal manquant' : 'Enregistré', sous && !netInfo(tid).bailDoc ? { bad: true } : undefined);
+    ui.sheet.rendered = false; renderSheet();
+  },
   async 'cand-note'(fd) {
     const id = String(fd.get('id') || '');
     if (!vault.get('reglages', id)) return;
@@ -10631,7 +10659,13 @@ const FORMS = {
     const g = (k) => String(fd.get(k) || '').trim();
     if (!g('nom')) return;
     let r;
+    const sous = g('fil') === 'proprio' && g('loueur') === 'sous';
+    if (sous && !g('realOwner')) return toast('Indiquez le propriétaire principal / réel (nom et prénom, ou société)', { bad: true });
     try { r = await netCreate(g('fil'), g('nom'), g('tel'), g('email')); } catch (e) { return toast(e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : publiez-le d’abord' : e.message, { bad: true }); }
+    if (g('fil') === 'proprio') await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + r.id, loueur: sous ? 'sous' : 'proprio', realOwner: sous ? g('realOwner') : '' }), '🔑 Client propriétaire / bailleur principal', g('nom'));
+    const bf = fd.get('bail');
+    if (sous && bf && bf.size) await netBailSave(r.id, bf, g('nom'));
+    if (sous && !(bf && bf.size)) toast('⚠️ Bail principal manquant : vous pourrez l’ajouter sur sa fiche', { bad: true });
     toast('Essai accordé : envoyez l’invitation');
     goBack();
     await netLoad(true);
@@ -12313,6 +12347,13 @@ document.addEventListener('change', (e) => {
   if (k === 'tache-imm') $('#tacheLog').innerHTML = val(logOptions(e.target.value, ''));
   if (k === 'col-mode') sheetEl.querySelectorAll('[data-mode]').forEach((el) => { el.hidden = el.dataset.mode !== e.target.value; });
   if (k === 'door-reason') { const w = $('#doorWarn'); if (w) w.hidden = e.target.value !== 'Impayé'; }
+  if (k === 'net-fil') { const f = e.target.form; if (f) netFilShow(f); }
+  if (k === 'net-loueur') { const f = e.target.form; if (f) f.querySelectorAll('.net-sous').forEach((x) => { x.hidden = e.target.value !== 'sous'; }); }
+  if (k === 'net-bail' && e.target.files && e.target.files[0]) {
+    const tid = e.target.dataset.id, t = ((ui.net && ui.net.list) || []).find((x) => x.id === tid) || {};
+    const file = e.target.files[0];
+    netBailSave(tid, file, t.nom || '').then(() => { toast('📎 Bail enregistré'); const s0 = ui.sheet; if (s0 && sheetEl.open) { openSheet(s0.kind, s0.id, s0.tab, s0.preset); ui.sheet.back = s0.back; } }).catch((err) => toast('Bail : ' + (err.message || err), { bad: true }));
+  }
   if (k === 'ag-net-link' && e.target.value) {
     const a = vault.get('agences', e.target.dataset.id), tid = e.target.value;
     if (a) vault.mutate((tx) => tx.put('agences', { id: a.id, netId: tid }), '🌐 Fiche reliée à sa centrale', a.nom).then(() => { ui.sheet.rendered = false; renderSheet(); });
