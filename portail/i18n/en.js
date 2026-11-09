@@ -129,8 +129,8 @@ export default [
 "Priority support"
 ],
 [
-"Ajoute l’icône LuxInterventions sur l’écran d’accueil.",
-"Adds the LuxInterventions icon to the home screen."
+"Ajoute l’icône LA CENTRAL sur l’écran d’accueil.",
+"Adds the LA CENTRAL icon to the home screen."
 ],
 [
 "Ajouter",
@@ -377,8 +377,8 @@ export default [
 "Good"
 ],
 [
-"Bon pour accord : votre acceptation est ferme et définitive. LuxInterventions organise les travaux.",
-"Agreed: your acceptance is firm and final. LuxInterventions organises the work."
+"Bon pour accord : votre acceptation est ferme et définitive. LA CENTRAL organise les travaux.",
+"Agreed: your acceptance is firm and final. LA CENTRAL organises the work."
 ],
 [
 "Bonjour",
@@ -461,8 +461,8 @@ export default [
 "What you typed is not saved yet. To keep it: “Cancel”, then the save button."
 ],
 [
-"Ces données figurent sur les factures de LuxInterventions (ARES INVEST S.A.). Le nom de la société est modifié par LuxInterventions.",
-"These details appear on LuxInterventions (ARES INVEST S.A.) invoices. The company name is changed by LuxInterventions."
+"Ces données figurent sur les factures de LA CENTRAL (ARES INVEST S.A.). Le nom de la société est modifié par LA CENTRAL.",
+"These details appear on LA CENTRAL (ARES INVEST S.A.) invoices. The company name is changed by LA CENTRAL."
 ],
 [
 "Cette année",
@@ -485,8 +485,8 @@ export default [
 "Change my password"
 ],
 [
-"Chaque facture est émise par ARES INVEST S.A. (LuxInterventions) une fois l’intervention clôturée ; téléchargez-la en PDF.",
-"Each invoice is issued by ARES INVEST S.A. (LuxInterventions) once the intervention is closed; download it as PDF."
+"Chaque facture est émise par ARES INVEST S.A. (LA CENTRAL) une fois l’intervention clôturée ; téléchargez-la en PDF.",
+"Each invoice is issued by ARES INVEST S.A. (LA CENTRAL) once the intervention is closed; download it as PDF."
 ],
 [
 "Chaque personne a son propre accès : on sait toujours qui a fait quelle demande. Un compte désactivé ne peut plus se connecter.",
@@ -701,8 +701,8 @@ export default [
 "Create the apartments"
 ],
 [
-"Créez le compte administrateur LuxInterventions.",
-"Create the LuxInterventions administrator account."
+"Créez le compte administrateur LA CENTRAL.",
+"Create the LA CENTRAL administrator account."
 ],
 [
 "Créez les gérances partenaires",
@@ -737,8 +737,8 @@ export default [
 "From {0} to {1}{2}"
 ],
 [
-"Demande #{0} envoyée — LuxInterventions est prévenu",
-"Request #{0} sent — LuxInterventions has been notified"
+"Demande #{0} envoyée — LA CENTRAL est prévenu",
+"Request #{0} sent — LA CENTRAL has been notified"
 ],
 [
 "Demande annulée",
@@ -785,8 +785,8 @@ export default [
 "Requests"
 ],
 [
-"Demandes d’intervention à LuxInterventions",
-"Intervention requests to LuxInterventions"
+"Demandes d’intervention à LA CENTRAL",
+"Intervention requests to LA CENTRAL"
 ],
 [
 "Demandes en cours",
@@ -861,8 +861,8 @@ export default [
 "Available after the server update."
 ],
 [
-"Dites à LuxInterventions ce qu’il faut revoir (travaux en plus ou en moins, délai, prix…). Vous recevrez une nouvelle version.",
-"Tell LuxInterventions what to review (more or less work, timing, price…). You will receive a new version."
+"Dites à LA CENTRAL ce qu’il faut revoir (travaux en plus ou en moins, délai, prix…). Vous recevrez une nouvelle version.",
+"Tell LA CENTRAL what to review (more or less work, timing, price…). You will receive a new version."
 ],
 [
 "Données de la société enregistrées",
@@ -1017,8 +1017,8 @@ export default [
 "Team area"
 ],
 [
-"Espace équipe LuxInterventions",
-"LuxInterventions team area"
+"Espace équipe LA CENTRAL",
+"LA CENTRAL team area"
 ],
 [
 "Espaces verts",
@@ -1349,8 +1349,8 @@ export default [
 "Up to {0}"
 ],
 [
-"La même app que LuxInterventions, pour vos immeubles et vos locataires.",
-"The same app as LuxInterventions, for your buildings and your tenants."
+"La même app que LA CENTRAL, pour vos immeubles et vos locataires.",
+"The same app as LA CENTRAL, for your buildings and your tenants."
 ],
 [
 "La personne est déconnectée immédiatement et ne peut plus se connecter. Ses demandes restent dans l’historique.",
@@ -1389,16 +1389,16 @@ export default [
 "The keys are with Mr Weber."
 ],
 [
-"Les demandes d’intervention à LuxInterventions restent gratuites, avec ou sans abonnement. Prix hors TVA.",
-"Intervention requests to LuxInterventions stay free, with or without a plan. Prices excl. VAT."
+"Les demandes d’intervention à LA CENTRAL restent gratuites, avec ou sans abonnement. Prix hors TVA.",
+"Intervention requests to LA CENTRAL stay free, with or without a plan. Prices excl. VAT."
 ],
 [
 "Les deux mots de passe ne correspondent pas.",
 "The two passwords do not match."
 ],
 [
-"Les montants et factures par intervention apparaîtront ici dès qu’ils seront émis par LuxInterventions.",
-"Amounts and invoices per intervention will appear here once issued by LuxInterventions."
+"Les montants et factures par intervention apparaîtront ici dès qu’ils seront émis par LA CENTRAL.",
+"Amounts and invoices per intervention will appear here once issued by LA CENTRAL."
 ],
 [
 "Les photos de la réparation apparaîtront ici.",
@@ -1457,24 +1457,24 @@ export default [
 "Luca is coming this afternoon, please let the caretaker know."
 ],
 [
-"LuxInterventions est en route / sur place",
-"LuxInterventions is on the way / on site"
+"LA CENTRAL est en route / sur place",
+"LA CENTRAL is on the way / on site"
 ],
 [
-"LuxInterventions est prévenu.",
-"LuxInterventions has been notified."
+"LA CENTRAL est prévenu.",
+"LA CENTRAL has been notified."
 ],
 [
-"LuxInterventions vous reconnaît d’un coup d’œil. PNG ou JPG, carré de préférence.",
-"LuxInterventions recognises you at a glance. PNG or JPG, preferably square."
+"LA CENTRAL vous reconnaît d’un coup d’œil. PNG ou JPG, carré de préférence.",
+"LA CENTRAL recognises you at a glance. PNG or JPG, preferably square."
 ],
 [
-"LuxInterventions · Interventions techniques 7j/7",
-"LuxInterventions · Technical call-outs 7 days a week"
+"LA CENTRAL · Interventions techniques 7j/7",
+"LA CENTRAL · Technical call-outs 7 days a week"
 ],
 [
-"LuxInterventions · Portail gérance v{0}",
-"LuxInterventions · Property manager portal v{0}"
+"LA CENTRAL · Portail gérance v{0}",
+"LA CENTRAL · Property manager portal v{0}"
 ],
 [
 "L’heure de fin doit être après l’heure de début.",
@@ -1521,24 +1521,24 @@ export default [
 "Joinery"
 ],
 [
-"Merci ! LuxInterventions vous contacte très vite pour votre abonnement.",
-"Thank you! LuxInterventions will contact you very soon about your plan."
+"Merci ! LA CENTRAL vous contacte très vite pour votre abonnement.",
+"Thank you! LA CENTRAL will contact you very soon about your plan."
 ],
 [
-"Merci ! Évaluation envoyée à LuxInterventions",
-"Thank you! Rating sent to LuxInterventions"
+"Merci ! Évaluation envoyée à LA CENTRAL",
+"Thank you! Rating sent to LA CENTRAL"
 ],
 [
-"Merci d’avoir choisi LuxInterventions.",
-"Thank you for choosing LuxInterventions."
+"Merci d’avoir choisi LA CENTRAL.",
+"Thank you for choosing LA CENTRAL."
 ],
 [
 "Mes demandes en cours",
 "My open requests"
 ],
 [
-"Message à LuxInterventions…",
-"Message to LuxInterventions…"
+"Message à LA CENTRAL…",
+"Message to LA CENTRAL…"
 ],
 [
 "Message à la gérance (facultatif)",
@@ -1593,8 +1593,8 @@ export default [
 "Password changed"
 ],
 [
-"Mot de passe oublié ? Demandez un nouveau lien à votre responsable ou à LuxInterventions.",
-"Forgot your password? Ask your lead contact or LuxInterventions for a new link."
+"Mot de passe oublié ? Demandez un nouveau lien à votre responsable ou à LA CENTRAL.",
+"Forgot your password? Ask your lead contact or LA CENTRAL for a new link."
 ],
 [
 "Mot de passe trop court (10 caractères minimum).",
@@ -1969,8 +1969,8 @@ export default [
 "Property manager portal"
 ],
 [
-"Portail Gérance — LuxInterventions",
-"Property manager portal — LuxInterventions"
+"Portail Gérance — LA CENTRAL",
+"Property manager portal — LA CENTRAL"
 ],
 [
 "Portail Gérances",
@@ -2293,8 +2293,8 @@ export default [
 "Reserved for the agency manager"
 ],
 [
-"Réservé à LuxInterventions ou au responsable de la gérance",
-"Reserved for LuxInterventions or the agency manager"
+"Réservé à LA CENTRAL ou au responsable de la gérance",
+"Reserved for LA CENTRAL or the agency manager"
 ],
 [
 "Résidence",
@@ -2333,8 +2333,8 @@ export default [
 "Summary"
 ],
 [
-"Révision demandée — LuxInterventions prépare une nouvelle version.",
-"Revision requested — LuxInterventions is preparing a new version."
+"Révision demandée — LA CENTRAL prépare une nouvelle version.",
+"Revision requested — LA CENTRAL is preparing a new version."
 ],
 [
 "Révisions",
@@ -2401,8 +2401,8 @@ export default [
 "Session expired"
 ],
 [
-"Seul LuxInterventions peut changer le statut",
-"Only LuxInterventions can change the status"
+"Seul LA CENTRAL peut changer le statut",
+"Only LA CENTRAL can change the status"
 ],
 [
 "Site web",
@@ -2537,8 +2537,8 @@ export default [
 "Finished this month"
 ],
 [
-"Terre · Eau · Feu · Air — LuxInterventions",
-"Earth · Water · Fire · Air — LuxInterventions"
+"Terre · Eau · Feu · Air — LA CENTRAL",
+"Earth · Water · Fire · Air — LA CENTRAL"
 ],
 [
 "Tester",
@@ -2697,12 +2697,12 @@ export default [
 "See the plans ›"
 ],
 [
-"Votre accès au portail LuxInterventions",
-"Your access to the LuxInterventions portal"
+"Votre accès au portail LA CENTRAL",
+"Your access to the LA CENTRAL portal"
 ],
 [
-"Votre activité avec LuxInterventions",
-"Your activity with LuxInterventions"
+"Votre activité avec LA CENTRAL",
+"Your activity with LA CENTRAL"
 ],
 [
 "Votre avis compte",
@@ -2725,16 +2725,16 @@ export default [
 "Your session has expired. Please sign in again."
 ],
 [
-"Vous voyez maintenant le portail comme l’équipe LuxInterventions",
-"You now see the portal as the LuxInterventions team"
+"Vous voyez maintenant le portail comme l’équipe LA CENTRAL",
+"You now see the portal as the LA CENTRAL team"
 ],
 [
 "Vous voyez maintenant le portail comme une gérance",
 "You now see the portal as a property manager"
 ],
 [
-"Vue LuxInterventions",
-"LuxInterventions view"
+"Vue LA CENTRAL",
+"LA CENTRAL view"
 ],
 [
 "Vue gérance",
@@ -3149,8 +3149,8 @@ export default [
 "Team"
 ],
 [
-"Équipe LuxInterventions",
-"LuxInterventions team"
+"Équipe LA CENTRAL",
+"LA CENTRAL team"
 ],
 [
 "Équipe illimitée",
@@ -3357,8 +3357,8 @@ export default [
 "✏️ Edit request #{0}"
 ],
 [
-"✓ Demande envoyée. LuxInterventions vous envoie un nouveau lien (WhatsApp ou email) : ouvrez-le pour choisir un nouveau mot de passe.",
-"✓ Request sent. LuxInterventions will send you a new link (WhatsApp or email): open it to choose a new password."
+"✓ Demande envoyée. LA CENTRAL vous envoie un nouveau lien (WhatsApp ou email) : ouvrez-le pour choisir un nouveau mot de passe.",
+"✓ Request sent. LA CENTRAL will send you a new link (WhatsApp or email): open it to choose a new password."
 ],
 [
 "✓ IBAN valide",
@@ -3417,8 +3417,8 @@ export default [
 "🎉 Welcome, {0}!"
 ],
 [
-"🎨 Ajoutez le logo de votre agence : LuxInterventions vous reconnaît d’un coup d’œil",
-"🎨 Add your agency’s logo: LuxInterventions recognises you at a glance"
+"🎨 Ajoutez le logo de votre agence : LA CENTRAL vous reconnaît d’un coup d’œil",
+"🎨 Add your agency’s logo: LA CENTRAL recognises you at a glance"
 ],
 [
 "🎨 Logo de votre agence",
@@ -3481,12 +3481,12 @@ export default [
 "📝 Open quotes ({0})"
 ],
 [
-"📲 En réel, LuxInterventions est prévenu de votre message.",
-"📲 In real use, LuxInterventions is notified of your message."
+"📲 En réel, LA CENTRAL est prévenu de votre message.",
+"📲 In real use, LA CENTRAL is notified of your message."
 ],
 [
-"📲 En réel, LuxInterventions reçoit maintenant votre réponse au devis.",
-"📲 For real, LuxInterventions now receives your answer to the quote."
+"📲 En réel, LA CENTRAL reçoit maintenant votre réponse au devis.",
+"📲 For real, LA CENTRAL now receives your answer to the quote."
 ],
 [
 "📲 En réel, la gérance est prévenue de votre message.",
@@ -3497,12 +3497,12 @@ export default [
 "📲 In real use, the property manager now gets a notification: «"
 ],
 [
-"📲 En réel, l’équipe LuxInterventions reçoit maintenant une alerte URGENTE sur son téléphone.",
-"📲 In real use, the LuxInterventions team now gets an URGENT alert on its phone."
+"📲 En réel, l’équipe LA CENTRAL reçoit maintenant une alerte URGENTE sur son téléphone.",
+"📲 In real use, the LA CENTRAL team now gets an URGENT alert on its phone."
 ],
 [
-"📲 En réel, l’équipe LuxInterventions reçoit maintenant une notification.",
-"📲 In real use, the LuxInterventions team now gets a notification."
+"📲 En réel, l’équipe LA CENTRAL reçoit maintenant une notification.",
+"📲 In real use, the LA CENTRAL team now gets a notification."
 ],
 [
 "📷 Choisir le logo",
@@ -3517,16 +3517,16 @@ export default [
 "🔄 Change"
 ],
 [
-"🔄 Demande de révision envoyée à LuxInterventions",
-"🔄 Revision request sent to LuxInterventions"
+"🔄 Demande de révision envoyée à LA CENTRAL",
+"🔄 Revision request sent to LA CENTRAL"
 ],
 [
 "🔄 Demander une révision",
 "🔄 Ask for a revision"
 ],
 [
-"🔄 L’ouvrier prévu n’est pas disponible — LuxInterventions envoie un autre ouvrier.",
-"🔄 The planned worker isn’t available — LuxInterventions is sending another one."
+"🔄 L’ouvrier prévu n’est pas disponible — LA CENTRAL envoie un autre ouvrier.",
+"🔄 The planned worker isn’t available — LA CENTRAL is sending another one."
 ],
 [
 "🔄 Rediscutés",
@@ -3581,12 +3581,12 @@ export default [
 "🔑 Forgot your password?"
 ],
 [
-"🔑 Pas encore ? Touchez « Mot de passe oublié ? » : LuxInterventions vous envoie un nouveau lien.",
-"🔑 Not yet? Tap “Mot de passe oublié ?”: LuxInterventions sends you a new link."
+"🔑 Pas encore ? Touchez « Mot de passe oublié ? » : LA CENTRAL vous envoie un nouveau lien.",
+"🔑 Not yet? Tap “Mot de passe oublié ?”: LA CENTRAL sends you a new link."
 ],
 [
-"🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.",
-"🔒 Your data is encrypted: nobody else, not even LuxInterventions, can read it."
+"🔒 Vos données sont chiffrées : personne d’autre, même pas LA CENTRAL, ne peut les lire.",
+"🔒 Your data is encrypted: nobody else, not even LA CENTRAL, can read it."
 ],
 [
 "🔧 Travaux",
@@ -3689,16 +3689,16 @@ export default [
 "Door {0}"
 ],
 [
-"Responsable du traitement : votre gérance, pour les données de ses résidences, de ses occupants et de ses demandes. ARES INVEST S.A. (nom commercial LuxInterventions) les traite uniquement pour réaliser les interventions demandées, en tant que sous-traitant (art. 28 RGPD).",
-"Data controller: your property manager, for the data of its residences, occupants and requests. ARES INVEST S.A. (trading as LuxInterventions) processes it only to carry out the requested work, as a processor (Art. 28 GDPR)."
+"Responsable du traitement : votre gérance, pour les données de ses résidences, de ses occupants et de ses demandes. ARES INVEST S.A. (nom commercial LA CENTRAL) les traite uniquement pour réaliser les interventions demandées, en tant que sous-traitant (art. 28 RGPD).",
+"Data controller: your property manager, for the data of its residences, occupants and requests. ARES INVEST S.A. (trading as LA CENTRAL) processes it only to carry out the requested work, as a processor (Art. 28 GDPR)."
 ],
 [
 "Données : résidences et adresses, prénom et nom des occupants, n° de porte, étage, codes d’accès et de serrure, contacts sur place, demandes, photos des interventions, devis et factures.",
 "Data: residences and addresses, first and last names of occupants, door no., floor, access and lock codes, on-site contacts, requests, photos of the work, quotes and invoices."
 ],
 [
-"Qui les voit : votre gérance et l’équipe LuxInterventions chargée de l’intervention (le technicien reçoit seulement ce qu’il faut pour sa mission). Aucune publicité, aucune revente.",
-"Who sees it: your property manager and the LuxInterventions team in charge of the job (the technician only receives what is needed for the job). No advertising, no resale."
+"Qui les voit : votre gérance et l’équipe LA CENTRAL chargée de l’intervention (le technicien reçoit seulement ce qu’il faut pour sa mission). Aucune publicité, aucune revente.",
+"Who sees it: your property manager and the LA CENTRAL team in charge of the job (the technician only receives what is needed for the job). No advertising, no resale."
 ],
 [
 "Durée : les noms, codes et contacts sont effacés 3 mois après la fin du contrat avec la gérance ; les devis et factures sont gardés 10 ans (obligation comptable).",
@@ -3709,8 +3709,8 @@ export default [
 "Security: personal access with email and password, encrypted connection (HTTPS), data stored with a technical hosting provider."
 ],
 [
-"Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LuxInterventions. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).",
-"Your rights: access, rectification, erasure, restriction and objection. The property manager corrects its data directly in the portal; for any other request, write to LuxInterventions. You can also contact the CNPD (Commission nationale pour la protection des données, Luxembourg)."
+"Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LA CENTRAL. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).",
+"Your rights: access, rectification, erasure, restriction and objection. The property manager corrects its data directly in the portal; for any other request, write to LA CENTRAL. You can also contact the CNPD (Commission nationale pour la protection des données, Luxembourg)."
 ],
 [
 "Inviter le responsable",
@@ -3757,8 +3757,8 @@ export default [
 "Colleagues are added by the property manager in its portal"
 ],
 [
-"📞 Votre contact LuxInterventions",
-"📞 Your LuxInterventions contact"
+"📞 Votre contact LA CENTRAL",
+"📞 Your LA CENTRAL contact"
 ],
 [
 "Responsable de la centrale",

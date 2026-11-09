@@ -1,4 +1,4 @@
-// LuxInterventions — Gestion locative (interface). L'app est à LuxInterventions (Ares Invest S.A.) ;
+// LA CENTRAL — Gestion locative (interface). L'app est à LA CENTRAL (Ares Invest S.A.) ;
 // les données de la société cliente (Réglages → Société, ici NOBIS s.a.r.l.) servent aux quittances et aux apps des locataires.
 import './reqmark.js';
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
@@ -36,7 +36,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.241.1';
+const VERSION = '2.242.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -659,7 +659,7 @@ function equipeData(i) {
   const k = vault.get('reglages', 'signal');
   return {
     v: 1, kind: 'equipe', lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i), photo: photoOk(i.photo) ? i.photo : '',
-    // l'équipe travaille pour ARES INVEST S.A. (LuxInterventions) : son nom et son logo (casque) dans l'app des ouvriers
+    // l'équipe travaille pour ARES INVEST S.A. (LA CENTRAL) : son nom et son logo (casque) dans l'app des ouvriers
     societe: { nom: factConf().nom || 'ARES INVEST S.A.', tel: factConf().tel || soc.tel || '', logo: '/ares/icons/lux-192.png' },
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '', ccss: i.ccss || '' },
     // intervenant occasionnel : il lit et signe sa fiche d'engagement dans son app
@@ -949,9 +949,9 @@ async function ptlFromTeam(w, msg) {
     const who = intervFull(w), note = String(it.note || '').slice(0, 1000);
     if (it.st === 'start' && t.taxi && t.taxi.st === 'ok' && t.intervenantId === w.id) await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `✅ Un technicien a accepté l’intervention (${who}).` } });
     else if (it.st === 'encours') await ptlApi(`tickets/${t.ptl.tid}/status`, { method: 'POST', body: { status: 'encours', technicien: who, text: `🚚 ${who} est sur place${note ? ' — ' + note : ''}` } });
-    else if (it.st === 'fait') await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `✅ ${who} a fini le travail${note ? ' — ' + note : ''}. Clôture après contrôle par LuxInterventions.` } });
+    else if (it.st === 'fait') await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `✅ ${who} a fini le travail${note ? ' — ' + note : ''}. Clôture après contrôle par LA CENTRAL.` } });
     else if (it.st === 'incomplet') await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `⚠️ ${who} : pas terminé${note ? ' — ' + note : ''}` } });
-    else if (it.st === 'refus' && !t.intervenantId && t.refus && t.refus.by === w.id) await ptlStatus(t.ptl.tid, 'prise', { technicien: '', planned_at: '', text: '🔄 L’ouvrier prévu n’est pas disponible — LuxInterventions envoie un autre ouvrier.' });
+    else if (it.st === 'refus' && !t.intervenantId && t.refus && t.refus.by === w.id) await ptlStatus(t.ptl.tid, 'prise', { technicien: '', planned_at: '', text: '🔄 L’ouvrier prévu n’est pas disponible — LA CENTRAL envoie un autre ouvrier.' });
   }
   // photos « après » de l'ouvrier → visibles par la gérance (avant / après)
   for (const { t, ph } of Object.values(after)) {
@@ -1282,10 +1282,10 @@ function espaceData(l) {
       visits.push({ d: x.d, w: i.id, nom: i.prenom || '', m: i.metier || 'autre', de: h ? h.de : '', a: h ? h.a : '', off: !!absOn(i, x.d), ty: x.t.type || '', t: own });
     }
     visits.sort((a, b) => a.d.localeCompare(b.d) || (a.de || '99').localeCompare(b.de || '99'));
-    // 🛠️ centrale d'un client : passages de LuxInterventions pour ses demandes (son logement ou les parties communes de son immeuble)
+    // 🛠️ centrale d'un client : passages de LA CENTRAL pour ses demandes (son logement ou les parties communes de son immeuble)
     if (TENANT) {
       for (const r of vault.list('reglages').filter((x) => x.id.startsWith('tdem-') && x.date && (x.immId === l.immId) && (!x.logId || x.logId === l.logId))) {
-        const base = { w: 'lux', nom: 'LuxInterventions', m: r.kind === 'reg' && r.reg ? r.reg.svc || 'autre' : 'autre', de: r.heure || '', a: r.heureFin || '', t: r.titre || '' };
+        const base = { w: 'lux', nom: 'LA CENTRAL', m: r.kind === 'reg' && r.reg ? r.reg.svc || 'autre' : 'autre', de: r.heure || '', a: r.heureFin || '', t: r.titre || '' };
         if (r.recur) { for (const d of recurDates(r.date, r.recur, today(), dN, r.fin)) visits.push({ ...base, d }); }
         else if (r.st && r.st !== 'afaire' && r.st !== 'fait' && r.date >= today() && r.date <= dN) visits.push({ ...base, d: r.date });
       }
@@ -1773,17 +1773,17 @@ async function netLoad(force) {
   if (ui.route === 'reseau') renderView();
   if (ui.sheet && ui.sheet.kind && ui.sheet.kind.startsWith('net')) { ui.sheet.rendered = false; renderSheet(); }
 }
-// 🌐 centrale d'un client : bandeau essai / lecture seule ; demandes d'intervention vers LuxInterventions (chiffrées pour elle)
+// 🌐 centrale d'un client : bandeau essai / lecture seule ; demandes d'intervention vers LA CENTRAL (chiffrées pour elle)
 function tenantBanner() {
   if (!TENANT) return '';
   const t = tenantInfo, dl = t.until ? Math.round((new Date(t.until + 'T12:00') - new Date(today() + 'T12:00')) / 864e5) : null;
   const late = tFactLate();
   if (t.hold === 'ro' && t.state === 'ro') return html`<div class="alert bad" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>facture non payée.</span> <a href="#/demandes">🧾 Payer</a> <span>: la centrale se débloque dès que le paiement est reçu.</span></div></div>`;
   if (late.length) return html`<div class="alert warn" style="margin-bottom:12px">🧾<div><b>${plural(late.length, 'facture')} en retard</b> — <a href="#/demandes">payer maintenant</a> <span>pour éviter la lecture seule.</span></div></div>`;
-  if (t.state === 'ro') return html`<div class="alert warn" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>abonnement échu le</span> <span data-notr>${fmtDate(t.until)}</span>. <span>Vos données restent visibles ; pour les modifier, contactez LuxInterventions.</span></div></div>`;
+  if (t.state === 'ro') return html`<div class="alert warn" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>abonnement échu le</span> <span data-notr>${fmtDate(t.until)}</span>. <span>Vos données restent visibles ; pour les modifier, contactez LA CENTRAL.</span></div></div>`;
   if (t.st === 'trial' && dl != null) return html`<div class="alert info" style="margin-bottom:12px">🎁<div><b>Essai gratuit</b> — <span>${dl > 0 ? `${dl} jour${dl > 1 ? 's' : ''} restant${dl > 1 ? 's' : ''}` : 'dernier jour'}</span> (<span>jusqu’au</span> <span data-notr>${fmtDate(t.until)}</span>).</div></div>`;
   // 30 jours avant la fin de l'abonnement (ou des 6 mois offerts) : rappel
-  if (dl != null && dl >= 0 && dl <= 30 && t.state === 'ok') return html`<div class="alert warn" style="margin-bottom:12px">⏳<div><b>Votre accès se termine dans ${plural(dl, 'jour')}</b> (<span>le</span> <span data-notr>${fmtDate(t.until)}</span>). <span>Pour garder la centrale, l’app de vos locataires / clients et l’envoi automatique des demandes, choisissez votre abonnement avec LuxInterventions.</span></div></div>`;
+  if (dl != null && dl >= 0 && dl <= 30 && t.state === 'ok') return html`<div class="alert warn" style="margin-bottom:12px">⏳<div><b>Votre accès se termine dans ${plural(dl, 'jour')}</b> (<span>le</span> <span data-notr>${fmtDate(t.until)}</span>). <span>Pour garder la centrale, l’app de vos locataires / clients et l’envoi automatique des demandes, choisissez votre abonnement avec LA CENTRAL.</span></div></div>`;
   return '';
 }
 // 🧾 centrale d'un client : fatture della CENTRAL-APP (casella cifrata per la nostra chiave), bonifico con QR, « Ho pagato »
@@ -1815,14 +1815,14 @@ async function tenantBoxSync() {
         // 🛠️ demande écrite dans « Demandes » : planifiée / régulier confirmé / terminée / arrêtée → la liste et l'app des locataires suivent
         const day = (x) => (/^\d{4}-\d{2}-\d{2}$/.test(x || '') ? x : ''), hm = (x) => (/^\d\d:\d\d$/.test(x || '') ? x : '');
         const st = ['afaire', 'planifie', 'encours', 'fait'].includes(m.st) ? m.st : 'afaire';
-        await vault.mutate((tx) => tx.put('reglages', { id: String(m.ref), st, date: day(m.date), heure: hm(m.heure), heureFin: hm(m.heureFin), recur: RECURS[m.recur] && m.recur ? m.recur : '', fin: day(m.fin), done: day(m.done) }), '↩️ État de la demande (LuxInterventions)', `${(vault.get('reglages', String(m.ref)) || {}).titre || ''} — ${TDEM_ST[st] || st}`);
+        await vault.mutate((tx) => tx.put('reglages', { id: String(m.ref), st, date: day(m.date), heure: hm(m.heure), heureFin: hm(m.heureFin), recur: RECURS[m.recur] && m.recur ? m.recur : '', fin: day(m.fin), done: day(m.done) }), '↩️ État de la demande (LA CENTRAL)', `${(vault.get('reglages', String(m.ref)) || {}).titre || ''} — ${TDEM_ST[st] || st}`);
       } else if (m.type === 'dem-st' && m.ref) {
-        // état d'une demande envoyée à LuxInterventions : la fiche (et l'app du locataire) suivent
+        // état d'une demande envoyée à LA CENTRAL : la fiche (et l'app du locataire) suivent
         const t = vault.get('taches', String(m.ref));
         if (t) {
           const st = ['afaire', 'planifie', 'encours', 'fait'].includes(m.st) ? m.st : t.statut;
           const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d : '');
-          await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: st, ...(day(m.date) ? { date: day(m.date) } : {}), ...(/^\d\d:\d\d$/.test(m.heure || '') ? { heure: m.heure } : {}), ...(st === 'fait' ? { doneDate: day(m.done) || today() } : {}), fwd: { ...(t.fwd || {}), st, who: String(m.who || '').slice(0, 40), upd: String(m.at || '').slice(0, 30) } }), '↩️ LuxInterventions : ' + (STATUTS[st] || st), t.titre, t.locId || '');
+          await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: st, ...(day(m.date) ? { date: day(m.date) } : {}), ...(/^\d\d:\d\d$/.test(m.heure || '') ? { heure: m.heure } : {}), ...(st === 'fait' ? { doneDate: day(m.done) || today() } : {}), fwd: { ...(t.fwd || {}), st, who: String(m.who || '').slice(0, 40), upd: String(m.at || '').slice(0, 30) } }), '↩️ LA CENTRAL : ' + (STATUTS[st] || st), t.titre, t.locId || '');
         }
       } else if (m.type === 'annonce' && m.x) {
         const rid = 'tann-' + String(m.id || Date.now().toString(36)).replace(/[^a-z0-9]/gi, '').slice(0, 24);
@@ -1849,23 +1849,23 @@ async function tenantRefresh() {
 }
 const TDEM_SVC = { menage: '🧹 Ménage', jardinier: '🌿 Jardin', homme: '🔧 Entretien', autre: '📋 Autre' };
 const TDEM_ST = { afaire: '📨 Reçue', planifie: '📅 Planifiée', encours: '🔧 En cours', fait: '✅ Terminée' };
-// état d'une demande renvoyé par LuxInterventions (dem-st) : planifiée, régulier confirmé, terminée, arrêtée
+// état d'une demande renvoyé par LA CENTRAL (dem-st) : planifiée, régulier confirmé, terminée, arrêtée
 const JOURS_C = ['', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
 function tdemStatus(d) {
   const hr = d.heure ? ` à ${d.heure}${d.heureFin ? '–' + d.heureFin : ''}` : '';
   let t = '';
   if (d.fin && d.fin <= today()) t = `⏹️ Service arrêté le ${fmtDate(d.fin)}`;
-  else if (d.stopAsk) t = '⏹️ Arrêt demandé — en attente de LuxInterventions';
+  else if (d.stopAsk) t = '⏹️ Arrêt demandé — en attente de LA CENTRAL';
   else if (d.recur && d.date) t = `🔁 Service confirmé : ${RECURS[d.recur].toLowerCase()} depuis le ${fmtDate(d.date)}${hr}`;
   else if (d.st === 'fait') t = `✅ Terminée${d.done ? ' le ' + fmtDate(d.done) : ''}`;
   else if (d.st && d.st !== 'afaire' && d.date) t = `${TDEM_ST[d.st] || ''} le ${fmtDate(d.date)}${hr}`;
-  else t = d.kind === 'reg' && d.reg ? `📨 Demande de service : ${TDEM_SVC[d.reg.svc] || ''} · ${RECURS[d.reg.freq].toLowerCase()} · ${(d.reg.jours || []).map((j) => JOURS_C[j]).join(', ')}${d.reg.de ? ' · ' + d.reg.de + (d.reg.a ? '–' + d.reg.a : '') : ''}` : '📨 Reçue par LuxInterventions';
+  else t = d.kind === 'reg' && d.reg ? `📨 Demande de service : ${TDEM_SVC[d.reg.svc] || ''} · ${RECURS[d.reg.freq].toLowerCase()} · ${(d.reg.jours || []).map((j) => JOURS_C[j]).join(', ')}${d.reg.de ? ' · ' + d.reg.de + (d.reg.a ? '–' + d.reg.a : '') : ''}` : '📨 Reçue par LA CENTRAL';
   const stop = d.kind === 'reg' && !d.stopAsk && !(d.fin && d.fin <= today()) ? html` <button class="btn sm" type="button" data-action="tdem-stop" data-id="${d.id}">⏹️ Arrêter</button>` : '';
   return html`<div class="small" style="margin:4px 0">${t}${d.ou ? html` · 📍 ${d.ou}` : ''}${stop}</div>`;
 }
 const TDEM_URG = { normal: '🟢 Normal', rapide: '🟠 Rapide (48 h)', urgent: '🔴 Urgent' };
 // 🍽️ Annonceurs HORECA (restaurants, bars, discothèques…) : leur app (annonce.html) envoie annonces et événements,
-// LuxInterventions valide ; paiement en ligne pas encore connecté (le bouton est là, désactivé)
+// LA CENTRAL valide ; paiement en ligne pas encore connecté (le bouton est là, désactivé)
 const AN_TYPES = { annonce: '📣 Annonce', evenement: '🎉 Événement', menu: '🍽️ Menu du jour' };
 const anCos = () => vault.list('reglages').filter((r) => r.id.startsWith('annc-')).sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
 const anTarifs = () => vault.get('reglages', 'annTarifs') || {};
@@ -1918,7 +1918,7 @@ async function annSync(onlyId, loud) {
         return { id: a.id, type: a.type || 'annonce', nom: a.nom, texte: a.texte || '', adresse: a.adresse || '', tel: a.tel || '', web: a.web || '', video: a.video || '', slot: pubSlot(a), aud: pubAud(a), debut: a.debut, fin: a.fin, jours: a.jours || [], h1: a.h1 || '', h2: a.h2 || '', bands: a.bands || [], we: !!a.we, pack: a.pack || '', dn: a.dn || '', du: a.du || '', down: !!a.down, st: a.st || 'ok', motif: a.motif || '', prix: a.prix || 0, v: st.v, taps: st.taps,
           claim: a.payClaim || '', fact: a.fact ? { no: a.fact.no, date: a.fact.date, ht: a.fact.ht, tva: a.fact.tva, ttc: a.fact.ttc, tx: a.fact.tx } : null, ...(a.st === 'pay' ? annDue(a) : {}) };
       });
-      const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', prof: { email: an.email || '', web: an.web || '', tva: an.tvaNum || '', iban: an.iban || '', banque: an.banque || '' }, recs: vault.list('reglages').filter((r) => r.id.startsWith('anrec-') && r.annId === an.id).map((r) => ({ t: r.t, motif: r.motif, texte: r.texte, rep: r.rep || '' })), adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: 'LuxInterventions',
+      const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', prof: { email: an.email || '', web: an.web || '', tva: an.tvaNum || '', iban: an.iban || '', banque: an.banque || '' }, recs: vault.list('reglages').filter((r) => r.id.startsWith('anrec-') && r.annId === an.id).map((r) => ({ t: r.t, motif: r.motif, texte: r.texte, rep: r.rep || '' })), adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: 'LA CENTRAL',
         tarifs: { ...anTarifsFull(), haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, crea_simple: +t.crea_simple || 0, crea_moyen: +t.crea_moyen || 0, crea_max: +t.crea_max || 0, note: t.note || '' }, pay: false, ...annFrom(), chat: pchatOut(an), chatRd: an.chatRd || '' };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && anHashes.get(e.id) === hs) continue;
@@ -2907,8 +2907,8 @@ const fraisOfYear = (y) => { let t = 0; for (let m = 1; m <= monthsElapsed(y); m
 const societe = () => vault.get('reglages', 'main') || {};
 
 // ───────────────────────── Branche « gérances » : le Portail gérance piloté depuis l'app de gestion ─────────────────────────
-// Les gérances (sociétés externes) utilisent le Portail gérance ; ici, LuxInterventions les crée, invite leurs responsables,
-// gère leurs résidences et peut les supprimer. La session du portail (compte LuxInterventions) est gardée dans le coffre chiffré.
+// Les gérances (sociétés externes) utilisent le Portail gérance ; ici, LA CENTRAL les crée, invite leurs responsables,
+// gère leurs résidences et peut les supprimer. La session du portail (compte LA CENTRAL) est gardée dans le coffre chiffré.
 const PTL_API = API.replace(/\/$/, '') + '/api/portail/';
 const ptlConf = () => { const c = vault.get('reglages', 'portail'); return c && c.token ? c : null; };
 class PtlError extends Error { constructor(status, message) { super(message); this.status = status; } }
@@ -3205,7 +3205,7 @@ async function txcoSync(onlyId, loud) {
       co = vault.get('reglages', co.id);
       const sig = vault.get('reglages', 'signal');
       const hcf = hoteConf();
-      const data = { v: 1, kind: 'taxi', gv: VERSION, nom: co.nom, tel: co.tel || '', cat: co.cat || {}, rides: await txRides(co), signalKey: sig ? sig.pub : '', reseau: hcf.nom || netBrand() || 'LuxInterventions',
+      const data = { v: 1, kind: 'taxi', gv: VERSION, nom: co.nom, tel: co.tel || '', cat: co.cat || {}, rides: await txRides(co), signalKey: sig ? sig.pub : '', reseau: hcf.nom || netBrand() || 'LA CENTRAL',
         prof: co.prof || null, cli: { nom: hcf.nom || netBrand(), adresse: hcf.adresse || '' },
         invs: txInvs(co.id).slice(0, 40).map((f) => ({ no: f.no, date: f.date, ht: f.ht, tva: f.tva, ttc: f.ttc, taux: f.taux, keys: f.keys, paid: f.paid || '', recv: f.recv || '' })),
         pubs: pubsActives(null, 'taxi').map(pubOut), chat: pchatOut(co), chatRd: co.chatRd || '' };
@@ -3303,7 +3303,7 @@ function hoteData(h, tks) {
     prenom: h.prenom || '', nom: h.nom || '', pers: h.pers || 1, arrivee: h.arrivee, depart: h.depart, hdeb: h.hdeb || '15:00', hfin: h.hfin || '11:00',
     formule: h.formule || '', pref: h.pref || '', porte: h.code && !h.codeOff ? h.code : '', cle: h.cle || '',
     ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: ch.persMax || '', m2: ch.m2 || '', npieces: ch.npieces || '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
-    st: { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LuxInterventions'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '', pays: soc.pays || 'LU' },
+    st: { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LA CENTRAL'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '', pays: soc.pays || 'LU' },
     menu: menu && menu.file ? menu.file : '', taxi: { pc: +c.txPc || 0, km: +c.txKm || 0, aero: +c.txAero || 0, gare: +c.txGare || 0, on: !!(c.drivers || []).length || !!txOffers().gam.length, ...txOffers() },
     rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, done: !!(r.taxi && r.taxi.done), rated: r.taxi && r.taxi.rate ? r.taxi.rate.s : 0, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
     arrDone: !!(h.taxi && h.taxi.done), arrRated: h.taxi && h.taxi.rate ? h.taxi.rate.s : 0,
@@ -3470,11 +3470,11 @@ function promptText(title, detail, placeholder) {
 const PAYS = { LU: ['Luxembourg', [17, 14, 8, 3]], FR: ['France', [20, 10, 5.5, 2.1]], BE: ['Belgique', [21, 12, 6]], DE: ['Deutschland', [19, 7]], IT: ['Italia', [22, 10, 5, 4]], PT: ['Portugal', [23, 13, 6]], ES: ['España', [21, 10, 4]], NL: ['Nederland', [21, 9]], AT: ['Österreich', [20, 13, 10]], CH: ['Suisse', [8.1, 3.8, 2.6]] };
 const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '').split(/[;, ]+/).map((x) => parseFloat(x.replace(',', '.'))).filter((x) => x > 0 && x < 100); return own.length ? own : (PAYS[s0.pays || 'LU'] || PAYS.LU)[1]; };
 // Marque de l'app de gestion (fixe, indépendante de la société cliente)
-const APP_BRAND = { nom: 'LuxInterventions', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
+const APP_BRAND = { nom: 'LA CENTRAL', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
 const DEF_SOC = () => (TENANT ? tenantInfo.nom || 'Centrale' : 'NOBIS s.a.r.l.');
 const socName = () => societe().nom || DEF_SOC();
-// nom affiché aux clients, locataires, ospiti, taxis, annonceurs : la marque LuxInterventions (la centrale d'un client : son propre nom)
-const netBrand = () => (TENANT ? socName() : 'LuxInterventions');
+// nom affiché aux clients, locataires, ospiti, taxis, annonceurs : la marque LA CENTRAL (la centrale d'un client : son propre nom)
+const netBrand = () => (TENANT ? socName() : 'LA CENTRAL');
 const socLogo = () => societe().logo || (TENANT ? '' : '/ares/icons/nobis-logo.png');
 const htOf = (ttc, r) => (r ? ttc / (1 + r / 100) : ttc);
 const r2 = (x) => Math.round(x * 100) / 100;
@@ -3502,7 +3502,7 @@ async function fixIdentity() {
   applyBrand();
   toast('Société corrigée : NOBIS s.a.r.l. · RCS B225665 · TVA LU30599412');
 }
-// L'en-tête de l'app montre la marque LuxInterventions ; le logo de la société (Réglages) sert aux quittances et à l'app des locataires
+// L'en-tête de l'app montre la marque LA CENTRAL ; le logo de la société (Réglages) sert aux quittances et à l'app des locataires
 function applyBrand() {
   document.querySelectorAll('.brand-mark').forEach((img) => { img.src = TENANT && societe().logo ? societe().logo : APP_BRAND.logo; });
 }
@@ -3684,10 +3684,10 @@ function renderLock(mode, error = '') {
   const legacy = legacyLocal();
   const head = html`
     <img class="lock-logo" src="${APP_BRAND.logo}" alt="" width="96" height="96">
-    <div class="lock-head"><h1>${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</h1><p>${TENANT ? (T_FIL_LBL[tenantInfo.fil] || '') + ' · réseau LuxInterventions' : 'Gestion locative · Luxembourg'}</p><p class="tiny" data-notr="1">${TENANT ? '' : APP_BRAND.legal}</p></div>`;
+    <div class="lock-head"><h1>${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</h1><p>${TENANT ? (T_FIL_LBL[tenantInfo.fil] || '') + ' · réseau LA CENTRAL' : 'Gestion locative · Luxembourg'}</p><p class="tiny" data-notr="1">${TENANT ? '' : APP_BRAND.legal}</p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>${TENANT ? html`<p class="tiny muted" style="text-align:center;margin:8px 0 0"><a href="?t=main">↩ Centrale principale</a></p>` : ''}`;
   if (mode === 'blocked') {
-    setHtml(lockEl, html`<div class="lock-card">${head}<div class="alert warn">${icon('lock')}<div><b>Centrale bloquée.</b> L’abonnement est échu ou suspendu : contactez LuxInterventions pour la réactiver. Vos données restent chiffrées et intactes.</div></div>${foot}</div>`);
+    setHtml(lockEl, html`<div class="lock-card">${head}<div class="alert warn">${icon('lock')}<div><b>Centrale bloquée.</b> L’abonnement est échu ou suspendu : contactez LA CENTRAL pour la réactiver. Vos données restent chiffrées et intactes.</div></div>${foot}</div>`);
     return;
   }
 
@@ -3717,9 +3717,9 @@ function renderLock(mode, error = '') {
   if (mode === 'recover') {
     setHtml(lockEl, html`<form class="lock-card" data-form="recover" autocomplete="off">
       ${head}
-      <div class="alert info">${icon('key')}<div><b>Clé d'accès oubliée ?</b> Seulement si vous aviez créé une <b>clé de secours</b> (Réglages → Sécurité, 24 caractères, ex. ABCD-EFGH-…) : saisissez-la ici, puis choisissez une nouvelle clé d'accès.${TENANT ? html`<br><br><b>Pas de clé de secours ?</b> Vos données ne peuvent pas être récupérées (elles sont chiffrées, personne d'autre n'a la clé). Demandez à LuxInterventions de <b>remettre votre centrale à zéro</b> : vous recevrez un nouveau code d'invitation et repartirez d'une centrale vide.` : ''}</div></div>
+      <div class="alert info">${icon('key')}<div><b>Clé d'accès oubliée ?</b> Seulement si vous aviez créé une <b>clé de secours</b> (Réglages → Sécurité, 24 caractères, ex. ABCD-EFGH-…) : saisissez-la ici, puis choisissez une nouvelle clé d'accès.${TENANT ? html`<br><br><b>Pas de clé de secours ?</b> Vos données ne peuvent pas être récupérées (elles sont chiffrées, personne d'autre n'a la clé). Demandez à LA CENTRAL de <b>remettre votre centrale à zéro</b> : vous recevrez un nouveau code d'invitation et repartirez d'une centrale vide.` : ''}</div></div>
       ${TENANT ? html`<label class="field">🧩 Moitié A <span class="tiny muted">(votre e-mail, la feuille imprimée, ou cet appareil)</span><input name="ra" value="${(() => { try { return localStorage.getItem(recAKey()) || ''; } catch { return ''; } })()}" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono)"></label>
-      <label class="field">🧩 Moitié B <span class="tiny muted">(donnée par LuxInterventions au téléphone)</span><input name="rb" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono)"></label>
+      <label class="field">🧩 Moitié B <span class="tiny muted">(donnée par LA CENTRAL au téléphone)</span><input name="rb" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono)"></label>
       <p class="tiny muted" style="margin:0">Ou, si vous avez une clé de secours complète (ancienne version) :</p>` : ''}
       <label class="field">Clé de secours <input name="code" ${TENANT ? '' : new Raw('required')} placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono);letter-spacing:.05em"></label>
       <div class="lock-err" role="alert">${error}</div>
@@ -3762,7 +3762,7 @@ function renderLock(mode, error = '') {
   }
   setHtml(lockEl, html`<form class="lock-card" data-form="unlock">
     ${head}
-    <input type="text" name="username" value="LuxInterventions" autocomplete="username" hidden>
+    <input type="text" name="username" value="LA CENTRAL" autocomplete="username" hidden>
     <label class="field">Clé d'accès ${pwField('pass', '••••••••••••', 'current-password')}</label>
     <div class="lock-err" role="alert">${error}</div>
     <button class="btn primary block" type="submit">Déverrouiller</button>
@@ -3804,7 +3804,7 @@ async function claimOrAsk() {
     const i = e.info || {};
     const ago = i.lastSeen ? Math.max(0, Math.round((Date.now() - i.lastSeen) / 1000)) : null;
     const choice = await choiceBox(
-      'LuxInterventions est ouvert sur un autre appareil',
+      'LA CENTRAL est ouvert sur un autre appareil',
       `${i.device || 'Un autre appareil'} est connecté${i.since ? ' depuis ' + fmtDateTime(i.since) : ''}${ago != null ? ` (actif il y a ${ago} s)` : ''}. Un seul appareil peut être connecté à la fois : si vous continuez, l'autre sera déconnecté immédiatement.`,
       [{ value: 'take', label: 'Prendre la main', cls: 'primary' }]
     );
@@ -3849,7 +3849,7 @@ async function onOpUnlock(fd, form) {
   setBusy(form, true, 'Vérification…');
   try {
     await vault.unlockOperator(fd.get('login'), fd.get('pass'));
-    if (!(await claimOrAsk())) { vault.lock(); return renderLock('op', 'Connexion annulée : LuxInterventions reste ouvert sur l’autre appareil.'); }
+    if (!(await claimOrAsk())) { vault.lock(); return renderLock('op', 'Connexion annulée : LA CENTRAL reste ouvert sur l’autre appareil.'); }
     startSession();
   } catch (e) {
     setBusy(form, false);
@@ -3864,7 +3864,7 @@ async function onUnlock(fd, form) {
     if (r.setup) return renderLock('setup');
     if (!(await claimOrAsk())) {
       vault.lock();
-      return renderLock('unlock', 'Connexion annulée : LuxInterventions reste ouvert sur l’autre appareil.');
+      return renderLock('unlock', 'Connexion annulée : LA CENTRAL reste ouvert sur l’autre appareil.');
     }
     startSession();
   } catch (e) {
@@ -4014,7 +4014,7 @@ vault.on((kind) => {
   if (kind === 'status') renderSync();
   if (kind === 'data') { renderView(); renderSheet(); scheduleEspaceSync(); }
   if (kind === 'auth-lost') lockNow("La clé d'accès a été changée sur un autre appareil.");
-  if (kind === 'session-lost') lockNow(`LuxInterventions a été ouvert sur ${vault.sessionLostBy || 'un autre appareil'} : cet appareil a été déconnecté.`);
+  if (kind === 'session-lost') lockNow(`LA CENTRAL a été ouvert sur ${vault.sessionLostBy || 'un autre appareil'} : cet appareil a été déconnecté.`);
 });
 
 // ───────────────────────── Coquille ─────────────────────────
@@ -4054,7 +4054,7 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>${TENANT ? tenantInfo.nom || 'Centrale' : 'LuxInterventions'}<small>${TENANT ? (T_FIL_LBL[tenantInfo.fil] || '') + ' · réseau LuxInterventions' : 'Gestion locative'}</small></span></div>
+      <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>${TENANT ? tenantInfo.nom || 'Centrale' : 'LA CENTRAL'}<small>${TENANT ? (T_FIL_LBL[tenantInfo.fil] || '') + ' · réseau LA CENTRAL' : 'Gestion locative'}</small></span></div>
       ${sideNavHtml()}
       ${navBtn(['reglages', 'Réglages', 'gear'])}
       ${legDots()}
@@ -4063,7 +4063,7 @@ function renderShell() {
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>${TENANT ? tenantInfo.nom || 'Centrale' : 'LuxInterventions'}</span></div>
+        <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>${TENANT ? tenantInfo.nom || 'Centrale' : 'LA CENTRAL'}</span></div>
         <button class="sync" id="sync" data-action="sync-now" data-s="idle"><i></i><span>…</span></button>
         <button class="btn icon ghost" data-action="lock" aria-label="Verrouiller" title="Verrouiller">${icon('lock')}</button>
       </header>
@@ -4189,7 +4189,7 @@ function collCard(im) {
   </div>`;
 }
 // 🧩 Clé de secours en deux moitiés (centrale d'un client) : A chez le client (e-mail, papier, cet appareil), B chiffrée pour la centrale
-// LuxInterventions. Aucune moitié seule n'ouvre quoi que ce soit : A + B = la clé de secours (addition lettre par lettre, modulo 32).
+// LA CENTRAL. Aucune moitié seule n'ouvre quoi que ce soit : A + B = la clé de secours (addition lettre par lettre, modulo 32).
 const RCA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const rcNorm = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/O/g, '0').replace(/I/g, '1');
 const rcFmt = (x) => x.match(/.{1,4}/g).join('-');
@@ -4207,7 +4207,7 @@ function rcJoin(a, b) {
   return rcFmt(r);
 }
 const recAKey = () => 'aresRecA:' + TENANT;
-// crée la clé de secours, la coupe en deux, confie B (chiffrée) à LuxInterventions, montre A au client
+// crée la clé de secours, la coupe en deux, confie B (chiffrée) à LA CENTRAL, montre A au client
 async function recActivate() {
   const code = await vault.createRecovery();
   const { a, b } = rcSplit(code);
@@ -4219,7 +4219,7 @@ async function recActivate() {
   await vault.mutate((tx) => tx.put('reglages', { id: 'recSplit', at: today() }), '🧩 Récupération de clé activée', '');
   openSheet('rec-split', null, null, a);
 }
-// 📣 Centrale d'un client : les annonces du réseau (validées par LuxInterventions) aux 3 emplacements de l'Accueil
+// 📣 Centrale d'un client : les annonces du réseau (validées par LA CENTRAL) aux 3 emplacements de l'Accueil
 let netAdsCache = null, netAdsAt = 0;
 function netAdsLoad() {
   if (!TENANT || Date.now() - netAdsAt < 10 * 60000) return;
@@ -4956,8 +4956,8 @@ async function occPdf(t, i, o) {
   engFoot(p, i, c, y, X, R);
   return p.bytes();
 }
-// ── Factures des interventions (ARES INVEST S.A. — marque LuxInterventions) → la gérance la télécharge dans le portail ──
-const FACT_DEF = { nom: 'ARES INVEST S.A.', marque: 'LuxInterventions', adresse: '37, Val Saint André', ville: 'L-1128 Luxembourg', rcs: 'B225245', tva: 'LU30440727', tel: '+352 691 423 943', email: '', iban: '', bic: '', banque: '', taux: 17, delai: 30, seq: 0, marge: 0 };
+// ── Factures des interventions (ARES INVEST S.A. — marque LA CENTRAL) → la gérance la télécharge dans le portail ──
+const FACT_DEF = { nom: 'ARES INVEST S.A.', marque: 'LA CENTRAL', adresse: '37, Val Saint André', ville: 'L-1128 Luxembourg', rcs: 'B225245', tva: 'LU30440727', tel: '+352 691 423 943', email: '', iban: '', bic: '', banque: '', taux: 17, delai: 30, seq: 0, marge: 0 };
 // Régime de TVA d'un client (gérance) : taux normal, taux particulier, autoliquidation (client assujetti d'un autre pays de l'UE), non applicable
 const TVA_REG = {
   normal: ['TVA normale (taux des réglages)', ''],
@@ -4991,7 +4991,7 @@ function centraleSection() {
   return html`<div class="section-label">👥 Centrale : responsable et opérateurs</div>
     ${vault.op ? html`<p class="small" style="margin:0 0 8px">👤 Connecté : <b>${vault.op.name}</b> · ${OP_ROLES[vault.op.role] || ''}</p>` : ''}
     <div class="list settings" style="margin-bottom:12px">
-      <button class="row" data-action="centrale-edit"><span class="avatar">⭐</span><span class="grow"><span class="title" style="display:block">Responsable de la centrale</span><span class="meta">${centraleResp() ? [centraleResp(), c.tel, c.email].filter(Boolean).join(' · ') : 'à compléter'}</span><span class="meta" style="display:block">Affiché aux gérances dans leur portail (« Votre contact LuxInterventions ») et sur vos factures.</span></span><span class="chev">›</span></button>
+      <button class="row" data-action="centrale-edit"><span class="avatar">⭐</span><span class="grow"><span class="title" style="display:block">Responsable de la centrale</span><span class="meta">${centraleResp() ? [centraleResp(), c.tel, c.email].filter(Boolean).join(' · ') : 'à compléter'}</span><span class="meta" style="display:block">Affiché aux gérances dans leur portail (« Votre contact LA CENTRAL ») et sur vos factures.</span></span><span class="chev">›</span></button>
     </div>
     <div class="card" style="margin-bottom:14px">
       <b>👤 Opérateurs</b><p class="tiny muted" style="margin:2px 0 8px">Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître la clé d’accès du directeur. Le centraliste gère tout, y compris les accès des opérateurs. Le comptable voit tout, s’occupe des factures, mais n’affecte pas les travaux et ne gère pas les accès. Retirer un opérateur lui coupe l’accès tout de suite.</p>
@@ -5037,7 +5037,7 @@ function qrPdf(p, x, y, size, text) {
   p.rect(x, y, size, size, { fill: [1, 1, 1] });
   for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) p.rect(x + (c + 1) * m, y + (r + 1) * m, m + 0.05, m + 0.05, { fill: [0, 0, 0] });
 }
-// Facture LuxInterventions (ARES INVEST S.A.) → gérance, mise en page « facture classique » :
+// Facture LA CENTRAL (ARES INVEST S.A.) → gérance, mise en page « facture classique » :
 // émetteur + logo, client à droite, n°, dates, tableau Description / Quantité / Prix unitaire / TVA / Montant, totaux, paiement + QR
 async function factPdf(t, f, no, dateIso, c) {
   const k = factCalc(f, factTaux(f, c)), w = vault.get('intervenants', t.intervenantId) || {}, tx = factTaux(f, c);
@@ -5535,7 +5535,7 @@ dashboard() {
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`;
     }
 
-    const nudge = TENANT && !vault.get('reglages', 'recSplit') ? html`<div class="alert bad" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>🧩 Activez la récupération de votre clé.</b> Sans elle, une clé d'accès oubliée = toutes vos données perdues. 1 minute, et LuxInterventions ne peut pas lire vos données.</div><button class="btn sm primary" data-action="make-recovery">Activer</button></div>` : vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
+    const nudge = TENANT && !vault.get('reglages', 'recSplit') ? html`<div class="alert bad" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>🧩 Activez la récupération de votre clé.</b> Sans elle, une clé d'accès oubliée = toutes vos données perdues. 1 minute, et LA CENTRAL ne peut pas lire vos données.</div><button class="btn sm primary" data-action="make-recovery">Activer</button></div>` : vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
     const sig = newSignals();
     const sigBox = sig.length ? html`<div class="card mk mk-int mk-on" style="margin-bottom:14px">
         <div class="card-title" style="margin-bottom:8px"><h3>📩 <span>${sig.length > 1 ? sig.length + " nouveaux messages" : "1 nouveau message"}${sig.every((t) => !t.byInterv) ? (sig.length > 1 ? ' de locataires' : ' de locataire') : ''}</span></h3></div>
@@ -5716,16 +5716,16 @@ dashboard() {
   // 🏨 Hotel — première étape : les clients (chambre, étage, clé, arrivée → départ)
   hotel() { return hotView('hotel'); },
   airbnb() { return hotView('airbnb'); },
-  // 🛠️ centrale d'un client : ses demandes d'intervention à LuxInterventions
+  // 🛠️ centrale d'un client : ses demandes d'intervention à LA CENTRAL
   demandes() {
     const list = vault.list('reglages').filter((r) => r.id.startsWith('tdem-')).sort((a, b) => (b.t || '').localeCompare(a.t || ''));
     const F = tFacts();
     const fRows = F.length ? html`<div class="section-label">🧾 Factures des interventions</div><div class="list" style="margin-bottom:16px">${F.map((f) => { const late = !f.paid ? lateDays(f.due) : 0, cl = tClaim(f.no); return html`<button class="row" data-action="tfact-open" data-id="${f.no}"><span class="grow"><span class="title" style="display:block">${f.no} · ${eur(f.ttc)}</span><span class="meta">${f.paid ? '✅ payée' : cl ? '⏳ paiement envoyé — en vérification' : late > 0 ? `🔴 ${late} j de retard` : '💳 à payer avant le ' + fmtDate(f.due)}</span></span>${f.paid ? '' : html`<span class="badge ${late > 0 && !cl ? 'bad' : 'warn'}">${cl ? 'envoyé' : 'à payer'}</span>`}</button>`; })}</div>` : '';
-    return html`${pageHead('🛠️ Demandes d’intervention', 'Envoyées à LuxInterventions, qui envoie ses intervenants')}${fRows}
+    return html`${pageHead('🛠️ Demandes d’intervention', 'Envoyées à LA CENTRAL, qui envoie ses intervenants')}${fRows}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="tdem-new">${icon('plus')} Demande</button></div></div>
       ${list.length ? html`<div class="list">${list.map((d) => html`<div class="row" style="display:block"><b>${d.kind === 'reg' ? '🔁 ' : d.kind === 'once' ? '🔧 ' : ''}${TDEM_URG[d.urgence] || ''} · ${d.titre}</b>${tdemStatus(d)}
         <div class="small" style="white-space:pre-wrap">${d.texte}</div><div class="tiny muted" style="display:flex;align-items:center;gap:8px"><span class="grow">${d.adresse ? '📍 ' + d.adresse + ' · ' : ''}Envoyée le ${fmtDateTime(d.t)}</span><button class="btn icon sm ghost danger" data-action="tdem-del" data-id="${d.id}" aria-label="Supprimer">${icon('trash')}</button></div></div>`)}</div>`
-        : html`<div class="card" style="max-width:560px"><p style="margin-top:0">Une fuite, une panne, des travaux ? ＋ Demande : LuxInterventions la reçoit tout de suite (chiffrée), la planifie et envoie un intervenant.</p></div>`}`;
+        : html`<div class="card" style="max-width:560px"><p style="margin-top:0">Une fuite, une panne, des travaux ? ＋ Demande : LA CENTRAL la reçoit tout de suite (chiffrée), la planifie et envoie un intervenant.</p></div>`}`;
   },
   reseau() {
     const n = ui.net;
@@ -5807,14 +5807,14 @@ dashboard() {
           <img src="/portail/icons/ptl-banner.webp" alt="" width="1100" height="283" style="display:block;width:100%;max-width:320px;height:auto;margin:0 auto 12px">
           <p style="margin-top:0">Les <b>gérances</b> sont les sociétés externes qui vous confient leurs réparations. Elles utilisent leur app, le <b>Portail gérance</b> : demandes avec photos, suivi, chat, photos avant / après, satisfaction, statistiques.</p>
           <p class="small">Ici vous créez les gérances (nom, email, téléphone, RCS) et leur envoyez le lien d’invitation ; elles remplissent elles-mêmes leurs données et leurs résidences. Vous recevez leurs demandes et leur envoyez vos factures.</p>
-          <div class="alert info" style="margin:12px 0">${icon('shield')}<div>Connectez une seule fois cette app au portail avec votre <b>compte LuxInterventions du portail</b>. Le mot de passe ne quitte pas l’appareil ; la session est gardée dans vos données chiffrées.</div></div>
+          <div class="alert info" style="margin:12px 0">${icon('shield')}<div>Connectez une seule fois cette app au portail avec votre <b>compte LA CENTRAL du portail</b>. Le mot de passe ne quitte pas l’appareil ; la session est gardée dans vos données chiffrées.</div></div>
           ${ui.ptl.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${ui.ptl.err}</div></div>` : ''}
           <form data-form="ptl-login" class="fields">
-            <label class="field full">Email du compte LuxInterventions<input type="email" name="email" autocomplete="username" required value="${ui.ptl.email || (vault.get('reglages', 'portail') || {}).email || ''}"></label>
+            <label class="field full">Email du compte LA CENTRAL<input type="email" name="email" autocomplete="username" required value="${ui.ptl.email || (vault.get('reglages', 'portail') || {}).email || ''}"></label>
             <label class="field full">Mot de passe du portail<input type="password" name="pass" autocomplete="current-password" required></label>
             <button class="btn primary full" type="submit">${icon('key')} Connecter au portail</button>
           </form>
-          <p class="tiny muted" style="margin-bottom:0"><span>Pas encore de compte ? Ouvrez le portail : la « Première configuration » crée le compte LuxInterventions.</span> ${portal}</p>
+          <p class="tiny muted" style="margin-bottom:0"><span>Pas encore de compte ? Ouvrez le portail : la « Première configuration » crée le compte LA CENTRAL.</span> ${portal}</p>
         </div>`;
     }
     const d = ui.ptl.data;
@@ -6019,10 +6019,10 @@ dashboard() {
     } else if (tab === 'tva') {
       const perT = soc.periode || 't';
       const periods = perT === 'm' ? MONTHS_FULL.map((_, i) => 'm' + (i + 1)) : perT === 'a' ? ['y'] : ['q1', 'q2', 'q3', 'q4'];
-      // TVA des factures d'interventions (ARES INVEST S.A. — LuxInterventions) : pas de TVA sur les loyers
+      // TVA des factures d'interventions (ARES INVEST S.A. — LA CENTRAL) : pas de TVA sur les loyers
       const inv = (a, b) => vault.list('taches').filter((t) => t.facture && t.facture.date >= a && t.facture.date <= b);
       const c0 = factConf();
-      body = html`<p class="small muted" style="margin-top:0">TVA des <b>factures d’interventions</b> émises par ${c0.nom} (LuxInterventions). Les loyers ne sont pas soumis à la TVA.</p>
+      body = html`<p class="small muted" style="margin-top:0">TVA des <b>factures d’interventions</b> émises par ${c0.nom} (LA CENTRAL). Les loyers ne sont pas soumis à la TVA.</p>
         <div class="card" style="padding:0;overflow:auto;margin-bottom:14px"><table class="tbl"><thead><tr><th>Période</th><th class="r">Factures</th><th class="r">HT</th><th class="r">TVA collectée</th><th class="r">TTC</th></tr></thead><tbody>
           ${periods.map((pp) => { const [a, b] = cpRange(y, pp), F = inv(a, b); return html`<tr><td>${cpLabel(y, pp)}</td><td class="r">${F.length}</td><td class="r">${money(sum(F, (t) => t.facture.ht))}</td><td class="r"><b>${money(sum(F, (t) => t.facture.tva))}</b></td><td class="r">${money(sum(F, (t) => t.facture.ttc))}</td></tr>`; })}
           ${(() => { const [a, b] = cpRange(y, 'y'), F = inv(a, b); return html`<tr class="cp-month"><td><b>Année ${y}</b></td><td class="r"><b>${F.length}</b></td><td class="r"><b>${money(sum(F, (t) => t.facture.ht))}</b></td><td class="r"><b>${money(sum(F, (t) => t.facture.tva))}</b></td><td class="r"><b>${money(sum(F, (t) => t.facture.ttc))}</b></td></tr>`; })()}
@@ -6151,7 +6151,7 @@ dashboard() {
         <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
           <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
         ${TENANT ? '' : html`<button class="row" data-action="go" data-to="reseau"><span class="avatar">🔑</span><span class="grow"><span class="title" style="display:block">Licences — centrales des clients</span><span class="meta">Essai 15 jours, abonnements 1 · 2 · 3 ans, tarifs et remises, factures, statistiques, registre</span></span><span class="chev">›</span></button>`}
-        ${TENANT ? (() => { const F = tFacts(), due = F.filter((f) => !f.paid).length; return html`<button class="row" data-action="go" data-to="demandes"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Factures des interventions</span><span class="meta">${F.length ? `${plural(F.length, 'facture')} de LuxInterventions${due ? ` · ${due} à payer` : ' · tout est payé'}` : 'Aucune facture pour le moment'}</span></span>${icon('chevron')}</button>`; })() : html`<button class="row" data-action="fact-set"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Facturation des interventions</span><span class="meta">${factConf().nom} — LuxInterventions · TVA ${factConf().taux} % · IBAN ${factConf().iban || 'à compléter'}</span></span></button>`}
+        ${TENANT ? (() => { const F = tFacts(), due = F.filter((f) => !f.paid).length; return html`<button class="row" data-action="go" data-to="demandes"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Factures des interventions</span><span class="meta">${F.length ? `${plural(F.length, 'facture')} de LA CENTRAL${due ? ` · ${due} à payer` : ' · tout est payé'}` : 'Aucune facture pour le moment'}</span></span>${icon('chevron')}</button>`; })() : html`<button class="row" data-action="fact-set"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Facturation des interventions</span><span class="meta">${factConf().nom} — LA CENTRAL · TVA ${factConf().taux} % · IBAN ${factConf().iban || 'à compléter'}</span></span></button>`}
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
       </div>
 
@@ -6170,7 +6170,7 @@ dashboard() {
 
       ${!standalone ? html`<div class="section-label">Application</div>
       <div class="list settings"><div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Installer sur ce téléphone</span>
-        <span class="meta" style="white-space:normal">${isIOS ? 'Safari : bouton Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône LuxInterventions sur l’écran d’accueil, fonctionne hors ligne.'}</span></span>
+        <span class="meta" style="white-space:normal">${isIOS ? 'Safari : bouton Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône LA CENTRAL sur l’écran d’accueil, fonctionne hors ligne.'}</span></span>
         ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}<button class="btn sm" data-action="install-anim">▶ Voir comment</button></div></div>` : ''}
 
       ${centraleSection()}
@@ -6212,7 +6212,7 @@ dashboard() {
       <div class="section-label">Langue</div>
       <div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].filter((k) => LANGS[k]).map((k) => html`<button type="button" data-action="set-lang" data-id="${k}" title="${LANGS[k]}" aria-pressed="${LANG === k}">${k.toUpperCase()}</button>`)}</div>
       <p class="tiny muted" style="margin-top:4px">Les quittances, reçus et relances aux locataires restent en français (documents officiels).</p>
-      <p class="tiny muted" style="margin-top:28px;text-align:center"><span data-notr="1">LuxInterventions · ${APP_BRAND.legal}</span> · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
+      <p class="tiny muted" style="margin-top:28px;text-align:center"><span data-notr="1">LA CENTRAL · ${APP_BRAND.legal}</span> · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
   },
 };
 
@@ -6480,13 +6480,13 @@ function relanceText(l, lang) {
 }
 
 const SHEETS = {
-  // ↪️ centrale d'un client : envoyer le problème signalé par son locataire à LuxInterventions, tel quel
+  // ↪️ centrale d'un client : envoyer le problème signalé par son locataire à LA CENTRAL, tel quel
   'tfwd-form'({ id }) {
     const t = vault.get('taches', id);
     if (!t) return null;
     const l = vault.get('locataires', t.locId) || {}, im = vault.get('immeubles', t.immId || l.immId) || {}, nPh = vault.list('documents').filter((x) => x.tacheId === t.id).length;
     return {
-      title: '↪️ Envoyer à LuxInterventions', narrow: true,
+      title: '↪️ Envoyer à LA CENTRAL', narrow: true,
       body: html`<form id="f" data-form="tfwd" class="stack"><input type="hidden" name="id" value="${id}">
         <p class="small" style="margin:0"><b>${String(t.titre || '').replace(/^(Signalement|Problème signalé par [^:]+) : /, '')}</b><br><span class="muted">${im.adresse || ''}${logName(t.logId || l.logId) ? ' · ' + logName(t.logId || l.logId) : ''}${nPh ? ` · 📷 ${nPh} photo${nPh > 1 ? 's' : ''} jointe${nPh > 1 ? 's' : ''}` : ''}</span></p>
         <label class="field">Urgence<select name="urgence">${Object.entries(TDEM_URG).map(([k, v]) => html`<option value="${k}" ${(t.urgent ? 'urgent' : 'normal') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
@@ -6494,7 +6494,7 @@ const SHEETS = {
         <label class="field">🚪 Code / accès de l’entrée de l’immeuble<input name="entree" value="${im.codeEntree || ''}" placeholder="ex. porte A, code 1234, sonnette « Gestion »"></label>
         <label class="row" style="cursor:pointer"><input type="checkbox" name="acces" data-input="tfwd-acc" style="width:20px;height:20px;flex:none"><span class="grow">🔑 J’autorise l’accès au logement en l’absence du locataire (urgence)<span class="meta" style="display:block">Inutile si le locataire est présent. Votre nom et la date figureront sur l’intervention et sur la facture.</span></span></label>
         <label class="field" id="tfwdAcc" hidden>Code ou instructions d’accès au logement<textarea name="accesTxt" maxlength="600" placeholder="ex. boîte à clés n° 3, code 5678 ; serrure électronique ouverte à distance par la gérance"></textarea></label>
-        <label class="field">Message pour LuxInterventions (facultatif)<textarea name="plus" maxlength="1000"></textarea></label>
+        <label class="field">Message pour LA CENTRAL (facultatif)<textarea name="plus" maxlength="1000"></textarea></label>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">↪️ Envoyer</button>`,
     };
@@ -6712,7 +6712,7 @@ const SHEETS = {
         <label class="field">Nom<input name="nom" value="${c.nom || ''}" required></label>
         <label class="field">Téléphone<input type="tel" name="tel" value="${c.tel || ''}" placeholder="+352…"></label>
         <label class="field">Email<input type="email" name="email" value="${c.email || ''}"></label>
-        <p class="tiny muted full" style="margin:0">Affiché aux gérances dans leur portail (« Votre contact LuxInterventions ») et sur vos factures.</p></form>`,
+        <p class="tiny muted full" style="margin:0">Affiché aux gérances dans leur portail (« Votre contact LA CENTRAL ») et sur vos factures.</p></form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
@@ -6729,7 +6729,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Créer l’accès</button>`,
     };
   },
-  // gérance : LuxInterventions écrit seulement nom, email, téléphone et RCS ; adresse, TVA, banque, logo et responsable sont remplis par la gérance dans son portail
+  // gérance : LA CENTRAL écrit seulement nom, email, téléphone et RCS ; adresse, TVA, banque, logo et responsable sont remplis par la gérance dans son portail
   'ger-form'({ id }) {
     const o = id ? ptlOrg(id) : { kind: ui.ptl.kind || 'gerance' };
     if (id && !o) return null;
@@ -6797,7 +6797,7 @@ const SHEETS = {
           <p class="tiny muted" style="margin-top:6px">Montants, TVA, remises, acomptes : réglés dans <b>Réglages → 🧾 Facturation</b> et dans chaque facture (<b>Comptabilité → Factures</b>). Adresse, TVA et banque de la gérance : remplies par elle dans son portail.</p>`;
       }
     } else {
-      // le responsable (créé par LuxInterventions) en premier, puis les collègues qu'il a ajoutés dans son portail
+      // le responsable (créé par LA CENTRAL) en premier, puis les collègues qu'il a ajoutés dans son portail
       const us = d.users.filter((u) => u.org_id === id).sort((a, b) => (a.role === 'gerance_admin' ? 0 : 1) - (b.role === 'gerance_admin' ? 0 : 1) || a.name.localeCompare(b.name));
       const hasResp = us.some((u) => u.role === 'gerance_admin' && u.active);
       const cl = factClient(id, o.name);
@@ -6951,7 +6951,7 @@ const SHEETS = {
     return {
       title: '🧾 Facturation des interventions',
       body: html`<form id="f" data-form="fact-set" class="fields">
-        <p class="small muted full" style="margin:0">Émetteur des factures envoyées aux gérances (marque LuxInterventions). Les factures des loyers (NOBIS s.a.r.l.) ne changent pas.</p>
+        <p class="small muted full" style="margin:0">Émetteur des factures envoyées aux gérances (marque LA CENTRAL). Les factures des loyers (NOBIS s.a.r.l.) ne changent pas.</p>
         ${field('Raison sociale', 'nom', c.nom, { required: true })}${field('Marque', 'marque', c.marque)}
         ${field('Adresse', 'adresse', c.adresse, { required: true })}${field('Code postal et ville', 'ville', c.ville, { required: true })}
         ${field('RCS', 'rcs', c.rcs, { required: true })}${field('N° TVA', 'tva', c.tva, { required: true })}
@@ -7193,7 +7193,7 @@ const SHEETS = {
     const ints = vault.list('intervenants').filter((i) => !i.archive || i.id === t.intervenantId).sort((a, b) => fits(b) - fits(a) || intervFull(a).localeCompare(intervFull(b)));
     return {
       title: id ? "Modifier l'intervention" : 'Nouvelle intervention',
-      body: html`${!TENANT && t.net && t.net.stopAsk && !t.fin ? html`<div class="alert warn" style="margin-bottom:10px">⏹️<div><b>${t.net.nom}</b> demande l’arrêt de ce service régulier (le ${fmtDate(t.net.stopAsk)}). Mettez la <b>date de fin</b> de la répétition : le client et ses locataires la voient.</div></div>` : ''}${!TENANT && t.net && t.net.reg && !t.recur ? html`<div class="alert info" style="margin-bottom:10px">🔁<div><b>Service régulier demandé</b> : ${TDEM_SVC[t.net.reg.svc] || ''} · ${RECURS[t.net.reg.freq] || ''} · ${(t.net.reg.jours || []).map((j) => JOURS_C[j]).join(', ')}${t.net.reg.de ? ' · ' + t.net.reg.de + (t.net.reg.a ? '–' + t.net.reg.a : '') : ''}. Choisissez la <b>répétition</b>, la date et l’heure confirmées.</div></div>` : ''}${TENANT && id && t.locId && t.sentAt ? (t.fwd ? html`<div class="alert info" style="margin-bottom:10px">↪️<div><b>Envoyé à LuxInterventions</b> le ${fmtDateTime(t.fwd.at)}${t.fwd.st ? html` · état : <b>${STATUTS[t.fwd.st] || t.fwd.st}</b>${t.fwd.who ? ' · 👷 ' + t.fwd.who : ''}` : ''}${t.fwd.acces ? html`<div class="tiny">🔑 accès au logement autorisé par ${t.fwd.acces}</div>` : ''}</div></div>` : t.statut !== 'fait' ? html`<button class="btn primary block" style="margin-bottom:10px" data-action="tfwd" data-id="${id}">↪️ Envoyer à LuxInterventions</button>` : '') : ''}${id && !t.recur && t.statut !== 'fait' && t.intervenantId ? tripSlot(t.id, today()) : ''}<form id="f" data-form="tache" class="fields">
+      body: html`${!TENANT && t.net && t.net.stopAsk && !t.fin ? html`<div class="alert warn" style="margin-bottom:10px">⏹️<div><b>${t.net.nom}</b> demande l’arrêt de ce service régulier (le ${fmtDate(t.net.stopAsk)}). Mettez la <b>date de fin</b> de la répétition : le client et ses locataires la voient.</div></div>` : ''}${!TENANT && t.net && t.net.reg && !t.recur ? html`<div class="alert info" style="margin-bottom:10px">🔁<div><b>Service régulier demandé</b> : ${TDEM_SVC[t.net.reg.svc] || ''} · ${RECURS[t.net.reg.freq] || ''} · ${(t.net.reg.jours || []).map((j) => JOURS_C[j]).join(', ')}${t.net.reg.de ? ' · ' + t.net.reg.de + (t.net.reg.a ? '–' + t.net.reg.a : '') : ''}. Choisissez la <b>répétition</b>, la date et l’heure confirmées.</div></div>` : ''}${TENANT && id && t.locId && t.sentAt ? (t.fwd ? html`<div class="alert info" style="margin-bottom:10px">↪️<div><b>Envoyé à LA CENTRAL</b> le ${fmtDateTime(t.fwd.at)}${t.fwd.st ? html` · état : <b>${STATUTS[t.fwd.st] || t.fwd.st}</b>${t.fwd.who ? ' · 👷 ' + t.fwd.who : ''}` : ''}${t.fwd.acces ? html`<div class="tiny">🔑 accès au logement autorisé par ${t.fwd.acces}</div>` : ''}</div></div>` : t.statut !== 'fait' ? html`<button class="btn primary block" style="margin-bottom:10px" data-action="tfwd" data-id="${id}">↪️ Envoyer à LA CENTRAL</button>` : '') : ''}${id && !t.recur && t.statut !== 'fait' && t.intervenantId ? tripSlot(t.id, today()) : ''}<form id="f" data-form="tache" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
         <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${(t.type === 'entretien' ? 'reparation' : t.type) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}
@@ -7512,7 +7512,7 @@ const SHEETS = {
         <label class="field full">📷 Photos de ce qui est cassé (5 au plus)<input type="file" name="photos" accept="image/*" multiple></label>
         <label class="field full">Description<textarea name="texte" required style="min-height:100px" placeholder="Que se passe-t-il ? Depuis quand ? Accès (code, clé, gardien)…"></textarea></label>
         ${field('Contact sur place', 'contact', '', { placeholder: 'ex. locataire M. Dupont' })}${field('Téléphone', 'tel', soc.tel || '', { type: 'tel' })}
-        <p class="tiny muted full" style="margin:0">Chiffrée : seule la centrale LuxInterventions peut la lire.</p>
+        <p class="tiny muted full" style="margin:0">Chiffrée : seule la centrale LA CENTRAL peut la lire.</p>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Envoyer</button>`,
     };
@@ -7587,7 +7587,7 @@ const SHEETS = {
   'annc-form'({ id }) {
     const an = id ? vault.get('reglages', id) : { cat: 'resto', appCode: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0') };
     if (id && !an) return null;
-    const inv = `📣 ${an.nom || ''} — app des annonces LuxInterventions : ${location.origin}/annunci.html\nCode : ${an.appCode}`, tel = String(an.tel || '').replace(/[^\d+]/g, '');
+    const inv = `📣 ${an.nom || ''} — app des annonces LA CENTRAL : ${location.origin}/annunci.html\nCode : ${an.appCode}`, tel = String(an.tel || '').replace(/[^\d+]/g, '');
     return {
       title: id ? an.nom : 'Nouvel annonceur',
       narrow: true,
@@ -7626,7 +7626,7 @@ const SHEETS = {
         <div class="section-label full" style="margin:6px 0 0">📅 Prix au jour par fascia (€ HT) — utilisés en mode « fascia »</div>
         ${BANDS.map(([k]) => field(bandTxt(k), 'b_' + k, tf['b_' + k], { attrs: money$ }))}
         <p class="tiny muted full" style="margin:0">Prix = base × position (Haut + / Bas −) × (week-end : 3 jours sur 7) × durée − remise. Rotation et Milieu = prix de base.</p>
-        <div class="section-label full" style="margin:6px 0 0">🎬 Création de l’annonce par LuxInterventions — prix HT, une fois</div>
+        <div class="section-label full" style="margin:6px 0 0">🎬 Création de l’annonce par LA CENTRAL — prix HT, une fois</div>
         ${field('SIMPLE — page fixe avec leur texte, graphisme surprise (€)', 'crea_simple', t.crea_simple, { attrs: money$ })}${field('MOYEN — clip animé avec leur texte, surprise (€)', 'crea_moyen', t.crea_moyen, { attrs: money$ })}${field('MAX — vidéo-clip, surprise (€)', 'crea_max', t.crea_max, { attrs: money$ })}
         <p class="tiny muted full" style="margin:0">Vide = « sur devis » (réponse sous 3 jours max).</p>
         <label class="field full">Note pour les annonceurs (facultatif)<textarea name="note" style="min-height:60px" placeholder="ex. −20 % à partir de 30 jours">${t.note || ''}</textarea></label>
@@ -7638,7 +7638,7 @@ const SHEETS = {
   'txco-form'({ id }) {
     const co = id ? vault.get('reglages', id) : { appCode: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0') };
     if (id && !co) return null;
-    const inv = `🚕 ${co.nom || ''} — app des courses ${hoteConf().nom || 'LuxInterventions'} : ${location.origin}/taxi.html\nCode : ${co.appCode}`, tel = String(co.tel || '').replace(/[^\d+]/g, '');
+    const inv = `🚕 ${co.nom || ''} — app des courses ${hoteConf().nom || 'LA CENTRAL'} : ${location.origin}/taxi.html\nCode : ${co.appCode}`, tel = String(co.tel || '').replace(/[^\d+]/g, '');
     return {
       title: id ? co.nom : 'Nouvelle société de taxi',
       narrow: true,
@@ -7831,7 +7831,7 @@ const SHEETS = {
     return {
       title: 'Calendrier de la commune',
       body: html`<form id="f" data-form="icsall" class="fields">
-        <p class="small full" style="margin:0">Importez le calendrier <b>complet</b> de la commune pour <b>${im.adresse}</b> : LuxInterventions le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.</p>
+        <p class="small full" style="margin:0">Importez le calendrier <b>complet</b> de la commune pour <b>${im.adresse}</b> : LA CENTRAL le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.</p>
         ${field('Lien du calendrier (.ics / webcal) — se met à jour tout seul', 'url', st.url, { full: true, type: 'url', placeholder: 'https://… .ics ou webcal://…' })}
         <div class="full" style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn sm" type="button" data-action="ics-analyze">${icon('sync')} Lire le lien</button>
@@ -7882,7 +7882,7 @@ const SHEETS = {
           <p class="tiny muted full" style="margin:0">Chaque année : remplacez les dates par celles du nouveau calendrier de la commune.</p></div>
         <label class="field">Quand sortir<select name="sortie">${Object.entries(SORTIES).map(([k, v]) => html`<option value="${k}" ${(c.sortie || 'veille') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Heure (facultatif)', 'heure', c.heure, { placeholder: 'ex. après 18 h, avant 6 h' })}
-        <p class="tiny muted full" style="margin:0">Les dates ci-dessus sont les jours de <b>passage</b> du camion (comme sur le calendrier de la commune). LuxInterventions calcule quand sortir les poubelles.</p>
+        <p class="tiny muted full" style="margin:0">Les dates ci-dessus sont les jours de <b>passage</b> du camion (comme sur le calendrier de la commune). LA CENTRAL calcule quand sortir les poubelles.</p>
         <label class="field full">Où sortir les poubelles<select name="lieu">${Object.entries(LIEUX).map(([k, v]) => html`<option value="${k}" ${c.lieu === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Remarque', 'note', c.note, { full: true, placeholder: 'ex. sortir la veille après 18 h, conteneur au garage n°2' })}
       </form>`,
@@ -8472,7 +8472,7 @@ const SHEETS = {
     };
   },
   recovery({ preset: code }) {
-    const body = encodeURIComponent(`Clé de secours LuxInterventions :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : https://luxinterventions.com/locataires.html → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
+    const body = encodeURIComponent(`Clé de secours LA CENTRAL :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : https://luxinterventions.com/locataires.html → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
     return {
       title: 'Votre clé de secours',
       narrow: true,
@@ -8482,7 +8482,7 @@ const SHEETS = {
         <div class="actions" style="margin-top:14px">
           <button class="btn" data-action="copy-recovery">${icon('file')} Copier</button>
           <button class="btn" data-action="print-recovery">${icon('download')} Imprimer</button>
-          <a class="btn" href="mailto:${MAIL}?subject=${encodeURIComponent('LuxInterventions — clé de secours')}&body=${body}">${icon('mail')} Email</a>
+          <a class="btn" href="mailto:${MAIL}?subject=${encodeURIComponent('LA CENTRAL — clé de secours')}&body=${body}">${icon('mail')} Email</a>
         </div>
         <p class="tiny muted">Le bouton Email prépare un message vers ${MAIL}. Pratique, mais toute personne qui accède à cette messagerie pourrait ouvrir le coffre : le papier reste plus sûr.</p>`,
       foot: html`<button class="btn primary" data-action="close-sheet">J'ai noté ma clé de secours</button>`,
@@ -8729,12 +8729,12 @@ const tenantFromForm = (fd, p = '') => ({
 });
 
 // ───────────────────────── Rapports imprimables ─────────────────────────
-// Impressions de l'app : en-tête LuxInterventions by ARES INVEST S.A. ; client = true seulement pour les quittances
+// Impressions de l'app : en-tête LA CENTRAL by ARES INVEST S.A. ; client = true seulement pour les quittances
 // et reçus de caution, qui restent au nom de la société cliente (bailleur, son timbre)
 function printDoc(title, body, client) {
   const el = $('#print'), lux = !client;
   const fc = factConf(), so = lux ? { rcs: fc.rcs, tvaNum: fc.tva } : societe();
-  setHtml(el, html`<div class="pr-head"><div style="display:flex;align-items:center;gap:10px"><img src="${lux ? '/ares/icons/lux-192.png' : socLogo()}" alt="" style="height:34px;max-width:120px;object-fit:contain"><span><b>${lux ? fc.marque || 'LuxInterventions' : socName()}</b>${lux && fc.marque ? html` <small>by ${fc.nom}</small>` : ''} · ${title}${so.rcs || so.tvaNum ? html`<br><small>${[so.rcs ? 'RCS ' + so.rcs : '', so.tvaNum ? 'TVA ' + so.tvaNum : ''].filter(Boolean).join(' · ')}</small>` : ''}</span></div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
+  setHtml(el, html`<div class="pr-head"><div style="display:flex;align-items:center;gap:10px"><img src="${lux ? '/ares/icons/lux-192.png' : socLogo()}" alt="" style="height:34px;max-width:120px;object-fit:contain"><span><b>${lux ? fc.marque || 'LA CENTRAL' : socName()}</b>${lux && fc.marque ? html` <small>by ${fc.nom}</small>` : ''} · ${title}${so.rcs || so.tvaNum ? html`<br><small>${[so.rcs ? 'RCS ' + so.rcs : '', so.tvaNum ? 'TVA ' + so.tvaNum : ''].filter(Boolean).join(' · ')}</small>` : ''}</span></div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
   document.body.classList.add('printing');
   const done = () => { document.body.classList.remove('printing'); setHtml(el, ''); removeEventListener('afterprint', done); };
   addEventListener('afterprint', done);
@@ -9246,7 +9246,7 @@ const ACTIONS = {
   async 'occ-dl'(d) { const t = vault.get('taches', d.id), i = t && vault.get('intervenants', t.intervenantId); if (!t || !t.occ || !i) return; download(`Intervention occasionnelle ${t.occ.no}.pdf`, await occPdf(t, i, t.occ), 'application/pdf'); },
   'photo-del': (d, el) => { const box = el.closest('.photo-pick'); box.querySelector('[name=photo]').value = ''; setHtml(box.querySelector('.pp-circle'), '👤'); el.remove(); },
   // ▶ le même petit dessin animé que dans les autres apps (iPhone / Android / Samsung)
-  'install-anim': () => import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'LuxInterventions', icon: '/ares/icons/lux-192.png', lang: (() => { try { return localStorage.getItem('aresLang') || 'fr'; } catch { return 'fr'; } })() })),
+  'install-anim': () => import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'LA CENTRAL', icon: '/ares/icons/lux-192.png', lang: (() => { try { return localStorage.getItem('aresLang') || 'fr'; } catch { return 'fr'; } })() })),
   'eq-swap': (d) => openOver('eq-swap', d.id),
   async 'eq-swap-do'(d) {
     const t = vault.get('taches', d.id);
@@ -9262,7 +9262,7 @@ const ACTIONS = {
     // trajet de l'ancien ouvrier : le compte à rebours s'arrête ; le nouveau lance le sien avec « Je suis en route »
     const tk = ui.tripTks[t.id + '|' + today()];
     if (tk) fetch(vault.api.root + 'trip/' + tk, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ st: 'stop' }) }).catch(() => {});
-    if (t.ptl && ptlConf()) { const s2 = vault.get('taches', t.id); ptlStatus(t.ptl.tid, w && s2.date ? 'planifiee' : 'prise', { technicien: w ? intervFull(w) : '', planned_at: w && s2.date ? `${s2.date}T${s2.heure || '08:00'}` : '', text: w ? `🔄 Changement d’intervenant : ${intervFull(w)}` : '🔄 LuxInterventions envoie un autre intervenant.' }).catch(() => {}); }
+    if (t.ptl && ptlConf()) { const s2 = vault.get('taches', t.id); ptlStatus(t.ptl.tid, w && s2.date ? 'planifiee' : 'prise', { technicien: w ? intervFull(w) : '', planned_at: w && s2.date ? `${s2.date}T${s2.heure || '08:00'}` : '', text: w ? `🔄 Changement d’intervenant : ${intervFull(w)}` : '🔄 LA CENTRAL envoie un autre intervenant.' }).catch(() => {}); }
     closeSheet();
     toast(w ? `🔄 ${t.titre} → ${intervFull(w)}` : `⏹ ${t.titre} : ouvrier retiré`);
     renderView(); scheduleEspaceSync();
@@ -9443,14 +9443,14 @@ const ACTIONS = {
   'bail-open': (d) => openSheet('imm', d.id, 'proprio'),
   async 'tdem-stop'(d) {
     const r = vault.get('reglages', d.id);
-    if (!r || !(await confirmBox('Arrêter ce service régulier ?', { ok: '⏹️ Arrêter', danger: true, detail: (r.titre || '') + ' — LuxInterventions confirme la date du dernier passage.' }))) return;
+    if (!r || !(await confirmBox('Arrêter ce service régulier ?', { ok: '⏹️ Arrêter', danger: true, detail: (r.titre || '') + ' — LA CENTRAL confirme la date du dernier passage.' }))) return;
     try { await tenantSend({ type: 'dem-stop', ref: r.ref || r.id, titre: r.titre || '' }); } catch (e) { return toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
     await vault.mutate((tx) => tx.put('reglages', { id: r.id, stopAsk: today() }), '⏹️ Arrêt du service demandé', r.titre || '');
     toast('Demande d’arrêt envoyée');
   },
   async 'tdem-del'(d) {
     const r = vault.get('reglages', d.id);
-    if (!r || !(await confirmBox('Supprimer cette demande de votre liste ?', { ok: 'Supprimer', danger: true, detail: (r.titre || '') + ' — si LuxInterventions l’a déjà reçue, appelez-nous pour l’annuler.' }))) return;
+    if (!r || !(await confirmBox('Supprimer cette demande de votre liste ?', { ok: 'Supprimer', danger: true, detail: (r.titre || '') + ' — si LA CENTRAL l’a déjà reçue, appelez-nous pour l’annuler.' }))) return;
     await vault.mutate((tx) => tx.remove('reglages', d.id), '🗑️ Demande supprimée de la liste', r.titre || '');
   },
   'net-new': () => openOver('net-new'),
@@ -9584,7 +9584,7 @@ const ACTIONS = {
     let y = 60;
     const line = (t, size = 11, bold = false) => { p.text(48, y, t, { size, bold }); y += size + 8; };
     line('Certificat de suppression des données', 18, true); y += 6;
-    line(`${soc.nom || 'LuxInterventions'}${soc.rcs ? ' · RCS ' + soc.rcs : ''}`, 10);
+    line(`${soc.nom || 'LA CENTRAL'}${soc.rcs ? ' · RCS ' + soc.rcs : ''}`, 10);
     y += 10;
     line(`Client : ${c.tenant.nom} (${(NET_FIL[c.tenant.fil] || '').replace(/^\S+ /, '')})`, 12, true);
     line(`Identifiant de la centrale : ${c.tenant.id}`);
@@ -9854,7 +9854,7 @@ const ACTIONS = {
       const { fix, afterExit } = datesFix(l, [{ y, m }]);
       if (afterExit.length) return toast(`${fullName(l)} est parti le ${fmtDate(l.sortie)} : ce mois n'est plus dû.`, { bad: true });
       const what = fix.debut ? `avancer l'entrée au ${fmtDate(fix.debut)}` : `prolonger le contrat jusqu'au ${fmtDate(fix.fin)}`;
-      if (!(await confirmBox(`${MONTHS_FULL[m - 1]} ${y} est hors du contrat`, { ok: fix.debut ? "Avancer l'entrée et payer" : 'Prolonger et payer', detail: `Le contrat de ${fullName(l)} ${fix.debut ? 'commence le ' + fmtDate(l.debut) : 'finit le ' + fmtDate(l.fin)}. Pour que les totaux restent justes, LuxInterventions va ${what}, puis enregistrer le paiement.` }))) return;
+      if (!(await confirmBox(`${MONTHS_FULL[m - 1]} ${y} est hors du contrat`, { ok: fix.debut ? "Avancer l'entrée et payer" : 'Prolonger et payer', detail: `Le contrat de ${fullName(l)} ${fix.debut ? 'commence le ' + fmtDate(l.debut) : 'finit le ' + fmtDate(l.fin)}. Pour que les totaux restent justes, LA CENTRAL va ${what}, puis enregistrer le paiement.` }))) return;
       await vault.mutate((tx) => tx.put('locataires', { id: l.id, ...fix }), 'Dates du contrat corrigées', `${fullName(l)} — ${what}`, l.id);
     }
     payFull(d.loc, y, m);
@@ -10311,7 +10311,7 @@ const FORMS = {
       const me = await fetch(PTL_API + 'me', { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' }).then((r) => r.json());
       if (!me.user || me.user.role !== 'admin') {
         fetch(PTL_API + 'logout', { method: 'POST', headers: { Authorization: 'Bearer ' + token } }).catch(() => {});
-        throw new PtlError(403, 'Ce compte est celui d’une gérance : connectez le compte LuxInterventions.');
+        throw new PtlError(403, 'Ce compte est celui d’une gérance : connectez le compte LA CENTRAL.');
       }
       await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token, email, name: me.user.name || '' }), 'Portail gérance connecté', email);
       ui.ptl = { data: null, loading: false, err: '', inv: {} };
@@ -10633,7 +10633,7 @@ const FORMS = {
     if (!d.titre || !d.texte) return;
     if (reg && !d.reg.jours.length) return toast('Choisissez au moins un jour souhaité', { bad: true });
     if (!ou && !g('adresse') && !g('ouTxt')) return toast('Dites où : choisissez l’immeuble dans « Où », ou écrivez l’adresse', { bad: true });
-    // 📷 photos réduites (1600 px), chiffrées avec la demande : seule la centrale LuxInterventions les voit
+    // 📷 photos réduites (1600 px), chiffrées avec la demande : seule la centrale LA CENTRAL les voit
     const files = fd.getAll('photos').filter((f) => f && f.size && /^image\//.test(f.type)).slice(0, 5), photos = [];
     let size = 0;
     if (files.length) toast('Préparation des photos…');
@@ -10644,7 +10644,7 @@ const FORMS = {
       await vault.call('demande', { method: 'POST', body });
     } catch (e) { return toast(e.status === 423 ? 'Lecture seule : abonnement échu' : e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
     await vault.mutate((tx) => tx.put('reglages', { id, ...d, immId: imO ? imO.id : '', logId: lg ? lg.id : '', st: 'afaire' }), '🛠️ Demande d’intervention envoyée', d.titre);
-    toast(`Demande envoyée à LuxInterventions${photos.length ? ` avec ${plural(photos.length, 'photo')}` : ''}`);
+    toast(`Demande envoyée à LA CENTRAL${photos.length ? ` avec ${plural(photos.length, 'photo')}` : ''}`);
     goBack();
   },
   async 'lic-tarifs'(fd) {
@@ -11133,9 +11133,9 @@ const FORMS = {
       await vault.mutate((tx) => {
         tx.put('taches', { id: t.id, fwd: { at: d.t, by: who, ...(acc ? { acces: `${who} le ${fmtDate(today())}` } : {}) } });
         if (g('entree') && im.id && g('entree') !== im.codeEntree) tx.put('immeubles', { id: im.id, codeEntree: g('entree') });
-      }, '↪️ Envoyé à LuxInterventions', d.titre, t.locId || '');
+      }, '↪️ Envoyé à LA CENTRAL', d.titre, t.locId || '');
       closeSheet();
-      toast(`↪️ Envoyé à LuxInterventions${photos.length ? ` avec ${plural(photos.length, 'photo')}` : ''}`);
+      toast(`↪️ Envoyé à LA CENTRAL${photos.length ? ` avec ${plural(photos.length, 'photo')}` : ''}`);
     } catch (e) { setBusy(form, false); toast(e.status === 423 ? 'Lecture seule : abonnement échu' : e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
   async annsend(fd, form) {
@@ -11354,7 +11354,7 @@ document.addEventListener('pointerdown', (e) => {
   while (prev && !(prev.dataset.p === p && prev.querySelector('input[name$="a"]').value)) prev = prev.dataset.p === p ? prev.previousElementSibling : null;
   inp.value = prev ? prev.querySelector('input[name$="a"]').value : HOR_START[p];
 }, true);
-// ───────────────────────── Devis (ARES INVEST S.A. — LuxInterventions) ─────────────────────────
+// ───────────────────────── Devis (ARES INVEST S.A. — LA CENTRAL) ─────────────────────────
 // Sur place : le chef de chantier prend les photos, écrit son rapport et prévoit les ouvriers et les heures (sans prix).
 // Ensuite : le directeur choisit les ouvriers (tarifs des réglages), déplacement, matériel, remise, acompte, validité.
 // Le client signe avec le doigt (« Bon pour accord ») ; PDF à imprimer ou à envoyer par WhatsApp / email ;
@@ -11762,7 +11762,7 @@ Object.assign(SHEETS, {
     const d = vault.get('devis', id);
     if (!d || !d.pubToken) return null;
     const url = `${location.origin}/devis.html#t=${d.pubToken}`, cl = d.client || {}, k = devCalc(d);
-    const msg = `Bonjour ${d.interloc || devClient(d)},\n\nVoici votre ${k.ct ? 'offre de service' : 'devis'} LuxInterventions n° ${devNo(d)}${d.titre ? ' — ' + d.titre : ''} : ${eur(k.ttc)} TTC${k.ct ? ' / mois' : ''}.\nVous pouvez le lire, l’imprimer et le signer sur votre téléphone :\n${url}\n\nBien à vous,\n${factConf().marque || 'LuxInterventions'}`;
+    const msg = `Bonjour ${d.interloc || devClient(d)},\n\nVoici votre ${k.ct ? 'offre de service' : 'devis'} LA CENTRAL n° ${devNo(d)}${d.titre ? ' — ' + d.titre : ''} : ${eur(k.ttc)} TTC${k.ct ? ' / mois' : ''}.\nVous pouvez le lire, l’imprimer et le signer sur votre téléphone :\n${url}\n\nBien à vous,\n${factConf().marque || 'LA CENTRAL'}`;
     const tel = String(cl.tel || '').replace(/[^\d+]/g, ''), wa = tel.replace(/^\+/, '').replace(/^00/, '');
     return {
       title: `🔗 Lien du devis — ${devNo(d)}`,
@@ -12180,13 +12180,13 @@ Object.assign(ACTIONS, {
     const part = v.client && v.client.type === 'part';
     if (!(await confirmBox(`Devis ${devNo(v)} accepté ?`, { ok: '✅ Accepté', detail: `${devClient(v)} a donné son accord (signature papier, email…).${part ? ' Particulier : il garde 14 jours pour se rétracter (pastille violette).' : ''} Pour une signature sur le téléphone : « ✍️ Faire signer le client ».` }))) return;
     const at = new Date().toISOString();
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'accepte', acc: at, decision: { st: 'accepte', at: Date.now(), by: 'LuxInterventions', note: '' }, ...devH(v, 'accepte') }), 'Devis accepté', `${devNo(v)} — ${devClient(v)}`);
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'accepte', acc: at, decision: { st: 'accepte', at: Date.now(), by: 'LA CENTRAL', note: '' }, ...devH(v, 'accepte') }), 'Devis accepté', `${devNo(v)} — ${devClient(v)}`);
     toast('✅ Devis accepté'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
   async 'dev-ref'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
     if (!(await confirmBox(`Devis ${devNo(v)} refusé ?`, { ok: '❌ Refusé', danger: true, detail: devClient(v) }))) return;
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'refuse', decision: { st: 'refuse', at: Date.now(), by: 'LuxInterventions', note: '' }, ...devH(v, 'refuse') }), 'Devis refusé', `${devNo(v)} — ${devClient(v)}`);
+    await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'refuse', decision: { st: 'refuse', at: Date.now(), by: 'LA CENTRAL', note: '' }, ...devH(v, 'refuse') }), 'Devis refusé', `${devNo(v)} — ${devClient(v)}`);
     toast('Devis refusé'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
   async 'dev-rev'(d) {

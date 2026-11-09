@@ -7,6 +7,7 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 - Rispondere **in italiano**, diretto e sincero, da fratello. Non correggere la sua ortografia.
 - **Domanda → si risponde e si aspetta «VAI»** prima di cambiare il codice. Un'istruzione chiara («fai…», «togli…») vale come VAI.
 - **Il sito pubblico LUXINTERVENTION resta in francese**: non cambiarlo.
+- **Nome nelle app: «LA CENTRAL»** (poi diventerà «AJR INTERVENTIONS», quando lo dice il titolare). LuxInterventions è una società di riparazioni fuori dall'app: compare solo nel sito pubblico e dove lo dirà il titolare. Il sito web non si tocca.
 - **Mai inventare** fatture, prezzi, dati, cifre legali. Mai usare l'IBAN di un'altra società al posto di quello giusto.
 - **Mai chiedere né scrivere** password, chiavi, token (DeepL, Cloudflare, GitHub…). Le chiavi le mette il titolare direttamente in Cloudflare.
 - **I dati veri non si perdono**: ogni modifica aggiunge, non cancella. Prima di operazioni rischiose: Sauvegarde chiffrée.

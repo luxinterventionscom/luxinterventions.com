@@ -1,6 +1,6 @@
-// LuxInterventions — Portail Gérance / Syndic
+// LA CENTRAL — Portail Gérance / Syndic
 // Plusieurs utilisateurs et plusieurs gérances : chacun voit uniquement ses résidences et ses demandes,
-// l'équipe LuxInterventions (rôle « admin ») voit tout et traite les demandes.
+// l'équipe LA CENTRAL (rôle « admin ») voit tout et traite les demandes.
 
 import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { newsHtml } from '/ares/news.js';
@@ -129,7 +129,7 @@ const partsHtml = (s) => String(s || '').split(' · ').filter(Boolean).map((x, i
 // fonction de la personne dans la gérance ; les 3 premières invitent leurs collègues (responsable)
 const TITLES = ['Directeur', 'Responsable sec.', 'Manager', 'Chef d’équipe', 'Secrétaire', 'Technicien de maintenance'];
 const TITLE_ADMIN = ['Directeur', 'Responsable sec.', 'Manager'];
-const ROLES = { admin: 'LuxInterventions', gerance_admin: 'Responsable gérance', gerance_user: 'Utilisateur gérance' };
+const ROLES = { admin: 'LA CENTRAL', gerance_admin: 'Responsable gérance', gerance_user: 'Utilisateur gérance' };
 // Fiche d'évaluation d'une intervention terminée (remplie par la gérance, enregistrée comme message du suivi)
 const EVAL_CRIT = [
   ['rapidite', 'Rapidité & ponctualité', 'Délais de réponse et d’arrivée'],
@@ -305,8 +305,8 @@ function setBusy(btn, busy, label) {
 const lockEl = $('#lock');
 const appEl = $('#app');
 const brandHead = () => html`
-  <img class="lock-banner" src="/portail/icons/ptl-banner.webp" alt="Terre · Eau · Feu · Air — LuxInterventions" width="1100" height="283">
-  <div class="lock-head"><h1>Portail Gérances</h1><p>LuxInterventions · Interventions techniques 7j/7</p></div>
+  <img class="lock-banner" src="/portail/icons/ptl-banner.webp" alt="Terre · Eau · Feu · Air — LA CENTRAL" width="1100" height="283">
+  <div class="lock-head"><h1>Portail Gérances</h1><p>LA CENTRAL · Interventions techniques 7j/7</p></div>
   ${langMini()}`;
 // écran d'accès : initiales seules « FR | DE | EN … »
 const langMini = () => html`<div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => html`<button type="button" data-action="set-lang" data-id="${k}" title="${PTL_LANGS[k]}" aria-pressed="${LANG === k}">${k.toUpperCase()}</button>`)}</div>`;
@@ -323,7 +323,7 @@ function renderLock(mode, data = {}) {
   }
   if (mode === 'setup') {
     setHtml(lockEl, html`<form class="lock-card" data-form="setup" autocomplete="off">${brandHead()}
-      <div class="alert info">${icon('key')}<div><b>Première configuration.</b> Créez le compte administrateur LuxInterventions.</div></div>
+      <div class="alert info">${icon('key')}<div><b>Première configuration.</b> Créez le compte administrateur LA CENTRAL.</div></div>
       <label class="field">Code de configuration <input name="code" type="password" required placeholder="PORTAIL_SETUP_CODE"></label>
       <label class="field">Votre nom <input name="name" required autocomplete="name"></label>
       <label class="field">Email <input name="email" type="email" required autocomplete="email"></label>
@@ -335,7 +335,7 @@ function renderLock(mode, data = {}) {
   }
   if (mode === 'invite') {
     setHtml(lockEl, html`<form class="lock-card" data-form="invite" autocomplete="off">${brandHead()}
-      <div class="inv-welcome"><p class="iw-t">🎉 Bienvenue${data.name ? ' ' + data.name : ''} !</p><p class="iw-org">${data.org}</p><p><b>Merci d’avoir choisi LuxInterventions.</b> Nous sommes très heureux de travailler avec vous.</p></div>
+      <div class="inv-welcome"><p class="iw-t">🎉 Bienvenue${data.name ? ' ' + data.name : ''} !</p><p class="iw-org">${data.org}</p><p><b>Merci d’avoir choisi LA CENTRAL.</b> Nous sommes très heureux de travailler avec vous.</p></div>
       ${offerBanner()}
       <p class="iw-step">🔑 Choisissez votre mot de passe</p>
       <p class="small muted" style="margin:-4px 0 4px">Une seule fois : ensuite vous vous connecterez avec votre email et ce mot de passe.</p>
@@ -352,7 +352,7 @@ function renderLock(mode, data = {}) {
   if (mode === 'invalid-invite') {
     setHtml(lockEl, html`<div class="lock-card">${brandHead()}<div class="alert bad">${icon('alert')}<div>${data.message}</div></div>
       <p class="small" style="margin:4px 0 0"><b>Pourquoi ?</b> Le lien a déjà servi, il a plus de 14 jours, ou un lien plus récent vous a été envoyé (seul le dernier marche).</p>
-      <p class="small" style="margin:0">✅ Mot de passe déjà choisi ? Connectez-vous avec votre email.<br>🔑 Pas encore ? Touchez « Mot de passe oublié ? » : LuxInterventions vous envoie un nouveau lien.</p>
+      <p class="small" style="margin:0">✅ Mot de passe déjà choisi ? Connectez-vous avec votre email.<br>🔑 Pas encore ? Touchez « Mot de passe oublié ? » : LA CENTRAL vous envoie un nouveau lien.</p>
       <button class="btn primary block" data-action="to-login">Aller à la connexion</button></div>`);
     return;
   }
@@ -440,7 +440,7 @@ async function startSession() {
   if (t) openTicket(t[1]);
   startPolling();
   initPush();
-  // offres d'abonnement : toujours relire le réglage de LuxInterventions (même si on arrive sur « Plus » ou « Demandes »), puis la fenêtre une seule fois
+  // offres d'abonnement : toujours relire le réglage de LA CENTRAL (même si on arrive sur « Plus » ou « Demandes »), puis la fenêtre une seule fois
   if (!isAdmin() && !state.demo) api('pubs').then((r) => {
     const off = r.offers === false;
     if (r.contact !== undefined && JSON.stringify(r.contact) !== JSON.stringify(state.contact || null)) { state.contact = r.contact; if (state.route === 'plus') renderView(); }
@@ -515,18 +515,18 @@ function renderShell() {
   const nb = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span><i class="navbadge" data-badge="${id}" hidden></i></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">PORTAIL GÉRANCES<small>${isAdmin() ? 'Espace équipe LuxInterventions' : html`${orgLogoImg('ptl-orglogo')}${state.me.org_name || ''}`}</small></span></div>
+      <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">PORTAIL GÉRANCES<small>${isAdmin() ? 'Espace équipe LA CENTRAL' : html`${orgLogoImg('ptl-orglogo')}${state.me.org_name || ''}`}</small></span></div>
       ${navItems().map(nb)}
       <div class="spacer"></div>
       <button class="navbtn" data-action="logout">${icon('logout')}<span>Déconnexion</span></button>
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">PORTAIL GÉRANCES<small>${isAdmin() ? 'Espace équipe LuxInterventions' : html`${orgLogoImg('ptl-orglogo')}${state.me.org_name || ''}`}</small></span></div>
+        <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">PORTAIL GÉRANCES<small>${isAdmin() ? 'Espace équipe LA CENTRAL' : html`${orgLogoImg('ptl-orglogo')}${state.me.org_name || ''}`}</small></span></div>
         <button class="btn sm primary" data-action="new-ticket">${icon('plus')} <span class="show-xs">Dépannage</span><span class="hide-xs">Demande de dépannage</span></button>
       </header>
       ${state.demo ? html`<div class="demo-bar">${icon('eye')}<span class="grow"><b>Mode démo</b> — données d’exemple, rien n’est enregistré.</span>
-        <span class="demo-switch"><button class="chip" data-action="demo-switch" data-id="gerance" aria-pressed="${!isAdmin()}">Vue gérance</button><button class="chip" data-action="demo-switch" data-id="admin" aria-pressed="${isAdmin()}">Vue LuxInterventions</button></span>
+        <span class="demo-switch"><button class="chip" data-action="demo-switch" data-id="gerance" aria-pressed="${!isAdmin()}">Vue gérance</button><button class="chip" data-action="demo-switch" data-id="admin" aria-pressed="${isAdmin()}">Vue LA CENTRAL</button></span>
         <button class="btn sm ghost" data-action="logout">Quitter</button></div>` : ''}
       <main class="main" id="view"></main>
     </div>
@@ -575,7 +575,7 @@ async function loadRoute(route) {
     const [stats, tickets, pubs] = await Promise.all([api('stats' + (org ? '?' + org.slice(1) : '')), api('tickets?scope=active' + org), api('pubs').catch(() => ({ items: [] }))]);
     state.cache.home = { stats, tickets: tickets.tickets, pubs: pubs.items || [] };
     if (pubs.contact !== undefined) state.contact = pubs.contact;
-    if (pubs.offers === false) { state.offersOff = true; offersMem(true); } else if (pubs.items) { state.offersOff = false; offersMem(false); } // offres d'abonnement masquées par LuxInterventions
+    if (pubs.offers === false) { state.offersOff = true; offersMem(true); } else if (pubs.items) { state.offersOff = false; offersMem(false); } // offres d'abonnement masquées par LA CENTRAL
     if (!isAdmin()) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; orgLogoRefresh(); } catch { /* hors ligne */ } }
     if (!isAdmin()) { try { state.cache.home.devis = (await api('devis')).devis || []; } catch { state.cache.home.devis = []; } }
   } else if (route === 'demandes') {
@@ -671,7 +671,7 @@ function guideCard(stats) {
       ]
     : [
         ...(isManager() && state.myOrg ? [[!orgMissing(state.myOrg).length, orgMissing(state.myOrg).length ? html`<span class="red">⚠️ <b>Données de votre société à compléter</b> :</span> <span>${orgMissing(state.myOrg).join(', ')}</span>` : 'Données de votre société (adresse, RCS, TVA, banque)', 'org-edit', '']] : []),
-        ...(isManager() && state.myOrg ? [[!!state.myOrg.logo, '🎨 Ajoutez le logo de votre agence : LuxInterventions vous reconnaît d’un coup d’œil', 'org-edit', '']] : []),
+        ...(isManager() && state.myOrg ? [[!!state.myOrg.logo, '🎨 Ajoutez le logo de votre agence : LA CENTRAL vous reconnaît d’un coup d’œil', 'org-edit', '']] : []),
         [(stats.residences || 0) > 0, 'Ajoutez vos résidences (une seule fois : accès, clés, contact)', 'new-residence', ''],
         [(stats.createdMonth || 0) + (stats.open || 0) > 0, 'Envoyez votre première demande d’intervention', 'new-ticket', ''],
         [push, 'Activez les notifications pour suivre vos demandes', 'push-on', ''],
@@ -900,7 +900,7 @@ function prView() {
 }
 function prPrint() {
   const c = prCfg(), tb = prTable(c), org = isAdmin() ? (state.filters.org ? orgName(state.filters.org) : 'Toutes les gérances') : state.me.org_name || '';
-  setHtml($('#print'), html`<div class="pr-head"><div style="display:flex;align-items:center;gap:10px"><img src="/ares/icons/lux-192.png" alt="" style="height:34px"><span><b>LuxInterventions</b><br><small>by ARES INVEST S.A.</small></span></div><div style="text-align:right"><b>${org}</b><br>${prDate(Date.now())}</div></div>
+  setHtml($('#print'), html`<div class="pr-head"><div style="display:flex;align-items:center;gap:10px"><img src="/ares/icons/lux-192.png" alt="" style="height:34px"><span><b>LA CENTRAL</b><br><small>by ARES INVEST S.A.</small></span></div><div style="text-align:right"><b>${org}</b><br>${prDate(Date.now())}</div></div>
     <h1>📊 ${PR_SRC[c.src][0].replace(/^\S+\s/, '')}${c.src === 'totaux' ? ' — ' + PR_GROUP[c.g].toLowerCase() : ''}</h1><p class="pr-sub">${prPeriod(c)} · ${tb.n} ligne(s)</p>
     <table class="tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.map((r) => html`<tr>${r.map((v) => html`<td>${typeof v === 'number' ? String(v).replace('.', ',') : v}</td>`)}</tr>`)}</tbody></table>
     ${c.src === 'devis' ? '' : html`<h2 class="pr-page">Graphiques</h2>${prCharts(c)}`}`);
@@ -920,14 +920,14 @@ const VIEWS = {
     const hello = html`Bonjour <span>${state.me.name.split(' ')[0]}</span>`;
     // l'équipe arrive : en route / sur place (clignote) ; prévue aujourd'hui
     const coming = tickets.filter((t) => t.status === 'encours');
-    const arrive = coming.length || planToday.length ? html`<div class="arrive">${coming.map((t) => html`<button class="arrive-b go" data-action="open-ticket" data-id="${t.id}"><span class="arr-dot"></span><span class="grow">🚚 <b>LuxInterventions est en route / sur place</b><span class="meta" style="display:block">#${t.ref} · ${t.residence_name}${t.technicien ? html` · <span>technicien</span> ${t.technicien}` : ''}</span></span></button>`)}
+    const arrive = coming.length || planToday.length ? html`<div class="arrive">${coming.map((t) => html`<button class="arrive-b go" data-action="open-ticket" data-id="${t.id}"><span class="arr-dot"></span><span class="grow">🚚 <b>LA CENTRAL est en route / sur place</b><span class="meta" style="display:block">#${t.ref} · ${t.residence_name}${t.technicien ? html` · <span>technicien</span> ${t.technicien}` : ''}</span></span></button>`)}
       ${planToday.map((t) => html`<button class="arrive-b today" data-action="open-ticket" data-id="${t.id}"><span class="arr-dot"></span><span class="grow">📅 <b>Aujourd'hui</b> ${new Date(t.planned_at).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })}<span class="meta" style="display:block">#${t.ref} · ${t.residence_name}${t.technicien ? html` · <span>technicien</span> ${t.technicien}` : ''}</span></span></button>`)}</div>` : '';
     const pushCard = !['on', 'demo'].includes(pushState()) ? html`<div class="alert ${isAdmin() ? 'warn' : 'info'}" style="margin-bottom:14px;align-items:center">${icon('bell')}<div style="flex:1">${isAdmin()
       ? html`<b>Activez les notifications</b> pour être alerté immédiatement des nouvelles demandes urgentes.` : html`<b>Activez les notifications</b> pour suivre l'avancement de vos demandes.`}</div>${iosSafari() ? '' : html`<button class="btn sm" data-action="push-on">Activer</button>`}</div>${iosSafari() ? html`<div class="alert info" style="margin:-8px 0 14px">📱<div><b>Sur iPhone, d’abord installer l’app :</b> en bas de Safari, touchez <b>Partager</b> (carré avec flèche ↑) → <b>« Sur l’écran d’accueil »</b> → Ajouter. Ouvrez ensuite le portail <b>depuis la nouvelle icône</b> et touchez « Activer » : Safari seul ne permet pas les notifications.</div></div>` : ''}` : '';
     if (isAdmin()) {
       return html`${pushCard}
         ${guideCard(stats)}
-        ${pageHead(hello, 'Espace équipe LuxInterventions')}
+        ${pageHead(hello, 'Espace équipe LA CENTRAL')}
         ${arrive}
         ${pubSlot('haut')}
         ${new Raw(nbienBanner())}
@@ -1000,7 +1000,7 @@ const VIEWS = {
           <span class="meta" style="white-space:normal">${isAdmin() ? html`🏢 ${t.org_name} · ` : ''}📍 ${t.residence_name}${t.technicien ? html` · 👷 ${t.technicien}` : ''}${evOf(t.id) ? ' · ' + evOf(t.id) : ''}${t.photos ? html` · 📷 ${t.photos}` : ''}</span></span>
         <span style="text-align:right">${t.inv_no ? html`<b>${eurP(t.inv_ttc)}</b>${t.inv_cont && !t.inv_paid ? html`<span class="badge cont-blink" style="display:block">⚠️ CONTENTIEUX</span>` : html`<span class="tiny ${t.inv_paid ? '' : 'red'}" style="display:block">${t.inv_paid ? '✅ payée' : '⏳ à payer'}</span>`}` : html`<span class="tiny muted">facture à venir</span>`}</span></button>
         ${t.inv_no ? html`<div style="display:flex;justify-content:flex-end;margin:-4px 0 8px"><button class="btn sm" data-action="inv-dl" data-id="${t.id}" data-no="${t.inv_no}">⬇️ Facture ${t.inv_no} (PDF)</button></div>` : ''}`)}</div>` : html`<p class="muted">Aucune intervention terminée ce mois-ci.</p>`}
-      <p class="tiny muted" style="margin-top:10px">Chaque facture est émise par ARES INVEST S.A. (LuxInterventions) une fois l’intervention clôturée ; téléchargez-la en PDF.</p>`;
+      <p class="tiny muted" style="margin-top:10px">Chaque facture est émise par ARES INVEST S.A. (LA CENTRAL) une fois l’intervention clôturée ; téléchargez-la en PDF.</p>`;
   },
   statsBody() {
     const { tickets, evals } = state.cache.stats || { tickets: [], evals: [] };
@@ -1102,7 +1102,7 @@ const VIEWS = {
         <div class="card-title"><h3>${o.name}</h3>${o.open ? html`<span class="badge warn">${o.open} en cours</span>` : ''}</div>
         <div class="pay-foot"><span>${o.residences} résidence${o.residences > 1 ? 's' : ''}</span><span>${o.users} utilisateur${o.users > 1 ? 's' : ''}</span></div>
       </button>`)}</div>` : empty('users', 'Aucune gérance. Créez la première, puis invitez ses utilisateurs.', html`<button class="btn primary" data-action="new-org">${icon('plus')} Gérance</button>`)}
-      <div class="section-label">Équipe LuxInterventions</div>
+      <div class="section-label">Équipe LA CENTRAL</div>
       <div class="list">${staff.map(userRow)}</div>
       <button class="btn block" style="margin-top:10px" data-action="new-user" data-org="" data-role="admin">${icon('plus')} Inviter un membre de l'équipe</button>`;
   },
@@ -1135,7 +1135,7 @@ const VIEWS = {
           ${ps === 'on' ? html`<button class="btn sm" data-action="push-test">Tester</button><button class="btn sm ghost" data-action="push-off">Désactiver</button>` : ps === 'off' ? html`<button class="btn sm primary" data-action="push-on">Activer</button>` : ''}</div>
       </div>
       ${!standalone ? html`<div class="section-label">Application</div><div class="list settings"><div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Installer sur ce téléphone</span>
-        <span class="meta" style="white-space:normal">${isIOS ? 'Safari : Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône LuxInterventions sur l’écran d’accueil.'}</span></span>
+        <span class="meta" style="white-space:normal">${isIOS ? 'Safari : Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône LA CENTRAL sur l’écran d’accueil.'}</span></span>
         ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}</div>
         <div class="row"><span class="grow"></span><button class="btn sm" data-action="install-anim">▶ Voir comment (animation)</button></div></div>` : ''}
       <div class="section-label">Rapports</div>
@@ -1157,7 +1157,7 @@ const VIEWS = {
         <button class="btn" type="button" data-action="report-csv">📊 Export Excel (CSV)</button>
       </form>
       ${isAdmin() ? '' : offerBanner()}
-      ${!isAdmin() && state.contact && state.contact.nom ? html`<div class="section-label">📞 Votre contact LuxInterventions</div>
+      ${!isAdmin() && state.contact && state.contact.nom ? html`<div class="section-label">📞 Votre contact LA CENTRAL</div>
       <div class="card" style="margin-bottom:14px"><b>${state.contact.nom}</b><span class="meta" style="display:block">Responsable de la centrale</span>
         ${state.contact.tel ? html`<a class="btn sm" style="margin-top:8px" href="tel:${state.contact.tel.replace(/[^\d+]/g, '')}">📞 ${state.contact.tel}</a> ` : ''}${state.contact.email ? html`<a class="btn sm" style="margin-top:8px" href="mailto:${state.contact.email}">✉️ ${state.contact.email}</a>` : ''}</div>` : ''}
       <div class="section-label">Compte</div>
@@ -1167,7 +1167,7 @@ const VIEWS = {
         <button class="row" data-action="rgpd">🔒<span class="grow title">Protection des données (RGPD)</span></button>
         <button class="row" data-action="logout">${icon('logout')}<span class="grow title red">Se déconnecter</span></button>
       </div>
-      <p class="tiny muted" style="margin-top:28px;text-align:center">LuxInterventions · Portail gérance v${VERSION}</p>`;
+      <p class="tiny muted" style="margin-top:28px;text-align:center">LA CENTRAL · Portail gérance v${VERSION}</p>`;
   },
 };
 
@@ -1308,20 +1308,20 @@ async function openTicket(id, silent) {
 
 // 💼 Offre d'abonnement : gérer aussi ses propres immeubles et locataires (s'affiche à la 1ʳᵉ ouverture du portail)
 const OFFER_PLANS = [
-  { id: 'decouverte', name: 'Découverte', sub: 'Pour commencer, sans engagement.', price: '0 €', per: '/ mois', cta: 'Je commence gratuitement', items: [[1, '1 immeuble (jusqu’à 10 logements)'], [1, 'Locataires, loyers, quittances'], [1, 'App des locataires'], [1, 'Demandes d’intervention à LuxInterventions'], [0, 'Plusieurs immeubles'], [0, 'Rapports et statistiques avancés']] },
+  { id: 'decouverte', name: 'Découverte', sub: 'Pour commencer, sans engagement.', price: '0 €', per: '/ mois', cta: 'Je commence gratuitement', items: [[1, '1 immeuble (jusqu’à 10 logements)'], [1, 'Locataires, loyers, quittances'], [1, 'App des locataires'], [1, 'Demandes d’intervention à LA CENTRAL'], [0, 'Plusieurs immeubles'], [0, 'Rapports et statistiques avancés']] },
   { id: 'pro', name: 'Pro', sub: 'Pour les gérances qui grandissent.', price: '29 €', per: '/ mois', save: '2 mois offerts en payant à l’année', badge: '♥ LE PLUS CHOISI', cta: 'Je suis intéressé', items: [[1, 'Jusqu’à 50 logements'], [1, 'Tout le plan Découverte'], [1, 'États des lieux avec photos'], [1, 'Comptabilité et rappels de paiement'], [1, 'Rapports et statistiques'], [1, 'Plusieurs collègues (responsables)']] },
   { id: 'agence', name: 'Agence', sub: 'Pour les grands portefeuilles.', price: '79 €', per: '/ mois', save: '2 mois offerts en payant à l’année', badge: 'MEILLEUR PRIX', cta: 'Je suis intéressé', items: [[1, 'Jusqu’à 250 logements'], [1, 'Tout le plan Pro'], [1, 'Équipe illimitée'], [1, 'Annonces dans les apps (espaces publicitaires)'], [1, 'Aide prioritaire'], [1, 'Plus de 250 logements : sur devis']] },
 ];
 const OFFER_KEY = 'ptlOfferSeen';
 // bannière « 💼 Gérez aussi vos propres locataires — Voir les offres » (page d'invitation, accueil, Plus) ; « Voir les offres » clignote en rouge
-// Devis de LuxInterventions : « DEVIS EN COURS » (violet) → ✅ Accepter · ❌ Refuser · 🔄 Demander une révision
+// Devis de LA CENTRAL : « DEVIS EN COURS » (violet) → ✅ Accepter · ❌ Refuser · 🔄 Demander une révision
 function devisBall(v) {
   if (!v.valid_until) return ['green', ''];
   const left = Math.round((Date.parse(v.valid_until + 'T12:00:00') - Date.parse(new Date().toISOString().slice(0, 10) + 'T12:00:00')) / 864e5);
   const d = fmtDate(Date.parse(v.valid_until + 'T12:00:00'));
   return left < 0 ? ['red', html`<span>Expiré le</span> ${d}`] : left <= 3 ? ['yellow', left === 0 ? html`<span>Expire ce soir à minuit</span>` : html`<span>Expire dans ${left} jour(s)</span>`] : ['green', html`<span>Valable jusqu’au</span> ${d}`];
 }
-// « Votre activité avec LuxInterventions » : ce que la gérance a confié à LuxInterventions, en grand
+// « Votre activité avec LA CENTRAL » : ce que la gérance a confié à LA CENTRAL, en grand
 function activityCard(tickets, devis) {
   const y = new Date().getFullYear(), inY = (t) => t && new Date(t).getFullYear() === y;
   const fact = (L) => L.reduce((n, t) => n + (+t.inv_ttc || 0), 0);
@@ -1329,7 +1329,7 @@ function activityCard(tickets, devis) {
   const accY = (devis || []).filter((v) => v.status === 'accepte' && inY(v.decided_at));
   const res = new Set(tickets.map((t) => t.residence_id)).size;
   return html`<div class="card activity-card">
-    <div class="section-label" style="margin-top:0">🤝 <span>Votre activité avec LuxInterventions</span> · ${y}</div>
+    <div class="section-label" style="margin-top:0">🤝 <span>Votre activité avec LA CENTRAL</span> · ${y}</div>
     <div class="act-big">${eurP(fact(inv.filter((t) => inY(t.inv_date))))}</div><div class="small muted"><span>facturés cette année (TTC)</span></div>
     <div class="act-row">
       <span><b>${done.filter((t) => inY(t.done_at)).length}</b> <span>interventions terminées</span></span>
@@ -1370,7 +1370,7 @@ function devisBanner() {
     ${open.map((v) => { const [k, lbl] = devisBall(v); return html`<div class="dev-item">
       <div style="display:flex;gap:10px;align-items:flex-start"><span class="dball dball-${k}"></span><span class="grow"><b style="display:block"><span>Devis</span> ${v.no}</b>${v.title ? html`<span class="small" style="display:block">${v.title}</span>` : ''}
         <span class="small"><b>${eurP(v.ttc)} TTC</b>${v.pct ? html` · <span>acompte</span> ${v.pct} % : ${eurP(v.acompte)}` : ''}</span><span class="tiny muted" style="display:block">${lbl}</span>
-        ${v.status === 'revision' ? html`<span class="tiny" style="display:block;color:#7c3aed">🔄 <span>Révision demandée — LuxInterventions prépare une nouvelle version.</span></span>` : ''}</span></div>
+        ${v.status === 'revision' ? html`<span class="tiny" style="display:block;color:#7c3aed">🔄 <span>Révision demandée — LA CENTRAL prépare une nouvelle version.</span></span>` : ''}</span></div>
       <div class="dev-btns" style="margin-top:10px"><button class="btn sm" data-action="dev-dl" data-id="${v.id}" data-no="${v.no}">⬇️ <span>Voir le devis (PDF)</span></button>
         ${v.status === 'envoye' && isManager() ? html`<button class="btn sm primary" data-action="dev-dec" data-id="${v.id}" data-st="accepte" data-no="${v.no}">✅ Accepter</button><button class="btn sm" data-action="dev-rev" data-id="${v.id}" data-no="${v.no}">🔄 Demander une révision</button><button class="btn sm ghost danger" data-action="dev-dec" data-id="${v.id}" data-st="refuse" data-no="${v.no}">❌ Refuser</button>`
           : v.status === 'envoye' ? html`<span class="tiny muted">Le responsable de votre gérance accepte ou refuse le devis.</span>` : ''}</div></div>`; })}
@@ -1381,7 +1381,7 @@ const offerBanner = () => state.offersOff !== false ? '' : html`<button type="bu
 const offerSeen = () => { try { return localStorage.getItem(OFFER_KEY) === '1'; } catch { return true; } };
 const offerMark = () => { try { localStorage.setItem(OFFER_KEY, '1'); } catch { /* stockage indisponible */ } };
 
-// 🏢 données de la société de la gérance (factures de LuxInterventions) : ce qui manque est signalé ⚠️ dans « Premiers pas »
+// 🏢 données de la société de la gérance (factures de LA CENTRAL) : ce qui manque est signalé ⚠️ dans « Premiers pas »
 const ibanClean = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const ibanFmt = (v) => ibanClean(v).replace(/(.{4})/g, '$1 ').trim();
 function ibanOk(v) {
@@ -1419,19 +1419,19 @@ async function orgLogoSave(logo) {
 const orgLogoPick = () => {
   const lg = state.myOrg && state.myOrg.logo;
   return html`<span class="org-logo-box">${lg ? html`<img src="${lg}" alt="Logo">` : html`<span class="muted tiny">Logo</span>`}</span>
-    <span class="grow"><b style="display:block">🎨 Logo de votre agence</b><span class="tiny muted">LuxInterventions vous reconnaît d’un coup d’œil. PNG ou JPG, carré de préférence.</span>
+    <span class="grow"><b style="display:block">🎨 Logo de votre agence</b><span class="tiny muted">LA CENTRAL vous reconnaît d’un coup d’œil. PNG ou JPG, carré de préférence.</span>
     <span style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px"><label class="btn sm">${lg ? '🔄 Changer' : '📷 Choisir le logo'}<input type="file" accept="image/png,image/jpeg,image/webp" data-input="org-logo" hidden></label>${lg ? html`<button class="btn sm ghost" type="button" data-action="org-logo-del">Retirer</button>` : ''}</span></span>`;
 };
 const orgMissing = (o) => (o ? [!o.address && 'adresse', !o.rcs && 'RCS (B…)', !o.tva && 'n° TVA (LU…)', !o.banque && 'banque', !o.bic && 'BIC', !o.iban && 'IBAN'].filter(Boolean) : []);
 
-// RGPD du portail : la gérance est responsable de ses données ; ARES INVEST S.A. (LuxInterventions) les traite pour les interventions (sous-traitant)
+// RGPD du portail : la gérance est responsable de ses données ; ARES INVEST S.A. (LA CENTRAL) les traite pour les interventions (sous-traitant)
 const RGPD_P = [
-  'Responsable du traitement : votre gérance, pour les données de ses résidences, de ses occupants et de ses demandes. ARES INVEST S.A. (nom commercial LuxInterventions) les traite uniquement pour réaliser les interventions demandées, en tant que sous-traitant (art. 28 RGPD).',
+  'Responsable du traitement : votre gérance, pour les données de ses résidences, de ses occupants et de ses demandes. ARES INVEST S.A. (nom commercial LA CENTRAL) les traite uniquement pour réaliser les interventions demandées, en tant que sous-traitant (art. 28 RGPD).',
   'Données : résidences et adresses, prénom et nom des occupants, n° de porte, étage, codes d’accès et de serrure, contacts sur place, demandes, photos des interventions, devis et factures.',
-  'Qui les voit : votre gérance et l’équipe LuxInterventions chargée de l’intervention (le technicien reçoit seulement ce qu’il faut pour sa mission). Aucune publicité, aucune revente.',
+  'Qui les voit : votre gérance et l’équipe LA CENTRAL chargée de l’intervention (le technicien reçoit seulement ce qu’il faut pour sa mission). Aucune publicité, aucune revente.',
   'Durée : les noms, codes et contacts sont effacés 3 mois après la fin du contrat avec la gérance ; les devis et factures sont gardés 10 ans (obligation comptable).',
   'Sécurité : accès personnel par email et mot de passe, connexion chiffrée (HTTPS), données chez un hébergeur technique.',
-  'Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LuxInterventions. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).',
+  'Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LA CENTRAL. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).',
 ];
 const SHEETS = {
   rgpd() {
@@ -1448,7 +1448,7 @@ const SHEETS = {
       narrow: true,
       body: html`<form id="f" data-form="devis-rev" class="fields"><input type="hidden" name="id" value="${id}">
         <p class="tiny muted full" style="margin:0"><span>Devis</span> ${no}</p>
-        <p class="small full" style="margin:0">Dites à LuxInterventions ce qu’il faut revoir (travaux en plus ou en moins, délai, prix…). Vous recevrez une nouvelle version.</p>
+        <p class="small full" style="margin:0">Dites à LA CENTRAL ce qu’il faut revoir (travaux en plus ou en moins, délai, prix…). Vous recevrez une nouvelle version.</p>
         <label class="field full">Votre message<textarea name="note" required style="min-height:110px" placeholder="ex. Pouvez-vous enlever la peinture du couloir et revoir le prix ?"></textarea></label>
         <div class="full" style="display:flex;justify-content:flex-end;margin-top:-4px"><button class="btn primary" type="submit">${icon('send')} Envoyer</button></div>
       </form>`,
@@ -1462,7 +1462,7 @@ const SHEETS = {
       narrow: true,
       body: html`<form id="f" data-form="myorg" class="fields">
         <div class="org-logo-pick full">${orgLogoPick()}</div>
-        <p class="small muted full" style="margin:0">Ces données figurent sur les factures de LuxInterventions (ARES INVEST S.A.). Le nom de la société est modifié par LuxInterventions.</p>
+        <p class="small muted full" style="margin:0">Ces données figurent sur les factures de LA CENTRAL (ARES INVEST S.A.). Le nom de la société est modifié par LA CENTRAL.</p>
         <label class="field full">Société<input value="${o.name || state.me.org_name || ''}" readonly class="muted"></label>
         <label class="field full">Adresse<textarea name="address" required style="min-height:56px" placeholder="rue, n°, code postal, ville">${o.address || ''}</textarea></label>
         <label class="field">RCS<input name="rcs" required value="${o.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
@@ -1480,9 +1480,9 @@ const SHEETS = {
     return {
       wide: true,
       title: '💼 Nos abonnements',
-      body: html`<h3 style="margin:0 0 6px">Gérez aussi vos propres locataires</h3><p class="muted" style="margin:0 0 4px">La même app que LuxInterventions, pour vos immeubles et vos locataires.</p>
-        <p style="margin:0 0 4px"><b>🔒 Vos données sont chiffrées : personne d’autre, même pas LuxInterventions, ne peut les lire.</b></p>
-        <p class="tiny muted" style="margin:0 0 14px">Les demandes d’intervention à LuxInterventions restent gratuites, avec ou sans abonnement. Prix hors TVA.</p>
+      body: html`<h3 style="margin:0 0 6px">Gérez aussi vos propres locataires</h3><p class="muted" style="margin:0 0 4px">La même app que LA CENTRAL, pour vos immeubles et vos locataires.</p>
+        <p style="margin:0 0 4px"><b>🔒 Vos données sont chiffrées : personne d’autre, même pas LA CENTRAL, ne peut les lire.</b></p>
+        <p class="tiny muted" style="margin:0 0 14px">Les demandes d’intervention à LA CENTRAL restent gratuites, avec ou sans abonnement. Prix hors TVA.</p>
         <div class="offer-grid">${OFFER_PLANS.map((p) => html`<div class="offer-card${p.id === 'pro' ? ' pop' : ''}">
           <div class="offer-top"><h3>${p.name}</h3>${p.badge ? html`<span class="offer-badge">${p.badge}</span>` : ''}</div>
           <p class="tiny muted" style="margin:2px 0 10px">${p.sub}</p>
@@ -1550,7 +1550,7 @@ const SHEETS = {
             ${isAdmin() ? html`<div class="ir org">🏢 ${res.org_name} · #${t.ref}</div>` : ''}</div>`;
         })()}
         ${(() => {
-          // photos du dégât (gérance, à la demande) | photos après réparation (équipe LuxInterventions)
+          // photos du dégât (gérance, à la demande) | photos après réparation (équipe LA CENTRAL)
           const after = d.events.filter((e) => e !== firstEvent && e.user_role === 'admin').flatMap((e) => byEvent[e.id] || []);
           if (!rootPhotos.length && !after.length) return '';
           return html`<div class="card ba" style="margin-bottom:12px"><div class="ba-grid">
@@ -1571,13 +1571,13 @@ const SHEETS = {
         ${t.trip && open ? html`<div data-trip-tk="${t.trip}" data-trip-kind="box"></div>` : ''}
         <div class="section-label">Suivi</div>
         <div class="timeline">${d.events.map((e) => html`<div class="tl ${e.kind} ${e.user_role === 'admin' ? 'staff' : ''}">
-          <div class="tl-head"><b>${evLabel(e)}</b> <span class="muted">· ${e.user_name || '—'}${e.user_role === 'admin' ? ' (LuxInterventions)' : ''} · ${fmtDateTime(e.created_at)}</span></div>
+          <div class="tl-head"><b>${evLabel(e)}</b> <span class="muted">· ${e.user_name || '—'}${e.user_role === 'admin' ? ' (LA CENTRAL)' : ''} · ${fmtDateTime(e.created_at)}</span></div>
           ${e.text && e.kind !== 'create' && e !== evalEv ? html`<div class="tl-text">${e.text}</div>` : ''}
           ${e !== firstEvent ? gallery(byEvent[e.id]) : ''}
         </div>`)}</div>
         <form data-form="comment" class="comment-box">
           <input type="hidden" name="id" value="${t.id}">
-          <textarea name="text" placeholder="${isAdmin() ? 'Message à la gérance…' : 'Message à LuxInterventions…'}" style="min-height:70px"></textarea>
+          <textarea name="text" placeholder="${isAdmin() ? 'Message à la gérance…' : 'Message à LA CENTRAL…'}" style="min-height:70px"></textarea>
           <div style="display:flex;gap:8px;align-items:center;margin-top:8px">
             <label class="btn sm" style="cursor:pointer">${icon('camera')} Photo<input type="file" name="photos" accept="image/*" multiple hidden data-input="count-files"></label>
             <button class="btn sm primary" type="submit">${icon('send')} Envoyer</button>
@@ -1775,7 +1775,7 @@ const SHEETS = {
   },
 
   'user-form'({ data }) {
-    // LuxInterventions invite le responsable d'une gérance : email (+ téléphone) seulement, il écrit son nom en ouvrant le lien
+    // LA CENTRAL invite le responsable d'une gérance : email (+ téléphone) seulement, il écrit son nom en ouvrant le lien
     if (isAdmin() && data.role !== 'admin') return {
       title: 'Inviter le responsable', narrow: true,
       body: html`<form id="f" data-form="user" class="fields"><input type="hidden" name="org_id" value="${data.org || ''}"><input type="hidden" name="role" value="gerance_admin">
@@ -1928,7 +1928,7 @@ async function printReport(o) {
   const mMax = Math.max(1, ...Object.values(months).map((x) => x.n));
   const gTable = (head, rows) => html`<table class="tbl"><thead><tr><th>${head}</th><th class="r">Demandes</th><th class="r">Urgentes</th><th class="r">Terminées</th><th class="r">Facturé TTC</th></tr></thead><tbody>${rows.map(([k, v]) => html`<tr><td>${k}</td><td class="r">${v.n}</td><td class="r">${v.urg}</td><td class="r">${v.done}</td><td class="r">${v.ttc ? eurP(v.ttc) : '—'}</td></tr>`)}</tbody></table>`;
   const el = $('#print');
-  setHtml(el, html`<div class="pr-head"><div><b>LuxInterventions</b> · ARES INVEST S.A. · ${title}</div><div>Imprimé le ${fmtDate(Date.now())}</div></div>
+  setHtml(el, html`<div class="pr-head"><div><b>LA CENTRAL</b> · ARES INVEST S.A. · ${title}</div><div>Imprimé le ${fmtDate(Date.now())}</div></div>
     <h1>${title}</h1><p class="pr-sub">${who} · ${tickets.length} demande(s)${filt.length ? ' · ' + filt.join(' · ') : ''}</p>
     ${on('resume') ? html`<h2>Résumé</h2>
     <table class="tbl"><tbody>
@@ -1978,7 +1978,7 @@ const ACTIONS = {
     if (!state.me) { try { localStorage.setItem('ptlOfferWant', d.id); } catch { /* stockage indisponible */ } } // pas encore connecté : envoyé après le mot de passe
     else if (!state.demo) { try { await api('offer', { method: 'POST', body: { plan: d.id } }); } catch { /* ancien serveur : on remercie quand même */ } }
     closeSheet();
-    toast('Merci ! LuxInterventions vous contacte très vite pour votre abonnement.');
+    toast('Merci ! LA CENTRAL vous contacte très vite pour votre abonnement.');
   },
   'offer-open': () => openSheet('offer'),
   go: (d) => { if (state.sheet) closeSheet(); go(d.to); },
@@ -2013,7 +2013,7 @@ const ACTIONS = {
     if (state.sheet) closeSheet();
     renderShell();
     await go('home', true);
-    toast(d.id === 'admin' ? 'Vous voyez maintenant le portail comme l’équipe LuxInterventions' : 'Vous voyez maintenant le portail comme une gérance');
+    toast(d.id === 'admin' ? 'Vous voyez maintenant le portail comme l’équipe LA CENTRAL' : 'Vous voyez maintenant le portail comme une gérance');
   },
   'guide-hide': () => { try { localStorage.setItem('ptlGuideHidden', '1'); } catch {} state.guideHidden = true; renderView(); },
   'open-ticket': (d) => openTicket(d.id),
@@ -2051,7 +2051,7 @@ const ACTIONS = {
   'dev-rev': (d) => openSheet('devis-rev', d.id, { no: d.no }),
   async 'dev-dec'(d) {
     const acc = d.st === 'accepte';
-    if (!(await confirmBox(acc ? 'Accepter ce devis ?' : 'Refuser ce devis ?', { ok: acc ? '✅ Accepter' : '❌ Refuser', danger: !acc, detail: acc ? 'Bon pour accord : votre acceptation est ferme et définitive. LuxInterventions organise les travaux.' : 'LuxInterventions est prévenu.' }))) return;
+    if (!(await confirmBox(acc ? 'Accepter ce devis ?' : 'Refuser ce devis ?', { ok: acc ? '✅ Accepter' : '❌ Refuser', danger: !acc, detail: acc ? 'Bon pour accord : votre acceptation est ferme et définitive. LA CENTRAL organise les travaux.' : 'LA CENTRAL est prévenu.' }))) return;
     await api(`devis/${d.id}/decision`, { method: 'POST', body: { status: d.st } });
     toast(acc ? '✅ Devis accepté — merci !' : 'Devis refusé'); go('home', true);
   },
@@ -2172,13 +2172,13 @@ const ACTIONS = {
   'org-logo-del': () => orgLogoSave('').catch((e) => toast(e.message, { bad: true })),
   'org-edit': async () => { if (!state.myOrg) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; } catch { /* hors ligne */ } } openSheet('myorg'); },
   copy: async (d) => { try { await navigator.clipboard.writeText(d.text); toast('Copié'); } catch { toast('Copie impossible', { bad: true }); } },
-  // mot de passe oublié : LuxInterventions (ou le responsable) reçoit la demande et envoie un nouveau lien
+  // mot de passe oublié : LA CENTRAL (ou le responsable) reçoit la demande et envoie un nouveau lien
   async forgot(d, btn) {
     const f = lockEl.querySelector('form[data-form=login]'), em = f && f.querySelector('[name=email]'), err = f && f.querySelector('.lock-err');
     const email = em ? em.value.trim().toLowerCase() : '';
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { if (err) err.textContent = 'Écrivez d’abord votre email ci-dessus, puis touchez « Mot de passe oublié ? ».'; em && em.focus(); return; }
     try { await api('forgot', { method: 'POST', body: { email } }); } catch (e) { if (err) err.textContent = e.message; return; }
-    if (err) { err.classList.add('ok'); err.textContent = '✓ Demande envoyée. LuxInterventions vous envoie un nouveau lien (WhatsApp ou email) : ouvrez-le pour choisir un nouveau mot de passe.'; }
+    if (err) { err.classList.add('ok'); err.textContent = '✓ Demande envoyée. LA CENTRAL vous envoie un nouveau lien (WhatsApp ou email) : ouvrez-le pour choisir un nouveau mot de passe.'; }
     if (btn) btn.disabled = true;
   },
   'push-on': () => enablePush().catch((e) => toast(e.message || 'Impossible d’activer les notifications', { bad: true })),
@@ -2194,7 +2194,7 @@ const FORMS = {
     const note = String(fd.get('note') || '').trim();
     if (!note) return;
     await api(`devis/${fd.get('id')}/decision`, { method: 'POST', body: { status: 'revision', note } });
-    closeSheet(); toast('🔄 Demande de révision envoyée à LuxInterventions'); go('home', true);
+    closeSheet(); toast('🔄 Demande de révision envoyée à LA CENTRAL'); go('home', true);
   },
   async myorg(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
@@ -2284,7 +2284,7 @@ const FORMS = {
       }
       const { id, ref } = await api('tickets', { method: 'POST', body });
       if (files.length) { setBusy(btn, true, `Photos 0/${files.length}…`); await uploadPhotos(id, files); }
-      toast(`Demande #${ref} envoyée — LuxInterventions est prévenu`);
+      toast(`Demande #${ref} envoyée — LA CENTRAL est prévenu`);
       await refresh(true);
       await openTicket(id);
     } catch (e) {
@@ -2303,7 +2303,7 @@ const FORMS = {
     setBusy(btn, true);
     try {
       await api(`tickets/${fd.get('id')}/comments`, { method: 'POST', body: { text: evalText(fd.get('ref'), v) } });
-      toast('Merci ! Évaluation envoyée à LuxInterventions');
+      toast('Merci ! Évaluation envoyée à LA CENTRAL');
       await openTicket(fd.get('id'));
     } catch (e) {
       setBusy(btn, false);
