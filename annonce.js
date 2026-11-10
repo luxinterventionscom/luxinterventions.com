@@ -3,6 +3,7 @@
 // 💳 Paiement en ligne : pas encore connecté (bouton affiché, désactivé, avec une info).
 import { pubLive, pubSlotNow, pubPickNow, BANDS, BAND_KEYS, PACK_N, adPrice, durDays } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
+import { domierHtml, domierInit, DOM_TEL } from '/ares/domier.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { openJson, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
@@ -325,6 +326,7 @@ function render() {
   const lg = ls.get('annLogo:' + id) || '';
   out.push(`<div class="top"><span class="brandx" style="display:flex;align-items:center;gap:10px"><button class="av-wrap" data-logo-open="1" aria-label="Logo"><span class="av-btn">${lg ? `<img src="${esc(lg)}" alt="" style="object-fit:contain;background:#fff">` : '📣'}</span><span class="av-pen" aria-hidden="true">✏️</span></button><b>${esc(d.nom)}</b></span>${langs}</div><p class="sub">${esc(t.app)} · ${esc(d.reseau)}</p>`);
   if (logoOpen) out.push(`<div class="card"><h2 style="margin-top:0">🖼️ Logo</h2><p class="meta" style="margin:0 0 10px">${esc((LGT[lang] || LGT.fr))}</p><div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn sec sm" style="cursor:pointer;margin:0">${lg ? '🔄' : '➕'} Logo<input type="file" accept="image/*" data-logo="1" hidden></label>${lg ? '<button class="btn sec sm" data-logo-del="1">✖</button>' : ''}<button class="btn sm" data-logo-open="1">OK</button></div></div>${profCard()}${recCard()}<div class="card"><button class="btn sec block" data-reset="1">🔑 ${esc(t.reset)}</button></div>`);
+  out.push(domierHtml({ tel: DOM_TEL, form: true, list: d.doms || [], lang })); // 🔧 DOMIER : directement à LUXINTERVENTION
   { const p = slot('haut'); if (p) out.push(adBox(p) + `<p class="meta" style="margin:-4px 0 12px">💡 ${esc((ADT[lang] || ADT.fr).why)}</p>`); }
   if (pushSt && pushSt !== 'unsupported' && (pushSt !== 'on' || pushJust)) out.push(`<div class="card"><h2>${esc(t.notif)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.notifHint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0">${esc(t.notifOk)}</p>` : `<button class="btn sm" data-push="1">${esc(t.notifOn)}</button>`}</div>`);
   out.push(repliesCard());
@@ -467,3 +469,4 @@ pchatInit({ id: () => id, data: () => data, send: (o) => sendOwner(o), lang: () 
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data && !form) { setBadge(0, '/annonce'); load(); } });
 load();
 emojiInit(); // 😊 bouton émojis dans les chats
+domierInit({ lang: () => lang, send: (o) => sendOwner(o), rerender: () => render() });

@@ -4,6 +4,7 @@
 import { jobHtml, jobInit } from '/ares/jobform.js';
 import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
+import { domierHtml, domierInit, DOM_TEL } from '/ares/domier.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { openJson, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
@@ -221,6 +222,7 @@ function render() {
   document.title = `🚕 ${d.nom}`;
   // 1 en-tête · 2 pub · 3 notifications · 4 météo/radio · 5 courses · 6 pub · 7 chauffeurs, voitures, tarifs · 8 🔒 · 9 pub · 10 infos · 11 cours
   out.push(`<div class="top"><span class="brandx"><b>🚕 ${esc(d.nom)}</b></span>${langs}</div><p class="sub">${esc(t.app)} · ${esc(d.reseau)}</p>`);
+  out.push(domierHtml({ tel: DOM_TEL, form: true, list: d.doms || [], lang, myTel: d.tel || '' })); // 🔧 DOMIER : directement à LUXINTERVENTION
   { const p = slot('haut'); if (p) out.push(adBox(p, t)); }
   if (pushSt && pushSt !== 'unsupported' && (pushSt !== 'on' || pushJust)) out.push(`<div class="card"><h2>${esc(t.notif)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.notifHint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0">${esc(t.notifOk)}</p>` : `<button class="btn sm" data-push="1">${esc(t.notifOn)}</button>`}</div>`);
   out.push(wxRadioCard());
@@ -357,3 +359,4 @@ app.addEventListener('click', async (e) => {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) { setBadge(0, '/taxi'); load(); } });
 load();
 emojiInit(); // 😊 bouton émojis dans les chats
+domierInit({ lang: () => lang, send: (o) => sendOwner(o), rerender: () => render() });

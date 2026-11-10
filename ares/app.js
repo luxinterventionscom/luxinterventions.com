@@ -14,6 +14,7 @@ import { zoneOk, visParse, visZone } from './netpubs.js';
 import { newsHtml } from './news.js';
 import { BANDS, BAND_KEYS, TARIF_DEF, PACK_N, adPrice, durDays, pubLive, pubSlotNow, pubPickNow, bandNow } from './pubsched.js';
 import { emojiInit } from './emoji.js';
+import { domierHtml, domierInit, DOM_TEL } from './domier.js';
 import { pubStatInit, pubSeen, pubTap } from './pubstat.js';
 import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from './pubsocial.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
@@ -36,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.244.0';
+const VERSION = '2.245.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -68,6 +69,7 @@ const homeRoute = () => (TENANT ? tRoutes()[0] : 'dashboard');
 const vault = new Vault(API, TENANT);
 trInit(API, () => getLang()); // 🌐 traduction des messages des chats
 emojiInit(); // 😊 bouton émojis dans les chats
+domierInit({ lang: () => getLang() }); // 🔧 DOMIER (centrales des clients)
 // 🗄️ Nouveau départ : les données de test sont archivées (gardées, rien n'est effacé) et ne s'affichent plus
 // nulle part (listes, statistiques, apps) ; Réglages → « Voir les archives » les montre à nouveau
 const ARCH_COLS = new Set(['taches', 'devis', 'hotes', 'biens']);
@@ -1510,6 +1512,8 @@ async function netApi(path, method = 'GET', body) {
   return r.json();
 }
 const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
+// 🔧 DOMIER dans les centrales des clients : appeler LUXINTERVENTION, ou ＋ Demande
+const domierCentral = () => (TENANT ? new Raw(domierHtml({ tel: DOM_TEL, lang: getLang(), extra: `<button type="button" class="btn sm primary" data-action="tdem-new" style="margin-top:8px">🔧 ＋ Demande</button>` }).replace('<details ', '<details data-notr="1" ')) : '');
 // 🏗️ ANGAR : état des paquets dans chaque container
 async function angarPacks() {
   const A = {};
@@ -1950,7 +1954,7 @@ async function annSync(onlyId, loud) {
           claim: a.payClaim || '', fact: a.fact ? { no: a.fact.no, date: a.fact.date, ht: a.fact.ht, tva: a.fact.tva, ttc: a.fact.ttc, tx: a.fact.tx } : null, ...(a.st === 'pay' ? annDue(a) : {}) };
       });
       const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', prof: { email: an.email || '', web: an.web || '', tva: an.tvaNum || '', iban: an.iban || '', banque: an.banque || '' }, recs: vault.list('reglages').filter((r) => r.id.startsWith('anrec-') && r.annId === an.id).map((r) => ({ t: r.t, motif: r.motif, texte: r.texte, rep: r.rep || '' })), adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: 'LA CENTRAL',
-        tarifs: { ...anTarifsFull(), haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, crea_simple: +t.crea_simple || 0, crea_moyen: +t.crea_moyen || 0, crea_max: +t.crea_max || 0, note: t.note || '' }, pay: false, ...annFrom(), chat: pchatOut(an), chatRd: an.chatRd || '' };
+        tarifs: { ...anTarifsFull(), haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, crea_simple: +t.crea_simple || 0, crea_moyen: +t.crea_moyen || 0, crea_max: +t.crea_max || 0, note: t.note || '' }, pay: false, ...annFrom(), chat: pchatOut(an), doms: domList('an', an.id), chatRd: an.chatRd || '' };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && anHashes.get(e.id) === hs) continue;
       await vault.espacePut(e.id, await sealJson(e.key, data));
@@ -1960,10 +1964,29 @@ async function annSync(onlyId, loud) {
   }
   return true;
 }
+// 🔧 DOMIER : demande d'intervention envoyée depuis une app (taxi, annonceur → LUXINTERVENTION ; client d'hôtel → son hôtel)
+async function domIn(k, who, msg, extra = {}) {
+  const S = (v, n) => String(v ?? '').trim().slice(0, n);
+  const ph = (Array.isArray(msg.photos) ? msg.photos : []).filter((b) => typeof b === 'string' && b.length < 4e6).slice(0, 3);
+  const titre = S(msg.texte, 80) || 'Demande';
+  let t;
+  await vault.mutate((tx) => {
+    t = tx.put('taches', { type: 'reparation', titre: `🔧 DOMIER${msg.urg ? ' 🚨' : ''} — ${who} : ${titre}`, intervenantId: '', date: today(), recur: '', statut: 'afaire', sentAt: S(msg.t, 30) || new Date().toISOString(),
+      dom: { k, id: extra.id || '', nom: who }, adr: S(msg.adresse, 160) || extra.adr || '',
+      note: `${S(msg.texte, 2000)}${msg.urg ? '\n🚨 URGENT' : ''}\n\n— ${who} · ${fmtDateTime(msg.t || Date.now())}${msg.tel ? ' · tél. ' + S(msg.tel, 30) : ''}${msg.adresse || extra.adr ? '\nAdresse : ' + (S(msg.adresse, 160) || extra.adr) : ''}${msg.dispo ? '\nDisponibilités : ' + S(msg.dispo, 200) : ''}${msg.acces ? '\nAccès : ' + S(msg.acces, 200) : ''}` });
+    ph.forEach((b, i) => tx.put('documents', { id: t.id + 'p' + i, tacheId: t.id, kind: 'signal', label: `DOMIER — photo ${i + 1}`, date: today(), mime: 'image/jpeg', size: Math.round(b.length * 0.75) }));
+  }, '🔧 DOMIER : demande reçue', `${who} — ${titre}`);
+  for (let i = 0; i < ph.length; i++) await vault.saveFile(t.id + 'p' + i, unb64u(ph[i]));
+  return t;
+}
+// état des demandes DOMIER renvoyé dans l'app (celles transmises à LA CENTRAL : l'état qui revient)
+const domList = (k, id) => vault.list('taches').filter((t) => t.dom && t.dom.k === k && t.dom.id === id).sort((a, b) => String(b.sentAt || '').localeCompare(String(a.sentAt || ''))).slice(0, 10)
+  .map((t) => ({ id: t.id, titre: String(t.note || '').split('\n')[0].slice(0, 80), st: t.statut === 'fait' ? 'fait' : t.fwd ? t.fwd.st || 'afaire' : t.statut || 'afaire', at: String(t.sentAt || t.date || '').slice(0, 10) }));
 // annonce envoyée par l'app de l'annonceur : nouvelle ou modifiée → à valider ; arrêt demandé
 async function annInbox(an, msg) {
   const S = (v, n) => String(v ?? '').trim().slice(0, n);
   if (msg.type === 'pchat') return pchatIn(an, msg);
+  if (msg.type === 'domier') { await domIn('an', an.nom || 'Annonceur', msg, { id: an.id }); annSync(an.id); return true; }
   if (msg.type === 'an-ad') {
     const a = msg.ad || {}, id = S(a.id, 40), old = id ? vault.get('avis', id) : null;
     if (old && old.annId !== an.id) return false;
@@ -2464,6 +2487,7 @@ async function biensSync() {
 async function hoteInbox(h, msg) {
   const who = `${[h.prenom, h.nom].filter(Boolean).join(' ')} — ${h.chambre}`;
   if (msg.type === 'pchat') return pchatIn(h, msg);
+  if (msg.type === 'domier') { const hc = hoteConf(); await domIn('ho', who, msg, { id: h.id, adr: [h.lieu === 'airbnb' ? h.adresse || hc.adresse : hc.adresse || h.adresse, (h.lieu === 'airbnb' ? 'logement ' : 'chambre ') + (h.chambre || '')].filter(Boolean).join(' — ') }); hotesSync(h.id); return true; }
   if (msg.type === 'hote-arr') {
     const mode = msg.mode === 'taxi' ? 'taxi' : 'self', num = (v, m) => Math.max(0, Math.min(m, +v || 0));
     const geo = (g) => (g && isFinite(+g.lat) && isFinite(+g.lon) ? { lat: +(+g.lat).toFixed(5), lon: +(+g.lon).toFixed(5) } : null);
@@ -3239,7 +3263,7 @@ async function txcoSync(onlyId, loud) {
       const data = { v: 1, kind: 'taxi', gv: VERSION, nom: co.nom, tel: co.tel || '', cat: co.cat || {}, rides: await txRides(co), signalKey: sig ? sig.pub : '', reseau: hcf.nom || netBrand() || 'LA CENTRAL',
         prof: co.prof || null, cli: { nom: hcf.nom || netBrand(), adresse: hcf.adresse || '' },
         invs: txInvs(co.id).slice(0, 40).map((f) => ({ no: f.no, date: f.date, ht: f.ht, tva: f.tva, ttc: f.ttc, taux: f.taux, keys: f.keys, paid: f.paid || '', recv: f.recv || '' })),
-        pubs: pubsActives(null, 'taxi').map(pubOut), chat: pchatOut(co), chatRd: co.chatRd || '' };
+        pubs: pubsActives(null, 'taxi').map(pubOut), chat: pchatOut(co), chatRd: co.chatRd || '', doms: domList('tx', co.id) };
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && txHashes.get(e.id) === hs) continue;
       await vault.espacePut(e.id, await sealJson(e.key, data));
@@ -3253,6 +3277,7 @@ async function txcoSync(onlyId, loud) {
 async function txInbox(co, msg) {
   const S = (v, n) => String(v ?? '').trim().slice(0, n), N = (v) => Math.max(0, Math.min(100000, +v || 0));
   if (msg.type === 'pchat') return pchatIn(co, msg);
+  if (msg.type === 'domier') { await domIn('tx', co.nom || 'Taxi', msg, { id: co.id }); txcoSync(co.id); return true; }
   if (msg.type === 'tx-cat') {
     const c = msg.cat || {}, gammes = {};
     for (const k of Object.keys(TX_GAM)) { const g = (c.gammes || {})[k] || {}; gammes[k] = { on: !!g.on, pc: N(g.pc), km: N(g.km), h: N(g.h), demi: N(g.demi), jour: N(g.jour) }; }
@@ -3342,7 +3367,7 @@ function hoteData(h, tks) {
     edlSent: h.edlOut ? Object.keys(h.edlOut.ph || {}) : [], sejour: hoteSejour(h), ...tks, signalKey: sig ? sig.pub : '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
     pubs: TENANT ? [] : pubsActives(null, 'hote').filter((a) => zoneOk(a, { txt: h.adresse || ch.adresse || c.adresse || soc.adresse || '', pays: soc.pays || 'LU' })).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut), ...(TENANT ? { netPubs: 1 } : {}),
-    chat: pchatOut(h), chatRd: h.chatRd || '',
+    chat: pchatOut(h), chatRd: h.chatRd || '', doms: domList('ho', h.id),
   };
 }
 // le client a son app : accès (id + clé) et code personnel enregistré sur le serveur (empreinte seulement)
@@ -5563,7 +5588,7 @@ dashboard() {
 
     if (!imms.length && !locs.length) {
       const { anRecBox: rb0, annBox: ab0 } = annAlerts((cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`);
-      return html`${packBox()}${pushNudge()}${netAd('haut')}${rb0}${ab0}${centralinoHtml()}${netAd('milieu')}${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
+      return html`${packBox()}${domierCentral()}${pushNudge()}${netAd('haut')}${rb0}${ab0}${centralinoHtml()}${netAd('milieu')}${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`;
     }
 
@@ -5615,6 +5640,7 @@ dashboard() {
     const appsBox = appsVer !== verMM && vault.list('locataires').some((x) => x.espace && x.espace.on) ? html`<div class="alert info" style="margin-bottom:14px;align-items:center">🆕<div style="flex:1"><b>Mise à jour importante (v${verMM})</b> : mettez à jour toutes les apps (locataires, équipe, clients, partenaires) pour qu’elles reçoivent les nouveautés.</div><button class="btn sm primary" data-action="apps-refresh-all">🔄 Tout mettre à jour</button></div>` : '';
     return html`
       ${packBox()}
+      ${domierCentral()}
       ${pushNudge()}
       ${bailBox}
       ${appsBox}
@@ -5754,7 +5780,10 @@ dashboard() {
     const list = vault.list('reglages').filter((r) => r.id.startsWith('tdem-')).sort((a, b) => (b.t || '').localeCompare(a.t || ''));
     const F = tFacts();
     const fRows = F.length ? html`<div class="section-label">🧾 Factures des interventions</div><div class="list" style="margin-bottom:16px">${F.map((f) => { const late = !f.paid ? lateDays(f.due) : 0, cl = tClaim(f.no); return html`<button class="row" data-action="tfact-open" data-id="${f.no}"><span class="grow"><span class="title" style="display:block">${f.no} · ${eur(f.ttc)}</span><span class="meta">${f.paid ? '✅ payée' : cl ? '⏳ paiement envoyé — en vérification' : late > 0 ? `🔴 ${late} j de retard` : '💳 à payer avant le ' + fmtDate(f.due)}</span></span>${f.paid ? '' : html`<span class="badge ${late > 0 && !cl ? 'bad' : 'warn'}">${cl ? 'envoyé' : 'à payer'}</span>`}</button>`; })}</div>` : '';
-    return html`${pageHead('🛠️ Demandes d’intervention', 'Envoyées à LA CENTRAL, qui envoie ses intervenants')}${fRows}
+    // 📩 problèmes signalés par les locataires / clients (DOMIER) : à transmettre à LA CENTRAL avec ↪️
+    const todo = vault.list('taches').filter((t) => t.sentAt && !t.fwd && t.statut !== 'fait').sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
+    const tRows = todo.length ? html`<div class="section-label">📩 Signalés par vos locataires / clients — à transmettre</div><div class="list" style="margin-bottom:16px">${todo.map((t) => html`<button class="row" data-action="edit-tache" data-id="${t.id}"><span class="grow"><b>${t.titre}</b><span class="meta" style="display:block">${fmtDateTime(t.sentAt)}${t.adr ? ' · 📍 ' + t.adr : ''}</span></span><span class="btn sm primary">↪️</span></button>`)}</div>` : '';
+    return html`${pageHead('🛠️ Demandes d’intervention', 'Envoyées à LA CENTRAL, qui envoie ses intervenants')}${domierCentral()}${tRows}${fRows}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="tdem-new">${icon('plus')} Demande</button></div></div>
       ${list.length ? html`<div class="list">${list.map((d) => html`<div class="row" style="display:block"><b>${d.kind === 'reg' ? '🔁 ' : d.kind === 'once' ? '🔧 ' : ''}${TDEM_URG[d.urgence] || ''} · ${d.titre}</b>${tdemStatus(d)}
         <div class="small" style="white-space:pre-wrap">${d.texte}</div><div class="tiny muted" style="display:flex;align-items:center;gap:8px"><span class="grow">${d.adresse ? '📍 ' + d.adresse + ' · ' : ''}Envoyée le ${fmtDateTime(d.t)}</span><button class="btn icon sm ghost danger" data-action="tdem-del" data-id="${d.id}" aria-label="Supprimer">${icon('trash')}</button></div></div>`)}</div>`
@@ -7228,7 +7257,7 @@ const SHEETS = {
     const ints = vault.list('intervenants').filter((i) => !i.archive || i.id === t.intervenantId).sort((a, b) => fits(b) - fits(a) || intervFull(a).localeCompare(intervFull(b)));
     return {
       title: id ? "Modifier l'intervention" : 'Nouvelle intervention',
-      body: html`${!TENANT && t.net && t.net.stopAsk && !t.fin ? html`<div class="alert warn" style="margin-bottom:10px">⏹️<div><b>${t.net.nom}</b> demande l’arrêt de ce service régulier (le ${fmtDate(t.net.stopAsk)}). Mettez la <b>date de fin</b> de la répétition : le client et ses locataires la voient.</div></div>` : ''}${!TENANT && t.net && t.net.reg && !t.recur ? html`<div class="alert info" style="margin-bottom:10px">🔁<div><b>Service régulier demandé</b> : ${TDEM_SVC[t.net.reg.svc] || ''} · ${RECURS[t.net.reg.freq] || ''} · ${(t.net.reg.jours || []).map((j) => JOURS_C[j]).join(', ')}${t.net.reg.de ? ' · ' + t.net.reg.de + (t.net.reg.a ? '–' + t.net.reg.a : '') : ''}. Choisissez la <b>répétition</b>, la date et l’heure confirmées.</div></div>` : ''}${TENANT && id && t.locId && t.sentAt ? (t.fwd ? html`<div class="alert info" style="margin-bottom:10px">↪️<div><b>Envoyé à LA CENTRAL</b> le ${fmtDateTime(t.fwd.at)}${t.fwd.st ? html` · état : <b>${STATUTS[t.fwd.st] || t.fwd.st}</b>${t.fwd.who ? ' · 👷 ' + t.fwd.who : ''}` : ''}${t.fwd.acces ? html`<div class="tiny">🔑 accès au logement autorisé par ${t.fwd.acces}</div>` : ''}</div></div>` : t.statut !== 'fait' ? html`<button class="btn primary block" style="margin-bottom:10px" data-action="tfwd" data-id="${id}">↪️ Envoyer à LA CENTRAL</button>` : '') : ''}${id && !t.recur && t.statut !== 'fait' && t.intervenantId ? tripSlot(t.id, today()) : ''}<form id="f" data-form="tache" class="fields">
+      body: html`${!TENANT && t.net && t.net.stopAsk && !t.fin ? html`<div class="alert warn" style="margin-bottom:10px">⏹️<div><b>${t.net.nom}</b> demande l’arrêt de ce service régulier (le ${fmtDate(t.net.stopAsk)}). Mettez la <b>date de fin</b> de la répétition : le client et ses locataires la voient.</div></div>` : ''}${!TENANT && t.net && t.net.reg && !t.recur ? html`<div class="alert info" style="margin-bottom:10px">🔁<div><b>Service régulier demandé</b> : ${TDEM_SVC[t.net.reg.svc] || ''} · ${RECURS[t.net.reg.freq] || ''} · ${(t.net.reg.jours || []).map((j) => JOURS_C[j]).join(', ')}${t.net.reg.de ? ' · ' + t.net.reg.de + (t.net.reg.a ? '–' + t.net.reg.a : '') : ''}. Choisissez la <b>répétition</b>, la date et l’heure confirmées.</div></div>` : ''}${TENANT && id && (t.locId || t.dom) && t.sentAt ? (t.fwd ? html`<div class="alert info" style="margin-bottom:10px">↪️<div><b>Envoyé à LA CENTRAL</b> le ${fmtDateTime(t.fwd.at)}${t.fwd.st ? html` · état : <b>${STATUTS[t.fwd.st] || t.fwd.st}</b>${t.fwd.who ? ' · 👷 ' + t.fwd.who : ''}` : ''}${t.fwd.acces ? html`<div class="tiny">🔑 accès au logement autorisé par ${t.fwd.acces}</div>` : ''}</div></div>` : t.statut !== 'fait' ? html`<button class="btn primary block" style="margin-bottom:10px" data-action="tfwd" data-id="${id}">↪️ Envoyer à LA CENTRAL</button>` : '') : ''}${id && !t.recur && t.statut !== 'fait' && t.intervenantId ? tripSlot(t.id, today()) : ''}<form id="f" data-form="tache" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
         <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${(t.type === 'entretien' ? 'reparation' : t.type) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}
@@ -11269,7 +11298,7 @@ const FORMS = {
       }
       const who = whoLabel() || socName();
       const d = { type: 'demande', client: socName(), fil: tenantInfo.fil || '', ref: t.id, titre: String(t.titre || '').replace(/^(Signalement|Problème signalé par [^:]+) : /, '').slice(0, 120), urgence: TDEM_URG[g('urgence')] ? g('urgence') : 'normal',
-        adresse: [im.adresse, im.ville, logName(t.logId || l.logId)].filter(Boolean).join(' — '), texte: [String(t.note || '').slice(0, 2500), g('plus')].filter(Boolean).join('\n\n'),
+        adresse: [im.adresse, im.ville, logName(t.logId || l.logId)].filter(Boolean).join(' — ') || t.adr || '', texte: [String(t.note || '').slice(0, 2500), g('plus')].filter(Boolean).join('\n\n'),
         ...(fd.get('contact') ? { contact: fullName(l), tel: l.tel || '' } : {}), ...(g('entree') ? { entree: g('entree') } : {}),
         ...(acc ? { acces: { txt: g('accesTxt'), by: `${who} (${socName()})`, at: new Date().toISOString() } } : {}), photos, t: new Date().toISOString() };
       const k = await (await vault.call('network-key')).json();

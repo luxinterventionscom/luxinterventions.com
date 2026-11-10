@@ -3,6 +3,7 @@
 import { jobHtml, jobInit } from '/ares/jobform.js';
 import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
+import { domierHtml, domierInit } from '/ares/domier.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import qrcode from '/ares/qrcode.js';
@@ -970,6 +971,7 @@ function render() {
     <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${ph ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
     <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>`; })() + `<p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${MY_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === (icMine || d.avatar)}">${esc(e)}</button>`).join('')}</div></div>` : ''}<p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);
   // 🔄 révision du loyer annoncée par le gestionnaire
+  out.push(domierHtml({ tel: d.societe.tel, sig: true, lang })); // 🔧 DOMIER : son gestionnaire (la chaîne est respectée)
   if (d.revis && d.revis.from && (s.pay || s.contrat)) { const rv = REVT[lang] || REVT.fr; out.push(`<div class="card notice" style="border-left:4px solid #2563eb"><p style="margin:0"><b>🔄 ${esc(rv.t)}</b></p><p style="margin:6px 0 0">${esc(rv.from)} <b>${esc(fmt(d.revis.from))}</b> : ${esc(money(d.revis.ancien))} → <b>${esc(money(d.revis.nouveau))}</b> ${esc(rv.m)}</p></div>`); }
   const pubs = s.pub ? (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x) && pubLive(x)) : [];
   const ad = pubs.find((x) => x.id === adSel);
@@ -1699,3 +1701,4 @@ async function load() {
 lang = pick(null);
 load();
 emojiInit(); // 😊 bouton émojis dans les chats
+domierInit({ lang: () => lang, rerender: () => render() });

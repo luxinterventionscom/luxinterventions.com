@@ -4,6 +4,7 @@
 import { jobHtml, jobInit } from '/ares/jobform.js';
 import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
+import { domierHtml, domierInit } from '/ares/domier.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { openJson, openBytes, sealForOwner, codeHash, unwrapWithCode, b64u } from '/ares/espace-crypto.js';
@@ -288,6 +289,7 @@ function render() {
   if (today > d.depart) out.push(`<div class="card okc"><p style="margin:0">🙏 ${esc(t.thanks)}</p></div>`);
   const pubs = (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x) && pubLive(x)), slot = (k) => pickPub(pubs.filter((x) => pubSlotNow(x) === k));
   // 2 · publicité (haut)
+  out.push(domierHtml({ tel: st.tel, form: 'room', list: d.doms || [], lang })); // 🔧 DOMIER : un problème dans la chambre → l'hôtel / l'hôte
   { const p = slot('haut'); if (p) out.push(adBox(p, t)); }
   // 3 · notifications
   if (pushSt && pushSt !== 'unsupported' && (pushSt !== 'on' || pushJust)) out.push(`<div class="card notif"><h2>🔔 ${esc(t.notif)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.notifHint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0">${esc(t.notifOk)}</p>` : `<button class="btn sm" data-push="1">${esc(t.notifOn)}</button>`}</div>`);
@@ -581,3 +583,4 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 lang = lang || pick(null);
 load();
 emojiInit(); // 😊 bouton émojis dans les chats
+domierInit({ lang: () => lang, send: (o) => sendOwner(o), rerender: () => render() });
