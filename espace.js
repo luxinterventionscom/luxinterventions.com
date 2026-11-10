@@ -971,7 +971,7 @@ function render() {
     <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${ph ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
     <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>`; })() + `<p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${MY_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === (icMine || d.avatar)}">${esc(e)}</button>`).join('')}</div></div>` : ''}<p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);
   // 🔄 révision du loyer annoncée par le gestionnaire
-  out.push(domierHtml({ tel: d.societe.tel, sig: true, lang })); // 🔧 DOMIER : son gestionnaire (la chaîne est respectée)
+  const domAt = out.length; out.push(''); // 🔧 DOMIER : son gestionnaire (la chaîne est respectée) ; « Signaler un problème » est dedans (rempli plus bas)
   if (d.revis && d.revis.from && (s.pay || s.contrat)) { const rv = REVT[lang] || REVT.fr; out.push(`<div class="card notice" style="border-left:4px solid #2563eb"><p style="margin:0"><b>🔄 ${esc(rv.t)}</b></p><p style="margin:6px 0 0">${esc(rv.from)} <b>${esc(fmt(d.revis.from))}</b> : ${esc(money(d.revis.ancien))} → <b>${esc(money(d.revis.nouveau))}</b> ${esc(rv.m)}</p></div>`); }
   const pubs = s.pub ? (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x) && pubLive(x)) : [];
   const ad = pubs.find((x) => x.id === adSel);
@@ -1170,11 +1170,12 @@ function render() {
       <button class="btn block" style="margin-top:12px" type="submit">${esc(t.send)}</button></form>
       ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div>${x.acc && x.statut !== 'fait' ? `<div class="meta" style="color:#15803d;font-weight:700">${esc(t.acc)}</div>` : ''}</div></div>`).join('')}` : ''}</details>`;
   }
+  out[domAt] = domierHtml({ tel: d.societe.tel, lang, extra: sigHtml });
   const legHtml = s.coll || s.signal ? `<p class="meta mt-leg"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow"></span> ${esc(t.lights[1])} · <span class="light l-red"></span> ${esc(t.lights[2])}${vis ? ` · <span class="light l-grey"></span> ${esc(t.mt.offL)}` : ''}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</p>` : '';
   // un avertissement aujourd'hui / demain (ouvriers, ménage, poubelles) : le cadre de « Maintenance » clignote en rouge ;
   // dedans, chaque avertissement garde sa propre pastille
   const mtL = [binSoon && binSoon.c, mtLight].includes('red') ? 'red' : [binSoon && binSoon.c, mtLight].includes('yellow') ? 'yellow' : mtLight;
-  if (mtCard || collHtml || sigHtml || legHtml || binSoon || binTop) out[mtAt] = foldCard(`<div class="card" id="mtCard"${binSoon || mtLight || binTop ? ' data-alert="red"' : ''}><h2>${mtL || binTop ? `<span class="light l-${binTop ? 'red' : mtL} blink"></span> ` : ''}🛠️ ${esc(t.mt.t)}</h2>${binSoon ? binSoon.html : ''}${d.bins && d.chat ? `<div id="binBox">${binTop}</div>` : ''}${mtCard}${collHtml}${sigHtml}${legHtml}</div>`, 'mt', '');
+  if (mtCard || collHtml || legHtml || binSoon || binTop) out[mtAt] = foldCard(`<div class="card" id="mtCard"${binSoon || mtLight || binTop ? ' data-alert="red"' : ''}><h2>${mtL || binTop ? `<span class="light l-${binTop ? 'red' : mtL} blink"></span> ` : ''}🛠️ ${esc(t.mt.t)}</h2>${binSoon ? binSoon.html : ''}${d.bins && d.chat ? `<div id="binBox">${binTop}</div>` : ''}${mtCard}${collHtml}${legHtml}</div>`, 'mt', '');
   // 📣 annonce du bas + 📰 News : juste sous l'état des lieux
   { const low = slot('bas'); if (low) out.push(adBox(low, t, d)); }
   out.push(newsHtml(API));
