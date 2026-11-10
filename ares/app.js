@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.245.1';
+const VERSION = '2.246.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1648,6 +1648,29 @@ async function netFactEmit(tid, tasks) {
   await vault.saveFile(docId, bytes);
   return no;
 }
+// 🧾 facture DOMIER : taxi ou annonceur qui nous a appelés → facture ARES INVEST S.A. (LUXINTERVENTION) dans son app (QR + « J'ai payé »)
+const domBill = (t) => !!(t && t.dom && (t.dom.k === 'tx' || t.dom.k === 'an'));
+async function domFactEmit(t) {
+  const c = factConf(), miss = factMissing(c);
+  if (miss.length) throw new Error('Complétez : ' + miss.join(', ') + ' (Réglages → 🧾 Facturation)');
+  const f = factDraft(t), tx = factTaux(f, c), k = factCalc(f, tx);
+  if (!(k.ht > 0)) throw new Error('Montant à 0 € : indiquez heures et tarif');
+  const co = vault.get('reglages', t.dom.id) || {}, pr = co.prof || {}, client = pr.nom || co.nom || t.dom.nom;
+  const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-INT${String(seq).padStart(4, '0')}`, due = addDays(date, +c.delai || 30);
+  const w = vault.get('intervenants', t.intervenantId) || {}, fr = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  const titre = String(t.titre || 'Intervention').replace(/^🔧 DOMIER[^—]*— [^:]*:\s*/, '');
+  const sub = [fr(t.doneDate || t.date), intervFull(w), `${String(num(f.h)).replace('.', ',')} h × ${eur(num(f.taux))}`, k.dep ? 'déplacement ' + eur(k.dep) : '', k.mat ? 'matériel ' + eur(k.mat) : ''].filter(Boolean).join(' · ');
+  const { bytes, ht, tva, ttc } = await netFactPdf([{ titre: '🔧 DOMIER — ' + titre, sub, tx, ht: k.ht, tva: k.tva }], [client, pr.adresse, pr.ville, pr.tva ? 'TVA ' + pr.tva : ''].filter(Boolean).join(', '), no, date, due, c);
+  let docId = '';
+  await vault.mutate((txn) => {
+    txn.put('reglages', { id: 'facturation', seq });
+    docId = txn.put('documents', { tacheId: t.id, kind: 'facture-int', label: `Facture ${no} — ${client}`, date, mime: 'application/pdf', size: bytes.length }).id;
+    txn.put('taches', { id: t.id, factDraft: f, facture: { no, date, due, ht, tva, ttc, paid: '', claim: '', docId, dom: t.dom.k } });
+  }, '🧾 Facture DOMIER émise', `${no} — ${client} · ${eur(ttc)}`);
+  await vault.saveFile(docId, bytes);
+  if (t.dom.k === 'tx') txcoSync(t.dom.id); else annSync(t.dom.id);
+  return no;
+}
 async function netFactPaid(no) {
   const f = vault.get('reglages', 'nfact-' + no);
   if (!f || f.paid) return;
@@ -1984,14 +2007,23 @@ async function domIn(k, who, msg, extra = {}) {
   for (let i = 0; i < ph.length; i++) await vault.saveFile(t.id + 'p' + i, unb64u(ph[i]));
   return t;
 }
+// « J'ai payé » depuis l'app (taxi / annonceur) : à vérifier sur le compte, puis ✅ Reçu
+async function domClaim(coId, msg) {
+  const t = vault.list('taches').find((x) => x.dom && x.dom.id === coId && x.facture && x.facture.no === String(msg.no || ''));
+  if (!t || t.facture.paid || t.facture.claim) return false;
+  await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, claim: today() } }), '💳 Le client dit avoir payé', `${t.facture.no} — ${t.dom.nom} · ${eur(t.facture.ttc)}`);
+  return true;
+}
 // état des demandes DOMIER renvoyé dans l'app (celles transmises à LA CENTRAL : l'état qui revient)
 const domList = (k, id) => vault.list('taches').filter((t) => t.dom && t.dom.k === k && t.dom.id === id).sort((a, b) => String(b.sentAt || '').localeCompare(String(a.sentAt || ''))).slice(0, 10)
-  .map((t) => ({ id: t.id, titre: String(t.note || '').split('\n')[0].slice(0, 80), st: t.statut === 'fait' ? 'fait' : t.fwd ? t.fwd.st || 'afaire' : t.statut || 'afaire', at: String(t.sentAt || t.date || '').slice(0, 10) }));
+  .map((t) => { const F = t.facture, c = F ? factConf() : {}; return { id: t.id, titre: String(t.note || '').split('\n')[0].slice(0, 80), st: t.statut === 'fait' ? 'fait' : t.fwd ? t.fwd.st || 'afaire' : t.statut || 'afaire', at: String(t.sentAt || t.date || '').slice(0, 10),
+    ...(F && !F.net ? { fact: { no: F.no, date: F.date, due: F.due || '', ht: F.ht, tva: F.tva, ttc: F.ttc, paid: F.paid || '', claim: F.claim || '', nom: c.marque ? `${c.marque} (${c.nom})` : c.nom, iban: c.iban || '', bic: c.bic || '', epc: !F.paid && c.iban ? epcText(c.nom, c.iban, c.bic, F.ttc, 'Facture ' + F.no) : '' } } : {}) }; });
 // annonce envoyée par l'app de l'annonceur : nouvelle ou modifiée → à valider ; arrêt demandé
 async function annInbox(an, msg) {
   const S = (v, n) => String(v ?? '').trim().slice(0, n);
   if (msg.type === 'pchat') return pchatIn(an, msg);
   if (msg.type === 'domier') { await domIn('an', an.nom || 'Annonceur', msg, { id: an.id }); annSync(an.id); return true; }
+  if (msg.type === 'dom-paid') return domClaim(an.id, msg);
   if (msg.type === 'an-ad') {
     const a = msg.ad || {}, id = S(a.id, 40), old = id ? vault.get('avis', id) : null;
     if (old && old.annId !== an.id) return false;
@@ -3283,6 +3315,7 @@ async function txInbox(co, msg) {
   const S = (v, n) => String(v ?? '').trim().slice(0, n), N = (v) => Math.max(0, Math.min(100000, +v || 0));
   if (msg.type === 'pchat') return pchatIn(co, msg);
   if (msg.type === 'domier') { await domIn('tx', co.nom || 'Taxi', msg, { id: co.id }); txcoSync(co.id); return true; }
+  if (msg.type === 'dom-paid') return domClaim(co.id, msg);
   if (msg.type === 'tx-cat') {
     const c = msg.cat || {}, gammes = {};
     for (const k of Object.keys(TX_GAM)) { const g = (c.gammes || {})[k] || {}; gammes[k] = { on: !!g.on, pc: N(g.pc), km: N(g.km), h: N(g.h), demi: N(g.demi), jour: N(g.jour) }; }
@@ -6097,7 +6130,7 @@ dashboard() {
         <p class="tiny muted">Taux normal : ${String(c0.taux).replace('.', ',')} % (Réglages → 🧾 Facturation) ; régime par client (autoliquidation, non applicable…) dans Gérances → la gérance → 🧾 Facturation. Détail facture par facture : onglet 🧾 Factures. Aide à la déclaration, à faire vérifier par votre comptable.</p>`;
     } else if (tab === 'fact') {
       const F = vault.list('taches').filter((t) => t.facture && t.facture.date >= from && t.facture.date <= to).sort((a, b) => b.facture.no.localeCompare(a.facture.no));
-      const todo = vault.list('taches').filter((t) => (t.ptl || (t.net && netPayMode(t.net.tid) === 'each')) && t.statut === 'fait' && !t.facture);
+      const todo = vault.list('taches').filter((t) => (t.ptl || domBill(t) || (t.net && netPayMode(t.net.tid) === 'each')) && t.statut === 'fait' && !t.facture);
       const c = factConf();
       body = html`<div class="metrics" style="margin-bottom:14px">
           <div class="metric"><div class="lbl">Factures</div><div class="val">${F.length}</div><div class="sub">${cpLabel(y, per)}</div></div>
@@ -6105,7 +6138,7 @@ dashboard() {
           ${(() => { const C = vault.list('taches').filter((t) => t.facture && t.facture.cont && !t.facture.paid); return C.length ? html`<div class="metric cont-blink-box"><div class="lbl">⚠️ Contentieux</div><div class="val red">${eur(sum(C, (t) => t.facture.ttc))}</div><div class="sub">${plural(C.length, 'facture')} impayée${C.length > 1 ? 's' : ''} en litige</div></div>` : ''; })()}
           <div class="metric hero"><div class="lbl">Facturé TTC</div><div class="val accent">${eur(sum(F, (t) => t.facture.ttc))}</div><div class="sub">HT ${eur(sum(F, (t) => t.facture.ht))} · TVA ${eur(sum(F, (t) => t.facture.tva))}</div></div></div>
         <div class="toolbar" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-action="cp-fact-csv">${icon('download')} Factures (Excel / CSV)</button><button class="btn ghost" data-action="fact-set">⚙️ Émetteur : ${c.nom}</button></div>
-        ${todo.length ? html`<div class="section-label">🟡 À facturer (${todo.length})</div><div class="list" style="margin-bottom:14px">${todo.map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : ''} · clôturée le ${fmtDate(t.doneDate || t.date)}</span></span><span class="badge warn">🧾 Faire la facture</span></button>`)}</div>` : ''}
+        ${todo.length ? html`<div class="section-label">🟡 À facturer (${todo.length})</div><div class="list" style="margin-bottom:14px">${todo.map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : t.dom ? '🔧 ' + t.dom.nom : ''} · clôturée le ${fmtDate(t.doneDate || t.date)}</span></span><span class="badge warn">🧾 Faire la facture</span></button>`)}</div>` : ''}
         ${F.length ? html`<div class="section-label">Factures émises</div><div class="list">${F.slice(0, ui.cpLim || 10).map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.facture.no}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : ''} · ${fmtDate(t.facture.date)} · ${t.titre}</span></span><span style="text-align:right"><b>${eur(t.facture.ttc)}</b>${t.facture.cont && !t.facture.paid ? html`<span class="badge cont-blink" style="display:block">⚠️ CONTENTIEUX</span>` : html`<span class="tiny ${t.facture.paid ? '' : 'red'}" style="display:block">${t.facture.paid ? '✅ payée' : '⏳ à payer'}</span>`}</span></button>`)}</div>${moreBtn(F.length, ui.cpLim || 10)}` : html`<p class="muted">Aucune facture émise sur cette période.</p>`}`;
     } else if (tab === 'interv') {
       const L = intervLedger(from, to);
@@ -7053,7 +7086,8 @@ const SHEETS = {
       return {
         title: `🧾 Facture ${F.no}`,
         body: html`${F.cont && !F.paid ? html`<div class="alert bad cont-blink-box" style="margin-bottom:10px">⚠️<div><b>CONTENTIEUX</b> depuis le ${fmtDate(F.cont)} — facture impayée en litige. La gérance le voit en rouge dans son portail.</div></div>` : ''}<dl class="kv">${kvRow('Intervention', `${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`)}${kvRow('Gérance', t.ptl ? t.ptl.org : '—')}${kvRow('Date', fmtDate(F.date))}${kvRow('Total HT', eur(F.ht))}${kvRow('TVA', eur(F.tva))}${kvRow('Total TTC', html`<b>${eur(F.ttc)}</b>`)}${kvRow('Paiement', F.paid ? `✅ payée le ${fmtDate(F.paid)}` : '⏳ à payer')}</dl>
-          <p class="small muted">${F.net ? 'Le client la voit et la paie dans sa centrale (🧾 Factures).' : 'La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).'}</p>`,
+          ${F.claim && !F.paid ? html`<div class="alert info" style="margin-bottom:10px">💳<div>Le client dit avoir payé le ${fmtDate(F.claim)} : vérifiez le compte, puis ✅.</div></div>` : ''}
+          <p class="small muted">${F.dom ? 'Le client la voit et la paie dans son app (QR code, « J’ai payé »).' : F.net ? 'Le client la voit et la paie dans sa centrale (🧾 Factures).' : 'La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).'}</p>`,
         foot: html`${F.docId ? html`<button class="btn" data-action="open-doc" data-id="${F.docId}">⬇️ PDF</button>` : ''}${F.paid ? '' : html`<button class="btn ${F.cont ? '' : 'danger'}" data-action="fact-cont" data-id="${id}">${F.cont ? '↩️ Sortir du contentieux' : '⚠️ Contentieux'}</button>`}<button class="btn ${F.paid ? '' : 'primary'}" data-action="fact-paid" data-id="${id}">${F.paid ? '↩️ Marquer à payer' : '✅ Marquer payée'}</button>`,
       };
     }
@@ -7317,7 +7351,7 @@ const SHEETS = {
         ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id && !x.phase).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id && !x.phase).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
-        ${id && (t.ptl || t.net) && t.statut === 'fait' ? html`<button class="btn" data-action="fact-open" data-id="${id}">🧾 ${t.facture ? 'Facture ' + t.facture.no : 'Facture'}</button>` : ''}
+        ${id && (t.ptl || t.net || domBill(t)) && t.statut === 'fait' ? html`<button class="btn" data-action="fact-open" data-id="${id}">🧾 ${t.facture ? 'Facture ' + t.facture.no : 'Facture'}</button>` : ''}
         ${id && t.locId && !t.recur && t.statut !== 'fait' ? html`<button class="btn" style="background:var(--green-soft);color:var(--green)" data-action="tache-done" data-id="${id}">${icon('check')} Réparé</button>` : html`<button class="btn" data-action="close-sheet">Annuler</button>`}
         <button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -9178,6 +9212,13 @@ const ACTIONS = {
       if (!(await confirmBox(`Émettre la facture de cette intervention ?`, { ok: 'Émettre et envoyer', detail: `${t.net.nom} — la facture arrive dans sa centrale (💳 virement avec QR code).` }))) return;
       await vault.mutate((tx) => tx.put('taches', { id: t.id, factDraft: factRead(fm) }), 'Brouillon de facture', t.titre);
       try { const no = await netFactEmit(t.net.tid, [vault.get('taches', t.id)]); toast(`🧾 Facture ${no} envoyée à ${t.net.nom}`); } catch (e) { return toast(e.message || 'Envoi impossible', { bad: true }); }
+      sheetDirty = false; ui.sheet.rendered = false; renderSheet();
+      return;
+    }
+    if (domBill(t)) {
+      if (!(await confirmBox('Émettre la facture DOMIER ?', { ok: 'Émettre et envoyer', detail: `${t.dom.nom} — la facture arrive dans son app (💳 virement avec QR code, « J’ai payé »).` }))) return;
+      await vault.mutate((tx) => tx.put('taches', { id: t.id, factDraft: factRead(fm) }), 'Brouillon de facture', t.titre);
+      try { const no = await domFactEmit(vault.get('taches', t.id)); toast(`🧾 Facture ${no} envoyée à ${t.dom.nom}`); } catch (e) { return toast(e.message || 'Émission impossible', { bad: true }); }
       sheetDirty = false; ui.sheet.rendered = false; renderSheet();
       return;
     }
