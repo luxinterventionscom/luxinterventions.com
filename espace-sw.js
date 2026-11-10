@@ -1,5 +1,5 @@
 // App des locataires : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'espace-shell-v1.121.0';
+const CACHE = 'espace-shell-v1.122.0';
 const SHELL = ['/espace.html', '/espace.js', '/ares/netpubs.js', '/ares/espace-crypto.js', '/ares/binplan.js', '/ares/chatops.js', '/ares/chattr.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/news.js', '/ares/domier.js', '/ares/jobform.js', '/ares/emoji.js', '/ares/pubstat.js', '/ares/pubsched.js', '/ares/pubsocial.js', '/ares/reqmark.js', '/ares/qrcode.js', '/ares/nbien.js', '/ares/confirm-box.js', '/ares/photo-crop.js', '/ares/pull-refresh.js', '/ares/trip.js', '/espace.webmanifest', '/ares/icons/ares-192.png', '/ares/icons/nobis-logo.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

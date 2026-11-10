@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.245.0';
+const VERSION = '2.245.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1969,11 +1969,16 @@ async function domIn(k, who, msg, extra = {}) {
   const S = (v, n) => String(v ?? '').trim().slice(0, n);
   const ph = (Array.isArray(msg.photos) ? msg.photos : []).filter((b) => typeof b === 'string' && b.length < 4e6).slice(0, 3);
   const titre = S(msg.texte, 80) || 'Demande';
+  // urgence : 🔴 urgent · 🟠 rapide (48 h) · 📅 à planifier (date souhaitée) ; type : une fois / 🔁 régulier (anciennes apps : urg = vrai / faux)
+  const urg = msg.urg === true || msg.urg === 'urgent' ? 'urgent' : msg.urg === 'rapide' ? 'rapide' : 'plan', dOk = /^\d{4}-\d{2}-\d{2}$/.test(msg.date || '') && msg.date >= today() ? msg.date : '';
+  const UL = { urgent: '🔴 URGENT', rapide: '🟠 Rapide (48 h)', plan: `📅 À planifier${dOk ? ' — souhaité le ' + fmtDate(dOk) + (/^\d{2}:\d{2}$/.test(msg.heure || '') ? ' à ' + msg.heure : '') : ''}` };
+  const SV = { menage: '🧹 Ménage', jardin: '🌿 Jardin', entretien: '🔧 Entretien', autre: '📋 Autre' }, JR = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
+  const reg = msg.kind === 'reg' ? `🔁 Régulier : ${SV[msg.svc] || SV.autre} · ${RECURS[msg.freq] || ''} · ${(Array.isArray(msg.jours) ? msg.jours : []).map((j) => JR[j - 1]).filter(Boolean).join(', ')}` : '';
   let t;
   await vault.mutate((tx) => {
-    t = tx.put('taches', { type: 'reparation', titre: `🔧 DOMIER${msg.urg ? ' 🚨' : ''} — ${who} : ${titre}`, intervenantId: '', date: today(), recur: '', statut: 'afaire', sentAt: S(msg.t, 30) || new Date().toISOString(),
-      dom: { k, id: extra.id || '', nom: who }, adr: S(msg.adresse, 160) || extra.adr || '',
-      note: `${S(msg.texte, 2000)}${msg.urg ? '\n🚨 URGENT' : ''}\n\n— ${who} · ${fmtDateTime(msg.t || Date.now())}${msg.tel ? ' · tél. ' + S(msg.tel, 30) : ''}${msg.adresse || extra.adr ? '\nAdresse : ' + (S(msg.adresse, 160) || extra.adr) : ''}${msg.dispo ? '\nDisponibilités : ' + S(msg.dispo, 200) : ''}${msg.acces ? '\nAccès : ' + S(msg.acces, 200) : ''}` });
+    t = tx.put('taches', { type: msg.kind === 'reg' ? (msg.svc === 'menage' ? 'nettoyage' : 'autre') : 'reparation', titre: `🔧 DOMIER ${urg === 'urgent' ? '🔴' : urg === 'rapide' ? '🟠' : '📅'}${reg ? ' 🔁' : ''} — ${who} : ${titre}`, intervenantId: '', date: dOk || today(), heure: dOk && /^\d{2}:\d{2}$/.test(msg.heure || '') ? msg.heure : '', recur: '', statut: 'afaire', sentAt: S(msg.t, 30) || new Date().toISOString(),
+      dom: { k, id: extra.id || '', nom: who, urg }, adr: S(msg.adresse, 160) || extra.adr || '',
+      note: `${S(msg.texte, 2000)}\n${UL[urg]}${reg ? '\n' + reg : ''}\n\n— ${who} · ${fmtDateTime(msg.t || Date.now())}${msg.tel ? ' · tél. ' + S(msg.tel, 30) : ''}${msg.adresse || extra.adr ? '\nAdresse : ' + (S(msg.adresse, 160) || extra.adr) : ''}${msg.dispo ? '\nDisponibilités : ' + S(msg.dispo, 200) : ''}${msg.acces ? '\nAccès : ' + S(msg.acces, 200) : ''}` });
     ph.forEach((b, i) => tx.put('documents', { id: t.id + 'p' + i, tacheId: t.id, kind: 'signal', label: `DOMIER — photo ${i + 1}`, date: today(), mime: 'image/jpeg', size: Math.round(b.length * 0.75) }));
   }, '🔧 DOMIER : demande reçue', `${who} — ${titre}`);
   for (let i = 0; i < ph.length; i++) await vault.saveFile(t.id + 'p' + i, unb64u(ph[i]));
