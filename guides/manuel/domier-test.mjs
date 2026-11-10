@@ -32,5 +32,28 @@ await p.waitForTimeout(4000);
 await x.reload(); await x.waitForTimeout(4000);
 const bn2 = await x.$eval('[data-domier]', (e) => e.innerText).catch(() => '');
 assert(/Le mie richieste/.test(bn2) && /presa in carico/.test(bn2), 'taxi: stato della richiesta tornato: ' + bn2.slice(-120).replace(/\n/g, ' / '));
+// 🧾 intervento fatto → fattura DOMIER → nell'app taxi con QR → «Ho pagato» → la centrale lo vede
+await act(p, 'fact-set'); await p.waitForTimeout(700);
+for (const [k, v] of [['nom', 'ARES INVEST S.A.'], ['adresse', '1, rue Démo'], ['ville', 'L-1000 Luxembourg'], ['rcs', 'B999999'], ['tva', 'LU99999999'], ['iban', 'LU28 0019 4006 4475 0000'], ['bic', 'BCEELULL']]) { if (await p.$(`#f [name=${k}]`)) await p.fill(`#f [name=${k}]`, v); }
+await p.click('button[type=submit][form=f]'); await p.waitForTimeout(1500);
+await p.evaluate(() => { location.hash = '#/maintenance'; }); await p.waitForTimeout(1200);
+const tid2 = await p.$$eval('[data-action=edit-tache]', (els) => { const e = els.find((x) => /DOMIER/.test(x.textContent)); return e ? e.dataset.id : ''; });
+assert(tid2, 'id intervento DOMIER');
+await act(p, 'tache-done', { id: tid2 }); await p.waitForTimeout(1500); for (let k = 0; k < 2; k++) { const c = await p.$('#confirm[open] .btn.primary'); if (c) { await c.click(); await p.waitForTimeout(1200); } }
+await p.keyboard.press('Escape'); await p.waitForTimeout(400);
+await act(p, 'fact-open', { id: tid2 }); await p.waitForTimeout(900);
+await p.fill('#f [name=h]', '2'); await p.fill('#f [name=taux]', '50');
+await act(p, 'fact-emit', { id: tid2 }); await p.waitForTimeout(700); await p.click('#confirm .btn.primary'); await p.waitForTimeout(4000);
+const fs = await p.$eval('.sheet', (e) => e.innerText).catch(() => '');
+assert(/(Facture|Fattura) \d{8}-INT/.test(fs), 'fattura DOMIER emessa: ' + fs.slice(0, 80).replace(/\n/g, ' / '));
+await p.keyboard.press('Escape'); await p.waitForTimeout(5000);
+await x.reload(); await x.waitForTimeout(4500);
+const bn3 = await x.$eval('[data-domier]', (e) => e.innerText).catch(() => '');
+assert(/Fattura \d{8}-INT/.test(bn3) && await x.$('[data-domier] svg') && await x.$('[data-domier-paid]'), 'taxi: fattura con QR e «Ho pagato»: ' + bn3.slice(-200).replace(/\n/g, ' / '));
+await x.click('[data-domier-paid]'); await x.waitForTimeout(2000);
+assert(/pagamento segnalato/.test(await x.$eval('[data-domier]', (e) => e.innerText)), 'taxi: pagamento segnalato');
+await relog(p); await p.waitForTimeout(3000);
+await act(p, 'fact-open', { id: tid2 }); await p.waitForTimeout(900);
+assert(/dit avoir payé|dice di aver pagato|avoir payé/i.test(await p.$eval('.sheet', (e) => e.innerText)), 'centrale: «il cliente dice di aver pagato»');
 // app operai: niente banner (sono loro i DOMIER)
 log('errs ' + errs.join(' | ')); await b.close();
