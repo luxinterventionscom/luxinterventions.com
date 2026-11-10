@@ -32,6 +32,7 @@ await q.fill('input[name=code]', codes.lc1); await q.click('form button[type=sub
 if (await q.$('[data-rules-ok]')) { await q.click('[data-rules-ok]'); await q.waitForTimeout(1500); }
 await q.evaluate(() => { for (const d of document.querySelectorAll('details[data-fold=tools], details[data-job]')) d.open = true; });
 assert(await q.$('#jobf'), 'modulo «Cerco lavoro» nell’app');
+assert(await q.$('[data-domier] #sig') && !(await q.$('#mtCard #sig')), '🛠️ Segnala un problema dentro DOMIER (non più in Manutenzione)');
 await q.check('#jobf [name=met][value=plombier]'); await q.check('#jobf [name=disp][value=appel]');
 await q.click('#jobf [name=outils][value=non]'); await q.check('#jobf [name=valise]');
 await q.fill('#jobf [name=tarif]', '25'); await q.fill('#jobf [name=nom]', 'Mario Rossi'); await q.fill('#jobf [name=tel]', '+352 691 000 111');
