@@ -4,6 +4,7 @@
 
 import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { newsHtml } from '/ares/news.js';
+import { domierHtml, domierInit, DOM_TEL } from '/ares/domier.js';
 import '/ares/reqmark.js';
 import { startI18n, LOCALES, translate as T } from '/ares/i18n.js';
 import { PTL_INVITE } from '/ares/ptl-invite.js';
@@ -39,6 +40,7 @@ const INVITE = PTL_INVITE;
 wxRadioInit({ app: 'ptl', lang: () => LANG, home: () => 'Luxembourg' });
 const API = document.querySelector('meta[name="ptl-api"]').content.replace(/\/$/, '') + '/api/portail/';
 nbienInit({ api: location.hash === '#demo' ? '' : API.replace(/\/api\/portail\/$/, ''), app: 'ptl', lang: () => LANG }); // démo du site : pas d'annonces réelles
+domierInit({ lang: () => LANG }); // 🔧 DOMIER : appeler LUXINTERVENTION
 const $ = (s, r = document) => r.querySelector(s);
 
 // ───────────────────────── Gabarits HTML (échappement automatique) ─────────────────────────
@@ -952,6 +954,7 @@ const VIEWS = {
       ${devisBanner()}
       ${offerBanner()}
       ${arrive}
+      ${new Raw(domierHtml({ tel: DOM_TEL, lang: LANG, extra: '<button type="button" class="btn sm primary" data-action="new-ticket" style="margin-top:8px">🔧 ＋ Demande</button>' }))}
       ${pubSlot('haut')}
         ${new Raw(nbienBanner())}
         ${new Raw(wxRadioCard())}

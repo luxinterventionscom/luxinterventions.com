@@ -1,0 +1,33 @@
+// 🔧 DOMIER : bandeau + demande dall'app taxi → Maintenance della centrale → stato che torna — WORKER_MJS=… node domier-test.mjs
+import { chromium } from 'playwright';
+import { phone, centralSetup, assert, log } from './harness.mjs';
+const b = await chromium.launch(), errs = [];
+const act = (p, a, d = {}) => p.evaluate(([a, d]) => { const el = document.createElement('button'); el.dataset.action = a; Object.assign(el.dataset, d); el.hidden = true; document.body.append(el); el.click(); el.remove(); }, [a, d]);
+const body = (p) => p.evaluate(() => document.body.innerText);
+const PASS = 'Tr3s-l0ngue-cle!';
+const relog = async (p) => { await p.reload(); await p.waitForTimeout(2500); await p.fill('[data-form=unlock] [name=pass]', PASS); await p.click('[data-form=unlock] button[type=submit]'); await p.waitForTimeout(4000); for (let i = 0; i < 3; i++) { const btn = await p.$('dialog[open] .btn.primary, #confirm .btn.primary'); if (!btn) break; await btn.click().catch(() => {}); await p.waitForTimeout(1500); } await p.waitForTimeout(2500); };
+const c1 = await phone(b, 'it'), p = await c1.newPage(); p.on('pageerror', (e) => errs.push('central: ' + e.message));
+await centralSetup(p);
+await p.evaluate(() => { location.hash = '#/taxis'; }); await p.waitForTimeout(900);
+await act(p, 'new-txco'); await p.waitForTimeout(500); await p.fill('#f [name=nom]', 'Taxi Démo'); await p.fill('#f [name=tel]', '+352 691 000 040');
+const txCode = await p.$eval('#f [name=appCode]', (e) => e.value); await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3000); await p.keyboard.press('Escape');
+const ct = await phone(b, 'it'), x = await ct.newPage(); x.on('pageerror', (e) => errs.push('taxi: ' + e.message));
+await x.goto('http://localhost:8765/taxi.html'); await x.waitForTimeout(1200); await x.fill('input[name=code]', txCode); await x.click('form button[type=submit]'); await x.waitForTimeout(3500);
+const bn = await x.$eval('[data-domier]', (e) => e.innerText).catch(() => '');
+assert(/DOMIER/.test(bn) && /riparazioni urgenti/.test(bn) && /LUXINTERVENTION/.test(bn), 'banner DOMIER nell’app taxi: ' + bn.slice(0, 120).replace(/\n/g, ' / '));
+assert(await x.$('[data-domier] a[href="tel:+352691423943"]'), '📞 numero LUXINTERVENTION');
+await x.click('[data-domier-open]'); await x.waitForTimeout(400);
+await x.fill('[data-domier-form] [name=texte]', 'Perdita d’acqua nel garage'); await x.check('[data-domier-form] [name=urg]');
+await x.fill('[data-domier-form] [name=adresse]', '1, rue du Taxi'); await x.fill('[data-domier-form] [name=acces]', 'chiave alla reception');
+await x.click('[data-domier-form] button[type=submit]'); await x.waitForTimeout(2500);
+assert(/Grazie, richiesta inviata/.test(await x.$eval('[data-domier]', (e) => e.innerText)), 'taxi: richiesta inviata');
+await relog(p); await p.waitForTimeout(3000);
+await p.evaluate(() => { location.hash = '#/maintenance'; }); await p.waitForTimeout(1500);
+const mb = await body(p);
+assert(/DOMIER 🚨 — Taxi Démo : Perdita/.test(mb), 'centrale: intervento DOMIER in Maintenance');
+await p.waitForTimeout(4000);
+await x.reload(); await x.waitForTimeout(4000);
+const bn2 = await x.$eval('[data-domier]', (e) => e.innerText).catch(() => '');
+assert(/Le mie richieste/.test(bn2) && /presa in carico/.test(bn2), 'taxi: stato della richiesta tornato: ' + bn2.slice(-120).replace(/\n/g, ' / '));
+// app operai: niente banner (sono loro i DOMIER)
+log('errs ' + errs.join(' | ')); await b.close();
