@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.250.3';
+const VERSION = '2.250.4';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5905,7 +5905,7 @@ dashboard() {
     const days = (u) => (u ? Math.round((new Date(u + 'T12:00') - new Date(t0 + 'T12:00')) / 864e5) : null);
     const tab = ui.licTab || 'clients';
     const tabs = html`<div class="tabs" role="tablist" style="margin-bottom:14px">${[['clients', '🏢 Clients'], ['factures', '🧾 Factures'], ['stats', '📊 Statistiques'], ['registre', '📜 Registre']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="lic-tab" data-id="${k}">${l}</button>`)}</div>`;
-    const head = html`${pageHead('🔑 Licences', `${plural(list.length, 'client')} · essai ${LIC_ESSAI} jours · abonnements 1 · 2 · 3 ans`)}
+    const head = html`${pageHead(html`<span style="display:inline-flex;vertical-align:-3px;margin-right:6px">${icon('qr')}</span>Licences`, `${plural(list.length, 'client')} · essai ${LIC_ESSAI} jours · abonnements 1 · 2 · 3 ans`)}
       <div class="imm-row"><span></span><div class="imm-btns">${isCompta() ? '' : html`<button class="btn primary" data-action="net-new">${icon('plus')} Client</button><button class="btn" data-action="lic-tarifs">💶 Tarifs</button>`}<button class="btn" data-action="net-reload">${icon('sync')} Actualiser</button></div></div>
       ${n && n.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${n.err}</div></div>` : ''}${tabs}`;
     if (tab === 'factures') {
@@ -6141,7 +6141,7 @@ dashboard() {
     const secTabs = html`<div class="tabs" role="tablist" style="max-width:640px;margin-bottom:16px">${[['compta', html`📒 <span class="tab-long">Comptabilité</span><span class="tab-short">Compta</span>`], ['stats', html`📊 <span class="tab-long">Statistiques</span><span class="tab-short">Stats</span>`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sec === k}" data-action="cp-sec" data-id="${k}">${l}</button>`)}</div>`;
     // Abonnements : rubrique à part dans le menu, sans les onglets de la comptabilité
     if (sec === 'abo') { const lf = licFacts(), yy = String(new Date().getFullYear()); return html`${pageHead('💳 Abonnements', 'Abonnements des gérances et annonces publicitaires vendues')}
-      ${TENANT ? '' : html`<button class="card row" data-action="go" data-to="reseau" style="width:100%;margin-bottom:14px;text-align:left"><span class="avatar">🔑</span><span class="grow"><span class="title" style="display:block">Licences des centrales clients</span><span class="meta">${yy} : ${money(sum(lf.filter((f) => f.date.startsWith(yy)), (f) => f.ht))} HT · à encaisser ${money(sum(lf.filter((f) => !f.paid), (f) => f.ttc))} TTC</span></span><span class="chev">›</span></button>`}${aboSection()}`; }
+      ${TENANT ? '' : html`<button class="card row" data-action="go" data-to="reseau" style="width:100%;margin-bottom:14px;text-align:left"><span class="avatar">${icon('qr')}</span><span class="grow"><span class="title" style="display:block">Licences des centrales clients</span><span class="meta">${yy} : ${money(sum(lf.filter((f) => f.date.startsWith(yy)), (f) => f.ht))} HT · à encaisser ${money(sum(lf.filter((f) => !f.paid), (f) => f.ttc))} TTC</span></span><span class="chev">›</span></button>`}${aboSection()}`; }
     if (sec === 'stats') return html`${secTabs}${pageHead('📊 Statistiques', 'Loyers, occupation, dépenses, interventions, devis')}${VIEWS.stats()}${devStatsHtml(ui.year)}`;
     const tabs = html`<div class="tabs tabs-wrap" role="tablist" style="max-width:720px">${[['journal', 'Journal'], ['tva', 'TVA'], ['interv', '🔧 Interventions'], ['fact', '🧾 Factures'], ['frais', '💸 Frais fixes'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
     if (tab === 'stats') ui.cpTab = 'journal';
@@ -6320,7 +6320,7 @@ dashboard() {
       <div class="list settings">
         <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
           <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
-        ${TENANT ? '' : html`<button class="row" data-action="go" data-to="reseau"><span class="avatar">🔑</span><span class="grow"><span class="title" style="display:block">Licences — centrales des clients</span><span class="meta">Essai 15 jours, abonnements 1 · 2 · 3 ans, tarifs et remises, factures, statistiques, registre</span></span><span class="chev">›</span></button>`}
+        ${TENANT ? '' : html`<button class="row" data-action="go" data-to="reseau"><span class="avatar">${icon('qr')}</span><span class="grow"><span class="title" style="display:block">Licences — centrales des clients</span><span class="meta">Essai 15 jours, abonnements 1 · 2 · 3 ans, tarifs et remises, factures, statistiques, registre</span></span><span class="chev">›</span></button>`}
         ${TENANT ? (() => { const F = tFacts(), due = F.filter((f) => !f.paid).length; return html`<button class="row" data-action="go" data-to="demandes"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Factures des interventions</span><span class="meta">${F.length ? `${plural(F.length, 'facture')} de LA CENTRAL${due ? ` · ${due} à payer` : ' · tout est payé'}` : 'Aucune facture pour le moment'}</span></span>${icon('chevron')}</button>`; })() : html`<button class="row" data-action="fact-set"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Facturation des interventions</span><span class="meta">${factConf().nom} — LA CENTRAL · TVA ${factConf().taux} % · IBAN ${factConf().iban || 'à compléter'}</span></span></button>`}
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
       </div>
