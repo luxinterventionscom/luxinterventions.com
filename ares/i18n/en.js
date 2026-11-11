@@ -18443,4 +18443,8 @@ export default [
 "Se déconnecter ?",
 "Log out?"
 ],
+[
+"Annonceurs",
+"Advertisers"
+],
 ];
