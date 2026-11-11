@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.250.1';
+const VERSION = '2.250.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -692,7 +692,7 @@ function equipeData(i) {
   }
   const k = vault.get('reglages', 'signal');
   return {
-    v: 1, kind: 'equipe', lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i), photo: photoOk(i.photo) ? i.photo : '',
+    v: 1, kind: 'equipe', gv: VERSION, lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i), photo: photoOk(i.photo) ? i.photo : '',
     // l'équipe travaille pour ARES INVEST S.A. (LA CENTRAL) : son nom et son logo (casque) dans l'app des ouvriers
     societe: { nom: factConf().nom || 'ARES INVEST S.A.', tel: factConf().tel || soc.tel || '', logo: '/ares/icons/lux-192.png' },
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '', ccss: i.ccss || '' },
@@ -4448,7 +4448,7 @@ function renderView() {
   if (!view || !vault.unlocked) return;
   const active = document.activeElement;
   const keepSearch = active && active.name === 'search' ? active.selectionStart : null;
-  setHtml(view, html`${tenantBanner()}${VIEWS[ui.route]()}<div style="text-align:center;margin:28px 0 8px"><button class="btn ghost" data-action="lock">🚪 Se déconnecter</button><p class="tiny muted" style="margin:4px 0 0">La centrale se ferme : il faudra la clé pour rouvrir</p></div>`); // 🚪 en bas de chaque page, comme dans les apps
+  setHtml(view, html`${tenantBanner()}${VIEWS[ui.route]()}<div style="text-align:center;margin:28px 0 8px"><button class="btn ghost" data-action="lock">🚪 Se déconnecter</button><p class="tiny muted" style="margin:4px 0 0">La centrale se ferme : il faudra la clé pour rouvrir</p><p class="tiny" data-notr="1" style="margin:8px 0 0;color:#9a968c">v${VERSION}</p></div>`); // 🚪 en bas de chaque page, comme dans les apps ; version en gris
   enhanceFolds(view, '', false);
   updateBadge();
   tripPaint();

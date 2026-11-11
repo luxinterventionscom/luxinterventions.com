@@ -338,7 +338,7 @@ function render() {
   out.push(infoBox({ lang }));
   // 12 · barre des cours (servie par le Worker)
   out.push(`<div class="ticker" data-vsrc="${API}/ticker"></div>`);
-  out.push(`<p class="meta" style="text-align:center;margin-top:14px"><button class="linkb" data-reset="1">${esc(t.reset)}</button></p>`);
+  out.push(`<p class="meta" style="text-align:center;font-size:11px;margin:8px 0 0;color:#9a968c">${esc(data && data.gv ? 'v' + data.gv : '')}</p><p style="text-align:center;margin:10px 0 6px"><button class="btn sec" data-reset="1">🚪 ${esc(({ fr: 'Se déconnecter', it: 'Esci', de: 'Abmelden', pt: 'Terminar sessão', en: 'Log out', es: 'Cerrar sesión' })[lang] || 'Se déconnecter')}</button></p>`); // ── fin : version (grise) + 🚪 Se déconnecter ──
   const keep = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');
   document.querySelectorAll('.vid[data-vsrc], .ticker[data-vsrc]').forEach((v) => {
