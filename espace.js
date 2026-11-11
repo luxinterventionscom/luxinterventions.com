@@ -463,7 +463,7 @@ function renderGuide() {
   const steps = guideTab === 'ios'
     ? [[g.i1, MK.bar()], [g.i2, MK.menu(['⬆  ' + u.share, '☆  ' + u.fav, '＋  ' + u.newTab], 0)], [g.i3, MK.menu(['☆  ' + u.fav, '🔍  ' + u.find, '⊕  ' + u.a2hs], 2)], [g.i4, MK.dlg(u)], [g.done, MK.home()]]
     : [[g.a1, MK.chrome()], [g.a2, MK.menu(['＋  ' + u.newTab, '🕘  ' + u.hist, '📲  ' + u.ainstall], 2)], [g.a3, MK.adlg(u)], [g.done, MK.home()]];
-  el.innerHTML = `<div class="g-head"><b>📱 ${esc(t.install)}</b><button class="btn sm sec" data-gclose="1">✕ ${esc(t.close)}</button></div>
+  el.innerHTML = `<div class="g-head"><b>📱 ${esc(t.install)}</b></div>
     <div class="langs g-langs">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => `<button data-glang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>
     <div class="g-tabs"><button data-gtab="ios" aria-pressed="${guideTab === 'ios'}">🍎 iPhone</button><button data-gtab="and" aria-pressed="${guideTab === 'and'}">🤖 Android</button></div>
     <p style="text-align:center;margin:0 0 10px"><button class="btn sm" data-ianim="1">${esc(IA_BTN[lang] || IA_BTN.fr)}</button></p>
