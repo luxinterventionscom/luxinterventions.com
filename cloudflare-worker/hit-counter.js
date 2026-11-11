@@ -673,7 +673,7 @@ function tenantState(reg) {
   if (Number.isInteger(reg.roDays) && reg.roDays >= 0 && (Date.parse(dayIso()) - Date.parse(reg.until)) / 864e5 > reg.roDays) return "blocked";
   return "ro";
 }
-const tenantPub = (reg) => ({ id: reg.id, fil: reg.fil, nom: reg.nom, st: reg.st, until: reg.until || "", state: tenantState(reg), hold: reg.hold || "" });
+const tenantPub = (reg) => ({ id: reg.id, fil: reg.fil, nom: reg.nom, st: reg.st, until: reg.until || "", state: tenantState(reg), hold: reg.hold || "", sous: !!reg.sous });
 // 🧾 casella della centrale d'un client : fatture e avvisi della centrale principale, cifrati per la chiave pubblica del client
 const TBOX = (tid) => "ares/tbox/" + tid + "/";
 async function tboxList(env, tid) {
@@ -985,6 +985,7 @@ async function handleAres(request, env, url, headers) {
       if (/^\d{4}-\d{2}-\d{2}$/.test(b.until || "")) n.until = b.until;
       if (["trial", "active", "suspended"].includes(b.st)) n.st = b.st;
       if (b.hold === "ro" || b.hold === "") n.hold = b.hold;
+      if (typeof b.sous === "boolean") n.sous = b.sous; // 🔑 propriétaire ou bailleur principal (sous-titre de sa centrale)
       if (b.roDays === null || b.roDays === "") n.roDays = null; else if (b.roDays != null && Number.isInteger(+b.roDays) && +b.roDays >= 0 && +b.roDays <= 3650) n.roDays = +b.roDays;
       let code;
       if (b.newCode && !(await env.PHOTOS.head("ares/t/" + r.id + "/meta.json"))) { code = invite(); n.setupHash = await sha256Hex(code); n.setupExp = Date.now() + 30 * 864e5; }
