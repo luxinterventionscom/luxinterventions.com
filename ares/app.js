@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.246.0';
+const VERSION = '2.246.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1420,7 +1420,7 @@ async function binDaily() {
   let d = '';
   try { d = localStorage.getItem('aresBinDay') || ''; } catch {}
   if (d === today() || !vault.unlocked) return;
-  for (const im of vault.list('immeubles').filter(binsOn)) {
+  for (const im of vault.list('immeubles').filter((x) => binsOn(x) && !x.xfer)) {
     for (const [gk, g] of Object.entries(im.chats || {})) { try { await binRecord(vault.get('immeubles', im.id), gk, g, await chatRead(g)); } catch { /* hors ligne */ } }
   }
   try { localStorage.setItem('aresBinDay', today()); } catch {}
@@ -2244,7 +2244,7 @@ async function chatSync() {
 async function chatPoll() {
   if (!vault.unlocked) return;
   const res = {};
-  for (const im of vault.list('immeubles')) for (const g of Object.values(im.chats || {})) {
+  for (const im of vault.list('immeubles').filter((x) => !x.xfer)) for (const g of Object.values(im.chats || {})) { // 📦 transféré : ses messages vont à sa centrale, plus ici
     try {
       let seen = '';
       try { seen = localStorage.getItem(chatSeenKey(g.id)) || ''; } catch {}
@@ -2259,7 +2259,7 @@ async function chatPoll() {
 }
 async function chatLoad(imId, force) {
   const im = vault.get('immeubles', imId);
-  if (!im) return;
+  if (!im || im.xfer) return; // 📦 transféré : la chat appartient à sa centrale
   ui.chatAt = ui.chatAt || {};
   ui.chatCache = ui.chatCache || {};
   if (!force && ui.chatAt[imId] && Date.now() - ui.chatAt[imId] < 15000) return;
@@ -2725,7 +2725,7 @@ const annLog = () => (vault.get('reglages', 'annLog') || {}).list || [];
 // 🎧 Centralino : tous les messages reçus, par catégorie, avec un lien direct vers la conversation
 function centralinoHtml() {
   const sig = newSignals();
-  const imms = vault.list('immeubles').filter((im) => Object.keys(im.chats || {}).length && !immGone(im));
+  const imms = vault.list('immeubles').filter((im) => Object.keys(im.chats || {}).length && !immGone(im) && !im.xfer);
   const houseN = (im) => (ui.chatNew || {})[im.id] || 0;
   const eqs = vault.list('intervenants').filter((i) => !i.archive && ((i.chat || []).length || (i.espace && i.espace.on)))
     .map((i) => ({ i, last: (i.chat || []).filter((m) => !m.del).slice(-1)[0] }))
@@ -6616,7 +6616,7 @@ const SHEETS = {
     };
   },
   'ann-new'({ preset }) {
-    const imms = vault.list('immeubles').filter((im) => !immGone(im) && Object.keys(im.chats || {}).length).sort(byAddr);
+    const imms = vault.list('immeubles').filter((im) => !immGone(im) && !im.xfer && Object.keys(im.chats || {}).length).sort(byAddr);
     const ws = vault.list('intervenants').filter((w) => w.espace && w.espace.on && !w.archive), grp = eqGroup();
     const nets = TENANT ? [] : ((ui.net && ui.net.list) || []).filter((t) => t.pub);
     const fils = [...new Set(nets.map((t) => t.fil).filter(Boolean))];
@@ -11366,7 +11366,7 @@ const FORMS = {
     try {
       if (loc) {
         const gs = [];
-        for (const im of vault.list('immeubles').filter((z) => !immGone(z))) for (const g of Object.values(im.chats || {})) if (loc === 'all' || loc === 'i:' + im.id || loc === 'g:' + g.id) gs.push(g);
+        for (const im of vault.list('immeubles').filter((z) => !immGone(z) && !z.xfer)) for (const g of Object.values(im.chats || {})) if (loc === 'all' || loc === 'i:' + im.id || loc === 'g:' + g.id) gs.push(g);
         for (const g of gs) await vault.boardPost(g.id, await sealJson(g.key, { id: newMsgId(), a: netBrand(), m: 'mgr', x, t: at, an: 1 }));
         done.push(`🏠 ${plural(gs.length, 'fil')}`);
       }
