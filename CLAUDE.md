@@ -33,6 +33,23 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
   - app: `CACHE` in `espace-sw.js`, `equipe-sw.js`, `hote-sw.js`, `taxi-sw.js`, `annonce-sw.js`, `portail-sw.js`.
 - Un file nuovo in `ares/` usato da un'app va aggiunto alla `SHELL` del suo service worker.
 
+## Struttura della rete (accordo col titolare — non cambiarla senza di lui)
+- Progetto: **CENTRAL-DOMIER** (come i pompieri: noi risolviamo i problemi, 24/7). Oggi fattura solo ARES INVEST S.A.
+  (nome per le riparazioni: LUXINTERVENTION); poi tutto passerà alla società **AJR_interventions** (solo quando lo dice il titolare).
+- **Livello 1 · CENTRAL-MASTER**: i suoi **operai = i DOMIER** (parlano con la MASTER e sono tracciati da lei);
+  riceve le richieste dei clienti (↪️) e degli annunciatori, fattura, pubblicità, ANGAR, rete.
+  La MASTER **non ha proprietà né inquilini propri** (un giorno: una società cliente «THE DOMIER il vostro centro interventi 24/7»).
+- **Livello 2 · CENTRALI CLIENTI** (ognuna cifrata e sua): Gérance, Agence immobilière, Propriétaire/bailleur → inquilini;
+  Hotel, Airbnb → ospiti.
+- **Livello 3 · APP DEGLI UTENTI**: inquilini → la loro centrale; ospiti → il loro hotel/Airbnb; operai DOMIER → MASTER;
+  **annunciatori → chat diretta con la MASTER** (non hanno clienti sotto).
+- **Regola d'oro**: ogni messaggio sale **di un solo livello**; arriva alla MASTER solo se il cliente lo manda con ↪️.
+  Gli inquilini di una centrale cliente (es. ARES) non devono MAI arrivare alla MASTER.
+- **Taxi — in sospeso, ne riparliamo ai test TAXI**: idea logica = CENTRAL-TAXI con sotto gli **operai-tassisti** (GPS, chat di gruppo);
+  forse siamo noi a dare il servizio (paghiamo la corsa, il cliente paga a noi con il rincaro) e le richieste dei sotto-clienti
+  salgono a noi; per hotel/Airbnb non è chiaro (forse carta di credito obbligatoria). **Non costruire niente finché non lo decide.**
+- La centrale del titolare è in **francese**; le centrali dei test sono in italiano (solo per le prove).
+
 ## Struttura (in breve)
 - Indirizzi «parlanti» (operai.html, ospiti.html, centrale.html…) → vedi `LIENS.md`: rimandano alla pagina vera.
 - `locataires.html` + `ares/app.js`: la **centrale** (anche le centrali dei clienti della rete, con `?t=<id>`).
