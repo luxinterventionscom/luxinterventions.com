@@ -49,6 +49,7 @@ assert(pk.format === 'ares-transfer' && !/Anna|Martin/.test(pk.data), 'paquet ci
 const own = [...store.keys()].filter((k) => k.startsWith('ares/own/')).map((k) => Buffer.from(store.get(k).b).toString());
 assert(own.includes(tid), '🌐 app di Anna adottata dalla centrale ARES: ' + own.join(','));
 await p.keyboard.press('Escape'); await p.waitForTimeout(400);
+assert(/^\/centraldomier\/\?/.test(new URL(q.url()).pathname + new URL(q.url()).search) && !(await q.$('link[rel=manifest]')), 'ARES: indirizzo con il numero e icona che lo ricorda: ' + q.url());
 // 4) la centrale ARES riceve
 await q.evaluate(() => { location.hash = '#/reglages'; }); await q.waitForTimeout(900);
 const [fc] = await Promise.all([q.waitForEvent('filechooser'), act(q, 'import')]);

@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.247.2';
+const VERSION = '2.247.3';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -54,6 +54,14 @@ const TENANT = (() => {
   } catch { return /^[a-z0-9]{12,24}$/.test(q) ? q : ''; }
 })();
 let tenantInfo = (() => { try { return JSON.parse(localStorage.getItem('aresTenantInfo:' + TENANT) || '{}'); } catch { return {}; } })();
+// 📱 icône sur l'écran d'un client : elle doit garder SON adresse (/centraldomier/?<numéro>), pas celle de la centrale principale
+// (sans manifeste, le téléphone enregistre l'adresse affichée ; sur iPhone l'icône ne partage pas la mémoire de Safari)
+if (TENANT) {
+  document.querySelector('link[rel=manifest]')?.remove();
+  if (!/^\?[a-z0-9]{12,24}$/.test(location.search)) history.replaceState(null, '', '/centraldomier/?' + TENANT + location.hash);
+  const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at && tenantInfo.nom) at.content = tenantInfo.nom;
+  if (tenantInfo.nom) document.title = tenantInfo.nom;
+}
 const tenantSave = (t) => { if (!TENANT || !t) return; tenantInfo = t; try { localStorage.setItem('aresTenantInfo:' + TENANT, JSON.stringify(t)); } catch { /* stockage plein */ } };
 const T_FIL_LBL = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
 // rubriques de chaque filière (la centrale du client ne montre que les siennes)
