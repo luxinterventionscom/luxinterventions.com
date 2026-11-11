@@ -997,3 +997,8 @@ details.centralino.cent-new:not([open]) { animation: centBlink 1.6s ease-in-out 
 @media (prefers-reduced-motion: reduce) { details.centralino:not([open]) { animation: none; } details.centralino.cent-new:not([open]) { animation: none; box-shadow: 0 0 0 3px rgba(59,130,246,.55); } }
 /* cases à cocher et boutons ronds dans une ligne : petite taille fixe, le texte prend la place */
 .row > input[type=radio], .row > input[type=checkbox] { width: 22px; height: 22px; min-height: 22px; flex: none; margin: 0; }
+
+/* bandeaux en haut des pages : le même espace entre tous (DOMIER, notifications, publicité, messages, alertes…) */
+#view > .alert, #view > .card, #view > details, #view > .domier-w { margin-top: 0 !important; margin-bottom: 14px !important; }
+/* ordinateur : 🚪 Se déconnecter en bas à gauche et en bas de page ; le cadenas en haut à droite reste seulement sur le téléphone */
+@media (min-width: 960px) { .topbar [data-action=lock] { display: none; } }

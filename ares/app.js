@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.248.1';
+const VERSION = '2.248.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1539,7 +1539,7 @@ async function netApi(path, method = 'GET', body) {
 }
 const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
 // 🔧 DOMIER dans les centrales des clients : appeler LUXINTERVENTION, ou ＋ Demande
-const domierCentral = () => (TENANT ? new Raw('<div style="margin:0 0 16px">' + domierHtml({ tel: DOM_TEL, lang: getLang(), extra: `<button type="button" class="btn sm primary" data-action="tdem-new" style="margin-top:8px">🔧 ＋ Demande</button>` }).replace('<details ', '<details data-notr="1" ') + '</div>') : ''); // spazio sotto (non attaccato al resto)
+const domierCentral = () => (TENANT ? new Raw('<div class="domier-w">' + domierHtml({ tel: DOM_TEL, lang: getLang(), extra: `<button type="button" class="btn sm primary" data-action="tdem-new" style="margin-top:8px">🔧 ＋ Demande</button>` }).replace('<details ', '<details data-notr="1" ') + '</div>') : ''); // spazio sotto (non attaccato al resto)
 // 🏗️ ANGAR : état des paquets dans chaque container
 async function angarPacks() {
   const A = {};
