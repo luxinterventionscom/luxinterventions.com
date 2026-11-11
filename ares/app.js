@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.246.1';
+const VERSION = '2.247.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -67,6 +67,18 @@ const tRoutes = () => TENANT_ROUTES[tenantInfo.fil] || TENANT_ROUTES.gerance;
 const routeOk = (r) => (TENANT ? tRoutes().includes(r) : r !== 'demandes');
 const homeRoute = () => (TENANT ? tRoutes()[0] : 'dashboard');
 const vault = new Vault(API, TENANT);
+// 📦 immeubles transférés à un client (centrale principale) : cachés partout (avec logements et locataires), gardés en archive ;
+// Réglages → 📦 Transférés pour les revoir. vault.listAll = la liste complète (transfert, comptes).
+{
+  const XF = new Set(['immeubles', 'logements', 'locataires']), rawList = vault.list.bind(vault);
+  vault.listAll = rawList;
+  vault.list = (c) => {
+    const L = rawList(c);
+    if (TENANT || !XF.has(c) || (typeof ui !== 'undefined' && ui.xferShow)) return L;
+    const gone = new Set(rawList('immeubles').filter((x) => x.xfer).map((x) => x.id));
+    return gone.size ? L.filter((x) => !x.xfer && !gone.has(x.immId)) : L;
+  };
+}
 trInit(API, () => getLang()); // 🌐 traduction des messages des chats
 emojiInit(); // 😊 bouton émojis dans les chats
 domierInit({ lang: () => getLang() }); // 🔧 DOMIER (centrales des clients)
@@ -1525,7 +1537,7 @@ async function angarPacks() {
 const bytesUrl = (b, mime) => 'data:' + (mime || 'application/octet-stream') + ';base64,' + b64big(b);
 async function xferPack(immIds) {
   const S = new Set(immIds), st = { v: 2 }, files = {}, miss = [];
-  const pick = (c, f, map = (r) => r) => { st[c] = {}; for (const r of vault.list(c)) if (f(r)) { const { u, ...x } = map(r); st[c][r.id] = x; } };
+  const pick = (c, f, map = (r) => r) => { st[c] = {}; for (const r of vault.listAll(c)) if (f(r)) { const { u, ...x } = map(r); st[c][r.id] = x; } };
   pick('immeubles', (r) => S.has(r.id), ({ xfer, ...r }) => r);
   pick('logements', (r) => S.has(r.immId));
   const G = new Set(Object.keys(st.logements));
@@ -6295,6 +6307,7 @@ dashboard() {
       <div class="list settings">
         <button class="row" data-action="export-enc">${icon('shield')}<span class="grow"><span class="title" style="display:block">Sauvegarde chiffrée</span><span class="meta">Fichier .ares, lisible uniquement avec la clé</span></span></button>
         <button class="row" data-action="export-json">${icon('download')}<span class="grow"><span class="title" style="display:block">Export lisible (JSON)</span><span class="meta">Non chiffré — à conserver en lieu sûr</span></span></button>
+        ${(() => { const n = TENANT ? 0 : vault.listAll('immeubles').filter((x) => x.xfer).length; return n ? html`<button class="row" data-action="xfer-show">📦<span class="grow"><span class="title" style="display:block">${ui.xferShow ? '🙈 Cacher' : '👁 Afficher'} les immeubles transférés (${n})</span><span class="meta">Archive : ils sont chez la centrale du client ; ici rien n’est effacé</span></span></button>` : ''; })()}
         ${TENANT || vault.op ? '' : html`<button class="row" data-action="angar">🏗️<span class="grow"><span class="title" style="display:block">ANGAR — paquets vers les containers (clients)</span><span class="meta">Transférer immeubles, locataires, paiements, documents vers la centrale d’un client, ou en fichier</span></span></button>`}
         <button class="row" data-action="my-data">${icon('download')}<span class="grow"><span class="title" style="display:block">📦 Récupérer toutes mes données</span><span class="meta">Un fichier complet avec les documents (réimportable) + tableaux CSV des locataires et des paiements</span></span></button>
         <button class="row" data-action="import">${icon('upload')}<span class="grow"><span class="title" style="display:block">Importer</span><span class="meta">Sauvegarde .ares, 📦 transfert reçu ou export JSON (ancienne version incluse)</span></span></button>
@@ -7683,7 +7696,7 @@ const SHEETS = {
         })()}
         ${['gerance', 'agence', 'proprio'].includes(t.fil) && !vault.op ? html`<div class="section-label" style="margin-top:14px">📦 Transfert</div>
           <button class="btn block" data-action="xfer-open" data-id="${id}">📦 Transférer des immeubles et leurs locataires vers cette centrale</button>
-          ${(() => { const n = vault.list('immeubles').filter((x) => x.xfer && x.xfer.to === id).length; return n ? html`<p class="tiny muted" style="margin:4px 0 0">✅ ${plural(n, 'immeuble')} déjà transféré${n > 1 ? 's' : ''} (gardé${n > 1 ? 's' : ''} ici en archive).</p>` : ''; })()}` : ''}
+          ${(() => { const n = vault.listAll('immeubles').filter((x) => x.xfer && x.xfer.to === id).length; return n ? html`<p class="tiny muted" style="margin:4px 0 0">✅ ${plural(n, 'immeuble')} déjà transféré${n > 1 ? 's' : ''} (gardé${n > 1 ? 's' : ''} ici en archive).</p>` : ''; })()}` : ''}
         <div class="section-label" style="margin-top:14px">Accès</div>
         <div class="actions" style="flex-wrap:wrap;margin:0">${!t.configured ? html`<button class="btn sm" data-action="net-code" data-id="${id}">🔁 Nouveau code d’invitation</button>` : ''}<button class="btn sm" data-action="net-recb" data-id="${id}" style="flex-basis:100%;justify-content:flex-start">🧩 Clé oubliée : donner la moitié B</button><button class="btn sm ghost danger" data-action="net-reset" data-id="${id}" style="flex-basis:100%;justify-content:flex-start">🗑️ Vider la centrale (clé perdue)</button>${vault.op ? '' : html`<button class="btn sm ghost danger" data-action="net-del" data-id="${id}">🗑 Supprimer avec certificat</button>`}</div>
         <p class="tiny muted" style="margin:6px 0 0">Nouvel accès : la centrale du client est vidée (sans sa clé personne ne peut lire ses données) et un nouveau code est créé. S’il a sa clé de secours, il rentre seul sans rien perdre.</p>`}`,
@@ -7697,7 +7710,7 @@ const SHEETS = {
       body: html`<p class="small muted" style="margin:0 0 10px">Les <b>containers</b> sont les centrales de vos clients. Préparez un <b>paquet</b> (immeubles, locataires, paiements, documents…) et envoyez-le : directement dans son container, ou en fichier (PC, USB, email). Ici tout reste en archive.</p>
         <p style="margin:0 0 12px"><button class="btn primary" data-action="net-new">＋ Nouveau container (nouveau client)</button></p>
         ${ui.net && ui.net.err ? html`<div class="alert warn" style="margin-bottom:10px">⚠️<div>${ui.net.err}</div></div>` : ''}
-        ${N.length ? html`<div class="list">${N.map((t) => { const got = vault.list('immeubles').filter((x) => x.xfer && x.xfer.to === t.id).length, pk = P[t.id] || []; return html`<div class="row" style="flex-wrap:wrap"><span class="avatar">${(NET_FIL[t.fil] || '🌐').split(' ')[0]}</span><span class="grow"><b>${t.nom}</b><span class="meta" style="display:block">${NET_FIL[t.fil] || ''}${got ? ` · 📦 ${plural(got, 'immeuble')} envoyé${got > 1 ? 's' : ''}` : ''}${t.configured ? '' : ' · invitation pas encore utilisée'}</span>
+        ${N.length ? html`<div class="list">${N.map((t) => { const got = vault.listAll('immeubles').filter((x) => x.xfer && x.xfer.to === t.id).length, pk = P[t.id] || []; return html`<div class="row" style="flex-wrap:wrap"><span class="avatar">${(NET_FIL[t.fil] || '🌐').split(' ')[0]}</span><span class="grow"><b>${t.nom}</b><span class="meta" style="display:block">${NET_FIL[t.fil] || ''}${got ? ` · 📦 ${plural(got, 'immeuble')} envoyé${got > 1 ? 's' : ''}` : ''}${t.configured ? '' : ' · invitation pas encore utilisée'}</span>
             ${pk.map((x) => html`<span class="meta" style="display:block">${x.opened ? '✅ ouvert le ' + fmtDateTime(x.opened) : '⏳ en attente'} · ${xferTxt(x.counts || {})} · ${fmtDateTime(x.at)}${x.opened ? '' : html` <button class="btn sm ghost danger" data-action="pack-del" data-tid="${t.id}" data-id="${x.id}">Retirer</button>`}</span>`)}</span>
             ${OK.includes(t.fil) ? html`<button class="btn sm primary" data-action="xfer-open" data-id="${t.id}">📦 Paquet</button>` : ''}<button class="btn sm" data-action="net-open" data-id="${t.id}">Fiche</button></div>`; })}</div>` : html`<p class="muted small">${ui.net && ui.net.loading ? 'Chargement…' : 'Aucun container pour le moment.'}</p>`}`,
       foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
@@ -7717,13 +7730,13 @@ const SHEETS = {
         <p class="tiny muted" style="margin:10px 0 0">Ici rien n’est effacé : les immeubles restent en archive (marqués 📦), sans app. Vous pouvez les masquer avec 🔒 Masquer.</p>`,
       foot: html`<button class="btn primary" data-action="close-sheet">Terminé</button>`,
     };
-    const ims = vault.list('immeubles').slice().sort((a2, b2) => String(a2.adresse || '').localeCompare(String(b2.adresse || '')));
+    const ims = vault.listAll('immeubles').slice().sort((a2, b2) => String(a2.adresse || '').localeCompare(String(b2.adresse || '')));
     return {
       title: `📦 Transfert vers ${t.nom}`, narrow: true,
       body: html`<p class="small muted" style="margin:0 0 10px">Choisissez les immeubles : ils partent avec leurs logements, locataires (et leurs apps), paiements, dépenses, collectes, avis, chats, classement des poubelles et documents. Les interventions et la comptabilité de la centrale restent ici.</p>
         ${t.configured ? '' : html`<div class="alert warn" style="margin-bottom:10px">⚠️<div>La centrale de ${t.nom} n’est pas encore configurée : faites-la d’abord ouvrir avec le code d’invitation.</div></div>`}
         <p style="margin:0 0 6px"><button class="btn sm" type="button" data-action="xfer-all" data-on="1">☑️ Tout</button> <button class="btn sm" type="button" data-action="xfer-all" data-on="0">⬜ Rien</button></p>
-        <div class="list small" style="margin-bottom:10px">${ims.map((im) => { const nl = tenantsOfImm(im.id).length, x = im.xfer; return html`<label class="row" style="cursor:pointer"><input type="checkbox" data-xfer-imm value="${im.id}" ${x ? '' : new Raw('checked')}><span class="grow"><b>${im.adresse || 'Sans adresse'}</b><span class="meta" style="display:block">${plural(nl, 'locataire')}${x ? ` · 📦 déjà transféré${x.nom ? ' à ' + x.nom : ''} le ${fmtDate(x.at)}` : ''}</span></span></label>`; })}</div>
+        <div class="list small" style="margin-bottom:10px">${ims.map((im) => { const nl = vault.listAll('locataires').filter((l) => l.immId === im.id).length, x = im.xfer; return html`<label class="row" style="cursor:pointer"><input type="checkbox" data-xfer-imm value="${im.id}" ${x ? '' : new Raw('checked')}><span class="grow"><b>${im.adresse || 'Sans adresse'}</b><span class="meta" style="display:block">${plural(nl, 'locataire')}${x ? ` · 📦 déjà transféré${x.nom ? ' à ' + x.nom : ''} le ${fmtDate(x.at)}` : ''}</span></span></label>`; })}</div>
         <div class="section-label">🚚 Où va le paquet ?</div>
         <div class="list small" style="margin-bottom:10px">${[['box', `📦 Directement dans le container de ${t.nom}`, 'il le trouve dans l’Accueil de sa centrale'], ['dl', '⬇️ Télécharger', 'PC, clé USB… puis Réglages → Importer chez le client'], ['share', '📤 Envoyer', 'email, WhatsApp… (partage du téléphone)']].map(([k, l, m], n) => html`<label class="row" style="cursor:pointer"><input type="radio" name="xdest" value="${k}" ${n ? '' : new Raw('checked')}><span class="grow"><b>${l}</b><span class="meta" style="display:block">${m}</span></span></label>`)}</div>
         <p class="tiny muted" style="margin:0">Avant : une sauvegarde chiffrée est téléchargée. Le paquet est chiffré avec un code à usage unique : sans le code il ne sert à rien. Ici tout reste en archive.</p>`,
@@ -9673,6 +9686,7 @@ const ACTIONS = {
   'net-reload': () => netLoad(true),
   'net-open': (d) => openOver('net-client', d.id),
   'xfer-open': (d) => { ui.xferDone = null; openOver('xfer', d.id); },
+  'xfer-show': () => { ui.xferShow = !ui.xferShow; renderView(); toast(ui.xferShow ? '📦 Immeubles transférés affichés (archive)' : '📦 Immeubles transférés cachés'); },
   'xfer-all': (d) => sheetEl.querySelectorAll('[data-xfer-imm]').forEach((c) => { c.checked = d.on === '1'; }),
   angar: () => { netLoad(true).then(() => angarPacks()).catch(() => {}); openSheet('angar'); },
   async 'pack-open'(d) {
@@ -12666,6 +12680,6 @@ function applyTheme() {
 
 applyTheme();
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  navigator.serviceWorker.register('/locataires-sw.js', { scope: '/locataires' }).catch(() => {});
+  navigator.serviceWorker.register('/locataires-sw.js', { scope: location.pathname.startsWith('/centraldomier') ? '/centraldomier' : '/locataires' }).catch(() => {}); // CENTRAL-DOMIER : sa propre adresse
 }
 boot();
