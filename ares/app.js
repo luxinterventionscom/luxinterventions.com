@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.247.8';
+const VERSION = '2.248.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3629,8 +3629,30 @@ async function fixIdentity() {
 }
 // L'en-tête de l'app montre la marque LA CENTRAL ; le logo de la société (Réglages) sert aux quittances et à l'app des locataires
 function applyBrand() {
+  const ico = brandIco();
+  if (ico) { APP_BRAND.logo = ico; document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]').forEach((l) => { l.href = ico; }); document.querySelectorAll('.lock-logo').forEach((img) => { img.src = ico; }); }
   document.querySelectorAll('.brand-mark').forEach((img) => { img.src = TENANT && societe().logo ? societe().logo : APP_BRAND.logo; });
 }
+// 🖼️ icône de la CENTRAL DOMIER (choisie dans Réglages, seulement la centrale principale) : en-tête, page de la clé, onglet du navigateur,
+// icône sur l'écran (nouvelle installation). Gardée aussi sur l'appareil (non chiffrée : c'est seulement un logo) pour la page de la clé.
+const BRAND_DEF = APP_BRAND.logo;
+function brandIco() {
+  if (TENANT) return '';
+  const v = vault.unlocked ? (vault.get('reglages', 'brand') || {}).ico : undefined;
+  if (v !== undefined) { try { if (v) localStorage.setItem('aresBrandIco', v); else localStorage.removeItem('aresBrandIco'); } catch { /* plein */ } return v || BRAND_DEF; }
+  try { return localStorage.getItem('aresBrandIco') || ''; } catch { return ''; }
+}
+async function brandSet(file) {
+  const bmp = await createImageBitmap(file).catch(() => null);
+  if (!bmp) return toast('Image illisible', { bad: true });
+  const S = 512, c = document.createElement('canvas'); c.width = S; c.height = S;
+  const x = c.getContext('2d'), k = Math.max(S / bmp.width, S / bmp.height); // carré rempli (recadré au centre), fond blanc
+  x.fillStyle = '#fff'; x.fillRect(0, 0, S, S); x.drawImage(bmp, (S - bmp.width * k) / 2, (S - bmp.height * k) / 2, bmp.width * k, bmp.height * k);
+  const ico = c.toDataURL('image/png');
+  await vault.mutate((tx) => tx.put('reglages', { id: 'brand', ico }), '🖼️ Icône de la CENTRAL DOMIER', '');
+  applyBrand(); renderView(); toast('🖼️ Icône changée');
+}
+if (!TENANT) { const ic = brandIco(); if (ic) { APP_BRAND.logo = ic; document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]').forEach((l) => { l.href = ic; }); } } // dès l'ouverture (page de la clé)
 const associes = () => (societe().associes || []).filter((a) => a.nom && a.part > 0);
 
 function dataYears() {
@@ -6327,6 +6349,7 @@ dashboard() {
         <button class="row" data-action="export-enc">${icon('shield')}<span class="grow"><span class="title" style="display:block">Sauvegarde chiffrée</span><span class="meta">Fichier .ares, lisible uniquement avec la clé</span></span></button>
         <button class="row" data-action="export-json">${icon('download')}<span class="grow"><span class="title" style="display:block">Export lisible (JSON)</span><span class="meta">Non chiffré — à conserver en lieu sûr</span></span></button>
         ${(() => { const n = TENANT || vault.op ? 0 : vault.listAll('immeubles').filter((x) => x.xfer).length; return n ? html`<button class="row" data-action="xfer-show">📦<span class="grow"><span class="title" style="display:block">${xferHide() ? '👁 Afficher' : '🙈 Cacher'} les immeubles transférés (${n})</span><span class="meta">Choix de cet appareil. Ils sont chez la centrale du client ; ici rien n’est effacé</span></span></button>` : ''; })()}
+        ${TENANT || vault.op ? '' : html`<label class="row" style="cursor:pointer"><img src="${APP_BRAND.logo}" alt="" width="36" height="36" style="border-radius:8px;object-fit:cover"><span class="grow"><span class="title" style="display:block">🖼️ Icône de la CENTRAL DOMIER</span><span class="meta">Image carrée (au moins 512 × 512) : en-tête, page de la clé, onglet, icône sur l’écran (à remettre sur le téléphone)</span></span><input type="file" accept="image/*" data-input="brand-ico" hidden></label>${(vault.get('reglages', 'brand') || {}).ico ? html`<button class="row" data-action="brand-reset">↩️<span class="grow title">Remettre l’icône d’origine</span></button>` : ''}`}
         ${TENANT || vault.op ? '' : html`<button class="row" data-action="angar">🏗️<span class="grow"><span class="title" style="display:block">ANGAR — paquets vers les containers (clients)</span><span class="meta">Transférer immeubles, locataires, paiements, documents vers la centrale d’un client, ou en fichier</span></span></button>`}
         <button class="row" data-action="my-data">${icon('download')}<span class="grow"><span class="title" style="display:block">📦 Récupérer toutes mes données</span><span class="meta">Un fichier complet avec les documents (réimportable) + tableaux CSV des locataires et des paiements</span></span></button>
         <button class="row" data-action="import">${icon('upload')}<span class="grow"><span class="title" style="display:block">Importer</span><span class="meta">Sauvegarde .ares, 📦 transfert reçu ou export JSON (ancienne version incluse)</span></span></button>
@@ -9706,6 +9729,7 @@ const ACTIONS = {
   'net-open': (d) => openOver('net-client', d.id),
   'xfer-open': (d) => { ui.xferDone = null; openOver('xfer', d.id); },
   'xfer-show': () => { const h = !xferHide(); try { localStorage.setItem('aresXferHide', h ? '1' : '0'); } catch { /* rien */ } renderView(); toast(h ? '📦 Immeubles transférés cachés sur cet appareil' : '📦 Immeubles transférés affichés'); },
+  'brand-reset': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'brand', ico: '' }), '🖼️ Icône d’origine', ''); APP_BRAND.logo = BRAND_DEF; applyBrand(); location.reload(); },
   'xfer-all': (d) => sheetEl.querySelectorAll('[data-xfer-imm]').forEach((c) => { c.checked = d.on === '1'; }),
   angar: () => { netLoad(true).then(() => angarPacks()).catch(() => {}); openSheet('angar'); },
   async 'pack-open'(d) {
@@ -11589,7 +11613,7 @@ async function importFile(file) {
 
 // ───────────────────────── Délégation d'événements ─────────────────────────
 // réservé au responsable (clé principale) ; le comptable n'affecte pas les travaux
-const RESP_ONLY = new Set(['xfer-do', 'xfer-show', 'angar', 'pack-del', 'change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del', 'net-reset', 'test-clean', 'test-clean-do']);
+const RESP_ONLY = new Set(['brand-reset', 'xfer-do', 'xfer-show', 'angar', 'pack-del', 'change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del', 'net-reset', 'test-clean', 'test-clean-do']);
 const DEL_ACTION = /^del-|-del$|wipe/; // toute suppression
 const NO_COMPTA = new Set(['eq-swap', 'eq-swap-do', 'interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job', 'op-del', 'op-new']);
 document.addEventListener('click', (e) => {
@@ -12569,6 +12593,7 @@ document.addEventListener('change', (e) => {
   if (k === 'year') { ui.year = +e.target.value; ui.cpLim = 10; renderView(); }
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
   if (k === 'soc-logo' && e.target.files[0]) setLogo(e.target.files[0]);
+  if (k === 'brand-ico' && e.target.files[0] && !TENANT && !vault.op) { brandSet(e.target.files[0]); e.target.value = ''; }
   if (k === 'dev-w') { const o = e.target.selectedOptions[0], t = e.target.form[e.target.name.replace('dw', 'dt')]; if (t && o && num(o.dataset.rate)) t.value = o.dataset.rate; const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(e.target.form))); }
   if (k === 'dev-kind') { const f = e.target.form; f.dataset.kind = e.target.value; const pd = $('#devPDir'); if (pd) setHtml(pd, devPDirHtml(devRead(f))); const tb = $('#devTot'); if (tb) setHtml(tb, devTotHtml(devRead(f))); }
   if (k === 'dev-photos' && e.target.files.length) {
