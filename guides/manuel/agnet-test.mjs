@@ -5,7 +5,7 @@ const b = await chromium.launch(), errs = [];
 const act = (p, a, d = {}) => p.evaluate(([a, d]) => { const el = document.createElement('button'); el.dataset.action = a; Object.assign(el.dataset, d); el.hidden = true; document.body.append(el); el.click(); el.remove(); }, [a, d]);
 const c = await phone(b, 'fr', { width: 1100, height: 900 }), p = await c.newPage(); p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text().slice(0, 200)); });
 await centralSetup(p);
-assert(await p.$('[data-to=reseau]'), 'Réseau nel menu');
+assert(await p.$('[data-to=licences]'), 'Réseau nel menu');
 // centrale déjà créée côté réseau
 await p.evaluate(() => { location.hash = '#/reseau'; }); await p.waitForTimeout(1200);
 await act(p, 'net-new'); await p.waitForTimeout(600);
