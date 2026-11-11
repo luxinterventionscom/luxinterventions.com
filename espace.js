@@ -326,7 +326,7 @@ const pick = (d) => { try { const s = localStorage.getItem('espLang'); if (L[s])
 let data = null, lang = 'fr', sentOk = false;
 nbienInit({ api: API, app: 'esp', lang: () => lang });
 // mon icône (comme sur WhatsApp) : choisie ici, visible chez le gestionnaire
-const MY_ICONS = ['😀', '😊', '🙂', '😎', '🥰', '😇', '🤓', '🧐', '🤠', '🥳', '😺', '👩', '👨', '👧', '👦', '👵', '👴', '🧑‍💼', '👩‍🍳', '👨‍🎓', '🐶', '🐱', '🦊', '🐻', '🐼', '🦁', '🐯', '🐸', '🐵', '🐧', '🦄', '🐢', '🌸', '🌻', '🌈', '⚽', '🎵', '🎨', '🚗', '🏍️', '🏠', '⭐', '❤️', '🍕', '☕', '🌍'];
+const MY_ICONS = ['😀', '😊', '😎', '🍎', '🍓', '🍌', '⚽', '🏀', '🎾', '🐶', '🐱', '🦊', '🍰', '🍩', '🍫']; // 3 faccine, 3 frutta, 3 sport, 3 animali, 3 dolci (regola del titolare)
 const ICT = { fr: 'Mon icône', it: 'La mia icona', de: 'Mein Symbol', en: 'My icon', pt: 'O meu ícone', es: 'Mi icono' };
 const TFT = {
   fr: { lock: 'Vos données sont chiffrées et visibles uniquement par votre gestionnaire.', out: 'Se déconnecter', call: 'Appeler' },
@@ -348,12 +348,12 @@ const GAR = {
 // « Se déconnecter » : on demande d'abord (fenêtre dans la page)
 const OUTQ = { fr: ['Voulez-vous vraiment vous déconnecter de l’app ?', 'Oui, me déconnecter', 'Annuler'], it: ['Vuoi davvero uscire dall’app?', 'Sì, esci', 'Annulla'], de: ['Möchten Sie sich wirklich von der App abmelden?', 'Ja, abmelden', 'Abbrechen'], en: ['Do you really want to log out of the app?', 'Yes, log out', 'Cancel'], pt: ['Quer mesmo terminar a sessão da app?', 'Sim, terminar sessão', 'Cancelar'], es: ['¿Seguro que quieres cerrar la sesión de la app?', 'Sí, cerrar sesión', 'Cancelar'] };
 const SETT = {
-  fr: { t: 'Mon profil', ph: 'Ma photo', pick: '📷 Choisir une photo', del: 'Retirer', hint: 'Elle apparaît chez votre gestionnaire, à côté de votre nom.', ok: 'Photo envoyée ✓' },
-  it: { t: 'Il mio profilo', ph: 'La mia foto', pick: '📷 Scegli una foto', del: 'Togli', hint: 'Appare al tuo gestore, accanto al tuo nome.', ok: 'Foto inviata ✓' },
-  de: { t: 'Mein Profil', ph: 'Mein Foto', pick: '📷 Foto wählen', del: 'Entfernen', hint: 'Es erscheint bei Ihrer Verwaltung neben Ihrem Namen.', ok: 'Foto gesendet ✓' },
-  en: { t: 'My profile', ph: 'My photo', pick: '📷 Choose a photo', del: 'Remove', hint: 'It shows up for your manager, next to your name.', ok: 'Photo sent ✓' },
-  pt: { t: 'O meu perfil', ph: 'A minha foto', pick: '📷 Escolher uma foto', del: 'Retirar', hint: 'Aparece ao seu gestor, ao lado do seu nome.', ok: 'Foto enviada ✓' },
-  es: { t: 'Mi perfil', ph: 'Mi foto', pick: '📷 Elegir una foto', del: 'Quitar', hint: 'Aparece a tu administrador, junto a tu nombre.', ok: 'Foto enviada ✓' },
+  fr: { me: 'Mes données', meHint: 'Une erreur ? Dites-le à votre gestionnaire (DOMIER → Signaler un problème).', t: 'Mon profil', ph: 'Ma photo', pick: '📷 Choisir une photo', del: 'Retirer', hint: 'Elle apparaît chez votre gestionnaire, à côté de votre nom.', ok: 'Photo envoyée ✓' },
+  it: { me: 'I miei dati', meHint: 'Un errore? Dillo al tuo gestore (DOMIER → Segnala un problema).', t: 'Il mio profilo', ph: 'La mia foto', pick: '📷 Scegli una foto', del: 'Togli', hint: 'Appare al tuo gestore, accanto al tuo nome.', ok: 'Foto inviata ✓' },
+  de: { me: 'Meine Daten', meHint: 'Ein Fehler? Sagen Sie es Ihrer Verwaltung (DOMIER → Problem melden).', t: 'Mein Profil', ph: 'Mein Foto', pick: '📷 Foto wählen', del: 'Entfernen', hint: 'Es erscheint bei Ihrer Verwaltung neben Ihrem Namen.', ok: 'Foto gesendet ✓' },
+  en: { me: 'My details', meHint: 'A mistake? Tell your manager (DOMIER → Report a problem).', t: 'My profile', ph: 'My photo', pick: '📷 Choose a photo', del: 'Remove', hint: 'It shows up for your manager, next to your name.', ok: 'Photo sent ✓' },
+  pt: { me: 'Os meus dados', meHint: 'Um erro? Diga ao seu gestor (DOMIER → Comunicar um problema).', t: 'O meu perfil', ph: 'A minha foto', pick: '📷 Escolher uma foto', del: 'Retirar', hint: 'Aparece ao seu gestor, ao lado do seu nome.', ok: 'Foto enviada ✓' },
+  es: { me: 'Mis datos', meHint: '¿Un error? Díselo a tu administrador (DOMIER → Avisar de un problema).', t: 'Mi perfil', ph: 'Mi foto', pick: '📷 Elegir una foto', del: 'Quitar', hint: 'Aparece a tu administrador, junto a tu nombre.', ok: 'Foto enviada ✓' },
 };
 let icOpen = false, icMine = '', phMine = null;
 async function sendOwner(o) { if (data && data.signalKey) await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) }); }
@@ -424,14 +424,14 @@ function installCard(t) {
 }
 // Maquettes simplifiées de l'écran (libellés dans la langue du téléphone), l'endroit à toucher en surbrillance
 const HI = (x) => `<span class="hi">${x}</span>`;
-const ICON = '<img src="/ares/icons/ares-192.png" alt="">';
+const ICON = () => `<img src="${esc((data && data.societe && data.societe.logo) || (data && /nobis/i.test((data.societe || {}).nom || '') ? '/ares/icons/ares-192.png' : '/ares/icons/lux-192.png'))}" alt="">`; // le logo de SON gestionnaire
 const MK = {
   bar: () => `<div class="gmk"><div class="mk-page"></div><div class="mk-bar"><span>‹</span><span class="mk-url">luxinterventions.com</span>${HI('⋯')}</div></div>`,
   menu: (items, h) => `<div class="gmk mk-sheet">${items.map((x, i) => `<div class="mk-row${i === h ? ' hi-row' : ''}">${esc(x)}</div>`).join('')}</div>`,
-  dlg: (u) => `<div class="gmk"><div class="mk-top"><span>${esc(u.cancel)}</span>${HI(esc(u.add))}</div><div class="mk-dlg">${ICON}<div><b>Locataires</b><small>luxinterventions.com</small></div></div></div>`,
-  home: () => `<div class="gmk mk-home">${'<i></i>'.repeat(6)}<span class="hi-app">${ICON}<small>Locataires</small></span><i></i></div>`,
+  dlg: (u) => `<div class="gmk"><div class="mk-top"><span>${esc(u.cancel)}</span>${HI(esc(u.add))}</div><div class="mk-dlg">${ICON()}<div><b>Locataires</b><small>luxinterventions.com</small></div></div></div>`,
+  home: () => `<div class="gmk mk-home">${'<i></i>'.repeat(6)}<span class="hi-app">${ICON()}<small>Locataires</small></span><i></i></div>`,
   chrome: () => `<div class="gmk"><div class="mk-bar"><span class="mk-url">luxinterventions.com</span>${HI('⋮')}</div><div class="mk-page"></div></div>`,
-  adlg: (u) => `<div class="gmk mk-adlg">${ICON}<b>Locataires</b><div class="mk-btns"><span>${esc(u.cancel)}</span>${HI(esc(u.ainstallBtn))}</div></div>`,
+  adlg: (u) => `<div class="gmk mk-adlg">${ICON()}<b>Locataires</b><div class="mk-btns"><span>${esc(u.cancel)}</span>${HI(esc(u.ainstallBtn))}</div></div>`,
 };
 let guideTab = IS_IOS ? 'ios' : 'and';
 function renderGuide() {
@@ -969,10 +969,18 @@ function render() {
   out.push(`<div class="top"><span class="brandx">${socLogoHtml(d.societe)}<b>${esc(d.societe.nom)}</b></span></div><h1 style="display:flex;align-items:center;gap:12px"><button class="av-wrap" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}"><span class="av-btn">${(phMine !== null ? phMine : d.photo) ? `<img src="${esc(phMine !== null ? phMine : d.photo)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span><span class="av-pen" aria-hidden="true">✏️</span></button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1><div id="tripSlot">${tripBoxes()}</div>${icOpen ? (() => { const st = SETT[lang] || SETT.fr, ph = phMine !== null ? phMine : d.photo || ''; return `<div class="card" id="settCard"><h2 style="margin:0 0 10px">✏️ ${esc(st.t)}</h2><p style="display:flex;align-items:center;gap:8px;margin:0 0 12px">🌐 ${langs}</p><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span class="av-btn" style="width:72px;height:72px;font-size:32px">${ph ? `<img src="${esc(ph)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span>
     <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${ph ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
-    <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>`; })() + `<p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${MY_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === (icMine || d.avatar)}">${esc(e)}</button>`).join('')}</div></div>` : ''}<p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);
+    <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>
+    <p style="margin:0 0 4px"><b>👤 ${esc(st.me)}</b></p><p class="meta" style="margin:0 0 14px;line-height:1.6">${esc([d.prenom, d.nom].filter(Boolean).join(' '))}${d.mail ? '<br>✉️ ' + esc(d.mail) : ''}${d.logement || addrFull ? '<br>🏠 ' + esc([d.logement, addrFull].filter(Boolean).join(' · ')) : ''}<br><span style="font-size:11px">${esc(st.meHint)}</span></p>`; })() + `<p style="margin:0 0 8px"><b>${esc(ICT[lang] || ICT.fr)}</b></p><div class="av-grid">${MY_ICONS.map((e) => `<button data-ic="${esc(e)}" aria-pressed="${e === (icMine || d.avatar)}">${esc(e)}</button>`).join('')}</div></div>` : ''}<p class="sub"><span class="marq"><span>${esc([d.logement, addrFull].filter(Boolean).join(' · '))}</span></span></p>`);
   // 🔄 révision du loyer annoncée par le gestionnaire
-  const domAt = out.length; out.push(''); // 🔧 DOMIER : son gestionnaire (la chaîne est respectée) ; « Signaler un problème » est dedans (rempli plus bas)
+  { const al = document.querySelector('link[rel=apple-touch-icon]'); if (al && d.societe && d.societe.logo && al.getAttribute('href') !== d.societe.logo) al.setAttribute('href', d.societe.logo); } // 📱 iPhone : l'icône = le logo de son gestionnaire
+  // ── Sezione 2 · informazioni da e per la centrale (spariscono quando non servono più), poi DOMIER ──
   if (d.revis && d.revis.from && (s.pay || s.contrat)) { const rv = REVT[lang] || REVT.fr; out.push(`<div class="card notice" style="border-left:4px solid #2563eb"><p style="margin:0"><b>🔄 ${esc(rv.t)}</b></p><p style="margin:6px 0 0">${esc(rv.from)} <b>${esc(fmt(d.revis.from))}</b> : ${esc(money(d.revis.ancien))} → <b>${esc(money(d.revis.nouveau))}</b> ${esc(rv.m)}</p></div>`); }
+  if (s.avis && (d.avis || []).length) out.push(`<div class="card avis"><h2>📢 ${esc(t.avis)}</h2>${d.avis.map((a) => `<p style="margin:6px 0;white-space:pre-wrap">${esc(a.texte)}${a.debut || a.fin ? `<br><span class="meta">${esc([fmt(a.debut), fmt(a.fin)].filter(Boolean).join(' → '))}</span>` : ''}</p>`).join('')}</div>`);
+  out.push(nbienBanner()); // 🆕 Nouveau bien (bleu mer, clignote tant qu'il n'est pas ouvert)
+  if (pushSt) out.push(notifCard(t)); // 🔔 notifications coupées (« activées » juste après, puis disparaît)
+  out.push(installCard(t)); // 📱 icône pas encore sur l'écran (disparaît dans l'app installée)
+  const domAt = out.length; out.push(''); // 🔧 DOMIER : son gestionnaire (la chaîne est respectée) ; « Signaler un problème » est dedans (rempli plus bas)
+  // ── Sezione 3 · publicité en haut ──
   const pubs = s.pub ? (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x) && pubLive(x)) : [];
   const ad = pubs.find((x) => x.id === adSel);
   if (!ad) adSel = '';
@@ -984,9 +992,7 @@ function render() {
   else if (ad) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)} · ${esc((t.ad.cats[ad.cat] || t.ad.cats.autre).split(' ')[0])} ${esc(ad.nom)}</b><br><span class="meta">📍 ${esc(ad.adresse)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(ad.adresse))}"></div>
     <div class="btn-row"><a class="btn" href="https://www.google.com/maps/dir/?api=1${d.adresse ? '&origin=' + encodeURIComponent(mapQ(addrFull)) : ''}&destination=${encodeURIComponent(mapQ(ad.adresse))}" target="_blank" rel="noopener">${esc(t.ad.route)}</a>${d.adresse ? `<button class="btn sec" data-home="1">${esc(t.ad.home)}</button>` : ''}${slot('haut') ? `<button class="btn sec" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div></div>`);
   else if (d.adresse) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">🏠 ${esc(addrFull)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(addrFull))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQ(addrFull))}" target="_blank" rel="noopener">${esc(t.ed.map)}</a><p class="meta" style="margin:6px 0 0;text-align:center">${esc(t.ed.mapHint)}</p>${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
-  out.push(nbienBanner()); // 🆕 Nouveau bien (bleu mer, clignote tant qu'il n'est pas ouvert)
   // Météo de la semaine + radio (carte pliable, ouverte par défaut)
-  if (pushSt && pushSt !== 'on') out.push(notifCard(t)); // notifications coupées : rappel en haut (sous la carte)
   { const w = (AX[lang] || AX.fr).wx; out.push(foldCard(`<div class="card" id="wxCard"><h2>🌤️ ${esc(w.t)} · 📻 ${esc(w.r)}</h2><div id="wxBox">${wxHtml()}</div><div id="radioBox">${radioHtml()}</div></div>`, 'meteo', `<span id="wxSum">${wxSumHtml()}</span>`)); setTimeout(() => wxLoad(d), 0); }
   const binTop = d.bins && d.chat ? binHtml() : ''; // le tour du jour (Fait / Je ne peux pas / Je le fais à sa place) : en haut de « Maintenance »
   let binSoon = null;
@@ -1022,7 +1028,6 @@ function render() {
       <p class="meta" style="margin:0 0 6px">${esc(t.men.q)}</p><div class="men-opts" role="radiogroup" aria-label="${esc(t.men.crit)}">${t.men.opts.map((o, i) => `<button role="radio" aria-checked="${mv === i + 1}" data-men="${i + 1}" data-w="${esc(mt.w)}">${esc(o)}</button>`).join('')}</div>
       ${mv ? `<p class="ok" style="margin:8px 0 0"><b>✓ ${esc(t.men.thanks)}</b></p>` : ''}</div>`);
   }
-  if (s.avis && (d.avis || []).length) out.push(`<div class="card avis"><h2>📢 ${esc(t.avis)}</h2>${d.avis.map((a) => `<p style="margin:6px 0;white-space:pre-wrap">${esc(a.texte)}${a.debut || a.fin ? `<br><span class="meta">${esc([fmt(a.debut), fmt(a.fin)].filter(Boolean).join(' → '))}</span>` : ''}</p>`).join('')}</div>`);
   // Clé digitale (code de la porte) : dans « Mes loyers », entre les loyers et le contrat ; contour vert qui « respire » tant qu'elle est active
   const door = s.porte && d.porte && (!d.porte.fin || d.porte.fin >= today) ? (() => {
     const p = d.porte, n = p.fin ? Math.round((new Date(p.fin + 'T12:00:00') - new Date(today + 'T12:00:00')) / 864e5) : null;
@@ -1178,24 +1183,21 @@ function render() {
   if (mtCard || collHtml || legHtml || binSoon || binTop) out[mtAt] = foldCard(`<div class="card" id="mtCard"${binSoon || mtLight || binTop ? ' data-alert="red"' : ''}><h2>${mtL || binTop ? `<span class="light l-${binTop ? 'red' : mtL} blink"></span> ` : ''}🛠️ ${esc(t.mt.t)}</h2>${binSoon ? binSoon.html : ''}${d.bins && d.chat ? `<div id="binBox">${binTop}</div>` : ''}${mtCard}${collHtml}${legHtml}</div>`, 'mt', '');
   // 📣 annonce du bas + 📰 News : juste sous l'état des lieux
   { const low = slot('bas'); if (low) out.push(adBox(low, t, d)); }
+  // ── Sezione 6 · fondo : News ; 📜 Règlement (dedans : RGPD et les couleurs de l'info) ; bourse ; 🚪 Se déconnecter ──
   out.push(newsHtml(API));
-  if (d.regles) {
-    const lu = rulesDate(d);
-    out.push(`<div class="card" id="rules"><details${lu ? '' : ' open'}><summary><h2 style="display:inline">📜 ${esc(t.hr.rulesT)}</h2>${lu ? ` <span class="meta">✓ ${esc(fmt(lu))}</span>` : ''}</summary>
+  {
+    const ft = TFT[lang] || TFT.fr, lu = d.regles ? rulesDate(d) : '';
+    const rgpd = `<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e5e2da"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><button class="link-rgpd" data-rgpd="1">${esc(t.rgpdT)}</button></div>`;
+    const info = `<div style="margin-top:10px">${infoBox({ extra: `<button class="btn sec block" data-ianim="1">▶ ${esc(IA_T[lang] || IA_T.fr)}</button>` })}</div>`;
+    if (d.regles) out.push(`<div class="card" id="rules"><details${lu ? '' : ' open'}><summary><h2 style="display:inline">📜 ${esc(t.hr.rulesT)}</h2>${lu ? ` <span class="meta">✓ ${esc(fmt(lu))}</span>` : ''}</summary>
       <ol class="steps" style="margin-top:10px">${t.hr.R.map((r) => `<li>${esc(r)}</li>`).join('')}</ol>
       ${d.regles.extra ? `<p style="margin:8px 0 4px"><b>${esc(t.hr.rulesExtra)}</b></p><p class="pre" style="margin:0">${esc(d.regles.extra)}</p>` : ''}
-      ${lu ? `<p class="ok" style="margin:10px 0 0">✓ ${esc(t.hr.rulesOk)} ${esc(fmt(lu))}</p>` : `<button class="btn block" style="margin-top:12px" data-rules-ok="1">${esc(t.hr.rulesAccept)}</button>`}</details></div>`);
+      ${lu ? `<p class="ok" style="margin:10px 0 0">✓ ${esc(t.hr.rulesOk)} ${esc(fmt(lu))}</p>` : `<button class="btn block" style="margin-top:12px" data-rules-ok="1">${esc(t.hr.rulesAccept)}</button>`}${rgpd}${info}</details></div>`);
+    else out.push(`<div class="card" id="rules"><details><summary><h2 style="display:inline">🔒 ${esc(t.rgpdT)}</h2></summary>${rgpd}${info}</details></div>`);
+    out.push(TICKER);
+    out.push(`<p class="meta" style="text-align:center;font-size:11px;margin:8px 0 0">${esc(d.gv ? 'v' + d.gv : 'v < 2.57')}</p>`); // version de l'app de gestion (dépannage)
+    out.push(`<p style="text-align:center;margin:14px 0 6px"><button class="btn sec" data-logout="1">🚪 ${esc(ft.out)}</button></p>`);
   }
-  if (pushSt === 'on') out.push(notifCard(t));
-  out.push(installCard(t));
-  { // bas de page : 🔒 phrase courte + RGPD, 🚪 Se déconnecter, 📞 Appeler (numéro non affiché) ; l'icône sur l'écran = le grand bouton violet plus haut
-    const ft = TFT[lang] || TFT.fr;
-    out.push(`<div class="card notice"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><button class="link-rgpd" data-rgpd="1">${esc(t.rgpdT)}</button><div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px"><button class="btn sec sm" data-logout="1">🚪 ${esc(ft.out)}</button>${d.societe.tel ? `<a class="btn sm" href="tel:${esc(d.societe.tel.replace(/[^\d+]/g, ''))}">📞 ${esc(ft.call)}</a><span class="meta">${esc(d.societe.nom)}</span>` : ''}</div></div>`);
-  }
-  out.push(infoBox({ extra: `<button class="btn sec block" data-ianim="1">▶ ${esc(IA_T[lang] || IA_T.fr)}</button>` }));
-  // version de l'app de gestion qui a publié ces données (aide au dépannage)
-  out.push(`<p class="meta" style="text-align:center;font-size:11px;margin:8px 0 0">${esc(d.gv ? 'v' + d.gv : 'v < 2.57')}</p>`);
-  out.push(TICKER);
   const keepMap = document.querySelector('#mapBox iframe');
   const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');
