@@ -18673,4 +18673,12 @@ export default [
 "Indiquez le propriétaire principal / réel (nom et prénom, ou société)",
 "Haupt- / tatsächlichen Eigentümer angeben"
 ],
+[
+"Votre société — propriétaire / bailleur (apparaît sur les quittances et les relances)",
+"Ihre Gesellschaft — Eigentümer / Vermieter (erscheint auf Quittungen und Mahnungen)"
+],
+[
+"Votre société — gestionnaire (apparaît sur les quittances et les relances)",
+"Ihre Gesellschaft — Verwalter (erscheint auf Quittungen und Mahnungen)"
+],
 ];

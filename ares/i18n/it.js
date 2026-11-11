@@ -18686,4 +18686,12 @@ export default [
 "Indiquez le propriétaire principal / réel (nom et prénom, ou société)",
 "Indicate il proprietario principale / reale (nome e cognome, o società)"
 ],
+[
+"Votre société — propriétaire / bailleur (apparaît sur les quittances et les relances)",
+"La sua società — proprietario / locatore (compare sulle quietanze e sui solleciti)"
+],
+[
+"Votre société — gestionnaire (apparaît sur les quittances et les relances)",
+"La sua società — amministratore (compare sulle quietanze e sui solleciti)"
+],
 ];

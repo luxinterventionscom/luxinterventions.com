@@ -18598,4 +18598,12 @@ export default [
 "Indiquez le propriétaire principal / réel (nom et prénom, ou société)",
 "Indique o proprietário principal / real"
 ],
+[
+"Votre société — propriétaire / bailleur (apparaît sur les quittances et les relances)",
+"A sua sociedade — proprietário / senhorio (aparece nos recibos e nos lembretes)"
+],
+[
+"Votre société — gestionnaire (apparaît sur les quittances et les relances)",
+"A sua sociedade — gestor (aparece nos recibos e nos lembretes)"
+],
 ];
