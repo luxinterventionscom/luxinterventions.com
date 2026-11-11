@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.249.1';
+const VERSION = '2.250.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -80,12 +80,15 @@ const TENANT_ROUTES = {
   airbnb: ['airbnb', 'demandes', 'compta', 'rapports', 'reglages'],
 };
 const tRoutes = () => TENANT_ROUTES[tenantInfo.fil] || TENANT_ROUTES.gerance;
-const routeOk = (r) => (TENANT ? tRoutes().includes(r) : r !== 'demandes');
+// 🏛️ CENTRAL DOMIER : pas de propriétés ni de locataires à elle (tout est chez les clients) ; l'ancien parc reste en archive (Réglages → 📦)
+const archOn = () => { try { return !TENANT && localStorage.getItem('aresArch') === '1'; } catch { return false; } };
+const ownPark = () => { try { return vault.unlocked && vault.listAll('immeubles').some((x) => !x.xfer); } catch { return false; } }; // encore un immeuble pas transféré ?
+const routeOk = (r) => (TENANT ? tRoutes().includes(r) : r !== 'demandes' && (archOn() || ownPark() || !['immeubles', 'locataires', 'paiements'].includes(r)));
 const homeRoute = () => (TENANT ? tRoutes()[0] : 'dashboard');
 const vault = new Vault(API, TENANT);
 // 📦 immeubles transférés à un client (centrale principale) : cachés partout (avec logements et locataires), gardés en archive ;
 // Réglages → 📦 Transférés pour les revoir. vault.listAll = la liste complète (transfert, comptes).
-const xferHide = () => { try { return !vault.op && localStorage.getItem('aresXferHide') === '1'; } catch { return false; } }; // choix de cet appareil (par défaut : visibles)
+const xferHide = () => !TENANT && !archOn(); // CENTRAL DOMIER : les immeubles transférés n'apparaissent que dans l'archive // choix de cet appareil (par défaut : visibles)
 {
   const XF = new Set(['immeubles', 'logements', 'locataires']), rawList = vault.list.bind(vault);
   vault.listAll = rawList;
@@ -5687,10 +5690,10 @@ dashboard() {
     const p = pct(received, expected);
     const alertBtn = (cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`;
 
-    if (!imms.length && !locs.length) {
+    if (TENANT && !imms.length && !locs.length) {
       const { anRecBox: rb0, annBox: ab0 } = annAlerts((cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`);
-      return html`${packBox()}${domierCentral()}${pushNudge()}${netAd('haut')}${rb0}${ab0}${centralinoHtml()}${netAd('milieu')}${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
-        ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`;
+      return html`${packBox()}${domierCentral()}${pushNudge()}${netAd('haut')}${rb0}${ab0}${centralinoHtml()}${netAd('milieu')}${TENANT ? html`${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
+        ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}` : ''}`;
     }
 
     const nudge = TENANT && !vault.get('reglages', 'recSplit') ? html`<div class="alert bad" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>🧩 Activez la récupération de votre clé.</b> Sans elle, une clé d'accès oubliée = toutes vos données perdues. 1 minute, et LA CENTRAL ne peut pas lire vos données.</div><button class="btn sm primary" data-action="make-recovery">Activer</button></div>` : vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
@@ -5759,7 +5762,7 @@ dashboard() {
       ${anRecBox}${annBox}${nClaimBox}${netSoonBox}${netStopBox}${eqBox}${candBox}
       ${absBox}
       ${toolsBox}
-      ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
+      ${imms.length || locs.length ? html`      ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
       <div class="metrics">
         <div class="metric hero">
           <div class="lbl">Encaissé ce mois</div>
@@ -5783,7 +5786,7 @@ dashboard() {
           ${parts.map((a) => html`<dt>Part de ${a.nom} (${a.part}%)</dt><dd class="num">${money((prevu * a.part) / 100)}</dd>`)}
         </dl>
         ${!parts.length ? html`<p class="tiny muted" style="margin-top:8px"><a href="#" data-action="open-societe">Ajouter les associés</a> pour voir la part de chacun.</p>` : ''}
-        <button class="btn sm ghost" style="margin-top:8px" data-action="open-frais">${icon('edit')} Frais fixes</button>`, 'margin-top:10px')}
+        <button class="btn sm ghost" style="margin-top:8px" data-action="open-frais">${icon('edit')} Frais fixes</button>`, 'margin-top:10px')}` : ''}
 
       ${mtCard()}
       ${late.length || expiring.length || leaving.length || arriving.length || vacants.length || revisions.length || outside.length || depMissing().length ? html`<div class="section-label">À surveiller</div><div class="stack">
@@ -6358,7 +6361,7 @@ dashboard() {
       <div class="list settings">
         <button class="row" data-action="export-enc">${icon('shield')}<span class="grow"><span class="title" style="display:block">Sauvegarde chiffrée</span><span class="meta">Fichier .ares, lisible uniquement avec la clé</span></span></button>
         <button class="row" data-action="export-json">${icon('download')}<span class="grow"><span class="title" style="display:block">Export lisible (JSON)</span><span class="meta">Non chiffré — à conserver en lieu sûr</span></span></button>
-        ${(() => { const n = TENANT || vault.op ? 0 : vault.listAll('immeubles').filter((x) => x.xfer).length; return n ? html`<button class="row" data-action="xfer-show">📦<span class="grow"><span class="title" style="display:block">${xferHide() ? '👁 Afficher' : '🙈 Cacher'} les immeubles transférés (${n})</span><span class="meta">Choix de cet appareil. Ils sont chez la centrale du client ; ici rien n’est effacé</span></span></button>` : ''; })()}
+        ${TENANT || vault.op ? '' : html`<button class="row" data-action="xfer-arch">📦<span class="grow"><span class="title" style="display:block">${archOn() ? '🙈 Fermer l’archive des anciens immeubles' : '👁 Ouvrir l’archive des anciens immeubles'}</span><span class="meta">${archOn() ? 'Mes Propriétés est visible (lecture) — refermez quand vous avez fini' : 'Mes Propriétés n’est plus dans le menu : les immeubles et locataires sont chez les clients ; rien n’est effacé'}</span></span></button>`}
         ${TENANT || vault.op ? '' : html`<label class="row" style="cursor:pointer"><img src="${APP_BRAND.logo}" alt="" width="36" height="36" style="border-radius:8px;object-fit:cover"><span class="grow"><span class="title" style="display:block">🖼️ Icône de la CENTRAL DOMIER</span><span class="meta">Image carrée (au moins 512 × 512) : en-tête, page de la clé, onglet, icône sur l’écran (à remettre sur le téléphone)</span></span><input type="file" accept="image/*" data-input="brand-ico" hidden></label>${(vault.get('reglages', 'brand') || {}).ico ? html`<button class="row" data-action="brand-reset">↩️<span class="grow title">Remettre l’icône d’origine</span></button>` : ''}`}
         ${TENANT || vault.op ? '' : html`<button class="row" data-action="angar">🏗️<span class="grow"><span class="title" style="display:block">ANGAR — paquets vers les containers (clients)</span><span class="meta">Transférer immeubles, locataires, paiements, documents vers la centrale d’un client, ou en fichier</span></span></button>`}
         <button class="row" data-action="my-data">${icon('download')}<span class="grow"><span class="title" style="display:block">📦 Récupérer toutes mes données</span><span class="meta">Un fichier complet avec les documents (réimportable) + tableaux CSV des locataires et des paiements</span></span></button>
@@ -9738,7 +9741,7 @@ const ACTIONS = {
   'net-reload': () => netLoad(true),
   'net-open': (d) => openOver('net-client', d.id),
   'xfer-open': (d) => { ui.xferDone = null; openOver('xfer', d.id); },
-  'xfer-show': () => { const h = !xferHide(); try { localStorage.setItem('aresXferHide', h ? '1' : '0'); } catch { /* rien */ } renderView(); toast(h ? '📦 Immeubles transférés cachés sur cet appareil' : '📦 Immeubles transférés affichés'); },
+  'xfer-arch': () => { const on = !archOn(); try { localStorage.setItem('aresArch', on ? '1' : '0'); } catch { /* rien */ } renderShell(); renderView(); toast(on ? '📦 Archive ouverte : Mes Propriétés dans le menu' : '📦 Archive fermée'); },
   'brand-reset': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'brand', ico: '' }), '🖼️ Icône d’origine', ''); await vault.call('brand', { method: 'DELETE' }).catch(() => {}); APP_BRAND.logo = BRAND_DEF; applyBrand(); location.reload(); },
   'xfer-all': (d) => sheetEl.querySelectorAll('[data-xfer-imm]').forEach((c) => { c.checked = d.on === '1'; }),
   angar: () => { netLoad(true).then(() => angarPacks()).catch(() => {}); openSheet('angar'); },
@@ -11623,7 +11626,7 @@ async function importFile(file) {
 
 // ───────────────────────── Délégation d'événements ─────────────────────────
 // réservé au responsable (clé principale) ; le comptable n'affecte pas les travaux
-const RESP_ONLY = new Set(['brand-reset', 'xfer-do', 'xfer-show', 'angar', 'pack-del', 'change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del', 'net-reset', 'test-clean', 'test-clean-do']);
+const RESP_ONLY = new Set(['brand-reset', 'xfer-do', 'xfer-arch', 'angar', 'pack-del', 'change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del', 'net-reset', 'test-clean', 'test-clean-do']);
 const DEL_ACTION = /^del-|-del$|wipe/; // toute suppression
 const NO_COMPTA = new Set(['eq-swap', 'eq-swap-do', 'interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job', 'op-del', 'op-new']);
 document.addEventListener('click', (e) => {
