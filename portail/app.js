@@ -40,7 +40,7 @@ const INVITE = PTL_INVITE;
 wxRadioInit({ app: 'ptl', lang: () => LANG, home: () => 'Luxembourg' });
 const API = document.querySelector('meta[name="ptl-api"]').content.replace(/\/$/, '') + '/api/portail/';
 nbienInit({ api: location.hash === '#demo' ? '' : API.replace(/\/api\/portail\/$/, ''), app: 'ptl', lang: () => LANG }); // démo du site : pas d'annonces réelles
-domierInit({ lang: () => LANG }); // 🔧 DOMIER : appeler LUXINTERVENTION
+domierInit({ api: API.replace(/\/api\/portail\/$/, ''), lang: () => LANG }); // 🔧 DOMIER : appeler LUXINTERVENTION
 const $ = (s, r = document) => r.querySelector(s);
 
 // ───────────────────────── Gabarits HTML (échappement automatique) ─────────────────────────

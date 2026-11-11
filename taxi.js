@@ -359,4 +359,4 @@ app.addEventListener('click', async (e) => {
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) { setBadge(0, '/taxi'); load(); } });
 load();
 emojiInit(); // 😊 bouton émojis dans les chats
-domierInit({ lang: () => lang, send: (o) => sendOwner(o), rerender: () => render() });
+domierInit({ api: API, lang: () => lang, send: (o) => sendOwner(o), rerender: () => render() });

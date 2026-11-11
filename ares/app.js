@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.248.3';
+const VERSION = '2.249.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -96,7 +96,7 @@ const xferHide = () => { try { return !vault.op && localStorage.getItem('aresXfe
 }
 trInit(API, () => getLang()); // 🌐 traduction des messages des chats
 emojiInit(); // 😊 bouton émojis dans les chats
-domierInit({ lang: () => getLang() }); // 🔧 DOMIER (centrales des clients)
+domierInit({ api: API.replace(/\/$/, ''), lang: () => getLang() }); // 🔧 DOMIER (centrales des clients)
 // 🗄️ Nouveau départ : les données de test sont archivées (gardées, rien n'est effacé) et ne s'affichent plus
 // nulle part (listes, statistiques, apps) ; Réglages → « Voir les archives » les montre à nouveau
 const ARCH_COLS = new Set(['taches', 'devis', 'hotes', 'biens']);
@@ -3656,7 +3656,9 @@ async function brandSet(file) {
   x.fillStyle = '#fff'; x.fillRect(0, 0, S, S); x.drawImage(bmp, (S - bmp.width * k) / 2, (S - bmp.height * k) / 2, bmp.width * k, bmp.height * k);
   const ico = c.toDataURL('image/png');
   await vault.mutate((tx) => tx.put('reglages', { id: 'brand', ico }), '🖼️ Icône de la CENTRAL DOMIER', '');
-  applyBrand(); renderView(); toast('🖼️ Icône changée');
+  applyBrand(); renderShell(); renderView(); toast('🖼️ Icône changée');
+  // publiée (c'est seulement un logo) : le bandeau DOMIER de toutes les apps la montre
+  try { const b = Uint8Array.from(atob(ico.split(',')[1]), (ch) => ch.charCodeAt(0)); /* fetch d'une adresse data: est bloqué par la CSP */ await vault.call('brand', { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: b }); } catch { toast('Logo enregistré ici ; pour les apps, publiez le nouveau Worker', { bad: true }); }
 }
 { const ic = TENANT ? tIco() : brandIco(); if (ic) { APP_BRAND.logo = ic; document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]').forEach((l) => { l.href = ic; }); } } // dès l'ouverture (page de la clé)
 const associes = () => (societe().associes || []).filter((a) => a.nom && a.part > 0);
@@ -4208,7 +4210,7 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}<small>${TENANT ? tSub() : APP_BRAND.sub}</small></span></div>
+      <div class="brand">${TENANT || vault.op ? html`<img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36">` : html`<label class="brand-pen" title="Changer le logo DOMIER" style="position:relative;cursor:pointer;display:inline-block"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span aria-hidden="true" style="position:absolute;right:-4px;bottom:-4px;background:#fff;border-radius:50%;font-size:13px;line-height:1;padding:3px;box-shadow:0 1px 3px rgba(0,0,0,.25)">✏️</span><input type="file" accept="image/*" data-input="brand-ico" hidden></label>`}<span data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}<small>${TENANT ? tSub() : APP_BRAND.sub}</small></span></div>
       ${sideNavHtml()}
       ${navBtn(['reglages', 'Réglages', 'gear'])}
       ${legDots()}
@@ -9735,7 +9737,7 @@ const ACTIONS = {
   'net-open': (d) => openOver('net-client', d.id),
   'xfer-open': (d) => { ui.xferDone = null; openOver('xfer', d.id); },
   'xfer-show': () => { const h = !xferHide(); try { localStorage.setItem('aresXferHide', h ? '1' : '0'); } catch { /* rien */ } renderView(); toast(h ? '📦 Immeubles transférés cachés sur cet appareil' : '📦 Immeubles transférés affichés'); },
-  'brand-reset': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'brand', ico: '' }), '🖼️ Icône d’origine', ''); APP_BRAND.logo = BRAND_DEF; applyBrand(); location.reload(); },
+  'brand-reset': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'brand', ico: '' }), '🖼️ Icône d’origine', ''); await vault.call('brand', { method: 'DELETE' }).catch(() => {}); APP_BRAND.logo = BRAND_DEF; applyBrand(); location.reload(); },
   'xfer-all': (d) => sheetEl.querySelectorAll('[data-xfer-imm]').forEach((c) => { c.checked = d.on === '1'; }),
   angar: () => { netLoad(true).then(() => angarPacks()).catch(() => {}); openSheet('angar'); },
   async 'pack-open'(d) {

@@ -469,4 +469,4 @@ pchatInit({ id: () => id, data: () => data, send: (o) => sendOwner(o), lang: () 
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data && !form) { setBadge(0, '/annonce'); load(); } });
 load();
 emojiInit(); // 😊 bouton émojis dans les chats
-domierInit({ lang: () => lang, send: (o) => sendOwner(o), rerender: () => render() });
+domierInit({ api: API, lang: () => lang, send: (o) => sendOwner(o), rerender: () => render() });
