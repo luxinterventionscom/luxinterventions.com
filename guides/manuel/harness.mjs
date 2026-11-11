@@ -38,7 +38,7 @@ export async function routeCtx(ctx) {
     const h = { ...cors }; res.headers.forEach((v, k) => { if (!k.startsWith('access-control')) h[k] = v; });
     r.fulfill({ status: res.status, headers: h, body: Buffer.from(await res.arrayBuffer()) });
   });
-  await ctx.route('http://localhost:8765/**', async (r) => { const f = decodeURIComponent(new URL(r.request().url()).pathname); try { r.fulfill({ status: 200, contentType: MIME[f.split('.').pop()] || 'application/octet-stream', body: await readFile(ROOT + f) }); } catch { r.fulfill({ status: 404, body: '' }); } });
+  await ctx.route('http://localhost:8765/**', async (r) => { let f = decodeURIComponent(new URL(r.request().url()).pathname); if (f.endsWith('/')) f += 'index.html'; /* comme GitHub Pages */ try { r.fulfill({ status: 200, contentType: MIME[f.split('.').pop()] || 'application/octet-stream', body: await readFile(ROOT + f) }); } catch { r.fulfill({ status: 404, body: '' }); } });
   await ctx.route('https://geocoding-api.open-meteo.com/**', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ results: [{ latitude: 49.61, longitude: 6.13 }] }) }));
   await ctx.route('https://api.open-meteo.com/**', (r) => r.fulfill({ status: 404, body: '' }));
 }

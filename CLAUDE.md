@@ -29,7 +29,7 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 ## Flusso git
 - Ramo di lavoro → push → `main` con `merge --no-ff` → push → il ramo di lavoro torna allineato (`merge --ff-only main`).
 - Ad ogni modifica: aumentare le versioni
-  - centrale: `VERSION` in `ares/app.js`, `?v=` in `locataires.html` **e `centraldomier.html`**, `CACHE` in `locataires-sw.js` (stessa cifra);
+  - centrale: `VERSION` in `ares/app.js`, `?v=` in `locataires.html`, **`centraldomier.html` e `centraldomier/index.html`**, `CACHE` in `locataires-sw.js` (stessa cifra);
   - app: `CACHE` in `espace-sw.js`, `equipe-sw.js`, `hote-sw.js`, `taxi-sw.js`, `annonce-sw.js`, `portail-sw.js`.
 - Un file nuovo in `ares/` usato da un'app va aggiunto alla `SHELL` del suo service worker.
 
@@ -53,6 +53,7 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 
 ## Struttura (in breve)
 - Indirizzi «parlanti» (operai.html, ospiti.html, centrale.html…) → vedi `LIENS.md`: rimandano alla pagina vera.
+- Centrali dei clienti: **`/centraldomier/?<numero>`** (solo il numero del cliente, mai nomi nell'indirizzo; una sola pagina per tutti). Il vecchio `locataires.html?t=` funziona ancora.
 - `centraldomier.html` = **CENTRAL-DOMIER**, la MASTER (copia di `locataires.html`: tenerle uguali). `locataires.html` resta per i vecchi link e le centrali dei clienti.
 - `locataires.html` + `ares/app.js`: la **centrale** (anche le centrali dei clienti della rete, con `?t=<id>`).
 - App: `espace.js` (inquilini), `equipe.js` (operai), `hote.js` (ospiti hotel/Airbnb), `taxi.js` (ditte taxi),
