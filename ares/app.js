@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.248.0';
+const VERSION = '2.248.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3629,13 +3629,19 @@ async function fixIdentity() {
 }
 // L'en-tête de l'app montre la marque LA CENTRAL ; le logo de la société (Réglages) sert aux quittances et à l'app des locataires
 function applyBrand() {
-  const ico = brandIco();
+  const ico = TENANT ? tIco() : brandIco();
   if (ico) { APP_BRAND.logo = ico; document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]').forEach((l) => { l.href = ico; }); document.querySelectorAll('.lock-logo').forEach((img) => { img.src = ico; }); }
   document.querySelectorAll('.brand-mark').forEach((img) => { img.src = TENANT && societe().logo ? societe().logo : APP_BRAND.logo; });
 }
 // 🖼️ icône de la CENTRAL DOMIER (choisie dans Réglages, seulement la centrale principale) : en-tête, page de la clé, onglet du navigateur,
 // icône sur l'écran (nouvelle installation). Gardée aussi sur l'appareil (non chiffrée : c'est seulement un logo) pour la page de la clé.
 const BRAND_DEF = APP_BRAND.logo;
+// centrale d'un client : son logo (Réglages → Votre société) devient aussi son icône (onglet, iPhone, page de la clé)
+function tIco() {
+  const k = 'aresTIco:' + TENANT, v = vault.unlocked ? societe().logo || '' : null;
+  if (v !== null) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch { /* plein */ } return v; }
+  try { return localStorage.getItem(k) || ''; } catch { return ''; }
+}
 function brandIco() {
   if (TENANT) return '';
   const v = vault.unlocked ? (vault.get('reglages', 'brand') || {}).ico : undefined;
@@ -3652,7 +3658,7 @@ async function brandSet(file) {
   await vault.mutate((tx) => tx.put('reglages', { id: 'brand', ico }), '🖼️ Icône de la CENTRAL DOMIER', '');
   applyBrand(); renderView(); toast('🖼️ Icône changée');
 }
-if (!TENANT) { const ic = brandIco(); if (ic) { APP_BRAND.logo = ic; document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]').forEach((l) => { l.href = ic; }); } } // dès l'ouverture (page de la clé)
+{ const ic = TENANT ? tIco() : brandIco(); if (ic) { APP_BRAND.logo = ic; document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]').forEach((l) => { l.href = ic; }); } } // dès l'ouverture (page de la clé)
 const associes = () => (societe().associes || []).filter((a) => a.nom && a.part > 0);
 
 function dataYears() {
@@ -4207,7 +4213,7 @@ function renderShell() {
       ${navBtn(['reglages', 'Réglages', 'gear'])}
       ${legDots()}
       <div class="spacer"></div>
-      <button class="navbtn" data-action="lock">${icon('lock')}<span>Verrouiller</span></button>
+      <button class="navbtn" data-action="lock">🚪<span>Se déconnecter</span></button>
     </nav>
     <div>
       <header class="topbar">
@@ -4435,7 +4441,7 @@ function renderView() {
   if (!view || !vault.unlocked) return;
   const active = document.activeElement;
   const keepSearch = active && active.name === 'search' ? active.selectionStart : null;
-  setHtml(view, html`${tenantBanner()}${VIEWS[ui.route]()}`);
+  setHtml(view, html`${tenantBanner()}${VIEWS[ui.route]()}<div style="text-align:center;margin:28px 0 8px"><button class="btn ghost" data-action="lock">🚪 Se déconnecter</button><p class="tiny muted" style="margin:4px 0 0">La centrale se ferme : il faudra la clé pour rouvrir</p></div>`); // 🚪 en bas de chaque page, comme dans les apps
   enhanceFolds(view, '', false);
   updateBadge();
   tripPaint();
@@ -10032,7 +10038,7 @@ const ACTIONS = {
     goBack();
   },
   go: (d) => { closeSheet(); if (d.sec) ui.cpSec = d.sec; go(d.to); },
-  lock: async () => { if (await confirmBox('Verrouiller l’app ?', { ok: '🔒 Verrouiller', detail: 'Il faudra votre mot de passe pour la rouvrir.' })) lockNow(); },
+  lock: async () => { if (await confirmBox('Se déconnecter ?', { ok: '🚪 Se déconnecter', detail: 'La centrale se ferme : il faudra la clé pour rouvrir' })) lockNow(); },
   'sync-now': () => vault.sync().then(() => vault.status === 'synced' && toast('Synchronisé')),
   'toggle-pw': (_, el) => {
     const inp = el.parentElement.querySelector('input');

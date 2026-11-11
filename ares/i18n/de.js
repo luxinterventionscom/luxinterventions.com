@@ -18681,4 +18681,20 @@ export default [
 "Votre société — gestionnaire (apparaît sur les quittances et les relances)",
 "Ihre Gesellschaft — Verwalter (erscheint auf Quittungen und Mahnungen)"
 ],
+[
+"Se déconnecter",
+"Abmelden"
+],
+[
+"🚪 Se déconnecter",
+"🚪 Abmelden"
+],
+[
+"La centrale se ferme : il faudra la clé pour rouvrir",
+"Die Zentrale wird geschlossen: zum Öffnen braucht es den Schlüssel"
+],
+[
+"Se déconnecter ?",
+"Abmelden?"
+],
 ];

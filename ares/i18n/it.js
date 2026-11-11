@@ -18694,4 +18694,20 @@ export default [
 "Votre société — gestionnaire (apparaît sur les quittances et les relances)",
 "La sua società — amministratore (compare sulle quietanze e sui solleciti)"
 ],
+[
+"Se déconnecter",
+"Disconnetti"
+],
+[
+"🚪 Se déconnecter",
+"🚪 Disconnetti"
+],
+[
+"La centrale se ferme : il faudra la clé pour rouvrir",
+"La centrale si chiude: servirà la chiave per riaprirla"
+],
+[
+"Se déconnecter ?",
+"Disconnettersi?"
+],
 ];
