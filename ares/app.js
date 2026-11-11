@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.249.0';
+const VERSION = '2.249.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -54,6 +54,8 @@ const TENANT = (() => {
   } catch { return /^[a-z0-9]{12,24}$/.test(q) ? q : ''; }
 })();
 let tenantInfo = (() => { try { return JSON.parse(localStorage.getItem('aresTenantInfo:' + TENANT) || '{}'); } catch { return {}; } })();
+// 🏛️ la centrale principale a son adresse : …/centraldomier.html (l'ancien …/locataires.html y passe tout seul, mêmes données)
+if (!TENANT && /^\/locataires\.html$/.test(location.pathname)) history.replaceState(null, '', '/centraldomier.html' + location.hash);
 // 📱 icône sur l'écran d'un client : elle doit garder SON adresse (/centraldomier/?<numéro>), pas celle de la centrale principale
 // (sans manifeste, le téléphone enregistre l'adresse affichée ; sur iPhone l'icône ne partage pas la mémoire de Safari)
 if (TENANT) {
