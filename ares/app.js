@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.247.4';
+const VERSION = '2.247.5';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -63,6 +63,7 @@ if (TENANT) {
   if (tenantInfo.nom) document.title = tenantInfo.nom;
 }
 const tenantSave = (t) => { if (!TENANT || !t) return; tenantInfo = t; try { localStorage.setItem('aresTenantInfo:' + TENANT, JSON.stringify(t)); } catch { /* stockage plein */ } };
+const tSub = () => (tenantInfo.fil === 'proprio' ? (tenantInfo.sous ? 'Bailleur principal' : 'Propriétaire') : (T_FIL_LBL[tenantInfo.fil] || '').replace(/^\S+ /, '')); // sous-titre de la centrale d'un client
 const T_FIL_LBL = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
 // rubriques de chaque filière (la centrale du client ne montre que les siennes)
 const TENANT_ROUTES = {
@@ -1702,6 +1703,10 @@ async function netFactPaid(no) {
   }, 'Facture payée', `${no} — ${f.nom} · ${eur(f.ttc)}`);
 }
 // impayés : sola lettura de la centrale du client après les jours choisis, levée quand tout est payé
+// 🔑 sous-titre de la centrale d'un client propriétaire : « Bailleur principal » ou « Propriétaire » (choisi ici, dans sa fiche)
+async function netSousSync(list) {
+  for (const t of list.filter((x) => x.fil === 'proprio' && netInfo(x.id).loueur)) { const want = netInfo(t.id).loueur === 'sous'; if (!!t.sous !== want) { try { await netApi('tenants/' + t.id, 'PATCH', { sous: want }); t.sous = want; } catch { /* hors ligne */ } } }
+}
 async function netHoldSync(list) {
   if (TENANT || isCompta() || !vault.unlocked) return;
   const d = payDays();
@@ -1847,6 +1852,7 @@ async function netLoad(force) {
     await agNetAutoLink(list).catch(() => {});
     await netDemSync(list);
     await netHoldSync(list);
+    await netSousSync(list).catch(() => {});
     await netStatusSync();
   } catch (e) { ui.net = { list: (ui.net || {}).list || [], dem: (ui.net || {}).dem || [], at: Date.now(), err: e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.' : e.message || 'Connexion impossible' }; }
   if (ui.route === 'reseau') renderView();
@@ -3799,7 +3805,7 @@ function renderLock(mode, error = '') {
   const legacy = legacyLocal();
   const head = html`
     <img class="lock-logo" src="${APP_BRAND.logo}" alt="" width="96" height="96">
-    <div class="lock-head"><h1 data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</h1><p data-notr="1">${TENANT ? (T_FIL_LBL[tenantInfo.fil] || '') + ' · réseau LA CENTRAL' : APP_BRAND.sub}</p><p class="tiny" data-notr="1">${TENANT ? '' : APP_BRAND.legal}</p></div>`;
+    <div class="lock-head"><h1 data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</h1><p>${TENANT ? tSub() : APP_BRAND.sub}</p><p class="tiny" data-notr="1">${TENANT ? '' : APP_BRAND.legal}</p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>${TENANT ? html`<p class="tiny muted" style="text-align:center;margin:8px 0 0"><a href="?t=main">↩ Centrale principale</a></p>` : ''}`;
   if (mode === 'blocked') {
     setHtml(lockEl, html`<div class="lock-card">${head}<div class="alert warn">${icon('lock')}<div><b>Centrale bloquée.</b> L’abonnement est échu ou suspendu : contactez LA CENTRAL pour la réactiver. Vos données restent chiffrées et intactes.</div></div>${foot}</div>`);
@@ -4170,7 +4176,7 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}<small>${TENANT ? (T_FIL_LBL[tenantInfo.fil] || '') + ' · réseau LA CENTRAL' : APP_BRAND.sub}</small></span></div>
+      <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}<small>${TENANT ? tSub() : APP_BRAND.sub}</small></span></div>
       ${sideNavHtml()}
       ${navBtn(['reglages', 'Réglages', 'gear'])}
       ${legDots()}
@@ -10855,6 +10861,7 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + tid, loueur: sous ? 'sous' : 'proprio', realOwner: sous ? g('realOwner') : '' }), '🔑 Client propriétaire / bailleur principal', t.nom || '');
     const bf = fd.get('bail');
     if (sous && bf && bf.size) await netBailSave(tid, bf, t.nom || '');
+    try { await netApi('tenants/' + tid, 'PATCH', { sous }); t.sous = sous; } catch { /* hors ligne : refait à la prochaine ouverture */ }
     toast(sous && !(bf && bf.size) && !netInfo(tid).bailDoc ? '⚠️ Enregistré — bail principal manquant' : 'Enregistré', sous && !netInfo(tid).bailDoc ? { bad: true } : undefined);
     ui.sheet.rendered = false; renderSheet();
   },
