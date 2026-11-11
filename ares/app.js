@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.250.6';
+const VERSION = '2.250.7';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -9108,7 +9108,7 @@ addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installProm
 
 const ACTIONS = {
   'abo-edit': (d) => openSheet('abo', d.id),
-  'abo-tab': (d) => { ui.aboTab = d.id; renderView(); },
+  'abo-tab': (d) => { ui.aboTab = d.id; if (ui.route === 'annonceurs' && d.id !== 'pub') { ui.cpSec = 'abo'; go('compta'); } else renderView(); }, // depuis 📣 Annonceurs : « Abonnements gérances » ouvre la page Abonnements
   async 'netpubs-now'() { try { localStorage.removeItem('aresNetPubs2'); } catch { /* rien */ } await netPubsSync(); renderView(); toast('Liste du réseau envoyée'); },
   'ann-open': () => { ui.cpSec = 'abo'; ui.aboTab = 'pub'; go('compta'); },
   async 'anrec-open'(d) {
