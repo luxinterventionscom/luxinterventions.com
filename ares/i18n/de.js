@@ -18697,4 +18697,8 @@ export default [
 "Se déconnecter ?",
 "Abmelden?"
 ],
+[
+"Annonceurs",
+"Inserenten"
+],
 ];

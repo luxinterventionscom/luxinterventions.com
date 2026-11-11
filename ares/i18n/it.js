@@ -18710,4 +18710,8 @@ export default [
 "Se déconnecter ?",
 "Disconnettersi?"
 ],
+[
+"Annonceurs",
+"Annunciatori"
+],
 ];
