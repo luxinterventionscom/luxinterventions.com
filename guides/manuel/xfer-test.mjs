@@ -93,10 +93,12 @@ assert(/Transféré|Trasferit/.test(await p.$eval('.sheet', (e) => e.innerText))
 await p.keyboard.press('Escape'); await p.waitForTimeout(400);
 // la MASTER non mostra più gli immobili trasferiti (archivio in Réglages → 📦)
 await p.evaluate(() => { location.hash = '#/immeubles'; }); await p.waitForTimeout(1500);
-assert(/12, rue des Exemples/.test(await body(p)), 'MASTER: trasferiti ancora visibili di default (Maurizio ci lavora)');
-await act(p, 'xfer-show'); await p.evaluate(() => { location.hash = '#/reglages'; }); await p.waitForTimeout(600); await p.evaluate(() => { location.hash = '#/immeubles'; }); await p.waitForTimeout(1500);
-assert(!/12, rue des Exemples/.test(await body(p)), 'MASTER: 🙈 nascosti su questo apparecchio');
-await act(p, 'xfer-show'); await p.waitForTimeout(500);
+assert(!/12, rue des Exemples/.test(await body(p)) && !(await p.$('[data-to=immeubles]')), 'CENTRAL DOMIER: niente più Mes Propriétés (menu e pagina)');
+await act(p, 'xfer-arch'); await p.waitForTimeout(600); await p.evaluate(() => { location.hash = '#/immeubles'; }); await p.waitForTimeout(1500);
+assert(/12, rue des Exemples/.test(await body(p)), 'archivio aperto: i vecchi immobili si rivedono');
+await act(p, 'xfer-arch'); await p.waitForTimeout(500);
+await p.evaluate(() => { location.hash = '#/dashboard'; }); await p.waitForTimeout(1200);
+assert(!/Bienvenue|Benvenut/.test(await body(p)) && !/Encaissé ce mois|Incassato/.test(await body(p)), 'Accueil DOMIER: niente «Bienvenue / ajouter immeuble», niente affitti');
 const brand = await p.$eval('.sidenav .brand', (e) => e.innerText).catch(() => '');
 assert(/CENTRAL DOMIER/.test(brand) && /LuxIntervention/.test(brand), 'MASTER: CENTRAL DOMIER + LuxIntervention: ' + brand);
 // CENTRAL-DOMIER : il nuovo indirizzo della MASTER
