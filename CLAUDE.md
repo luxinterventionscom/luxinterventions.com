@@ -51,6 +51,19 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
   salgono a noi; per hotel/Airbnb non è chiaro (forse carta di credito obbligatoria). **Non costruire niente finché non lo decide.**
 - La centrale del titolare è in **francese**; le centrali dei test sono in italiano (solo per le prove).
 
+## Le 6 sezioni di ogni app (regola del titolare — quando non sai dove va una cosa nuova, CHIEDI)
+Vale per tutte le app degli utenti (inquilini, ospiti, operai, annunciatori, tassisti…), sempre in quest'ordine:
+1. **Chi sono**: nome, foto, indirizzo; dentro la ✏️: lingua, foto personale, dati personali, poche icone
+   (3 faccine, 3 frutta, 3 sport, 3 animali, 3 dolci — non di più).
+2. **Informazioni da e per la centrale** (spariscono o si toccano «letto/ricevuto»: documenti mancanti, icona non installata,
+   notifiche spente, avvisi…), poi **DOMIER**.
+3. **Pubblicità in alto** (solo pub).
+4. **Il cuore dell'app** (diverso per ognuno). Inquilini: meteo, mes loyers & mon dossier, pub in mezzo, chat,
+   don/prêt/location, maintenance, état des lieux.
+5. **Pubblicità in basso** (solo pub).
+6. **Fondo**: giornale (News), «📜 Règlement de la maison» richiudibile con dentro RGPD e i colori dell'info,
+   borsa/cripto, e alla fine **🚪 Se déconnecter**.
+
 ## Struttura (in breve)
 - Indirizzi «parlanti» (operai.html, ospiti.html, centrale.html…) → vedi `LIENS.md`: rimandano alla pagina vera.
 - Centrali dei clienti: **`/centraldomier/?<numero>`** (solo il numero del cliente, mai nomi nell'indirizzo; una sola pagina per tutti). Il vecchio `locataires.html?t=` funziona ancora.
