@@ -36,9 +36,10 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 ## Struttura della rete (accordo col titolare — non cambiarla senza di lui)
 - Progetto: **CENTRAL-DOMIER** (come i pompieri: noi risolviamo i problemi, 24/7). Oggi fattura solo ARES INVEST S.A.
   (nome per le riparazioni: LUXINTERVENTION); poi tutto passerà alla società **AJR_interventions** (solo quando lo dice il titolare).
-- **Livello 1 · CENTRAL-MASTER**: i suoi **operai = i DOMIER** (parlano con la MASTER e sono tracciati da lei);
-  riceve le richieste dei clienti (↪️) e degli annunciatori, fattura, pubblicità, ANGAR, rete.
-  La MASTER **non ha proprietà né inquilini propri** (un giorno: una società cliente «THE DOMIER il vostro centro interventi 24/7»).
+- **Livello 1 · CENTRAL-MASTER = i DOMIER / «THE DOMIER, il nostro centro interventi 24/7»** (stessa cosa): sotto di lei
+  gli **operai**, che parlano con la MASTER e sono tracciati da lei; riceve le richieste dei clienti (↪️) e degli annunciatori,
+  fattura, pubblicità, ANGAR, rete. La MASTER **non ha proprietà né inquilini propri**: un giorno una società «x»
+  (con immobili) si iscriverà da noi come **cliente qualsiasi**, e la gestiremo come gli altri clienti.
 - **Livello 2 · CENTRALI CLIENTI** (ognuna cifrata e sua): Gérance, Agence immobilière, Propriétaire/bailleur → inquilini;
   Hotel, Airbnb → ospiti.
 - **Livello 3 · APP DEGLI UTENTI**: inquilini → la loro centrale; ospiti → il loro hotel/Airbnb; operai DOMIER → MASTER;
