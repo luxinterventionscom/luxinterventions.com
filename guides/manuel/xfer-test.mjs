@@ -92,6 +92,8 @@ assert(/CENTRAL DOMIER/.test(brand) && /LuxIntervention/.test(brand), 'MASTER: C
 // CENTRAL-DOMIER : il nuovo indirizzo della MASTER
 const cd = await c1.newPage(); await cd.goto('http://localhost:8765/centraldomier.html'); await cd.waitForTimeout(2500);
 assert((await cd.title()) === 'CENTRAL-DOMIER' && await cd.$('[data-form=unlock] [name=pass]'), 'centraldomier.html: la MASTER si apre (chiave)');
+await cd.goto('http://localhost:8765/centraldomier/?' + tid); await cd.waitForTimeout(2500);
+assert(/ARES INVEST/.test(await cd.$eval('#lock', (e) => e.innerText).catch(() => '')), 'centraldomier/?<numero>: la centrale ARES (senza nomi nell’indirizzo)');
 await cd.close();
 // 📦 Récupérer toutes mes données (ARES)
 const dl2 = []; q.on('download', (d) => dl2.push(d.suggestedFilename()));

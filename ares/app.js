@@ -37,13 +37,14 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.247.1';
+const VERSION = '2.247.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
 // 🌐 centrale d'un client du réseau : …/locataires.html?t=<id> (gardé sur cet appareil) ; ?t=main → centrale principale
 const TENANT = (() => {
-  const q = new URLSearchParams(location.search).get('t') || '';
+  // …/centraldomier/?<id> (sans nom dans l'adresse) ou l'ancien …/locataires.html?t=<id>
+  const q = new URLSearchParams(location.search).get('t') || ((location.search.match(/^\?([a-z0-9]{12,24})$/) || [])[1]) || '';
   try {
     if (q === 'main') { localStorage.removeItem('aresTenant'); return ''; }
     if (/^[a-z0-9]{12,24}$/.test(q)) { localStorage.setItem('aresTenant', q); return q; }
@@ -1518,8 +1519,7 @@ async function licInvoicePdf(f) {
   return p.bytes();
 }
 // adresse « parlante » selon le client (voir LIENS.md) : propriétaire, agence, gestionnaire ; hôtel / Airbnb → centrale.html
-const NET_PAGE = { proprio: 'proprietaire', agence: 'agence', gerance: 'gestionnaire' };
-const netUrl = (tid, fil) => `${location.origin}/${NET_PAGE[fil] || 'centrale'}.html?t=${tid}`;
+const netUrl = (tid) => `${location.origin}/centraldomier/?${tid}`; // un seul indirizzo per tutte le centrali dei clienti, senza nomi
 async function netApi(path, method = 'GET', body) {
   const r = await vault.call(path, { method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
   return r.json();

@@ -6,6 +6,7 @@ utilise la même app que les nôtres, mais ne voit que sa maison et écrit à so
 | Adresse simple | Vraie page | Pour qui |
 |---|---|---|
 | /centraldomier.html | (page réelle) | **CENTRAL-DOMIER** : la centrale principale, sa propre adresse (même app que locataires.html) |
+| /centraldomier/?<numéro> | (page réelle) | la centrale d'un **client** du réseau — seulement son numéro, aucun nom (lien de son invitation) |
 | /centrale.html | locataires.html | la centrale (la nôtre ; celle d'un client avec `?t=code`) |
 | /proprietaire.html | locataires.html | la centrale d'un **propriétaire / bailleur principal** du réseau (`?t=code`) — lien de son invitation |
 | /agence.html | locataires.html | la centrale d'une **agence immobilière** du réseau (`?t=code`) |
