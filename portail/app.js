@@ -28,6 +28,7 @@ const LANG = (() => {
   const n = (navigator.language || '').slice(0, 2).toLowerCase();
   return PTL_LANGS[n] ? n : 'fr';
 })();
+document.documentElement.lang = LANG; // 📰 News et autres modules suivent la langue du portail
 // ℹ️ Infos : « ▶ Mettre l'icône sur l'écran » (le cadre des infos n'est pas traduit par la page : texte déjà dans la langue)
 const IA_T = ({ fr: 'Mettre l’icône sur l’écran', it: 'Mettere l’icona sullo schermo', de: 'Symbol auf den Bildschirm legen', pt: 'Pôr o ícone no ecrã', en: 'Put the icon on your screen', es: 'Poner el icono en la pantalla' })[LANG] || 'Mettre l’icône sur l’écran';
 const LOC = LOCALES[LANG] || 'fr-LU';
