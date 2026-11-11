@@ -18606,4 +18606,20 @@ export default [
 "Votre société — gestionnaire (apparaît sur les quittances et les relances)",
 "A sua sociedade — gestor (aparece nos recibos e nos lembretes)"
 ],
+[
+"Se déconnecter",
+"Terminar sessão"
+],
+[
+"🚪 Se déconnecter",
+"🚪 Terminar sessão"
+],
+[
+"La centrale se ferme : il faudra la clé pour rouvrir",
+"A central fecha-se: será precisa a chave para reabrir"
+],
+[
+"Se déconnecter ?",
+"Terminar sessão?"
+],
 ];

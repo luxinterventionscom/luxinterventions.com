@@ -18427,4 +18427,20 @@ export default [
 "Votre société — gestionnaire (apparaît sur les quittances et les relances)",
 "Your company — property manager (shown on receipts and reminders)"
 ],
+[
+"Se déconnecter",
+"Log out"
+],
+[
+"🚪 Se déconnecter",
+"🚪 Log out"
+],
+[
+"La centrale se ferme : il faudra la clé pour rouvrir",
+"The central closes: you will need the key to reopen it"
+],
+[
+"Se déconnecter ?",
+"Log out?"
+],
 ];

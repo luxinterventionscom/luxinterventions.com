@@ -10,4 +10,9 @@ const r = await p.evaluate(() => ({ mark: document.querySelector('.brand-mark').
 assert(r.mark === 'data:image/png;base64,' && r.fav === r.mark && r.apple === r.mark, 'icona nuova: intestazione, scheda, iPhone ' + JSON.stringify(r));
 await p.reload(); await p.waitForTimeout(2500);
 assert((await p.$eval('.lock-logo', (e) => e.src)).startsWith('data:image/png'), 'icona nuova anche sulla pagina della chiave');
+await p.fill('[data-form=unlock] [name=pass]', 'Tr3s-l0ngue-cle!'); await p.click('[data-form=unlock] button[type=submit]'); await p.waitForTimeout(4000);
+for (let i = 0; i < 3; i++) { const bt = await p.$('dialog[open] .btn.primary'); if (!bt) break; await bt.click().catch(() => {}); await p.waitForTimeout(1200); }
+assert(await p.$('#view [data-action=lock]') && /Se déconnecter/.test(await p.$eval('.sidenav', (e) => e.innerText)), '🚪 Se déconnecter in fondo alla pagina e nel menu');
+await p.click('#view [data-action=lock]'); await p.waitForTimeout(600); await p.click('#confirm .btn.primary'); await p.waitForTimeout(1500);
+assert(await p.$('[data-form=unlock] [name=pass]'), '🚪 → torna alla chiave');
 log('errs ' + errs.join(' | ')); await b.close();
