@@ -1713,4 +1713,4 @@ async function load() {
 lang = pick(null);
 load();
 emojiInit(); // 😊 bouton émojis dans les chats
-domierInit({ lang: () => lang, rerender: () => render() });
+domierInit({ api: API, lang: () => lang, rerender: () => render() });

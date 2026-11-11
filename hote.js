@@ -583,4 +583,4 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 lang = lang || pick(null);
 load();
 emojiInit(); // 😊 bouton émojis dans les chats
-domierInit({ lang: () => lang, send: (o) => sendOwner(o), rerender: () => render() });
+domierInit({ api: API, lang: () => lang, send: (o) => sendOwner(o), rerender: () => render() });

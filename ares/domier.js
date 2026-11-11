@@ -35,7 +35,7 @@ const L = {
     sent: 'Gracias, solicitud enviada: síguela aquí.', mine: 'Mis solicitudes', S: { wait: '⏳ recibida', afaire: '📋 en curso', planifie: '📅 programada', fait: '✅ hecha' }, err: 'No se pudo enviar, inténtelo de nuevo.', need: 'Describa el problema' },
 };
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
-let cfg = { lang: () => 'fr' }, msg = '', formOpen = false, last = {};
+let cfg = { lang: () => 'fr' }, msg = '', formOpen = false, last = {}, logo = '';
 const tx = (lg) => L[lg || cfg.lang() || 'fr'] || L.fr;
 const shut = () => { try { return localStorage.getItem('domierShut') === '1'; } catch { return false; } };
 const telHref = (t) => 'tel:' + String(t || '').replace(/[^\d+]/g, '');
@@ -52,7 +52,7 @@ async function shrink(file) {
 export function domierHtml(o = {}) {
   last = o;
   const t = tx(o.lang), list = o.list || [];
-  const sum = `<summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px"><span style="font-size:26px">🔧</span><span style="flex:1"><b style="font-size:18px;letter-spacing:.06em">DOMIER</b><span style="display:block;font-size:13px">${esc(t.sub)}</span><span style="display:block;font-size:10px;opacity:.7">${esc(t.by)}</span></span>${o.tel ? `<a class="btn sm" href="${esc(telHref(o.tel))}" style="white-space:nowrap" data-domier-call="1">${esc(t.call)}</a>` : ''}</summary>`;
+  const sum = `<summary style="cursor:pointer;list-style:none;display:flex;align-items:center;gap:10px">${logo ? `<img src="${esc(logo)}" alt="" width="40" height="40" style="border-radius:10px;object-fit:cover;flex:none">` : '<span style="font-size:26px">🔧</span>'}<span style="flex:1"><b style="font-size:18px;letter-spacing:.06em">DOMIER</b><span style="display:block;font-size:13px">${esc(t.sub)}</span><span style="display:block;font-size:10px;opacity:.7">${esc(t.by)}</span></span>${o.tel ? `<a class="btn sm" href="${esc(telHref(o.tel))}" style="white-space:nowrap" data-domier-call="1">${esc(t.call)}</a>` : ''}</summary>`;
   const form = o.form ? `${formOpen ? '' : `<button type="button" class="btn sm" data-domier-open="1" style="margin-top:8px">${esc(o.form === 'room' ? t.room : t.ask)}</button>`}
     ${formOpen ? `<form data-domier-form="1" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">
       <label>${esc(t.what)}</label><textarea name="texte" rows="3" maxlength="2000" required placeholder="${esc(t.whatPh)}"></textarea>
@@ -81,9 +81,11 @@ export function domierHtml(o = {}) {
 function repaint() { for (const el of document.querySelectorAll('[data-domier]')) el.outerHTML = domierHtml(last); }
 // lang : () => langue ; send : async (demande) => … (chiffrée pour le destinataire par l'app) ; rerender : () => … (redessine la page)
 export function domierInit(o) {
-  const first = !cfg.send;
-  cfg = { ...cfg, ...o };
+  const first = !cfg.started;
+  cfg = { ...cfg, ...o, started: true };
   if (!first) return;
+  // 🖼️ logo DOMIER (choisi dans la centrale principale, publié sur le Worker) : à la place de 🔧 ; sans Worker à jour, 🔧 reste
+  if (cfg.api) fetch(cfg.api + '/api/brand').then((r) => (r.ok ? r.blob() : null)).then((b) => { if (b && b.size) { logo = URL.createObjectURL(b); repaint(); } }).catch(() => {});
   document.addEventListener('toggle', (e) => { const d = e.target; if (d && d.matches && d.matches('details[data-domier]')) { try { localStorage.setItem('domierShut', d.open ? '0' : '1'); } catch { /* rien */ } } }, true);
   document.addEventListener('click', (e) => {
     if (e.target.closest('[data-domier-open]')) { e.preventDefault(); formOpen = true; msg = ''; repaint(); }

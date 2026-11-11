@@ -76,6 +76,11 @@ async function route(request, env, ctx, headers) {
     if (url.pathname === "/api/publikes" && request.method === "GET") return pubLikesGet(url, env, headers);
     // 🙋‍♀️🙋🏾 Candidatures « Je cherche du travail » : clé publique de la centrale principale (publique par nature) et dépôt chiffré
     // (locataires, hôtes, taxis — aussi ceux des centrales des clients : la candidature va directement chez nous)
+    // 🔧 logo DOMIER (choisi dans la centrale principale) : public, affiché dans le bandeau DOMIER de toutes les apps
+    if (url.pathname === "/api/brand" && request.method === "GET") {
+      const o = await env.PHOTOS.get("ares/brand.png");
+      return o ? new Response(o.body, { headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=600", ...headers } }) : aresJson({ error: "Pas de logo" }, 404, headers);
+    }
     if (url.pathname === "/api/netkey" && request.method === "GET") {
       const o = await env.PHOTOS.get("ares/network-key.json");
       const j = o ? await o.json().catch(() => null) : null;
@@ -830,7 +835,7 @@ async function handleAres(request, env, url, headers) {
 
   // ── Centrale d'un client : pas de publicité / biens / annonces du réseau / registre ; scaduto = sola lettura ──
   if (tid) {
-    if (/^(pubs|netpubs|biens|pubstats|tools|tenants|demandes)(\/|$)/.test(path) || (path === "network-key" && method !== "GET")) return aresJson({ error: "Réservé à la centrale principale" }, 403, headers);
+    if (/^(pubs|netpubs|biens|pubstats|tools|tenants|demandes|brand)(\/|$)/.test(path) || (path === "network-key" && method !== "GET")) return aresJson({ error: "Réservé à la centrale principale" }, 403, headers);
     if (path === "tenant-key" && method === "PUT") {
       let b;
       try { b = await request.json(); } catch { b = null; }
@@ -874,6 +879,14 @@ async function handleAres(request, env, url, headers) {
     if (path === "tenant" && method === "GET") return aresJson({ tenant: tenantPub(reg) }, 200, headers);
   }
   // clé publique de la centrale principale : les centrales des clients chiffrent pour elle leurs demandes
+  if (path === "brand" && (method === "PUT" || method === "DELETE")) {
+    if (slot !== "main") return aresJson({ error: "Réservé au directeur" }, 403, headers);
+    if (method === "DELETE") { await env.PHOTOS.delete("ares/brand.png"); return aresJson({ ok: true }, 200, headers); }
+    const body = await request.arrayBuffer();
+    if (body.byteLength < 100 || body.byteLength > 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
+    await env.PHOTOS.put("ares/brand.png", body, { httpMetadata: { contentType: "image/png" } });
+    return aresJson({ ok: true }, 200, headers);
+  }
   if (path === "network-key" && method === "PUT") {
     let b;
     try { b = await request.json(); } catch { b = null; }
