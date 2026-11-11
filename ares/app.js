@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.247.6';
+const VERSION = '2.247.7';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -62,7 +62,7 @@ if (TENANT) {
   const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at && tenantInfo.nom) at.content = tenantInfo.nom;
   if (tenantInfo.nom) document.title = tenantInfo.nom;
 }
-const tenantSave = (t) => { if (!TENANT || !t) return; tenantInfo = t; try { localStorage.setItem('aresTenantInfo:' + TENANT, JSON.stringify(t)); } catch { /* stockage plein */ } };
+const tenantSave = (t) => { if (!TENANT || !t) return; tenantInfo = t; try { localStorage.setItem('aresTenantInfo:' + TENANT, JSON.stringify(t)); } catch { /* stockage plein */ } if (t.nom) { document.title = t.nom; const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at) at.content = t.nom; } }; // nom sous l'icône de l'écran
 // 🧾 qui signe les quittances : bailleur principal (locataire principal, comme la centrale principale aujourd'hui), propriétaire, ou gérance / agence
 const socRole = () => (!TENANT ? 'sous' : tenantInfo.fil === 'proprio' ? (tenantInfo.sous ? 'sous' : 'proprio') : ['gerance', 'agence'].includes(tenantInfo.fil) ? 'gest' : 'proprio');
 const SOC_QUAL = { sous: 'locataire principal et bailleur', proprio: 'propriétaire et bailleur', gest: 'agissant pour le compte du bailleur' };
