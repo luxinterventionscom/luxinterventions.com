@@ -18419,4 +18419,12 @@ export default [
 "Indiquez le propriétaire principal / réel (nom et prénom, ou société)",
 "Enter the main / actual owner"
 ],
+[
+"Votre société — propriétaire / bailleur (apparaît sur les quittances et les relances)",
+"Your company — owner / landlord (shown on receipts and reminders)"
+],
+[
+"Votre société — gestionnaire (apparaît sur les quittances et les relances)",
+"Your company — property manager (shown on receipts and reminders)"
+],
 ];

@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.247.5';
+const VERSION = '2.247.6';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -63,6 +63,10 @@ if (TENANT) {
   if (tenantInfo.nom) document.title = tenantInfo.nom;
 }
 const tenantSave = (t) => { if (!TENANT || !t) return; tenantInfo = t; try { localStorage.setItem('aresTenantInfo:' + TENANT, JSON.stringify(t)); } catch { /* stockage plein */ } };
+// 🧾 qui signe les quittances : bailleur principal (locataire principal, comme la centrale principale aujourd'hui), propriétaire, ou gérance / agence
+const socRole = () => (!TENANT ? 'sous' : tenantInfo.fil === 'proprio' ? (tenantInfo.sous ? 'sous' : 'proprio') : ['gerance', 'agence'].includes(tenantInfo.fil) ? 'gest' : 'proprio');
+const SOC_QUAL = { sous: 'locataire principal et bailleur', proprio: 'propriétaire et bailleur', gest: 'agissant pour le compte du bailleur' };
+const SOC_FICHE = { sous: 'Votre société — locataire principal (apparaît sur les quittances et les relances)', proprio: 'Votre société — propriétaire / bailleur (apparaît sur les quittances et les relances)', gest: 'Votre société — gestionnaire (apparaît sur les quittances et les relances)' };
 const tSub = () => (tenantInfo.fil === 'proprio' ? (tenantInfo.sous ? 'Bailleur principal' : 'Propriétaire') : (T_FIL_LBL[tenantInfo.fil] || '').replace(/^\S+ /, '')); // sous-titre de la centrale d'un client
 const T_FIL_LBL = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
 // rubriques de chaque filière (la centrale du client ne montre que les siennes)
@@ -8720,7 +8724,7 @@ const SHEETS = {
     return {
       title: 'Société & associés',
       body: html`<form id="f" data-form="societe" class="fields">
-        <div class="section-label full" style="margin:0">Votre société — locataire principal (apparaît sur les quittances et les relances)</div>
+        <div class="section-label full" style="margin:0">${SOC_FICHE[socRole()]}</div>
         <div class="full" style="display:flex;align-items:center;gap:12px">${socLogo() ? html`<img src="${socLogo()}" alt="" style="height:48px;max-width:140px;object-fit:contain;background:#fff;border-radius:8px;padding:4px;border:1px solid var(--border)">` : html`<span style="width:48px;height:48px;border-radius:50%;background:var(--accent,#4f46e5);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex:none">${String(societe().nom || DEF_SOC()).trim().charAt(0).toUpperCase()}</span>`}
           <label class="btn sm" style="cursor:pointer">🖼️ ${st.logo ? 'Changer le logo' : 'Mettre votre logo'}<input type="file" accept="image/*" data-input="soc-logo" hidden></label>
           ${st.logo ? html`<button class="btn sm ghost" type="button" data-action="soc-logo-del">Retirer</button>` : ''}</div>
@@ -8939,8 +8943,8 @@ function printQuittance(locId, y, m) {
       ${!full ? html`<tr><td>Reste dû</td><td class="r">${money(st.rest)}</td></tr>` : ''}
     </tbody></table>
     <p style="font-size:12px;line-height:1.6">${full
-      ? `Je soussigné(e), ${soc.nom || '……………………'}, locataire principal et bailleur, déclare avoir reçu de ${fullName(l)} la somme de ${money(st.paid)} au titre du loyer et des charges du logement ${[logName(l.logId), im.adresse].filter(Boolean).join(', ')}, pour la période du 1er au ${last} ${MONTHS_FULL[m - 1].toLowerCase()} ${y}, et lui en donne quittance, sous réserve de tous mes droits.`
-      : `Je soussigné(e), ${soc.nom || '……………………'}, locataire principal et bailleur, déclare avoir reçu de ${fullName(l)} la somme de ${money(st.paid)} à titre d'acompte sur le loyer et les charges du logement ${[logName(l.logId), im.adresse].filter(Boolean).join(', ')} pour ${MONTHS_FULL[m - 1].toLowerCase()} ${y}. Il reste dû ${money(st.rest)}. Ce reçu ne vaut pas quittance.`}</p>
+      ? `Je soussigné(e), ${soc.nom || '……………………'}, ${SOC_QUAL[socRole()]}, déclare avoir reçu de ${fullName(l)} la somme de ${money(st.paid)} au titre du loyer et des charges du logement ${[logName(l.logId), im.adresse].filter(Boolean).join(', ')}, pour la période du 1er au ${last} ${MONTHS_FULL[m - 1].toLowerCase()} ${y}, et lui en donne quittance, sous réserve de tous mes droits.`
+      : `Je soussigné(e), ${soc.nom || '……………………'}, ${SOC_QUAL[socRole()]}, déclare avoir reçu de ${fullName(l)} la somme de ${money(st.paid)} à titre d'acompte sur le loyer et les charges du logement ${[logName(l.logId), im.adresse].filter(Boolean).join(', ')} pour ${MONTHS_FULL[m - 1].toLowerCase()} ${y}. Il reste dû ${money(st.rest)}. Ce reçu ne vaut pas quittance.`}</p>
     <div style="margin-top:36px;display:flex;justify-content:space-between"><div>Fait à Luxembourg, le ${fmtDate(today())}</div><div style="text-align:center;min-width:200px">Signature<div style="border-bottom:1px solid #999;height:60px"></div></div></div>`, true);
   vault.mutate(() => {}, full ? 'Quittance imprimée' : 'Reçu imprimé', `${fullName(l)} — ${MONTHS_FULL[m - 1]} ${y}`, l.id);
 }
@@ -8965,7 +8969,7 @@ function printCaution(locId) {
       <tr><td>Entrée dans les lieux</td><td class="r">${l.debut ? fmtDate(l.debut) : '—'}</td></tr>
       <tr><td><b>Caution reçue</b>${l.cautionDate ? ` le ${fmtDate(l.cautionDate)}` : ''}${mode ? ` (${mode})` : ''}</td><td class="r"><b>${money(l.caution)}</b></td></tr>
     </tbody></table>
-    <p style="font-size:12px;line-height:1.6">Je soussigné(e), ${soc.nom || '……………………'}, locataire principal et bailleur, déclare avoir reçu de ${fullName(l)} la somme de ${money(l.caution)} à titre de garantie locative (caution) pour ${where || 'le logement loué'}${l.cautionDate ? ', le ' + fmtDate(l.cautionDate) : ''}${mode ? ', ' + mode : ''}. Cette somme sera restituée à la fin du contrat, après l'état des lieux de sortie, déduction faite des sommes éventuellement dues (loyers, charges, dégâts constatés).</p>
+    <p style="font-size:12px;line-height:1.6">Je soussigné(e), ${soc.nom || '……………………'}, ${SOC_QUAL[socRole()]}, déclare avoir reçu de ${fullName(l)} la somme de ${money(l.caution)} à titre de garantie locative (caution) pour ${where || 'le logement loué'}${l.cautionDate ? ', le ' + fmtDate(l.cautionDate) : ''}${mode ? ', ' + mode : ''}. Cette somme sera restituée à la fin du contrat, après l'état des lieux de sortie, déduction faite des sommes éventuellement dues (loyers, charges, dégâts constatés).</p>
     <div style="margin-top:36px;display:flex;justify-content:space-between;gap:24px"><div>Fait à Luxembourg, le ${fmtDate(today())}</div></div>
     <div style="margin-top:18px;display:flex;justify-content:space-between;gap:24px">
       <div style="text-align:center;min-width:200px">Le bailleur<div style="border-bottom:1px solid #999;height:60px"></div></div>

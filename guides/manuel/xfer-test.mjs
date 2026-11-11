@@ -72,6 +72,10 @@ assert((await q.$eval('.sheet', (e) => e.innerText)).includes(lCode), 'ARES: ste
 await q.keyboard.press('Escape'); await q.waitForTimeout(400);
 await q.evaluate(() => { location.hash = '#/champions'; }); await q.waitForTimeout(1500);
 assert(/Locataire de l|Inquilino dell/.test(await body(q)), '🏆 classifica nella centrale ARES');
+await act(q, 'open-societe'); await q.waitForTimeout(800);
+log('societe: ' + (await q.$eval('.sheet', (e) => e.innerText).catch(() => 'NO SHEET')).slice(0, 300).replace(/\n/g, ' / '));
+assert(/proprietario \/ locatore|propriétaire \/ bailleur/i.test(await q.$eval('.sheet', (e) => e.innerText)) && !/locataire principal|inquilino principale/i.test(await q.$eval('.sheet', (e) => e.innerText)), 'ARES (proprietario): scheda società «propriétaire / bailleur»');
+await q.keyboard.press('Escape'); await q.waitForTimeout(400);
 // 5) l'app di Anna funziona (pubblicata da ARES)
 const c3 = await phone(b, 'it'), a = await c3.newPage(); a.on('pageerror', (e) => errs.push('anna: ' + e.message));
 await a.goto('http://localhost:8765/espace.html'); await a.waitForTimeout(1200);
