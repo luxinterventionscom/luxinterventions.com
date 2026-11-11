@@ -82,6 +82,11 @@ await a.goto('http://localhost:8765/espace.html'); await a.waitForTimeout(1200);
 await a.fill('input[name=code]', lCode); await a.click('form button[type=submit]'); await a.waitForTimeout(4500);
 if (await a.$('[data-rules-ok]')) { await a.click('[data-rules-ok]'); await a.waitForTimeout(1500); }
 assert(/Anna/.test(await body(a)), 'app di Anna aperta dopo il trasferimento');
+await a.evaluate(() => { window.print = () => {}; for (const d of document.querySelectorAll('details')) d.open = true; });
+await a.click('[data-recap]').catch(() => {}); await a.waitForTimeout(1500);
+const rc = await a.evaluate(() => document.body.textContent);
+log('recap: ' + (rc.match(/.{0,80}(sottoscritt|soussign|locatore|bailleur).{0,120}/) || ['NONE'])[0] + ' | btn=' + !!(await a.$('[data-recap]')));
+assert(/proprietario e locatore|propriétaire et bailleur/.test(rc) && !/locatario principale e locatore/.test(rc), 'riepilogo affitti di Anna: «proprietario e locatore» (ARES proprietario)');
 // 6) la centrale principale tiene tutto in archivio
 await act(p, 'open-loc', { id: 'lc1' }); await p.waitForTimeout(600); await act(p, 'sheet-tab', { id: 'espace' }); await p.waitForTimeout(500);
 assert(/Transféré|Trasferit/.test(await p.$eval('.sheet', (e) => e.innerText)), 'centrale: Anna in archivio «Transféré»');
