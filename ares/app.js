@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.247.3';
+const VERSION = '2.247.4';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -78,7 +78,7 @@ const homeRoute = () => (TENANT ? tRoutes()[0] : 'dashboard');
 const vault = new Vault(API, TENANT);
 // 📦 immeubles transférés à un client (centrale principale) : cachés partout (avec logements et locataires), gardés en archive ;
 // Réglages → 📦 Transférés pour les revoir. vault.listAll = la liste complète (transfert, comptes).
-const xferHide = () => { try { return localStorage.getItem('aresXferHide') === '1'; } catch { return false; } }; // choix de cet appareil (par défaut : visibles)
+const xferHide = () => { try { return !vault.op && localStorage.getItem('aresXferHide') === '1'; } catch { return false; } }; // choix de cet appareil (par défaut : visibles)
 {
   const XF = new Set(['immeubles', 'logements', 'locataires']), rawList = vault.list.bind(vault);
   vault.listAll = rawList;
@@ -6276,7 +6276,7 @@ dashboard() {
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
       </div>
 
-      ${TENANT ? '' : html`<div class="section-label">🔒 Masquer</div>
+      ${TENANT || vault.op ? '' : html`<div class="section-label">🔒 Masquer</div>
       <div class="stack"><p class="small muted" style="margin:0 0 8px">Rubrique cochée : dans le menu, son nom est remplacé par « 🔒 MASQUÉ » et elle ne s’ouvre plus. Décochez pour la retrouver.</p>
       <div class="list settings">${MASKABLE.map(([k, l]) => html`<label class="row" style="cursor:pointer"><input type="checkbox" data-input="masque" value="${k}" ${masked().has(k) ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"><span class="grow title">${l}</span>${masked().has(k) ? html`<span class="badge">🔒 MASQUÉ</span>` : ''}</label>`)}</div></div>`}
 
@@ -6316,7 +6316,7 @@ dashboard() {
       <div class="list settings">
         <button class="row" data-action="export-enc">${icon('shield')}<span class="grow"><span class="title" style="display:block">Sauvegarde chiffrée</span><span class="meta">Fichier .ares, lisible uniquement avec la clé</span></span></button>
         <button class="row" data-action="export-json">${icon('download')}<span class="grow"><span class="title" style="display:block">Export lisible (JSON)</span><span class="meta">Non chiffré — à conserver en lieu sûr</span></span></button>
-        ${(() => { const n = TENANT ? 0 : vault.listAll('immeubles').filter((x) => x.xfer).length; return n ? html`<button class="row" data-action="xfer-show">📦<span class="grow"><span class="title" style="display:block">${xferHide() ? '👁 Afficher' : '🙈 Cacher'} les immeubles transférés (${n})</span><span class="meta">Choix de cet appareil. Ils sont chez la centrale du client ; ici rien n’est effacé</span></span></button>` : ''; })()}
+        ${(() => { const n = TENANT || vault.op ? 0 : vault.listAll('immeubles').filter((x) => x.xfer).length; return n ? html`<button class="row" data-action="xfer-show">📦<span class="grow"><span class="title" style="display:block">${xferHide() ? '👁 Afficher' : '🙈 Cacher'} les immeubles transférés (${n})</span><span class="meta">Choix de cet appareil. Ils sont chez la centrale du client ; ici rien n’est effacé</span></span></button>` : ''; })()}
         ${TENANT || vault.op ? '' : html`<button class="row" data-action="angar">🏗️<span class="grow"><span class="title" style="display:block">ANGAR — paquets vers les containers (clients)</span><span class="meta">Transférer immeubles, locataires, paiements, documents vers la centrale d’un client, ou en fichier</span></span></button>`}
         <button class="row" data-action="my-data">${icon('download')}<span class="grow"><span class="title" style="display:block">📦 Récupérer toutes mes données</span><span class="meta">Un fichier complet avec les documents (réimportable) + tableaux CSV des locataires et des paiements</span></span></button>
         <button class="row" data-action="import">${icon('upload')}<span class="grow"><span class="title" style="display:block">Importer</span><span class="meta">Sauvegarde .ares, 📦 transfert reçu ou export JSON (ancienne version incluse)</span></span></button>
@@ -11578,7 +11578,7 @@ async function importFile(file) {
 
 // ───────────────────────── Délégation d'événements ─────────────────────────
 // réservé au responsable (clé principale) ; le comptable n'affecte pas les travaux
-const RESP_ONLY = new Set(['xfer-do', 'angar', 'pack-del', 'change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del', 'net-reset', 'test-clean', 'test-clean-do']);
+const RESP_ONLY = new Set(['xfer-do', 'xfer-show', 'angar', 'pack-del', 'change-key', 'make-recovery', 'wipe-all', 'arch-start', 'arch-do', 'net-del', 'net-reset', 'test-clean', 'test-clean-do']);
 const DEL_ACTION = /^del-|-del$|wipe/; // toute suppression
 const NO_COMPTA = new Set(['eq-swap', 'eq-swap-do', 'interv-aff', 'aff-pick', 'ger-to-mt', 'ger-aff', 'interv-job', 'op-del', 'op-new']);
 document.addEventListener('click', (e) => {
@@ -12609,6 +12609,7 @@ document.addEventListener('change', (e) => {
     renderView();
   }
   if (k === 'masque') {
+    if (TENANT || vault.op) return; // 🔒 masquer : seulement la centrale principale, avec la clé principale
     const on = [...document.querySelectorAll('[data-input=masque]:checked')].map((x) => x.value);
     vault.mutate((tx) => tx.put('reglages', { id: 'masque', on }), 'Menu : rubriques masquées', on.length ? on.map((x) => (MASKABLE.find((m) => m[0] === x) || [x, x])[1]).join(', ') : 'aucune')
       .then(() => { renderShell(); go(ui.route, true); });
