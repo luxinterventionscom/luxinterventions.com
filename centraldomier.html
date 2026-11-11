@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<!-- CENTRAL-DOMIER : la centrale principale (même app que locataires.html, qui reste pour les anciens liens et les centrales des clients ?t=). Garder identique à locataires.html (?v=). -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev https://nominatim.openstreetmap.org; frame-src blob: https://maps.google.com https://www.google.com https://www.youtube-nocookie.com https://www.youtube.com https://www.tiktok.com https://www.instagram.com https://www.facebook.com https://player.vimeo.com https://open.spotify.com https://widget.deezer.com https://embed.music.apple.com https://w.soundcloud.com https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta name="ares-api" content="https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev">
+<meta name="theme-color" content="#f5f4f0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CENTRAL-DOMIER">
+<title>CENTRAL-DOMIER</title>
+<link rel="manifest" href="/centraldomier.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/ares/icons/lux-favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/ares/icons/lux-192.png">
+<link rel="apple-touch-icon" href="/ares/icons/lux-apple-touch-icon.png">
+<link rel="stylesheet" href="/ares/app.css?v=2.247.0">
+<script type="module" src="/ares/app.js"></script>
+</head>
+<body>
+<div id="lock" class="lock"></div>
+<div id="app" class="app" hidden></div>
+<dialog id="sheet" class="sheet" aria-modal="true"></dialog>
+<dialog id="confirm" class="sheet narrow" aria-modal="true"></dialog>
+<div id="toasts" class="toasts" aria-live="polite" popover="manual"></div>
+<div id="print"></div>
+<input type="file" id="importFile" accept=".json,.ares,application/json" hidden>
+<noscript><p style="padding:24px;font-family:sans-serif">JavaScript est nécessaire pour utiliser cette application.</p></noscript>
+</body>
+</html>

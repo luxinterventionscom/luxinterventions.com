@@ -81,6 +81,17 @@ assert(/Anna/.test(await body(a)), 'app di Anna aperta dopo il trasferimento');
 await act(p, 'open-loc', { id: 'lc1' }); await p.waitForTimeout(600); await act(p, 'sheet-tab', { id: 'espace' }); await p.waitForTimeout(500);
 assert(/Transféré|Trasferit/.test(await p.$eval('.sheet', (e) => e.innerText)), 'centrale: Anna in archivio «Transféré»');
 await p.keyboard.press('Escape'); await p.waitForTimeout(400);
+// la MASTER non mostra più gli immobili trasferiti (archivio in Réglages → 📦)
+await p.evaluate(() => { location.hash = '#/immeubles'; }); await p.waitForTimeout(1500);
+assert(!/12, rue des Exemples/.test(await body(p)), 'MASTER: immobili trasferiti nascosti da Mes Propriétés');
+await p.evaluate(() => { location.hash = '#/reglages'; }); await p.waitForTimeout(900);
+await act(p, 'xfer-show'); await p.evaluate(() => { location.hash = '#/immeubles'; }); await p.waitForTimeout(1500);
+assert(/12, rue des Exemples/.test(await body(p)), 'MASTER: 👁 archivio dei trasferiti visibile');
+await act(p, 'xfer-show'); await p.waitForTimeout(500);
+// CENTRAL-DOMIER : il nuovo indirizzo della MASTER
+const cd = await c1.newPage(); await cd.goto('http://localhost:8765/centraldomier.html'); await cd.waitForTimeout(2500);
+assert((await cd.title()) === 'CENTRAL-DOMIER' && await cd.$('[data-form=unlock] [name=pass]'), 'centraldomier.html: la MASTER si apre (chiave)');
+await cd.close();
 // 📦 Récupérer toutes mes données (ARES)
 const dl2 = []; q.on('download', (d) => dl2.push(d.suggestedFilename()));
 await act(q, 'my-data'); await q.waitForTimeout(600); await q.click('#confirm .btn.primary'); await q.waitForTimeout(5000);

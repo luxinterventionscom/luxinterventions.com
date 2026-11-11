@@ -1,9 +1,10 @@
 // Service worker Ares : met l'application en cache pour l'ouvrir hors ligne.
 // Les données ne passent jamais par ce cache (elles sont chiffrées dans IndexedDB
 // et les appels à l'API ne sont pas interceptés).
-const CACHE = 'ares-shell-v2.246.1';
+const CACHE = 'ares-shell-v2.247.0';
 const SHELL = [
   '/locataires.html',
+  '/centraldomier.html',
   '/ares/app.css',
   '/ares/app.js',
   '/ares/store.js',
@@ -72,7 +73,7 @@ self.addEventListener('fetch', (e) => {
         }
         return res;
       })
-      .catch(() => caches.match(e.request, { ignoreSearch: true }).then((r) => r || caches.match('/locataires.html')))
+      .catch(() => caches.match(e.request, { ignoreSearch: true }).then((r) => r || caches.match(new URL(e.request.url).pathname.startsWith('/centraldomier') ? '/centraldomier.html' : '/locataires.html')))
   );
 });
 

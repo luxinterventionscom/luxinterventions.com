@@ -1,0 +1,32 @@
+{
+  "name": "CENTRAL-DOMIER",
+  "short_name": "CENTRAL-DOMIER",
+  "description": "Gestion des immeubles, locataires et loyers — données chiffrées de bout en bout.",
+  "lang": "fr",
+  "start_url": "/centraldomier.html",
+  "scope": "/centraldomier",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f5f4f0",
+  "theme_color": "#f5f4f0",
+  "icons": [
+    {
+      "src": "/ares/icons/lux-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ares/icons/lux-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/ares/icons/lux-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
