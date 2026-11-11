@@ -83,11 +83,12 @@ assert(/Transféré|Trasferit/.test(await p.$eval('.sheet', (e) => e.innerText))
 await p.keyboard.press('Escape'); await p.waitForTimeout(400);
 // la MASTER non mostra più gli immobili trasferiti (archivio in Réglages → 📦)
 await p.evaluate(() => { location.hash = '#/immeubles'; }); await p.waitForTimeout(1500);
-assert(!/12, rue des Exemples/.test(await body(p)), 'MASTER: immobili trasferiti nascosti da Mes Propriétés');
-await p.evaluate(() => { location.hash = '#/reglages'; }); await p.waitForTimeout(900);
-await act(p, 'xfer-show'); await p.evaluate(() => { location.hash = '#/immeubles'; }); await p.waitForTimeout(1500);
-assert(/12, rue des Exemples/.test(await body(p)), 'MASTER: 👁 archivio dei trasferiti visibile');
+assert(/12, rue des Exemples/.test(await body(p)), 'MASTER: trasferiti ancora visibili di default (Maurizio ci lavora)');
+await act(p, 'xfer-show'); await p.evaluate(() => { location.hash = '#/reglages'; }); await p.waitForTimeout(600); await p.evaluate(() => { location.hash = '#/immeubles'; }); await p.waitForTimeout(1500);
+assert(!/12, rue des Exemples/.test(await body(p)), 'MASTER: 🙈 nascosti su questo apparecchio');
 await act(p, 'xfer-show'); await p.waitForTimeout(500);
+const brand = await p.$eval('.sidenav .brand', (e) => e.innerText).catch(() => '');
+assert(/CENTRAL DOMIER/.test(brand) && /LuxIntervention/.test(brand), 'MASTER: CENTRAL DOMIER + LuxIntervention: ' + brand);
 // CENTRAL-DOMIER : il nuovo indirizzo della MASTER
 const cd = await c1.newPage(); await cd.goto('http://localhost:8765/centraldomier.html'); await cd.waitForTimeout(2500);
 assert((await cd.title()) === 'CENTRAL-DOMIER' && await cd.$('[data-form=unlock] [name=pass]'), 'centraldomier.html: la MASTER si apre (chiave)');

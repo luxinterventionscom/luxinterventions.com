@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.247.0';
+const VERSION = '2.247.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -69,12 +69,13 @@ const homeRoute = () => (TENANT ? tRoutes()[0] : 'dashboard');
 const vault = new Vault(API, TENANT);
 // 📦 immeubles transférés à un client (centrale principale) : cachés partout (avec logements et locataires), gardés en archive ;
 // Réglages → 📦 Transférés pour les revoir. vault.listAll = la liste complète (transfert, comptes).
+const xferHide = () => { try { return localStorage.getItem('aresXferHide') === '1'; } catch { return false; } }; // choix de cet appareil (par défaut : visibles)
 {
   const XF = new Set(['immeubles', 'logements', 'locataires']), rawList = vault.list.bind(vault);
   vault.listAll = rawList;
   vault.list = (c) => {
     const L = rawList(c);
-    if (TENANT || !XF.has(c) || (typeof ui !== 'undefined' && ui.xferShow)) return L;
+    if (TENANT || !XF.has(c) || !xferHide()) return L;
     const gone = new Set(rawList('immeubles').filter((x) => x.xfer).map((x) => x.id));
     return gone.size ? L.filter((x) => !x.xfer && !gone.has(x.immId)) : L;
   };
@@ -3576,7 +3577,7 @@ function promptText(title, detail, placeholder) {
 const PAYS = { LU: ['Luxembourg', [17, 14, 8, 3]], FR: ['France', [20, 10, 5.5, 2.1]], BE: ['Belgique', [21, 12, 6]], DE: ['Deutschland', [19, 7]], IT: ['Italia', [22, 10, 5, 4]], PT: ['Portugal', [23, 13, 6]], ES: ['España', [21, 10, 4]], NL: ['Nederland', [21, 9]], AT: ['Österreich', [20, 13, 10]], CH: ['Suisse', [8.1, 3.8, 2.6]] };
 const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '').split(/[;, ]+/).map((x) => parseFloat(x.replace(',', '.'))).filter((x) => x > 0 && x < 100); return own.length ? own : (PAYS[s0.pays || 'LU'] || PAYS.LU)[1]; };
 // Marque de l'app de gestion (fixe, indépendante de la société cliente)
-const APP_BRAND = { nom: 'LA CENTRAL', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
+const APP_BRAND = { nom: 'CENTRAL DOMIER', sub: 'LuxIntervention', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
 const DEF_SOC = () => (TENANT ? tenantInfo.nom || 'Centrale' : 'NOBIS s.a.r.l.');
 const socName = () => societe().nom || DEF_SOC();
 // nom affiché aux clients, locataires, ospiti, taxis, annonceurs : la marque LA CENTRAL (la centrale d'un client : son propre nom)
@@ -3790,7 +3791,7 @@ function renderLock(mode, error = '') {
   const legacy = legacyLocal();
   const head = html`
     <img class="lock-logo" src="${APP_BRAND.logo}" alt="" width="96" height="96">
-    <div class="lock-head"><h1>${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</h1><p>${TENANT ? (T_FIL_LBL[tenantInfo.fil] || '') + ' · réseau LA CENTRAL' : 'Gestion locative · Luxembourg'}</p><p class="tiny" data-notr="1">${TENANT ? '' : APP_BRAND.legal}</p></div>`;
+    <div class="lock-head"><h1 data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</h1><p data-notr="1">${TENANT ? (T_FIL_LBL[tenantInfo.fil] || '') + ' · réseau LA CENTRAL' : APP_BRAND.sub}</p><p class="tiny" data-notr="1">${TENANT ? '' : APP_BRAND.legal}</p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>${TENANT ? html`<p class="tiny muted" style="text-align:center;margin:8px 0 0"><a href="?t=main">↩ Centrale principale</a></p>` : ''}`;
   if (mode === 'blocked') {
     setHtml(lockEl, html`<div class="lock-card">${head}<div class="alert warn">${icon('lock')}<div><b>Centrale bloquée.</b> L’abonnement est échu ou suspendu : contactez LA CENTRAL pour la réactiver. Vos données restent chiffrées et intactes.</div></div>${foot}</div>`);
@@ -4161,7 +4162,7 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>${TENANT ? tenantInfo.nom || 'Centrale' : 'LA CENTRAL'}<small>${TENANT ? (T_FIL_LBL[tenantInfo.fil] || '') + ' · réseau LA CENTRAL' : 'Gestion locative'}</small></span></div>
+      <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}<small>${TENANT ? (T_FIL_LBL[tenantInfo.fil] || '') + ' · réseau LA CENTRAL' : APP_BRAND.sub}</small></span></div>
       ${sideNavHtml()}
       ${navBtn(['reglages', 'Réglages', 'gear'])}
       ${legDots()}
@@ -4170,7 +4171,7 @@ function renderShell() {
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span>${TENANT ? tenantInfo.nom || 'Centrale' : 'LA CENTRAL'}</span></div>
+        <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</span></div>
         <button class="sync" id="sync" data-action="sync-now" data-s="idle"><i></i><span>…</span></button>
         <button class="btn icon ghost" data-action="lock" aria-label="Verrouiller" title="Verrouiller">${icon('lock')}</button>
       </header>
@@ -6307,7 +6308,7 @@ dashboard() {
       <div class="list settings">
         <button class="row" data-action="export-enc">${icon('shield')}<span class="grow"><span class="title" style="display:block">Sauvegarde chiffrée</span><span class="meta">Fichier .ares, lisible uniquement avec la clé</span></span></button>
         <button class="row" data-action="export-json">${icon('download')}<span class="grow"><span class="title" style="display:block">Export lisible (JSON)</span><span class="meta">Non chiffré — à conserver en lieu sûr</span></span></button>
-        ${(() => { const n = TENANT ? 0 : vault.listAll('immeubles').filter((x) => x.xfer).length; return n ? html`<button class="row" data-action="xfer-show">📦<span class="grow"><span class="title" style="display:block">${ui.xferShow ? '🙈 Cacher' : '👁 Afficher'} les immeubles transférés (${n})</span><span class="meta">Archive : ils sont chez la centrale du client ; ici rien n’est effacé</span></span></button>` : ''; })()}
+        ${(() => { const n = TENANT ? 0 : vault.listAll('immeubles').filter((x) => x.xfer).length; return n ? html`<button class="row" data-action="xfer-show">📦<span class="grow"><span class="title" style="display:block">${xferHide() ? '👁 Afficher' : '🙈 Cacher'} les immeubles transférés (${n})</span><span class="meta">Choix de cet appareil. Ils sont chez la centrale du client ; ici rien n’est effacé</span></span></button>` : ''; })()}
         ${TENANT || vault.op ? '' : html`<button class="row" data-action="angar">🏗️<span class="grow"><span class="title" style="display:block">ANGAR — paquets vers les containers (clients)</span><span class="meta">Transférer immeubles, locataires, paiements, documents vers la centrale d’un client, ou en fichier</span></span></button>`}
         <button class="row" data-action="my-data">${icon('download')}<span class="grow"><span class="title" style="display:block">📦 Récupérer toutes mes données</span><span class="meta">Un fichier complet avec les documents (réimportable) + tableaux CSV des locataires et des paiements</span></span></button>
         <button class="row" data-action="import">${icon('upload')}<span class="grow"><span class="title" style="display:block">Importer</span><span class="meta">Sauvegarde .ares, 📦 transfert reçu ou export JSON (ancienne version incluse)</span></span></button>
@@ -9686,7 +9687,7 @@ const ACTIONS = {
   'net-reload': () => netLoad(true),
   'net-open': (d) => openOver('net-client', d.id),
   'xfer-open': (d) => { ui.xferDone = null; openOver('xfer', d.id); },
-  'xfer-show': () => { ui.xferShow = !ui.xferShow; renderView(); toast(ui.xferShow ? '📦 Immeubles transférés affichés (archive)' : '📦 Immeubles transférés cachés'); },
+  'xfer-show': () => { const h = !xferHide(); try { localStorage.setItem('aresXferHide', h ? '1' : '0'); } catch { /* rien */ } renderView(); toast(h ? '📦 Immeubles transférés cachés sur cet appareil' : '📦 Immeubles transférés affichés'); },
   'xfer-all': (d) => sheetEl.querySelectorAll('[data-xfer-imm]').forEach((c) => { c.checked = d.on === '1'; }),
   angar: () => { netLoad(true).then(() => angarPacks()).catch(() => {}); openSheet('angar'); },
   async 'pack-open'(d) {
