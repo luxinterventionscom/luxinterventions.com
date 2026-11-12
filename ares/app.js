@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.255.3';
+const VERSION = '2.256.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3300,11 +3300,19 @@ const paysNom = (cc) => { try { return new Intl.DisplayNames(['fr'], { type: 're
 // 🌍 tous les pays (adresse des annonces, pays des immeubles), triés par nom
 const WORLD = 'AD AE AF AG AL AM AO AR AT AU AZ BA BB BD BE BF BG BH BI BJ BN BO BR BS BT BW BY BZ CA CD CF CG CH CI CL CM CN CO CR CU CV CY CZ DE DJ DK DM DO DZ EC EE EG ER ES ET FI FJ FR GA GB GD GE GH GM GN GQ GR GT GW GY HK HN HR HT HU ID IE IL IN IQ IR IS IT JM JO JP KE KG KH KM KN KR KW KZ LA LB LC LI LK LR LS LT LU LV LY MA MC MD ME MG MK ML MM MN MO MR MT MU MV MW MX MY MZ NA NE NG NI NL NO NP NZ OM PA PE PG PH PK PL PS PT PY QA RE RO RS RU RW SA SC SD SE SG SI SK SL SM SN SO SR SS SV SY SZ TD TG TH TJ TL TM TN TR TT TW TZ UA UG US UY UZ VA VE VN YE ZA ZM ZW'.split(' ');
 const paysOptions = (sel) => WORLD.map((cc) => [cc, paysNom(cc)]).sort((a, b) => a[1].localeCompare(b[1], 'fr')).map(([cc, n]) => html`<option value="${cc}" ${cc === sel ? new Raw('selected') : ''}>${flag(cc)} ${n}</option>`);
+// 👥 qui vient ; ⚠️ les 14 allergènes que les restaurants doivent indiquer en Europe ; 🍽️ régime ; où il mange
+const COMPO = { seul: '👤 Seul', couple: '👫 Couple', famille: '👨‍👩‍👧 Famille', groupe: '👥 Groupe' };
+const ALLERG = { gluten: 'Gluten', lait: 'Lait / lactose', oeufs: 'Œufs', arachides: 'Arachides', noix: 'Fruits à coque', poisson: 'Poisson', crustaces: 'Crustacés', mollusques: 'Mollusques', soja: 'Soja', celeri: 'Céleri', moutarde: 'Moutarde', sesame: 'Sésame', sulfites: 'Sulfites', lupin: 'Lupin' };
+const REGIME = { vege: 'Végétarien', vegan: 'Vegan', halal: 'Halal', casher: 'Casher', sansporc: 'Sans porc', sansalcool: 'Sans alcool' };
+const REPAS_OU = { resto: 'au restaurant', chambre: 'en chambre' };
+const ROOM_SVC = { non: 'Pas de service en chambre', jour: 'Oui, aux heures du restaurant', h24: 'Oui, 24 h/24', nuit: 'Oui, 24 h/24 — la nuit carte réduite (voir le menu)' };
+const chipChecks = (name, dict, sel) => html`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${Object.entries(dict).map(([k, l]) => html`<label class="chip" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 10px"><input type="checkbox" name="${name}" value="${k}" ${(sel || []).includes(k) ? new Raw('checked') : ''} style="width:16px;height:16px">${l}</label>`)}</div>`;
+const stepper = (name, label, v, min = 0) => html`<div class="field"><span>${label}</span><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><button type="button" class="btn sm" data-action="num-step" data-n="${name}" data-d="-1" data-min="${min}" aria-label="moins">−</button><input name="${name}" type="number" min="${min}" max="20" value="${v}" inputmode="numeric" style="width:64px;text-align:center"><button type="button" class="btn sm" data-action="num-step" data-n="${name}" data-d="1" data-min="${min}" aria-label="plus">＋</button></div></div>`;
 const FORMULES = { seul: 'Logement seul', pdj: 'Petit-déjeuner', demi: 'Demi-pension', complete: 'Pension complète' };
 const CH_PH = [['immeuble', '🏢 Bâtiment'], ['porte', '🚪 Porte'], ['sdb', '🛁 Salle de bain'], ['chambre', '🛏️ Chambre'], ['cuisine', '🍳 Cuisine'], ['parking', '🅿️ Parking'], ['autre', '📷 Autre']];
 const chKey = (lieu, num) => 'ch-' + (lieu === 'airbnb' ? 'airbnb' : 'hotel') + '-' + String(num || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-const CH_CAT = { eco: 'Économique', standard: 'Standard', sup: 'Supérieure', deluxe: 'Deluxe', suite: 'Suite' };
-const CH_TYPE = { single: 'Single', double: 'Double', twin: 'Twin', triple: 'Triple', famille: 'Familiale', studio: 'Studio', appartement: 'Appartement', maison: 'Maison', colocation: 'Colocation' };
+const CH_CAT = { eco: 'Économique', standard: 'Standard', sup: 'Supérieure', deluxe: 'Deluxe', suite: 'Suite', vip: '⭐ Suite présidentielle (VIP)' };
+const CH_TYPE = { single: '1 lit simple', double: '1 grand lit (couple)', twin: '2 lits séparés', triple: '3 lits', famille: 'Familiale (grand lit + lits enfants)', studio: 'Studio', appartement: 'Appartement', maison: 'Maison', colocation: 'Colocation' };
 const menuKey = (lieu) => (lieu === 'airbnb' ? 'airbnbMenu' : 'hotelMenu');
 const chGet = (lieu, num) => (num ? vault.get('reglages', chKey(lieu, num)) : null) || {};
 // 📱 App des clients (Hotel / Airbnb) : réglages de l'établissement, données chiffrées publiées pour l'app, code d'accès
@@ -4901,7 +4909,7 @@ function hotView(hf, acc) {
     const pres = all.filter((h) => h.arrivee <= t && h.depart > t).sort((a, b) => String(a.chambre).localeCompare(String(b.chambre), 'fr', { numeric: true }));
     const next = all.filter((h) => h.arrivee > t).sort(by), past = all.filter((h) => h.depart < t).sort((a, b) => b.depart.localeCompare(a.depart));
     const row = (h) => html`<button class="row" data-action="edit-hote" data-id="${h.id}"><span class="avatar" style="font-size:13px;font-weight:800">${h.chambre}</span>
-      <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.pers > 1 ? html` <span class="badge">👥 ${h.pers}</span>` : ''}${(h.langues || []).length ? html` <span class="tiny muted">🗣️ ${h.langues.map((k) => k.toUpperCase()).join(' · ')}</span>` : ''}</span>
+      <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.pers > 1 ? html` <span class="badge">👥 ${h.pers}</span>` : ''}${(h.langues || []).length ? html` <span class="tiny muted">🗣️ ${h.langues.map((k) => k.toUpperCase()).join(' · ')}</span>` : ''}${(h.allerg || []).length || h.allergAutre ? html` <span class="badge bad" title="${[...(h.allerg || []).map((k) => ALLERG[k]), h.allergAutre].filter(Boolean).join(', ')}">⚠️ allergie</span>` : ''}${h.bebe ? ' 👶' : ''}</span>
       <span class="meta">${h.lieu === 'airbnb' && h.adresse ? html`🏠 ${h.adresse} · ` : ''}${h.etage ? html`<span>Étage</span> ${h.etage} · ` : ''}${h.cle ? html`🪪 ${h.cle} · ` : ''}${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}</span>${h.appCode && h.arrivee >= t ? html`<span class="tiny" style="display:block">${!h.arr ? '❓ Arrivée pas encore choisie' : h.arr.mode === 'taxi' ? `🚕 Taxi${h.taxi ? (h.taxi.st === 'wait' ? ' · ⏳ ' + h.taxi.nom : h.taxi.st === 'no' ? ' · ❌ ' + h.taxi.nom : ' · ' + h.taxi.nom) : ' demandé'}` : '🚗 Vient par ses propres moyens'}</span>` : ''}${hoteKey(h) ? html`<span style="display:block;margin-top:4px"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></span>` : ''}</span><span class="chev">›</span></button>`;
     const sec = (title, list, empty) => html`<div class="section-label">${title}</div>${list.length ? html`<div class="list">${list.map(row)}</div>` : html`<p class="small muted" style="margin:0 0 12px">${empty}</p>`}`;
     // 🏨 centrale d'un hôtel / Airbnb : l'Accueil par secteurs (titre gris + explication), comme le bureau de LA CENTRAL
@@ -7794,7 +7802,10 @@ const SHEETS = {
         <label class="field">Pays<select name="pays"><option value="">—</option>${HOTE_PAYS.map((cc) => html`<option value="${cc}" ${h.pays === cc ? new Raw('selected') : ''}>${flag(cc)} ${paysNom(cc)}</option>`)}</select></label>
         <label class="field">Langue de son app<select name="langue">${Object.entries(LG).map(([k, l]) => html`<option value="${k}" ${h.langue === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
         <div class="field full">🗣️ Langues parlées <span class="tiny muted">(cochez dans la liste)</span>${lgPick(h.langues || (h.langue && h.langue !== 'autre' ? [h.langue] : []))}</div>
-        ${field('Personnes', 'pers', h.pers, { type: 'number', attrs: 'min="1" max="20" inputmode="numeric"' })}
+        <div class="full section-label" style="margin:6px 0 0">👥 Qui vient</div>
+        <label class="field">Composition<select name="compo">${Object.entries(COMPO).map(([k, l]) => html`<option value="${k}" ${(h.compo || (h.pers > 2 ? 'famille' : h.pers === 2 ? 'couple' : 'seul')) === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+        ${stepper('adultes', 'Adultes', h.adultes ?? Math.max(1, (h.pers || 1) - (h.enfants || 0) - (h.bebe ? 1 : 0)), 1)}${stepper('enfants', 'Enfants', h.enfants || 0)}
+        <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="bebe" ${h.bebe ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">👶 Bébé (lit bébé)</label>
         ${field('Arrivée', 'arrivee', h.arrivee, { type: 'date', required: true })}${field('Départ', 'depart', h.depart, { type: 'date', required: true })}
         ${html`<label class="field full">Formule<select name="formule">${Object.entries(FORMULES).map(([k, l]) => html`<option value="${k}" ${(h.formule || 'seul') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>`}
         ${bnb ? (() => { const x = h.prix || {}; return html`<div class="full section-label" style="margin:6px 0 0">💶 Prix du séjour — visible dans l’app du client</div>
@@ -7802,7 +7813,20 @@ const SHEETS = {
           ${field('a) Total du séjour (€)', 'prixTot', x.tot, { attrs: money$ })}${field('b) Prix par nuit (€)', 'prixNuit', x.nuit, { attrs: money$ })}
           ${field('b) Ménage (€)', 'prixMenage', x.menage, { attrs: money$ })}${field('b) Taxe de séjour (€ / personne / nuit)', 'prixTaxe', x.taxe, { attrs: money$ })}
           <p class="tiny muted full" style="margin:0">Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.</p>`; })() : ''}
-        <label class="field full">Préférences / allergies<textarea name="pref" style="min-height:56px" placeholder="ex. sans gluten, oreiller ferme, étage bas…">${h.pref || ''}</textarea></label>
+        <div class="full section-label" style="margin:6px 0 0;color:var(--bad,#c0392b)">⚠️ Allergies / intolérances</div>
+        <div class="full">${chipChecks('allerg', ALLERG, h.allerg)}</div>
+        ${field('Autre allergie', 'allergAutre', h.allergAutre || '', { full: true, placeholder: 'ex. kiwi, pénicilline…' })}
+        <div class="full section-label" style="margin:6px 0 0">🍽️ Repas</div>
+        <div class="full">${chipChecks('regime', REGIME, h.regime)}</div>
+        ${field('🥗 Déjeuner : ce qu’il souhaite', 'dej', h.dej || '', { full: true })}
+        <label class="field">Déjeuner<select name="dejOu">${Object.entries(REPAS_OU).map(([k, l]) => html`<option value="${k}" ${(h.dejOu || 'resto') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+        ${field('🍷 Dîner : ce qu’il souhaite', 'din', h.din || '', { full: true })}
+        <label class="field">Dîner<select name="dinOu">${Object.entries(REPAS_OU).map(([k, l]) => html`<option value="${k}" ${(h.dinOu || 'resto') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+        <label class="field full">🛏️ Autres préférences<textarea name="pref" style="min-height:56px" placeholder="ex. oreiller ferme, étage bas…">${h.pref || ''}</textarea></label>
+        ${(() => { const hc = hoteConf(); return html`<div class="full section-label" style="margin:6px 0 0">🛎️ Service en chambre (le même pour tous les clients)</div>
+          <label class="field full">Service en chambre<select name="roomSvc">${Object.entries(ROOM_SVC).map(([k, l]) => html`<option value="${k}" ${(hc.roomSvc || 'non') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+          ${field('Supplément service en chambre (%)', 'roomPct', hc.roomPct ?? '', { type: 'number', attrs: 'min="0" max="100" step="1" inputmode="numeric"' })}
+          <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="roomDeliv" ${hc.roomDeliv ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">🛵 Livraison de l’extérieur acceptée</label>`; })()}
         ${html`<div class="full section-label" style="margin:6px 0 0">🍽️ Menu du restaurant (PDF, le même pour tous les clients)</div>
           ${menu && menu.file ? html`<div class="full actions" style="margin:0"><button type="button" class="btn sm" data-action="hotel-menu-view" data-lieu="${bnb ? 'airbnb' : 'hotel'}">👁 Voir le menu</button><span class="tiny muted">${menu.name || ''} · ${fmtDate(menu.at)}</span></div>` : ''}
           <label class="field full">${menu && menu.file ? 'Remplacer le menu' : 'Ajouter le menu'} <span class="tiny muted">(PDF · 10 Mo maximum)</span><input type="file" name="menu" accept="application/pdf"></label>`}
@@ -8271,7 +8295,7 @@ const SHEETS = {
         ${field(bnb ? 'N° / nom du logement' : 'N° de chambre', 'num', c.num, { required: true, placeholder: bnb ? 'ex. Appart 3' : 'ex. 204', attrs: id ? 'readonly' : '' })}${field('Étage', 'etage', c.etage, { placeholder: 'ex. 2' })}
         ${bnb ? field('Adresse', 'adresse', c.adresse, { full: true, placeholder: 'rue, n°, ville' }) : ''}
         ${bnb ? '' : html`<label class="field">Catégorie<select name="cat"><option value="">—</option>${Object.entries(CH_CAT).map(([k, l]) => html`<option value="${k}" ${c.cat === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>`}
-        <label class="field">Type<select name="typ"><option value="">—</option>${types.map((k) => html`<option value="${k}" ${c.typ === k ? new Raw('selected') : ''}>${CH_TYPE[k]}</option>`)}</select></label>
+        <label class="field">${bnb ? 'Type' : 'Lits'}<select name="typ"><option value="">—</option>${types.map((k) => html`<option value="${k}" ${c.typ === k ? new Raw('selected') : ''}>${CH_TYPE[k]}</option>`)}</select></label>
         ${field('Personnes (max.)', 'persMax', c.persMax, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' })}${field('Surface (m²)', 'm2', c.m2, { attrs: 'inputmode="decimal"' })}
         ${c.lieu === 'airbnb' ? field('Nombre de pièces (ex. studio : 1, appartement : 3)', 'npieces', c.npieces, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' }) : ''}
         <label class="field full">Présentation pour vos clients (visible dans leur app)<textarea name="desc" style="min-height:80px" placeholder="${bnb ? 'ex. Appartement lumineux, cuisine équipée, wifi, parking privé…' : 'ex. Chambre calme côté jardin, lit 160, douche à l’italienne, wifi…'}">${c.desc || ''}</textarea></label>
@@ -9937,6 +9961,7 @@ const ACTIONS = {
   'new-annc': () => openOver('annc-form'),
   'tdem-new': () => openOver('tdem-form'),
   'tdem-taxi': () => openOver('tdem-taxi-form'),
+  'num-step': (d, el) => { const i = el.closest('form').querySelector(`input[name=${d.n}]`); if (i) i.value = Math.max(+d.min || 0, Math.min(20, (+i.value || 0) + +d.d)); },
   'bail-letter': (d) => bailLetter(d.id),
   'bail-open': (d) => openSheet('imm', d.id, 'proprio'),
   async 'tdem-stop'(d) {
@@ -11391,12 +11416,16 @@ const FORMS = {
   async hote(fd) {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
-    const rec = { lieu: g('lieu') === 'airbnb' ? 'airbnb' : 'hotel', adresse: g('adresse'), pays: g('pays'), formule: g('formule'), pref: g('pref'), appCode: g('appCode'), prenom: g('prenom'), nom: g('nom'), tel: g('tel'), mail: g('mail'), langue: g('langue') || 'fr', langues: fd.getAll('langues').filter((k) => LG_ALL[k]).slice(0, 12), pers: Math.max(1, parseInt(g('pers'), 10) || 1),
+    const rec = { lieu: g('lieu') === 'airbnb' ? 'airbnb' : 'hotel', adresse: g('adresse'), pays: g('pays'), formule: g('formule'), pref: g('pref'), appCode: g('appCode'), prenom: g('prenom'), nom: g('nom'), tel: g('tel'), mail: g('mail'), langue: g('langue') || 'fr', langues: fd.getAll('langues').filter((k) => LG_ALL[k]).slice(0, 12),
+      compo: COMPO[g('compo')] ? g('compo') : 'seul', adultes: Math.max(1, Math.min(20, parseInt(g('adultes'), 10) || 1)), enfants: Math.max(0, Math.min(20, parseInt(g('enfants'), 10) || 0)), bebe: !!fd.get('bebe'),
+      allerg: fd.getAll('allerg').filter((k) => ALLERG[k]), allergAutre: g('allergAutre').slice(0, 200), regime: fd.getAll('regime').filter((k) => REGIME[k]), dej: g('dej').slice(0, 300), dejOu: REPAS_OU[g('dejOu')] ? g('dejOu') : 'resto', din: g('din').slice(0, 300), dinOu: REPAS_OU[g('dinOu')] ? g('dinOu') : 'resto',
       chambre: g('chambre'), etage: g('etage'), cle: g('cle'), arrivee: g('arrivee'), depart: g('depart'), notes: g('notes'),
       code: g('code'), codeOff: fd.get('codeOff') === '1' };
     const tm = (k, d) => (/^\d\d:\d\d$/.test(g(k)) ? g(k) : d), mo = (k) => { const v = g(k).replace(',', '.'); return v ? Math.max(0, num(v)) : ''; };
     if (rec.lieu === 'airbnb') rec.prix = { mode: ['total', 'detail'].includes(g('prixMode')) ? g('prixMode') : '', tot: mo('prixTot'), nuit: mo('prixNuit'), menage: mo('prixMenage'), taxe: mo('prixTaxe') };
     rec.hdeb = tm('hdeb', '15:00'); rec.hfin = tm('hfin', '11:00');
+    rec.pers = rec.adultes + rec.enfants + (rec.bebe ? 1 : 0);
+    if (fd.has('roomSvc')) { const hc = hoteConf(), rs = ROOM_SVC[g('roomSvc')] ? g('roomSvc') : 'non', rp = g('roomPct') === '' ? '' : Math.max(0, Math.min(100, num(g('roomPct')))), rd = !!fd.get('roomDeliv'); if (rs !== (hc.roomSvc || 'non') || rp !== (hc.roomPct ?? '') || rd !== !!hc.roomDeliv) await vault.mutate((tx) => tx.put('reglages', { id: 'hoteConf', roomSvc: rs, roomPct: rp, roomDeliv: rd }), '🛎️ Service en chambre', ROOM_SVC[rs]); }
     if (rec.code && !/^[0-9A-Za-z#*]{3,16}$/.test(rec.code)) return toast('Code invalide (3 à 16 chiffres ou lettres)', { bad: true });
     const prevH = id ? vault.get('hotes', id) : null;
     rec.hist = [...((prevH && prevH.hist) || [])];
