@@ -36,7 +36,7 @@ const L = {
   fr: { app: 'Mon séjour', welcome: 'Entrez le code reçu de votre hôtel ou de votre hôte.', code: 'Votre code personnel', enter: 'Entrer', bad: 'Code inconnu ou séjour terminé.', off: 'Votre séjour est terminé. Merci et à bientôt !',
     hi: 'Bonjour', stay: 'Votre séjour', from: 'Arrivée', to: 'Départ', after: 'à partir de', before: 'avant', pers: 'personnes', room: 'Votre chambre', home: 'Votre logement', floor: 'Étage', rooms: 'pièces', max: 'max.',
     door: 'Code de la porte', doorSoon: 'Visible le jour de votre arrivée', key: 'Badge / clé', formule: 'Formule', F: { seul: 'Logement seul', pdj: 'Petit-déjeuner', demi: 'Demi-pension', complete: 'Pension complète' },
-    pref: 'Vos préférences / allergies', menu: '🍽️ Voir le menu', close: 'Fermer', call: '📞 Appeler', wa: '💬 WhatsApp', way: '🧭 Itinéraire',
+    pref: 'Vos préférences', menu: '🍽️ Voir le menu', close: 'Fermer', call: '📞 Appeler', wa: '💬 WhatsApp', way: '🧭 Itinéraire',
     arrT: 'Comment arrivez-vous ?', self: '🚗 Je viens par mes propres moyens', taxi: '🚕 Envoyez-moi un taxi', pick: 'Où vous prendre ?', aero: '✈️ Aéroport de Luxembourg', gare: '🚉 Gare de Luxembourg', other: '📍 Autre adresse / ville',
     otherPh: 'ex. Trier, Hauptbahnhof', when: 'Quand ?', vol: 'N° de vol / train (facultatif)', est: 'Estimation', calc: 'Calcul…', send: 'Confirmer', change: 'Changer', chosenSelf: 'Vous venez par vos propres moyens.', chosenTaxi: 'Taxi demandé',
     wait: 'L’établissement vous envoie un chauffeur — vous serez prévenu ici.', driver: 'Votre chauffeur', go: '🚗 Je suis en route', here: '✅ Je suis arrivé', mins: 'Arrivée dans combien de minutes ?', gpsNo: 'Position non disponible : choisissez les minutes.',
@@ -47,7 +47,7 @@ const L = {
   en: { app: 'My stay', welcome: 'Enter the code you received from your hotel or host.', code: 'Your personal code', enter: 'Enter', bad: 'Unknown code or stay ended.', off: 'Your stay has ended. Thank you and see you soon!',
     hi: 'Hello', stay: 'Your stay', from: 'Arrival', to: 'Departure', after: 'from', before: 'before', pers: 'guests', room: 'Your room', home: 'Your home', floor: 'Floor', rooms: 'rooms', max: 'max.',
     door: 'Door code', doorSoon: 'Shown on your arrival day', key: 'Badge / key', formule: 'Board', F: { seul: 'Room only', pdj: 'Breakfast', demi: 'Half board', complete: 'Full board' },
-    pref: 'Your preferences / allergies', menu: '🍽️ See the menu', close: 'Close', call: '📞 Call', wa: '💬 WhatsApp', way: '🧭 Directions',
+    pref: 'Your preferences', menu: '🍽️ See the menu', close: 'Close', call: '📞 Call', wa: '💬 WhatsApp', way: '🧭 Directions',
     arrT: 'How are you arriving?', self: '🚗 I’m coming on my own', taxi: '🚕 Send me a taxi', pick: 'Where should we pick you up?', aero: '✈️ Luxembourg Airport', gare: '🚉 Luxembourg Station', other: '📍 Other address / city',
     otherPh: 'e.g. Trier, Hauptbahnhof', when: 'When?', vol: 'Flight / train no. (optional)', est: 'Estimate', calc: 'Calculating…', send: 'Confirm', change: 'Change', chosenSelf: 'You are coming on your own.', chosenTaxi: 'Taxi requested',
     wait: 'The property is sending you a driver — you will be notified here.', driver: 'Your driver', go: '🚗 I’m on my way', here: '✅ I have arrived', mins: 'Arriving in how many minutes?', gpsNo: 'Location unavailable: choose the minutes.',
@@ -58,7 +58,7 @@ const L = {
   de: { app: 'Mein Aufenthalt', welcome: 'Geben Sie den Code ein, den Sie von Ihrem Hotel oder Gastgeber erhalten haben.', code: 'Ihr persönlicher Code', enter: 'Öffnen', bad: 'Unbekannter Code oder Aufenthalt beendet.', off: 'Ihr Aufenthalt ist beendet. Danke und bis bald!',
     hi: 'Guten Tag', stay: 'Ihr Aufenthalt', from: 'Ankunft', to: 'Abreise', after: 'ab', before: 'bis', pers: 'Personen', room: 'Ihr Zimmer', home: 'Ihre Unterkunft', floor: 'Etage', rooms: 'Zimmer', max: 'max.',
     door: 'Türcode', doorSoon: 'Sichtbar am Anreisetag', key: 'Badge / Schlüssel', formule: 'Verpflegung', F: { seul: 'Nur Übernachtung', pdj: 'Frühstück', demi: 'Halbpension', complete: 'Vollpension' },
-    pref: 'Ihre Vorlieben / Allergien', menu: '🍽️ Speisekarte ansehen', close: 'Schließen', call: '📞 Anrufen', wa: '💬 WhatsApp', way: '🧭 Route',
+    pref: 'Ihre Vorlieben', menu: '🍽️ Speisekarte ansehen', close: 'Schließen', call: '📞 Anrufen', wa: '💬 WhatsApp', way: '🧭 Route',
     arrT: 'Wie reisen Sie an?', self: '🚗 Ich komme selbst', taxi: '🚕 Schicken Sie mir ein Taxi', pick: 'Wo sollen wir Sie abholen?', aero: '✈️ Flughafen Luxemburg', gare: '🚉 Bahnhof Luxemburg', other: '📍 Andere Adresse / Stadt',
     otherPh: 'z. B. Trier, Hauptbahnhof', when: 'Wann?', vol: 'Flug- / Zugnr. (optional)', est: 'Schätzung', calc: 'Berechnung…', send: 'Bestätigen', change: 'Ändern', chosenSelf: 'Sie kommen selbst.', chosenTaxi: 'Taxi angefragt',
     wait: 'Das Haus schickt Ihnen einen Fahrer — Sie werden hier benachrichtigt.', driver: 'Ihr Fahrer', go: '🚗 Ich bin unterwegs', here: '✅ Ich bin angekommen', mins: 'Ankunft in wie vielen Minuten?', gpsNo: 'Standort nicht verfügbar: Minuten wählen.',
@@ -69,7 +69,7 @@ const L = {
   it: { app: 'Il mio soggiorno', welcome: 'Inserisca il codice ricevuto dal suo hotel o dal suo host.', code: 'Il suo codice personale', enter: 'Entra', bad: 'Codice sconosciuto o soggiorno terminato.', off: 'Il suo soggiorno è terminato. Grazie e a presto!',
     hi: 'Buongiorno', stay: 'Il suo soggiorno', from: 'Arrivo', to: 'Partenza', after: 'dalle', before: 'entro le', pers: 'persone', room: 'La sua camera', home: 'Il suo alloggio', floor: 'Piano', rooms: 'locali', max: 'max.',
     door: 'Codice della porta', doorSoon: 'Visibile il giorno del suo arrivo', key: 'Badge / chiave', formule: 'Formula', F: { seul: 'Solo pernottamento', pdj: 'Colazione', demi: 'Mezza pensione', complete: 'Pensione completa' },
-    pref: 'Le sue preferenze / allergie', menu: '🍽️ Vedi il menù', close: 'Chiudi', call: '📞 Chiama', wa: '💬 WhatsApp', way: '🧭 Percorso',
+    pref: 'Le sue preferenze', menu: '🍽️ Vedi il menù', close: 'Chiudi', call: '📞 Chiama', wa: '💬 WhatsApp', way: '🧭 Percorso',
     arrT: 'Come arriva?', self: '🚗 Vengo con i miei mezzi', taxi: '🚕 Mandatemi un taxi', pick: 'Dove la veniamo a prendere?', aero: '✈️ Aeroporto di Lussemburgo', gare: '🚉 Stazione di Lussemburgo', other: '📍 Altro indirizzo / città',
     otherPh: 'es. Trier, Hauptbahnhof', when: 'Quando?', vol: 'N° volo / treno (facoltativo)', est: 'Stima', calc: 'Calcolo…', send: 'Conferma', change: 'Cambia', chosenSelf: 'Viene con i suoi mezzi.', chosenTaxi: 'Taxi richiesto',
     wait: 'La struttura le manda un autista — sarà avvisato qui.', driver: 'Il suo autista', go: '🚗 Sono in viaggio', here: '✅ Sono arrivato', mins: 'Arrivo tra quanti minuti?', gpsNo: 'Posizione non disponibile: scelga i minuti.',
@@ -80,7 +80,7 @@ const L = {
   pt: { app: 'A minha estadia', welcome: 'Introduza o código recebido do seu hotel ou anfitrião.', code: 'O seu código pessoal', enter: 'Entrar', bad: 'Código desconhecido ou estadia terminada.', off: 'A sua estadia terminou. Obrigado e até breve!',
     hi: 'Olá', stay: 'A sua estadia', from: 'Chegada', to: 'Partida', after: 'a partir das', before: 'até às', pers: 'pessoas', room: 'O seu quarto', home: 'O seu alojamento', floor: 'Andar', rooms: 'divisões', max: 'máx.',
     door: 'Código da porta', doorSoon: 'Visível no dia da chegada', key: 'Cartão / chave', formule: 'Regime', F: { seul: 'Só alojamento', pdj: 'Pequeno-almoço', demi: 'Meia pensão', complete: 'Pensão completa' },
-    pref: 'As suas preferências / alergias', menu: '🍽️ Ver o menu', close: 'Fechar', call: '📞 Ligar', wa: '💬 WhatsApp', way: '🧭 Itinerário',
+    pref: 'As suas preferências', menu: '🍽️ Ver o menu', close: 'Fechar', call: '📞 Ligar', wa: '💬 WhatsApp', way: '🧭 Itinerário',
     arrT: 'Como vai chegar?', self: '🚗 Vou pelos meus meios', taxi: '🚕 Enviem-me um táxi', pick: 'Onde o vamos buscar?', aero: '✈️ Aeroporto do Luxemburgo', gare: '🚉 Estação do Luxemburgo', other: '📍 Outra morada / cidade',
     otherPh: 'ex. Trier, Hauptbahnhof', when: 'Quando?', vol: 'N.º voo / comboio (opcional)', est: 'Estimativa', calc: 'A calcular…', send: 'Confirmar', change: 'Alterar', chosenSelf: 'Vem pelos seus meios.', chosenTaxi: 'Táxi pedido',
     wait: 'O estabelecimento envia-lhe um motorista — será avisado aqui.', driver: 'O seu motorista', go: '🚗 Estou a caminho', here: '✅ Cheguei', mins: 'Chegada dentro de quantos minutos?', gpsNo: 'Localização indisponível: escolha os minutos.',
@@ -91,7 +91,7 @@ const L = {
   es: { app: 'Mi estancia', welcome: 'Introduzca el código recibido de su hotel o anfitrión.', code: 'Su código personal', enter: 'Entrar', bad: 'Código desconocido o estancia terminada.', off: 'Su estancia ha terminado. ¡Gracias y hasta pronto!',
     hi: 'Hola', stay: 'Su estancia', from: 'Llegada', to: 'Salida', after: 'desde las', before: 'antes de las', pers: 'personas', room: 'Su habitación', home: 'Su alojamiento', floor: 'Planta', rooms: 'habitaciones', max: 'máx.',
     door: 'Código de la puerta', doorSoon: 'Visible el día de su llegada', key: 'Tarjeta / llave', formule: 'Régimen', F: { seul: 'Solo alojamiento', pdj: 'Desayuno', demi: 'Media pensión', complete: 'Pensión completa' },
-    pref: 'Sus preferencias / alergias', menu: '🍽️ Ver el menú', close: 'Cerrar', call: '📞 Llamar', wa: '💬 WhatsApp', way: '🧭 Ruta',
+    pref: 'Sus preferencias', menu: '🍽️ Ver el menú', close: 'Cerrar', call: '📞 Llamar', wa: '💬 WhatsApp', way: '🧭 Ruta',
     arrT: '¿Cómo llega?', self: '🚗 Voy por mis medios', taxi: '🚕 Envíenme un taxi', pick: '¿Dónde le recogemos?', aero: '✈️ Aeropuerto de Luxemburgo', gare: '🚉 Estación de Luxemburgo', other: '📍 Otra dirección / ciudad',
     otherPh: 'p. ej. Trier, Hauptbahnhof', when: '¿Cuándo?', vol: 'N.º de vuelo / tren (opcional)', est: 'Estimación', calc: 'Calculando…', send: 'Confirmar', change: 'Cambiar', chosenSelf: 'Viene por sus medios.', chosenTaxi: 'Taxi solicitado',
     wait: 'El establecimiento le envía un conductor — se le avisará aquí.', driver: 'Su conductor', go: '🚗 Estoy en camino', here: '✅ He llegado', mins: '¿Llega en cuántos minutos?', gpsNo: 'Ubicación no disponible: elija los minutos.',
@@ -129,6 +129,38 @@ async function sendOwner(o) {
   if (!data || !data.signalKey) throw new Error('signal');
   const r = await fetch(`${API}/api/esp/${id}/signal?app=hote`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) });
   if (!r.ok) throw new Error(r.status);
+}
+// ⚠️ allergies, 🍽️ régime et repas, 🛎️ service en chambre : ce que l'hôtel a noté (traduit)
+const MEAL = {
+  fr: { al: '⚠️ Vos allergies', reg: '🍽️ Régime', dej: '🥗 Déjeuner', din: '🍷 Dîner', resto: 'au restaurant', chambre: 'en chambre', room: '🛎️ Service en chambre', jour: 'aux heures du restaurant', h24: '24 h/24', nuit: '24 h/24 (la nuit : carte réduite, voir le menu)', sup: 'supplément', deliv: '🛵 Livraison de l’extérieur acceptée',
+    A: { gluten: 'Gluten', lait: 'Lait / lactose', oeufs: 'Œufs', arachides: 'Arachides', noix: 'Fruits à coque', poisson: 'Poisson', crustaces: 'Crustacés', mollusques: 'Mollusques', soja: 'Soja', celeri: 'Céleri', moutarde: 'Moutarde', sesame: 'Sésame', sulfites: 'Sulfites', lupin: 'Lupin' },
+    R: { vege: 'Végétarien', vegan: 'Vegan', halal: 'Halal', casher: 'Casher', sansporc: 'Sans porc', sansalcool: 'Sans alcool' } },
+  en: { al: '⚠️ Your allergies', reg: '🍽️ Diet', dej: '🥗 Lunch', din: '🍷 Dinner', resto: 'at the restaurant', chambre: 'in your room', room: '🛎️ Room service', jour: 'during restaurant hours', h24: '24/7', nuit: '24/7 (at night: reduced menu, see the menu)', sup: 'surcharge', deliv: '🛵 Outside delivery accepted',
+    A: { gluten: 'Gluten', lait: 'Milk / lactose', oeufs: 'Eggs', arachides: 'Peanuts', noix: 'Tree nuts', poisson: 'Fish', crustaces: 'Crustaceans', mollusques: 'Molluscs', soja: 'Soy', celeri: 'Celery', moutarde: 'Mustard', sesame: 'Sesame', sulfites: 'Sulphites', lupin: 'Lupin' },
+    R: { vege: 'Vegetarian', vegan: 'Vegan', halal: 'Halal', casher: 'Kosher', sansporc: 'No pork', sansalcool: 'No alcohol' } },
+  de: { al: '⚠️ Ihre Allergien', reg: '🍽️ Ernährung', dej: '🥗 Mittagessen', din: '🍷 Abendessen', resto: 'im Restaurant', chambre: 'im Zimmer', room: '🛎️ Zimmerservice', jour: 'zu den Restaurantzeiten', h24: 'rund um die Uhr', nuit: 'rund um die Uhr (nachts: kleine Karte, siehe Speisekarte)', sup: 'Zuschlag', deliv: '🛵 Lieferdienste von außen erlaubt',
+    A: { gluten: 'Gluten', lait: 'Milch / Laktose', oeufs: 'Eier', arachides: 'Erdnüsse', noix: 'Schalenfrüchte', poisson: 'Fisch', crustaces: 'Krebstiere', mollusques: 'Weichtiere', soja: 'Soja', celeri: 'Sellerie', moutarde: 'Senf', sesame: 'Sesam', sulfites: 'Sulfite', lupin: 'Lupinen' },
+    R: { vege: 'Vegetarisch', vegan: 'Vegan', halal: 'Halal', casher: 'Koscher', sansporc: 'Ohne Schwein', sansalcool: 'Ohne Alkohol' } },
+  it: { al: '⚠️ Le sue allergie', reg: '🍽️ Regime', dej: '🥗 Pranzo', din: '🍷 Cena', resto: 'al ristorante', chambre: 'in camera', room: '🛎️ Servizio in camera', jour: 'negli orari del ristorante', h24: '24 ore su 24', nuit: '24 ore su 24 (di notte: menù ridotto, vedi il menù)', sup: 'supplemento', deliv: '🛵 Consegne dall’esterno accettate',
+    A: { gluten: 'Glutine', lait: 'Latte / lattosio', oeufs: 'Uova', arachides: 'Arachidi', noix: 'Frutta a guscio', poisson: 'Pesce', crustaces: 'Crostacei', mollusques: 'Molluschi', soja: 'Soia', celeri: 'Sedano', moutarde: 'Senape', sesame: 'Sesamo', sulfites: 'Solfiti', lupin: 'Lupini' },
+    R: { vege: 'Vegetariano', vegan: 'Vegano', halal: 'Halal', casher: 'Kosher', sansporc: 'Senza maiale', sansalcool: 'Senza alcol' } },
+  pt: { al: '⚠️ As suas alergias', reg: '🍽️ Regime', dej: '🥗 Almoço', din: '🍷 Jantar', resto: 'no restaurante', chambre: 'no quarto', room: '🛎️ Serviço de quarto', jour: 'no horário do restaurante', h24: '24 h/24', nuit: '24 h/24 (à noite: carta reduzida, ver o menu)', sup: 'suplemento', deliv: '🛵 Entregas do exterior aceites',
+    A: { gluten: 'Glúten', lait: 'Leite / lactose', oeufs: 'Ovos', arachides: 'Amendoins', noix: 'Frutos de casca rija', poisson: 'Peixe', crustaces: 'Crustáceos', mollusques: 'Moluscos', soja: 'Soja', celeri: 'Aipo', moutarde: 'Mostarda', sesame: 'Sésamo', sulfites: 'Sulfitos', lupin: 'Tremoço' },
+    R: { vege: 'Vegetariano', vegan: 'Vegano', halal: 'Halal', casher: 'Kosher', sansporc: 'Sem porco', sansalcool: 'Sem álcool' } },
+  es: { al: '⚠️ Sus alergias', reg: '🍽️ Dieta', dej: '🥗 Almuerzo', din: '🍷 Cena', resto: 'en el restaurante', chambre: 'en la habitación', room: '🛎️ Servicio de habitaciones', jour: 'en el horario del restaurante', h24: '24 h', nuit: '24 h (de noche: carta reducida, ver el menú)', sup: 'suplemento', deliv: '🛵 Se aceptan entregas del exterior',
+    A: { gluten: 'Gluten', lait: 'Leche / lactosa', oeufs: 'Huevos', arachides: 'Cacahuetes', noix: 'Frutos de cáscara', poisson: 'Pescado', crustaces: 'Crustáceos', mollusques: 'Moluscos', soja: 'Soja', celeri: 'Apio', moutarde: 'Mostaza', sesame: 'Sésamo', sulfites: 'Sulfitos', lupin: 'Altramuces' },
+    R: { vege: 'Vegetariano', vegan: 'Vegano', halal: 'Halal', casher: 'Kosher', sansporc: 'Sin cerdo', sansalcool: 'Sin alcohol' } },
+};
+function mealHtml(m) {
+  if (!m) return '';
+  const k = MEAL[lang] || MEAL.fr, row = (x) => `<p class="meta" style="margin:6px 0 0">${x}</p>`, out = [];
+  const al = [...(m.allerg || []).map((a) => k.A[a] || a), m.allergAutre].filter(Boolean);
+  if (al.length) out.push(`<p style="margin:8px 0 0;color:#b91c1c"><b>${esc(k.al)}</b> : ${esc(al.join(', '))}</p>`);
+  if ((m.regime || []).length) out.push(row(`${esc(k.reg)} : ${esc(m.regime.map((r) => k.R[r] || r).join(', '))}`));
+  if (m.dej) out.push(row(`${esc(k.dej)} (${esc(k[m.dejOu] || k.resto)}) : ${esc(m.dej)}`));
+  if (m.din) out.push(row(`${esc(k.din)} (${esc(k[m.dinOu] || k.resto)}) : ${esc(m.din)}`));
+  if (m.room) out.push(row(`${esc(k.room)} : ${esc(k[m.room.svc] || '')}${+m.room.pct ? ` · ${esc(k.sup)} ${+m.room.pct} %` : ''}${m.room.deliv ? ' · ' + esc(k.deliv) : ''}`));
+  return out.join('');
 }
 // fichiers chiffrés (photos de la chambre, menu)
 const fileUrls = new Map();
@@ -311,10 +343,11 @@ function render() {
   // 6b · prix du séjour (Airbnb)
   if (bnb && today <= d.depart) out.push(sejourHtml(d.sejour));
   // 7 · cœur : mon séjour (formule, menu, préférences, contact) + arrivée (taxi ou soi-même)
+  const ml = mealHtml(d.meal);
   out.push(`<div class="card"><h2>🧳 ${esc(t.stay)}</h2>
     <p style="margin:0">🛬 ${esc(t.from)} : <b>${esc(fmt(d.arrivee))}</b> ${esc(t.after)} ${esc(d.hdeb)}<br>🛫 ${esc(t.to)} : <b>${esc(fmt(d.depart))}</b> ${esc(t.before)} ${esc(d.hfin)}</p>
     ${d.formule ? `<p style="margin:8px 0 0">🍽️ ${esc(t.formule)} : <b>${esc(t.F[d.formule] || d.formule)}</b></p>` : ''}
-    ${d.pref ? `<p class="meta" style="margin:6px 0 0">📝 ${esc(t.pref)} : ${esc(d.pref)}</p>` : ''}
+    ${d.pref ? `<p class="meta" style="margin:6px 0 0">📝 ${esc(t.pref)} : ${esc(d.pref)}</p>` : ''}${ml}
     <div class="btns">${d.menu ? `<button class="btn sm" data-menu="1">${esc(t.menu)}</button>` : ''}${tel ? `<a class="btn sm sec" href="tel:${esc(tel)}">${esc(t.call)}</a>` : ''}${wa ? `<a class="btn sm sec" href="https://wa.me/${esc(wa)}" target="_blank" rel="noopener">${esc(t.wa)}</a>` : ''}</div></div>`);
   if (today <= d.arrivee) out.push(arrCard(t));
   if (d.taxi && d.taxi.on && today >= d.arrivee && today <= d.depart) out.push(rideCard());

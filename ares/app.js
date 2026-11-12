@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.256.0';
+const VERSION = '2.257.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3537,6 +3537,7 @@ function hoteData(h, tks) {
     formule: h.formule || '', pref: h.pref || '', porte: h.code && !h.codeOff ? h.code : '', cle: h.cle || '',
     ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: ch.persMax || '', m2: ch.m2 || '', npieces: h.lieu === 'airbnb' ? ch.npieces || '' : '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
     st: TENANT ? { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : c.nom || tenantInfo.nom || 'LA CENTRAL', adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || soc.adresse || c.adresse || '' : soc.adresse || c.adresse || '', tel: soc.tel || c.tel || '', wa: '', logo: soc.logo || '', pays: soc.pays || 'LU' } : { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LA CENTRAL'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '', pays: soc.pays || 'LU' },
+    meal: { allerg: h.allerg || [], allergAutre: h.allergAutre || '', regime: h.regime || [], dej: h.dej || '', dejOu: h.dejOu || '', din: h.din || '', dinOu: h.dinOu || '', room: c.roomSvc && c.roomSvc !== 'non' ? { svc: c.roomSvc, pct: c.roomPct || 0, deliv: !!c.roomDeliv } : null },
     menu: menu && menu.file ? menu.file : '', taxi: { pc: +c.txPc || 0, km: +c.txKm || 0, aero: +c.txAero || 0, gare: +c.txGare || 0, on: !!TENANT || !!(c.drivers || []).length || !!chaufs().length || !!txOffers().gam.length, ...txOffers() },
     rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, done: !!(r.taxi && r.taxi.done), rated: r.taxi && r.taxi.rate ? r.taxi.rate.s : 0, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
     arrDone: !!(h.taxi && h.taxi.done), arrRated: h.taxi && h.taxi.rate ? h.taxi.rate.s : 0,
@@ -4927,7 +4928,7 @@ function hotView(hf, acc) {
         ${S2('🚕', 'TAXIS', 'Courses en cours : vos chauffeurs, ↪️ LA CENTRAL, vos sociétés', [
           lcRides.length ? html`<div class="list" style="margin-bottom:10px">${lcRides.map(([h, x]) => html`<button class="row" data-action="hote-taxi" data-id="${h.id}" data-r="${x === h.taxi ? '' : (h.rides || []).find((r) => r.taxi === x).id}"><span class="avatar">${x.lc ? '↪️' : x.own ? '🚙' : '🚕'}</span><span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')} (${h.chambre})</span><span class="meta">${x.st === 'ok' ? '🚙 ' + x.nom + (x.plaque ? ' · ' + x.plaque : '') : x.st === 'no' ? '❌ refusée par ' + x.nom : x.lc ? '⏳ LA CENTRAL choisit le chauffeur' : '⏳ en attente de ' + x.nom}${x.prix ? ' · ' + eur(x.prix) : ''}</span></span><span class="chev">›</span></button>`)}</div>` : '',
           html`<button class="btn sm" data-action="go" data-to="taxis">🚕 Toutes les courses</button>`])}
-        ${S2('🔧', 'DOMIER — PROBLÈMES DES CHAMBRES', 'Signaler un problème à LA CENTRAL, suivre les interventions', [domierCentral(), pbs.length ? html`<div class="list" style="margin-bottom:10px">${pbs.map((x) => tacheRow(x))}</div>` : ''])}
+        <button class="row card" data-action="go" data-to="demandes" style="display:flex;align-items:center;gap:10px;width:100%;margin:14px 0 4px;font:inherit;text-align:left;cursor:pointer"><span class="avatar">🔧</span><span class="grow"><b>DOMIER</b><span class="meta" style="display:block">${pbs.length ? `${plural(pbs.length, 'intervention')} en cours` : 'Problèmes des chambres : signaler, suivre'}</span></span><span class="chev">›</span></button>
         ${S2('🧹', 'MÉNAGE DES ' + (hf === 'airbnb' ? 'LOGEMENTS' : 'CHAMBRES'), 'À faire aujourd’hui : les départs du jour', [dep.length ? html`<div class="list" style="margin-bottom:10px">${dep.map((h) => html`<div class="row"><span class="avatar" style="font-size:13px;font-weight:800">${h.chambre}</span><span class="grow"><span class="title" style="display:block">🧹 ${hf === 'airbnb' ? 'Logement' : 'Chambre'} ${h.chambre}</span><span class="meta">départ de ${[h.prenom, h.nom].filter(Boolean).join(' ')}</span></span></div>`)}</div>` : ''])}
         ${S2('🧾', 'FACTURES', 'LA CENTRAL (interventions, courses) et vos sociétés de taxi', [
           fDue.length ? AB(late.length ? 'bad' : 'info', 'demandes', html`🧾 <b>${plural(fDue.length, 'facture')} de LA CENTRAL à payer</b> · ${eur(sum(fDue, (f) => f.ttc))}`) : '',
@@ -6528,6 +6529,7 @@ dashboard() {
         <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
         ${TENANT ? '' : html`<button class="row" data-action="eq-group"><span class="avatar">💬</span><span class="grow"><span class="title" style="display:block">Groupe de l’équipe (messages spéciaux)</span><span class="meta">${plural(eqGroup().length, 'ouvrier')} dans le groupe · les autres messages restent entre chaque ouvrier et la centrale</span></span>${icon('chevron')}</button>`}
         ${TENANT ? '' : html`<button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>`}
+        ${(TENANT ? ['hotel', 'airbnb'].includes(tenantInfo.fil) : vault.list('hotes').length) ? html`<button class="row" data-action="hote-resto"><span class="avatar">🍽️</span><span class="grow"><span class="title" style="display:block">Restaurant & service en chambre</span><span class="meta">Menu (PDF) · service en chambre, supplément %, livraison — pour tous les clients</span></span>${icon('chevron')}</button>` : ''}
         <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${TENANT && !societe().logo ? html`<b style="color:var(--amber,#b45309)">🖼️ Mettez votre logo : vos locataires le voient dans leur app</b><br>` : ''}${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
       </div>
 
@@ -7790,7 +7792,7 @@ const SHEETS = {
     if (id && !h) return null;
     const rnd = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0');
     const LG = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español', ar: 'العربية', autre: 'Autre' };
-    const bnb = h.lieu === 'airbnb', ch = chGet(h.lieu, h.chambre), menu = vault.get('reglages', menuKey(h.lieu));
+    const bnb = h.lieu === 'airbnb', ch = chGet(h.lieu, h.chambre);
     setTimeout(() => hydrateBiens(sheetEl), 0);
     return {
       title: id ? html`${(bnb ? 'Client — ' : 'Client — chambre ') + h.chambre} ${vraiBtn('hotes', h)}` : 'Nouveau client',
@@ -7823,13 +7825,7 @@ const SHEETS = {
         ${field('🍷 Dîner : ce qu’il souhaite', 'din', h.din || '', { full: true })}
         <label class="field">Dîner<select name="dinOu">${Object.entries(REPAS_OU).map(([k, l]) => html`<option value="${k}" ${(h.dinOu || 'resto') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
         <label class="field full">🛏️ Autres préférences<textarea name="pref" style="min-height:56px" placeholder="ex. oreiller ferme, étage bas…">${h.pref || ''}</textarea></label>
-        ${(() => { const hc = hoteConf(); return html`<div class="full section-label" style="margin:6px 0 0">🛎️ Service en chambre (le même pour tous les clients)</div>
-          <label class="field full">Service en chambre<select name="roomSvc">${Object.entries(ROOM_SVC).map(([k, l]) => html`<option value="${k}" ${(hc.roomSvc || 'non') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
-          ${field('Supplément service en chambre (%)', 'roomPct', hc.roomPct ?? '', { type: 'number', attrs: 'min="0" max="100" step="1" inputmode="numeric"' })}
-          <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="roomDeliv" ${hc.roomDeliv ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">🛵 Livraison de l’extérieur acceptée</label>`; })()}
-        ${html`<div class="full section-label" style="margin:6px 0 0">🍽️ Menu du restaurant (PDF, le même pour tous les clients)</div>
-          ${menu && menu.file ? html`<div class="full actions" style="margin:0"><button type="button" class="btn sm" data-action="hotel-menu-view" data-lieu="${bnb ? 'airbnb' : 'hotel'}">👁 Voir le menu</button><span class="tiny muted">${menu.name || ''} · ${fmtDate(menu.at)}</span></div>` : ''}
-          <label class="field full">${menu && menu.file ? 'Remplacer le menu' : 'Ajouter le menu'} <span class="tiny muted">(PDF · 10 Mo maximum)</span><input type="file" name="menu" accept="application/pdf"></label>`}
+        <div class="full"><button type="button" class="btn sm" data-action="hote-resto" data-lieu="${bnb ? 'airbnb' : 'hotel'}">🍽️ Menu du restaurant · 🛎️ service en chambre (pour tous les clients)</button></div>
         <div class="full section-label" style="margin:6px 0 0">${bnb ? '🏠 Le logement' : '🛏️ La chambre'} — visible dans l’app du client</div>
         ${field(bnb ? 'N° / nom du logement' : 'N° de chambre', 'chambre', h.chambre, { required: true, placeholder: bnb ? 'ex. Appart 3' : 'ex. 204', attrs: 'list="chList" autocomplete="off"' })}<datalist id="chList">${chambres(h.lieu).map((c) => html`<option value="${c.num}">${[CH_CAT[c.cat], CH_TYPE[c.typ], c.persMax ? '👥 ' + c.persMax : ''].filter(Boolean).join(' · ')}</option>`)}</datalist>${field('Étage', 'etage', h.etage || ch.etage, { placeholder: 'ex. 2' })}
         ${bnb ? field('Adresse', 'adresse', h.adresse || ch.adresse, { full: true, placeholder: 'rue, n°, ville' }) : ''}
@@ -8166,6 +8162,23 @@ const SHEETS = {
           ${field('Voiture', 'd_auto', d.auto, { placeholder: 'ex. Mercedes grise' })}${field('Plaque', 'd_plaque', d.plaque, { placeholder: 'ex. LU-1234' })}</div>`)}
         <p class="tiny muted full" style="margin:0">Une ligne vide en plus apparaît après l’enregistrement. Le chauffeur n’installe rien : il reçoit un lien par WhatsApp / SMS.</p>
       </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  // 🍽️ menu (PDF) et 🛎️ service en chambre : les mêmes pour tous les clients → Réglages
+  'hote-resto'({ preset }) {
+    const lieu = preset === 'airbnb' ? 'airbnb' : 'hotel', bnb = lieu === 'airbnb', menu = vault.get('reglages', menuKey(lieu)), hc = hoteConf();
+    return {
+      title: '🍽️ Restaurant & service en chambre', narrow: true,
+      body: html`<form id="f" data-form="hote-resto" class="fields"><input type="hidden" name="lieu" value="${lieu}">
+        <div class="full section-label" style="margin:6px 0 0">🛎️ Service en chambre (le même pour tous les clients)</div>
+          <label class="field full">Service en chambre<select name="roomSvc">${Object.entries(ROOM_SVC).map(([k, l]) => html`<option value="${k}" ${(hc.roomSvc || 'non') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+          ${field('Supplément service en chambre (%)', 'roomPct', hc.roomPct ?? '', { type: 'number', attrs: 'min="0" max="100" step="1" inputmode="numeric"' })}
+          <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="roomDeliv" ${hc.roomDeliv ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">🛵 Livraison de l’extérieur acceptée</label>
+        ${html`<div class="full section-label" style="margin:6px 0 0">🍽️ Menu du restaurant (PDF, le même pour tous les clients)</div>
+          ${menu && menu.file ? html`<div class="full actions" style="margin:0"><button type="button" class="btn sm" data-action="hotel-menu-view" data-lieu="${bnb ? 'airbnb' : 'hotel'}">👁 Voir le menu</button><span class="tiny muted">${menu.name || ''} · ${fmtDate(menu.at)}</span></div>` : ''}
+          <label class="field full">${menu && menu.file ? 'Remplacer le menu' : 'Ajouter le menu'} <span class="tiny muted">(PDF · 10 Mo maximum)</span><input type="file" name="menu" accept="application/pdf"></label>`}
+        </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
@@ -10301,6 +10314,7 @@ const ACTIONS = {
     openSheet('interv', wid);
   },
   'hote-tarifs': () => openOver('hote-tarifs'),
+  'hote-resto': (d) => openOver('hote-resto', null, null, d.lieu || (TENANT && tenantInfo.fil === 'airbnb' ? 'airbnb' : 'hotel')),
   async 'hote-taxi-lc-x'(d) {
     const h = vault.get('hotes', d.id);
     if (!h || !(await confirmBox('Annuler cette course ?', { ok: 'Annuler la course', danger: true, detail: 'LA CENTRAL est prévenue tout de suite.' }))) return;
@@ -11383,6 +11397,21 @@ const FORMS = {
     goBack();
     await txcoSync(rid, true);
     if (!id) openOver('txco-form', rid);
+  },
+  async 'hote-resto'(fd) {
+    const g = (k) => String(fd.get(k) || '').trim(), lieu = g('lieu') === 'airbnb' ? 'airbnb' : 'hotel';
+    const rs = ROOM_SVC[g('roomSvc')] ? g('roomSvc') : 'non', rp = g('roomPct') === '' ? '' : Math.max(0, Math.min(100, num(g('roomPct'))));
+    await vault.mutate((tx) => tx.put('reglages', { id: 'hoteConf', roomSvc: rs, roomPct: rp, roomDeliv: !!fd.get('roomDeliv') }), '🛎️ Service en chambre', ROOM_SVC[rs]);
+    const mf = fd.get('menu');
+    if (mf && mf.size) {
+      if (mf.type !== 'application/pdf') return toast('Menu : fichier PDF seulement', { bad: true });
+      if (mf.size > 10e6) return toast('Menu : 10 Mo maximum', { bad: true });
+      const pm = vault.get('reglages', menuKey(lieu)), mid = uid();
+      await vault.saveFile(mid, new Uint8Array(await mf.arrayBuffer()));
+      await vault.mutate((tx) => tx.put('reglages', { id: menuKey(lieu), file: mid, name: mf.name, at: today() }), 'Menu du restaurant', mf.name);
+      if (pm && pm.file) await vault.deleteFile(pm.file).catch(() => {});
+    }
+    toast('Enregistré'); closeSheet(); hotesSync(null, false);
   },
   async 'hote-tarifs'(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), m = (k) => (g(k) ? Math.max(0, num(g(k).replace(',', '.'))) : '');
