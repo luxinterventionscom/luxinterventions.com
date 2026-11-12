@@ -1002,3 +1002,8 @@ details.centralino.cent-new:not([open]) { animation: centBlink 1.6s ease-in-out 
 #view > .alert, #view > .card, #view > details, #view > .domier-w { margin-top: 0 !important; margin-bottom: 14px !important; }
 /* ordinateur : 🚪 Se déconnecter en bas à gauche et en bas de page ; le cadenas en haut à droite reste seulement sur le téléphone */
 @media (min-width: 960px) { .topbar [data-action=lock] { display: none; } }
+
+/* 🔴 client qui arrive aujourd'hui : pastille rouge qui clignote */
+.arr-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #dc2626; margin-right: 6px; vertical-align: middle; animation: arrBlink 1s ease-in-out infinite; }
+@keyframes arrBlink { 50% { opacity: 0.15; } }
+@media (prefers-reduced-motion: reduce) { .arr-dot { animation-duration: 2.5s; } }
