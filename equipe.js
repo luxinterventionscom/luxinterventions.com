@@ -647,6 +647,45 @@ function placesOf(d) {
 
 // Notifications : abonnement de ce téléphone (avec la langue et, pour les locataires, le fil de la maison)
 let pushSt = '', pushJust = false;
+// 🚙 chauffeur « en service » : position envoyée (chiffrée pour la centrale) toutes les 90 s, seulement pendant le service et l'app ouverte
+const SVT = {
+  fr: { t: '🚙 Service', on: '▶️ Je suis en service', off: '⏹ Fin de service', hint: 'Pendant le service, votre position est envoyée à la centrale (toutes les 90 s). Gardez l’app ouverte (téléphone sur le support).', sent: '📍 Position envoyée à', wait: '📍 Recherche de la position…', gps: '⚠️ Position refusée : autorisez la localisation pour cette app.', old: '⚠️ Serveur pas encore à jour.' },
+  it: { t: '🚙 Servizio', on: '▶️ Sono in servizio', off: '⏹ Fine servizio', hint: 'Durante il servizio la tua posizione va alla centrale (ogni 90 s). Tieni l’app aperta (telefono sul supporto).', sent: '📍 Posizione inviata alle', wait: '📍 Cerco la posizione…', gps: '⚠️ Posizione rifiutata: autorizza la localizzazione per questa app.', old: '⚠️ Server non ancora aggiornato.' },
+  pt: { t: '🚙 Serviço', on: '▶️ Estou em serviço', off: '⏹ Fim do serviço', hint: 'Durante o serviço, a sua posição é enviada à central (a cada 90 s). Mantenha a app aberta (telefone no suporte).', sent: '📍 Posição enviada às', wait: '📍 A procurar a posição…', gps: '⚠️ Posição recusada: autorize a localização para esta app.', old: '⚠️ Servidor ainda não atualizado.' },
+  de: { t: '🚙 Dienst', on: '▶️ Ich bin im Dienst', off: '⏹ Dienstende', hint: 'Während des Dienstes wird Ihre Position an die Zentrale gesendet (alle 90 s). App geöffnet lassen (Handy in der Halterung).', sent: '📍 Position gesendet um', wait: '📍 Position wird gesucht…', gps: '⚠️ Standort abgelehnt: bitte für diese App erlauben.', old: '⚠️ Server noch nicht aktualisiert.' },
+  en: { t: '🚙 Service', on: '▶️ I’m on duty', off: '⏹ End of duty', hint: 'While on duty, your position is sent to the central (every 90 s). Keep the app open (phone in the holder).', sent: '📍 Position sent at', wait: '📍 Getting your position…', gps: '⚠️ Location refused: allow location for this app.', old: '⚠️ Server not updated yet.' },
+  es: { t: '🚙 Servicio', on: '▶️ Estoy de servicio', off: '⏹ Fin del servicio', hint: 'Durante el servicio, tu posición se envía a la central (cada 90 s). Mantén la app abierta (teléfono en el soporte).', sent: '📍 Posición enviada a las', wait: '📍 Buscando la posición…', gps: '⚠️ Posición rechazada: autoriza la ubicación para esta app.', old: '⚠️ Servidor aún no actualizado.' },
+};
+let svcOn = (() => { try { return localStorage.getItem('eqSvc') === '1'; } catch { return false; } })(), svcAt = 0, svcErr = '', svcTimer = null, svcWake = null;
+function svcCard() {
+  if (!data || !data.chauffeur) return '';
+  const v = SVT[lang] || SVT.fr, hh = svcAt ? new Date(svcAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+  return `<div class="card" id="svcCard"${svcOn ? ' style="border-left:5px solid #16a34a"' : ''}><h2>${esc(v.t)}</h2><button class="btn block${svcOn ? ' sec' : ''}" data-svc="1">${esc(svcOn ? v.off : v.on)}</button>
+    <p class="meta" style="margin:8px 0 0">${svcOn ? esc(svcErr ? v[svcErr] || '' : svcAt ? v.sent + ' ' + hh : v.wait) + '<br>' : ''}${esc(v.hint)}</p></div>`;
+}
+const svcPaint = () => { const el = document.getElementById('svcCard'); if (el) el.outerHTML = svcCard(); };
+function svcSend() {
+  if (!svcOn || !data || !data.signalKey || !navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(async (p) => {
+    try {
+      const body = await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'pos', lat: +p.coords.latitude.toFixed(5), lon: +p.coords.longitude.toFixed(5), acc: Math.round(p.coords.accuracy || 0) });
+      const r = await fetch(`${API}/api/esp/${id}/pos?app=eq`, { method: 'POST', body });
+      if (r.ok) { svcAt = Date.now(); svcErr = ''; } else if (r.status === 404) svcErr = 'old';
+    } catch { /* hors ligne : au prochain tour */ }
+    svcPaint();
+  }, () => { svcErr = 'gps'; svcPaint(); }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
+}
+function svcWakeOn() { try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { svcWake = w; }).catch(() => {}); } catch { /* écran : pas de verrou */ } }
+function svcStart() { clearInterval(svcTimer); svcTimer = setInterval(svcSend, 90000); svcSend(); svcWakeOn(); }
+function svcStop() { clearInterval(svcTimer); svcTimer = null; try { if (svcWake) svcWake.release(); } catch { /* rien */ } svcWake = null; }
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && svcOn && data && data.chauffeur) { svcSend(); svcWakeOn(); } });
+document.addEventListener('click', (e) => {
+  if (!e.target.closest || !e.target.closest('[data-svc]')) return;
+  e.preventDefault(); svcOn = !svcOn; svcAt = 0; svcErr = '';
+  try { localStorage.setItem('eqSvc', svcOn ? '1' : '0'); } catch { /* rien */ }
+  if (svcOn) svcStart(); else svcStop();
+  svcPaint();
+});
 const pushPost = (b) => fetch(`${API}/api/esp/${id}/push`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...b, app: 'eq', lang, boards: [] }) }).then((r) => { if (!r.ok) throw new Error(r.status); });
 async function pushInit() {
   pushSt = await pushStatus('/equipe');
@@ -755,6 +794,8 @@ function render() {
   const eg = d.eng && !d.eng.signed && !sigSent ? ENGT[lang] || ENGT.fr : null;
   if (eg) out.push(`<div class="card warnc"><p style="margin:0 0 8px"><b>✍️ ${esc(eg.top)}</b></p><button class="btn sm" data-eng-open="1">${esc(eg.open)} ↓</button></div>`);
   if (d.eng && d.eng.assurTodo && !assurSent) out.push(assurCard());
+  out.push(svcCard()); // 🚙 chauffeurs : en service / fin de service
+  if (d.chauffeur && svcOn && !svcTimer) setTimeout(svcStart, 0); // l'app rouverte pendant le service : reprend tout seul
   out.push(nbienBanner()); // 🆕 Nouveau bien (bleu mer)
   // météo de la semaine + radio (comme dans l'app des locataires)
   out.push(wxRadioCard());
