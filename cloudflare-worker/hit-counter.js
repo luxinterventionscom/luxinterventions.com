@@ -127,7 +127,7 @@ async function route(request, env, ctx, headers) {
       return aresJson({ key: (await vapidKeys(env)).publicKey }, 200, headers);
     }
 
-    const esp = url.pathname.match(/^\/api\/esp\/([0-9a-f]{32})(?:\/(f\/[a-z0-9]{1,40}|signal|push|tools(?:\/[0-9a-f]{16})?))?$/);
+    const esp = url.pathname.match(/^\/api\/esp\/([0-9a-f]{32})(?:\/(f\/[a-z0-9]{1,40}|signal|pos|push|tools(?:\/[0-9a-f]{16})?))?$/);
     if (esp) return espacePublic(request, env, esp[1], esp[2] || "", headers);
 
     const board = url.pathname.match(/^\/api\/board\/([0-9a-f]{32})$/);
@@ -399,6 +399,16 @@ async function espacePublic(request, env, id, sub, headers) {
       return aresJson({ ok: true }, 200, headers);
     }
     return (await espPushSave(env, id, b)) ? aresJson({ ok: true }, 200, headers) : aresJson({ error: "Abonnement invalide" }, 400, headers);
+  }
+  // 📍 position d'un chauffeur « en service » (chiffrée pour sa centrale, illisible ici) : seulement la dernière, remplacée à chaque envoi
+  if (request.method === "POST" && sub === "pos") {
+    const k = "pos-rl:" + id, last = parseInt((await env.HITS.get(k)) || "0", 10);
+    if (Date.now() - last < 25000) return aresJson({ error: "Trop rapide" }, 429, headers);
+    const body = await request.arrayBuffer();
+    if (body.byteLength < 50 || body.byteLength > 4096) return aresJson({ error: "Taille invalide" }, 413, headers);
+    await env.PHOTOS.put("ares/pos/" + id, body);
+    try { await env.HITS.put(k, String(Date.now()), { expirationTtl: 120 }); } catch { /* compteur indisponible */ }
+    return aresJson({ ok: true }, 200, headers);
   }
   if (request.method === "POST" && sub === "signal") {
     // Limites : 30 envois / heure par adresse IP, 200 / jour par espace (l'équipe envoie arrivée, départ, photos, messages…)
@@ -1126,6 +1136,16 @@ async function handleAres(request, env, url, headers) {
     if (!body.byteLength || body.byteLength > (espMatch[2] ? ARES_MAX_FILE : 8 * 1024 * 1024)) return aresJson({ error: "Taille invalide" }, 413, headers);
     await env.PHOTOS.put(key, body, { httpMetadata: { contentType: "application/octet-stream" } });
     return aresJson({ ok: true }, 200, headers);
+  }
+  // 📍 positions des chauffeurs de cette centrale (chiffrées) : ?ids=a,b,c
+  if (path === "pos" && method === "GET") {
+    const out = {};
+    for (const id of String(url.searchParams.get("ids") || "").split(",").filter((x) => /^[0-9a-f]{32}$/.test(x)).slice(0, 60)) {
+      if ((await espOwner(env, id)) !== V.me) continue;
+      const o = await env.PHOTOS.get("ares/pos/" + id);
+      if (o) { const u = new Uint8Array(await o.arrayBuffer()); let bin = ""; for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode(...u.subarray(i, i + 0x8000)); out[id] = btoa(bin); }
+    }
+    return aresJson({ items: out }, 200, headers, { "Cache-Control": "no-store" });
   }
   const codeMatch = path.match(/^espcode\/([0-9a-f]{64})$/);
   if (codeMatch && method === "PUT") {

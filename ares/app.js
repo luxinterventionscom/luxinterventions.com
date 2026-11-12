@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.251.1';
+const VERSION = '2.252.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -266,7 +266,27 @@ const MET_ICON = { menage: '🧹', homme: '🧰', menuisier: '🔨', electricien
 // icône choisie par la personne dans son app (sinon celle de son métier)
 const emojiOk = (v) => typeof v === 'string' && v.length <= 16 && /^\p{Extended_Pictographic}/u.test(v);
 const metIcon = (i) => (i && emojiOk(i.icon) ? i.icon : MET_ICON[i && i.metier] || '👷');
-const METIERS = { menage: 'F. de ménage', homme: 'H. à tout faire', menuisier: 'Menuisier', electricien: 'Électricien', plombier: 'Plombier / sanitaire', chauffagiste: 'Chauffagiste', macon: 'Maçon', peintre: 'Peintre', serrurier: 'Serrurier', jardinier: 'Jardinier', autre: 'Autre' };
+// 🚙 nos chauffeurs (des ouvriers comme les autres : app de l'équipe, chat) ; véhicules ; position « en service » (chiffrée, toutes les 90 s)
+const CHAUF = new Set(['chauffeur', 'chauffeur_pl']);
+const VEH_TYPES = { voiture: '🚙 Voiture', luxe: '💎 Voiture de luxe', van: '🚐 Van', suv: '🚙 SUV', util: '🚚 Utilitaire (moyen)', camion: '🚛 Poids lourd', autre: '🚗 Autre' };
+const vehs = () => vault.list('reglages').filter((r) => r.id.startsWith('veh-')).sort((a, b) => String(a.plaque || '').localeCompare(String(b.plaque || '')));
+const chaufs = () => vault.list('intervenants').filter((i) => CHAUF.has(i.metier) && !i.archive).sort((a, b) => intervFull(a).localeCompare(intervFull(b)));
+// remplaçant actif aujourd'hui ?
+const vehSub = (v) => (v.sub && (!v.subDu || v.subDu <= today()) && (!v.subAu || v.subAu >= today()) ? v.sub : '');
+async function posLoad(force) {
+  if (TENANT || !vault.unlocked || (!force && ui.posAt && Date.now() - ui.posAt < 45000)) return;
+  ui.posAt = Date.now();
+  const keys = vault.get('reglages', 'signal'), ids = chaufs().filter((i) => i.espace && i.espace.id).map((i) => i.espace.id);
+  if (!keys || !keys.priv || !ids.length) return;
+  try {
+    const items = (await (await vault.call('pos?ids=' + ids.join(','))).json()).items || {};
+    ui.pos = {};
+    for (const [id, b] of Object.entries(items)) { try { const m = await openFromTenant(keys.priv, b64d(b)); if (m && m.espace === id && isFinite(+m.lat) && isFinite(+m.lon)) ui.pos[id] = { lat: +m.lat, lon: +m.lon, acc: +m.acc || 0, t: Date.parse(m.t) || 0 }; } catch { /* illisible */ } }
+    if (ui.route === 'taxis') renderView();
+  } catch { /* Worker pas à jour : rien */ }
+}
+setInterval(() => { if (ui.route === 'taxis') posLoad(true); }, 60000);
+const METIERS = { menage: 'F. de ménage', homme: 'H. à tout faire', menuisier: 'Menuisier', electricien: 'Électricien', plombier: 'Plombier / sanitaire', chauffagiste: 'Chauffagiste', macon: 'Maçon', peintre: 'Peintre', serrurier: 'Serrurier', jardinier: 'Jardinier', chauffeur: '🚙 Chauffeur voiture', chauffeur_pl: '🚚 Chauffeur véhicules moyens et lourds', autre: 'Autre' };
 const TACHE_TYPES = { nettoyage: '🧹 Nettoyage', reparation: '🔧 Réparation', gros: '🚚 Gros travaux', autre: '📌 Autre' };
 const tacheIcon = (type) => (type === 'entretien' ? '🔧' : (TACHE_TYPES[type] || '📌').split(' ')[0]);
 // Feu tricolore : rouge = aujourd'hui ou en retard, jaune = demain / après-demain, vert = il y a le temps
@@ -694,7 +714,7 @@ function equipeData(i) {
   }
   const k = vault.get('reglages', 'signal');
   return {
-    v: 1, kind: 'equipe', gv: VERSION, lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i), photo: photoOk(i.photo) ? i.photo : '',
+    v: 1, kind: 'equipe', gv: VERSION, chauffeur: CHAUF.has(i.metier), lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i), photo: photoOk(i.photo) ? i.photo : '',
     // l'équipe travaille pour ARES INVEST S.A. (LA CENTRAL) : son nom et son logo (casque) dans l'app des ouvriers
     societe: { nom: factConf().nom || 'ARES INVEST S.A.', tel: factConf().tel || soc.tel || '', logo: '/ares/icons/lux-192.png' },
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '', ccss: i.ccss || '' },
@@ -4185,12 +4205,12 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr']] },
+  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis & chauffeurs', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis & chauffeurs', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
@@ -5978,7 +5998,19 @@ dashboard() {
     const cos = txCos(), t = today();
     const rides = vault.list('hotes').filter((h) => h.depart >= t).flatMap((h) => [...(h.taxi && h.taxi.co && h.arr ? [[h, 'arr', h.arr, h.taxi]] : []), ...(h.rides || []).filter((r) => r.taxi && r.taxi.co).map((r) => [h, r.id, r, r.taxi])]);
     const ST = { wait: '⏳ En attente', ok: '✅ Acceptée', no: '❌ Refusée' };
-    return html`${pageHead('🚕 Taxis', `${plural(cos.length, 'société')} · ${plural(rides.length, 'course')}`)}
+    setTimeout(() => posLoad(), 0);
+    const CH = chaufs(), VS = vehs(), ago = (ms) => { const n = Math.round((Date.now() - ms) / 60000); return n < 1 ? 'à l’instant' : n < 60 ? `il y a ${n} min` : `il y a ${Math.round(n / 60)} h`; };
+    const posOf = (i) => (i.espace && ui.pos ? ui.pos[i.espace.id] : null);
+    const ours = html`<div class="section-label">🚚 🚙 Véhicules et chauffeurs <span class="tiny muted">— les nôtres</span></div>
+      <div class="actions" style="margin:0 0 10px;flex-wrap:wrap"><button class="btn primary" data-action="new-chauffeur">${icon('plus')} Chauffeur</button><button class="btn" data-action="veh-new">${icon('plus')} Véhicule</button></div>
+      ${CH.length ? html`<div class="list" style="margin-bottom:10px">${CH.map((i) => { const p = posOf(i), live = p && Date.now() - p.t < 5 * 60000, v = VS.find((x) => x.chauffeur === i.id || vehSub(x) === i.id); return html`<div class="row"><span class="avatar">${i.metier === 'chauffeur_pl' ? '🚚' : '🚙'}</span>
+        <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="open-interv" data-id="${i.id}"><span class="title" style="display:block">${intervFull(i)}</span><span class="meta">${METIERS[i.metier]}${v ? ' · ' + (VEH_TYPES[v.type] || '') + ' ' + (v.plaque || '') : ''}</span>
+        <span class="tiny" style="display:block">${p ? html`${live ? '🟢 en service' : '⚪ hors service'} · 📍 ${ago(p.t)}` : i.espace && i.espace.on ? '⚪ pas encore de position' : '📱 app pas encore activée'}</span></button>
+        ${p ? html`<a class="btn sm" href="https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lon}#map=16/${p.lat}/${p.lon}" target="_blank" rel="noopener">🗺️ Carte</a>` : ''}</div>`; })}</div>` : html`<p class="small muted">Aucun chauffeur : ＋ Chauffeur (c’est un ouvrier : il reçoit l’app de l’équipe et envoie sa position pendant le service).</p>`}
+      ${VS.length ? html`<div class="list" style="margin-bottom:14px">${VS.map((v) => { const c = vault.get('intervenants', v.chauffeur), sb = vehSub(v) ? vault.get('intervenants', vehSub(v)) : null; return html`<button class="row" data-action="veh-edit" data-id="${v.id}"><span class="avatar">${(VEH_TYPES[v.type] || '🚗').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${v.plaque || '—'} · ${v.modele || VEH_TYPES[v.type] || ''}</span><span class="meta">${c ? '👤 ' + intervFull(c) : 'pas de chauffeur'}${sb ? html` · <b>🔁 remplacé par ${intervFull(sb)}</b>${v.subAu ? ' jusqu’au ' + fmtDate(v.subAu) : ''}` : ''}</span></span><span class="chev">›</span></button>`; })}</div>` : ''}`;
+    return html`${pageHead('🚕 Taxis & chauffeurs', `${plural(cos.length, 'société')} · ${plural(CH.length, 'chauffeur')} · ${plural(rides.length, 'course')}`)}
+      ${ours}
+      <div class="section-label">🚕 Taxis <span class="tiny muted">— les sociétés</span></div>
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-txco">${icon('plus')} Société de taxi</button></div></div>
       <div class="section-label">🏢 Sociétés</div>
       ${cos.length ? html`<div class="list">${cos.map((co) => { const c = co.cat || {}; return html`<button class="row" data-action="edit-txco" data-id="${co.id}"><span class="avatar">🚕</span>
@@ -7802,6 +7834,24 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
     };
   },
+  'veh-form'({ id }) {
+    const v = id ? vault.get('reglages', id) || {} : {}, CH = chaufs();
+    const opt = (sel) => html`<option value="">—</option>${CH.map((i) => html`<option value="${i.id}" ${sel === i.id ? new Raw('selected') : ''}>${intervFull(i)}</option>`)}`;
+    return {
+      title: id ? `🚗 ${v.plaque || 'Véhicule'}` : '🚗 Nouveau véhicule', narrow: true,
+      body: html`<form id="f" data-form="veh" class="fields"><input type="hidden" name="id" value="${id || ''}">
+        <label class="field">Type<select name="type">${Object.entries(VEH_TYPES).map(([k, l]) => html`<option value="${k}" ${v.type === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+        ${field('Plaque', 'plaque', v.plaque || '', { required: true })}
+        ${field('Modèle (marque, couleur…)', 'modele', v.modele || '', { full: true })}
+        <label class="field full">👤 Chauffeur habituel<select name="chauffeur">${opt(v.chauffeur)}</select></label>
+        <div class="section-label full" style="margin:6px 0 0">🔁 Remplaçant (chauffeur absent)</div>
+        <label class="field full">Remplacé par<select name="sub">${opt(v.sub)}</select></label>
+        ${field('Du', 'subDu', v.subDu || '', { type: 'date' })}${field('Au', 'subAu', v.subAu || '', { type: 'date' })}
+        ${field('Note', 'note', v.note || '', { full: true })}
+      </form>`,
+      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-veh" data-id="${id}">Supprimer</button>` : ''}<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
   'xfer'({ id }) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === id);
     if (!t) return null;
@@ -9261,6 +9311,10 @@ const ACTIONS = {
   },
   'mt-tab': (d) => { ui.mtTab = d.id; renderView(); },
   'new-interv': () => openOver('interv-form'),
+  'new-chauffeur': () => openOver('interv-form', null, null, { metier: 'chauffeur' }),
+  'veh-new': () => openOver('veh-form'),
+  'veh-edit': (d) => openOver('veh-form', d.id),
+  async 'del-veh'(d) { if (!(await confirmBox('Supprimer ce véhicule ?', { ok: 'Supprimer', danger: true }))) return; await vault.mutate((tx) => tx.remove('reglages', d.id), '🚗 Véhicule supprimé', ''); closeSheet(); },
   'cand-list': () => openSheet('cand-list'),
   'cand-open': (d) => openOver('cand', d.id),
   'cand-ouvrier': (d) => {
@@ -11428,6 +11482,13 @@ const FORMS = {
       setBusy(form, false);
       toast(e.message || 'Envoi impossible', { bad: true });
     }
+  },
+  async veh(fd) {
+    const g = (k) => String(fd.get(k) || '').trim(), id = g('id') || 'veh-' + uid();
+    if (!g('plaque')) return toast('Indiquez la plaque', { bad: true });
+    const v = { id, type: VEH_TYPES[g('type')] ? g('type') : 'voiture', plaque: g('plaque').toUpperCase(), modele: g('modele'), chauffeur: g('chauffeur'), sub: g('sub'), subDu: g('subDu'), subAu: g('subAu'), note: g('note') };
+    await vault.mutate((tx) => tx.put('reglages', v), '🚗 Véhicule', `${v.plaque}${v.sub ? ' · remplaçant' : ''}`);
+    closeSheet(); toast('Véhicule enregistré');
   },
   async tfwd(fd, form) {
     const t = vault.get('taches', fd.get('id'));
