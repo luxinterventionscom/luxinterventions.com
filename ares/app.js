@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.255.2';
+const VERSION = '2.255.3';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3527,7 +3527,7 @@ function hoteData(h, tks) {
     v: 1, kind: 'hote', gv: VERSION, lang: HOTE_LG.includes(h.langue) ? h.langue : '', lieu: h.lieu === 'airbnb' ? 'airbnb' : 'hotel',
     prenom: h.prenom || '', nom: h.nom || '', pers: h.pers || 1, arrivee: h.arrivee, depart: h.depart, hdeb: h.hdeb || '15:00', hfin: h.hfin || '11:00',
     formule: h.formule || '', pref: h.pref || '', porte: h.code && !h.codeOff ? h.code : '', cle: h.cle || '',
-    ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: ch.persMax || '', m2: ch.m2 || '', npieces: ch.npieces || '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
+    ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: ch.persMax || '', m2: ch.m2 || '', npieces: h.lieu === 'airbnb' ? ch.npieces || '' : '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
     st: TENANT ? { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : c.nom || tenantInfo.nom || 'LA CENTRAL', adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || soc.adresse || c.adresse || '' : soc.adresse || c.adresse || '', tel: soc.tel || c.tel || '', wa: '', logo: soc.logo || '', pays: soc.pays || 'LU' } : { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LA CENTRAL'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '', pays: soc.pays || 'LU' },
     menu: menu && menu.file ? menu.file : '', taxi: { pc: +c.txPc || 0, km: +c.txKm || 0, aero: +c.txAero || 0, gare: +c.txGare || 0, on: !!TENANT || !!(c.drivers || []).length || !!chaufs().length || !!txOffers().gam.length, ...txOffers() },
     rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, done: !!(r.taxi && r.taxi.done), rated: r.taxi && r.taxi.rate ? r.taxi.rate.s : 0, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
@@ -7809,7 +7809,7 @@ const SHEETS = {
         <div class="full section-label" style="margin:6px 0 0">${bnb ? '🏠 Le logement' : '🛏️ La chambre'} — visible dans l’app du client</div>
         ${field(bnb ? 'N° / nom du logement' : 'N° de chambre', 'chambre', h.chambre, { required: true, placeholder: bnb ? 'ex. Appart 3' : 'ex. 204', attrs: 'list="chList" autocomplete="off"' })}<datalist id="chList">${chambres(h.lieu).map((c) => html`<option value="${c.num}">${[CH_CAT[c.cat], CH_TYPE[c.typ], c.persMax ? '👥 ' + c.persMax : ''].filter(Boolean).join(' · ')}</option>`)}</datalist>${field('Étage', 'etage', h.etage || ch.etage, { placeholder: 'ex. 2' })}
         ${bnb ? field('Adresse', 'adresse', h.adresse || ch.adresse, { full: true, placeholder: 'rue, n°, ville' }) : ''}
-        ${field('Surface (m²)', 'm2', ch.m2, { attrs: 'inputmode="decimal"' })}${field('Nombre de pièces', 'npieces', ch.npieces, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' })}
+        ${field('Surface (m²)', 'm2', ch.m2, { attrs: 'inputmode="decimal"' })}${bnb ? field('Nombre de pièces (ex. studio : 1, appartement : 3)', 'npieces', ch.npieces, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' }) : ''}
         <p class="tiny muted full" style="margin:0">📷 6 photos minimum : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Elles restent pour les prochains clients de ${bnb ? 'ce logement' : 'cette chambre'}.</p>
         <div class="full ch-ph">${CH_PH.map(([k, l]) => html`<label class="ch-slot">${(ch.ph || {})[k] ? html`<img data-bph="${ch.ph[k]}" alt="">` : html`<span class="ch-empty">＋</span>`}<span class="tiny">${l}</span><input type="file" name="ph_${k}" accept="image/*"></label>`)}</div>
         <div class="full section-label" style="margin:6px 0 0">🔑 Clé numérique (code de la porte)</div>
@@ -8273,7 +8273,7 @@ const SHEETS = {
         ${bnb ? '' : html`<label class="field">Catégorie<select name="cat"><option value="">—</option>${Object.entries(CH_CAT).map(([k, l]) => html`<option value="${k}" ${c.cat === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>`}
         <label class="field">Type<select name="typ"><option value="">—</option>${types.map((k) => html`<option value="${k}" ${c.typ === k ? new Raw('selected') : ''}>${CH_TYPE[k]}</option>`)}</select></label>
         ${field('Personnes (max.)', 'persMax', c.persMax, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' })}${field('Surface (m²)', 'm2', c.m2, { attrs: 'inputmode="decimal"' })}
-        ${field('Nombre de pièces', 'npieces', c.npieces, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' })}
+        ${c.lieu === 'airbnb' ? field('Nombre de pièces (ex. studio : 1, appartement : 3)', 'npieces', c.npieces, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' }) : ''}
         <label class="field full">Présentation pour vos clients (visible dans leur app)<textarea name="desc" style="min-height:80px" placeholder="${bnb ? 'ex. Appartement lumineux, cuisine équipée, wifi, parking privé…' : 'ex. Chambre calme côté jardin, lit 160, douche à l’italienne, wifi…'}">${c.desc || ''}</textarea></label>
         <div class="full section-label" style="margin:6px 0 0">📋 État des lieux — photos d’entrée (7)</div>
         <p class="tiny muted full" style="margin:0">L’état ${bnb ? 'du logement' : 'de la chambre'} avant chaque séjour : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Au départ, les photos de sortie se prennent dans la fiche du client.</p>
@@ -11383,7 +11383,7 @@ const FORMS = {
       const f = fd.get('ph_' + k);
       if (f && f.size && f.type.startsWith('image/')) { const pid = uid(); await vault.saveFile(pid, await compressPhoto(f)); if (ph[k]) dels.push(ph[k]); ph[k] = pid; }
     }
-    await vault.mutate((tx) => tx.put('reglages', { ...c, id: ck, lieu, num, etage: g('etage'), adresse: g('adresse'), cat: g('cat'), typ: g('typ'), persMax: g('persMax'), m2: g('m2').replace(',', '.'), npieces: g('npieces'), desc: g('desc'), ph }), lieu === 'airbnb' ? 'Fiche du logement' : 'Fiche de la chambre', num);
+    await vault.mutate((tx) => tx.put('reglages', { ...c, id: ck, lieu, num, etage: g('etage'), adresse: g('adresse'), cat: g('cat'), typ: g('typ'), persMax: g('persMax'), m2: g('m2').replace(',', '.'), npieces: fd.has('npieces') ? g('npieces') : c.npieces || '', desc: g('desc'), ph }), lieu === 'airbnb' ? 'Fiche du logement' : 'Fiche de la chambre', num);
     for (const x of dels) await vault.deleteFile(x).catch(() => {});
     toast(Object.keys(ph).length < 6 ? 'Enregistré — 📷 6 photos minimum conseillées' : 'Enregistré');
     goBack();
