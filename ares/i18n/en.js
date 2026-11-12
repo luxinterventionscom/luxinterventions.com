@@ -18447,4 +18447,16 @@ export default [
 "Annonceurs",
 "Advertisers"
 ],
+[
+"🛠️ Interventions",
+"🛠️ Jobs"
+],
+[
+"Le travail de nos ouvriers : à confier, planning, équipe, devis",
+"Our workers' jobs: to assign, schedule, team, quotes"
+],
+[
+"Les 14 prochains jours : interventions de nos ouvriers",
+"The next 14 days: our workers' jobs"
+],
 ];
