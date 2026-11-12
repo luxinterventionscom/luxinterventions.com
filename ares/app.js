@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.251.0';
+const VERSION = '2.251.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4185,12 +4185,12 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr']] },
+  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Maintenance', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis', 'car'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
@@ -5601,7 +5601,7 @@ const VIEWS = {
 
   maintenance() {
     if (ui.mtTab === 'pub') { ui.mtTab = 'planning'; ui.cpSec = 'abo'; go('compta', true); return ''; } // les annonces sont dans Comptabilité → Abonnements
-    const tab = ui.mtTab || 'planning';
+    let tab = ui.mtTab || 'planning';
     const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
     const f = ui.immFilter && imms.some((im) => im.id === ui.immFilter) ? ui.immFilter : '';
     const chips = imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
@@ -5611,7 +5611,9 @@ const VIEWS = {
       : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
       : tab === 'devis' ? html`<button class="btn primary" data-action="dev-new">${icon('plus')} Devis</button>`
       : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
-    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', html`<span>Réclamations</span> (${tacheToDo().length})`], ['dechets', 'Déchets'], ['avis', 'Avis'], ['intervenants', 'Équipe'], ['devis', html`📝 Devis${devOpen().length ? html` <b class="dev-n">${devOpen().length}</b>` : ''}`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
+    const loc = TENANT || ownPark(); // CENTRAL DOMIER : seulement le travail de nos ouvriers (déchets et avis des immeubles = chez les clients)
+    if (!loc && ['dechets', 'avis'].includes(tab)) tab = ui.mtTab = 'planning';
+    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', html`<span>${loc ? 'Réclamations' : 'Interventions'}</span> (${tacheToDo().length})`], ...(loc ? [['dechets', 'Déchets'], ['avis', 'Avis']] : []), ['intervenants', 'Équipe'], ['devis', html`📝 Devis${devOpen().length ? html` <b class="dev-n">${devOpen().length}</b>` : ''}`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
     let body;
     if (tab === 'planning') {
       const from = today(), to = addDays(from, 13);
@@ -5620,7 +5622,7 @@ const VIEWS = {
       body = days.length ? days.map((d) => html`<div class="section-label">${d === from ? "Aujourd'hui" : d === addDays(from, 1) ? 'Demain' : ''} ${fmtDay(d)}</div>
         <div class="list" style="margin-bottom:10px">${items.filter((x) => x.d === d).map(agendaRow)}</div>`)
         : empty('calendar', 'Rien de prévu dans les 14 prochains jours.', html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Planifier une intervention</button>`);
-      body = html`<p class="small muted" style="margin:0 0 6px">Les 14 prochains jours : nettoyages, réparations et jours de collecte des déchets.</p>${body}${mtLegend()}`;
+      body = html`<p class="small muted" style="margin:0 0 6px">${loc ? 'Les 14 prochains jours : nettoyages, réparations et jours de collecte des déchets.' : 'Les 14 prochains jours : interventions de nos ouvriers'}</p>${body}${mtLegend()}`;
     } else if (tab === 'taches') {
       const all = vault.list('taches').filter((t) => (!f || t.immId === f) && !immGone(vault.get('immeubles', t.immId)));
       const open = all.filter((t) => !t.recur && t.statut !== 'fait').sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
@@ -5663,7 +5665,7 @@ const VIEWS = {
         </div>`;
       })}</div>` : empty('users', 'Aucun intervenant. Ajoutez la femme de ménage et les artisans (menuisier, électricien, plombier, chauffagiste, maçon…).', html`<button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button>`);
     }
-    return html`${pageHead('Maintenance', 'Nettoyage, réparations et collecte des déchets')}<div class="imm-row">${tabs}<div class="imm-btns">${add}</div></div>${tab !== 'intervenants' && tab !== 'devis' ? chips : ''}${body}${new Raw(infoBox({ lang: getLang() }))}`;
+    return html`${pageHead(loc ? 'Maintenance' : '🛠️ Interventions', loc ? 'Nettoyage, réparations et collecte des déchets' : 'Le travail de nos ouvriers : à confier, planning, équipe, devis')}<div class="imm-row">${tabs}<div class="imm-btns">${add}</div></div>${tab !== 'intervenants' && tab !== 'devis' ? chips : ''}${body}${new Raw(infoBox({ lang: getLang() }))}`;
   },
 
 dashboard() {

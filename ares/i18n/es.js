@@ -18695,4 +18695,16 @@ export default [
 "Annonceurs",
 "Anunciantes"
 ],
+[
+"🛠️ Interventions",
+"🛠️ Intervenciones"
+],
+[
+"Le travail de nos ouvriers : à confier, planning, équipe, devis",
+"El trabajo de nuestros operarios: por asignar, planificación, equipo, presupuestos"
+],
+[
+"Les 14 prochains jours : interventions de nos ouvriers",
+"Los próximos 14 días: intervenciones de nuestros operarios"
+],
 ];
