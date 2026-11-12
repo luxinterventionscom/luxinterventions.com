@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.255.1';
+const VERSION = '2.255.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -7805,7 +7805,7 @@ const SHEETS = {
         <label class="field full">Préférences / allergies<textarea name="pref" style="min-height:56px" placeholder="ex. sans gluten, oreiller ferme, étage bas…">${h.pref || ''}</textarea></label>
         ${html`<div class="full section-label" style="margin:6px 0 0">🍽️ Menu du restaurant (PDF, le même pour tous les clients)</div>
           ${menu && menu.file ? html`<div class="full actions" style="margin:0"><button type="button" class="btn sm" data-action="hotel-menu-view" data-lieu="${bnb ? 'airbnb' : 'hotel'}">👁 Voir le menu</button><span class="tiny muted">${menu.name || ''} · ${fmtDate(menu.at)}</span></div>` : ''}
-          <label class="field full">${menu && menu.file ? 'Remplacer le menu' : 'Ajouter le menu'}<input type="file" name="menu" accept="application/pdf"></label>`}
+          <label class="field full">${menu && menu.file ? 'Remplacer le menu' : 'Ajouter le menu'} <span class="tiny muted">(PDF · 10 Mo maximum)</span><input type="file" name="menu" accept="application/pdf"></label>`}
         <div class="full section-label" style="margin:6px 0 0">${bnb ? '🏠 Le logement' : '🛏️ La chambre'} — visible dans l’app du client</div>
         ${field(bnb ? 'N° / nom du logement' : 'N° de chambre', 'chambre', h.chambre, { required: true, placeholder: bnb ? 'ex. Appart 3' : 'ex. 204', attrs: 'list="chList" autocomplete="off"' })}<datalist id="chList">${chambres(h.lieu).map((c) => html`<option value="${c.num}">${[CH_CAT[c.cat], CH_TYPE[c.typ], c.persMax ? '👥 ' + c.persMax : ''].filter(Boolean).join(' · ')}</option>`)}</datalist>${field('Étage', 'etage', h.etage || ch.etage, { placeholder: 'ex. 2' })}
         ${bnb ? field('Adresse', 'adresse', h.adresse || ch.adresse, { full: true, placeholder: 'rue, n°, ville' }) : ''}
