@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.253.1';
+const VERSION = '2.254.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -76,8 +76,8 @@ const TENANT_ROUTES = {
   gerance: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'champions', 'reglages'],
   proprio: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'champions', 'reglages'],
   agence: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'agences', 'proprios', 'compta', 'rapports', 'champions', 'reglages'],
-  hotel: ['hotel', 'taxis', 'demandes', 'compta', 'rapports', 'reglages'],
-  airbnb: ['airbnb', 'taxis', 'demandes', 'compta', 'rapports', 'reglages'],
+  hotel: ['dashboard', 'demandes', 'hotel', 'taxis', 'compta', 'rapports', 'reglages'],
+  airbnb: ['dashboard', 'demandes', 'airbnb', 'taxis', 'compta', 'rapports', 'reglages'],
 };
 const tRoutes = () => TENANT_ROUTES[tenantInfo.fil] || TENANT_ROUTES.gerance;
 // 🏛️ CENTRAL DOMIER : pas de propriétés ni de locataires à elle (tout est chez les clients) ; l'ancien parc reste en archive (Réglages → 📦)
@@ -4267,7 +4267,9 @@ function sideNavHtml() {
   return NAV_TREE.map((x) => (x.group ? (x.items.some(navKeep) ? html`<div class="nav-group">${x.group}</div>${x.items.filter(navKeep).map((it) => navItem(it, true))}` : '') : navKeep(x) ? navItem(x) : ''));
 }
 function navItem([id, label, ic, plus, sec], sub) {
-  if (TENANT && id === 'taxis') label = 'Taxis';
+  // 🏨 centrale hôtel / Airbnb : Accueil · Maintenance · Clients · Taxi · Comptabilité · Réglages
+  if (TENANT && ['hotel', 'airbnb'].includes(tenantInfo.fil)) label = { demandes: 'Maintenance', hotel: 'Clients', airbnb: 'Clients', taxis: 'Taxi' }[id] || label;
+  else if (TENANT && id === 'taxis') label = 'Taxis';
   if (masked().has(id)) return html`<span class="navbtn nav-masked${sub ? ' nav-sub' : ''}" aria-disabled="true" title="Masqué dans les réglages">${icon('lock')}<span>MASQUÉ</span></span>`;
   return html`<button class="navbtn${sub ? ' nav-sub' : ''}" data-action="go" data-to="${id}" ${sec ? new Raw(`data-sec="${sec}"`) : ''}>${icon(ic)}<span>${label}</span></button>${plus ? html`<button class="navbtn nav-plus" data-action="${plus[0]}">＋ <span>${plus[1]}</span></button>` : ''}`;
 }
@@ -4856,7 +4858,7 @@ function agView(f) {
         : html`<div class="card" style="max-width:560px"><p style="margin-top:0">${f === 'proprio' ? 'Les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.' : 'Les agences immobilières publient leurs biens et vous confient leurs interventions.'}</p></div>`}`;
 }
 // 🏨 Hotel / 🏠 Airbnb : les clients (chambre ou logement, clé, arrivée → départ), une rubrique chacun
-function hotView(hf) {
+function hotView(hf, acc) {
     const t = today(), all = vault.list('hotes').filter((h) => (h.lieu === 'airbnb' ? 'airbnb' : 'hotel') === hf);
     const by = (a, b) => (a.arrivee || '').localeCompare(b.arrivee || '') || String(a.chambre).localeCompare(String(b.chambre), 'fr', { numeric: true });
     const arr = all.filter((h) => h.arrivee === t).sort(by), dep = all.filter((h) => h.depart === t).sort(by);
@@ -4867,7 +4869,7 @@ function hotView(hf) {
       <span class="meta">${h.lieu === 'airbnb' && h.adresse ? html`🏠 ${h.adresse} · ` : ''}${h.etage ? html`<span>Étage</span> ${h.etage} · ` : ''}${h.cle ? html`🪪 ${h.cle} · ` : ''}${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}</span>${h.appCode && h.arrivee >= t ? html`<span class="tiny" style="display:block">${!h.arr ? '❓ Arrivée pas encore choisie' : h.arr.mode === 'taxi' ? `🚕 Taxi${h.taxi ? (h.taxi.st === 'wait' ? ' · ⏳ ' + h.taxi.nom : h.taxi.st === 'no' ? ' · ❌ ' + h.taxi.nom : ' · ' + h.taxi.nom) : ' demandé'}` : '🚗 Vient par ses propres moyens'}</span>` : ''}${hoteKey(h) ? html`<span style="display:block;margin-top:4px"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></span>` : ''}</span><span class="chev">›</span></button>`;
     const sec = (title, list, empty) => html`<div class="section-label">${title}</div>${list.length ? html`<div class="list">${list.map(row)}</div>` : html`<p class="small muted" style="margin:0 0 12px">${empty}</p>`}`;
     // 🏨 centrale d'un hôtel / Airbnb : l'Accueil par secteurs (titre gris + explication), comme le bureau de LA CENTRAL
-    if (TENANT) {
+    if (TENANT && acc) {
       const S2 = (ic, ti, sub, items) => { const it = items.filter(Boolean); return html`<div class="dsec"><div class="section-label" style="margin:18px 0 0">${ic} ${ti}</div><p class="tiny muted" style="margin:0 0 8px">${sub}</p>${it.length ? it : html`<p class="tiny muted" style="margin:0 0 4px">✓ rien à traiter</p>`}</div>`; };
       const lcRides = all.filter((h) => h.depart >= t).flatMap((h) => [...(h.taxi && h.taxi.lc && !h.taxi.done ? [[h, h.taxi]] : []), ...(h.rides || []).filter((r) => r.taxi && r.taxi.lc && !r.taxi.done).map((r) => [h, r.taxi])]);
       const pbs = vault.list('taches').filter((x) => x.statut !== 'fait' && !x.recur).slice(0, 12);
@@ -4875,9 +4877,9 @@ function hotView(hf) {
       const F = tFacts(), fDue = F.filter((f) => !f.paid), late = tFactLate(), txF = txInvs().filter((f) => !f.paid);
       return html`${centralinoHtml()}
         ${S2('🔔', 'FLASH', 'À traiter vite, puis ça disparaît', [pushNudge(), late.length ? AB('bad', 'demandes', html`🔴 <b>${plural(late.length, 'facture')} en retard</b>`) : ''])}
-        ${pageHead(hf === 'airbnb' ? '🏠 Airbnb' : '🏨 Hotel', `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
+        ${pageHead('🏠 Accueil — ' + (hf === 'airbnb' ? 'Airbnb' : 'Hotel'), `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
         <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button><button class="btn primary" data-action="new-chambre">${icon('plus')} ${hf === 'airbnb' ? 'Logement' : 'Chambre'}</button><button class="btn" data-action="hote-conf">${icon('gear')} Réglages</button></div></div>
-        ${S2('🛎️', 'ARRIVÉES & DÉPARTS', 'Les clients du jour : arrivée choisie, clé, départ', [hoteAlerts(all, t, 'arr'), sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.'), sec('🛫 Départs aujourd’hui', dep, 'Aucun départ aujourd’hui.'), sec('🛏️ Présents', pres, 'Aucun client présent.')])}
+        ${S2('🛎️', 'ARRIVÉES & DÉPARTS', 'Les clients du jour : arrivée choisie, clé, départ', [hoteAlerts(all, t, 'arr'), sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.'), sec('🛫 Départs aujourd’hui', dep, 'Aucun départ aujourd’hui.'), html`<button class="btn sm" data-action="go" data-to="${hf}">🛎️ Tous les clients (${pres.length} présents)</button>`])}
         ${S2('🚕', 'TAXIS', 'Courses à envoyer (↪️ LA CENTRAL ou ma liste) et en cours', [hoteAlerts(all, t, 'taxi'),
           lcRides.length ? html`<div class="list" style="margin-bottom:10px">${lcRides.map(([h, x]) => html`<button class="row" data-action="hote-taxi" data-id="${h.id}" data-r="${x === h.taxi ? '' : (h.rides || []).find((r) => r.taxi === x).id}"><span class="avatar">↪️</span><span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')} (${h.chambre})</span><span class="meta">${x.st === 'ok' ? '🚙 ' + x.nom + (x.plaque ? ' · ' + x.plaque : '') : '⏳ LA CENTRAL choisit le chauffeur'}${x.prix ? ' · ' + eur(x.prix) : ''}</span></span><span class="chev">›</span></button>`)}</div>` : '',
           html`<button class="btn sm" data-action="go" data-to="taxis">🚕 Toutes les courses</button>`])}
@@ -4886,10 +4888,9 @@ function hotView(hf) {
         ${S2('🧾', 'FACTURES', 'LA CENTRAL (interventions, courses) et vos sociétés de taxi', [
           fDue.length ? AB(late.length ? 'bad' : 'info', 'demandes', html`🧾 <b>${plural(fDue.length, 'facture')} de LA CENTRAL à payer</b> · ${eur(sum(fDue, (f) => f.ttc))}`) : '',
           txF.length ? AB('info', 'taxis', html`🚕 <b>${plural(txF.length, 'facture')} de taxi à payer</b> · ${eur(sum(txF, (f) => f.ttc))}`) : ''])}
-        ${next.length ? sec('📅 À venir', next, '') : ''}
-        ${past.length ? sec('🗂️ Partis', past.slice(0, 50), '') : ''}`;
+`;
     }
-    return html`${pageHead(hf === 'airbnb' ? '🏠 Airbnb' : '🏨 Hotel', `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
+    return html`${pageHead(TENANT ? '🛎️ Clients — ' + (hf === 'airbnb' ? 'Airbnb' : 'Hotel') : hf === 'airbnb' ? '🏠 Airbnb' : '🏨 Hotel', `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button><button class="btn primary" data-action="new-chambre">${icon('plus')} ${hf === 'airbnb' ? 'Logement' : 'Chambre'}</button><button class="btn" data-action="hote-conf">${icon('gear')} Réglages</button></div></div>
       ${hoteAlerts(all, t)}
       ${sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.')}
@@ -5756,6 +5757,7 @@ const VIEWS = {
   },
 
 dashboard() {
+    if (TENANT && ['hotel', 'airbnb'].includes(tenantInfo.fil)) return hotView(tenantInfo.fil, true);
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
@@ -6005,7 +6007,7 @@ dashboard() {
     // 📩 problèmes signalés par les locataires / clients (DOMIER) : à transmettre à LA CENTRAL avec ↪️
     const todo = vault.list('taches').filter((t) => t.sentAt && !t.fwd && t.statut !== 'fait').sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
     const tRows = todo.length ? html`<div class="section-label">📩 Signalés par vos locataires / clients — à transmettre</div><div class="list" style="margin-bottom:16px">${todo.map((t) => html`<button class="row" data-action="edit-tache" data-id="${t.id}"><span class="grow"><b>${t.titre}</b><span class="meta" style="display:block">${fmtDateTime(t.sentAt)}${t.adr ? ' · 📍 ' + t.adr : ''}</span></span><span class="btn sm primary">↪️</span></button>`)}</div>` : '';
-    return html`${pageHead('🛠️ Demandes d’intervention', 'Envoyées à LA CENTRAL, qui envoie ses intervenants')}${domierCentral()}${tRows}${fRows}
+    return html`${pageHead(['hotel', 'airbnb'].includes(tenantInfo.fil) ? '🛠️ Maintenance' : '🛠️ Demandes d’intervention', 'Envoyées à LA CENTRAL, qui envoie ses intervenants')}${domierCentral()}${tRows}${fRows}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="tdem-new">${icon('plus')} Demande</button></div></div>
       ${list.length ? html`<div class="list">${list.map((d) => html`<div class="row" style="display:block"><b>${d.kind === 'reg' ? '🔁 ' : d.kind === 'once' ? '🔧 ' : ''}${TDEM_URG[d.urgence] || ''} · ${d.titre}</b>${tdemStatus(d)}
         <div class="small" style="white-space:pre-wrap">${d.texte}</div><div class="tiny muted" style="display:flex;align-items:center;gap:8px"><span class="grow">${d.adresse ? '📍 ' + d.adresse + ' · ' : ''}Envoyée le ${fmtDateTime(d.t)}</span><button class="btn icon sm ghost danger" data-action="tdem-del" data-id="${d.id}" aria-label="Supprimer">${icon('trash')}</button></div></div>`)}</div>`

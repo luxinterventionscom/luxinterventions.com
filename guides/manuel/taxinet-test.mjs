@@ -32,7 +32,10 @@ await p.keyboard.press('Escape'); await p.waitForTimeout(400);
 // 2) centrale de l'hôtel : Accueil par secteurs, menu Taxis, ↪️ LA CENTRAL
 const c2 = await phone(b, 'it', { width: 1000, height: 900 }), q = await c2.newPage(); q.on('pageerror', (e) => errs.push('hotel: ' + e.message));
 await centralSetup(q, '/locataires.html?t=' + tid, tCode, CPASS); await q.waitForTimeout(3000); await imp(q);
-await q.evaluate(() => { location.hash = '#/hotel'; }); await q.waitForTimeout(1500);
+await q.evaluate(() => { location.hash = '#/dashboard'; }); await q.waitForTimeout(1500);
+const nav = await q.evaluate(() => [...document.querySelectorAll('.sidenav .navbtn span, nav .navbtn span')].map((e) => e.textContent.trim()).join('|'));
+log('menu: ' + nav);
+assert(/Accueil|Home/.test(nav) && /Maintenance|Manutenzione/.test(nav) && /Clients|Clienti/.test(nav) && /Taxi/.test(nav), 'hotel: menu Accueil · Maintenance · Clients · Taxi');
 const acc = await body(q);
 assert(/ARRIVÉES & DÉPARTS|ARRIVI/i.test(acc) && /TAXIS/i.test(acc) && /MÉNAGE|PULIZIA/i.test(acc) && /FACTURES|FATTURE/i.test(acc), 'hotel: Accueil par secteurs');
 assert(await q.$('[data-action=go][data-to=taxis]'), 'hotel: menu 🚕 Taxis');
