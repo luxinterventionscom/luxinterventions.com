@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.254.0';
+const VERSION = '2.254.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -6007,7 +6007,7 @@ dashboard() {
     // 📩 problèmes signalés par les locataires / clients (DOMIER) : à transmettre à LA CENTRAL avec ↪️
     const todo = vault.list('taches').filter((t) => t.sentAt && !t.fwd && t.statut !== 'fait').sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
     const tRows = todo.length ? html`<div class="section-label">📩 Signalés par vos locataires / clients — à transmettre</div><div class="list" style="margin-bottom:16px">${todo.map((t) => html`<button class="row" data-action="edit-tache" data-id="${t.id}"><span class="grow"><b>${t.titre}</b><span class="meta" style="display:block">${fmtDateTime(t.sentAt)}${t.adr ? ' · 📍 ' + t.adr : ''}</span></span><span class="btn sm primary">↪️</span></button>`)}</div>` : '';
-    return html`${pageHead(['hotel', 'airbnb'].includes(tenantInfo.fil) ? '🛠️ Maintenance' : '🛠️ Demandes d’intervention', 'Envoyées à LA CENTRAL, qui envoie ses intervenants')}${domierCentral()}${tRows}${fRows}
+    return html`${pageHead(['hotel', 'airbnb'].includes(tenantInfo.fil) ? '🛠️ DOMIER' : '🛠️ Demandes d’intervention', ['hotel', 'airbnb'].includes(tenantInfo.fil) ? 'Maintenance — envoyées à LA CENTRAL, qui envoie ses intervenants' : 'Envoyées à LA CENTRAL, qui envoie ses intervenants')}${domierCentral()}${tRows}${fRows}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="tdem-new">${icon('plus')} Demande</button></div></div>
       ${list.length ? html`<div class="list">${list.map((d) => html`<div class="row" style="display:block"><b>${d.kind === 'reg' ? '🔁 ' : d.kind === 'once' ? '🔧 ' : ''}${TDEM_URG[d.urgence] || ''} · ${d.titre}</b>${tdemStatus(d)}
         <div class="small" style="white-space:pre-wrap">${d.texte}</div><div class="tiny muted" style="display:flex;align-items:center;gap:8px"><span class="grow">${d.adresse ? '📍 ' + d.adresse + ' · ' : ''}Envoyée le ${fmtDateTime(d.t)}</span><button class="btn icon sm ghost danger" data-action="tdem-del" data-id="${d.id}" aria-label="Supprimer">${icon('trash')}</button></div></div>`)}</div>`
