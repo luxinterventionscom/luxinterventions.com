@@ -15,6 +15,7 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
 import { tripLine } from '/ares/trip.js';
+import qrcode from '/ares/qrcode.js';
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'eqAccess';
 const RX = /^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/;
@@ -379,6 +380,16 @@ async function pbUrl(docId) {
   return pbUrls.get(docId);
 }
 const hydratePb = () => document.querySelectorAll('img[data-pb-img]').forEach((img) => { pbUrl(img.dataset.pbImg).then((u) => { img.src = u; }).catch(() => {}); });
+document.addEventListener('click', (e) => {
+  const q = e.target.closest && e.target.closest('[data-cqr]'), p = e.target.closest && e.target.closest('[data-cpay]');
+  if (q) { e.preventDefault(); cQr = cQr === q.dataset.cqr ? '' : q.dataset.cqr; render(); return; }
+  if (p) {
+    e.preventDefault(); p.disabled = true;
+    try { localStorage.setItem(cPaidK(p.dataset.cpay), p.dataset.mode); } catch { /* stockage indisponible */ }
+    cQr = ''; render();
+    queue({ k: 'pay', tid: p.dataset.cpay, mode: p.dataset.mode, at: new Date().toISOString() });
+  }
+});
 document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('[data-pb]'); if (!a) return; e.preventDefault(); pbUrl(a.dataset.pb).then((u) => { const o = document.createElement('div'); o.className = 'lbx'; o.innerHTML = `<img src="${u}" alt=""><span>✕</span>`; o.onclick = () => o.remove(); document.body.append(o); }).catch(() => {}); });
 // heure prévue (de → à) et urgence, mises par le responsable
 const whenTag = (x) => `${x.urgent ? ` <span class="tag urg">🔴 ${esc(T().urg)}</span>` : ''}${x.heure ? ` <span class="tag hr">🕒 ${esc(x.heure)}${x.heureFin ? '–' + esc(x.heureFin) : ''}</span>` : ''}`;
@@ -438,6 +449,33 @@ function infoHtml(x, t) {
   if (x.contact) rows.push(`<div class="ir"><span class="ic">👤</span><div class="tx">${esc(x.contact.nom)}${tel ? ` <a class="call" href="tel:${esc(tel)}" aria-label="${esc(t.call)}">📞</a>` : ''}</div></div>`);
   if (g) rows.push(`<div class="ir org">🏢 ${esc(g.org)} · #${esc(g.ref)}</div>`);
   return (rows.length ? `<div class="tbox">${rows.join('')}</div>` : '') + pbHtml(x);
+}
+// 🚕 course d'un client (chauffeurs) : trajet, qui paie ; encaisser : 📱 QR virement, 💶 espèces, 💳 terminal (Payconiq bientôt)
+const CPT = {
+  fr: { r: '🚕 Course', cl: '💶 Le client paie dans la voiture', ho: '🧾 Facturé au client par la centrale : rien à encaisser', amt: 'À encaisser', qr: '📱 QR virement', qrh: 'Faites scanner ce code avec l’app de la banque du client.', cash: '💶 Payé en espèces', term: '💳 Payé au terminal', qrok: '📱 Payé par virement', pc: '🟣 Payconiq — bientôt', paid: '✅ Encaissé', cancel: '❌ Course annulée par le client' },
+  it: { r: '🚕 Corsa', cl: '💶 Il cliente paga in macchina', ho: '🧾 Fatturata al cliente dalla centrale: niente da incassare', amt: 'Da incassare', qr: '📱 QR bonifico', qrh: 'Fai scansionare questo codice con l’app della banca del cliente.', cash: '💶 Pagato in contanti', term: '💳 Pagato al terminale', qrok: '📱 Pagato con bonifico', pc: '🟣 Payconiq — presto', paid: '✅ Incassato', cancel: '❌ Corsa annullata dal cliente' },
+  pt: { r: '🚕 Corrida', cl: '💶 O cliente paga no carro', ho: '🧾 Faturada ao cliente pela central: nada a cobrar', amt: 'A cobrar', qr: '📱 QR transferência', qrh: 'Peça ao cliente para ler este código com a app do banco.', cash: '💶 Pago em dinheiro', term: '💳 Pago no terminal', qrok: '📱 Pago por transferência', pc: '🟣 Payconiq — em breve', paid: '✅ Cobrado', cancel: '❌ Corrida cancelada pelo cliente' },
+  de: { r: '🚕 Fahrt', cl: '💶 Der Kunde zahlt im Auto', ho: '🧾 Wird dem Kunden von der Zentrale berechnet: nichts kassieren', amt: 'Zu kassieren', qr: '📱 QR-Überweisung', qrh: 'Lassen Sie den Kunden diesen Code mit seiner Banking-App scannen.', cash: '💶 Bar bezahlt', term: '💳 Am Terminal bezahlt', qrok: '📱 Per Überweisung bezahlt', pc: '🟣 Payconiq — bald', paid: '✅ Kassiert', cancel: '❌ Fahrt vom Kunden storniert' },
+  en: { r: '🚕 Ride', cl: '💶 The customer pays in the car', ho: '🧾 Invoiced to the client by the central: nothing to collect', amt: 'To collect', qr: '📱 QR transfer', qrh: 'Let the customer scan this code with their banking app.', cash: '💶 Paid in cash', term: '💳 Paid at the terminal', qrok: '📱 Paid by transfer', pc: '🟣 Payconiq — soon', paid: '✅ Collected', cancel: '❌ Ride cancelled by the customer' },
+  es: { r: '🚕 Carrera', cl: '💶 El cliente paga en el coche', ho: '🧾 Facturada al cliente por la central: nada que cobrar', amt: 'A cobrar', qr: '📱 QR transferencia', qrh: 'Que el cliente escanee este código con la app de su banco.', cash: '💶 Pagado en efectivo', term: '💳 Pagado en el terminal', qrok: '📱 Pagado por transferencia', pc: '🟣 Payconiq — pronto', paid: '✅ Cobrado', cancel: '❌ Carrera cancelada por el cliente' },
+};
+const cPaidK = (tid) => 'eqCPaid:' + tid;
+let cQr = '';
+function courseHtml(x, tid) {
+  const c = x.course;
+  if (!c) return '';
+  const k = CPT[lang] || CPT.fr, eur = (n) => (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') + ' €';
+  let mine = '';
+  try { mine = localStorage.getItem(cPaidK(tid)) || ''; } catch { /* stockage indisponible */ }
+  const paid = c.paid || mine, lab = { qr: k.qrok, cash: k.cash, term: k.term };
+  const head = `<div class="ir"><span class="ic">🚕</span><div class="tx"><b>${esc(c.from)}</b> → <b>${esc(c.to || '?')}</b>${c.vol ? ' · ✈️ ' + esc(c.vol) : ''}${c.pax ? ' · 👥 ' + c.pax : ''}</div></div>`;
+  if (c.cancel) return `<div class="tbox">${head}<div class="ir"><b>${esc(k.cancel)}</b></div></div>`;
+  if (c.payer !== 'client') return `<div class="tbox">${head}<div class="ir"><span class="ic">🧾</span><div class="tx">${esc(k.ho)}</div></div></div>`;
+  const body = paid ? `<div class="ir"><b>${esc(k.paid)} · ${esc(lab[paid] || paid)}${c.ttc ? ' · ' + eur(c.ttc) : ''}</b></div>`
+    : `<div class="ir"><span class="ic">💶</span><div class="tx">${esc(k.cl)}${c.ttc ? ` · ${esc(k.amt)}${colon()}<b>${eur(c.ttc)}</b>` : ''}</div></div>
+      ${cQr === tid && c.epc ? (() => { try { const q = qrcode(0, 'M'); q.addData(unescape(encodeURIComponent(c.epc))); q.make(); return `<div style="background:#fff;padding:8px;border-radius:10px;max-width:240px;margin:6px auto">${q.createSvgTag(5, 2)}</div><p class="meta" style="text-align:center">${esc(k.qrh)}</p>`; } catch { return ''; } })() : ''}
+      <div class="btns" style="flex-wrap:wrap">${c.epc ? `<button class="btn sec" data-cqr="${esc(tid)}">${esc(k.qr)}</button>` : ''}${c.epc && cQr === tid ? `<button class="btn ok" data-cpay="${esc(tid)}" data-mode="qr">${esc(k.qrok)}</button>` : ''}<button class="btn ok" data-cpay="${esc(tid)}" data-mode="cash">${esc(k.cash)}</button><button class="btn ok" data-cpay="${esc(tid)}" data-mode="term">${esc(k.term)}</button><button class="btn sec" disabled>${esc(k.pc)}</button></div>`;
+  return `<div class="tbox">${head}${body}</div>`;
 }
 // ligne courte (planning du jour) : le détail et les boutons sont dans « Mon horaire »
 function taskLine(it) {
@@ -502,7 +540,7 @@ function taskCard(it, withBtns) {
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>` : '';
   return `<div class="task ${done ? 'done' : ''}${x.urgent && !done ? ' urgent' : ''}">${notStarted && !done ? refusTop(it) : ''}
     ${headHtml(x, it.late ? ` <span class="tag bad">${esc(t.late)}</span>` : '')}
-    ${infoHtml(x, t)}
+    ${infoHtml(x, t)}${courseHtml(x, it.tid)}
     ${st && st.st !== 'refus' ? `<div class="stline ${st.st}">${esc(t.st[st.st])} · ${esc(fmt(st.at))} ${esc(t.at)} ${esc(st.h || (st.at || '').slice(11, 16))}${st.note ? ' — ' + esc(st.note) : ''}</div>` : ''}
     ${btns}${fh}${notStarted && !done ? refusUi(it) : ''}${withBtns && !(st && st.st === 'refus') ? phBlock(it, x) : ''}</div>`;
 }
@@ -586,7 +624,7 @@ function stopCard(it, cur) {
   const trip = it.tk && it.d === today && !tm.arr && !ended && !refused;
   return `<div class="stop${cur ? ' cur' : ''}${ended ? ' done' : ''}${x.urgent && !ended ? ' urgent' : ''}">${!tm.arr && !ended && !trip ? refusTop(it) : ''}
     ${headHtml(x, cur ? ` <span class="tag now">${esc(tm.arr ? t.s.now : t.s.next)}</span>` : '', cur ? '<span class="live" aria-hidden="true"></span>' : '')}
-    ${ended ? (x.ger ? `<div class="meta">🏢 ${esc(x.ger.org)} · #${esc(x.ger.ref)}</div>` : '') : infoHtml(x, T())}${trip ? tripUi(it, x) : ''}<div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
+    ${ended ? (x.ger ? `<div class="meta">🏢 ${esc(x.ger.org)} · #${esc(x.ger.ref)}</div>` : '') : infoHtml(x, T())}${courseHtml(x, it.tid)}${trip ? tripUi(it, x) : ''}<div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
     ${act}</div>`;
 }
 // Photos avant / après une intervention : 6 + 6, avec l'appareil photo ou la galerie
