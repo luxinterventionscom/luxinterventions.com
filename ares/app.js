@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.257.0';
+const VERSION = '2.257.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4322,7 +4322,7 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand">${TENANT && !vault.op && ['hotel', 'airbnb'].includes(tenantInfo.fil) && tenantInfo.state !== 'ro' ? html`<label class="brand-pen" title="Changer le logo" style="position:relative;cursor:pointer;display:inline-block"><img class="brand-mark" src="${societe().logo || APP_BRAND.logo}" alt="" width="36" height="36"><span aria-hidden="true" style="position:absolute;right:-4px;bottom:-4px;background:#fff;border-radius:50%;font-size:13px;line-height:1;padding:3px;box-shadow:0 1px 3px rgba(0,0,0,.25)">✏️</span><input type="file" accept="image/*" data-input="soc-logo" hidden></label>` : TENANT || vault.op ? html`<img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36">` : html`<label class="brand-pen" title="Changer le logo DOMIER" style="position:relative;cursor:pointer;display:inline-block"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span aria-hidden="true" style="position:absolute;right:-4px;bottom:-4px;background:#fff;border-radius:50%;font-size:13px;line-height:1;padding:3px;box-shadow:0 1px 3px rgba(0,0,0,.25)">✏️</span><input type="file" accept="image/*" data-input="brand-ico" hidden></label>`}<span data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}<small>${TENANT ? tSub() : APP_BRAND.sub}</small></span></div>
+      <div class="brand">${TENANT && !vault.op && ['hotel', 'airbnb'].includes(tenantInfo.fil) && tenantInfo.state !== 'ro' ? html`<span class="brand-pen" style="position:relative;display:inline-block"><img class="brand-mark" src="${societe().logo || APP_BRAND.logo}" alt="" width="36" height="36"><label title="Changer le logo" aria-label="Changer le logo" style="position:absolute;right:-4px;bottom:-4px;background:#fff;border-radius:50%;font-size:13px;line-height:1;padding:3px;box-shadow:0 1px 3px rgba(0,0,0,.25);cursor:pointer">✏️<input type="file" accept="image/*" data-input="soc-logo" hidden></label></span>` : TENANT || vault.op ? html`<img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36">` : html`<span class="brand-pen" style="position:relative;display:inline-block"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><label title="Changer le logo DOMIER" aria-label="Changer le logo DOMIER" style="position:absolute;right:-4px;bottom:-4px;background:#fff;border-radius:50%;font-size:13px;line-height:1;padding:3px;box-shadow:0 1px 3px rgba(0,0,0,.25);cursor:pointer">✏️<input type="file" accept="image/*" data-input="brand-ico" hidden></label></span>`}<span data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}<small>${TENANT ? tSub() : APP_BRAND.sub}</small></span></div>
       ${sideNavHtml()}
       ${navBtn(['reglages', 'Réglages', 'gear'])}
       ${legDots()}
