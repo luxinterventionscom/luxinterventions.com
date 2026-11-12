@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.250.7';
+const VERSION = '2.251.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5747,6 +5747,30 @@ dashboard() {
     const refBox = refs.length ? html`<div class="section-label" style="margin-top:0;color:var(--bad,#c0392b)">✋ ${refs.length} ${refs.length > 1 ? 'travaux' : 'travail'} refusé${refs.length > 1 ? 's' : ''} par l’ouvrier — à réaffecter</div><div class="list ref-list" style="margin-bottom:14px">${refs.map((t) => html`<div>${tacheRow(t)}<div class="tiny" style="padding:2px 12px 8px">${t.taxi && t.taxi.st === 'none' ? html`🚕 ${taxiLog(t)}` : html`✋ ${intervName(t.refus.by)} · ${fmtDateTime(t.refus.at)}${t.refus.note ? ' — ' + t.refus.note : ''}`}</div></div>`)}</div>` : '';
     const appsVer = (() => { try { return localStorage.getItem('aresAppsVer') || ''; } catch { return 'x'; } })(), verMM = VERSION.split('.').slice(0, 2).join('.');
     const appsBox = appsVer !== verMM && vault.list('locataires').some((x) => x.espace && x.espace.on) ? html`<div class="alert info" style="margin-bottom:14px;align-items:center">🆕<div style="flex:1"><b>Mise à jour importante (v${verMM})</b> : mettez à jour toutes les apps (locataires, équipe, clients, partenaires) pour qu’elles reçoivent les nouveautés.</div><button class="btn sm primary" data-action="apps-refresh-all">🔄 Tout mettre à jour</button></div>` : '';
+    // 🏛️ CENTRAL DOMIER (sans parc à elle) : l'Accueil = le bureau du centraliste, par secteurs (titre gris + explication)
+    if (!TENANT && !ownPark()) {
+      const sec = (ic, t, sub, items) => { const it = items.filter(Boolean); return html`<div class="dsec"><div class="section-label" style="margin:18px 0 0">${ic} ${t}</div><p class="tiny muted" style="margin:0 0 8px">${sub}</p>${it.length ? it : html`<p class="tiny muted" style="margin:0 0 4px">✓ rien à traiter</p>`}</div>`; };
+      const confier = vault.list('taches').filter((t) => !t.intervenantId && !t.recur && t.statut !== 'fait').sort((a, b) => String(a.sentAt || a.date || '').localeCompare(String(b.sentAt || b.date || '')));
+      const toBill = vault.list('taches').filter((t) => t.statut === 'fait' && !t.facture && (t.ptl || domBill(t) || (t.net && netPayMode(t.net.tid) === 'each')));
+      const unpaid = vault.list('taches').filter((t) => t.facture && !t.facture.paid);
+      const claimed = unpaid.filter((t) => t.facture.claim);
+      const late2 = unpaid.filter((t) => t.facture.due && lateDays(t.facture.due) > 0);
+      return html`${centralinoHtml()}
+        ${sec('🔔', 'FLASH', 'À traiter vite, puis ça disparaît', [pushNudge(), appsBox, toolsBox])}
+        ${netAd('haut')}
+        ${sec('🛠️', 'À CONFIER', 'Demandes arrivées : choisir l’ouvrier ; puis les travaux du jour', [
+          confier.length ? html`<div class="stack" style="margin-bottom:10px">${confier.slice(0, 12).map((t) => alertBtn('warn', 'tool', 'edit-tache', t.id, html`<b>${t.titre}</b><span class="small" style="display:block">${t.net ? '🌐 ' + t.net.nom + ' · ' : ''}${t.adr ? '📍 ' + t.adr + ' · ' : ''}${fmtDate(t.date)} — à confier</span>`))}${confier.length > 12 ? html`<p class="tiny muted">… et ${confier.length - 12} autres (Maintenance)</p>` : ''}</div>` : '', sigBox, netStopBox, mtCard()])}
+        ${sec('👷', 'INFO OUVRIERS', 'Maladie, accident, retard, imprévu sur chantier, travaux refusés, assurance', [absBox, refBox, eqBox, assurBox, finBox])}
+        ${sec('📝', 'DEVIS', 'Reçus du chef de chantier : vérifier, envoyer, faire signer', [devBanner()])}
+        ${sec('📣', 'PUBLICITÉ', 'Annonces à valider, clips à créer, à encaisser', [anRecBox, annBox])}
+        ${sec('🙋', 'CANDIDATURES', 'Personnes qui cherchent du travail', [candBox])}
+        ${sec('🧾', 'FACTURES OUVERTES', 'À émettre, à encaisser, en retard', [
+          toBill.length ? alertBtn('warn', 'receipt', 'open-facts', '', html`🟡 <b>${plural(toBill.length, 'intervention')} terminée${toBill.length > 1 ? 's' : ''} à facturer</b>`) : '',
+          unpaid.length ? alertBtn(late2.length ? 'bad' : 'info', 'wallet', 'open-facts', '', html`⏳ <b>${plural(unpaid.length, 'facture')} à encaisser</b> · ${eur(sum(unpaid, (t) => t.facture.ttc))}${late2.length ? html` · 🔴 ${late2.length} en retard` : ''}${claimed.length ? html` · 💳 ${claimed.length} « payé » à vérifier` : ''}`) : '',
+          nClaimBox])}
+        ${sec('🌐', 'CLIENTS & LICENCES', 'Abonnements à renouveler, essais qui finissent', [netSoonBox])}
+        ${netAd('milieu')}`;
+    }
     return html`
       ${packBox()}
       ${domierCentral()}
@@ -9108,6 +9132,7 @@ addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installProm
 
 const ACTIONS = {
   'abo-edit': (d) => openSheet('abo', d.id),
+  'open-facts': () => { ui.cpSec = 'compta'; ui.cpTab = 'fact'; go('compta'); }, // 🧾 Accueil → Comptabilité, onglet Factures
   'abo-tab': (d) => { ui.aboTab = d.id; if (ui.route === 'annonceurs' && d.id !== 'pub') { ui.cpSec = 'abo'; go('compta'); } else renderView(); }, // depuis 📣 Annonceurs : « Abonnements gérances » ouvre la page Abonnements
   async 'netpubs-now'() { try { localStorage.removeItem('aresNetPubs2'); } catch { /* rien */ } await netPubsSync(); renderView(); toast('Liste du réseau envoyée'); },
   'ann-open': () => { ui.cpSec = 'abo'; ui.aboTab = 'pub'; go('compta'); },
