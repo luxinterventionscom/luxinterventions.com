@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.255.0';
+const VERSION = '2.255.1';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3312,6 +3312,11 @@ const hoteConf = () => vault.get('reglages', 'hoteConf') || {};
 const HOTE_URL = () => `${location.origin}/hote.html`;
 const hoteTks = async (h) => ({ tin: await tripTk('hin:' + h.id, h.arrivee), t1: await tripTk('tx1:' + h.id, h.arrivee), t2: await tripTk('tx2:' + h.id, h.arrivee) });
 const HOTE_LG = ['fr', 'it', 'de', 'en', 'pt', 'es'];
+// 🗣️ langues parlées par un client (plusieurs) : une liste à cocher, les langues choisies restent en ovales
+const LG_ALL = { fr: 'Français', en: 'English', de: 'Deutsch', lb: 'Lëtzebuergesch', it: 'Italiano', pt: 'Português', es: 'Español', nl: 'Nederlands', ar: 'العربية', ru: 'Русский', uk: 'Українська', pl: 'Polski', ro: 'Română', tr: 'Türkçe', el: 'Ελληνικά', sq: 'Shqip', sr: 'Srpski / Hrvatski', zh: '中文', ja: '日本語', ko: '한국어', hi: 'हिन्दी', fa: 'فارسی', he: 'עברית', sv: 'Svenska', da: 'Dansk', no: 'Norsk', fi: 'Suomi', cs: 'Čeština', hu: 'Magyar', bg: 'Български' };
+const lgChips = (ls) => (ls.length ? ls.map((k) => html`<span class="badge" style="border-radius:999px;padding:3px 10px;margin:2px 4px 2px 0;display:inline-block">${LG_ALL[k] || k}</span>`) : html`<span class="muted small">aucune</span>`);
+const lgPick = (sel) => html`<details class="lgpick" style="border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-top:4px"><summary style="cursor:pointer;list-style:none"><span class="lgchips">${lgChips(sel)}</span> <span class="tiny muted">▾ liste</span></summary>
+  <div style="max-height:220px;overflow:auto;margin-top:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 10px">${Object.entries(LG_ALL).map(([k, l]) => html`<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer"><input type="checkbox" name="langues" value="${k}" data-input="lg-pick" ${sel.includes(k) ? new Raw('checked') : ''} style="width:18px;height:18px;flex:none">${l}</label>`)}</div></details>`;
 // message d'invitation (lien + code), dans la langue du client
 const HOTE_INV = {
   fr: (p, s, u, c) => `Bonjour ${p}, bienvenue chez ${s} ! Votre app de séjour (chambre, photos, code de la porte, menu, taxi) : ${u}\nVotre code personnel : ${c}`,
@@ -4896,7 +4901,7 @@ function hotView(hf, acc) {
     const pres = all.filter((h) => h.arrivee <= t && h.depart > t).sort((a, b) => String(a.chambre).localeCompare(String(b.chambre), 'fr', { numeric: true }));
     const next = all.filter((h) => h.arrivee > t).sort(by), past = all.filter((h) => h.depart < t).sort((a, b) => b.depart.localeCompare(a.depart));
     const row = (h) => html`<button class="row" data-action="edit-hote" data-id="${h.id}"><span class="avatar" style="font-size:13px;font-weight:800">${h.chambre}</span>
-      <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.pers > 1 ? html` <span class="badge">👥 ${h.pers}</span>` : ''}</span>
+      <span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.pers > 1 ? html` <span class="badge">👥 ${h.pers}</span>` : ''}${(h.langues || []).length ? html` <span class="tiny muted">🗣️ ${h.langues.map((k) => k.toUpperCase()).join(' · ')}</span>` : ''}</span>
       <span class="meta">${h.lieu === 'airbnb' && h.adresse ? html`🏠 ${h.adresse} · ` : ''}${h.etage ? html`<span>Étage</span> ${h.etage} · ` : ''}${h.cle ? html`🪪 ${h.cle} · ` : ''}${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}</span>${h.appCode && h.arrivee >= t ? html`<span class="tiny" style="display:block">${!h.arr ? '❓ Arrivée pas encore choisie' : h.arr.mode === 'taxi' ? `🚕 Taxi${h.taxi ? (h.taxi.st === 'wait' ? ' · ⏳ ' + h.taxi.nom : h.taxi.st === 'no' ? ' · ❌ ' + h.taxi.nom : ' · ' + h.taxi.nom) : ' demandé'}` : '🚗 Vient par ses propres moyens'}</span>` : ''}${hoteKey(h) ? html`<span style="display:block;margin-top:4px"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></span>` : ''}</span><span class="chev">›</span></button>`;
     const sec = (title, list, empty) => html`<div class="section-label">${title}</div>${list.length ? html`<div class="list">${list.map(row)}</div>` : html`<p class="small muted" style="margin:0 0 12px">${empty}</p>`}`;
     // 🏨 centrale d'un hôtel / Airbnb : l'Accueil par secteurs (titre gris + explication), comme le bureau de LA CENTRAL
@@ -7787,7 +7792,8 @@ const SHEETS = {
         ${field('Prénom', 'prenom', h.prenom)}${field('Nom', 'nom', h.nom, { required: true })}
         ${field('Téléphone', 'tel', h.tel, { type: 'tel', placeholder: '+352 …' })}${field('Email', 'mail', h.mail, { type: 'email' })}
         <label class="field">Pays<select name="pays"><option value="">—</option>${HOTE_PAYS.map((cc) => html`<option value="${cc}" ${h.pays === cc ? new Raw('selected') : ''}>${flag(cc)} ${paysNom(cc)}</option>`)}</select></label>
-        <label class="field">Langue<select name="langue">${Object.entries(LG).map(([k, l]) => html`<option value="${k}" ${h.langue === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+        <label class="field">Langue de son app<select name="langue">${Object.entries(LG).map(([k, l]) => html`<option value="${k}" ${h.langue === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+        <div class="field full">🗣️ Langues parlées <span class="tiny muted">(cochez dans la liste)</span>${lgPick(h.langues || (h.langue && h.langue !== 'autre' ? [h.langue] : []))}</div>
         ${field('Personnes', 'pers', h.pers, { type: 'number', attrs: 'min="1" max="20" inputmode="numeric"' })}
         ${field('Arrivée', 'arrivee', h.arrivee, { type: 'date', required: true })}${field('Départ', 'depart', h.depart, { type: 'date', required: true })}
         ${html`<label class="field full">Formule<select name="formule">${Object.entries(FORMULES).map(([k, l]) => html`<option value="${k}" ${(h.formule || 'seul') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>`}
@@ -11385,7 +11391,7 @@ const FORMS = {
   async hote(fd) {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
-    const rec = { lieu: g('lieu') === 'airbnb' ? 'airbnb' : 'hotel', adresse: g('adresse'), pays: g('pays'), formule: g('formule'), pref: g('pref'), appCode: g('appCode'), prenom: g('prenom'), nom: g('nom'), tel: g('tel'), mail: g('mail'), langue: g('langue') || 'fr', pers: Math.max(1, parseInt(g('pers'), 10) || 1),
+    const rec = { lieu: g('lieu') === 'airbnb' ? 'airbnb' : 'hotel', adresse: g('adresse'), pays: g('pays'), formule: g('formule'), pref: g('pref'), appCode: g('appCode'), prenom: g('prenom'), nom: g('nom'), tel: g('tel'), mail: g('mail'), langue: g('langue') || 'fr', langues: fd.getAll('langues').filter((k) => LG_ALL[k]).slice(0, 12), pers: Math.max(1, parseInt(g('pers'), 10) || 1),
       chambre: g('chambre'), etage: g('etage'), cle: g('cle'), arrivee: g('arrivee'), depart: g('depart'), notes: g('notes'),
       code: g('code'), codeOff: fd.get('codeOff') === '1' };
     const tm = (k, d) => (/^\d\d:\d\d$/.test(g(k)) ? g(k) : d), mo = (k) => { const v = g(k).replace(',', '.'); return v ? Math.max(0, num(v)) : ''; };
@@ -12961,6 +12967,7 @@ document.addEventListener('change', (e) => {
   if (e.target.form && e.target.form.dataset.form === 'log' && e.target.name === 'louemode') { const cp = e.target.form.querySelector('.coloc-pick'); if (cp) cp.hidden = e.target.value !== 'chambre'; }
   if (e.target.form && e.target.form.dataset.form === 'log' && e.target.name === 'partieSel') { const cn = e.target.form.querySelector('.coloc-new'); if (cn) cn.hidden = e.target.value !== '__new'; }
   if (e.target.name === 'type' && e.target.form && e.target.form.dataset.form === 'log') { const ps = e.target.form.querySelector('.park-set'); if (ps) ps.hidden = !PARK_TYPES.includes(e.target.value); }
+  if (k === 'lg-pick') { const d = e.target.closest('details'), box = d && d.querySelector('.lgchips'); if (box) setHtml(box, lgChips([...d.querySelectorAll('input[name=langues]:checked')].map((x) => x.value))); }
   if (k === 'tfwd-acc') { const b = document.getElementById('tfwdAcc'); if (b) b.hidden = !e.target.checked; }
   // fiche d'une personne : horaire seulement pour le personnel régulier ; engagement pour occasionnels et sociétés
   if (k === 'photo-pick' && e.target.files[0]) {
