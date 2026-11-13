@@ -46,9 +46,10 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
   **annunciatori → chat diretta con la MASTER** (non hanno clienti sotto).
 - **Regola d'oro**: ogni messaggio sale **di un solo livello**; arriva alla MASTER solo se il cliente lo manda con ↪️.
   Gli inquilini di una centrale cliente (es. ARES) non devono MAI arrivare alla MASTER.
-- **Taxi — in sospeso, ne riparliamo ai test TAXI**: idea logica = CENTRAL-TAXI con sotto gli **operai-tassisti** (GPS, chat di gruppo);
-  forse siamo noi a dare il servizio (paghiamo la corsa, il cliente paga a noi con il rincaro) e le richieste dei sotto-clienti
-  salgono a noi; per hotel/Airbnb non è chiaro (forse carta di credito obbligatoria). **Non costruire niente finché non lo decide.**
+- **Taxi (deciso dal titolare)**: autisti = operai (app operai con GPS «en service», corse, incasso QR/espèces/terminal).
+  Nuovo cliente della rete **🚕 CENTRALE-TAXI** (filière `taxi`): menu Accueil (centralino) · Chauffeurs · Parc auto · Comptabilité & statistiques · Réglages.
+  Hotel/Airbnb: «🚕 Taxi / Chauffeurs» (loro chauffeurs con app, ↪️ LA CENTRAL, loro società). L'app `taxi.html` delle società resta per i tassisti da soli.
+  Da fare: le corse dagli hotel/LA CENTRAL verso una CENTRALE-TAXI della rete (passano dalla MASTER), noleggio auto completo, Payconiq.
 - La centrale del titolare è in **francese**; le centrali dei test sono in italiano (solo per le prove).
 
 ## Le 6 sezioni di ogni app (regola del titolare — quando non sai dove va una cosa nuova, CHIEDI)
