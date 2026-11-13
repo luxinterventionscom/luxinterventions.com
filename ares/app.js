@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.257.2';
+const VERSION = '2.257.3';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4290,12 +4290,12 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis & chauffeurs', 'car'], ['chat', 'Chat', 'chat'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr']] },
+  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis & chauffeurs', 'car'], ['chat', 'Chat', 'msg'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis & chauffeurs', 'car'], ['chat', 'Chat', 'chat'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis & chauffeurs', 'car'], ['chat', 'Chat', 'msg'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
