@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.258.1';
+const VERSION = '2.258.2';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2642,8 +2642,24 @@ async function hoteInbox(h, msg) {
     const geo = (g) => (g && isFinite(+g.lat) && isFinite(+g.lon) ? { lat: +(+g.lat).toFixed(5), lon: +(+g.lon).toFixed(5) } : null);
     const svc = (m) => ({ service: TX_SRV[m.service] ? m.service : 'course', gamme: TX_GAM[m.gamme] ? m.gamme : '', extras: (Array.isArray(m.extras) ? m.extras : []).filter((k) => TX_EXT[k]).slice(0, 6), heures: num(m.heures, 240) });
     const arr = { mode, at: String(msg.t || new Date().toISOString()).slice(0, 30), from: String(msg.from || '').slice(0, 120), quand: String(msg.quand || '').slice(0, 16), vol: String(msg.vol || '').slice(0, 30), km: num(msg.km, 2000), prix: num(msg.prix, 100000), fg: geo(msg.fg), sg: geo(msg.sg), ...svc(msg) };
-    await vault.mutate((tx) => tx.put('hotes', { id: h.id, arr, ...(mode === 'self' ? { taxi: null } : {}) }), mode === 'taxi' ? '🚕 Taxi demandé par le client' : '🚗 Le client vient par ses propres moyens', `${who}${mode === 'taxi' ? ` · ${arr.from} · ${arr.km} km${arr.prix ? ' · ~' + arr.prix + ' €' : ''}` : ''}`);
+    // ✏️ le client a changé son arrivée : 🔔 Flash à l'hôtel, la course suit (chauffeur de l'hôtel, ↪️ LA CENTRAL, société)
+    const old = h.arr, sum = (a) => (a ? (a.mode === 'taxi' ? `🚕 ${a.from || ''}${a.quand ? ' · ' + String(a.quand).replace('T', ' ') : ''}${a.vol ? ' · ✈️ ' + a.vol : ''}${(a.extras || []).length ? ' · ' + a.extras.map((k) => TX_EXT[k]).join(' ') : ''}` : '🚗 par ses propres moyens') : '');
+    const chg = old && sum(old) !== sum(arr) ? { at: arr.at, old: sum(old), now: sum(arr) } : null, tx0 = h.taxi;
+    await vault.mutate((tx) => {
+      tx.put('hotes', { id: h.id, arr, ...(mode === 'self' ? { taxi: null } : {}), ...(chg ? { arrChg: chg } : {}) });
+      const t = tx0 && tx0.own && tx0.tid ? vault.get('taches', tx0.tid) : null;
+      if (chg && t && t.statut !== 'fait') {
+        if (mode === 'self') tx.put('taches', { id: t.id, statut: 'fait', doneDate: today(), titre: '❌ ' + t.titre.replace(/^❌ /, ''), course: { ...t.course, cancel: today() } });
+        else { const q = arr.quand; tx.put('taches', { id: t.id, date: /^\d{4}-\d{2}-\d{2}/.test(q) ? q.slice(0, 10) : t.date, heure: /T\d\d:\d\d/.test(q) ? q.slice(11, 16) : t.heure, adresse: arr.from, lieu: { ...(t.lieu || {}), adr: arr.from }, course: { ...t.course, from: arr.from, quand: q, vol: arr.vol }, note: [t.note || '', '✏️ Changé par le client : ' + chg.now].join('\n') }); }
+      }
+    }, chg ? '✏️ Le client a changé son arrivée' : mode === 'taxi' ? '🚕 Taxi demandé par le client' : '🚗 Le client vient par ses propres moyens', `${who}${mode === 'taxi' ? ` · ${arr.from} · ${arr.km} km${arr.prix ? ' · ~' + arr.prix + ' €' : ''}` : ''}`);
     hotesSync(h.id);
+    if (chg && tx0) {
+      if (tx0.own && tx0.w) equipeSync(tx0.w).catch(() => {});
+      if (tx0.lc && TENANT) { const hc = hoteConf(), home = h.lieu === 'airbnb' ? h.adresse || chGet(h.lieu, h.chambre).adresse || '' : hc.adresse || societe().adresse || '';
+        tenantSend(mode === 'self' ? { type: 'taxi-cancel', ref: h.id + '|arr' } : { type: 'taxi', ref: h.id + '|arr', c: { from: arr.from, to: home, quand: arr.quand, vol: arr.vol, km: arr.km, prix: arr.prix, service: arr.service, gamme: arr.gamme, extras: arr.extras, heures: arr.heures, pax: h.pers || 0, payer: tx0.payer || 'client', guest: [h.prenom, h.nom].filter(Boolean).join(' '), tel: h.tel || '', plus: '✏️ Changé par le client' } }).catch(() => {}); }
+      if (tx0.co) txcoSync(tx0.co, true).catch(() => {});
+    }
     return true;
   }
   if (msg.type === 'hote-ride') {
@@ -4925,7 +4941,7 @@ function hotView(hf, acc) {
       const AB = (cls, to, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer;margin-bottom:8px" data-action="go" data-to="${to}">${icon('receipt')}<div>${content}</div></button>`;
       const F = tFacts(), fDue = F.filter((f) => !f.paid), late = tFactLate(), txF = txInvs().filter((f) => !f.paid);
       return html`${centralinoHtml()}
-        ${S2('🔔', 'FLASH', 'À traiter vite, puis ça disparaît', [pushNudge(), hoteAlerts(all, t, 'taxi'), late.length ? AB('bad', 'demandes', html`🔴 <b>${plural(late.length, 'facture')} en retard</b>`) : ''])}
+        ${S2('🔔', 'FLASH', 'À traiter vite, puis ça disparaît', [pushNudge(), ...all.filter((h) => h.arrChg && !h.arrChg.vu).map((h) => html`<div class="alert warn" style="margin-bottom:10px">✏️<div style="flex:1"><b>${[h.prenom, h.nom].filter(Boolean).join(' ')} (${h.chambre}) a changé son arrivée</b><div class="small"><s>${h.arrChg.old}</s></div><div class="small">→ <b>${h.arrChg.now}</b></div>${h.taxi ? html`<div class="tiny">La course suit : ${h.taxi.lc ? '↪️ LA CENTRAL prévenue' : h.taxi.own ? '🚙 l’app du chauffeur est à jour' : '🚕 la société est prévenue'}</div>` : ''}<button class="btn sm" style="margin-top:6px" data-action="hote-chg-ok" data-id="${h.id}">✓ Vu</button></div></div>`), hoteAlerts(all, t, 'taxi'), late.length ? AB('bad', 'demandes', html`🔴 <b>${plural(late.length, 'facture')} en retard</b>`) : ''])}
         ${pageHead('🏠 Accueil — ' + (hf === 'airbnb' ? 'Airbnb' : 'Hotel'), `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
         <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button><button class="btn primary" data-action="new-chambre">${icon('plus')} ${hf === 'airbnb' ? 'Logement' : 'Chambre'}</button>${TENANT ? '' : html`<button class="btn" data-action="hote-conf">${icon('gear')} Réglages</button>`}</div></div>
         ${S2('🛎️', 'ARRIVÉES & DÉPARTS', 'Les clients du jour : arrivée choisie, clé, départ', [hoteAlerts(all, t, 'arr'), sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.'), sec('🛫 Départs aujourd’hui', dep, 'Aucun départ aujourd’hui.'), html`<button class="btn sm" data-action="go" data-to="${hf}">🛎️ Tous les clients (${pres.length} présents)</button>`])}
@@ -10335,6 +10351,7 @@ const ACTIONS = {
     openSheet('interv', wid);
   },
   'hote-tarifs': () => openOver('hote-tarifs'),
+  'hote-chg-ok': async (d) => { const h = vault.get('hotes', d.id); if (h && h.arrChg) await vault.mutate((tx) => tx.put('hotes', { id: h.id, arrChg: { ...h.arrChg, vu: 1 } }), '✓ Changement vu', h.nom || ''); renderView(); },
   'hote-qr': (d) => openOver('hote-qr', d.id),
   'hote-resto': (d) => openOver('hote-resto', null, null, d.lieu || (TENANT && tenantInfo.fil === 'airbnb' ? 'airbnb' : 'hotel')),
   async 'hote-taxi-lc-x'(d) {
