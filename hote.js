@@ -305,6 +305,33 @@ function adBox(x, t) {
     <div class="btns">${x.adresse ? `<button class="btn sm" data-hmap="${esc(x.adresse)}" data-hnom="${esc(x.nom || x.titre || '')}" data-pev="map">${esc(t.ad.see)}</button>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(/^https?:/.test(x.web) ? x.web : 'https://' + x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}</div>${pubSocialBar(x)}</details>`;
 }
 
+// 🛎️ icône de l'app (onglet, iPhone, Android) : le logo de l'hôtel / de l'hôte (✏️ dans sa centrale), sinon 🛎️ hôtel · 🏠 Airbnb — jamais celle de LA CENTRAL
+let iconSig = '';
+function hIcons(d) {
+  const bnb = d.lieu === 'airbnb', st = d.st || {}, logo = st.logo || '', sig = (bnb ? 'b' : 'h') + logo.length + (st.nom || '');
+  if (sig === iconSig) return;
+  iconSig = sig;
+  const def = location.origin + (bnb ? '/ares/icons/bnb-' : '/ares/icons/hote-'), nom = st.nom || (bnb ? 'Airbnb' : 'Mon séjour');
+  const apply = (u180, u192, u512) => {
+    document.querySelectorAll('link[rel="icon"]').forEach((l) => { l.href = u192; });
+    document.querySelectorAll('link[rel="apple-touch-icon"]').forEach((l) => { l.href = u180; });
+    let t = document.querySelector('meta[name="apple-mobile-web-app-title"]');
+    if (!t) { t = document.createElement('meta'); t.name = 'apple-mobile-web-app-title'; document.head.append(t); }
+    t.content = nom.slice(0, 20);
+    const m = { name: nom, short_name: nom.slice(0, 12), start_url: location.origin + '/hote.html', scope: location.origin + '/hote', display: 'standalone', background_color: '#f3f5f4', theme_color: '#92400E', icons: [{ src: u192, sizes: '192x192', type: 'image/png' }, { src: u512, sizes: '512x512', type: 'image/png' }] };
+    const l = document.querySelector('link[rel="manifest"]');
+    if (l) { try { const old = l.dataset.blob; l.href = URL.createObjectURL(new Blob([JSON.stringify(m)], { type: 'application/manifest+json' })); l.dataset.blob = l.href; if (old) URL.revokeObjectURL(old); } catch { /* le manifeste fixe reste */ } }
+  };
+  const plain = () => apply(def + '180.png', def + '192.png', def + '512.png');
+  if (!logo) return plain();
+  const img = new Image();
+  img.onload = () => {
+    const mk = (n) => { const c = document.createElement('canvas'); c.width = c.height = n; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, n, n); const k = Math.min((n * 0.86) / img.width, (n * 0.86) / img.height); x.drawImage(img, (n - img.width * k) / 2, (n - img.height * k) / 2, img.width * k, img.height * k); return c.toDataURL('image/png'); };
+    try { apply(mk(180), mk(192), mk(512)); } catch { plain(); }
+  };
+  img.onerror = plain;
+  img.src = logo;
+}
 function hMapFill() {
   const mb = document.getElementById('hMapBox');
   if (!mb || mb.querySelector('iframe')) return;
@@ -314,6 +341,7 @@ function hMapFill() {
 }
 function render() {
   setTimeout(hMapFill, 0);
+  if (data) hIcons(data);
   const t = T();
   document.documentElement.lang = lang;
   const langs = `<div class="langs">${LANGS.map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
