@@ -121,6 +121,8 @@ const TYP = { single: 'Single', double: 'Double', twin: 'Twin', triple: 'Triple'
 const SPOTS = { aero: [49.6233, 6.2044], gare: [49.5998, 6.134] };
 
 let data = null, loadErr = '', lang = 'fr';
+// ▦ QR / lien de l'hôtel : ?c=<code> → le code est déjà écrit
+const QC = (() => { try { return (new URLSearchParams(location.search).get('c') || '').replace(/[^0-9A-Za-z]/g, '').slice(0, 16); } catch { return ''; } })();
 try { lang = localStorage.getItem('hoteLang') || ''; } catch { /* stockage bloqué */ }
 const T = () => L[lang] || L.fr;
 const pick = (d) => { if (d && LANGS.includes(d.lang)) return d.lang; const n = (navigator.language || 'fr').slice(0, 2); return LANGS.includes(n) ? n : 'en'; };
@@ -309,7 +311,7 @@ function render() {
       <p class="sub" style="text-align:center;margin-top:18px">${esc(t.welcome)}</p>
       ${loadErr ? `<div class="card warnc"><p style="margin:0">${esc(loadErr)}</p></div>` : ''}
       <div class="card"><form id="codeForm"><label>${esc(t.code)}</label>
-        <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" style="font-size:24px;letter-spacing:.1em;text-align:center">
+        <input type="text" name="code" inputmode="numeric" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" value="${esc(QC)}" style="font-size:24px;letter-spacing:.1em;text-align:center">
         <button class="btn block" style="margin-top:12px" type="submit">${esc(t.enter)}</button></form></div>`;
     return;
   }

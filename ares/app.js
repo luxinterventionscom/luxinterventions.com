@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.257.3';
+const VERSION = '2.258.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3337,7 +3337,8 @@ const HOTE_INV = {
   pt: (p, s, u, c) => `Olá ${p}, bem-vindo a ${s}! A sua app da estadia (quarto, fotos, código da porta, menu, táxi): ${u}\nO seu código pessoal: ${c}`,
   es: (p, s, u, c) => `Hola ${p}, ¡bienvenido a ${s}! Su app de estancia (habitación, fotos, código de la puerta, menú, taxi): ${u}\nSu código personal: ${c}`,
 };
-const hoteInvite = (h) => (HOTE_INV[h.langue] || HOTE_INV.en)(h.prenom || h.nom, hoteConf().nom || netBrand(), HOTE_URL(), h.appCode);
+const hoteLink = (h) => `${HOTE_URL()}?c=${encodeURIComponent(h.appCode || '')}`;
+const hoteInvite = (h) => (HOTE_INV[h.langue] || HOTE_INV.en)(h.prenom || h.nom, hoteConf().nom || netBrand(), hoteLink(h), h.appCode);
 // 🚕 Sociétés de taxi / chauffeurs (réseau) : chacune a son app (taxi.html) ; catalogue envoyé par la société
 const TX_GAM = { luxe: '💎 Luxe', confort: '🚘 Confort', eco: '🚕 Économique' };
 const TX_SRV = { course: '🛣️ Course', heures: '⏱️ À l’heure', demi: '🌗 Demi-journée', jour: '☀️ Journée', sejour: '📅 Tout le séjour' };
@@ -7838,24 +7839,27 @@ const SHEETS = {
         ${field('Surface (m²)', 'm2', ch.m2, { attrs: 'inputmode="decimal"' })}${bnb ? field('Nombre de pièces (ex. studio : 1, appartement : 3)', 'npieces', ch.npieces, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' }) : ''}
         <p class="tiny muted full" style="margin:0">📷 6 photos minimum : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Elles restent pour les prochains clients de ${bnb ? 'ce logement' : 'cette chambre'}.</p>
         <div class="full ch-ph">${CH_PH.map(([k, l]) => html`<label class="ch-slot">${(ch.ph || {})[k] ? html`<img data-bph="${ch.ph[k]}" alt="">` : html`<span class="ch-empty">＋</span>`}<span class="tiny">${l}</span><input type="file" name="ph_${k}" accept="image/*"></label>`)}</div>
-        <div class="full section-label" style="margin:6px 0 0">🔑 Clé numérique (code de la porte)</div>
-        ${field('Code de la chambre', 'code', id ? h.code : rnd, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
+        <div class="full hote-door fields" style="background:#fdf3d7;border:1px solid #efd9a0;border-radius:14px;padding:12px 14px;margin:6px 0 0">
+          <div class="full section-label" style="margin:0;color:#8a5a00">🔑 CODE DE LA PORTE <span class="tiny muted">— ouvre ${bnb ? 'le logement' : 'la chambre'} (pas l’app)</span></div>
+          ${id && hoteKey(h) ? (() => { const k = hoteKey(h); return html`<div class="full" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="kdot" style="width:12px;height:12px;border-radius:50%;flex:none;background:${k.k === 'ok' ? '#16a34a' : k.k === 'warn' ? '#9ca3af' : '#dc2626'}"></span><span class="small">${k.h}</span></div>`; })() : ''}
+        ${field('🔑 Code de la porte', 'code', id ? h.code : rnd, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em;background:#fff"' })}
         <p class="tiny muted full" style="margin:0">Code proposé au hasard — vous pouvez le changer. Programmez-le dans la serrure (app du fabricant) avec les mêmes dates et heures : il marche seulement pendant le séjour, puis expire tout seul.</p>
         ${field('Valable à partir de (heure d’arrivée)', 'hdeb', h.hdeb || '15:00', { type: 'time' })}${field('Expire à (heure de départ)', 'hfin', h.hfin || '11:00', { type: 'time' })}
         ${field('Badge / clé physique (n°, facultatif)', 'cle', h.cle, { full: true, placeholder: 'ex. badge 17' })}
-        ${id && h.code ? html`<label class="full t-urg"><input type="checkbox" name="codeOff" value="1" ${h.codeOff ? new Raw('checked') : ''}> <span>⏸️ Désactiver le code (clé perdue, départ anticipé…)</span></label>` : ''}
-        ${id && hoteKey(h) ? html`<div class="full"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></div>
-          <div class="full actions" style="margin:0">${h.tel ? html`<a class="btn sm" href="https://wa.me/${h.tel.replace(/[^\d+]/g, '').replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(hoteMsg(h))}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}${h.mail ? html`<a class="btn sm" href="mailto:${h.mail}?subject=${encodeURIComponent('🔑 ' + h.chambre)}&body=${encodeURIComponent(hoteMsg(h))}">✉️ Email</a>` : ''}${h.tel ? html`<a class="btn sm" href="sms:${h.tel.replace(/[^\d+]/g, '')}?&body=${encodeURIComponent(hoteMsg(h))}">📱 SMS</a>` : ''}</div>
-          <p class="tiny muted full" style="margin:0">Envoyer le code au client (message dans sa langue).</p>` : ''}
+          ${id && h.code ? html`<label class="full t-urg" style="display:flex;align-items:center;gap:8px"><span style="width:12px;height:12px;border-radius:50%;flex:none;background:${h.codeOff ? '#dc2626' : '#9ca3af'}"></span><input type="checkbox" name="codeOff" value="1" ${h.codeOff ? new Raw('checked') : ''}> <span>⏸️ Désactiver le code (clé perdue, départ anticipé…)</span></label>` : ''}
+          ${id && h.code ? (() => { const tel = String(h.tel || '').replace(/[^\d+]/g, ''), msg = hoteMsg(h); return html`<div class="full actions" style="margin:0;flex-wrap:wrap;gap:6px"><button type="button" class="btn sm" data-action="code-copy" data-code="${h.code}">📋 Code porte</button>${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}${h.mail ? html`<a class="btn sm" href="mailto:${h.mail}?subject=${encodeURIComponent('🔑 ' + h.chambre)}&body=${encodeURIComponent(msg)}">✉️ Email</a>` : ''}${tel ? html`<a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(msg)}">📱 SMS</a>` : ''}</div><p class="tiny muted full" style="margin:0">Envoie seulement le code de la porte, dans sa langue.</p>`; })() : ''}
+        </div>
         ${(h.hist || []).length ? html`<details class="full"><summary class="small">Historique des codes (${h.hist.length})</summary><div class="list small">${[...h.hist].reverse().map((x) => html`<div class="row"><span class="grow">${fmtDate(x.d)} — ${'•'.repeat(Math.max(0, (x.code || '').length - 2))}${(x.code || '').slice(-2)}</span></div>`)}</div></details>` : ''}
         ${id ? html`<div class="full section-label" style="margin:6px 0 0">📋 État des lieux de sortie (au départ)</div>
           <div class="full ch-ph">${CH_PH.map(([k, l]) => html`<label class="ch-slot">${((h.edlOut || {}).ph || {})[k] ? html`<img data-bph="${h.edlOut.ph[k]}" alt="">` : html`<span class="ch-empty">＋</span>`}<span class="tiny">${l}</span><input type="file" name="out_${k}" accept="image/*"></label>`)}</div>
           <p class="tiny muted full" style="margin:0">À comparer avec les photos d’entrée dans la fiche ${bnb ? 'du logement' : 'de la chambre'}.</p>` : ''}
-        <div class="full section-label" style="margin:6px 0 0">📱 App du client</div>
-        ${field('Code d’accès à l’app', 'appCode', h.appCode, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
-        <p class="tiny muted full" style="margin:0">Code personnel du client (aussi depuis l’étranger) : dans l’app il voit ${bnb ? 'son logement' : 'sa chambre'}, les photos, son code de porte, le menu, et choisit comment il arrive (taxi ou lui-même). L’app se remet à zéro le lendemain du départ.</p>
-        ${id && h.appCode ? html`<div class="full actions" style="margin:0">${h.tel ? html`<a class="btn sm" href="https://wa.me/${h.tel.replace(/[^\d+]/g, '').replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(hoteInvite(h))}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm" href="sms:${h.tel.replace(/[^\d+]/g, '')}?&body=${encodeURIComponent(hoteInvite(h))}">📱 SMS</a>` : ''}${h.mail ? html`<a class="btn sm" href="mailto:${h.mail}?subject=${encodeURIComponent('📱 ' + (hoteConf().nom || 'App'))}&body=${encodeURIComponent(hoteInvite(h))}">✉️ Email</a>` : ''}<button type="button" class="btn sm" data-action="code-copy" data-code="${h.appCode}">📋 Copier le code</button></div>
-          <p class="tiny muted full" style="margin:0">Envoyer au client le lien de l’app et son code, dans sa langue.</p>` : ''}
+        <div class="full hote-appz" style="background:#e8f3fc;border:1px solid #c6def3;border-radius:14px;padding:12px 14px;display:grid;gap:10px">
+          <div class="section-label" style="margin:0;color:#1d4e89">📱 CODE DE L’APP <span class="tiny muted">— pour entrer dans son app (pas la porte)</span></div>
+          ${field('📱 Code de l’app', 'appCode', h.appCode, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em;background:#fff"' })}
+          ${id && h.appCode ? (() => { const tel = String(h.tel || '').replace(/[^\d+]/g, ''), msg = hoteInvite(h), link = hoteLink(h);
+            return html`<div class="actions" style="margin:0;flex-wrap:wrap;gap:6px"><button type="button" class="btn sm" data-action="code-copy" data-code="${h.appCode}">📋 Code</button><button type="button" class="btn sm" data-action="code-copy" data-code="${link}">🔗 Lien</button>${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}${h.mail ? html`<a class="btn sm" href="mailto:${h.mail}?subject=${encodeURIComponent('📱 ' + (hoteConf().nom || socName() || 'App'))}&body=${encodeURIComponent(msg)}">✉️ Email</a>` : ''}${tel ? html`<a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(msg)}">📱 SMS</a>` : ''}<button type="button" class="btn sm" data-action="hote-qr" data-id="${id}">▦ QR</button></div>
+              <p class="tiny muted" style="margin:0">🔗 ${link}<br>Le message part dans sa langue : lien de l’app et code de l’app. ▦ QR : à montrer à la réception, il entre sans rien écrire.</p>`; })() : html`<p class="tiny muted" style="margin:0">Code personnel du client (aussi depuis l’étranger) : dans l’app il voit ${bnb ? 'son logement' : 'sa chambre'}, son code de porte, le menu, et choisit comment il arrive. Enregistrez pour envoyer le lien.</p>`}
+        </div>
         <label class="field full">Notes<textarea name="notes" style="min-height:70px" placeholder="ex. allergie, lit bébé, arrivée tardive…">${h.notes || ''}</textarea></label>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-hote" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
@@ -8186,6 +8190,17 @@ const SHEETS = {
           <label class="field full">${menu && menu.file ? 'Remplacer le menu' : 'Ajouter le menu'} <span class="tiny muted">(PDF · 10 Mo maximum)</span><input type="file" name="menu" accept="application/pdf"></label>`}
         </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'hote-qr'({ id }) {
+    const h = vault.get('hotes', id);
+    if (!h || !h.appCode) return null;
+    return {
+      title: '▦ ' + [h.prenom, h.nom].filter(Boolean).join(' '), narrow: true,
+      body: html`<div style="text-align:center"><div style="background:#fff;display:inline-block;padding:10px;border-radius:12px">${qrSvg(hoteLink(h), 7)}</div>
+        <p style="margin:10px 0 4px">📱 Code de l’app : <b style="font-family:var(--mono);font-size:20px">${h.appCode}</b></p>
+        <p class="small muted" style="margin:0">Le client scanne avec l’appareil photo : son app s’ouvre avec le code déjà écrit.</p></div>`,
+      foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
     };
   },
   'hote-tarifs'() {
@@ -10320,6 +10335,7 @@ const ACTIONS = {
     openSheet('interv', wid);
   },
   'hote-tarifs': () => openOver('hote-tarifs'),
+  'hote-qr': (d) => openOver('hote-qr', d.id),
   'hote-resto': (d) => openOver('hote-resto', null, null, d.lieu || (TENANT && tenantInfo.fil === 'airbnb' ? 'airbnb' : 'hotel')),
   async 'hote-taxi-lc-x'(d) {
     const h = vault.get('hotes', d.id);
