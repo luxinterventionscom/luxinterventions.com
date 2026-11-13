@@ -16,7 +16,16 @@ let api = '', ui = () => 'fr', busy = false, timer = null, failAt = 0;
 const showOrig = new Set();
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const tx = () => L[ui()] || L.fr;
-export const trLang = () => { try { return localStorage.getItem(K) || ''; } catch { return ''; } };
+// la langue de l'app = la langue des messages ; le 🌐 peut en choisir une autre (ou « ne pas traduire »)
+// tant qu'on ne change pas la langue de l'app (le choix est gardé avec la langue de l'app du moment)
+export const trLang = () => {
+  const u = (ui() || 'fr').slice(0, 2);
+  let v = '';
+  try { v = localStorage.getItem(K) || ''; } catch { /* stockage indisponible */ }
+  const [c, at] = v.split('|');
+  if (!v || !at || at !== u) return u; // pas de choix, ancien choix, ou langue de l'app changée : on suit l'app
+  return c === '-' ? '' : c;
+};
 const cacheGet = (l) => { try { return JSON.parse(localStorage.getItem(CK(l)) || '{}'); } catch { return {}; } };
 const cacheSet = (l, c) => { const ks = Object.keys(c); if (ks.length > 400) for (const k of ks.slice(0, ks.length - 400)) delete c[k]; try { localStorage.setItem(CK(l), JSON.stringify(c)); } catch { /* plein */ } };
 // le bouton 🌐 à mettre en haut de chaque chat
@@ -59,7 +68,7 @@ function onClick(e) {
   bg.addEventListener('click', (ev) => {
     const b = ev.target.closest('[data-l]');
     if (!b) { if (ev.target === bg) bg.remove(); return; }
-    try { if (b.dataset.l) localStorage.setItem(K, b.dataset.l); else localStorage.removeItem(K); } catch { /* stockage indisponible */ }
+    try { localStorage.setItem(K, (b.dataset.l || '-') + '|' + (ui() || 'fr').slice(0, 2)); } catch { /* stockage indisponible */ }
     bg.remove();
     for (const x of document.querySelectorAll('[data-trpick]')) x.outerHTML = trButton();
     paintAll(); trApply();
