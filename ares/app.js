@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.258.2';
+const VERSION = '2.258.3';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4981,14 +4981,14 @@ function hoteDrvBtns(h) {
 function hoteAlerts(all, t, part) {
   const soon = all.filter((h) => h.appCode && (h.arrivee === t || h.arrivee === addDays(t, 1)));
   const nm = (h) => `${[h.prenom, h.nom].filter(Boolean).join(' ')} (${h.chambre})`;
-  const ask = soon.filter((h) => !h.arr), taxi = soon.filter((h) => h.arr && h.arr.mode === 'taxi' && (!h.taxi || h.taxi.st === 'no'));
+  const ask = soon.filter((h) => !h.arr), taxi = all.filter((h) => h.arrivee >= t && h.arr && h.arr.mode === 'taxi' && (!h.taxi || h.taxi.st === 'no')).sort((a, b) => String(a.arr.quand || a.arrivee).localeCompare(String(b.arr.quand || b.arrivee)));
   const rides = all.filter((h) => h.depart >= t).flatMap((h) => (h.rides || []).filter((r) => !r.taxi || r.taxi.st === 'no').map((r) => [h, r]));
   const svcTxt = (a) => [TX_SRV[a.service] && a.service !== 'course' ? TX_SRV[a.service] + (a.service === 'heures' && a.heures ? ' ' + a.heures + ' h' : '') : '', TX_GAM[a.gamme] || '', (a.extras || []).map((k) => TX_EXT[k]).join(' ')].filter(Boolean).join(' · ');
   const live = all.filter((h) => h.arrivee === t && h.espace && h.espace.id);
   if (part === 'arr') { taxi.length = 0; rides.length = 0; }
   if (part === 'taxi') { ask.length = 0; live.length = 0; }
   return html`${ask.length ? html`<div class="alert warn" style="margin-bottom:10px">${icon('alert')}<div><b>Arrivée pas encore choisie</b>${ask.map((h) => html`<div class="small">❓ ${nm(h)} · ${fmtDate(h.arrivee)} — le client a reçu le rappel dans son app</div>`)}</div></div>` : ''}
-    ${taxi.map((h) => html`<div class="alert info" style="margin-bottom:10px">🚕<div><b>Taxi demandé · ${nm(h)}</b>${h.taxi && h.taxi.st === 'no' ? html` <span class="badge warn">❌ refusé par ${h.taxi.nom}</span>` : ''}<div class="small">${h.arr.from}${h.arr.quand ? ' · ' + String(h.arr.quand).replace('T', ' ') : ''}${h.arr.vol ? ' · ✈️ ' + h.arr.vol : ''} · ${h.arr.km} km${h.arr.prix ? ' · ~' + h.arr.prix + ' €' : ''}</div>${svcTxt(h.arr) ? html`<div class="small">${svcTxt(h.arr)}</div>` : ''}
+    ${taxi.map((h) => html`<div class="alert info" style="margin-bottom:10px">🚕<div><b>Taxi demandé · ${nm(h)}</b>${h.arrivee !== t ? html` <span class="badge">📅 ${fmtDate(h.arrivee)}</span>` : ''}${h.taxi && h.taxi.st === 'no' ? html` <span class="badge warn">❌ refusé par ${h.taxi.nom}</span>` : ''}<div class="small">${h.arr.from}${h.arr.quand ? ' · ' + String(h.arr.quand).replace('T', ' ') : ''}${h.arr.vol ? ' · ✈️ ' + h.arr.vol : ''} · ${h.arr.km} km${h.arr.prix ? ' · ~' + h.arr.prix + ' €' : ''}</div>${svcTxt(h.arr) ? html`<div class="small">${svcTxt(h.arr)}</div>` : ''}
       <button class="btn sm primary" style="margin-top:6px" data-action="hote-taxi" data-id="${h.id}">🚕 Envoyer le taxi</button></div></div>`)}
     ${rides.map(([h, r]) => html`<div class="alert info" style="margin-bottom:10px">🚘<div><b>Chauffeur réservé · ${nm(h)}</b>${r.taxi && r.taxi.st === 'no' ? html` <span class="badge warn">❌ refusé par ${r.taxi.nom}</span>` : ''}<div class="small">${svcTxt(r) || TX_SRV.course}${r.quand ? ' · 🕒 ' + String(r.quand).replace('T', ' ') : ''}${r.from ? ' · 📍 ' + r.from : ''}${r.to ? ' → ' + r.to : ''}${r.prix ? ' · ~' + r.prix + ' €' : ''}</div>
       <button class="btn sm primary" style="margin-top:6px" data-action="hote-taxi" data-id="${h.id}" data-r="${r.id}">🚘 Envoyer un chauffeur</button></div></div>`)}
