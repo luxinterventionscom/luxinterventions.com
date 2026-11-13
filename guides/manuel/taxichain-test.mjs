@@ -16,6 +16,8 @@ const demo = new URL('./shots/demo-tx.json', import.meta.url).pathname;
 await writeFile(demo, JSON.stringify(st));
 const imp = async (x) => { await x.evaluate(() => { location.hash = '#/reglages'; }); await x.waitForTimeout(900); const [fc] = await Promise.all([x.waitForEvent('filechooser'), act(x, 'import')]); await fc.setFiles(demo); await x.waitForTimeout(800); await x.click('#confirm button[type=submit], #confirm .btn.primary'); await x.waitForTimeout(2500); };
 const T0 = Date.now();
+const demoK = new URL('./shots/demo-tk.json', import.meta.url).pathname; { const s2 = JSON.parse(JSON.stringify(st)); s2.hotes = {}; await writeFile(demoK, JSON.stringify(s2)); }
+const impK = async (x) => { await x.evaluate(() => { location.hash = '#/reglages'; }); await x.waitForTimeout(900); const [fc] = await Promise.all([x.waitForEvent('filechooser'), act(x, 'import')]); await fc.setFiles(demoK); await x.waitForTimeout(800); await x.click('#confirm button[type=submit], #confirm .btn.primary'); await x.waitForTimeout(2500); };
 const KPASS = 'Cle-Demo-Taxi-2026!';
 const c1 = await phone(b, 'it', { width: 1000, height: 900 }), p = await c1.newPage(); p.on('pageerror', (e) => errs.push('central: ' + e.message));
 await centralSetup(p);
@@ -25,7 +27,7 @@ const [kid, kCode] = await mk('taxi', 'Taxi Lux Centrale', '+352 691 000 060');
 console.log('⏱ '+((Date.now()-T0)/1000|0)+'s centrale taxi : son chauffe');
 // centrale taxi : son chauffeur w3 avec l'app
 const ck = await phone(b, 'it', { width: 1000, height: 900 }), k = await ck.newPage(); k.on('pageerror', (e) => errs.push('taxi: ' + e.message));
-await centralSetup(k, '/locataires.html?t=' + kid, kCode, KPASS); await k.waitForTimeout(3000); await imp(k);
+await centralSetup(k, '/locataires.html?t=' + kid, kCode, KPASS); await k.waitForTimeout(3000); await impK(k);
 await act(k, 'open-interv', { id: 'w3' }); await k.waitForTimeout(600); await act(k, 'sheet-tab', { id: 'app' }); await k.waitForTimeout(400);
 await act(k, 'eq-on', { id: 'w3' }); await k.waitForTimeout(3500);
 const wCode = await k.$eval('.sheet [style*="mono"]', (e) => e.textContent.trim());
@@ -72,7 +74,7 @@ await relog(q, CPASS); await q.waitForTimeout(4000);
 console.log('⏱ '+((Date.now()-T0)/1000|0)+'s client');
 const g = await (await phone(b, 'it')).newPage(); g.on('pageerror', (e) => errs.push('hote: ' + e.message));
 await g.goto('http://localhost:8765/hote.html'); await g.waitForTimeout(1200); await g.fill('input[name=code]', '731204'); await g.click('form button[type=submit]'); await g.waitForTimeout(3500);
-await writeFile('/tmp/claude-0/-home-user-luxinterventions-com/8ca9f513-906b-59c7-ab95-4bf4a371e616/scratchpad/g.txt', await body(g)); assert(await g.$('[data-gtl][data-ev=dep]'), 'client : 🚗 À bord');
+assert(await g.$('[data-gtl][data-ev=dep]'), 'client : 🚗 À bord');
 await g.click('[data-gtl][data-ev=dep]'); await g.waitForTimeout(1500); await g.click('[data-gtl][data-ev=arr]'); await g.waitForTimeout(2000);
 await relog(k, KPASS); await k.waitForTimeout(3500);
 await act(p, 'net-reload'); await p.waitForTimeout(4000); await act(p, 'net-reload'); await p.waitForTimeout(3000);
