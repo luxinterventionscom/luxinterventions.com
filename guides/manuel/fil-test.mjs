@@ -17,7 +17,8 @@ await writeFile(demo, JSON.stringify(st));
 const imp = async (x) => { await x.evaluate(() => { location.hash = '#/reglages'; }); await x.waitForTimeout(900); const [fc] = await Promise.all([x.waitForEvent('filechooser'), act(x, 'import')]); await fc.setFiles(demo); await x.waitForTimeout(800); await x.click('#confirm button[type=submit], #confirm .btn.primary'); await x.waitForTimeout(2500); };
 // 1) LA CENTRAL : notre chauffeur + un client hôtel
 const c1 = await phone(b, 'it', { width: 1000, height: 900 }), p = await c1.newPage(); p.on('pageerror', (e) => errs.push('central: ' + e.message));
-await centralSetup(p); await imp(p);
+const demoM = new URL('./shots/demo-fm.json', import.meta.url).pathname; { const s2 = JSON.parse(JSON.stringify(st)); s2.hotes = {}; await writeFile(demoM, JSON.stringify(s2)); }
+await centralSetup(p); { await p.evaluate(() => { location.hash = '#/reglages'; }); await p.waitForTimeout(900); const [fc] = await Promise.all([p.waitForEvent('filechooser'), act(p, 'import')]); await fc.setFiles(demoM); await p.waitForTimeout(800); await p.click('#confirm button[type=submit], #confirm .btn.primary'); await p.waitForTimeout(2500); }
 await act(p, 'open-interv', { id: 'w3' }); await p.waitForTimeout(600); await act(p, 'sheet-tab', { id: 'app' }); await p.waitForTimeout(400);
 await act(p, 'eq-on', { id: 'w3' }); await p.waitForTimeout(3500);
 const wCode = await p.$eval('.sheet [style*="mono"]', (e) => e.textContent.trim());
@@ -76,8 +77,8 @@ await a.fill('[data-cfil-x]', 'Sono all’uscita B'); await a.click('[data-cfil]
 await relog(p, PASS); await p.waitForTimeout(3500); await act(p, 'net-reload'); await p.waitForTimeout(3000);
 await relog(q, CPASS); await q.waitForTimeout(3500);
 await act(q, 'hote-taxi', { id: 'h1' }); await q.waitForTimeout(900);
-const sh = await q.$eval('.sheet', (e) => e.innerText); log(sh.match(/.*uscita B.*/)?.[0]);
-assert(/uscita B/.test(sh), 'hôtel : réponse du chauffeur');
+const sh2 = await q.$eval('.sheet', (e) => e.innerText); log(sh2.match(/.*uscita B.*/)?.[0]);
+assert(/uscita B/.test(sh2), 'hôtel : réponse du chauffeur');
 await q.click('.sheet [data-action=fil-client]'); await q.waitForTimeout(3000);
 const g = await (await phone(b, 'it')).newPage(); g.on('pageerror', (e) => errs.push('hote: ' + e.message));
 await g.goto('http://localhost:8765/hote.html'); await g.waitForTimeout(1200); await g.fill('input[name=code]', '731204'); await g.click('form button[type=submit]'); await g.waitForTimeout(3500);
