@@ -20,6 +20,8 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
 import { tripView, tripFetch } from '/ares/trip.js';
+import { themeInit, themeBtn, themeAccent } from '/ares/theme.js';
+themeInit();
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 // Accès : lien direct (#id.clé) ou code personnel saisi une fois ; mémorisé sur ce téléphone
 const ACC = 'espAccess';
@@ -947,7 +949,7 @@ addEventListener('message', (e) => {
 function render() {
   const t = T();
   document.documentElement.lang = lang;
-  const langs = `<div class="langs">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
+  const langs = `<div class="langs">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}${themeBtn()}</div>`;
   if (!data) {
     app.innerHTML = `<div class="top">${brandSaved()}${langs}</div>
       <h1 style="text-align:center;margin-top:18px">${esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
@@ -960,7 +962,7 @@ function render() {
     return;
   }
   const d = data, s = d.show || {};
-  document.title = `${t.title} — ${d.societe.nom}`;
+  document.title = `${t.title} — ${d.societe.nom}`; themeAccent(d.societe.color);
   if (d.regles && !rulesDate(d)) {
     const changed = d.regles.lu && d.regles.lv !== d.regles.v;
     app.innerHTML = `<div class="top"><span class="brandx">${socLogoHtml(d.societe)}<b>${esc(d.societe.nom)}</b></span>${langs}</div><h1>${esc(t.hello)} ${esc(d.prenom || d.nom)}</h1>
@@ -975,7 +977,7 @@ function render() {
   const out = [];
   // adresse complète : rue + code postal et localité (si renseignés dans l'app de gestion)
   const addrFull = [d.adresse, d.ville].filter(Boolean).join(', ');
-  out.push(`<div class="top"><span class="brandx">${socLogoHtml(d.societe)}<b>${esc(d.societe.nom)}</b></span></div><h1 style="display:flex;align-items:center;gap:12px"><button class="av-wrap" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}"><span class="av-btn">${(phMine !== null ? phMine : d.photo) ? `<img src="${esc(phMine !== null ? phMine : d.photo)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span><span class="av-pen" aria-hidden="true">✏️</span></button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1><div id="tripSlot">${tripBoxes()}</div>${icOpen ? (() => { const st = SETT[lang] || SETT.fr, ph = phMine !== null ? phMine : d.photo || ''; return `<div class="card" id="settCard"><h2 style="margin:0 0 10px">✏️ ${esc(st.t)}</h2><p style="display:flex;align-items:center;gap:8px;margin:0 0 12px">🌐 ${langs}</p><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
+  out.push(`<div class="top"><span class="brandx">${socLogoHtml(d.societe)}<b>${esc(d.societe.nom)}</b></span>${themeBtn()}</div><h1 style="display:flex;align-items:center;gap:12px"><button class="av-wrap" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}"><span class="av-btn">${(phMine !== null ? phMine : d.photo) ? `<img src="${esc(phMine !== null ? phMine : d.photo)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span><span class="av-pen" aria-hidden="true">✏️</span></button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1><div id="tripSlot">${tripBoxes()}</div>${icOpen ? (() => { const st = SETT[lang] || SETT.fr, ph = phMine !== null ? phMine : d.photo || ''; return `<div class="card" id="settCard"><h2 style="margin:0 0 10px">✏️ ${esc(st.t)}</h2><p style="display:flex;align-items:center;gap:8px;margin:0 0 12px">🌐 ${langs}</p><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span class="av-btn" style="width:72px;height:72px;font-size:32px">${ph ? `<img src="${esc(ph)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span>
     <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${ph ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
     <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>

@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.264.0';
+const VERSION = '2.265.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -767,7 +767,7 @@ function equipeData(i) {
   return {
     v: 1, kind: 'equipe', gv: VERSION, chauffeur: CHAUF.has(i.metier), ident: CHAUF.has(i.metier) ? i.ident || '' : '', lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i), photo: photoOk(i.photo) ? i.photo : '',
     // l'équipe travaille pour ARES INVEST S.A. (LA CENTRAL) : son nom et son logo (casque) dans l'app des ouvriers
-    societe: TENANT ? { nom: socName(), tel: soc.tel || '', logo: soc.logo || '/ares/icons/lux-192.png' } : { nom: factConf().nom || 'ARES INVEST S.A.', tel: factConf().tel || soc.tel || '', logo: '/ares/icons/lux-192.png' },
+    societe: TENANT ? { nom: socName(), tel: soc.tel || '', logo: soc.logo || '/ares/icons/lux-192.png', color: soc.color || '' } : { nom: factConf().nom || 'ARES INVEST S.A.', tel: factConf().tel || soc.tel || '', logo: '/ares/icons/lux-192.png' },
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '', ccss: i.ccss || '' },
     // intervenant occasionnel : il lit et signe sa fiche d'engagement dans son app
     eng: i.genre === 'prive' ? { assur: i.assur || '', police: i.police || '', assurTodo: !!i.assurTodo, signed: !!i.sign, signAt: i.signAt || '' } : null,
@@ -1350,7 +1350,7 @@ function espaceData(l) {
   const soc = societe();
   const out = {
     v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', avatar: emojiOk(l.avatar) ? l.avatar : '', photo: photoOk(l.photo) ? l.photo : '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', ...(im ? { pays: im.pays || societe().pays || 'LU', ...(Array.isArray(im.geo) ? { geo: im.geo } : {}) } : {}), show,
-    societe: { role: socRole(), nom: soc.nom && (TENANT || !WRONG_ID.test(soc.nom)) ? soc.nom : DEF_SOC(), adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', sign: signLite.src === soc.signature && signLite.url ? signLite.url : soc.signature || '', signW: soc.signW || 8 },
+    societe: { role: socRole(), nom: soc.nom && (TENANT || !WRONG_ID.test(soc.nom)) ? soc.nom : DEF_SOC(), adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', color: TENANT ? soc.color || '' : '', sign: signLite.src === soc.signature && signLite.url ? signLite.url : soc.signature || '', signW: soc.signW || 8 },
     loyer: loyerAt(l, new Date().getFullYear(), new Date().getMonth() + 1) || l.loyer || 0, revis: revNext(l), ...(TENANT ? { netPubs: 1 } : {}), parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : { nom: 'Seven Radio', url: 'https://sevenradio.lu/?proradio-popup=1' }; })(),
     annex: g ? annexOf(g) : {}, annexM2: (g && g.annexM2) || {}, surface: (g && g.surface) || '', maison: g && g.type === 'maison' ? g.maison || '' : '', unit: g ? g.type : '',
@@ -3738,7 +3738,7 @@ function hoteData(h, tks) {
     prenom: h.prenom || '', nom: h.nom || '', pers: h.pers || 1, arrivee: h.arrivee, depart: h.depart, hdeb: h.hdeb || '15:00', hfin: h.hfin || '11:00',
     formule: h.formule || '', pref: h.pref || '', porte: h.code && !h.codeOff ? h.code : '', cle: h.cle || '',
     ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: ch.persMax || '', m2: ch.m2 || '', npieces: h.lieu === 'airbnb' ? ch.npieces || '' : '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
-    st: TENANT ? { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : c.nom || tenantInfo.nom || 'LA CENTRAL', adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || soc.adresse || c.adresse || '' : soc.adresse || c.adresse || '', tel: soc.tel || c.tel || '', wa: '', logo: soc.logo || '', pays: soc.pays || 'LU' } : { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LA CENTRAL'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '', pays: soc.pays || 'LU' },
+    st: TENANT ? { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : c.nom || tenantInfo.nom || 'LA CENTRAL', adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || soc.adresse || c.adresse || '' : soc.adresse || c.adresse || '', tel: soc.tel || c.tel || '', wa: '', logo: soc.logo || '', color: soc.color || '', pays: soc.pays || 'LU' } : { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LA CENTRAL'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '', pays: soc.pays || 'LU' },
     // 🚗 parc auto des sociétés de taxi (photos dehors / dedans), par sorte de voiture
     fleet: txCos().flatMap((co) => Object.entries(co.fleet || {}).filter(([k, x]) => FLEET_T[k] && x.n > 0).map(([k, x]) => ({ t: k, n: x.n, co: co.nom || '', ph: x.ph || {} }))),
     meal: { allerg: h.allerg || [], allergAutre: h.allergAutre || '', allergCh: h.allergCh || [], allergChAutre: h.allergChAutre || '', regime: h.regime || [], dej: h.dej || '', dejOu: h.dejOu || '', din: h.din || '', dinOu: h.dinOu || '', room: c.roomSvc && c.roomSvc !== 'non' ? { svc: c.roomSvc, pct: c.roomPct || 0, deliv: !!c.roomDeliv } : null },
@@ -3945,6 +3945,9 @@ function applyBrand() {
   const ico = TENANT ? tIco() : brandIco();
   if (ico) { APP_BRAND.logo = ico; document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]').forEach((l) => { l.href = ico; }); document.querySelectorAll('.lock-logo').forEach((img) => { img.src = ico; }); }
   document.querySelectorAll('.brand-mark').forEach((img) => { img.src = TENANT && societe().logo ? societe().logo : APP_BRAND.logo; });
+  // 🎨 centrale d'un client : la couleur de son logo
+  const col = TENANT && vault.unlocked ? societe().color || '' : '';
+  if (/^#[0-9a-f]{6}$/i.test(col)) document.documentElement.style.setProperty('--accent', col); else document.documentElement.style.removeProperty('--accent');
 }
 // 🖼️ icône de la CENTRAL DOMIER (choisie dans Réglages, seulement la centrale principale) : en-tête, page de la clé, onglet du navigateur,
 // icône sur l'écran (nouvelle installation). Gardée aussi sur l'appareil (non chiffrée : c'est seulement un logo) pour la page de la clé.
@@ -4966,6 +4969,25 @@ function signBlock(st) {
       <p class="tiny muted" style="margin:6px 0 0">Le timbre doit être celui de la société indiquée ci-dessous.</p>
     </div></div>`;
 }
+// 🎨 couleur du client = la couleur dominante de son logo (sans le blanc, le noir et le gris), assez foncée pour les boutons
+function logoColor(c) {
+  try {
+    const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, b = {};
+    for (let i = 0; i < d.length; i += 16) {
+      if (d[i + 3] < 200) continue;
+      const r = d[i], g = d[i + 1], bl = d[i + 2], mx = Math.max(r, g, bl), mn = Math.min(r, g, bl);
+      if (mx - mn < 40 || mx < 40) continue;
+      const k = (r >> 5) + ',' + (g >> 5) + ',' + (bl >> 5), o = b[k] || (b[k] = { w: 0, n: 0, r: 0, g: 0, b: 0 });
+      o.w += 1 + (mx - mn) / 64; o.n++; o.r += r; o.g += g; o.b += bl;
+    }
+    const best = Object.values(b).sort((x, y) => y.w - x.w)[0];
+    if (!best) return '';
+    let rgb = [best.r, best.g, best.b].map((v) => v / best.n);
+    const L = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+    if (L > 0.5) rgb = rgb.map((v) => v * 0.5 / L); // trop clair pour un bouton blanc sur couleur : on fonce
+    return '#' + rgb.map((v) => Math.round(Math.min(255, v)).toString(16).padStart(2, '0')).join('');
+  } catch { return ''; }
+}
 async function setLogo(file, field = 'logo') {
   if (field === 'signature') {
     try {
@@ -4985,7 +5007,8 @@ async function setLogo(file, field = 'logo') {
     c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
     const url = c.toDataURL('image/png');
     const logo = url.length < 180000 ? url : c.toDataURL('image/jpeg', 0.85);
-    await vault.mutate((tx) => tx.put('reglages', { id: 'main', [field]: logo }), field === 'logo' ? 'Logo de la société' : 'Signature + timbre de la société', socName());
+    const col = field === 'logo' ? logoColor(c) : '';
+    await vault.mutate((tx) => tx.put('reglages', { id: 'main', [field]: logo, ...(col ? { color: col } : {}) }), field === 'logo' ? 'Logo de la société' : 'Signature + timbre de la société', socName());
     applyBrand();
     toast(field === 'logo' ? 'Logo enregistré' : 'Signature + timbre enregistrés');
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
@@ -9421,7 +9444,8 @@ const SHEETS = {
         <div class="section-label full" style="margin:0">${SOC_FICHE[socRole()]}</div>
         <div class="full" style="display:flex;align-items:center;gap:12px">${socLogo() ? html`<img src="${socLogo()}" alt="" style="height:48px;max-width:140px;object-fit:contain;background:#fff;border-radius:8px;padding:4px;border:1px solid var(--border)">` : html`<span style="width:48px;height:48px;border-radius:50%;background:var(--accent,#4f46e5);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex:none">${String(societe().nom || DEF_SOC()).trim().charAt(0).toUpperCase()}</span>`}
           <label class="btn sm" style="cursor:pointer">🖼️ ${st.logo ? 'Changer le logo' : 'Mettre votre logo'}<input type="file" accept="image/*" data-input="soc-logo" hidden></label>
-          ${st.logo ? html`<button class="btn sm ghost" type="button" data-action="soc-logo-del">Retirer</button>` : ''}</div>
+          ${st.logo ? html`<button class="btn sm ghost" type="button" data-action="soc-logo-del">Retirer</button>` : ''}
+          ${TENANT ? html`<label class="btn sm ghost" style="cursor:pointer" title="Couleur de vos apps (prise du logo)">🎨 Couleur <input type="color" data-input="soc-color" value="${/^#[0-9a-f]{6}$/i.test(st.color || '') ? st.color : '#4f46e5'}" style="width:28px;height:22px;border:0;padding:0;background:none"></label>` : ''}</div>
         <p class="tiny muted full" style="margin:0">Le logo apparaît dans l’app, les apps des locataires et de l’équipe, les quittances et les impressions.</p>
         <div class="section-label full" style="margin:8px 0 0">✍️ Signature + timbre (récapitulatif des loyers des locataires)</div>
         <div class="full" id="signWrap">${signBlock(st)}</div>
@@ -13488,6 +13512,7 @@ document.addEventListener('change', (e) => {
   }
   if (k === 'year') { ui.year = +e.target.value; ui.cpLim = 10; renderView(); }
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
+  if (k === 'soc-color' && /^#[0-9a-f]{6}$/i.test(e.target.value)) { vault.mutate((tx) => tx.put('reglages', { id: 'main', color: e.target.value }), 'Couleur de la société', socName()).then(() => { applyBrand(); toast('Couleur enregistrée'); }); return; }
   if (k === 'soc-logo' && e.target.files[0]) { setLogo(e.target.files[0]).then(() => { if (TENANT) { renderShell(); go(ui.route, true); } }); e.target.value = ''; }
   if (k === 'brand-ico' && e.target.files[0] && !TENANT && !vault.op) { brandSet(e.target.files[0]); e.target.value = ''; }
   if (k === 'dev-w') { const o = e.target.selectedOptions[0], t = e.target.form[e.target.name.replace('dw', 'dt')]; if (t && o && num(o.dataset.rate)) t.value = o.dataset.rate; const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(e.target.form))); }

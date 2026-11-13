@@ -16,6 +16,8 @@ import { videoEmbed } from '/ares/video-embed.js';
 import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
 import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from '/ares/pubsocial.js';
 import { netPubsGet, netPubsFor } from '/ares/netpubs.js';
+import { themeInit, themeBtn } from '/ares/theme.js';
+themeInit();
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'annAccess';
 let [id, key] = (location.hash.slice(1).match(/^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/) || []).slice(1);
@@ -331,7 +333,7 @@ const LGT = { fr: 'Votre logo apparaît dans vos annonces, dans toutes les apps 
 function render() {
   const t = T();
   document.documentElement.lang = lang;
-  const langs = `<div class="langs">${LANGS.map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
+  const langs = `<div class="langs">${LANGS.map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}${themeBtn()}</div>`;
   if (!data) {
     app.innerHTML = `<div class="top"><span class="brandx"><b>📣 ${esc(t.app)}</b></span>${langs}</div><p class="sub" style="text-align:center;margin-top:18px">${esc(t.welcome)}</p>
       ${loadErr ? `<div class="card warnc"><p style="margin:0">${esc(loadErr)}</p></div>` : ''}
