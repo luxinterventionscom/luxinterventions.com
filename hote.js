@@ -38,7 +38,7 @@ const L = {
     door: 'Code de la porte', doorSoon: 'Visible le jour de votre arrivée', key: 'Badge / clé', formule: 'Formule', F: { seul: 'Logement seul', pdj: 'Petit-déjeuner', demi: 'Demi-pension', complete: 'Pension complète' },
     pref: 'Vos préférences', menu: '🍽️ Voir le menu', close: 'Fermer', call: '📞 Appeler', wa: '💬 WhatsApp', way: '🧭 Itinéraire',
     arrT: 'Comment arrivez-vous ?', self: '🚗 Je viens par mes propres moyens', taxi: '🚕 Envoyez-moi un taxi', pick: 'Où vous prendre ?', aero: '✈️ Aéroport de Luxembourg', gare: '🚉 Gare de Luxembourg', other: '📍 Autre adresse / ville',
-    otherPh: 'ex. Trier, Hauptbahnhof', when: 'Quand ?', vol: 'N° de vol / train (facultatif)', est: 'Estimation', calc: 'Calcul…', send: 'Confirmer', change: 'Changer', chosenSelf: 'Vous venez par vos propres moyens.', chosenTaxi: 'Taxi demandé',
+    otherPh: 'ex. Trier, Hauptbahnhof', when: 'Quand ?', vol: 'N° de vol / train (facultatif)', est: 'Estimation', calc: 'Calcul…', send: 'Confirmer', change: 'Changer', chBack: '↩️ Annuler — garder mon choix', chQ: 'Le chauffeur est déjà prévu : l’hôtel sera prévenu. Changer quand même ?', chY: 'Oui, changer', chN: 'Non', accQ: 'Accepter les modifications ?', accY: 'Oui, envoyer', accN: 'Revoir', chosenSelf: 'Vous venez par vos propres moyens.', chosenTaxi: 'Taxi demandé',
     wait: 'L’établissement vous envoie un chauffeur — vous serez prévenu ici.', driver: 'Votre chauffeur', go: '🚗 Je suis en route', here: '✅ Je suis arrivé', mins: 'Arrivée dans combien de minutes ?', gpsNo: 'Position non disponible : choisissez les minutes.',
     trackOn: 'L’établissement voit votre heure d’arrivée (pas votre position exacte). Le partage s’arrête à votre arrivée.', sent: 'Envoyé ✓',
     edlT: '📋 État des lieux de sortie', edlP: 'Avant de partir, prenez les photos (une par case) : elles protègent votre caution et vous.', edlSend: 'Envoyer les photos', edlOk: 'photo(s) reçue(s) par l’établissement',
@@ -49,7 +49,7 @@ const L = {
     door: 'Door code', doorSoon: 'Shown on your arrival day', key: 'Badge / key', formule: 'Board', F: { seul: 'Room only', pdj: 'Breakfast', demi: 'Half board', complete: 'Full board' },
     pref: 'Your preferences', menu: '🍽️ See the menu', close: 'Close', call: '📞 Call', wa: '💬 WhatsApp', way: '🧭 Directions',
     arrT: 'How are you arriving?', self: '🚗 I’m coming on my own', taxi: '🚕 Send me a taxi', pick: 'Where should we pick you up?', aero: '✈️ Luxembourg Airport', gare: '🚉 Luxembourg Station', other: '📍 Other address / city',
-    otherPh: 'e.g. Trier, Hauptbahnhof', when: 'When?', vol: 'Flight / train no. (optional)', est: 'Estimate', calc: 'Calculating…', send: 'Confirm', change: 'Change', chosenSelf: 'You are coming on your own.', chosenTaxi: 'Taxi requested',
+    otherPh: 'e.g. Trier, Hauptbahnhof', when: 'When?', vol: 'Flight / train no. (optional)', est: 'Estimate', calc: 'Calculating…', send: 'Confirm', change: 'Change', chBack: '↩️ Cancel — keep my choice', chQ: 'Your driver is already booked: the hotel will be told. Change anyway?', chY: 'Yes, change', chN: 'No', accQ: 'Accept the changes?', accY: 'Yes, send', accN: 'Review', chosenSelf: 'You are coming on your own.', chosenTaxi: 'Taxi requested',
     wait: 'The property is sending you a driver — you will be notified here.', driver: 'Your driver', go: '🚗 I’m on my way', here: '✅ I have arrived', mins: 'Arriving in how many minutes?', gpsNo: 'Location unavailable: choose the minutes.',
     trackOn: 'The property sees your arrival time (not your exact position). Sharing stops when you arrive.', sent: 'Sent ✓',
     edlT: '📋 Check-out inventory', edlP: 'Before leaving, take the photos (one per box): they protect your deposit and you.', edlSend: 'Send the photos', edlOk: 'photo(s) received by the property',
@@ -60,7 +60,7 @@ const L = {
     door: 'Türcode', doorSoon: 'Sichtbar am Anreisetag', key: 'Badge / Schlüssel', formule: 'Verpflegung', F: { seul: 'Nur Übernachtung', pdj: 'Frühstück', demi: 'Halbpension', complete: 'Vollpension' },
     pref: 'Ihre Vorlieben', menu: '🍽️ Speisekarte ansehen', close: 'Schließen', call: '📞 Anrufen', wa: '💬 WhatsApp', way: '🧭 Route',
     arrT: 'Wie reisen Sie an?', self: '🚗 Ich komme selbst', taxi: '🚕 Schicken Sie mir ein Taxi', pick: 'Wo sollen wir Sie abholen?', aero: '✈️ Flughafen Luxemburg', gare: '🚉 Bahnhof Luxemburg', other: '📍 Andere Adresse / Stadt',
-    otherPh: 'z. B. Trier, Hauptbahnhof', when: 'Wann?', vol: 'Flug- / Zugnr. (optional)', est: 'Schätzung', calc: 'Berechnung…', send: 'Bestätigen', change: 'Ändern', chosenSelf: 'Sie kommen selbst.', chosenTaxi: 'Taxi angefragt',
+    otherPh: 'z. B. Trier, Hauptbahnhof', when: 'Wann?', vol: 'Flug- / Zugnr. (optional)', est: 'Schätzung', calc: 'Berechnung…', send: 'Bestätigen', change: 'Ändern', chBack: '↩️ Abbrechen — meine Wahl behalten', chQ: 'Ihr Fahrer ist schon eingeplant: das Hotel wird informiert. Trotzdem ändern?', chY: 'Ja, ändern', chN: 'Nein', accQ: 'Änderungen übernehmen?', accY: 'Ja, senden', accN: 'Prüfen', chosenSelf: 'Sie kommen selbst.', chosenTaxi: 'Taxi angefragt',
     wait: 'Das Haus schickt Ihnen einen Fahrer — Sie werden hier benachrichtigt.', driver: 'Ihr Fahrer', go: '🚗 Ich bin unterwegs', here: '✅ Ich bin angekommen', mins: 'Ankunft in wie vielen Minuten?', gpsNo: 'Standort nicht verfügbar: Minuten wählen.',
     trackOn: 'Das Haus sieht Ihre Ankunftszeit (nicht Ihren genauen Standort). Das Teilen endet bei Ihrer Ankunft.', sent: 'Gesendet ✓',
     edlT: '📋 Auszugsprotokoll', edlP: 'Machen Sie vor der Abreise die Fotos (eines pro Feld): sie schützen Ihre Kaution und Sie.', edlSend: 'Fotos senden', edlOk: 'Foto(s) vom Haus erhalten',
@@ -71,7 +71,7 @@ const L = {
     door: 'Codice della porta', doorSoon: 'Visibile il giorno del suo arrivo', key: 'Badge / chiave', formule: 'Formula', F: { seul: 'Solo pernottamento', pdj: 'Colazione', demi: 'Mezza pensione', complete: 'Pensione completa' },
     pref: 'Le sue preferenze', menu: '🍽️ Vedi il menù', close: 'Chiudi', call: '📞 Chiama', wa: '💬 WhatsApp', way: '🧭 Percorso',
     arrT: 'Come arriva?', self: '🚗 Vengo con i miei mezzi', taxi: '🚕 Mandatemi un taxi', pick: 'Dove la veniamo a prendere?', aero: '✈️ Aeroporto di Lussemburgo', gare: '🚉 Stazione di Lussemburgo', other: '📍 Altro indirizzo / città',
-    otherPh: 'es. Trier, Hauptbahnhof', when: 'Quando?', vol: 'N° volo / treno (facoltativo)', est: 'Stima', calc: 'Calcolo…', send: 'Conferma', change: 'Cambia', chosenSelf: 'Viene con i suoi mezzi.', chosenTaxi: 'Taxi richiesto',
+    otherPh: 'es. Trier, Hauptbahnhof', when: 'Quando?', vol: 'N° volo / treno (facoltativo)', est: 'Stima', calc: 'Calcolo…', send: 'Conferma', change: 'Cambia', chBack: '↩️ Annulla — tengo la mia scelta', chQ: 'L’autista è già previsto: l’hotel verrà avvisato. Cambiare lo stesso?', chY: 'Sì, cambia', chN: 'No', accQ: 'Accetti le modifiche?', accY: 'Sì, invia', accN: 'Rivedi', chosenSelf: 'Viene con i suoi mezzi.', chosenTaxi: 'Taxi richiesto',
     wait: 'La struttura le manda un autista — sarà avvisato qui.', driver: 'Il suo autista', go: '🚗 Sono in viaggio', here: '✅ Sono arrivato', mins: 'Arrivo tra quanti minuti?', gpsNo: 'Posizione non disponibile: scelga i minuti.',
     trackOn: 'La struttura vede l’ora del suo arrivo (non la posizione esatta). La condivisione si ferma al suo arrivo.', sent: 'Inviato ✓',
     edlT: '📋 Stato dei luoghi d’uscita', edlP: 'Prima di partire, faccia le foto (una per casella): proteggono la sua cauzione e lei.', edlSend: 'Invia le foto', edlOk: 'foto ricevute dalla struttura',
@@ -82,7 +82,7 @@ const L = {
     door: 'Código da porta', doorSoon: 'Visível no dia da chegada', key: 'Cartão / chave', formule: 'Regime', F: { seul: 'Só alojamento', pdj: 'Pequeno-almoço', demi: 'Meia pensão', complete: 'Pensão completa' },
     pref: 'As suas preferências', menu: '🍽️ Ver o menu', close: 'Fechar', call: '📞 Ligar', wa: '💬 WhatsApp', way: '🧭 Itinerário',
     arrT: 'Como vai chegar?', self: '🚗 Vou pelos meus meios', taxi: '🚕 Enviem-me um táxi', pick: 'Onde o vamos buscar?', aero: '✈️ Aeroporto do Luxemburgo', gare: '🚉 Estação do Luxemburgo', other: '📍 Outra morada / cidade',
-    otherPh: 'ex. Trier, Hauptbahnhof', when: 'Quando?', vol: 'N.º voo / comboio (opcional)', est: 'Estimativa', calc: 'A calcular…', send: 'Confirmar', change: 'Alterar', chosenSelf: 'Vem pelos seus meios.', chosenTaxi: 'Táxi pedido',
+    otherPh: 'ex. Trier, Hauptbahnhof', when: 'Quando?', vol: 'N.º voo / comboio (opcional)', est: 'Estimativa', calc: 'A calcular…', send: 'Confirmar', change: 'Alterar', chBack: '↩️ Cancelar — manter a minha escolha', chQ: 'O motorista já está previsto: o hotel será avisado. Alterar mesmo assim?', chY: 'Sim, alterar', chN: 'Não', accQ: 'Aceita as alterações?', accY: 'Sim, enviar', accN: 'Rever', chosenSelf: 'Vem pelos seus meios.', chosenTaxi: 'Táxi pedido',
     wait: 'O estabelecimento envia-lhe um motorista — será avisado aqui.', driver: 'O seu motorista', go: '🚗 Estou a caminho', here: '✅ Cheguei', mins: 'Chegada dentro de quantos minutos?', gpsNo: 'Localização indisponível: escolha os minutos.',
     trackOn: 'O estabelecimento vê a hora de chegada (não a posição exata). A partilha para quando chegar.', sent: 'Enviado ✓',
     edlT: '📋 Vistoria de saída', edlP: 'Antes de sair, tire as fotos (uma por casa): protegem a sua caução e a si.', edlSend: 'Enviar as fotos', edlOk: 'foto(s) recebida(s) pelo estabelecimento',
@@ -93,7 +93,7 @@ const L = {
     door: 'Código de la puerta', doorSoon: 'Visible el día de su llegada', key: 'Tarjeta / llave', formule: 'Régimen', F: { seul: 'Solo alojamiento', pdj: 'Desayuno', demi: 'Media pensión', complete: 'Pensión completa' },
     pref: 'Sus preferencias', menu: '🍽️ Ver el menú', close: 'Cerrar', call: '📞 Llamar', wa: '💬 WhatsApp', way: '🧭 Ruta',
     arrT: '¿Cómo llega?', self: '🚗 Voy por mis medios', taxi: '🚕 Envíenme un taxi', pick: '¿Dónde le recogemos?', aero: '✈️ Aeropuerto de Luxemburgo', gare: '🚉 Estación de Luxemburgo', other: '📍 Otra dirección / ciudad',
-    otherPh: 'p. ej. Trier, Hauptbahnhof', when: '¿Cuándo?', vol: 'N.º de vuelo / tren (opcional)', est: 'Estimación', calc: 'Calculando…', send: 'Confirmar', change: 'Cambiar', chosenSelf: 'Viene por sus medios.', chosenTaxi: 'Taxi solicitado',
+    otherPh: 'p. ej. Trier, Hauptbahnhof', when: '¿Cuándo?', vol: 'N.º de vuelo / tren (opcional)', est: 'Estimación', calc: 'Calculando…', send: 'Confirmar', change: 'Cambiar', chBack: '↩️ Cancelar — mantener mi elección', chQ: 'El conductor ya está previsto: se avisará al hotel. ¿Cambiar de todos modos?', chY: 'Sí, cambiar', chN: 'No', accQ: '¿Acepta los cambios?', accY: 'Sí, enviar', accN: 'Revisar', chosenSelf: 'Viene por sus medios.', chosenTaxi: 'Taxi solicitado',
     wait: 'El establecimiento le envía un conductor — se le avisará aquí.', driver: 'Su conductor', go: '🚗 Estoy en camino', here: '✅ He llegado', mins: '¿Llega en cuántos minutos?', gpsNo: 'Ubicación no disponible: elija los minutos.',
     trackOn: 'El establecimiento ve su hora de llegada (no su posición exacta). Se deja de compartir al llegar.', sent: 'Enviado ✓',
     edlT: '📋 Inventario de salida', edlP: 'Antes de irse, haga las fotos (una por casilla): protegen su fianza y a usted.', edlSend: 'Enviar las fotos', edlOk: 'foto(s) recibida(s) por el establecimiento',
@@ -489,7 +489,7 @@ function arrCard(t) {
       <label>${esc(t.vol)}</label><input data-vol="1" value="${esc(f.vol)}">
       ${svcHtml(f, 'a')}
       <p class="est" id="estBox"></p>` : ''}
-    ${f.mode ? `<button class="btn block" style="margin-top:10px" data-arr-send="1">${esc(t.send)}</button>` : ''}</div>`;
+    ${f.mode ? `<button class="btn block" style="margin-top:10px" data-arr-send="1">${esc(t.send)}</button>` : ''}${arrEdit ? `<button class="btn block sec" style="margin-top:8px" data-arr-back="1">${esc(t.chBack)}</button>` : ''}</div>`;
 }
 
 async function load() {
@@ -590,7 +590,17 @@ app.addEventListener('click', async (e) => {
     } catch { /* hors ligne */ }
     return;
   }
-  if (b.dataset.arrEdit) { arrEdit = true; arrForm.mode = ''; return render(); }
+  if (b.dataset.arrEdit) {
+    const open = () => {
+      const s0 = data.arr || arrSent() || {}, spot = s0.from === t.aero.replace(/^\S+\s/, '') ? 'aero' : s0.from === t.gare.replace(/^\S+\s/, '') ? 'gare' : 'other';
+      arrForm = { ...arrForm, mode: s0.mode || '', spot: s0.mode === 'taxi' ? spot : arrForm.spot, other: s0.mode === 'taxi' && spot === 'other' ? s0.from || '' : arrForm.other, quand: s0.quand || arrForm.quand, vol: s0.vol || '', service: s0.service || 'course', gamme: s0.gamme || '', extras: [...(s0.extras || [])], heures: s0.heures || 3, est: null };
+      arrEdit = true; render(); if (arrForm.mode === 'taxi') estimate().then(() => render()).catch(() => {});
+    };
+    if (data.taxiOk) return import('/ares/confirm-box.js').then((m) => m.confirmBox(t.chQ, t.chY, t.chN, open));
+    return open();
+  }
+  if (b.dataset.arrBack) { arrEdit = false; return render(); }
+  if (b.dataset.arrSend && arrEdit && !b.dataset.ok) return import('/ares/confirm-box.js').then((m) => m.confirmBox(t.accQ, t.accY, t.accN, () => { b.dataset.ok = '1'; b.click(); }));
   if (b.dataset.arrSend) {
     b.disabled = true;
     const f = arrForm, from = f.spot === 'other' ? f.other : t[f.spot].replace(/^\S+\s/, '');
