@@ -8184,8 +8184,6 @@ const SHEETS = {
           ${(co.codeHist || []).length ? html`<details><summary class="small">🗂️ Codes donnés : ${co.codeHist.length}</summary><div class="list small">${[...co.codeHist].reverse().map((x) => html`<div class="row"><span class="grow">${fmtDate(x.d)} — ${'•'.repeat(Math.max(0, (x.code || '').length - 2))}${(x.code || '').slice(-2)}${x.why ? ' · ' + x.why : ''}</span></div>`)}</div></details>` : ''}
           <p class="tiny muted" style="margin:0">Dans son app, la société met ses chauffeurs, ses voitures, ses tarifs et ses extras ; elle accepte ou refuse les courses que vous lui envoyez.</p>
         </div>
-        <div class="full section-label" style="margin:6px 0 0">🚗 Parc auto <span class="tiny muted">— combien, et 2 photos (dehors, dedans) : vos clients les voient</span></div>
-        <div class="full" style="display:grid;gap:8px">${Object.entries(FLEET_T).map(([k, l]) => { const x = (co.fleet || {})[k] || {}; return html`<div style="display:grid;grid-template-columns:1fr 70px 90px 90px;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 8px"><b class="small">${l}</b><input name="fl_${k}" type="number" min="0" max="99" value="${x.n || ''}" placeholder="0" inputmode="numeric" aria-label="Nombre ${l}">${['e', 'i'].map((w) => html`<label class="ch-slot" style="padding:3px">${(x.ph || {})[w] ? html`<img data-bph="${x.ph[w]}" alt="">` : html`<span class="ch-empty" style="font-size:16px">＋</span>`}<span class="tiny">${w === 'e' ? 'dehors' : 'dedans'}</span><input type="file" name="flp_${k}_${w}" accept="image/*" hidden></label>`)}</div>`; })}</div>
         ${co.cat ? html`<div class="full section-label" style="margin:6px 0 0">📋 Catalogue reçu ${co.catAt ? '(' + fmtDateTime(co.catAt) + ')' : ''}</div>
           <div class="full small">${Object.keys(TX_GAM).filter((k) => (co.cat.gammes || {})[k] && co.cat.gammes[k].on).map((k) => { const g = co.cat.gammes[k]; return html`<div>${TX_GAM[k]} — ${[g.pc ? g.pc + ' € + ' + g.km + ' €/km' : '', g.h ? g.h + ' €/h' : '', g.demi ? '½ j ' + g.demi + ' €' : '', g.jour ? 'jour ' + g.jour + ' €' : ''].filter(Boolean).join(' · ')}</div>`; })}
           ${(co.cat.drivers || []).map((d) => html`<div>👤 ${d.nom}${d.lg ? ' · ' + d.lg : ''}</div>`)}${(co.cat.cars || []).map((x) => html`<div>🚘 ${x.modele} · ${x.plaque} · ${TX_GAM[x.gamme]}</div>`)}
@@ -11468,18 +11466,9 @@ const FORMS = {
     const rid = id || 'txco-' + uid(), old = vault.get('reglages', rid) || {}, lost = !!(sheetEl.querySelector('input[name=appCode]') || {}).dataset?.lost;
     const codeHist = [...(old.codeHist || [])];
     if (!old.appCode || old.appCode !== g('appCode')) codeHist.push({ d: today(), code: g('appCode'), why: !old.appCode ? 'création' : lost ? 'code perdu' : 'changé' });
-    // 🚗 parc auto : nombres + photos (dehors / dedans)
-    const fleet = { ...(old.fleet || {}) }, dels = [];
-    for (const k of Object.keys(FLEET_T)) {
-      const x = { ...(fleet[k] || {}), ph: { ...((fleet[k] || {}).ph || {}) } };
-      x.n = Math.max(0, Math.min(99, parseInt(g('fl_' + k), 10) || 0));
-      for (const w of ['e', 'i']) { const f = fd.get(`flp_${k}_${w}`); if (f && f.size && f.type.startsWith('image/')) { const pid = uid(); await vault.saveFile(pid, await compressPhoto(f)); if (x.ph[w]) dels.push(x.ph[w]); x.ph[w] = pid; } }
-      if (x.n || Object.keys(x.ph).length) fleet[k] = x; else delete fleet[k];
-    }
     const iban = g('iban').replace(/\s+/g, '').toUpperCase();
     if (iban && !ibanOk(iban)) return toast('IBAN invalide : vérifiez-le (ou laissez vide)', { bad: true });
-    await vault.mutate((tx) => tx.put('reglages', { id: rid, nom: g('nom'), tel: g('tel'), gsm: g('gsm'), email: g('email'), rcs: g('rcs').toUpperCase(), adresse: g('adresse'), ville: g('ville'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), appCode: g('appCode'), codeHist: codeHist.slice(-30), fleet }), id ? 'Société de taxi modifiée' : 'Société de taxi créée', g('nom'));
-    for (const x of dels) await vault.deleteFile(x).catch(() => {});
+    await vault.mutate((tx) => tx.put('reglages', { id: rid, nom: g('nom'), tel: g('tel'), gsm: g('gsm'), email: g('email'), rcs: g('rcs').toUpperCase(), adresse: g('adresse'), ville: g('ville'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), appCode: g('appCode'), codeHist: codeHist.slice(-30) }), id ? 'Société de taxi modifiée' : 'Société de taxi créée', g('nom'));
     toast(id ? 'Enregistré' : 'Société créée : envoyez-lui le code');
     goBack();
     await txcoSync(rid, true);
