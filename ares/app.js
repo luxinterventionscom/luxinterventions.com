@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.261.0';
+const VERSION = '2.262.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -645,6 +645,52 @@ const pchatColl = (r) => (vault.get('hotes', r.id) ? 'hotes' : 'reglages');
 const pchatSync = (id) => (vault.get('hotes', id) ? hotesSync(id, true) : String(id).startsWith('txco-') ? txcoSync(id, true) : annSync(id, true));
 const pchatKind = (r) => (vault.get('hotes', r.id) ? '🛎️' : String(r.id).startsWith('txco-') ? '🚕' : '🍽️');
 const pchatName = (r) => (vault.get('hotes', r.id) ? `${[r.prenom, r.nom].filter(Boolean).join(' ') || 'Client'}${r.chambre ? ' — ' + r.chambre : ''}` : r.nom);
+// 🧵 FIL DE LA COURSE : hôtel ↔ (LA CENTRAL) ↔ taxi / chauffeur. Le client parle seulement à l'hôtel ;
+// l'hôtel gire avec ↪️ au client / ↪️ au taxi ; 💬 au chauffeur (urgence) : le client et le chauffeur s'écrivent via l'hôtel, jusqu'à 2 h après l'arrivée
+const FIL_MAX = 60;
+const filMsg = (x, from, who) => ({ id: 'f' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5), at: new Date().toISOString(), from: ['hotel', 'lc', 'taxi', 'drv', 'client'].includes(from) ? from : 'hotel', who: String(who || '').slice(0, 60), x: String(x || '').trim().slice(0, 1000) });
+const filIn = (m) => (m && typeof m === 'object' && String(m.x || '').trim() ? { ...filMsg(m.x, m.from, m.who), id: String(m.id || '').replace(/[^a-z0-9]/gi, '').slice(0, 24) || 'f' + Date.now().toString(36), at: String(m.at || new Date().toISOString()).slice(0, 30) } : null);
+const filAdd = (arr, m) => ((arr || []).some((x) => x.id === m.id) ? arr || [] : [...(arr || []), m].slice(-FIL_MAX));
+const FIL_IC = { hotel: '🛎️', lc: '🌐', taxi: '🚕', drv: '🚙', client: '👤' };
+const filRideOf = (h) => { const L = [['arr', h.taxi], ...(h.rides || []).map((z) => [z.id, z.taxi])].filter(([, x]) => x && (x.lc || x.own) && !x.done && x.st !== 'no'); return L.length ? L[0][0] : ''; };
+const rideTaxi = (h, rid) => (rid === 'arr' ? h.taxi : ((h.rides || []).find((r) => r.id === rid) || {}).taxi) || null;
+const ridePut = (tx, h, rid, fn) => { if (rid === 'arr') tx.put('hotes', { id: h.id, taxi: fn(h.taxi || {}) }); else tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === rid ? { ...r, taxi: fn(r.taxi || {}) } : r)) }); };
+const filDirect = (x) => { if (!x || !x.direct) return false; if (!x.done) return true; const a = [...(x.tl || [])].reverse().find((e) => e.k === 'arr'); return !!a && Date.now() - Date.parse(a.at) < 2 * 3600e3; };
+async function guestSay(h, x) {
+  const cur = vault.get('hotes', h.id) || h;
+  await vault.mutate((tx) => tx.put('hotes', { id: h.id, chat: [...(cur.chat || []), { id: 'c' + Date.now().toString(36), at: new Date().toISOString(), from: 'mgr', x: String(x).slice(0, 1500) }].slice(-PCHAT_MAX) }), '💬 Message au client', cur.nom || '');
+  await pchatSync(h.id).catch(() => {});
+}
+async function filHotel(h, rid, x, from = 'hotel') {
+  const cur = rideTaxi(h, rid);
+  if (!cur || !(cur.lc || cur.own)) return false;
+  const m = filMsg(x, from, from === 'client' ? [h.prenom, h.nom].filter(Boolean).join(' ') : socName());
+  if (!m.x) return false;
+  await vault.mutate((tx) => {
+    ridePut(tx, h, rid, (o) => ({ ...o, fil: filAdd(o.fil, m) }));
+    const t = cur.own && cur.tid ? vault.get('taches', cur.tid) : null;
+    if (t) tx.put('taches', { id: t.id, course: { ...t.course, fil: filAdd(t.course.fil, m) } });
+  }, '🧵 Fil de la course', m.x.slice(0, 60));
+  if (cur.lc && TENANT) await tenantSend({ type: 'fil', ref: h.id + '|' + rid, m });
+  if (cur.own && cur.w) equipeSync(cur.w).catch(() => {});
+  hotesSync(h.id);
+  return true;
+}
+async function filHotelIn(h, rid, m) {
+  const cur = rideTaxi(h, rid);
+  if (!cur) return;
+  await vault.mutate((tx) => ridePut(tx, h, rid, (o) => ({ ...o, fil: filAdd(o.fil, m), filNew: (o.filNew || 0) + 1 })), '🧵 Fil : ' + (m.who || ''), m.x.slice(0, 60));
+  if (filDirect(cur) && m.from !== 'client' && m.from !== 'hotel') await guestSay(h, `${FIL_IC[m.from] || '🚕'} ${m.who || ''} : ${m.x}`);
+}
+async function filTache(t, m) {
+  await vault.mutate((tx) => tx.put('taches', { id: t.id, course: { ...t.course, fil: filAdd(t.course.fil, m) } }), '🧵 Fil de la course', m.x.slice(0, 60));
+  const c = t.course;
+  if (TENANT && c.up) await tenantSend({ type: 'fil', ref: c.up.ref, m }).catch(() => {});
+  if (TENANT && c.hid) { const h = vault.get('hotes', c.hid); if (h && m.from !== 'hotel') await filHotelIn(h, c.rid, m); }
+  if (!TENANT && t.net && m.from !== 'hotel') await netBoxSend(t.net.tid, { type: 'fil', ref: t.net.ref, m }).catch(() => {});
+  if (!TENANT && c.ct && m.from !== 'taxi') await netBoxSend(c.ct.tid, { type: 'fil', ref: t.id, m }).catch(() => {});
+  if (t.intervenantId && m.from !== 'drv') equipeSync(t.intervenantId).catch(() => {});
+}
 async function pchatIn(r, msg) {
   const chat = [...(r.chat || [])], at0 = String(msg.t || new Date().toISOString()).slice(0, 30);
   let n = 0, ed = 0;
@@ -665,6 +711,7 @@ async function pchatIn(r, msg) {
   if (!n && !ed) return false;
   chat.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
   const co = pchatColl(r), cur = vault.get(co, r.id) || r;
+  if (n && co === 'hotes') { const h = vault.get('hotes', r.id); if (h) for (const [rid, x] of [['arr', h.taxi], ...(h.rides || []).map((z) => [z.id, z.taxi])]) if (filDirect(x)) { for (const it of chat.slice(-n).filter((m) => m.from === 'p')) setTimeout(() => filHotel(vault.get('hotes', h.id), rid, it.x, 'client').catch(() => {}), 0); break; } }
   await vault.mutate((tx) => tx.put(co, { id: r.id, chat: chat.slice(-PCHAT_MAX), chatNew: (cur.chatNew || 0) + n }), n ? `💬 Message de ${pchatName(r)}` : `💬 Message modifié par ${pchatName(r)}`, pchatName(r));
   await pchatSync(r.id);
   return true;
@@ -673,7 +720,7 @@ const pchatHtml = (r) => {
   const msgs = (r.chat || []).slice(-80), on = r.espace && r.espace.id;
   return html`<p class="tiny muted" style="margin:0 0 8px;display:flex;align-items:center;gap:8px"><span>Messages entre <b>${pchatName(r)}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</span>${new Raw(trButton())}</p>
     ${!on ? html`<div class="alert warn" style="margin-bottom:10px">📱<div>Son app n’est pas encore active : il ne recevra vos messages qu’après sa première connexion.</div></div>` : ''}
-    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? '🛡️ Centrale' : pchatKind(r) + ' ' + pchatName(r)} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}${m.from === 'mgr' && !m.del ? html`<button class="bub-mn" data-action="pc-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : ''}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé</div>` : m.from === 'mgr' ? m.x : html`<span data-trx="${m.x}">${m.x}</span>`}${m.from === 'mgr' && ui.pcMn === m.id && !m.del ? html`<div class="bub-menu">${Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<button class="btn sm" data-action="pc-edit" data-r="${r.id}" data-id="${m.id}">✏️ Modifier</button>` : ''}<button class="btn sm danger" data-action="pc-del" data-r="${r.id}" data-id="${m.id}">🗑️ Supprimer</button></div>` : ''}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
+    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? '🛡️ Centrale' : pchatKind(r) + ' ' + pchatName(r)} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}${m.from === 'mgr' && !m.del ? html`<button class="bub-mn" data-action="pc-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : ''}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé</div>` : m.from === 'mgr' ? m.x : html`<span data-trx="${m.x}">${m.x}</span>${r.arrivee && filRideOf(r) ? html` <button type="button" class="btn sm" data-action="fil-taxi" data-id="${r.id}" data-m="${m.id}">↪️ au taxi</button>` : ''}`}${m.from === 'mgr' && ui.pcMn === m.id && !m.del ? html`<div class="bub-menu">${Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<button class="btn sm" data-action="pc-edit" data-r="${r.id}" data-id="${m.id}">✏️ Modifier</button>` : ''}<button class="btn sm danger" data-action="pc-del" data-r="${r.id}" data-id="${m.id}">🗑️ Supprimer</button></div>` : ''}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
     <form data-form="pchat" class="eq-chat-f"><input type="hidden" name="id" value="${r.id}"><textarea name="x" required maxlength="1500" placeholder="Écrire à ${pchatName(r)}…" data-draft="p:${r.id}">${(ui.drafts || {})['p:' + r.id] || ''}</textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
 };
 const eqChatHtml = (i) => {
@@ -701,7 +748,7 @@ function equipeData(i) {
       ph: { av: eqPhotos(t.id, 'av').length, ap: eqPhotos(t.id, 'ap').length },
       pb: eqPhotos(t.id, 'pb').slice(0, 6).map((x) => x.id),
       // 🚕 course d'un client : trajet, qui paie, prix TTC, QR du virement (IBAN de la société qui facture), paiement déjà noté
-      ...(t.course ? { course: (() => { const c = t.course, fc = TENANT ? { nom: socName(), iban: ibanOk(societe().iban) ? societe().iban : '', bic: societe().bic || '' } : factConf(), ttc = courseTtc(t); return { from: c.from || '', to: c.to || '', vol: c.vol || '', pax: c.pax || 0, payer: c.payer, ttc, paid: c.paid ? c.paid.mode : '', cancel: c.cancel || '', epc: c.payer === 'client' && ttc > 0 && fc.iban ? epcText(fc.nom, fc.iban, fc.bic, ttc, 'Course ' + (t.date || '') + ' ' + String(t.id).slice(-6)) : '' }; })() } : {}),
+      ...(t.course ? { course: (() => { const c = t.course, fc = TENANT ? { nom: socName(), iban: ibanOk(societe().iban) ? societe().iban : '', bic: societe().bic || '' } : factConf(), ttc = courseTtc(t); return { fil: (c.fil || []).slice(-20).map((m) => ({ id: m.id, at: m.at, from: m.from, who: m.who, x: m.x })), from: c.from || '', to: c.to || '', vol: c.vol || '', pax: c.pax || 0, payer: c.payer, ttc, paid: c.paid ? c.paid.mode : '', cancel: c.cancel || '', epc: c.payer === 'client' && ttc > 0 && fc.iban ? epcText(fc.nom, fc.iban, fc.bic, ttc, 'Course ' + (t.date || '') + ' ' + String(t.id).slice(-6)) : '' }; })() } : {}),
     };
   };
   const imIds = new Set(hors(i).map((h) => h.immId).filter(Boolean));
@@ -885,6 +932,10 @@ async function equipeInbox(w, msg) {
         tx.put('taches', upd);
         feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note: entry.qte ? `🔢 ${entry.qte} ${entry.qu}`.trim() + (note ? ' — ' + note : '') : note, ph: ph.length, h: entry.h || '', ...(entry.geo ? { geo: entry.geo } : {}) });
         fresh++;
+      } else if (it.k === 'fil') {
+        const t = vault.get('taches', String(it.tid || ''));
+        if (!t || !t.course || t.intervenantId !== w.id) continue;
+        (ui.filOut ||= []).push([t.id, filMsg(it.x, 'drv', intervFull(w))]);
       } else if (it.k === 'ctl') {
         // 🚕 ▶️ départ · 📍 étape · 🏁 arrivée (heure + position) ; l'arrivée termine la course
         const t = vault.get('taches', String(it.tid || ''));
@@ -1842,6 +1893,12 @@ async function netDemSync(list) {
         continue;
       }
       const S = (v, n) => String(v ?? '').trim().slice(0, n), ref = S(m.ref, 40);
+      if (m.type === 'fil') {
+        const fm = filIn(m.m), t = ref && (vault.list('taches').find((x) => x.course && x.net && x.net.tid === tid && x.net.ref === ref) || ((x) => (x && x.course && x.course.ct && x.course.ct.tid === tid ? x : null))(vault.get('taches', ref)));
+        if (fm && t) await filTache({ ...t, course: { ...t.course, filNew: (t.course.filNew || 0) + 1 } }, fm);
+        await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
+        continue;
+      }
       if (m.type === 'course-st') {
         const t = ref && vault.get('taches', ref);
         if (t && t.course && t.course.ct && t.course.ct.tid === tid) {
@@ -2006,6 +2063,10 @@ async function tenantBoxSync() {
           else await vault.mutate((tx) => tx.put('taches', { type: 'autre', ...rec, immId: '', logId: '', locId: '', intervenantId: '', recur: '', statut: 'afaire', urgent: false, sentAt: new Date().toISOString(), course: cr }), '🚕 Course reçue de LA CENTRAL', rec.titre);
           if (cur && cur.intervenantId) equipeSync(cur.intervenantId).catch(() => {});
         }
+      } else if (m.type === 'fil' && m.ref && !ro) {
+        const fm = filIn(m.m);
+        if (fm && String(m.ref).includes('|')) { const [hid, rid] = String(m.ref).split('|'), h = vault.get('hotes', hid); if (h) await filHotelIn(h, rid, fm); }
+        else if (fm) { const t = vault.list('taches').find((x) => x.course && x.course.up && x.course.up.ref === String(m.ref)); if (t) { await vault.mutate((tx) => tx.put('taches', { id: t.id, course: { ...t.course, fil: filAdd(t.course.fil, fm), filNew: (t.course.filNew || 0) + 1 } }), '🧵 Fil : ' + (fm.who || ''), fm.x.slice(0, 60)); if (t.intervenantId) equipeSync(t.intervenantId).catch(() => {}); } }
       } else if (m.type === 'dem-st' && m.ref && String(m.ref).includes('|')) {
         // 🚕 course confiée à LA CENTRAL : chauffeur, voiture, prix, terminée → la fiche du client (et son app) suivent
         const [hid, rid] = String(m.ref).split('|'), h = vault.get('hotes', hid);
@@ -2773,7 +2834,7 @@ async function inboxSync() {
       try { msg = await openFromTenant(keys.priv, await vault.inboxGet(it.name)); } catch { continue; }
       const w = vault.list('intervenants').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
       if (w) {
-        if (w.espace.on && msg.type === 'equipe') { await equipeInbox(w, msg); n++; for (const hid of ui.hoteTouch || []) hotesSync(hid); ui.hoteTouch = null; }
+        if (w.espace.on && msg.type === 'equipe') { await equipeInbox(w, msg); n++; for (const hid of ui.hoteTouch || []) hotesSync(hid); ui.hoteTouch = null; for (const [tid, fm] of ui.filOut || []) { const t = vault.get('taches', tid); if (t && fm.x) await filTache(t, fm).catch(() => {}); } ui.filOut = null; }
         await vault.inboxDel(it.name);
         continue;
       }
@@ -4995,6 +5056,9 @@ function agView(f) {
         ${miss(a).length && !a.bankLater ? html`<span class="tiny amber" style="display:block">⚠️ À compléter : ${miss(a).join(', ')}</span>` : ''}</span><span class="btn sm primary" role="button" data-action="new-bien" data-ag="${a.id}" style="flex:none">${icon('plus')} Bien immo.</span><span class="chev">›</span></button>`)}</div>`
         : html`<div class="card" style="max-width:560px"><p style="margin-top:0">${f === 'proprio' ? 'Les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.' : 'Les agences immobilières publient leurs biens et vous confient leurs interventions.'}</p></div>`}`;
 }
+const filBox = (fil, form, extra = () => '') => html`<div class="section-label" style="margin:8px 0 4px">🧵 Fil de la course</div>
+  <div class="eq-chat" style="max-height:220px;overflow:auto">${(fil || []).length ? fil.slice(-30).map((m) => html`<div class="eq-msg ${m.from === 'hotel' || m.from === 'lc' ? 'me' : ''}"><div class="eq-msg-h">${FIL_IC[m.from] || '•'} ${m.who || ''} · ${String(m.at).slice(11, 16)}${extra(m)}</div><span data-trx="${m.x}">${m.x}</span></div>`) : html`<p class="tiny muted">Pas encore de message.</p>`}</div>
+  <form data-form="fil" class="eq-chat-f">${new Raw(form)}<textarea name="x" required maxlength="1000" placeholder="Écrire sur cette course…"></textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
 // 🚕 CENTRALE-TAXI : l'Accueil par secteurs (centralino, flash, courses du jour, chauffeurs en service, factures)
 function taxiAccueil() {
   const t = today(), S2 = (ic, ti, sub, items) => { const it = items.filter(Boolean); return html`<div class="dsec"><div class="section-label" style="margin:18px 0 0">${ic} ${ti}</div><p class="tiny muted" style="margin:0 0 8px">${sub}</p>${it.length ? it : html`<p class="tiny muted" style="margin:0 0 4px">✓ rien à traiter</p>`}</div>`; };
@@ -8145,6 +8209,7 @@ const SHEETS = {
         <div>${[t.lieu && t.lieu.contact ? '👤 ' + t.lieu.contact : '', t.lieu && t.lieu.tel ? '📞 ' + t.lieu.tel : '', c.pax ? '👥 ' + c.pax : '', TX_SRV[c.service], TX_GAM[c.gamme], ...(c.extras || []).map((k) => TX_EXT[k])].filter(Boolean).join(' · ')}</div></div>
         ${c.cancel ? html`<div class="alert warn" style="margin-bottom:10px">❌<div>Annulée par le client le ${fmtDate(c.cancel)}</div></div>` : ''}
         ${c.paid ? html`<div class="alert info" style="margin-bottom:10px">✅<div>Payée : <b>${PAY_MODES[c.paid.mode] || c.paid.mode}</b> · ${fmtDateTime(c.paid.at)}</div></div>` : ''}
+        ${t.net || c.up || c.ct || t.intervenantId ? html`<div class="card" style="padding:10px;margin-bottom:10px">${filBox(c.fil, `<input type="hidden" name="t" value="${id}">`)}</div>` : ''}
         <form id="f" data-form="course" class="fields"><input type="hidden" name="id" value="${id}">
         <label class="field full">🚙 Notre chauffeur<select name="w"><option value="">—</option>${CH.map((i) => html`<option value="${i.id}" ${t.intervenantId === i.id ? new Raw('selected') : ''}>${intervFull(i)} · ${METIERS[i.metier]}</option>`)}</select></label>
         <label class="field full">🚗 Véhicule<select name="veh"><option value="">— celui du chauffeur</option>${VS.map((v) => html`<option value="${v.id}" ${c.veh === v.id ? new Raw('selected') : ''}>${v.plaque} · ${v.modele || VEH_TYPES[v.type] || ''}</option>`)}</select></label>
@@ -8462,6 +8527,9 @@ const SHEETS = {
         ${cur && !cur.lc && cur.st === 'wait' ? html`<div class="alert warn" style="margin-bottom:10px">⏳<div>Envoyé à <b>${cur.nom}</b> — en attente de sa réponse</div></div>` : ''}
         ${cur && !cur.lc && cur.st !== 'wait' && cur.st !== 'no' ? html`<div class="alert info" style="margin-bottom:10px">🚘<div><b>${cur.nom}</b> · ${cur.auto || ''} ${cur.plaque || ''}${rid ? '' : html`<div class="actions" style="margin:6px 0 0;flex-wrap:wrap">${hoteDrvBtns(h)}</div>`}</div></div>` : ''}
         ${tlBox(cur)}
+        ${cur && (cur.lc || cur.own) && cur.st !== 'no' ? html`<div class="card" style="padding:10px;margin-bottom:10px">${filBox(cur.fil, `<input type="hidden" name="h" value="${id}"><input type="hidden" name="r" value="${rid || 'arr'}">`, (m) => (m.from !== 'hotel' && m.from !== 'client' ? html` <button type="button" class="btn sm" data-action="fil-client" data-id="${id}" data-r="${rid || 'arr'}" data-m="${m.id}">↪️ au client</button>` : ''))}
+          <div class="actions" style="margin:8px 0 0;flex-wrap:wrap"><button type="button" class="btn sm ${filDirect(cur) ? 'primary' : ''}" data-action="fil-direct" data-id="${id}" data-r="${rid || 'arr'}">💬 au chauffeur ${filDirect(cur) ? '— ouvert (fermer)' : '(urgence)'}</button></div>
+          <p class="tiny muted" style="margin:4px 0 0">${filDirect(cur) ? '💬 Ouvert : le client et le chauffeur s’écrivent directement (par votre centrale), jusqu’à 2 h après l’arrivée.' : 'Le client vous écrit dans sa chat ; ↪️ au taxi depuis sa chat, ↪️ au client depuis ce fil.'}</p></div>` : ''}
         ${TENANT ? (() => {
           const own = chaufs().filter((w) => !w.archive), payL = cur && cur.payer === 'hotel' ? (cur.own ? '🧾 Sur la note du client' : h.lieu === 'airbnb' ? '🧾 Payé par nous (Airbnb), sur facture' : '🧾 Payé par l’hôtel, sur facture') : '💶 Payé par le client dans la voiture';
           if (cur && (cur.lc || cur.own) && cur.st !== 'no') return html`<div class="alert ${cur.st === 'ok' ? 'info' : 'warn'}" style="margin-bottom:10px">${cur.lc ? '↪️' : '🚙'}<div><b>${cur.st === 'ok' ? '🚙 ' + cur.nom : '⏳ Envoyé à LA CENTRAL — chauffeur pas encore choisi'}</b>${cur.st === 'ok' ? html`<div class="small">${[cur.auto, cur.plaque].filter(Boolean).join(' · ')}${cur.tel ? html` · <a href="tel:${String(cur.tel).replace(/[^\d+]/g, '')}">📞 ${cur.tel}</a>` : ''}</div>` : ''}<div class="tiny">${cur.lc ? '↪️ LA CENTRAL · ' : '🚙 Votre chauffeur · '}${payL}${cur.prix ? ' · ' + eur(cur.prix) : ''}${cur.done ? ' · 🏁 terminée' : ''}${(cur.done && cur.done.pay) || cur.pay ? ' · ✅ ' + (PAY_MODES[(cur.done && cur.done.pay) || cur.pay] || '') : ''}</div>
@@ -10508,6 +10576,9 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('hotes', { id: h.id, rents: (h.rents || []).map((x) => (x.id === r.id ? { ...x, st: 'lc', lcAt: new Date().toISOString() } : x)) }), '↪️ Location envoyée à LA CENTRAL', h.nom || '');
     toast('↪️ Envoyé à LA CENTRAL'); renderView();
   },
+  'fil-client': async (d) => { const h = vault.get('hotes', d.id), m = h && ((rideTaxi(h, d.r) || {}).fil || []).find((x) => x.id === d.m); if (!m) return; await guestSay(h, `${FIL_IC[m.from] || '🚕'} ${m.who || ''} : ${m.x}`); toast('↪️ Envoyé au client'); },
+  'fil-taxi': async (d) => { const h = vault.get('hotes', d.id), m = h && (h.chat || []).find((x) => x.id === d.m), rid = h && filRideOf(h); if (!m || !rid) return; try { await filHotel(h, rid, m.x, 'client'); toast('↪️ Envoyé au taxi'); } catch { toast('Envoi impossible (connexion ?)', { bad: true }); } },
+  'fil-direct': async (d) => { const h = vault.get('hotes', d.id); if (!h) return; const on = !filDirect(rideTaxi(h, d.r)); await vault.mutate((tx) => ridePut(tx, h, d.r, (o) => ({ ...o, direct: on ? { at: new Date().toISOString() } : null })), on ? '💬 Au chauffeur : ouvert' : '💬 Au chauffeur : fermé', h.nom || ''); if (on) await guestSay(vault.get('hotes', h.id), '💬 Vous pouvez écrire directement au chauffeur ici, jusqu’à 2 h après l’arrivée.'); hotesSync(h.id); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
   'hote-chg-ok': async (d) => { const h = vault.get('hotes', d.id); if (h && h.arrChg) await vault.mutate((tx) => tx.put('hotes', { id: h.id, arrChg: { ...h.arrChg, vu: 1 } }), '✓ Changement vu', h.nom || ''); renderView(); },
   'hote-qr': (d) => openOver('hote-qr', d.id),
   'hote-resto': (d) => openOver('hote-resto', null, null, d.lieu || (TENANT && tenantInfo.fil === 'airbnb' ? 'airbnb' : 'hotel')),
@@ -12057,6 +12128,18 @@ const FORMS = {
     if (w) equipeSync(w.id).catch(() => {});
     closeSheet(); toast(w ? '🚕 Course dans l’app de ' + intervFull(w) : '🚕 Course enregistrée : à confier'); renderView();
     void tid;
+  },
+  async fil(fd, form) {
+    const x = String(fd.get('x') || '').trim();
+    if (!x) return;
+    setBusy(form, true, 'Envoi…');
+    try {
+      if (fd.get('h')) { const h = vault.get('hotes', String(fd.get('h'))); if (h) await filHotel(h, String(fd.get('r') || 'arr'), x, 'hotel'); }
+      else { const t = vault.get('taches', String(fd.get('t'))); if (t && t.course) await filTache(t, filMsg(x, TENANT ? (t.course.up ? 'taxi' : 'hotel') : 'lc', socName() || netBrand())); }
+      toast('🧵 Envoyé');
+    } catch (e) { toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
+    setBusy(form, false);
+    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
   async veh(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), id = g('id') || 'veh-' + uid();
