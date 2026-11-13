@@ -1,6 +1,6 @@
 // App des clients (Hotel / Airbnb) : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'hote-shell-v1.32.0';
-const SHELL = ['/hote.html', '/hote.js', '/ares/netpubs.js', '/ares/espace-crypto.js', '/ares/pchat.js', '/ares/chattr.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/news.js', '/ares/domier.js', '/ares/qrcode.js', '/ares/jobform.js', '/ares/emoji.js', '/ares/pubstat.js', '/ares/pubsched.js', '/ares/pubsocial.js', '/ares/reqmark.js', '/ares/wxradio.js', '/ares/nbien.js', '/ares/trip.js', '/ares/confirm-box.js', '/hote.webmanifest', '/ares/icons/lux-192.png', '/assets/fonts/fonts.css'];
+const CACHE = 'hote-shell-v1.33.0';
+const SHELL = ['/hote.html', '/hote.js', '/ares/netpubs.js', '/ares/espace-crypto.js', '/ares/pchat.js', '/ares/chattr.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/news.js', '/ares/domier.js', '/ares/qrcode.js', '/ares/jobform.js', '/ares/emoji.js', '/ares/pubstat.js', '/ares/pubsched.js', '/ares/pubsocial.js', '/ares/reqmark.js', '/ares/wxradio.js', '/ares/nbien.js', '/ares/trip.js', '/ares/confirm-box.js', '/hote.webmanifest', '/ares/icons/hote-192.png', '/ares/icons/hote-180.png', '/ares/icons/bnb-192.png', '/ares/icons/bnb-180.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
@@ -31,7 +31,7 @@ self.addEventListener('push', (e) => {
   e.waitUntil((async () => {
     const n = (await badgeGet()) + 1;
     await badgeSet(n);
-    await self.registration.showNotification('🏨 ' + (m.title && !/NOBIS/.test(m.title) ? m.title : 'Mon séjour'), { body: m.body || '', icon: '/ares/icons/lux-192.png', badge: '/ares/icons/favicon-32.png', tag: m.tag || 'app', renotify: true, data: { url: '/hote.html' } });
+    await self.registration.showNotification('🏨 ' + (m.title && !/NOBIS/.test(m.title) ? m.title : 'Mon séjour'), { body: m.body || '', icon: '/ares/icons/hote-192.png', badge: '/ares/icons/favicon-32.png', tag: m.tag || 'app', renotify: true, data: { url: '/hote.html' } });
     for (const c of await self.clients.matchAll({ type: 'window', includeUncontrolled: true })) c.postMessage({ k: 'push', tag: m.tag || '' });
   })());
 });
