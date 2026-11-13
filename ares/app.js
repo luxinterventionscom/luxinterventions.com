@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.260.0';
+const VERSION = '2.261.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -567,7 +567,7 @@ async function publishPub(immId, loud) {
 // Chaque personne voit seulement SON planning (lieu, jour, consignes), son horaire et ses absences ;
 // elle renvoie « commencé / fini / pas fini » avec note et photos, ses coordonnées, ses arrêts maladie.
 const eqUrl = (i) => `${location.origin}/equipe.html#${i.espace.id}.${i.espace.key}`;
-const eqAppUrl = () => `${location.origin}/equipe.html`;
+const eqAppUrl = (i) => `${location.origin}/${i && CHAUF.has(i.metier) ? 'autista' : 'equipe'}.html`; // 🚙 chauffeurs : autista.html (même app)
 const MEN_TAGS = { ok: '⏰ À l’heure', late: '⏰ En retard', nice: '😊 Aimable', rude: '😠 Désagréable', clean: '✨ Bien nettoyé', dirty: '🧹 Oublis / mal nettoyé', fait: '✅ Travail bien fait', pasfini: '⚠️ Pas fini', tidy: '🧽 Laissé propre', messy: '🗑️ Laissé sale' };
 const MEN_EVAL = { 1: '😞 Insuffisant', 2: '😐 Suffisant', 3: '🙂 Bien', 4: '⭐ Excellent' };
 const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini', refus: '✋ Refusé', start: '🚕 Accepté (START)' };
@@ -884,6 +884,16 @@ async function equipeInbox(w, msg) {
         }
         tx.put('taches', upd);
         feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note: entry.qte ? `🔢 ${entry.qte} ${entry.qu}`.trim() + (note ? ' — ' + note : '') : note, ph: ph.length, h: entry.h || '', ...(entry.geo ? { geo: entry.geo } : {}) });
+        fresh++;
+      } else if (it.k === 'ctl') {
+        // 🚕 ▶️ départ · 📍 étape · 🏁 arrivée (heure + position) ; l'arrivée termine la course
+        const t = vault.get('taches', String(it.tid || ''));
+        if (!t || !t.course || t.intervenantId !== w.id || !['dep', 'eta', 'arr'].includes(it.ev)) continue;
+        const gi = geoIn(it.geo), tl = [...(t.course.tl || []), { k: it.ev, at, ...(gi ? { geo: gi } : {}) }].slice(-12);
+        tx.put('taches', { id: t.id, course: { ...t.course, tl }, ...(it.ev === 'arr' ? { statut: 'fait', doneDate: at.slice(0, 10) } : it.ev === 'dep' && t.statut === 'planifie' ? { statut: 'encours' } : {}) });
+        const h = t.course.hid ? vault.get('hotes', t.course.hid) : null;
+        if (h) { const up = (o) => ({ ...o, tl, ...(it.ev === 'arr' ? { done: { ...(o.done || {}), prix: num(t.course.ttcFix) || num(o.prix), at: at.slice(0, 10) } } : {}) }); if (t.course.rid === 'arr') tx.put('hotes', { id: h.id, taxi: up(h.taxi || {}) }); else tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === t.course.rid ? { ...r, taxi: up(r.taxi || {}) } : r)) }); (ui.hoteTouch ||= new Set()).add(h.id); }
+        feed.push({ at, k: 'task', tid: t.id, d: at.slice(0, 10), st: 'pay', note: { dep: '▶️ Départ', eta: '📍 Étape', arr: '🏁 Arrivée' }[it.ev], ph: 0, h: at.slice(11, 16) });
         fresh++;
       } else if (it.k === 'pay') {
         // 🚕 le chauffeur a encaissé la course : 📱 QR, 💶 espèces, 💳 terminal
@@ -1832,6 +1842,18 @@ async function netDemSync(list) {
         continue;
       }
       const S = (v, n) => String(v ?? '').trim().slice(0, n), ref = S(m.ref, 40);
+      if (m.type === 'course-st') {
+        const t = ref && vault.get('taches', ref);
+        if (t && t.course && t.course.ct && t.course.ct.tid === tid) {
+          const d = m.drv && typeof m.drv === 'object' ? { nom: S(m.drv.nom, 60), tel: S(m.drv.tel, 30), auto: S(m.drv.auto, 60), plaque: S(m.drv.plaque, 20), ident: S(m.drv.ident, 40) } : null;
+          const st = ['afaire', 'planifie', 'encours', 'fait'].includes(m.st) ? m.st : t.statut;
+          const tl = (Array.isArray(m.tl) ? m.tl : []).slice(0, 12).map((x) => ({ k: ['dep', 'eta', 'arr'].includes(x.k) ? x.k : 'eta', at: S(x.at, 30) }));
+          await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: m.cancel ? t.statut : st === 'afaire' && d ? 'planifie' : st, ...(st === 'fait' ? { doneDate: S(m.done, 10) || today() } : {}), course: { ...t.course, drv: d, tl, ...(m.pay && ['qr', 'cash', 'term'].includes(m.pay) ? { paid: { mode: m.pay, at: new Date().toISOString(), by: 'ct' } } : {}) } }), '↩️ Centrale taxi : ' + (d ? '🚙 ' + d.nom : STATUTS[st] || st), `${cl} — ${t.titre}`);
+          netStatusSync();
+        }
+        await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
+        continue;
+      }
       if (m.type === 'dem-stop') {
         const t = ref && vault.list('taches').find((x) => x.net && x.net.tid === tid && x.net.ref === ref);
         if (t) await vault.mutate((tx) => tx.put('taches', { id: t.id, net: { ...t.net, stopAsk: today() } }), '⏹️ Le client demande l’arrêt du service régulier', `${cl} — ${t.titre}`);
@@ -1879,7 +1901,7 @@ async function netStatusSync() {
     for (const t of vault.list('taches').filter((x) => x.net && x.net.ref && x.net.tid)) {
       const w = t.intervenantId ? vault.get('intervenants', t.intervenantId) : null;
       const st = { st: t.statut || 'afaire', date: t.date || '', heure: t.heure || '', heureFin: t.heureFin || '', recur: t.recur || '', fin: t.fin || '', who: w ? w.prenom || '' : '', done: t.doneDate || '' };
-      if (t.course) Object.assign(st, { drv: t.course.drv || null, prix: courseTtc(t), pay: t.course.paid ? t.course.paid.mode : '', cancel: t.course.cancel || '' });
+      if (t.course) Object.assign(st, { drv: t.course.drv || null, prix: courseTtc(t), pay: t.course.paid ? t.course.paid.mode : '', cancel: t.course.cancel || '', tl: t.course.tl || [] });
       const sig = JSON.stringify(st);
       if (t.net.sent === sig) continue;
       try { await netBoxSend(t.net.tid, { type: 'dem-st', ref: t.net.ref, ...st, at: new Date().toISOString() }); } catch { continue; }
@@ -1973,12 +1995,23 @@ async function tenantBoxSync() {
         const dv = m.drv && typeof m.drv === 'object' ? { nom: String(m.drv.nom || '').slice(0, 60), tel: String(m.drv.tel || '').slice(0, 30), auto: String(m.drv.auto || '').slice(0, 60), plaque: String(m.drv.plaque || '').slice(0, 20) } : null;
         const tx2 = (vault.get('reglages', String(m.ref)) || {}).kind === 'taxi' ? { drv: dv, prix: +m.prix > 0 ? Math.round(+m.prix * 100) / 100 : 0, pay: String(m.pay || '').slice(0, 10), cancel: day(m.cancel) } : {};
         await vault.mutate((tx) => tx.put('reglages', { id: String(m.ref), st, date: day(m.date), heure: hm(m.heure), heureFin: hm(m.heureFin), recur: RECURS[m.recur] && m.recur ? m.recur : '', fin: day(m.fin), done: day(m.done), ...tx2 }), '↩️ État de la demande (LA CENTRAL)', `${(vault.get('reglages', String(m.ref)) || {}).titre || ''} — ${TDEM_ST[st] || st}`);
+      } else if (m.type === 'course' && m.ref && !ro) {
+        // 🚕 course envoyée par LA CENTRAL (hôtel, Airbnb…) : à confier à un de nos chauffeurs ; l'état repart tout seul
+        const S = (v, n) => String(v ?? '').slice(0, n), ref = S(m.ref, 40), cur = vault.list('taches').find((x) => x.course && x.course.up && x.course.up.ref === ref);
+        if (m.cancel) { if (cur && cur.statut !== 'fait') await vault.mutate((tx) => tx.put('taches', { id: cur.id, statut: 'fait', doneDate: today(), titre: '❌ ' + cur.titre.replace(/^❌ /, ''), course: { ...cur.course, cancel: today() } }), '❌ Course annulée (LA CENTRAL)', cur.titre); if (cur && cur.intervenantId) equipeSync(cur.intervenantId).catch(() => {}); }
+        else {
+          const c = m.c || {}, q = S(c.quand, 16), cr = { from: S(c.from, 160), to: S(c.to, 160), quand: q, vol: S(c.vol, 20), pax: Math.max(0, Math.min(60, +c.pax || 0)), payer: c.payer === 'hotel' ? 'hotel' : 'client', prix: Math.max(0, +c.prix || 0), vehT: FLEET_T[c.vehT] ? c.vehT : '', up: { ref, from: S(m.from, 80) || 'LA CENTRAL', client: S(c.client, 80) } };
+          const rec = { titre: `🌐 🚕 ${cr.up.client || cr.up.from} : ${cr.from || '?'} → ${cr.to || '?'}`, date: /^\d{4}-\d{2}-\d{2}/.test(c.date || q) ? S(c.date || q, 10) : today(), heure: /^\d\d:\d\d$/.test(c.heure || '') ? c.heure : /T\d\d:\d\d/.test(q) ? q.slice(11, 16) : '', adresse: cr.from, lieu: { nom: S(c.guest, 80), adr: cr.from, contact: S(c.guest, 80), tel: S(c.tel, 30) }, note: S(c.note, 2000) };
+          if (cur) await vault.mutate((tx) => tx.put('taches', { id: cur.id, ...rec, course: { ...cur.course, ...cr } }), '🚕 Course modifiée (LA CENTRAL)', rec.titre);
+          else await vault.mutate((tx) => tx.put('taches', { type: 'autre', ...rec, immId: '', logId: '', locId: '', intervenantId: '', recur: '', statut: 'afaire', urgent: false, sentAt: new Date().toISOString(), course: cr }), '🚕 Course reçue de LA CENTRAL', rec.titre);
+          if (cur && cur.intervenantId) equipeSync(cur.intervenantId).catch(() => {});
+        }
       } else if (m.type === 'dem-st' && m.ref && String(m.ref).includes('|')) {
         // 🚕 course confiée à LA CENTRAL : chauffeur, voiture, prix, terminée → la fiche du client (et son app) suivent
         const [hid, rid] = String(m.ref).split('|'), h = vault.get('hotes', hid);
         if (h && !ro) {
           const S = (v, n) => String(v ?? '').slice(0, n), d = m.drv && typeof m.drv === 'object' ? m.drv : null, old = (rid === 'arr' ? h.taxi : ((h.rides || []).find((r) => r.id === rid) || {}).taxi) || {};
-          const t = { ...old, lc: 1, st: m.cancel ? 'no' : d ? 'ok' : 'wait', nom: d ? S(d.nom, 60) : 'LA CENTRAL', tel: d ? S(d.tel, 30) : '', auto: d ? S(d.auto, 60) : '', plaque: d ? S(d.plaque, 20) : '', prix: +m.prix > 0 ? Math.round(+m.prix * 100) / 100 : old.prix || 0, ...(m.st === 'fait' && !m.cancel ? { done: { prix: +m.prix || 0, pay: S(m.pay, 10), at: S(m.done, 10) } } : {}) };
+          const t = { ...old, lc: 1, tl: (Array.isArray(m.tl) ? m.tl : old.tl || []).slice(0, 12), st: m.cancel ? 'no' : d ? 'ok' : 'wait', nom: d ? S(d.nom, 60) : 'LA CENTRAL', tel: d ? S(d.tel, 30) : '', auto: d ? S(d.auto, 60) : '', plaque: d ? S(d.plaque, 20) : '', prix: +m.prix > 0 ? Math.round(+m.prix * 100) / 100 : old.prix || 0, ...(m.st === 'fait' && !m.cancel ? { done: { prix: +m.prix || 0, pay: S(m.pay, 10), at: S(m.done, 10) } } : {}) };
           if (rid === 'arr') await vault.mutate((tx) => tx.put('hotes', { id: h.id, taxi: t }), '↩️ LA CENTRAL : course ' + (TDEM_ST[m.st] || ''), `${h.nom || ''} — ${t.nom}`);
           else await vault.mutate((tx) => tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === rid ? { ...r, taxi: t } : r)) }), '↩️ LA CENTRAL : course ' + (TDEM_ST[m.st] || ''), `${h.nom || ''} — ${t.nom}`);
           hotesSync(h.id);
@@ -2004,6 +2037,21 @@ async function tenantBoxSync() {
   } catch { /* Worker pas encore à jour ou hors ligne */ } finally { tboxBusy = false; }
   // cadre + page ensemble (redessiner seulement le cadre laissait la page vide : « puff »)
   if (got && vault.unlocked && (['demandes', 'dashboard'].includes(ui.route) || tFacts().length)) { const y = scrollY; renderShell(); go(ui.route, true); scrollTo(0, y); }
+}
+let upBusy = false;
+async function courseUpSync() {
+  if (!TENANT || upBusy || !vault.unlocked || tenantInfo.state === 'ro') return;
+  upBusy = true;
+  try {
+    for (const t of vault.list('taches').filter((x) => x.course && x.course.up)) {
+      const c = t.course, w = t.intervenantId ? vault.get('intervenants', t.intervenantId) : null, v = w ? vehs().find((x) => vehSub(x) === w.id) || vehs().find((x) => x.chauffeur === w.id) : null;
+      const st = { st: t.statut || 'afaire', done: t.doneDate || '', drv: w ? { nom: intervFull(w), tel: w.tel || '', auto: v ? v.modele || VEH_TYPES[v.type] || '' : '', plaque: v ? v.plaque || '' : '', ident: w.ident || '' } : null, pay: c.paid ? c.paid.mode : '', tl: c.tl || [], cancel: c.cancel || '' };
+      const sig = JSON.stringify(st);
+      if (c.upSent === sig) continue;
+      try { await tenantSend({ type: 'course-st', ref: c.up.ref, ...st }); } catch { continue; }
+      await vault.mutate((tx) => tx.put('taches', { id: t.id, course: { ...c, upSent: sig } }), '↩️ État de la course envoyé à LA CENTRAL', t.titre);
+    }
+  } catch { /* hors ligne */ } finally { upBusy = false; }
 }
 async function tenantSend(obj) {
   const k = await (await vault.call('network-key')).json();
@@ -2664,6 +2712,15 @@ async function hoteInbox(h, msg) {
     }
     return true;
   }
+  if (msg.type === 'hote-tl') {
+    const ev = ['dep', 'eta', 'arr'].includes(msg.ev) ? msg.ev : '', rid = String(msg.r || 'arr'), at = new Date().toISOString();
+    if (!ev) return true;
+    const add = (o) => ({ ...(o || {}), gtl: [...((o || {}).gtl || []), { k: ev, at }].slice(-12) });
+    if (rid === 'arr') await vault.mutate((tx) => tx.put('hotes', { id: h.id, taxi: add(h.taxi) }), '🚗 Le client : ' + { dep: 'à bord', eta: 'étape', arr: 'arrivé' }[ev], who);
+    else await vault.mutate((tx) => tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === rid ? { ...r, taxi: add(r.taxi) } : r)) }), '🚗 Le client : ' + { dep: 'à bord', eta: 'étape', arr: 'arrivé' }[ev], who);
+    hotesSync(h.id);
+    return true;
+  }
   if (msg.type === 'hote-rent') {
     const d10 = (x) => (/^\d{4}-\d{2}-\d{2}$/.test(x || '') ? x : '');
     const r = { id: 'rent' + Date.now().toString(36), at: new Date().toISOString(), du: d10(msg.du), au: d10(msg.au), veh: FLEET_T[msg.veh] ? msg.veh : '', boite: msg.boite === 'man' ? 'man' : 'auto', livr: !!msg.livr, note: String(msg.note || '').slice(0, 300), st: 'new' };
@@ -2705,7 +2762,7 @@ async function hoteInbox(h, msg) {
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
 async function inboxSync() {
-  if (TENANT) { tenantBoxSync(); packSync(); } else { netDemSync(); netLoad(); geoAuto(); candPurge().catch(() => {}); }
+  if (TENANT) { tenantBoxSync(); packSync(); courseUpSync(); } else { netDemSync(); netLoad(); geoAuto(); candPurge().catch(() => {}); }
   const keys = vault.get('reglages', 'signal');
   if (!keys || !keys.priv || inboxBusy || !vault.unlocked) return;
   inboxBusy = true;
@@ -6206,8 +6263,8 @@ dashboard() {
     const lcs = TENANT && tenantInfo.fil !== 'taxi' ? [] : vault.list('taches').filter((x) => x.course && (x.net || TENANT) && (x.statut !== 'fait' || (x.doneDate || '') >= addDays(t, -7))).sort((a, b) => ((a.date || '') + (a.heure || '')).localeCompare((b.date || '') + (b.heure || '')));
     const lcBox = lcs.length ? html`<div class="section-label">${TENANT ? '🛣️ Courses' : html`↪️ Courses des clients <span class="tiny muted">— hôtels / Airbnb</span>`}</div><div class="list" style="margin-bottom:14px">${lcs.map((x) => { const c = x.course, w = x.intervenantId ? vault.get('intervenants', x.intervenantId) : null; return html`<button class="row" data-action="course-open" data-id="${x.id}"><span class="avatar">🚕</span>
       <span class="grow"><span class="title" style="display:block">${x.net ? x.net.nom : x.lieu && x.lieu.contact ? x.lieu.contact : 'Client'}${x.net && x.lieu && x.lieu.contact ? ' · ' + x.lieu.contact : ''}</span><span class="meta">${fmtDate(x.date)}${x.heure ? ' ' + x.heure : ''} · ${c.from || '?'} → ${c.to || '?'}${c.vol ? ' · ✈️ ' + c.vol : ''}</span>
-      <span class="tiny" style="display:block">${w ? '🚙 ' + intervFull(w) : c.co ? '🚕 ' + c.co : '⚠️ à confier'} · ${c.payer === 'hotel' ? '🧾 facture au client' : '💶 payé dans la voiture'}${c.prix ? ' · ' + eur(courseTtc(x)) : ''}${c.paid ? ' · ✅ ' + (PAY_MODES[c.paid.mode] || '') : ''}</span></span>
-      <span class="badge ${c.cancel ? 'bad' : x.statut === 'fait' ? 'ok' : w || c.co ? 'ok' : 'warn'}">${c.cancel ? '❌ Annulée' : x.statut === 'fait' ? '🏁 Terminée' : w || c.co ? '✅ Confiée' : '⏳ À confier'}</span></button>`; })}</div>` : '';
+      <span class="tiny" style="display:block">${w ? '🚙 ' + intervFull(w) : c.ct ? '🚕 ' + c.ct.nom + (c.drv ? ' · 🚙 ' + c.drv.nom : ' · ⏳') : c.co ? '🚕 ' + c.co : '⚠️ à confier'}${c.up ? ' · ↪️ ' + (c.up.client || c.up.from) : ''} · ${c.payer === 'hotel' ? '🧾 facture au client' : '💶 payé dans la voiture'}${c.prix ? ' · ' + eur(courseTtc(x)) : ''}${c.paid ? ' · ✅ ' + (PAY_MODES[c.paid.mode] || '') : ''}</span></span>
+      <span class="badge ${c.cancel ? 'bad' : x.statut === 'fait' ? 'ok' : w || c.co || c.ct ? 'ok' : 'warn'}">${c.cancel ? '❌ Annulée' : x.statut === 'fait' ? '🏁 Terminée' : w || c.co || c.ct ? '✅ Confiée' : '⏳ À confier'}</span></button>`; })}</div>` : '';
     if (TENANT && tenantInfo.fil === 'taxi') return html`${pageHead('🚙 Chauffeurs', `${plural(CH.length, 'chauffeur')} · ${plural(lcs.filter((x) => x.statut !== 'fait').length, 'course')} en cours`)}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="course-new">${icon('plus')} Course</button></div></div>${lcBox}${ours}`;
     return html`${pageHead(TENANT ? '🚕 Taxi / Chauffeurs' : '🚕 Taxis & chauffeurs', TENANT ? `${plural(CH.length, 'chauffeur')} · ${plural(cos.length, 'société')} · ${plural(rides.length, 'course')}` : `${plural(cos.length, 'société')} · ${plural(CH.length, 'chauffeur')} · ${plural(rides.length + lcs.filter((x) => x.statut !== 'fait').length, 'course')}`)}
@@ -7584,7 +7641,7 @@ const SHEETS = {
           <button class="btn primary block" data-action="eq-on" data-id="${id}">📱 Créer l’accès à l’app</button>`;
       } else {
         const url = eqUrl(i);
-        const inv = inviteMsg('eq', e.lang, i.prenom || '', eqAppUrl(), e.code || '—', url, factConf().nom || 'ARES INVEST S.A.');
+        const inv = inviteMsg('eq', e.lang, i.prenom || '', eqAppUrl(i), e.code || '—', url, TENANT ? socName() : factConf().nom || 'ARES INVEST S.A.');
         const msgTxt = encodeURIComponent(inv.txt);
         body = html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code personnel</div>
             <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
@@ -8091,6 +8148,7 @@ const SHEETS = {
         <form id="f" data-form="course" class="fields"><input type="hidden" name="id" value="${id}">
         <label class="field full">🚙 Notre chauffeur<select name="w"><option value="">—</option>${CH.map((i) => html`<option value="${i.id}" ${t.intervenantId === i.id ? new Raw('selected') : ''}>${intervFull(i)} · ${METIERS[i.metier]}</option>`)}</select></label>
         <label class="field full">🚗 Véhicule<select name="veh"><option value="">— celui du chauffeur</option>${VS.map((v) => html`<option value="${v.id}" ${c.veh === v.id ? new Raw('selected') : ''}>${v.plaque} · ${v.modele || VEH_TYPES[v.type] || ''}</option>`)}</select></label>
+        ${(() => { const CT = ((ui.net && ui.net.list) || []).filter((x) => x.fil === 'taxi'); return !TENANT && CT.length ? html`<label class="field full">ou 🚕 confier à une CENTRALE-TAXI du réseau (elle choisit son chauffeur)<select name="ct"><option value="">—</option>${CT.map((x) => html`<option value="${x.id}" ${(c.ct || {}).tid === x.id ? new Raw('selected') : ''}>${x.nom}${x.ville ? ' · ' + x.ville : ''}</option>`)}</select></label>${c.ct ? html`<p class="tiny full" style="margin:0">🚕 Envoyée à <b>${c.ct.nom}</b> ${c.ct.at ? 'le ' + fmtDateTime(c.ct.at) : ''}${c.drv ? ' · 🚙 ' + c.drv.nom : ' · ⏳ chauffeur pas encore choisi'}</p>` : ''}` : ''; })()}
         ${cos.length ? html`<label class="field full">ou 🚕 confier à une société (vous la prévenez par sa chat)<select name="co"><option value="">—</option>${cos.map((co) => html`<option value="${co.nom}" ${c.co === co.nom ? new Raw('selected') : ''}>${co.nom}</option>`)}</select></label>` : ''}
         ${field('Prix HT (€)', 'prix', c.prix || '', { type: 'number', step: '0.01', min: '0' })}
         <label class="field">Qui paie ?<select name="payer"><option value="client" ${c.payer !== 'hotel' ? new Raw('selected') : ''}>💶 Le client, dans la voiture</option><option value="hotel" ${c.payer === 'hotel' ? new Raw('selected') : ''}>🧾 ${t.net ? t.net.nom : 'Le client'}, sur facture</option></select></label>
@@ -8392,6 +8450,8 @@ const SHEETS = {
   'hote-taxi'({ id, preset }) {
     const h = vault.get('hotes', id);
     if (!h) return null;
+    const tlBox = (x) => { if (!x || (!(x.tl || []).length && !(x.gtl || []).length)) return ''; const L = { dep: '▶️ Départ', eta: '📍 Étape', arr: '🏁 Arrivée' }, hm = (a) => String(a || '').slice(11, 16), last = (a, k) => [...(a || [])].reverse().find((e) => e.k === k), dA = last(x.tl, 'arr'), gA = last(x.gtl, 'arr'), gap = dA && gA ? Math.abs(Date.parse(dA.at) - Date.parse(gA.at)) / 60000 : 0;
+      return html`<div class="card" style="padding:8px 10px;margin-bottom:10px"><div class="small" style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px"><b>🚙 Chauffeur</b><b>🛎️ Client</b><span>${(x.tl || []).map((e) => html`<span style="display:block">${L[e.k]} ${hm(e.at)}</span>`)}</span><span>${(x.gtl || []).map((e) => html`<span style="display:block">${L[e.k]} ${hm(e.at)}</span>`)}</span></div>${gap > 15 ? html`<div class="tiny" style="color:var(--bad,#c0392b);margin-top:4px">⚠️ ${Math.round(gap)} min d’écart entre les deux arrivées</div>` : ''}</div>`; };
     const c = hoteConf(), dr = c.drivers || [], rid = preset || '', a = rid ? (h.rides || []).find((r) => r.id === rid) || {} : h.arr || {}, cur = rid ? a.taxi : h.taxi;
     const cos = txCos().filter((co) => co.appCode);
     return {
@@ -8401,6 +8461,7 @@ const SHEETS = {
         ${a.service || a.gamme || a.veh || a.note ? html`<div class="small" style="margin:-4px 0 10px">${[TX_SRV[a.service], TX_GAM[a.gamme], FLEET_T[a.veh], ...(a.extras || []).map((k) => TX_EXT[k])].filter(Boolean).join(' · ')}${a.heures ? ` · ${a.heures} h` : ''}${a.note ? html`<div><b>📝 ${a.note}</b></div>` : ''}</div>` : ''}
         ${cur && !cur.lc && cur.st === 'wait' ? html`<div class="alert warn" style="margin-bottom:10px">⏳<div>Envoyé à <b>${cur.nom}</b> — en attente de sa réponse</div></div>` : ''}
         ${cur && !cur.lc && cur.st !== 'wait' && cur.st !== 'no' ? html`<div class="alert info" style="margin-bottom:10px">🚘<div><b>${cur.nom}</b> · ${cur.auto || ''} ${cur.plaque || ''}${rid ? '' : html`<div class="actions" style="margin:6px 0 0;flex-wrap:wrap">${hoteDrvBtns(h)}</div>`}</div></div>` : ''}
+        ${tlBox(cur)}
         ${TENANT ? (() => {
           const own = chaufs().filter((w) => !w.archive), payL = cur && cur.payer === 'hotel' ? (cur.own ? '🧾 Sur la note du client' : h.lieu === 'airbnb' ? '🧾 Payé par nous (Airbnb), sur facture' : '🧾 Payé par l’hôtel, sur facture') : '💶 Payé par le client dans la voiture';
           if (cur && (cur.lc || cur.own) && cur.st !== 'no') return html`<div class="alert ${cur.st === 'ok' ? 'info' : 'warn'}" style="margin-bottom:10px">${cur.lc ? '↪️' : '🚙'}<div><b>${cur.st === 'ok' ? '🚙 ' + cur.nom : '⏳ Envoyé à LA CENTRAL — chauffeur pas encore choisi'}</b>${cur.st === 'ok' ? html`<div class="small">${[cur.auto, cur.plaque].filter(Boolean).join(' · ')}${cur.tel ? html` · <a href="tel:${String(cur.tel).replace(/[^\d+]/g, '')}">📞 ${cur.tel}</a>` : ''}</div>` : ''}<div class="tiny">${cur.lc ? '↪️ LA CENTRAL · ' : '🚙 Votre chauffeur · '}${payL}${cur.prix ? ' · ' + eur(cur.prix) : ''}${cur.done ? ' · 🏁 terminée' : ''}${(cur.done && cur.done.pay) || cur.pay ? ' · ✅ ' + (PAY_MODES[(cur.done && cur.done.pay) || cur.pay] || '') : ''}</div>
@@ -11962,13 +12023,19 @@ const FORMS = {
     const w = fd.get('w') ? vault.get('intervenants', String(fd.get('w'))) : null, co = String(fd.get('co') || '').slice(0, 80);
     const v = (fd.get('veh') ? vault.get('reglages', String(fd.get('veh'))) : null) || (w ? vehs().find((x) => vehSub(x) === w.id) || vehs().find((x) => x.chauffeur === w.id) : null);
     const drv = w ? { nom: intervFull(w), tel: w.tel || '', auto: v ? v.modele || VEH_TYPES[v.type] || '' : '', plaque: v ? v.plaque || '' : '' } : co ? { nom: co, tel: (txCos().find((x) => x.nom === co) || {}).tel || '', auto: '', plaque: '' } : null;
-    const c = { ...t.course, prix: Math.max(0, Math.round(num(fd.get('prix')) * 100) / 100), payer: fd.get('payer') === 'hotel' ? 'hotel' : 'client', veh: v ? v.id : '', co: w ? '' : co, drv };
+    const ctId = !w && !co ? String(fd.get('ct') || '') : '', ctT = ctId ? ((ui.net && ui.net.list) || []).find((x) => x.id === ctId) : null;
+    const c = { ...t.course, prix: Math.max(0, Math.round(num(fd.get('prix')) * 100) / 100), payer: fd.get('payer') === 'hotel' ? 'hotel' : 'client', veh: v ? v.id : '', co: w ? '' : co, drv: ctT && t.course.ct && t.course.ct.tid === ctId ? t.course.drv : drv };
+    if (ctT && !(t.course.ct && t.course.ct.tid === ctId)) {
+      // 🚕 la course part dans la centrale taxi (chiffrée pour elle) ; elle choisit son chauffeur, l'état revient ici puis à l'hôtel
+      try { await netBoxSend(ctId, { type: 'course', ref: t.id, from: netBrand(), c: { ...c, drv: null, ct: null, guest: (t.lieu || {}).contact || '', tel: (t.lieu || {}).tel || '', client: t.net ? t.net.nom : '', date: t.date, heure: t.heure, note: t.note || '' } }); } catch (e) { return toast(e.message || 'Envoi impossible à la centrale taxi', { bad: true }); }
+      c.ct = { tid: ctId, nom: ctT.nom, at: new Date().toISOString() };
+    } else if (!ctT && t.course.ct) { try { await netBoxSend(t.course.ct.tid, { type: 'course', ref: t.id, cancel: 1 }); } catch { /* elle verra plus tard */ } c.ct = null; }
     const t2 = { ...t, course: c };
-    await vault.mutate((tx) => tx.put('taches', { id: t.id, course: c, intervenantId: w ? w.id : '', statut: t.statut === 'fait' ? 'fait' : w || co ? 'planifie' : 'afaire', factDraft: courseDraft(t2) }), '🚕 Course confiée', `${t.net ? t.net.nom : ''} — ${drv ? drv.nom : 'personne'}`);
+    await vault.mutate((tx) => tx.put('taches', { id: t.id, course: c, intervenantId: w ? w.id : '', statut: t.statut === 'fait' ? 'fait' : w || co || c.ct ? 'planifie' : 'afaire', factDraft: courseDraft(t2) }), '🚕 Course confiée', `${t.net ? t.net.nom : ''} — ${drv ? drv.nom : c.ct ? '🚕 ' + c.ct.nom : 'personne'}`);
     for (const wid of new Set([w ? w.id : '', t.intervenantId].filter(Boolean))) equipeSync(wid).catch(() => {});
     netStatusSync();
     closeSheet();
-    toast(drv ? '🚕 Course confiée à ' + drv.nom : 'Enregistré');
+    toast(drv ? '🚕 Course confiée à ' + drv.nom : c.ct ? '🚕 Envoyée à ' + c.ct.nom : 'Enregistré');
   },
   async fleet(fd) {
     const old = fleetConf(), F = {}, dels = [];
