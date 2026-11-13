@@ -132,6 +132,41 @@ async function sendOwner(o) {
   const r = await fetch(`${API}/api/esp/${id}/signal?app=hote`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) });
   if (!r.ok) throw new Error(r.status);
 }
+// 🚗 voitures des taxis, souhait libre, 🔑 location de voiture (6 langues)
+const CARS = {
+  fr: { T: { berline: '🚘 Berline', suv: '🚙 SUV', van: '🚐 Van (6-8 places)', luxe: '💎 Luxe / limousine', sport: '🏎️ Sportive', minibus: '🚌 Minibus' }, veh: 'Type de voiture', any: 'Peu importe', wish: '📝 Un souhait ? (eau, champagne, siège bébé…)', fleet: '🚗 Nos voitures', out: 'dehors', in: 'dedans',
+    rent: '🔑 Louer une voiture (sans chauffeur)', du: 'Du', au: 'Au', boite: 'Boîte de vitesses', auto: 'Automatique', man: 'Manuelle', livr: 'Livrée à l’hôtel', rsend: 'Envoyer la demande', rok: '✅ Demande envoyée : l’hôtel vous répond ici ou dans la chat.', rnote: 'Permis de conduire et caution : demandés par le loueur.' },
+  en: { T: { berline: '🚘 Sedan', suv: '🚙 SUV', van: '🚐 Van (6-8 seats)', luxe: '💎 Luxury / limousine', sport: '🏎️ Sports car', minibus: '🚌 Minibus' }, veh: 'Type of car', any: 'Any', wish: '📝 A wish? (water, champagne, baby seat…)', fleet: '🚗 Our cars', out: 'outside', in: 'inside',
+    rent: '🔑 Rent a car (no driver)', du: 'From', au: 'To', boite: 'Gearbox', auto: 'Automatic', man: 'Manual', livr: 'Delivered to the hotel', rsend: 'Send the request', rok: '✅ Request sent: the hotel will answer here or in the chat.', rnote: 'Driving licence and deposit: asked by the rental company.' },
+  de: { T: { berline: '🚘 Limousine', suv: '🚙 SUV', van: '🚐 Van (6-8 Plätze)', luxe: '💎 Luxus / Stretch', sport: '🏎️ Sportwagen', minibus: '🚌 Kleinbus' }, veh: 'Fahrzeugtyp', any: 'Egal', wish: '📝 Ein Wunsch? (Wasser, Champagner, Kindersitz…)', fleet: '🚗 Unsere Fahrzeuge', out: 'außen', in: 'innen',
+    rent: '🔑 Auto mieten (ohne Fahrer)', du: 'Von', au: 'Bis', boite: 'Getriebe', auto: 'Automatik', man: 'Schaltung', livr: 'Lieferung ans Hotel', rsend: 'Anfrage senden', rok: '✅ Anfrage gesendet: das Hotel antwortet hier oder im Chat.', rnote: 'Führerschein und Kaution: vom Vermieter verlangt.' },
+  it: { T: { berline: '🚘 Berlina', suv: '🚙 SUV', van: '🚐 Van (6-8 posti)', luxe: '💎 Lusso / limousine', sport: '🏎️ Sportiva', minibus: '🚌 Minibus' }, veh: 'Tipo di auto', any: 'Indifferente', wish: '📝 Un desiderio? (acqua, champagne, seggiolino…)', fleet: '🚗 Le nostre auto', out: 'fuori', in: 'dentro',
+    rent: '🔑 Noleggiare un’auto (senza autista)', du: 'Dal', au: 'Al', boite: 'Cambio', auto: 'Automatico', man: 'Manuale', livr: 'Consegnata in hotel', rsend: 'Invia la richiesta', rok: '✅ Richiesta inviata: l’hotel risponde qui o in chat.', rnote: 'Patente e cauzione: chieste dal noleggiatore.' },
+  pt: { T: { berline: '🚘 Berlina', suv: '🚙 SUV', van: '🚐 Carrinha (6-8 lugares)', luxe: '💎 Luxo / limusina', sport: '🏎️ Desportivo', minibus: '🚌 Minibus' }, veh: 'Tipo de carro', any: 'Tanto faz', wish: '📝 Um desejo? (água, champanhe, cadeira de bebé…)', fleet: '🚗 Os nossos carros', out: 'fora', in: 'dentro',
+    rent: '🔑 Alugar um carro (sem motorista)', du: 'De', au: 'Até', boite: 'Caixa', auto: 'Automática', man: 'Manual', livr: 'Entregue no hotel', rsend: 'Enviar o pedido', rok: '✅ Pedido enviado: o hotel responde aqui ou no chat.', rnote: 'Carta de condução e caução: pedidas pela empresa de aluguer.' },
+  es: { T: { berline: '🚘 Berlina', suv: '🚙 SUV', van: '🚐 Furgoneta (6-8 plazas)', luxe: '💎 Lujo / limusina', sport: '🏎️ Deportivo', minibus: '🚌 Minibús' }, veh: 'Tipo de coche', any: 'Da igual', wish: '📝 ¿Un deseo? (agua, champán, silla de bebé…)', fleet: '🚗 Nuestros coches', out: 'fuera', in: 'dentro',
+    rent: '🔑 Alquilar un coche (sin conductor)', du: 'Del', au: 'Al', boite: 'Cambio', auto: 'Automático', man: 'Manual', livr: 'Entregado en el hotel', rsend: 'Enviar la solicitud', rok: '✅ Solicitud enviada: el hotel responde aquí o en el chat.', rnote: 'Permiso de conducir y fianza: los pide la empresa de alquiler.' },
+};
+const CK2 = () => CARS[lang] || CARS.fr;
+let rent = { du: '', au: '', veh: '', boite: 'auto', livr: true, note: '', sent: '' };
+function fleetCard() {
+  const F = (data.fleet || []);
+  if (!F.length) return '';
+  const k = CK2();
+  return `<details class="card hfold" data-fk="fleet"${hFoldShut().has('fleet') ? '' : ' open'}><summary><h2 style="margin:0">${esc(k.fleet)}</h2></summary>${F.map((x) => `<div style="margin:8px 0"><b>${esc(k.T[x.t] || x.t)}</b> <span class="meta">× ${x.n} · ${esc(x.co)}</span><div class="car">${['e', 'i'].filter((w) => x.ph[w]).map((w) => `<figure><img data-f="${esc(x.ph[w])}" alt="" data-lb="1"><figcaption>${esc(w === 'e' ? k.out : k.in)}</figcaption></figure>`).join('')}</div></div>`).join('')}</details>`;
+}
+const vehOpts = (cur) => { const k = CK2(), ts = [...new Set((data.fleet || []).map((x) => x.t))]; const list = ts.length ? ts : Object.keys(k.T); return `<option value="">${esc(k.any)}</option>${list.map((x) => `<option value="${x}" ${cur === x ? 'selected' : ''}>${esc(k.T[x] || x)}</option>`).join('')}`; };
+function rentCard() {
+  const k = CK2(), r = rent;
+  return `<details class="card hfold" data-fk="rent"${hFoldShut().has('rent') || !r.open ? '' : ' open'}><summary><h2 style="margin:0">${esc(k.rent)}</h2></summary>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div><label>${esc(k.du)}</label><input type="date" data-rent="du" value="${esc(r.du || data.arrivee)}"></div><div><label>${esc(k.au)}</label><input type="date" data-rent="au" value="${esc(r.au || data.depart)}"></div></div>
+    <label>${esc(k.veh)}</label><select data-rent="veh">${vehOpts(r.veh)}</select>
+    <label>${esc(k.boite)}</label><select data-rent="boite"><option value="auto" ${r.boite === 'auto' ? 'selected' : ''}>${esc(k.auto)}</option><option value="man" ${r.boite === 'man' ? 'selected' : ''}>${esc(k.man)}</option></select>
+    <label class="chk" style="margin-top:8px"><input type="checkbox" data-rent="livr" ${r.livr ? 'checked' : ''}> ${esc(k.livr)}</label>
+    <label>${esc(k.wish)}</label><input data-rent="note" value="${esc(r.note)}">
+    <p class="meta" style="margin:6px 0 0">${esc(k.rnote)}</p>
+    <button class="btn block" style="margin-top:10px" data-rent-send="1">${esc(k.rsend)}</button>${r.sent ? `<p class="ok" style="margin:8px 0 0">${esc(k.rok)}</p>` : ''}</details>`;
+}
 // ⚠️ allergies, 🍽️ régime et repas, 🛎️ service en chambre : ce que l'hôtel a noté (traduit)
 const MEAL = {
   fr: { alc: '⚠️ Chambre', C: { acariens: 'Acariens', plumes: 'Plumes', laine: 'Laine', poils: 'Poils d’animaux', latex: 'Latex', parfums: 'Parfums / produits ménagers', pollen: 'Pollen' }, al: '⚠️ Vos allergies', reg: '🍽️ Régime', dej: '🥗 Déjeuner', din: '🍷 Dîner', resto: 'au restaurant', chambre: 'en chambre', room: '🛎️ Service en chambre', jour: 'aux heures du restaurant', h24: '24 h/24', nuit: '24 h/24 (la nuit : carte réduite, voir le menu)', sup: 'supplément', deliv: '🛵 Livraison de l’extérieur acceptée',
@@ -397,6 +432,7 @@ function render() {
     <div class="btns">${d.menu ? `<button class="btn sm" data-menu="1">${esc(t.menu)}</button>` : ''}${tel ? `<a class="btn sm sec" href="tel:${esc(tel)}">${esc(t.call)}</a>` : ''}${wa ? `<a class="btn sm sec" href="https://wa.me/${esc(wa)}" target="_blank" rel="noopener">${esc(t.wa)}</a>` : ''}</div></div>`);
   if (today <= d.arrivee) out.push(arrCard(t));
   if (d.taxi && d.taxi.on && today >= d.arrivee && today <= d.depart) out.push(rideCard());
+  if (d.taxi && d.taxi.on && today <= d.depart) { out.push(fleetCard()); out.push(rentCard()); }
   // 8 · état des lieux de sortie (pendant le séjour)
   if (inStay || today === d.depart) {
     const done = new Set([...(d.edlSent || []), ...edlDone()]);
@@ -515,6 +551,8 @@ function arrCard(t) {
       ${f.spot === 'other' ? `<input data-other="1" value="${esc(f.other)}" placeholder="${esc(t.otherPh)}" style="margin-top:6px">` : ''}
       <label>${esc(t.when)}</label><input type="datetime-local" data-quand="1" value="${esc(dq)}">
       <label>${esc(t.vol)}</label><input data-vol="1" value="${esc(f.vol)}">
+      <label>${esc(CK2().veh)}</label><select data-veh="1">${vehOpts(f.veh)}</select>
+      <label>${esc(CK2().wish)}</label><input data-wish="1" value="${esc(f.note || '')}" maxlength="300">
       ${svcHtml(f, 'a')}
       <p class="est" id="estBox"></p>` : ''}
     ${f.mode ? `<button class="btn block" style="margin-top:10px" data-arr-send="1">${esc(t.send)}</button>` : ''}${arrEdit ? `<button class="btn block sec" style="margin-top:8px" data-arr-back="1">${esc(t.chBack)}</button>` : ''}</div>`;
@@ -591,6 +629,9 @@ app.addEventListener('change', async (e) => {
   if (el.dataset.rQuand) { ride.quand = el.value; return; }
   if (el.dataset.rTo) { ride.to = el.value; return; }
   if (el.dataset.vol) { arrForm.vol = el.value; return; }
+  if (el.dataset.veh) { arrForm.veh = el.value; return; }
+  if (el.dataset.wish) { arrForm.note = el.value; return; }
+  if (el.dataset.rent) { rent[el.dataset.rent] = el.type === 'checkbox' ? el.checked : el.value; return; }
   if (el.dataset.edl && el.files && el.files[0]) {
     const f = el.files[0];
     edl[el.dataset.edl] = { f, u: URL.createObjectURL(f) };
@@ -621,13 +662,18 @@ app.addEventListener('click', async (e) => {
   if (b.dataset.arrEdit) {
     const open = () => {
       const s0 = data.arr || arrSent() || {}, spot = s0.from === t.aero.replace(/^\S+\s/, '') ? 'aero' : s0.from === t.gare.replace(/^\S+\s/, '') ? 'gare' : 'other';
-      arrForm = { ...arrForm, mode: s0.mode || '', spot: s0.mode === 'taxi' ? spot : arrForm.spot, other: s0.mode === 'taxi' && spot === 'other' ? s0.from || '' : arrForm.other, quand: s0.quand || arrForm.quand, vol: s0.vol || '', service: s0.service || 'course', gamme: s0.gamme || '', extras: [...(s0.extras || [])], heures: s0.heures || 3, est: null };
+      arrForm = { ...arrForm, mode: s0.mode || '', spot: s0.mode === 'taxi' ? spot : arrForm.spot, other: s0.mode === 'taxi' && spot === 'other' ? s0.from || '' : arrForm.other, quand: s0.quand || arrForm.quand, vol: s0.vol || '', service: s0.service || 'course', gamme: s0.gamme || '', extras: [...(s0.extras || [])], heures: s0.heures || 3, veh: s0.veh || '', note: s0.note || '', est: null };
       arrEdit = true; render(); if (arrForm.mode === 'taxi') estimate().then(() => render()).catch(() => {});
     };
     if (data.taxiOk) return import('/ares/confirm-box.js').then((m) => m.confirmBox(t.chQ, t.chY, t.chN, open));
     return open();
   }
   if (b.dataset.arrBack) { arrEdit = false; return render(); }
+  if (b.dataset.rentSend) {
+    b.disabled = true;
+    try { await sendOwner({ type: 'hote-rent', du: rent.du || data.arrivee, au: rent.au || data.depart, veh: rent.veh || '', boite: rent.boite === 'man' ? 'man' : 'auto', livr: !!rent.livr, note: String(rent.note || '').slice(0, 300) }); rent = { ...rent, sent: '1', open: true }; } catch { b.disabled = false; return; }
+    return render();
+  }
   if (b.dataset.arrSend && arrEdit && !b.dataset.ok) return import('/ares/confirm-box.js').then((m) => m.confirmBox(t.accQ, t.accY, t.accN, () => { b.dataset.ok = '1'; b.click(); }));
   if (b.dataset.arrSend) {
     b.disabled = true;
@@ -635,7 +681,7 @@ app.addEventListener('click', async (e) => {
     if (f.mode === 'taxi' && !f.est) await estimate();
     const e2 = f.est || {};
     const msg = f.mode === 'taxi'
-      ? { type: 'hote-arr', mode: 'taxi', from, quand: f.quand || `${data.arrivee}T${data.hdeb || '15:00'}`, vol: f.vol, km: e2.km || 0, prix: price(f, e2.km) || 0, service: f.service, gamme: f.gamme, extras: f.extras, heures: f.service === 'heures' ? f.heures : 0, fg: e2.fg ? { lat: e2.fg[0], lon: e2.fg[1] } : null, sg: e2.sg ? { lat: e2.sg[0], lon: e2.sg[1] } : null }
+      ? { type: 'hote-arr', mode: 'taxi', from, quand: f.quand || `${data.arrivee}T${data.hdeb || '15:00'}`, vol: f.vol, km: e2.km || 0, prix: price(f, e2.km) || 0, service: f.service, gamme: f.gamme, extras: f.extras, heures: f.service === 'heures' ? f.heures : 0, veh: f.veh || '', note: (f.note || '').slice(0, 300), fg: e2.fg ? { lat: e2.fg[0], lon: e2.fg[1] } : null, sg: e2.sg ? { lat: e2.sg[0], lon: e2.sg[1] } : null }
       : { type: 'hote-arr', mode: 'self' };
     try {
       await sendOwner(msg);

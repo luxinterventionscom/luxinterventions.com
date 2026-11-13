@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.258.3';
+const VERSION = '2.259.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2641,9 +2641,9 @@ async function hoteInbox(h, msg) {
     const mode = msg.mode === 'taxi' ? 'taxi' : 'self', num = (v, m) => Math.max(0, Math.min(m, +v || 0));
     const geo = (g) => (g && isFinite(+g.lat) && isFinite(+g.lon) ? { lat: +(+g.lat).toFixed(5), lon: +(+g.lon).toFixed(5) } : null);
     const svc = (m) => ({ service: TX_SRV[m.service] ? m.service : 'course', gamme: TX_GAM[m.gamme] ? m.gamme : '', extras: (Array.isArray(m.extras) ? m.extras : []).filter((k) => TX_EXT[k]).slice(0, 6), heures: num(m.heures, 240) });
-    const arr = { mode, at: String(msg.t || new Date().toISOString()).slice(0, 30), from: String(msg.from || '').slice(0, 120), quand: String(msg.quand || '').slice(0, 16), vol: String(msg.vol || '').slice(0, 30), km: num(msg.km, 2000), prix: num(msg.prix, 100000), fg: geo(msg.fg), sg: geo(msg.sg), ...svc(msg) };
+    const arr = { mode, at: String(msg.t || new Date().toISOString()).slice(0, 30), from: String(msg.from || '').slice(0, 120), quand: String(msg.quand || '').slice(0, 16), vol: String(msg.vol || '').slice(0, 30), km: num(msg.km, 2000), prix: num(msg.prix, 100000), fg: geo(msg.fg), sg: geo(msg.sg), ...svc(msg), veh: FLEET_T[msg.veh] ? msg.veh : '', note: String(msg.note || '').slice(0, 300) };
     // ✏️ le client a changé son arrivée : 🔔 Flash à l'hôtel, la course suit (chauffeur de l'hôtel, ↪️ LA CENTRAL, société)
-    const old = h.arr, sum = (a) => (a ? (a.mode === 'taxi' ? `🚕 ${a.from || ''}${a.quand ? ' · ' + String(a.quand).replace('T', ' ') : ''}${a.vol ? ' · ✈️ ' + a.vol : ''}${(a.extras || []).length ? ' · ' + a.extras.map((k) => TX_EXT[k]).join(' ') : ''}` : '🚗 par ses propres moyens') : '');
+    const old = h.arr, sum = (a) => (a ? (a.mode === 'taxi' ? `🚕 ${a.from || ''}${a.quand ? ' · ' + String(a.quand).replace('T', ' ') : ''}${a.vol ? ' · ✈️ ' + a.vol : ''}${a.veh ? ' · ' + FLEET_T[a.veh] : ''}${(a.extras || []).length ? ' · ' + a.extras.map((k) => TX_EXT[k]).join(' ') : ''}${a.note ? ' · 📝 ' + a.note : ''}` : '🚗 par ses propres moyens') : '');
     const chg = old && sum(old) !== sum(arr) ? { at: arr.at, old: sum(old), now: sum(arr) } : null, tx0 = h.taxi;
     await vault.mutate((tx) => {
       tx.put('hotes', { id: h.id, arr, ...(mode === 'self' ? { taxi: null } : {}), ...(chg ? { arrChg: chg } : {}) });
@@ -2660,6 +2660,13 @@ async function hoteInbox(h, msg) {
         tenantSend(mode === 'self' ? { type: 'taxi-cancel', ref: h.id + '|arr' } : { type: 'taxi', ref: h.id + '|arr', c: { from: arr.from, to: home, quand: arr.quand, vol: arr.vol, km: arr.km, prix: arr.prix, service: arr.service, gamme: arr.gamme, extras: arr.extras, heures: arr.heures, pax: h.pers || 0, payer: tx0.payer || 'client', guest: [h.prenom, h.nom].filter(Boolean).join(' '), tel: h.tel || '', plus: '✏️ Changé par le client' } }).catch(() => {}); }
       if (tx0.co) txcoSync(tx0.co, true).catch(() => {});
     }
+    return true;
+  }
+  if (msg.type === 'hote-rent') {
+    const d10 = (x) => (/^\d{4}-\d{2}-\d{2}$/.test(x || '') ? x : '');
+    const r = { id: 'rent' + Date.now().toString(36), at: new Date().toISOString(), du: d10(msg.du), au: d10(msg.au), veh: FLEET_T[msg.veh] ? msg.veh : '', boite: msg.boite === 'man' ? 'man' : 'auto', livr: !!msg.livr, note: String(msg.note || '').slice(0, 300), st: 'new' };
+    await vault.mutate((tx) => tx.put('hotes', { id: h.id, rents: [...(h.rents || []), r].slice(-10) }), '🔑 Location de voiture demandée', `${who} · ${fmtDate(r.du)} → ${fmtDate(r.au)}`);
+    hotesSync(h.id);
     return true;
   }
   if (msg.type === 'hote-ride') {
@@ -3357,6 +3364,10 @@ const hoteLink = (h) => `${HOTE_URL()}?c=${encodeURIComponent(h.appCode || '')}`
 const hoteInvite = (h) => (HOTE_INV[h.langue] || HOTE_INV.en)(h.prenom || h.nom, hoteConf().nom || netBrand(), hoteLink(h), h.appCode);
 // 🚕 Sociétés de taxi / chauffeurs (réseau) : chacune a son app (taxi.html) ; catalogue envoyé par la société
 const TX_GAM = { luxe: '💎 Luxe', confort: '🚘 Confort', eco: '🚕 Économique' };
+// 🚗 parc auto d'une société de taxi : combien de chaque sorte, 2 photos (dehors, dedans) — le client les voit dans son app
+const FLEET_T = { berline: '🚘 Berline', suv: '🚙 SUV', van: '🚐 Van (6-8 places)', luxe: '💎 Luxe / limousine', sport: '🏎️ Sportive', minibus: '🚌 Minibus' };
+// fiche de facturation : celle que la société remplit dans son app ; sinon ce que l'hôtel a écrit (« rempli par vous »)
+const txProf = (co) => co.prof || (co.iban || co.adresse ? { nom: co.nom, adresse: co.adresse || '', ville: co.ville || '', rcs: co.rcs || '', tel: co.tel || '', email: co.email || '', pay: 'iban', iban: co.iban || '', bic: co.bic || '', banque: co.banque || '', manual: 1 } : {});
 const TX_SRV = { course: '🛣️ Course', heures: '⏱️ À l’heure', demi: '🌗 Demi-journée', jour: '☀️ Journée', sejour: '📅 Tout le séjour' };
 const TX_EXT = { garde: '🛡️ Garde du corps', boissons: '🍾 Boissons', friandises: '🍫 Friandises', siege: '🍼 Siège enfant', pancarte: '🪧 Pancarte à l’arrivée', bagages: '🧳 Aide bagages' };
 const txCos = () => vault.list('reglages').filter((r) => r.id.startsWith('txco-')).sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
@@ -3378,7 +3389,7 @@ function txStats(coId) {
 }
 // facture d'une société de taxi (émise par elle, à l'hôtel / l'Airbnb) : une course ou le récapitulatif du mois
 async function txInvPdf(f) {
-  const co = vault.get('reglages', f.co) || {}, pr = co.prof || {}, hc = hoteConf(), soc = societe();
+  const co = vault.get('reglages', f.co) || {}, pr = txProf(co), hc = hoteConf(), soc = societe();
   const p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42], fr = (iso) => fmtDate(String(iso).slice(0, 10));
   p.text(X, 52, pr.nom || co.nom || '', { size: 12, bold: true }).text(X, 66, [pr.adresse, pr.ville].filter(Boolean).join(', '), { size: 9 }).text(X, 78, [pr.rcs && 'RCS ' + pr.rcs, pr.tva && 'TVA ' + pr.tva].filter(Boolean).join(' · '), { size: 8.5, color: G });
   p.text(X, 90, [pr.tel, pr.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
@@ -3557,6 +3568,8 @@ function hoteData(h, tks) {
     formule: h.formule || '', pref: h.pref || '', porte: h.code && !h.codeOff ? h.code : '', cle: h.cle || '',
     ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: ch.persMax || '', m2: ch.m2 || '', npieces: h.lieu === 'airbnb' ? ch.npieces || '' : '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
     st: TENANT ? { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : c.nom || tenantInfo.nom || 'LA CENTRAL', adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || soc.adresse || c.adresse || '' : soc.adresse || c.adresse || '', tel: soc.tel || c.tel || '', wa: '', logo: soc.logo || '', pays: soc.pays || 'LU' } : { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LA CENTRAL'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '', pays: soc.pays || 'LU' },
+    // 🚗 parc auto des sociétés de taxi (photos dehors / dedans), par sorte de voiture
+    fleet: txCos().flatMap((co) => Object.entries(co.fleet || {}).filter(([k, x]) => FLEET_T[k] && x.n > 0).map(([k, x]) => ({ t: k, n: x.n, co: co.nom || '', ph: x.ph || {} }))),
     meal: { allerg: h.allerg || [], allergAutre: h.allergAutre || '', allergCh: h.allergCh || [], allergChAutre: h.allergChAutre || '', regime: h.regime || [], dej: h.dej || '', dejOu: h.dejOu || '', din: h.din || '', dinOu: h.dinOu || '', room: c.roomSvc && c.roomSvc !== 'non' ? { svc: c.roomSvc, pct: c.roomPct || 0, deliv: !!c.roomDeliv } : null },
     menu: menu && menu.file ? menu.file : '', taxi: { pc: +c.txPc || 0, km: +c.txKm || 0, aero: +c.txAero || 0, gare: +c.txGare || 0, on: !!TENANT || !!(c.drivers || []).length || !!chaufs().length || !!txOffers().gam.length, ...txOffers() },
     rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, done: !!(r.taxi && r.taxi.done), rated: r.taxi && r.taxi.rate ? r.taxi.rate.s : 0, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
@@ -3605,7 +3618,7 @@ async function hotesSync(onlyId, loud) {
       const data = hoteData(h, await hoteTks(h));
       const hs = await sha256Hex(JSON.stringify(data));
       if (!loud && hoteHashes.get(e.id) === hs) continue;
-      const files = [...Object.values(data.ch.ph), ...(data.menu ? [data.menu] : [])];
+      const files = [...Object.values(data.ch.ph), ...(data.menu ? [data.menu] : []), ...data.fleet.flatMap((x) => Object.values(x.ph))];
       const up = new Set(e.docs || []);
       let ch = false;
       for (const f of files) if (!up.has(f)) { const b = await vault.readFile(f).catch(() => null); if (b) { await vault.espacePut(e.id, await sealBytes(e.key, b), f); up.add(f); ch = true; } }
@@ -4941,7 +4954,7 @@ function hotView(hf, acc) {
       const AB = (cls, to, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer;margin-bottom:8px" data-action="go" data-to="${to}">${icon('receipt')}<div>${content}</div></button>`;
       const F = tFacts(), fDue = F.filter((f) => !f.paid), late = tFactLate(), txF = txInvs().filter((f) => !f.paid);
       return html`${centralinoHtml()}
-        ${S2('🔔', 'FLASH', 'À traiter vite, puis ça disparaît', [pushNudge(), ...all.filter((h) => h.arrChg && !h.arrChg.vu).map((h) => html`<div class="alert warn" style="margin-bottom:10px">✏️<div style="flex:1"><b>${[h.prenom, h.nom].filter(Boolean).join(' ')} (${h.chambre}) a changé son arrivée</b><div class="small"><s>${h.arrChg.old}</s></div><div class="small">→ <b>${h.arrChg.now}</b></div>${h.taxi ? html`<div class="tiny">La course suit : ${h.taxi.lc ? '↪️ LA CENTRAL prévenue' : h.taxi.own ? '🚙 l’app du chauffeur est à jour' : '🚕 la société est prévenue'}</div>` : ''}<button class="btn sm" style="margin-top:6px" data-action="hote-chg-ok" data-id="${h.id}">✓ Vu</button></div></div>`), hoteAlerts(all, t, 'taxi'), late.length ? AB('bad', 'demandes', html`🔴 <b>${plural(late.length, 'facture')} en retard</b>`) : ''])}
+        ${S2('🔔', 'FLASH', 'À traiter vite, puis ça disparaît', [pushNudge(), ...all.flatMap((h) => (h.rents || []).filter((r) => r.st === 'new').map((r) => html`<div class="alert info" style="margin-bottom:10px">🔑<div style="flex:1"><b>Location de voiture · ${[h.prenom, h.nom].filter(Boolean).join(' ')} (${h.chambre})</b><div class="small">${rentTxt(r)}</div><div class="actions" style="margin:6px 0 0;flex-wrap:wrap"><button class="btn sm primary" data-action="hote-rent-lc" data-id="${h.id}" data-r="${r.id}">↪️ Envoyer à LA CENTRAL</button><button class="btn sm" data-action="hote-rent-ok" data-id="${h.id}" data-r="${r.id}">✓ Je m’en occupe</button></div></div></div>`)), ...all.filter((h) => h.arrChg && !h.arrChg.vu).map((h) => html`<div class="alert warn" style="margin-bottom:10px">✏️<div style="flex:1"><b>${[h.prenom, h.nom].filter(Boolean).join(' ')} (${h.chambre}) a changé son arrivée</b><div class="small"><s>${h.arrChg.old}</s></div><div class="small">→ <b>${h.arrChg.now}</b></div>${h.taxi ? html`<div class="tiny">La course suit : ${h.taxi.lc ? '↪️ LA CENTRAL prévenue' : h.taxi.own ? '🚙 l’app du chauffeur est à jour' : '🚕 la société est prévenue'}</div>` : ''}<button class="btn sm" style="margin-top:6px" data-action="hote-chg-ok" data-id="${h.id}">✓ Vu</button></div></div>`), hoteAlerts(all, t, 'taxi'), late.length ? AB('bad', 'demandes', html`🔴 <b>${plural(late.length, 'facture')} en retard</b>`) : ''])}
         ${pageHead('🏠 Accueil — ' + (hf === 'airbnb' ? 'Airbnb' : 'Hotel'), `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
         <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button><button class="btn primary" data-action="new-chambre">${icon('plus')} ${hf === 'airbnb' ? 'Logement' : 'Chambre'}</button>${TENANT ? '' : html`<button class="btn" data-action="hote-conf">${icon('gear')} Réglages</button>`}</div></div>
         ${S2('🛎️', 'ARRIVÉES & DÉPARTS', 'Les clients du jour : arrivée choisie, clé, départ', [hoteAlerts(all, t, 'arr'), sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.'), sec('🛫 Départs aujourd’hui', dep, 'Aucun départ aujourd’hui.'), html`<button class="btn sm" data-action="go" data-to="${hf}">🛎️ Tous les clients (${pres.length} présents)</button>`])}
@@ -4983,7 +4996,7 @@ function hoteAlerts(all, t, part) {
   const nm = (h) => `${[h.prenom, h.nom].filter(Boolean).join(' ')} (${h.chambre})`;
   const ask = soon.filter((h) => !h.arr), taxi = all.filter((h) => h.arrivee >= t && h.arr && h.arr.mode === 'taxi' && (!h.taxi || h.taxi.st === 'no')).sort((a, b) => String(a.arr.quand || a.arrivee).localeCompare(String(b.arr.quand || b.arrivee)));
   const rides = all.filter((h) => h.depart >= t).flatMap((h) => (h.rides || []).filter((r) => !r.taxi || r.taxi.st === 'no').map((r) => [h, r]));
-  const svcTxt = (a) => [TX_SRV[a.service] && a.service !== 'course' ? TX_SRV[a.service] + (a.service === 'heures' && a.heures ? ' ' + a.heures + ' h' : '') : '', TX_GAM[a.gamme] || '', (a.extras || []).map((k) => TX_EXT[k]).join(' ')].filter(Boolean).join(' · ');
+  const svcTxt = (a) => [TX_SRV[a.service] && a.service !== 'course' ? TX_SRV[a.service] + (a.service === 'heures' && a.heures ? ' ' + a.heures + ' h' : '') : '', TX_GAM[a.gamme] || '', FLEET_T[a.veh] || '', (a.extras || []).map((k) => TX_EXT[k]).join(' '), a.note ? '📝 ' + a.note : ''].filter(Boolean).join(' · ');
   const live = all.filter((h) => h.arrivee === t && h.espace && h.espace.id);
   if (part === 'arr') { taxi.length = 0; rides.length = 0; }
   if (part === 'taxi') { ask.length = 0; live.length = 0; }
@@ -5345,6 +5358,7 @@ const eur = (n) => (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') + ' 
 // 🚕 course de nos chauffeurs : prix HT saisi par la centrale (1 × prix) → TTC avec la TVA des réglages / du client
 const courseDraft = (t) => ({ ...factDraft({ ...t, factDraft: null }), h: 1, taux: num((t.course || {}).prix), depl: 0, mat: [] });
 const courseTtc = (t) => (t.course && num(t.course.ttcFix) > 0 ? num(t.course.ttcFix) : t.course && num(t.course.prix) > 0 ? factCalc(courseDraft(t), factTaux(courseDraft(t), factConf())).ttc : 0);
+const rentTxt = (r) => `🔑 ${fmtDate(r.du)} → ${fmtDate(r.au)}${r.veh ? ' · ' + FLEET_T[r.veh] : ''} · ${r.boite === 'man' ? 'manuelle' : 'automatique'}${r.livr ? ' · livrée à l’hôtel' : ''}${r.note ? ' · 📝 ' + r.note : ''}`;
 const PAY_MODES = { qr: '📱 Virement (QR)', cash: '💶 Espèces', term: '💳 Terminal', payconiq: '🟣 Payconiq', hotel: '🧾 Facture' };
 // QR « EPC » (virement SEPA) : scanné avec l'app de la banque, il remplit bénéficiaire, IBAN, montant et référence
 const ascii = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7e]/g, ' ');
@@ -6166,6 +6180,8 @@ dashboard() {
         ${ours}
         ${oldDr.length ? html`<div class="section-label">🔗 Ancienne liste <span class="tiny muted">— lien WhatsApp, sans app ni GPS</span></div><div class="list" style="margin-bottom:14px">${oldDr.map(([d, i]) => html`<div class="row"><span class="avatar">🚘</span><span class="grow"><span class="title" style="display:block">${d.nom}</span><span class="meta">${[d.auto, d.plaque, d.tel].filter(Boolean).join(' · ')}</span></span><button class="btn sm primary" data-action="drv-conv" data-i="${i}">📱 Passer à l’app</button></div>`)}</div>` : ''}
         <div class="list settings" style="margin-bottom:14px"><button class="row" data-action="hote-tarifs"><span class="avatar">💶</span><span class="grow"><span class="title" style="display:block">Tarifs affichés à vos clients</span><span class="meta">${(() => { const c = hoteConf(); return c.txPc || c.txKm ? `${eur(num(c.txPc))} + ${eur(num(c.txKm))}/km${c.txAero ? ' · ✈️ ' + eur(num(c.txAero)) : ''}${c.txGare ? ' · 🚆 ' + eur(num(c.txGare)) : ''}` : 'pas encore de tarifs'; })()}</span></span>${icon('chevron')}</button></div>` : html`${lcBox}${ours}`}
+      ${(() => { const F = cos.flatMap((co) => Object.entries(co.fleet || {}).filter(([k, x]) => FLEET_T[k] && x.n > 0).map(([k, x]) => [co, k, x])); if (!F.length) return ''; setTimeout(() => hydrateBiens($('#view')), 0);
+        return html`<div class="section-label">🚗 Parc auto <span class="tiny muted">— ce que vos clients voient dans leur app</span></div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:14px">${F.map(([co, k, x]) => html`<div class="card" style="padding:10px"><b>${FLEET_T[k]} × ${x.n}</b><div class="tiny muted">${co.nom}</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">${['e', 'i'].map((w) => (x.ph || {})[w] ? html`<img data-bph="${x.ph[w]}" alt="${w === 'e' ? 'dehors' : 'dedans'}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px">` : html`<span class="ch-empty" style="aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--surface-2)">📷</span>`)}</div></div>`)}</div>`; })()}
       <div class="section-label">${TENANT ? '🚕 Vos sociétés de taxi' : html`🚕 Taxis <span class="tiny muted">— les sociétés</span>`}</div>
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-txco">${icon('plus')} Société de taxi</button></div></div>
       <div class="section-label">🏢 Sociétés</div>
@@ -8147,19 +8163,27 @@ const SHEETS = {
   'txco-form'({ id }) {
     const co = id ? vault.get('reglages', id) : { appCode: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0') };
     if (id && !co) return null;
-    const inv = `🚕 ${co.nom || ''} — app des courses ${hoteConf().nom || 'LA CENTRAL'} : ${location.origin}/taxi.html\nCode : ${co.appCode}`, tel = String(co.tel || '').replace(/[^\d+]/g, '');
+    const inv = `🚕 ${co.nom || ''} — app des courses ${hoteConf().nom || socName() || 'LA CENTRAL'} : ${location.origin}/taxi.html\nCode : ${co.appCode}`;
+    setTimeout(() => hydrateBiens(sheetEl), 0);
     return {
       title: id ? co.nom : 'Nouvelle société de taxi',
       narrow: true,
       body: html`<form id="f" data-form="txco" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
         ${field('Nom de la société / du chauffeur', 'nom', co.nom, { full: true, required: true, placeholder: 'ex. Taxi Lux Premium' })}
-        ${field('Téléphone (WhatsApp)', 'tel', co.tel, { type: 'tel', placeholder: '+352…' })}${field('Email', 'email', co.email, { type: 'email' })}
-        ${field('RCS (facultatif)', 'rcs', co.rcs, { placeholder: 'B123456' })}
-        <div class="full section-label" style="margin:6px 0 0">📱 App de la société</div>
-        ${field('Code d’accès à l’app', 'appCode', co.appCode, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
-        <p class="tiny muted full" style="margin:0">Dans son app, la société met ses chauffeurs, ses voitures (Luxe, Confort, Économique), ses tarifs (course, à l’heure, demi-journée, journée) et ses extras ; elle accepte ou refuse les courses que vous lui envoyez.</p>
-        ${id ? html`<div class="full actions" style="margin:0;flex-wrap:wrap">${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}${co.email ? html`<a class="btn sm" href="mailto:${co.email}?subject=${encodeURIComponent('🚕 App des courses')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}<button type="button" class="btn sm" data-action="code-copy" data-code="${co.appCode}">📋 Copier le code</button></div>` : ''}
+        ${field('📞 Centrale (numéro du dispatch)', 'tel', co.tel, { type: 'tel', placeholder: '+352…' })}${field('📱 GSM (WhatsApp)', 'gsm', co.gsm, { type: 'tel', placeholder: '+352 6…' })}
+        ${field('Email', 'email', co.email, { type: 'email' })}${field('RCS (facultatif)', 'rcs', co.rcs, { placeholder: 'B123456' })}
+        ${field('Adresse', 'adresse', co.adresse, { full: true, placeholder: 'rue, n°' })}${field('Code postal, ville', 'ville', co.ville, { full: true, placeholder: 'L-1234 Luxembourg' })}
+        <div class="full section-label" style="margin:6px 0 0">🏦 Banque <span class="tiny muted">— facultatif, pour la payer</span></div>
+        ${co.prof ? html`<p class="tiny full" style="margin:0">🏢 La société a rempli sa fiche dans son app : ce sont <b>ses</b> données qui servent (IBAN ${co.prof.iban ? '…' + String(co.prof.iban).replace(/\s/g, '').slice(-4) : '—'}).</p>` : html`<p class="tiny muted full" style="margin:0">✍️ Rempli par vous. Si la société remplit sa fiche dans son app, ses données remplaceront celles-ci.</p>`}
+        ${field('IBAN', 'iban', co.iban, { full: true, placeholder: 'LU.. .... .... .... ....' })}${field('BIC', 'bic', co.bic, {})}${field('Banque', 'banque', co.banque, {})}
+        <div class="full" style="background:#e8f3fc;border:1px solid #c6def3;border-radius:14px;padding:12px 14px;display:grid;gap:10px">
+          <div class="section-label" style="margin:0;color:#1d4e89">📱 CODE DE L’APP DE LA SOCIÉTÉ</div>
+          <div style="display:flex;gap:8px;align-items:flex-end">${field('Code d’accès à l’app', 'appCode', co.appCode, { attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em;background:#fff"' })}<button type="button" class="btn sm" data-action="txco-newcode" title="Code perdu : un nouveau code (l’ancien ne marche plus)">🔄 Code perdu</button></div>
+          ${id ? (() => { const t2 = String(co.gsm || co.tel || '').replace(/[^\d+]/g, ''), link = `${location.origin}/taxi.html`; return html`<div class="actions" style="margin:0;flex-wrap:wrap;gap:6px"><button type="button" class="btn sm" data-action="code-copy" data-code="${co.appCode}">📋 Code</button><button type="button" class="btn sm" data-action="code-copy" data-code="${link}">🔗 Lien</button>${t2 ? html`<a class="btn sm" href="https://wa.me/${t2.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}${co.email ? html`<a class="btn sm" href="mailto:${co.email}?subject=${encodeURIComponent('🚕 App des courses')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}${t2 ? html`<a class="btn sm" href="sms:${t2}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}</div>`; })() : html`<p class="tiny muted" style="margin:0">Enregistrez, puis envoyez le code (WhatsApp, email, SMS).</p>`}
+          ${(co.codeHist || []).length ? html`<details><summary class="small">🗂️ Codes donnés : ${co.codeHist.length}</summary><div class="list small">${[...co.codeHist].reverse().map((x) => html`<div class="row"><span class="grow">${fmtDate(x.d)} — ${'•'.repeat(Math.max(0, (x.code || '').length - 2))}${(x.code || '').slice(-2)}${x.why ? ' · ' + x.why : ''}</span></div>`)}</div></details>` : ''}
+          <p class="tiny muted" style="margin:0">Dans son app, la société met ses chauffeurs, ses voitures, ses tarifs et ses extras ; elle accepte ou refuse les courses que vous lui envoyez.</p>
+        </div>
         ${co.cat ? html`<div class="full section-label" style="margin:6px 0 0">📋 Catalogue reçu ${co.catAt ? '(' + fmtDateTime(co.catAt) + ')' : ''}</div>
           <div class="full small">${Object.keys(TX_GAM).filter((k) => (co.cat.gammes || {})[k] && co.cat.gammes[k].on).map((k) => { const g = co.cat.gammes[k]; return html`<div>${TX_GAM[k]} — ${[g.pc ? g.pc + ' € + ' + g.km + ' €/km' : '', g.h ? g.h + ' €/h' : '', g.demi ? '½ j ' + g.demi + ' €' : '', g.jour ? 'jour ' + g.jour + ' €' : ''].filter(Boolean).join(' · ')}</div>`; })}
           ${(co.cat.drivers || []).map((d) => html`<div>👤 ${d.nom}${d.lg ? ' · ' + d.lg : ''}</div>`)}${(co.cat.cars || []).map((x) => html`<div>🚘 ${x.modele} · ${x.plaque} · ${TX_GAM[x.gamme]}</div>`)}
@@ -8232,7 +8256,7 @@ const SHEETS = {
   'txinv-pay'({ id }) {
     const f = vault.get('reglages', id);
     if (!f) return null;
-    const co = vault.get('reglages', f.co) || {}, pr = co.prof || {};
+    const co = vault.get('reglages', f.co) || {}, pr = txProf(co);
     return {
       title: `💳 ${f.coNom} · ${f.no}`,
       narrow: true,
@@ -8313,7 +8337,7 @@ const SHEETS = {
       title: '🚕 Taxi — ' + [h.prenom, h.nom].filter(Boolean).join(' '),
       narrow: true,
       body: html`<div class="small" style="margin-bottom:10px">📍 ${a.from || '—'}${a.quand ? html` · 🕒 ${String(a.quand).replace('T', ' ')}` : ''}${a.vol ? html` · ✈️ ${a.vol}` : ''} · ${a.km || 0} km${a.prix ? html` · ~${a.prix} €` : ''}</div>
-        ${a.service || a.gamme ? html`<div class="small" style="margin:-4px 0 10px">${[TX_SRV[a.service], TX_GAM[a.gamme], ...(a.extras || []).map((k) => TX_EXT[k])].filter(Boolean).join(' · ')}${a.heures ? ` · ${a.heures} h` : ''}</div>` : ''}
+        ${a.service || a.gamme || a.veh || a.note ? html`<div class="small" style="margin:-4px 0 10px">${[TX_SRV[a.service], TX_GAM[a.gamme], FLEET_T[a.veh], ...(a.extras || []).map((k) => TX_EXT[k])].filter(Boolean).join(' · ')}${a.heures ? ` · ${a.heures} h` : ''}${a.note ? html`<div><b>📝 ${a.note}</b></div>` : ''}</div>` : ''}
         ${cur && !cur.lc && cur.st === 'wait' ? html`<div class="alert warn" style="margin-bottom:10px">⏳<div>Envoyé à <b>${cur.nom}</b> — en attente de sa réponse</div></div>` : ''}
         ${cur && !cur.lc && cur.st !== 'wait' && cur.st !== 'no' ? html`<div class="alert info" style="margin-bottom:10px">🚘<div><b>${cur.nom}</b> · ${cur.auto || ''} ${cur.plaque || ''}${rid ? '' : html`<div class="actions" style="margin:6px 0 0;flex-wrap:wrap">${hoteDrvBtns(h)}</div>`}</div></div>` : ''}
         ${TENANT ? (() => {
@@ -10268,6 +10292,7 @@ const ACTIONS = {
     annSync(a.annId); renderView();
   },
   'edit-txco': (d) => openOver('txco-form', d.id),
+  'txco-newcode': () => { const i = sheetEl.querySelector('input[name=appCode]'); if (i) { i.value = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0'); i.dataset.lost = '1'; toast('Nouveau code : enregistrez, puis envoyez-le (l’ancien ne marchera plus)'); } },
   async 'del-txco'(d) {
     const co = vault.get('reglages', d.id);
     if (!co || !(await confirmBox('Supprimer cette société de taxi ?', { ok: 'Supprimer', danger: true, detail: `${co.nom} — son app ne fonctionnera plus` }))) return;
@@ -10294,7 +10319,7 @@ const ACTIONS = {
     const rid = d.r || 'arr', a = d.r ? (h.rides || []).find((r) => r.id === d.r) || {} : h.arr || {}, hc = hoteConf();
     const payer = (document.getElementById('txPayer') || {}).value === 'hotel' ? 'hotel' : 'client';
     const home = h.lieu === 'airbnb' ? h.adresse || chGet(h.lieu, h.chambre).adresse || '' : hc.adresse || '';
-    const c = { from: a.from || '', to: a.to || (d.r ? '' : home), quand: a.quand || '', vol: a.vol || '', km: a.km || 0, prix: a.prix || 0, service: a.service || 'course', gamme: a.gamme || '', extras: a.extras || [], heures: a.heures || 0, pax: h.pers || 0, payer, guest: [h.prenom, h.nom].filter(Boolean).join(' '), tel: h.tel || '', plus: (h.lieu === 'airbnb' ? 'Logement ' : 'Chambre ') + (h.chambre || '') };
+    const c = { from: a.from || '', to: a.to || (d.r ? '' : home), quand: a.quand || '', vol: a.vol || '', km: a.km || 0, prix: a.prix || 0, service: a.service || 'course', gamme: a.gamme || '', extras: a.extras || [], heures: a.heures || 0, pax: h.pers || 0, payer, guest: [h.prenom, h.nom].filter(Boolean).join(' '), tel: h.tel || '', plus: [(h.lieu === 'airbnb' ? 'Logement ' : 'Chambre ') + (h.chambre || ''), FLEET_T[a.veh] || '', (a.extras || []).map((k) => TX_EXT[k]).join(' '), a.note ? '📝 ' + a.note : ''].filter(Boolean).join(' · ') };
     try { await tenantSend({ type: 'taxi', ref: h.id + '|' + rid, c }); } catch (e) { return toast(e.status === 423 ? 'Lecture seule : abonnement échu' : 'Envoi impossible (connexion ?)', { bad: true }); }
     const t = { lc: 1, st: 'wait', nom: 'LA CENTRAL', payer, prix: 0, at: new Date().toISOString() };
     if (d.r) await vault.mutate((tx) => tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === d.r ? { ...r, taxi: t } : r)) }), '↪️ Course envoyée à LA CENTRAL', `${h.nom} — ${c.from}`);
@@ -10315,7 +10340,7 @@ const ACTIONS = {
     const t = { own: 1, w: w.id, st: 'ok', nom: intervFull(w), tel: w.tel || '', auto: v ? v.modele || VEH_TYPES[v.type] || '' : '', plaque: v ? v.plaque || '' : '', payer, prix: num(a.prix) || 0, at: new Date().toISOString() };
     await vault.mutate((tx) => {
       t.tid = tx.put('taches', { type: 'autre', titre: `🚕 ${guest} (${h.chambre || ''}) : ${a.from || '?'} → ${to || '?'}`, immId: '', logId: '', locId: '', intervenantId: w.id, date: /^\d{4}-\d{2}-\d{2}/.test(q) ? q.slice(0, 10) : today(), heure: /T\d\d:\d\d/.test(q) ? q.slice(11, 16) : '', recur: '', statut: 'planifie', urgent: false, adresse: a.from || '',
-        lieu: { nom: guest, adr: a.from || '', contact: guest, tel: h.tel || '' }, note: [to ? '🏁 → ' + to : '', a.vol ? '✈️ ' + a.vol : '', h.pers ? '👥 ' + h.pers : '', payer === 'hotel' ? '🧾 Sur la note du client : rien à encaisser' : '💶 Le client paie dans la voiture'].filter(Boolean).join('\n'),
+        lieu: { nom: guest, adr: a.from || '', contact: guest, tel: h.tel || '' }, note: [to ? '🏁 → ' + to : '', a.vol ? '✈️ ' + a.vol : '', h.pers ? '👥 ' + h.pers : '', FLEET_T[a.veh] || '', (a.extras || []).map((k) => TX_EXT[k]).join(' '), a.note ? '📝 ' + a.note : '', payer === 'hotel' ? '🧾 Sur la note du client : rien à encaisser' : '💶 Le client paie dans la voiture'].filter(Boolean).join('\n'),
         course: { from: a.from || '', to, quand: q, vol: a.vol || '', pax: h.pers || 0, payer, ttcFix: num(a.prix) || 0, hid: h.id, rid, veh: v ? v.id : '', drv: { nom: t.nom, tel: t.tel, auto: t.auto, plaque: t.plaque } } }).id;
       if (d.r) tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === d.r ? { ...r, taxi: t } : r)) });
       else tx.put('hotes', { id: h.id, taxi: t });
@@ -10351,6 +10376,14 @@ const ACTIONS = {
     openSheet('interv', wid);
   },
   'hote-tarifs': () => openOver('hote-tarifs'),
+  'hote-rent-ok': async (d) => { const h = vault.get('hotes', d.id); if (!h) return; await vault.mutate((tx) => tx.put('hotes', { id: h.id, rents: (h.rents || []).map((r) => (r.id === d.r ? { ...r, st: 'moi' } : r)) }), '🔑 Location : l’hôtel s’en occupe', h.nom || ''); renderView(); },
+  async 'hote-rent-lc'(d) {
+    const h = vault.get('hotes', d.id), r = h && (h.rents || []).find((x) => x.id === d.r);
+    if (!r) return;
+    try { await tenantSend({ type: 'demande', ref: 'rent-' + h.id + '-' + r.id, titre: `🔑 Location de voiture — ${[h.prenom, h.nom].filter(Boolean).join(' ')}`, urgence: 'normal', adresse: hoteConf().adresse || societe().adresse || '', texte: rentTxt(r) + `\n👤 ${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.tel ? ' · 📞 ' + h.tel : ''} · ${h.lieu === 'airbnb' ? 'logement' : 'chambre'} ${h.chambre || ''}` }); } catch (e) { return toast(e.status === 423 ? 'Lecture seule : abonnement échu' : 'Envoi impossible (connexion ?)', { bad: true }); }
+    await vault.mutate((tx) => tx.put('hotes', { id: h.id, rents: (h.rents || []).map((x) => (x.id === r.id ? { ...x, st: 'lc', lcAt: new Date().toISOString() } : x)) }), '↪️ Location envoyée à LA CENTRAL', h.nom || '');
+    toast('↪️ Envoyé à LA CENTRAL'); renderView();
+  },
   'hote-chg-ok': async (d) => { const h = vault.get('hotes', d.id); if (h && h.arrChg) await vault.mutate((tx) => tx.put('hotes', { id: h.id, arrChg: { ...h.arrChg, vu: 1 } }), '✓ Changement vu', h.nom || ''); renderView(); },
   'hote-qr': (d) => openOver('hote-qr', d.id),
   'hote-resto': (d) => openOver('hote-resto', null, null, d.lieu || (TENANT && tenantInfo.fil === 'airbnb' ? 'airbnb' : 'hotel')),
@@ -11430,8 +11463,12 @@ const FORMS = {
     const g = (k) => String(fd.get(k) || '').trim(), id = g('id');
     if (!g('nom')) return;
     if (!/^[0-9A-Za-z]{4,16}$/.test(g('appCode'))) return toast('Code : 4 à 16 chiffres ou lettres', { bad: true });
-    const rid = id || 'txco-' + uid();
-    await vault.mutate((tx) => tx.put('reglages', { id: rid, nom: g('nom'), tel: g('tel'), email: g('email'), rcs: g('rcs').toUpperCase(), appCode: g('appCode') }), id ? 'Société de taxi modifiée' : 'Société de taxi créée', g('nom'));
+    const rid = id || 'txco-' + uid(), old = vault.get('reglages', rid) || {}, lost = !!(sheetEl.querySelector('input[name=appCode]') || {}).dataset?.lost;
+    const codeHist = [...(old.codeHist || [])];
+    if (!old.appCode || old.appCode !== g('appCode')) codeHist.push({ d: today(), code: g('appCode'), why: !old.appCode ? 'création' : lost ? 'code perdu' : 'changé' });
+    const iban = g('iban').replace(/\s+/g, '').toUpperCase();
+    if (iban && !ibanOk(iban)) return toast('IBAN invalide : vérifiez-le (ou laissez vide)', { bad: true });
+    await vault.mutate((tx) => tx.put('reglages', { id: rid, nom: g('nom'), tel: g('tel'), gsm: g('gsm'), email: g('email'), rcs: g('rcs').toUpperCase(), adresse: g('adresse'), ville: g('ville'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), appCode: g('appCode'), codeHist: codeHist.slice(-30) }), id ? 'Société de taxi modifiée' : 'Société de taxi créée', g('nom'));
     toast(id ? 'Enregistré' : 'Société créée : envoyez-lui le code');
     goBack();
     await txcoSync(rid, true);
