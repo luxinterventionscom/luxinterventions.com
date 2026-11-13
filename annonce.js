@@ -128,7 +128,19 @@ const PST = {
 const PS = () => PST[lang] || PST.fr;
 const fBands = (f) => (f.pack === 'max' ? [...BAND_KEYS] : (f.bands || []).filter((k) => BAND_KEYS.includes(k)));
 const days = (f) => (f.du ? durDays(f.dn, f.du) : Math.max(1, Math.round((new Date(f.fin) - new Date(f.debut)) / 864e5) + 1));
-const priceOf = (f) => { const tr = (data && data.tarifs) || {}, c = f.crea ? +tr['crea_' + f.crea] || 0 : 0; if (f.du) { const p = adPrice({ ...f, bands: fBands(f) }, tr); return p && (!f.crea || c) ? Math.round((p + c) * 100) / 100 : 0; } const r = +tr[f.slot] || 0; return r && (!f.crea || c) ? Math.round(r * days(f)) + c : 0; };
+// 📱 option : aussi sur nos réseaux sociaux (prix TVA comprise, une fois) ; total avec la TVA à la fin
+const SOCL = {
+  fr: { t: '📱 Aussi sur nos réseaux sociaux — Instagram · Facebook · YouTube · TikTok', f: (n) => `Plus de ${n} personnes nous suivent`, once: 'une fois, TVA comprise', tot: 'Total', vat: 'dont TVA', pub: '📱 Nos réseaux', wait: '⏳ bientôt en ligne', done: '✅ en ligne' },
+  en: { t: '📱 Also on our social networks — Instagram · Facebook · YouTube · TikTok', f: (n) => `More than ${n} people follow us`, once: 'one-off, VAT included', tot: 'Total', vat: 'incl. VAT', pub: '📱 Our networks', wait: '⏳ online soon', done: '✅ online' },
+  de: { t: '📱 Auch in unseren sozialen Netzwerken — Instagram · Facebook · YouTube · TikTok', f: (n) => `Mehr als ${n} Personen folgen uns`, once: 'einmalig, inkl. MwSt.', tot: 'Gesamt', vat: 'davon MwSt.', pub: '📱 Unsere Netzwerke', wait: '⏳ bald online', done: '✅ online' },
+  it: { t: '📱 Anche sui nostri social — Instagram · Facebook · YouTube · TikTok', f: (n) => `Più di ${n} persone ci seguono`, once: 'una tantum, IVA compresa', tot: 'Totale', vat: 'di cui IVA', pub: '📱 I nostri social', wait: '⏳ presto online', done: '✅ online' },
+  pt: { t: '📱 Também nas nossas redes sociais — Instagram · Facebook · YouTube · TikTok', f: (n) => `Mais de ${n} pessoas seguem-nos`, once: 'uma vez, IVA incluído', tot: 'Total', vat: 'dos quais IVA', pub: '📱 As nossas redes', wait: '⏳ em breve online', done: '✅ online' },
+  es: { t: '📱 También en nuestras redes sociales — Instagram · Facebook · YouTube · TikTok', f: (n) => `Más de ${n} personas nos siguen`, once: 'una vez, IVA incluido', tot: 'Total', vat: 'de los cuales IVA', pub: '📱 Nuestras redes', wait: '⏳ pronto en línea', done: '✅ en línea' },
+};
+const SL = () => SOCL[lang] || SOCL.fr;
+const SOC_ICO = { ig: '📸 Instagram', fb: '👍 Facebook', yt: '▶️ YouTube', tt: '🎵 TikTok' };
+const priceOf = (f) => { const b = priceBase(f), so = ((data && data.tarifs) || {}).soc || {}; return b && f.soc && so.ht ? Math.round((b + so.ht) * 100) / 100 : b; };
+const priceBase = (f) => { const tr = (data && data.tarifs) || {}, c = f.crea ? +tr['crea_' + f.crea] || 0 : 0; if (f.du) { const p = adPrice({ ...f, bands: fBands(f) }, tr); return p && (!f.crea || c) ? Math.round((p + c) * 100) / 100 : 0; } const r = +tr[f.slot] || 0; return r && (!f.crea || c) ? Math.round(r * days(f)) + c : 0; };
 async function sendOwner(o) {
   const r = await fetch(`${API}/api/esp/${id}/signal?app=ann`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), ...o }) });
   if (!r.ok) throw new Error(r.status);
@@ -198,13 +210,19 @@ function formHtml(t) {
     <label>✍️ ${esc(SPX[lang] ? SPX[lang][0] : SPX.fr[0])}</label><textarea data-k="special" rows="2" placeholder="${esc(SPX[lang] ? SPX[lang][1] : SPX.fr[1])}">${esc(f.special || '')}</textarea>
     <p class="meta" style="margin:10px 0 0">${esc(MD().jingle)}</p>
     <label>🎬 ${esc((CRT[lang] || CRT.fr).t)}</label><select data-k="crea">${['', 'simple', 'moyen', 'max'].map((k) => `<option value="${k}" ${(f.crea || '') === k ? 'selected' : ''}>${esc((CRT[lang] || CRT.fr)[k || 'none'])}${k ? ' — ' + (+tr['crea_' + k] ? esc(eur(+tr['crea_' + k])) + ' ' + esc(TP().ht) : esc(t.quote)) : ''}</option>`).join('')}</select>
-    <p class="est">${esc(t.price)} : <b>${p ? p + ' € ' + esc(TP().ht) : esc(t.quote) + ' — ' + esc((CRT[lang] || CRT.fr).q3)}</b>${tr.note ? `<br><span class="meta">${esc(tr.note)}</span>` : ''}</p>
+    ${tr.soc && tr.soc.ttc ? `<label class="chk" style="margin-top:10px;display:flex;gap:8px;align-items:flex-start"><input type="checkbox" data-soc="1" ${f.soc ? 'checked' : ''} style="width:20px;height:20px;flex:none"><span><b>${esc(SL().t)}</b> <span class="tag">+${esc(String(tr.soc.ttc).replace('.', ','))} € · ${esc(SL().once)}</span>${tr.soc.f ? `<br><span class="meta">👥 ${esc(SL().f(tr.soc.f.toLocaleString(lang)))}</span>` : ''}</span></label>` : ''}
+    <p class="est">${esc(t.price)} : <b>${p ? p + ' € ' + esc(TP().ht) : esc(t.quote) + ' — ' + esc((CRT[lang] || CRT.fr).q3)}</b>${p && tr.tx ? `<br>${esc(SL().tot)} : <b>${(Math.round(p * (1 + tr.tx / 100) * 100) / 100).toFixed(2).replace('.', ',')} € ${esc(TP().ttc)}</b> <span class="meta">(${esc(SL().vat)} ${tr.tx} % : ${(Math.round(p * tr.tx) / 100).toFixed(2).replace('.', ',')} €)</span>` : ''}${tr.note ? `<br><span class="meta">${esc(tr.note)}</span>` : ''}</p>
     <div class="duo"><button class="btn sec" data-cancel="1">${esc(t.cancel)}</button><button class="btn" data-send="1">${esc(t.send)}</button></div></div>`;
+}
+function socLine(a) {
+  if (!a.soc) return '';
+  const sp = a.socPub || {}, on = Object.keys(SOC_ICO).filter((k) => sp[k]);
+  return `<p class="meta" style="margin:4px 0 0">${esc(SL().pub)} : ${on.length ? on.map((k) => sp[k].url ? `<a href="${esc(sp[k].url)}" target="_blank" rel="noopener">${esc(SOC_ICO[k])}</a>` : esc(SOC_ICO[k])).join(' · ') + ' ' + esc(SL().done) : esc(SL().wait)}</p>`;
 }
 function adHtml(a, t) {
   const st = a.st === 'ok' && a.fin && a.fin < today ? 'end' : a.st, u = TP();
   return `<div class="ad ${st === 'pay' ? 'wait' : st}"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(t.Ty[a.type] || '')} · ${esc(a.nom)}</b><span class="tag">${esc(st === 'pay' ? u.st : t.St[st] || '')}</span></div>
-    <p style="margin:4px 0 0;white-space:pre-wrap">${esc(a.texte)}</p>${a.crea ? `<p class="meta" style="margin:4px 0 0">🎬 ${esc((CRT[lang] || CRT.fr)[a.crea] || '')}</p>` : ''}
+    <p style="margin:4px 0 0;white-space:pre-wrap">${esc(a.texte)}</p>${a.crea ? `<p class="meta" style="margin:4px 0 0">🎬 ${esc((CRT[lang] || CRT.fr)[a.crea] || '')}</p>` : ''}${socLine(a)}
     <p class="meta" style="margin:4px 0 0">${esc(t.Sl[a.slot] || (PS().ps[a.slot] || '').split(' — ')[0])}${a.bands && a.bands.length ? ' · ' + a.bands.map((k) => esc(PS().bt[k] || k)).join(', ') : ''}${a.we ? ' · 🎉' : ''} · ${(a.aud || []).map((k) => esc(t.Au[k] || '')).join(' · ')}<br>📅 ${esc(a.debut)} → ${esc(a.fin)}${a.jours && a.jours.length ? ' · ' + a.jours.map((j) => esc(t.D[j])).join(' ') : ''}${a.h1 ? ` · ${esc(a.h1)}–${esc(a.h2)}` : ''}${a.prix ? ' · ' + esc(a.prix) + ' € ' + esc(u.ht) : ''}</p>
     ${st === 'pay' ? payHtml(a) : ''}
     ${a.st === 'no' && a.motif ? `<p class="warnt">${esc(t.motif)} : ${esc(a.motif)}</p>` : ''}
@@ -388,6 +406,7 @@ app.addEventListener('change', async (e) => {
     if (form) form.logo = u; ls.set('annLogo:' + id, u); render();
   } catch { /* image illisible */ }
 });
+app.addEventListener('change', (e) => { if (form && e.target.dataset.soc) { form.soc = e.target.checked; render(); } });
 app.addEventListener('input', (e) => { const el = e.target; if (form && el.dataset.k) { form[el.dataset.k] = el.value; if (['debut', 'fin', 'crea', 'du'].includes(el.dataset.k)) render(); else if (el.dataset.k === 'dn') { const p = app.querySelector('.est b'); if (p) { const v = priceOf(form); p.textContent = v ? v + ' € ' + TP().ht : p.textContent; } } } });
 app.addEventListener('change', (e) => {
   const el = e.target;
@@ -454,7 +473,7 @@ app.addEventListener('click', async (e) => {
     b.disabled = true;
     try {
       const mref = Math.random().toString(36).slice(2, 12) + Date.now().toString(36);
-      await sendOwner({ type: 'an-ad', ad: { ...f, mref: mFiles.length ? mref : f.mref || '', mn: mFiles.length, logo: ls.get('annLogo:' + id) || '' } });
+      await sendOwner({ type: 'an-ad', ad: { ...f, soc: !!f.soc, mref: mFiles.length ? mref : f.mref || '', mn: mFiles.length, logo: ls.get('annLogo:' + id) || '' } });
       if (mFiles.length) { b.textContent = MD().sending; await sendMedia(mref); mFiles = []; }
       const pend = (() => { try { return JSON.parse(ls.get('annPend:' + id) || '[]'); } catch { return []; } })();
       if (!f.id) { pend.push({ ...f, id: '', st: 'wait', prix: priceOf(f), at: Date.now() }); ls.set('annPend:' + id, JSON.stringify(pend)); }
