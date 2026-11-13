@@ -43,7 +43,7 @@ const L = {
     trackOn: 'L’établissement voit votre heure d’arrivée (pas votre position exacte). Le partage s’arrête à votre arrivée.', sent: 'Envoyé ✓',
     edlT: '📋 État des lieux de sortie', edlP: 'Avant de partir, prenez les photos (une par case) : elles protègent votre caution et vous.', edlSend: 'Envoyer les photos', edlOk: 'photo(s) reçue(s) par l’établissement',
     safe: '🔒 Vos données sont chiffrées : seul l’établissement peut les lire.', notif: 'Notifications', notifHint: 'Code de la porte, taxi, rappels : recevez-les sur ce téléphone.', notifOn: 'Activer', notifOk: 'Notifications activées ✓',
-    ad: { lbl: 'Publicité', see: '🗺️ Voir', call: '📞 Appeler', web: '🌐 Site' }, thanks: 'Merci pour votre séjour !', lang: 'Langue', reset: 'Changer de code' },
+    ad: { back: '📣 Publicité', mapT: '🗺️ Carte', home: '🏨 L’hôtel', lbl: 'Publicité', see: '🗺️ Voir', call: '📞 Appeler', web: '🌐 Site' }, thanks: 'Merci pour votre séjour !', lang: 'Langue', reset: 'Changer de code' },
   en: { app: 'My stay', welcome: 'Enter the code you received from your hotel or host.', code: 'Your personal code', enter: 'Enter', bad: 'Unknown code or stay ended.', off: 'Your stay has ended. Thank you and see you soon!',
     hi: 'Hello', stay: 'Your stay', from: 'Arrival', to: 'Departure', after: 'from', before: 'before', pers: 'guests', room: 'Your room', home: 'Your home', floor: 'Floor', rooms: 'rooms', max: 'max.',
     door: 'Door code', doorSoon: 'Shown on your arrival day', key: 'Badge / key', formule: 'Board', F: { seul: 'Room only', pdj: 'Breakfast', demi: 'Half board', complete: 'Full board' },
@@ -54,7 +54,7 @@ const L = {
     trackOn: 'The property sees your arrival time (not your exact position). Sharing stops when you arrive.', sent: 'Sent ✓',
     edlT: '📋 Check-out inventory', edlP: 'Before leaving, take the photos (one per box): they protect your deposit and you.', edlSend: 'Send the photos', edlOk: 'photo(s) received by the property',
     safe: '🔒 Your data is encrypted: only the property can read it.', notif: 'Notifications', notifHint: 'Door code, taxi, reminders: get them on this phone.', notifOn: 'Turn on', notifOk: 'Notifications on ✓',
-    ad: { lbl: 'Advertising', see: '🗺️ See', call: '📞 Call', web: '🌐 Website' }, thanks: 'Thank you for your stay!', lang: 'Language', reset: 'Change code' },
+    ad: { back: '📣 Advertising', mapT: '🗺️ Map', home: '🏨 The hotel', lbl: 'Advertising', see: '🗺️ See', call: '📞 Call', web: '🌐 Website' }, thanks: 'Thank you for your stay!', lang: 'Language', reset: 'Change code' },
   de: { app: 'Mein Aufenthalt', welcome: 'Geben Sie den Code ein, den Sie von Ihrem Hotel oder Gastgeber erhalten haben.', code: 'Ihr persönlicher Code', enter: 'Öffnen', bad: 'Unbekannter Code oder Aufenthalt beendet.', off: 'Ihr Aufenthalt ist beendet. Danke und bis bald!',
     hi: 'Guten Tag', stay: 'Ihr Aufenthalt', from: 'Ankunft', to: 'Abreise', after: 'ab', before: 'bis', pers: 'Personen', room: 'Ihr Zimmer', home: 'Ihre Unterkunft', floor: 'Etage', rooms: 'Zimmer', max: 'max.',
     door: 'Türcode', doorSoon: 'Sichtbar am Anreisetag', key: 'Badge / Schlüssel', formule: 'Verpflegung', F: { seul: 'Nur Übernachtung', pdj: 'Frühstück', demi: 'Halbpension', complete: 'Vollpension' },
@@ -65,7 +65,7 @@ const L = {
     trackOn: 'Das Haus sieht Ihre Ankunftszeit (nicht Ihren genauen Standort). Das Teilen endet bei Ihrer Ankunft.', sent: 'Gesendet ✓',
     edlT: '📋 Auszugsprotokoll', edlP: 'Machen Sie vor der Abreise die Fotos (eines pro Feld): sie schützen Ihre Kaution und Sie.', edlSend: 'Fotos senden', edlOk: 'Foto(s) vom Haus erhalten',
     safe: '🔒 Ihre Daten sind verschlüsselt: nur das Haus kann sie lesen.', notif: 'Benachrichtigungen', notifHint: 'Türcode, Taxi, Erinnerungen: auf diesem Telefon erhalten.', notifOn: 'Aktivieren', notifOk: 'Benachrichtigungen aktiv ✓',
-    ad: { lbl: 'Werbung', see: '🗺️ Ansehen', call: '📞 Anrufen', web: '🌐 Website' }, thanks: 'Danke für Ihren Aufenthalt!', lang: 'Sprache', reset: 'Code ändern' },
+    ad: { back: '📣 Werbung', mapT: '🗺️ Karte', home: '🏨 Das Hotel', lbl: 'Werbung', see: '🗺️ Ansehen', call: '📞 Anrufen', web: '🌐 Website' }, thanks: 'Danke für Ihren Aufenthalt!', lang: 'Sprache', reset: 'Code ändern' },
   it: { app: 'Il mio soggiorno', welcome: 'Inserisca il codice ricevuto dal suo hotel o dal suo host.', code: 'Il suo codice personale', enter: 'Entra', bad: 'Codice sconosciuto o soggiorno terminato.', off: 'Il suo soggiorno è terminato. Grazie e a presto!',
     hi: 'Buongiorno', stay: 'Il suo soggiorno', from: 'Arrivo', to: 'Partenza', after: 'dalle', before: 'entro le', pers: 'persone', room: 'La sua camera', home: 'Il suo alloggio', floor: 'Piano', rooms: 'locali', max: 'max.',
     door: 'Codice della porta', doorSoon: 'Visibile il giorno del suo arrivo', key: 'Badge / chiave', formule: 'Formula', F: { seul: 'Solo pernottamento', pdj: 'Colazione', demi: 'Mezza pensione', complete: 'Pensione completa' },
@@ -76,7 +76,7 @@ const L = {
     trackOn: 'La struttura vede l’ora del suo arrivo (non la posizione esatta). La condivisione si ferma al suo arrivo.', sent: 'Inviato ✓',
     edlT: '📋 Stato dei luoghi d’uscita', edlP: 'Prima di partire, faccia le foto (una per casella): proteggono la sua cauzione e lei.', edlSend: 'Invia le foto', edlOk: 'foto ricevute dalla struttura',
     safe: '🔒 I suoi dati sono cifrati: solo la struttura può leggerli.', notif: 'Notifiche', notifHint: 'Codice porta, taxi, promemoria: li riceva su questo telefono.', notifOn: 'Attiva', notifOk: 'Notifiche attive ✓',
-    ad: { lbl: 'Pubblicità', see: '🗺️ Vedi', call: '📞 Chiama', web: '🌐 Sito' }, thanks: 'Grazie per il suo soggiorno!', lang: 'Lingua', reset: 'Cambia codice' },
+    ad: { back: '📣 Pubblicità', mapT: '🗺️ Mappa', home: '🏨 L’hotel', lbl: 'Pubblicità', see: '🗺️ Vedi', call: '📞 Chiama', web: '🌐 Sito' }, thanks: 'Grazie per il suo soggiorno!', lang: 'Lingua', reset: 'Cambia codice' },
   pt: { app: 'A minha estadia', welcome: 'Introduza o código recebido do seu hotel ou anfitrião.', code: 'O seu código pessoal', enter: 'Entrar', bad: 'Código desconhecido ou estadia terminada.', off: 'A sua estadia terminou. Obrigado e até breve!',
     hi: 'Olá', stay: 'A sua estadia', from: 'Chegada', to: 'Partida', after: 'a partir das', before: 'até às', pers: 'pessoas', room: 'O seu quarto', home: 'O seu alojamento', floor: 'Andar', rooms: 'divisões', max: 'máx.',
     door: 'Código da porta', doorSoon: 'Visível no dia da chegada', key: 'Cartão / chave', formule: 'Regime', F: { seul: 'Só alojamento', pdj: 'Pequeno-almoço', demi: 'Meia pensão', complete: 'Pensão completa' },
@@ -87,7 +87,7 @@ const L = {
     trackOn: 'O estabelecimento vê a hora de chegada (não a posição exata). A partilha para quando chegar.', sent: 'Enviado ✓',
     edlT: '📋 Vistoria de saída', edlP: 'Antes de sair, tire as fotos (uma por casa): protegem a sua caução e a si.', edlSend: 'Enviar as fotos', edlOk: 'foto(s) recebida(s) pelo estabelecimento',
     safe: '🔒 Os seus dados estão cifrados: só o estabelecimento os pode ler.', notif: 'Notificações', notifHint: 'Código da porta, táxi, lembretes: receba-os neste telemóvel.', notifOn: 'Ativar', notifOk: 'Notificações ativas ✓',
-    ad: { lbl: 'Publicidade', see: '🗺️ Ver', call: '📞 Ligar', web: '🌐 Site' }, thanks: 'Obrigado pela sua estadia!', lang: 'Idioma', reset: 'Mudar de código' },
+    ad: { back: '📣 Publicidade', mapT: '🗺️ Mapa', home: '🏨 O hotel', lbl: 'Publicidade', see: '🗺️ Ver', call: '📞 Ligar', web: '🌐 Site' }, thanks: 'Obrigado pela sua estadia!', lang: 'Idioma', reset: 'Mudar de código' },
   es: { app: 'Mi estancia', welcome: 'Introduzca el código recibido de su hotel o anfitrión.', code: 'Su código personal', enter: 'Entrar', bad: 'Código desconocido o estancia terminada.', off: 'Su estancia ha terminado. ¡Gracias y hasta pronto!',
     hi: 'Hola', stay: 'Su estancia', from: 'Llegada', to: 'Salida', after: 'desde las', before: 'antes de las', pers: 'personas', room: 'Su habitación', home: 'Su alojamiento', floor: 'Planta', rooms: 'habitaciones', max: 'máx.',
     door: 'Código de la puerta', doorSoon: 'Visible el día de su llegada', key: 'Tarjeta / llave', formule: 'Régimen', F: { seul: 'Solo alojamiento', pdj: 'Desayuno', demi: 'Media pensión', complete: 'Pensión completa' },
@@ -98,7 +98,7 @@ const L = {
     trackOn: 'El establecimiento ve su hora de llegada (no su posición exacta). Se deja de compartir al llegar.', sent: 'Enviado ✓',
     edlT: '📋 Inventario de salida', edlP: 'Antes de irse, haga las fotos (una por casilla): protegen su fianza y a usted.', edlSend: 'Enviar las fotos', edlOk: 'foto(s) recibida(s) por el establecimiento',
     safe: '🔒 Sus datos están cifrados: solo el establecimiento puede leerlos.', notif: 'Notificaciones', notifHint: 'Código de la puerta, taxi, recordatorios: recíbalos en este teléfono.', notifOn: 'Activar', notifOk: 'Notificaciones activadas ✓',
-    ad: { lbl: 'Publicidad', see: '🗺️ Ver', call: '📞 Llamar', web: '🌐 Web' }, thanks: '¡Gracias por su estancia!', lang: 'Idioma', reset: 'Cambiar de código' },
+    ad: { back: '📣 Publicidad', mapT: '🗺️ Mapa', home: '🏨 El hotel', lbl: 'Publicidad', see: '🗺️ Ver', call: '📞 Llamar', web: '🌐 Web' }, thanks: '¡Gracias por su estancia!', lang: 'Idioma', reset: 'Cambiar de código' },
 };
 // 🚘 services, gammes et extras des chauffeurs du réseau
 const TX = {
@@ -120,7 +120,7 @@ const TYP = { single: 'Single', double: 'Double', twin: 'Twin', triple: 'Triple'
 // lieux connus (prise en charge du taxi)
 const SPOTS = { aero: [49.6233, 6.2044], gare: [49.5998, 6.134] };
 
-let data = null, loadErr = '', lang = 'fr';
+let data = null, loadErr = '', lang = 'fr', hMap = null; // 🗺️ carte en haut (à la place de la publicité)
 // ▦ QR / lien de l'hôtel : ?c=<code> → le code est déjà écrit
 const QC = (() => { try { return (new URLSearchParams(location.search).get('c') || '').replace(/[^0-9A-Za-z]/g, '').slice(0, 16); } catch { return ''; } })();
 try { lang = localStorage.getItem('hoteLang') || ''; } catch { /* stockage bloqué */ }
@@ -297,12 +297,20 @@ const adShut = () => { try { return new Set(JSON.parse(localStorage.getItem('adS
 document.addEventListener('toggle', (e) => { const d = e.target; if (!d.classList || !d.classList.contains('pub-box')) return; const s = adShut(); if (d.open) s.delete(d.dataset.pid); else s.add(d.dataset.pid); try { localStorage.setItem('adShut', JSON.stringify([...s].slice(-60))); } catch { /* stockage plein */ } }, true);
 function adBox(x, t) {
   const v = x.video ? videoEmbed(x.video) : null;
-  return `<details class="card pub-box" data-pid="${esc(x.id)}"${adShut().has(x.id) ? '' : ' open'}><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b></div>${pubLogo(x)}<b style="display:block;font-size:17px">${esc(x.nom)}</b><p style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p></summary>
+  return `<details class="card pub-box" data-pid="${esc(x.id)}"${adShut().has(x.id) ? '' : ' open'}><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b></div>${pubLogo(x)}<b style="display:block;font-size:17px">${esc(x.nom)}</b></summary>${x.texte ? `<p class="pub-txt" style="margin:4px 0 0;white-space:pre-wrap">${esc(x.texte)}</p>` : ''}
     ${v ? `<div class="vid${v.tall ? ' tall' : ''}" data-vsrc="${esc(v.src)}"></div>` : ''}${x.adresse ? `<div class="meta" style="margin-top:6px">📍 ${esc(x.adresse)}</div>` : ''}
-    <div class="btns">${x.adresse ? `<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(x.adresse)}" target="_blank" rel="noopener" data-pev="map">${esc(t.ad.see)}</a>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(/^https?:/.test(x.web) ? x.web : 'https://' + x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}</div>${pubSocialBar(x)}</details>`;
+    <div class="btns">${x.adresse ? `<button class="btn sm" data-hmap="${esc(x.adresse)}" data-hnom="${esc(x.nom || x.titre || '')}" data-pev="map">${esc(t.ad.see)}</button>` : ''}${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(/^https?:/.test(x.web) ? x.web : 'https://' + x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}</div>${pubSocialBar(x)}</details>`;
 }
 
+function hMapFill() {
+  const mb = document.getElementById('hMapBox');
+  if (!mb || mb.querySelector('iframe')) return;
+  const f = document.createElement('iframe');
+  f.src = `https://maps.google.com/maps?q=${encodeURIComponent(mb.dataset.q)}&hl=${lang}&z=16&output=embed`; f.title = 'Google Maps'; f.loading = 'lazy'; f.referrerPolicy = 'no-referrer-when-downgrade';
+  mb.append(f);
+}
 function render() {
+  setTimeout(hMapFill, 0);
   const t = T();
   document.documentElement.lang = lang;
   const langs = `<div class="langs">${LANGS.map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
@@ -326,7 +334,10 @@ function render() {
   const pubs = (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x) && pubLive(x)), slot = (k) => pickPub(pubs.filter((x) => pubSlotNow(x) === k));
   // 2 · publicité (haut)
   out.push(domierHtml({ tel: st.tel, form: 'room', list: d.doms || [], lang })); // 🔧 DOMIER : un problème dans la chambre → l'hôtel / l'hôte
-  { const p = slot('haut'); if (p) out.push(adBox(p, t)); }
+  { const p = slot('haut'), hq = hMap && (hMap.q === 'hotel' ? st.adresse : hMap.q);
+    if (hq) out.push(`<div class="card mapcard" id="hMapCard"><p style="margin:0 0 8px"><b>${esc(t.ad.mapT)} · ${esc(hMap.q === 'hotel' ? st.nom || '' : hMap.nom || '')}</b><br><span class="meta">📍 ${esc(hq)}</span></p><div id="hMapBox" class="map" data-q="${esc(hq)}"></div>
+      <div class="btns"><a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(hq)}" target="_blank" rel="noopener">${esc(t.way)}</a>${hMap.q !== 'hotel' && st.adresse ? `<button class="btn sm sec" data-hmap="hotel">${esc(t.ad.home)}</button>` : ''}${p ? `<button class="btn sm sec" data-hpubback="1">${esc(t.ad.back)}</button>` : ''}</div></div>`);
+    else if (p) out.push(adBox(p, t)); }
   // 3 · notifications
   if (pushSt && pushSt !== 'unsupported' && (pushSt !== 'on' || pushJust)) out.push(`<div class="card notif"><h2>🔔 ${esc(t.notif)}</h2><p class="meta" style="margin:0 0 8px">${esc(t.notifHint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0">${esc(t.notifOk)}</p>` : `<button class="btn sm" data-push="1">${esc(t.notifOn)}</button>`}</div>`);
   // 4 · météo + radio
@@ -341,7 +352,7 @@ function render() {
     ${ch.desc ? `<p style="margin:8px 0 0;white-space:pre-wrap">${esc(ch.desc)}</p>` : ''}
     ${d.porte ? `<div class="door">🔑 ${esc(t.door)} : ${inStay ? `<b>${esc(d.porte)}</b> <span class="meta">(${esc(t.after)} ${esc(d.hdeb)} · ${esc(t.before)} ${esc(d.hfin)})</span>` : `<span class="meta">${esc(t.doorSoon)}</span>`}</div>` : ''}
     ${d.cle ? `<p class="meta" style="margin:6px 0 0">🪪 ${esc(t.key)} : ${esc(d.cle)}</p>` : ''}
-    ${st.adresse ? `<p class="meta" style="margin:8px 0 0">📍 ${esc(st.adresse)}</p><div class="btns"><a class="btn sm sec" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(st.adresse)}" target="_blank" rel="noopener">${esc(t.way)}</a></div>` : ''}</div>`);
+    ${st.adresse ? `<p class="meta" style="margin:8px 0 0">📍 ${esc(st.adresse)}</p><div class="btns"><button class="btn sm sec" data-hmap="hotel">${esc(t.ad.mapT)}</button><a class="btn sm sec" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(st.adresse)}" target="_blank" rel="noopener">${esc(t.way)}</a></div>` : ''}</div>`);
   // 6 · publicité (milieu)
   { const p = slot('milieu'); if (p) out.push(adBox(p, t)); }
   // 6b · prix du séjour (Airbnb)
@@ -508,6 +519,14 @@ const quietData = async () => { const r = await fetch(`${API}/api/esp/${id}`, { 
 pchatInit({ id: () => id, data: () => data, send: (o) => sendOwner(o), lang: () => lang || 'en', refresh: quietData, quick: null, labels: guestLabels });
 pubSocialInit(API, () => lang);
 document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
+document.addEventListener('click', (e) => {
+  const m = e.target.closest && e.target.closest('[data-hmap]'), bk = e.target.closest && e.target.closest('[data-hpubback]');
+  if (!m && !bk) return;
+  e.preventDefault();
+  hMap = m ? { q: m.dataset.hmap, nom: m.dataset.hnom || '' } : null;
+  render();
+  if (m) { const c = document.getElementById('hMapCard'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+});
 
 app.addEventListener('submit', async (e) => {
   if (e.target.id !== 'codeForm') return;
