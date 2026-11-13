@@ -18,18 +18,12 @@ const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const tx = () => L[ui()] || L.fr;
 // la langue de l'app = la langue des messages ; le 🌐 peut en choisir une autre (ou « ne pas traduire »)
 // tant qu'on ne change pas la langue de l'app (le choix est gardé avec la langue de l'app du moment)
-export const trLang = () => {
-  const u = (ui() || 'fr').slice(0, 2);
-  let v = '';
-  try { v = localStorage.getItem(K) || ''; } catch { /* stockage indisponible */ }
-  const [c, at] = v.split('|');
-  if (!v || !at || at !== u) return u; // pas de choix, ancien choix, ou langue de l'app changée : on suit l'app
-  return c === '-' ? '' : c;
-};
+// règle du titulaire : seule la langue de l'app décide (textes, chat, News) — plus de choix à part dans la chat
+export const trLang = () => (ui() || 'fr').slice(0, 2);
 const cacheGet = (l) => { try { return JSON.parse(localStorage.getItem(CK(l)) || '{}'); } catch { return {}; } };
 const cacheSet = (l, c) => { const ks = Object.keys(c); if (ks.length > 400) for (const k of ks.slice(0, ks.length - 400)) delete c[k]; try { localStorage.setItem(CK(l), JSON.stringify(c)); } catch { /* plein */ } };
 // le bouton 🌐 à mettre en haut de chaque chat
-export const trButton = () => { const l = trLang(); return `<button type="button" class="trpick" data-trpick="1" aria-label="🌐">🌐${l ? ' ' + l.toUpperCase() : ''}</button>`; };
+export const trButton = () => ''; // la langue se choisit une seule fois, dans l'app
 
 let inited = false;
 export const trReady = () => inited;
