@@ -18,6 +18,8 @@ import { tripView, tripFetch } from '/ares/trip.js';
 import { pchatInit, pchatCard } from '/ares/pchat.js';
 import { trInit } from '/ares/chattr.js';
 import { netPubsGet, netPubsFor } from '/ares/netpubs.js';
+import { themeInit, themeBtn, themeAccent } from '/ares/theme.js';
+themeInit();
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'hoteAccess';
 let [id, key] = (location.hash.slice(1).match(/^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/) || []).slice(1);
@@ -385,7 +387,7 @@ function render() {
   if (data) hIcons(data);
   const t = T();
   document.documentElement.lang = lang;
-  const langs = `<div class="langs">${LANGS.map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
+  const langs = `<div class="langs">${LANGS.map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}${themeBtn()}</div>`;
   if (!data) {
     app.innerHTML = `<div class="top"><span class="brandx"><b>🏨 ${esc(t.app)}</b></span>${langs}</div>
       <p class="sub" style="text-align:center;margin-top:18px">${esc(t.welcome)}</p>
@@ -396,7 +398,7 @@ function render() {
     return;
   }
   const d = data, out = [], bnb = d.lieu === 'airbnb', ch = d.ch || {}, st = d.st || {};
-  document.title = `${t.app} — ${st.nom}`;
+  document.title = `${t.app} — ${st.nom}`; themeAccent(st.color);
   const tel = String(st.tel || '').replace(/[^\d+]/g, ''), wa = String(st.wa || '').replace(/[^\d]/g, '').replace(/^00/, '');
   // 1 · en-tête : logo et nom de l'établissement, langues ; bonjour + dates
   out.push(`<div class="top"><span class="brandx">${st.logo ? `<img class="top-logo" src="${esc(st.logo)}" alt="">` : ''}<b>${esc(st.nom)}</b></span>${langs}</div>

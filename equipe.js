@@ -16,6 +16,8 @@ import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
 import { tripLine } from '/ares/trip.js';
 import qrcode from '/ares/qrcode.js';
+import { themeInit, themeBtn, themeAccent } from '/ares/theme.js';
+themeInit({ night: true });
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'eqAccess';
 const RX = /^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/;
@@ -806,9 +808,9 @@ addEventListener('message', (e) => {
 function render() {
   const t = T();
   document.documentElement.lang = lang;
-  const langs = `<div class="langs">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}</div>`;
+  const langs = `<div class="langs">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => `<button data-lang="${k}" aria-pressed="${k === lang}">${k.toUpperCase()}</button>`).join('')}${themeBtn()}</div>`;
   // langues : en haut seulement avant la connexion ; ensuite dans « ✏️ Mon profil »
-  const top = (name, logo, withLangs = false) => `<div class="top"><span class="brandx"><img class="top-logo" src="${esc(logo || '/ares/icons/lux-192.png')}" alt="" width="76" height="32"><b>${esc(name)}</b></span>${withLangs ? langs : ''}</div>`;
+  const top = (name, logo, withLangs = false) => `<div class="top"><span class="brandx"><img class="top-logo" src="${esc(logo || '/ares/icons/lux-192.png')}" alt="" width="76" height="32"><b>${esc(name)}</b></span>${withLangs ? langs : themeBtn()}</div>`;
   if (!data) {
     app.innerHTML = `${top('ARES INVEST S.A.', '', true)}
       <h1 style="text-align:center;margin-top:18px">👷 ${esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
@@ -821,7 +823,7 @@ function render() {
     return;
   }
   const d = data, out = [];
-  document.title = `${t.app} — ${d.societe.nom}`;
+  document.title = `${t.app} — ${d.societe.nom}`; themeAccent(d.societe.color);
   if (devEd && !d.devis) devEd = null;
   if (devEd) {
     // l'éditeur du devis occupe l'écran ; il n'est redessiné que si sa forme change (le texte tapé reste)
