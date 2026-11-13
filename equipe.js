@@ -383,6 +383,17 @@ const hydratePb = () => document.querySelectorAll('img[data-pb-img]').forEach((i
 document.addEventListener('click', (e) => {
   const q = e.target.closest && e.target.closest('[data-cqr]'), p = e.target.closest && e.target.closest('[data-cpay]');
   if (q) { e.preventDefault(); cQr = cQr === q.dataset.cqr ? '' : q.dataset.cqr; render(); return; }
+  const ct = e.target.closest && e.target.closest('[data-ctl]');
+  if (ct) {
+    e.preventDefault(); ct.disabled = true;
+    const tid = ct.dataset.ctl, ev = ct.dataset.ev, at = new Date().toISOString();
+    try { const m = JSON.parse(localStorage.getItem('eqCtl:' + tid) || '{}'); m[ev] = at; localStorage.setItem('eqCtl:' + tid, JSON.stringify(m)); } catch { /* stockage indisponible */ }
+    render();
+    const send = (geo) => queue({ k: 'ctl', tid, ev, at, ...(geo ? { geo } : {}) });
+    if (navigator.geolocation) navigator.geolocation.getCurrentPosition((p) => send({ lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy }), () => send(null), { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
+    else send(null);
+    return;
+  }
   if (p) {
     e.preventDefault(); p.disabled = true;
     try { localStorage.setItem(cPaidK(p.dataset.cpay), p.dataset.mode); } catch { /* stockage indisponible */ }
@@ -452,12 +463,12 @@ function infoHtml(x, t) {
 }
 // 🚕 course d'un client (chauffeurs) : trajet, qui paie ; encaisser : 📱 QR virement, 💶 espèces, 💳 terminal (Payconiq bientôt)
 const CPT = {
-  fr: { r: '🚕 Course', cl: '💶 Le client paie dans la voiture', ho: '🧾 Facturé au client par la centrale : rien à encaisser', amt: 'À encaisser', qr: '📱 QR virement', qrh: 'Faites scanner ce code avec l’app de la banque du client.', cash: '💶 Payé en espèces', term: '💳 Payé au terminal', qrok: '📱 Payé par virement', pc: '🟣 Payconiq — bientôt', paid: '✅ Encaissé', cancel: '❌ Course annulée par le client' },
-  it: { r: '🚕 Corsa', cl: '💶 Il cliente paga in macchina', ho: '🧾 Fatturata al cliente dalla centrale: niente da incassare', amt: 'Da incassare', qr: '📱 QR bonifico', qrh: 'Fai scansionare questo codice con l’app della banca del cliente.', cash: '💶 Pagato in contanti', term: '💳 Pagato al terminale', qrok: '📱 Pagato con bonifico', pc: '🟣 Payconiq — presto', paid: '✅ Incassato', cancel: '❌ Corsa annullata dal cliente' },
-  pt: { r: '🚕 Corrida', cl: '💶 O cliente paga no carro', ho: '🧾 Faturada ao cliente pela central: nada a cobrar', amt: 'A cobrar', qr: '📱 QR transferência', qrh: 'Peça ao cliente para ler este código com a app do banco.', cash: '💶 Pago em dinheiro', term: '💳 Pago no terminal', qrok: '📱 Pago por transferência', pc: '🟣 Payconiq — em breve', paid: '✅ Cobrado', cancel: '❌ Corrida cancelada pelo cliente' },
-  de: { r: '🚕 Fahrt', cl: '💶 Der Kunde zahlt im Auto', ho: '🧾 Wird dem Kunden von der Zentrale berechnet: nichts kassieren', amt: 'Zu kassieren', qr: '📱 QR-Überweisung', qrh: 'Lassen Sie den Kunden diesen Code mit seiner Banking-App scannen.', cash: '💶 Bar bezahlt', term: '💳 Am Terminal bezahlt', qrok: '📱 Per Überweisung bezahlt', pc: '🟣 Payconiq — bald', paid: '✅ Kassiert', cancel: '❌ Fahrt vom Kunden storniert' },
-  en: { r: '🚕 Ride', cl: '💶 The customer pays in the car', ho: '🧾 Invoiced to the client by the central: nothing to collect', amt: 'To collect', qr: '📱 QR transfer', qrh: 'Let the customer scan this code with their banking app.', cash: '💶 Paid in cash', term: '💳 Paid at the terminal', qrok: '📱 Paid by transfer', pc: '🟣 Payconiq — soon', paid: '✅ Collected', cancel: '❌ Ride cancelled by the customer' },
-  es: { r: '🚕 Carrera', cl: '💶 El cliente paga en el coche', ho: '🧾 Facturada al cliente por la central: nada que cobrar', amt: 'A cobrar', qr: '📱 QR transferencia', qrh: 'Que el cliente escanee este código con la app de su banco.', cash: '💶 Pagado en efectivo', term: '💳 Pagado en el terminal', qrok: '📱 Pagado por transferencia', pc: '🟣 Payconiq — pronto', paid: '✅ Cobrado', cancel: '❌ Carrera cancelada por el cliente' },
+  fr: { dep: '▶️ Départ', eta: '📍 Étape', arr: '🏁 Arrivée', r: '🚕 Course', cl: '💶 Le client paie dans la voiture', ho: '🧾 Facturé au client par la centrale : rien à encaisser', amt: 'À encaisser', qr: '📱 QR virement', qrh: 'Faites scanner ce code avec l’app de la banque du client.', cash: '💶 Payé en espèces', term: '💳 Payé au terminal', qrok: '📱 Payé par virement', pc: '🟣 Payconiq — bientôt', paid: '✅ Encaissé', cancel: '❌ Course annulée par le client' },
+  it: { dep: '▶️ Partenza', eta: '📍 Tappa', arr: '🏁 Arrivo', r: '🚕 Corsa', cl: '💶 Il cliente paga in macchina', ho: '🧾 Fatturata al cliente dalla centrale: niente da incassare', amt: 'Da incassare', qr: '📱 QR bonifico', qrh: 'Fai scansionare questo codice con l’app della banca del cliente.', cash: '💶 Pagato in contanti', term: '💳 Pagato al terminale', qrok: '📱 Pagato con bonifico', pc: '🟣 Payconiq — presto', paid: '✅ Incassato', cancel: '❌ Corsa annullata dal cliente' },
+  pt: { dep: '▶️ Partida', eta: '📍 Paragem', arr: '🏁 Chegada', r: '🚕 Corrida', cl: '💶 O cliente paga no carro', ho: '🧾 Faturada ao cliente pela central: nada a cobrar', amt: 'A cobrar', qr: '📱 QR transferência', qrh: 'Peça ao cliente para ler este código com a app do banco.', cash: '💶 Pago em dinheiro', term: '💳 Pago no terminal', qrok: '📱 Pago por transferência', pc: '🟣 Payconiq — em breve', paid: '✅ Cobrado', cancel: '❌ Corrida cancelada pelo cliente' },
+  de: { dep: '▶️ Abfahrt', eta: '📍 Zwischenstopp', arr: '🏁 Ankunft', r: '🚕 Fahrt', cl: '💶 Der Kunde zahlt im Auto', ho: '🧾 Wird dem Kunden von der Zentrale berechnet: nichts kassieren', amt: 'Zu kassieren', qr: '📱 QR-Überweisung', qrh: 'Lassen Sie den Kunden diesen Code mit seiner Banking-App scannen.', cash: '💶 Bar bezahlt', term: '💳 Am Terminal bezahlt', qrok: '📱 Per Überweisung bezahlt', pc: '🟣 Payconiq — bald', paid: '✅ Kassiert', cancel: '❌ Fahrt vom Kunden storniert' },
+  en: { dep: '▶️ Departure', eta: '📍 Stop', arr: '🏁 Arrival', r: '🚕 Ride', cl: '💶 The customer pays in the car', ho: '🧾 Invoiced to the client by the central: nothing to collect', amt: 'To collect', qr: '📱 QR transfer', qrh: 'Let the customer scan this code with their banking app.', cash: '💶 Paid in cash', term: '💳 Paid at the terminal', qrok: '📱 Paid by transfer', pc: '🟣 Payconiq — soon', paid: '✅ Collected', cancel: '❌ Ride cancelled by the customer' },
+  es: { dep: '▶️ Salida', eta: '📍 Parada', arr: '🏁 Llegada', r: '🚕 Carrera', cl: '💶 El cliente paga en el coche', ho: '🧾 Facturada al cliente por la central: nada que cobrar', amt: 'A cobrar', qr: '📱 QR transferencia', qrh: 'Que el cliente escanee este código con la app de su banco.', cash: '💶 Pagado en efectivo', term: '💳 Pagado en el terminal', qrok: '📱 Pagado por transferencia', pc: '🟣 Payconiq — pronto', paid: '✅ Cobrado', cancel: '❌ Carrera cancelada por el cliente' },
 };
 const cPaidK = (tid) => 'eqCPaid:' + tid;
 let cQr = '';
@@ -468,7 +479,9 @@ function courseHtml(x, tid) {
   let mine = '';
   try { mine = localStorage.getItem(cPaidK(tid)) || ''; } catch { /* stockage indisponible */ }
   const paid = c.paid || mine, lab = { qr: k.qrok, cash: k.cash, term: k.term };
-  const head = `<div class="ir"><span class="ic">🚕</span><div class="tx"><b>${esc(c.from)}</b> → <b>${esc(c.to || '?')}</b>${c.vol ? ' · ✈️ ' + esc(c.vol) : ''}${c.pax ? ' · 👥 ' + c.pax : ''}</div></div>`;
+  const tlDone = (() => { try { return JSON.parse(localStorage.getItem('eqCtl:' + tid) || '{}'); } catch { return {}; } })(), tl = { ...Object.fromEntries((c.tl || []).map((e) => [e.k, e.at])), ...tlDone };
+  const tlRow = c.cancel ? '' : `<div class="btns" style="flex-wrap:wrap">${['dep', 'eta', 'arr'].map((e) => (e === 'eta' || !tl[e]) ? `<button class="btn ${e === 'arr' ? 'ok' : 'sec'}" data-ctl="${esc(tid)}" data-ev="${e}"${e === 'arr' && !tl.dep ? ' disabled' : ''}>${esc(k[e])}</button>` : `<span class="tag">${esc(k[e])} ${esc(String(tl[e]).slice(11, 16))}</span>`).join('')}</div>`;
+  const head = `<div class="ir"><span class="ic">🚕</span><div class="tx"><b>${esc(c.from)}</b> → <b>${esc(c.to || '?')}</b>${c.vol ? ' · ✈️ ' + esc(c.vol) : ''}${c.pax ? ' · 👥 ' + c.pax : ''}</div></div>${tlRow}`;
   if (c.cancel) return `<div class="tbox">${head}<div class="ir"><b>${esc(k.cancel)}</b></div></div>`;
   if (c.payer !== 'client') return `<div class="tbox">${head}<div class="ir"><span class="ic">🧾</span><div class="tx">${esc(k.ho)}</div></div></div>`;
   const body = paid ? `<div class="ir"><b>${esc(k.paid)} · ${esc(lab[paid] || paid)}${c.ttc ? ' · ' + eur(c.ttc) : ''}</b></div>`

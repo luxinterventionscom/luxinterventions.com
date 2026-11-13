@@ -13,6 +13,7 @@ utilise la même app que les nôtres, mais ne voit que sa maison et écrit à so
 | /gestionnaire.html | locataires.html | la centrale d'une **gérance** du réseau (`?t=code`) — /gerance.html reste le portail gratuit |
 | /inquilini.html · /locataire.html | espace.html | l'app des locataires (de tous les gestionnaires) |
 | /operai.html | equipe.html | l'app de l'équipe (ouvriers) |
+| /autista.html | equipe.html | l'app des chauffeurs (privés avec n° TVA ou salariés) — les sociétés de taxi : /taxi.html |
 | /ospiti.html · /hotel.html · /airbnb.html | hote.html | l'app des clients d'hôtel et d'Airbnb |
 | /taxi.html | taxi.html | l'app des sociétés de taxi |
 | /annunci.html · /annonces.html | annonce.html | l'app des annonceurs (restaurants, bars…) |
