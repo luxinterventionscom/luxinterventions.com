@@ -115,7 +115,7 @@ const PH = { immeuble: ['🏢', { fr: 'Bâtiment', en: 'Building', de: 'Gebäude
   sdb: ['🛁', { fr: 'Salle de bain', en: 'Bathroom', de: 'Bad', it: 'Bagno', pt: 'Casa de banho', es: 'Baño' }], chambre: ['🛏️', { fr: 'Chambre', en: 'Room', de: 'Zimmer', it: 'Camera', pt: 'Quarto', es: 'Habitación' }],
   cuisine: ['🍳', { fr: 'Cuisine', en: 'Kitchen', de: 'Küche', it: 'Cucina', pt: 'Cozinha', es: 'Cocina' }], parking: ['🅿️', { fr: 'Parking', en: 'Parking', de: 'Parkplatz', it: 'Parcheggio', pt: 'Estacionamento', es: 'Aparcamiento' }],
   autre: ['📷', { fr: 'Autre', en: 'Other', de: 'Andere', it: 'Altro', pt: 'Outro', es: 'Otro' }] };
-const CAT = { eco: 'Économique / Economy', standard: 'Standard', sup: 'Supérieure / Superior', deluxe: 'Deluxe', suite: 'Suite' };
+const CAT = { eco: 'Économique / Economy', standard: 'Standard', sup: 'Supérieure / Superior', deluxe: 'Deluxe', suite: 'Suite', vip: '⭐ Suite présidentielle / Presidential suite' };
 const TYP = { single: 'Single', double: 'Double', twin: 'Twin', triple: 'Triple', famille: 'Family', studio: 'Studio', appartement: 'Apartment', maison: 'House', colocation: 'Flatshare' };
 // lieux connus (prise en charge du taxi)
 const SPOTS = { aero: [49.6233, 6.2044], gare: [49.5998, 6.134] };
@@ -293,6 +293,9 @@ const pickPub = (list) => pubPickNow(list); // tour de 3 minutes chacune
 const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
 const pubLogo = (x) => (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(x.logo || '') && x.logo.length < 60000 ? `<img src="${x.logo}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''); // logo de l'annonceur
 // 🔽 annonces repliables : celles fermées restent fermées sur ce téléphone
+// cartes repliables (🛏️ la chambre…) : le choix reste sur le téléphone
+const hFoldShut = () => { try { return new Set(JSON.parse(localStorage.getItem('hFold') || '[]')); } catch { return new Set(); } };
+document.addEventListener('toggle', (e) => { const d = e.target; if (!d.classList || !d.classList.contains('hfold')) return; const s = hFoldShut(); if (d.open) s.delete(d.dataset.fk); else s.add(d.dataset.fk); try { localStorage.setItem('hFold', JSON.stringify([...s])); } catch { /* plein */ } }, true);
 const adShut = () => { try { return new Set(JSON.parse(localStorage.getItem('adShut') || '[]')); } catch { return new Set(); } };
 document.addEventListener('toggle', (e) => { const d = e.target; if (!d.classList || !d.classList.contains('pub-box')) return; const s = adShut(); if (d.open) s.delete(d.dataset.pid); else s.add(d.dataset.pid); try { localStorage.setItem('adShut', JSON.stringify([...s].slice(-60))); } catch { /* stockage plein */ } }, true);
 function adBox(x, t) {
@@ -345,14 +348,14 @@ function render() {
   // 5 · cœur : ma chambre / mon logement
   const phs = Object.keys(PH).filter((k) => (ch.ph || {})[k]);
   const inStay = today >= d.arrivee && today <= d.depart;
-  out.push(`<div class="card"><h2>${bnb ? '🏠' : '🛏️'} ${esc(bnb ? t.home : t.room)} ${esc(ch.num)}</h2>
+  out.push(`<details class="card hfold" data-fk="room"${hFoldShut().has('room') ? '' : ' open'}><summary><h2 style="margin:0">${bnb ? '🏠' : '🛏️'} ${esc(bnb ? t.home : t.room)} ${esc(ch.num)}</h2></summary>
     ${phs.length ? `<div class="car">${phs.map((k) => `<figure><img data-f="${esc(ch.ph[k])}" alt="" data-lb="1"><figcaption>${PH[k][0]} ${esc(PH[k][1][lang] || PH[k][1].fr)}</figcaption></figure>`).join('')}</div>` : ''}
     <p style="margin:8px 0 0"><b>${esc([CAT[ch.cat], TYP[ch.typ]].filter(Boolean).join(' · '))}</b></p>
     <p class="meta" style="margin:2px 0 0">${[ch.etage ? `${t.floor} ${ch.etage}` : '', ch.m2 ? ch.m2 + ' m²' : '', ch.npieces ? ch.npieces + ' ' + t.rooms : '', ch.persMax ? `👥 ${t.max} ${ch.persMax}` : ''].filter(Boolean).map(esc).join(' · ')}</p>
     ${ch.desc ? `<p style="margin:8px 0 0;white-space:pre-wrap">${esc(ch.desc)}</p>` : ''}
     ${d.porte ? `<div class="door">🔑 ${esc(t.door)} : ${inStay ? `<b>${esc(d.porte)}</b> <span class="meta">(${esc(t.after)} ${esc(d.hdeb)} · ${esc(t.before)} ${esc(d.hfin)})</span>` : `<span class="meta">${esc(t.doorSoon)}</span>`}</div>` : ''}
     ${d.cle ? `<p class="meta" style="margin:6px 0 0">🪪 ${esc(t.key)} : ${esc(d.cle)}</p>` : ''}
-    ${st.adresse ? `<p class="meta" style="margin:8px 0 0">📍 ${esc(st.adresse)}</p><div class="btns"><button class="btn sm sec" data-hmap="hotel">${esc(t.ad.mapT)}</button><a class="btn sm sec" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(st.adresse)}" target="_blank" rel="noopener">${esc(t.way)}</a></div>` : ''}</div>`);
+    ${st.adresse ? `<p class="meta" style="margin:8px 0 0">📍 ${esc(st.adresse)}</p><div class="btns"><button class="btn sm sec" data-hmap="hotel">${esc(t.ad.mapT)}</button><a class="btn sm sec" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(st.adresse)}" target="_blank" rel="noopener">${esc(t.way)}</a></div>` : ''}</details>`);
   // 6 · publicité (milieu)
   { const p = slot('milieu'); if (p) out.push(adBox(p, t)); }
   // 6b · prix du séjour (Airbnb)
