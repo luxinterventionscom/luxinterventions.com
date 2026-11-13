@@ -668,7 +668,7 @@ function validKeyMaterial(b) {
 }
 
 // ── Centrali dei clienti (gérance, agence, propriétaire, hôtel, Airbnb) : casseforti separate ──
-const TENANT_FIL = ["gerance", "agence", "proprio", "hotel", "airbnb"];
+const TENANT_FIL = ["gerance", "agence", "proprio", "hotel", "airbnb", "taxi"];
 const tenantKey = (tid) => "ares/tenants/" + tid + ".json";
 const PACK = (tid) => "ares/t/" + tid + "/pack/", PACKM = (tid) => "ares/t/" + tid + "/packm/";
 async function packList(env, tid) {
