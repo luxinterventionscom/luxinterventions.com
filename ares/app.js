@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.268.0';
+const VERSION = '2.269.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -76,8 +76,8 @@ const TENANT_ROUTES = {
   gerance: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'champions', 'reglages'],
   proprio: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'champions', 'reglages'],
   agence: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'agences', 'proprios', 'compta', 'rapports', 'champions', 'reglages'],
-  hotel: ['dashboard', 'demandes', 'hotel', 'taxis', 'chat', 'compta', 'rapports', 'reglages'],
-  airbnb: ['dashboard', 'demandes', 'airbnb', 'taxis', 'chat', 'compta', 'rapports', 'reglages'],
+  hotel: ['dashboard', 'demandes', 'hotel', 'chambres', 'taxis', 'chat', 'compta', 'rapports', 'reglages'],
+  airbnb: ['dashboard', 'demandes', 'airbnb', 'chambres', 'taxis', 'chat', 'compta', 'rapports', 'reglages'],
   // 🚕 CENTRALE-TAXI : Accueil (centralino) · Chauffeurs · Parc auto · Comptabilité & statistiques · Réglages
   taxi: ['dashboard', 'taxis', 'parc', 'compta', 'rapports', 'reglages'],
 };
@@ -85,7 +85,7 @@ const tRoutes = () => TENANT_ROUTES[tenantInfo.fil] || TENANT_ROUTES.gerance;
 // 🏛️ CENTRAL DOMIER : pas de propriétés ni de locataires à elle (tout est chez les clients) ; l'ancien parc reste en archive (Réglages → 📦)
 const archOn = () => { try { return !TENANT && localStorage.getItem('aresArch') === '1'; } catch { return false; } };
 const ownPark = () => { try { return vault.unlocked && vault.listAll('immeubles').some((x) => !x.xfer); } catch { return false; } }; // encore un immeuble pas transféré ?
-const routeOk = (r) => (TENANT ? tRoutes().includes(r) : r !== 'demandes' && r !== 'chat' && r !== 'parc' && (archOn() || ownPark() || !['immeubles', 'locataires', 'paiements'].includes(r)));
+const routeOk = (r) => (TENANT ? tRoutes().includes(r) : r !== 'demandes' && r !== 'chat' && r !== 'parc' && r !== 'chambres' && (archOn() || ownPark() || !['immeubles', 'locataires', 'paiements'].includes(r)));
 const homeRoute = () => (TENANT ? tRoutes()[0] : 'dashboard');
 const vault = new Vault(API, TENANT);
 // 📦 immeubles transférés à un client (centrale principale) : cachés partout (avec logements et locataires), gardés en archive ;
@@ -2822,6 +2822,14 @@ async function hoteInbox(h, msg) {
     }
     return true;
   }
+  if (msg.type === 'hote-gp') {
+    // ✍️ le voyageur note ses allergies, son régime, ses repas et ses besoins dans son app
+    const S = (v, n) => String(v ?? '').trim().slice(0, n), A = (v, M) => (Array.isArray(v) ? v : []).filter((k) => M[k]).slice(0, 20);
+    const gp = { at: new Date().toISOString(), allerg: A(msg.allerg, ALLERG), allergAutre: S(msg.allergAutre, 200), allergCh: A(msg.allergCh, ALLERG_CH), regime: A(msg.regime, REGIME), repas: S(msg.repas, 300), autre: S(msg.autre, 300) };
+    await vault.mutate((tx) => tx.put('hotes', { id: h.id, gp }), '✍️ Le voyageur a noté ses allergies / besoins', who);
+    hotesSync(h.id);
+    return true;
+  }
   if (msg.type === 'hote-tl') {
     const ev = ['dep', 'eta', 'arr'].includes(msg.ev) ? msg.ev : '', rid = String(msg.r || 'arr'), at = new Date().toISOString();
     if (!ev) return true;
@@ -3498,14 +3506,24 @@ const paysOptions = (sel) => WORLD.map((cc) => [cc, paysNom(cc)]).sort((a, b) =>
 const COMPO = { seul: '👤 Seul', couple: '👫 Couple', famille: '👨‍👩‍👧 Famille', groupe: '👥 Groupe' };
 const ALLERG = { gluten: 'Gluten', lait: 'Lait / lactose', oeufs: 'Œufs', arachides: 'Arachides', noix: 'Fruits à coque', poisson: 'Poisson', crustaces: 'Crustacés', mollusques: 'Mollusques', soja: 'Soja', celeri: 'Céleri', moutarde: 'Moutarde', sesame: 'Sésame', sulfites: 'Sulfites', lupin: 'Lupin' };
 const ALLERG_CH = { acariens: 'Acariens (pas de moquette, literie anti-acariens)', plumes: 'Plumes (oreiller et couette synthétiques)', laine: 'Laine (couvertures sans laine)', poils: 'Poils d’animaux (chambre sans animaux)', latex: 'Latex', parfums: 'Parfums / produits ménagers (ménage sans parfum)', pollen: 'Pollen (pas de fleurs, fenêtres fermées)' };
-const allergTxt = (h) => [...(h.allerg || []).map((k) => ALLERG[k]), h.allergAutre, ...(h.allergCh || []).map((k) => ALLERG_CH[k].split(' (')[0]), h.allergChAutre].filter(Boolean);
-const allergChTxt = (h) => [...(h.allergCh || []).map((k) => ALLERG_CH[k].split(' (')[0]), h.allergChAutre].filter(Boolean);
+// allergies notées par l'accueil + celles que le voyageur a écrites dans son app (h.gp)
+const allergTxt = (h) => [...new Set([...(h.allerg || []), ...((h.gp || {}).allerg || [])])].map((k) => ALLERG[k]).concat([h.allergAutre, (h.gp || {}).allergAutre], [...new Set([...(h.allergCh || []), ...((h.gp || {}).allergCh || [])])].map((k) => (ALLERG_CH[k] || '').split(' (')[0]), [h.allergChAutre, (h.gp || {}).autre]).filter(Boolean);
+const allergChTxt = (h) => [...new Set([...(h.allergCh || []), ...((h.gp || {}).allergCh || [])])].map((k) => (ALLERG_CH[k] || '').split(' (')[0]).concat([h.allergChAutre, (h.gp || {}).autre]).filter(Boolean);
+// ✍️ ce que le voyageur a écrit dans son app (allergies, régime, repas, besoins) : lu par l'accueil dans sa fiche
+function hoteGpBox(h) {
+  const g = h.gp;
+  if (!g) return '';
+  const L = [[(g.allerg || []).map((k) => ALLERG[k]).concat(g.allergAutre || []).filter(Boolean).join(', '), '⚠️ Allergies alimentaires'], [(g.allergCh || []).map((k) => (ALLERG_CH[k] || '').split(' (')[0]).filter(Boolean).join(', '), '⚠️ Chambre'],
+    [(g.regime || []).map((k) => REGIME[k]).filter(Boolean).join(', '), '🍽️ Régime'], [g.repas || '', '🍷 Repas'], [g.autre || '', '✍️ Besoins particuliers']].filter(([v]) => v);
+  return html`<div class="full card" style="background:#ecfdf5;border:1px solid #a7f3d0;padding:10px 12px;margin:0"><div class="small"><b>✍️ Ce que le voyageur a indiqué dans son app</b> <span class="tiny muted">${g.at ? fmtDateTime(g.at) : ''}</span></div>
+    ${L.length ? L.map(([v, t]) => html`<div class="small" style="margin-top:4px"><b>${t}</b> : ${v}</div>`) : html`<div class="tiny muted">Rien de particulier.</div>`}</div>`;
+}
 const REGIME = { vege: 'Végétarien', vegan: 'Vegan', halal: 'Halal', casher: 'Casher', sansporc: 'Sans porc', sansalcool: 'Sans alcool' };
 const REPAS_OU = { resto: 'au restaurant', chambre: 'en chambre' };
 const ROOM_SVC = { non: 'Pas de service en chambre', jour: 'Oui, aux heures du restaurant', h24: 'Oui, 24 h/24', nuit: 'Oui, 24 h/24 — la nuit carte réduite (voir le menu)' };
 const chipChecks = (name, dict, sel) => html`<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${Object.entries(dict).map(([k, l]) => html`<label class="chip" style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:999px;padding:4px 10px"><input type="checkbox" name="${name}" value="${k}" ${(sel || []).includes(k) ? new Raw('checked') : ''} style="width:16px;height:16px">${l}</label>`)}</div>`;
 const stepper = (name, label, v, min = 0) => html`<div class="field"><span>${label}</span><div style="display:flex;align-items:center;gap:8px;margin-top:4px"><button type="button" class="btn sm" data-action="num-step" data-n="${name}" data-d="-1" data-min="${min}" aria-label="moins">−</button><input name="${name}" type="number" min="${min}" max="20" value="${v}" inputmode="numeric" style="width:64px;text-align:center"><button type="button" class="btn sm" data-action="num-step" data-n="${name}" data-d="1" data-min="${min}" aria-label="plus">＋</button></div></div>`;
-const FORMULES = { seul: 'Logement seul', pdj: 'Petit-déjeuner', demi: 'Demi-pension', complete: 'Pension complète' };
+const FORMULES = { seul: 'Logement seul', pdj: 'Petit-déjeuner', demi: 'Demi-pension', complete: 'Pension complète', carte: 'À la carte (le voyageur choisit dans le menu de son app)' };
 const CH_PH = [['immeuble', '🏢 Bâtiment'], ['porte', '🚪 Porte'], ['sdb', '🛁 Salle de bain'], ['chambre', '🛏️ Chambre'], ['cuisine', '🍳 Cuisine'], ['parking', '🅿️ Parking'], ['autre', '📷 Autre']];
 const chKey = (lieu, num) => 'ch-' + (lieu === 'airbnb' ? 'airbnb' : 'hotel') + '-' + String(num || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
 const CH_CAT = { eco: 'Économique', standard: 'Standard', sup: 'Supérieure', deluxe: 'Deluxe', suite: 'Suite', vip: '⭐ Suite présidentielle (VIP)' };
@@ -3520,7 +3538,7 @@ const HOTE_LG = ['fr', 'it', 'de', 'en', 'pt', 'es'];
 // 🗣️ langues parlées par un client (plusieurs) : une liste à cocher, les langues choisies restent en ovales
 const LG_ALL = { fr: 'Français', en: 'English', de: 'Deutsch', lb: 'Lëtzebuergesch', it: 'Italiano', pt: 'Português', es: 'Español', nl: 'Nederlands', ar: 'العربية', ru: 'Русский', uk: 'Українська', pl: 'Polski', ro: 'Română', tr: 'Türkçe', el: 'Ελληνικά', sq: 'Shqip', sr: 'Srpski / Hrvatski', zh: '中文', ja: '日本語', ko: '한국어', hi: 'हिन्दी', fa: 'فارسی', he: 'עברית', sv: 'Svenska', da: 'Dansk', no: 'Norsk', fi: 'Suomi', cs: 'Čeština', hu: 'Magyar', bg: 'Български' };
 const lgChips = (ls) => (ls.length ? ls.map((k) => html`<span class="badge" style="border-radius:999px;padding:3px 10px;margin:2px 4px 2px 0;display:inline-block">${LG_ALL[k] || k}</span>`) : html`<span class="muted small">aucune</span>`);
-const lgPick = (sel) => html`<details class="lgpick" style="border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-top:4px"><summary style="cursor:pointer;list-style:none"><span class="lgchips">${lgChips(sel)}</span> <span class="tiny muted">▾ liste</span></summary>
+const lgPick = (sel) => html`<details class="lgpick" style="border:1px solid var(--line);border-radius:12px;padding:8px 10px;margin-top:4px"><summary style="cursor:pointer;list-style:none"><span class="lgchips">${lgChips(sel)}</span> <span style="color:var(--c-ok,#16a34a);font-weight:700;font-size:14px">▾ choisir dans la liste</span></summary>
   <div style="max-height:220px;overflow:auto;margin-top:8px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:2px 10px">${Object.entries(LG_ALL).map(([k, l]) => html`<label style="display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer"><input type="checkbox" name="langues" value="${k}" data-input="lg-pick" ${sel.includes(k) ? new Raw('checked') : ''} style="width:18px;height:18px;flex:none">${l}</label>`)}</div></details>`;
 // message d'invitation (lien + code), dans la langue du client
 const HOTE_INV = {
@@ -3741,6 +3759,7 @@ function hoteData(h, tks) {
     st: TENANT ? { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : c.nom || tenantInfo.nom || 'LA CENTRAL', adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || soc.adresse || c.adresse || '' : soc.adresse || c.adresse || '', tel: soc.tel || c.tel || '', wa: '', logo: soc.logo || '', color: soc.color || '', pays: soc.pays || 'LU' } : { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LA CENTRAL'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '', pays: soc.pays || 'LU' },
     // 🚗 parc auto des sociétés de taxi (photos dehors / dedans), par sorte de voiture
     fleet: txCos().flatMap((co) => Object.entries(co.fleet || {}).filter(([k, x]) => FLEET_T[k] && x.n > 0).map(([k, x]) => ({ t: k, n: x.n, co: co.nom || '', ph: x.ph || {} }))),
+    gp: h.gp || null,
     meal: { allerg: h.allerg || [], allergAutre: h.allergAutre || '', allergCh: h.allergCh || [], allergChAutre: h.allergChAutre || '', regime: h.regime || [], dej: h.dej || '', dejOu: h.dejOu || '', din: h.din || '', dinOu: h.dinOu || '', room: c.roomSvc && c.roomSvc !== 'non' ? { svc: c.roomSvc, pct: c.roomPct || 0, deliv: !!c.roomDeliv } : null },
     menu: menu && menu.file ? menu.file : '', taxi: { pc: +c.txPc || 0, km: +c.txKm || 0, aero: +c.txAero || 0, gare: +c.txGare || 0, on: !!TENANT || !!(c.drivers || []).length || !!chaufs().length || !!txOffers().gam.length, ...txOffers() },
     rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, done: !!(r.taxi && r.taxi.done), rated: r.taxi && r.taxi.rate ? r.taxi.rate.s : 0, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
@@ -4503,12 +4522,12 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis & chauffeurs', 'car'], ['parc', 'Parc auto', 'car'], ['chat', 'Chat', 'msg'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr']] },
+  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['chambres', 'Chambres', 'bed'], ['taxis', 'Taxis & chauffeurs', 'car'], ['parc', 'Parc auto', 'car'], ['chat', 'Chat', 'msg'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['taxis', 'Taxis & chauffeurs', 'car'], ['parc', 'Parc auto', 'car'], ['chat', 'Chat', 'msg'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['hotel', 'Hotel', 'bed'], ['airbnb', 'Airbnb', 'luggage'], ['chambres', 'Chambres', 'bed'], ['taxis', 'Taxis & chauffeurs', 'car'], ['parc', 'Parc auto', 'car'], ['chat', 'Chat', 'msg'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire', hotel: '🏨 Hôtel', airbnb: '🏠 Airbnb' };
@@ -4529,7 +4548,7 @@ function sideNavHtml() {
 }
 function navItem([id, label, ic, plus, sec], sub) {
   // 🏨 centrale hôtel / Airbnb : Accueil · Maintenance · Clients · Taxi · Comptabilité · Réglages
-  if (TENANT && ['hotel', 'airbnb'].includes(tenantInfo.fil)) label = { demandes: 'Maintenance', hotel: 'Clients', airbnb: 'Clients', taxis: 'Taxi / Chauffeurs' }[id] || label;
+  if (TENANT && ['hotel', 'airbnb'].includes(tenantInfo.fil)) label = { demandes: 'Maintenance', hotel: 'Voyageurs', airbnb: 'Voyageurs', chambres: tenantInfo.fil === 'airbnb' ? 'Logements' : 'Chambres', taxis: 'Taxi / Chauffeurs' }[id] || label;
   else if (TENANT && tenantInfo.fil === 'taxi') label = { taxis: 'Chauffeurs', parc: 'Parc auto', compta: 'Comptabilité & statistiques' }[id] || label;
   else if (TENANT && id === 'taxis') label = 'Taxis';
   if (masked().has(id)) return html`<span class="navbtn nav-masked${sub ? ' nav-sub' : ''}" aria-disabled="true" title="Masqué dans les réglages">${icon('lock')}<span>MASQUÉ</span></span>`;
@@ -5191,8 +5210,8 @@ function hotView(hf, acc) {
       return html`${centralinoHtml()}
         ${S2('🔔', 'FLASH', 'À traiter vite, puis ça disparaît', [pushNudge(), ...all.flatMap((h) => (h.rents || []).filter((r) => r.st === 'new').map((r) => html`<div class="alert info" style="margin-bottom:10px">🔑<div style="flex:1"><b>Location de voiture · ${[h.prenom, h.nom].filter(Boolean).join(' ')} (${h.chambre})</b><div class="small">${rentTxt(r)}</div><div class="actions" style="margin:6px 0 0;flex-wrap:wrap"><button class="btn sm primary" data-action="hote-rent-lc" data-id="${h.id}" data-r="${r.id}">↪️ Envoyer à LA CENTRAL</button><button class="btn sm" data-action="hote-rent-ok" data-id="${h.id}" data-r="${r.id}">✓ Je m’en occupe</button></div></div></div>`)), ...all.filter((h) => h.arrChg && !h.arrChg.vu).map((h) => html`<div class="alert warn" style="margin-bottom:10px">✏️<div style="flex:1"><b>${[h.prenom, h.nom].filter(Boolean).join(' ')} (${h.chambre}) a changé son arrivée</b><div class="small"><s>${h.arrChg.old}</s></div><div class="small">→ <b>${h.arrChg.now}</b></div>${h.taxi ? html`<div class="tiny">La course suit : ${h.taxi.lc ? '↪️ LA CENTRAL prévenue' : h.taxi.own ? '🚙 l’app du chauffeur est à jour' : '🚕 la société est prévenue'}</div>` : ''}<button class="btn sm" style="margin-top:6px" data-action="hote-chg-ok" data-id="${h.id}">✓ Vu</button></div></div>`), hoteAlerts(all, t, 'taxi'), late.length ? AB('bad', 'demandes', html`🔴 <b>${plural(late.length, 'facture')} en retard</b>`) : ''])}
         ${pageHead('🏠 Accueil — ' + (hf === 'airbnb' ? 'Airbnb' : 'Hotel'), `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
-        <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button><button class="btn primary" data-action="new-chambre">${icon('plus')} ${hf === 'airbnb' ? 'Logement' : 'Chambre'}</button>${TENANT ? '' : html`<button class="btn" data-action="hote-conf">${icon('gear')} Réglages</button>`}</div></div>
-        ${S2('🛎️', 'ARRIVÉES & DÉPARTS', 'Les clients du jour : arrivée choisie, clé, départ', [hoteAlerts(all, t, 'arr'), sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.'), sec('🛫 Départs aujourd’hui', dep, 'Aucun départ aujourd’hui.'), html`<button class="btn sm" data-action="go" data-to="${hf}">🛎️ Tous les clients (${pres.length} présents)</button>`])}
+        <div class="imm-row"><span></span><div class="imm-btns">${TENANT ? html`<button class="btn primary" data-action="new-hote" style="flex-direction:column;gap:0;line-height:1.1;padding:6px 16px"><span style="font-size:20px">＋</span><span class="tiny">Voyageur</span></button>` : html`<button class="btn primary" data-action="new-hote">${icon('plus')} Client</button><button class="btn primary" data-action="new-chambre">${icon('plus')} ${hf === 'airbnb' ? 'Logement' : 'Chambre'}</button>`}${TENANT ? '' : html`<button class="btn" data-action="hote-conf">${icon('gear')} Réglages</button>`}</div></div>
+        ${S2('🛎️', 'ARRIVÉES & DÉPARTS', 'Les voyageurs du jour : arrivée choisie, clé, départ', [hoteAlerts(all, t, 'arr'), sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.'), sec('🛫 Départs aujourd’hui', dep, 'Aucun départ aujourd’hui.'), html`<button class="btn sm" data-action="go" data-to="${hf}">🛎️ Tous les clients (${pres.length} présents)</button>`])}
         ${S2('🚕', 'TAXIS', 'Courses en cours : vos chauffeurs, ↪️ LA CENTRAL, vos sociétés', [
           lcRides.length ? html`<div class="list" style="margin-bottom:10px">${lcRides.map(([h, x]) => html`<button class="row" data-action="hote-taxi" data-id="${h.id}" data-r="${x === h.taxi ? '' : (h.rides || []).find((r) => r.taxi === x).id}"><span class="avatar">${x.lc ? '↪️' : x.own ? '🚙' : '🚕'}</span><span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')} (${h.chambre})</span><span class="meta">${x.st === 'ok' ? '🚙 ' + x.nom + (x.plaque ? ' · ' + x.plaque : '') : x.st === 'no' ? '❌ refusée par ' + x.nom : x.lc ? '⏳ LA CENTRAL choisit le chauffeur' : '⏳ en attente de ' + x.nom}${x.prix ? ' · ' + eur(x.prix) : ''}</span></span><span class="chev">›</span></button>`)}</div>` : '',
           html`<button class="btn sm" data-action="go" data-to="taxis">🚕 Toutes les courses</button>`])}
@@ -5204,15 +5223,15 @@ function hotView(hf, acc) {
           txF.length ? AB('info', 'taxis', html`🚕 <b>${plural(txF.length, 'facture')} de taxi à payer</b> · ${eur(sum(txF, (f) => f.ttc))}`) : ''])}
 `;
     }
-    return html`${pageHead(TENANT ? '🛎️ Clients — ' + (hf === 'airbnb' ? 'Airbnb' : 'Hotel') : hf === 'airbnb' ? '🏠 Airbnb' : '🏨 Hotel', `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
-      <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-hote">${icon('plus')} Client</button><button class="btn primary" data-action="new-chambre">${icon('plus')} ${hf === 'airbnb' ? 'Logement' : 'Chambre'}</button>${TENANT ? '' : html`<button class="btn" data-action="hote-conf">${icon('gear')} Réglages</button>`}</div></div>
+    return html`${pageHead(TENANT ? '🛎️ Voyageurs — ' + (hf === 'airbnb' ? 'Airbnb' : 'Hotel') : hf === 'airbnb' ? '🏠 Airbnb' : '🏨 Hotel', `Présents : ${pres.length} · Arrivées : ${arr.length} · Départs : ${dep.length}`)}
+      <div class="imm-row"><span></span><div class="imm-btns">${TENANT ? html`<button class="btn primary" data-action="new-hote" style="flex-direction:column;gap:0;line-height:1.1;padding:6px 16px"><span style="font-size:20px">＋</span><span class="tiny">Voyageur</span></button>` : html`<button class="btn primary" data-action="new-hote">${icon('plus')} Client</button><button class="btn primary" data-action="new-chambre">${icon('plus')} ${hf === 'airbnb' ? 'Logement' : 'Chambre'}</button>`}${TENANT ? '' : html`<button class="btn" data-action="hote-conf">${icon('gear')} Réglages</button>`}</div></div>
       ${hoteAlerts(all, t)}
       ${sec('🛬 Arrivées aujourd’hui', arr, 'Aucune arrivée aujourd’hui.')}
       ${sec('🛫 Départs aujourd’hui', dep, 'Aucun départ aujourd’hui.')}
       ${sec('🛏️ Présents', pres, 'Aucun client présent.')}
       ${next.length ? sec('📅 À venir', next, '') : ''}
       ${past.length ? sec('🗂️ Partis', past.slice(0, 50), '') : ''}
-      ${chList(hf, pres)}`;
+      ${TENANT ? '' : chList(hf, pres)}`;
 }
 // lien du chauffeur : tout est dans le lien (rien à installer) ; 2 trajets : vers le client, puis client à bord → vers nous
 function hoteDrvLink(h) {
@@ -6324,6 +6343,14 @@ dashboard() {
   proprios() { return agView('proprio'); },
   // 🏨 Hotel — première étape : les clients (chambre, étage, clé, arrivée → départ)
   hotel() { return hotView('hotel'); },
+  // 🛏️ Chambres (hôtel) / 🏠 Logements (Airbnb) : la fiche de chaque bien (n°, m², catégorie, photos, présentation) — ＋ Voyageur choisit parmi les libres
+  chambres() {
+    const hf = TENANT && tenantInfo.fil === 'airbnb' ? 'airbnb' : 'hotel', t = today(), bnb = hf === 'airbnb';
+    const pres = vault.list('hotes').filter((h) => (h.lieu === 'airbnb' ? 'airbnb' : 'hotel') === hf && h.arrivee <= t && h.depart > t);
+    return html`${pageHead(bnb ? '🏠 Logements' : '🛏️ Chambres', bnb ? 'Vos logements : adresse, pièces, m², photos — visibles dans l’app du voyageur' : 'Vos chambres : catégorie, lits, m², photos — visibles dans l’app du voyageur')}
+      <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-chambre" data-lieu="${hf}">${icon('plus')} ${bnb ? 'Logement' : 'Chambre'}</button></div></div>
+      ${chList(hf, pres)}`;
+  },
   airbnb() { return hotView('airbnb'); },
   // 🛠️ centrale d'un client : ses demandes d'intervention à LA CENTRAL
   demandes() {
@@ -6407,7 +6434,7 @@ dashboard() {
       <p style="margin:0 0 12px"><button class="btn primary sm" data-action="ann-new">📣 Annonce</button>${annLog().length ? html` <button class="btn sm" data-action="ann-log">🗂️ Annonces envoyées (${annLog().length})</button>` : ''}</p>
       ${recv.length ? html`<div class="section-label">📣 Annonces de LA CENTRAL ${badge(recv.filter((r) => !r.vu).length)}</div><div class="list" style="margin-bottom:14px">${recv.map((r) => html`<div class="row" style="align-items:flex-start"><span class="grow"><span class="title" style="display:block;white-space:pre-wrap">${r.x}</span><span class="meta">${r.from || ''} · ${fmtDateTime(r.at)}</span></span><span style="display:flex;flex-direction:column;gap:6px"><button class="btn sm primary" data-action="ann-fwd" data-id="${r.id}">↪️ Transférer aux miens</button>${r.vu ? '' : html`<button class="btn sm" data-action="ann-vu" data-id="${r.id}">✓ Lu</button>`}</span></div>`)}</div>` : ''}
       ${sig.length ? html`<div class="section-label">📩 Problèmes signalés ${badge(sig.length)}</div><div class="list" style="margin-bottom:14px">${sig.slice(0, 8).map((t) => html`<button class="row" data-action="open-signal" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.titre}</span><span class="meta">${fmtDateTime(t.sentAt)}</span></span></button>`)}</div>` : ''}
-      <div class="section-label">🛎️ Clients</div>${guests.length ? html`<div class="list" style="margin-bottom:14px">${guests.map(row)}</div>` : html`<p class="small muted">Aucun client avec l’app en ce moment.</p>`}
+      <div class="section-label">🛎️ Voyageurs</div>${guests.length ? html`<div class="list" style="margin-bottom:14px">${guests.map(row)}</div>` : html`<p class="small muted">Aucun client avec l’app en ce moment.</p>`}
       <div class="section-label">🚕 Taxi — chauffeurs et sociétés</div>${tx.length ? html`<div class="list">${tx.map(row)}</div>` : html`<p class="small muted">Aucun chauffeur ni société avec l’app : 🚕 Taxi / Chauffeurs → ＋ Chauffeur, ＋ Société de taxi.</p>`}`;
   },
   taxis() {
@@ -6439,7 +6466,7 @@ dashboard() {
         // 🚕 En cours : où en est chaque course (chauffeur et client) ; sinon, comment en commander une
         const last = (L) => [...(L || [])].sort((p, q) => String(p.at).localeCompare(String(q.at))).pop(), hm = (v) => String(v || '').slice(11, 16);
         const live = rides.filter(([, , , x]) => { if (x.st === 'no' || x.cancel) return false; const e = [...(x.tl || []), ...(x.gtl || [])].filter((v) => v.k === 'arr').map((v) => Date.parse(v.at)).sort().pop(); return !e || Date.now() - e < 2 * 3600e3; });
-        if (!live.length) return html`<div class="alert info" style="margin-bottom:12px">🚕<div>Pour commander une course : 🛎️ Clients → la fiche → 🚕 → <b>votre chauffeur</b>, <b>↪️ LA CENTRAL</b> ou <b>une de vos sociétés</b>.</div></div>`;
+        if (!live.length) return html`<div class="alert info" style="margin-bottom:12px">🚕<div>Pour commander une course : 🛎️ Voyageurs → la fiche → 🚕 → <b>votre chauffeur</b>, <b>↪️ LA CENTRAL</b> ou <b>une de vos sociétés</b>.</div></div>`;
         const ST = { dep: ['🚗', 'En route', 'var(--c-app,#3b82f6)'], eta: ['📍', 'Étape', 'var(--c-door,#f59e0b)'], arr: ['🟢', 'Arrivée', 'var(--c-ok,#16a34a)'] };
         return html`<div class="section-label">🚕 En cours <span class="badge">${live.length}</span></div><div class="list" style="margin-bottom:14px">${live.map(([h, rid, a, x]) => { const ev = last([...(x.tl || []), ...(x.gtl || [])]), s = ev ? ST[ev.k] : null, d = last((x.tl || []).filter((v) => v.k === ev?.k)), g = last((x.gtl || []).filter((v) => v.k === ev?.k));
           return html`<button class="row" data-action="hote-taxi" data-id="${h.id}" data-r="${rid === 'arr' ? '' : rid}"><span class="avatar">${s ? s[0] : x.st === 'ok' ? '⚪' : '⏳'}</span><span class="grow"><span class="title" style="display:block">${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.chambre ? ' (' + h.chambre + ')' : ''}</span>
@@ -8108,15 +8135,14 @@ const SHEETS = {
     const bnb = h.lieu === 'airbnb', ch = chGet(h.lieu, h.chambre);
     setTimeout(() => hydrateBiens(sheetEl), 0);
     return {
-      title: id ? html`${(bnb ? 'Client — ' : 'Client — chambre ') + h.chambre} ${vraiBtn('hotes', h)}` : 'Nouveau client',
+      title: id ? html`${(bnb ? 'Voyageur — ' : 'Voyageur — chambre ') + h.chambre} ${vraiBtn('hotes', h)}` : 'Nouveau voyageur',
       narrow: true,
       body: html`<form id="f" data-form="hote" class="fields">
         <input type="hidden" name="id" value="${id || ''}"><input type="hidden" name="lieu" value="${bnb ? 'airbnb' : 'hotel'}">
         ${field('Prénom', 'prenom', h.prenom)}${field('Nom', 'nom', h.nom, { required: true })}
         ${field('Téléphone', 'tel', h.tel, { type: 'tel', placeholder: '+352 …' })}${field('Email', 'mail', h.mail, { type: 'email' })}
-        <label class="field">Pays<select name="pays"><option value="">—</option>${HOTE_PAYS.map((cc) => html`<option value="${cc}" ${h.pays === cc ? new Raw('selected') : ''}>${flag(cc)} ${paysNom(cc)}</option>`)}</select></label>
-        <label class="field">Langue de son app<select name="langue">${Object.entries(LG).map(([k, l]) => html`<option value="${k}" ${h.langue === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
-        <div class="field full">🗣️ Langues parlées <span class="tiny muted">(cochez dans la liste)</span>${lgPick(h.langues || (h.langue && h.langue !== 'autre' ? [h.langue] : []))}</div>
+        <label class="field">Pays de provenance<select name="pays"><option value="">—</option>${HOTE_PAYS.map((cc) => html`<option value="${cc}" ${h.pays === cc ? new Raw('selected') : ''}>${flag(cc)} ${paysNom(cc)}</option>`)}</select></label>
+        <div class="field full">🗣️ Langues parlées${lgPick(h.langues || (h.langue && h.langue !== 'autre' ? [h.langue] : []))}</div>
         <div class="full section-label" style="margin:6px 0 0">👥 Qui vient</div>
         <label class="field">Composition<select name="compo">${Object.entries(COMPO).map(([k, l]) => html`<option value="${k}" ${(h.compo || (h.pers > 2 ? 'famille' : h.pers === 2 ? 'couple' : 'seul')) === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
         ${stepper('adultes', 'Adultes', h.adultes ?? Math.max(1, (h.pers || 1) - (h.enfants || 0) - (h.bebe ? 1 : 0)), 1)}${stepper('enfants', 'Enfants', h.enfants || 0)}
@@ -8128,25 +8154,19 @@ const SHEETS = {
           ${field('a) Total du séjour (€)', 'prixTot', x.tot, { attrs: money$ })}${field('b) Prix par nuit (€)', 'prixNuit', x.nuit, { attrs: money$ })}
           ${field('b) Ménage (€)', 'prixMenage', x.menage, { attrs: money$ })}${field('b) Taxe de séjour (€ / personne / nuit)', 'prixTaxe', x.taxe, { attrs: money$ })}
           <p class="tiny muted full" style="margin:0">Le client voit le détail et le total. 💳 « Payer le séjour » : pas encore connecté (bouton affiché, désactivé). À l’hôtel, le client paie à la réception.</p>`; })() : ''}
-        <div class="full section-label" style="margin:6px 0 0;color:var(--bad,#c0392b)">⚠️ Allergies / intolérances</div>
-        <div class="full"><b class="small">🍽️ Alimentaires</b>${chipChecks('allerg', ALLERG, h.allerg)}</div>
-        ${field('Autre allergie alimentaire', 'allergAutre', h.allergAutre || '', { full: true, placeholder: 'ex. kiwi…' })}
-        <div class="full"><b class="small">🛏️ Chambre</b>${chipChecks('allergCh', ALLERG_CH, h.allergCh)}</div>
-        ${field('Autre allergie (chambre, médicament…)', 'allergChAutre', h.allergChAutre || '', { full: true, placeholder: 'ex. nickel, pénicilline…' })}
-        <div class="full section-label" style="margin:6px 0 0">🍽️ Repas</div>
-        <div class="full">${chipChecks('regime', REGIME, h.regime)}</div>
-        ${field('🥗 Déjeuner : ce qu’il souhaite', 'dej', h.dej || '', { full: true })}
-        <label class="field">Déjeuner<select name="dejOu">${Object.entries(REPAS_OU).map(([k, l]) => html`<option value="${k}" ${(h.dejOu || 'resto') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
-        ${field('🍷 Dîner : ce qu’il souhaite', 'din', h.din || '', { full: true })}
-        <label class="field">Dîner<select name="dinOu">${Object.entries(REPAS_OU).map(([k, l]) => html`<option value="${k}" ${(h.dinOu || 'resto') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
-        <label class="field full">🛏️ Autres préférences<textarea name="pref" style="min-height:56px" placeholder="ex. oreiller ferme, étage bas…">${h.pref || ''}</textarea></label>
-        <div class="full"><button type="button" class="btn sm" data-action="hote-resto" data-lieu="${bnb ? 'airbnb' : 'hotel'}">🍽️ Menu du restaurant · 🛎️ service en chambre (pour tous les clients)</button></div>
-        <div class="full section-label" style="margin:6px 0 0">${bnb ? '🏠 Le logement' : '🛏️ La chambre'} — visible dans l’app du client</div>
-        ${field(bnb ? 'N° / nom du logement' : 'N° de chambre', 'chambre', h.chambre, { required: true, placeholder: bnb ? 'ex. Appart 3' : 'ex. 204', attrs: 'list="chList" autocomplete="off"' })}<datalist id="chList">${chambres(h.lieu).map((c) => html`<option value="${c.num}">${[CH_CAT[c.cat], CH_TYPE[c.typ], c.persMax ? '👥 ' + c.persMax : ''].filter(Boolean).join(' · ')}</option>`)}</datalist>${field('Étage', 'etage', h.etage || ch.etage, { placeholder: 'ex. 2' })}
-        ${bnb ? field('Adresse', 'adresse', h.adresse || ch.adresse, { full: true, placeholder: 'rue, n°, ville' }) : ''}
-        ${field('Surface (m²)', 'm2', ch.m2, { attrs: 'inputmode="decimal"' })}${bnb ? field('Nombre de pièces (ex. studio : 1, appartement : 3)', 'npieces', ch.npieces, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' }) : ''}
-        <p class="tiny muted full" style="margin:0">📷 6 photos minimum : bâtiment, porte, salle de bain, chambre, cuisine, parking (+ 1 au choix). Elles restent pour les prochains clients de ${bnb ? 'ce logement' : 'cette chambre'}.</p>
-        <div class="full ch-ph">${CH_PH.map(([k, l]) => html`<label class="ch-slot">${(ch.ph || {})[k] ? html`<img data-bph="${ch.ph[k]}" alt="">` : html`<span class="ch-empty">＋</span>`}<span class="tiny">${l}</span><input type="file" name="ph_${k}" accept="image/*"></label>`)}</div>
+        ${hoteGpBox(h)}
+        <details class="full" ${(h.allerg || []).length || (h.allergCh || []).length || h.allergAutre || h.allergChAutre ? new Raw('open') : ''} style="border:1px solid var(--line);border-radius:12px;padding:8px 10px">
+          <summary style="cursor:pointer;color:var(--bad,#c0392b)"><b>⚠️ Allergies</b> <span class="tiny muted">(si le voyageur le dit par téléphone — sinon il le note dans son app)</span></summary>
+          <div><b class="small">🍽️ Alimentaires</b>${chipChecks('allerg', ALLERG, h.allerg)}</div>
+          ${field('Autre allergie alimentaire', 'allergAutre', h.allergAutre || '', { full: true })}
+          <div><b class="small">🛏️ Chambre</b>${chipChecks('allergCh', ALLERG_CH, h.allergCh)}</div>
+          ${field('Autre allergie ou besoin particulier — ce que le voyageur nous dit', 'allergChAutre', h.allergChAutre || '', { full: true })}
+        </details>
+        <div class="full section-label" style="margin:6px 0 0">${bnb ? '🏠 Le logement' : '🛏️ La chambre'}</div>
+        ${(() => { const L = chambres(h.lieu), occ = (c) => vault.list('hotes').find((x) => x.id !== id && x.lieu === h.lieu && String(x.chambre).trim().toLowerCase() === String(c.num).trim().toLowerCase() && x.arrivee < h.depart && h.arrivee < x.depart);
+          if (!L.length) return html`${field(bnb ? 'N° / nom du logement' : 'N° de chambre', 'chambre', h.chambre, { required: true, placeholder: bnb ? 'ex. Appart 3' : 'ex. 204' })}<p class="tiny muted full" style="margin:0">💡 Créez ${bnb ? 'vos logements' : 'vos chambres'} une fois pour toutes (menu ${bnb ? '🏠 Logements' : '🛏️ Chambres'} → ＋) : m², photos et présentation suivent chaque voyageur.</p>`;
+          const has = L.some((c) => String(c.num) === String(h.chambre));
+          return html`<label class="field full">${bnb ? 'Logement' : 'Chambre'} <span class="tiny muted">(🟢 libre aux dates choisies)</span><select name="chambre" required><option value="">—</option>${h.chambre && !has ? html`<option value="${h.chambre}" selected>${h.chambre}</option>` : ''}${L.map((c) => { const o = occ(c); return html`<option value="${c.num}" ${String(h.chambre) === String(c.num) ? new Raw('selected') : ''}>${o ? '🔴' : '🟢'} ${c.num}${c.cat ? ' · ' + (CH_CAT[c.cat] || '') : ''}${c.typ ? ' · ' + (CH_TYPE[c.typ] || '') : ''}${c.persMax ? ' · 👥 ' + c.persMax : ''}${c.m2 ? ' · ' + c.m2 + ' m²' : ''}${o ? ' — occupé : ' + [o.prenom, o.nom].filter(Boolean).join(' ') : ''}</option>`; })}</select></label>`; })()}
         <div class="full hote-door fields" style="background:#fdf3d7;border:1px solid #efd9a0;border-radius:14px;padding:12px 14px;margin:6px 0 0">
           <div class="full section-label" style="margin:0;color:#8a5a00">🔑 CODE DE LA PORTE <span class="tiny muted">— ouvre ${bnb ? 'le logement' : 'la chambre'} (pas l’app)</span></div>
           ${id && hoteKey(h) ? (() => { const k = hoteKey(h); return html`<div class="full" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="kdot" style="width:12px;height:12px;border-radius:50%;flex:none;background:${k.k === 'ok' ? '#16a34a' : k.k === 'warn' ? '#9ca3af' : '#dc2626'}"></span><span class="small">${k.h}</span></div>`; })() : ''}
@@ -8168,7 +8188,7 @@ const SHEETS = {
             return html`<div class="actions" style="margin:0;flex-wrap:wrap;gap:6px"><button type="button" class="btn sm" data-action="code-copy" data-code="${h.appCode}">📋 Code</button><button type="button" class="btn sm" data-action="code-copy" data-code="${link}">🔗 Lien</button>${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}${h.mail ? html`<a class="btn sm" href="mailto:${h.mail}?subject=${encodeURIComponent('📱 ' + (hoteConf().nom || socName() || 'App'))}&body=${encodeURIComponent(msg)}">✉️ Email</a>` : ''}${tel ? html`<a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(msg)}">📱 SMS</a>` : ''}<button type="button" class="btn sm" data-action="hote-qr" data-id="${id}">▦ QR</button></div>
               <p class="tiny muted" style="margin:0">🔗 ${link}<br>Le message part dans sa langue : lien de l’app et code de l’app. ▦ QR : à montrer à la réception, il entre sans rien écrire.</p>`; })() : html`<p class="tiny muted" style="margin:0">Code personnel du client (aussi depuis l’étranger) : dans l’app il voit ${bnb ? 'son logement' : 'sa chambre'}, son code de porte, le menu, et choisit comment il arrive. Enregistrez pour envoyer le lien.</p>`}
         </div>
-        <label class="field full">Notes<textarea name="notes" style="min-height:70px" placeholder="ex. allergie, lit bébé, arrivée tardive…">${h.notes || ''}</textarea></label>
+        <label class="field full">📝 Note de l’accueil <span class="tiny muted">(interne : le voyageur ne la voit pas)</span><textarea name="notes" style="min-height:70px" placeholder="ex. arrivée tardive, rappeler demain…">${h.notes || ''}</textarea></label>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-hote" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
@@ -8533,7 +8553,7 @@ const SHEETS = {
         <div class="full section-label" style="margin:6px 0 0">🛎️ Service en chambre (le même pour tous les clients)</div>
           <label class="field full">Service en chambre<select name="roomSvc">${Object.entries(ROOM_SVC).map(([k, l]) => html`<option value="${k}" ${(hc.roomSvc || 'non') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
           ${field('Supplément service en chambre (%)', 'roomPct', hc.roomPct ?? '', { type: 'number', attrs: 'min="0" max="100" step="1" inputmode="numeric"' })}
-          <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="roomDeliv" ${hc.roomDeliv ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">🛵 Livraison de l’extérieur acceptée</label>
+          <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="roomDeliv" ${hc.roomDeliv ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">🛵 Livraison de l’extérieur acceptée <span class="tiny muted">(supplément selon le livreur : pas de % fixe)</span></label>
         ${html`<div class="full section-label" style="margin:6px 0 0">🍽️ Menu du restaurant (PDF, le même pour tous les clients)</div>
           ${menu && menu.file ? html`<div class="full actions" style="margin:0"><button type="button" class="btn sm" data-action="hotel-menu-view" data-lieu="${bnb ? 'airbnb' : 'hotel'}">👁 Voir le menu</button><span class="tiny muted">${menu.name || ''} · ${fmtDate(menu.at)}</span></div>` : ''}
           <label class="field full">${menu && menu.file ? 'Remplacer le menu' : 'Ajouter le menu'} <span class="tiny muted">(PDF · 10 Mo maximum)</span><input type="file" name="menu" accept="application/pdf"></label>`}
@@ -8690,8 +8710,8 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
     };
   },
-  'chambre-form'({ id }) {
-    const c = id ? vault.get('reglages', id) : { lieu: ui.route === 'airbnb' ? 'airbnb' : 'hotel' };
+  'chambre-form'({ id, preset }) {
+    const c = id ? vault.get('reglages', id) : { lieu: preset === 'airbnb' || ui.route === 'airbnb' ? 'airbnb' : 'hotel' };
     if (id && !c) return null;
     const bnb = c.lieu === 'airbnb', types = bnb ? ['studio', 'appartement', 'maison', 'colocation'] : ['single', 'double', 'twin', 'triple', 'famille'];
     const outs = id ? vault.list('hotes').filter((h) => h.lieu === c.lieu && String(h.chambre).trim().toLowerCase() === String(c.num).trim().toLowerCase() && h.edlOut && Object.keys(h.edlOut.ph || {}).length).sort((a, b) => b.depart.localeCompare(a.depart)).slice(0, 5) : [];
@@ -10373,7 +10393,7 @@ const ACTIONS = {
   },
   'new-hote': () => openOver('hote-form'),
   'edit-hote': (d) => openOver('hote-form', d.id),
-  'new-chambre': () => openOver('chambre-form'),
+  'new-chambre': (d) => openOver('chambre-form', null, null, d.lieu || ''),
   'hote-conf': () => openOver('hote-conf'),
   'new-txco': () => openOver('txco-form'),
   'new-annc': () => openOver('annc-form'),
@@ -11897,6 +11917,8 @@ const FORMS = {
     const tm = (k, d) => (/^\d\d:\d\d$/.test(g(k)) ? g(k) : d), mo = (k) => { const v = g(k).replace(',', '.'); return v ? Math.max(0, num(v)) : ''; };
     if (rec.lieu === 'airbnb') rec.prix = { mode: ['total', 'detail'].includes(g('prixMode')) ? g('prixMode') : '', tot: mo('prixTot'), nuit: mo('prixNuit'), menage: mo('prixMenage'), taxe: mo('prixTaxe') };
     rec.hdeb = tm('hdeb', '15:00'); rec.hfin = tm('hfin', '11:00');
+    // champs qui ne sont plus dans la fiche (le voyageur les note dans son app) : on garde ce qui existe
+    for (const [k, probe] of [['langue'], ['pref'], ['adresse'], ['etage'], ['regime', 'dej'], ['dej'], ['dejOu'], ['din'], ['dinOu'], ['allerg', 'allergAutre'], ['allergCh', 'allergAutre'], ['allergAutre'], ['allergChAutre']]) if (!fd.has(probe || k)) delete rec[k];
     rec.pers = rec.adultes + rec.enfants + (rec.bebe ? 1 : 0);
     if (fd.has('roomSvc')) { const hc = hoteConf(), rs = ROOM_SVC[g('roomSvc')] ? g('roomSvc') : 'non', rp = g('roomPct') === '' ? '' : Math.max(0, Math.min(100, num(g('roomPct')))), rd = !!fd.get('roomDeliv'); if (rs !== (hc.roomSvc || 'non') || rp !== (hc.roomPct ?? '') || rd !== !!hc.roomDeliv) await vault.mutate((tx) => tx.put('reglages', { id: 'hoteConf', roomSvc: rs, roomPct: rp, roomDeliv: rd }), '🛎️ Service en chambre', ROOM_SVC[rs]); }
     if (rec.code && !/^[0-9A-Za-z#*]{3,16}$/.test(rec.code)) return toast('Code invalide (3 à 16 chiffres ou lettres)', { bad: true });
@@ -11928,7 +11950,7 @@ const FORMS = {
         for (const x of oold) await vault.deleteFile(x).catch(() => {});
       }
     }
-    await vault.mutate((tx) => tx.put('reglages', { ...ch, id: ck, lieu: rec.lieu, num: rec.chambre, etage: rec.etage || ch.etage || '', adresse: rec.adresse || ch.adresse || '', m2: nm('m2') || ch.m2 || '', npieces: g('npieces') || ch.npieces || '', ph }), rec.lieu === 'airbnb' ? 'Fiche du logement' : 'Fiche de la chambre', rec.chambre);
+    if (fd.has('m2') || Object.keys(ph).length !== Object.keys(ch.ph || {}).length || old.length) await vault.mutate((tx) => tx.put('reglages', { ...ch, id: ck, lieu: rec.lieu, num: rec.chambre, etage: rec.etage || ch.etage || '', adresse: rec.adresse || ch.adresse || '', m2: nm('m2') || ch.m2 || '', npieces: g('npieces') || ch.npieces || '', ph }), rec.lieu === 'airbnb' ? 'Fiche du logement' : 'Fiche de la chambre', rec.chambre);
     for (const x of old) await vault.deleteFile(x).catch(() => {});
     const mf = fd.get('menu');
     if (mf && mf.size) {
@@ -11939,7 +11961,7 @@ const FORMS = {
       await vault.mutate((tx) => tx.put('reglages', { id: menuKey(rec.lieu), file: mid, name: mf.name, at: today() }), 'Menu du restaurant', mf.name);
       if (pm && pm.file) await vault.deleteFile(pm.file).catch(() => {});
     }
-    toast(Object.keys(ph).length < 6 ? 'Client enregistré — 📷 ajoutez au moins 6 photos de ' + (rec.lieu === 'airbnb' ? 'ce logement' : 'cette chambre') : 'Client enregistré');
+    toast(Object.keys(ph).length < 6 ? 'Voyageur enregistré — 📷 ajoutez au moins 6 photos de ' + (rec.lieu === 'airbnb' ? 'ce logement' : 'cette chambre') + ' (menu ' + (rec.lieu === 'airbnb' ? '🏠 Logements' : '🛏️ Chambres') + ')' : 'Voyageur enregistré');
     goBack();
     const saved = vault.list('hotes').find((x) => x.id === id) || vault.list('hotes').filter((x) => x.nom === rec.nom && x.chambre === rec.chambre && x.arrivee === rec.arrivee).pop();
     if (saved) hotesSync(saved.id).then(() => tripRegister().catch(() => {}));
