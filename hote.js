@@ -117,8 +117,8 @@ const PH = { immeuble: ['🏢', { fr: 'Bâtiment', en: 'Building', de: 'Gebäude
   sdb: ['🛁', { fr: 'Salle de bain', en: 'Bathroom', de: 'Bad', it: 'Bagno', pt: 'Casa de banho', es: 'Baño' }], chambre: ['🛏️', { fr: 'Chambre', en: 'Room', de: 'Zimmer', it: 'Camera', pt: 'Quarto', es: 'Habitación' }],
   cuisine: ['🍳', { fr: 'Cuisine', en: 'Kitchen', de: 'Küche', it: 'Cucina', pt: 'Cozinha', es: 'Cocina' }], parking: ['🅿️', { fr: 'Parking', en: 'Parking', de: 'Parkplatz', it: 'Parcheggio', pt: 'Estacionamento', es: 'Aparcamiento' }],
   autre: ['📷', { fr: 'Autre', en: 'Other', de: 'Andere', it: 'Altro', pt: 'Outro', es: 'Otro' }] };
-const CAT = { eco: 'Économique / Economy', standard: 'Standard', sup: 'Supérieure / Superior', deluxe: 'Deluxe', suite: 'Suite', vip: '⭐ Suite présidentielle / Presidential suite' };
-const TYP = { single: 'Single', double: 'Double', twin: 'Twin', triple: 'Triple', famille: 'Family', studio: 'Studio', appartement: 'Apartment', maison: 'House', colocation: 'Flatshare' };
+const CAT = { eco: 'Économique / Economy', standard: 'Standard', sup: 'Supérieure / Superior', deluxe: 'Deluxe', junior: 'Junior suite', suite: 'Suite', vip: 'Suite présidentielle / Presidential suite' };
+const TYP = { single: 'Single', double: 'Double', twin: 'Twin', triple: 'Triple', famille: 'Family', quad: 'Quadruple', studio: 'Studio', appartement: 'Apartment', maison: 'House', colocation: 'Flatshare' };
 // lieux connus (prise en charge du taxi)
 const SPOTS = { aero: [49.6233, 6.2044], gare: [49.5998, 6.134] };
 
@@ -443,7 +443,7 @@ function render() {
   const inStay = today >= d.arrivee && today <= d.depart;
   out.push(`<details class="card hfold" data-fk="room"${hFoldShut().has('room') ? '' : ' open'}><summary><h2 style="margin:0">${bnb ? '🏠' : '🛏️'} ${esc(bnb ? t.home : t.room)} ${esc(ch.num)}</h2></summary>
     ${phs.length ? `<div class="car">${phs.map((k) => `<figure><img data-f="${esc(ch.ph[k])}" alt="" data-lb="1"><figcaption>${PH[k][0]} ${esc(PH[k][1][lang] || PH[k][1].fr)}</figcaption></figure>`).join('')}</div>` : ''}
-    <p style="margin:8px 0 0"><b>${esc([CAT[ch.cat], TYP[ch.typ]].filter(Boolean).join(' · '))}</b></p>
+    <p style="margin:8px 0 0"><b>${esc([ch.vip ? '⭐ VIP' : '', CAT[ch.cat], TYP[ch.typ]].filter(Boolean).join(' · '))}</b>${[ch.lit ? '🛏️ ' + ch.lit + ' cm' : '', +ch.canape ? '🛋️ +' + ch.canape : '', ch.appoint ? '➕ +1' : '', ch.culle ? '👶' : ''].filter(Boolean).map((x) => ` <span class="tag">${esc(x)}</span>`).join('')}</p>
     <p class="meta" style="margin:2px 0 0">${[ch.etage ? `${t.floor} ${ch.etage}` : '', ch.m2 ? ch.m2 + ' m²' : '', ch.npieces ? ch.npieces + ' ' + t.rooms : '', ch.persMax ? `👥 ${t.max} ${ch.persMax}` : ''].filter(Boolean).map(esc).join(' · ')}</p>
     ${ch.desc ? `<p style="margin:8px 0 0;white-space:pre-wrap">${esc(ch.desc)}</p>` : ''}
     ${d.porte ? `<div class="door">🔑 ${esc(t.door)} : ${inStay ? `<b>${esc(d.porte)}</b> <span class="meta">(${esc(t.after)} ${esc(d.hdeb)} · ${esc(t.before)} ${esc(d.hfin)})</span>` : `<span class="meta">${esc(t.doorSoon)}</span>`}</div>` : ''}

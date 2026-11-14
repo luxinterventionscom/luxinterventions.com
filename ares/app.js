@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.269.0';
+const VERSION = '2.270.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3526,8 +3526,11 @@ const stepper = (name, label, v, min = 0) => html`<div class="field"><span>${lab
 const FORMULES = { seul: 'Logement seul', pdj: 'Petit-déjeuner', demi: 'Demi-pension', complete: 'Pension complète', carte: 'À la carte (le voyageur choisit dans le menu de son app)' };
 const CH_PH = [['immeuble', '🏢 Bâtiment'], ['porte', '🚪 Porte'], ['sdb', '🛁 Salle de bain'], ['chambre', '🛏️ Chambre'], ['cuisine', '🍳 Cuisine'], ['parking', '🅿️ Parking'], ['autre', '📷 Autre']];
 const chKey = (lieu, num) => 'ch-' + (lieu === 'airbnb' ? 'airbnb' : 'hotel') + '-' + String(num || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '-');
-const CH_CAT = { eco: 'Économique', standard: 'Standard', sup: 'Supérieure', deluxe: 'Deluxe', suite: 'Suite', vip: '⭐ Suite présidentielle (VIP)' };
-const CH_TYPE = { single: '1 lit simple', double: '1 grand lit (couple)', twin: '2 lits séparés', triple: '3 lits', famille: 'Familiale (grand lit + lits enfants)', studio: 'Studio', appartement: 'Appartement', maison: 'Maison', colocation: 'Colocation' };
+// 👥 personnes selon les lits (+ canapé-lit, + lit d'appoint ; le lit bébé ne compte pas)
+const CH_BEDS = { single: 1, double: 2, twin: 2, triple: 3, famille: 4, quad: 4 };
+const chPers = (c) => +c.persMax || (CH_BEDS[c.typ] ? CH_BEDS[c.typ] + (+c.canape || 0) + (c.appoint ? 1 : 0) : 0);
+const CH_CAT = { eco: 'Économique', standard: 'Standard', sup: 'Supérieure', deluxe: 'Deluxe', junior: 'Junior suite', suite: 'Suite', vip: 'Suite présidentielle' };
+const CH_TYPE = { single: 'Single — 1 lit simple', double: 'Double — 1 grand lit', twin: 'Twin — 2 lits séparés', triple: 'Triple — grand lit + 1 lit, ou 3 lits', famille: 'Familiale — grand lit + lits superposés', quad: 'Quadruple — 2 grands lits ou 4 lits', studio: 'Studio', appartement: 'Appartement', maison: 'Maison', colocation: 'Colocation' };
 const menuKey = (lieu) => (lieu === 'airbnb' ? 'airbnbMenu' : 'hotelMenu');
 const chGet = (lieu, num) => (num ? vault.get('reglages', chKey(lieu, num)) : null) || {};
 // 📱 App des clients (Hotel / Airbnb) : réglages de l'établissement, données chiffrées publiées pour l'app, code d'accès
@@ -3755,7 +3758,7 @@ function hoteData(h, tks) {
     v: 1, kind: 'hote', gv: VERSION, lang: HOTE_LG.includes(h.langue) ? h.langue : '', lieu: h.lieu === 'airbnb' ? 'airbnb' : 'hotel',
     prenom: h.prenom || '', nom: h.nom || '', pers: h.pers || 1, arrivee: h.arrivee, depart: h.depart, hdeb: h.hdeb || '15:00', hfin: h.hfin || '11:00',
     formule: h.formule || '', pref: h.pref || '', porte: h.code && !h.codeOff ? h.code : '', cle: h.cle || '',
-    ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: ch.persMax || '', m2: ch.m2 || '', npieces: h.lieu === 'airbnb' ? ch.npieces || '' : '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
+    ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: chPers(ch) || '', lit: ch.lit || '', canape: +ch.canape || 0, appoint: !!ch.appoint, culle: !!ch.culle, vip: !!ch.vip, m2: ch.m2 || '', npieces: h.lieu === 'airbnb' ? ch.npieces || '' : '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
     st: TENANT ? { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : c.nom || tenantInfo.nom || 'LA CENTRAL', adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || soc.adresse || c.adresse || '' : soc.adresse || c.adresse || '', tel: soc.tel || c.tel || '', wa: '', logo: soc.logo || '', color: soc.color || '', pays: soc.pays || 'LU' } : { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LA CENTRAL'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '', pays: soc.pays || 'LU' },
     // 🚗 parc auto des sociétés de taxi (photos dehors / dedans), par sorte de voiture
     fleet: txCos().flatMap((co) => Object.entries(co.fleet || {}).filter(([k, x]) => FLEET_T[k] && x.n > 0).map(([k, x]) => ({ t: k, n: x.n, co: co.nom || '', ph: x.ph || {} }))),
@@ -5197,7 +5200,7 @@ function hotView(hf, acc) {
     const pres = all.filter((h) => h.arrivee <= t && h.depart > t).sort((a, b) => String(a.chambre).localeCompare(String(b.chambre), 'fr', { numeric: true }));
     const next = all.filter((h) => h.arrivee > t).sort(by), past = all.filter((h) => h.depart < t).sort((a, b) => b.depart.localeCompare(a.depart));
     const row = (h) => html`<button class="row" data-action="edit-hote" data-id="${h.id}"><span class="avatar" style="font-size:13px;font-weight:800">${h.chambre}</span>
-      <span class="grow"><span class="title" style="display:block">${h.arrivee === t ? html`<span class="arr-dot" title="Arrivée aujourd’hui"></span>` : ''}${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.pers > 1 ? html` <span class="badge">👥 ${h.pers}</span>` : ''}${(h.langues || []).length ? html` <span class="tiny muted">🗣️ ${h.langues.map((k) => k.toUpperCase()).join(' · ')}</span>` : ''}${allergTxt(h).length ? html` <span class="badge bad" title="${allergTxt(h).join(', ')}">⚠️ allergie</span>` : ''}${h.bebe ? ' 👶' : ''}</span>
+      <span class="grow"><span class="title" style="display:block">${h.arrivee === t ? html`<span class="arr-dot" title="Arrivée aujourd’hui"></span>` : ''}${h.vip ? '⭐ ' : ''}${[h.prenom, h.nom].filter(Boolean).join(' ')}${h.pers > 1 ? html` <span class="badge">👥 ${h.pers}</span>` : ''}${(h.langues || []).length ? html` <span class="tiny muted">🗣️ ${h.langues.map((k) => k.toUpperCase()).join(' · ')}</span>` : ''}${allergTxt(h).length ? html` <span class="badge bad" title="${allergTxt(h).join(', ')}">⚠️ allergie</span>` : ''}${h.bebe ? ' 👶' : ''}</span>
       <span class="meta">${h.lieu === 'airbnb' && h.adresse ? html`🏠 ${h.adresse} · ` : ''}${h.etage ? html`<span>Étage</span> ${h.etage} · ` : ''}${h.cle ? html`🪪 ${h.cle} · ` : ''}${fmtDate(h.arrivee)} → ${fmtDate(h.depart)}</span>${h.appCode && h.arrivee >= t ? html`<span class="tiny" style="display:block">${!h.arr ? '❓ Arrivée pas encore choisie' : h.arr.mode === 'taxi' ? `🚕 Taxi${h.taxi ? (h.taxi.st === 'wait' ? ' · ⏳ ' + h.taxi.nom : h.taxi.st === 'no' ? ' · ❌ ' + h.taxi.nom : ' · ' + h.taxi.nom) : ' demandé'}` : '🚗 Vient par ses propres moyens'}</span>` : ''}${hoteKey(h) ? html`<span style="display:block;margin-top:4px"><span class="badge ${hoteKey(h).k}">🔑 ${hoteKey(h).h}</span></span>` : ''}</span><span class="chev">›</span></button>`;
     const sec = (title, list, empty) => html`<div class="section-label">${title}</div>${list.length ? html`<div class="list">${list.map(row)}</div>` : html`<p class="small muted" style="margin:0 0 12px">${empty}</p>`}`;
     // 🏨 centrale d'un hôtel / Airbnb : l'Accueil par secteurs (titre gris + explication), comme le bureau de LA CENTRAL
@@ -5269,7 +5272,7 @@ function chList(hf, pres) {
     ${list.length ? html`<div class="list">${list.map((c) => { const g = pres.find((h) => String(h.chambre).trim().toLowerCase() === String(c.num).trim().toLowerCase()), np = Object.keys(c.ph || {}).length;
       return html`<button class="row" data-action="edit-chambre" data-id="${c.id}"><span class="avatar" style="font-size:13px;font-weight:800">${c.num}</span>
         <span class="grow"><span class="title" style="display:block">${[CH_CAT[c.cat], CH_TYPE[c.typ]].filter(Boolean).join(' · ') || (bnb ? 'Logement' : 'Chambre')}</span>
-        <span class="meta">${c.persMax ? html`👥 ${c.persMax} · ` : ''}${c.m2 ? html`${c.m2} m² · ` : ''}${c.etage ? html`<span>Étage</span> ${c.etage} · ` : ''}📷 ${np}/7${np < 6 ? html` <span class="amber">⚠️</span>` : ''}</span></span>
+        <span class="meta">${c.vip ? '⭐ VIP · ' : ''}${chPers(c) ? html`👥 ${chPers(c)} · ` : ''}${c.lit ? html`🛏️ ${c.lit} cm · ` : ''}${+c.canape ? '🛋️ · ' : ''}${c.culle ? '👶 · ' : ''}${c.m2 ? html`${c.m2} m² · ` : ''}${c.etage ? html`<span>Étage</span> ${c.etage} · ` : ''}📷 ${np}/7${np < 6 ? html` <span class="amber">⚠️</span>` : ''}</span></span>
         <span class="badge ${g ? 'warn' : 'ok'}">${g ? '🔴 ' + [g.prenom, g.nom].filter(Boolean).join(' ') : '🟢 Libre'}</span></button>`; })}</div>`
     : html`<p class="small muted" style="margin:0 0 12px">${bnb ? 'Aucun logement. ＋ Logement : type, personnes, m², photos, présentation pour vos clients.' : 'Aucune chambre. ＋ Chambre : catégorie, type, personnes, m², photos, présentation pour vos clients.'}</p>`}`;
 }
@@ -8147,6 +8150,7 @@ const SHEETS = {
         <label class="field">Composition<select name="compo">${Object.entries(COMPO).map(([k, l]) => html`<option value="${k}" ${(h.compo || (h.pers > 2 ? 'famille' : h.pers === 2 ? 'couple' : 'seul')) === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
         ${stepper('adultes', 'Adultes', h.adultes ?? Math.max(1, (h.pers || 1) - (h.enfants || 0) - (h.bebe ? 1 : 0)), 1)}${stepper('enfants', 'Enfants', h.enfants || 0)}
         <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="bebe" ${h.bebe ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">👶 Bébé (lit bébé)</label>
+        <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="vip" ${h.vip ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">⭐ Voyageur VIP</label>
         ${field('Arrivée', 'arrivee', h.arrivee, { type: 'date', required: true })}${field('Départ', 'depart', h.depart, { type: 'date', required: true })}
         ${html`<label class="field full">Formule<select name="formule">${Object.entries(FORMULES).map(([k, l]) => html`<option value="${k}" ${(h.formule || 'seul') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>`}
         ${bnb ? (() => { const x = h.prix || {}; return html`<div class="full section-label" style="margin:6px 0 0">💶 Prix du séjour — visible dans l’app du client</div>
@@ -8166,7 +8170,7 @@ const SHEETS = {
         ${(() => { const L = chambres(h.lieu), occ = (c) => vault.list('hotes').find((x) => x.id !== id && x.lieu === h.lieu && String(x.chambre).trim().toLowerCase() === String(c.num).trim().toLowerCase() && x.arrivee < h.depart && h.arrivee < x.depart);
           if (!L.length) return html`${field(bnb ? 'N° / nom du logement' : 'N° de chambre', 'chambre', h.chambre, { required: true, placeholder: bnb ? 'ex. Appart 3' : 'ex. 204' })}<p class="tiny muted full" style="margin:0">💡 Créez ${bnb ? 'vos logements' : 'vos chambres'} une fois pour toutes (menu ${bnb ? '🏠 Logements' : '🛏️ Chambres'} → ＋) : m², photos et présentation suivent chaque voyageur.</p>`;
           const has = L.some((c) => String(c.num) === String(h.chambre));
-          return html`<label class="field full">${bnb ? 'Logement' : 'Chambre'} <span class="tiny muted">(🟢 libre aux dates choisies)</span><select name="chambre" required><option value="">—</option>${h.chambre && !has ? html`<option value="${h.chambre}" selected>${h.chambre}</option>` : ''}${L.map((c) => { const o = occ(c); return html`<option value="${c.num}" ${String(h.chambre) === String(c.num) ? new Raw('selected') : ''}>${o ? '🔴' : '🟢'} ${c.num}${c.cat ? ' · ' + (CH_CAT[c.cat] || '') : ''}${c.typ ? ' · ' + (CH_TYPE[c.typ] || '') : ''}${c.persMax ? ' · 👥 ' + c.persMax : ''}${c.m2 ? ' · ' + c.m2 + ' m²' : ''}${o ? ' — occupé : ' + [o.prenom, o.nom].filter(Boolean).join(' ') : ''}</option>`; })}</select></label>`; })()}
+          return html`<label class="field full">${bnb ? 'Logement' : 'Chambre'} <span class="tiny muted">(🟢 libre aux dates choisies)</span><select name="chambre" required><option value="">—</option>${h.chambre && !has ? html`<option value="${h.chambre}" selected>${h.chambre}</option>` : ''}${L.map((c) => { const o = occ(c); return html`<option value="${c.num}" ${String(h.chambre) === String(c.num) ? new Raw('selected') : ''}>${o ? '🔴' : '🟢'} ${c.num}${c.cat ? ' · ' + (CH_CAT[c.cat] || '') : ''}${c.typ ? ' · ' + (CH_TYPE[c.typ] || '') : ''}${c.vip ? ' · ⭐ VIP' : ''}${chPers(c) ? ' · 👥 ' + chPers(c) : ''}${c.m2 ? ' · ' + c.m2 + ' m²' : ''}${o ? ' — occupé : ' + [o.prenom, o.nom].filter(Boolean).join(' ') : ''}</option>`; })}</select></label>`; })()}
         <div class="full hote-door fields" style="background:#fdf3d7;border:1px solid #efd9a0;border-radius:14px;padding:12px 14px;margin:6px 0 0">
           <div class="full section-label" style="margin:0;color:#8a5a00">🔑 CODE DE LA PORTE <span class="tiny muted">— ouvre ${bnb ? 'le logement' : 'la chambre'} (pas l’app)</span></div>
           ${id && hoteKey(h) ? (() => { const k = hoteKey(h); return html`<div class="full" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="kdot" style="width:12px;height:12px;border-radius:50%;flex:none;background:${k.k === 'ok' ? '#16a34a' : k.k === 'warn' ? '#9ca3af' : '#dc2626'}"></span><span class="small">${k.h}</span></div>`; })() : ''}
@@ -8713,7 +8717,7 @@ const SHEETS = {
   'chambre-form'({ id, preset }) {
     const c = id ? vault.get('reglages', id) : { lieu: preset === 'airbnb' || ui.route === 'airbnb' ? 'airbnb' : 'hotel' };
     if (id && !c) return null;
-    const bnb = c.lieu === 'airbnb', types = bnb ? ['studio', 'appartement', 'maison', 'colocation'] : ['single', 'double', 'twin', 'triple', 'famille'];
+    const bnb = c.lieu === 'airbnb', types = bnb ? ['studio', 'appartement', 'maison', 'colocation'] : ['single', 'double', 'twin', 'triple', 'famille', 'quad'];
     const outs = id ? vault.list('hotes').filter((h) => h.lieu === c.lieu && String(h.chambre).trim().toLowerCase() === String(c.num).trim().toLowerCase() && h.edlOut && Object.keys(h.edlOut.ph || {}).length).sort((a, b) => b.depart.localeCompare(a.depart)).slice(0, 5) : [];
     setTimeout(() => hydrateBiens(sheetEl), 0);
     return {
@@ -8725,7 +8729,12 @@ const SHEETS = {
         ${bnb ? field('Adresse', 'adresse', c.adresse, { full: true, placeholder: 'rue, n°, ville' }) : ''}
         ${bnb ? '' : html`<label class="field">Catégorie<select name="cat"><option value="">—</option>${Object.entries(CH_CAT).map(([k, l]) => html`<option value="${k}" ${c.cat === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>`}
         <label class="field">${bnb ? 'Type' : 'Lits'}<select name="typ"><option value="">—</option>${types.map((k) => html`<option value="${k}" ${c.typ === k ? new Raw('selected') : ''}>${CH_TYPE[k]}</option>`)}</select></label>
-        ${field('Personnes (max.)', 'persMax', c.persMax, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' })}${field('Surface (m²)', 'm2', c.m2, { attrs: 'inputmode="decimal"' })}
+        ${bnb ? '' : html`<label class="field">Taille du grand lit<select name="lit">${[['', '—'], ['90', '90 cm (une place)'], ['120', '120 cm'], ['140', '140 cm'], ['160', '160 cm'], ['180', '180 cm']].map(([k, l]) => html`<option value="${k}" ${String(c.lit || '') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+          <label class="field">🛋️ Canapé-lit<select name="canape">${[['0', 'Non'], ['1', 'Oui, +1 personne'], ['2', 'Oui, +2 personnes']].map(([k, l]) => html`<option value="${k}" ${String(c.canape || 0) === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+          <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="appoint" ${c.appoint ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">➕ Lit d’appoint sur demande (+1)</label>
+          <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="culle" ${c.culle ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">👶 Lit bébé disponible</label>
+          <label class="field full" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="vip" ${c.vip ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">⭐ Chambre VIP <span class="tiny muted">(décor, qualité, taille — en plus de la catégorie)</span></label>`}
+        ${field('Personnes (max.) — vide = calcul selon les lits', 'persMax', c.persMax, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' })}${field('Surface (m²)', 'm2', c.m2, { attrs: 'inputmode="decimal"' })}
         ${c.lieu === 'airbnb' ? field('Nombre de pièces (ex. studio : 1, appartement : 3)', 'npieces', c.npieces, { type: 'number', attrs: 'min="1" max="30" inputmode="numeric"' }) : ''}
         <label class="field full">Présentation pour vos clients (visible dans leur app)<textarea name="desc" style="min-height:80px" placeholder="${bnb ? 'ex. Appartement lumineux, cuisine équipée, wifi, parking privé…' : 'ex. Chambre calme côté jardin, lit 160, douche à l’italienne, wifi…'}">${c.desc || ''}</textarea></label>
         <div class="full section-label" style="margin:6px 0 0">📋 État des lieux — photos d’entrée (7)</div>
@@ -11901,7 +11910,7 @@ const FORMS = {
       const f = fd.get('ph_' + k);
       if (f && f.size && f.type.startsWith('image/')) { const pid = uid(); await vault.saveFile(pid, await compressPhoto(f)); if (ph[k]) dels.push(ph[k]); ph[k] = pid; }
     }
-    await vault.mutate((tx) => tx.put('reglages', { ...c, id: ck, lieu, num, etage: g('etage'), adresse: g('adresse'), cat: g('cat'), typ: g('typ'), persMax: g('persMax'), m2: g('m2').replace(',', '.'), npieces: fd.has('npieces') ? g('npieces') : c.npieces || '', desc: g('desc'), ph }), lieu === 'airbnb' ? 'Fiche du logement' : 'Fiche de la chambre', num);
+    await vault.mutate((tx) => tx.put('reglages', { ...c, id: ck, lieu, num, etage: g('etage'), adresse: g('adresse'), cat: g('cat'), typ: g('typ'), persMax: g('persMax'), ...(lieu === 'hotel' ? { lit: g('lit'), canape: Math.max(0, Math.min(2, +g('canape') || 0)), appoint: !!fd.get('appoint'), culle: !!fd.get('culle'), vip: !!fd.get('vip') } : {}), m2: g('m2').replace(',', '.'), npieces: fd.has('npieces') ? g('npieces') : c.npieces || '', desc: g('desc'), ph }), lieu === 'airbnb' ? 'Fiche du logement' : 'Fiche de la chambre', num);
     for (const x of dels) await vault.deleteFile(x).catch(() => {});
     toast(Object.keys(ph).length < 6 ? 'Enregistré — 📷 6 photos minimum conseillées' : 'Enregistré');
     goBack();
@@ -11910,7 +11919,7 @@ const FORMS = {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
     const rec = { lieu: g('lieu') === 'airbnb' ? 'airbnb' : 'hotel', adresse: g('adresse'), pays: g('pays'), formule: g('formule'), pref: g('pref'), appCode: g('appCode'), prenom: g('prenom'), nom: g('nom'), tel: g('tel'), mail: g('mail'), langue: g('langue') || 'fr', langues: fd.getAll('langues').filter((k) => LG_ALL[k]).slice(0, 12),
-      compo: COMPO[g('compo')] ? g('compo') : 'seul', adultes: Math.max(1, Math.min(20, parseInt(g('adultes'), 10) || 1)), enfants: Math.max(0, Math.min(20, parseInt(g('enfants'), 10) || 0)), bebe: !!fd.get('bebe'),
+      compo: COMPO[g('compo')] ? g('compo') : 'seul', adultes: Math.max(1, Math.min(20, parseInt(g('adultes'), 10) || 1)), enfants: Math.max(0, Math.min(20, parseInt(g('enfants'), 10) || 0)), bebe: !!fd.get('bebe'), vip: !!fd.get('vip'),
       allerg: fd.getAll('allerg').filter((k) => ALLERG[k]), allergAutre: g('allergAutre').slice(0, 200), allergCh: fd.getAll('allergCh').filter((k) => ALLERG_CH[k]), allergChAutre: g('allergChAutre').slice(0, 200), regime: fd.getAll('regime').filter((k) => REGIME[k]), dej: g('dej').slice(0, 300), dejOu: REPAS_OU[g('dejOu')] ? g('dejOu') : 'resto', din: g('din').slice(0, 300), dinOu: REPAS_OU[g('dinOu')] ? g('dinOu') : 'resto',
       chambre: g('chambre'), etage: g('etage'), cle: g('cle'), arrivee: g('arrivee'), depart: g('depart'), notes: g('notes'),
       code: g('code'), codeOff: fd.get('codeOff') === '1' };
