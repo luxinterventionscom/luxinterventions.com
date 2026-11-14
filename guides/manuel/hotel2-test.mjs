@@ -22,9 +22,15 @@ await act(q, 'new-chambre', { lieu: 'hotel' }); await q.waitForTimeout(700);
 await q.fill('#f [name=num]', '101'); await q.fill('#f [name=m2]', '22'); await q.selectOption('#f [name=typ]', 'double'); await q.selectOption('#f [name=canape]', '1'); await q.check('#f [name=vip]'); await q.fill('#f [name=prix]', '120'); await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2000);
 { const v = await q.$eval('#view', (e) => e.innerText); assert(/101/.test(v) && /👥 3/.test(v) && /VIP/.test(v), 'chambre 101 : Double + canapé = 👥 3, ⭐ VIP — ' + v.slice(0, 300)); }
 await act(q, 'svc-new', { lieu: 'hotel' }); await q.waitForTimeout(700);
-await q.check('#f [name=ts][value=spa]'); await q.check('#f [name=ts][value=sauna]'); await q.selectOption('#f [name=p_spa_s0_pub]', 'f'); await q.fill('#f [name=p_spa_s0_h1]', '09:00'); await q.fill('#f [name=p_spa_s0_h2]', '21:00'); await q.check('#f [name=p_spa_s0_j][value="0"]'); await q.check('#f [name=p_spa_maint]'); await q.check('#f [name=p_sauna_h24]'); await q.setInputFiles('#f [name=ph_0]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname);
+await q.selectOption('#f [name=t]', 'spa'); await q.selectOption('#f [name=loc]', 'int');
+await q.selectOption('#f [name=s0_g]', 'f'); await q.selectOption('#f [name=s0_h1_h]', '09'); await q.selectOption('#f [name=s0_h2_h]', '12'); await q.selectOption('#f [name=s0_h2_ap]', 'PM'); await q.check('#f [name=s0_j][value="0"]'); await q.fill('#f [name=s0_px]', '25');
+await q.selectOption('#f [name=m_on]', '1'); await q.check('#f [name=m_nv]'); await q.fill('#f [name=prix]', '10'); await q.selectOption('#f [name=cur]', 'EUR');
+await q.setInputFiles('#f [name=ph_0]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname);
+await q.click('button[type=submit][form=f]'); await q.waitForTimeout(1500);
+assert(await q.$('#f [name=s0_g]'), 'service : bloqué avec moins de 3 photos');
+await q.setInputFiles('#f [name=ph_1]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname); await q.setInputFiles('#f [name=ph_2]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname);
 await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2500);
-{ const v = await q.$eval('#view', (e) => e.innerText); assert(/Spa/.test(v) && /maintenance/i.test(v) && /1\/3/.test(v) && /120/.test(v), 'service Spa (1 photo) + prix 120 €'); }
+{ const v = await q.$eval('#view', (e) => e.innerText); assert(/Spa/.test(v) && /maintenance/i.test(v) && /9:00 AM–12:00 PM/.test(v) && /120/.test(v), 'service Spa + prix chambre 120 — ' + v.slice(-300)); }
 await q.evaluate(() => { location.hash = '#/hotel'; }); await q.waitForTimeout(1200);
 assert(!(await q.$('#view [data-action=new-chambre]')), 'Voyageurs : plus de ＋ Chambre');
 await act(q, 'new-hote'); await q.waitForTimeout(800);
@@ -38,7 +44,7 @@ const c3 = await phone(b, 'it'), g = await c3.newPage(); g.on('pageerror', (e) =
 await g.goto('http://localhost:8765/hote.html'); await g.waitForTimeout(1200); await g.fill('input[name=code]', app); await g.click('form button[type=submit]'); await g.waitForTimeout(3500);
 assert(await g.$('#gpForm'), 'app : cadre ✍️ allergies');
 assert(/servizi|services/i.test(await g.evaluate(() => document.body.innerText)) && await g.$('[data-fk=svc] img[data-f]'), 'app : 🏨 services avec photo');
-{ const t = await g.evaluate(() => document.querySelector('[data-fk=svc]').innerText); assert(/manutenzione/i.test(t) && /09:00–21:00/.test(t) && /Lu/.test(t) && /Donne/.test(t) && /24 ore/.test(t), 'app : service fermé pour maintenance, 09:00–21:00, Lu — ' + t); }
+{ const t = await g.evaluate(() => document.querySelector('[data-fk=svc]').innerText); assert(/manutenzione/i.test(t) && /nuovo avviso/.test(t) && /9:00 AM – 12:00 PM/.test(t) && /Lu/.test(t) && /Donne/.test(t) && /Ingresso esterni 25/.test(t) && /interna/.test(t), 'app : service fermé pour maintenance, 09:00–21:00, Lu — ' + t); }
 await g.check('#gpForm [name=allerg][value=gluten]'); await g.fill('#gpForm [name=autre]', 'Oreiller ferme');
 await g.click('[data-gp-send]'); await g.waitForTimeout(2500);
 await relog(q, CPASS);
