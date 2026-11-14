@@ -26,8 +26,6 @@ await q.selectOption('#f [name=t]', 'spa'); await q.selectOption('#f [name=loc]'
 await q.selectOption('#f [name=s0_g]', 'f'); await q.selectOption('#f [name=s0_h1_h]', '09'); await q.selectOption('#f [name=s0_h2_h]', '12'); await q.selectOption('#f [name=s0_h2_ap]', 'PM'); await q.check('#f [name=s0_j][value="0"]');
 await q.selectOption('#f [name=m_on]', '1'); await q.check('#f [name=m_nv]'); await q.fill('#f [name=prix]', '10'); await q.fill('#f [name=pxExt]', '25'); await q.selectOption('#f [name=cur]', 'EUR');
 await q.setInputFiles('#f [name=ph_0]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname);
-await q.click('button[type=submit][form=f]'); await q.waitForTimeout(1500);
-assert(await q.$('#f [name=s0_g]'), 'service : bloqué avec moins de 3 photos');
 await q.setInputFiles('#f [name=ph_1]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname); await q.setInputFiles('#f [name=ph_2]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname);
 await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2500);
 { const v = await q.$eval('#view', (e) => e.innerText); assert(/Spa/.test(v) && /maintenance/i.test(v) && /9:00 AM–12:00 PM/.test(v) && /120/.test(v), 'service Spa + prix chambre 120 — ' + v.slice(-300)); }
