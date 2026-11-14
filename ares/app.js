@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.278.0';
+const VERSION = '2.279.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3536,7 +3536,7 @@ const SVC_SYM = { EUR: '€', USD: '$', BTC: '₿', USDT: 'USDT', USDC: 'USDC' }
 // anciennes fiches (cases à cocher, créneaux par service) → fiche actuelle : 1 service, créneaux (genre, jours, heures, entrée non-résidents), maintenance, prix
 const svcOldTs = (x) => (x.ts && x.ts.length ? x.ts : x.t ? [x.t] : []);
 function svcNorm(x) {
-  if (x.v === 2) return x;
+  if (x.v === 2) { const z = (x.sl || []).find((y) => y.px !== '' && y.px != null); return x.pxExt == null && z ? { ...x, pxExt: z.px } : x; } // entrée non-résidents : avant par créneau, maintenant un seul prix
   const t0 = svcOldTs(x)[0] || 'autre', P = (x.per || {})[t0] || { maint: x.maint, maintAu: x.maintAu, sl: x.h1 ? [{ pub: 'tous', j: x.jours || [], h1: x.h1, h2: x.h2 }] : [] };
   return { ...x, v: 2, t: /^piscine/.test(t0) ? 'piscine' : SVC_T[t0] ? t0 : 'autre', loc: t0 === 'piscine_in' ? 'int' : t0 === 'piscine_out' ? 'ext' : '',
     sl: (P.sl || []).map((z) => ({ g: z.pub === 'f' ? 'f' : z.pub === 'h' ? 'h' : 'mixte', j: z.j || [], h1: z.h1 || '', h2: z.h2 || '', px: '' })), m: { on: !!P.maint, du: '', au: P.maintAu || '', nv: false }, prix: x.prix || '', cur: 'EUR', inc: !!x.inclus };
@@ -3781,7 +3781,7 @@ function hoteData(h, tks) {
     // 🚗 parc auto des sociétés de taxi (photos dehors / dedans), par sorte de voiture
     fleet: txCos().flatMap((co) => Object.entries(co.fleet || {}).filter(([k, x]) => FLEET_T[k] && x.n > 0).map(([k, x]) => ({ t: k, n: x.n, co: co.nom || '', ph: x.ph || {} }))),
     gp: h.gp || null,
-    svc: svcs(h.lieu).map(svcNorm).map((x) => ({ t: x.t, loc: x.loc || '', nom: x.nom || '', sl: x.sl || [], m: svcMaint(x.m) ? x.m : null, prix: x.prix === '' ? '' : +x.prix, cur: x.cur || 'EUR', inc: !!x.inc, desc: x.desc || '', ph: (x.ph || []).slice(0, 6) })),
+    svc: svcs(h.lieu).map(svcNorm).map((x) => ({ t: x.t, loc: x.loc || '', nom: x.nom || '', sl: x.sl || [], m: svcMaint(x.m) ? x.m : null, prix: x.prix === '' ? '' : +x.prix, pxExt: x.pxExt === '' || x.pxExt == null ? '' : +x.pxExt, cur: x.cur || 'EUR', inc: !!x.inc, desc: x.desc || '', ph: (x.ph || []).slice(0, 6) })),
     meal: { allerg: h.allerg || [], allergAutre: h.allergAutre || '', allergCh: h.allergCh || [], allergChAutre: h.allergChAutre || '', regime: h.regime || [], dej: h.dej || '', dejOu: h.dejOu || '', din: h.din || '', dinOu: h.dinOu || '', room: c.roomSvc && c.roomSvc !== 'non' ? { svc: c.roomSvc, pct: c.roomPct || 0, deliv: !!c.roomDeliv } : null },
     menu: menu && menu.file ? menu.file : '', taxi: { pc: +c.txPc || 0, km: +c.txKm || 0, aero: +c.txAero || 0, gare: +c.txGare || 0, on: !!TENANT || !!(c.drivers || []).length || !!chaufs().length || !!txOffers().gam.length, ...txOffers() },
     rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, done: !!(r.taxi && r.taxi.done), rated: r.taxi && r.taxi.rate ? r.taxi.rate.s : 0, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
@@ -8734,7 +8734,7 @@ const SHEETS = {
   'svc-form'({ id, preset }) {
     const x0 = id ? vault.get('reglages', id) : { lieu: preset === 'airbnb' ? 'airbnb' : 'hotel', v: 2, t: 'piscine', sl: [], m: {}, cur: 'EUR', ph: [] };
     if (id && !x0) return null;
-    const x = svcNorm(x0), sl = [...(x.sl || []), {}, {}, {}, {}].slice(0, 4), m = x.m || {};
+    const x = svcNorm(x0), sl = [...(x.sl || []), { g: 'mixte' }, { g: 'h' }, { g: 'f' }].slice(0, 3), m = x.m || {};
     setTimeout(() => hydrateBiens(sheetEl), 0);
     // 🇮🇹 sections en couleurs pastel (lisibles aussi en mode sombre)
     const box = (c, t, body) => html`<div class="full fields" style="background:${c};border:1px solid rgba(0,0,0,.05);border-radius:16px;padding:12px 14px;margin:0"><div class="full" style="font-variant:small-caps;letter-spacing:.08em;font-weight:700;opacity:.75">${t}</div>${body}</div>`;
@@ -8745,14 +8745,13 @@ const SHEETS = {
       title: id ? x.nom || svcLbl(x) : '🏨 Nouveau service', narrow: true,
       body: html`<form id="f" data-form="svc" class="fields" style="gap:12px"><input type="hidden" name="id" value="${id || ''}"><input type="hidden" name="lieu" value="${x.lieu}">
         ${box('rgba(59,130,246,.10)', '🏷️ Service', html`<label class="field">Type de service${sel('t', SVC_T, x.t)}</label><label class="field">Intérieur / extérieur${sel('loc', SVC_LOC, x.loc || '')}</label>${field('Nom (facultatif)', 'nom', x.nom, { full: true, placeholder: 'ex. Spa « Les Thermes »' })}`)}
-        ${box('rgba(16,185,129,.10)', '🕒 Horaires, jours et genre', html`<p class="tiny muted full" style="margin:0">Une ligne par créneau (ex. hommes le matin, femmes l’après-midi). Jours non cochés = fermé ces jours-là ; rien coché = tous les jours. Lignes vides ignorées.</p>
+        ${box('rgba(16,185,129,.10)', '🕒 Horaires, jours et genre', html`<p class="tiny muted full" style="margin:0">Mixte, hommes, femmes : une ligne chacun. Jours non cochés = fermé ces jours-là ; rien coché = tous les jours. Ligne sans heures = pas ouvert pour ce genre.</p>
           ${sl.map((z, i) => html`<div class="full" style="background:rgba(255,255,255,.55);border-radius:12px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
             ${sel(`s${i}_g`, SVC_G, z.g || 'mixte')} <span class="small">de</span> ${hm(`s${i}_h1`, z.h1)} <span class="small">à</span> ${hm(`s${i}_h2`, z.h2)}
-            <span style="display:flex;flex-wrap:wrap;gap:4px">${SEMAINE.map((d, j) => html`<label class="tiny" style="display:inline-flex;gap:2px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:2px 7px;cursor:pointer"><input type="checkbox" name="s${i}_j" value="${j}" ${(z.j || []).includes(j) ? new Raw('checked') : ''}>${d.slice(0, 2)}</label>`)}</span>
-            <label class="small" style="display:inline-flex;gap:4px;align-items:center">🎟️ Entrée non-résidents <input name="s${i}_px" value="${z.px ?? ''}" inputmode="decimal" style="width:80px" placeholder="0"> ${SVC_SYM[x.cur] || '€'}</label></div>`)}`)}
-        ${box('rgba(239,68,68,.08)', '🔧 Maintenance', html`<label class="field">État${sel('m_on', { '': 'Ouvert (on)', 1: '🔧 Fermé pour maintenance (off)' }, m.on ? '1' : '')}</label>${field('Du', 'm_du', m.du, { type: 'date' })}${field('Au', 'm_au', m.au, { type: 'date' })}
+            <span style="display:flex;flex-wrap:wrap;gap:4px">${SEMAINE.map((d, j) => html`<label class="tiny" style="display:inline-flex;gap:2px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:2px 7px;cursor:pointer"><input type="checkbox" name="s${i}_j" value="${j}" ${(z.j || []).includes(j) ? new Raw('checked') : ''}>${d.slice(0, 2)}</label>`)}</span></div>`)}`)}
+        ${box('rgba(239,68,68,.08)', '🔧 Maintenance de ce service', html`<label class="field">État${sel('m_on', { '': 'Ouvert (on)', 1: '🔧 Fermé pour maintenance (off)' }, m.on ? '1' : '')}</label>${field('Du', 'm_du', m.du, { type: 'date' })}${field('Au', 'm_au', m.au, { type: 'date' })}
           <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="m_nv" ${m.nv ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">Jusqu’à nouvel avis</label>`)}
-        ${box('rgba(234,179,8,.13)', '💶 Prix pour nos voyageurs', html`${field('Prix', 'prix', x.prix, { attrs: 'inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"' })}<label class="field">Monnaie${sel('cur', SVC_CUR, x.cur || 'EUR')}</label><label class="field">Dans le séjour${sel('inc', { '': 'Non inclus', 1: 'Inclus' }, x.inc ? '1' : '')}</label>
+        ${box('rgba(234,179,8,.13)', '💶 Prix', html`${field('Prix voyageurs (nos clients)', 'prix', x.prix, { attrs: 'inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"' })}${field('🎟️ Entrée non-résidents (externes)', 'pxExt', x.pxExt, { attrs: 'inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"' })}<label class="field">Monnaie${sel('cur', SVC_CUR, x.cur || 'EUR')}</label><label class="field">Dans le séjour${sel('inc', { '': 'Non inclus', 1: 'Inclus' }, x.inc ? '1' : '')}</label>
           <p class="tiny muted full" style="margin:0">Crypto : le voyageur demande les détails à l’accueil.</p>`)}
         ${box('rgba(139,92,246,.09)', 'ℹ️ Informations du service', html`<label class="field full"><textarea name="desc" style="min-height:80px" placeholder="ex. Piscine chauffée à 28 °C, peignoirs fournis, bonnet obligatoire…">${x.desc || ''}</textarea></label>`)}
         ${box('rgba(249,115,22,.09)', '📷 Photos du service — 3 minimum', html`<div class="full ch-ph">${[0, 1, 2, 3, 4, 5].map((i) => html`<label class="ch-slot">${(x.ph || [])[i] ? html`<img data-bph="${x.ph[i]}" alt="">` : html`<span class="ch-empty">＋</span>`}<span class="tiny">Photo ${i + 1}${i < 3 ? ' *' : ''}</span><input type="file" name="ph_${i}" accept="image/*"></label>`)}</div>`)}
@@ -11965,9 +11964,9 @@ const FORMS = {
     if (n < 3) return toast('📷 3 photos minimum pour ce service', { bad: true });
     const dels = [];
     for (const [i, f] of add) { const pid = uid(); await vault.saveFile(pid, await compressPhoto(f)); if (ph[i]) dels.push(ph[i]); ph[i] = pid; }
-    const sl = [0, 1, 2, 3].map((i) => ({ g: SVC_G[g(`s${i}_g`)] ? g(`s${i}_g`) : 'mixte', j: fd.getAll(`s${i}_j`).map(Number).filter((j) => j >= 0 && j < 7), h1: t24(`s${i}_h1`), h2: t24(`s${i}_h2`), px: nb(g(`s${i}_px`)) })).filter((z) => z.h1 && z.h2);
+    const sl = [0, 1, 2].map((i) => ({ g: SVC_G[g(`s${i}_g`)] ? g(`s${i}_g`) : 'mixte', j: fd.getAll(`s${i}_j`).map(Number).filter((j) => j >= 0 && j < 7), h1: t24(`s${i}_h1`), h2: t24(`s${i}_h2`) })).filter((z) => z.h1 && z.h2);
     const rec = { id: id || 'svc-' + lieu + '-' + uid(), lieu, v: 2, t: SVC_T[g('t')] ? g('t') : 'autre', loc: SVC_LOC[g('loc')] ? g('loc') : '', nom: g('nom').slice(0, 80), sl,
-      m: { on: g('m_on') === '1', du: g('m_du'), au: g('m_au'), nv: !!fd.get('m_nv') }, prix: nb(g('prix')), cur: SVC_CUR[g('cur')] ? g('cur') : 'EUR', inc: g('inc') === '1', desc: g('desc').slice(0, 800), ph: ph.filter(Boolean).slice(0, 6) };
+      m: { on: g('m_on') === '1', du: g('m_du'), au: g('m_au'), nv: !!fd.get('m_nv') }, prix: nb(g('prix')), pxExt: nb(g('pxExt')), cur: SVC_CUR[g('cur')] ? g('cur') : 'EUR', inc: g('inc') === '1', desc: g('desc').slice(0, 800), ph: ph.filter(Boolean).slice(0, 6) };
     await vault.mutate((tx) => tx.put('reglages', rec), id ? 'Service modifié' : 'Nouveau service', rec.nom || svcLbl(rec));
     for (const x of dels) await vault.deleteFile(x).catch(() => {});
     toast('Service enregistré'); goBack(); hotesSync();
