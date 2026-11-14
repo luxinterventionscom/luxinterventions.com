@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.276.0';
+const VERSION = '2.277.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -8728,6 +8728,8 @@ const SHEETS = {
     return {
       title: id ? x.nom || svcLbl(x) || 'Service' : '🏨 Nouveau service', narrow: true,
       body: html`<form id="f" data-form="svc" class="fields"><input type="hidden" name="id" value="${id || ''}"><input type="hidden" name="lieu" value="${x.lieu}">
+        <div class="full section-label" style="margin:0">📷 Photos (3 maximum)</div>
+        <div class="full ch-ph">${[0, 1, 2].map((i) => html`<label class="ch-slot">${(x.ph || [])[i] ? html`<img data-bph="${x.ph[i]}" alt="">` : html`<span class="ch-empty">＋</span>`}<span class="tiny">Photo ${i + 1}</span><input type="file" name="ph_${i}" accept="image/*"></label>`)}</div>
         <style>.svc-x{display:none}.svc-it:has(> label input:checked) .svc-x{display:grid}</style>
         <div class="full"><b class="small">Service</b> <span class="tiny muted">(cochez tout ce qui va ensemble : ex. 2 piscines, spa + sauna — chacun a ses horaires)</span>
         ${Object.entries(SVC_T).map(([k, l]) => { const P = svcPer(x)[k] || {}, sl = [...(P.sl || []), {}, {}, {}].slice(0, 3);
@@ -8746,8 +8748,6 @@ const SHEETS = {
         <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="inclus" ${x.inclus ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">🆓 Inclus dans le séjour</label>
         ${field('💶 Prix si payant (€)', 'prix', x.prix, { attrs: 'inputmode="decimal"' })}
         <label class="field full">Présentation (visible dans l’app du voyageur)<textarea name="desc" style="min-height:70px" placeholder="ex. Piscine chauffée à 28 °C, peignoirs fournis…">${x.desc || ''}</textarea></label>
-        <div class="full section-label" style="margin:6px 0 0">📷 Photos (3 maximum)</div>
-        <div class="full ch-ph">${[0, 1, 2].map((i) => html`<label class="ch-slot">${(x.ph || [])[i] ? html`<img data-bph="${x.ph[i]}" alt="">` : html`<span class="ch-empty">＋</span>`}<span class="tiny">Photo ${i + 1}</span><input type="file" name="ph_${i}" accept="image/*"></label>`)}</div>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="svc-del" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
