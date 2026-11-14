@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.283.0';
+const VERSION = '2.284.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4570,7 +4570,7 @@ function sideNavHtml() {
 }
 function navItem([id, label, ic, plus, sec], sub) {
   // 🏨 centrale hôtel / Airbnb : Accueil · Maintenance · Clients · Taxi · Comptabilité · Réglages
-  if (TENANT && ['hotel', 'airbnb'].includes(tenantInfo.fil)) label = { demandes: 'Maintenance', hotel: 'Voyageurs', airbnb: 'Voyageurs', chambres: tenantInfo.fil === 'airbnb' ? 'Logements' : 'Chambres', taxis: 'Taxi / Chauffeurs' }[id] || label;
+  if (TENANT && ['hotel', 'airbnb'].includes(tenantInfo.fil)) label = { demandes: 'Maintenance', hotel: 'Voyageurs', airbnb: 'Voyageurs', chambres: tenantInfo.fil === 'airbnb' ? 'Logements + services' : 'Chambres + services', taxis: 'Taxi / Chauffeurs' }[id] || label;
   else if (TENANT && tenantInfo.fil === 'taxi') label = { taxis: 'Chauffeurs', parc: 'Parc auto', compta: 'Comptabilité & statistiques' }[id] || label;
   else if (TENANT && id === 'taxis') label = 'Taxis';
   if (masked().has(id)) return html`<span class="navbtn nav-masked${sub ? ' nav-sub' : ''}" aria-disabled="true" title="Masqué dans les réglages">${icon('lock')}<span>MASQUÉ</span></span>`;
@@ -6367,10 +6367,10 @@ dashboard() {
   chambres() {
     const hf = TENANT && tenantInfo.fil === 'airbnb' ? 'airbnb' : 'hotel', t = today(), bnb = hf === 'airbnb';
     const pres = vault.list('hotes').filter((h) => (h.lieu === 'airbnb' ? 'airbnb' : 'hotel') === hf && h.arrivee <= t && h.depart > t);
-    return html`${pageHead(bnb ? '🏠 Logements' : '🛏️ Chambres', bnb ? 'Vos logements : adresse, pièces, m², photos — visibles dans l’app du voyageur' : 'Vos chambres : catégorie, lits, m², photos — visibles dans l’app du voyageur')}
+    return html`${pageHead(bnb ? '🏠 Logements + services' : '🛏️ Chambres + services', bnb ? 'Vos logements : adresse, pièces, m², photos — visibles dans l’app du voyageur' : 'Vos chambres : catégorie, lits, m², photos — visibles dans l’app du voyageur')}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-chambre" data-lieu="${hf}">${icon('plus')} ${bnb ? 'Logement' : 'Chambre'}</button></div></div>
       ${chList(hf, pres)}
-      ${dfold('svc', `🏨 Services ${bnb ? 'du logement' : 'de l’hôtel'}`, `${plural(svcs(hf).length, 'service')} · photos, horaires, prix — visibles dans l’app du voyageur`, html`
+      ${dfold('svc', `🏊 Services ${bnb ? 'du logement' : 'de l’hôtel'}`, `${plural(svcs(hf).length, 'service')} · photos, horaires, prix — visibles dans l’app du voyageur`, html`
       <div class="actions" style="margin:0 0 10px"><button class="btn primary" data-action="svc-new" data-lieu="${hf}">${icon('plus')} Service</button></div>
       ${(() => { const L = svcs(hf).map(svcNorm); return L.length ? html`<div style="background:#fff;border:2px solid #dc2626;border-radius:16px;padding:10px 12px;margin:0 0 12px"><div style="font-variant:small-caps;letter-spacing:.08em;font-weight:700;color:#dc2626;margin-bottom:6px">🔧 Maintenance rapide</div>
         ${L.map((x) => html`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:6px 0;border-top:1px solid #f3d0d0"><span style="flex:1;min-width:150px;color:#222"><b>${x.nom || svcLbl(x)}</b></span>
