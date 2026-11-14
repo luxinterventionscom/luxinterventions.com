@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.279.0';
+const VERSION = '2.280.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -8754,7 +8754,7 @@ const SHEETS = {
         ${box('rgba(234,179,8,.13)', '💶 Prix', html`${field('Prix voyageurs (nos clients)', 'prix', x.prix, { attrs: 'inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"' })}${field('🎟️ Entrée non-résidents (externes)', 'pxExt', x.pxExt, { attrs: 'inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"' })}<label class="field">Monnaie${sel('cur', SVC_CUR, x.cur || 'EUR')}</label><label class="field">Dans le séjour${sel('inc', { '': 'Non inclus', 1: 'Inclus' }, x.inc ? '1' : '')}</label>
           <p class="tiny muted full" style="margin:0">Crypto : le voyageur demande les détails à l’accueil.</p>`)}
         ${box('rgba(139,92,246,.09)', 'ℹ️ Informations du service', html`<label class="field full"><textarea name="desc" style="min-height:80px" placeholder="ex. Piscine chauffée à 28 °C, peignoirs fournis, bonnet obligatoire…">${x.desc || ''}</textarea></label>`)}
-        ${box('rgba(249,115,22,.09)', '📷 Photos du service — 3 minimum', html`<div class="full ch-ph">${[0, 1, 2, 3, 4, 5].map((i) => html`<label class="ch-slot">${(x.ph || [])[i] ? html`<img data-bph="${x.ph[i]}" alt="">` : html`<span class="ch-empty">＋</span>`}<span class="tiny">Photo ${i + 1}${i < 3 ? ' *' : ''}</span><input type="file" name="ph_${i}" accept="image/*"></label>`)}</div>`)}
+        ${box('rgba(249,115,22,.09)', '📷 Photos du service — 6 maximum', html`<div class="full ch-ph">${[0, 1, 2, 3, 4, 5].map((i) => html`<label class="ch-slot">${(x.ph || [])[i] ? html`<img data-bph="${x.ph[i]}" alt="">` : html`<span class="ch-empty">＋</span>`}<span class="tiny">Photo ${i + 1}</span><input type="file" name="ph_${i}" accept="image/*"></label>`)}</div>`)}
         <p class="tiny muted full" style="margin:0">Tout est visible dans l’app du voyageur.</p>
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="svc-del" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
@@ -11960,8 +11960,6 @@ const FORMS = {
     const nb = (v) => { const n = parseFloat(String(v || '').replace(',', '.')); return isFinite(n) && n >= 0 ? n : ''; };
     const t24 = (p) => { const h = g(p + '_h'); if (!h) return ''; const hh = (+h % 12) + (g(p + '_ap') === 'PM' ? 12 : 0); return String(hh).padStart(2, '0') + ':' + (['00', '15', '30', '45'].includes(g(p + '_m')) ? g(p + '_m') : '00'); };
     for (const i of [0, 1, 2, 3, 4, 5]) { const f = fd.get('ph_' + i); if (f && f.size && f.type.startsWith('image/')) add.push([i, f]); }
-    const n = new Set([...ph.map((_, i) => i).filter((i) => ph[i]), ...add.map(([i]) => i)]).size;
-    if (n < 3) return toast('📷 3 photos minimum pour ce service', { bad: true });
     const dels = [];
     for (const [i, f] of add) { const pid = uid(); await vault.saveFile(pid, await compressPhoto(f)); if (ph[i]) dels.push(ph[i]); ph[i] = pid; }
     const sl = [0, 1, 2].map((i) => ({ g: SVC_G[g(`s${i}_g`)] ? g(`s${i}_g`) : 'mixte', j: fd.getAll(`s${i}_j`).map(Number).filter((j) => j >= 0 && j < 7), h1: t24(`s${i}_h1`), h2: t24(`s${i}_h2`) })).filter((z) => z.h1 && z.h2);
