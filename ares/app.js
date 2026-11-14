@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.271.0';
+const VERSION = '2.272.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -8189,9 +8189,6 @@ const SHEETS = {
           ${id && h.code ? (() => { const tel = String(h.tel || '').replace(/[^\d+]/g, ''), msg = hoteMsg(h); return html`<div class="full actions" style="margin:0;flex-wrap:wrap;gap:6px"><button type="button" class="btn sm" data-action="code-copy" data-code="${h.code}">📋 Code porte</button>${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}${h.mail ? html`<a class="btn sm" href="mailto:${h.mail}?subject=${encodeURIComponent('🔑 ' + h.chambre)}&body=${encodeURIComponent(msg)}">✉️ Email</a>` : ''}${tel ? html`<a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(msg)}">📱 SMS</a>` : ''}</div><p class="tiny muted full" style="margin:0">Envoie seulement le code de la porte, dans sa langue.</p>`; })() : ''}
         </div>
         ${(h.hist || []).length ? html`<details class="full"><summary class="small">Historique des codes (${h.hist.length})</summary><div class="list small">${[...h.hist].reverse().map((x) => html`<div class="row"><span class="grow">${fmtDate(x.d)} — ${'•'.repeat(Math.max(0, (x.code || '').length - 2))}${(x.code || '').slice(-2)}</span></div>`)}</div></details>` : ''}
-        ${id ? html`<div class="full section-label" style="margin:6px 0 0">📋 État des lieux de sortie (au départ)</div>
-          <div class="full ch-ph">${CH_PH.map(([k, l]) => html`<label class="ch-slot">${((h.edlOut || {}).ph || {})[k] ? html`<img data-bph="${h.edlOut.ph[k]}" alt="">` : html`<span class="ch-empty">＋</span>`}<span class="tiny">${l}</span><input type="file" name="out_${k}" accept="image/*"></label>`)}</div>
-          <p class="tiny muted full" style="margin:0">À comparer avec les photos d’entrée dans la fiche ${bnb ? 'du logement' : 'de la chambre'}.</p>` : ''}
         <div class="full hote-appz" style="background:#e8f3fc;border:1px solid #c6def3;border-radius:14px;padding:12px 14px;display:grid;gap:10px">
           <div class="section-label" style="margin:0;color:#1d4e89">📱 CODE DE L’APP <span class="tiny muted">— pour entrer dans son app (pas la porte)</span></div>
           ${field('📱 Code de l’app', 'appCode', h.appCode, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em;background:#fff"' })}
