@@ -45,6 +45,8 @@ assert(await q.$('[data-action=hote-taxi-own][data-w=w3]'), 'hotel: « Vos chauf
 await act(q, 'hote-taxi-own', { id: 'h1', r: '', w: 'w3' }); await q.waitForTimeout(2500);
 assert(/Nadia/.test(await q.$eval('.sheet', (e) => e.innerText)), 'hotel: chauffeur Nadia sur la course');
 await q.keyboard.press('Escape'); await q.waitForTimeout(300);
+await q.evaluate(() => { location.hash = '#/dashboard'; }); await q.waitForTimeout(600); await q.evaluate(() => { location.hash = '#/taxis'; }); await q.waitForTimeout(1200);
+{ const v = await q.$eval('#view', (e) => e.innerText); assert(/En cours|In corso/i.test(v) && /Nadia/.test(v) && !/Pour commander|Per ordinare/i.test(v), 'hotel: 🚕 En cours (course + chauffeur)'); }
 // 4) l'app du chauffeur de l'hôtel : course, encaissée en espèces
 const c3 = await phone(b, 'it'), a = await c3.newPage(); a.on('pageerror', (e) => errs.push('equipe: ' + e.message));
 await a.goto('http://localhost:8765/equipe.html'); await a.waitForTimeout(1200);
