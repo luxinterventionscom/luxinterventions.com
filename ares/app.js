@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.266.0';
+const VERSION = '2.267.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4165,7 +4165,7 @@ function renderLock(mode, error = '') {
   const head = html`
     <img class="lock-logo" src="${APP_BRAND.logo}" alt="" width="96" height="96">
     <div class="lock-head"><h1 data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</h1><p>${TENANT ? tSub() : APP_BRAND.sub}</p><p class="tiny" data-notr="1">${TENANT ? '' : legalLine()}</p></div>`;
-  const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>${TENANT ? html`<p class="tiny muted" style="text-align:center;margin:8px 0 0"><a href="?t=main">↩ Centrale principale</a></p>` : ''}`;
+  const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>`;
   if (mode === 'blocked') {
     setHtml(lockEl, html`<div class="lock-card">${head}<div class="alert warn">${icon('lock')}<div><b>Centrale bloquée.</b> L’abonnement est échu ou suspendu : contactez LA CENTRAL pour la réactiver. Vos données restent chiffrées et intactes.</div></div>${foot}</div>`);
     return;
