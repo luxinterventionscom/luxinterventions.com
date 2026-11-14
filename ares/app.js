@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.280.0';
+const VERSION = '2.281.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -8749,9 +8749,9 @@ const SHEETS = {
           ${sl.map((z, i) => html`<div class="full" style="background:rgba(255,255,255,.55);border-radius:12px;padding:8px 10px;display:flex;flex-wrap:wrap;gap:8px;align-items:center">
             ${sel(`s${i}_g`, SVC_G, z.g || 'mixte')} <span class="small">de</span> ${hm(`s${i}_h1`, z.h1)} <span class="small">à</span> ${hm(`s${i}_h2`, z.h2)}
             <span style="display:flex;flex-wrap:wrap;gap:4px">${SEMAINE.map((d, j) => html`<label class="tiny" style="display:inline-flex;gap:2px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:2px 7px;cursor:pointer"><input type="checkbox" name="s${i}_j" value="${j}" ${(z.j || []).includes(j) ? new Raw('checked') : ''}>${d.slice(0, 2)}</label>`)}</span></div>`)}`)}
-        ${box('rgba(239,68,68,.08)', '🔧 Maintenance de ce service', html`<label class="field">État${sel('m_on', { '': 'Ouvert (on)', 1: '🔧 Fermé pour maintenance (off)' }, m.on ? '1' : '')}</label>${field('Du', 'm_du', m.du, { type: 'date' })}${field('Au', 'm_au', m.au, { type: 'date' })}
-          <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="m_nv" ${m.nv ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">Jusqu’à nouvel avis</label>`)}
-        ${box('rgba(234,179,8,.13)', '💶 Prix', html`${field('Prix voyageurs (nos clients)', 'prix', x.prix, { attrs: 'inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"' })}${field('🎟️ Entrée non-résidents (externes)', 'pxExt', x.pxExt, { attrs: 'inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*"' })}<label class="field">Monnaie${sel('cur', SVC_CUR, x.cur || 'EUR')}</label><label class="field">Dans le séjour${sel('inc', { '': 'Non inclus', 1: 'Inclus' }, x.inc ? '1' : '')}</label>
+        ${html`<div class="full fields" style="background:#fff;border:2px solid #dc2626;border-radius:16px;padding:12px 14px;margin:0"><div class="full" style="font-variant:small-caps;letter-spacing:.08em;font-weight:700;color:#dc2626">🔧 Maintenance — <span data-svc-name="1">${svcLbl(x)}</span></div><label class="field">État${sel('m_on', { '': 'Ouvert (on)', 1: '🔧 Fermé pour maintenance (off)' }, m.on ? '1' : '')}</label>${field('Du', 'm_du', m.du, { type: 'date' })}${field('Au', 'm_au', m.au, { type: 'date' })}
+          <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="m_nv" ${m.nv ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">Jusqu’à nouvel avis</label></div>`}
+        ${box('rgba(234,179,8,.13)', '💶 Prix', html`<div class="full" style="display:flex;gap:8px;align-items:center"><input name="prix" value="${x.prix ?? ''}" inputmode="decimal" pattern="[0-9]*[.,]?[0-9]*" placeholder="0" style="width:120px">${sel('cur', SVC_CUR, x.cur || 'EUR')}</div>
           <p class="tiny muted full" style="margin:0">Crypto : le voyageur demande les détails à l’accueil.</p>`)}
         ${box('rgba(139,92,246,.09)', 'ℹ️ Informations du service', html`<label class="field full"><textarea name="desc" style="min-height:80px" placeholder="ex. Piscine chauffée à 28 °C, peignoirs fournis, bonnet obligatoire…">${x.desc || ''}</textarea></label>`)}
         ${box('rgba(249,115,22,.09)', '📷 Photos du service — 6 maximum', html`<div class="full ch-ph">${[0, 1, 2, 3, 4, 5].map((i) => html`<label class="ch-slot">${(x.ph || [])[i] ? html`<img data-bph="${x.ph[i]}" alt="">` : html`<span class="ch-empty">＋</span>`}<span class="tiny">Photo ${i + 1}</span><input type="file" name="ph_${i}" accept="image/*"></label>`)}</div>`)}
@@ -11964,7 +11964,7 @@ const FORMS = {
     for (const [i, f] of add) { const pid = uid(); await vault.saveFile(pid, await compressPhoto(f)); if (ph[i]) dels.push(ph[i]); ph[i] = pid; }
     const sl = [0, 1, 2].map((i) => ({ g: SVC_G[g(`s${i}_g`)] ? g(`s${i}_g`) : 'mixte', j: fd.getAll(`s${i}_j`).map(Number).filter((j) => j >= 0 && j < 7), h1: t24(`s${i}_h1`), h2: t24(`s${i}_h2`) })).filter((z) => z.h1 && z.h2);
     const rec = { id: id || 'svc-' + lieu + '-' + uid(), lieu, v: 2, t: SVC_T[g('t')] ? g('t') : 'autre', loc: SVC_LOC[g('loc')] ? g('loc') : '', nom: g('nom').slice(0, 80), sl,
-      m: { on: g('m_on') === '1', du: g('m_du'), au: g('m_au'), nv: !!fd.get('m_nv') }, prix: nb(g('prix')), pxExt: nb(g('pxExt')), cur: SVC_CUR[g('cur')] ? g('cur') : 'EUR', inc: g('inc') === '1', desc: g('desc').slice(0, 800), ph: ph.filter(Boolean).slice(0, 6) };
+      m: { on: g('m_on') === '1', du: g('m_du'), au: g('m_au'), nv: !!fd.get('m_nv') }, prix: nb(g('prix')), pxExt: '', cur: SVC_CUR[g('cur')] ? g('cur') : 'EUR', inc: false, desc: g('desc').slice(0, 800), ph: ph.filter(Boolean).slice(0, 6) };
     await vault.mutate((tx) => tx.put('reglages', rec), id ? 'Service modifié' : 'Nouveau service', rec.nom || svcLbl(rec));
     for (const x of dels) await vault.deleteFile(x).catch(() => {});
     toast('Service enregistré'); goBack(); hotesSync();
@@ -13633,6 +13633,8 @@ document.addEventListener('change', (e) => {
   }
   if (k === 'year') { ui.year = +e.target.value; ui.cpLim = 10; renderView(); }
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
+  if (e.target.name === 't' && e.target.form && e.target.form.dataset.form === 'svc') { const o = e.target.form.querySelector('[data-svc-name]'), l = e.target.form.querySelector('[name=loc]'); if (o) o.textContent = (SVC_T[e.target.value] || '') + (l && l.value ? ' ' + SVC_LOC[l.value].toLowerCase() : ''); }
+  if (e.target.name === 'loc' && e.target.form && e.target.form.dataset.form === 'svc') { const o = e.target.form.querySelector('[data-svc-name]'), t = e.target.form.querySelector('[name=t]'); if (o && t) o.textContent = (SVC_T[t.value] || '') + (e.target.value ? ' ' + SVC_LOC[e.target.value].toLowerCase() : ''); }
   if (k === 'soc-color' && /^#[0-9a-f]{6}$/i.test(e.target.value)) { vault.mutate((tx) => tx.put('reglages', { id: 'main', color: e.target.value }), 'Couleur de la société', socName()).then(() => { applyBrand(); toast('Couleur enregistrée'); }); return; }
   if (k === 'soc-logo' && e.target.files[0]) { setLogo(e.target.files[0]).then(() => { if (TENANT) { renderShell(); go(ui.route, true); } }); e.target.value = ''; }
   if (k === 'brand-ico' && e.target.files[0] && !TENANT && !vault.op) { brandSet(e.target.files[0]); e.target.value = ''; }
