@@ -19,8 +19,8 @@ const nav = await q.evaluate(() => [...document.querySelectorAll('.navbtn')].map
 assert(/Voyageurs|Viaggiatori/i.test(nav) && /Chambres|Camere/i.test(nav), 'menu : Voyageurs + Chambres — ' + nav);
 await q.evaluate(() => { location.hash = '#/chambres'; }); await q.waitForTimeout(1200);
 await act(q, 'new-chambre', { lieu: 'hotel' }); await q.waitForTimeout(700);
-await q.fill('#f [name=num]', '101'); await q.fill('#f [name=m2]', '22'); await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2000);
-assert(/101/.test(await q.$eval('#view', (e) => e.innerText)), 'chambre 101 dans la liste');
+await q.fill('#f [name=num]', '101'); await q.fill('#f [name=m2]', '22'); await q.selectOption('#f [name=typ]', 'double'); await q.selectOption('#f [name=canape]', '1'); await q.check('#f [name=vip]'); await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2000);
+{ const v = await q.$eval('#view', (e) => e.innerText); assert(/101/.test(v) && /👥 3/.test(v) && /VIP/.test(v), 'chambre 101 : Double + canapé = 👥 3, ⭐ VIP — ' + v.slice(0, 300)); }
 await q.evaluate(() => { location.hash = '#/hotel'; }); await q.waitForTimeout(1200);
 assert(!(await q.$('#view [data-action=new-chambre]')), 'Voyageurs : plus de ＋ Chambre');
 await act(q, 'new-hote'); await q.waitForTimeout(800);
