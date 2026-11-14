@@ -23,8 +23,8 @@ await q.fill('#f [name=num]', '101'); await q.fill('#f [name=m2]', '22'); await 
 { const v = await q.$eval('#view', (e) => e.innerText); assert(/101/.test(v) && /👥 3/.test(v) && /VIP/.test(v), 'chambre 101 : Double + canapé = 👥 3, ⭐ VIP — ' + v.slice(0, 300)); }
 await act(q, 'svc-new', { lieu: 'hotel' }); await q.waitForTimeout(700);
 await q.selectOption('#f [name=t]', 'spa'); await q.selectOption('#f [name=loc]', 'int');
-await q.selectOption('#f [name=s0_g]', 'f'); await q.selectOption('#f [name=s0_h1_h]', '09'); await q.selectOption('#f [name=s0_h2_h]', '12'); await q.selectOption('#f [name=s0_h2_ap]', 'PM'); await q.check('#f [name=s0_j][value="0"]'); await q.fill('#f [name=s0_px]', '25');
-await q.selectOption('#f [name=m_on]', '1'); await q.check('#f [name=m_nv]'); await q.fill('#f [name=prix]', '10'); await q.selectOption('#f [name=cur]', 'EUR');
+await q.selectOption('#f [name=s0_g]', 'f'); await q.selectOption('#f [name=s0_h1_h]', '09'); await q.selectOption('#f [name=s0_h2_h]', '12'); await q.selectOption('#f [name=s0_h2_ap]', 'PM'); await q.check('#f [name=s0_j][value="0"]');
+await q.selectOption('#f [name=m_on]', '1'); await q.check('#f [name=m_nv]'); await q.fill('#f [name=prix]', '10'); await q.fill('#f [name=pxExt]', '25'); await q.selectOption('#f [name=cur]', 'EUR');
 await q.setInputFiles('#f [name=ph_0]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname);
 await q.click('button[type=submit][form=f]'); await q.waitForTimeout(1500);
 assert(await q.$('#f [name=s0_g]'), 'service : bloqué avec moins de 3 photos');

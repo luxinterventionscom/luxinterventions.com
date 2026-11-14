@@ -170,8 +170,8 @@ function svcCard() {
   return `<details class="card hfold" data-fk="svc"${hFoldShut().has('svc') ? '' : ' open'}><summary><h2 style="margin:0">${esc(k.t)}</h2></summary>${L.map((x) => { const lb = (k.T[x.t] || k.T.autre) + (x.loc && k.L[x.loc] ? ' ' + k.L[x.loc] : ''), m = x.m;
     return `<div style="margin:12px 0"><b>${esc(x.nom || lb)}</b>${x.nom ? ` <span class="meta">${esc(lb)}</span>` : ''}
     ${m ? `<p style="margin:4px 0 0;color:#b91c1c"><b>${esc(k.mt)}</b>${m.du ? ' ' + esc(k.du) + ' ' + esc(fmt(m.du)) : ''}${m.nv ? ' · ' + esc(k.nv) : m.au ? ' ' + esc(k.au) + ' ' + esc(fmt(m.au)) : ''}</p>` : ''}
-    ${(x.sl || []).map((z) => `<p class="meta" style="margin:2px 0 0">🕒 ${z.g && k.G[z.g] ? esc(k.G[z.g]) + ' · ' : ''}${(z.j || []).length && z.j.length < 7 ? esc(z.j.slice().sort().map((i) => k.D[i]).join(' ')) + ' · ' : ''}${esc(h12(z.h1))} – ${esc(h12(z.h2))}${z.px !== '' && z.px != null ? ` · ${esc(k.ext)} ${money(z.px, x.cur)}` : ''}</p>`).join('')}
-    <p class="meta" style="margin:2px 0 0">${x.inc ? esc(k.inc) : x.prix !== '' && x.prix != null ? `${esc(k.pay)} ${money(x.prix, x.cur)}` : ''}</p>${x.desc ? `<p style="margin:4px 0 0">${esc(x.desc)}</p>` : ''}
+    ${(x.sl || []).map((z) => `<p class="meta" style="margin:2px 0 0">🕒 ${z.g && k.G[z.g] ? esc(k.G[z.g]) + ' · ' : ''}${(z.j || []).length && z.j.length < 7 ? esc(z.j.slice().sort().map((i) => k.D[i]).join(' ')) + ' · ' : ''}${esc(h12(z.h1))} – ${esc(h12(z.h2))}</p>`).join('')}
+    <p class="meta" style="margin:2px 0 0">${x.inc ? esc(k.inc) : x.prix !== '' && x.prix != null ? `${esc(k.pay)} ${money(x.prix, x.cur)}` : ''}${x.pxExt !== '' && x.pxExt != null ? ` · ${esc(k.ext)} ${money(x.pxExt, x.cur)}` : ''}</p>${x.desc ? `<p style="margin:4px 0 0">${esc(x.desc)}</p>` : ''}
     ${(x.ph || []).length ? `<div class="car">${x.ph.map((f) => `<figure><img data-f="${esc(f)}" alt="" data-lb="1"></figure>`).join('')}</div>` : ''}</div>`; }).join('')}</details>`;
 }
 function fleetCard() {
