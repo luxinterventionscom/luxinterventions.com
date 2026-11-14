@@ -19,8 +19,12 @@ const nav = await q.evaluate(() => [...document.querySelectorAll('.navbtn')].map
 assert(/Voyageurs|Viaggiatori/i.test(nav) && /Chambres|Camere/i.test(nav), 'menu : Voyageurs + Chambres — ' + nav);
 await q.evaluate(() => { location.hash = '#/chambres'; }); await q.waitForTimeout(1200);
 await act(q, 'new-chambre', { lieu: 'hotel' }); await q.waitForTimeout(700);
-await q.fill('#f [name=num]', '101'); await q.fill('#f [name=m2]', '22'); await q.selectOption('#f [name=typ]', 'double'); await q.selectOption('#f [name=canape]', '1'); await q.check('#f [name=vip]'); await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2000);
+await q.fill('#f [name=num]', '101'); await q.fill('#f [name=m2]', '22'); await q.selectOption('#f [name=typ]', 'double'); await q.selectOption('#f [name=canape]', '1'); await q.check('#f [name=vip]'); await q.fill('#f [name=prix]', '120'); await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2000);
 { const v = await q.$eval('#view', (e) => e.innerText); assert(/101/.test(v) && /👥 3/.test(v) && /VIP/.test(v), 'chambre 101 : Double + canapé = 👥 3, ⭐ VIP — ' + v.slice(0, 300)); }
+await act(q, 'svc-new', { lieu: 'hotel' }); await q.waitForTimeout(700);
+await q.selectOption('#f [name=t]', 'spa'); await q.fill('#f [name=h]', '9 h – 21 h'); await q.setInputFiles('#f [name=ph_0]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname);
+await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2500);
+{ const v = await q.$eval('#view', (e) => e.innerText); assert(/Spa/.test(v) && /1\/3/.test(v) && /120/.test(v), 'service Spa (1 photo) + prix 120 €'); }
 await q.evaluate(() => { location.hash = '#/hotel'; }); await q.waitForTimeout(1200);
 assert(!(await q.$('#view [data-action=new-chambre]')), 'Voyageurs : plus de ＋ Chambre');
 await act(q, 'new-hote'); await q.waitForTimeout(800);
@@ -33,6 +37,7 @@ await q.click('button[type=submit][form=f]'); await q.waitForTimeout(4000);
 const c3 = await phone(b, 'it'), g = await c3.newPage(); g.on('pageerror', (e) => errs.push('hote: ' + e.message));
 await g.goto('http://localhost:8765/hote.html'); await g.waitForTimeout(1200); await g.fill('input[name=code]', app); await g.click('form button[type=submit]'); await g.waitForTimeout(3500);
 assert(await g.$('#gpForm'), 'app : cadre ✍️ allergies');
+assert(/servizi|services/i.test(await g.evaluate(() => document.body.innerText)) && await g.$('[data-fk=svc] img[data-f]'), 'app : 🏨 services avec photo');
 await g.check('#gpForm [name=allerg][value=gluten]'); await g.fill('#gpForm [name=autre]', 'Oreiller ferme');
 await g.click('[data-gp-send]'); await g.waitForTimeout(2500);
 await relog(q, CPASS);
