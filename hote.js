@@ -151,6 +151,23 @@ const CARS = {
 };
 const CK2 = () => CARS[lang] || CARS.fr;
 let rent = { du: '', au: '', veh: '', boite: 'auto', livr: true, note: '', sent: '' };
+// 🏨 services de l'établissement : piscine, spa, salle, restaurant… (photos, horaires, inclus / payant)
+const SVCL = {
+  fr: { t: '🏨 Nos services', inc: '🆓 Inclus', pay: '💶 Payant', T: { piscine_in: '🏊 Piscine intérieure', piscine_out: '🏖️ Piscine extérieure', spa: '💆 Spa', sauna: '🧖 Sauna / hammam', gym: '🏋️ Salle de sport', resto: '🍽️ Restaurant', salle: '🥐 Salle du petit-déjeuner', bar: '🍸 Bar', reunion: '💼 Salle de réunion', parking: '🅿️ Parking', jardin: '🌳 Jardin / terrasse', autre: '✨ Service' } },
+  en: { t: '🏨 Our services', inc: '🆓 Included', pay: '💶 Extra charge', T: { piscine_in: '🏊 Indoor pool', piscine_out: '🏖️ Outdoor pool', spa: '💆 Spa', sauna: '🧖 Sauna / hammam', gym: '🏋️ Gym', resto: '🍽️ Restaurant', salle: '🥐 Breakfast room', bar: '🍸 Bar', reunion: '💼 Meeting room', parking: '🅿️ Parking', jardin: '🌳 Garden / terrace', autre: '✨ Service' } },
+  de: { t: '🏨 Unsere Leistungen', inc: '🆓 Inklusive', pay: '💶 Gegen Aufpreis', T: { piscine_in: '🏊 Hallenbad', piscine_out: '🏖️ Freibad', spa: '💆 Spa', sauna: '🧖 Sauna / Hamam', gym: '🏋️ Fitnessraum', resto: '🍽️ Restaurant', salle: '🥐 Frühstücksraum', bar: '🍸 Bar', reunion: '💼 Tagungsraum', parking: '🅿️ Parkplatz', jardin: '🌳 Garten / Terrasse', autre: '✨ Leistung' } },
+  it: { t: '🏨 I nostri servizi', inc: '🆓 Incluso', pay: '💶 A pagamento', T: { piscine_in: '🏊 Piscina interna', piscine_out: '🏖️ Piscina esterna', spa: '💆 Spa', sauna: '🧖 Sauna / hammam', gym: '🏋️ Palestra', resto: '🍽️ Ristorante', salle: '🥐 Sala colazioni', bar: '🍸 Bar', reunion: '💼 Sala riunioni', parking: '🅿️ Parcheggio', jardin: '🌳 Giardino / terrazza', autre: '✨ Servizio' } },
+  pt: { t: '🏨 Os nossos serviços', inc: '🆓 Incluído', pay: '💶 Pago', T: { piscine_in: '🏊 Piscina interior', piscine_out: '🏖️ Piscina exterior', spa: '💆 Spa', sauna: '🧖 Sauna / hammam', gym: '🏋️ Ginásio', resto: '🍽️ Restaurante', salle: '🥐 Sala de pequeno-almoço', bar: '🍸 Bar', reunion: '💼 Sala de reuniões', parking: '🅿️ Estacionamento', jardin: '🌳 Jardim / terraço', autre: '✨ Serviço' } },
+  es: { t: '🏨 Nuestros servicios', inc: '🆓 Incluido', pay: '💶 De pago', T: { piscine_in: '🏊 Piscina interior', piscine_out: '🏖️ Piscina exterior', spa: '💆 Spa', sauna: '🧖 Sauna / hammam', gym: '🏋️ Gimnasio', resto: '🍽️ Restaurante', salle: '🥐 Sala de desayunos', bar: '🍸 Bar', reunion: '💼 Sala de reuniones', parking: '🅿️ Aparcamiento', jardin: '🌳 Jardín / terraza', autre: '✨ Servicio' } },
+};
+function svcCard() {
+  const L = data.svc || [];
+  if (!L.length) return '';
+  const k = SVCL[lang] || SVCL.fr;
+  return `<details class="card hfold" data-fk="svc"${hFoldShut().has('svc') ? '' : ' open'}><summary><h2 style="margin:0">${esc(k.t)}</h2></summary>${L.map((x) => `<div style="margin:10px 0"><b>${esc(x.nom || k.T[x.t] || k.T.autre)}</b>${x.nom ? ` <span class="meta">${esc(k.T[x.t] || '')}</span>` : ''}
+    <p class="meta" style="margin:2px 0 0">${x.h ? '🕒 ' + esc(x.h) + ' · ' : ''}${x.inclus ? esc(k.inc) : esc(k.pay) + (x.prix ? ' ' + esc(String(x.prix).replace('.', ',')) + ' €' : '')}</p>${x.desc ? `<p style="margin:4px 0 0">${esc(x.desc)}</p>` : ''}
+    ${(x.ph || []).length ? `<div class="car">${x.ph.map((f) => `<figure><img data-f="${esc(f)}" alt="" data-lb="1"></figure>`).join('')}</div>` : ''}</div>`).join('')}</details>`;
+}
 function fleetCard() {
   const F = (data.fleet || []);
   if (!F.length) return '';
@@ -463,6 +480,7 @@ function render() {
   if (today <= d.depart) out.push(gpCard(d.gp));
   if (today <= d.arrivee) out.push(arrCard(t));
   if (d.taxi && d.taxi.on && today >= d.arrivee && today <= d.depart) out.push(rideCard());
+  if (today <= d.depart) out.push(svcCard());
   if (d.taxi && d.taxi.on && today <= d.depart) { out.push(fleetCard()); out.push(rentCard()); }
   // 8 · état des lieux de sortie (pendant le séjour)
   if (inStay || today === d.depart) {
