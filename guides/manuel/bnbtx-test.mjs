@@ -68,7 +68,7 @@ await q.keyboard.press('Escape'); await q.waitForTimeout(300);
 // 6) 💬 Chat
 await q.evaluate(() => { location.hash = '#/chat'; }); await q.waitForTimeout(1200);
 const ch = await q.evaluate(() => document.querySelector('#view').innerText);
-assert(/Clients|Clienti/.test(ch) && /Nadia/.test(ch), 'hotel: Chat (clients + chauffeurs)');
+assert(/Voyageurs|Viaggiatori|Clienti/.test(ch) && /Nadia/.test(ch), 'hotel: Chat (clients + chauffeurs)');
 // 7) ＋ Demande → 🚕 → LA CENTRAL
 await act(q, 'tdem-new'); await q.waitForTimeout(600); await act(q, 'tdem-taxi'); await q.waitForTimeout(600);
 await q.fill('#f [name=from]', 'Gare centrale'); await q.fill('#f [name=to]', 'Kirchberg'); await q.fill('#f [name=quand]', T + 'T20:00');
