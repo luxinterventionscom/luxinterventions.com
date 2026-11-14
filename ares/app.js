@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.274.0';
+const VERSION = '2.275.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3530,6 +3530,9 @@ const chKey = (lieu, num) => 'ch-' + (lieu === 'airbnb' ? 'airbnb' : 'hotel') + 
 // 🏨 services de l'établissement (piscine, spa, salle, restaurant…) : photos, horaires, inclus ou payant — visibles dans l'app du voyageur
 const SVC_T = { piscine_in: '🏊 Piscine intérieure', piscine_out: '🏖️ Piscine extérieure', spa: '💆 Spa', sauna: '🧖 Sauna / hammam', gym: '🏋️ Salle de sport', resto: '🍽️ Restaurant', salle: '🥐 Salle (petit-déjeuner, banquets)', bar: '🍸 Bar', reunion: '💼 Salle de réunion', parking: '🅿️ Parking', jardin: '🌳 Jardin / terrasse', autre: '➕ Autre' };
 const svcTs = (x) => (x.ts && x.ts.length ? x.ts : x.t ? [x.t] : []);
+// créneaux par service coché : pour qui (tous, femmes, hommes, familles), jours, heures ; 24 h/24 ; 🔧 maintenance
+const SVC_PUB = { tous: 'Tous', f: '👩 Femmes', h: '👨 Hommes', fam: '👨‍👩‍👧 Familles' };
+const svcPer = (x) => { if (x.per) return x.per; const o = {}; for (const k of svcTs(x)) o[k] = { h24: !!x.h24, maint: !!x.maint, maintAu: x.maintAu || '', sl: x.h1 ? [{ pub: 'tous', j: x.jours || [], h1: x.h1, h2: x.h2 || '' }] : [] }; return o; };
 const svcLbl = (x) => svcTs(x).map((k) => SVC_T[k]).filter(Boolean).join(' · ');
 const svcs = (lieu) => vault.list('reglages').filter((r) => r.id.startsWith('svc-' + (lieu === 'airbnb' ? 'airbnb' : 'hotel') + '-')).sort((a, b) => Object.keys(SVC_T).indexOf(a.t) - Object.keys(SVC_T).indexOf(b.t));
 const CH_BEDS = { single: 1, double: 2, twin: 2, triple: 3, famille: 4, quad: 4 };
@@ -3768,7 +3771,7 @@ function hoteData(h, tks) {
     // 🚗 parc auto des sociétés de taxi (photos dehors / dedans), par sorte de voiture
     fleet: txCos().flatMap((co) => Object.entries(co.fleet || {}).filter(([k, x]) => FLEET_T[k] && x.n > 0).map(([k, x]) => ({ t: k, n: x.n, co: co.nom || '', ph: x.ph || {} }))),
     gp: h.gp || null,
-    svc: svcs(h.lieu).map((x) => ({ t: SVC_T[x.t] ? x.t : 'autre', ts: svcTs(x).filter((k) => SVC_T[k]), nom: x.nom || '', h: x.h || '', h1: x.h1 || '', h2: x.h2 || '', h24: !!x.h24, jours: x.jours || [], du: x.du || '', au: x.au || '', maint: !!x.maint && !(x.maintAu && x.maintAu < today()), maintAu: x.maintAu || '', inclus: !!x.inclus, prix: num(x.prix) || 0, desc: x.desc || '', ph: (x.ph || []).slice(0, 3) })),
+    svc: svcs(h.lieu).map((x) => ({ t: SVC_T[x.t] ? x.t : 'autre', ts: svcTs(x).filter((k) => SVC_T[k]), nom: x.nom || '', h: x.h || '', per: Object.fromEntries(Object.entries(svcPer(x)).map(([k, P]) => [k, { ...P, maint: !!P.maint && !(P.maintAu && P.maintAu < today()) }])), du: x.du || '', au: x.au || '', inclus: !!x.inclus, prix: num(x.prix) || 0, desc: x.desc || '', ph: (x.ph || []).slice(0, 3) })),
     meal: { allerg: h.allerg || [], allergAutre: h.allergAutre || '', allergCh: h.allergCh || [], allergChAutre: h.allergChAutre || '', regime: h.regime || [], dej: h.dej || '', dejOu: h.dejOu || '', din: h.din || '', dinOu: h.dinOu || '', room: c.roomSvc && c.roomSvc !== 'non' ? { svc: c.roomSvc, pct: c.roomPct || 0, deliv: !!c.roomDeliv } : null },
     menu: menu && menu.file ? menu.file : '', taxi: { pc: +c.txPc || 0, km: +c.txKm || 0, aero: +c.txAero || 0, gare: +c.txGare || 0, on: !!TENANT || !!(c.drivers || []).length || !!chaufs().length || !!txOffers().gam.length, ...txOffers() },
     rides: (h.rides || []).map((r) => ({ id: r.id, service: r.service, gamme: r.gamme, quand: r.quand, from: r.from, to: r.to, prix: r.prix, done: !!(r.taxi && r.taxi.done), rated: r.taxi && r.taxi.rate ? r.taxi.rate.s : 0, st: r.taxi ? r.taxi.st || 'ok' : 'wait', drv: r.taxi && r.taxi.st !== 'wait' ? { nom: r.taxi.nom, tel: r.taxi.tel, auto: r.taxi.auto, plaque: r.taxi.plaque } : null })),
@@ -6361,7 +6364,7 @@ dashboard() {
       ${chList(hf, pres)}
       <div class="section-label" style="margin-top:18px">🏨 Services ${bnb ? 'du logement / de la résidence' : 'de l’hôtel'} <span class="tiny muted">— photos, horaires, inclus ou payant : visibles dans l’app du voyageur</span></div>
       <div class="actions" style="margin:0 0 10px"><button class="btn primary" data-action="svc-new" data-lieu="${hf}">${icon('plus')} Service</button></div>
-      ${(() => { const L = svcs(hf); return L.length ? html`<div class="list">${L.map((x) => html`<button class="row" data-action="svc-edit" data-id="${x.id}"><span class="avatar">${(SVC_T[x.t] || '➕').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${x.nom || svcLbl(x)}</span>${x.nom ? html`<span class="tiny muted" style="display:block">${svcLbl(x)}</span>` : ''}<span class="meta">${x.maint ? html`<b style="color:var(--c-urg,#dc2626)">🔧 maintenance${x.maintAu ? ' → ' + fmtDate(x.maintAu) : ''}</b> · ` : ''}${x.h24 ? '🕒 24 h/24 · ' : x.h1 ? '🕒 ' + x.h1 + '–' + (x.h2 || '?') + ' · ' : x.h ? '🕒 ' + x.h + ' · ' : ''}${x.inclus ? '🆓 inclus' : x.prix ? '💶 ' + eur(num(x.prix)) : '💶 payant'} · 📷 ${(x.ph || []).length}/3</span></span></button>`)}</div>` : html`<p class="small muted">Aucun service : ＋ Service (piscine, spa, salle, restaurant, parking…).</p>`; })()}`;
+      ${(() => { const L = svcs(hf); return L.length ? html`<div class="list">${L.map((x) => html`<button class="row" data-action="svc-edit" data-id="${x.id}"><span class="avatar">${(SVC_T[x.t] || '➕').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${x.nom || svcLbl(x)}</span>${x.nom ? html`<span class="tiny muted" style="display:block">${svcLbl(x)}</span>` : ''}<span class="meta">${Object.entries(svcPer(x)).filter(([, P]) => P.maint).map(([k]) => html`<b style="color:var(--c-urg,#dc2626)">🔧 ${(SVC_T[k] || '').split(' ')[0]} maintenance</b> · `)}${Object.entries(svcPer(x)).map(([k, P]) => (P.h24 ? (SVC_T[k] || '').split(' ')[0] + ' 24 h/24 · ' : (P.sl || []).length ? (SVC_T[k] || '').split(' ')[0] + ' ' + P.sl.map((z) => (z.pub !== 'tous' ? SVC_PUB[z.pub].split(' ')[0] + ' ' : '') + z.h1 + '–' + z.h2).join(', ') + ' · ' : ''))}${x.inclus ? '🆓 inclus' : x.prix ? '💶 ' + eur(num(x.prix)) : '💶 payant'} · 📷 ${(x.ph || []).length}/3</span></span></button>`)}</div>` : html`<p class="small muted">Aucun service : ＋ Service (piscine, spa, salle, restaurant, parking…).</p>`; })()}`;
   },
   airbnb() { return hotView('airbnb'); },
   // 🛠️ centrale d'un client : ses demandes d'intervention à LA CENTRAL
@@ -8727,17 +8730,20 @@ const SHEETS = {
     return {
       title: id ? x.nom || svcLbl(x) || 'Service' : '🏨 Nouveau service', narrow: true,
       body: html`<form id="f" data-form="svc" class="fields"><input type="hidden" name="id" value="${id || ''}"><input type="hidden" name="lieu" value="${x.lieu}">
-        <div class="full"><b class="small">Service</b> <span class="tiny muted">(cochez tout ce qui va ensemble : ex. 2 piscines, spa + sauna)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${Object.entries(SVC_T).map(([k, l]) => html`<label class="small" style="display:inline-flex;gap:4px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px 10px;cursor:pointer"><input type="checkbox" name="ts" value="${k}" ${svcTs(x).includes(k) ? new Raw('checked') : ''}> ${l}</label>`)}</div></div>
-        ${field('Nom (facultatif)', 'nom', x.nom, { full: true, placeholder: 'ex. Spa « Les Thermes »' })}
-        <div class="full section-label" style="margin:6px 0 0">🕒 Horaires</div>
-        ${field('Ouverture', 'h1', x.h1, { type: 'time' })}${field('Fermeture', 'h2', x.h2, { type: 'time' })}
-        <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="h24" ${x.h24 ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">Ouvert 24 h / 24</label>
-        <div class="full"><b class="small">Jours d’ouverture</b> <span class="tiny muted">(rien coché = tous les jours)</span><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${SEMAINE.map((d, i) => html`<label class="small" style="display:inline-flex;gap:4px;align-items:center;border:1px solid var(--line);border-radius:999px;padding:3px 10px;cursor:pointer"><input type="checkbox" name="jours" value="${i}" ${(x.jours || []).includes(i) ? new Raw('checked') : ''}> ${d.slice(0, 3)}</label>`)}</div></div>
+        <style>.svc-x{display:none}.svc-it:has(> label input:checked) .svc-x{display:grid}</style>
+        <div class="full"><b class="small">Service</b> <span class="tiny muted">(cochez tout ce qui va ensemble : ex. 2 piscines, spa + sauna — chacun a ses horaires)</span>
+        ${Object.entries(SVC_T).map(([k, l]) => { const P = svcPer(x)[k] || {}, sl = [...(P.sl || []), {}, {}, {}].slice(0, 3);
+          return html`<div class="svc-it" style="border:1px solid var(--line);border-radius:12px;padding:6px 10px;margin-top:6px"><label style="display:flex;gap:8px;align-items:center;cursor:pointer"><input type="checkbox" name="ts" value="${k}" ${svcTs(x).includes(k) ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none"> <b>${l}</b></label>
+            <div class="svc-x" style="gap:6px;margin-top:6px">
+              <div style="display:flex;flex-wrap:wrap;gap:12px;align-items:center"><label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="p_${k}_h24" ${P.h24 ? new Raw('checked') : ''}> 24 h / 24</label>
+                <label class="small" style="display:flex;gap:6px;align-items:center;color:var(--c-urg,#dc2626)"><input type="checkbox" name="p_${k}_maint" ${P.maint ? new Raw('checked') : ''}> 🔧 Fermé pour maintenance</label><label class="small">jusqu’au <input type="date" name="p_${k}_maintAu" value="${P.maintAu || ''}"></label></div>
+              <span class="tiny muted">Créneaux (pour qui, jours, heures) — rien coché aux jours = tous les jours</span>
+              ${sl.map((z, i) => html`<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;border-top:1px dashed var(--line);padding-top:6px"><select name="p_${k}_s${i}_pub">${Object.entries(SVC_PUB).map(([v, t]) => html`<option value="${v}" ${(z.pub || 'tous') === v ? new Raw('selected') : ''}>${t}</option>`)}</select>
+                <input type="time" name="p_${k}_s${i}_h1" value="${z.h1 || ''}"> – <input type="time" name="p_${k}_s${i}_h2" value="${z.h2 || ''}">
+                ${SEMAINE.map((d, j) => html`<label class="tiny" style="display:inline-flex;gap:2px;align-items:center"><input type="checkbox" name="p_${k}_s${i}_j" value="${j}" ${(z.j || []).includes(j) ? new Raw('checked') : ''}>${d.slice(0, 2)}</label>`)}</div>`)}
+            </div></div>`; })}</div>
         <div class="full section-label" style="margin:6px 0 0">📅 Période d’ouverture <span class="tiny muted">(facultatif : ex. piscine extérieure en été)</span></div>
         ${field('Du', 'du', x.du, { type: 'date' })}${field('Au', 'au', x.au, { type: 'date' })}
-        <div class="full" style="background:#fdecec;border:1px solid #f5c2c2;border-radius:12px;padding:8px 12px;display:flex;flex-wrap:wrap;gap:10px;align-items:center">
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="maint" ${x.maint ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">🔧 <b>Fermé pour maintenance</b></label>
-          <label class="small" style="display:flex;align-items:center;gap:6px">jusqu’au <input type="date" name="maintAu" value="${x.maintAu || ''}"></label></div>
         ${x.h ? field('Note sur les horaires', 'h', x.h, { full: true }) : ''}
         <label class="field" style="flex-direction:row;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" name="inclus" ${x.inclus ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">🆓 Inclus dans le séjour</label>
         ${field('💶 Prix si payant (€)', 'prix', x.prix, { attrs: 'inputmode="decimal"' })}
@@ -11950,7 +11956,7 @@ const FORMS = {
       if (f && f.size && f.type.startsWith('image/')) { const pid = uid(); await vault.saveFile(pid, await compressPhoto(f)); if (ph[i]) dels.push(ph[i]); ph[i] = pid; }
     }
     const ts = fd.getAll('ts').filter((k) => SVC_T[k]).slice(0, 12);
-    const rec = { id: id || 'svc-' + lieu + '-' + uid(), lieu, ts: ts.length ? ts : ['autre'], t: ts[0] || 'autre', nom: g('nom').slice(0, 80), h: g('h').slice(0, 120), h1: /^\d\d:\d\d$/.test(g('h1')) ? g('h1') : '', h2: /^\d\d:\d\d$/.test(g('h2')) ? g('h2') : '', h24: !!fd.get('h24'), jours: fd.getAll('jours').map(Number).filter((i) => i >= 0 && i < 7), du: g('du'), au: g('au'), maint: !!fd.get('maint'), maintAu: g('maintAu'), inclus: !!fd.get('inclus'), prix: g('prix') ? Math.max(0, num(g('prix').replace(',', '.'))) : '', desc: g('desc').slice(0, 800), ph: ph.filter(Boolean).slice(0, 3) };
+    const rec = { id: id || 'svc-' + lieu + '-' + uid(), lieu, ts: ts.length ? ts : ['autre'], t: ts[0] || 'autre', nom: g('nom').slice(0, 80), h: g('h').slice(0, 120), per: Object.fromEntries((ts.length ? ts : ['autre']).map((k) => { const tm = (v) => (/^\d\d:\d\d$/.test(v) ? v : ''); return [k, { h24: !!fd.get(`p_${k}_h24`), maint: !!fd.get(`p_${k}_maint`), maintAu: g(`p_${k}_maintAu`), sl: [0, 1, 2].map((i) => ({ pub: SVC_PUB[g(`p_${k}_s${i}_pub`)] ? g(`p_${k}_s${i}_pub`) : 'tous', j: fd.getAll(`p_${k}_s${i}_j`).map(Number).filter((j) => j >= 0 && j < 7), h1: tm(g(`p_${k}_s${i}_h1`)), h2: tm(g(`p_${k}_s${i}_h2`)) })).filter((z) => z.h1) }]; })), du: g('du'), au: g('au'), inclus: !!fd.get('inclus'), prix: g('prix') ? Math.max(0, num(g('prix').replace(',', '.'))) : '', desc: g('desc').slice(0, 800), ph: ph.filter(Boolean).slice(0, 3) };
     await vault.mutate((tx) => tx.put('reglages', rec), id ? 'Service modifié' : 'Nouveau service', rec.nom || SVC_T[rec.t]);
     for (const x of dels) await vault.deleteFile(x).catch(() => {});
     toast('Service enregistré'); goBack(); hotesSync();
