@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.265.0';
+const VERSION = '2.266.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3911,6 +3911,15 @@ const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '')
 const APP_BRAND = { nom: 'CENTRAL DOMIER', sub: 'LuxIntervention', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
 const DEF_SOC = () => (TENANT ? tenantInfo.nom || 'Centrale' : 'NOBIS s.a.r.l.');
 const socName = () => societe().nom || DEF_SOC();
+// ligne légale (page de la clé, bas de la centrale) : la société de ⚙️ Réglages → 🧾 Facturation, gardée sur l'appareil pour la page de la clé
+function legalLine() {
+  if (vault.unlocked) {
+    const f = factConf(), v = [f.nom, f.rcs ? 'RCS ' + f.rcs : ''].filter(Boolean).join(' · ');
+    try { if (v) localStorage.setItem('aresLegal', v); } catch { /* plein */ }
+    return v || APP_BRAND.legal;
+  }
+  try { return localStorage.getItem('aresLegal') || APP_BRAND.legal; } catch { return APP_BRAND.legal; }
+}
 // nom affiché aux clients, locataires, ospiti, taxis, annonceurs : la marque LA CENTRAL (la centrale d'un client : son propre nom)
 const netBrand = () => (TENANT ? socName() : 'LA CENTRAL');
 const socLogo = () => societe().logo || (TENANT ? '' : '/ares/icons/nobis-logo.png');
@@ -4155,7 +4164,7 @@ function renderLock(mode, error = '') {
   const legacy = legacyLocal();
   const head = html`
     <img class="lock-logo" src="${APP_BRAND.logo}" alt="" width="96" height="96">
-    <div class="lock-head"><h1 data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</h1><p>${TENANT ? tSub() : APP_BRAND.sub}</p><p class="tiny" data-notr="1">${TENANT ? '' : APP_BRAND.legal}</p></div>`;
+    <div class="lock-head"><h1 data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</h1><p>${TENANT ? tSub() : APP_BRAND.sub}</p><p class="tiny" data-notr="1">${TENANT ? '' : legalLine()}</p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>${TENANT ? html`<p class="tiny muted" style="text-align:center;margin:8px 0 0"><a href="?t=main">↩ Centrale principale</a></p>` : ''}`;
   if (mode === 'blocked') {
     setHtml(lockEl, html`<div class="lock-card">${head}<div class="alert warn">${icon('lock')}<div><b>Centrale bloquée.</b> L’abonnement est échu ou suspendu : contactez LA CENTRAL pour la réactiver. Vos données restent chiffrées et intactes.</div></div>${foot}</div>`);
@@ -6870,7 +6879,7 @@ dashboard() {
       <div class="section-label">Langue</div>
       <div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].filter((k) => LANGS[k]).map((k) => html`<button type="button" data-action="set-lang" data-id="${k}" title="${LANGS[k]}" aria-pressed="${LANG === k}">${k.toUpperCase()}</button>`)}</div>
       <p class="tiny muted" style="margin-top:4px">Les quittances, reçus et relances aux locataires restent en français (documents officiels).</p>
-      <p class="tiny muted" style="margin-top:28px;text-align:center"><span data-notr="1">LA CENTRAL · ${APP_BRAND.legal}</span> · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
+      <p class="tiny muted" style="margin-top:28px;text-align:center"><span data-notr="1">LA CENTRAL · ${legalLine()}</span> · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
   },
 };
 
