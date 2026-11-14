@@ -30,6 +30,10 @@ await q.setInputFiles('#f [name=ph_0]', new URL('../../ares/icons/hote-192.png',
 await q.setInputFiles('#f [name=ph_1]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname); await q.setInputFiles('#f [name=ph_2]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname);
 await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2500);
 { const v = await q.$eval('#view', (e) => e.innerText); assert(/Spa/.test(v) && /maintenance/i.test(v) && /9:00 AM–12:00 PM/.test(v) && /120/.test(v), 'service Spa + prix chambre 120 — ' + v.slice(-300)); }
+assert(await q.$('#view [data-input=svc-mt]'), 'maintenance rapide présente');
+await q.selectOption('#view [data-input=svc-mt]', ''); await q.waitForTimeout(1500);
+assert(!/maintenance/i.test(await q.$eval('#view [data-action=svc-edit]', (e) => e.innerText)), 'maintenance rapide : rouvert');
+await q.selectOption('#view [data-input=svc-mt]', '1'); await q.waitForTimeout(1500);
 await q.evaluate(() => { location.hash = '#/hotel'; }); await q.waitForTimeout(1200);
 assert(!(await q.$('#view [data-action=new-chambre]')), 'Voyageurs : plus de ＋ Chambre');
 await act(q, 'new-hote'); await q.waitForTimeout(800);
