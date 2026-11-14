@@ -164,10 +164,10 @@ function svcCard() {
   const L = data.svc || [];
   if (!L.length) return '';
   const k = SVCL[lang] || SVCL.fr;
-  return `<details class="card hfold" data-fk="svc"${hFoldShut().has('svc') ? '' : ' open'}><summary><h2 style="margin:0">${esc(k.t)}</h2></summary>${L.map((x) => `<div style="margin:10px 0"><b>${esc(x.nom || k.T[x.t] || k.T.autre)}</b>${x.nom ? ` <span class="meta">${esc(k.T[x.t] || '')}</span>` : ''}
+  return `<details class="card hfold" data-fk="svc"${hFoldShut().has('svc') ? '' : ' open'}><summary><h2 style="margin:0">${esc(k.t)}</h2></summary>${L.map((x) => { const lb = ((x.ts && x.ts.length) ? x.ts : [x.t]).map((t) => k.T[t] || k.T.autre).join(' · '); return `<div style="margin:10px 0"><b>${esc(x.nom || lb)}</b>${x.nom ? ` <span class="meta">${esc(lb)}</span>` : ''}
     ${x.maint ? `<p style="margin:4px 0 0;color:#b91c1c"><b>${esc(k.mt)}</b>${x.maintAu ? ' · ' + esc(k.until) + ' ' + esc(fmt(x.maintAu)) : ''}</p>` : ''}
     <p class="meta" style="margin:2px 0 0">${x.h24 ? '🕒 ' + esc(k.h24) + ' · ' : x.h1 ? '🕒 ' + esc(x.h1) + '–' + esc(x.h2 || '') + ' · ' : ''}${(x.jours || []).length && x.jours.length < 7 ? esc(x.jours.slice().sort().map((i) => k.D[i]).join(' ')) + ' · ' : ''}${x.du && x.au ? '📅 ' + esc(k.per.replace('{a}', fmt(x.du)).replace('{b}', fmt(x.au))) + ' · ' : ''}${x.h ? '🕒 ' + esc(x.h) + ' · ' : ''}${x.inclus ? esc(k.inc) : esc(k.pay) + (x.prix ? ' ' + esc(String(x.prix).replace('.', ',')) + ' €' : '')}</p>${x.desc ? `<p style="margin:4px 0 0">${esc(x.desc)}</p>` : ''}
-    ${(x.ph || []).length ? `<div class="car">${x.ph.map((f) => `<figure><img data-f="${esc(f)}" alt="" data-lb="1"></figure>`).join('')}</div>` : ''}</div>`).join('')}</details>`;
+    ${(x.ph || []).length ? `<div class="car">${x.ph.map((f) => `<figure><img data-f="${esc(f)}" alt="" data-lb="1"></figure>`).join('')}</div>` : ''}</div>`; }).join('')}</details>`;
 }
 function fleetCard() {
   const F = (data.fleet || []);

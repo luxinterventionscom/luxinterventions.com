@@ -22,7 +22,7 @@ await act(q, 'new-chambre', { lieu: 'hotel' }); await q.waitForTimeout(700);
 await q.fill('#f [name=num]', '101'); await q.fill('#f [name=m2]', '22'); await q.selectOption('#f [name=typ]', 'double'); await q.selectOption('#f [name=canape]', '1'); await q.check('#f [name=vip]'); await q.fill('#f [name=prix]', '120'); await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2000);
 { const v = await q.$eval('#view', (e) => e.innerText); assert(/101/.test(v) && /👥 3/.test(v) && /VIP/.test(v), 'chambre 101 : Double + canapé = 👥 3, ⭐ VIP — ' + v.slice(0, 300)); }
 await act(q, 'svc-new', { lieu: 'hotel' }); await q.waitForTimeout(700);
-await q.selectOption('#f [name=t]', 'spa'); await q.fill('#f [name=h1]', '09:00'); await q.fill('#f [name=h2]', '21:00'); await q.check('#f [name=jours][value="0"]'); await q.check('#f [name=maint]'); await q.setInputFiles('#f [name=ph_0]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname);
+await q.check('#f [name=ts][value=spa]'); await q.check('#f [name=ts][value=sauna]'); await q.fill('#f [name=h1]', '09:00'); await q.fill('#f [name=h2]', '21:00'); await q.check('#f [name=jours][value="0"]'); await q.check('#f [name=maint]'); await q.setInputFiles('#f [name=ph_0]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname);
 await q.click('button[type=submit][form=f]'); await q.waitForTimeout(2500);
 { const v = await q.$eval('#view', (e) => e.innerText); assert(/Spa/.test(v) && /maintenance/i.test(v) && /1\/3/.test(v) && /120/.test(v), 'service Spa (1 photo) + prix 120 €'); }
 await q.evaluate(() => { location.hash = '#/hotel'; }); await q.waitForTimeout(1200);
