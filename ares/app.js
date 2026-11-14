@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.282.0';
+const VERSION = '2.283.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -6370,14 +6370,14 @@ dashboard() {
     return html`${pageHead(bnb ? '🏠 Logements' : '🛏️ Chambres', bnb ? 'Vos logements : adresse, pièces, m², photos — visibles dans l’app du voyageur' : 'Vos chambres : catégorie, lits, m², photos — visibles dans l’app du voyageur')}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-chambre" data-lieu="${hf}">${icon('plus')} ${bnb ? 'Logement' : 'Chambre'}</button></div></div>
       ${chList(hf, pres)}
-      <div class="section-label" style="margin-top:18px">🏨 Services ${bnb ? 'du logement / de la résidence' : 'de l’hôtel'} <span class="tiny muted">— photos, horaires, inclus ou payant : visibles dans l’app du voyageur</span></div>
+      ${dfold('svc', `🏨 Services ${bnb ? 'du logement' : 'de l’hôtel'}`, `${plural(svcs(hf).length, 'service')} · photos, horaires, prix — visibles dans l’app du voyageur`, html`
       <div class="actions" style="margin:0 0 10px"><button class="btn primary" data-action="svc-new" data-lieu="${hf}">${icon('plus')} Service</button></div>
       ${(() => { const L = svcs(hf).map(svcNorm); return L.length ? html`<div style="background:#fff;border:2px solid #dc2626;border-radius:16px;padding:10px 12px;margin:0 0 12px"><div style="font-variant:small-caps;letter-spacing:.08em;font-weight:700;color:#dc2626;margin-bottom:6px">🔧 Maintenance rapide</div>
         ${L.map((x) => html`<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:6px 0;border-top:1px solid #f3d0d0"><span style="flex:1;min-width:150px;color:#222"><b>${x.nom || svcLbl(x)}</b></span>
           <select data-input="svc-mt" data-id="${x.id}"><option value="" ${x.m && x.m.on ? '' : new Raw('selected')}>Ouvert</option><option value="1" ${x.m && x.m.on ? new Raw('selected') : ''}>🔧 Fermé – maintenance</option></select>
           <label class="small" style="display:inline-flex;gap:4px;align-items:center;color:#222">jusqu’au <input type="date" data-input="svc-mtau" data-id="${x.id}" value="${(x.m && x.m.au) || ''}"></label></div>`)}
         <p class="tiny" style="margin:6px 0 0;color:#666">Sans date = jusqu’à nouvel avis. Le voyageur le voit tout de suite dans son app.</p></div>` : ''; })()}
-      ${(() => { const L = svcs(hf).map(svcNorm); return L.length ? html`<div class="list">${L.map((x) => html`<button class="row" data-action="svc-edit" data-id="${x.id}"><span class="avatar">${(SVC_T[x.t] || '➕').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${x.nom || svcLbl(x)}</span><span class="meta">${svcMaint(x.m) ? html`<b style="color:var(--c-urg,#dc2626)">🔧 maintenance</b> · ` : ''}${(x.sl || []).map((z) => `${z.g !== 'mixte' ? SVC_G[z.g].split(' ')[0] + ' ' : ''}${h12(z.h1)}–${h12(z.h2)}`).join(', ')}${(x.sl || []).length ? ' · ' : ''}${x.inc ? '🆓 inclus' : x.prix ? '💶 ' + x.prix + ' ' + (SVC_SYM[x.cur] || '€') : ''} · 📷 ${(x.ph || []).length}</span></span></button>`)}</div>` : html`<p class="small muted">Aucun service : ＋ Service (piscine, spa, hammam, restaurant, bar…).</p>`; })()}`;
+      ${(() => { const L = svcs(hf).map(svcNorm); return L.length ? html`<div class="list">${L.map((x) => html`<button class="row" data-action="svc-edit" data-id="${x.id}"><span class="avatar">${(SVC_T[x.t] || '➕').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${x.nom || svcLbl(x)}</span><span class="meta">${svcMaint(x.m) ? html`<b style="color:var(--c-urg,#dc2626)">🔧 maintenance</b> · ` : ''}${(x.sl || []).map((z) => `${z.g !== 'mixte' ? SVC_G[z.g].split(' ')[0] + ' ' : ''}${h12(z.h1)}–${h12(z.h2)}`).join(', ')}${(x.sl || []).length ? ' · ' : ''}${x.inc ? '🆓 inclus' : x.prix ? '💶 ' + x.prix + ' ' + (SVC_SYM[x.cur] || '€') : ''} · 📷 ${(x.ph || []).length}</span></span></button>`)}</div>` : html`<p class="small muted">Aucun service : ＋ Service (piscine, spa, hammam, restaurant, bar…).</p>`; })()}`, 'margin-top:18px')}`;
   },
   airbnb() { return hotView('airbnb'); },
   // 🛠️ centrale d'un client : ses demandes d'intervention à LA CENTRAL
