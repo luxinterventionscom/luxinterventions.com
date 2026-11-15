@@ -48,7 +48,11 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
   Gli inquilini di una centrale cliente (es. ARES) non devono MAI arrivare alla MASTER.
 - **Taxi (deciso dal titolare)**: autisti = operai (app operai con GPS «en service», corse, incasso QR/espèces/terminal).
   Nuovo cliente della rete **🚕 CENTRALE-TAXI** (filière `taxi`): menu Accueil (centralino) · Chauffeurs · Parc auto · Comptabilité & statistiques · Réglages.
-  Hotel/Airbnb: «🚕 Taxi / Chauffeurs» (loro chauffeurs con app, ↪️ LA CENTRAL, loro società). L'app `taxi.html` delle società resta per i tassisti da soli.
+  Hotel/Airbnb: «🚕 Taxi / Chauffeurs» (loro chauffeurs con app, ↪️ LA CENTRAL, loro società).
+  **Tassista** = autista di una CENTRALE-TAXI → `taxi.html` (stesso motore dell'app autista, nome «Tassista», logo/colore della ditta).
+  **Autista** = da solo: nostro operaio o freelance (con o senza società) → `autista.html`, sotto LA CENTRAL. Un autista da solo NON diventa CENTRALE-TAXI.
+  La CENTRALE-TAXI è l'ufficio: Parc auto con foto (l'ospite sceglie il veicolo), 💶 tarifs et extras, tassisti con lingue, società/fatture.
+  La vecchia app delle società è ora `taxi-ditta.html`.
   Da fare: le corse dagli hotel/LA CENTRAL verso una CENTRALE-TAXI della rete (passano dalla MASTER), noleggio auto completo, Payconiq.
 - La centrale del titolare è in **francese**; le centrali dei test sono in italiano (solo per le prove).
 

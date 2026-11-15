@@ -485,6 +485,38 @@ const CPT = {
 };
 const cPaidK = (tid) => 'eqCPaid:' + tid;
 let cQr = '';
+// 🚕 nom de l'app : « Tassista » (chauffeur d'une centrale taxi, ouverte par taxi.html) ou « Autista »
+const APPN = { fr: ['🚕 App Tassista', '🚙 App Autista'], it: ['🚕 App Tassista', '🚙 App Autista'], de: ['🚕 Taxi-App', '🚙 Fahrer-App'], en: ['🚕 Taxi driver app', '🚙 Driver app'], pt: ['🚕 App Taxista', '🚙 App Motorista'], es: ['🚕 App Taxista', '🚙 App Conductor'] };
+try { if (new URLSearchParams(location.search).get('app') === 'taxi') localStorage.setItem('eqTx', '1'); } catch { /* stockage indisponible */ }
+const isTx = () => (data ? data.fil === 'taxi' : (() => { try { return localStorage.getItem('eqTx') === '1'; } catch { return false; } })());
+const appName = () => { const n = APPN[lang] || APPN.fr; return data && !data.chauffeur ? null : data || isTx() ? n[isTx() ? 0 : 1] : null; };
+// 🪧 pancarte à l'écran · 🗣️ phrases prêtes dans la langue du client · 🗺️ itinéraire · ✈️ vol
+const PANC = { fr: ['🪧 Pancarte', '🗣️ Phrases pour le client', '🗺️ Itinéraire', '✈️ Suivre le vol', 'Touchez pour fermer'], it: ['🪧 Cartello', '🗣️ Frasi per il cliente', '🗺️ Itinerario', '✈️ Segui il volo', 'Tocca per chiudere'], de: ['🪧 Namensschild', '🗣️ Sätze für den Gast', '🗺️ Route', '✈️ Flug verfolgen', 'Tippen zum Schließen'], en: ['🪧 Name sign', '🗣️ Phrases for the guest', '🗺️ Route', '✈️ Track the flight', 'Tap to close'], pt: ['🪧 Placa', '🗣️ Frases para o cliente', '🗺️ Itinerário', '✈️ Seguir o voo', 'Toque para fechar'], es: ['🪧 Cartel', '🗣️ Frases para el cliente', '🗺️ Ruta', '✈️ Seguir el vuelo', 'Toque para cerrar'] };
+const PHR = {
+  fr: ['Bonjour, je suis votre chauffeur.', 'Je vous attends à la sortie.', 'J’arrive dans 10 minutes.', 'Je m’occupe de vos bagages.', 'Attachez votre ceinture, s’il vous plaît.', 'Nous sommes arrivés. Bon séjour !'],
+  en: ['Hello, I am your driver.', 'I am waiting for you at the exit.', 'I will be there in 10 minutes.', 'I will take care of your luggage.', 'Please fasten your seat belt.', 'We have arrived. Enjoy your stay!'],
+  de: ['Guten Tag, ich bin Ihr Fahrer.', 'Ich warte am Ausgang auf Sie.', 'Ich bin in 10 Minuten da.', 'Ich kümmere mich um Ihr Gepäck.', 'Bitte schnallen Sie sich an.', 'Wir sind angekommen. Schönen Aufenthalt!'],
+  it: ['Buongiorno, sono il suo autista.', 'La aspetto all’uscita.', 'Arrivo tra 10 minuti.', 'Mi occupo io dei bagagli.', 'Allacci la cintura, per favore.', 'Siamo arrivati. Buon soggiorno!'],
+  pt: ['Olá, sou o seu motorista.', 'Espero por si à saída.', 'Chego dentro de 10 minutos.', 'Eu trato da sua bagagem.', 'Aperte o cinto, por favor.', 'Chegámos. Boa estadia!'],
+  es: ['Hola, soy su conductor.', 'Le espero en la salida.', 'Llego en 10 minutos.', 'Yo me ocupo de su equipaje.', 'Abróchese el cinturón, por favor.', 'Hemos llegado. ¡Buena estancia!'],
+};
+function courseTools(x, c) {
+  const P = PANC[lang] || PANC.fr, nom = (x.contact && x.contact.nom) || '', gl = (c.lg || []).find((l) => PHR[l] && l !== lang);
+  const q = encodeURIComponent, route = c.from && c.to ? `https://www.google.com/maps/dir/?api=1&origin=${q(c.from)}&destination=${q(c.to)}` : c.from ? `https://www.google.com/maps/search/?api=1&query=${q(c.from)}` : '';
+  const vol = String(c.vol || '').replace(/\s+/g, '').toLowerCase();
+  return `<div class="btns" style="flex-wrap:wrap">${nom ? `<button class="btn sec" data-panc="${esc(nom)}">${esc(P[0])}</button>` : ''}${route ? `<a class="btn sec" href="${esc(route)}" target="_blank" rel="noopener">${esc(P[2])}</a>` : ''}${/^[a-z0-9]{3,8}$/.test(vol) ? `<a class="btn sec" href="https://www.flightradar24.com/data/flights/${esc(vol)}" target="_blank" rel="noopener">${esc(P[3])}</a>` : ''}</div>
+    ${gl ? `<details style="margin-top:6px"><summary class="meta" style="cursor:pointer">${esc(P[1])} · ${esc(gl.toUpperCase())}</summary>${PHR[gl].map((f, i) => `<div style="margin:6px 0"><b style="font-size:17px">${esc(f)}</b><div class="meta">${esc((PHR[lang] || PHR.fr)[i])}</div></div>`).join('')}</details>` : ''}`;
+}
+document.addEventListener('click', (e) => {
+  const b = e.target.closest && e.target.closest('[data-panc]');
+  if (!b) return;
+  const P = PANC[lang] || PANC.fr, o = document.createElement('div');
+  o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#fff;color:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;filter:none';
+  o.innerHTML = `<div style="font:800 clamp(40px,12vw,120px)/1.1 system-ui;word-break:break-word">${esc(b.dataset.panc)}</div><div style="margin-top:24px;color:#888;font:16px system-ui">${esc(P[4])}</div>`;
+  o.addEventListener('click', () => o.remove());
+  document.body.append(o);
+  try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {}); } catch { /* pas de plein écran */ }
+});
 function courseHtml(x, tid) {
   const c = x.course;
   if (!c) return '';
@@ -496,7 +528,7 @@ function courseHtml(x, tid) {
   const tlRow = c.cancel ? '' : `<div class="btns" style="flex-wrap:wrap">${['dep', 'eta', 'arr'].map((e) => (e === 'eta' || !tl[e]) ? `<button class="btn ${e === 'arr' ? 'ok' : 'sec'}" data-ctl="${esc(tid)}" data-ev="${e}"${e === 'arr' && !tl.dep ? ' disabled' : ''}>${esc(k[e])}</button>` : `<span class="tag">${esc(k[e])} ${esc(String(tl[e]).slice(11, 16))}</span>`).join('')}</div>`;
   const FI = { hotel: '🛎️', lc: '🌐', taxi: '🚕', drv: '🚙', client: '👤' };
   const filRow = c.cancel ? '' : `<details style="margin-top:6px"${(c.fil || []).length ? ' open' : ''}><summary class="meta" style="cursor:pointer">${esc(k.fil)}${(c.fil || []).length ? ' (' + c.fil.length + ')' : ''}</summary>${(c.fil || []).slice(-10).map((m) => `<div class="meta" style="margin:4px 0"><b>${FI[m.from] || '•'} ${esc(m.who || '')}</b> ${esc(String(m.at).slice(11, 16))} — <span data-trx="${esc(m.x)}">${esc(m.x)}</span></div>`).join('')}<div style="display:flex;gap:6px;margin-top:6px"><input data-cfil-x="${esc(tid)}" placeholder="${esc(k.filPh)}" maxlength="1000" style="flex:1"><button class="btn sm" data-cfil="${esc(tid)}">${esc(k.filSend)}</button></div></details>`;
-  const head = `<div class="ir"><span class="ic">🚕</span><div class="tx"><b>${esc(c.from)}</b> → <b>${esc(c.to || '?')}</b>${c.vol ? ' · ✈️ ' + esc(c.vol) : ''}${c.pax ? ' · 👥 ' + c.pax : ''}</div></div>${tlRow}${filRow}`;
+  const head = `<div class="ir"><span class="ic">🚕</span><div class="tx"><b>${esc(c.from)}</b> → <b>${esc(c.to || '?')}</b>${c.vol ? ' · ✈️ ' + esc(c.vol) : ''}${c.pax ? ' · 👥 ' + c.pax : ''}${(c.lg || []).length ? ' · 🗣️ ' + esc(c.lg.join(' ').toUpperCase()) : ''}</div></div>${c.cancel ? '' : courseTools(x, c)}${tlRow}${filRow}`;
   if (c.cancel) return `<div class="tbox">${head}<div class="ir"><b>${esc(k.cancel)}</b></div></div>`;
   if (c.payer !== 'client') return `<div class="tbox">${head}<div class="ir"><span class="ic">🧾</span><div class="tx">${esc(k.ho)}</div></div></div>`;
   const body = paid ? `<div class="ir"><b>${esc(k.paid)} · ${esc(lab[paid] || paid)}${c.ttc ? ' · ' + eur(c.ttc) : ''}</b></div>`
@@ -813,7 +845,7 @@ function render() {
   const top = (name, logo, withLangs = false) => `<div class="top"><span class="brandx"><img class="top-logo" src="${esc(logo || '/ares/icons/lux-192.png')}" alt="" width="76" height="32"><b>${esc(name)}</b></span>${withLangs ? langs : themeBtn()}</div>`;
   if (!data) {
     app.innerHTML = `${top('ARES INVEST S.A.', '', true)}
-      <h1 style="text-align:center;margin-top:18px">👷 ${esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
+      <h1 style="text-align:center;margin-top:18px">${appName() ? esc(appName()) : "👷 " + esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
       ${loadErr ? `<div class="card warnc"><p style="margin:0">${esc(loadErr)}</p></div>` : ''}
       <div class="card"><form id="codeForm"><label>${esc(t.code)}</label>
         <input type="text" name="code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="${esc(t.codePh)}" style="font-size:22px;letter-spacing:.08em;text-align:center" required>
@@ -823,7 +855,7 @@ function render() {
     return;
   }
   const d = data, out = [];
-  document.title = `${t.app} — ${d.societe.nom}`; themeAccent(d.societe.color);
+  document.title = `${appName() || t.app} — ${d.societe.nom}`; themeAccent(d.societe.color);
   if (devEd && !d.devis) devEd = null;
   if (devEd) {
     // l'éditeur du devis occupe l'écran ; il n'est redessiné que si sa forme change (le texte tapé reste)

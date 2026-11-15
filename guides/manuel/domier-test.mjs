@@ -12,7 +12,7 @@ await p.evaluate(() => { location.hash = '#/taxis'; }); await p.waitForTimeout(9
 await act(p, 'new-txco'); await p.waitForTimeout(500); await p.fill('#f [name=nom]', 'Taxi Démo'); await p.fill('#f [name=tel]', '+352 691 000 040');
 const txCode = await p.$eval('#f [name=appCode]', (e) => e.value); await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3000); await p.keyboard.press('Escape');
 const ct = await phone(b, 'it'), x = await ct.newPage(); x.on('pageerror', (e) => errs.push('taxi: ' + e.message));
-await x.goto('http://localhost:8765/taxi.html'); await x.waitForTimeout(1200); await x.fill('input[name=code]', txCode); await x.click('form button[type=submit]'); await x.waitForTimeout(3500);
+await x.goto('http://localhost:8765/taxi-ditta.html'); await x.waitForTimeout(1200); await x.fill('input[name=code]', txCode); await x.click('form button[type=submit]'); await x.waitForTimeout(3500);
 const bn = await x.$eval('[data-domier]', (e) => e.innerText).catch(() => '');
 assert(/DOMIER/.test(bn) && /riparazioni urgenti/.test(bn) && /LUXINTERVENTION/.test(bn), 'banner DOMIER nell’app taxi: ' + bn.slice(0, 120).replace(/\n/g, ' / '));
 assert(await x.$('[data-domier] a[href="tel:+352691423943"]'), '📞 numero LUXINTERVENTION');
