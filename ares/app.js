@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.284.0';
+const VERSION = '2.285.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3700,7 +3700,8 @@ async function txInbox(co, msg) {
     const c = msg.cat || {}, gammes = {};
     for (const k of Object.keys(TX_GAM)) { const g = (c.gammes || {})[k] || {}; gammes[k] = { on: !!g.on, pc: N(g.pc), km: N(g.km), h: N(g.h), demi: N(g.demi), jour: N(g.jour) }; }
     const extras = {}; for (const k of Object.keys(TX_EXT)) if ((c.extras || {})[k] !== undefined && (c.extras || {})[k] !== '') extras[k] = N(c.extras[k]);
-    const cat = { gammes, extras, drivers: (Array.isArray(c.drivers) ? c.drivers : []).slice(0, 40).map((d) => ({ nom: S(d.nom, 60), tel: S(d.tel, 30), lg: S(d.lg, 40), code: S(d.code, 8).toUpperCase() })).filter((d) => d.nom),
+    const xtra = (Array.isArray(c.xtra) ? c.xtra : []).slice(0, 12).map((x) => ({ n: S(x.n, 40), p: N(x.p) })).filter((x) => x.n);
+    const cat = { gammes, extras, xtra, drivers: (Array.isArray(c.drivers) ? c.drivers : []).slice(0, 40).map((d) => ({ nom: S(d.nom, 60), tel: S(d.tel, 30), lg: S(d.lg, 120), code: S(d.code, 8).toUpperCase() })).filter((d) => d.nom),
       cars: (Array.isArray(c.cars) ? c.cars : []).slice(0, 40).map((x) => ({ modele: S(x.modele, 60), plaque: S(x.plaque, 20).toUpperCase(), gamme: TX_GAM[x.gamme] ? x.gamme : 'eco', places: N(x.places) })).filter((x) => x.modele) };
     await vault.mutate((tx) => tx.put('reglages', { id: co.id, cat, catAt: new Date().toISOString() }), '🚕 Catalogue de la société de taxi', `${co.nom} · ${plural(cat.drivers.length, 'chauffeur')} · ${plural(cat.cars.length, 'voiture')}`);
     hotesSync(); return true;
