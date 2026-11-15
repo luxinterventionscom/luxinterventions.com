@@ -9,7 +9,7 @@ const relog = async (p, pass) => { await p.reload(); await p.waitForTimeout(2500
 const body = (p) => p.evaluate(() => document.body.innerText);
 const PASS = 'Tr3s-l0ngue-cle!', CPASS = 'Cle-Demo-Hotel-2026!';
 const st = JSON.parse(execFileSync('node', [new URL('./demo-data.mjs', import.meta.url).pathname]).toString());
-st.intervenants.w3.metier = 'chauffeur';
+st.intervenants.w3.metier = 'chauffeur'; st.hotes.h1.langues = ['en'];
 const T = st.hotes.h1.arrivee;
 st.hotes.h1.arr = { mode: 'taxi', from: 'Aéroport Findel', quand: T + 'T18:30', vol: 'LG123', km: 8, prix: 35 };
 const demo = new URL('./shots/demo-tx.json', import.meta.url).pathname;
@@ -57,6 +57,11 @@ assert((await a.evaluate(() => document.documentElement.style.getPropertyValue('
 assert(await a.$('[data-theme-btn]'), 'chauffeur: bouton ☀️/🌙');
 await a.click('[data-theme-btn]'); await a.click('[data-theme-btn]'); await a.waitForTimeout(200);
 assert((await a.evaluate(() => document.documentElement.dataset.theme)) === 'dark', 'chauffeur: 🌙 sombre');
+assert(await a.$('[data-panc]'), 'chauffeur: 🪧 pancarte');
+assert(/Hello, I am your driver/.test(await a.evaluate(() => document.body.innerHTML)), 'chauffeur: 🗣️ phrases en anglais');
+await a.click('[data-panc]'); await a.waitForTimeout(300);
+assert(await a.evaluate(() => [...document.body.children].some((x) => x.style.position === 'fixed' && /Tocca per chiudere/.test(x.textContent))), 'chauffeur: pancarte plein écran');
+await a.mouse.click(50, 50); await a.waitForTimeout(200);
 const cash = await a.$('[data-cpay][data-mode=cash]');
 assert(cash, 'chauffeur: course avec « Payé en espèces »');
 await cash.click(); await a.waitForTimeout(3000);
@@ -76,4 +81,6 @@ await q.click('button[type=submit][form=f]'); await q.waitForTimeout(3000);
 let cid = '';
 for (let k = 0; k < 4 && !cid; k++) { await act(p, 'net-reload'); await p.waitForTimeout(3000); await p.evaluate(() => { location.hash = '#/taxis'; }); await p.waitForTimeout(1200); cid = await p.evaluate(() => { const el = [...document.querySelectorAll('[data-action=course-open]')].find((x) => /Kirchberg/.test(x.innerText)); return el ? el.dataset.id : ''; }); }
 assert(cid, 'centrale: ＋ Demande 🚕 reçue');
+const c9 = await phone(b, 'it'), tz = await c9.newPage(); await tz.goto('http://localhost:8765/taxi.html'); await tz.waitForTimeout(1500);
+assert(/equipe\.html\?app=taxi/.test(tz.url()) && /Tassista/.test(await tz.evaluate(() => document.body.innerText)), 'taxi.html → app Tassista');
 log('errs ' + errs.join(' | ')); await b.close();

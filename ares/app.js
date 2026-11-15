@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.286.0';
+const VERSION = '2.287.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -567,7 +567,7 @@ async function publishPub(immId, loud) {
 // Chaque personne voit seulement SON planning (lieu, jour, consignes), son horaire et ses absences ;
 // elle renvoie « commencé / fini / pas fini » avec note et photos, ses coordonnées, ses arrêts maladie.
 const eqUrl = (i) => `${location.origin}/equipe.html#${i.espace.id}.${i.espace.key}`;
-const eqAppUrl = (i) => `${location.origin}/${i && CHAUF.has(i.metier) ? 'autista' : 'equipe'}.html`; // 🚙 chauffeurs : autista.html (même app)
+const eqAppUrl = (i) => `${location.origin}/${i && CHAUF.has(i.metier) ? (TENANT && tenantInfo.fil === 'taxi' ? 'taxi' : 'autista') : 'equipe'}.html`; // 🚕 tassista d'une CENTRALE-TAXI : taxi.html // 🚙 chauffeurs : autista.html (même app)
 const MEN_TAGS = { ok: '⏰ À l’heure', late: '⏰ En retard', nice: '😊 Aimable', rude: '😠 Désagréable', clean: '✨ Bien nettoyé', dirty: '🧹 Oublis / mal nettoyé', fait: '✅ Travail bien fait', pasfini: '⚠️ Pas fini', tidy: '🧽 Laissé propre', messy: '🗑️ Laissé sale' };
 const MEN_EVAL = { 1: '😞 Insuffisant', 2: '😐 Suffisant', 3: '🙂 Bien', 4: '⭐ Excellent' };
 const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini', refus: '✋ Refusé', start: '🚕 Accepté (START)' };
@@ -748,7 +748,7 @@ function equipeData(i) {
       ph: { av: eqPhotos(t.id, 'av').length, ap: eqPhotos(t.id, 'ap').length },
       pb: eqPhotos(t.id, 'pb').slice(0, 6).map((x) => x.id),
       // 🚕 course d'un client : trajet, qui paie, prix TTC, QR du virement (IBAN de la société qui facture), paiement déjà noté
-      ...(t.course ? { course: (() => { const c = t.course, fc = TENANT ? { nom: socName(), iban: ibanOk(societe().iban) ? societe().iban : '', bic: societe().bic || '' } : factConf(), ttc = courseTtc(t); return { fil: (c.fil || []).slice(-20).map((m) => ({ id: m.id, at: m.at, from: m.from, who: m.who, x: m.x })), from: c.from || '', to: c.to || '', vol: c.vol || '', pax: c.pax || 0, payer: c.payer, ttc, paid: c.paid ? c.paid.mode : '', cancel: c.cancel || '', epc: c.payer === 'client' && ttc > 0 && fc.iban ? epcText(fc.nom, fc.iban, fc.bic, ttc, 'Course ' + (t.date || '') + ' ' + String(t.id).slice(-6)) : '' }; })() } : {}),
+      ...(t.course ? { course: (() => { const c = t.course, fc = TENANT ? { nom: socName(), iban: ibanOk(societe().iban) ? societe().iban : '', bic: societe().bic || '' } : factConf(), ttc = courseTtc(t); return { lg: ((c.lg && c.lg.length ? c.lg : c.hid ? (vault.get('hotes', c.hid) || {}).langues : null) || []).slice(0, 6), fil: (c.fil || []).slice(-20).map((m) => ({ id: m.id, at: m.at, from: m.from, who: m.who, x: m.x })), from: c.from || '', to: c.to || '', vol: c.vol || '', pax: c.pax || 0, payer: c.payer, ttc, paid: c.paid ? c.paid.mode : '', cancel: c.cancel || '', epc: c.payer === 'client' && ttc > 0 && fc.iban ? epcText(fc.nom, fc.iban, fc.bic, ttc, 'Course ' + (t.date || '') + ' ' + String(t.id).slice(-6)) : '' }; })() } : {}),
     };
   };
   const imIds = new Set(hors(i).map((h) => h.immId).filter(Boolean));
@@ -765,7 +765,7 @@ function equipeData(i) {
   }
   const k = vault.get('reglages', 'signal');
   return {
-    v: 1, kind: 'equipe', gv: VERSION, chauffeur: CHAUF.has(i.metier), ident: CHAUF.has(i.metier) ? i.ident || '' : '', lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i), photo: photoOk(i.photo) ? i.photo : '',
+    v: 1, kind: 'equipe', gv: VERSION, chauffeur: CHAUF.has(i.metier), fil: TENANT ? tenantInfo.fil || '' : '', ident: CHAUF.has(i.metier) ? i.ident || '' : '', lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i), photo: photoOk(i.photo) ? i.photo : '',
     // l'équipe travaille pour ARES INVEST S.A. (LA CENTRAL) : son nom et son logo (casque) dans l'app des ouvriers
     societe: TENANT ? { nom: socName(), tel: soc.tel || '', logo: soc.logo || '/ares/icons/lux-192.png', color: soc.color || '' } : { nom: factConf().nom || 'ARES INVEST S.A.', tel: factConf().tel || soc.tel || '', logo: '/ares/icons/lux-192.png' },
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '', ccss: i.ccss || '' },
@@ -1962,7 +1962,7 @@ async function netDemSync(list) {
           if (cur && cur.statut !== 'fait') await vault.mutate((tx) => tx.put('taches', { id: cur.id, statut: 'fait', doneDate: today(), titre: '❌ ' + cur.titre.replace(/^❌ /, ''), course: { ...cur.course, cancel: today() } }), '❌ Course annulée par le client', `${cl} — ${cur.titre}`);
         } else if (ref) {
           const c = m.c || {}, q = S(c.quand, 16);
-          const cr = { from: S(c.from, 160), to: S(c.to, 160), quand: q, vol: S(c.vol, 20), km: Math.max(0, +c.km || 0), est: Math.max(0, +c.prix || 0), service: TX_SRV[c.service] ? c.service : 'course', gamme: TX_GAM[c.gamme] ? c.gamme : '', extras: (Array.isArray(c.extras) ? c.extras : []).filter((k) => TX_EXT[k]).slice(0, 6), heures: Math.max(0, +c.heures || 0), pax: Math.max(0, Math.min(60, +c.pax || 0)), payer: c.payer === 'hotel' ? 'hotel' : 'client' };
+          const cr = { from: S(c.from, 160), to: S(c.to, 160), quand: q, vol: S(c.vol, 20), km: Math.max(0, +c.km || 0), est: Math.max(0, +c.prix || 0), service: TX_SRV[c.service] ? c.service : 'course', gamme: TX_GAM[c.gamme] ? c.gamme : '', extras: (Array.isArray(c.extras) ? c.extras : []).filter((k) => TX_EXT[k]).slice(0, 6), heures: Math.max(0, +c.heures || 0), pax: Math.max(0, Math.min(60, +c.pax || 0)), payer: c.payer === 'hotel' ? 'hotel' : 'client', lg: (Array.isArray(c.lg) ? c.lg : []).map((x) => S(x, 3)).slice(0, 6) };
           const rec = { titre: `🌐 🚕 ${cl} : ${cr.from || '?'} → ${cr.to || '?'}`, date: /^\d{4}-\d{2}-\d{2}/.test(q) ? q.slice(0, 10) : today(), heure: /T\d\d:\d\d/.test(q) ? q.slice(11, 16) : '', adresse: cr.from,
             lieu: { nom: S(c.guest, 80) || cl, adr: cr.from, contact: S(c.guest, 80), tel: S(c.tel, 30) }, note: [cr.to ? '🏁 → ' + cr.to : '', cr.vol ? '✈️ ' + cr.vol : '', cr.pax ? '👥 ' + cr.pax : '', [TX_SRV[cr.service], TX_GAM[cr.gamme], ...cr.extras.map((k) => TX_EXT[k])].filter(Boolean).join(' · '), cr.payer === 'hotel' ? '🧾 Payé par ' + cl + ' (facture)' : '💶 Payé par le client dans la voiture', S(c.plus, 600)].filter(Boolean).join('\n') };
           if (cur && cur.statut !== 'fait') await vault.mutate((tx) => tx.put('taches', { id: cur.id, ...rec, course: { ...cur.course, ...cr } }), '🚕 Course modifiée par le client', `${cl} — ${cr.from} → ${cr.to}`);
@@ -2095,7 +2095,7 @@ async function tenantBoxSync() {
         const S = (v, n) => String(v ?? '').slice(0, n), ref = S(m.ref, 40), cur = vault.list('taches').find((x) => x.course && x.course.up && x.course.up.ref === ref);
         if (m.cancel) { if (cur && cur.statut !== 'fait') await vault.mutate((tx) => tx.put('taches', { id: cur.id, statut: 'fait', doneDate: today(), titre: '❌ ' + cur.titre.replace(/^❌ /, ''), course: { ...cur.course, cancel: today() } }), '❌ Course annulée (LA CENTRAL)', cur.titre); if (cur && cur.intervenantId) equipeSync(cur.intervenantId).catch(() => {}); }
         else {
-          const c = m.c || {}, q = S(c.quand, 16), cr = { from: S(c.from, 160), to: S(c.to, 160), quand: q, vol: S(c.vol, 20), pax: Math.max(0, Math.min(60, +c.pax || 0)), payer: c.payer === 'hotel' ? 'hotel' : 'client', prix: Math.max(0, +c.prix || 0), vehT: FLEET_T[c.vehT] ? c.vehT : '', up: { ref, from: S(m.from, 80) || 'LA CENTRAL', client: S(c.client, 80) } };
+          const c = m.c || {}, q = S(c.quand, 16), cr = { from: S(c.from, 160), to: S(c.to, 160), quand: q, vol: S(c.vol, 20), pax: Math.max(0, Math.min(60, +c.pax || 0)), payer: c.payer === 'hotel' ? 'hotel' : 'client', prix: Math.max(0, +c.prix || 0), vehT: FLEET_T[c.vehT] ? c.vehT : '', lg: (Array.isArray(c.lg) ? c.lg : []).map((x) => S(x, 3)).slice(0, 6), up: { ref, from: S(m.from, 80) || 'LA CENTRAL', client: S(c.client, 80) } };
           const rec = { titre: `🌐 🚕 ${cr.up.client || cr.up.from} : ${cr.from || '?'} → ${cr.to || '?'}`, date: /^\d{4}-\d{2}-\d{2}/.test(c.date || q) ? S(c.date || q, 10) : today(), heure: /^\d\d:\d\d$/.test(c.heure || '') ? c.heure : /T\d\d:\d\d/.test(q) ? q.slice(11, 16) : '', adresse: cr.from, lieu: { nom: S(c.guest, 80), adr: cr.from, contact: S(c.guest, 80), tel: S(c.tel, 30) }, note: S(c.note, 2000) };
           if (cur) await vault.mutate((tx) => tx.put('taches', { id: cur.id, ...rec, course: { ...cur.course, ...cr } }), '🚕 Course modifiée (LA CENTRAL)', rec.titre);
           else await vault.mutate((tx) => tx.put('taches', { type: 'autre', ...rec, immId: '', logId: '', locId: '', intervenantId: '', recur: '', statut: 'afaire', urgent: false, sentAt: new Date().toISOString(), course: cr }), '🚕 Course reçue de LA CENTRAL', rec.titre);
@@ -2817,7 +2817,7 @@ async function hoteInbox(h, msg) {
     if (chg && tx0) {
       if (tx0.own && tx0.w) equipeSync(tx0.w).catch(() => {});
       if (tx0.lc && TENANT) { const hc = hoteConf(), home = h.lieu === 'airbnb' ? h.adresse || chGet(h.lieu, h.chambre).adresse || '' : hc.adresse || societe().adresse || '';
-        tenantSend(mode === 'self' ? { type: 'taxi-cancel', ref: h.id + '|arr' } : { type: 'taxi', ref: h.id + '|arr', c: { from: arr.from, to: home, quand: arr.quand, vol: arr.vol, km: arr.km, prix: arr.prix, service: arr.service, gamme: arr.gamme, extras: arr.extras, heures: arr.heures, pax: h.pers || 0, payer: tx0.payer || 'client', guest: [h.prenom, h.nom].filter(Boolean).join(' '), tel: h.tel || '', plus: '✏️ Changé par le client' } }).catch(() => {}); }
+        tenantSend(mode === 'self' ? { type: 'taxi-cancel', ref: h.id + '|arr' } : { type: 'taxi', ref: h.id + '|arr', c: { from: arr.from, to: home, quand: arr.quand, lg: h.langues || [], vol: arr.vol, km: arr.km, prix: arr.prix, service: arr.service, gamme: arr.gamme, extras: arr.extras, heures: arr.heures, pax: h.pers || 0, payer: tx0.payer || 'client', guest: [h.prenom, h.nom].filter(Boolean).join(' '), tel: h.tel || '', plus: '✏️ Changé par le client' } }).catch(() => {}); }
       if (tx0.co) txcoSync(tx0.co, true).catch(() => {});
     }
     return true;
@@ -3572,7 +3572,7 @@ const HOTE_INV = {
 };
 const hoteLink = (h) => `${HOTE_URL()}?c=${encodeURIComponent(h.appCode || '')}`;
 const hoteInvite = (h) => (HOTE_INV[h.langue] || HOTE_INV.en)(h.prenom || h.nom, hoteConf().nom || netBrand(), hoteLink(h), h.appCode);
-// 🚕 Sociétés de taxi / chauffeurs (réseau) : chacune a son app (taxi.html) ; catalogue envoyé par la société
+// 🚕 Sociétés de taxi / chauffeurs (réseau) : chacune a son app (taxi-ditta.html) ; catalogue envoyé par la société
 const TX_GAM = { luxe: '💎 Luxe', confort: '🚘 Confort', eco: '🚕 Économique' };
 // 🚗 parc auto d'une société de taxi : combien de chaque sorte, 2 photos (dehors, dedans) — le client les voit dans son app
 const FLEET_T = { berline: '🚘 Berline', suv: '🚙 SUV', van: '🚐 Van (6-8 places)', luxe: '💎 Luxe / limousine', sport: '🏎️ Sportive', minibus: '🚌 Minibus' };
@@ -8540,7 +8540,7 @@ const SHEETS = {
   'txco-form'({ id }) {
     const co = id ? vault.get('reglages', id) : { appCode: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0') };
     if (id && !co) return null;
-    const inv = `🚕 ${co.nom || ''} — app des courses ${hoteConf().nom || socName() || 'LA CENTRAL'} : ${location.origin}/taxi.html\nCode : ${co.appCode}`;
+    const inv = `🚕 ${co.nom || ''} — app des courses ${hoteConf().nom || socName() || 'LA CENTRAL'} : ${location.origin}/taxi-ditta.html\nCode : ${co.appCode}`;
     setTimeout(() => hydrateBiens(sheetEl), 0);
     return {
       title: id ? co.nom : 'Nouvelle société de taxi',
@@ -8559,7 +8559,7 @@ const SHEETS = {
         <div class="full" style="background:#e8f3fc;border:1px solid #c6def3;border-radius:14px;padding:12px 14px;display:grid;gap:10px">
           <div class="section-label" style="margin:0;color:#1d4e89">📱 CODE DE L’APP DE LA SOCIÉTÉ</div>
           <div style="display:flex;gap:8px;align-items:flex-end">${field('Code d’accès à l’app', 'appCode', co.appCode, { attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em;background:#fff"' })}<button type="button" class="btn sm" data-action="txco-newcode" title="Code perdu : un nouveau code (l’ancien ne marche plus)">🔄 Code perdu</button></div>
-          ${id ? (() => { const t2 = String(co.gsm || co.tel || '').replace(/[^\d+]/g, ''), link = `${location.origin}/taxi.html`; return html`<div class="actions" style="margin:0;flex-wrap:wrap;gap:6px"><button type="button" class="btn sm" data-action="code-copy" data-code="${co.appCode}">📋 Code</button><button type="button" class="btn sm" data-action="code-copy" data-code="${link}">🔗 Lien</button>${t2 ? html`<a class="btn sm" href="https://wa.me/${t2.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}${co.email ? html`<a class="btn sm" href="mailto:${co.email}?subject=${encodeURIComponent('🚕 App des courses')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}${t2 ? html`<a class="btn sm" href="sms:${t2}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}</div>`; })() : html`<p class="tiny muted" style="margin:0">Enregistrez, puis envoyez le code (WhatsApp, email, SMS).</p>`}
+          ${id ? (() => { const t2 = String(co.gsm || co.tel || '').replace(/[^\d+]/g, ''), link = `${location.origin}/taxi-ditta.html`; return html`<div class="actions" style="margin:0;flex-wrap:wrap;gap:6px"><button type="button" class="btn sm" data-action="code-copy" data-code="${co.appCode}">📋 Code</button><button type="button" class="btn sm" data-action="code-copy" data-code="${link}">🔗 Lien</button>${t2 ? html`<a class="btn sm" href="https://wa.me/${t2.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a>` : ''}${co.email ? html`<a class="btn sm" href="mailto:${co.email}?subject=${encodeURIComponent('🚕 App des courses')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}${t2 ? html`<a class="btn sm" href="sms:${t2}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}</div>`; })() : html`<p class="tiny muted" style="margin:0">Enregistrez, puis envoyez le code (WhatsApp, email, SMS).</p>`}
           ${(co.codeHist || []).length ? html`<details><summary class="small">🗂️ Codes donnés : ${co.codeHist.length}</summary><div class="list small">${[...co.codeHist].reverse().map((x) => html`<div class="row"><span class="grow">${fmtDate(x.d)} — ${'•'.repeat(Math.max(0, (x.code || '').length - 2))}${(x.code || '').slice(-2)}${x.why ? ' · ' + x.why : ''}</span></div>`)}</div></details>` : ''}
           <p class="tiny muted" style="margin:0">Dans son app, la société met ses chauffeurs, ses voitures, ses tarifs et ses extras ; elle accepte ou refuse les courses que vous lui envoyez.</p>
         </div>
@@ -10770,7 +10770,7 @@ const ACTIONS = {
     const rid = d.r || 'arr', a = d.r ? (h.rides || []).find((r) => r.id === d.r) || {} : h.arr || {}, hc = hoteConf();
     const payer = (document.getElementById('txPayer') || {}).value === 'hotel' ? 'hotel' : 'client';
     const home = h.lieu === 'airbnb' ? h.adresse || chGet(h.lieu, h.chambre).adresse || '' : hc.adresse || '';
-    const c = { from: a.from || '', to: a.to || (d.r ? '' : home), quand: a.quand || '', vol: a.vol || '', km: a.km || 0, prix: a.prix || 0, service: a.service || 'course', gamme: a.gamme || '', extras: a.extras || [], heures: a.heures || 0, pax: h.pers || 0, payer, guest: [h.prenom, h.nom].filter(Boolean).join(' '), tel: h.tel || '', plus: [(h.lieu === 'airbnb' ? 'Logement ' : 'Chambre ') + (h.chambre || ''), FLEET_T[a.veh] || '', (a.extras || []).map((k) => TX_EXT[k]).join(' '), a.note ? '📝 ' + a.note : ''].filter(Boolean).join(' · ') };
+    const c = { from: a.from || '', to: a.to || (d.r ? '' : home), quand: a.quand || '', vol: a.vol || '', km: a.km || 0, prix: a.prix || 0, service: a.service || 'course', gamme: a.gamme || '', extras: a.extras || [], heures: a.heures || 0, pax: h.pers || 0, lg: h.langues || [], payer, guest: [h.prenom, h.nom].filter(Boolean).join(' '), tel: h.tel || '', plus: [(h.lieu === 'airbnb' ? 'Logement ' : 'Chambre ') + (h.chambre || ''), FLEET_T[a.veh] || '', (a.extras || []).map((k) => TX_EXT[k]).join(' '), a.note ? '📝 ' + a.note : ''].filter(Boolean).join(' · ') };
     try { await tenantSend({ type: 'taxi', ref: h.id + '|' + rid, c }); } catch (e) { return toast(e.status === 423 ? 'Lecture seule : abonnement échu' : 'Envoi impossible (connexion ?)', { bad: true }); }
     const t = { lc: 1, st: 'wait', nom: 'LA CENTRAL', payer, prix: 0, at: new Date().toISOString() };
     if (d.r) await vault.mutate((tx) => tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === d.r ? { ...r, taxi: t } : r)) }), '↪️ Course envoyée à LA CENTRAL', `${h.nom} — ${c.from}`);
@@ -10792,7 +10792,7 @@ const ACTIONS = {
     await vault.mutate((tx) => {
       t.tid = tx.put('taches', { type: 'autre', titre: `🚕 ${guest} (${h.chambre || ''}) : ${a.from || '?'} → ${to || '?'}`, immId: '', logId: '', locId: '', intervenantId: w.id, date: /^\d{4}-\d{2}-\d{2}/.test(q) ? q.slice(0, 10) : today(), heure: /T\d\d:\d\d/.test(q) ? q.slice(11, 16) : '', recur: '', statut: 'planifie', urgent: false, adresse: a.from || '',
         lieu: { nom: guest, adr: a.from || '', contact: guest, tel: h.tel || '' }, note: [to ? '🏁 → ' + to : '', a.vol ? '✈️ ' + a.vol : '', h.pers ? '👥 ' + h.pers : '', FLEET_T[a.veh] || '', (a.extras || []).map((k) => TX_EXT[k]).join(' '), a.note ? '📝 ' + a.note : '', payer === 'hotel' ? '🧾 Sur la note du client : rien à encaisser' : '💶 Le client paie dans la voiture'].filter(Boolean).join('\n'),
-        course: { from: a.from || '', to, quand: q, vol: a.vol || '', pax: h.pers || 0, payer, ttcFix: num(a.prix) || 0, hid: h.id, rid, veh: v ? v.id : '', drv: { nom: t.nom, tel: t.tel, auto: t.auto, plaque: t.plaque } } }).id;
+        course: { from: a.from || '', to, quand: q, vol: a.vol || '', pax: h.pers || 0, lg: h.langues || [], payer, ttcFix: num(a.prix) || 0, hid: h.id, rid, veh: v ? v.id : '', drv: { nom: t.nom, tel: t.tel, auto: t.auto, plaque: t.plaque } } }).id;
       if (d.r) tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === d.r ? { ...r, taxi: t } : r)) });
       else tx.put('hotes', { id: h.id, taxi: t });
     }, '🚙 Course confiée à votre chauffeur', `${guest} — ${intervFull(w)}`);

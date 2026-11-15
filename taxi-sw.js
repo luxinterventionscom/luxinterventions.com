@@ -1,6 +1,6 @@
 // App des sociétés de taxi : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'taxi-shell-v1.28.0';
-const SHELL = ['/ares/theme.js', '/taxi.html', '/taxi.js', '/ares/espace-crypto.js', '/ares/pchat.js', '/ares/chattr.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/news.js', '/ares/domier.js', '/ares/qrcode.js', '/ares/jobform.js', '/ares/emoji.js', '/ares/pubstat.js', '/ares/pubsched.js', '/ares/pubsocial.js', '/ares/reqmark.js', '/ares/wxradio.js', '/ares/nbien.js', '/ares/trip.js', '/taxi.webmanifest', '/ares/icons/lux-192.png', '/assets/fonts/fonts.css'];
+const CACHE = 'taxi-shell-v1.29.0';
+const SHELL = ['/ares/theme.js', '/taxi.html', '/taxi-ditta.html', '/taxi.js', '/ares/espace-crypto.js', '/ares/pchat.js', '/ares/chattr.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/news.js', '/ares/domier.js', '/ares/qrcode.js', '/ares/jobform.js', '/ares/emoji.js', '/ares/pubstat.js', '/ares/pubsched.js', '/ares/pubsocial.js', '/ares/reqmark.js', '/ares/wxradio.js', '/ares/nbien.js', '/ares/trip.js', '/taxi.webmanifest', '/ares/icons/lux-192.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
@@ -31,13 +31,13 @@ self.addEventListener('push', (e) => {
   e.waitUntil((async () => {
     const n = (await badgeGet()) + 1;
     await badgeSet(n);
-    await self.registration.showNotification('🚕 Courses', { body: m.body || '', icon: '/ares/icons/lux-192.png', badge: '/ares/icons/favicon-32.png', tag: m.tag || 'app', renotify: true, data: { url: '/taxi.html' } });
+    await self.registration.showNotification('🚕 Courses', { body: m.body || '', icon: '/ares/icons/lux-192.png', badge: '/ares/icons/favicon-32.png', tag: m.tag || 'app', renotify: true, data: { url: '/taxi-ditta.html' } });
     for (const c of await self.clients.matchAll({ type: 'window', includeUncontrolled: true })) c.postMessage({ k: 'push', tag: m.tag || '' });
   })());
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
-  const url = (e.notification.data && e.notification.data.url) || '/taxi.html';
+  const url = (e.notification.data && e.notification.data.url) || '/taxi-ditta.html';
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
     const c = cs.find((x) => new URL(x.url).pathname === url);
     return c ? c.focus() : self.clients.openWindow(url);

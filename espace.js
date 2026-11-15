@@ -1702,7 +1702,7 @@ async function load() {
       // code de l'app de l'équipe tapé ici par erreur : on ouvre la bonne app
       if (data && data.kind === 'equipe') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/equipe.html#${id}.${key}`); return; }
       if (data && data.kind === 'hote') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/hote.html#${id}.${key}`); return; }
-      if (data && data.kind === 'taxi') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/taxi.html#${id}.${key}`); return; }
+      if (data && data.kind === 'taxi') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/taxi-ditta.html#${id}.${key}`); return; }
       if (data && data.kind === 'annonce') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/annonce.html#${id}.${key}`); return; }
       else if (r.status === 404) { try { localStorage.removeItem(ACC); } catch {} id = key = ''; loadErr = T().off; }
     } catch { loadErr = '⚠ offline'; }

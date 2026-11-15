@@ -22,7 +22,7 @@ await p.evaluate(() => { location.hash = '#/taxis'; }); await p.waitForTimeout(9
 await act(p, 'new-txco'); await p.waitForTimeout(500); await p.fill('#f [name=nom]', 'Taxi Démo'); await p.fill('#f [name=tel]', '+352 691 000 040');
 const txCode = await p.$eval('#f [name=appCode]', (e) => e.value); await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3000); await p.keyboard.press('Escape');
 const ct = await phone(b, L), x = await ct.newPage(); x.on('pageerror', (e) => errs.push('taxi: ' + e.message));
-await x.goto('http://localhost:8765/taxi.html'); await x.waitForTimeout(1200); await x.fill('input[name=code]', txCode); await x.click('form button[type=submit]'); await x.waitForTimeout(3500);
+await x.goto('http://localhost:8765/taxi-ditta.html'); await x.waitForTimeout(1200); await x.fill('input[name=code]', txCode); await x.click('form button[type=submit]'); await x.waitForTimeout(3500);
 assert(await x.$('#profCard'), 'fiche de facturation affichée à la première ouverture');
 for (const [k, v] of [['nom', 'Taxi Démo S.à r.l.'], ['adresse', '1, rue du Taxi'], ['ville', 'L-1000 Luxembourg'], ['rcs', 'B000001'], ['tva', 'LU00000001'], ['taux', '3']]) await x.fill(`[data-p=${k}]`, v);
 await x.check('[data-pr=pay][value=iban]'); await x.waitForTimeout(300); await x.fill('[data-p=iban]', 'LU28 0019 4006 4475 0000'); await x.fill('[data-p=bic]', 'BCEELULL');
