@@ -58,6 +58,8 @@ function list() {
     .map((m) => { const e = eds.find((z) => z.id === m.id); return !e ? m : e.del ? null : { ...m, x: e.x, ed: e.at }; })
     .filter(Boolean).slice(-50);
 }
+// 💬 carte repliable (choix gardé ; rouverte toute seule s'il y a un nouveau message)
+document.addEventListener('toggle', (e) => { if (e.target.id !== 'pcCard') return; try { localStorage.setItem('pcShut', e.target.open ? '' : '1'); } catch { /* stockage indisponible */ } }, true);
 export function pchatCard() {
   const t = tx(), d = cfg.data() || {}, rd = d.chatRd || '', all = list();
   let seen = ''; try { seen = localStorage.getItem(SK()) || ''; } catch { /* stockage indisponible */ }
@@ -65,11 +67,12 @@ export function pchatCard() {
   const tm = (m) => new Date(m.at).toLocaleString(cfg.lang(), { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
   const tk = (m) => (m.from !== 'p' ? '' : m.wait ? '<span class="tk">✓</span>' : `<span class="tk${rd && m.at <= rd ? ' rd' : ''}">✓✓</span>`);
   const quick = cfg.quick ? `<div class="pc-quick" aria-label="${esc(t.quick)}">${cfg.quick.map(([em, l]) => { const txt = em + ' ' + (l[cfg.lang()] || l.fr); return `<button type="button" class="pill" data-pcq="${esc(txt)}">${esc(txt)}</button>`; }).join('')}</div>` : '';
-  return `<div class="card pc-c" id="pcCard"><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(t.t)}${nw ? ` <span class="tag bad">${nw} ${esc(t.nw)}</span>` : ''}${trButton()}</h2><p class="meta" style="margin:0 0 8px">🔒 ${esc(t.hint)}</p>
+  let shut = false; try { shut = localStorage.getItem('pcShut') === '1'; } catch { /* stockage indisponible */ }
+  return `<details class="card pc-c" id="pcCard"${shut && !nw ? '' : ' open'}><summary style="cursor:pointer;list-style:none"><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0">${esc(t.t)}${nw ? ` <span class="tag bad">${nw} ${esc(t.nw)}</span>` : ''}${trButton()}</h2></summary><p class="meta" style="margin:0 0 8px">🔒 ${esc(t.hint)}</p>
     <div class="chat">${all.length ? all.map((m) => { const ed = editable(m); return `<div class="bub ${m.from === 'p' ? 'me' : 'mgr'}"><div class="bub-h"><b>${esc(m.from === 'p' ? t.me : t.ctr)}</b> · ${esc(tm(m))}${ed ? `<button type="button" class="bub-mn" data-pcmenu="${esc(m.id)}" aria-label="${esc(t.menu)}">⋯</button>` : ''}</div><div class="bub-x"${m.from === 'p' ? '' : ` data-trx="${esc(m.x)}"`}>${esc(m.x)}</div>`
       + `${m.ed || m.from === 'p' ? `<div class="bub-f">${m.ed ? esc(t.edited) : ''} ${tk(m)}</div>` : ''}`
       + `${ed && menu === m.id ? `<div class="bub-menu"><button type="button" data-pcop="edit" data-id="${esc(m.id)}">${esc(t.edit)}</button><button type="button" data-pcop="del" data-id="${esc(m.id)}">${esc(t.del)}</button></div>` : ''}</div>`; }).join('') : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}</div>
-    ${quick}<form id="pcForm">${editing ? `<div class="chat-ed"><span>${esc(t.editing)}</span><button type="button" class="pill" data-pcop="cancel">${esc(t.cancel)}</button></div>` : ''}<div class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(t.ph)}">${esc(draft)}</textarea><button class="btn" type="submit">${esc(t.send)}</button></div></form></div>`;
+    ${quick}<form id="pcForm">${editing ? `<div class="chat-ed"><span>${esc(t.editing)}</span><button type="button" class="pill" data-pcop="cancel">${esc(t.cancel)}</button></div>` : ''}<div class="chat-form"><textarea name="x" required maxlength="1500" placeholder="${esc(t.ph)}">${esc(draft)}</textarea><button class="btn" type="submit">${esc(t.send)}</button></div></form></details>`;
 }
 // la carte seule est redessinée (le reste de l'app ne bouge pas) ; texte et curseur gardés
 function paint() {
