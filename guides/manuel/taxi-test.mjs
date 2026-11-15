@@ -41,10 +41,14 @@ await relog(p);
 await p.evaluate(() => { location.hash = '#/hotel'; }); await p.waitForTimeout(900); await act(p, 'edit-hote', { id: 'h1' }); await p.waitForTimeout(900); await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3500);
 const cg = await phone(b, L), g = await cg.newPage(); g.on('pageerror', (e) => errs.push('ospite: ' + e.message));
 await g.goto('http://localhost:8765/hote.html'); await g.waitForTimeout(1200); await g.fill('input[name=code]', '731204'); await g.click('form button[type=submit]'); await g.waitForTimeout(3500);
-await g.check('input[name=arrMode][value=taxi]'); await g.waitForTimeout(800); await g.click('[data-arr-send]'); await g.waitForTimeout(3000);
+await g.check('input[name=arrMode][value=taxi]'); await g.waitForTimeout(800);
+assert(await g.$('[data-lgd=a]'), 'ospite : 🗣️ langue souhaitée du chauffeur');
+await g.click('[data-lgds=a]'); await g.check('[data-lgd=a][value=it]'); await g.waitForTimeout(200);
+assert(/Italiano/.test(await g.$eval('[data-lgds=a]', (e) => e.textContent)), 'ospite : langue choisie');
+await g.click('[data-arr-send]'); await g.waitForTimeout(3000);
 log('taxi demandé par l’ospite');
 await relog(p);
-await act(p, 'hote-taxi', { id: 'h1' }); await p.waitForTimeout(900);
+await act(p, 'hote-taxi', { id: 'h1' }); await p.waitForTimeout(900); assert(/Italiano/.test(await p.$eval('.sheet', (e) => e.innerText)), 'hôtel : chauffeur parlant italien');
 await p.click('[data-action=hote-taxi-co]'); await p.waitForTimeout(3000);
 // la société accepte, termine (prix corrigé), facture envoyée
 await x.reload(); await x.waitForTimeout(3500);

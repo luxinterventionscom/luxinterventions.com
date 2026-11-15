@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.287.0';
+const VERSION = '2.288.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2801,7 +2801,7 @@ async function hoteInbox(h, msg) {
     const mode = msg.mode === 'taxi' ? 'taxi' : 'self', num = (v, m) => Math.max(0, Math.min(m, +v || 0));
     const geo = (g) => (g && isFinite(+g.lat) && isFinite(+g.lon) ? { lat: +(+g.lat).toFixed(5), lon: +(+g.lon).toFixed(5) } : null);
     const svc = (m) => ({ service: TX_SRV[m.service] ? m.service : 'course', gamme: TX_GAM[m.gamme] ? m.gamme : '', extras: (Array.isArray(m.extras) ? m.extras : []).filter((k) => TX_EXT[k]).slice(0, 6), heures: num(m.heures, 240) });
-    const arr = { mode, at: String(msg.t || new Date().toISOString()).slice(0, 30), from: String(msg.from || '').slice(0, 120), quand: String(msg.quand || '').slice(0, 16), vol: String(msg.vol || '').slice(0, 30), km: num(msg.km, 2000), prix: num(msg.prix, 100000), fg: geo(msg.fg), sg: geo(msg.sg), ...svc(msg), veh: FLEET_T[msg.veh] ? msg.veh : '', note: String(msg.note || '').slice(0, 300) };
+    const arr = { mode, at: String(msg.t || new Date().toISOString()).slice(0, 30), from: String(msg.from || '').slice(0, 120), quand: String(msg.quand || '').slice(0, 16), vol: String(msg.vol || '').slice(0, 30), km: num(msg.km, 2000), prix: num(msg.prix, 100000), fg: geo(msg.fg), sg: geo(msg.sg), ...svc(msg), veh: FLEET_T[msg.veh] ? msg.veh : '', lgd: (Array.isArray(msg.lgd) ? msg.lgd : []).map((x) => String(x).slice(0, 3)).slice(0, 6), note: String(msg.note || '').slice(0, 300) };
     // ✏️ le client a changé son arrivée : 🔔 Flash à l'hôtel, la course suit (chauffeur de l'hôtel, ↪️ LA CENTRAL, société)
     const old = h.arr, sum = (a) => (a ? (a.mode === 'taxi' ? `🚕 ${a.from || ''}${a.quand ? ' · ' + String(a.quand).replace('T', ' ') : ''}${a.vol ? ' · ✈️ ' + a.vol : ''}${a.veh ? ' · ' + FLEET_T[a.veh] : ''}${(a.extras || []).length ? ' · ' + a.extras.map((k) => TX_EXT[k]).join(' ') : ''}${a.note ? ' · 📝 ' + a.note : ''}` : '🚗 par ses propres moyens') : '');
     const chg = old && sum(old) !== sum(arr) ? { at: arr.at, old: sum(old), now: sum(arr) } : null, tx0 = h.taxi;
@@ -2817,7 +2817,7 @@ async function hoteInbox(h, msg) {
     if (chg && tx0) {
       if (tx0.own && tx0.w) equipeSync(tx0.w).catch(() => {});
       if (tx0.lc && TENANT) { const hc = hoteConf(), home = h.lieu === 'airbnb' ? h.adresse || chGet(h.lieu, h.chambre).adresse || '' : hc.adresse || societe().adresse || '';
-        tenantSend(mode === 'self' ? { type: 'taxi-cancel', ref: h.id + '|arr' } : { type: 'taxi', ref: h.id + '|arr', c: { from: arr.from, to: home, quand: arr.quand, lg: h.langues || [], vol: arr.vol, km: arr.km, prix: arr.prix, service: arr.service, gamme: arr.gamme, extras: arr.extras, heures: arr.heures, pax: h.pers || 0, payer: tx0.payer || 'client', guest: [h.prenom, h.nom].filter(Boolean).join(' '), tel: h.tel || '', plus: '✏️ Changé par le client' } }).catch(() => {}); }
+        tenantSend(mode === 'self' ? { type: 'taxi-cancel', ref: h.id + '|arr' } : { type: 'taxi', ref: h.id + '|arr', c: { from: arr.from, to: home, quand: arr.quand, lg: (arr.lgd && arr.lgd.length ? arr.lgd : h.langues) || [], vol: arr.vol, km: arr.km, prix: arr.prix, service: arr.service, gamme: arr.gamme, extras: arr.extras, heures: arr.heures, pax: h.pers || 0, payer: tx0.payer || 'client', guest: [h.prenom, h.nom].filter(Boolean).join(' '), tel: h.tel || '', plus: '✏️ Changé par le client' } }).catch(() => {}); }
       if (tx0.co) txcoSync(tx0.co, true).catch(() => {});
     }
     return true;
@@ -2852,7 +2852,7 @@ async function hoteInbox(h, msg) {
     const rid = S(msg.rid, 20) || uid();
     if ((h.rides || []).some((r) => r.id === rid)) return false;
     const r = { id: rid, at: S(msg.t, 30), service: TX_SRV[msg.service] ? msg.service : 'course', gamme: TX_GAM[msg.gamme] ? msg.gamme : '', extras: (Array.isArray(msg.extras) ? msg.extras : []).filter((k) => TX_EXT[k]).slice(0, 6),
-      heures: N(msg.heures, 240), from: S(msg.from, 120), to: S(msg.to, 120), quand: S(msg.quand, 16), prix: N(msg.prix, 100000) };
+      heures: N(msg.heures, 240), from: S(msg.from, 120), to: S(msg.to, 120), quand: S(msg.quand, 16), prix: N(msg.prix, 100000), lgd: (Array.isArray(msg.lgd) ? msg.lgd : []).map((x) => String(x).slice(0, 3)).slice(0, 6) };
     await vault.mutate((tx) => tx.put('hotes', { id: h.id, rides: [...(h.rides || []), r].slice(-20) }), '🚘 Chauffeur réservé par le client', `${who} · ${TX_SRV[r.service]}${r.gamme ? ' · ' + TX_GAM[r.gamme] : ''}${r.prix ? ' · ~' + r.prix + ' €' : ''}`);
     hotesSync(h.id);
     return true;
@@ -8739,6 +8739,7 @@ const SHEETS = {
       narrow: true,
       body: html`<div class="small" style="margin-bottom:10px">📍 ${a.from || '—'}${a.quand ? html` · 🕒 ${String(a.quand).replace('T', ' ')}` : ''}${a.vol ? html` · ✈️ ${a.vol}` : ''} · ${a.km || 0} km${a.prix ? html` · ~${a.prix} €` : ''}</div>
         ${a.service || a.gamme || a.veh || a.note ? html`<div class="small" style="margin:-4px 0 10px">${[TX_SRV[a.service], TX_GAM[a.gamme], FLEET_T[a.veh], ...(a.extras || []).map((k) => TX_EXT[k])].filter(Boolean).join(' · ')}${a.heures ? ` · ${a.heures} h` : ''}${a.note ? html`<div><b>📝 ${a.note}</b></div>` : ''}</div>` : ''}
+        ${(a.lgd || []).length ? html`<div class="small" style="margin:-4px 0 10px">🗣️ Chauffeur parlant : <b>${a.lgd.map((k) => LG_ALL[k] || k).join(', ')}</b></div>` : ''}
         ${cur && !cur.lc && cur.st === 'wait' ? html`<div class="alert warn" style="margin-bottom:10px">⏳<div>Envoyé à <b>${cur.nom}</b> — en attente de sa réponse</div></div>` : ''}
         ${cur && !cur.lc && cur.st !== 'wait' && cur.st !== 'no' ? html`<div class="alert info" style="margin-bottom:10px">🚘<div><b>${cur.nom}</b> · ${cur.auto || ''} ${cur.plaque || ''}${rid ? '' : html`<div class="actions" style="margin:6px 0 0;flex-wrap:wrap">${hoteDrvBtns(h)}</div>`}</div></div>` : ''}
         ${tlBox(cur)}
@@ -10770,7 +10771,7 @@ const ACTIONS = {
     const rid = d.r || 'arr', a = d.r ? (h.rides || []).find((r) => r.id === d.r) || {} : h.arr || {}, hc = hoteConf();
     const payer = (document.getElementById('txPayer') || {}).value === 'hotel' ? 'hotel' : 'client';
     const home = h.lieu === 'airbnb' ? h.adresse || chGet(h.lieu, h.chambre).adresse || '' : hc.adresse || '';
-    const c = { from: a.from || '', to: a.to || (d.r ? '' : home), quand: a.quand || '', vol: a.vol || '', km: a.km || 0, prix: a.prix || 0, service: a.service || 'course', gamme: a.gamme || '', extras: a.extras || [], heures: a.heures || 0, pax: h.pers || 0, lg: h.langues || [], payer, guest: [h.prenom, h.nom].filter(Boolean).join(' '), tel: h.tel || '', plus: [(h.lieu === 'airbnb' ? 'Logement ' : 'Chambre ') + (h.chambre || ''), FLEET_T[a.veh] || '', (a.extras || []).map((k) => TX_EXT[k]).join(' '), a.note ? '📝 ' + a.note : ''].filter(Boolean).join(' · ') };
+    const c = { from: a.from || '', to: a.to || (d.r ? '' : home), quand: a.quand || '', vol: a.vol || '', km: a.km || 0, prix: a.prix || 0, service: a.service || 'course', gamme: a.gamme || '', extras: a.extras || [], heures: a.heures || 0, pax: h.pers || 0, lg: (a.lgd && a.lgd.length ? a.lgd : h.langues) || [], payer, guest: [h.prenom, h.nom].filter(Boolean).join(' '), tel: h.tel || '', plus: [(h.lieu === 'airbnb' ? 'Logement ' : 'Chambre ') + (h.chambre || ''), FLEET_T[a.veh] || '', (a.extras || []).map((k) => TX_EXT[k]).join(' '), a.note ? '📝 ' + a.note : ''].filter(Boolean).join(' · ') };
     try { await tenantSend({ type: 'taxi', ref: h.id + '|' + rid, c }); } catch (e) { return toast(e.status === 423 ? 'Lecture seule : abonnement échu' : 'Envoi impossible (connexion ?)', { bad: true }); }
     const t = { lc: 1, st: 'wait', nom: 'LA CENTRAL', payer, prix: 0, at: new Date().toISOString() };
     if (d.r) await vault.mutate((tx) => tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === d.r ? { ...r, taxi: t } : r)) }), '↪️ Course envoyée à LA CENTRAL', `${h.nom} — ${c.from}`);
@@ -10792,7 +10793,7 @@ const ACTIONS = {
     await vault.mutate((tx) => {
       t.tid = tx.put('taches', { type: 'autre', titre: `🚕 ${guest} (${h.chambre || ''}) : ${a.from || '?'} → ${to || '?'}`, immId: '', logId: '', locId: '', intervenantId: w.id, date: /^\d{4}-\d{2}-\d{2}/.test(q) ? q.slice(0, 10) : today(), heure: /T\d\d:\d\d/.test(q) ? q.slice(11, 16) : '', recur: '', statut: 'planifie', urgent: false, adresse: a.from || '',
         lieu: { nom: guest, adr: a.from || '', contact: guest, tel: h.tel || '' }, note: [to ? '🏁 → ' + to : '', a.vol ? '✈️ ' + a.vol : '', h.pers ? '👥 ' + h.pers : '', FLEET_T[a.veh] || '', (a.extras || []).map((k) => TX_EXT[k]).join(' '), a.note ? '📝 ' + a.note : '', payer === 'hotel' ? '🧾 Sur la note du client : rien à encaisser' : '💶 Le client paie dans la voiture'].filter(Boolean).join('\n'),
-        course: { from: a.from || '', to, quand: q, vol: a.vol || '', pax: h.pers || 0, lg: h.langues || [], payer, ttcFix: num(a.prix) || 0, hid: h.id, rid, veh: v ? v.id : '', drv: { nom: t.nom, tel: t.tel, auto: t.auto, plaque: t.plaque } } }).id;
+        course: { from: a.from || '', to, quand: q, vol: a.vol || '', pax: h.pers || 0, lg: (a.lgd && a.lgd.length ? a.lgd : h.langues) || [], payer, ttcFix: num(a.prix) || 0, hid: h.id, rid, veh: v ? v.id : '', drv: { nom: t.nom, tel: t.tel, auto: t.auto, plaque: t.plaque } } }).id;
       if (d.r) tx.put('hotes', { id: h.id, rides: (h.rides || []).map((r) => (r.id === d.r ? { ...r, taxi: t } : r)) });
       else tx.put('hotes', { id: h.id, taxi: t });
     }, '🚙 Course confiée à votre chauffeur', `${guest} — ${intervFull(w)}`);

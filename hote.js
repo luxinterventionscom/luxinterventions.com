@@ -301,6 +301,20 @@ function price(f, km) {
   return Math.round(p);
 }
 // choix du service, de la gamme et des extras (taxi à l'arrivée et chauffeur pendant le séjour)
+// 🗣️ langue souhaitée du chauffeur (liste à cocher) · 🚗 choix du véhicule sur photo
+const DLG = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español', lb: 'Lëtzebuergesch', nl: 'Nederlands', ar: 'العربية', ru: 'Русский', pl: 'Polski', ro: 'Română', tr: 'Türkçe', zh: '中文' };
+const LGD = { fr: ['🗣️ Langue souhaitée du chauffeur', 'indifférent', 'choisir dans la liste'], en: ['🗣️ Preferred driver language', 'no preference', 'choose from the list'], de: ['🗣️ Gewünschte Sprache des Fahrers', 'egal', 'aus der Liste wählen'], it: ['🗣️ Lingua desiderata dell’autista', 'indifferente', 'scegliere dalla lista'], pt: ['🗣️ Língua desejada do motorista', 'indiferente', 'escolher na lista'], es: ['🗣️ Idioma deseado del conductor', 'indiferente', 'elegir en la lista'] };
+const lgdSum = (f) => (f.lgd || []).map((c) => DLG[c]).join(' · ') || (LGD[lang] || LGD.fr)[1];
+function lgdHtml(f, pfx) {
+  const L = LGD[lang] || LGD.fr;
+  return `<label>${esc(L[0])}</label><details class="lgp" style="border:1px solid #e5e2da;border-radius:12px;padding:6px 10px"><summary style="cursor:pointer"><span data-lgds="${pfx}">${esc(lgdSum(f))}</span> <span style="color:#16a34a;font-weight:700">▾ ${esc(L[2])}</span></summary><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${Object.entries(DLG).map(([c, n]) => `<label class="chk" style="border:1px solid #e5e2da;border-radius:999px;padding:3px 10px"><input type="checkbox" data-lgd="${pfx}" value="${c}" ${(f.lgd || []).includes(c) ? 'checked' : ''}> ${esc(n)}</label>`).join('')}</div></details>`;
+}
+function vehPick(f) {
+  const F = (data.fleet || []).filter((x) => x.ph && (x.ph.e || x.ph.i)), k = CK2();
+  if (!F.length) return `<label>${esc(k.veh)}</label><select data-veh="1">${vehOpts(f.veh)}</select>`;
+  const seen = new Set(), L = F.filter((x) => !seen.has(x.t) && seen.add(x.t));
+  return `<label>${esc(k.veh)}</label><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px">${L.map((x) => `<button type="button" data-vehpick="${esc(x.t)}" style="border:2px solid ${f.veh === x.t ? '#16a34a' : '#e5e2da'};border-radius:12px;padding:4px;background:#fff;text-align:center;cursor:pointer"><img data-f="${esc(x.ph.e || x.ph.i)}" alt="" style="width:100%;height:80px;object-fit:cover;border-radius:8px"><span style="font-size:13px">${f.veh === x.t ? '✅ ' : ''}${esc(k.T[x.t] || x.t)}</span></button>`).join('')}<button type="button" data-vehpick="" style="border:2px solid ${!f.veh ? '#16a34a' : '#e5e2da'};border-radius:12px;padding:8px;background:#fff;cursor:pointer">${!f.veh ? '✅ ' : ''}${esc(k.any)}</button></div>`;
+}
 function svcHtml(f, pfx) {
   const tx = data.taxi || {}, w = TXT(), gam = tx.gam || [], ext = tx.ext || [];
   return `${gam.length ? `<label>${esc(w.srv)}</label><select data-${pfx}-srv="1">${Object.entries(w.S).map(([k, l]) => `<option value="${k}" ${f.service === k ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>
@@ -573,6 +587,7 @@ function rideCard() {
     ${f.open ? `${svcHtml(f, 'r')}
       <label>${esc(T().when)}</label><input type="datetime-local" data-r-quand="1" value="${esc(f.quand || today + 'T10:00')}">
       <label>${esc(w.dest)}</label><input data-r-to="1" value="${esc(f.to)}" placeholder="${esc(w.destPh)}">
+      ${lgdHtml(f, 'r')}
       <p class="est">${esc(w.total)} : <b>${p ? '~' + p + ' €' : esc(w.ask)}</b></p>
       <button class="btn block" style="margin-top:10px" data-ride-send="1">${esc(T().send)}</button>`
       : `<button class="btn block" data-ride-open="1">${esc(w.book)}</button>`}
@@ -606,8 +621,9 @@ function arrCard(t) {
       ${f.spot === 'other' ? `<input data-other="1" value="${esc(f.other)}" placeholder="${esc(t.otherPh)}" style="margin-top:6px">` : ''}
       <label>${esc(t.when)}</label><input type="datetime-local" data-quand="1" value="${esc(dq)}">
       <label>${esc(t.vol)}</label><input data-vol="1" value="${esc(f.vol)}">
-      <label>${esc(CK2().veh)}</label><select data-veh="1">${vehOpts(f.veh)}</select>
+      ${vehPick(f)}
       <label>${esc(CK2().wish)}</label><input data-wish="1" value="${esc(f.note || '')}" maxlength="300">
+      ${lgdHtml(f, 'a')}
       ${svcHtml(f, 'a')}
       <p class="est" id="estBox"></p>` : ''}
     ${f.mode ? `<button class="btn block" style="margin-top:10px" data-arr-send="1">${esc(t.send)}</button>` : ''}${arrEdit ? `<button class="btn block sec" style="margin-top:8px" data-arr-back="1">${esc(t.chBack)}</button>` : ''}</div>`;
@@ -676,6 +692,7 @@ app.addEventListener('change', async (e) => {
   if (el.dataset.aSrv) { arrForm.service = el.value; return render(); }
   if (el.dataset.aH) { arrForm.heures = el.value; return paintEst(); }
   if (el.name === 'aGam') { arrForm.gamme = el.value; return paintEst(); }
+  if (el.dataset.lgd) { const f = el.dataset.lgd === 'a' ? arrForm : ride; f.lgd = Object.keys(DLG).filter((c) => (c === el.value ? el.checked : (f.lgd || []).includes(c))); const sp = app.querySelector(`[data-lgds="${el.dataset.lgd}"]`); if (sp) sp.textContent = lgdSum(f); return; }
   if (el.dataset.aExt) { arrForm.extras = el.checked ? [...arrForm.extras, el.dataset.aExt] : arrForm.extras.filter((k) => k !== el.dataset.aExt); return paintEst(); }
   if (el.dataset.rSrv) { ride.service = el.value; return render(); }
   if (el.dataset.rH) { ride.heures = el.value; return render(); }
@@ -750,7 +767,7 @@ app.addEventListener('click', async (e) => {
     if (f.mode === 'taxi' && !f.est) await estimate();
     const e2 = f.est || {};
     const msg = f.mode === 'taxi'
-      ? { type: 'hote-arr', mode: 'taxi', from, quand: f.quand || `${data.arrivee}T${data.hdeb || '15:00'}`, vol: f.vol, km: e2.km || 0, prix: price(f, e2.km) || 0, service: f.service, gamme: f.gamme, extras: f.extras, heures: f.service === 'heures' ? f.heures : 0, veh: f.veh || '', note: (f.note || '').slice(0, 300), fg: e2.fg ? { lat: e2.fg[0], lon: e2.fg[1] } : null, sg: e2.sg ? { lat: e2.sg[0], lon: e2.sg[1] } : null }
+      ? { type: 'hote-arr', mode: 'taxi', from, quand: f.quand || `${data.arrivee}T${data.hdeb || '15:00'}`, vol: f.vol, km: e2.km || 0, prix: price(f, e2.km) || 0, service: f.service, gamme: f.gamme, extras: f.extras, heures: f.service === 'heures' ? f.heures : 0, veh: f.veh || '', lgd: f.lgd || [], note: (f.note || '').slice(0, 300), fg: e2.fg ? { lat: e2.fg[0], lon: e2.fg[1] } : null, sg: e2.sg ? { lat: e2.sg[0], lon: e2.sg[1] } : null }
       : { type: 'hote-arr', mode: 'self' };
     try {
       await sendOwner(msg);
@@ -759,12 +776,13 @@ app.addEventListener('click', async (e) => {
     } catch { b.disabled = false; return; }
     return render();
   }
+  if (b.dataset.vehpick !== undefined) { arrForm.veh = b.dataset.vehpick; return render(); }
   if (b.dataset.rideOpen) { ride.open = true; ride.sent = ''; return render(); }
   if (b.dataset.rideSend) {
     b.disabled = true;
     const f = ride, prix = price({ ...f, spot: 'other' }, 0);
     try {
-      await sendOwner({ type: 'hote-ride', rid: Date.now().toString(36), service: f.service, gamme: f.gamme, extras: f.extras, heures: f.service === 'heures' ? f.heures : 0, from: data.st.nom, to: f.to, quand: f.quand || today + 'T10:00', prix });
+      await sendOwner({ type: 'hote-ride', rid: Date.now().toString(36), service: f.service, gamme: f.gamme, extras: f.extras, heures: f.service === 'heures' ? f.heures : 0, from: data.st.nom, to: f.to, quand: f.quand || today + 'T10:00', prix, lgd: f.lgd || [] });
       ride = { open: false, service: 'course', gamme: '', extras: [], heures: 3, quand: '', to: '', sent: TXT().W };
     } catch { b.disabled = false; return; }
     return render();
