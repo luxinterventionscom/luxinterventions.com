@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.285.0';
+const VERSION = '2.286.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5211,6 +5211,8 @@ function taxiStatsHtml() {
   return html`${blk(C.filter((t) => String(t.doneDate || t.date).startsWith(m0)), '📅 Ce mois-ci')}${blk(C.filter((t) => String(t.doneDate || t.date).startsWith(y0)), '🗓️ Cette année')}`;
 }
 // 🚗 parc auto (centrale taxi) : combien de chaque sorte + 2 photos (dehors, dedans), et les véhicules un par un
+// 💶 tarifs (luxe / confort / économique) et extras de la centrale taxi
+const txTar = () => { const t = vault.get('reglages', 'txtar') || {}; return { gammes: t.gammes || {}, extras: t.extras || {}, xtra: t.xtra || [] }; };
 const fleetConf = () => (vault.get('reglages', 'fleet') || {}).t || {};
 // 🏨 Hotel / 🏠 Airbnb : les clients (chambre ou logement, clé, arrivée → départ), une rubrique chacun
 function hotView(hf, acc) {
@@ -6450,6 +6452,11 @@ dashboard() {
     setTimeout(() => hydrateBiens($('#view')), 0);
     return html`${pageHead('🚗 Parc auto', `${plural(VS.length, 'véhicule')} · ${ks.reduce((a, k) => a + (F[k].n || 0), 0)} par sorte`)}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="fleet-edit">✏️ Sortes de voitures et photos</button><button class="btn" data-action="veh-new">${icon('plus')} Véhicule</button></div></div>
+      ${(() => { const T = txTar(), on = Object.keys(TX_GAM).filter((k) => (T.gammes[k] || {}).on), nx = Object.keys(T.extras).length + T.xtra.length;
+        return dfold('txtar', '💶 Tarifs et extras', on.length ? `${on.map((k) => TX_GAM[k]).join(' · ')} · ${plural(nx, 'extra')}` : 'pas encore remplis', html`
+          ${on.length ? html`<div class="list" style="margin-bottom:8px">${on.map((k) => { const x = T.gammes[k]; return html`<div class="row"><span class="grow"><b>${TX_GAM[k]}</b><span class="meta" style="display:block">${[x.pc !== '' ? 'prise en charge ' + eur(x.pc) : '', x.km !== '' ? eur(x.km) + ' / km' : '', x.h !== '' ? eur(x.h) + ' / h' : '', x.demi !== '' ? '½ journée ' + eur(x.demi) : '', x.jour !== '' ? 'journée ' + eur(x.jour) : ''].filter(Boolean).join(' · ')}</span></span></div>`; })}</div>` : ''}
+          ${nx ? html`<p class="small" style="margin:0 0 8px">${[...Object.entries(T.extras).map(([k, p]) => `${TX_EXT[k]} ${eur(p)}`), ...T.xtra.map((x) => `➕ ${x.n} ${eur(x.p)}`)].join(' · ')}</p>` : ''}
+          <button class="btn sm" data-action="txtar-edit">✏️ Modifier tarifs et extras</button>`, 'margin-bottom:14px'); })()}
       <div class="section-label">🚘 Par sorte <span class="tiny muted">— vu par les hôtels et leurs clients</span></div>
       ${ks.length ? html`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:14px">${ks.map((k) => { const x = F[k]; return html`<div class="card" style="padding:10px"><b>${FLEET_T[k]} × ${x.n || 0}</b><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">${['e', 'i'].map((w) => (x.ph || {})[w] ? html`<img data-bph="${x.ph[w]}" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px">` : html`<span style="aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--surface-2)">📷 ${w === 'e' ? 'dehors' : 'dedans'}</span>`)}</div></div>`; })}</div>` : html`<p class="small muted">Rien encore : ✏️ Sortes de voitures et photos.</p>`}
       <div class="section-label">🚗 Véhicules <span class="tiny muted">— plaque, chauffeur, remplaçant</span></div>
@@ -7673,7 +7680,8 @@ const SHEETS = {
         <div class="full fields drv-only" style="margin:0;border:1px dashed var(--line);border-radius:12px;padding:8px" ${CHAUF.has(i.metier) ? '' : new Raw('hidden')}><div class="full section-label" style="margin:0">🚙 Chauffeur</div>
           ${field('🪪 N° d’identification du chauffeur', 'ident', i.ident || '', { placeholder: 'carte de chauffeur, licence…' })}
           <label class="field">Statut<select name="dstat"><option value="sal" ${i.dstat !== 'aff' ? new Raw('selected') : ''}>👷 Salarié</option><option value="aff" ${i.dstat === 'aff' ? new Raw('selected') : ''}>🏢 Société affiliée</option></select></label>
-          ${field('Société affiliée (nom)', 'affNom', i.affNom || '', {})}${field('IBAN de la société affiliée', 'affIban', i.affIban || '', { placeholder: 'LU.. ….' })}</div>
+          ${field('Société affiliée (nom)', 'affNom', i.affNom || '', {})}${field('IBAN de la société affiliée', 'affIban', i.affIban || '', { placeholder: 'LU.. ….' })}
+          <div class="field full">🗣️ Langues parlées${lgPick(i.langues || [])}</div>${field('Autre langue', 'lgAutre', i.lgAutre || '', { full: true, placeholder: 'ex. wolof' })}</div>
         <label class="field soc-only" ${(i.genre || 'interne') === 'societe' ? '' : new Raw('hidden')}>RCS (société)<input name="rcs" value="${i.rcs || ''}" placeholder="ex. B123456"></label>
         <label class="field soc-only" ${(i.genre || 'interne') === 'societe' ? '' : new Raw('hidden')}>N° TVA (société)<input name="tva" value="${i.tva || ''}" placeholder="ex. LU12345678"></label>
         <label class="check full" style="margin:4px 0 0"><input type="checkbox" name="chefDevis" value="1" ${i.chefDevis ? new Raw('checked') : ''}> 🦺 <b>Chef de chantier — devis</b> : il prépare les devis dans son app (photos, rapport, travaux, signature « Vu et correct » du client), sans voir les prix</label>
@@ -8390,6 +8398,21 @@ const SHEETS = {
         ${ttc ? html`<p class="tiny muted full" style="margin:0">TTC (TVA des réglages) : <b>${eur(ttc)}</b>${c.payer === 'hotel' ? ' — facturé avec les interventions du client (🧾 Factures)' : ' — le chauffeur encaisse : 📱 QR virement, 💶 espèces ou 💳 terminal'}</p>` : ''}
         </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+  'txtar-form'() {
+    const T = txTar(), rows = [...Object.entries(T.extras).map(([k, p]) => ({ k, p })), ...T.xtra.map((x) => ({ k: 'autre', n: x.n, p: x.p })), {}, {}, {}].slice(0, Math.max(4, Object.keys(T.extras).length + T.xtra.length + 2));
+    const F = [['pc', 'Prise en charge'], ['km', '€ / km'], ['h', '€ / heure'], ['demi', 'Demi-journée'], ['jour', 'Journée']];
+    return {
+      title: '💶 Tarifs et extras', narrow: true,
+      body: html`<form id="f" data-form="txtar" class="fields" style="gap:12px">
+        ${Object.entries(TX_GAM).map(([k, l]) => { const x = T.gammes[k] || {}; return html`<div class="full fields" style="background:rgba(59,130,246,.07);border-radius:14px;padding:10px 12px;margin:0"><label class="full" style="display:flex;gap:8px;align-items:center;font-weight:700;cursor:pointer"><input type="checkbox" name="g_${k}_on" ${x.on ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none">${l} — proposée</label>
+          <div class="full" style="display:flex;flex-wrap:wrap;gap:8px">${F.map(([f, t]) => html`<span style="display:inline-flex;flex-direction:column;font-size:12px">${t}<span style="display:inline-flex;gap:4px;align-items:center"><input name="g_${k}_${f}" value="${x[f] ?? ''}" inputmode="decimal" style="width:84px">€</span></span>`)}</div></div>`; })}
+        <div class="full fields" style="background:rgba(234,179,8,.12);border-radius:14px;padding:10px 12px;margin:0"><div class="full" style="font-weight:700">Extras</div>
+          ${rows.map((x, i) => html`<div class="full" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center"><select name="x${i}_k"><option value="">—</option>${Object.entries(TX_EXT).map(([k, l]) => html`<option value="${k}" ${x.k === k ? new Raw('selected') : ''}>${l}</option>`)}<option value="autre" ${x.k === 'autre' ? new Raw('selected') : ''}>➕ Autre</option></select>
+            <input name="x${i}_n" value="${x.n || ''}" placeholder="si ➕ Autre : nom" maxlength="40" style="flex:1;min-width:120px"><input name="x${i}_p" value="${x.p ?? ''}" inputmode="decimal" placeholder="0,00" style="width:84px">€</div>`)}</div>
+        <p class="tiny muted full" style="margin:0">Prix en chiffres seulement. Case vide = pas proposé.</p></form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
   'fleet-form'() {
@@ -10261,6 +10284,7 @@ const ACTIONS = {
     renderView();
   },
   'fleet-edit': () => openOver('fleet-form'),
+  'txtar-edit': () => openOver('txtar-form'),
   async 'eng-pdf'(d) { const i = vault.get('intervenants', d.id); if (!i) return; download(`Fiche engagement ${intervFull(i)}.pdf`, await engPdf(i), 'application/pdf'); },
   'occ-open': (d) => openOver('occ-fact', d.id),
   async 'occ-dl'(d) { const t = vault.get('taches', d.id), i = t && vault.get('intervenants', t.intervenantId); if (!t || !t.occ || !i) return; download(`Intervention occasionnelle ${t.occ.no}.pdf`, await occPdf(t, i, t.occ), 'application/pdf'); },
@@ -11600,7 +11624,7 @@ const FORMS = {
     if (fd.has('ident')) {
       const ai = g('affIban').replace(/\s+/g, '').toUpperCase();
       if (g('dstat') === 'aff' && ai && !ibanOk(ai)) return toast('IBAN de la société affiliée invalide', { bad: true });
-      Object.assign(rec, { ident: g('ident').slice(0, 40), dstat: g('dstat') === 'aff' ? 'aff' : 'sal', affNom: g('dstat') === 'aff' ? g('affNom').slice(0, 80) : '', affIban: g('dstat') === 'aff' ? ai : '' });
+      Object.assign(rec, { ident: g('ident').slice(0, 40), dstat: g('dstat') === 'aff' ? 'aff' : 'sal', affNom: g('dstat') === 'aff' ? g('affNom').slice(0, 80) : '', affIban: g('dstat') === 'aff' ? ai : '', langues: fd.getAll('langues').filter((k) => LG_ALL[k]).slice(0, 20), lgAutre: g('lgAutre').slice(0, 60) });
     }
     if (rec.genre === 'prive') { rec.rcs = ''; rec.tva = ''; } // occasionnel : ni RCS ni TVA
     // l'horaire ne se fait plus ici : fiche de la personne → Horaires (routine et planning par semaine)
@@ -11946,6 +11970,14 @@ const FORMS = {
     for (const k of Object.keys(SOC_NET)) if (fd.get('on_' + k)) { const u = String(fd.get('url_' + k) || '').trim(); sp[k] = { at: (old[k] && old[k].at) || new Date().toISOString(), url: /^https?:\/\//.test(u) ? u.slice(0, 400) : '' }; }
     await vault.mutate((tx) => tx.put('avis', { id: a.id, socPub: sp }), '📱 Publié sur nos réseaux', `${a.nom} · ${Object.keys(sp).map((k) => SOC_NET[k]).join(', ')}`);
     closeSheet(); toast('Enregistré'); annSync(a.annId); renderView();
+  },
+  async txtar(fd) {
+    const g = (k) => String(fd.get(k) || '').trim(), nb = (v) => { const n = parseFloat(String(v).replace(/[^0-9.,]/g, '').replace(',', '.')); return isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : ''; };
+    const gammes = Object.fromEntries(Object.keys(TX_GAM).map((k) => [k, { on: !!fd.get(`g_${k}_on`), ...Object.fromEntries(['pc', 'km', 'h', 'demi', 'jour'].map((f) => [f, nb(g(`g_${k}_${f}`))])) }]));
+    const extras = {}, xtra = [];
+    for (let i = 0; i < 20 && fd.has(`x${i}_k`); i++) { const k = g(`x${i}_k`), p = nb(g(`x${i}_p`)); if (!k || p === '') continue; if (k === 'autre') { if (g(`x${i}_n`)) xtra.push({ n: g(`x${i}_n`).slice(0, 40), p }); } else if (TX_EXT[k]) extras[k] = p; }
+    await vault.mutate((tx) => tx.put('reglages', { id: 'txtar', gammes, extras, xtra }), '💶 Tarifs et extras', Object.keys(TX_GAM).filter((k) => gammes[k].on).map((k) => TX_GAM[k]).join(', '));
+    toast('Tarifs enregistrés'); goBack();
   },
   async 'hote-tarifs'(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), m = (k) => (g(k) ? Math.max(0, num(g(k).replace(',', '.'))) : '');
