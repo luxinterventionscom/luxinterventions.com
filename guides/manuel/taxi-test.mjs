@@ -88,7 +88,7 @@ assert((await x.$eval('#pcCard', (e) => e.textContent)).includes('✅') && (awai
 await relog(p);
 await p.evaluate(() => { location.hash = '#/dashboard'; }); await p.waitForTimeout(1500);
 assert(await p.$('.centralino [data-action=open-pchat]'), 'centrale: il taxi è nel Centralino');
-await p.evaluate(() => { const d = document.querySelector('.centralino'); if (d) d.open = true; }); await p.click('.centralino [data-action=open-pchat]'); await p.waitForTimeout(2000);
+await p.evaluate(() => { const d = document.querySelector('.centralino'); if (d) d.open = true; }); await p.click('.centralino [data-action=open-pchat][data-id^=txco-]'); await p.waitForTimeout(2000);
 assert((await p.$eval('.sheet', (e) => e.textContent)).includes('✅'), 'centrale: legge il messaggio del taxi');
 await p.fill('.sheet form[data-form=pchat] textarea', 'Perfetto, grazie'); await p.click('.sheet form[data-form=pchat] button[type=submit]'); await p.waitForTimeout(4000);
 await x.reload(); await x.waitForTimeout(3500);
