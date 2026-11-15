@@ -28,12 +28,16 @@ const app = document.getElementById('app');
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const ls = { get: (k) => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch { /* stockage plein */ } } };
 const LANGS = ['fr', 'en', 'de', 'it', 'pt', 'es'];
+// 🗣️ langues des chauffeurs (liste + « autre ») — gardées en texte « fr,en,… » pour la centrale
+const DLG = { fr: 'Français', de: 'Deutsch', en: 'English', it: 'Italiano', pt: 'Português', es: 'Español', lb: 'Lëtzebuergesch', nl: 'Nederlands', ar: 'العربية', ru: 'Русский', pl: 'Polski', ro: 'Română', tr: 'Türkçe', zh: '中文' };
+const lgSplit = (v) => { const T = String(v || '').split(/[,;/]+/).map((x) => x.trim()).filter(Boolean), codes = [], other = []; for (const x of T) { const c = x.toLowerCase().slice(0, 2); if (DLG[x.toLowerCase()] || (x.length <= 3 && DLG[c])) codes.push(DLG[x.toLowerCase()] ? x.toLowerCase() : c); else { const k = Object.keys(DLG).find((y) => DLG[y].toLowerCase() === x.toLowerCase()); if (k) codes.push(k); else other.push(x); } } return { codes: [...new Set(codes)], other: other.join(', ') }; };
+const lgJoin = (codes, other) => [...codes, ...(other ? [other] : [])].join(',');
 const GK = ['luxe', 'confort', 'eco'], EK = ['garde', 'boissons', 'friandises', 'siege', 'pancarte', 'bagages'];
 const L = {
   fr: { app: 'Courses', welcome: 'Entrez le code reçu de l’établissement.', code: 'Code d’accès', enter: 'Entrer', bad: 'Code inconnu.', off: 'Accès désactivé.',
     rides: '🛣️ Courses', none: 'Aucune course pour le moment.', newR: 'Nouvelle course', accept: '✅ Accepter', refuse: '❌ Refuser', drv: 'Chauffeur', car: 'Voiture', send: 'Envoyer', W: '⏳ À répondre', O: '✅ Acceptée', N: '❌ Refusée',
     open: '🧭 Ouvrir la course (suivi)', toDrv: '💬 Envoyer au chauffeur', guest: 'Client', from: 'Prise en charge', to: 'Destination', flight: 'Vol / train', price: 'Prix annoncé au client', hours: 'heures',
-    team: '🚘 Chauffeurs et voitures', name: 'Nom', tel: 'Téléphone', lg: 'Langues parlées', model: 'Modèle', plate: 'Plaque', seats: 'Places', addD: '＋ Chauffeur', addC: '＋ Voiture',
+    team: '🚘 Chauffeurs et voitures', name: 'Nom', tel: 'Téléphone', lg: 'Langues parlées', model: 'Modèle', plate: 'Plaque', seats: 'Places', addD: '＋ Chauffeur', other: 'Autre', otherPh: 'Nom de l’extra', addX: '＋ Extra', pick: 'choisir dans la liste', addC: '＋ Voiture',
     tarifs: '💶 Tarifs et extras', on: 'Proposée', pc: 'Prise en charge €', km: '€ / km', h: '€ / heure', demi: 'Demi-journée €', jour: 'Journée €', extras: 'Extras (prix en €, vide = pas proposé, 0 = offert)', save: 'Enregistrer et envoyer', saved: 'Envoyé ✓ — visible après la synchro de l’établissement',
     G: { luxe: '💎 Luxe', confort: '🚘 Confort', eco: '🚕 Économique' }, E: { garde: '🛡️ Garde du corps', boissons: '🍾 Boissons', friandises: '🍫 Friandises', siege: '🍼 Siège enfant', pancarte: '🪧 Pancarte', bagages: '🧳 Aide bagages' },
     S: { course: '🛣️ Course', heures: '⏱️ À l’heure', demi: '🌗 Demi-journée', jour: '☀️ Journée', sejour: '📅 Séjour' },
@@ -41,7 +45,7 @@ const L = {
   en: { app: 'Rides', welcome: 'Enter the code you received from the property.', code: 'Access code', enter: 'Enter', bad: 'Unknown code.', off: 'Access disabled.',
     rides: '🛣️ Rides', none: 'No ride for now.', newR: 'New ride', accept: '✅ Accept', refuse: '❌ Decline', drv: 'Driver', car: 'Car', send: 'Send', W: '⏳ To answer', O: '✅ Accepted', N: '❌ Declined',
     open: '🧭 Open the ride (tracking)', toDrv: '💬 Send to the driver', guest: 'Guest', from: 'Pickup', to: 'Destination', flight: 'Flight / train', price: 'Price shown to the guest', hours: 'hours',
-    team: '🚘 Drivers and cars', name: 'Name', tel: 'Phone', lg: 'Languages', model: 'Model', plate: 'Plate', seats: 'Seats', addD: '＋ Driver', addC: '＋ Car',
+    team: '🚘 Drivers and cars', name: 'Name', tel: 'Phone', lg: 'Languages', model: 'Model', plate: 'Plate', seats: 'Seats', addD: '＋ Driver', other: 'Other', otherPh: 'Extra name', addX: '＋ Extra', pick: 'choose from the list', addC: '＋ Car',
     tarifs: '💶 Fares and extras', on: 'Offered', pc: 'Pickup fee €', km: '€ / km', h: '€ / hour', demi: 'Half day €', jour: 'Full day €', extras: 'Extras (price in €, empty = not offered, 0 = free)', save: 'Save and send', saved: 'Sent ✓ — visible after the property syncs',
     G: { luxe: '💎 Luxury', confort: '🚘 Comfort', eco: '🚕 Economy' }, E: { garde: '🛡️ Bodyguard', boissons: '🍾 Drinks', friandises: '🍫 Sweets', siege: '🍼 Child seat', pancarte: '🪧 Name sign', bagages: '🧳 Luggage help' },
     S: { course: '🛣️ Ride', heures: '⏱️ By the hour', demi: '🌗 Half day', jour: '☀️ Full day', sejour: '📅 Whole stay' },
@@ -49,7 +53,7 @@ const L = {
   de: { app: 'Fahrten', welcome: 'Geben Sie den Code des Hauses ein.', code: 'Zugangscode', enter: 'Öffnen', bad: 'Unbekannter Code.', off: 'Zugang deaktiviert.',
     rides: '🛣️ Fahrten', none: 'Im Moment keine Fahrt.', newR: 'Neue Fahrt', accept: '✅ Annehmen', refuse: '❌ Ablehnen', drv: 'Fahrer', car: 'Auto', send: 'Senden', W: '⏳ Antwort offen', O: '✅ Angenommen', N: '❌ Abgelehnt',
     open: '🧭 Fahrt öffnen (Verfolgung)', toDrv: '💬 An den Fahrer senden', guest: 'Gast', from: 'Abholung', to: 'Ziel', flight: 'Flug / Zug', price: 'Dem Gast angezeigter Preis', hours: 'Stunden',
-    team: '🚘 Fahrer und Autos', name: 'Name', tel: 'Telefon', lg: 'Sprachen', model: 'Modell', plate: 'Kennzeichen', seats: 'Plätze', addD: '＋ Fahrer', addC: '＋ Auto',
+    team: '🚘 Fahrer und Autos', name: 'Name', tel: 'Telefon', lg: 'Sprachen', model: 'Modell', plate: 'Kennzeichen', seats: 'Plätze', addD: '＋ Fahrer', other: 'Andere', otherPh: 'Name des Extras', addX: '＋ Extra', pick: 'aus der Liste wählen', addC: '＋ Auto',
     tarifs: '💶 Tarife und Extras', on: 'Angeboten', pc: 'Grundgebühr €', km: '€ / km', h: '€ / Stunde', demi: 'Halber Tag €', jour: 'Ganzer Tag €', extras: 'Extras (Preis in €, leer = nicht angeboten, 0 = gratis)', save: 'Speichern und senden', saved: 'Gesendet ✓ — sichtbar nach der Synchronisierung des Hauses',
     G: { luxe: '💎 Luxus', confort: '🚘 Komfort', eco: '🚕 Economy' }, E: { garde: '🛡️ Leibwächter', boissons: '🍾 Getränke', friandises: '🍫 Süßigkeiten', siege: '🍼 Kindersitz', pancarte: '🪧 Namensschild', bagages: '🧳 Gepäckhilfe' },
     S: { course: '🛣️ Fahrt', heures: '⏱️ Pro Stunde', demi: '🌗 Halber Tag', jour: '☀️ Ganzer Tag', sejour: '📅 Aufenthalt' },
@@ -57,7 +61,7 @@ const L = {
   it: { app: 'Corse', welcome: 'Inserisca il codice ricevuto dalla struttura.', code: 'Codice di accesso', enter: 'Entra', bad: 'Codice sconosciuto.', off: 'Accesso disattivato.',
     rides: '🛣️ Corse', none: 'Nessuna corsa per ora.', newR: 'Nuova corsa', accept: '✅ Accetta', refuse: '❌ Rifiuta', drv: 'Autista', car: 'Auto', send: 'Invia', W: '⏳ Da rispondere', O: '✅ Accettata', N: '❌ Rifiutata',
     open: '🧭 Apri la corsa (tracking)', toDrv: '💬 Manda all’autista', guest: 'Cliente', from: 'Presa', to: 'Destinazione', flight: 'Volo / treno', price: 'Prezzo indicato al cliente', hours: 'ore',
-    team: '🚘 Autisti e auto', name: 'Nome', tel: 'Telefono', lg: 'Lingue parlate', model: 'Modello', plate: 'Targa', seats: 'Posti', addD: '＋ Autista', addC: '＋ Auto',
+    team: '🚘 Autisti e auto', name: 'Nome', tel: 'Telefono', lg: 'Lingue parlate', model: 'Modello', plate: 'Targa', seats: 'Posti', addD: '＋ Autista', other: 'Altro', otherPh: 'Nome dell’extra', addX: '＋ Extra', pick: 'scegliere dalla lista', addC: '＋ Auto',
     tarifs: '💶 Tariffe ed extra', on: 'Proposta', pc: 'Presa in carico €', km: '€ / km', h: '€ / ora', demi: 'Mezza giornata €', jour: 'Giornata €', extras: 'Extra (prezzo in €, vuoto = non proposto, 0 = offerto)', save: 'Salva e invia', saved: 'Inviato ✓ — visibile dopo la sincronizzazione della struttura',
     G: { luxe: '💎 Lusso', confort: '🚘 Comfort', eco: '🚕 Economica' }, E: { garde: '🛡️ Guardia del corpo', boissons: '🍾 Bevande', friandises: '🍫 Dolcetti', siege: '🍼 Seggiolino', pancarte: '🪧 Cartello', bagages: '🧳 Aiuto bagagli' },
     S: { course: '🛣️ Corsa', heures: '⏱️ A ore', demi: '🌗 Mezza giornata', jour: '☀️ Giornata', sejour: '📅 Soggiorno' },
@@ -65,7 +69,7 @@ const L = {
   pt: { app: 'Corridas', welcome: 'Introduza o código recebido do estabelecimento.', code: 'Código de acesso', enter: 'Entrar', bad: 'Código desconhecido.', off: 'Acesso desativado.',
     rides: '🛣️ Corridas', none: 'Nenhuma corrida por agora.', newR: 'Nova corrida', accept: '✅ Aceitar', refuse: '❌ Recusar', drv: 'Motorista', car: 'Carro', send: 'Enviar', W: '⏳ Por responder', O: '✅ Aceite', N: '❌ Recusada',
     open: '🧭 Abrir a corrida (seguimento)', toDrv: '💬 Enviar ao motorista', guest: 'Cliente', from: 'Recolha', to: 'Destino', flight: 'Voo / comboio', price: 'Preço indicado ao cliente', hours: 'horas',
-    team: '🚘 Motoristas e carros', name: 'Nome', tel: 'Telefone', lg: 'Línguas', model: 'Modelo', plate: 'Matrícula', seats: 'Lugares', addD: '＋ Motorista', addC: '＋ Carro',
+    team: '🚘 Motoristas e carros', name: 'Nome', tel: 'Telefone', lg: 'Línguas', model: 'Modelo', plate: 'Matrícula', seats: 'Lugares', addD: '＋ Motorista', other: 'Outro', otherPh: 'Nome do extra', addX: '＋ Extra', pick: 'escolher na lista', addC: '＋ Carro',
     tarifs: '💶 Tarifas e extras', on: 'Proposta', pc: 'Bandeirada €', km: '€ / km', h: '€ / hora', demi: 'Meio dia €', jour: 'Dia inteiro €', extras: 'Extras (preço em €, vazio = não proposto, 0 = oferta)', save: 'Guardar e enviar', saved: 'Enviado ✓ — visível após a sincronização do estabelecimento',
     G: { luxe: '💎 Luxo', confort: '🚘 Conforto', eco: '🚕 Económico' }, E: { garde: '🛡️ Guarda-costas', boissons: '🍾 Bebidas', friandises: '🍫 Guloseimas', siege: '🍼 Cadeira de criança', pancarte: '🪧 Placa', bagages: '🧳 Ajuda bagagens' },
     S: { course: '🛣️ Corrida', heures: '⏱️ À hora', demi: '🌗 Meio dia', jour: '☀️ Dia inteiro', sejour: '📅 Estadia' },
@@ -73,7 +77,7 @@ const L = {
   es: { app: 'Carreras', welcome: 'Introduzca el código recibido del establecimiento.', code: 'Código de acceso', enter: 'Entrar', bad: 'Código desconocido.', off: 'Acceso desactivado.',
     rides: '🛣️ Carreras', none: 'Ninguna carrera por ahora.', newR: 'Nueva carrera', accept: '✅ Aceptar', refuse: '❌ Rechazar', drv: 'Conductor', car: 'Coche', send: 'Enviar', W: '⏳ Por responder', O: '✅ Aceptada', N: '❌ Rechazada',
     open: '🧭 Abrir la carrera (seguimiento)', toDrv: '💬 Enviar al conductor', guest: 'Cliente', from: 'Recogida', to: 'Destino', flight: 'Vuelo / tren', price: 'Precio indicado al cliente', hours: 'horas',
-    team: '🚘 Conductores y coches', name: 'Nombre', tel: 'Teléfono', lg: 'Idiomas', model: 'Modelo', plate: 'Matrícula', seats: 'Plazas', addD: '＋ Conductor', addC: '＋ Coche',
+    team: '🚘 Conductores y coches', name: 'Nombre', tel: 'Teléfono', lg: 'Idiomas', model: 'Modelo', plate: 'Matrícula', seats: 'Plazas', addD: '＋ Conductor', other: 'Otro', otherPh: 'Nombre del extra', addX: '＋ Extra', pick: 'elegir en la lista', addC: '＋ Coche',
     tarifs: '💶 Tarifas y extras', on: 'Ofrecida', pc: 'Bajada de bandera €', km: '€ / km', h: '€ / hora', demi: 'Medio día €', jour: 'Día completo €', extras: 'Extras (precio en €, vacío = no ofrecido, 0 = gratis)', save: 'Guardar y enviar', saved: 'Enviado ✓ — visible tras la sincronización del establecimiento',
     G: { luxe: '💎 Lujo', confort: '🚘 Confort', eco: '🚕 Económico' }, E: { garde: '🛡️ Guardaespaldas', boissons: '🍾 Bebidas', friandises: '🍫 Golosinas', siege: '🍼 Silla infantil', pancarte: '🪧 Cartel', bagages: '🧳 Ayuda equipaje' },
     S: { course: '🛣️ Carrera', heures: '⏱️ Por horas', demi: '🌗 Medio día', jour: '☀️ Día completo', sejour: '📅 Estancia' },
@@ -151,7 +155,7 @@ function catHtml(t) {
   cat = c;
   const g = (k) => c.gammes[k] || (c.gammes[k] = { on: false });
   return `<div class="card"><h2>${esc(t.team)}</h2>
-    ${c.drivers.map((d, i) => `<div class="line">${d.code || (d.code = drvCode()) ? `<span class="tag" title="${esc(T2().code)}">🪪 ${esc(d.code)}</span>` : ''}<input data-cd="${i}" data-f="nom" value="${esc(d.nom)}" placeholder="${esc(t.name)}"><input data-cd="${i}" data-f="tel" value="${esc(d.tel)}" placeholder="${esc(t.tel)}" type="tel"><input data-cd="${i}" data-f="lg" value="${esc(d.lg)}" placeholder="${esc(t.lg)}"></div>`).join('')}
+    ${c.drivers.map((d, i) => `<div class="line">${d.code || (d.code = drvCode()) ? `<span class="tag" title="${esc(T2().code)}">🪪 ${esc(d.code)}</span>` : ''}<input data-cd="${i}" data-f="nom" value="${esc(d.nom)}" placeholder="${esc(t.name)}"><input data-cd="${i}" data-f="tel" value="${esc(d.tel)}" placeholder="${esc(t.tel)}" type="tel">${(() => { const L = lgSplit(d.lg); return `<details class="lgp" style="flex-basis:100%;border:1px solid #e5e2da;border-radius:12px;padding:6px 10px"><summary style="cursor:pointer"><span data-lgs="${i}">🗣️ ${esc([...L.codes.map((c) => DLG[c]), L.other].filter(Boolean).join(' · ') || t.lg)}</span> <span style="color:#16a34a;font-weight:700">▾ ${esc(t.pick)}</span></summary><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">${Object.entries(DLG).map(([c, n]) => `<label class="chk" style="border:1px solid #e5e2da;border-radius:999px;padding:3px 10px"><input type="checkbox" data-cdl="${i}" value="${c}" ${L.codes.includes(c) ? 'checked' : ''}> ${esc(n)}</label>`).join('')}</div><input data-cdo="${i}" value="${esc(L.other)}" placeholder="${esc(t.other)} : …" style="margin-top:6px"></details>`; })()}</div>`).join('')}
     <button class="btn sm sec" data-add-d="1">${esc(t.addD)}</button>
     ${c.cars.map((x, i) => `<div class="line"><input data-cc="${i}" data-f="modele" value="${esc(x.modele)}" placeholder="${esc(t.model)}"><input data-cc="${i}" data-f="plaque" value="${esc(x.plaque)}" placeholder="${esc(t.plate)}"><select data-cc="${i}" data-f="gamme">${GK.map((k) => `<option value="${k}" ${x.gamme === k ? 'selected' : ''}>${esc(t.G[k])}</option>`).join('')}</select></div>`).join('')}
     <button class="btn sm sec" data-add-c="1">${esc(t.addC)}</button></div>
@@ -159,7 +163,8 @@ function catHtml(t) {
     ${GK.map((k) => `<div class="gam"><label class="chk"><input type="checkbox" data-g="${k}" data-f="on" ${g(k).on ? 'checked' : ''}> <b>${esc(t.G[k])}</b> · ${esc(t.on)}</label>
       ${g(k).on ? `<div class="grid">${['pc', 'km', 'h', 'demi', 'jour'].map((f) => `<label>${esc(t[f])}<input inputmode="decimal" data-g="${k}" data-f="${f}" value="${esc(g(k)[f] ?? '')}"></label>`).join('')}</div>` : ''}</div>`).join('')}
     <p class="meta" style="margin:10px 0 4px">${esc(t.extras)}</p>
-    <div class="grid">${EK.map((k) => `<label>${esc(t.E[k])}<input inputmode="decimal" data-e="${k}" value="${esc(c.extras[k] ?? '')}"></label>`).join('')}</div>
+    ${(c.xl || (c.xl = [...Object.entries(c.extras || {}).map(([k, p]) => ({ k, p })), ...(c.xtra || []).map((x) => ({ k: 'autre', n: x.n, p: x.p }))])).map((x, i) => `<div class="line"><select data-xl="${i}" data-f="k">${[...EK, 'autre'].map((k) => `<option value="${k}" ${x.k === k ? 'selected' : ''}>${esc(k === 'autre' ? '➕ ' + t.other : t.E[k])}</option>`).join('')}</select>${x.k === 'autre' ? `<input data-xl="${i}" data-f="n" value="${esc(x.n || '')}" placeholder="${esc(t.otherPh)}" maxlength="40">` : ''}<input data-xl="${i}" data-f="p" inputmode="decimal" value="${esc(x.p ?? '')}" placeholder="0,00" style="max-width:90px"><span>€</span><button class="btn sm sec" data-xl-del="${i}" aria-label="✕">✕</button></div>`).join('')}
+    <button class="btn sm sec" data-add-x="1">${esc(t.addX)}</button>
     <button class="btn block" style="margin-top:12px" data-cat-save="1">${esc(t.save)}</button>
     ${catMsg ? `<p class="ok" style="margin:8px 0 0">${esc(catMsg)}</p>` : ''}</details>`;
 }
@@ -293,13 +298,16 @@ app.addEventListener('input', (e) => {
   if (el.dataset.cd) cat.drivers[+el.dataset.cd][el.dataset.f] = el.value;
   else if (el.dataset.cc) cat.cars[+el.dataset.cc][el.dataset.f] = el.value;
   else if (el.dataset.g && el.dataset.f !== 'on') cat.gammes[el.dataset.g][el.dataset.f] = el.value;
-  else if (el.dataset.e) { if (el.value === '') delete cat.extras[el.dataset.e]; else cat.extras[el.dataset.e] = el.value; }
+  else if (el.dataset.xl && el.dataset.f !== 'k') { if (el.dataset.f === 'p') { const v = el.value.replace(/[^0-9.,]/g, ''); if (v !== el.value) el.value = v; } cat.xl[+el.dataset.xl][el.dataset.f] = el.value; }
+  else if (el.dataset.cdo) { const d = cat.drivers[+el.dataset.cdo], L = lgSplit(d.lg); d.lg = lgJoin(L.codes, el.value.trim()); }
 });
 app.addEventListener('change', (e) => {
   const el = e.target;
   if (el.dataset.pr && prof) { prof[el.dataset.pr] = el.value; profMsg = ''; return render(); }
   if (cat && el.dataset.g && el.dataset.f === 'on') { cat.gammes[el.dataset.g].on = el.checked; catMsg = ''; return render(); }
   if (cat && el.dataset.cc && el.dataset.f === 'gamme') cat.cars[+el.dataset.cc].gamme = el.value;
+  if (cat && el.dataset.xl && el.dataset.f === 'k') { cat.xl[+el.dataset.xl].k = el.value; return render(); }
+  if (cat && el.dataset.cdl) { const i = +el.dataset.cdl, d = cat.drivers[i], L = lgSplit(d.lg), set = new Set(L.codes); if (el.checked) set.add(el.value); else set.delete(el.value); d.lg = lgJoin(Object.keys(DLG).filter((c) => set.has(c)), L.other); const sp = app.querySelector(`[data-lgs="${i}"]`); if (sp) { const M = lgSplit(d.lg); sp.textContent = '🗣️ ' + ([...M.codes.map((c) => DLG[c]), M.other].filter(Boolean).join(' · ') || T().lg); } }
 });
 app.addEventListener('click', async (e) => {
   pubTap(e);
@@ -310,9 +318,13 @@ app.addEventListener('click', async (e) => {
   if (b.dataset.push) { if (await pushEnable({ api: API, swUrl: '/taxi-sw.js', scope: '/taxi', post: pushPost })) { pushSt = 'on'; pushJust = true; } else pushSt = await pushStatus('/taxi'); return render(); }
   if (b.dataset.reset) { ls.set(ACC, null); id = key = ''; data = null; return render(); }
   if (b.dataset.addD) { cat.drivers.push({ nom: '', tel: '', lg: '', code: drvCode() }); return render(); }
+  if (b.dataset.addX) { const used = new Set(cat.xl.map((x) => x.k)); cat.xl.push({ k: EK.find((k) => !used.has(k)) || 'autre', p: '' }); return render(); }
+  if (b.dataset.xlDel) { cat.xl.splice(+b.dataset.xlDel, 1); return render(); }
   if (b.dataset.addC) { cat.cars.push({ modele: '', plaque: '', gamme: 'confort' }); return render(); }
   if (b.dataset.catSave) {
     b.disabled = true;
+    cat.extras = {}; cat.xtra = [];
+    for (const x of cat.xl || []) { const p = String(x.p ?? '').replace(',', '.'); if (p === '' || isNaN(+p)) continue; if (x.k === 'autre') { if (String(x.n || '').trim()) cat.xtra.push({ n: String(x.n).trim().slice(0, 40), p: +p }); } else cat.extras[x.k] = +p; }
     try { await sendOwner({ type: 'tx-cat', cat }); catMsg = t.saved; data.cat = JSON.parse(JSON.stringify(cat)); } catch { b.disabled = false; return; }
     return render();
   }
