@@ -155,28 +155,31 @@ function catHtml(t) {
     <button class="btn sm sec" data-add-d="1">${esc(t.addD)}</button>
     ${c.cars.map((x, i) => `<div class="line"><input data-cc="${i}" data-f="modele" value="${esc(x.modele)}" placeholder="${esc(t.model)}"><input data-cc="${i}" data-f="plaque" value="${esc(x.plaque)}" placeholder="${esc(t.plate)}"><select data-cc="${i}" data-f="gamme">${GK.map((k) => `<option value="${k}" ${x.gamme === k ? 'selected' : ''}>${esc(t.G[k])}</option>`).join('')}</select></div>`).join('')}
     <button class="btn sm sec" data-add-c="1">${esc(t.addC)}</button></div>
-    <div class="card"><h2>${esc(t.tarifs)}</h2>
+    <details class="card tfold" data-fk="tar"${tfShut().has('tar') ? '' : ' open'}><summary style="cursor:pointer"><h2 style="display:inline-block;margin:0">${esc(t.tarifs)}</h2></summary>
     ${GK.map((k) => `<div class="gam"><label class="chk"><input type="checkbox" data-g="${k}" data-f="on" ${g(k).on ? 'checked' : ''}> <b>${esc(t.G[k])}</b> · ${esc(t.on)}</label>
       ${g(k).on ? `<div class="grid">${['pc', 'km', 'h', 'demi', 'jour'].map((f) => `<label>${esc(t[f])}<input inputmode="decimal" data-g="${k}" data-f="${f}" value="${esc(g(k)[f] ?? '')}"></label>`).join('')}</div>` : ''}</div>`).join('')}
     <p class="meta" style="margin:10px 0 4px">${esc(t.extras)}</p>
     <div class="grid">${EK.map((k) => `<label>${esc(t.E[k])}<input inputmode="decimal" data-e="${k}" value="${esc(c.extras[k] ?? '')}"></label>`).join('')}</div>
     <button class="btn block" style="margin-top:12px" data-cat-save="1">${esc(t.save)}</button>
-    ${catMsg ? `<p class="ok" style="margin:8px 0 0">${esc(catMsg)}</p>` : ''}</div>`;
+    ${catMsg ? `<p class="ok" style="margin:8px 0 0">${esc(catMsg)}</p>` : ''}</details>`;
 }
+// 📋 / 💶 cartes repliables (choix gardé sur ce téléphone)
+function tfShut() { try { return new Set(JSON.parse(localStorage.getItem('taxiFold') || '[]')); } catch { return new Set(); } }
+document.addEventListener('toggle', (e) => { const d = e.target; if (!d.classList || !d.classList.contains('tfold')) return; const s = tfShut(); if (d.open) s.delete(d.dataset.fk); else s.add(d.dataset.fk); try { localStorage.setItem('taxiFold', JSON.stringify([...s])); } catch { /* stockage plein */ } }, true);
 function profHtml() {
   const u = T2(), p0 = data.prof || {}, open = !data.prof || profOpen;
-  if (!open) return `<div class="card"><h2>${esc(u.prof)}</h2><p class="meta" style="margin:0">${esc([p0.nom, u.P[p0.pay], u.X[p0.prix], u.F[p0.fact], p0.taux !== '' ? u.taux + ' ' + p0.taux : ''].filter(Boolean).join(' · '))}</p><button class="btn sm sec" style="margin-top:8px" data-prof-edit="1">${esc(u.edit)}</button></div>`;
+  if (!open) return `<details class="card tfold" data-fk="prof"${tfShut().has('prof') ? '' : ' open'}><summary style="cursor:pointer"><h2 style="display:inline-block;margin:0">${esc(u.prof)}</h2></summary><p class="meta" style="margin:0">${esc([p0.nom, u.P[p0.pay], u.X[p0.prix], u.F[p0.fact], p0.taux !== '' ? u.taux + ' ' + p0.taux : ''].filter(Boolean).join(' · '))}</p><button class="btn sm sec" style="margin-top:8px" data-prof-edit="1">${esc(u.edit)}</button></details>`;
   const p = prof || (prof = { nom: data.nom || '', adresse: '', ville: '', rcs: '', tva: '', tel: data.tel || '', email: '', pay: 'iban', iban: '', bic: '', lien: '', prix: 'fixe', fact: 'each', taux: '', ...p0 });
   const inp = (k, lbl, type = 'text') => `<label>${esc(lbl)}</label><input data-p="${k}" type="${type}" value="${esc(p[k] ?? '')}">`;
   const radios = (k, opts) => Object.entries(opts).map(([v, l]) => `<label class="chk"><input type="radio" name="p_${k}" data-pr="${k}" value="${v}" ${p[k] === v ? 'checked' : ''}> ${esc(l)}</label>`).join('');
-  return `<div class="card" id="profCard"><h2>${esc(u.prof)}</h2><p class="meta" style="margin:0 0 8px">${esc(u.profHint)}</p>
+  return `<details class="card tfold" id="profCard" data-fk="prof"${data.prof && tfShut().has('prof') ? '' : ' open'}><summary style="cursor:pointer"><h2 style="display:inline-block;margin:0">${esc(u.prof)}</h2></summary><p class="meta" style="margin:0 0 8px">${esc(u.profHint)}</p>
     ${inp('nom', u.nom)}${inp('adresse', u.adr)}${inp('ville', u.ville)}${inp('rcs', u.rcs)}${inp('tva', u.tvaN)}${inp('tel', T().tel, 'tel')}${inp('email', u.mail, 'email')}
     <p class="meta" style="margin:10px 0 4px"><b>${esc(u.pay)}</b></p>${radios('pay', u.P)}
     ${p.pay === 'iban' ? inp('iban', u.iban) + inp('bic', u.bic) : p.pay === 'lien' ? inp('lien', u.lien, 'url') : ''}
     <p class="meta" style="margin:10px 0 4px"><b>${esc(u.prix)}</b></p>${radios('prix', u.X)}
     <p class="meta" style="margin:10px 0 4px"><b>${esc(u.fact)}</b></p>${radios('fact', u.F)}
     ${inp('taux', u.taux)}<p class="meta" style="margin:2px 0 0">${esc(u.tauxHint)}</p>
-    <button class="btn block" style="margin-top:12px" data-prof-save="1">${esc(u.save)}</button>${profMsg ? `<p class="ok" style="margin:8px 0 0">${esc(profMsg)}</p>` : ''}</div>`;
+    <button class="btn block" style="margin-top:12px" data-prof-save="1">${esc(u.save)}</button>${profMsg ? `<p class="ok" style="margin:8px 0 0">${esc(profMsg)}</p>` : ''}</details>`;
 }
 const rKey = (r) => r.h + ':' + r.r;
 function invHtml() {
