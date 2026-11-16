@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.288.0';
+const VERSION = '2.289.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1711,6 +1711,55 @@ const netPayMode = (tid) => (netInfo(tid).payMode === 'month' ? 'month' : 'each'
 const netToBill = (tid) => vault.list('taches').filter((t) => t.net && t.net.tid === tid && t.statut === 'fait' && !t.facture && !(t.course && (t.course.payer === 'client' || t.course.cancel)));
 const lateDays = (due) => Math.floor((Date.parse(today()) - Date.parse(due)) / 864e5);
 const b64big = (bytes) => { let bin = ''; const u = new Uint8Array(bytes); for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(bin); };
+// 🚗 parc auto du réseau : CENTRALE-TAXI → LA CENTRAL → hôtels / Airbnb → app du voyageur (photos réduites, rechiffrées à chaque étape)
+async function shrinkJpeg(bytes, max = 720) {
+  try {
+    const bmp = await createImageBitmap(new Blob([bytes])), k = Math.min(1, max / Math.max(bmp.width, bmp.height)), c = document.createElement('canvas');
+    c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k); c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const b = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.72));
+    return b ? new Uint8Array(await b.arrayBuffer()) : bytes;
+  } catch { return bytes; }
+}
+async function fleetB64(T) {
+  const out = {};
+  for (const [k, x] of Object.entries(T || {})) {
+    if (!FLEET_T[k] || !(x.n > 0 || Object.keys(x.ph || {}).length)) continue;
+    const o = { n: Math.max(0, Math.min(99, +x.n || 0)) };
+    for (const w of ['e', 'i']) if (x.ph && x.ph[w]) { const b = await vault.readFile(x.ph[w]).catch(() => null); if (b) o[w] = b64big(await shrinkJpeg(b)); }
+    out[k] = o;
+  }
+  return out;
+}
+async function fleetSave(T, oldT) {
+  const F = {}, keep = new Set();
+  for (const [k, x] of Object.entries(T || {})) {
+    if (!FLEET_T[k]) continue;
+    const ph = {};
+    for (const w of ['e', 'i']) if (typeof x[w] === 'string' && x[w].length > 100 && x[w].length < 2e6) { const pid = uid(); await vault.saveFile(pid, b64d(x[w])); ph[w] = pid; }
+    F[k] = { n: Math.max(0, Math.min(99, +x.n || 0)), ph };
+  }
+  for (const x of Object.values(oldT || {})) for (const f of Object.values(x.ph || {})) if (!keep.has(f)) await vault.deleteFile(f).catch(() => {});
+  return F;
+}
+// CENTRALE-TAXI : envoie son parc auto (et ses tarifs) à LA CENTRAL
+async function lcFleetPush() {
+  if (!TENANT || tenantInfo.fil !== 'taxi') return;
+  try { await tenantSend({ type: 'fleet', types: await fleetB64(fleetConf()), tar: txTar() }); } catch { /* hors ligne : au prochain enregistrement */ }
+}
+// LA CENTRAL : le parc de toutes les centrales taxi, envoyé aux hôtels / Airbnb qui ne l'ont pas encore
+async function lcFleetShare() {
+  if (TENANT || !vault.unlocked) return;
+  const all = vault.list('reglages').filter((r) => r.id.startsWith('netfleet-'));
+  if (!all.length) return;
+  const ver = all.map((r) => r.at || '').sort().pop(), sent = (vault.get('reglages', 'lcfleetSent') || {}).m || {};
+  const to = ((ui.net && ui.net.list) || []).filter((t) => t.pub && ['hotel', 'airbnb'].includes(t.fil) && sent[t.id] !== ver);
+  if (!to.length) return;
+  const agg = {};
+  for (const r of all) for (const [k, x] of Object.entries(r.t || {})) { const a = agg[k] || (agg[k] = { n: 0, ph: {} }); a.n += +x.n || 0; for (const w of ['e', 'i']) if (!a.ph[w] && x.ph && x.ph[w]) a.ph[w] = x.ph[w]; }
+  const types = await fleetB64(agg), m = { ...sent };
+  for (const t of to) { try { await netBoxSend(t.id, { type: 'lcfleet', ver, types }); m[t.id] = ver; } catch { /* plus tard */ } }
+  await vault.mutate((tx) => tx.put('reglages', { id: 'lcfleetSent', m }), '🚗 Parc auto du réseau envoyé', plural(to.length, 'client'));
+}
 async function netBoxSend(tid, obj) {
   const t = ((ui.net && ui.net.list) || []).find((x) => x.id === tid);
   if (!t || !t.pub) throw new Error('Le client n’a pas encore ouvert sa centrale (mise à jour) : réessayez après.');
@@ -1956,6 +2005,12 @@ async function netDemSync(list) {
         continue;
       }
       // 🚕 course demandée par un hôtel / Airbnb client (↪️ LA CENTRAL) : une tâche pour nos chauffeurs, à confier
+      if (m.type === 'fleet') {
+        const old = vault.get('reglages', 'netfleet-' + tid), t = await fleetSave(m.types, old && old.t);
+        await vault.mutate((tx) => tx.put('reglages', { id: 'netfleet-' + tid, tid, nom: cl, at: new Date().toISOString(), t, tar: m.tar && typeof m.tar === 'object' ? { gammes: m.tar.gammes || {}, extras: m.tar.extras || {}, xtra: (m.tar.xtra || []).slice(0, 12) } : null }), '🚗 Parc auto d’une centrale taxi', `${cl} · ${Object.entries(t).map(([k, x]) => FLEET_T[k] + ' × ' + x.n).join(', ')}`);
+        await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
+        continue;
+      }
       if (m.type === 'taxi' || m.type === 'taxi-cancel') {
         const cur = ref && vault.list('taches').find((x) => x.net && x.net.tid === tid && x.net.ref === ref);
         if (m.type === 'taxi-cancel') {
@@ -2041,6 +2096,7 @@ async function netLoad(force) {
     await netHoldSync(list);
     await netSousSync(list).catch(() => {});
     await netStatusSync();
+    await lcFleetShare().catch(() => {});
   } catch (e) { ui.net = { list: (ui.net || {}).list || [], dem: (ui.net || {}).dem || [], at: Date.now(), err: e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.' : e.message || 'Connexion impossible' }; }
   if (ui.route === 'licences') renderView();
   if (ui.sheet && ui.sheet.kind && ui.sheet.kind.startsWith('net')) { ui.sheet.rendered = false; renderSheet(); }
@@ -2101,6 +2157,10 @@ async function tenantBoxSync() {
           else await vault.mutate((tx) => tx.put('taches', { type: 'autre', ...rec, immId: '', logId: '', locId: '', intervenantId: '', recur: '', statut: 'afaire', urgent: false, sentAt: new Date().toISOString(), course: cr }), '🚕 Course reçue de LA CENTRAL', rec.titre);
           if (cur && cur.intervenantId) equipeSync(cur.intervenantId).catch(() => {});
         }
+      } else if (m.type === 'lcfleet' && !ro) {
+        const old = vault.get('reglages', 'lcfleet'), t = await fleetSave(m.types, old && old.t);
+        await vault.mutate((tx) => tx.put('reglages', { id: 'lcfleet', ver: String(m.ver || ''), t }), '🚗 Parc auto de LA CENTRAL', Object.entries(t).map(([k, x]) => FLEET_T[k] + ' × ' + x.n).join(', '));
+        hotesSync().catch(() => {});
       } else if (m.type === 'course-rate' && m.ref && !ro) {
         const t = vault.list('taches').find((x) => x.course && x.course.up && x.course.up.ref === String(m.ref)), s0 = Math.round(+m.s);
         if (t && s0 >= 1 && s0 <= 5) await vault.mutate((tx) => tx.put('taches', { id: t.id, course: { ...t.course, rate: s0 } }), '⭐ Note du client sur la course', t.titre);
@@ -3780,7 +3840,7 @@ function hoteData(h, tks) {
     ch: { num: h.chambre, etage: h.etage || ch.etage || '', cat: ch.cat || '', typ: ch.typ || '', persMax: chPers(ch) || '', lit: ch.lit || '', canape: +ch.canape || 0, appoint: !!ch.appoint, culle: !!ch.culle, vip: !!ch.vip, m2: ch.m2 || '', npieces: h.lieu === 'airbnb' ? ch.npieces || '' : '', desc: ch.desc || '', ph: ch.ph || {}, adresse: h.adresse || ch.adresse || '' },
     st: TENANT ? { nom: soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : c.nom || tenantInfo.nom || 'LA CENTRAL', adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || soc.adresse || c.adresse || '' : soc.adresse || c.adresse || '', tel: soc.tel || c.tel || '', wa: '', logo: soc.logo || '', color: soc.color || '', pays: soc.pays || 'LU' } : { nom: c.nom || (soc.nom && !WRONG_ID.test(soc.nom) ? soc.nom : 'LA CENTRAL'), adresse: h.lieu === 'airbnb' ? h.adresse || ch.adresse || c.adresse || '' : c.adresse || soc.adresse || '', tel: c.tel || soc.tel || '', wa: c.wa || '', logo: soc.logo || '', pays: soc.pays || 'LU' },
     // 🚗 parc auto des sociétés de taxi (photos dehors / dedans), par sorte de voiture
-    fleet: txCos().flatMap((co) => Object.entries(co.fleet || {}).filter(([k, x]) => FLEET_T[k] && x.n > 0).map(([k, x]) => ({ t: k, n: x.n, co: co.nom || '', ph: x.ph || {} }))),
+    fleet: [...txCos().flatMap((co) => Object.entries(co.fleet || {}).filter(([k, x]) => FLEET_T[k] && x.n > 0).map(([k, x]) => ({ t: k, n: x.n, co: co.nom || '', ph: x.ph || {} }))), ...(TENANT ? Object.entries((vault.get('reglages', 'lcfleet') || {}).t || {}).filter(([k, x]) => FLEET_T[k] && x.n > 0).map(([k, x]) => ({ t: k, n: x.n, co: 'LA CENTRAL', ph: x.ph || {} })) : [])],
     gp: h.gp || null,
     svc: svcs(h.lieu).map(svcNorm).map((x) => ({ t: x.t, loc: x.loc || '', nom: x.nom || '', sl: x.sl || [], m: svcMaint(x.m) ? x.m : null, prix: x.prix === '' ? '' : +x.prix, pxExt: x.pxExt === '' || x.pxExt == null ? '' : +x.pxExt, cur: x.cur || 'EUR', inc: !!x.inc, desc: x.desc || '', ph: (x.ph || []).slice(0, 6) })),
     meal: { allerg: h.allerg || [], allergAutre: h.allergAutre || '', allergCh: h.allergCh || [], allergChAutre: h.allergChAutre || '', regime: h.regime || [], dej: h.dej || '', dejOu: h.dejOu || '', din: h.din || '', dinOu: h.dinOu || '', room: c.roomSvc && c.roomSvc !== 'non' ? { svc: c.roomSvc, pct: c.roomPct || 0, deliv: !!c.roomDeliv } : null },
@@ -11978,7 +12038,7 @@ const FORMS = {
     const extras = {}, xtra = [];
     for (let i = 0; i < 20 && fd.has(`x${i}_k`); i++) { const k = g(`x${i}_k`), p = nb(g(`x${i}_p`)); if (!k || p === '') continue; if (k === 'autre') { if (g(`x${i}_n`)) xtra.push({ n: g(`x${i}_n`).slice(0, 40), p }); } else if (TX_EXT[k]) extras[k] = p; }
     await vault.mutate((tx) => tx.put('reglages', { id: 'txtar', gammes, extras, xtra }), '💶 Tarifs et extras', Object.keys(TX_GAM).filter((k) => gammes[k].on).map((k) => TX_GAM[k]).join(', '));
-    toast('Tarifs enregistrés'); goBack();
+    toast('Tarifs enregistrés'); goBack(); lcFleetPush();
   },
   async 'hote-tarifs'(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), m = (k) => (g(k) ? Math.max(0, num(g(k).replace(',', '.'))) : '');
@@ -12430,7 +12490,7 @@ const FORMS = {
     }
     await vault.mutate((tx) => tx.put('reglages', { id: 'fleet', t: F }), '🚗 Parc auto', Object.entries(F).map(([k, x]) => FLEET_T[k] + ' × ' + x.n).join(', '));
     for (const x of dels) await vault.deleteFile(x).catch(() => {});
-    closeSheet(); toast('Parc auto enregistré'); renderView();
+    closeSheet(); toast('Parc auto enregistré'); renderView(); lcFleetPush();
   },
   async coursenew(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), q = g('quand'), w = g('w') ? vault.get('intervenants', g('w')) : null;
