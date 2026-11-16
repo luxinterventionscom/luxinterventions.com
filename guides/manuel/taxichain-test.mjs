@@ -90,6 +90,6 @@ await act(q, 'hote-taxi', { id: 'h1' }); await q.waitForTimeout(900);
 const hs = await q.$eval('.sheet', (e) => e.innerText); log(hs.replace(/\n/g, ' / ').slice(0, 300));
 assert(/Chauffeur/.test(hs) && /Départ|Partenza/.test(hs) && /Client|Cliente/.test(hs), 'hôtel : horaires chauffeur + client');
 await relog(q, CPASS); await q.waitForTimeout(3000); await act(p, 'net-reload'); await p.waitForTimeout(4000); await relog(k, KPASS); await k.waitForTimeout(3000);
-await k.evaluate(() => { location.hash = '#/champdrv'; }); await k.waitForTimeout(1500);
-log('classement : ' + (await k.$eval('#view', (e) => e.innerText)).replace(/\n/g, ' / ').slice(0, 260));
+await k.evaluate(() => { location.hash = '#/compta'; }); await k.waitForTimeout(1200); await act(k, 'cp-sec', { id: 'stats' }); await k.waitForTimeout(1200);
+{ const v = await k.$eval('#view', (e) => e.innerText); log('classement : ' + v.replace(/\n/g, ' / ').slice(0, 300)); assert(/Classement des tassistes/.test(v) && /⭐ 5/.test(v), 'centrale taxi : 🥇 classement avec ⭐ 5 du voyageur'); }
 log('errs ' + errs.join(' | ')); await b.close();

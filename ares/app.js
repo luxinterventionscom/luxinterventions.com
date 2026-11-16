@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.289.0';
+const VERSION = '2.290.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5268,7 +5268,11 @@ function taxiStatsHtml() {
     return html`<div class="card" style="margin-bottom:12px"><b>${title}</b><p style="margin:6px 0">${plural(L.length, 'course')} · <b>${eur(ca)}</b> TTC</p>
       <div class="small">${Object.entries(byP).map(([k, n]) => html`<span class="badge" style="margin:2px">${PAY_MODES[k] || (k === '—' ? '⏳ pas encore payé' : k)} × ${n}</span>`)}</div>
       ${Object.keys(byD).length ? html`<div class="list small" style="margin-top:8px">${Object.entries(byD).sort((a, b) => b[1].ca - a[1].ca).map(([w, x]) => html`<div class="row"><span class="grow">🚙 ${w}</span><span>${plural(x.n, 'course')} · ${eur(x.ca)}</span></div>`)}</div>` : ''}</div>`; };
-  return html`${blk(C.filter((t) => String(t.doneDate || t.date).startsWith(m0)), '📅 Ce mois-ci')}${blk(C.filter((t) => String(t.doneDate || t.date).startsWith(y0)), '🗓️ Cette année')}`;
+  // 🥇 classement des tassistes (année) : courses, ⭐ moyenne des clients, arrivées notées
+  const R = {}; for (const t of C.filter((x) => String(x.doneDate || x.date).startsWith(y0) && x.intervenantId)) { const w = vault.get('intervenants', t.intervenantId); if (!w) continue; const o = R[w.id] || (R[w.id] = { nom: intervFull(w), n: 0, s: 0, nr: 0 }); o.n++; if (t.course.rate) { o.s += t.course.rate; o.nr++; } }
+  const L = Object.values(R).sort((a, b) => (b.nr ? b.s / b.nr : 0) * 2 + b.n - ((a.nr ? a.s / a.nr : 0) * 2 + a.n)), md = ['🥇', '🥈', '🥉'];
+  const rank = L.length ? html`<div class="card" style="margin-bottom:12px"><b>🥇 Classement des tassistes · ${y0}</b><div class="list small" style="margin-top:8px">${L.map((x, i) => html`<div class="row"><span class="avatar">${md[i] || i + 1}</span><span class="grow">${x.nom}</span><span>${plural(x.n, 'course')}${x.nr ? html` · ⭐ ${String(Math.round((x.s / x.nr) * 10) / 10).replace('.', ',')} <span class="tiny muted">(${x.nr})</span>` : ''}</span></div>`)}</div></div>` : '';
+  return html`${rank}${blk(C.filter((t) => String(t.doneDate || t.date).startsWith(m0)), '📅 Ce mois-ci')}${blk(C.filter((t) => String(t.doneDate || t.date).startsWith(y0)), '🗓️ Cette année')}`;
 }
 // 🚗 parc auto (centrale taxi) : combien de chaque sorte + 2 photos (dehors, dedans), et les véhicules un par un
 // 💶 tarifs (luxe / confort / économique) et extras de la centrale taxi
