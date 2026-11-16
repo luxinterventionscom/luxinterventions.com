@@ -32,6 +32,10 @@ await act(k, 'open-interv', { id: 'w3' }); await k.waitForTimeout(600); await ac
 await act(k, 'eq-on', { id: 'w3' }); await k.waitForTimeout(3500);
 const wCode = await k.$eval('.sheet [style*="mono"]', (e) => e.textContent.trim());
 await k.keyboard.press('Escape'); await k.waitForTimeout(300);
+// 🚗 parc auto de la centrale taxi (photo) → LA CENTRAL → hôtel → voyageur
+await k.evaluate(() => { location.hash = '#/parc'; }); await k.waitForTimeout(1000); await act(k, 'fleet-edit'); await k.waitForTimeout(700);
+await k.fill('#f [name=fl_van]', '2'); await k.setInputFiles('#f [name=flp_van_e]', new URL('../../ares/icons/hote-192.png', import.meta.url).pathname); await k.click('button[type=submit][form=f]'); await k.waitForTimeout(3500);
+await act(p, 'net-reload'); await p.waitForTimeout(4000); await act(p, 'net-reload'); await p.waitForTimeout(3000);
 console.log('⏱ '+((Date.now()-T0)/1000|0)+'s hôtel : ↪️ LA CENTRAL');
 // hôtel : ↪️ LA CENTRAL
 const c2 = await phone(b, 'it', { width: 1000, height: 900 }), q = await c2.newPage(); q.on('pageerror', (e) => errs.push('hotel: ' + e.message));
@@ -76,10 +80,16 @@ const g = await (await phone(b, 'it')).newPage(); g.on('pageerror', (e) => errs.
 await g.goto('http://localhost:8765/hote.html'); await g.waitForTimeout(1200); await g.fill('input[name=code]', '731204'); await g.click('form button[type=submit]'); await g.waitForTimeout(3500);
 assert(await g.$('[data-gtl][data-ev=dep]'), 'client : 🚗 À bord');
 await g.click('[data-gtl][data-ev=dep]'); await g.waitForTimeout(1500); await g.click('[data-gtl][data-ev=arr]'); await g.waitForTimeout(2000);
+{ const gt = await g.evaluate(() => (document.querySelector('[data-fk=fleet]') || {}).innerText || ''); assert(/LA CENTRAL/.test(gt) && await g.$('[data-fk=fleet] img[data-f]'), 'voyageur : 🚗 parc auto de la centrale taxi (photo) — ' + gt.slice(0, 120)); }
+await g.reload(); await g.waitForTimeout(3500);
+if (await g.$('[data-rate=arr][data-s="5"]')) { await g.click('[data-rate=arr][data-s="5"]'); await g.waitForTimeout(300); await g.click('[data-rate-send=arr]'); await g.waitForTimeout(2500); } else log('pas encore de note (arrivée pas marquée)');
 await relog(k, KPASS); await k.waitForTimeout(3500);
 await act(p, 'net-reload'); await p.waitForTimeout(4000); await act(p, 'net-reload'); await p.waitForTimeout(3000);
 await relog(q, CPASS); await q.waitForTimeout(3000);
 await act(q, 'hote-taxi', { id: 'h1' }); await q.waitForTimeout(900);
 const hs = await q.$eval('.sheet', (e) => e.innerText); log(hs.replace(/\n/g, ' / ').slice(0, 300));
 assert(/Chauffeur/.test(hs) && /Départ|Partenza/.test(hs) && /Client|Cliente/.test(hs), 'hôtel : horaires chauffeur + client');
+await relog(q, CPASS); await q.waitForTimeout(3000); await act(p, 'net-reload'); await p.waitForTimeout(4000); await relog(k, KPASS); await k.waitForTimeout(3000);
+await k.evaluate(() => { location.hash = '#/compta'; }); await k.waitForTimeout(1200); await act(k, 'cp-sec', { id: 'stats' }); await k.waitForTimeout(1200);
+{ const v = await k.$eval('#view', (e) => e.innerText); log('classement : ' + v.replace(/\n/g, ' / ').slice(0, 300)); assert(/Classement des tassistes/.test(v) && /⭐ 5/.test(v), 'centrale taxi : 🥇 classement avec ⭐ 5 du voyageur'); }
 log('errs ' + errs.join(' | ')); await b.close();
