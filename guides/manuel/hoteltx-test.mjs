@@ -62,6 +62,7 @@ assert(/Hello, I am your driver/.test(await a.evaluate(() => document.body.inner
 await a.click('[data-panc]'); await a.waitForTimeout(300);
 assert(await a.evaluate(() => [...document.body.children].some((x) => x.style.position === 'fixed' && /Tocca per chiudere/.test(x.textContent))), 'chauffeur: pancarte plein écran');
 await a.mouse.click(50, 50); await a.waitForTimeout(200);
+await a.click('#monthCard > h2'); await a.waitForTimeout(200); assert(await a.$('#monthCard.shut'), 'chauffeur : carte du mois repliable');
 const cash = await a.$('[data-cpay][data-mode=cash]');
 assert(cash, 'chauffeur: course avec « Payé en espèces »');
 await cash.click(); await a.waitForTimeout(3000);

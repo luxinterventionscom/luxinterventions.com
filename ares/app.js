@@ -37,7 +37,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.290.0';
+const VERSION = '2.292.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4629,10 +4629,10 @@ const navKeep = (it) => routeOk(it[0]) && !(TENANT && it[4] === 'abo');
 function sideNavHtml() {
   return NAV_TREE.map((x) => (x.group ? (x.items.some(navKeep) ? html`<div class="nav-group">${x.group}</div>${x.items.filter(navKeep).map((it) => navItem(it, true))}` : '') : navKeep(x) ? navItem(x) : ''));
 }
-function navItem([id, label, ic, plus, sec], sub) {
+function navItem([id, label, ic, plus, sec], sub, mob) {
   // 🏨 centrale hôtel / Airbnb : Accueil · Maintenance · Clients · Taxi · Comptabilité · Réglages
   if (TENANT && ['hotel', 'airbnb'].includes(tenantInfo.fil)) label = { demandes: 'Maintenance', hotel: 'Voyageurs', airbnb: 'Voyageurs', chambres: tenantInfo.fil === 'airbnb' ? 'Logements + services' : 'Chambres + services', taxis: 'Taxi / Chauffeurs' }[id] || label;
-  else if (TENANT && tenantInfo.fil === 'taxi') label = { taxis: 'Chauffeurs', parc: 'Parc auto', compta: 'Comptabilité & statistiques' }[id] || label;
+  else if (TENANT && tenantInfo.fil === 'taxi') label = { taxis: 'Chauffeurs', parc: 'Parc auto', compta: mob ? 'Compta & stats' : 'Comptabilité & statistiques' }[id] || label;
   else if (TENANT && id === 'taxis') label = 'Taxis';
   if (masked().has(id)) return html`<span class="navbtn nav-masked${sub ? ' nav-sub' : ''}" aria-disabled="true" title="Masqué dans les réglages">${icon('lock')}<span>MASQUÉ</span></span>`;
   return html`<button class="navbtn${sub ? ' nav-sub' : ''}" data-action="go" data-to="${id}" ${sec ? new Raw(`data-sec="${sec}"`) : ''}>${icon(ic)}<span>${label}</span></button>${plus ? html`<button class="navbtn nav-plus" data-action="${plus[0]}">＋ <span>${plus[1]}</span></button>` : ''}`;
@@ -4656,7 +4656,7 @@ function renderShell() {
       </header>
       <main class="main" id="view"></main>
     </div>
-    <nav class="bottomnav" aria-label="Navigation">${NAV_MOBILE.filter((x) => navKeep(x) || x[0] === 'reglages').map((x) => navItem(x))}</nav>
+    <nav class="bottomnav" aria-label="Navigation">${NAV_MOBILE.filter((x) => navKeep(x) || x[0] === 'reglages').map((x) => navItem(x, false, true))}</nav>
   `);
   renderSync();
 }
@@ -4934,6 +4934,21 @@ document.addEventListener('toggle', (e) => {
   if (d.open) foldOpen.add(d.dataset.dfold); else foldOpen.delete(d.dataset.dfold);
   try { localStorage.setItem('aresFolds', JSON.stringify([...foldOpen])); } catch {}
 }, true);
+// 🔽 secteurs repliables (ouverts par défaut ; toucher le titre gris) — choix gardé sur l'appareil
+const sfShutSet = (() => { try { return new Set(JSON.parse(localStorage.getItem('aresShut') || '[]')); } catch { return new Set(); } })();
+const sfold = (key, label, body, cls = '') => html`<div class="sfold${cls ? ' ' + cls : ''}${sfShutSet.has(key) ? ' shut' : ''}" data-sfk="${key}"><div class="section-label sf-h" style="cursor:pointer">${label}</div><div class="sf-b">${body}</div></div>`;
+{ const st = document.createElement('style'); st.textContent = '.sf-h::after{content:" ▾";opacity:.55}.sfold.shut>.sf-h::after{content:" ▸"}.sfold.shut>.sf-b{display:none}'; document.head.append(st); }
+document.addEventListener('click', (e) => {
+  const h = e.target.closest && e.target.closest('.sfold>.sf-h');
+  if (!h) return;
+  const c = h.parentElement, k = c.dataset.sfk;
+  c.classList.toggle('shut');
+  if (c.classList.contains('shut')) sfShutSet.add(k); else sfShutSet.delete(k);
+  try { localStorage.setItem('aresShut', JSON.stringify([...sfShutSet])); } catch { /* plein */ }
+});
+// 🇮🇹 parties d'un formulaire sur fond pastel (lisible aussi en mode sombre)
+const PB = { bleu: 'rgba(59,130,246,.09)', vert: 'rgba(16,185,129,.10)', jaune: 'rgba(234,179,8,.13)', violet: 'rgba(139,92,246,.09)', peche: 'rgba(249,115,22,.09)', gris: 'rgba(100,116,139,.08)' };
+const pbox = (c, t, body) => html`<div class="full fields" style="background:${PB[c] || c};border:1px solid rgba(0,0,0,.05);border-radius:16px;padding:10px 12px;margin:0">${t ? html`<div class="full" style="font-variant:small-caps;letter-spacing:.08em;font-weight:700;opacity:.75">${t}</div>` : ''}${body}</div>`;
 const dfold = (key, title, sumTxt, body, style = '') => html`<details class="card dfold" data-dfold="${key}" style="${style}" ${foldOpen.has(key) ? new Raw('open') : ''}><summary><h3>${title}</h3><span class="sum">${sumTxt}</span></summary><div class="dfold-body">${body}</div></details>`;
 function mtCard() {
   const t0 = today(), t1 = addDays(t0, 1);
@@ -5246,7 +5261,7 @@ const filBox = (fil, form, extra = () => '') => html`<div class="section-label" 
   <form data-form="fil" class="eq-chat-f">${new Raw(form)}<textarea name="x" required maxlength="1000" placeholder="Écrire sur cette course…"></textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
 // 🚕 CENTRALE-TAXI : l'Accueil par secteurs (centralino, flash, courses du jour, chauffeurs en service, factures)
 function taxiAccueil() {
-  const t = today(), S2 = (ic, ti, sub, items) => { const it = items.filter(Boolean); return html`<div class="dsec"><div class="section-label" style="margin:18px 0 0">${ic} ${ti}</div><p class="tiny muted" style="margin:0 0 8px">${sub}</p>${it.length ? it : html`<p class="tiny muted" style="margin:0 0 4px">✓ rien à traiter</p>`}</div>`; };
+  const t = today(), S2 = (ic, ti, sub, items) => { const it = items.filter(Boolean); return html`<div class="dsec" style="margin-top:18px">${sfold('tacc-' + ti, html`${ic} ${ti}`, html`<p class="tiny muted" style="margin:0 0 8px">${sub}</p>${it.length ? it : html`<p class="tiny muted" style="margin:0 0 4px">✓ rien à traiter</p>`}`)}</div>`; };
   setTimeout(() => posLoad(), 0);
   const C = vault.list('taches').filter((x) => x.course), open = C.filter((x) => x.statut !== 'fait'), free = open.filter((x) => !x.intervenantId).sort((a, b) => ((a.date || '') + (a.heure || '')).localeCompare((b.date || '') + (b.heure || '')));
   const day = open.filter((x) => x.date === t).sort((a, b) => (a.heure || '').localeCompare(b.heure || '')), CH = chaufs().filter((i) => !i.archive);
@@ -6521,10 +6536,10 @@ dashboard() {
           ${on.length ? html`<div class="list" style="margin-bottom:8px">${on.map((k) => { const x = T.gammes[k]; return html`<div class="row"><span class="grow"><b>${TX_GAM[k]}</b><span class="meta" style="display:block">${[x.pc !== '' ? 'prise en charge ' + eur(x.pc) : '', x.km !== '' ? eur(x.km) + ' / km' : '', x.h !== '' ? eur(x.h) + ' / h' : '', x.demi !== '' ? '½ journée ' + eur(x.demi) : '', x.jour !== '' ? 'journée ' + eur(x.jour) : ''].filter(Boolean).join(' · ')}</span></span></div>`; })}</div>` : ''}
           ${nx ? html`<p class="small" style="margin:0 0 8px">${[...Object.entries(T.extras).map(([k, p]) => `${TX_EXT[k]} ${eur(p)}`), ...T.xtra.map((x) => `➕ ${x.n} ${eur(x.p)}`)].join(' · ')}</p>` : ''}
           <button class="btn sm" data-action="txtar-edit">✏️ Modifier tarifs et extras</button>`, 'margin-bottom:14px'); })()}
-      <div class="section-label">🚘 Par sorte <span class="tiny muted">— vu par les hôtels et leurs clients</span></div>
-      ${ks.length ? html`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:14px">${ks.map((k) => { const x = F[k]; return html`<div class="card" style="padding:10px"><b>${FLEET_T[k]} × ${x.n || 0}</b><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">${['e', 'i'].map((w) => (x.ph || {})[w] ? html`<img data-bph="${x.ph[w]}" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px">` : html`<span style="aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--surface-2)">📷 ${w === 'e' ? 'dehors' : 'dedans'}</span>`)}</div></div>`; })}</div>` : html`<p class="small muted">Rien encore : ✏️ Sortes de voitures et photos.</p>`}
-      <div class="section-label">🚗 Véhicules <span class="tiny muted">— plaque, chauffeur, remplaçant</span></div>
-      ${VS.length ? html`<div class="list">${VS.map((v) => { const c = vault.get('intervenants', v.chauffeur), sb = vehSub(v) ? vault.get('intervenants', vehSub(v)) : null; return html`<button class="row" data-action="veh-edit" data-id="${v.id}"><span class="avatar">${(VEH_TYPES[v.type] || '🚗').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${v.plaque || '—'} · ${v.modele || VEH_TYPES[v.type] || ''}</span><span class="meta">${c ? '👤 ' + intervFull(c) : 'pas de chauffeur'}${sb ? html` · <b>🔁 ${intervFull(sb)}</b>` : ''}</span></span><span class="chev">›</span></button>`; })}</div>` : html`<p class="small muted">Aucun véhicule : ＋ Véhicule.</p>`}`;
+      ${sfold('pa-sorte', html`🚘 Par sorte <span class="tiny muted">— vu par les hôtels et leurs clients</span>`, html`
+      ${ks.length ? html`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:14px">${ks.map((k) => { const x = F[k]; return html`<div class="card" style="padding:10px"><b>${FLEET_T[k]} × ${x.n || 0}</b><div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px">${['e', 'i'].map((w) => (x.ph || {})[w] ? html`<img data-bph="${x.ph[w]}" alt="" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px">` : html`<span style="aspect-ratio:4/3;display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--surface-2)">📷 ${w === 'e' ? 'dehors' : 'dedans'}</span>`)}</div></div>`; })}</div>` : html`<p class="small muted">Rien encore : ✏️ Sortes de voitures et photos.</p>`}`)}
+      ${sfold('pa-veh', html`🚗 Véhicules <span class="tiny muted">— plaque, chauffeur, remplaçant</span>`, html`
+      ${VS.length ? html`<div class="list">${VS.map((v) => { const c = vault.get('intervenants', v.chauffeur), sb = vehSub(v) ? vault.get('intervenants', vehSub(v)) : null; return html`<button class="row" data-action="veh-edit" data-id="${v.id}"><span class="avatar">${(VEH_TYPES[v.type] || '🚗').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${v.plaque || '—'} · ${v.modele || VEH_TYPES[v.type] || ''}</span><span class="meta">${c ? '👤 ' + intervFull(c) : 'pas de chauffeur'}${sb ? html` · <b>🔁 ${intervFull(sb)}</b>` : ''}</span></span><span class="chev">›</span></button>`; })}</div>` : html`<p class="small muted">Aucun véhicule : ＋ Véhicule.</p>`}`)}`;
   },
   chat() {
     const { guests, tx, recv } = chatNews(), sig = newSignals();
@@ -6545,19 +6560,19 @@ dashboard() {
     const CH = chaufs(), VS = vehs(), ago = (ms) => { const n = Math.round((Date.now() - ms) / 60000); return n < 1 ? 'à l’instant' : n < 60 ? `il y a ${n} min` : `il y a ${Math.round(n / 60)} h`; };
     const posOf = (i) => (i.espace && ui.pos ? ui.pos[i.espace.id] : null);
     const oldDr = TENANT ? (hoteConf().drivers || []).map((d, i) => [d, i]).filter(([d]) => !d.conv) : [];
-    const ours = html`<div class="section-label">🚚 🚙 ${TENANT ? 'Vos chauffeurs et véhicules' : 'Véhicules et chauffeurs'} <span class="tiny muted">— ${TENANT ? 'app + GPS, vus seulement par vous' : 'les nôtres'}</span></div>
+    const ours = sfold('tx-ours', html`🚚 🚙 ${TENANT ? 'Vos chauffeurs et véhicules' : 'Véhicules et chauffeurs'} <span class="tiny muted">— ${TENANT ? 'app + GPS, vus seulement par vous' : 'les nôtres'}</span>`, html`
       <div class="actions" style="margin:0 0 10px;flex-wrap:wrap"><button class="btn primary" data-action="new-chauffeur">${icon('plus')} Chauffeur</button><button class="btn" data-action="veh-new">${icon('plus')} Véhicule</button></div>
       ${CH.length ? html`<div class="list" style="margin-bottom:10px">${CH.map((i) => { const p = posOf(i), live = p && Date.now() - p.t < 5 * 60000, v = VS.find((x) => x.chauffeur === i.id || vehSub(x) === i.id); return html`<div class="row"><span class="avatar">${i.metier === 'chauffeur_pl' ? '🚚' : '🚙'}</span>
         <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="open-interv" data-id="${i.id}"><span class="title" style="display:block">${intervFull(i)}</span><span class="meta">${METIERS[i.metier]}${v ? ' · ' + (VEH_TYPES[v.type] || '') + ' ' + (v.plaque || '') : ''}</span>
         <span class="tiny" style="display:block">${p ? html`${live ? '🟢 en service' : '⚪ hors service'} · 📍 ${ago(p.t)}` : i.espace && i.espace.on ? '⚪ pas encore de position' : '📱 app pas encore activée'}</span></button>
         ${p ? html`<a class="btn sm" href="https://www.openstreetmap.org/?mlat=${p.lat}&mlon=${p.lon}#map=16/${p.lat}/${p.lon}" target="_blank" rel="noopener">🗺️ Carte</a>` : ''}</div>`; })}</div>` : html`<p class="small muted">Aucun chauffeur : ＋ Chauffeur (c’est un ouvrier : il reçoit l’app de l’équipe et envoie sa position pendant le service).</p>`}
-      ${VS.length ? html`<div class="list" style="margin-bottom:14px">${VS.map((v) => { const c = vault.get('intervenants', v.chauffeur), sb = vehSub(v) ? vault.get('intervenants', vehSub(v)) : null; return html`<button class="row" data-action="veh-edit" data-id="${v.id}"><span class="avatar">${(VEH_TYPES[v.type] || '🚗').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${v.plaque || '—'} · ${v.modele || VEH_TYPES[v.type] || ''}</span><span class="meta">${c ? '👤 ' + intervFull(c) : 'pas de chauffeur'}${sb ? html` · <b>🔁 remplacé par ${intervFull(sb)}</b>${v.subAu ? ' jusqu’au ' + fmtDate(v.subAu) : ''}` : ''}</span></span><span class="chev">›</span></button>`; })}</div>` : ''}`;
+      ${VS.length ? html`<div class="list" style="margin-bottom:14px">${VS.map((v) => { const c = vault.get('intervenants', v.chauffeur), sb = vehSub(v) ? vault.get('intervenants', vehSub(v)) : null; return html`<button class="row" data-action="veh-edit" data-id="${v.id}"><span class="avatar">${(VEH_TYPES[v.type] || '🚗').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${v.plaque || '—'} · ${v.modele || VEH_TYPES[v.type] || ''}</span><span class="meta">${c ? '👤 ' + intervFull(c) : 'pas de chauffeur'}${sb ? html` · <b>🔁 remplacé par ${intervFull(sb)}</b>${v.subAu ? ' jusqu’au ' + fmtDate(v.subAu) : ''}` : ''}</span></span><span class="chev">›</span></button>`; })}</div>` : ''}`);
     // ↪️ courses envoyées par les hôtels / Airbnb clients : à confier à un de nos chauffeurs
     const lcs = TENANT && tenantInfo.fil !== 'taxi' ? [] : vault.list('taches').filter((x) => x.course && (x.statut !== 'fait' || (x.doneDate || '') >= addDays(t, -7))).sort((a, b) => ((a.date || '') + (a.heure || '')).localeCompare((b.date || '') + (b.heure || '')));
-    const lcBox = lcs.length ? html`<div class="section-label">${TENANT ? '🛣️ Courses' : html`↪️ Courses des clients <span class="tiny muted">— hôtels / Airbnb</span>`}</div><div class="list" style="margin-bottom:14px">${lcs.map((x) => { const c = x.course, w = x.intervenantId ? vault.get('intervenants', x.intervenantId) : null; return html`<button class="row" data-action="course-open" data-id="${x.id}"><span class="avatar">🚕</span>
+    const lcBox = lcs.length ? sfold('tx-lc', html`${TENANT ? '🛣️ Courses' : html`↪️ Courses des clients <span class="tiny muted">— hôtels / Airbnb</span>`}`, html`<div class="list" style="margin-bottom:14px">${lcs.map((x) => { const c = x.course, w = x.intervenantId ? vault.get('intervenants', x.intervenantId) : null; return html`<button class="row" data-action="course-open" data-id="${x.id}"><span class="avatar">🚕</span>
       <span class="grow"><span class="title" style="display:block">${x.net ? x.net.nom : x.lieu && x.lieu.contact ? x.lieu.contact : 'Client'}${x.net && x.lieu && x.lieu.contact ? ' · ' + x.lieu.contact : ''}</span><span class="meta">${fmtDate(x.date)}${x.heure ? ' ' + x.heure : ''} · ${c.from || '?'} → ${c.to || '?'}${c.vol ? ' · ✈️ ' + c.vol : ''}</span>
       <span class="tiny" style="display:block">${w ? '🚙 ' + intervFull(w) : c.ct ? '🚕 ' + c.ct.nom + (c.drv ? ' · 🚙 ' + c.drv.nom : ' · ⏳') : c.co ? '🚕 ' + c.co : '⚠️ à confier'}${c.up ? ' · ↪️ ' + (c.up.client || c.up.from) : ''} · ${c.payer === 'hotel' ? '🧾 facture au client' : '💶 payé dans la voiture'}${c.prix ? ' · ' + eur(courseTtc(x)) : ''}${c.paid ? ' · ✅ ' + (PAY_MODES[c.paid.mode] || '') : ''}</span></span>
-      <span class="badge ${c.cancel ? 'bad' : x.statut === 'fait' ? 'ok' : w || c.co || c.ct ? 'ok' : 'warn'}">${c.cancel ? '❌ Annulée' : x.statut === 'fait' ? '🏁 Terminée' : w || c.co || c.ct ? '✅ Confiée' : '⏳ À confier'}</span></button>`; })}</div>` : '';
+      <span class="badge ${c.cancel ? 'bad' : x.statut === 'fait' ? 'ok' : w || c.co || c.ct ? 'ok' : 'warn'}">${c.cancel ? '❌ Annulée' : x.statut === 'fait' ? '🏁 Terminée' : w || c.co || c.ct ? '✅ Confiée' : '⏳ À confier'}</span></button>`; })}</div>`) : '';
     if (TENANT && tenantInfo.fil === 'taxi') return html`${pageHead('🚙 Chauffeurs', `${plural(CH.length, 'chauffeur')} · ${plural(lcs.filter((x) => x.statut !== 'fait').length, 'course')} en cours`)}
       <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="course-new">${icon('plus')} Course</button></div></div>${lcBox}${ours}`;
     const comBox = TENANT ? '' : (() => { const D = comDue(), F = vault.list('reglages').filter((r) => r.id.startsWith('comf-')).sort((a, b) => (b.no || '').localeCompare(a.no || '')).slice(0, 12); return D.length || F.length ? html`<div class="section-label">🧾 Commissions <span class="tiny muted">— les courses que nous donnons aux centrales taxi et sociétés</span></div><div class="list" style="margin-bottom:14px">${D.map((g) => html`<div class="row"><span class="avatar">🚕</span><span class="grow"><span class="title" style="display:block">${g.nom}</span><span class="meta">${plural(g.tasks.length, 'course')} terminée${g.tasks.length > 1 ? 's' : ''} · ${eur(g.total)} HT</span></span><button class="btn sm primary" data-action="com-bill" data-k="${g.key}">🧾 Facturer</button></div>`)}${F.map((f) => html`<div class="row"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">${f.no} · ${f.nom}</span><span class="meta">${fmtDate(f.date)} · ${eur(f.ttc)} TTC · ${plural((f.tasks || []).length, 'course')}</span></span>${f.docId ? html`<button class="btn sm" data-action="open-doc" data-id="${f.docId}">📄</button>` : ''}</div>`)}</div>` : ''; })();
@@ -7741,7 +7756,7 @@ const SHEETS = {
         ${field('Téléphone', 'tel', i.tel, { type: 'tel', placeholder: '+352 …' })}
         ${field('Email', 'mail', i.mail, { type: 'email', full: true })}
         ${field('N° CCSS (matricule de sécurité sociale)', 'ccss', i.ccss, { placeholder: '13 chiffres — vide : l’ouvrier le complète dans son app', attrs: 'inputmode="numeric" autocomplete="off"' })}
-        <div class="full fields drv-only" style="margin:0;border:1px dashed var(--line);border-radius:12px;padding:8px" ${CHAUF.has(i.metier) ? '' : new Raw('hidden')}><div class="full section-label" style="margin:0">🚙 Chauffeur</div>
+        <div class="full fields drv-only" style="margin:0;background:rgba(234,179,8,.12);border:1px solid rgba(0,0,0,.05);border-radius:16px;padding:10px 12px" ${CHAUF.has(i.metier) ? '' : new Raw('hidden')}><div class="full section-label" style="margin:0">🚙 Chauffeur</div>
           ${field('🪪 N° d’identification du chauffeur', 'ident', i.ident || '', { placeholder: 'carte de chauffeur, licence…' })}
           <label class="field">Statut<select name="dstat"><option value="sal" ${i.dstat !== 'aff' ? new Raw('selected') : ''}>👷 Salarié</option><option value="aff" ${i.dstat === 'aff' ? new Raw('selected') : ''}>🏢 Société affiliée</option></select></label>
           ${field('Société affiliée (nom)', 'affNom', i.affNom || '', {})}${field('IBAN de la société affiliée', 'affIban', i.affIban || '', { placeholder: 'LU.. ….' })}
@@ -8485,7 +8500,7 @@ const SHEETS = {
     return {
       title: '🚗 Sortes de voitures et photos', narrow: true,
       body: html`<form id="f" data-form="fleet" class="fields"><p class="tiny muted full" style="margin:0">Combien de chaque sorte, et 2 photos (dehors, dedans) : les hôtels et leurs clients les voient.</p>
-        <div class="full" style="display:grid;gap:8px">${Object.entries(FLEET_T).map(([k, l]) => { const x = F[k] || {}; return html`<div style="display:grid;grid-template-columns:1fr 70px 90px 90px;gap:8px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:6px 8px"><b class="small">${l}</b><input name="fl_${k}" type="number" min="0" max="99" value="${x.n || ''}" placeholder="0" inputmode="numeric" aria-label="Nombre ${l}">${['e', 'i'].map((w) => html`<label class="ch-slot" style="padding:3px">${(x.ph || {})[w] ? html`<img data-bph="${x.ph[w]}" alt="">` : html`<span class="ch-empty" style="font-size:16px">＋</span>`}<span class="tiny">${w === 'e' ? 'dehors' : 'dedans'}</span><input type="file" name="flp_${k}_${w}" accept="image/*" hidden></label>`)}</div>`; })}</div></form>`,
+        <div class="full" style="display:grid;gap:8px">${Object.entries(FLEET_T).map(([k, l]) => { const x = F[k] || {}; return html`<div style="display:grid;grid-template-columns:1fr 70px 90px 90px;gap:8px;align-items:center;background:rgba(59,130,246,.08);border:1px solid rgba(0,0,0,.05);border-radius:14px;padding:8px 10px"><b class="small">${l}</b><input name="fl_${k}" type="number" min="0" max="99" value="${x.n || ''}" placeholder="0" inputmode="numeric" aria-label="Nombre ${l}">${['e', 'i'].map((w) => html`<label class="ch-slot" style="padding:3px">${(x.ph || {})[w] ? html`<img data-bph="${x.ph[w]}" alt="">` : html`<span class="ch-empty" style="font-size:16px">＋</span>`}<span class="tiny">${w === 'e' ? 'dehors' : 'dedans'}</span><input type="file" name="flp_${k}_${w}" accept="image/*" hidden></label>`)}</div>`; })}</div></form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
@@ -8493,15 +8508,15 @@ const SHEETS = {
     const CH = chaufs().filter((i) => !i.archive), t0 = today();
     return {
       title: '🚕 Nouvelle course', narrow: true,
-      body: html`<form id="f" data-form="coursenew" class="fields">
-        ${field('Départ', 'from', '', { full: true, required: true, placeholder: 'adresse, aéroport, gare…' })}${field('Destination', 'to', '', { full: true })}
-        ${field('Jour et heure', 'quand', t0 + 'T' + new Date().toTimeString().slice(0, 5), { type: 'datetime-local', required: true })}${field('Vol / train', 'vol', '', {})}
-        ${field('Client', 'nom', '', {})}${field('Téléphone', 'tel', '', { type: 'tel', placeholder: '+352…' })}${field('Personnes', 'pax', '1', { type: 'number', attrs: 'min="1" max="60"' })}
-        <label class="field">Voiture<select name="veh"><option value="">—</option>${Object.entries(FLEET_T).map(([k, l]) => html`<option value="${k}">${l}</option>`)}</select></label>
-        <label class="field full">🚙 Chauffeur<select name="w"><option value="">— plus tard</option>${CH.map((i) => html`<option value="${i.id}">${intervFull(i)}</option>`)}</select></label>
-        ${field('Prix HT (€)', 'prix', '', { type: 'number', attrs: 'step="0.01" min="0"' })}
-        <label class="field">Qui paie ?<select name="payer"><option value="client">💶 Le client, dans la voiture</option><option value="hotel">🧾 Sur facture</option></select></label>
-        ${field('📝 Note (souhait, bagages…)', 'note', '', { full: true })}</form>`,
+      body: html`<form id="f" data-form="coursenew" class="fields" style="gap:12px">
+        ${pbox('bleu', '🛣️ Trajet', html`${field('Départ', 'from', '', { full: true, required: true, placeholder: 'adresse, aéroport, gare…' })}${field('Destination', 'to', '', { full: true })}
+        ${field('Jour et heure', 'quand', t0 + 'T' + new Date().toTimeString().slice(0, 5), { type: 'datetime-local', required: true })}${field('Vol / train', 'vol', '', {})}`)}
+        ${pbox('vert', '👤 Client', html`${field('Client', 'nom', '', {})}${field('Téléphone', 'tel', '', { type: 'tel', placeholder: '+352…' })}${field('Personnes', 'pax', '1', { type: 'number', attrs: 'min="1" max="60"' })}`)}
+        ${pbox('jaune', '🚙 Voiture et chauffeur', html`<label class="field">Voiture<select name="veh"><option value="">—</option>${Object.entries(FLEET_T).map(([k, l]) => html`<option value="${k}">${l}</option>`)}</select></label>
+        <label class="field full">Chauffeur<select name="w"><option value="">— plus tard</option>${CH.map((i) => html`<option value="${i.id}">${intervFull(i)}</option>`)}</select></label>`)}
+        ${pbox('violet', '💶 Prix et paiement', html`${field('Prix HT (€)', 'prix', '', { type: 'number', attrs: 'step="0.01" min="0"' })}
+        <label class="field">Qui paie ?<select name="payer"><option value="client">💶 Le client, dans la voiture</option><option value="hotel">🧾 Sur facture</option></select></label>`)}
+        ${pbox('peche', '📝 Note', field('Note (souhait, bagages…)', 'note', '', { full: true }))}</form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
@@ -8510,15 +8525,14 @@ const SHEETS = {
     const opt = (sel) => html`<option value="">—</option>${CH.map((i) => html`<option value="${i.id}" ${sel === i.id ? new Raw('selected') : ''}>${intervFull(i)}</option>`)}`;
     return {
       title: id ? `🚗 ${v.plaque || 'Véhicule'}` : '🚗 Nouveau véhicule', narrow: true,
-      body: html`<form id="f" data-form="veh" class="fields"><input type="hidden" name="id" value="${id || ''}">
-        <label class="field">Type<select name="type">${Object.entries(VEH_TYPES).map(([k, l]) => html`<option value="${k}" ${v.type === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
+      body: html`<form id="f" data-form="veh" class="fields" style="gap:12px"><input type="hidden" name="id" value="${id || ''}">
+        ${pbox('bleu', '🚗 Véhicule', html`<label class="field">Type<select name="type">${Object.entries(VEH_TYPES).map(([k, l]) => html`<option value="${k}" ${v.type === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
         ${field('Plaque', 'plaque', v.plaque || '', { required: true })}
-        ${field('Modèle (marque, couleur…)', 'modele', v.modele || '', { full: true })}
-        <label class="field full">👤 Chauffeur habituel<select name="chauffeur">${opt(v.chauffeur)}</select></label>
-        <div class="section-label full" style="margin:6px 0 0">🔁 Remplaçant (chauffeur absent)</div>
-        <label class="field full">Remplacé par<select name="sub">${opt(v.sub)}</select></label>
-        ${field('Du', 'subDu', v.subDu || '', { type: 'date' })}${field('Au', 'subAu', v.subAu || '', { type: 'date' })}
-        ${field('Note', 'note', v.note || '', { full: true })}
+        ${field('Modèle (marque, couleur…)', 'modele', v.modele || '', { full: true })}`)}
+        ${pbox('vert', '👤 Chauffeur', html`<label class="field full">Chauffeur habituel<select name="chauffeur">${opt(v.chauffeur)}</select></label>`)}
+        ${pbox('jaune', '🔁 Remplaçant (chauffeur absent)', html`<label class="field full">Remplacé par<select name="sub">${opt(v.sub)}</select></label>
+        ${field('Du', 'subDu', v.subDu || '', { type: 'date' })}${field('Au', 'subAu', v.subAu || '', { type: 'date' })}`)}
+        ${pbox('violet', '📝 Note', field('Note', 'note', v.note || '', { full: true }))}
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-veh" data-id="${id}">Supprimer</button>` : ''}<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
