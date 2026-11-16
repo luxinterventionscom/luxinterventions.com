@@ -30,4 +30,11 @@ const w = await q.evaluate(() => { const r = [...document.querySelectorAll('[dat
 await act(q, 'open-interv', { id: w }); await q.waitForTimeout(800);
 const es = await q.evaluate(() => [...document.querySelectorAll('[data-action]')].map((x) => x.dataset.action).filter((a) => /edit/.test(a)).slice(0, 5));
 log('edit actions ' + es);
+await q.keyboard.press('Escape'); await q.waitForTimeout(300);
+await q.evaluate(() => { location.hash = '#/dashboard'; }); await q.waitForTimeout(1200);
+const nS = await q.$$eval('.sfold', (x) => x.length); assert(nS >= 3, 'Accueil : secteurs repliables ' + nS);
+await q.click('.sfold .sf-h'); await q.waitForTimeout(200); assert(await q.$('.sfold.shut'), 'Accueil : secteur replié');
+
+await q.evaluate(() => { location.hash = '#/parc'; }); await q.waitForTimeout(1000); assert((await q.$$eval('.sfold', (x) => x.length)) >= 2, 'Parc auto : listes repliables');
+await act(q, 'course-new'); await q.waitForTimeout(700); assert((await q.$$eval('#f > .fields', (x) => x.length)) >= 4, 'nouvelle course : parties en couleur');
 log('errs ' + errs.join(' | ')); await b.close();

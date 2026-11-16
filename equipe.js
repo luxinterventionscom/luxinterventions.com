@@ -191,7 +191,7 @@ function chatCard() {
   try { seen = localStorage.getItem(CSK()) || ''; } catch { /* stockage indisponible */ }
   const nw = list.filter((m) => m.from === 'mgr' && m.at > seen).length;
   const tm = (m) => `${esc(fmt(m.at))} ${esc(String(m.at).slice(11, 16))}`;
-  return `<div class="card" id="chatCard"><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(c.t)}${nw ? ` <span class="tag bad">${nw} ${esc(c.nw)}</span>` : ''}${trButton()}</h2><p class="meta" style="margin:0 0 8px">🔒 ${esc(c.hint)}</p>
+  return `<div class="card${efShut('chat')}" id="chatCard" data-efk="chat"><h2 style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">${esc(c.t)}${nw ? ` <span class="tag bad">${nw} ${esc(c.nw)}</span>` : ''}${trButton()}</h2><p class="meta" style="margin:0 0 8px">🔒 ${esc(c.hint)}</p>
     <div class="chat">${all.length ? all.map((m) => { const ed = eqEditable(m); return `<div class="bub ${m.from === 'eq' ? 'me' : 'mgr'}"><div class="bub-h"><b>${esc(m.from === 'eq' ? c.me : m.g ? c.sp : c.ctr)}</b> · ${m.wait ? esc(c.wait) : tm(m)}${ed ? `<button type="button" class="bub-mn" data-emenu="${esc(m.id)}" aria-label="${esc(x9.menu)}">⋯</button>` : ''}</div><div class="bub-x"${m.from === 'eq' ? '' : ` data-trx="${esc(m.x)}"`}>${esc(m.x)}</div>`
       + `${m.ed || m.from === 'eq' ? `<div class="bub-f">${m.ed ? esc(x9.edited) : ''} ${tk(m)}</div>` : ''}`
       + `${ed && chatMenu === m.id ? `<div class="bub-menu"><button type="button" data-eop="edit" data-id="${esc(m.id)}">${esc(x9.edit)}</button><button type="button" data-eop="del" data-id="${esc(m.id)}">${esc(x9.del)}</button></div>` : ''}</div>`; }).join('') : `<p class="meta" style="margin:0">${esc(c.none)}</p>`}</div>
@@ -516,6 +516,18 @@ document.addEventListener('click', (e) => {
   o.addEventListener('click', () => o.remove());
   document.body.append(o);
   try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {}); } catch { /* pas de plein écran */ }
+});
+// 🔽 cartes repliables : toucher le titre ; choix gardé sur ce téléphone (la course du jour et le service restent toujours ouverts)
+const efShutSet = (() => { try { return new Set(JSON.parse(localStorage.getItem('eqShut') || '[]')); } catch { return new Set(); } })();
+const efShut = (k) => (efShutSet.has(k) ? ' shut' : '');
+{ const st = document.createElement('style'); st.textContent = '[data-efk]>h2{cursor:pointer}[data-efk]>h2::after{content:" ▾";opacity:.5;font-size:.8em}[data-efk].shut>h2::after{content:" ▸"}[data-efk].shut>:not(h2){display:none!important}[data-efk].shut>h2{margin-bottom:0}'; document.head.append(st); }
+document.addEventListener('click', (e) => {
+  const h = e.target.closest && e.target.closest('[data-efk]>h2');
+  if (!h || e.target.closest('button, a, input, select')) return;
+  const c = h.parentElement, k = c.dataset.efk;
+  c.classList.toggle('shut');
+  if (c.classList.contains('shut')) efShutSet.add(k); else efShutSet.delete(k);
+  try { localStorage.setItem('eqShut', JSON.stringify([...efShutSet])); } catch { /* stockage plein */ }
 });
 function courseHtml(x, tid) {
   const c = x.course;
@@ -926,7 +938,7 @@ function render() {
     weeks.push({ ws, we, n: Math.floor((thu.getDate() - 1) / 7) + 1, cur: ws <= today && today <= we, days });
   }
   const wkOpen = (w) => { const v = wkMap()[w.ws]; return v === undefined ? w.cur : v; };
-  out.push(`<div class="card" id="monthCard"><h2>🗓️ ${esc(t.wk.t)} · ${esc(now.toLocaleDateString(T().loc, { month: 'long', year: 'numeric' }))}</h2>${weeks.map((w) => `<details class="wk${w.cur ? ' cur' : ''}" data-wk="${w.ws}"${wkOpen(w) ? ' open' : ''}><summary><b>${esc(t.wk.w)} ${w.n}</b> <span class="meta">${esc(sd(w.ws))} – ${esc(sd(w.we))}${w.days.length ? ` · ${w.days.length} ${esc(w.days.length === 1 ? t.wk.day1 : t.wk.days)}` : ''}</span></summary>
+  out.push(`<div class="card${efShut('month')}" id="monthCard" data-efk="month"><h2>🗓️ ${esc(t.wk.t)} · ${esc(now.toLocaleDateString(T().loc, { month: 'long', year: 'numeric' }))}</h2>${weeks.map((w) => `<details class="wk${w.cur ? ' cur' : ''}" data-wk="${w.ws}"${wkOpen(w) ? ' open' : ''}><summary><b>${esc(t.wk.w)} ${w.n}</b> <span class="meta">${esc(sd(w.ws))} – ${esc(sd(w.we))}${w.days.length ? ` · ${w.days.length} ${esc(w.days.length === 1 ? t.wk.day1 : t.wk.days)}` : ''}</span></summary>
     ${w.days.length ? w.days.map((dd) => `<div class="day">${esc(fmtDay(dd))}</div>${hOf(dd).map(hrow).join('')}${(byDay[dd] || []).map((x) => taskCard(x, false)).join('')}`).join('') : `<p class="meta" style="margin:6px 0 0">${esc(t.wk.none)}</p>`}</details>`).join('')}</div>`);
   if (d.devis) out.push(devCard());
   // Mon horaire : la personne écrit son arrivée / son départ, et signale ce qui ne va pas (3 photos minimum)
@@ -949,11 +961,11 @@ function render() {
   // classement de l'année : sa place et ses points (les autres ne sont pas montrés)
   if (d.rank && d.rank.pts > 0) {
     const r = d.rank, f = (x) => x.replace('{p}', r.pos).replace('{n}', r.of);
-    out.push(`<div class="card rk"><h2>${esc(t.rk.t)} · ${r.y}</h2><div class="rk-pos">${r.pos === 1 ? esc(f(t.rk.first)) : esc(f(t.rk.pos))}</div><div class="rk-pts">${esc(t.rk.pts.replace('{p}', r.pts))}</div>
+    out.push(`<div class="card rk${efShut('rk')}" data-efk="rk"><h2>${esc(t.rk.t)} · ${r.y}</h2><div class="rk-pos">${r.pos === 1 ? esc(f(t.rk.first)) : esc(f(t.rk.pos))}</div><div class="rk-pts">${esc(t.rk.pts.replace('{p}', r.pts))}</div>
       <div class="meta">✅ ${r.fait} ${esc(t.rk.fait)} · 📷 ${r.ph} ${esc(t.rk.ph)}${r.urg ? ` · 🔴 ${r.urg} ${esc(t.rk.urg)}` : ''}${r.good ? ` · ⭐ ${r.good} ${esc(t.rk.good)}` : ''}</div>
       <p class="meta" style="margin:8px 0 0">${esc(t.rk.hint)}</p></div>`);
   }
-  out.push(`<div class="card"><h2>🤒 ${esc(t.abs)}</h2>${absList.map((a) => `<div class="row"><span class="grow">${esc(t.types[a.type] || a.type)} · ${esc(fmt(a.debut))}${a.fin ? ' → ' + esc(fmt(a.fin)) : ''}</span></div>`).join('')}
+  out.push(`<div class="card${efShut('abs')}" data-efk="abs"><h2>🤒 ${esc(t.abs)}</h2>${absList.map((a) => `<div class="row"><span class="grow">${esc(t.types[a.type] || a.type)} · ${esc(fmt(a.debut))}${a.fin ? ' → ' + esc(fmt(a.fin)) : ''}</span></div>`).join('')}
     <details class="more"><summary>${esc(t.sick)}</summary><form id="absForm">
       <label>${esc(t.abs)}</label><select name="type">${Object.entries(t.types).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select>
       <label>${esc(t.from)}</label><input type="date" name="debut" value="${today}" required>
