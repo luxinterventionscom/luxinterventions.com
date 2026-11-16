@@ -87,6 +87,15 @@ Vale per tutte le app degli utenti (inquilini, ospiti, operai, annunciatori, tas
 - ✋ mano rossa = messaggio solo per la centrale (inquilini). La centrale vede il testo di prima dei messaggi modificati.
 - 🎧 **Centralino** in Accueil: tutte le categorie, richiudibili (scelta ricordata), 📣 Annunci con storico.
 
+## Da fare, deciso col titolare (non ancora nel codice — se ne riparla)
+- **Licences → ＋ Client: stessa creazione per tutti i tipi** (taxi, agenzia immo, privato, gérance, proprietario, hotel, Airbnb…):
+  solo nome/titolo → codice di invito, codice perso, chiave di secours divisa (½ A al cliente, ½ B a noi), link. Prova **3 mesi per tutti**.
+  Tutto il resto (logo, IBAN, società, tariffe, parc auto…) lo mette **il cliente** nella sua centrale.
+- **Commissione 3 € a corsa**: la paga **chi ci chiede la corsa** (es. Airbnb → DOMIER → CENTRALE-TAXI), aggiunta alla sua fattura di abbonamento
+  (oggi il codice la fattura alla CENTRALE-TAXI). Il taxi fattura a noi solo le corse ordinate da noi; se paga il cliente in auto, nessuna fattura.
+- **Trasloco** verso `ajrinterventions.com` / `app.ajrinterventions.com` (GitHub aljadyrecords, Worker nuovo su Cloudflare AJR), senza tracce
+  di luxinterventions.com: il titolare si prepara; prima di tutto Sauvegarde chiffrée. Da decidere: dati A (backup + import) o B (da zero), nome repo, nome app.
+
 ## Clienti della rete: gratis o abbonamento
 - 🆓 Portale gérance gratis: richieste scritte a mano; riga 💎 di invito (solo se le offerte sono attive).
 - 💎 Abbonamento / 🎁 6 mesi offerti / prova 15 giorni (sempre completa): centrale del cliente con i suoi inquilini;
