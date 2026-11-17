@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8"><title>ALJADY R. INTERVENTIONS — Diagramma di flusso v2.292</title>
+<style>
+@page{size:A4 landscape;margin:12mm}
+*{box-sizing:border-box}
+body{font-family:Arial,Helvetica,sans-serif;color:#1b2e4a;margin:0}
+.pg{height:186mm;display:flex;flex-direction:column;break-after:page;position:relative}
+.pg:last-child{break-after:auto}
+h1{margin:0 0 1mm;font-size:17pt;color:#1b2e4a}
+.sub{margin:0 0 5mm;font-size:9.5pt;color:#64748b}
+.foot{position:absolute;bottom:0;left:0;right:0;font-size:7.5pt;color:#94a3b8;display:flex;justify-content:space-between;border-top:1px solid #e2e8f0;padding-top:1.5mm}
+.brand{color:#b7791f;font-weight:700;letter-spacing:1.5pt}
+.row{display:flex;align-items:stretch;gap:0;justify-content:center;margin:2mm 0}
+.b{border-radius:3mm;padding:2.5mm 3mm;font-size:8.6pt;line-height:1.28;border:1.4px solid;min-width:30mm;max-width:46mm;background:#fff}
+.b b{display:block;font-size:9.5pt;margin-bottom:.8mm}
+.ar{display:flex;align-items:center;justify-content:center;width:9mm;font-size:16pt;color:#475569;flex:none}
+.ar small{font-size:6.5pt;display:block;text-align:center;line-height:1}
+.c1{border-color:#4f46e5;background:#eef2ff}.c2{border-color:#0e7490;background:#ecfeff}.c3{border-color:#15803d;background:#f0fdf4}
+.c4{border-color:#b45309;background:#fff7ed}.c5{border-color:#be185d;background:#fdf2f8}.c6{border-color:#ca8a04;background:#fefce8}
+.c7{border-color:#7c3aed;background:#f5f3ff}.c8{border-color:#dc2626;background:#fef2f2}.c9{border-color:#334155;background:#f8fafc}
+.lv{border:1.6px dashed;border-radius:4mm;padding:3mm;margin:1.5mm 0;display:flex;align-items:center;gap:4mm}
+.lv .tag{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:700;font-size:9pt;letter-spacing:1pt}
+.lv .boxes{display:flex;flex-wrap:wrap;gap:3mm;flex:1;justify-content:center}
+.note{font-size:8.4pt;background:#f8fafc;border-left:3px solid #4f46e5;padding:2mm 3mm;margin:2mm 0;border-radius:1mm}
+.down{text-align:center;font-size:14pt;color:#475569;line-height:1;margin:.5mm 0}
+.legend{display:flex;gap:4mm;flex-wrap:wrap;font-size:8pt;margin-top:2mm}
+.legend span{display:inline-flex;gap:1.5mm;align-items:center}
+.dot{width:3.5mm;height:3.5mm;border-radius:50%;display:inline-block}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:6mm}
+.dec{border:1.4px solid #ca8a04;background:#fefce8;transform:none;border-radius:3mm;padding:2mm 3mm;font-size:8.4pt;text-align:center}
+</style></head><body>
+
+<!-- 1 · architettura -->
+<div class="pg">
+<h1>1 · L’architettura: tre livelli e la regola d’oro</h1>
+<p class="sub">Ogni centrale è cifrata e sua. Ogni messaggio sale di un solo livello; arriva alla MASTER solo se il cliente lo manda con ↪️.</p>
+<div class="lv" style="border-color:#4f46e5"><div class="tag" style="color:#4f46e5">LIVELLO 1</div><div class="boxes">
+ <div class="b c1" style="max-width:120mm"><b>🗂️ CENTRAL-MASTER · «i DOMIER» · centro interventi 24/7</b>Operai e autisti · richieste ↪️ dei clienti · fatture · pubblicità e annunciatori · 🔳 licenze · rete taxi · ANGAR. Nessun immobile né inquilino proprio.</div>
+ <div class="b c9"><b>⚙️ Worker (server)</b>Vede solo byte cifrati: caselle, file, licenze, notifiche.</div>
+</div></div>
+<div class="down">⇅ ↪️ solo su richiesta del cliente · ⇣ stato, fatture, annunci</div>
+<div class="lv" style="border-color:#0e7490"><div class="tag" style="color:#0e7490">LIVELLO 2</div><div class="boxes">
+ <div class="b c2"><b>🏢 Gérance</b>immobili · inquilini · manutenzione</div>
+ <div class="b c2"><b>🏘️ Agenzia immobiliare</b>patrimonio · affitti · vendite</div>
+ <div class="b c2"><b>🔑 Proprietario</b>immobili · inquilini</div>
+ <div class="b c4"><b>🏨 Hotel</b>camere · servizi · viaggiatori · taxi</div>
+ <div class="b c4"><b>🏠 Airbnb</b>alloggi · servizi · viaggiatori</div>
+ <div class="b c6"><b>🚕 CENTRALE-TAXI</b>tassisti · parc auto · tariffe · classifica</div>
+</div></div>
+<div class="down">⇅ un livello alla volta</div>
+<div class="lv" style="border-color:#15803d"><div class="tag" style="color:#15803d">LIVELLO 3</div><div class="boxes">
+ <div class="b c3"><b>🏠 App inquilini</b>espace.html</div>
+ <div class="b c4"><b>🛎️ App viaggiatori</b>hote.html</div>
+ <div class="b c3"><b>🦺 App operai</b>equipe.html</div>
+ <div class="b c6"><b>🚕 App tassista</b>taxi.html</div>
+ <div class="b c6"><b>🚙 App autista</b>autista.html</div>
+ <div class="b c5"><b>📣 App annunciatori</b>annonce.html → chat diretta MASTER</div>
+</div></div>
+<div class="legend"><span><i class="dot" style="background:#16a34a"></i>fatto / attivo</span><span><i class="dot" style="background:#9ca3af"></i>in attesa</span><span><i class="dot" style="background:#dc2626"></i>urgente</span><span><i class="dot" style="background:#f59e0b"></i>porta / chiavi</span><span><i class="dot" style="background:#3b82f6"></i>app / codici</span><span><i class="dot" style="background:#8b5cf6"></i>pagamenti</span></div>
+<div class="foot"><span class="brand">ALJADY R. INTERVENTIONS</span><span>Diagramma di flusso · v2.292 · 11/2026</span><span>1 / 6</span></div>
+</div>
+
+<!-- 2 · licenza -->
+<div class="pg">
+<h1>2 · Licenza di un nuovo cliente</h1>
+<p class="sub">Uguale per tutti i tipi di cliente. La chiave la conosce solo il cliente; la chiave di secours è divisa in due metà.</p>
+<div class="row">
+ <div class="b c1"><b>1 · MASTER</b>🔳 Licences → ＋ Client: tipo e nome</div><div class="ar">→</div>
+ <div class="b c9"><b>2 · Worker</b>crea la licenza: prova, codice di invito</div><div class="ar">→</div>
+ <div class="b c1"><b>3 · MASTER</b>manda link <i>/centraldomier/?n°</i> + codice</div><div class="ar">→</div>
+ <div class="b c2"><b>4 · Cliente</b>apre il link, mette il codice, <b>crea la sua chiave</b></div>
+</div>
+<div class="down">↓</div>
+<div class="row">
+ <div class="b c2"><b>5 · Centrale del cliente</b>genera la chiave di secours e la <b>divide in due</b></div><div class="ar">→</div>
+ <div class="b c3"><b>½ A</b>resta al cliente (stampa / e-mail)</div><div class="ar">+</div>
+ <div class="b c7"><b>½ B</b>cifrata per la MASTER</div><div class="ar">→</div>
+ <div class="b c1"><b>6 · MASTER</b>vede «entrato»; conserva ½ B</div>
+</div>
+<div class="down">↓</div>
+<div class="row">
+ <div class="b c2" style="max-width:90mm"><b>7 · Il cliente compila da solo</b>logo (→ colore delle sue app), società, IBAN, fatturazione, camere, servizi, parc auto, tariffe…<br>La MASTER non li vede: sono cifrati.</div><div class="ar">→</div>
+ <div class="dec"><b>Chiave dimenticata?</b><br>½ A (cliente) + ½ B (MASTER)<br>= riapertura</div>
+</div>
+<div class="note">Nessun dato in chiaro passa dal server: tutto è cifrato sul telefono o sul computer prima di partire.</div>
+<div class="foot"><span class="brand">ALJADY R. INTERVENTIONS</span><span>Diagramma di flusso · v2.292 · 11/2026</span><span>2 / 6</span></div>
+</div>
+
+<!-- 3 · intervento -->
+<div class="pg">
+<h1>3 · Richiesta di intervento (gérance, agenzia, proprietario)</h1>
+<p class="sub">L’inquilino parla solo con la sua centrale; la centrale decide se mandare alla MASTER con ↪️.</p>
+<div class="row">
+ <div class="b c3"><b>1 · Inquilino</b>📷 segnala un problema dall’app</div><div class="ar">→</div>
+ <div class="b c2"><b>2 · Centrale cliente</b>riceve; risolve da sola…</div><div class="ar">→</div>
+ <div class="dec"><b>Mandare a LA CENTRAL?</b><br>↪️ sì · no</div><div class="ar">→<small>sì</small></div>
+ <div class="b c1"><b>3 · MASTER</b>riceve con foto, contatto, entrata e 🔑 accesso autorizzato</div>
+</div>
+<div class="down">↓</div>
+<div class="row">
+ <div class="b c1"><b>4 · MASTER</b>preventivo (firma) · affida all’operaio</div><div class="ar">→</div>
+ <div class="b c3"><b>5 · Operaio</b>🚗 in viaggio · 🟢 arrivato (GPS) · 📷 prima/dopo · ✅ finito</div><div class="ar">→</div>
+ <div class="b c1"><b>6 · MASTER</b>🧾 fattura con QR</div><div class="ar">→</div>
+ <div class="b c2"><b>7 · Centrale cliente</b>stato e fattura; paga</div><div class="ar">→</div>
+ <div class="b c3"><b>8 · Inquilino</b>vede lo stato nella sua app</div>
+</div>
+<div class="note">Gli inquilini di una centrale cliente non arrivano mai alla MASTER: ogni passaggio sale o scende di un solo livello.</div>
+<div class="foot"><span class="brand">ALJADY R. INTERVENTIONS</span><span>Diagramma di flusso · v2.292 · 11/2026</span><span>3 / 6</span></div>
+</div>
+
+<!-- 4 · taxi -->
+<div class="pg">
+<h1>4 · Corsa taxi attraverso la rete</h1>
+<p class="sub">Il veicolo scelto sulla foto e la lingua desiderata viaggiano con la corsa; gli orari tornano indietro dalle due parti.</p>
+<div class="row">
+ <div class="b c4"><b>1 · Viaggiatore</b>🚕 chiede il taxi: veicolo (foto), 🗣️ lingua, volo</div><div class="ar">→</div>
+ <div class="b c4"><b>2 · Hotel / Airbnb</b>suo autista · sua società · ↪️ LA CENTRAL</div><div class="ar">→<small>↪️</small></div>
+ <div class="b c1"><b>3 · MASTER</b>sceglie: nostro autista o una CENTRALE-TAXI</div><div class="ar">→</div>
+ <div class="b c6"><b>4 · CENTRALE-TAXI</b>affida al suo tassista</div>
+</div>
+<div class="down">↓</div>
+<div class="row">
+ <div class="b c6"><b>5 · Tassista (taxi.html)</b>🪧 cartello · 🗣️ frasi nella lingua dell’ospite · 🗺️ itinerario · ✈️ volo</div><div class="ar">→</div>
+ <div class="b c6"><b>6 · Corsa</b>▶️ partenza · 📍 tappa · 🏁 arrivo · incasso QR / contanti / terminale</div><div class="ar">→</div>
+ <div class="b c4"><b>7 · Viaggiatore</b>🚗 a bordo · 🏁 arrivato · ⭐ voto</div>
+</div>
+<div class="down">↓ ritorno, un livello alla volta</div>
+<div class="row">
+ <div class="b c6"><b>CENTRALE-TAXI</b>🥇 classifica tassisti (⭐)</div><div class="ar">←</div>
+ <div class="b c1"><b>MASTER</b>autista, prezzo, orari · commissione 3 €</div><div class="ar">←</div>
+ <div class="b c4"><b>Hotel / Airbnb</b>🚕 En cours: autista, auto, orari dei due · ⚠️ se &gt; 15 min</div>
+</div>
+<div class="note">Chi paga: il cliente in auto (nessuna fattura a noi) oppure l’hotel / Airbnb su fattura della ditta di taxi.</div>
+<div class="foot"><span class="brand">ALJADY R. INTERVENTIONS</span><span>Diagramma di flusso · v2.292 · 11/2026</span><span>4 / 6</span></div>
+</div>
+
+<!-- 5 · parc auto e servizi -->
+<div class="pg">
+<h1>5 · Foto del parc auto e servizi dell’hotel fino al viaggiatore</h1>
+<p class="sub">A ogni passaggio i dati sono decifrati e cifrati di nuovo per il destinatario.</p>
+<div class="row">
+ <div class="b c6"><b>1 · CENTRALE-TAXI</b>salva parc auto (tipi, numero, foto) e 💶 tariffe ed extra</div><div class="ar">→<small>🔐</small></div>
+ <div class="b c1"><b>2 · MASTER</b>riunisce i parchi di tutte le CENTRALI-TAXI</div><div class="ar">→<small>🔐</small></div>
+ <div class="b c4"><b>3 · Hotel / Airbnb</b>della rete (anche chi entra dopo)</div><div class="ar">→<small>🔐</small></div>
+ <div class="b c4"><b>4 · App viaggiatore</b>sceglie il veicolo toccando la foto</div>
+</div>
+<div class="down">&nbsp;</div>
+<div class="row">
+ <div class="b c4"><b>Hotel: 🛏️ Chambres + services</b>camere (letti, VIP, prezzo, foto) · 🏊 servizi</div><div class="ar">→</div>
+ <div class="b c4"><b>Servizio</b>tipo · interno/esterno · 3 fasce: misto / uomini / donne · giorni · prezzo · foto</div><div class="ar">→</div>
+ <div class="b c8"><b>🔧 Manutenzione</b>on / off · dal … al … · fino a nuovo avviso</div><div class="ar">→</div>
+ <div class="b c4"><b>App viaggiatore</b>🏨 Nos services nella sua lingua; chiuso = in rosso</div>
+</div>
+<div class="row">
+ <div class="b c4" style="max-width:120mm"><b>✍️ Il viaggiatore scrive nella sua app</b>allergie, regime, pasti, richieste → l’accoglienza le legge nella sua scheda (riquadro verde)</div>
+</div>
+<div class="foot"><span class="brand">ALJADY R. INTERVENTIONS</span><span>Diagramma di flusso · v2.292 · 11/2026</span><span>5 / 6</span></div>
+</div>
+
+<!-- 6 · annunci + app -->
+<div class="pg">
+<h1>6 · Annunci e struttura di ogni app</h1>
+<div class="cols"><div>
+<p class="sub">Annunciatori (ristoranti, bar, negozi)</p>
+<div class="row"><div class="b c5"><b>1 · Annunciatore</b>scrive l’annuncio · ☑ «I nostri social» (5,99 € IVA incl.)</div></div>
+<div class="down">↓</div>
+<div class="row"><div class="b c1"><b>2 · MASTER</b>valida · prezzo · 🟣 da incassare</div></div>
+<div class="down">↓</div>
+<div class="row"><div class="b c5"><b>3 · Annunciatore</b>paga con QR · «Ho pagato»</div></div>
+<div class="down">↓</div>
+<div class="row"><div class="b c1"><b>4 · MASTER</b>✅ pagamento ricevuto → fattura → online · 📱 da pubblicare sui social</div></div>
+<div class="down">↓</div>
+<div class="row"><div class="b c3"><b>5 · App degli utenti</b>pubblicità in alto / in basso, per zona · 👍👎👉</div></div>
+</div><div>
+<p class="sub">Le 6 sezioni di ogni app, sempre in quest’ordine</p>
+<div class="row"><div class="b c9" style="max-width:110mm"><b>1 · Chi sono</b>nome, foto · ✏️ lingua, dati, icone · ☀️/🌙/🌗 tema</div></div>
+<div class="row"><div class="b c2" style="max-width:110mm"><b>2 · Informazioni da e per la centrale</b>avvisi, documenti, notifiche · poi DOMIER</div></div>
+<div class="row"><div class="b c5" style="max-width:110mm"><b>3 · Pubblicità in alto</b></div></div>
+<div class="row"><div class="b c3" style="max-width:110mm"><b>4 · Il cuore dell’app</b>diverso per ognuno (affitti, soggiorno, corse, lavori…) · riquadri richiudibili</div></div>
+<div class="row"><div class="b c5" style="max-width:110mm"><b>5 · Pubblicità in basso</b></div></div>
+<div class="row"><div class="b c9" style="max-width:110mm"><b>6 · Fondo</b>News · regolamento con RGPD · 🚪 Esci</div></div>
+</div></div>
+<div class="foot"><span class="brand">ALJADY R. INTERVENTIONS</span><span>Diagramma di flusso · v2.292 · 11/2026</span><span>6 / 6</span></div>
+</div>
+</body></html>
