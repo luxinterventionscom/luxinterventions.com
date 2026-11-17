@@ -8,7 +8,7 @@ import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
 const HERE = new URL('./', import.meta.url).pathname, TMP = HERE + 'shots/build/';
 await mkdir(TMP, { recursive: true });
-const VER = '2.217';
+const VER = '2.292';
 const META = {
   it: ['Italiano', 'Manuale dell’applicazione INTERVENTI', 'Chi lo usa e perché', 'pagine'],
   fr: ['Français', 'Manuel de l’application INTERVENTIONS', 'Qui l’utilise et pourquoi', 'pages'],
@@ -59,7 +59,7 @@ const cover = () => `<div style="height:265mm;display:flex;flex-direction:column
   <div style="font-size:15pt;color:#4e45e4;margin-top:3mm">${META.it[1]}</div>
   <div style="font-size:10pt;color:#334155;margin-top:5mm">Gestione · Inquilini · Squadra · Gérance · Preventivi · Hotel · Airbnb · Taxi · Annunci · Licenze · Chat · Pagamenti</div>
   <div style="font-size:10pt;color:#b7791f;margin-top:4mm">${langs.map((l) => META[l][0]).join(' · ')}</div>
-  <div style="font-size:9.5pt;color:#64748b;margin-top:2mm">v${VER}.0 · 10/2026 · ${total} ${META.it[3]}</div></div>`;
+  <div style="font-size:9.5pt;color:#64748b;margin-top:2mm">v${VER}.0 · 11/2026 · ${total} ${META.it[3]}</div></div>`;
 const tocHtml = () => `<div style="display:grid;grid-template-columns:1fr 1fr;gap:4mm 8mm;font-size:8pt;line-height:1.22">${langs.map((l) => `<div><div style="font-weight:700;font-size:11pt;color:#4338ca;border-bottom:1.5px solid #c7d2fe;margin-bottom:1.5mm">${META[l][0]}</div>${toc[l].map(([t, p]) => `<div style="display:flex;justify-content:space-between;gap:3mm;margin:0.6mm 0"><span>${t}</span><span>${p}</span></div>`).join('')}</div>`).join('')}</div>`;
 const frontPdf = () => toPdf(`${cover()}<div style="break-before:page"></div>${tocHtml()}`, `${TMP}front.pdf`);
 await frontPdf();
