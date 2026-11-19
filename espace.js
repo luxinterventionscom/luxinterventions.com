@@ -12,7 +12,7 @@ import { chatResolve, chatOpen, editable, tick, newMsgId } from '/ares/chatops.j
 import { trInit, trButton } from '/ares/chattr.js';
 
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
-import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
+import { infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
 import { tripView, tripFetch } from '/ares/trip.js';
 import { themeInit, themeBtn, themeAccent } from '/ares/theme.js';
@@ -321,7 +321,6 @@ const L = {
 };
 const pick = (d) => { try { const s = localStorage.getItem('espLang'); if (L[s]) return s; } catch {} if (d && L[d.lang]) return d.lang; const n = (navigator.language || 'fr').slice(0, 2); return L[n] ? n : 'fr'; };
 let data = null, lang = 'fr', sentOk = false;
-nbienInit({ api: API, app: 'esp', lang: () => lang });
 // mon icône (comme sur WhatsApp) : choisie ici, visible chez le gestionnaire
 // 🧾 qui est le bailleur de ce locataire (donné par sa centrale) : bailleur principal (sous-location), propriétaire, ou gérance / agence
 const ROLE = () => ((data && data.societe && data.societe.role) || 'sous');
@@ -967,7 +966,6 @@ function render() {
   // ── Sezione 2 · informazioni da e per la centrale (spariscono quando non servono più), poi DOMIER ──
   if (d.revis && d.revis.from && (s.pay || s.contrat)) { const rv = REVT[lang] || REVT.fr; out.push(`<div class="card notice" style="border-left:4px solid #2563eb"><p style="margin:0"><b>🔄 ${esc(rv.t)}</b></p><p style="margin:6px 0 0">${esc(rv.from)} <b>${esc(fmt(d.revis.from))}</b> : ${esc(money(d.revis.ancien))} → <b>${esc(money(d.revis.nouveau))}</b> ${esc(rv.m)}</p></div>`); }
   if (s.avis && (d.avis || []).length) out.push(`<div class="card avis"><h2>📢 ${esc(t.avis)}</h2>${d.avis.map((a) => `<p style="margin:6px 0;white-space:pre-wrap">${esc(a.texte)}${a.debut || a.fin ? `<br><span class="meta">${esc([fmt(a.debut), fmt(a.fin)].filter(Boolean).join(' → '))}</span>` : ''}</p>`).join('')}</div>`);
-  out.push(nbienBanner()); // 🆕 Nouveau bien (bleu mer, clignote tant qu'il n'est pas ouvert)
   if (pushSt) out.push(notifCard(t)); // 🔔 notifications coupées (« activées » juste après, puis disparaît)
   out.push(installCard(t)); // 📱 icône pas encore sur l'écran (disparaît dans l'app installée)
   const domAt = out.length; out.push(''); // 🔧 DOMIER : son gestionnaire (la chaîne est respectée) ; « Signaler un problème » est dedans (rempli plus bas)

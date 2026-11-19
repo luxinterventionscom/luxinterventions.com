@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.295.0';
+const VERSION = '2.296.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -61,17 +61,16 @@ if (TENANT) {
   if (tenantInfo.nom) document.title = tenantInfo.nom;
 }
 const tenantSave = (t) => { if (!TENANT || !t) return; tenantInfo = t; try { localStorage.setItem('aresTenantInfo:' + TENANT, JSON.stringify(t)); } catch { /* stockage plein */ } if (t.nom) { document.title = t.nom; const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at) at.content = t.nom; } }; // nom sous l'icône de l'écran
-// 🧾 qui signe les quittances : bailleur principal (locataire principal, comme la centrale principale aujourd'hui), propriétaire, ou gérance / agence
-const socRole = () => (!TENANT ? 'sous' : tenantInfo.fil === 'proprio' ? (tenantInfo.sous ? 'sous' : 'proprio') : ['gerance', 'agence'].includes(tenantInfo.fil) ? 'gest' : 'proprio');
+// 🧾 qui signe les quittances : bailleur principal (locataire principal, comme la centrale principale aujourd'hui), propriétaire, ou gérance
+const socRole = () => (!TENANT ? 'sous' : tenantInfo.fil === 'proprio' ? (tenantInfo.sous ? 'sous' : 'proprio') : tenantInfo.fil === 'gerance' ? 'gest' : 'proprio');
 const SOC_QUAL = { sous: 'locataire principal et bailleur', proprio: 'propriétaire et bailleur', gest: 'agissant pour le compte du bailleur' };
 const SOC_FICHE = { sous: 'Votre société — locataire principal (apparaît sur les quittances et les relances)', proprio: 'Votre société — propriétaire / bailleur (apparaît sur les quittances et les relances)', gest: 'Votre société — gestionnaire (apparaît sur les quittances et les relances)' };
 const tSub = () => (tenantInfo.fil === 'proprio' ? (tenantInfo.sous ? 'Bailleur principal' : 'Propriétaire') : (T_FIL_LBL[tenantInfo.fil] || '').replace(/^\S+ /, '')); // sous-titre de la centrale d'un client
-const T_FIL_LBL = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire' };
+const T_FIL_LBL = { gerance: '🏢 Gérance', proprio: '🔑 Propriétaire' };
 // rubriques de chaque filière (la centrale du client ne montre que les siennes)
 const TENANT_ROUTES = {
   gerance: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'champions', 'reglages'],
   proprio: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'champions', 'reglages'],
-  agence: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'agences', 'proprios', 'compta', 'rapports', 'champions', 'reglages'],
 };
 const tRoutes = () => TENANT_ROUTES[tenantInfo.fil] || TENANT_ROUTES.gerance;
 // 🏛️ CENTRAL DOMIER : pas de propriétés ni de locataires à elle (tout est chez les clients) ; l'ancien parc reste en archive (Réglages → 📦)
@@ -1323,7 +1322,6 @@ const PAT_TYPES = [
   ['🏗️ Autre', { immeuble: 'Immeuble entier', terrain: 'Terrain', cave: 'Cave / débarras', autre: 'Autre' }],
 ];
 const PAT_Q = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '10+'];
-const AG_POUR = { soi: 'Son propre compte', proprios: 'Des propriétaires', fonds: 'Des fonds d’investissement' };
 function patBlock(pat = {}) {
   return html`<div class="full section-label" style="margin:6px 0 0">🏠 Patrimoine (biens possédés ou gérés)</div>
     <p class="tiny muted full" style="margin:0">Combien de chaque type ; si le client donne le nombre exact, écrivez-le à droite.</p>
@@ -1351,9 +1349,9 @@ function patSum(pat) {
     return n ? `${g.split(' ')[0]} ${n}${plus ? '+' : ''}` : '';
   }).filter(Boolean).join(' · ');
 }
-// 🌐 Réseau : centrales des clients (gérance, agence, propriétaire, hôtel, Airbnb), chacune avec sa cassaforte ;
+// 🌐 Réseau : centrales des clients (gérance, propriétaire), chacune avec sa cassaforte ;
 // ici : essai, échéance, lecture seule / blocage, nouvel accès, suppression avec certificat, demandes d'intervention reçues
-const NET_FIL = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire / bailleur principal' };
+const NET_FIL = { gerance: '🏢 Gérance', proprio: '🔑 Propriétaire / bailleur principal' };
 const NET_STATE = { ok: ['🟢', 'Actif'], ro: ['🟠', 'Lecture seule (échu)'], blocked: ['🔴', 'Bloqué'] };
 const NET_ST = { trial: '🎁 Essai', active: '✅ Abonnement', suspended: '⏸ Suspendu' };
 // 🔑 Licences : tarifs par filière (prix 1 an HT, remises 2 et 3 ans), factures, registre
@@ -1394,7 +1392,7 @@ async function licInvoicePdf(f) {
   if (c.iban) p.text(X, y, `Paiement par virement : ${c.banque ? c.banque + ' · ' : ''}IBAN ${c.iban}${c.bic ? ' · BIC ' + c.bic : ''} · communication : ${f.no}`, { size: 9 });
   return p.bytes();
 }
-// adresse « parlante » selon le client (voir LIENS.md) : propriétaire, agence, gestionnaire ; hôtel / Airbnb → centrale.html
+// adresse « parlante » selon le client (voir LIENS.md) : propriétaire, gestionnaire
 const netUrl = (tid) => `${location.origin}/centraldomier/?${tid}`; // un seul indirizzo per tutte le centrali dei clienti, senza nomi
 async function netApi(path, method = 'GET', body) {
   const r = await vault.call(path, { method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
@@ -1663,18 +1661,6 @@ async function netStatusSync() {
 }
 // 🌐 fiche Agence / Propriétaire ↔ sa centrale du réseau : même nom (et même filière) → reliées toutes seules ; sinon on choisit à la main
 const normNom = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
-const agFil = (a) => (a.type === 'proprio' ? 'proprio' : 'agence');
-async function agNetAutoLink(list) {
-  if (TENANT) return;
-  const used = new Set(vault.list('agences').map((a) => a.netId).filter(Boolean));
-  for (const a of vault.list('agences').filter((x) => !x.netId)) {
-    const t = list.find((x) => !used.has(x.id) && x.fil === agFil(a) && normNom(x.nom) === normNom(a.nom));
-    if (!t) continue;
-    used.add(t.id);
-    await vault.mutate((tx) => tx.put('agences', { id: a.id, netId: t.id }), '🌐 Fiche reliée à sa centrale', a.nom);
-  }
-}
-const agNet = (a) => (a && a.netId ? ((ui.net && ui.net.list) || []).find((t) => t.id === a.netId) || { id: a.netId, nom: a.nom, st: '?', state: 'ok' } : null);
 // créer la centrale d'un client (aussi depuis sa fiche) : essai gratuit, code d'invitation
 async function netCreate(fil, nom, tel = '', email = '') {
   const r = await netApi('tenants', 'POST', { fil, nom, days: LIC_ESSAI });
@@ -1693,7 +1679,6 @@ async function netLoad(force) {
     if (keys && keys.pub && !(vault.get('reglages', 'netKey') || {}).done) { await netApi('network-key', 'PUT', { pub: keys.pub }); await vault.mutate((tx) => tx.put('reglages', { id: 'netKey', done: today() }), 'Réseau : clé publiée', ''); }
     const list = (await netApi('tenants')).tenants || [];
     ui.net = { list, dem: [], at: Date.now(), err: '' };
-    await agNetAutoLink(list).catch(() => {});
     await netDemSync(list);
     await netHoldSync(list);
     await netSousSync(list).catch(() => {});
@@ -2108,7 +2093,7 @@ async function espaceSync(onlyId, loud) {
       if (navigator.onLine && !espWarned.has(l.id)) { espWarned.add(l.id); toast(e.message === 'session-taken' ? `App de ${fullName(l)} pas mise à jour : cette centrale est ouverte sur un autre appareil${e.info && e.info.device ? ' (' + e.info.device + ')' : ''}. Un seul appareil à la fois peut enregistrer : fermez-la là-bas, puis rechargez cette page.` : `App de ${fullName(l)} pas mise à jour : ${e.message || 'erreur'}`, { bad: true }); }
     }
   }
-  if (!onlyId) { await equipeSync(); await portailPubsSync(); await netPubsSync(); await biensSync(); }
+  if (!onlyId) { await equipeSync(); await portailPubsSync(); await netPubsSync(); }
   return true;
 }
 // 🌐 liste publique des annonces du réseau : vide (plus de publicité), envoyée une fois pour effacer l'ancienne
@@ -2131,39 +2116,6 @@ async function portailPubsSync() {
   try { prev = localStorage.getItem('aresPubPtl') || ''; } catch { /* stockage indisponible */ }
   if (h === prev) return;
   try { await vault.pubsPortail(list, offers, contact); localStorage.setItem('aresPubPtl', h); } catch { /* Worker pas encore à jour ou hors ligne : on réessaiera */ }
-}
-// « 🆕 Nouveau bien » : les biens à louer / à vendre sont publiés (annonces publiques) pour les apps des locataires,
-// de l'équipe et le portail gérance ; 6 photos max. par bien, envoyées seulement quand elles changent
-let biensBusy = false, biensAgain = false;
-async function biensSync() {
-  if (TENANT) return; // centrale d'un client : pas de portail, d'annonces ni de biens du réseau
-  if (biensBusy) { biensAgain = true; return; }
-  if (!vault.unlocked) return;
-  biensBusy = true;
-  try {
-    const c = factConf(), items = vault.list('biens').sort((a, b) => (b.cree || '').localeCompare(a.cree || '')).slice(0, 60).map((b) => {
-      const ag = b.agenceId ? vault.get('agences', b.agenceId) : null;
-      return { id: b.id, titre: b.titre, type: b.type, surface: b.surface, adresse: b.adresse, dispo: b.dispo, louer: b.louer, vendre: b.vendre, loyer: b.loyer, charges: b.charges, prix: b.prix,
-        description: b.description, pieces: (b.pieces || []).map((p) => ({ k: p.k, nom: p.nom, m2: p.m2 })), cree: b.cree, nph: Math.min(6, (b.photos || []).length),
-        agence: ag ? { nom: ag.nom, tel: ag.tel || (ag.dir || {}).tel || '', email: ag.email || (ag.dir || {}).email || '' } : { nom: c.marque || c.nom || '', tel: c.tel || '', email: c.email || '' } };
-    });
-    let up = {};
-    try { up = JSON.parse(localStorage.getItem('aresBiensUp') || '{}'); } catch { /* illisible */ }
-    const h = await sha256Hex(JSON.stringify(items));
-    if (h === up._h) return;
-    for (const b of vault.list('biens')) {
-      const ph = (b.photos || []).slice(0, 6), k = ph.join(',');
-      if (up[b.id] === k) continue;
-      let ok = true;
-      for (let n = 0; n < ph.length; n++) { try { await vault.biensPhoto(b.id, n, await vault.readFile(ph[n])); } catch { ok = false; } }
-      if (ok) up[b.id] = k;
-    }
-    await vault.biensPut(items);
-    const ids = new Set(items.map((x) => x.id));
-    for (const k of Object.keys(up)) if (k !== '_h' && !ids.has(k)) delete up[k];
-    up._h = h;
-    try { localStorage.setItem('aresBiensUp', JSON.stringify(up)); } catch { /* stockage indisponible */ }
-  } catch { /* Worker pas encore à jour ou hors ligne : on réessaiera */ } finally { biensBusy = false; if (biensAgain) { biensAgain = false; setTimeout(biensSync, 0); } }
 }
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
@@ -3424,22 +3376,22 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['licences', 'Licences', 'qr']] },
+  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['licences', 'Licences', 'qr']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
-const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire' };
-const MASKABLE = [['gerances', 'Gérances'], ['immeubles', 'Mes Propriétés'], ['agences', 'Agences'], ['proprios', 'Propriétaires']];
+const ORG_KINDS = { gerance: '🏢 Gérance', proprio: '🔑 Propriétaire' };
+const MASKABLE = [['gerances', 'Gérances'], ['immeubles', 'Mes Propriétés']];
 const masked = () => new Set(TENANT ? [] : (vault.get('reglages', 'masque') || {}).on || []); // centrale d'un client : rien de masqué (le réglage n'existe que chez nous)
 // pages qui appartiennent à une rubrique (Locataires et Gestion locataire sont dans Immeubles)
 const maskOf = (route) => (['locataires', 'paiements'].includes(route) ? 'immeubles' : route);
 // Légende des couleurs de nos activités (mêmes couleurs que dans les apps des locataires, de l'équipe et le portail)
 const COLOR_LEG = [['#F97316', 'Interventions et maintenance : demandes, travaux, équipe'], ['#1D4ED8', 'Gérances : portail et demandes des gérances'],
-  ['#0077BE', 'Nouveau bien : biens à louer / à vendre des agences immobilières'], ['#8B5CF6', 'Devis : offres de prix à signer'],
+  ['#8B5CF6', 'Devis : offres de prix à signer'],
   ['#0D9488', 'Locataires et loyers : logements, contrats, paiements'],
   ['#475569', 'Avis de l’immeuble : coupures, travaux dans les communs'],
   ['#4F46E5', 'Planning du jour : ce qui est prévu aujourd’hui']];
@@ -3972,38 +3924,6 @@ function eqScores(year) {
   return Object.entries(sc).filter(([id]) => { const i = vault.get('intervenants', id); return i && !i.archive; }).sort((a, b) => b[1].pts - a[1].pts || a[1].bad - b[1].bad || b[1].fait - a[1].fait);
 }
 
-// 🏘️ Agences / 🔑 Propriétaires : même page, une rubrique chacun
-// 🌐 « Sa centrale » dans la fiche d'une agence / d'un propriétaire : activer, voir l'état, ouvrir la fiche réseau, ou relier
-function agNetBlock(a) {
-  const t = agNet(a), free = ((ui.net && ui.net.list) || []).filter((x) => x.fil === agFil(a) && !vault.list('agences').some((y) => y.netId === x.id));
-  return html`<div class="full card" style="margin:0 0 6px;padding:12px;border-left:4px solid var(--accent,#4f46e5)"><b>🌐 Sa centrale</b>
-    ${t ? html`<p class="small" style="margin:4px 0 8px">${NET_FIL[t.fil] || ''} · ${NET_ST[t.st] || t.st || ''}${t.until ? html` · jusqu’au ${fmtDate(t.until)}` : ''}</p>${netBailLine(t.id)}
-      <div class="actions" style="margin:0;flex-wrap:wrap"><button type="button" class="btn sm primary" data-action="net-open" data-id="${t.id}">🌐 Ouvrir : code, licence, 6 mois offerts…</button><button type="button" class="btn sm ghost" data-action="ag-net-unlink" data-id="${a.id}">Délier</button></div>`
-    : html`<p class="small muted" style="margin:4px 0 8px">Pas encore de centrale : son espace à lui (ses immeubles, ses locataires et leurs apps, ses demandes d’intervention), avec un code d’invitation.</p>
-      <div class="actions" style="margin:0;flex-wrap:wrap"><button type="button" class="btn sm primary" data-action="ag-net-on" data-id="${a.id}">🌐 Activer sa centrale (essai ${LIC_ESSAI} jours)</button>
-      ${free.length ? html`<select data-input="ag-net-link" data-id="${a.id}" style="width:auto"><option value="">… ou la relier à une centrale existante</option>${free.map((x) => html`<option value="${x.id}">${x.nom}</option>`)}</select>` : ''}</div>`}</div>`;
-}
-function agView(f) {
-    const nb = {};
-    for (const b of vault.list('biens')) if (b.agenceId) nb[b.agenceId] = (nb[b.agenceId] || 0) + 1;
-    const all = vault.list('agences'), typ = (a) => (a.type === 'proprio' ? 'proprio' : 'agence');
-    const list = all.filter((a) => typ(a) === f).sort((a, b) => (nb[b.id] || 0) - (nb[a.id] || 0) || (a.nom || '').localeCompare(b.nom || ''));
-    const ids = new Set(list.map((a) => a.id));
-    const miss = (a) => [!a.tva && 'N° TVA', !a.banque && 'banque', !a.bic && 'BIC', !a.iban && 'IBAN'].filter(Boolean);
-    const biens = vault.list('biens').filter((b) => ids.has(b.agenceId) || (f === 'agence' && !(b.agenceId && vault.get('agences', b.agenceId)))).sort((a, b) => (b.cree || '').localeCompare(a.cree || '') || (a.titre || '').localeCompare(b.titre || ''));
-    setTimeout(() => hydrateBiens($('#view')), 0);
-    return html`${pageHead(f === 'proprio' ? '🔑 Propriétaires' : '🏘️ Agences', f === 'proprio' ? plural(list.length, 'propriétaire') : `${list.length} ${list.length > 1 ? 'agences immobilières' : 'agence immobilière'}`)}
-      <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="new-agence">${icon('plus')} ${f === 'proprio' ? 'Propriétaire' : 'Agence'}</button></div></div>
-      <div class="section-label">🏠 Biens à louer / à vendre</div>
-      ${biens.length ? html`<div class="bien-grid">${biens.map(bienAffiche)}</div>` : html`<p class="small muted" style="margin:0 0 14px">Aucun bien publié. ＋ Bien immo. sur la ligne du propriétaire ou de l’agence : type, m², pièces, photos, prix.</p>`}
-      <div class="section-label">${f === 'proprio' ? '🔑 Propriétaires' : '🏘️ Agences immo.'}</div>
-      ${list.length ? html`<div class="list">${list.map((a) => html`<button class="row" data-action="edit-agence" data-id="${a.id}"><span class="avatar">${typ(a) === 'proprio' ? '🔑' : '🏘️'}</span>
-        <span class="grow"><span class="title" style="display:block">${a.nom}</span>
-        <span class="meta">${typ(a) === 'proprio' ? 'Propriétaire' : 'Agence immo.'}${a.rcs ? html` · RCS ${a.rcs}` : ''}${a.dir && (a.dir.prenom || a.dir.nom) ? html` · ⭐ ${[a.dir.prenom, a.dir.nom].filter(Boolean).join(' ')}` : ''} · 📣 ${plural(nb[a.id] || 0, 'annonce')} · ${a.netId ? html`<b>🌐 centrale ${(NET_ST[(agNet(a) || {}).st] || '').toLowerCase()}</b>` : html`<span class="muted">— pas de centrale</span>`}</span>
-        ${patSum(a.pat) || (a.pour || []).length ? html`<span class="tiny" style="display:block">${patSum(a.pat)}${(a.pour || []).length ? `${patSum(a.pat) ? ' · ' : ''}pour : ${a.pour.map((k) => AG_POUR[k].toLowerCase()).join(', ')}${a.fonds ? ' (' + a.fonds + ')' : ''}` : ''}</span>` : ''}
-        ${miss(a).length && !a.bankLater ? html`<span class="tiny amber" style="display:block">⚠️ À compléter : ${miss(a).join(', ')}</span>` : ''}</span><span class="btn sm primary" role="button" data-action="new-bien" data-ag="${a.id}" style="flex:none">${icon('plus')} Bien immo.</span><span class="chev">›</span></button>`)}</div>`
-        : html`<div class="card" style="max-width:560px"><p style="margin-top:0">${f === 'proprio' ? 'Les propriétaires (un ou plusieurs logements) publient leurs biens et vous confient leurs interventions.' : 'Les agences immobilières publient leurs biens et vous confient leurs interventions.'}</p></div>`}`;
-}
 const immHead = (cur, sub) => html`${pageHead('🏢 Immeubles', sub)}
   <div class="imm-row"><div class="tabs" role="tablist">${[['immeubles', '🏢 Immeubles'], ['locataires', '👥 Locataires']].map(([r, l, sh]) => masked().has(r) ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${sh ? html`<span class="t-lg">${l}</span><span class="t-sm">${sh}</span>` : l}</button>`)}</div>
     <div class="imm-btns"><button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button><button class="btn primary" data-action="new-loc">${icon('plus')} Locataire</button></div></div>`;
@@ -4093,65 +4013,6 @@ function engForm(i) {
 const IBAN_LEN = { AD: 24, AL: 28, AT: 20, BA: 20, BE: 16, BG: 22, BR: 29, CH: 21, CY: 28, CZ: 24, DE: 22, DK: 18, EE: 20, ES: 24, FI: 18, FO: 18, FR: 27, GB: 22, GI: 23, GL: 18, GR: 27, HR: 21, HU: 28, IE: 22, IS: 26, IT: 27, LI: 21, LT: 20, LU: 20, LV: 21, MA: 28, MC: 27, MD: 24, ME: 22, MK: 19, MT: 31, NL: 18, NO: 15, PL: 28, PT: 25, RO: 24, RS: 22, SE: 24, SI: 19, SK: 24, SM: 27, TN: 24, TR: 26, UA: 29, VA: 22, XK: 20 };
 const ibanClean = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
 const ibanFmt = (v) => ibanClean(v).replace(/(.{4})/g, '$1 ').trim();
-// 🏠 Biens des agences : types, pièces (catalogue + libres), photos chiffrées, affiche horizontale à faire défiler
-const BIEN_TYPES = { maison: 'Maison', garage: 'Garage', appartement: 'Appartement', studio: 'Studio', colocation: 'Colocation', local: 'Commerce / magasin', villa: 'Villa', chambre: 'Chambre', duplex: 'Duplex', penthouse: 'Penthouse', bureau: 'Bureau', entrepot: 'Entrepôt', terrain: 'Terrain', parking: 'Parking', autre: 'Autre' };
-const PIECES = { chambre: '🛏️ Chambre', salon: '🛋️ Salon', sejour: '🍽️ Séjour', cuisine: '🍳 Cuisine', sdb: '🛁 Salle de bain', douche: '🚿 Salle de douche', wc: '🚽 WC', bureau: '💼 Bureau', dressing: '👔 Dressing', buanderie: '🧺 Buanderie', cave: '🍷 Cave', grenier: '📦 Grenier', balcon: '🌇 Balcon', terrasse: '☀️ Terrasse', jardin: '🌳 Jardin', piscine: '🏊 Piscine', garage: '🚗 Garage', box: '🅿️ Box / parking', vitrine: '🪟 Vitrine', reserve: '📦 Réserve', technique: '⚙️ Local technique', autre: '➕ Autre' };
-const pieceRow = (p = {}) => html`<div class="piece-row"><select name="p_k">${Object.entries(PIECES).map(([k, l]) => html`<option value="${k}" ${p.k === k ? new Raw('selected') : ''}>${l}</option>`)}</select><input name="p_nom" value="${p.nom || ''}" placeholder="précision (ex. chambre 2, côté jardin)"><input name="p_m2" value="${p.m2 || ''}" inputmode="decimal" placeholder="m²"><input name="p_note" value="${p.note || ''}" placeholder="note"><button type="button" class="btn icon sm ghost" data-action="bien-piece-del" aria-label="Retirer">✕</button></div>`;
-const eur0 = (n) => (+n || 0).toLocaleString('fr-LU', { maximumFractionDigits: 0 }) + ' €';
-const bienPrix = (b) => [b.louer && b.loyer ? html`<b>${eur0(b.loyer)}</b><span class="muted"> / mois</span>${b.charges ? html`<span class="muted"> + ${eur0(b.charges)} charges</span>` : ''}` : '', b.vendre && b.prix ? html`<b>${eur0(b.prix)}</b><span class="muted"> à vendre</span>` : ''].filter(Boolean);
-// affiche : photos à faire défiler (flèches, doigt), un toucher → plein écran
-const bienAffiche = (b) => html`<div class="bien-card" data-bien="${b.id}">
-  <div class="bien-media"><div class="bien-car">${(b.photos || []).length ? b.photos.map((ph, i) => html`<img data-bph="${ph}" data-action="bien-full" data-id="${b.id}" data-n="${i}" alt="">`) : html`<div class="bien-nophoto">🏠</div>`}</div>
-  ${(b.photos || []).length > 1 ? html`<button class="car-arrow l" data-action="car-move" data-dir="-1" aria-label="Photo précédente">‹</button><button class="car-arrow r" data-action="car-move" data-dir="1" aria-label="Photo suivante">›</button><span class="car-count">📷 ${b.photos.length}</span>` : ''}</div>
-  <div class="bien-info" data-action="edit-bien" data-id="${b.id}"><span class="bien-new">🆕</span> <b>${b.titre}</b><br>
-    <span class="small">${BIEN_TYPES[b.type] || ''}${b.surface ? ` · ${b.surface} m²` : ''}${(b.pieces || []).length ? ` · ${b.pieces.length} pièces` : ''}</span><br>
-    <span class="small">${bienPrix(b).map((x, i) => html`${i ? ' · ' : ''}${x}`)}</span><br>
-    <span class="tiny muted">📍 ${b.adresse || '—'}${b.dispo ? html` · disponible dès le ${fmtDate(b.dispo)}` : ''}${b.agenceId ? html` · 🏘️ ${(vault.get('agences', b.agenceId) || {}).nom || ''}` : ''}${b.loueur === 'sous' ? (b.contrat ? html` · 🔁 sous-location (📎 contrat)` : html` · <b style="color:var(--amber,#b45309)">⚠️ sous-location : contrat manquant</b>`) : ''}${b.propriete === 'tiers' ? html` · 🤝 Confié par ${b.tiersNom}` : ''}</span></div>
-</div>`;
-const bienUrls = new Map();
-function hydrateBiens(root = document) {
-  root.querySelectorAll('img[data-bph]').forEach(async (img) => {
-    const id = img.dataset.bph;
-    try {
-      if (!bienUrls.has(id)) bienUrls.set(id, URL.createObjectURL(new Blob([await vault.readFile(id)], { type: 'image/jpeg' })));
-      img.src = bienUrls.get(id);
-    } catch { img.classList.add('missing'); }
-  });
-}
-// plein écran : largeur du téléphone, hauteur limitée ; flèches et doigt
-function bienFull(id, n) {
-  const b = vault.get('biens', id);
-  if (!b || !(b.photos || []).length) return;
-  let d = $('#bienFull');
-  if (!d) { d = document.createElement('dialog'); d.id = 'bienFull'; d.className = 'bien-full'; document.body.append(d); d.addEventListener('click', (e) => { if (e.target === d || e.target.closest('[data-close]')) d.close(); }); }
-  setHtml(d, html`<button class="bf-x" data-close aria-label="Fermer">✕</button><div class="bien-media"><div class="bien-car bf-car">${b.photos.map((ph) => html`<img data-bph="${ph}" alt="">`)}</div>
-    ${b.photos.length > 1 ? html`<button class="car-arrow l" data-action="car-move" data-dir="-1" aria-label="Photo précédente">‹</button><button class="car-arrow r" data-action="car-move" data-dir="1" aria-label="Photo suivante">›</button>` : ''}</div>
-    <p class="bf-cap"><b>${b.titre}</b> · ${bienPrix(b).map((x, i) => html`${i ? ' · ' : ''}${x}`)}</p>`);
-  hydrateBiens(d);
-  d.showModal();
-  const car = d.querySelector('.bf-car');
-  requestAnimationFrame(() => { car.scrollLeft = car.clientWidth * (+n || 0); });
-}
-// Banque d'une société (gérance, agence) : IBAN/BIC obligatoires, sauf « 🕓 Compléter plus tard » coché
-const bankBlock = (cl, who) => {
-  const later = cl.bankLater || (!cl.iban && !cl.bic && !!cl.rcs);
-  return html`<div class="section-label full" style="margin:4px 0 0">🏦 ${who}</div>
-    <label class="field full" style="flex-direction:row;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" name="bankLater" data-input="bank-later" ${later ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"><span>🕓 Compléter plus tard (IBAN / BIC)</span></label>
-    <label class="field">Nom de la banque<input name="banque" ${later ? '' : new Raw('required')} data-bank value="${cl.banque || ''}" placeholder="ex. POST Luxembourg, Spuerkeess…"></label>
-    <label class="field">Code BIC / SWIFT<input name="bic" ${later ? '' : new Raw('required')} data-bank value="${cl.bic || ''}" placeholder="ex. CCPLLULL" autocomplete="off" autocapitalize="characters" maxlength="14" data-input="bank-chk"><span class="bank-msg tiny" data-for="bic"></span></label>
-    <label class="field full">IBAN<input name="iban" ${later ? '' : new Raw('required')} data-bank value="${ibanFmt(cl.iban || '')}" placeholder="LU.. .... .... .... ...." autocomplete="off" autocapitalize="characters" maxlength="42" data-input="bank-chk"><span class="bank-msg tiny" data-for="iban"></span></label>`;
-};
-// contrôle : RCS toujours obligatoire ; N° TVA facultatif ; IBAN/BIC vérifiés s'ils sont obligatoires ou écrits
-function companyCheck(fd, who, rcsOpt) {
-  const g = (k) => String(fd.get(k) || '').trim();
-  if (!g('rcs') && !rcsOpt) return `RCS ${who} obligatoire`;
-  const later = !!fd.get('bankLater');
-  if (later && !g('iban') && !g('bic')) return '';
-  const ib = ibanCheck(g('iban')), bc = bicCheck(g('bic'), ib.ok ? ib.cc : '');
-  if (!ib.ok) return `IBAN ${who} : ${ib.msg}`;
-  if (!bc.ok) return `BIC ${who} : ${bc.msg}`;
-  return '';
-}
 function ibanCheck(v) {
   const x = ibanClean(v), cc = x.slice(0, 2);
   if (!x) return { ok: false, msg: 'IBAN obligatoire' };
@@ -4468,7 +4329,7 @@ const RPT_SRC = {
   retards: ['⏰ Retards', [['type', 'Type de retard'], ['date', 'Date prévue / échéance'], ['qui', 'Qui'], ['quoi', 'Quoi / où'], ['j', 'Retard (jours)'], ['min', 'Retard (minutes)'], ['montant', 'Montant (€)']], null],
   totaux: ['📈 Totaux', [['ind', 'Indicateur'], ['val', 'Valeur']], null],
 };
-const RPT_WHO = { loc: 'Locataires', interne: 'Ouvriers internes', societe: 'Sociétés externes', prive: 'Collaborateurs occasionnels', agence: 'Agences et propriétaires', ger: 'Gérances' };
+const RPT_WHO = { loc: 'Locataires', interne: 'Ouvriers internes', societe: 'Sociétés externes', prive: 'Collaborateurs occasionnels', ger: 'Gérances' };
 const RPT_LATE = { loyer: 'Loyers impayés', topen: 'Travaux pas finis (date passée)', tfin: 'Travaux finis après la date prévue', arr: 'Arrivées de l’ouvrier après l’heure prévue', fact: 'Factures pas payées à l’échéance' };
 const rptDef = () => ({ src: 'contacts', from: today().slice(0, 4) + '-01-01', to: today(), who: Object.keys(RPT_WHO), late: Object.keys(RPT_LATE), genre: Object.keys(INT_GENRES), withMail: false, withTel: false, ttype: '', tstat: '', persons: null, orgs: null, lieux: null, q: '', cols: {} });
 const rptCfg = () => (ui.rpt = ui.rpt || rptDef());
@@ -4533,7 +4394,6 @@ function rptRows(c) {
     const out = [], who = new Set(c.who), add = (cat, o) => out.push({ cat, ...o });
     if (who.has('loc')) for (const l of currentLocs()) add(RPT_WHO.loc, { nom: l.nom || '', prenom: l.prenom || '', soc: '', email: l.mail || '', tel: l.tel || '', adr: [logName(l.logId), immName(l.immId)].filter(Boolean).join(' · '), info: '' });
     for (const i of vault.list('intervenants').filter((i) => !i.archive)) { const g = i.genre || 'interne'; if (who.has(g)) add(RPT_WHO[g], { nom: i.nom || '', prenom: i.prenom || '', soc: g === 'societe' ? i.nom || '' : '', email: i.mail || '', tel: i.tel || '', adr: [i.adresse, i.ville].filter(Boolean).join(', '), info: METIERS[i.metier] || '' }); }
-    if (who.has('agence')) for (const a of vault.list('agences')) add(RPT_WHO.agence, { nom: (a.dir || {}).nom || '', prenom: (a.dir || {}).prenom || '', soc: a.nom, email: a.email || (a.dir || {}).email || '', tel: a.tel || (a.dir || {}).tel || '', adr: a.adresse || '', info: a.rcs ? 'RCS ' + a.rcs : '' });
     if (who.has('ger')) for (const o of (ui.ptl.data && ui.ptl.data.orgs) || []) add(RPT_WHO.ger, { nom: '', prenom: '', soc: o.name || '', email: o.email || '', tel: o.phone || '', adr: '', info: '' });
     return out.filter((r) => (!c.withMail || r.email) && (!c.withTel || r.tel)).sort((a, b) => a.cat.localeCompare(b.cat) || (a.nom || a.soc).localeCompare(b.nom || b.soc));
   }
@@ -5023,9 +4883,6 @@ dashboard() {
       })}</div>` : empty('building', 'Aucun immeuble enregistré.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`;
   },
 
-  // 🏘️ Agences (rubrique du menu) : agences immobilières et propriétaires (1 ou plusieurs logements), avec leurs biens
-  agences() { return agView('agence'); },
-  proprios() { return agView('proprio'); },
   // 🛠️ centrale d'un client : ses demandes d'intervention à LA CENTRAL
   demandes() {
     const list = vault.list('reglages').filter((r) => r.id.startsWith('tdem-')).sort((a, b) => (b.t || '').localeCompare(a.t || ''));
@@ -5088,7 +4945,7 @@ dashboard() {
         <span class="grow"><span class="title" style="display:block">${t.nom}</span><span class="meta">${NET_FIL[t.fil] || ''}${netInfo(t.id).ville ? ' · 🌍 ' + netInfo(t.id).ville : ''} · ${NET_ST[t.st] || ''}${t.until ? html` · jusqu’au ${fmtDate(t.until)}${dl != null && dl >= 0 ? ` (${dl} j)` : ''}` : ''}</span>
         <span class="tiny" style="display:block">${t.configured ? (t.lastSeen ? '🖥️ dernière connexion ' + fmtDateTime(t.lastSeen) : '🔐 centrale configurée') : '✉️ invitation envoyée, pas encore ouverte'}</span></span>
         <span class="badge ${t.state === 'ok' ? 'ok' : t.state === 'ro' ? 'warn' : 'bad'}">${st[0]} ${st[1]}</span></button>`; })}</div>`
-        : n && !n.loading && !n.err ? html`<div class="card" style="max-width:560px"><p style="margin-top:0">Donnez à vos clients (gérances, agences, propriétaires) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; leurs demandes d’intervention arrivent dans Maintenance. ＋ Client → essai gratuit de ${LIC_ESSAI} jours, puis abonnement 1, 2 ou 3 ans.</p></div>` : ''}`;
+        : n && !n.loading && !n.err ? html`<div class="card" style="max-width:560px"><p style="margin-top:0">Donnez à vos clients (gérances, propriétaires) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; leurs demandes d’intervention arrivent dans Maintenance. ＋ Client → essai gratuit de ${LIC_ESSAI} jours, puis abonnement 1, 2 ou 3 ans.</p></div>` : ''}`;
   },
   gerances() {
     const c = ptlConf();
@@ -5968,7 +5825,7 @@ const SHEETS = {
   // 🗄️ Archiver : on coche ce qu'on range (gardé, plus affiché), jusqu'à quelle date ; l'historique dit quand et qui
   'arch-form'() {
     const hist = ((vault.get('reglages', 'archives') || {}).list || []).slice().reverse();
-    const nT = vault.list('taches').filter((t) => !t.recur).length, nD = vault.list('devis').length, nB = vault.list('biens').length;
+    const nT = vault.list('taches').filter((t) => !t.recur).length, nD = vault.list('devis').length;
     const cb = (k, l, m, on = true) => html`<label class="row" style="cursor:pointer"><input type="checkbox" name="${k}" ${on ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none"><span class="grow"><span class="title" style="display:block">${l}</span><span class="meta" style="white-space:normal">${m}</span></span></label>`;
     return {
       title: '🗄️ Archiver', narrow: true,
@@ -5977,7 +5834,6 @@ const SHEETS = {
         <div class="list">
           ${cb('interv', '🔧 Interventions', `${nT} en tout — signalements, demandes des gérances, travaux, avec leurs photos et factures (les ménages réguliers restent)`)}
           ${cb('devis', '📝 Devis', `${nD} en tout`)}
-          ${masked().has('agences') ? '' : cb('biens', '🏘️ Agences — biens', `Annonces à louer / à vendre — ${nB} en tout`, false)}
           ${cb('team', '👷 Activité de l’équipe', 'Messages et nouvelles reçus des ouvriers')}
           ${cb('num', '🧾 Factures et devis', `⚠️ La numérotation repart de 0001 (prochaine facture ${ymd(today())}-INT0001)`, false)}
         </div>
@@ -6581,84 +6437,6 @@ const SHEETS = {
     };
   },
 
-  'bien-form'({ id, preset }) {
-    const b = id ? vault.get('biens', id) : { louer: true, agenceId: typeof preset === 'string' && vault.get('agences', preset) ? preset : '', pieces: [{ k: 'chambre' }, { k: 'salon' }, { k: 'cuisine' }, { k: 'sdb' }] };
-    if (id && !b) return null;
-    const ags = vault.list('agences').sort((a, x) => (a.nom || '').localeCompare(x.nom || ''));
-    setTimeout(() => hydrateBiens(sheetEl), 0);
-    return {
-      title: id ? 'Modifier le bien' : 'Nouveau bien',
-      body: html`<form id="f" data-form="bien" class="fields">
-        <input type="hidden" name="id" value="${id || ''}">
-        <label class="field full">Agence, propriétaire ou bailleur principal<select name="agenceId" data-input="bien-ag"><option value="">— Nos biens (sans agence) —</option>${ags.map((a) => html`<option value="${a.id}" ${b.agenceId === a.id ? new Raw('selected') : ''}>${a.type === 'proprio' ? '🔑' : '🏘️'} ${a.nom}</option>`)}</select></label>
-        <div class="full fields bien-nous" style="margin:0" ${b.agenceId ? new Raw('hidden') : ''}>        <label class="field">Propriété<select name="propriete"><option value="nous">Le bien est à nous</option><option value="tiers" ${b.propriete === 'tiers' ? new Raw('selected') : ''}>Confié par un tiers</option></select></label>
-        ${field('Nom du propriétaire (si confié)', 'tiersNom', b.tiersNom, { placeholder: 'ex. M. Dupont' })}</div>
-        <div class="full fields bien-ag" style="margin:0" ${b.agenceId ? '' : new Raw('hidden')}>
-          <div class="field full">Qui loue ce bien ?<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
-            <label class="row" style="cursor:pointer"><input type="radio" name="loueur" value="proprio" data-input="bien-loueur" ${b.loueur !== 'sous' ? new Raw('checked') : ''}><span class="grow">🔑 Le propriétaire lui-même</span></label>
-            <label class="row" style="cursor:pointer"><input type="radio" name="loueur" value="sous" data-input="bien-loueur" ${b.loueur === 'sous' ? new Raw('checked') : ''}><span class="grow">🔁 Un bailleur principal (sous-location)</span></label></div></div>
-          <div class="full fields bien-sous" style="margin:0" ${b.loueur === 'sous' ? '' : new Raw('hidden')}>
-            ${field('Propriétaire réel (nom et prénom, ou société)', 'realOwner', b.realOwner, { full: true, placeholder: 'ex. Jean Dupont' })}
-            <label class="field full">📎 Contrat de bail principal autorisant la sous-location (PDF ou photo — jamais publié)<input type="file" name="contrat" accept="application/pdf,image/*"></label>
-            ${b.contrat ? html`<p class="tiny full" style="margin:0">✅ Contrat enregistré <button type="button" class="btn sm" data-action="open-doc" data-id="${b.contrat}">📎 Voir</button></p>` : html`<p class="tiny full" style="margin:0;color:var(--amber,#b45309)">⚠️ Contrat manquant : le bien est publié quand même, le manque est signalé.</p>`}
-            <label class="row full" style="cursor:pointer"><input type="checkbox" name="sousOk" ${b.sousOk ? new Raw('checked') : ''}><span class="grow">☑️ Je certifie que la sous-location est autorisée par écrit par le propriétaire</span></label>
-            ${field('Fin du bail principal (facultatif)', 'bailFin', b.bailFin, { type: 'date' })}
-          </div></div>
-        <label class="field full">Titre de l’annonce<input name="titre" required value="${b.titre || ''}" placeholder="ex. Bel appartement 2 chambres avec terrasse"></label>
-        <label class="field">Type<select name="type">${Object.entries(BIEN_TYPES).map(([k, l]) => html`<option value="${k}" ${b.type === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
-        ${field('Surface totale (m²)', 'surface', b.surface, { attrs: 'inputmode="decimal"' })}
-        ${field('Adresse', 'adresse', b.adresse, { full: true, placeholder: 'rue, n°, code postal, ville (pour la carte)' })}
-        ${field('Disponible dès le', 'dispo', b.dispo, { type: 'date' })}
-        <div class="section-label full" style="margin:6px 0 0">💶 Prix</div>
-        <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="louer" ${b.louer ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"> À louer</label>
-        <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" name="vendre" ${b.vendre ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"> À vendre</label>
-        ${field('Loyer (€ / mois)', 'loyer', b.loyer, { attrs: money$ })}${field('Charges (€ / mois)', 'charges', b.charges, { attrs: money$ })}
-        ${field('Prix de vente (€)', 'prix', b.prix, { full: true, attrs: money$ })}
-        <div class="section-label full" style="margin:6px 0 0">🚪 Pièces et espaces</div>
-        <p class="tiny muted full" style="margin:-4px 0 0">Chambres, cuisine, cave, balcon, piscine… choisissez dans la liste ou « ➕ Autre » ; m² et note facultatifs.</p>
-        <div class="full" id="bienPieces">${(b.pieces || []).map((p) => pieceRow(p))}</div>
-        <button type="button" class="btn sm full" data-action="bien-piece-add">${icon('plus')} Pièce / espace</button>
-        <div class="section-label full" style="margin:6px 0 0">📷 Photos de l’annonce</div>
-        ${(b.photos || []).length ? html`<div class="full bien-thumbs">${b.photos.map((ph) => html`<label class="bien-thumb"><img data-bph="${ph}" alt=""><span><input type="checkbox" name="delph" value="${ph}"> 🗑</span></label>`)}</div>` : ''}
-        <label class="field full">Ajouter des photos (horizontales de préférence)<input type="file" name="photos" accept="image/*" multiple></label>
-        <label class="field full">Description<textarea name="description" style="min-height:90px" placeholder="état, étage, ascenseur, chauffage, proximité…">${b.description || ''}</textarea></label>
-      </form>`,
-      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-bien" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
-        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${id ? 'Enregistrer' : 'Publier le bien'}</button>`,
-    };
-  },
-  'agence-form'({ id }) {
-    if (id && !TENANT) netLoad();
-    const a = id ? vault.get('agences', id) : { type: ui.route === 'proprios' ? 'proprio' : 'agence' };
-    if (id && !a) return null;
-    const d = a.dir || {};
-    return {
-      title: a.type === 'proprio' ? (id ? 'Modifier le propriétaire' : 'Nouveau propriétaire') : (id ? 'Modifier l’agence' : 'Nouvelle agence immobilière'),
-      narrow: true,
-      body: html`<form id="f" data-form="agence" class="fields">
-        <input type="hidden" name="id" value="${id || ''}"><input type="hidden" name="type" value="${a.type === 'proprio' ? 'proprio' : 'agence'}">
-        ${id && !TENANT ? agNetBlock(a) : ''}
-        ${a.type === 'proprio' ? '' : html`<div class="field full">Travaille pour<div class="chips" style="margin-top:6px">${Object.entries(AG_POUR).map(([k, v]) => html`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="pour_${k}" value="1" ${(a.pour || []).includes(k) ? new Raw('checked') : ''}> ${v}</label>`)}</div></div>
-          ${field('Fonds d’investissement (noms, facultatif)', 'fonds', a.fonds, { full: true, placeholder: 'ex. Fonds Alpha SICAV, Beta Real Estate' })}`}
-        <label class="field full">Nom (société ou propriétaire)<input name="nom" required value="${a.nom || ''}" placeholder="ex. Immo Centre S.à r.l."></label>
-        <label class="field full">Adresse<textarea name="adresse" style="min-height:56px" placeholder="rue, n°, code postal, ville">${a.adresse || ''}</textarea></label>
-        <label class="field">RCS (obligatoire pour une agence)<input name="rcs" value="${a.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
-        <label class="field">N° TVA (facultatif)<input name="tvaNum" value="${a.tva || ''}" placeholder="LU12345678" autocapitalize="characters"></label>
-        <label class="field">Email<input type="email" name="email" value="${a.email || ''}"></label>
-        <label class="field">Téléphone<input type="tel" name="tel" value="${a.tel || ''}" placeholder="+352…"></label>
-        ${bankBlock({ banque: a.banque, bic: a.bic, iban: a.iban, rcs: a.rcs, bankLater: a.bankLater }, 'Banque de l’agence')}
-        <div class="section-label full" style="margin:6px 0 0">⭐ Directeur / contact</div>
-        <label class="field">Prénom<input name="dprenom" value="${d.prenom || ''}" autocomplete="off"></label>
-        <label class="field">Nom<input name="dnom" value="${d.nom || ''}" autocomplete="off"></label>
-        <label class="field">Email<input type="email" name="demail" value="${d.email || ''}"></label>
-        <label class="field">Téléphone (WhatsApp)<input type="tel" name="dtel" value="${d.tel || ''}" placeholder="+352…"></label>
-        <p class="tiny muted full" style="margin:-4px 0 0">Pour une agence, prénom, nom et email du directeur sont obligatoires. Le directeur invitera ses agents (app des agents, prochaine étape).</p>
-        ${patBlock(a.pat)}
-      </form>`,
-      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-agence" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
-        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${id ? 'Enregistrer' : 'Créer'}</button>`,
-    };
-  },
   'net-cert'({ id }) {
     const c = vault.get('reglages', id);
     if (!c) return null;
@@ -6764,7 +6542,7 @@ const SHEETS = {
             ${F.length ? html`<div class="list small" style="margin-bottom:8px">${F.slice(0, 20).map((f) => { const late = !f.paid ? lateDays(f.due) : 0; return html`<div class="row"><span class="grow"><b>${f.no}</b> · ${eur(f.ttc)}<span class="meta" style="display:block">${f.paid ? '✅ payée le ' + fmtDate(f.paid) : f.claim ? '💳 le client dit avoir payé (' + fmtDate(f.claim) + ')' : late > 0 ? `🔴 ${late} j de retard` : '⏳ échéance ' + fmtDate(f.due)}</span></span>
               ${f.docId ? html`<button class="btn sm" data-action="open-doc" data-id="${f.docId}">⬇️ PDF</button>` : ''}${f.paid || isCompta() ? '' : html`<button class="btn sm primary" data-action="nfact-paid" data-id="${f.no}">✅ Reçu</button>`}</div>`; })}</div>` : html`<p class="tiny muted">Aucune facture.</p>`}`;
         })()}
-        ${['gerance', 'agence', 'proprio'].includes(t.fil) && !vault.op ? html`<div class="section-label" style="margin-top:14px">📦 Transfert</div>
+        ${['gerance', 'proprio'].includes(t.fil) && !vault.op ? html`<div class="section-label" style="margin-top:14px">📦 Transfert</div>
           <button class="btn block" data-action="xfer-open" data-id="${id}">📦 Transférer des immeubles et leurs locataires vers cette centrale</button>
           ${(() => { const n = vault.listAll('immeubles').filter((x) => x.xfer && x.xfer.to === id).length; return n ? html`<p class="tiny muted" style="margin:4px 0 0">✅ ${plural(n, 'immeuble')} déjà transféré${n > 1 ? 's' : ''} (gardé${n > 1 ? 's' : ''} ici en archive).</p>` : ''; })()}` : ''}
         <div class="section-label" style="margin-top:14px">Accès</div>
@@ -6774,7 +6552,7 @@ const SHEETS = {
     };
   },
   angar() {
-    const N = (ui.net && ui.net.list) || [], P = ui.angar || {}, OK = ['gerance', 'agence', 'proprio'];
+    const N = (ui.net && ui.net.list) || [], P = ui.angar || {}, OK = ['gerance', 'proprio'];
     return {
       title: '🏗️ ANGAR', narrow: true,
       body: html`<p class="small muted" style="margin:0 0 10px">Les <b>containers</b> sont les centrales de vos clients. Préparez un <b>paquet</b> (immeubles, locataires, paiements, documents…) et envoyez-le : directement dans son container, ou en fichier (PC, USB, email). Ici tout reste en archive.</p>
@@ -8425,45 +8203,6 @@ const ACTIONS = {
   },
   'new-avis': (d) => openOver('avis-form', null, null, d.imm || ui.immFilter || ''),
   'edit-avis': (d) => openOver('avis-form', d.id),
-  'new-bien': (d) => openOver('bien-form', null, null, d.ag || ''), // depuis la ligne d'une agence / d'un propriétaire : déjà choisi
-  'edit-bien': (d) => openOver('bien-form', d.id),
-  'bien-piece-add': () => { const box = $('#bienPieces'); if (box) box.insertAdjacentHTML('beforeend', String(pieceRow({ k: 'chambre' }))); },
-  'bien-piece-del': (d, el) => { el.closest('.piece-row')?.remove(); },
-  'bien-full': (d) => bienFull(d.id, d.n),
-  'car-move': (d, el) => { const car = el.parentElement.querySelector('.bien-car'); if (car) car.scrollBy({ left: car.clientWidth * (+d.dir || 1), behavior: 'smooth' }); },
-  async 'del-bien'(d) {
-    const b = vault.get('biens', d.id);
-    if (!b || !(await confirmBox('Supprimer ce bien ?', { ok: 'Supprimer', danger: true, detail: b.titre }))) return;
-    await vault.mutate((tx) => tx.remove('biens', d.id), 'Bien supprimé', b.titre);
-    for (const ph of b.photos || []) await vault.deleteFile(ph).catch(() => {});
-    biensSync();
-    goBack();
-  },
-  'new-agence': () => openOver('agence-form'),
-  async 'ag-net-on'(d) {
-    const a = vault.get('agences', d.id);
-    if (!a || a.netId) return;
-    if (!(await confirmBox(`Activer la centrale de ${a.nom} ?`, { ok: '🌐 Activer', detail: `Essai gratuit de ${LIC_ESSAI} jours, puis 🎁 6 mois offerts ou abonnement. Vous recevez le code d’invitation à lui envoyer.` }))) return;
-    let r;
-    try { r = await netCreate(agFil(a), a.nom, a.tel || '', a.email || ''); } catch (e) { return toast(e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : publiez-le d’abord' : e.message, { bad: true }); }
-    await vault.mutate((tx) => tx.put('agences', { id: a.id, netId: r.id }), '🌐 Centrale activée depuis la fiche', a.nom);
-    toast('Centrale activée : envoyez le code d’invitation');
-    await netLoad(true);
-    openOver('net-client', r.id);
-  },
-  async 'ag-net-unlink'(d) {
-    const a = vault.get('agences', d.id);
-    if (!a || !(await confirmBox(`Délier la fiche de ${a.nom} de sa centrale ?`, { detail: 'La centrale continue d’exister (rien n’est effacé) : seul le lien entre les deux est retiré.' }))) return;
-    await vault.mutate((tx) => tx.put('agences', { id: a.id, netId: '' }), '🌐 Fiche déliée de sa centrale', a.nom);
-    ui.sheet.rendered = false; renderSheet();
-  },
-  'edit-agence': (d) => openOver('agence-form', d.id),
-  async 'del-agence'(d) {
-    const a = vault.get('agences', d.id);
-    if (!a || !(await confirmBox('Supprimer cette agence ?', { ok: 'Supprimer', danger: true, detail: `${a.nom} — RCS ${a.rcs}` }))) return;
-    await vault.mutate((tx) => tx.remove('agences', d.id), 'Agence immobilière supprimée', a.nom);
-    goBack();
-  },
   'tdem-new': () => openOver('tdem-form'),
   'num-step': (d, el) => { const i = el.closest('form').querySelector(`input[name=${d.n}]`); if (i) i.value = Math.max(+d.min || 0, Math.min(20, (+i.value || 0) + +d.d)); },
   'bail-letter': (d) => bailLetter(d.id),
@@ -9189,27 +8928,25 @@ const ACTIONS = {
     const f = document.getElementById('archF');
     if (!f) return;
     const on = (k) => !!(f.querySelector(`[name=${k}]`) || {}).checked, until = /^\d{4}-\d{2}-\d{2}$/.test(f.until.value) ? f.until.value : today();
-    const sel = { interv: on('interv'), devis: on('devis'), biens: on('biens'), team: on('team'), num: on('num') };
+    const sel = { interv: on('interv'), devis: on('devis'), team: on('team'), num: on('num') };
     if (!Object.values(sel).some(Boolean)) return toast('Cochez au moins une case', { bad: true });
     const day = (x) => String(x || '').slice(0, 10);
     const ts = sel.interv ? vault.list('taches').filter((t) => !t.recur && (day(t.date || t.sentAt) || today()) <= until) : [];
     const dv = sel.devis ? vault.list('devis').filter((d) => (day(d.date) || today()) <= until) : [];
-    const bi = sel.biens ? vault.list('biens').filter((b) => (day(b.cree) || today()) <= until) : [];
-    const k = await promptKey('🗄️ Archiver', `${sel.interv ? ts.length + ' interventions · ' : ''}${sel.devis ? dv.length + ' devis · ' : ''}${sel.biens ? bi.length + ' biens · ' : ''}${sel.team ? 'activité de l’équipe · ' : ''}${sel.num ? 'numéros de facture et de devis à 0001 · ' : ''}jusqu’au ${fmtDate(until)}. Rien n’est effacé. Saisissez votre clé d’accès pour confirmer.`, [...(sel.interv || sel.devis || sel.hotel || sel.biens || sel.team ? [ARCH_W1] : []), ...(sel.num ? [ARCH_W2] : [])]);
+    const k = await promptKey('🗄️ Archiver', `${sel.interv ? ts.length + ' interventions · ' : ''}${sel.devis ? dv.length + ' devis · ' : ''}${sel.team ? 'activité de l’équipe · ' : ''}${sel.num ? 'numéros de facture et de devis à 0001 · ' : ''}jusqu’au ${fmtDate(until)}. Rien n’est effacé. Saisissez votre clé d’accès pour confirmer.`, [...(sel.interv || sel.devis || sel.hotel || sel.biens || sel.team ? [ARCH_W1] : []), ...(sel.num ? [ARCH_W2] : [])]);
     if (!k) return;
     if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
     const at = new Date().toISOString(), fc = factConf();
     await vault.mutate((tx) => {
       for (const t of ts) tx.put('taches', { id: t.id, arch: at });
       for (const d of dv) tx.put('devis', { id: d.id, arch: at });
-      for (const b of bi) tx.put('biens', { id: b.id, arch: at });
       if (sel.team) for (const i of vault.list('intervenants')) if ((i.feed || []).length) tx.put('intervenants', { id: i.id, feedArch: [...(i.feedArch || []), ...i.feed].slice(-500), feed: [], feedNew: 0 });
       if (sel.num) tx.put('reglages', { id: 'facturation', seq: 0, devSeq: 0, archSeq: [...(fc.archSeq || []), { at, seq: +fc.seq || 0, devSeq: +fc.devSeq || 0 }] });
-      tx.put('reglages', { id: 'archives', list: [...((vault.get('reglages', 'archives') || {}).list || []), { at, by: whoLabel() || '⭐ Directeur', until, taches: ts.length, devis: dv.length, biens: bi.length, team: sel.team, num: sel.num }] });
+      tx.put('reglages', { id: 'archives', list: [...((vault.get('reglages', 'archives') || {}).list || []), { at, by: whoLabel() || '⭐ Directeur', until, taches: ts.length, devis: dv.length, team: sel.team, num: sel.num }] });
     }, '🗄️ Archivage', `${ts.length} interventions · ${dv.length} devis · jusqu’au ${fmtDate(until)}`);
     closeSheet();
-    toast(`🗄️ Archivé : ${ts.length} interventions, ${dv.length} devis${bi.length ? ', ' + bi.length + ' biens' : ''}`);
-    renderView(); scheduleEspaceSync(); if (bi.length) biensSync();
+    toast(`🗄️ Archivé : ${ts.length} interventions, ${dv.length} devis`);
+    renderView(); scheduleEspaceSync();
   },
   'arch-toggle': () => { showArch = !showArch; toast(showArch ? '👁 Archives affichées' : '🙈 Archives cachées'); renderView(); },
   async 'wipe-all'() {
@@ -9497,68 +9234,6 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('logements', { id: g.id, porte: { code, maj: today(), off: false, fin: /^\d{4}-\d{2}-\d{2}$/.test(fd.get('fin') || '') ? fd.get('fin') : '', serrure: String(fd.get('serrure') || '').trim(), info: String(fd.get('info') || '').trim(), hist: [...(pt.hist || []), h].slice(-30) } }), 'Code de porte changé', `${g.nom} (${immName(g.immId)}) — ${h.raison}`, g.immId);
     toast('Code enregistré');
     goBack();
-  },
-  async bien(fd) {
-    const id = fd.get('id'), g = (k) => String(fd.get(k) || '').trim(), n = (k) => (g(k) ? Math.max(0, num(g(k).replace(',', '.'))) : '');
-    const old = id ? vault.get('biens', id) : null;
-    const rec = { agenceId: g('agenceId'), propriete: g('propriete') === 'tiers' ? 'tiers' : 'nous', tiersNom: g('propriete') === 'tiers' ? g('tiersNom') : '', titre: g('titre'), type: g('type') || 'autre', surface: n('surface'), adresse: g('adresse'), dispo: g('dispo'),
-      louer: !!fd.get('louer'), vendre: !!fd.get('vendre'), loyer: n('loyer'), charges: n('charges'), prix: n('prix'), description: g('description'),
-      pieces: fd.getAll('p_k').map((k, i) => ({ k, nom: String(fd.getAll('p_nom')[i] || '').trim(), m2: String(fd.getAll('p_m2')[i] || '').trim(), note: String(fd.getAll('p_note')[i] || '').trim() })),
-      cree: (old && old.cree) || today() };
-    if (!rec.titre) return;
-    if (!rec.louer && !rec.vendre) return toast('Cochez « À louer » et / ou « À vendre »', { bad: true });
-    if (!rec.agenceId && rec.propriete === 'tiers' && !rec.tiersNom) return toast('Nom du propriétaire manquant (bien confié par un tiers)', { bad: true });
-    // 🔁 bien d'un propriétaire / bailleur principal : qui loue, propriétaire réel, contrat (facultatif : s'il manque, on le signale)
-    rec.loueur = rec.agenceId && g('loueur') === 'sous' ? 'sous' : 'proprio';
-    rec.realOwner = rec.loueur === 'sous' ? g('realOwner') : '';
-    rec.sousOk = rec.loueur === 'sous' && !!fd.get('sousOk');
-    rec.bailFin = rec.loueur === 'sous' && /^\d{4}-\d{2}-\d{2}$/.test(g('bailFin')) ? g('bailFin') : '';
-    if (rec.agenceId) { rec.propriete = 'tiers'; rec.tiersNom = rec.loueur === 'sous' ? rec.realOwner : (vault.get('agences', rec.agenceId) || {}).nom || ''; }
-    if (rec.loueur === 'sous' && !rec.realOwner) return toast('Indiquez le propriétaire réel (nom et prénom, ou société)', { bad: true });
-    const cf = fd.get('contrat');
-    if (rec.loueur === 'sous' && cf && cf.size) {
-      if (cf.size > 15e6) return toast('Contrat trop lourd (15 Mo au plus)', { bad: true });
-      const cid = uid(), mime = /^image\//.test(cf.type) ? 'image/jpeg' : 'application/pdf';
-      await vault.saveFile(cid, mime === 'image/jpeg' ? await compressPhoto(cf) : new Uint8Array(await cf.arrayBuffer()));
-      await vault.mutate((tx) => tx.put('documents', { id: cid, kind: 'souscontrat', label: `📎 Contrat de bail principal — ${rec.titre}`, date: today(), mime, size: cf.size }), '📎 Contrat de sous-location', rec.titre);
-      rec.contrat = cid;
-    } else if (old && old.contrat && rec.loueur === 'sous') rec.contrat = old.contrat;
-    if (rec.louer && !rec.loyer) return toast('Loyer mensuel manquant', { bad: true });
-    if (rec.vendre && !rec.prix) return toast('Prix de vente manquant', { bad: true });
-    const del = new Set(fd.getAll('delph'));
-    const files = fd.getAll('photos').filter((f) => f && f.size && f.type.startsWith('image/'));
-    const keep = ((old && old.photos) || []).filter((ph) => !del.has(ph));
-    if (keep.length + files.length > 20) return toast('20 photos au maximum', { bad: true });
-    if (files.length) toast('Chiffrement des photos…');
-    const added = [];
-    for (const f of files) { const pid = uid(); await vault.saveFile(pid, await compressPhoto(f)); added.push(pid); }
-    rec.photos = [...keep, ...added];
-    if (id) rec.id = id;
-    await vault.mutate((tx) => tx.put('biens', rec), id ? 'Bien modifié' : 'Nouveau bien publié', `${rec.titre} — ${BIEN_TYPES[rec.type] || ''}${rec.surface ? ' · ' + rec.surface + ' m²' : ''}`);
-    for (const ph of del) { await vault.deleteFile(ph).catch(() => {}); if (bienUrls.has(ph)) { URL.revokeObjectURL(bienUrls.get(ph)); bienUrls.delete(ph); } }
-    toast(`${id ? 'Bien enregistré' : 'Bien publié'}${rec.loueur === 'sous' && !rec.contrat ? ' — ⚠️ contrat de sous-location manquant' : ''}`, rec.loueur === 'sous' && !rec.contrat ? { bad: true } : undefined);
-    biensSync();
-    goBack();
-    const to = (vault.get('agences', rec.agenceId) || {}).type === 'proprio' ? 'proprios' : 'agences';
-    if (ui.route !== to) go(to);
-  },
-  async agence(fd) {
-    const id = fd.get('id'), g = (k) => String(fd.get(k) || '').trim();
-    if (!g('nom')) return;
-    const type = g('type') === 'proprio' ? 'proprio' : 'agence';
-    if (type === 'agence' && !(g('dprenom') && g('dnom') && g('demail'))) return toast('Pour une agence, prénom, nom et email du directeur sont obligatoires', { bad: true });
-    const err = companyCheck(fd, type === 'agence' ? 'de l’agence' : 'du propriétaire', type === 'proprio');
-    if (err) return toast(err, { bad: true });
-    const rec = { type, nom: g('nom'), adresse: g('adresse'), rcs: g('rcs').toUpperCase().replace(/\s+/g, ''), tva: g('tvaNum').toUpperCase().replace(/\s+/g, ''), email: g('email'), tel: g('tel'),
-      bankLater: !!fd.get('bankLater'), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s+/g, ''), iban: ibanClean(g('iban')),
-      dir: { prenom: g('dprenom'), nom: g('dnom'), email: g('demail'), tel: g('dtel') }, pat: patRead(fd),
-      pour: type === 'agence' ? Object.keys(AG_POUR).filter((k) => fd.get('pour_' + k)) : [], fonds: type === 'agence' ? g('fonds').slice(0, 300) : '' };
-    if (id) rec.id = id;
-    await vault.mutate((tx) => tx.put('agences', rec), id ? 'Agence modifiée' : (type === 'proprio' ? 'Propriétaire créé' : 'Agence immobilière créée'), `${rec.nom}${rec.rcs ? ' — RCS ' + rec.rcs : ''}`);
-    toast(id ? 'Enregistré' : (type === 'proprio' ? 'Propriétaire créé' : 'Agence créée'));
-    goBack();
-    const to = type === 'proprio' ? 'proprios' : 'agences';
-    if (ui.route !== to) go(to);
   },
   async 'net-bail-set'(fd) {
     const tid = String(fd.get('tid') || ''), g = (k) => String(fd.get(k) || '').trim(), sous = g('loueur') === 'sous', t = ((ui.net && ui.net.list) || []).find((x) => x.id === tid) || {};
@@ -11215,11 +10890,6 @@ document.addEventListener('change', (e) => {
     const file = e.target.files[0];
     netBailSave(tid, file, t.nom || '').then(() => { toast('📎 Bail enregistré'); const s0 = ui.sheet; if (s0 && sheetEl.open) { openSheet(s0.kind, s0.id, s0.tab, s0.preset); ui.sheet.back = s0.back; } }).catch((err) => toast('Bail : ' + (err.message || err), { bad: true }));
   }
-  if (k === 'ag-net-link' && e.target.value) {
-    const a = vault.get('agences', e.target.dataset.id), tid = e.target.value;
-    if (a) vault.mutate((tx) => tx.put('agences', { id: a.id, netId: tid }), '🌐 Fiche reliée à sa centrale', a.nom).then(() => { ui.sheet.rendered = false; renderSheet(); });
-  }
-  if (k === 'bien-ag') { const f = e.target.form; if (f) { const on = !!e.target.value; f.querySelectorAll('.bien-nous').forEach((x) => { x.hidden = on; }); f.querySelectorAll('.bien-ag').forEach((x) => { x.hidden = !on; }); } }
   if (k === 'bien-loueur') { const f = e.target.form; if (f) f.querySelectorAll('.bien-sous').forEach((x) => { x.hidden = e.target.value !== 'sous'; }); }
   if (k === 'bins-on') {
     const im = vault.get('immeubles', e.target.dataset.id);

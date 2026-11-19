@@ -40,11 +40,11 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
   gli **operai**, che parlano con la MASTER e sono tracciati da lei; riceve le richieste dei clienti (↪️),
   fattura, pubblicità, ANGAR, rete. La MASTER **non ha proprietà né inquilini propri**: un giorno una società «x»
   (con immobili) si iscriverà da noi come **cliente qualsiasi**, e la gestiremo come gli altri clienti.
-- **Livello 2 · CENTRALI CLIENTI** (ognuna cifrata e sua): Gérance, Agence immobilière, Propriétaire/bailleur → inquilini.
+- **Livello 2 · CENTRALI CLIENTI** (ognuna cifrata e sua): Gérance (gratis: apre ticket) e Propriétaire/bailleur (ARES con il co-proprietario: una sola centrale, con i loro locatari).
 - **Livello 3 · APP DEGLI UTENTI**: inquilini → la loro centrale; operai DOMIER → MASTER.
 - **Regola d'oro**: ogni messaggio sale **di un solo livello**; arriva alla MASTER solo se il cliente lo manda con ↪️.
   Gli inquilini di una centrale cliente (es. ARES) non devono MAI arrivare alla MASTER.
-- **Hotel, Airbnb e taxi: TOLTI** (v2.294) · **annunciatori e tutta la pubblicità: TOLTI** (v2.295) — deciso dal titolare.
+- **Hotel, Airbnb e taxi: TOLTI** (v2.294) · **annunciatori e tutta la pubblicità: TOLTI** (v2.295) · **agenzie immobiliari e «Nouveau bien»: TOLTE** (v2.296) — deciso dal titolare.
   Nome della MASTER: **«LUXINTERVENTIONS»** (con la s). Cancellati da questo progetto: app ospiti (`hote.*`),
   app taxi/tassista/autista (`taxi*`, `autista.html`, `chauffeur.*`), menu, centrali hotel/Airbnb/CENTRALE-TAXI, corse, parco auto,
   commissioni, autisti tra gli operai. Restano nella storia git (e nell'altro progetto AJR). Il «🚕 Mode taxi» degli **operai**

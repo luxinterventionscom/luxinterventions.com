@@ -8,7 +8,7 @@ import { openJson, openBytes, sealForOwner, codeHash, unwrapWithCode } from '/ar
 import { trInit, trButton } from '/ares/chattr.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
-import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
+import { infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
 import { tripLine } from '/ares/trip.js';
 import { themeInit, themeBtn, themeAccent } from '/ares/theme.js';
@@ -303,7 +303,6 @@ const CCSS = { fr: ['N° CCSS (matricule de sécurité sociale)', '13 chiffres',
 let phMine = null;
 const ICONS = { nettoyage: '🧹', reparation: '🔧', gros: '🚚', autre: '📌', entretien: '🔧' };
 let data = null, lang = 'fr', loadErr = '', form = null, flash = '';
-nbienInit({ api: API, app: 'eq', lang: () => lang });
 wxRadioInit({ app: 'eq', lang: () => lang, home: () => (data && data.me && data.me.ville) || 'Luxembourg', radio: () => (data && data.radio) || null });
 const app = document.getElementById('app');
 const T = () => L[lang] || L.fr;
@@ -746,7 +745,6 @@ function render() {
   const eg = d.eng && !d.eng.signed && !sigSent ? ENGT[lang] || ENGT.fr : null;
   if (eg) out.push(`<div class="card warnc"><p style="margin:0 0 8px"><b>✍️ ${esc(eg.top)}</b></p><button class="btn sm" data-eng-open="1">${esc(eg.open)} ↓</button></div>`);
   if (d.eng && d.eng.assurTodo && !assurSent) out.push(assurCard());
-  out.push(nbienBanner()); // 🆕 Nouveau bien (bleu mer)
   // météo de la semaine + radio (comme dans l'app des locataires)
   out.push(wxRadioCard());
   const q = getJ(QK());
