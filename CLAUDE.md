@@ -30,7 +30,7 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 - Ramo di lavoro → push → `main` con `merge --no-ff` → push → il ramo di lavoro torna allineato (`merge --ff-only main`).
 - Ad ogni modifica: aumentare le versioni
   - centrale: `VERSION` in `ares/app.js`, `?v=` in `locataires.html`, **`centraldomier.html` e `centraldomier/index.html`**, `CACHE` in `locataires-sw.js` (stessa cifra);
-  - app: `CACHE` in `espace-sw.js`, `equipe-sw.js`, `hote-sw.js`, `taxi-sw.js`, `annonce-sw.js`, `portail-sw.js`.
+  - app: `CACHE` in `espace-sw.js`, `equipe-sw.js`, `annonce-sw.js`, `portail-sw.js`.
 - Un file nuovo in `ares/` usato da un'app va aggiunto alla `SHELL` del suo service worker.
 
 ## Struttura della rete (accordo col titolare — non cambiarla senza di lui)
@@ -40,24 +40,24 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
   gli **operai**, che parlano con la MASTER e sono tracciati da lei; riceve le richieste dei clienti (↪️) e degli annunciatori,
   fattura, pubblicità, ANGAR, rete. La MASTER **non ha proprietà né inquilini propri**: un giorno una società «x»
   (con immobili) si iscriverà da noi come **cliente qualsiasi**, e la gestiremo come gli altri clienti.
-- **Livello 2 · CENTRALI CLIENTI** (ognuna cifrata e sua): Gérance, Agence immobilière, Propriétaire/bailleur → inquilini;
-  Hotel, Airbnb → ospiti.
-- **Livello 3 · APP DEGLI UTENTI**: inquilini → la loro centrale; ospiti → il loro hotel/Airbnb; operai DOMIER → MASTER;
+- **Livello 2 · CENTRALI CLIENTI** (ognuna cifrata e sua): Gérance, Agence immobilière, Propriétaire/bailleur → inquilini.
+- **Livello 3 · APP DEGLI UTENTI**: inquilini → la loro centrale; operai DOMIER → MASTER;
   **annunciatori → chat diretta con la MASTER** (non hanno clienti sotto).
 - **Regola d'oro**: ogni messaggio sale **di un solo livello**; arriva alla MASTER solo se il cliente lo manda con ↪️.
   Gli inquilini di una centrale cliente (es. ARES) non devono MAI arrivare alla MASTER.
-- **Taxi (deciso dal titolare)**: autisti = operai (app operai con GPS «en service», corse, incasso QR/espèces/terminal).
-  Nuovo cliente della rete **🚕 CENTRALE-TAXI** (filière `taxi`): menu Accueil (centralino) · Chauffeurs · Parc auto · Comptabilité & statistiques · Réglages.
-  Hotel/Airbnb: «🚕 Taxi / Chauffeurs» (loro chauffeurs con app, ↪️ LA CENTRAL, loro società).
-  **Tassista** = autista di una CENTRALE-TAXI → `taxi.html` (stesso motore dell'app autista, nome «Tassista», logo/colore della ditta).
-  **Autista** = da solo: nostro operaio o freelance (con o senza società) → `autista.html`, sotto LA CENTRAL. Un autista da solo NON diventa CENTRALE-TAXI.
-  La CENTRALE-TAXI è l'ufficio: Parc auto con foto (l'ospite sceglie il veicolo), 💶 tarifs et extras, tassisti con lingue, società/fatture.
-  La vecchia app delle società è ora `taxi-ditta.html`.
-  Da fare: le corse dagli hotel/LA CENTRAL verso una CENTRALE-TAXI della rete (passano dalla MASTER), noleggio auto completo, Payconiq.
+- **Hotel, Airbnb e taxi: TOLTI** (v2.294, deciso dal titolare). Cancellati da questo progetto: app ospiti (`hote.*`),
+  app taxi/tassista/autista (`taxi*`, `autista.html`, `chauffeur.*`), menu, centrali hotel/Airbnb/CENTRALE-TAXI, corse, parco auto,
+  commissioni, autisti tra gli operai. Restano nella storia git (e nell'altro progetto AJR). Il «🚕 Mode taxi» degli **operai**
+  (START entro il tempo limite, poi passa al prossimo) NON è il taxi: resta.
+- **Piano del titolare (si fa SOLO quando lo dice lui, pezzo per pezzo)**: questo progetto diventa piccolo.
+  Resta la MASTER, che si chiamerà **«LUXINTERVENTION»** e crea **solo app gérance** (password di entrata + password dimenticata
+  che possiamo ridare; niente locatari né app locatari: la gérance apre un ticket che arriva alla MASTER).
+  Nella MASTER resta a sinistra «Gestion locataire» solo con **ARES INVEST e i suoi locatari di oggi** (tutti i dati, chiave divisa):
+  per loro restano chat, spazzatura, operai che passano. **Ai locatari non si toglie niente.** Togliere dalla storia git solo se lo dice lui.
 - La centrale del titolare è in **francese**; le centrali dei test sono in italiano (solo per le prove).
 
 ## Le 6 sezioni di ogni app (regola del titolare — quando non sai dove va una cosa nuova, CHIEDI)
-Vale per tutte le app degli utenti (inquilini, ospiti, operai, annunciatori, tassisti…), sempre in quest'ordine:
+Vale per tutte le app degli utenti (inquilini, operai, annunciatori…), sempre in quest'ordine:
 1. **Chi sono**: nome, foto, indirizzo; dentro la ✏️: lingua, foto personale, dati personali, poche icone
    (3 faccine, 3 frutta, 3 sport, 3 animali, 3 dolci — non di più).
 2. **Informazioni da e per la centrale** (spariscono o si toccano «letto/ricevuto»: documenti mancanti, icona non installata,
@@ -70,29 +70,27 @@ Vale per tutte le app degli utenti (inquilini, ospiti, operai, annunciatori, tas
    borsa/cripto, e alla fine **🚪 Se déconnecter**.
 
 ## Struttura (in breve)
-- Indirizzi «parlanti» (operai.html, ospiti.html, centrale.html…) → vedi `LIENS.md`: rimandano alla pagina vera.
+- Indirizzi «parlanti» (operai.html, centrale.html…) → vedi `LIENS.md`: rimandano alla pagina vera.
 - Centrali dei clienti: **`/centraldomier/?<numero>`** (solo il numero del cliente, mai nomi nell'indirizzo; una sola pagina per tutti). Il vecchio `locataires.html?t=` funziona ancora.
 - `centraldomier.html` = **CENTRAL-DOMIER**, la MASTER (copia di `locataires.html`: tenerle uguali). `locataires.html` resta per i vecchi link e le centrali dei clienti.
 - `locataires.html` + `ares/app.js`: la **centrale** (anche le centrali dei clienti della rete, con `?t=<id>`).
-- App: `espace.js` (inquilini), `equipe.js` (operai), `hote.js` (ospiti hotel/Airbnb), `taxi.js` (ditte taxi),
+- App: `espace.js` (inquilini), `equipe.js` (operai),
   `annonce.js` (annunciatori HORECA), `portail/` (gérances).
 - Moduli condivisi in `ares/`: `chatops.js` (privato ✋, modifica, spunte), `chattr.js` (🌐 traduzione),
-  `pchat.js` (chat partner/ospiti), `pubsocial.js` (👍👎👉), `espace-crypto.js`, ecc.
+  `pchat.js` (chat annunciatori), `pubsocial.js` (👍👎👉), `espace-crypto.js`, ecc.
 - Traduzioni della centrale: `ares/i18n/<lingua>.js` (chiave = testo francese).
 - Tutti i dati sono **cifrati**: il server vede solo byte illeggibili.
 
 ## Chat (stato attuale)
-- Chat della casa (inquilini, per gruppo «Qui discute ensemble ?»), chat operai, chat taxi, chat annunciatori, chat ospiti.
+- Chat della casa (inquilini, per gruppo «Qui discute ensemble ?»), chat operai, chat annunciatori.
 - Ovunque: ✓ / ✓✓ / ✓✓ blu, ⋯ modifica/elimina 15 min (la centrale elimina sempre), 🌐 traduzione.
 - ✋ mano rossa = messaggio solo per la centrale (inquilini). La centrale vede il testo di prima dei messaggi modificati.
 - 🎧 **Centralino** in Accueil: tutte le categorie, richiudibili (scelta ricordata), 📣 Annunci con storico.
 
 ## Da fare, deciso col titolare (non ancora nel codice — se ne riparla)
-- **Licences → ＋ Client: stessa creazione per tutti i tipi** (taxi, agenzia immo, privato, gérance, proprietario, hotel, Airbnb…):
+- **Licences → ＋ Client: stessa creazione per tutti i tipi** (agenzia immo, privato, gérance, proprietario…):
   solo nome/titolo → codice di invito, codice perso, chiave di secours divisa (½ A al cliente, ½ B a noi), link. Prova **3 mesi per tutti**.
-  Tutto il resto (logo, IBAN, società, tariffe, parc auto…) lo mette **il cliente** nella sua centrale.
-- **Commissione 3 € a corsa**: la paga **chi ci chiede la corsa** (es. Airbnb → DOMIER → CENTRALE-TAXI), aggiunta alla sua fattura di abbonamento
-  (oggi il codice la fattura alla CENTRALE-TAXI). Il taxi fattura a noi solo le corse ordinate da noi; se paga il cliente in auto, nessuna fattura.
+  Tutto il resto (logo, IBAN, società, tariffe…) lo mette **il cliente** nella sua centrale.
 - **Trasloco** verso `ajrinterventions.com` / `app.ajrinterventions.com` (GitHub aljadyrecords, Worker nuovo su Cloudflare AJR), senza tracce
   di luxinterventions.com: il titolare si prepara; prima di tutto Sauvegarde chiffrée. Da decidere: dati A (backup + import) o B (da zero), nome repo, nome app.
 
@@ -103,7 +101,7 @@ Vale per tutte le app degli utenti (inquilini, ospiti, operai, annunciatori, tas
   lo stato torna al cliente e al suo inquilino. Avviso 30 giorni prima della fine.
 
 ## Dati veri e dati di prova
-- ⭐ «Vrai — à conserver» accanto al nome (inquilini, operai, immobili, ospiti).
+- ⭐ «Vrai — à conserver» accanto al nome (inquilini, operai, immobili).
 - Réglages → 🧹 «Supprimer les données de test»: tiene il ⭐ e ciò che ne dipende, scarica prima un backup cifrato.
 - Chi è vero lo segna **il titolare**, a mano: l'assistente non deve mai indovinare.
 
