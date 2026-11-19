@@ -1,14 +1,10 @@
 // App de l'équipe : planning personnel (quoi, où, quand), « commencé / fini / pas fini » avec note et photos,
 // horaire, absences, coordonnées. Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
-import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
 import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
 import { openJson, openBytes, sealForOwner, codeHash, unwrapWithCode } from '/ares/espace-crypto.js';
 
-import { videoEmbed } from '/ares/video-embed.js';
-import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
-import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from '/ares/pubsocial.js';
 import { trInit, trButton } from '/ares/chattr.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
@@ -621,21 +617,6 @@ function presOf(dd) {
   try { loc = JSON.parse(localStorage.getItem(PRK()) || '{}')[dd] || {}; } catch { /* stockage indisponible */ }
   return { ...((data.pres || {})[dd] || {}), ...loc };
 }
-// Annonces (3 emplacements payants : haut à la place de la carte, milieu, bas au-dessus de la barre crypto)
-let pubTurn = 0;
-try { pubTurn = (+localStorage.getItem('eqPubTurn') || 0) + 1; localStorage.setItem('eqPubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
-// annonce repliée / rouverte d'un toucher sur son titre (mémorisé sur ce téléphone)
-const pubShut = new Set((() => { try { return JSON.parse(localStorage.getItem('eqPubShut') || '[]'); } catch { return []; } })());
-const pickPub = (list) => pubPickNow(list); // tour de 3 minutes chacune
-// annonce limitée à certains jours / heures (ex. happy hour 17:00–19:00, le samedi)
-const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
-const pubLogo = (x) => (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(x.logo || '') && x.logo.length < 60000 ? `<img src="${x.logo}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''); // logo de l'annonceur
-function adBox(x, t) {
-  const v = x.video ? videoEmbed(x.video) : null;
-  return `<details class="card pub-box mk mk-pub mk-on" data-pid="${esc(x.id)}"${pubShut.has(x.id) ? '' : ' open'}><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b> · ${esc(t.ad.cats[x.cat] || t.ad.cats.autre)}</div>${pubLogo(x)}<b style="display:block;font-size:18px">${esc(x.nom)}</b></summary>${x.texte ? `<div>${esc(x.texte)}</div>` : ''}
-    ${v ? `<div class="vid${v.tall ? ' tall' : ''}${v.audio ? ' audio' : ''}"${v.audio ? ` style="height:${v.audio}px"` : ''} data-vsrc="${esc(v.src)}"></div>` : ''}<div class="meta" style="margin-top:6px">📍 ${esc(x.adresse)}</div>
-    <div class="btns"><button class="btn sm" data-place="${esc(x.adresse)}" data-pev="map">${esc(t.ad.see)}</button>${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}${x.video && !v ? `<a class="btn sm sec" href="${esc(x.video)}" target="_blank" rel="noopener" data-pev="video">▶ Video</a>` : ''}</div>${pubSocialBar(x)}</details>`;
-}
 // Lieux de travail (adresses du planning et de l'horaire) ; la carte du lieu choisi s'affiche sous « Bonjour »
 let place = '';
 // itinéraire : Google Maps, Waze ou Plans (iPhone) — le choix est gardé sur ce téléphone
@@ -655,7 +636,6 @@ function placesOf(d) {
   for (const x of d.items.filter((z) => z.d >= today || z.late)) add((d.tasks[x.tid] || {}).adresse);
   for (const h of d.horaires || []) add(h.lieu);
   for (const hs of Object.values(d.jours || {})) for (const h of hs) add(h.lieu);
-  for (const x of d.pubs || []) add(x.adresse);
   return outp;
 }
 
@@ -761,10 +741,7 @@ function render() {
   } else if (miss) out.push(`<div class="card warnc" id="profNag"><p style="margin:0 0 8px"><b>👤 ${esc(t.info)} · ${esc(ci.n(miss))}</b></p><button class="btn sm" data-prof="1">${esc(ci.go)}</button></div>`);
   const pls = placesOf(d);
   if (place && !pls.includes(place)) place = '';
-  const pubs = (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x) && pubLive(x));
-  const slot = (k) => pickPub(pubs.filter((x) => pubSlotNow(x) === k));
-  if (place) out.push(`<div class="card"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">📍 ${esc(place)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(place))}"></div>${navBtns(mapQ(place))}${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
-  else { const top = slot('haut'); if (top) out.push(adBox(top, t)); }
+  if (place) out.push(`<div class="card"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">📍 ${esc(place)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(place))}"></div>${navBtns(mapQ(place))}</div>`);
   if (pushSt && pushSt !== 'on') out.push(notifCard(t)); // notifications coupées : rappel en haut (sous la carte)
   const eg = d.eng && !d.eng.signed && !sigSent ? ENGT[lang] || ENGT.fr : null;
   if (eg) out.push(`<div class="card warnc"><p style="margin:0 0 8px"><b>✍️ ${esc(eg.top)}</b></p><button class="btn sm" data-eng-open="1">${esc(eg.open)} ↓</button></div>`);
@@ -783,7 +760,6 @@ function render() {
   const hrow = (h) => `<div class="hday"><b>${esc(t.days[h.j])}</b><span class="hh">🕒 ${esc(t.w.arr)} <b>${esc(h.de)}</b> · ${esc(t.w.dep)} <b>${esc(h.a)}</b></span>${h.lieu ? `<button class="place" data-place="${esc(h.lieu)}" aria-pressed="${h.lieu === place}">📍 ${esc(h.lieu)}</button>` : ''}</div>`;
   const todayAt = out.length;
   out.push(`<div class="card mk mk-plan${todays.length ? ' mk-on' : ''}" id="todayCard"><h2>🗓️ ${esc(t.w.today)} · ${esc(fmtDay(today))}</h2>${hsToday.map(hrow).join('')}${todays.length ? todays.map(taskLine).join('') : hsToday.length ? '' : `<p class="meta" style="margin:0">${esc(t.none)}</p>`}${hsToday.some((h) => h.lieu) || todays.length ? `<p class="meta" style="margin:8px 0 0">${esc(t.x.placesHint)}</p>` : ''}</div>`);
-  { const mid = slot('milieu'); if (mid) out.push(adBox(mid, t)); }
   const nexts = d.items.filter((x) => x.d > today).sort(byHour);
   const byDay = {};
   for (const x of nexts) (byDay[x.d] ||= []).push(x);
@@ -838,7 +814,6 @@ function render() {
       <button class="btn block" style="margin-top:12px" type="submit">${esc(t.send)}</button></form></details></div>`);
   if (d.eng) out.push(engCard(d));
   if (pushSt === 'on') out.push(notifCard(t));
-  { const low = slot('bas'); if (low) out.push(adBox(low, t)); } // 📣 annonce du bas + 📰 News : au-dessus de « Se déconnecter »
   out.push(newsHtml(API));
   { // bas de page : ℹ️ infos (animation « icône sur l'écran »), 🔒 + Se déconnecter + 📞 la centrale (numéro non affiché : il vient de l'app de gestion)
     const ft = FT[lang] || FT.fr;
@@ -862,8 +837,6 @@ function render() {
     f.allow = 'encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share'; f.allowFullscreen = true; f.referrerPolicy = 'strict-origin-when-cross-origin';
     v.append(f);
   });
-  pubSeen(app);
-  pubSocialLoad(app);
   const mb = document.getElementById('mapBox');
   if (mb) {
     const src = `https://maps.google.com/maps?q=${encodeURIComponent(mb.dataset.q)}&hl=${lang}&z=16&output=embed`;
@@ -872,10 +845,7 @@ function render() {
   }
 }
 
-pubStatInit(API, 'eq', () => lang);
-pubSocialInit(API, () => lang);
 trInit(API, () => lang); // 🌐 traduction des messages du chat
-document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
 // 💬 ⋯ sur son message : ✏️ modifier / 🗑️ supprimer (15 min)
 document.addEventListener('click', async (e) => {
   const mn = e.target.closest && e.target.closest('[data-emenu]');
@@ -901,14 +871,9 @@ document.addEventListener('click', async (e) => {
     render();
   }
 });
-app.addEventListener('click', pubTap, true);
 app.addEventListener('toggle', (e) => {
   const wk = e.target.dataset && e.target.dataset.wk;
   if (wk) { const m = wkMap(); m[wk] = e.target.open; for (const k of Object.keys(m).sort().slice(0, -12)) delete m[k]; setJ('eqWeeks', m); return; }
-  const pid = e.target.classList && e.target.classList.contains('pub-box') && e.target.dataset.pid;
-  if (!pid) return;
-  if (e.target.open) pubShut.delete(pid); else pubShut.add(pid);
-  try { localStorage.setItem('eqPubShut', JSON.stringify([...pubShut])); } catch { /* stockage indisponible */ }
 }, true);
 app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-ianim]')) { import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'ARES Équipe', icon: '/ares/icons/lux-192.png', lang })); return; }
@@ -931,7 +896,6 @@ app.addEventListener('click', async (e) => {
 
   const pdl = e.target.closest('[data-pb-del]');
   if (pdl) { const [x] = pbPhotos.splice(+pdl.dataset.pbDel, 1); if (x) URL.revokeObjectURL(x.url); return render(); }
-  if (e.target.closest('[data-pubback]')) { place = ''; render(); scrollTo({ top: 0, behavior: 'smooth' }); return; }
   const txo = e.target.closest('[data-taxi-ok]');
   if (txo) { txo.disabled = true; const k = txo.dataset.taxiOk + '|' + txo.dataset.d; setJ(TXK(), [...getJ(TXK()).filter((v) => v !== k), k].slice(-50)); render(); return queue({ k: 'task', tid: txo.dataset.taxiOk, d: txo.dataset.d, st: 'start', at: new Date().toISOString() }); }
   const tg = e.target.closest('[data-trip-go]');
