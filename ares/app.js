@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.296.0';
+const VERSION = '2.297.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2233,6 +2233,7 @@ async function inboxSync() {
   } catch { /* hors ligne : on réessaiera */ }
   inboxBusy = false;
   if (n) toast(`📩 ${plural(n, 'message')} de locataire reçu${n > 1 ? 's' : ''} — voir l'accueil`);
+  if (TENANT) autoFwd().catch(() => {});
 }
 
 // Messages envoyés par les locataires depuis leur app, pas encore ouverts dans Ares
@@ -8999,6 +9000,48 @@ const ACTIONS = {
   },
 };
 
+// ↪️ envoyer un signalement à LUXINTERVENTIONS (bouton ↪️ ou automatique) : photos, contact, entrée, accès ; renvoie le nombre de photos
+async function tfwdSend(t, o = {}) {
+  const l = vault.get('locataires', t.locId) || {}, im = vault.get('immeubles', t.immId || l.immId) || {};
+  const acc = String(o.accesTxt || '').trim(), entree = String(o.entree || '').trim();
+  const photos = [];
+  let size = 0;
+  for (const d of vault.list('documents').filter((x) => x.tacheId === t.id && /^image\//.test(x.mime || '')).slice(0, 6)) {
+    const b = await vault.readFile(d.id).catch(() => null);
+    if (!b || size + b.byteLength > 7e6) continue;
+    size += b.byteLength; photos.push({ b: b64u(b) });
+  }
+  const who = o.auto ? '🤖 envoi automatique' : whoLabel() || socName();
+  const d = { type: 'demande', client: socName(), fil: tenantInfo.fil || '', ref: t.id, titre: String(t.titre || '').replace(/^(Signalement|Problème signalé par [^:]+) : /, '').slice(0, 120), urgence: TDEM_URG[o.urgence] || TDEM_URG.normal,
+    adresse: [im.adresse, im.ville, logName(t.logId || l.logId)].filter(Boolean).join(' — ') || t.adr || '', texte: [String(t.note || '').slice(0, 2500), String(o.plus || '')].filter(Boolean).join('\n\n'),
+    ...(o.contact ? { contact: fullName(l), tel: l.tel || '' } : {}), ...(entree ? { entree } : {}),
+    ...(acc ? { acces: { txt: acc, by: `${who} (${socName()})`, at: new Date().toISOString() } } : {}), photos, t: new Date().toISOString() };
+  const k = await (await vault.call('network-key')).json();
+  await vault.call('demande', { method: 'POST', body: await sealForOwner(k.pub, d) });
+  await vault.mutate((tx) => {
+    tx.put('taches', { id: t.id, fwd: { at: d.t, by: who, ...(o.auto ? { auto: 1 } : {}), ...(acc ? { acces: `${who} le ${fmtDate(today())}` } : {}) } });
+    if (entree && im.id && entree !== im.codeEntree) tx.put('immeubles', { id: im.id, codeEntree: entree });
+  }, o.auto ? '↪️ Envoyé automatiquement à LA CENTRAL' : '↪️ Envoyé à LA CENTRAL', d.titre, t.locId || '');
+  return photos.length;
+}
+// 🤖 centrale d'un client (ARES…) : les dégâts signalés par les locataires partent tout seuls à LUXINTERVENTIONS, qui envoie l'ouvrier.
+// Seulement les réparations (pas le dossier / paiements), arrivées depuis l'activation (pas les anciens signalements), une fois chacune.
+let autoFwdBusy = false;
+async function autoFwd() {
+  if (!TENANT || autoFwdBusy || !vault.unlocked || tenantInfo.state === 'ro') return;
+  autoFwdBusy = true;
+  try {
+    let from = (vault.get('reglages', 'autoFwd') || {}).from;
+    if (!from) { from = new Date().toISOString(); await vault.mutate((tx) => tx.put('reglages', { id: 'autoFwd', from }), '🤖 Envoi automatique des dégâts activé', ''); }
+    const todo = vault.list('taches').filter((t) => t.sentAt && t.sentAt >= from && !t.fwd && t.locId && t.type === 'reparation' && t.statut !== 'fait');
+    let n = 0;
+    for (const t of todo) {
+      const im = vault.get('immeubles', t.immId || (vault.get('locataires', t.locId) || {}).immId) || {};
+      try { await tfwdSend(t, { urgence: t.urgent ? 'urgent' : 'normal', contact: true, entree: im.codeEntree || '', auto: true }); n++; } catch { break; /* hors ligne : au prochain tour */ }
+    }
+    if (n) toast(`↪️ ${plural(n, 'signalement')} envoyé${n > 1 ? 's' : ''} automatiquement à LA CENTRAL`);
+  } finally { autoFwdBusy = false; }
+}
 const FORMS = {
   async abo(fd) {
     const id = fd.get('id'), g = (k) => String(fd.get(k) || '').trim(), cur = aboOf(id) || {};
@@ -9631,32 +9674,13 @@ const FORMS = {
   async tfwd(fd, form) {
     const t = vault.get('taches', fd.get('id'));
     if (!t) return;
-    const l = vault.get('locataires', t.locId) || {}, im = vault.get('immeubles', t.immId || l.immId) || {};
-    const g = (k) => String(fd.get(k) || '').trim(), acc = !!fd.get('acces') && g('accesTxt');
+    const g = (k) => String(fd.get(k) || '').trim();
     if (fd.get('acces') && !g('accesTxt')) return toast('Indiquez le code ou les instructions d’accès au logement (ou décochez 🔑)', { bad: true });
     setBusy(form, true, 'Envoi…');
     try {
-      // photos du signalement (réduites par l'app du locataire) : jointes telles quelles
-      const photos = [];
-      let size = 0;
-      for (const d of vault.list('documents').filter((x) => x.tacheId === t.id && /^image\//.test(x.mime || '')).slice(0, 6)) {
-        const b = await vault.readFile(d.id).catch(() => null);
-        if (!b || size + b.byteLength > 7e6) continue;
-        size += b.byteLength; photos.push({ b: b64u(b) });
-      }
-      const who = whoLabel() || socName();
-      const d = { type: 'demande', client: socName(), fil: tenantInfo.fil || '', ref: t.id, titre: String(t.titre || '').replace(/^(Signalement|Problème signalé par [^:]+) : /, '').slice(0, 120), urgence: TDEM_URG[g('urgence')] ? g('urgence') : 'normal',
-        adresse: [im.adresse, im.ville, logName(t.logId || l.logId)].filter(Boolean).join(' — ') || t.adr || '', texte: [String(t.note || '').slice(0, 2500), g('plus')].filter(Boolean).join('\n\n'),
-        ...(fd.get('contact') ? { contact: fullName(l), tel: l.tel || '' } : {}), ...(g('entree') ? { entree: g('entree') } : {}),
-        ...(acc ? { acces: { txt: g('accesTxt'), by: `${who} (${socName()})`, at: new Date().toISOString() } } : {}), photos, t: new Date().toISOString() };
-      const k = await (await vault.call('network-key')).json();
-      await vault.call('demande', { method: 'POST', body: await sealForOwner(k.pub, d) });
-      await vault.mutate((tx) => {
-        tx.put('taches', { id: t.id, fwd: { at: d.t, by: who, ...(acc ? { acces: `${who} le ${fmtDate(today())}` } : {}) } });
-        if (g('entree') && im.id && g('entree') !== im.codeEntree) tx.put('immeubles', { id: im.id, codeEntree: g('entree') });
-      }, '↪️ Envoyé à LA CENTRAL', d.titre, t.locId || '');
+      const n = await tfwdSend(t, { urgence: g('urgence'), contact: !!fd.get('contact'), entree: g('entree'), accesTxt: fd.get('acces') ? g('accesTxt') : '', plus: g('plus') });
       closeSheet();
-      toast(`↪️ Envoyé à LA CENTRAL${photos.length ? ` avec ${plural(photos.length, 'photo')}` : ''}`);
+      toast(`↪️ Envoyé à LA CENTRAL${n ? ` avec ${plural(n, 'photo')}` : ''}`);
     } catch (e) { setBusy(form, false); toast(e.status === 423 ? 'Lecture seule : abonnement échu' : e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
   async annsend(fd, form) {

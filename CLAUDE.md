@@ -43,6 +43,9 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 - **Livello 2 · CENTRALI CLIENTI** (ognuna cifrata e sua): Gérance (gratis: apre ticket) e Propriétaire/bailleur (ARES con il co-proprietario: una sola centrale, con i loro locatari).
 - **Livello 3 · APP DEGLI UTENTI**: inquilini → la loro centrale; operai DOMIER → MASTER.
 - **Regola d'oro**: ogni messaggio sale **di un solo livello**; arriva alla MASTER solo se il cliente lo manda con ↪️.
+  **🤖 Inoltro automatico (v2.297, scelta A del titolare)**: nella centrale del cliente (ARES…) i **danni** segnalati dai locatari
+  partono da soli verso LUXINTERVENTIONS (foto + contatto + codice d'entrata salvato), quando la centrale del cliente è aperta.
+  Non partono: dossier/pagamenti, segnalazioni arrivate prima dell'attivazione. Il bottone ↪️ resta per il resto.
   Gli inquilini di una centrale cliente (es. ARES) non devono MAI arrivare alla MASTER.
 - **Hotel, Airbnb e taxi: TOLTI** (v2.294) · **annunciatori e tutta la pubblicità: TOLTI** (v2.295) · **agenzie immobiliari e «Nouveau bien»: TOLTE** (v2.296) — deciso dal titolare.
   Nome della MASTER: **«LUXINTERVENTIONS»** (con la s). Cancellati da questo progetto: app ospiti (`hote.*`),
