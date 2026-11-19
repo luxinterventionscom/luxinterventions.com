@@ -30,22 +30,22 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 - Ramo di lavoro → push → `main` con `merge --no-ff` → push → il ramo di lavoro torna allineato (`merge --ff-only main`).
 - Ad ogni modifica: aumentare le versioni
   - centrale: `VERSION` in `ares/app.js`, `?v=` in `locataires.html`, **`centraldomier.html` e `centraldomier/index.html`**, `CACHE` in `locataires-sw.js` (stessa cifra);
-  - app: `CACHE` in `espace-sw.js`, `equipe-sw.js`, `annonce-sw.js`, `portail-sw.js`.
+  - app: `CACHE` in `espace-sw.js`, `equipe-sw.js`, `portail-sw.js`.
 - Un file nuovo in `ares/` usato da un'app va aggiunto alla `SHELL` del suo service worker.
 
 ## Struttura della rete (accordo col titolare — non cambiarla senza di lui)
 - Progetto: **CENTRAL-DOMIER** (come i pompieri: noi risolviamo i problemi, 24/7). Oggi fattura solo ARES INVEST S.A.
   (nome per le riparazioni: LUXINTERVENTION); poi tutto passerà alla società **AJR_interventions** (solo quando lo dice il titolare).
 - **Livello 1 · CENTRAL-MASTER = i DOMIER / «THE DOMIER, il nostro centro interventi 24/7»** (stessa cosa): sotto di lei
-  gli **operai**, che parlano con la MASTER e sono tracciati da lei; riceve le richieste dei clienti (↪️) e degli annunciatori,
+  gli **operai**, che parlano con la MASTER e sono tracciati da lei; riceve le richieste dei clienti (↪️),
   fattura, pubblicità, ANGAR, rete. La MASTER **non ha proprietà né inquilini propri**: un giorno una società «x»
   (con immobili) si iscriverà da noi come **cliente qualsiasi**, e la gestiremo come gli altri clienti.
 - **Livello 2 · CENTRALI CLIENTI** (ognuna cifrata e sua): Gérance, Agence immobilière, Propriétaire/bailleur → inquilini.
-- **Livello 3 · APP DEGLI UTENTI**: inquilini → la loro centrale; operai DOMIER → MASTER;
-  **annunciatori → chat diretta con la MASTER** (non hanno clienti sotto).
+- **Livello 3 · APP DEGLI UTENTI**: inquilini → la loro centrale; operai DOMIER → MASTER.
 - **Regola d'oro**: ogni messaggio sale **di un solo livello**; arriva alla MASTER solo se il cliente lo manda con ↪️.
   Gli inquilini di una centrale cliente (es. ARES) non devono MAI arrivare alla MASTER.
-- **Hotel, Airbnb e taxi: TOLTI** (v2.294, deciso dal titolare). Cancellati da questo progetto: app ospiti (`hote.*`),
+- **Hotel, Airbnb e taxi: TOLTI** (v2.294) · **annunciatori e tutta la pubblicità: TOLTI** (v2.295) — deciso dal titolare.
+  Nome della MASTER: **«LUXINTERVENTIONS»** (con la s). Cancellati da questo progetto: app ospiti (`hote.*`),
   app taxi/tassista/autista (`taxi*`, `autista.html`, `chauffeur.*`), menu, centrali hotel/Airbnb/CENTRALE-TAXI, corse, parco auto,
   commissioni, autisti tra gli operai. Restano nella storia git (e nell'altro progetto AJR). Il «🚕 Mode taxi» degli **operai**
   (START entro il tempo limite, poi passa al prossimo) NON è il taxi: resta.
@@ -57,15 +57,16 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 - La centrale del titolare è in **francese**; le centrali dei test sono in italiano (solo per le prove).
 
 ## Le 6 sezioni di ogni app (regola del titolare — quando non sai dove va una cosa nuova, CHIEDI)
-Vale per tutte le app degli utenti (inquilini, operai, annunciatori…), sempre in quest'ordine:
+Vale per tutte le app degli utenti (inquilini, operai…), sempre in quest'ordine.
+**Pubblicità TOLTA (v2.295, deciso dal titolare)**: le sezioni 3 e 5 non ci sono più, la MASTER non mette più pubblicità.
 1. **Chi sono**: nome, foto, indirizzo; dentro la ✏️: lingua, foto personale, dati personali, poche icone
    (3 faccine, 3 frutta, 3 sport, 3 animali, 3 dolci — non di più).
 2. **Informazioni da e per la centrale** (spariscono o si toccano «letto/ricevuto»: documenti mancanti, icona non installata,
    notifiche spente, avvisi…), poi **DOMIER**.
-3. **Pubblicità in alto** (solo pub).
-4. **Il cuore dell'app** (diverso per ognuno). Inquilini: meteo, mes loyers & mon dossier, pub in mezzo, chat,
+3. ~~Pubblicità in alto~~ (tolta).
+4. **Il cuore dell'app** (diverso per ognuno). Inquilini: meteo, mes loyers & mon dossier, chat,
    don/prêt/location, maintenance, état des lieux.
-5. **Pubblicità in basso** (solo pub).
+5. ~~Pubblicità in basso~~ (tolta).
 6. **Fondo**: giornale (News), «📜 Règlement de la maison» richiudibile con dentro RGPD e i colori dell'info,
    borsa/cripto, e alla fine **🚪 Se déconnecter**.
 
@@ -74,15 +75,14 @@ Vale per tutte le app degli utenti (inquilini, operai, annunciatori…), sempre 
 - Centrali dei clienti: **`/centraldomier/?<numero>`** (solo il numero del cliente, mai nomi nell'indirizzo; una sola pagina per tutti). Il vecchio `locataires.html?t=` funziona ancora.
 - `centraldomier.html` = **CENTRAL-DOMIER**, la MASTER (copia di `locataires.html`: tenerle uguali). `locataires.html` resta per i vecchi link e le centrali dei clienti.
 - `locataires.html` + `ares/app.js`: la **centrale** (anche le centrali dei clienti della rete, con `?t=<id>`).
-- App: `espace.js` (inquilini), `equipe.js` (operai),
-  `annonce.js` (annunciatori HORECA), `portail/` (gérances).
+- App: `espace.js` (inquilini), `equipe.js` (operai), `portail/` (gérances).
 - Moduli condivisi in `ares/`: `chatops.js` (privato ✋, modifica, spunte), `chattr.js` (🌐 traduzione),
-  `pchat.js` (chat annunciatori), `pubsocial.js` (👍👎👉), `espace-crypto.js`, ecc.
+  `espace-crypto.js`, ecc.
 - Traduzioni della centrale: `ares/i18n/<lingua>.js` (chiave = testo francese).
 - Tutti i dati sono **cifrati**: il server vede solo byte illeggibili.
 
 ## Chat (stato attuale)
-- Chat della casa (inquilini, per gruppo «Qui discute ensemble ?»), chat operai, chat annunciatori.
+- Chat della casa (inquilini, per gruppo «Qui discute ensemble ?»), chat operai.
 - Ovunque: ✓ / ✓✓ / ✓✓ blu, ⋯ modifica/elimina 15 min (la centrale elimina sempre), 🌐 traduzione.
 - ✋ mano rossa = messaggio solo per la centrale (inquilini). La centrale vede il testo di prima dei messaggi modificati.
 - 🎧 **Centralino** in Accueil: tutte le categorie, richiudibili (scelta ricordata), 📣 Annunci con storico.

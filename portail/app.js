@@ -2,17 +2,13 @@
 // Plusieurs utilisateurs et plusieurs gérances : chacun voit uniquement ses résidences et ses demandes,
 // l'équipe LA CENTRAL (rôle « admin ») voit tout et traite les demandes.
 
-import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { newsHtml } from '/ares/news.js';
 import { domierHtml, domierInit, DOM_TEL } from '/ares/domier.js';
 import '/ares/reqmark.js';
 import { startI18n, LOCALES, translate as T } from '/ares/i18n.js';
 import { PTL_INVITE } from '/ares/ptl-invite.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
-import { videoEmbed } from '/ares/video-embed.js';
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
-import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
-import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from '/ares/pubsocial.js';
 import { scrollHintInit } from '/ares/scroll-hint.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
 import { tripView, tripFetch } from '/ares/trip.js';
@@ -576,7 +572,7 @@ async function loadRoute(route) {
   const org = isAdmin() && f.org ? '&org=' + f.org : '';
   if (route === 'home') {
     const [stats, tickets, pubs] = await Promise.all([api('stats' + (org ? '?' + org.slice(1) : '')), api('tickets?scope=active' + org), api('pubs').catch(() => ({ items: [] }))]);
-    state.cache.home = { stats, tickets: tickets.tickets, pubs: pubs.items || [] };
+    state.cache.home = { stats, tickets: tickets.tickets };
     if (pubs.contact !== undefined) state.contact = pubs.contact;
     if (pubs.offers === false) { state.offersOff = true; offersMem(true); } else if (pubs.items) { state.offersOff = false; offersMem(false); } // offres d'abonnement masquées par LA CENTRAL
     if (!isAdmin()) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; orgLogoRefresh(); } catch { /* hors ligne */ } }
@@ -625,7 +621,6 @@ function renderView() {
   const a = document.activeElement;
   const keep = a && a.dataset && a.dataset.input === 'q' ? a.selectionStart : null;
   setHtml(view, VIEWS[state.route]());
-  if (!state.demo) { pubSeen(view); pubSocialLoad(view); }
   tripPaint();
   if (keep != null) { const s = view.querySelector('[data-input=q]'); if (s) { s.focus(); s.setSelectionRange(keep, keep); } }
 }
@@ -694,12 +689,6 @@ function guideCard(stats) {
 }
 
 // ───────────────────────── Vues ─────────────────────────
-// Annonces des partenaires (publiées depuis l'app de gestion) : petit lecteur vidéo, itinéraire, appel, site
-const PUB_ICON = { musique: '🎵', journal: '📰', resto: '🍕', bar: '🍺', horeca: '☕', bricolage: '🔨', meubles: '🛋️', courses: '🛒', proxi: '🏪', bureau: '🏢', social: '📱', services: '🧰', autre: '📌' };
-pubStatInit(API.replace(/\/api\/portail\/$/, ''), 'ptl', () => LANG);
-document.addEventListener('click', (e) => { if (!state.demo) pubTap(e); }, true);
-pubSocialInit(API.replace(/\/api\/portail\/$/, ''), () => LANG);
-document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
 const TICKER_BASE = API.replace(/\/api\/portail\/$/, '');
 // la barra crypto (servie par le Worker) annonce sa hauteur réelle : le cadre s'adapte (PC, téléphone)
 addEventListener('message', (e) => {
@@ -707,36 +696,14 @@ addEventListener('message', (e) => {
   const h = Math.max(30, Math.min(160, Math.round(e.data.tickerH)));
   document.querySelectorAll('.ticker').forEach((t) => { t.style.height = h + 'px'; });
 });
-let pubTurn = 0;
-try { pubTurn = (+localStorage.getItem('ptlPubTurn') || 0) + 1; localStorage.setItem('ptlPubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
-const pubShut = new Set((() => { try { return JSON.parse(localStorage.getItem('ptlPubShut') || '[]'); } catch { return []; } })());
 // replier / déplier une annonce ou le guide : on s'en souvient sur cet appareil
 document.addEventListener('toggle', (e) => {
   const el = e.target;
   if (!el.classList || !el.classList.contains('fold')) return;
-  if (el.dataset.pid) {
-    if (el.open) pubShut.delete(el.dataset.pid); else pubShut.add(el.dataset.pid);
-    try { localStorage.setItem('ptlPubShut', JSON.stringify([...pubShut].slice(-50))); } catch { /* stockage indisponible */ }
-  } else if (el.classList.contains('guide')) {
+  if (el.classList.contains('guide')) {
     try { localStorage.setItem('ptlGuideShut', el.open ? '0' : '1'); } catch { /* stockage indisponible */ }
   }
 }, true);
-// une annonce par emplacement (haut sous « Bonjour », milieu, bas au-dessus de la barre crypto) ; plusieurs → une autre à chaque ouverture
-// annonce limitée à certains jours / heures (ex. happy hour 17:00–19:00, le samedi)
-const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
-function pubSlot(k) {
-  const list = ((state.cache.home && state.cache.home.pubs) || []).filter((a) => pubSlotNow(a) === k && pubNow(a) && pubLive(a));
-  if (!list.length) return '';
-  const a = pubPickNow(list), v = videoEmbed(a.video);
-  return html`<details class="card ptl-pub fold mk mk-pub mk-on" style="margin:12px 0" data-pid="${a.id}"${pubShut.has(a.id) ? '' : ' open'}><summary><div class="small muted"><b class="pub-lbl">📣 Publicité</b> · ${PUB_ICON[a.cat] || '📌'}</div><b style="font-size:17px">${a.nom}</b></summary>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
-      ${v ? html`<div class="vid${v.tall ? ' tall' : ''}${v.audio ? ' audio' : ''}" style="${v.audio ? `height:${v.audio}px` : ''}"><iframe src="${v.src}" loading="lazy" title="Vidéo" allow="encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>` : ''}
-      <div class="small muted" style="margin-top:6px">📍 ${a.adresse}</div>
-      <div class="actions" style="margin-top:8px;flex-wrap:wrap">
-        <a class="btn sm" href="https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener" data-pev="map">🧭 Itinéraire</a>
-        ${a.tel ? html`<a class="btn sm" href="tel:${a.tel.replace(/[^\d+]/g, '')}" data-pev="call">📞 Appeler</a>` : ''}
-        ${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener" data-pev="web">🌐 Site web</a>` : ''}
-        ${a.video && !v ? html`<a class="btn sm" href="${a.video}" target="_blank" rel="noopener" data-pev="video">▶ Vidéo</a>` : ''}</div>${state.demo ? '' : new Raw(pubSocialBar(a))}</details>`;
-}
 // barre des cours crypto (TradingView) : servie par le Worker sur un autre domaine, isolée du portail
 const newsBar = () => new Raw(newsHtml(API.replace(/\/api\/portail\/$/, '')));
 const tickerBar = () => html`<div class="ticker"><iframe src="${API.replace(/api\/portail\/$/, '')}ticker" title="Crypto" loading="lazy" referrerpolicy="no-referrer" scrolling="no"></iframe></div>`;
@@ -932,7 +899,6 @@ const VIEWS = {
         ${guideCard(stats)}
         ${pageHead(hello, 'Espace équipe LA CENTRAL')}
         ${arrive}
-        ${pubSlot('haut')}
         ${new Raw(nbienBanner())}
         ${new Raw(wxRadioCard())}
         ${orgFilter()}
@@ -942,12 +908,11 @@ const VIEWS = {
           <div class="metric"><div class="lbl">En cours</div><div class="val">${stats.open || 0}</div><div class="sub">${planToday.length} planifiée(s) aujourd'hui</div></div>
           <div class="metric"><div class="lbl">Délai de prise en charge</div><div class="val">${duration(stats.avgTakeMs)}</div><div class="sub">urgences : ${duration(stats.avgTakeUrgentMs)} · 90 jours</div></div>
         </div>
-        ${pubSlot('milieu')}
         <div class="section-label">À traiter maintenant</div>
         ${recue.length ? html`<div class="list">${recue.map(ticketRow)}</div>` : html`<div class="alert" style="background:var(--green-soft);color:var(--green)">${icon('check')}<div>Aucune nouvelle demande en attente.</div></div>`}
         <div class="section-label">En cours</div>
         ${others.length ? html`<div class="list">${others.map(ticketRow)}</div>` : html`<p class="muted small">Aucune intervention en cours.</p>`}
-        ${pubSlot('bas')}${newsBar()}${new Raw(infoBox({ extra: `<button class="btn sec block" data-action="install-anim">▶ ${IA_T}</button>` }))}${tickerBar()}`;
+        ${newsBar()}${new Raw(infoBox({ extra: `<button class="btn sec block" data-action="install-anim">▶ ${IA_T}</button>` }))}${tickerBar()}`;
     }
     return html`${pushCard}
       ${guideCard(stats)}
@@ -956,7 +921,6 @@ const VIEWS = {
       ${offerBanner()}
       ${arrive}
       ${new Raw(domierHtml({ tel: DOM_TEL, lang: LANG, extra: '<button type="button" class="btn sm primary" data-action="new-ticket" style="margin-top:8px">🔧 ＋ Demande</button>' }))}
-      ${pubSlot('haut')}
         ${new Raw(nbienBanner())}
         ${new Raw(wxRadioCard())}
       <button class="big-cta" data-action="new-ticket">${icon('plus')}<span><b>Nouvelle demande de dépannage</b><small>Urgence, photos, accès — en 30 secondes</small></span></button>
@@ -967,11 +931,10 @@ const VIEWS = {
         <div class="metric"><div class="lbl">Prise en charge</div><div class="val">${duration(stats.avgTakeMs)}</div><div class="sub">délai moyen</div></div>
         <div class="metric"><div class="lbl">Résidences</div><div class="val">${stats.residences || 0}</div><div class="sub">${stats.apartments ? stats.apartments + ' appartements' : ''}</div></div>
       </div>
-      ${pubSlot('milieu')}
       <button class="btn block" style="margin-top:12px" data-action="go" data-to="stats">${icon('chart')} Statistiques de nos interventions</button>
       <div class="section-label">Mes demandes en cours</div>
       ${tickets.length ? html`<div class="list">${tickets.map(ticketRow)}</div>` : empty('check', 'Aucune demande en cours.', html`<button class="btn primary" data-action="new-ticket">${icon('plus')} Dépannage</button>`)}
-      ${pubSlot('bas')}${newsBar()}${new Raw(infoBox({ extra: `<button class="btn sec block" data-action="install-anim">▶ ${IA_T}</button>` }))}${tickerBar()}`;
+      ${newsBar()}${new Raw(infoBox({ extra: `<button class="btn sec block" data-action="install-anim">▶ ${IA_T}</button>` }))}${tickerBar()}`;
   },
 
   // Comptabilité : deux espaces séparés — Comptabilité (interventions terminées, par mois) | Statistiques

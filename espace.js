@@ -1,7 +1,6 @@
 // Espace locataire : page personnelle, en lecture seule (+ signaler un problème).
 // Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
 import { jobHtml, jobInit } from '/ares/jobform.js';
-import { pubLive, pubSlotNow, pubPickNow } from '/ares/pubsched.js';
 import { emojiInit } from '/ares/emoji.js';
 import { domierHtml, domierInit } from '/ares/domier.js';
 import { newsHtml } from '/ares/news.js';
@@ -12,10 +11,6 @@ import { openJson, sealJson, openBytes, sealForOwner, codeHash, unwrapWithCode, 
 import { chatResolve, chatOpen, editable, tick, newMsgId } from '/ares/chatops.js';
 import { trInit, trButton } from '/ares/chattr.js';
 
-import { videoEmbed } from '/ares/video-embed.js';
-import { netPubsGet, netPubsFor } from '/ares/netpubs.js';
-import { pubStatInit, pubSeen, pubTap } from '/ares/pubstat.js';
-import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from '/ares/pubsocial.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
@@ -840,21 +835,6 @@ function rateCard(d, t) {
 const menTags = new Set();
 let menNote = '';
 const menVote = () => { try { return (JSON.parse(localStorage.getItem(menKey()) || '{}'))[today] || 0; } catch { return 0; } };
-// Annonces : une par emplacement ; s'il y en a plusieurs au même endroit, une autre à chaque ouverture de l'app
-let homeMap = false, pubTurn = 0, topPubId = '';
-try { pubTurn = (+localStorage.getItem('espPubTurn') || 0) + 1; localStorage.setItem('espPubTurn', String(pubTurn)); } catch { /* stockage indisponible */ }
-// annonce repliée d'un toucher sur son titre (mémorisé sur l'appareil), rouverte de la même façon
-const pubShut = new Set((() => { try { return JSON.parse(localStorage.getItem('espPubShut') || '[]'); } catch { return []; } })());
-const pickPub = (list) => pubPickNow(list); // tour de 3 minutes chacune
-// annonce limitée à certains jours / heures (ex. happy hour 17:00–19:00, le samedi)
-const pubNow = (x) => { const n = new Date(), hm = String(n.getHours()).padStart(2, '0') + ':' + String(n.getMinutes()).padStart(2, '0'); return (!x.jours || !x.jours.length || x.jours.includes(n.getDay())) && (!x.h1 || !x.h2 || (x.h1 <= x.h2 ? hm >= x.h1 && hm < x.h2 : hm >= x.h1 || hm < x.h2)); };
-const pubLogo = (x) => (/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(x.logo || '') && x.logo.length < 60000 ? `<img src="${x.logo}" alt="" style="float:right;max-height:44px;max-width:90px;object-fit:contain;border-radius:8px;margin:0 0 4px 8px;background:#fff">` : ''); // logo de l'annonceur
-function adBox(x, t, d, top) {
-  const v = x.video ? videoEmbed(x.video) : null;
-  return `<details class="card pub-box mk mk-pub mk-on${top ? ' pub-top' : ''}" data-pid="${esc(x.id)}"${pubShut.has(x.id) ? '' : ' open'}><summary><div class="meta"><b class="pub-lbl">📣 ${esc(t.ad.lbl)}</b> · ${esc(t.ad.cats[x.cat] || t.ad.cats.autre)}</div>${pubLogo(x)}<b class="pub-name">${esc(x.nom)}</b></summary>${x.texte ? `<div class="pub-txt">${esc(x.texte)}</div>` : ''}
-    ${v ? `<div class="vid${v.tall ? ' tall' : ''}${v.audio ? ' audio' : ''}"${v.audio ? ` style="height:${v.audio}px"` : ''} data-vsrc="${esc(v.src)}"></div>` : ''}<div class="meta" style="margin-top:6px">📍 ${esc(x.adresse)}</div>
-    <div class="pub-acts"><button class="btn sm" data-ad="${esc(x.id)}" data-pev="map">${esc(t.ad.see)}</button>${x.tel ? `<a class="btn sm sec" href="tel:${esc(x.tel.replace(/[^\d+]/g, ''))}" data-pev="call">${esc(t.ad.call)}</a>` : ''}${x.web ? `<a class="btn sm sec" href="${esc(x.web)}" target="_blank" rel="noopener" data-pev="web">${esc(t.ad.web)}</a>` : ''}${x.video && !v ? `<a class="btn sm sec" href="${esc(x.video)}" target="_blank" rel="noopener" data-pev="video">▶ Video</a>` : ''}${top && d.adresse ? `<button class="btn sm sec" data-home="1">${esc(t.ad.home)}</button>` : ''}</div>${pubSocialBar(x)}</details>`;
-}
 // Barre des cours crypto (TradingView), servie par le Worker sur un autre domaine : elle ne voit rien de l'app
 const TICKER = `<div class="ticker" data-vsrc="${API}/ticker"></div>`;
 // Adresse pour Google Maps (on ajoute le pays s'il manque)
@@ -862,7 +842,7 @@ const mapQ = (a) => (/luxemb|lëtzebuerg|deutschland|germany|france|belgi|portug
 // État des lieux : photos d'entrée (déchiffrées à l'affichage) et photos de sortie choisies par le locataire
 const EDL_ROOMS = ['sdb', 'cuisine', 'chambre', 'cave', 'buanderie', 'parking'];
 const edlUrls = new Map();
-let edlPick = {}, edlMsg = '', adSel = '';
+let edlPick = {}, edlMsg = '';
 // 📤 documents envoyés par le locataire (chiffrés pour le gestionnaire, vérifiés dans l'app de gestion)
 const UP_TYPES = ['identite', 'cns', 'caution', 'bail', 'assurance', 'revenus', 'autre'];
 let upSel = 'identite', upFile = null, upMsg = null;
@@ -991,18 +971,7 @@ function render() {
   if (pushSt) out.push(notifCard(t)); // 🔔 notifications coupées (« activées » juste après, puis disparaît)
   out.push(installCard(t)); // 📱 icône pas encore sur l'écran (disparaît dans l'app installée)
   const domAt = out.length; out.push(''); // 🔧 DOMIER : son gestionnaire (la chaîne est respectée) ; « Signaler un problème » est dedans (rempli plus bas)
-  // ── Sezione 3 · publicité en haut ──
-  const pubs = s.pub ? (d.pubs || []).filter((x) => (!x.fin || x.fin >= today) && pubNow(x) && pubLive(x)) : [];
-  const ad = pubs.find((x) => x.id === adSel);
-  if (!ad) adSel = '';
-  // trois emplacements payants : haut (à la place de la carte, à l'ouverture), milieu, bas (au-dessus de la barre crypto)
-  const slot = (k) => pickPub(pubs.filter((x) => pubSlotNow(x) === k));
-  const topAd = !ad && !homeMap ? slot('haut') : null;
-  topPubId = (slot('haut') || {}).id || '';
-  if (topAd) out.push(adBox(topAd, t, d, true));
-  else if (ad) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)} · ${esc((t.ad.cats[ad.cat] || t.ad.cats.autre).split(' ')[0])} ${esc(ad.nom)}</b><br><span class="meta">📍 ${esc(ad.adresse)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(ad.adresse))}"></div>
-    <div class="btn-row"><a class="btn" href="https://www.google.com/maps/dir/?api=1${d.adresse ? '&origin=' + encodeURIComponent(mapQ(addrFull)) : ''}&destination=${encodeURIComponent(mapQ(ad.adresse))}" target="_blank" rel="noopener">${esc(t.ad.route)}</a>${d.adresse ? `<button class="btn sec" data-home="1">${esc(t.ad.home)}</button>` : ''}${slot('haut') ? `<button class="btn sec" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div></div>`);
-  else if (d.adresse) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">🏠 ${esc(addrFull)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(addrFull))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQ(addrFull))}" target="_blank" rel="noopener">${esc(t.ed.map)}</a><p class="meta" style="margin:6px 0 0;text-align:center">${esc(t.ed.mapHint)}</p>${slot('haut') ? `<button class="btn sec block" style="margin-top:8px" data-pubback="1">${esc(t.ad.back)}</button>` : ''}</div>`);
+  if (d.adresse) out.push(`<div class="card mapcard"><p style="margin:0 0 8px"><b>🗺️ ${esc(t.ad.mapT)}</b> · <span class="meta">🏠 ${esc(addrFull)}</span></p><div id="mapBox" class="map" data-q="${esc(mapQ(addrFull))}"></div><a class="btn sec block" style="margin-top:8px" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(mapQ(addrFull))}" target="_blank" rel="noopener">${esc(t.ed.map)}</a><p class="meta" style="margin:6px 0 0;text-align:center">${esc(t.ed.mapHint)}</p></div>`);
   // Météo de la semaine + radio (carte pliable, ouverte par défaut)
   { const w = (AX[lang] || AX.fr).wx; out.push(foldCard(`<div class="card" id="wxCard"><h2>🌤️ ${esc(w.t)} · 📻 ${esc(w.r)}</h2><div id="wxBox">${wxHtml()}</div><div id="radioBox">${radioHtml()}</div></div>`, 'meteo', `<span id="wxSum">${wxSumHtml()}</span>`)); setTimeout(() => wxLoad(d), 0); }
   const binTop = d.bins && d.chat ? binHtml() : ''; // le tour du jour (Fait / Je ne peux pas / Je le fais à sa place) : en haut de « Maintenance »
@@ -1096,7 +1065,6 @@ function render() {
     if (payAt >= 0) out[payAt] = foldCard(host.body = `${payH}${door}<div class="ctr-quit"><h3>📄 ${esc(t.contrat)}</h3>${ctr}</div>${qs}</div>`, 'pay', paySum);
     else { host = { at: out.length, body: `<div class="card"><h2>📄 ${esc(t.contrat)}</h2>${ctr}${qs}</div>`, key: 'contrat', sum: esc(csum) }; out.push(foldCard(host.body, 'contrat', host.sum)); }
   }
-  { const mid = slot('milieu'); if (mid) out.push(adBox(mid, t, d)); }
   // 📁 Mon dossier : dans la carte des loyers (mêmes informations du locataire) ; envoi des documents qui manquent
   if (s.docs && ((d.docs || []).length || (s.signal && d.signalKey))) {
     const u = UPL[lang] || UPL.fr, canUp = s.signal && d.signalKey;
@@ -1193,7 +1161,6 @@ function render() {
   const mtL = [binSoon && binSoon.c, mtLight].includes('red') ? 'red' : [binSoon && binSoon.c, mtLight].includes('yellow') ? 'yellow' : mtLight;
   if (mtCard || collHtml || legHtml || binSoon || binTop) out[mtAt] = foldCard(`<div class="card" id="mtCard"${binSoon || mtLight || binTop ? ' data-alert="red"' : ''}><h2>${mtL || binTop ? `<span class="light l-${binTop ? 'red' : mtL} blink"></span> ` : ''}🛠️ ${esc(t.mt.t)}</h2>${binSoon ? binSoon.html : ''}${d.bins && d.chat ? `<div id="binBox">${binTop}</div>` : ''}${mtCard}${collHtml}${legHtml}</div>`, 'mt', '');
   // 📣 annonce du bas + 📰 News : juste sous l'état des lieux
-  { const low = slot('bas'); if (low) out.push(adBox(low, t, d)); }
   // ── Sezione 6 · fondo : News ; 📜 Règlement (dedans : RGPD et les couleurs de l'info) ; bourse ; 🚪 Se déconnecter ──
   out.push(newsHtml(API));
   {
@@ -1233,8 +1200,6 @@ function render() {
     else { const f = document.createElement('iframe'); f.src = src; f.dataset.src = src; f.title = 'Google Maps'; f.loading = 'lazy'; f.referrerPolicy = 'no-referrer-when-downgrade'; mb.append(f); }
   }
   hydrateEdl();
-  pubSeen(app);
-  pubSocialLoad(app);
   if (s.tools && myTools == null) toolsFetch();
   if (d.chat) { const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight; if (!chatTimer) chatStart(); chatSeen(); }
 }
@@ -1323,12 +1288,8 @@ async function compress(file) {
   return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-pubStatInit(API, 'loc', () => lang);
-pubSocialInit(API, () => lang);
 trInit(API, () => lang); // 🌐 traduction des messages du chat
 jobInit({ api: API, app: 'loc', lang: () => lang, who: () => (data ? { nom: [data.prenom, data.nom].filter(Boolean).join(' '), tel: data.tel || '', mail: data.mail || '' } : {}) });
-document.addEventListener('click', (e) => { if (pubSocialClick(e)) e.stopPropagation(); }, true);
-app.addEventListener('click', pubTap, true);
 app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-ianim]')) { import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'Locataires', icon: '/ares/icons/ares-192.png', lang })); return; }
   if (e.target.closest('[data-chat-refresh]')) return chatFetch();
@@ -1463,10 +1424,6 @@ app.addEventListener('click', async (e) => {
     dl.disabled = false;
     return;
   }
-  const adb = e.target.closest('[data-ad]');
-  if (adb) { adSel = adb.dataset.ad; homeMap = false; render(); scrollTo({ top: 0, behavior: 'smooth' }); return; }
-  if (e.target.closest('[data-pubback]')) { adSel = ''; homeMap = false; if (topPubId) pubShut.delete(topPubId); try { localStorage.setItem('espPubShut', JSON.stringify([...pubShut])); } catch { /* stockage indisponible */ } render(); scrollTo({ top: 0, behavior: 'smooth' }); return; }
-  if (e.target.closest('[data-home]')) { adSel = ''; homeMap = true; render(); scrollTo({ top: 0, behavior: 'smooth' }); return; }
   const ev = e.target.closest('[data-edl-view]');
   if (ev) {
     const ph = data.edl.find((x) => x.id === ev.dataset.edlView);
@@ -1571,12 +1528,6 @@ app.addEventListener('click', (e) => {
   if (k === 'chat' && !d.open) setTimeout(chatSeen, 50);
 }, true);
 app.addEventListener('toggle', (e) => {
-  const pid = e.target.classList && e.target.classList.contains('pub-box') && e.target.dataset.pid;
-  if (pid) {
-    if (e.target.open) pubShut.delete(pid); else pubShut.add(pid);
-    try { localStorage.setItem('espPubShut', JSON.stringify([...pubShut])); } catch { /* stockage indisponible */ }
-    return;
-  }
   const k = e.target.dataset && e.target.dataset.fold;
   if (!k) return;
   foldSet(k, e.target.open);
@@ -1697,7 +1648,6 @@ async function load() {
       const r = await fetch(`${API}/api/esp/${id}`, { cache: 'no-store' });
       if (r.ok) data = await openJson(key, await r.arrayBuffer());
       // 📣 centrale d'un client : les annonces validées par LA CENTRAL (liste publique du réseau, filtrée par zone)
-      if (data && data.netPubs) { const dd = data; netPubsGet(API).then((it) => { if (data === dd) { dd.pubs = netPubsFor(it, 'loc', { txt: `${dd.adresse || ''} ${dd.ville || ''}`, ville: dd.ville || '', pays: dd.pays || '', geo: dd.geo || null }); render(); } }); }
       if (data && data.societe) { try { const lg = String(data.societe.logo || ''); localStorage.setItem('espBrand', JSON.stringify({ nom: data.societe.nom || '', logo: lg.length < 200000 ? lg : '' })); } catch { /* plein */ } }
       // code de l'app de l'équipe tapé ici par erreur : on ouvre la bonne app
       if (data && data.kind === 'equipe') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/equipe.html#${id}.${key}`); return; }

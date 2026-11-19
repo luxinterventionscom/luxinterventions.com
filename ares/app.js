@@ -10,13 +10,9 @@ import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
 import { videoEmbed } from './video-embed.js';
 import { PTL_INVITE } from './ptl-invite.js';
-import { zoneOk, visParse, visZone } from './netpubs.js';
 import { newsHtml } from './news.js';
-import { BANDS, BAND_KEYS, TARIF_DEF, PACK_N, adPrice, durDays, pubLive, pubSlotNow, pubPickNow, bandNow } from './pubsched.js';
 import { emojiInit } from './emoji.js';
 import { domierHtml, domierInit, DOM_TEL } from './domier.js';
-import { pubStatInit, pubSeen, pubTap } from './pubstat.js';
-import { pubSocialInit, pubSocialBar, pubSocialLoad, pubSocialClick } from './pubsocial.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
 import { makePdf } from './pdfmini.js';
 import { scrollHintInit } from './scroll-hint.js';
@@ -37,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.294.0';
+const VERSION = '2.295.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -612,45 +608,6 @@ async function eqChatSend(ids, x, g) {
   }, g ? '📣 Message spécial à l’équipe' : '💬 Message à un ouvrier', g ? plural(ids.length, 'ouvrier') : intervFull(vault.get('intervenants', ids[0])), ids.length === 1 ? ids[0] : '');
   for (const wid of ids) await equipeSync(wid, true);
 }
-// 💬 Chat centrale ↔ partenaires du réseau (sociétés de taxi, annonceurs HORECA) — comme celle des ouvriers :
-// leurs messages arrivent chiffrés dans la boîte ; les nôtres partent dans leur app (publiée chiffrée)
-const PCHAT_MAX = 300;
-const pchatOut = (r) => (r.chat || []).filter((m) => !m.del).slice(-60).map((m) => ({ id: m.id, at: m.at, from: m.from, x: m.x, ...(m.ed ? { ed: m.ed } : {}) }));
-const pchatColl = () => 'reglages';
-const pchatSync = (id) => annSync(id, true);
-const pchatKind = () => '🍽️';
-const pchatName = (r) => r.nom;
-async function pchatIn(r, msg) {
-  const chat = [...(r.chat || [])], at0 = String(msg.t || new Date().toISOString()).slice(0, 30);
-  let n = 0, ed = 0;
-  for (const it of (Array.isArray(msg.items) ? msg.items : []).slice(0, 30)) {
-    const mid = String(it.id || '').replace(/[^a-z0-9]/gi, '').slice(0, 24), when = String(it.at || at0).slice(0, 30), x = String(it.x || '').replace(/\s+$/, '').slice(0, 1500).trim();
-    if (it.k === 'msg-ed' || it.k === 'msg-del') {
-      const j = chat.findIndex((m) => m.id === mid && m.from === 'p');
-      if (j < 0 || chat[j].del || Date.parse(when) - Date.parse(chat[j].at) > EQ_EDIT_MS + 120000) continue;
-      if (it.k === 'msg-del') chat[j] = { ...chat[j], del: when };
-      else if (x && x !== chat[j].x) chat[j] = { ...chat[j], x, ed: when, old: [...(chat[j].old || []), { x: chat[j].x, at: chat[j].ed || chat[j].at }].slice(-10) };
-      else continue;
-      ed++; continue;
-    }
-    if (it.k !== 'msg' || !x || (mid && chat.some((m) => m.id === mid))) continue;
-    chat.push({ id: mid || 'p' + Date.now().toString(36) + n, at: when, from: 'p', x });
-    n++;
-  }
-  if (!n && !ed) return false;
-  chat.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
-  const co = pchatColl(r), cur = vault.get(co, r.id) || r;
-  await vault.mutate((tx) => tx.put(co, { id: r.id, chat: chat.slice(-PCHAT_MAX), chatNew: (cur.chatNew || 0) + n }), n ? `💬 Message de ${pchatName(r)}` : `💬 Message modifié par ${pchatName(r)}`, pchatName(r));
-  await pchatSync(r.id);
-  return true;
-}
-const pchatHtml = (r) => {
-  const msgs = (r.chat || []).slice(-80), on = r.espace && r.espace.id;
-  return html`<p class="tiny muted" style="margin:0 0 8px;display:flex;align-items:center;gap:8px"><span>Messages entre <b>${pchatName(r)}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</span>${new Raw(trButton())}</p>
-    ${!on ? html`<div class="alert warn" style="margin-bottom:10px">📱<div>Son app n’est pas encore active : il ne recevra vos messages qu’après sa première connexion.</div></div>` : ''}
-    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? '🛡️ Centrale' : pchatKind(r) + ' ' + pchatName(r)} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}${m.from === 'mgr' && !m.del ? html`<button class="bub-mn" data-action="pc-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : ''}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé</div>` : m.from === 'mgr' ? m.x : html`<span data-trx="${m.x}">${m.x}</span>`}${m.from === 'mgr' && ui.pcMn === m.id && !m.del ? html`<div class="bub-menu">${Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<button class="btn sm" data-action="pc-edit" data-r="${r.id}" data-id="${m.id}">✏️ Modifier</button>` : ''}<button class="btn sm danger" data-action="pc-del" data-r="${r.id}" data-id="${m.id}">🗑️ Supprimer</button></div>` : ''}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
-    <form data-form="pchat" class="eq-chat-f"><input type="hidden" name="id" value="${r.id}"><textarea name="x" required maxlength="1500" placeholder="Écrire à ${pchatName(r)}…" data-draft="p:${r.id}">${(ui.drafts || {})['p:' + r.id] || ''}</textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
-};
 const eqChatHtml = (i) => {
   const msgs = (i.chat || []).slice(-80);
   return html`<p class="tiny muted" style="margin:0 0 8px;display:flex;align-items:center;gap:8px"><span>Messages entre <b>${intervFull(i)}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</span>${new Raw(trButton())}</p>
@@ -701,7 +658,6 @@ function equipeData(i) {
     horaires: hors(i).map((h) => ({ j: h.j, de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })), jours,
     absences: (i.absences || []).filter((a) => !a.fin || a.fin >= addDays(today(), -30)).map((a) => ({ type: a.type, debut: a.debut, fin: a.fin || '' })),
     pres: Object.fromEntries(Object.entries(i.pres || {}).filter(([d]) => d >= addDays(today(), -7)).map(([d, p]) => [d, { ...(p.arr ? { arr: p.arr } : {}), ...(p.dep ? { dep: p.dep } : {}) }])),
-    pubs: pubsActives([...imIds], 'eq').map(pubOut),
     rank: (() => { const y = new Date().getFullYear(), r = eqScores(y), n = r.findIndex(([wid]) => wid === i.id), v = n >= 0 ? r[n][1] : null; return v ? { y, pos: n + 1, of: r.length, pts: v.pts, fait: v.fait, ph: v.ph, urg: v.urg, good: v.good } : null; })(),
     tasks, items: items.sort((a, b) => a.d.localeCompare(b.d)), signalKey: k ? k.pub : '', chat: eqChatOut(i), chatRd: i.chatRd || '',
     ...(i.chefDevis ? { devis: devChefData(i) } : {}),
@@ -1064,7 +1020,6 @@ const ESP_SHOW = {
   docs: 'Son dossier : documents enregistrés (identité, CNS, caution, preuves de paiement…) avec aperçu — 👁 Privé pour en cacher un',
   coll: 'Collectes des déchets de l’immeuble',
   avis: 'Avis de l’immeuble (travaux, coupures…)',
-  pub: 'Bons plans du quartier (publicité des partenaires, avec carte)',
   menage: 'Maintenance : passages de la femme de ménage et des ouvriers (aujourd’hui, demain, heure prévue) + avis sur le ménage 😞 → ⭐',
   signal: 'Signaler un problème (avec photos)',
   edl: 'État des lieux : vos 6 photos (salle de bain, cuisine, chambre, cave, buanderie, parking) + ses photos de sortie à son départ',
@@ -1075,91 +1030,7 @@ const ESP_SHOW = {
 };
 const ESP_ALL = Object.fromEntries(Object.keys(ESP_SHOW).map((k) => [k, k !== 'porte']));
 const espUrl = (l) => `${location.origin}/espace.html#${l.espace.id}.${l.espace.key}`;
-// Publicité des partenaires du quartier (pizzerias, bars, bricolage, meubles…) : rangée avec les avis (kind « pub »),
-// visible dans l'app des locataires jusqu'à sa date de fin (durée choisie à la publication)
-const PUB_CATS = { social: '📱 Annonce réseaux sociaux (TikTok, Instagram, Facebook…)', musique: '🎵 Musique (nouveautés, clips)', journal: '📰 Journal / magazine', resto: '🍕 Pizzeria / restaurant', bar: '🍺 Bar / pub', horeca: '☕ Café / snack (Horeca)', courses: '🛒 Supermarché', proxi: '🏪 Commerce de proximité (boulangerie, épicerie, pharmacie…)', bricolage: '🔨 Bricolage / jardinage', meubles: '🛋️ Meubles / décoration', bureau: '🏢 Bureaux (agence, cabinet, fiduciaire…)', services: '🧰 Services', autre: '📌 Autre' };
-const PUB_TTL = [7, 14, 30, 60, 90, 180, 365];
 const isPub = (a) => a.kind === 'pub';
-// À qui s'adresse l'annonce : locataires (par défaut), équipe, portail gérance
-const PUB_AUD = { loc: '🏠 Locataires', eq: '👷 Équipe', ptl: '🏢 Portail gérance', cli: '🌐 Centrales des clients (gérances, agences, propriétaires)', ann: '📣 Annonceurs' };
-// Trois emplacements payants dans les apps (locataires, équipe, portail) — du plus cher au moins cher
-const PUB_VIS = [['', '🌍 Partout'], ['pays', '🏳️ Même pays'], ['ville', '🏙️ Même ville'], ['km1', '📍 À moins de 1 km'], ['km5', '📍 À moins de 5 km'], ['km10', '📍 À moins de 10 km'], ['km25', '📍 À moins de 25 km'], ['km50', '📍 À moins de 50 km']];
-const PUB_SLOTS = { rot: '🔄 Rotation — Haut, Milieu, Bas à tour de rôle (prix de base)', haut: '🔝 Haut — sous « Bonjour », visible à l’ouverture (prix élevé)', milieu: '⏺ Milieu — au centre de l’app (prix moyen)', bas: '🔽 Bas — en fin de page, au-dessus de la barre crypto (prix bas)' };
-const pubSlot = (a) => (PUB_SLOTS[a.slot] ? a.slot : 'milieu');
-const pubAud = (a) => (Array.isArray(a.aud) && a.aud.length ? a.aud : ['loc']);
-// Statistiques anonymes des annonces (vues : une fois par jour et par téléphone ; clics : carte, appel, site, vidéo)
-const PUB_EV = { map: '🗺️ Carte / itinéraire', call: '📞 Appels', web: '🌐 Site web', video: '▶ Vidéo' };
-// 👍 👎 👉 des apps (ares/pubsocial.js) : un avis par téléphone, retirable (unl / und)
-const PUB_SOC = { like: 1, unl: 1, dis: 1, und: 1, share: 1 };
-const PUB_LANGS = { fr: 'Français', it: 'Italiano', de: 'Deutsch', pt: 'Português', en: 'English', es: 'Español' };
-function pubStatsBlock(a) {
-  const st = pubStatsFor(a.id, a.debut || '0000'), last = pubStatsFor(a.id, addDays(today(), -29));
-  const days = Array.from({ length: 30 }, (_, i) => addDays(today(), i - 29)), max = Math.max(1, ...days.map((d) => (last.day[d] || {}).v || 0));
-  return html`<div class="full pub-stats"><div class="section-label" style="margin:6px 0">📊 Statistiques (anonymes)</div>
-    <div class="metrics">
-      <div class="metric"><div class="lbl">Vues</div><div class="val">${st.v}</div><div class="sub">depuis le ${fmtDate(a.debut)}</div></div>
-      <div class="metric"><div class="lbl">Clics</div><div class="val">${st.taps}</div><div class="sub">taux de clic ${String(st.ctr).replace('.', ',')} %</div></div>
-      <div class="metric"><div class="lbl">👍 · 👎 · 👉</div><div class="val">${st.like} · ${st.dis} · ${st.sh}</div><div class="sub"><span>j’aime · je n’aime pas · partages</span></div></div>
-    </div>
-    <p class="small" style="margin:8px 0 0">${Object.entries(PUB_EV).map(([k, v]) => html`<span>${v}</span> <b>${st.ev[k] || 0}</b>`).reduce((x, y) => html`${x} · ${y}`)}</p>
-    ${Object.keys(st.band).length ? html`<p class="small" style="margin:4px 0 0">🕒 ${BANDS.filter(([k]) => st.band[k]).map(([k]) => html`<span>${BAND_LBL[k]}</span> <b>${st.band[k].v}</b>/${st.band[k].t}`).reduce((x, y) => html`${x} · ${y}`)} <span class="tiny muted">(vues / clics par fascia)</span></p>` : ''}
-    <p class="small muted" style="margin:4px 0 0">${Object.entries(PUB_AUD).filter(([k]) => st.app[k]).map(([k, v]) => html`<span>${v}</span> ${st.app[k].v}/${st.app[k].t}`).reduce((x, y) => html`${x} · ${y}`, '')}</p>
-    <div class="pub-bars" title="Vues par jour (30 jours)">${days.map((d) => html`<i style="height:${Math.round((((last.day[d] || {}).v || 0) / max) * 100)}%" title="${fmtDate(d)} : ${(last.day[d] || {}).v || 0}"></i>`)}</div>
-    <p class="tiny muted" style="margin:2px 0 0">Vues par jour — 30 derniers jours${ui.pubStats && ui.pubStats.err ? ' · ⚠ statistiques indisponibles (connexion ?)' : ''}</p>
-    <button class="btn sm" type="button" data-action="pub-report" data-id="${a.id}" style="margin-top:8px">📄 Rapport pour l’annonceur (A4)</button>
-  </div>`;
-}
-// Rapport A4 à remettre à l'annonceur (diffusion, clics, publics) — en français, comme les autres documents officiels
-function pubReport(id) {
-  const a = vault.get('avis', id);
-  if (!a) return;
-  const to = a.fin && a.fin < today() ? a.fin : today();
-  const st = pubStatsFor(id, a.debut || '0000', to);
-  const weeks = {};
-  for (const [d, x] of Object.entries(st.day)) { const w = addDays(d, -((new Date(d + 'T12:00:00').getDay() + 6) % 7)); (weeks[w] ||= { v: 0, t: 0 }); weeks[w].v += x.v; weeks[w].t += x.t; }
-  const pct = (n, tot) => (tot ? Math.round((n / tot) * 100) + ' %' : '—');
-  const totLang = Object.values(st.lang).reduce((x, y) => x + y, 0);
-  printDoc('Rapport de diffusion publicitaire', html`
-    <h1 style="margin:6px 0 2px">${a.nom}</h1>
-    <p style="margin:0 0 10px">${PUB_CATS[a.cat] || PUB_CATS.autre} · 📍 ${a.adresse}</p>
-    <table class="pr-table"><tr><td>Emplacement</td><td><b>${PUB_SLOTS[pubSlot(a)]}</b></td></tr>
-      <tr><td>Visible pour</td><td>${pubAud(a).map((k) => PUB_AUD[k]).join(' · ')}</td></tr>
-      <tr><td>Période</td><td>du ${fmtDate(a.debut)} au ${fmtDate(to)}${a.fin && a.fin > today() ? ` (diffusion jusqu’au ${fmtDate(a.fin)})` : ''}</td></tr></table>
-    <h3>Résultats</h3>
-    <table class="pr-table"><tr><td>Vues (téléphones, une fois par jour)</td><td><b>${st.v}</b></td></tr>
-      <tr><td>Clics au total</td><td><b>${st.taps}</b> — taux de clic ${String(st.ctr).replace('.', ',')} %</td></tr>
-      ${Object.entries(PUB_EV).map(([k, v]) => html`<tr><td>${v}</td><td>${st.ev[k] || 0}</td></tr>`)}</table>
-    ${Object.keys(st.app).length ? html`<h3>Par public</h3><table class="pr-table"><tr><th>Public</th><th>Vues</th><th>Clics</th></tr>${Object.entries(PUB_AUD).filter(([k]) => st.app[k]).map(([k, v]) => html`<tr><td>${v}</td><td>${st.app[k].v}</td><td>${st.app[k].t}</td></tr>`)}</table>` : ''}
-    ${totLang ? html`<h3>Langue des personnes touchées</h3><table class="pr-table">${Object.entries(st.lang).sort((x, y) => y[1] - x[1]).map(([k, n]) => html`<tr><td>${PUB_LANGS[k] || k}</td><td>${pct(n, totLang)}</td></tr>`)}</table>` : ''}
-    ${Object.keys(weeks).length ? html`<h3>Semaine par semaine</h3><table class="pr-table"><tr><th>Semaine du</th><th>Vues</th><th>Clics</th></tr>${Object.keys(weeks).sort().map((w) => html`<tr><td>${fmtDate(w)}</td><td>${weeks[w].v}</td><td>${weeks[w].t}</td></tr>`)}</table>` : ''}
-    <p style="font-size:10pt;color:#555;margin-top:14px">Vues : nombre de téléphones qui ont affiché l’annonce, comptés une seule fois par jour. Clics : touchers sur les boutons de l’annonce (carte / itinéraire, appel, site web, vidéo). Statistiques entièrement anonymes : aucune donnée personnelle n’est collectée ni transmise (RGPD).</p>`);
-}
-async function pubStatsLoad(force) {
-  if (TENANT) return; // centrale d'un client : pas de portail, d'annonces ni de biens du réseau
-  const st = ui.pubStats;
-  if (!force && st && (st.loading || Date.now() - st.at < 15000)) return;
-  ui.pubStats = { ...(st || { rows: [] }), loading: true, at: Date.now() };
-  try { ui.pubStats = { ...(await vault.pubStatsAll(400)), at: Date.now() }; } catch { ui.pubStats = { rows: (st && st.rows) || [], bands: (st && st.bands) || [], at: Date.now(), err: true }; }
-  if (ui.route === 'maintenance' || ui.route === 'champpub') renderView();
-  if (ui.sheet && ui.sheet.kind === 'pub-form') { ui.sheet.rendered = false; renderSheet(); }
-}
-function pubStatsFor(id, from = '0000', to = '9999') {
-  const r = { v: 0, taps: 0, ev: {}, app: {}, lang: {}, day: {}, soc: {} };
-  for (const x of (ui.pubStats && ui.pubStats.rows) || []) {
-    if (x.ad !== id || x.day < from || x.day > to) continue;
-    const d = (r.day[x.day] ||= { v: 0, t: 0 });
-    if (x.ev === 'v') { r.v += x.n; d.v += x.n; (r.app[x.app] ||= { v: 0, t: 0 }).v += x.n; r.lang[x.lang] = (r.lang[x.lang] || 0) + x.n; }
-    else if (PUB_SOC[x.ev]) r.soc[x.ev] = (r.soc[x.ev] || 0) + x.n;
-    else { r.taps += x.n; d.t += x.n; r.ev[x.ev] = (r.ev[x.ev] || 0) + x.n; (r.app[x.app] ||= { v: 0, t: 0 }).t += x.n; }
-  }
-  r.band = {};
-  for (const x of (ui.pubStats && ui.pubStats.bands) || []) { if (x.ad !== id || x.day < from || x.day > to) continue; const b = (r.band[x.band] ||= { v: 0, t: 0 }); if (x.ev === 'v') b.v += x.n; else if (!PUB_SOC[x.ev]) b.t += x.n; }
-  r.ctr = r.v ? Math.round((r.taps / r.v) * 1000) / 10 : 0;
-  r.like = Math.max(0, (r.soc.like || 0) - (r.soc.unl || 0)); r.dis = Math.max(0, (r.soc.dis || 0) - (r.soc.und || 0)); r.sh = r.soc.share || 0;
-  return r;
-}
-const pubOut = (a) => ({ id: a.id, ...(a.bands && a.bands.length ? { bands: a.bands } : {}), ...(a.we ? { we: 1 } : {}), ...(a.zone ? { zone: a.zone } : {}), ...(a.logo ? { logo: a.logo } : {}), slot: pubSlot(a), cat: a.cat || 'autre', nom: a.nom || '', adresse: a.adresse || '', texte: a.texte || '', tel: a.tel || '', web: a.web || '', video: a.video || '', fin: a.fin || '', ...(a.jours && a.jours.length ? { jours: a.jours } : {}), ...(a.h1 && a.h2 ? { h1: a.h1, h2: a.h2 } : {}), ...(a.type ? { type: a.type } : {}) });
-const pubsActives = (immId, aud = 'loc') => vault.list('avis').filter((a) => isPub(a) && (!a.st || a.st === 'ok') && pubAud(a).includes(aud) && (aud === 'ptl' || !immId || !a.immId || (Array.isArray(immId) ? immId.includes(a.immId) : a.immId === immId)) && (!a.debut || a.debut <= today()) && (!a.fin || a.fin >= today()));
 const avisActifs = (immId) => vault.list('avis').filter((a) => !isPub(a) && (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
   .sort((a, b) => (a.debut || '').localeCompare(b.debut || ''));
 async function ownerKeys() {
@@ -1234,7 +1105,7 @@ function espaceData(l) {
   const out = {
     v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', avatar: emojiOk(l.avatar) ? l.avatar : '', photo: photoOk(l.photo) ? l.photo : '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', ...(im ? { pays: im.pays || societe().pays || 'LU', ...(Array.isArray(im.geo) ? { geo: im.geo } : {}) } : {}), show,
     societe: { role: socRole(), nom: soc.nom && (TENANT || !WRONG_ID.test(soc.nom)) ? soc.nom : DEF_SOC(), adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', color: TENANT ? soc.color || '' : '', sign: signLite.src === soc.signature && signLite.url ? signLite.url : soc.signature || '', signW: soc.signW || 8 },
-    loyer: loyerAt(l, new Date().getFullYear(), new Date().getMonth() + 1) || l.loyer || 0, revis: revNext(l), ...(TENANT ? { netPubs: 1 } : {}), parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
+    loyer: loyerAt(l, new Date().getFullYear(), new Date().getMonth() + 1) || l.loyer || 0, revis: revNext(l), parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : { nom: 'Seven Radio', url: 'https://sevenradio.lu/?proradio-popup=1' }; })(),
     annex: g ? annexOf(g) : {}, annexM2: (g && g.annexM2) || {}, surface: (g && g.surface) || '', maison: g && g.type === 'maison' ? g.maison || '' : '', unit: g ? g.type : '',
   };
@@ -1316,7 +1187,6 @@ function espaceData(l) {
     out.visits = visits.filter((v) => v.d >= today());
     out.done = visits.filter((v) => v.d < today() && !v.off).map((v) => ({ d: v.d, w: v.w, nom: v.nom, m: v.m, de: v.de, a: v.a }));
   }
-  if (show.pub) out.pubs = (TENANT ? [] : pubsActives(l.immId).filter((a) => zoneOk(a, placeOf(im)))).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map(pubOut);
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
   if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '', lv: l.reglesV || '', v: rulesVersion(im) };
   if (show.chat && chatOn(im) && isCurrent(l)) {
@@ -1667,29 +1537,6 @@ async function netFactEmit(tid, tasks) {
   await vault.saveFile(docId, bytes);
   return no;
 }
-// 🧾 facture DOMIER : taxi ou annonceur qui nous a appelés → facture ARES INVEST S.A. (LUXINTERVENTION) dans son app (QR + « J'ai payé »)
-const domBill = (t) => !!(t && t.dom && t.dom.k === 'an');
-async function domFactEmit(t) {
-  const c = factConf(), miss = factMissing(c);
-  if (miss.length) throw new Error('Complétez : ' + miss.join(', ') + ' (Réglages → 🧾 Facturation)');
-  const f = factDraft(t), tx = factTaux(f, c), k = factCalc(f, tx);
-  if (!(k.ht > 0)) throw new Error('Montant à 0 € : indiquez heures et tarif');
-  const co = vault.get('reglages', t.dom.id) || {}, pr = co.prof || {}, client = pr.nom || co.nom || t.dom.nom;
-  const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-INT${String(seq).padStart(4, '0')}`, due = addDays(date, +c.delai || 30);
-  const w = vault.get('intervenants', t.intervenantId) || {}, fr = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const titre = String(t.titre || 'Intervention').replace(/^🔧 DOMIER[^—]*— [^:]*:\s*/, '');
-  const sub = [fr(t.doneDate || t.date), intervFull(w), `${String(num(f.h)).replace('.', ',')} h × ${eur(num(f.taux))}`, k.dep ? 'déplacement ' + eur(k.dep) : '', k.mat ? 'matériel ' + eur(k.mat) : ''].filter(Boolean).join(' · ');
-  const { bytes, ht, tva, ttc } = await netFactPdf([{ titre: '🔧 DOMIER — ' + titre, sub, tx, ht: k.ht, tva: k.tva }], [client, pr.adresse, pr.ville, pr.tva ? 'TVA ' + pr.tva : ''].filter(Boolean).join(', '), no, date, due, c);
-  let docId = '';
-  await vault.mutate((txn) => {
-    txn.put('reglages', { id: 'facturation', seq });
-    docId = txn.put('documents', { tacheId: t.id, kind: 'facture-int', label: `Facture ${no} — ${client}`, date, mime: 'application/pdf', size: bytes.length }).id;
-    txn.put('taches', { id: t.id, factDraft: f, facture: { no, date, due, ht, tva, ttc, paid: '', claim: '', docId, dom: t.dom.k } });
-  }, '🧾 Facture DOMIER émise', `${no} — ${client} · ${eur(ttc)}`);
-  await vault.saveFile(docId, bytes);
-  annSync(t.dom.id);
-  return no;
-}
 async function netFactPaid(no) {
   const f = vault.get('reglages', 'nfact-' + no);
   if (!f || f.paid) return;
@@ -1948,235 +1795,6 @@ function tdemStatus(d) {
   return html`<div class="small" style="margin:4px 0">${t}${d.ou ? html` · 📍 ${d.ou}` : ''}${stop}</div>`;
 }
 const TDEM_URG = { normal: '🟢 Normal', rapide: '🟠 Rapide (48 h)', urgent: '🔴 Urgent' };
-// 🍽️ Annonceurs HORECA (restaurants, bars, discothèques…) : leur app (annonce.html) envoie annonces et événements,
-// LA CENTRAL valide ; paiement en ligne pas encore connecté (le bouton est là, désactivé)
-const AN_TYPES = { annonce: '📣 Annonce', evenement: '🎉 Événement', menu: '🍽️ Menu du jour' };
-const anCos = () => vault.list('reglages').filter((r) => r.id.startsWith('annc-')).sort((a, b) => (a.nom || '').localeCompare(b.nom || ''));
-const anTarifs = () => vault.get('reglages', 'annTarifs') || {};
-// tarifs complets (valeurs de lancement si rien n'est réglé) : pacchetti, posizioni, remises, fasce, capacité
-const anTarifsFull = () => { const t = anTarifs(), o = { ...TARIF_DEF }; for (const k of Object.keys(TARIF_DEF)) if (t[k] !== undefined && t[k] !== '') o[k] = k === 'mode' ? (t[k] === 'band' ? 'band' : 'pack') : +t[k]; return o; };
-const BAND_LBL = { m: '🌅 Matin', m2: '☀️ Matin +', a: '🌤️ Après-midi', a2: '🌇 Après-midi +', s: '🌆 Soir', n: '🌙 Nuit' };
-const bandTxt = (k) => { const b = BANDS.find((x) => x[0] === k); return b ? `${BAND_LBL[k]} ${b[1]}–${b[2]}` : k; };
-const PACK_LBL = { start: '🟢 Start — 1 fascia', plus: '🟡 Plus — 3 fasce', max: '🔴 Max — toutes les fasce' };
-const PUB_JOURS = ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'];
-const anHashes = new Map();
-// 💶 annonce validée → l'annonceur paie la centrale (virement QR + « J'ai payé ») → « Paiement reçu » : facture et mise en ligne.
-// Les tarifs des emplacements sont HT ; la TVA est celle de 🧾 Facturation.
-const annDue = (a) => { const c = factConf(), tx = factTaux({}, c), ht = r2(+a.prix || 0), tva = r2((ht * tx) / 100), ttc = r2(ht + tva); return { tx, ht, tva, ttc, epc: c.iban ? epcText(c.nom, c.iban, c.bic, ttc, 'Annonce ' + String(a.id).slice(0, 8)) : '' }; };
-// 📱 nos réseaux sociaux (Instagram · Facebook · YouTube · TikTok) : option des annonces, prix TTC (TVA des réglages), abonnés affichés aux annonceurs
-const SOC_NET = { ig: '📸 Instagram', fb: '👍 Facebook', yt: '▶️ YouTube', tt: '🎵 TikTok' };
-const socConf = () => ({ prix: 5.99, f: 3000, ...(vault.get('reglages', 'socnet') || {}) });
-const socHT = () => { const tx = factTaux({}, factConf()); return r2(num(socConf().prix) / (1 + tx / 100)); };
-const annFrom = () => { const c = factConf(); return { from: { nom: c.nom, marque: c.marque, adresse: c.adresse, ville: c.ville, rcs: c.rcs, tva: c.tva, iban: c.iban, bic: c.bic, banque: c.banque } }; };
-async function annFactEmit(a) {
-  const c = factConf(), miss = factMissing(c);
-  if (miss.length) throw new Error('Complétez : ' + miss.join(', ') + ' (Réglages → 🧾 Facturation)');
-  const an = vault.get('reglages', a.annId) || {}, client = an.nom || a.nom, d = annDue(a), t = anTarifs();
-  if (!(d.ht > 0)) throw new Error('Montant à 0 € : indiquez les 💶 Tarifs des annonces.');
-  const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-ANN${String(seq).padStart(4, '0')}`;
-  const sub = [PUB_SLOTS[pubSlot(a)].split(' — ')[0], `${fmtDate(a.debut)} → ${fmtDate(a.fin)}`, `${a.ttl || 1} j${+t[pubSlot(a)] ? ' × ' + eur(+t[pubSlot(a)]) : ''}`, pubAud(a).map((k) => PUB_AUD[k]).join(', ')].join(' · ');
-  const { bytes } = await netFactPdf([{ titre: `${AN_TYPES[a.type] || 'Annonce'} — ${a.nom}`, sub, tx: d.tx, ht: d.ht, tva: d.tva }], client, no, date, date, c, 'Annonces');
-  let docId = '';
-  await vault.mutate((tx) => {
-    tx.put('reglages', { id: 'facturation', seq });
-    docId = tx.put('documents', { kind: 'facture-ann', label: `Facture ${no} — ${client}`, date, mime: 'application/pdf', size: bytes.length }).id;
-    tx.put('avis', { id: a.id, st: 'ok', motif: '', pay: 'ok', fact: { no, date, ht: d.ht, tva: d.tva, ttc: d.ttc, tx: d.tx, paid: date, docId } });
-  }, '📣 Annonce payée : facture et mise en ligne', `${no} — ${client} · ${eur(d.ttc)}`);
-  await vault.saveFile(docId, bytes);
-  return no;
-}
-async function annSync(onlyId, loud) {
-  if (!vault.unlocked) return true;
-  for (const an0 of anCos().filter((x) => x.appCode && (!onlyId || x.id === onlyId))) {
-    try {
-      await ownerKeys();
-      let an = an0, e = an.espace;
-      if (!e || !e.id) { e = { id: newEspaceId(), key: newEspaceKey() }; await vault.mutate((tx) => tx.put('reglages', { id: an.id, espace: e }), 'App annonceur : accès créé', an.nom); }
-      if (e.code !== an.appCode) {
-        if (e.codeHash) await vault.espCodeDel(e.codeHash).catch(() => {});
-        const hh = await codeHash(an.appCode);
-        await vault.espCodePut(hh, { id: e.id, ...(await wrapWithCode(an.appCode, e.key)) });
-        e = { ...e, code: an.appCode, codeHash: hh };
-        await vault.mutate((tx) => tx.put('reglages', { id: an.id, espace: e }), 'App annonceur : code', an.nom);
-      }
-      an = vault.get('reglages', an.id);
-      const sig = vault.get('reglages', 'signal'), t = anTarifs();
-      const ads = vault.list('avis').filter((a) => isPub(a) && a.annId === an.id).sort((a, b) => (b.debut || '').localeCompare(a.debut || '')).map((a) => {
-        const st = pubStatsFor(a.id, a.debut || '0000');
-        return { id: a.id, type: a.type || 'annonce', nom: a.nom, texte: a.texte || '', adresse: a.adresse || '', tel: a.tel || '', web: a.web || '', video: a.video || '', slot: pubSlot(a), aud: pubAud(a), debut: a.debut, fin: a.fin, jours: a.jours || [], h1: a.h1 || '', h2: a.h2 || '', bands: a.bands || [], we: !!a.we, pack: a.pack || '', dn: a.dn || '', du: a.du || '', down: !!a.down, st: a.st || 'ok', motif: a.motif || '', prix: a.prix || 0, v: st.v, taps: st.taps,
-          soc: !!a.soc, socPub: Object.fromEntries(Object.entries(a.socPub || {}).filter(([k]) => SOC_NET[k]).map(([k, v]) => [k, { at: v.at || '', url: v.url || '' }])),
-          claim: a.payClaim || '', fact: a.fact ? { no: a.fact.no, date: a.fact.date, ht: a.fact.ht, tva: a.fact.tva, ttc: a.fact.ttc, tx: a.fact.tx } : null, ...(a.st === 'pay' ? annDue(a) : {}) };
-      });
-      const data = { v: 1, kind: 'annonce', gv: VERSION, nom: an.nom, cat: an.cat || 'resto', prof: { email: an.email || '', web: an.web || '', tva: an.tvaNum || '', iban: an.iban || '', banque: an.banque || '' }, recs: vault.list('reglages').filter((r) => r.id.startsWith('anrec-') && r.annId === an.id).map((r) => ({ t: r.t, motif: r.motif, texte: r.texte, rep: r.rep || '' })), adresse: an.adresse || '', tel: an.tel || '', ads, signalKey: sig ? sig.pub : '', reseau: 'LA CENTRAL',
-        tarifs: { soc: { ttc: num(socConf().prix), ht: socHT(), f: +socConf().f || 0 }, tx: factTaux({}, factConf()), ...anTarifsFull(), haut: +t.haut || 0, milieu: +t.milieu || 0, bas: +t.bas || 0, crea_simple: +t.crea_simple || 0, crea_moyen: +t.crea_moyen || 0, crea_max: +t.crea_max || 0, note: t.note || '' }, pay: false, ...annFrom(), chat: pchatOut(an), doms: domList('an', an.id), chatRd: an.chatRd || '' };
-      const hs = await sha256Hex(JSON.stringify(data));
-      if (!loud && anHashes.get(e.id) === hs) continue;
-      await vault.espacePut(e.id, await sealJson(e.key, data));
-      anHashes.set(e.id, hs);
-      await notifyNews(e.id, [...ads.filter((a) => a.st !== 'wait').map((a) => 'a:' + a.id + ':' + a.st), ...data.chat.filter((m) => m.from === 'mgr').map((m) => 'c:' + m.id + (m.ed || ''))]);
-    } catch (err) { if (loud) { toast(err.message || 'Publication impossible (connexion ?)', { bad: true }); return false; } }
-  }
-  return true;
-}
-// 🔧 DOMIER : demande d'intervention envoyée depuis une app (taxi, annonceur → LUXINTERVENTION ; client d'hôtel → son hôtel)
-async function domIn(k, who, msg, extra = {}) {
-  const S = (v, n) => String(v ?? '').trim().slice(0, n);
-  const ph = (Array.isArray(msg.photos) ? msg.photos : []).filter((b) => typeof b === 'string' && b.length < 4e6).slice(0, 3);
-  const titre = S(msg.texte, 80) || 'Demande';
-  // urgence : 🔴 urgent · 🟠 rapide (48 h) · 📅 à planifier (date souhaitée) ; type : une fois / 🔁 régulier (anciennes apps : urg = vrai / faux)
-  const urg = msg.urg === true || msg.urg === 'urgent' ? 'urgent' : msg.urg === 'rapide' ? 'rapide' : 'plan', dOk = /^\d{4}-\d{2}-\d{2}$/.test(msg.date || '') && msg.date >= today() ? msg.date : '';
-  const UL = { urgent: '🔴 URGENT', rapide: '🟠 Rapide (48 h)', plan: `📅 À planifier${dOk ? ' — souhaité le ' + fmtDate(dOk) + (/^\d{2}:\d{2}$/.test(msg.heure || '') ? ' à ' + msg.heure : '') : ''}` };
-  const SV = { menage: '🧹 Ménage', jardin: '🌿 Jardin', entretien: '🔧 Entretien', autre: '📋 Autre' }, JR = ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
-  const reg = msg.kind === 'reg' ? `🔁 Régulier : ${SV[msg.svc] || SV.autre} · ${RECURS[msg.freq] || ''} · ${(Array.isArray(msg.jours) ? msg.jours : []).map((j) => JR[j - 1]).filter(Boolean).join(', ')}` : '';
-  let t;
-  await vault.mutate((tx) => {
-    t = tx.put('taches', { type: msg.kind === 'reg' ? (msg.svc === 'menage' ? 'nettoyage' : 'autre') : 'reparation', titre: `🔧 DOMIER ${urg === 'urgent' ? '🔴' : urg === 'rapide' ? '🟠' : '📅'}${reg ? ' 🔁' : ''} — ${who} : ${titre}`, intervenantId: '', date: dOk || today(), heure: dOk && /^\d{2}:\d{2}$/.test(msg.heure || '') ? msg.heure : '', recur: '', statut: 'afaire', sentAt: S(msg.t, 30) || new Date().toISOString(),
-      dom: { k, id: extra.id || '', nom: who, urg }, adr: S(msg.adresse, 160) || extra.adr || '',
-      note: `${S(msg.texte, 2000)}\n${UL[urg]}${reg ? '\n' + reg : ''}\n\n— ${who} · ${fmtDateTime(msg.t || Date.now())}${msg.tel ? ' · tél. ' + S(msg.tel, 30) : ''}${msg.adresse || extra.adr ? '\nAdresse : ' + (S(msg.adresse, 160) || extra.adr) : ''}${msg.dispo ? '\nDisponibilités : ' + S(msg.dispo, 200) : ''}${msg.acces ? '\nAccès : ' + S(msg.acces, 200) : ''}` });
-    ph.forEach((b, i) => tx.put('documents', { id: t.id + 'p' + i, tacheId: t.id, kind: 'signal', label: `DOMIER — photo ${i + 1}`, date: today(), mime: 'image/jpeg', size: Math.round(b.length * 0.75) }));
-  }, '🔧 DOMIER : demande reçue', `${who} — ${titre}`);
-  for (let i = 0; i < ph.length; i++) await vault.saveFile(t.id + 'p' + i, unb64u(ph[i]));
-  return t;
-}
-// « J'ai payé » depuis l'app (taxi / annonceur) : à vérifier sur le compte, puis ✅ Reçu
-async function domClaim(coId, msg) {
-  const t = vault.list('taches').find((x) => x.dom && x.dom.id === coId && x.facture && x.facture.no === String(msg.no || ''));
-  if (!t || t.facture.paid || t.facture.claim) return false;
-  await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, claim: today() } }), '💳 Le client dit avoir payé', `${t.facture.no} — ${t.dom.nom} · ${eur(t.facture.ttc)}`);
-  return true;
-}
-// état des demandes DOMIER renvoyé dans l'app (celles transmises à LA CENTRAL : l'état qui revient)
-const domList = (k, id) => vault.list('taches').filter((t) => t.dom && t.dom.k === k && t.dom.id === id).sort((a, b) => String(b.sentAt || '').localeCompare(String(a.sentAt || ''))).slice(0, 10)
-  .map((t) => { const F = t.facture, c = F ? factConf() : {}; return { id: t.id, titre: String(t.note || '').split('\n')[0].slice(0, 80), st: t.statut === 'fait' ? 'fait' : t.fwd ? t.fwd.st || 'afaire' : t.statut || 'afaire', at: String(t.sentAt || t.date || '').slice(0, 10),
-    ...(F && !F.net ? { fact: { no: F.no, date: F.date, due: F.due || '', ht: F.ht, tva: F.tva, ttc: F.ttc, paid: F.paid || '', claim: F.claim || '', nom: c.marque ? `${c.marque} (${c.nom})` : c.nom, iban: c.iban || '', bic: c.bic || '', epc: !F.paid && c.iban ? epcText(c.nom, c.iban, c.bic, F.ttc, 'Facture ' + F.no) : '' } } : {}) }; });
-// annonce envoyée par l'app de l'annonceur : nouvelle ou modifiée → à valider ; arrêt demandé
-async function annInbox(an, msg) {
-  const S = (v, n) => String(v ?? '').trim().slice(0, n);
-  if (msg.type === 'pchat') return pchatIn(an, msg);
-  if (msg.type === 'domier') { await domIn('an', an.nom || 'Annonceur', msg, { id: an.id }); annSync(an.id); return true; }
-  if (msg.type === 'dom-paid') return domClaim(an.id, msg);
-  if (msg.type === 'an-ad') {
-    const a = msg.ad || {}, id = S(a.id, 40), old = id ? vault.get('avis', id) : null;
-    if (old && old.annId !== an.id) return false;
-    const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d : ''), hm = (v) => (/^\d\d:\d\d$/.test(v || '') ? v : '');
-    const debut = day(a.debut) || today(), fin = day(a.fin) && day(a.fin) >= debut ? day(a.fin) : addDays(debut, 30);
-    const rec = { kind: 'pub', annId: an.id, st: 'wait', motif: '', type: AN_TYPES[a.type] ? a.type : 'annonce', cat: an.cat || 'resto', nom: S(a.nom, 80) || an.nom, texte: S(a.texte, 600), adresse: S(a.adresse, 160) || an.adresse || '',
-      tel: S(a.tel, 30), web: /^https?:\/\//.test(S(a.web, 300)) ? S(a.web, 300) : '', video: /^https?:\/\//.test(S(a.video, 400)) ? S(a.video, 400) : '', slot: PUB_SLOTS[a.slot] ? a.slot : 'milieu',
-      aud: (Array.isArray(a.aud) ? a.aud : []).filter((k) => PUB_AUD[k]).slice(0, 8), debut, fin, ttl: Math.round((new Date(fin) - new Date(debut)) / 864e5) + 1,
-      jours: (Array.isArray(a.jours) ? a.jours : []).map(Number).filter((n) => n >= 0 && n <= 6).slice(0, 7), h1: hm(a.h1), h2: hm(a.h2), immId: '', pay: 'none' };
-    rec.aud = old && Array.isArray(old.aud) && old.aud.length ? old.aud : Object.keys(PUB_AUD); // les apps : c'est la centrale qui choisit (par défaut : toutes)
-    rec.special = S(a.special, 600);
-    rec.logo = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.logo || '') && a.logo.length < 60000 ? a.logo : '';
-    rec.crea = ['simple', 'moyen', 'max'].includes(a.crea) ? a.crea : '';
-    // 📎 images / clip envoyés à part (an-media, même référence) · ☑️ droits certifiés par l'annonceur
-    rec.mref = /^[a-z0-9]{6,40}$/.test(a.mref || '') ? a.mref : (old && old.mref) || '';
-    rec.muse = a.muse === 'ex' ? 'ex' : 'pub';
-    rec.droits = !!a.droits;
-    const t = anTarifs();
-    if (['d', 'w', 'm', 'y'].includes(a.du)) {
-      // 📅 nouveau modèle : pacchetto + fasce + position (fixe ou rotation) + semaine / week-end + durée
-      rec.pack = PACK_N[a.pack] ? a.pack : 'start';
-      rec.bands = rec.pack === 'max' ? [...BAND_KEYS] : (Array.isArray(a.bands) ? a.bands : []).filter((k) => BAND_KEYS.includes(k)).slice(0, PACK_N[rec.pack]);
-      rec.we = !!a.we; rec.du = a.du; rec.dn = Math.min(a.du === 'y' ? 5 : a.du === 'm' ? 24 : a.du === 'w' ? 52 : 365, Math.max(1, Math.round(+a.dn || 1)));
-      rec.slot = ['haut', 'milieu', 'bas', 'rot'].includes(a.slot) ? a.slot : 'rot';
-      rec.down = rec.slot === 'haut' && !!a.down;
-      rec.fin = addDays(debut, durDays(rec.dn, rec.du) - 1); rec.ttl = durDays(rec.dn, rec.du); rec.jours = []; rec.h1 = rec.h2 = '';
-      rec.prix = Math.round((adPrice(rec, anTarifsFull()) + (rec.crea ? +t['crea_' + rec.crea] || 0 : 0)) * 100) / 100;
-    } else rec.prix = Math.round((+t[rec.slot] || 0) * rec.ttl) + (rec.crea ? +t['crea_' + rec.crea] || 0 : 0);
-    rec.soc = !!a.soc;
-    if (rec.soc) rec.prix = r2((+rec.prix || 0) + socHT());
-    rec.socPub = (old && old.socPub) || {};
-    if (old) rec.id = old.id;
-    await vault.mutate((tx) => tx.put('avis', rec), old ? '📣 Annonce modifiée par l’annonceur (à valider)' : '📣 Nouvelle annonce à valider', `${an.nom} · ${AN_TYPES[rec.type]} · ${fmtDate(rec.debut)} → ${fmtDate(rec.fin)}`);
-    annSync(an.id); return true;
-  }
-  // 📎 un fichier (ou un morceau de clip) de l'annonceur : gardé chiffré ; le clip est rassemblé quand tous les morceaux sont là
-  if (msg.type === 'an-media') {
-    const ref = S(msg.ref, 40), fid = S(msg.fid, 20), parts = Math.min(10, Math.max(1, +msg.parts || 1)), i = +msg.i || 0;
-    if (!/^[a-z0-9]{6,40}$/.test(ref) || !/^[a-z0-9]{4,20}$/.test(fid) || i < 0 || i >= parts || typeof msg.b !== 'string') return false;
-    const mime = /^(image\/(jpeg|png|webp)|video\/[a-z0-9.+-]{2,20})$/.test(msg.mime || '') ? msg.mime : 'application/octet-stream';
-    const key = `anm-${an.id}-${ref}-${fid}`;
-    const st = vault.get('reglages', key) || { id: key, got: [] };
-    const pid = key + '-p' + i;
-    await vault.saveFile(pid, unb64u(msg.b));
-    const got = [...new Set([...(st.got || []), i])];
-    if (got.length < parts) { await vault.mutate((tx) => tx.put('reglages', { id: key, got, parts }), '📎 Fichier de l’annonceur (en cours)', `${an.nom} · ${got.length}/${parts}`); return true; }
-    const bufs = [];
-    for (let k = 0; k < parts; k++) bufs.push(new Uint8Array(await vault.readFile(key + '-p' + k)));
-    const all = new Uint8Array(bufs.reduce((n, b) => n + b.length, 0));
-    let o = 0; for (const b of bufs) { all.set(b, o); o += b.length; }
-    let docId = '';
-    await vault.mutate((tx) => {
-      const doc = tx.put('documents', { kind: 'annmedia', annId: an.id, mref: ref, label: `${mime.startsWith('video/') ? '🎬' : '🖼️'} ${an.nom} — ${S(msg.name, 60) || 'fichier'}`, date: today(), mime, size: all.length });
-      docId = doc.id;
-      tx.remove('reglages', key);
-    }, '📎 Fichier reçu de l’annonceur', `${an.nom} · ${S(msg.name, 60)}`);
-    await vault.saveFile(docId, all);
-    for (let k = 0; k < parts; k++) await vault.deleteFile(key + '-p' + k).catch(() => {});
-    return true;
-  }
-  if (msg.type === 'an-paid') {
-    const a = vault.get('avis', S(msg.id, 40));
-    if (!a || a.annId !== an.id || a.st !== 'pay' || a.payClaim) return false;
-    await vault.mutate((tx) => tx.put('avis', { id: a.id, payClaim: today() }), '💶 L’annonceur dit avoir payé', `${an.nom} · ${a.nom} · ${eur(annDue(a).ttc)}`);
-    annSync(an.id); return true;
-  }
-  // ✏️ profil modifié par l'annonceur (société, mail, site, TVA, IBAN pour les remboursements)
-  if (msg.type === 'an-prof') {
-    const q = msg.prof || {}, iban = S(q.iban, 42).replace(/\s/g, '').toUpperCase();
-    const upd = { id: an.id, nom: S(q.nom, 80) || an.nom, email: S(q.email, 120), web: /^https?:\/\//.test(S(q.web, 300)) ? S(q.web, 300) : '', tvaNum: S(q.tva, 30), iban: /^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(iban) ? iban : '', banque: S(q.banque, 80) };
-    await vault.mutate((tx) => tx.put('reglages', upd), '✏️ L’annonceur a modifié son profil', `${upd.nom}${upd.iban ? ' · IBAN ' + upd.iban.slice(0, 4) + '…' + upd.iban.slice(-4) : ''}`);
-    annSync(an.id); return true;
-  }
-  // ⚠️ réclamation de l'annonceur (et pourquoi)
-  if (msg.type === 'an-rec') {
-    const r = { id: 'anrec-' + uid(), annId: an.id, motif: S(msg.motif, 60), texte: S(msg.texte, 1500), t: new Date().toISOString(), vu: false };
-    if (!r.texte) return false;
-    await vault.mutate((tx) => tx.put('reglages', r), '⚠️ Réclamation d’un annonceur', `${an.nom} · ${r.motif}`);
-    return true;
-  }
-  if (msg.type === 'an-stop') {
-    const a = vault.get('avis', S(msg.id, 40));
-    if (!a || a.annId !== an.id) return false;
-    await vault.mutate((tx) => tx.put('avis', { id: a.id, fin: addDays(today(), -1), st: a.st === 'wait' || a.st === 'pay' ? 'no' : a.st }), '📣 Annonce arrêtée par l’annonceur', `${an.nom} · ${a.nom}`);
-    annSync(an.id); return true;
-  }
-  return false;
-}
-function annBlock() {
-  const cos = anCos(), wait = vault.list('avis').filter((a) => isPub(a) && a.st === 'wait').sort((a, b) => (a.debut || '').localeCompare(b.debut || '')), t = anTarifs();
-  const nm = (a) => (vault.get('reglages', a.annId) || {}).nom || a.nom, topay = vault.list('avis').filter((a) => isPub(a) && a.st === 'pay').sort((a, b) => (b.payClaim || '').localeCompare(a.payClaim || ''));
-  return html`<div class="card" style="margin-bottom:14px"><div class="card-title"><h3>🍽️ Annonceurs (HORECA)</h3><div class="actions" style="margin:0;flex-wrap:wrap"><button class="btn sm" data-action="ann-tarifs">💶 Tarifs</button><button class="btn sm primary" data-action="new-annc">${icon('plus')} Annonceur</button></div></div>
-    ${(() => { let i = null; try { i = JSON.parse(localStorage.getItem('aresNetPubsInfo') || 'null'); } catch { /* rien */ } const enl = vault.list('avis').filter((a) => isPub(a) && (!a.st || a.st === 'ok') && (!a.fin || a.fin >= today())).length; return html`<p class="small" style="margin:0 0 8px;padding:6px 10px;border-radius:10px;background:${i && i.err ? 'rgba(220,38,38,.08)' : 'rgba(37,99,235,.06)'}">🌐 <b>Réseau</b> (centrales des clients, leurs locataires, annonceurs) : <b>${enl}</b> annonce(s) en ligne aujourd’hui${i ? (i.err ? html` · ⚠️ envoi refusé : ${i.err}` : html` · envoyées le ${fmtDateTime(i.at)} (${i.n})`) : ' · pas encore envoyées'} <button class="btn sm" type="button" data-action="netpubs-now">🔄 Envoyer maintenant</button></p>`; })()}
-    <p class="tiny muted" style="margin:0 0 8px">Restaurants, bistrots, bars, discothèques… publient eux-mêmes leurs annonces, menus et événements dans leur app ; vous validez. Tarifs HT / jour : 🔝 ${t.haut ? t.haut + ' €' : '—'} · ⏺ ${t.milieu ? t.milieu + ' €' : '—'} · 🔽 ${t.bas ? t.bas + ' €' : '—'} · 💶 virement (QR) puis « Paiement reçu » · 💳 en ligne : <b>non connecté</b></p>
-    ${wait.length ? html`<div class="section-label">⏳ À valider (${wait.length})</div><div class="list" style="margin-bottom:10px">${wait.map((a) => html`<div class="row" style="display:block">
-      <b>${nm(a)}</b> · ${AN_TYPES[a.type] || ''} — ${a.nom}<div class="small">${a.texte}</div>${a.crea ? html`<div class="alert info" style="margin:6px 0">🎬<div><b>Création demandée : ${({ simple: 'SIMPLE — page fixe', moyen: 'MOYEN — clip animé', max: 'MAX — vidéo-clip' })[a.crea]}</b>${+anTarifs()['crea_' + a.crea] ? ` · ${eur(+anTarifs()['crea_' + a.crea])} HT` : ' · sur devis (réponse sous 3 jours)'}</div></div>` : ''}${a.special ? html`<div class="alert warn" style="margin:6px 0">✍️<div><b>Demande spéciale</b> : ${a.special}<div class="tiny">répondez par la 💬 messagerie de l’annonceur (prix sur devis si besoin)</div></div></div>` : ''}
-      <div class="tiny muted">${PUB_SLOTS[pubSlot(a)].split(' — ')[0]} · ${pubAud(a).map((k) => PUB_AUD[k]).join(' · ')} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}${a.jours && a.jours.length ? ' · ' + a.jours.map((j) => PUB_JOURS[j]).join(' ') : ''}${a.h1 ? ` · ${a.h1}–${a.h2}` : ''}${a.prix ? ' · ' + a.prix + ' €' : ''}</div>
-      <div class="actions" style="margin:6px 0 0"><button class="btn sm primary" data-action="pub-ok" data-id="${a.id}">✅ Publier</button><button class="btn sm" data-action="edit-pub" data-id="${a.id}">✏️ Voir</button><button class="btn sm ghost danger" data-action="pub-no" data-id="${a.id}">❌ Refuser</button></div></div>`)}</div>` : ''}
-    ${topay.length ? html`<div class="section-label">💶 À encaisser (${topay.length})</div><div class="list" style="margin-bottom:10px">${topay.map((a) => html`<div class="row" style="display:block">
-      <b>${nm(a)}</b> · ${AN_TYPES[a.type] || ''} — ${a.nom} · <b>${eur(annDue(a).ttc)}</b> <span>TTC</span> ${a.payClaim ? html`<span class="badge warn">💶 <span>payé selon l’annonceur</span> · ${fmtDate(a.payClaim)}</span>` : html`<span class="badge">⏳ <span>en attente du paiement</span></span>`}
-      <div class="tiny muted">${fmtDate(a.debut)} → ${fmtDate(a.fin)}</div>
-      <div class="actions" style="margin:6px 0 0"><button class="btn sm primary" data-action="pub-paid" data-id="${a.id}">✅ Paiement reçu</button><button class="btn sm" data-action="edit-pub" data-id="${a.id}">✏️ Voir</button></div></div>`)}</div>` : ''}
-    ${cos.length ? html`<div class="list">${cos.map((an) => { const n = vault.list('avis').filter((a) => isPub(a) && a.annId === an.id && (!a.fin || a.fin >= today()) && a.st === 'ok').length; return html`<button class="row" data-action="edit-annc" data-id="${an.id}"><span class="avatar">${(PUB_CATS[an.cat] || '📣').split(' ')[0]}</span><span class="grow"><span class="title" style="display:block">${an.nom}</span><span class="meta">${plural(n, 'annonce')} en ligne${an.tel ? ' · ' + an.tel : ''}</span></span><span class="chev">›</span></button>`; })}</div>` : html`<p class="small muted" style="margin:0">Aucun annonceur.</p>`}</div>`;
-}
-// 📣 annonces publicitaires des partenaires (vendues) : dans Comptabilité → Abonnements
-function pubSection(f = '') {
-      pubStatsLoad();
-      const all = vault.list('avis').filter((a) => isPub(a) && (!f || !a.immId || a.immId === f)).sort((a, b) => (b.debut || '').localeCompare(a.debut || ''));
-      const on = all.filter((a) => !a.fin || a.fin >= today()), off = all.filter((a) => a.fin && a.fin < today()).slice(0, 20);
-      const left = (a) => { if (!a.fin) return 'sans fin'; const n = Math.round((new Date(a.fin + 'T12:00:00') - new Date(today() + 'T12:00:00')) / 864e5); return a.debut > today() ? `à partir du ${fmtDate(a.debut)}` : n <= 0 ? 'dernier jour' : `encore ${plural(n, 'jour')}`; };
-      const row = (a) => html`<button class="row" data-action="edit-pub" data-id="${a.id}"><span class="grow"><span class="title" style="display:block;white-space:normal">${(PUB_CATS[a.cat] || PUB_CATS.autre).split(' ')[0]} <b>${a.nom}</b></span>
-        <span class="meta" style="display:block;white-space:normal">📍 ${a.adresse}${a.texte ? ' · ' + a.texte.slice(0, 90) : ''}${a.video ? ' · ▶ ' + (videoEmbed(a.video) ? videoEmbed(a.video).name : 'vidéo') : ''}</span>
-        <span class="meta" style="display:block"><b>${PUB_SLOTS[pubSlot(a)].split(' — ')[0]}</b> · ${pubAud(a).map((k) => html`<span>${PUB_AUD[k]}</span>`).reduce((x, y) => html`${x} · ${y}`)}</span>
-        <span class="meta"><span>${a.immId ? immName(a.immId) : 'Tous les immeubles'}</span>${a.fin ? html` · <span>${fmtDate(a.debut)} → ${fmtDate(a.fin)}</span>` : ''}</span>
-        ${(() => { const st = pubStatsFor(a.id, a.debut || '0000'); return st.v || st.taps || st.like || st.dis || st.sh ? html`<span class="meta" style="display:block">📊 <b>${st.v}</b> <span>vues</span> · <b>${st.taps}</b> <span>clics</span> · 👍 <b>${st.like}</b> · 👎 <b>${st.dis}</b> · 👉 <b>${st.sh}</b>${st.v ? html` · <span>${String(st.ctr).replace('.', ',')} %</span>` : ''}</span>` : ''; })()}</span>
-        <span class="badge ${a.st === 'wait' || a.st === 'pay' ? 'warn' : a.st === 'no' ? 'bad' : a.fin && a.fin < today() ? '' : a.fin && a.fin <= addDays(today(), 3) ? 'warn' : 'ok'}">${a.st === 'wait' ? '⏳ à valider' : a.st === 'pay' ? '💶 à payer' : a.st === 'no' ? '❌ refusée' : a.fin && a.fin < today() ? 'expirée' : left(a)}</span></button>`;
-      return html`${f ? '' : annBlock()}<p class="small muted" style="margin:0 0 10px">Annonces de partenaires (pizzerias, bars / pubs, bricolage, meubles…) dans l'app des locataires, avec la carte sous « Bonjour ». Chaque annonce disparaît seule à la fin de sa durée.</p>
-        ${all.length ? html`<p class="tiny muted" style="margin:-4px 0 8px">📊 Statistiques anonymes : vues (une fois par jour et par téléphone) et clics. <a href="#" data-action="pub-stats-refresh">↻ Actualiser les statistiques</a></p>` : ''}
-        ${on.length ? html`<div class="list" style="margin-bottom:14px">${on.map(row)}</div>` : empty('msg', 'Aucune annonce en cours.', html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>`)}
-        ${off.length ? html`<div class="section-label">Expirées (touchez pour republier)</div><div class="list">${off.map(row)}</div>` : ''}
-        ${radioCard()}`;
-}
 // 💼 abonnements des gérances (offre « Gérez aussi vos propres locataires ») : formule, prix, payé jusqu'au…
 const ABO_PLANS = { decouverte: ['Découverte', 0], pro: ['Pro', 29], agence: ['Agence', 79], mesure: ['Sur devis', 0] };
 const aboAll = () => (vault.get('reglages', 'abos') || {}).list || {};
@@ -2184,9 +1802,7 @@ const aboOf = (orgId) => aboAll()[orgId] || null;
 const aboState = (a) => (!a ? 'none' : a.plan === 'decouverte' ? 'free' : a.paidUntil && a.paidUntil >= today() ? 'ok' : 'due');
 const aboOffersOn = () => (vault.get('reglages', 'abos') || {}).offers !== false;
 function aboSection() {
-  const sub = ui.aboTab || 'ger';
-  const tabs = html`<div class="tabs" role="tablist" style="max-width:560px;margin-bottom:14px">${[['ger', html`💼 <span class="tab-long">Abonnements </span>gérances`], ['pub', html`📣 Annonces<span class="tab-long"> publicitaires</span>`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sub === k}" data-action="abo-tab" data-id="${k}">${l}</button>`)}</div>`; // (pas de 📰 News ici : elles restent dans l'Accueil)
-  if (sub === 'pub') return html`${tabs}<p style="margin:0 0 10px"><button class="btn primary" data-action="new-pub" data-imm="">${icon('plus')} Annonce</button></p>${pubPlanning()}${pubSection('')}`;
+  const tabs = '';
   const on = aboOffersOn();
   const sw = html`<div class="card" style="margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="grow"><b>Offres d’abonnement dans le portail des gérances</b><span class="meta" style="display:block">${on ? 'Les gérances voient « 💼 Nos abonnements » et « Voir les offres ».' : 'Masquées : les gérances ne voient aucune offre d’abonnement.'}</span></span>
     <button class="btn ${on ? 'primary' : ''}" data-action="abo-offers" aria-pressed="${on}">${on ? '🟢 Activé' : '⚪ Désactivé'}</button></div>`;
@@ -2427,12 +2043,11 @@ async function notifyNews(espId, raw) {
   if (Array.isArray(prev) && keys.some((x) => !prev.includes(x))) await vault.espNotify(espId).catch(() => {});
 }
 const espHashes = new Map(), espWarned = new Set();
-// 🔄 toutes les apps (locataires, équipe, ospiti, taxis, annonceurs) : on oublie ce qui a déjà été envoyé et on republie tout
+// 🔄 toutes les apps (locataires, équipe) : on oublie ce qui a déjà été envoyé et on republie tout
 async function appsRefreshAll() {
   espHashes.clear(); espWarned.clear();
   try { for (const k of Object.keys(localStorage)) if (k.startsWith('aresEsp:') || k.startsWith('aresNews:') === false && /^ares(Hote|Tx|Ann|Eq)/.test(k)) localStorage.removeItem(k); } catch { /* stockage */ }
   try { localStorage.removeItem('aresNetPubs2'); } catch { /* stockage */ }
-  if (typeof anHashes !== 'undefined') anHashes.clear();
   await espaceSync();
   try { localStorage.setItem('aresAppsVer', VERSION.split('.').slice(0, 2).join('.')); } catch { /* stockage */ }
   const n = vault.list('locataires').filter((x) => x.espace && x.espace.on).length;
@@ -2493,17 +2108,13 @@ async function espaceSync(onlyId, loud) {
       if (navigator.onLine && !espWarned.has(l.id)) { espWarned.add(l.id); toast(e.message === 'session-taken' ? `App de ${fullName(l)} pas mise à jour : cette centrale est ouverte sur un autre appareil${e.info && e.info.device ? ' (' + e.info.device + ')' : ''}. Un seul appareil à la fois peut enregistrer : fermez-la là-bas, puis rechargez cette page.` : `App de ${fullName(l)} pas mise à jour : ${e.message || 'erreur'}`, { bad: true }); }
     }
   }
-  if (!onlyId) await annSync();
   if (!onlyId) { await equipeSync(); await portailPubsSync(); await netPubsSync(); await biensSync(); }
   return true;
 }
-// Annonces pour le portail gérance : publiées en clair (publicité, aucune donnée personnelle), relues par le portail
-// 📍 Lieu d'un immeuble pour « Qui voit l'annonce ? » (zoneOk dans netpubs.js) : ville, pays (celui de la société par défaut), position
-const placeOf = (im) => (im ? { ville: im.ville || '', pays: im.pays || societe().pays || 'LU', geo: Array.isArray(im.geo) ? im.geo : null, txt: `${im.adresse || ''} ${im.ville || ''}` } : {});
-// 🌐 Annonces validées → liste publique du réseau (apps des centrales des clients et des annonceurs)
+// 🌐 liste publique des annonces du réseau : vide (plus de publicité), envoyée une fois pour effacer l'ancienne
 async function netPubsSync() {
   if (TENANT) return;
-  const list = vault.list('avis').filter((a) => isPub(a) && (!a.st || a.st === 'ok') && (!a.fin || a.fin >= today())).map((a) => ({ ...pubOut(a), aud: pubAud(a), debut: a.debut || '', annId: a.annId || '' }));
+  const list = []; // 📣 plus de publicité : la liste publique reste vide (efface les anciennes annonces chez les apps)
   const h = await sha256Hex(JSON.stringify(list));
   let prev = '';
   try { prev = localStorage.getItem('aresNetPubs2') || ''; } catch { /* stockage indisponible */ }
@@ -2514,7 +2125,7 @@ async function netPubsSync() {
 }
 async function portailPubsSync() {
   if (TENANT) return;
-  const list = pubsActives('', 'ptl').map(pubOut), offers = aboOffersOn(), cc = centraleConf(), contact = centraleResp() ? { nom: centraleResp(), tel: cc.tel || '', email: cc.email || '' } : null;
+  const list = [], offers = aboOffersOn(), cc = centraleConf(), contact = centraleResp() ? { nom: centraleResp(), tel: cc.tel || '', email: cc.email || '' } : null;
   const h = await sha256Hex(JSON.stringify([list, offers, contact]));
   let prev = '';
   try { prev = localStorage.getItem('aresPubPtl') || ''; } catch { /* stockage indisponible */ }
@@ -2572,8 +2183,6 @@ async function inboxSync() {
         await vault.inboxDel(it.name);
         continue;
       }
-      const anc = anCos().find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
-      if (anc) { if (await annInbox(anc, msg)) n++; await vault.inboxDel(it.name); continue; }
       const l = vault.list('locataires').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
       if (!l || !l.espace.on) { await vault.inboxDel(it.name); continue; }
       if (msg.type === 'paye') {
@@ -2675,7 +2284,7 @@ async function inboxSync() {
 }
 
 // Messages envoyés par les locataires depuis leur app, pas encore ouverts dans Ares
-// 📣 Annonce de la centrale : un seul message, envoyé dans la chat de chacun (habitants, équipe, taxis, annonceurs)
+// 📣 Annonce de la centrale : un seul message, envoyé dans la chat de chacun (habitants, équipe, clients du réseau)
 // et dans la boîte chiffrée des clients du réseau (qui peuvent le transférer aux leurs)
 // Plan du nettoyage : ce qui est ⭐ (ou lié à du ⭐) reste, le reste part
 function testPlan() {
@@ -2715,10 +2324,7 @@ function centralinoHtml() {
   const eqs = vault.list('intervenants').filter((i) => !i.archive && ((i.chat || []).length || (i.espace && i.espace.on)))
     .map((i) => ({ i, last: (i.chat || []).filter((m) => !m.del).slice(-1)[0] }))
     .sort((a, b) => (b.i.chatNew || 0) - (a.i.chatNew || 0) || ((b.last || {}).at || '').localeCompare((a.last || {}).at || ''));
-  const parts = anCos().filter((r) => r.espace && r.espace.id).map((r) => ({ r, last: (r.chat || []).filter((m) => !m.del).slice(-1)[0] }))
-    .sort((a, b) => (b.r.chatNew || 0) - (a.r.chatNew || 0) || ((b.last || {}).at || '').localeCompare((a.last || {}).at || ''));
-  const nPart = parts.reduce((a, p) => a + (p.r.chatNew || 0), 0);
-  const nHouse = imms.reduce((a, im) => a + houseN(im), 0), nEq = eqs.reduce((a, e) => a + (e.i.chatNew || 0), 0), tot = sig.length + nHouse + nEq + nPart;
+  const nHouse = imms.reduce((a, im) => a + houseN(im), 0), nEq = eqs.reduce((a, e) => a + (e.i.chatNew || 0), 0), tot = sig.length + nHouse + nEq;
   const open = ui.centOpen ?? tot > 0;
   const badge = (n) => (n ? html`<span class="badge bad">${n}</span>` : '');
   const row = (action, id, title, sub, n) => html`<button class="row" data-action="${action}" data-id="${id}"><span class="grow"><span class="title" style="display:block">${title}</span><span class="meta">${sub}</span></span>${badge(n)}</button>`;
@@ -2735,7 +2341,6 @@ function centralinoHtml() {
     ${imms.length ? html`<div class="list">${imms.map((im) => row('open-chat', im.id, immName(im.id), houseN(im) ? `${houseN(im)} nouveau${houseN(im) > 1 ? 'x messages' : ' message'} — touchez pour lire` : `${plural(Object.keys(im.chats || {}).length, 'fil')} · touchez pour ouvrir`, houseN(im)))}</div>` : html`<p class="small muted">Aucun fil de messages entre habitants.</p>`}</details>
     <details class="cent-sec gfold" data-gk="cent|eq" ${foldIsOpen('cent|eq') ? new Raw('open') : ''}><summary>👷 Messages des Équipes ${badge(nEq)}</summary>
     ${eqs.length ? html`<div class="list">${eqs.map(({ i, last }) => row('open-eq-chat', i.id, intervFull(i), last ? `${last.from === 'mgr' ? '🛡️ ' : '👷 '}${String(last.x || '').slice(0, 60)} · ${fmtDateTime(last.at)}` : 'Pas encore de message', i.chatNew || 0))}</div>` : html`<p class="small muted">Aucun ouvrier avec l’app active.</p>`}</details>
-    ${parts.length ? html`<details class="cent-sec gfold" data-gk="cent|part" ${foldIsOpen('cent|part') ? new Raw('open') : ''}><summary>🍽️ Annonceurs ${badge(nPart)}</summary><div class="list">${parts.map(({ r, last }) => row('open-pchat', r.id, `${pchatKind(r)} ${r.nom}`, last ? `${last.from === 'mgr' ? '🛡️ ' : ''}${String(last.x || '').slice(0, 60)} · ${fmtDateTime(last.at)}` : 'Pas encore de message', r.chatNew || 0))}</div></details>` : ''}
   </details>`;
 }
 const newSignals = () => vault.list('taches').filter((t) => t.sentAt && !t.vu).sort((a, b) => (b.sentAt || '').localeCompare(a.sentAt || ''));
@@ -3225,7 +2830,7 @@ function promptText(title, detail, placeholder) {
 const PAYS = { LU: ['Luxembourg', [17, 14, 8, 3]], FR: ['France', [20, 10, 5.5, 2.1]], BE: ['Belgique', [21, 12, 6]], DE: ['Deutschland', [19, 7]], IT: ['Italia', [22, 10, 5, 4]], PT: ['Portugal', [23, 13, 6]], ES: ['España', [21, 10, 4]], NL: ['Nederland', [21, 9]], AT: ['Österreich', [20, 13, 10]], CH: ['Suisse', [8.1, 3.8, 2.6]] };
 const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '').split(/[;, ]+/).map((x) => parseFloat(x.replace(',', '.'))).filter((x) => x > 0 && x < 100); return own.length ? own : (PAYS[s0.pays || 'LU'] || PAYS.LU)[1]; };
 // Marque de l'app de gestion (fixe, indépendante de la société cliente)
-const APP_BRAND = { nom: 'CENTRAL DOMIER', sub: 'LuxIntervention', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
+const APP_BRAND = { nom: 'LUXINTERVENTIONS', sub: '', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
 const DEF_SOC = () => (TENANT ? tenantInfo.nom || 'Centrale' : 'NOBIS s.a.r.l.');
 const socName = () => societe().nom || DEF_SOC();
 // ligne légale (page de la clé, bas de la centrale) : la société de ⚙️ Réglages → 🧾 Facturation, gardée sur l'appareil pour la page de la clé
@@ -3237,7 +2842,7 @@ function legalLine() {
   }
   try { return localStorage.getItem('aresLegal') || APP_BRAND.legal; } catch { return APP_BRAND.legal; }
 }
-// nom affiché aux clients, locataires, ospiti, taxis, annonceurs : la marque LA CENTRAL (la centrale d'un client : son propre nom)
+// nom affiché aux clients et aux locataires : la marque LA CENTRAL (la centrale d'un client : son propre nom)
 const netBrand = () => (TENANT ? socName() : 'LA CENTRAL');
 const socLogo = () => societe().logo || (TENANT ? '' : '/ares/icons/nobis-logo.png');
 const htOf = (ttc, r) => (r ? ttc / (1 + r / 100) : ttc);
@@ -3819,12 +3424,12 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr']] },
+  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['licences', 'Licences', 'qr']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['annonceurs', 'Annonceurs', 'megaphone'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['agences', 'Agences', 'homes'], ['proprios', 'Propriétaires', 'key'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', agence: '🏘️ Agence immo.', proprio: '🔑 Propriétaire' };
@@ -3836,7 +3441,7 @@ const maskOf = (route) => (['locataires', 'paiements'].includes(route) ? 'immeub
 const COLOR_LEG = [['#F97316', 'Interventions et maintenance : demandes, travaux, équipe'], ['#1D4ED8', 'Gérances : portail et demandes des gérances'],
   ['#0077BE', 'Nouveau bien : biens à louer / à vendre des agences immobilières'], ['#8B5CF6', 'Devis : offres de prix à signer'],
   ['#0D9488', 'Locataires et loyers : logements, contrats, paiements'],
-  ['#DC2626', 'Publicité : annonces des partenaires du quartier'], ['#475569', 'Avis de l’immeuble : coupures, travaux dans les communs'],
+  ['#475569', 'Avis de l’immeuble : coupures, travaux dans les communs'],
   ['#4F46E5', 'Planning du jour : ce qui est prévu aujourd’hui']];
 const legDots = () => html`<div class="leg-dots" aria-label="Légende des couleurs">${COLOR_LEG.map(([c, t]) => html`<button type="button" class="leg-dot" style="--c:${c}" data-action="leg-dot"><span class="leg-tip">${t}</span></button>`)}</div>`;
 const navKeep = (it) => routeOk(it[0]) && !(TENANT && it[4] === 'abo');
@@ -3887,7 +3492,7 @@ function go(route, replace) {
   ui.route = route;
   const url = '#/' + route;
   if (replace) history.replaceState(null, '', url); else if (location.hash !== url) history.pushState(null, '', url);
-  const navRoute = route === 'champeq' || route === 'champpub' || route === 'champdrv' ? 'champions' : route === 'rapports' ? 'compta' : ['paiements', 'locataires'].includes(route) ? 'immeubles' : route;
+  const navRoute = route === 'champeq' ? 'champions' : route === 'rapports' ? 'compta' : ['paiements', 'locataires'].includes(route) ? 'immeubles' : route;
   document.querySelectorAll('.navbtn[data-to]').forEach((b) => (b.dataset.to === navRoute && (!b.dataset.sec || b.dataset.sec === (ui.cpSec === 'abo' ? 'abo' : 'compta')) ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current')));
   bnavShow();
   renderView();
@@ -4016,69 +3621,6 @@ async function recActivate() {
   try { localStorage.setItem(recAKey(), a); } catch { /* stockage indisponible */ }
   await vault.mutate((tx) => tx.put('reglages', { id: 'recSplit', at: today() }), '🧩 Récupération de clé activée', '');
   openSheet('rec-split', null, null, a);
-}
-// 📣 Centrale d'un client : les annonces du réseau (validées par LA CENTRAL) aux 3 emplacements de l'Accueil
-let netAdsCache = null, netAdsAt = 0;
-function netAdsLoad() {
-  if (!TENANT || Date.now() - netAdsAt < 10 * 60000) return;
-  netAdsAt = Date.now();
-  fetch(API.replace(/\/$/, '') + '/api/netpubs').then((r) => (r.ok ? r.json() : { items: [] })).then((j) => { netAdsCache = Array.isArray(j.items) ? j.items : []; if (ui.route === 'dashboard' && vault.unlocked) renderView(); }).catch(() => {});
-}
-// 📣 annonces du réseau dans la centrale d'un client : même carte que dans les apps (logo, vidéo / musique, 👍 👎 👉, vues et clics)
-let netSocOn = false;
-// 📅 occupation : par fascia et par position, annonces en cours (fixes + un tiers des « rotation »), capacité réglée dans les tarifs
-function pubLoad(excludeId) {
-  const t0 = today(), occ = {};
-  for (const a of vault.list('avis').filter((x) => isPub(x) && (!x.st || x.st === 'ok' || x.st === 'pay') && x.id !== excludeId && (!x.fin || x.fin >= t0))) {
-    for (const k of a.bands && a.bands.length ? a.bands : BAND_KEYS) {
-      const o = (occ[k] ||= { haut: 0, milieu: 0, bas: 0, rot: 0 });
-      o[a.slot === 'rot' ? 'rot' : pubSlot(a) === 'rot' ? 'rot' : pubSlot(a)] += 1;
-    }
-  }
-  return occ;
-}
-const pubUsed = (o, p) => (o ? o[p] + Math.ceil(o.rot / 3) : 0);
-function pubFull(a) {
-  const cap = anTarifsFull().cap || 10, occ = pubLoad(a.id), ps = a.slot === 'rot' ? ['haut', 'milieu', 'bas'] : [pubSlot(a)];
-  return (a.bands && a.bands.length ? a.bands : BAND_KEYS).filter((k) => ps.some((p) => pubUsed(occ[k], p) + (a.slot === 'rot' ? 1 / 3 : 1) > cap));
-}
-function pubPlanning() {
-  const cap = anTarifsFull().cap || 10, occ = pubLoad(''), now = bandNow();
-  const cell = (o, p) => { const n = pubUsed(o, p); return html`<td style="text-align:center;font-weight:600;color:${n >= cap ? 'var(--bad,#c0392b)' : n >= cap * 0.7 ? 'var(--amber,#b45309)' : 'inherit'}">${n} / ${cap}</td>`; };
-  return html`<details class="card gfold" data-gk="pub|plan" ${foldIsOpen('pub|plan') ? new Raw('open') : ''} style="margin-bottom:14px"><summary><b>📅 Planning des annonces</b> <span class="tiny muted">places occupées par fascia et par position · rouge = complet</span></summary>
-    <div style="overflow-x:auto;margin-top:8px"><table class="pr-table" style="width:100%"><tr><th style="text-align:left">Fascia</th><th>🔝 Haut</th><th>⏺ Milieu</th><th>🔽 Bas</th><th>🔄 Rotation</th></tr>
-    ${BANDS.map(([k]) => { const o = occ[k]; return html`<tr${k === now ? new Raw(' style="background:rgba(59,130,246,.08)"') : ''}><td>${bandTxt(k)}${k === now ? ' ◀' : ''}</td>${cell(o, 'haut')}${cell(o, 'milieu')}${cell(o, 'bas')}<td style="text-align:center">${o ? o.rot : 0}</td></tr>`; })}</table></div>
-    <p class="tiny muted" style="margin:6px 0 0">Chaque annonce reste 3 minutes, puis cède sa place ; elle revient au moins toutes les 30 minutes tant que la position n’est pas complète. Les annonces « rotation » comptent pour un tiers dans chaque position.</p></details>`;
-}
-function netAd(slot) {
-  if (!TENANT) return '';
-  netAdsLoad();
-  const t0 = today(), ims = imms0();
-  const l = (netAdsCache || []).filter((a) => (a.aud || []).includes('cli') && pubSlotNow(a) === slot && pubLive(a) && (!a.fin || a.fin >= t0) && (!a.debut || a.debut <= t0) && (!ims.length || ims.some((im) => zoneOk(a, placeOf(im)))));
-  if (!l.length) return '';
-  if (!netSocOn) {
-    netSocOn = true;
-    pubStatInit(API, 'cli', () => getLang());
-    pubSocialInit(API, () => getLang());
-    // 🔽 annonce repliée / ouverte : gardé sur cet appareil
-    document.addEventListener('toggle', (e) => { const d = e.target; if (!d.classList || !d.classList.contains('net-ad')) return; const sh = netAdShut(); if (d.open) sh.delete(d.dataset.pid); else sh.add(d.dataset.pid); try { localStorage.setItem('netAdShut', JSON.stringify([...sh].slice(-50))); } catch { /* stockage indisponible */ } }, true);
-    document.addEventListener('click', (e) => { if (!e.target.closest || !e.target.closest('.net-ad')) return; if (pubSocialClick(e)) { e.stopPropagation(); return; } pubTap(e); }, true);
-  }
-  setTimeout(() => { const r = document.querySelector('.net-ad'); if (r) { pubSocialLoad(document); pubSeen(document); } }, 0);
-  const a = pubPickNow(l), lg = /^data:image\/(png|jpeg|webp);base64,/.test(a.logo || '') ? a.logo : '', v = a.video ? videoEmbed(a.video) : null;
-  return html`<details class="card net-ad" data-pid="${a.id}" style="margin-bottom:14px;border-left:4px solid #DC2626" ${netAdShut().has(a.id) ? '' : new Raw('open')}><summary style="cursor:pointer;list-style:none;display:flex;gap:10px;align-items:center"><span style="flex:1;min-width:0"><span class="tiny muted" style="display:block"><b>📣 Publicité</b>${PUB_CATS[a.cat] ? ' · ' + PUB_CATS[a.cat] : ''}</span><b style="display:block;font-size:16px">${a.nom}</b></span>${lg ? html`<img src="${lg}" alt="" style="max-height:40px;max-width:80px;object-fit:contain;border-radius:8px;background:#fff">` : ''}<span class="muted" aria-hidden="true">▾</span></summary>${a.texte ? html`<p class="small" style="margin:4px 0 0;white-space:pre-wrap">${a.texte}</p>` : ''}
-    ${v ? html`<div style="clear:both;margin-top:8px;border-radius:12px;overflow:hidden;background:#000;${v.audio ? `height:${v.audio}px` : 'aspect-ratio:' + (v.tall ? '9/16;max-height:520px;max-width:300px' : '16/9')}"><iframe src="${v.src}" title="${v.name}" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share" allowfullscreen referrerpolicy="strict-origin-when-cross-origin" style="width:100%;height:100%;border:0;display:block"></iframe></div>` : a.video ? html`<p style="margin:8px 0 0"><a class="btn sm" href="${a.video}" target="_blank" rel="noopener">▶ Vidéo</a></p>` : ''}
-    ${a.adresse ? html`<div class="meta" style="margin-top:6px">📍 ${a.adresse}</div>` : ''}
-    <div class="actions" style="margin:8px 0 0;flex-wrap:wrap">${a.adresse ? html`<a class="btn sm" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(a.adresse)}" target="_blank" rel="noopener" data-pev="map">📍 Voir</a>` : ''}${a.tel ? html`<a class="btn sm" href="tel:${String(a.tel).replace(/[^\d+]/g, '')}" data-pev="call">📞 Appeler</a>` : ''}${a.web ? html`<a class="btn sm" href="${a.web}" target="_blank" rel="noopener" data-pev="web">🌐 Site</a>` : ''}</div>${new Raw(pubSocialBar(a))}</details>`;
-}
-function netAdShut() { try { return new Set(JSON.parse(localStorage.getItem('netAdShut') || '[]')); } catch { return new Set(); } }
-// 📣 / ⚠️ annonces à valider et réclamations des annonceurs (Accueil, même vide)
-function annAlerts(alertBtn) {
-    const annWait = TENANT ? [] : vault.list('avis').filter((a) => isPub(a) && a.st === 'wait' && a.annId);
-    const anRecs = TENANT ? [] : vault.list('reglages').filter((r) => r.id.startsWith('anrec-') && !r.vu);
-    const anRecBox = anRecs.length ? html`<div class="stack" style="margin-bottom:14px">${anRecs.map((r) => alertBtn('bad', 'alert', 'anrec-open', r.id, html`⚠️ <b>Réclamation — ${(vault.get('reglages', r.annId) || {}).nom || '?'}</b> · ${r.motif}<div class="tiny">${r.texte.slice(0, 140)}</div>`))}</div>` : '';
-    const annBox = annWait.length ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('warn', 'alert', 'ann-open', '', html`📣 <b>${plural(annWait.length, 'annonce')} à valider</b> — ${[...new Set(annWait.map((a) => (vault.get('reglages', a.annId) || {}).nom || a.nom))].join(', ')}${annWait.some((a) => a.special) ? ' · ✍️ demande spéciale' : ''}<div class="tiny">touchez pour voir, accepter ou refuser</div>`)}</div>` : '';
-  return { anRecBox, annBox };
 }
 function renderView() {
   const view = $('#view');
@@ -4470,7 +4012,7 @@ const locTabs = (cur, nGone) => html`<div class="tabs loc-tabs" role="tablist" s
   <button class="tab" role="tab" aria-selected="${cur === 'actuels'}" data-action="loc-seg" data-id="actuels">Actuels</button>
   <button class="tab" role="tab" aria-selected="${cur === 'anciens'}" data-action="loc-seg" data-id="anciens">Anciens (${nGone})</button>
   ${masked().has('paiements') ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === 'paiements'}" data-action="go" data-to="paiements"><span class="t-lg">💶 Gestion locataire</span><span class="t-sm">💶 Gestion loc.</span></button>`}</div>`;
-const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:640px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année'], ['champpub', '📣 Annonces de l’année']].filter(([r]) => !TENANT || r === 'champions').map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
+const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:640px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année']].filter(([r]) => !TENANT || r === 'champions').map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
 // Éditeur d'horaire sur 7 jours : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute.
 // slotsOf(j) : créneaux du jour j (0 = lundi) ; title(j) : nom du jour (avec la date pour une semaine précise)
 function horWeekEditor(slotsOf, title) {
@@ -5120,30 +4662,6 @@ function rptView() {
 
 const VIEWS = {
   rapports() { return rptView(); },
-  // 📣 Annonceurs (clients de la centrale) : leurs annonces, validation, paiements — l'onglet « Annonces » des Abonnements
-  annonceurs() { ui.cpSec = 'abo'; ui.aboTab = 'pub'; return VIEWS.compta(); },
-  // 📣 les annonces les plus aimées de l'année : 👍 👎 👉 (apps) + vues et clics, podium
-  champpub() {
-    pubStatsLoad();
-    const cy = new Date().getFullYear(), y = ui.champPubYear || cy, from = y + '-01-01', to = y + '-12-31';
-    const rows = vault.list('avis').filter(isPub).map((a) => [a, pubStatsFor(a.id, from, to)]).filter(([, st]) => st.v || st.taps || st.like || st.dis || st.sh)
-      .sort((p, q) => q[1].like - p[1].like || q[1].sh - p[1].sh || q[1].v - p[1].v);
-    const tot = (k) => sum(rows, ([, st]) => st[k]), medal = ['🥇', '🥈', '🥉'];
-    const nm = (a) => (a.annId && (vault.get('reglages', a.annId) || {}).nom) || a.nom;
-    return html`
-      ${champTabs('champpub')}${pageHead('📣 Annonces de l’année', 'Les annonces les plus aimées dans les apps (locataires, équipe, portail) : 👍 j’aime, 👎 je n’aime pas, 👉 partages, vues et clics.')}
-      <div class="chips" style="margin-bottom:14px">${[cy, cy - 1].map((yy) => html`<button class="chip" data-action="champpub-year" data-id="${yy}" aria-pressed="${yy === y}">${yy}</button>`)}</div>
-      <div class="metrics" style="margin-bottom:14px">
-        <div class="metric"><div class="lbl">👍 <span>J’aime</span></div><div class="val">${tot('like')}</div></div>
-        <div class="metric"><div class="lbl">👎 <span>Je n’aime pas</span></div><div class="val">${tot('dis')}</div></div>
-        <div class="metric"><div class="lbl">👉 <span>Partages</span></div><div class="val">${tot('sh')}</div></div>
-        <div class="metric"><div class="lbl">👁 <span>Vues</span></div><div class="val">${tot('v')}</div></div>
-        <div class="metric"><div class="lbl">👆 <span>Clics</span></div><div class="val">${tot('taps')}</div></div>
-      </div>
-      ${rows.length ? html`<div class="list">${rows.map(([a, st], i) => html`<button class="row" data-action="edit-pub" data-id="${a.id}"><span class="avatar">${medal[i] || i + 1}</span><span class="grow"><span class="title" style="display:block">${nm(a)}</span><span class="meta">${AN_TYPES[a.type] || ''} ${a.nom !== nm(a) ? '· ' + a.nom : ''}</span><span class="meta" style="display:block">👍 <b>${st.like}</b> · 👎 <b>${st.dis}</b> · 👉 <b>${st.sh}</b> · 👁 ${st.v} · 👆 ${st.taps}</span></span><span class="chev">›</span></button>`)}</div>`
-        : html`<p class="small muted">Pas encore de j’aime, de partages ni de vues cette année.</p>`}
-      ${ui.pubStats && ui.pubStats.err ? html`<p class="tiny muted">⚠ Statistiques indisponibles (connexion ?)</p>` : ''}`;
-  },
   champeq() {
     const cy = new Date().getFullYear();
     const y = ui.champEqYear || cy;
@@ -5205,14 +4723,13 @@ const VIEWS = {
   },
 
   maintenance() {
-    if (ui.mtTab === 'pub') { ui.mtTab = 'planning'; ui.cpSec = 'abo'; go('compta', true); return ''; } // les annonces sont dans Comptabilité → Abonnements
     let tab = ui.mtTab || 'planning';
     const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
     const f = ui.immFilter && imms.some((im) => im.id === ui.immFilter) ? ui.immFilter : '';
     const chips = imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
       <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!f}">Tous</button>
       ${imms.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${f === im.id}">${im.adresse}</button>`)}</div>` : '';
-    const add = tab === 'pub' ? html`<button class="btn primary" data-action="new-pub" data-imm="${f}">${icon('plus')} Annonce</button>` : tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions acts-fit" style="margin:0"><button class="btn" data-action="aff-pick">📌 Affectation d’interv.</button><button class="btn" data-action="interv-job">📅 Nouv. intervention</button><button class="btn primary" data-action="new-interv">${icon('plus')} Ouvrier</button></div>`
+    const add = tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions acts-fit" style="margin:0"><button class="btn" data-action="aff-pick">📌 Affectation d’interv.</button><button class="btn" data-action="interv-job">📅 Nouv. intervention</button><button class="btn primary" data-action="new-interv">${icon('plus')} Ouvrier</button></div>`
       : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
       : tab === 'devis' ? html`<button class="btn primary" data-action="dev-new">${icon('plus')} Devis</button>`
       : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
@@ -5303,8 +4820,7 @@ dashboard() {
     const alertBtn = (cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`;
 
     if (TENANT && !imms.length && !locs.length) {
-      const { anRecBox: rb0, annBox: ab0 } = annAlerts((cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`);
-      return html`${packBox()}${domierCentral()}${pushNudge()}${netAd('haut')}${rb0}${ab0}${centralinoHtml()}${netAd('milieu')}${TENANT ? html`${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
+      return html`${packBox()}${domierCentral()}${pushNudge()}${centralinoHtml()}${TENANT ? html`${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}` : ''}`;
     }
 
@@ -5324,7 +4840,6 @@ dashboard() {
     // ⏳ clients du réseau dont l'accès (abonnement ou 6 mois offerts) se termine dans 30 jours : c'est le moment d'appeler
     const netSoon = TENANT ? [] : ((ui.net && ui.net.list) || []).filter((t) => t.until && t.until >= today() && t.until <= addDays(today(), 30) && t.st !== 'suspended');
     const netStopBox = TENANT ? '' : (() => { const l = vault.list('taches').filter((t) => t.net && t.net.stopAsk && !t.fin); return l.length ? html`<div class="stack" style="margin-bottom:14px">${l.map((t) => alertBtn('warn', 'calendar', 'edit-tache', t.id, html`⏹️ <b>${t.net.nom}</b> demande l’arrêt du service : ${t.titre}<div class="tiny">mettez la date de fin dans la tâche</div>`))}</div>` : ''; })();
-    const { anRecBox, annBox } = annAlerts(alertBtn);
     const bailBox = (() => {
       const al = imms0().map((im) => [im, bailAlert(im)]).filter(([, a]) => a).sort((x, y) => x[1].left - y[1].left);
       const revB = imms0().filter((im) => isBailPrincipal(im) && im.bailRev && daysUntil(im.bailRev) >= -15 && daysUntil(im.bailRev) <= 60);
@@ -5358,25 +4873,24 @@ dashboard() {
     if (!TENANT && !ownPark()) {
       const sec = (ic, t, sub, items) => { const it = items.filter(Boolean); return html`<div class="dsec"><div class="section-label" style="margin:18px 0 0">${ic} ${t}</div><p class="tiny muted" style="margin:0 0 8px">${sub}</p>${it.length ? it : html`<p class="tiny muted" style="margin:0 0 4px">✓ rien à traiter</p>`}</div>`; };
       const confier = vault.list('taches').filter((t) => !t.intervenantId && !t.recur && t.statut !== 'fait').sort((a, b) => String(a.sentAt || a.date || '').localeCompare(String(b.sentAt || b.date || '')));
-      const toBill = vault.list('taches').filter((t) => t.statut === 'fait' && !t.facture && (t.ptl || domBill(t) || (t.net && netPayMode(t.net.tid) === 'each')));
+      const toBill = vault.list('taches').filter((t) => t.statut === 'fait' && !t.facture && (t.ptl || (t.net && netPayMode(t.net.tid) === 'each')));
       const unpaid = vault.list('taches').filter((t) => t.facture && !t.facture.paid);
       const claimed = unpaid.filter((t) => t.facture.claim);
       const late2 = unpaid.filter((t) => t.facture.due && lateDays(t.facture.due) > 0);
       return html`${centralinoHtml()}
         ${sec('🔔', 'FLASH', 'À traiter vite, puis ça disparaît', [pushNudge(), appsBox, toolsBox])}
-        ${netAd('haut')}
+        
         ${sec('🛠️', 'À CONFIER', 'Demandes arrivées : choisir l’ouvrier ; puis les travaux du jour', [
           confier.length ? html`<div class="stack" style="margin-bottom:10px">${confier.slice(0, 12).map((t) => alertBtn('warn', 'tool', 'edit-tache', t.id, html`<b>${t.titre}</b><span class="small" style="display:block">${t.net ? '🌐 ' + t.net.nom + ' · ' : ''}${t.adr ? '📍 ' + t.adr + ' · ' : ''}${fmtDate(t.date)} — à confier</span>`))}${confier.length > 12 ? html`<p class="tiny muted">… et ${confier.length - 12} autres (Maintenance)</p>` : ''}</div>` : '', sigBox, netStopBox, mtCard()])}
         ${sec('👷', 'INFO OUVRIERS', 'Maladie, accident, retard, imprévu sur chantier, travaux refusés, assurance', [absBox, refBox, eqBox, assurBox, finBox])}
         ${sec('📝', 'DEVIS', 'Reçus du chef de chantier : vérifier, envoyer, faire signer', [devBanner()])}
-        ${sec('📣', 'PUBLICITÉ', 'Annonces à valider, clips à créer, à encaisser, à publier sur nos réseaux', [anRecBox, annBox, (() => { const L = vault.list('avis').filter((a) => a.soc && a.st === 'ok' && (a.fin || '') >= today() && Object.keys(SOC_NET).some((k) => !(a.socPub || {})[k])); return L.length ? html`<div class="alert info" style="margin-bottom:10px">📱<div style="flex:1"><b>${plural(L.length, 'annonce')} à publier sur nos réseaux</b><div class="list" style="margin-top:6px">${L.map((a) => html`<button class="row" data-action="socpub-open" data-id="${a.id}"><span class="grow"><span class="title" style="display:block">${a.nom}</span><span class="meta">${Object.entries(SOC_NET).map(([k, l]) => ((a.socPub || {})[k] ? '✅' : '⬜') + ' ' + l.split(' ')[1]).join(' · ')} · jusqu’au ${fmtDate(a.fin)}</span></span><span class="chev">›</span></button>`)}</div></div></div>` : ''; })()])}
         ${sec('🙋', 'CANDIDATURES', 'Personnes qui cherchent du travail', [candBox])}
         ${sec('🧾', 'FACTURES OUVERTES', 'À émettre, à encaisser, en retard', [
           toBill.length ? alertBtn('warn', 'receipt', 'open-facts', '', html`🟡 <b>${plural(toBill.length, 'intervention')} terminée${toBill.length > 1 ? 's' : ''} à facturer</b>`) : '',
           unpaid.length ? alertBtn(late2.length ? 'bad' : 'info', 'wallet', 'open-facts', '', html`⏳ <b>${plural(unpaid.length, 'facture')} à encaisser</b> · ${eur(sum(unpaid, (t) => t.facture.ttc))}${late2.length ? html` · 🔴 ${late2.length} en retard` : ''}${claimed.length ? html` · 💳 ${claimed.length} « payé » à vérifier` : ''}`) : '',
           nClaimBox])}
         ${sec('🌐', 'CLIENTS & LICENCES', 'Abonnements à renouveler, essais qui finissent', [netSoonBox])}
-        ${netAd('milieu')}`;
+        `;
     }
     return html`
       ${packBox()}
@@ -5384,7 +4898,7 @@ dashboard() {
       ${pushNudge()}
       ${bailBox}
       ${appsBox}
-      ${netAd('haut')}
+      
       ${nudge}
       ${devBanner()}
       ${refBox}
@@ -5392,10 +4906,10 @@ dashboard() {
       ${finBox}
       ${sigBox}
       ${centralinoHtml()}
-      ${netAd('milieu')}
+      
       ${virBox}
       ${edlBox}
-      ${anRecBox}${annBox}${nClaimBox}${netSoonBox}${netStopBox}${eqBox}${candBox}
+      ${nClaimBox}${netSoonBox}${netStopBox}${eqBox}${candBox}
       ${absBox}
       ${toolsBox}
       ${imms.length || locs.length ? html`      ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
@@ -5466,7 +4980,7 @@ dashboard() {
           <div class="progress ${level(pp)}"><i style="width:${Math.min(pp, 100)}%"></i></div>
           <div class="pay-foot"><span>${im.type && im.type !== 'immeuble' ? (IMM_TYPES[im.type] || '') + ' · ' : ''}${plural(ls.length, 'locataire')}</span><span class="num">${money(rec)} / ${money(exp)}</span></div>
         </button>`;
-      })}</div>`, 'margin-top:14px')}${netAd('bas')}${TENANT ? html`<div style="margin-top:14px">${new Raw(newsHtml(API))}</div>` : ''}`;
+      })}</div>`, 'margin-top:14px')}${TENANT ? html`<div style="margin-top:14px">${new Raw(newsHtml(API))}</div>` : ''}`;
   },
 
   immeubles() {
@@ -5808,7 +5322,7 @@ dashboard() {
         <p class="tiny muted">Taux normal : ${String(c0.taux).replace('.', ',')} % (Réglages → 🧾 Facturation) ; régime par client (autoliquidation, non applicable…) dans Gérances → la gérance → 🧾 Facturation. Détail facture par facture : onglet 🧾 Factures. Aide à la déclaration, à faire vérifier par votre comptable.</p>`;
     } else if (tab === 'fact') {
       const F = vault.list('taches').filter((t) => t.facture && t.facture.date >= from && t.facture.date <= to).sort((a, b) => b.facture.no.localeCompare(a.facture.no));
-      const todo = vault.list('taches').filter((t) => (t.ptl || domBill(t) || (t.net && netPayMode(t.net.tid) === 'each')) && t.statut === 'fait' && !t.facture);
+      const todo = vault.list('taches').filter((t) => (t.ptl || (t.net && netPayMode(t.net.tid) === 'each')) && t.statut === 'fait' && !t.facture);
       const c = factConf();
       body = html`<div class="metrics" style="margin-bottom:14px">
           <div class="metric"><div class="lbl">Factures</div><div class="val">${F.length}</div><div class="sub">${cpLabel(y, per)}</div></div>
@@ -5943,7 +5457,6 @@ dashboard() {
         <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
         ${TENANT ? '' : html`<button class="row" data-action="eq-group"><span class="avatar">💬</span><span class="grow"><span class="title" style="display:block">Groupe de l’équipe (messages spéciaux)</span><span class="meta">${plural(eqGroup().length, 'ouvrier')} dans le groupe · les autres messages restent entre chaque ouvrier et la centrale</span></span>${icon('chevron')}</button>`}
         ${TENANT ? '' : html`<button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>`}
-        ${TENANT ? '' : html`<button class="row" data-action="socnet-open"><span class="avatar">📱</span><span class="grow"><span class="title" style="display:block">Nos réseaux sociaux</span><span class="meta">${socConf().f} abonnés · option des annonces ${eur(num(socConf().prix))} TTC</span></span>${icon('chevron')}</button>`}
         <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${TENANT && !societe().logo ? html`<b style="color:var(--amber,#b45309)">🖼️ Mettez votre logo : vos locataires le voient dans leur app</b><br>` : ''}${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
       </div>
 
@@ -6301,8 +5814,6 @@ const SHEETS = {
     const ws = vault.list('intervenants').filter((w) => w.espace && w.espace.on && !w.archive), grp = eqGroup();
     const nets = TENANT ? [] : ((ui.net && ui.net.list) || []).filter((t) => t.pub);
     const fils = [...new Set(nets.map((t) => t.fil).filter(Boolean))];
-    const an = TENANT ? [] : anCos().filter((r) => r.espace && r.espace.id);
-    const cb = (name, label, sub) => html`<label class="row" style="cursor:pointer"><input type="checkbox" name="${name}" style="width:20px;height:20px;flex:none"><span class="grow"><span class="title" style="display:block">${label}</span><span class="meta">${sub}</span></span></label>`;
     return {
       title: '📣 Nouvelle annonce', narrow: true,
       body: html`<form id="f" data-form="annsend" class="stack">
@@ -6311,7 +5822,6 @@ const SHEETS = {
         <label class="field">🏠 Habitants<select name="loc"><option value="">— personne —</option>${imms.length ? html`<option value="all">Tous les habitants de tous les immeubles</option>` : ''}${imms.map((im) => html`<option value="i:${im.id}">${im.adresse} — tous</option>${Object.entries(im.chats || {}).length > 1 ? Object.entries(im.chats || {}).map(([gk, g]) => html`<option value="g:${g.id}">&nbsp;&nbsp;${im.adresse} — ${chatLabel(gk)}</option>`) : ''}`)}</select></label>
         ${ws.length ? html`<label class="field">👷 Équipe<select name="eq"><option value="">— personne —</option><option value="all">Tous les ouvriers (${ws.length})</option>${grp.length ? html`<option value="grp">Groupe de l’équipe (${grp.length})</option>` : ''}</select></label>` : ''}
         ${nets.length ? html`<label class="field">🏢 Clients du réseau<select name="net"><option value="">— personne —</option><option value="all">Tous les clients (${nets.length})</option>${fils.map((f) => html`<option value="${f}">${NET_FIL[f] || f} (${nets.filter((t) => t.fil === f).length})</option>`)}</select></label>` : ''}
-        ${an.length ? html`<div class="list">${an.length ? cb('an', `🍽️ Annonceurs (${an.length})`, 'dans leur chat avec vous') : ''}</div>` : ''}
         <p class="tiny muted" style="margin:0">Chacun le reçoit dans sa chat avec vous, avec « 📣 » devant et une notification ; chacun peut le traduire avec 🌐.${nets.length ? ' Les clients du réseau le reçoivent dans leur 🎧 Centralino et peuvent le transférer aux leurs.' : ''}</p>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">📣 Envoyer</button>`,
@@ -6319,14 +5829,6 @@ const SHEETS = {
   },
   'ann-log'() {
     return { title: '🗂️ Annonces envoyées', narrow: true, body: html`<div class="list">${annLog().slice().reverse().map((a) => html`<div class="row" style="align-items:flex-start"><span class="grow"><span class="title" style="display:block;white-space:pre-wrap">${a.x}</span><span class="meta">${fmtDateTime(a.at)} · ${a.to} · 👤 ${a.by || '—'}</span></span></div>`)}</div>` };
-  },
-  pchat({ id }) {
-    const r = vault.get('reglages', id);
-    if (!r) return null;
-    // lu : ✓✓ bleu dans son app
-    const lastP = (r.chat || []).filter((m) => m.from === 'p').reduce((a, m) => (m.at > a ? m.at : a), '');
-    if (r.chatNew || (lastP && lastP > (r.chatRd || ''))) setTimeout(async () => { await vault.mutate((tx) => tx.put(pchatColl(r), { id: r.id, chatNew: 0, ...(lastP ? { chatRd: lastP } : {}) }), 'Messages lus', pchatName(r)); pchatSync(r.id); }, 0);
-    return { title: `💬 ${pchatKind(r)} ${pchatName(r)}`, narrow: true, body: pchatHtml(r) };
   },
   // 💼 abonnement d'une gérance : formule, prix, période, payé jusqu'au, paiements reçus
   abo({ id }) {
@@ -6667,7 +6169,7 @@ const SHEETS = {
     const cs = cands();
     return {
       title: '🙋‍♀️🙋🏾 Candidats « Je cherche du travail »',
-      body: html`<p class="small muted" style="margin:0 0 10px">Envoyés depuis les apps (locataires, annonceurs — aussi ceux des centrales des clients). Chiffrés : seule cette centrale les lit. Effacés tout seuls après 12 mois sans mise à jour (RGPD).</p>
+      body: html`<p class="small muted" style="margin:0 0 10px">Envoyés depuis les apps (locataires — aussi ceux des centrales des clients). Chiffrés : seule cette centrale les lit. Effacés tout seuls après 12 mois sans mise à jour (RGPD).</p>
         ${cs.length ? html`<div class="list">${cs.map((c) => html`<button class="row" data-action="cand-open" data-id="${c.id}"><span class="avatar">${c.vu ? '🙋' : '🆕'}</span><span class="grow"><span class="title" style="display:block">${c.f.nom || '—'}${c.f.tarif ? html` · <span class="tiny">${c.f.tarif} €/h</span>` : ''}</span>
           <span class="meta" style="display:block;white-space:normal">${c.f.met.map((k) => CAND_MET[k]).join(', ')}${c.f.autre ? ' · ' + c.f.autre : ''} — ${c.f.disp.map((k) => CAND_DISP[k]).join(' · ')}</span>
           <span class="tiny muted">${CAND_APP[c.app] || ''} · ${c.f.urg === 'date' && c.f.date ? 'dès le ' + fmtDate(c.f.date) : 'tout de suite'} · reçue le ${fmtDate(c.sent)}${vault.list('documents').some((d) => d.kind === 'cv' && d.candId === c.id) ? ' · 📎 CV' : ''}</span></span></button>`)}</div>` : html`<p class="muted small">Aucune candidature pour le moment.</p>`}`,
@@ -7031,7 +6533,7 @@ const SHEETS = {
         ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id && !x.phase).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id && !x.phase).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
       </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
-        ${id && (t.ptl || t.net || domBill(t)) && t.statut === 'fait' ? html`<button class="btn" data-action="fact-open" data-id="${id}">🧾 ${t.facture ? 'Facture ' + t.facture.no : 'Facture'}</button>` : ''}
+        ${id && (t.ptl || t.net) && t.statut === 'fait' ? html`<button class="btn" data-action="fact-open" data-id="${id}">🧾 ${t.facture ? 'Facture ' + t.facture.no : 'Facture'}</button>` : ''}
         ${id && t.locId && !t.recur && t.statut !== 'fait' ? html`<button class="btn" style="background:var(--green-soft);color:var(--green)" data-action="tache-done" data-id="${id}">${icon('check')} Réparé</button>` : html`<button class="btn" data-action="close-sheet">Annuler</button>`}
         <button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -7079,49 +6581,6 @@ const SHEETS = {
     };
   },
 
-  'pub-form'({ id, preset }) {
-    if (id) pubStatsLoad();
-    const a = id ? vault.get('avis', id) : { immId: preset || '', debut: today(), ttl: 30, cat: 'resto' };
-    if (id && !a) return null;
-    const ad = { pays: societe().pays || 'LU', ...(a.adr || (a.adresse ? { rue: a.adresse } : {})) }, v0 = visParse(a.zone);
-    const vis0 = v0.m === 'km' ? 'km' + v0.k : v0.m;
-    const exp = a.fin && a.fin < today();
-    return {
-      title: id ? "Modifier l'annonce" : 'Nouvelle annonce (publicité)',
-      narrow: true,
-      body: html`<form id="f" data-form="pub" class="fields">
-        <input type="hidden" name="id" value="${id || ''}">
-        ${a.annId ? (() => { const md = vault.list('documents').filter((d) => d.kind === 'annmedia' && d.annId === a.annId && a.mref && d.mref === a.mref);
-          return html`<div class="full alert ${a.video || md.length ? (a.droits ? 'info' : 'warn') : 'info'}" style="margin:0">📎<div>${a.video || md.length ? (a.droits ? html`<b>☑️ Droits certifiés par l’annonceur</b> (vidéo / musique / images à lui ou autorisées).` : html`<b>⚠️ Droits NON certifiés</b> pour la vidéo / musique : demandez-lui avant de publier.`) : html`Aucune vidéo ni fichier envoyé.`}
-            ${md.length ? html`<div style="margin-top:6px"><b>${md.length > 1 ? md.length + ' fichiers' : '1 fichier'} reçu${md.length > 1 ? 's' : ''}</b> — ${a.muse === 'ex' ? 'exemple pour la création' : 'pub à publier telle quelle'} :</div><div class="actions" style="margin:6px 0 0;flex-wrap:wrap">${md.map((d) => html`<button type="button" class="btn sm" data-action="open-doc" data-id="${d.id}">${d.label.split(' — ').pop()} · ${Math.max(1, Math.round((d.size || 0) / 1048576))} Mo</button>`)}</div>` : ''}</div></div>`; })() : ''}
-        <label class="field full">Catégorie<select name="cat">${Object.entries(PUB_CATS).map(([k, v]) => html`<option value="${k}" ${a.cat === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        ${field('Nom du commerce', 'nom', a.nom, { full: true, required: true, placeholder: 'ex. Pizzeria Da Mario' })}
-        <div class="section-label full" style="margin:6px 0 0">📍 Adresse du commerce</div>
-        ${field('N°', 'adr_n', ad.n, { attrs: 'inputmode="numeric" pattern="[0-9]*" maxlength="6"', placeholder: 'ex. 12' })}
-        ${field('Rue', 'adr_rue', ad.rue, { required: true, placeholder: 'ex. rue de Hollerich' })}
-        ${field('Code postal (chiffres, facultatif)', 'adr_cp', ad.cp, { attrs: 'inputmode="numeric" pattern="[0-9]*" maxlength="10"', placeholder: 'ex. 1741' })}
-        ${field('Ville', 'adr_ville', ad.ville, { required: true, placeholder: 'ex. Luxembourg' })}
-        <label class="field full">Pays<select name="adr_pays">${paysOptions(ad.pays)}</select></label>
-        <label class="field full">Message / offre<textarea name="texte" style="min-height:80px" placeholder="ex. −10 % pour les locataires sur présentation de l'app">${a.texte || ''}</textarea></label>
-        ${field('Téléphone', 'tel', a.tel, { type: 'tel' })}
-        ${field('Site web', 'web', a.web, { type: 'url', placeholder: 'https://…' })}
-        ${field('Vidéo ou musique (YouTube, TikTok, Instagram, Facebook, Vimeo, Spotify, Deezer, Apple Music, SoundCloud)', 'video', a.video, { full: true, type: 'url', placeholder: 'https://www.youtube.com/watch?v=… · https://www.tiktok.com/@…/video/…', attrs: 'data-input="vid-link"' })}
-        <p class="tiny muted full" style="margin:0">Collez le lien de la vidéo ou du morceau : il s’affiche dans l’annonce comme un petit écran ou un petit lecteur audio, on le regarde ou l’écoute sans quitter l’app. <b id="vidHint">${vidHint(a.video)}</b></p>
-        <label class="field full">Emplacement<select name="slot">${Object.entries(PUB_SLOTS).map(([k, v]) => html`<option value="${k}" ${(a.slot ? pubSlot(a) : 'haut') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        <div class="field full">Visible pour<div class="chips" style="margin-top:6px">${Object.entries(PUB_AUD).map(([k, v]) => html`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="aud_${k}" ${pubAud(a).includes(k) ? new Raw('checked') : ''} style="width:18px;min-height:18px;margin:0">${v}</label>`)}</div></div>
-        <div class="field full">🕒 Fasce horaires (aucune = toute la journée)<div class="chips" style="margin-top:6px">${BANDS.map(([k]) => html`<label class="chip" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" name="band_${k}" ${(a.bands || []).includes(k) ? new Raw('checked') : ''} style="width:18px;min-height:18px;margin:0">${bandTxt(k)}</label>`)}</div></div>
-        <label class="row full" style="cursor:pointer"><input type="checkbox" name="we" ${a.we ? new Raw('checked') : ''}><span class="grow">🎉 Seulement le week-end (jeudi, vendredi, samedi)</span></label>
-        <label class="field full">Qui la voit ?<select name="vis">${PUB_VIS.map(([k, v]) => html`<option value="${k}" ${vis0 === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        <p class="tiny muted full" style="margin:0">Comparé à l’adresse de l’annonce et à l’immeuble de chaque locataire (ville, pays, position). Si l’immeuble n’a pas de ville, de pays ou de position, le locataire voit l’annonce. 🌐 Les annonces validées vont aussi dans les apps des <b>centrales des clients</b> et des <b>annonceurs</b>.</p>
-        ${field('Publier à partir du', 'debut', exp ? today() : a.debut, { type: 'date', required: true })}
-        <label class="field">Durée (TTL)<select name="ttl">${PUB_TTL.map((n) => html`<option value="${n}" ${+(a.ttl || 30) === n ? new Raw('selected') : ''}>${n} jours</option>`)}</select></label>
-        ${id ? pubStatsBlock(a) : ''}
-        <p class="tiny muted full" style="margin:0">${exp ? `Expirée le ${fmtDate(a.fin)} : enregistrez pour la republier.` : a.fin ? `Visible jusqu'au ${fmtDate(a.fin)} inclus, puis retirée automatiquement de l'app des locataires.` : "Retirée automatiquement de l'app des locataires à la fin de la durée."}</p>
-      </form>`,
-      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-pub" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
-        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">${exp ? 'Republier' : 'Publier'}</button>`,
-    };
-  },
   'bien-form'({ id, preset }) {
     const b = id ? vault.get('biens', id) : { louer: true, agenceId: typeof preset === 'string' && vault.get('agences', preset) ? preset : '', pieces: [{ k: 'chambre' }, { k: 'salon' }, { k: 'cuisine' }, { k: 'sdb' }] };
     if (id && !b) return null;
@@ -7352,77 +6811,6 @@ const SHEETS = {
         <div class="list small" style="margin-bottom:10px">${[['box', `📦 Directement dans le container de ${t.nom}`, 'il le trouve dans l’Accueil de sa centrale'], ['dl', '⬇️ Télécharger', 'PC, clé USB… puis Réglages → Importer chez le client'], ['share', '📤 Envoyer', 'email, WhatsApp… (partage du téléphone)']].map(([k, l, m], n) => html`<label class="row" style="cursor:pointer"><input type="radio" name="xdest" value="${k}" ${n ? '' : new Raw('checked')}><span class="grow"><b>${l}</b><span class="meta" style="display:block">${m}</span></span></label>`)}</div>
         <p class="tiny muted" style="margin:0">Avant : une sauvegarde chiffrée est téléchargée. Le paquet est chiffré avec un code à usage unique : sans le code il ne sert à rien. Ici tout reste en archive.</p>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" data-action="xfer-do" data-id="${id}" ${t.configured ? '' : new Raw('disabled')}>📦 Transférer</button>`,
-    };
-  },
-  'annc-form'({ id }) {
-    const an = id ? vault.get('reglages', id) : { cat: 'resto', appCode: String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0') };
-    if (id && !an) return null;
-    const inv = `📣 ${an.nom || ''} — app des annonces LA CENTRAL : ${location.origin}/annunci.html\nCode : ${an.appCode}`, tel = String(an.tel || '').replace(/[^\d+]/g, '');
-    return {
-      title: id ? an.nom : 'Nouvel annonceur',
-      narrow: true,
-      body: html`<form id="f" data-form="annc" class="fields">
-        <input type="hidden" name="id" value="${id || ''}">
-        ${field('Nom du commerce', 'nom', an.nom, { full: true, required: true, placeholder: 'ex. Bistrot du Marché' })}
-        <label class="field full">Catégorie<select name="cat">${Object.entries(PUB_CATS).map(([k, v]) => html`<option value="${k}" ${an.cat === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        ${field('Adresse', 'adresse', an.adresse, { full: true })}${field('Téléphone (WhatsApp)', 'tel', an.tel, { type: 'tel' })}${field('Email', 'email', an.email, { type: 'email' })}
-        ${id && (an.web || an.tvaNum || an.iban || an.banque) ? html`<div class="full small" style="margin:0;padding:8px 10px;border:1px dashed var(--border);border-radius:10px">✏️ <b>Rempli par l’annonceur</b>${an.web ? html`<br>🌐 <a href="${an.web}" target="_blank" rel="noopener">${an.web}</a>` : ''}${an.tvaNum ? html`<br>N° TVA : ${an.tvaNum}` : ''}${an.iban ? html`<br>🏦 IBAN (remboursements) : <span style="font-family:var(--mono)">${an.iban}</span>${an.banque ? ' · ' + an.banque : ''}` : ''}</div>` : ''}
-        <div class="full section-label" style="margin:6px 0 0">📱 App de l’annonceur</div>
-        ${field('Code d’accès à l’app', 'appCode', an.appCode, { full: true, attrs: 'inputmode="numeric" autocomplete="off" style="font-family:var(--mono);font-size:22px;letter-spacing:.1em"' })}
-        ${id ? html`<div class="full card" style="text-align:center;margin:0"><div class="tiny muted">Lien de son app</div>
-          <p style="margin:4px 0 8px;word-break:break-all"><a href="${location.origin}/annunci.html" target="_blank" rel="noopener">${location.host}/annunci.html</a></p>
-          <div class="qr" style="max-width:150px;margin:0 auto 8px">${qrSvg(location.origin + '/annunci.html', 4)}</div>
-          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap"><button class="btn sm" type="button" data-action="copy-url" data-url="${location.origin}/annunci.html">🔗 Copier le lien</button><button class="btn sm" type="button" data-action="code-copy" data-code="${an.appCode}">📋 Copier le code</button><button class="btn sm danger" type="button" data-action="annc-newcode">🔁 Nouveau code</button></div></div>` : ''}
-        <p class="tiny muted full" style="margin:0">Dans son app, il crée ses annonces, menus et événements (dates, jours, heures, emplacement, apps), voit le prix et ses statistiques ; vous validez chaque annonce avant publication.</p>
-        ${id ? html`<div class="full actions" style="margin:0;flex-wrap:wrap">${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}${an.email ? html`<a class="btn sm" href="mailto:${an.email}?subject=${encodeURIComponent('📣 App des annonces')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}<button type="button" class="btn sm" data-action="code-copy" data-code="${an.appCode}">📋 Copier le code</button></div>` : ''}
-      </form>`,
-      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-annc" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
-        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
-    };
-  },
-  'ann-tarifs'() {
-    const t = anTarifs(), tf = anTarifsFull();
-    return {
-      title: '💶 Tarifs des annonces',
-      narrow: true,
-      body: html`<form id="f" data-form="ann-tarifs" class="fields">
-        <label class="field full">Mode de prix<select name="mode"><option value="pack" ${tf.mode !== 'band' ? new Raw('selected') : ''}>🚀 Lancement : pacchetti par mois (Start / Plus / Max)</option><option value="band" ${tf.mode === 'band' ? new Raw('selected') : ''}>📅 Prix au jour par fascia (plus tard)</option></select></label>
-        <div class="section-label full" style="margin:6px 0 0">🚀 Pacchetti — € HT par mois (position Milieu)</div>
-        ${field('🟢 Start — 1 fascia', 'pk_start', tf.pk_start, { attrs: money$ })}${field('🟡 Plus — 3 fasce', 'pk_plus', tf.pk_plus, { attrs: money$ })}${field('🔴 Max — toutes', 'pk_max', tf.pk_max, { attrs: money$ })}
-        <div class="section-label full" style="margin:6px 0 0">📍 Position et remises (%)</div>
-        ${field('🔝 Haut fixe : + %', 'pos_h', tf.pos_h, { attrs: 'inputmode="decimal"' })}${field('🔽 Bas fixe : − %', 'pos_b', tf.pos_b, { attrs: 'inputmode="decimal"' })}
-        ${field('Remise en semaines − %', 'd_w', tf.d_w, { attrs: 'inputmode="decimal"' })}${field('Remise en mois − %', 'd_m', tf.d_m, { attrs: 'inputmode="decimal"' })}${field('Remise en années − %', 'd_y', tf.d_y, { attrs: 'inputmode="decimal"' })}
-        ${field('Annonces max. par position et par fascia', 'cap', tf.cap, { attrs: 'inputmode="numeric"' })}
-        <div class="section-label full" style="margin:6px 0 0">📅 Prix au jour par fascia (€ HT) — utilisés en mode « fascia »</div>
-        ${BANDS.map(([k]) => field(bandTxt(k), 'b_' + k, tf['b_' + k], { attrs: money$ }))}
-        <p class="tiny muted full" style="margin:0">Prix = base × position (Haut + / Bas −) × (week-end : 3 jours sur 7) × durée − remise. Rotation et Milieu = prix de base.</p>
-        <div class="section-label full" style="margin:6px 0 0">🎬 Création de l’annonce par LA CENTRAL — prix HT, une fois</div>
-        ${field('SIMPLE — page fixe avec leur texte, graphisme surprise (€)', 'crea_simple', t.crea_simple, { attrs: money$ })}${field('MOYEN — clip animé avec leur texte, surprise (€)', 'crea_moyen', t.crea_moyen, { attrs: money$ })}${field('MAX — vidéo-clip, surprise (€)', 'crea_max', t.crea_max, { attrs: money$ })}
-        <p class="tiny muted full" style="margin:0">Vide = « sur devis » (réponse sous 3 jours max).</p>
-        <label class="field full">Note pour les annonceurs (facultatif)<textarea name="note" style="min-height:60px" placeholder="ex. −20 % à partir de 30 jours">${t.note || ''}</textarea></label>
-        <p class="tiny muted full" style="margin:0">L’annonceur voit le prix HT (jours × tarif de l’emplacement) avant d’envoyer. Après votre validation il paie par virement (QR, TVA de 🧾 Facturation) ; vous confirmez « Paiement reçu » : facture et mise en ligne. 💳 Paiement en ligne : pas encore connecté.</p>
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
-    };
-  },
-  'socnet-form'() {
-    const c = socConf();
-    return {
-      title: '📱 Nos réseaux sociaux', narrow: true,
-      body: html`<form id="f" data-form="socnet" class="fields"><p class="tiny muted full" style="margin:0">Instagram · Facebook · YouTube · TikTok. Les annonceurs voient le nombre d’abonnés sous l’option « Aussi sur nos réseaux ».</p>
-        ${field('Abonnés aujourd’hui (total)', 'f', c.f, { type: 'number', attrs: 'min="0" step="1"' })}${field('Prix de l’option (€ TVA comprise)', 'prix', c.prix, { type: 'number', attrs: 'min="0" step="0.01"' })}
-        <p class="tiny muted full" style="margin:0">TVA : celle de 🧾 Facturation (${factTaux({}, factConf())} %).</p></form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
-    };
-  },
-  'socpub-form'({ id }) {
-    const a = vault.get('avis', id);
-    if (!a) return null;
-    return {
-      title: '📱 ' + a.nom, narrow: true,
-      body: html`<form id="f" data-form="socpub" class="fields"><input type="hidden" name="id" value="${id}"><p class="tiny muted full" style="margin:0">Cochez quand c’est en ligne et collez le lien du post : l’annonceur le voit dans son app. En ligne jusqu’au ${fmtDate(a.fin)}.</p>
-        ${Object.entries(SOC_NET).map(([k, l]) => { const v = (a.socPub || {})[k] || {}; return html`<div class="full" style="display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="on_${k}" ${v.at ? new Raw('checked') : ''}> ${l}</label><input name="url_${k}" value="${v.url || ''}" placeholder="https://…"></div>`; })}</form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
   'tfact'({ id }) {
@@ -8568,18 +7956,6 @@ addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installProm
 const ACTIONS = {
   'abo-edit': (d) => openSheet('abo', d.id),
   'open-facts': () => { ui.cpSec = 'compta'; ui.cpTab = 'fact'; go('compta'); }, // 🧾 Accueil → Comptabilité, onglet Factures
-  'abo-tab': (d) => { ui.aboTab = d.id; if (ui.route === 'annonceurs' && d.id !== 'pub') { ui.cpSec = 'abo'; go('compta'); } else renderView(); }, // depuis 📣 Annonceurs : « Abonnements gérances » ouvre la page Abonnements
-  async 'netpubs-now'() { try { localStorage.removeItem('aresNetPubs2'); } catch { /* rien */ } await netPubsSync(); renderView(); toast('Liste du réseau envoyée'); },
-  'ann-open': () => { ui.cpSec = 'abo'; ui.aboTab = 'pub'; go('compta'); },
-  async 'anrec-open'(d) {
-    const r = vault.get('reglages', d.id);
-    if (!r) return;
-    const an = vault.get('reglages', r.annId) || {};
-    const rep = await promptText(`⚠️ ${an.nom || ''} — ${r.motif}`, `${r.texte}\n\nVotre réponse (elle apparaît dans son app ; vide = marquer comme vu) :`, 'ex. Nous avons corrigé l’annonce et prolongé de 2 jours.');
-    if (rep == null) return;
-    await vault.mutate((tx) => tx.put('reglages', { id: r.id, vu: true, rep: String(rep).trim().slice(0, 800) }), '⚠️ Réclamation traitée', `${an.nom || ''} · ${r.motif}`);
-    annSync(r.annId, true);
-  },
   async 'abo-offers'() {
     const on = !aboOffersOn();
     await vault.mutate((tx) => tx.put('reglages', { id: 'abos', offers: on }), on ? 'Offres d’abonnement activées' : 'Offres d’abonnement désactivées', 'Portail gérance');
@@ -8745,13 +8121,6 @@ const ACTIONS = {
       if (!(await confirmBox(`Émettre la facture de cette intervention ?`, { ok: 'Émettre et envoyer', detail: `${t.net.nom} — la facture arrive dans sa centrale (💳 virement avec QR code).` }))) return;
       await vault.mutate((tx) => tx.put('taches', { id: t.id, factDraft: factRead(fm) }), 'Brouillon de facture', t.titre);
       try { const no = await netFactEmit(t.net.tid, [vault.get('taches', t.id)]); toast(`🧾 Facture ${no} envoyée à ${t.net.nom}`); } catch (e) { return toast(e.message || 'Envoi impossible', { bad: true }); }
-      sheetDirty = false; ui.sheet.rendered = false; renderSheet();
-      return;
-    }
-    if (domBill(t)) {
-      if (!(await confirmBox('Émettre la facture DOMIER ?', { ok: 'Émettre et envoyer', detail: `${t.dom.nom} — la facture arrive dans son app (💳 virement avec QR code, « J’ai payé »).` }))) return;
-      await vault.mutate((tx) => tx.put('taches', { id: t.id, factDraft: factRead(fm) }), 'Brouillon de facture', t.titre);
-      try { const no = await domFactEmit(vault.get('taches', t.id)); toast(`🧾 Facture ${no} envoyée à ${t.dom.nom}`); } catch (e) { return toast(e.message || 'Émission impossible', { bad: true }); }
       sheetDirty = false; ui.sheet.rendered = false; renderSheet();
       return;
     }
@@ -9048,22 +8417,11 @@ const ACTIONS = {
     if (l.espace.code && !(await confirmBox('Nouveau code d’accès ?', { ok: 'Nouveau code', detail: 'L’ancien code ne fonctionnera plus pour une nouvelle installation (les téléphones déjà connectés restent connectés).' }))) return;
     try { await setAccessCode(l); toast('Nouveau code créé'); } catch (e) { toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
   },
-  'annc-newcode'() { const i = sheetEl.querySelector('#f [name=appCode]'); if (!i) return; i.value = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, '0'); i.focus(); sheetDirty = true; toast('Nouveau code : touchez « Enregistrer » (l’ancien ne marchera plus)'); },
   async 'copy-url'(d) { try { await navigator.clipboard.writeText(d.url); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); } },
   async 'code-copy'(d) { try { await navigator.clipboard.writeText(d.code); toast('Code copié : ' + d.code); } catch { toast('Copie impossible', { bad: true }); } },
   async 'esp-copy'(d) {
     const l = vault.get('locataires', d.id);
     try { await navigator.clipboard.writeText(espUrl(l)); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); }
-  },
-  'pub-report': (d) => pubReport(d.id),
-  'pub-stats-refresh': () => pubStatsLoad(true),
-  'new-pub': () => openOver('pub-form', null, null, ''), // par défaut : tous les immeubles
-  'edit-pub': (d) => openOver('pub-form', d.id),
-  async 'del-pub'(d) {
-    const a = vault.get('avis', d.id);
-    if (!a || !(await confirmBox('Supprimer cette annonce ?', { ok: 'Supprimer', danger: true, detail: a.nom }))) return;
-    await vault.mutate((tx) => tx.remove('avis', d.id), 'Annonce supprimée', a.nom, a.immId);
-    goBack();
   },
   'new-avis': (d) => openOver('avis-form', null, null, d.imm || ui.immFilter || ''),
   'edit-avis': (d) => openOver('avis-form', d.id),
@@ -9106,7 +8464,6 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.remove('agences', d.id), 'Agence immobilière supprimée', a.nom);
     goBack();
   },
-  'new-annc': () => openOver('annc-form'),
   'tdem-new': () => openOver('tdem-form'),
   'num-step': (d, el) => { const i = el.closest('form').querySelector(`input[name=${d.n}]`); if (i) i.value = Math.max(+d.min || 0, Math.min(20, (+i.value || 0) + +d.d)); },
   'bail-letter': (d) => bailLetter(d.id),
@@ -9323,49 +8680,6 @@ const ACTIONS = {
     const blob = new Blob([p.bytes()], { type: 'application/pdf' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `certificat-suppression-${c.tenant.id}.pdf`; a.click();
   },
-  'edit-annc': (d) => openOver('annc-form', d.id),
-  'ann-tarifs': () => openOver('ann-tarifs'),
-  async 'del-annc'(d) {
-    const an = vault.get('reglages', d.id);
-    if (!an || !(await confirmBox('Supprimer cet annonceur ?', { ok: 'Supprimer', danger: true, detail: `${an.nom} — son app ne fonctionnera plus ; ses annonces restent jusqu’à leur fin` }))) return;
-    if (an.espace && an.espace.id) { await vault.espaceDel(an.espace.id).catch(() => {}); if (an.espace.codeHash) await vault.espCodeDel(an.espace.codeHash).catch(() => {}); }
-    await vault.mutate((tx) => tx.remove('reglages', d.id), 'Annonceur supprimé', an.nom);
-    goBack();
-  },
-  async 'pub-ok'(d) {
-    let a = vault.get('avis', d.id);
-    if (!a) return;
-    // 📅 fascia complète pour sa position : passer en Milieu (s'il l'accepte) ou le dire avant de valider
-    const full = pubFull(a);
-    if (full.length) {
-      if (a.slot === 'haut' && a.down && !pubFull({ ...a, slot: 'milieu' }).length) {
-        if (!(await confirmBox(`Haut complet (${full.map(bandTxt).join(', ')}). L’annonceur accepte Milieu : la passer en Milieu ?`))) return;
-        await vault.mutate((tx) => tx.put('avis', { id: a.id, slot: 'milieu', prix: Math.round((adPrice({ ...a, slot: 'milieu' }, anTarifsFull()) + (a.crea ? +anTarifs()['crea_' + a.crea] || 0 : 0)) * 100) / 100 }), '📅 Haut complet : annonce passée en Milieu', a.nom);
-        a = vault.get('avis', a.id);
-      } else if (!(await confirmBox(`⏳ Complet : ${full.map(bandTxt).join(', ')} (${PUB_SLOTS[pubSlot(a)].split(' — ')[0]}). Valider quand même ? Sinon elle reste en liste d’attente.`))) return;
-    }
-    const pay = a.annId && +a.prix > 0 && !(a.fact && a.fact.paid);
-    await vault.mutate((tx) => tx.put('avis', { id: a.id, st: pay ? 'pay' : 'ok', motif: '' }), pay ? '📣 Annonce validée : en attente du paiement' : '📣 Annonce validée et publiée', `${a.nom} · ${fmtDate(a.debut)} → ${fmtDate(a.fin)}`);
-    toast(pay ? 'Validée : en ligne dès le paiement reçu' : 'Annonce publiée');
-    annSync(a.annId); renderView();
-  },
-  async 'pub-paid'(d) {
-    const a = vault.get('avis', d.id);
-    if (!a || a.st !== 'pay') return;
-    if (!(await confirmBox('Paiement reçu ?', { ok: '✅ Reçu', detail: `${a.nom} · ${eur(annDue(a).ttc)} — la facture est créée et l’annonce passe en ligne` }))) return;
-    try { toast('Facture ' + (await annFactEmit(a)) + ' · annonce en ligne'); } catch (e) { return toast(e.message, { bad: true }); }
-    annSync(a.annId, true); renderView();
-  },
-  async 'pub-no'(d) {
-    const a = vault.get('avis', d.id);
-    if (!a) return;
-    const m = await promptText('Refuser l’annonce ?', 'Motif (envoyé à l’annonceur dans son app)', 'ex. vidéo non conforme, dates à changer…');
-    if (m == null) return;
-    await vault.mutate((tx) => tx.put('avis', { id: a.id, st: 'no', motif: String(m).trim().slice(0, 200) }), '📣 Annonce refusée', `${a.nom}${m ? ' — ' + m : ''}`);
-    annSync(a.annId); renderView();
-  },
-  'socnet-open': () => openOver('socnet-form'),
-  'socpub-open': (d) => openOver('socpub-form', d.id),
   async 'del-avis'(d) {
     const a = vault.get('avis', d.id);
     if (!a || !(await confirmBox('Supprimer cet avis ?', { ok: 'Supprimer', danger: true, detail: a.texte.slice(0, 120) }))) return;
@@ -9581,7 +8895,6 @@ const ACTIONS = {
   },
   'champ-year': (d) => { ui.champYear = +d.id; renderView(); },
   'champeq-year': (d) => { ui.champEqYear = +d.id; renderView(); },
-  'champpub-year': (d) => { ui.champPubYear = +d.id; renderView(); },
   async 'champeq-prize'(d) {
     const y = ui.champEqYear || new Date().getFullYear();
     const cur = vault.get('reglages', 'champions') || {};
@@ -9617,7 +8930,6 @@ const ACTIONS = {
     const sel = document.querySelector(`select[name="to"][data-gid="${d.id}"]`);
     if (sel) { sel.value = d.loc; const ta = sel.closest('form').querySelector('textarea'); if (ta) ta.focus(); }
   },
-  'open-pchat': (d) => openSheet('pchat', d.id),
   tfwd: (d) => openOver('tfwd-form', d.id),
   async 'vrai-tog'(d, el) {
     const r = vault.get(d.c, d.id);
@@ -9649,27 +8961,6 @@ const ACTIONS = {
   'ann-log': () => openSheet('ann-log'),
   'ann-fwd': (d) => { const r = vault.get('reglages', d.id); if (!r) return; if (!r.vu) vault.mutate((tx) => tx.put('reglages', { id: r.id, vu: true }), '📣 Annonce lue', ''); openSheet('ann-new', null, null, r.x); },
   'ann-vu': (d) => vault.mutate((tx) => tx.put('reglages', { id: d.id, vu: true }), '📣 Annonce lue', ''),
-  'pc-mn': (d) => { ui.pcMn = ui.pcMn === d.id ? '' : d.id; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
-  async 'pc-edit'(d) {
-    ui.pcMn = '';
-    const r = vault.get('reglages', d.r), m = r && (r.chat || []).find((x) => x.id === d.id);
-    if (!m || m.from !== 'mgr') return;
-    if (Date.now() - Date.parse(m.at) >= EQ_EDIT_MS) return toast('Plus possible : 15 minutes sont passées.', { bad: true });
-    const x = await promptEdit('✏️ Modifier le message', m.x);
-    if (x == null || x === m.x) return;
-    const at = new Date().toISOString(), co = pchatColl(r);
-    await vault.mutate((tx) => tx.put(co, { id: r.id, chat: (vault.get(co, r.id).chat || []).map((z) => (z.id === m.id ? { ...z, x, ed: at, old: [...(z.old || []), { x: z.x, at: z.ed || z.at }].slice(-10) } : z)) }), '💬 Message modifié', pchatName(r));
-    await pchatSync(r.id);
-  },
-  async 'pc-del'(d) {
-    ui.pcMn = '';
-    const r = vault.get('reglages', d.r), m = r && (r.chat || []).find((x) => x.id === d.id);
-    if (!m || m.from !== 'mgr') return;
-    if (!(await confirmBox('Supprimer ce message ?', { ok: 'Supprimer', danger: true, detail: 'Il disparaît de son app.' }))) return;
-    const co = pchatColl(r);
-    await vault.mutate((tx) => tx.put(co, { id: r.id, chat: (vault.get(co, r.id).chat || []).map((z) => (z.id === m.id ? { ...z, del: new Date().toISOString() } : z)) }), '💬 Message supprimé', pchatName(r));
-    await pchatSync(r.id);
-  },
   'eqc-mn': (d) => { ui.eqcMn = ui.eqcMn === d.id ? '' : d.id; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
   async 'eqc-edit'(d) {
     ui.eqcMn = '';
@@ -10207,38 +9498,6 @@ const FORMS = {
     toast('Code enregistré');
     goBack();
   },
-  async pub(fd) {
-    const id = fd.get('id');
-    const ttl = PUB_TTL.includes(+fd.get('ttl')) ? +fd.get('ttl') : 30;
-    const debut = fd.get('debut') || today();
-    const rec = { kind: 'pub', cat: PUB_CATS[fd.get('cat')] ? fd.get('cat') : 'autre', nom: fd.get('nom').trim(), texte: fd.get('texte').trim(), tel: fd.get('tel').trim(), web: /^https?:\/\//.test(fd.get('web').trim()) ? fd.get('web').trim() : '', video: /^https?:\/\//.test(String(fd.get('video') || '').trim()) ? String(fd.get('video')).trim().slice(0, 500) : '', aud: Object.keys(PUB_AUD).filter((k) => fd.get('aud_' + k)), slot: PUB_SLOTS[fd.get('slot')] ? fd.get('slot') : 'haut', immId: '', debut, ttl, fin: addDays(debut, ttl - 1) };
-    const g = (k) => String(fd.get(k) || '').trim().replace(/\s+/g, ' ');
-    const adr = { n: g('adr_n'), rue: g('adr_rue'), cp: g('adr_cp'), ville: g('adr_ville'), pays: WORLD.includes(g('adr_pays')) ? g('adr_pays') : societe().pays || 'LU' };
-    if (adr.n && !/^\d{1,6}$/.test(adr.n)) return toast('N° : seulement des chiffres (ex. 12) — « bis », lettre… dans la rue', { bad: true });
-    if (adr.cp && !/^\d{3,10}$/.test(adr.cp)) return toast('Code postal : seulement des chiffres (ex. 1741), ou vide', { bad: true });
-    if (!rec.nom || !adr.rue || !adr.ville) return toast('Nom, rue et ville obligatoires', { bad: true });
-    rec.adr = adr;
-    rec.adresse = `${adr.n ? adr.n + ' ' : ''}${adr.rue}, ${adr.cp ? adr.cp + ' ' : ''}${adr.ville}, ${paysNom(adr.pays)}`;
-    const vis = String(fd.get('vis') || ''), km = /^km(\d+)$/.exec(vis);
-    let geo = null;
-    if (km) {
-      const old = id ? vault.get('avis', id) : null;
-      geo = old && old.adresse === rec.adresse && Array.isArray(old.geo) ? old.geo : null;
-      if (!geo) { try { geo = await osmGeo(rec.adresse, adr.pays); } catch { /* hors ligne */ } }
-      if (!geo) return toast('Adresse introuvable sur la carte (OpenStreetMap) : vérifiez-la, ou choisissez « Même ville »', { bad: true });
-      rec.geo = geo;
-    }
-    rec.bands = BAND_KEYS.filter((k) => fd.get('band_' + k));
-    rec.we = !!fd.get('we');
-    rec.zone = visZone(km ? 'km' : ['pays', 'ville'].includes(vis) ? vis : '', adr.pays, adr.ville, km ? +km[1] : 0, geo);
-    if (!rec.aud.length) rec.aud = ['loc'];
-    if (id) rec.id = id;
-    // lien court TikTok (bouton « Partager » du téléphone) → lien complet, sinon pas de mini écran
-    if (rec.video && !videoEmbed(rec.video) && ttShort(rec.video)) { const full = await vault.videoLink(rec.video.trim()); if (full) rec.video = full; }
-    await vault.mutate((tx) => tx.put('avis', rec), id ? 'Annonce modifiée' : 'Annonce publiée', `${rec.nom} — jusqu'au ${fmtDate(rec.fin)}`, rec.immId);
-    toast(rec.video && !videoEmbed(rec.video) ? (ttShort(rec.video) ? 'Annonce publiée — lien court TikTok non converti (hors ligne ?) : ouvrez la vidéo dans le navigateur et copiez le lien complet' : 'Annonce publiée — lien vidéo non reconnu : il s’affiche comme un bouton') : `Annonce publiée jusqu'au ${fmtDate(rec.fin)}`, rec.video && !videoEmbed(rec.video) ? { bad: true } : undefined);
-    goBack();
-  },
   async bien(fd) {
     const id = fd.get('id'), g = (k) => String(fd.get(k) || '').trim(), n = (k) => (g(k) ? Math.max(0, num(g(k).replace(',', '.'))) : '');
     const old = id ? vault.get('biens', id) : null;
@@ -10377,38 +9636,6 @@ const FORMS = {
     toast('Enregistré');
     goBack();
     netLoad(true);
-  },
-  async annc(fd) {
-    const g = (k) => String(fd.get(k) || '').trim(), id = g('id');
-    if (!g('nom')) return;
-    if (!/^[0-9A-Za-z]{4,16}$/.test(g('appCode'))) return toast('Code : 4 à 16 chiffres ou lettres', { bad: true });
-    const rid = id || 'annc-' + uid();
-    await vault.mutate((tx) => tx.put('reglages', { id: rid, nom: g('nom'), cat: PUB_CATS[g('cat')] ? g('cat') : 'autre', adresse: g('adresse'), tel: g('tel'), email: g('email'), appCode: g('appCode') }), id ? 'Annonceur modifié' : 'Annonceur créé', g('nom'));
-    toast(id ? 'Enregistré' : 'Annonceur créé : envoyez-lui le code');
-    goBack();
-    await annSync(rid, true);
-    if (!id) openOver('annc-form', rid);
-  },
-  async 'ann-tarifs'(fd) {
-    const m = (k) => { const v = String(fd.get(k) || '').trim().replace(',', '.'); return v ? Math.max(0, num(v)) : ''; };
-    const nt = { mode: fd.get('mode') === 'band' ? 'band' : 'pack' };
-    for (const k of Object.keys(TARIF_DEF)) if (k !== 'mode') nt[k] = m(k);
-    await vault.mutate((tx) => tx.put('reglages', { id: 'annTarifs', ...nt, crea_simple: m('crea_simple'), crea_moyen: m('crea_moyen'), crea_max: m('crea_max'), note: String(fd.get('note') || '').trim().slice(0, 300) }), 'Tarifs des annonces', nt.mode === 'band' ? 'Prix au jour par fascia' : `Pacchetti ${m('pk_start')} / ${m('pk_plus')} / ${m('pk_max')} € par mois`);
-    toast('Tarifs enregistrés');
-    goBack();
-    annSync(null, true);
-  },
-  async socnet(fd) {
-    await vault.mutate((tx) => tx.put('reglages', { id: 'socnet', f: Math.max(0, Math.round(num(fd.get('f')))), prix: Math.max(0, r2(num(fd.get('prix')))) }), '📱 Nos réseaux sociaux', `${fd.get('f')} abonnés · ${fd.get('prix')} €`);
-    closeSheet(); toast('Enregistré'); for (const an of anCos()) annSync(an.id);
-  },
-  async socpub(fd) {
-    const a = vault.get('avis', String(fd.get('id')));
-    if (!a) return;
-    const old = a.socPub || {}, sp = {};
-    for (const k of Object.keys(SOC_NET)) if (fd.get('on_' + k)) { const u = String(fd.get('url_' + k) || '').trim(); sp[k] = { at: (old[k] && old[k].at) || new Date().toISOString(), url: /^https?:\/\//.test(u) ? u.slice(0, 400) : '' }; }
-    await vault.mutate((tx) => tx.put('avis', { id: a.id, socPub: sp }), '📱 Publié sur nos réseaux', `${a.nom} · ${Object.keys(sp).map((k) => SOC_NET[k]).join(', ')}`);
-    closeSheet(); toast('Enregistré'); annSync(a.annId); renderView();
   },
   async avis(fd) {
     const id = fd.get('id');
@@ -10758,9 +9985,9 @@ const FORMS = {
     } catch (e) { setBusy(form, false); toast(e.status === 423 ? 'Lecture seule : abonnement échu' : e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
   async annsend(fd, form) {
-    const x0 = String(fd.get('x') || '').trim().slice(0, 1480), loc = String(fd.get('loc') || ''), eq = String(fd.get('eq') || ''), net = String(fd.get('net') || ''), sendAn = !!fd.get('an');
+    const x0 = String(fd.get('x') || '').trim().slice(0, 1480), loc = String(fd.get('loc') || ''), eq = String(fd.get('eq') || ''), net = String(fd.get('net') || '');
     if (!x0) return;
-    if (!loc && !eq && !net && !sendAn) return toast('Choisissez au moins un destinataire', { bad: true });
+    if (!loc && !eq && !net) return toast('Choisissez au moins un destinataire', { bad: true });
     const x = '📣 ' + x0, at = new Date().toISOString(), done = [];
     setBusy(form, true, 'Envoi…');
     try {
@@ -10774,12 +10001,6 @@ const FORMS = {
         const ids = eq === 'grp' ? eqGroup() : vault.list('intervenants').filter((w) => w.espace && w.espace.on && !w.archive).map((w) => w.id);
         if (ids.length) { await eqChatSend(ids, x, true); done.push(`👷 ${plural(ids.length, 'ouvrier')}`); }
       }
-      const parts = (sendAn ? anCos() : []).filter((r) => r.espace && r.espace.id);
-      if (parts.length) {
-        await vault.mutate((tx) => { for (const r of parts) tx.put('reglages', { id: r.id, chat: [...(vault.get('reglages', r.id).chat || []), { id: 'c' + Date.now().toString(36) + r.id.slice(-3), at, from: 'mgr', x, an: 1 }].slice(-PCHAT_MAX) }); }, '📣 Annonce aux partenaires', plural(parts.length, 'partenaire'));
-        for (const r of parts) await pchatSync(r.id);
-        done.push(`🚕🍽️ ${plural(parts.length, 'partenaire')}`);
-      }
       if (net) {
         const list = ((ui.net && ui.net.list) || []).filter((t) => t.pub && (net === 'all' || t.fil === net));
         let n = 0;
@@ -10792,19 +10013,6 @@ const FORMS = {
       toast('📣 Annonce envoyée : ' + done.join(' · '));
       for (const im of vault.list('immeubles')) if ((ui.chatAt || {})[im.id]) chatLoad(im.id, true);
     } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
-  },
-  async pchat(fd, form) {
-    const r = vault.get('reglages', fd.get('id')), x = String(fd.get('x') || '').trim().slice(0, 1500);
-    if (!r || !x) return;
-    const draft = form.x.value, co = pchatColl(r);
-    form.x.value = '';
-    if (ui.drafts) delete ui.drafts['p:' + r.id];
-    setBusy(form, true, 'Envoi…');
-    try {
-      await vault.mutate((tx) => tx.put(co, { id: r.id, chat: [...(vault.get(co, r.id).chat || []), { id: 'c' + Date.now().toString(36), at: new Date().toISOString(), from: 'mgr', x }].slice(-PCHAT_MAX), chatNew: 0 }), `💬 Message à ${pchatName(r)}`, pchatName(r));
-      await pchatSync(r.id);
-      toast('Message envoyé');
-    } catch (e) { form.x.value = draft; setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
   async 'eq-chat'(fd, form) {
     const i = vault.get('intervenants', fd.get('id')), x = String(fd.get('x') || '').trim().slice(0, 1500);
