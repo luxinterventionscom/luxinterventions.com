@@ -872,7 +872,7 @@ dialog.bien-full::backdrop { background: rgba(0,0,0,.9); }
 .mk { border: 2px solid var(--mk) !important; }
 .mk-on { animation: mkGlow 1.5s ease-in-out infinite; }
 @keyframes mkGlow { 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--mk) 55%, transparent); } 50% { box-shadow: 0 0 0 7px transparent, 0 0 18px 2px color-mix(in srgb, var(--mk) 35%, transparent); } }
-.mk-int { --mk: #F97316; } .mk-ger { --mk: #1D4ED8; } .mk-bien { --mk: #0077BE; } .mk-dev { --mk: #8B5CF6; } .mk-loc { --mk: #0D9488; } .mk-hot { --mk: #92400E; } .mk-pub { --mk: #DC2626; } .mk-avis { --mk: #475569; } .mk-plan { --mk: #4F46E5; }
+.mk-int { --mk: #F97316; } .mk-ger { --mk: #1D4ED8; } .mk-bien { --mk: #0077BE; } .mk-dev { --mk: #8B5CF6; } .mk-loc { --mk: #0D9488; } .mk-pub { --mk: #DC2626; } .mk-avis { --mk: #475569; } .mk-plan { --mk: #4F46E5; }
 @media (prefers-reduced-motion: reduce) { .mk-on { animation: none; } }
 /* dans un banner de couleur (devis, contours d'activité) : une seule bordure, celle du banner — la section pliable intérieure ne s'allume pas en orange */
 .dev-banner details.dfold, .mk details.dfold { animation: none !important; box-shadow: none !important; border: 0 !important; background: transparent !important; padding: 2px 0 0 !important; }

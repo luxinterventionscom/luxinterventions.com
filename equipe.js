@@ -15,9 +15,8 @@ import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client
 import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
 import { tripLine } from '/ares/trip.js';
-import qrcode from '/ares/qrcode.js';
 import { themeInit, themeBtn, themeAccent } from '/ares/theme.js';
-themeInit({ night: true });
+themeInit();
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'eqAccess';
 const RX = /^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/;
@@ -382,38 +381,6 @@ async function pbUrl(docId) {
   return pbUrls.get(docId);
 }
 const hydratePb = () => document.querySelectorAll('img[data-pb-img]').forEach((img) => { pbUrl(img.dataset.pbImg).then((u) => { img.src = u; }).catch(() => {}); });
-document.addEventListener('click', (e) => {
-  const q = e.target.closest && e.target.closest('[data-cqr]'), p = e.target.closest && e.target.closest('[data-cpay]');
-  if (q) { e.preventDefault(); cQr = cQr === q.dataset.cqr ? '' : q.dataset.cqr; render(); return; }
-  const cf = e.target.closest && e.target.closest('[data-cfil]');
-  if (cf) {
-    e.preventDefault();
-    const tid = cf.dataset.cfil, inp = document.querySelector(`[data-cfil-x="${CSS.escape(tid)}"]`), x = inp ? inp.value.trim() : '';
-    if (!x) return;
-    const t = data && data.tasks[tid];
-    if (t && t.course) t.course.fil = [...(t.course.fil || []), { id: 'l' + Date.now(), at: new Date().toISOString(), from: 'drv', who: [data.prenom, data.nom].filter(Boolean).join(' '), x }];
-    queue({ k: 'fil', tid, x: x.slice(0, 1000), at: new Date().toISOString() });
-    render();
-    return;
-  }
-  const ct = e.target.closest && e.target.closest('[data-ctl]');
-  if (ct) {
-    e.preventDefault(); ct.disabled = true;
-    const tid = ct.dataset.ctl, ev = ct.dataset.ev, at = new Date().toISOString();
-    try { const m = JSON.parse(localStorage.getItem('eqCtl:' + tid) || '{}'); m[ev] = at; localStorage.setItem('eqCtl:' + tid, JSON.stringify(m)); } catch { /* stockage indisponible */ }
-    render();
-    const send = (geo) => queue({ k: 'ctl', tid, ev, at, ...(geo ? { geo } : {}) });
-    if (navigator.geolocation) navigator.geolocation.getCurrentPosition((p) => send({ lat: p.coords.latitude, lon: p.coords.longitude, acc: p.coords.accuracy }), () => send(null), { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 });
-    else send(null);
-    return;
-  }
-  if (p) {
-    e.preventDefault(); p.disabled = true;
-    try { localStorage.setItem(cPaidK(p.dataset.cpay), p.dataset.mode); } catch { /* stockage indisponible */ }
-    cQr = ''; render();
-    queue({ k: 'pay', tid: p.dataset.cpay, mode: p.dataset.mode, at: new Date().toISOString() });
-  }
-});
 document.addEventListener('click', (e) => { const a = e.target.closest && e.target.closest('[data-pb]'); if (!a) return; e.preventDefault(); pbUrl(a.dataset.pb).then((u) => { const o = document.createElement('div'); o.className = 'lbx'; o.innerHTML = `<img src="${u}" alt=""><span>✕</span>`; o.onclick = () => o.remove(); document.body.append(o); }).catch(() => {}); });
 // heure prévue (de → à) et urgence, mises par le responsable
 const whenTag = (x) => `${x.urgent ? ` <span class="tag urg">🔴 ${esc(T().urg)}</span>` : ''}${x.heure ? ` <span class="tag hr">🕒 ${esc(x.heure)}${x.heureFin ? '–' + esc(x.heureFin) : ''}</span>` : ''}`;
@@ -474,50 +441,7 @@ function infoHtml(x, t) {
   if (g) rows.push(`<div class="ir org">🏢 ${esc(g.org)} · #${esc(g.ref)}</div>`);
   return (rows.length ? `<div class="tbox">${rows.join('')}</div>` : '') + pbHtml(x);
 }
-// 🚕 course d'un client (chauffeurs) : trajet, qui paie ; encaisser : 📱 QR virement, 💶 espèces, 💳 terminal (Payconiq bientôt)
-const CPT = {
-  fr: { fil: '🧵 Fil de la course', filPh: 'Écrire sur cette course…', filSend: 'Envoyer', dep: '▶️ Départ', eta: '📍 Étape', arr: '🏁 Arrivée', r: '🚕 Course', cl: '💶 Le client paie dans la voiture', ho: '🧾 Facturé au client par la centrale : rien à encaisser', amt: 'À encaisser', qr: '📱 QR virement', qrh: 'Faites scanner ce code avec l’app de la banque du client.', cash: '💶 Payé en espèces', term: '💳 Payé au terminal', qrok: '📱 Payé par virement', pc: '🟣 Payconiq — bientôt', paid: '✅ Encaissé', cancel: '❌ Course annulée par le client' },
-  it: { fil: '🧵 Filo della corsa', filPh: 'Scrivi su questa corsa…', filSend: 'Invia', dep: '▶️ Partenza', eta: '📍 Tappa', arr: '🏁 Arrivo', r: '🚕 Corsa', cl: '💶 Il cliente paga in macchina', ho: '🧾 Fatturata al cliente dalla centrale: niente da incassare', amt: 'Da incassare', qr: '📱 QR bonifico', qrh: 'Fai scansionare questo codice con l’app della banca del cliente.', cash: '💶 Pagato in contanti', term: '💳 Pagato al terminale', qrok: '📱 Pagato con bonifico', pc: '🟣 Payconiq — presto', paid: '✅ Incassato', cancel: '❌ Corsa annullata dal cliente' },
-  pt: { fil: '🧵 Fio da corrida', filPh: 'Escrever sobre esta corrida…', filSend: 'Enviar', dep: '▶️ Partida', eta: '📍 Paragem', arr: '🏁 Chegada', r: '🚕 Corrida', cl: '💶 O cliente paga no carro', ho: '🧾 Faturada ao cliente pela central: nada a cobrar', amt: 'A cobrar', qr: '📱 QR transferência', qrh: 'Peça ao cliente para ler este código com a app do banco.', cash: '💶 Pago em dinheiro', term: '💳 Pago no terminal', qrok: '📱 Pago por transferência', pc: '🟣 Payconiq — em breve', paid: '✅ Cobrado', cancel: '❌ Corrida cancelada pelo cliente' },
-  de: { fil: '🧵 Fahrt-Chat', filPh: 'Zu dieser Fahrt schreiben…', filSend: 'Senden', dep: '▶️ Abfahrt', eta: '📍 Zwischenstopp', arr: '🏁 Ankunft', r: '🚕 Fahrt', cl: '💶 Der Kunde zahlt im Auto', ho: '🧾 Wird dem Kunden von der Zentrale berechnet: nichts kassieren', amt: 'Zu kassieren', qr: '📱 QR-Überweisung', qrh: 'Lassen Sie den Kunden diesen Code mit seiner Banking-App scannen.', cash: '💶 Bar bezahlt', term: '💳 Am Terminal bezahlt', qrok: '📱 Per Überweisung bezahlt', pc: '🟣 Payconiq — bald', paid: '✅ Kassiert', cancel: '❌ Fahrt vom Kunden storniert' },
-  en: { fil: '🧵 Ride thread', filPh: 'Write about this ride…', filSend: 'Send', dep: '▶️ Departure', eta: '📍 Stop', arr: '🏁 Arrival', r: '🚕 Ride', cl: '💶 The customer pays in the car', ho: '🧾 Invoiced to the client by the central: nothing to collect', amt: 'To collect', qr: '📱 QR transfer', qrh: 'Let the customer scan this code with their banking app.', cash: '💶 Paid in cash', term: '💳 Paid at the terminal', qrok: '📱 Paid by transfer', pc: '🟣 Payconiq — soon', paid: '✅ Collected', cancel: '❌ Ride cancelled by the customer' },
-  es: { fil: '🧵 Hilo de la carrera', filPh: 'Escribir sobre esta carrera…', filSend: 'Enviar', dep: '▶️ Salida', eta: '📍 Parada', arr: '🏁 Llegada', r: '🚕 Carrera', cl: '💶 El cliente paga en el coche', ho: '🧾 Facturada al cliente por la central: nada que cobrar', amt: 'A cobrar', qr: '📱 QR transferencia', qrh: 'Que el cliente escanee este código con la app de su banco.', cash: '💶 Pagado en efectivo', term: '💳 Pagado en el terminal', qrok: '📱 Pagado por transferencia', pc: '🟣 Payconiq — pronto', paid: '✅ Cobrado', cancel: '❌ Carrera cancelada por el cliente' },
-};
-const cPaidK = (tid) => 'eqCPaid:' + tid;
-let cQr = '';
-// 🚕 nom de l'app : « Tassista » (chauffeur d'une centrale taxi, ouverte par taxi.html) ou « Autista »
-const APPN = { fr: ['🚕 App Tassista', '🚙 App Autista'], it: ['🚕 App Tassista', '🚙 App Autista'], de: ['🚕 Taxi-App', '🚙 Fahrer-App'], en: ['🚕 Taxi driver app', '🚙 Driver app'], pt: ['🚕 App Taxista', '🚙 App Motorista'], es: ['🚕 App Taxista', '🚙 App Conductor'] };
-try { if (new URLSearchParams(location.search).get('app') === 'taxi') localStorage.setItem('eqTx', '1'); } catch { /* stockage indisponible */ }
-const isTx = () => (data ? data.fil === 'taxi' : (() => { try { return localStorage.getItem('eqTx') === '1'; } catch { return false; } })());
-const appName = () => { const n = APPN[lang] || APPN.fr; return data && !data.chauffeur ? null : data || isTx() ? n[isTx() ? 0 : 1] : null; };
-// 🪧 pancarte à l'écran · 🗣️ phrases prêtes dans la langue du client · 🗺️ itinéraire · ✈️ vol
-const PANC = { fr: ['🪧 Pancarte', '🗣️ Phrases pour le client', '🗺️ Itinéraire', '✈️ Suivre le vol', 'Touchez pour fermer'], it: ['🪧 Cartello', '🗣️ Frasi per il cliente', '🗺️ Itinerario', '✈️ Segui il volo', 'Tocca per chiudere'], de: ['🪧 Namensschild', '🗣️ Sätze für den Gast', '🗺️ Route', '✈️ Flug verfolgen', 'Tippen zum Schließen'], en: ['🪧 Name sign', '🗣️ Phrases for the guest', '🗺️ Route', '✈️ Track the flight', 'Tap to close'], pt: ['🪧 Placa', '🗣️ Frases para o cliente', '🗺️ Itinerário', '✈️ Seguir o voo', 'Toque para fechar'], es: ['🪧 Cartel', '🗣️ Frases para el cliente', '🗺️ Ruta', '✈️ Seguir el vuelo', 'Toque para cerrar'] };
-const PHR = {
-  fr: ['Bonjour, je suis votre chauffeur.', 'Je vous attends à la sortie.', 'J’arrive dans 10 minutes.', 'Je m’occupe de vos bagages.', 'Attachez votre ceinture, s’il vous plaît.', 'Nous sommes arrivés. Bon séjour !'],
-  en: ['Hello, I am your driver.', 'I am waiting for you at the exit.', 'I will be there in 10 minutes.', 'I will take care of your luggage.', 'Please fasten your seat belt.', 'We have arrived. Enjoy your stay!'],
-  de: ['Guten Tag, ich bin Ihr Fahrer.', 'Ich warte am Ausgang auf Sie.', 'Ich bin in 10 Minuten da.', 'Ich kümmere mich um Ihr Gepäck.', 'Bitte schnallen Sie sich an.', 'Wir sind angekommen. Schönen Aufenthalt!'],
-  it: ['Buongiorno, sono il suo autista.', 'La aspetto all’uscita.', 'Arrivo tra 10 minuti.', 'Mi occupo io dei bagagli.', 'Allacci la cintura, per favore.', 'Siamo arrivati. Buon soggiorno!'],
-  pt: ['Olá, sou o seu motorista.', 'Espero por si à saída.', 'Chego dentro de 10 minutos.', 'Eu trato da sua bagagem.', 'Aperte o cinto, por favor.', 'Chegámos. Boa estadia!'],
-  es: ['Hola, soy su conductor.', 'Le espero en la salida.', 'Llego en 10 minutos.', 'Yo me ocupo de su equipaje.', 'Abróchese el cinturón, por favor.', 'Hemos llegado. ¡Buena estancia!'],
-};
-function courseTools(x, c) {
-  const P = PANC[lang] || PANC.fr, nom = (x.contact && x.contact.nom) || '', gl = (c.lg || []).find((l) => PHR[l] && l !== lang);
-  const q = encodeURIComponent, route = c.from && c.to ? `https://www.google.com/maps/dir/?api=1&origin=${q(c.from)}&destination=${q(c.to)}` : c.from ? `https://www.google.com/maps/search/?api=1&query=${q(c.from)}` : '';
-  const vol = String(c.vol || '').replace(/\s+/g, '').toLowerCase();
-  return `<div class="btns" style="flex-wrap:wrap">${nom ? `<button class="btn sec" data-panc="${esc(nom)}">${esc(P[0])}</button>` : ''}${route ? `<a class="btn sec" href="${esc(route)}" target="_blank" rel="noopener">${esc(P[2])}</a>` : ''}${/^[a-z0-9]{3,8}$/.test(vol) ? `<a class="btn sec" href="https://www.flightradar24.com/data/flights/${esc(vol)}" target="_blank" rel="noopener">${esc(P[3])}</a>` : ''}</div>
-    ${gl ? `<details style="margin-top:6px"><summary class="meta" style="cursor:pointer">${esc(P[1])} · ${esc(gl.toUpperCase())}</summary>${PHR[gl].map((f, i) => `<div style="margin:6px 0"><b style="font-size:17px">${esc(f)}</b><div class="meta">${esc((PHR[lang] || PHR.fr)[i])}</div></div>`).join('')}</details>` : ''}`;
-}
-document.addEventListener('click', (e) => {
-  const b = e.target.closest && e.target.closest('[data-panc]');
-  if (!b) return;
-  const P = PANC[lang] || PANC.fr, o = document.createElement('div');
-  o.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#fff;color:#111;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;filter:none';
-  o.innerHTML = `<div style="font:800 clamp(40px,12vw,120px)/1.1 system-ui;word-break:break-word">${esc(b.dataset.panc)}</div><div style="margin-top:24px;color:#888;font:16px system-ui">${esc(P[4])}</div>`;
-  o.addEventListener('click', () => o.remove());
-  document.body.append(o);
-  try { document.documentElement.requestFullscreen && document.documentElement.requestFullscreen().catch(() => {}); } catch { /* pas de plein écran */ }
-});
-// 🔽 cartes repliables : toucher le titre ; choix gardé sur ce téléphone (la course du jour et le service restent toujours ouverts)
+// 🔽 cartes repliables : toucher le titre ; choix gardé sur ce téléphone
 const efShutSet = (() => { try { return new Set(JSON.parse(localStorage.getItem('eqShut') || '[]')); } catch { return new Set(); } })();
 const efShut = (k) => (efShutSet.has(k) ? ' shut' : '');
 { const st = document.createElement('style'); st.textContent = '[data-efk]>h2{cursor:pointer}[data-efk]>h2::after{content:" ▾";opacity:.5;font-size:.8em}[data-efk].shut>h2::after{content:" ▸"}[data-efk].shut>:not(h2){display:none!important}[data-efk].shut>h2{margin-bottom:0}'; document.head.append(st); }
@@ -529,26 +453,6 @@ document.addEventListener('click', (e) => {
   if (c.classList.contains('shut')) efShutSet.add(k); else efShutSet.delete(k);
   try { localStorage.setItem('eqShut', JSON.stringify([...efShutSet])); } catch { /* stockage plein */ }
 });
-function courseHtml(x, tid) {
-  const c = x.course;
-  if (!c) return '';
-  const k = CPT[lang] || CPT.fr, eur = (n) => (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') + ' €';
-  let mine = '';
-  try { mine = localStorage.getItem(cPaidK(tid)) || ''; } catch { /* stockage indisponible */ }
-  const paid = c.paid || mine, lab = { qr: k.qrok, cash: k.cash, term: k.term };
-  const tlDone = (() => { try { return JSON.parse(localStorage.getItem('eqCtl:' + tid) || '{}'); } catch { return {}; } })(), tl = { ...Object.fromEntries((c.tl || []).map((e) => [e.k, e.at])), ...tlDone };
-  const tlRow = c.cancel ? '' : `<div class="btns" style="flex-wrap:wrap">${['dep', 'eta', 'arr'].map((e) => (e === 'eta' || !tl[e]) ? `<button class="btn ${e === 'arr' ? 'ok' : 'sec'}" data-ctl="${esc(tid)}" data-ev="${e}"${e === 'arr' && !tl.dep ? ' disabled' : ''}>${esc(k[e])}</button>` : `<span class="tag">${esc(k[e])} ${esc(String(tl[e]).slice(11, 16))}</span>`).join('')}</div>`;
-  const FI = { hotel: '🛎️', lc: '🌐', taxi: '🚕', drv: '🚙', client: '👤' };
-  const filRow = c.cancel ? '' : `<details style="margin-top:6px"${(c.fil || []).length ? ' open' : ''}><summary class="meta" style="cursor:pointer">${esc(k.fil)}${(c.fil || []).length ? ' (' + c.fil.length + ')' : ''}</summary>${(c.fil || []).slice(-10).map((m) => `<div class="meta" style="margin:4px 0"><b>${FI[m.from] || '•'} ${esc(m.who || '')}</b> ${esc(String(m.at).slice(11, 16))} — <span data-trx="${esc(m.x)}">${esc(m.x)}</span></div>`).join('')}<div style="display:flex;gap:6px;margin-top:6px"><input data-cfil-x="${esc(tid)}" placeholder="${esc(k.filPh)}" maxlength="1000" style="flex:1"><button class="btn sm" data-cfil="${esc(tid)}">${esc(k.filSend)}</button></div></details>`;
-  const head = `<div class="ir"><span class="ic">🚕</span><div class="tx"><b>${esc(c.from)}</b> → <b>${esc(c.to || '?')}</b>${c.vol ? ' · ✈️ ' + esc(c.vol) : ''}${c.pax ? ' · 👥 ' + c.pax : ''}${(c.lg || []).length ? ' · 🗣️ ' + esc(c.lg.join(' ').toUpperCase()) : ''}</div></div>${c.cancel ? '' : courseTools(x, c)}${tlRow}${filRow}`;
-  if (c.cancel) return `<div class="tbox">${head}<div class="ir"><b>${esc(k.cancel)}</b></div></div>`;
-  if (c.payer !== 'client') return `<div class="tbox">${head}<div class="ir"><span class="ic">🧾</span><div class="tx">${esc(k.ho)}</div></div></div>`;
-  const body = paid ? `<div class="ir"><b>${esc(k.paid)} · ${esc(lab[paid] || paid)}${c.ttc ? ' · ' + eur(c.ttc) : ''}</b></div>`
-    : `<div class="ir"><span class="ic">💶</span><div class="tx">${esc(k.cl)}${c.ttc ? ` · ${esc(k.amt)}${colon()}<b>${eur(c.ttc)}</b>` : ''}</div></div>
-      ${cQr === tid && c.epc ? (() => { try { const q = qrcode(0, 'M'); q.addData(unescape(encodeURIComponent(c.epc))); q.make(); return `<div style="background:#fff;padding:8px;border-radius:10px;max-width:240px;margin:6px auto">${q.createSvgTag(5, 2)}</div><p class="meta" style="text-align:center">${esc(k.qrh)}</p>`; } catch { return ''; } })() : ''}
-      <div class="btns" style="flex-wrap:wrap">${c.epc ? `<button class="btn sec" data-cqr="${esc(tid)}">${esc(k.qr)}</button>` : ''}${c.epc && cQr === tid ? `<button class="btn ok" data-cpay="${esc(tid)}" data-mode="qr">${esc(k.qrok)}</button>` : ''}<button class="btn ok" data-cpay="${esc(tid)}" data-mode="cash">${esc(k.cash)}</button><button class="btn ok" data-cpay="${esc(tid)}" data-mode="term">${esc(k.term)}</button><button class="btn sec" disabled>${esc(k.pc)}</button></div>`;
-  return `<div class="tbox">${head}${body}</div>`;
-}
 // ligne courte (planning du jour) : le détail et les boutons sont dans « Mon horaire »
 function taskLine(it) {
   const x = data.tasks[it.tid];
@@ -612,7 +516,7 @@ function taskCard(it, withBtns) {
       <div class="btns"><button class="btn" type="submit">${esc(t.send)}</button><button class="btn sec" type="button" data-cancel="1">${esc(t.cancel)}</button></div></form>` : '';
   return `<div class="task ${done ? 'done' : ''}${x.urgent && !done ? ' urgent' : ''}">${notStarted && !done ? refusTop(it) : ''}
     ${headHtml(x, it.late ? ` <span class="tag bad">${esc(t.late)}</span>` : '')}
-    ${infoHtml(x, t)}${courseHtml(x, it.tid)}
+    ${infoHtml(x, t)}
     ${st && st.st !== 'refus' ? `<div class="stline ${st.st}">${esc(t.st[st.st])} · ${esc(fmt(st.at))} ${esc(t.at)} ${esc(st.h || (st.at || '').slice(11, 16))}${st.note ? ' — ' + esc(st.note) : ''}</div>` : ''}
     ${btns}${fh}${notStarted && !done ? refusUi(it) : ''}${withBtns && !(st && st.st === 'refus') ? phBlock(it, x) : ''}</div>`;
 }
@@ -696,7 +600,7 @@ function stopCard(it, cur) {
   const trip = it.tk && it.d === today && !tm.arr && !ended && !refused;
   return `<div class="stop${cur ? ' cur' : ''}${ended ? ' done' : ''}${x.urgent && !ended ? ' urgent' : ''}">${!tm.arr && !ended && !trip ? refusTop(it) : ''}
     ${headHtml(x, cur ? ` <span class="tag now">${esc(tm.arr ? t.s.now : t.s.next)}</span>` : '', cur ? '<span class="live" aria-hidden="true"></span>' : '')}
-    ${ended ? (x.ger ? `<div class="meta">🏢 ${esc(x.ger.org)} · #${esc(x.ger.ref)}</div>` : '') : infoHtml(x, T())}${courseHtml(x, it.tid)}${trip ? tripUi(it, x) : ''}<div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
+    ${ended ? (x.ger ? `<div class="meta">🏢 ${esc(x.ger.org)} · #${esc(x.ger.ref)}</div>` : '') : infoHtml(x, T())}${trip ? tripUi(it, x) : ''}<div class="stline">🟢 ${esc(t.p.arr)} <b>${esc(tm.arr || '—')}</b> · 🔴 ${esc(t.p.dep)} <b>${esc(tm.dep || '—')}</b>${tm.end ? ` · ${esc(t.st[tm.end.st])}` : ''}</div>
     ${act}</div>`;
 }
 // Photos avant / après une intervention : 6 + 6, avec l'appareil photo ou la galerie
@@ -757,45 +661,6 @@ function placesOf(d) {
 
 // Notifications : abonnement de ce téléphone (avec la langue et, pour les locataires, le fil de la maison)
 let pushSt = '', pushJust = false;
-// 🚙 chauffeur « en service » : position envoyée (chiffrée pour la centrale) toutes les 90 s, seulement pendant le service et l'app ouverte
-const SVT = {
-  fr: { t: '🚙 Service', on: '▶️ Je suis en service', off: '⏹ Fin de service', hint: 'Pendant le service, votre position est envoyée à la centrale (toutes les 90 s). Gardez l’app ouverte (téléphone sur le support).', sent: '📍 Position envoyée à', wait: '📍 Recherche de la position…', gps: '⚠️ Position refusée : autorisez la localisation pour cette app.', old: '⚠️ Serveur pas encore à jour.' },
-  it: { t: '🚙 Servizio', on: '▶️ Sono in servizio', off: '⏹ Fine servizio', hint: 'Durante il servizio la tua posizione va alla centrale (ogni 90 s). Tieni l’app aperta (telefono sul supporto).', sent: '📍 Posizione inviata alle', wait: '📍 Cerco la posizione…', gps: '⚠️ Posizione rifiutata: autorizza la localizzazione per questa app.', old: '⚠️ Server non ancora aggiornato.' },
-  pt: { t: '🚙 Serviço', on: '▶️ Estou em serviço', off: '⏹ Fim do serviço', hint: 'Durante o serviço, a sua posição é enviada à central (a cada 90 s). Mantenha a app aberta (telefone no suporte).', sent: '📍 Posição enviada às', wait: '📍 A procurar a posição…', gps: '⚠️ Posição recusada: autorize a localização para esta app.', old: '⚠️ Servidor ainda não atualizado.' },
-  de: { t: '🚙 Dienst', on: '▶️ Ich bin im Dienst', off: '⏹ Dienstende', hint: 'Während des Dienstes wird Ihre Position an die Zentrale gesendet (alle 90 s). App geöffnet lassen (Handy in der Halterung).', sent: '📍 Position gesendet um', wait: '📍 Position wird gesucht…', gps: '⚠️ Standort abgelehnt: bitte für diese App erlauben.', old: '⚠️ Server noch nicht aktualisiert.' },
-  en: { t: '🚙 Service', on: '▶️ I’m on duty', off: '⏹ End of duty', hint: 'While on duty, your position is sent to the central (every 90 s). Keep the app open (phone in the holder).', sent: '📍 Position sent at', wait: '📍 Getting your position…', gps: '⚠️ Location refused: allow location for this app.', old: '⚠️ Server not updated yet.' },
-  es: { t: '🚙 Servicio', on: '▶️ Estoy de servicio', off: '⏹ Fin del servicio', hint: 'Durante el servicio, tu posición se envía a la central (cada 90 s). Mantén la app abierta (teléfono en el soporte).', sent: '📍 Posición enviada a las', wait: '📍 Buscando la posición…', gps: '⚠️ Posición rechazada: autoriza la ubicación para esta app.', old: '⚠️ Servidor aún no actualizado.' },
-};
-let svcOn = (() => { try { return localStorage.getItem('eqSvc') === '1'; } catch { return false; } })(), svcAt = 0, svcErr = '', svcTimer = null, svcWake = null;
-function svcCard() {
-  if (!data || !data.chauffeur) return '';
-  const v = SVT[lang] || SVT.fr, hh = svcAt ? new Date(svcAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-  return `<div class="card" id="svcCard"${svcOn ? ' style="border-left:5px solid #16a34a"' : ''}><h2>${esc(v.t)}</h2><button class="btn block${svcOn ? ' sec' : ''}" data-svc="1">${esc(svcOn ? v.off : v.on)}</button>
-    <p class="meta" style="margin:8px 0 0">${svcOn ? esc(svcErr ? v[svcErr] || '' : svcAt ? v.sent + ' ' + hh : v.wait) + '<br>' : ''}${esc(v.hint)}</p></div>`;
-}
-const svcPaint = () => { const el = document.getElementById('svcCard'); if (el) el.outerHTML = svcCard(); };
-function svcSend() {
-  if (!svcOn || !data || !data.signalKey || !navigator.geolocation) return;
-  navigator.geolocation.getCurrentPosition(async (p) => {
-    try {
-      const body = await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'pos', lat: +p.coords.latitude.toFixed(5), lon: +p.coords.longitude.toFixed(5), acc: Math.round(p.coords.accuracy || 0) });
-      const r = await fetch(`${API}/api/esp/${id}/pos?app=eq`, { method: 'POST', body });
-      if (r.ok) { svcAt = Date.now(); svcErr = ''; } else if (r.status === 404) svcErr = 'old';
-    } catch { /* hors ligne : au prochain tour */ }
-    svcPaint();
-  }, () => { svcErr = 'gps'; svcPaint(); }, { enableHighAccuracy: true, timeout: 20000, maximumAge: 30000 });
-}
-function svcWakeOn() { try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then((w) => { svcWake = w; }).catch(() => {}); } catch { /* écran : pas de verrou */ } }
-function svcStart() { clearInterval(svcTimer); svcTimer = setInterval(svcSend, 90000); svcSend(); svcWakeOn(); }
-function svcStop() { clearInterval(svcTimer); svcTimer = null; try { if (svcWake) svcWake.release(); } catch { /* rien */ } svcWake = null; }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && svcOn && data && data.chauffeur) { svcSend(); svcWakeOn(); } });
-document.addEventListener('click', (e) => {
-  if (!e.target.closest || !e.target.closest('[data-svc]')) return;
-  e.preventDefault(); svcOn = !svcOn; svcAt = 0; svcErr = '';
-  try { localStorage.setItem('eqSvc', svcOn ? '1' : '0'); } catch { /* rien */ }
-  if (svcOn) svcStart(); else svcStop();
-  svcPaint();
-});
 const pushPost = (b) => fetch(`${API}/api/esp/${id}/push`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...b, app: 'eq', lang, boards: [] }) }).then((r) => { if (!r.ok) throw new Error(r.status); });
 async function pushInit() {
   pushSt = await pushStatus('/equipe');
@@ -857,7 +722,7 @@ function render() {
   const top = (name, logo, withLangs = false) => `<div class="top"><span class="brandx"><img class="top-logo" src="${esc(logo || '/ares/icons/lux-192.png')}" alt="" width="76" height="32"><b>${esc(name)}</b></span>${withLangs ? langs : themeBtn()}</div>`;
   if (!data) {
     app.innerHTML = `${top('ARES INVEST S.A.', '', true)}
-      <h1 style="text-align:center;margin-top:18px">${appName() ? esc(appName()) : "👷 " + esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
+      <h1 style="text-align:center;margin-top:18px">👷 ${esc(t.app)}</h1><p class="sub" style="text-align:center">${esc(t.welcome)}</p>
       ${loadErr ? `<div class="card warnc"><p style="margin:0">${esc(loadErr)}</p></div>` : ''}
       <div class="card"><form id="codeForm"><label>${esc(t.code)}</label>
         <input type="text" name="code" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="${esc(t.codePh)}" style="font-size:22px;letter-spacing:.08em;text-align:center" required>
@@ -867,7 +732,7 @@ function render() {
     return;
   }
   const d = data, out = [];
-  document.title = `${appName() || t.app} — ${d.societe.nom}`; themeAccent(d.societe.color);
+  document.title = `${t.app} — ${d.societe.nom}`; themeAccent(d.societe.color);
   if (devEd && !d.devis) devEd = null;
   if (devEd) {
     // l'éditeur du devis occupe l'écran ; il n'est redessiné que si sa forme change (le texte tapé reste)
@@ -904,8 +769,6 @@ function render() {
   const eg = d.eng && !d.eng.signed && !sigSent ? ENGT[lang] || ENGT.fr : null;
   if (eg) out.push(`<div class="card warnc"><p style="margin:0 0 8px"><b>✍️ ${esc(eg.top)}</b></p><button class="btn sm" data-eng-open="1">${esc(eg.open)} ↓</button></div>`);
   if (d.eng && d.eng.assurTodo && !assurSent) out.push(assurCard());
-  out.push(svcCard()); // 🚙 chauffeurs : en service / fin de service
-  if (d.chauffeur && svcOn && !svcTimer) setTimeout(svcStart, 0); // l'app rouverte pendant le service : reprend tout seul
   out.push(nbienBanner()); // 🆕 Nouveau bien (bleu mer)
   // météo de la semaine + radio (comme dans l'app des locataires)
   out.push(wxRadioCard());

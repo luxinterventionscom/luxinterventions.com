@@ -25,10 +25,10 @@ await p.fill('#f [name=iban]', 'LU28 0019 4006 4475 0000'); await p.fill('#f [na
 await p.fill('#f [name=avv]', '7'); await p.fill('#f [name=rog]', '30');
 await p.click('button[type=submit][form=f]'); await p.waitForTimeout(1500);
 log('facturation');
-// client hôtel sous licence
+// client gérance sous licence
 await p.evaluate(() => { location.hash = '#/reseau'; }); await p.waitForTimeout(1500);
 await act(p, 'net-new'); await p.waitForTimeout(600);
-await p.selectOption('#f [name=fil]', 'hotel'); await p.fill('#f [name=nom]', 'Hôtel Démo'); await p.fill('#f [name=tel]', '+352 691 000 050');
+await p.selectOption('#f [name=fil]', 'gerance'); await p.fill('#f [name=nom]', 'Gérance Démo'); await p.fill('#f [name=tel]', '+352 691 000 050');
 await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3000);
 const tCode = await p.$eval('.sheet [style*="mono"]', (e) => e.textContent.trim());
 const tid = [...store.keys()].find((k) => k.startsWith('ares/tenants/')).split('/')[2].replace('.json', '');
