@@ -8,7 +8,7 @@ import '/ares/reqmark.js';
 import { startI18n, LOCALES, translate as T } from '/ares/i18n.js';
 import { PTL_INVITE } from '/ares/ptl-invite.js';
 import { wxRadioCard, wxRadioInit } from '/ares/wxradio.js';
-import { nbienInit, nbienBanner, infoBox } from '/ares/nbien.js';
+import { infoBox } from '/ares/nbien.js';
 import { scrollHintInit } from '/ares/scroll-hint.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
 import { tripView, tripFetch } from '/ares/trip.js';
@@ -36,7 +36,6 @@ try { caches.open('ptl-pref').then((c) => c.put('/__ptl-lang', new Response(LANG
 const INVITE = PTL_INVITE;
 wxRadioInit({ app: 'ptl', lang: () => LANG, home: () => 'Luxembourg' });
 const API = document.querySelector('meta[name="ptl-api"]').content.replace(/\/$/, '') + '/api/portail/';
-nbienInit({ api: location.hash === '#demo' ? '' : API.replace(/\/api\/portail\/$/, ''), app: 'ptl', lang: () => LANG }); // démo du site : pas d'annonces réelles
 domierInit({ api: API.replace(/\/api\/portail\/$/, ''), lang: () => LANG }); // 🔧 DOMIER : appeler LUXINTERVENTION
 const $ = (s, r = document) => r.querySelector(s);
 
@@ -899,7 +898,6 @@ const VIEWS = {
         ${guideCard(stats)}
         ${pageHead(hello, 'Espace équipe LA CENTRAL')}
         ${arrive}
-        ${new Raw(nbienBanner())}
         ${new Raw(wxRadioCard())}
         ${orgFilter()}
         <div class="metrics">
@@ -921,7 +919,6 @@ const VIEWS = {
       ${offerBanner()}
       ${arrive}
       ${new Raw(domierHtml({ tel: DOM_TEL, lang: LANG, extra: '<button type="button" class="btn sm primary" data-action="new-ticket" style="margin-top:8px">🔧 ＋ Demande</button>' }))}
-        ${new Raw(nbienBanner())}
         ${new Raw(wxRadioCard())}
       <button class="big-cta" data-action="new-ticket">${icon('plus')}<span><b>Nouvelle demande de dépannage</b><small>Urgence, photos, accès — en 30 secondes</small></span></button>
       ${state.offersOff === false && !isAdmin() ? html`<button type="button" class="offer-line" data-action="offer-open">💎 <span>Avec l’abonnement, vos locataires vous écrivent depuis leur app et vous nous transmettez la panne en un geste, photos comprises — puis ils suivent l’intervention.</span> <b>Voir ›</b></button>` : ''}
