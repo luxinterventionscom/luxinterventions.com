@@ -1,4 +1,4 @@
-// Catena gérance (abbonamento): inquilino → centrale della gérance → ↪️ LA CENTRAL → stato che torna — WORKER_MJS=… node fwd-test.mjs
+// Catena cliente: inquilino → centrale del cliente → 🤖 inoltro automatico a LA CENTRAL → stato che torna — WORKER_MJS=… node fwd-test.mjs
 import { chromium } from 'playwright';
 import { writeFile } from 'node:fs/promises';
 import { execFileSync } from 'node:child_process';
@@ -51,29 +51,22 @@ await a.fill('#sig textarea[name=texte]', 'Perdita d’acqua sotto il lavandino 
 await a.setInputFiles('#sig input[name=photos]', S + '/leak.jpg');
 await a.click('#sig button[type=submit]'); await a.waitForTimeout(4000);
 log('segnalazione inviata dall’inquilino');
-// 4) la gérance la riceve e la inoltra a noi con l'accesso autorizzato
-await relog(q, CPASS);
+// 4) 🤖 la centrale del cliente la riceve e la inoltra DA SOLA a LUXINTERVENTIONS (senza toccare ↪️)
+await relog(q, CPASS); await q.waitForTimeout(6000);
 await q.evaluate(() => { location.hash = '#/dashboard'; }); await q.waitForTimeout(1500);
 const sid = await q.evaluate(() => { const el = document.querySelector('[data-action=open-signal]'); return el ? el.dataset.id : ''; });
-assert(sid, 'gérance: segnalazione arrivata');
+assert(sid, 'cliente: segnalazione arrivata');
 await act(q, 'open-signal', { id: sid }); await q.waitForTimeout(1000);
-assert(await q.$('[data-action=tfwd]'), 'gérance: bottone «↪️ Envoyer à LA CENTRAL»');
-await act(q, 'tfwd', { id: sid }); await q.waitForTimeout(800);
-await q.fill('#f [name=entree]', 'Portone A, codice 1234');
-await q.check('#f [name=acces]'); await q.waitForTimeout(200);
-await q.fill('#f [name=accesTxt]', 'Cassetta chiavi n. 3, codice 5678');
-await q.click('button[type=submit][form=f]'); await q.waitForTimeout(4000);
-await act(q, 'open-signal', { id: sid }); await q.waitForTimeout(800);
-assert(/Inviato a LA CENTRAL|Envoyé à LA CENTRAL/.test(await body(q)), 'gérance: «inviato a LA CENTRAL»');
+assert(/Inviato a LA CENTRAL|Envoyé à LA CENTRAL/.test(await body(q)), 'cliente: inoltrata da sola («inviato a LA CENTRAL»)');
 await q.keyboard.press('Escape'); await q.waitForTimeout(300);
-log('inoltrata con foto, entrata e accesso');
-// 5) la centrale la riceve con foto e accessi, la chiude
+log('inoltrata automaticamente con foto e contatto');
+// 5) la centrale la riceve con foto e contatto, la chiude
 let tk = '';
 for (let k = 0; k < 4 && !tk; k++) { await act(p, 'net-reload'); await p.waitForTimeout(3000); tk = await p.evaluate(() => { const el = [...document.querySelectorAll('[data-action=edit-tache][data-id], [data-action=open-tache][data-id], [data-action=tache-done][data-id]')].find((x) => /Perdita d’acqua/.test((x.closest('.row, .card') || x).textContent || '')); return el ? el.dataset.id : ''; }); if (!tk) { await p.evaluate(() => { location.hash = '#/maintenance'; }); await p.waitForTimeout(1000); } }
 assert(tk, 'centrale: richiesta arrivata in Manutenzione');
 await act(p, 'edit-tache', { id: tk }); await p.waitForTimeout(1000);
 const note = await p.evaluate(() => [...document.querySelectorAll('.sheet textarea, .sheet')].map((e) => e.value || e.innerText).join(' '));
-assert(/Cassetta chiavi n\. 3/.test(note) && /Portone A/.test(note) && /Anna/.test(note) && /📷 1 photo/.test(note), 'centrale: nota con inquilino, entrata, accesso autorizzato e 1 foto');
+assert(/Anna/.test(note) && /📷 1 photo/.test(note), 'centrale: nota con inquilino e 1 foto: ' + note.slice(0, 160));
 await p.keyboard.press('Escape'); await p.waitForTimeout(400);
 await act(p, 'tache-done', { id: tk }); await p.waitForTimeout(1500);
 if (await p.$('.sheet[open]')) { await p.keyboard.press('Escape'); await p.waitForTimeout(400); }
