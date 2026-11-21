@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.298.0';
+const VERSION = '2.299.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -8374,7 +8374,7 @@ const ACTIONS = {
   async 'net-reset'(d) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
     if (!t) return;
-    const v = await promptText('🗑️ Vider la centrale de « ' + t.nom + ' » ?', 'TOUT sera EFFACÉ : immeubles, locataires, paiements, documents, demandes. Impossible de revenir en arrière. Seulement si le client a perdu sa clé ET n’a pas de clé de secours. Pour un simple nouveau code, ce n’est PAS ce bouton. Tapez le nom pour confirmer.', t.nom);
+    const v = await promptText('🗑️ Vider la centrale de « ' + t.nom + ' » ?', 'TOUT sera EFFACÉ : immeubles, locataires, paiements, documents, demandes. Impossible de revenir en arrière. Seulement si le client a perdu sa clé ET n’a pas de clé de secours. Pour un simple nouveau code, ce n’est PAS ce bouton.\n\nPour confirmer, écrivez le NOM DU CLIENT exactement comme ici : « ' + t.nom + ' » (ce n’est pas un mot de passe ni une clé).', t.nom);
     if (v == null) return;
     if (v.trim() !== t.nom) return toast('Nom différent : rien n’a été fait', { bad: true });
     if (!(await confirmBox('Dernière confirmation : tout effacer ?', { ok: '🗑️ Tout effacer', danger: true, detail: 'La centrale de « ' + t.nom + ' » sera vide. Irréversible.' }))) return;
@@ -8385,7 +8385,7 @@ const ACTIONS = {
   async 'net-del'(d) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
     if (!t) return;
-    const v = await promptText('Supprimer « ' + t.nom + ' » ?', 'Sa centrale, ses apps (locataires, clients…), ses codes et ses fichiers sont effacés définitivement. Vous recevez un certificat de suppression. Tapez le nom pour confirmer.', t.nom);
+    const v = await promptText('Supprimer « ' + t.nom + ' » ?', 'Sa centrale, ses apps (locataires, clients…), ses codes et ses fichiers sont effacés définitivement. Vous recevez un certificat de suppression.\n\nPour confirmer, écrivez le NOM DU CLIENT exactement comme ici : « ' + t.nom + ' » (ce n’est pas un mot de passe ni une clé).', t.nom);
     if (v == null) return;
     if (v.trim() !== t.nom) return toast('Nom différent : rien n’a été fait', { bad: true });
     let cert;
