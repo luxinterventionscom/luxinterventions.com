@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.299.0';
+const VERSION = '2.300.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1356,6 +1356,7 @@ const NET_STATE = { ok: ['🟢', 'Actif'], ro: ['🟠', 'Lecture seule (échu)']
 const NET_ST = { trial: '🎁 Essai', active: '✅ Abonnement', suspended: '⏸ Suspendu' };
 // 🔑 Licences : tarifs par filière (prix 1 an HT, remises 2 et 3 ans), factures, registre
 const LIC_ESSAI = 15;
+const FREE_UNTIL = '2099-12-31'; // ♾️ « gratuit, sans échéance »
 const licTarifs = () => vault.get('reglages', 'licTarifs') || {};
 function licPrice(fil, years) {
   const t = licTarifs()[fil] || {}, an = num(t.an1), r = years === 2 ? num(t.r2) : years === 3 ? num(t.r3) : 0, c = factConf();
@@ -4943,7 +4944,7 @@ dashboard() {
     }
     return html`${head}${!n || (n.loading && !list.length) ? html`<p class="muted">Chargement…</p>` : ''}
       ${list.length ? html`<div class="list">${list.map((t) => { const st = NET_STATE[t.state] || NET_STATE.ok, dl = days(t.until); return html`<button class="row" data-action="net-open" data-id="${t.id}"><span class="avatar">${(NET_FIL[t.fil] || '🌐').split(' ')[0]}</span>
-        <span class="grow"><span class="title" style="display:block">${t.nom}</span><span class="meta">${NET_FIL[t.fil] || ''}${netInfo(t.id).ville ? ' · 🌍 ' + netInfo(t.id).ville : ''} · ${NET_ST[t.st] || ''}${t.until ? html` · jusqu’au ${fmtDate(t.until)}${dl != null && dl >= 0 ? ` (${dl} j)` : ''}` : ''}</span>
+        <span class="grow"><span class="title" style="display:block">${t.nom}</span><span class="meta">${NET_FIL[t.fil] || ''}${netInfo(t.id).ville ? ' · 🌍 ' + netInfo(t.id).ville : ''} · ${NET_ST[t.st] || ''}${t.until ? html` · ${t.until >= FREE_UNTIL ? '♾️ sans échéance' : 'jusqu’au ' + fmtDate(t.until)}${dl != null && dl >= 0 ? ` (${dl} j)` : ''}` : ''}</span>
         <span class="tiny" style="display:block">${t.configured ? (t.lastSeen ? '🖥️ dernière connexion ' + fmtDateTime(t.lastSeen) : '🔐 centrale configurée') : '✉️ invitation envoyée, pas encore ouverte'}</span></span>
         <span class="badge ${t.state === 'ok' ? 'ok' : t.state === 'ro' ? 'warn' : 'bad'}">${st[0]} ${st[1]}</span></button>`; })}</div>`
         : n && !n.loading && !n.err ? html`<div class="card" style="max-width:560px"><p style="margin-top:0">Donnez à vos clients (gérances, propriétaires) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; leurs demandes d’intervention arrivent dans Maintenance. ＋ Client → essai gratuit de ${LIC_ESSAI} jours, puis abonnement 1, 2 ou 3 ans.</p></div>` : ''}`;
@@ -6517,14 +6518,14 @@ const SHEETS = {
     return {
       title: `${(NET_FIL[t.fil] || '').split(' ')[0]} ${t.nom}`,
       narrow: true,
-      body: html`<div class="alert ${t.state === 'ok' ? 'info' : 'warn'}" style="margin-bottom:12px">${st[0]}<div><b>${st[1]}</b> · ${NET_ST[t.st] || ''}${t.until ? ' · jusqu’au ' + fmtDate(t.until) : ''}<div class="tiny">${t.configured ? (t.lastSeen ? 'Dernière connexion : ' + fmtDateTime(t.lastSeen) : 'Centrale configurée') : 'Invitation pas encore utilisée'}</div></div></div>
+      body: html`<div class="alert ${t.state === 'ok' ? 'info' : 'warn'}" style="margin-bottom:12px">${st[0]}<div><b>${st[1]}</b> · ${NET_ST[t.st] || ''}${t.until ? (t.until >= FREE_UNTIL ? ' · ♾️ sans échéance' : ' · jusqu’au ' + fmtDate(t.until)) : ''}<div class="tiny">${t.configured ? (t.lastSeen ? 'Dernière connexion : ' + fmtDateTime(t.lastSeen) : 'Centrale configurée') : 'Invitation pas encore utilisée'}</div></div></div>
         ${t.fil === 'proprio' ? html`${netBailLine(id)}<details class="card" style="margin-bottom:12px" ${netInfo(id).loueur ? '' : new Raw('open')}><summary><b>🔑 Propriétaire ou bailleur principal ?</b>${netInfo(id).loueur ? '' : html` <span class="tiny" style="color:var(--amber,#b45309)">à préciser</span>`}</summary>
           <form data-form="net-bail-set" class="fields" style="margin-top:8px"><input type="hidden" name="tid" value="${id}">${netBailFields(netInfo(id))}<button class="btn sm primary full" type="submit">Enregistrer</button></form></details>` : ''}
         ${code ? html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d’invitation</div><div style="font-family:var(--mono);font-size:24px;font-weight:800;letter-spacing:.08em">${code}</div>
           <div class="actions" style="justify-content:center;flex-wrap:wrap">${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}${inf.email ? html`<a class="btn sm" href="mailto:${inf.email}?subject=${encodeURIComponent('🌐 Votre centrale')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}<button class="btn sm" data-action="code-copy" data-code="${inv}">📋 Copier l’invitation</button></div></div>` : ''}
         ${isCompta() ? '' : html`<div class="section-label">🔑 Abonnement</div>
           <div class="lic-packs">${[1, 2, 3].map((n2) => { const pr = licPrice(t.fil, n2); return html`<button class="btn ${n2 === 1 ? '' : 'primary'}" data-action="lic-buy" data-id="${id}" data-y="${n2}" ${pr.an ? '' : new Raw('disabled')}><b>🔑 ${n2} an${n2 > 1 ? 's' : ''}</b><span>${pr.an ? money(pr.ht) + ' HT' : 'tarif à fixer'}</span>${pr.r ? html`<span class="tiny">−${pr.r} %</span>` : ''}</button>`; })}</div>
-          <p style="margin:8px 0 0"><button class="btn sm" data-action="lic-gift" data-id="${id}">🎁 6 mois offerts (accès complet)</button></p>
+          <p style="margin:8px 0 0;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-action="lic-gift" data-id="${id}">🎁 6 mois offerts (accès complet)</button><button class="btn sm" data-action="lic-free" data-id="${id}">♾️ Gratuit — sans échéance</button></p>
           <p class="tiny muted" style="margin:6px 0 12px">${licPrice(t.fil, 1).an ? `L’abonnement commence ${t.until && t.until > today() ? 'à la fin de la période en cours (' + fmtDate(t.until) + ')' : 'aujourd’hui'} ; une facture est créée.` : 'Fixez d’abord les tarifs : 💶 Tarifs.'}</p>
           <div class="actions" style="margin:0 0 12px;flex-wrap:wrap">${t.st === 'suspended' ? html`<button class="btn sm" data-action="lic-susp" data-id="${id}" data-on="0">▶ Réactiver</button>` : html`<button class="btn sm" data-action="lic-susp" data-id="${id}" data-on="1">⏸ Suspendre</button>`}</div>
           <form id="f" data-form="net-edit" class="fields">
@@ -8241,6 +8242,16 @@ const ACTIONS = {
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); a.download = `facture-${no}.pdf`; a.click();
   },
   // 🎁 6 mois offerts, accès complet : facture à 0 € pour la trace ; à la fin, lecture seule comme les autres
+  // ♾️ client gratuit pour toujours : actif, sans fin (31/12/2099), sans facture ; rien n'est effacé (centrale, locataires, clé)
+  async 'lic-free'(d) {
+    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
+    if (!t) return;
+    if (!(await confirmBox(`♾️ « ${t.nom} » gratuit, sans échéance ?`, { ok: '♾️ Gratuit pour toujours', detail: 'Sa centrale reste active pour toujours, sans abonnement ni facture. Rien n’est effacé : immeubles, locataires, apps et clé restent comme aujourd’hui. Vous pouvez la suspendre quand vous voulez (⏸️ Suspendre).' }))) return;
+    try { await netApi('tenants/' + t.id, 'PATCH', { until: FREE_UNTIL, st: 'active' }); } catch (e) { return toast(e.message, { bad: true }); }
+    await licLogAdd(t, '♾️ Gratuit, sans échéance', '');
+    toast('♾️ Gratuit, sans échéance');
+    await netLoad(true);
+  },
   async 'lic-gift'(d) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
     if (!t) return;
