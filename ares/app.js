@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.304.0';
+const VERSION = '2.305.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -56,7 +56,8 @@ if (!TENANT && /^\/locataires\.html$/.test(location.pathname)) history.replaceSt
 // (sans manifeste, le téléphone enregistre l'adresse affichée ; sur iPhone l'icône ne partage pas la mémoire de Safari)
 if (TENANT) {
   document.querySelector('link[rel=manifest]')?.remove();
-  if (!/^\?[a-z0-9]{12,24}$/.test(location.search)) history.replaceState(null, '', '/centraldomier/?' + TENANT + location.hash);
+  // adresse des clients : /centralluxintervention/?<numéro> (les anciens liens /centraldomier/… et locataires.html?t= y passent tout seuls)
+  if (!/^\?[a-z0-9]{12,24}$/.test(location.search) || !location.pathname.startsWith('/centralluxintervention')) history.replaceState(null, '', '/centralluxintervention/?' + TENANT + location.hash);
   const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at && tenantInfo.nom) at.content = tenantInfo.nom;
   if (tenantInfo.nom) document.title = tenantInfo.nom;
 }
@@ -1394,7 +1395,7 @@ async function licInvoicePdf(f) {
   return p.bytes();
 }
 // adresse « parlante » selon le client (voir LIENS.md) : propriétaire, gestionnaire
-const netUrl = (tid) => `${location.origin}/centraldomier/?${tid}`; // un seul indirizzo per tutte le centrali dei clienti, senza nomi
+const netUrl = (tid) => `${location.origin}/centralluxintervention/?${tid}`; // un seul indirizzo per tutte le centrali dei clienti, senza nomi
 async function netApi(path, method = 'GET', body) {
   const r = await vault.call(path, { method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
   return r.json();
@@ -11042,6 +11043,6 @@ function applyTheme() {
 
 applyTheme();
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  navigator.serviceWorker.register('/locataires-sw.js', { scope: location.pathname.startsWith('/centraldomier') ? '/centraldomier' : '/locataires' }).catch(() => {}); // CENTRAL-DOMIER : sa propre adresse
+  navigator.serviceWorker.register('/locataires-sw.js', { scope: location.pathname.startsWith('/centralluxintervention') ? '/centralluxintervention' : location.pathname.startsWith('/centraldomier') ? '/centraldomier' : '/locataires' }).catch(() => {}); // CENTRAL-DOMIER : sa propre adresse
 }
 boot();
