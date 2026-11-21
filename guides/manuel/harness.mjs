@@ -45,6 +45,7 @@ export async function routeCtx(ctx) {
 export async function centralSetup(page, path = '/locataires.html', code = 'x', pass = 'Tr3s-l0ngue-cle!') {
   await page.goto('http://localhost:8765' + path); await page.waitForSelector('[data-form=setup]', { timeout: 15000 });
   await page.fill('[name=code]', code); await page.fill('[name=pass]', pass); await page.fill('[name=pass2]', pass);
+  if (await page.$('[data-form=setup] [name=cgu]')) await page.check('[data-form=setup] [name=cgu]'); // 📜 conditions (centrales des clients)
   await page.click('[data-form=setup] button[type=submit]'); await page.waitForTimeout(5000);
   for (let i = 0; i < 4; i++) { const btn = await page.$('.sheet .btn.primary, dialog .btn.primary'); if (!btn) break; await btn.click().catch(() => {}); await page.waitForTimeout(600); }
 }

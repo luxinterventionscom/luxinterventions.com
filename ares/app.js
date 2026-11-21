@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.302.0';
+const VERSION = '2.303.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1615,6 +1615,12 @@ async function netDemSync(list) {
       try { m = await openFromTenant(keys.priv, new Uint8Array(await (await vault.call('demandes/' + it.name)).arrayBuffer())); } catch { continue; }
       if (/^job/.test(m.type || '')) { await candIn(m).catch(() => {}); await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {}); continue; }
       const tid = it.name.split('-')[1] || '', cl = ((list || (ui.net && ui.net.list) || []).find((t) => t.id === tid) || {}).nom || m.client || 'Client du réseau';
+      if (m.type === 'cgu') {
+        const S2 = (v, n) => String(v ?? '').trim().slice(0, n);
+        await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + tid, ...netInfo(tid), cgu: { v: S2(m.v, 20), at: S2(m.at, 30), by: S2(m.by, 80) } }), '📜 Conditions acceptées par le client', `${cl} · ${S2(m.v, 20)}`);
+        await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
+        continue;
+      }
       if (m.type === 'paid' || m.type === 'conf') {
         if (m.type === 'paid') { const f = vault.get('reglages', 'nfact-' + String(m.no || '')); if (f && f.tid === tid && !f.paid) await vault.mutate((tx) => tx.put('reglages', { id: f.id, claim: today() }), '💳 Le client dit avoir payé', `${f.no} — ${cl}`); }
         else await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + tid, ...netInfo(tid), payMode: m.payMode === 'month' ? 'month' : 'each' }), '💳 Mode de paiement du client', `${cl} : ${m.payMode === 'month' ? 'facture mensuelle' : 'chaque intervention'}`);
@@ -1755,6 +1761,32 @@ async function tenantBoxSync() {
   // cadre + page ensemble (redessiner seulement le cadre laissait la page vide : « puff »)
   if (got && vault.unlocked && (['demandes', 'dashboard'].includes(ui.route) || tFacts().length)) { const y = scrollY; renderShell(); go(ui.route, true); scrollTo(0, y); }
 }
+// 📜 Conditions d'utilisation de la centrale d'un client : acceptées à la configuration (ou plus tard, une fois) ;
+// la date et la version partent à LUXINTERVENTIONS (certificat de suppression). Texte à faire valider par votre avocat.
+const CGU_V = '2026-11-v1';
+const CGU_TXT = [
+  'Le client est responsable du traitement des données qu’il saisit (immeubles, locataires, documents). Le prestataire héberge la centrale en tant que sous-traitant (article 28 du RGPD).',
+  'Les données sont chiffrées de bout en bout avec la clé d’accès du client : le prestataire ne peut pas les lire. Une clé perdue sans clé de secours ne peut pas être récupérée.',
+  'Le client garde ses propres copies : Réglages → Sauvegarde chiffrée. Ces copies restent sous sa seule responsabilité.',
+  'À la fin du service ou sur demande du client, la centrale et les apps de ses locataires sont effacées définitivement ; un certificat de suppression est remis (articles 17 et 28 du RGPD).',
+  'Les demandes d’intervention envoyées à LUXINTERVENTIONS contiennent seulement ce que le client choisit d’envoyer (texte, photos, contact, accès).',
+  'Les factures et documents comptables sont conservés pendant la durée légale de conservation.',
+];
+const cguHtml = () => html`<details style="margin:6px 0"><summary class="small" style="cursor:pointer">📜 Lire les conditions d’utilisation (version ${CGU_V})</summary><ul class="small" style="margin:6px 0 0;padding-left:18px">${CGU_TXT.map((x) => html`<li style="margin:4px 0">${x}</li>`)}</ul></details>`;
+const cguOk = () => !TENANT || ((vault.get('reglages', 'cgu') || {}).v === CGU_V);
+async function cguAccept(by) {
+  const at = new Date().toISOString();
+  await vault.mutate((tx) => tx.put('reglages', { id: 'cgu', v: CGU_V, at, by }), '📜 Conditions d’utilisation acceptées', CGU_V);
+  try { await tenantSend({ type: 'cgu', v: CGU_V, at, by }); await vault.mutate((tx) => tx.put('reglages', { id: 'cgu', sent: at }), '📜 Acceptation envoyée', ''); } catch { /* hors ligne : renvoyée à la prochaine ouverture */ }
+}
+// pas encore envoyée (hors ligne au moment de l'acceptation) : on la renvoie
+async function cguResend() {
+  const c = vault.get('reglages', 'cgu');
+  if (!TENANT || !c || c.sent || c.v !== CGU_V) return;
+  try { await tenantSend({ type: 'cgu', v: c.v, at: c.at, by: c.by || '' }); await vault.mutate((tx) => tx.put('reglages', { id: 'cgu', sent: new Date().toISOString() }), '📜 Acceptation envoyée', ''); } catch { /* plus tard */ }
+}
+// Accueil d'une centrale cliente qui ne les a pas encore acceptées (configurée avant cette version)
+const cguBox = () => (cguOk() || vault.op ? '' : html`<div class="alert warn" style="margin-bottom:14px">📜<div style="flex:1"><b>Conditions d’utilisation à accepter</b><div class="small">Une seule fois, pour toute la centrale.</div>${cguHtml()}<button class="btn primary sm" data-action="cgu-accept" style="margin-top:6px">✅ J’ai lu et j’accepte</button></div></div>`);
 async function tenantSend(obj) {
   const k = await (await vault.call('network-key')).json();
   await vault.call('demande', { method: 'POST', body: await sealForOwner(k.pub, { client: socName(), fil: tenantInfo.fil || '', t: new Date().toISOString(), ...obj }) });
@@ -2121,7 +2153,7 @@ async function portailPubsSync() {
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
 async function inboxSync() {
-  if (TENANT) { tenantBoxSync(); packSync(); } else { netDemSync(); netLoad(); geoAuto(); candPurge().catch(() => {}); }
+  if (TENANT) { tenantBoxSync(); packSync(); cguResend().catch(() => {}); } else { netDemSync(); netLoad(); geoAuto(); candPurge().catch(() => {}); }
   const keys = vault.get('reglages', 'signal');
   if (!keys || !keys.priv || inboxBusy || !vault.unlocked) return;
   inboxBusy = true;
@@ -3061,6 +3093,7 @@ function renderLock(mode, error = '') {
       <div class="meter"><i id="meter"></i></div>
       <div class="tiny muted" id="meterTxt">${METER_HINT}</div>
       <label class="field">Confirmer la clé ${pwField('pass2', 'Retapez la clé', 'new-password')}</label>
+      ${TENANT ? html`${cguHtml()}<label class="row" style="padding:0;min-height:0;gap:10px;border:0;align-items:flex-start"><input type="checkbox" name="cgu" style="width:20px;min-height:20px;flex:none"> <span class="small">J’ai lu et j’accepte les <b>conditions d’utilisation</b> (version ${CGU_V}).</span></label>` : ''}
       ${legacy ? html`<label class="row" style="padding:0;min-height:0;gap:10px;border:0"><input type="checkbox" name="legacy" checked style="width:20px;min-height:20px"> <span class="small">Importer les données de l'ancienne version trouvées sur cet appareil (${legacy.immeubles.length} immeubles, ${legacy.locataires.length} locataires)</span></label>` : ''}
       <div class="lock-err" role="alert">${error}</div>
       <button class="btn primary block" type="submit">Créer le coffre sécurisé</button>
@@ -3234,6 +3267,7 @@ async function onSetup(fd, form) {
   const err = form.querySelector('.lock-err');
   if (pass.length < 12 || passphraseStrength(pass) < 2) return (err.textContent = 'Clé trop faible : au moins 12 caractères, idéalement une phrase de plusieurs mots.');
   if (pass !== fd.get('pass2')) return (err.textContent = 'Les deux clés ne correspondent pas.');
+  if (TENANT && !fd.get('cgu')) return (err.textContent = 'Cochez « J’ai lu et j’accepte les conditions d’utilisation ».');
   setBusy(form, true, 'Création…');
   try {
     await vault.setup(fd.get('code'), pass);
@@ -3244,6 +3278,7 @@ async function onSetup(fd, form) {
     return;
   }
   startSession();
+  if (TENANT) setTimeout(() => cguAccept('Configuration de la centrale').catch(() => {}), 800);
   if (TENANT) setTimeout(async () => { try { if (await vault.verifyPassphrase(pass)) await recActivate(); } catch { /* l'avis rouge de l'Accueil le proposera */ } }, 1500);
   const legacy = fd.get('legacy') && legacyLocal();
   if (legacy) {
@@ -4682,7 +4717,7 @@ dashboard() {
     const alertBtn = (cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`;
 
     if (TENANT && !imms.length && !locs.length) {
-      return html`${packBox()}${domierCentral()}${pushNudge()}${centralinoHtml()}${TENANT ? html`${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
+      return html`${cguBox()}${packBox()}${domierCentral()}${pushNudge()}${centralinoHtml()}${TENANT ? html`${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}` : ''}`;
     }
 
@@ -4755,6 +4790,7 @@ dashboard() {
         `;
     }
     return html`
+      ${cguBox()}
       ${packBox()}
       ${domierCentral()}
       ${pushNudge()}
@@ -6518,7 +6554,7 @@ const SHEETS = {
     return {
       title: `${(NET_FIL[t.fil] || '').split(' ')[0]} ${t.nom}`,
       narrow: true,
-      body: html`<div class="alert ${t.state === 'ok' ? 'info' : 'warn'}" style="margin-bottom:12px">${st[0]}<div><b>${st[1]}</b> · ${NET_ST[t.st] || ''}${t.until ? (t.until >= FREE_UNTIL ? ' · ♾️ sans échéance' : ' · jusqu’au ' + fmtDate(t.until)) : ''}<div class="tiny">${t.configured ? (t.lastSeen ? 'Dernière connexion : ' + fmtDateTime(t.lastSeen) : 'Centrale configurée') : 'Invitation pas encore utilisée'}</div></div></div>
+      body: html`<div class="alert ${t.state === 'ok' ? 'info' : 'warn'}" style="margin-bottom:12px">${st[0]}<div><b>${st[1]}</b> · ${NET_ST[t.st] || ''}${t.until ? (t.until >= FREE_UNTIL ? ' · ♾️ sans échéance' : ' · jusqu’au ' + fmtDate(t.until)) : ''}<div class="tiny">${t.configured ? (t.lastSeen ? 'Dernière connexion : ' + fmtDateTime(t.lastSeen) : 'Centrale configurée') : 'Invitation pas encore utilisée'}</div><div class="tiny">${netInfo(id).cgu ? `📜 Conditions acceptées le ${fmtDateTime(netInfo(id).cgu.at)} (version ${netInfo(id).cgu.v})` : '📜 Conditions pas encore acceptées'}</div></div></div>
         ${t.fil === 'proprio' ? html`${netBailLine(id)}<details class="card" style="margin-bottom:12px" ${netInfo(id).loueur ? '' : new Raw('open')}><summary><b>🔑 Propriétaire ou bailleur principal ?</b>${netInfo(id).loueur ? '' : html` <span class="tiny" style="color:var(--amber,#b45309)">à préciser</span>`}</summary>
           <form data-form="net-bail-set" class="fields" style="margin-top:8px"><input type="hidden" name="tid" value="${id}">${netBailFields(netInfo(id))}<button class="btn sm primary full" type="submit">Enregistrer</button></form></details>` : ''}
         ${code ? html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d’invitation</div><div style="font-family:var(--mono);font-size:24px;font-weight:800;letter-spacing:.08em">${code}</div>
@@ -8402,13 +8438,14 @@ const ACTIONS = {
     if (v.trim() !== t.nom) return toast('Nom différent : rien n’a été fait', { bad: true });
     let cert;
     try { cert = (await netApi('tenants/' + t.id, 'DELETE')).certificate; } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate((tx) => { tx.put('reglages', { id: 'netcert-' + t.id, ...cert, by: whoLabel() || '⭐ Directeur' }); tx.remove('reglages', 'netc-' + t.id); }, '🧾 Client du réseau supprimé (certificat)', `${t.nom} · ${cert.objects} objets`);
+    await vault.mutate((tx) => { tx.put('reglages', { id: 'netcert-' + t.id, ...cert, by: whoLabel() || '⭐ Directeur', ...(netInfo(t.id).cgu ? { cgu: netInfo(t.id).cgu } : {}) }); tx.remove('reglages', 'netc-' + t.id); }, '🧾 Client du réseau supprimé (certificat)', `${t.nom} · ${cert.objects} objets`);
     await licLogAdd(t, 'Supprimé avec certificat', `${cert.objects} objets · ${cert.digest.slice(0, 12)}…`);
     goBack();
     netLoad(true);
     openOver('net-cert', 'netcert-' + t.id);
   },
   'net-cert': (d) => openOver('net-cert', d.id),
+  async 'cgu-accept'() { await cguAccept(whoLabel() || 'Directeur'); toast('📜 Conditions acceptées'); renderView(); },
   async 'net-cert-pdf'(d) {
     const c = vault.get('reglages', d.id);
     if (!c) return;
@@ -8422,6 +8459,7 @@ const ACTIONS = {
     line(`Identifiant de la centrale : ${c.tenant.id}`);
     line(`Date et heure de la suppression : ${new Date(c.at).toLocaleString('fr-LU')}`);
     line(`Demandée par : ${pt(c.by) || 'Directeur'}`);
+    line(c.cgu ? `Conditions d’utilisation acceptées par le client le ${new Date(c.cgu.at).toLocaleString('fr-LU')} (version ${pt(c.cgu.v)})` : 'Conditions d’utilisation : acceptation non enregistrée (centrale configurée avant leur mise en place)', 10);
     line(`Objets effacés : ${c.objects} (${Math.round((c.bytes || 0) / 1024)} Ko)`);
     line('Empreinte SHA-256 de la liste des objets effacés :');
     line(c.digest, 9);
