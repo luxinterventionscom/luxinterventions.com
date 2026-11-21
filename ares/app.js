@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.305.0';
+const VERSION = '2.306.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2570,7 +2570,14 @@ const fraisOfMonth = (y, m) => sum(vault.list('frais').filter((f) => (!f.debut |
 // Mois écoulés d'une année (année en cours : jusqu'au mois actuel inclus)
 const monthsElapsed = (y) => { const d = new Date(); return y < d.getFullYear() ? 12 : y > d.getFullYear() ? 0 : d.getMonth() + 1; };
 const fraisOfYear = (y) => { let t = 0; for (let m = 1; m <= monthsElapsed(y); m++) t += fraisOfMonth(y, m); return t; };
-const societe = () => vault.get('reglages', 'main') || {};
+// MASTER : nom, adresse, RCS, TVA, banque et logo viennent de 🧾 Facturation (la société des interventions) ;
+// la fiche « main » de la MASTER ne garde que la TVA et les associés (les anciennes données restent, non utilisées)
+const societe = () => {
+  const m = vault.get('reglages', 'main') || {};
+  if (TENANT) return m;
+  const f = factConf();
+  return { ...m, nom: f.nom, adresse: f.adresse, ville: f.ville, tel: f.tel, email: f.email, rcs: f.rcs, tvaNum: f.tva, iban: f.iban, bic: f.bic, banque: f.banque, web: '', logo: '', signature: '' };
+};
 
 // ───────────────────────── Branche « gérances » : le Portail gérance piloté depuis l'app de gestion ─────────────────────────
 // Les gérances (sociétés externes) utilisent le Portail gérance ; ici, LA CENTRAL les crée, invite leurs responsables,
@@ -2832,7 +2839,7 @@ function legalLine() {
 }
 // nom affiché aux clients et aux locataires : la marque LA CENTRAL (la centrale d'un client : son propre nom)
 const netBrand = () => (TENANT ? socName() : 'LA CENTRAL');
-const socLogo = () => societe().logo || (TENANT ? '' : '/ares/icons/nobis-logo.png');
+const socLogo = () => (TENANT ? societe().logo || '' : APP_BRAND.logo);
 const htOf = (ttc, r) => (r ? ttc / (1 + r / 100) : ttc);
 const r2 = (x) => Math.round(x * 100) / 100;
 // Logo et nom partout dans l'app (et sur l'écran de verrouillage, mémorisés sur cet appareil)
@@ -5365,7 +5372,7 @@ ${netClientsList(list, n, days)}`;
         <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
         ${TENANT ? '' : html`<button class="row" data-action="eq-group"><span class="avatar">💬</span><span class="grow"><span class="title" style="display:block">Groupe de l’équipe (messages spéciaux)</span><span class="meta">${plural(eqGroup().length, 'ouvrier')} dans le groupe · les autres messages restent entre chaque ouvrier et la centrale</span></span>${icon('chevron')}</button>`}
         ${TENANT ? '' : html`<button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>`}
-        <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${TENANT && !societe().logo ? html`<b style="color:var(--amber,#b45309)">🖼️ Mettez votre logo : vos locataires le voient dans leur app</b><br>` : ''}${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
+        <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">${TENANT ? 'Société & associés' : 'Associés & TVA'}</span><span class="meta">${TENANT && !societe().logo ? html`<b style="color:var(--amber,#b45309)">🖼️ Mettez votre logo : vos locataires le voient dans leur app</b><br>` : ''}${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
       </div>
 
       ${!standalone ? html`<div class="section-label">Application</div>
@@ -7432,6 +7439,7 @@ const SHEETS = {
   },
 
   'societe-form'() {
+    if (!TENANT) return SHEETS['societe-master']();
     const st = societe();
     const pays = st.pays || 'LU';
     const rows = [...(st.associes || []), {}, {}, {}, {}].slice(0, Math.max(4, (st.associes || []).length + 1));
@@ -7471,6 +7479,28 @@ const SHEETS = {
         ${field('Adresse USDT', 'usdt', st.usdt, { placeholder: '0x… ou T…', attrs: 'autocomplete="off" spellcheck="false"' })}${netSelect('usdtNet', st.usdtNet)}
         ${field('Adresse USDC', 'usdc', st.usdc, { placeholder: '0x…', attrs: 'autocomplete="off" spellcheck="false"' })}${netSelect('usdcNet', st.usdcNet)}
         <p class="tiny muted full" style="margin:0">🔐 Mettez seulement l’<b>adresse de réception</b> (publique) de votre wallet. <b>Jamais</b> la clé privée ni les 12/24 mots de récupération. Laissez vide ce que vous n’utilisez pas : le bouton n’apparaît pas.</p>
+        <div class="section-label full" style="margin:10px 0 0">Associés — partage du résultat net</div>
+        ${rows.map((a, i) => html`${field('Associé ' + (i + 1), 'an' + i, a.nom)}${field('Part (%)', 'ap' + i, a.part, { type: 'number', attrs: 'inputmode="decimal" min="0" max="100" step="0.01"' })}`)}
+        <p class="tiny muted full">Le total des parts doit faire 100 %. Laissez vide les lignes inutiles.</p>
+        <div class="lock-err full" role="alert"></div>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+
+  'societe-master'() {
+    const st = vault.get('reglages', 'main') || {}, fc = factConf();
+    const rows = [...(st.associes || []), {}, {}, {}, {}].slice(0, Math.max(4, (st.associes || []).length + 1));
+    return {
+      title: 'Associés & TVA',
+      body: html`<form id="f" data-form="societe" class="fields">
+        <div class="full" style="display:flex;align-items:center;gap:12px"><img src="${APP_BRAND.logo}" alt="" style="height:48px;max-width:140px;object-fit:contain;background:#fff;border-radius:8px;padding:4px;border:1px solid var(--border)">
+          <span class="grow small"><b>${APP_BRAND.nom}</b> · ${fc.nom}${fc.rcs ? ' · RCS ' + fc.rcs : ''}<br><span class="muted">Nom, adresse, RCS, TVA et banque : dans 🧾 Facturation des interventions.</span></span>
+          <button class="btn sm" type="button" data-action="fact-set">🧾 Facturation</button></div>
+        <div class="section-label full" style="margin:10px 0 0">Comptabilité et TVA</div>
+        <label class="field">Assujetti à la TVA<select name="assujetti"><option value="1" ${st.assujetti !== false ? new Raw('selected') : ''}>Oui</option><option value="0" ${st.assujetti === false ? new Raw('selected') : ''}>Non</option></select></label>
+        <label class="field">Déclaration de TVA<select name="periode">${[['m', 'Mensuelle'], ['t', 'Trimestrielle'], ['a', 'Annuelle']].map(([k, v]) => html`<option value="${k}" ${(st.periode || 't') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field('Taux de TVA (%)', 'taux', st.taux || '', { full: true, placeholder: PAYS.LU[1].join(', ') + ' (taux du pays si vide)' })}
         <div class="section-label full" style="margin:10px 0 0">Associés — partage du résultat net</div>
         ${rows.map((a, i) => html`${field('Associé ' + (i + 1), 'an' + i, a.nom)}${field('Part (%)', 'ap' + i, a.part, { type: 'number', attrs: 'inputmode="decimal" min="0" max="100" step="0.01"' })}`)}
         <p class="tiny muted full">Le total des parts doit faire 100 %. Laissez vide les lignes inutiles.</p>
@@ -9644,6 +9674,12 @@ const FORMS = {
     const total = sum(associes, (a) => a.part);
     if (associes.length && Math.abs(total - 100) > 0.01) return (form.querySelector('.lock-err').textContent = `Le total des parts fait ${total} % au lieu de 100 %.`);
     const g = (k) => String(fd.get(k) || '').trim();
+    if (!TENANT) {
+      const rm = { id: 'main', associes, assujetti: g('assujetti') !== '0', periode: g('periode') || 't', taux: g('taux') };
+      await vault.mutate((tx) => tx.put('reglages', rm), 'Associés & TVA modifiés', APP_BRAND.nom);
+      toast('Enregistré');
+      return closeSheet();
+    }
     const pay = { paypal: g('paypal').replace(/^(https?:\/\/)?(www\.)?paypal\.(me|com\/paypalme)\//i, '').replace(/\/.*$/, ''), cardLink: g('cardLink'), btc: g('btc'), eth: g('eth'), usdt: g('usdt'), usdtNet: g('usdtNet') || 'erc20', usdc: g('usdc'), usdcNet: g('usdcNet') || 'erc20' };
     const nomS = g('nom');
     const idErr = WRONG_ID.test([nomS, g('rcs'), g('tvaNum')].join(' ')) ? 'Ces apps appartiennent à NOBIS s.a.r.l. (RCS B225665, TVA LU30599412) : Ares Invest S.A. / B225245 ne peut pas être mis ici.'
