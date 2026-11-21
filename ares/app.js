@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.300.0';
+const VERSION = '2.302.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1372,7 +1372,7 @@ async function licLogAdd(t, act, detail = '') {
 const addMonths = (d, n) => { const x = new Date(d + 'T12:00'); x.setMonth(x.getMonth() + n); return x.toISOString().slice(0, 10); };
 const addYears = (d, n) => { const x = new Date(d + 'T12:00'); x.setFullYear(x.getFullYear() + n); return x.toISOString().slice(0, 10); };
 async function licInvoicePdf(f) {
-  const c = factConf(), p = makePdf().page(), X = 48, R = 547, G = [0.42, 0.42, 0.42], inf = netInfo(f.tid);
+  const c = factConf(), p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42], inf = netInfo(f.tid);
   const logo = await sigJpeg('/ares/icons/lux-192.png').catch(() => null);
   if (logo) p.image(X, 40, 62, 62, logo.bytes, logo.w, logo.h);
   const ex = logo ? X + 78 : X;
@@ -6583,13 +6583,14 @@ const SHEETS = {
     const ims = vault.listAll('immeubles').slice().sort((a2, b2) => String(a2.adresse || '').localeCompare(String(b2.adresse || '')));
     return {
       title: `📦 Transfert vers ${t.nom}`, narrow: true,
-      body: html`<p class="small muted" style="margin:0 0 10px">Choisissez les immeubles : ils partent avec leurs logements, locataires (et leurs apps), paiements, dépenses, collectes, avis, chats, classement des poubelles et documents. Les interventions et la comptabilité de la centrale restent ici.</p>
+      body: html`<div class="alert warn" style="margin-bottom:10px">⚠️<div><b>Ce n’est pas une sauvegarde.</b> Ici vous <b>déplacez</b> des immeubles de cette centrale vers celle de ${t.nom}. Pour <b>sauvegarder les données</b> de ${t.nom} : ouvrez <b>sa</b> centrale (avec sa clé) → Réglages → 🛡️ Sauvegarde chiffrée.</div></div>
+        <p class="small muted" style="margin:0 0 10px">Choisissez les immeubles : ils partent avec leurs logements, locataires (et leurs apps), paiements, dépenses, collectes, avis, chats, classement des poubelles et documents. Les interventions et la comptabilité de la centrale restent ici.</p>
         ${t.configured ? '' : html`<div class="alert warn" style="margin-bottom:10px">⚠️<div>La centrale de ${t.nom} n’est pas encore configurée : faites-la d’abord ouvrir avec le code d’invitation.</div></div>`}
         <p style="margin:0 0 6px"><button class="btn sm" type="button" data-action="xfer-all" data-on="1">☑️ Tout</button> <button class="btn sm" type="button" data-action="xfer-all" data-on="0">⬜ Rien</button></p>
         <div class="list small" style="margin-bottom:10px">${ims.map((im) => { const nl = vault.listAll('locataires').filter((l) => l.immId === im.id).length, x = im.xfer; return html`<label class="row" style="cursor:pointer"><input type="checkbox" data-xfer-imm value="${im.id}" ${x ? '' : new Raw('checked')}><span class="grow"><b>${im.adresse || 'Sans adresse'}</b><span class="meta" style="display:block">${plural(nl, 'locataire')}${x ? ` · 📦 déjà transféré${x.nom ? ' à ' + x.nom : ''} le ${fmtDate(x.at)}` : ''}</span></span></label>`; })}</div>
         <div class="section-label">🚚 Où va le paquet ?</div>
-        <div class="list small" style="margin-bottom:10px">${[['box', `📦 Directement dans le container de ${t.nom}`, 'il le trouve dans l’Accueil de sa centrale'], ['dl', '⬇️ Télécharger', 'PC, clé USB… puis Réglages → Importer chez le client'], ['share', '📤 Envoyer', 'email, WhatsApp… (partage du téléphone)']].map(([k, l, m], n) => html`<label class="row" style="cursor:pointer"><input type="radio" name="xdest" value="${k}" ${n ? '' : new Raw('checked')}><span class="grow"><b>${l}</b><span class="meta" style="display:block">${m}</span></span></label>`)}</div>
-        <p class="tiny muted" style="margin:0">Avant : une sauvegarde chiffrée est téléchargée. Le paquet est chiffré avec un code à usage unique : sans le code il ne sert à rien. Ici tout reste en archive.</p>`,
+        <div class="list small" style="margin-bottom:10px">${[['box', `📦 Envoyer dans la centrale de ${t.nom}`, `il arrive dans SON Accueil : « 📦 Recevoir ce paquet ? » — ${t.nom} l’accepte (ou le refuse) avec sa clé`], ['dl', '⬇️ Télécharger le paquet', 'PC, clé USB… puis, dans la centrale du client : Réglages → Importer'], ['share', '📤 Envoyer le paquet', 'email, WhatsApp… (partage du téléphone)']].map(([k, l, m], n) => html`<label class="row" style="cursor:pointer"><input type="radio" name="xdest" value="${k}" ${n ? '' : new Raw('checked')}><span class="grow"><b>${l}</b><span class="meta" style="display:block">${m}</span></span></label>`)}</div>
+        <p class="tiny muted" style="margin:0">Vous recevez jusqu’à 2 fichiers : ① <b>sauvegarde chiffrée de CETTE centrale</b> (par sécurité, avant le départ) ; ② <b>transfert_….ares</b> = le paquet, si vous l’avez téléchargé. Le paquet est chiffré avec un code à usage unique : sans le code il ne sert à rien. Ici tout reste en archive.</p>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" data-action="xfer-do" data-id="${id}" ${t.configured ? '' : new Raw('disabled')}>📦 Transférer</button>`,
     };
   },
@@ -8411,7 +8412,7 @@ const ACTIONS = {
   async 'net-cert-pdf'(d) {
     const c = vault.get('reglages', d.id);
     if (!c) return;
-    const p = makePdf().page(), soc = societe();
+    const p = makePdf(), soc = societe(), pt = (x) => String(x || '').replace(/[^\x20-\xFF’‘“”«»–—…€]/gu, '').replace(/\s+/g, ' ').trim();
     let y = 60;
     const line = (t, size = 11, bold = false) => { p.text(48, y, t, { size, bold }); y += size + 8; };
     line('Certificat de suppression des données', 18, true); y += 6;
@@ -8420,14 +8421,30 @@ const ACTIONS = {
     line(`Client : ${c.tenant.nom} (${(NET_FIL[c.tenant.fil] || '').replace(/^\S+ /, '')})`, 12, true);
     line(`Identifiant de la centrale : ${c.tenant.id}`);
     line(`Date et heure de la suppression : ${new Date(c.at).toLocaleString('fr-LU')}`);
-    line(`Demandée par : ${c.by || 'Directeur'}`);
+    line(`Demandée par : ${pt(c.by) || 'Directeur'}`);
     line(`Objets effacés : ${c.objects} (${Math.round((c.bytes || 0) / 1024)} Ko)`);
     line('Empreinte SHA-256 de la liste des objets effacés :');
     line(c.digest, 9);
     y += 10;
     line('Sont effacés : la centrale chiffrée du client (données, fichiers, sessions, messages),', 10);
     line('ses apps (espaces chiffrés, documents, photos) et leurs codes d’accès.', 10);
-    line('Les factures et documents comptables de la centrale principale ne sont pas concernés.', 10);
+    line('Les factures et documents comptables de la centrale principale ne sont pas concernés : ils sont conservés', 10);
+    line('pendant la durée légale de conservation des documents comptables.', 10);
+    y += 8;
+    line('Cadre juridique (Règlement (UE) 2016/679 — RGPD)', 11, true);
+    line('· Effacement des données personnelles : article 17 RGPD (droit à l’effacement).', 10);
+    line('· Fin de la prestation du sous-traitant : article 28, paragraphe 3, point g) RGPD', 10);
+    line('  (suppression des données à caractère personnel au terme de la prestation).', 10);
+    line('· Le client est responsable du traitement de ses données ; le prestataire n’agit que comme sous-traitant', 10);
+    line('  (hébergement chiffré). Les données étaient chiffrées de bout en bout : le prestataire n’a jamais eu accès', 10);
+    line('  à leur contenu.', 10);
+    line('· Les copies téléchargées par le client lui-même (sauvegardes chiffrées) restent sous sa seule responsabilité.', 10);
+    y += 8;
+    line('Motif : ____________________________________________', 10);
+    y += 14;
+    line('Fait à ________________________, le ____ / ____ / ________', 10);
+    y += 10;
+    line('Signature et cachet du prestataire :', 10);
     const blob = new Blob([p.bytes()], { type: 'application/pdf' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `certificat-suppression-${c.tenant.id}.pdf`; a.click();
   },
