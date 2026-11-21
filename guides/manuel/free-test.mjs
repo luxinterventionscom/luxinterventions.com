@@ -1,0 +1,28 @@
+// ♾️ Cliente «Gratuit — sans échéance»: attivo per sempre, niente cancellato — WORKER_MJS=… node free-test.mjs
+import { chromium } from 'playwright';
+import { phone, centralSetup, store, assert, log } from './harness.mjs';
+const b = await chromium.launch(), errs = [];
+const act = (p, a, d = {}) => p.evaluate(([a, d]) => { const el = document.createElement('button'); el.dataset.action = a; Object.assign(el.dataset, d); el.hidden = true; document.body.append(el); el.click(); el.remove(); }, [a, d]);
+const body = (p) => p.evaluate(() => document.body.innerText);
+const c1 = await phone(b, 'it', { width: 1000, height: 900 }), p = await c1.newPage(); p.on('pageerror', (e) => errs.push('central: ' + e.message));
+await centralSetup(p);
+await p.evaluate(() => { location.hash = '#/reseau'; }); await p.waitForTimeout(1500);
+await act(p, 'net-new'); await p.waitForTimeout(600);
+await p.selectOption('#f [name=fil]', 'proprio'); await p.fill('#f [name=nom]', 'Proprietario Prova'); await p.fill('#f [name=tel]', '+352 691 000 080');
+await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3000);
+const tid = [...store.keys()].find((k) => k.startsWith('ares/tenants/')).split('/')[2].replace('.json', '');
+await p.keyboard.press('Escape'); await p.waitForTimeout(400);
+const reg0 = JSON.parse(Buffer.from(store.get('ares/tenants/' + tid + '.json').b).toString());
+log('cliente creato: ' + reg0.st + ' fino al ' + reg0.until);
+await act(p, 'net-open', { id: tid }); await p.waitForTimeout(1000);
+assert(await p.$('[data-action=lic-free]'), 'bottone «♾️ Gratuit — sans échéance» nella scheda');
+await act(p, 'lic-free', { id: tid }); await p.waitForTimeout(600);
+await p.click('#confirm .btn.primary, #confirm button[type=submit]'); await p.waitForTimeout(3000);
+const reg = JSON.parse(Buffer.from(store.get('ares/tenants/' + tid + '.json').b).toString());
+assert(reg.st === 'active' && reg.until === '2099-12-31', 'server: attivo fino al 2099-12-31 (' + reg.st + ' ' + reg.until + ')');
+assert(reg.setupHash === reg0.setupHash && reg.createdAt === reg0.createdAt, 'server: codice e scheda del cliente invariati');
+await act(p, 'net-open', { id: tid }); await p.waitForTimeout(1000);
+assert(/sans échéance|senza scadenza/.test(await body(p)), 'scheda: «♾️ sans échéance» al posto della data');
+log('cliente gratuito per sempre, niente cancellato');
+console.log('ERRORS', errs.length ? errs : 'none');
+await b.close();
