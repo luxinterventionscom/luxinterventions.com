@@ -16,7 +16,7 @@ const c1 = await phone(b, 'it', { width: 1000, height: 900 }), p = await c1.newP
 await centralSetup(p);
 await p.evaluate(() => { location.hash = '#/reseau'; }); await p.waitForTimeout(1500);
 await act(p, 'net-new'); await p.waitForTimeout(600);
-await p.selectOption('#f [name=fil]', 'gerance'); await p.fill('#f [name=nom]', 'Gérance Test'); await p.fill('#f [name=tel]', '+352 691 000 070');
+await p.fill('#f [name=nom]', 'Gérance Test'); await p.fill('#f [name=tel]', '+352 691 000 070');
 await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3000);
 const tCode = await p.$eval('.sheet [style*="mono"]', (e) => e.textContent.trim());
 const tid = [...store.keys()].find((k) => k.startsWith('ares/tenants/')).split('/')[2].replace('.json', '');

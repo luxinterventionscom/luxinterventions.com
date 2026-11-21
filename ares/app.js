@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.303.0';
+const VERSION = '2.304.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1819,7 +1819,7 @@ const ABO_PLANS = { decouverte: ['Découverte', 0], pro: ['Pro', 29], agence: ['
 const aboAll = () => (vault.get('reglages', 'abos') || {}).list || {};
 const aboOf = (orgId) => aboAll()[orgId] || null;
 const aboState = (a) => (!a ? 'none' : a.plan === 'decouverte' ? 'free' : a.paidUntil && a.paidUntil >= today() ? 'ok' : 'due');
-const aboOffersOn = () => (vault.get('reglages', 'abos') || {}).offers !== false;
+const aboOffersOn = () => false; // plus d'abonnements : tout est gratuit
 function aboSection() {
   const tabs = '';
   const on = aboOffersOn();
@@ -3411,20 +3411,38 @@ vault.on((kind) => {
 
 // ───────────────────────── Coquille ─────────────────────────
 // Menu de gauche (ordinateur) : sections avec sous-rubriques et raccourcis « + »
+// 🏢 centrales des clients (gérances, Nobis…) : liste commune à « Gérances » et au registre des clients
+function netClientsList(list, n, days) {
+  return html`${list.length ? html`<div class="list">${list.map((t) => { const st = NET_STATE[t.state] || NET_STATE.ok, dl = days(t.until); return html`<button class="row" data-action="net-open" data-id="${t.id}"><span class="avatar">${(NET_FIL[t.fil] || '🌐').split(' ')[0]}</span>
+        <span class="grow"><span class="title" style="display:block">${t.nom}</span><span class="meta">${NET_FIL[t.fil] || ''}${netInfo(t.id).ville ? ' · 🌍 ' + netInfo(t.id).ville : ''} · ${NET_ST[t.st] || ''}${t.until ? html` · ${t.until >= FREE_UNTIL ? '♾️ sans échéance' : 'jusqu’au ' + fmtDate(t.until)}${dl != null && dl >= 0 ? ` (${dl} j)` : ''}` : ''}</span>
+        <span class="tiny" style="display:block">${t.configured ? (t.lastSeen ? '🖥️ dernière connexion ' + fmtDateTime(t.lastSeen) : '🔐 centrale configurée') : '✉️ invitation envoyée, pas encore ouverte'}</span></span>
+        <span class="badge ${t.state === 'ok' ? 'ok' : t.state === 'ro' ? 'warn' : 'bad'}">${st[0]} ${st[1]}</span></button>`; })}</div>`
+        : n && !n.loading && !n.err ? html`<div class="card" style="max-width:560px"><p style="margin-top:0">Donnez à vos clients (gérances, propriétaires) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; leurs demandes d’intervention arrivent dans Maintenance. ＋ Gérance : gratuite, sans échéance.</p></div>` : ''}`;
+}
+function netClientsBlock() {
+  const n = ui.net;
+  if (!n || Date.now() - n.at > 60000) setTimeout(() => netLoad(), 0);
+  const list = (n && n.list) || [], t0 = today();
+  const days = (u) => (u ? Math.round((new Date(u + 'T12:00') - new Date(t0 + 'T12:00')) / 864e5) : null);
+  return html`<div class="section-label" style="display:flex;align-items:center;gap:8px"><span class="grow">🏢 Centrales des clients · ${plural(list.length, 'client')} · gratuits, sans échéance</span>${isCompta() ? '' : html`<button class="btn sm primary" data-action="net-new">${icon('plus')} Gérance</button>`}<button class="btn sm" data-action="go" data-to="licences">📜 Registre</button></div>
+    ${n && n.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${n.err}</div></div>` : ''}
+    <div style="margin-bottom:18px">${!n || (n.loading && !list.length) ? html`<p class="muted">Chargement…</p>` : netClientsList(list, n, days)}</div>`;
+}
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
-const NAV_TREE = [
+const NAV_TREE = !TENANT ? [
+  ['dashboard', 'Accueil', 'home'], ['maintenance', 'Interventions', 'tool'], ['gerances', 'Gérances', 'briefcase'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'],
+] : [
   ['dashboard', 'Accueil', 'home'],
   { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['licences', 'Clients', 'qr']] },
   ['champions', 'Classement', 'trophy'],
   { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['licences', 'Clients', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = !TENANT ? [['dashboard', 'Accueil', 'home'], ['maintenance', 'Interventions', 'tool'], ['gerances', 'Gérances', 'briefcase'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['reglages', 'Réglages', 'gear']] : [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['licences', 'Clients', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', proprio: '🔑 Propriétaire' };
-const MASKABLE = [['gerances', 'Gérances'], ['immeubles', 'Mes Propriétés']];
-const masked = () => new Set(TENANT ? [] : (vault.get('reglages', 'masque') || {}).on || []); // centrale d'un client : rien de masqué (le réglage n'existe que chez nous)
+const masked = () => new Set(); // « Masquer » retiré : plus rien de masqué ; // centrale d'un client : rien de masqué (le réglage n'existe que chez nous)
 // pages qui appartiennent à une rubrique (Locataires et Gestion locataire sont dans Immeubles)
 const maskOf = (route) => (['locataires', 'paiements'].includes(route) ? 'immeubles' : route);
 // Légende des couleurs de nos activités (mêmes couleurs que dans les apps des locataires, de l'équipe et le portail)
@@ -4980,13 +4998,10 @@ dashboard() {
         ${certs.length ? html`<div class="section-label" style="margin-top:16px">🧾 Certificats de suppression</div><div class="list">${certs.map((c) => html`<button class="row" data-action="net-cert" data-id="${c.id}"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">${c.tenant.nom}</span><span class="meta">${fmtDateTime(c.at)} · ${plural(c.objects, 'objet')} effacés</span></span><span class="chev">›</span></button>`)}</div>` : ''}`;
     }
     return html`${head}${!n || (n.loading && !list.length) ? html`<p class="muted">Chargement…</p>` : ''}
-      ${list.length ? html`<div class="list">${list.map((t) => { const st = NET_STATE[t.state] || NET_STATE.ok, dl = days(t.until); return html`<button class="row" data-action="net-open" data-id="${t.id}"><span class="avatar">${(NET_FIL[t.fil] || '🌐').split(' ')[0]}</span>
-        <span class="grow"><span class="title" style="display:block">${t.nom}</span><span class="meta">${NET_FIL[t.fil] || ''}${netInfo(t.id).ville ? ' · 🌍 ' + netInfo(t.id).ville : ''} · ${NET_ST[t.st] || ''}${t.until ? html` · ${t.until >= FREE_UNTIL ? '♾️ sans échéance' : 'jusqu’au ' + fmtDate(t.until)}${dl != null && dl >= 0 ? ` (${dl} j)` : ''}` : ''}</span>
-        <span class="tiny" style="display:block">${t.configured ? (t.lastSeen ? '🖥️ dernière connexion ' + fmtDateTime(t.lastSeen) : '🔐 centrale configurée') : '✉️ invitation envoyée, pas encore ouverte'}</span></span>
-        <span class="badge ${t.state === 'ok' ? 'ok' : t.state === 'ro' ? 'warn' : 'bad'}">${st[0]} ${st[1]}</span></button>`; })}</div>`
-        : n && !n.loading && !n.err ? html`<div class="card" style="max-width:560px"><p style="margin-top:0">Donnez à vos clients (gérances, propriétaires) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; leurs demandes d’intervention arrivent dans Maintenance. ＋ Client → essai gratuit de ${LIC_ESSAI} jours, puis abonnement 1, 2 ou 3 ans.</p></div>` : ''}`;
+${netClientsList(list, n, days)}`;
   },
-  gerances() {
+  gerances() { return html`${TENANT ? '' : netClientsBlock()}${VIEWS.gerancesPortail()}`; },
+  gerancesPortail() {
     const c = ptlConf();
     const portal = html`<a class="btn sm" href="/portail.html" target="_blank" rel="noopener">${icon('eye')} Ouvrir le portail</a>`;
     if (!c) {
@@ -5342,10 +5357,6 @@ dashboard() {
         ${TENANT ? (() => { const F = tFacts(), due = F.filter((f) => !f.paid).length; return html`<button class="row" data-action="go" data-to="demandes"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Factures des interventions</span><span class="meta">${F.length ? `${plural(F.length, 'facture')} de LA CENTRAL${due ? ` · ${due} à payer` : ' · tout est payé'}` : 'Aucune facture pour le moment'}</span></span>${icon('chevron')}</button>`; })() : html`<button class="row" data-action="fact-set"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Facturation des interventions</span><span class="meta">${factConf().nom} — LA CENTRAL · TVA ${factConf().taux} % · IBAN ${factConf().iban || 'à compléter'}</span></span></button>`}
         <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
       </div>
-
-      ${TENANT || vault.op ? '' : html`<div class="section-label">🔒 Masquer</div>
-      <div class="stack"><p class="small muted" style="margin:0 0 8px">Rubrique cochée : dans le menu, son nom est remplacé par « 🔒 MASQUÉ » et elle ne s’ouvre plus. Décochez pour la retrouver.</p>
-      <div class="list settings">${MASKABLE.map(([k, l]) => html`<label class="row" style="cursor:pointer"><input type="checkbox" data-input="masque" value="${k}" ${masked().has(k) ? new Raw('checked') : ''} style="width:22px;height:22px;margin:0"><span class="grow title">${l}</span>${masked().has(k) ? html`<span class="badge">🔒 MASQUÉ</span>` : ''}</label>`)}</div></div>`}
 
       <div class="section-label">Gestion</div>
       <div class="list settings">
@@ -6533,18 +6544,18 @@ const SHEETS = {
   'net-new'() {
     setTimeout(() => { const f = document.getElementById('f'); if (f && f.fil) netFilShow(f); }, 0);
     return {
-      title: '🌐 Nouveau client du réseau',
+      title: '🏢 Nouvelle gérance',
       narrow: true,
       body: html`<form id="f" data-form="net-new" class="fields">
-        <label class="field full">Filière<select name="fil" data-input="net-fil">${Object.entries(NET_FIL).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
-        ${field('Nom de la société / du client', 'nom', '', { full: true, required: true })}
+        <input type="hidden" name="fil" value="gerance">
+        ${field('Nom de la gérance', 'nom', '', { full: true, required: true })}
         <div class="full fields net-proprio" style="margin:0" hidden>${netBailFields()}</div>
         ${field('Téléphone (WhatsApp)', 'tel', '', { type: 'tel', placeholder: '+352…' })}${field('Email', 'email', '', { type: 'email' })}
         ${field('🌍 Pays', 'pays', 'LU', { placeholder: 'LU, FR, IT…' })}${field('Ville', 'ville', '', { placeholder: 'Luxembourg' })}
         <div class="full fields net-taxi" style="margin:0" ${false ? '' : new Raw('hidden')}>${field('🪪 N° de licence taxi', 'licence', '', {})}<label class="field">Commission par course que nous lui donnons<select name="comT"><option value="eur" ${'eur' !== 'pct' ? new Raw('selected') : ''}>€ par course</option><option value="pct" ${'eur' === 'pct' ? new Raw('selected') : ''}>% du prix</option></select></label>${field('Montant', 'comV', 3, { type: 'number', attrs: 'step="0.01" min="0"' })}</div>
-        <p class="tiny muted full" style="margin:0">Essai gratuit de ${LIC_ESSAI} jours. Un code d’invitation est créé (valable 30 jours, une seule fois). Le client ouvre sa centrale, choisit sa clé d’accès (vous ne la connaissez pas) et commence son essai.</p>
+        <p class="tiny muted full" style="margin:0">Gratuite, sans échéance. Un code d’invitation est créé (valable 30 jours, une seule fois). Le client ouvre sa centrale, choisit sa clé d’accès (vous ne la connaissez pas) et commence son essai.</p>
       </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">🎁 Accorder un essai</button>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">＋ Créer la gérance</button>`,
     };
   },
   'net-client'({ id }) {
@@ -10959,12 +10970,6 @@ document.addEventListener('change', (e) => {
     else c[key] = t.checked ? [...new Set([...c[key], t.value])] : c[key].filter((x) => x !== t.value);
     if (c.from > c.to) [c.from, c.to] = [c.to, c.from];
     renderView();
-  }
-  if (k === 'masque') {
-    if (TENANT || vault.op) return; // 🔒 masquer : seulement la centrale principale, avec la clé principale
-    const on = [...document.querySelectorAll('[data-input=masque]:checked')].map((x) => x.value);
-    vault.mutate((tx) => tx.put('reglages', { id: 'masque', on }), 'Menu : rubriques masquées', on.length ? on.map((x) => (MASKABLE.find((m) => m[0] === x) || [x, x])[1]).join(', ') : 'aucune')
-      .then(() => { renderShell(); go(ui.route, true); });
   }
   if (k === 'lockmin') { localStorage.setItem('aresLockMin', e.target.value); toast('Verrouillage après ' + e.target.value + ' min'); }
   if (e.target.id === 'importFile' && e.target.files[0]) { importFile(e.target.files[0]); e.target.value = ''; }

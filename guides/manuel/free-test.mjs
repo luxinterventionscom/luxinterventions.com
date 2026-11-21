@@ -8,7 +8,7 @@ const c1 = await phone(b, 'it', { width: 1000, height: 900 }), p = await c1.newP
 await centralSetup(p);
 await p.evaluate(() => { location.hash = '#/reseau'; }); await p.waitForTimeout(1500);
 await act(p, 'net-new'); await p.waitForTimeout(600);
-await p.selectOption('#f [name=fil]', 'proprio'); await p.fill('#f [name=nom]', 'Proprietario Prova'); await p.fill('#f [name=tel]', '+352 691 000 080');
+await p.fill('#f [name=nom]', 'Proprietario Prova'); await p.fill('#f [name=tel]', '+352 691 000 080');
 await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3000);
 const tid = [...store.keys()].find((k) => k.startsWith('ares/tenants/')).split('/')[2].replace('.json', '');
 await p.keyboard.press('Escape'); await p.waitForTimeout(400);
@@ -20,7 +20,9 @@ assert(/sans échéance|senza scadenza/.test(t), 'scheda: «♾️ sans échéan
 assert(!(await p.$('[data-action=lic-buy]')) && !(await p.$('[data-action=lic-gift]')), 'scheda: niente abbonamenti né 6 mesi offerti');
 await p.keyboard.press('Escape'); await p.waitForTimeout(300);
 const menu = await p.$eval('.sidenav', (e) => e.innerText);
-assert(/Clients|Clienti/.test(menu) && !/Licences|Licenze|Abonnements|Abbonamenti/.test(menu), 'menu: «Clients», niente Licences né Abonnements: ' + menu.replace(/\n/g, ' / ').slice(0, 200));
+assert(/Gérances|Gerenze|Gérance/.test(menu) && !/Licences|Licenze|Abonnements|Abbonamenti|Clients|Clienti|Masqu|Propriétés|Propriet/.test(menu), 'menu: Accueil · Interventions · Gérances · Classement · Compta · Réglages: ' + menu.replace(/\n/g, ' / ').slice(0, 220));
+await p.evaluate(() => { location.hash = '#/gerances'; }); await p.waitForTimeout(1500);
+assert(/Proprietario Prova/.test(await body(p)) && await p.$('[data-action=net-new]'), 'Gérances: il cliente è dentro, con «＋ Gérance»');
 log('cliente gratuito per sempre, niente abbonamenti');
 console.log('ERRORS', errs.length ? errs : 'none');
 await b.close();
