@@ -100,10 +100,10 @@ await act(p, 'xfer-arch'); await p.waitForTimeout(500);
 await p.evaluate(() => { location.hash = '#/dashboard'; }); await p.waitForTimeout(1200);
 assert(!/Bienvenue|Benvenut/.test(await body(p)) && !/Encaissé ce mois|Incassato/.test(await body(p)), 'Accueil DOMIER: niente «Bienvenue / ajouter immeuble», niente affitti');
 const brand = await p.$eval('.sidenav .brand', (e) => e.innerText).catch(() => '');
-assert(/CENTRAL DOMIER/.test(brand) && /LuxIntervention/.test(brand), 'MASTER: CENTRAL DOMIER + LuxIntervention: ' + brand);
+assert(/LUXINTERVENTIONS/.test(brand), 'MASTER: LUXINTERVENTIONS: ' + brand);
 // CENTRAL-DOMIER : il nuovo indirizzo della MASTER
 const cd = await c1.newPage(); await cd.goto('http://localhost:8765/centraldomier.html'); await cd.waitForTimeout(2500);
-assert((await cd.title()) === 'CENTRAL-DOMIER' && await cd.$('[data-form=unlock] [name=pass]'), 'centraldomier.html: la MASTER si apre (chiave)');
+assert((await cd.title()) === 'LUXINTERVENTIONS' && await cd.$('[data-form=unlock] [name=pass]'), 'centraldomier.html: la MASTER si apre (chiave)');
 await cd.goto('http://localhost:8765/centraldomier/?' + tid); await cd.waitForTimeout(2500);
 assert(/ARES INVEST/.test(await cd.$eval('#lock', (e) => e.innerText).catch(() => '')), 'centraldomier/?<numero>: la centrale ARES (senza nomi nell’indirizzo)');
 await cd.close();
