@@ -1671,8 +1671,9 @@ const normNom = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[
 // créer la centrale d'un client (aussi depuis sa fiche) : essai gratuit, code d'invitation
 async function netCreate(fil, nom, tel = '', email = '') {
   const r = await netApi('tenants', 'POST', { fil, nom, days: LIC_ESSAI });
-  await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + r.id, code: r.code, tel, email }), '🎁 Essai accordé (réseau)', `${nom} · ${NET_FIL[fil] || ''} · jusqu’au ${fmtDate(r.tenant.until)}`);
-  await licLogAdd({ id: r.id, nom, fil }, 'Essai accordé', `${LIC_ESSAI} jours · jusqu’au ${fmtDate(r.tenant.until)}`);
+  try { await netApi('tenants/' + r.id, 'PATCH', { until: FREE_UNTIL, st: 'active' }); r.tenant = { ...r.tenant, until: FREE_UNTIL, st: 'active' }; } catch { /* reste en essai : ♾️ dans sa fiche */ }
+  await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + r.id, code: r.code, tel, email }), '♾️ Client créé (gratuit, sans échéance)', `${nom} · ${NET_FIL[fil] || ''} · jusqu’au ${fmtDate(r.tenant.until)}`);
+  await licLogAdd({ id: r.id, nom, fil }, 'Client créé', r.tenant.until >= FREE_UNTIL ? '♾️ gratuit, sans échéance' : `jusqu’au ${fmtDate(r.tenant.until)}`);
   return r;
 }
 async function netLoad(force) {
@@ -3413,12 +3414,12 @@ vault.on((kind) => {
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
 const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
-  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['licences', 'Licences', 'qr']] },
+  { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['licences', 'Clients', 'qr']] },
   ['champions', 'Classement', 'trophy'],
-  { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo']] },
+  { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta']] },
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['licences', 'Licences', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['compta', 'Abonnements', 'receipt', null, 'abo'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['licences', 'Clients', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['reglages', 'Réglages', 'gear']];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', proprio: '🔑 Propriétaire' };
@@ -4941,10 +4942,10 @@ dashboard() {
     const list = (n && n.list) || [], certs = vault.list('reglages').filter((r) => r.id.startsWith('netcert-')).sort((a, b) => (b.at || '').localeCompare(a.at || ''));
     const facts = licFacts(), log = licLog(), y = String(new Date().getFullYear()), t0 = today();
     const days = (u) => (u ? Math.round((new Date(u + 'T12:00') - new Date(t0 + 'T12:00')) / 864e5) : null);
-    const tab = ui.licTab || 'clients';
-    const tabs = html`<div class="tabs" role="tablist" style="margin-bottom:14px">${[['clients', '🏢 Clients'], ['factures', '🧾 Factures'], ['stats', '📊 Statistiques'], ['registre', '📜 Registre']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="lic-tab" data-id="${k}">${l}</button>`)}</div>`;
-    const head = html`${pageHead(html`<span style="display:inline-flex;vertical-align:-3px;margin-right:6px">${icon('qr')}</span>Licences`, `${plural(list.length, 'client')} · essai ${LIC_ESSAI} jours · abonnements 1 · 2 · 3 ans`)}
-      <div class="imm-row"><span></span><div class="imm-btns">${isCompta() ? '' : html`<button class="btn primary" data-action="net-new">${icon('plus')} Client</button><button class="btn" data-action="lic-tarifs">💶 Tarifs</button>`}<button class="btn" data-action="net-reload">${icon('sync')} Actualiser</button></div></div>
+    const tab = ['clients', 'registre'].includes(ui.licTab) ? ui.licTab : 'clients';
+    const tabs = html`<div class="tabs" role="tablist" style="margin-bottom:14px">${[['clients', '🏢 Clients'], ['registre', '📜 Registre']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="lic-tab" data-id="${k}">${l}</button>`)}</div>`;
+    const head = html`${pageHead(html`<span style="display:inline-flex;vertical-align:-3px;margin-right:6px">${icon('qr')}</span>Clients`, `${plural(list.length, 'client')} · gratuits, sans échéance`)}
+      <div class="imm-row"><span></span><div class="imm-btns">${isCompta() ? '' : html`<button class="btn primary" data-action="net-new">${icon('plus')} Client</button>`}<button class="btn" data-action="net-reload">${icon('sync')} Actualiser</button></div></div>
       ${n && n.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${n.err}</div></div>` : ''}${tabs}`;
     if (tab === 'factures') {
       const due = facts.filter((f) => !f.paid);
@@ -6559,10 +6560,7 @@ const SHEETS = {
           <form data-form="net-bail-set" class="fields" style="margin-top:8px"><input type="hidden" name="tid" value="${id}">${netBailFields(netInfo(id))}<button class="btn sm primary full" type="submit">Enregistrer</button></form></details>` : ''}
         ${code ? html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d’invitation</div><div style="font-family:var(--mono);font-size:24px;font-weight:800;letter-spacing:.08em">${code}</div>
           <div class="actions" style="justify-content:center;flex-wrap:wrap">${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}${inf.email ? html`<a class="btn sm" href="mailto:${inf.email}?subject=${encodeURIComponent('🌐 Votre centrale')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}<button class="btn sm" data-action="code-copy" data-code="${inv}">📋 Copier l’invitation</button></div></div>` : ''}
-        ${isCompta() ? '' : html`<div class="section-label">🔑 Abonnement</div>
-          <div class="lic-packs">${[1, 2, 3].map((n2) => { const pr = licPrice(t.fil, n2); return html`<button class="btn ${n2 === 1 ? '' : 'primary'}" data-action="lic-buy" data-id="${id}" data-y="${n2}" ${pr.an ? '' : new Raw('disabled')}><b>🔑 ${n2} an${n2 > 1 ? 's' : ''}</b><span>${pr.an ? money(pr.ht) + ' HT' : 'tarif à fixer'}</span>${pr.r ? html`<span class="tiny">−${pr.r} %</span>` : ''}</button>`; })}</div>
-          <p style="margin:8px 0 0;display:flex;gap:8px;flex-wrap:wrap"><button class="btn sm" data-action="lic-gift" data-id="${id}">🎁 6 mois offerts (accès complet)</button><button class="btn sm" data-action="lic-free" data-id="${id}">♾️ Gratuit — sans échéance</button></p>
-          <p class="tiny muted" style="margin:6px 0 12px">${licPrice(t.fil, 1).an ? `L’abonnement commence ${t.until && t.until > today() ? 'à la fin de la période en cours (' + fmtDate(t.until) + ')' : 'aujourd’hui'} ; une facture est créée.` : 'Fixez d’abord les tarifs : 💶 Tarifs.'}</p>
+        ${isCompta() ? '' : html`${t.until >= FREE_UNTIL ? '' : html`<p style="margin:0 0 12px"><button class="btn sm primary" data-action="lic-free" data-id="${id}">♾️ Gratuit — sans échéance</button></p>`}
           <div class="actions" style="margin:0 0 12px;flex-wrap:wrap">${t.st === 'suspended' ? html`<button class="btn sm" data-action="lic-susp" data-id="${id}" data-on="0">▶ Réactiver</button>` : html`<button class="btn sm" data-action="lic-susp" data-id="${id}" data-on="1">⏸ Suspendre</button>`}</div>
           <form id="f" data-form="net-edit" class="fields">
           <input type="hidden" name="id" value="${id}">
