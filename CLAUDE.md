@@ -29,7 +29,7 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 ## Flusso git
 - Ramo di lavoro → push → `main` con `merge --no-ff` → push → il ramo di lavoro torna allineato (`merge --ff-only main`).
 - Ad ogni modifica: aumentare le versioni
-  - centrale: `VERSION` in `ares/app.js`, `?v=` in `locataires.html`, **`centraldomier.html` e `centraldomier/index.html`**, `CACHE` in `locataires-sw.js` (stessa cifra);
+  - centrale: `VERSION` in `ares/app.js`, `?v=` in `locataires.html`, **`centraldomier.html`, `centraldomier/index.html` e `centralluxintervention/index.html`**, `CACHE` in `locataires-sw.js` (stessa cifra);
   - app: `CACHE` in `espace-sw.js`, `equipe-sw.js`, `portail-sw.js`.
 - Un file nuovo in `ares/` usato da un'app va aggiunto alla `SHELL` del suo service worker.
 
@@ -75,7 +75,7 @@ Vale per tutte le app degli utenti (inquilini, operai…), sempre in quest'ordin
 
 ## Struttura (in breve)
 - Indirizzi «parlanti» (operai.html, centrale.html…) → vedi `LIENS.md`: rimandano alla pagina vera.
-- Centrali dei clienti: **`/centraldomier/?<numero>`** (solo il numero del cliente, mai nomi nell'indirizzo; una sola pagina per tutti). Il vecchio `locataires.html?t=` funziona ancora.
+- Centrali dei clienti: **`/centralluxintervention/?<numero>`** (solo il numero del cliente, mai nomi nell'indirizzo; una sola pagina per tutti). I vecchi `/centraldomier/?…` e `locataires.html?t=` passano da soli al nuovo indirizzo (le pagine `centraldomier/index.html` e `centralluxintervention/index.html` vanno tenute uguali).
 - `centraldomier.html` = **CENTRAL-DOMIER**, la MASTER (copia di `locataires.html`: tenerle uguali). `locataires.html` resta per i vecchi link e le centrali dei clienti.
 - `locataires.html` + `ares/app.js`: la **centrale** (anche le centrali dei clienti della rete, con `?t=<id>`).
 - App: `espace.js` (inquilini), `equipe.js` (operai), `portail/` (gérances).
