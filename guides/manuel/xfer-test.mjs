@@ -25,7 +25,7 @@ log('app di Anna ' + lCode);
 // 2) cliente «ARES INVEST» (proprio) + la sua centrale
 await p.evaluate(() => { location.hash = '#/reseau'; }); await p.waitForTimeout(1500);
 await act(p, 'net-new'); await p.waitForTimeout(600);
-await p.selectOption('#f [name=fil]', 'proprio'); await p.fill('#f [name=nom]', 'ARES INVEST S.A.'); await p.fill('#f [name=tel]', '+352 691 000 071');
+await p.fill('#f [name=nom]', 'ARES INVEST S.A.'); await p.fill('#f [name=tel]', '+352 691 000 071');
 await p.click('button[type=submit][form=f]'); await p.waitForTimeout(3000);
 const tCode = await p.$eval('.sheet [style*="mono"]', (e) => e.textContent.trim());
 const tid = [...store.keys()].find((k) => k.startsWith('ares/tenants/')).split('/')[2].replace('.json', '');
