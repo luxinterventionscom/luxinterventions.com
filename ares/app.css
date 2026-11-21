@@ -212,6 +212,9 @@ label.field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; 
 .sidenav .brand-mark { height: 64px; max-width: 110px; object-fit: contain; border-radius: 10px; }
 .topbar .brand-mark, header .brand-mark { height: 44px; max-width: 96px; object-fit: contain; border-radius: 8px; }
 .brand small { display: block; font-size: 11px; font-weight: 500; color: var(--text-3); letter-spacing: 0.02em; }
+.sidenav .brand > span[data-notr] { min-width: 0; font-size: 13px; line-height: 1.2; letter-spacing: -0.01em; overflow-wrap: break-word; }
+.sidenav .brand { gap: 8px; }
+.sidenav .brand .brand-mark { height: 52px; max-width: 80px; }
 .sync {
   display: inline-flex; align-items: center; gap: 7px;
   font-size: 13px; font-weight: 550; color: var(--text-2);
