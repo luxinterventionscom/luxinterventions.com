@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.305.0';
+const VERSION = '2.308.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1562,39 +1562,8 @@ async function netHoldSync(list) {
 }
 // 🛠️ demandes d'intervention des centrales des clients → directement dans Maintenance (comme les signalements)
 let netDemBusy = false;
-// 🙋‍♀️🙋🏾 candidatures « Je cherche du travail » (app des locataires, hôtes, taxis ; aussi ceux des clients) : gardées 12 mois sans mise à jour
-const CAND_MET = { ...METIERS, demenagement: 'Déménagement / montage' };
-const CAND_DISP = { heure: '⏱️ À l’heure', jour: '📅 À la journée', mi: '🕐 Mi-temps', plein: '🏢 Temps plein', appel: '📞 Sur appel' };
-const CAND_APP = { loc: '🏠 Locataire' };
+// 🙋 candidatures « Je cherche du travail » : retirées (v2.307) ; les anciennes restent cachées puis s'effacent après 12 mois (RGPD)
 const cands = () => vault.list('reglages').filter((r) => r.id.startsWith('cand-')).sort((a, b) => (b.at || '').localeCompare(a.at || ''));
-async function candIn(m) {
-  const S = (v, n) => String(v ?? '').trim().slice(0, n), cid = S(m.cid, 20);
-  if (!/^[0-9a-f]{16}$/.test(cid)) return;
-  const id = 'cand-' + cid, old = vault.get('reglages', id), tokH = await sha256Hex('cand:' + S(m.tok, 40));
-  if (old && old.tokH !== tokH) return; // seul le téléphone qui l'a envoyée peut la changer
-  const oldDocs = vault.list('documents').filter((d) => d.kind === 'cv' && d.candId === id);
-  if (m.type === 'job-del') {
-    await vault.mutate((tx) => { tx.remove('reglages', id); for (const d of oldDocs) tx.remove('documents', d.id); }, '🙋 Candidature retirée par la personne', old ? old.f.nom : '');
-    for (const d of oldDocs) await vault.deleteFile(d.id).catch(() => {});
-    return;
-  }
-  if (m.type === 'job-keep') { if (old) await vault.mutate((tx) => tx.put('reglages', { id, at: new Date().toISOString() }), '🙋 Candidature gardée 12 mois de plus', old.f.nom); return; }
-  if (m.type !== 'job') return;
-  const f = m.f || {}, arr = (a, ok, n) => (Array.isArray(a) ? a : []).map((x) => S(x, 20)).filter((x) => ok(x)).slice(0, n);
-  const rec = { id, tokH, app: CAND_APP[m.app] ? m.app : 'loc', lang: S(m.lang, 2), at: new Date().toISOString(), sent: (old && old.sent) || new Date().toISOString(), vu: false, note: (old && old.note) || '',
-    f: { met: arr(f.met, (x) => CAND_MET[x], 12), autre: S(f.autre, 80), disp: arr(f.disp, (x) => CAND_DISP[x], 5), jours: arr(f.jours, (x) => /^[1-7]$/.test(x), 7), heures: S(f.heures, 60), urg: f.urg === 'date' ? 'date' : 'now', date: /^\d{4}-\d{2}-\d{2}$/.test(f.date || '') ? f.date : '',
-      exp: S(f.exp, 600), outils: f.outils === 'non' ? 'non' : 'oui', valise: !!f.valise, permis: !!f.permis, auto: !!f.auto, langues: S(f.langues, 80), statut: ['indep', 'emp', 'etu'].includes(f.statut) ? f.statut : '', chez: S(f.chez, 60), tarif: S(f.tarif, 8), nom: S(f.nom, 80), tel: S(f.tel, 30), mail: S(f.mail, 120), age: !!f.age } };
-  const files = (Array.isArray(m.cv) ? m.cv : []).slice(0, 2).filter((c) => typeof c.b === 'string' && c.b.length < 1e7);
-  const keep = files.length ? [] : oldDocs, toSave = [];
-  await vault.mutate((tx) => {
-    tx.put('reglages', rec);
-    if (files.length) for (const d of oldDocs) tx.remove('documents', d.id);
-    for (const c of files) { const mime = /^(application\/pdf|image\/(jpeg|png|webp))$/.test(c.mime || '') ? c.mime : 'application/pdf'; const doc = tx.put('documents', { kind: 'cv', candId: id, label: `📎 CV — ${rec.f.nom}${c.name ? ' (' + S(c.name, 40) + ')' : ''}`, date: today(), mime, size: Math.round(c.b.length * 0.75) }); toSave.push([doc.id, c.b]); }
-  }, old ? '🙋 Candidature mise à jour' : '🙋 Nouvelle candidature', `${rec.f.nom} · ${rec.f.met.map((k) => CAND_MET[k]).join(', ')}`);
-  for (const [did, b] of toSave) await vault.saveFile(did, unb64u(b)).catch(() => {});
-  if (files.length) for (const d of oldDocs) await vault.deleteFile(d.id).catch(() => {});
-  void keep;
-}
 // 12 mois sans mise à jour : la candidature et son CV sont effacés (RGPD)
 async function candPurge() {
   const lim = new Date(Date.now() - 365 * 864e5).toISOString(), old = cands().filter((c) => (c.at || '') < lim);
@@ -1614,7 +1583,7 @@ async function netDemSync(list) {
     for (const it of items) {
       let m;
       try { m = await openFromTenant(keys.priv, new Uint8Array(await (await vault.call('demandes/' + it.name)).arrayBuffer())); } catch { continue; }
-      if (/^job/.test(m.type || '')) { await candIn(m).catch(() => {}); await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {}); continue; }
+      if (/^job/.test(m.type || '')) { await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {}); continue; } // candidatures retirées : ignorées
       const tid = it.name.split('-')[1] || '', cl = ((list || (ui.net && ui.net.list) || []).find((t) => t.id === tid) || {}).nom || m.client || 'Client du réseau';
       if (m.type === 'cgu') {
         const S2 = (v, n) => String(v ?? '').trim().slice(0, n);
@@ -2570,7 +2539,14 @@ const fraisOfMonth = (y, m) => sum(vault.list('frais').filter((f) => (!f.debut |
 // Mois écoulés d'une année (année en cours : jusqu'au mois actuel inclus)
 const monthsElapsed = (y) => { const d = new Date(); return y < d.getFullYear() ? 12 : y > d.getFullYear() ? 0 : d.getMonth() + 1; };
 const fraisOfYear = (y) => { let t = 0; for (let m = 1; m <= monthsElapsed(y); m++) t += fraisOfMonth(y, m); return t; };
-const societe = () => vault.get('reglages', 'main') || {};
+// MASTER : nom, adresse, RCS, TVA, banque et logo viennent de 🧾 Facturation (la société des interventions) ;
+// la fiche « main » de la MASTER ne garde que la TVA et les associés (les anciennes données restent, non utilisées)
+const societe = () => {
+  const m = vault.get('reglages', 'main') || {};
+  if (TENANT) return m;
+  const f = factConf();
+  return { ...m, nom: f.nom, adresse: f.adresse, ville: f.ville, tel: f.tel, email: f.email, rcs: f.rcs, tvaNum: f.tva, iban: f.iban, bic: f.bic, banque: f.banque, web: '', logo: '', signature: '' };
+};
 
 // ───────────────────────── Branche « gérances » : le Portail gérance piloté depuis l'app de gestion ─────────────────────────
 // Les gérances (sociétés externes) utilisent le Portail gérance ; ici, LA CENTRAL les crée, invite leurs responsables,
@@ -2832,7 +2808,7 @@ function legalLine() {
 }
 // nom affiché aux clients et aux locataires : la marque LA CENTRAL (la centrale d'un client : son propre nom)
 const netBrand = () => (TENANT ? socName() : 'LA CENTRAL');
-const socLogo = () => societe().logo || (TENANT ? '' : '/ares/icons/nobis-logo.png');
+const socLogo = () => (TENANT ? societe().logo || '' : APP_BRAND.logo);
 const htOf = (ttc, r) => (r ? ttc / (1 + r / 100) : ttc);
 const r2 = (x) => Math.round(x * 100) / 100;
 // Logo et nom partout dans l'app (et sur l'écran de verrouillage, mémorisés sur cet appareil)
@@ -3471,6 +3447,7 @@ function renderShell() {
       ${legDots()}
       <div class="spacer"></div>
       <button class="navbtn" data-action="lock">🚪<span>Se déconnecter</span></button>
+      <div class="tiny muted" data-notr style="text-align:center;padding:2px 0 6px">v${VERSION}</div>
     </nav>
     <div>
       <header class="topbar">
@@ -3636,7 +3613,7 @@ function renderView() {
   if (!view || !vault.unlocked) return;
   const active = document.activeElement;
   const keepSearch = active && active.name === 'search' ? active.selectionStart : null;
-  setHtml(view, html`${tenantBanner()}${VIEWS[ui.route]()}<div style="text-align:center;margin:28px 0 8px"><button class="btn ghost" data-action="lock">🚪 Se déconnecter</button><p class="tiny muted" style="margin:4px 0 0">La centrale se ferme : il faudra la clé pour rouvrir</p><p class="tiny" data-notr="1" style="margin:8px 0 0;color:#9a968c">v${VERSION}</p></div>`); // 🚪 en bas de chaque page, comme dans les apps ; version en gris
+  setHtml(view, html`${tenantBanner()}${VIEWS[ui.route]()}<div style="text-align:center;margin:28px 0 8px"><button class="btn ghost" data-action="lock">🚪 Se déconnecter</button> <span class="tiny muted" data-notr>v${VERSION}</span><p class="tiny muted" style="margin:4px 0 0">La centrale se ferme : il faudra la clé pour rouvrir</p><p class="tiny" data-notr="1" style="margin:8px 0 0;color:#9a968c">v${VERSION}</p></div>`); // 🚪 en bas de chaque page, comme dans les apps ; version en gris
   enhanceFolds(view, '', false);
   updateBadge();
   tripPaint();
@@ -4692,9 +4669,7 @@ const VIEWS = {
     } else {
       const ints = vault.list('intervenants').sort((a, b) => (a.cat === 'specialise') - (b.cat === 'specialise') || Object.keys(METIERS).indexOf(a.metier) - Object.keys(METIERS).indexOf(b.metier) || intervFull(a).localeCompare(intervFull(b)));
       const nNew = sum(ints, (i) => i.feedNew || 0);
-      const cs = TENANT ? [] : cands(), cNew = cs.filter((c) => !c.vu).length;
-      const candBtn = cs.length ? html`<button class="btn block" style="margin-bottom:8px" data-action="cand-list">🙋‍♀️🙋🏾 Candidats (${cs.length})${cNew ? html` <span class="badge bad">${cNew} nouveau${cNew > 1 ? 'x' : ''}</span>` : ''}</button>` : '';
-      body = ints.length ? html`${candBtn}${eqTodayHtml()}<button class="btn block" style="margin-bottom:8px" data-action="eq-feed">📋 Activité de l’équipe${nNew ? html` <span class="badge bad">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}</button><button class="btn block" style="margin-bottom:12px" data-action="eq-special">📣 Message spécial à l’équipe</button><div class="list">${ints.map((i) => {
+      body = ints.length ? html`${eqTodayHtml()}<button class="btn block" style="margin-bottom:8px" data-action="eq-feed">📋 Activité de l’équipe${nNew ? html` <span class="badge bad">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}</button><button class="btn block" style="margin-bottom:12px" data-action="eq-special">📣 Message spécial à l’équipe</button><div class="list">${ints.map((i) => {
         const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length;
         const tel = (i.tel || '').replace(/[^\d+]/g, '');
         const ab = absOn(i, today());
@@ -4768,8 +4743,6 @@ dashboard() {
         ${lose.map(([im, r]) => alertBtn('bad', 'alert', 'bail-open', im.id, html`🔴 <b>${im.adresse}</b> : perd <b>${money(-r.net)} / mois</b><div class="tiny">${rentaLine(r)}${r.vides ? html` · <span>${r.vides} logement(s) vide(s)</span>` : ''}</div>`))}</div>`;
     })();
     const netSoonBox = netSoon.length ? html`<div class="stack" style="margin-bottom:14px">${netSoon.map((t) => alertBtn('warn', 'calendar', 'net-open', t.id, html`⏳ <b>${t.nom}</b> : accès jusqu’au ${fmtDate(t.until)}${(vault.list('reglages').find((f) => f.id.startsWith('licfac-') && f.tid === t.id && f.au === t.until) || {}).gift ? ' (🎁 6 mois offerts)' : ''}<div class="tiny">bon moment pour proposer l’abonnement</div>`))}</div>` : '';
-    const cNew = TENANT ? 0 : cands().filter((c) => !c.vu).length;
-    const candBox = cNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'cand-list', '', html`🙋‍♀️🙋🏾 <b>${cNew} nouvelle${cNew > 1 ? 's' : ''} candidature${cNew > 1 ? 's' : ''}</b> « Je cherche du travail »<div class="tiny">touchez pour voir les profils et les CV</div>`)}</div>` : '';
     const eqBox = eqNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'eq-feed', '', html`👷 <b>${eqNew} nouvelle${eqNew > 1 ? 's' : ''} de l’équipe</b> (commencé, fini, pas fini, notes, photos…)<div class="tiny">touchez pour voir qui fait quoi, où et quand</div>`)}</div>` : '';
     const assurTodo = vault.list('intervenants').filter((i) => i.genre === 'prive' && i.assurTodo && !i.archive);
     const assurBox = assurTodo.length ? html`<div class="stack" style="margin-bottom:14px">${assurTodo.map((i) => alertBtn('warn', 'alert', 'open-interv', i.id, html`🛡️ <b>Assurance RC à faire</b> : ${intervFull(i)} (occasionnel) n’a pas encore donné son assurance<div class="tiny">rappel affiché dans son app · touchez pour ouvrir sa fiche</div>`))}</div>` : '';
@@ -4801,7 +4774,6 @@ dashboard() {
           confier.length ? html`<div class="stack" style="margin-bottom:10px">${confier.slice(0, 12).map((t) => alertBtn('warn', 'tool', 'edit-tache', t.id, html`<b>${t.titre}</b><span class="small" style="display:block">${t.net ? '🌐 ' + t.net.nom + ' · ' : ''}${t.adr ? '📍 ' + t.adr + ' · ' : ''}${fmtDate(t.date)} — à confier</span>`))}${confier.length > 12 ? html`<p class="tiny muted">… et ${confier.length - 12} autres (Maintenance)</p>` : ''}</div>` : '', sigBox, netStopBox, mtCard()])}
         ${sec('👷', 'INFO OUVRIERS', 'Maladie, accident, retard, imprévu sur chantier, travaux refusés, assurance', [absBox, refBox, eqBox, assurBox, finBox])}
         ${sec('📝', 'DEVIS', 'Reçus du chef de chantier : vérifier, envoyer, faire signer', [devBanner()])}
-        ${sec('🙋', 'CANDIDATURES', 'Personnes qui cherchent du travail', [candBox])}
         ${sec('🧾', 'FACTURES OUVERTES', 'À émettre, à encaisser, en retard', [
           toBill.length ? alertBtn('warn', 'receipt', 'open-facts', '', html`🟡 <b>${plural(toBill.length, 'intervention')} terminée${toBill.length > 1 ? 's' : ''} à facturer</b>`) : '',
           unpaid.length ? alertBtn(late2.length ? 'bad' : 'info', 'wallet', 'open-facts', '', html`⏳ <b>${plural(unpaid.length, 'facture')} à encaisser</b> · ${eur(sum(unpaid, (t) => t.facture.ttc))}${late2.length ? html` · 🔴 ${late2.length} en retard` : ''}${claimed.length ? html` · 💳 ${claimed.length} « payé » à vérifier` : ''}`) : '',
@@ -4827,7 +4799,7 @@ dashboard() {
       
       ${virBox}
       ${edlBox}
-      ${nClaimBox}${netSoonBox}${netStopBox}${eqBox}${candBox}
+      ${nClaimBox}${netSoonBox}${netStopBox}${eqBox}
       ${absBox}
       ${toolsBox}
       ${imms.length || locs.length ? html`      ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
@@ -5365,7 +5337,7 @@ ${netClientsList(list, n, days)}`;
         <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
         ${TENANT ? '' : html`<button class="row" data-action="eq-group"><span class="avatar">💬</span><span class="grow"><span class="title" style="display:block">Groupe de l’équipe (messages spéciaux)</span><span class="meta">${plural(eqGroup().length, 'ouvrier')} dans le groupe · les autres messages restent entre chaque ouvrier et la centrale</span></span>${icon('chevron')}</button>`}
         ${TENANT ? '' : html`<button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>`}
-        <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">Société & associés</span><span class="meta">${TENANT && !societe().logo ? html`<b style="color:var(--amber,#b45309)">🖼️ Mettez votre logo : vos locataires le voient dans leur app</b><br>` : ''}${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
+        <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">${TENANT ? 'Société & associés' : 'Associés & TVA'}</span><span class="meta">${TENANT && !societe().logo ? html`<b style="color:var(--amber,#b45309)">🖼️ Mettez votre logo : vos locataires le voient dans leur app</b><br>` : ''}${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
       </div>
 
       ${!standalone ? html`<div class="section-label">Application</div>
@@ -6070,42 +6042,6 @@ const SHEETS = {
         </div>
         <p class="tiny muted">Astuce : envoyez le lien par WhatsApp ou SMS, ou affichez l'affiche dans l'entrée.</p>`,
       foot: html`<button class="btn ghost danger" data-action="share-off" data-id="${id}">Désactiver le lien</button><button class="btn primary" data-action="close-sheet">OK</button>`,
-    };
-  },
-  'cand-list'() {
-    const cs = cands();
-    return {
-      title: '🙋‍♀️🙋🏾 Candidats « Je cherche du travail »',
-      body: html`<p class="small muted" style="margin:0 0 10px">Envoyés depuis les apps (locataires — aussi ceux des centrales des clients). Chiffrés : seule cette centrale les lit. Effacés tout seuls après 12 mois sans mise à jour (RGPD).</p>
-        ${cs.length ? html`<div class="list">${cs.map((c) => html`<button class="row" data-action="cand-open" data-id="${c.id}"><span class="avatar">${c.vu ? '🙋' : '🆕'}</span><span class="grow"><span class="title" style="display:block">${c.f.nom || '—'}${c.f.tarif ? html` · <span class="tiny">${c.f.tarif} €/h</span>` : ''}</span>
-          <span class="meta" style="display:block;white-space:normal">${c.f.met.map((k) => CAND_MET[k]).join(', ')}${c.f.autre ? ' · ' + c.f.autre : ''} — ${c.f.disp.map((k) => CAND_DISP[k]).join(' · ')}</span>
-          <span class="tiny muted">${CAND_APP[c.app] || ''} · ${c.f.urg === 'date' && c.f.date ? 'dès le ' + fmtDate(c.f.date) : 'tout de suite'} · reçue le ${fmtDate(c.sent)}${vault.list('documents').some((d) => d.kind === 'cv' && d.candId === c.id) ? ' · 📎 CV' : ''}</span></span></button>`)}</div>` : html`<p class="muted small">Aucune candidature pour le moment.</p>`}`,
-      foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
-    };
-  },
-  cand({ id }) {
-    const c = vault.get('reglages', id);
-    if (!c) return null;
-    const f = c.f, docs = vault.list('documents').filter((d) => d.kind === 'cv' && d.candId === id), J = ['', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
-    if (!c.vu) setTimeout(() => vault.mutate((tx) => tx.put('reglages', { id, vu: true }), '🙋 Candidature lue', f.nom).catch(() => {}), 0);
-    return {
-      title: '🙋 ' + (f.nom || 'Candidat'),
-      body: html`<dl class="kv small">
-        <dt>Travail</dt><dd>${f.met.map((k) => CAND_MET[k]).join(', ')}${f.autre ? ' · ' + f.autre : ''}</dd>
-        <dt>Disponibilité</dt><dd>${f.disp.map((k) => CAND_DISP[k]).join(' · ')}${f.jours.length ? ' · ' + f.jours.map((j) => J[+j]).join(', ') : ''}${f.heures ? ' · ' + f.heures : ''}</dd>
-        <dt>Début</dt><dd>${f.urg === 'date' && f.date ? fmtDate(f.date) : 'Tout de suite'}</dd>
-        <dt>Expérience</dt><dd style="white-space:pre-wrap">${f.exp || '—'}</dd>
-        <dt>🧰 Outils</dt><dd>${f.outils === 'non' ? html`Non${f.valise ? html` — <b>intéressé(e) par la valise d’outils</b>` : ''}` : 'Oui'}</dd>
-        <dt>🚗</dt><dd>${[f.permis ? 'Permis' : '', f.auto ? 'Voiture' : ''].filter(Boolean).join(' · ') || '—'}</dd>
-        <dt>Langues</dt><dd>${f.langues || '—'}</dd>
-        <dt>Statut</dt><dd>${f.statut === 'indep' ? 'Indépendant(e)' : f.statut === 'emp' ? 'Employé(e) chez ' + (f.chez || '…') : f.statut === 'etu' ? 'Étudiant(e)' : '—'}</dd>
-        <dt>Tarif souhaité</dt><dd>${f.tarif ? f.tarif + ' € / h' : '—'}</dd>
-        <dt>Contact</dt><dd>${f.tel ? html`<a href="tel:${f.tel.replace(/[^\d+]/g, '')}">${f.tel}</a>` : ''}${f.mail ? html` · <a href="mailto:${f.mail}">${f.mail}</a>` : ''}</dd>
-        <dt>Origine</dt><dd>${CAND_APP[c.app] || ''} · reçue le ${fmtDate(c.sent)} · gardée jusqu’au ${fmtDate(addDays((c.at || '').slice(0, 10), 365))}</dd>
-        <dt>18+ / droit</dt><dd>${f.age ? '✅ confirmé' : '⚠️ non confirmé'}</dd></dl>
-        ${docs.length ? html`<div class="actions" style="margin:10px 0;flex-wrap:wrap">${docs.map((d) => html`<button class="btn sm" data-action="open-doc" data-id="${d.id}">📎 CV${docs.length > 1 ? ' ' + (docs.indexOf(d) + 1) : ''}</button>`)}</div>` : html`<p class="tiny muted">Pas de CV.</p>`}
-        <form data-form="cand-note" class="stack"><input type="hidden" name="id" value="${id}"><label class="field">Notes (test de compétences, essai sur le terrain…)<textarea name="note" style="min-height:70px">${c.note || ''}</textarea></label><button class="btn sm" type="submit">Enregistrer la note</button></form>`,
-      foot: html`<button class="btn ghost danger" data-action="cand-del" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button><button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" data-action="cand-ouvrier" data-id="${id}">➕ Créer l’ouvrier</button>`,
     };
   },
   'interv-form'({ id, preset }) {
@@ -7432,6 +7368,7 @@ const SHEETS = {
   },
 
   'societe-form'() {
+    if (!TENANT) return SHEETS['societe-master']();
     const st = societe();
     const pays = st.pays || 'LU';
     const rows = [...(st.associes || []), {}, {}, {}, {}].slice(0, Math.max(4, (st.associes || []).length + 1));
@@ -7471,6 +7408,28 @@ const SHEETS = {
         ${field('Adresse USDT', 'usdt', st.usdt, { placeholder: '0x… ou T…', attrs: 'autocomplete="off" spellcheck="false"' })}${netSelect('usdtNet', st.usdtNet)}
         ${field('Adresse USDC', 'usdc', st.usdc, { placeholder: '0x…', attrs: 'autocomplete="off" spellcheck="false"' })}${netSelect('usdcNet', st.usdcNet)}
         <p class="tiny muted full" style="margin:0">🔐 Mettez seulement l’<b>adresse de réception</b> (publique) de votre wallet. <b>Jamais</b> la clé privée ni les 12/24 mots de récupération. Laissez vide ce que vous n’utilisez pas : le bouton n’apparaît pas.</p>
+        <div class="section-label full" style="margin:10px 0 0">Associés — partage du résultat net</div>
+        ${rows.map((a, i) => html`${field('Associé ' + (i + 1), 'an' + i, a.nom)}${field('Part (%)', 'ap' + i, a.part, { type: 'number', attrs: 'inputmode="decimal" min="0" max="100" step="0.01"' })}`)}
+        <p class="tiny muted full">Le total des parts doit faire 100 %. Laissez vide les lignes inutiles.</p>
+        <div class="lock-err full" role="alert"></div>
+      </form>`,
+      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
+    };
+  },
+
+  'societe-master'() {
+    const st = vault.get('reglages', 'main') || {}, fc = factConf();
+    const rows = [...(st.associes || []), {}, {}, {}, {}].slice(0, Math.max(4, (st.associes || []).length + 1));
+    return {
+      title: 'Associés & TVA',
+      body: html`<form id="f" data-form="societe" class="fields">
+        <div class="full" style="display:flex;align-items:center;gap:12px"><img src="${APP_BRAND.logo}" alt="" style="height:48px;max-width:140px;object-fit:contain;background:#fff;border-radius:8px;padding:4px;border:1px solid var(--border)">
+          <span class="grow small"><b>${APP_BRAND.nom}</b> · ${fc.nom}${fc.rcs ? ' · RCS ' + fc.rcs : ''}<br><span class="muted">Nom, adresse, RCS, TVA et banque : dans 🧾 Facturation des interventions.</span></span>
+          <button class="btn sm" type="button" data-action="fact-set">🧾 Facturation</button></div>
+        <div class="section-label full" style="margin:10px 0 0">Comptabilité et TVA</div>
+        <label class="field">Assujetti à la TVA<select name="assujetti"><option value="1" ${st.assujetti !== false ? new Raw('selected') : ''}>Oui</option><option value="0" ${st.assujetti === false ? new Raw('selected') : ''}>Non</option></select></label>
+        <label class="field">Déclaration de TVA<select name="periode">${[['m', 'Mensuelle'], ['t', 'Trimestrielle'], ['a', 'Annuelle']].map(([k, v]) => html`<option value="${k}" ${(st.periode || 't') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+        ${field('Taux de TVA (%)', 'taux', st.taux || '', { full: true, placeholder: PAYS.LU[1].join(', ') + ' (taux du pays si vide)' })}
         <div class="section-label full" style="margin:10px 0 0">Associés — partage du résultat net</div>
         ${rows.map((a, i) => html`${field('Associé ' + (i + 1), 'an' + i, a.nom)}${field('Part (%)', 'ap' + i, a.part, { type: 'number', attrs: 'inputmode="decimal" min="0" max="100" step="0.01"' })}`)}
         <p class="tiny muted full">Le total des parts doit faire 100 %. Laissez vide les lignes inutiles.</p>
@@ -7897,22 +7856,6 @@ const ACTIONS = {
   },
   'mt-tab': (d) => { ui.mtTab = d.id; renderView(); },
   'new-interv': () => openOver('interv-form'),
-  'cand-list': () => openSheet('cand-list'),
-  'cand-open': (d) => openOver('cand', d.id),
-  'cand-ouvrier': (d) => {
-    const c = vault.get('reglages', d.id);
-    if (!c) return;
-    const parts = String(c.f.nom || '').trim().split(/\s+/), met = c.f.met.find((k) => METIERS[k]) || 'autre';
-    openOver('interv-form', null, null, { prenom: parts[0] || '', nom: parts.slice(1).join(' '), tel: c.f.tel || '', mail: c.f.mail || '', metier: met, genre: c.f.statut === 'indep' ? 'societe' : 'prive', cat: 'quotidien' });
-  },
-  async 'cand-del'(d) {
-    const c = vault.get('reglages', d.id);
-    if (!c || !(await confirmBox(`Supprimer la candidature de ${c.f.nom} ?`, { ok: 'Supprimer', danger: true, detail: 'Elle et son CV sont effacés de la base de données.' }))) return;
-    const ds = vault.list('documents').filter((x) => x.kind === 'cv' && x.candId === c.id);
-    await vault.mutate((tx) => { tx.remove('reglages', c.id); for (const x of ds) tx.remove('documents', x.id); }, '🙋 Candidature supprimée', c.f.nom);
-    for (const x of ds) await vault.deleteFile(x.id).catch(() => {});
-    goBack(); toast('Candidature supprimée');
-  },
   // « + » : ajoute une ligne « Supplément » (dépannage, nettoyage en plus) à ce jour
   'hor-add': (d, el) => {
     const grid = el.closest('.hor-blk').querySelector('.hor-grid'), p = HOR_P[d.p] ? d.p : 'extra';
@@ -9364,12 +9307,6 @@ const FORMS = {
     toast(sous && !(bf && bf.size) && !netInfo(tid).bailDoc ? '⚠️ Enregistré — bail principal manquant' : 'Enregistré', sous && !netInfo(tid).bailDoc ? { bad: true } : undefined);
     ui.sheet.rendered = false; renderSheet();
   },
-  async 'cand-note'(fd) {
-    const id = String(fd.get('id') || '');
-    if (!vault.get('reglages', id)) return;
-    await vault.mutate((tx) => tx.put('reglages', { id, note: String(fd.get('note') || '').trim().slice(0, 2000) }), '🙋 Note sur la candidature', '');
-    toast('Note enregistrée');
-  },
   async tdem(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
     const ou = g('ou'), lg = ou.startsWith('l:') ? vault.get('logements', ou.slice(2)) : null, imO = ou.startsWith('c:') ? vault.get('immeubles', ou.slice(2)) : lg ? vault.get('immeubles', lg.immId) : null;
@@ -9644,6 +9581,12 @@ const FORMS = {
     const total = sum(associes, (a) => a.part);
     if (associes.length && Math.abs(total - 100) > 0.01) return (form.querySelector('.lock-err').textContent = `Le total des parts fait ${total} % au lieu de 100 %.`);
     const g = (k) => String(fd.get(k) || '').trim();
+    if (!TENANT) {
+      const rm = { id: 'main', associes, assujetti: g('assujetti') !== '0', periode: g('periode') || 't', taux: g('taux') };
+      await vault.mutate((tx) => tx.put('reglages', rm), 'Associés & TVA modifiés', APP_BRAND.nom);
+      toast('Enregistré');
+      return closeSheet();
+    }
     const pay = { paypal: g('paypal').replace(/^(https?:\/\/)?(www\.)?paypal\.(me|com\/paypalme)\//i, '').replace(/\/.*$/, ''), cardLink: g('cardLink'), btc: g('btc'), eth: g('eth'), usdt: g('usdt'), usdtNet: g('usdtNet') || 'erc20', usdc: g('usdc'), usdcNet: g('usdcNet') || 'erc20' };
     const nomS = g('nom');
     const idErr = WRONG_ID.test([nomS, g('rcs'), g('tvaNum')].join(' ')) ? 'Ces apps appartiennent à NOBIS s.a.r.l. (RCS B225665, TVA LU30599412) : Ares Invest S.A. / B225245 ne peut pas être mis ici.'
