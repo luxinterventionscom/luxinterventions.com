@@ -28,7 +28,7 @@ await p.keyboard.press('Escape'); await p.waitForTimeout(400);
 log('accesso Nadia ' + code);
 // app di Nadia : prima SENZA permesso di posizione
 const cc = await phone(b, L), q = await cc.newPage(); q.on('pageerror', (e) => errs.push('equipe: ' + e.message));
-await q.goto('http://localhost:8765/equipe.html'); await q.waitForTimeout(1200);
+await q.goto('http://localhost:8765/centralouvriers.html'); await q.waitForTimeout(1200);
 await q.fill('input[name=code]', code); await q.click('form button[type=submit]'); await q.waitForTimeout(3500);
 await q.click('form.pres[data-pres=arr] button[type=submit]'); await q.waitForTimeout(2500);
 assert(await q.$('#geoWarn'), 'senza posizione: avviso e niente invio');

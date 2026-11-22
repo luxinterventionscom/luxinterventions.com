@@ -1,20 +1,25 @@
 # Liens des apps — qui va où
 
-Une seule app par rôle : l'app reconnaît **qui vous êtes grâce au code** (l'inquilino d'une agence ou d'un propriétaire
-utilise la même app que les nôtres, mais ne voit que sa maison et écrit à son gestionnaire).
+Une seule app par rôle : l'app reconnaît **qui vous êtes grâce au code**.
+Toutes les adresses commencent par **central…** (une seule famille, sous LUXINTERVENTIONS).
 
-| Adresse simple | Vraie page | Pour qui |
-|---|---|---|
-| /centraldomier.html | (page réelle) | **CENTRAL-DOMIER** : la centrale principale, sa propre adresse (même app que locataires.html) |
-| /centralluxintervention/?<numéro> | (page réelle) | la centrale d'un **client** du réseau — seulement son numéro, aucun nom (lien de son invitation) |
-| /centraldomier/?<numéro> | (page réelle) | ancienne adresse des clients : passe toute seule à /centralluxintervention/?<numéro> |
-| /centrale.html | locataires.html | la centrale (la nôtre ; celle d'un client avec `?t=code`) |
-| /proprietaire.html | locataires.html | la centrale d'un **propriétaire / bailleur principal** du réseau (`?t=code`) — lien de son invitation |
-| /agence.html | locataires.html | la centrale d'une **agence immobilière** du réseau (`?t=code`) |
-| /gestionnaire.html | locataires.html | la centrale d'une **gérance** du réseau (`?t=code`) — /gerance.html reste le portail gratuit |
-| /inquilini.html · /locataire.html | espace.html | l'app des locataires (de tous les gestionnaires) |
-| /operai.html | equipe.html | l'app de l'équipe (ouvriers) |
-| /annunci.html · /annonces.html | annonce.html | l'app des annonceurs (restaurants, bars…) |
-| /gerance.html | portail.html | le portail gratuit des gérances |
+| Adresse | Pour qui |
+|---|---|
+| /centralluxinterventions.html | **LUXINTERVENTIONS** : la MASTER (même app que locataires.html) |
+| /centralgerances/?<numéro> | la centrale d'un **client** (gérance, Nobis…) — seulement son numéro, aucun nom (lien de son invitation) |
+| /centrallocataires.html | l'app des **locataires** (même app que espace.html) |
+| /centralouvriers.html | l'app des **ouvriers** (même app que equipe.html) |
+| /gerance.html | le portail gratuit des gérances (→ portail.html) |
 
-Les adresses simples ne font que renvoyer à la vraie page (même code, même lien d'invitation).
+## Anciennes adresses (elles marchent toujours : apps déjà installées, anciens liens)
+
+| Ancienne adresse | Ce qui se passe |
+|---|---|
+| /centraldomier.html · /locataires.html | la MASTER, l'adresse affichée devient /centralluxinterventions.html |
+| /centraldomier/?<numéro> · /centralluxintervention/?<numéro> · locataires.html?t= | la centrale du client, l'adresse affichée devient /centralgerances/?<numéro> |
+| /espace.html · /locataire.html · /inquilini.html | l'app des locataires (espace.html reste une vraie page pour les apps installées ; les deux autres renvoient à /centrallocataires.html) |
+| /equipe.html · /operai.html | l'app des ouvriers (equipe.html reste une vraie page ; operai.html renvoie à /centralouvriers.html) |
+| /centrale.html · /proprietaire.html · /gestionnaire.html · /agence.html | renvoient à locataires.html |
+
+Les pages en double doivent rester identiques : centralluxinterventions.html = centraldomier.html = locataires.html (sauf manifeste) ;
+centralgerances/index.html = centralluxintervention/index.html = centraldomier/index.html ; centrallocataires.html = espace.html ; centralouvriers.html = equipe.html (sauf manifeste).

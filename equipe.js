@@ -12,6 +12,8 @@ import { infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
 import { tripLine } from '/ares/trip.js';
 import { themeInit, themeBtn, themeAccent } from '/ares/theme.js';
+// adresse nouvelle /centralouvriers.html (ou l'ancienne /equipe.html des apps déjà installées) : chacune son service worker
+const SWSCOPE = location.pathname.startsWith('/centralouvriers') ? '/centralouvriers' : '/equipe';
 themeInit();
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 const ACC = 'eqAccess';
@@ -642,12 +644,12 @@ function placesOf(d) {
 let pushSt = '', pushJust = false;
 const pushPost = (b) => fetch(`${API}/api/esp/${id}/push`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...b, app: 'eq', lang, boards: [] }) }).then((r) => { if (!r.ok) throw new Error(r.status); });
 async function pushInit() {
-  pushSt = await pushStatus('/equipe');
-  if (pushSt === 'on') pushRefresh('/equipe', pushPost);
-  setBadge(0, '/equipe');
+  pushSt = await pushStatus(SWSCOPE);
+  if (pushSt === 'on') pushRefresh(SWSCOPE, pushPost);
+  setBadge(0, SWSCOPE);
   render();
 }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) setBadge(0, '/equipe'); });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) setBadge(0, SWSCOPE); });
 function engCard(d) {
   const e = ENGT[lang] || ENGT.fr, g = d.eng, s = d.societe.nom || '';
   const a = g.assur ? ` (${g.assur}${g.police ? ', n° ' + g.police : ''})` : '';
@@ -879,7 +881,7 @@ app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-prof]')) { profOpen = !profOpen; render(); if (profOpen) document.getElementById('profCard')?.scrollIntoView({ block: 'start', behavior: 'smooth' }); return; }
   if (e.target.closest('[data-sig-clear]')) { const c = app.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); sigUrl = ''; return; }
   const lb = e.target.closest('[data-lang]');
-  if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('eqLang', lang); } catch {} if (pushSt === 'on') pushRefresh('/equipe', pushPost); return render(); }
+  if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('eqLang', lang); } catch {} if (pushSt === 'on') pushRefresh(SWSCOPE, pushPost); return render(); }
   if (e.target.closest('[data-rgpd]') && data) { const g = WRGPD[lang] || WRGPD.fr; return import('/ares/confirm-box.js').then((m) => m.infoBox(g.t, g.p((data.societe && data.societe.nom) || 'ARES INVEST S.A.'), g.close)); }
   if (e.target.closest('[data-logout]')) { e.preventDefault(); const ft = FT[lang] || FT.fr; const out = () => { try { localStorage.removeItem(IK()); localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; render(); }; if (!data) return out(); return import('/ares/confirm-box.js').then((m) => m.confirmBox(ft.sure, ft.yes, ft.no, out)); }
   if (e.target.closest('[data-retry]')) return flush();
@@ -887,7 +889,7 @@ app.addEventListener('click', async (e) => {
   if (pon) {
     pon.disabled = true;
     try {
-      if (await pushEnable({ api: API, swUrl: '/equipe-sw.js', scope: '/equipe', post: pushPost })) { pushSt = 'on'; pushJust = true; } else pushSt = await pushStatus('/equipe');
+      if (await pushEnable({ api: API, swUrl: '/equipe-sw.js', scope: SWSCOPE, post: pushPost })) { pushSt = 'on'; pushJust = true; } else pushSt = await pushStatus(SWSCOPE);
     } catch { alert(T().nt.err); }
     return render();
   }
@@ -1437,7 +1439,7 @@ async function load() {
       if (r.ok) {
         const x = await openJson(key, await r.arrayBuffer());
         if (x && x.kind === 'equipe') data = x;
-        else { loadErr = T().mismatch; try { localStorage.removeItem(ACC); } catch {} location.replace(`/espace.html#${id}.${key}`); return; }
+        else { loadErr = T().mismatch; try { localStorage.removeItem(ACC); } catch {} location.replace(`/centrallocataires.html#${id}.${key}`); return; }
       } else if (r.status === 404) { try { localStorage.removeItem(ACC); } catch {} id = key = ''; loadErr = T().off; }
     } catch { loadErr = '⚠ offline'; }
   }
@@ -1481,7 +1483,7 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('mess
 // tirer vers le bas = recharger (pas pendant un formulaire en cours) ; hors ligne : on garde ce qu'on avait
 pullRefreshInit({ lang: () => lang, refresh: async () => { if (!id || !key || form || devEd) return; const prev = data; await load(); if (!data && prev && loadErr === '⚠ offline') { data = prev; render(); } } });
 addEventListener('online', () => { flush(); devFlush(); });
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/equipe-sw.js', { scope: '/equipe' }).catch(() => {});
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/equipe-sw.js', { scope: SWSCOPE }).catch(() => {});
 
 // Nouvelle version publiée : l'app installée reste ouverte en mémoire (iPhone) — au retour dans l'app on compare
 // le service worker ; s'il a changé et que personne n'écrit, on recharge (sinon au prochain retour)

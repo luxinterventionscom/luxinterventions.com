@@ -15,6 +15,8 @@ import { infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
 import { tripView, tripFetch } from '/ares/trip.js';
 import { themeInit, themeBtn, themeAccent } from '/ares/theme.js';
+// adresse nouvelle /centrallocataires.html (ou l'ancienne /espace.html des apps déjà installées) : chacune son service worker
+const SWSCOPE = location.pathname.startsWith('/centrallocataires') ? '/centrallocataires' : '/espace';
 themeInit();
 const API = document.querySelector('meta[name="esp-api"]').content.replace(/\/$/, '');
 // Accès : lien direct (#id.clé) ou code personnel saisi une fois ; mémorisé sur ce téléphone
@@ -24,7 +26,7 @@ if (id) { try { localStorage.setItem(ACC, id + '.' + key); } catch {} history.re
 else { try { [id, key] = ((localStorage.getItem(ACC) || '').match(/^([0-9a-f]{32})\.([A-Za-z0-9_-]{40,})$/) || []).slice(1); } catch {} }
 let installEvt = null;
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installEvt = e; if (!/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || "")) render(); });
-if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/espace-sw.js', { scope: '/espace' }).catch(() => {});
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/espace-sw.js', { scope: SWSCOPE }).catch(() => {});
 
 // Nouvelle version publiée : l'app installée reste ouverte en mémoire (iPhone) — au retour dans l'app on compare
 // le service worker ; s'il a changé et que personne n'écrit, on recharge (sinon au prochain retour)
@@ -450,7 +452,7 @@ function renderGuide() {
       const tb = e.target.closest('[data-gtab]');
       if (tb) { guideTab = tb.dataset.gtab; return renderGuide(); }
       const cl = e.target.closest('[data-copylink]');
-      if (cl) { try { await navigator.clipboard.writeText(location.origin + '/espace.html'); cl.textContent = '✓'; } catch { prompt('', location.origin + '/espace.html'); } }
+      if (cl) { try { await navigator.clipboard.writeText(location.origin + '/centrallocataires.html'); cl.textContent = '✓'; } catch { prompt('', location.origin + '/centrallocataires.html'); } }
     });
     document.body.append(el);
   }
@@ -893,9 +895,9 @@ function hydrateEdl() {
 let pushSt = '', pushJust = false;
 const pushPost = (b) => fetch(`${API}/api/esp/${id}/push`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...b, app: 'esp', lang, boards: data.chat ? [data.chat.id] : [] }) }).then((r) => { if (!r.ok) throw new Error(r.status); });
 async function pushInit() {
-  pushSt = await pushStatus('/espace');
-  if (pushSt === 'on') pushRefresh('/espace', pushPost);
-  setBadge(0, '/espace');
+  pushSt = await pushStatus(SWSCOPE);
+  if (pushSt === 'on') pushRefresh(SWSCOPE, pushPost);
+  setBadge(0, SWSCOPE);
   render();
 }
 // 🚗 l'ouvrier qui vient aujourd'hui : compte à rebours sous « Bonjour » (état relu toutes les 30 s, sans redessiner la page)
@@ -911,7 +913,7 @@ async function tripPoll() {
 setInterval(tripPoll, 30000);
 // tirer vers le bas = recharger ; hors ligne : on garde ce qu'on avait
 pullRefreshInit({ lang: () => lang, refresh: async () => { if (!id || !key || !data) return; const prev = data; await load(); if (!data && prev && loadErr === '⚠ offline') { data = prev; render(); } } });
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) { setBadge(0, '/espace'); if (data.chat) chatSeen(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) { setBadge(0, SWSCOPE); if (data.chat) chatSeen(); } });
 function notifCard(t) {
   if (!pushSt || pushSt === 'unsupported' || (pushSt === 'on' && !pushJust)) return '';
   const n = t.nt;
@@ -1309,7 +1311,7 @@ app.addEventListener('click', async (e) => {
   if (pon) {
     pon.disabled = true;
     try {
-      if (await pushEnable({ api: API, swUrl: '/espace-sw.js', scope: '/espace', post: pushPost })) { pushSt = 'on'; pushJust = true; } else pushSt = await pushStatus('/espace');
+      if (await pushEnable({ api: API, swUrl: '/espace-sw.js', scope: SWSCOPE, post: pushPost })) { pushSt = 'on'; pushJust = true; } else pushSt = await pushStatus(SWSCOPE);
     } catch { alert(T().nt.err); }
     return render();
   }
@@ -1470,7 +1472,7 @@ app.addEventListener('click', async (e) => {
   }
   if (e.target.closest('[data-guide]')) { if (installEvt && !IS_IOS) { installEvt.prompt(); installEvt = null; return; } return renderGuide(); }
   const cl = e.target.closest('[data-copylink]');
-  if (cl) { try { await navigator.clipboard.writeText(location.origin + '/espace.html'); cl.textContent = '✓'; } catch { prompt('', location.origin + '/espace.html'); } return; }
+  if (cl) { try { await navigator.clipboard.writeText(location.origin + '/centrallocataires.html'); cl.textContent = '✓'; } catch { prompt('', location.origin + '/centrallocataires.html'); } return; }
   if (e.target.closest('[data-pay]')) { payOpen = !payOpen; return render(); }
   const pvb = e.target.closest('[data-payvia]');
   if (pvb) { payVia = pvb.dataset.payvia; return render(); }
@@ -1489,7 +1491,7 @@ app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-rgpd]') && data) { const t = T(), g = RGPDX[lang] || RGPDX.fr, so = { ...data.societe, nom: `${data.societe.nom} (${g.grp} ARES INVEST S.A.)` }; return import('/ares/confirm-box.js').then((m) => m.infoBox(t.rgpdT, [t.rgpd(so), g.docs, t.hr.rgpd2], g.close)); }
   if (e.target.closest('[data-logout]')) { e.preventDefault(); const o = OUTQ[lang] || OUTQ.fr; const out = () => { try { localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; render(); }; if (!data) return out(); return import('/ares/confirm-box.js').then((m) => m.confirmBox(o[0], o[1], o[2], out)); }
   const lb = e.target.closest('[data-lang]');
-  if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('espLang', lang); } catch {} if (pushSt === 'on') pushRefresh('/espace', pushPost); return render(); }
+  if (lb) { lang = lb.dataset.lang; try { localStorage.setItem('espLang', lang); } catch {} if (pushSt === 'on') pushRefresh(SWSCOPE, pushPost); return render(); }
   if (e.target.closest('[data-recap]')) return recap();
   if (e.target.closest('[data-ic-open]')) { icOpen = !icOpen; render(); return; }
   if (e.target.closest('[data-photo-del]')) { phMine = ''; render(); try { await sendOwner({ type: 'photo', d: '' }); } catch { /* hors ligne */ } return; }
@@ -1645,7 +1647,7 @@ async function load() {
       // 📣 centrale d'un client : les annonces validées par LA CENTRAL (liste publique du réseau, filtrée par zone)
       if (data && data.societe) { try { const lg = String(data.societe.logo || ''); localStorage.setItem('espBrand', JSON.stringify({ nom: data.societe.nom || '', logo: lg.length < 200000 ? lg : '' })); } catch { /* plein */ } }
       // code de l'app de l'équipe tapé ici par erreur : on ouvre la bonne app
-      if (data && data.kind === 'equipe') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/equipe.html#${id}.${key}`); return; }
+      if (data && data.kind === 'equipe') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/centralouvriers.html#${id}.${key}`); return; }
       if (data && data.kind === 'annonce') { try { localStorage.removeItem(ACC); } catch {} location.replace(`/annonce.html#${id}.${key}`); return; }
       else if (r.status === 404) { try { localStorage.removeItem(ACC); } catch {} id = key = ''; loadErr = T().off; }
     } catch { loadErr = '⚠ offline'; }

@@ -1,6 +1,6 @@
 // App de l'équipe ARES INVEST S.A. (ARES Équipe) : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'equipe-shell-v1.101.0';
-const SHELL = ['/ares/theme.js', '/equipe.html', '/equipe.js', '/ares/espace-crypto.js', '/ares/chattr.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/news.js', '/ares/emoji.js', '/ares/reqmark.js', '/ares/wxradio.js', '/ares/nbien.js', '/ares/confirm-box.js', '/ares/photo-crop.js', '/ares/pull-refresh.js', '/ares/trip.js', '/ares/qrcode.js', '/equipe.webmanifest', '/ares/icons/ares-192.png', '/ares/icons/nobis-logo.png', '/ares/icons/lux-192.png', '/ares/icons/lux-apple-touch-icon.png', '/assets/fonts/fonts.css'];
+const CACHE = 'equipe-shell-v1.102.0';
+const SHELL = ['/ares/theme.js', '/equipe.html', '/centralouvriers.html', '/equipe.js', '/ares/espace-crypto.js', '/ares/chattr.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/news.js', '/ares/emoji.js', '/ares/reqmark.js', '/ares/wxradio.js', '/ares/nbien.js', '/ares/confirm-box.js', '/ares/photo-crop.js', '/ares/pull-refresh.js', '/ares/trip.js', '/ares/qrcode.js', '/equipe.webmanifest', '/ares/icons/ares-192.png', '/ares/icons/nobis-logo.png', '/ares/icons/lux-192.png', '/ares/icons/lux-apple-touch-icon.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
@@ -38,7 +38,7 @@ self.addEventListener('push', (e) => {
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
-  const url = (e.notification.data && e.notification.data.url) || '/equipe.html';
+  const url = (e.notification.data && e.notification.data.url) || (self.registration.scope.includes('/centralouvriers') ? '/centralouvriers.html' : '/equipe.html');
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
     const c = cs.find((x) => new URL(x.url).pathname === url);
     return c ? c.focus() : self.clients.openWindow(url);
