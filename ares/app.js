@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.307.0';
+const VERSION = '2.308.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3447,6 +3447,7 @@ function renderShell() {
       ${legDots()}
       <div class="spacer"></div>
       <button class="navbtn" data-action="lock">🚪<span>Se déconnecter</span></button>
+      <div class="tiny muted" data-notr style="text-align:center;padding:2px 0 6px">v${VERSION}</div>
     </nav>
     <div>
       <header class="topbar">
@@ -3612,7 +3613,7 @@ function renderView() {
   if (!view || !vault.unlocked) return;
   const active = document.activeElement;
   const keepSearch = active && active.name === 'search' ? active.selectionStart : null;
-  setHtml(view, html`${tenantBanner()}${VIEWS[ui.route]()}<div style="text-align:center;margin:28px 0 8px"><button class="btn ghost" data-action="lock">🚪 Se déconnecter</button><p class="tiny muted" style="margin:4px 0 0">La centrale se ferme : il faudra la clé pour rouvrir</p><p class="tiny" data-notr="1" style="margin:8px 0 0;color:#9a968c">v${VERSION}</p></div>`); // 🚪 en bas de chaque page, comme dans les apps ; version en gris
+  setHtml(view, html`${tenantBanner()}${VIEWS[ui.route]()}<div style="text-align:center;margin:28px 0 8px"><button class="btn ghost" data-action="lock">🚪 Se déconnecter</button> <span class="tiny muted" data-notr>v${VERSION}</span><p class="tiny muted" style="margin:4px 0 0">La centrale se ferme : il faudra la clé pour rouvrir</p><p class="tiny" data-notr="1" style="margin:8px 0 0;color:#9a968c">v${VERSION}</p></div>`); // 🚪 en bas de chaque page, comme dans les apps ; version en gris
   enhanceFolds(view, '', false);
   updateBadge();
   tripPaint();
