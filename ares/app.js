@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.308.0';
+const VERSION = '2.309.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4679,7 +4679,7 @@ const VIEWS = {
         </div>`;
       })}</div>` : empty('users', 'Aucun intervenant. Ajoutez la femme de ménage et les artisans (menuisier, électricien, plombier, chauffagiste, maçon…).', html`<button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button>`);
     }
-    return html`${pageHead(loc ? 'Maintenance' : '🛠️ Interventions', loc ? 'Nettoyage, réparations et collecte des déchets' : 'Le travail de nos ouvriers : à confier, planning, équipe, devis')}<div class="imm-row">${tabs}<div class="imm-btns">${add}</div></div>${tab !== 'intervenants' && tab !== 'devis' ? chips : ''}${body}${new Raw(infoBox({ lang: getLang() }))}`;
+    return html`${pageHead(loc ? 'Maintenance' : '🛠️ Interventions', loc ? 'Nettoyage, réparations et collecte des déchets' : 'Le travail de nos ouvriers : à confier, planning, équipe, devis')}<div class="imm-row">${tabs}</div><div class="imm-btns" style="margin:-4px 0 16px">${add}</div>${tab !== 'intervenants' && tab !== 'devis' ? chips : ''}${body}${new Raw(infoBox({ lang: getLang() }))}`;
   },
 
 dashboard() {
