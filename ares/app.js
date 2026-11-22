@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.309.0';
+const VERSION = '2.310.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -3428,7 +3428,9 @@ const COLOR_LEG = [['#F97316', 'Interventions et maintenance : demandes, travaux
   ['#0D9488', 'Locataires et loyers : logements, contrats, paiements'],
   ['#475569', 'Avis de l’immeuble : coupures, travaux dans les communs'],
   ['#4F46E5', 'Planning du jour : ce qui est prévu aujourd’hui']];
-const legDots = () => html`<div class="leg-dots" aria-label="Légende des couleurs">${COLOR_LEG.map(([c, t]) => html`<button type="button" class="leg-dot" style="--c:${c}" data-action="leg-dot"><span class="leg-tip">${t}</span></button>`)}</div>`;
+// MASTER : sans « Locataires et loyers » ni « Avis de l’immeuble » (plus d’inquilini ni d’immeubles à elle)
+const legList = () => (TENANT ? COLOR_LEG : COLOR_LEG.filter(([c]) => c !== '#0D9488' && c !== '#475569'));
+const legDots = () => html`<div class="leg-dots" aria-label="Légende des couleurs">${legList().map(([c, t]) => html`<button type="button" class="leg-dot" style="--c:${c}" data-action="leg-dot"><span class="leg-tip">${t}</span></button>`)}</div>`;
 const navKeep = (it) => routeOk(it[0]) && !(TENANT && it[4] === 'abo');
 function sideNavHtml() {
   return NAV_TREE.map((x) => (x.group ? (x.items.some(navKeep) ? html`<div class="nav-group">${x.group}</div>${x.items.filter(navKeep).map((it) => navItem(it, true))}` : '') : navKeep(x) ? navItem(x) : ''));
@@ -5336,7 +5338,7 @@ ${netClientsList(list, n, days)}`;
         ${TENANT ? html`<button class="row" data-action="tpay-conf"><span class="avatar">💳</span><span class="grow"><span class="title" style="display:block">Paiements</span><span class="meta">${(vault.get('reglages', 'tpayConf') || {}).payMode === 'month' ? 'Factures des interventions : une par mois' : 'Factures des interventions : à chaque intervention'}</span></span>${icon('chevron')}</button>` : ''}
         <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
         ${TENANT ? '' : html`<button class="row" data-action="eq-group"><span class="avatar">💬</span><span class="grow"><span class="title" style="display:block">Groupe de l’équipe (messages spéciaux)</span><span class="meta">${plural(eqGroup().length, 'ouvrier')} dans le groupe · les autres messages restent entre chaque ouvrier et la centrale</span></span>${icon('chevron')}</button>`}
-        ${TENANT ? '' : html`<button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${COLOR_LEG.length} activités</span></span></button>`}
+        ${TENANT ? '' : html`<button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${legList().length} activités</span></span></button>`}
         <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">${TENANT ? 'Société & associés' : 'Associés & TVA'}</span><span class="meta">${TENANT && !societe().logo ? html`<b style="color:var(--amber,#b45309)">🖼️ Mettez votre logo : vos locataires le voient dans leur app</b><br>` : ''}${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
       </div>
 
@@ -7443,7 +7445,7 @@ const SHEETS = {
     return {
       title: '🎨 Couleurs de nos activités',
       body: html`<p class="small muted" style="margin:0 0 8px">Les mêmes couleurs dans toutes les apps (locataires, équipe, portail gérance) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.</p>
-        <div class="list settings">${COLOR_LEG.map(([c, t]) => html`<div class="row"><span class="leg-sw" style="background:${c}"></span><span class="grow">${t}</span></div>`)}</div>
+        <div class="list settings">${legList().map(([c, t]) => html`<div class="row"><span class="leg-sw" style="background:${c}"></span><span class="grow">${t}</span></div>`)}</div>
         <p class="small" style="margin:8px 0 0">Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème</p>`,
     };
   },
