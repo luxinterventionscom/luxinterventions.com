@@ -24,7 +24,7 @@ const LANG = (() => {
   const n = (navigator.language || '').slice(0, 2).toLowerCase();
   return PTL_LANGS[n] ? n : 'fr';
 })();
-document.documentElement.lang = LANG; // 📰 News et autres modules suivent la langue du portail
+document.documentElement.lang = LANG; // 📰 News et autres modules suivent la langue de l’app
 // ℹ️ Infos : « ▶ Mettre l'icône sur l'écran » (le cadre des infos n'est pas traduit par la page : texte déjà dans la langue)
 const IA_T = ({ fr: 'Mettre l’icône sur l’écran', it: 'Mettere l’icona sullo schermo', de: 'Symbol auf den Bildschirm legen', pt: 'Pôr o ícone no ecrã', en: 'Put the icon on your screen', es: 'Poner el icono en la pantalla' })[LANG] || 'Mettre l’icône sur l’écran';
 const LOC = LOCALES[LANG] || 'fr-LU';
@@ -32,7 +32,7 @@ await startI18n(LANG, (l) => import(`./i18n/${l}.js`));
 // le service worker traduit les notifications push dans cette langue
 try { caches.open('ptl-pref').then((c) => c.put('/__ptl-lang', new Response(LANG))).catch(() => {}); } catch {}
 
-// Message d'invitation (email / WhatsApp) dans la langue du portail
+// Message d'invitation (email / WhatsApp) dans la langue de l’app
 const INVITE = PTL_INVITE;
 wxRadioInit({ app: 'ptl', lang: () => LANG, home: () => 'Luxembourg' });
 const API = document.querySelector('meta[name="ptl-api"]').content.replace(/\/$/, '') + '/api/portail/';
@@ -304,7 +304,7 @@ const lockEl = $('#lock');
 const appEl = $('#app');
 const brandHead = () => html`
   <img class="lock-banner" src="/portail/icons/ptl-banner.webp" alt="Terre · Eau · Feu · Air — LA CENTRAL" width="1100" height="283">
-  <div class="lock-head"><h1>Portail Gérances</h1><p>LA CENTRAL · Interventions techniques 7j/7</p></div>
+  <div class="lock-head"><h1>Gérances</h1><p>LA CENTRAL · Interventions techniques 7j/7</p></div>
   ${langMini()}`;
 // écran d'accès : initiales seules « FR | DE | EN … »
 const langMini = () => html`<div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => html`<button type="button" data-action="set-lang" data-id="${k}" title="${PTL_LANGS[k]}" aria-pressed="${LANG === k}">${k.toUpperCase()}</button>`)}</div>`;
@@ -361,7 +361,7 @@ function renderLock(mode, data = {}) {
     <button class="btn primary block" type="submit">Se connecter</button>
     <button class="btn ghost block" type="button" data-action="forgot">🔑 Mot de passe oublié ?</button>
     <p class="tiny muted" style="text-align:center">Première fois ? Ouvrez le <b>lien personnel</b> reçu par email ou WhatsApp : vous y choisirez votre mot de passe.</p>
-    <button class="btn ghost block" type="button" data-action="demo-start">${icon('eye')} Découvrir le portail en mode démo</button>
+    <button class="btn ghost block" type="button" data-action="demo-start">${icon('eye')} Découvrir l’app Gérances en mode démo</button>
     <button class="btn ghost block" type="button" data-action="rgpd">🔒 Protection des données (RGPD)</button>
     <p class="tiny muted" style="text-align:center"><a href="/confidentialite.html" target="_blank" rel="noopener">Confidentialité</a> · <a href="/mentions-legales.html" target="_blank" rel="noopener">Mentions légales</a></p>
   </form>`);
@@ -513,14 +513,14 @@ function renderShell() {
   const nb = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span><i class="navbadge" data-badge="${id}" hidden></i></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">PORTAIL GÉRANCES<small>${isAdmin() ? 'Espace équipe LA CENTRAL' : html`${orgLogoImg('ptl-orglogo')}${state.me.org_name || ''}`}</small></span></div>
+      <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">GÉRANCES<small>${isAdmin() ? 'Espace équipe LA CENTRAL' : html`${orgLogoImg('ptl-orglogo')}${state.me.org_name || ''}`}</small></span></div>
       ${navItems().map(nb)}
       <div class="spacer"></div>
       <button class="navbtn" data-action="logout">${icon('logout')}<span>Déconnexion</span></button>
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">PORTAIL GÉRANCES<small>${isAdmin() ? 'Espace équipe LA CENTRAL' : html`${orgLogoImg('ptl-orglogo')}${state.me.org_name || ''}`}</small></span></div>
+        <div class="brand"><img class="brand-mark" src="/portail/icons/ptl-192.png" alt="" width="36" height="36"><span class="ptl-name">GÉRANCES<small>${isAdmin() ? 'Espace équipe LA CENTRAL' : html`${orgLogoImg('ptl-orglogo')}${state.me.org_name || ''}`}</small></span></div>
         <button class="btn sm primary" data-action="new-ticket">${icon('plus')} <span class="show-xs">Dépannage</span><span class="hide-xs">Demande de dépannage</span></button>
       </header>
       ${state.demo ? html`<div class="demo-bar">${icon('eye')}<span class="grow"><b>Mode démo</b> — données d’exemple, rien n’est enregistré.</span>
@@ -611,7 +611,7 @@ function updateBadges() {
     b.hidden = !(n && b.dataset.badge === 'home');
     b.textContent = n;
   });
-  document.title = (n ? `(${n}) ` : '') + 'Portail Gérances';
+  document.title = (n ? `(${n}) ` : '') + 'Gérances';
 }
 
 function renderView() {
@@ -703,7 +703,7 @@ document.addEventListener('toggle', (e) => {
     try { localStorage.setItem('ptlGuideShut', el.open ? '0' : '1'); } catch { /* stockage indisponible */ }
   }
 }, true);
-// barre des cours crypto (TradingView) : servie par le Worker sur un autre domaine, isolée du portail
+// barre des cours crypto (TradingView) : servie par le Worker sur un autre domaine, isolée de l’app
 const newsBar = () => new Raw(newsHtml(API.replace(/\/api\/portail\/$/, '')));
 const tickerBar = () => html`<div class="ticker"><iframe src="${API.replace(/api\/portail\/$/, '')}ticker" title="Crypto" loading="lazy" referrerpolicy="no-referrer" scrolling="no"></iframe></div>`;
 
@@ -892,7 +892,7 @@ const VIEWS = {
     const arrive = coming.length || planToday.length ? html`<div class="arrive">${coming.map((t) => html`<button class="arrive-b go" data-action="open-ticket" data-id="${t.id}"><span class="arr-dot"></span><span class="grow">🚚 <b>LA CENTRAL est en route / sur place</b><span class="meta" style="display:block">#${t.ref} · ${t.residence_name}${t.technicien ? html` · <span>technicien</span> ${t.technicien}` : ''}</span></span></button>`)}
       ${planToday.map((t) => html`<button class="arrive-b today" data-action="open-ticket" data-id="${t.id}"><span class="arr-dot"></span><span class="grow">📅 <b>Aujourd'hui</b> ${new Date(t.planned_at).toLocaleTimeString(LOC, { hour: '2-digit', minute: '2-digit' })}<span class="meta" style="display:block">#${t.ref} · ${t.residence_name}${t.technicien ? html` · <span>technicien</span> ${t.technicien}` : ''}</span></span></button>`)}</div>` : '';
     const pushCard = !['on', 'demo'].includes(pushState()) ? html`<div class="alert ${isAdmin() ? 'warn' : 'info'}" style="margin-bottom:14px;align-items:center">${icon('bell')}<div style="flex:1">${isAdmin()
-      ? html`<b>Activez les notifications</b> pour être alerté immédiatement des nouvelles demandes urgentes.` : html`<b>Activez les notifications</b> pour suivre l'avancement de vos demandes.`}</div>${iosSafari() ? '' : html`<button class="btn sm" data-action="push-on">Activer</button>`}</div>${iosSafari() ? html`<div class="alert info" style="margin:-8px 0 14px">📱<div><b>Sur iPhone, d’abord installer l’app :</b> en bas de Safari, touchez <b>Partager</b> (carré avec flèche ↑) → <b>« Sur l’écran d’accueil »</b> → Ajouter. Ouvrez ensuite le portail <b>depuis la nouvelle icône</b> et touchez « Activer » : Safari seul ne permet pas les notifications.</div></div>` : ''}` : '';
+      ? html`<b>Activez les notifications</b> pour être alerté immédiatement des nouvelles demandes urgentes.` : html`<b>Activez les notifications</b> pour suivre l'avancement de vos demandes.`}</div>${iosSafari() ? '' : html`<button class="btn sm" data-action="push-on">Activer</button>`}</div>${iosSafari() ? html`<div class="alert info" style="margin:-8px 0 14px">📱<div><b>Sur iPhone, d’abord installer l’app :</b> en bas de Safari, touchez <b>Partager</b> (carré avec flèche ↑) → <b>« Sur l’écran d’accueil »</b> → Ajouter. Ouvrez ensuite l’app <b>depuis la nouvelle icône</b> et touchez « Activer » : Safari seul ne permet pas les notifications.</div></div>` : ''}` : '';
     if (isAdmin()) {
       return html`${pushCard}
         ${guideCard(stats)}
@@ -1131,7 +1131,7 @@ const VIEWS = {
         <button class="row" data-action="rgpd">🔒<span class="grow title">Protection des données (RGPD)</span></button>
         <button class="row" data-action="logout">${icon('logout')}<span class="grow title red">Se déconnecter</span></button>
       </div>
-      <p class="tiny muted" style="margin-top:28px;text-align:center">LA CENTRAL · Portail gérance v${VERSION}</p>`;
+      <p class="tiny muted" style="margin-top:28px;text-align:center">LA CENTRAL · Gérances v${VERSION}</p>`;
   },
 };
 
@@ -1270,7 +1270,7 @@ async function openTicket(id, silent) {
   }
 }
 
-// 💼 Offre d'abonnement : gérer aussi ses propres immeubles et locataires (s'affiche à la 1ʳᵉ ouverture du portail)
+// 💼 Offre d'abonnement : gérer aussi ses propres immeubles et locataires (s'affiche à la 1ʳᵉ ouverture de l’app)
 const OFFER_PLANS = [
   { id: 'decouverte', name: 'Découverte', sub: 'Pour commencer, sans engagement.', price: '0 €', per: '/ mois', cta: 'Je commence gratuitement', items: [[1, '1 immeuble (jusqu’à 10 logements)'], [1, 'Locataires, loyers, quittances'], [1, 'App des locataires'], [1, 'Demandes d’intervention à LA CENTRAL'], [0, 'Plusieurs immeubles'], [0, 'Rapports et statistiques avancés']] },
   { id: 'pro', name: 'Pro', sub: 'Pour les gérances qui grandissent.', price: '29 €', per: '/ mois', save: '2 mois offerts en payant à l’année', badge: '♥ LE PLUS CHOISI', cta: 'Je suis intéressé', items: [[1, 'Jusqu’à 50 logements'], [1, 'Tout le plan Découverte'], [1, 'États des lieux avec photos'], [1, 'Comptabilité et rappels de paiement'], [1, 'Rapports et statistiques'], [1, 'Plusieurs collègues (responsables)']] },
@@ -1357,7 +1357,7 @@ function ibanOk(v) {
 }
 const bicOk = (v, iban) => { const x = String(v || '').toUpperCase().replace(/\s/g, ''); return /^[A-Z]{4}[A-Z]{2}[A-Z0-9]{2}([A-Z0-9]{3})?$/.test(x) && (!iban || x.slice(4, 6) === ibanClean(iban).slice(0, 2)); };
 const LU_BIC = { '001': ['BCEELULL', 'Spuerkeess'], '002': ['BILLLULL', 'BIL'], '003': ['BGLLLULL', 'BGL BNP Paribas'], '009': ['CCRALULL', 'Raiffeisen'], '014': ['CELLLULL', 'ING Luxembourg'], '111': ['CCPLLULL', 'POST Luxembourg'] };
-// Logo de l'agence (choisi par le responsable dans « Ma société ») : réduit à 256 px, gardé dans le portail
+// Logo de l'agence (choisi par le responsable dans « Ma société ») : réduit à 256 px, gardé dans l’app
 const orgLogoImg = (cls = '') => (state.myOrg && state.myOrg.logo ? html`<img class="org-logo ${cls}" src="${state.myOrg.logo}" alt="">` : html`<img class="org-logo ${cls}" alt="" hidden>`);
 function orgLogoRefresh() {
   const lg = (state.myOrg && state.myOrg.logo) || '';
@@ -1395,7 +1395,7 @@ const RGPD_P = [
   'Qui les voit : votre gérance et l’équipe LA CENTRAL chargée de l’intervention (le technicien reçoit seulement ce qu’il faut pour sa mission). Aucune publicité, aucune revente.',
   'Durée : les noms, codes et contacts sont effacés 3 mois après la fin du contrat avec la gérance ; les devis et factures sont gardés 10 ans (obligation comptable).',
   'Sécurité : accès personnel par email et mot de passe, connexion chiffrée (HTTPS), données chez un hébergeur technique.',
-  'Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LA CENTRAL. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).',
+  'Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans l’app ; pour toute autre demande, écrivez à LA CENTRAL. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).',
 ];
 const SHEETS = {
   rgpd() {
@@ -1716,7 +1716,7 @@ const SHEETS = {
         <dl class="kv small" style="margin-bottom:14px">${kv('Téléphone', o.phone)}${kv('Email', o.email)}${kv('Résidences', String(o.residences))}${kv('Demandes en cours', String(o.open))}</dl>
         <div class="section-label" style="margin-top:0">Utilisateurs</div>
         ${list.length ? html`<div class="list">${list.map(userRow)}</div>` : html`<p class="muted small">Aucun utilisateur. Invitez le responsable de la gérance.</p>`}
-        ${list.some((u) => u.role === 'gerance_admin' && u.active) ? html`<p class="tiny muted" style="margin:10px 0 0">Les collaborateurs sont ajoutés par le responsable dans son portail.</p>` : html`<button class="btn primary block" style="margin-top:12px" data-action="new-user" data-org="${id}" data-role="gerance_admin">${icon('plus')} Inviter le responsable</button>`}
+        ${list.some((u) => u.role === 'gerance_admin' && u.active) ? html`<p class="tiny muted" style="margin:10px 0 0">Les collaborateurs sont ajoutés par le responsable dans son app Gérances.</p>` : html`<button class="btn primary block" style="margin-top:12px" data-action="new-user" data-org="${id}" data-role="gerance_admin">${icon('plus')} Inviter le responsable</button>`}
         <div class="actions" style="margin-top:12px">
           <button class="btn" data-action="org-residences" data-id="${id}">${icon('building')} Résidences</button>
           <button class="btn" data-action="org-tickets" data-id="${id}">${icon('wrench')} Demandes</button>
@@ -1733,7 +1733,7 @@ const SHEETS = {
       body: html`<form id="f" data-form="org" class="fields"><input type="hidden" name="id" value="${id || ''}">
         ${field('Nom', 'name', o.name, { full: true, required: true, placeholder: 'ex. Gérance Dupont SA' })}
         ${field('Téléphone', 'phone', o.phone, { type: 'tel' })}${field('Email', 'email', o.email, { type: 'email' })}${field('RCS', 'rcs', o.rcs, { placeholder: 'B123456' })}
-        <p class="tiny muted full" style="margin:0">Adresse, TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).</p></form>`,
+        <p class="tiny muted full" style="margin:0">Adresse, TVA, banque et logo : la gérance les remplit elle-même dans son app Gérances (Ma société).</p></form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
@@ -1977,7 +1977,7 @@ const ACTIONS = {
     if (state.sheet) closeSheet();
     renderShell();
     await go('home', true);
-    toast(d.id === 'admin' ? 'Vous voyez maintenant le portail comme l’équipe LA CENTRAL' : 'Vous voyez maintenant le portail comme une gérance');
+    toast(d.id === 'admin' ? 'Vous voyez maintenant l’app Gérances comme l’équipe LA CENTRAL' : 'Vous voyez maintenant l’app Gérances comme une gérance');
   },
   'guide-hide': () => { try { localStorage.setItem('ptlGuideHidden', '1'); } catch {} state.guideHidden = true; renderView(); },
   'open-ticket': (d) => openTicket(d.id),
@@ -2132,7 +2132,7 @@ const ACTIONS = {
     toast(active ? 'Accès réactivé' : 'Accès désactivé');
   },
   'change-password': () => openSheet('password-form'),
-  'install-anim': () => import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'Portail Gérances', icon: '/portail/icons/ptl-192.png', lang: LANG })),
+  'install-anim': () => import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'Gérances', icon: '/portail/icons/ptl-192.png', lang: LANG })),
   'org-logo-del': () => orgLogoSave('').catch((e) => toast(e.message, { bad: true })),
   'org-edit': async () => { if (!state.myOrg) { try { state.myOrg = ((await api('orgs')).orgs || [])[0] || null; } catch { /* hors ligne */ } } openSheet('myorg'); },
   copy: async (d) => { try { await navigator.clipboard.writeText(d.text); toast('Copié'); } catch { toast('Copie impossible', { bad: true }); } },

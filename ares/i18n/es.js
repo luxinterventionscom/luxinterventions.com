@@ -8221,8 +8221,8 @@ export default [
 "Visible para"
 ],
 [
-"Portail gérance",
-"Portal de gestión"
+"Gérances",
+"Gérances"
 ],
 [
 "Immeuble (locataires et équipe)",
@@ -8537,7 +8537,7 @@ export default [
 "Todavía ninguna administración."
 ],
 [
-"Aucune résidence. La gérance peut aussi les ajouter elle-même dans son portail.",
+"Aucune résidence. La gérance peut aussi les ajouter elle-même dans son app Gérances.",
 "Ninguna residencia. La administración también puede añadirlas en su portal."
 ],
 [
@@ -8553,23 +8553,23 @@ export default [
 "Colaborador (hace y sigue las solicitudes)"
 ],
 [
-"Connecter au portail",
+"Connecter l’app Gérances",
 "Conectar al portal"
 ],
 [
-"Connectez une seule fois cette app au portail avec votre",
+"Connectez une seule fois cette app à l’app Gérances avec votre",
 "Conecta esta app al portal una sola vez con tu"
 ],
 [
-"compte LA CENTRAL du portail",
+"compte LA CENTRAL de l’app Gérances",
 "cuenta LA CENTRAL del portal"
 ],
 [
-"Connecté au Portail gérance",
-"Conectado al Portal de administración"
+"Connecté au Gérances",
+"Conectado al Gérances"
 ],
 [
-"Connecté au portail :",
+"Connecté à l’app Gérances :",
 "Conectado al portal:"
 ],
 [
@@ -8597,7 +8597,7 @@ export default [
 "Desconectar"
 ],
 [
-"Déconnecter l’app du portail ?",
+"Déconnecter l’app Gérances ?",
 "¿Desconectar la app del portal?"
 ],
 [
@@ -8637,8 +8637,8 @@ export default [
 "Administraciones"
 ],
 [
-"Gérances — Portail gérance",
-"Administraciones — Portal de administración"
+"Gérances — Gérances",
+"Administraciones — Gérances"
 ],
 [
 "Gérances externes : accès, résidences, demandes d’intervention",
@@ -8649,8 +8649,8 @@ export default [
 "Aquí creas las administraciones, invitas a sus responsables, gestionas sus residencias y puedes eliminarlas — como en la app del equipo."
 ],
 [
-"Invitation au Portail gérance",
-"Invitación al Portal de administración"
+"Invitation au Gérances",
+"Invitación al Gérances"
 ],
 [
 "La personne est déconnectée tout de suite. Vous pourrez réactiver l’accès.",
@@ -8661,8 +8661,8 @@ export default [
 "Idioma del mensaje de invitación."
 ],
 [
-"Le Portail gérance, piloté d’ici",
-"El Portal de administración, gestionado desde aquí"
+"Le Gérances, piloté d’ici",
+"El Gérances, gestionado desde aquí"
 ],
 [
 "Les",
@@ -8677,7 +8677,7 @@ export default [
 "son las empresas externas que te confían sus reparaciones. Usan su app, el"
 ],
 [
-"Les gérances restent dans le portail ; vous pourrez vous reconnecter.",
+"Les gérances restent dans l’app Gérances ; vous pourrez vous reconnecter.",
 "Las administraciones se quedan en el portal; podrás volver a conectarte."
 ],
 [
@@ -8693,7 +8693,7 @@ export default [
 "Editar la administración"
 ],
 [
-"Mot de passe du portail",
+"Mot de passe de l’app Gérances",
 "Contraseña del portal"
 ],
 [
@@ -8713,7 +8713,7 @@ export default [
 "Nueva administración"
 ],
 [
-"Ouvrir le portail",
+"Ouvrir l’app Gérances",
 "Abrir el portal"
 ],
 [
@@ -8721,7 +8721,7 @@ export default [
 "Sin conexión a internet"
 ],
 [
-"Pas encore de compte ? Ouvrez le portail : la « Première configuration » crée le compte LA CENTRAL.",
+"Pas encore de compte ? Ouvrez l’app Gérances : la « Première configuration » crée le compte LA CENTRAL.",
 "¿Aún sin cuenta? Abre el portal: la «Primera configuración» crea la cuenta LA CENTRAL."
 ],
 [
@@ -8729,16 +8729,16 @@ export default [
 "Nadie tiene acceso todavía. Añade al responsable de la administración: recibe un enlace personal y elige su contraseña."
 ],
 [
-"Portail gérance connecté",
-"Portal de administración conectado"
+"Gérances connecté",
+"Gérances conectado"
 ],
 [
-"Portail gérance déconnecté",
-"Portal de administración desconectado"
+"Gérances déconnecté",
+"Gérances desconectado"
 ],
 [
-"Portail gérance : session expirée",
-"Portal de administración: sesión caducada"
+"Gérances : session expirée",
+"Gérances: sesión caducada"
 ],
 [
 "Responsable (peut inviter des collègues)",
@@ -8773,7 +8773,7 @@ export default [
 "Sus accesos, residencias, solicitudes y sus fotos se eliminan del portal. Irreversible. Escribe el nombre de la administración para confirmar."
 ],
 [
-"Session du portail expirée : reconnectez-vous.",
+"Session de l’app Gérances expirée : reconnectez-vous.",
 "Sesión del portal caducada: vuelve a conectarte."
 ],
 [
@@ -9169,8 +9169,8 @@ export default [
 "Mensaje enviado a la administración"
 ],
 [
-"Portail gérance mis à jour : {0}",
-"Portal de administraciones actualizado: {0}"
+"App Gérances mise à jour : {0}",
+"Gérances actualizado: {0}"
 ],
 [
 "Demandée",
@@ -9213,7 +9213,7 @@ export default [
 "Solicitud"
 ],
 [
-"Ouvrir dans le portail",
+"Ouvrir dans l’app Gérances",
 "Abrir en el portal"
 ],
 [
@@ -9429,11 +9429,11 @@ export default [
 "Compruebe (fotos después, trabajo hecho) y elija 🟢 Terminada para cerrar la obra."
 ],
 [
-"🔑 Nouveau mot de passe du portail",
+"🔑 Nouveau mot de passe de l’app Gérances",
 "🔑 Nueva contraseña del portal"
 ],
 [
-"Choisir un nouveau mot de passe du portail ?",
+"Choisir un nouveau mot de passe de l’app Gérances ?",
 "¿Elegir una nueva contraseña del portal?"
 ],
 [
@@ -9905,7 +9905,7 @@ export default [
 "Cargando solicitudes…"
 ],
 [
-"Portail gérance non connecté (menu Gérances).",
+"App Gérances non connectée (menu Gérances).",
 "Portal de gérance no conectado (menú Gérances)."
 ],
 [
@@ -10401,7 +10401,7 @@ export default [
 "⚪ Desactivado"
 ],
 [
-"Offres d’abonnement dans le portail des gérances",
+"Offres d’abonnement dans le app Gérances",
 "Ofertas de suscripción en el portal de las administradoras"
 ],
 [
@@ -10429,7 +10429,7 @@ export default [
 "(opcional)"
 ],
 [
-"La gérance peut aussi l’ajouter elle-même dans son portail (Ma société).",
+"La gérance peut aussi l’ajouter elle-même dans son app Gérances (Ma société).",
 "La administradora también puede añadirlo en su portal (Mi empresa)."
 ],
 [
@@ -10673,8 +10673,8 @@ export default [
 "Foto del presupuesto quitada"
 ],
 [
-"Portail gérance non connecté",
-"Portal de administradoras no conectado"
+"App Gérances non connectée",
+"Gérances no conectado"
 ],
 [
 "RCS obligatoire pour une société (ex. B123456)",
@@ -10701,7 +10701,7 @@ export default [
 "Sin anticipo"
 ],
 [
-"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier). Ensuite les prix (👔 directeur), la signature du client et l’envoi (PDF, WhatsApp, email ou portail de la gérance).",
+"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier). Ensuite les prix (👔 directeur), la signature du client et l’envoi (PDF, WhatsApp, email ou app de la gérance).",
 "En el lugar: fotos, informe y operarios previstos (🦺 jefe de obra). Luego los precios (👔 director), la firma del cliente y el envío (PDF, WhatsApp, email o portal de la administradora)."
 ],
 [
@@ -10789,7 +10789,7 @@ export default [
 "· inicio de los trabajos antes del fin del plazo de desistimiento solicitado"
 ],
 [
-"· 📤 dans son portail",
+"· 📤 dans son app Gérances",
 "· 📤 en su portal"
 ],
 [
@@ -10861,7 +10861,7 @@ export default [
 "👤 Particular"
 ],
 [
-"💼 Gérance du portail",
+"💼 Gérance (app Gérances)",
 "💼 Administradora del portal"
 ],
 [
@@ -10893,7 +10893,7 @@ export default [
 "📤 Presupuesto {0} enviado al portal de {1}"
 ],
 [
-"📤 {0} au portail de la gérance",
+"📤 {0} au app de la gérance",
 "📤 {0} al portal de la administradora"
 ],
 [
@@ -10997,7 +10997,7 @@ export default [
 "Exportar CSV de presupuestos {0}"
 ],
 [
-"Temps de réponse : du premier envoi (PDF, WhatsApp, email ou portail) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.",
+"Temps de réponse : du premier envoi (PDF, WhatsApp, email ou app Gérances) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.",
 "Tiempo de respuesta: del primer envío (PDF, WhatsApp, email o portal) a la firma, a «Accepté / Refusé» o a la respuesta de la administradora."
 ],
 [
@@ -11129,7 +11129,7 @@ export default [
 "Enlace imposible:"
 ],
 [
-"Connectez d’abord le portail gérance (Gérances) : il héberge les liens des devis",
+"Connectez d’abord le app Gérances (Gérances) : il héberge les liens des devis",
 "Conecta primero el portal de administradoras (Gérances): aloja los enlaces de presupuestos"
 ],
 [
@@ -12377,7 +12377,7 @@ export default [
 "Borrador de factura"
 ],
 [
-"Facture : intervention liée à une gérance et portail connecté nécessaires",
+"Facture : intervention liée à une gérance et app Gérances connectée nécessaires",
 "Factura: requiere una intervención vinculada a una administradora y el portal conectado"
 ],
 [
@@ -12497,7 +12497,7 @@ export default [
 "¿Emitir la factura {0}?"
 ],
 [
-"{0} · {1} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son portail.",
+"{0} · {1} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son app Gérances.",
 "{0} · {1} IVA incl. El número ya no puede cambiar; la administradora la recibe en su portal."
 ],
 [
@@ -12505,7 +12505,7 @@ export default [
 "· emitida por {0} ({1}). No se envía nada antes de «Émettre»."
 ],
 [
-"La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).",
+"La gérance la voit et la télécharge dans son app Gérances (Comptabilité et fiche de la demande).",
 "La administradora la ve y la descarga en su portal (Contabilidad y ficha de la solicitud)."
 ],
 [
@@ -12797,11 +12797,11 @@ export default [
 "Ocultas: las administradoras no ven ninguna oferta de suscripción."
 ],
 [
-"⚪ Offres masquées dans le portail des gérances",
+"⚪ Offres masquées dans le app Gérances",
 "⚪ Ofertas ocultas en el portal de administradoras"
 ],
 [
-"🟢 Offres visibles dans le portail des gérances",
+"🟢 Offres visibles dans le app Gérances",
 "🟢 Ofertas visibles en el portal de administradoras"
 ],
 [
@@ -12813,7 +12813,7 @@ export default [
 "Ofertas de suscripción desactivadas"
 ],
 [
-"Quand une gérance touche « Je suis intéressé » dans son portail, vous recevez une notification. Touchez une gérance pour choisir sa formule et noter ses paiements.",
+"Quand une gérance touche « Je suis intéressé » dans son app Gérances, vous recevez une notification. Touchez une gérance pour choisir sa formule et noter ses paiements.",
 "Cuando una administradora toca «Je suis intéressé» en su portal, recibe una notificación. Toque una administradora para elegir su fórmula y anotar sus pagos."
 ],
 [
@@ -12833,7 +12833,7 @@ export default [
 "Responsable y colaboradores ({0})"
 ],
 [
-"Les collaborateurs sont ajoutés par le responsable dans son portail (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.",
+"Les collaborateurs sont ajoutés par le responsable dans son app Gérances (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.",
 "Los colaboradores los añade el responsable en su portal (Équipe). 🔑 Nouvel accès = nuevo enlace si alguien olvidó su contraseña."
 ],
 [
@@ -12865,7 +12865,7 @@ export default [
 "⚠️ invitación caducada: cree un nuevo enlace"
 ],
 [
-"Lien d’invitation au portail",
+"Lien d’invitation à l’app Gérances",
 "Enlace de invitación al portal"
 ],
 [
@@ -12897,19 +12897,19 @@ export default [
 "(vista previa, otro idioma…): el ya enviado sigue siendo válido."
 ],
 [
-"(la gérance peut aussi les compléter dans son portail)",
+"(la gérance peut aussi les compléter dans son app Gérances)",
 "(la administradora también puede completarlos en su portal)"
 ],
 [
-"Logo ajouté par la gérance dans son portail (Ma société).",
+"Logo ajouté par la gérance dans son app Gérances (Ma société).",
 "Logotipo añadido por la administradora en su portal (Ma société)."
 ],
 [
-"Connectez d’abord le Portail gérance (menu Gérances).",
+"Connectez d’abord l’app Gérances (menu Gérances).",
 "Conecte primero el portal de administradoras (menú Gérances)."
 ],
 [
-"Portail gérance mis à jour :",
+"App Gérances mise à jour :",
 "Portal de la administradora actualizado:"
 ],
 [
@@ -13533,7 +13533,7 @@ export default [
 "ej."
 ],
 [
-"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou portail de la gérance) et la signature du client.",
+"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou app de la gérance) et la signature du client.",
 "En el lugar: fotos, informe y trabajadores previstos (🦺 jefe de obra, aquí o en su app). Luego los precios (👔 director) y «✅ Presupuesto terminado»; solo entonces el envío (PDF, WhatsApp, email o portal de la administración) y la firma del cliente."
 ],
 [
@@ -13561,7 +13561,7 @@ export default [
 "«✅ Presupuesto terminado»"
 ],
 [
-": alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, portail) et la signature « Bon pour accord ».",
+": alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, app Gérances) et la signature « Bon pour accord ».",
 ": solo entonces aparecen el envío al cliente (PDF, WhatsApp, email, enlace, portal) y la firma «Bon pour accord»."
 ],
 [
@@ -13633,11 +13633,11 @@ export default [
 "¿Presupuesto {0} terminado?"
 ],
 [
-"⚠️ {0} ligne(s) sans prix. Total {1} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.",
+"⚠️ {0} ligne(s) sans prix. Total {1} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son app Gérances) et le faire signer. Le chef de chantier ne peut plus le modifier.",
 "⚠️ {0} línea(s) sin precio. Total {1} IVA incl. Después podrás enviarlo al cliente (o a su portal) y hacerlo firmar. El jefe de obra ya no puede modificarlo."
 ],
 [
-"Total {0} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.",
+"Total {0} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son app Gérances) et le faire signer. Le chef de chantier ne peut plus le modifier.",
 "Total {0} IVA incl. Después podrás enviarlo al cliente (o a su portal) y hacerlo firmar. El jefe de obra ya no puede modificarlo."
 ],
 [
@@ -14357,7 +14357,7 @@ export default [
 "Colores de nuestras actividades"
 ],
 [
-"Les mêmes couleurs dans toutes les apps (locataires, équipe, portail gérance) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.",
+"Les mêmes couleurs dans toutes les apps (locataires, équipe, app Gérances) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.",
 "Los mismos colores en todas las apps (inquilinos, equipo, portal de administradoras): en el ordenador, pase el ratón sobre los puntos de color bajo «Ajustes»; en las apps, toque las pequeñas líneas de color abajo."
 ],
 [
@@ -14365,7 +14365,7 @@ export default [
 "Intervenciones y mantenimiento: solicitudes, trabajos, equipo"
 ],
 [
-"Gérances : portail et demandes des gérances",
+"Gérances : app et demandes des gérances",
 "Administradoras: portal y sus solicitudes"
 ],
 [
@@ -14841,7 +14841,7 @@ export default [
 "Aún no rellenado por la administración"
 ],
 [
-"(dans son portail → Ma société)",
+"(dans son app Gérances → Ma société)",
 "(en su portal → Mi empresa)"
 ],
 [
@@ -14849,7 +14849,7 @@ export default [
 "(recibe el enlace de invitación)"
 ],
 [
-"Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).",
+"Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son app Gérances (Ma société).",
 "Dirección, n.º de IVA, banco y logo: la administración los rellena ella misma en su portal (Mi empresa)."
 ],
 [
@@ -14869,7 +14869,7 @@ export default [
 "Crear el enlace del responsable"
 ],
 [
-"). Adresse, TVA et banque de la gérance : remplies par elle dans son portail.",
+"). Adresse, TVA et banque de la gérance : remplies par elle dans son app Gérances.",
 "). Dirección, IVA y banco de la administración: los rellena ella en su portal."
 ],
 [
@@ -14957,7 +14957,7 @@ export default [
 "⭐ Responsable de la central"
 ],
 [
-"Affiché aux gérances dans leur portail (« Votre contact LA CENTRAL ») et sur vos factures.",
+"Affiché aux gérances dans leur app Gérances (« Votre contact LA CENTRAL ») et sur vos factures.",
 "Se muestra a las administraciones en su portal («Su contacto LA CENTRAL») y en sus facturas."
 ],
 [

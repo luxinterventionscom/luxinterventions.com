@@ -8033,7 +8033,7 @@ export default [
 "Visible to"
 ],
 [
-"Portail gérance",
+"Gérances",
 "Management portal"
 ],
 [
@@ -8357,7 +8357,7 @@ export default [
 "No management company yet."
 ],
 [
-"Aucune résidence. La gérance peut aussi les ajouter elle-même dans son portail.",
+"Aucune résidence. La gérance peut aussi les ajouter elle-même dans son app Gérances.",
 "No residence. The management company can also add them in its portal."
 ],
 [
@@ -8373,23 +8373,23 @@ export default [
 "Staff member (makes and follows requests)"
 ],
 [
-"Connecter au portail",
+"Connecter l’app Gérances",
 "Connect to the portal"
 ],
 [
-"Connectez une seule fois cette app au portail avec votre",
+"Connectez une seule fois cette app à l’app Gérances avec votre",
 "Connect this app to the portal once with your"
 ],
 [
-"compte LA CENTRAL du portail",
+"compte LA CENTRAL de l’app Gérances",
 "LA CENTRAL portal account"
 ],
 [
-"Connecté au Portail gérance",
-"Connected to the management portal"
+"Connecté au Gérances",
+"Connected to the Gérances app"
 ],
 [
-"Connecté au portail :",
+"Connecté à l’app Gérances :",
 "Connected to the portal:"
 ],
 [
@@ -8417,7 +8417,7 @@ export default [
 "Disconnect"
 ],
 [
-"Déconnecter l’app du portail ?",
+"Déconnecter l’app Gérances ?",
 "Disconnect the app from the portal?"
 ],
 [
@@ -8457,8 +8457,8 @@ export default [
 "Management companies"
 ],
 [
-"Gérances — Portail gérance",
-"Management companies — management portal"
+"Gérances — Gérances",
+"Management companies — Gérances app"
 ],
 [
 "Gérances externes : accès, résidences, demandes d’intervention",
@@ -8469,8 +8469,8 @@ export default [
 "Here you create the management companies, invite their managers, handle their residences and can delete them — like the team app."
 ],
 [
-"Invitation au Portail gérance",
-"Invitation to the management portal"
+"Invitation au Gérances",
+"Invitation to the Gérances app"
 ],
 [
 "La personne est déconnectée tout de suite. Vous pourrez réactiver l’accès.",
@@ -8481,8 +8481,8 @@ export default [
 "Language of the invitation message."
 ],
 [
-"Le Portail gérance, piloté d’ici",
-"The management portal, run from here"
+"Le Gérances, piloté d’ici",
+"The Gérances app, run from here"
 ],
 [
 "Les",
@@ -8497,7 +8497,7 @@ export default [
 "are the external companies that entrust you with their repairs. They use their app, the"
 ],
 [
-"Les gérances restent dans le portail ; vous pourrez vous reconnecter.",
+"Les gérances restent dans l’app Gérances ; vous pourrez vous reconnecter.",
 "The management companies stay in the portal; you can reconnect."
 ],
 [
@@ -8513,7 +8513,7 @@ export default [
 "Edit the management company"
 ],
 [
-"Mot de passe du portail",
+"Mot de passe de l’app Gérances",
 "Portal password"
 ],
 [
@@ -8533,7 +8533,7 @@ export default [
 "New management company"
 ],
 [
-"Ouvrir le portail",
+"Ouvrir l’app Gérances",
 "Open the portal"
 ],
 [
@@ -8541,7 +8541,7 @@ export default [
 "No internet connection"
 ],
 [
-"Pas encore de compte ? Ouvrez le portail : la « Première configuration » crée le compte LA CENTRAL.",
+"Pas encore de compte ? Ouvrez l’app Gérances : la « Première configuration » crée le compte LA CENTRAL.",
 "No account yet? Open the portal: the “First setup” creates the LA CENTRAL account."
 ],
 [
@@ -8549,15 +8549,15 @@ export default [
 "Nobody has access yet. Add the company's manager: they get a personal link and choose a password."
 ],
 [
-"Portail gérance connecté",
+"Gérances connecté",
 "Management portal connected"
 ],
 [
-"Portail gérance déconnecté",
+"Gérances déconnecté",
 "Management portal disconnected"
 ],
 [
-"Portail gérance : session expirée",
+"Gérances : session expirée",
 "Management portal: session expired"
 ],
 [
@@ -8597,7 +8597,7 @@ export default [
 "Its access, residences, requests and their photos are deleted from the portal. Irreversible. Type the company name to confirm."
 ],
 [
-"Session du portail expirée : reconnectez-vous.",
+"Session de l’app Gérances expirée : reconnectez-vous.",
 "Portal session expired: reconnect."
 ],
 [
@@ -8977,7 +8977,7 @@ export default [
 "Message sent to the agency"
 ],
 [
-"Portail gérance mis à jour : {0}",
+"App Gérances mise à jour : {0}",
 "Agency portal updated: {0}"
 ],
 [
@@ -9021,7 +9021,7 @@ export default [
 "Request"
 ],
 [
-"Ouvrir dans le portail",
+"Ouvrir dans l’app Gérances",
 "Open in the portal"
 ],
 [
@@ -9237,11 +9237,11 @@ export default [
 "Check (photos after, work done), then choose 🟢 Done to close the job."
 ],
 [
-"🔑 Nouveau mot de passe du portail",
+"🔑 Nouveau mot de passe de l’app Gérances",
 "🔑 New portal password"
 ],
 [
-"Choisir un nouveau mot de passe du portail ?",
+"Choisir un nouveau mot de passe de l’app Gérances ?",
 "Choose a new portal password?"
 ],
 [
@@ -9701,7 +9701,7 @@ export default [
 "Loading requests…"
 ],
 [
-"Portail gérance non connecté (menu Gérances).",
+"App Gérances non connectée (menu Gérances).",
 "Management portal not connected (Gérances menu)."
 ],
 [
@@ -10185,7 +10185,7 @@ export default [
 "⚪ Off"
 ],
 [
-"Offres d’abonnement dans le portail des gérances",
+"Offres d’abonnement dans le app Gérances",
 "Subscription offers in the agencies’ portal"
 ],
 [
@@ -10213,7 +10213,7 @@ export default [
 "(optional)"
 ],
 [
-"La gérance peut aussi l’ajouter elle-même dans son portail (Ma société).",
+"La gérance peut aussi l’ajouter elle-même dans son app Gérances (Ma société).",
 "The agency can also add it itself in its portal (My company)."
 ],
 [
@@ -10457,7 +10457,7 @@ export default [
 "Quote photo removed"
 ],
 [
-"Portail gérance non connecté",
+"App Gérances non connectée",
 "Agency portal not connected"
 ],
 [
@@ -10485,8 +10485,8 @@ export default [
 "No deposit"
 ],
 [
-"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier). Ensuite les prix (👔 directeur), la signature du client et l’envoi (PDF, WhatsApp, email ou portail de la gérance).",
-"On site: photos, report and planned workers (🦺 site manager). Then prices (👔 director), the client’s signature and sending (PDF, WhatsApp, email or the agency portal)."
+"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier). Ensuite les prix (👔 directeur), la signature du client et l’envoi (PDF, WhatsApp, email ou app de la gérance).",
+"On site: photos, report and planned workers (🦺 site manager). Then prices (👔 director), the client’s signature and sending (PDF, WhatsApp, email or the Gérances app)."
 ],
 [
 "Supprimer le devis {0} ?",
@@ -10569,7 +10569,7 @@ export default [
 "· work start before the end of the withdrawal period requested"
 ],
 [
-"· 📤 dans son portail",
+"· 📤 dans son app Gérances",
 "· 📤 in its portal"
 ],
 [
@@ -10641,7 +10641,7 @@ export default [
 "👤 Private client"
 ],
 [
-"💼 Gérance du portail",
+"💼 Gérance (app Gérances)",
 "💼 Portal agency"
 ],
 [
@@ -10673,8 +10673,8 @@ export default [
 "📤 Quote {0} sent to {1}’s portal"
 ],
 [
-"📤 {0} au portail de la gérance",
-"📤 {0} to the agency portal"
+"📤 {0} au app de la gérance",
+"📤 {0} to the Gérances app"
 ],
 [
 "📷 Photos (2 à 20)",
@@ -10777,7 +10777,7 @@ export default [
 "CSV export of quotes {0}"
 ],
 [
-"Temps de réponse : du premier envoi (PDF, WhatsApp, email ou portail) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.",
+"Temps de réponse : du premier envoi (PDF, WhatsApp, email ou app Gérances) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.",
 "Response time: from the first sending (PDF, WhatsApp, email or portal) to the signature, “Accepté / Refusé” or the agency’s answer."
 ],
 [
@@ -10909,8 +10909,8 @@ export default [
 "Link failed:"
 ],
 [
-"Connectez d’abord le portail gérance (Gérances) : il héberge les liens des devis",
-"Connect the agency portal first (Gérances): it hosts the quote links"
+"Connectez d’abord le app Gérances (Gérances) : il héberge les liens des devis",
+"Connect the Gérances app first (Gérances): it hosts the quote links"
 ],
 [
 "🏗️ Installation de chantier",
@@ -12153,7 +12153,7 @@ export default [
 "Draft invoice"
 ],
 [
-"Facture : intervention liée à une gérance et portail connecté nécessaires",
+"Facture : intervention liée à une gérance et app Gérances connectée nécessaires",
 "Invoice: needs a job linked to an agency and the portal connected"
 ],
 [
@@ -12273,7 +12273,7 @@ export default [
 "Issue invoice {0}?"
 ],
 [
-"{0} · {1} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son portail.",
+"{0} · {1} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son app Gérances.",
 "{0} · {1} incl. VAT. The number can no longer change; the agency receives it in its portal."
 ],
 [
@@ -12281,7 +12281,7 @@ export default [
 "· issued by {0} ({1}). Nothing is sent before “Émettre”."
 ],
 [
-"La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).",
+"La gérance la voit et la télécharge dans son app Gérances (Comptabilité et fiche de la demande).",
 "The agency sees and downloads it in its portal (Accounting and request sheet)."
 ],
 [
@@ -12565,12 +12565,12 @@ export default [
 "Hidden: agencies see no subscription offer."
 ],
 [
-"⚪ Offres masquées dans le portail des gérances",
-"⚪ Offers hidden in the agency portal"
+"⚪ Offres masquées dans le app Gérances",
+"⚪ Offers hidden in the Gérances app"
 ],
 [
-"🟢 Offres visibles dans le portail des gérances",
-"🟢 Offers visible in the agency portal"
+"🟢 Offres visibles dans le app Gérances",
+"🟢 Offers visible in the Gérances app"
 ],
 [
 "Offres d’abonnement activées",
@@ -12581,7 +12581,7 @@ export default [
 "Subscription offers turned off"
 ],
 [
-"Quand une gérance touche « Je suis intéressé » dans son portail, vous recevez une notification. Touchez une gérance pour choisir sa formule et noter ses paiements.",
+"Quand une gérance touche « Je suis intéressé » dans son app Gérances, vous recevez une notification. Touchez une gérance pour choisir sa formule et noter ses paiements.",
 "When an agency taps “Je suis intéressé” in its portal, you get a notification. Tap an agency to choose its plan and record its payments."
 ],
 [
@@ -12601,7 +12601,7 @@ export default [
 "Manager and staff ({0})"
 ],
 [
-"Les collaborateurs sont ajoutés par le responsable dans son portail (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.",
+"Les collaborateurs sont ajoutés par le responsable dans son app Gérances (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.",
 "Staff are added by the manager in their portal (Équipe). 🔑 Nouvel accès = new link if someone forgot their password."
 ],
 [
@@ -12633,7 +12633,7 @@ export default [
 "⚠️ invitation expired: create a new link"
 ],
 [
-"Lien d’invitation au portail",
+"Lien d’invitation à l’app Gérances",
 "Portal invitation link"
 ],
 [
@@ -12665,19 +12665,19 @@ export default [
 "(preview, other language…): the one already sent stays valid."
 ],
 [
-"(la gérance peut aussi les compléter dans son portail)",
+"(la gérance peut aussi les compléter dans son app Gérances)",
 "(the agency can also complete them in its portal)"
 ],
 [
-"Logo ajouté par la gérance dans son portail (Ma société).",
+"Logo ajouté par la gérance dans son app Gérances (Ma société).",
 "Logo added by the agency in its portal (Ma société)."
 ],
 [
-"Connectez d’abord le Portail gérance (menu Gérances).",
-"Connect the agency portal first (Gérances menu)."
+"Connectez d’abord l’app Gérances (menu Gérances).",
+"Connect the Gérances app first (Gérances menu)."
 ],
 [
-"Portail gérance mis à jour :",
+"App Gérances mise à jour :",
 "Agency portal updated:"
 ],
 [
@@ -13289,7 +13289,7 @@ export default [
 "e.g."
 ],
 [
-"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou portail de la gérance) et la signature du client.",
+"Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou app de la gérance) et la signature du client.",
 "On site: photos, report and planned workers (🦺 site manager, here or in their app). Then the prices (👔 director) and “✅ Quote finished”; only then sending (PDF, WhatsApp, email or the property manager’s portal) and the client’s signature."
 ],
 [
@@ -13317,7 +13317,7 @@ export default [
 "“✅ Quote finished”"
 ],
 [
-": alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, portail) et la signature « Bon pour accord ».",
+": alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, app Gérances) et la signature « Bon pour accord ».",
 ": only then do sending to the client (PDF, WhatsApp, email, link, portal) and the “Bon pour accord” signature appear."
 ],
 [
@@ -13389,11 +13389,11 @@ export default [
 "Quote {0} finished?"
 ],
 [
-"⚠️ {0} ligne(s) sans prix. Total {1} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.",
+"⚠️ {0} ligne(s) sans prix. Total {1} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son app Gérances) et le faire signer. Le chef de chantier ne peut plus le modifier.",
 "⚠️ {0} line(s) without a price. Total {1} incl. VAT. Then you can send it to the client (or to their portal) and have it signed. The site manager can no longer change it."
 ],
 [
-"Total {0} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.",
+"Total {0} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son app Gérances) et le faire signer. Le chef de chantier ne peut plus le modifier.",
 "Total {0} incl. VAT. Then you can send it to the client (or to their portal) and have it signed. The site manager can no longer change it."
 ],
 [
@@ -14097,7 +14097,7 @@ export default [
 "Colours of our activities"
 ],
 [
-"Les mêmes couleurs dans toutes les apps (locataires, équipe, portail gérance) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.",
+"Les mêmes couleurs dans toutes les apps (locataires, équipe, app Gérances) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.",
 "The same colours in every app (tenants, team, managers’ portal): on a computer, hover over the coloured dots under “Settings”; in the apps, tap the small coloured lines at the bottom."
 ],
 [
@@ -14105,7 +14105,7 @@ export default [
 "Jobs and maintenance: requests, works, team"
 ],
 [
-"Gérances : portail et demandes des gérances",
+"Gérances : app et demandes des gérances",
 "Property managers: portal and their requests"
 ],
 [
@@ -14577,7 +14577,7 @@ export default [
 "Not yet filled in by the property manager"
 ],
 [
-"(dans son portail → Ma société)",
+"(dans son app Gérances → Ma société)",
 "(in its portal → My company)"
 ],
 [
@@ -14585,7 +14585,7 @@ export default [
 "(receives the invitation link)"
 ],
 [
-"Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).",
+"Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son app Gérances (Ma société).",
 "Address, VAT no., bank and logo: the property manager fills them in itself in its portal (My company)."
 ],
 [
@@ -14605,7 +14605,7 @@ export default [
 "Create the manager’s link"
 ],
 [
-"). Adresse, TVA et banque de la gérance : remplies par elle dans son portail.",
+"). Adresse, TVA et banque de la gérance : remplies par elle dans son app Gérances.",
 "). Address, VAT and bank of the property manager: filled in by them in their portal."
 ],
 [
@@ -14693,7 +14693,7 @@ export default [
 "⭐ Central manager"
 ],
 [
-"Affiché aux gérances dans leur portail (« Votre contact LA CENTRAL ») et sur vos factures.",
+"Affiché aux gérances dans leur app Gérances (« Votre contact LA CENTRAL ») et sur vos factures.",
 "Shown to property managers in their portal (“Your LA CENTRAL contact”) and on your invoices."
 ],
 [

@@ -1,4 +1,4 @@
-// Traduction du portail gérance (source : français). Généré — une ligne par phrase.
+// Traduction du app Gérances (source : français). Généré — une ligne par phrase.
 export default [
 [
 "(carré avec flèche ↑) →",
@@ -917,7 +917,7 @@ export default [
 "Start"
 ],
 [
-"Découvrir le portail en mode démo",
+"Découvrir l’app Gérances en mode démo",
 "Das Portal im Demo-Modus entdecken"
 ],
 [
@@ -1393,7 +1393,7 @@ export default [
 "Der Link wurde schon benutzt, ist älter als 14 Tage oder Ihnen wurde ein neuerer geschickt (nur der letzte funktioniert)."
 ],
 [
-"Le logo est ajouté par la gérance dans son portail",
+"Le logo est ajouté par la gérance dans son app Gérances",
 "Das Logo fügt die Verwaltung in ihrem Portal hinzu"
 ],
 [
@@ -1493,8 +1493,8 @@ export default [
 "LA CENTRAL · Technische Einsätze 7/7"
 ],
 [
-"LA CENTRAL · Portail gérance v{0}",
-"LA CENTRAL · Verwaltungsportal v{0}"
+"LA CENTRAL · Gérances v{0}",
+"LA CENTRAL · Gérances-App v{0}"
 ],
 [
 "L’heure de fin doit être après l’heure de début.",
@@ -1813,7 +1813,7 @@ export default [
 "Wo die Schlüssel sind (Raum, Schlüsselkasten…)"
 ],
 [
-"PORTAIL GÉRANCES",
+"GÉRANCES",
 "VERWALTUNGSPORTAL"
 ],
 [
@@ -2013,20 +2013,20 @@ export default [
 "Portal"
 ],
 [
-"Portail Gérance",
-"Verwaltungsportal"
+"Gérances",
+"Gérances-App"
 ],
 [
-"Portail Gérance — LA CENTRAL",
-"Verwaltungsportal — LA CENTRAL"
+"Gérances — LA CENTRAL",
+"Gérances-App — LA CENTRAL"
 ],
 [
-"Portail Gérances",
-"Verwaltungsportal"
+"Gérances",
+"Gérances-App"
 ],
 [
-"Portail gérance",
-"Verwaltungsportal"
+"Gérances",
+"Gérances-App"
 ],
 [
 "Porte",
@@ -2757,7 +2757,7 @@ export default [
 "Angebote ansehen ›"
 ],
 [
-"Votre accès au portail LA CENTRAL",
+"Votre accès à l’app Gérances LA CENTRAL",
 "Ihr Zugang zum LA CENTRAL-Portal"
 ],
 [
@@ -2785,11 +2785,11 @@ export default [
 "Ihre Sitzung ist abgelaufen. Bitte melden Sie sich erneut an."
 ],
 [
-"Vous voyez maintenant le portail comme l’équipe LA CENTRAL",
+"Vous voyez maintenant l’app Gérances comme l’équipe LA CENTRAL",
 "Sie sehen das Portal jetzt wie das LA CENTRAL-Team"
 ],
 [
-"Vous voyez maintenant le portail comme une gérance",
+"Vous voyez maintenant l’app Gérances comme une gérance",
 "Sie sehen das Portal jetzt wie eine Verwaltung"
 ],
 [
@@ -3305,7 +3305,7 @@ export default [
 "— bitte wählen —"
 ],
 [
-"→ Ajouter. Ouvrez ensuite le portail",
+"→ Ajouter. Ouvrez ensuite l’app",
 "→ Hinzufügen. Öffnen Sie das Portal dann"
 ],
 [
@@ -3781,7 +3781,7 @@ export default [
 "Sicherheit: persönlicher Zugang mit E-Mail und Passwort, verschlüsselte Verbindung (HTTPS), Daten bei einem technischen Hosting-Anbieter."
 ],
 [
-"Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LA CENTRAL. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).",
+"Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans l’app ; pour toute autre demande, écrivez à LA CENTRAL. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).",
 "Ihre Rechte: Auskunft, Berichtigung, Löschung, Einschränkung und Widerspruch. Die Hausverwaltung korrigiert ihre Daten direkt im Portal; für alle anderen Anfragen schreiben Sie an LA CENTRAL. Sie können sich auch an die CNPD wenden (Commission nationale pour la protection des données, Luxemburg)."
 ],
 [
@@ -3793,11 +3793,11 @@ export default [
 "Die erste Person, die den Link öffnet, wird Verantwortliche: sie gibt Vor- und Nachnamen ein, wählt ihr Passwort und fügt ihre Kollegen hinzu. 14 Tage gültig."
 ],
 [
-"Les collaborateurs sont ajoutés par le responsable dans son portail.",
+"Les collaborateurs sont ajoutés par le responsable dans son app Gérances.",
 "Die Mitarbeiter werden vom Verantwortlichen in seinem Portal hinzugefügt."
 ],
 [
-"Adresse, TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).",
+"Adresse, TVA, banque et logo : la gérance les remplit elle-même dans son app Gérances (Ma société).",
 "Adresse, MwSt., Bank und Logo: füllt die Hausverwaltung selbst in ihrem Portal aus (Meine Firma)."
 ],
 [
@@ -3817,7 +3817,7 @@ export default [
 "Geben Sie Vor- und Nachnamen ein"
 ],
 [
-"Les résidences sont gérées par la gérance dans son portail",
+"Les résidences sont gérées par la gérance dans son app Gérances",
 "Die Residenzen werden von der Hausverwaltung in ihrem Portal verwaltet"
 ],
 [
@@ -3825,7 +3825,7 @@ export default [
 "Diese Hausverwaltung hat bereits eine/n Verantwortliche/n"
 ],
 [
-"Les collaborateurs sont ajoutés par la gérance dans son portail",
+"Les collaborateurs sont ajoutés par la gérance dans son app Gérances",
 "Die Mitarbeiter werden von der Hausverwaltung in ihrem Portal hinzugefügt"
 ],
 [
