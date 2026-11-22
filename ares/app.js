@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.313.0';
+const VERSION = '2.314.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1793,7 +1793,7 @@ const aboOffersOn = () => false; // plus d'abonnements : tout est gratuit
 function aboSection() {
   const tabs = '';
   const on = aboOffersOn();
-  const sw = html`<div class="card" style="margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="grow"><b>Offres d’abonnement dans le portail des gérances</b><span class="meta" style="display:block">${on ? 'Les gérances voient « 💼 Nos abonnements » et « Voir les offres ».' : 'Masquées : les gérances ne voient aucune offre d’abonnement.'}</span></span>
+  const sw = html`<div class="card" style="margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="grow"><b>Offres d’abonnement dans le app Gérances</b><span class="meta" style="display:block">${on ? 'Les gérances voient « 💼 Nos abonnements » et « Voir les offres ».' : 'Masquées : les gérances ne voient aucune offre d’abonnement.'}</span></span>
     <button class="btn ${on ? 'primary' : ''}" data-action="abo-offers" aria-pressed="${on}">${on ? '🟢 Activé' : '⚪ Désactivé'}</button></div>`;
   return html`${tabs}${sw}${aboGer()}`;
 }
@@ -1813,11 +1813,11 @@ function aboGer() {
       <div class="metric ${due.length ? 'cont-blink-box' : ''}"><div class="lbl">À payer</div><div class="val ${due.length ? 'red' : ''}">${due.length}</div><div class="sub">${eur(sum(due, (x) => +x.a.prix || 0))}</div></div>
       <div class="metric hero"><div class="lbl">Revenu mensuel</div><div class="val accent">${eur(mrr)}</div><div class="sub">abonnements payants</div></div></div>
     <div class="section-label">💼 Abonnements des gérances</div>
-    ${!ptlConf() ? html`<p class="muted small">Connectez d’abord le Portail gérance (menu Gérances).</p>` : !d ? html`<p class="muted small">Chargement…</p>` : html`
+    ${!ptlConf() ? html`<p class="muted small">Connectez d’abord l’app Gérances (menu Gérances).</p>` : !d ? html`<p class="muted small">Chargement…</p>` : html`
       ${due.length ? html`<div class="list" style="margin-bottom:10px">${due.map(row)}</div>` : ''}
       ${ok.length || subs.length - due.length ? html`<div class="list" style="margin-bottom:10px">${subs.filter((x) => aboState(x.a) !== 'due').map(row)}</div>` : ''}
       ${none.length ? html`<details style="margin-bottom:14px"><summary class="small" style="cursor:pointer">Gérances sans abonnement (${none.length})</summary><div class="list" style="margin-top:8px">${none.map(row)}</div></details>` : ''}
-      <p class="tiny muted" style="margin:0 0 18px">Quand une gérance touche « Je suis intéressé » dans son portail, vous recevez une notification. Touchez une gérance pour choisir sa formule et noter ses paiements.</p>`}
+      <p class="tiny muted" style="margin:0 0 18px">Quand une gérance touche « Je suis intéressé » dans son app Gérances, vous recevez une notification. Touchez une gérance pour choisir sa formule et noter ses paiements.</p>`}
 `;
 }
 // Classement de l'année : tours faits par personne, tours à rattraper
@@ -2548,8 +2548,8 @@ const societe = () => {
   return { ...m, nom: f.nom, adresse: f.adresse, ville: f.ville, tel: f.tel, email: f.email, rcs: f.rcs, tvaNum: f.tva, iban: f.iban, bic: f.bic, banque: f.banque, web: '', logo: '', signature: '' };
 };
 
-// ───────────────────────── Branche « gérances » : le Portail gérance piloté depuis l'app de gestion ─────────────────────────
-// Les gérances (sociétés externes) utilisent le Portail gérance ; ici, LA CENTRAL les crée, invite leurs responsables,
+// ───────────────────────── Branche « gérances » : l’app Gérances piloté depuis l'app de gestion ─────────────────────────
+// Les gérances (sociétés externes) utilisent l’app Gérances ; ici, LA CENTRAL les crée, invite leurs responsables,
 // gère leurs résidences et peut les supprimer. La session du portail (compte LA CENTRAL) est gardée dans le coffre chiffré.
 const PTL_API = API.replace(/\/$/, '') + '/api/portail/';
 const ptlConf = () => { const c = vault.get('reglages', 'portail'); return c && c.token ? c : null; };
@@ -2563,9 +2563,9 @@ async function ptlApi(path, opts = {}) {
   try { r = await fetch(PTL_API + path, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined, cache: 'no-store' }); } catch { throw new PtlError(0, 'Pas de connexion internet'); }
   const j = await r.json().catch(() => ({}));
   if (r.status === 401 && c && !opts.anon) {
-    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token: '' }), 'Portail gérance : session expirée', c.email || '');
+    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token: '' }), 'Gérances : session expirée', c.email || '');
     ui.ptl.data = null;
-    throw new PtlError(401, 'Session du portail expirée : reconnectez-vous.');
+    throw new PtlError(401, 'Session de l’app Gérances expirée : reconnectez-vous.');
   }
   if (!r.ok) throw new PtlError(r.status, j.error || 'Erreur ' + r.status);
   return j;
@@ -2638,7 +2638,7 @@ async function ptlWatch() {
   try { const t = await ptlApi('tickets?scope=active'); ptlBadge(t.tickets || []); } catch { /* hors ligne : on réessaiera */ }
   devSync();
 }
-// Demandes d'intervention des gérances (Portail gérance) — affichage dans l'app de gestion
+// Demandes d'intervention des gérances (Gérances) — affichage dans l'app de gestion
 const PTL_URG = { urgent: ['🔴', 'Urgent', 'red'], '24h': ['🟠', 'Sous 24 h', 'amber'], planifie: ['🟢', 'Planifiable', 'green'] };
 const PTL_ST = { recue: 'Reçue', prise: 'Prise en charge', planifiee: 'Planifiée', encours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
 const ptlTime = (ms) => (ms ? fmtDateTime(ms) : '');
@@ -2666,7 +2666,7 @@ const ptlInvSaved = (uid) => { const x = ((vault.get('reglages', 'ptlinv') || {}
 async function ptlInvSave(uid, url) {
   const links = Object.fromEntries(Object.entries((vault.get('reglages', 'ptlinv') || {}).links || {}).filter(([, x]) => x.exp > Date.now()));
   links[uid] = { url, exp: Date.now() + 14 * 864e5 };
-  await vault.mutate((tx) => tx.put('reglages', { id: 'ptlinv', links }), 'Lien d’invitation au portail');
+  await vault.mutate((tx) => tx.put('reglages', { id: 'ptlinv', links }), 'Lien d’invitation à l’app Gérances');
 }
 async function ptlStatus(id, status, extra = {}) {
   await ptlApi(`tickets/${id}/status`, { method: 'POST', body: { status, ...extra } });
@@ -2737,7 +2737,7 @@ const ptlResCodes = (r) => { let named = []; try { named = JSON.parse(r.codes ||
 const affTeam = (hints) => vault.list('intervenants').filter((i) => !i.archive).sort((a, b) => hints.includes(b.metier) - hints.includes(a.metier) || intervFull(a).localeCompare(intervFull(b)));
 const affRow = (i, hints, attrs) => { const ab = absOn(i, today()); return html`<button class="row" ${new Raw(attrs)}><span class="avatar met-ic">${avW(i)}</span><span class="grow"><span class="title" style="display:block">${hints.includes(i.metier) ? '⭐ ' : ''}${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || i.metier || '—'} · ${INT_GENRES[i.genre || 'interne']}${ab ? html` · <b class="red">${ABS_TYPES[ab.type]}</b>` : ''}</span></span><span class="badge">Affecter →</span></button>`; };
 const ptlOrg = (id) => ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => o.id === id);
-// logo de l'agence (ajouté par la gérance dans son portail, ou ici dans « Modifier ») : on la reconnaît d'un coup d'œil
+// logo de l'agence (ajouté par la gérance dans son app Gérances, ou ici dans « Modifier ») : on la reconnaît d'un coup d'œil
 const orgLogo = (id, big) => { const o = ptlOrg(id || ''); return o && o.logo ? html`<img class="org-logo${big ? ' big' : ''}" src="${o.logo}" alt="">` : '🏢'; };
 const ptlInviteUrl = (tok) => `${location.origin}/portail.html#invite=${tok}`;
 // mot de passe → clé dérivée sur l'appareil (comme dans le portail) : le serveur ne voit jamais le mot de passe
@@ -2897,7 +2897,7 @@ const ui = {
   immSeg: 'actuels',
   histShown: 20,
   sheet: null, // { kind, id, tab }
-  ptl: { data: null, loading: false, err: '', inv: {} }, // branche gérances (Portail gérance)
+  ptl: { data: null, loading: false, err: '', inv: {} }, // branche gérances (Gérances)
 };
 
 // Période choisie dans Comptabilité : année, trimestre (q1..q4) ou mois (m1..m12)
@@ -3423,7 +3423,7 @@ const masked = () => new Set(); // « Masquer » retiré : plus rien de masqué 
 // pages qui appartiennent à une rubrique (Locataires et Gestion locataire sont dans Immeubles)
 const maskOf = (route) => (['locataires', 'paiements'].includes(route) ? 'immeubles' : route);
 // Légende des couleurs de nos activités (mêmes couleurs que dans les apps des locataires, de l'équipe et le portail)
-const COLOR_LEG = [['#F97316', 'Interventions et maintenance : demandes, travaux, équipe'], ['#1D4ED8', 'Gérances : portail et demandes des gérances'],
+const COLOR_LEG = [['#F97316', 'Interventions et maintenance : demandes, travaux, équipe'], ['#1D4ED8', 'Gérances : app et demandes des gérances'],
   ['#8B5CF6', 'Devis : offres de prix à signer'],
   ['#0D9488', 'Locataires et loyers : logements, contrats, paiements'],
   ['#475569', 'Avis de l’immeuble : coupures, travaux dans les communs'],
@@ -4200,7 +4200,7 @@ function centraleSection() {
   return html`<div class="section-label">👥 Centrale : responsable et opérateurs</div>
     ${vault.op ? html`<p class="small" style="margin:0 0 8px">👤 Connecté : <b>${vault.op.name}</b> · ${OP_ROLES[vault.op.role] || ''}</p>` : ''}
     <div class="list settings" style="margin-bottom:12px">
-      <button class="row" data-action="centrale-edit"><span class="avatar">⭐</span><span class="grow"><span class="title" style="display:block">Responsable de la centrale</span><span class="meta">${centraleResp() ? [centraleResp(), c.tel, c.email].filter(Boolean).join(' · ') : 'à compléter'}</span><span class="meta" style="display:block">Affiché aux gérances dans leur portail (« Votre contact LA CENTRAL ») et sur vos factures.</span></span><span class="chev">›</span></button>
+      <button class="row" data-action="centrale-edit"><span class="avatar">⭐</span><span class="grow"><span class="title" style="display:block">Responsable de la centrale</span><span class="meta">${centraleResp() ? [centraleResp(), c.tel, c.email].filter(Boolean).join(' · ') : 'à compléter'}</span><span class="meta" style="display:block">Affiché aux gérances dans leur app Gérances (« Votre contact LA CENTRAL ») et sur vos factures.</span></span><span class="chev">›</span></button>
     </div>
     <div class="card" style="margin-bottom:14px">
       <b>👤 Opérateurs</b><p class="tiny muted" style="margin:2px 0 8px">Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître la clé d’accès du directeur. Le centraliste gère tout, y compris les accès des opérateurs. Le comptable voit tout, s’occupe des factures, mais n’affecte pas les travaux et ne gère pas les accès. Retirer un opérateur lui coupe l’accès tout de suite.</p>
@@ -4395,7 +4395,7 @@ const jobTimes = (t, d) => {
   return { arr, dep, h: arr && dep ? Math.max(0, Math.round((hm(dep) - hm(arr)) * 100) / 100) : 0 };
 };
 // quantité notée par l'ouvrier en finissant (« Combien ? »)
-// quantité du travail fini (« Combien ? ») envoyée au portail : « 3 robinets »
+// quantité du travail fini (« Combien ? ») envoyée à l’app Gérances : « 3 robinets »
 const ptlQte = (t) => { const q = jobQty(t, (t.fini && t.fini.d) || t.doneDate || ''); return q.qte ? `${q.qte} ${q.qu}`.trim() : ''; };
 const jobQty = (t, d) => { const q = (t.fini && t.fini.qte ? t.fini : null) || [...(t.journal || [])].reverse().find((x) => x.d === d && x.qte); return q ? { qte: q.qte, qu: q.qu || '' } : { qte: '', qu: '' }; };
 const jobDay = (t) => (t.statut === 'fait' ? t.doneDate || t.date : t.fini ? t.fini.d : t.date) || '';
@@ -4978,28 +4978,28 @@ ${netClientsList(list, n, days)}`;
   gerances() { return html`${TENANT ? '' : netClientsBlock()}${VIEWS.gerancesPortail()}`; },
   gerancesPortail() {
     const c = ptlConf();
-    const portal = html`<a class="btn sm" href="/portail.html" target="_blank" rel="noopener">${icon('eye')} Ouvrir le portail</a>`;
+    const portal = html`<a class="btn sm" href="/portail.html" target="_blank" rel="noopener">${icon('eye')} Ouvrir l’app Gérances</a>`;
     if (!c) {
-      return html`${pageHead('Gérances', 'Le Portail gérance, piloté d’ici')}
+      return html`${pageHead('Gérances', 'Le Gérances, piloté d’ici')}
         <div class="card" style="max-width:560px">
           <img src="/portail/icons/ptl-banner.webp" alt="" width="1100" height="283" style="display:block;width:100%;max-width:320px;height:auto;margin:0 auto 12px">
-          <p style="margin-top:0">Les <b>gérances</b> sont les sociétés externes qui vous confient leurs réparations. Elles utilisent leur app, le <b>Portail gérance</b> : demandes avec photos, suivi, chat, photos avant / après, satisfaction, statistiques.</p>
+          <p style="margin-top:0">Les <b>gérances</b> sont les sociétés externes qui vous confient leurs réparations. Elles utilisent leur app, l’app <b>Gérances</b> : demandes avec photos, suivi, chat, photos avant / après, satisfaction, statistiques.</p>
           <p class="small">Ici vous créez les gérances (nom, email, téléphone, RCS) et leur envoyez le lien d’invitation ; elles remplissent elles-mêmes leurs données et leurs résidences. Vous recevez leurs demandes et leur envoyez vos factures.</p>
-          <div class="alert info" style="margin:12px 0">${icon('shield')}<div>Connectez une seule fois cette app au portail avec votre <b>compte LA CENTRAL du portail</b>. Le mot de passe ne quitte pas l’appareil ; la session est gardée dans vos données chiffrées.</div></div>
+          <div class="alert info" style="margin:12px 0">${icon('shield')}<div>Connectez une seule fois cette app à l’app Gérances avec votre <b>compte LA CENTRAL de l’app Gérances</b>. Le mot de passe ne quitte pas l’appareil ; la session est gardée dans vos données chiffrées.</div></div>
           ${ui.ptl.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${ui.ptl.err}</div></div>` : ''}
           <form data-form="ptl-login" class="fields">
             <label class="field full">Email du compte LA CENTRAL<input type="email" name="email" autocomplete="username" required value="${ui.ptl.email || (vault.get('reglages', 'portail') || {}).email || ''}"></label>
-            <label class="field full">Mot de passe du portail<input type="password" name="pass" autocomplete="current-password" required></label>
-            <button class="btn primary full" type="submit">${icon('key')} Connecter au portail</button>
+            <label class="field full">Mot de passe de l’app Gérances<input type="password" name="pass" autocomplete="current-password" required></label>
+            <button class="btn primary full" type="submit">${icon('key')} Connecter l’app Gérances</button>
           </form>
-          <p class="tiny muted" style="margin-bottom:0"><span>Pas encore de compte ? Ouvrez le portail : la « Première configuration » crée le compte LA CENTRAL.</span> ${portal}</p>
+          <p class="tiny muted" style="margin-bottom:0"><span>Pas encore de compte ? Ouvrez l’app Gérances : la « Première configuration » crée le compte LA CENTRAL.</span> ${portal}</p>
         </div>`;
     }
     const d = ui.ptl.data;
     if ((!d && !ui.ptl.err) || (d && Date.now() - d.at > 60000)) !ui.ptl.loading && setTimeout(ptlLoad, 0);
-    const head = pageHead('Gérances', d ? `${plural(d.orgs.length, 'gérance')} · Portail gérance` : 'Portail gérance', html`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-action="ger-reload">${icon('sync')} Actualiser</button><button class="btn primary" data-action="ger-new">${icon('plus')} Gérance</button></div>`);
-    const foot = html`<p class="tiny muted" style="margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">Connecté au portail : <b>${c.email || ''}</b>
-      <button class="btn sm ghost" data-action="ptl-self-reset">🔑 Nouveau mot de passe du portail</button><button class="btn sm ghost danger" data-action="ptl-logout">Déconnecter</button></p>`;
+    const head = pageHead('Gérances', d ? `${plural(d.orgs.length, 'gérance')} · Gérances` : 'Gérances', html`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-action="ger-reload">${icon('sync')} Actualiser</button><button class="btn primary" data-action="ger-new">${icon('plus')} Gérance</button></div>`);
+    const foot = html`<p class="tiny muted" style="margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">Connecté à l’app Gérances : <b>${c.email || ''}</b>
+      <button class="btn sm ghost" data-action="ptl-self-reset">🔑 Nouveau mot de passe de l’app Gérances</button><button class="btn sm ghost danger" data-action="ptl-logout">Déconnecter</button></p>`;
     if (!d) return html`${head}${ui.ptl.err ? html`<div class="alert warn">${icon('alert')}<div>${ui.ptl.err} <button class="btn sm" data-action="ger-reload">Réessayer</button></div></div>` : html`<p class="muted">Chargement…</p>`}${foot}`;
     const of = ui.ptl.org || '', oSel = of && ptlOrg(of), kf = ui.ptl.kind || '';
     const kOf = (o) => (o && ORG_KINDS[o.kind] ? o.kind : 'gerance'), orgs = d.orgs.filter((o) => !kf || kOf(o) === kf);
@@ -5017,7 +5017,7 @@ ${netClientsList(list, n, days)}`;
           <span class="meta" style="display:block;white-space:normal">${t.technicien ? html`👷 ${t.technicien} · ` : ''}${t.planned_at ? html`📅 ${String(t.planned_at).replace('T', ' ')} · ` : ''}${ptlTime(t.created_at)}${t.photos ? html` · 📷 ${t.photos}` : ''}</span></span>
         <span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="badge ${t.status === 'recue' ? 'warn' : ''}">${PTL_ST[t.status] || t.status}</span>${!['terminee', 'annulee'].includes(t.status) && !vault.list('taches').some((x) => x.ptl && x.ptl.tid === t.id && x.intervenantId) ? html`<span class="tiny amber">⏸ à affecter</span>` : ''}
           ${t.msgs ? html`<span class="tiny ${ptlUnread(t) ? 'ger-unread' : 'muted'}">💬 ${t.msgs} message${t.msgs > 1 ? 's' : ''}${ptlUnread(t) ? html` · <b>${ptlUnread(t)} nouveau${ptlUnread(t) > 1 ? 'x' : ''}</b>` : ''}</span>` : ''}</span></button>`; };
-    // demandes « mot de passe oublié » venues du portail : un nouveau lien en un toucher
+    // demandes « mot de passe oublié » venues de l’app Gérances : un nouveau lien en un toucher
     const forgot = d.users.filter((u) => u.forgot_at && u.active);
     const forgotBox = forgot.length ? html`<div class="alert warn" style="margin-bottom:14px">🔑<div><b>Mot de passe oublié</b>${forgot.map((u) => html`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px"><span class="grow">${u.name} · ${u.email}${ptlOrg(u.org_id) ? ' · 🏢 ' + ptlOrg(u.org_id).name : ''} <span class="tiny muted">(${ptlTime(u.forgot_at)})</span></span><button class="btn sm primary" data-action="ger-inv" data-id="${u.id}" data-org="${u.org_id || ''}">🔗 Envoyer un nouveau lien</button></div>`)}</div></div>` : '';
     return html`${head}
@@ -5772,7 +5772,7 @@ const SHEETS = {
         <div class="list small" style="margin-bottom:10px">${d.events.map((e) => html`<div class="row" style="display:block"><b>${evLbl(e)}</b> <span class="muted">· ${e.user_name || ''} · ${ptlTime(e.created_at)}</span>${e.text && e.kind !== 'create' ? html`<div style="white-space:pre-wrap;margin-top:4px">${e.text}</div>` : ''}</div>`)}</div>
         <form data-form="ger-msg" class="chat-form"><input type="hidden" name="id" value="${t.id}"><textarea name="x" required maxlength="2000" placeholder="Message à la gérance…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>
         <button class="btn sm" style="margin-top:8px" data-action="ger-ticket" data-id="${t.id}">${icon('sync')} Actualiser les messages</button>`,
-      foot: html`<a class="btn" href="/portail.html#/t/${t.id}" target="_blank" rel="noopener">${icon('eye')} Ouvrir dans le portail</a><button class="btn primary" data-action="close-sheet">Fermer</button>`,
+      foot: html`<a class="btn" href="/portail.html#/t/${t.id}" target="_blank" rel="noopener">${icon('eye')} Ouvrir dans l’app Gérances</a><button class="btn primary" data-action="close-sheet">Fermer</button>`,
     };
   },
   // note « INTERVENTION OCCASIONNELLE » d'un travail terminé (heures réelles × tarif payé)
@@ -5815,7 +5815,7 @@ const SHEETS = {
     if (!i) return null;
     const foot = html`<button class="btn" data-action="ger-aff-reload" data-id="${id}">${icon('sync')} Actualiser</button><button class="btn primary" data-action="close-sheet">Fermer</button>`;
     const title = `📌 Affecter ${intervFull(i)}`;
-    if (!ptlConf()) return { title, body: html`<p class="muted">Portail gérance non connecté (menu Gérances).</p>`, foot };
+    if (!ptlConf()) return { title, body: html`<p class="muted">App Gérances non connectée (menu Gérances).</p>`, foot };
     const d = ui.ptl.data;
     if (!d && ui.ptl.err) return { title, body: html`<p class="red">${ui.ptl.err}</p>`, foot };
     if (!d || ui.ptl.done) { if (ui.ptl.done) { ui.ptl.done = false; ui.ptl.data = null; } ptlLoad(); return { title, body: html`<p class="muted">Chargement des demandes…</p>`, foot }; }
@@ -5877,7 +5877,7 @@ const SHEETS = {
         <label class="field">Nom<input name="nom" value="${c.nom || ''}" required></label>
         <label class="field">Téléphone<input type="tel" name="tel" value="${c.tel || ''}" placeholder="+352…"></label>
         <label class="field">Email<input type="email" name="email" value="${c.email || ''}"></label>
-        <p class="tiny muted full" style="margin:0">Affiché aux gérances dans leur portail (« Votre contact LA CENTRAL ») et sur vos factures.</p></form>`,
+        <p class="tiny muted full" style="margin:0">Affiché aux gérances dans leur app Gérances (« Votre contact LA CENTRAL ») et sur vos factures.</p></form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
@@ -5894,7 +5894,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Créer l’accès</button>`,
     };
   },
-  // gérance : LA CENTRAL écrit seulement nom, email, téléphone et RCS ; adresse, TVA, banque, logo et responsable sont remplis par la gérance dans son portail
+  // gérance : LA CENTRAL écrit seulement nom, email, téléphone et RCS ; adresse, TVA, banque, logo et responsable sont remplis par la gérance dans son app Gérances
   'ger-form'({ id }) {
     const o = id ? ptlOrg(id) : { kind: ui.ptl.kind || 'gerance' };
     if (id && !o) return null;
@@ -5909,7 +5909,7 @@ const SHEETS = {
         <label class="field">Téléphone (WhatsApp)<input type="tel" name="phone" value="${o.phone || ''}" placeholder="+352…"></label>
         <label class="field">RCS (sauf propriétaire)<input name="rcs" value="${o.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
         ${patBlock((vault.get('reglages', 'gerpat-' + id) || {}).pat)}
-        <p class="tiny muted full" style="margin:0">${id ? 'Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).' : 'Un lien d’invitation est créé pour cet email (14 jours). La première personne qui l’ouvre devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis remplit les données de sa société (adresse, TVA, banque, logo) et ajoute ses collègues.'}</p>
+        <p class="tiny muted full" style="margin:0">${id ? 'Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son app Gérances (Ma société).' : 'Un lien d’invitation est créé pour cet email (14 jours). La première personne qui l’ouvre devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis remplit les données de sa société (adresse, TVA, banque, logo) et ajoute ses collègues.'}</p>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="gerForm">${id ? 'Enregistrer' : 'Créer + lien d’invitation'}</button>`,
     };
@@ -5921,7 +5921,7 @@ const SHEETS = {
     const tabs = html`<div class="tabs" role="tablist" style="margin-bottom:12px">
       <button class="tab" role="tab" aria-selected="${tab === 'acces'}" data-action="ger-open" data-id="${id}" data-tab="acces">${icon('users')} Accès</button>
       <button class="tab" role="tab" aria-selected="${tab === 'fact'}" data-action="ger-open" data-id="${id}" data-tab="fact">🧾 Facturation</button></div>`;
-    if (tab === 'res') tab = 'acces'; // les résidences sont gérées par la gérance dans son portail
+    if (tab === 'res') tab = 'acces'; // les résidences sont gérées par la gérance dans son app Gérances
     let body;
     if (tab === 'fact') {
       // liste des chantiers de la gérance : ouverts, en cours, fermés, contentieux (les montants, remises, TVA : Réglages + Comptabilité)
@@ -5945,7 +5945,7 @@ const SHEETS = {
         const sum0 = html`<div class="card" style="margin-bottom:12px;padding:12px">
             <b>${o.logo ? html`<img class="org-logo xl" src="${o.logo}" alt="">` : '🏢 '}${o.name}</b>
             <dl class="kv small" style="margin:6px 0 0">${cl.adresse ? html`<dt>Adresse</dt><dd style="white-space:pre-line">${cl.adresse}</dd>` : ''}${cl.rcs ? html`<dt>RCS</dt><dd>${cl.rcs}</dd>` : ''}${cl.tvaNum ? html`<dt>N° TVA</dt><dd>${cl.tvaNum}</dd>` : ''}${cl.banque ? html`<dt>Banque</dt><dd>${cl.banque}</dd>` : ''}${cl.iban ? html`<dt>IBAN</dt><dd>${cl.iban}</dd>` : ''}${cl.bic ? html`<dt>BIC</dt><dd>${cl.bic}</dd>` : ''}${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}</dl>
-            ${orgMissing(cl).length ? html`<p class="tiny amber" style="margin:6px 0 0">⏳ Pas encore rempli par la gérance : ${orgMissing(cl).join(', ')} <span class="muted">(dans son portail → Ma société)</span></p>` : ''}
+            ${orgMissing(cl).length ? html`<p class="tiny amber" style="margin:6px 0 0">⏳ Pas encore rempli par la gérance : ${orgMissing(cl).join(', ')} <span class="muted">(dans son app Gérances → Ma société)</span></p>` : ''}
             <form data-form="ger-tva" class="fields" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px"><input type="hidden" name="org" value="${id}">
               <div class="full">${tvaBox({ regime: cl.regime, taux: cl.taux, mention: cl.mention }, c)}</div>
               <p class="tiny muted full" style="margin:0">Pour vos factures à cette gérance. Travaux sur un immeuble au Luxembourg : en principe avec TVA luxembourgeoise — en cas de doute, demandez à votre comptable.</p>
@@ -5959,10 +5959,10 @@ const SHEETS = {
           ${grp('🔵 En cours', cours)}
           ${grp('✅ Fermés', done)}
           ${all.length ? '' : html`<p class="muted small">Aucune demande de cette gérance pour l’instant.</p>`}
-          <p class="tiny muted" style="margin-top:6px">Montants, TVA, remises, acomptes : réglés dans <b>Réglages → 🧾 Facturation</b> et dans chaque facture (<b>Comptabilité → Factures</b>). Adresse, TVA et banque de la gérance : remplies par elle dans son portail.</p>`;
+          <p class="tiny muted" style="margin-top:6px">Montants, TVA, remises, acomptes : réglés dans <b>Réglages → 🧾 Facturation</b> et dans chaque facture (<b>Comptabilité → Factures</b>). Adresse, TVA et banque de la gérance : remplies par elle dans son app Gérances.</p>`;
       }
     } else {
-      // le responsable (créé par LA CENTRAL) en premier, puis les collègues qu'il a ajoutés dans son portail
+      // le responsable (créé par LA CENTRAL) en premier, puis les collègues qu'il a ajoutés dans son app Gérances
       const us = d.users.filter((u) => u.org_id === id).sort((a, b) => (a.role === 'gerance_admin' ? 0 : 1) - (b.role === 'gerance_admin' ? 0 : 1) || a.name.localeCompare(b.name));
       const hasResp = us.some((u) => u.role === 'gerance_admin' && u.active);
       const cl = factClient(id, o.name);
@@ -5978,8 +5978,8 @@ const SHEETS = {
       body = html`<div class="card" style="margin-bottom:12px;padding:12px">
           <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>${o.logo ? html`<img class="org-logo xl" src="${o.logo}" alt="">` : '🏢 '}${o.name}</b><button class="btn sm ghost" data-action="ger-edit" data-id="${id}">${icon('edit')} Modifier</button></div>
           <dl class="kv small" style="margin:6px 0 0">${cl.adresse ? html`<dt>Adresse</dt><dd style="white-space:pre-line">${cl.adresse}</dd>` : ''}${cl.rcs ? html`<dt>RCS</dt><dd>${cl.rcs}</dd>` : ''}${cl.tvaNum ? html`<dt>N° TVA</dt><dd>${cl.tvaNum}</dd>` : ''}${cl.iban ? html`<dt>Banque</dt><dd>${[cl.banque, cl.bic ? 'BIC ' + cl.bic : '', ibanFmt(cl.iban)].filter(Boolean).join(' · ')}</dd>` : ''}${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}</dl>
-          ${orgMissing(cl).length ? html`<p class="tiny amber" style="margin:6px 0 0">⏳ Pas encore rempli par la gérance : ${orgMissing(cl).join(', ')} <span class="muted">(dans son portail → Ma société)</span></p>` : ''}</div>
-        ${us.length ? html`<div class="section-label">Responsable et collaborateurs (${us.length})</div>${us.map(uRow)}<p class="tiny muted" style="margin:0 0 12px">Les collaborateurs sont ajoutés par le responsable dans son portail (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.</p>` : ''}
+          ${orgMissing(cl).length ? html`<p class="tiny amber" style="margin:6px 0 0">⏳ Pas encore rempli par la gérance : ${orgMissing(cl).join(', ')} <span class="muted">(dans son app Gérances → Ma société)</span></p>` : ''}</div>
+        ${us.length ? html`<div class="section-label">Responsable et collaborateurs (${us.length})</div>${us.map(uRow)}<p class="tiny muted" style="margin:0 0 12px">Les collaborateurs sont ajoutés par le responsable dans son app Gérances (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.</p>` : ''}
         ${hasResp ? '' : html`<div class="section-label">⭐ Responsable de la gérance</div>
         <p class="small muted" style="margin:0 0 8px">La première personne qui ouvre le lien devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis ajoute ses collaborateurs.</p>
         <form data-form="ger-user" class="fields">
@@ -6002,7 +6002,7 @@ const SHEETS = {
     const t = PTL_INVITE[lang] || PTL_INVITE.fr, first = u.name.split(' ')[0], msg = t.text(first, link), enc = encodeURIComponent(msg), encWa = encodeURIComponent(t.wa(first, link));
     const tel = (u.phone || '').replace(/[^\d+]/g, '').replace(/^00/, '+');
     return {
-      title: 'Invitation au Portail gérance',
+      title: 'Invitation au Gérances',
       narrow: true,
       body: html`<p style="margin-top:0">Lien personnel pour <b>${u.name || u.email}</b>${u.name ? ` (${u.email})` : ''} : la personne ouvre le lien${u.name ? '' : ', écrit son prénom et son nom'} et choisit son mot de passe. <b>Valable 14 jours</b>, une seule fois.</p>
         <p class="tiny muted" style="margin:-6px 0 10px">Rouvrir cette fenêtre redonne <b>le même lien</b> (aperçu, autre langue…) : celui déjà envoyé reste bon.</p>
@@ -6112,9 +6112,9 @@ const SHEETS = {
       const F = t.facture;
       return {
         title: `🧾 Facture ${F.no}`,
-        body: html`${F.cont && !F.paid ? html`<div class="alert bad cont-blink-box" style="margin-bottom:10px">⚠️<div><b>CONTENTIEUX</b> depuis le ${fmtDate(F.cont)} — facture impayée en litige. La gérance le voit en rouge dans son portail.</div></div>` : ''}<dl class="kv">${kvRow('Intervention', `${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`)}${kvRow('Gérance', t.ptl ? t.ptl.org : '—')}${kvRow('Date', fmtDate(F.date))}${kvRow('Total HT', eur(F.ht))}${kvRow('TVA', eur(F.tva))}${kvRow('Total TTC', html`<b>${eur(F.ttc)}</b>`)}${kvRow('Paiement', F.paid ? `✅ payée le ${fmtDate(F.paid)}` : '⏳ à payer')}</dl>
+        body: html`${F.cont && !F.paid ? html`<div class="alert bad cont-blink-box" style="margin-bottom:10px">⚠️<div><b>CONTENTIEUX</b> depuis le ${fmtDate(F.cont)} — facture impayée en litige. La gérance le voit en rouge dans son app Gérances.</div></div>` : ''}<dl class="kv">${kvRow('Intervention', `${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`)}${kvRow('Gérance', t.ptl ? t.ptl.org : '—')}${kvRow('Date', fmtDate(F.date))}${kvRow('Total HT', eur(F.ht))}${kvRow('TVA', eur(F.tva))}${kvRow('Total TTC', html`<b>${eur(F.ttc)}</b>`)}${kvRow('Paiement', F.paid ? `✅ payée le ${fmtDate(F.paid)}` : '⏳ à payer')}</dl>
           ${F.claim && !F.paid ? html`<div class="alert info" style="margin-bottom:10px">💳<div>Le client dit avoir payé le ${fmtDate(F.claim)} : vérifiez le compte, puis ✅.</div></div>` : ''}
-          <p class="small muted">${F.dom ? 'Le client la voit et la paie dans son app (QR code, « J’ai payé »).' : F.net ? 'Le client la voit et la paie dans sa centrale (🧾 Factures).' : 'La gérance la voit et la télécharge dans son portail (Comptabilité et fiche de la demande).'}</p>`,
+          <p class="small muted">${F.dom ? 'Le client la voit et la paie dans son app (QR code, « J’ai payé »).' : F.net ? 'Le client la voit et la paie dans sa centrale (🧾 Factures).' : 'La gérance la voit et la télécharge dans son app Gérances (Comptabilité et fiche de la demande).'}</p>`,
         foot: html`${F.docId ? html`<button class="btn" data-action="open-doc" data-id="${F.docId}">⬇️ PDF</button>` : ''}${F.paid ? '' : html`<button class="btn ${F.cont ? '' : 'danger'}" data-action="fact-cont" data-id="${id}">${F.cont ? '↩️ Sortir du contentieux' : '⚠️ Contentieux'}</button>`}<button class="btn ${F.paid ? '' : 'primary'}" data-action="fact-paid" data-id="${id}">${F.paid ? '↩️ Marquer à payer' : '✅ Marquer payée'}</button>`,
       };
     }
@@ -7444,7 +7444,7 @@ const SHEETS = {
   couleurs() {
     return {
       title: '🎨 Couleurs de nos activités',
-      body: html`<p class="small muted" style="margin:0 0 8px">Les mêmes couleurs dans toutes les apps (locataires, équipe, portail gérance) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.</p>
+      body: html`<p class="small muted" style="margin:0 0 8px">Les mêmes couleurs dans toutes les apps (locataires, équipe, app Gérances) : sur ordinateur, passez la souris sur les points de couleur sous « Réglages » ; dans les apps, touchez les petites lignes colorées en bas.</p>
         <div class="list settings">${legList().map(([c, t]) => html`<div class="row"><span class="leg-sw" style="background:${c}"></span><span class="grow">${t}</span></div>`)}</div>
         <p class="small" style="margin:8px 0 0">Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème</p>`,
     };
@@ -7746,8 +7746,8 @@ const ACTIONS = {
   'open-facts': () => { ui.cpSec = 'compta'; ui.cpTab = 'fact'; go('compta'); }, // 🧾 Accueil → Comptabilité, onglet Factures
   async 'abo-offers'() {
     const on = !aboOffersOn();
-    await vault.mutate((tx) => tx.put('reglages', { id: 'abos', offers: on }), on ? 'Offres d’abonnement activées' : 'Offres d’abonnement désactivées', 'Portail gérance');
-    toast(on ? '🟢 Offres visibles dans le portail des gérances' : '⚪ Offres masquées dans le portail des gérances');
+    await vault.mutate((tx) => tx.put('reglages', { id: 'abos', offers: on }), on ? 'Offres d’abonnement activées' : 'Offres d’abonnement désactivées', 'Gérances');
+    toast(on ? '🟢 Offres visibles dans le app Gérances' : '⚪ Offres masquées dans le app Gérances');
     portailPubsSync().catch(() => {});
   },
   async 'abo-paid'(d) {
@@ -7792,9 +7792,9 @@ const ACTIONS = {
   'ger-open': (d) => { if (d.tab === 'fact') ui.ptl.orgT = null; openSheet('ger', d.id, d.tab); ptlLoad(); }, // les données du portail sont rafraîchies à chaque ouverture
   'ger-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; renderView(); },
   async 'ptl-logout'() {
-    if (!(await confirmBox('Déconnecter l’app du portail ?', { ok: 'Déconnecter', detail: 'Les gérances restent dans le portail ; vous pourrez vous reconnecter.' }))) return;
+    if (!(await confirmBox('Déconnecter l’app Gérances ?', { ok: 'Déconnecter', detail: 'Les gérances restent dans l’app Gérances ; vous pourrez vous reconnecter.' }))) return;
     try { await ptlApi('logout', { method: 'POST' }); } catch { /* déjà expirée */ }
-    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token: '' }), 'Portail gérance déconnecté', '');
+    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token: '' }), 'Gérances déconnecté', '');
     ui.ptl.data = null; renderView();
   },
   async 'ger-del'(d) {
@@ -7807,9 +7807,9 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('reglages', { id: 'portail', lastDel: o.name }), 'Gérance supprimée du portail', o.name);
     closeSheet(); toast('Gérance supprimée'); ui.ptl.data = null; renderView();
   },
-  // mot de passe du portail oublié : l'app de gestion (encore connectée) crée un lien pour en choisir un nouveau
+  // mot de passe de l’app Gérances oublié : l'app de gestion (encore connectée) crée un lien pour en choisir un nouveau
   async 'ptl-self-reset'() {
-    if (!(await confirmBox('Choisir un nouveau mot de passe du portail ?', { ok: 'Créer le lien', detail: `Compte ${(ptlConf() || {}).email || ''} : le portail s’ouvre et vous choisissez un nouveau mot de passe (l’ancien reste valable tant que vous ne l’avez pas changé).` }))) return;
+    if (!(await confirmBox('Choisir un nouveau mot de passe de l’app Gérances ?', { ok: 'Créer le lien', detail: `Compte ${(ptlConf() || {}).email || ''} : l’app Gérances s’ouvre et vous choisissez un nouveau mot de passe (l’ancien reste valable tant que vous ne l’avez pas changé).` }))) return;
     const win = window.open('', '_blank');
     try {
       const me = await ptlApi('me');
@@ -7896,14 +7896,14 @@ const ACTIONS = {
       sheetDirty = false; ui.sheet.rendered = false; renderSheet();
       return;
     }
-    if (!t.ptl || !ptlConf()) return toast('Facture : intervention liée à une gérance et portail connecté nécessaires', { bad: true });
+    if (!t.ptl || !ptlConf()) return toast('Facture : intervention liée à une gérance et app Gérances connectée nécessaires', { bad: true });
     const f = factRead(fm), c = factConf(), miss = factMissing(c);
     if (miss.length) return toast('Complétez : ' + miss.join(', '), { bad: true });
     const k = factCalc(f, factTaux(f, c));
     const cl = factClient(t.ptl.orgId, t.ptl.org);
     if (f.reg.regime === 'autoliq' && !cl.tvaNum) return toast('Autoliquidation : indiquez d’abord le n° TVA du client (Gérances → la gérance → 🧾 Facturation)', { bad: true });
     const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-INT${String(seq).padStart(4, '0')}`;
-    if (!(await confirmBox(`Émettre la facture ${no} ?`, { ok: 'Émettre et envoyer', detail: `${t.ptl.org} · ${eur(k.ttc)} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son portail.` }))) return;
+    if (!(await confirmBox(`Émettre la facture ${no} ?`, { ok: 'Émettre et envoyer', detail: `${t.ptl.org} · ${eur(k.ttc)} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son app Gérances.` }))) return;
     const { bytes } = await factPdf(t, f, no, date, c);
     try {
       const r = await fetch(PTL_API + `tickets/${t.ptl.tid}/invoice`, { method: 'PUT', headers: { Authorization: 'Bearer ' + ptlConf().token, 'Content-Type': 'application/pdf', 'X-Invoice': encodeURIComponent(JSON.stringify({ no, ht: k.ht, tva: k.tva, ttc: k.ttc, h: f.h, qte: ptlQte(t) })) }, body: bytes });
@@ -7920,13 +7920,13 @@ const ACTIONS = {
     toast(`🧾 Facture ${no} envoyée à ${t.ptl.org}`);
     ui.sheet.rendered = false; renderSheet();
   },
-  // ⚠️ contentieux : facture impayée en litige — rouge clignotant dans la master et dans le portail de la gérance
+  // ⚠️ contentieux : facture impayée en litige — rouge clignotant dans la master et dans le app de la gérance
   async 'fact-cont'(d) {
     const t = vault.get('taches', d.id);
     if (!t || !t.facture || t.facture.paid) return;
     if (t.facture.net) return toast('Client du réseau : sa centrale passe en lecture seule tout seule après les jours choisis (🧾 Facturation)', { bad: true });
     const on = !t.facture.cont;
-    if (on && !(await confirmBox('Mettre cette facture en contentieux ?', { ok: '⚠️ Contentieux', danger: true, detail: `${t.facture.no} · ${eur(t.facture.ttc)} — la gérance reçoit un message et voit la facture en rouge dans son portail.` }))) return;
+    if (on && !(await confirmBox('Mettre cette facture en contentieux ?', { ok: '⚠️ Contentieux', danger: true, detail: `${t.facture.no} · ${eur(t.facture.ttc)} — la gérance reçoit un message et voit la facture en rouge dans son app Gérances.` }))) return;
     try { await ptlApi(`tickets/${t.ptl.tid}/invoice-paid`, { method: 'POST', body: { cont: on } }); } catch (e) { return toast(e.message, { bad: true }); }
     await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, cont: on ? today() : '' } }), on ? 'Facture en contentieux' : 'Contentieux levé', t.facture.no, t.immId);
     toast(on ? '⚠️ Facture en contentieux' : 'Contentieux levé');
@@ -8494,7 +8494,7 @@ const ACTIONS = {
     const fromSheet = ui.sheet && ui.sheet.kind === 'tache-form';
     const saved = await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: t.fini ? t.fini.d : today(), vu: true }), 'Chantier clôturé', `${t.titre} — ${placeName(t)}`, t.immId);
     toast(t.locId ? '✓ Réparé · le locataire voit « Terminé » dans son app' : '🟢 Chantier clôturé');
-    if (saved.ptl && ptlConf()) { const w = vault.get('intervenants', saved.intervenantId); ptlStatus(saved.ptl.tid, 'terminee', { technicien: w ? intervFull(w) : '', rapport: (saved.fini && saved.fini.note) || saved.note || 'Intervention terminée', qte: ptlQte(saved) }).then(() => toast('Portail gérance mis à jour : Terminée')).catch((e) => toast('Portail gérance : ' + e.message, { bad: true })); }
+    if (saved.ptl && ptlConf()) { const w = vault.get('intervenants', saved.intervenantId); ptlStatus(saved.ptl.tid, 'terminee', { technicien: w ? intervFull(w) : '', rapport: (saved.fini && saved.fini.note) || saved.note || 'Intervention terminée', qte: ptlQte(saved) }).then(() => toast('App Gérances mise à jour : Terminée')).catch((e) => toast('Gérances : ' + e.message, { bad: true })); }
     if (fromSheet) goBack();
     await offerDepense(saved);
   },
@@ -9094,9 +9094,9 @@ const FORMS = {
         fetch(PTL_API + 'logout', { method: 'POST', headers: { Authorization: 'Bearer ' + token } }).catch(() => {});
         throw new PtlError(403, 'Ce compte est celui d’une gérance : connectez le compte LA CENTRAL.');
       }
-      await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token, email, name: me.user.name || '' }), 'Portail gérance connecté', email);
+      await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token, email, name: me.user.name || '' }), 'Gérances connecté', email);
       ui.ptl = { data: null, loading: false, err: '', inv: {} };
-      toast('Connecté au Portail gérance'); renderView();
+      toast('Connecté au Gérances'); renderView();
     } catch (e) { ui.ptl.err = e.message; btn.disabled = false; renderView(); }
   },
   async ger(fd) {
@@ -9263,7 +9263,7 @@ const FORMS = {
       if (key !== was) {
         const st = saved.statut === 'fait' ? 'terminee' : w && saved.date ? 'planifiee' : 'prise';
         ptlStatus(saved.ptl.tid, st, { technicien: w ? intervFull(w) : '', planned_at: saved.date ? `${saved.date}T${saved.heure || '08:00'}` : '', text: w ? `👷 ${intervFull(w)}${saved.date ? ' — ' + fmtDate(saved.date) + (saved.heure ? ' ' + saved.heure : '') : ''}` : '', ...(st === 'terminee' ? { rapport: saved.note || 'Intervention terminée', qte: ptlQte(saved) } : {}) })
-          .then(() => toast('Portail gérance mis à jour : ' + PTL_ST[st])).catch((e) => toast('Portail gérance : ' + e.message, { bad: true }));
+          .then(() => toast('App Gérances mise à jour : ' + PTL_ST[st])).catch((e) => toast('Gérances : ' + e.message, { bad: true }));
       }
     }
     if (!recur && !saved.ptl && !saved.dev && !saved.lieu) await syncDepense(saved);
@@ -9935,7 +9935,7 @@ document.addEventListener('pointerdown', (e) => {
 // Ensuite : le directeur choisit les ouvriers (tarifs des réglages), déplacement, matériel, remise, acompte, validité.
 // Le client signe avec le doigt (« Bon pour accord ») ; PDF à imprimer ou à envoyer par WhatsApp / email ;
 // une gérance du portail accepte, refuse ou demande une révision depuis son portail.
-const DEV_TYPES = { part: '👤 Particulier', pro: '🏢 Société', ger: '💼 Gérance du portail' };
+const DEV_TYPES = { part: '👤 Particulier', pro: '🏢 Société', ger: '💼 Gérance (app Gérances)' };
 const DEV_ACOMPTE = [40, 30, 20, 10, 0];
 const DEV_RETRACT = 14; // jours de rétractation d'un particulier (contrat signé hors établissement)
 const devAcompteConseil = (ttc) => (ttc <= 2000 ? 40 : ttc <= 10000 ? 30 : ttc <= 50000 ? 20 : 10);
@@ -10023,7 +10023,7 @@ function devStatsHtml(y) {
     ${byType.length > 1 ? html`<p class="small muted" style="margin:0 0 8px">${byType.map(([l, n, a]) => html`${l} : ${a}/${n} acceptés · `)}</p>` : ''}
     ${rows.length ? html`<div class="list">${rows.map(({ d, ms }) => html`<button class="row" data-action="dev-open" data-id="${d.id}">${devBall(d)}<span class="grow"><span class="title" style="display:block;white-space:normal">${devNo(d)}</span><span class="meta">${devClient(d)} · ${lbl[d.st]} en <b>${durTxt(ms)}</b>${d.rev ? ` · après ${d.rev} révision${d.rev > 1 ? 's' : ''}` : ''}</span></span><b style="white-space:nowrap">${eur(devCalc(d).ttc)}</b></button>`)}</div>` : ''}
     <p style="margin:10px 0 0"><button class="btn sm" data-action="dev-csv" data-y="${y}">${icon('download')} Export CSV des devis ${y}</button></p>
-    <p class="tiny muted">Temps de réponse : du premier envoi (PDF, WhatsApp, email ou portail) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.</p>`;
+    <p class="tiny muted">Temps de réponse : du premier envoi (PDF, WhatsApp, email ou app Gérances) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.</p>`;
 }
 // le directeur a mis les prix et terminé le devis (les devis déjà envoyés le sont forcément)
 const devFini = (d) => !!d.fini || !!(d.st && d.st !== 'brouillon');
@@ -10045,7 +10045,7 @@ function devRow(d) {
   return html`<button class="row dev-row" data-action="dev-open" data-id="${d.id}">${devBall(d)}
     <span class="grow"><span class="title" style="display:block;white-space:normal">${devNo(d)}${d.titre ? html` <span class="muted small">— ${d.titre}</span>` : ''}</span>
       <span class="meta" style="white-space:normal">${d.client && d.client.type === 'ger' ? orgLogo(d.client.orgId) : d.client && d.client.type === 'pro' ? '🏢' : '👤'} ${devClient(d)}${d.chantier ? ' · ' + d.chantier : ''}</span>
-      <span class="meta" style="display:block;white-space:normal">${s.lbl}${d.ptlSt === 'envoye' && d.st !== 'accepte' ? ' · 📤 dans son portail' : ''}</span>
+      <span class="meta" style="display:block;white-space:normal">${s.lbl}${d.ptlSt === 'envoye' && d.st !== 'accepte' ? ' · 📤 dans son app Gérances' : ''}</span>
       ${devFrom(d) ? html`<span class="meta" style="display:block;white-space:normal">${devFrom(d)}</span>` : ''}${SAT_FACE[d.sat] ? html`<span class="meta" style="display:block">Avis du client : <b>${SAT_FACE[d.sat]}</b></span>` : ''}</span>
     <b style="white-space:nowrap">${eur(k.ttc)}${k.ct ? html`<span class="tiny muted"> / mois</span>` : ''}</b></button>`;
 }
@@ -10070,7 +10070,7 @@ function devTab() {
   const all = every.filter((d) => !d.arch), arch = every.filter((d) => d.arch);
   const open = all.filter((d) => devState(d).open), prep = all.filter((d) => devState(d).k === 'prep'), drafts = all.filter((d) => devState(d).k === 'draft'), done = all.filter((d) => !devState(d).open && !['draft', 'prep'].includes(devState(d).k)).slice(0, ui.cpLim || 10);
   const c = factConf();
-  return html`<p class="small muted" style="margin:0 0 10px">Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou portail de la gérance) et la signature du client.</p>
+  return html`<p class="small muted" style="margin:0 0 10px">Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou app de la gérance) et la signature du client.</p>
     ${c.autorisation ? '' : html`<div class="alert warn" style="margin-bottom:12px">⚠️<div>Ajoutez le <b>n° d’autorisation d’établissement</b> dans <a href="#" data-action="fact-set">🧾 Facturation</a> : il est imprimé sur chaque devis.</div></div>`}
     <p style="margin:0 0 6px"><span class="tiny muted">🟢 en attente · 🟡 expire bientôt (3 derniers jours) · 🔴 expiré à minuit · 🟣 particulier : délai de rétractation de 14 jours · ✅ accepté</span></p>
     ${devSec('open', 'En cours', open)}
@@ -10263,7 +10263,7 @@ Object.assign(SHEETS, {
         ${d.sign ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ Signé par ${d.sign.nom || 'le client'} le ${fmtDateTime(Date.parse(d.sign.at) || 0)}${d.sign.early ? ' · début des travaux avant la fin du délai de rétractation demandé' : ''}</p>${devSigImg(d.sign)}` : ''}
         ${chefW ? html`<p class="tiny muted" style="margin:0 0 8px">🦺 Préparé par <b>${intervFull(chefW)}</b> dans son app${d.chefAt ? ' · dernier envoi le ' + fmtDateTime(Date.parse(d.chefAt) || 0) : ''}</p>` : ''}
         ${d.visa ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ « Vu et correct » signé par ${d.visa.nom || 'le client'} le ${fmtDateTime(Date.parse(d.visa.at) || 0)} (le rapport du chef correspond à sa demande — sans prix)</p>${devSigImg(d.visa)}<button class="btn sm ghost danger" style="margin:0 0 10px" data-action="dev-visa-del" data-id="${id}">🗑️ Retirer la signature</button>` : d.chefBy && !d.sign ? html`<p class="small" style="margin:0 0 8px;color:#b45309">⚠️ Rapport envoyé sans « Vu et correct » du client. Le client signera le devis final pour l’accepter.</p>` : ''}
-        ${!devFini(d) ? html`<div class="alert info" style="margin:0 0 8px">🟡<div><b>En préparation.</b> Enregistrez autant de fois que vous voulez, sans signature. Le directeur met les prix puis touche <b>« ✅ Devis terminé »</b> : alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, portail) et la signature « Bon pour accord ».</div></div>
+        ${!devFini(d) ? html`<div class="alert info" style="margin:0 0 8px">🟡<div><b>En préparation.</b> Enregistrez autant de fois que vous voulez, sans signature. Le directeur met les prix puis touche <b>« ✅ Devis terminé »</b> : alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, app Gérances) et la signature « Bon pour accord ».</div></div>
         <div class="dev-btns"><button class="btn sm primary" data-action="dev-fini" data-id="${id}">✅ Devis terminé</button>
           <button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button></div>` : html`
         <div class="dev-btns">
@@ -10271,7 +10271,7 @@ Object.assign(SHEETS, {
           <button class="btn sm" data-action="dev-share" data-id="${id}" data-via="wa">💬 WhatsApp</button>
           <button class="btn sm" data-action="dev-share" data-id="${id}" data-via="mail">✉️ Email</button>
           ${cl.type !== 'ger' && d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm" data-action="dev-link" data-id="${id}">🔗 Lien / QR code${d.pubId ? ' ✓' : ''}</button>` : ''}
-          ${cl.type === 'ger' && cl.orgId && d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm" data-action="dev-ptl" data-id="${id}">📤 ${d.ptlSt ? 'Renvoyer' : 'Envoyer'} au portail de la gérance</button>` : ''}
+          ${cl.type === 'ger' && cl.orgId && d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm" data-action="dev-ptl" data-id="${id}">📤 ${d.ptlSt ? 'Renvoyer' : 'Envoyer'} au app de la gérance</button>` : ''}
           ${d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm primary" data-action="dev-sign" data-id="${id}">✍️ Faire signer le client</button><button class="btn sm" data-action="dev-acc" data-id="${id}">✅ Accepté</button><button class="btn sm ghost danger" data-action="dev-ref" data-id="${id}">❌ Refusé</button>` : ''}
           ${s.k === 'ok' ? html`<button class="btn sm primary" data-action="dev-tache" data-id="${id}">➡️ Créer l’intervention</button>` : ''}
           ${d.st !== 'brouillon' && !d.tacheId && !devLocked(d) ? html`<button class="btn sm ghost" data-action="dev-rev" data-id="${id}">🔄 Nouvelle version (R${(d.rev || 0) + 1})</button>` : ''}
@@ -10555,7 +10555,7 @@ async function devPdf(d) {
     ? [`Devis gratuit et sans engagement, valable ${num((d.dir || {}).valid) || 30} jours (jusqu’au ${frD(until)}). Il n’engage le client qu’après sa signature « Bon pour accord ».`,
       'Droit de rétractation (contrat conclu hors établissement, Code de la consommation) : vous disposez de 14 jours à compter de la signature pour vous rétracter, sans donner de motif et sans frais, en nous envoyant le formulaire ci-joint ou une déclaration claire (courrier ou email). L’acompte éventuellement versé est alors remboursé sous 14 jours.',
       'Les travaux ne commencent pas avant la fin de ce délai, sauf demande expresse du client ; s’il se rétracte ensuite, il paie la part des travaux déjà réalisés. Pas de droit de rétractation pour une réparation urgente demandée par le client.']
-    : [`Devis gratuit et sans engagement, valable ${num((d.dir || {}).valid) || 30} jours (jusqu’au ${frD(until)}). Pour un professionnel, l’acceptation (signature « Bon pour accord » ou accord dans le portail) est ferme et définitive.`];
+    : [`Devis gratuit et sans engagement, valable ${num((d.dir || {}).valid) || 30} jours (jusqu’au ${frD(until)}). Pour un professionnel, l’acceptation (signature « Bon pour accord » ou accord dans l’app Gérances) est ferme et définitive.`];
   legal.push(k.ct ? 'Toute prestation supplémentaire fera l’objet d’un accord préalable ou d’un avenant au contrat.' : `Paiement du solde à réception de la facture (${+c.delai || 30} jours). Tout travail supplémentaire fera l’objet d’un avenant ou d’un nouveau devis.`);
   p.line(X, y, R, y, { w: 0.6 }); y += 14;
   for (const t of legal) { need(30); y += p.wrap(X, y, t, R - X, { size: 7.5 }) + 3; }
@@ -10660,7 +10660,7 @@ Object.assign(ACTIONS, {
   // lien web + QR code pour un client externe : il voit, imprime et signe le devis sur son téléphone
   async 'dev-link'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
-    if (!ptlConf()) return toast('Connectez d’abord le portail gérance (Gérances) : il héberge les liens des devis', { bad: true });
+    if (!ptlConf()) return toast('Connectez d’abord le app Gérances (Gérances) : il héberge les liens des devis', { bad: true });
     if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
     const k = devCalc(v), bytes = await devPdf(v);
     const meta = { id: v.pubId || '', no: devNo(v), title: v.titre || '', client: devClient(v), ttc: k.ttc, acompte: k.acompte, pct: k.pct, valid_until: addDays(v.date || today(), num((v.dir || {}).valid) || 30), part: (v.client || {}).type === 'part', kind: v.kind || 'travaux' };
@@ -10694,7 +10694,7 @@ Object.assign(ACTIONS, {
     const k = devCalc(v);
     if (!(k.ttc > 0)) return toast('Mettez d’abord les prix (👔 directeur) : le total est à 0 €', { bad: true });
     const sansPrix = k.prest.filter((p) => p.pu === '' || p.pu == null).length + k.lines.filter((l) => !l.taux).length;
-    if (!(await confirmBox(`Devis ${devNo(v)} terminé ?`, { ok: '✅ Terminé', detail: `${sansPrix ? `⚠️ ${sansPrix} ligne(s) sans prix. ` : ''}Total ${eur(k.ttc)} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son portail) et le faire signer. Le chef de chantier ne peut plus le modifier.` }))) return;
+    if (!(await confirmBox(`Devis ${devNo(v)} terminé ?`, { ok: '✅ Terminé', detail: `${sansPrix ? `⚠️ ${sansPrix} ligne(s) sans prix. ` : ''}Total ${eur(k.ttc)} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son app Gérances) et le faire signer. Le chef de chantier ne peut plus le modifier.` }))) return;
     await vault.mutate((tx) => tx.put('devis', { id: v.id, fini: { at: new Date().toISOString() } }), 'Devis terminé (directeur)', `${devNo(v)} — ${devClient(v)}`);
     toast('✅ Devis terminé : vous pouvez l’envoyer au client'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
@@ -10738,7 +10738,7 @@ Object.assign(ACTIONS, {
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
   async 'dev-ptl'(d) {
-    const v = vault.get('devis', d.id); if (!v || !ptlConf()) return toast('Portail gérance non connecté', { bad: true });
+    const v = vault.get('devis', d.id); if (!v || !ptlConf()) return toast('App Gérances non connectée', { bad: true });
     if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
     const k = devCalc(v), bytes = await devPdf(v);
     const meta = { id: v.ptlId || '', org: v.client.orgId, no: devNo(v), title: v.titre || '', ttc: k.ttc, acompte: k.acompte, pct: k.pct, valid_until: addDays(v.date || today(), num((v.dir || {}).valid) || 30) };

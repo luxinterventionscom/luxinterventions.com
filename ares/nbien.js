@@ -1,5 +1,5 @@
 // « 🆕 Nouveau bien » (biens à louer / à vendre des agences, publiés par l'app de gestion) + légende des couleurs,
-// partagés par l'app des locataires, l'app de l'équipe et le Portail gérance. Bannière bleu mer qui clignote
+// partagés par l'app des locataires, l'app de l'équipe et l’app Gérances. Bannière bleu mer qui clignote
 // tant que la personne n'a pas ouvert le nouveau bien ; fiche plein écran avec photos à faire glisser.
 export const PALETTE = [
   ['int', '#F97316'], ['ger', '#1D4ED8'], ['dev', '#8B5CF6'], ['loc', '#0D9488'],
@@ -8,7 +8,7 @@ export const PALETTE = [
 const TX = {
   fr: { nb: 'Nouveau bien', nbs: 'Nouveaux biens', all: 'Biens à louer / à vendre', open: 'Voir', mo: '/ mois', ch: 'charges', sale: 'à vendre', dispo: 'Disponible le', pcs: 'Pièces et espaces', call: 'Appeler', mail: 'Email', close: 'Fermer', by: 'Contact',
     leg: 'Couleurs', legT: 'Légende des couleurs', legH: 'Touchez une couleur', sem: 'Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème',
-    L: { int: ['Interventions et maintenance', 'demandes, travaux, équipe'], ger: ['Gérances', 'portail et demandes des gérances'], dev: ['Devis', 'offres de prix à signer'], loc: ['Locataires et loyers', 'logements, contrats, paiements'], avis: ['Avis de l’immeuble', 'coupures, travaux dans les communs'], plan: ['Planning du jour', 'ce qui est prévu aujourd’hui'] },
+    L: { int: ['Interventions et maintenance', 'demandes, travaux, équipe'], ger: ['Gérances', 'app et demandes des gérances'], dev: ['Devis', 'offres de prix à signer'], loc: ['Locataires et loyers', 'logements, contrats, paiements'], avis: ['Avis de l’immeuble', 'coupures, travaux dans les communs'], plan: ['Planning du jour', 'ce qui est prévu aujourd’hui'] },
     T: { garage: 'Garage', colocation: 'Colocation', appartement: 'Appartement', maison: 'Maison', villa: 'Villa', studio: 'Studio', chambre: 'Chambre', duplex: 'Duplex', penthouse: 'Penthouse', local: 'Commerce / magasin', bureau: 'Bureau', entrepot: 'Entrepôt', terrain: 'Terrain', parking: 'Parking', autre: 'Autre' },
     P: { chambre: 'Chambre', salon: 'Salon', sejour: 'Séjour', cuisine: 'Cuisine', sdb: 'Salle de bain', douche: 'Salle de douche', wc: 'WC', bureau: 'Bureau', dressing: 'Dressing', buanderie: 'Buanderie', cave: 'Cave', grenier: 'Grenier', balcon: 'Balcon', terrasse: 'Terrasse', jardin: 'Jardin', piscine: 'Piscine', garage: 'Garage', box: 'Box / parking', vitrine: 'Vitrine', reserve: 'Réserve', technique: 'Local technique', autre: 'Autre' } },
   it: { nb: 'Nuovo immobile', nbs: 'Nuovi immobili', all: 'Immobili in affitto / in vendita', open: 'Vedi', mo: '/ mese', ch: 'spese', sale: 'in vendita', dispo: 'Disponibile dal', pcs: 'Locali e spazi', call: 'Chiama', mail: 'Email', close: 'Chiudi', by: 'Contatto',

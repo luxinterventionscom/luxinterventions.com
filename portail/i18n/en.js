@@ -1,4 +1,4 @@
-// Traduction du portail gérance (source : français). Généré — une ligne par phrase.
+// Traduction du app Gérances (source : français). Généré — une ligne par phrase.
 export default [
 [
 "(carré avec flèche ↑) →",
@@ -905,7 +905,7 @@ export default [
 "Starter"
 ],
 [
-"Découvrir le portail en mode démo",
+"Découvrir l’app Gérances en mode démo",
 "Explore the portal in demo mode"
 ],
 [
@@ -1373,7 +1373,7 @@ export default [
 "The link was already used, is older than 14 days, or a newer link was sent to you (only the last one works)."
 ],
 [
-"Le logo est ajouté par la gérance dans son portail",
+"Le logo est ajouté par la gérance dans son app Gérances",
 "The logo is added by the agency in its portal"
 ],
 [
@@ -1473,7 +1473,7 @@ export default [
 "LA CENTRAL · Technical call-outs 7 days a week"
 ],
 [
-"LA CENTRAL · Portail gérance v{0}",
+"LA CENTRAL · Gérances v{0}",
 "LA CENTRAL · Property manager portal v{0}"
 ],
 [
@@ -1781,7 +1781,7 @@ export default [
 "Where to find the keys (room, key box…)"
 ],
 [
-"PORTAIL GÉRANCES",
+"GÉRANCES",
 "PROPERTY MANAGER PORTAL"
 ],
 [
@@ -1965,19 +1965,19 @@ export default [
 "Portal"
 ],
 [
-"Portail Gérance",
+"Gérances",
 "Property manager portal"
 ],
 [
-"Portail Gérance — LA CENTRAL",
+"Gérances — LA CENTRAL",
 "Property manager portal — LA CENTRAL"
 ],
 [
-"Portail Gérances",
+"Gérances",
 "Property manager portal"
 ],
 [
-"Portail gérance",
+"Gérances",
 "Property manager portal"
 ],
 [
@@ -2697,7 +2697,7 @@ export default [
 "See the plans ›"
 ],
 [
-"Votre accès au portail LA CENTRAL",
+"Votre accès à l’app Gérances LA CENTRAL",
 "Your access to the LA CENTRAL portal"
 ],
 [
@@ -2725,11 +2725,11 @@ export default [
 "Your session has expired. Please sign in again."
 ],
 [
-"Vous voyez maintenant le portail comme l’équipe LA CENTRAL",
+"Vous voyez maintenant l’app Gérances comme l’équipe LA CENTRAL",
 "You now see the portal as the LA CENTRAL team"
 ],
 [
-"Vous voyez maintenant le portail comme une gérance",
+"Vous voyez maintenant l’app Gérances comme une gérance",
 "You now see the portal as a property manager"
 ],
 [
@@ -3237,7 +3237,7 @@ export default [
 "— choose —"
 ],
 [
-"→ Ajouter. Ouvrez ensuite le portail",
+"→ Ajouter. Ouvrez ensuite l’app",
 "→ Add. Then open the portal"
 ],
 [
@@ -3709,7 +3709,7 @@ export default [
 "Security: personal access with email and password, encrypted connection (HTTPS), data stored with a technical hosting provider."
 ],
 [
-"Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans le portail ; pour toute autre demande, écrivez à LA CENTRAL. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).",
+"Vos droits : accès, rectification, effacement, limitation et opposition. La gérance corrige ses données directement dans l’app ; pour toute autre demande, écrivez à LA CENTRAL. Vous pouvez aussi saisir la CNPD (Commission nationale pour la protection des données, Luxembourg).",
 "Your rights: access, rectification, erasure, restriction and objection. The property manager corrects its data directly in the portal; for any other request, write to LA CENTRAL. You can also contact the CNPD (Commission nationale pour la protection des données, Luxembourg)."
 ],
 [
@@ -3721,11 +3721,11 @@ export default [
 "The first person who opens the link becomes the manager: they enter their first and last name, choose a password and add their colleagues. Valid 14 days."
 ],
 [
-"Les collaborateurs sont ajoutés par le responsable dans son portail.",
+"Les collaborateurs sont ajoutés par le responsable dans son app Gérances.",
 "Colleagues are added by the manager in their portal."
 ],
 [
-"Adresse, TVA, banque et logo : la gérance les remplit elle-même dans son portail (Ma société).",
+"Adresse, TVA, banque et logo : la gérance les remplit elle-même dans son app Gérances (Ma société).",
 "Address, VAT, bank and logo: the property manager fills them in itself in its portal (My company)."
 ],
 [
@@ -3745,7 +3745,7 @@ export default [
 "Enter your first and last name"
 ],
 [
-"Les résidences sont gérées par la gérance dans son portail",
+"Les résidences sont gérées par la gérance dans son app Gérances",
 "Residences are managed by the property manager in its portal"
 ],
 [
@@ -3753,7 +3753,7 @@ export default [
 "This property manager already has a lead"
 ],
 [
-"Les collaborateurs sont ajoutés par la gérance dans son portail",
+"Les collaborateurs sont ajoutés par la gérance dans son app Gérances",
 "Colleagues are added by the property manager in its portal"
 ],
 [

@@ -275,7 +275,7 @@ export function createDemo() {
     if (om) {
       const o = orgs.find((x) => x.id === om[1]), own = me.role === 'gerance_admin' && me.org_id === o.id;
       if (!isAdmin() && !own) fail(403, 'Réservé à LA CENTRAL ou au responsable de la gérance');
-      if (b.logo != null) { if (!own) fail(403, 'Le logo est ajouté par la gérance dans son portail'); o.logo = String(b.logo); }
+      if (b.logo != null) { if (!own) fail(403, 'Le logo est ajouté par la gérance dans son app Gérances'); o.logo = String(b.logo); }
       for (const k of ['phone', 'email', 'address', 'rcs', 'tva', 'banque', 'bic', 'iban']) if (b[k] != null) o[k] = b[k];
       if (isAdmin() && b.name != null) o.name = b.name;
       return { ok: true };
