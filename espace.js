@@ -1,6 +1,5 @@
 // Espace locataire : page personnelle, en lecture seule (+ signaler un problème).
 // Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
-import { jobHtml, jobInit } from '/ares/jobform.js';
 import { emojiInit } from '/ares/emoji.js';
 import { domierHtml, domierInit } from '/ares/domier.js';
 import { newsHtml } from '/ares/news.js';
@@ -1106,9 +1105,8 @@ function render() {
         <label>${esc(tl.lieu)}</label><input name="lieu" maxlength="60">
         <label>${esc(tl.mail)}</label><input name="mail" type="email" required maxlength="120" value="${esc(d.mail || '')}">
         <label class="chk"><input type="checkbox" name="ok" required> <span>${esc(tl.ok)} <a href="/outils.html#regles" target="_blank" rel="noopener">${esc(tl.rulesLink)}</a></span></label>
-        <button class="btn block" type="submit" style="margin-top:12px">${esc(tl.send)}</button></form></details>${jobHtml()}</div>`, 'tools', myTools && myTools.length ? esc(tl.mine + ' : ' + myTools.length) : ''));
+        <button class="btn block" type="submit" style="margin-top:12px">${esc(tl.send)}</button></form></details></div>`, 'tools', myTools && myTools.length ? esc(tl.mine + ' : ' + myTools.length) : ''));
   }
-  else out.push(`<div class="card">${jobHtml()}</div>`); // 🙋‍♀️🙋🏾 candidature même sans « Don · prêt · location »
   // la carte « Maintenance » est complétée plus bas (signaler un problème + légende), à cette place
   const mtAt = out.length;
   out.push('');
@@ -1287,7 +1285,6 @@ async function compress(file) {
 }
 
 trInit(API, () => lang); // 🌐 traduction des messages du chat
-jobInit({ api: API, app: 'loc', lang: () => lang, who: () => (data ? { nom: [data.prenom, data.nom].filter(Boolean).join(' '), tel: data.tel || '', mail: data.mail || '' } : {}) });
 app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-ianim]')) { import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'Locataires', icon: '/ares/icons/ares-192.png', lang })); return; }
   if (e.target.closest('[data-chat-refresh]')) return chatFetch();

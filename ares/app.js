@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.306.0';
+const VERSION = '2.307.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -1562,39 +1562,8 @@ async function netHoldSync(list) {
 }
 // 🛠️ demandes d'intervention des centrales des clients → directement dans Maintenance (comme les signalements)
 let netDemBusy = false;
-// 🙋‍♀️🙋🏾 candidatures « Je cherche du travail » (app des locataires, hôtes, taxis ; aussi ceux des clients) : gardées 12 mois sans mise à jour
-const CAND_MET = { ...METIERS, demenagement: 'Déménagement / montage' };
-const CAND_DISP = { heure: '⏱️ À l’heure', jour: '📅 À la journée', mi: '🕐 Mi-temps', plein: '🏢 Temps plein', appel: '📞 Sur appel' };
-const CAND_APP = { loc: '🏠 Locataire' };
+// 🙋 candidatures « Je cherche du travail » : retirées (v2.307) ; les anciennes restent cachées puis s'effacent après 12 mois (RGPD)
 const cands = () => vault.list('reglages').filter((r) => r.id.startsWith('cand-')).sort((a, b) => (b.at || '').localeCompare(a.at || ''));
-async function candIn(m) {
-  const S = (v, n) => String(v ?? '').trim().slice(0, n), cid = S(m.cid, 20);
-  if (!/^[0-9a-f]{16}$/.test(cid)) return;
-  const id = 'cand-' + cid, old = vault.get('reglages', id), tokH = await sha256Hex('cand:' + S(m.tok, 40));
-  if (old && old.tokH !== tokH) return; // seul le téléphone qui l'a envoyée peut la changer
-  const oldDocs = vault.list('documents').filter((d) => d.kind === 'cv' && d.candId === id);
-  if (m.type === 'job-del') {
-    await vault.mutate((tx) => { tx.remove('reglages', id); for (const d of oldDocs) tx.remove('documents', d.id); }, '🙋 Candidature retirée par la personne', old ? old.f.nom : '');
-    for (const d of oldDocs) await vault.deleteFile(d.id).catch(() => {});
-    return;
-  }
-  if (m.type === 'job-keep') { if (old) await vault.mutate((tx) => tx.put('reglages', { id, at: new Date().toISOString() }), '🙋 Candidature gardée 12 mois de plus', old.f.nom); return; }
-  if (m.type !== 'job') return;
-  const f = m.f || {}, arr = (a, ok, n) => (Array.isArray(a) ? a : []).map((x) => S(x, 20)).filter((x) => ok(x)).slice(0, n);
-  const rec = { id, tokH, app: CAND_APP[m.app] ? m.app : 'loc', lang: S(m.lang, 2), at: new Date().toISOString(), sent: (old && old.sent) || new Date().toISOString(), vu: false, note: (old && old.note) || '',
-    f: { met: arr(f.met, (x) => CAND_MET[x], 12), autre: S(f.autre, 80), disp: arr(f.disp, (x) => CAND_DISP[x], 5), jours: arr(f.jours, (x) => /^[1-7]$/.test(x), 7), heures: S(f.heures, 60), urg: f.urg === 'date' ? 'date' : 'now', date: /^\d{4}-\d{2}-\d{2}$/.test(f.date || '') ? f.date : '',
-      exp: S(f.exp, 600), outils: f.outils === 'non' ? 'non' : 'oui', valise: !!f.valise, permis: !!f.permis, auto: !!f.auto, langues: S(f.langues, 80), statut: ['indep', 'emp', 'etu'].includes(f.statut) ? f.statut : '', chez: S(f.chez, 60), tarif: S(f.tarif, 8), nom: S(f.nom, 80), tel: S(f.tel, 30), mail: S(f.mail, 120), age: !!f.age } };
-  const files = (Array.isArray(m.cv) ? m.cv : []).slice(0, 2).filter((c) => typeof c.b === 'string' && c.b.length < 1e7);
-  const keep = files.length ? [] : oldDocs, toSave = [];
-  await vault.mutate((tx) => {
-    tx.put('reglages', rec);
-    if (files.length) for (const d of oldDocs) tx.remove('documents', d.id);
-    for (const c of files) { const mime = /^(application\/pdf|image\/(jpeg|png|webp))$/.test(c.mime || '') ? c.mime : 'application/pdf'; const doc = tx.put('documents', { kind: 'cv', candId: id, label: `📎 CV — ${rec.f.nom}${c.name ? ' (' + S(c.name, 40) + ')' : ''}`, date: today(), mime, size: Math.round(c.b.length * 0.75) }); toSave.push([doc.id, c.b]); }
-  }, old ? '🙋 Candidature mise à jour' : '🙋 Nouvelle candidature', `${rec.f.nom} · ${rec.f.met.map((k) => CAND_MET[k]).join(', ')}`);
-  for (const [did, b] of toSave) await vault.saveFile(did, unb64u(b)).catch(() => {});
-  if (files.length) for (const d of oldDocs) await vault.deleteFile(d.id).catch(() => {});
-  void keep;
-}
 // 12 mois sans mise à jour : la candidature et son CV sont effacés (RGPD)
 async function candPurge() {
   const lim = new Date(Date.now() - 365 * 864e5).toISOString(), old = cands().filter((c) => (c.at || '') < lim);
@@ -1614,7 +1583,7 @@ async function netDemSync(list) {
     for (const it of items) {
       let m;
       try { m = await openFromTenant(keys.priv, new Uint8Array(await (await vault.call('demandes/' + it.name)).arrayBuffer())); } catch { continue; }
-      if (/^job/.test(m.type || '')) { await candIn(m).catch(() => {}); await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {}); continue; }
+      if (/^job/.test(m.type || '')) { await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {}); continue; } // candidatures retirées : ignorées
       const tid = it.name.split('-')[1] || '', cl = ((list || (ui.net && ui.net.list) || []).find((t) => t.id === tid) || {}).nom || m.client || 'Client du réseau';
       if (m.type === 'cgu') {
         const S2 = (v, n) => String(v ?? '').trim().slice(0, n);
@@ -4699,9 +4668,7 @@ const VIEWS = {
     } else {
       const ints = vault.list('intervenants').sort((a, b) => (a.cat === 'specialise') - (b.cat === 'specialise') || Object.keys(METIERS).indexOf(a.metier) - Object.keys(METIERS).indexOf(b.metier) || intervFull(a).localeCompare(intervFull(b)));
       const nNew = sum(ints, (i) => i.feedNew || 0);
-      const cs = TENANT ? [] : cands(), cNew = cs.filter((c) => !c.vu).length;
-      const candBtn = cs.length ? html`<button class="btn block" style="margin-bottom:8px" data-action="cand-list">🙋‍♀️🙋🏾 Candidats (${cs.length})${cNew ? html` <span class="badge bad">${cNew} nouveau${cNew > 1 ? 'x' : ''}</span>` : ''}</button>` : '';
-      body = ints.length ? html`${candBtn}${eqTodayHtml()}<button class="btn block" style="margin-bottom:8px" data-action="eq-feed">📋 Activité de l’équipe${nNew ? html` <span class="badge bad">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}</button><button class="btn block" style="margin-bottom:12px" data-action="eq-special">📣 Message spécial à l’équipe</button><div class="list">${ints.map((i) => {
+      body = ints.length ? html`${eqTodayHtml()}<button class="btn block" style="margin-bottom:8px" data-action="eq-feed">📋 Activité de l’équipe${nNew ? html` <span class="badge bad">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}</button><button class="btn block" style="margin-bottom:12px" data-action="eq-special">📣 Message spécial à l’équipe</button><div class="list">${ints.map((i) => {
         const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length;
         const tel = (i.tel || '').replace(/[^\d+]/g, '');
         const ab = absOn(i, today());
@@ -4775,8 +4742,6 @@ dashboard() {
         ${lose.map(([im, r]) => alertBtn('bad', 'alert', 'bail-open', im.id, html`🔴 <b>${im.adresse}</b> : perd <b>${money(-r.net)} / mois</b><div class="tiny">${rentaLine(r)}${r.vides ? html` · <span>${r.vides} logement(s) vide(s)</span>` : ''}</div>`))}</div>`;
     })();
     const netSoonBox = netSoon.length ? html`<div class="stack" style="margin-bottom:14px">${netSoon.map((t) => alertBtn('warn', 'calendar', 'net-open', t.id, html`⏳ <b>${t.nom}</b> : accès jusqu’au ${fmtDate(t.until)}${(vault.list('reglages').find((f) => f.id.startsWith('licfac-') && f.tid === t.id && f.au === t.until) || {}).gift ? ' (🎁 6 mois offerts)' : ''}<div class="tiny">bon moment pour proposer l’abonnement</div>`))}</div>` : '';
-    const cNew = TENANT ? 0 : cands().filter((c) => !c.vu).length;
-    const candBox = cNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'cand-list', '', html`🙋‍♀️🙋🏾 <b>${cNew} nouvelle${cNew > 1 ? 's' : ''} candidature${cNew > 1 ? 's' : ''}</b> « Je cherche du travail »<div class="tiny">touchez pour voir les profils et les CV</div>`)}</div>` : '';
     const eqBox = eqNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'eq-feed', '', html`👷 <b>${eqNew} nouvelle${eqNew > 1 ? 's' : ''} de l’équipe</b> (commencé, fini, pas fini, notes, photos…)<div class="tiny">touchez pour voir qui fait quoi, où et quand</div>`)}</div>` : '';
     const assurTodo = vault.list('intervenants').filter((i) => i.genre === 'prive' && i.assurTodo && !i.archive);
     const assurBox = assurTodo.length ? html`<div class="stack" style="margin-bottom:14px">${assurTodo.map((i) => alertBtn('warn', 'alert', 'open-interv', i.id, html`🛡️ <b>Assurance RC à faire</b> : ${intervFull(i)} (occasionnel) n’a pas encore donné son assurance<div class="tiny">rappel affiché dans son app · touchez pour ouvrir sa fiche</div>`))}</div>` : '';
@@ -4808,7 +4773,6 @@ dashboard() {
           confier.length ? html`<div class="stack" style="margin-bottom:10px">${confier.slice(0, 12).map((t) => alertBtn('warn', 'tool', 'edit-tache', t.id, html`<b>${t.titre}</b><span class="small" style="display:block">${t.net ? '🌐 ' + t.net.nom + ' · ' : ''}${t.adr ? '📍 ' + t.adr + ' · ' : ''}${fmtDate(t.date)} — à confier</span>`))}${confier.length > 12 ? html`<p class="tiny muted">… et ${confier.length - 12} autres (Maintenance)</p>` : ''}</div>` : '', sigBox, netStopBox, mtCard()])}
         ${sec('👷', 'INFO OUVRIERS', 'Maladie, accident, retard, imprévu sur chantier, travaux refusés, assurance', [absBox, refBox, eqBox, assurBox, finBox])}
         ${sec('📝', 'DEVIS', 'Reçus du chef de chantier : vérifier, envoyer, faire signer', [devBanner()])}
-        ${sec('🙋', 'CANDIDATURES', 'Personnes qui cherchent du travail', [candBox])}
         ${sec('🧾', 'FACTURES OUVERTES', 'À émettre, à encaisser, en retard', [
           toBill.length ? alertBtn('warn', 'receipt', 'open-facts', '', html`🟡 <b>${plural(toBill.length, 'intervention')} terminée${toBill.length > 1 ? 's' : ''} à facturer</b>`) : '',
           unpaid.length ? alertBtn(late2.length ? 'bad' : 'info', 'wallet', 'open-facts', '', html`⏳ <b>${plural(unpaid.length, 'facture')} à encaisser</b> · ${eur(sum(unpaid, (t) => t.facture.ttc))}${late2.length ? html` · 🔴 ${late2.length} en retard` : ''}${claimed.length ? html` · 💳 ${claimed.length} « payé » à vérifier` : ''}`) : '',
@@ -4834,7 +4798,7 @@ dashboard() {
       
       ${virBox}
       ${edlBox}
-      ${nClaimBox}${netSoonBox}${netStopBox}${eqBox}${candBox}
+      ${nClaimBox}${netSoonBox}${netStopBox}${eqBox}
       ${absBox}
       ${toolsBox}
       ${imms.length || locs.length ? html`      ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
@@ -6077,42 +6041,6 @@ const SHEETS = {
         </div>
         <p class="tiny muted">Astuce : envoyez le lien par WhatsApp ou SMS, ou affichez l'affiche dans l'entrée.</p>`,
       foot: html`<button class="btn ghost danger" data-action="share-off" data-id="${id}">Désactiver le lien</button><button class="btn primary" data-action="close-sheet">OK</button>`,
-    };
-  },
-  'cand-list'() {
-    const cs = cands();
-    return {
-      title: '🙋‍♀️🙋🏾 Candidats « Je cherche du travail »',
-      body: html`<p class="small muted" style="margin:0 0 10px">Envoyés depuis les apps (locataires — aussi ceux des centrales des clients). Chiffrés : seule cette centrale les lit. Effacés tout seuls après 12 mois sans mise à jour (RGPD).</p>
-        ${cs.length ? html`<div class="list">${cs.map((c) => html`<button class="row" data-action="cand-open" data-id="${c.id}"><span class="avatar">${c.vu ? '🙋' : '🆕'}</span><span class="grow"><span class="title" style="display:block">${c.f.nom || '—'}${c.f.tarif ? html` · <span class="tiny">${c.f.tarif} €/h</span>` : ''}</span>
-          <span class="meta" style="display:block;white-space:normal">${c.f.met.map((k) => CAND_MET[k]).join(', ')}${c.f.autre ? ' · ' + c.f.autre : ''} — ${c.f.disp.map((k) => CAND_DISP[k]).join(' · ')}</span>
-          <span class="tiny muted">${CAND_APP[c.app] || ''} · ${c.f.urg === 'date' && c.f.date ? 'dès le ' + fmtDate(c.f.date) : 'tout de suite'} · reçue le ${fmtDate(c.sent)}${vault.list('documents').some((d) => d.kind === 'cv' && d.candId === c.id) ? ' · 📎 CV' : ''}</span></span></button>`)}</div>` : html`<p class="muted small">Aucune candidature pour le moment.</p>`}`,
-      foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
-    };
-  },
-  cand({ id }) {
-    const c = vault.get('reglages', id);
-    if (!c) return null;
-    const f = c.f, docs = vault.list('documents').filter((d) => d.kind === 'cv' && d.candId === id), J = ['', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'];
-    if (!c.vu) setTimeout(() => vault.mutate((tx) => tx.put('reglages', { id, vu: true }), '🙋 Candidature lue', f.nom).catch(() => {}), 0);
-    return {
-      title: '🙋 ' + (f.nom || 'Candidat'),
-      body: html`<dl class="kv small">
-        <dt>Travail</dt><dd>${f.met.map((k) => CAND_MET[k]).join(', ')}${f.autre ? ' · ' + f.autre : ''}</dd>
-        <dt>Disponibilité</dt><dd>${f.disp.map((k) => CAND_DISP[k]).join(' · ')}${f.jours.length ? ' · ' + f.jours.map((j) => J[+j]).join(', ') : ''}${f.heures ? ' · ' + f.heures : ''}</dd>
-        <dt>Début</dt><dd>${f.urg === 'date' && f.date ? fmtDate(f.date) : 'Tout de suite'}</dd>
-        <dt>Expérience</dt><dd style="white-space:pre-wrap">${f.exp || '—'}</dd>
-        <dt>🧰 Outils</dt><dd>${f.outils === 'non' ? html`Non${f.valise ? html` — <b>intéressé(e) par la valise d’outils</b>` : ''}` : 'Oui'}</dd>
-        <dt>🚗</dt><dd>${[f.permis ? 'Permis' : '', f.auto ? 'Voiture' : ''].filter(Boolean).join(' · ') || '—'}</dd>
-        <dt>Langues</dt><dd>${f.langues || '—'}</dd>
-        <dt>Statut</dt><dd>${f.statut === 'indep' ? 'Indépendant(e)' : f.statut === 'emp' ? 'Employé(e) chez ' + (f.chez || '…') : f.statut === 'etu' ? 'Étudiant(e)' : '—'}</dd>
-        <dt>Tarif souhaité</dt><dd>${f.tarif ? f.tarif + ' € / h' : '—'}</dd>
-        <dt>Contact</dt><dd>${f.tel ? html`<a href="tel:${f.tel.replace(/[^\d+]/g, '')}">${f.tel}</a>` : ''}${f.mail ? html` · <a href="mailto:${f.mail}">${f.mail}</a>` : ''}</dd>
-        <dt>Origine</dt><dd>${CAND_APP[c.app] || ''} · reçue le ${fmtDate(c.sent)} · gardée jusqu’au ${fmtDate(addDays((c.at || '').slice(0, 10), 365))}</dd>
-        <dt>18+ / droit</dt><dd>${f.age ? '✅ confirmé' : '⚠️ non confirmé'}</dd></dl>
-        ${docs.length ? html`<div class="actions" style="margin:10px 0;flex-wrap:wrap">${docs.map((d) => html`<button class="btn sm" data-action="open-doc" data-id="${d.id}">📎 CV${docs.length > 1 ? ' ' + (docs.indexOf(d) + 1) : ''}</button>`)}</div>` : html`<p class="tiny muted">Pas de CV.</p>`}
-        <form data-form="cand-note" class="stack"><input type="hidden" name="id" value="${id}"><label class="field">Notes (test de compétences, essai sur le terrain…)<textarea name="note" style="min-height:70px">${c.note || ''}</textarea></label><button class="btn sm" type="submit">Enregistrer la note</button></form>`,
-      foot: html`<button class="btn ghost danger" data-action="cand-del" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button><button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" data-action="cand-ouvrier" data-id="${id}">➕ Créer l’ouvrier</button>`,
     };
   },
   'interv-form'({ id, preset }) {
@@ -7927,22 +7855,6 @@ const ACTIONS = {
   },
   'mt-tab': (d) => { ui.mtTab = d.id; renderView(); },
   'new-interv': () => openOver('interv-form'),
-  'cand-list': () => openSheet('cand-list'),
-  'cand-open': (d) => openOver('cand', d.id),
-  'cand-ouvrier': (d) => {
-    const c = vault.get('reglages', d.id);
-    if (!c) return;
-    const parts = String(c.f.nom || '').trim().split(/\s+/), met = c.f.met.find((k) => METIERS[k]) || 'autre';
-    openOver('interv-form', null, null, { prenom: parts[0] || '', nom: parts.slice(1).join(' '), tel: c.f.tel || '', mail: c.f.mail || '', metier: met, genre: c.f.statut === 'indep' ? 'societe' : 'prive', cat: 'quotidien' });
-  },
-  async 'cand-del'(d) {
-    const c = vault.get('reglages', d.id);
-    if (!c || !(await confirmBox(`Supprimer la candidature de ${c.f.nom} ?`, { ok: 'Supprimer', danger: true, detail: 'Elle et son CV sont effacés de la base de données.' }))) return;
-    const ds = vault.list('documents').filter((x) => x.kind === 'cv' && x.candId === c.id);
-    await vault.mutate((tx) => { tx.remove('reglages', c.id); for (const x of ds) tx.remove('documents', x.id); }, '🙋 Candidature supprimée', c.f.nom);
-    for (const x of ds) await vault.deleteFile(x.id).catch(() => {});
-    goBack(); toast('Candidature supprimée');
-  },
   // « + » : ajoute une ligne « Supplément » (dépannage, nettoyage en plus) à ce jour
   'hor-add': (d, el) => {
     const grid = el.closest('.hor-blk').querySelector('.hor-grid'), p = HOR_P[d.p] ? d.p : 'extra';
@@ -9393,12 +9305,6 @@ const FORMS = {
     try { await netApi('tenants/' + tid, 'PATCH', { sous }); t.sous = sous; } catch { /* hors ligne : refait à la prochaine ouverture */ }
     toast(sous && !(bf && bf.size) && !netInfo(tid).bailDoc ? '⚠️ Enregistré — bail principal manquant' : 'Enregistré', sous && !netInfo(tid).bailDoc ? { bad: true } : undefined);
     ui.sheet.rendered = false; renderSheet();
-  },
-  async 'cand-note'(fd) {
-    const id = String(fd.get('id') || '');
-    if (!vault.get('reglages', id)) return;
-    await vault.mutate((tx) => tx.put('reglages', { id, note: String(fd.get('note') || '').trim().slice(0, 2000) }), '🙋 Note sur la candidature', '');
-    toast('Note enregistrée');
   },
   async tdem(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
