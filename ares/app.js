@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.314.0';
+const VERSION = '2.315.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -4975,7 +4975,8 @@ dashboard() {
     return html`${head}${!n || (n.loading && !list.length) ? html`<p class="muted">Chargement…</p>` : ''}
 ${netClientsList(list, n, days)}`;
   },
-  gerances() { return html`${TENANT ? '' : netClientsBlock()}${VIEWS.gerancesPortail()}`; },
+  // MASTER : seulement les centrales des gérances (« ＋ Gérance ») ; l’ancien portail (logo 4 éléments) n’est plus montré, ses données restent sur Cloudflare
+  gerances() { return TENANT ? VIEWS.gerancesPortail() : html`${pageHead('Gérances', 'Les centrales de nos clients : chacune a son numéro, ses données chiffrées')}${netClientsBlock()}`; },
   gerancesPortail() {
     const c = ptlConf();
     const portal = html`<a class="btn sm" href="/portail.html" target="_blank" rel="noopener">${icon('eye')} Ouvrir l’app Gérances</a>`;
