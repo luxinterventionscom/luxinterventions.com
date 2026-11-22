@@ -52,7 +52,7 @@ assert(pk.format === 'ares-transfer' && !/Anna|Martin/.test(pk.data), 'paquet ci
 const own = [...store.keys()].filter((k) => k.startsWith('ares/own/')).map((k) => Buffer.from(store.get(k).b).toString());
 assert(own.includes(tid), '🌐 app di Anna adottata dalla centrale ARES: ' + own.join(','));
 await p.keyboard.press('Escape'); await p.waitForTimeout(400);
-assert(/^\/centralluxintervention\/\?/.test(new URL(q.url()).pathname + new URL(q.url()).search) && !(await q.$('link[rel=manifest]')), 'ARES: indirizzo con il numero e icona che lo ricorda: ' + q.url());
+assert(/^\/centralgerances\/\?/.test(new URL(q.url()).pathname + new URL(q.url()).search) && !(await q.$('link[rel=manifest]')), 'ARES: indirizzo con il numero e icona che lo ricorda: ' + q.url());
 // 4) la centrale ARES riceve
 await q.evaluate(() => { location.hash = '#/reglages'; }); await q.waitForTimeout(900);
 const [fc] = await Promise.all([q.waitForEvent('filechooser'), act(q, 'import')]);
@@ -81,7 +81,7 @@ assert(/proprietario \/ locatore|propriétaire \/ bailleur/i.test(await q.$eval(
 await q.keyboard.press('Escape'); await q.waitForTimeout(400);
 // 5) l'app di Anna funziona (pubblicata da ARES)
 const c3 = await phone(b, 'it'), a = await c3.newPage(); a.on('pageerror', (e) => errs.push('anna: ' + e.message));
-await a.goto('http://localhost:8765/espace.html'); await a.waitForTimeout(1200);
+await a.goto('http://localhost:8765/centrallocataires.html'); await a.waitForTimeout(1200);
 await a.fill('input[name=code]', lCode); await a.click('form button[type=submit]'); await a.waitForTimeout(4500);
 if (await a.$('[data-rules-ok]')) { await a.click('[data-rules-ok]'); await a.waitForTimeout(1500); }
 assert(/Anna/.test(await body(a)), 'app di Anna aperta dopo il trasferimento');
@@ -107,9 +107,12 @@ assert(/LUXINTERVENTIONS/.test(brand), 'MASTER: LUXINTERVENTIONS: ' + brand);
 // CENTRAL-DOMIER : il nuovo indirizzo della MASTER
 const cd = await c1.newPage(); await cd.goto('http://localhost:8765/centraldomier.html'); await cd.waitForTimeout(2500);
 assert((await cd.title()) === 'LUXINTERVENTIONS' && await cd.$('[data-form=unlock] [name=pass]'), 'centraldomier.html: la MASTER si apre (chiave)');
+assert(/\/centralluxinterventions\.html/.test(cd.url()), 'vecchio /centraldomier.html → mostra /centralluxinterventions.html: ' + cd.url());
+await cd.goto('http://localhost:8765/centralluxinterventions.html'); await cd.waitForTimeout(2000);
+assert(await cd.$('[data-form=unlock] [name=pass]'), 'centralluxinterventions.html: la MASTER si apre');
 await cd.goto('http://localhost:8765/centraldomier/?' + tid); await cd.waitForTimeout(2500);
 assert(/ARES INVEST/.test(await cd.$eval('#lock', (e) => e.innerText).catch(() => '')), 'centraldomier/?<numero>: la centrale ARES (senza nomi nell’indirizzo)');
-assert(/\/centralluxintervention\/\?/.test(cd.url()), 'vecchio link /centraldomier/?… → passa da solo a /centralluxintervention/?…: ' + cd.url());
+assert(/\/centralgerances\/\?/.test(cd.url()), 'vecchio link /centraldomier/?… → passa da solo a /centralgerances/?…: ' + cd.url());
 await cd.close();
 // 📦 Récupérer toutes mes données (ARES)
 const dl2 = []; q.on('download', (d) => dl2.push(d.suggestedFilename()));

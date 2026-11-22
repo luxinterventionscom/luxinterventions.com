@@ -42,7 +42,7 @@ await q.keyboard.press('Escape'); await q.waitForTimeout(400);
 log('inquilino della gérance con la sua app');
 // 3) l'inquilino segnala un guasto con una foto
 const c3 = await phone(b, 'it'), a = await c3.newPage(); a.on('pageerror', (e) => errs.push('inquilino: ' + e.message));
-await a.goto('http://localhost:8765/espace.html'); await a.waitForTimeout(1200);
+await a.goto('http://localhost:8765/centrallocataires.html'); await a.waitForTimeout(1200);
 await a.fill('input[name=code]', lCode); await a.click('form button[type=submit]'); await a.waitForTimeout(3500);
 if (await a.$('[data-rules-ok]')) { await a.click('[data-rules-ok]'); await a.waitForTimeout(1200); }
 await a.evaluate(() => { const d = document.querySelector('details[data-fold=signal]'); if (d) d.open = true; });

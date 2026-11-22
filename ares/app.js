@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.310.0';
+const VERSION = '2.311.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -51,13 +51,13 @@ const TENANT = (() => {
 })();
 let tenantInfo = (() => { try { return JSON.parse(localStorage.getItem('aresTenantInfo:' + TENANT) || '{}'); } catch { return {}; } })();
 // 🏛️ la centrale principale a son adresse : …/centraldomier.html (l'ancien …/locataires.html y passe tout seul, mêmes données)
-if (!TENANT && /^\/locataires\.html$/.test(location.pathname)) history.replaceState(null, '', '/centraldomier.html' + location.hash);
+if (!TENANT && /^\/(locataires|centraldomier)\.html$/.test(location.pathname)) history.replaceState(null, '', '/centralluxinterventions.html' + location.hash);
 // 📱 icône sur l'écran d'un client : elle doit garder SON adresse (/centraldomier/?<numéro>), pas celle de la centrale principale
 // (sans manifeste, le téléphone enregistre l'adresse affichée ; sur iPhone l'icône ne partage pas la mémoire de Safari)
 if (TENANT) {
   document.querySelector('link[rel=manifest]')?.remove();
   // adresse des clients : /centralluxintervention/?<numéro> (les anciens liens /centraldomier/… et locataires.html?t= y passent tout seuls)
-  if (!/^\?[a-z0-9]{12,24}$/.test(location.search) || !location.pathname.startsWith('/centralluxintervention')) history.replaceState(null, '', '/centralluxintervention/?' + TENANT + location.hash);
+  if (!/^\?[a-z0-9]{12,24}$/.test(location.search) || !location.pathname.startsWith('/centralgerances')) history.replaceState(null, '', '/centralgerances/?' + TENANT + location.hash);
   const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at && tenantInfo.nom) at.content = tenantInfo.nom;
   if (tenantInfo.nom) document.title = tenantInfo.nom;
 }
@@ -538,8 +538,8 @@ async function publishPub(immId, loud) {
 // ───────────────────────── App de l'équipe (lien / code personnel, chiffré) ─────────────────────────
 // Chaque personne voit seulement SON planning (lieu, jour, consignes), son horaire et ses absences ;
 // elle renvoie « commencé / fini / pas fini » avec note et photos, ses coordonnées, ses arrêts maladie.
-const eqUrl = (i) => `${location.origin}/equipe.html#${i.espace.id}.${i.espace.key}`;
-const eqAppUrl = () => `${location.origin}/equipe.html`;
+const eqUrl = (i) => `${location.origin}/centralouvriers.html#${i.espace.id}.${i.espace.key}`;
+const eqAppUrl = () => `${location.origin}/centralouvriers.html`;
 const MEN_TAGS = { ok: '⏰ À l’heure', late: '⏰ En retard', nice: '😊 Aimable', rude: '😠 Désagréable', clean: '✨ Bien nettoyé', dirty: '🧹 Oublis / mal nettoyé', fait: '✅ Travail bien fait', pasfini: '⚠️ Pas fini', tidy: '🧽 Laissé propre', messy: '🗑️ Laissé sale' };
 const MEN_EVAL = { 1: '😞 Insuffisant', 2: '😐 Suffisant', 3: '🙂 Bien', 4: '⭐ Excellent' };
 const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini', refus: '✋ Refusé', start: '🚕 Accepté (START)' };
@@ -1029,7 +1029,7 @@ const ESP_SHOW = {
   tools: 'Don · prêt · location (publier ses objets sur le site, après votre approbation)',
 };
 const ESP_ALL = Object.fromEntries(Object.keys(ESP_SHOW).map((k) => [k, k !== 'porte']));
-const espUrl = (l) => `${location.origin}/espace.html#${l.espace.id}.${l.espace.key}`;
+const espUrl = (l) => `${location.origin}/centrallocataires.html#${l.espace.id}.${l.espace.key}`;
 const isPub = (a) => a.kind === 'pub';
 const avisActifs = (immId) => vault.list('avis').filter((a) => !isPub(a) && (!a.immId || a.immId === immId) && (!a.fin || a.fin >= today()) && (!a.debut || a.debut <= addDays(today(), 60)))
   .sort((a, b) => (a.debut || '').localeCompare(b.debut || ''));
@@ -1096,7 +1096,7 @@ function mtPreview(l) {
     ${why.length ? html`<div class="section-label" style="margin-top:10px">Pas affichés chez ce locataire</div><ul class="small" style="margin:4px 0 0;padding-left:18px">${why.map((w) => html`<li>${w}</li>`)}</ul>
     <p class="tiny muted" style="margin:6px 0 0">Pour qu’une personne de l’équipe apparaisse ici, son horaire doit avoir comme lieu l’adresse de cet immeuble (Maintenance → Équipe → la personne → Modifier → le jour → « — lieu — »).</p>` : ''}</div>`;
 }
-const appUrl = () => `${location.origin}/espace.html`;
+const appUrl = () => `${location.origin}/centrallocataires.html`;
 // Ce que le locataire voit — uniquement les rubriques cochées, uniquement ses propres données
 function espaceData(l) {
   const e = l.espace, show = { ...ESP_ALL, ...(e.show || {}) };
@@ -1395,7 +1395,7 @@ async function licInvoicePdf(f) {
   return p.bytes();
 }
 // adresse « parlante » selon le client (voir LIENS.md) : propriétaire, gestionnaire
-const netUrl = (tid) => `${location.origin}/centralluxintervention/?${tid}`; // un seul indirizzo per tutte le centrali dei clienti, senza nomi
+const netUrl = (tid) => `${location.origin}/centralgerances/?${tid}`; // un seul indirizzo per tutte le centrali dei clienti, senza nomi
 async function netApi(path, method = 'GET', body) {
   const r = await vault.call(path, { method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
   return r.json();
@@ -10988,6 +10988,6 @@ function applyTheme() {
 
 applyTheme();
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  navigator.serviceWorker.register('/locataires-sw.js', { scope: location.pathname.startsWith('/centralluxintervention') ? '/centralluxintervention' : location.pathname.startsWith('/centraldomier') ? '/centraldomier' : '/locataires' }).catch(() => {}); // CENTRAL-DOMIER : sa propre adresse
+  navigator.serviceWorker.register('/locataires-sw.js', { scope: location.pathname.startsWith('/centralgerances') ? '/centralgerances' : location.pathname.startsWith('/centralluxinterventions') ? '/centralluxinterventions' : location.pathname.startsWith('/centralluxintervention') ? '/centralluxintervention' : location.pathname.startsWith('/centraldomier') ? '/centraldomier' : '/locataires' }).catch(() => {}); // CENTRAL-DOMIER : sa propre adresse
 }
 boot();

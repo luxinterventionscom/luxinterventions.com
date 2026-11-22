@@ -1,6 +1,6 @@
 // App des locataires : la page s'ouvre même sans réseau (les données, elles, viennent du serveur).
-const CACHE = 'espace-shell-v1.138.0';
-const SHELL = ['/ares/theme.js', '/espace.html', '/espace.js', '/ares/espace-crypto.js', '/ares/binplan.js', '/ares/chatops.js', '/ares/chattr.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/news.js', '/ares/domier.js', '/ares/emoji.js', '/ares/reqmark.js', '/ares/qrcode.js', '/ares/nbien.js', '/ares/confirm-box.js', '/ares/photo-crop.js', '/ares/pull-refresh.js', '/ares/trip.js', '/espace.webmanifest', '/ares/icons/ares-192.png', '/ares/icons/nobis-logo.png', '/assets/fonts/fonts.css'];
+const CACHE = 'espace-shell-v1.139.0';
+const SHELL = ['/ares/theme.js', '/espace.html', '/centrallocataires.html', '/espace.js', '/ares/espace-crypto.js', '/ares/binplan.js', '/ares/chatops.js', '/ares/chattr.js', '/ares/push-client.js', '/ares/video-embed.js', '/ares/news.js', '/ares/domier.js', '/ares/emoji.js', '/ares/reqmark.js', '/ares/qrcode.js', '/ares/nbien.js', '/ares/confirm-box.js', '/ares/photo-crop.js', '/ares/pull-refresh.js', '/ares/trip.js', '/espace.webmanifest', '/ares/icons/ares-192.png', '/ares/icons/nobis-logo.png', '/assets/fonts/fonts.css'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
 });
@@ -38,7 +38,7 @@ self.addEventListener('push', (e) => {
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
-  const url = (e.notification.data && e.notification.data.url) || '/espace.html';
+  const url = (e.notification.data && e.notification.data.url) || (self.registration.scope.includes('/centrallocataires') ? '/centrallocataires.html' : '/espace.html');
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
     const c = cs.find((x) => new URL(x.url).pathname === url);
     return c ? c.focus() : self.clients.openWindow(url);
