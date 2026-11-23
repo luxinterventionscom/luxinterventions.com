@@ -1,6 +1,10 @@
 <!doctype html>
-<!-- Adresse « parlante » : gerance.html renvoie vers la vraie page portail.html (même lien, même code). Voir LIENS.md -->
+<!-- L’ancien portail des gérances est retiré (v2.316). Les gérances ont leur centrale : /centralgerances/?<numéro> (lien de leur invitation). -->
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
-<title>Portail des gérances — LA CENTRAL</title><meta http-equiv="refresh" content="0;url=/portail.html">
-<script>location.replace('/portail.html' + location.search + location.hash);</script></head>
-<body style="font-family:system-ui;padding:24px"><a href="/portail.html">Portail des gérances →</a></body></html>
+<title>Gérances</title>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => { if (/\/portail/.test(r.scope)) r.unregister(); })).catch(() => {});</script></head>
+<body style="font-family:system-ui,sans-serif;max-width:520px;margin:60px auto;padding:0 16px;color:#1a1a1a;background:#f5f4f0;text-align:center">
+<h1 style="font-size:22px">Cette app n’existe plus</h1>
+<p>Les gérances ont maintenant leur propre centrale : ouvrez le lien de votre invitation.</p>
+<p>Une question ? Contactez LUXINTERVENTIONS.</p>
+</body></html>

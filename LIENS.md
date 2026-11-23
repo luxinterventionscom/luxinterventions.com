@@ -9,7 +9,7 @@ Toutes les adresses commencent par **central…** (une seule famille, sous LUXIN
 | /centralgerances/?<numéro> | la centrale d'un **client** (gérance, Nobis…) — seulement son numéro, aucun nom (lien de son invitation) |
 | /centrallocataires.html | l'app des **locataires** (même app que espace.html) |
 | /centralouvriers.html | l'app des **ouvriers** (même app que equipe.html) |
-| /gerance.html | le portail gratuit des gérances (→ portail.html) |
+| /gerance.html · /portail.html | ancien portail des gérances : retiré (message « Cette app n’existe plus ») |
 
 ## Anciennes adresses (elles marchent toujours : apps déjà installées, anciens liens)
 
