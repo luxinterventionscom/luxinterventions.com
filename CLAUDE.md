@@ -91,6 +91,16 @@ Vale per tutte le app degli utenti (inquilini, operai…), sempre in quest'ordin
 - ✋ mano rossa = messaggio solo per la centrale (inquilini). La centrale vede il testo di prima dei messaggi modificati.
 - 🎧 **Centralino** in Accueil: tutte le categorie, richiudibili (scelta ricordata), 📣 Annunci con storico.
 
+## ⏸️ In attesa (standby, novembre 2026)
+- **App LuxInterventions** (una sola app per tutti, senza centrale: mattonelle del sito → modulo in 3 passi con foto →
+  invio per e-mail/WhatsApp/SMS; «Mes demandes» con firma del devis al dito; «Moi» con 📦 sauvegarde/import; dati solo sul telefono).
+  Il titolare ha mandato al cliente il PDF «description et devis à signer» (7 schermate, compreso/non compreso, RGPD, prezzo,
+  firme). **Si aspetta la firma del cliente.** Poi: 1) PDF della **fattura** (prestataire = la società UK del titolare,
+  autoliquidazione TVA: il cliente ha un n° TVA LU; dati della società e banca li ridà il titolare, non scriverli qui);
+  2) costruire l'app **esattamente come nel PDF, niente di più**.
+- **Separare ARES/Nobis da LuxInterventions** (ancora da decidere: indirizzo A/B, bottone Nobis sul sito, inoltro automatico).
+- **Link di firma dei devis nella MASTER** («🔗 Lien / QR code») non funziona più dalla v2.316 (passava dal vecchio portale): da riparare solo se lo chiede.
+
 ## Da fare, deciso col titolare (non ancora nel codice — se ne riparla)
 - **Licences → ＋ Client: stessa creazione per tutti i tipi** (agenzia immo, privato, gérance, proprietario…):
   solo nome/titolo → codice di invito, codice perso, chiave di secours divisa (½ A al cliente, ½ B a noi), link. Prova **3 mesi per tutti**.
