@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.315.0';
+const VERSION = '2.316.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -2552,7 +2552,8 @@ const societe = () => {
 // Les gérances (sociétés externes) utilisent l’app Gérances ; ici, LA CENTRAL les crée, invite leurs responsables,
 // gère leurs résidences et peut les supprimer. La session du portail (compte LA CENTRAL) est gardée dans le coffre chiffré.
 const PTL_API = API.replace(/\/$/, '') + '/api/portail/';
-const ptlConf = () => { const c = vault.get('reglages', 'portail'); return c && c.token ? c : null; };
+// 🗑️ l’ancien portail des gérances (portail.html) est retiré : plus de connexion (la session gardée dans le coffre reste, non utilisée)
+const ptlConf = () => null;
 class PtlError extends Error { constructor(status, message) { super(message); this.status = status; } }
 async function ptlApi(path, opts = {}) {
   const c = ptlConf();

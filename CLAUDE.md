@@ -30,7 +30,7 @@ Memoria di lavoro per chi (persona o assistente) riprende il progetto.
 - Ramo di lavoro → push → `main` con `merge --no-ff` → push → il ramo di lavoro torna allineato (`merge --ff-only main`).
 - Ad ogni modifica: aumentare le versioni
   - centrale: `VERSION` in `ares/app.js`, `?v=` in `locataires.html`, **`centralluxinterventions.html`, `centraldomier.html`, `centralgerances/index.html`, `centraldomier/index.html` e `centralluxintervention/index.html`**, `CACHE` in `locataires-sw.js` (stessa cifra);
-  - app: `CACHE` in `espace-sw.js`, `equipe-sw.js`, `portail-sw.js`.
+  - app: `CACHE` in `espace-sw.js`, `equipe-sw.js` (`portail-sw.js` ora si autodistrugge: non toccarlo).
 - Un file nuovo in `ares/` usato da un'app va aggiunto alla `SHELL` del suo service worker.
 
 ## Struttura della rete (accordo col titolare — non cambiarla senza di lui)
@@ -79,7 +79,7 @@ Vale per tutte le app degli utenti (inquilini, operai…), sempre in quest'ordin
 - Centrali dei clienti (vecchio): **`/centralluxintervention/?<numero>`** (solo il numero del cliente, mai nomi nell'indirizzo; una sola pagina per tutti). I vecchi `/centraldomier/?…` e `locataires.html?t=` passano da soli al nuovo indirizzo (le pagine `centraldomier/index.html` e `centralluxintervention/index.html` vanno tenute uguali).
 - `centraldomier.html` = **CENTRAL-DOMIER**, la MASTER (copia di `locataires.html`: tenerle uguali). `locataires.html` resta per i vecchi link e le centrali dei clienti.
 - `locataires.html` + `ares/app.js`: la **centrale** (anche le centrali dei clienti della rete, con `?t=<id>`).
-- App: `espace.js` (inquilini), `equipe.js` (operai), `portail/` (gérances).
+- App: `espace.js` (inquilini), `equipe.js` (operai). **Vecchio portale gérances (`portail/`, logo 4 elementi) TOLTO (v2.316)**: le gérances si creano con «＋ Gérance» (centrale `centralgerances/?numero`); `portail.html`/`gerance.html` mostrano «Cette app n’existe plus»; i dati restano su Cloudflare; tolto anche il bottone «Accéder au portail» dal sito (chiesto dal titolare).
 - Moduli condivisi in `ares/`: `chatops.js` (privato ✋, modifica, spunte), `chattr.js` (🌐 traduzione),
   `espace-crypto.js`, ecc.
 - Traduzioni della centrale: `ares/i18n/<lingua>.js` (chiave = testo francese).

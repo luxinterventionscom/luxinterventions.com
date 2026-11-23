@@ -1,31 +1,10 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev https://api.open-meteo.com https://geocoding-api.open-meteo.com; media-src https:; frame-src https://www.youtube-nocookie.com https://www.youtube.com https://www.tiktok.com https://www.instagram.com https://www.facebook.com https://player.vimeo.com https://open.spotify.com https://widget.deezer.com https://embed.music.apple.com https://w.soundcloud.com https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev; object-src 'none'; base-uri 'none'; form-action 'none'">
-<meta name="referrer" content="no-referrer">
-<meta name="robots" content="noindex, nofollow">
-<meta name="ptl-api" content="https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev">
-<meta name="theme-color" content="#1B2E4B">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Gérances">
+<!doctype html>
+<!-- L’ancien portail des gérances est retiré (v2.316). Les gérances ont leur centrale : /centralgerances/?<numéro> (lien de leur invitation). -->
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>Gérances</title>
-<link rel="manifest" href="/portail.webmanifest">
-<link rel="icon" type="image/png" sizes="32x32" href="/portail/icons/ptl-32.png">
-<link rel="apple-touch-icon" href="/portail/icons/ptl-180.png">
-<link rel="stylesheet" href="/ares/app.css">
-<link rel="stylesheet" href="/portail/portail.css">
-<script type="module" src="/portail/app.js"></script>
-</head>
-<body>
-<div id="lock" class="lock"></div>
-<div id="app" class="app" hidden></div>
-<dialog id="sheet" class="sheet" aria-modal="true"></dialog>
-<dialog id="confirm" class="sheet narrow" aria-modal="true"></dialog>
-<div id="toasts" class="toasts" aria-live="polite" popover="manual"></div>
-<div id="print"></div>
-<noscript><p style="padding:24px;font-family:sans-serif">JavaScript est nécessaire pour utiliser le portail.</p></noscript>
-</body>
-</html>
+<script>if ('serviceWorker' in navigator) navigator.serviceWorker.getRegistrations().then((rs) => rs.forEach((r) => { if (/\/portail/.test(r.scope)) r.unregister(); })).catch(() => {});</script></head>
+<body style="font-family:system-ui,sans-serif;max-width:520px;margin:60px auto;padding:0 16px;color:#1a1a1a;background:#f5f4f0;text-align:center">
+<h1 style="font-size:22px">Cette app n’existe plus</h1>
+<p>Les gérances ont maintenant leur propre centrale : ouvrez le lien de votre invitation.</p>
+<p>Une question ? Contactez LUXINTERVENTIONS.</p>
+</body></html>
