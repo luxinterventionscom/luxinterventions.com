@@ -30,7 +30,7 @@ const S = process.argv[2];
   await p.fill('#f-adr', '12 rue Test, L-1234 Luxembourg'); await p.fill('#f-notes', 'Fuite sous l’évier');
   const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
   fs.writeFileSync(S + '/p.png', png);
-  await p.setInputFiles('[data-in=photo]', S + '/p.png'); await p.waitForTimeout(600);
+  await p.setInputFiles('[data-in=photo]', S + '/p.png'); await p.waitForTimeout(1500);
   ok(await p.$$eval('.ph img', (x) => x.length) === 1, 'foto aggiunta');
   await p.screenshot({ path: S + '/a2.png' });
   await p.click('[data-act=next2]'); await p.waitForTimeout(800);
