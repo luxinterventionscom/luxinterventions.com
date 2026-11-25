@@ -125,8 +125,9 @@ const SCREENS = {
   home() {
     nav('services'); setSub();
     return `${installBox()}<h2>De quoi avez-vous besoin ?</h2><p class="sub">Touchez un service : dépannage ou devis.</p>
-      <div class="grid">${SERVICES.map(([k, n, e, c, sh, d]) => `<div class="tw"><button class="tile" data-act="svc" data-k="${k}"><i style="background:${c}">${e}</i><span>${esc(sh || n)}</span></button>${d ? `<button class="ti" data-act="go" data-to="#/info/${k}" aria-label="Infos ${esc(n)}">i</button>` : ''}</div>`).join('')}</div>
-      <button class="row" style="margin-top:10px" data-act="svc" data-k="autre"><i style="background:#eee">➕</i><span class="g"><b>Autre demande</b><small>Ce qui n’est pas dans la liste</small></span></button>`;
+      <div class="grid">${SERVICES.map(([k, n, e, c, sh, d]) => `<div class="tw"><button class="tile" data-act="svc" data-k="${k}"><i style="background:${c}">${e}</i><span>${esc(sh || n)}</span></button>${d ? `<button class="ti" data-act="go" data-to="#/info/${k}" aria-label="Infos ${esc(n)}">i</button>` : ''}</div>`).join('')}
+        <div class="tw"><button class="tile" data-act="svc" data-k="autre"><i style="background:#eee">➕</i><span>Autre demande</span></button><button class="ti" data-act="go" data-to="#/info/autre" aria-label="Infos Autre demande">i</button></div>
+        <div class="tw"><button class="tile soon" data-act="soon"><i style="background:#F3F1EC">✨</i><span>Nouveau service</span><small class="soon-b">Bientôt</small></button></div></div>`;
   },
   step1() {
     const d = draft, s = svc(d.service); nav('services'); setSub(s[1]);
@@ -279,7 +280,7 @@ const SCREENS = {
       <div class="sec">Contacter LuxInterventions</div>
       ${sendBtns('contact')}
       <a class="btn gh" href="tel:${LUX_TEL}">📞 Appeler ${LUX_TEL_TXT}</a>
-      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.3.0</p>`;
+      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.3.1</p>`;
   },
   edit() {
     nav('moi'); setSub('Mes coordonnées'); const m = db.me;
@@ -366,6 +367,7 @@ view.addEventListener('click', async (e) => {
   const a = b.dataset.act, via = b.dataset.via;
   if (a === 'go') { location.hash = b.dataset.to; return; }
   if (a === 'svc') { draft = newDraft(b.dataset.k); location.hash = '#/f/1'; return; }
+  if (a === 'soon') { toast('✨ Nouveau service bientôt disponible : restez connecté !'); return; }
   if (a === 'cancel') { draft = null; location.hash = '#/'; return; }
   if (a === 'install' && deferredInstall) { deferredInstall.prompt(); deferredInstall = null; render(); return; }
   if (a === 'inst-hide') { try { localStorage.setItem('luxappInstHide', '1'); } catch { /* */ } render(); return; }
