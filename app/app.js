@@ -6,13 +6,23 @@ import { luxMail, LUX_TEL, LUX_TEL_TXT } from './mail.js';
 
 const WORKER = 'https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev';
 const KEY = 'luxapp';
+// mêmes services, textes et étiquettes que le site (index.html, section Services) : [clé, nom, icône, couleur, nom court, description, étiquette]
 const SERVICES = [
-  ['toiture', 'Toiture', '🏗️', '#EBF3FB'], ['jardin', 'Jardinage', '🌿', '#EBF5EF'], ['etanch', 'Étanchéité', '🛡️', '#FDF0EB'],
-  ['renov', 'Rénovation et façades', '🏘️', '#F3EEFB', 'Rénovation façades'], ['serr', 'Serrurerie', '🔐', '#FFF8E1'], ['plomb', 'Plomberie & Débouchage', '💧', '#EBF3FB'],
-  ['elec', 'Électricité', '⚡', '#FFF3E0'], ['dechets', 'Collecte Déchets & Déchets Spéciaux', '🗑️', '#F5F5F5', 'Collecte déchets'], ['demen', 'Déménagement', '🚚', '#E8F4FD'],
-  ['brico', 'Bricolage & Améliorations', '🔧', '#F0FBF0', 'Bricolage'], ['nett', 'Nettoyage des résidences', '🧹', '#E6F7F5', 'Nettoyage'], ['solaire', 'Panneaux solaires', '☀️', '#FFF7E0'],
+  ['rapport', 'Rapport d’expertise', '📊', '#E8EEF6', '', 'Détection de fuites, humidité, thermographie infrarouge, inspection vidéo et traçage de conduites.', 'Diagnostic'],
+  ['toiture', 'Toiture', '🏗️', '#EBF3FB', '', 'Réparations d’urgence, inspection, remplacement de tuiles. Intervention rapide après intempéries.', '7j/7'],
+  ['jardin', 'Jardinage', '🌿', '#EBF5EF', '', 'Entretien des espaces verts, taille, tonte, nettoyage, déneigement et salage.', '7j/7'],
+  ['etanch', 'Étanchéité', '🛡️', '#FDF0EB', '', 'Terrasses, toitures-terrasses, sous-sols. Diagnostic et traitement contre les infiltrations.', 'Urgences'],
+  ['renov', 'Rénovation et façades', '🏘️', '#F3EEFB', 'Rénovation façades', 'Travaux intérieurs et extérieurs, remise en état, rénovation complète. Service programmé.', 'Programmé'],
+  ['serr', 'Serrurerie', '🔐', '#FFF8E1', '', 'Ouverture de portes, remplacement de cylindres, sécurisation. Intervention nocturne garantie.', '24h/24'],
+  ['plomb', 'Plomberie & Débouchage', '💧', '#EBF3FB', '', 'Fuites, canalisations bouchées, WC, colonnes. Urgences nocturnes et week-end disponibles.', '24h/24'],
+  ['elec', 'Électricité', '⚡', '#FFF3E0', '', 'Dépannages, remise en conformité, tableaux électriques, urgences.', 'Dépannage'],
+  ['dechets', 'Collecte Déchets & Déchets Spéciaux', '🗑️', '#F5F5F5', 'Collecte déchets', 'Service régulier en partenariat avec Arcolux. Gestion des déchets pour résidences et immeubles.', 'Contrat'],
+  ['demen', 'Déménagement', '🚚', '#E8F4FD', '', 'Organisation et exécution de déménagements résidentiels. Devis gratuit, équipe certifiée.', 'Sur devis'],
+  ['brico', 'Bricolage & Améliorations', '🔧', '#F0FBF0', 'Bricolage', 'Petits travaux, montage de meubles, fixations, remplacement de vitrages, réparations diverses. Rapide et fiable.', 'Rapide'],
+  ['nett', 'Nettoyage des résidences', '🧹', '#E6F7F5', 'Nettoyage', 'Entretien et nettoyage des parties communes.', 'Régulier'],
+  ['solaire', 'Panneaux solaires', '☀️', '#FFF7E0', '', 'Devis, pose et réparation de vos panneaux solaires.', 'Devis · Pose · Réparation'],
 ];
-const AUTRE = ['autre', 'Autre demande', '➕', '#eeeeee'];
+const AUTRE = ['autre', 'Autre demande', '➕', '#eeeeee', '', 'Ce qui n’est pas dans la liste : décrivez votre besoin, nous trouvons la bonne personne.', ''];
 const svc = (k) => SERVICES.find((s) => s[0] === k) || AUTRE;
 const STATUTS = { proprietaire: 'Propriétaire', locataire: 'Locataire', syndic: 'Syndic' };
 const URG = { normal: 'Normal', jour: 'Aujourd’hui', urgent: '🔴 Urgent' };
@@ -108,14 +118,14 @@ function installBox() {
   try { if (localStorage.getItem('luxappInstHide') === '1') return ''; } catch { /* */ }
   // toujours la clip iPhone / Android (le bouton « Installer » seulement quand le téléphone le permet)
   return `<div class="inst" style="flex-wrap:wrap"><span style="font-size:26px">📲</span><div class="g"><b>Installer l’app</b>L’icône LuxInterventions sur votre téléphone, comme une vraie app</div>${deferredInstall ? '<button data-act="install">Installer</button>' : ''}<button class="x" data-act="inst-hide" aria-label="Fermer">✕</button>
-    <div data-install-clip style="width:100%;background:#fff;border-radius:12px;margin-top:6px;padding:2px 0"></div></div>`;
+    <details style="width:100%"><summary style="cursor:pointer;font-weight:700;color:#F2B08C;margin-top:4px">Voir comment faire</summary><div data-install-clip style="background:#fff;border-radius:12px;margin-top:6px;padding:2px 0"></div></details></div>`;
 }
 
 const SCREENS = {
   home() {
     nav('services'); setSub();
     return `${installBox()}<h2>De quoi avez-vous besoin ?</h2><p class="sub">Touchez un service : dépannage ou devis.</p>
-      <div class="grid">${SERVICES.map(([k, n, e, c, sh]) => `<button class="tile" data-act="svc" data-k="${k}"><i style="background:${c}">${e}</i><span>${esc(sh || n)}</span></button>`).join('')}</div>
+      <div class="grid">${SERVICES.map(([k, n, e, c, sh, d]) => `<div class="tw"><button class="tile" data-act="svc" data-k="${k}"><i style="background:${c}">${e}</i><span>${esc(sh || n)}</span></button>${d ? `<button class="ti" data-act="go" data-to="#/info/${k}" aria-label="Infos ${esc(n)}">i</button>` : ''}</div>`).join('')}</div>
       <button class="row" style="margin-top:10px" data-act="svc" data-k="autre"><i style="background:#eee">➕</i><span class="g"><b>Autre demande</b><small>Ce qui n’est pas dans la liste</small></span></button>`;
   },
   step1() {
@@ -220,6 +230,40 @@ const SCREENS = {
       <label for="f-av">Un commentaire (facultatif)</label><textarea id="f-av" data-av="txt" maxlength="1000">${esc(avis.txt)}</textarea>
       <label>Envoyer votre avis à LuxInterventions par</label>${sendBtns('avis-send')}`;
   },
+  infos() {
+    nav('infos'); setSub('Nos services');
+    return `<h2>ℹ️ Nos services</h2>
+      <p class="sub">LuxInterventions coordonne des interventions techniques pour gérances, syndics et particuliers au Luxembourg et dans la Grande Région.</p>
+      ${SERVICES.map(([k, n, e, c, , d, t]) => `<button class="row" data-act="go" data-to="#/info/${k}"><i style="background:${c}">${e}</i><span class="g"><b>${esc(n)}</b><small>${esc(d || 'Sur demande')}</small></span>${t ? `<span class="bd b-envoyee">${esc(t)}</span>` : ''}</button>`).join('')}
+      <div class="note" style="margin-top:6px">🚨 En cas d’urgence, le téléphone reste le moyen le plus rapide, 7j/7 et 24h/24 : <a href="tel:${LUX_TEL}"><b>${LUX_TEL_TXT}</b></a></div>`;
+  },
+  info(k) {
+    const s = svc(k); nav('infos'); setSub(s[1]);
+    return `<button class="back" data-act="go" data-to="#/infos">‹ Tous nos services</button>
+      <div style="text-align:center;margin:6px 0 14px"><i style="display:inline-flex;width:84px;height:84px;border-radius:24px;align-items:center;justify-content:center;font-style:normal;font-size:44px;background:${s[3]}">${s[2]}</i>
+        <h2 style="margin-top:10px">${esc(s[1])}</h2>${s[6] ? `<span class="bd b-envoyee">${esc(s[6])}</span>` : ''}</div>
+      <div class="recap" style="white-space:normal">${esc(s[5] || 'Décrivez votre besoin dans la demande : nous vous recontactons.')}</div>
+      <button class="btn" data-act="svc" data-k="${s[0]}">▶ Faire une demande</button>
+      <a class="btn gh" href="tel:${LUX_TEL}">📞 Urgence : ${LUX_TEL_TXT}</a>`;
+  },
+  legal() {
+    nav('legal'); setSub('Informations légales');
+    return `<h2>⚖️ Informations légales</h2><div class="text">
+      <div class="sec">Avertissement</div>
+      <p>Les informations de cette app (services, délais, étiquettes comme « 24h/24 » ou « Devis gratuit ») sont fournies <b>à titre indicatif</b> et peuvent changer. Elles ne constituent pas une offre contractuelle : seules font foi les conditions convenues par écrit avec LuxInterventions (devis signé, contrat).</p>
+      <p>Envoyer une demande dans l’app <b>n’est pas une commande</b> : LuxInterventions vous recontacte pour confirmer, et vous recevez un devis quand il en faut un. Un devis devient un accord quand vous le signez « Bon pour accord » et le renvoyez.</p>
+      <p>L’app fonctionne sur votre téléphone, sans compte. LuxInterventions ne répond pas des pertes de données du téléphone (changement, panne, effacement) : pensez à la 📦 sauvegarde dans « Moi ». En cas d’urgence, appelez le <a href="tel:${LUX_TEL}">${LUX_TEL_TXT}</a>.</p>
+      <div class="sec">Données personnelles (RGPD)</div>
+      <ul>
+        <li><b>Sur votre téléphone</b> : vos demandes, devis, signatures et avis restent uniquement ici. Pas de compte, pas de centrale, pas de suivi publicitaire.</li>
+        <li><b>Ce que reçoit LuxInterventions</b> : seulement ce que <b>vous</b> envoyez (e-mail, WhatsApp, SMS) et les photos ou signatures jointes par lien.</li>
+        <li><b>Pourquoi</b> : préparer et réaliser les devis et interventions demandés (mesures précontractuelles et exécution du contrat, art. 6.1.b RGPD).</li>
+        <li><b>Combien de temps et vos droits</b> : comme pour les demandes faites sur le site, selon notre politique de confidentialité. Vous pouvez à tout moment consulter, corriger ou faire effacer vos données en nous écrivant.</li>
+      </ul></div>
+      <a class="btn gh" href="/mentions-legales.html" target="_blank" rel="noopener">📄 Mentions légales complètes</a>
+      <a class="btn gh" href="/confidentialite.html" target="_blank" rel="noopener">🔒 Politique de confidentialité complète</a>
+      <div class="sec">Nous écrire</div>${sendBtns('contact')}`;
+  },
   moi() {
     nav('moi'); setSub('Moi');
     const m = db.me;
@@ -231,10 +275,11 @@ const SCREENS = {
       <label class="row" style="margin-bottom:9px"><i style="background:#F3EEFB">📥</i><span class="g"><b>Importer sur ce téléphone</b><small>Retrouver demandes et devis</small></span><input type="file" accept="application/json,.json" data-in="import" hidden></label>
       <div class="sec">Infos</div>
       <button class="row" data-act="go" data-to="#/conf"><i style="background:#F5F5F5">🔒</i><span class="g"><b>Confidentialité</b><small>Qui reçoit vos données et pourquoi</small></span></button>
+      <button class="row" data-act="go" data-to="#/legal"><i style="background:#F5F5F5">⚖️</i><span class="g"><b>Informations légales</b><small>Avertissement, RGPD, mentions légales</small></span></button>
       <div class="sec">Contacter LuxInterventions</div>
       ${sendBtns('contact')}
       <a class="btn gh" href="tel:${LUX_TEL}">📞 Appeler ${LUX_TEL_TXT}</a>
-      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.2.0</p>`;
+      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.3.0</p>`;
   },
   edit() {
     nav('moi'); setSub('Mes coordonnées'); const m = db.me;
@@ -290,6 +335,9 @@ function render() {
   else if (h === '#/moi') view.innerHTML = SCREENS.moi();
   else if (h === '#/moi/edit') view.innerHTML = SCREENS.edit();
   else if (h === '#/conf') view.innerHTML = SCREENS.conf();
+  else if (h === '#/infos') view.innerHTML = SCREENS.infos();
+  else if ((m = h.match(/^#\/info\/(\w+)$/))) view.innerHTML = SCREENS.info(m[1]);
+  else if (h === '#/legal') view.innerHTML = SCREENS.legal();
   else view.innerHTML = SCREENS.home();
   sigInit();
   if (window.luxInstallClip) view.querySelectorAll('[data-install-clip]').forEach(window.luxInstallClip);
