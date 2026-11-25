@@ -99,9 +99,9 @@ const isIos = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
 function installBox() {
   if (standalone()) return '';
   try { if (localStorage.getItem('luxappInstHide') === '1') return ''; } catch { /* */ }
-  if (deferredInstall) return `<div class="inst"><span style="font-size:26px">📲</span><div class="g"><b>Installer l’app</b>L’icône LuxInterventions sur votre téléphone</div><button data-act="install">Installer</button><button class="x" data-act="inst-hide" aria-label="Fermer">✕</button></div>`;
-  if (isIos()) return `<div class="inst"><span style="font-size:26px">📲</span><div class="g"><b>Installer l’app sur l’iPhone</b>Touchez <b>Partager</b> ⬆️ puis « <b>Sur l’écran d’accueil</b> »</div><button class="x" data-act="inst-hide" aria-label="Fermer">✕</button></div>`;
-  return '';
+  // toujours la clip iPhone / Android (le bouton « Installer » seulement quand le téléphone le permet)
+  return `<div class="inst" style="flex-wrap:wrap"><span style="font-size:26px">📲</span><div class="g"><b>Installer l’app</b>L’icône LuxInterventions sur votre téléphone, comme une vraie app</div>${deferredInstall ? '<button data-act="install">Installer</button>' : ''}<button class="x" data-act="inst-hide" aria-label="Fermer">✕</button>
+    <div data-install-clip style="width:100%;background:#fff;border-radius:12px;margin-top:6px;padding:2px 0"></div></div>`;
 }
 
 const SCREENS = {
@@ -209,7 +209,7 @@ const SCREENS = {
       <div class="sec">Contacter LuxInterventions</div>
       ${sendBtns('contact')}
       <a class="btn gh" href="tel:${LUX_TEL}">📞 Appeler ${LUX_TEL_TXT}</a>
-      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.0.0</p>`;
+      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.1.0</p>`;
   },
   edit() {
     nav('moi'); setSub('Mes coordonnées'); const m = db.me;
@@ -266,6 +266,7 @@ function render() {
   else if (h === '#/conf') view.innerHTML = SCREENS.conf();
   else view.innerHTML = SCREENS.home();
   sigInit();
+  if (window.luxInstallClip) view.querySelectorAll('[data-install-clip]').forEach(window.luxInstallClip);
   window.scrollTo(0, 0);
 }
 window.addEventListener('hashchange', render);
