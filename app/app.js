@@ -209,7 +209,7 @@ const SCREENS = {
         ${dv.signedAt ? `<label>Renvoyer le devis signé</label>${sendBtns('resend-sig')}` : `<button class="btn" data-act="go" data-to="#/r/${r.id}/signer">✍️ Signer le devis</button>`}`
       : `<div class="two"><button class="btn green" data-act="sent-pop" data-id="${r.id}">✅ Envoyée</button><button class="btn" data-act="go" data-to="#/r/${r.id}/devis">📝 J’ai reçu un devis</button></div>`}
       ${r.st === 'fait' ? '' : askDone(r) ? `<div class="sec">Et maintenant ?</div><div class="recap" style="text-align:center"><b>L’intervention a-t-elle été faite ?</b><div class="three" style="grid-template-columns:1fr 1fr;margin:10px 0 0"><button type="button" style="background:var(--green)" data-act="fait" data-id="${r.id}"><em>✅</em>Oui, c’est fait</button><button type="button" style="background:#8a857b" data-act="pas-encore" data-id="${r.id}"><em>⏳</em>Pas encore</button></div></div>` : ''}
-      ${r.st === 'fait' ? '' : `<button class="btn gh" data-act="resend" data-id="${r.id}">↻ Renvoyer la demande</button>`}
+      ${r.st === 'fait' ? '' : `<div class="two eq"><button class="btn gh" data-act="resend" data-id="${r.id}">↻ Renvoyer</button><button class="btn gh" data-act="go" data-to="#/r/${r.id}/avis">⭐ Satisfaction</button></div>`}
       <button class="btn gh" style="color:#b91c1c" data-act="del" data-id="${r.id}">🗑️ Supprimer de ce téléphone</button>`;
   },
   devis(id) {
@@ -239,12 +239,15 @@ const SCREENS = {
     nav('mes'); setSub('Votre avis');
     if (!avis || avis.id !== id) avis = { id, stars: 0, q: {}, txt: '' };
     return `<button class="back" data-act="go" data-to="#/r/${id}">‹ Retour</button>
-      <h2>⭐ Êtes-vous satisfait ?</h2><p class="sub">${esc(svc(r.service)[1])} · terminé le ${fmt(r.doneAt)}</p>
+      <h2>⭐ Êtes-vous satisfait ?</h2><p class="sub">${esc(svc(r.service)[1])} · ${r.st === 'fait' ? 'terminé le ' + fmt(r.doneAt) : 'demande du ' + fmt(r.at)}</p>
       <label>Note générale <span class="req">*</span></label>
       <div class="seg" data-avis="stars" style="font-size:24px">${[1, 2, 3, 4, 5].map((n) => `<button type="button" data-v="${n}" class="${avis.stars >= n ? 'on' : ''}" aria-label="${n} sur 5">${avis.stars >= n ? '⭐' : '☆'}</button>`).join('')}</div>
       ${AVQ.map(([k, l]) => `<label>${l}</label><div class="seg" data-avis="${k}"><button type="button" data-v="1" class="${avis.q[k] === 1 ? 'on' : ''}">👍 Oui</button><button type="button" data-v="0" class="${avis.q[k] === 0 ? 'on' : ''}">👎 Non</button></div>`).join('')}
       <label for="f-av">Un commentaire (facultatif)</label><textarea id="f-av" data-av="txt" maxlength="1000">${esc(avis.txt)}</textarea>
-      <label>Envoyer votre avis à LuxInterventions par</label>${sendBtns('avis-send')}`;
+      <label>Envoyer votre avis à LuxInterventions par</label>${sendBtns('avis-send')}
+      <div class="sec">Dossier</div>
+      ${r.st === 'fait' ? `<div class="note ok-note">✅ Demande clôturée le ${fmt(r.doneAt)} : elle est dans « Travaux terminés ».</div>`
+        : `<button class="btn green" data-act="close" data-id="${r.id}">✅ Clôturer la demande</button><p class="sub" style="margin-top:6px">La demande passe dans « ✅ Travaux terminés ». Vous la retrouvez toujours dans Demandes.</p>`}`;
   },
   infos() {
     nav('infos'); setSub('Nos services');
@@ -295,7 +298,7 @@ const SCREENS = {
       <div class="sec">Contacter LuxInterventions</div>
       ${sendBtns('contact')}
       ${centralBox()}
-      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.3.4</p>`;
+      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.3.5</p>`;
   },
   edit() {
     nav('moi'); setSub('Mes coordonnées'); const m = db.me;
@@ -416,6 +419,11 @@ view.addEventListener('click', async (e) => {
     return;
   }
   if (a === 'resend') { const r = getReq(b.dataset.id); if (r) { draft = { ...r, photos: r.photos.map((p) => ({ ...p })) }; location.hash = '#/f/3'; } return; }
+  if (a === 'close') {
+    const r = getReq(b.dataset.id); if (!r) return;
+    if (!confirm('Clôturer cette demande ? Elle passe dans « Travaux terminés ».')) return;
+    r.st = 'fait'; r.doneAt = new Date().toISOString(); save(); location.hash = '#/r/' + r.id; toast('✅ Demande clôturée'); return;
+  }
   if (a === 'sent-pop') { const r = getReq(b.dataset.id); if (r) sentPop(r); return; }
   if (a === 'fait') { const r = getReq(b.dataset.id); if (r) { r.st = 'fait'; r.doneAt = new Date().toISOString(); save(); location.hash = '#/r/' + r.id + '/avis'; toast('✅ Travaux terminés : donnez votre avis'); } return; }
   if (a === 'pas-encore') { const r = getReq(b.dataset.id); if (r) { r.askAt = new Date().toISOString(); save(); render(); toast('D’accord : on vous redemandera demain'); } return; }
@@ -424,7 +432,7 @@ view.addEventListener('click', async (e) => {
     if (!avis.stars) return toast('Choisissez une note de 1 à 5 étoiles');
     r.avis = { stars: avis.stars, q: { ...avis.q }, txt: avis.txt.trim(), at: new Date().toISOString() }; save();
     const s = svc(r.service);
-    const text = '=== AVIS CLIENT — TRAVAUX TERMINÉS ===\n\n' + 'Service : ' + s[1] + '\nDemande : ' + r.ref + ' du ' + fmt(r.at) + '\nTerminé le : ' + fmt(r.doneAt) + '\nClient : ' + r.nom + ' · ' + r.tel + '\nAdresse : ' + r.adresse + '\n\n'
+    const text = '=== AVIS CLIENT ===\n\n' + 'Service : ' + s[1] + '\nDemande : ' + r.ref + ' du ' + fmt(r.at) + (r.doneAt ? '\nTerminé le : ' + fmt(r.doneAt) : '\nStatut : en cours') + '\nClient : ' + r.nom + ' · ' + r.tel + '\nAdresse : ' + r.adresse + '\n\n'
       + 'Note : ' + r.avis.stars + '/5 ' + stars(r.avis.stars) + '\n' + AVQ.map(([k, l]) => l + ' : ' + (r.avis.q[k] === 1 ? '👍 oui' : r.avis.q[k] === 0 ? '👎 non' : '—')).join('\n')
       + '\n\nCommentaire : ' + (r.avis.txt || '—') + '\n\n=== Envoyé depuis l’app LuxInterventions ===';
     await sendVia(via, `[LuxInterventions] Avis ${r.avis.stars}/5 — ${s[1]} — ${r.nom}`, text);

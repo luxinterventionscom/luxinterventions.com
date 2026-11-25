@@ -78,3 +78,4 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); border-color: tr
 .pop-box { background: #fff; border-radius: 20px; padding: 22px 18px 18px; max-width: 380px; width: 100%; text-align: center; font-size: 14.5px; line-height: 1.5; }
 .pop-box p { margin: 0 0 10px; }
 .pop-ok { width: 72px; height: 72px; border-radius: 50%; background: var(--green); color: #fff; font-size: 38px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }
+.two.eq { grid-template-columns: 1fr 1fr; margin-top: 9px; } .two.eq .btn.gh { margin-top: 0; }
