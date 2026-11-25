@@ -82,3 +82,8 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); border-color: tr
 /* ✅ demande terminée : cadre vert (liste et fiche) */
 .row.fin, .hd.fin { border: 2px solid #8FC3A3; background: #F4FAF6; }
 .hd.fin { border-radius: 16px; padding: 9px 11px; }
+/* 🌐 pastilles de langue dans la barre bleue */
+.top .g { flex: 1; min-width: 0; }
+.langs { display: flex; gap: 5px; flex: none; }
+.langs button { width: 30px; height: 30px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,.35); background: transparent; color: rgba(255,255,255,.8); font: 700 10.5px system-ui, sans-serif; cursor: pointer; padding: 0; }
+.langs button.on { background: #fff; color: var(--navy); border-color: #fff; }
