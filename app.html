@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<!-- App LuxInterventions : une seule app pour tous, sans centrale. Demandes et devis envoyés par e-mail / WhatsApp / SMS ;
+     les données restent sur le téléphone de la personne. Code : /app/app.js · cache : /app-sw.js -->
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev; connect-src 'self' https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#1B2E4B">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="LuxInterventions">
+<title>LuxInterventions</title>
+<link rel="manifest" href="/app.webmanifest">
+<link rel="icon" type="image/png" sizes="32x32" href="/ares/icons/lux-favicon-32.png">
+<link rel="apple-touch-icon" href="/ares/icons/lux-apple-touch-icon.png">
+<link rel="stylesheet" href="/app/app.css?v=1.0.0">
+<script type="module" src="/app/app.js?v=1.0.0"></script>
+</head>
+<body>
+<header class="top"><img src="/assets/luxinterventions-logo.png" alt="" width="38" height="38"><div><b>LUXINTERVENTIONS</b><small id="topSub">Interventions techniques 7j/7 · 24h/24</small></div></header>
+<main id="view"></main>
+<nav class="nav" id="nav">
+  <a href="#/" data-tab="services"><em>🏠</em>Services</a>
+  <a href="#/mes" data-tab="mes"><em>📋</em>Mes demandes</a>
+  <a href="#/moi" data-tab="moi"><em>👤</em>Moi</a>
+</nav>
+<div id="toast" class="toast" hidden></div>
+</body>
+</html>
