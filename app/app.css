@@ -71,3 +71,10 @@ input:focus, textarea:focus { outline: 2px solid var(--accent); border-color: tr
 .ti { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid #c9c4b8; background: #fff; color: var(--blue); font: italic 700 13px Georgia, serif; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; }
 .tile.soon { opacity: .75; border: 1.5px dashed #c9c4b8; box-shadow: none; position: relative; }
 .soon-b { display: inline-block; margin-top: 4px; font-size: 10px; font-weight: 700; color: var(--accent); background: #FDF0EB; padding: 2px 7px; border-radius: 10px; }
+.two { display: grid; grid-template-columns: 1fr 1.6fr; gap: 9px; }
+.two .btn { padding: 15px 8px; font-size: 15px; }
+.btn.green { background: var(--green); box-shadow: 0 4px 14px rgba(46,125,82,.3); }
+.pop { position: fixed; inset: 0; background: rgba(20,19,18,.55); z-index: 20; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.pop-box { background: #fff; border-radius: 20px; padding: 22px 18px 18px; max-width: 380px; width: 100%; text-align: center; font-size: 14.5px; line-height: 1.5; }
+.pop-box p { margin: 0 0 10px; }
+.pop-ok { width: 72px; height: 72px; border-radius: 50%; background: var(--green); color: #fff; font-size: 38px; display: flex; align-items: center; justify-content: center; margin: 0 auto 10px; }

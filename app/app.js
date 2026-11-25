@@ -124,6 +124,17 @@ function installBox() {
 // 🚨 même bloc partout (Services, Infos, fiche d’un service, Moi) : urgence + appel de la centrale
 const centralBox = () => `<div class="note" style="margin:8px 0 0">🚨 En cas d’urgence, le téléphone reste le moyen le plus rapide, 7j/7 et 24h/24.</div>
       <a class="btn gh" href="tel:${LUX_TEL}">📞 Central ${LUX_TEL_TXT}</a>`;
+// ✅ pop-up rassurant : la demande est bien partie (après l'envoi, et en touchant « ✅ Envoyée »)
+function sentPop(r) {
+  const s = svc(r.service), el = document.createElement('div');
+  el.className = 'pop';
+  el.innerHTML = `<div class="pop-box" role="dialog" aria-modal="true"><div class="pop-ok">✓</div><h2>Demande transmise</h2>
+    <p>Votre ${r.kind === 'devis' ? 'demande de devis' : 'demande d’intervention'} <b>${esc(s[1])}</b> a été envoyée à LuxInterventions le ${fmt(r.at)}${r.via ? ' par ' + VIA[r.via] : ''}.</p>
+    <p>Vous pouvez être tranquille : nous vous recontactons au <b>${esc(r.tel)}</b>.</p>
+    <p class="sub" style="margin:0 0 14px">Réf. ${esc(r.ref)}</p><button class="btn" data-pop-ok>OK</button></div>`;
+  el.addEventListener('click', (e) => { if (e.target === el || e.target.closest('[data-pop-ok]')) el.remove(); });
+  document.body.append(el);
+}
 const SCREENS = {
   home() {
     nav('services'); setSub();
@@ -196,7 +207,7 @@ const SCREENS = {
         <p class="sub">Reçu le ${fmt(dv.at)}${dv.signedAt ? ` · ✍️ signé « Bon pour accord » le ${fmt(dv.signedAt)}` : ''}</p>
         ${dv.sigTh ? `<img class="devimg" style="max-height:120px;object-fit:contain" src="${dv.sigTh}" alt="Signature">` : ''}
         ${dv.signedAt ? `<label>Renvoyer le devis signé</label>${sendBtns('resend-sig')}` : `<button class="btn" data-act="go" data-to="#/r/${r.id}/signer">✍️ Signer le devis</button>`}`
-      : `<button class="btn" data-act="go" data-to="#/r/${r.id}/devis">📝 J’ai reçu un devis</button>`}
+      : `<div class="two"><button class="btn green" data-act="sent-pop" data-id="${r.id}">✅ Envoyée</button><button class="btn" data-act="go" data-to="#/r/${r.id}/devis">📝 J’ai reçu un devis</button></div>`}
       ${r.st === 'fait' ? '' : askDone(r) ? `<div class="sec">Et maintenant ?</div><div class="recap" style="text-align:center"><b>L’intervention a-t-elle été faite ?</b><div class="three" style="grid-template-columns:1fr 1fr;margin:10px 0 0"><button type="button" style="background:var(--green)" data-act="fait" data-id="${r.id}"><em>✅</em>Oui, c’est fait</button><button type="button" style="background:#8a857b" data-act="pas-encore" data-id="${r.id}"><em>⏳</em>Pas encore</button></div></div>` : ''}
       ${r.st === 'fait' ? '' : `<button class="btn gh" data-act="resend" data-id="${r.id}">↻ Renvoyer la demande</button>`}
       <button class="btn gh" style="color:#b91c1c" data-act="del" data-id="${r.id}">🗑️ Supprimer de ce téléphone</button>`;
@@ -284,7 +295,7 @@ const SCREENS = {
       <div class="sec">Contacter LuxInterventions</div>
       ${sendBtns('contact')}
       ${centralBox()}
-      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.3.3</p>`;
+      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.3.4</p>`;
   },
   edit() {
     nav('moi'); setSub('Mes coordonnées'); const m = db.me;
@@ -401,10 +412,11 @@ view.addEventListener('click', async (e) => {
     save();
     await sendVia(via, reqSubject(r), reqText(r));
     draft = null;
-    setTimeout(() => { location.hash = '#/r/' + r.id; toast('✅ Demande gardée dans Mes demandes'); }, via === 'copie' ? 400 : 1200);
+    setTimeout(() => { location.hash = '#/r/' + r.id; if (via !== 'copie') sentPop(r); else toast('✅ Demande gardée dans Mes demandes'); }, via === 'copie' ? 400 : 1200);
     return;
   }
   if (a === 'resend') { const r = getReq(b.dataset.id); if (r) { draft = { ...r, photos: r.photos.map((p) => ({ ...p })) }; location.hash = '#/f/3'; } return; }
+  if (a === 'sent-pop') { const r = getReq(b.dataset.id); if (r) sentPop(r); return; }
   if (a === 'fait') { const r = getReq(b.dataset.id); if (r) { r.st = 'fait'; r.doneAt = new Date().toISOString(); save(); location.hash = '#/r/' + r.id + '/avis'; toast('✅ Travaux terminés : donnez votre avis'); } return; }
   if (a === 'pas-encore') { const r = getReq(b.dataset.id); if (r) { r.askAt = new Date().toISOString(); save(); render(); toast('D’accord : on vous redemandera demain'); } return; }
   if (a === 'avis-send') {
