@@ -9,7 +9,7 @@ const S = process.argv[2];
   const p = await c.newPage(); const errs = []; let ups = 0;
   p.on('pageerror', (e) => errs.push(e.message)); p.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
   await p.route('https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev/**', (r) => { ups++; r.fulfill({ status: 200, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ url: 'https://photos.example/' + ups + '.jpg' }) }); });
-  await p.goto('http://localhost:8766/app.html'); await p.waitForTimeout(800);
+  await p.goto('http://localhost:8766/app.html'); await p.evaluate(() => localStorage.setItem('luxappLang', 'fr')); await p.reload(); await p.waitForTimeout(800); // le téléphone simulé est en anglais
   const ok = (cond, m) => { console.log((cond ? 'OK  ' : 'FAIL ') + m); if (!cond) process.exitCode = 1; };
   ok(await p.$$eval('.tile', (x) => x.length) === 15, '15 quadratini (13 servizi + Autre + Bientôt)');
   await p.click('.tw:has([data-k=serr]) .ti'); await p.waitForTimeout(300);

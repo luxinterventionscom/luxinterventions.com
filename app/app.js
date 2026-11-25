@@ -1,10 +1,37 @@
-// App LuxInterventions (v1.0.0) — une seule app pour tous, sans centrale ni compte.
+// App LuxInterventions — une seule app pour tous, sans centrale ni compte.
 // Demande : service → qui êtes-vous → le problème + photos → envoi par e-mail / WhatsApp / SMS.
 // Les données (demandes, devis, signatures) restent UNIQUEMENT sur ce téléphone (localStorage) ; 📦 sauvegarde / import.
 // Les photos et signatures passent par le Worker du site (PUT /api/upload/<id>/<1|2|3>), comme les formulaires du site.
 import { luxMail, LUX_TEL, LUX_TEL_TXT } from './mail.js';
+import { tr } from './i18n.js?v=1.4.0';
 
-const APP_V = '1.3.7'; // version du logiciel (la même dans app.html ?v= et app-sw.js)
+// 🌐 langue de l'écran : FR (base) · EN · DE — choisie avec les pastilles en haut à droite, sinon la langue du téléphone.
+// Les messages envoyés à LuxInterventions restent en français (avec « Langue du client : EN/DE »).
+const LANGS = ['fr', 'en', 'de'];
+const LANG = (() => { try { const l = localStorage.getItem('luxappLang'); if (LANGS.includes(l)) return l; } catch { /* */ } const n = (navigator.language || 'fr').slice(0, 2).toLowerCase(); return n === 'de' || n === 'en' ? n : 'fr'; })();
+const LI = LANG === 'en' ? 0 : LANG === 'de' ? 1 : -1;
+const t = (x) => tr(x, LI);
+document.documentElement.lang = LANG;
+function trNode(root) {
+  if (LI < 0 || !root) return;
+  if (root.nodeType === 3) { const v = root.nodeValue, n = tr(v, LI); if (n !== v && !root.parentElement?.closest('textarea,[data-notr]')) root.nodeValue = n; return; }
+  if (root.nodeType !== 1 || root.closest('[data-notr]')) return;
+  const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let x;
+  while ((x = w.nextNode())) trNode(x);
+  for (const el of [root, ...root.querySelectorAll('[placeholder],[aria-label]')]) {
+    if (el.placeholder) { const n = tr(el.placeholder, LI); if (n !== el.placeholder) el.placeholder = n; }
+    const al = el.getAttribute && el.getAttribute('aria-label'); if (al) { const n = tr(al, LI); if (n !== al) el.setAttribute('aria-label', n); }
+  }
+}
+if (LI >= 0) new MutationObserver((ms) => { for (const m of ms) { if (m.type === 'characterData') trNode(m.target); else m.addedNodes.forEach(trNode); } }).observe(document.body, { childList: true, subtree: true, characterData: true });
+// pastilles FR · EN · DE dans la barre bleue
+const langBar = document.getElementById('langs');
+if (langBar) {
+  langBar.innerHTML = LANGS.map((l) => `<button type="button" data-lang="${l}" class="${l === LANG ? 'on' : ''}" aria-label="${l.toUpperCase()}">${l.toUpperCase()}</button>`).join('');
+  langBar.addEventListener('click', (e) => { const b = e.target.closest('[data-lang]'); if (!b || b.dataset.lang === LANG) return; try { localStorage.setItem('luxappLang', b.dataset.lang); } catch { /* */ } location.reload(); });
+}
+
+const APP_V = '1.4.0'; // version du logiciel (la même dans app.html ?v= et app-sw.js)
 const WORKER = 'https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev';
 const KEY = 'luxapp';
 // mêmes services, textes et étiquettes que le site (index.html, section Services) : [clé, nom, icône, couleur, nom court, description, étiquette]
@@ -77,12 +104,13 @@ async function upload(rid, slot, blob, type) {
 // ── envoi : e-mail, WhatsApp, SMS, copie ──
 const waNum = LUX_TEL.replace(/\D/g, '');
 async function sendVia(via, subject, text) {
+  if (LANG !== 'fr') text = 'Langue du client : ' + LANG.toUpperCase() + '\n' + text;
   if (via === 'mail') location.href = `mailto:${luxMail()}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(text)}`;
   else if (via === 'wa') window.open(`https://wa.me/${waNum}?text=${encodeURIComponent(text)}`, '_blank', 'noopener');
   else if (via === 'sms') location.href = `sms:${LUX_TEL}?&body=${encodeURIComponent(text)}`;
   else {
     try { await navigator.clipboard.writeText(text); toast('Texte copié : collez-le dans votre message à LuxInterventions'); }
-    catch { prompt('Copiez ce texte :', text); }
+    catch { prompt(t('Copiez ce texte :'), text); }
   }
 }
 const sendBtns = (act) => `<div class="three">
@@ -289,7 +317,7 @@ const SCREENS = {
     nav('moi'); setSub('Moi');
     const m = db.me;
     return `<h2>Moi</h2>
-      <button class="row" data-act="go" data-to="#/moi/edit"><i style="background:#EBF3FB">👤</i><span class="g"><b>${esc(m.nom || 'Mes coordonnées')}</b><small>${esc([m.tel, STATUTS[m.statut]].filter(Boolean).join(' · ') || 'Nom, téléphone, adresse')}</small></span><span class="bd b-envoyee">✏️</span></button>
+      <button class="row" data-act="go" data-to="#/moi/edit"><i style="background:#EBF3FB">👤</i><span class="g"><b${m.nom ? ' data-notr' : ''}>${esc(m.nom || 'Mes coordonnées')}</b><small>${esc([m.tel, STATUTS[m.statut]].filter(Boolean).join(' · ') || 'Nom, téléphone, adresse')}</small></span><span class="bd b-envoyee">✏️</span></button>
       <div class="note">⚠️ Vos demandes et vos devis sont <b>uniquement sur ce téléphone</b>. Avant de changer de téléphone : <b>📦 Sauvegarder</b>, puis 📥 Importer sur le nouveau.</div>
       <div class="sec">Mes données</div>
       <button class="row" data-act="backup"><i style="background:#E7F4EC">📦</i><span class="g"><b>Sauvegarder mes données</b><small>Un fichier à garder ou à envoyer sur votre nouveau téléphone</small></span></button>
@@ -423,7 +451,7 @@ view.addEventListener('click', async (e) => {
   if (a === 'resend') { const r = getReq(b.dataset.id); if (r) { draft = { ...r, photos: r.photos.map((p) => ({ ...p })) }; location.hash = '#/f/3'; } return; }
   if (a === 'close') {
     const r = getReq(b.dataset.id); if (!r) return;
-    if (!confirm('Clôturer cette demande ? Elle passe dans « Travaux terminés ».')) return;
+    if (!confirm(t('Clôturer cette demande ? Elle passe dans « Travaux terminés ».'))) return;
     r.st = 'fait'; r.doneAt = new Date().toISOString(); save(); location.hash = '#/r/' + r.id; toast('✅ Demande clôturée'); return;
   }
   if (a === 'sent-pop') { const r = getReq(b.dataset.id); if (r) sentPop(r); return; }
@@ -442,7 +470,7 @@ view.addEventListener('click', async (e) => {
     return;
   }
   if (a === 'del') {
-    if (!confirm('Supprimer cette demande de ce téléphone ? (LuxInterventions garde le message déjà reçu)')) return;
+    if (!confirm(t('Supprimer cette demande de ce téléphone ? (LuxInterventions garde le message déjà reçu)'))) return;
     db.reqs = db.reqs.filter((x) => x.id !== b.dataset.id); save(); location.hash = '#/mes'; return;
   }
   if (a === 'sig-clear') { render(); return; }
@@ -515,4 +543,5 @@ view.addEventListener('change', async (e) => {
 });
 
 render();
+trNode(document.body); // en-tête et barre du bas (écrits dans app.html)
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/app-sw.js', { scope: '/app' }).catch(() => {});
