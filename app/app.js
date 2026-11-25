@@ -279,8 +279,8 @@ const SCREENS = {
       <button class="row" data-act="go" data-to="#/legal"><i style="background:#F5F5F5">⚖️</i><span class="g"><b>Informations légales</b><small>Avertissement, RGPD, mentions légales</small></span></button>
       <div class="sec">Contacter LuxInterventions</div>
       ${sendBtns('contact')}
-      <a class="btn gh" href="tel:${LUX_TEL}">📞 Appeler ${LUX_TEL_TXT}</a>
-      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.3.1</p>`;
+      <a class="btn gh" href="tel:${LUX_TEL}">📞 Central ${LUX_TEL_TXT}</a>
+      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.3.2</p>`;
   },
   edit() {
     nav('moi'); setSub('Mes coordonnées'); const m = db.me;
