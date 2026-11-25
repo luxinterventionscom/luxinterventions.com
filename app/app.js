@@ -4,6 +4,7 @@
 // Les photos et signatures passent par le Worker du site (PUT /api/upload/<id>/<1|2|3>), comme les formulaires du site.
 import { luxMail, LUX_TEL, LUX_TEL_TXT } from './mail.js';
 
+const APP_V = '1.3.6'; // version du logiciel (la même dans app.html ?v= et app-sw.js)
 const WORKER = 'https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev';
 const KEY = 'luxapp';
 // mêmes services, textes et étiquettes que le site (index.html, section Services) : [clé, nom, icône, couleur, nom court, description, étiquette]
@@ -254,7 +255,8 @@ const SCREENS = {
     return `<h2>ℹ️ Nos services</h2>
       <p class="sub">LuxInterventions coordonne des interventions techniques pour gérances, syndics et particuliers au Luxembourg et dans la Grande Région.</p>
       ${SERVICES.map(([k, n, e, c, , d, t]) => `<button class="row" data-act="go" data-to="#/info/${k}"><i style="background:${c}">${e}</i><span class="g"><b>${esc(n)}</b><small>${esc(d || 'Sur demande')}</small></span>${t ? `<span class="bd b-envoyee">${esc(t)}</span>` : ''}</button>`).join('')}
-      ${centralBox()}`;
+      ${centralBox()}
+      <p class="sub" style="text-align:center;margin-top:18px">Version du logiciel : <b>App LuxInterventions v${APP_V}</b></p>`;
   },
   info(k) {
     const s = svc(k); nav('infos'); setSub(s[1]);
@@ -298,7 +300,7 @@ const SCREENS = {
       <div class="sec">Contacter LuxInterventions</div>
       ${sendBtns('contact')}
       ${centralBox()}
-      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.3.5</p>`;
+      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v${APP_V}</p>`;
   },
   edit() {
     nav('moi'); setSub('Mes coordonnées'); const m = db.me;
