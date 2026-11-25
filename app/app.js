@@ -121,13 +121,17 @@ function installBox() {
     <details style="width:100%"><summary style="cursor:pointer;font-weight:700;color:#F2B08C;margin-top:4px">Voir comment faire</summary><div data-install-clip style="background:#fff;border-radius:12px;margin-top:6px;padding:2px 0"></div></details></div>`;
 }
 
+// 🚨 même bloc partout (Services, Infos, fiche d’un service, Moi) : urgence + appel de la centrale
+const centralBox = () => `<div class="note" style="margin:8px 0 0">🚨 En cas d’urgence, le téléphone reste le moyen le plus rapide, 7j/7 et 24h/24.</div>
+      <a class="btn gh" href="tel:${LUX_TEL}">📞 Central ${LUX_TEL_TXT}</a>`;
 const SCREENS = {
   home() {
     nav('services'); setSub();
     return `${installBox()}<h2>De quoi avez-vous besoin ?</h2><p class="sub">Touchez un service : dépannage ou devis.</p>
       <div class="grid">${SERVICES.map(([k, n, e, c, sh, d]) => `<div class="tw"><button class="tile" data-act="svc" data-k="${k}"><i style="background:${c}">${e}</i><span>${esc(sh || n)}</span></button>${d ? `<button class="ti" data-act="go" data-to="#/info/${k}" aria-label="Infos ${esc(n)}">i</button>` : ''}</div>`).join('')}
         <div class="tw"><button class="tile" data-act="svc" data-k="autre"><i style="background:#eee">➕</i><span>Autre demande</span></button><button class="ti" data-act="go" data-to="#/info/autre" aria-label="Infos Autre demande">i</button></div>
-        <div class="tw"><button class="tile soon" data-act="soon"><i style="background:#F3F1EC">✨</i><span>Nouveau service</span><small class="soon-b">Bientôt</small></button></div></div>`;
+        <div class="tw"><button class="tile soon" data-act="soon"><i style="background:#F3F1EC">✨</i><span>Nouveau service</span><small class="soon-b">Bientôt</small></button></div></div>
+      <div style="margin-top:6px">${centralBox()}</div>`;
   },
   step1() {
     const d = draft, s = svc(d.service); nav('services'); setSub(s[1]);
@@ -236,7 +240,7 @@ const SCREENS = {
     return `<h2>ℹ️ Nos services</h2>
       <p class="sub">LuxInterventions coordonne des interventions techniques pour gérances, syndics et particuliers au Luxembourg et dans la Grande Région.</p>
       ${SERVICES.map(([k, n, e, c, , d, t]) => `<button class="row" data-act="go" data-to="#/info/${k}"><i style="background:${c}">${e}</i><span class="g"><b>${esc(n)}</b><small>${esc(d || 'Sur demande')}</small></span>${t ? `<span class="bd b-envoyee">${esc(t)}</span>` : ''}</button>`).join('')}
-      <div class="note" style="margin-top:6px">🚨 En cas d’urgence, le téléphone reste le moyen le plus rapide, 7j/7 et 24h/24 : <a href="tel:${LUX_TEL}"><b>${LUX_TEL_TXT}</b></a></div>`;
+      ${centralBox()}`;
   },
   info(k) {
     const s = svc(k); nav('infos'); setSub(s[1]);
@@ -245,7 +249,7 @@ const SCREENS = {
         <h2 style="margin-top:10px">${esc(s[1])}</h2>${s[6] ? `<span class="bd b-envoyee">${esc(s[6])}</span>` : ''}</div>
       <div class="recap" style="white-space:normal">${esc(s[5] || 'Décrivez votre besoin dans la demande : nous vous recontactons.')}</div>
       <button class="btn" data-act="svc" data-k="${s[0]}">▶ Faire une demande</button>
-      <a class="btn gh" href="tel:${LUX_TEL}">📞 Urgence : ${LUX_TEL_TXT}</a>`;
+      ${centralBox()}`;
   },
   legal() {
     nav('legal'); setSub('Informations légales');
@@ -279,8 +283,8 @@ const SCREENS = {
       <button class="row" data-act="go" data-to="#/legal"><i style="background:#F5F5F5">⚖️</i><span class="g"><b>Informations légales</b><small>Avertissement, RGPD, mentions légales</small></span></button>
       <div class="sec">Contacter LuxInterventions</div>
       ${sendBtns('contact')}
-      <a class="btn gh" href="tel:${LUX_TEL}">📞 Central ${LUX_TEL_TXT}</a>
-      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.3.2</p>`;
+      ${centralBox()}
+      <p class="sub" style="text-align:center;margin-top:18px">App LuxInterventions · v1.3.3</p>`;
   },
   edit() {
     nav('moi'); setSub('Mes coordonnées'); const m = db.me;
