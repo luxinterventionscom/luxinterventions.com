@@ -4,7 +4,7 @@
 // Les photos et signatures passent par le Worker du site (PUT /api/upload/<id>/<1|2|3>), comme les formulaires du site.
 import { luxMail, LUX_TEL, LUX_TEL_TXT } from './mail.js';
 
-const APP_V = '1.3.6'; // version du logiciel (la même dans app.html ?v= et app-sw.js)
+const APP_V = '1.3.7'; // version du logiciel (la même dans app.html ?v= et app-sw.js)
 const WORKER = 'https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev';
 const KEY = 'luxapp';
 // mêmes services, textes et étiquettes que le site (index.html, section Services) : [clé, nom, icône, couleur, nom court, description, étiquette]
@@ -186,7 +186,7 @@ const SCREENS = {
   mes() {
     nav('mes'); setSub('Mes demandes');
     const L = db.reqs.slice().sort((a, b) => (b.at || '').localeCompare(a.at || ''));
-    const row = (r) => { const s = svc(r.service); return `<button class="row" data-act="go" data-to="#/r/${r.id}"><i style="background:${s[3]}">${s[2]}</i><span class="g"><b>${esc(s[1])} · ${r.kind === 'devis' ? 'Devis' : 'Dommage'}</b><small>${r.st === 'fait' ? 'terminé le ' + fmt(r.doneAt || r.at) + (r.avis ? ' · ' + stars(r.avis.stars) : ' · ⭐ avis à donner') : fmt(r.at) + (r.via ? ' · envoyée par ' + VIA[r.via] : '') + (r.devis && r.devis.no ? ' · devis ' + esc(r.devis.no) : '')}</small></span><span class="bd b-${r.st}">${askDone(r) ? '❓ Fait ?' : ST[r.st] || ''}</span></button>`; };
+    const row = (r) => { const s = svc(r.service); return `<button class="row${r.st === 'fait' ? ' fin' : ''}" data-act="go" data-to="#/r/${r.id}"><i style="background:${s[3]}">${s[2]}</i><span class="g"><b>${esc(s[1])} · ${r.kind === 'devis' ? 'Devis' : 'Dommage'}</b><small>${r.st === 'fait' ? 'terminé le ' + fmt(r.doneAt || r.at) + (r.avis ? ' · ' + stars(r.avis.stars) : ' · ⭐ avis à donner') : fmt(r.at) + (r.via ? ' · envoyée par ' + VIA[r.via] : '') + (r.devis && r.devis.no ? ' · devis ' + esc(r.devis.no) : '')}</small></span><span class="bd b-${r.st}">${askDone(r) ? '❓ Fait ?' : ST[r.st] || ''}</span></button>`; };
     const open = L.filter((r) => r.st !== 'fait'), done = L.filter((r) => r.st === 'fait');
     if (!L.length) return '<h2>Mes demandes</h2><p class="empty">Aucune demande pour le moment.<br>Touchez 🏠 Services pour en faire une.</p>';
     return `<h2>Mes demandes</h2>
@@ -198,7 +198,7 @@ const SCREENS = {
     const s = svc(r.service); nav('mes'); setSub(s[1]);
     const dv = r.devis;
     return `<button class="back" data-act="go" data-to="#/mes">‹ Mes demandes</button>
-      <div class="hd"><i style="background:${s[3]}">${s[2]}</i><div><b>${esc(s[1])} · ${r.kind === 'devis' ? 'Devis' : 'Dommage'}</b><small>${fmt(r.at)} · réf. ${esc(r.ref)}${r.via ? ' · par ' + VIA[r.via] : ''}</small></div><span class="bd b-${r.st}" style="margin-left:auto">${ST[r.st]}</span></div>
+      <div class="hd${r.st === 'fait' ? ' fin' : ''}"><i style="background:${s[3]}">${s[2]}</i><div><b>${esc(s[1])} · ${r.kind === 'devis' ? 'Devis' : 'Dommage'}</b><small>${fmt(r.at)} · réf. ${esc(r.ref)}${r.via ? ' · par ' + VIA[r.via] : ''}</small></div><span class="bd b-${r.st}" style="margin-left:auto">${ST[r.st]}</span></div>
       ${r.st === 'fait' ? `<div class="note ok-note">✅ <b>Travaux terminés</b> le ${fmt(r.doneAt || r.at)}${r.avis ? `<br>Votre avis : ${stars(r.avis.stars)}${r.avis.txt ? ' — « ' + esc(r.avis.txt.slice(0, 120)) + ' »' : ''} · envoyé le ${fmt(r.avis.at)}` : ''}</div>${r.avis ? '' : `<button class="btn" style="margin-bottom:12px" data-act="go" data-to="#/r/${r.id}/avis">⭐ Donner mon avis</button>`}`
         : `<div class="note" style="background:#EBF3FB;color:#1f4f7a">📨 <b>Demande envoyée</b> le ${fmt(r.at)}${r.via ? ' par ' + VIA[r.via] : ''}. LuxInterventions vous recontacte.</div>`}
       <div class="recap">👤 ${esc(r.nom)} · ${STATUTS[r.statut] || ''}\n📞 ${esc(r.tel)}\n📍 ${esc(r.adresse)}${r.acces ? ' · ' + esc(r.acces) : ''}\n📝 ${esc(r.notes)}</div>
