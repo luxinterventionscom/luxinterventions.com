@@ -1,6 +1,6 @@
 // App LuxInterventions : l'app s'ouvre même sans réseau (les envois, eux, demandent une connexion).
-const CACHE = 'luxapp-v1.3.1';
-const SHELL = ['/app.html', '/app/app.js?v=1.3.1', '/app/app.css?v=1.3.1', '/app/mail.js', '/app/install-clip.js?v=1.3.1', '/app.webmanifest', '/assets/luxinterventions-logo.png', '/ares/icons/lux-192.png', '/ares/icons/lux-favicon-32.png'];
+const CACHE = 'luxapp-v1.3.2';
+const SHELL = ['/app.html', '/app/app.js?v=1.3.2', '/app/app.css?v=1.3.2', '/app/mail.js', '/app/install-clip.js?v=1.3.2', '/app.webmanifest', '/assets/luxinterventions-logo.png', '/ares/icons/lux-192.png', '/ares/icons/lux-favicon-32.png'];
 self.addEventListener('install', (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', (e) => {
   e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('luxapp-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
