@@ -97,6 +97,7 @@ Vale per tutte le app degli utenti (inquilini, operai…), sempre in quest'ordin
   modulo in 3 passi (chi / problema + 3 foto / invio e-mail · WhatsApp · SMS · copia) → «Mes demandes» (stati, «J’ai reçu un devis»,
   firma al dito, renvoi) → «Moi» (coordinate, 📦 sauvegarde/📥 import JSON, 🔒 Confidentialité). Dati solo in localStorage;
   foto e firme via `PUT /api/upload/<id>/<1|2|3>` del Worker (solo immagini: un devis PDF resta sul telefono). Worker NON toccato.
+  v1.2.0: «Envoyée» e «Terminé» separati (Mes demandes: 🕓 En cours / ✅ Travaux terminés); «L’intervention a-t-elle été faite ?» solo dopo il devis firmato o 1 giorno dopo un dommage; «Oui» → scheda ⭐ soddisfazione (1-5 + ponctualité/propreté/travail + commento) inviata per e-mail/WhatsApp/SMS (non nel PDF firmato dal cliente).
   Test: `guides/manuel/luxapp-test.cjs`. Versione dell'app: `?v=` in app.html + `CACHE`/SHELL in app-sw.js + testo «v1.0.0» in «Moi».
   Resta da fare quando il cliente firma: il PDF della **fattura** (dati della società e banca li ridà il titolare, non scriverli qui).
 - **Separare ARES/Nobis da LuxInterventions** (ancora da decidere: indirizzo A/B, bottone Nobis sul sito, inoltro automatico).
