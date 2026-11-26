@@ -105,6 +105,15 @@ Vale per tutte le app degli utenti (inquilini, operai…), sempre in quest'ordin
   Resta da fare quando il cliente firma: il PDF della **fattura** (dati della società e banca li ridà il titolare, non scriverli qui).
 - **Manuale dell'app LuxInterventions** (v1.5.0, FR · EN · DE): `guides/app-luxinterventions/manuel-app-luxinterventions-<l>.pdf`;
   si rifà con `shots.cjs` (foto vere dell'app) + `manual.cjs`. Il **documento da firmare** (descrizione v1.5.0 + prezzo + IBAN) NON sta nel progetto (dati bancari): si consegna al titolare.
+- **Contratto e deposito (26/11/2026)**: il titolare ha ricevuto il documento da firmare v1.5.0 (FR, 3 pagine: foto, funzioni,
+  RGPD, prezzo 10 000 € HTVA in autoliquidazione, acconto/saldo/consegna da scrivere a mano, **6. Propriété intellectuelle**:
+  autore = la società UK del titolare, «conçue, dessinée et réalisée sous la direction de…»; il cliente riconosce che GitHub,
+  Cloudflare e Claude li ha messi lui e non gli danno diritti prima del pagamento; dopo il pagamento completo cessione dei diritti
+  patrimoniali, il titolare resta autore; nome/logo/testi del cliente restano del cliente) + mail di accompagnamento in francese.
+  Pacco per il deposito **Patamu** `App-LuxInterventions-v1.5.0.zip` (codice, manuali, storyboard, schermate, LISEZMOI, impronte
+  SHA-256 di ogni file e dello ZIP). Ordine: 1) deposito Patamu, 2) invio al cliente, 3) firma → fattura. Il titolare se la vede
+  col cliente; da far leggere a un legale. File solo dal titolare (non nel progetto: IBAN). Per i prossimi lavori: account propri
+  (Claude, GitHub, Cloudflare a nome della sua società).
 - **Da fare (chiesto dal titolare, «domani»)**: pulizia del progetto — togliere test, codice e file che non servono più (prima chiedere la lista, i dati veri non si toccano).
 - **Separare ARES/Nobis da LuxInterventions** (ancora da decidere: indirizzo A/B, bottone Nobis sul sito, inoltro automatico).
 - **Link di firma dei devis nella MASTER** («🔗 Lien / QR code») non funziona più dalla v2.316 (passava dal vecchio portale): da riparare solo se lo chiede.
