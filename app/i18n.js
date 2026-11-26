@@ -119,6 +119,7 @@ export const T = {
   'Avertissement, RGPD, mentions légales': ['Disclaimer, GDPR, legal notice', 'Haftungsausschluss, DSGVO, Impressum'], 'Contacter LuxInterventions': ['Contact LuxInterventions', 'LuxInterventions kontaktieren'],
   '‹ Moi': ['‹ Me', '‹ Ich'], 'Elles remplissent vos demandes toutes seules. Gardées seulement sur ce téléphone.': ['They fill in your requests automatically. Kept only on this phone.', 'Sie füllen Ihre Anfragen automatisch aus. Nur auf diesem Handy gespeichert.'],
   'Adresse': ['Address', 'Adresse'], 'Enregistrer': ['Save', 'Speichern'], 'Langue': ['Language', 'Sprache'],
+  'Thème de l’app': ['App theme', 'App-Design'], 'Classique': ['Classic', 'Klassisch'], 'Nuit': ['Night', 'Nacht'], 'Prestige': ['Prestige', 'Prestige'], 'Appeler la centrale': ['Call the control centre', 'Zentrale anrufen'],
   // ── confidentialité ──
   '🔒 Confidentialité': ['🔒 Privacy', '🔒 Datenschutz'], 'Qui reçoit vos données ?': ['Who receives your data?', 'Wer erhält Ihre Daten?'],
   'LuxInterventions, seulement quand': ['LuxInterventions, only when', 'LuxInterventions, nur wenn'], 'envoyez une demande ou un devis signé (e-mail, WhatsApp ou SMS).': ['send a request or a signed quote (e-mail, WhatsApp or SMS).', 'eine Anfrage oder ein unterschriebenes Angebot senden (E-Mail, WhatsApp oder SMS).'],
@@ -157,6 +158,7 @@ export const T = {
 // textes avec une partie variable (date, nombre, nom…) : [expression, [anglais, allemand]] — $1, $2… = parties variables
 const VIA_T = { 'e-mail': ['e-mail', 'E-Mail'], WhatsApp: ['WhatsApp', 'WhatsApp'], SMS: ['SMS', 'SMS'], 'copie du texte': ['copied text', 'kopierten Text'] };
 export const P = [
+  [/^Bonjour (.+) 👋$/, ['Hello $1 👋', 'Hallo $1 👋']],
   [/^🕓 En cours \((\d+)\)$/, ['🕓 In progress ($1)', '🕓 In Bearbeitung ($1)']],
   [/^✅ Travaux terminés \((\d+)\)$/, ['✅ Work completed ($1)', '✅ Arbeiten abgeschlossen ($1)']],
   [/^(.+) · Dommage$/, ['$S1 · Damage', '$S1 · Schaden']],
