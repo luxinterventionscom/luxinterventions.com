@@ -3,7 +3,18 @@
 // Les données (demandes, devis, signatures) restent UNIQUEMENT sur ce téléphone (localStorage) ; 📦 sauvegarde / import.
 // Les photos et signatures passent par le Worker du site (PUT /api/upload/<id>/<1|2|3>), comme les formulaires du site.
 import { luxMail, LUX_TEL, LUX_TEL_TXT } from './mail.js';
-import { tr } from './i18n.js?v=1.4.0';
+import { tr } from './i18n.js?v=1.5.0';
+import { ic, SVC_IC } from './icons.js?v=1.5.0';
+
+// 🎨 3 thèmes au choix du client (dans « Moi ») : Classique · Nuit · Prestige — gardé sur le téléphone
+const THEMES = { classique: ['Classique', '#1B2E4B', '#E8723A', '#F7F5F0'], nuit: ['Nuit', '#0A111D', '#F08A4B', '#17243A'], prestige: ['Prestige', '#101D30', '#B8913F', '#FBF8F1'] };
+const theme = () => { try { const v = localStorage.getItem('luxappTheme'); return THEMES[v] ? v : 'classique'; } catch { return 'classique'; } };
+function applyTheme(v) {
+  if (v === 'classique') delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = v;
+  const m = document.querySelector('meta[name=theme-color]'); if (m) m.content = THEMES[v][1];
+}
+applyTheme(theme());
+const sic = (s, n = 22) => ic(SVC_IC[s[0]] || 'plus', n);
 
 // 🌐 langue de l'écran : FR (base) · EN · DE — choisie avec les pastilles en haut à droite, sinon la langue du téléphone.
 // Les messages envoyés à LuxInterventions restent en français (avec « Langue du client : EN/DE »).
@@ -31,7 +42,7 @@ if (langBar) {
   langBar.addEventListener('click', (e) => { const b = e.target.closest('[data-lang]'); if (!b || b.dataset.lang === LANG) return; try { localStorage.setItem('luxappLang', b.dataset.lang); } catch { /* */ } location.reload(); });
 }
 
-const APP_V = '1.4.0'; // version du logiciel (la même dans app.html ?v= et app-sw.js)
+const APP_V = '1.5.0'; // version du logiciel (la même dans app.html ?v= et app-sw.js)
 const WORKER = 'https://luxinterventions-hitcounter.weathered-tree-cfd3.workers.dev';
 const KEY = 'luxapp';
 // mêmes services, textes et étiquettes que le site (index.html, section Services) : [clé, nom, icône, couleur, nom court, description, étiquette]
@@ -166,17 +177,16 @@ function sentPop(r) {
 }
 const SCREENS = {
   home() {
-    nav('services'); setSub();
+    nav('services'); setSub(db.me.nom ? 'Bonjour ' + db.me.nom.trim().split(/\s+/)[0] + ' 👋' : '');
     return `${installBox()}<h2>De quoi avez-vous besoin ?</h2><p class="sub">Touchez un service : dépannage ou devis.</p>
-      <div class="grid">${SERVICES.map(([k, n, e, c, sh, d]) => `<div class="tw"><button class="tile" data-act="svc" data-k="${k}"><i style="background:${c}">${e}</i><span>${esc(sh || n)}</span></button>${d ? `<button class="ti" data-act="go" data-to="#/info/${k}" aria-label="Infos ${esc(n)}">i</button>` : ''}</div>`).join('')}
-        <div class="tw"><button class="tile" data-act="svc" data-k="autre"><i style="background:#eee">➕</i><span>Autre demande</span></button><button class="ti" data-act="go" data-to="#/info/autre" aria-label="Infos Autre demande">i</button></div>
-        <div class="tw"><button class="tile soon" data-act="soon"><i style="background:#F3F1EC">✨</i><span>Nouveau service</span><small class="soon-b">Bientôt</small></button></div></div>
-      <div style="margin-top:6px">${centralBox()}</div>`;
+      <div class="grid">${SERVICES.map(([k, n, e, c, sh, d]) => `<div class="tw"><button class="tile" data-act="svc" data-k="${k}"><i>${ic(SVC_IC[k], 24)}</i><span>${esc(sh || n)}</span></button>${d ? `<button class="ti" data-act="go" data-to="#/info/${k}" aria-label="Infos ${esc(n)}">i</button>` : ''}</div>`).join('')}
+        <div class="tw"><button class="tile" data-act="svc" data-k="autre"><i>${ic('plus', 24)}</i><span>Autre demande</span></button><button class="ti" data-act="go" data-to="#/info/autre" aria-label="Infos Autre demande">i</button></div>
+        <div class="tw"><button class="tile soon" data-act="soon"><i>${ic('spark', 24)}</i><span>Nouveau service</span><small class="soon-b">Bientôt</small></button></div></div>`;
   },
   step1() {
     const d = draft, s = svc(d.service); nav('services'); setSub(s[1]);
     return `<div class="steps"><i class="on"></i><i></i><i></i></div>
-      <div class="hd"><i style="background:${s[3]}">${s[2]}</i><div><b>${esc(s[1])}</b><small>Étape 1 sur 3 · Vous</small></div></div>
+      <div class="hd"><i>${sic(s)}</i><div><b>${esc(s[1])}</b><small>Étape 1 sur 3 · Vous</small></div></div>
       <div class="seg" data-seg="kind"><button type="button" data-v="dommage" class="${d.kind === 'dommage' ? 'on' : ''}">🚨 Dommage</button><button type="button" data-v="devis" class="${d.kind === 'devis' ? 'on' : ''}">📝 Demande de devis</button></div>
       <label>Vous êtes <span class="req">*</span></label>
       <div class="seg" data-seg="statut">${Object.entries(STATUTS).map(([k, v]) => `<button type="button" data-v="${k}" class="${d.statut === k ? 'on' : ''}">${v}</button>`).join('')}</div>
@@ -190,10 +200,10 @@ const SCREENS = {
   step2() {
     const d = draft, s = svc(d.service); nav('services'); setSub(s[1]);
     const ph = [0, 1, 2].map((i) => (d.photos[i] ? `<div class="ph"><img src="${d.photos[i].th}" alt=""><button class="x" data-act="ph-del" data-i="${i}" aria-label="Retirer">✕</button></div>`
-      : i === d.photos.length ? `<label class="ph" style="margin:0">📷<input type="file" accept="image/*" data-in="photo" hidden></label>` : '<div class="ph" style="border-style:dotted;opacity:.4"></div>')).join('');
+      : i === d.photos.length ? `<label class="ph" style="margin:0">${ic('camera', 26)}<input type="file" accept="image/*" data-in="photo" hidden></label>` : '<div class="ph" style="border-style:dotted;opacity:.4"></div>')).join('');
     return `<div class="steps"><i class="on"></i><i class="on"></i><i></i></div>
       <button class="back" data-act="go" data-to="#/f/1">‹ Retour</button>
-      <div class="hd"><i style="background:${s[3]}">${s[2]}</i><div><b>${d.kind === 'devis' ? 'Votre demande' : 'Le problème'}</b><small>Étape 2 sur 3</small></div></div>
+      <div class="hd"><i>${sic(s)}</i><div><b>${d.kind === 'devis' ? 'Votre demande' : 'Le problème'}</b><small>Étape 2 sur 3</small></div></div>
       <label for="f-adr">Adresse de l’intervention <span class="req">*</span></label><input type="text" id="f-adr" data-f="adresse" value="${esc(d.adresse)}" autocomplete="street-address" maxlength="200" placeholder="Rue, n°, code postal, ville">
       <label for="f-acc">Accès (étage, code, clés…)</label><input type="text" id="f-acc" data-f="acces" value="${esc(d.acces)}" maxlength="200">
       <label>Photos (jusqu’à 3)</label><div class="photos">${ph}</div>
@@ -214,7 +224,7 @@ const SCREENS = {
   mes() {
     nav('mes'); setSub('Mes demandes');
     const L = db.reqs.slice().sort((a, b) => (b.at || '').localeCompare(a.at || ''));
-    const row = (r) => { const s = svc(r.service); return `<button class="row${r.st === 'fait' ? ' fin' : ''}" data-act="go" data-to="#/r/${r.id}"><i style="background:${s[3]}">${s[2]}</i><span class="g"><b>${esc(s[1])} · ${r.kind === 'devis' ? 'Devis' : 'Dommage'}</b><small>${r.st === 'fait' ? 'terminé le ' + fmt(r.doneAt || r.at) + (r.avis ? ' · ' + stars(r.avis.stars) : ' · ⭐ avis à donner') : fmt(r.at) + (r.via ? ' · envoyée par ' + VIA[r.via] : '') + (r.devis && r.devis.no ? ' · devis ' + esc(r.devis.no) : '')}</small></span><span class="bd b-${r.st}">${askDone(r) ? '❓ Fait ?' : ST[r.st] || ''}</span></button>`; };
+    const row = (r) => { const s = svc(r.service); return `<button class="row${r.st === 'fait' ? ' fin' : ''}" data-act="go" data-to="#/r/${r.id}"><i>${sic(s)}</i><span class="g"><b>${esc(s[1])} · ${r.kind === 'devis' ? 'Devis' : 'Dommage'}</b><small>${r.st === 'fait' ? 'terminé le ' + fmt(r.doneAt || r.at) + (r.avis ? ' · ' + stars(r.avis.stars) : ' · ⭐ avis à donner') : fmt(r.at) + (r.via ? ' · envoyée par ' + VIA[r.via] : '') + (r.devis && r.devis.no ? ' · devis ' + esc(r.devis.no) : '')}</small></span><span class="bd b-${r.st}">${askDone(r) ? '❓ Fait ?' : ST[r.st] || ''}</span></button>`; };
     const open = L.filter((r) => r.st !== 'fait'), done = L.filter((r) => r.st === 'fait');
     if (!L.length) return '<h2>Mes demandes</h2><p class="empty">Aucune demande pour le moment.<br>Touchez 🏠 Services pour en faire une.</p>';
     return `<h2>Mes demandes</h2>
@@ -226,9 +236,9 @@ const SCREENS = {
     const s = svc(r.service); nav('mes'); setSub(s[1]);
     const dv = r.devis;
     return `<button class="back" data-act="go" data-to="#/mes">‹ Mes demandes</button>
-      <div class="hd${r.st === 'fait' ? ' fin' : ''}"><i style="background:${s[3]}">${s[2]}</i><div><b>${esc(s[1])} · ${r.kind === 'devis' ? 'Devis' : 'Dommage'}</b><small>${fmt(r.at)} · réf. ${esc(r.ref)}${r.via ? ' · par ' + VIA[r.via] : ''}</small></div><span class="bd b-${r.st}" style="margin-left:auto">${ST[r.st]}</span></div>
+      <div class="hd${r.st === 'fait' ? ' fin' : ''}"><i>${sic(s)}</i><div><b>${esc(s[1])} · ${r.kind === 'devis' ? 'Devis' : 'Dommage'}</b><small>${fmt(r.at)} · réf. ${esc(r.ref)}${r.via ? ' · par ' + VIA[r.via] : ''}</small></div><span class="bd b-${r.st}" style="margin-left:auto">${ST[r.st]}</span></div>
       ${r.st === 'fait' ? `<div class="note ok-note">✅ <b>Travaux terminés</b> le ${fmt(r.doneAt || r.at)}${r.avis ? `<br>Votre avis : ${stars(r.avis.stars)}${r.avis.txt ? ' — « ' + esc(r.avis.txt.slice(0, 120)) + ' »' : ''} · envoyé le ${fmt(r.avis.at)}` : ''}</div>${r.avis ? '' : `<button class="btn" style="margin-bottom:12px" data-act="go" data-to="#/r/${r.id}/avis">⭐ Donner mon avis</button>`}`
-        : `<div class="note" style="background:#EBF3FB;color:#1f4f7a">📨 <b>Demande envoyée</b> le ${fmt(r.at)}${r.via ? ' par ' + VIA[r.via] : ''}. LuxInterventions vous recontacte.</div>`}
+        : `<div class="note info">📨 <b>Demande envoyée</b> le ${fmt(r.at)}${r.via ? ' par ' + VIA[r.via] : ''}. LuxInterventions vous recontacte.</div>`}
       <div class="recap">👤 ${esc(r.nom)} · ${STATUTS[r.statut] || ''}\n📞 ${esc(r.tel)}\n📍 ${esc(r.adresse)}${r.acces ? ' · ' + esc(r.acces) : ''}\n📝 ${esc(r.notes)}</div>
       ${r.photos.length ? `<div class="photos">${r.photos.map((p) => `<div class="ph" style="cursor:default"><img src="${p.th}" alt=""></div>`).join('')}</div>` : ''}
       ${dv ? `<div class="sec">Devis${dv.no ? ' ' + esc(dv.no) : ''}</div>
@@ -255,7 +265,7 @@ const SCREENS = {
     const r = getReq(id); if (!r || !r.devis) return SCREENS.mes();
     const dv = r.devis; nav('mes'); setSub('Signer le devis');
     return `<button class="back" data-act="go" data-to="#/r/${id}">‹ Retour</button>
-      <div class="hd"><i style="background:#FFF8E1">📝</i><div><b>Devis${dv.no ? ' ' + esc(dv.no) : ''}</b><small>Reçu le ${fmt(dv.at)}</small></div></div>
+      <div class="hd"><i>${ic('edit')}</i><div><b>Devis${dv.no ? ' ' + esc(dv.no) : ''}</b><small>Reçu le ${fmt(dv.at)}</small></div></div>
       ${dv.th ? `<img class="devimg" src="${dv.th}" alt="Devis">` : `<div class="pdfbox">📄 ${esc(dv.name || 'Devis')}</div>`}
       <label for="f-sname">Nom du signataire <span class="req">*</span></label><input type="text" id="f-sname" data-sn="1" value="${esc(r.nom)}" maxlength="120">
       <label>Votre signature — « Bon pour accord » <span class="req">*</span></label>
@@ -282,14 +292,14 @@ const SCREENS = {
     nav('infos'); setSub('Nos services');
     return `<h2>ℹ️ Nos services</h2>
       <p class="sub">LuxInterventions coordonne des interventions techniques pour gérances, syndics et particuliers au Luxembourg et dans la Grande Région.</p>
-      ${SERVICES.map(([k, n, e, c, , d, t]) => `<button class="row" data-act="go" data-to="#/info/${k}"><i style="background:${c}">${e}</i><span class="g"><b>${esc(n)}</b><small>${esc(d || 'Sur demande')}</small></span>${t ? `<span class="bd b-envoyee">${esc(t)}</span>` : ''}</button>`).join('')}
+      ${SERVICES.map(([k, n, e, c, , d, t]) => `<button class="row" data-act="go" data-to="#/info/${k}"><i>${ic(SVC_IC[k])}</i><span class="g"><b>${esc(n)}</b><small>${esc(d || 'Sur demande')}</small></span>${t ? `<span class="bd b-envoyee">${esc(t)}</span>` : ''}</button>`).join('')}
       ${centralBox()}
       <p class="sub" style="text-align:center;margin-top:18px">Version du logiciel : <b>App LuxInterventions v${APP_V}</b></p>`;
   },
   info(k) {
     const s = svc(k); nav('infos'); setSub(s[1]);
     return `<button class="back" data-act="go" data-to="#/infos">‹ Tous nos services</button>
-      <div style="text-align:center;margin:6px 0 14px"><i style="display:inline-flex;width:84px;height:84px;border-radius:24px;align-items:center;justify-content:center;font-style:normal;font-size:44px;background:${s[3]}">${s[2]}</i>
+      <div style="text-align:center;margin:6px 0 14px"><i style="display:inline-flex;width:84px;height:84px;border-radius:50%;align-items:center;justify-content:center;background:var(--chip);color:var(--ink)">${sic(s, 40)}</i>
         <h2 style="margin-top:10px">${esc(s[1])}</h2>${s[6] ? `<span class="bd b-envoyee">${esc(s[6])}</span>` : ''}</div>
       <div class="recap" style="white-space:normal">${esc(s[5] || 'Décrivez votre besoin dans la demande : nous vous recontactons.')}</div>
       <button class="btn" data-act="svc" data-k="${s[0]}">▶ Faire une demande</button>
@@ -317,14 +327,16 @@ const SCREENS = {
     nav('moi'); setSub('Moi');
     const m = db.me;
     return `<h2>Moi</h2>
-      <button class="row" data-act="go" data-to="#/moi/edit"><i style="background:#EBF3FB">👤</i><span class="g"><b${m.nom ? ' data-notr' : ''}>${esc(m.nom || 'Mes coordonnées')}</b><small>${esc([m.tel, STATUTS[m.statut]].filter(Boolean).join(' · ') || 'Nom, téléphone, adresse')}</small></span><span class="bd b-envoyee">✏️</span></button>
+      <button class="row" data-act="go" data-to="#/moi/edit"><i>${ic('user')}</i><span class="g"><b${m.nom ? ' data-notr' : ''}>${esc(m.nom || 'Mes coordonnées')}</b><small>${esc([m.tel, STATUTS[m.statut]].filter(Boolean).join(' · ') || 'Nom, téléphone, adresse')}</small></span><span class="bd b-envoyee">✏️</span></button>
       <div class="note">⚠️ Vos demandes et vos devis sont <b>uniquement sur ce téléphone</b>. Avant de changer de téléphone : <b>📦 Sauvegarder</b>, puis 📥 Importer sur le nouveau.</div>
+      <div class="sec">Thème de l’app</div>
+      <div class="themes">${Object.entries(THEMES).map(([k, [n, a, b, c]]) => `<button type="button" data-act="theme" data-v="${k}" class="${theme() === k ? 'on' : ''}" style="--a:${a};--b:${b};--c:${c}"><i></i>${n}</button>`).join('')}</div>
       <div class="sec">Mes données</div>
-      <button class="row" data-act="backup"><i style="background:#E7F4EC">📦</i><span class="g"><b>Sauvegarder mes données</b><small>Un fichier à garder ou à envoyer sur votre nouveau téléphone</small></span></button>
-      <label class="row" style="margin-bottom:9px"><i style="background:#F3EEFB">📥</i><span class="g"><b>Importer sur ce téléphone</b><small>Retrouver demandes et devis</small></span><input type="file" accept="application/json,.json" data-in="import" hidden></label>
+      <button class="row" data-act="backup"><i>${ic('box')}</i><span class="g"><b>Sauvegarder mes données</b><small>Un fichier à garder ou à envoyer sur votre nouveau téléphone</small></span></button>
+      <label class="row" style="margin-bottom:9px"><i>${ic('download')}</i><span class="g"><b>Importer sur ce téléphone</b><small>Retrouver demandes et devis</small></span><input type="file" accept="application/json,.json" data-in="import" hidden></label>
       <div class="sec">Infos</div>
-      <button class="row" data-act="go" data-to="#/conf"><i style="background:#F5F5F5">🔒</i><span class="g"><b>Confidentialité</b><small>Qui reçoit vos données et pourquoi</small></span></button>
-      <button class="row" data-act="go" data-to="#/legal"><i style="background:#F5F5F5">⚖️</i><span class="g"><b>Informations légales</b><small>Avertissement, RGPD, mentions légales</small></span></button>
+      <button class="row" data-act="go" data-to="#/conf"><i>${ic('lock')}</i><span class="g"><b>Confidentialité</b><small>Qui reçoit vos données et pourquoi</small></span></button>
+      <button class="row" data-act="go" data-to="#/legal"><i>${ic('scale')}</i><span class="g"><b>Informations légales</b><small>Avertissement, RGPD, mentions légales</small></span></button>
       <div class="sec">Contacter LuxInterventions</div>
       ${sendBtns('contact')}
       ${centralBox()}
@@ -389,6 +401,7 @@ function render() {
   else if (h === '#/legal') view.innerHTML = SCREENS.legal();
   else view.innerHTML = SCREENS.home();
   sigInit();
+  const fab = document.getElementById('fab'); if (fab) fab.hidden = /^#\/f\/|\/(signer|avis|devis)$/.test(h);
   if (window.luxInstallClip) view.querySelectorAll('[data-install-clip]').forEach(window.luxInstallClip);
   window.scrollTo(0, 0);
 }
@@ -415,6 +428,7 @@ view.addEventListener('click', async (e) => {
   const a = b.dataset.act, via = b.dataset.via;
   if (a === 'go') { location.hash = b.dataset.to; return; }
   if (a === 'svc') { draft = newDraft(b.dataset.k); location.hash = '#/f/1'; return; }
+  if (a === 'theme') { try { localStorage.setItem('luxappTheme', b.dataset.v); } catch { /* */ } applyTheme(b.dataset.v); render(); return; }
   if (a === 'soon') { toast('✨ Nouveau service bientôt disponible : restez connecté !'); return; }
   if (a === 'cancel') { draft = null; location.hash = '#/'; return; }
   if (a === 'install' && deferredInstall) { deferredInstall.prompt(); deferredInstall = null; render(); return; }
@@ -543,5 +557,6 @@ view.addEventListener('change', async (e) => {
 });
 
 render();
+{ const NI = { services: 'home', mes: 'list', infos: 'info', legal: 'scale', moi: 'user' }; document.querySelectorAll('#nav a').forEach((a) => { const e = a.querySelector('em'); if (e) e.outerHTML = ic(NI[a.dataset.tab], 22); }); }
 trNode(document.body); // en-tête et barre du bas (écrits dans app.html)
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('/app-sw.js', { scope: '/app' }).catch(() => {});
