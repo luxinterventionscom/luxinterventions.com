@@ -103,6 +103,9 @@ Vale per tutte le app degli utenti (inquilini, operai…), sempre in quest'ordin
   v1.2.0: «Envoyée» e «Terminé» separati (Mes demandes: 🕓 En cours / ✅ Travaux terminés); «L’intervention a-t-elle été faite ?» solo dopo il devis firmato o 1 giorno dopo un dommage; «Oui» → scheda ⭐ soddisfazione (1-5 + ponctualité/propreté/travail + commento) inviata per e-mail/WhatsApp/SMS (non nel PDF firmato dal cliente).
   Test: `guides/manuel/luxapp-test.cjs`. Versione dell'app: `?v=` in app.html + `CACHE`/SHELL in app-sw.js + testo «v1.0.0» in «Moi».
   Resta da fare quando il cliente firma: il PDF della **fattura** (dati della società e banca li ridà il titolare, non scriverli qui).
+- **Manuale dell'app LuxInterventions** (v1.5.0, FR · EN · DE): `guides/app-luxinterventions/manuel-app-luxinterventions-<l>.pdf`;
+  si rifà con `shots.cjs` (foto vere dell'app) + `manual.cjs`. Il **documento da firmare** (descrizione v1.5.0 + prezzo + IBAN) NON sta nel progetto (dati bancari): si consegna al titolare.
+- **Da fare (chiesto dal titolare, «domani»)**: pulizia del progetto — togliere test, codice e file che non servono più (prima chiedere la lista, i dati veri non si toccano).
 - **Separare ARES/Nobis da LuxInterventions** (ancora da decidere: indirizzo A/B, bottone Nobis sul sito, inoltro automatico).
 - **Link di firma dei devis nella MASTER** («🔗 Lien / QR code») non funziona più dalla v2.316 (passava dal vecchio portale): da riparare solo se lo chiede.
 
