@@ -98,6 +98,7 @@ Vale per tutte le app degli utenti (inquilini, operai…), sempre in quest'ordin
 - **Clé de secours**: le due metà A e B restano al cliente (prima B andava alla MASTER); chi aveva il vecchio kit vede «Refaites votre kit».
 - Prove di CENTRAL-OGL (nello scratchpad della sessione, non nel progetto): prova a tappeto dei bottoni, giro segnalazione → «Réparé» → «Terminé», clé de secours A+B, testi EN/DE identici dopo la pulizia delle traduzioni.
 - **Contratti e depositi**: 2 documenti da firmare (uno per app, **prezzo globale 10 000 € HTVA per le due, dovuto una volta**, firma ARES INVEST S.A.) e 2 pacchi Patamu (codice + Worker intero + dossier di creazione + manuali + impronte). Non nel progetto (IBAN): li ha il titolare.
+- **Worker pulito (27/11/2026, ~1 050 righe)**: solo sito (contatore), app LuxInterventions (foto) e CENTRAL-OGL (coffre, app locatari, chat, collectes, traduzione, news/ticker, notifiche). Tolti MASTER, rete/licenze, portale, annunci, biens, tools, trajets, candidature. La centrale del cliente **non scade più** (tenantState sempre «ok»). I dati su Cloudflare non sono stati toccati (pulizia dei dati: a parte, quando lo dice il titolare, con sauvegarde prima).
 - Manuale CENTRAL-OGL: FR · EN. Sito luxinterventions.com: **non toccare** finché non dà il VAI (clip della sezione gérance e pagina Nobis proposti, in attesa).
 
 ## ⏸️ In attesa (standby, novembre 2026)
