@@ -25,7 +25,7 @@ pullRefreshInit({
   refresh: async () => {
     if (!vault.unlocked) return;
     await vault.sync();
-    await Promise.all([ptlWatch(), inboxSync(), chatPoll(), toolsLoad(true), ui.route === 'gerances' ? ptlLoad() : 0].map((p) => Promise.resolve(p).catch(() => {})));
+    await Promise.all([inboxSync(), chatPoll()].map((p) => Promise.resolve(p).catch(() => {})));
     renderView();
   },
 });
@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.319.0';
+const VERSION = '2.320.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -50,6 +50,7 @@ const TENANT = (() => {
   } catch { return /^[a-z0-9]{12,24}$/.test(q) ? q : ''; }
 })();
 // CENTRAL-OGL · Organisation et gestion des locataires (ARES Invest s.a. / Nobis s.a.r.l.)
+const brandName = () => societe().nom || OGL.nom; // nom qui signe les messages et les annonces
 const OGL = { nom: 'CENTRAL-OGL', sub: 'ARES Invest s.a. / Nobis s.a.r.l.', info: 'Organisation et gestion des locataires' };
 let tenantInfo = (() => { try { return JSON.parse(localStorage.getItem('aresTenantInfo:' + TENANT) || '{}'); } catch { return {}; } })();
 {
@@ -61,6 +62,7 @@ let tenantInfo = (() => { try { return JSON.parse(localStorage.getItem('aresTena
 }
 // CENTRAL-OGL : il n'y a plus de centrale principale ; sans numéro de centrale dans l'adresse, on n'ouvre rien
 const TENANT_ID = TENANT;
+const centralUrl = (tid) => `${location.origin}/central-ogl/?${tid}`; // adresse de la centrale (kit de récupération)
 if (!TENANT_ID) {
   document.title = OGL.nom;
   document.body.innerHTML = '<div style="font-family:system-ui,sans-serif;max-width:520px;margin:60px auto;padding:0 16px;text-align:center;color:#1a1a1a"><h1 style="font-size:22px">CENTRAL-OGL</h1><p>Ouvrez le lien de votre centrale (adresse avec son numéro).</p></div>';
@@ -93,7 +95,6 @@ const vault = new Vault(API, TENANT);
 }
 trInit(API, () => getLang()); // 🌐 traduction des messages des chats
 emojiInit(); // 😊 bouton émojis dans les chats
-domierInit({ api: API.replace(/\/$/, ''), lang: () => getLang() }); // 🔧 DOMIER (centrales des clients)
 // 🗄️ Nouveau départ : les données de test sont archivées (gardées, rien n'est effacé) et ne s'affichent plus
 // nulle part (listes, statistiques, apps) ; Réglages → « Voir les archives » les montre à nouveau
 const ARCH_COLS = new Set(['taches', 'devis', 'hotes', 'biens']);
@@ -186,9 +187,6 @@ const fullName = (l) => [l.prenom, l.nom].filter(Boolean).join(' ') || 'Sans nom
 // photo de profil (locataire / ouvrier) : JPEG carré 256 px, mise par nous ou par la personne dans son app
 const photoOk = (v) => typeof v === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(v) && v.length < 160000;
 const avIn = (l) => (l && photoOk(l.photo) ? html`<img class="av-ph" src="${l.photo}" alt="">` : initials(l));
-// mini-pastille (photo ou icône du métier) devant un nom
-const miniW = (i) => html`<span class="mini-av">${i && photoOk(i.photo) ? html`<img src="${i.photo}" alt="">` : metIcon(i)}</span>`;
-const avW = (i) => (i && photoOk(i.photo) ? html`<img class="av-ph" src="${i.photo}" alt="">` : metIcon(i));
 const photoField = (rec, fallback) => html`<div class="full photo-pick"><span class="pp-circle">${photoOk(rec.photo) ? html`<img src="${rec.photo}" alt="">` : fallback}</span>
   <input type="hidden" name="photo" value="${photoOk(rec.photo) ? rec.photo : ''}">
   <label class="btn sm" style="cursor:pointer">📷 ${photoOk(rec.photo) ? 'Changer la photo' : 'Ajouter une photo'}<input type="file" accept="image/*" data-input="photo-pick" hidden></label>
@@ -252,22 +250,9 @@ const edlOf = (logId, kind = 'edl') => vault.list('documents').filter((d) => d.k
 const edlIn = (logId, room) => edlOf(logId).filter((d) => d.room === room).pop();
 const edlOutNew = () => vault.list('documents').filter((d) => d.kind === 'edl-out' && !d.seen);
 
-// ───────────────────────── Maintenance : intervenants, interventions, collectes des déchets ─────────────────────────
-// icône du métier (comme dans l'app des locataires) : à la place des initiales dans les listes de l'équipe
-const MET_ICON = { menage: '🧹', homme: '🧰', menuisier: '🔨', electricien: '⚡', plombier: '🔧', chauffagiste: '🔥', macon: '🧱', peintre: '🖌️', serrurier: '🔑', jardinier: '🌿', autre: '🛠️' };
 // icône choisie par la personne dans son app (sinon celle de son métier)
 const emojiOk = (v) => typeof v === 'string' && v.length <= 16 && /^\p{Extended_Pictographic}/u.test(v);
-const metIcon = (i) => (i && emojiOk(i.icon) ? i.icon : MET_ICON[i && i.metier] || '👷');
-const METIERS = { menage: 'F. de ménage', homme: 'H. à tout faire', menuisier: 'Menuisier', electricien: 'Électricien', plombier: 'Plombier / sanitaire', chauffagiste: 'Chauffagiste', macon: 'Maçon', peintre: 'Peintre', serrurier: 'Serrurier', jardinier: 'Jardinier', autre: 'Autre' };
 const TACHE_TYPES = { nettoyage: '🧹 Nettoyage', reparation: '🔧 Réparation', gros: '🚚 Gros travaux', autre: '📌 Autre' };
-const tacheIcon = (type) => (type === 'entretien' ? '🔧' : (TACHE_TYPES[type] || '📌').split(' ')[0]);
-// Feu tricolore : rouge = aujourd'hui ou en retard, jaune = demain / après-demain, vert = il y a le temps
-const LIGHTS = { red: 'Urgent : aujourd’hui ou en retard', yellow: 'Attention : demain ou après-demain', green: 'Il y a le temps' };
-function light(d) {
-  if (!d) return '';
-  const lvl = d <= today() ? 'red' : d <= addDays(today(), 2) ? 'yellow' : 'green';
-  return new Raw(`<span class="light light-${lvl}" title="${LIGHTS[lvl]}" aria-label="${LIGHTS[lvl]}"></span>`);
-}
 const RECURS = { '': 'Une seule fois', hebdo: 'Chaque semaine', '2sem': 'Toutes les 2 semaines', mois: 'Chaque mois' };
 const STATUTS = { afaire: 'À faire', planifie: 'Planifiée', fait: 'Terminée' };
 const ST_DOT = { afaire: '🔴', planifie: '🟡', fait: '🟢' };
@@ -329,11 +314,6 @@ function collecteDates(c, from, to) {
 }
 // Quand sortir les poubelles : la veille au soir (par défaut) ou le jour même, tôt le matin
 const SORTIES = { veille: 'La veille au soir', jour: 'Le jour même, tôt le matin' };
-const sortieDay = (c, d) => (c.sortie === 'jour' ? d : addDays(d, -1));
-const shortDay = (s) => new Date(s + 'T00:00:00').toLocaleDateString(LOC, { weekday: 'long', day: 'numeric', month: 'short' });
-const sortieText = (c, d) => c.sortie === 'jour'
-  ? `à sortir le jour même${c.heure ? ' ' + c.heure : ' tôt le matin'}`
-  : `à sortir la veille au soir${d ? ' (' + shortDay(addDays(d, -1)) + ')' : ''}${c.heure ? ' ' + c.heure : ''}`;
 const sortieRule = (c) => (c.sortie === 'jour' ? `Le jour du passage, ${c.heure || 'tôt le matin'}` : `La veille au soir${c.heure ? ', ' + c.heure : ''}`);
 const collecteRule = (c) => (c.mode === 'hebdo' ? `chaque ${JOURS[+c.jour]}` : c.mode === '2sem' ? `un ${JOURS[weekday(c.debut)]} sur deux (à partir du ${fmtDate(c.debut)})` : plural((c.dates || []).length, 'date'));
 // Lecture souple de dates : 07/01/2026, 7.1.2026, 07/01 (année par défaut), 2026-01-07
@@ -403,17 +383,9 @@ function parseDates(text, year, cat) {
   }
   return [...out].sort();
 }
-const intervFull = (i) => [i.prenom, i.nom].filter(Boolean).join(' ');
-const intervName = (id) => { const i = vault.get('intervenants', id); return i ? intervFull(i) : ''; };
 const INT_GENRES = { interne: 'Ouvrier interne (salarié)', societe: 'Société externe', prive: 'Privé (travail occasionnel)' };
-const INT_CATS = { quotidien: 'Gestion quotidienne (ménage, petits travaux)', specialise: 'Professionnel spécialisé' };
-const ABS_TYPES = { maladie: '🤒 Maladie', conges: '🏖️ Congé', autre: '📌 Autre absence' };
-// Créneaux d'une journée de travail : matin, après-midi, soir (+ suppléments / dépannages ajoutés avec « + »)
-const HOR_P = { matin: '🌅 Matin', aprem: '☀️ Après-midi', soir: '🌙 Soir', extra: '➕ Supplément' };
-const HOR_MIN = { matin: 3, aprem: 3, soir: 1 };
 // heure proposée quand on touche une case vide : début du créneau, ou la fin de la maison précédente
 const HOR_START = { matin: '08:00', aprem: '14:00', soir: '18:00', extra: '08:00' };
-const horP = (h) => (HOR_P[h.p] ? h.p : (hm(h.de) || 0) < 12 ? 'matin' : (hm(h.de) || 0) < 17 ? 'aprem' : 'soir');
 const SEMAINE = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 const hm = (s) => { const m = /^(\d{1,2}):(\d{2})$/.exec(s || ''); return m ? +m[1] + +m[2] / 60 : null; };
 // Heures prévues par jour de la semaine (0 = lundi)
@@ -428,23 +400,9 @@ document.addEventListener('change', (e) => {
   img.src = URL.createObjectURL(f); img.alt = '';
   old.replaceWith(img);
 }, true);
-const hors = (i) => (i.horaires || []).filter((h) => h.de && h.a && h.de !== h.a);
 const dowOf = (iso) => (new Date(iso + 'T12:00:00').getDay() + 6) % 7;
-const okSlot = (h) => h && h.de && h.a && h.de !== h.a;
-// 📍 pointage de l'équipe : la position est prise par l'app seulement au toucher d'Arrivée / Départ ; on la compare
-// à la position du lieu (immeuble : OpenStreetMap à partir de l'adresse, ou « je suis sur place ») — 150 m = sur place
-const GEO_OK = 150;
 const geoOk = (g) => g && Number.isFinite(+g.la) && Number.isFinite(+g.lo) && Math.abs(+g.la) <= 90 && Math.abs(+g.lo) <= 180;
 const geoIn = (g) => (geoOk(g) ? { la: Math.round(+g.la * 1e6) / 1e6, lo: Math.round(+g.lo * 1e6) / 1e6, acc: Math.max(0, Math.min(99999, Math.round(+g.acc || 0))) } : null);
-const geoM = (a, b) => { const r = Math.PI / 180, x = Math.sin(((b[0] - a[0]) * r) / 2) ** 2 + Math.cos(a[0] * r) * Math.cos(b[0] * r) * Math.sin(((b[1] - a[1]) * r) / 2) ** 2; return Math.round(12742000 * Math.asin(Math.sqrt(x))); };
-// le lieu le plus proche parmi ceux prévus : { m, imm } (m = null si aucun de ces lieux n'a encore de position)
-function geoNear(g, immIds) {
-  let best = null;
-  for (const id of new Set(immIds.filter(Boolean))) { const im = vault.get('immeubles', id); if (im && Array.isArray(im.geo)) { const m = geoM([g.la, g.lo], im.geo); if (!best || m < best.m) best = { m, imm: id }; } }
-  return best || { m: null, imm: immIds.find(Boolean) || '' };
-}
-const geoDist = (m) => (m >= 1000 ? (m / 1000).toFixed(1).replace('.', ',') + ' km' : m + ' m');
-const geoTxt = (g) => (!g ? '' : html`${g.m == null ? html`📍 <span>position reçue</span>${g.imm ? html` — ${immName(g.imm)} : <span>lieu sans position</span>` : ''}` : g.m <= GEO_OK ? html`✅ <span>sur place</span> (${g.m} m) — ${immName(g.imm)}` : html`⚠️ <span>loin du lieu</span> : ${geoDist(g.m)} — ${immName(g.imm)}`}${g.acc ? ` · ±${g.acc} m` : ''}`);
 function geoFill(f, g, src, acc) {
   f.geoLa.value = g[0]; f.geoLo.value = g[1];
   let s = f.querySelector('[name=geoSrc]');
@@ -459,26 +417,7 @@ async function osmGeo(adr, cc) {
   const j = r.ok ? await r.json() : [];
   return j && j[0] ? [Math.round(+j[0].lat * 1e6) / 1e6, Math.round(+j[0].lon * 1e6) / 1e6] : null;
 }
-const horsOn = (i, iso) => (i.plan && Array.isArray(i.plan[iso]) ? i.plan[iso].filter(okSlot) : hors(i).filter((h) => h.j === dowOf(iso))).slice().sort((a, b) => a.de.localeCompare(b.de));
-const slotsHours = (hs) => hs.reduce((n, h) => { const a = hm(h.de), b = hm(h.a); return n + (a != null && b != null && b > a ? b - a : 0); }, 0);
 const mondayOf = (iso) => addDays(iso, -dowOf(iso));
-const dayHours = (i, dow) => hors(i).filter((h) => h.j === dow).reduce((n, h) => { const a = hm(h.de), b = hm(h.a); return n + (a != null && b != null && b > a ? b - a : 0); }, 0);
-const absOn = (i, d) => (i.absences || []).find((a) => a.debut <= d && (!a.fin || a.fin >= d));
-// Heures du mois : prévues selon l'horaire, moins les jours d'absence (par type)
-function intervMonth(i, y, m) {
-  const out = { prevu: 0, maladie: 0, conges: 0, autre: 0, jm: 0, jc: 0, ja: 0 };
-  const n = new Date(y, m, 0).getDate();
-  for (let d = 1; d <= n; d++) {
-    const iso = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-    const h = slotsHours(horsOn(i, iso));
-    out.prevu += h;
-    const a = absOn(i, iso);
-    if (a && h) { out[a.type in out ? a.type : 'autre'] += h; out[{ maladie: 'jm', conges: 'jc' }[a.type] || 'ja']++; }
-  }
-  out.net = out.prevu - out.maladie - out.conges - out.autre;
-  return out;
-}
-const fmtH = (h) => { const r = Math.round(h * 60); return `${Math.floor(r / 60)} h${r % 60 ? String(r % 60).padStart(2, '0') : ''}`; };
 const placeName = (t) => (t.lieu ? `📍 ${[t.lieu.nom, t.lieu.adr].filter(Boolean).join(' — ')}` : t.dev ? `📝 ${[t.dev.client, t.dev.adr].filter(Boolean).join(' — ')}` : t.ptl ? `🏢 ${t.ptl.res}${t.ptl.adr ? ' — ' + t.ptl.adr : ''}` : [t.logId ? logName(t.logId) : 'Parties communes', immName(t.immId)].join(' · '));
 
 // Agenda : tout ce qui se passe entre from et to (interventions + collectes), trié par jour
@@ -517,488 +456,6 @@ async function publishPub(immId, loud) {
     try { await vault.publishPublic(im.pubToken, pubData(im)); } catch (e) { if (loud) toast(e.message || 'Publication impossible', { bad: true }); return false; }
   }
   return true;
-}
-
-// ───────────────────────── App de l'équipe (lien / code personnel, chiffré) ─────────────────────────
-// Chaque personne voit seulement SON planning (lieu, jour, consignes), son horaire et ses absences ;
-// elle renvoie « commencé / fini / pas fini » avec note et photos, ses coordonnées, ses arrêts maladie.
-const eqUrl = (i) => `${location.origin}/centralouvriers.html#${i.espace.id}.${i.espace.key}`;
-const eqAppUrl = () => `${location.origin}/centralouvriers.html`;
-const MEN_TAGS = { ok: '⏰ À l’heure', late: '⏰ En retard', nice: '😊 Aimable', rude: '😠 Désagréable', clean: '✨ Bien nettoyé', dirty: '🧹 Oublis / mal nettoyé', fait: '✅ Travail bien fait', pasfini: '⚠️ Pas fini', tidy: '🧽 Laissé propre', messy: '🗑️ Laissé sale' };
-const MEN_EVAL = { 1: '😞 Insuffisant', 2: '😐 Suffisant', 3: '🙂 Bien', 4: '⭐ Excellent' };
-const EQ_ST = { encours: '▶️ Commencé', fait: '✅ Fini', incomplet: '⚠️ Pas fini', refus: '✋ Refusé', start: '🚕 Accepté (START)' };
-// 🚕 Mode taxi : l'ouvrier choisi doit appuyer sur START (5 min si urgent, 30 min sinon) ;
-// s'il refuse ou ne répond pas, la demande passe au suivant (3 ouvriers au plus), puis « personne n'a accepté »
-const TAXI_MAX = 3;
-const taxiCur = (t) => (t && t.taxi && t.taxi.st === 'wait' ? t.taxi.list[t.taxi.i] : '');
-const taxiUntil = (t) => t.taxi.at + t.taxi.lim * 60000;
-function taxiNext(t, why) {
-  const x = t.taxi, log = [...(x.log || []), { w: x.list[x.i], r: why, at: new Date().toISOString() }], i = x.i + 1;
-  if (i >= x.list.length) return { taxi: { ...x, i, log, st: 'none' }, intervenantId: '', statut: 'afaire' };
-  return { taxi: { ...x, i, log, at: Date.now() }, intervenantId: x.list[i] };
-}
-// les suivants : même métier, avec l'app, pas absents ce jour-là, pas déjà refusé ; les meilleurs points d'abord
-function taxiCandidates(t, first) {
-  const w0 = vault.get('intervenants', first), mets = (t.metiers || []).length ? t.metiers : w0 ? [w0.metier] : [], d = t.date || today();
-  const pts = Object.fromEntries(eqScores(today().slice(0, 4)).map(([id, v]) => [id, v.pts]));
-  return vault.list('intervenants').filter((i) => i.id !== first && !i.archive && i.espace && i.espace.on && mets.includes(i.metier) && !absOn(i, d) && !(t.refusBy || []).includes(i.id))
-    .sort((a, b) => (pts[b.id] || 0) - (pts[a.id] || 0) || intervFull(a).localeCompare(intervFull(b))).map((i) => i.id).slice(0, TAXI_MAX - 1);
-}
-let taxiBusy = false;
-async function taxiTick() {
-  if (!vault.unlocked || taxiBusy || !vault.list('taches').some(taxiCur)) return;
-  taxiBusy = true;
-  try {
-    // d'abord les réponses arrivées (un START juste avant la fin compte), puis les temps écoulés
-    if (Date.now() - lastInbox > 25000) { lastInbox = Date.now(); await inboxSync(); }
-    const late = vault.list('taches').filter((t) => taxiCur(t) && Date.now() > taxiUntil(t));
-    if (!late.length) return;
-    await vault.mutate((tx) => late.forEach((t) => tx.put('taches', { id: t.id, ...taxiNext(t, 'timeout') })), '🚕 Mode taxi : pas de réponse', late.map((t) => `${t.titre} — ${intervName(t.taxi.list[t.taxi.i])}`).join(' · '));
-    for (const t of late) { const n = vault.get('taches', t.id); toast(taxiCur(n) ? `🚕 ${t.titre} : pas de réponse → ${intervName(taxiCur(n))}` : `⏸ ${t.titre} : personne n’a accepté`, { bad: !taxiCur(n) }); }
-    scheduleEspaceSync();
-  } catch { /* hors ligne : au prochain tour */ } finally { taxiBusy = false; }
-}
-// petite étiquette dans les listes : en attente (compte à rebours), accepté, personne
-const taxiTag = (t) => {
-  if (!t.taxi || t.statut === 'fait') return '';
-  if (t.taxi.st === 'wait') return html` <span class="badge warn" data-taxi-until="${taxiUntil(t)}">🚕 attend ${intervName(taxiCur(t))} · ⏱ ${Math.max(0, Math.ceil((taxiUntil(t) - Date.now()) / 60000))} min</span>`;
-  if (t.taxi.st === 'ok') return html` <span class="badge ok">✅ accepté par ${intervName(t.intervenantId)}</span>`;
-  return html` <span class="badge bad">⏸ Personne n’a accepté</span>`;
-};
-const TAXI_R = { refus: '✋ a refusé', timeout: '⏱ pas de réponse', ok: '✅ START' };
-// un élément par étape : chaque étape se traduit à part
-const taxiLog = (t) => ((t.taxi.log || []).length ? html`${t.taxi.log.map((x, n) => html`<span>${n ? ' → ' : ''}${intervName(x.w)} ${TAXI_R[x.r] || x.r} (${fmtDateTime(x.at).slice(-5)})</span>`)}` : 'en attente');
-// minutes restantes sur les étiquettes, sans tout redessiner
-const taxiCount = () => document.querySelectorAll('[data-taxi-until]').forEach((el) => { el.textContent = el.textContent.replace(/⏱ \d+/, `⏱ ${Math.max(0, Math.ceil((+el.dataset.taxiUntil - Date.now()) / 60000))}`); });
-// Dernier état donné par l'équipe pour une intervention un jour donné
-// Photos « avant » / « après » envoyées par l'équipe pour une intervention (6 + 6 maximum)
-const EQ_PH = { av: 'Avant', ap: 'Après' }, EQ_PH_MAX = 6;
-const eqPhotos = (tid, phase) => vault.list('documents').filter((x) => x.tacheId === tid && x.phase === phase).sort((a, b) => (a.u || 0) - (b.u || 0));
-const eqState = (t, d) => { const j = (t.journal || []).filter((x) => x.d === d); return j.length ? j[j.length - 1] : null; };
-// 💬 Chat ouvrier ↔ centrale : ses messages arrivent comme ses autres nouvelles (chiffrés pour la centrale), les réponses
-// partent dans les données de son app (notification « du nouveau »). 📣 Message spécial : aux ouvriers du groupe choisi dans Réglages.
-const EQ_CHAT_MAX = 300;
-const EQ_EDIT_MS = 15 * 60000;
-// pour son app : sans les messages supprimés ni les anciennes versions (« modifié » seulement)
-const eqChatOut = (i) => (i.chat || []).filter((m) => !m.del).slice(-60).map((m) => ({ id: m.id, at: m.at, from: m.from, x: m.x, ...(m.g ? { g: 1 } : {}), ...(m.ed ? { ed: m.ed } : {}) }));
-const eqGroup = () => ((vault.get('reglages', 'eqGroup') || {}).ids || []).filter((wid) => { const w = vault.get('intervenants', wid); return w && w.espace && w.espace.on; });
-async function eqChatSend(ids, x, g) {
-  const at = new Date().toISOString(), mid = 'c' + Date.now().toString(36);
-  await vault.mutate((tx) => {
-    for (const wid of ids) {
-      const cur = vault.get('intervenants', wid);
-      if (cur) tx.put('intervenants', { id: wid, chat: [...(cur.chat || []), { id: mid + wid.slice(-4), at, from: 'mgr', x, ...(g ? { g: 1 } : {}) }].slice(-EQ_CHAT_MAX), ...(g ? {} : { chatNew: 0 }) });
-    }
-  }, g ? '📣 Message spécial à l’équipe' : '💬 Message à un ouvrier', g ? plural(ids.length, 'ouvrier') : intervFull(vault.get('intervenants', ids[0])), ids.length === 1 ? ids[0] : '');
-  for (const wid of ids) await equipeSync(wid, true);
-}
-const eqChatHtml = (i) => {
-  const msgs = (i.chat || []).slice(-80);
-  return html`<p class="tiny muted" style="margin:0 0 8px;display:flex;align-items:center;gap:8px"><span>Messages entre <b>${intervFull(i)}</b> et la centrale, chiffrés. Lui seul et la centrale les lisent.</span>${new Raw(trButton())}</p>
-    ${!(i.espace && i.espace.on) ? html`<div class="alert warn" style="margin-bottom:10px">📱<div>Son app n’est pas active : activez-la dans l’onglet <b>📱 App</b> pour qu’il reçoive vos messages.</div></div>` : ''}
-    <div class="eq-chat">${msgs.length ? msgs.map((m) => html`<div class="eq-msg ${m.from === 'mgr' ? 'me' : ''}"><div class="eq-msg-h">${m.from === 'mgr' ? (m.g ? '📣 Message spécial' : '🛡️ Centrale') : '👷 ' + (i.prenom || intervFull(i))} · ${fmtDate(m.at.slice(0, 10))} ${m.at.slice(11, 16)}${m.from === 'mgr' && !m.del ? html`<button class="bub-mn" data-action="eqc-mn" data-id="${m.id}" aria-label="Options du message">⋯</button>` : ''}</div>${m.del ? html`<s>${m.x}</s><div class="tiny muted">🗑️ supprimé par l’ouvrier</div>` : m.from === 'mgr' ? m.x : html`<span data-trx="${m.x}">${m.x}</span>`}${m.from === 'mgr' && ui.eqcMn === m.id && !m.del ? html`<div class="bub-menu">${Date.now() - Date.parse(m.at) < EQ_EDIT_MS ? html`<button class="btn sm" data-action="eqc-edit" data-w="${i.id}" data-id="${m.id}">✏️ Modifier</button>` : ''}<button class="btn sm danger" data-action="eqc-del" data-w="${i.id}" data-id="${m.id}">🗑️ Supprimer</button></div>` : ''}${m.old && m.old.length ? html`<details class="bub-old"><summary>modifié · voir avant</summary>${m.old.map((o) => html`<div><span class="tiny muted">${o.at.slice(11, 16)}</span> ${o.x}</div>`)}</details>` : ''}</div>`) : html`<p class="small muted">Aucun message pour l’instant.</p>`}</div>
-    <form data-form="eq-chat" class="eq-chat-f"><input type="hidden" name="id" value="${i.id}"><textarea name="x" required maxlength="1500" placeholder="Écrire à ${i.prenom || intervFull(i)}…" data-draft="w:${i.id}">${(ui.drafts || {})['w:' + i.id] || ''}</textarea><button class="btn primary" type="submit">Envoyer</button></form>`;
-};
-function equipeData(i) {
-  const soc = societe();
-  // jusqu'à la fin du mois suivant au plus tard : l'app de l'équipe montre le planning du mois, semaine par semaine
-  const from = addDays(today(), -7), to = addDays(today(), 45);
-  const tasks = {}, items = [];
-  const out1 = (t) => {
-    const l = t.locId ? vault.get('locataires', t.locId) : null;
-    return {
-      titre: t.titre, type: t.type, recur: t.recur ? RECURS[t.recur] : '', note: t.note || '', ...(t.taxi && t.taxi.st !== 'none' ? { taxi: t.taxi.st === 'ok' ? -1 : taxiUntil(t) } : {}), heure: t.heure || '', heureFin: t.heureFin || '', urgent: !!t.urgent,
-      adresse: t.lieu ? [t.lieu.nom, t.lieu.adr].filter(Boolean).join(' — ') : t.dev ? [t.dev.client, t.dev.adr].filter(Boolean).join(' — ') : t.ptl ? [t.ptl.res, t.ptl.adr].filter(Boolean).join(' — ') : immName(t.immId), lieu: t.dev || t.lieu ? '' : t.ptl ? [t.ptl.lieu, t.ptl.interior].filter(Boolean).join(' · ') : t.logId ? logName(t.logId) : '', statut: t.statut,
-      contact: l ? { nom: l.prenom || fullName(l), tel: l.tel || '' } : t.lieu && (t.lieu.contact || t.lieu.tel) ? { nom: t.lieu.contact || '', tel: t.lieu.tel || '' } : t.dev && (t.dev.contact || t.dev.tel) ? { nom: t.dev.contact || '', tel: t.dev.tel || '' } : t.ptl && (t.ptl.contact || t.ptl.tel) ? { nom: t.ptl.contact || '', tel: t.ptl.tel || '' } : null,
-      // demande d'une gérance : codes, disponibilités, heure, gérance
-      ...(t.ptl ? { ger: { org: t.ptl.org, ref: t.ptl.ref, acces: t.ptl.acces || t.ptl.codes || '', dispo: t.ptl.dispo || '', heure: t.heure || '' } } : {}),
-      // le refus d'un collègue ne le concerne pas (sinon le travail paraît « refusé » chez celui qui le reprend)
-      journal: (t.journal || []).filter((x) => !(x.st === 'refus' && x.by && x.by !== i.id)).slice(-20).map((x) => ({ d: x.d, st: x.st, note: x.note || '', at: x.at, h: x.h || '' })),
-      ph: { av: eqPhotos(t.id, 'av').length, ap: eqPhotos(t.id, 'ap').length },
-      pb: eqPhotos(t.id, 'pb').slice(0, 6).map((x) => x.id),
-    };
-  };
-  const imIds = new Set(hors(i).map((h) => h.immId).filter(Boolean));
-  const jours = {};
-  for (const [iso, hs] of Object.entries(i.plan || {})) if (iso >= addDays(today(), -7) && iso <= to) { jours[iso] = hs.filter(okSlot).map((h) => ({ de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })); hs.forEach((h) => h.immId && imIds.add(h.immId)); }
-  for (const x of agenda(from, to).filter((x) => x.kind === 'tache' && x.t.intervenantId === i.id)) {
-    if (x.t.immId) imIds.add(x.t.immId);
-    tasks[x.t.id] ||= out1(x.t);
-    items.push({ d: x.d, tid: x.t.id, late: !!x.late });
-  }
-  for (const t of vault.list('taches').filter((t) => t.intervenantId === i.id && !t.recur && t.statut === 'fait' && (t.doneDate || '') >= from)) {
-    tasks[t.id] ||= out1(t);
-    if (!items.some((x) => x.tid === t.id)) items.push({ d: t.doneDate, tid: t.id });
-  }
-  const k = vault.get('reglages', 'signal');
-  return {
-    v: 1, kind: 'equipe', gv: VERSION, lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i), photo: photoOk(i.photo) ? i.photo : '',
-    // l'équipe travaille pour ARES INVEST S.A. (LA CENTRAL) : son nom et son logo (casque) dans l'app des ouvriers
-    societe: {
-      nom: socName(),
-      tel: soc.tel || '',
-      logo: soc.logo || '/ares/icons/lux-192.png',
-      color: soc.color || ''
-    },
-    me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '', ccss: i.ccss || '' },
-    // intervenant occasionnel : il lit et signe sa fiche d'engagement dans son app
-    eng: i.genre === 'prive' ? { assur: i.assur || '', police: i.police || '', assurTodo: !!i.assurTodo, signed: !!i.sign, signAt: i.signAt || '' } : null,
-    radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : null; })(),
-    horaires: hors(i).map((h) => ({ j: h.j, de: h.de, a: h.a, lieu: h.immId ? immName(h.immId) : '' })), jours,
-    absences: (i.absences || []).filter((a) => !a.fin || a.fin >= addDays(today(), -30)).map((a) => ({ type: a.type, debut: a.debut, fin: a.fin || '' })),
-    pres: Object.fromEntries(Object.entries(i.pres || {}).filter(([d]) => d >= addDays(today(), -7)).map(([d, p]) => [d, { ...(p.arr ? { arr: p.arr } : {}), ...(p.dep ? { dep: p.dep } : {}) }])),
-    rank: (() => { const y = new Date().getFullYear(), r = eqScores(y), n = r.findIndex(([wid]) => wid === i.id), v = n >= 0 ? r[n][1] : null; return v ? { y, pos: n + 1, of: r.length, pts: v.pts, fait: v.fait, ph: v.ph, urg: v.urg, good: v.good } : null; })(),
-    tasks, items: items.sort((a, b) => a.d.localeCompare(b.d)), signalKey: k ? k.pub : '', chat: eqChatOut(i), chatRd: i.chatRd || '',
-    ...(i.chefDevis ? { devis: devChefData(i) } : {}),
-  };
-}
-// ── 🚗 Trajet de l'ouvrier : un jeton secret par intervention et par jour (aujourd'hui, demain), le même dans l'app de
-// l'ouvrier, celle du locataire, le portail et ici ; le serveur ne garde que l'heure d'arrivée estimée (aucune position)
-let tripSec = '', tripTimer = 0;
-async function tripSecret() {
-  if (tripSec) return tripSec;
-  let r = vault.get('reglages', 'trip');
-  if (!r || !r.k) {
-    const k = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
-    await vault.mutate((tx) => tx.put('reglages', { id: 'trip', k }), 'Trajets : clé créée');
-    r = vault.get('reglages', 'trip');
-  }
-  return (tripSec = r.k);
-}
-const tripTk = async (tid, d) => (await sha256Hex((await tripSecret()) + '|' + tid + '|' + d)).slice(0, 32);
-// interventions ponctuelles d'aujourd'hui et de demain avec un ouvrier (pas les ménages réguliers)
-const tripTasks = () => agenda(today(), addDays(today(), 1)).filter((x) => x.kind === 'tache' && x.t.intervenantId && !x.t.recur && x.t.statut !== 'fait');
-async function tripRegister() {
-  const items = [];
-  for (const x of tripTasks()) {
-    const l = x.t.locId ? vault.get('locataires', x.t.locId) : null;
-    const tk = await tripTk(x.t.id, x.d);
-    ui.tripTks[x.t.id + '|' + x.d] = tk;
-    items.push({ tk, to: l && l.espace && l.espace.on && l.espace.id ? [l.espace.id] : [], ptl: (x.t.ptl && x.t.ptl.tid) || '' });
-  }
-  if (!items.length) return;
-  const sig = await sha256Hex(today() + JSON.stringify(items));
-  try { if (localStorage.getItem('aresTripReg') === sig) return; } catch { /* stockage indisponible */ }
-  await vault.tripReg(items);
-  try { localStorage.setItem('aresTripReg', sig); } catch { /* stockage plein */ }
-}
-// état des trajets d'aujourd'hui (toutes les 30 s) → étiquettes du planning et cadres des fiches, sans redessiner l'écran
-async function tripPoll() {
-  if (!vault.unlocked || document.visibilityState !== 'visible') return;
-  try {
-    for (const x of tripTasks().filter((x) => x.d === today())) ui.tripTks[x.t.id + '|' + x.d] ||= await tripTk(x.t.id, x.d);
-    const tks = Object.entries(ui.tripTks).filter(([k]) => k.endsWith('|' + today())).map(([, tk]) => tk);
-    ui.trips = await tripFetch(vault.api.root, tks.slice(0, 60));
-  } catch { /* hors ligne */ }
-  tripPaint();
-}
-function tripPaint() {
-  for (const el of document.querySelectorAll('[data-trip-key]')) {
-    const tk = ui.tripTks[el.dataset.tripKey], h = tk ? tripView(ui.trips[tk], { lang: getLang(), kind: el.dataset.tripKind || 'box' }) : '';
-    if (el.innerHTML !== h) el.innerHTML = h;
-  }
-}
-const tripSlot = (tid, d, kind = 'box') => html`<span data-trip-key="${tid}|${d}" data-trip-kind="${kind}" style="${kind === 'box' ? 'display:block' : ''}"></span>`;
-
-const eqHashes = new Map();
-async function equipeSync(onlyId, loud) {
-  if (!vault.unlocked) return true;
-  await tripRegister().catch(() => {});
-  for (const i of vault.list('intervenants').filter((x) => x.espace && x.espace.on && x.espace.id && (!onlyId || x.id === onlyId))) {
-    try {
-      const data = equipeData(i);
-      // 🚗 jeton du trajet pour les interventions d'aujourd'hui / demain
-      for (const it of data.items) if ((it.d === today() || it.d === addDays(today(), 1)) && !data.tasks[it.tid].recur && (vault.get('taches', it.tid) || {}).statut !== 'fait') it.tk = await tripTk(it.tid, it.d);
-      const h = await sha256Hex(JSON.stringify(data));
-      let stored = eqHashes.get(i.id);
-      try { stored = stored || localStorage.getItem('aresEq:' + i.espace.id); } catch {}
-      if (h === stored && !loud) continue;
-      const up = new Set(i.espace.files || []);
-      const files = Object.values(data.tasks).flatMap((x) => x.pb || []);
-      let filesChanged = false;
-      for (const did of files) if (!up.has(did)) { const b = await vault.readFile(did).catch(() => null); if (b) { await vault.espacePut(i.espace.id, await sealBytes(i.espace.key, b), did); up.add(did); filesChanged = true; } }
-      for (const did of [...up]) if (!files.includes(did)) { await vault.espaceDel(i.espace.id, did).catch(() => {}); up.delete(did); filesChanged = true; }
-      await vault.espacePut(i.espace.id, await sealJson(i.espace.key, data));
-      eqHashes.set(i.id, h);
-      if (filesChanged) await vault.mutate((tx) => { const cur = vault.get('intervenants', i.id); if (cur && cur.espace) tx.put('intervenants', { id: i.id, espace: { ...cur.espace, files: [...up] } }); }, 'App de l’équipe : photos', intervFull(i), i.id);
-      await notifyNews(i.espace.id, [...data.items.filter((x) => x.d >= today()).map((x) => 'i:' + x.tid + ':' + x.d), ...(i.assurTodo ? ['assur'] : []), ...data.chat.filter((m) => m.from === 'mgr').map((m) => 'm:' + m.id)]); // 💬 réponse de la centrale ; 🛡️ assurance « à faire » → notification sur son téléphone
-      try { localStorage.setItem('aresEq:' + i.espace.id, h); } catch {}
-    } catch (e) {
-      if (loud) { toast(e.message || 'Publication impossible (connexion ?)', { bad: true }); return false; }
-    }
-  }
-  return true;
-}
-async function eqSetCode(i) {
-  const e = i.espace;
-  if (e.codeHash) await vault.espCodeDel(e.codeHash).catch(() => {});
-  const code = newAccessCode();
-  const h = await codeHash(code);
-  await vault.espCodePut(h, { id: e.id, ...(await wrapWithCode(code, e.key)) });
-  // fiche actuelle (la langue ou les rubriques ont pu changer pendant l'envoi du code)
-  await vault.mutate((tx) => { const cur = vault.get('intervenants', i.id); tx.put('intervenants', { id: i.id, espace: { ...((cur && cur.espace) || e), code, codeHash: h } }); }, 'Code d’accès équipe créé', intervFull(i), i.id);
-  return code;
-}
-async function equipeInbox(w, msg) {
-  const files = [];
-  const at0 = String(msg.t || new Date().toISOString()).slice(0, 30);
-  await vault.mutate((tx) => {
-    let cur = vault.get('intervenants', w.id);
-    const feed = [...(cur.feed || [])];
-    let fresh = 0;
-    for (const it of (Array.isArray(msg.items) ? msg.items : []).slice(0, 30)) {
-      const at = String(it.at || at0).slice(0, 30);
-      const note = String(it.note || '').slice(0, 1000);
-      const photos = (Array.isArray(it.photos) ? it.photos : []).slice(0, 3);
-      if (it.k === 'task') {
-        const t = vault.get('taches', String(it.tid || ''));
-        // 🚕 START : seulement si c'est encore son tour
-        if (it.st === 'start') {
-          if (taxiCur(t) !== w.id) continue;
-          tx.put('taches', { id: t.id, taxi: { ...t.taxi, st: 'ok', okAt: at, log: [...(t.taxi.log || []), { w: w.id, r: 'ok', at }] }, ...(t.statut === 'afaire' ? { statut: 'planifie' } : {}) });
-          feed.push({ at, k: 'task', tid: t.id, d: /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10), st: 'start', note: '', ph: 0, h: '' });
-          fresh++;
-          continue;
-        }
-        if (!t || t.intervenantId !== w.id || !own(EQ_ST, it.st)) continue;
-        const d = /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10);
-        const ph = photos.map((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'equipe', label: `${intervFull(w)} — ${t.titre} (${n + 1})`, date: d, mime: 'image/jpeg', size: Math.round(String(b).length * 0.75) }); files.push([doc.id, b]); return doc.id; });
-        const entry = { d, st: it.st, note, at, by: w.id, ph };
-        if (/^\d{2}:\d{2}$/.test(it.h || '')) entry.h = it.h;
-        { const gi = geoIn(it.geo); if (gi) entry.geo = { ...gi, ...geoNear(gi, [t.immId]) }; }
-        // « Combien ? » : quantité faite (12 vitres, 3 robinets…), pour les statistiques
-        if (it.st === 'fait' && +it.qte > 0) { entry.qte = Math.min(99999, Math.round(+it.qte * 100) / 100); entry.qu = String(it.qu || '').trim().slice(0, 40); }
-        const upd = { id: t.id, journal: [...(t.journal || []), entry].slice(-80) };
-        // l'ouvrier a fini : c'est le bureau qui clôture le chantier (après contrôle des photos)
-        if (!t.recur && it.st === 'fait') Object.assign(upd, { fini: { d, by: w.id, h: entry.h || at.slice(11, 16), note, ...(entry.qte ? { qte: entry.qte, qu: entry.qu } : {}) } });
-        if (!t.recur && it.st === 'incomplet') upd.fini = null;
-        // ✋ « Je ne peux pas » (malade, pas disponible…) : le travail revient sans ouvrier, à réaffecter
-        if (it.st === 'refus') {
-          if (t.fini || t.statut === 'fait' || (t.journal || []).some((x) => x.d === d && x.by === w.id && x.st !== 'refus')) continue;
-          upd.refus = { by: w.id, at, d, note };
-          upd.refusBy = [...new Set([...(t.refusBy || []), w.id])];
-          if (!t.recur) Object.assign(upd, taxiCur(t) === w.id ? taxiNext(t, 'refus') : { intervenantId: '', statut: 'afaire' });
-        }
-        tx.put('taches', upd);
-        feed.push({ at, k: 'task', tid: t.id, d, st: it.st, note: entry.qte ? `🔢 ${entry.qte} ${entry.qu}`.trim() + (note ? ' — ' + note : '') : note, ph: ph.length, h: entry.h || '', ...(entry.geo ? { geo: entry.geo } : {}) });
-        fresh++;
-      } else if (it.k === 'ph') {
-        const t = vault.get('taches', String(it.tid || ''));
-        const b = photos[0] || (typeof it.photo === 'string' ? it.photo : '');
-        if (!t || t.intervenantId !== w.id || !own(EQ_PH, it.phase) || !b) continue;
-        const nb = eqPhotos(t.id, it.phase).length;
-        if (nb >= EQ_PH_MAX) continue;
-        const d = /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10);
-        const doc = tx.put('documents', { tacheId: t.id, kind: 'equipe', phase: it.phase, label: `${EQ_PH[it.phase]} ${nb + 1} — ${t.titre} (${intervFull(w)})`, date: d, mime: 'image/jpeg', size: Math.round(b.length * 0.75) });
-        files.push([doc.id, b]);
-        const last = feed[feed.length - 1];
-        if (last && last.k === 'ph' && last.tid === t.id && last.phase === it.phase && last.d === d) { last.ph = (last.ph || 0) + 1; last.at = at; } else feed.push({ at, k: 'ph', tid: t.id, d, phase: it.phase, ph: 1 });
-        fresh++;
-      } else if (it.k === 'pres') {
-        // pointage : heure d'arrivée / de départ écrite par la personne
-        const d = /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10);
-        const hm = (v) => (/^\d{2}:\d{2}$/.test(v || '') ? v : '');
-        const arr = hm(it.arr), dep = hm(it.dep);
-        if (!arr && !dep) continue;
-        cur = vault.get('intervenants', w.id);
-        const pres = { ...(cur.pres || {}) };
-        const prevu = horsOn(cur, d).map((h) => h.immId).filter(Boolean);
-        const gi = geoIn(it.geo), g = gi ? { ...gi, ...geoNear(gi, prevu.length ? prevu : vault.list('immeubles').map((x) => x.id)) } : null;
-        const pass = { ...(cur.pass || {}) };
-        pass[d] = passAdd(pass[d] || passDays(cur)[d] || [], arr ? 'arr' : 'dep', arr || dep, g);
-        for (const k of Object.keys(pass).sort().slice(0, -400)) delete pass[k];
-        pres[d] = { ...(pres[d] || {}), ...(arr ? { arr } : {}), ...(dep ? { dep } : {}), ...(g ? { [arr ? 'arrGeo' : 'depGeo']: g } : {}) };
-        for (const k of Object.keys(pres).sort().slice(0, -60)) delete pres[k];
-        tx.put('intervenants', { id: w.id, pres, pass });
-        feed.push({ at, k: 'pres', d, note: arr ? `🟢 Arrivée ${arr}` : `🔴 Départ ${dep}`, ...(arr ? { arr } : { dep }), ...(g ? { geo: g } : {}) });
-        fresh++;
-      } else if (it.k === 'pb') {
-        // « Quelque chose ne va pas » : devient une intervention à faire, avec les photos
-        const ph = (Array.isArray(it.photos) ? it.photos : []).filter((b) => typeof b === 'string').slice(0, 6);
-        const d = /^\d{4}-\d{2}-\d{2}$/.test(it.d || '') ? it.d : at.slice(0, 10);
-        const lieu = String(it.lieu || '').trim().toLowerCase();
-        const im = lieu ? vault.list('immeubles').find((x) => (x.adresse || '').trim().toLowerCase() === lieu) : null;
-        const titre = (note.split('\n')[0] || 'Problème').slice(0, 80);
-        const t = tx.put('taches', { type: 'reparation', titre: `Problème signalé par ${intervFull(w)} : ${titre}`, immId: im ? im.id : '', logId: '', locId: '', intervenantId: '', byInterv: w.id, date: d, recur: '', statut: 'afaire', sentAt: at, note: `${note}\n\n— Envoyé par ${intervFull(w)} (équipe) le ${fmtDateTime(at)}${it.lieu ? ' · lieu : ' + String(it.lieu).slice(0, 120) : ''}` });
-        ph.forEach((b, n) => { const doc = tx.put('documents', { tacheId: t.id, kind: 'signal', label: `Problème — photo ${n + 1}`, date: d, mime: 'image/jpeg', size: Math.round(b.length * 0.75) }); files.push([doc.id, b]); });
-        feed.push({ at, k: 'pb', tid: t.id, d, note: '⚠️ ' + titre, ph: ph.length });
-        fresh++;
-      } else if (it.k === 'devis' || it.k === 'devph') {
-        // 🦺 devis préparé par le chef de chantier dans son app (sans prix) : créé ou corrigé tant qu'il n'est pas terminé
-        if (!cur.chefDevis) continue;
-        const r = it.k === 'devis' ? devChefIn(tx, w, it, at) : devChefPhoto(tx, w, it, at, files);
-        if (!r) continue;
-        if (r.note) { const last = feed[feed.length - 1]; if (r.ph && last && last.devPh === r.did) { last.ph = (last.ph || 0) + 1; last.note = `📷 ${last.ph} photos pour le devis ${r.no}`; last.at = at; } else feed.push({ at, k: 'info', note: r.note, ...(r.ph ? { devPh: r.did, ph: 1 } : {}) }); }
-        fresh++;
-      } else if (it.k === 'photo') {
-        if (photoOk(it.d) || it.d === '') { tx.put('intervenants', { id: w.id, photo: it.d }); feed.push({ at, k: 'info', note: it.d ? '📷 Photo de profil mise à jour' : 'Photo de profil retirée' }); fresh++; }
-      } else if (it.k === 'icon') {
-        if (emojiOk(it.e)) { tx.put('intervenants', { id: w.id, icon: it.e }); feed.push({ at, k: 'info', note: `Icône choisie : ${it.e}` }); }
-      } else if (it.k === 'assur') {
-        // 🛡️ l'occasionnel écrit lui-même son assurance RC (elle était « à faire »)
-        const co = String(it.assur || '').trim().slice(0, 80), pol = String(it.police || '').trim().slice(0, 40);
-        if (w.genre === 'prive' && co && pol) {
-          tx.put('intervenants', { id: w.id, assur: co, police: pol, assurTodo: false });
-          feed.push({ at, k: 'info', note: `🛡️ Assurance RC reçue : ${co} — police n° ${pol}` });
-          fresh++;
-        }
-      } else if (it.k === 'sign') {
-        // signature de la fiche d'engagement, faite par l'intervenant occasionnel dans son app
-        if (w.genre === 'prive' && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(it.png || '') && it.png.length < 400000) {
-          tx.put('intervenants', { id: w.id, sign: it.png, signAt: /^\d{4}-\d\d-\d\dT/.test(it.at || '') ? it.at : new Date().toISOString() });
-          feed.push({ at, k: 'info', note: '✍️ Fiche d’engagement signée dans son app' });
-          fresh++;
-        }
-      } else if (it.k === 'info') {
-        // l'ouvrier tient lui-même à jour ses données (nom, prénom, adresse, téléphone, email) : on garde l'ancien → le nouveau dans l'activité
-        const clean = (v, n) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, n);
-        const now = vault.get('intervenants', w.id) || w, upd = { id: w.id }, chg = [];
-        const LBL = { prenom: 'Prénom', nom: 'Nom', tel: 'Téléphone', mail: 'Email', adresse: 'Adresse', ville: 'Code postal et ville', ccss: 'N° CCSS' };
-        for (const [f, n] of [['prenom', 60], ['nom', 80], ['tel', 40], ['mail', 120], ['adresse', 160], ['ville', 80], ['ccss', 20]]) {
-          if (!(f in it)) continue;
-          const v = f === 'ccss' ? clean(it[f], 30).replace(/\s/g, '') : clean(it[f], n), was = String(now[f] || '').trim();
-          if (f === 'ccss' && (was || !/^\d{13}$/.test(v))) continue; // n° CCSS : l'ouvrier le complète seulement s'il manque
-          if (!v || v === was || (f === 'mail' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v))) continue; // on ne vide jamais un champ
-          upd[f] = v; chg.push(`${LBL[f]} : ${was || '—'} → ${v}`);
-        }
-        if (chg.length) { tx.put('intervenants', upd); feed.push({ at, k: 'info', note: '👤 Données mises à jour par l’ouvrier — ' + chg.join(' · ') }); fresh++; }
-      } else if (it.k === 'abs') {
-        const debut = /^\d{4}-\d{2}-\d{2}$/.test(it.debut || '') ? it.debut : at.slice(0, 10);
-        const fin = /^\d{4}-\d{2}-\d{2}$/.test(it.fin || '') && it.fin >= debut ? it.fin : '';
-        const type = own(ABS_TYPES, it.type) ? it.type : 'maladie';
-        const a = { id: 'a' + Date.now().toString(36) + fresh, type, debut, fin, note: note || 'Envoyé depuis l’app', fromApp: true };
-        if (photos[0]) { const doc = tx.put('documents', { intervId: w.id, kind: 'absence', label: `${ABS_TYPES[type].replace(/^\S+ /, '')} — ${intervFull(w)}`, date: debut, mime: 'image/jpeg', size: Math.round(String(photos[0]).length * 0.75) }); files.push([doc.id, photos[0]]); a.docId = doc.id; }
-        cur = vault.get('intervenants', w.id);
-        tx.put('intervenants', { id: w.id, absences: [...(cur.absences || []), a] });
-        feed.push({ at, k: 'abs', note: `${ABS_TYPES[type]} du ${fmtDate(debut)}${fin ? ' au ' + fmtDate(fin) : ''}${note ? ' — ' + note : ''}`, ph: photos[0] ? 1 : 0 });
-        fresh++;
-      }
-    }
-    // 💬 messages de l'ouvrier à la centrale
-    const now2 = vault.get('intervenants', w.id) || cur, chat = [...(now2.chat || [])];
-    let nMsg = 0, nEd = 0;
-    for (const it of (Array.isArray(msg.items) ? msg.items : []).slice(0, 30)) {
-      if (it.k === 'msg-ed' || it.k === 'msg-del') {
-        // l'ouvrier modifie / supprime son message dans les 15 minutes ; vous gardez le texte d'avant
-        const j = chat.findIndex((m) => m.id === String(it.id || '') && m.from === 'eq');
-        const when = String(it.at || at0).slice(0, 30);
-        if (j < 0 || chat[j].del || Date.parse(when) - Date.parse(chat[j].at) > EQ_EDIT_MS + 120000) continue;
-        const m = chat[j], nx = String(it.x || '').replace(/\s+$/, '').slice(0, 1500).trim();
-        if (it.k === 'msg-del') chat[j] = { ...m, del: when };
-        else if (nx && nx !== m.x) chat[j] = { ...m, x: nx, ed: when, old: [...(m.old || []), { x: m.x, at: m.ed || m.at }].slice(-10) };
-        else continue;
-        nEd++;
-        continue;
-      }
-      if (it.k !== 'msg') continue;
-      const x = String(it.x || '').replace(/\s+$/, '').slice(0, 1500).trim(), mid = String(it.id || '').replace(/[^a-z0-9]/gi, '').slice(0, 24);
-      if (!x || (mid && chat.some((m) => m.id === mid))) continue;
-      chat.push({ id: mid || 'e' + Date.now().toString(36) + nMsg, at: String(it.at || at0).slice(0, 30), from: 'eq', x });
-      nMsg++;
-    }
-    if (nMsg) chat.sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : 0));
-    tx.put('intervenants', { id: w.id, feed: feed.slice(-200), feedNew: (cur.feedNew || 0) + fresh, ...(nMsg || nEd ? { chat: chat.slice(-EQ_CHAT_MAX), chatNew: (now2.chatNew || 0) + nMsg } : {}) });
-  }, 'Nouvelles de l’équipe', intervFull(w), w.id);
-  for (const [id, b] of files) await vault.saveFile(id, unb64u(b));
-  for (const it of (Array.isArray(msg.items) ? msg.items : [])) if (it.k === 'task' && it.st === 'fait' && !(vault.get('taches', String(it.tid || '')) || {}).ptl) await syncDepense({ id: String(it.tid || '') }, true);
-  await ptlFromTeam(w, msg).catch(() => { /* portail injoignable : la gérance verra au prochain changement */ });
-}
-// Ouvrier sur une demande de gérance : ▶️ commencé → « en cours », ✅ fini → « terminée » (+ photos après), ⚠️ pas fini → message
-async function ptlFromTeam(w, msg) {
-  if (!ptlConf()) return;
-  const items = Array.isArray(msg.items) ? msg.items : [];
-  const after = {};
-  for (const it of items) {
-    const t = vault.get('taches', String(it.tid || ''));
-    if (!t || !t.ptl) continue;
-    if (it.k === 'ph' && it.phase === 'ap') { const b = (Array.isArray(it.photos) ? it.photos[0] : '') || it.photo; if (b) (after[t.id] ||= { t, ph: [] }).ph.push(b); }
-    if (it.k !== 'task') continue;
-    const who = intervFull(w), note = String(it.note || '').slice(0, 1000);
-    if (it.st === 'start' && t.taxi && t.taxi.st === 'ok' && t.intervenantId === w.id) await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `✅ Un technicien a accepté l’intervention (${who}).` } });
-    else if (it.st === 'encours') await ptlApi(`tickets/${t.ptl.tid}/status`, { method: 'POST', body: { status: 'encours', technicien: who, text: `🚚 ${who} est sur place${note ? ' — ' + note : ''}` } });
-    else if (it.st === 'fait') await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `✅ ${who} a fini le travail${note ? ' — ' + note : ''}. Clôture après contrôle par LA CENTRAL.` } });
-    else if (it.st === 'incomplet') await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `⚠️ ${who} : pas terminé${note ? ' — ' + note : ''}` } });
-    else if (it.st === 'refus' && !t.intervenantId && t.refus && t.refus.by === w.id) await ptlStatus(t.ptl.tid, 'prise', { technicien: '', planned_at: '', text: '🔄 L’ouvrier prévu n’est pas disponible — LA CENTRAL envoie un autre ouvrier.' });
-  }
-  // photos « après » de l'ouvrier → visibles par la gérance (avant / après)
-  for (const { t, ph } of Object.values(after)) {
-    const ev = await ptlApi(`tickets/${t.ptl.tid}/comments`, { method: 'POST', body: { text: `📷 Photos après les travaux (${intervFull(w)})` } });
-    for (const b of ph.slice(0, 6)) {
-      try { await fetch(PTL_API + `tickets/${t.ptl.tid}/photos`, { method: 'PUT', headers: { Authorization: 'Bearer ' + ptlConf().token, 'Content-Type': 'image/jpeg', ...(ev.event_id ? { 'X-Event-Id': ev.event_id } : {}) }, body: new Blob([unb64u(b)], { type: 'image/jpeg' }) }); } catch { /* hors ligne */ }
-    }
-  }
-  if (ui.ptl) ui.ptl.data = null;
-}
-// 🕒 Passages (arrivée → départ) de chaque jour : enregistrés à la réception (i.pass), sinon reconstruits depuis l'activité
-const hm2m = (v) => (/^\d\d:\d\d$/.test(v || '') ? +v.slice(0, 2) * 60 + +v.slice(3) : null);
-function passAdd(list, k, h, g) {
-  const L = list.map((x) => ({ ...x }));
-  if (k === 'arr') L.push({ arr: h, ...(g ? { arrGeo: g } : {}) });
-  else { const o = [...L].reverse().find((x) => x.arr && !x.dep); if (o) { o.dep = h; if (g) o.depGeo = g; } else L.push({ dep: h, ...(g ? { depGeo: g } : {}) }); }
-  return L;
-}
-function passDays(i) {
-  const out = {};
-  for (const f of [...(i.feedArch || []), ...(i.feed || [])].filter((x) => x.k === 'pres' && x.d).sort((a, b) => (a.at || '').localeCompare(b.at || ''))) {
-    const m = String(f.note || '').match(/(\d\d:\d\d)\s*$/), k = f.arr ? 'arr' : f.dep ? 'dep' : /🟢/.test(f.note || '') ? 'arr' : 'dep', h = f.arr || f.dep || (m && m[1]);
-    if (h) out[f.d] = passAdd(out[f.d] || [], k, h, f.geo);
-  }
-  return { ...out, ...(i.pass || {}) };
-}
-const passMin = (p) => { const a = hm2m(p.arr), b = hm2m(p.dep); return a != null && b != null && b > a ? b - a : 0; };
-const dayMin = (L) => sum(L || [], passMin);
-// où : la position (si envoyée), sinon l'immeuble prévu à cette heure dans son horaire
-function passPlace(i, d, p) {
-  const g = p.arrGeo || p.depGeo;
-  if (g) return html`${p.arrGeo && p.depGeo ? html`🟢 ${geoTxt(p.arrGeo)}<br>🔴 ${geoTxt(p.depGeo)}` : geoTxt(g)}`;
-  const t = hm2m(p.arr || p.dep), slot = horsOn(i, d).find((h) => h.immId && t != null && hm2m(h.de) - 30 <= t && t <= hm2m(h.a));
-  return slot ? html`📍 ${immName(slot.immId)} <span class="muted">(<span>prévu dans l’horaire</span>)</span>` : html`<span class="muted">📍 <span>lieu inconnu (pas de position, rien dans l’horaire)</span></span>`;
-}
-function presHtml(i) {
-  const off = (ui.presOff || {})[i.id] || 0, mon = addDays(mondayOf(today()), off * 7), days = passDays(i);
-  const wk = [0, 1, 2, 3, 4, 5, 6].map((j) => addDays(mon, j)).filter((d) => (days[d] || []).length);
-  const tot = (ds) => fmtH(sum(ds, (d) => dayMin(days[d])) / 60);
-  const ym = mon.slice(0, 7), md = Object.keys(days).filter((d) => d.startsWith(ym));
-  return html`<div class="section-label">🕒 Arrivées et départs, jour par jour</div>
-    <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button class="btn sm" data-action="pres-wk" data-id="${i.id}" data-d="-1" aria-label="Semaine précédente">◀</button>
-      <b class="grow" style="text-align:center">Semaine du ${dayShort(mon)} au ${dayShort(addDays(mon, 6))}</b><button class="btn sm" data-action="pres-wk" data-id="${i.id}" data-d="1" aria-label="Semaine suivante">▶</button></div>
-    <p class="small" style="margin:0 0 8px"><span>Semaine</span> : <b>${tot(wk)}</b> · ${MONTHS_FULL[+ym.slice(5) - 1]} : <b>${tot(md)}</b></p>
-    ${wk.length ? html`<div class="stack" style="gap:6px;margin-bottom:12px">${wk.slice().reverse().map((d) => { const L = days[d]; return html`<details class="card" style="padding:8px 12px" ${d === today() || wk.length === 1 ? new Raw('open') : ''}><summary><b>${dowOfIso(d)} ${dayShort(d)}</b> · ${plural(L.length, 'visite')} · <b>${fmtH(dayMin(L) / 60)}</b>${L.some((p) => !p.dep) ? html` <span class="badge warn">départ manquant</span>` : ''}${L.some((p) => [p.arrGeo, p.depGeo].some((g) => g && g.m != null && g.m > GEO_OK)) ? html` <span class="badge bad">⚠️ hors du lieu</span>` : ''}</summary>
-      <div class="list small" style="margin-top:6px">${L.map((p) => html`<div class="row" style="display:block"><b>🟢 ${p.arr || '—'} → 🔴 ${p.dep || '—'}</b>${passMin(p) ? html` · ${fmtH(passMin(p) / 60)}` : ''}<span class="small" style="display:block;margin-top:2px">${passPlace(i, d, p)}</span></div>`)}</div></details>`; })}</div>` : html`<p class="small muted">Aucune arrivée ni départ cette semaine.</p>`}`;
-}
-// Journal de l'équipe (toutes les personnes, ou une seule), le plus récent d'abord ; noPres : sans les arrivées / départs (groupés à part)
-function eqFeedHtml(onlyId, max = 80, noPres = false) {
-  const rows = [];
-  for (const i of vault.list('intervenants')) if (!onlyId || i.id === onlyId) for (const f of i.feed || []) if (!noPres || f.k !== 'pres') rows.push([i, f]);
-  rows.sort((a, b) => (b[1].at || '').localeCompare(a[1].at || ''));
-  if (!rows.length) return html`<p class="small muted">Rien pour le moment. Ce que l’équipe envoie depuis son app (commencé, fini, pas fini, notes, photos, maladie) arrive ici.</p>`;
-  return html`<div class="list small">${rows.slice(0, max).map(([i, f]) => {
-    const t = f.tid ? vault.get('taches', f.tid) : null;
-    const what = f.k === 'eval' ? html`<b>${f.note}</b>` : f.k === 'pres' ? html`<b>${f.note}</b>` : f.k === 'pb' ? html`<b>${f.note}</b>` : f.k === 'task' || f.k === 'ph' ? html`<b>${f.k === 'ph' ? '📷 ' + EQ_PH[f.phase] : f.st === 'pay' ? '✅ ' + f.note : EQ_ST[f.st] || f.st}${f.h ? ' 🕒 ' + f.h : ''}</b> · ${t ? t.titre : '(intervention supprimée)'}${t ? html`<span class="meta" style="display:block">📍 ${placeName(t)} · ${fmtDate(f.d)}</span>` : ''}` : f.k === 'abs' ? html`<b>${f.note}</b>` : html`<b>✏️ ${f.note}</b>`;
-    return html`<button class="row" ${t ? html`data-action="edit-tache" data-id="${t.id}"` : html`data-action="open-interv" data-id="${i.id}"`} style="text-align:left">
-      <span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDateTime(f.at)} · ${miniW(i)}${intervFull(i)}</span>${what}${f.geo ? html`<span class="small" style="display:block;margin-top:2px;color:${f.geo.m != null && f.geo.m <= GEO_OK ? 'var(--ok, #15803d)' : 'var(--warn, #b45309)'}">${geoTxt(f.geo)} <span data-action="geo-map" style="text-decoration:underline;cursor:pointer" data-la="${f.geo.la}" data-lo="${f.geo.lo}">🗺️ <span>carte</span></span></span>` : ''}${f.k === 'task' && f.note ? html`<span class="small" style="display:block;margin-top:2px">📝 ${f.note}</span>` : ''}</span>
-      ${f.ph ? html`<span class="badge">📷 ${f.ph}</span>` : ''}</button>`;
-  })}</div>`;
-}
-// Aujourd'hui : qui fait quoi, où, et où il en est
-function eqTodayHtml() {
-  const d0 = today();
-  const its = agenda(d0, d0).filter((x) => x.kind === 'tache' && x.t.intervenantId);
-  // terminées aujourd'hui (elles ne sont plus dans l'agenda) : on les garde, avec ✅
-  for (const t of vault.list('taches')) if (t.intervenantId && !t.recur && t.statut === 'fait' && t.doneDate === d0 && !its.some((x) => x.t.id === t.id)) its.push({ d: d0, kind: 'tache', t });
-  const absent = vault.list('intervenants').filter((i) => absOn(i, d0));
-  const pointes = vault.list('intervenants').filter((i) => (i.pres || {})[d0]);
-  if (!its.length && !absent.length && !pointes.length) return '';
-  return html`<div class="card" style="margin-bottom:14px"><div class="card-title" style="margin-bottom:6px"><h3>👷 Aujourd’hui</h3></div>
-    <div class="list small">${its.map((x) => {
-      const t = x.t, i = vault.get('intervenants', t.intervenantId) || {}, st = eqState(t, x.d);
-      // 🔄 changer d'ouvrier : tant qu'il n'est pas arrivé (pas encore commencé), pas pour le comptable
-      const swap = !st && !t.recur && t.statut !== 'fait' && !isCompta();
-      return html`<div class="row"><button class="grow" data-action="edit-tache" data-id="${t.id}" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0;white-space:normal">${miniW(i)}<b>${intervFull(i)}</b> — ${tacheIcon(t.type)} ${t.titre}<span class="meta" style="display:block">📍 ${placeName(t)}${st && st.note ? ' · 📝 ' + st.note : ''}</span></button>
-        <span class="badge ${st ? (st.st === 'fait' ? 'ok' : st.st === 'incomplet' ? 'bad' : 'warn') : ''}">${st ? EQ_ST[st.st] + ' ' + (st.h || (st.at || '').slice(11, 16)) : absOn(i, d0) ? '🤒 absent' : '⏳ pas encore'}</span>${swap ? html`<button class="btn sm" data-action="eq-swap" data-id="${t.id}" title="Changer d’ouvrier" aria-label="Changer d’ouvrier">🔄</button>` : ''}</div>`;
-    })}
-    ${pointes.map((i) => { const L = passDays(i)[d0] || []; return html`<button class="row" data-action="open-interv" data-id="${i.id}" style="text-align:left"><span class="grow" style="white-space:normal">${miniW(i)}<b>${intervFull(i)}</b> — ${plural(L.length, 'visite')} · ${fmtH(dayMin(L) / 60)}${L.map((p) => html`<span class="small" style="display:block">🟢 ${p.arr || '—'} → 🔴 ${p.dep || '—'} · ${passPlace(i, d0, p)}</span>`)}</span></button>`; })}
-    ${absent.filter((i) => !its.some((x) => x.t.intervenantId === i.id)).map((i) => html`<div class="row"><span class="grow"><b>${intervFull(i)}</b> — ${ABS_TYPES[absOn(i, d0).type]}</span></div>`)}</div></div>`;
 }
 
 // ───────────────────────── Espace locataire (lien personnel, contenu choisi, chiffré) ─────────────────────────
@@ -1049,42 +506,6 @@ function rulesVersion(im) {
   return RULES_V + '-' + h.toString(36);
 }
 const rulesAccepted = (l) => !!(l.reglesLu && l.reglesV === rulesVersion(vault.get('immeubles', l.immId)));
-// Contrôle « Maintenance » : ce que le locataire reçoit (7 jours), et sinon pourquoi rien n'apparaît
-function mtPreview(l) {
-  const show = { ...ESP_ALL, ...((l.espace || {}).show || {}) };
-  if (!show.menage) return html`<div class="alert warn" style="margin:0 0 12px">${icon('alert')}<div>« Maintenance » est décoché : le locataire ne voit pas les passages.</div></div>`;
-  const vis = espaceData(l).visits || [];
-  const im = immName(l.immId), d0 = today(), dN = addDays(d0, 7);
-  // pour chaque personne de l'équipe absente de la liste : pourquoi
-  const why = vault.list('intervenants').filter((i) => !i.archive && !vis.some((v) => v.w === i.id)).map((i) => {
-    const r = [];
-    const hs = hors(i);
-    const noPlace = hs.filter((h) => !h.immId).length;
-    const other = [...new Set(hs.filter((h) => h.immId && h.immId !== l.immId).map((h) => immName(h.immId)))];
-    if (noPlace) r.push(`${noPlace} créneau(x) d’horaire sans lieu`);
-    if (other.length) r.push(`horaire à ${other.join(', ')}`);
-    // même adresse mais autre fiche immeuble (doublon) : la cause la plus difficile à voir
-    const norm = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
-    if (hs.some((h) => h.immId && h.immId !== l.immId && norm(immName(h.immId)) === norm(im))) r.push('⚠️ son horaire pointe vers une AUTRE fiche immeuble qui a la même adresse (doublon dans Immeubles) : choisissez le bon immeuble dans son horaire');
-    const ts = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait'));
-    const here = ts.filter((t) => t.immId === l.immId);
-    for (const t of here) {
-      const nx = agenda(d0, addDays(d0, 400)).find((x) => x.kind === 'tache' && x.t.id === t.id);
-      if (t.logId && t.logId !== l.logId) r.push(`« ${t.titre} » : dans un autre logement (${logName(t.logId)}), seul son locataire le voit`);
-      else if (!nx) r.push(`« ${t.titre} » : pas de date prévue`);
-      else if (nx.d > dN) r.push(`« ${t.titre} » : prévu le ${fmtDate(nx.d)} (au-delà de 7 jours)`);
-    }
-    const elsewhere = [...new Set(ts.filter((t) => t.immId !== l.immId).map((t) => immName(t.immId)))];
-    if (elsewhere.length) r.push(`interventions à ${elsewhere.join(', ')}`);
-    if (!hs.length && !ts.length) r.push('aucun horaire ni intervention');
-    return `${intervFull(i)} — ${r.join(' · ') || 'rien de prévu ici'}`;
-  });
-  const list = vis.length ? html`<div class="list small" style="margin-top:6px">${vis.map((v) => html`<div class="row"><span class="grow">${v.off ? '⚫' : v.d === d0 ? '🔴' : v.d === addDays(d0, 1) ? '🟡' : '🟢'} <b>${fmtDate(v.d)}</b> · ${METIERS[v.m] || v.m} ${v.nom ? '(' + v.nom + ')' : ''}${v.t ? ' · ' + v.t : ''}</span><span class="meta">${v.de}${v.a ? '–' + v.a : ''}${v.off ? ' · absent' : ''}</span></div>`)}</div>`
-    : html`<p class="small" style="margin:6px 0 0"><b>🛠️ Maintenance : aucun passage prévu dans les 7 prochains jours pour cet immeuble.</b> <span data-notr="1">(${im})</span></p>`;
-  return html`<div class="card" style="margin:0 0 12px;padding:12px"><b>🛠️ Maintenance — ce que voit le locataire (7 jours)</b>${list}
-    ${why.length ? html`<div class="section-label" style="margin-top:10px">Pas affichés chez ce locataire</div><ul class="small" style="margin:4px 0 0;padding-left:18px">${why.map((w) => html`<li>${w}</li>`)}</ul>
-    <p class="tiny muted" style="margin:6px 0 0">Pour qu’une personne de l’équipe apparaisse ici, son horaire doit avoir comme lieu l’adresse de cet immeuble (Maintenance → Équipe → la personne → Modifier → le jour → « — lieu — »).</p>` : ''}</div>`;
-}
 const appUrl = () => `${location.origin}/centrallocataires.html`;
 // Ce que le locataire voit — uniquement les rubriques cochées, uniquement ses propres données
 function espaceData(l) {
@@ -1132,47 +553,6 @@ function espaceData(l) {
     out.edlOut = edlOf(g.id, 'edl-out').filter((d) => d.locId === l.id).map((d) => ({ room: d.room, date: d.date }));
   }
   if (show.coll && im) { out.coll = pubData(im).items; if (im.pubToken) out.collLink = pubUrl(im); }
-  if (show.menage) {
-    // horaires réguliers des femmes de ménage dans cet immeuble + nettoyages datés (14 jours) ; l'app du locataire affiche celui du jour
-    const men = vault.list('intervenants').filter((i) => i.metier === 'menage' && !i.archive);
-    const week = [], dates = [];
-    for (const i of men) {
-      const off = (i.absences || []).filter((a) => !a.fin || a.fin >= today()).map((a) => [a.debut, a.fin || '9999-12-31']);
-      for (const h of hors(i)) if (h.immId === l.immId) week.push({ w: i.id, nom: i.prenom || '', j: h.j, de: h.de, a: h.a, off });
-    }
-    for (const x of agenda(today(), addDays(today(), 14)).filter((x) => x.kind === 'tache' && x.t.type === 'nettoyage' && x.t.intervenantId && x.t.immId === l.immId && (!x.t.logId || x.t.logId === l.logId))) {
-      const i = vault.get('intervenants', x.t.intervenantId);
-      if (!i) continue;
-      const h = horsOn(i, x.d).find((hh) => hh.immId === l.immId);
-      dates.push({ w: i.id, nom: i.prenom || '', d: x.d, de: h ? h.de : '', a: h ? h.a : '', off: !!absOn(i, x.d) });
-    }
-    out.menage = { week, dates };
-    // Maintenance : passages des 7 prochains jours dans cet immeuble — femme de ménage ET ouvriers (horaire habituel + interventions datées)
-    // le titre d'une intervention : parties communes ou son propre logement (rien sur les logements des voisins)
-    // (+ les 7 derniers jours : le locataire donne son avis sur chaque passage, l'un après l'autre)
-    const visits = [], d0 = addDays(today(), -7), dN = addDays(today(), 7);
-    for (const i of vault.list('intervenants').filter((x) => !x.archive)) {
-      for (let d = d0; d <= dN; d = addDays(d, 1)) for (const h of horsOn(i, d)) if (h.immId === l.immId) visits.push({ d, w: i.id, nom: i.prenom || '', m: i.metier || 'autre', de: h.de, a: h.a || '', off: !!absOn(i, d) });
-    }
-    for (const x of agenda(d0, dN).filter((x) => x.kind === 'tache' && x.t.intervenantId && x.t.immId === l.immId && (!x.t.logId || x.t.logId === l.logId) && (x.t.statut !== 'fait' || x.d < today()))) {
-      const i = vault.get('intervenants', x.t.intervenantId);
-      if (!i || i.archive) continue;
-      const own = !x.t.logId || x.t.logId === l.logId ? x.t.titre : '';
-      const same = visits.find((v) => v.w === i.id && v.d === x.d);
-      if (same) { if (own) same.t = own; same.ty = x.t.type || ''; continue; }
-      const h = horsOn(i, x.d).find((hh) => hh.immId === l.immId);
-      visits.push({ d: x.d, w: i.id, nom: i.prenom || '', m: i.metier || 'autre', de: h ? h.de : '', a: h ? h.a : '', off: !!absOn(i, x.d), ty: x.t.type || '', t: own });
-    }
-    visits.sort((a, b) => a.d.localeCompare(b.d) || (a.de || '99').localeCompare(b.de || '99'));
-    for (const r of vault.list('reglages').filter((x) => x.id.startsWith('tdem-') && x.date && (x.immId === l.immId) && (!x.logId || x.logId === l.logId))) {
-      const base = { w: 'lux', nom: 'LA CENTRAL', m: r.kind === 'reg' && r.reg ? r.reg.svc || 'autre' : 'autre', de: r.heure || '', a: r.heureFin || '', t: r.titre || '' };
-      if (r.recur) { for (const d of recurDates(r.date, r.recur, today(), dN, r.fin)) visits.push({ ...base, d }); }
-      else if (r.st && r.st !== 'afaire' && r.st !== 'fait' && r.date >= today() && r.date <= dN) visits.push({ ...base, d: r.date });
-    }
-    visits.sort((a, b) => a.d.localeCompare(b.d) || (a.de || '99').localeCompare(b.de || '99'));
-    out.visits = visits.filter((v) => v.d >= today());
-    out.done = visits.filter((v) => v.d < today() && !v.off).map((v) => ({ d: v.d, w: v.w, nom: v.nom, m: v.m, de: v.de, a: v.a }));
-  }
   if (show.avis) out.avis = avisActifs(l.immId).map((a) => ({ texte: a.texte, debut: a.debut || '', fin: a.fin || '' }));
   if (show.regles) out.regles = { extra: (im && im.regles) || '', lu: l.reglesLu || '', lv: l.reglesV || '', v: rulesVersion(im) };
   if (show.chat && chatOn(im) && isCurrent(l)) {
@@ -1301,430 +681,22 @@ async function binDaily() {
   }
   try { localStorage.setItem('aresBinDay', today()); } catch {}
 }
-// 🏠 Patrimoine (biens possédés ou gérés) : par type, combien (menu 1…10, 10+) et, si connu, le nombre exact
-const PAT_TYPES = [
-  ['🏠 Habitation', { chambre: 'Chambre (colocation)', studio: 'Studio', appartement: 'Appartement', duplex: 'Duplex / penthouse', maison: 'Maison / villa' }],
-  ['🚗 Véhicules', { garage: 'Garage / box', parkint: 'Parking intérieur', parkext: 'Place de parking extérieure' }],
-  ['🏢 Professionnel', { bureau: 'Bureau', commerce: 'Commerce / boutique', resto: 'Restaurant / café / bar', atelier: 'Local artisanal / atelier', entrepot: 'Entrepôt / dépôt', cabinet: 'Cabinet (médical, libéral)' }],
-  ['🏗️ Autre', { immeuble: 'Immeuble entier', terrain: 'Terrain', cave: 'Cave / débarras', autre: 'Autre' }],
-];
-const PAT_Q = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '10+'];
-function patBlock(pat = {}) {
-  return html`<div class="full section-label" style="margin:6px 0 0">🏠 Patrimoine (biens possédés ou gérés)</div>
-    <p class="tiny muted full" style="margin:0">Combien de chaque type ; si le client donne le nombre exact, écrivez-le à droite.</p>
-    ${PAT_TYPES.map(([g, types]) => html`<div class="full"><div class="small" style="font-weight:700;margin:6px 0 2px">${g}</div>${Object.entries(types).map(([k, l]) => { const v = pat[k] || {}; return html`<div class="pat-row"><span>${l}</span>
-      <select name="pq_${k}" aria-label="${l}"><option value="">—</option>${PAT_Q.map((q) => html`<option value="${q}" ${v.q === q ? new Raw('selected') : ''}>${q}</option>`)}</select>
-      <input name="pn_${k}" inputmode="numeric" placeholder="exact" value="${v.n || ''}" aria-label="${l} : nombre exact"></div>`; })}</div>`)}
-    ${field('Autre (précisez)', 'pat_autre', pat._autre || '', { full: true, placeholder: 'ex. 2 hangars, 1 salle de sport' })}`;
-}
-function patRead(fd) {
-  const out = {};
-  for (const [, types] of PAT_TYPES) for (const k of Object.keys(types)) {
-    const q = String(fd.get('pq_' + k) || ''), n = String(fd.get('pn_' + k) || '').replace(/\D/g, '').slice(0, 6);
-    if (PAT_Q.includes(q) || n) out[k] = { ...(PAT_Q.includes(q) ? { q } : {}), ...(n ? { n } : {}) };
-  }
-  const a = String(fd.get('pat_autre') || '').trim().slice(0, 200);
-  if (a) out._autre = a;
-  return out;
-}
-// 🌐 Réseau : centrales des clients (gérance, propriétaire), chacune avec sa cassaforte ;
-// ici : essai, échéance, lecture seule / blocage, nouvel accès, suppression avec certificat, demandes d'intervention reçues
-const NET_FIL = { gerance: '🏢 Gérance', proprio: '🔑 Propriétaire / bailleur principal' };
-const NET_STATE = { ok: ['🟢', 'Actif'], ro: ['🟠', 'Lecture seule (échu)'], blocked: ['🔴', 'Bloqué'] };
-const NET_ST = { trial: '🎁 Essai', active: '✅ Abonnement', suspended: '⏸ Suspendu' };
-const FREE_UNTIL = '2099-12-31'; // ♾️ « gratuit, sans échéance »
-const licFacts = () => vault.list('reglages').filter((r) => r.id.startsWith('licfac-')).sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.no || '').localeCompare(a.no || ''));
-const licLog = () => (vault.get('reglages', 'liclog') || {}).list || [];
-async function licLogAdd(t, act, detail = '') {
-  const e = { at: new Date().toISOString(), by: whoLabel() || '⭐ Directeur', tid: t.id, nom: t.nom, fil: t.fil, act, detail };
-  await vault.mutate((tx) => tx.put('reglages', { id: 'liclog', list: [e, ...licLog()].slice(0, 1000) }), '🔑 ' + act, `${t.nom}${detail ? ' · ' + detail : ''}`);
-}
 const addMonths = (d, n) => { const x = new Date(d + 'T12:00'); x.setMonth(x.getMonth() + n); return x.toISOString().slice(0, 10); };
-// adresse « parlante » selon le client (voir LIENS.md) : propriétaire, gestionnaire
-const netUrl = (tid) => `${location.origin}/central-ogl/?${tid}`; // un seul indirizzo per tutte le centrali dei clienti, senza nomi
-async function netApi(path, method = 'GET', body) {
-  const r = await vault.call(path, { method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
-  return r.json();
-}
-const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
-// 🔧 DOMIER dans les centrales des clients : appeler LUXINTERVENTION, ou ＋ Demande
-const domierCentral = () => ''; // CENTRAL-OGL : plus de lien vers LUXINTERVENTION
 // 📦 Transfert d'immeubles (et de tout ce qui va avec) vers la centrale d'un client du réseau : copie chiffrée, rien n'est effacé ici
 const bytesUrl = (b, mime) => 'data:' + (mime || 'application/octet-stream') + ';base64,' + b64big(b);
-async function xferPack(immIds) {
-  const S = new Set(immIds), st = { v: 2 }, files = {}, miss = [];
-  const pick = (c, f, map = (r) => r) => { st[c] = {}; for (const r of vault.listAll(c)) if (f(r)) { const { u, ...x } = map(r); st[c][r.id] = x; } };
-  pick('immeubles', (r) => S.has(r.id), ({ xfer, ...r }) => r);
-  pick('logements', (r) => S.has(r.immId));
-  const G = new Set(Object.keys(st.logements));
-  pick('locataires', (r) => S.has(r.immId) || G.has(r.logId), ({ xfer, ...r }) => (r.espace && xfer ? { ...r, espace: { ...r.espace, on: !!xfer.on } } : r));
-  const L = new Set(Object.keys(st.locataires));
-  pick('paiements', (r) => L.has(r.locId));
-  pick('versements', (r) => S.has(r.immId));
-  pick('depenses', (r) => S.has(r.immId) || G.has(r.logId));
-  pick('collectes', (r) => S.has(r.immId));
-  pick('avis', (r) => !isPub(r) && S.has(r.immId));
-  const D = new Set(Object.values(st.depenses).map((x) => x.docId).filter(Boolean));
-  pick('documents', (r) => L.has(r.locId) || S.has(r.immId) || G.has(r.logId) || D.has(r.id));
-  for (const d of Object.values(st.documents)) { try { files[d.id] = bytesUrl(await vault.readFile(d.id), d.mime); } catch { miss.push(d.label || d.id); } }
-  const n = (c) => Object.keys(st[c]).length;
-  const counts = { immeubles: n('immeubles'), logements: n('logements'), locataires: n('locataires'), paiements: n('paiements'), documents: Object.keys(files).length, apps: Object.values(st.locataires).filter((l) => l.espace && l.espace.on && l.espace.id).length };
-  return { state: { ...st, files }, counts, miss };
-}
-const XFER_LBL = { immeubles: 'immeubles', logements: 'logements', locataires: 'locataires', paiements: 'paiements', documents: 'documents', apps: 'apps des locataires' };
-const xferTxt = (c) => Object.entries(XFER_LBL).map(([k, v]) => `${c[k] || 0} ${v}`).join(' · ');
-// 🔑 client « propriétaire / bailleur principal » : qui est-il, propriétaire réel, bail principal (facultatif : s'il manque, on le signale)
-const netBailFields = (x = {}) => html`<div class="field full">Qui est-ce ?<div style="display:flex;flex-direction:column;gap:4px;margin-top:4px">
-    <label class="row" style="cursor:pointer"><input type="radio" name="loueur" value="proprio" data-input="net-loueur" ${x.loueur !== 'sous' ? new Raw('checked') : ''}><span class="grow">🔑 Le propriétaire des biens</span></label>
-    <label class="row" style="cursor:pointer"><input type="radio" name="loueur" value="sous" data-input="net-loueur" ${x.loueur === 'sous' ? new Raw('checked') : ''}><span class="grow">🔁 Un bailleur principal (il sous-loue : chambres, colocations…)</span></label></div></div>
-  <div class="full fields net-sous" style="margin:0" ${x.loueur === 'sous' ? '' : new Raw('hidden')}>
-    ${field('Propriétaire principal / réel (nom et prénom, ou société)', 'realOwner', x.realOwner || '', { full: true, placeholder: 'ex. Jean Dupont' })}
-    <label class="field full">📎 Bail principal / contrat autorisant la sous-location (PDF ou photo — chiffré, jamais publié)<input type="file" name="bail" accept="application/pdf,image/*"></label>
-    <p class="tiny full" style="margin:0;color:var(--amber,#b45309)">S’il manque, la centrale est créée quand même : « ⚠️ bail manquant » reste affiché sur sa fiche.</p></div>`;
-function netFilShow(f) { f.querySelectorAll('.net-proprio').forEach((x) => { x.hidden = f.fil.value !== 'proprio'; }); }
-async function netBailSave(tid, file, nom) {
-  const cid = uid(), mime = /^image\//.test(file.type) ? 'image/jpeg' : 'application/pdf';
-  await vault.saveFile(cid, mime === 'image/jpeg' ? await compressPhoto(file) : new Uint8Array(await file.arrayBuffer()));
-  await vault.mutate((tx) => { tx.put('documents', { id: cid, kind: 'netbail', tid, label: `📎 Bail principal — ${nom}`, date: today(), mime, size: file.size }); tx.put('reglages', { id: 'netc-' + tid, bailDoc: cid }); }, '📎 Bail principal du client', nom);
-}
-const netBailLine = (tid) => { const i = netInfo(tid); return i.loueur === 'sous' ? html`<p class="small" style="margin:6px 0">🔁 Bailleur principal · propriétaire réel : <b>${i.realOwner || '—'}</b> · ${i.bailDoc ? html`<button type="button" class="btn sm" data-action="open-doc" data-id="${i.bailDoc}">📎 Bail</button>` : html`<b style="color:var(--amber,#b45309)">⚠️ bail manquant</b> <label class="btn sm" style="cursor:pointer">📎 Ajouter<input type="file" hidden accept="application/pdf,image/*" data-input="net-bail" data-id="${tid}"></label>`}</p>` : ''; };
-const netInvite = (t, code) => `🌐 ${t.nom} — votre centrale de gestion (${NET_FIL[t.fil] || ''})
-👉 Ouvrir : ${netUrl(t.id, t.fil)}
-🔑 Code d’invitation : ${code}
-
-1️⃣ À la première ouverture : entrez le code, puis choisissez votre clé d’accès (votre mot de passe). Elle chiffre vos données : personne d’autre ne la connaît, pas même la centrale.
-2️⃣ Juste après, la centrale vous montre votre kit de secours : la « moitié A » de votre clé de secours. Envoyez-la-vous par e-mail ou imprimez-la (boutons 📧 et 🖨️) et gardez-la à 2 endroits. La « moitié B » est gardée fermée par la centrale : il faut les deux pour rouvrir votre centrale si vous oubliez votre clé d’accès.
-3️⃣ Vous n’avez pas vu ou pas gardé le kit ? Dans la centrale : l’avis rouge 🧩 de l’Accueil, ou Réglages → Sécurité → « Clé de secours » (une nouvelle moitié A est créée). Clé d’accès oubliée et moitié A perdue : contactez la centrale.`;
-// 🧾 Fatture della CENTRAL-APP alle UTENTI-APP (centrali dei clienti) : cifrate per la chiave pubblica del client, nella sua
-// casella ; bonifico con QR + « Ho pagato » (Stripe : pas encore connecté). Avviso puis sola lettura après les jours de 🧾 Facturation.
-const payDays = () => { const c = factConf(); return { avv: c.avv === '' || c.avv == null ? 7 : Math.max(0, +c.avv), ro: Math.max(1, +c.rog || 30) }; };
-const netFacts = (tid) => vault.list('reglages').filter((r) => r.id.startsWith('nfact-') && (!tid || r.tid === tid)).sort((a, b) => (b.no || '').localeCompare(a.no || ''));
-const netPayMode = (tid) => (netInfo(tid).payMode === 'month' ? 'month' : 'each');
-const netToBill = (tid) => vault.list('taches').filter((t) => t.net && t.net.tid === tid && t.statut === 'fait' && !t.facture);
-const lateDays = (due) => Math.floor((Date.parse(today()) - Date.parse(due)) / 864e5);
 const b64big = (bytes) => { let bin = ''; const u = new Uint8Array(bytes); for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(bin); };
-async function netBoxSend(tid, obj) {
-  const t = ((ui.net && ui.net.list) || []).find((x) => x.id === tid);
-  if (!t || !t.pub) throw new Error('Le client n’a pas encore ouvert sa centrale (mise à jour) : réessayez après.');
-  const r = await vault.call(`tenants/${tid}/box`, { method: 'POST', body: await sealForOwner(t.pub, obj) });
-  if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Erreur ' + r.status);
-}
-// facture de la centrale : lignes { titre, sub, tx, ht, tva } (interventions, annonces HORECA…)
-async function netFactPdf(items, client, no, dateIso, due, c, what = 'Interventions') {
-  const p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42];
-  const logo = await sigJpeg('/ares/icons/lux-192.png').catch(() => null);
-  if (logo) p.image(X, 40, 62, 62, logo.bytes, logo.w, logo.h);
-  const ex = logo ? X + 78 : X, fr = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  p.text(ex, 52, c.marque || c.nom, { size: 11, bold: true }).text(ex, 66, c.marque ? 'by ' + c.nom : '', { size: 9, color: G });
-  p.text(ex, 80, c.adresse, { size: 9 }).text(ex, 92, c.ville, { size: 9 }).text(ex, 104, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8.5, color: G });
-  if (c.tel || c.email) p.text(ex, 116, [c.tel, c.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
-  p.text(330, 150, client, { size: 11, bold: true });
-  let y = 236;
-  p.text(X, y, `Facture ${no}`, { size: 20, bold: true, color: [0.2, 0.2, 0.2] }); y += 26;
-  [['Date de facturation', fr(dateIso)], ['Date d’échéance', fr(due)], [what, String(items.length)], ['Référence', no]].forEach(([l, v], i) => { const xx = X + i * 125; p.text(xx, y, l, { size: 8.5, color: G }).text(xx, y + 13, v, { size: 10 }); });
-  y += 40;
-  p.text(X + 6, y, 'Description', { size: 9.5, bold: true }).text(470, y, 'TVA', { size: 9.5, bold: true, align: 'right' }).text(R - 6, y, 'Montant HT', { size: 9.5, bold: true, align: 'right' });
-  y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
-  for (const { titre, sub, tx, ht } of items) {
-    if (y > 700) { p.page(); y = 60; }
-    p.text(470, y, String(tx).replace('.', ',') + '%', { size: 9.5, align: 'right' }).text(R - 6, y, eur(ht), { size: 9.5, align: 'right' });
-    let hh = p.wrap(X + 6, y, titre, 360, { size: 9.5 });
-    hh += p.wrap(X + 6, y + hh, sub, 360, { size: 8.5, color: G });
-    y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
-  }
-  const ht = r2(sum(items, (i) => i.ht)), tva = r2(sum(items, (i) => i.tva)), ttc = r2(ht + tva);
-  y += 10;
-  if (y > 640) { p.page(); y = 60; }
-  const TX = 330, ty = y;
-  const trow = (l, v, b, bg) => { if (bg) p.rect(TX, y - 12, R - TX, 20, { fill: [0.94, 0.94, 0.94] }); p.text(TX + 8, y, l, { size: b ? 11 : 9.5, bold: b }).text(R - 8, y, v, { size: b ? 11 : 9.5, bold: b, align: 'right' }); y += 22; };
-  trow('Montant hors taxes', eur(ht), false, true); trow('TVA', eur(tva), false, false); trow('Total', eur(ttc), true, true);
-  let py = ty;
-  p.text(X, py, `Communication de paiement : ${no}`, { size: 9.5, bold: true }); py += 13;
-  p.text(X, py, `sur ce compte : ${c.iban}${c.banque ? ' - ' + c.banque : ''}`, { size: 9.5 }); py += 12;
-  if (c.bic) { p.text(X, py, 'BIC : ' + c.bic, { size: 9, color: G }); py += 12; }
-  if (c.iban) { qrPdf(p, X, py + 6, 92, epcText(c.nom, c.iban, c.bic, ttc, no)); p.text(X + 102, py + 30, 'Scanner le code QR avec', { size: 8.5, color: G }).text(X + 102, py + 42, 'votre application bancaire', { size: 8.5, color: G }); py += 104; }
-  y = Math.max(y, py) + 10;
-  p.text(X, y, `Paiement à ${+c.delai || 30} jours, avant le ${fr(due)}.`, { size: 9, color: G });
-  p.text((X + R) / 2, 800, `${c.marque ? c.marque + ' by ' : ''}${c.nom} · ${c.adresse}, ${c.ville} · RCS Luxembourg ${c.rcs} · TVA ${c.tva}`, { size: 7.5, color: G, align: 'center' });
-  return { bytes: p.bytes(), ht, tva, ttc };
-}
-async function netFactEmit(tid, tasks) {
-  const c = factConf(), miss = factMissing(c);
-  if (miss.length) throw new Error('Complétez : ' + miss.join(', ') + ' (Réglages → 🧾 Facturation)');
-  const cl = ((ui.net && ui.net.list) || []).find((x) => x.id === tid) || {}, client = cl.nom || tasks[0].net.nom;
-  const items = tasks.map((t) => { const f = factDraft(t), tx = factTaux(f, c); return { t, f, tx, k: factCalc(f, tx) }; });
-  const zero = items.filter((i) => !(i.k.ht > 0));
-  if (zero.length) throw new Error(`Montant à 0 € : ouvrez la facture de ${zero.map((i) => '« ' + String(i.t.titre || '').replace(/^🌐 [^:]*:\s*/, '') + ' »').join(', ')} (Comptabilité → 🧾 Factures) et indiquez heures et tarif.`);
-  const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-INT${String(seq).padStart(4, '0')}`, due = addDays(date, +c.delai || 30);
-  const rows = items.map(({ t, f, k, tx }) => {
-    const w = vault.get('intervenants', t.intervenantId) || {}, fr = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    const sub = [fr(t.doneDate || t.date), intervFull(w), `${String(num(f.h)).replace('.', ',')} h × ${eur(num(f.taux))}`, k.dep ? 'déplacement ' + eur(k.dep) : '', k.mat ? 'matériel ' + eur(k.mat) : '', k.adj ? (k.adj < 0 ? 'remise ' : 'majoration ') + eur(Math.abs(k.adj)) : ''].filter(Boolean).join(' · ');
-    // chaîne des accès : le client (gérance…) a autorisé l'accès au logement en l'absence de l'occupant
-    const acc = t.acces && t.acces.by ? ` · 🔑 Accès au logement autorisé par ${t.acces.by} le ${fr(String(t.acces.at || '').slice(0, 10))} (mandat de l’occupant / du propriétaire), transmis à ${c.marque || c.nom}` : '';
-    return { titre: String(t.titre || 'Intervention').replace(/^🌐 [^:]*:\s*/, ''), sub: sub + acc, tx, ht: k.ht, tva: k.tva };
-  });
-  const { bytes, ht, tva, ttc } = await netFactPdf(rows, client, no, date, due, c);
-  const d = payDays();
-  await netBoxSend(tid, { type: 'facture', no, date, due, ht, tva, ttc, from: c.marque || c.nom, lignes: items.map((i) => ({ titre: String(i.t.titre || '').replace(/^🌐 [^:]*:\s*/, ''), d: i.t.doneDate || i.t.date, ht: i.k.ht })), pay: { nom: c.nom, iban: c.iban, bic: c.bic, banque: c.banque }, avv: d.avv, ro: d.ro, pdf: b64big(bytes) });
-  let docId = '';
-  await vault.mutate((tx) => {
-    tx.put('reglages', { id: 'facturation', seq });
-    docId = tx.put('documents', { kind: 'facture-int', label: `Facture ${no} — ${client}`, date, mime: 'application/pdf', size: bytes.length }).id;
-    tx.put('reglages', { id: 'nfact-' + no, tid, nom: client, no, date, due, ht, tva, ttc, docId, tasks: tasks.map((t) => t.id), paid: '', claim: '' });
-    for (const i of items) tx.put('taches', { id: i.t.id, factDraft: i.f, facture: { no, date, ht: i.k.ht, tva: i.k.tva, ttc: i.k.ttc, paid: '', docId, net: tid } });
-  }, 'Facture émise', `${no} — ${client} · ${eur(ttc)}`);
-  await vault.saveFile(docId, bytes);
-  return no;
-}
-async function netFactPaid(no) {
-  const f = vault.get('reglages', 'nfact-' + no);
-  if (!f || f.paid) return;
-  await netBoxSend(f.tid, { type: 'paid', no });
-  await vault.mutate((tx) => {
-    tx.put('reglages', { id: f.id, paid: today() });
-    for (const tid of f.tasks || []) { const t = vault.get('taches', tid); if (t && t.facture) tx.put('taches', { id: tid, facture: { ...t.facture, paid: today() } }); }
-  }, 'Facture payée', `${no} — ${f.nom} · ${eur(f.ttc)}`);
-}
-// impayés : sola lettura de la centrale du client après les jours choisis, levée quand tout est payé
-// 🔑 sous-titre de la centrale d'un client propriétaire : « Bailleur principal » ou « Propriétaire » (choisi ici, dans sa fiche)
-async function netSousSync(list) {
-  for (const t of list.filter((x) => x.fil === 'proprio' && netInfo(x.id).loueur)) { const want = netInfo(t.id).loueur === 'sous'; if (!!t.sous !== want) { try { await netApi('tenants/' + t.id, 'PATCH', { sous: want }); t.sous = want; } catch { /* hors ligne */ } } }
-}
-async function netHoldSync(list) {
-  return;
-  const d = payDays();
-  for (const t of list || []) {
-    const late = netFacts(t.id).filter((f) => !f.paid && lateDays(f.due) >= d.ro);
-    const want = late.length ? 'ro' : '';
-    if ((t.hold || '') !== want) { try { await netApi('tenants/' + t.id, 'PATCH', { hold: want }); t.hold = want; } catch { /* hors ligne */ } }
-  }
-}
-// 🛠️ demandes d'intervention des centrales des clients → directement dans Maintenance (comme les signalements)
-let netDemBusy = false;
-async function netDemSync(list) {
-  return;
-  const keys = vault.get('reglages', 'signal');
-  if (!keys || !keys.priv) return;
-  netDemBusy = true;
-  try {
-    const items = ((await netApi('demandes')).items || []).slice(0, 50);
-    for (const it of items) {
-      let m;
-      try { m = await openFromTenant(keys.priv, new Uint8Array(await (await vault.call('demandes/' + it.name)).arrayBuffer())); } catch { continue; }
-      if (/^job/.test(m.type || '')) { await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {}); continue; } // candidatures retirées : ignorées
-      const tid = it.name.split('-')[1] || '', cl = ((list || (ui.net && ui.net.list) || []).find((t) => t.id === tid) || {}).nom || m.client || 'Client du réseau';
-      if (m.type === 'cgu') {
-        const S2 = (v, n) => String(v ?? '').trim().slice(0, n);
-        await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + tid, ...netInfo(tid), cgu: { v: S2(m.v, 20), at: S2(m.at, 30), by: S2(m.by, 80) } }), '📜 Conditions acceptées par le client', `${cl} · ${S2(m.v, 20)}`);
-        await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
-        continue;
-      }
-      if (m.type === 'paid' || m.type === 'conf') {
-        if (m.type === 'paid') { const f = vault.get('reglages', 'nfact-' + String(m.no || '')); if (f && f.tid === tid && !f.paid) await vault.mutate((tx) => tx.put('reglages', { id: f.id, claim: today() }), '💳 Le client dit avoir payé', `${f.no} — ${cl}`); }
-        else await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + tid, ...netInfo(tid), payMode: m.payMode === 'month' ? 'month' : 'each' }), '💳 Mode de paiement du client', `${cl} : ${m.payMode === 'month' ? 'facture mensuelle' : 'chaque intervention'}`);
-        await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
-        continue;
-      }
-      const S = (v, n) => String(v ?? '').trim().slice(0, n), ref = S(m.ref, 40);
-      if (m.type === 'dem-stop') {
-        const t = ref && vault.list('taches').find((x) => x.net && x.net.tid === tid && x.net.ref === ref);
-        if (t) await vault.mutate((tx) => tx.put('taches', { id: t.id, net: { ...t.net, stopAsk: today() } }), '⏹️ Le client demande l’arrêt du service régulier', `${cl} — ${t.titre}`);
-        await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
-        continue;
-      }
-      const rg = m.kind === 'reg' && m.reg ? { svc: TDEM_SVC[m.reg.svc] ? m.reg.svc : 'autre', freq: RECURS[m.reg.freq] && m.reg.freq ? m.reg.freq : 'hebdo', jours: (Array.isArray(m.reg.jours) ? m.reg.jours : []).map(Number).filter((x) => x >= 1 && x <= 7).slice(0, 7), de: S(m.reg.de, 5), a: S(m.reg.a, 5), debut: S(m.reg.debut, 10) } : null;
-      const acces = m.acces && S(m.acces.txt, 600) ? { txt: S(m.acces.txt, 600), by: S(m.acces.by, 120) || cl, at: S(m.acces.at, 30) || new Date().toISOString() } : null;
-      const photos = (Array.isArray(m.photos) ? m.photos : []).slice(0, 8).filter((ph) => typeof ph.b === 'string' && ph.b.length < 4e6);
-      let tidNew = '';
-      const files = [];
-      await vault.mutate((tx) => {
-        tidNew = tx.put('taches', { type: rg ? (rg.svc === 'menage' ? 'menage' : 'reparation') : 'reparation', titre: `🌐 ${rg ? '🔁 ' : m.kind === 'once' ? '🔧 ' : ''}${cl} : ${S(m.titre || 'Intervention', 80)}`, immId: '', logId: '', locId: '', intervenantId: '', date: today(), recur: '', statut: 'afaire', sentAt: m.t || new Date().toISOString(), urgent: m.urgence === 'urgent',
-          net: { tid, nom: cl, urgence: m.urgence || 'normal', ...(ref ? { ref } : {}), ...(rg ? { reg: rg } : {}), ...(m.ou ? { ou: S(m.ou, 160) } : {}) }, adresse: S(m.adresse, 200), ...(acces ? { acces } : {}),
-          note: `${rg ? `🔁 SERVICE RÉGULIER demandé : ${TDEM_SVC[rg.svc]} · ${RECURS[rg.freq]} · ${rg.jours.map((j) => JOURS_C[j]).join(', ') || '?'}${rg.de ? ' · ' + rg.de + (rg.a ? '–' + rg.a : '') : ''} · à partir du ${fmtDate(rg.debut) || '?'}\n→ mettez « Répétition », la date et l’heure dans la tâche : le client et ses locataires voient le calendrier.\n` : ''}${m.ou ? '📍 Où : ' + S(m.ou, 160) + '\n' : ''}${S(m.texte, 3000)}${m.adresse ? '\n📍 ' + m.adresse : ''}${m.contact ? '\n👤 ' + m.contact : ''}${m.tel ? ' · 📞 ' + m.tel : ''}${m.entree ? '\n🚪 Entrée de l’immeuble : ' + S(m.entree, 200) : ''}${acces ? `\n🔑 Accès au logement (si l’occupant est absent, urgence) : ${acces.txt}\n   autorisé par ${acces.by} le ${fmtDateTime(acces.at)}` : ''}\n\n— Demande de ${cl} (centrale du client) le ${fmtDateTime(m.t || Date.now())}${photos.length ? ` · 📷 ${photos.length} photo${photos.length > 1 ? 's' : ''}` : ''}` }).id;
-        for (const ph of photos) { const doc = tx.put('documents', { tacheId: tidNew, kind: 'signal', label: `📷 ${cl} — ${S(m.titre, 60)}`, date: today(), mime: 'image/jpeg', size: Math.round(ph.b.length * 0.75) }); files.push([doc.id, ph.b]); }
-      }, '🌐 Demande d’un client → Maintenance', `${cl} — ${m.titre || ''}`);
-      for (const [did, b] of files) await vault.saveFile(did, unb64u(b)).catch(() => {});
-      await vault.call('demandes/' + it.name, { method: 'DELETE' }).catch(() => {});
-    }
-  } catch { /* Worker pas encore à jour ou hors ligne */ } finally { netDemBusy = false; }
-}
-// ↩️ État des demandes des clients : renvoyé à leur centrale (📅 planifié, 🔧 en cours, ✅ fait) quand il change
-let netStBusy = false;
-async function netStatusSync() {
-  return;
-  netStBusy = true;
-  try {
-    for (const t of vault.list('taches').filter((x) => x.net && x.net.ref && x.net.tid)) {
-      const w = t.intervenantId ? vault.get('intervenants', t.intervenantId) : null;
-      const st = { st: t.statut || 'afaire', date: t.date || '', heure: t.heure || '', heureFin: t.heureFin || '', recur: t.recur || '', fin: t.fin || '', who: w ? w.prenom || '' : '', done: t.doneDate || '' };
-      const sig = JSON.stringify(st);
-      if (t.net.sent === sig) continue;
-      try { await netBoxSend(t.net.tid, { type: 'dem-st', ref: t.net.ref, ...st, at: new Date().toISOString() }); } catch { continue; }
-      await vault.mutate((tx) => tx.put('taches', { id: t.id, net: { ...t.net, sent: sig } }), '↩️ État envoyé au client', `${t.net.nom} — ${STATUTS[st.st] || st.st}`);
-    }
-  } catch { /* hors ligne */ } finally { netStBusy = false; }
-}
-// 🌐 fiche Agence / Propriétaire ↔ sa centrale du réseau : même nom (et même filière) → reliées toutes seules ; sinon on choisit à la main
-const normNom = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
-async function netLoad(force) {
-  if (!vault.unlocked) return;
-  if (ui.net && ui.net.loading) return;
-  if (!force && ui.net && Date.now() - ui.net.at < 60000) return;
-  ui.net = { ...(ui.net || { list: [], dem: [] }), loading: true };
-  try {
-    const keys = vault.get('reglages', 'signal') || (await ownerKeys());
-    // clé publique de la centrale principale : les centrales des clients chiffrent pour elle leurs demandes
-    if (keys && keys.pub && !(vault.get('reglages', 'netKey') || {}).done) { await netApi('network-key', 'PUT', { pub: keys.pub }); await vault.mutate((tx) => tx.put('reglages', { id: 'netKey', done: today() }), 'Réseau : clé publiée', ''); }
-    const list = (await netApi('tenants')).tenants || [];
-    ui.net = { list, dem: [], at: Date.now(), err: '' };
-    await netDemSync(list);
-    await netHoldSync(list);
-    await netSousSync(list).catch(() => {});
-    await netStatusSync();
-  } catch (e) { ui.net = { list: (ui.net || {}).list || [], dem: (ui.net || {}).dem || [], at: Date.now(), err: e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : la rubrique Réseau fonctionnera après sa publication.' : e.message || 'Connexion impossible' }; }
-  if (ui.route === 'licences') renderView();
-  if (ui.sheet && ui.sheet.kind && ui.sheet.kind.startsWith('net')) { ui.sheet.rendered = false; renderSheet(); }
-}
 // 🌐 centrale d'un client : bandeau essai / lecture seule ; demandes d'intervention vers LA CENTRAL (chiffrées pour elle)
 function tenantBanner() {
-  const t = tenantInfo, dl = t.until ? Math.round((new Date(t.until + 'T12:00') - new Date(today() + 'T12:00')) / 864e5) : null;
-  const late = tFactLate();
-  if (t.hold === 'ro' && t.state === 'ro') return html`<div class="alert bad" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>facture non payée.</span> <a href="#/demandes">🧾 Payer</a> <span>: la centrale se débloque dès que le paiement est reçu.</span></div></div>`;
-  if (late.length) return html`<div class="alert warn" style="margin-bottom:12px">🧾<div><b>${plural(late.length, 'facture')} en retard</b> — <a href="#/demandes">payer maintenant</a> <span>pour éviter la lecture seule.</span></div></div>`;
-  if (t.state === 'ro') return html`<div class="alert warn" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>abonnement échu le</span> <span data-notr>${fmtDate(t.until)}</span>. <span>Vos données restent visibles ; pour les modifier, contactez LA CENTRAL.</span></div></div>`;
-  if (t.st === 'trial' && dl != null) return html`<div class="alert info" style="margin-bottom:12px">🎁<div><b>Essai gratuit</b> — <span>${dl > 0 ? `${dl} jour${dl > 1 ? 's' : ''} restant${dl > 1 ? 's' : ''}` : 'dernier jour'}</span> (<span>jusqu’au</span> <span data-notr>${fmtDate(t.until)}</span>).</div></div>`;
-  // 30 jours avant la fin de l'abonnement (ou des 6 mois offerts) : rappel
-  if (dl != null && dl >= 0 && dl <= 30 && t.state === 'ok') return html`<div class="alert warn" style="margin-bottom:12px">⏳<div><b>Votre accès se termine dans ${plural(dl, 'jour')}</b> (<span>le</span> <span data-notr>${fmtDate(t.until)}</span>). <span>Pour garder la centrale, l’app de vos locataires / clients et l’envoi automatique des demandes, choisissez votre abonnement avec LA CENTRAL.</span></div></div>`;
+  if (tenantInfo.state === 'ro') return html`<div class="alert warn" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>la centrale ne peut pas enregistrer de modification pour le moment.</span></div></div>`;
   return '';
 }
-// 🧾 centrale d'un client : fatture della CENTRAL-APP (casella cifrata per la nostra chiave), bonifico con QR, « Ho pagato »
-let tboxBusy = false;
-const tfMem = () => (ui.tfacts ||= {}); // fatture tenute in memoria (centrale in sola lettura)
-const tFacts = () => { const m = { ...Object.fromEntries(vault.list('reglages').filter((r) => r.id.startsWith('tfact-')).map((r) => [r.no, r])), ...tfMem() }; return Object.values(m).sort((a, b) => (b.no || '').localeCompare(a.no || '')); };
-async function tenantBoxSync() {
-  if (tboxBusy || !vault.unlocked) return;
-  tboxBusy = true;
-  let got = 0;
-  try {
-    const keys = await ownerKeys();
-    if ((vault.get('reglages', 'tboxPub') || {}).pub !== keys.pub) { await vault.call('tenant-key', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pub: keys.pub }) }); if (tenantInfo.state !== 'ro') await vault.mutate((tx) => tx.put('reglages', { id: 'tboxPub', pub: keys.pub }), 'Clé des factures publiée', ''); }
-    const items = (await (await vault.call('box')).json()).items || [];
-    got = items.length;
-    const ro = tenantInfo.state === 'ro';
-    for (const it of items) {
-      let m;
-      try { m = await openFromTenant(keys.priv, b64d(it.d)); } catch { continue; }
-      if (m.type === 'facture' && m.no) {
-        const rec = { no: m.no, date: m.date, due: m.due, ht: m.ht, tva: m.tva, ttc: m.ttc, from: m.from || '', lignes: m.lignes || [], pay: m.pay || {}, avv: m.avv, ro: m.ro, paid: '' };
-        if (ro) { tfMem()[m.no] = { ...rec, pdf: m.pdf }; continue; } // sola lettura : on garde la casella telle quelle
-        const bytes = b64d(m.pdf || '');
-        let docId = '';
-        await vault.mutate((tx) => { docId = bytes.length ? tx.put('documents', { kind: 'facture-recue', label: `Facture ${m.no} — ${rec.from}`, date: m.date, mime: 'application/pdf', size: bytes.length }).id : ''; tx.put('reglages', { id: 'tfact-' + m.no, ...rec, docId }); }, '🧾 Facture reçue', `${m.no} · ${eur(m.ttc)}`);
-        if (docId) await vault.saveFile(docId, bytes);
-      } else if (m.type === 'dem-st' && m.ref && String(m.ref).startsWith('tdem-') && vault.get('reglages', String(m.ref))) {
-        // 🛠️ demande écrite dans « Demandes » : planifiée / régulier confirmé / terminée / arrêtée → la liste et l'app des locataires suivent
-        const day = (x) => (/^\d{4}-\d{2}-\d{2}$/.test(x || '') ? x : ''), hm = (x) => (/^\d\d:\d\d$/.test(x || '') ? x : '');
-        const st = ['afaire', 'planifie', 'encours', 'fait'].includes(m.st) ? m.st : 'afaire';
-        const dv = m.drv && typeof m.drv === 'object' ? { nom: String(m.drv.nom || '').slice(0, 60), tel: String(m.drv.tel || '').slice(0, 30), auto: String(m.drv.auto || '').slice(0, 60), plaque: String(m.drv.plaque || '').slice(0, 20) } : null;
-        const tx2 = (vault.get('reglages', String(m.ref)) || {}).kind === 'taxi' ? { drv: dv, prix: +m.prix > 0 ? Math.round(+m.prix * 100) / 100 : 0, pay: String(m.pay || '').slice(0, 10), cancel: day(m.cancel) } : {};
-        await vault.mutate((tx) => tx.put('reglages', { id: String(m.ref), st, date: day(m.date), heure: hm(m.heure), heureFin: hm(m.heureFin), recur: RECURS[m.recur] && m.recur ? m.recur : '', fin: day(m.fin), done: day(m.done), ...tx2 }), '↩️ État de la demande (LA CENTRAL)', `${(vault.get('reglages', String(m.ref)) || {}).titre || ''} — ${TDEM_ST[st] || st}`);
-      } else if (m.type === 'dem-st' && m.ref) {
-        // état d'une demande envoyée à LA CENTRAL : la fiche (et l'app du locataire) suivent
-        const t = vault.get('taches', String(m.ref));
-        if (t) {
-          const st = ['afaire', 'planifie', 'encours', 'fait'].includes(m.st) ? m.st : t.statut;
-          const day = (d) => (/^\d{4}-\d{2}-\d{2}$/.test(d || '') ? d : '');
-          await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: st, ...(day(m.date) ? { date: day(m.date) } : {}), ...(/^\d\d:\d\d$/.test(m.heure || '') ? { heure: m.heure } : {}), ...(st === 'fait' ? { doneDate: day(m.done) || today() } : {}), fwd: { ...(t.fwd || {}), st, who: String(m.who || '').slice(0, 40), upd: String(m.at || '').slice(0, 30) } }), '↩️ LA CENTRAL : ' + (STATUTS[st] || st), t.titre, t.locId || '');
-        }
-      } else if (m.type === 'annonce' && m.x) {
-        const rid = 'tann-' + String(m.id || Date.now().toString(36)).replace(/[^a-z0-9]/gi, '').slice(0, 24);
-        if (!vault.get('reglages', rid)) await vault.mutate((tx) => tx.put('reglages', { id: rid, x: String(m.x).slice(0, 1500), at: String(m.at || new Date().toISOString()).slice(0, 30), from: String(m.from || '').slice(0, 80) }), '📣 Annonce reçue de la centrale', String(m.from || ''));
-      } else if (m.type === 'paid' && m.no) {
-        if (ro) { const mem = tfMem(); if (mem[m.no]) mem[m.no].paid = today(); else { const r = vault.get('reglages', 'tfact-' + m.no); if (r) mem[m.no] = { ...r, paid: today() }; } continue; }
-        const r = vault.get('reglages', 'tfact-' + m.no);
-        if (r) await vault.mutate((tx) => tx.put('reglages', { id: r.id, paid: today() }), '✅ Facture payée', m.no);
-      }
-      await vault.call('box/' + it.name, { method: 'DELETE' }).catch(() => {});
-    }
-  } catch { /* Worker pas encore à jour ou hors ligne */ } finally { tboxBusy = false; }
-  // cadre + page ensemble (redessiner seulement le cadre laissait la page vide : « puff »)
-  if (got && vault.unlocked && (['demandes', 'dashboard'].includes(ui.route) || tFacts().length)) { const y = scrollY; renderShell(); go(ui.route, true); scrollTo(0, y); }
-}
-// 📜 Conditions d'utilisation de la centrale d'un client : acceptées à la configuration (ou plus tard, une fois) ;
-// la date et la version partent à LUXINTERVENTIONS (certificat de suppression). Texte à faire valider par votre avocat.
-const CGU_V = '2026-11-v1';
-const CGU_TXT = [
-  'Le client est responsable du traitement des données qu’il saisit (immeubles, locataires, documents). Le prestataire héberge la centrale en tant que sous-traitant (article 28 du RGPD).',
-  'Les données sont chiffrées de bout en bout avec la clé d’accès du client : le prestataire ne peut pas les lire. Une clé perdue sans clé de secours ne peut pas être récupérée.',
-  'Le client garde ses propres copies : Réglages → Sauvegarde chiffrée. Ces copies restent sous sa seule responsabilité.',
-  'À la fin du service ou sur demande du client, la centrale et les apps de ses locataires sont effacées définitivement ; un certificat de suppression est remis (articles 17 et 28 du RGPD).',
-  'Les demandes d’intervention envoyées à LUXINTERVENTIONS contiennent seulement ce que le client choisit d’envoyer (texte, photos, contact, accès).',
-  'Les factures et documents comptables sont conservés pendant la durée légale de conservation.',
-];
-const cguHtml = () => html`<details style="margin:6px 0"><summary class="small" style="cursor:pointer">📜 Lire les conditions d’utilisation (version ${CGU_V})</summary><ul class="small" style="margin:6px 0 0;padding-left:18px">${CGU_TXT.map((x) => html`<li style="margin:4px 0">${x}</li>`)}</ul></details>`;
-const cguOk = () => ((vault.get('reglages', 'cgu') || {}).v === CGU_V);
-async function cguAccept(by) {
-  const at = new Date().toISOString();
-  await vault.mutate((tx) => tx.put('reglages', { id: 'cgu', v: CGU_V, at, by }), '📜 Conditions d’utilisation acceptées', CGU_V);
-  try { await tenantSend({ type: 'cgu', v: CGU_V, at, by }); await vault.mutate((tx) => tx.put('reglages', { id: 'cgu', sent: at }), '📜 Acceptation envoyée', ''); } catch { /* hors ligne : renvoyée à la prochaine ouverture */ }
-}
-// pas encore envoyée (hors ligne au moment de l'acceptation) : on la renvoie
-async function cguResend() {
-  const c = vault.get('reglages', 'cgu');
-  if (!c || c.sent || c.v !== CGU_V) return;
-  try { await tenantSend({ type: 'cgu', v: c.v, at: c.at, by: c.by || '' }); await vault.mutate((tx) => tx.put('reglages', { id: 'cgu', sent: new Date().toISOString() }), '📜 Acceptation envoyée', ''); } catch { /* plus tard */ }
-}
-// Accueil d'une centrale cliente qui ne les a pas encore acceptées (configurée avant cette version)
-const cguBox = () => (cguOk() || vault.op ? '' : html`<div class="alert warn" style="margin-bottom:14px">📜<div style="flex:1"><b>Conditions d’utilisation à accepter</b><div class="small">Une seule fois, pour toute la centrale.</div>${cguHtml()}<button class="btn primary sm" data-action="cgu-accept" style="margin-top:6px">✅ J’ai lu et j’accepte</button></div></div>`);
 async function tenantSend(obj) {
   const k = await (await vault.call('network-key')).json();
   await vault.call('demande', { method: 'POST', body: await sealForOwner(k.pub, { client: socName(), fil: tenantInfo.fil || '', t: new Date().toISOString(), ...obj }) });
 }
-const tFactLate = () => tFacts().filter((f) => !f.paid && lateDays(f.due) >= (f.avv ?? 7));
 async function tenantRefresh() {
   if (!vault.unlocked) return;
   try { const j = await (await vault.call('tenant')).json(); if (j.tenant) { const prev = JSON.stringify(tenantInfo); tenantSave(j.tenant); if (JSON.stringify(j.tenant) !== prev) { renderShell(); go(ui.route, true); } } } catch { /* hors ligne */ }
-}
-const TDEM_SVC = { menage: '🧹 Ménage', jardinier: '🌿 Jardin', homme: '🔧 Entretien', autre: '📋 Autre' };
-const TDEM_ST = { afaire: '📨 Reçue', planifie: '📅 Planifiée', encours: '🔧 En cours', fait: '✅ Terminée' };
-// état d'une demande renvoyé par LA CENTRAL (dem-st) : planifiée, régulier confirmé, terminée, arrêtée
-const JOURS_C = ['', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
-const TDEM_URG = { normal: '🟢 Normal', rapide: '🟠 Rapide (48 h)', urgent: '🔴 Urgent' };
-// 💼 abonnements des gérances (offre « Gérez aussi vos propres locataires ») : formule, prix, payé jusqu'au…
-const ABO_PLANS = { decouverte: ['Découverte', 0], pro: ['Pro', 29], agence: ['Agence', 79], mesure: ['Sur devis', 0] };
-const aboAll = () => (vault.get('reglages', 'abos') || {}).list || {};
-const aboOf = (orgId) => aboAll()[orgId] || null;
-const aboState = (a) => (!a ? 'none' : a.plan === 'decouverte' ? 'free' : a.paidUntil && a.paidUntil >= today() ? 'ok' : 'due');
-const aboOffersOn = () => false; // plus d'abonnements : tout est gratuit
-function aboSection() {
-  const tabs = '';
-  const on = aboOffersOn();
-  const sw = html`<div class="card" style="margin-bottom:14px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><span class="grow"><b>Offres d’abonnement dans le app Gérances</b><span class="meta" style="display:block">${on ? 'Les gérances voient « 💼 Nos abonnements » et « Voir les offres ».' : 'Masquées : les gérances ne voient aucune offre d’abonnement.'}</span></span>
-    <button class="btn ${on ? 'primary' : ''}" data-action="abo-offers" aria-pressed="${on}">${on ? '🟢 Activé' : '⚪ Désactivé'}</button></div>`;
-  return html`${tabs}${sw}${aboGer()}`;
-}
-function aboGer() {
-  const d = ui.ptl.data;
-  if (!d && ptlConf()) ptlLoad();
-  const orgs = d ? d.orgs : [];
-  const rows = orgs.map((o) => ({ o, a: aboOf(o.id) }));
-  const subs = rows.filter((x) => x.a), none = rows.filter((x) => !x.a);
-  const due = subs.filter((x) => aboState(x.a) === 'due'), ok = subs.filter((x) => aboState(x.a) === 'ok');
-  const mrr = sum(subs.filter((x) => x.a.plan !== 'decouverte'), (x) => (x.a.periode === 'an' ? (+x.a.prix || 0) / 12 : +x.a.prix || 0));
-  const st = (a) => { const k = aboState(a); return k === 'free' ? html`<span class="badge">🎁 gratuit</span>` : k === 'ok' ? html`<span class="badge ok">✅ payé jusqu’au ${fmtDate(a.paidUntil)}</span>` : html`<span class="badge cont-blink">⏳ à payer</span>`; };
-  const row = ({ o, a }) => html`<button class="row" data-action="abo-edit" data-id="${o.id}"><span class="grow"><span class="title" style="display:block">🏢 ${o.name}</span>
-      <span class="meta">${a ? html`<b>${(ABO_PLANS[a.plan] || ABO_PLANS.pro)[0]}</b> · ${a.prix ? eur(+a.prix) + (a.periode === 'an' ? ' / an' : ' / mois') : 'gratuit'}${a.debut ? ' · depuis le ' + fmtDate(a.debut) : ''}` : 'pas d’abonnement'}</span></span>${a ? st(a) : html`<span class="badge">＋ Abonnement</span>`}</button>`;
-  return html`<div class="metrics" style="margin-bottom:14px">
-      <div class="metric"><div class="lbl">Abonnements</div><div class="val">${subs.length}</div><div class="sub">${ok.length} payé(s) · ${subs.filter((x) => x.a.plan === 'decouverte').length} gratuit(s)</div></div>
-      <div class="metric ${due.length ? 'cont-blink-box' : ''}"><div class="lbl">À payer</div><div class="val ${due.length ? 'red' : ''}">${due.length}</div><div class="sub">${eur(sum(due, (x) => +x.a.prix || 0))}</div></div>
-      <div class="metric hero"><div class="lbl">Revenu mensuel</div><div class="val accent">${eur(mrr)}</div><div class="sub">abonnements payants</div></div></div>
-    <div class="section-label">💼 Abonnements des gérances</div>
-    ${!ptlConf() ? html`<p class="muted small">Connectez d’abord l’app Gérances (menu Gérances).</p>` : !d ? html`<p class="muted small">Chargement…</p>` : html`
-      ${due.length ? html`<div class="list" style="margin-bottom:10px">${due.map(row)}</div>` : ''}
-      ${ok.length || subs.length - due.length ? html`<div class="list" style="margin-bottom:10px">${subs.filter((x) => aboState(x.a) !== 'due').map(row)}</div>` : ''}
-      ${none.length ? html`<details style="margin-bottom:14px"><summary class="small" style="cursor:pointer">Gérances sans abonnement (${none.length})</summary><div class="list" style="margin-top:8px">${none.map(row)}</div></details>` : ''}
-      <p class="tiny muted" style="margin:0 0 18px">Quand une gérance touche « Je suis intéressé » dans son app Gérances, vous recevez une notification. Touchez une gérance pour choisir sa formule et noter ses paiements.</p>`}
-`;
 }
 // Classement de l'année : tours faits par personne, tours à rattraper
 function binScores(plan, year) {
@@ -1894,33 +866,6 @@ const chatBubbles = (rs, gid) => {
     ${m.p && m.m !== 'mgr' ? html`<button class="btn sm" style="margin-top:4px" data-action="chat-reply-priv" data-id="${gid}" data-loc="${m.p}">${HANDR} Répondre en privé</button>` : ''}</div>`)}`;
 };
 
-// ───── Annonces « Don · prêt · location » publiées par les locataires (site public, après approbation) ─────
-const TOOL_KINDS = { don: '🎁 Don', pret: '🤝 Prêt gratuit', loc: '💶 Location' };
-const TOOL_UNITS = { h: '/ heure', j: '/ jour', we: '/ week-end', s: '/ semaine', u: '(prix unique)' };
-const toolPrice = (it) => (it.kind === 'loc' ? money(it.price) + ' ' + (own(TOOL_UNITS, it.unit) ? TOOL_UNITS[it.unit] : '') : it.kind === 'don' ? 'gratuit (don)' : 'gratuit (prêt)');
-function toolOwner(it) {
-  if (it.owner === 'mgr') return netBrand();
-  const l = vault.list('locataires').find((x) => x.espace && 'e:' + x.espace.id === it.owner);
-  return l ? fullName(l) + ' · ' + (logName(l.logId) || immName(l.immId)) : 'Locataire (espace fermé)';
-}
-async function toolsLoad(force) {
-  return;
-  if (!vault.unlocked) return;
-  if (!force && ui.toolsAt && Date.now() - ui.toolsAt < 15000) return;
-  ui.toolsAt = Date.now();
-  try { ui.tools = await vault.toolsList(); } catch { ui.tools = ui.tools || []; }
-  ui.toolsPending = ui.tools.filter((it) => it.status === 'pending').length;
-  ui.toolImg = ui.toolImg || {};
-  const redraw = () => { if (ui.sheet && ui.sheet.kind === 'tools') { ui.sheet.rendered = false; renderSheet(); } };
-  for (const it of ui.tools) {
-    if (ui.toolImg[it.id]) continue;
-    ui.toolImg[it.id] = 'loading';
-    fetch(`${API}/api/tools/${it.id}/p0.jpg`).then((r) => (r.ok ? r.blob() : null)).then((b) => { ui.toolImg[it.id] = b ? URL.createObjectURL(b) : ''; redraw(); }).catch(() => {});
-  }
-  redraw();
-  if (ui.route === 'dashboard') renderView();
-}
-
 // « Du nouveau » pour un locataire ou l'équipe (avis, document, réponse à un signalement, nouveau travail…) :
 // on compare avec la dernière publication et on envoie une notification (sans contenu) si quelque chose s'ajoute
 const espNews = (d) => [
@@ -1979,9 +924,6 @@ async function espaceSync(onlyId, loud) {
   for (const l of vault.list('locataires').filter((x) => x.espace && x.espace.on && x.espace.id && (!onlyId || x.id === onlyId))) {
     try {
       const data = espaceData(l);
-      // 🚗 l'ouvrier qui vient chez ce locataire aujourd'hui / demain : jeton pour suivre son arrivée
-      const tt = tripTasks().filter((x) => x.t.locId === l.id);
-      if (tt.length) data.trips = await Promise.all(tt.map(async (x) => ({ tk: await tripTk(x.t.id, x.d), d: x.d })));
       const h = await sha256Hex(JSON.stringify(data));
       let stored = espHashes.get(l.id);
       try { stored = stored || localStorage.getItem('aresEsp:' + l.espace.id); } catch {}
@@ -2003,34 +945,11 @@ async function espaceSync(onlyId, loud) {
       if (navigator.onLine && !espWarned.has(l.id)) { espWarned.add(l.id); toast(e.message === 'session-taken' ? `App de ${fullName(l)} pas mise à jour : cette centrale est ouverte sur un autre appareil${e.info && e.info.device ? ' (' + e.info.device + ')' : ''}. Un seul appareil à la fois peut enregistrer : fermez-la là-bas, puis rechargez cette page.` : `App de ${fullName(l)} pas mise à jour : ${e.message || 'erreur'}`, { bad: true }); }
     }
   }
-  if (!onlyId) { await equipeSync(); await portailPubsSync(); await netPubsSync(); }
   return true;
-}
-// 🌐 liste publique des annonces du réseau : vide (plus de publicité), envoyée une fois pour effacer l'ancienne
-async function netPubsSync() {
-  return;
-  const list = []; // 📣 plus de publicité : la liste publique reste vide (efface les anciennes annonces chez les apps)
-  const h = await sha256Hex(JSON.stringify(list));
-  let prev = '';
-  try { prev = localStorage.getItem('aresNetPubs2') || ''; } catch { /* stockage indisponible */ }
-  if (h === prev) return;
-  // envoi réussi seulement si le serveur répond OK (sinon on réessaie à la prochaine ouverture / modification)
-  const info = (o) => { try { localStorage.setItem('aresNetPubsInfo', JSON.stringify({ ...o, at: new Date().toISOString() })); } catch { /* stockage */ } };
-  try { const r = await vault.call('netpubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: list }) }); if (r && r.ok) { localStorage.setItem('aresNetPubs2', h); info({ n: list.length, all: vault.list('avis').filter(isPub).length }); } } catch (e) { info({ err: e.message || String(e) }); /* on réessaiera */ }
-}
-async function portailPubsSync() {
-  return;
-  const list = [], offers = aboOffersOn(), cc = centraleConf(), contact = centraleResp() ? { nom: centraleResp(), tel: cc.tel || '', email: cc.email || '' } : null;
-  const h = await sha256Hex(JSON.stringify([list, offers, contact]));
-  let prev = '';
-  try { prev = localStorage.getItem('aresPubPtl') || ''; } catch { /* stockage indisponible */ }
-  if (h === prev) return;
-  try { await vault.pubsPortail(list, offers, contact); localStorage.setItem('aresPubPtl', h); } catch { /* Worker pas encore à jour ou hors ligne : on réessaiera */ }
 }
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
 async function inboxSync() {
-  tenantBoxSync();packSync();cguResend().catch(() => {});
   const keys = vault.get('reglages', 'signal');
   if (!keys || !keys.priv || inboxBusy || !vault.unlocked) return;
   inboxBusy = true;
@@ -2039,12 +958,6 @@ async function inboxSync() {
     for (const it of await vault.inboxList()) try {
       let msg;
       try { msg = await openFromTenant(keys.priv, await vault.inboxGet(it.name)); } catch { continue; }
-      const w = vault.list('intervenants').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
-      if (w) {
-        if (w.espace.on && msg.type === 'equipe') { await equipeInbox(w, msg); n++; }
-        await vault.inboxDel(it.name);
-        continue;
-      }
       const l = vault.list('locataires').find((x) => x.espace && x.espace.id && x.espace.id === msg.espace && x.espace.id.startsWith(it.name.split('-')[1] || '-'));
       if (!l || !l.espace.on) { await vault.inboxDel(it.name); continue; }
       if (msg.type === 'paye') {
@@ -2069,25 +982,7 @@ async function inboxSync() {
         await vault.inboxDel(it.name);
         continue;
       }
-      if (msg.type === 'menage-eval') {
-        // avis du locataire sur le passage de la femme de ménage (1 = 😞 … 4 = ⭐)
-        const w = vault.get('intervenants', String(msg.w || ''));
-        const v = Math.round(+msg.v), d = /^\d{4}-\d{2}-\d{2}$/.test(msg.d || '') ? msg.d : today();
-        if (w && v >= 1 && v <= 4) {
-          // cases rapides (à l'heure, aimable…) + commentaire libre, s'il y en a
-          const tags = (Array.isArray(msg.tags) ? msg.tags : []).filter((k) => MEN_TAGS[k]).slice(0, 6);
-          const note = String(msg.note || '').trim().slice(0, 500);
-          const prevE = (w.evals || []).find((e) => e.locId === l.id && e.d === d);
-          const evals = (w.evals || []).filter((e) => !(e.locId === l.id && e.d === d));
-          evals.push({ d, v, locId: l.id, at: String(msg.t || new Date().toISOString()).slice(0, 30), ...(tags.length || note ? { tags, note } : prevE && (prevE.tags || prevE.note) ? { tags: prevE.tags || [], note: prevE.note || '' } : {}) });
-          const extra = [tags.map((k) => MEN_TAGS[k]).join(' · '), note ? `« ${note} »` : ''].filter(Boolean).join(' — ');
-          const feed = [...(w.feed || []), { at: String(msg.t || new Date().toISOString()).slice(0, 30), k: 'eval', note: `${MEN_EVAL[v]} — avis de ${fullName(l)} (${fmtDate(d)})${extra ? ' — ' + extra : ''}` }];
-          await vault.mutate((tx) => tx.put('intervenants', { id: w.id, evals: evals.slice(-300), feed: feed.slice(-200), feedNew: (w.feedNew || 0) + 1 }), w.metier === 'menage' ? 'Avis sur le ménage' : 'Avis sur le passage', `${intervFull(w)} — ${MEN_EVAL[v]}`, w.id);
-          n++;
-        }
-        await vault.inboxDel(it.name);
-        continue;
-      }
+      if (msg.type === 'menage-eval') { await vault.inboxDel(it.name); continue; } // ancienne app : avis sur un passage (plus utilisé)
       if (msg.type === 'doc-up') {
         // 📤 document envoyé depuis l'app du locataire : à vérifier (✅ ranger dans le dossier / ❌ refuser avec le motif)
         const b = typeof msg.b === 'string' && msg.b.length < 12e6 ? msg.b : '', pdf = msg.mime === 'application/pdf';
@@ -2198,14 +1093,13 @@ function centralinoHtml() {
   <p style="margin:10px 0 0"><button class="btn primary sm" data-action="ann-new">📣 Annonce</button>${annLog().length ? html` <button class="btn sm" data-action="ann-log">🗂️ Annonces envoyées (${annLog().length})</button>` : ''}</p>
   ${recv.length ? html`<details class="cent-sec gfold" data-gk="cent|recv" ${foldIsOpen('cent|recv') ? new Raw('open') : ''}><summary>📣 Annonces reçues de la centrale ${badge(nRecv)}</summary><div class="list">${recv.map((r) => html`<div class="row" style="align-items:flex-start"><span class="grow"><span class="title" style="display:block;white-space:pre-wrap">${r.x}</span><span class="meta">${r.from || ''} · ${fmtDateTime(r.at)}</span></span><span style="display:flex;flex-direction:column;gap:6px"><button class="btn sm primary" data-action="ann-fwd" data-id="${r.id}">↪️ Transférer aux miens</button>${r.vu ? '' : html`<button class="btn sm" data-action="ann-vu" data-id="${r.id}">✓ Lu</button>`}</span></div>`)}</div></details>` : ''}
   <details class="cent-sec gfold" data-gk="cent|sig" ${foldIsOpen('cent|sig') ? new Raw('open') : ''}><summary>📩 Signalements des locataires ${badge(sig.length)}</summary>
-  ${sig.length ? html`<div class="list">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = t.byInterv ? vault.get('intervenants', t.byInterv) : null; return row('open-signal', t.id, html`${w ? '👷 ' + intervFull(w) : fullName(l)} — ${t.titre.replace(/^Signalement : /, '')}`, `${logName(l.logId) || immName(t.immId)} · ${fmtDateTime(t.sentAt)}`, 0); })}</div>` : html`<p class="small muted">Aucun nouveau signalement.</p>`}</details>
+  ${sig.length ? html`<div class="list">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = null; return row('open-signal', t.id, html`${fullName(l)} — ${t.titre.replace(/^Signalement : /, '')}`, `${logName(l.logId) || immName(t.immId)} · ${fmtDateTime(t.sentAt)}`, 0); })}</div>` : html`<p class="small muted">Aucun nouveau signalement.</p>`}</details>
   <details class="cent-sec gfold" data-gk="cent|loc" ${foldIsOpen('cent|loc') ? new Raw('open') : ''}><summary>🏠 Messages des Locataires ${badge(nHouse)}</summary>
   ${imms.length ? html`<div class="list">${imms.map((im) => row('open-chat', im.id, immName(im.id), houseN(im) ? `${houseN(im)} nouveau${houseN(im) > 1 ? 'x messages' : ' message'} — touchez pour lire` : `${plural(Object.keys(im.chats || {}).length, 'fil')} · touchez pour ouvrir`, houseN(im)))}</div>` : html`<p class="small muted">Aucun fil de messages entre habitants.</p>`}</details>
   `;
 }
 const newSignals = () => vault.list('taches').filter((t) => t.sentAt && !t.vu).sort((a, b) => (b.sentAt || '').localeCompare(a.sentAt || ''));
 const signalPhotos = (t) => vault.list('documents').filter((x) => x.tacheId === t.id).length;
-const tacheToDo = () => vault.list('taches').filter((t) => !t.recur && t.statut !== 'fait');
 const byAddr = (a, b) => (a.adresse || '').localeCompare(b.adresse || '', 'fr');
 const byLogName = (a, b) => (a.nom || '').localeCompare(b.nom || '', 'fr', { numeric: true });
 const byDebut = (a, b) => (a.debut || '').localeCompare(b.debut || '');
@@ -2447,143 +1341,9 @@ const fraisOfYear = (y) => { let t = 0; for (let m = 1; m <= monthsElapsed(y); m
 const societe = () => {
   const m = vault.get('reglages', 'main') || {};
   return m;
-  const f = factConf();
-  return { ...m, nom: f.nom, adresse: f.adresse, ville: f.ville, tel: f.tel, email: f.email, rcs: f.rcs, tvaNum: f.tva, iban: f.iban, bic: f.bic, banque: f.banque, web: '', logo: '', signature: '' };
 };
 
-// ───────────────────────── Branche « gérances » : l’app Gérances piloté depuis l'app de gestion ─────────────────────────
-// Les gérances (sociétés externes) utilisent l’app Gérances ; ici, LA CENTRAL les crée, invite leurs responsables,
-// gère leurs résidences et peut les supprimer. La session du portail (compte LA CENTRAL) est gardée dans le coffre chiffré.
-const PTL_API = API.replace(/\/$/, '') + '/api/portail/';
-// 🗑️ l’ancien portail des gérances (portail.html) est retiré : plus de connexion (la session gardée dans le coffre reste, non utilisée)
-const ptlConf = () => null;
 class PtlError extends Error { constructor(status, message) { super(message); this.status = status; } }
-async function ptlApi(path, opts = {}) {
-  const c = ptlConf();
-  const headers = {};
-  if (c && !opts.anon) headers.Authorization = 'Bearer ' + c.token;
-  if (opts.body) headers['Content-Type'] = 'application/json';
-  let r;
-  try { r = await fetch(PTL_API + path, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined, cache: 'no-store' }); } catch { throw new PtlError(0, 'Pas de connexion internet'); }
-  const j = await r.json().catch(() => ({}));
-  if (r.status === 401 && c && !opts.anon) {
-    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token: '' }), 'Gérances : session expirée', c.email || '');
-    ui.ptl.data = null;
-    throw new PtlError(401, 'Session de l’app Gérances expirée : reconnectez-vous.');
-  }
-  if (!r.ok) throw new PtlError(r.status, j.error || 'Erreur ' + r.status);
-  return j;
-}
-// toutes les demandes d'une gérance (ouvertes, en cours, fermées) pour l'onglet Facturation de sa fiche
-async function ptlOrgTickets(id) {
-  if (ui.ptl.orgTLoading === id) return;
-  ui.ptl.orgTLoading = id;
-  try { const r = await ptlApi(`tickets?scope=all&org=${id}`); ui.ptl.orgT = { id, list: r.tickets || [] }; } catch (e) { ui.ptl.orgT = { id, list: [] }; toast(e.message, { bad: true }); }
-  ui.ptl.orgTLoading = '';
-  if (ui.sheet && ui.sheet.kind === 'ger') { ui.sheet.rendered = false; renderSheet(); }
-}
-async function ptlLoad() {
-  if (ui.ptl.loading || !ptlConf()) return;
-  ui.ptl.loading = true; ui.ptl.err = '';
-  try {
-    const [o, u, r, t] = await Promise.all([ptlApi('orgs'), ptlApi('users'), ptlApi('residences'), ptlApi('tickets?scope=' + (ui.ptl.done ? 'done' : 'active'))]);
-    ui.ptl.data = { orgs: o.orgs || [], users: u.users || [], residences: r.residences || [], tickets: t.tickets || [], at: Date.now() };
-    if (!ui.ptl.done) ptlBadge(ui.ptl.data.tickets);
-  } catch (e) { ui.ptl.err = e.message; }
-  ui.ptl.loading = false;
-  if (ui.route === 'gerances') renderView();
-  const typing = sheetEl.contains(document.activeElement) && document.activeElement.matches('input, textarea, select') && document.activeElement.value;
-  if (ui.sheet && ui.sheet.kind.startsWith('ger') && !typing) { ui.sheet.rendered = false; renderSheet(); }
-}
-// messages des gérances déjà lus, par demande (sur cet appareil)
-const ptlSeenGet = () => { try { return JSON.parse(localStorage.getItem('aresPtlSeen') || 'null'); } catch { return null; } };
-const ptlSeenPut = (o) => { try { localStorage.setItem('aresPtlSeen', JSON.stringify(o)); } catch { /* stockage indisponible */ } };
-const ptlUnread = (t) => Math.max(0, (t.msgs_ger || 0) - ((ptlSeenGet() || {})[t.id] || 0));
-// Veille 24 h/24 : les nouvelles demandes s'affichent sur le bouton « Gérances » (pastille) et en message
-function ptlBadge(tickets) {
-  ui.ptl.lastTickets = tickets;
-  // première fois sur cet appareil : les anciens messages comptent comme lus
-  if (!ptlSeenGet()) ptlSeenPut(Object.fromEntries(tickets.map((t) => [t.id, t.msgs_ger || 0])));
-  const unread = tickets.filter((t) => ptlUnread(t) > 0), nMsg = unread.reduce((n, t) => n + ptlUnread(t), 0);
-  const prevMsg = ui.ptl.msgSeen;
-  ui.ptl.msgSeen = Object.fromEntries(tickets.map((t) => [t.id, t.msgs_ger || 0]));
-  if (prevMsg) {
-    const nw = tickets.filter((t) => (t.msgs_ger || 0) > (prevMsg[t.id] || 0) && prevMsg[t.id] != null);
-    if (nw.length) toast(`💬 Nouveau message de la gérance : ${nw.map((t) => '#' + t.ref).join(', ')}`);
-  }
-  ui.ptl.nMsg = nMsg;
-  const fresh = tickets.filter((t) => t.status === 'recue');
-  const seen = ui.ptl.seen;
-  ui.ptl.nNew = fresh.length;
-  ui.ptl.seen = new Set(fresh.map((t) => t.id));
-  if (seen) {
-    const nw = fresh.filter((t) => !seen.has(t.id));
-    if (nw.length) {
-      const urg = nw.some((t) => t.urgence === 'urgent');
-      toast(`📥 ${nw.length > 1 ? nw.length + ' nouvelles demandes' : 'Nouvelle demande'} d'intervention : ${nw.map((t) => '#' + t.ref).join(', ')}${urg ? ' · 🔴 URGENT' : ''}`, { bad: urg });
-      try { navigator.vibrate && navigator.vibrate(urg ? [300, 150, 300] : 200); } catch {}
-    }
-  }
-  document.querySelectorAll('.navbtn[data-to="gerances"]').forEach((b) => {
-    let n = b.querySelector('.nav-n');
-    const tot = fresh.length + nMsg;
-    if (!tot) return n && n.remove();
-    if (!n) { n = document.createElement('i'); n.className = 'nav-n'; b.appendChild(n); }
-    n.textContent = tot;
-    n.title = `${fresh.length} nouvelle(s) demande(s) · ${nMsg} message(s) non lu(s) des gérances`;
-    n.classList.toggle('u-urgent', fresh.some((t) => t.urgence === 'urgent'));
-  });
-}
-async function ptlWatch() {
-  return;
-  if (!ptlConf() || ui.ptl.loading) return;
-  const typing = sheetEl.contains(document.activeElement) && document.activeElement.matches('input, textarea, select');
-  if (ui.route === 'gerances' && !typing) return ptlLoad();
-  try { const t = await ptlApi('tickets?scope=active'); ptlBadge(t.tickets || []); } catch { /* hors ligne : on réessaiera */ }
-  devSync();
-}
-// Demandes d'intervention des gérances (Gérances) — affichage dans l'app de gestion
-const PTL_URG = { urgent: ['🔴', 'Urgent', 'red'], '24h': ['🟠', 'Sous 24 h', 'amber'], planifie: ['🟢', 'Planifiable', 'green'] };
-const PTL_ST = { recue: 'Reçue', prise: 'Prise en charge', planifiee: 'Planifiée', encours: 'En cours', terminee: 'Terminée', annulee: 'Annulée' };
-const ptlTime = (ms) => (ms ? fmtDateTime(ms) : '');
-async function ptlTicketOpen(id) {
-  try { ui.ptl.cur = await ptlApi('tickets/' + id); } catch (e) { return toast(e.message, { bad: true }); }
-  if (ui.sheet && ui.sheet.kind === 'ger-ticket' && ui.sheet.id === id) { ui.sheet.rendered = false; renderSheet(); } else openSheet('ger-ticket', id);
-  ptlPhotos();
-  const nIn = (ui.ptl.cur.events || []).filter((e) => e.kind === 'comment' && e.user_role !== 'admin').length;
-  const seen = ptlSeenGet() || {};
-  if ((seen[id] || 0) !== nIn) { seen[id] = nIn; ptlSeenPut(seen); if (ui.ptl.lastTickets) ptlBadge(ui.ptl.lastTickets); if (ui.route === 'gerances') renderView(); }
-}
-// photos du portail : lues avec la session, affichées en local
-async function ptlPhotos() {
-  ui.ptl.blobs ||= {};
-  for (const img of sheetEl.querySelectorAll('img[data-ptl-photo]')) {
-    const pid = img.dataset.ptlPhoto;
-    if (!ui.ptl.blobs[pid]) {
-      try { const r = await fetch(PTL_API + 'photos/' + pid, { headers: { Authorization: 'Bearer ' + ptlConf().token } }); if (r.ok) ui.ptl.blobs[pid] = URL.createObjectURL(await r.blob()); } catch { /* hors ligne */ }
-    }
-    if (ui.ptl.blobs[pid]) { img.src = ui.ptl.blobs[pid]; img.closest('a') && (img.closest('a').href = ui.ptl.blobs[pid]); }
-  }
-}
-// liens d'invitation déjà créés (dans le coffre chiffré) : rouvrir l'invitation renvoie le même lien au lieu de l'annuler
-const ptlInvSaved = (uid) => { const x = ((vault.get('reglages', 'ptlinv') || {}).links || {})[uid]; return x && x.exp > Date.now() ? x : null; };
-async function ptlInvSave(uid, url) {
-  const links = Object.fromEntries(Object.entries((vault.get('reglages', 'ptlinv') || {}).links || {}).filter(([, x]) => x.exp > Date.now()));
-  links[uid] = { url, exp: Date.now() + 14 * 864e5 };
-  await vault.mutate((tx) => tx.put('reglages', { id: 'ptlinv', links }), 'Lien d’invitation à l’app Gérances');
-}
-async function ptlStatus(id, status, extra = {}) {
-  await ptlApi(`tickets/${id}/status`, { method: 'POST', body: { status, ...extra } });
-  ui.ptl.data = null; ptlLoad();
-  if (ui.sheet && ui.sheet.kind === 'ger-ticket') ptlTicketOpen(id);
-}
-// métier conseillé pour une demande (catégorie + mots de la description)
-const MET_HINT = [[/plomb|sanitaire|fuite|wc|toilette|cesso|robinet|évier|douche|égout|canalis/i, 'plombier'], [/électri|electri|courant|prise|disjonct|lumière|lampe|voltage|tension|solaire|panneaux solaires/i, 'electricien'],
-  [/chauff|chaudière|radiateur|eau chaude/i, 'chauffagiste'], [/maçon|carrel|toit|façade|fissure|mur/i, 'macon'], [/peint/i, 'peintre'], [/serrur|clé|cle |porte bloqu|vitr/i, 'serrurier'],
-  [/menuis|bois|fenêtre|parquet|meuble/i, 'menuisier'], [/nettoy|ménage|propreté|sale/i, 'menage'], [/jardin|espaces verts|haie|pelouse|arbre/i, 'jardinier']];
-const metHints = (txt) => MET_HINT.filter(([rx]) => rx.test(txt || '')).map(([, m]) => m);
-// lien demande ↔ intervention : infos utiles à l'ouvrier (adresse, lieu, codes, disponibilités, contact)
-const ptlLink = (d) => { const t = d.ticket, r = d.residence || {}; return { tid: t.id, ref: t.ref, orgId: t.org_id || '', org: r.org_name || '', res: r.name || '', adr: r.address || '', lieu: t.lieu || '', acces: t.acces || '', dispo: t.dispo || '', contact: t.contact_name || r.contact_name || '', tel: t.contact_phone || r.contact_phone || '', interior: r.interior || '', floors: r.floors || '', codes: ptlResCodes(r).join(' · ') }; };
 // fiche du lieu d'intervention (demande d'une gérance) : où, à quel étage, qui contacter, codes, disponibilités
 // lieux où nous avons déjà travaillé (interventions des gérances, des devis, adresses libres) : proposés quand on affecte un travail
 const lieuxHist = () => {
@@ -2595,7 +1355,6 @@ const lieuxHist = () => {
     else { o.n++; if ((d || '') > o.d) Object.assign(o, { nom: p.nom || o.nom, contact: p.contact || o.contact, tel: p.tel || o.tel, d }); }
   };
   for (const t of vault.list('taches')) add(t.lieu ? t.lieu : t.ptl ? { nom: t.ptl.res, adr: t.ptl.adr, contact: t.ptl.contact, tel: t.ptl.tel } : t.dev ? { nom: t.dev.client, adr: t.dev.adr, contact: t.dev.contact, tel: t.dev.tel } : null, t.date);
-  for (const v of vault.list('devis')) add({ nom: devClient(v), adr: v.chantier || (v.client || {}).adresse, contact: v.interloc, tel: (v.client || {}).tel }, v.date);
   return [...m.values()].sort((a, b) => b.d.localeCompare(a.d) || b.n - a.n);
 };
 const lieuQ = (...x) => x.filter(Boolean).join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -2613,37 +1372,6 @@ const paysOptions = (sel) => WORLD.map((cc) => [cc, paysNom(cc)]).sort((a, b) =>
 // 🗣️ langues parlées par un client (plusieurs) : une liste à cocher, les langues choisies restent en ovales
 const LG_ALL = { fr: 'Français', en: 'English', de: 'Deutsch', lb: 'Lëtzebuergesch', it: 'Italiano', pt: 'Português', es: 'Español', nl: 'Nederlands', ar: 'العربية', ru: 'Русский', uk: 'Українська', pl: 'Polski', ro: 'Română', tr: 'Türkçe', el: 'Ελληνικά', sq: 'Shqip', sr: 'Srpski / Hrvatski', zh: '中文', ja: '日本語', ko: '한국어', hi: 'हिन्दी', fa: 'فارسی', he: 'עברית', sv: 'Svenska', da: 'Dansk', no: 'Norsk', fi: 'Suomi', cs: 'Čeština', hu: 'Magyar', bg: 'Български' };
 const lgChips = (ls) => (ls.length ? ls.map((k) => html`<span class="badge" style="border-radius:999px;padding:3px 10px;margin:2px 4px 2px 0;display:inline-block">${LG_ALL[k] || k}</span>`) : html`<span class="muted small">aucune</span>`);
-// lieu sans répétition : « Appartement · Étage 1 · Appartement 3 » → « Étage 1 · Appartement 3 »
-const lieuDedup = (v) => { const p = String(v || '').split(' · ').map((x) => x.trim()).filter(Boolean); return p.filter((x) => !p.some((q) => q !== x && q.toLowerCase().startsWith(x.toLowerCase() + ' '))).join(' · '); };
-// cadre orange d'une demande : problème, codes, quand, contact, (intérieur), gérance — une ligne par information
-function reqBox({ pb, codes = [], dispo = '', contact = '', tel = '', telShow = '', inside = '', org = '' }) {
-  const row = (ic, v, cls = '') => html`<div class="ir${cls}"><span class="ic">${ic}</span><div class="tx">${v}</div></div>`;
-  return html`<div class="reqbox">
-    ${pb ? row('⚠️', html`<b>Problème :</b> ${pb}`) : ''}
-    ${codes.map((c) => row('🔐', c))}
-    ${dispo ? row('🕗', String(dispo).split(' · ').filter(Boolean).join(' · ')) : ''}
-    ${contact || tel ? html`<div class="ir"><span class="ic">👤</span><div class="tx">${contact}${tel ? html` <a class="call" href="tel:${tel}" aria-label="Appeler">📞</a>` : ''}${telShow ? html` <span class="muted small">${telShow}</span>` : ''}</div></div>` : ''}
-    ${inside ? row('🏠', inside) : ''}
-    ${org ? html`<div class="ir org">🏢 ${org}</div>` : ''}</div>`;
-}
-const ptlPlace = (p) => {
-  const parts = (x) => String(x || '').split(' · ').filter(Boolean);
-  const codes = parts(p.acces).length ? parts(p.acces) : parts(p.codes);
-  const tel = String(p.tel || '').replace(/[^\d+]/g, '');
-  const q = encodeURIComponent([p.adr || p.res, 'Luxembourg'].join(', '));
-  return html`<div class="rq-top"><div>📍 <b>${p.res}</b>${p.adr ? html` — ${p.adr} <a href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">🗺️ Plan</a>` : ''}</div>
-      ${p.adr ? html`<div class="small">${navLinks(p.adr)}</div>` : ''}${p.lieu ? html`<div>🚪 ${lieuDedup(p.lieu)}</div>` : ''}</div>
-    ${reqBox({ codes, dispo: p.dispo, contact: p.contact, tel, telShow: p.tel, inside: [p.interior, p.floors ? 'étage(s) ' + p.floors : ''].filter(Boolean).join(' · '), org: `${p.org} · Demande #${p.ref}` })}`;
-};
-// codes d'une résidence du portail : boîte à clés, portes / portails, alarme, locaux techniques, puis les autres codes nommés
-const ptlResCodes = (r) => { let named = []; try { named = JSON.parse(r.codes || '[]'); } catch { /* illisible */ } if (!Array.isArray(named)) named = []; const kb = named.find((c) => c.l === 'Boîte à clés'); return [kb && kb.c ? 'Boîte à clés : ' + kb.c : '', r.access ? 'Porte : ' + r.access : '', r.alarm ? 'Alarme : ' + r.alarm : '', r.code_other ? 'Locaux techniques : ' + r.code_other : '', ...named.filter((c) => c.c && c !== kb).map((c) => `${c.l || 'Code'} : ${c.c}`)].filter(Boolean); };
-// affectation : l'équipe triée (métier conseillé d'abord ⭐), absents signalés
-const affTeam = (hints) => vault.list('intervenants').filter((i) => !i.archive).sort((a, b) => hints.includes(b.metier) - hints.includes(a.metier) || intervFull(a).localeCompare(intervFull(b)));
-const affRow = (i, hints, attrs) => { const ab = absOn(i, today()); return html`<button class="row" ${new Raw(attrs)}><span class="avatar met-ic">${avW(i)}</span><span class="grow"><span class="title" style="display:block">${hints.includes(i.metier) ? '⭐ ' : ''}${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || i.metier || '—'} · ${INT_GENRES[i.genre || 'interne']}${ab ? html` · <b class="red">${ABS_TYPES[ab.type]}</b>` : ''}</span></span><span class="badge">Affecter →</span></button>`; };
-const ptlOrg = (id) => ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => o.id === id);
-// logo de l'agence (ajouté par la gérance dans son app Gérances, ou ici dans « Modifier ») : on la reconnaît d'un coup d'œil
-const orgLogo = (id, big) => { const o = ptlOrg(id || ''); return o && o.logo ? html`<img class="org-logo${big ? ' big' : ''}" src="${o.logo}" alt="">` : '🏢'; };
-const ptlInviteUrl = (tok) => `${location.origin}/portail.html#invite=${tok}`;
 // Petite boîte de saisie (texte) : renvoie la valeur ou null
 // ✏️ corriger un message : le texte actuel est déjà dans la case
 function promptEdit(title, value) {
@@ -2667,27 +1395,6 @@ function promptEdit(title, value) {
     f.t.focus();
   });
 }
-function promptText(title, detail, placeholder) {
-  const dlg = $('#confirm');
-  setHtml(dlg, html`
-    <form class="sheet-body stack" method="dialog">
-      <h2 style="font-size:18px">${title}</h2>
-      ${detail ? html`<p class="muted small">${detail}</p>` : ''}
-      <input name="t" autocomplete="off" required placeholder="${placeholder || ''}">
-      <div class="sheet-foot" style="padding:0;border:0;margin-top:16px">
-        <button class="btn" value="no" type="button">Annuler</button>
-        <button class="btn danger solid" type="submit">Confirmer</button>
-      </div>
-    </form>`);
-  return new Promise((resolve) => {
-    const f = dlg.querySelector('form');
-    dlg.querySelector('button[value=no]').onclick = () => { dlg.close(); resolve(null); };
-    f.onsubmit = (e) => { e.preventDefault(); const v = f.t.value; dlg.close(); resolve(v); };
-    dlg.onclose = null; setTimeout(() => { if (dlg.open) dlg.onclose = () => resolve(null); }, 0); // la fermeture de la fenêtre précédente (même <dialog>) arrive un instant après : elle ne doit pas annuler celle-ci
-    dlg.showModal();
-    f.t.focus();
-  });
-}
 // Pays et taux de TVA (modifiables dans Réglages → Société) — aide à la comptabilité, pas un conseil fiscal
 const PAYS = { LU: ['Luxembourg', [17, 14, 8, 3]], FR: ['France', [20, 10, 5.5, 2.1]], BE: ['Belgique', [21, 12, 6]], DE: ['Deutschland', [19, 7]], IT: ['Italia', [22, 10, 5, 4]], PT: ['Portugal', [23, 13, 6]], ES: ['España', [21, 10, 4]], NL: ['Nederland', [21, 9]], AT: ['Österreich', [20, 13, 10]], CH: ['Suisse', [8.1, 3.8, 2.6]] };
 const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '').split(/[;, ]+/).map((x) => parseFloat(x.replace(',', '.'))).filter((x) => x > 0 && x < 100); return own.length ? own : (PAYS[s0.pays || 'LU'] || PAYS.LU)[1]; };
@@ -2699,14 +1406,12 @@ const socName = () => societe().nom || DEF_SOC();
 // ligne légale (page de la clé, bas de la centrale) : la société de ⚙️ Réglages → 🧾 Facturation, gardée sur l'appareil pour la page de la clé
 function legalLine() {
   if (vault.unlocked) {
-    const f = factConf(), v = [f.nom, f.rcs ? 'RCS ' + f.rcs : ''].filter(Boolean).join(' · ');
+    const f = societe(), v = [f.nom, f.rcs ? 'RCS ' + f.rcs : ''].filter(Boolean).join(' · ');
     try { if (v) localStorage.setItem('aresLegal', v); } catch { /* plein */ }
     return v || APP_BRAND.legal;
   }
   try { return localStorage.getItem('aresLegal') || APP_BRAND.legal; } catch { return APP_BRAND.legal; }
 }
-// nom affiché aux clients et aux locataires : la marque LA CENTRAL (la centrale d'un client : son propre nom)
-const netBrand = () => (socName());
 const socLogo = () => (societe().logo || '');
 const htOf = (ttc, r) => (r ? ttc / (1 + r / 100) : ttc);
 const r2 = (x) => Math.round(x * 100) / 100;
@@ -2876,9 +1581,6 @@ function choiceBox(message, detail, choices) {
 const confirmBox = async (message, { ok = 'Confirmer', danger = false, detail = '' } = {}) =>
   (await choiceBox(message, detail, [{ value: 'yes', label: ok, cls: danger ? 'danger solid' : 'primary' }])) === 'yes';
 
-const ARCH_W1 = 'Ce qui est coché disparaît des listes, des statistiques et des apps de l’équipe et des locataires. Rien n’est effacé : « 👁 Voir les archives » le montre à nouveau.';
-const ARCH_W2 = 'La numérotation des factures et des devis repart de 0001. À faire seulement en début d’année ou après les tests : sinon deux factures risquent d’avoir le même numéro.';
-const ARCH_W3 = 'Si vous cochez « 🧾 Factures et devis », la numérotation repart de 0001 : à faire seulement en début d’année ou après les tests, sinon deux factures risquent d’avoir le même numéro.';
 function promptKey(title, detail, warn = []) {
   const dlg = $('#confirm');
   setHtml(dlg, html`
@@ -2961,7 +1663,7 @@ function renderLock(mode, error = '') {
       <div class="meter"><i id="meter"></i></div>
       <div class="tiny muted" id="meterTxt">${METER_HINT}</div>
       <label class="field">Confirmer la clé ${pwField('pass2', 'Retapez la clé', 'new-password')}</label>
-      ${html`${cguHtml()}<label class="row" style="padding:0;min-height:0;gap:10px;border:0;align-items:flex-start"><input type="checkbox" name="cgu" style="width:20px;min-height:20px;flex:none"> <span class="small">J’ai lu et j’accepte les <b>conditions d’utilisation</b> (version ${CGU_V}).</span></label>`}
+      
       ${legacy ? html`<label class="row" style="padding:0;min-height:0;gap:10px;border:0"><input type="checkbox" name="legacy" checked style="width:20px;min-height:20px"> <span class="small">Importer les données de l'ancienne version trouvées sur cet appareil (${legacy.immeubles.length} immeubles, ${legacy.locataires.length} locataires)</span></label>` : ''}
       <div class="lock-err" role="alert">${error}</div>
       <button class="btn primary block" type="submit">Créer le coffre sécurisé</button>
@@ -3101,18 +1803,6 @@ async function onNewKey(fd, form) {
   }
 }
 
-async function onOpUnlock(fd, form) {
-  setBusy(form, true, 'Vérification…');
-  try {
-    await vault.unlockOperator(fd.get('login'), fd.get('pass'));
-    if (!(await claimOrAsk())) { vault.lock(); return renderLock('op', 'Connexion annulée : LA CENTRAL reste ouvert sur l’autre appareil.'); }
-    startSession();
-  } catch (e) {
-    setBusy(form, false);
-    form.querySelector('.lock-err').textContent = e.message || 'Erreur';
-  }
-}
-
 async function onUnlock(fd, form) {
   setBusy(form, true, 'Vérification…');
   try {
@@ -3135,7 +1825,6 @@ async function onSetup(fd, form) {
   const err = form.querySelector('.lock-err');
   if (pass.length < 12 || passphraseStrength(pass) < 2) return (err.textContent = 'Clé trop faible : au moins 12 caractères, idéalement une phrase de plusieurs mots.');
   if (pass !== fd.get('pass2')) return (err.textContent = 'Les deux clés ne correspondent pas.');
-  if (!fd.get('cgu')) return (err.textContent = 'Cochez « J’ai lu et j’accepte les conditions d’utilisation ».');
   setBusy(form, true, 'Création…');
   try {
     await vault.setup(fd.get('code'), pass);
@@ -3146,7 +1835,6 @@ async function onSetup(fd, form) {
     return;
   }
   startSession();
-  setTimeout(() => cguAccept('Configuration de la centrale').catch(() => {}), 800);
   setTimeout(async () => { try { if (await vault.verifyPassphrase(pass)) await recActivate(); } catch { /* l'avis rouge de l'Accueil le proposera */ } }, 1500);
   const legacy = fd.get('legacy') && legacyLocal();
   if (legacy) {
@@ -3166,7 +1854,7 @@ let lastActive = Date.now();
 let hiddenAt = null;
 const lockMinutes = () => parseInt(localStorage.getItem('aresLockMin') || '15', 10);
 
-let lastInbox = 0, lastTools = 0;
+let lastInbox = 0;
 // une notification arrive pendant que la centrale est ouverte : on relit tout de suite la boîte et les messages
 if ('serviceWorker' in navigator) navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.k === 'push' && vault.unlocked) { lastInbox = Date.now(); inboxSync(); chatPoll(); if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.tab === 'chat') chatLoad(ui.sheet.id, true); } });
 function startSession() {
@@ -3177,13 +1865,10 @@ function startSession() {
   appEl.hidden = false;
   lastActive = Date.now();
   clearInterval(idleTimer);
-  clearInterval(tripTimer);
-  tripTimer = setInterval(() => { tripPoll(); taxiTick(); taxiCount(); }, 30000); // 🚗 trajets en cours, 🚕 mode taxi
-  setTimeout(tripPoll, 3000);
   idleTimer = setInterval(() => {
     if (!vault.unlocked) return;
     if (Date.now() - lastActive > lockMinutes() * 60000) lockNow('Verrouillé après inactivité.');
-    else if (document.visibilityState === 'visible') { vault.sync(); ptlWatch(); if (Math.random() < 0.1) tenantRefresh(); if (Date.now() - lastInbox > 25000) { lastInbox = Date.now(); inboxSync(); chatPoll(); if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.tab === 'chat') chatLoad(ui.sheet.id); } if (Date.now() - lastTools > 180000) { lastTools = Date.now(); toolsLoad(true); } }
+    else if (document.visibilityState === 'visible') { vault.sync(); if (Math.random() < 0.1) tenantRefresh(); if (Date.now() - lastInbox > 25000) { lastInbox = Date.now(); inboxSync(); chatPoll(); if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.tab === 'chat') chatLoad(ui.sheet.id); } }
   }, 30000);
   renderShell();
   applyBrand();
@@ -3193,10 +1878,7 @@ function startSession() {
   go(firstOpen ? 'dashboard' : location.hash.slice(2) || 'dashboard', true);
   firstOpen = false;
   vault.sync();
-  setTimeout(ptlWatch, 1500);
-  setTimeout(() => netPubsSync().catch(() => {}), 5000); // 📣 liste publique des annonces du réseau, à chaque ouverture
   pushInit(); // rappel « notifications coupées » dès l'Accueil
-  packSync();
   setTimeout(async () => {
     await refreshIcs(false);
     // Une fois par jour : republier les pages locataires (dates glissantes sur 13 mois)
@@ -3207,7 +1889,6 @@ function startSession() {
     await inboxSync();
     pushInit();
     await chatPoll();
-    await toolsLoad(true);
     await binDaily();
   }, 4000);
 }
@@ -3295,18 +1976,13 @@ const NAV_MOBILE = [
   ['compta', 'Comptabilité', 'chart', null, 'compta'],
   ['reglages', 'Réglages', 'gear']
 ];
-// Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
-// clients du portail (tous demandent leurs interventions à la centrale)
-const ORG_KINDS = { gerance: '🏢 Gérance', proprio: '🔑 Propriétaire' };
 const masked = () => new Set(); // « Masquer » retiré : plus rien de masqué ; // centrale d'un client : rien de masqué (le réglage n'existe que chez nous)
 // pages qui appartiennent à une rubrique (Locataires et Gestion locataire sont dans Immeubles)
 const maskOf = (route) => (['locataires', 'paiements'].includes(route) ? 'immeubles' : route);
 // Légende des couleurs de nos activités (mêmes couleurs que dans les apps des locataires, de l'équipe et le portail)
-const COLOR_LEG = [['#F97316', 'Interventions et maintenance : demandes, travaux, équipe'], ['#1D4ED8', 'Gérances : app et demandes des gérances'],
-  ['#8B5CF6', 'Devis : offres de prix à signer'],
-  ['#0D9488', 'Locataires et loyers : logements, contrats, paiements'],
+const COLOR_LEG = [['#F97316', 'Signalements des locataires : dégâts, problèmes'], ['#0D9488', 'Locataires et loyers : logements, contrats, paiements'],
   ['#475569', 'Avis de l’immeuble : coupures, travaux dans les communs'],
-  ['#4F46E5', 'Planning du jour : ce qui est prévu aujourd’hui']];
+];
 // MASTER : sans « Locataires et loyers » ni « Avis de l’immeuble » (plus d’inquilini ni d’immeubles à elle)
 const legList = () => (COLOR_LEG);
 const legDots = () => html`<div class="leg-dots" aria-label="Légende des couleurs">${legList().map(([c, t]) => html`<button type="button" class="leg-dot" style="--c:${c}" data-action="leg-dot"><span class="leg-tip">${t}</span></button>`)}</div>`;
@@ -3364,7 +2040,6 @@ function go(route, replace) {
   bnavShow();
   renderView();
   scrollTo(0, 0);
-  if (route === 'gerances' && ui.ptl.data) setTimeout(ptlLoad, 0); // toujours les demandes du moment
 }
 // barre du bas : la rubrique ouverte reste visible ; les flèches ‹ › de scroll-hint.js montrent qu'il y en a d'autres
 function bnavShow() {
@@ -3497,7 +2172,6 @@ function renderView() {
   setHtml(view, html`${tenantBanner()}${VIEWS[ui.route]()}<div style="text-align:center;margin:28px 0 8px"><button class="btn ghost" data-action="lock">🚪 Se déconnecter</button> <span class="tiny muted" data-notr>v${VERSION}</span><p class="tiny muted" style="margin:4px 0 0">La centrale se ferme : il faudra la clé pour rouvrir</p><p class="tiny" data-notr="1" style="margin:8px 0 0;color:#9a968c">v${VERSION}</p></div>`); // 🚪 en bas de chaque page, comme dans les apps ; version en gris
   enhanceFolds(view, '', false);
   updateBadge();
-  tripPaint();
   if (keepSearch != null) {
     const s = view.querySelector('[name=search]');
     if (s) { s.focus(); s.setSelectionRange(keepSearch, keepSearch); }
@@ -3565,44 +2239,6 @@ document.addEventListener('click', (e) => {
   try { localStorage.setItem('aresShut', JSON.stringify([...sfShutSet])); } catch { /* plein */ }
 });
 const dfold = (key, title, sumTxt, body, style = '') => html`<details class="card dfold" data-dfold="${key}" style="${style}" ${foldOpen.has(key) ? new Raw('open') : ''}><summary><h3>${title}</h3><span class="sum">${sumTxt}</span></summary><div class="dfold-body">${body}</div></details>`;
-function mtCard() {
-  const t0 = today(), t1 = addDays(t0, 1);
-  const items = agenda(t0, t1);
-  const lateN = tacheToDo().filter((t) => t.date && t.date < t0).length;
-  if (!items.length && !lateN) return '';
-  // « À sortir » selon la règle de chaque collecte : ce soir (passage demain) ou ce matin (passage aujourd'hui)
-  const tonight = items.filter((x) => x.kind === 'collecte' && x.d === t1 && x.c.sortie !== 'jour');
-  const thisMorning = items.filter((x) => x.kind === 'collecte' && x.d === t0 && x.c.sortie === 'jour');
-  const binList = (arr) => arr.map((x) => DECHETS[x.c.cat].short + ' (' + immName(x.c.immId) + (x.c.heure ? ', ' + x.c.heure : '') + ')').join(', ');
-  const nT = items.filter((x) => x.kind === 'tache').length;
-  const sumTxt = [nT ? plural(nT, 'intervention') + ' (aujourd’hui / demain)' : '', lateN ? `${lateN} en retard` : '', thisMorning.length ? '🗑️ poubelles ce matin' : tonight.length ? '🗑️ poubelles ce soir' : ''].filter(Boolean).join(' · ') || 'rien de prévu';
-  return dfold('mt', 'Maintenance', sumTxt, html`
-    ${thisMorning.length ? html`<div class="alert warn" style="margin-bottom:8px">${icon('alert')}<div><b>Ce matin : sortir les poubelles</b> (passage aujourd'hui) — ${binList(thisMorning)}</div></div>` : ''}
-    ${tonight.length ? html`<div class="alert warn" style="margin-bottom:8px">${icon('alert')}<div><b>Ce soir : sortir les poubelles</b> (passage demain) — ${binList(tonight)}</div></div>` : ''}
-    ${lateN ? html`<div class="alert bad" style="margin-bottom:8px">${icon('alert')}<div>${plural(lateN, 'intervention')} en retard</div></div>` : ''}
-    ${items.length ? html`<div class="list">${items.map((x) => html`${agendaRow(x)}`)}</div>` : ''}
-    <button class="btn sm ghost" style="margin-top:8px" data-action="go" data-to="maintenance">${icon('tool')} Ouvrir la maintenance</button>`, 'margin-top:10px');
-}
-function agendaRow(x) {
-  if (x.kind === 'collecte') {
-    const c = x.c, k = DECHETS[c.cat];
-    return html`<button class="row" data-action="edit-collecte" data-id="${c.id}">${light(sortieDay(c, x.d))}
-      <span class="grow"><span class="title" style="display:block;white-space:normal">🗑️ <span class="dot inline" style="background:${k.color}"></span> ${k.short} — ${immName(c.immId)}</span><span class="meta" style="white-space:normal"><b>Passage ce jour</b> · ${sortieText(c, x.d)} · ${LIEUX[c.lieu] || ''}${c.note ? ' · ' + c.note : ''}</span></span></button>`;
-  }
-  return tacheRow(x.t, x);
-}
-function tacheRow(t, x = {}) {
-  const who = intervName(t.intervenantId);
-  const when = t.recur ? `${RECURS[t.recur].toLowerCase()} depuis le ${fmtDate(t.date)}` : t.statut === 'fait' ? `terminée le ${fmtDate(t.doneDate)}` : t.date ? (x.late || t.date < today() ? `prévue le ${fmtDate(t.date)} — en retard` : `prévue le ${fmtDate(t.date)}`) : 'date à fixer';
-  const due = t.statut === 'fait' ? '' : x.d || (t.recur ? recurDates(t.date, t.recur, today(), addDays(today(), 62), t.fin)[0] : t.date);
-  return html`<div class="row">${t.statut === 'fait' ? '' : light(due)}
-    <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="edit-tache" data-id="${t.id}">
-      ${t.fini && t.statut !== 'fait' ? html`<span class="badge ok" style="display:table;margin-bottom:4px">✅ Fini — à clôturer</span>` : ''}<span class="title" style="display:block">${t.urgent && t.statut !== 'fait' && !t.fini ? html`<span class="badge bad">🔴 Urgent</span> ` : ''}${tacheIcon(t.type)} ${t.titre}${taxiTag(t)}</span>
-      <span class="meta" style="white-space:normal">${placeName(t)}${who ? ' · ' + who : ' · intervenant à choisir'} · ${when}${t.heure ? ` · 🕒 ${t.heure}${t.heureFin ? '–' + t.heureFin : ''}` : ''}${t.cout ? ' · ' + money(t.cout) : ''}${!t.recur && t.statut !== 'fait' && t.intervenantId && due === today() ? html` ${tripSlot(t.id, due, 'tag')}` : ''}</span>
-    </button>
-    ${!t.recur && t.statut !== 'fait' ? html`<button class="btn sm${t.fini ? ' cloture' : ''}" data-action="tache-done" data-id="${t.id}">${t.fini ? '🟢 Clôturer' : html`${icon('check')} Fait`}</button>` : t.statut === 'fait' ? html`<span class="badge ok">✓</span>` : ''}
-  </div>`;
-}
 function reportCollectes(immId, y) {
   const im = vault.get('immeubles', immId);
   const cs = vault.list('collectes').filter((c) => c.immId === immId).sort((a, b) => Object.keys(DECHETS).indexOf(a.cat) - Object.keys(DECHETS).indexOf(b.cat));
@@ -3622,7 +2258,7 @@ function reportCollectes(immId, y) {
     ${im.pubToken ? html`<div style="display:flex;gap:16px;align-items:center;margin-top:16px;border:1px solid #ccc;border-radius:10px;padding:10px 14px">
       <div class="qr" style="width:120px;flex:0 0 120px">${qrSvg(pubUrl(im), 4)}</div>
       <div><b>📱 Scannez : calendrier sur votre téléphone, rappel la veille.</b><br>Scansiona: calendario sul telefono, promemoria la sera prima.<br>Scannen: Kalender auf Ihrem Handy, Erinnerung am Vorabend.<br>Digitalize: calendário no telemóvel, aviso na véspera.<br>Scan: calendar on your phone, reminder the evening before.</div></div>` : ''}
-    <p class="pr-sub" style="margin-top:14px">Une question ? ${netBrand()}${societe().tel ? ' · ' + societe().tel : ''}</p>`;
+    <p class="pr-sub" style="margin-top:14px">Une question ? ${brandName()}${societe().tel ? ' · ' + societe().tel : ''}</p>`;
 }
 const logOptions = (immId, sel) => html`<option value="">Parties communes / tout l'immeuble</option>${logsOf(immId).map((g) => html`<option value="${g.id}" ${g.id === sel ? new Raw('selected') : ''}>${logLabel(g)}</option>`)}`;
 // Intervention terminée avec un coût : proposer de l'ajouter aux dépenses de l'immeuble (une seule fois)
@@ -3634,8 +2270,7 @@ async function syncDepense(t, quiet) {
   if (!t || t.recur) return;
   const dep = t.depId ? vault.get('depenses', t.depId) : null;
   const want = t.statut === 'fait' && t.cout > 0;
-  const who = intervName(t.intervenantId);
-  const rec = { immId: t.immId, logId: t.logId || '', desc: t.titre + (who ? ' — ' + who : ''), montant: t.cout, date: t.doneDate || today(), cat: depCat(t), tacheId: t.id };
+  const rec = { immId: t.immId, logId: t.logId || '', desc: t.titre, montant: t.cout, date: t.doneDate || today(), cat: depCat(t), tacheId: t.id };
   if (want && !dep && t.depSkip) return;
   if (want && !dep) {
     await vault.mutate((tx) => { const d = tx.put('depenses', rec); tx.put('taches', { id: t.id, depId: d.id }); }, 'Dépense ajoutée', `${t.titre} ${money(t.cout)}`, t.immId);
@@ -3758,38 +2393,6 @@ async function attachFacture(dep, file) {
   await vault.saveFile(doc.id, bytes);
   toast('Facture jointe');
 }
-// Interventions terminées avant ce changement, avec un coût jamais compté
-const depMissing = () => vault.list('taches').filter((t) => !t.recur && !t.depSkip && t.statut === 'fait' && t.cout > 0 && !(t.depId && vault.get('depenses', t.depId)));
-
-// Ouvrier de l'année : travail fini, photos après, urgences du jour, avis des locataires
-const EQ_PTS = { fait: 1, inc: -1, ph: 1, urg: 2, ev: { 4: 3, 3: 2, 2: 0, 1: -2 }, tagGood: 1, tagBad: -1 };
-const EQ_GOOD = ['ok', 'nice', 'clean'], EQ_BAD = ['late', 'rude', 'dirty'];
-function eqScores(year) {
-  const sc = {};
-  const get = (id) => sc[id] || (sc[id] = { pts: 0, fait: 0, inc: 0, ph: 0, urg: 0, ev: 0, good: 0, bad: 0 });
-  for (const t of vault.list('taches')) {
-    // une fois par jour et par intervention (dernier état du jour)
-    const last = {};
-    for (const j of t.journal || []) if ((j.by || t.intervenantId) && String(j.d || '').startsWith(year + '-') && j.st !== 'encours') last[(j.by || t.intervenantId) + '|' + j.d] = j;
-    for (const [k, j] of Object.entries(last)) {
-      const x = get(k.split('|')[0]);
-      if (j.st === 'fait') { x.fait++; if (t.urgent && !t.recur && j.d <= t.date) x.urg++; }
-      if (j.st === 'incomplet') x.inc++;
-    }
-    if (t.intervenantId) {
-      const days = new Set(eqPhotos(t.id, 'ap').filter((d) => String(d.date || '').startsWith(year + '-')).map((d) => d.date));
-      if (days.size) get(t.intervenantId).ph += days.size;
-    }
-  }
-  for (const i of vault.list('intervenants')) for (const e of i.evals || []) {
-    if (!String(e.d || '').startsWith(year + '-')) continue;
-    const x = get(i.id);
-    x.ev += EQ_PTS.ev[e.v] || 0; if (e.v >= 3) x.good++; if (e.v <= 1) x.bad++;
-    for (const k of e.tags || []) { if (EQ_GOOD.includes(k)) { x.ev += EQ_PTS.tagGood; x.good++; } if (EQ_BAD.includes(k)) { x.ev += EQ_PTS.tagBad; x.bad++; } }
-  }
-  for (const x of Object.values(sc)) x.pts = x.fait * EQ_PTS.fait + x.inc * EQ_PTS.inc + x.ph * EQ_PTS.ph + x.urg * EQ_PTS.urg + x.ev;
-  return Object.entries(sc).filter(([id]) => { const i = vault.get('intervenants', id); return i && !i.archive; }).sort((a, b) => b[1].pts - a[1].pts || a[1].bad - b[1].bad || b[1].fait - a[1].fait);
-}
 
 const immHead = (cur, sub) => html`${pageHead('🏢 Immeubles', sub)}
   <div class="imm-row"><div class="tabs" role="tablist">${[['immeubles', '🏢 Immeubles'], ['locataires', '👥 Locataires']].map(([r, l, sh]) => masked().has(r) ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${sh ? html`<span class="t-lg">${l}</span><span class="t-sm">${sh}</span>` : l}</button>`)}</div>
@@ -3799,82 +2402,9 @@ const locTabs = (cur, nGone) => html`<div class="tabs loc-tabs" role="tablist" s
   <button class="tab" role="tab" aria-selected="${cur === 'actuels'}" data-action="loc-seg" data-id="actuels">Actuels</button>
   <button class="tab" role="tab" aria-selected="${cur === 'anciens'}" data-action="loc-seg" data-id="anciens">Anciens (${nGone})</button>
   ${masked().has('paiements') ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === 'paiements'}" data-action="go" data-to="paiements"><span class="t-lg">💶 Gestion locataire</span><span class="t-sm">💶 Gestion loc.</span></button>`}</div>`;
-// Éditeur d'horaire sur 7 jours : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute.
-// slotsOf(j) : créneaux du jour j (0 = lundi) ; title(j) : nom du jour (avec la date pour une semaine précise)
-function horWeekEditor(slotsOf, title) {
-  const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
-  const dayRows = (j) => {
-    const g = { matin: [], aprem: [], soir: [], extra: [] };
-    for (const h of slotsOf(j).slice().sort((a, b) => (a.de || '').localeCompare(b.de || ''))) g[horP(h)].push(h);
-    for (const [p, n] of Object.entries(HOR_MIN)) while (g[p].length < n) g[p].push({});
-    return Object.entries(g).flatMap(([p, arr]) => arr.map((h, n) => ({ p, h, n: n + 1 })));
-  };
-  const imOpts = (cur) => imms.map((im) => html`<option value="${im.id}" ${cur === im.id ? new Raw('selected') : ''}>${im.adresse}</option>`);
-  const horRow = (j, k, p, h, n) => html`<div class="hor-row" data-p="${p}"><span class="hor-p">${HOR_P[p]}${p !== 'extra' && p !== 'soir' ? html`<span class="hor-n"> ${n}</span>` : ''}</span><input type="hidden" name="h${j}_${k}p" value="${p}">
-          <span class="hor-t"><span class="hor-tl">de</span><span class="tph${h.de ? ' v' : ''}"><input name="h${j}_${k}d" type="time" value="${h.de || ''}" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} de"><i>--:--</i></span></span>
-          <span class="hor-t"><span class="hor-tl">à</span><span class="tph${h.a ? ' v' : ''}"><input name="h${j}_${k}a" type="time" value="${h.a || ''}" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} à"><i>--:--</i></span></span>
-          <select name="h${j}_${k}i" aria-label="${SEMAINE[j] || ''} ${HOR_P[p]} lieu"><option value="">— lieu —</option>${imOpts(h.immId)}</select></div>`;
-  return html`<div class="full hor-week">${SEMAINE.map((jn, j) => { const rows = dayRows(j), used = rows.filter((r) => r.h.de); return html`<details class="hor-blk" ${used.length ? new Raw('open') : ''}>
-          <summary><b>${title(j)}</b> <span class="meta">${used.length ? used.map((r) => `${r.h.de}–${r.h.a}${r.h.immId ? ' · ' + immName(r.h.immId) : ''}`).join(' / ') : '—'}</span></summary>
-          <div class="hor-grid" data-n="${rows.length}">${rows.map((r, k) => horRow(j, k, r.p, r.h, r.n))}</div>
-          <div class="hor-adds"><button type="button" class="btn sm" data-action="hor-add" data-j="${j}" data-p="matin">${icon('plus')} <span>🌅 Matin</span></button><button type="button" class="btn sm" data-action="hor-add" data-j="${j}" data-p="aprem">${icon('plus')} <span>☀️ Après-midi</span></button><button type="button" class="btn sm" data-action="hor-add" data-j="${j}" data-p="extra">${icon('plus')} <span>Dépannage / supplément</span></button></div></details>`; })}</div>
-        ${Object.keys(HOR_P).map((p) => html`<template data-hor-tpl="${p}">${horRow('__J__', '__K__', p, {}, '__N__')}</template>`)}`;
-}
-// Lecture de l'éditeur : [{ j, de, a, immId, p }]
-function horFromForm(fd) {
-  const g = (k) => String(fd.get(k) || '').trim(), out = [];
-  for (let j = 0; j < 7; j++) for (let k = 0; k < 60; k++) {
-    if (!fd.has(`h${j}_${k}d`)) continue;
-    const de = g(`h${j}_${k}d`), a = g(`h${j}_${k}a`), p = g(`h${j}_${k}p`);
-    if (de && a && de !== a) out.push({ j, de, a, immId: g(`h${j}_${k}i`), p: HOR_P[p] ? p : '' });
-  }
-  return out.sort((x, y) => x.j - y.j || x.de.localeCompare(y.de));
-}
 // ── Fiche d'engagement (ouvriers occasionnels, sociétés) : assurance, paiement, obligations, signature digitale ──
 // horaire fixe : ménage régulier, ou personnel interne de gestion quotidienne ; les ouvriers reçoivent jour/heure/lieu à chaque travail
 const horFixed = (i) => i.metier === 'menage' || ((i.genre || 'interne') === 'interne' && (i.cat || 'quotidien') === 'quotidien');
-const ENG_OBL = (i) => [
-  ['Obligation de résultat', 'L’intervenant s’engage à exécuter le travail confié dans les règles de l’art, aux jour, heure et lieu convenus, et à le reprendre à ses frais s’il n’est pas conforme.'],
-  ['Dommages', `Tout dommage causé aux biens ou aux personnes pendant l’intervention est à la charge de l’intervenant et de son assurance responsabilité civile${i.assur ? ` (${i.assur}${i.police ? ', police n° ' + i.police : ''})` : ''}.`],
-  ['Indépendance', 'Intervention ponctuelle, sans lien de subordination : l’intervenant déclare lui-même ses revenus et s’acquitte de ses obligations fiscales et sociales.'],
-  ['Confidentialité', 'Codes, clés et informations des lieux et des occupants restent confidentiels et ne servent qu’à l’intervention.'],
-];
-const ENG_RGPD = (c) => `Protection des données (RGPD — règlement (UE) 2016/679) : ${c.nom} traite les données de l’intervenant (identité, coordonnées, assurance, IBAN, signature, heures de travail) uniquement pour la gestion des missions, les paiements et ses obligations légales. Conservation : durée légale (10 ans pour les pièces comptables). Droits d’accès, de rectification, d’effacement et d’opposition : ${c.email || c.tel || c.nom}. Réclamation possible auprès de la CNPD (Luxembourg).`;
-// Tarifs d'une personne : ce qu'on lui paie (accord) et ce qu'on facture à la gérance (avec notre marge)
-const sfx = (label, name, val, unit, attrs = money$) => html`<label class="field mini">${label}<span class="sfx"><input name="${name}" type="number" ${new Raw(attrs)} value="${val ?? ''}"><i>${unit}</i></span></label>`;
-function tarifBox(i) {
-  const m = num(factConf().marge);
-  const cell = (name, val, unit, lbl) => html`<span class="sfx"><input name="${name}" type="number" ${new Raw(money$)} value="${val ?? ''}" aria-label="${lbl}"><i>${unit}</i></span>`;
-  return html`<div class="full tarif-box"><div class="section-label" style="margin:6px 0 6px">💶 Tarifs</div>
-    <div class="tarif-grid">
-      <span></span><span class="tg-h">€ / heure</span><span class="tg-h">Déplacement</span>
-      <span class="tg-r">Payé à l’ouvrier</span>${cell('payeH', i.payeH, '€/h', 'Payé à l’ouvrier € / heure')}${cell('payeDepl', i.payeDepl, '€', 'Déplacement payé')}
-      <span class="tg-r">Facturé à la gérance</span>${cell('tauxH', i.tauxH, '€/h HT', 'Facturé à la gérance € / heure')}${cell('depl', i.depl, '€ HT', 'Déplacement facturé')}
-    </div>
-    <p class="tiny muted" style="margin:4px 0 8px">Facturé vide = payé + marge ${m ? String(m).replace('.', ',') + ' %' : '(Réglages → 🧾 Facturation)'}</p>
-    <label class="field">Accord / forfait (facultatif)<input name="tarif" value="${i.tarif || ''}" placeholder="ex. forfait 80 € le chantier"></label></div>`;
-}
-function engForm(i) {
-  const on = (i.genre || 'interne') !== 'interne', occ = (i.genre || '') === 'prive';
-  return html`<div class="full eng-wrap" ${on ? '' : new Raw('hidden')}>
-    <div class="section-label" style="margin:10px 0 0">📝 Engagement<span class="eng-occ" ${occ ? '' : new Raw('hidden')}> — intervention occasionnelle</span></div>
-    <div class="fields" style="margin-top:6px">
-      ${field('Assurance RC (compagnie)', 'assur', i.assur, { placeholder: 'ex. Foyer, La Luxembourgeoise, AXA…' })}
-      ${field('N° de police', 'police', i.police, { attrs: 'autocomplete="off"' })}
-    </div>
-    <label class="check eng-occ" style="margin:8px 0 0" ${occ ? '' : new Raw('hidden')}><input type="checkbox" name="assurTodo" value="1" ${i.assurTodo ? new Raw('checked') : ''}> 🛡️ <b>Assurance à faire</b> — il n’a pas encore les données : un rappel reste dans son app (il pourra l’écrire lui-même)</label>
-    <label class="check eng-occ" style="margin:8px 0 0" ${occ ? '' : new Raw('hidden')}><input type="checkbox" name="cash" value="1" ${i.cash ? new Raw('checked') : ''}> 💵 <b>Paiement cash</b> (en espèces) — il le demande : la banque n’est alors pas obligatoire</label>
-    <div class="section-label" style="margin:8px 0 0">🏦 Compte bancaire (pour le payer) — même fiche pour tous les pays</div>
-    <div class="fields bank-box" style="margin-top:6px">
-      ${field('Nom de la banque', 'banque', i.banque, { placeholder: 'ex. BNP Paribas, Spuerkeess, Intesa Sanpaolo…', attrs: 'autocomplete="off"' })}
-      <label class="field">Code BIC / SWIFT<input name="bic" value="${i.bic || ''}" placeholder="ex. BNPAFRPPXXX" autocomplete="off" autocapitalize="characters" maxlength="14" data-input="bank-chk"><span class="bank-msg tiny" data-for="bic"></span></label>
-      <label class="field full">IBAN<input name="iban" value="${ibanFmt(i.iban || '')}" placeholder="ex. FR76 3000 4028 3700 0123 4567 845 · LU28 0019 4006 4475 0000" autocomplete="off" autocapitalize="characters" maxlength="42" data-input="bank-chk"><span class="bank-msg tiny" data-for="iban"></span></label>
-      <p class="tiny muted full" style="margin:0">L’IBAN contient déjà code banque, guichet, compte et clé (RIB en France, ABI/CAB en Italie, BLZ en Allemagne…) : pas besoin de les écrire à part. Le pays du BIC doit être celui de l’IBAN.</p>
-    </div>
-    <div class="note small" style="margin:8px 0">${ENG_OBL(i).map(([t, x]) => html`<div style="margin-bottom:4px"><b>${t} :</b> ${x}</div>`)}<div class="tiny muted" style="margin-top:6px">${ENG_RGPD(factConf())}</div></div>
-    <div class="alert ${i.sign ? 'info' : 'warn'} eng-occ" ${occ ? '' : new Raw('hidden')}>✍️<div>${i.sign ? html`Signée par l’intervenant dans son app le <b>${fmtDateTime(Date.parse(i.signAt) || 0)}</b>` : html`<b>Signature :</b> l’intervenant la fait lui-même dans son app (📱 App → lien à lui envoyer), rubrique « ✍️ Ma fiche d’engagement ».`}</div></div>
-  </div>`;
-}
 // Comptes bancaires : longueur de l'IBAN par pays (Europe + voisins) et contrôle modulo 97 ; BIC du même pays
 const IBAN_LEN = { AD: 24, AL: 28, AT: 20, BA: 20, BE: 16, BG: 22, BR: 29, CH: 21, CY: 28, CZ: 24, DE: 22, DK: 18, EE: 20, ES: 24, FI: 18, FO: 18, FR: 27, GB: 22, GI: 23, GL: 18, GR: 27, HR: 21, HU: 28, IE: 22, IS: 26, IT: 27, LI: 21, LT: 20, LU: 20, LV: 21, MA: 28, MC: 27, MD: 24, ME: 22, MK: 19, MT: 31, NL: 18, NO: 15, PL: 28, PT: 25, RO: 24, RS: 22, SE: 24, SI: 19, SK: 24, SM: 27, TN: 24, TR: 26, UA: 29, VA: 22, XK: 20 };
 const ibanClean = (v) => String(v || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -3906,115 +2436,7 @@ function bankMsgs(f) {
   for (const [k, r, v] of [['iban', ib, f.iban.value], ['bic', bc, f.bic.value]]) { const m = f.querySelector(`.bank-msg[data-for=${k}]`); if (m) { m.textContent = v.trim() ? r.msg : ''; m.className = `bank-msg tiny ${r.ok ? 'green' : 'red'}`; } }
   return { ib, bc };
 }
-// PNG (signature) → JPEG sur fond blanc pour le PDF
-async function sigJpeg(url) {
-  if (!url) return null;
-  const im = new Image(); im.src = url; await im.decode();
-  const c = document.createElement('canvas'); c.width = im.naturalWidth; c.height = im.naturalHeight;
-  const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height); x.drawImage(im, 0, 0);
-  const b = atob(c.toDataURL('image/jpeg', 0.9).split(',')[1]);
-  return { bytes: Uint8Array.from(b, (ch) => ch.charCodeAt(0)), w: c.width, h: c.height };
-}
 const frD = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-// pied de page : obligations + RGPD (sur la fiche d'engagement et sur chaque note « intervention occasionnelle »)
-function engFoot(p, i, c, y, X, R) {
-  p.line(X, y, R, y, { w: 0.6 }); y += 14;
-  for (const [t, x] of ENG_OBL(i)) y += p.wrap(X, y, `${t} : ${x}`, R - X, { size: 7.5 }) + 2;
-  y += 2; y += p.wrap(X, y, ENG_RGPD(c), R - X, { size: 7, color: [0.35, 0.35, 0.35] });
-  return y;
-}
-async function engPdf(i) {
-  const c = factConf(), p = makePdf(), X = 48, R = 547;
-  p.text(X, 64, c.nom, { size: 15, bold: true }).text(X, 80, [c.adresse, c.ville].filter(Boolean).join(', '), { size: 9 }).text(X, 92, `RCS ${c.rcs} · TVA ${c.tva}${c.tel ? ' · ' + c.tel : ''}`, { size: 9 });
-  p.text(R, 64, 'FICHE D’ENGAGEMENT', { size: 13, bold: true, align: 'right' }).text(R, 80, INT_GENRES[i.genre || 'prive'] || '', { size: 9.5, align: 'right' });
-  let y = 124;
-  const kv = (k, v) => { if (!v && v !== 0) return; p.text(X, y, k, { size: 9, color: [0.4, 0.4, 0.4] }); y += p.wrap(X + 150, y, String(v), R - X - 150, { size: 10, bold: true }) + 4; };
-  p.rect(X, y - 12, R - X, 18, { fill: [0.15, 0.2, 0.35] }).text(X + 6, y, 'Intervenant', { size: 10, bold: true, color: [1, 1, 1] }); y += 22;
-  kv('Nom', intervFull(i)); kv('Métier', METIERS[i.metier] || i.metier || ''); kv('Adresse', [i.adresse, i.ville].filter(Boolean).join(', '));
-  kv('Téléphone / email', [i.tel, i.mail].filter(Boolean).join(' · ')); kv('RCS / N° TVA', [i.rcs, i.tva].filter(Boolean).join(' · '));
-  kv('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')); kv('Banque', [i.banque, i.bic ? 'BIC / SWIFT ' + i.bic : ''].filter(Boolean).join(' — ')); kv('IBAN', ibanFmt(i.iban));
-  if (i.genre === 'prive') kv('Paiement', i.cash ? 'en espèces (cash), à sa demande' : 'par virement');
-  kv('Rémunération', [i.payeH ? eur(i.payeH) + ' / heure' : i.tarif || '', i.payeDepl ? 'déplacement ' + eur(i.payeDepl) : ''].filter(Boolean).join(' · '));
-  y += 8; p.rect(X, y - 12, R - X, 18, { fill: [0.15, 0.2, 0.35] }).text(X + 6, y, 'Obligations de l’intervenant', { size: 10, bold: true, color: [1, 1, 1] }); y += 22;
-  for (const [t, x] of ENG_OBL(i)) { p.text(X, y, t, { size: 9.5, bold: true }); y += 13; y += p.wrap(X, y, x, R - X, { size: 9.5 }) + 6; }
-  y += 6; y += p.wrap(X, y, ENG_RGPD(c), R - X, { size: 8.5, color: [0.3, 0.3, 0.3] }) + 14;
-  p.text(R, y, `Pour ${c.nom}`, { size: 9, bold: true, align: 'right' });
-  if (i.genre !== 'prive') return p.bytes();
-  p.text(X, y, 'Lu et approuvé — signature de l’intervenant', { size: 9, bold: true }); y += 8;
-  const sg = await sigJpeg(i.sign);
-  if (sg) { const w = 180, h = (w * sg.h) / sg.w; p.image(X, y, w, h, sg.bytes, sg.w, sg.h); y += h + 4; p.text(X, y + 8, `Signé électroniquement le ${new Date(Date.parse(i.signAt) || Date.now()).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`, { size: 8, color: [0.4, 0.4, 0.4] }); } else p.text(X, y + 30, '(pas encore signée)', { size: 9, color: [0.6, 0.1, 0.1] });
-  return p.bytes();
-}
-// note de l'intervenant occasionnel à ARES : « INTERVENTION OCCASIONNELLE » (une par travail terminé)
-async function occPdf(t, i, o) {
-  const c = factConf(), p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42];
-  const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id) || {};
-  // émetteur : l'intervenant
-  p.text(X, 52, intervFull(i), { size: 11, bold: true }).text(X, 66, METIERS[i.metier] || '', { size: 9, color: G });
-  let ey = 80;
-  for (const ln of [i.adresse, i.ville, [i.tel, i.mail].filter(Boolean).join(' · '), [i.rcs ? 'RCS ' + i.rcs : '', i.tva ? 'TVA ' + i.tva : ''].filter(Boolean).join(' · ')]) if (ln) { p.text(X, ey, ln, { size: 9 }); ey += 12; }
-  // client : ARES INVEST S.A.
-  const CX = 330;
-  p.text(CX, 150, c.nom, { size: 11, bold: true }).text(CX, 164, c.adresse, { size: 9.5 }).text(CX, 176, c.ville, { size: 9.5 }).text(CX, 192, 'TVA : ' + c.tva, { size: 9.5 });
-  let y = 236;
-  p.text(X, y, 'INTERVENTION OCCASIONNELLE', { size: 15, bold: true, color: [0.2, 0.2, 0.2] }).text(X, y + 18, `N° ${o.no}`, { size: 11, bold: true }); y += 44;
-  const info = [['Date', frD(o.d)], ['Date d’intervention', frD(L.d || t.doneDate || t.date || o.d)], ['Horaire', L.arr ? `${L.arr}–${L.dep || ''}` : '—'], ['Référence', t.ptl ? 'Demande #' + t.ptl.ref : o.no]];
-  info.forEach(([l, v], k) => { const xx = X + k * 125; p.text(xx, y, l, { size: 8.5, color: G }).text(xx, y + 13, v, { size: 10 }); });
-  y += 40;
-  const CQ = 400, CP = 470;
-  p.text(X + 6, y, 'Description', { size: 9.5, bold: true }).text(CQ, y, 'Quantité', { size: 9.5, bold: true, align: 'right' }).text(CP, y, 'Prix unitaire', { size: 9.5, bold: true, align: 'right' }).text(R - 6, y, 'Montant', { size: 9.5, bold: true, align: 'right' });
-  y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
-  const n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
-  const row = (lib, sub, q, pu, tot) => {
-    p.text(CQ, y, q, { size: 9.5, align: 'right' }).text(CP, y, pu, { size: 9.5, align: 'right' }).text(R - 6, y, tot, { size: 9.5, align: 'right' });
-    let hh = p.wrap(X + 6, y, lib, 300, { size: 9.5 });
-    if (sub) hh += p.wrap(X + 6, y + hh, sub, 300, { size: 8.5, color: G });
-    y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
-  };
-  row(`Main-d'œuvre — ${t.titre || METIERS[i.metier] || 'travail'}`, t.ptl ? [t.ptl.res, t.ptl.adr, t.ptl.lieu].filter(Boolean).join(' — ') : placeName(t), n2(o.h) + ' h', n2(o.taux), eur(r2(o.h * o.taux)));
-  if (o.depl) row('Déplacement', '', '1,00', n2(o.depl), eur(o.depl));
-  if (o.mat) row(`Matériel avancé${o.matLib ? ' : ' + o.matLib : ''}`, '', '1,00', n2(o.mat), eur(o.mat));
-  y += 10;
-  const TX = 330, ty = y;
-  p.rect(TX, y - 12, R - TX, 20, { fill: [0.94, 0.94, 0.94] }).text(TX + 8, y, 'Total à payer', { size: 11, bold: true }).text(R - 8, y, eur(o.tot), { size: 11, bold: true, align: 'right' }); y += 22;
-  p.text(TX + 8, y, i.tva ? 'TVA : selon le régime de l’intervenant' : 'TVA non applicable (non assujetti)', { size: 8.5, color: G }); y += 16;
-  let py = ty;
-  if (o.cash) { p.text(X, py, 'Paiement en espèces (cash)', { size: 9.5, bold: true }); py += 13; p.text(X, py, `Référence : ${o.no}`, { size: 9.5 }); py += 14; }
-  else if (i.iban) {
-    p.text(X, py, `Communication de paiement : ${o.no}`, { size: 9.5, bold: true }); py += 13;
-    p.text(X, py, `sur ce compte : ${ibanFmt(i.iban)}${i.banque ? ' - ' + i.banque : ''}`, { size: 9.5 }); py += 12;
-    if (i.bic) { p.text(X, py, 'BIC : ' + i.bic, { size: 9, color: G }); py += 12; }
-    qrPdf(p, X, py + 6, 86, epcText(intervFull(i), i.iban, i.bic, o.tot, o.no)); p.text(X + 96, py + 30, 'Scanner le code QR avec', { size: 8.5, color: G }).text(X + 96, py + 42, 'votre application bancaire', { size: 8.5, color: G }); py += 100;
-  }
-  y = Math.max(y, py) + 8;
-  if (o.note) y += p.wrap(X, y, 'Note : ' + o.note, R - X, { size: 9 }) + 6;
-  p.text(X, y + 6, 'Signature de l’intervenant', { size: 9, bold: true }); y += 12;
-  const sg = await sigJpeg(i.sign);
-  if (sg) { const w = 150, h = (w * sg.h) / sg.w; p.image(X, y, w, h, sg.bytes, sg.w, sg.h); y += h; }
-  y = Math.max(y + 16, 640);
-  engFoot(p, i, c, y, X, R);
-  return p.bytes();
-}
-// ── Factures des interventions (ARES INVEST S.A. — marque LA CENTRAL) → la gérance la télécharge dans le portail ──
-const FACT_DEF = { nom: 'ARES INVEST S.A.', marque: 'LA CENTRAL', adresse: '37, Val Saint André', ville: 'L-1128 Luxembourg', rcs: 'B225245', tva: 'LU30440727', tel: '+352 691 423 943', email: '', iban: '', bic: '', banque: '', taux: 17, delai: 30, seq: 0, marge: 0 };
-// Régime de TVA d'un client (gérance) : taux normal, taux particulier, autoliquidation (client assujetti d'un autre pays de l'UE), non applicable
-const TVA_REG = {
-  normal: ['TVA normale (taux des réglages)', ''],
-  taux: ['Taux particulier', ''],
-  autoliq: ['Autoliquidation — client assujetti UE (0 %)', 'Autoliquidation : TVA due par le preneur (art. 196 de la directive 2006/112/CE).'],
-  exo: ['TVA non applicable / exonérée (0 %)', 'TVA non applicable.'],
-};
-// données de facturation d'une gérance : régime TVA (coffre) + société (portail : adresse, RCS, TVA, banque — la gérance peut les compléter elle-même)
-const factClient = (orgId, name) => {
-  const all = (vault.get('reglages', 'factClients') || {}).list || {};
-  const o = (ui.ptl && ui.ptl.data && ui.ptl.data.orgs.find((x) => x.id === orgId)) || {};
-  const fromPtl = Object.fromEntries([['adresse', o.address], ['rcs', o.rcs], ['tvaNum', o.tva], ['banque', o.banque], ['bic', o.bic], ['iban', o.iban]].filter(([, v]) => v));
-  return { regime: 'normal', taux: '', tvaNum: '', adresse: '', pays: 'LU', mention: '', ...(all[orgId] || all['n:' + (name || '')] || {}), ...fromPtl };
-};
-const orgMissing = (cl) => [!cl.adresse && 'adresse', !cl.rcs && 'RCS (B…)', !cl.tvaNum && 'n° TVA (LU…)', !cl.banque && 'banque', !cl.bic && 'BIC', !cl.iban && 'IBAN'].filter(Boolean);
-const regTaux = (reg, c) => (reg.regime === 'autoliq' || reg.regime === 'exo' ? 0 : reg.regime === 'taux' ? num(reg.taux) : num(c.taux));
-const regMention = (reg) => (reg.regime === 'autoliq' || reg.regime === 'exo' ? reg.mention || TVA_REG[reg.regime][1] : reg.mention || '');
-const factConf = () => ({ ...FACT_DEF, ...(vault.get('reglages', 'facturation') || {}) });
 // 👥 Centrale : le responsable (clé principale) et les opérateurs (centraliste, comptable — mot de passe personnel, voir store.js)
 const OP_ROLES = { centraliste: 'Centraliste', comptable: 'Comptable' };
 const centraleConf = () => vault.get('reglages', 'centrale') || {};
@@ -4038,189 +2460,25 @@ function centraleSection() {
       <button class="btn sm" data-action="op-new">${icon('plus')} Opérateur</button>
     </div>`;
 }
-// TVA d'une gérance / d'une facture : une case « Avec TVA » ; sans TVA, la mention écrite sur la facture (anciens régimes « taux » / « autoliq » gardés)
-const tvaOn = (r) => !r || r.regime === 'normal' || r.regime === 'taux';
-const tvaBox = (r, c) => html`<label style="display:flex;gap:10px;align-items:center;cursor:pointer;margin:0"><input type="checkbox" name="tva_on" value="1" data-input="tva-on" style="width:22px;height:22px;min-height:22px;flex:none;margin:0" ${tvaOn(r) ? new Raw('checked') : ''}> <span><b>Avec TVA</b> (${String(r && r.regime === 'taux' ? r.taux : c.taux).replace('.', ',')} %)</span></label>
-  <input type="hidden" name="reg_prev" value="${(r && r.regime) || 'normal'}"><input type="hidden" name="reg_taux" value="${(r && r.taux) || ''}">
-  <label class="field full tva-mention" style="margin-top:6px" ${tvaOn(r) ? new Raw('hidden') : ''}>Mention sur la facture (sans TVA)<input name="reg_mention" value="${(r && r.mention) || ''}" placeholder="ex. TVA non applicable — formule donnée par votre comptable"></label>`;
-const tvaRead = (fd) => { const prev = String(fd.get('reg_prev') || 'normal'), on = !!fd.get('tva_on'); return { regime: on ? (prev === 'taux' ? 'taux' : 'normal') : (prev === 'autoliq' ? 'autoliq' : 'exo'), taux: String(fd.get('reg_taux') || ''), mention: String(fd.get('reg_mention') || '').trim() }; };
-const factMissing = (c) => [['nom', 'raison sociale'], ['adresse', 'adresse'], ['rcs', 'RCS'], ['tva', 'n° TVA'], ['iban', 'IBAN']].filter(([k]) => !String(c[k] || '').trim()).map(([, l]) => l);
-const ymd = (iso) => iso.replace(/-/g, '');
-// brouillon d'une facture à partir de l'intervention clôturée : heures réelles × tarif, déplacement, matériel, remise / majoration
-function factDraft(t) {
-  if (t.factDraft) return t.factDraft;
-  const w = vault.get('intervenants', t.intervenantId) || {};
-  const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id);
-  const h = L && L.min ? Math.ceil(L.min / 15) / 4 : 1;
-  const cl = factClient(t.ptl && t.ptl.orgId, t.ptl && t.ptl.org);
-  const m = 1 + num(factConf().marge) / 100;
-  return { h, taux: w.tauxH || (w.payeH ? r2(w.payeH * m) : 0), depl: w.depl || (w.payeDepl ? r2(w.payeDepl * m) : 0), mat: [], adj: { type: 'remise', mode: '%', val: 0, lib: '' }, reg: { regime: cl.regime, taux: cl.taux, mention: cl.mention } };
-}
-// taux effectif d'une facture : régime choisi pour cette facture (sinon celui du client), sinon les réglages
-const factTaux = (f, c) => regTaux(f.reg || { regime: 'normal' }, c);
-function factCalc(f, taux) {
-  const mo = r2(num(f.h) * num(f.taux)), dep = r2(num(f.depl)), mat = r2(sum(f.mat || [], (m) => num(m.ht)));
-  const sub = r2(mo + dep + mat);
-  const a = f.adj || {}, raw = a.mode === '%' ? r2((sub * num(a.val)) / 100) : r2(num(a.val));
-  const adj = a.type === 'remise' ? -raw : raw;
-  const ht = r2(sub + adj), tva = r2((ht * num(taux)) / 100);
-  return { mo, dep, mat, sub, adj, ht, tva, ttc: r2(ht + tva) };
-}
-const eur = (n) => (Math.round(n * 100) / 100).toFixed(2).replace('.', ',') + ' €';
-// QR « EPC » (virement SEPA) : scanné avec l'app de la banque, il remplit bénéficiaire, IBAN, montant et référence
-const ascii = (v) => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x20-\x7e]/g, ' ');
-const epcText = (name, iban, bic, amount, ref) => ['BCD', '002', '1', 'SCT', ascii(bic).replace(/\s/g, ''), ascii(name).slice(0, 70), ascii(iban).replace(/\s/g, ''), 'EUR' + (Math.round(amount * 100) / 100).toFixed(2), '', '', ascii(ref).slice(0, 140)].join('\n');
-function qrPdf(p, x, y, size, text) {
-  const q = qrcode(0, 'M'); q.addData(text); q.make();
-  const n = q.getModuleCount(), m = size / (n + 2);
-  p.rect(x, y, size, size, { fill: [1, 1, 1] });
-  for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) if (q.isDark(r, c)) p.rect(x + (c + 1) * m, y + (r + 1) * m, m + 0.05, m + 0.05, { fill: [0, 0, 0] });
-}
-// Facture LA CENTRAL (ARES INVEST S.A.) → gérance, mise en page « facture classique » :
-// émetteur + logo, client à droite, n°, dates, tableau Description / Quantité / Prix unitaire / TVA / Montant, totaux, paiement + QR
-async function factPdf(t, f, no, dateIso, c) {
-  const k = factCalc(f, factTaux(f, c)), w = vault.get('intervenants', t.intervenantId) || {}, tx = factTaux(f, c);
-  const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id) || {};
-  const org = ptlOrg((t.ptl && t.ptl.orgId) || '') || ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => t.ptl && o.name === t.ptl.org) || {};
-  const cl = factClient(t.ptl && t.ptl.orgId, t.ptl && t.ptl.org);
-  const p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42];
-  const due = addDays(dateIso, +c.delai || 30);
-  // émetteur + logo
-  const logo = await sigJpeg('/ares/icons/lux-192.png').catch(() => null);
-  if (logo) p.image(X, 40, 62, 62, logo.bytes, logo.w, logo.h);
-  const ex = logo ? X + 78 : X;
-  p.text(ex, 52, c.marque || c.nom, { size: 11, bold: true }).text(ex, 66, c.marque ? 'by ' + c.nom : '', { size: 9, color: G });
-  p.text(ex, 80, c.adresse, { size: 9 }).text(ex, 92, c.ville, { size: 9 }).text(ex, 104, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8.5, color: G });
-  if (c.tel || c.email) p.text(ex, 116, [c.tel, c.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
-  if (centraleResp()) p.text(ex, 128, 'Responsable : ' + centraleResp(), { size: 8.5, color: G });
-  // client
-  const CX = 330;
-  let cy = 150;
-  p.text(CX, cy, (t.ptl && t.ptl.org) || org.name || '', { size: 11, bold: true }); cy += 14;
-  for (const ln of String(cl.adresse || '').split(/\n|,\s*(?=L-|\d{4})/).filter(Boolean).slice(0, 3)) { p.text(CX, cy, ln.trim(), { size: 9.5 }); cy += 12; }
-  if (!cl.adresse) { const ct = [org.email, org.phone].filter(Boolean).join(' · '); if (ct) { p.text(CX, cy, ct, { size: 9.5 }); cy += 12; } }
-  if (cl.pays && cl.pays !== 'LU') { p.text(CX, cy, cl.pays, { size: 9.5 }); cy += 12; }
-  if (cl.tvaNum) { cy += 4; p.text(CX, cy, 'TVA : ' + cl.tvaNum, { size: 9.5 }); }
-  // titre + dates
-  let y = 236;
-  p.text(X, y, `Facture ${no}`, { size: 20, bold: true, color: [0.2, 0.2, 0.2] }); y += 26;
-  const fr = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
-  const info = [['Date de facturation', fr(dateIso)], ['Date d’échéance', fr(due)], ['Date d’intervention', fr(L.d || t.doneDate || dateIso)], ['Référence', t.ptl ? 'Demande #' + t.ptl.ref : no]];
-  info.forEach(([l, v], i) => { const xx = X + i * 125; p.text(xx, y, l, { size: 8.5, color: G }).text(xx, y + 13, v, { size: 10 }); });
-  y += 40;
-  // tableau
-  const CQ = 352, CP = 430, CT = 482;
-  p.text(X + 6, y, 'Description', { size: 9.5, bold: true }).text(CQ, y, 'Quantité', { size: 9.5, bold: true, align: 'right' }).text(CP, y, 'Prix unitaire', { size: 9.5, bold: true, align: 'right' }).text(CT, y, 'TVA', { size: 9.5, bold: true, align: 'right' }).text(R - 6, y, 'Montant', { size: 9.5, bold: true, align: 'right' });
-  y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
-  const txt = String(tx).replace('.', ',') + '%';
-  const row = (lib, sub, q, pu, tot) => {
-    if (q !== '') p.text(CQ, y, q, { size: 9.5, align: 'right' });
-    if (pu !== '') p.text(CP, y, pu, { size: 9.5, align: 'right' });
-    p.text(CT, y, txt, { size: 9.5, align: 'right' }).text(R - 6, y, tot, { size: 9.5, align: 'right' });
-    let hh = p.wrap(X + 6, y, lib, 240, { size: 9.5 });
-    if (sub) hh += p.wrap(X + 6, y + hh, sub, 240, { size: 8.5, color: G });
-    y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
-  };
-  const n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
-  const lieu = t.ptl ? [t.ptl.res, t.ptl.adr, t.ptl.lieu].filter(Boolean).join(' — ') : placeName(t);
-  row(`Main-d'œuvre — ${String(t.titre || 'Intervention').replace(/^#\d+\s*/, '')}`, `${intervFull(w)}${L.arr ? ` · ${L.arr}–${L.dep || ''}` : ''} · ${lieu}`, n2(num(f.h)) + ' h', n2(num(f.taux)), eur(k.mo));
-  if (k.dep) row('Déplacement', '', '1,00', n2(k.dep), eur(k.dep));
-  for (const m of f.mat || []) if (num(m.ht)) row(`Matériel : ${m.lib || 'fourniture'}`, '', '1,00', n2(num(m.ht)), eur(num(m.ht)));
-  if (k.adj) row(`${f.adj.type === 'remise' ? 'Remise' : 'Majoration'}${f.adj.mode === '%' ? ' ' + String(num(f.adj.val)).replace('.', ',') + ' %' : ''}${f.adj.lib ? ' — ' + f.adj.lib : ''}`, '', '', '', (k.adj < 0 ? '− ' : '') + eur(Math.abs(k.adj)));
-  // totaux (encadré à droite)
-  y += 10;
-  const TX = 330, ty = y;
-  const trow = (l, v, b, bg) => { if (bg) p.rect(TX, y - 12, R - TX, 20, { fill: [0.94, 0.94, 0.94] }); p.text(TX + 8, y, l, { size: b ? 11 : 9.5, bold: b }).text(R - 8, y, v, { size: b ? 11 : 9.5, bold: b, align: 'right' }); y += 22; };
-  trow('Montant hors taxes', eur(k.ht), false, true); trow(`TVA ${txt}`, eur(k.tva), false, false); trow('Total', eur(k.ttc), true, true);
-  // paiement + QR (à gauche des totaux)
-  let py = ty;
-  p.text(X, py, `Communication de paiement : ${no}`, { size: 9.5, bold: true }); py += 13;
-  p.text(X, py, `sur ce compte : ${c.iban}${c.banque ? ' - ' + c.banque : ''}`, { size: 9.5 }); py += 12;
-  if (c.bic) { p.text(X, py, 'BIC : ' + c.bic, { size: 9, color: G }); py += 12; }
-  if (c.iban) { qrPdf(p, X, py + 6, 92, epcText(c.nom, c.iban, c.bic, k.ttc, no)); p.text(X + 102, py + 30, 'Scanner le code QR avec', { size: 8.5, color: G }).text(X + 102, py + 42, 'votre application bancaire', { size: 8.5, color: G }); py += 106; }
-  y = Math.max(y, py) + 10;
-  const mention = regMention(f.reg || {});
-  if (mention) y += p.wrap(X, y, mention, R - X, { size: 9, bold: true }) + 4;
-  p.text(X, y, `Paiement à ${+c.delai || 30} jours, avant le ${fr(due)}.`, { size: 9, color: G });
-  p.text((X + R) / 2, 800, `${c.marque ? c.marque + ' by ' : ''}${c.nom} · ${c.adresse}, ${c.ville} · RCS Luxembourg ${c.rcs} · TVA ${c.tva}`, { size: 7.5, color: G, align: 'center' });
-  return { bytes: p.bytes(), k };
-}
-const factRead = (fm) => {
-  const fd = new FormData(fm), mat = [];
-  for (let n = 0; n < 30; n++) if (fd.has(`ml${n}`)) { const lib = String(fd.get(`ml${n}`) || '').trim(), ht = num(fd.get(`mh${n}`)); if (lib || ht) mat.push({ lib, ht }); }
-  const cost = fd.has('cost_h') ? { h: num(fd.get('cost_h')), d: num(fd.get('cost_d')) } : null;
-  return { cost, reg: tvaRead(fd), h: num(fd.get('h')), taux: num(fd.get('taux')), depl: num(fd.get('depl')), mat, adj: { type: fd.get('adj_type') === 'maj' ? 'maj' : 'remise', mode: fd.get('adj_mode') === '€' ? '€' : '%', val: num(fd.get('adj_val')), lib: String(fd.get('adj_lib') || '').trim() } };
-};
-const matRow = (n, m = {}) => html`<div class="fact-mat"><input name="ml${n}" value="${m.lib || ''}" placeholder="Matériel acheté (ex. disjoncteur 16 A)"><input name="mh${n}" type="number" ${new Raw(money$)} value="${m.ht ?? ''}" placeholder="€ HT" aria-label="Montant HT"></div>`;
-function factTotHtml(f) {
-  const c = factConf(), tx = factTaux(f, c), k = factCalc(f, tx);
-  return html`<div class="kv-tot"><span>Main-d’œuvre</span><b>${eur(k.mo)}</b><span>Déplacement</span><b>${eur(k.dep)}</b><span>Matériel</span><b>${eur(k.mat)}</b>${k.adj ? html`<span>${k.adj < 0 ? 'Remise' : 'Majoration'}</span><b>${k.adj < 0 ? '− ' : '+ '}${eur(Math.abs(k.adj))}</b>` : ''}
-    <span>Total HT</span><b>${eur(k.ht)}</b>${f.cost ? (() => { const co = r2(num(f.h) * f.cost.h + (num(f.depl) ? f.cost.d : 0) + k.mat), mg = r2(k.ht - co); return html`<span class="muted">Coût (ouvrier + matériel)</span><b class="muted">${eur(co)}</b><span class="${mg < 0 ? 'red' : 'green'}">Ma marge</span><b class="${mg < 0 ? 'red' : 'green'}">${eur(mg)}${co ? ` (${Math.round((mg / co) * 100)} %)` : ''}</b>`; })() : ''}<span>TVA ${String(tx).replace('.', ',')} %${f.reg && (f.reg.regime === 'autoliq' || f.reg.regime === 'exo') ? ' — ' + TVA_REG[f.reg.regime][0].split(' (')[0] : ''}</span><b>${eur(k.tva)}</b><span class="big">Total TTC</span><b class="big">${eur(k.ttc)}</b></div>`;
-}
 // « Voir plus » : 10 lignes de plus à chaque toucher
 const moreBtn = (total, lim) => (total > lim ? html`<button class="btn block" style="margin-top:12px" data-action="cp-more">⬇ Voir plus (${Math.min(10, total - lim)} sur ${total - lim} restantes)</button><p class="tiny muted" style="text-align:center;margin:6px 0 0">${lim} sur ${total} affichées</p>` : total > 10 ? html`<p class="tiny muted" style="text-align:center;margin:10px 0 0">Tout est affiché (${total})</p>` : '');
-// Registre des interventions terminées (ou finies par l'ouvrier) : où, quoi, qui, heures réelles, avis, coût
-function intervLedger(from, to) {
-  const out = [];
-  for (const t of vault.list('taches')) {
-    if (t.recur) continue;
-    const d = t.statut === 'fait' ? t.doneDate || t.date : t.fini ? t.fini.d : '';
-    if (!d || d < from || d > to) continue;
-    const j = (t.journal || []).filter((x) => x.d === d).sort((a, b) => (a.at || '').localeCompare(b.at || ''));
-    const hOf = (x) => (x ? x.h || (x.at || '').slice(11, 16) : '');
-    const arr = hOf(j.find((x) => x.st === 'encours')), dep = hOf([...j].reverse().find((x) => x.st === 'fait'));
-    const min = arr && dep ? Math.max(0, (hm(dep) - hm(arr)) * 60) : 0;
-    const w = vault.get('intervenants', t.intervenantId);
-    const ev = w ? (w.evals || []).filter((e) => e.d === d) : [];
-    const avis = ev.length ? MEN_EVAL[Math.round(sum(ev, (e) => e.v) / ev.length)] : '';
-    out.push({ t, d, arr, dep, min, who: w ? intervFull(w) : '', lieu: placeName(t), ger: t.ptl ? `${t.ptl.org} #${t.ptl.ref}` : '', avis, cout: t.cout || 0, state: t.statut === 'fait' ? 'fait' : 'fini' });
-  }
-  return out.sort((a, b) => b.d.localeCompare(a.d));
-}
-const dayShort = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 
 // ───────── 📊 Rapports & exports : contacts, travaux, heures, retards, totaux — filtres, colonnes au choix, Excel (.xlsx) ou PDF ─────────
 const RPT_SRC = {
   contacts: ['👥 Contacts', [['cat', 'Catégorie'], ['nom', 'Nom'], ['prenom', 'Prénom'], ['soc', 'Société'], ['email', 'Email'], ['tel', 'Téléphone'], ['adr', 'Adresse'], ['info', 'Détail']], ['cat', 'nom', 'prenom', 'email', 'tel']],
-  travaux: ['🔧 Travaux', [['date', 'Date'], ['heure', 'Heure prévue'], ['type', 'Type'], ['titre', 'Quoi'], ['lieu', 'Où'], ['qui', 'Qui'], ['statut', 'Statut'], ['urg', 'Urgent'], ['arr', 'Arrivée'], ['dep', 'Départ'], ['h', 'Heures réelles'], ['qte', 'Quantité'], ['qu', 'Unité'], ['cout', 'Coût (€)'], ['ger', 'Gérance / demande']], ['date', 'type', 'titre', 'lieu', 'qui', 'statut', 'h', 'qte', 'qu']],
-  heures: ['⏱️ Heures par personne', [['qui', 'Personne'], ['cat', 'Catégorie'], ['metier', 'Métier'], ['n', 'Travaux finis'], ['h', 'Heures réelles'], ['nettoyage', 'Nettoyages'], ['reparation', 'Réparations'], ['gros', 'Gros travaux'], ['autre', 'Autres'], ['late', 'Arrivées en retard']], null],
   retards: ['⏰ Retards', [['type', 'Type de retard'], ['date', 'Date prévue / échéance'], ['qui', 'Qui'], ['quoi', 'Quoi / où'], ['j', 'Retard (jours)'], ['min', 'Retard (minutes)'], ['montant', 'Montant (€)']], null],
   totaux: ['📈 Totaux', [['ind', 'Indicateur'], ['val', 'Valeur']], null],
 };
-const RPT_WHO = { loc: 'Locataires', interne: 'Ouvriers internes', societe: 'Sociétés externes', prive: 'Collaborateurs occasionnels', ger: 'Gérances' };
-const RPT_LATE = { loyer: 'Loyers impayés', topen: 'Travaux pas finis (date passée)', tfin: 'Travaux finis après la date prévue', arr: 'Arrivées de l’ouvrier après l’heure prévue', fact: 'Factures pas payées à l’échéance' };
+const RPT_WHO = { loc: 'Locataires' };
+const RPT_LATE = { loyer: 'Loyers impayés' };
 const rptDef = () => ({ src: 'contacts', from: today().slice(0, 4) + '-01-01', to: today(), who: Object.keys(RPT_WHO), late: Object.keys(RPT_LATE), genre: Object.keys(INT_GENRES), withMail: false, withTel: false, ttype: '', tstat: '', persons: null, orgs: null, lieux: null, q: '', cols: {} });
 const rptCfg = () => (ui.rpt = ui.rpt || rptDef());
 // filtres à cocher : personnes, sociétés (gérances), lieux — null = tous
 const rptPlace = (t) => (t.immId && !t.lieu ? 'i:' + t.immId : 'l:' + String((t.lieu && (t.lieu.adr || t.lieu.nom)) || (t.ptl && (t.ptl.adr || t.ptl.res)) || (t.dev && (t.dev.adr || t.dev.client)) || '').toLowerCase().replace(/\s+/g, ' ').trim());
 const rptOrg = (t) => (t.ptl ? t.ptl.org || '' : '');
 const rptOk = (t, c) => (!c.persons || c.persons.includes(t.intervenantId || '')) && (!c.orgs || c.orgs.includes(rptOrg(t))) && (!c.lieux || c.lieux.includes(rptPlace(t)));
-const rptPickData = () => {
-  const T = vault.list('taches'), seen = new Map(), orgs = new Set();
-  for (const t of T) { const k = rptPlace(t); if (k.length > 2 && !seen.has(k)) seen.set(k, placeName(t).replace(/^[📍📝🏢]\s?/u, '')); orgs.add(rptOrg(t)); }
-  return {
-    persons: [['', '— sans personne —'], ...vault.list('intervenants').filter((i) => !i.archive || T.some((t) => t.intervenantId === i.id)).sort((a, b) => intervFull(a).localeCompare(intervFull(b))).map((i) => [i.id, `${intervFull(i)} · ${RPT_WHO[i.genre || 'interne']}`])],
-    orgs: [...orgs].sort().map((o) => [o, o || 'Nos immeubles et clients directs']),
-    lieux: [...seen].sort((a, b) => a[1].localeCompare(b[1])),
-  };
-};
-const rptPick = (k, title, items, sel) => html`<details class="rpt-pick" data-k="${k}" ${ui.rptOpen === k ? new Raw('open') : ''}><summary>${title} <b>(${sel ? sel.length : items.length}/${items.length})</b></summary>
-  <div class="rpt-pick-tools"><input type="search" data-input="rpt-pick-q" placeholder="Rechercher…" autocomplete="off"><button class="btn sm" data-action="rpt-all" data-k="${k}">Tout cocher</button><button class="btn sm" data-action="rpt-none" data-k="${k}">Tout décocher</button></div>
-  <div class="rpt-pick-list">${items.map(([v, l]) => html`<label data-q="${String(l).toLowerCase()}"><input type="checkbox" class="rpt-cb" data-input="rpt-set" data-k="${k}" value="${v}" ${!sel || sel.includes(v) ? new Raw('checked') : ''}>${l}</label>`)}</div></details>`;
 const rptCols = (c) => c.cols[c.src] || RPT_SRC[c.src][2] || RPT_SRC[c.src][1].map(([k]) => k);
 const daysBetween = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 864e5);
-// arrivée / départ notés par l'ouvrier ce jour-là (journal de l'app de l'équipe)
-const jobTimes = (t, d) => {
-  const j = (t.journal || []).filter((x) => x.d === d).sort((a, b) => (a.at || '').localeCompare(b.at || ''));
-  const hOf = (x) => (x ? x.h || (x.at || '').slice(11, 16) : '');
-  const arr = hOf(j.find((x) => x.st === 'encours')), dep = hOf([...j].reverse().find((x) => x.st === 'fait'));
-  return { arr, dep, h: arr && dep ? Math.max(0, Math.round((hm(dep) - hm(arr)) * 100) / 100) : 0 };
-};
-// quantité notée par l'ouvrier en finissant (« Combien ? »)
-// quantité du travail fini (« Combien ? ») envoyée à l’app Gérances : « 3 robinets »
-const ptlQte = (t) => { const q = jobQty(t, (t.fini && t.fini.d) || t.doneDate || ''); return q.qte ? `${q.qte} ${q.qu}`.trim() : ''; };
-const jobQty = (t, d) => { const q = (t.fini && t.fini.qte ? t.fini : null) || [...(t.journal || [])].reverse().find((x) => x.d === d && x.qte); return q ? { qte: q.qte, qu: q.qu || '' } : { qte: '', qu: '' }; };
-const jobDay = (t) => (t.statut === 'fait' ? t.doneDate || t.date : t.fini ? t.fini.d : t.date) || '';
 const inPer = (d, c) => d && d >= c.from && d <= c.to;
 function rptRetards(c) {
   const out = [], T = today(), on = new Set(c.late), pers = (t) => rptOk(t, c);
@@ -4234,135 +2492,33 @@ function rptRetards(c) {
       }
     }
   }
-  for (const t of vault.list('taches')) {
-    if (!pers(t)) continue;
-    const w = vault.get('intervenants', t.intervenantId), qui = w ? intervFull(w) : '';
-    if (!t.recur && t.date && on.has('topen') && t.statut !== 'fait' && !t.fini && t.date < T && inPer(t.date, c)) out.push({ type: RPT_LATE.topen, date: t.date, qui, quoi: `${t.titre} — ${placeName(t)}`, j: daysBetween(t.date, T), min: '', montant: '' });
-    if (!t.recur && t.date && on.has('tfin')) { const d = jobDay(t); if ((t.statut === 'fait' || t.fini) && d > t.date && inPer(t.date, c)) out.push({ type: RPT_LATE.tfin, date: t.date, qui, quoi: `${t.titre} — ${placeName(t)}`, j: daysBetween(t.date, d), min: '', montant: '' }); }
-    if (on.has('arr') && t.heure) for (const x of (t.journal || []).filter((x) => x.st === 'encours' && inPer(x.d, c))) {
-      const h = x.h || (x.at || '').slice(11, 16), late = h ? Math.round((hm(h) - hm(t.heure)) * 60) : 0;
-      if (late > 0) out.push({ type: RPT_LATE.arr, date: x.d, qui: intervName(x.by || t.intervenantId) || qui, quoi: `${t.titre} — ${placeName(t)} (prévu ${t.heure}, arrivé ${h})`, j: '', min: late, montant: '' });
-    }
-    if (on.has('fact') && t.facture && !t.facture.paid && t.facture.date) { const ech = addDays(t.facture.date, 30); if (ech < T && inPer(ech, c)) out.push({ type: RPT_LATE.fact, date: ech, qui: t.ptl ? t.ptl.org : qui, quoi: `${t.facture.no} — ${t.titre}`, j: daysBetween(ech, T), min: '', montant: t.facture.ttc }); }
-  }
   return out.sort((a, b) => a.type.localeCompare(b.type) || a.date.localeCompare(b.date));
 }
 function rptRows(c) {
   if (c.src === 'contacts') {
     const out = [], who = new Set(c.who), add = (cat, o) => out.push({ cat, ...o });
     if (who.has('loc')) for (const l of currentLocs()) add(RPT_WHO.loc, { nom: l.nom || '', prenom: l.prenom || '', soc: '', email: l.mail || '', tel: l.tel || '', adr: [logName(l.logId), immName(l.immId)].filter(Boolean).join(' · '), info: '' });
-    for (const i of vault.list('intervenants').filter((i) => !i.archive)) { const g = i.genre || 'interne'; if (who.has(g)) add(RPT_WHO[g], { nom: i.nom || '', prenom: i.prenom || '', soc: g === 'societe' ? i.nom || '' : '', email: i.mail || '', tel: i.tel || '', adr: [i.adresse, i.ville].filter(Boolean).join(', '), info: METIERS[i.metier] || '' }); }
-    if (who.has('ger')) for (const o of (ui.ptl.data && ui.ptl.data.orgs) || []) add(RPT_WHO.ger, { nom: '', prenom: '', soc: o.name || '', email: o.email || '', tel: o.phone || '', adr: '', info: '' });
     return out.filter((r) => (!c.withMail || r.email) && (!c.withTel || r.tel)).sort((a, b) => a.cat.localeCompare(b.cat) || (a.nom || a.soc).localeCompare(b.nom || b.soc));
   }
-  if (c.src === 'travaux') {
-    const q = String(c.q || '').toLowerCase();
-    return vault.list('taches').filter((t) => !t.recur).map((t) => ({ t, d: jobDay(t) })).filter(({ t, d }) => inPer(d, c) && (!c.ttype || t.type === c.ttype) && (!c.tstat || (c.tstat === 'fini' ? t.statut !== 'fait' && t.fini : t.statut === c.tstat)) && rptOk(t, c) && (!q || `${t.titre} ${placeName(t)}`.toLowerCase().includes(q)))
-      .map(({ t, d }) => { const w = vault.get('intervenants', t.intervenantId), k = jobTimes(t, d); return { date: d, heure: t.heure || '', type: (TACHE_TYPES[t.type] || t.type || '').replace(/^\S+\s/, ''), titre: t.titre, lieu: placeName(t).replace(/^[📍📝🏢]\s?/u, ''), qui: w ? intervFull(w) : '', statut: t.statut !== 'fait' && t.fini ? 'Fini par l’ouvrier' : STATUTS[t.statut] || '', urg: t.urgent ? 'oui' : '', arr: k.arr, dep: k.dep, h: k.h || '', ...jobQty(t, d), cout: t.cout || '', ger: t.ptl ? `${t.ptl.org} #${t.ptl.ref}` : '' }; })
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }
-  if (c.src === 'heures') {
-    const by = new Map(), lateBy = new Map();
-    for (const r of rptRetards({ ...c, late: ['arr'] })) lateBy.set(r.qui, (lateBy.get(r.qui) || 0) + 1);
-    for (const t of vault.list('taches').filter((t) => !t.recur && (t.statut === 'fait' || t.fini) && t.intervenantId && rptOk(t, c))) {
-      const d = jobDay(t); if (!inPer(d, c)) continue;
-      const o = by.get(t.intervenantId) || { n: 0, h: 0, nettoyage: 0, reparation: 0, gros: 0, autre: 0 };
-      o.n++; o.h += jobTimes(t, d).h; o[TACHE_TYPES[t.type] ? t.type : 'autre']++; by.set(t.intervenantId, o);
-    }
-    return vault.list('intervenants').filter((i) => c.genre.includes(i.genre || 'interne') && (!c.persons || c.persons.includes(i.id)) && (!i.archive || by.has(i.id))).map((i) => {
-      const o = by.get(i.id) || { n: 0, h: 0, nettoyage: 0, reparation: 0, gros: 0, autre: 0 };
-      return { qui: intervFull(i), cat: RPT_WHO[i.genre || 'interne'], metier: METIERS[i.metier] || '', ...o, h: Math.round(o.h * 100) / 100, late: lateBy.get(intervFull(i)) || 0 };
-    }).sort((a, b) => b.h - a.h || b.n - a.n || a.qui.localeCompare(b.qui));
-  }
   if (c.src === 'retards') return rptRetards(c);
-  // totaux de la période
-  const T = vault.list('taches').filter((t) => !t.recur && rptOk(t, c)), all = !c.persons && !c.orgs && !c.lieux;
-  const done = T.filter((t) => (t.statut === 'fait' || t.fini) && inPer(jobDay(t), c)), cnt = (k) => done.filter((t) => (TACHE_TYPES[t.type] ? t.type : 'autre') === k).length;
-  const R = rptRetards({ ...c, late: Object.keys(RPT_LATE) }), rc = (k) => R.filter((r) => r.type === RPT_LATE[k]);
-  const dv = vault.list('devis').filter((v) => inPer(v.date || '', c));
-  return [
-    ['Travaux terminés (total)', done.length], ['Dépannages / réparations', cnt('reparation')], ['Nettoyages', cnt('nettoyage')], ['Gros travaux', cnt('gros')], ['Autres travaux', cnt('autre')],
-    ['Demandes des gérances traitées', done.filter((t) => t.ptl).length], ['Interventions urgentes', done.filter((t) => t.urgent).length],
-    ['Heures réelles (total)', Math.round(done.reduce((n, t) => n + jobTimes(t, jobDay(t)).h, 0) * 100) / 100],
-    ...Object.entries(done.reduce((m, t) => { const q = jobQty(t, jobDay(t)); if (q.qte) { const u = (q.qu || 'pièces').toLowerCase(); m[u] = Math.round(((m[u] || 0) + q.qte) * 100) / 100; } return m; }, {})).sort().map(([u, n]) => [`Quantité faite — ${u}`, n]),
-    ...(!all ? [] : [['Loyers impayés (mois)', rc('loyer').length], ['Loyers impayés (€)', Math.round(rc('loyer').reduce((n, r) => n + (+r.montant || 0), 0) * 100) / 100]]),
-    ['Travaux pas finis en retard', rc('topen').length], ['Travaux finis après la date prévue', rc('tfin').length], ['Arrivées en retard', rc('arr').length],
-    ['Factures en retard', rc('fact').length], ['Factures en retard (€)', Math.round(rc('fact').reduce((n, r) => n + (+r.montant || 0), 0) * 100) / 100],
-    ...(!all ? [] : [['Devis émis', dv.length], ['Devis acceptés', dv.filter((v) => v.st === 'accepte' || v.acc).length]]),
-  ].map(([ind, val]) => ({ ind, val }));
+  // totaux de la période : loyers impayés
+  const rc = rptRetards({ ...c, late: ['loyer'] });
+  return [['Loyers impayés (mois)', rc.length], ['Loyers impayés (€)', Math.round(rc.reduce((n, r) => n + (+r.montant || 0), 0) * 100) / 100]].map(([ind, val]) => ({ ind, val }));
 }
 const rptVal = (v) => (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v.split('-').reverse().join('/') : v ?? '');
 const rptTable = (c) => { const cols = rptCols(c), L = Object.fromEntries(RPT_SRC[c.src][1]); const rows = rptRows(c); return { head: cols.map((k) => L[k]), rows: rows.map((r) => cols.map((k) => rptVal(r[k]))), n: rows.length }; };
 const rptTitle = (c) => `${RPT_SRC[c.src][0].replace(/^\S+\s/, '')}${c.src === 'contacts' ? '' : ` ${fmtDate(c.from)} – ${fmtDate(c.to)}`}`;
 const rptChk = (k, v, on, label) => html`<label class="chip" style="cursor:pointer"><input type="checkbox" data-input="rpt-arr" data-k="${k}" value="${v}" ${on ? new Raw('checked') : ''} class="rpt-cb">${label}</label>`;
-// ── Graphiques (SVG, s'impriment) : chiffres clés, types, mois, personnes, ponctualité, avis des clients ──
-const VZ = { s: ['#2a78d6', '#eb6834', '#1baf7a', '#eda100'], good: '#0ca30c', bad: '#d03b3b', blue: '#2a78d6', sat: ['#d03b3b', '#ec835a', '#86b6ef', '#2a78d6'] };
-function rptChartData(c) {
-  const T = vault.list('taches').filter((t) => !t.recur && rptOk(t, c));
-  const done = T.filter((t) => (t.statut === 'fait' || t.fini) && inPer(jobDay(t), c));
-  const types = Object.keys(TACHE_TYPES).map((k) => [TACHE_TYPES[k].replace(/^\S+\s/, ''), done.filter((t) => (TACHE_TYPES[t.type] ? t.type : 'autre') === k).length]);
-  const months = new Map();
-  for (const t of done) { const m = jobDay(t).slice(0, 7); months.set(m, (months.get(m) || 0) + 1); }
-  const mList = []; for (let d = new Date(c.from.slice(0, 7) + '-01T12:00:00'), end = c.to.slice(0, 7); ; d.setMonth(d.getMonth() + 1)) { const m = d.toISOString().slice(0, 7); if (m > end || mList.length > 36) break; mList.push(m); }
-  const byP = new Map();
-  for (const t of done) { const k = t.intervenantId || ''; const o = byP.get(k) || { n: 0, h: 0 }; o.n++; o.h += jobTimes(t, jobDay(t)).h; byP.set(k, o); }
-  const onTime = done.filter((t) => !t.date || jobDay(t) <= t.date).length;
-  let arrOk = 0, arrLate = 0;
-  for (const t of T) if (t.heure) for (const x of (t.journal || []).filter((x) => x.st === 'encours' && inPer(x.d, c))) { const h = x.h || (x.at || '').slice(11, 16); if (h) (hm(h) > hm(t.heure) ? arrLate++ : arrOk++); }
-  const ev = []; for (const i of vault.list('intervenants')) if (!c.persons || c.persons.includes(i.id)) for (const e of i.evals || []) if (inPer(e.d, c) && e.v >= 1 && e.v <= 4) ev.push(e.v);
-  return { n: done.length, h: Math.round(done.reduce((n, t) => n + jobTimes(t, jobDay(t)).h, 0) * 10) / 10, types,
-    months: (mList.length > 24 ? mList.slice(-24) : mList).map((m) => [m, months.get(m) || 0]),
-    persons: [...byP].map(([k, o]) => [k ? intervName(k) || '?' : 'Sans personne', o.n, Math.round(o.h * 10) / 10]).sort((a, b) => b[1] - a[1]).slice(0, 12),
-    fin: [onTime, done.length - onTime], arr: [arrOk, arrLate], ev: [1, 2, 3, 4].map((v) => ev.filter((x) => x === v).length) };
-}
-const svgDonut = (parts) => {
-  const tot = parts.reduce((n, p) => n + p[1], 0); if (!tot) return '';
-  let a = -Math.PI / 2; const R = 60, r = 36, cx = 70, cy = 70;
-  const arcs = parts.map(([l, v], i) => { if (!v) return ''; const b = a + (v / tot) * Math.PI * 2 - (v < tot ? 0.03 : 0); const big = b - a > Math.PI ? 1 : 0;
-    const P = (ang, rad) => `${(cx + rad * Math.cos(ang)).toFixed(2)} ${(cy + rad * Math.sin(ang)).toFixed(2)}`;
-    const d = v === tot ? `M ${P(-Math.PI / 2, R)} A ${R} ${R} 0 1 1 ${P(Math.PI * 1.4999, R)} L ${P(Math.PI * 1.4999, r)} A ${r} ${r} 0 1 0 ${P(-Math.PI / 2, r)} Z` : `M ${P(a, R)} A ${R} ${R} 0 ${big} 1 ${P(b, R)} L ${P(b, r)} A ${r} ${r} 0 ${big} 0 ${P(a, r)} Z`;
-    a = b + (v < tot ? 0.03 : 0); return `<path d="${d}" fill="${VZ.s[i % 4]}"><title>${esc(l)} : ${v} (${pct(v, tot)} %)</title></path>`; }).join('');
-  return `<svg viewBox="0 0 140 140" width="140" height="140" role="img" aria-label="Répartition">${arcs}<text x="70" y="76" text-anchor="middle" font-size="18" font-weight="700" fill="currentColor">${tot}</text></svg>`;
-};
-const svgBars = (rows, color, unit = '') => {
-  const max = Math.max(1, ...rows.map((r) => r[1])), W = Math.max(rows.length * 34, 200), H = 150;
-  return `<svg viewBox="0 0 ${W} ${H + 34}" width="100%" style="max-width:${W}px" role="img">${rows.map(([l, v], i) => { const h = Math.round((v / max) * H), x = i * 34 + 6;
-    return `<g><title>${esc(l)} : ${v}${unit}</title><rect x="${x}" y="${H - h + 4}" width="22" height="${Math.max(h, v ? 2 : 0)}" rx="4" fill="${color}"/>${v ? `<text x="${x + 11}" y="${H - h}" text-anchor="middle" font-size="10" fill="currentColor">${v}</text>` : ''}<text x="${x + 11}" y="${H + 20}" text-anchor="middle" font-size="9" fill="currentColor" opacity=".7">${esc(l)}</text></g>`; }).join('')}<line x1="0" x2="${W}" y1="${H + 4}" y2="${H + 4}" stroke="currentColor" opacity=".25"/></svg>`;
-};
-const hBars = (rows) => { const max = Math.max(1, ...rows.map((r) => r[1])); return rows.map(([l, n, h]) => `<div class="vz-hb"><span class="vz-hl">${esc(l)}</span><span class="vz-ht"><i style="width:${Math.max(2, (n / max) * 100)}%;background:${VZ.blue}"></i></span><span class="vz-hv">${n} · ${String(h).replace('.', ',')} h</span></div>`).join(''); };
-const stack = (parts) => { const tot = parts.reduce((n, p) => n + p[1], 0); if (!tot) return '<p class="tiny muted">—</p>'; return `<div class="vz-stack">${parts.map(([l, v, col]) => (v ? `<i style="flex:${v};background:${col}" title="${esc(l)} : ${v} (${pct(v, tot)} %)"></i>` : '')).join('')}</div><div class="vz-leg">${parts.map(([l, v, col]) => `<span><i style="background:${col}"></i>${esc(l)} : <b>${v}</b> (${pct(v, tot)} %)</span>`).join('')}</div>`; };
-function rptChartsHtml(d) {
-  const evN = d.ev.reduce((a, b) => a + b, 0), sat = pct(d.ev[2] + d.ev[3], evN), arrN = d.arr[0] + d.arr[1];
-  const tiles = [['Travaux finis', d.n], ['Heures réelles', String(d.h).replace('.', ',')], ['Arrivées à l’heure', arrN ? pct(d.arr[0], arrN) + ' %' : '—'], ['Clients satisfaits', evN ? sat + ' %' : '—']];
-  return new Raw(`<div class="vz">
-    <div class="vz-tiles">${tiles.map(([l, v]) => `<div class="vz-tile"><div class="vz-tv">${v}</div><div class="vz-tl">${l}</div></div>`).join('')}</div>
-    <div class="vz-grid">
-      <div class="vz-card"><h4>Travaux par type</h4><div class="vz-donut">${svgDonut(d.types) || '<p class="tiny muted">—</p>'}<div class="vz-leg col">${d.types.map(([l, v], i) => `<span><i style="background:${VZ.s[i]}"></i>${l} : <b>${v}</b> (${pct(v, d.n)} %)</span>`).join('')}</div></div></div>
-      <div class="vz-card"><h4>Travaux finis par mois</h4>${svgBars(d.months.map(([m, v]) => [m.slice(5) + '/' + m.slice(2, 4), v]), VZ.blue)}</div>
-      <div class="vz-card"><h4>Par personne (travaux · heures)</h4>${d.persons.length ? hBars(d.persons) : '<p class="tiny muted">—</p>'}</div>
-      <div class="vz-card"><h4>Ponctualité</h4><p class="tiny" style="margin:0 0 4px">Fin des travaux</p>${stack([['✅ À temps', d.fin[0], VZ.good], ['⏰ En retard', d.fin[1], VZ.bad]])}<p class="tiny" style="margin:10px 0 4px">Arrivée de l’ouvrier</p>${stack([['✅ À l’heure', d.arr[0], VZ.good], ['⏰ En retard', d.arr[1], VZ.bad]])}</div>
-      <div class="vz-card"><h4>Avis des clients (locataires)</h4>${stack([1, 2, 3, 4].map((v, i) => [MEN_EVAL[v], d.ev[i], VZ.sat[i]]))}<p class="tiny muted" style="margin:6px 0 0">${evN} avis${evN ? ' · moyenne ' + (d.ev.reduce((n, x, i) => n + x * (i + 1), 0) / evN).toFixed(1).replace('.', ',') + ' / 4' : ''}</p></div>
-    </div></div>`);
-}
 function rptView() {
   const c = rptCfg(), L = RPT_SRC[c.src], cols = rptCols(c), tb = rptTable(c);
   const saved = ((vault.get('reglages', 'rapports') || {}).list) || [];
-  const pd = rptPickData();
-  const persSel = html`<div class="rpt-picks">${rptPick('persons', '👷 Personnes', pd.persons, c.persons)}${c.src === 'heures' ? '' : html`${rptPick('orgs', '🏢 Sociétés (gérances)', pd.orgs, c.orgs)}${rptPick('lieux', '📍 Lieux', pd.lieux, c.lieux)}`}</div>`;
   const y = +today().slice(0, 4), m = today().slice(0, 7);
   const per = c.src === 'contacts' ? '' : html`<div class="fields" style="margin-bottom:6px">
       <label class="field">Du<input type="date" data-input="rpt" data-k="from" value="${c.from}"></label><label class="field">Au<input type="date" data-input="rpt" data-k="to" value="${c.to}"></label></div>
     <div class="chips" style="margin-bottom:10px">${[['Ce mois', m + '-01', today()], ['Cette année', y + '-01-01', today()], ['Année ' + (y - 1), (y - 1) + '-01-01', (y - 1) + '-12-31'], ['Depuis le début', '2000-01-01', today()]].map(([l, f, t]) => html`<button class="chip" data-action="rpt-per" data-f="${f}" data-t="${t}" aria-pressed="${c.from === f && c.to === t}">${l}</button>`)}</div>`;
   const filters = c.src === 'contacts' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(RPT_WHO).map(([k, l]) => rptChk('who', k, c.who.includes(k), l))}</div>
-      <div class="chips">${rptChk('withMail', '1', c.withMail, 'Seulement avec email')}${rptChk('withTel', '1', c.withTel, 'Seulement avec téléphone')}</div>
-      ${c.who.includes('ger') && !(ui.ptl.data && ui.ptl.data.orgs) ? html`<p class="tiny muted" style="margin:6px 0 0">Gérances : ouvrez une fois la page Gérances pour charger leurs coordonnées.</p>` : ''}`
-    : c.src === 'travaux' ? html`<div class="fields">
-        <label class="field">Type<select data-input="rpt" data-k="ttype"><option value="">Tous</option>${Object.entries(TACHE_TYPES).map(([k, l]) => html`<option value="${k}" ${c.ttype === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
-        <label class="field">Statut<select data-input="rpt" data-k="tstat"><option value="">Tous</option>${[...Object.entries(STATUTS), ['fini', 'Fini par l’ouvrier']].map(([k, l]) => html`<option value="${k}" ${c.tstat === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
-        <label class="field">Où / quoi contient<input type="search" data-input="rpt" data-k="q" value="${c.q || ''}" placeholder="ex. rue de Hollerich"></label></div>${persSel}`
-    : c.src === 'heures' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(INT_GENRES).map(([k]) => rptChk('genre', k, c.genre.includes(k), RPT_WHO[k]))}</div>${persSel}`
-    : c.src === 'retards' ? html`<div class="chips" style="margin-bottom:8px">${Object.entries(RPT_LATE).map(([k, l]) => rptChk('late', k, c.late.includes(k), l))}</div>${persSel}`
-    : persSel;
+      <div class="chips">${rptChk('withMail', '1', c.withMail, 'Seulement avec email')}${rptChk('withTel', '1', c.withTel, 'Seulement avec téléphone')}</div>`
+    : '';
   return html`<button class="btn sm ghost" style="margin-bottom:8px" data-action="rpt-back">← Statistiques</button>${pageHead('🖨️ Statistiques sur mesure', 'Statistiques : choisissez quoi, filtrez, cochez les colonnes, puis Excel ou PDF.')}
     <div class="chips" style="margin-bottom:12px">${Object.entries(RPT_SRC).map(([k, [l]]) => html`<button class="chip" data-action="rpt-src" data-id="${k}" aria-pressed="${c.src === k}">${l}</button>`)}</div>
     ${saved.length ? html`<div class="section-label">⭐ Mes listes</div><div class="chips" style="margin-bottom:12px">${saved.map((s) => html`<span class="chip" style="display:inline-flex;gap:6px;align-items:center"><button style="border:0;background:none;font:inherit;color:inherit;cursor:pointer;padding:0" data-action="rpt-load" data-id="${s.id}">${s.nom}</button><button style="border:0;background:none;cursor:pointer;padding:0" data-action="rpt-del" data-id="${s.id}" aria-label="Supprimer">✕</button></span>`)}</div>` : ''}
@@ -4373,9 +2529,7 @@ function rptView() {
       <button class="btn" data-action="rpt-print" ${tb.n && cols.length ? '' : new Raw('disabled')}>🖨️ Imprimer / PDF</button>
       <span class="rpt-save"><input id="rptName" placeholder="Nom de la liste (ex. Téléphones collaborateurs)" style="min-width:220px"><button class="btn" data-action="rpt-save">💾 Enregistrer dans Mes listes</button></span></div>
     <div class="section-label">Aperçu — lignes : ${tb.n}</div>
-    ${tb.n && cols.length ? html`<div style="overflow-x:auto"><table class="tbl rpt-tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.slice(0, 300).map((r) => html`<tr>${r.map((v) => html`<td>${v}</td>`)}</tr>`)}</tbody></table></div>${tb.n > 300 ? html`<p class="tiny muted">Aperçu limité à 300 lignes ; l’export contient tout.</p>` : ''}` : html`<p class="muted">Rien avec ces filtres.</p>`}
-    ${c.src === 'contacts' ? '' : html`<div class="section-label" style="margin-top:22px">📊 Graphiques</div>${rptChartsHtml(rptChartData(c))}
-      <button class="btn primary" style="margin-top:8px" data-action="rpt-dir">🖨️ Rapport direction (PDF)</button>`}`;
+    ${tb.n && cols.length ? html`<div style="overflow-x:auto"><table class="tbl rpt-tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.slice(0, 300).map((r) => html`<tr>${r.map((v) => html`<td>${v}</td>`)}</tr>`)}</tbody></table></div>${tb.n > 300 ? html`<p class="tiny muted">Aperçu limité à 300 lignes ; l’export contient tout.</p>` : ''}` : html`<p class="muted">Rien avec ces filtres.</p>`}`;
 }
 
 const VIEWS = {
@@ -4411,7 +2565,7 @@ const VIEWS = {
     const alertBtn = (cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`;
 
     if (!imms.length && !locs.length) {
-      return html`${cguBox()}${packBox()}${domierCentral()}${pushNudge()}${centralinoHtml()}${html`${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
+      return html`${pushNudge()}${centralinoHtml()}${html`${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`}`;
     }
 
@@ -4419,18 +2573,12 @@ const VIEWS = {
     const sig = newSignals();
     const sigBox = sig.length ? html`<div class="card mk mk-int mk-on" style="margin-bottom:14px">
         <div class="card-title" style="margin-bottom:8px"><h3>📩 <span>${sig.length > 1 ? sig.length + " nouveaux messages" : "1 nouveau message"}${sig.every((t) => !t.byInterv) ? (sig.length > 1 ? ' de locataires' : ' de locataire') : ''}</span></h3></div>
-        <div class="stack">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = t.byInterv ? vault.get('intervenants', t.byInterv) : null; const n = signalPhotos(t); return alertBtn('bad', 'msg', 'open-signal', t.id, html`<b>${w ? '👷 ' + intervFull(w) : fullName(l)}</b> · ${logName(l.logId) || immName(t.immId)} — ${t.titre.replace(/^Signalement : /, '').replace(/^Problème signalé par [^:]+ : /, '⚠️ ')}<div class="tiny">${fmtDateTime(t.sentAt)}${n ? ` · 📷 ${n} photo${n > 1 ? 's' : ''}` : ''} · touchez pour lire</div>`); })}</div>
+        <div class="stack">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = null; const n = signalPhotos(t); return alertBtn('bad', 'msg', 'open-signal', t.id, html`<b>${fullName(l)}</b> · ${logName(l.logId) || immName(t.immId)} — ${t.titre.replace(/^Signalement : /, '').replace(/^Problème signalé par [^:]+ : /, '⚠️ ')}<div class="tiny">${fmtDateTime(t.sentAt)}${n ? ` · 📷 ${n} photo${n > 1 ? 's' : ''}` : ''} · touchez pour lire</div>`); })}</div>
       </div>` : '';
     const virs = vault.list('locataires').filter((l) => l.virSignal && !l.virSignal.vu);
     const edlNew = [...new Set(edlOutNew().map((d) => d.logId))].filter((id) => vault.get('logements', id));
     const edlBox = edlNew.length ? html`<div class="stack" style="margin-bottom:14px">${edlNew.map((id) => { const ph = edlOutNew().filter((d) => d.logId === id), w = vault.get('locataires', ph[0].locId); return alertBtn('info', 'camera', 'open-edl-out', id, html`📷 <b>${plural(ph.length, 'photo')} de sortie</b> à contrôler — ${logName(id)}${w ? ' · ' + fullName(w) : ''}<div class="tiny">touchez pour comparer avec vos photos d’entrée</div>`); })}</div>` : '';
     const virBox = virs.length ? html`<div class="stack" style="margin-bottom:14px">${virs.map((l) => alertBtn('info', 'wallet', 'open-vir', l.id, html`💳 <b>${fullName(l)}</b> dit avoir payé${l.virSignal.montant ? html` <b>${money(l.virSignal.montant)}</b>` : ''} par ${PAY_VIA[l.virSignal.via || 'vir']} — ${l.virSignal.ref}<div class="tiny">${fmtDateTime(l.virSignal.t)} · vérifiez la réception, puis cochez le mois payé</div>`))}</div>` : '';
-    const eqNew = sum(vault.list('intervenants'), (i) => i.feedNew || 0);
-    const nClaims = [];
-    const nClaimBox = nClaims.length ? html`<div class="stack" style="margin-bottom:14px">${nClaims.map((f) => alertBtn('info', 'wallet', 'net-open', f.tid, html`💳 <b>${f.nom}</b> dit avoir payé la facture <b>${f.no}</b> (${eur(f.ttc)})<div class="tiny">vérifiez sur le compte, puis « ✅ Reçu » dans sa fiche</div>`))}</div>` : '';
-    // ⏳ clients du réseau dont l'accès (abonnement ou 6 mois offerts) se termine dans 30 jours : c'est le moment d'appeler
-    const netSoon = [];
-    const netStopBox = "";
     const bailBox = (() => {
       const al = imms0().map((im) => [im, bailAlert(im)]).filter(([, a]) => a).sort((x, y) => x[1].left - y[1].left);
       const revB = imms0().filter((im) => isBailPrincipal(im) && im.bailRev && daysUntil(im.bailRev) >= -15 && daysUntil(im.bailRev) <= 60);
@@ -4441,44 +2589,20 @@ const VIEWS = {
         ${revB.map((im) => alertBtn('info', 'chart', 'edit-imm', im.id, html`🔄 <b>${im.adresse}</b> : révision du loyer au bailleur le <b>${fmtDate(im.bailRev)}</b> (${plural(Math.max(0, daysUntil(im.bailRev)), 'jour')})<div class="tiny">Loyer actuel ${money(ownerRent(im))} / mois · mettez le nouveau loyer dans la fiche : la rentabilité se recalcule</div>`))}
         ${lose.map(([im, r]) => alertBtn('bad', 'alert', 'bail-open', im.id, html`🔴 <b>${im.adresse}</b> : perd <b>${money(-r.net)} / mois</b><div class="tiny">${rentaLine(r)}${r.vides ? html` · <span>${r.vides} logement(s) vide(s)</span>` : ''}</div>`))}</div>`;
     })();
-    const netSoonBox = netSoon.length ? html`<div class="stack" style="margin-bottom:14px">${netSoon.map((t) => alertBtn('warn', 'calendar', 'net-open', t.id, html`⏳ <b>${t.nom}</b> : accès jusqu’au ${fmtDate(t.until)}${(vault.list('reglages').find((f) => f.id.startsWith('licfac-') && f.tid === t.id && f.au === t.until) || {}).gift ? ' (🎁 6 mois offerts)' : ''}<div class="tiny">bon moment pour proposer l’abonnement</div>`))}</div>` : '';
-    const eqBox = eqNew ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('info', 'users', 'eq-feed', '', html`👷 <b>${eqNew} nouvelle${eqNew > 1 ? 's' : ''} de l’équipe</b> (commencé, fini, pas fini, notes, photos…)<div class="tiny">touchez pour voir qui fait quoi, où et quand</div>`)}</div>` : '';
-    const assurTodo = vault.list('intervenants').filter((i) => i.genre === 'prive' && i.assurTodo && !i.archive);
-    const assurBox = assurTodo.length ? html`<div class="stack" style="margin-bottom:14px">${assurTodo.map((i) => alertBtn('warn', 'alert', 'open-interv', i.id, html`🛡️ <b>Assurance RC à faire</b> : ${intervFull(i)} (occasionnel) n’a pas encore donné son assurance<div class="tiny">rappel affiché dans son app · touchez pour ouvrir sa fiche</div>`))}</div>` : '';
-    const absNow = vault.list('intervenants').map((i) => [i, absOn(i, today())]).filter(([, a]) => a);
-    const absSoon = vault.list('intervenants').map((i) => [i, (i.absences || []).find((a) => a.debut > today() && a.debut <= addDays(today(), 7))]).filter(([, a]) => a);
-    const absBox = absNow.length || absSoon.length ? html`<div class="stack" style="margin-bottom:14px">${absNow.map(([i, a]) => { const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length; return alertBtn(a.type === 'maladie' ? 'bad' : 'warn', 'calendar', 'open-interv', i.id, html`${ABS_TYPES[a.type]} : <b>${intervFull(i)}</b> absent${a.fin ? ' jusqu’au ' + fmtDate(a.fin) : ' (fin non connue)'}${n ? html` — <b>${plural(n, 'intervention')}</b> à vérifier` : ''}<div class="tiny">touchez pour la fiche</div>`); })}
-      ${absSoon.map(([i, a]) => alertBtn('info', 'calendar', 'open-interv', i.id, html`${ABS_TYPES[a.type]} prévu : <b>${intervFull(i)}</b> du ${fmtDate(a.debut)}${a.fin ? ' au ' + fmtDate(a.fin) : ''}`))}</div>` : '';
-    const toolsBox = ui.toolsPending ? html`<div class="stack" style="margin-bottom:14px">${alertBtn('warn', 'check', 'open-tools', '', html`🧰 <b>${ui.toolsPending} annonce${ui.toolsPending > 1 ? 's' : ''} à approuver</b> (don · prêt · location)<div class="tiny">touchez pour voir et approuver</div>`)}</div>` : '';
-    // travaux finis par l'équipe, en attente de clôture par le bureau
-    const fins = vault.list('taches').filter((t) => t.fini && !t.recur && t.statut !== 'fait').sort((a, b) => (a.fini.d + a.fini.h).localeCompare(b.fini.d + b.fini.h));
-    const finBox = fins.length ? html`<div class="section-label" style="margin-top:0">🟢 ${plural(fins.length, 'chantier')} fini${fins.length > 1 ? 's' : ''} par l’équipe — à clôturer</div><div class="list fin-list" style="margin-bottom:14px">${fins.map((t) => tacheRow(t))}</div>` : '';
-    // ✋ travaux refusés par l'ouvrier (malade, pas disponible…) : à donner à quelqu'un d'autre
-    const refs = vault.list('taches').filter((t) => (t.refus || (t.taxi && t.taxi.st === 'none')) && !t.intervenantId && !t.recur && t.statut !== 'fait').sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
-    const refBox = refs.length ? html`<div class="section-label" style="margin-top:0;color:var(--bad,#c0392b)">✋ ${refs.length} ${refs.length > 1 ? 'travaux' : 'travail'} refusé${refs.length > 1 ? 's' : ''} par l’ouvrier — à réaffecter</div><div class="list ref-list" style="margin-bottom:14px">${refs.map((t) => html`<div>${tacheRow(t)}<div class="tiny" style="padding:2px 12px 8px">${t.taxi && t.taxi.st === 'none' ? html`🚕 ${taxiLog(t)}` : html`✋ ${intervName(t.refus.by)} · ${fmtDateTime(t.refus.at)}${t.refus.note ? ' — ' + t.refus.note : ''}`}</div></div>`)}</div>` : '';
     const appsVer = (() => { try { return localStorage.getItem('aresAppsVer') || ''; } catch { return 'x'; } })(), verMM = VERSION.split('.').slice(0, 2).join('.');
     const appsBox = appsVer !== verMM && vault.list('locataires').some((x) => x.espace && x.espace.on) ? html`<div class="alert info" style="margin-bottom:14px;align-items:center">🆕<div style="flex:1"><b>Mise à jour importante (v${verMM})</b> : mettez à jour ${"les apps des locataires"} pour qu’elles reçoivent les nouveautés.</div><button class="btn sm primary" data-action="apps-refresh-all">🔄 Tout mettre à jour</button></div>` : '';
     return html`
-      ${cguBox()}
-      ${packBox()}
-      ${domierCentral()}
+      
       ${pushNudge()}
       ${bailBox}
       ${appsBox}
       
       ${nudge}
-      ${devBanner()}
-      ${refBox}
-      ${assurBox}
-      ${finBox}
       ${sigBox}
       ${centralinoHtml()}
       
       ${virBox}
       ${edlBox}
-      ${nClaimBox}${netSoonBox}${netStopBox}${eqBox}
-      ${absBox}
-      ${toolsBox}
       ${imms.length || locs.length ? html`      ${pageHead(MONTHS_FULL[m - 1] + ' ' + y, `${plural(locs.length, 'locataire')} · ${plural(imms.length, 'immeuble')}${logs.length ? ' · ' + plural(logs.length, 'logement') : ''}`)}
       <div class="metrics">
         <div class="metric hero">
@@ -4505,18 +2629,17 @@ const VIEWS = {
         ${!parts.length ? html`<p class="tiny muted" style="margin-top:8px"><a href="#" data-action="open-societe">Ajouter les associés</a> pour voir la part de chacun.</p>` : ''}
         <button class="btn sm ghost" style="margin-top:8px" data-action="open-frais">${icon('edit')} Frais fixes</button>`, 'margin-top:10px')}` : ''}
 
-      ${mtCard()}
-      ${late.length || expiring.length || leaving.length || arriving.length || vacants.length || revisions.length || outside.length || depMissing().length ? html`<div class="section-label">À surveiller</div><div class="stack">
-        ${depMissing().length ? alertBtn('warn', 'wallet', 'dep-catchup', '', html`<b>${plural(depMissing().length, 'intervention')} terminée${depMissing().length > 1 ? 's' : ''} avec un coût</b> pas encore dans les dépenses (${money(sum(depMissing(), (t) => t.cout))}) — touchez pour vérifier et ajouter`) : ''}
+      ${late.length || expiring.length || leaving.length || arriving.length || vacants.length || revisions.length || outside.length ? html`<div class="section-label">À surveiller</div><div class="stack">
+        
         ${outside.map((l) => alertBtn('warn', 'calendar', 'fix-dates', l.id, html`<b>${fullName(l)}</b> — ${plural(outsidePays(l).length, 'loyer')} payé${outsidePays(l).length > 1 ? 's' : ''} hors des dates du contrat : touchez pour corriger`))}
-        ${late.slice(0, 6).map(({ l, months }) => alertBtn(months.length >= 2 ? 'bad' : 'warn', 'alert', 'open-loc', l.id, html`<b>${fullName(l)}</b> — ${months.length} mois impayé${months.length > 1 ? 's' : ''} (${months.map((x) => MONTHS[x - 1]).join(', ')})`))}
-        ${leaving.map((l) => alertBtn('warn', 'calendar', 'open-loc', l.id, html`<b>${fullName(l)}</b> quitte ${logName(l.logId) || 'le logement'} le ${fmtDate(l.sortie)}`))}
-        ${[...new Set(recusAll().map((d) => d.locId))].map((lid) => { const l = vault.get('locataires', lid), n = recusAll().filter((d) => d.locId === lid).length; return alertBtn('info', 'file', 'open-loc-docs', lid, html`📥 <b>${fullName(l)}</b> a envoyé ${plural(n, 'document')} — à vérifier<div class="tiny">touchez pour voir, accepter ou refuser</div>`); })}
-        ${arriving.map((l) => alertBtn('info', 'users', 'open-loc', l.id, html`<b>${fullName(l)}</b> arrive dans ${logName(l.logId) || immName(l.immId)} le ${fmtDate(l.debut)}`))}
-        ${expiring.map(({ l, d }) => alertBtn('warn', 'calendar', 'renew', l.id, html`<b>${fullName(l)}</b> — fin de contrat ${d === 0 ? "aujourd'hui" : `dans ${plural(d, 'jour')}`} (${fmtDate(l.fin)}). Toucher pour prolonger.`))}
-        ${revisions.map((l) => alertBtn('info', 'chart', 'index', l.id, html`<b>${fullName(l)}</b> — révision du loyer ${daysUntil(l.revision) < 0 ? 'prévue depuis le' : 'prévue le'} ${fmtDate(l.revision)} (${money(l.loyer)}). Toucher pour réviser.`))}
-        ${vacants.slice(0, 6).map((g) => alertBtn('info', 'home', 'open-log', g.id, html`<b>${logLabel(g)}</b> (${immName(g.immId)}) est vacant`))}
-      </div>` : ''}
+    ${late.slice(0, 6).map(({ l, months }) => alertBtn(months.length >= 2 ? 'bad' : 'warn', 'alert', 'open-loc', l.id, html`<b>${fullName(l)}</b> — ${months.length} mois impayé${months.length > 1 ? 's' : ''} (${months.map((x) => MONTHS[x - 1]).join(', ')})`))}
+    ${leaving.map((l) => alertBtn('warn', 'calendar', 'open-loc', l.id, html`<b>${fullName(l)}</b> quitte ${logName(l.logId) || 'le logement'} le ${fmtDate(l.sortie)}`))}
+    ${[...new Set(recusAll().map((d) => d.locId))].map((lid) => { const l = vault.get('locataires', lid), n = recusAll().filter((d) => d.locId === lid).length; return alertBtn('info', 'file', 'open-loc-docs', lid, html`📥 <b>${fullName(l)}</b> a envoyé ${plural(n, 'document')} — à vérifier<div class="tiny">touchez pour voir, accepter ou refuser</div>`); })}
+    ${arriving.map((l) => alertBtn('info', 'users', 'open-loc', l.id, html`<b>${fullName(l)}</b> arrive dans ${logName(l.logId) || immName(l.immId)} le ${fmtDate(l.debut)}`))}
+    ${expiring.map(({ l, d }) => alertBtn('warn', 'calendar', 'renew', l.id, html`<b>${fullName(l)}</b> — fin de contrat ${d === 0 ? "aujourd'hui" : `dans ${plural(d, 'jour')}`} (${fmtDate(l.fin)}). Toucher pour prolonger.`))}
+    ${revisions.map((l) => alertBtn('info', 'chart', 'index', l.id, html`<b>${fullName(l)}</b> — révision du loyer ${daysUntil(l.revision) < 0 ? 'prévue depuis le' : 'prévue le'} ${fmtDate(l.revision)} (${money(l.loyer)}). Toucher pour réviser.`))}
+    ${vacants.slice(0, 6).map((g) => alertBtn('info', 'home', 'open-log', g.id, html`<b>${logLabel(g)}</b> (${immName(g.immId)}) est vacant`))}
+  </div>` : ''}
 
       <div class="section-label">À encaisser — ${MONTHS_FULL[m - 1]}</div>
       ${todo.length ? html`<div class="list">${todo.map((l) => html`
@@ -4680,17 +2803,14 @@ const VIEWS = {
   },
 
   compta() {
-    const y = ui.year, tab = ui.cpTab || 'journal';
+    const y = ui.year, tab = ['journal', 'frais', 'export'].includes(ui.cpTab) ? ui.cpTab : 'journal';
     const per = ui.cpPer || (ui.cpPer = 'y');
     const soc = societe();
     // deux espaces séparés : Comptabilité (pour l'État) | Statistiques
     const sec = ui.cpSec || 'compta';
     const secTabs = html`<div class="tabs" role="tablist" style="max-width:640px;margin-bottom:16px">${[['compta', html`📒 <span class="tab-long">Comptabilité</span><span class="tab-short">Compta</span>`], ['stats', html`📊 <span class="tab-long">Statistiques</span><span class="tab-short">Stats</span>`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sec === k}" data-action="cp-sec" data-id="${k}">${l}</button>`)}</div>`;
-    // Abonnements : rubrique à part dans le menu, sans les onglets de la comptabilité
-    if (sec === 'abo') { const lf = licFacts(), yy = String(new Date().getFullYear()); return html`${pageHead('💳 Abonnements', 'Abonnements des gérances et annonces publicitaires vendues')}
-  ${aboSection()}`; }
-    if (sec === 'stats') return html`${secTabs}${pageHead('📊 Statistiques', 'Loyers, occupation, dépenses, interventions, devis')}${VIEWS.stats()}${devStatsHtml(ui.year)}`;
-    const tabs = html`<div class="tabs tabs-wrap" role="tablist" style="max-width:720px">${[['journal', 'Journal'], ['tva', 'TVA'], ['interv', '🔧 Interventions'], ['fact', '🧾 Factures'], ['frais', '💸 Frais fixes'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
+    if (sec === 'stats') return html`${secTabs}${pageHead('📊 Statistiques', 'Loyers, occupation, dépenses')}${VIEWS.stats()}`;
+    const tabs = html`<div class="tabs tabs-wrap" role="tablist" style="max-width:720px">${[['journal', 'Journal'], ['frais', '💸 Frais fixes'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
     if (tab === 'stats') ui.cpTab = 'journal';
     const perSel = html`<select data-input="cp-per" style="width:auto" aria-label="Période"><option value="y" ${per === 'y' ? new Raw('selected') : ''}>Toute l’année</option>${[1, 2, 3, 4].map((q) => html`<option value="q${q}" ${per === 'q' + q ? new Raw('selected') : ''}>Trimestre ${q}</option>`)}${MONTHS_FULL.map((mn, i) => html`<option value="m${i + 1}" ${per === 'm' + (i + 1) ? new Raw('selected') : ''}>${mn}</option>`)}</select>`;
     const [from, to] = cpRange(y, per);
@@ -4733,43 +2853,6 @@ const VIEWS = {
           </tbody></table></div>
           ${moreBtn(sorted.length, lim)}`;
         })()}`;
-    } else if (tab === 'tva') {
-      const perT = soc.periode || 't';
-      const periods = perT === 'm' ? MONTHS_FULL.map((_, i) => 'm' + (i + 1)) : perT === 'a' ? ['y'] : ['q1', 'q2', 'q3', 'q4'];
-      // TVA des factures d'interventions (ARES INVEST S.A. — LA CENTRAL) : pas de TVA sur les loyers
-      const inv = (a, b) => vault.list('taches').filter((t) => t.facture && t.facture.date >= a && t.facture.date <= b);
-      const c0 = factConf();
-      body = html`<p class="small muted" style="margin-top:0">TVA des <b>factures d’interventions</b> émises par ${c0.nom} (LA CENTRAL). Les loyers ne sont pas soumis à la TVA.</p>
-        <div class="card" style="padding:0;overflow:auto;margin-bottom:14px"><table class="tbl"><thead><tr><th>Période</th><th class="r">Factures</th><th class="r">HT</th><th class="r">TVA collectée</th><th class="r">TTC</th></tr></thead><tbody>
-          ${periods.map((pp) => { const [a, b] = cpRange(y, pp), F = inv(a, b); return html`<tr><td>${cpLabel(y, pp)}</td><td class="r">${F.length}</td><td class="r">${money(sum(F, (t) => t.facture.ht))}</td><td class="r"><b>${money(sum(F, (t) => t.facture.tva))}</b></td><td class="r">${money(sum(F, (t) => t.facture.ttc))}</td></tr>`; })}
-          ${(() => { const [a, b] = cpRange(y, 'y'), F = inv(a, b); return html`<tr class="cp-month"><td><b>Année ${y}</b></td><td class="r"><b>${F.length}</b></td><td class="r"><b>${money(sum(F, (t) => t.facture.ht))}</b></td><td class="r"><b>${money(sum(F, (t) => t.facture.tva))}</b></td><td class="r"><b>${money(sum(F, (t) => t.facture.ttc))}</b></td></tr>`; })()}
-        </tbody></table></div>
-        <p class="tiny muted">Taux normal : ${String(c0.taux).replace('.', ',')} % (Réglages → 🧾 Facturation) ; régime par client (autoliquidation, non applicable…) dans Gérances → la gérance → 🧾 Facturation. Détail facture par facture : onglet 🧾 Factures. Aide à la déclaration, à faire vérifier par votre comptable.</p>`;
-    } else if (tab === 'fact') {
-      const F = vault.list('taches').filter((t) => t.facture && t.facture.date >= from && t.facture.date <= to).sort((a, b) => b.facture.no.localeCompare(a.facture.no));
-      const todo = vault.list('taches').filter((t) => (t.ptl || (t.net && netPayMode(t.net.tid) === 'each')) && t.statut === 'fait' && !t.facture);
-      const c = factConf();
-      body = html`<div class="metrics" style="margin-bottom:14px">
-          <div class="metric"><div class="lbl">Factures</div><div class="val">${F.length}</div><div class="sub">${cpLabel(y, per)}</div></div>
-          <div class="metric"><div class="lbl">À encaisser</div><div class="val red">${eur(sum(F.filter((t) => !t.facture.paid), (t) => t.facture.ttc))}</div><div class="sub">${plural(F.filter((t) => !t.facture.paid).length, 'facture')}</div></div>
-          ${(() => { const C = vault.list('taches').filter((t) => t.facture && t.facture.cont && !t.facture.paid); return C.length ? html`<div class="metric cont-blink-box"><div class="lbl">⚠️ Contentieux</div><div class="val red">${eur(sum(C, (t) => t.facture.ttc))}</div><div class="sub">${plural(C.length, 'facture')} impayée${C.length > 1 ? 's' : ''} en litige</div></div>` : ''; })()}
-          <div class="metric hero"><div class="lbl">Facturé TTC</div><div class="val accent">${eur(sum(F, (t) => t.facture.ttc))}</div><div class="sub">HT ${eur(sum(F, (t) => t.facture.ht))} · TVA ${eur(sum(F, (t) => t.facture.tva))}</div></div></div>
-        <div class="toolbar" style="margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-action="cp-fact-csv">${icon('download')} Factures (Excel / CSV)</button><button class="btn ghost" data-action="fact-set">⚙️ Émetteur : ${c.nom}</button></div>
-        ${todo.length ? html`<div class="section-label">🟡 À facturer (${todo.length})</div><div class="list" style="margin-bottom:14px">${todo.map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : t.dom ? '🔧 ' + t.dom.nom : ''} · clôturée le ${fmtDate(t.doneDate || t.date)}</span></span><span class="badge warn">🧾 Faire la facture</span></button>`)}</div>` : ''}
-        ${F.length ? html`<div class="section-label">Factures émises</div><div class="list">${F.slice(0, ui.cpLim || 10).map((t) => html`<button class="row" data-action="fact-open" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.facture.no}</span><span class="meta">🏢 ${t.ptl ? t.ptl.org : ''} · ${fmtDate(t.facture.date)} · ${t.titre}</span></span><span style="text-align:right"><b>${eur(t.facture.ttc)}</b>${t.facture.cont && !t.facture.paid ? html`<span class="badge cont-blink" style="display:block">⚠️ CONTENTIEUX</span>` : html`<span class="tiny ${t.facture.paid ? '' : 'red'}" style="display:block">${t.facture.paid ? '✅ payée' : '⏳ à payer'}</span>`}</span></button>`)}</div>${moreBtn(F.length, ui.cpLim || 10)}` : html`<p class="muted">Aucune facture émise sur cette période.</p>`}`;
-    } else if (tab === 'interv') {
-      const L = intervLedger(from, to);
-      const hTot = sum(L, (x) => x.min) / 60, cTot = sum(L, (x) => x.cout || 0);
-      body = html`<div class="metrics" style="margin-bottom:14px">
-          <div class="metric"><div class="lbl">Interventions</div><div class="val">${L.length}</div><div class="sub">${cpLabel(y, per)}</div></div>
-          <div class="metric"><div class="lbl">Heures réelles</div><div class="val">${fmtH(hTot)}</div><div class="sub">arrivée → départ (app de l’équipe)</div></div>
-          <div class="metric hero"><div class="lbl">Montant</div><div class="val accent">${money(cTot)}</div><div class="sub">coûts indiqués sur les interventions</div></div></div>
-        <div class="toolbar" style="margin-bottom:10px"><button class="btn" data-action="cp-int-csv">${icon('download')} Interventions (Excel / CSV)</button></div>
-        ${L.length ? html`<div class="list">${L.slice(0, ui.cpLim || 10).map((x) => html`<button class="row" data-action="edit-tache" data-id="${x.t.id}"><span style="min-width:74px"><b>${dayShort(x.d)}</b><span class="meta" style="display:block">${x.arr ? `${x.arr}–${x.dep || '…'}` : '—'}</span></span>
-            <span class="grow"><span class="title" style="display:block;white-space:normal">${tacheIcon(x.t.type)} ${x.t.titre}${x.ger ? html` <span class="badge">🏢 ${x.ger}</span>` : ''}</span>
-              <span class="meta" style="white-space:normal">📍 ${x.lieu} · 👷 ${x.who || '—'}${x.min ? ' · 🕒 ' + fmtH(x.min / 60) : ''}${x.avis ? ' · ' + x.avis : ''}${x.state === 'fini' ? ' · ✅ à clôturer' : ''}</span></span>
-            <b>${x.cout ? money(x.cout) : ''}</b></button>`)}</div>${moreBtn(L.length, ui.cpLim || 10)}` : html`<p class="muted">Aucune intervention terminée sur cette période.</p>`}
-        <p class="tiny muted" style="margin-top:10px">Chaque ligne : où, quoi, qui, heures réelles (l’ouvrier note son arrivée et son départ), avis des locataires et coût. Les factures par intervention arrivent à l’étape suivante.</p>`;
     } else if (tab === 'frais') {
       // frais fixes (salaires, bureau, provisions…) : déduits du résultat, donc ici avec les comptes
       // le formulaire reste dans la fenêtre : une synchro qui redessine la page n'efface pas ce qu'on tape
@@ -4868,7 +2951,7 @@ const VIEWS = {
     <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
       <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
         
-        ${(() => { const F = tFacts(), due = F.filter((f) => !f.paid).length; return html`<button class="row" data-action="go" data-to="demandes"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Factures des interventions</span><span class="meta">${F.length ? `${plural(F.length, 'facture')} de LA CENTRAL${due ? ` · ${due} à payer` : ' · tout est payé'}` : 'Aucune facture pour le moment'}</span></span>${icon('chevron')}</button>`; })()}
+        
     <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
   </div>
 
@@ -4955,7 +3038,7 @@ let sheetSnap = '';
 const sheetSig = () => [...sheetEl.querySelectorAll('form')].map((f) => { try { return [...new FormData(f)].map(([k, v]) => k + '=' + (typeof v === 'string' ? v : v.name)).join('&'); } catch { return ''; } }).join('|');
 const leaveSheetOk = async () => {
   if (!sheetDirty) return true;
-  if (sheetSig() === sheetSnap && !(ui.sheet && ui.sheet.kind === 'devis' && devPend.files.length)) return true;
+  if (sheetSig() === sheetSnap) return true;
   const subs = [...sheetEl.querySelectorAll('button[type=submit]')].filter((b) => !b.disabled);
   const save = subs.find((b) => b.closest('.sheet-foot')) || subs[subs.length - 1];
   if (!save) return true; // rien à enregistrer dans cette fenêtre
@@ -5025,9 +3108,7 @@ function renderSheet() {
   if (!sheetDirty) sheetSnap = sheetSig();
   // dans les fiches : mêmes sections repliables, ouvertes par défaut
   enhanceFolds(sheetEl.querySelector('.sheet-body'), 'sheet:' + s.kind + ':' + (s.tab || ''), true);
-  if (sheetEl.querySelector('img[data-ptl-photo]')) setTimeout(ptlPhotos, 0);
   hydrateEdl();
-  tripPaint();
 }
 
 // Déchiffre les vignettes d'état des lieux après l'affichage (gardées en mémoire jusqu'au verrouillage)
@@ -5069,8 +3150,6 @@ async function setEdlPhoto(logId, room, file) {
 }
 const dropEdlUrl = (id) => { if (edlUrls.has(id)) { URL.revokeObjectURL(edlUrls.get(id)); edlUrls.delete(id); } };
 
-const PAY_NETS = { erc20: 'Ethereum (ERC-20)', trc20: 'Tron (TRC-20)', polygon: 'Polygon', bep20: 'BNB Chain (BEP-20)', sol: 'Solana' };
-const netSelect = (name, cur) => html`<label class="field">Réseau<select name="${name}">${Object.entries(PAY_NETS).map(([k, v]) => html`<option value="${k}" ${cur === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>`;
 const PAY_VIA = { vir: 'virement', pp: 'PayPal', card: 'carte', crypto: 'crypto' };
 // Adresses de réception : format selon le réseau (jamais de clé privée !)
 function badAddr(kind, a, net) {
@@ -5082,9 +3161,6 @@ function badAddr(kind, a, net) {
   if (net === 'sol') return /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(a) ? '' : 'adresse Solana invalide';
   return '';
 }
-// Lien vidéo de l'annonce : ce que verront les locataires (vérifié pendant la saisie)
-const ttShort = (v) => /^https:\/\/((vm|vt)\.tiktok\.com\/|(www\.)?tiktok\.com\/t\/)[\w-]{4,30}\/?/.test(String(v || '').trim());
-const vidHint = (v) => { v = String(v || '').trim(); if (!v) return ''; const e = videoEmbed(v); return e ? (e.audio ? '✓ Lien reconnu : petit lecteur audio dans l’annonce.' : '✓ Lien reconnu : mini écran dans l’annonce.') : ttShort(v) ? '🔗 Lien court TikTok : il sera converti en lien complet à l’enregistrement (mini écran).' : '⚠ Lien non reconnu : il s’affichera comme un simple bouton « ▶ Vidéo ».'; };
 const field = (label, name, value, opts = {}) => html`<label class="field ${opts.full ? 'full' : ''}">${label}
   <input name="${name}" type="${opts.type || 'text'}" value="${value ?? ''}" ${opts.required ? new Raw('required') : ''} ${opts.attrs ? new Raw(opts.attrs) : ''} placeholder="${opts.placeholder || ''}"></label>`;
 const money$ = 'inputmode="decimal" step="0.01" min="0"';
@@ -5183,7 +3259,7 @@ function relanceText(l, lang) {
   const mName = (m) => (NAMES[lang] ? NAMES[lang][m - 1] : new Date(2026, m - 1, 15).toLocaleDateString(lang, { month: 'long' }));
   const list = months.map((x) => `${mName(x.m)} ${x.y} (${money(payState(l, x.y, x.m).rest)})`).join(', ') || '—';
   const where = [logName(l.logId), immName(l.immId)].filter(Boolean).join(', ');
-  const sign = st.nom || netBrand();
+  const sign = st.nom || brandName();
   const iban = st.iban ? (lang === 'fr' ? `\nIBAN : ${st.iban}` : `\nIBAN: ${st.iban}`) : '';
   const T = {
     fr: `Bonjour ${fullName(l)},\n\nSauf erreur de notre part, nous n'avons pas encore reçu le loyer de ${list} pour ${where}, soit ${money(total)} au total.\n\nMerci de procéder au règlement dès que possible, ou de nous contacter si le paiement a déjà été effectué.${iban}\n\nCordialement,\n${sign}`,
@@ -5199,7 +3275,7 @@ function relanceText(l, lang) {
 const SHEETS = {
   'test-clean'() {
     const p = testPlan(), lab = { immeubles: '🏢 Immeubles', logements: '🚪 Logements', locataires: '👤 Locataires', intervenants: '👷 Ouvriers', hotes: '🛎️ Clients hôtel / Airbnb', paiements: '💶 Paiements', documents: '📎 Documents', taches: '🔧 Travaux', collectes: '🗑️ Collectes', depenses: '🧾 Dépenses' };
-    const nm = (c, r) => (c === 'locataires' ? fullName(r) : c === 'intervenants' ? intervFull(r) : c === 'immeubles' ? r.adresse : c === 'logements' ? logName(r.id) : c === 'hotes' ? [r.prenom, r.nom].filter(Boolean).join(' ') + (r.chambre ? ' — ' + r.chambre : '') : r.id);
+    const nm = (c, r) => (c === 'locataires' ? fullName(r) : c === 'intervenants' ? [r.prenom, r.nom].filter(Boolean).join(' ') : c === 'immeubles' ? r.adresse : c === 'logements' ? logName(r.id) : c === 'hotes' ? [r.prenom, r.nom].filter(Boolean).join(' ') + (r.chambre ? ' — ' + r.chambre : '') : r.id);
     return {
       title: '🧹 Supprimer les données de test', narrow: true,
       body: html`<div class="warn-box"><b class="warn-t">⚠️ ATTENTION</b><p>Tout ce qui n’est pas marqué ⭐ « Vrai » (et n’est pas lié à une fiche ⭐) sera effacé. Avant, une sauvegarde chiffrée est téléchargée automatiquement.</p><p>Pour protéger une fiche : ouvrez-la et touchez « ☆ Test ? » à côté du nom → « ⭐ Vrai ».</p></div>
@@ -5214,18 +3290,13 @@ const SHEETS = {
 
   'ann-new'({ preset }) {
     const imms = vault.list('immeubles').filter((im) => !immGone(im) && !im.xfer && Object.keys(im.chats || {}).length).sort(byAddr);
-    const ws = vault.list('intervenants').filter((w) => w.espace && w.espace.on && !w.archive), grp = eqGroup();
-    const nets = [];
-    const fils = [...new Set(nets.map((t) => t.fil).filter(Boolean))];
     return {
       title: '📣 Nouvelle annonce', narrow: true,
       body: html`<form id="f" data-form="annsend" class="stack">
         <label class="field">Message<textarea name="x" required maxlength="1500" style="min-height:120px" placeholder="ex. Mardi de 9 h à 12 h : coupure d’eau dans tout le quartier.">${preset || ''}</textarea></label>
         <div class="section-label" style="margin:4px 0">À qui ?</div>
         <label class="field">🏠 Habitants<select name="loc"><option value="">— personne —</option>${imms.length ? html`<option value="all">Tous les habitants de tous les immeubles</option>` : ''}${imms.map((im) => html`<option value="i:${im.id}">${im.adresse} — tous</option>${Object.entries(im.chats || {}).length > 1 ? Object.entries(im.chats || {}).map(([gk, g]) => html`<option value="g:${g.id}">&nbsp;&nbsp;${im.adresse} — ${chatLabel(gk)}</option>`) : ''}`)}</select></label>
-        ${ws.length ? html`<label class="field">👷 Équipe<select name="eq"><option value="">— personne —</option><option value="all">Tous les ouvriers (${ws.length})</option>${grp.length ? html`<option value="grp">Groupe de l’équipe (${grp.length})</option>` : ''}</select></label>` : ''}
-        ${nets.length ? html`<label class="field">🏢 Clients du réseau<select name="net"><option value="">— personne —</option><option value="all">Tous les clients (${nets.length})</option>${fils.map((f) => html`<option value="${f}">${NET_FIL[f] || f} (${nets.filter((t) => t.fil === f).length})</option>`)}</select></label>` : ''}
-        <p class="tiny muted" style="margin:0">Chacun le reçoit dans sa chat avec vous, avec « 📣 » devant et une notification ; chacun peut le traduire avec 🌐.${nets.length ? ' Les clients du réseau le reçoivent dans leur 🎧 Centralino et peuvent le transférer aux leurs.' : ''}</p>
+        <p class="tiny muted" style="margin:0">Chacun le reçoit dans sa chat avec vous, avec « 📣 » devant et une notification ; chacun peut le traduire avec 🌐.</p>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">📣 Envoyer</button>`,
     };
@@ -5233,156 +3304,6 @@ const SHEETS = {
 
   'ann-log'() {
     return { title: '🗂️ Annonces envoyées', narrow: true, body: html`<div class="list">${annLog().slice().reverse().map((a) => html`<div class="row" style="align-items:flex-start"><span class="grow"><span class="title" style="display:block;white-space:pre-wrap">${a.x}</span><span class="meta">${fmtDateTime(a.at)} · ${a.to} · 👤 ${a.by || '—'}</span></span></div>`)}</div>` };
-  },
-
-  // 💼 abonnement d'une gérance : formule, prix, période, payé jusqu'au, paiements reçus
-  abo({ id }) {
-    const o = ptlOrg(id);
-    if (!o) return null;
-    const a = aboOf(id) || { plan: 'pro', prix: 29, periode: 'mois', debut: today(), paidUntil: '', pays: [] };
-    const pays = (a.pays || []).slice().reverse();
-    return {
-      title: '💼 Abonnement — ' + o.name,
-      narrow: true,
-      body: html`<form id="f" data-form="abo" class="fields"><input type="hidden" name="id" value="${id}">
-        <label class="field full">Formule<select name="plan" data-input="abo-plan">${Object.entries(ABO_PLANS).map(([k, [l, pr]]) => html`<option value="${k}" data-prix="${pr}" ${a.plan === k ? new Raw('selected') : ''}>${l}${pr ? ` — ${pr} € / mois` : k === 'decouverte' ? ' — gratuit (1 immeuble)' : ''}</option>`)}</select></label>
-        <label class="field">Prix HT (€)<input name="prix" type="number" step="0.01" min="0" inputmode="decimal" value="${a.prix ?? ''}"></label>
-        <label class="field">Période<select name="periode"><option value="mois" ${a.periode !== 'an' ? new Raw('selected') : ''}>par mois</option><option value="an" ${a.periode === 'an' ? new Raw('selected') : ''}>par an (2 mois offerts)</option></select></label>
-        <label class="field">Début<input type="date" name="debut" value="${a.debut || today()}"></label>
-        <label class="field">Payé jusqu’au<input type="date" name="paidUntil" value="${a.paidUntil || ''}"></label>
-      </form>
-      ${aboOf(id) && a.plan !== 'decouverte' ? html`<div class="alert ${aboState(a) === 'ok' ? 'ok' : 'warn'}" style="margin:12px 0">${aboState(a) === 'ok' ? '✅' : '⏳'}<div>${aboState(a) === 'ok' ? html`Payé jusqu’au <b>${fmtDate(a.paidUntil)}</b>` : html`<b>À payer</b>${a.paidUntil ? html` depuis le ${fmtDate(a.paidUntil)}` : ''}`}
-        <div style="margin-top:8px"><button class="btn sm primary" data-action="abo-paid" data-id="${id}">✅ Paiement reçu (${eur(+a.prix || 0)} · ${a.periode === 'an' ? '1 an' : '1 mois'})</button></div></div></div>` : ''}
-      ${pays.length ? html`<div class="section-label">Paiements reçus</div><div class="list small">${pays.slice(0, 24).map((p) => html`<div class="row"><span class="grow">${fmtDate(p.d)} · <b>${eur(p.m)}</b></span><span class="meta">jusqu’au ${fmtDate(p.to)}</span></div>`)}</div>` : ''}`,
-      foot: html`${aboOf(id) ? html`<button class="btn ghost danger" data-action="abo-del" data-id="${id}">${icon('trash')} Supprimer</button>` : ''}<button class="btn primary" type="submit" form="f">Enregistrer</button>`,
-    };
-  },
-
-  'ger-ticket'({ id }) {
-    const d = ui.ptl.cur;
-    if (!d || !d.ticket || d.ticket.id !== id) return { title: 'Demande', body: html`<p class="muted">Chargement…</p>` };
-    const t = d.ticket, r = d.residence || {}, u = PTL_URG[t.urgence] || PTL_URG.planifie, open = !['terminee', 'annulee'].includes(t.status);
-    const parts = (x) => String(x || '').split(' · ').filter(Boolean);
-    const linked = vault.list('taches').filter((x) => x.ptl && x.ptl.tid === t.id);
-    const tel = (t.contact_phone || r.contact_phone || '').replace(/[^\d+]/g, '');
-    const evLbl = (e) => (e.kind === 'create' ? 'Demande créée' : e.kind === 'edit' ? '✏️ Demande modifiée' : e.kind === 'status' ? PTL_ST[e.status] || e.status : e.kind === 'invoice' ? '🧾 Facture' : 'Message');
-    return {
-      title: `#${t.ref} · ${r.name || ''}`,
-      body: html`<div class="chips" style="margin-bottom:10px"><span class="badge ${u[2] === 'red' ? 'danger' : u[2] === 'amber' ? 'warn' : ''}">${u[0]} ${u[1]}</span><span class="badge">${PTL_ST[t.status]}</span><span class="badge">${orgLogo(t.org_id)} ${r.org_name || ''}</span></div>
-        ${linked.filter((x) => x.intervenantId && x.statut !== 'fait').map((x) => tripSlot(x.id, today()))}
-        <div class="rq-top"><div class="rq-t">${t.categorie || 'Intervention'}</div>
-          <div>📍 <b>${r.name || ''}</b>${r.address ? ' — ' + r.address : ''}</div>${t.lieu ? html`<div>🚪 ${lieuDedup(t.lieu)}</div>` : ''}</div>
-        ${reqBox({ pb: t.description, codes: [...parts(t.acces), ...(!/(Boîte à clés|Porte|Alarme|Panneaux|Locaux techniques) : /.test(t.acces || '') ? ptlResCodes(r) : [])], dispo: t.dispo, contact: t.contact_name || r.contact_name || '', tel, telShow: t.contact_phone || r.contact_phone || '', inside: [r.interior, r.floors ? 'étage(s) ' + r.floors : ''].filter(Boolean).join(' · '), org: `${r.org_name || ''} · #${t.ref}` })}
-        <dl class="kv small" style="margin-bottom:12px">
-          ${t.technicien ? kvRow('Technicien', t.technicien) : ''}${t.planned_at ? kvRow('Planifiée', String(t.planned_at).replace('T', ' ')) : ''}
-          ${kvRow('Demandée', ptlTime(t.created_at))}
-        </dl>
-        ${d.photos.length ? html`<div class="section-label">📷 Photos</div><div class="photos" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${d.photos.map((p) => html`<a target="_blank" rel="noopener"><img data-ptl-photo="${p.id}" alt="Photo" style="width:96px;height:96px;object-fit:cover;border-radius:10px;background:var(--surface-2)"></a>`)}</div>` : ''}
-        ${linked.length ? html`<div class="alert info" style="margin-bottom:12px">${icon('tool')}<div>Dans Maintenance : ${linked.map((x) => html`<a href="#" data-action="edit-tache" data-id="${x.id}">${x.titre}${x.intervenantId ? ' — 👷 ' + intervFull(vault.get('intervenants', x.intervenantId) || {}) : ''}${x.date ? ' · ' + fmtDate(x.date) : ''}</a>${x.statut === 'fait' ? html` <button class="btn sm" data-action="fact-open" data-id="${x.id}">🧾 ${x.facture ? x.facture.no : 'Faire la facture'}</button>` : ''} `)}</div></div>` : ''}
-        ${open ? (() => {
-          const hints = metHints(`${t.categorie || ''} ${t.description || ''}`), team = affTeam(hints), fit = team.filter((i) => hints.includes(i.metier));
-          const newBtn = html`<button class="btn sm" data-action="new-interv">${icon('plus')} Ouvrier</button>`;
-          return html`<div class="section-label">👷 Affectation${linked.length ? ' — envoyer un autre ouvrier' : ' — qui envoyer ?'}</div>
-          ${!team.length || (hints.length && !fit.length && !linked.length) ? html`<div class="alert warn" style="margin-bottom:10px">⏸<div><b>Stand-by</b> — ${team.length ? html`aucun ${hints.map((m) => METIERS[m]).join(' / ')} dans votre équipe` : 'aucun ouvrier dans votre équipe'}.<br><span class="small">Trouvez quelqu’un (ouvrier à engager, société externe ou privé occasionnel), créez-le avec « Nouvel ouvrier », puis affectez-le ici.</span></div></div>` : ''}
-          ${team.length ? html`<div class="list small" style="margin-bottom:8px">${team.map((i) => affRow(i, hints, `data-action="ger-to-mt" data-id="${t.id}" data-iid="${i.id}"`))}</div>` : ''}
-          <p style="margin:0 0 12px">${newBtn}</p>`;
-        })() : ''}
-        ${open ? html`<div class="actions" style="flex-wrap:wrap;margin-bottom:14px">
-          ${t.status === 'recue' ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="prise">✅ Prendre en charge</button>` : ''}
-          ${t.status === 'planifiee' ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="encours">🚚 En route</button>` : ''}
-          ${['prise', 'planifiee', 'encours'].includes(t.status) ? html`<button class="btn" data-action="ger-st" data-id="${t.id}" data-st="terminee">${icon('check')} Terminée</button>` : ''}
-          <button class="btn ghost danger" data-action="ger-st" data-id="${t.id}" data-st="annulee">Annuler la demande</button></div>` : ''}
-        <div class="section-label">Suivi</div>
-        <div class="list small" style="margin-bottom:10px">${d.events.map((e) => html`<div class="row" style="display:block"><b>${evLbl(e)}</b> <span class="muted">· ${e.user_name || ''} · ${ptlTime(e.created_at)}</span>${e.text && e.kind !== 'create' ? html`<div style="white-space:pre-wrap;margin-top:4px">${e.text}</div>` : ''}</div>`)}</div>
-        <form data-form="ger-msg" class="chat-form"><input type="hidden" name="id" value="${t.id}"><textarea name="x" required maxlength="2000" placeholder="Message à la gérance…"></textarea><button class="btn primary" type="submit">${icon('msg')} Envoyer</button></form>
-        <button class="btn sm" style="margin-top:8px" data-action="ger-ticket" data-id="${t.id}">${icon('sync')} Actualiser les messages</button>`,
-      foot: html`<a class="btn" href="/portail.html#/t/${t.id}" target="_blank" rel="noopener">${icon('eye')} Ouvrir dans l’app Gérances</a><button class="btn primary" data-action="close-sheet">Fermer</button>`,
-    };
-  },
-
-  // note « INTERVENTION OCCASIONNELLE » d'un travail terminé (heures réelles × tarif payé)
-  'occ-fact'({ id }) {
-    const t = vault.get('taches', id), i = t && vault.get('intervenants', t.intervenantId);
-    if (!t || !i) return null;
-    const L = intervLedger('0000', '9999').find((x) => x.t.id === t.id) || {};
-    const o = t.occ || { h: L.min ? r2(L.min / 60) : '', taux: i.payeH ?? '', depl: i.payeDepl ?? '', mat: '', matLib: '', note: '', cash: !!i.cash || !i.iban };
-    return {
-      title: `🧾 Intervention occasionnelle${t.occ ? ' · ' + t.occ.no : ''}`,
-      narrow: true,
-      body: html`<form id="f" data-form="occ" class="fields"><input type="hidden" name="id" value="${id}">
-        <p class="small full" style="margin:0"><b>${intervFull(i)}</b> → ${factConf().nom}<br>${t.titre} · ${placeName(t)}${L.arr ? html` · 🕒 ${L.arr}–${L.dep || ''}` : ''}</p>
-        ${field('Heures travaillées', 'h', o.h, { type: 'number', attrs: 'step="0.25" min="0" inputmode="decimal" required' })}
-        ${field('€ / heure', 'taux', o.taux, { type: 'number', attrs: money$ + ' required' })}
-        ${field('Déplacement (€)', 'depl', o.depl, { type: 'number', attrs: money$ })}
-        ${field('Matériel avancé (€)', 'mat', o.mat, { type: 'number', attrs: money$ })}
-        ${field('Matériel : quoi ?', 'matLib', o.matLib, { full: true })}
-        <div class="field full">Paiement<div class="st-radios" style="margin-top:4px"><label><input type="radio" name="pay" value="vir" ${o.cash ? '' : new Raw('checked')} ${i.iban ? '' : new Raw('disabled')}> 🏦 Virement${i.iban ? '' : ' (pas d’IBAN)'}</label><label><input type="radio" name="pay" value="cash" ${o.cash ? new Raw('checked') : ''}> 💵 Cash</label></div></div>
-        <label class="field full">Note<textarea name="note">${o.note || ''}</textarea></label>
-        ${i.sign ? '' : html`<div class="alert warn full">⚠️<div>La fiche de ${intervFull(i)} n’est pas signée : la note sortira sans signature.</div></div>`}
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">🧾 Enregistrer + PDF</button>`,
-    };
-  },
-
-  'ger-aff'({ id }) {
-    const i = vault.get('intervenants', id);
-    if (!i) return null;
-    const foot = html`<button class="btn" data-action="ger-aff-reload" data-id="${id}">${icon('sync')} Actualiser</button><button class="btn primary" data-action="close-sheet">Fermer</button>`;
-    const title = `📌 Affecter ${intervFull(i)}`;
-    if (!ptlConf()) return { title, body: html`<p class="muted">App Gérances non connectée (menu Gérances).</p>`, foot };
-    const d = ui.ptl.data;
-    if (!d && ui.ptl.err) return { title, body: html`<p class="red">${ui.ptl.err}</p>`, foot };
-    if (!d || ui.ptl.done) { if (ui.ptl.done) { ui.ptl.done = false; ui.ptl.data = null; } ptlLoad(); return { title, body: html`<p class="muted">Chargement des demandes…</p>`, foot }; }
-    const tks = d.tickets.filter((t) => !['terminee', 'annulee'].includes(t.status));
-    const fitT = (t) => metHints(`${t.categorie || ''} ${t.description || ''}`).includes(i.metier);
-    tks.sort((a, b) => fitT(b) - fitT(a) || (a.urgence === 'urgent' ? -1 : 0) - (b.urgence === 'urgent' ? -1 : 0));
-    return {
-      title,
-      body: html`<p class="small muted" style="margin:0 0 10px">${METIERS[i.metier] || ''} · touchez la demande à confier : il reste à choisir le jour et l’heure. ⭐ = correspond au métier.</p>
-        ${tks.length ? html`<div class="list small">${tks.map((t) => {
-          const u = PTL_URG[t.urgence] || PTL_URG.planifie, who = vault.list('taches').filter((x) => x.ptl && x.ptl.tid === t.id && x.intervenantId).map((x) => intervFull(vault.get('intervenants', x.intervenantId) || {}));
-          return html`<button class="row" data-action="ger-to-mt" data-id="${t.id}" data-iid="${id}"><span class="avatar">${fitT(t) ? '⭐' : u[0]}</span><span class="grow"><span class="title" style="display:block;white-space:normal">${u[0]} #${t.ref} · ${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted">— ${t.lieu}</span>` : ''}</span><span class="meta" style="white-space:normal">${orgLogo(t.org_id)} ${t.org_name} · ${t.residence_name}</span>${who.length ? html`<span class="meta" style="display:block">👷 déjà : ${who.join(', ')}</span>` : html`<span class="meta amber" style="display:block">⏸ pas encore affectée</span>`}</span><span class="badge">Affecter →</span></button>`;
-        })}</div>` : html`<p class="muted">Aucune demande d’intervention en cours.</p>`}`,
-      foot,
-    };
-  },
-
-  // 🔄 changer d'ouvrier (ou le retirer) en un tocco, avec le motif (court, obligatoire)
-  'eq-swap'({ id }) {
-    const t = vault.get('taches', id);
-    if (!t) return null;
-    const cur = t.intervenantId, hint = t.metiers && t.metiers.length ? t.metiers : [(vault.get('intervenants', cur) || {}).metier], d = t.date && t.date > today() ? t.date : today();
-    const ints = vault.list('intervenants').filter((i) => !i.archive && i.id !== cur).sort((a, b) => hint.includes(b.metier) - hint.includes(a.metier) || intervFull(a).localeCompare(intervFull(b)));
-    return {
-      title: '🔄 Changer d’ouvrier', narrow: true,
-      body: html`<p class="small" style="margin:0 0 10px">${tacheIcon(t.type)} <b>${t.titre}</b> · ${placeName(t)}<br>Aujourd’hui : <b>${intervName(cur)}</b></p>
-        <label class="field">Pourquoi ? (obligatoire)<input id="swapWhy" maxlength="40" placeholder="ex. plus près, erreur, urgence" autocomplete="off"></label>
-        <div class="section-label" style="margin:12px 0 6px">Donner le travail à… <span class="tiny muted">⭐ = même métier</span></div>
-        <div class="list small">${ints.map((i) => html`<button class="row" data-action="eq-swap-do" data-id="${id}" data-w="${i.id}"><span class="avatar met-ic">${avW(i)}</span><span class="grow"><span class="title" style="display:block">${hint.includes(i.metier) ? '⭐ ' : ''}${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || ''}${absOn(i, d) ? html` · <b class="red">absent</b>` : ''}${(t.refusBy || []).includes(i.id) ? ' · ✋ a refusé' : ''}${i.espace && i.espace.on ? '' : ' · sans app'}</span></span><span class="chev">›</span></button>`)}</div>`,
-      foot: html`<button class="btn danger" data-action="eq-swap-do" data-id="${id}" data-w="">⏹ Retirer l’ouvrier</button><button class="btn" data-action="close-sheet">Annuler</button>`,
-    };
-  },
-
-  // 🗄️ Archiver : on coche ce qu'on range (gardé, plus affiché), jusqu'à quelle date ; l'historique dit quand et qui
-  'arch-form'() {
-    const hist = ((vault.get('reglages', 'archives') || {}).list || []).slice().reverse();
-    const nT = vault.list('taches').filter((t) => !t.recur).length, nD = vault.list('devis').length;
-    const cb = (k, l, m, on = true) => html`<label class="row" style="cursor:pointer"><input type="checkbox" name="${k}" ${on ? new Raw('checked') : ''} style="width:20px;height:20px;flex:none"><span class="grow"><span class="title" style="display:block">${l}</span><span class="meta" style="white-space:normal">${m}</span></span></label>`;
-    return {
-      title: '🗄️ Archiver', narrow: true,
-      body: html`<form id="archF" class="stack" onsubmit="return false">
-        <div class="warn-box"><b class="warn-t">⚠️ ATTENTION</b><p>${ARCH_W1}</p><p>${ARCH_W3}</p></div>
-        <div class="list">
-          ${cb('interv', '🔧 Interventions', `${nT} en tout — signalements, demandes des gérances, travaux, avec leurs photos et factures (les ménages réguliers restent)`)}
-          ${cb('devis', '📝 Devis', `${nD} en tout`)}
-          ${cb('team', '👷 Activité de l’équipe', 'Messages et nouvelles reçus des ouvriers')}
-          ${cb('num', '🧾 Factures et devis', `⚠️ La numérotation repart de 0001 (prochaine facture ${ymd(today())}-INT0001)`, false)}
-        </div>
-        <label class="field">Archiver ce qui date de jusqu’au<input type="date" name="until" value="${today()}"></label>
-        ${hist.length ? html`<div class="section-label" style="margin:6px 0 4px">Historique</div><div class="list small">${hist.map((a) => html`<div class="row"><span class="grow"><b>${fmtDateTime(a.at)}</b> · 👤 ${a.by || '—'}<span class="meta" style="display:block">${a.taches} interventions · ${a.devis} devis${a.hotes ? ' · ' + a.hotes + ' séjours' : ''}${a.biens ? ' · ' + a.biens + ' biens' : ''}${a.team ? ' · activité de l’équipe' : ''}${a.num ? ' · numéros à 0001' : ''}${a.until ? ' · jusqu’au ' + fmtDate(a.until) : ''}</span></span></div>`)}</div>` : ''}
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" data-action="arch-do">🗄️ Archiver</button>`,
-    };
   },
 
   'centrale-form'() {
@@ -5396,149 +3317,6 @@ const SHEETS = {
         <label class="field">Email<input type="email" name="email" value="${c.email || ''}"></label>
         <p class="tiny muted full" style="margin:0">Affiché aux gérances dans leur app Gérances (« Votre contact LA CENTRAL ») et sur vos factures.</p></form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
-    };
-  },
-
-  'op-form'() {
-    return {
-      title: '👤 Nouvel opérateur', narrow: true,
-      body: html`<form id="f" data-form="op-save" class="fields" autocomplete="off">
-        <label class="field">Nom affiché<input name="name" required placeholder="ex. Sara"></label>
-        <label class="field">Rôle<select name="role">${Object.entries(OP_ROLES).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
-        <label class="field">Identifiant<input name="login" required pattern="[a-zA-Z0-9._-]{3,30}" placeholder="ex. sara" autocapitalize="none" spellcheck="false" autocomplete="off"></label>
-        <label class="field">Mot de passe ${pwField('pass', 'Au moins 10 caractères', 'new-password')}</label>
-        <label class="field full">Confirmer ${pwField('pass2', 'Retapez le mot de passe', 'new-password')}</label>
-        <p class="tiny muted full" style="margin:0">${vault.op ? 'Votre mot de passe' : 'Votre clé d’accès'} vous sera demandé pour confirmer. Même identifiant = nouveau mot de passe.</p></form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Créer l’accès</button>`,
-    };
-  },
-
-  // gérance : LA CENTRAL écrit seulement nom, email, téléphone et RCS ; adresse, TVA, banque, logo et responsable sont remplis par la gérance dans son app Gérances
-  'ger-form'({ id }) {
-    const o = id ? ptlOrg(id) : { kind: ui.ptl.kind || 'gerance' };
-    if (id && !o) return null;
-    return {
-      title: id ? 'Modifier la gérance' : 'Nouvelle gérance',
-      narrow: true,
-      body: html`<form id="gerForm" data-form="ger" class="fields">
-        <input type="hidden" name="id" value="${id || ''}">
-        <label class="field full">Type de client<select name="kind">${Object.entries(ORG_KINDS).map(([k, l]) => html`<option value="${k}" ${(o.kind || 'gerance') === k ? new Raw('selected') : ''}>${l}</option>`)}</select></label>
-        <label class="field full">Nom (société ou personne)<input name="name" required value="${o.name || ''}" placeholder="ex. Gérance du Centre S.A."></label>
-        <label class="field full">Email${id ? '' : html` <span class="tiny muted">(reçoit le lien d’invitation)</span>`}<input type="email" name="email" ${id ? '' : new Raw('required')} value="${o.email || ''}"></label>
-        <label class="field">Téléphone (WhatsApp)<input type="tel" name="phone" value="${o.phone || ''}" placeholder="+352…"></label>
-        <label class="field">RCS (sauf propriétaire)<input name="rcs" value="${o.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
-        ${patBlock((vault.get('reglages', 'gerpat-' + id) || {}).pat)}
-        <p class="tiny muted full" style="margin:0">${id ? 'Adresse, n° TVA, banque et logo : la gérance les remplit elle-même dans son app Gérances (Ma société).' : 'Un lien d’invitation est créé pour cet email (14 jours). La première personne qui l’ouvre devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis remplit les données de sa société (adresse, TVA, banque, logo) et ajoute ses collègues.'}</p>
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="gerForm">${id ? 'Enregistrer' : 'Créer + lien d’invitation'}</button>`,
-    };
-  },
-
-  ger({ id, tab }) {
-    const d = ui.ptl.data, o = ptlOrg(id);
-    if (!d || !o) return null;
-    tab = tab || 'acces';
-    const tabs = html`<div class="tabs" role="tablist" style="margin-bottom:12px">
-      <button class="tab" role="tab" aria-selected="${tab === 'acces'}" data-action="ger-open" data-id="${id}" data-tab="acces">${icon('users')} Accès</button>
-      <button class="tab" role="tab" aria-selected="${tab === 'fact'}" data-action="ger-open" data-id="${id}" data-tab="fact">🧾 Facturation</button></div>`;
-    if (tab === 'res') tab = 'acces'; // les résidences sont gérées par la gérance dans son app Gérances
-    let body;
-    if (tab === 'fact') {
-      // liste des chantiers de la gérance : ouverts, en cours, fermés, contentieux (les montants, remises, TVA : Réglages + Comptabilité)
-      const all = (ui.ptl.orgT && ui.ptl.orgT.id === id ? ui.ptl.orgT.list : null);
-      if (!all) { ptlOrgTickets(id); body = html`<p class="muted">Chargement…</p>`; }
-      else {
-        const tache = (t) => vault.list('taches').find((x) => x.ptl && x.ptl.tid === t.id);
-        const fOf = (t) => { const x = tache(t); return x && x.facture ? x.facture : null; };
-        const cont = all.filter((t) => t.inv_cont && !t.inv_paid);
-        const open = all.filter((t) => ['recue', 'prise', 'planifiee'].includes(t.status));
-        const cours = all.filter((t) => t.status === 'encours');
-        const done = all.filter((t) => t.status === 'terminee' && !(t.inv_cont && !t.inv_paid));
-        const st = (t) => { const f = fOf(t); return t.inv_no ? (t.inv_paid ? html`<span class="badge ok">✅ payée</span>` : t.inv_cont ? html`<span class="badge cont-blink">⚠️ CONTENTIEUX</span>` : html`<span class="badge warn">⏳ à payer</span>`) : t.status === 'terminee' ? html`<span class="badge">${f ? 'facturée' : '🟡 à facturer'}</span>` : html`<span class="badge">${PTL_ST[t.status] || t.status}</span>`; };
-        const line = (t) => { const x = tache(t); return html`<button class="row" data-action="${x && (x.facture || t.status === 'terminee') ? 'fact-open' : 'ger-ticket'}" data-id="${x && (x.facture || t.status === 'terminee') ? x.id : t.id}">
-          <span class="grow"><span class="title" style="display:block;white-space:normal">#${t.ref} · ${t.categorie || 'Intervention'}${t.inv_no ? html` <span class="muted small">· ${t.inv_no}</span>` : ''}</span>
-          <span class="meta" style="white-space:normal">📍 ${t.residence_name}${t.lieu ? ' — ' + t.lieu : ''} · ${ptlTime(t.done_at || t.created_at)}</span></span>
-          <span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">${t.inv_ttc ? html`<b>${eur(t.inv_ttc)}</b>` : ''}${st(t)}</span></button>`; };
-        const grp = (title, list, cls = '') => list.length ? html`<div class="section-label ${cls}">${title} (${list.length})</div><div class="list" style="margin-bottom:14px">${list.map(line)}</div>` : '';
-        const due = sum(all.filter((t) => t.inv_no && !t.inv_paid), (t) => +t.inv_ttc || 0), dueC = sum(cont, (t) => +t.inv_ttc || 0);
-        const cl = factClient(id, o.name), c = factConf();
-        const sum0 = html`<div class="card" style="margin-bottom:12px;padding:12px">
-            <b>${o.logo ? html`<img class="org-logo xl" src="${o.logo}" alt="">` : '🏢 '}${o.name}</b>
-            <dl class="kv small" style="margin:6px 0 0">${cl.adresse ? html`<dt>Adresse</dt><dd style="white-space:pre-line">${cl.adresse}</dd>` : ''}${cl.rcs ? html`<dt>RCS</dt><dd>${cl.rcs}</dd>` : ''}${cl.tvaNum ? html`<dt>N° TVA</dt><dd>${cl.tvaNum}</dd>` : ''}${cl.banque ? html`<dt>Banque</dt><dd>${cl.banque}</dd>` : ''}${cl.iban ? html`<dt>IBAN</dt><dd>${cl.iban}</dd>` : ''}${cl.bic ? html`<dt>BIC</dt><dd>${cl.bic}</dd>` : ''}${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}</dl>
-            ${orgMissing(cl).length ? html`<p class="tiny amber" style="margin:6px 0 0">⏳ Pas encore rempli par la gérance : ${orgMissing(cl).join(', ')} <span class="muted">(dans son app Gérances → Ma société)</span></p>` : ''}
-            <form data-form="ger-tva" class="fields" style="margin-top:10px;border-top:1px solid var(--border);padding-top:10px"><input type="hidden" name="org" value="${id}">
-              <div class="full">${tvaBox({ regime: cl.regime, taux: cl.taux, mention: cl.mention }, c)}</div>
-              <p class="tiny muted full" style="margin:0">Pour vos factures à cette gérance. Travaux sur un immeuble au Luxembourg : en principe avec TVA luxembourgeoise — en cas de doute, demandez à votre comptable.</p>
-              <button class="btn sm primary" type="submit">Enregistrer</button></form></div>`;
-        body = html`${sum0}<div class="metrics" style="margin-bottom:14px">
-            <div class="metric"><div class="lbl">Ouverts / en cours</div><div class="val">${open.length + cours.length}</div></div>
-            <div class="metric"><div class="lbl">À encaisser</div><div class="val red">${eur(due)}</div></div>
-            <div class="metric ${cont.length ? 'cont-blink-box' : ''}"><div class="lbl">⚠️ Contentieux</div><div class="val ${cont.length ? 'red' : ''}">${cont.length ? eur(dueC) : '—'}</div></div></div>
-          ${grp('⚠️ CONTENTIEUX — impayés en litige', cont, 'cont-blink')}
-          ${grp('🟠 Ouverts', open)}
-          ${grp('🔵 En cours', cours)}
-          ${grp('✅ Fermés', done)}
-          ${all.length ? '' : html`<p class="muted small">Aucune demande de cette gérance pour l’instant.</p>`}
-          <p class="tiny muted" style="margin-top:6px">Montants, TVA, remises, acomptes : réglés dans <b>Réglages → 🧾 Facturation</b> et dans chaque facture (<b>Comptabilité → Factures</b>). Adresse, TVA et banque de la gérance : remplies par elle dans son app Gérances.</p>`;
-      }
-    } else {
-      // le responsable (créé par LA CENTRAL) en premier, puis les collègues qu'il a ajoutés dans son app Gérances
-      const us = d.users.filter((u) => u.org_id === id).sort((a, b) => (a.role === 'gerance_admin' ? 0 : 1) - (b.role === 'gerance_admin' ? 0 : 1) || a.name.localeCompare(b.name));
-      const hasResp = us.some((u) => u.role === 'gerance_admin' && u.active);
-      const cl = factClient(id, o.name);
-      const uRow = (u) => html`<div class="card ger-u${u.active ? '' : ' off'}" style="margin-bottom:10px;padding:12px">
-          <div style="display:flex;gap:10px;align-items:flex-start"><span class="avatar">${(u.name || '?').split(/\s+/).map((x) => x[0]).join('').slice(0, 2).toUpperCase()}</span>
-          <span class="grow"><b style="display:block">${u.name} <span class="badge ${u.role === 'gerance_admin' ? 'accent' : ''}">${u.role === 'gerance_admin' ? '⭐ Responsable' : 'Collaborateur'}</span></b>
-            ${u.title ? html`<span class="meta" style="display:block">${u.title}</span>` : ''}
-            <span class="meta" style="display:block">✉️ <a href="mailto:${u.email}">${u.email}</a>${u.phone ? html` · 📞 <a href="tel:${u.phone.replace(/[^\d+]/g, '')}">${u.phone}</a>` : ''}</span>
-            <span class="meta" style="display:block;white-space:normal">${!u.active ? html`<span class="red">⛔ désactivé</span>` : !u.has_password ? html`<span>${u.invite_expires > Date.now() ? `✉️ invitation envoyée, valable jusqu’au ${fmtDate(new Date(u.invite_expires).toISOString().slice(0, 10))}` : '⚠️ invitation expirée : créez un nouveau lien'}</span>` : u.last_login ? html`✅ <span>dernière connexion</span> ${fmtDateTime(u.last_login)}` : '✅ accès activé'}</span></span></div>
-          <div class="actions" style="margin:10px 0 0;flex-wrap:wrap">
-            ${u.active ? html`<button class="btn sm" data-action="ger-inv" data-id="${u.id}" data-org="${id}">${u.has_password ? '🔑 Nouvel accès' : '🔗 Lien d’invitation'}</button>` : ''}
-            <button class="btn sm ghost ${u.active ? 'danger' : ''}" data-action="ger-user-toggle" data-id="${u.id}" data-org="${id}" data-on="${u.active ? 1 : 0}">${u.active ? 'Désactiver' : 'Réactiver'}</button></div></div>`;
-      body = html`<div class="card" style="margin-bottom:12px;padding:12px">
-          <div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start"><b>${o.logo ? html`<img class="org-logo xl" src="${o.logo}" alt="">` : '🏢 '}${o.name}</b><button class="btn sm ghost" data-action="ger-edit" data-id="${id}">${icon('edit')} Modifier</button></div>
-          <dl class="kv small" style="margin:6px 0 0">${cl.adresse ? html`<dt>Adresse</dt><dd style="white-space:pre-line">${cl.adresse}</dd>` : ''}${cl.rcs ? html`<dt>RCS</dt><dd>${cl.rcs}</dd>` : ''}${cl.tvaNum ? html`<dt>N° TVA</dt><dd>${cl.tvaNum}</dd>` : ''}${cl.iban ? html`<dt>Banque</dt><dd>${[cl.banque, cl.bic ? 'BIC ' + cl.bic : '', ibanFmt(cl.iban)].filter(Boolean).join(' · ')}</dd>` : ''}${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}</dl>
-          ${orgMissing(cl).length ? html`<p class="tiny amber" style="margin:6px 0 0">⏳ Pas encore rempli par la gérance : ${orgMissing(cl).join(', ')} <span class="muted">(dans son app Gérances → Ma société)</span></p>` : ''}</div>
-        ${us.length ? html`<div class="section-label">Responsable et collaborateurs (${us.length})</div>${us.map(uRow)}<p class="tiny muted" style="margin:0 0 12px">Les collaborateurs sont ajoutés par le responsable dans son app Gérances (Équipe). 🔑 Nouvel accès = nouveau lien si quelqu’un a oublié son mot de passe.</p>` : ''}
-        ${hasResp ? '' : html`<div class="section-label">⭐ Responsable de la gérance</div>
-        <p class="small muted" style="margin:0 0 8px">La première personne qui ouvre le lien devient responsable : elle écrit son prénom et son nom, choisit son mot de passe, puis ajoute ses collaborateurs.</p>
-        <form data-form="ger-user" class="fields">
-          <input type="hidden" name="org" value="${id}"><input type="hidden" name="role" value="gerance_admin">
-          <label class="field">Email<input type="email" name="email" required value="${o.email || ''}"></label>
-          <label class="field">Téléphone (WhatsApp)<input type="tel" name="phone" placeholder="+352…" value="${o.phone || ''}"></label>
-          <button class="btn primary full" type="submit">${icon('plus')} Créer le lien du responsable</button>
-        </form>`}`;
-    }
-    return {
-      title: '🏢 ' + o.name,
-      body: html`${tabs}${body}`,
-      foot: html`<button class="btn ghost danger" data-action="ger-del" data-id="${id}">${icon('trash')} Supprimer la gérance</button><button class="btn primary" data-action="close-sheet">Fermer</button>`,
-    };
-  },
-
-  'ger-invite'({ id, preset }) {
-    const d = ui.ptl.data, u = d && d.users.find((x) => x.id === id), link = ui.ptl.inv[id];
-    if (!u || !link) return null;
-    const lang = preset && preset.lang || 'fr';
-    const t = PTL_INVITE[lang] || PTL_INVITE.fr, first = u.name.split(' ')[0], msg = t.text(first, link), enc = encodeURIComponent(msg), encWa = encodeURIComponent(t.wa(first, link));
-    const tel = (u.phone || '').replace(/[^\d+]/g, '').replace(/^00/, '+');
-    return {
-      title: 'Invitation au Gérances',
-      narrow: true,
-      body: html`<p style="margin-top:0">Lien personnel pour <b>${u.name || u.email}</b>${u.name ? ` (${u.email})` : ''} : la personne ouvre le lien${u.name ? '' : ', écrit son prénom et son nom'} et choisit son mot de passe. <b>Valable 14 jours</b>, une seule fois.</p>
-        <p class="tiny muted" style="margin:-6px 0 10px">Rouvrir cette fenêtre redonne <b>le même lien</b> (aperçu, autre langue…) : celui déjà envoyé reste bon.</p>
-        <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(link, 5)}</div>
-        <div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].map((k) => html`<button type="button" data-action="ger-inv-lang" data-id="${id}" data-l="${k}" aria-pressed="${lang === k}">${k.toUpperCase()}</button>`)}</div>
-        <p class="tiny muted" style="margin:0 0 10px">Langue du message d’invitation.</p>
-        <details class="inv-prev" style="margin:0 0 12px"><summary class="small"><b>👁 Aperçu de l’invitation</b></summary><div class="inv-card" data-notr="1">${new Raw(t.html(first, link))}</div></details>
-        <div class="actions" style="flex-direction:column">
-          <button class="btn primary" data-action="ger-inv-html" data-id="${id}" data-l="${lang}">✨ Copier l’invitation mise en forme</button>
-          <p class="tiny muted" style="margin:-4px 0 4px;text-align:center">Puis « Envoyer par email » et collez (⌘V / Ctrl+V) à la place du texte : couleurs, gras et bouton orange.</p>
-          ${tel ? html`<a class="btn" href="https://wa.me/${tel.replace(/^\+/, '')}?text=${encWa}" target="_blank" rel="noopener">${icon('msg')} Envoyer par WhatsApp</a><a class="btn" href="sms:${tel}?&body=${enc}">${icon('msg')} Envoyer par SMS</a>` : ''}
-          <a class="btn" href="mailto:${u.email}?subject=${encodeURIComponent(t.subject)}&body=${enc}">${icon('mail')} Envoyer par email</a>
-          <button class="btn" data-action="ger-inv-copy" data-id="${id}">${icon('file')} Copier le lien</button>
-        </div>`,
-      foot: html`<button class="btn primary" data-action="ger-open" data-id="${u.org_id}">OK</button>`,
     };
   },
 
@@ -5569,345 +3347,53 @@ const SHEETS = {
     };
   },
 
-  'interv-form'({ id, preset }) {
-    const i = id ? vault.get('intervenants', id) : { metier: '', genre: 'interne', cat: 'quotidien', ...(preset && typeof preset === 'object' ? preset : {}) };
-    if (id && !i) return null;
-    return {
-      title: id ? 'Modifier la fiche' : 'Nouvelle personne',
-      body: html`<form id="f" data-form="interv" class="fields">
-        <input type="hidden" name="id" value="${id || ''}">
-        ${photoField(i, metIcon(i))}
-        <label class="field">Type<select name="genre" data-input="interv-kind">${Object.entries(INT_GENRES).map(([k, v]) => html`<option value="${k}" ${(i.genre || 'interne') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        <label class="field">Catégorie<select name="cat" data-input="interv-kind">${Object.entries(INT_CATS).map(([k, v]) => html`<option value="${k}" ${(i.cat || 'quotidien') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        ${field('Prénom', 'prenom', i.prenom, { attrs: 'autocomplete="off"' })}
-        ${field('Nom (ou nom de la société)', 'nom', i.nom, { required: true, placeholder: 'ex. Rossi, Électricité Schmit…', attrs: 'autocomplete="off"' })}
-        <label class="field">Métier / mansion<select name="metier" required data-input="interv-kind"><option value="">— à choisir —</option>${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${i.metier === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        ${tarifBox(i)}
-        ${field('Adresse', 'adresse', i.adresse, { full: true, attrs: 'autocomplete="off"' })}
-        ${field('Code postal et ville', 'ville', i.ville, { placeholder: 'L-1234 Luxembourg' })}
-        ${field('Téléphone', 'tel', i.tel, { type: 'tel', placeholder: '+352 …' })}
-        ${field('Email', 'mail', i.mail, { type: 'email', full: true })}
-        ${field('N° CCSS (matricule de sécurité sociale)', 'ccss', i.ccss, { placeholder: '13 chiffres — vide : l’ouvrier le complète dans son app', attrs: 'inputmode="numeric" autocomplete="off"' })}
-        <label class="field soc-only" ${(i.genre || 'interne') === 'societe' ? '' : new Raw('hidden')}>RCS (société)<input name="rcs" value="${i.rcs || ''}" placeholder="ex. B123456"></label>
-        <label class="field soc-only" ${(i.genre || 'interne') === 'societe' ? '' : new Raw('hidden')}>N° TVA (société)<input name="tva" value="${i.tva || ''}" placeholder="ex. LU12345678"></label>
-        <label class="check full" style="margin:4px 0 0"><input type="checkbox" name="chefDevis" value="1" ${i.chefDevis ? new Raw('checked') : ''}> 🦺 <b>Chef de chantier — devis</b> : il prépare les devis dans son app (photos, rapport, travaux, signature « Vu et correct » du client), sans voir les prix</label>
-        ${engForm(i)}
-        <label class="field full">Notes<textarea name="note" placeholder="Clés confiées, disponibilités…">${i.note || ''}</textarea></label>
-      </form>`,
-      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-interv" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
-        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
-    };
-  },
-
-  'fact-set'() {
-    const c = factConf();
-    return {
-      title: '🧾 Facturation des interventions',
-      body: html`<form id="f" data-form="fact-set" class="fields">
-        <p class="small muted full" style="margin:0">Émetteur des factures envoyées aux gérances (marque LA CENTRAL). Les factures des loyers (NOBIS s.a.r.l.) ne changent pas.</p>
-        ${field('Raison sociale', 'nom', c.nom, { required: true })}${field('Marque', 'marque', c.marque)}
-        ${field('Adresse', 'adresse', c.adresse, { required: true })}${field('Code postal et ville', 'ville', c.ville, { required: true })}
-        ${field('RCS', 'rcs', c.rcs, { required: true })}${field('N° TVA', 'tva', c.tva, { required: true })}
-        ${field('Téléphone', 'tel', c.tel)}${field('Email', 'email', c.email, { type: 'email' })}
-        ${field('N° d’autorisation d’établissement', 'autorisation', c.autorisation || '', { placeholder: 'imprimé sur les devis et factures' })}
-        <label class="field full">IBAN (compte d’ARES INVEST S.A.)<input name="iban" value="${c.iban}" required placeholder="LU.. .... .... .... ...." autocomplete="off" autocapitalize="characters" maxlength="42" data-input="bank-chk"><span class="bank-msg tiny" data-for="iban"></span></label>
-        <label class="field">Code BIC / SWIFT<input name="bic" value="${c.bic}" required placeholder="ex. CCPLLULL (POST Luxembourg)" autocomplete="off" autocapitalize="characters" maxlength="14" data-input="bank-chk"><span class="bank-msg tiny" data-for="bic"></span></label>
-        ${field('Banque', 'banque', c.banque, { placeholder: 'ex. POST Luxembourg' })}
-        <p class="tiny muted full" style="margin:-6px 0 0">Le BIC (8 ou 11 caractères) est proposé tout seul pour un IBAN luxembourgeois connu (POST : CCPLLULL, Spuerkeess : BCEELULL…). Il est imprimé sur la facture et dans le QR code de paiement.</p>
-        <label class="field">TVA normale (%)<input name="taux" type="number" step="0.01" min="0" max="100" inputmode="decimal" value="${c.taux}" list="tvaRates" required></label>
-        <datalist id="tvaRates">${[17, 16, 14, 8, 3, 0, 20, 21, 19, 22, 10, 5.5].map((r) => html`<option value="${r}"></option>`)}</datalist>
-        <p class="tiny muted full" style="margin:-6px 0 0">Taux appliqué par défaut (17 % = taux normal au Luxembourg ; tout autre taux possible). Chaque client peut avoir son propre régime : Gérances → la gérance → 🧾 Facturation.</p>
-        ${field('Paiement à (jours)', 'delai', c.delai, { type: 'number', attrs: 'min="0" max="120" inputmode="numeric"' })}
-        <div class="full section-label" style="margin:4px 0 0">💳 Paiements des clients (centrales du réseau)</div>
-        ${field('Avis de retard après (jours)', 'avv', c.avv ?? 7, { type: 'number', attrs: 'min="0" max="365" inputmode="numeric"' })}${field('Lecture seule après (jours)', 'rog', c.rog ?? 30, { type: 'number', attrs: 'min="1" max="365" inputmode="numeric"' })}
-        <p class="tiny muted full" style="margin:-6px 0 0">Comptés depuis l’échéance de la facture. Le client paie par virement (QR code) et touche « J’ai payé » ; vous confirmez à réception. 💳 Stripe (carte, Apple / Google Pay) : <b>non connecté</b> pour l’instant.</p>
-        ${sfx('Ma marge par défaut sur les ouvriers', 'marge', c.marge, '%', 'step="1" min="0" max="500" inputmode="decimal"')}
-        <p class="tiny muted full" style="margin:-6px 0 0">Ex. 25 % : ouvrier payé 40 €/h → facturé 50 €/h à la gérance (si la fiche de l’ouvrier n’a pas de tarif « facturé à la gérance »). Modifiable dans chaque facture, avec remise ou majoration.</p>
-        <p class="tiny muted full" style="margin:0">Taux de TVA à confirmer avec votre comptable. Prochain numéro : ${ymd(today())}-INT${String((+c.seq || 0) + 1).padStart(4, '0')} · prochain devis n° …-${String((+c.devSeq || 0) + 1).padStart(4, '0')}</p>
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
-    };
-  },
-
-  facture({ id }) {
-    const t = vault.get('taches', id);
-    if (!t) return null;
-    const c = factConf();
-    if (t.facture) {
-      const F = t.facture;
-      return {
-        title: `🧾 Facture ${F.no}`,
-        body: html`${F.cont && !F.paid ? html`<div class="alert bad cont-blink-box" style="margin-bottom:10px">⚠️<div><b>CONTENTIEUX</b> depuis le ${fmtDate(F.cont)} — facture impayée en litige. La gérance le voit en rouge dans son app Gérances.</div></div>` : ''}<dl class="kv">${kvRow('Intervention', `${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`)}${kvRow('Gérance', t.ptl ? t.ptl.org : '—')}${kvRow('Date', fmtDate(F.date))}${kvRow('Total HT', eur(F.ht))}${kvRow('TVA', eur(F.tva))}${kvRow('Total TTC', html`<b>${eur(F.ttc)}</b>`)}${kvRow('Paiement', F.paid ? `✅ payée le ${fmtDate(F.paid)}` : '⏳ à payer')}</dl>
-          ${F.claim && !F.paid ? html`<div class="alert info" style="margin-bottom:10px">💳<div>Le client dit avoir payé le ${fmtDate(F.claim)} : vérifiez le compte, puis ✅.</div></div>` : ''}
-          <p class="small muted">${F.dom ? 'Le client la voit et la paie dans son app (QR code, « J’ai payé »).' : F.net ? 'Le client la voit et la paie dans sa centrale (🧾 Factures).' : 'La gérance la voit et la télécharge dans son app Gérances (Comptabilité et fiche de la demande).'}</p>`,
-        foot: html`${F.docId ? html`<button class="btn" data-action="open-doc" data-id="${F.docId}">⬇️ PDF</button>` : ''}${F.paid ? '' : html`<button class="btn ${F.cont ? '' : 'danger'}" data-action="fact-cont" data-id="${id}">${F.cont ? '↩️ Sortir du contentieux' : '⚠️ Contentieux'}</button>`}<button class="btn ${F.paid ? '' : 'primary'}" data-action="fact-paid" data-id="${id}">${F.paid ? '↩️ Marquer à payer' : '✅ Marquer payée'}</button>`,
-      };
-    }
-    const f = factDraft(t), miss = factMissing(c);
-    const mats = [...(f.mat || [])]; while (mats.length < 3) mats.push({});
-    return {
-      title: `🧾 Facture — ${t.ptl ? '#' + t.ptl.ref + ' · ' : ''}${t.titre}`,
-      body: html`<form id="f" data-form="facture" class="fields"><input type="hidden" name="id" value="${id}">
-        ${miss.length ? html`<div class="full alert warn" style="margin:0">⚠️<div>Avant d’émettre : complétez ${miss.join(', ')} dans <a href="#" data-action="fact-set">🧾 Facturation</a>.</div></div>` : ''}
-        <p class="small muted full" style="margin:0">Client : <b>${t.ptl ? t.ptl.org : t.net ? t.net.nom : '—'}</b> · émise par ${c.nom} (${c.marque}). Rien n’est envoyé avant « Émettre ».</p>
-        ${t.net && netPayMode(t.net.tid) === 'month' ? html`<div class="full alert info" style="margin:0">📅<div>Ce client paie par <b>facture mensuelle</b> : enregistrez le brouillon, l’intervention entrera dans la facture du mois (Réglages → 🔑 Licences → le client).</div></div>` : ''}
-        ${field('Heures (réelles, arrondies au ¼ h)', 'h', f.h, { type: 'number', attrs: 'step="0.25" min="0" inputmode="decimal"' })}
-        ${(() => { const w = vault.get('intervenants', t.intervenantId) || {}; return w.payeH || w.payeDepl ? html`<div class="full note small" style="margin:0"><input type="hidden" name="cost_h" value="${w.payeH || 0}"><input type="hidden" name="cost_d" value="${w.payeDepl || 0}">
-          👷 Coût ${intervFull(w)} : <b>${eur(w.payeH || 0)}/h</b>${w.payeDepl ? html` · déplacement <b>${eur(w.payeDepl)}</b>` : ''}
-          <div class="fact-adj" style="grid-template-columns:auto 90px auto;align-items:center;margin-top:6px"><span>Ma marge sur ses tarifs</span><span class="sfx"><input name="marge" type="number" step="1" min="-90" max="500" inputmode="decimal" value="${w.payeH && f.taux ? Math.round((num(f.taux) / w.payeH - 1) * 100) : num(factConf().marge)}" data-input="fact-marge"><i>%</i></span><span class="tiny muted">→ recalcule tarif et déplacement</span></div></div>` : ''; })()}
-        ${sfx('Tarif facturé', 'taux', f.taux, '€/h HT')}
-        ${sfx('Déplacement facturé', 'depl', f.depl, '€ HT')}
-        <div class="full"><div class="section-label" style="margin:4px 0 6px">Matériel acheté en plus (HT)</div><div id="factMats">${mats.map((m, n) => matRow(n, m))}</div>
-          <button type="button" class="btn sm" data-action="fact-mat-add">${icon('plus')} Ligne</button></div>
-        <div class="full"><div class="section-label" style="margin:4px 0 6px">Remise / majoration (avant émission)</div>
-          <div class="fact-adj"><select name="adj_type"><option value="remise" ${f.adj.type === 'remise' ? new Raw('selected') : ''}>Remise −</option><option value="maj" ${f.adj.type === 'maj' ? new Raw('selected') : ''}>Majoration +</option></select>
-            <input name="adj_val" type="number" ${new Raw(money$)} value="${f.adj.val || ''}" placeholder="0" aria-label="Valeur"><select name="adj_mode"><option value="%" ${f.adj.mode === '%' ? new Raw('selected') : ''}>%</option><option value="€" ${f.adj.mode === '€' ? new Raw('selected') : ''}>€</option></select></div>
-          <input name="adj_lib" value="${f.adj.lib || ''}" placeholder="Motif (ex. client fidèle, urgence de nuit)" style="margin-top:6px"></div>
-        <div class="full"><div class="section-label" style="margin:4px 0 6px">TVA de cette facture</div>
-          ${tvaBox(f.reg || { regime: 'normal' }, c)}
-          <p class="tiny muted" style="margin:4px 0 0">Par défaut : le choix fait pour la gérance (Gérances → la gérance → 🧾 Facturation). Travaux sur un immeuble situé au Luxembourg : la TVA luxembourgeoise s’applique en principe, même pour un client étranger — à confirmer avec votre comptable.</p></div>
-        <div class="full" id="factTot">${factTotHtml(f)}</div>
-      </form>`,
-      foot: html`<button class="btn" type="submit" form="f">Enregistrer le brouillon</button><button class="btn primary" data-action="fact-emit" data-id="${id}" ${miss.length ? new Raw('disabled') : ''}>🧾 Émettre et envoyer</button>`,
-    };
-  },
-
-  // routine de chaque semaine (salariés : ménage, contrôles), avec la semaine en dates
-  'hor-std'({ id }) {
-    const i = vault.get('intervenants', id);
-    if (!i) return null;
-    const wk = mondayOf(today());
-    return {
-      title: `🔁 Routine · ${intervFull(i)}`,
-      body: html`<form id="f" data-form="hor-std" class="fields"><input type="hidden" name="id" value="${id}">
-        <p class="small muted full" style="margin:0">Se répète chaque semaine (ménage, contrôles…). Une semaine différente : 📅 Planning par semaine. Un dégât signalé : 📌 Affectation.</p>
-        <label class="field">Semaine du (date)<input type="date" name="hwk" value="${today()}" data-input="hor-wk"></label>
-        ${horWeekEditor((j) => hors(i).filter((h) => h.j === j), (j) => `${SEMAINE[j]} ${frD(addDays(wk, j))}`)}
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer la routine</button>`,
-    };
-  },
-
-  'plan-week'({ id, preset }) {
-    const i = vault.get('intervenants', id);
-    if (!i) return null;
-    const mon = preset;
-    return {
-      title: `📅 ${intervFull(i)} · semaine du ${dayShort(mon)}`,
-      body: html`<form id="f" data-form="plan-week" class="fields"><input type="hidden" name="id" value="${id}"><input type="hidden" name="mon" value="${mon}">
-        <p class="small muted full" style="margin:0">Chaque jour avec sa date. Ce qui est déjà rempli vient de l’horaire habituel : changez, ajoutez ou videz (jour non travaillé).</p>
-        ${horWeekEditor((j) => horsOn(i, addDays(mon, j)), (j) => `${SEMAINE[j]} ${dayShort(addDays(mon, j))}`)}
-        <label class="field full">Recopier ce planning aussi sur<select name="copy"><option value="0">cette semaine seulement</option>${[1, 2, 3, 4, 6, 8, 12].map((n) => html`<option value="${n}">+ ${n} semaine${n > 1 ? 's' : ''} suivante${n > 1 ? 's' : ''} (jusqu’au ${dayShort(addDays(mon, n * 7 + 6))})</option>`)}</select></label>
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer la semaine</button>`,
-    };
-  },
-
-  'eq-feed'() {
-    return { title: 'Activité de l’équipe', body: html`${eqTodayHtml()}<p class="tiny muted" style="margin:0 0 8px">Arrivées et départs des autres jours, groupés par jour avec les heures : fiche de la personne → Activité.</p>${eqFeedHtml('', 150, true)}`, foot: html`<button class="btn primary" data-action="close-sheet">OK</button>` };
-  },
-
-  // Travail daté d'une personne (hors horaire habituel) : en retard, aujourd'hui, à venir
-  // Fiche d'une personne : infos · horaire et heures du mois · absences (maladie avec certificat, congés…)
-  interv({ id, tab }) {
-    const i = vault.get('intervenants', id);
-    if (!i) return null;
-    const jobs = vault.list('taches').filter((t) => t.intervenantId === id && !t.recur && t.statut !== 'fait' && t.date).sort((a, b) => (a.date + (a.heure || '')).localeCompare(b.date + (b.heure || '')));
-    const jobBtn = html`<button class="btn primary block" data-action="interv-aff" data-id="${id}" style="margin-bottom:8px">📌 Affectation d’interv.</button><button class="btn block" data-action="interv-job" data-id="${id}" style="margin-bottom:12px">📅 Nouv. intervention</button>`;
-    const jobList = html`<div class="section-label">📅 Travail prévu (avec date)</div>
-      ${jobs.length ? html`<div class="list small">${jobs.map((t) => html`<button class="row${t.urgent ? ' u-urgent' : ''}" data-action="edit-tache" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.urgent ? '🔴 ' : ''}${t.titre}</span><span class="meta">${placeName(t)}</span></span><span class="meta" style="text-align:right">${t.date < today() ? html`<b style="color:var(--red)">${fmtDate(t.date)}</b>` : fmtDate(t.date)}${t.heure ? html`<br>🕒 ${t.heure}${t.heureFin ? '–' + t.heureFin : ''}` : ''}</span></button>`)}</div>` : html`<p class="small muted">Rien de prévu en plus de l’horaire habituel.</p>`}`;
-    tab = tab || 'fiche';
-    const t0 = today();
-    const cur = absOn(i, t0);
-    const tel = (i.tel || '').replace(/[^\d+]/g, '');
-    let body;
-    if (tab === 'fiche') {
-      const tasks = vault.list('taches').filter((t) => t.intervenantId === id && (t.recur || t.statut !== 'fait'));
-      body = html`${jobBtn}${cur ? html`<div class="alert ${cur.type === 'maladie' ? 'bad' : 'warn'}" style="margin-bottom:12px">${icon('calendar')}<div><b>${ABS_TYPES[cur.type]}</b> ${cur.fin ? 'jusqu’au ' + fmtDate(cur.fin) : '(fin non connue)'}${tasks.length ? html` · <b>${plural(tasks.length, 'intervention')}</b> à réassigner si besoin` : ''}</div></div>` : ''}
-        <dl class="kv">
-          ${kvRow('Type', INT_GENRES[i.genre || 'interne'])}
-          ${kvRow('Catégorie', INT_CATS[i.cat || 'quotidien'])}
-          ${kvRow('Métier', METIERS[i.metier] || i.metier || '—')}
-          ${(() => { const dv = vault.list('devis').filter((d) => d.chefBy === i.id && SAT_FACE[d.sat]); if (!dv.length) return ''; const n = (k) => dv.filter((d) => d.sat === k).length; return kvRow('Avis des clients (visites)', `😃 ${n('top')} · 🧐 ${n('moyen')} · 😡 ${n('mauvais')}`); })()}
-          ${(i.evals || []).length ? kvRow('Avis des locataires', `${MEN_EVAL[Math.round(sum(i.evals, (e) => e.v) / i.evals.length)]} · ${(sum(i.evals, (e) => e.v) / i.evals.length).toFixed(1).replace('.', ',')} / 4 (${plural(i.evals.length, 'avis')})`) : ''}
-          ${i.tarif ? kvRow('Tarif', i.tarif) : ''}
-          ${i.adresse || i.ville ? kvRow('Adresse', [i.adresse, i.ville].filter(Boolean).join(', ')) : ''}
-          ${i.tel ? kvRow('Téléphone', html`<a href="tel:${tel}">${i.tel}</a>`) : ''}
-          ${i.mail ? kvRow('Email', html`<a href="mailto:${i.mail}">${i.mail}</a>`) : ''}
-          ${kvRow('N° CCSS', i.ccss || html`<span class="badge warn">à compléter</span> par l’ouvrier dans son app`)}
-          ${i.rcs ? kvRow('RCS', i.rcs) : ''}${i.tva ? kvRow('N° TVA', i.tva) : ''}
-          ${i.assurTodo ? kvRow('Assurance RC', html`<span class="badge warn">🛡️ à faire</span> pas encore fournie${i.assur || i.police ? ' — ' + [i.assur, i.police].filter(Boolean).join(' · ') : ''} (rappel dans son app)`) : i.assur || i.police ? kvRow('Assurance RC', [i.assur, i.police ? 'police n° ' + i.police : ''].filter(Boolean).join(' — ')) : ''}${i.iban ? kvRow('Banque', [i.banque, i.bic ? 'BIC ' + i.bic : '', ibanFmt(i.iban)].filter(Boolean).join(' · ')) : ''}
-          ${i.cash ? kvRow('Paiement', '💵 cash (en espèces)') : ''}
-          ${i.payeH ? kvRow('Payé', `${eur(i.payeH)} / heure${i.payeDepl ? ' · déplacement ' + eur(i.payeDepl) : ''}`) : ''}
-        </dl>
-        ${(i.genre || 'interne') !== 'interne' ? (() => {
-          const done = vault.list('taches').filter((t) => t.intervenantId === id && !t.recur && (t.statut === 'fait' || t.fini)).sort((a, b) => (b.doneDate || b.date || '').localeCompare(a.doneDate || a.date || ''));
-          return html`<div class="section-label">📝 Engagement</div>
-          ${i.genre === 'prive' ? html`<div class="alert ${i.sign ? 'info' : 'warn'}" style="margin-bottom:8px">${i.sign ? '✍️' : '⚠️'}<div>${i.sign ? html`Fiche signée le <b>${fmtDateTime(Date.parse(i.signAt) || 0)}</b>` : html`<b>Pas encore signée</b> — il la signe dans son app (onglet 📱 App → lui envoyer le lien), rubrique « ✍️ Ma fiche d’engagement »`}</div></div>` : ''}
-          <button class="btn block" data-action="eng-pdf" data-id="${id}" style="margin-bottom:12px">📄 Fiche d’engagement (PDF)</button>
-          ${i.genre === 'prive' ? html`<div class="section-label">🧾 Interventions occasionnelles (ses notes à payer)</div>
-          ${done.length ? html`<div class="list small">${done.map((t) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${t.titre}</span><span class="meta">${placeName(t)} · ${fmtDate(t.doneDate || (t.fini && t.fini.d) || t.date)}${t.occ ? html` · <b>${t.occ.no}</b> · ${eur(t.occ.tot)}${t.occ.cash ? ' · 💵 cash' : ''}` : ''}</span></span>
-            ${t.occ ? html`<button class="btn sm" data-action="occ-dl" data-id="${t.id}">⬇️ PDF</button>` : ''}<button class="btn sm ${t.occ ? 'ghost' : 'primary'}" data-action="occ-open" data-id="${t.id}">${t.occ ? '✏️' : '🧾 Faire la note'}</button></div>`)}</div>` : html`<p class="small muted">Aucun travail terminé pour l’instant.</p>`}` : ''}`;
-        })() : ''}
-        ${(() => { const cm = (i.evals || []).filter((e) => (e.tags || []).length || e.note).slice(-8).reverse(); return cm.length ? html`<div class="section-label">Commentaires des locataires</div><div class="list small">${cm.map((e) => html`<div class="row"><span class="grow" style="white-space:normal"><span class="meta" style="display:block">${fmtDate(e.d)} · ${(vault.get('locataires', e.locId) && fullName(vault.get('locataires', e.locId))) || '—'}</span><b>${MEN_EVAL[e.v] || ''}</b>${(e.tags || []).map((k) => html` · <span>${MEN_TAGS[k] || k}</span>`)}${e.note ? html`<span style="display:block">« ${e.note} »</span>` : ''}</span></div>`)}</div>` : ''; })()}
-        ${i.note ? html`<p class="small" style="white-space:pre-wrap">${i.note}</p>` : ''}
-        ${tasks.length ? html`<div class="section-label">Interventions en cours</div><div class="list small">${tasks.map((t) => html`<button class="row" data-action="edit-tache" data-id="${t.id}"><span class="grow"><span class="title" style="display:block">${t.titre}</span><span class="meta">${placeName(t)} · ${t.recur ? 'récurrent' : fmtDate(t.date)}</span></span></button>`)}</div>` : ''}`;
-    } else if (tab === 'heures') {
-      const d = new Date();
-      const months = [0, 1, 2].map((k) => { const x = new Date(d.getFullYear(), d.getMonth() - k, 1); return [x.getFullYear(), x.getMonth() + 1]; });
-      const hs = hors(i).slice().sort((a, b) => a.j - b.j || (a.de || '').localeCompare(b.de || ''));
-      const mon = ui.planWk && ui.planWk[id] ? ui.planWk[id] : mondayOf(today());
-      const wkDays = [0, 1, 2, 3, 4, 5, 6].map((j) => addDays(mon, j));
-      const planHtml = html`<div class="section-label">📅 Planning par semaine (avec les dates)</div>
-        <div class="card" style="padding:10px 12px;margin-bottom:12px">
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px"><button class="btn sm" data-action="plan-wk" data-id="${id}" data-d="-7" aria-label="Semaine précédente">◀</button>
-            <b class="grow" style="text-align:center">Semaine du ${dayShort(wkDays[0])} au ${dayShort(wkDays[6])}${mon === mondayOf(today()) ? ' · cette semaine' : ''}</b>
-            <button class="btn sm" data-action="plan-wk" data-id="${id}" data-d="7" aria-label="Semaine suivante">▶</button></div>
-          <div class="list small">${wkDays.map((iso, j) => { const hs = horsOn(i, iso), mod = i.plan && Array.isArray(i.plan[iso]), ab = absOn(i, iso), jb = vault.list('taches').filter((t) => t.intervenantId === id && !t.recur && t.date === iso && t.statut !== 'fait');
-            return html`<div class="row${iso === today() ? ' is-today' : ''}"><span style="min-width:92px"><b>${SEMAINE[j]}</b><span class="meta" style="display:block">${dayShort(iso)}</span></span>
-              <span class="grow">${ab ? html`<span class="badge ${ab.type === 'maladie' ? 'bad' : 'warn'}">${ABS_TYPES[ab.type] || ab.type}</span> ` : ''}${hs.length ? hs.map((h) => html`<span style="display:block">${HOR_P[horP(h)].split(' ')[0]} ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : ''}</span>`) : html`<span class="muted">—</span>`}${jb.map((t) => html`<span style="display:block">🔧 ${t.titre}${t.heure ? ' · ' + t.heure : ''}</span>`)}</span>
-              ${mod ? html`<span class="badge">modifié</span>` : ''}</div>`; })}</div>
-          <div class="actions" style="margin-top:8px"><button class="btn primary" data-action="plan-edit" data-id="${id}" data-d="${mon}">✏️ Planifier cette semaine</button>
-            ${wkDays.some((iso) => i.plan && i.plan[iso]) ? html`<button class="btn ghost" data-action="plan-reset" data-id="${id}" data-d="${mon}">↩️ Revenir à l’horaire habituel</button>` : ''}</div>
-          <p class="tiny muted" style="margin:6px 0 0">Les jours sans modification suivent l’horaire habituel (plus bas). La personne voit ce planning, avec les dates, dans son app.</p></div>`;
-      body = html`<div class="section-label">🔁 Routine chaque semaine</div>
-        <p class="small muted" style="margin:0 0 8px">Son travail fixe, qui se répète chaque semaine : jour, heures et immeuble. Il/elle le voit dans son app avec l’itinéraire, et sa position à l’arrivée est comparée à cet immeuble.</p>
-        <button class="btn primary block" data-action="hor-std" data-id="${id}" style="margin-bottom:8px">${hs.length ? '✏️ Ajouter ou modifier des passages' : '➕ Créer la routine (jour, heures, immeuble)'}</button>
-        ${hs.length ? html`<div class="list small">${hs.map((h, n) => html`<div class="row"><span class="grow"><b>${SEMAINE[h.j]}</b> <span>${HOR_P[horP(h)]}</span> ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : html` · <span class="badge warn">sans immeuble</span>`}</span><span class="meta">${fmtH(dayHours({ horaires: [h] }, h.j))}</span><button class="btn sm ghost danger" data-action="hor-del" data-id="${id}" data-n="${n}" aria-label="Retirer">🗑️</button></div>`)}</div>
-          <p class="tiny muted">Total par semaine : <b>${fmtH([0, 1, 2, 3, 4, 5, 6].reduce((n, j) => n + dayHours(i, j), 0))}</b></p>` : html`<p class="small muted">Pas encore de routine${horFixed(i) ? '' : ' : sans routine, le jour, l’heure et le lieu se donnent à chaque travail (plus bas)'}.</p>`}
-        ${horFixed(i) || hs.length ? html`<div class="section-label">📅 Semaine par semaine (avec les dates)</div>
-        <p class="small muted" style="margin:0 0 8px">Pour changer <b>une seule semaine</b> (congé, jour en plus, autre immeuble) : ✏️ Planifier cette semaine. Les autres semaines suivent la routine.</p>${planHtml}` : ''}
-        <div class="section-label">🧰 Travaux à part</div>
-        <p class="small muted" style="margin:0 0 8px">📌 lui donner une demande déjà reçue (locataire, gérance) · 📅 un nouveau travail, une seule fois ou répété (Répétition : chaque semaine, toutes les 2 semaines, chaque mois).</p>
-        ${jobBtn}${jobList}
-        <div class="section-label">Heures par mois (horaire − absences)</div>
-        <div class="list small">${months.map(([yy, mm]) => { const r = intervMonth(i, yy, mm); return html`<div class="row"><span class="grow"><b>${MONTHS_FULL[mm - 1]} ${yy}</b><span class="meta" style="display:block">prévu ${fmtH(r.prevu)}${r.jm ? ` · 🤒 ${r.jm} j (−${fmtH(r.maladie)})` : ''}${r.jc ? ` · 🏖️ ${r.jc} j (−${fmtH(r.conges)})` : ''}${r.ja ? ` · 📌 ${r.ja} j (−${fmtH(r.autre)})` : ''}</span></span><b>${fmtH(r.net)}</b></div>`; })}</div>
-        <p class="tiny muted">Calcul sur l’horaire habituel : pour les heures en plus ou en moins, ajoutez une note.</p>`;
-    } else if (tab === 'chat') {
-      // ✓✓ bleu dans son app : lu par la centrale jusqu'à son dernier message
-      const lastEq = (i.chat || []).filter((m) => m.from === 'eq').reduce((a, m) => (m.at > a ? m.at : a), '');
-      if (i.chatNew || (lastEq && lastEq > (i.chatRd || ''))) setTimeout(() => { vault.mutate((tx) => tx.put('intervenants', { id: i.id, chatNew: 0, ...(lastEq ? { chatRd: lastEq } : {}) }), 'Messages lus', intervFull(i), i.id); if (lastEq > (i.chatRd || '')) equipeSync(i.id, true); }, 0);
-      body = eqChatHtml(i);
-    } else if (tab === 'act') {
-      if (i.feedNew) setTimeout(() => vault.mutate((tx) => tx.put('intervenants', { id: i.id, feedNew: 0 }), 'Activité lue', intervFull(i), i.id), 0);
-      body = html`${presHtml(i)}<div class="section-label">📋 Autres nouvelles de son app</div>${eqFeedHtml(id, 120, true)}`;
-    } else if (tab === 'app') {
-      const e = i.espace || {};
-      if (!e.on) {
-        body = html`<p style="margin-top:0">Donnez à <b>${intervFull(i)}</b> son <b>app de l’équipe</b> avec un code personnel (comme pour les locataires). Il/elle y voit <b>seulement</b> :</p>
-          <ul class="small" style="margin:0 0 12px;padding-left:20px"><li>son planning : quoi, où, quand (3 semaines), avec vos consignes</li><li>son horaire et ses absences</li></ul>
-          <p class="small" style="margin:0 0 12px">Et il/elle peut vous envoyer : <b>▶️ commencé · ✅ fini · ⚠️ pas fini</b> (avec la raison et des photos), ses coordonnées, un <b>arrêt maladie</b> avec le certificat. Tout arrive ici (Activité) et sur l’Accueil.</p>
-          <div class="alert info" style="margin-bottom:12px">${icon('shield')}<div>Données chiffrées : il/elle ne voit ni les loyers, ni les locataires (sauf le prénom et le téléphone de celui qui a signalé une panne), ni vos comptes.</div></div>
-          <button class="btn primary block" data-action="eq-on" data-id="${id}">📱 Créer l’accès à l’app</button>`;
-      } else {
-        const url = eqUrl(i);
-        const inv = inviteMsg('eq', e.lang, i.prenom || '', eqAppUrl(i), e.code || '—', url, socName());
-        const msgTxt = encodeURIComponent(inv.txt);
-        body = html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code personnel</div>
-            <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
-            <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">${e.code ? html`<button class="btn sm" data-action="code-copy" data-code="${e.code}">📋 Copier le code</button>` : ''}<button class="btn sm" data-action="eq-code" data-id="${id}">${e.code ? 'Nouveau code' : 'Créer le code'}</button></div></div>
-          <div class="qr" style="max-width:190px;margin:0 auto 10px">${qrSvg(url, 5)}</div>
-          <label class="field" style="margin:0 0 4px">Langue de son app<select data-input="eq-lang" data-id="${id}">${[['', 'Celle de son téléphone'], ['fr', 'Français'], ['it', 'Italiano'], ['pt', 'Português'], ['de', 'Deutsch'], ['en', 'English'], ['es', 'Español']].map(([k, v2]) => html`<option value="${k}" ${(e.lang || '') === k ? new Raw('selected') : ''}>${v2}</option>`)}</select></label>
-          <p class="tiny muted" style="margin:0 0 10px">Le message d’invitation part dans cette langue (en français si « Celle de son téléphone »).</p>
-          <div class="actions" style="flex-direction:column">
-            ${tel ? html`<a class="btn" href="https://wa.me/${tel.replace(/^\+/, '')}?text=${msgTxt}" target="_blank" rel="noopener">${icon('msg')} Envoyer par WhatsApp</a><a class="btn" href="sms:${tel}?&body=${msgTxt}">${icon('msg')} Envoyer par SMS</a>` : ''}
-            ${i.mail ? html`<a class="btn" href="mailto:${i.mail}?subject=${encodeURIComponent(inv.subj)}&body=${msgTxt}">${icon('mail')} Envoyer par email</a>` : ''}
-            <button class="btn" data-action="eq-copy" data-id="${id}">${icon('file')} Copier le lien</button>
-            <a class="btn" href="${url}" target="_blank" rel="noopener">${icon('eye')} Voir son app</a>
-          </div>
-          <p class="tiny muted">L’app se met à jour toute seule quand vous changez son planning ou ses interventions.</p>
-          <button class="btn ghost danger block" data-action="eq-off" data-id="${id}">Désactiver l’accès</button>`;
-      }
-    } else {
-      const abs = (i.absences || []).slice().sort((a, b) => b.debut.localeCompare(a.debut));
-      body = html`<form data-form="absence" class="fields" style="margin-bottom:14px">
-          <input type="hidden" name="id" value="${id}">
-          <label class="field">Type<select name="type">${Object.entries(ABS_TYPES).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
-          ${field('Du', 'debut', t0, { type: 'date', required: true })}
-          ${field('Au (inclus)', 'fin', '', { type: 'date' })}
-          ${field('Note', 'note', '', { placeholder: 'ex. certificat reçu par WhatsApp' })}
-          <label class="field full">Certificat / justificatif (photo ou PDF)<input type="file" name="file" accept="image/*,application/pdf"></label>
-          <button class="btn primary full" type="submit">${icon('plus')} Absence</button>
-        </form>
-        ${abs.length ? html`<div class="list small">${abs.map((a) => html`<div class="row"><span class="grow"><b>${ABS_TYPES[a.type] || a.type}</b> — ${fmtDate(a.debut)}${a.fin ? ' → ' + fmtDate(a.fin) : ' → ?'}${a.note ? html`<span class="meta" style="display:block">${a.note}</span>` : ''}</span>
-          ${a.docId && vault.get('documents', a.docId) ? html`<button class="btn sm" data-action="open-doc" data-id="${a.docId}">👁 Certificat</button>` : ''}
-          <button class="btn icon sm ghost" data-action="del-absence" data-id="${id}" data-aid="${a.id}" aria-label="Supprimer">${icon('trash')}</button></div>`)}</div>` : html`<p class="small muted">Aucune absence enregistrée.</p>`}`;
-    }
-    return {
-      title: html`${intervFull(i)} ${vraiBtn('intervenants', i)}`,
-      body: html`<p class="small muted" style="margin:0 0 10px">${METIERS[i.metier] || ''} · ${INT_GENRES[i.genre || 'interne']}${i.espace && i.espace.on ? ' · 📱 app active' : ''}</p>${tabsBar([['fiche', 'Fiche'], ['heures', 'Horaires'], ['abs', `Absences${cur ? ' 🔴' : ''}`], ['act', `Activité${i.feedNew ? ' (' + i.feedNew + ')' : ''}`], ['chat', `💬 Chat${i.chatNew ? ' (' + i.chatNew + ')' : ''}`], ['app', '📱 App']], tab)}${body}`,
-      foot: html`${tel ? html`<a class="btn" href="tel:${tel}">${icon('phone')} Appeler</a>` : ''}<button class="btn primary" data-action="edit-interv" data-id="${id}">Modifier</button>`,
-    };
-  },
-
   'tache-form'({ id, preset }) {
-    // preset : immeuble (texte) ou demande d'une gérance ({ ptl, titre, note })
-    const pz = preset && typeof preset === 'object' ? preset : null;
-    const t = id ? vault.get('taches', id) : { type: 'reparation', immId: pz ? '' : preset || '', statut: 'afaire', date: today(), recur: '', ...(pz || {}) };
-    // depuis la fiche d'une personne : elle est déjà choisie, il reste quoi, où, quel jour et à quelle heure
+    const t = id ? vault.get('taches', id) : { type: 'reparation', immId: preset || '', statut: 'afaire', date: today(), recur: '' };
     if (id && !t) return null;
     const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === t.immId).sort(byAddr);
-    if (!imms.length && !t.ptl && !t.dev && !t.net) return { title: 'Nouvelle intervention', body: empty('building', "Ajoutez d'abord un immeuble.") };
-    const hint = t.metiers || [], fits = (i) => hint.includes(i.metier);
-    const ints = vault.list('intervenants').filter((i) => !i.archive || i.id === t.intervenantId).sort((a, b) => fits(b) - fits(a) || intervFull(a).localeCompare(intervFull(b)));
+    if (!imms.length) return { title: 'Nouvelle intervention', body: empty('building', "Ajoutez d'abord un immeuble.") };
+    const docs = t.id ? vault.list('documents').filter((x) => x.tacheId === t.id) : [];
+    const hist = (ui.lieuH = lieuxHist());
     return {
-      title: id ? "Modifier l'intervention" : 'Nouvelle intervention',
-      body: html`${id && (t.locId || t.dom) && t.sentAt ? (t.fwd ? html`<div class="alert info" style="margin-bottom:10px">↪️<div><b>Envoyé à LA CENTRAL</b> le ${fmtDateTime(t.fwd.at)}${t.fwd.st ? html` · état : <b>${STATUTS[t.fwd.st] || t.fwd.st}</b>${t.fwd.who ? ' · 👷 ' + t.fwd.who : ''}` : ''}${t.fwd.acces ? html`<div class="tiny">🔑 accès au logement autorisé par ${t.fwd.acces}</div>` : ''}</div></div>` : '') : ''}${id && !t.recur && t.statut !== 'fait' && t.intervenantId ? tripSlot(t.id, today()) : ''}<form id="f" data-form="tache" class="fields">
+      title: id ? (t.locId && t.sentAt ? 'Signalement du locataire' : "Modifier l'intervention") : 'Nouvelle intervention',
+      body: html`<form id="f" data-form="tache" class="fields">
   <input type="hidden" name="id" value="${id || ''}">
+  ${t.locId ? html`<p class="full" style="margin:0">📨 Signalé par <a href="#" data-action="open-loc" data-id="${t.locId}">${fullName(vault.get('locataires', t.locId) || { nom: '?' })}</a>${t.sentAt ? ' le ' + fmtDateTime(t.sentAt) : ''} — il voit l'avancement dans son app.</p>` : ''}
   <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${(t.type === 'entretien' ? 'reparation' : t.type) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
   ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}
-  ${t.dev ? html`<div class="full ptl-box">📝 <b>Devis ${t.dev.no}</b> — ${t.dev.client}${t.dev.adr ? html`<br>📍 ${t.dev.adr}` : ''}${t.dev.contact ? html`<br>👤 ${t.dev.contact}${t.dev.tel ? ' · ' + t.dev.tel : ''}` : ''}
-      <input type="hidden" name="dev" value="${JSON.stringify(t.dev)}"><input type="hidden" name="immId" value=""></div>`
-    : t.ptl ? html`<div class="full ptl-box">${ptlPlace(t.ptl)}
-      <input type="hidden" name="ptl" value="${JSON.stringify(t.ptl)}"><input type="hidden" name="immId" value=""></div>`
-    : (() => { const hist = (ui.lieuH = lieuxHist()); return html`<div class="full lieu-pick">
-      <input type="hidden" name="immId" value="${t.lieu ? '' : t.immId || ''}"><input type="hidden" name="lieu" value="${t.lieu ? JSON.stringify(t.lieu) : ''}">
-      <div class="section-label" style="margin:0 0 6px">📍 Où ?</div>
-      <div class="search">${icon('search')}<input type="search" data-input="lieu-q" placeholder="Rechercher une rue, un immeuble, une résidence, un client…" autocomplete="off"></div>
-      <p class="small lieu-sel" id="lieuSel">${lieuSelHtml(t)}</p>
-      <div class="list small lieu-list" id="lieuList">
-        ${imms.map((im) => html`<button type="button" class="row" data-action="lieu-set" data-k="i:${im.id}" data-q="${lieuQ(im.adresse, im.nom, im.ville)}" aria-pressed="${!t.lieu && im.id === t.immId}"><span class="avatar">🏠</span><span class="grow"><span class="title" style="display:block">${im.adresse}</span><span class="meta">Nos immeubles</span></span></button>`)}
-        ${hist.map((h, n) => html`<button type="button" class="row" data-action="lieu-set" data-k="h:${n}" data-q="${lieuQ(h.nom, h.adr, h.contact)}" aria-pressed="${!!t.lieu && (t.lieu.adr || t.lieu.nom) === (h.adr || h.nom)}"><span class="avatar">🕘</span><span class="grow"><span class="title" style="display:block">${h.nom || h.adr}</span><span class="meta">${h.nom && h.adr ? h.adr + ' · ' : ''}${h.n} ${h.n > 1 ? 'interventions' : 'intervention'}${h.d ? ' · ' + fmtDate(h.d) : ''}</span></span></button>`)}
-        <p class="small muted lieu-none" hidden>Rien trouvé : ajoutez l’adresse ci-dessous.</p>
-      </div>
-      <button type="button" class="btn sm" data-action="lieu-new" style="margin-top:8px">✏️ Autre adresse (nouveau lieu)</button>
-      <div class="fields" id="lieuNew" hidden style="margin-top:8px">
-        ${field('Nom du lieu / client', 'lieuNom', '', { placeholder: 'ex. Résidence Les Tilleuls, Café du Port' })}
-        ${field('Adresse', 'lieuAdr', '', { placeholder: 'ex. 12 rue de Hollerich, L-1740 Luxembourg' })}
-        ${field('Contact sur place', 'lieuContact', '')}
-        ${field('Téléphone', 'lieuTel', '', { type: 'tel' })}
-      </div>
+  <div class="full lieu-pick">
+    <input type="hidden" name="immId" value="${t.lieu ? '' : t.immId || ''}"><input type="hidden" name="lieu" value="${t.lieu ? JSON.stringify(t.lieu) : ''}">
+    <div class="section-label" style="margin:0 0 6px">📍 Où ?</div>
+    <div class="search">${icon('search')}<input type="search" data-input="lieu-q" placeholder="Rechercher une rue, un immeuble…" autocomplete="off"></div>
+    <p class="small lieu-sel" id="lieuSel">${lieuSelHtml(t)}</p>
+    <div class="list small lieu-list" id="lieuList">
+      ${imms.map((im) => html`<button type="button" class="row" data-action="lieu-set" data-k="i:${im.id}" data-q="${lieuQ(im.adresse, im.nom, im.ville)}" aria-pressed="${!t.lieu && im.id === t.immId}"><span class="avatar">🏠</span><span class="grow"><span class="title" style="display:block">${im.adresse}</span><span class="meta">Nos immeubles</span></span></button>`)}
+      ${hist.map((h, n) => html`<button type="button" class="row" data-action="lieu-set" data-k="h:${n}" data-q="${lieuQ(h.nom, h.adr, h.contact)}" aria-pressed="${!!t.lieu && (t.lieu.adr || t.lieu.nom) === (h.adr || h.nom)}"><span class="avatar">🕘</span><span class="grow"><span class="title" style="display:block">${h.nom || h.adr}</span><span class="meta">${h.nom && h.adr ? h.adr : 'Déjà utilisé'}</span></span></button>`)}
+      <p class="small muted lieu-none" hidden>Rien trouvé : ajoutez l’adresse ci-dessous.</p>
     </div>
-  <label class="field" id="tacheLogF" ${t.immId && !t.lieu ? '' : new Raw('hidden')}>Logement / partie<select name="logId" id="tacheLog">${t.immId && !t.lieu ? logOptions(t.immId, t.logId) : ''}</select></label>`; })()}
-  <label class="field full">Qui ?<select name="intervenantId" ${isCompta() ? new Raw('disabled title="Le comptable n’affecte pas les travaux"') : ''}><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}${(t.refusBy || []).includes(i.id) ? ' (✋ a refusé)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
-  ${isCompta() || t.recur ? '' : html`<div class="full taxi-box"><label class="t-urg"><input type="checkbox" name="taxi" value="1" ${t.taxi && t.taxi.st !== 'none' ? new Raw('checked') : ''}> <span>🚕 <b>Mode taxi</b> — la personne appuie sur START (5 min si urgent, 30 min sinon) ; sinon la demande passe au suivant</span></label>
-    <div class="taxi-more fields">${[2, 3].map((n) => { const cur = t.taxi && t.taxi.st === 'wait' ? t.taxi.list[t.taxi.i + n - 1] || '' : ''; return html`<label class="field">${n}e choix<select name="taxi${n}"><option value="">🤖 automatique (même métier, meilleurs points)</option><option value="-">— personne —</option>${ints.filter((i) => !i.archive && i.espace && i.espace.on).map((i) => html`<option value="${i.id}" ${i.id === cur ? new Raw('selected') : ''}>${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}</option>`)}</select></label>`; })}</div>
-    ${t.taxi ? html`<p class="tiny muted" style="margin:4px 0 0">🚕 ${taxiLog(t)}${t.taxi.st === 'wait' ? ` · attend ${intervName(taxiCur(t))} — réponse avant ${new Date(taxiUntil(t)).toTimeString().slice(0, 5)}` : ''}</p>` : ''}</div>`}
-  ${(t.swaps || []).length ? html`<p class="tiny muted full" style="margin:-6px 0 0">${t.swaps.slice(-3).map((x) => html`<span style="display:block">🔄 ${intervName(x.from) || '—'} → ${intervName(x.to) || 'à choisir'} · ${fmtDateTime(x.at)} · « ${x.why} »${x.by ? ' · ' + x.by : ''}</span>`)}</p>` : ''}
-  ${hint.length ? html`<p class="tiny muted full" style="margin:-6px 0 0">⭐ = métier conseillé pour cette demande : ${[...new Set(hint)].map((m) => METIERS[m]).join(', ')}${ints.some(fits) ? '' : ' (personne de ce métier dans l’équipe)'}</p>` : ''}
-  ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
+    <button type="button" class="btn sm" data-action="lieu-new" style="margin-top:8px">✏️ Autre adresse (nouveau lieu)</button>
+    <div class="fields" id="lieuNew" hidden style="margin-top:8px">
+      ${field('Nom du lieu', 'lieuNom', '', { placeholder: 'ex. Résidence Les Tilleuls' })}
+      ${field('Adresse', 'lieuAdr', '', { placeholder: 'ex. 12 rue de Hollerich, L-1740 Luxembourg' })}
+      ${field('Contact sur place', 'lieuContact', '')}
+      ${field('Téléphone', 'lieuTel', '', { type: 'tel' })}
+    </div>
+  </div>
+  <label class="field" id="tacheLogF" ${t.immId && !t.lieu ? '' : new Raw('hidden')}>Logement / partie<select name="logId" id="tacheLog">${t.immId && !t.lieu ? logOptions(t.immId, t.logId) : ''}</select></label>
   ${field('Date', 'date', t.date, { type: 'date' })}
   <label class="field t-hours">Heure<span class="t-hrow"><span class="tph${t.heure ? ' v' : ''}"><input type="time" name="heure" value="${t.heure || ''}" aria-label="De"><i>--:--</i></span><span class="muted">→</span><span class="tph${t.heureFin ? ' v' : ''}"><input type="time" name="heureFin" value="${t.heureFin || ''}" aria-label="À"><i>--:--</i></span></span></label>
-  <label class="full t-urg"><input type="checkbox" name="urgent" value="1" ${t.urgent ? new Raw('checked') : ''}> <span>🔴 <b>Urgent</b> — clignote en rouge dans l’app de la personne</span></label>
+  <label class="full t-urg"><input type="checkbox" name="urgent" value="1" ${t.urgent ? new Raw('checked') : ''}> <span>🔴 <b>Urgent</b></span></label>
   <label class="field">Répétition<select name="recur">${Object.entries(RECURS).map(([k, v]) => html`<option value="${k}" ${(t.recur || '') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
   ${field("Jusqu'au (si répétition)", 'fin', t.fin, { type: 'date' })}
   ${field('Coût (€)', 'cout', t.cout, { type: 'number', attrs: money$ })}
-  ${t.fini && t.statut !== 'fait' ? html`<div class="full alert ok" style="margin:0">✅<div><b>${intervFull(vault.get('intervenants', t.fini.by) || {})} a fini le travail</b> le ${fmtDate(t.fini.d)}${t.fini.h ? ' à ' + t.fini.h : ''}${t.fini.note ? html` — « ${t.fini.note} »` : ''}<br><span class="small">Vérifiez (photos après, travail fait), puis choisissez 🟢 <b>Terminée</b> pour clôturer le chantier.</span></div></div>` : ''}
   ${!t.recur ? html`<fieldset class="full st-radios"><legend>Statut</legend><div class="st-row">${Object.entries(STATUTS).map(([k, v]) => html`<label class="st-opt st-${k}"><input type="radio" name="statut" value="${k}" ${(t.statut || 'afaire') === k ? new Raw('checked') : ''}><span>${ST_DOT[k]} ${v}</span></label>`)}</div>
-    <p class="tiny muted" style="margin:6px 0 0">🔴 <b>À faire</b> : pas encore organisé · 🟡 <b>Planifiée</b> : jour et personne fixés · 🟢 <b>Terminée</b> : chantier clôturé par le bureau</p></fieldset>` : ''}
-  <label class="field full">Notes<textarea name="note" placeholder="Accès, clés, pièces à acheter, ce qui a été fait…">${t.note || ''}</textarea></label>
-  ${(() => { const pb = t.id ? eqPhotos(t.id, 'pb') : [], np = (t.ptlPhotos || []).length; return html`<label class="field full">📷 Photos du problème (envoyées dans l’app de la personne)<input type="file" name="pbphotos" accept="image/*" multiple></label>
-  ${pb.length || np ? html`<div class="full"><p class="tiny muted" style="margin:-4px 0 6px">✓ ${pb.length + np} photo(s) déjà jointe(s)${np ? ' (photos de la gérance)' : ''}</p>
-    <div class="edl-grid sm">${pb.map((x) => html`<figure class="edl"><button type="button" class="edl-img" data-action="open-doc" data-id="${x.id}" aria-label="Agrandir"><img alt="" data-edl="${x.id}"></button></figure>`)}${(t.ptlPhotos || []).map((pid) => html`<figure class="edl"><a class="edl-img" target="_blank" rel="noopener" aria-label="Agrandir"><img alt="Photo de la gérance" data-ptl-photo="${pid}"></a></figure>`)}</div></div>` : ''}
-  ${np ? html`<input type="hidden" name="ptlPhotos" value="${t.ptlPhotos.join(',')}">` : ''}`; })()}
+    <p class="tiny muted" style="margin:6px 0 0">🔴 <b>À faire</b> · 🟡 <b>Planifiée</b> : jour fixé · 🟢 <b>Terminée</b> : le locataire voit « Terminé » dans son app</p></fieldset>` : ''}
+  <label class="field full">Notes<textarea name="note" placeholder="Accès, clés, artisan appelé, ce qui a été fait…">${t.note || ''}</textarea></label>
+  <label class="field full">📷 Ajouter des photos<input type="file" name="pbphotos" accept="image/*" multiple></label>
   ${t.depId ? html`<p class="tiny muted full" style="margin:0">✓ Coût enregistré dans les dépenses de l'immeuble.</p>` : ''}
-  ${(t.journal || []).length ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">👷 Suivi de l’équipe</div><div class="list small">${t.journal.slice().reverse().slice(0, 30).map((x) => html`<div class="row"><span class="grow" style="white-space:normal"><b>${EQ_ST[x.st] || x.st}${x.h ? ' 🕒 ' + x.h : ''}${x.qte ? ` · 🔢 ${x.qte} ${x.qu || ''}` : ''}</b> · ${fmtDate(x.d)}${x.by ? ' · ' + intervName(x.by) : ''}<span class="meta" style="display:block">${fmtDateTime(x.at)}</span>${x.note ? html`<span class="small" style="display:block">📝 ${x.note}</span>` : ''}</span>${(x.ph || []).filter((pid) => vault.get('documents', pid)).map((pid) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${pid}">📷</button>`)}</div>`)}</div></div>` : ''}
-  ${t.locId ? html`<p class="tiny full" style="margin:0">📨 Signalé par <a href="#" data-action="open-loc" data-id="${t.locId}">${fullName(vault.get('locataires', t.locId) || { nom: '?' })}</a> — il voit l'avancement dans son espace.</p>` : ''}
-  ${t.id && (eqPhotos(t.id, 'av').length || eqPhotos(t.id, 'ap').length) ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">📷 Avant / après les travaux</div><div class="edl-pair two">${Object.entries(EQ_PH).map(([ph, lb]) => html`<div><div class="tiny muted" style="margin-bottom:4px"><b>${lb}</b> · ${eqPhotos(t.id, ph).length} / ${EQ_PH_MAX}</div><div class="edl-grid sm">${eqPhotos(t.id, ph).map((x) => html`<figure class="edl"><button type="button" class="edl-img" data-action="open-doc" data-id="${x.id}" aria-label="Agrandir"><img alt="" data-edl="${x.id}"></button><figcaption><span>${fmtDate(x.date)}</span><button type="button" class="btn icon sm ghost danger" data-action="del-edl" data-id="${x.id}" aria-label="Retirer la photo">${icon('trash')}</button></figcaption></figure>`)}</div></div>`)}</div></div>` : ''}
-  ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id && !x.phase).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id && !x.phase).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
+  ${docs.length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${docs.map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${String(x.label || '').replace('Signalement — ', '')}</button>`)}</div>` : ''}
 </form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
-        ${id && (t.ptl || t.net) && t.statut === 'fait' ? html`<button class="btn" data-action="fact-open" data-id="${id}">🧾 ${t.facture ? 'Facture ' + t.facture.no : 'Facture'}</button>` : ''}
         ${id && t.locId && !t.recur && t.statut !== 'fait' ? html`<button class="btn" style="background:var(--green-soft);color:var(--green)" data-action="tache-done" data-id="${id}">${icon('check')} Réparé</button>` : html`<button class="btn" data-action="close-sheet">Annuler</button>`}
         <button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
@@ -5952,88 +3438,6 @@ const SHEETS = {
         ${field('Note (visible seulement par vous)', 'note', '', { full: true })}
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer le code</button>`,
-    };
-  },
-
-  'net-cert'({ id }) {
-    const c = vault.get('reglages', id);
-    if (!c) return null;
-    return {
-      title: '🧾 Certificat de suppression',
-      narrow: true,
-      body: html`<dl class="kv small"><dt>Client</dt><dd>${c.tenant.nom} · ${NET_FIL[c.tenant.fil] || ''}</dd><dt>Centrale</dt><dd>${c.tenant.id}</dd><dt>Date</dt><dd>${fmtDateTime(c.at)}</dd><dt>Par</dt><dd>${c.by || ''}</dd>
-        <dt>Objets effacés</dt><dd>${c.objects} (${Math.round((c.bytes || 0) / 1024)} Ko)</dd><dt>Empreinte</dt><dd style="font-family:var(--mono);font-size:11px;overflow-wrap:anywhere">${c.digest}</dd></dl>`,
-      foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" data-action="net-cert-pdf" data-id="${id}">⬇ PDF</button>`,
-    };
-  },
-
-  'net-client'({ id }) {
-    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === id);
-    if (!t) return null;
-    const inf = netInfo(id), code = inf.code && !t.configured ? inf.code : '', st = NET_STATE[t.state] || NET_STATE.ok;
-    const inv = code ? netInvite(t, code) : '', tel = String(inf.tel || '').replace(/[^\d+]/g, '');
-    return {
-      title: `${(NET_FIL[t.fil] || '').split(' ')[0]} ${t.nom}`,
-      narrow: true,
-      body: html`<div class="alert ${t.state === 'ok' ? 'info' : 'warn'}" style="margin-bottom:12px">${st[0]}<div><b>${st[1]}</b> · ${NET_ST[t.st] || ''}${t.until ? (t.until >= FREE_UNTIL ? ' · ♾️ sans échéance' : ' · jusqu’au ' + fmtDate(t.until)) : ''}<div class="tiny">${t.configured ? (t.lastSeen ? 'Dernière connexion : ' + fmtDateTime(t.lastSeen) : 'Centrale configurée') : 'Invitation pas encore utilisée'}</div><div class="tiny">${netInfo(id).cgu ? `📜 Conditions acceptées le ${fmtDateTime(netInfo(id).cgu.at)} (version ${netInfo(id).cgu.v})` : '📜 Conditions pas encore acceptées'}</div></div></div>
-        ${t.fil === 'proprio' ? html`${netBailLine(id)}<details class="card" style="margin-bottom:12px" ${netInfo(id).loueur ? '' : new Raw('open')}><summary><b>🔑 Propriétaire ou bailleur principal ?</b>${netInfo(id).loueur ? '' : html` <span class="tiny" style="color:var(--amber,#b45309)">à préciser</span>`}</summary>
-          <form data-form="net-bail-set" class="fields" style="margin-top:8px"><input type="hidden" name="tid" value="${id}">${netBailFields(netInfo(id))}<button class="btn sm primary full" type="submit">Enregistrer</button></form></details>` : ''}
-        ${code ? html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code d’invitation</div><div style="font-family:var(--mono);font-size:24px;font-weight:800;letter-spacing:.08em">${code}</div>
-          <div class="actions" style="justify-content:center;flex-wrap:wrap">${tel ? html`<a class="btn sm" href="https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent(inv)}" target="_blank" rel="noopener">💬 WhatsApp</a><a class="btn sm" href="sms:${tel}?&body=${encodeURIComponent(inv)}">📱 SMS</a>` : ''}${inf.email ? html`<a class="btn sm" href="mailto:${inf.email}?subject=${encodeURIComponent('🌐 Votre centrale')}&body=${encodeURIComponent(inv)}">✉️ Email</a>` : ''}<button class="btn sm" data-action="code-copy" data-code="${inv}">📋 Copier l’invitation</button></div></div>` : ''}
-        ${isCompta() ? '' : html`${t.until >= FREE_UNTIL ? '' : html`<p style="margin:0 0 12px"><button class="btn sm primary" data-action="lic-free" data-id="${id}">♾️ Gratuit — sans échéance</button></p>`}
-          <div class="actions" style="margin:0 0 12px;flex-wrap:wrap">${t.st === 'suspended' ? html`<button class="btn sm" data-action="lic-susp" data-id="${id}" data-on="0">▶ Réactiver</button>` : html`<button class="btn sm" data-action="lic-susp" data-id="${id}" data-on="1">⏸ Suspendre</button>`}</div>
-          <form id="f" data-form="net-edit" class="fields">
-          <input type="hidden" name="id" value="${id}">
-          ${field('Nom', 'nom', t.nom, { full: true, required: true })}
-          <label class="field full">Filière<select name="fil">${Object.entries(NET_FIL).map(([k, v]) => html`<option value="${k}" ${t.fil === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-          ${field('Jours en lecture seule après l’échéance (vide = jusqu’à votre décision)', 'roDays', t.roDays ?? '', { full: true, type: 'number', attrs: 'min="0" max="3650" inputmode="numeric"' })}
-          ${(() => { const ni = netInfo(id); return html`${field('🌍 Pays', 'pays', ni.pays || 'LU', {})}${field('Ville', 'ville', ni.ville || '', {})}<div class="full fields net-taxi" style="margin:0" ${t.fil === 'taxi' ? '' : new Raw('hidden')}>${field('🪪 N° de licence taxi', 'licence', ni.licence || '', {})}<label class="field">Commission par course que nous lui donnons<select name="comT"><option value="eur" ${ni.comT !== 'pct' ? new Raw('selected') : ''}>€ par course</option><option value="pct" ${ni.comT === 'pct' ? new Raw('selected') : ''}>% du prix</option></select></label>${field('Montant', 'comV', ni.comV ?? 3, { type: 'number', attrs: 'step="0.01" min="0"' })}</div>`; })()}
-          <p class="tiny muted full" style="margin:0">Échu : le client lit ses données mais ne peut plus les modifier ; après ces jours, sa centrale est bloquée (durées à fixer avec votre avocat). Ses données ne sont jamais effacées sans votre décision.</p>
-        </form>
-        ${(() => {
-          const F = netFacts(id), bill = netToBill(id), d = payDays();
-          return html`<div class="section-label" style="margin-top:14px">🧾 Factures des interventions · ${netPayMode(id) === 'month' ? '📅 facture mensuelle' : 'à chaque intervention'}</div>
-            ${t.hold === 'ro' ? html`<div class="alert bad" style="margin-bottom:8px">🔒<div><b>Lecture seule pour impayé</b> (plus de ${d.ro} jours de retard) — levée dès que tout est payé.</div></div>` : ''}
-            ${bill.length && !isCompta() ? html`<button class="btn block" style="margin-bottom:8px" data-action="nfact-bill" data-id="${id}">🧾 Facturer ${plural(bill.length, 'intervention')} terminée${bill.length > 1 ? 's' : ''}</button>` : ''}
-            ${F.length ? html`<div class="list small" style="margin-bottom:8px">${F.slice(0, 20).map((f) => { const late = !f.paid ? lateDays(f.due) : 0; return html`<div class="row"><span class="grow"><b>${f.no}</b> · ${eur(f.ttc)}<span class="meta" style="display:block">${f.paid ? '✅ payée le ' + fmtDate(f.paid) : f.claim ? '💳 le client dit avoir payé (' + fmtDate(f.claim) + ')' : late > 0 ? `🔴 ${late} j de retard` : '⏳ échéance ' + fmtDate(f.due)}</span></span>
-              ${f.docId ? html`<button class="btn sm" data-action="open-doc" data-id="${f.docId}">⬇️ PDF</button>` : ''}${f.paid || isCompta() ? '' : html`<button class="btn sm primary" data-action="nfact-paid" data-id="${f.no}">✅ Reçu</button>`}</div>`; })}</div>` : html`<p class="tiny muted">Aucune facture.</p>`}`;
-        })()}
-        ${['gerance', 'proprio'].includes(t.fil) && !vault.op ? html`<div class="section-label" style="margin-top:14px">📦 Transfert</div>
-          <button class="btn block" data-action="xfer-open" data-id="${id}">📦 Transférer des immeubles et leurs locataires vers cette centrale</button>
-          ${(() => { const n = vault.listAll('immeubles').filter((x) => x.xfer && x.xfer.to === id).length; return n ? html`<p class="tiny muted" style="margin:4px 0 0">✅ ${plural(n, 'immeuble')} déjà transféré${n > 1 ? 's' : ''} (gardé${n > 1 ? 's' : ''} ici en archive).</p>` : ''; })()}` : ''}
-        <div class="section-label" style="margin-top:14px">Accès</div>
-        <div class="actions" style="flex-wrap:wrap;margin:0">${!t.configured ? html`<button class="btn sm" data-action="net-code" data-id="${id}">🔁 Nouveau code d’invitation</button>` : ''}<button class="btn sm" data-action="net-recb" data-id="${id}" style="flex-basis:100%;justify-content:flex-start">🧩 Clé oubliée : donner la moitié B</button><button class="btn sm ghost danger" data-action="net-reset" data-id="${id}" style="flex-basis:100%;justify-content:flex-start">🗑️ Vider la centrale (clé perdue)</button>${vault.op ? '' : html`<button class="btn sm ghost danger" data-action="net-del" data-id="${id}">🗑 Supprimer avec certificat</button>`}</div>
-        <p class="tiny muted" style="margin:6px 0 0">Nouvel accès : la centrale du client est vidée (sans sa clé personne ne peut lire ses données) et un nouveau code est créé. S’il a sa clé de secours, il rentre seul sans rien perdre.</p>`}`,
-      foot: html`<button class="btn" data-action="close-sheet">Fermer</button>${isCompta() ? '' : html`<button class="btn primary" type="submit" form="f">Enregistrer</button>`}`,
-    };
-  },
-
-  'xfer'({ id }) {
-    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === id);
-    if (!t) return null;
-    const done = ui.xferDone && ui.xferDone.tid === id ? ui.xferDone : null;
-    if (done) return {
-      title: `📦 Transfert vers ${t.nom}`, narrow: true,
-      body: html`<div class="alert info" style="margin-bottom:12px">✅<div><b>${done.sent ? `Paquet déposé dans le container de ${t.nom}` : 'Paquet prêt et téléchargé'}</b><div class="tiny">${xferTxt(done.counts)}</div></div></div>
-        <div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code du transfert (à usage unique, il n’est gardé nulle part)</div><div style="font-family:var(--mono);font-size:24px;font-weight:800;letter-spacing:.08em">${done.code}</div>
-          <div class="actions" style="justify-content:center"><button class="btn sm" data-action="code-copy" data-code="${done.code}">📋 Copier</button><button class="btn sm" data-action="xfer-dl" data-id="${id}">⬇️ Télécharger encore le fichier</button></div></div>
-        ${done.miss.length ? html`<div class="alert warn" style="margin-bottom:12px">⚠️<div>${plural(done.miss.length, 'document')} illisible${done.miss.length > 1 ? 's' : ''} (pas dans le paquet) : ${done.miss.slice(0, 5).join(', ')}</div></div>` : ''}
-        <ol class="small" style="margin:0;padding-left:20px;line-height:1.6"><li>Ouvrez la centrale de <b>${t.nom}</b>.</li>${done.sent ? html`<li>Dans l’<b>Accueil</b> : « 📦 Un paquet de LA CENTRAL vous attend » → touchez-le.</li>` : html`<li>Réglages → <b>Importer</b> → choisissez le fichier <b>${done.file}</b>.</li>`}<li>Tapez le code ci-dessus, vérifiez les chiffres, confirmez.</li><li>Les apps des locataires passent à cette centrale : mêmes codes, mêmes liens, rien à réinstaller.</li></ol>
-        <p class="tiny muted" style="margin:10px 0 0">Ici rien n’est effacé : les immeubles restent en archive (marqués 📦), sans app. Vous pouvez les masquer avec 🔒 Masquer.</p>`,
-      foot: html`<button class="btn primary" data-action="close-sheet">Terminé</button>`,
-    };
-    const ims = vault.listAll('immeubles').slice().sort((a2, b2) => String(a2.adresse || '').localeCompare(String(b2.adresse || '')));
-    return {
-      title: `📦 Transfert vers ${t.nom}`, narrow: true,
-      body: html`<div class="alert warn" style="margin-bottom:10px">⚠️<div><b>Ce n’est pas une sauvegarde.</b> Ici vous <b>déplacez</b> des immeubles de cette centrale vers celle de ${t.nom}. Pour <b>sauvegarder les données</b> de ${t.nom} : ouvrez <b>sa</b> centrale (avec sa clé) → Réglages → 🛡️ Sauvegarde chiffrée.</div></div>
-        <p class="small muted" style="margin:0 0 10px">Choisissez les immeubles : ils partent avec leurs logements, locataires (et leurs apps), paiements, dépenses, collectes, avis, chats, classement des poubelles et documents. Les interventions et la comptabilité de la centrale restent ici.</p>
-        ${t.configured ? '' : html`<div class="alert warn" style="margin-bottom:10px">⚠️<div>La centrale de ${t.nom} n’est pas encore configurée : faites-la d’abord ouvrir avec le code d’invitation.</div></div>`}
-        <p style="margin:0 0 6px"><button class="btn sm" type="button" data-action="xfer-all" data-on="1">☑️ Tout</button> <button class="btn sm" type="button" data-action="xfer-all" data-on="0">⬜ Rien</button></p>
-        <div class="list small" style="margin-bottom:10px">${ims.map((im) => { const nl = vault.listAll('locataires').filter((l) => l.immId === im.id).length, x = im.xfer; return html`<label class="row" style="cursor:pointer"><input type="checkbox" data-xfer-imm value="${im.id}" ${x ? '' : new Raw('checked')}><span class="grow"><b>${im.adresse || 'Sans adresse'}</b><span class="meta" style="display:block">${plural(nl, 'locataire')}${x ? ` · 📦 déjà transféré${x.nom ? ' à ' + x.nom : ''} le ${fmtDate(x.at)}` : ''}</span></span></label>`; })}</div>
-        <div class="section-label">🚚 Où va le paquet ?</div>
-        <div class="list small" style="margin-bottom:10px">${[['box', `📦 Envoyer dans la centrale de ${t.nom}`, `il arrive dans SON Accueil : « 📦 Recevoir ce paquet ? » — ${t.nom} l’accepte (ou le refuse) avec sa clé`], ['dl', '⬇️ Télécharger le paquet', 'PC, clé USB… puis, dans la centrale du client : Réglages → Importer'], ['share', '📤 Envoyer le paquet', 'email, WhatsApp… (partage du téléphone)']].map(([k, l, m], n) => html`<label class="row" style="cursor:pointer"><input type="radio" name="xdest" value="${k}" ${n ? '' : new Raw('checked')}><span class="grow"><b>${l}</b><span class="meta" style="display:block">${m}</span></span></label>`)}</div>
-        <p class="tiny muted" style="margin:0">Vous recevez jusqu’à 2 fichiers : ① <b>sauvegarde chiffrée de CETTE centrale</b> (par sécurité, avant le départ) ; ② <b>transfert_….ares</b> = le paquet, si vous l’avez téléchargé. Le paquet est chiffré avec un code à usage unique : sans le code il ne sert à rien. Ici tout reste en archive.</p>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" data-action="xfer-do" data-id="${id}" ${t.configured ? '' : new Raw('disabled')}>📦 Transférer</button>`,
     };
   },
 
@@ -6270,54 +3674,6 @@ const SHEETS = {
       title: html`${im.adresse} ${vraiBtn('immeubles', im)}`,
       body: html`${immGone(im) ? html`<div class="alert info" style="margin-bottom:12px">${icon('history')}<div><b>Plus en gestion</b> depuis le ${fmtDate(im.finGestion)}${im.finNote ? ' — ' + im.finNote : ''}. Tout l'historique reste consultable et compte dans les statistiques.</div></div>` : ''}${tabsBar([['logs', 'Logements'], ['chat', `💬 Messages${(ui.chatNew || {})[id] ? ' (' + ui.chatNew[id] + ')' : ''}`], ['proprio', 'Bailleur'], ['dechets', '🗑️ Déchets'], ['deps', 'Dépenses'], ['bilan', 'Bilan']], tab)}${body}`,
       foot: html`${immGone(im) ? html`<button class="btn" data-action="reopen-imm" data-id="${id}">${icon('sync')} Réactiver</button>` : html`<button class="btn" data-action="end-imm" data-id="${id}">${icon('history')} Fin de gestion</button>`}<button class="btn icon" data-action="print-imm" data-id="${id}" aria-label="Imprimer">${icon('download')}</button><button class="btn" data-action="edit-imm" data-id="${id}">${icon('edit')} Modifier</button>`,
-    };
-  },
-
-  tools() {
-    setTimeout(() => toolsLoad(), 0);
-    const all = ui.tools, now = Date.now();
-    const img = (it) => (ui.toolImg || {})[it.id];
-    const card = (it) => html`<div class="row" style="align-items:flex-start">
-      ${img(it) && img(it) !== 'loading' ? html`<img src="${img(it)}" alt="" style="width:64px;height:64px;object-fit:cover;border-radius:10px;flex:0 0 64px">` : html`<span class="avatar">🧰</span>`}
-      <span class="grow" style="min-width:0"><span class="title" style="display:block">${it.title}</span>
-        <span class="meta" style="display:block">${own(TOOL_KINDS, it.kind) ? TOOL_KINDS[it.kind] : it.kind} · ${toolPrice(it)}${it.lieu ? ' · ' + it.lieu : ''}</span>
-        <span class="meta" style="display:block">${toolOwner(it)} · ${it.mail}</span>
-        <span class="tiny muted" style="display:block">publiée le ${fmtDate(isoDate(new Date(it.created)))} · ${it.exp < now ? 'expirée' : 'en ligne jusqu’au ' + fmtDate(isoDate(new Date(it.exp)))} · 📩 ${it.clicks || 0} intéressé${(it.clicks || 0) > 1 ? 's' : ''}</span>
-        ${it.desc ? html`<span class="small" style="display:block;margin-top:4px">${it.desc}</span>` : ''}
-        ${it.rules ? html`<span class="tiny muted" style="display:block;margin-top:2px">Conditions : ${it.rules}</span>` : ''}
-        <span style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">
-          ${it.status === 'pending' ? html`<button class="btn sm primary" data-action="tool-ok" data-id="${it.id}">${icon('check')} Approuver</button>` : ''}
-          <button class="btn sm ghost danger" data-action="tool-del" data-id="${it.id}">${icon('trash')} Retirer</button></span></span></div>`;
-    const list = all || [];
-    const pend = list.filter((it) => it.status === 'pending'), live = list.filter((it) => it.status === 'ok' && it.exp > now), old = list.filter((it) => it.status === 'ok' && it.exp <= now);
-    return {
-      title: '🧰 Don · prêt · location',
-      body: html`<p class="small muted" style="margin-top:0">Annonces publiées par les locataires depuis leur app : elles apparaissent sur le site après votre approbation. Les intéressés écrivent directement à l’email de l’annonceur et l’argent s’échange entre eux, en espèces à la remise : vous n’intervenez pas. Retirez tout objet illicite ou compromettant.</p>
-        <a class="btn sm" href="/outils.html" target="_blank" rel="noopener">${icon('eye')} Voir la page publique</a>
-        ${all == null ? html`<p class="muted">Chargement…</p>` : html`
-          <div class="section-label">À approuver (${pend.length})</div>${pend.length ? html`<div class="list">${pend.map(card)}</div>` : html`<p class="muted small">Aucune annonce en attente.</p>`}
-          <div class="section-label">En ligne (${live.length})</div>${live.length ? html`<div class="list">${live.map(card)}</div>` : html`<p class="muted small">Aucune annonce en ligne.</p>`}
-          ${old.length ? html`<div class="section-label">Expirées (${old.length})</div><div class="list">${old.map(card)}</div>` : ''}`}`,
-      foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" data-action="tool-new">${icon('plus')} Publier un objet</button>`,
-    };
-  },
-
-  'tool-form'() {
-    return {
-      title: 'Publier un objet',
-      narrow: true,
-      body: html`<form id="f" data-form="tool" class="fields">
-        <label class="field full">Photos (1 à 3)<input type="file" name="photos" accept="image/*" multiple required></label>
-        ${field('Titre', 'title', '', { full: true, required: true, placeholder: 'ex. Nettoyeur haute pression Kärcher' })}
-        <label class="field">Type<select name="kind">${Object.entries(TOOL_KINDS).map(([k, v]) => html`<option value="${k}" ${k === 'loc' ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        ${field('Prix (€)', 'price', '', { type: 'number', attrs: money$ })}
-        <label class="field">Par<select name="unit">${Object.entries(TOOL_UNITS).map(([k, v]) => html`<option value="${k}" ${k === 'j' ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        ${field('Lieu de remise', 'lieu', '', { placeholder: 'ex. Luxembourg-Gare' })}
-        ${field('Email de contact', 'mail', societe().email || '', { type: 'email', required: true, full: true })}
-        <label class="field full">Description<textarea name="desc" maxlength="800" placeholder="État, marque, accessoires…"></textarea></label>
-        <label class="field full">Conditions<textarea name="rules" maxlength="400" placeholder="Caution, retour, paiement en espèces à la remise…"></textarea></label>
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Publier</button>`,
     };
   },
 
@@ -6659,7 +4015,7 @@ const SHEETS = {
             <a class="btn" href="${url}" target="_blank" rel="noopener">${icon('eye')} Voir son espace</a>
             <button class="btn" data-action="esp-refresh" data-id="${id}">🔄 Mettre à jour son app maintenant</button>
           </div>
-          <div class="section-label">Ce qu'il voit</div>${boxes}${mtPreview(l)}
+          <div class="section-label">Ce qu'il voit</div>${boxes}
           <p class="tiny muted">Documents : tout ce que vous ajoutez dans Docs est visible dans son app (avec aperçu), pour qu'il vérifie que vous avez bien reçu ses papiers et ses paiements — touchez « 👁 Visible » pour le rendre privé. Ses messages et photos arrivent sur l'Accueil (📩) et dans Maintenance → Réclamations.</p>
           <button class="btn ghost danger block" data-action="esp-off" data-id="${id}">Désactiver l'espace</button>`;
       }
@@ -6684,7 +4040,7 @@ const SHEETS = {
 
   'rec-split'({ preset: a }) {
     const mail = societe().email || '';
-    const txt = `Kit de récupération — centrale ${socName()}\n\nMoitié A de ma clé de secours :\n${a}\n\nSi j'oublie ma clé d'accès : ${netUrl(TENANT, tenantInfo.fil).replace(/^https?:\/\//, '')} → « Clé d'accès oubliée ? » → moitié A (ci-dessus) + moitié B (donnée par la centrale au téléphone).`;
+    const txt = `Kit de récupération — centrale ${socName()}\n\nMoitié A de ma clé de secours :\n${a}\n\nSi j'oublie ma clé d'accès : ${centralUrl(TENANT, tenantInfo.fil).replace(/^https?:\/\//, '')} → « Clé d'accès oubliée ? » → moitié A (ci-dessus) + moitié B (donnée par la centrale au téléphone).`;
     return {
       title: '🧩 Votre kit de récupération',
       narrow: true,
@@ -6801,14 +4157,6 @@ const SHEETS = {
         <label class="field">Assujetti à la TVA<select name="assujetti"><option value="1" ${st.assujetti !== false ? new Raw('selected') : ''}>Oui</option><option value="0" ${st.assujetti === false ? new Raw('selected') : ''}>Non</option></select></label>
         <label class="field">Déclaration de TVA<select name="periode">${[['m', 'Mensuelle'], ['t', 'Trimestrielle'], ['a', 'Annuelle']].map(([k, v]) => html`<option value="${k}" ${(st.periode || 't') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Taux de TVA (%)', 'taux', st.taux || '', { full: true, placeholder: (PAYS[pays] || PAYS.LU)[1].join(', ') + ' (taux du pays si vide)' })}
-        <div class="section-label full" style="margin:10px 0 0">Autres moyens de paiement (bouton « Payer maintenant » des locataires)</div>
-        ${field('PayPal.me (votre nom PayPal.me)', 'paypal', st.paypal, { placeholder: 'ex. NobisSarl' })}
-        ${field('Lien de paiement par carte (Stripe, SumUp…)', 'cardLink', st.cardLink, { type: 'url', placeholder: 'https://…' })}
-        ${field('Adresse Bitcoin (BTC)', 'btc', st.btc, { full: true, placeholder: 'bc1…', attrs: 'autocomplete="off" spellcheck="false"' })}
-        ${field('Adresse Ethereum (ETH)', 'eth', st.eth, { full: true, placeholder: '0x…', attrs: 'autocomplete="off" spellcheck="false"' })}
-        ${field('Adresse USDT', 'usdt', st.usdt, { placeholder: '0x… ou T…', attrs: 'autocomplete="off" spellcheck="false"' })}${netSelect('usdtNet', st.usdtNet)}
-        ${field('Adresse USDC', 'usdc', st.usdc, { placeholder: '0x…', attrs: 'autocomplete="off" spellcheck="false"' })}${netSelect('usdcNet', st.usdcNet)}
-        <p class="tiny muted full" style="margin:0">🔐 Mettez seulement l’<b>adresse de réception</b> (publique) de votre wallet. <b>Jamais</b> la clé privée ni les 12/24 mots de récupération. Laissez vide ce que vous n’utilisez pas : le bouton n’apparaît pas.</p>
         <div class="section-label full" style="margin:10px 0 0">Associés — partage du résultat net</div>
         ${rows.map((a, i) => html`${field('Associé ' + (i + 1), 'an' + i, a.nom)}${field('Part (%)', 'ap' + i, a.part, { type: 'number', attrs: 'inputmode="decimal" min="0" max="100" step="0.01"' })}`)}
         <p class="tiny muted full">Le total des parts doit faire 100 %. Laissez vide les lignes inutiles.</p>
@@ -6966,9 +4314,8 @@ const tenantFromForm = (fd, p = '') => ({
 // Impressions de l'app : en-tête LA CENTRAL by ARES INVEST S.A. ; client = true seulement pour les quittances
 // et reçus de caution, qui restent au nom de la société cliente (bailleur, son timbre)
 function printDoc(title, body, client) {
-  const el = $('#print'), lux = !client;
-  const fc = factConf(), so = lux ? { rcs: fc.rcs, tvaNum: fc.tva } : societe();
-  setHtml(el, html`<div class="pr-head"><div style="display:flex;align-items:center;gap:10px"><img src="${lux ? '/ares/icons/lux-192.png' : socLogo()}" alt="" style="height:34px;max-width:120px;object-fit:contain"><span><b>${lux ? fc.marque || 'LA CENTRAL' : socName()}</b>${lux && fc.marque ? html` <small>by ${fc.nom}</small>` : ''} · ${title}${so.rcs || so.tvaNum ? html`<br><small>${[so.rcs ? 'RCS ' + so.rcs : '', so.tvaNum ? 'TVA ' + so.tvaNum : ''].filter(Boolean).join(' · ')}</small>` : ''}</span></div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
+  const el = $('#print'), so = societe();
+  setHtml(el, html`<div class="pr-head"><div style="display:flex;align-items:center;gap:10px"><img src="${socLogo() || APP_BRAND.logo}" alt="" style="height:34px;max-width:120px;object-fit:contain"><span><b>${socName()}</b> · ${title}${so.rcs || so.tvaNum ? html`<br><small>${[so.rcs ? 'RCS ' + so.rcs : '', so.tvaNum ? 'TVA ' + so.tvaNum : ''].filter(Boolean).join(' · ')}</small>` : ''}</span></div><div>Imprimé le ${fmtDate(today())}</div></div>${body}`);
   document.body.classList.add('printing');
   const done = () => { document.body.classList.remove('printing'); setHtml(el, ''); removeEventListener('afterprint', done); };
   addEventListener('afterprint', done);
@@ -7120,236 +4467,11 @@ let installPrompt = null;
 addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installPrompt = e; if (ui.route === 'reglages') renderView(); });
 
 const ACTIONS = {
-  'abo-edit': (d) => openSheet('abo', d.id),
-
-  async 'abo-offers'() {
-    const on = !aboOffersOn();
-    await vault.mutate((tx) => tx.put('reglages', { id: 'abos', offers: on }), on ? 'Offres d’abonnement activées' : 'Offres d’abonnement désactivées', 'Gérances');
-    toast(on ? '🟢 Offres visibles dans le app Gérances' : '⚪ Offres masquées dans le app Gérances');
-    portailPubsSync().catch(() => {});
-  },
-
-  async 'abo-paid'(d) {
-    const a = aboOf(d.id), o = ptlOrg(d.id);
-    if (!a) return;
-    const from = a.paidUntil && a.paidUntil >= today() ? a.paidUntil : today();
-    const x = new Date(from + 'T12:00:00'); if (a.periode === 'an') x.setFullYear(x.getFullYear() + 1); else x.setMonth(x.getMonth() + 1);
-    const to = x.toISOString().slice(0, 10);
-    if (!(await confirmBox(`Paiement reçu : ${eur(+a.prix || 0)} ?`, { ok: '✅ Paiement reçu', detail: `${o ? o.name : ''} — abonnement payé jusqu’au ${fmtDate(to)}.` }))) return;
-    const list = { ...aboAll(), [d.id]: { ...a, paidUntil: to, pays: [...(a.pays || []), { d: today(), m: +a.prix || 0, to }].slice(-60) } };
-    await vault.mutate((tx) => tx.put('reglages', { id: 'abos', list }), 'Abonnement payé', o ? o.name : d.id);
-    toast('✅ Paiement enregistré'); ui.sheet.rendered = false; renderSheet();
-  },
-
-  async 'abo-del'(d) {
-    const o = ptlOrg(d.id);
-    if (!(await confirmBox(`Supprimer l’abonnement de ${o ? o.name : 'cette gérance'} ?`, { ok: 'Supprimer', danger: true, detail: 'La formule et l’historique des paiements de cet abonnement sont effacés. La gérance et ses demandes ne changent pas.' }))) return;
-    const list = { ...aboAll() }; delete list[d.id];
-    await vault.mutate((tx) => tx.put('reglages', { id: 'abos', list }), 'Abonnement supprimé', o ? o.name : d.id);
-    closeSheet(); toast('Abonnement supprimé');
-  },
-
-  'ger-ticket': (d) => ptlTicketOpen(d.id),
-
-  async 'ger-st'(d) {
-    if (d.st === 'annulee' && !(await confirmBox('Annuler cette demande ?', { ok: 'Annuler la demande', danger: true }))) return;
-    try { await ptlStatus(d.id, d.st, d.st === 'terminee' ? { rapport: 'Intervention terminée' } : {}); toast(PTL_ST[d.st] + ' — la gérance est prévenue'); } catch (e) { toast(e.message, { bad: true }); }
-  },
-
-  async 'ger-to-mt'(a) {
-    if (a.id && (!ui.ptl.cur || !ui.ptl.cur.ticket || ui.ptl.cur.ticket.id !== a.id)) { try { ui.ptl.cur = await ptlApi('tickets/' + a.id); } catch (e) { return toast(e.message, { bad: true }); } }
-    const d = ui.ptl.cur; if (!d) return;
-    const dup = vault.list('taches').find((x) => x.ptl && x.ptl.tid === d.ticket.id && x.statut !== 'fait');
-    if (dup) {
-      if (await confirmBox(`#${d.ticket.ref} a déjà une intervention${dup.intervenantId ? ' (' + intervName(dup.intervenantId) + ')' : ''}`, { ok: 'Ouvrir l’intervention', detail: 'Pour changer d’ouvrier, utilisez « Qui ? » ou 🔄. Pour un autre travail sur place, créez une nouvelle intervention.' })) openOver('tache-form', dup.id);
-      return;
-    }
-    const L = ptlLink(d), w = a.iid ? vault.get('intervenants', a.iid) : null;
-    openOver('tache-form', null, null, { ...(w ? { intervenantId: w.id, type: w.metier === 'menage' ? 'nettoyage' : 'reparation' } : {}), metiers: metHints(`${d.ticket.categorie || ''} ${d.ticket.description || ''}`), ptlPhotos: (d.photos || []).map((p) => p.id).slice(0, 6), ptl: L, titre: `#${L.ref} ${d.ticket.categorie || 'Intervention'}`.slice(0, 80), note: d.ticket.description || '' });
-  },
-
-  'ger-edit': (d) => openSheet('ger-form', d.id),
-
-  // les données du portail sont rafraîchies à chaque ouverture
-  'ger-open': (d) => { if (d.tab === 'fact') ui.ptl.orgT = null; openSheet('ger', d.id, d.tab); ptlLoad(); },
-
-  async 'ger-del'(d) {
-    const o = ptlOrg(d.id);
-    if (!o) return;
-    const v = await promptText(`Supprimer « ${o.name} » ?`, 'Ses accès, ses résidences, ses demandes et leurs photos sont supprimés du portail. Irréversible. Tapez le nom de la gérance pour confirmer.', o.name);
-    if (v == null) return;
-    if (v.trim() !== o.name) return toast('Nom différent : rien n’a été supprimé.', { bad: true });
-    try { await ptlApi('orgs/' + o.id, { method: 'DELETE', body: { confirm: v.trim() } }); } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', lastDel: o.name }), 'Gérance supprimée du portail', o.name);
-    closeSheet(); toast('Gérance supprimée'); ui.ptl.data = null; renderView();
-  },
-
-  async 'ger-inv'(d) {
-    // un nouveau lien annule le précédent : on renvoie le même tant qu'il est valable (gardé chiffré dans le coffre)
-    const u = ui.ptl.data && ui.ptl.data.users.find((x) => x.id === d.id);
-    const pending = u && !u.has_password && u.invite_expires > Date.now();
-    const saved = ptlInvSaved(d.id);
-    if (pending && saved && Math.abs(saved.exp - u.invite_expires) < 5 * 60000) { ui.ptl.inv[d.id] = saved.url; return openSheet('ger-invite', d.id); }
-    if (pending && !(await confirmBox('Créer un nouveau lien ?', { ok: 'Nouveau lien', danger: true, detail: `Un lien a déjà été envoyé à ${u.name} (valable jusqu’au ${fmtDate(new Date(u.invite_expires).toISOString().slice(0, 10))}). Avec un nouveau lien, l’ancien ne marchera plus : envoyez bien le nouveau.` }))) return;
-    try { const r = await ptlApi(`users/${d.id}/invite`, { method: 'POST' }); ui.ptl.inv[d.id] = ptlInviteUrl(r.invite); await ptlInvSave(d.id, ui.ptl.inv[d.id]); } catch (e) { return toast(e.message, { bad: true }); }
-    openSheet('ger-invite', d.id);
-    ptlLoad(); // la demande « mot de passe oublié » disparaît
-  },
-
-  'ger-inv-lang': (d) => { ui.sheet = null; openSheet('ger-invite', d.id, null, { lang: d.l }); },
-
-  // invitation en HTML (couleurs, gras, bouton orange) : à coller dans le corps de l'email
-  async 'ger-inv-html'(d) {
-    const dd = ui.ptl.data, u = dd && dd.users.find((x) => x.id === d.id), link = ui.ptl.inv[d.id];
-    if (!u || !link) return;
-    const t = PTL_INVITE[d.l] || PTL_INVITE.fr, first = u.name.split(' ')[0], h = t.html(first, link), txt = t.text(first, link);
-    try {
-      if (window.ClipboardItem) await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([h], { type: 'text/html' }), 'text/plain': new Blob([txt], { type: 'text/plain' }) })]);
-      else await navigator.clipboard.writeText(txt);
-      toast('Invitation copiée — collez-la dans votre email');
-    } catch { toast('Copie impossible', { bad: true }); }
-  },
-
-  async 'ger-inv-copy'(d) {
-    try { await navigator.clipboard.writeText(ui.ptl.inv[d.id]); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); }
-  },
-
-  async 'ger-user-toggle'(d) {
-    const on = d.on === '1';
-    // désactiver : seulement à la demande du responsable de la gérance (on le demande avant)
-    if (on) {
-      const u = ui.ptl.data && ui.ptl.data.users.find((x) => x.id === d.id);
-      const resp = ui.ptl.data && ui.ptl.data.users.find((x) => x.org_id === d.org && x.role === 'gerance_admin' && x.id !== d.id);
-      const v = await choiceBox(`Désactiver l’accès de ${u ? u.name : 'cette personne'} ?`, `⚠️ Le responsable de la gérance${resp ? ' (' + resp.name + ')' : ''} vous l’a-t-il demandé ? Sans sa demande, ne désactivez pas. La personne est déconnectée tout de suite ; vous pourrez réactiver l’accès.`, [{ value: 'yes', label: '✅ Oui, il l’a demandé — désactiver', cls: 'danger' }]);
-      if (v !== 'yes') return;
-    }
-    try { await ptlApi('users/' + d.id, { method: 'PATCH', body: { active: !on } }); } catch (e) { return toast(e.message, { bad: true }); }
-    toast(on ? 'Accès désactivé' : 'Accès réactivé'); await ptlLoad();
-  },
-
-  'new-interv': () => openOver('interv-form'),
-
-  // « + » : ajoute une ligne « Supplément » (dépannage, nettoyage en plus) à ce jour
-  'hor-add': (d, el) => {
-    const grid = el.closest('.hor-blk').querySelector('.hor-grid'), p = HOR_P[d.p] ? d.p : 'extra';
-    const tpl = document.querySelector(`template[data-hor-tpl="${p}"]`);
-    const k = +grid.dataset.n || 0, same = grid.querySelectorAll(`.hor-row[data-p="${p}"]`);
-    grid.dataset.n = k + 1;
-    const row = tpl.innerHTML.replaceAll('__J__', d.j).replaceAll('__K__', k).replaceAll('__N__', same.length + 1);
-    // la nouvelle ligne se place à la suite de son créneau (matin sous le matin…), les suppléments à la fin
-    if (same.length && p !== 'extra') same[same.length - 1].insertAdjacentHTML('afterend', row);
-    else grid.insertAdjacentHTML('beforeend', row);
-    grid.querySelector(`[name="h${d.j}_${k}d"]`).focus();
-  },
-
-  'edit-interv': (d) => openOver('interv-form', d.id),
-  'plan-wk': (d) => { ui.planWk ||= {}; const cur = ui.planWk[d.id] || mondayOf(today()); ui.planWk[d.id] = addDays(cur, +d.d); ui.sheet.rendered = false; renderSheet(); },
-  'hor-std': (d) => openOver('hor-std', d.id),
-  'pres-wk'(d) { ui.presOff = { ...(ui.presOff || {}), [d.id]: ((ui.presOff || {})[d.id] || 0) + (+d.d || 0) }; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } else renderView(); },
-
-  async 'hor-del'(d) {
-    const i = vault.get('intervenants', d.id);
-    if (!i) return;
-    const hs = hors(i).slice().sort((a, b) => a.j - b.j || (a.de || '').localeCompare(b.de || '')), h = hs[+d.n];
-    if (!h || !(await confirmBox('Retirer ce passage de la routine ?', { ok: 'Retirer', danger: true, detail: `${SEMAINE[h.j]} ${h.de}–${h.a}${h.immId ? ' · ' + immName(h.immId) : ''} — les semaines suivantes ne l’auront plus` }))) return;
-    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, horaires: (i.horaires || []).filter((x) => x !== h && !(x.j === h.j && x.de === h.de && x.a === h.a && (x.immId || '') === (h.immId || ''))) }), 'Routine : passage retiré', `${intervFull(i)} — ${SEMAINE[h.j]} ${h.de}–${h.a}`, i.id);
-    toast('Passage retiré');
-  },
-
-  'plan-edit': (d) => openOver('plan-week', d.id, null, d.d),
-  'fact-set': () => openOver('fact-set'),
-  'fact-open': (d) => openOver('facture', d.id),
-  'fact-mat-add': () => { const box = $('#factMats'); if (box) box.insertAdjacentHTML('beforeend', String(matRow(box.children.length))); },
-
-  async 'fact-emit'(d) {
-    const t = vault.get('taches', d.id), fm = sheetEl.querySelector('form[data-form=facture]');
-    if (!t || !fm || t.facture) return;
-    if (t.net) {
-      if (!(await confirmBox(`Émettre la facture de cette intervention ?`, { ok: 'Émettre et envoyer', detail: `${t.net.nom} — la facture arrive dans sa centrale (💳 virement avec QR code).` }))) return;
-      await vault.mutate((tx) => tx.put('taches', { id: t.id, factDraft: factRead(fm) }), 'Brouillon de facture', t.titre);
-      try { const no = await netFactEmit(t.net.tid, [vault.get('taches', t.id)]); toast(`🧾 Facture ${no} envoyée à ${t.net.nom}`); } catch (e) { return toast(e.message || 'Envoi impossible', { bad: true }); }
-      sheetDirty = false; ui.sheet.rendered = false; renderSheet();
-      return;
-    }
-    if (!t.ptl || !ptlConf()) return toast('Facture : intervention liée à une gérance et app Gérances connectée nécessaires', { bad: true });
-    const f = factRead(fm), c = factConf(), miss = factMissing(c);
-    if (miss.length) return toast('Complétez : ' + miss.join(', '), { bad: true });
-    const k = factCalc(f, factTaux(f, c));
-    const cl = factClient(t.ptl.orgId, t.ptl.org);
-    if (f.reg.regime === 'autoliq' && !cl.tvaNum) return toast('Autoliquidation : indiquez d’abord le n° TVA du client (Gérances → la gérance → 🧾 Facturation)', { bad: true });
-    const seq = (+c.seq || 0) + 1, date = today(), no = `${ymd(date)}-INT${String(seq).padStart(4, '0')}`;
-    if (!(await confirmBox(`Émettre la facture ${no} ?`, { ok: 'Émettre et envoyer', detail: `${t.ptl.org} · ${eur(k.ttc)} TTC. Le numéro ne peut plus changer ; la gérance la reçoit dans son app Gérances.` }))) return;
-    const { bytes } = await factPdf(t, f, no, date, c);
-    try {
-      const r = await fetch(PTL_API + `tickets/${t.ptl.tid}/invoice`, { method: 'PUT', headers: { Authorization: 'Bearer ' + ptlConf().token, 'Content-Type': 'application/pdf', 'X-Invoice': encodeURIComponent(JSON.stringify({ no, ht: k.ht, tva: k.tva, ttc: k.ttc, h: f.h, qte: ptlQte(t) })) }, body: bytes });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || 'Erreur ' + r.status);
-    } catch (e) { return toast('Envoi impossible : ' + (e.message || 'connexion'), { bad: true }); }
-    let docId = '';
-    await vault.mutate((tx) => {
-      tx.put('reglages', { id: 'facturation', seq });
-      docId = tx.put('documents', { tacheId: t.id, kind: 'facture-int', label: `Facture ${no} — ${t.ptl.org}`, date, mime: 'application/pdf', size: bytes.length }).id;
-      tx.put('taches', { id: t.id, factDraft: f, facture: { no, date, ht: k.ht, tva: k.tva, ttc: k.ttc, paid: '', docId } });
-    }, 'Facture émise', `${no} — ${t.ptl.org} · ${eur(k.ttc)}`, t.immId);
-    await vault.saveFile(docId, bytes);
-    sheetDirty = false;
-    toast(`🧾 Facture ${no} envoyée à ${t.ptl.org}`);
-    ui.sheet.rendered = false; renderSheet();
-  },
-
-  // ⚠️ contentieux : facture impayée en litige — rouge clignotant dans la master et dans le app de la gérance
-  async 'fact-cont'(d) {
-    const t = vault.get('taches', d.id);
-    if (!t || !t.facture || t.facture.paid) return;
-    if (t.facture.net) return toast('Client du réseau : sa centrale passe en lecture seule tout seule après les jours choisis (🧾 Facturation)', { bad: true });
-    const on = !t.facture.cont;
-    if (on && !(await confirmBox('Mettre cette facture en contentieux ?', { ok: '⚠️ Contentieux', danger: true, detail: `${t.facture.no} · ${eur(t.facture.ttc)} — la gérance reçoit un message et voit la facture en rouge dans son app Gérances.` }))) return;
-    try { await ptlApi(`tickets/${t.ptl.tid}/invoice-paid`, { method: 'POST', body: { cont: on } }); } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, cont: on ? today() : '' } }), on ? 'Facture en contentieux' : 'Contentieux levé', t.facture.no, t.immId);
-    toast(on ? '⚠️ Facture en contentieux' : 'Contentieux levé');
-  },
-
-  async 'fact-paid'(d) {
-    const t = vault.get('taches', d.id);
-    if (!t || !t.facture) return;
-    if (t.facture.net) { if (t.facture.paid) return; try { await netFactPaid(t.facture.no); toast('✅ Facture payée'); } catch (e) { toast(e.message, { bad: true }); } if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } return; }
-    const paid = t.facture.paid ? '' : today();
-    try { await ptlApi(`tickets/${t.ptl.tid}/invoice-paid`, { method: 'POST', body: { paid: !!paid } }); } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, paid, ...(paid ? { cont: '' } : {}) } }), paid ? 'Facture payée' : 'Facture à payer', t.facture.no, t.immId);
-    toast(paid ? '✅ Facture payée' : 'Facture remise « à payer »');
-  },
-
-  async 'plan-reset'(d) {
-    const i = vault.get('intervenants', d.id);
-    if (!i || !(await confirmBox('Revenir à l’horaire habituel pour cette semaine ?', { ok: 'Revenir à l’habituel', detail: `Semaine du ${dayShort(d.d)} : les changements de cette semaine sont effacés.` }))) return;
-    const plan = { ...(i.plan || {}) };
-    for (let j = 0; j < 7; j++) delete plan[addDays(d.d, j)];
-    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, plan }), 'Planning : retour à l’horaire habituel', `${intervFull(i)} — semaine du ${dayShort(d.d)}`, i.id);
-    toast('Semaine remise à l’horaire habituel');
-  },
-
-  'open-interv': (d) => openSheet('interv', d.id),
   'cent-tog': (d, el) => { const dt = el.closest('details'); dt.open = !dt.open; ui.centOpen = dt.open; },
   'tpay-conf': () => openOver('tpay-conf'),
   'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
   'cp-tab': (d) => { ui.cpTab = d.id; ui.cpLim = 10; renderView(); },
   'cp-sec': (d) => { ui.cpSec = d.id; go('compta', true); },
-
-  'cp-fact-csv': () => {
-    const [from, to] = cpRange(ui.year, ui.cpPer || 'y');
-    const q = (v) => `"${csvSafe(v).replace(/"/g, '""')}"`, n2 = (v) => String(r2(v || 0)).replace('.', ',');
-    const rows = [['N° facture', 'Date', 'Client (gérance)', 'Demande', 'Intervention', 'HT', 'TVA', 'TTC', 'Payée le'].map(q).join(';')];
-    for (const t of vault.list('taches').filter((t) => t.facture && t.facture.date >= from && t.facture.date <= to).sort((a, b) => a.facture.no.localeCompare(b.facture.no))) rows.push([t.facture.no, t.facture.date, t.ptl ? t.ptl.org : '', t.ptl ? '#' + t.ptl.ref : '', t.titre, n2(t.facture.ht), n2(t.facture.tva), n2(t.facture.ttc), t.facture.paid || ''].map(q).join(';'));
-    download(`factures-${from}-${to}.csv`, '\ufeff' + rows.join('\r\n'), 'text/csv;charset=utf-8');
-  },
-
-  'cp-int-csv': () => {
-    const [from, to] = cpRange(ui.year, ui.cpPer || 'y');
-    const q = (v) => `"${csvSafe(v).replace(/"/g, '""')}"`;
-    const rows = [['Date', 'Arrivée', 'Départ', 'Heures', 'Lieu', 'Travail', 'Type', 'Intervenant', 'Gérance / réf.', 'Avis', 'Coût (€)', 'État'].map(q).join(';')];
-    for (const x of intervLedger(from, to)) rows.push([x.d, x.arr, x.dep, x.min ? (x.min / 60).toFixed(2).replace('.', ',') : '', x.lieu, x.t.titre, TACHE_TYPES[x.t.type] || x.t.type, x.who, x.ger, x.avis, x.cout ? String(x.cout).replace('.', ',') : '', x.state === 'fait' ? 'clôturée' : 'à clôturer'].map(q).join(';'));
-    download(`interventions-${from}-${to}.csv`, '\ufeff' + rows.join('\r\n'), 'text/csv;charset=utf-8');
-  },
-
   'cp-more': () => { ui.cpLim = (ui.cpLim || 10) + 10; renderView(); },
   'cp-clear': () => { ui.cpQ = ''; ui.cpFrom = ''; ui.cpTo = ''; ui.cpLim = 10; renderView(); },
   'soc-sign-del': async () => { if (!(await confirmBox('Supprimer la signature ?', { ok: 'Supprimer', danger: true, detail: 'Elle n’apparaîtra plus sur les quittances et documents. Ensuite, dessinez ou importez la nouvelle signature.' }))) return; await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: '', signPx: 0 }), 'Signature retirée', socName()); signRefresh(); },
@@ -7375,104 +4497,12 @@ const ACTIONS = {
       <p><b>Recettes :</b> ${money(sum(R, (r) => r.ttc))} · <b>Dépenses :</b> ${money(sum(D, (r) => r.ttc))} · <b>Résultat :</b> ${money(sum(R, (r) => r.ttc) - sum(D, (r) => r.ttc))} · <b>TVA collectée :</b> ${money(sum(R, (r) => r.tva))} · <b>TVA déductible :</b> ${money(sum(D, (r) => r.tva))}</p>`);
   },
 
-  async 'dep-catchup'() {
-    const list = depMissing();
-    if (!list.length) return;
-    if (!(await confirmBox(`Ajouter ${plural(list.length, 'coût')} aux dépenses ?`, { ok: 'Ajouter', detail: list.slice(0, 8).map((t) => `${fmtDate(t.doneDate)} · ${t.titre} (${placeName(t)}) : ${money(t.cout)}`).join('\n') + (list.length > 8 ? '\n…' : '') + '\n\nSi vous les avez déjà saisis à la main dans Dépenses, annulez pour ne pas les compter deux fois.' }))) return;
-    for (const t of list) await syncDepense(t, true);
-    toast(`${plural(list.length, 'dépense')} ajoutée${list.length > 1 ? 's' : ''}`);
-  },
-
-  'eq-feed': async () => {
-    openSheet('eq-feed');
-    const fresh = vault.list('intervenants').filter((i) => i.feedNew);
-    if (fresh.length) await vault.mutate((tx) => fresh.forEach((i) => tx.put('intervenants', { id: i.id, feedNew: 0 })), 'Activité de l’équipe lue', '');
-  },
-
-  async 'eq-on'(d) {
-    const i = vault.get('intervenants', d.id);
-    if (!i) return;
-    await ownerKeys();
-    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, espace: { on: true, id: newEspaceId(), key: newEspaceKey(), lang: '', since: today() } }), 'App de l’équipe : accès créé', intervFull(i), i.id);
-    toast('Création de l’accès…');
-    if (await equipeSync(i.id, true)) {
-      try { await eqSetCode(vault.get('intervenants', i.id)); toast('App de l’équipe prête'); } catch (e) { toast(e.message || 'Code impossible (connexion ?)', { bad: true }); }
-    }
-    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
-  },
-
-  async 'eq-off'(d) {
-    const i = vault.get('intervenants', d.id);
-    if (!i || !i.espace || !(await confirmBox('Désactiver l’app de ' + intervFull(i) + ' ?', { ok: 'Désactiver', danger: true, detail: 'Son code et son lien ne fonctionneront plus. Vous pourrez créer un nouvel accès plus tard.' }))) return;
-    try { await vault.espaceDel(i.espace.id); if (i.espace.codeHash) await vault.espCodeDel(i.espace.codeHash); } catch (e) { return toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
-    try { localStorage.removeItem('aresEq:' + i.espace.id); } catch {}
-    eqHashes.delete(i.id);
-    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, espace: { on: false } }), 'App de l’équipe désactivée', intervFull(i), i.id);
-    toast('Accès désactivé');
-  },
-
-  async 'eq-code'(d) {
-    const i = vault.get('intervenants', d.id);
-    if (!i || !i.espace || !i.espace.on) return;
-    if (i.espace.code && !(await confirmBox('Nouveau code ?', { ok: 'Nouveau code', detail: 'L’ancien code ne fonctionnera plus pour une nouvelle installation.' }))) return;
-    try { await eqSetCode(i); toast('Nouveau code créé'); } catch (e) { toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
-  },
-
-  async 'eq-copy'(d) {
-    const i = vault.get('intervenants', d.id);
-    try { await navigator.clipboard.writeText(eqUrl(i)); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); }
-  },
-
-  async 'del-absence'(d) {
-    const i = vault.get('intervenants', d.id);
-    const a = (i.absences || []).find((x) => x.id === d.aid);
-    if (!a || !(await confirmBox('Supprimer cette absence ?', { ok: 'Supprimer', danger: true, detail: `${ABS_TYPES[a.type]} — ${fmtDate(a.debut)}${a.fin ? ' → ' + fmtDate(a.fin) : ''}` }))) return;
-    await vault.mutate((tx) => { tx.put('intervenants', { id: i.id, absences: (i.absences || []).filter((x) => x.id !== a.id) }); if (a.docId) tx.remove('documents', a.docId); }, 'Absence supprimée', intervFull(i), i.id);
-    if (a.docId) vault.deleteFile(a.docId).catch(() => {});
-  },
-
-  'edit-tache': (d) => openOver('tache-form', d.id),
-  async 'eng-pdf'(d) { const i = vault.get('intervenants', d.id); if (!i) return; download(`Fiche engagement ${intervFull(i)}.pdf`, await engPdf(i), 'application/pdf'); },
-  'occ-open': (d) => openOver('occ-fact', d.id),
-  async 'occ-dl'(d) { const t = vault.get('taches', d.id), i = t && vault.get('intervenants', t.intervenantId); if (!t || !t.occ || !i) return; download(`Intervention occasionnelle ${t.occ.no}.pdf`, await occPdf(t, i, t.occ), 'application/pdf'); },
   'photo-del': (d, el) => { const box = el.closest('.photo-pick'); box.querySelector('[name=photo]').value = ''; setHtml(box.querySelector('.pp-circle'), '👤'); el.remove(); },
 
   // ▶ le même petit dessin animé que dans les autres apps (iPhone / Android / Samsung)
   'install-anim': () => import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'LA CENTRAL', icon: '/ares/icons/lux-192.png', lang: (() => { try { return localStorage.getItem('aresLang') || 'fr'; } catch { return 'fr'; } })() })),
 
-  'eq-swap': (d) => openOver('eq-swap', d.id),
-
-  async 'eq-swap-do'(d) {
-    const t = vault.get('taches', d.id);
-    if (!t) return;
-    const inp = document.getElementById('swapWhy'), why = String((inp && inp.value) || '').trim();
-    if (why.length < 2) { if (inp) inp.focus(); return toast('Écrivez pourquoi (quelques mots)', { bad: true }); }
-    const old = t.intervenantId, w = d.w ? vault.get('intervenants', d.w) : null;
-    if (!w && !(await confirmBox(`Retirer ${intervName(old)} de ce travail ?`, { ok: '⏹ Retirer', danger: true, detail: `${t.titre} — il reste à choisir quelqu’un.` }))) return;
-    const upd = { id: t.id, intervenantId: w ? w.id : '', swaps: [...(t.swaps || []), { from: old, to: w ? w.id : '', why: why.slice(0, 40), at: new Date().toISOString(), by: whoLabel() }].slice(-20) };
-    if (t.taxi && t.taxi.st === 'wait') upd.taxi = null; // la chaîne du mode taxi s'arrête : c'est la centrale qui a choisi
-    if (!w && t.statut === 'planifie') upd.statut = 'afaire';
-    await vault.mutate((tx) => tx.put('taches', upd), w ? '🔄 Ouvrier changé' : '⏹ Ouvrier retiré', `${t.titre} — ${intervName(old)} → ${w ? intervFull(w) : 'à choisir'} (${why})`, t.immId);
-    // trajet de l'ancien ouvrier : le compte à rebours s'arrête ; le nouveau lance le sien avec « Je suis en route »
-    const tk = ui.tripTks[t.id + '|' + today()];
-    if (tk) fetch(vault.api.root + 'trip/' + tk, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ st: 'stop' }) }).catch(() => {});
-    if (t.ptl && ptlConf()) { const s2 = vault.get('taches', t.id); ptlStatus(t.ptl.tid, w && s2.date ? 'planifiee' : 'prise', { technicien: w ? intervFull(w) : '', planned_at: w && s2.date ? `${s2.date}T${s2.heure || '08:00'}` : '', text: w ? `🔄 Changement d’intervenant : ${intervFull(w)}` : '🔄 LA CENTRAL envoie un autre intervenant.' }).catch(() => {}); }
-    closeSheet();
-    toast(w ? `🔄 ${t.titre} → ${intervFull(w)}` : `⏹ ${t.titre} : ouvrier retiré`);
-    renderView(); scheduleEspaceSync();
-  },
-
-  'interv-aff': (d) => { ui.ptl.data = null; ui.ptl.err = ''; openOver('ger-aff', d.id); },
-  'ger-aff-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; ptlLoad(); },
-  'interv-job': (d) => { const i = d.id && vault.get('intervenants', d.id); openOver('tache-form', null, null, i ? { intervenantId: d.id, type: i.metier === 'menage' ? 'nettoyage' : 'reparation' } : { type: 'reparation' }); },
   'open-rapports': () => { ui.cpSec = 'stats'; go('rapports'); },
-  'rpt-all': (d) => { rptCfg()[d.k] = null; ui.rptOpen = d.k; renderView(); },
-  'rpt-none': (d) => { rptCfg()[d.k] = []; ui.rptOpen = d.k; renderView(); },
-
-  'rpt-dir': () => { const c = rptCfg(), d = rptChartData(c), tb = rptTable({ ...c, src: 'totaux', cols: {} });
-    const f = (k, l) => (c[k] ? `${l} : ${c[k].length}` : ''); const sel = [f('persons', 'personnes'), f('orgs', 'sociétés'), f('lieux', 'lieux')].filter(Boolean).join(' · ');
-    printDoc(`Rapport direction ${fmtDate(c.from)} – ${fmtDate(c.to)}`, html`${sel ? html`<p class="tiny">Filtres : ${sel}</p>` : ''}${rptChartsHtml(d)}<h3 style="margin-top:16px">Totaux</h3><table class="pr-tbl"><tbody>${tb.rows.map((r) => html`<tr><td>${r[0]}</td><td style="text-align:right">${r[1]}</td></tr>`)}</tbody></table>`); },
-
   'rpt-back': () => { ui.cpSec = 'stats'; go('compta'); },
   'rpt-src': (d) => { rptCfg().src = d.id; renderView(); },
   'rpt-per': (d) => { const c = rptCfg(); c.from = d.f; c.to = d.t; renderView(); },
@@ -7594,188 +4624,6 @@ const ACTIONS = {
 
   'bail-letter': (d) => bailLetter(d.id),
   'bail-open': (d) => openSheet('imm', d.id, 'proprio'),
-
-  // 🎁 6 mois offerts, accès complet : facture à 0 € pour la trace ; à la fin, lecture seule comme les autres
-  // ♾️ client gratuit pour toujours : actif, sans fin (31/12/2099), sans facture ; rien n'est effacé (centrale, locataires, clé)
-  async 'lic-free'(d) {
-    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
-    if (!t) return;
-    if (!(await confirmBox(`♾️ « ${t.nom} » gratuit, sans échéance ?`, { ok: '♾️ Gratuit pour toujours', detail: 'Sa centrale reste active pour toujours, sans abonnement ni facture. Rien n’est effacé : immeubles, locataires, apps et clé restent comme aujourd’hui. Vous pouvez la suspendre quand vous voulez (⏸️ Suspendre).' }))) return;
-    try { await netApi('tenants/' + t.id, 'PATCH', { until: FREE_UNTIL, st: 'active' }); } catch (e) { return toast(e.message, { bad: true }); }
-    await licLogAdd(t, '♾️ Gratuit, sans échéance', '');
-    toast('♾️ Gratuit, sans échéance');
-    await netLoad(true);
-  },
-
-  async 'lic-susp'(d) {
-    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
-    if (!t) return;
-    const on = d.on === '1';
-    try { await netApi('tenants/' + t.id, 'PATCH', { st: on ? 'suspended' : (licFacts().some((f) => f.tid === t.id) ? 'active' : 'trial') }); } catch (e) { return toast(e.message, { bad: true }); }
-    await licLogAdd(t, on ? 'Suspendu' : 'Réactivé', '');
-    toast(on ? 'Centrale suspendue' : 'Centrale réactivée');
-    netLoad(true);
-  },
-
-  'net-open': (d) => openOver('net-client', d.id),
-  'xfer-open': (d) => { ui.xferDone = null; openOver('xfer', d.id); },
-  'xfer-all': (d) => sheetEl.querySelectorAll('[data-xfer-imm]').forEach((c) => { c.checked = d.on === '1'; }),
-
-  async 'pack-open'(d) {
-    try { const r = await vault.call('pack/' + d.id); await xferReceive(JSON.parse(await r.text()), d.id); } catch (e) { toast(e.message || 'Paquet illisible', { bad: true }); }
-  },
-
-  'xfer-dl'(d) { const x = ui.xferDone; if (x && x.tid === d.id) download(x.file, x.blob, 'application/octet-stream'); },
-
-  async 'xfer-do'(d, btn) {
-    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
-    const ids = [...sheetEl.querySelectorAll('[data-xfer-imm]:checked')].map((c) => c.value);
-    const dest = (sheetEl.querySelector('[name=xdest]:checked') || {}).value || 'dl';
-    if (!t || !ids.length) return toast('Choisissez au moins un immeuble', { bad: true });
-    if (!(await confirmBox(`Transférer ${plural(ids.length, 'immeuble')} vers ${t.nom} ?`, { ok: '📦 Transférer', detail: 'Une sauvegarde chiffrée est d’abord téléchargée. Les apps des locataires passent à sa centrale ; ici tout reste en archive.' }))) return;
-    if (btn) btn.disabled = true;
-    try {
-      await ACTIONS['export-enc']();
-      toast('Préparation du paquet…');
-      const { state, counts, miss } = await xferPack(ids);
-      const locs = Object.values(state.locataires), apps = locs.filter((l) => l.espace && l.espace.id);
-      if (apps.length) {
-        const r = await vault.call('tenants/' + t.id + '/adopt', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: apps.map((l) => l.espace.id), codes: apps.map((l) => l.espace.codeHash).filter(Boolean) }) });
-        if (!r.ok) throw new Error(r.status === 404 ? 'Publiez d’abord le nouveau Worker (transfert des apps) — rien n’a été changé' : 'Serveur : ' + r.status);
-      }
-      const at = today();
-      await vault.mutate((tx) => {
-        for (const id of ids) tx.put('immeubles', { id, xfer: { to: t.id, nom: t.nom, at } });
-        for (const l of locs) { const cur = vault.get('locataires', l.id); tx.put('locataires', { id: l.id, xfer: { to: t.id, nom: t.nom, at, on: !!(l.espace && l.espace.on) }, ...(cur.espace ? { espace: { ...cur.espace, on: false } } : {}) }); }
-      }, '📦 Transfert vers ' + t.nom, xferTxt(counts));
-      const code = Vault.newTransferCode(), file = `transfert_${normNom(t.nom).replace(/\s+/g, '-') || t.id}_${at}.ares`;
-      const blob = JSON.stringify(await Vault.sealTransfer(state, code, { to: t.id, nom: t.nom, counts }));
-      let sent = false;
-      if (dest === 'box') {
-        toast('Envoi dans le container…');
-        const r = await vault.call('tenants/' + t.id + '/packs?info=' + encodeURIComponent(JSON.stringify({ counts, label: plural(ids.length, 'immeuble') })), { method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: blob }).catch((e) => e);
-        sent = !!(r && r.ok);
-        if (!sent) toast('Container pas joignable (Worker à publier ?) : le paquet est téléchargé à la place', { bad: true });
-      }
-      if (dest === 'share' && navigator.canShare) {
-        const f = new File([blob], file, { type: 'application/octet-stream' });
-        if (navigator.canShare({ files: [f] })) { try { await navigator.share({ files: [f], title: '📦 ' + t.nom }); sent = 'share'; } catch { /* annulé */ } }
-      }
-      if (!sent) download(file, blob, 'application/octet-stream');
-      ui.xferDone = { tid: t.id, code, file, blob, counts, miss, sent: sent === true };
-      openOver('xfer', t.id);
-    } catch (e) { toast(e.message || 'Transfert impossible', { bad: true }); if (btn) btn.disabled = false; }
-  },
-
-  async 'nfact-bill'(d) {
-    const tasks = netToBill(d.id), t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id) || {};
-    if (!tasks.length) return;
-    if (!(await confirmBox(`Facturer ${plural(tasks.length, 'intervention')} ?`, { ok: 'Émettre et envoyer', detail: `${t.nom || ''} — une seule facture, envoyée dans sa centrale (💳 virement avec QR code).` }))) return;
-    try { const no = await netFactEmit(d.id, tasks); toast(`🧾 Facture ${no} envoyée`); } catch (e) { return toast(e.message || 'Envoi impossible', { bad: true }); }
-    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } else renderView();
-  },
-
-  async 'nfact-paid'(d) {
-    const f = vault.get('reglages', 'nfact-' + d.id);
-    if (!f || f.paid) return;
-    if (!(await confirmBox(`Paiement reçu pour ${f.no} ?`, { ok: '✅ Payée', detail: `${f.nom} · ${eur(f.ttc)} — vérifiez d’abord sur le compte. Le client le voit dans sa centrale.` }))) return;
-    try { await netFactPaid(f.no); toast('✅ Facture payée'); } catch (e) { return toast(e.message || 'Envoi impossible', { bad: true }); }
-    await netHoldSync((ui.net && ui.net.list) || []);
-    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } else renderView();
-  },
-
-  async 'net-code'(d) {
-    try { const r = await netApi('tenants/' + d.id, 'PATCH', { newCode: true }); if (r.code) { await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + d.id, ...netInfo(d.id), code: r.code }), '🌐 Nouveau code d’invitation', (r.tenant || {}).nom || ''); await licLogAdd(r.tenant || { id: d.id }, 'Nouveau code d’invitation', 'échéance inchangée'); } toast('Nouveau code créé'); } catch (e) { return toast(e.message, { bad: true }); }
-    netLoad(true);
-  },
-
-  async 'net-recb'(d) {
-    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id) || {};
-    const keys = vault.get('reglages', 'signal');
-    if (!keys || !keys.priv) return toast('Clé de la centrale introuvable', { bad: true });
-    let m;
-    try {
-      const r = await vault.call('tenants/' + d.id + '/recb');
-      if (r.status === 404) return confirmBox('Pas de moitié B', { ok: 'OK', detail: `${t.nom || 'Ce client'} n'a pas encore activé la récupération de clé. Sans elle, seule la remise à zéro est possible.` });
-      m = await openFromTenant(keys.priv, new Uint8Array(await r.arrayBuffer()));
-    } catch (e) { return toast(e.message || 'Lecture impossible (connexion ?)', { bad: true }); }
-    if (!m || !m.b) return toast('Moitié B illisible', { bad: true });
-    await vault.mutate(() => {}, '🧩 Moitié B donnée au client (clé oubliée)', t.nom || d.id);
-    const tel = String(netInfo(d.id).tel || '').replace(/[^\d+]/g, '');
-    await choiceBox(`🧩 Moitié B — ${t.nom || ''}`, `${m.b}\n\nDictez-la au client (vérifiez d'abord que c'est bien lui). Il l'ajoute à sa moitié A dans « Clé d'accès oubliée ? » et choisit une nouvelle clé : il ne perd rien. Seule, cette moitié n'ouvre rien.`, tel ? [{ value: 'wa', label: '📲 Envoyer par WhatsApp', cls: 'primary' }] : []).then((v) => { if (v === 'wa') window.open(`https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent('Moitié B de votre clé de secours : ' + m.b)}`, '_blank'); });
-  },
-
-  async 'net-reset'(d) {
-    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
-    if (!t) return;
-    const v = await promptText('🗑️ Vider la centrale de « ' + t.nom + ' » ?', 'TOUT sera EFFACÉ : immeubles, locataires, paiements, documents, demandes. Impossible de revenir en arrière. Seulement si le client a perdu sa clé ET n’a pas de clé de secours. Pour un simple nouveau code, ce n’est PAS ce bouton.\n\nPour confirmer, écrivez le NOM DU CLIENT exactement comme ici : « ' + t.nom + ' » (ce n’est pas un mot de passe ni une clé).', t.nom);
-    if (v == null) return;
-    if (v.trim() !== t.nom) return toast('Nom différent : rien n’a été fait', { bad: true });
-    if (!(await confirmBox('Dernière confirmation : tout effacer ?', { ok: '🗑️ Tout effacer', danger: true, detail: 'La centrale de « ' + t.nom + ' » sera vide. Irréversible.' }))) return;
-    try { const r = await netApi('tenants/' + t.id + '/reset', 'POST'); if (!r || !r.code) return toast('Remise à zéro impossible : ' + ((r && r.error) || 'le serveur n’a pas répondu') + ' — rien n’a été effacé', { bad: true }); await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + t.id, ...netInfo(t.id), code: r.code }), '🌐 Nouvel accès (centrale vidée)', t.nom); await licLogAdd(t, 'Nouvel accès (clé perdue)', 'centrale vidée, échéance inchangée'); toast('Nouvel accès : envoyez le nouveau code'); } catch (e) { return toast(e.message, { bad: true }); }
-    await netLoad(true);
-    openOver('net-client', t.id); // le nouveau code d'invitation, tout de suite
-  },
-
-  async 'net-del'(d) {
-    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
-    if (!t) return;
-    const v = await promptText('Supprimer « ' + t.nom + ' » ?', 'Sa centrale, ses apps (locataires, clients…), ses codes et ses fichiers sont effacés définitivement. Vous recevez un certificat de suppression.\n\nPour confirmer, écrivez le NOM DU CLIENT exactement comme ici : « ' + t.nom + ' » (ce n’est pas un mot de passe ni une clé).', t.nom);
-    if (v == null) return;
-    if (v.trim() !== t.nom) return toast('Nom différent : rien n’a été fait', { bad: true });
-    let cert;
-    try { cert = (await netApi('tenants/' + t.id, 'DELETE')).certificate; } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate((tx) => { tx.put('reglages', { id: 'netcert-' + t.id, ...cert, by: whoLabel() || '⭐ Directeur', ...(netInfo(t.id).cgu ? { cgu: netInfo(t.id).cgu } : {}) }); tx.remove('reglages', 'netc-' + t.id); }, '🧾 Client du réseau supprimé (certificat)', `${t.nom} · ${cert.objects} objets`);
-    await licLogAdd(t, 'Supprimé avec certificat', `${cert.objects} objets · ${cert.digest.slice(0, 12)}…`);
-    goBack();
-    netLoad(true);
-    openOver('net-cert', 'netcert-' + t.id);
-  },
-
-  'net-cert': (d) => openOver('net-cert', d.id),
-  async 'cgu-accept'() { await cguAccept(whoLabel() || 'Directeur'); toast('📜 Conditions acceptées'); renderView(); },
-
-  async 'net-cert-pdf'(d) {
-    const c = vault.get('reglages', d.id);
-    if (!c) return;
-    const p = makePdf(), soc = societe(), pt = (x) => String(x || '').replace(/[^\x20-\xFF’‘“”«»–—…€]/gu, '').replace(/\s+/g, ' ').trim();
-    let y = 60;
-    const line = (t, size = 11, bold = false) => { p.text(48, y, t, { size, bold }); y += size + 8; };
-    line('Certificat de suppression des données', 18, true); y += 6;
-    line(`${soc.nom || 'LA CENTRAL'}${soc.rcs ? ' · RCS ' + soc.rcs : ''}`, 10);
-    y += 10;
-    line(`Client : ${c.tenant.nom} (${(NET_FIL[c.tenant.fil] || '').replace(/^\S+ /, '')})`, 12, true);
-    line(`Identifiant de la centrale : ${c.tenant.id}`);
-    line(`Date et heure de la suppression : ${new Date(c.at).toLocaleString('fr-LU')}`);
-    line(`Demandée par : ${pt(c.by) || 'Directeur'}`);
-    line(c.cgu ? `Conditions d’utilisation acceptées par le client le ${new Date(c.cgu.at).toLocaleString('fr-LU')} (version ${pt(c.cgu.v)})` : 'Conditions d’utilisation : acceptation non enregistrée (centrale configurée avant leur mise en place)', 10);
-    line(`Objets effacés : ${c.objects} (${Math.round((c.bytes || 0) / 1024)} Ko)`);
-    line('Empreinte SHA-256 de la liste des objets effacés :');
-    line(c.digest, 9);
-    y += 10;
-    line('Sont effacés : la centrale chiffrée du client (données, fichiers, sessions, messages),', 10);
-    line('ses apps (espaces chiffrés, documents, photos) et leurs codes d’accès.', 10);
-    line('Les factures et documents comptables de la centrale principale ne sont pas concernés : ils sont conservés', 10);
-    line('pendant la durée légale de conservation des documents comptables.', 10);
-    y += 8;
-    line('Cadre juridique (Règlement (UE) 2016/679 — RGPD)', 11, true);
-    line('· Effacement des données personnelles : article 17 RGPD (droit à l’effacement).', 10);
-    line('· Fin de la prestation du sous-traitant : article 28, paragraphe 3, point g) RGPD', 10);
-    line('  (suppression des données à caractère personnel au terme de la prestation).', 10);
-    line('· Le client est responsable du traitement de ses données ; le prestataire n’agit que comme sous-traitant', 10);
-    line('  (hébergement chiffré). Les données étaient chiffrées de bout en bout : le prestataire n’a jamais eu accès', 10);
-    line('  à leur contenu.', 10);
-    line('· Les copies téléchargées par le client lui-même (sauvegardes chiffrées) restent sous sa seule responsabilité.', 10);
-    y += 8;
-    line('Motif : ____________________________________________', 10);
-    y += 14;
-    line('Fait à ________________________, le ____ / ____ / ________', 10);
-    y += 10;
-    line('Signature et cachet du prestataire :', 10);
-    const blob = new Blob([p.bytes()], { type: 'application/pdf' });
-    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `certificat-suppression-${c.tenant.id}.pdf`; a.click();
-  },
-
   'esp-list': () => openOver('esp-list'),
 
   async 'push-on'() {
@@ -7830,19 +4678,10 @@ const ACTIONS = {
     const t = vault.get('taches', d.id);
     if (!t) return;
     const fromSheet = ui.sheet && ui.sheet.kind === 'tache-form';
-    const saved = await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: t.fini ? t.fini.d : today(), vu: true }), 'Chantier clôturé', `${t.titre} — ${placeName(t)}`, t.immId);
-    toast(t.locId ? '✓ Réparé · le locataire voit « Terminé » dans son app' : '🟢 Chantier clôturé');
-    if (saved.ptl && ptlConf()) { const w = vault.get('intervenants', saved.intervenantId); ptlStatus(saved.ptl.tid, 'terminee', { technicien: w ? intervFull(w) : '', rapport: (saved.fini && saved.fini.note) || saved.note || 'Intervention terminée', qte: ptlQte(saved) }).then(() => toast('App Gérances mise à jour : Terminée')).catch((e) => toast('Gérances : ' + e.message, { bad: true })); }
+    const saved = await vault.mutate((tx) => tx.put('taches', { id: t.id, statut: 'fait', doneDate: today(), vu: true }), 'Chantier clôturé', `${t.titre} — ${placeName(t)}`, t.immId);
+    toast(t.locId ? '✓ Réparé · le locataire voit « Terminé » dans son app' : '🟢 Intervention terminée');
     if (fromSheet) goBack();
     await offerDepense(saved);
-  },
-
-  async 'del-interv'(d) {
-    const i = vault.get('intervenants', d.id);
-    const n = vault.list('taches').filter((t) => t.intervenantId === d.id).length;
-    if (!i || !(await confirmBox(`Supprimer ${intervFull(i)} ?`, { ok: 'Supprimer', danger: true, detail: n ? `${plural(n, 'intervention')} restent enregistrées, sans intervenant.` : '' }))) return;
-    await vault.mutate((tx) => tx.remove('intervenants', d.id), 'Intervenant supprimé', intervFull(i));
-    goBack();
   },
 
   async 'del-tache'(d) {
@@ -7893,7 +4732,6 @@ const ACTIONS = {
       () => toast('Position refusée ou introuvable : autorisez la localisation pour ce site', { bad: true }), { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   },
 
-  'geo-map'(d) { window.open(`https://www.google.com/maps?q=${encodeURIComponent(d.la + ',' + d.lo)}`, '_blank', 'noopener'); },
   'edit-imm': (d) => openSheet('imm-form', d.id),
   'new-loc': (d) => openSheet('loc-form', null, null, d.log),
   'edit-loc': (d) => openSheet('loc-form', d.id),
@@ -7996,24 +4834,6 @@ const ACTIONS = {
 
   quittance: (d) => printQuittance(d.loc, +d.y, +d.m),
   'caution-recu': (d) => printCaution(d.id),
-  'open-tools': () => { openSheet('tools'); toolsLoad(true); },
-  'tool-new': () => openOver('tool-form'),
-
-  async 'tool-ok'(d) {
-    const it = (ui.tools || []).find((x) => x.id === d.id);
-    try { await vault.toolsUpdate(d.id, { status: 'ok' }); toast('Annonce approuvée · en ligne sur le site'); } catch (e) { return toast(e.message || 'Impossible', { bad: true }); }
-    vault.mutate(() => {}, 'Annonce approuvée', it ? it.title : '', '');
-    toolsLoad(true);
-  },
-
-  async 'tool-del'(d) {
-    const it = (ui.tools || []).find((x) => x.id === d.id);
-    if (!(await confirmBox(`Retirer « ${it ? it.title : 'cette annonce'} » ?`, { ok: 'Retirer', danger: true, detail: 'L’annonce et ses photos disparaissent du site et de l’app du locataire.' }))) return;
-    try { await vault.toolsDel(d.id); toast('Annonce retirée'); } catch (e) { return toast(e.message || 'Impossible', { bad: true }); }
-    vault.mutate(() => {}, 'Annonce retirée', it ? it.title : '', '');
-    toolsLoad(true);
-  },
-
   'open-chat': (d) => { openSheet('imm', d.id, 'chat'); chatLoad(d.id, true); },
 
   'chat-reply-priv': (d) => {
@@ -8056,31 +4876,7 @@ const ACTIONS = {
   },
 
   'ann-log': () => openSheet('ann-log'),
-  'ann-fwd': (d) => { const r = vault.get('reglages', d.id); if (!r) return; if (!r.vu) vault.mutate((tx) => tx.put('reglages', { id: r.id, vu: true }), '📣 Annonce lue', ''); openSheet('ann-new', null, null, r.x); },
   'ann-vu': (d) => vault.mutate((tx) => tx.put('reglages', { id: d.id, vu: true }), '📣 Annonce lue', ''),
-  'eqc-mn': (d) => { ui.eqcMn = ui.eqcMn === d.id ? '' : d.id; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
-
-  async 'eqc-edit'(d) {
-    ui.eqcMn = '';
-    const i = vault.get('intervenants', d.w), m = i && (i.chat || []).find((x) => x.id === d.id);
-    if (!m || m.from !== 'mgr') return;
-    if (Date.now() - Date.parse(m.at) >= EQ_EDIT_MS) return toast('Plus possible : 15 minutes sont passées.', { bad: true });
-    const x = await promptEdit('✏️ Modifier le message', m.x);
-    if (x == null || x === m.x) return;
-    const at = new Date().toISOString();
-    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, chat: (vault.get('intervenants', i.id).chat || []).map((z) => (z.id === m.id ? { ...z, x, ed: at, old: [...(z.old || []), { x: z.x, at: z.ed || z.at }].slice(-10) } : z)) }), '💬 Message modifié', intervFull(i), i.id);
-    await equipeSync(i.id, true);
-  },
-
-  async 'eqc-del'(d) {
-    ui.eqcMn = '';
-    const i = vault.get('intervenants', d.w), m = i && (i.chat || []).find((x) => x.id === d.id);
-    if (!m || m.from !== 'mgr') return;
-    if (!(await confirmBox('Supprimer ce message ?', { ok: 'Supprimer', danger: true, detail: 'Il disparaît de son app.' }))) return;
-    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, chat: (vault.get('intervenants', i.id).chat || []).map((z) => (z.id === m.id ? { ...z, del: new Date().toISOString() } : z)) }), '💬 Message supprimé', intervFull(i), i.id);
-    await equipeSync(i.id, true);
-  },
-
   'chat-mn': (d) => { ui.chatMn = ui.chatMn === d.id ? '' : d.id; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
 
   async 'chat-edit'(d) {
@@ -8147,15 +4943,6 @@ const ACTIONS = {
   'renew-plus': (d) => { sheetEl.querySelector('[name=fin]').value = d.id; },
   'lock-mode': (d) => renderLock(d.id),
   'centrale-edit': () => openSheet('centrale-form'),
-  'op-new': () => openSheet('op-form'),
-
-  async 'op-del'(d) {
-    const o = (ui.ops || []).find((x) => x.id === d.id);
-    if (!(await confirmBox(`Retirer l’accès de ${o ? o.name : 'cet opérateur'} ?`, { ok: 'Retirer', danger: true, detail: 'Il ne pourra plus ouvrir la centrale. Vos données ne changent pas.' }))) return;
-    try { await vault.deleteOperator(d.id); } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate(() => {}, 'Opérateur retiré', o ? `${o.name} (${OP_ROLES[o.role] || o.role})` : '');
-    ui.ops = null; toast('Accès retiré'); renderView();
-  },
 
   async 'make-recovery'() {
     if (!navigator.onLine) return toast('Connexion requise', { bad: true });
@@ -8177,7 +4964,7 @@ const ACTIONS = {
   },
 
   'print-recovery': () => printDoc('Clé de secours', html`<h1>Clé de secours</h1><p class="pr-sub">À conserver en lieu sûr. En cas d'oubli de la clé d'accès : luxinterventions.com/locataires.html → « Clé d'accès oubliée ? »</p><div style="font:700 26px/1.4 monospace;letter-spacing:.08em;border:2px solid #000;padding:24px;text-align:center;margin-top:24px">${ui.sheet && ui.sheet.preset}</div>`),
-  'print-reckit': (d) => printDoc('Kit de récupération', html`<h1>🧩 Kit de récupération</h1><p class="pr-sub">Centrale ${socName()} — à garder avec les documents de la société.</p><p>Moitié A de votre clé de secours :</p><div style="font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:.06em;border:2px solid #333;border-radius:10px;padding:16px;text-align:center">${d.id}</div><h3>Clé d'accès oubliée ?</h3><ol><li>Ouvrez ${netUrl(TENANT, tenantInfo.fil)} → « Clé d'accès oubliée ? ».</li><li>Écrivez la <b>moitié A</b> (ci-dessus).</li><li>Appelez la centrale : elle vous donne la <b>moitié B</b>.</li><li>Choisissez une nouvelle clé d'accès : vos données sont intactes.</li></ol><p class="pr-sub">Les deux moitiés sont nécessaires : la centrale ne peut pas ouvrir la vôtre avec la moitié B seule.</p>`, true),
+  'print-reckit': (d) => printDoc('Kit de récupération', html`<h1>🧩 Kit de récupération</h1><p class="pr-sub">Centrale ${socName()} — à garder avec les documents de la société.</p><p>Moitié A de votre clé de secours :</p><div style="font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:.06em;border:2px solid #333;border-radius:10px;padding:16px;text-align:center">${d.id}</div><h3>Clé d'accès oubliée ?</h3><ol><li>Ouvrez ${centralUrl(TENANT, tenantInfo.fil)} → « Clé d'accès oubliée ? ».</li><li>Écrivez la <b>moitié A</b> (ci-dessus).</li><li>Appelez la centrale : elle vous donne la <b>moitié B</b>.</li><li>Choisissez une nouvelle clé d'accès : vos données sont intactes.</li></ol><p class="pr-sub">Les deux moitiés sont nécessaires : la centrale ne peut pas ouvrir la vôtre avec la moitié B seule.</p>`, true),
   'print-imm': (d) => printDoc('Rapport immeuble', reportImmeuble(d.id, ui.year)),
   'print-log': (d) => printDoc('Rapport logement', reportLogement(d.id)),
 
@@ -8307,35 +5094,6 @@ const ACTIONS = {
     await vault.deleteFile(d.id);
   },
 
-  'arch-start': () => openOver('arch-form'),
-
-  async 'arch-do'() {
-    const f = document.getElementById('archF');
-    if (!f) return;
-    const on = (k) => !!(f.querySelector(`[name=${k}]`) || {}).checked, until = /^\d{4}-\d{2}-\d{2}$/.test(f.until.value) ? f.until.value : today();
-    const sel = { interv: on('interv'), devis: on('devis'), team: on('team'), num: on('num') };
-    if (!Object.values(sel).some(Boolean)) return toast('Cochez au moins une case', { bad: true });
-    const day = (x) => String(x || '').slice(0, 10);
-    const ts = sel.interv ? vault.list('taches').filter((t) => !t.recur && (day(t.date || t.sentAt) || today()) <= until) : [];
-    const dv = sel.devis ? vault.list('devis').filter((d) => (day(d.date) || today()) <= until) : [];
-    const k = await promptKey('🗄️ Archiver', `${sel.interv ? ts.length + ' interventions · ' : ''}${sel.devis ? dv.length + ' devis · ' : ''}${sel.team ? 'activité de l’équipe · ' : ''}${sel.num ? 'numéros de facture et de devis à 0001 · ' : ''}jusqu’au ${fmtDate(until)}. Rien n’est effacé. Saisissez votre clé d’accès pour confirmer.`, [...(sel.interv || sel.devis || sel.hotel || sel.biens || sel.team ? [ARCH_W1] : []), ...(sel.num ? [ARCH_W2] : [])]);
-    if (!k) return;
-    if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
-    const at = new Date().toISOString(), fc = factConf();
-    await vault.mutate((tx) => {
-      for (const t of ts) tx.put('taches', { id: t.id, arch: at });
-      for (const d of dv) tx.put('devis', { id: d.id, arch: at });
-      if (sel.team) for (const i of vault.list('intervenants')) if ((i.feed || []).length) tx.put('intervenants', { id: i.id, feedArch: [...(i.feedArch || []), ...i.feed].slice(-500), feed: [], feedNew: 0 });
-      if (sel.num) tx.put('reglages', { id: 'facturation', seq: 0, devSeq: 0, archSeq: [...(fc.archSeq || []), { at, seq: +fc.seq || 0, devSeq: +fc.devSeq || 0 }] });
-      tx.put('reglages', { id: 'archives', list: [...((vault.get('reglages', 'archives') || {}).list || []), { at, by: whoLabel() || '⭐ Directeur', until, taches: ts.length, devis: dv.length, team: sel.team, num: sel.num }] });
-    }, '🗄️ Archivage', `${ts.length} interventions · ${dv.length} devis · jusqu’au ${fmtDate(until)}`);
-    closeSheet();
-    toast(`🗄️ Archivé : ${ts.length} interventions, ${dv.length} devis`);
-    renderView(); scheduleEspaceSync();
-  },
-
-  'arch-toggle': () => { showArch = !showArch; toast(showArch ? '👁 Archives affichées' : '🙈 Archives cachées'); renderView(); },
-
   async 'wipe-all'() {
     const k = await promptKey('Effacer toutes les données ?', 'Tout sera supprimé sur tous les appareils : immeubles, logements, locataires, paiements, dépenses et documents. Faites d’abord une sauvegarde chiffrée si besoin. Saisissez votre clé d’accès pour confirmer.');
     if (!k) return;
@@ -8394,149 +5152,10 @@ const ACTIONS = {
 };
 
 const FORMS = {
-  async abo(fd) {
-    const id = fd.get('id'), g = (k) => String(fd.get(k) || '').trim(), cur = aboOf(id) || {};
-    const plan = ABO_PLANS[g('plan')] ? g('plan') : 'pro';
-    const rec = { ...cur, plan, prix: plan === 'decouverte' ? 0 : Math.max(0, num(g('prix'))), periode: g('periode') === 'an' ? 'an' : 'mois', debut: g('debut') || today(), paidUntil: g('paidUntil') };
-    await vault.mutate((tx) => tx.put('reglages', { id: 'abos', list: { ...aboAll(), [id]: rec } }), 'Abonnement', (ptlOrg(id) || {}).name || id);
-    closeSheet(); toast('Abonnement enregistré');
-  },
-
-  async 'ger-msg'(fd, f) {
-    const id = fd.get('id'), x = String(fd.get('x') || '').trim(); if (!x) return;
-    try { await ptlApi(`tickets/${id}/comments`, { method: 'POST', body: { text: x } }); } catch (e) { return toast(e.message, { bad: true }); }
-    f.reset(); toast('Message envoyé à la gérance'); ptlTicketOpen(id);
-  },
-
   async radio(fd) {
     let url = String(fd.get('url') || '').trim(); if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
     await vault.mutate((tx) => tx.put('reglages', { id: 'radio', nom: String(fd.get('nom') || '').trim().slice(0, 60), url: url.slice(0, 500) }), 'Radio de l’app des locataires', url);
     toast('Radio enregistrée'); scheduleEspaceSync();
-  },
-
-  async ger(fd) {
-    const g = (k) => String(fd.get(k) || '').trim();
-    const id = g('id'), b = { kind: ORG_KINDS[g('kind')] ? g('kind') : 'gerance', name: g('name'), email: g('email'), phone: g('phone'), rcs: g('rcs').toUpperCase().replace(/\s+/g, '') };
-    if (!b.name) return;
-    if (!b.rcs && b.kind !== 'proprio') return toast('RCS obligatoire (sauf propriétaire)', { bad: true });
-    let nid = id;
-    try { if (id) await ptlApi('orgs/' + id, { method: 'PATCH', body: b }); else nid = (await ptlApi('orgs', { method: 'POST', body: b })).id; } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate((tx) => { tx.put('reglages', { id: 'portail', lastOrg: b.name }); tx.put('reglages', { id: 'gerpat-' + nid, pat: patRead(fd) }); }, id ? 'Gérance modifiée' : 'Gérance créée', b.name);
-    toast(id ? 'Gérance enregistrée' : 'Gérance créée');
-    // nouvelle gérance : lien d'invitation du responsable (il écrit son nom en l'ouvrant)
-    if (!id && b.email) {
-      try { const r = await ptlApi('users', { method: 'POST', body: { org_id: nid, name: '', email: b.email, phone: b.phone, role: 'gerance_admin' } }); ui.ptl.inv[r.id] = ptlInviteUrl(r.invite); await ptlInvSave(r.id, ui.ptl.inv[r.id]); await ptlLoad(); return openSheet('ger-invite', r.id); } catch (e) { toast(e.message, { bad: true }); }
-    }
-    await ptlLoad();
-    openSheet('ger', nid, id ? null : 'acces');
-  },
-
-  // 🧾 Facturation d'une gérance : avec ou sans TVA (le reste vient de la gérance)
-  async 'ger-tva'(fd) {
-    const org = String(fd.get('org') || ''), cur = (vault.get('reglages', 'factClients') || {}).list || {}, reg = tvaRead(fd);
-    const o = ptlOrg(org) || {};
-    await vault.mutate((tx) => tx.put('reglages', { id: 'factClients', list: { ...cur, [org]: { ...(cur[org] || {}), regime: reg.regime, taux: reg.taux, mention: reg.mention } } }), 'TVA de la gérance', `${o.name || ''} : ${tvaOn(reg) ? 'avec TVA' : 'sans TVA'}`);
-    toast(tvaOn(reg) ? '✅ Factures avec TVA' : '✅ Factures sans TVA');
-  },
-
-  async 'ger-user'(fd, f) {
-    const nm = String(fd.get('name') || '').trim();
-    const org = fd.get('org'), b = { org_id: org, name: nm, email: String(fd.get('email') || '').trim(), phone: String(fd.get('phone') || '').trim(), role: fd.get('role') };
-    let r;
-    try { r = await ptlApi('users', { method: 'POST', body: b }); } catch (e) { return toast(e.message, { bad: true }); }
-    f.reset();
-    ui.ptl.inv[r.id] = ptlInviteUrl(r.invite);
-    await ptlInvSave(r.id, ui.ptl.inv[r.id]);
-    await ptlLoad();
-    openSheet('ger-invite', r.id);
-  },
-
-  async 'fact-set'(fd) {
-    const g = (k) => String(fd.get(k) || '').trim();
-    { const ib = ibanCheck(g('iban')), bc = bicCheck(g('bic'), ib.ok ? ib.cc : ''); if (!ib.ok) return toast('IBAN : ' + ib.msg, { bad: true }); if (!bc.ok) return toast('BIC : ' + bc.msg, { bad: true }); }
-    const iban = g('iban').toUpperCase().replace(/\s+/g, '').replace(/(.{4})/g, '$1 ').trim();
-    await vault.mutate((tx) => tx.put('reglages', { id: 'facturation', nom: g('nom'), marque: g('marque'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), tel: g('tel'), email: g('email'), autorisation: g('autorisation'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), taux: num(fd.get('taux')), delai: Math.max(0, Math.round(num(fd.get('delai')))) || 30, marge: num(fd.get('marge')), avv: Math.max(0, Math.round(num(fd.get('avv')))), rog: Math.max(1, Math.round(num(fd.get('rog')))) || 30 }), 'Facturation des interventions', g('nom'));
-    toast('Facturation enregistrée'); goBack();
-  },
-
-  async facture(fd, fm) {
-    const t = vault.get('taches', fd.get('id'));
-    if (!t || t.facture) return;
-    await vault.mutate((tx) => tx.put('taches', { id: t.id, factDraft: factRead(fm) }), 'Brouillon de facture', t.titre, t.immId);
-    toast('Brouillon enregistré'); goBack();
-  },
-
-  async 'hor-std'(fd) {
-    const i = vault.get('intervenants', fd.get('id'));
-    if (!i) return;
-    const horaires = horFromForm(fd);
-    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, horaires }), 'Routine de la semaine', `${intervFull(i)} — ${horaires.length} créneau(x)`, i.id);
-    toast('Routine enregistrée'); goBack();
-  },
-
-  async 'plan-week'(fd) {
-    const i = vault.get('intervenants', fd.get('id'));
-    const mon = String(fd.get('mon') || '');
-    if (!i || !/^\d{4}-\d{2}-\d{2}$/.test(mon)) return;
-    const slots = horFromForm(fd), copy = Math.max(0, Math.min(12, +fd.get('copy') || 0));
-    const plan = { ...(i.plan || {}) };
-    const same = (a, b) => JSON.stringify(a.map((h) => [h.de, h.a, h.immId || ''])) === JSON.stringify(b.map((h) => [h.de, h.a, h.immId || '']));
-    for (let w = 0; w <= copy; w++) for (let j = 0; j < 7; j++) {
-      const iso = addDays(mon, w * 7 + j), day = slots.filter((h) => h.j === j).map(({ de, a, immId, p }) => ({ de, a, immId, p }));
-      // identique à l'horaire habituel : pas besoin de le garder
-      if (same(day, hors(i).filter((h) => h.j === j).sort((x, y) => x.de.localeCompare(y.de)))) delete plan[iso]; else plan[iso] = day;
-    }
-    // on ne garde pas les semaines passées depuis plus de 3 mois
-    for (const iso of Object.keys(plan)) if (iso < addDays(today(), -92)) delete plan[iso];
-    await vault.mutate((tx) => tx.put('intervenants', { id: i.id, plan }), 'Planning de la semaine', `${intervFull(i)} — semaine du ${dayShort(mon)}${copy ? ` (+${copy})` : ''}`, i.id);
-    toast(copy ? `Planning enregistré sur ${copy + 1} semaines` : 'Planning de la semaine enregistré');
-    goBack();
-  },
-
-  async occ(fd) {
-    const t = vault.get('taches', fd.get('id')), i = t && vault.get('intervenants', t.intervenantId);
-    if (!t || !i) return;
-    const o = { cash: fd.get('pay') === 'cash' || !i.iban, h: num(fd.get('h')), taux: num(fd.get('taux')), depl: num(fd.get('depl')), mat: num(fd.get('mat')), matLib: String(fd.get('matLib') || '').trim(), note: String(fd.get('note') || '').trim() };
-    if (!(o.h > 0) || !(o.taux > 0)) return toast('Indiquez les heures et le tarif', { bad: true });
-    o.tot = r2(o.h * o.taux + o.depl + o.mat);
-    // numéro : OCC-AAAA-0001 (suite par année, toutes personnes)
-    const y = today().slice(0, 4), cf = vault.get('reglages', 'occ') || {};
-    if (t.occ && t.occ.no) { o.no = t.occ.no; o.d = t.occ.d; } else { const n = (cf.y === y ? cf.n || 0 : 0) + 1; o.no = `OCC-${y}-${String(n).padStart(4, '0')}`; o.d = today(); await vault.mutate((tx) => tx.put('reglages', { id: 'occ', y, n }), 'Numérotation', o.no); }
-    await vault.mutate((tx) => tx.put('taches', { id: t.id, occ: o }), 'Intervention occasionnelle', `${o.no} — ${intervFull(i)} — ${eur(o.tot)}`, t.immId);
-    download(`Intervention occasionnelle ${o.no}.pdf`, await occPdf(t, i, o), 'application/pdf');
-    toast(`🧾 ${o.no} — ${eur(o.tot)}`);
-    goBack();
-  },
-
-  async interv(fd) {
-    const id = fd.get('id');
-    const g = (k) => String(fd.get(k) || '').trim();
-    const rec = { genre: g('genre') || 'interne', cat: g('cat') || 'quotidien', prenom: g('prenom'), nom: g('nom'), metier: fd.get('metier'), tel: g('tel'), mail: g('mail'), ccss: g('ccss').replace(/\s/g, ''), tarif: g('tarif'), tauxH: g('tauxH') === '' ? null : num(g('tauxH')), depl: g('depl') === '' ? null : num(g('depl')), payeH: g('payeH') === '' ? null : num(g('payeH')), payeDepl: g('payeDepl') === '' ? null : num(g('payeDepl')), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), note: g('note') };
-    rec.photo = photoOk(g('photo')) ? g('photo') : '';
-    rec.chefDevis = fd.get('chefDevis') === '1';
-    if (fd.has('ident')) {
-      const ai = g('affIban').replace(/\s+/g, '').toUpperCase();
-      if (g('dstat') === 'aff' && ai && !ibanOk(ai)) return toast('IBAN de la société affiliée invalide', { bad: true });
-      Object.assign(rec, { ident: g('ident').slice(0, 40), dstat: g('dstat') === 'aff' ? 'aff' : 'sal', affNom: g('dstat') === 'aff' ? g('affNom').slice(0, 80) : '', affIban: g('dstat') === 'aff' ? ai : '', langues: fd.getAll('langues').filter((k) => LG_ALL[k]).slice(0, 20), lgAutre: g('lgAutre').slice(0, 60) });
-    }
-    if (rec.genre === 'prive') { rec.rcs = ''; rec.tva = ''; } // occasionnel : ni RCS ni TVA
-    // l'horaire ne se fait plus ici : fiche de la personne → Horaires (routine et planning par semaine)
-    // engagement : assurance, paiement, obligations acceptées, signature digitale
-    if (rec.genre !== 'interne') {
-      Object.assign(rec, { cash: rec.genre === 'prive' && fd.get('cash') === '1', assurTodo: rec.genre === 'prive' && fd.get('assurTodo') === '1' && !(g('assur') && g('police')), assur: g('assur'), police: g('police'), banque: g('banque'), bic: g('bic').toUpperCase().replace(/\s/g, ''), iban: ibanClean(g('iban')) });
-      const ib = ibanCheck(rec.iban), bc = bicCheck(rec.bic, ib.ok ? ib.cc : '');
-      if (rec.genre === 'prive') {
-        const bank = !rec.cash || rec.iban || rec.bic || rec.banque; // cash : banque facultative (contrôlée si remplie)
-        const miss = [!rec.assurTodo && !rec.assur && 'assurance (ou cochez « Assurance à faire »)', !rec.assurTodo && !rec.police && 'n° de police', bank && !rec.banque && 'nom de la banque', bank && !bc.ok && 'BIC (' + bc.msg + ')', bank && !ib.ok && 'IBAN (' + ib.msg + ')'].filter(Boolean);
-        if (miss.length) return toast('Intervention occasionnelle — il manque : ' + miss.join(', '), { bad: true });
-      } else if ((rec.iban && !ib.ok) || (rec.bic && !bc.ok)) return toast(!ib.ok && rec.iban ? 'IBAN : ' + ib.msg : 'BIC : ' + bc.msg, { bad: true });
-      // la signature vient de l'app de l'intervenant occasionnel : on la garde telle quelle
-    }
-    if (!rec.nom) return;
-    if (id) rec.id = id;
-    await vault.mutate((tx) => tx.put('intervenants', rec), id ? 'Intervenant modifié' : 'Intervenant ajouté', `${intervFull(rec)} (${METIERS[rec.metier]})`);
-    toast(id ? 'Intervenant enregistré' : 'Intervenant ajouté');
-    goBack();
   },
 
   async tache(fd) {
@@ -8544,14 +5163,10 @@ const FORMS = {
     const prev = id ? vault.get('taches', id) : null;
     const recur = fd.get('recur') || '';
     const rec = {
-      type: fd.get('type'), titre: fd.get('titre').trim(), immId: fd.get('immId'), logId: fd.get('logId') || '', intervenantId: isCompta() ? (prev && prev.intervenantId) || '' : fd.get('intervenantId') || '', // le comptable n'affecte pas
+      type: fd.get('type'), titre: fd.get('titre').trim(), immId: fd.get('immId'), logId: fd.get('logId') || '',
       date: fd.get('date'), recur, fin: fd.get('fin') || '', cout: fd.get('cout') === '' ? null : num(fd.get('cout')), note: fd.get('note').trim(),
       statut: recur ? 'planifie' : fd.get('statut') || 'afaire',
     };
-    try { const pj = fd.get('ptl'); if (pj) rec.ptl = JSON.parse(pj); } catch { /* lien illisible */ }
-    if (prev && prev.ptl && !rec.ptl) rec.ptl = prev.ptl;
-    try { const dj = fd.get('dev'); if (dj) rec.dev = JSON.parse(dj); } catch { /* lien illisible */ }
-    if (prev && prev.dev && !rec.dev) rec.dev = prev.dev;
     try { const lj = fd.get('lieu'); if (lj && !rec.immId) rec.lieu = JSON.parse(lj); } catch { /* lieu illisible */ }
     const nl = { nom: String(fd.get('lieuNom') || '').trim(), adr: String(fd.get('lieuAdr') || '').trim(), contact: String(fd.get('lieuContact') || '').trim(), tel: String(fd.get('lieuTel') || '').trim() };
     if (!rec.immId && !rec.lieu && (nl.nom || nl.adr)) rec.lieu = nl;
@@ -8559,56 +5174,20 @@ const FORMS = {
     else if (prev && prev.lieu && !rec.immId) rec.lieu = prev.lieu;
     const hh = (k) => (/^\d\d:\d\d$/.test(fd.get(k) || '') ? fd.get(k) : '');
     rec.heure = hh('heure'); rec.heureFin = rec.heure ? hh('heureFin') : ''; rec.urgent = fd.get('urgent') === '1';
-    if (rec.ptl) rec.recur = '';
-    // 🚕 mode taxi : on garde la chaîne en cours si la personne n'a pas changé, sinon on repart de celle choisie
-    if (!isCompta()) {
-      const on = fd.get('taxi') === '1' && !rec.recur && rec.intervenantId && rec.statut !== 'fait';
-      if (!on) rec.taxi = prev && prev.taxi && prev.taxi.st === 'ok' && prev.intervenantId === rec.intervenantId ? prev.taxi : null;
-      else if (prev && prev.taxi && prev.taxi.st !== 'none' && prev.intervenantId === rec.intervenantId) rec.taxi = prev.taxi;
-      else {
-        const pick = [2, 3].map((n) => fd.get('taxi' + n) || ''), auto = taxiCandidates({ ...(prev || {}), ...rec }, rec.intervenantId);
-        const list = [rec.intervenantId];
-        for (const p of pick) { const id = p === '' ? auto.find((x) => !list.includes(x)) : p === '-' ? '' : p; if (id && !list.includes(id)) list.push(id); }
-        rec.taxi = { list: list.slice(0, TAXI_MAX), i: 0, at: Date.now(), lim: rec.urgent ? 5 : 30, log: [], st: 'wait' };
-        if (!rec.date) rec.date = today();
-      }
-    }
     if (!rec.titre) return;
-    if (!rec.immId && !rec.ptl && !rec.dev && !rec.lieu && !(prev && prev.net)) return toast('Choisissez le lieu', { bad: true });
+    if (!rec.immId && !rec.lieu) return toast('Choisissez le lieu', { bad: true });
     if (recur && !rec.date) return toast('Indiquez la date de la première fois', { bad: true });
     if (id) rec.id = id;
     if (!recur && rec.statut === 'fait' && !(prev && prev.statut === 'fait')) rec.doneDate = today();
     const saved = await vault.mutate((tx) => tx.put('taches', rec), id ? 'Intervention modifiée' : 'Intervention ajoutée', `${rec.titre} — ${placeName(rec)}`, rec.immId);
     toast(id ? 'Intervention enregistrée' : 'Intervention ajoutée');
-    // demande d'une gérance : le portail suit (planifiée avec l'ouvrier, ou terminée)
-    if (saved.ptl && ptlConf()) {
-      const w = vault.get('intervenants', saved.intervenantId), key = [saved.intervenantId, saved.date, saved.heure, saved.statut].join('|');
-      const was = prev ? [prev.intervenantId, prev.date, prev.heure, prev.statut].join('|') : '';
-      if (key !== was) {
-        const st = saved.statut === 'fait' ? 'terminee' : w && saved.date ? 'planifiee' : 'prise';
-        ptlStatus(saved.ptl.tid, st, { technicien: w ? intervFull(w) : '', planned_at: saved.date ? `${saved.date}T${saved.heure || '08:00'}` : '', text: w ? `👷 ${intervFull(w)}${saved.date ? ' — ' + fmtDate(saved.date) + (saved.heure ? ' ' + saved.heure : '') : ''}` : '', ...(st === 'terminee' ? { rapport: saved.note || 'Intervention terminée', qte: ptlQte(saved) } : {}) })
-          .then(() => toast('App Gérances mise à jour : ' + PTL_ST[st])).catch((e) => toast('Gérances : ' + e.message, { bad: true }));
-      }
-    }
-    if (!recur && !saved.ptl && !saved.dev && !saved.lieu) await syncDepense(saved);
-    // intervention née d'un devis : le devis la connaît, les photos du chantier vont dans l'app de l'ouvrier
-    if (saved.dev && !prev) {
-      const v = vault.get('devis', saved.dev.id), ph = v ? devPhotos(v.id).slice(0, 6) : [], docs = [];
-      if (v) {
-        const bytes = []; for (const x of ph) { try { bytes.push(await vault.readFile(x.id)); } catch { /* photo absente */ } }
-        await vault.mutate((tx) => { tx.put('devis', { id: v.id, tacheId: saved.id }); bytes.forEach((b, n) => docs.push([tx.put('documents', { tacheId: saved.id, kind: 'equipe', phase: 'pb', label: `Chantier ${n + 1} — ${saved.titre}`, date: today(), mime: 'image/jpeg', size: b.length }).id, b])); }, 'Intervention créée depuis le devis', devNo(v));
-        for (const [did, b] of docs) await vault.saveFile(did, b);
-      }
-    }
-    // photos du problème : jointes à l'intervention, publiées dans l'app de la personne
+    if (!recur && !saved.lieu) await syncDepense(saved);
+    // photos jointes à l'intervention (6 au plus)
     const pics = [];
     for (const f of fd.getAll('pbphotos').filter((f) => f && f.size)) pics.push(await compressPhoto(f));
-    if (!id && ptlConf()) for (const pid of String(fd.get('ptlPhotos') || '').split(',').filter(Boolean)) {
-      try { const r = await fetch(PTL_API + 'photos/' + pid, { headers: { Authorization: 'Bearer ' + ptlConf().token } }); if (r.ok) pics.push(new Uint8Array(await r.arrayBuffer())); } catch { /* hors ligne */ }
-    }
     if (pics.length) {
-      const nb = eqPhotos(saved.id, 'pb').length, docs = [];
-      await vault.mutate((tx) => pics.slice(0, Math.max(0, 6 - nb)).forEach((b, n) => docs.push([tx.put('documents', { tacheId: saved.id, kind: 'equipe', phase: 'pb', label: `Problème ${nb + n + 1} — ${saved.titre}`, date: today(), mime: 'image/jpeg', size: b.length }).id, b])), 'Photos du problème', saved.titre, saved.immId);
+      const nb = vault.list('documents').filter((x) => x.tacheId === saved.id).length, docs = [];
+      await vault.mutate((tx) => pics.slice(0, Math.max(0, 6 - nb)).forEach((b, n) => docs.push([tx.put('documents', { tacheId: saved.id, kind: 'tache', label: `Photo ${nb + n + 1} — ${saved.titre}`, date: today(), mime: 'image/jpeg', size: b.length }).id, b])), 'Photos ajoutées', saved.titre, saved.immId);
       for (const [did, b] of docs) await vault.saveFile(did, b);
     }
     goBack();
@@ -8623,55 +5202,6 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('logements', { id: g.id, porte: { code, maj: today(), off: false, fin: /^\d{4}-\d{2}-\d{2}$/.test(fd.get('fin') || '') ? fd.get('fin') : '', serrure: String(fd.get('serrure') || '').trim(), info: String(fd.get('info') || '').trim(), hist: [...(pt.hist || []), h].slice(-30) } }), 'Code de porte changé', `${g.nom} (${immName(g.immId)}) — ${h.raison}`, g.immId);
     toast('Code enregistré');
     goBack();
-  },
-
-  async 'net-bail-set'(fd) {
-    const tid = String(fd.get('tid') || ''), g = (k) => String(fd.get(k) || '').trim(), sous = g('loueur') === 'sous', t = ((ui.net && ui.net.list) || []).find((x) => x.id === tid) || {};
-    if (sous && !g('realOwner')) return toast('Indiquez le propriétaire principal / réel (nom et prénom, ou société)', { bad: true });
-    await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + tid, loueur: sous ? 'sous' : 'proprio', realOwner: sous ? g('realOwner') : '' }), '🔑 Client propriétaire / bailleur principal', t.nom || '');
-    const bf = fd.get('bail');
-    if (sous && bf && bf.size) await netBailSave(tid, bf, t.nom || '');
-    try { await netApi('tenants/' + tid, 'PATCH', { sous }); t.sous = sous; } catch { /* hors ligne : refait à la prochaine ouverture */ }
-    toast(sous && !(bf && bf.size) && !netInfo(tid).bailDoc ? '⚠️ Enregistré — bail principal manquant' : 'Enregistré', sous && !netInfo(tid).bailDoc ? { bad: true } : undefined);
-    ui.sheet.rendered = false; renderSheet();
-  },
-
-  async tdem(fd) {
-    const g = (k) => String(fd.get(k) || '').trim();
-    const ou = g('ou'), lg = ou.startsWith('l:') ? vault.get('logements', ou.slice(2)) : null, imO = ou.startsWith('c:') ? vault.get('immeubles', ou.slice(2)) : lg ? vault.get('immeubles', lg.immId) : null;
-    const reg = g('kind') === 'reg';
-    const id = 'tdem-' + uid();
-    const d = { ref: id, titre: g('titre'), urgence: TDEM_URG[g('urgence')] ? g('urgence') : 'normal', adresse: [imO ? imO.adresse + (imO.ville ? ', ' + imO.ville : '') : g('adresse'), lg ? logLabel(lg) : '', g('acces')].filter(Boolean).join(' — '), texte: g('texte'), contact: g('contact'), tel: g('tel'), t: new Date().toISOString(),
-      kind: reg ? 'reg' : 'once', ou: lg ? `${logLabel(lg)}${occupantsNow(lg.id).length ? ' (' + occupantsNow(lg.id).map(fullName).join(', ') + ')' : ''}` : imO ? 'Parties communes' : g('ouTxt'),
-      ...(reg ? { reg: { svc: TDEM_SVC[g('svc')] ? g('svc') : 'autre', freq: RECURS[g('freq')] && g('freq') ? g('freq') : 'hebdo', jours: fd.getAll('jours').map(Number).filter((x) => x >= 1 && x <= 7), de: g('hde'), a: g('ha'), debut: g('debut') || today() } } : {}) };
-    if (!d.titre || !d.texte) return;
-    if (reg && !d.reg.jours.length) return toast('Choisissez au moins un jour souhaité', { bad: true });
-    if (!ou && !g('adresse') && !g('ouTxt')) return toast('Dites où : choisissez l’immeuble dans « Où », ou écrivez l’adresse', { bad: true });
-    // 📷 photos réduites (1600 px), chiffrées avec la demande : seule la centrale LA CENTRAL les voit
-    const files = fd.getAll('photos').filter((f) => f && f.size && /^image\//.test(f.type)).slice(0, 5), photos = [];
-    let size = 0;
-    if (files.length) toast('Préparation des photos…');
-    for (const f of files) { const b = await compressPhoto(f).catch(() => null); if (!b || size + b.byteLength > 7e6) continue; size += b.byteLength; photos.push({ b: b64u(b) }); }
-    try {
-      const k = await (await vault.call('network-key')).json();
-      const body = await sealForOwner(k.pub, { type: 'demande', client: socName(), fil: tenantInfo.fil || '', ...d, photos });
-      await vault.call('demande', { method: 'POST', body });
-    } catch (e) { return toast(e.status === 423 ? 'Lecture seule : abonnement échu' : e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
-    await vault.mutate((tx) => tx.put('reglages', { id, ...d, immId: imO ? imO.id : '', logId: lg ? lg.id : '', st: 'afaire' }), '🛠️ Demande d’intervention envoyée', d.titre);
-    toast(`Demande envoyée à LA CENTRAL${photos.length ? ` avec ${plural(photos.length, 'photo')}` : ''}`);
-    goBack();
-  },
-
-  async 'net-edit'(fd) {
-    const g = (k) => String(fd.get(k) || '').trim(), id = g('id');
-    const t0 = ((ui.net && ui.net.list) || []).find((x) => x.id === id) || {};
-    try { await netApi('tenants/' + id, 'PATCH', { nom: g('nom'), fil: g('fil'), roDays: g('roDays') === '' ? '' : +g('roDays') }); } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + id, ...netInfo(id), pays: g('pays').toUpperCase().slice(0, 2), ville: g('ville').slice(0, 60), ...(g('fil') === 'taxi' ? { licence: g('licence').slice(0, 40), comT: g('comT') === 'pct' ? 'pct' : 'eur', comV: Math.max(0, num(g('comV'))) } : {}) }), '🌍 Fiche du client', `${g('nom')} · ${g('ville')}`);
-    if (t0.fil && t0.fil !== g('fil')) await licLogAdd({ id, nom: g('nom'), fil: g('fil') }, 'Filière changée', `${NET_FIL[t0.fil]} → ${NET_FIL[g('fil')]}`);
-    else await licLogAdd({ id, nom: g('nom'), fil: g('fil') }, 'Fiche modifiée', g('roDays') !== '' ? `lecture seule : ${g('roDays')} j` : '');
-    toast('Enregistré');
-    goBack();
-    netLoad(true);
   },
 
   async avis(fd) {
@@ -8732,29 +5262,6 @@ const FORMS = {
   },
 
   unlock: onUnlock,
-
-  async 'centrale-resp'(fd) {
-    const g = (k) => String(fd.get(k) || '').trim();
-    await vault.mutate((tx) => tx.put('reglages', { id: 'centrale', prenom: g('prenom'), nom: g('nom'), tel: g('tel'), email: g('email') }), 'Responsable de la centrale', `${g('prenom')} ${g('nom')}`);
-    vault.api.who = whoLabel();
-    toast('Responsable enregistré'); closeSheet(); portailPubsSync().catch(() => {});
-  },
-
-  async 'op-save'(fd, f) {
-    const g = (k) => String(fd.get(k) || '').trim(), pass = String(fd.get('pass') || '');
-    if (pass.length < 10) return toast('Mot de passe : au moins 10 caractères', { bad: true });
-    if (pass !== fd.get('pass2')) return toast('Les deux mots de passe ne correspondent pas', { bad: true });
-    if (!/^[a-zA-Z0-9._-]{3,30}$/.test(g('login'))) return toast('Identifiant : 3 à 30 lettres ou chiffres (sans espace)', { bad: true });
-    if (isCompta()) return toast('Le comptable ne gère pas les accès', { bad: true });
-    const k = await promptKey(vault.op ? 'Confirmer avec votre mot de passe' : 'Confirmer avec votre clé d’accès', 'Pour créer l’accès d’un opérateur.');
-    if (!k) return;
-    if (!(vault.op ? await vault.verifyOperator(k) : await vault.verifyPassphrase(k))) return toast(vault.op ? 'Mot de passe incorrect' : "Clé d'accès incorrecte", { bad: true });
-    try { await vault.saveOperator({ login: g('login'), name: g('name'), role: fd.get('role'), pass }); } catch (e) { return toast(e.message, { bad: true }); }
-    await vault.mutate(() => {}, 'Opérateur ajouté', `${g('name')} (${OP_ROLES[fd.get('role')] || ''}) · ${g('login').toLowerCase()}`);
-    ui.ops = null; closeSheet(); toast('✅ Accès créé : donnez-lui son identifiant et son mot de passe'); renderView();
-  },
-
-  'op-unlock': onOpUnlock,
   setup: onSetup,
   recover: onRecover,
   newkey: onNewKey,
@@ -8969,24 +5476,6 @@ const FORMS = {
     toast('Dépense ajoutée');
   },
 
-  async tool(fd, form) {
-    const files = [...form.querySelector('[name=photos]').files].slice(0, 3);
-    if (!files.length) return toast('Ajoutez au moins une photo', { bad: true });
-    setBusy(form, true, 'Publication…');
-    try {
-      const photos = [];
-      for (const f of files) photos.push(b64u(await compressPhoto(f)));
-      await vault.toolsCreate({ kind: fd.get('kind'), title: fd.get('title'), price: num(fd.get('price')), unit: fd.get('unit'), lieu: fd.get('lieu'), mail: fd.get('mail'), name: societe().nom || 'NOBIS s.a.r.l.', desc: fd.get('desc'), rules: fd.get('rules'), photos });
-      vault.mutate(() => {}, 'Annonce publiée (don · prêt · location)', fd.get('title'), '');
-      toast('Annonce publiée sur le site');
-      await toolsLoad(true);
-      goBack();
-    } catch (e) {
-      setBusy(form, false);
-      toast(e.message || 'Publication impossible', { bad: true });
-    }
-  },
-
   async chatpost(fd, form) {
     const im = vault.get('immeubles', fd.get('imm'));
     const g = im && (im.chats || {})[fd.get('gk')];
@@ -8997,7 +5486,7 @@ const FORMS = {
       const to = String(fd.get('to') || '');
       ui.chatTo = { ...(ui.chatTo || {}), [g.id]: to };
       const l = to && g.members.includes(to) ? vault.get('locataires', to) : null, k = vault.get('reglages', 'signal');
-      const msg = { id: newMsgId(), a: netBrand(), m: 'mgr', t: new Date().toISOString() };
+      const msg = { id: newMsgId(), a: brandName(), m: 'mgr', t: new Date().toISOString() };
       if (to) {
         // réponse privée : scellée pour l'habitant (clé de son espace) et pour vous ; notification à lui seul
         if (!l || !l.espace || !l.espace.key || !k || !k.pub) throw new Error('Message privé impossible : l’app de cet habitant n’est pas active.');
@@ -9013,27 +5502,17 @@ const FORMS = {
   },
 
   async annsend(fd, form) {
-    const x0 = String(fd.get('x') || '').trim().slice(0, 1480), loc = String(fd.get('loc') || ''), eq = String(fd.get('eq') || ''), net = String(fd.get('net') || '');
+    const x0 = String(fd.get('x') || '').trim().slice(0, 1480), loc = String(fd.get('loc') || '');
     if (!x0) return;
-    if (!loc && !eq && !net) return toast('Choisissez au moins un destinataire', { bad: true });
+    if (!loc) return toast('Choisissez au moins un destinataire', { bad: true });
     const x = '📣 ' + x0, at = new Date().toISOString(), done = [];
     setBusy(form, true, 'Envoi…');
     try {
       if (loc) {
         const gs = [];
         for (const im of vault.list('immeubles').filter((z) => !immGone(z) && !z.xfer)) for (const g of Object.values(im.chats || {})) if (loc === 'all' || loc === 'i:' + im.id || loc === 'g:' + g.id) gs.push(g);
-        for (const g of gs) await vault.boardPost(g.id, await sealJson(g.key, { id: newMsgId(), a: netBrand(), m: 'mgr', x, t: at, an: 1 }));
+        for (const g of gs) await vault.boardPost(g.id, await sealJson(g.key, { id: newMsgId(), a: brandName(), m: 'mgr', x, t: at, an: 1 }));
         done.push(`🏠 ${plural(gs.length, 'fil')}`);
-      }
-      if (eq) {
-        const ids = eq === 'grp' ? eqGroup() : vault.list('intervenants').filter((w) => w.espace && w.espace.on && !w.archive).map((w) => w.id);
-        if (ids.length) { await eqChatSend(ids, x, true); done.push(`👷 ${plural(ids.length, 'ouvrier')}`); }
-      }
-      if (net) {
-        const list = ((ui.net && ui.net.list) || []).filter((t) => t.pub && (net === 'all' || t.fil === net));
-        let n = 0;
-        for (const t of list) { try { await netBoxSend(t.id, { type: 'annonce', id: newMsgId(), x: x0, at, from: netBrand() }); n++; } catch { /* client pas encore prêt */ } }
-        done.push(`🏢 ${plural(n, 'client')}${n < list.length ? ` (${list.length - n} pas encore prêts)` : ''}`);
       }
       const log = [...annLog(), { at, x: x0, to: done.join(' · '), by: whoLabel() || '⭐ Directeur' }].slice(-100);
       await vault.mutate((tx) => tx.put('reglages', { id: 'annLog', list: log }), '📣 Annonce envoyée', done.join(' · '));
@@ -9043,45 +5522,11 @@ const FORMS = {
     } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
 
-  async 'eq-chat'(fd, form) {
-    const i = vault.get('intervenants', fd.get('id')), x = String(fd.get('x') || '').trim().slice(0, 1500);
-    if (!i || !x) return;
-    setBusy(form, true, 'Envoi…');
-    const draft = form.x.value;
-    form.x.value = ''; // sinon le texte envoyé revient quand la fiche se redessine
-    if (ui.drafts) delete ui.drafts['w:' + i.id];
-    try { await eqChatSend([i.id], x, false); toast('Message envoyé'); renderSheet(); } catch (e) { form.x.value = draft; setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
-  },
-
   async 'tpay-conf'(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), payMode = fd.get('payMode') === 'month' ? 'month' : 'each';
     try { await tenantSend({ type: 'conf', payMode }); } catch (e) { return toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
     await vault.mutate((tx) => tx.put('reglages', { id: 'tpayConf', payMode, iban: g('iban').toUpperCase(), lien: g('lien') }), '💳 Paiements', payMode === 'month' ? 'facture mensuelle' : 'chaque intervention');
     toast('Enregistré'); goBack();
-  },
-
-  async absence(fd, form) {
-    const id = fd.get('id');
-    const i = vault.get('intervenants', id);
-    const rec = { id: 'a' + Date.now().toString(36), type: fd.get('type'), debut: fd.get('debut'), fin: fd.get('fin') || '', note: String(fd.get('note') || '').trim() };
-    if (!i || !rec.debut) return;
-    if (rec.fin && rec.fin < rec.debut) return toast('La date de fin est avant le début', { bad: true });
-    const file = fd.get('file');
-    if (file && file.size > 10 * 1024 * 1024) return toast('Fichier trop lourd (10 Mo maximum)', { bad: true });
-    setBusy(form, true, 'Enregistrement…');
-    try {
-      let bytes = null;
-      if (file && file.size) bytes = /^image\//.test(file.type) ? await compressPhoto(file) : new Uint8Array(await file.arrayBuffer());
-      await vault.mutate((tx) => {
-        if (bytes) rec.docId = tx.put('documents', { intervId: id, kind: 'absence', label: `${ABS_TYPES[rec.type].replace(/^\S+ /, '')} — ${intervFull(i)}`, date: rec.debut, size: bytes.length, mime: /^image\//.test(file.type) ? 'image/jpeg' : file.type || 'application/pdf' }).id;
-        tx.put('intervenants', { id, absences: [...(i.absences || []), rec] });
-      }, 'Absence ajoutée', `${intervFull(i)} — ${ABS_TYPES[rec.type]} ${fmtDate(rec.debut)}${rec.fin ? ' → ' + fmtDate(rec.fin) : ''}`, id);
-      if (bytes) await vault.saveFile(rec.docId, bytes);
-      toast('Absence enregistrée');
-    } catch (e) {
-      setBusy(form, false);
-      toast(e.message || 'Erreur', { bad: true });
-    }
   },
 
   async regles(fd) {
@@ -9130,33 +5575,6 @@ const FORMS = {
   }
 };
 
-// 📦 recevoir un paquet (fichier importé ou arrivé dans le container) : code → vérification des chiffres → fusion → apps publiées
-async function xferReceive(obj, packId) {
-  const k = await promptKey('📦 Code du paquet', `Paquet du ${fmtDate(String(obj.date || '').slice(0, 10))}${obj.nom ? ' pour ' + obj.nom : ''} : tapez le code donné par LA CENTRAL.`);
-  if (!k) return false;
-  let state;
-  try { state = await Vault.openBackup(obj, k.trim().toUpperCase()); } catch { toast('Code du paquet incorrect', { bad: true }); return false; }
-  const c = obj.counts || {};
-  if (!(await confirmBox('Recevoir ce paquet ?', { ok: '📦 Recevoir', detail: `${xferTxt(c)}. Fusion avec vos données : rien n’est supprimé. Les apps des locataires sont ensuite publiées par votre centrale.` }))) return false;
-  toast('Installation du paquet…');
-  await vault.importState(state);
-  if (packId) await vault.call('pack/' + packId + '/done', { method: 'POST' }).catch(() => {});
-  const got = Object.keys(state.locataires || {}).filter((id) => vault.get('locataires', id)).length;
-  await ownerKeys();
-  await espaceSync(undefined, true).catch(() => {});
-  ui.packs = (ui.packs || []).filter((x) => x.id !== packId);
-  toast(`📦 Paquet reçu ✓ · ${Object.keys(state.immeubles || {}).length} immeuble(s) · ${got} locataire(s)`);
-  if (ui.route === 'dashboard') renderView();
-  return true;
-}
-// 🏗️ paquets en attente dans le container de cette centrale (client du réseau)
-async function packSync() {
-  if (!vault.unlocked) return;
-  try { const r = await vault.call('packs'); ui.packs = ((await r.json()).items || []).filter((x) => !x.opened); } catch { ui.packs = []; }
-  if (ui.packs.length && ui.route === 'dashboard') renderView();
-}
-const packBox = () => ((ui.packs || []).length ? html`${ui.packs.map((x) => html`<button class="alert info" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer;margin-bottom:14px" data-action="pack-open" data-id="${x.id}">📦<div><b>Un paquet de LA CENTRAL vous attend</b>${x.label ? ' · ' + x.label : ''}<div class="tiny">${xferTxt(x.counts || {})} · envoyé le ${fmtDateTime(x.at)} — touchez pour l’ouvrir (code donné par LA CENTRAL)</div></div></button>`)}` : '');
-
 async function importFile(file) {
   let obj;
   try { obj = JSON.parse(await file.text()); } catch { return toast('Fichier illisible', { bad: true }); }
@@ -9167,8 +5585,6 @@ async function importFile(file) {
       const state = await Vault.openBackup(obj, k);
       if (!(await confirmBox('Fusionner cette sauvegarde ?', { ok: 'Fusionner', detail: 'Les éléments les plus récents sont conservés, rien n’est supprimé.' }))) return;
       await vault.mergeIn(state);
-    } else if (obj && obj.format === 'ares-transfer') {
-      return xferReceive(obj);
     } else if (isLegacy(obj)) {
       if (!(await confirmBox('Importer ces données ?', { ok: 'Importer', detail: `${obj.immeubles.length} immeubles, ${obj.locataires.length} locataires (ancienne version). Fusion avec les données actuelles.` }))) return;
       await vault.importLegacy(obj);
@@ -9231,907 +5647,7 @@ document.addEventListener('pointerdown', (e) => {
   while (prev && !(prev.dataset.p === p && prev.querySelector('input[name$="a"]').value)) prev = prev.dataset.p === p ? prev.previousElementSibling : null;
   inp.value = prev ? prev.querySelector('input[name$="a"]').value : HOR_START[p];
 }, true);
-// ───────────────────────── Devis (ARES INVEST S.A. — LA CENTRAL) ─────────────────────────
-// Sur place : le chef de chantier prend les photos, écrit son rapport et prévoit les ouvriers et les heures (sans prix).
-// Ensuite : le directeur choisit les ouvriers (tarifs des réglages), déplacement, matériel, remise, acompte, validité.
-// Le client signe avec le doigt (« Bon pour accord ») ; PDF à imprimer ou à envoyer par WhatsApp / email ;
-// une gérance du portail accepte, refuse ou demande une révision depuis son portail.
-const DEV_TYPES = { part: '👤 Particulier', pro: '🏢 Société', ger: '💼 Gérance (app Gérances)' };
-const DEV_ACOMPTE = [40, 30, 20, 10, 0];
-const DEV_RETRACT = 14; // jours de rétractation d'un particulier (contrat signé hors établissement)
-const devAcompteConseil = (ttc) => (ttc <= 2000 ? 40 : ttc <= 10000 ? 30 : ttc <= 50000 ? 20 : 10);
-// initiales du client : « Agigest » → AG, « Mario Rossi » → MR, « Gérance du Centre S.A. » → GC
-function devInitials(nom) {
-  const w = ascii(nom).toUpperCase().replace(/[^A-Z0-9 ]/g, ' ').split(/\s+/).filter((x) => x && !['DU', 'DE', 'DES', 'LA', 'LE', 'LES', 'ET', 'SA', 'SARL', 'SAS', 'SC', 'S', 'A', 'R', 'L', 'ASBL', 'SPRL', 'GMBH', 'CO'].includes(x));
-  if (!w.length) return 'XX';
-  return w.length === 1 ? w[0].slice(0, 2) : w.slice(0, 3).map((x) => x[0]).join('');
-}
-const devNo = (d) => (d.no || '—') + (d.rev ? '-R' + d.rev : '');
-const devPhotos = (id) => vault.list('documents').filter((x) => x.devisId === id && x.kind === 'devis').sort((a, b) => (a.n || 0) - (b.n || 0));
-// main-d'œuvre : lignes du chef (métier, nombre, heures) + choix du directeur (ouvrier, tarif)
-// Catalogue des prestations (chef de chantier) : [catégorie, [[type, prestation, unité, détails à préciser]]]
-const DEV_CAT = [["🏗️ Installation de chantier", [["diag", "Visite technique et métré sur place", "fft", ""], ["pose", "Installation de chantier : amenée et repli du matériel, mise en sécurité", "fft", ""], ["pose", "Protection des sols et des meubles (bâches, cartons, rubans)", "m²", "surface"], ["pose", "Location et montage d’échafaudage", "m²", "hauteur (m)"], ["reno", "Évacuation des gravats vers une décharge agréée", "m³", "type de déchets"], ["reno", "Location de conteneur / benne", "pc", "volume (m³)"], ["ent", "Nettoyage de fin de chantier", "fft", ""]]], ["📊 Rapport d’expert / Diagnostic", [["diag", "Détection de fuite non destructive", "fft", "lieu de la fuite"], ["diag", "Mesure d’humidité et recherche d’infiltration", "fft", "pièces concernées"], ["diag", "Thermographie infrarouge", "fft", "surface / pièces"], ["diag", "Inspection vidéo de canalisation", "ml", "diamètre (mm)"], ["diag", "Traçage de conduites", "fft", ""], ["diag", "Rapport écrit avec photos (dossier assurance / litige)", "fft", "objectif du rapport"]]], ["🏠 Toiture", [["rep", "Réparation d’urgence après intempéries (bâchage)", "fft", "surface bâchée (m²)"], ["rep", "Remplacement de tuiles / ardoises cassées", "pc", "modèle de tuile"], ["rep", "Réparation de gouttière / descente d’eau", "ml", "diamètre (cm)"], ["pose", "Fourniture et pose de gouttière", "ml", "matière, diamètre (cm)"], ["pose", "Fourniture et pose de fenêtre de toit", "pc", "dimensions (cm)"], ["ent", "Nettoyage et démoussage de toiture", "m²", ""], ["ent", "Nettoyage des gouttières", "ml", ""], ["diag", "Inspection de toiture (photos / drone)", "fft", ""]]], ["🛡️ Étanchéité", [["rep", "Réparation ponctuelle d’étanchéité de terrasse", "m²", ""], ["pose", "Étanchéité de toiture-terrasse (membrane)", "m²", "type de membrane"], ["pose", "Étanchéité de balcon / terrasse carrelée", "m²", ""], ["pose", "Cuvelage / traitement de sous-sol contre les infiltrations", "m²", ""], ["reno", "Reprise des joints de façade", "ml", ""], ["pose", "Traitement hydrofuge de façade", "m²", ""]]], ["🎨 Peinture & revêtements muraux", [["reno", "Plafonds : enduisage complet et mise en peinture", "m²", "couleur, finition (mat / satin)"], ["reno", "Murs : enduisage complet et mise en peinture", "m²", "couleur, finition"], ["reno", "Enlèvement de l’ancien papier peint", "m²", ""], ["pose", "Fourniture et pose de toile de rénovation (variovlies)", "m²", ""], ["reno", "Mise en peinture des portes et encadrements", "pc", "dimensions (cm)"], ["reno", "Mise en peinture des radiateurs (démontage, montage, purge)", "pc", ""], ["reno", "Peinture de cage d’escalier", "m²", "nombre d’étages"], ["reno", "Peinture de façade", "m²", "hauteur (m), couleur"], ["reno", "Peinture de sol (garage, cave)", "m²", "type de peinture"], ["rep", "Retouches et réparation de fissures", "fft", ""]]], ["🧱 Maçonnerie / gros œuvre", [["reno", "Démolition de cloison (bloc béton, plâtre)", "m²", "épaisseur (cm)"], ["pose", "Construction de cloison (bloc, plaques de plâtre)", "m²", "épaisseur (cm)"], ["pose", "Confection de chape armée", "m²", "épaisseur (cm)"], ["reno", "Ragréage de sol", "m²", "épaisseur (mm)"], ["reno", "Ragréage / enduit de murs", "m²", ""], ["rep", "Rebouchage de saignées et fermeture de trous", "fft", ""], ["pose", "Création d’ouverture dans un mur (avec linteau)", "pc", "dimensions (cm)"], ["pose", "Pose de faux plafond (plaques de plâtre)", "m²", ""]]], ["🔲 Carrelage & sols", [["reno", "Décapage de carrelage au sol (chape et plinthes incluses), évacuation", "m²", ""], ["reno", "Décapage de revêtement mural et évacuation", "m²", ""], ["pose", "Fourniture et mise en place d’un fond d’accrochage", "m²", ""], ["pose", "Fourniture de carrelage de sol", "m²", "format (cm), ex. 60×60"], ["pose", "Fourniture de carrelage mural", "m²", "format (cm), ex. 60×30"], ["pose", "Pose de carrelage de sol, jointement en mortier", "m²", "format (cm)"], ["pose", "Pose de carrelage mural, jointement", "m²", "format (cm)"], ["pose", "Fourniture et pose de plinthes, joints silicone", "ml", "hauteur (cm)"], ["pose", "Découpes autour des cadres de porte", "pc", ""], ["pose", "Joints silicone sur angles verticaux et horizontaux", "ml", ""], ["pose", "Fourniture et pose de baguettes d’angle", "ml", "matière"], ["pose", "Fourniture et pose de parquet / sol stratifié / vinyle", "m²", "type, épaisseur (mm)"], ["rep", "Remplacement de carreaux cassés", "pc", "format (cm)"]]], ["💧 Plomberie & sanitaire", [["rep", "Recherche et réparation de fuite", "fft", "lieu"], ["rep", "Débouchage de canalisation / WC / évier", "fft", ""], ["rep", "Débouchage haute pression (colonne d’immeuble)", "h", ""], ["rep", "Remplacement de robinet / mitigeur", "pc", "marque, modèle"], ["rep", "Remplacement de mécanisme de chasse d’eau", "pc", ""], ["pose", "Démontage et évacuation du mobilier de salle de bain, WC, baignoire", "fft", ""], ["pose", "Fourniture et pose de conduites eau froide, eau chaude et écoulements", "fft", "appareils raccordés"], ["pose", "Réalisation d’une douche à l’italienne (chape en pente, isolation, caniveau, paroi)", "fft", "caniveau (cm), paroi (cm)"], ["pose", "Fourniture de bloc WC suspendu (bâti, cuvette, plaque) et habillage", "fft", "marque, modèle"], ["pose", "Fourniture de meuble de salle de bain (vasque, mitigeur, miroir)", "fft", "largeur (cm), modèle"], ["pose", "Fourniture de sèche-serviettes", "pc", "dimensions (mm)"], ["pose", "Fourniture de mitigeur de douche avec douchette", "pc", "modèle"], ["pose", "Montage de l’ensemble sanitaire et joints silicone", "fft", ""], ["pose", "Remplacement de chauffe-eau / boiler", "pc", "capacité (litres)"], ["ent", "Entretien de chaudière", "pc", "marque, modèle"], ["ent", "Purge et équilibrage des radiateurs", "pc", ""]]], ["⚡ Électricité", [["rep", "Dépannage électrique (recherche de panne)", "h", ""], ["rep", "Remplacement de prise / interrupteur", "pc", ""], ["pose", "Création d’un point lumineux ou d’une prise", "pc", ""], ["pose", "Remplacement de tableau électrique", "pc", "nombre de circuits"], ["pose", "Mise en conformité de l’installation", "fft", ""], ["pose", "Fourniture et pose de luminaire", "pc", "modèle"], ["pose", "Fourniture et pose de ventilateur d’aération (câblage inclus)", "pc", "diamètre (mm)"], ["pose", "Installation d’éclairage extérieur / potelets", "pc", ""], ["reno", "Enlèvement de luminaires existants et évacuation", "pc", ""], ["rep", "Vérification du câblage, offre si nécessaire", "fft", ""]]], ["🔐 Serrurerie", [["rep", "Ouverture de porte (claquée / fermée à clé)", "fft", "jour / nuit"], ["rep", "Remplacement de cylindre", "pc", "dimensions (mm), nombre de clés"], ["rep", "Réparation de serrure / gâche", "pc", ""], ["pose", "Pose de serrure multipoints / blindage", "pc", "modèle"], ["pose", "Pose de ferme-porte", "pc", ""], ["pose", "Reproduction de clés / badges", "pc", ""]]], ["🚪 Menuiserie & portes", [["pose", "Fourniture et pose de porte intérieure avec chambranle et poignée", "pc", "dimensions (mm), modèle"], ["pose", "Fourniture et pose de porte d’appartement coupe-feu", "pc", "dimensions (mm), classe (T30…)"], ["reno", "Démontage et évacuation d’anciennes portes", "pc", ""], ["rep", "Réglage / réparation de porte ou fenêtre", "pc", ""], ["pose", "Remplacement de vitrage", "pc", "dimensions (cm), type de verre"], ["pose", "Pose de cuisine / meubles", "fft", "longueur (cm)"], ["reno", "Dépose et évacuation de l’ancienne cuisine", "fft", ""], ["pose", "Pose de plinthes bois", "ml", ""]]], ["🔧 Bricolage & petits travaux", [["pose", "Montage de meubles", "pc", ""], ["pose", "Fixations murales (étagères, tringles, TV, miroirs)", "pc", ""], ["rep", "Petites réparations diverses", "h", ""], ["pose", "Pose de boîtes aux lettres / sonnettes", "pc", ""], ["pose", "Pose de stores / rideaux", "pc", "largeur (cm)"], ["rep", "Remplacement de joints silicone (cuisine, salle de bain)", "ml", ""]]], ["🌿 Jardinage & extérieurs", [["ent", "Tonte de pelouse", "m²", ""], ["ent", "Taille de haies", "ml", "hauteur (m)"], ["ent", "Taille d’arbres et d’arbustes", "pc", ""], ["ent", "Désherbage des allées et massifs", "m²", ""], ["ent", "Ramassage des feuilles et évacuation des déchets verts", "fft", ""], ["ent", "Déneigement et salage", "exécution", "surface (m²)"], ["ent", "Nettoyage haute pression de cour / terrasse (brosse rotative)", "m²", ""], ["pose", "Plantations et aménagement", "fft", ""]]], ["🧹 Nettoyage", [["ent", "Nettoyage des parties communes (forfait)", "mois", "fréquence par semaine"], ["ent", "Nettoyage du garage à l’autolaveuse", "exécution", "surface (m²)"], ["ent", "Nettoyage approfondi et détachage des escaliers", "exécution", "nombre d’étages"], ["ent", "Nettoyage des passerelles extérieures", "exécution", ""], ["ent", "Nettoyage des vitres", "m²", "hauteur (m)"], ["ent", "Nettoyage de fin de chantier / remise en état", "m²", ""], ["ent", "Nettoyage après déménagement / état des lieux", "fft", "surface (m²)"], ["ent", "Nettoyage des caves et greniers", "fft", ""]]], ["🗑️ Déchets & débarras", [["ent", "Sortie et rentrée des poubelles (contrat)", "mois", "jours de collecte"], ["ent", "Nettoyage et désinfection des conteneurs", "exécution", "nombre de conteneurs"], ["reno", "Débarras de cave / grenier / appartement", "m³", ""], ["reno", "Évacuation d’encombrants", "m³", ""], ["reno", "Collecte de déchets spéciaux (partenaire Arcolux)", "fft", "type de déchets"]]], ["🚚 Déménagement", [["pose", "Déménagement (main-d’œuvre)", "h", "nombre de déménageurs"], ["pose", "Camion avec chauffeur", "h", "volume (m³)"], ["pose", "Fourniture de cartons et protections", "fft", ""], ["pose", "Démontage et remontage de meubles", "fft", ""], ["pose", "Monte-meubles", "h", "étage"]]], ["⏱️ Régie", [["rep", "Travaux en régie (par heure et par personne, hors déplacement)", "h", "nombre de personnes"], ["rep", "Déplacement", "fft", ""]]]];
-// Protocole d'entretien (contrat) : [fréquence par défaut h/m/t/a, prestation]
-const DEV_PROTO = [["h", "Balayage / aspiration et lavage des sols des entrées, paliers et escaliers"], ["h", "Nettoyage des ascenseurs : sols, miroirs, boutons, portes et rails"], ["h", "Nettoyage des mains courantes et garde-corps"], ["h", "Enlèvement des traces sur les portes communes et portes d’entrée"], ["h", "Nettoyage des vitrages des portes d’entrée"], ["h", "Nettoyage humide des boîtes aux lettres et interphones"], ["h", "Entretien courant du local poubelles"], ["h", "Ramassage des feuilles, papiers et déchets dans les zones extérieures, rampe de garage comprise"], ["m", "Nettoyage des couloirs de caves"], ["m", "Nettoyage des buanderies : sols et surfaces communes accessibles"], ["m", "Enlèvement des toiles d’araignées visibles"], ["m", "Nettoyage des plinthes"], ["t", "Nettoyage complet des portes communes et encadrements"], ["t", "Dépoussiérage des luminaires accessibles"], ["t", "Nettoyage des traces sur les surfaces murales lavables"], ["t", "Nettoyage des locaux techniques accessibles"], ["t", "Dépoussiérage des équipements communs accessibles"], ["t", "Nettoyage des vitrages communs hors portes d’entrée"], ["t", "Dépoussiérage des grilles de ventilation accessibles"], ["t", "Dépoussiérage des conduites et installations techniques accessibles"], ["t", "Dépoussiérage en hauteur et enlèvement des toiles d’araignées accessibles"], ["a", "Nettoyage du garage à l’autolaveuse (facturé à part)"], ["a", "Nettoyage des passerelles extérieures"]];
-const DEV_UNITS = ['m²', 'ml', 'm³', 'pc', 'h', 'kg', 'fft', 'exécution', 'mois']; // ordre de la liste : « forfait (fft) » sous kg
-const DEV_PTYPE = { rep: '🚨 dépannage', pose: '🔩 installation', reno: '🏠 rénovation', ent: '🧽 entretien', diag: '🔎 diagnostic' };
-const devCatItem = (key) => { const m = /^c(\d+)i(\d+)$/.exec(key || ''); return m && DEV_CAT[+m[1]] ? DEV_CAT[+m[1]][1][+m[2]] || null : null; };
-const devPrestTot = (p) => r2((p.q === '' || p.q == null ? 1 : num(p.q)) * num(p.pu));
-const devQty = (p) => String(p.q === '' || p.q == null ? 1 : num(p.q)).replace('.', ',');
-function devCalc(d) {
-  const rows = (d.chef && d.chef.rows) || [], dir = (d.dir && d.dir.rows) || [];
-  const lines = rows.map((r, n) => { const t = num((dir[n] || {}).taux), hh = num(r.nb || 1) * num(r.h); return { ...r, w: (dir[n] || {}).w || '', taux: t, hh, mt: r2(hh * t) }; });
-  const ct = d.kind === 'contrat', prest = (d.prest || []).map((p) => ({ ...p, mt: devPrestTot(p) }));
-  const mo = ct ? 0 : r2(sum(lines, (l) => l.mt)), dep = ct ? 0 : r2(num(d.dir && d.dir.depl)), mat = ct ? 0 : r2(sum((d.dir && d.dir.mat) || [], (m) => num(m.ht)));
-  const pr = ct ? 0 : r2(sum(prest, (p) => p.mt)), forfait = ct ? r2(num(d.ct && d.ct.forfait)) : 0;
-  const sub = ct ? forfait : r2(mo + dep + mat + pr), rem = r2((sub * num(d.dir && d.dir.remise)) / 100), ht = r2(sub - rem);
-  const taux = d.dir && d.dir.tva !== '' && d.dir.tva != null ? num(d.dir.tva) : num(factConf().taux);
-  const tva = r2((ht * taux) / 100), ttc = r2(ht + tva);
-  const pct = ct ? 0 : d.dir && d.dir.acompte != null && d.dir.acompte !== '' ? +d.dir.acompte : devAcompteConseil(ttc);
-  return { ct, prest, lines, mo, dep, mat, pr, forfait, sub, rem, ht, taux, tva, ttc, pct, acompte: r2((ttc * pct) / 100) };
-}
-// état et pastille : 🟢 en attente · 🟡 3 derniers jours · 🔴 expiré (à 00:00) · 🟣 particulier dans les 14 jours de rétractation
-function devState(d) {
-  const t = today();
-  if (d.st === 'refuse') return { k: 'refuse', lbl: '❌ Refusé', open: false };
-  if (d.st === 'accepte') {
-    const acc = (d.acc || '').slice(0, 10) || t, end = addDays(acc, DEV_RETRACT);
-    if (d.tacheId) return { k: 'done', lbl: '➡️ Intervention créée', open: false };
-    if (d.client && d.client.type === 'part' && t <= end) return { k: 'purple', lbl: `🟣 Rétractation possible jusqu’au ${fmtDate(end)}${d.sign && d.sign.early ? ' · début anticipé demandé' : ''}`, open: true, end };
-    return { k: 'ok', lbl: '✅ Accepté — libre de commencer', open: true };
-  }
-  if (d.st === 'brouillon' || !d.st) {
-    if (d.fini) return { k: 'draft', lbl: '✅ Terminé — prêt à envoyer au client', open: false };
-    const w = d.chefBy ? vault.get('intervenants', d.chefBy) : null;
-    return { k: 'prep', lbl: `🟡 En préparation${w ? ' · 🦺 ' + intervFull(w) : ''}${d.visa ? ' · ✍️ Vu et correct' : ''}`, open: false };
-  }
-  const until = addDays(d.date || t, num((d.dir || {}).valid) || 30);
-  const left = Math.round((Date.parse(until + 'T12:00:00') - Date.parse(t + 'T12:00:00')) / 864e5);
-  const rv = d.st === 'revision' ? '🔄 Révision demandée · ' : '';
-  if (left < 0) return { k: 'red', lbl: `${rv}🔴 Expiré le ${fmtDate(until)} à minuit`, open: true, until };
-  if (left <= 3) return { k: 'yellow', lbl: `${rv}🟡 Expire ${left === 0 ? 'ce soir à minuit' : `dans ${left} jour${left > 1 ? 's' : ''}`} (${fmtDate(until)})`, open: true, until };
-  return { k: 'green', lbl: `${rv}🟢 En attente — valable jusqu’au ${fmtDate(until)}`, open: true, until };
-}
-// cronologie du devis (envoi, révision, nouvelle version, accord, refus) : pour les temps de réponse des statistiques
-const devH = (d, st, at = Date.now()) => ({ hist: [...((d && d.hist) || []), { st, at }] });
-const devSentAt = (d) => { const h = (d.hist || []).find((x) => x.st === 'envoye'); return h ? h.at : Date.parse(d.sentAt || '') || 0; };
-const devDecAt = (d) => (d.st === 'accepte' ? Date.parse(d.acc || '') || (d.decision && d.decision.at) || 0 : d.st === 'refuse' ? (d.decision && d.decision.at) || 0 : 0);
-const durTxt = (ms) => { if (ms == null || ms < 0) return '—'; const m = Math.round(ms / 60000); if (m < 60) return `${Math.max(1, m)} min`; const h = Math.round(m / 60); if (h < 48) return `${h} h`; return `${Math.round(h / 24)} jours`; };
-// Statistiques → 📝 Devis : émis, acceptés, refusés, rediscutés, expirés ; taux, montants, temps de réponse
-function devStatsHtml(y) {
-  const all = vault.list('devis').filter((d) => d.st !== 'brouillon' && (d.date || '').startsWith(String(y)));
-  if (!all.length) return html`<div class="section-label">📝 Devis ${y}</div><p class="muted small">Aucun devis envoyé en ${y}.</p>`;
-  const acc = all.filter((d) => d.st === 'accepte'), ref = all.filter((d) => d.st === 'refuse'), rev = all.filter((d) => (d.rev || 0) > 0 || d.st === 'revision');
-  const exp = all.filter((d) => devState(d).k === 'red'), open = all.filter((d) => ['green', 'yellow', 'purple'].includes(devState(d).k) || d.st === 'revision');
-  const decided = [...acc, ...ref].filter((d) => devSentAt(d) && devDecAt(d) >= devSentAt(d)).map((d) => ({ d, ms: devDecAt(d) - devSentAt(d) }));
-  const avg = decided.length ? decided.reduce((n, x) => n + x.ms, 0) / decided.length : null;
-  const fast = decided.slice().sort((a, b) => a.ms - b.ms)[0], slow = decided.slice().sort((a, b) => b.ms - a.ms)[0];
-  const tot = (L) => L.reduce((n, d) => n + devCalc(d).ttc, 0);
-  const rate = acc.length + ref.length ? Math.round((acc.length / (acc.length + ref.length)) * 100) : null;
-  const byType = Object.entries(DEV_TYPES).map(([k, l]) => { const L = all.filter((d) => (d.client || {}).type === k), a = L.filter((d) => d.st === 'accepte').length; return [l, L.length, a]; }).filter((x) => x[1]);
-  const lbl = { accepte: '✅ accepté', refuse: '❌ refusé' };
-  const rows = decided.sort((a, b) => devDecAt(b.d) - devDecAt(a.d)).slice(0, 30);
-  return html`<div class="section-label">📝 Devis ${y}</div>
-    <div class="metrics">
-      <div class="metric"><div class="lbl">Envoyés</div><div class="val">${all.length}</div><div class="sub">${eur(tot(all))} TTC</div></div>
-      <div class="metric"><div class="lbl">✅ Acceptés</div><div class="val green">${acc.length}</div><div class="sub">${eur(tot(acc))} TTC</div></div>
-      <div class="metric"><div class="lbl">❌ Refusés</div><div class="val ${ref.length ? 'red' : ''}">${ref.length}</div><div class="sub">${rate == null ? '' : rate + ' % acceptés'}</div></div>
-      <div class="metric"><div class="lbl">🔄 Rediscutés</div><div class="val">${rev.length}</div><div class="sub">au moins une révision</div></div>
-      <div class="metric"><div class="lbl">⏱️ Réponse</div><div class="val">${durTxt(avg)}</div><div class="sub">délai moyen</div></div>
-      <div class="metric"><div class="lbl">En cours / expirés</div><div class="val">${open.length} / <span class="${exp.length ? 'red' : ''}">${exp.length}</span></div><div class="sub">${acc.filter((d) => d.tacheId).length} devenus interventions</div></div>
-    </div>
-    ${fast ? html`<p class="small" style="margin:8px 0">⚡ Le plus rapide : <b>${devClient(fast.d)}</b> en ${durTxt(fast.ms)} · 🐢 le plus lent : <b>${devClient(slow.d)}</b> en ${durTxt(slow.ms)}</p>` : ''}
-    ${byType.length > 1 ? html`<p class="small muted" style="margin:0 0 8px">${byType.map(([l, n, a]) => html`${l} : ${a}/${n} acceptés · `)}</p>` : ''}
-    ${rows.length ? html`<div class="list">${rows.map(({ d, ms }) => html`<button class="row" data-action="dev-open" data-id="${d.id}">${devBall(d)}<span class="grow"><span class="title" style="display:block;white-space:normal">${devNo(d)}</span><span class="meta">${devClient(d)} · ${lbl[d.st]} en <b>${durTxt(ms)}</b>${d.rev ? ` · après ${d.rev} révision${d.rev > 1 ? 's' : ''}` : ''}</span></span><b style="white-space:nowrap">${eur(devCalc(d).ttc)}</b></button>`)}</div>` : ''}
-    <p style="margin:10px 0 0"><button class="btn sm" data-action="dev-csv" data-y="${y}">${icon('download')} Export CSV des devis ${y}</button></p>
-    <p class="tiny muted">Temps de réponse : du premier envoi (PDF, WhatsApp, email ou app Gérances) à la signature, à « Accepté / Refusé » ou à la réponse de la gérance.</p>`;
-}
-// le directeur a mis les prix et terminé le devis (les devis déjà envoyés le sont forcément)
-const devFini = (d) => !!d.fini || !!(d.st && d.st !== 'brouillon');
-const devBall = (d) => html`<span class="dball dball-${devState(d).k}" aria-hidden="true"></span>`;
-const devClient = (d) => (d.client && d.client.nom) || '—';
-// devis signé ou accepté : pièce à garder 10 ans → ni supprimé ni refait, seulement archivé
-const devLocked = (d) => !!(d.sign || d.st === 'accepte');
-const devOpen = () => vault.list('devis').filter((d) => devState(d).open).sort((a, b) => (a.date || '').localeCompare(b.date || ''));
-// qui l'a envoyé : rapport de visite du chef de chantier (app de l'équipe) ou devis créé dans la centrale (opérateur)
-// avis du client à la signature du rapport de visite (la visite et l'ouvrier)
-const SAT_FACE = { top: '😃 Très bien', moyen: '🧐 Moyen', mauvais: '😡 Pas content' };
-const devFrom = (d) => { const w = d.chefBy && vault.get('intervenants', d.chefBy); return d.chefBy ? `📋 Rapport de visite de 🦺 ${w ? intervFull(w) : 'chef de chantier'}${d.created ? ' · reçu le ' + fmtDateTime(d.created) : ''}` : d.creePar ? `✏️ Créé par ${d.creePar}${d.created ? ' · ' + fmtDateTime(d.created) : ''}` : ''; };
-// sections de la liste des devis : repliables (on se souvient de celles fermées)
-const devClosed = () => { try { return new Set(JSON.parse(localStorage.getItem('aresDevClosed') || '[]')); } catch { return new Set(); } };
-document.addEventListener('toggle', (e) => { const d = e.target; if (!d.classList || !d.classList.contains('dev-sec')) return; const c = devClosed(); if (d.open) c.delete(d.dataset.sec); else c.add(d.dataset.sec); try { localStorage.setItem('aresDevClosed', JSON.stringify([...c])); } catch { /* stockage indisponible */ } }, true);
-function devRow(d) {
-  const s = devState(d), k = devCalc(d);
-  return html`<button class="row dev-row" data-action="dev-open" data-id="${d.id}">${devBall(d)}
-    <span class="grow"><span class="title" style="display:block;white-space:normal">${devNo(d)}${d.titre ? html` <span class="muted small">— ${d.titre}</span>` : ''}</span>
-      <span class="meta" style="white-space:normal">${d.client && d.client.type === 'ger' ? orgLogo(d.client.orgId) : d.client && d.client.type === 'pro' ? '🏢' : '👤'} ${devClient(d)}${d.chantier ? ' · ' + d.chantier : ''}</span>
-      <span class="meta" style="display:block;white-space:normal">${s.lbl}${d.ptlSt === 'envoye' && d.st !== 'accepte' ? ' · 📤 dans son app Gérances' : ''}</span>
-      ${devFrom(d) ? html`<span class="meta" style="display:block;white-space:normal">${devFrom(d)}</span>` : ''}${SAT_FACE[d.sat] ? html`<span class="meta" style="display:block">Avis du client : <b>${SAT_FACE[d.sat]}</b></span>` : ''}</span>
-    <b style="white-space:nowrap">${eur(k.ttc)}${k.ct ? html`<span class="tiny muted"> / mois</span>` : ''}</b></button>`;
-}
-// bandeau de l'accueil : « DEVIS EN COURS », violet qui clignote
-// réponses des gérances : relues en ouvrant l'Accueil ou l'onglet Devis (au plus toutes les 15 s), sinon toutes les 30 s
-let devSyncAt = 0;
-const devSyncSoon = () => { if (Date.now() - devSyncAt > 15000) { devSyncAt = Date.now(); setTimeout(devSync, 0); } };
-function devBanner() {
-  devSyncSoon();
-  const L = devOpen();
-  if (!L.length) return '';
-  return html`<div class="dev-banner" style="margin-bottom:14px"><div class="section-label" style="margin:0 0 8px;color:#7c3aed">📝 Devis en cours (${L.length})</div>
-    <div class="list">${L.map((d) => { const s = devState(d); return html`<div class="dev-bline">${devRow(d)}
-      <div class="dev-bact">${s.k === 'ok' ? html`<button class="btn sm primary" data-action="dev-tache" data-id="${d.id}">➡️ Créer l’intervention</button>`
-        : s.k === 'purple' ? html`<span class="tiny" style="color:#7c3aed">Le client peut encore se rétracter. Ensuite : « ➡️ Créer l’intervention ».</span>`
-        : html`<button class="btn sm" data-action="dev-acc" data-id="${d.id}">✅ Accepté</button><button class="btn sm ghost danger" data-action="dev-ref" data-id="${d.id}">❌ Refusé</button>`}</div></div>`; })}</div></div>`;
-}
-// formulaire : lignes du chef (métier · nombre d'ouvriers · heures par ouvrier)
-const devChefRow = (n, r = {}) => html`<div class="dev-crow" data-n="${n}"><select name="met${n}" data-input="dev-chef" aria-label="Métier"><option value="">— métier —</option>${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${r.met === k ? new Raw('selected') : ''}>${MET_ICON[k] || '👷'} ${v}</option>`)}</select>
-  <span class="sfx"><input name="nb${n}" type="number" min="1" max="99" inputmode="numeric" value="${r.nb || ''}" placeholder="1" data-input="dev-chef" aria-label="Nombre d’ouvriers"><i>ouvr.</i></span>
-  <span class="sfx"><input name="h${n}" type="number" step="0.5" min="0" inputmode="decimal" value="${r.h || ''}" placeholder="0" data-input="dev-chef" aria-label="Heures par ouvrier"><i>h</i></span></div>`;
-const devRate = (w) => { if (!w) return 0; const m = 1 + num(factConf().marge) / 100; return w.tauxH || (w.payeH ? r2(w.payeH * m) : 0); };
-// cadre du directeur : un ouvrier et un tarif pour chaque ligne du chef
-function devDirHtml(chefRows, dirRows) {
-  const rows = chefRows.map((r, n) => [r, n]).filter(([r]) => r.met || num(r.h));
-  if (!rows.length) return html`<p class="tiny muted" style="margin:0">Les lignes du chef de chantier (métier, ouvriers, heures) apparaissent ici pour choisir l’ouvrier et le tarif.</p>`;
-  const ints = vault.list('intervenants').filter((i) => !i.archive);
-  return rows.map(([r, n]) => {
-    const dr = dirRows[n] || {}, cand = ints.filter((i) => !r.met || i.metier === r.met).concat(ints.filter((i) => r.met && i.metier !== r.met));
-    return html`<div class="dev-drow"><span class="small"><b>${num(r.nb || 1)} × ${METIERS[r.met] || 'ouvrier'}</b> × ${String(num(r.h)).replace('.', ',')} h = <b>${String(num(r.nb || 1) * num(r.h)).replace('.', ',')} h</b></span>
-      <select name="dw${n}" data-input="dev-w" aria-label="Ouvrier"><option value="">— tarif libre —</option>${cand.map((i) => html`<option value="${i.id}" data-rate="${devRate(i)}" ${dr.w === i.id ? new Raw('selected') : ''}>${metIcon(i)} ${intervFull(i)}${devRate(i) ? ' · ' + eur(devRate(i)) + '/h' : ''}</option>`)}</select>
-      <span class="sfx"><input name="dt${n}" type="number" ${new Raw(money$)} value="${dr.taux ?? ''}" placeholder="€/h" aria-label="Tarif horaire HT"><i>€/h HT</i></span></div>`;
-  });
-}
-function devRead(fm) {
-  const fd = new FormData(fm), g = (k) => String(fd.get(k) || '').trim();
-  const rows = [], dir = [], mat = [];
-  for (let n = 0; n < 40; n++) {
-    if (!fd.has(`met${n}`)) continue;
-    rows[n] = { met: g(`met${n}`), nb: num(fd.get(`nb${n}`)) || (g(`met${n}`) || num(fd.get(`h${n}`)) ? 1 : 0), h: num(fd.get(`h${n}`)) };
-    dir[n] = { w: g(`dw${n}`), taux: fd.has(`dt${n}`) && g(`dt${n}`) !== '' ? num(fd.get(`dt${n}`)) : '' };
-  }
-  for (let n = 0; n < 30; n++) if (fd.has(`ml${n}`)) { const lib = g(`ml${n}`), ht = num(fd.get(`mh${n}`)); if (lib || ht) mat.push({ lib, ht }); }
-  const keep = rows.map((r, n) => [r, dir[n] || {}]).filter(([r]) => r && (r.met || r.h));
-  // prestations cochées (catalogue) + lignes libres : quantité, unité, détails ; prix unitaire (directeur)
-  const prest = [];
-  const pq = (key, l) => prest.push({ k: key, l, q: g('pq_' + key) === '' ? '' : num(fd.get('pq_' + key)), u: g('pu_' + key) || 'fft', det: g('pd_' + key), pu: g('pp_' + key) === '' ? '' : num(fd.get('pp_' + key)) });
-  for (const key of fd.getAll('pk')) { const it = devCatItem(key); if (it) pq(key, it[1]); }
-  for (let n = 0; n < 80; n++) if (fd.has('pl_f' + n) && g('pl_f' + n)) pq('f' + n, g('pl_f' + n));
-  const kind = g('dkind') === 'contrat' ? 'contrat' : 'travaux', proto = [];
-  for (let n = 0; n < 200; n++) {
-    if (!fd.has('frl' + n)) continue;
-    const f = {}; for (const x of ['h', 'm', 't', 'a']) if (fd.get(`fr${n}_${x}`)) f[x] = 1;
-    if (g('frl' + n) && Object.keys(f).length) proto.push({ l: g('frl' + n), f });
-  }
-  return {
-    kind, prest, proto: kind === 'contrat' ? proto : undefined,
-    ct: { forfait: g('cforfait') === '' ? '' : num(fd.get('cforfait')), pass: g('cpass'), agents: g('cagents'), duree: num(fd.get('cduree')) || 12, preavis: num(fd.get('cpreavis')) || 3, cote: g('ccote'), pay: num(fd.get('cpay')) || 15 },
-    titre: g('titre'), chantier: g('chantier'), interloc: g('interloc'),
-    client: { type: DEV_TYPES[g('ctype')] ? g('ctype') : 'part', orgId: g('org'), nom: g('cnom'), rcs: g('crcs').toUpperCase().replace(/\s+/g, ''), tva: g('ctva').toUpperCase().replace(/\s+/g, ''), adresse: g('cadr'), tel: g('ctel'), email: g('cmail') },
-    chef: { rapport: String(fd.get('rapport') || '').trim(), jours: g('jours'), rows: keep.map(([r]) => r) },
-    dir: { rows: keep.map(([, d]) => d), depl: g('depl') === '' ? '' : num(fd.get('depl')), mat, remise: num(fd.get('remise')), tva: g('tva') === '' ? '' : num(fd.get('tva')), acompte: g('acompte') === '' ? '' : +g('acompte'), valid: Math.max(1, Math.round(num(fd.get('valid')))) || 30, delai: g('delai') },
-  };
-}
-// ── 🦺 Devis du chef de chantier (app de l'équipe) : il voit et écrit tout sauf les prix ──
-const DEV_CHEF_ST = (d) => (d.tacheId ? 'done' : d.st === 'brouillon' || !d.st ? (d.fini ? 'fini' : 'prep') : d.st);
-function devChefData(i) {
-  const since = addDays(today(), -120);
-  const mine = vault.list('devis').filter((d) => d.chefBy === i.id && d.chefDid && ((d.created || '') >= since || devState(d).open || !devFini(d)))
-    .sort((a, b) => (b.created || '').localeCompare(a.created || '')).slice(0, 30)
-    .map((d) => ({
-      did: d.chefDid, no: devNo(d), date: d.date || '', st: DEV_CHEF_ST(d), nph: devPhotos(d.id).length,
-      nx: 1 + Math.max(0, ...vault.list('documents').filter((x) => x.devisId === d.id && x.id.startsWith(d.id + 'c')).map((x) => +x.id.slice(d.id.length + 1) || 0)),
-      c: { type: (d.client || {}).type || 'part', nom: (d.client || {}).nom || '', rcs: (d.client || {}).rcs || '', tva: (d.client || {}).tva || '', adresse: (d.client || {}).adresse || '', tel: (d.client || {}).tel || '', email: (d.client || {}).email || '' },
-      titre: d.titre || '', chantier: d.chantier || '', interloc: d.interloc || '', rapport: (d.chef || {}).rapport || '', jours: (d.chef || {}).jours || '',
-      rows: ((d.chef || {}).rows || []).map((r) => ({ met: r.met || '', nb: r.nb || 1, h: r.h || 0 })),
-      prest: (d.prest || []).map((p) => ({ k: p.k, l: p.l, q: p.q ?? '', u: p.u || '', det: p.det || '' })),
-      visa: d.visa ? { nom: d.visa.nom || '', at: d.visa.at || '' } : null, sat: d.sat || '',
-    }));
-  return {
-    mine,
-    cat: DEV_CAT.map(([c, items]) => [c, items.map(([, l, u, det]) => [l, u, det])]),
-    units: DEV_UNITS, metiers: Object.entries(METIERS).map(([k, v]) => [k, (MET_ICON[k] || '👷') + ' ' + v]),
-  };
-}
-// ce que le client a vu et confirmé (« Vu et correct ») : rapport + travaux, sans les prix
-const devTravaux = (x) => JSON.stringify([String((x.chef && x.chef.rapport) || '').trim(), (x.prest || []).map((p) => [p.k, p.l, p.q === '' || p.q == null ? '' : +p.q, p.u || '', p.det || ''])]);
-const devByDid = (w, did) => vault.list('devis').find((d) => d.chefBy === w.id && d.chefDid === did) || null;
-function devChefIn(tx, w, it, at) {
-  const did = String(it.did || ''), s = (v, n) => String(v ?? '').trim().slice(0, n);
-  if (!/^[a-z0-9]{8,32}$/.test(did)) return null;
-  const prev = devByDid(w, did);
-  if (prev && devFini(prev)) return { note: `⚠️ Correction du devis ${devNo(prev)} reçue après « Devis terminé » : non appliquée (appelez ${intervFull(w)})` };
-  const c = it.c || {}, pc = (prev && prev.client) || {};
-  const client = { ...pc, type: pc.type === 'ger' ? 'ger' : c.type === 'pro' ? 'pro' : 'part', nom: s(c.nom, 120), rcs: s(c.rcs, 20).toUpperCase().replace(/\s+/g, ''), tva: s(c.tva, 20).toUpperCase().replace(/\s+/g, ''), adresse: s(c.adresse, 300), tel: s(c.tel, 40), email: s(c.email, 120) };
-  if (!client.nom) return null;
-  const rows = (Array.isArray(it.rows) ? it.rows : []).slice(0, 20).map((r) => ({ met: METIERS[r && r.met] ? r.met : '', nb: Math.min(99, Math.max(1, Math.round(num(r && r.nb)) || 1)), h: Math.min(9999, Math.max(0, num(r && r.h))) })).filter((r) => r.met || r.h);
-  // prix déjà mis par le directeur : gardés pour la même ligne (même travail / même métier)
-  const oldP = Object.fromEntries(((prev && prev.prest) || []).map((p) => [p.k, p]));
-  const prest = (Array.isArray(it.prest) ? it.prest : []).slice(0, 120).map((p) => {
-    const k = String((p && p.k) || ''), ci = devCatItem(k);
-    if (!ci && !/^f\d{1,2}$/.test(k)) return null;
-    const l = ci ? ci[1] : s(p.l, 200);
-    if (!l) return null;
-    const o = oldP[k] && oldP[k].l === l ? oldP[k] : null;
-    return { k, l, q: p.q === '' || p.q == null ? '' : Math.max(0, num(p.q)), u: DEV_UNITS.includes(p.u) ? p.u : ci ? ci[2] : 'fft', det: s(p.det, 200), pu: o ? o.pu ?? '' : '' };
-  }).filter(Boolean);
-  const oldRows = (prev && prev.chef && prev.chef.rows) || [], oldDir = (prev && prev.dir && prev.dir.rows) || [], used = new Set();
-  const dirRows = rows.map((r) => { const n = oldRows.findIndex((o, j) => !used.has(j) && o.met === r.met); if (n < 0) return { w: '', taux: '' }; used.add(n); return oldDir[n] || { w: '', taux: '' }; });
-  const v = it.visa;
-  let visa = v && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(v.png || '') && v.png.length < 400000 ? { png: v.png, nom: s(v.nom, 120), at: /^\d{4}-\d\d-\d\dT/.test(v.at || '') ? s(v.at, 30) : at } : null;
-  // signature déjà reçue : gardée si le rapport et les travaux n'ont pas changé
-  if (!visa && it.visaKeep && prev && prev.visa && devTravaux(prev) === devTravaux({ chef: { rapport: s(it.rapport, 6000) }, prest })) visa = prev.visa;
-  const rec = { client, titre: s(it.titre, 200), chantier: s(it.chantier, 300), interloc: s(it.interloc, 120), chef: { rapport: s(it.rapport, 6000), jours: s(it.jours, 80), rows }, prest, visa, sat: ['top', 'moyen', 'mauvais'].includes(it.sat) ? it.sat : '', chefAt: at, dir: { ...((prev && prev.dir) || { valid: 30 }), rows: dirRows } };
-  if (prev) { tx.put('devis', { id: prev.id, ...rec }); return { note: `✏️ Devis ${devNo(prev)} corrigé par ${intervFull(w)} : ${client.nom}` }; }
-  const conf = factConf(), now = new Date(), seq = (+conf.devSeq || 0) + 1;
-  const hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
-  rec.no = ['DEV', devInitials(client.nom), client.type !== 'part' ? client.rcs : '', ymd(today()), hhmm, String(seq).padStart(4, '0')].filter(Boolean).join('-');
-  Object.assign(rec, { kind: 'travaux', seq, st: 'brouillon', date: today(), created: now.toISOString(), rev: 0, chefBy: w.id, chefDid: did });
-  tx.put('reglages', { id: 'facturation', devSeq: seq });
-  tx.put('devis', rec);
-  return { note: `📝 Nouveau devis ${rec.no} de ${intervFull(w)} : ${client.nom}${visa ? ' · ✍️ Vu et correct' : ''}` };
-}
-// photo du devis (envoyées une par une, dans l'ordre) : 20 au maximum, jamais en double
-function devChefPhoto(tx, w, it, at, files) {
-  const d = devByDid(w, String(it.did || '')), n = Math.round(num(it.n)), b = typeof it.b === 'string' ? it.b : '';
-  if (!d || devFini(d) || !(n >= 1 && n <= 99) || !b || b.length > 2.5e6) return null;
-  const docId = d.id + 'c' + n, nb = devPhotos(d.id).length;
-  if (vault.get('documents', docId) || nb >= 20) return null;
-  tx.put('documents', { id: docId, devisId: d.id, kind: 'devis', n: nb + 1, label: `${devNo(d)} — photo ${nb + 1}`, date: at.slice(0, 10), mime: 'image/jpeg', size: Math.round(b.length * 0.75) });
-  files.push([docId, b]);
-  return { note: `📷 1 photo pour le devis ${devNo(d)}`, ph: 1, did: d.chefDid, no: devNo(d) };
-}
-// photos choisies mais pas encore enregistrées : leur nom s'affiche, et un nouveau choix s'ajoute (au lieu de remplacer)
-let devPend = { id: '', files: [] };
-function devPendHtml() {
-  const L = devPend.files;
-  if (!L.length) return '';
-  return html`<div class="dev-pf-list">${L.map((f, n) => html`<span class="dev-pf">📷 ${f.name} <span class="tiny muted">${Math.max(1, Math.round(f.size / 1024))} Ko</span><button type="button" class="btn icon sm ghost" data-action="dev-pend-del" data-n="${n}" aria-label="Retirer">${icon('x')}</button></span>`)}</div>
-    <p class="tiny" style="margin:4px 0 0;color:var(--accent)">${L.length} photo(s) choisie(s) — touchez 💾 Enregistrer pour les ajouter au devis (les miniatures apparaissent ensuite)</p>`;
-}
-// cadre « Prestations » : catalogue par catégorie, cases à cocher, quantité + unité + détails (mesures en cm / mm…)
-const devPq = (key, p, ph) => html`<div class="dev-pq"><input name="pq_${key}" type="number" step="0.01" min="0" inputmode="decimal" value="${p.q ?? ''}" placeholder="Qté" aria-label="Quantité"><select name="pu_${key}" aria-label="Unité">${DEV_UNITS.map((u) => html`<option value="${u}" ${u === p.u ? new Raw('selected') : ''}>${u === 'fft' ? 'forfait (fft)' : u}</option>`)}</select><input name="pd_${key}" value="${p.det || ''}" placeholder="${ph || 'détails : mesures (cm), format, couleur, modèle…'}" aria-label="Détails"></div>`;
-const devFreeRow = (n, p = {}) => html`<div class="dev-pi dev-free"><input name="pl_f${n}" value="${p.l || ''}" placeholder="Autre prestation (ex. Pose d’une crédence en verre)" aria-label="Prestation">${devPq('f' + n, { q: p.q, u: p.u || 'fft', det: p.det }, '')}</div>`;
-const devProtoRow = (n, r = { f: {} }) => html`<div class="dev-proto-r">${r.base ? html`<span class="small">${r.l}</span><input type="hidden" name="frl${n}" value="${r.l}">` : html`<input name="frl${n}" value="${r.l || ''}" placeholder="Autre prestation d’entretien">`}${['h', 'm', 't', 'a'].map((x) => html`<input type="checkbox" name="fr${n}_${x}" value="1" ${r.f && r.f[x] ? new Raw('checked') : ''} aria-label="${({ h: 'Hebdomadaire', m: 'Mensuel', t: 'Trimestriel', a: 'Annuel' })[x]}">`)}</div>`;
-function devPrestBox(d) {
-  const sel = Object.fromEntries((d.prest || []).filter((p) => /^c\d+i\d+$/.test(p.k)).map((p) => [p.k, p]));
-  const free = (d.prest || []).filter((p) => /^f\d+$/.test(p.k)).map((p) => [+p.k.slice(1), p]);
-  let nx = free.reduce((m, [n]) => Math.max(m, n + 1), 0);
-  while (free.length < 2) free.push([nx++, {}]);
-  const saved = d.kind === 'contrat' && Array.isArray(d.proto) ? d.proto : null;
-  const prows = DEV_PROTO.map(([f, l]) => { const s0 = saved && saved.find((x) => x.l === l); return { l, base: 1, f: s0 ? s0.f : saved ? {} : { [f]: 1 } }; });
-  for (const s0 of saved || []) if (!DEV_PROTO.some(([, l]) => l === s0.l)) prows.push({ l: s0.l, f: s0.f });
-  return html`<fieldset class="full dev-box dev-prest"><legend>📋 Prestations / description des travaux</legend>
-    <p class="tiny muted full" style="margin:0">Le chef de chantier coche les travaux et note la quantité, l’unité et les détails (mesures en cm / mm, format, couleur, modèle). Le directeur met les prix plus bas.</p>
-    <div class="search full" style="margin:0">${icon('search')}<input type="search" data-input="dev-psearch" placeholder="Rechercher : carrelage, fuite, peinture, porte…" autocomplete="off"></div>
-    <div class="full dev-pcats">${DEV_CAT.map(([cat, items], ci) => { const n = items.filter((_, ii) => sel[`c${ci}i${ii}`]).length; return html`<details class="dev-pg"${n ? new Raw(' open') : ''}><summary>${cat} <b class="dev-pn"${n ? '' : new Raw(' hidden')}>${n}</b></summary>
-      ${items.map(([t, l, u, det], ii) => { const key = `c${ci}i${ii}`, p = sel[key]; return html`<div class="dev-pi" data-l="${(l + ' ' + cat).toLowerCase()}"><label><input type="checkbox" name="pk" value="${key}"${p ? new Raw(' checked') : ''}> <span>${l}</span> <span class="tiny muted">· ${DEV_PTYPE[t] || ''}</span></label>${devPq(key, p || { q: '', u, det: '' }, det ? 'détails : ' + det : '')}</div>`; })}</details>`; })}</div>
-    <div class="full"><div class="section-label" style="margin:4px 0 6px">Autres travaux (texte libre)</div><div id="devFree">${free.map(([n, p]) => devFreeRow(n, p))}</div>
-      <button type="button" class="btn sm" data-action="dev-free-add">${icon('plus')} Ligne libre</button></div>
-    <div class="full dev-k-ct"><div class="section-label" style="margin:6px 0 6px">Protocole d’entretien (parties communes)</div>
-      <div class="dev-proto" id="devProto"><div class="dev-proto-r dev-proto-h"><span></span><b>Hebdo.</b><b>Mens.</b><b>Trim.</b><b>Annuel</b></div>${prows.map((r, n) => devProtoRow(n, r))}</div>
-      <button type="button" class="btn sm" data-action="dev-proto-add">${icon('plus')} Ligne</button>
-      <p class="tiny muted" style="margin:4px 0 0">Une ligne sans case cochée n’apparaît pas dans le contrat. Les prestations cochées plus haut deviennent les prestations ponctuelles (prix par exécution).</p></div>
-  </fieldset>`;
-}
-// prix des prestations (directeur) : prix unitaire HT par ligne
-function devPDirHtml(d) {
-  const L = d.prest || [];
-  if (!L.length) return html`<p class="tiny muted" style="margin:0">Les prestations cochées dans « 📋 Prestations » apparaissent ici pour mettre le prix unitaire.</p>`;
-  return html`<div class="section-label" style="margin:0 0 6px">${d.kind === 'contrat' ? 'Prestations ponctuelles — prix par exécution' : 'Prix des prestations'}</div>
-    ${L.map((p) => html`<div class="dev-drow"><span class="small"><b>${p.l}</b>${p.det ? html` <span class="muted">— ${p.det}</span>` : ''}<span class="muted" style="display:block">${devQty(p)} ${p.u || ''}</span></span>
-      <span class="sfx"><input name="pp_${p.k}" type="number" ${new Raw(money$)} value="${p.pu ?? ''}" placeholder="Prix unitaire" aria-label="Prix unitaire HT"><i>€ HT / ${p.u || 'u.'}</i></span>
-      <b class="small" style="text-align:right">${p.pu !== '' && p.pu != null ? eur(devPrestTot(p)) : ''}</b></div>`)}`;
-}
-function devTotHtml(d) {
-  const k = devCalc(d);
-  if (k.ct) return html`<div class="kv-tot"><span>Forfait mensuel HT</span><b>${eur(k.forfait)}</b>${k.rem ? html`<span>Remise ${String(num(d.dir.remise)).replace('.', ',')} %</span><b>− ${eur(k.rem)}</b>` : ''}<span>TVA ${String(k.taux).replace('.', ',')} %</span><b>${eur(k.tva)}</b><span class="big">Total TTC / mois</span><b class="big">${eur(k.ttc)}</b></div>${k.prest.length ? html`<p class="tiny muted" style="margin:4px 0 0">+ ${k.prest.length} prestation(s) ponctuelle(s), facturée(s) à chaque exécution.</p>` : ''}`;
-  return html`${k.pr ? html`<div class="kv-tot" style="margin-bottom:0"><span>Prestations</span><b>${eur(k.pr)}</b></div>` : ''}<div class="kv-tot"><div class="kv-tot"><span>Main-d’œuvre</span><b>${eur(k.mo)}</b><span>Déplacement</span><b>${eur(k.dep)}</b><span>Matériel</span><b>${eur(k.mat)}</b>${k.rem ? html`<span>Remise ${String(num(d.dir.remise)).replace('.', ',')} %</span><b>− ${eur(k.rem)}</b>` : ''}
-    <span>Total HT</span><b>${eur(k.ht)}</b><span>TVA ${String(k.taux).replace('.', ',')} %</span><b>${eur(k.tva)}</b><span class="big">Total TTC</span><b class="big">${eur(k.ttc)}</b>
-    <span>Acompte ${k.pct} %</span><b>${eur(k.acompte)}</b></div>${k.pct !== devAcompteConseil(k.ttc) ? html`<p class="tiny muted" style="margin:4px 0 0">Acompte conseillé pour ce montant : ${devAcompteConseil(k.ttc)} %</p>` : ''}`;
-}
-// signature du client (devis signé, « Vu et correct ») : l'image elle-même, pas seulement le nom
-const devSigImg = (sg) => (sg && /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(sg.png || '') ? html`<img class="dev-sig" src="${sg.png}" alt="Signature de ${sg.nom || 'le client'}">` : '');
-Object.assign(SHEETS, {
-  devis({ id }) {
-    const d = id ? vault.get('devis', id) : { st: 'brouillon', client: { type: 'part' }, chef: { rows: [] }, dir: { rows: [], valid: 30 } };
-    if (id && !d) return null;
-    const c = factConf(), cl = d.client || {}, chef = d.chef || {}, dir = d.dir || {};
-    const crows = [...(chef.rows || [])]; while (crows.length < 3) crows.push({});
-    const mats = [...(dir.mat || [])]; while (mats.length < 2) mats.push({});
-    const orgs = (ui.ptl.data && ui.ptl.data.orgs) || [];
-    if (devPend.id !== (id || 'new')) devPend = { id: id || 'new', files: [] };
-    const ph = id ? devPhotos(id) : [], s = devState(d), k = devCalc(d), chefW = d.chefBy ? vault.get('intervenants', d.chefBy) : null;
-    const acts = id ? html`<div class="card dev-acts" style="margin-bottom:12px;padding:12px">
-        <div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">${devBall(d)}<b class="grow">${s.lbl}</b></div>
-        ${d.decision && d.decision.note ? html`<p class="small" style="margin:0 0 8px">💬 <b>${d.decision.by || 'La gérance'}</b> : ${d.decision.note}</p>` : ''}
-        ${d.sign ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ Signé par ${d.sign.nom || 'le client'} le ${fmtDateTime(Date.parse(d.sign.at) || 0)}${d.sign.early ? ' · début des travaux avant la fin du délai de rétractation demandé' : ''}</p>${devSigImg(d.sign)}` : ''}
-        ${chefW ? html`<p class="tiny muted" style="margin:0 0 8px">🦺 Préparé par <b>${intervFull(chefW)}</b> dans son app${d.chefAt ? ' · dernier envoi le ' + fmtDateTime(Date.parse(d.chefAt) || 0) : ''}</p>` : ''}
-        ${d.visa ? html`<p class="tiny muted" style="margin:0 0 8px">✍️ « Vu et correct » signé par ${d.visa.nom || 'le client'} le ${fmtDateTime(Date.parse(d.visa.at) || 0)} (le rapport du chef correspond à sa demande — sans prix)</p>${devSigImg(d.visa)}<button class="btn sm ghost danger" style="margin:0 0 10px" data-action="dev-visa-del" data-id="${id}">🗑️ Retirer la signature</button>` : d.chefBy && !d.sign ? html`<p class="small" style="margin:0 0 8px;color:#b45309">⚠️ Rapport envoyé sans « Vu et correct » du client. Le client signera le devis final pour l’accepter.</p>` : ''}
-        ${!devFini(d) ? html`<div class="alert info" style="margin:0 0 8px">🟡<div><b>En préparation.</b> Enregistrez autant de fois que vous voulez, sans signature. Le directeur met les prix puis touche <b>« ✅ Devis terminé »</b> : alors seulement apparaissent l’envoi au client (PDF, WhatsApp, email, lien, app Gérances) et la signature « Bon pour accord ».</div></div>
-        <div class="dev-btns"><button class="btn sm primary" data-action="dev-fini" data-id="${id}">✅ Devis terminé</button>
-          <button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button></div>` : html`
-        <div class="dev-btns">
-          <button class="btn sm" data-action="dev-pdf" data-id="${id}">📄 PDF / imprimer</button>
-          <button class="btn sm" data-action="dev-share" data-id="${id}" data-via="wa">💬 WhatsApp</button>
-          <button class="btn sm" data-action="dev-share" data-id="${id}" data-via="mail">✉️ Email</button>
-          ${cl.type !== 'ger' && d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm" data-action="dev-link" data-id="${id}">🔗 Lien / QR code${d.pubId ? ' ✓' : ''}</button>` : ''}
-          ${cl.type === 'ger' && cl.orgId && d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm" data-action="dev-ptl" data-id="${id}">📤 ${d.ptlSt ? 'Renvoyer' : 'Envoyer'} au app de la gérance</button>` : ''}
-          ${d.st !== 'accepte' && d.st !== 'refuse' ? html`<button class="btn sm primary" data-action="dev-sign" data-id="${id}">✍️ Faire signer le client</button><button class="btn sm" data-action="dev-acc" data-id="${id}">✅ Accepté</button><button class="btn sm ghost danger" data-action="dev-ref" data-id="${id}">❌ Refusé</button>` : ''}
-          ${s.k === 'ok' ? html`<button class="btn sm primary" data-action="dev-tache" data-id="${id}">➡️ Créer l’intervention</button>` : ''}
-          ${d.st !== 'brouillon' && !d.tacheId && !devLocked(d) ? html`<button class="btn sm ghost" data-action="dev-rev" data-id="${id}">🔄 Nouvelle version (R${(d.rev || 0) + 1})</button>` : ''}
-          ${d.tacheId && vault.get('taches', d.tacheId) ? html`<button class="btn sm ghost" data-action="edit-tache" data-id="${d.tacheId}">🛠️ Voir l’intervention</button>` : ''}
-          ${d.st === 'brouillon' ? html`<button class="btn sm ghost" data-action="dev-unfini" data-id="${id}">↩️ Remettre en préparation</button>` : ''}
-          ${devLocked(d) ? html`<button class="btn sm ghost" data-action="dev-arch" data-id="${id}">${d.arch ? '↩️ Sortir des archives' : '🗄️ Archiver'}</button>` : html`<button class="btn sm ghost danger" data-action="dev-del" data-id="${id}">Supprimer</button>`}</div>`}
-        ${devLocked(d) ? html`<p class="tiny muted" style="margin:8px 0 0">🔒 Devis ${d.sign ? 'signé' : 'accepté'} : il ne peut pas être supprimé (à conserver 10 ans).${d.arch ? ' Archivé le ' + fmtDate(d.arch) + '.' : ''}</p>` : ''}</div>` : '';
-    return {
-      title: id ? `📝 Devis ${devNo(d)}` : '📝 Nouveau devis',
-      body: html`${acts}<form id="f" data-form="devis" class="fields" data-kind="${d.kind === 'contrat' ? 'contrat' : 'travaux'}"><input type="hidden" name="id" value="${id || ''}">
-        <label class="field full">Type de devis<select name="dkind" data-input="dev-kind"><option value="travaux">🛠️ Travaux — prix par prestation</option><option value="contrat" ${d.kind === 'contrat' ? new Raw('selected') : ''}>🧹 Contrat d’entretien — forfait mensuel + protocole</option></select></label>
-        <div class="section-label full" style="margin:0">Client</div>
-        <label class="field">Type de client<select name="ctype" data-input="dev-ctype">${Object.entries(DEV_TYPES).filter(([kk]) => kk !== 'ger' || orgs.length || cl.type === 'ger').map(([kk, v]) => html`<option value="${kk}" ${cl.type === kk ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        <label class="field dev-ger" ${cl.type === 'ger' ? '' : new Raw('hidden')}>Gérance<select name="org" data-input="dev-org"><option value="">— choisir —</option>${orgs.map((o) => html`<option value="${o.id}" ${cl.orgId === o.id ? new Raw('selected') : ''}>${o.name}</option>`)}</select></label>
-        <label class="field">Nom / raison sociale<input name="cnom" required value="${cl.nom || ''}" placeholder="ex. Mario Rossi, Gérance du Centre S.A."></label>
-        <label class="field dev-soc" ${cl.type === 'part' ? new Raw('hidden') : ''}>RCS <span class="red">*</span><input name="crcs" value="${cl.rcs || ''}" placeholder="B123456" autocapitalize="characters"></label>
-        <label class="field dev-soc" ${cl.type === 'part' ? new Raw('hidden') : ''}>N° TVA<input name="ctva" value="${cl.tva || ''}" placeholder="LU12345678" autocapitalize="characters"></label>
-        <label class="field full">Adresse du client<textarea name="cadr" style="min-height:52px" placeholder="rue, n°, code postal, ville">${cl.adresse || ''}</textarea></label>
-        <label class="field">Téléphone (WhatsApp)<input type="tel" name="ctel" value="${cl.tel || ''}" placeholder="+352…"></label>
-        <label class="field">Email<input type="email" name="cmail" value="${cl.email || ''}"></label>
-        <label class="field full">Objet du devis<input name="titre" value="${d.titre || ''}" placeholder="ex. Remise en état des appartements et du commerce"></label>
-        <label class="field">Adresse du chantier<input name="chantier" value="${d.chantier || ''}" placeholder="si différente de celle du client"></label>
-        <label class="field">Interlocuteur sur place<input name="interloc" value="${d.interloc || ''}" placeholder="ex. M. Pierre Loan"></label>
-        <fieldset class="full dev-box dev-chef"><legend>🦺 À remplir par le chef de chantier</legend>
-          <label class="field full">📷 Photos (2 à 20)<input type="file" name="photos" accept="image/*" multiple data-input="dev-photos"></label>
-          <div class="full dev-pend" id="devPend">${devPendHtml()}</div>
-          ${ph.length ? html`<div class="dev-ph full">${ph.map((p) => html`<figure><img data-edl="${p.id}" alt=""><button type="button" class="btn icon sm ghost" data-action="dev-ph-del" data-id="${p.id}" aria-label="Retirer la photo">${icon('x')}</button></figure>`)}</div><p class="tiny muted full" style="margin:-4px 0 0">${ph.length} / 20 photo(s)</p>` : ''}
-          <label class="field full">Rapport du chantier (ce qu’il faut faire)<textarea name="rapport" style="min-height:110px" placeholder="Constats, travaux à prévoir, accès, remarques…">${chef.rapport || ''}</textarea></label>
-          <div class="full"><div class="section-label" style="margin:0 0 6px">Ouvriers prévus (métier · nombre · heures par ouvrier)</div><div id="devRows">${crows.map((r, n) => devChefRow(n, r))}</div>
-            <button type="button" class="btn sm" data-action="dev-row-add">${icon('plus')} Ligne</button></div>
-          <label class="field">Durée prévue<input name="jours" value="${chef.jours || ''}" placeholder="ex. 3 jours, 2 semaines"></label>
-        </fieldset>
-        ${devPrestBox(d)}
-        <fieldset class="full dev-box dev-dir"><legend>👔 À remplir par le directeur</legend>
-          <div class="full" id="devPDir">${devPDirHtml(d)}</div>
-          <div class="dev-k-ct" style="display:contents">${(() => { const t = d.ct || {}; return html`
-          ${sfx('Forfait mensuel', 'cforfait', t.forfait ?? '', '€ HT / mois')}
-          <label class="field">Passages par semaine<input name="cpass" value="${t.pass || '1'}" inputmode="numeric"></label>
-          <label class="field">Agents par passage<input name="cagents" value="${t.agents || '2'}" inputmode="numeric"></label>
-          ${sfx('Durée du contrat', 'cduree', t.duree || 12, 'mois', 'inputmode="numeric" step="1" min="1" max="120"')}
-          ${sfx('Préavis de résiliation', 'cpreavis', t.preavis || 3, 'mois', 'inputmode="numeric" step="1" min="0" max="24"')}
-          ${sfx('Paiement', 'cpay', t.pay || 15, 'jours', 'inputmode="numeric" step="1" min="0" max="90"')}
-          <label class="field">Indice (cote d’application)<input name="ccote" value="${t.cote || ''}" placeholder="ex. 992,24"></label>`; })()}</div>
-          <div class="dev-k-tr" style="display:contents">
-          <div class="full" id="devDir">${devDirHtml(crows, dir.rows || [])}</div>
-          ${sfx('Déplacement', 'depl', dir.depl ?? '', '€ HT')}
-          ${sfx('Remise', 'remise', dir.remise || '', '%', 'inputmode="decimal" step="0.5" min="0" max="100"')}
-          <div class="full"><div class="section-label" style="margin:4px 0 6px">Matériel (HT)</div><div id="factMats">${mats.map((m, n) => matRow(n, m))}</div>
-            <button type="button" class="btn sm" data-action="fact-mat-add">${icon('plus')} Ligne</button></div></div>
-          ${sfx('TVA', 'tva', dir.tva ?? c.taux, '%', 'inputmode="decimal" step="0.01" min="0" max="100"')}
-          <label class="field mini dev-k-tr">Acompte<select name="acompte" data-input="dev-tot"><option value="" ${dir.acompte === '' || dir.acompte == null ? new Raw('selected') : ''}>Conseillé (${devAcompteConseil(k.ttc)} %)</option>${DEV_ACOMPTE.map((p) => html`<option value="${p}" ${dir.acompte !== '' && dir.acompte != null && +dir.acompte === p ? new Raw('selected') : ''}>${p ? p + ' %' : 'Sans acompte'}</option>`)}</select></label>
-          ${sfx('Devis valable', 'valid', dir.valid || 30, 'jours', 'inputmode="numeric" step="1" min="1" max="365"')}
-          <label class="field">Délai / début des travaux<input name="delai" value="${dir.delai || ''}" placeholder="ex. début sous 2 semaines, durée 3 jours"></label>
-          <p class="tiny muted full dev-k-tr" style="margin:0">Acompte conseillé : jusqu’à 2 000 € TTC 40 % · jusqu’à 10 000 € 30 % · jusqu’à 50 000 € 20 % · au-delà 10 %.</p>
-          <div class="full" id="devTot">${devTotHtml(d)}</div>
-        </fieldset>
-        ${!id ? html`<p class="tiny muted full" style="margin:0">Le numéro est donné à l’enregistrement : DEV-initiales-RCS (sociétés)-date-heure-numéro suivi (ex. DEV-AG-B123456-${ymd(today())}-0930-${String((+c.devSeq || 0) + 1).padStart(4, '0')}).</p>` : ''}
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" type="submit" form="f">💾 Enregistrer</button>`,
-    };
-  },
-  // lien web + QR code du devis (client externe)
-  'dev-link'({ id }) {
-    const d = vault.get('devis', id);
-    if (!d || !d.pubToken) return null;
-    const url = `${location.origin}/devis.html#t=${d.pubToken}`, cl = d.client || {}, k = devCalc(d);
-    const msg = `Bonjour ${d.interloc || devClient(d)},\n\nVoici votre ${k.ct ? 'offre de service' : 'devis'} LA CENTRAL n° ${devNo(d)}${d.titre ? ' — ' + d.titre : ''} : ${eur(k.ttc)} TTC${k.ct ? ' / mois' : ''}.\nVous pouvez le lire, l’imprimer et le signer sur votre téléphone :\n${url}\n\nBien à vous,\n${factConf().marque || 'LA CENTRAL'}`;
-    const tel = String(cl.tel || '').replace(/[^\d+]/g, ''), wa = tel.replace(/^\+/, '').replace(/^00/, '');
-    return {
-      title: `🔗 Lien du devis — ${devNo(d)}`,
-      narrow: true,
-      body: html`<p class="small" style="margin:0 0 10px">Le client ouvre ce lien (ou scanne le QR code) : il voit le devis, l’imprime et le <b>signe avec le doigt sur son téléphone</b>. La signature revient ici toute seule.</p>
-        <div style="text-align:center;margin:6px 0 10px"><div class="qr-box" style="display:inline-block;background:#fff;padding:10px;border-radius:12px">${qrSvg(url, 5)}</div></div>
-        <p class="tiny" style="word-break:break-all;margin:0 0 12px"><a href="${url}" target="_blank" rel="noopener">${url}</a></p>
-        <div class="dev-btns">
-          <a class="btn sm" href="https://wa.me/${wa}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">💬 WhatsApp</a>
-          <a class="btn sm" href="sms:${tel}${/iPhone|iPad/.test(navigator.userAgent) ? '&' : '?'}body=${encodeURIComponent(msg)}">📱 SMS</a>
-          <a class="btn sm" href="mailto:${encodeURIComponent(cl.email || '')}?subject=${encodeURIComponent('Devis ' + devNo(d))}&body=${encodeURIComponent(msg)}">✉️ Email</a>
-          <button class="btn sm" data-action="dev-link-copy" data-url="${url}">📋 Copier le lien</button></div>
-        <p class="tiny muted" style="margin:10px 0 0">Après une nouvelle version (R1, R2…), touchez à nouveau « 🔗 Lien / QR code » : le même lien montre la nouvelle version.</p>`,
-      foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
-    };
-  },
-  // signature du client avec le doigt : « Bon pour accord »
-  'devis-sign'({ id }) {
-    const d = vault.get('devis', id);
-    if (!d) return null;
-    const k = devCalc(d), part = d.client && d.client.type === 'part';
-    return {
-      title: `✍️ Bon pour accord — ${devNo(d)}`,
-      narrow: true,
-      body: html`<form id="fs" data-form="devis-sign" class="fields"><input type="hidden" name="id" value="${id}">
-        <div class="full card" style="padding:10px;margin:0"><b>${d.titre || 'Devis'}</b><div class="small">${devClient(d)}${d.chantier ? ' · ' + d.chantier : ''}</div>
-          <div style="margin-top:6px">Total : <b>${eur(k.ttc)} TTC</b>${k.pct ? html` · acompte ${k.pct} % : <b>${eur(k.acompte)}</b>` : ''}</div></div>
-        <label class="field full">Nom du signataire<input name="nom" required value="${d.interloc || devClient(d)}"></label>
-        ${part ? html`<p class="small full" style="margin:0">Vous disposez de <b>14 jours</b> pour vous rétracter, sans motif et sans frais (formulaire joint au devis).</p>
-          <label class="full" style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" name="early" value="1" style="width:22px;height:22px;flex:none"> <span class="small">Je demande expressément que les travaux commencent avant la fin du délai de rétractation. Si je me rétracte ensuite, je paierai les travaux déjà réalisés.</span></label>` : ''}
-        <p class="small full" style="margin:0"><b>Bon pour accord</b> — signez avec le doigt :</p>
-        <canvas class="sig-pad full" width="600" height="220" style="display:block;width:100%;aspect-ratio:30/11;background:#fff;border:1.5px dashed #9aa5a0;border-radius:12px;touch-action:none"></canvas>
-        <div class="full" style="display:flex;gap:8px"><button type="button" class="btn sm" data-action="dev-sig-clear">Effacer</button></div>
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="fs">✍️ Valider la signature</button>`,
-    };
-  },
-});
-// pavé de signature (doigt / souris)
-let devSig = null;
-document.addEventListener('pointerdown', (ev) => {
-  const c = ev.target.closest && ev.target.closest('canvas.sig-pad'); if (!c || !sheetEl.contains(c)) return;
-  ev.preventDefault(); c.setPointerCapture(ev.pointerId);
-  const r = c.getBoundingClientRect(), x = c.getContext('2d');
-  const pt = (q) => [(q.clientX - r.left) * (c.width / r.width), (q.clientY - r.top) * (c.height / r.height)];
-  x.lineWidth = 3.2; x.lineCap = 'round'; x.lineJoin = 'round'; x.strokeStyle = '#0b1f4d';
-  const [a, b] = pt(ev); x.beginPath(); x.moveTo(a, b); x.lineTo(a + 0.1, b + 0.1); x.stroke();
-  devSig = { c, x, pt };
-});
-document.addEventListener('pointermove', (ev) => { if (!devSig) return; const [a, b] = devSig.pt(ev); devSig.x.lineTo(a, b); devSig.x.stroke(); });
-const devSigUp = () => { devSig = null; }; // l'image est lue sur le canevas à l'enregistrement
-document.addEventListener('pointerup', devSigUp);document.addEventListener('pointercancel', devSigUp);
-// la signature est-elle vide ? (aucun pixel dessiné)
-const devSigEmpty = (c) => !c || !c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some((v, i) => i % 4 === 3 && v > 0);
-Object.assign(FORMS, {
-  async devis(fd, fm) {
-    const id = fd.get('id'), prev = id ? vault.get('devis', id) : null, rec = devRead(fm);
-    if (!rec.client.nom) return toast('Indiquez le nom du client', { bad: true });
-    if (rec.client.type !== 'part' && !rec.client.rcs) return toast('RCS obligatoire pour une société (ex. B123456)', { bad: true });
-    if (rec.client.type === 'ger' && !rec.client.orgId) return toast('Choisissez la gérance', { bad: true });
-    const files = devPend.files.filter((f) => f && f.size), nb = id ? devPhotos(id).length : 0;
-    if (nb + files.length > 20) toast(`20 photos maximum : ${Math.max(0, 20 - nb)} ajoutée(s)`, { bad: true });
-    const pics = [];
-    for (const f of files.slice(0, Math.max(0, 20 - nb))) pics.push(await compressPhoto(f));
-    let saved, seq = 0;
-    if (!prev) {
-      const c = factConf(), now = new Date(), hhmm = String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0');
-      seq = (+c.devSeq || 0) + 1;
-      rec.no = ['DEV', devInitials(rec.client.nom), rec.client.type !== 'part' ? rec.client.rcs : '', ymd(today()), hhmm, String(seq).padStart(4, '0')].filter(Boolean).join('-');
-      Object.assign(rec, { seq, st: 'brouillon', date: today(), created: now.toISOString(), rev: 0, creePar: vault.api.who || '' });
-    } else rec.id = id;
-    if (prev && prev.visa && devTravaux(prev) !== devTravaux(rec)) { rec.visa = null; toast('Rapport ou travaux modifiés : la signature « Vu et correct » est retirée (à refaire)', { bad: true }); }
-    const docs = [];
-    await vault.mutate((tx) => {
-      if (seq) tx.put('reglages', { id: 'facturation', devSeq: seq });
-      saved = tx.put('devis', rec);
-      pics.forEach((b, n) => docs.push([tx.put('documents', { devisId: saved.id, kind: 'devis', n: nb + n + 1, label: `${devNo(saved)} — photo ${nb + n + 1}`, date: today(), mime: 'image/jpeg', size: b.length }).id, b]));
-    }, prev ? 'Devis modifié' : 'Devis créé', `${devNo(prev || rec)} — ${rec.client.nom}`);
-    for (const [did, b] of docs) await vault.saveFile(did, b);
-    sheetDirty = false; devPend = { id: '', files: [] };
-    toast(prev ? 'Devis enregistré' : `📝 Devis ${devNo(saved)} créé`);
-    openSheet('devis', saved.id);
-  },
-  async 'devis-sign'(fd) {
-    const d = vault.get('devis', fd.get('id')), c = sheetEl.querySelector('canvas.sig-pad');
-    if (!d) return;
-    if (devSigEmpty(c)) return toast('Le client doit signer dans le cadre blanc', { bad: true });
-    const png = c.toDataURL('image/png'), at = new Date().toISOString();
-    await vault.mutate((tx) => tx.put('devis', { id: d.id, st: 'accepte', acc: at, sign: { png, at, nom: String(fd.get('nom') || '').trim(), early: fd.get('early') === '1' }, ...devH(d, 'accepte') }), 'Devis signé par le client', `${devNo(d)} — ${devClient(d)}`);
-    sheetDirty = false;
-    toast('✍️ Devis signé — bon pour accord');
-    goBack();
-  },
-});
-// PDF du devis : en-tête ARES, client, rapport, lignes, totaux, acompte, signatures, mentions légales, photos (4 par page), « N° … x/N »
-async function devPdf(d) {
-  const c = factConf(), k = devCalc(d), cl = d.client || {}, part = cl.type === 'part';
-  const p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42], BOT = 795, VIO = [0.36, 0.2, 0.62];
-  const no = devNo(d);
-  const logo = await sigJpeg('/ares/icons/lux-192.png').catch(() => null);
-  const head = () => {
-    if (logo) p.image(X, 36, 56, 56, logo.bytes, logo.w, logo.h);
-    const ex = logo ? X + 70 : X;
-    p.text(ex, 48, c.marque || c.nom, { size: 11, bold: true }).text(ex, 61, c.marque ? 'by ' + c.nom : '', { size: 9, color: G });
-    p.text(ex, 74, `${c.adresse}, ${c.ville}`, { size: 8.5 }).text(ex, 86, [c.tel ? 'Tél. ' + c.tel : '', c.email].filter(Boolean).join(' · '), { size: 8.5, color: G });
-    p.text(ex, 98, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8, color: G });
-    if (c.autorisation) p.text(ex, 110, `Autorisation d’établissement n° ${c.autorisation}`, { size: 8, color: G });
-  };
-  let y = 0;
-  const newPage = () => { p.page(); head(); y = 124; };
-  const need = (h) => { if (y + h > BOT) newPage(); };
-  head();
-  // client (en haut à droite, à côté de l'émetteur)
-  const CX = 330;
-  let cy = 48;
-  p.text(CX, cy, cl.nom || '', { size: 11, bold: true }); cy += 14;
-  for (const ln of String(cl.adresse || '').split(/\n|,\s*(?=L-|\d{4})/).filter(Boolean).slice(0, 3)) { p.text(CX, cy, ln.trim(), { size: 9.5 }); cy += 12; }
-  if (cl.rcs) { p.text(CX, cy, `RCS ${cl.rcs}${cl.tva ? ' · TVA ' + cl.tva : ''}`, { size: 9 }); cy += 12; }
-  if (cl.tel || cl.email) { p.text(CX, cy, [cl.tel, cl.email].filter(Boolean).join(' · '), { size: 9, color: G }); cy += 12; }
-  y = Math.max(cy + 20, 150);
-  p.text(X, y, k.ct ? 'OFFRE DE SERVICE' : 'DEVIS', { size: 22, bold: true, color: [0.2, 0.2, 0.2] }); if (k.ct) p.text(X + 230, y, 'Contrat d’entretien', { size: 11, color: G }); y += 18;
-  p.text(X, y, `N° ${no}`, { size: 10.5, bold: true }); y += 20;
-  const until = addDays(d.date || today(), num((d.dir || {}).valid) || 30);
-  const info = [['Date', frD(d.date || today())], ['Valable jusqu’au', frD(until)], k.ct ? ['Durée du contrat', `${(d.ct && d.ct.duree) || 12} mois`] : ['Durée prévue', (d.chef && d.chef.jours) || '—'], ['Devis gratuit', 'sans engagement']];
-  info.forEach(([l, v], i) => { const xx = X + i * 125; p.text(xx, y, l, { size: 8.5, color: G }).text(xx, y + 13, v, { size: 10 }); });
-  y += 36;
-  const kv = (l, v) => { if (!v) return; need(16); p.text(X, y, l, { size: 9, color: G }); y += p.wrap(X + 130, y, v, R - X - 130, { size: 10, bold: true }) + 3; };
-  kv('Objet', d.titre); kv('Lieu d’intervention', d.chantier || cl.adresse); kv('Interlocuteur', d.interloc); kv('Délai / début', (d.dir || {}).delai);
-  // rapport du chantier
-  const rap = String((d.chef && d.chef.rapport) || '').trim();
-  if (rap) {
-    y += 8; need(40);
-    p.rect(X, y - 12, R - X, 18, { fill: [0.93, 0.91, 0.97] }).text(X + 6, y, 'DESCRIPTION DES TRAVAUX', { size: 9.5, bold: true, color: VIO }); y += 20;
-    for (const para of rap.split(/\n+/)) { const h = p.wrap(X, -1000, para, R - X, { size: 9.5 }); need(Math.min(h, 200) + 4); y += p.wrap(X, y, para, R - X, { size: 9.5 }) + 4; }
-  }
-  // « Vu et correct » : le client a confirmé sur place que le rapport décrit sa demande
-  if (d.visa) {
-    const vs = await sigJpeg(d.visa.png).catch(() => null);
-    need(50); y += 4;
-    p.text(X, y, `Vu et correct — constat confirmé par ${d.visa.nom || 'le client'} le ${new Date(Date.parse(d.visa.at) || Date.now()).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`, { size: 8.5, color: G });
-    if (vs) { const h = 30, w = Math.min(120, (h * vs.w) / vs.h); p.image(R - w, y - 12, w, (w * vs.h) / vs.w, vs.bytes, vs.w, vs.h); }
-    y += 36;
-  }
-  const n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
-  const txt = String(k.taux).replace('.', ',') + '%';
-  const TX = 330;
-  if (!k.ct) {
-  // tableau des prix
-  y += 10; need(60);
-  const CQ = 352, CP = 430, CT = 482;
-  p.text(X + 6, y, 'Description', { size: 9.5, bold: true }).text(CQ, y, 'Quantité', { size: 9.5, bold: true, align: 'right' }).text(CP, y, 'Prix unitaire', { size: 9.5, bold: true, align: 'right' }).text(CT, y, 'TVA', { size: 9.5, bold: true, align: 'right' }).text(R - 6, y, 'Montant', { size: 9.5, bold: true, align: 'right' });
-  y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
-  const row = (lib, sub, q, pu, tot) => {
-    need(30);
-    if (q !== '') p.text(CQ, y, q, { size: 9.5, align: 'right' });
-    if (pu !== '') p.text(CP, y, pu, { size: 9.5, align: 'right' });
-    p.text(CT, y, txt, { size: 9.5, align: 'right' }).text(R - 6, y, tot, { size: 9.5, align: 'right' });
-    let hh = p.wrap(X + 6, y, lib, 240, { size: 9.5 });
-    if (sub) hh += p.wrap(X + 6, y + hh, sub, 240, { size: 8.5, color: G });
-    y += Math.max(hh, 13) + 9; p.line(X, y - 12, R, y - 12, { w: 0.4, color: [0.85, 0.85, 0.85] });
-  };
-  for (const pp of k.prest) { const has = pp.pu !== '' && pp.pu != null; row(pp.l, pp.det, `${devQty(pp)} ${pp.u || ''}`, has ? n2(num(pp.pu)) : '', has ? eur(pp.mt) : ''); }
-  for (const l of k.lines) row(`Main-d'œuvre — ${METIERS[l.met] || 'ouvrier'}`, `${num(l.nb || 1)} ouvrier(s) × ${n2(num(l.h))} h`, n2(l.hh) + ' h', n2(l.taux), eur(l.mt));
-  if (k.dep) row('Déplacement', '', '1,00', n2(k.dep), eur(k.dep));
-  for (const m of (d.dir && d.dir.mat) || []) if (num(m.ht)) row(`Matériel : ${m.lib || 'fourniture'}`, '', '1,00', n2(num(m.ht)), eur(num(m.ht)));
-  if (k.rem) row(`Remise ${String(num(d.dir.remise)).replace('.', ',')} %`, '', '', '', '− ' + eur(k.rem));
-  y += 10; need(110);
-  const trow = (l, v, b, bg) => { if (bg) p.rect(TX, y - 12, R - TX, 20, { fill: [0.94, 0.94, 0.94] }); p.text(TX + 8, y, l, { size: b ? 11 : 9.5, bold: b }).text(R - 8, y, v, { size: b ? 11 : 9.5, bold: b, align: 'right' }); y += 22; };
-  const ty = y;
-  trow('Montant hors taxes', eur(k.ht), false, true); trow(`TVA ${txt}`, eur(k.tva), false, false); trow('Total TTC', eur(k.ttc), true, true);
-  if (k.pct) trow(`Acompte (${k.pct} %)`, eur(k.acompte), true, false);
-  let py = ty;
-  if (c.iban) { p.text(X, py, 'Paiement par virement :', { size: 9, bold: true }); py += 12; p.text(X, py, `${c.iban}${c.bic ? ' · BIC ' + c.bic : ''}`, { size: 9 }); py += 12; p.text(X, py, `Communication : ${no}`, { size: 9, color: G }); py += 12; }
-  y = Math.max(y, py) + 14;
-  } else {
-    // contrat d'entretien : offre financière, organisation, durée et conditions, protocole d'entretien
-    const t = d.ct || {};
-    const sec = (s0) => { y += 8; need(44); p.rect(X, y - 12, R - X, 18, { fill: [0.93, 0.91, 0.97] }).text(X + 6, y, s0, { size: 9.5, bold: true, color: VIO }); y += 20; };
-    const bl = (s0) => { need(20); y += p.wrap(X + 10, y, '• ' + s0, R - X - 10, { size: 9.5 }) + 3; };
-    sec('1. OFFRE FINANCIÈRE');
-    const C1 = 350, C2 = 440;
-    p.text(X + 6, y, 'Prestation', { size: 9, bold: true }).text(C1, y, 'HTVA', { size: 9, bold: true, align: 'right' }).text(C2, y, `TVA ${txt}`, { size: 9, bold: true, align: 'right' }).text(R - 6, y, 'Total TTC', { size: 9, bold: true, align: 'right' });
-    y += 8; p.line(X, y, R, y, { w: 1, color: [0.55, 0.55, 0.55] }); y += 15;
-    const frow = (lib, ht, unit) => { need(30); const tv = r2((ht * k.taux) / 100); p.text(C1, y, eur(ht) + unit, { size: 9, align: 'right' }).text(C2, y, eur(tv), { size: 9, align: 'right' }).text(R - 6, y, eur(r2(ht + tv)) + unit, { size: 9, bold: true, align: 'right' }); const hh = p.wrap(X + 6, y, lib, 205, { size: 9.5 }); y += Math.max(hh, 13) + 8; p.line(X, y - 11, R, y - 11, { w: 0.4, color: [0.85, 0.85, 0.85] }); };
-    frow('Forfait mensuel — entretien des parties communes', k.ht, ' / mois');
-    for (const pp of k.prest) frow(pp.l + (pp.det ? ' — ' + pp.det : '') + (pp.q !== '' && pp.q != null && num(pp.q) !== 1 ? ` (${devQty(pp)} ${pp.u})` : ''), pp.mt, ' / exéc.');
-    y += 2; y += p.wrap(X, y, 'Le forfait mensuel comprend les prestations hebdomadaires, mensuelles et trimestrielles du protocole d’entretien ci-après. Les prestations annuelles et ponctuelles sont facturées séparément, à chaque exécution.', R - X, { size: 8.5, color: G }) + 4;
-    sec('2. ORGANISATION DE LA PRESTATION');
-    bl(`Fréquence : ${t.pass || 1} intervention(s) par semaine, réalisée(s) par ${t.agents || 1} agent(s) d’entretien.`);
-    bl('Matériel : produits de nettoyage et matériel courant nécessaires inclus dans le forfait.');
-    bl(`Remplacement : organisé par ${c.marque || c.nom} en cas de congé ou d’absence de l’agent habituellement affecté au site.`);
-    bl('Jours fériés : lorsqu’une intervention coïncide avec un jour férié, elle est replanifiée en concertation avec le client.');
-    bl('Déchets : les déchets collectés lors de l’entretien sont évacués dans les conteneurs prévus sur le site.');
-    bl(`Contrôle qualité : suivi du chantier par la responsable de ${c.marque || c.nom}, contrôle régulier et à chaque signalement du client.`);
-    sec('3. DURÉE, RÉSILIATION ET CONDITIONS');
-    bl(`Durée : ${t.duree || 12} mois à compter de la date de démarrage, renouvelable tacitement.`);
-    bl(`Résiliation : préavis de ${t.preavis || 3} mois, par écrit.`);
-    bl('Facturation : mensuelle pour le forfait d’entretien ; après exécution pour les prestations ponctuelles.');
-    bl(`Délai de paiement : ${t.pay || 15} jours à compter de la date de facture.`);
-    if (t.cote) bl(`Indexation : prix établis à la cote d’application ${t.cote}. En cas de modification légale de l’échelle mobile des salaires, les prix pourront être adaptés proportionnellement à l’évolution des coûts salariaux.`);
-    const pr0 = d.proto || [];
-    if (pr0.length) {
-      sec('PROTOCOLE D’ENTRETIEN');
-      const cols = [['h', 'Hebdo.'], ['m', 'Mensuel'], ['t', 'Trim.'], ['a', 'Annuel']], cx = (i) => 382 + i * 46;
-      need(30); p.text(X + 6, y, 'Prestations', { size: 8.5, bold: true }); cols.forEach(([, l], i) => p.text(cx(i), y, l, { size: 8.5, bold: true, align: 'center' })); y += 6; p.line(X, y, R, y, { w: 0.8, color: [0.55, 0.55, 0.55] }); y += 13;
-      for (const r of pr0) { need(24); const hh = p.wrap(X + 6, y, r.l, 310, { size: 9 }); cols.forEach(([x], i) => { if (r.f && r.f[x]) p.text(cx(i), y, 'X', { size: 9.5, bold: true, align: 'center' }); }); y += Math.max(hh, 12) + 6; p.line(X, y - 10, R, y - 10, { w: 0.3, color: [0.88, 0.88, 0.88] }); }
-      y += 2; y += p.wrap(X, y, 'Le protocole pourra être ajusté d’un commun accord selon les besoins constatés sur site. Les travaux non repris au présent protocole feront l’objet d’un accord préalable.', R - X, { size: 8.5, color: G }) + 4;
-    }
-    y += 10;
-  }
-  // mentions légales
-  y += 2; need(60);
-  const legal = part
-    ? [`Devis gratuit et sans engagement, valable ${num((d.dir || {}).valid) || 30} jours (jusqu’au ${frD(until)}). Il n’engage le client qu’après sa signature « Bon pour accord ».`,
-      'Droit de rétractation (contrat conclu hors établissement, Code de la consommation) : vous disposez de 14 jours à compter de la signature pour vous rétracter, sans donner de motif et sans frais, en nous envoyant le formulaire ci-joint ou une déclaration claire (courrier ou email). L’acompte éventuellement versé est alors remboursé sous 14 jours.',
-      'Les travaux ne commencent pas avant la fin de ce délai, sauf demande expresse du client ; s’il se rétracte ensuite, il paie la part des travaux déjà réalisés. Pas de droit de rétractation pour une réparation urgente demandée par le client.']
-    : [`Devis gratuit et sans engagement, valable ${num((d.dir || {}).valid) || 30} jours (jusqu’au ${frD(until)}). Pour un professionnel, l’acceptation (signature « Bon pour accord » ou accord dans l’app Gérances) est ferme et définitive.`];
-  legal.push(k.ct ? 'Toute prestation supplémentaire fera l’objet d’un accord préalable ou d’un avenant au contrat.' : `Paiement du solde à réception de la facture (${+c.delai || 30} jours). Tout travail supplémentaire fera l’objet d’un avenant ou d’un nouveau devis.`);
-  p.line(X, y, R, y, { w: 0.6 }); y += 14;
-  for (const t of legal) { need(30); y += p.wrap(X, y, t, R - X, { size: 7.5 }) + 3; }
-  y += 12;
-  // signatures
-  need(116);
-  p.text(X, y, 'Bon pour accord — le client', { size: 10, bold: true }).text(TX, y, `Pour ${c.nom}`, { size: 10, bold: true }); y += 6;
-  p.rect(X, y, 250, 66, { fill: [0.97, 0.97, 0.97] }).rect(TX, y, R - TX, 66, { fill: [0.97, 0.97, 0.97] });
-  const sg = d.sign ? await sigJpeg(d.sign.png).catch(() => null) : null;
-  if (sg) { const w = 170, h = Math.min(56, (w * sg.h) / sg.w); p.image(X + 8, y + 6, (h * sg.w) / sg.h, h, sg.bytes, sg.w, sg.h); }
-  y += 78;
-  if (d.sign) { p.text(X, y, `${d.sign.nom || ''} — signé le ${new Date(Date.parse(d.sign.at) || Date.now()).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`, { size: 8.5, color: G }); y += 12; }
-  else { p.text(X, y, 'Nom, date, mention « Bon pour accord » et signature', { size: 8.5, color: G }); y += 12; }
-  if (d.sign && d.sign.early) { y += p.wrap(X, y, 'Le client a demandé expressément que les travaux commencent avant la fin du délai de rétractation ; en cas de rétractation, il paie les travaux déjà réalisés.', R - X, { size: 8.5, color: G }) + 2; }
-  // formulaire de rétractation (particulier)
-  if (part) {
-    newPage();
-    p.text(X, y, 'FORMULAIRE DE RÉTRACTATION', { size: 14, bold: true }); y += 20;
-    y += p.wrap(X, y, '(Veuillez compléter et renvoyer le présent formulaire uniquement si vous souhaitez vous rétracter du contrat.)', R - X, { size: 9, color: G }) + 10;
-    y += p.wrap(X, y, `À l’attention de ${c.nom}${c.marque ? ' (' + c.marque + ')' : ''}, ${c.adresse}, ${c.ville}${c.email ? ', ' + c.email : ''} :`, R - X, { size: 10 }) + 10;
-    for (const t of [`Je vous notifie par la présente ma rétractation du contrat portant sur la prestation de services ci-dessous : devis n° ${no}${d.titre ? ' — ' + d.titre : ''}.`, 'Signé le (date) : ……………………………………', 'Nom du client : ……………………………………………………………', 'Adresse du client : ……………………………………………………………………………………………', 'Signature du client (uniquement en cas de notification sur papier) :', 'Date : ……………………………']) y += p.wrap(X, y, t, R - X, { size: 10 }) + 14;
-  }
-  // photos : 4 par page (2 × 2)
-  const ph = devPhotos(d.id);
-  if (ph.length) {
-    const W2 = (R - X - 14) / 2, H2 = 300;
-    for (let i = 0; i < ph.length; i++) {
-      if (i % 4 === 0) { newPage(); p.text(X, y, `PHOTO(S) — ${i + 1} à ${Math.min(ph.length, i + 4)} sur ${ph.length}`, { size: 11, bold: true }); y += 14; }
-      try {
-        const b = await vault.readFile(ph[i].id), bmp = await createImageBitmap(new Blob([b], { type: 'image/jpeg' }));
-        const k2 = Math.min(W2 / bmp.width, H2 / bmp.height), w = bmp.width * k2, h = bmp.height * k2, cx = X + (i % 2) * (W2 + 14), cyy = y + Math.floor((i % 4) / 2) * (H2 + 14);
-        p.image(cx + (W2 - w) / 2, cyy + (H2 - h) / 2, w, h, b, bmp.width, bmp.height);
-      } catch { /* photo illisible */ }
-    }
-  }
-  // pied de page : « N° … x/N »
-  const N = p.count();
-  for (let i = 0; i < N; i++) p.onPage(i).text((X + R) / 2, 812, `${c.marque ? c.marque + ' by ' : ''}${c.nom} · Devis N° ${no} · ${i + 1}/${N}`, { size: 7.5, color: G, align: 'center' });
-  return p.bytes();
-}
-// aperçu du PDF (imprimer / télécharger), comme les autres documents
-function pdfView(bytes, label) {
-  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
-  const dlg = document.createElement('dialog');
-  dlg.className = 'pv';
-  setHtml(dlg, html`<div class="pv-bar"><b>${label}</b>
-    <a class="btn sm" href="${url}" download="${label}.pdf">${icon('download')}</a>
-    <button class="btn sm" type="button" data-pv-print="1">🖨️ Imprimer</button>
-    <button class="btn sm" type="button" data-pv-close="1">${icon('x')} Fermer</button></div>
-    <iframe src="${url}" title="${label}"></iframe>`);
-  dlg.addEventListener('click', (e) => {
-    if (e.target.closest('[data-pv-close]')) dlg.close();
-    if (e.target.closest('[data-pv-print]')) { try { dlg.querySelector('iframe').contentWindow.print(); } catch { window.open(url, '_blank'); } }
-  });
-  dlg.addEventListener('close', () => { dlg.remove(); URL.revokeObjectURL(url); });
-  document.body.appendChild(dlg); dlg.showModal();
-}
-// premier envoi : le brouillon devient « envoyé » (la validité court depuis la date du devis)
-const devSent = (d, extra = {}) => vault.mutate((tx) => tx.put('devis', { id: d.id, ...(d.st === 'brouillon' ? { st: 'envoye', sentAt: new Date().toISOString(), ...devH(d, 'envoye') } : {}), ...extra }), 'Devis envoyé', `${devNo(d)} — ${devClient(d)}`);
-const devMsg = (d) => { const k = devCalc(d), c = factConf(); return `Bonjour ${d.interloc || devClient(d)},\n\nVoici notre ${k.ct ? 'offre de service (contrat d’entretien)' : 'devis'} n° ${devNo(d)}${d.titre ? ' — ' + d.titre : ''} : ${k.ct ? `forfait mensuel ${eur(k.ttc)} TTC` : `${eur(k.ttc)} TTC`}${k.pct ? ` (acompte ${k.pct} % : ${eur(k.acompte)})` : ''}, valable jusqu’au ${fmtDate(addDays(d.date || today(), num((d.dir || {}).valid) || 30))}.\nDevis gratuit et sans engagement.\n\nBien à vous,\n${c.marque || c.nom}${c.tel ? '\n📞 ' + c.tel : ''}${c.email ? '\n✉️ ' + c.email : ''}`; };
-// synchronisation avec le portail : la gérance accepte, refuse ou demande une révision
-// signatures faites par le client sur son téléphone (lien / QR code) : reprises dans le devis (signature sur le PDF)
-async function devPubSync() {
-  if (!ptlConf() || !vault.list('devis').some((d) => d.pubId && d.st !== 'accepte' && d.st !== 'refuse')) return;
-  let list;
-  try { list = (await ptlApi('devis-pub')).devis || []; } catch { return; }
-  const upd = list.map((r) => [vault.list('devis').find((x) => x.pubId === r.id), r]).filter(([d, r]) => d && d.st !== 'accepte' && d.st !== 'refuse' && r.decided_at && !(d.decision && d.decision.at >= r.decided_at));
-  if (!upd.length) return;
-  await vault.mutate((tx) => { for (const [d, r] of upd) { const at = new Date(r.decided_at).toISOString(); tx.put('devis', { id: d.id, st: r.status, decision: { st: r.status, at: r.decided_at, by: r.sign_name || 'le client', note: '' }, ...(r.status === 'accepte' ? { acc: at, sign: { png: r.sign_png, at, nom: r.sign_name || '', early: !!r.sign_early, remote: true } } : {}), ...devH(d, r.status, r.decided_at) }); } }, 'Réponse du client au devis (lien)', upd.map(([d, r]) => `${devNo(d)} : ${r.status === 'accepte' ? 'signé' : 'refusé'}`).join(' · '));
-  for (const [d, r] of upd) toast(`📝 ${devClient(d)} : devis ${devNo(d)} ${r.status === 'accepte' ? '✍️ signé sur son téléphone' : '❌ refusé'}`);
-  if (['dashboard', 'maintenance'].includes(ui.route)) renderView();
-  if (ui.sheet && ui.sheet.kind === 'devis') { ui.sheet.rendered = false; renderSheet(); }
-}
-async function devSync() {
-  devPubSync();
-  if (!ptlConf() || !vault.list('devis').some((d) => d.ptlId)) return;
-  let list;
-  try { list = (await ptlApi('devis')).devis || []; } catch { return; }
-  const upd = [];
-  for (const r of list) {
-    const d = vault.list('devis').find((x) => x.ptlId === r.id);
-    if (!d || !r.decided_at || (d.decision && d.decision.at >= r.decided_at)) continue;
-    if (!['accepte', 'refuse', 'revision'].includes(r.status)) continue;
-    upd.push([d, r]);
-  }
-  if (!upd.length) return;
-  await vault.mutate((tx) => { for (const [d, r] of upd) tx.put('devis', { id: d.id, st: r.status, ptlSt: r.status, decision: { st: r.status, at: r.decided_at, by: r.decided_by_name || '', note: r.note || '' }, ...(r.status === 'accepte' ? { acc: new Date(r.decided_at).toISOString() } : {}), ...devH(d, r.status, r.decided_at) }); }, 'Réponse de la gérance au devis', upd.map(([d, r]) => `${devNo(d)} : ${({ accepte: 'accepté', refuse: 'refusé', revision: 'révision demandée' })[r.status]}`).join(' · '));
-  for (const [d, r] of upd) toast(`📝 ${devClient(d)} : devis ${devNo(d)} ${({ accepte: '✅ accepté', refuse: '❌ refusé', revision: '🔄 révision demandée' })[r.status]}`);
-  if (['dashboard', 'maintenance'].includes(ui.route)) renderView();
-  if (ui.sheet && ui.sheet.kind === 'devis') { ui.sheet.rendered = false; renderSheet(); }
-}
-Object.assign(ACTIONS, {
-  'dev-csv': (d) => {
-    const q = (v) => `"${csvSafe(v).replace(/"/g, '""')}"`, n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
-    const L = vault.list('devis').filter((x) => x.st !== 'brouillon' && (x.date || '').startsWith(String(d.y))).sort((a, b) => (a.seq || 0) - (b.seq || 0));
-    const rows = [['Numéro', 'Date', 'Client', 'Type', 'Objet', 'HT', 'TVA', 'TTC', 'Acompte', 'Statut', 'Envoyé le', 'Réponse le', 'Temps de réponse', 'Révisions'].map(q).join(';')];
-    for (const x of L) { const k = devCalc(x), s0 = devSentAt(x), s1 = devDecAt(x); rows.push([devNo(x), x.date, devClient(x), DEV_TYPES[(x.client || {}).type] || '', x.titre || '', n2(k.ht), n2(k.tva), n2(k.ttc), n2(k.acompte), devState(x).lbl, s0 ? new Date(s0).toLocaleString('fr-FR') : '', s1 ? new Date(s1).toLocaleString('fr-FR') : '', s0 && s1 >= s0 ? durTxt(s1 - s0) : '', x.rev || 0].map(q).join(';')); }
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv' })); a.download = `devis-${d.y}.csv`; document.body.appendChild(a); a.click(); a.remove();
-  },
 
-  'dev-open': (d) => openSheet('devis', d.id),
-
-  // lien web + QR code pour un client externe : il voit, imprime et signe le devis sur son téléphone
-  async 'dev-link'(d) {
-    const v = vault.get('devis', d.id); if (!v) return;
-    if (!ptlConf()) return toast('Connectez d’abord le app Gérances (Gérances) : il héberge les liens des devis', { bad: true });
-    if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
-    const k = devCalc(v), bytes = await devPdf(v);
-    const meta = { id: v.pubId || '', no: devNo(v), title: v.titre || '', client: devClient(v), ttc: k.ttc, acompte: k.acompte, pct: k.pct, valid_until: addDays(v.date || today(), num((v.dir || {}).valid) || 30), part: (v.client || {}).type === 'part', kind: v.kind || 'travaux' };
-    let j;
-    try {
-      const r = await fetch(PTL_API + 'devis-pub', { method: 'PUT', headers: { Authorization: 'Bearer ' + ptlConf().token, 'Content-Type': 'application/pdf', 'X-Devis': encodeURIComponent(JSON.stringify(meta)) }, body: bytes });
-      j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j.error || 'Erreur ' + r.status);
-    } catch (e) { return toast('Lien impossible : ' + (e.message || 'connexion'), { bad: true }); }
-    await devSent(v, { pubId: j.id, ...(j.token ? { pubToken: j.token } : {}) });
-    openOver('dev-link', v.id);
-  },
-
-  'dev-link-copy': async (d) => { try { await navigator.clipboard.writeText(d.url); toast('Lien copié'); } catch { toast('Copie impossible : sélectionnez le lien', { bad: true }); } },
-  'dev-free-add': () => { const box = $('#devFree'); if (!box) return; const n = 1 + Math.max(-1, ...[...box.querySelectorAll('[name^=pl_f]')].map((x) => +x.name.slice(4))); box.insertAdjacentHTML('beforeend', String(devFreeRow(n))); box.lastElementChild.querySelector('input').focus(); },
-  'dev-proto-add': () => { const box = $('#devProto'); if (!box) return; const n = 1 + Math.max(-1, ...[...box.querySelectorAll('[name^=frl]')].map((x) => +x.name.slice(3))); box.insertAdjacentHTML('beforeend', String(devProtoRow(n, { f: { m: 1 } }))); box.lastElementChild.querySelector('input').focus(); },
-  'dev-row-add': () => { const box = $('#devRows'); if (box) box.insertAdjacentHTML('beforeend', String(devChefRow(box.children.length))); },
-  'dev-pend-del': (d) => { devPend.files.splice(+d.n, 1); const box = $('#devPend'); if (box) setHtml(box, devPendHtml()); },
-  'dev-sig-clear': () => { const c = sheetEl.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); },
-  'dev-sign': (d) => { if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true }); openOver('devis-sign', d.id); },
-
-  async 'dev-visa-del'(d) {
-    const v = vault.get('devis', d.id); if (!v || !v.visa) return;
-    if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
-    if (!(await confirmBox(`Retirer la signature « Vu et correct » de ${v.visa.nom || 'le client'} ?`, { ok: 'Retirer', danger: true, detail: 'L’ouvrier peut la faire refaire sur place ; le client signera de toute façon le devis final pour l’accepter.' }))) return;
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, visa: null }), 'Devis : signature « Vu et correct » retirée', `${devNo(v)} — ${devClient(v)}`);
-    toast('Signature retirée'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
-  },
-
-  // le directeur a fini (prix compris) : le devis peut partir au client
-  async 'dev-fini'(d) {
-    const v = vault.get('devis', d.id); if (!v) return;
-    if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
-    const k = devCalc(v);
-    if (!(k.ttc > 0)) return toast('Mettez d’abord les prix (👔 directeur) : le total est à 0 €', { bad: true });
-    const sansPrix = k.prest.filter((p) => p.pu === '' || p.pu == null).length + k.lines.filter((l) => !l.taux).length;
-    if (!(await confirmBox(`Devis ${devNo(v)} terminé ?`, { ok: '✅ Terminé', detail: `${sansPrix ? `⚠️ ${sansPrix} ligne(s) sans prix. ` : ''}Total ${eur(k.ttc)} TTC. Ensuite vous pourrez l’envoyer au client (ou dans son app Gérances) et le faire signer. Le chef de chantier ne peut plus le modifier.` }))) return;
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, fini: { at: new Date().toISOString() } }), 'Devis terminé (directeur)', `${devNo(v)} — ${devClient(v)}`);
-    toast('✅ Devis terminé : vous pouvez l’envoyer au client'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
-  },
-
-  async 'dev-unfini'(d) {
-    const v = vault.get('devis', d.id); if (!v || v.st !== 'brouillon') return;
-    if (!(await confirmBox(`Remettre le devis ${devNo(v)} en préparation ?`, { ok: '↩️ En préparation', detail: 'Il n’a pas encore été envoyé. Le chef de chantier pourra de nouveau le corriger dans son app ; ensuite touchez encore « ✅ Devis terminé ».' }))) return;
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, fini: null }), 'Devis remis en préparation', `${devNo(v)} — ${devClient(v)}`);
-    renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
-  },
-
-  async 'dev-ph-del'(d) {
-    const doc = vault.get('documents', d.id);
-    if (!doc || !(await confirmBox('Retirer cette photo du devis ?', { ok: 'Retirer', danger: true }))) return;
-    await vault.mutate((tx) => tx.remove('documents', doc.id), 'Photo du devis retirée', doc.label);
-    await vault.deleteFile(doc.id).catch(() => {});
-    ui.sheet.rendered = false; renderSheet();
-  },
-
-  async 'dev-pdf'(d) {
-    const v = vault.get('devis', d.id); if (!v) return;
-    if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
-    try { pdfView(await devPdf(v), 'Devis ' + devNo(v)); } catch (e) { return toast('PDF impossible : ' + (e.message || e), { bad: true }); }
-    if (v.st === 'brouillon') await devSent(v);
-  },
-
-  async 'dev-share'(d) {
-    const v = vault.get('devis', d.id); if (!v) return;
-    if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
-    const bytes = await devPdf(v), name = `Devis-${devNo(v)}.pdf`, msg = devMsg(v), cl = v.client || {};
-    const file = new File([bytes], name, { type: 'application/pdf' });
-    let shared = false;
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try { await navigator.share({ files: [file], title: 'Devis ' + devNo(v), text: msg }); shared = true; } catch (e) { if (e && e.name === 'AbortError') return; }
-    }
-    if (!shared) {
-      // ordinateur : le PDF est téléchargé, puis WhatsApp ou l'email s'ouvre avec le message (joindre le PDF)
-      const a = document.createElement('a'); a.href = URL.createObjectURL(file); a.download = name; document.body.appendChild(a); a.click(); a.remove();
-      const tel = String(cl.tel || '').replace(/[^\d]/g, '').replace(/^00/, '');
-      if (d.via === 'wa') window.open(`https://wa.me/${tel}?text=${encodeURIComponent(msg)}`, '_blank');
-      else location.href = `mailto:${encodeURIComponent(cl.email || '')}?subject=${encodeURIComponent('Devis ' + devNo(v) + (v.titre ? ' — ' + v.titre : ''))}&body=${encodeURIComponent(msg + '\n\n(PDF du devis en pièce jointe)')}`;
-      toast('PDF téléchargé : joignez-le au message');
-    }
-    await devSent(v);
-    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
-  },
-
-  async 'dev-ptl'(d) {
-    const v = vault.get('devis', d.id); if (!v || !ptlConf()) return toast('App Gérances non connectée', { bad: true });
-    if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
-    const k = devCalc(v), bytes = await devPdf(v);
-    const meta = { id: v.ptlId || '', org: v.client.orgId, no: devNo(v), title: v.titre || '', ttc: k.ttc, acompte: k.acompte, pct: k.pct, valid_until: addDays(v.date || today(), num((v.dir || {}).valid) || 30) };
-    try {
-      const r = await fetch(PTL_API + 'devis', { method: 'PUT', headers: { Authorization: 'Bearer ' + ptlConf().token, 'Content-Type': 'application/pdf', 'X-Devis': encodeURIComponent(JSON.stringify(meta)) }, body: bytes });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j.error || 'Erreur ' + r.status);
-      await devSent(v, { ptlId: j.id, ptlSt: 'envoye', ...(v.st === 'revision' ? { st: 'envoye' } : {}) });
-    } catch (e) { return toast('Envoi impossible : ' + (e.message || 'connexion'), { bad: true }); }
-    toast(`📤 Devis ${devNo(v)} envoyé dans le portail de ${devClient(v)}`);
-    ui.sheet.rendered = false; renderSheet();
-  },
-
-  async 'dev-acc'(d) {
-    const v = vault.get('devis', d.id); if (!v) return;
-    const part = v.client && v.client.type === 'part';
-    if (!(await confirmBox(`Devis ${devNo(v)} accepté ?`, { ok: '✅ Accepté', detail: `${devClient(v)} a donné son accord (signature papier, email…).${part ? ' Particulier : il garde 14 jours pour se rétracter (pastille violette).' : ''} Pour une signature sur le téléphone : « ✍️ Faire signer le client ».` }))) return;
-    const at = new Date().toISOString();
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'accepte', acc: at, decision: { st: 'accepte', at: Date.now(), by: 'LA CENTRAL', note: '' }, ...devH(v, 'accepte') }), 'Devis accepté', `${devNo(v)} — ${devClient(v)}`);
-    toast('✅ Devis accepté'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
-  },
-
-  async 'dev-ref'(d) {
-    const v = vault.get('devis', d.id); if (!v) return;
-    if (!(await confirmBox(`Devis ${devNo(v)} refusé ?`, { ok: '❌ Refusé', danger: true, detail: devClient(v) }))) return;
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'refuse', decision: { st: 'refuse', at: Date.now(), by: 'LA CENTRAL', note: '' }, ...devH(v, 'refuse') }), 'Devis refusé', `${devNo(v)} — ${devClient(v)}`);
-    toast('Devis refusé'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
-  },
-
-  async 'dev-rev'(d) {
-    const v = vault.get('devis', d.id); if (!v) return;
-    if (!(await confirmBox(`Nouvelle version R${(v.rev || 0) + 1} ?`, { ok: '🔄 Nouvelle version', detail: 'Même numéro + R1, R2… Modifiez les travaux ou faites une remise, touchez « ✅ Devis terminé », puis renvoyez-le. La signature éventuelle est retirée.' }))) return;
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, rev: (v.rev || 0) + 1, st: 'brouillon', fini: null, date: today(), sign: null, acc: '', ...devH(v, 'R' + ((v.rev || 0) + 1)) }), 'Nouvelle version du devis', `${v.no}-R${(v.rev || 0) + 1}`);
-    toast(`Version R${(v.rev || 0) + 1} : modifiez puis renvoyez`); ui.sheet.rendered = false; renderSheet();
-  },
-
-  async 'dev-arch'(d) {
-    const v = vault.get('devis', d.id); if (!v || !devLocked(v)) return;
-    await vault.mutate((tx) => tx.put('devis', { id: v.id, arch: v.arch ? '' : today() }), v.arch ? 'Devis sorti des archives' : 'Devis archivé', `${devNo(v)} — ${devClient(v)}`);
-    toast(v.arch ? 'Devis sorti des archives' : '🗄️ Devis archivé'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
-  },
-
-  async 'dev-del'(d) {
-    const v = vault.get('devis', d.id); if (!v) return;
-    if (devLocked(v)) return toast('Devis signé ou accepté : il ne peut pas être supprimé (à conserver 10 ans). Archivez-le.', { bad: true });
-    if (!(await confirmBox(`Supprimer le devis ${devNo(v)} ?`, { ok: 'Supprimer', danger: true, detail: 'Le devis et ses photos sont effacés. Le numéro n’est pas réutilisé.' }))) return;
-    const ph = devPhotos(v.id);
-    await vault.mutate((tx) => { tx.remove('devis', v.id); ph.forEach((x) => tx.remove('documents', x.id)); }, 'Devis supprimé', `${devNo(v)} — ${devClient(v)}`);
-    for (const x of ph) await vault.deleteFile(x.id).catch(() => {});
-    if (v.ptlId && ptlConf()) ptlApi('devis/' + v.ptlId, { method: 'DELETE' }).catch(() => {});
-    if (v.pubId && ptlConf()) ptlApi('devis-pub/' + v.pubId, { method: 'DELETE' }).catch(() => {});
-    sheetDirty = false; closeSheet(); toast('Devis supprimé'); renderView();
-  },
-
-  // devis accepté → intervention au planning (chantier, rapport, ouvriers prévus, photos du chantier)
-  'dev-tache': (d) => {
-    const v = vault.get('devis', d.id); if (!v) return;
-    const k = devCalc(v), first = k.lines.find((l) => l.w) || {};
-    const note = [`Devis ${devNo(v)} accepté — ${eur(k.ttc)} TTC`, v.interloc ? 'Interlocuteur : ' + v.interloc : '', v.client.tel ? 'Tél. ' + v.client.tel : '', ...k.lines.map((l) => `• ${num(l.nb || 1)} × ${METIERS[l.met] || 'ouvrier'} × ${String(num(l.h)).replace('.', ',')} h${l.w ? ' (' + intervName(l.w) + ')' : ''}`), v.chef && v.chef.jours ? 'Durée prévue : ' + v.chef.jours : '', v.chef && v.chef.rapport ? '\n' + v.chef.rapport : ''].filter(Boolean).join('\n');
-    openOver('tache-form', null, null, { titre: v.titre || 'Devis ' + devNo(v), note, intervenantId: first.w || '', metiers: k.lines.map((l) => l.met).filter(Boolean), dev: { id: v.id, no: devNo(v), client: devClient(v), adr: v.chantier || v.client.adresse || '', contact: v.interloc || '', tel: v.client.tel || '' } });
-  }
-});
-
-document.addEventListener('input', (e) => {
-  const ff = e.target.closest && e.target.closest('form[data-form=facture]');
-  if (ff && e.target.name === 'marge') { const m = 1 + num(e.target.value) / 100; ff.taux.value = r2(num(ff.cost_h.value) * m) || ''; if (num(ff.cost_d.value)) ff.depl.value = r2(num(ff.cost_d.value) * m); }
-  if (ff) { const box = $('#factTot'); if (box) setHtml(box, factTotHtml(factRead(ff))); }
-  const fdv = e.target.closest && e.target.closest('form[data-form=devis]');
-  if (fdv) {
-    if (e.target.dataset.input === 'dev-chef') { const box = $('#devDir'), raw = [], dir = []; fdv.querySelectorAll('.dev-crow').forEach((row) => { const n = +row.dataset.n; raw[n] = { met: fdv[`met${n}`].value, nb: num(fdv[`nb${n}`].value), h: num(fdv[`h${n}`].value) }; dir[n] = { w: fdv[`dw${n}`] ? fdv[`dw${n}`].value : '', taux: fdv[`dt${n}`] ? fdv[`dt${n}`].value : '' }; }); if (box) setHtml(box, devDirHtml(raw.map((x) => x || {}), dir)); }
-    if (e.target.dataset.input === 'dev-psearch') {
-      const q = e.target.value.trim().toLowerCase();
-      fdv.querySelectorAll('.dev-pg').forEach((g) => { let hit = 0; g.querySelectorAll('.dev-pi').forEach((it) => { const ok = !q || it.dataset.l.includes(q); it.hidden = !ok; hit += ok; }); g.hidden = !hit; if (q) g.open = !!hit; });
-      return;
-    }
-    if (e.target.closest('.dev-prest')) {
-      const g = e.target.closest('.dev-pg');
-      if (g) { const n = g.querySelectorAll('input[name=pk]:checked').length, b = g.querySelector('.dev-pn'); b.textContent = n; b.hidden = !n; }
-      const pd = $('#devPDir'); if (pd) setHtml(pd, devPDirHtml(devRead(fdv)));
-    }
-    const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(fdv)));
-  }
-  const k = e.target.dataset.input;
-  if (k === 'esp-search') filterEspList();
-  if (k === 'rpt-pick-q') { const q = e.target.value.trim().toLowerCase(); e.target.closest('.rpt-pick').querySelectorAll('.rpt-pick-list label').forEach((l) => { l.hidden = !!q && !l.dataset.q.includes(q); }); }
-  if (k === 'lieu-q') {
-    const ws = lieuQ(e.target.value).split(/\s+/).filter(Boolean), box = $('#lieuList');
-    let hit = 0; box.querySelectorAll('[data-q]').forEach((r) => { const ok = ws.every((w) => r.dataset.q.includes(w)); r.hidden = !ok; hit += ok; });
-    box.querySelector('.lieu-none').hidden = !!hit;
-  }
-  if (k === 'vid-link') { const h = document.getElementById('vidHint'); if (h) h.textContent = vidHint(e.target.value); }
-  if (k === 'bank-chk') bankMsgs(e.target.form);
-  if (k === 'search') { ui.search = e.target.value; renderView(); }
-  if (k === 'cp-q') { ui.cpQ = e.target.value; ui.cpLim = 10; clearTimeout(ui.cpT); ui.cpT = setTimeout(renderView, 200); }
-  if (k === 'idx-pct' || k === 'idx-amount') {
-    const f = e.target.form;
-    const l = vault.get('locataires', f.querySelector('[name=id]').value);
-    if (k === 'idx-pct' && e.target.value !== '') f.loyer.value = Math.round(l.loyer * (1 + num(e.target.value) / 100) * 100) / 100;
-    if (k === 'idx-amount') f.pct.value = l.loyer ? Math.round(((num(e.target.value) / l.loyer - 1) * 100) * 100) / 100 : '';
-  }
-});
 document.addEventListener('change', (e) => {
   const k = e.target.dataset.input;
   if (k === 'tva-on') { const m = e.target.form && e.target.form.querySelector('.tva-mention'); if (m) m.hidden = e.target.checked; }
@@ -10139,7 +5655,6 @@ document.addEventListener('change', (e) => {
   if (e.target.form && e.target.form.dataset.form === 'log' && e.target.name === 'louemode') { const cp = e.target.form.querySelector('.coloc-pick'); if (cp) cp.hidden = e.target.value !== 'chambre'; }
   if (e.target.form && e.target.form.dataset.form === 'log' && e.target.name === 'partieSel') { const cn = e.target.form.querySelector('.coloc-new'); if (cn) cn.hidden = e.target.value !== '__new'; }
   if (e.target.name === 'type' && e.target.form && e.target.form.dataset.form === 'log') { const ps = e.target.form.querySelector('.park-set'); if (ps) ps.hidden = !PARK_TYPES.includes(e.target.value); }
-  if (k === 'net-fil') { const b = e.target.form && e.target.form.querySelector('.net-taxi'); if (b) b.hidden = e.target.value !== 'taxi'; }
   if (k === 'lg-pick') { const d = e.target.closest('details'), box = d && d.querySelector('.lgchips'); if (box) setHtml(box, lgChips([...d.querySelectorAll('input[name=langues]:checked')].map((x) => x.value))); }
   if (k === 'tfwd-acc') { const b = document.getElementById('tfwdAcc'); if (b) b.hidden = !e.target.checked; }
   // fiche d'une personne : horaire seulement pour le personnel régulier ; engagement pour occasionnels et sociétés
@@ -10167,26 +5682,10 @@ document.addEventListener('change', (e) => {
     renderShell();go(ui.route, true);
   }); e.target.value = ''; }
   if (k === 'brand-ico' && e.target.files[0] && false && !vault.op) { brandSet(e.target.files[0]); e.target.value = ''; }
-  if (k === 'dev-w') { const o = e.target.selectedOptions[0], t = e.target.form[e.target.name.replace('dw', 'dt')]; if (t && o && num(o.dataset.rate)) t.value = o.dataset.rate; const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(e.target.form))); }
-  if (k === 'dev-kind') { const f = e.target.form; f.dataset.kind = e.target.value; const pd = $('#devPDir'); if (pd) setHtml(pd, devPDirHtml(devRead(f))); const tb = $('#devTot'); if (tb) setHtml(tb, devTotHtml(devRead(f))); }
-  if (k === 'dev-photos' && e.target.files.length) {
-    const id = (e.target.form.querySelector('[name=id]') || {}).value, room = 20 - (id ? devPhotos(id).length : 0) - devPend.files.length;
-    const add = [...e.target.files].slice(0, Math.max(0, room));
-    if (e.target.files.length > add.length) toast(`20 photos maximum : ${add.length} ajoutée(s)`, { bad: true });
-    devPend.files.push(...add); e.target.value = ''; sheetDirty = true;
-    const box = $('#devPend'); if (box) setHtml(box, devPendHtml());
-  }
-  if (k === 'dev-tot') { const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(e.target.form))); }
-  if (k === 'dev-ctype') { const f = e.target.form, v = e.target.value; f.querySelectorAll('.dev-ger').forEach((x) => { x.hidden = v !== 'ger'; }); f.querySelectorAll('.dev-soc').forEach((x) => { x.hidden = v === 'part'; }); }
-  if (k === 'dev-org') {
-    const f = e.target.form, o = ptlOrg(e.target.value);
-    if (o) { const cl = factClient(o.id, o.name); f.cnom.value = o.name; f.crcs.value = cl.rcs || ''; f.ctva.value = cl.tvaNum || ''; f.cadr.value = cl.adresse || ''; if (o.phone && !f.ctel.value) f.ctel.value = o.phone; if (o.email && !f.cmail.value) f.cmail.value = o.email; }
-  }
 
   if (k === 'soc-sign' && e.target.files[0]) setLogo(e.target.files[0], 'signature');
   if (k === 'soc-sign-w') vault.mutate((tx) => tx.put('reglages', { id: 'main', signW: [6, 8, 10, 12].includes(+e.target.value) ? +e.target.value : 8 }), 'Taille de la signature', `${e.target.value} cm`).then(signRefresh);
   if (k === 'cp-per') { ui.cpPer = e.target.value; ui.cpLim = 10; renderView(); }
-  if (k === 'abo-plan') { const o = e.target.selectedOptions[0], f = e.target.form; if (f && o) f.prix.value = o.dataset.prix || 0; }
   if (k === 'cp-from' || k === 'cp-to') { ui[k === 'cp-from' ? 'cpFrom' : 'cpTo'] = e.target.value; ui.cpLim = 10; renderView(); }
   if (k === 'tva-loyer-off') { const im = vault.get('immeubles', e.target.dataset.id); if (im) vault.mutate((tx) => tx.put('immeubles', { id: im.id, tvaLoyer: parseFloat(e.target.value) || 0 }), 'TVA sur les loyers', `${im.adresse} : ${e.target.value || 0} %`, im.id); }
   if (k === 'place') {
@@ -10222,13 +5721,6 @@ document.addEventListener('change', (e) => {
   if (k === 'tache-imm') $('#tacheLog').innerHTML = val(logOptions(e.target.value, ''));
   if (k === 'col-mode') sheetEl.querySelectorAll('[data-mode]').forEach((el) => { el.hidden = el.dataset.mode !== e.target.value; });
   if (k === 'door-reason') { const w = $('#doorWarn'); if (w) w.hidden = e.target.value !== 'Impayé'; }
-  if (k === 'net-fil') { const f = e.target.form; if (f) netFilShow(f); }
-  if (k === 'net-loueur') { const f = e.target.form; if (f) f.querySelectorAll('.net-sous').forEach((x) => { x.hidden = e.target.value !== 'sous'; }); }
-  if (k === 'net-bail' && e.target.files && e.target.files[0]) {
-    const tid = e.target.dataset.id, t = ((ui.net && ui.net.list) || []).find((x) => x.id === tid) || {};
-    const file = e.target.files[0];
-    netBailSave(tid, file, t.nom || '').then(() => { toast('📎 Bail enregistré'); const s0 = ui.sheet; if (s0 && sheetEl.open) { openSheet(s0.kind, s0.id, s0.tab, s0.preset); ui.sheet.back = s0.back; } }).catch((err) => toast('Bail : ' + (err.message || err), { bad: true }));
-  }
   if (k === 'bien-loueur') { const f = e.target.form; if (f) f.querySelectorAll('.bien-sous').forEach((x) => { x.hidden = e.target.value !== 'sous'; }); }
   if (k === 'bins-on') {
     const im = vault.get('immeubles', e.target.dataset.id);
@@ -10240,14 +5732,6 @@ document.addEventListener('change', (e) => {
       const chat = { scope: chatScope(im), ...(im.chat || {}), ...(k === 'chat-on' ? { on: e.target.checked } : { scope: e.target.value }) };
       vault.mutate((tx) => tx.put('immeubles', { id: im.id, chat }), k === 'chat-scope' ? 'Messages de la maison : groupes modifiés' : chat.on ? 'Messages de la maison activés' : 'Messages de la maison désactivés', im.adresse, im.id)
         .then(() => chatSync()).then(() => chatLoad(im.id, true));
-    }
-  }
-  if (k === 'eq-lang') {
-    const i = vault.get('intervenants', e.target.dataset.id);
-    if (i && i.espace && i.espace.on) {
-      // le message d'invitation suit la nouvelle langue
-      Promise.resolve(vault.mutate((tx) => tx.put('intervenants', { id: i.id, espace: { ...i.espace, lang: e.target.value } }), 'App de l’équipe : langue', intervFull(i), i.id))
-        .then(() => { if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } });
     }
   }
   if (k === 'esp-show' || k === 'esp-lang') {
