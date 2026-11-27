@@ -27,7 +27,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.323.0';
+const VERSION = '2.324.0';
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
 // 🌐 centrale d'un client du réseau : …/locataires.html?t=<id> (gardé sur cet appareil) ; ?t=main → centrale principale
@@ -2957,7 +2957,7 @@ const VIEWS = {
 
   ${centraleSection()}
   <div class="section-label">Apps</div>
-  <div class="list settings"><button class="row" data-action="apps-refresh-all"><span class="avatar">🔄</span><span class="grow"><span class="title" style="display:block">Mettre à jour toutes les apps maintenant</span><span class="meta">Locataires, équipe, annonceurs : après une grosse mise à jour ou si une app ne montre pas une nouveauté</span></span></button></div>
+  <div class="list settings"><button class="row" data-action="apps-refresh-all"><span class="avatar">🔄</span><span class="grow"><span class="title" style="display:block">Mettre à jour toutes les apps maintenant</span><span class="meta">Apps des locataires : après une grosse mise à jour ou si une app ne montre pas une nouveauté</span></span></button></div>
   <div class="section-label">Sécurité</div>
   <div class="list settings">
     <div class="row">${icon('lock')}<span class="grow title">Verrouillage automatique</span>
