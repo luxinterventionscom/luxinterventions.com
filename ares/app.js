@@ -27,7 +27,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.321.0';
+const VERSION = '2.322.0';
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
 // 🌐 centrale d'un client du réseau : …/locataires.html?t=<id> (gardé sur cet appareil) ; ?t=main → centrale principale
@@ -459,13 +459,11 @@ const ESP_SHOW = {
   docs: 'Son dossier : documents enregistrés (identité, CNS, caution, preuves de paiement…) avec aperçu — 👁 Privé pour en cacher un',
   coll: 'Collectes des déchets de l’immeuble',
   avis: 'Avis de l’immeuble (travaux, coupures…)',
-  menage: 'Maintenance : passages de la femme de ménage et des ouvriers (aujourd’hui, demain, heure prévue) + avis sur le ménage 😞 → ⭐',
   signal: 'Signaler un problème (avec photos)',
   edl: 'État des lieux : vos 6 photos (salle de bain, cuisine, chambre, cave, buanderie, parking) + ses photos de sortie à son départ',
   porte: 'Code de la porte (serrure à code / connectée)',
   regles: 'Règlement de la maison (à lire, avec « J’ai lu et j’accepte »)',
   chat: 'Messages de la maison (mini-chat entre habitants, lu par vous)',
-  tools: 'Don · prêt · location (publier ses objets sur le site, après votre approbation)',
 };
 const ESP_ALL = Object.fromEntries(Object.keys(ESP_SHOW).map((k) => [k, k !== 'porte']));
 const espUrl = (l) => `${location.origin}/centrallocataires.html#${l.espace.id}.${l.espace.key}`;
@@ -2856,7 +2854,7 @@ const VIEWS = {
         <button class="btn" data-action="cp-print">${icon('file')} Imprimer / PDF</button>
         <p class="tiny muted" style="margin-bottom:0">Les factures restent dans l’app (chiffrées) : ouvrez-les avec 📎 dans le Journal pour les télécharger une par une.</p></div>`;
     }
-    return html`${secTabs}${pageHead('📒 Comptabilité', 'Journal, TVA, interventions et export pour le comptable (déclarations)')}${tabs}${tools}${body}`;
+    return html`${secTabs}${pageHead('📒 Comptabilité', 'Journal, frais fixes et export pour le comptable')}${tabs}${tools}${body}`;
   },
 
   stats() {
@@ -2947,7 +2945,6 @@ const VIEWS = {
   <div class="section-label">Gestion</div>
   <div class="list settings">
     ${html`<button class="row" data-action="tpay-conf"><span class="avatar">💳</span><span class="grow"><span class="title" style="display:block">Paiements</span><span class="meta">${(vault.get('reglages', 'tpayConf') || {}).payMode === 'month' ? 'Factures des interventions : une par mois' : 'Factures des interventions : à chaque intervention'}</span></span>${icon('chevron')}</button>`}
-    <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
         
         
         <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">${"Société & associés"}</span><span class="meta">${!societe().logo ? html`<b style="color:var(--amber,#b45309)">🖼️ Mettez votre logo : vos locataires le voient dans leur app</b><br>` : ''}${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
