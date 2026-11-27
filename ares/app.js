@@ -27,7 +27,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.324.0';
+const VERSION = '2.325.0';
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
 // 🌐 centrale d'un client du réseau : …/locataires.html?t=<id> (gardé sur cet appareil) ; ?t=main → centrale principale
