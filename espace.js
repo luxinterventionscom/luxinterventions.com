@@ -1,10 +1,7 @@
 // Espace locataire : page personnelle, en lecture seule (+ signaler un problème).
 // Le lien contient l'identifiant et la clé (#id.clé) ; la clé ne quitte jamais le téléphone.
 import { emojiInit } from '/ares/emoji.js';
-import { domierHtml, domierInit } from '/ares/domier.js';
-import { newsHtml } from '/ares/news.js';
 import '/ares/reqmark.js';
-import qrcode from '/ares/qrcode.js';
 import { binPlan } from '/ares/binplan.js';
 import { openJson, sealJson, openBytes, sealForOwner, codeHash, unwrapWithCode, b64u, unb64u } from '/ares/espace-crypto.js';
 import { chatResolve, chatOpen, editable, tick, newMsgId } from '/ares/chatops.js';
@@ -13,7 +10,6 @@ import { trInit, trButton } from '/ares/chattr.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from '/ares/push-client.js';
 import { infoBox } from '/ares/nbien.js';
 import { pullRefreshInit } from '/ares/pull-refresh.js';
-import { tripView, tripFetch } from '/ares/trip.js';
 import { themeInit, themeBtn, themeAccent } from '/ares/theme.js';
 // adresse nouvelle /centrallocataires.html (ou l'ancienne /espace.html des apps déjà installées) : chacune son service worker
 const SWSCOPE = location.pathname.startsWith('/centrallocataires') ? '/centrallocataires' : '/espace';
@@ -624,95 +620,8 @@ function chatStart() {
   // une notification arrive pendant que l'app est ouverte : messages relus tout de suite
   if ('serviceWorker' in navigator && !chatSwOn) { chatSwOn = true; navigator.serviceWorker.addEventListener('message', (e) => { if (e.data && e.data.k === 'push' && data && data.chat) chatFetch(); }); }
 }
-// ── Mes annonces « Don · prêt · location » ──
-let myTools = null, toolMsg = '';
-const toolSeen = (tid) => { try { return +localStorage.getItem('espToolSeen:' + tid) || 0; } catch { return 0; } };
-function toolsHtml() {
-  const tl = T().tl;
-  if (!myTools || !myTools.length) return '';
-  return `<p style="margin:12px 0 4px"><b>${esc(tl.mine)}</b></p>` + myTools.map((it) => {
-    const st = it.exp < Date.now() ? tl.st.exp : tl.st[it.status] || it.status;
-    const n = it.clicks || 0, fresh = n > toolSeen(it.id);
-    return `<div class="row"><img src="${API}/api/tools/${esc(it.id)}/p0.jpg" alt="" style="width:52px;height:52px;object-fit:cover;border-radius:10px;flex:0 0 52px">
-      <div class="grow"><b>${esc(it.title)}</b><div class="meta">${esc(st)}</div>${n ? `<button class="pill${fresh ? ' new' : ''}" data-tool-seen="${esc(it.id)}" data-n="${n}">${esc(tl.inter(n))}</button>` : ''}</div>
-      <button class="btn sm sec" data-tool-del="${esc(it.id)}">${esc(tl.del)}</button></div>`;
-  }).join('');
-}
-async function toolsFetch() {
-  try {
-    const r = await fetch(`${API}/api/esp/${id}/tools`, { cache: 'no-store' });
-    if (r.ok) myTools = (await r.json()).items || [];
-  } catch { /* hors ligne */ }
-  myTools = myTools || [];
-  const box = document.getElementById('myTools');
-  if (box) box.innerHTML = toolsHtml();
-}
 // Cartes repliables : fermées au départ, on les ouvre d'un toucher ; celles qui sont ouvertes brillent doucement
 let openFolds = new Set();
-// Payer le loyer : virement vers le compte du gestionnaire (rien ne passe par l'app)
-let payOpen = false, payVia = '';
-const paidKey = () => 'espPaid:' + id;
-function payInfo() {
-  const d = data, t = T();
-  const rest = d.years.reduce((n, y) => n + y.rest, 0);
-  const cm = new Date().getMonth(), cy = new Date().getFullYear();
-  const y0 = d.years.find((y) => y.y === cy);
-  const [due, paid] = (y0 && y0.months[cm]) || [0, 0];
-  const amt = rest > 0.009 ? rest : Math.max(0, due - paid);
-  return { amt: Math.round(amt * 100) / 100, ref: `${t.rent} ${t.monthsFull[cm]} ${cy} — ${d.nom}`.slice(0, 140) };
-}
-const COINS = { btc: 'Bitcoin (BTC)', eth: 'Ethereum (ETH)', usdt: 'Tether (USDT)', usdc: 'USD Coin (USDC)' };
-const NETS = { erc20: 'Ethereum (ERC-20)', trc20: 'Tron (TRC-20)', polygon: 'Polygon', bep20: 'BNB Chain (BEP-20)', sol: 'Solana' };
-function qrSvg(text) {
-  try { const q = qrcode(0, 'M'); q.addData(unescape(encodeURIComponent(text))); q.make(); return `<div class="pay-qr">${q.createSvgTag(4, 2)}</div>`; } catch { return ''; }
-}
-function payHtml() {
-  const d = data, t = T(), pv = t.pv, { amt, ref } = payInfo(), x = d.payx || {};
-  let sent = '';
-  try { sent = localStorage.getItem(paidKey()) || ''; } catch {}
-  const recent = sent && Date.now() - new Date(sent).getTime() < 10 * 864e5;
-  const btn = `<button class="btn block" style="margin-top:12px" data-pay="1" aria-expanded="${payOpen}">${esc(pv.btn)}</button>`;
-  const thanks = recent ? `<div class="pay-ok">${esc(pv.thanks(fmt(sent.slice(0, 10))))}</div>` : '';
-  if (!payOpen) return btn + thanks;
-  const coins = Object.keys(COINS).filter((c) => x[c]);
-  const vias = [d.iban && 'vir', x.paypal && 'pp', x.card && 'card', coins.length && 'crypto'].filter(Boolean);
-  const via = vias.includes(payVia) ? payVia : vias[0];
-  const row = (lbl, val, copy) => `<div class="row pay-row"><div class="grow"><span class="meta">${esc(lbl)}</span><br><b>${esc(val)}</b></div>${copy ? `<button class="btn sec sm" data-copy="${esc(copy)}">${esc(pv.copy)}</button>` : ''}</div>`;
-  const tabs = vias.length > 1 ? `<div class="pay-tabs">${vias.map((v) => `<button class="chip" data-payvia="${v}" aria-pressed="${v === via}">${esc(pv.tabs[v])}</button>`).join('')}</div>` : '';
-  const amtTxt = amt > 0 ? money(amt) : '';
-  let body = '';
-  if (via === 'vir') {
-    const iban = d.iban.replace(/\s+/g, '').toUpperCase();
-    // QR « virement SEPA » (norme EPC) : lu par la plupart des apps bancaires
-    const epc = ['BCD', '002', '1', 'SCT', (d.bic || '').replace(/\s/g, ''), d.societe.nom.slice(0, 70), iban, amt > 0 ? 'EUR' + amt.toFixed(2) : '', '', '', ref].join('\n');
-    const qr = qrSvg(epc);
-    body = `<h2 style="margin:0 0 6px">${esc(pv.title)}</h2>
-    ${row(pv.who, d.societe.nom, d.societe.nom)}
-    ${row('IBAN', d.iban, iban)}
-    ${d.bic ? row('BIC / SWIFT' + (d.banque ? ' · ' + d.banque : ''), d.bic, d.bic) : ''}
-    ${amt > 0 ? row(pv.amt, amtTxt, amt.toFixed(2)) : ''}
-    ${row(t.ref, ref, ref)}
-    <p class="meta" style="margin:10px 0 6px">${esc(pv.how)}</p>
-    ${qr ? `${qr}<p class="meta" style="margin:4px 0 10px;text-align:center">${esc(pv.qr)}</p>` : ''}`;
-  } else if (via === 'pp') {
-    const url = `https://www.paypal.com/paypalme/${encodeURIComponent(x.paypal)}${amt > 0 ? '/' + amt.toFixed(2) + 'EUR' : ''}`;
-    body = `<p class="meta" style="margin:0 0 10px">${esc(pv.toType(amtTxt || '—', ref))}</p>
-    <a class="btn block" href="${esc(url)}" target="_blank" rel="noopener">${esc(pv.ppGo)}</a>`;
-  } else if (via === 'card') {
-    body = `<p class="meta" style="margin:0 0 10px">${esc(pv.toType(amtTxt || '—', ref))}</p>
-    <a class="btn block" href="${esc(x.card)}" target="_blank" rel="noopener">${esc(pv.cardGo)}</a>`;
-  } else if (via === 'crypto') {
-    body = `${amt > 0 ? `<p style="margin:0 0 6px"><b>${esc(pv.cryAmt(amtTxt))}</b></p>` : ''}<p class="meta" style="margin:0 0 8px">⚠️ ${esc(pv.cryNet)}</p>
-    ${coins.map((c) => {
-      const a = x[c].a, n = x[c].n;
-      const uri = c === 'btc' ? 'bitcoin:' + a : c === 'eth' ? 'ethereum:' + a : a;
-      return `<div class="pay-coin"><b>${esc(COINS[c])}</b>${n ? ` <span class="meta">· ${esc(pv.net)} : ${esc(NETS[n] || n)}</span>` : ''}${row('', a, a)}${qrSvg(uri)}</div>`;
-    }).join('')}`;
-  }
-  return `${btn}<div class="pay-box">${tabs}${body}
-    <button class="btn block" style="margin-top:12px" data-paydone="${via}">${esc(via === 'vir' ? pv.done : pv.done2)}</button>
-    <p class="meta" style="margin:8px 0 0">${esc(pv.note(d.societe.nom))}</p></div>${thanks}`;
-}
 try { openFolds = new Set(JSON.parse(localStorage.getItem('espFolds') || '[]')); } catch { /* stockage indisponible */ }
 const DEF_OPEN = new Set(['mt', 'chat', 'meteo']);
 const foldIsOpen = (k) => (DEF_OPEN.has(k) ? !openFolds.has('-' + k) : openFolds.has(k));
@@ -735,108 +644,7 @@ function rulesDate(d) {
   const r = rulesLocal();
   return r.v === d.regles.v ? r.d : '';
 }
-// Femme de ménage : passage d'aujourd'hui (date prévue ou horaire de la semaine, hors absences) et avis du locataire
-// passage prévu un jour donné : { ...passage, off } (off = absente : elle ne passe pas) ou null
-function menOn(d, day) {
-  const m = d.menage;
-  if (!m) return null;
-  const dow = (new Date(day + 'T12:00:00').getDay() + 6) % 7;
-  const all = [...(m.dates || []).filter((z) => z.d === day), ...(m.week || []).filter((h) => h.j === dow).map((h) => ({ ...h, off: (h.off || []).some(([a, b]) => a <= day && day <= b) }))]
-    .sort((a, b) => (a.off ? 1 : 0) - (b.off ? 1 : 0) || (a.de || '').localeCompare(b.de || ''));
-  return all[0] || null;
-}
-// une seule pastille : 🟢 aujourd'hui · 🟡 demain · 🔴 ne passe pas (problème technique)
-function menState(d) {
-  const a = menOn(d, today);
-  if (a) return { ...a, when: 'today', c: a.off ? 'red' : 'green' };
-  const b = menOn(d, addDays(today, 1));
-  if (b) return { ...b, when: 'tomorrow', c: b.off ? 'red' : 'yellow' };
-  return null;
-}
-// Passages des 7 prochains jours (femme de ménage + ouvriers) ; plusieurs créneaux le même jour = une ligne
-function visitsOf(d) {
-  let list = d.visits;
-  // données publiées par une app de gestion pas encore à jour : on reprend le passage du ménage (horaire + dates)
-  if (!Array.isArray(list)) {
-    const m = d.menage;
-    if (!m) return null;
-    list = [];
-    for (let i = 0; i <= 7; i++) {
-      const dd = addDays(today, i), dow = (new Date(dd + 'T12:00:00').getDay() + 6) % 7;
-      for (const h of m.week || []) if (h.j === dow) list.push({ d: dd, w: h.w, nom: h.nom, m: 'menage', de: h.de, a: h.a, off: (h.off || []).some(([x, y]) => x <= dd && dd <= y) });
-      for (const z of (m.dates || []).filter((z) => z.d === dd)) list.push({ ...z, m: 'menage' });
-    }
-    list.sort((a, b) => a.d.localeCompare(b.d) || (a.de || '99').localeCompare(b.de || '99'));
-  }
-  const out = [];
-  for (const v of list) {
-    if (v.d < today) continue;
-    const same = out.find((x) => x.w === v.w && x.d === v.d);
-    const hr = v.de ? v.de + (v.a ? '–' + v.a : '') : '';
-    if (same) { if (hr) same.hrs.push(hr); same.off = same.off || v.off; same.t = same.t || v.t; continue; }
-    out.push({ ...v, hrs: hr ? [hr] : [] });
-  }
-  return out;
-}
-// même code que les collectes : 🔴 aujourd'hui · 🟡 demain · 🟢 plus tard ; ⚫ gris = ne passe pas
-const visColor = (v) => (v.off ? 'grey' : v.d === today ? 'red' : v.d === addDays(today, 1) ? 'yellow' : 'green');
-function visLine(v, t, short) {
-  const mt = t.mt, who = (mt.m[v.m] || mt.m.autre) + (v.nom ? ' (' + v.nom + ')' : '');
-  const when = v.d === today ? mt.today : v.d === addDays(today, 1) ? mt.tomorrow : day(v.d);
-  const soon = v.d <= addDays(today, 1);
-  return `<div class="row vis"><span class="light l-${visColor(v)}${soon && !v.off ? ' blink' : ''}" style="margin-top:6px"></span><div class="grow"><b>${esc(short ? when + ' · ' + who : who)}</b><div class="${v.off ? 'bad' : 'meta'}">${short ? '' : esc(when) + ' · '}${v.off ? esc(mt.off) : esc(v.hrs.join(' · '))}${v.t ? ' · ' + esc(v.t) : ''}</div></div></div>`;
-}
-const menKey = () => 'espMen:' + id;
 let payYear = 0; // « Mes loyers » : l'année affichée (un bouton par année)
-// ⭐ Avis sur chaque passage (ménage et ouvriers), un à la fois : quand l'horaire est fini, du plus ancien au plus récent ;
-// voté (+ commentaire envoyé, ou « Suivant ») → le suivant. En attente 7 jours au plus (la liste vient de l'app de gestion).
-const RVT = {
-  fr: { t: '⭐ Votre avis', qm: 'Êtes-vous satisfait du ménage ?', qo: 'Êtes-vous satisfait de l’intervention ?', skip: 'Passer', next: 'Suivant ›', left: (n) => `encore ${n} passage${n > 1 ? 's' : ''} à noter`, tags: { fait: '✅ Travail bien fait', pasfini: '⚠️ Pas fini', tidy: '🧽 Laissé propre', messy: '🗑️ Laissé sale' } },
-  it: { t: '⭐ Il tuo voto', qm: 'Sei soddisfatto delle pulizie?', qo: 'Sei soddisfatto dell’intervento?', skip: 'Salta', next: 'Avanti ›', left: (n) => `ancora ${n} ${n > 1 ? 'passaggi' : 'passaggio'} da votare`, tags: { fait: '✅ Lavoro ben fatto', pasfini: '⚠️ Non finito', tidy: '🧽 Lasciato pulito', messy: '🗑️ Lasciato sporco' } },
-  de: { t: '⭐ Ihre Meinung', qm: 'Sind Sie mit der Reinigung zufrieden?', qo: 'Sind Sie mit dem Einsatz zufrieden?', skip: 'Überspringen', next: 'Weiter ›', left: (n) => `noch ${n} ${n > 1 ? 'Besuche' : 'Besuch'} zu bewerten`, tags: { fait: '✅ Gute Arbeit', pasfini: '⚠️ Nicht fertig', tidy: '🧽 Sauber hinterlassen', messy: '🗑️ Schmutzig hinterlassen' } },
-  pt: { t: '⭐ A sua opinião', qm: 'Está satisfeito com a limpeza?', qo: 'Está satisfeito com a intervenção?', skip: 'Saltar', next: 'Seguinte ›', left: (n) => `ainda ${n} ${n > 1 ? 'visitas' : 'visita'} para avaliar`, tags: { fait: '✅ Trabalho bem feito', pasfini: '⚠️ Não terminado', tidy: '🧽 Deixou limpo', messy: '🗑️ Deixou sujo' } },
-  en: { t: '⭐ Your opinion', qm: 'Are you happy with the cleaning?', qo: 'Are you happy with the job?', skip: 'Skip', next: 'Next ›', left: (n) => `${n} more visit${n > 1 ? 's' : ''} to rate`, tags: { fait: '✅ Job well done', pasfini: '⚠️ Not finished', tidy: '🧽 Left clean', messy: '🗑️ Left dirty' } },
-  es: { t: '⭐ Tu opinión', qm: '¿Estás satisfecho con la limpieza?', qo: '¿Estás satisfecho con la intervención?', skip: 'Saltar', next: 'Siguiente ›', left: (n) => `quedan ${n} ${n > 1 ? 'visitas' : 'visita'} por valorar`, tags: { fait: '✅ Trabajo bien hecho', pasfini: '⚠️ Sin terminar', tidy: '🧽 Lo dejó limpio', messy: '🗑️ Lo dejó sucio' } },
-};
-const RK = () => 'espRate:' + id;
-const rateAll = () => { try { const m = JSON.parse(localStorage.getItem(RK()) || '{}'); return m && typeof m === 'object' ? m : {}; } catch { return {}; } };
-const ratePut = (k, v) => { const m = rateAll(); m[k] = { ...(m[k] || {}), ...v, at: today }; for (const x of Object.keys(m).filter((x) => m[x].at < addDays(today, -30))) delete m[x]; try { localStorage.setItem(RK(), JSON.stringify(m)); } catch { /* stockage plein */ } };
-const nowHM = () => new Date().toTimeString().slice(0, 5);
-// passages à noter : les 7 derniers jours + ceux d'aujourd'hui dont l'horaire est fini (sans horaire : à partir de 18 h)
-function toRate(d) {
-  const all = [...(d.done || []), ...(d.visits || []).filter((v) => v.d === today && !v.off)];
-  const by = new Map();
-  for (const v of all) {
-    const k = v.w + '|' + v.d, x = by.get(k);
-    if (x) { if ((v.a || v.de || '') > x.end) x.end = v.a || v.de || ''; continue; }
-    by.set(k, { ...v, k, end: v.a || v.de || '' });
-  }
-  const m = rateAll(), old = (() => { try { return JSON.parse(localStorage.getItem(menKey()) || '{}'); } catch { return {}; } })();
-  return [...by.values()].filter((v) => (v.d < today || nowHM() >= (v.end || '18:00')) && !(m[v.k] && m[v.k].done) && !(v.m === 'menage' && old[v.d] && !m[v.k]))
-    .sort((a, b) => a.d.localeCompare(b.d) || (a.end || '').localeCompare(b.end || ''));
-}
-function rateCard(d, t) {
-  const L = toRate(d);
-  if (!L.length) return '';
-  const v = L[0], r = RVT[lang] || RVT.fr, cur = rateAll()[v.k] || {}, mv = cur.v || 0;
-  const who = (t.mt.m[v.m] || t.mt.m.autre) + (v.nom ? ' (' + v.nom + ')' : ''), when = v.d === today ? t.mt.today : day(v.d);
-  const tags = v.m === 'menage' ? t.mc.tags : { ok: t.mc.tags.ok, late: t.mc.tags.late, nice: t.mc.tags.nice, rude: t.mc.tags.rude, ...r.tags };
-  return `<div class="men-rate" id="rateBox"><p style="margin:0 0 6px"><b>${esc(r.t)} — ${esc(who)}</b> <span class="meta">${esc(when)}${v.de ? ' · ' + esc(v.de) + (v.end && v.end !== v.de ? '–' + esc(v.end) : '') : ''}</span><br><span class="meta">${esc(v.m === 'menage' ? r.qm : r.qo)}</span></p>
-    <div class="men-opts" role="radiogroup" aria-label="${esc(t.men.crit)}">${t.men.opts.map((o, i) => `<button role="radio" aria-checked="${mv === i + 1}" data-rv="${i + 1}" data-k="${esc(v.k)}" data-w="${esc(v.w)}" data-d="${esc(v.d)}">${esc(o)}</button>`).join('')}</div>
-    ${mv ? `<p class="ok" style="margin:8px 0 0"><b>✓ ${esc(t.men.thanks)}</b></p><details class="more"${menTags.size || menNote ? ' open' : ''}><summary>${esc(t.mc.add)}</summary>
-      <div class="men-tags">${Object.entries(tags).map(([k, x]) => `<button type="button" aria-pressed="${menTags.has(k)}" data-mtag="${k}">${esc(x)}</button>`).join('')}</div>
-      <textarea id="menNote" maxlength="500" placeholder="${esc(t.mc.ph)}">${esc(menNote)}</textarea>
-      <button class="btn block" style="margin-top:8px" data-rv-send="${esc(v.k)}" data-w="${esc(v.w)}" data-d="${esc(v.d)}">${esc(t.mc.send)}</button></details>
-      <button class="btn sec block" style="margin-top:8px" data-rv-next="${esc(v.k)}">${esc(r.next)}</button>`
-    : `<p style="margin:8px 0 0;text-align:right"><button class="linkb" data-rv-next="${esc(v.k)}">${esc(r.skip)}</button></p>`}
-    ${L.length > 1 ? `<p class="meta" style="margin:6px 0 0">${esc(r.left(L.length - 1))}</p>` : ''}</div>`;
-}
-// commentaire sur le ménage du jour : cases rapides (à l'heure, aimable…) + texte libre, envoyés avec la note
-const menTags = new Set();
-let menNote = '';
-const menVote = () => { try { return (JSON.parse(localStorage.getItem(menKey()) || '{}'))[today] || 0; } catch { return 0; } };
-// Barre des cours crypto (TradingView), servie par le Worker sur un autre domaine : elle ne voit rien de l'app
-const TICKER = `<div class="ticker" data-vsrc="${API}/ticker"></div>`;
 // Adresse pour Google Maps (on ajoute le pays s'il manque)
 const mapQ = (a) => (/luxemb|lëtzebuerg|deutschland|germany|france|belgi|portugal|espa|ital/i.test(a) ? a : a + ', Luxembourg');
 // État des lieux : photos d'entrée (déchiffrées à l'affichage) et photos de sortie choisies par le locataire
@@ -900,17 +708,6 @@ async function pushInit() {
   setBadge(0, SWSCOPE);
   render();
 }
-// 🚗 l'ouvrier qui vient aujourd'hui : compte à rebours sous « Bonjour » (état relu toutes les 30 s, sans redessiner la page)
-let espTrips = {};
-const tripBoxes = () => ((data && data.trips) || []).filter((x) => x.d === today).map((x) => tripView(espTrips[x.tk], { lang })).join('');
-async function tripPoll() {
-  const tks = ((data && data.trips) || []).filter((x) => x.d === today).map((x) => x.tk);
-  if (!tks.length || document.visibilityState !== 'visible') return;
-  try { espTrips = await tripFetch(API + '/api/', tks); } catch { /* hors ligne */ }
-  const el = document.getElementById('tripSlot'), h = tripBoxes();
-  if (el && el.innerHTML !== h) el.innerHTML = h;
-}
-setInterval(tripPoll, 30000);
 // tirer vers le bas = recharger ; hors ligne : on garde ce qu'on avait
 pullRefreshInit({ lang: () => lang, refresh: async () => { if (!id || !key || !data) return; const prev = data; await load(); if (!data && prev && loadErr === '⚠ offline') { data = prev; render(); } } });
 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && data) { setBadge(0, SWSCOPE); if (data.chat) chatSeen(); } });
@@ -919,13 +716,6 @@ function notifCard(t) {
   const n = t.nt;
   return `<div class="card notif${pushSt !== 'on' ? ' notif-off' : ''}"><h2>${esc(n.t)}</h2><p class="meta" style="margin:0 0 8px">${esc(n.hint)}</p>${pushSt === 'on' ? `<p class="ok" style="margin:0"><b>${esc(n.ok)}</b></p>` : pushSt === 'install' ? `<p class="meta" style="margin:0">📱 ${esc(n.install)}</p>` : pushSt === 'denied' ? `<p class="meta" style="margin:0">⚠️ ${esc(n.denied)}</p>` : `<button class="btn block" data-push-on="1">${esc(n.on)}</button>`}</div>`;
 }
-const TICKER_BASE = API;
-// la barra crypto (servie par le Worker) annonce sa hauteur réelle : le cadre s'adapte (PC, téléphone)
-addEventListener('message', (e) => {
-  if (e.origin !== new URL(TICKER_BASE).origin || !e.data || typeof e.data.tickerH !== 'number') return;
-  const h = Math.max(30, Math.min(160, Math.round(e.data.tickerH)));
-  document.querySelectorAll('.ticker').forEach((t) => { t.style.height = h + 'px'; });
-});
 function render() {
   const t = T();
   document.documentElement.lang = lang;
@@ -957,7 +747,7 @@ function render() {
   const out = [];
   // adresse complète : rue + code postal et localité (si renseignés dans l'app de gestion)
   const addrFull = [d.adresse, d.ville].filter(Boolean).join(', ');
-  out.push(`<div class="top"><span class="brandx">${socLogoHtml(d.societe)}<b>${esc(d.societe.nom)}</b></span>${themeBtn()}</div><h1 style="display:flex;align-items:center;gap:12px"><button class="av-wrap" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}"><span class="av-btn">${(phMine !== null ? phMine : d.photo) ? `<img src="${esc(phMine !== null ? phMine : d.photo)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span><span class="av-pen" aria-hidden="true">✏️</span></button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1><div id="tripSlot">${tripBoxes()}</div>${icOpen ? (() => { const st = SETT[lang] || SETT.fr, ph = phMine !== null ? phMine : d.photo || ''; return `<div class="card" id="settCard"><h2 style="margin:0 0 10px">✏️ ${esc(st.t)}</h2><p style="display:flex;align-items:center;gap:8px;margin:0 0 12px">🌐 ${langs}</p><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
+  out.push(`<div class="top"><span class="brandx">${socLogoHtml(d.societe)}<b>${esc(d.societe.nom)}</b></span>${themeBtn()}</div><h1 style="display:flex;align-items:center;gap:12px"><button class="av-wrap" data-ic-open="1" aria-label="${esc((SETT[lang] || SETT.fr).t)}"><span class="av-btn">${(phMine !== null ? phMine : d.photo) ? `<img src="${esc(phMine !== null ? phMine : d.photo)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span><span class="av-pen" aria-hidden="true">✏️</span></button><span>${esc(t.hello)} ${esc(d.prenom || d.nom)}</span></h1>${icOpen ? (() => { const st = SETT[lang] || SETT.fr, ph = phMine !== null ? phMine : d.photo || ''; return `<div class="card" id="settCard"><h2 style="margin:0 0 10px">✏️ ${esc(st.t)}</h2><p style="display:flex;align-items:center;gap:8px;margin:0 0 12px">🌐 ${langs}</p><p style="margin:0 0 6px"><b>${esc(st.ph)}</b></p>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:6px"><span class="av-btn" style="width:72px;height:72px;font-size:32px">${ph ? `<img src="${esc(ph)}" alt="">` : esc(icMine || d.avatar || '🙂')}</span>
     <label class="btn sec sm" style="cursor:pointer">${esc(st.pick)}<input type="file" accept="image/*" data-photo-pick="1" hidden></label>${ph ? `<button class="btn sec sm" data-photo-del="1">${esc(st.del)}</button>` : ''}</div>
     <p class="meta" style="margin:0 0 14px">${esc(st.hint)}</p>
@@ -988,25 +778,6 @@ function render() {
       binSoon = { c, days: [today, addDays(today, 1)].filter((p) => onDay(p).length), html: `<div class="avis bin-soon bin-${c}" style="border-radius:12px;padding:10px 12px;margin:0 0 12px">${[today, addDays(today, 1)].filter((p) => onDay(p).length).map((p) => `<div><b><span class="light l-${p === today ? 'red' : 'yellow'} blink"></span> 🗑️ ${esc(p === today ? t.cr.today : t.cr.tomorrow)} — ${esc(t.putOut)} :</b> ${onDay(p).map((x) => `<span class="bin" style="--c:${BIN_COLORS[x.it.cat] || '#9a958a'}">${esc(what(x))}</span>`).join(' · ')}<div class="meta">${esc(t.truck)} ${esc(truckOf(onDay(p)))}${binTurn(p)}</div></div>`).join('')}</div>` };
     }
   }
-  // Maintenance : avec les nouvelles données (femme de ménage + ouvriers), alerte en haut pour aujourd'hui / demain
-  // et la carte « Maintenance » au-dessus des collectes ; sinon (ancienne app de gestion) l'ancien encadré du ménage
-  const vis = s.menage ? visitsOf(d) : null;
-  let mtCard = '', mtLight = '';
-  if (vis) {
-    // pastille dans le titre « Maintenance » : verte = passage aujourd'hui, jaune = demain, rouge = ne passe pas
-    const soon = vis.filter((v) => v.d <= addDays(today, 1));
-    // pastille du titre : la plus urgente gagne (🔴 aujourd'hui ou ne passe pas, 🟡 demain)
-    mtLight = !soon.length ? '' : soon.some((v) => v.off || v.d === today) ? 'red' : 'yellow';
-    mtCard = `${vis.length ? vis.map((v) => visLine(v, t)).join('') : `<p class="meta" style="margin:0">${esc(t.mt.none)}</p>`}${rateCard(d, t)}`;
-  }
-  const mt = s.menage && !vis ? menState(d) : null;
-  if (mt && mt.c !== 'green') out.push(`<div class="card avis men men-${mt.c}"><h2><span class="light l-${mt.c} blink"></span> 🧹 ${esc(mt.c === 'red' ? (mt.when === 'today' ? t.men.noToday : t.men.noTomorrow) : t.men.tomorrow)}${mt.nom && mt.c !== 'red' ? ' (' + esc(mt.nom) + ')' : ''}</h2>${mt.c === 'red' ? `<p class="meta" style="margin:0">${esc(t.men.noWhy)}</p>` : mt.de ? `<p style="margin:0"><b>${esc(t.men.at)} ${esc(mt.de)}</b>${mt.a ? ` – ${esc(mt.a)}` : ''}</p>` : ''}</div>`);
-  if (mt && mt.c === 'green') {
-    const mv = menVote();
-    out.push(`<div class="card avis men"><h2><span class="light l-green blink"></span> 🧹 ${esc(t.men.today)}${mt.nom ? ' (' + esc(mt.nom) + ')' : ''}</h2>${mt.de ? `<p style="margin:0 0 8px"><b>${esc(t.men.at)} ${esc(mt.de)}</b>${mt.a ? ` – ${esc(mt.a)}` : ''}</p>` : ''}
-      <p class="meta" style="margin:0 0 6px">${esc(t.men.q)}</p><div class="men-opts" role="radiogroup" aria-label="${esc(t.men.crit)}">${t.men.opts.map((o, i) => `<button role="radio" aria-checked="${mv === i + 1}" data-men="${i + 1}" data-w="${esc(mt.w)}">${esc(o)}</button>`).join('')}</div>
-      ${mv ? `<p class="ok" style="margin:8px 0 0"><b>✓ ${esc(t.men.thanks)}</b></p>` : ''}</div>`);
-  }
   // Clé digitale (code de la porte) : dans « Mes loyers », entre les loyers et le contrat ; contour vert qui « respire » tant qu'elle est active
   const door = s.porte && d.porte && (!d.porte.fin || d.porte.fin >= today) ? (() => {
     const p = d.porte, n = p.fin ? Math.round((new Date(p.fin + 'T12:00:00') - new Date(today + 'T12:00:00')) / 864e5) : null;
@@ -1030,7 +801,7 @@ function render() {
         const cls = paid >= due - 0.009 && paid > 0 ? 'paid' : paid > 0 ? 'part' : !due ? 'off' : past ? 'late' : '';
         return `<div class="m ${cls}" ${now ? 'style="outline:2px solid var(--accent)"' : ''}>${esc(t.months[i])}<small>${paid > 0 && paid < due - 0.009 ? esc(Math.round(paid) + '€') : cls === 'paid' ? '✓' : cls === 'late' ? '!' : due ? '·' : '–'}</small></div>`;
       }).join('')}</div>`).join('')}
-      ${d.iban || d.payx ? payHtml() : ''}`;
+`;
     paySum = rest > 0.009 ? `<span class="bad">${esc(money(rest))}</span> ${esc(t.restNow)}` : `<span class="ok">${esc(t.allPaid)}</span>`;
     if (door) paySum += ' · 🔑';
     host = { at: out.length, body: payH + door + '</div>', key: 'pay', sum: paySum };
@@ -1090,25 +861,6 @@ function render() {
         : `<p class="meta"><a href="#rules" data-goto-rules="1">${esc(t.hr.boardFirst)}</a></p>`}
 </div>`, 'chat', '<span id="chatNew"></span>'));
   }
-  if (s.tools) {
-    const tl = t.tl;
-    out.push(foldCard(`<div class="card" id="toolsCard"><h2>🧰 ${esc(tl.title)}</h2><p class="meta" style="margin:0 0 8px">${esc(tl.hint)}</p>
-      <a class="btn sec block" href="/outils.html" target="_blank" rel="noopener">${esc(tl.see)}</a>
-      ${toolMsg ? `<p class="ok" style="margin:10px 0 0"><b>${esc(toolMsg)}</b></p>` : ''}
-      <div id="myTools">${toolsHtml()}</div>
-      <details class="more"><summary>${esc(tl.add)}</summary><form id="toolf">
-        <label>${esc(tl.photos)}</label><input type="file" name="photos" accept="image/*" multiple required>
-        <label>${esc(tl.t)}</label><input name="title" required maxlength="80">
-        <label>${esc(tl.kind)}</label><select name="kind">${Object.entries(tl.kinds).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select>
-        <div id="toolPrice" hidden><label>${esc(tl.price)}</label><input name="price" type="number" inputmode="decimal" min="0" step="0.5">
-          <label>${esc(tl.unit)}</label><select name="unit">${Object.entries(tl.units).map(([k, v]) => `<option value="${k}"${k === 'j' ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select></div>
-        <label>${esc(tl.desc)}</label><textarea name="desc" maxlength="800"></textarea>
-        <label>${esc(tl.rules)}</label><textarea name="rules" maxlength="400"></textarea>
-        <label>${esc(tl.lieu)}</label><input name="lieu" maxlength="60">
-        <label>${esc(tl.mail)}</label><input name="mail" type="email" required maxlength="120" value="${esc(d.mail || '')}">
-        <label class="chk"><input type="checkbox" name="ok" required> <span>${esc(tl.ok)} <a href="/outils.html#regles" target="_blank" rel="noopener">${esc(tl.rulesLink)}</a></span></label>
-        <button class="btn block" type="submit" style="margin-top:12px">${esc(tl.send)}</button></form></details></div>`, 'tools', myTools && myTools.length ? esc(tl.mine + ' : ' + myTools.length) : ''));
-  }
   // la carte « Maintenance » est complétée plus bas (signaler un problème + légende), à cette place
   const mtAt = out.length;
   out.push('');
@@ -1143,7 +895,7 @@ function render() {
   let sigHtml = '';
   if (s.signal && d.signalKey) {
     const sum = (d.signals || []).length ? ` <span class="sum">${esc(t.mine + ' : ' + d.signals.length)}</span>` : '';
-    sigHtml = `<div class="mt-sec" data-fold="signal"><p style="margin:10px 0 6px"><b>🛠️ ${esc(t.signal)}</b>${sum}</p>${sentOk ? `<p class="ok" style="margin:0 0 8px"><b>${esc(t.sent)}</b></p>` : ''}
+    sigHtml = `<div class="mt-sec" data-fold="signal">${sum ? `<p style="margin:0 0 6px">${sum}</p>` : ''}${sentOk ? `<p class="ok" style="margin:0 0 8px"><b>${esc(t.sent)}</b></p>` : ''}
       <form id="sig"><label>${esc(t.type)}</label><select name="type">${Object.entries(t.types).map(([k, v]) => `<option value="${k}">${esc(v)}</option>`).join('')}</select>
       <label>${esc(t.what)}</label><textarea name="texte" required maxlength="3000" placeholder="${esc(t.whatPh)}"></textarea>
       <label>${esc(t.photos)}</label><input type="file" name="photos" accept="image/*" multiple>
@@ -1152,15 +904,14 @@ function render() {
       <button class="btn block" style="margin-top:12px" type="submit">${esc(t.send)}</button></form>
       ${(d.signals || []).length ? `<h2 style="margin-top:16px">${esc(t.mine)}</h2>${d.signals.map((x) => `<div class="row"><span class="light l-${x.statut === 'fait' ? 'green' : x.statut === 'planifie' ? 'yellow' : 'red'}" style="margin-top:6px"></span><div class="grow"><b>${esc(x.titre)}</b><div class="meta">${esc(fmt(x.sent || x.date))} · ${esc(t.st[x.statut] || x.statut)}${x.done ? ' · ' + esc(fmt(x.done)) : ''}</div>${x.acc && x.statut !== 'fait' ? `<div class="meta" style="color:#15803d;font-weight:700">${esc(t.acc)}</div>` : ''}</div></div>`).join('')}` : ''}</div>`;
   }
-  out[domAt] = domierHtml({ tel: d.societe.tel, lang, extra: sigHtml });
-  const legHtml = s.coll || s.signal ? `<p class="meta mt-leg"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow"></span> ${esc(t.lights[1])} · <span class="light l-red"></span> ${esc(t.lights[2])}${vis ? ` · <span class="light l-grey"></span> ${esc(t.mt.offL)}` : ''}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</p>` : '';
+  out[domAt] = sigHtml ? foldCard(`<div class="card" id="sigCard"><h2>🛠️ ${esc(t.signal)}</h2>${d.societe.tel ? `<a class="btn sec block" style="margin-bottom:8px" href="tel:${esc(String(d.societe.tel).replace(/[^\d+]/g, ''))}">📞 ${esc(d.societe.nom)}</a>` : ''}${sigHtml}</div>`, 'signal', '') : '';
+  const legHtml = s.coll || s.signal ? `<p class="meta mt-leg"><b>${esc(t.legend)}</b> — <span class="light l-green"></span> ${esc(t.lights[0])} · <span class="light l-yellow"></span> ${esc(t.lights[1])} · <span class="light l-red"></span> ${esc(t.lights[2])}${s.signal ? `<br>🔧 ${esc(t.types.rep.slice(3))} · 🧹 ${esc(t.types.menage.slice(3))} · 🗑️ ${esc(t.coll)}` : ''}</p>` : '';
   // un avertissement aujourd'hui / demain (ouvriers, ménage, poubelles) : le cadre de « Maintenance » clignote en rouge ;
   // dedans, chaque avertissement garde sa propre pastille
-  const mtL = [binSoon && binSoon.c, mtLight].includes('red') ? 'red' : [binSoon && binSoon.c, mtLight].includes('yellow') ? 'yellow' : mtLight;
-  if (mtCard || collHtml || legHtml || binSoon || binTop) out[mtAt] = foldCard(`<div class="card" id="mtCard"${binSoon || mtLight || binTop ? ' data-alert="red"' : ''}><h2>${mtL || binTop ? `<span class="light l-${binTop ? 'red' : mtL} blink"></span> ` : ''}🛠️ ${esc(t.mt.t)}</h2>${binSoon ? binSoon.html : ''}${d.bins && d.chat ? `<div id="binBox">${binTop}</div>` : ''}${mtCard}${collHtml}${legHtml}</div>`, 'mt', '');
+  const mtL = binSoon ? binSoon.c : '';
+  if (collHtml || legHtml || binSoon || binTop) out[mtAt] = foldCard(`<div class="card" id="mtCard"${binSoon || binTop ? ' data-alert="red"' : ''}><h2>${mtL || binTop ? `<span class="light l-${binTop ? 'red' : mtL} blink"></span> ` : ''}🛠️ ${esc(t.mt.t)}</h2>${binSoon ? binSoon.html : ''}${d.bins && d.chat ? `<div id="binBox">${binTop}</div>` : ''}${collHtml}${legHtml}</div>`, 'mt', '');
   // 📣 annonce du bas + 📰 News : juste sous l'état des lieux
   // ── Sezione 6 · fondo : News ; 📜 Règlement (dedans : RGPD et les couleurs de l'info) ; bourse ; 🚪 Se déconnecter ──
-  out.push(newsHtml(API));
   {
     const ft = TFT[lang] || TFT.fr, lu = d.regles ? rulesDate(d) : '';
     const rgpd = `<div style="margin-top:12px;padding-top:10px;border-top:1px solid #e5e2da"><p class="meta" style="margin:0">🔒 ${esc(ft.lock)}</p><button class="link-rgpd" data-rgpd="1">${esc(t.rgpdT)}</button></div>`;
@@ -1170,27 +921,16 @@ function render() {
       ${d.regles.extra ? `<p style="margin:8px 0 4px"><b>${esc(t.hr.rulesExtra)}</b></p><p class="pre" style="margin:0">${esc(d.regles.extra)}</p>` : ''}
       ${lu ? `<p class="ok" style="margin:10px 0 0">✓ ${esc(t.hr.rulesOk)} ${esc(fmt(lu))}</p>` : `<button class="btn block" style="margin-top:12px" data-rules-ok="1">${esc(t.hr.rulesAccept)}</button>`}${rgpd}${info}</details></div>`);
     else out.push(`<div class="card" id="rules"><details><summary><h2 style="display:inline">🔒 ${esc(t.rgpdT)}</h2></summary>${rgpd}${info}</details></div>`);
-    out.push(TICKER);
     out.push(`<p class="meta" style="text-align:center;font-size:11px;margin:8px 0 0">${esc(d.gv ? 'v' + d.gv : 'v < 2.57')}</p>`); // version de l'app de gestion (dépannage)
     out.push(`<p style="text-align:center;margin:14px 0 6px"><button class="btn sec" data-logout="1">🚪 ${esc(ft.out)}</button></p>`);
   }
   const keepMap = document.querySelector('#mapBox iframe');
-  const keepVid = new Map([...document.querySelectorAll('.vid iframe, .ticker iframe')].map((f) => [f.dataset.src, f]));
   app.innerHTML = out.join('');
   // adresse trop longue pour l'écran : elle défile doucement (aller-retour)
   for (const m of app.querySelectorAll('.marq')) {
     const dx = m.firstElementChild.scrollWidth - m.clientWidth;
     if (dx > 4) { m.style.setProperty('--dx', -dx + 'px'); m.style.setProperty('--dur', Math.max(6, dx / 25 + 4) + 's'); m.classList.add('run'); }
   }
-  // lecteurs vidéo des annonces : gardés d'un affichage à l'autre (la vidéo ne recommence pas)
-  document.querySelectorAll('.vid[data-vsrc], .ticker[data-vsrc]').forEach((v) => {
-    const src = v.dataset.vsrc, old = keepVid.get(src);
-    if (old) return v.append(old);
-    const f = document.createElement('iframe');
-    f.src = src; f.dataset.src = src; f.loading = 'lazy'; f.title = 'Video';
-    f.allow = 'encrypted-media; picture-in-picture; fullscreen; clipboard-write; web-share'; f.allowFullscreen = true; f.referrerPolicy = 'strict-origin-when-cross-origin';
-    v.append(f);
-  });
   const mb = document.getElementById('mapBox');
   if (mb) {
     const src = `https://maps.google.com/maps?q=${encodeURIComponent(mb.dataset.q)}&hl=${lang}&z=16&output=embed`;
@@ -1198,7 +938,6 @@ function render() {
     else { const f = document.createElement('iframe'); f.src = src; f.dataset.src = src; f.title = 'Google Maps'; f.loading = 'lazy'; f.referrerPolicy = 'no-referrer-when-downgrade'; mb.append(f); }
   }
   hydrateEdl();
-  if (s.tools && myTools == null) toolsFetch();
   if (d.chat) { const box = document.getElementById('chat'); if (box) box.scrollTop = box.scrollHeight; if (!chatTimer) chatStart(); chatSeen(); }
 }
 
@@ -1316,52 +1055,6 @@ app.addEventListener('click', async (e) => {
     return render();
   }
 
-  // ⭐ avis sur un passage : note → merci + commentaire ; « Suivant » / « Passer » / commentaire envoyé → le passage suivant
-  const rv = e.target.closest('[data-rv]');
-  if (rv) {
-    const v = +rv.dataset.rv;
-    ratePut(rv.dataset.k, { v });
-    render();
-    if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: rv.dataset.w, d: rv.dataset.d, v }) }); } catch { /* hors ligne */ } }
-    return;
-  }
-  const rn = e.target.closest('[data-rv-next]');
-  if (rn) { ratePut(rn.dataset.rvNext, { done: true }); menTags.clear(); menNote = ''; return render(); }
-  const rs = e.target.closest('[data-rv-send]');
-  if (rs) {
-    const nt = document.getElementById('menNote'); if (nt) menNote = nt.value.trim().slice(0, 500);
-    if (!menTags.size && !menNote) return;
-    rs.disabled = true;
-    try {
-      const k = rs.dataset.rvSend, cur = rateAll()[k] || {};
-      const r = await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: rs.dataset.w, d: rs.dataset.d, v: cur.v, tags: [...menTags], note: menNote }) });
-      if (!r.ok) throw new Error();
-      menTags.clear(); menNote = '';
-      // « Commentaire envoyé » un instant, puis le passage suivant
-      const box = document.getElementById('rateBox');
-      if (box) box.insertAdjacentHTML('beforeend', `<p class="ok" style="margin:6px 0 0"><b>${esc(T().mc.ok)}</b></p>`);
-      setTimeout(() => { ratePut(k, { done: true }); render(); }, 1400);
-    } catch { alert('⚠'); rs.disabled = false; }
-    return;
-  }
-  const mtg = e.target.closest('[data-mtag]');
-  if (mtg) {
-    const k = mtg.dataset.mtag, opp = { ok: 'late', late: 'ok', nice: 'rude', rude: 'nice', clean: 'dirty', dirty: 'clean', fait: 'pasfini', pasfini: 'fait', tidy: 'messy', messy: 'tidy' };
-    const nt = document.getElementById('menNote'); if (nt) menNote = nt.value;
-    if (menTags.has(k)) menTags.delete(k); else { menTags.add(k); menTags.delete(opp[k]); }
-    return render();
-  }
-  const mb = e.target.closest('[data-men]');
-  if (mb) {
-    const v = +mb.dataset.men;
-    let m = {}; try { m = JSON.parse(localStorage.getItem(menKey()) || '{}'); } catch { /* stockage indisponible */ }
-    m[today] = v;
-    for (const k of Object.keys(m).sort().slice(0, -30)) delete m[k];
-    try { localStorage.setItem(menKey(), JSON.stringify(m)); } catch { /* stockage plein */ }
-    render();
-    if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: new Date().toISOString(), type: 'menage-eval', w: mb.dataset.w, d: today, v }) }); } catch { /* hors ligne */ } }
-    return;
-  }
   const ut = e.target.closest('[data-uptype]');
   if (ut) { upSel = ut.dataset.uptype; render(); const f = document.getElementById('upType'); if (f) f.closest('.up-box').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
   const us = e.target.closest('[data-upsend]');
@@ -1450,15 +1143,6 @@ app.addEventListener('click', async (e) => {
   }
   const bn = e.target.closest('[data-bin]');
   if (bn) { bn.disabled = true; try { await binAct(bn.dataset.bin, bn.dataset.d); } catch { alert('⚠'); } return; }
-  const ts = e.target.closest('[data-tool-seen]');
-  if (ts) { try { localStorage.setItem('espToolSeen:' + ts.dataset.toolSeen, ts.dataset.n); } catch {} ts.classList.remove('new'); return; }
-  const td = e.target.closest('[data-tool-del]');
-  if (td) {
-    if (!confirm(T().tl.delQ)) return;
-    td.disabled = true;
-    try { await fetch(`${API}/api/esp/${id}/tools/${td.dataset.toolDel}`, { method: 'DELETE' }); } catch { /* hors ligne */ }
-    return toolsFetch();
-  }
   if (e.target.closest('[data-goto-rules]')) { e.preventDefault(); const r = document.getElementById('rules'); if (r) { r.querySelector('details').open = true; r.scrollIntoView({ behavior: 'smooth' }); } return; }
   const ro = e.target.closest('[data-rules-ok]');
   if (ro) {
@@ -1473,20 +1157,6 @@ app.addEventListener('click', async (e) => {
   if (e.target.closest('[data-guide]')) { if (installEvt && !IS_IOS) { installEvt.prompt(); installEvt = null; return; } return renderGuide(); }
   const cl = e.target.closest('[data-copylink]');
   if (cl) { try { await navigator.clipboard.writeText(location.origin + '/centrallocataires.html'); cl.textContent = '✓'; } catch { prompt('', location.origin + '/centrallocataires.html'); } return; }
-  if (e.target.closest('[data-pay]')) { payOpen = !payOpen; return render(); }
-  const pvb = e.target.closest('[data-payvia]');
-  if (pvb) { payVia = pvb.dataset.payvia; return render(); }
-  const cp = e.target.closest('[data-copy]');
-  if (cp) { try { await navigator.clipboard.writeText(cp.dataset.copy); cp.textContent = T().pv.copied; } catch { prompt('', cp.dataset.copy); } return; }
-  const pdb = e.target.closest('[data-paydone]');
-  if (pdb) {
-    if (!confirm(T().pv.doneQ)) return;
-    const now = new Date().toISOString(), { amt, ref } = payInfo();
-    if (data.signalKey) { try { await fetch(`${API}/api/esp/${id}/signal?app=esp`, { method: 'POST', body: await sealForOwner(data.signalKey, { espace: id, t: now, type: 'paye', montant: amt, ref, via: pdb.dataset.paydone }) }); } catch { /* hors ligne */ } }
-    try { localStorage.setItem(paidKey(), now); } catch {}
-    payOpen = false;
-    return render();
-  }
   // 🔒 Protection des données (RGPD) : qui traite les données, pourquoi, combien de temps, vos droits, la CNPD
   if (e.target.closest('[data-rgpd]') && data) { const t = T(), g = RGPDX[lang] || RGPDX.fr, so = { ...data.societe, nom: `${data.societe.nom} (${g.grp} ARES INVEST S.A.)` }; return import('/ares/confirm-box.js').then((m) => m.infoBox(t.rgpdT, [t.rgpd(so), g.docs, t.hr.rgpd2], g.close)); }
   if (e.target.closest('[data-logout]')) { e.preventDefault(); const o = OUTQ[lang] || OUTQ.fr; const out = () => { try { localStorage.removeItem(ACC); } catch {} id = key = ''; data = null; loadErr = ''; render(); }; if (!data) return out(); return import('/ares/confirm-box.js').then((m) => m.confirmBox(o[0], o[1], o[2], out)); }
@@ -1557,31 +1227,8 @@ app.addEventListener('change', async (e) => {
     } catch { alert('⚠'); }
     return;
   }
-  if (e.target.name === 'kind' && e.target.form && e.target.form.id === 'toolf') document.getElementById('toolPrice').hidden = e.target.value !== 'loc';
 });
 app.addEventListener('submit', async (e) => {
-  if (e.target.id === 'toolf') {
-    e.preventDefault();
-    const f = e.target.elements, tl = T().tl;
-    const files = [...f.photos.files].slice(0, 3);
-    if (!files.length) return alert(tl.need);
-    const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true; btn.textContent = '…';
-    try {
-      const photos = [];
-      for (const file of files) photos.push(await compress(file));
-      const body = { kind: f.kind.value, title: f.title.value, price: f.price.value, unit: f.unit.value, desc: f.desc.value, rules: f.rules.value, lieu: f.lieu.value, mail: f.mail.value, name: data.prenom || data.nom || '', photos };
-      const r = await fetch(`${API}/api/esp/${id}/tools`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (!r.ok) throw new Error((await r.json().catch(() => ({}))).error || r.status);
-      toolMsg = tl.sent;
-      myTools = null;
-      render();
-      document.getElementById('toolsCard')?.scrollIntoView({ block: 'start' });
-    } catch (err) {
-      btn.disabled = false; btn.textContent = tl.send;
-      alert('⚠ ' + (err.message || err));
-    }
-    return;
-  }
   if (e.target.id === 'chatf') {
     e.preventDefault();
     const f = e.target, x = f.x.value.trim().slice(0, 1500);
@@ -1655,9 +1302,8 @@ async function load() {
   let chosen = ''; try { chosen = localStorage.getItem('espLang') || ''; } catch { /* stockage bloqué (navigation privée) */ }
   if (!chosen) lang = pick(data);
   render();
-  if (data) { pushInit(); tripPoll(); }
+  if (data) pushInit();
 }
 lang = pick(null);
 load();
 emojiInit(); // 😊 bouton émojis dans les chats
-domierInit({ api: API, lang: () => lang, rerender: () => render() });
