@@ -1,4 +1,4 @@
-// LA CENTRAL — Gestion locative (interface). L'app est à LA CENTRAL (Ares Invest S.A.) ;
+// CENTRAL-OGL — Gestion locative (interface). L'app est à CENTRAL-OGL (Ares Invest S.A.) ;
 // les données de la société cliente (Réglages → Société, ici NOBIS s.a.r.l.) servent aux quittances et aux apps des locataires.
 import './reqmark.js';
 import { Vault, payKey, isLegacy, ApiError, uid, deviceLabel } from './store.js';
@@ -33,8 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.320.0';
-const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
+const VERSION = '2.321.0';
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
 // 🌐 centrale d'un client du réseau : …/locataires.html?t=<id> (gardé sur cet appareil) ; ?t=main → centrale principale
@@ -75,7 +74,7 @@ const SOC_QUAL = { sous: 'locataire principal et bailleur', proprio: 'propriéta
 const SOC_FICHE = { sous: 'Votre société — locataire principal (apparaît sur les quittances et les relances)', proprio: 'Votre société — propriétaire / bailleur (apparaît sur les quittances et les relances)', gest: 'Votre société — gestionnaire (apparaît sur les quittances et les relances)' };
 // rubriques de chaque filière (la centrale du client ne montre que les siennes)
 const TENANT_ROUTES = {
-  // CENTRAL-OGL : seulement la gestion des locataires (plus de demandes à LA CENTRAL ni de classement des ouvriers)
+  // CENTRAL-OGL : seulement la gestion des locataires (plus de demandes à CENTRAL-OGL ni de classement des ouvriers)
   gerance: ['dashboard', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'reglages'],
   proprio: ['dashboard', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'reglages'],
 };
@@ -685,7 +684,7 @@ const addMonths = (d, n) => { const x = new Date(d + 'T12:00'); x.setMonth(x.get
 // 📦 Transfert d'immeubles (et de tout ce qui va avec) vers la centrale d'un client du réseau : copie chiffrée, rien n'est effacé ici
 const bytesUrl = (b, mime) => 'data:' + (mime || 'application/octet-stream') + ';base64,' + b64big(b);
 const b64big = (bytes) => { let bin = ''; const u = new Uint8Array(bytes); for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(bin); };
-// 🌐 centrale d'un client : bandeau essai / lecture seule ; demandes d'intervention vers LA CENTRAL (chiffrées pour elle)
+// 🌐 centrale d'un client : bandeau essai / lecture seule ; demandes d'intervention vers CENTRAL-OGL (chiffrées pour elle)
 function tenantBanner() {
   if (tenantInfo.state === 'ro') return html`<div class="alert warn" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>la centrale ne peut pas enregistrer de modification pour le moment.</span></div></div>`;
   return '';
@@ -1399,7 +1398,7 @@ function promptEdit(title, value) {
 const PAYS = { LU: ['Luxembourg', [17, 14, 8, 3]], FR: ['France', [20, 10, 5.5, 2.1]], BE: ['Belgique', [21, 12, 6]], DE: ['Deutschland', [19, 7]], IT: ['Italia', [22, 10, 5, 4]], PT: ['Portugal', [23, 13, 6]], ES: ['España', [21, 10, 4]], NL: ['Nederland', [21, 9]], AT: ['Österreich', [20, 13, 10]], CH: ['Suisse', [8.1, 3.8, 2.6]] };
 const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '').split(/[;, ]+/).map((x) => parseFloat(x.replace(',', '.'))).filter((x) => x > 0 && x < 100); return own.length ? own : (PAYS[s0.pays || 'LU'] || PAYS.LU)[1]; };
 // Marque de l'app de gestion (fixe, indépendante de la société cliente)
-const APP_BRAND = { nom: 'LUXINTERVENTIONS', sub: '', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
+const APP_BRAND = { nom: 'CENTRAL-OGL', sub: '', legal: 'Ares Invest S.A. · RCS B225245', logo: '/ares/icons/ares-192.png' };
 APP_BRAND.logo = '/ares/icons/ares-192.png';
 const DEF_SOC = () => (tenantInfo.nom || 'Centrale');
 const socName = () => societe().nom || DEF_SOC();
@@ -1439,7 +1438,7 @@ async function fixIdentity() {
   applyBrand();
   toast('Société corrigée : NOBIS s.a.r.l. · RCS B225665 · TVA LU30599412');
 }
-// L'en-tête de l'app montre la marque LA CENTRAL ; le logo de la société (Réglages) sert aux quittances et à l'app des locataires
+// L'en-tête de l'app montre la marque CENTRAL-OGL ; le logo de la société (Réglages) sert aux quittances et à l'app des locataires
 function applyBrand() {
   const ico = tIco();
   if (ico) { APP_BRAND.logo = ico; document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]').forEach((l) => { l.href = ico; }); document.querySelectorAll('.lock-logo').forEach((img) => { img.src = ico; }); }
@@ -1461,7 +1460,7 @@ async function brandSet(file) {
   const x = c.getContext('2d'), k = Math.max(S / bmp.width, S / bmp.height); // carré rempli (recadré au centre), fond blanc
   x.fillStyle = '#fff'; x.fillRect(0, 0, S, S); x.drawImage(bmp, (S - bmp.width * k) / 2, (S - bmp.height * k) / 2, bmp.width * k, bmp.height * k);
   const ico = c.toDataURL('image/png');
-  await vault.mutate((tx) => tx.put('reglages', { id: 'brand', ico }), '🖼️ Icône de la CENTRAL DOMIER', '');
+  await vault.mutate((tx) => tx.put('reglages', { id: 'brand', ico }), '🖼️ Icône de la CENTRAL-OGL', '');
   applyBrand(); renderShell(); renderView(); toast('🖼️ Icône changée');
   // publiée (c'est seulement un logo) : le bandeau DOMIER de toutes les apps la montre
   try { const b = Uint8Array.from(atob(ico.split(',')[1]), (ch) => ch.charCodeAt(0)); /* fetch d'une adresse data: est bloqué par la CSP */ await vault.call('brand', { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: b }); } catch { toast('Logo enregistré ici ; pour les apps, publiez le nouveau Worker', { bad: true }); }
@@ -1644,7 +1643,7 @@ function renderLock(mode, error = '') {
   <div class="lock-head"><h1 data-notr="1">${OGL.nom}</h1><p data-notr="1">${OGL.sub}</p><p class="tiny">${OGL.info}</p><p class="tiny" data-notr="1"></p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>`;
   if (mode === 'blocked') {
-    setHtml(lockEl, html`<div class="lock-card">${head}<div class="alert warn">${icon('lock')}<div><b>Centrale bloquée.</b> L’abonnement est échu ou suspendu : contactez LA CENTRAL pour la réactiver. Vos données restent chiffrées et intactes.</div></div>${foot}</div>`);
+    setHtml(lockEl, html`<div class="lock-card">${head}<div class="alert warn">${icon('lock')}<div><b>Centrale bloquée.</b> La centrale est en lecture seule : contactez CENTRAL-OGL pour la réactiver. Vos données restent chiffrées et intactes.</div></div>${foot}</div>`);
     return;
   }
 
@@ -1675,9 +1674,9 @@ function renderLock(mode, error = '') {
   if (mode === 'recover') {
     setHtml(lockEl, html`<form class="lock-card" data-form="recover" autocomplete="off">
   ${head}
-  <div class="alert info">${icon('key')}<div><b>Clé d'accès oubliée ?</b> Seulement si vous aviez créé une <b>clé de secours</b> (Réglages → Sécurité, 24 caractères, ex. ABCD-EFGH-…) : saisissez-la ici, puis choisissez une nouvelle clé d'accès.${html`<br><br><b>Pas de clé de secours ?</b> Vos données ne peuvent pas être récupérées (elles sont chiffrées, personne d'autre n'a la clé). Demandez à LA CENTRAL de <b>remettre votre centrale à zéro</b> : vous recevrez un nouveau code d'invitation et repartirez d'une centrale vide.`}</div></div>
+  <div class="alert info">${icon('key')}<div><b>Clé d'accès oubliée ?</b> Seulement si vous aviez créé une <b>clé de secours</b> (Réglages → Sécurité, 24 caractères, ex. ABCD-EFGH-…) : saisissez-la ici, puis choisissez une nouvelle clé d'accès.${html`<br><br><b>Pas de clé de secours ?</b> Vos données ne peuvent pas être récupérées (elles sont chiffrées, personne d'autre n'a la clé). Demandez à CENTRAL-OGL de <b>remettre votre centrale à zéro</b> : vous recevrez un nouveau code d'invitation et repartirez d'une centrale vide.`}</div></div>
   ${html`<label class="field">🧩 Moitié A <span class="tiny muted">(votre e-mail, la feuille imprimée, ou cet appareil)</span><input name="ra" value="${(() => { try { return localStorage.getItem(recAKey()) || ''; } catch { return ''; } })()}" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono)"></label>
-  <label class="field">🧩 Moitié B <span class="tiny muted">(donnée par LA CENTRAL au téléphone)</span><input name="rb" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono)"></label>
+  <label class="field">🧩 Moitié B <span class="tiny muted">(gardée à un autre endroit : associé, coffre…)</span><input name="rb" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono)"></label>
   <p class="tiny muted" style="margin:0">Ou, si vous avez une clé de secours complète (ancienne version) :</p>`}
       <label class="field">Clé de secours <input name="code"  placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono);letter-spacing:.05em"></label>
       <div class="lock-err" role="alert">${error}</div>
@@ -1720,7 +1719,7 @@ function renderLock(mode, error = '') {
   }
   setHtml(lockEl, html`<form class="lock-card" data-form="unlock">
     ${head}
-    <input type="text" name="username" value="LA CENTRAL" autocomplete="username" hidden>
+    <input type="text" name="username" value="CENTRAL-OGL" autocomplete="username" hidden>
     <label class="field">Clé d'accès ${pwField('pass', '••••••••••••', 'current-password')}</label>
     <div class="lock-err" role="alert">${error}</div>
     <button class="btn primary block" type="submit">Déverrouiller</button>
@@ -1810,7 +1809,7 @@ async function onUnlock(fd, form) {
     if (r.setup) return renderLock('setup');
     if (!(await claimOrAsk())) {
       vault.lock();
-      return renderLock('unlock', 'Connexion annulée : LA CENTRAL reste ouvert sur l’autre appareil.');
+      return renderLock('unlock', 'Connexion annulée : CENTRAL-OGL reste ouverte sur l’autre appareil.');
     }
     startSession();
   } catch (e) {
@@ -1954,7 +1953,7 @@ vault.on((kind) => {
   if (kind === 'status') renderSync();
   if (kind === 'data') { renderView(); renderSheet(); scheduleEspaceSync(); }
   if (kind === 'auth-lost') lockNow("La clé d'accès a été changée sur un autre appareil.");
-  if (kind === 'session-lost') lockNow(`LA CENTRAL a été ouvert sur ${vault.sessionLostBy || 'un autre appareil'} : cet appareil a été déconnecté.`);
+  if (kind === 'session-lost') lockNow(`CENTRAL-OGL a été ouverte sur ${vault.sessionLostBy || 'un autre appareil'} : cet appareil a été déconnecté.`);
 });
 
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
@@ -2133,8 +2132,8 @@ function collCard(im) {
     </button>`)}</div>` : html`<p class="muted small">Aucune collecte enregistrée.</p>`}
   </div>`;
 }
-// 🧩 Clé de secours en deux moitiés (centrale d'un client) : A chez le client (e-mail, papier, cet appareil), B chiffrée pour la centrale
-// LA CENTRAL. Aucune moitié seule n'ouvre quoi que ce soit : A + B = la clé de secours (addition lettre par lettre, modulo 32).
+// 🧩 Clé de secours en deux moitiés : A et B gardées à deux endroits différents (e-mail, papier, cet appareil, l'associé).
+// Aucune moitié seule n'ouvre quoi que ce soit : A + B = la clé de secours (addition lettre par lettre, modulo 32).
 const RCA = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const rcNorm = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/O/g, '0').replace(/I/g, '1');
 const rcFmt = (x) => x.match(/.{1,4}/g).join('-');
@@ -2152,17 +2151,13 @@ function rcJoin(a, b) {
   return rcFmt(r);
 }
 const recAKey = () => 'aresRecA:' + TENANT;
-// crée la clé de secours, la coupe en deux, confie B (chiffrée) à LA CENTRAL, montre A au client
+// crée la clé de secours et la coupe en deux : A et B, à garder à deux endroits différents (ex. le directeur et l'associé)
 async function recActivate() {
   const code = await vault.createRecovery();
   const { a, b } = rcSplit(code);
-  const k = await (await vault.call('network-key')).json();
-  const sealed = await sealForOwner(k.pub, { type: 'recb', b, tid: TENANT, t: new Date().toISOString() });
-  const r = await vault.call('recb', { method: 'PUT', body: sealed });
-  if (!r.ok) throw new Error('Envoi de la moitié B impossible (connexion ?)');
   try { localStorage.setItem(recAKey(), a); } catch { /* stockage indisponible */ }
-  await vault.mutate((tx) => tx.put('reglages', { id: 'recSplit', at: today() }), '🧩 Récupération de clé activée', '');
-  openSheet('rec-split', null, null, a);
+  await vault.mutate((tx) => tx.put('reglages', { id: 'recSplit', at: today(), both: true }), '🧩 Récupération de clé activée', '');
+  openSheet('rec-split', null, null, { a, b });
 }
 function renderView() {
   const view = $('#view');
@@ -2452,7 +2447,7 @@ function centraleSection() {
   return html`<div class="section-label">👥 Centrale : responsable et opérateurs</div>
     ${vault.op ? html`<p class="small" style="margin:0 0 8px">👤 Connecté : <b>${vault.op.name}</b> · ${OP_ROLES[vault.op.role] || ''}</p>` : ''}
     <div class="list settings" style="margin-bottom:12px">
-      <button class="row" data-action="centrale-edit"><span class="avatar">⭐</span><span class="grow"><span class="title" style="display:block">Responsable de la centrale</span><span class="meta">${centraleResp() ? [centraleResp(), c.tel, c.email].filter(Boolean).join(' · ') : 'à compléter'}</span><span class="meta" style="display:block">Affiché aux gérances dans leur app Gérances (« Votre contact LA CENTRAL ») et sur vos factures.</span></span><span class="chev">›</span></button>
+      <button class="row" data-action="centrale-edit"><span class="avatar">⭐</span><span class="grow"><span class="title" style="display:block">Responsable de la centrale</span><span class="meta">${centraleResp() ? [centraleResp(), c.tel, c.email].filter(Boolean).join(' · ') : 'à compléter'}</span><span class="meta" style="display:block">Affiché sur vos documents.</span></span><span class="chev">›</span></button>
     </div>
     <div class="card" style="margin-bottom:14px">
       <b>👤 Opérateurs</b><p class="tiny muted" style="margin:2px 0 8px">Centraliste ou comptable : chacun se connecte avec son identifiant et son mot de passe (« 👤 Connexion opérateur » sur l’écran de verrouillage), sans connaître la clé d’accès du directeur. Le centraliste gère tout, y compris les accès des opérateurs. Le comptable voit tout, s’occupe des factures, mais n’affecte pas les travaux et ne gère pas les accès. Retirer un opérateur lui coupe l’accès tout de suite.</p>
@@ -2569,7 +2564,7 @@ const VIEWS = {
         ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`}`;
     }
 
-    const nudge = !vault.get('reglages', 'recSplit') ? html`<div class="alert bad" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>🧩 Activez la récupération de votre clé.</b> Sans elle, une clé d'accès oubliée = toutes vos données perdues. 1 minute, et LA CENTRAL ne peut pas lire vos données.</div><button class="btn sm primary" data-action="make-recovery">Activer</button></div>` : vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
+    const nudge = !vault.get('reglages', 'recSplit') ? html`<div class="alert bad" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>🧩 Activez la récupération de votre clé.</b> Sans elle, une clé d'accès oubliée = toutes vos données perdues. 1 minute, et personne d'autre ne peut lire vos données.</div><button class="btn sm primary" data-action="make-recovery">Activer</button></div>` : !(vault.get('reglages', 'recSplit') || {}).both ? html`<div class="alert bad" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>🧩 Refaites votre kit de récupération.</b> La moitié B était gardée par l’ancienne centrale principale, qui n’existe plus : créez un nouveau kit et gardez vous-même les deux moitiés, à deux endroits différents.</div><button class="btn sm primary" data-action="make-recovery">Refaire</button></div>` : vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
     const sig = newSignals();
     const sigBox = sig.length ? html`<div class="card mk mk-int mk-on" style="margin-bottom:14px">
         <div class="card-title" style="margin-bottom:8px"><h3>📩 <span>${sig.length > 1 ? sig.length + " nouveaux messages" : "1 nouveau message"}${sig.every((t) => !t.byInterv) ? (sig.length > 1 ? ' de locataires' : ' de locataire') : ''}</span></h3></div>
@@ -2966,7 +2961,7 @@ const VIEWS = {
 
   ${!standalone ? html`<div class="section-label">Application</div>
   <div class="list settings"><div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Installer sur ce téléphone</span>
-    <span class="meta" style="white-space:normal">${isIOS ? 'Safari : bouton Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône LA CENTRAL sur l’écran d’accueil, fonctionne hors ligne.'}</span></span>
+    <span class="meta" style="white-space:normal">${isIOS ? 'Safari : bouton Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône CENTRAL-OGL sur l’écran d’accueil, fonctionne hors ligne.'}</span></span>
     ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}<button class="btn sm" data-action="install-anim">▶ Voir comment</button></div></div>` : ''}
 
   ${centraleSection()}
@@ -3012,7 +3007,7 @@ const VIEWS = {
   <div class="section-label">Langue</div>
   <div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].filter((k) => LANGS[k]).map((k) => html`<button type="button" data-action="set-lang" data-id="${k}" title="${LANGS[k]}" aria-pressed="${LANG === k}">${k.toUpperCase()}</button>`)}</div>
   <p class="tiny muted" style="margin-top:4px">Les quittances, reçus et relances aux locataires restent en français (documents officiels).</p>
-  <p class="tiny muted" style="margin-top:28px;text-align:center"><span data-notr="1">LA CENTRAL · ${legalLine()}</span> · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
+  <p class="tiny muted" style="margin-top:28px;text-align:center"><span data-notr="1">CENTRAL-OGL · ${legalLine()}</span> · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
   }
 };
 
@@ -3315,7 +3310,7 @@ const SHEETS = {
         <label class="field">Nom<input name="nom" value="${c.nom || ''}" required></label>
         <label class="field">Téléphone<input type="tel" name="tel" value="${c.tel || ''}" placeholder="+352…"></label>
         <label class="field">Email<input type="email" name="email" value="${c.email || ''}"></label>
-        <p class="tiny muted full" style="margin:0">Affiché aux gérances dans leur app Gérances (« Votre contact LA CENTRAL ») et sur vos factures.</p></form>`,
+        <p class="tiny muted full" style="margin:0">Affiché sur vos documents.</p></form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
@@ -3463,7 +3458,7 @@ const SHEETS = {
     return {
       title: 'Calendrier de la commune',
       body: html`<form id="f" data-form="icsall" class="fields">
-        <p class="small full" style="margin:0">Importez le calendrier <b>complet</b> de la commune pour <b>${im.adresse}</b> : LA CENTRAL le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.</p>
+        <p class="small full" style="margin:0">Importez le calendrier <b>complet</b> de la commune pour <b>${im.adresse}</b> : CENTRAL-OGL le sépare tout seul par type de déchets (verre, papier, résiduels…) et crée une collecte pour chacun.</p>
         ${field('Lien du calendrier (.ics / webcal) — se met à jour tout seul', 'url', st.url, { full: true, type: 'url', placeholder: 'https://… .ics ou webcal://…' })}
         <div class="full" style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn sm" type="button" data-action="ics-analyze">${icon('sync')} Lire le lien</button>
@@ -3514,7 +3509,7 @@ const SHEETS = {
           <p class="tiny muted full" style="margin:0">Chaque année : remplacez les dates par celles du nouveau calendrier de la commune.</p></div>
         <label class="field">Quand sortir<select name="sortie">${Object.entries(SORTIES).map(([k, v]) => html`<option value="${k}" ${(c.sortie || 'veille') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Heure (facultatif)', 'heure', c.heure, { placeholder: 'ex. après 18 h, avant 6 h' })}
-        <p class="tiny muted full" style="margin:0">Les dates ci-dessus sont les jours de <b>passage</b> du camion (comme sur le calendrier de la commune). LA CENTRAL calcule quand sortir les poubelles.</p>
+        <p class="tiny muted full" style="margin:0">Les dates ci-dessus sont les jours de <b>passage</b> du camion (comme sur le calendrier de la commune). CENTRAL-OGL calcule quand sortir les poubelles.</p>
         <label class="field full">Où sortir les poubelles<select name="lieu">${Object.entries(LIEUX).map(([k, v]) => html`<option value="${k}" ${c.lieu === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Remarque', 'note', c.note, { full: true, placeholder: 'ex. sortir la veille après 18 h, conteneur au garage n°2' })}
       </form>`,
@@ -4038,29 +4033,30 @@ const SHEETS = {
     };
   },
 
-  'rec-split'({ preset: a }) {
+  'rec-split'({ preset }) {
+    const { a, b } = typeof preset === 'string' ? { a: preset, b: '' } : preset || {};
     const mail = societe().email || '';
-    const txt = `Kit de récupération — centrale ${socName()}\n\nMoitié A de ma clé de secours :\n${a}\n\nSi j'oublie ma clé d'accès : ${centralUrl(TENANT, tenantInfo.fil).replace(/^https?:\/\//, '')} → « Clé d'accès oubliée ? » → moitié A (ci-dessus) + moitié B (donnée par la centrale au téléphone).`;
+    const txt = (h, c) => `Kit de récupération — centrale ${socName()}\n\nMoitié ${h} de la clé de secours :\n${c}\n\nSi la clé d'accès est oubliée : ${centralUrl(TENANT).replace(/^https?:\/\//, '')} → « Clé d'accès oubliée ? » → moitié A + moitié B.`;
+    const half = (h, c, who) => html`<div class="tiny muted" style="margin-top:10px">Moitié ${h} — ${who}</div>
+        <div style="font-family:var(--mono);font-size:21px;font-weight:700;letter-spacing:.05em;text-align:center;padding:16px 8px;background:var(--surface-2);border-radius:var(--radius);word-break:break-all">${c}</div>
+        <div class="actions" style="flex-wrap:wrap;margin-top:6px">
+          <a class="btn sm" href="mailto:${mail}?subject=${encodeURIComponent('Kit de récupération ' + h + ' — ' + socName())}&body=${encodeURIComponent(txt(h, c))}">📧 E-mail</a>
+          <button class="btn sm" data-action="print-reckit" data-id="${c}" data-h="${h}">🖨️ Imprimer</button>
+          <a class="btn sm" href="https://wa.me/?text=${encodeURIComponent(txt(h, c))}" target="_blank" rel="noopener">📲 WhatsApp</a>
+        </div>`;
     return {
       title: '🧩 Votre kit de récupération',
       narrow: true,
-      body: html`<div class="alert info" style="margin-bottom:12px">${icon('shield')}<div>Votre clé de secours est coupée en <b>deux moitiés</b>. <b>Moitié A</b> : chez vous (ci-dessous). <b>Moitié B</b> : gardée fermée par la centrale. Aucune moitié seule n'ouvre vos données — <b>la centrale ne peut pas les lire</b>. Si vous oubliez votre clé d'accès : vous appelez, on vous donne la moitié B, vous ajoutez votre moitié A, et vous ne perdez rien.</div></div>
-        <div class="tiny muted">Votre moitié A</div>
-        <div style="font-family:var(--mono);font-size:21px;font-weight:700;letter-spacing:.05em;text-align:center;padding:16px 8px;background:var(--surface-2);border-radius:var(--radius);word-break:break-all" id="rcode">${a}</div>
-        <p class="small" style="margin:12px 0 6px"><b>Gardez-la à au moins 2 endroits :</b></p>
-        <div class="actions" style="flex-direction:column">
-          <a class="btn" href="mailto:${mail}?subject=${encodeURIComponent('Kit de récupération — ' + socName())}&body=${encodeURIComponent(txt)}">📧 M'envoyer par e-mail</a>
-          <button class="btn" data-action="print-reckit" data-id="${a}">🖨️ Imprimer le kit (A4)</button>
-          <a class="btn" href="https://wa.me/?text=${encodeURIComponent(txt)}" target="_blank" rel="noopener">📲 WhatsApp à moi-même</a>
-          <button class="btn" data-action="copy-recovery">📋 Copier</button>
-        </div>
-        <p class="tiny muted">✓ Cet appareil s'en souvient aussi. Ne la donnez à personne : avec la moitié B elle ouvre votre centrale.</p>`,
-      foot: html`<button class="btn primary" data-action="close-sheet">J'ai gardé ma moitié A</button>`,
+      body: html`<div class="alert info" style="margin-bottom:12px">${icon('shield')}<div>Votre clé de secours est coupée en <b>deux moitiés</b>. Gardez-les à <b>deux endroits différents</b> (par exemple : moitié A chez le directeur, moitié B chez l'associé ou au coffre). Aucune moitié seule n'ouvre vos données ; personne d'autre ne peut les lire.</div></div>
+        ${half('A', a, 'chez le directeur')}
+        ${b ? half('B', b, 'à un autre endroit (associé, coffre)') : ''}
+        <p class="tiny muted" style="margin-top:12px">✓ Cet appareil se souvient de la moitié A. Ne donnez jamais les deux moitiés à la même personne.</p>`,
+      foot: html`<button class="btn primary" data-action="close-sheet">J'ai gardé les deux moitiés</button>`,
     };
   },
 
   recovery({ preset: code }) {
-    const body = encodeURIComponent(`Clé de secours LA CENTRAL :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : https://luxinterventions.com/locataires.html → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
+    const body = encodeURIComponent(`Clé de secours CENTRAL-OGL :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : ${centralUrl(TENANT)} → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
     return {
       title: 'Votre clé de secours',
       narrow: true,
@@ -4070,9 +4066,9 @@ const SHEETS = {
         <div class="actions" style="margin-top:14px">
           <button class="btn" data-action="copy-recovery">${icon('file')} Copier</button>
           <button class="btn" data-action="print-recovery">${icon('download')} Imprimer</button>
-          <a class="btn" href="mailto:${MAIL}?subject=${encodeURIComponent('LA CENTRAL — clé de secours')}&body=${body}">${icon('mail')} Email</a>
+          <a class="btn" href="mailto:${societe().email || ''}?subject=${encodeURIComponent('CENTRAL-OGL — clé de secours')}&body=${body}">${icon('mail')} Email</a>
         </div>
-        <p class="tiny muted">Le bouton Email prépare un message vers ${MAIL}. Pratique, mais toute personne qui accède à cette messagerie pourrait ouvrir le coffre : le papier reste plus sûr.</p>`,
+        <p class="tiny muted">Le bouton Email prépare un message vers votre propre adresse. Pratique, mais toute personne qui accède à cette messagerie pourrait ouvrir le coffre : le papier reste plus sûr.</p>`,
       foot: html`<button class="btn primary" data-action="close-sheet">J'ai noté ma clé de secours</button>`,
     };
   },
@@ -4311,7 +4307,7 @@ const tenantFromForm = (fd, p = '') => ({
 });
 
 // ───────────────────────── Rapports imprimables ─────────────────────────
-// Impressions de l'app : en-tête LA CENTRAL by ARES INVEST S.A. ; client = true seulement pour les quittances
+// Impressions de l'app : en-tête CENTRAL-OGL by ARES INVEST S.A. ; client = true seulement pour les quittances
 // et reçus de caution, qui restent au nom de la société cliente (bailleur, son timbre)
 function printDoc(title, body, client) {
   const el = $('#print'), so = societe();
@@ -4500,7 +4496,7 @@ const ACTIONS = {
   'photo-del': (d, el) => { const box = el.closest('.photo-pick'); box.querySelector('[name=photo]').value = ''; setHtml(box.querySelector('.pp-circle'), '👤'); el.remove(); },
 
   // ▶ le même petit dessin animé que dans les autres apps (iPhone / Android / Samsung)
-  'install-anim': () => import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'LA CENTRAL', icon: '/ares/icons/lux-192.png', lang: (() => { try { return localStorage.getItem('aresLang') || 'fr'; } catch { return 'fr'; } })() })),
+  'install-anim': () => import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'CENTRAL-OGL', icon: '/ares/icons/ares-192.png', lang: (() => { try { return localStorage.getItem('aresLang') || 'fr'; } catch { return 'fr'; } })() })),
 
   'open-rapports': () => { ui.cpSec = 'stats'; go('rapports'); },
   'rpt-back': () => { ui.cpSec = 'stats'; go('compta'); },
@@ -4799,7 +4795,7 @@ const ACTIONS = {
       const { fix, afterExit } = datesFix(l, [{ y, m }]);
       if (afterExit.length) return toast(`${fullName(l)} est parti le ${fmtDate(l.sortie)} : ce mois n'est plus dû.`, { bad: true });
       const what = fix.debut ? `avancer l'entrée au ${fmtDate(fix.debut)}` : `prolonger le contrat jusqu'au ${fmtDate(fix.fin)}`;
-      if (!(await confirmBox(`${MONTHS_FULL[m - 1]} ${y} est hors du contrat`, { ok: fix.debut ? "Avancer l'entrée et payer" : 'Prolonger et payer', detail: `Le contrat de ${fullName(l)} ${fix.debut ? 'commence le ' + fmtDate(l.debut) : 'finit le ' + fmtDate(l.fin)}. Pour que les totaux restent justes, LA CENTRAL va ${what}, puis enregistrer le paiement.` }))) return;
+      if (!(await confirmBox(`${MONTHS_FULL[m - 1]} ${y} est hors du contrat`, { ok: fix.debut ? "Avancer l'entrée et payer" : 'Prolonger et payer', detail: `Le contrat de ${fullName(l)} ${fix.debut ? 'commence le ' + fmtDate(l.debut) : 'finit le ' + fmtDate(l.fin)}. Pour que les totaux restent justes, CENTRAL-OGL va ${what}, puis enregistrer le paiement.` }))) return;
       await vault.mutate((tx) => tx.put('locataires', { id: l.id, ...fix }), 'Dates du contrat corrigées', `${fullName(l)} — ${what}`, l.id);
     }
     payFull(d.loc, y, m);
@@ -4950,9 +4946,7 @@ const ACTIONS = {
     if (!k) return;
     if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
     try {
-      await recActivate();if (ui.route === 'reglages' || ui.route === 'dashboard') renderView();return;
-      const code = await vault.createRecovery();
-      openSheet('recovery', null, null, code);
+      await recActivate();
       if (ui.route === 'reglages' || ui.route === 'dashboard') renderView();
     } catch (e) {
       toast(e.message || 'Erreur', { bad: true });
@@ -4963,8 +4957,8 @@ const ACTIONS = {
     try { await navigator.clipboard.writeText($('#rcode').textContent.trim()); toast('Clé copiée'); } catch { toast('Copie impossible : notez-la à la main', { bad: true }); }
   },
 
-  'print-recovery': () => printDoc('Clé de secours', html`<h1>Clé de secours</h1><p class="pr-sub">À conserver en lieu sûr. En cas d'oubli de la clé d'accès : luxinterventions.com/locataires.html → « Clé d'accès oubliée ? »</p><div style="font:700 26px/1.4 monospace;letter-spacing:.08em;border:2px solid #000;padding:24px;text-align:center;margin-top:24px">${ui.sheet && ui.sheet.preset}</div>`),
-  'print-reckit': (d) => printDoc('Kit de récupération', html`<h1>🧩 Kit de récupération</h1><p class="pr-sub">Centrale ${socName()} — à garder avec les documents de la société.</p><p>Moitié A de votre clé de secours :</p><div style="font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:.06em;border:2px solid #333;border-radius:10px;padding:16px;text-align:center">${d.id}</div><h3>Clé d'accès oubliée ?</h3><ol><li>Ouvrez ${centralUrl(TENANT, tenantInfo.fil)} → « Clé d'accès oubliée ? ».</li><li>Écrivez la <b>moitié A</b> (ci-dessus).</li><li>Appelez la centrale : elle vous donne la <b>moitié B</b>.</li><li>Choisissez une nouvelle clé d'accès : vos données sont intactes.</li></ol><p class="pr-sub">Les deux moitiés sont nécessaires : la centrale ne peut pas ouvrir la vôtre avec la moitié B seule.</p>`, true),
+  'print-recovery': () => printDoc('Clé de secours', html`<h1>Clé de secours</h1><p class="pr-sub">À conserver en lieu sûr. En cas d'oubli de la clé d'accès : ${centralUrl(TENANT).replace(/^https?:\/\//, '')} → « Clé d'accès oubliée ? »</p><div style="font:700 26px/1.4 monospace;letter-spacing:.08em;border:2px solid #000;padding:24px;text-align:center;margin-top:24px">${ui.sheet && ui.sheet.preset}</div>`),
+  'print-reckit': (d) => printDoc('Kit de récupération', html`<h1>🧩 Kit de récupération — moitié ${d.h || 'A'}</h1><p class="pr-sub">Centrale ${socName()} — à garder avec les documents de la société.</p><p>Moitié ${d.h || 'A'} de votre clé de secours :</p><div style="font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:.06em;border:2px solid #333;border-radius:10px;padding:16px;text-align:center">${d.id}</div><h3>Clé d'accès oubliée ?</h3><ol><li>Ouvrez ${centralUrl(TENANT)} → « Clé d'accès oubliée ? ».</li><li>Écrivez la <b>moitié A</b> et la <b>moitié B</b> (gardées à deux endroits différents).</li><li>Choisissez une nouvelle clé d'accès : vos données sont à nouveau ouvertes.</li></ol><p class="tiny">Ne gardez jamais les deux moitiés au même endroit.</p>`),
   'print-imm': (d) => printDoc('Rapport immeuble', reportImmeuble(d.id, ui.year)),
   'print-log': (d) => printDoc('Rapport logement', reportLogement(d.id)),
 
