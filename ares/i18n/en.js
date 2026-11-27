@@ -18459,4 +18459,8 @@ export default [
 "Les 14 prochains jours : interventions de nos ouvriers",
 "The next 14 days: our workers' jobs"
 ],
+[
+"(recommandé)",
+"(recommended)"
+]
 ];

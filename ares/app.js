@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.316.0';
+const VERSION = '2.317.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -5369,12 +5369,12 @@ ${netClientsList(list, n, days)}`;
 
       <div class="section-label">Données</div>
       <div class="list settings">
-        <button class="row" data-action="export-enc">${icon('shield')}<span class="grow"><span class="title" style="display:block">Sauvegarde chiffrée</span><span class="meta">Fichier .ares, lisible uniquement avec la clé</span></span></button>
+        <button class="row" data-action="export-enc">${icon('shield')}<span class="grow"><span class="title" style="display:block">Sauvegarde chiffrée <span class="pill" style="font-size:11px;background:#E7F4EC;color:#2E7D52;border-radius:999px;padding:1px 7px;vertical-align:middle">(recommandé)</span></span><span class="meta">Fichier .ares, lisible uniquement avec la clé</span></span></button>
         <button class="row" data-action="export-json">${icon('download')}<span class="grow"><span class="title" style="display:block">Export lisible (JSON)</span><span class="meta">Non chiffré — à conserver en lieu sûr</span></span></button>
         ${TENANT || vault.op ? '' : html`<button class="row" data-action="xfer-arch">📦<span class="grow"><span class="title" style="display:block">${archOn() ? '🙈 Fermer l’archive des anciens immeubles' : '👁 Ouvrir l’archive des anciens immeubles'}</span><span class="meta">${archOn() ? 'Mes Propriétés est visible (lecture) — refermez quand vous avez fini' : 'Mes Propriétés n’est plus dans le menu : les immeubles et locataires sont chez les clients ; rien n’est effacé'}</span></span></button>`}
         ${TENANT || vault.op ? '' : html`<label class="row" style="cursor:pointer"><img src="${APP_BRAND.logo}" alt="" width="36" height="36" style="border-radius:8px;object-fit:cover"><span class="grow"><span class="title" style="display:block">🖼️ Icône de la CENTRAL DOMIER</span><span class="meta">Image carrée (au moins 512 × 512) : en-tête, page de la clé, onglet, icône sur l’écran (à remettre sur le téléphone)</span></span><input type="file" accept="image/*" data-input="brand-ico" hidden></label>${(vault.get('reglages', 'brand') || {}).ico ? html`<button class="row" data-action="brand-reset">↩️<span class="grow title">Remettre l’icône d’origine</span></button>` : ''}`}
         ${TENANT || vault.op ? '' : html`<button class="row" data-action="angar">🏗️<span class="grow"><span class="title" style="display:block">ANGAR — paquets vers les containers (clients)</span><span class="meta">Transférer immeubles, locataires, paiements, documents vers la centrale d’un client, ou en fichier</span></span></button>`}
-        <button class="row" data-action="my-data">${icon('download')}<span class="grow"><span class="title" style="display:block">📦 Récupérer toutes mes données</span><span class="meta">Un fichier complet avec les documents (réimportable) + tableaux CSV des locataires et des paiements</span></span></button>
+        <button class="row" data-action="my-data">${icon('download')}<span class="grow"><span class="title" style="display:block">📦 Récupérer toutes mes données <span class="pill" style="font-size:11px;background:#E7F4EC;color:#2E7D52;border-radius:999px;padding:1px 7px;vertical-align:middle">(recommandé)</span></span><span class="meta">Un fichier complet avec les documents (réimportable) + tableaux CSV des locataires et des paiements</span></span></button>
         <button class="row" data-action="import">${icon('upload')}<span class="grow"><span class="title" style="display:block">Importer</span><span class="meta">Sauvegarde .ares, 📦 transfert reçu ou export JSON (ancienne version incluse)</span></span></button>
         <button class="row" data-action="print">${icon('file')}<span class="grow title">Imprimer la page Paiements</span></button>
       </div>
