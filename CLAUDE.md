@@ -91,6 +91,15 @@ Vale per tutte le app degli utenti (inquilini, operai…), sempre in quest'ordin
 - ✋ mano rossa = messaggio solo per la centrale (inquilini). La centrale vede il testo di prima dei messaggi modificati.
 - 🎧 **Centralino** in Accueil: tutte le categorie, richiudibili (scelta ricordata), 📣 Annunci con storico.
 
+## ✅ Stato al 27/11/2026 — due app separate (decisione del titolare)
+- **App LuxInterventions** (`app.html`, webapp, v1.5.0) e **CENTRAL-OGL** (gestione locatari di ARES Invest s.a. / Nobis s.a.r.l.) sono **due progetti distinti** che convivono nello stesso GitHub e nello stesso Worker.
+- **CENTRAL-OGL** = centrale del cliente (`/central-ogl/?<numero>`; i vecchi `/centralgerances/?…`, `/centralluxintervention/?…`, `/centraldomier/?…`, `locataires.html?t=` ci portano) + app locatari (`/centrallocataires.html`, `espace.js`). Nome in alto «CENTRAL-OGL», sotto «ARES Invest s.a. / Nobis s.a.r.l.», info «Organisation et gestion des locataires».
+- **MASTER tolta dal codice** (v2.319–2.325): senza numero nell'indirizzo la centrale mostra «Ouvrez le lien de votre centrale». Tolti: operai/équipe, taxi, trajets, portale, rete/licenze, abbonamenti, devis e fatture d'intervento, annunci don/prêt, ANGAR, archivio, CGU di LA CENTRAL, inoltro ↪️/automatico. Ai locatari: tolti pubblicità, cripto, giornale, passaggi/valutazioni operai, don/prêt, pagamento affitto. I file vecchi (equipe.*, centralluxinterventions.html…) sono ancora nel progetto: pulizia solo con la lista e il VAI del titolare.
+- **Clé de secours**: le due metà A e B restano al cliente (prima B andava alla MASTER); chi aveva il vecchio kit vede «Refaites votre kit».
+- Prove di CENTRAL-OGL (nello scratchpad della sessione, non nel progetto): prova a tappeto dei bottoni, giro segnalazione → «Réparé» → «Terminé», clé de secours A+B, testi EN/DE identici dopo la pulizia delle traduzioni.
+- **Contratti e depositi**: 2 documenti da firmare (uno per app, **prezzo globale 10 000 € HTVA per le due, dovuto una volta**, firma ARES INVEST S.A.) e 2 pacchi Patamu (codice + Worker intero + dossier di creazione + manuali + impronte). Non nel progetto (IBAN): li ha il titolare.
+- Manuale CENTRAL-OGL: FR · EN. Sito luxinterventions.com: **non toccare** finché non dà il VAI (clip della sezione gérance e pagina Nobis proposti, in attesa).
+
 ## ⏸️ In attesa (standby, novembre 2026)
 - **App LuxInterventions FATTA (app v1.0.0, 25/11/2026)**: `app.html` + `app/app.js`, `app/app.css`, `app/mail.js`, `app-sw.js`, `app.webmanifest`;
   bottone «📲 Installer l’app LuxInterventions» nel sito (hero). Una sola app per tutti, senza centrale: 12 mattonelle + Autre →
