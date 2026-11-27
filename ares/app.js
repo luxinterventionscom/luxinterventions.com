@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.318.0';
+const VERSION = '2.319.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -52,24 +52,25 @@ const TENANT = (() => {
 // CENTRAL-OGL · Organisation et gestion des locataires (ARES Invest s.a. / Nobis s.a.r.l.)
 const OGL = { nom: 'CENTRAL-OGL', sub: 'ARES Invest s.a. / Nobis s.a.r.l.', info: 'Organisation et gestion des locataires' };
 let tenantInfo = (() => { try { return JSON.parse(localStorage.getItem('aresTenantInfo:' + TENANT) || '{}'); } catch { return {}; } })();
-// 🏛️ la centrale principale a son adresse : …/centraldomier.html (l'ancien …/locataires.html y passe tout seul, mêmes données)
-if (!TENANT && /^\/(locataires|centraldomier)\.html$/.test(location.pathname)) history.replaceState(null, '', '/centralluxinterventions.html' + location.hash);
-// 📱 icône sur l'écran d'un client : elle doit garder SON adresse (/centraldomier/?<numéro>), pas celle de la centrale principale
-// (sans manifeste, le téléphone enregistre l'adresse affichée ; sur iPhone l'icône ne partage pas la mémoire de Safari)
-if (TENANT) {
+{
   document.querySelector('link[rel=manifest]')?.remove();
   // adresse des clients : /centralluxintervention/?<numéro> (les anciens liens /centraldomier/… et locataires.html?t= y passent tout seuls)
   if (!/^\?[a-z0-9]{12,24}$/.test(location.search) || !location.pathname.startsWith('/central-ogl')) history.replaceState(null, '', '/central-ogl/?' + TENANT + location.hash); // CENTRAL-OGL : sa propre adresse (les anciens liens y passent tout seuls)
-  const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at) at.content = OGL.nom;
+  const at = document.querySelector('meta[name=apple-mobile-web-app-title]');if (at) at.content = OGL.nom;
   document.title = OGL.nom;
 }
-const tenantSave = (t) => { if (!TENANT || !t) return; tenantInfo = t; try { localStorage.setItem('aresTenantInfo:' + TENANT, JSON.stringify(t)); } catch { /* stockage plein */ } if (t.nom) { document.title = OGL.nom; const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at) at.content = t.nom; } }; // nom sous l'icône de l'écran
+// CENTRAL-OGL : il n'y a plus de centrale principale ; sans numéro de centrale dans l'adresse, on n'ouvre rien
+const TENANT_ID = TENANT;
+if (!TENANT_ID) {
+  document.title = OGL.nom;
+  document.body.innerHTML = '<div style="font-family:system-ui,sans-serif;max-width:520px;margin:60px auto;padding:0 16px;text-align:center;color:#1a1a1a"><h1 style="font-size:22px">CENTRAL-OGL</h1><p>Ouvrez le lien de votre centrale (adresse avec son numéro).</p></div>';
+  await new Promise(() => {});
+}
+const tenantSave = (t) => { if (!t) return; tenantInfo = t; try { localStorage.setItem('aresTenantInfo:' + TENANT, JSON.stringify(t)); } catch { /* stockage plein */ } if (t.nom) { document.title = OGL.nom; const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at) at.content = t.nom; } }; // nom sous l'icône de l'écran
 // 🧾 qui signe les quittances : bailleur principal (locataire principal, comme la centrale principale aujourd'hui), propriétaire, ou gérance
-const socRole = () => (!TENANT ? 'sous' : tenantInfo.fil === 'proprio' ? (tenantInfo.sous ? 'sous' : 'proprio') : tenantInfo.fil === 'gerance' ? 'gest' : 'proprio');
+const socRole = () => (tenantInfo.fil === 'proprio' ? (tenantInfo.sous ? 'sous' : 'proprio') : tenantInfo.fil === 'gerance' ? 'gest' : 'proprio');
 const SOC_QUAL = { sous: 'locataire principal et bailleur', proprio: 'propriétaire et bailleur', gest: 'agissant pour le compte du bailleur' };
 const SOC_FICHE = { sous: 'Votre société — locataire principal (apparaît sur les quittances et les relances)', proprio: 'Votre société — propriétaire / bailleur (apparaît sur les quittances et les relances)', gest: 'Votre société — gestionnaire (apparaît sur les quittances et les relances)' };
-const tSub = () => (tenantInfo.fil === 'proprio' ? (tenantInfo.sous ? 'Bailleur principal' : 'Propriétaire') : (T_FIL_LBL[tenantInfo.fil] || '').replace(/^\S+ /, '')); // sous-titre de la centrale d'un client
-const T_FIL_LBL = { gerance: '🏢 Gérance', proprio: '🔑 Propriétaire' };
 // rubriques de chaque filière (la centrale du client ne montre que les siennes)
 const TENANT_ROUTES = {
   // CENTRAL-OGL : seulement la gestion des locataires (plus de demandes à LA CENTRAL ni de classement des ouvriers)
@@ -77,21 +78,15 @@ const TENANT_ROUTES = {
   proprio: ['dashboard', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'reglages'],
 };
 const tRoutes = () => TENANT_ROUTES[tenantInfo.fil] || TENANT_ROUTES.gerance;
-// 🏛️ CENTRAL DOMIER : pas de propriétés ni de locataires à elle (tout est chez les clients) ; l'ancien parc reste en archive (Réglages → 📦)
-const archOn = () => { try { return !TENANT && localStorage.getItem('aresArch') === '1'; } catch { return false; } };
-const ownPark = () => { try { return vault.unlocked && vault.listAll('immeubles').some((x) => !x.xfer); } catch { return false; } }; // encore un immeuble pas transféré ?
-const routeOk = (r) => (TENANT ? tRoutes().includes(r) : r !== 'demandes' && (archOn() || ownPark() || !['immeubles', 'locataires', 'paiements'].includes(r)));
-const homeRoute = () => (TENANT ? tRoutes()[0] : 'dashboard');
+const routeOk = (r) => (tRoutes().includes(r));
+const homeRoute = () => (tRoutes()[0]);
 const vault = new Vault(API, TENANT);
-// 📦 immeubles transférés à un client (centrale principale) : cachés partout (avec logements et locataires), gardés en archive ;
-// Réglages → 📦 Transférés pour les revoir. vault.listAll = la liste complète (transfert, comptes).
-const xferHide = () => !TENANT && !archOn(); // CENTRAL DOMIER : les immeubles transférés n'apparaissent que dans l'archive // choix de cet appareil (par défaut : visibles)
 {
   const XF = new Set(['immeubles', 'logements', 'locataires']), rawList = vault.list.bind(vault);
   vault.listAll = rawList;
   vault.list = (c) => {
     const L = rawList(c);
-    if (TENANT || !XF.has(c) || !xferHide()) return L;
+    return L;
     const gone = new Set(rawList('immeubles').filter((x) => x.xfer).map((x) => x.id));
     return gone.size ? L.filter((x) => !x.xfer && !gone.has(x.immId)) : L;
   };
@@ -464,20 +459,6 @@ async function osmGeo(adr, cc) {
   const j = r.ok ? await r.json() : [];
   return j && j[0] ? [Math.round(+j[0].lat * 1e6) / 1e6, Math.round(+j[0].lon * 1e6) / 1e6] : null;
 }
-// immeubles de l'horaire de l'équipe encore sans position : une recherche OpenStreetMap par seconde, une fois par session
-let geoAutoDone = false;
-async function geoAuto() {
-  if (geoAutoDone || TENANT || isCompta() || !vault.unlocked) return;
-  geoAutoDone = true;
-  const ids = new Set();
-  for (const i of vault.list('intervenants')) { for (const h of hors(i)) ids.add(h.immId); for (const hs of Object.values(i.plan || {})) for (const h of hs || []) ids.add(h.immId); }
-  for (const id of ids) {
-    const im = id && vault.get('immeubles', id);
-    if (!im || Array.isArray(im.geo) || !im.adresse) continue;
-    try { const g = await osmGeo([im.adresse, im.ville].filter(Boolean).join(', '), im.pays); if (g) await vault.mutate((tx) => tx.put('immeubles', { id, geo: g, geoSrc: 'osm' }), '📍 Position du lieu (OpenStreetMap)', im.adresse); } catch { /* hors ligne */ }
-    await new Promise((ok) => setTimeout(ok, 1100));
-  }
-}
 const horsOn = (i, iso) => (i.plan && Array.isArray(i.plan[iso]) ? i.plan[iso].filter(okSlot) : hors(i).filter((h) => h.j === dowOf(iso))).slice().sort((a, b) => a.de.localeCompare(b.de));
 const slotsHours = (hs) => hs.reduce((n, h) => { const a = hm(h.de), b = hm(h.a); return n + (a != null && b != null && b > a ? b - a : 0); }, 0);
 const mondayOf = (iso) => addDays(iso, -dowOf(iso));
@@ -653,7 +634,12 @@ function equipeData(i) {
   return {
     v: 1, kind: 'equipe', gv: VERSION, lang: i.espace.lang || '', prenom: i.prenom || '', nom: i.nom || '', metier: METIERS[i.metier] || '', icon: metIcon(i), photo: photoOk(i.photo) ? i.photo : '',
     // l'équipe travaille pour ARES INVEST S.A. (LA CENTRAL) : son nom et son logo (casque) dans l'app des ouvriers
-    societe: TENANT ? { nom: socName(), tel: soc.tel || '', logo: soc.logo || '/ares/icons/lux-192.png', color: soc.color || '' } : { nom: factConf().nom || 'ARES INVEST S.A.', tel: factConf().tel || soc.tel || '', logo: '/ares/icons/lux-192.png' },
+    societe: {
+      nom: socName(),
+      tel: soc.tel || '',
+      logo: soc.logo || '/ares/icons/lux-192.png',
+      color: soc.color || ''
+    },
     me: { tel: i.tel || '', mail: i.mail || '', adresse: i.adresse || '', ville: i.ville || '', ccss: i.ccss || '' },
     // intervenant occasionnel : il lit et signe sa fiche d'engagement dans son app
     eng: i.genre === 'prive' ? { assur: i.assur || '', police: i.police || '', assurTodo: !!i.assurTodo, signed: !!i.sign, signAt: i.signAt || '' } : null,
@@ -1107,7 +1093,7 @@ function espaceData(l) {
   const soc = societe();
   const out = {
     v: 1, gv: VERSION, lang: e.lang || '', prenom: l.prenom || '', nom: l.nom || '', avatar: emojiOk(l.avatar) ? l.avatar : '', photo: photoOk(l.photo) ? l.photo : '', logement: g ? logLabel(g) : '', adresse: im ? im.adresse : '', ville: im ? im.ville || '' : '', ...(im ? { pays: im.pays || societe().pays || 'LU', ...(Array.isArray(im.geo) ? { geo: im.geo } : {}) } : {}), show,
-    societe: { role: socRole(), nom: soc.nom && (TENANT || !WRONG_ID.test(soc.nom)) ? soc.nom : DEF_SOC(), adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', color: TENANT ? soc.color || '' : '', sign: signLite.src === soc.signature && signLite.url ? signLite.url : soc.signature || '', signW: soc.signW || 8 },
+    societe: { role: socRole(), nom: soc.nom ? soc.nom : DEF_SOC(), adresse: soc.adresse || '', ville: soc.ville || '', tel: soc.tel || '', email: soc.email || '', logo: soc.logo || '', color: soc.color || '', sign: signLite.src === soc.signature && signLite.url ? signLite.url : soc.signature || '', signW: soc.signW || 8 },
     loyer: loyerAt(l, new Date().getFullYear(), new Date().getMonth() + 1) || l.loyer || 0, revis: revNext(l), parti: isGone(l) ? l.sortie : '', mail: l.mail || '',
     radio: (() => { const r = vault.get('reglages', 'radio'); return r && r.url ? { nom: r.nom || '', url: r.url } : { nom: 'Seven Radio', url: 'https://sevenradio.lu/?proradio-popup=1' }; })(),
     annex: g ? annexOf(g) : {}, annexM2: (g && g.annexM2) || {}, surface: (g && g.surface) || '', maison: g && g.type === 'maison' ? g.maison || '' : '', unit: g ? g.type : '',
@@ -1178,15 +1164,12 @@ function espaceData(l) {
       visits.push({ d: x.d, w: i.id, nom: i.prenom || '', m: i.metier || 'autre', de: h ? h.de : '', a: h ? h.a : '', off: !!absOn(i, x.d), ty: x.t.type || '', t: own });
     }
     visits.sort((a, b) => a.d.localeCompare(b.d) || (a.de || '99').localeCompare(b.de || '99'));
-    // 🛠️ centrale d'un client : passages de LA CENTRAL pour ses demandes (son logement ou les parties communes de son immeuble)
-    if (TENANT) {
-      for (const r of vault.list('reglages').filter((x) => x.id.startsWith('tdem-') && x.date && (x.immId === l.immId) && (!x.logId || x.logId === l.logId))) {
-        const base = { w: 'lux', nom: 'LA CENTRAL', m: r.kind === 'reg' && r.reg ? r.reg.svc || 'autre' : 'autre', de: r.heure || '', a: r.heureFin || '', t: r.titre || '' };
-        if (r.recur) { for (const d of recurDates(r.date, r.recur, today(), dN, r.fin)) visits.push({ ...base, d }); }
-        else if (r.st && r.st !== 'afaire' && r.st !== 'fait' && r.date >= today() && r.date <= dN) visits.push({ ...base, d: r.date });
-      }
-      visits.sort((a, b) => a.d.localeCompare(b.d) || (a.de || '99').localeCompare(b.de || '99'));
+    for (const r of vault.list('reglages').filter((x) => x.id.startsWith('tdem-') && x.date && (x.immId === l.immId) && (!x.logId || x.logId === l.logId))) {
+      const base = { w: 'lux', nom: 'LA CENTRAL', m: r.kind === 'reg' && r.reg ? r.reg.svc || 'autre' : 'autre', de: r.heure || '', a: r.heureFin || '', t: r.titre || '' };
+      if (r.recur) { for (const d of recurDates(r.date, r.recur, today(), dN, r.fin)) visits.push({ ...base, d }); }
+      else if (r.st && r.st !== 'afaire' && r.st !== 'fait' && r.date >= today() && r.date <= dN) visits.push({ ...base, d: r.date });
     }
+    visits.sort((a, b) => a.d.localeCompare(b.d) || (a.de || '99').localeCompare(b.de || '99'));
     out.visits = visits.filter((v) => v.d >= today());
     out.done = visits.filter((v) => v.d < today() && !v.off).map((v) => ({ d: v.d, w: v.w, nom: v.nom, m: v.m, de: v.de, a: v.a }));
   }
@@ -1344,29 +1327,12 @@ function patRead(fd) {
   if (a) out._autre = a;
   return out;
 }
-// résumé : « 🏠 4 · 🚗 6 · 🏢 1 » (nombre exact sinon quantité du menu)
-function patSum(pat) {
-  if (!pat) return '';
-  return PAT_TYPES.map(([g, types]) => {
-    let n = 0, plus = false;
-    for (const k of Object.keys(types)) { const v = pat[k]; if (!v) continue; if (v.n) n += +v.n; else if (v.q === '10+') { n += 10; plus = true; } else n += +v.q || 0; }
-    return n ? `${g.split(' ')[0]} ${n}${plus ? '+' : ''}` : '';
-  }).filter(Boolean).join(' · ');
-}
 // 🌐 Réseau : centrales des clients (gérance, propriétaire), chacune avec sa cassaforte ;
 // ici : essai, échéance, lecture seule / blocage, nouvel accès, suppression avec certificat, demandes d'intervention reçues
 const NET_FIL = { gerance: '🏢 Gérance', proprio: '🔑 Propriétaire / bailleur principal' };
 const NET_STATE = { ok: ['🟢', 'Actif'], ro: ['🟠', 'Lecture seule (échu)'], blocked: ['🔴', 'Bloqué'] };
 const NET_ST = { trial: '🎁 Essai', active: '✅ Abonnement', suspended: '⏸ Suspendu' };
-// 🔑 Licences : tarifs par filière (prix 1 an HT, remises 2 et 3 ans), factures, registre
-const LIC_ESSAI = 15;
 const FREE_UNTIL = '2099-12-31'; // ♾️ « gratuit, sans échéance »
-const licTarifs = () => vault.get('reglages', 'licTarifs') || {};
-function licPrice(fil, years) {
-  const t = licTarifs()[fil] || {}, an = num(t.an1), r = years === 2 ? num(t.r2) : years === 3 ? num(t.r3) : 0, c = factConf();
-  const base = r2(an * years), remise = r2(base * r / 100), ht = r2(base - remise), taux = num(c.taux), tva = r2(ht * taux / 100);
-  return { an, years, base, r, remise, ht, taux, tva, ttc: r2(ht + tva) };
-}
 const licFacts = () => vault.list('reglages').filter((r) => r.id.startsWith('licfac-')).sort((a, b) => (b.date || '').localeCompare(a.date || '') || (b.no || '').localeCompare(a.no || ''));
 const licLog = () => (vault.get('reglages', 'liclog') || {}).list || [];
 async function licLogAdd(t, act, detail = '') {
@@ -1374,29 +1340,6 @@ async function licLogAdd(t, act, detail = '') {
   await vault.mutate((tx) => tx.put('reglages', { id: 'liclog', list: [e, ...licLog()].slice(0, 1000) }), '🔑 ' + act, `${t.nom}${detail ? ' · ' + detail : ''}`);
 }
 const addMonths = (d, n) => { const x = new Date(d + 'T12:00'); x.setMonth(x.getMonth() + n); return x.toISOString().slice(0, 10); };
-const addYears = (d, n) => { const x = new Date(d + 'T12:00'); x.setFullYear(x.getFullYear() + n); return x.toISOString().slice(0, 10); };
-async function licInvoicePdf(f) {
-  const c = factConf(), p = makePdf(), X = 48, R = 547, G = [0.42, 0.42, 0.42], inf = netInfo(f.tid);
-  const logo = await sigJpeg('/ares/icons/lux-192.png').catch(() => null);
-  if (logo) p.image(X, 40, 62, 62, logo.bytes, logo.w, logo.h);
-  const ex = logo ? X + 78 : X;
-  p.text(ex, 52, c.marque || c.nom, { size: 11, bold: true }).text(ex, 66, c.marque ? 'by ' + c.nom : '', { size: 9, color: G });
-  p.text(ex, 80, c.adresse, { size: 9 }).text(ex, 92, c.ville, { size: 9 }).text(ex, 104, `RCS ${c.rcs} · TVA ${c.tva}`, { size: 8.5, color: G });
-  p.text(R, 52, 'FACTURE', { size: 18, bold: true, align: 'right' }).text(R, 72, 'N° ' + f.no, { size: 10, align: 'right' }).text(R, 86, 'Date : ' + fmtDate(f.date), { size: 9, align: 'right' }).text(R, 98, 'Échéance : ' + fmtDate(addDays(f.date, +c.delai || 30)), { size: 9, align: 'right' });
-  p.text(X, 150, 'Client', { size: 9, color: G }).text(X, 164, f.nom, { size: 11, bold: true });
-  if (inf.email || inf.tel) p.text(X, 178, [inf.email, inf.tel].filter(Boolean).join(' · '), { size: 9 });
-  p.rect(X, 210, R - X, 22, { fill: [0.94, 0.94, 0.94] }).text(X + 8, 225, 'Désignation', { size: 9, bold: true }).text(R - 8, 225, 'Montant HT', { size: 9, bold: true, align: 'right' });
-  let y = 250;
-  p.text(X + 8, y, `Licence centrale ${c.marque || c.nom} — ${(NET_FIL[f.fil] || '').replace(/^\S+ /, '')} — ${f.gift ? '6 mois offerts' : f.years + ' an' + (f.years > 1 ? 's' : '')}`, { size: 10 }).text(R - 8, y, money(f.base), { size: 10, align: 'right' }); y += 14;
-  p.text(X + 8, y, f.gift ? `Période : du ${fmtDate(f.du)} au ${fmtDate(f.au)} · offerte (accès complet, 0 €)` : `Période : du ${fmtDate(f.du)} au ${fmtDate(f.au)} · ${f.years} × ${money(f.an)} HT`, { size: 8.5, color: G }); y += 20;
-  if (f.remise) { p.text(X + 8, y, `Remise forfait ${f.years} ans (−${f.r} %)`, { size: 10 }).text(R - 8, y, '−' + money(f.remise), { size: 10, align: 'right' }); y += 20; }
-  p.line(X, y, R, y); y += 18;
-  p.text(R - 120, y, 'Total HT', { size: 10 }).text(R - 8, y, money(f.ht), { size: 10, align: 'right' }); y += 16;
-  p.text(R - 120, y, `TVA ${String(f.taux).replace('.', ',')} %`, { size: 10 }).text(R - 8, y, money(f.tva), { size: 10, align: 'right' }); y += 18;
-  p.text(R - 120, y, 'Total TTC', { size: 12, bold: true }).text(R - 8, y, money(f.ttc), { size: 12, bold: true, align: 'right' }); y += 34;
-  if (c.iban) p.text(X, y, `Paiement par virement : ${c.banque ? c.banque + ' · ' : ''}IBAN ${c.iban}${c.bic ? ' · BIC ' + c.bic : ''} · communication : ${f.no}`, { size: 9 });
-  return p.bytes();
-}
 // adresse « parlante » selon le client (voir LIENS.md) : propriétaire, gestionnaire
 const netUrl = (tid) => `${location.origin}/central-ogl/?${tid}`; // un seul indirizzo per tutte le centrali dei clienti, senza nomi
 async function netApi(path, method = 'GET', body) {
@@ -1406,14 +1349,6 @@ async function netApi(path, method = 'GET', body) {
 const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
 // 🔧 DOMIER dans les centrales des clients : appeler LUXINTERVENTION, ou ＋ Demande
 const domierCentral = () => ''; // CENTRAL-OGL : plus de lien vers LUXINTERVENTION
-const domierCentralOld = () => (TENANT ? new Raw('<div class="domier-w">' + domierHtml({ tel: DOM_TEL, lang: getLang(), extra: `<button type="button" class="btn sm primary" data-action="tdem-new" style="margin-top:8px">🔧 ＋ Demande</button>` }).replace('<details ', '<details data-notr="1" ') + '</div>') : ''); // spazio sotto (non attaccato al resto)
-// 🏗️ ANGAR : état des paquets dans chaque container
-async function angarPacks() {
-  const A = {};
-  for (const t of (ui.net && ui.net.list) || []) { try { const r = await vault.call('tenants/' + t.id + '/packs'); A[t.id] = (await r.json()).items || []; } catch { A[t.id] = []; } }
-  ui.angar = A;
-  if (ui.sheet && ui.sheet.kind === 'angar') { ui.sheet.rendered = false; renderSheet(); }
-}
 // 📦 Transfert d'immeubles (et de tout ce qui va avec) vers la centrale d'un client du réseau : copie chiffrée, rien n'est effacé ici
 const bytesUrl = (b, mime) => 'data:' + (mime || 'application/octet-stream') + ';base64,' + b64big(b);
 async function xferPack(immIds) {
@@ -1556,7 +1491,7 @@ async function netSousSync(list) {
   for (const t of list.filter((x) => x.fil === 'proprio' && netInfo(x.id).loueur)) { const want = netInfo(t.id).loueur === 'sous'; if (!!t.sous !== want) { try { await netApi('tenants/' + t.id, 'PATCH', { sous: want }); t.sous = want; } catch { /* hors ligne */ } } }
 }
 async function netHoldSync(list) {
-  if (TENANT || isCompta() || !vault.unlocked) return;
+  return;
   const d = payDays();
   for (const t of list || []) {
     const late = netFacts(t.id).filter((f) => !f.paid && lateDays(f.due) >= d.ro);
@@ -1566,19 +1501,8 @@ async function netHoldSync(list) {
 }
 // 🛠️ demandes d'intervention des centrales des clients → directement dans Maintenance (comme les signalements)
 let netDemBusy = false;
-// 🙋 candidatures « Je cherche du travail » : retirées (v2.307) ; les anciennes restent cachées puis s'effacent après 12 mois (RGPD)
-const cands = () => vault.list('reglages').filter((r) => r.id.startsWith('cand-')).sort((a, b) => (b.at || '').localeCompare(a.at || ''));
-// 12 mois sans mise à jour : la candidature et son CV sont effacés (RGPD)
-async function candPurge() {
-  const lim = new Date(Date.now() - 365 * 864e5).toISOString(), old = cands().filter((c) => (c.at || '') < lim);
-  for (const c of old) {
-    const ds = vault.list('documents').filter((d) => d.kind === 'cv' && d.candId === c.id);
-    await vault.mutate((tx) => { tx.remove('reglages', c.id); for (const d of ds) tx.remove('documents', d.id); }, '🙋 Candidature effacée (12 mois sans mise à jour)', c.f.nom);
-    for (const d of ds) await vault.deleteFile(d.id).catch(() => {});
-  }
-}
 async function netDemSync(list) {
-  if (TENANT || netDemBusy || !vault.unlocked || isCompta()) return;
+  return;
   const keys = vault.get('reglages', 'signal');
   if (!keys || !keys.priv) return;
   netDemBusy = true;
@@ -1627,7 +1551,7 @@ async function netDemSync(list) {
 // ↩️ État des demandes des clients : renvoyé à leur centrale (📅 planifié, 🔧 en cours, ✅ fait) quand il change
 let netStBusy = false;
 async function netStatusSync() {
-  if (TENANT || netStBusy || !vault.unlocked || !ui.net || !(ui.net.list || []).length) return;
+  return;
   netStBusy = true;
   try {
     for (const t of vault.list('taches').filter((x) => x.net && x.net.ref && x.net.tid)) {
@@ -1642,14 +1566,6 @@ async function netStatusSync() {
 }
 // 🌐 fiche Agence / Propriétaire ↔ sa centrale du réseau : même nom (et même filière) → reliées toutes seules ; sinon on choisit à la main
 const normNom = (x) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
-// créer la centrale d'un client (aussi depuis sa fiche) : essai gratuit, code d'invitation
-async function netCreate(fil, nom, tel = '', email = '') {
-  const r = await netApi('tenants', 'POST', { fil, nom, days: LIC_ESSAI });
-  try { await netApi('tenants/' + r.id, 'PATCH', { until: FREE_UNTIL, st: 'active' }); r.tenant = { ...r.tenant, until: FREE_UNTIL, st: 'active' }; } catch { /* reste en essai : ♾️ dans sa fiche */ }
-  await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + r.id, code: r.code, tel, email }), '♾️ Client créé (gratuit, sans échéance)', `${nom} · ${NET_FIL[fil] || ''} · jusqu’au ${fmtDate(r.tenant.until)}`);
-  await licLogAdd({ id: r.id, nom, fil }, 'Client créé', r.tenant.until >= FREE_UNTIL ? '♾️ gratuit, sans échéance' : `jusqu’au ${fmtDate(r.tenant.until)}`);
-  return r;
-}
 async function netLoad(force) {
   if (!vault.unlocked) return;
   if (ui.net && ui.net.loading) return;
@@ -1671,7 +1587,6 @@ async function netLoad(force) {
 }
 // 🌐 centrale d'un client : bandeau essai / lecture seule ; demandes d'intervention vers LA CENTRAL (chiffrées pour elle)
 function tenantBanner() {
-  if (!TENANT) return '';
   const t = tenantInfo, dl = t.until ? Math.round((new Date(t.until + 'T12:00') - new Date(today() + 'T12:00')) / 864e5) : null;
   const late = tFactLate();
   if (t.hold === 'ro' && t.state === 'ro') return html`<div class="alert bad" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>facture non payée.</span> <a href="#/demandes">🧾 Payer</a> <span>: la centrale se débloque dès que le paiement est reçu.</span></div></div>`;
@@ -1686,9 +1601,8 @@ function tenantBanner() {
 let tboxBusy = false;
 const tfMem = () => (ui.tfacts ||= {}); // fatture tenute in memoria (centrale in sola lettura)
 const tFacts = () => { const m = { ...Object.fromEntries(vault.list('reglages').filter((r) => r.id.startsWith('tfact-')).map((r) => [r.no, r])), ...tfMem() }; return Object.values(m).sort((a, b) => (b.no || '').localeCompare(a.no || '')); };
-const tClaim = (no, v) => { const k = 'aresTClaim:' + TENANT + ':' + no; try { if (v) localStorage.setItem(k, v); return localStorage.getItem(k) || ''; } catch { return ''; } };
 async function tenantBoxSync() {
-  if (!TENANT || tboxBusy || !vault.unlocked) return;
+  if (tboxBusy || !vault.unlocked) return;
   tboxBusy = true;
   let got = 0;
   try {
@@ -1748,7 +1662,7 @@ const CGU_TXT = [
   'Les factures et documents comptables sont conservés pendant la durée légale de conservation.',
 ];
 const cguHtml = () => html`<details style="margin:6px 0"><summary class="small" style="cursor:pointer">📜 Lire les conditions d’utilisation (version ${CGU_V})</summary><ul class="small" style="margin:6px 0 0;padding-left:18px">${CGU_TXT.map((x) => html`<li style="margin:4px 0">${x}</li>`)}</ul></details>`;
-const cguOk = () => !TENANT || ((vault.get('reglages', 'cgu') || {}).v === CGU_V);
+const cguOk = () => ((vault.get('reglages', 'cgu') || {}).v === CGU_V);
 async function cguAccept(by) {
   const at = new Date().toISOString();
   await vault.mutate((tx) => tx.put('reglages', { id: 'cgu', v: CGU_V, at, by }), '📜 Conditions d’utilisation acceptées', CGU_V);
@@ -1757,7 +1671,7 @@ async function cguAccept(by) {
 // pas encore envoyée (hors ligne au moment de l'acceptation) : on la renvoie
 async function cguResend() {
   const c = vault.get('reglages', 'cgu');
-  if (!TENANT || !c || c.sent || c.v !== CGU_V) return;
+  if (!c || c.sent || c.v !== CGU_V) return;
   try { await tenantSend({ type: 'cgu', v: c.v, at: c.at, by: c.by || '' }); await vault.mutate((tx) => tx.put('reglages', { id: 'cgu', sent: new Date().toISOString() }), '📜 Acceptation envoyée', ''); } catch { /* plus tard */ }
 }
 // Accueil d'une centrale cliente qui ne les a pas encore acceptées (configurée avant cette version)
@@ -1768,25 +1682,13 @@ async function tenantSend(obj) {
 }
 const tFactLate = () => tFacts().filter((f) => !f.paid && lateDays(f.due) >= (f.avv ?? 7));
 async function tenantRefresh() {
-  if (!TENANT || !vault.unlocked) return;
+  if (!vault.unlocked) return;
   try { const j = await (await vault.call('tenant')).json(); if (j.tenant) { const prev = JSON.stringify(tenantInfo); tenantSave(j.tenant); if (JSON.stringify(j.tenant) !== prev) { renderShell(); go(ui.route, true); } } } catch { /* hors ligne */ }
 }
 const TDEM_SVC = { menage: '🧹 Ménage', jardinier: '🌿 Jardin', homme: '🔧 Entretien', autre: '📋 Autre' };
 const TDEM_ST = { afaire: '📨 Reçue', planifie: '📅 Planifiée', encours: '🔧 En cours', fait: '✅ Terminée' };
 // état d'une demande renvoyé par LA CENTRAL (dem-st) : planifiée, régulier confirmé, terminée, arrêtée
 const JOURS_C = ['', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
-function tdemStatus(d) {
-  const hr = d.heure ? ` à ${d.heure}${d.heureFin ? '–' + d.heureFin : ''}` : '';
-  let t = '';
-  if (d.fin && d.fin <= today()) t = `⏹️ Service arrêté le ${fmtDate(d.fin)}`;
-  else if (d.stopAsk) t = '⏹️ Arrêt demandé — en attente de LA CENTRAL';
-  else if (d.recur && d.date) t = `🔁 Service confirmé : ${RECURS[d.recur].toLowerCase()} depuis le ${fmtDate(d.date)}${hr}`;
-  else if (d.st === 'fait') t = `✅ Terminée${d.done ? ' le ' + fmtDate(d.done) : ''}`;
-  else if (d.st && d.st !== 'afaire' && d.date) t = `${TDEM_ST[d.st] || ''} le ${fmtDate(d.date)}${hr}`;
-  else t = d.kind === 'reg' && d.reg ? `📨 Demande de service : ${TDEM_SVC[d.reg.svc] || ''} · ${RECURS[d.reg.freq].toLowerCase()} · ${(d.reg.jours || []).map((j) => JOURS_C[j]).join(', ')}${d.reg.de ? ' · ' + d.reg.de + (d.reg.a ? '–' + d.reg.a : '') : ''}` : '📨 Reçue par LA CENTRAL';
-  const stop = d.kind === 'reg' && !d.stopAsk && !(d.fin && d.fin <= today()) ? html` <button class="btn sm" type="button" data-action="tdem-stop" data-id="${d.id}">⏹️ Arrêter</button>` : '';
-  return html`<div class="small" style="margin:4px 0">${t}${d.ou ? html` · 📍 ${d.ou}` : ''}${stop}</div>`;
-}
 const TDEM_URG = { normal: '🟢 Normal', rapide: '🟠 Rapide (48 h)', urgent: '🔴 Urgent' };
 // 💼 abonnements des gérances (offre « Gérez aussi vos propres locataires ») : formule, prix, payé jusqu'au…
 const ABO_PLANS = { decouverte: ['Découverte', 0], pro: ['Pro', 29], agence: ['Agence', 79], mesure: ['Sur devis', 0] };
@@ -2002,7 +1904,7 @@ function toolOwner(it) {
   return l ? fullName(l) + ' · ' + (logName(l.logId) || immName(l.immId)) : 'Locataire (espace fermé)';
 }
 async function toolsLoad(force) {
-  if (TENANT) return; // centrale d'un client : pas de portail, d'annonces ni de biens du réseau
+  return;
   if (!vault.unlocked) return;
   if (!force && ui.toolsAt && Date.now() - ui.toolsAt < 15000) return;
   ui.toolsAt = Date.now();
@@ -2106,7 +2008,7 @@ async function espaceSync(onlyId, loud) {
 }
 // 🌐 liste publique des annonces du réseau : vide (plus de publicité), envoyée une fois pour effacer l'ancienne
 async function netPubsSync() {
-  if (TENANT) return;
+  return;
   const list = []; // 📣 plus de publicité : la liste publique reste vide (efface les anciennes annonces chez les apps)
   const h = await sha256Hex(JSON.stringify(list));
   let prev = '';
@@ -2117,7 +2019,7 @@ async function netPubsSync() {
   try { const r = await vault.call('netpubs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: list }) }); if (r && r.ok) { localStorage.setItem('aresNetPubs2', h); info({ n: list.length, all: vault.list('avis').filter(isPub).length }); } } catch (e) { info({ err: e.message || String(e) }); /* on réessaiera */ }
 }
 async function portailPubsSync() {
-  if (TENANT) return;
+  return;
   const list = [], offers = aboOffersOn(), cc = centraleConf(), contact = centraleResp() ? { nom: centraleResp(), tel: cc.tel || '', email: cc.email || '' } : null;
   const h = await sha256Hex(JSON.stringify([list, offers, contact]));
   let prev = '';
@@ -2128,7 +2030,7 @@ async function portailPubsSync() {
 // Signalements envoyés par les locataires → travaux dans Maintenance (+ photos dans la fiche du locataire)
 let inboxBusy = false;
 async function inboxSync() {
-  if (TENANT) { tenantBoxSync(); packSync(); cguResend().catch(() => {}); } else { netDemSync(); netLoad(); geoAuto(); candPurge().catch(() => {}); }
+  tenantBoxSync();packSync();cguResend().catch(() => {});
   const keys = vault.get('reglages', 'signal');
   if (!keys || !keys.priv || inboxBusy || !vault.unlocked) return;
   inboxBusy = true;
@@ -2288,20 +2190,18 @@ function centralinoHtml() {
   const open = ui.centOpen ?? tot > 0;
   const badge = (n) => (n ? html`<span class="badge bad">${n}</span>` : '');
   const row = (action, id, title, sub, n) => html`<button class="row" data-action="${action}" data-id="${id}"><span class="grow"><span class="title" style="display:block">${title}</span><span class="meta">${sub}</span></span>${badge(n)}</button>`;
-  const recv = false ? vault.list('reglages').filter((r) => r.id.startsWith('tann-')).sort((a, b) => (b.at || '').localeCompare(a.at || '')).slice(0, 10) : [];
+  const recv = [];
   const nRecv = recv.filter((r) => !r.vu).length, tot2 = tot + nRecv;
   // la lumière suit l'horloge : quand l'accueil se redessine, elle continue sans repartir de zéro (pas de sautillement)
   return html`<details class="card centralino${tot2 ? ' cent-new' : ''}" ${open || nRecv ? new Raw('open') : ''} style="margin-bottom:14px;animation-delay:-${Date.now() % (tot2 ? 1600 : 3200)}ms">
-    <summary data-action="cent-tog"><span class="cent-ic">${icon('headset')}</span><b>Centralino</b><span class="grow"></span>${tot2 ? html`<span class="badge bad">${tot2} nouveau${tot2 > 1 ? 'x' : ''}</span>` : html`<span class="muted small">rien de nouveau</span>`}</summary>
-    <p style="margin:10px 0 0"><button class="btn primary sm" data-action="ann-new">📣 Annonce</button>${annLog().length ? html` <button class="btn sm" data-action="ann-log">🗂️ Annonces envoyées (${annLog().length})</button>` : ''}</p>
-    ${recv.length ? html`<details class="cent-sec gfold" data-gk="cent|recv" ${foldIsOpen('cent|recv') ? new Raw('open') : ''}><summary>📣 Annonces reçues de la centrale ${badge(nRecv)}</summary><div class="list">${recv.map((r) => html`<div class="row" style="align-items:flex-start"><span class="grow"><span class="title" style="display:block;white-space:pre-wrap">${r.x}</span><span class="meta">${r.from || ''} · ${fmtDateTime(r.at)}</span></span><span style="display:flex;flex-direction:column;gap:6px"><button class="btn sm primary" data-action="ann-fwd" data-id="${r.id}">↪️ Transférer aux miens</button>${r.vu ? '' : html`<button class="btn sm" data-action="ann-vu" data-id="${r.id}">✓ Lu</button>`}</span></div>`)}</div></details>` : ''}
-    <details class="cent-sec gfold" data-gk="cent|sig" ${foldIsOpen('cent|sig') ? new Raw('open') : ''}><summary>📩 Signalements des locataires ${badge(sig.length)}</summary>
-    ${sig.length ? html`<div class="list">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = t.byInterv ? vault.get('intervenants', t.byInterv) : null; return row('open-signal', t.id, html`${w ? '👷 ' + intervFull(w) : fullName(l)} — ${t.titre.replace(/^Signalement : /, '')}`, `${logName(l.logId) || immName(t.immId)} · ${fmtDateTime(t.sentAt)}`, 0); })}</div>` : html`<p class="small muted">Aucun nouveau signalement.</p>`}</details>
-    <details class="cent-sec gfold" data-gk="cent|loc" ${foldIsOpen('cent|loc') ? new Raw('open') : ''}><summary>🏠 Messages des Locataires ${badge(nHouse)}</summary>
-    ${imms.length ? html`<div class="list">${imms.map((im) => row('open-chat', im.id, immName(im.id), houseN(im) ? `${houseN(im)} nouveau${houseN(im) > 1 ? 'x messages' : ' message'} — touchez pour lire` : `${plural(Object.keys(im.chats || {}).length, 'fil')} · touchez pour ouvrir`, houseN(im)))}</div>` : html`<p class="small muted">Aucun fil de messages entre habitants.</p>`}</details>
-    ${TENANT ? '' : html`<details class="cent-sec gfold" data-gk="cent|eq" ${foldIsOpen('cent|eq') ? new Raw('open') : ''}><summary>👷 Messages des Équipes ${badge(nEq)}</summary>
-    ${eqs.length ? html`<div class="list">${eqs.map(({ i, last }) => row('open-eq-chat', i.id, intervFull(i), last ? `${last.from === 'mgr' ? '🛡️ ' : '👷 '}${String(last.x || '').slice(0, 60)} · ${fmtDateTime(last.at)}` : 'Pas encore de message', i.chatNew || 0))}</div>` : html`<p class="small muted">Aucun ouvrier avec l’app active.</p>`}</details>
-  </details>`}`;
+  <summary data-action="cent-tog"><span class="cent-ic">${icon('headset')}</span><b>Centralino</b><span class="grow"></span>${tot2 ? html`<span class="badge bad">${tot2} nouveau${tot2 > 1 ? 'x' : ''}</span>` : html`<span class="muted small">rien de nouveau</span>`}</summary>
+  <p style="margin:10px 0 0"><button class="btn primary sm" data-action="ann-new">📣 Annonce</button>${annLog().length ? html` <button class="btn sm" data-action="ann-log">🗂️ Annonces envoyées (${annLog().length})</button>` : ''}</p>
+  ${recv.length ? html`<details class="cent-sec gfold" data-gk="cent|recv" ${foldIsOpen('cent|recv') ? new Raw('open') : ''}><summary>📣 Annonces reçues de la centrale ${badge(nRecv)}</summary><div class="list">${recv.map((r) => html`<div class="row" style="align-items:flex-start"><span class="grow"><span class="title" style="display:block;white-space:pre-wrap">${r.x}</span><span class="meta">${r.from || ''} · ${fmtDateTime(r.at)}</span></span><span style="display:flex;flex-direction:column;gap:6px"><button class="btn sm primary" data-action="ann-fwd" data-id="${r.id}">↪️ Transférer aux miens</button>${r.vu ? '' : html`<button class="btn sm" data-action="ann-vu" data-id="${r.id}">✓ Lu</button>`}</span></div>`)}</div></details>` : ''}
+  <details class="cent-sec gfold" data-gk="cent|sig" ${foldIsOpen('cent|sig') ? new Raw('open') : ''}><summary>📩 Signalements des locataires ${badge(sig.length)}</summary>
+  ${sig.length ? html`<div class="list">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = t.byInterv ? vault.get('intervenants', t.byInterv) : null; return row('open-signal', t.id, html`${w ? '👷 ' + intervFull(w) : fullName(l)} — ${t.titre.replace(/^Signalement : /, '')}`, `${logName(l.logId) || immName(t.immId)} · ${fmtDateTime(t.sentAt)}`, 0); })}</div>` : html`<p class="small muted">Aucun nouveau signalement.</p>`}</details>
+  <details class="cent-sec gfold" data-gk="cent|loc" ${foldIsOpen('cent|loc') ? new Raw('open') : ''}><summary>🏠 Messages des Locataires ${badge(nHouse)}</summary>
+  ${imms.length ? html`<div class="list">${imms.map((im) => row('open-chat', im.id, immName(im.id), houseN(im) ? `${houseN(im)} nouveau${houseN(im) > 1 ? 'x messages' : ' message'} — touchez pour lire` : `${plural(Object.keys(im.chats || {}).length, 'fil')} · touchez pour ouvrir`, houseN(im)))}</div>` : html`<p class="small muted">Aucun fil de messages entre habitants.</p>`}</details>
+  `;
 }
 const newSignals = () => vault.list('taches').filter((t) => t.sentAt && !t.vu).sort((a, b) => (b.sentAt || '').localeCompare(a.sentAt || ''));
 const signalPhotos = (t) => vault.list('documents').filter((x) => x.tacheId === t.id).length;
@@ -2546,7 +2446,7 @@ const fraisOfYear = (y) => { let t = 0; for (let m = 1; m <= monthsElapsed(y); m
 // la fiche « main » de la MASTER ne garde que la TVA et les associés (les anciennes données restent, non utilisées)
 const societe = () => {
   const m = vault.get('reglages', 'main') || {};
-  if (TENANT) return m;
+  return m;
   const f = factConf();
   return { ...m, nom: f.nom, adresse: f.adresse, ville: f.ville, tel: f.tel, email: f.email, rcs: f.rcs, tvaNum: f.tva, iban: f.iban, bic: f.bic, banque: f.banque, web: '', logo: '', signature: '' };
 };
@@ -2635,7 +2535,7 @@ function ptlBadge(tickets) {
   });
 }
 async function ptlWatch() {
-  if (TENANT) return; // centrale d'un client : pas de portail, d'annonces ni de biens du réseau
+  return;
   if (!ptlConf() || ui.ptl.loading) return;
   const typing = sheetEl.contains(document.activeElement) && document.activeElement.matches('input, textarea, select');
   if (ui.route === 'gerances' && !typing) return ptlLoad();
@@ -2744,12 +2644,6 @@ const ptlOrg = (id) => ((ui.ptl.data && ui.ptl.data.orgs) || []).find((o) => o.i
 // logo de l'agence (ajouté par la gérance dans son app Gérances, ou ici dans « Modifier ») : on la reconnaît d'un coup d'œil
 const orgLogo = (id, big) => { const o = ptlOrg(id || ''); return o && o.logo ? html`<img class="org-logo${big ? ' big' : ''}" src="${o.logo}" alt="">` : '🏢'; };
 const ptlInviteUrl = (tok) => `${location.origin}/portail.html#invite=${tok}`;
-// mot de passe → clé dérivée sur l'appareil (comme dans le portail) : le serveur ne voit jamais le mot de passe
-async function ptlDerive(password, saltB64, iter) {
-  const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(password.normalize('NFC')), 'PBKDF2', false, ['deriveBits']);
-  const salt = Uint8Array.from(atob(saltB64), (c) => c.charCodeAt(0));
-  return [...new Uint8Array(await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations: iter }, base, 256))].map((b) => b.toString(16).padStart(2, '0')).join('');
-}
 // Petite boîte de saisie (texte) : renvoie la valeur ou null
 // ✏️ corriger un message : le texte actuel est déjà dans la case
 function promptEdit(title, value) {
@@ -2799,8 +2693,8 @@ const PAYS = { LU: ['Luxembourg', [17, 14, 8, 3]], FR: ['France', [20, 10, 5.5, 
 const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '').split(/[;, ]+/).map((x) => parseFloat(x.replace(',', '.'))).filter((x) => x > 0 && x < 100); return own.length ? own : (PAYS[s0.pays || 'LU'] || PAYS.LU)[1]; };
 // Marque de l'app de gestion (fixe, indépendante de la société cliente)
 const APP_BRAND = { nom: 'LUXINTERVENTIONS', sub: '', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
-if (TENANT) APP_BRAND.logo = '/ares/icons/ares-192.png'; // CENTRAL-OGL : jamais le logo de LuxInterventions
-const DEF_SOC = () => (TENANT ? tenantInfo.nom || 'Centrale' : 'NOBIS s.a.r.l.');
+APP_BRAND.logo = '/ares/icons/ares-192.png';
+const DEF_SOC = () => (tenantInfo.nom || 'Centrale');
 const socName = () => societe().nom || DEF_SOC();
 // ligne légale (page de la clé, bas de la centrale) : la société de ⚙️ Réglages → 🧾 Facturation, gardée sur l'appareil pour la page de la clé
 function legalLine() {
@@ -2812,8 +2706,8 @@ function legalLine() {
   try { return localStorage.getItem('aresLegal') || APP_BRAND.legal; } catch { return APP_BRAND.legal; }
 }
 // nom affiché aux clients et aux locataires : la marque LA CENTRAL (la centrale d'un client : son propre nom)
-const netBrand = () => (TENANT ? socName() : 'LA CENTRAL');
-const socLogo = () => (TENANT ? societe().logo || '' : APP_BRAND.logo);
+const netBrand = () => (socName());
+const socLogo = () => (societe().logo || '');
 const htOf = (ttc, r) => (r ? ttc / (1 + r / 100) : ttc);
 const r2 = (x) => Math.round(x * 100) / 100;
 // Logo et nom partout dans l'app (et sur l'écran de verrouillage, mémorisés sur cet appareil)
@@ -2832,7 +2726,7 @@ function ibanOk(v) {
 }
 const WRONG_ID = /\bares\b|arest|invenst|ares invest|B\s*225\s*245|LU\s*30440727/i;
 async function fixIdentity() {
-  if (TENANT) return; // centrale d'un client : sa société, pas NOBIS
+  return;
   const so = societe();
   const badIban = so.iban && (WRONG_ID.test(so.iban) || !ibanOk(so.iban));
   if (![so.nom, so.rcs, so.tvaNum].some((v) => WRONG_ID.test(v || '')) && !badIban) return;
@@ -2842,27 +2736,18 @@ async function fixIdentity() {
 }
 // L'en-tête de l'app montre la marque LA CENTRAL ; le logo de la société (Réglages) sert aux quittances et à l'app des locataires
 function applyBrand() {
-  const ico = TENANT ? tIco() : brandIco();
+  const ico = tIco();
   if (ico) { APP_BRAND.logo = ico; document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]').forEach((l) => { l.href = ico; }); document.querySelectorAll('.lock-logo').forEach((img) => { img.src = ico; }); }
-  document.querySelectorAll('.brand-mark').forEach((img) => { img.src = TENANT && societe().logo ? societe().logo : APP_BRAND.logo; });
+  document.querySelectorAll('.brand-mark').forEach((img) => { img.src = societe().logo ? societe().logo : APP_BRAND.logo; });
   // 🎨 centrale d'un client : la couleur de son logo
-  const col = TENANT && vault.unlocked ? societe().color || '' : '';
+  const col = vault.unlocked ? societe().color || '' : '';
   if (/^#[0-9a-f]{6}$/i.test(col)) document.documentElement.style.setProperty('--accent', col); else document.documentElement.style.removeProperty('--accent');
 }
-// 🖼️ icône de la CENTRAL DOMIER (choisie dans Réglages, seulement la centrale principale) : en-tête, page de la clé, onglet du navigateur,
-// icône sur l'écran (nouvelle installation). Gardée aussi sur l'appareil (non chiffrée : c'est seulement un logo) pour la page de la clé.
-const BRAND_DEF = APP_BRAND.logo;
 // centrale d'un client : son logo (Réglages → Votre société) devient aussi son icône (onglet, iPhone, page de la clé)
 function tIco() {
   const k = 'aresTIco:' + TENANT, v = vault.unlocked ? societe().logo || '' : null;
   if (v !== null) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch { /* plein */ } return v; }
   try { return localStorage.getItem(k) || ''; } catch { return ''; }
-}
-function brandIco() {
-  if (TENANT) return '';
-  const v = vault.unlocked ? (vault.get('reglages', 'brand') || {}).ico : undefined;
-  if (v !== undefined) { try { if (v) localStorage.setItem('aresBrandIco', v); else localStorage.removeItem('aresBrandIco'); } catch { /* plein */ } return v || BRAND_DEF; }
-  try { return localStorage.getItem('aresBrandIco') || ''; } catch { return ''; }
 }
 async function brandSet(file) {
   const bmp = await createImageBitmap(file).catch(() => null);
@@ -2876,7 +2761,7 @@ async function brandSet(file) {
   // publiée (c'est seulement un logo) : le bandeau DOMIER de toutes les apps la montre
   try { const b = Uint8Array.from(atob(ico.split(',')[1]), (ch) => ch.charCodeAt(0)); /* fetch d'une adresse data: est bloqué par la CSP */ await vault.call('brand', { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: b }); } catch { toast('Logo enregistré ici ; pour les apps, publiez le nouveau Worker', { bad: true }); }
 }
-{ const ic = TENANT ? tIco() : brandIco(); if (ic) { APP_BRAND.logo = ic; document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]').forEach((l) => { l.href = ic; }); } } // dès l'ouverture (page de la clé)
+{ const ic = tIco(); if (ic) { APP_BRAND.logo = ic; document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]').forEach((l) => { l.href = ic; }); } } // dès l'ouverture (page de la clé)
 const associes = () => (societe().associes || []).filter((a) => a.nom && a.part > 0);
 
 function dataYears() {
@@ -3053,8 +2938,8 @@ function renderLock(mode, error = '') {
   lockEl.hidden = false;
   const legacy = legacyLocal();
   const head = html`
-    <img class="lock-logo" src="${APP_BRAND.logo}" alt="" width="96" height="96">
-    <div class="lock-head"><h1 data-notr="1">${TENANT ? OGL.nom : APP_BRAND.nom}</h1><p data-notr="1">${TENANT ? OGL.sub : APP_BRAND.sub}</p><p class="tiny">${TENANT ? OGL.info : ''}</p><p class="tiny" data-notr="1">${TENANT ? '' : legalLine()}</p></div>`;
+  <img class="lock-logo" src="${APP_BRAND.logo}" alt="" width="96" height="96">
+  <div class="lock-head"><h1 data-notr="1">${OGL.nom}</h1><p data-notr="1">${OGL.sub}</p><p class="tiny">${OGL.info}</p><p class="tiny" data-notr="1"></p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>`;
   if (mode === 'blocked') {
     setHtml(lockEl, html`<div class="lock-card">${head}<div class="alert warn">${icon('lock')}<div><b>Centrale bloquée.</b> L’abonnement est échu ou suspendu : contactez LA CENTRAL pour la réactiver. Vos données restent chiffrées et intactes.</div></div>${foot}</div>`);
@@ -3069,14 +2954,14 @@ function renderLock(mode, error = '') {
     setHtml(lockEl, html`<form class="lock-card" data-form="setup" autocomplete="off">
       ${head}
       <div class="alert info">${icon('key')}<div><b>Première configuration.</b> Choisissez la clé d'accès : elle chiffre toutes les données et ne peut pas être récupérée si elle est perdue.</div></div>
-      <label class="field">${TENANT ? 'Code d’invitation' : 'Code de configuration'}
-        <input name="code" type="password" required placeholder="${TENANT ? 'Code d’invitation reçu' : 'ARES_SETUP_CODE'}" autocomplete="off">
+      <label class="field">${"Code d’invitation"}
+        <input name="code" type="password" required placeholder="${"Code d’invitation reçu"}" autocomplete="off">
       </label>
       <label class="field">Nouvelle clé d'accès ${pwField('pass', 'Au moins 12 caractères', 'new-password')}</label>
       <div class="meter"><i id="meter"></i></div>
       <div class="tiny muted" id="meterTxt">${METER_HINT}</div>
       <label class="field">Confirmer la clé ${pwField('pass2', 'Retapez la clé', 'new-password')}</label>
-      ${TENANT ? html`${cguHtml()}<label class="row" style="padding:0;min-height:0;gap:10px;border:0;align-items:flex-start"><input type="checkbox" name="cgu" style="width:20px;min-height:20px;flex:none"> <span class="small">J’ai lu et j’accepte les <b>conditions d’utilisation</b> (version ${CGU_V}).</span></label>` : ''}
+      ${html`${cguHtml()}<label class="row" style="padding:0;min-height:0;gap:10px;border:0;align-items:flex-start"><input type="checkbox" name="cgu" style="width:20px;min-height:20px;flex:none"> <span class="small">J’ai lu et j’accepte les <b>conditions d’utilisation</b> (version ${CGU_V}).</span></label>`}
       ${legacy ? html`<label class="row" style="padding:0;min-height:0;gap:10px;border:0"><input type="checkbox" name="legacy" checked style="width:20px;min-height:20px"> <span class="small">Importer les données de l'ancienne version trouvées sur cet appareil (${legacy.immeubles.length} immeubles, ${legacy.locataires.length} locataires)</span></label>` : ''}
       <div class="lock-err" role="alert">${error}</div>
       <button class="btn primary block" type="submit">Créer le coffre sécurisé</button>
@@ -3087,18 +2972,18 @@ function renderLock(mode, error = '') {
   }
   if (mode === 'recover') {
     setHtml(lockEl, html`<form class="lock-card" data-form="recover" autocomplete="off">
-      ${head}
-      <div class="alert info">${icon('key')}<div><b>Clé d'accès oubliée ?</b> Seulement si vous aviez créé une <b>clé de secours</b> (Réglages → Sécurité, 24 caractères, ex. ABCD-EFGH-…) : saisissez-la ici, puis choisissez une nouvelle clé d'accès.${TENANT ? html`<br><br><b>Pas de clé de secours ?</b> Vos données ne peuvent pas être récupérées (elles sont chiffrées, personne d'autre n'a la clé). Demandez à LA CENTRAL de <b>remettre votre centrale à zéro</b> : vous recevrez un nouveau code d'invitation et repartirez d'une centrale vide.` : ''}</div></div>
-      ${TENANT ? html`<label class="field">🧩 Moitié A <span class="tiny muted">(votre e-mail, la feuille imprimée, ou cet appareil)</span><input name="ra" value="${(() => { try { return localStorage.getItem(recAKey()) || ''; } catch { return ''; } })()}" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono)"></label>
-      <label class="field">🧩 Moitié B <span class="tiny muted">(donnée par LA CENTRAL au téléphone)</span><input name="rb" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono)"></label>
-      <p class="tiny muted" style="margin:0">Ou, si vous avez une clé de secours complète (ancienne version) :</p>` : ''}
-      <label class="field">Clé de secours <input name="code" ${TENANT ? '' : new Raw('required')} placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono);letter-spacing:.05em"></label>
+  ${head}
+  <div class="alert info">${icon('key')}<div><b>Clé d'accès oubliée ?</b> Seulement si vous aviez créé une <b>clé de secours</b> (Réglages → Sécurité, 24 caractères, ex. ABCD-EFGH-…) : saisissez-la ici, puis choisissez une nouvelle clé d'accès.${html`<br><br><b>Pas de clé de secours ?</b> Vos données ne peuvent pas être récupérées (elles sont chiffrées, personne d'autre n'a la clé). Demandez à LA CENTRAL de <b>remettre votre centrale à zéro</b> : vous recevrez un nouveau code d'invitation et repartirez d'une centrale vide.`}</div></div>
+  ${html`<label class="field">🧩 Moitié A <span class="tiny muted">(votre e-mail, la feuille imprimée, ou cet appareil)</span><input name="ra" value="${(() => { try { return localStorage.getItem(recAKey()) || ''; } catch { return ''; } })()}" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono)"></label>
+  <label class="field">🧩 Moitié B <span class="tiny muted">(donnée par LA CENTRAL au téléphone)</span><input name="rb" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono)"></label>
+  <p class="tiny muted" style="margin:0">Ou, si vous avez une clé de secours complète (ancienne version) :</p>`}
+      <label class="field">Clé de secours <input name="code"  placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX" autocapitalize="characters" autocorrect="off" spellcheck="false" style="font-family:var(--mono);letter-spacing:.05em"></label>
       <div class="lock-err" role="alert">${error}</div>
-      <button class="btn primary block" type="submit">Ouvrir avec la clé de secours</button>
-      <button class="btn ghost block" type="button" data-action="lock-mode" data-id="unlock">Retour</button>
-      <p class="tiny muted">Sans clé de secours, les données ne peuvent pas être récupérées : elles sont chiffrées et personne d'autre ne possède la clé.</p>
-      ${foot}
-    </form>`);
+  <button class="btn primary block" type="submit">Ouvrir avec la clé de secours</button>
+  <button class="btn ghost block" type="button" data-action="lock-mode" data-id="unlock">Retour</button>
+  <p class="tiny muted">Sans clé de secours, les données ne peuvent pas être récupérées : elles sont chiffrées et personne d'autre ne possède la clé.</p>
+  ${foot}
+</form>`);
     setTimeout(() => lockEl.querySelector('[name=code]')?.focus(), 50);
     return;
   }
@@ -3152,7 +3037,7 @@ async function boot() {
     if (meta && meta.tenant) tenantSave(meta.tenant);
     renderLock(meta && !meta.configured ? 'setup' : 'unlock');
   } catch (e) {
-    if (e && e.status === 403 && TENANT) { tenantSave((e.info && e.info.tenant) || tenantInfo); return renderLock('blocked'); }
+    if (e && e.status === 403) { tenantSave((e.info && e.info.tenant) || tenantInfo); return renderLock('blocked'); }
     renderLock('unlock');
   }
 }
@@ -3175,7 +3060,7 @@ async function claimOrAsk() {
     const i = e.info || {};
     const ago = i.lastSeen ? Math.max(0, Math.round((Date.now() - i.lastSeen) / 1000)) : null;
     const choice = await choiceBox(
-      TENANT ? 'CENTRAL-OGL est ouverte sur un autre appareil' : 'LA CENTRAL est ouvert sur un autre appareil',
+      "CENTRAL-OGL est ouverte sur un autre appareil",
       `${i.device || 'Un autre appareil'} est connecté${i.since ? ' depuis ' + fmtDateTime(i.since) : ''}${ago != null ? ` (actif il y a ${ago} s)` : ''}. Un seul appareil peut être connecté à la fois : si vous continuez, l'autre sera déconnecté immédiatement.`,
       [{ value: 'take', label: 'Prendre la main', cls: 'primary' }]
     );
@@ -3250,7 +3135,7 @@ async function onSetup(fd, form) {
   const err = form.querySelector('.lock-err');
   if (pass.length < 12 || passphraseStrength(pass) < 2) return (err.textContent = 'Clé trop faible : au moins 12 caractères, idéalement une phrase de plusieurs mots.');
   if (pass !== fd.get('pass2')) return (err.textContent = 'Les deux clés ne correspondent pas.');
-  if (TENANT && !fd.get('cgu')) return (err.textContent = 'Cochez « J’ai lu et j’accepte les conditions d’utilisation ».');
+  if (!fd.get('cgu')) return (err.textContent = 'Cochez « J’ai lu et j’accepte les conditions d’utilisation ».');
   setBusy(form, true, 'Création…');
   try {
     await vault.setup(fd.get('code'), pass);
@@ -3261,8 +3146,8 @@ async function onSetup(fd, form) {
     return;
   }
   startSession();
-  if (TENANT) setTimeout(() => cguAccept('Configuration de la centrale').catch(() => {}), 800);
-  if (TENANT) setTimeout(async () => { try { if (await vault.verifyPassphrase(pass)) await recActivate(); } catch { /* l'avis rouge de l'Accueil le proposera */ } }, 1500);
+  setTimeout(() => cguAccept('Configuration de la centrale').catch(() => {}), 800);
+  setTimeout(async () => { try { if (await vault.verifyPassphrase(pass)) await recActivate(); } catch { /* l'avis rouge de l'Accueil le proposera */ } }, 1500);
   const legacy = fd.get('legacy') && legacyLocal();
   if (legacy) {
     try {
@@ -3298,7 +3183,7 @@ function startSession() {
   idleTimer = setInterval(() => {
     if (!vault.unlocked) return;
     if (Date.now() - lastActive > lockMinutes() * 60000) lockNow('Verrouillé après inactivité.');
-    else if (document.visibilityState === 'visible') { vault.sync(); ptlWatch(); if (TENANT && Math.random() < 0.1) tenantRefresh(); if (Date.now() - lastInbox > 25000) { lastInbox = Date.now(); inboxSync(); chatPoll(); if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.tab === 'chat') chatLoad(ui.sheet.id); } if (Date.now() - lastTools > 180000) { lastTools = Date.now(); toolsLoad(true); } }
+    else if (document.visibilityState === 'visible') { vault.sync(); ptlWatch(); if (Math.random() < 0.1) tenantRefresh(); if (Date.now() - lastInbox > 25000) { lastInbox = Date.now(); inboxSync(); chatPoll(); if (ui.sheet && ui.sheet.kind === 'imm' && ui.sheet.tab === 'chat') chatLoad(ui.sheet.id); } if (Date.now() - lastTools > 180000) { lastTools = Date.now(); toolsLoad(true); } }
   }, 30000);
   renderShell();
   applyBrand();
@@ -3311,7 +3196,7 @@ function startSession() {
   setTimeout(ptlWatch, 1500);
   setTimeout(() => netPubsSync().catch(() => {}), 5000); // 📣 liste publique des annonces du réseau, à chaque ouverture
   pushInit(); // rappel « notifications coupées » dès l'Accueil
-  if (TENANT) packSync(); // 📦 paquet de LA CENTRAL en attente ?
+  packSync();
   setTimeout(async () => {
     await refreshIcs(false);
     // Une fois par jour : republier les pages locataires (dates glissantes sur 13 mois)
@@ -3391,36 +3276,25 @@ vault.on((kind) => {
   if (kind === 'session-lost') lockNow(`LA CENTRAL a été ouvert sur ${vault.sessionLostBy || 'un autre appareil'} : cet appareil a été déconnecté.`);
 });
 
-// ───────────────────────── Coquille ─────────────────────────
-// Menu de gauche (ordinateur) : sections avec sous-rubriques et raccourcis « + »
-// 🏢 centrales des clients (gérances, Nobis…) : liste commune à « Gérances » et au registre des clients
-function netClientsList(list, n, days) {
-  return html`${list.length ? html`<div class="list">${list.map((t) => { const st = NET_STATE[t.state] || NET_STATE.ok, dl = days(t.until); return html`<button class="row" data-action="net-open" data-id="${t.id}"><span class="avatar">${(NET_FIL[t.fil] || '🌐').split(' ')[0]}</span>
-        <span class="grow"><span class="title" style="display:block">${t.nom}</span><span class="meta">${NET_FIL[t.fil] || ''}${netInfo(t.id).ville ? ' · 🌍 ' + netInfo(t.id).ville : ''} · ${NET_ST[t.st] || ''}${t.until ? html` · ${t.until >= FREE_UNTIL ? '♾️ sans échéance' : 'jusqu’au ' + fmtDate(t.until)}${dl != null && dl >= 0 ? ` (${dl} j)` : ''}` : ''}</span>
-        <span class="tiny" style="display:block">${t.configured ? (t.lastSeen ? '🖥️ dernière connexion ' + fmtDateTime(t.lastSeen) : '🔐 centrale configurée') : '✉️ invitation envoyée, pas encore ouverte'}</span></span>
-        <span class="badge ${t.state === 'ok' ? 'ok' : t.state === 'ro' ? 'warn' : 'bad'}">${st[0]} ${st[1]}</span></button>`; })}</div>`
-        : n && !n.loading && !n.err ? html`<div class="card" style="max-width:560px"><p style="margin-top:0">Donnez à vos clients (gérances, propriétaires) leur propre centrale : leurs locataires ou leurs clients, leurs apps, tout chiffré ; leurs demandes d’intervention arrivent dans Maintenance. ＋ Gérance : gratuite, sans échéance.</p></div>` : ''}`;
-}
-function netClientsBlock() {
-  const n = ui.net;
-  if (!n || Date.now() - n.at > 60000) setTimeout(() => netLoad(), 0);
-  const list = (n && n.list) || [], t0 = today();
-  const days = (u) => (u ? Math.round((new Date(u + 'T12:00') - new Date(t0 + 'T12:00')) / 864e5) : null);
-  return html`<div class="section-label" style="display:flex;align-items:center;gap:8px"><span class="grow">🏢 Centrales des clients · ${plural(list.length, 'client')} · gratuits, sans échéance</span>${isCompta() ? '' : html`<button class="btn sm primary" data-action="net-new">${icon('plus')} Gérance</button>`}<button class="btn sm" data-action="go" data-to="licences">📜 Registre</button></div>
-    ${n && n.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${n.err}</div></div>` : ''}
-    <div style="margin-bottom:18px">${!n || (n.loading && !list.length) ? html`<p class="muted">Chargement…</p>` : netClientsList(list, n, days)}</div>`;
-}
 // (même ordre que la barre du bas du téléphone ; Locataires et Gestion locataire sont des onglets d'Immeubles)
-const NAV_TREE = !TENANT ? [
-  ['dashboard', 'Accueil', 'home'], ['maintenance', 'Interventions', 'tool'], ['gerances', 'Gérances', 'briefcase'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'],
-] : [
+const NAV_TREE = [
   ['dashboard', 'Accueil', 'home'],
   { group: 'Gestion', items: [['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['licences', 'Clients', 'qr']] },
   ['champions', 'Classement', 'trophy'],
-  { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta']] },
+  { group: 'Comptabilité', items: [['compta', 'Comptabilité', 'chart', null, 'compta']] }
 ];
 // téléphone : toutes les rubriques sur une barre qui défile au doigt
-const NAV_MOBILE = !TENANT ? [['dashboard', 'Accueil', 'home'], ['maintenance', 'Interventions', 'tool'], ['gerances', 'Gérances', 'briefcase'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['reglages', 'Réglages', 'gear']] : [['dashboard', 'Accueil', 'home'], ['demandes', 'Demandes', 'tool'], ['maintenance', 'Interventions', 'tool'], ['immeubles', 'Mes Propriétés', 'building'], ['gerances', 'Gérances', 'briefcase'], ['licences', 'Clients', 'qr'], ['champions', 'Classement', 'trophy'], ['compta', 'Comptabilité', 'chart', null, 'compta'], ['reglages', 'Réglages', 'gear']];
+const NAV_MOBILE = [
+  ['dashboard', 'Accueil', 'home'],
+  ['demandes', 'Demandes', 'tool'],
+  ['maintenance', 'Interventions', 'tool'],
+  ['immeubles', 'Mes Propriétés', 'building'],
+  ['gerances', 'Gérances', 'briefcase'],
+  ['licences', 'Clients', 'qr'],
+  ['champions', 'Classement', 'trophy'],
+  ['compta', 'Comptabilité', 'chart', null, 'compta'],
+  ['reglages', 'Réglages', 'gear']
+];
 // Réglages › Masquer : rubriques du menu remplacées par « 🔒 MASQUÉ » (non cliquables), sur tous les appareils
 // clients du portail (tous demandent leurs interventions à la centrale)
 const ORG_KINDS = { gerance: '🏢 Gérance', proprio: '🔑 Propriétaire' };
@@ -3434,9 +3308,9 @@ const COLOR_LEG = [['#F97316', 'Interventions et maintenance : demandes, travaux
   ['#475569', 'Avis de l’immeuble : coupures, travaux dans les communs'],
   ['#4F46E5', 'Planning du jour : ce qui est prévu aujourd’hui']];
 // MASTER : sans « Locataires et loyers » ni « Avis de l’immeuble » (plus d’inquilini ni d’immeubles à elle)
-const legList = () => (TENANT ? COLOR_LEG : COLOR_LEG.filter(([c]) => c !== '#0D9488' && c !== '#475569'));
+const legList = () => (COLOR_LEG);
 const legDots = () => html`<div class="leg-dots" aria-label="Légende des couleurs">${legList().map(([c, t]) => html`<button type="button" class="leg-dot" style="--c:${c}" data-action="leg-dot"><span class="leg-tip">${t}</span></button>`)}</div>`;
-const navKeep = (it) => routeOk(it[0]) && !(TENANT && it[4] === 'abo');
+const navKeep = (it) => routeOk(it[0]) && !((it[4] === 'abo'));
 function sideNavHtml() {
   return NAV_TREE.map((x) => (x.group ? (x.items.some(navKeep) ? html`<div class="nav-group">${x.group}</div>${x.items.filter(navKeep).map((it) => navItem(it, true))}` : '') : navKeep(x) ? navItem(x) : ''));
 }
@@ -3448,7 +3322,7 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand">${TENANT || vault.op ? html`<img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36">` : html`<span class="brand-pen" style="position:relative;display:inline-block"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><label title="Changer le logo DOMIER" aria-label="Changer le logo DOMIER" style="position:absolute;left:-6px;top:-6px;background:#fff;border-radius:50%;font-size:13px;line-height:1;padding:3px;box-shadow:0 1px 3px rgba(0,0,0,.25);cursor:pointer">✏️<input type="file" accept="image/*" data-input="brand-ico" hidden></label></span>`}<span data-notr="1">${TENANT ? OGL.nom : APP_BRAND.nom}<small>${TENANT ? OGL.sub : APP_BRAND.sub}</small>${TENANT ? html`<small>${OGL.info}</small>` : ''}</span></div>
+      <div class="brand">${html`<img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36">`}<span data-notr="1">${OGL.nom}<small>${OGL.sub}</small>${html`<small>${OGL.info}</small>`}</span></div>
       ${sideNavHtml()}
       ${navBtn(['reglages', 'Réglages', 'gear'])}
       ${legDots()}
@@ -3458,7 +3332,7 @@ function renderShell() {
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span data-notr="1">${TENANT ? OGL.nom : APP_BRAND.nom}</span></div>
+        <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span data-notr="1">${OGL.nom}</span></div>
         <button class="sync" id="sync" data-action="sync-now" data-s="idle"><i></i><span>…</span></button>
         <button class="btn icon ghost" data-action="lock" aria-label="Verrouiller" title="Verrouiller">${icon('lock')}</button>
       </header>
@@ -3709,11 +3583,6 @@ function mtCard() {
     ${items.length ? html`<div class="list">${items.map((x) => html`${agendaRow(x)}`)}</div>` : ''}
     <button class="btn sm ghost" style="margin-top:8px" data-action="go" data-to="maintenance">${icon('tool')} Ouvrir la maintenance</button>`, 'margin-top:10px');
 }
-// Légende sous le planning et les travaux : feu tricolore + icônes des types
-const mtLegend = () => html`<div class="card legend" style="margin-top:14px">
-  <div class="legend-row">${['green', 'yellow', 'red'].map((k) => html`<span class="lg"><span class="light light-${k}"></span>${LIGHTS[k]}</span>`)}</div>
-  <div class="legend-row">${Object.values(TACHE_TYPES).map((t) => html`<span>${t}</span>`)}<span>🗑️ Collecte des déchets</span></div>
-</div>`;
 function agendaRow(x) {
   if (x.kind === 'collecte') {
     const c = x.c, k = DECHETS[c.cat];
@@ -3892,49 +3761,6 @@ async function attachFacture(dep, file) {
 // Interventions terminées avant ce changement, avec un coût jamais compté
 const depMissing = () => vault.list('taches').filter((t) => !t.recur && !t.depSkip && t.statut === 'fait' && t.cout > 0 && !(t.depId && vault.get('depenses', t.depId)));
 
-// ───────────────────────── Vues ─────────────────────────
-// ───── Locataire de l'année : tours des poubelles faits, tous immeubles confondus ─────
-async function champLoad(force) {
-  if (!vault.unlocked || (ui.champBusy && !force)) return;
-  if (!force && ui.champAt && Date.now() - ui.champAt < 60000) return;
-  ui.champBusy = true;
-  ui.chatCache = ui.chatCache || {};
-  for (const im of vault.list('immeubles').filter((x) => binsOn(x) && !x.xfer)) {
-    for (const [gk, g] of Object.entries(im.chats || {})) {
-      try { ui.chatCache[g.id] = await chatRead(g); await binRecord(vault.get('immeubles', im.id), gk, g, ui.chatCache[g.id]); } catch { /* hors ligne */ }
-    }
-  }
-  ui.champAt = Date.now();
-  ui.champBusy = false;
-  if (ui.route === 'champions') renderView();
-}
-function champScores(year) {
-  const sc = {};
-  const add = (id, k, imId) => { const x = sc[id] || (sc[id] = { done: 0, forgot: 0, imId }); x[k]++; };
-  for (const im of vault.list('immeubles').filter((x) => !x.xfer)) { // 📦 transféré : classé dans l'autre centrale
-    const logs = im.binLog || {};
-    const seen = new Set();
-    for (const [gk, g] of Object.entries(im.chats || {})) {
-      seen.add(gk);
-      if (g.members.length < 2) continue; // fil d'une seule personne : pas de tour de poubelles
-      const days = new Set();
-      for (const e of binGroupPlan(im, gk, g, (ui.chatCache || {})[g.id], year + '-12-31').filter((x) => x.p.startsWith(year + '-'))) {
-        days.add(e.p);
-        if (e.done) add(e.done, 'done', im.id);
-        if (e.forgot) add(e.who, 'forgot', im.id);
-      }
-      // tours du même groupe enregistrés avant ce fil (fil recréé quand les habitants ont changé)
-      for (const [pDate, x] of Object.entries(logs[gk] || {})) if (pDate.startsWith(year + '-') && !days.has(pDate)) { if (x.d) add(x.d, 'done', im.id); if (x.f) add(x.w, 'forgot', im.id); }
-    }
-    // fils disparus (habitants partis, groupes changés) : leur journal compte encore
-    for (const [gk, log] of Object.entries(logs)) {
-      if (seen.has(gk)) continue;
-      for (const [pDate, x] of Object.entries(log)) if (pDate.startsWith(year + '-')) { if (x.d) add(x.d, 'done', im.id); if (x.f) add(x.w, 'forgot', im.id); }
-    }
-  }
-  return Object.entries(sc).filter(([id]) => vault.get('locataires', id)).sort((a, b) => b[1].done - a[1].done || a[1].forgot - b[1].forgot);
-}
-
 // Ouvrier de l'année : travail fini, photos après, urgences du jour, avis des locataires
 const EQ_PTS = { fait: 1, inc: -1, ph: 1, urg: 2, ev: { 4: 3, 3: 2, 2: 0, 1: -2 }, tagGood: 1, tagBad: -1 };
 const EQ_GOOD = ['ok', 'nice', 'clean'], EQ_BAD = ['late', 'rude', 'dirty'];
@@ -3973,7 +3799,6 @@ const locTabs = (cur, nGone) => html`<div class="tabs loc-tabs" role="tablist" s
   <button class="tab" role="tab" aria-selected="${cur === 'actuels'}" data-action="loc-seg" data-id="actuels">Actuels</button>
   <button class="tab" role="tab" aria-selected="${cur === 'anciens'}" data-action="loc-seg" data-id="anciens">Anciens (${nGone})</button>
   ${masked().has('paiements') ? html`<span class="tab nav-masked" aria-disabled="true">🔒 MASQUÉ</span>` : html`<button class="tab" role="tab" aria-selected="${cur === 'paiements'}" data-action="go" data-to="paiements"><span class="t-lg">💶 Gestion locataire</span><span class="t-sm">💶 Gestion loc.</span></button>`}</div>`;
-const champTabs = (cur) => html`<div class="tabs" role="tablist" style="max-width:640px;margin-bottom:16px">${[['champions', '🏆 Locataire de l’année'], ['champeq', '👷 Ouvrier de l’année']].filter(([r]) => !TENANT || r === 'champions').map(([r, l]) => html`<button class="tab" role="tab" aria-selected="${cur === r}" data-action="go" data-to="${r}">${l}</button>`)}</div>`;
 // Éditeur d'horaire sur 7 jours : 3 lignes le matin et l'après-midi (plusieurs maisons), 1 le soir, puis les suppléments ; « + » en ajoute.
 // slotsOf(j) : créneaux du jour j (0 = lundi) ; title(j) : nom du jour (avec la date pour une semaine précise)
 function horWeekEditor(slotsOf, title) {
@@ -4334,14 +4159,6 @@ function factTotHtml(f) {
 }
 // « Voir plus » : 10 lignes de plus à chaque toucher
 const moreBtn = (total, lim) => (total > lim ? html`<button class="btn block" style="margin-top:12px" data-action="cp-more">⬇ Voir plus (${Math.min(10, total - lim)} sur ${total - lim} restantes)</button><p class="tiny muted" style="text-align:center;margin:6px 0 0">${lim} sur ${total} affichées</p>` : total > 10 ? html`<p class="tiny muted" style="text-align:center;margin:10px 0 0">Tout est affiché (${total})</p>` : '');
-// Radio de l'app des locataires (Maintenance → Publicité, sous les annonces)
-const radioCard = () => html`<div class="section-label">📻 Radio de l’app des locataires</div>
-      ${(() => { const r = vault.get('reglages', 'radio') || {}; return html`<form data-form="radio" class="fields card" style="margin:0 0 6px">
-        <label class="field">Nom<input name="nom" value="${r.nom || 'Seven Radio'}" placeholder="ex. Seven Radio"></label>
-        <label class="field">Lien (site ou flux audio)<input name="url" type="url" value="${r.url || 'https://sevenradio.lu/?proradio-popup=1'}" placeholder="https://…"></label>
-        <button class="btn primary full" type="submit">Enregistrer</button>
-        <p class="tiny muted full" style="margin:0">Proposée sous la météo dans l’app des locataires et l’app de l’équipe (bouton ▶). Avec le lien du <b>flux audio</b> (demandé à la radio), elle joue directement dans l’app ; avec le lien du site, l’app ouvre le site. Chaque locataire peut coller sa propre radio.</p>
-      </form>`; })()}`;
 // Registre des interventions terminées (ou finies par l'ouvrier) : où, quoi, qui, heures réelles, avis, coût
 function intervLedger(from, to) {
   const out = [];
@@ -4563,133 +4380,8 @@ function rptView() {
 
 const VIEWS = {
   rapports() { return rptView(); },
-  champeq() {
-    const cy = new Date().getFullYear();
-    const y = ui.champEqYear || cy;
-    const rows = eqScores(y);
-    const prizes = ((vault.get('reglages', 'champions') || {}).eq || {})[y] || {};
-    const medal = ['🥇', '🥈', '🥉'];
-    const w = (id) => vault.get('intervenants', id) || {};
-    const detail = (v) => [v.fait ? `✅ ${v.fait}` : '', v.ph ? `📷 ${v.ph}` : '', v.urg ? `🔴 ${v.urg}` : '', v.good ? `⭐ ${v.good}` : '', v.inc ? `⚠️ ${v.inc}` : '', v.bad ? `👎 ${v.bad}` : ''].filter(Boolean).join(' · ');
-    const podium = rows.filter(([, v]) => v.pts > 0).slice(0, 3);
-    return html`
-      ${champTabs('champeq')}${pageHead('👷 Ouvrier de l’année', 'Classement de l’équipe : travail fini, photos après, urgences, avis des locataires. Les 3 premiers sont récompensés 🎁')}
-      <div class="chips" style="margin-bottom:14px">${[cy, cy - 1].map((yy) => html`<button class="chip" data-action="champeq-year" data-id="${yy}" aria-pressed="${yy === y}">${yy}</button>`)}
-</div>
-      ${podium.length ? html`<div class="metrics" style="margin-bottom:14px">${podium.map(([id, v], i) => html`<div class="metric" style="text-align:center;border:2px solid ${['#d4a017', '#9ca3af', '#b45309'][i]}">
-          <div style="font-size:40px;line-height:1.1">${medal[i]}</div>
-          <div class="val" style="font-size:20px">${intervFull(w(id))}</div>
-          <div class="sub">${METIERS[w(id).metier] || ''}</div>
-          <div style="margin:8px 0;font-size:18px;font-weight:700">${v.pts} pts</div>
-          <div class="tiny muted" style="margin-bottom:8px">${detail(v)}</div>
-          ${prizes[id] ? html`<button class="btn sm" style="max-width:100%;white-space:normal" data-action="champeq-prize" data-id="${id}">🎁 Remise le ${fmtDate(prizes[id])}</button>` : html`<button class="btn sm primary" style="max-width:100%;white-space:normal" data-action="champeq-prize" data-id="${id}">🎁 Récompense remise</button>`}
-        </div>`)}</div>` : html`<div class="alert info" style="margin-bottom:14px">${icon('trophy')}<div>Pas encore de points en ${y}. Le classement se remplit tout seul : travail fini dans l’app de l’équipe, photos après, avis des locataires.</div></div>`}
-      ${rows.length ? html`<div class="section-label">Classement ${y}</div>
-        <div class="list">${rows.map(([id, v], i) => html`<button class="row" data-action="open-interv" data-id="${id}">
-          <span class="avatar">${v.pts > 0 && i < 3 ? html`<span class="av-emo">${medal[i]}</span>` : i + 1}</span>
-          <span class="grow"><span class="title" style="display:block">${intervFull(w(id))}</span><span class="meta">${detail(v) || '—'}</span></span>
-          <b>${v.pts} pts</b></button>`)}</div>` : ''}
-      <p class="tiny muted" style="margin-top:12px">✅ travail fini = 1 point · 📷 photos après = 1 · 🔴 urgence faite le jour prévu = 2 · avis des locataires : ⭐ Excellent 3, 🙂 Bien 2, 😞 Insuffisant −2 ; « à l’heure », « aimable », « bien nettoyé » +1 ; « en retard », « désagréable », « mal nettoyé » −1 · ⚠️ pas fini −1. Chacun voit sa place dans son app. Le classement repart de zéro chaque 1er janvier.</p>`;
-  },
-  champions() {
-    setTimeout(() => champLoad(), 0);
-    const cy = new Date().getFullYear();
-    const y = ui.champYear || cy;
-    const rows = champScores(y);
-    const prizes = (vault.get('reglages', 'champions') || {}).prizes || {};
-    const medal = ['🥇', '🥈', '🥉'];
-    const who = (id) => vault.get('locataires', id) || {};
-    const place = (id, imId) => [logName(who(id).logId), immName(who(id).immId || imId)].filter(Boolean).join(' · ');
-    const podium = rows.filter(([, v]) => v.done > 0).slice(0, 3);
-    return html`
-      ${champTabs('champions')}${pageHead('🏆 Locataire de l’année', 'Classement des tours des poubelles faits, dans tous les immeubles. Les 3 premiers gagnent… une pizza 🍕')}
-      <div class="chips" style="margin-bottom:14px">${[cy, cy - 1].map((yy) => html`<button class="chip" data-action="champ-year" data-id="${yy}" aria-pressed="${yy === y}">${yy}</button>`)}
-        <button class="chip" data-action="champ-refresh">${icon('sync')} Actualiser</button></div>
-      ${podium.length ? html`<div class="metrics" style="margin-bottom:14px">${podium.map(([id, v], i) => {
-        const pz = (prizes[y] || {})[id];
-        return html`<div class="metric" style="text-align:center;border:2px solid ${['#d4a017', '#9ca3af', '#b45309'][i]}">
-          <div style="font-size:40px;line-height:1.1">${medal[i]}</div>
-          <div class="val" style="font-size:20px">${fullName(who(id))}</div>
-          <div class="sub">${place(id, v.imId)}${isGone(who(id)) ? ' · parti' : ''}</div>
-          <div style="margin:8px 0;font-size:18px;font-weight:700">${v.done} ✅</div>
-          ${pz ? html`<button class="btn sm" data-action="champ-pizza" data-id="${id}">🍕 Offerte le ${fmtDate(pz)}</button>` : html`<button class="btn sm primary" data-action="champ-pizza" data-id="${id}">🍕 Pizza offerte</button>`}
-        </div>`;
-      })}</div>` : html`<div class="alert info" style="margin-bottom:14px">${icon('trophy')}<div>Pas encore de tours faits en ${y}. Le classement se remplit tout seul quand les locataires touchent « ✅ Fait » dans leur app (tour des poubelles, dans chaque immeuble → 💬 Messages).</div></div>`}
-      ${rows.length ? html`<div class="section-label">Classement ${y}</div>
-        <div class="list">${rows.map(([id, v], i) => html`<button class="row" data-action="open-loc" data-id="${id}">
-          <span class="avatar">${v.done > 0 && i < 3 ? html`<span class="av-emo">${medal[i]}</span>` : i + 1}</span>
-          <span class="grow"><span class="title" style="display:block">${fullName(who(id))}</span><span class="meta">${place(id, v.imId)}${isGone(who(id)) ? ' · parti' : ''}</span></span>
-          <span style="text-align:right"><b>${v.done} ✅</b>${v.forgot ? html`<span class="tiny muted" style="display:block">${v.forgot} oubli${v.forgot > 1 ? 's' : ''}</span>` : ''}</span></button>`)}</div>` : ''}
-      <p class="tiny muted" style="margin-top:12px">1 tour fait = 1 point (« ✅ Fait » ou « 🙋 Je l’ai fait à sa place »). À égalité, celui qui a le moins d’oublis passe devant. Le classement repart de zéro chaque 1er janvier ; l’année précédente reste consultable.</p>`;
-  },
 
-  maintenance() {
-    let tab = ui.mtTab || 'planning';
-    const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
-    const f = ui.immFilter && imms.some((im) => im.id === ui.immFilter) ? ui.immFilter : '';
-    const chips = imms.length > 1 ? html`<div class="chips" style="margin-bottom:14px">
-      <button class="chip" data-action="imm-filter" data-id="" aria-pressed="${!f}">Tous</button>
-      ${imms.map((im) => html`<button class="chip" data-action="imm-filter" data-id="${im.id}" aria-pressed="${f === im.id}">${im.adresse}</button>`)}</div>` : '';
-    const add = tab === 'avis' ? html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>` : tab === 'intervenants' ? html`<div class="actions acts-fit" style="margin:0"><button class="btn" data-action="aff-pick">📌 Affectation d’interv.</button><button class="btn" data-action="interv-job">📅 Nouv. intervention</button><button class="btn primary" data-action="new-interv">${icon('plus')} Ouvrier</button></div>`
-      : tab === 'dechets' ? html`<button class="btn primary" data-action="new-collecte" data-imm="${f}">${icon('plus')} Collecte</button>`
-      : tab === 'devis' ? html`<button class="btn primary" data-action="dev-new">${icon('plus')} Devis</button>`
-      : html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`;
-    const loc = TENANT || ownPark(); // CENTRAL DOMIER : seulement le travail de nos ouvriers (déchets et avis des immeubles = chez les clients)
-    if (!loc && ['dechets', 'avis'].includes(tab)) tab = ui.mtTab = 'planning';
-    const tabs = html`<div class="tabs" role="tablist" style="max-width:560px">${[['planning', 'Planning'], ['taches', html`<span>${loc ? 'Réclamations' : 'Interventions'}</span> (${tacheToDo().length})`], ...(loc ? [['dechets', 'Déchets'], ['avis', 'Avis']] : []), ['intervenants', 'Équipe'], ['devis', html`📝 Devis${devOpen().length ? html` <b class="dev-n">${devOpen().length}</b>` : ''}`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="mt-tab" data-id="${k}">${l}</button>`)}</div>`;
-    let body;
-    if (tab === 'planning') {
-      const from = today(), to = addDays(from, 13);
-      const items = agenda(from, to, f);
-      const days = [...new Set(items.map((x) => x.d))];
-      body = days.length ? days.map((d) => html`<div class="section-label">${d === from ? "Aujourd'hui" : d === addDays(from, 1) ? 'Demain' : ''} ${fmtDay(d)}</div>
-        <div class="list" style="margin-bottom:10px">${items.filter((x) => x.d === d).map(agendaRow)}</div>`)
-        : empty('calendar', 'Rien de prévu dans les 14 prochains jours.', html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Planifier une intervention</button>`);
-      body = html`<p class="small muted" style="margin:0 0 6px">${loc ? 'Les 14 prochains jours : nettoyages, réparations et jours de collecte des déchets.' : 'Les 14 prochains jours : interventions de nos ouvriers'}</p>${body}${mtLegend()}`;
-    } else if (tab === 'taches') {
-      const all = vault.list('taches').filter((t) => (!f || t.immId === f) && !immGone(vault.get('immeubles', t.immId)));
-      const open = all.filter((t) => !t.recur && t.statut !== 'fait').sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
-      const recur = all.filter((t) => t.recur).sort((a, b) => immName(a.immId).localeCompare(immName(b.immId)));
-      const done = all.filter((t) => !t.recur && t.statut === 'fait').sort((a, b) => (b.doneDate || '').localeCompare(a.doneDate || '')).slice(0, 30);
-      const list = (arr) => html`<div class="list" style="margin-bottom:14px">${arr.map(tacheRow)}</div>`;
-      body = all.length ? html`
-        <div class="section-label"><span>À faire + travaux</span> (${open.length})</div>${open.length ? list(open) : html`<p class="muted small">Rien à faire. 👍</p>`}
-        ${recur.length ? html`<div class="section-label">Récurrentes (${recur.length})</div>${list(recur)}` : ''}
-        ${done.length ? html`<div class="section-label">Terminées récemment</div>${list(done)}` : ''}${mtLegend()}`
-        : empty('tool', 'Aucune intervention.', html`<button class="btn primary" data-action="new-tache" data-imm="${f}">${icon('plus')} Intervention</button>`);
-      body = html`<p class="small muted" style="margin:0 0 10px">Ce que les locataires signalent depuis leur app (pannes, défauts, propreté, avertissements…) et les travaux à faire dans les logements et les parties communes.</p>${body}`;
-    } else if (tab === 'avis') {
-      const all = vault.list('avis').filter((a) => !isPub(a) && (!f || !a.immId || a.immId === f)).sort((a, b) => (b.debut || '').localeCompare(a.debut || ''));
-      const actifs = all.filter((a) => !a.fin || a.fin >= today()), passes = all.filter((a) => a.fin && a.fin < today()).slice(0, 10);
-      const row = (a) => html`<button class="row" data-action="edit-avis" data-id="${a.id}"><span class="grow"><span class="title" style="display:block;white-space:normal">📢 ${a.texte.slice(0, 140)}</span>
-        <span class="meta">${a.immId ? immName(a.immId) : 'Tous les immeubles'} · ${a.debut ? 'du ' + fmtDate(a.debut) : ''}${a.fin ? ' au ' + fmtDate(a.fin) : ''}</span></span></button>`;
-      body = html`<p class="small muted" style="margin:0 0 10px">Messages affichés dans l'espace des locataires (coupure d'eau, travaux, nettoyage de la cave…).</p>
-        ${actifs.length ? html`<div class="list" style="margin-bottom:14px">${actifs.map(row)}</div>` : empty('msg', 'Aucun avis en cours.', html`<button class="btn primary" data-action="new-avis" data-imm="${f}">${icon('plus')} Avis</button>`)}
-        ${passes.length ? html`<div class="section-label">Terminés</div><div class="list">${passes.map(row)}</div>` : ''}`;
-    } else if (tab === 'dechets') {
-      const shown = f ? imms.filter((im) => im.id === f) : imms;
-      body = html`<p class="small muted" style="margin:0 0 10px">Jours de collecte de chaque immeuble (à mettre à jour chaque année avec le calendrier de la commune). Imprimez l'affiche pour les locataires.</p>
-        ${shown.map(collCard)}`;
-      if (!shown.length) body = empty('building', 'Ajoutez d’abord un immeuble.');
-    } else if (tab === 'devis') {
-      body = devTab();
-    } else {
-      const ints = vault.list('intervenants').sort((a, b) => (a.cat === 'specialise') - (b.cat === 'specialise') || Object.keys(METIERS).indexOf(a.metier) - Object.keys(METIERS).indexOf(b.metier) || intervFull(a).localeCompare(intervFull(b)));
-      const nNew = sum(ints, (i) => i.feedNew || 0);
-      body = ints.length ? html`${eqTodayHtml()}<button class="btn block" style="margin-bottom:8px" data-action="eq-feed">📋 Activité de l’équipe${nNew ? html` <span class="badge bad">${nNew} nouveau${nNew > 1 ? 'x' : ''}</span>` : ''}</button><button class="btn block" style="margin-bottom:12px" data-action="eq-special">📣 Message spécial à l’équipe</button><div class="list">${ints.map((i) => {
-        const n = vault.list('taches').filter((t) => t.intervenantId === i.id && (t.recur || t.statut !== 'fait')).length;
-        const tel = (i.tel || '').replace(/[^\d+]/g, '');
-        const ab = absOn(i, today());
-        return html`<div class="row"><span class="avatar met-ic" title="${METIERS[i.metier] || ''}">${avW(i)}</span>
-          <button class="grow" style="background:none;border:0;font:inherit;color:inherit;text-align:left;cursor:pointer;min-width:0" data-action="open-interv" data-id="${i.id}"><span class="title" style="display:block">${intervFull(i)}${i.espace && i.espace.on ? ' 📱' : ''}${ab ? html` <span class="badge ${ab.type === 'maladie' ? 'bad' : 'warn'}">${ABS_TYPES[ab.type]}${ab.fin ? ' → ' + fmtDate(ab.fin) : ''}</span>` : ''}</span><span class="meta">${METIERS[i.metier] || i.metier} · ${{ interne: 'interne', societe: 'société', prive: 'privé' }[i.genre || 'interne']} · ${(i.cat || 'quotidien') === 'specialise' ? 'spécialisé' : 'quotidien'}${i.tarif ? ' · ' + i.tarif : ''}${n ? ' · ' + plural(n, 'intervention') + ' en cours' : ''}</span></button>
-          ${tel ? html`<a class="btn icon sm" href="tel:${tel}" aria-label="Appeler">${icon('phone')}</a>` : ''}
-        </div>`;
-      })}</div>` : empty('users', 'Aucun intervenant. Ajoutez la femme de ménage et les artisans (menuisier, électricien, plombier, chauffagiste, maçon…).', html`<button class="btn primary" data-action="new-interv">${icon('plus')} Intervenant</button>`);
-    }
-    return html`${pageHead(loc ? 'Maintenance' : '🛠️ Interventions', loc ? 'Nettoyage, réparations et collecte des déchets' : 'Le travail de nos ouvriers : à confier, planning, équipe, devis')}<div class="imm-row">${tabs}</div><div class="imm-btns" style="margin:-4px 0 16px">${add}</div>${tab !== 'intervenants' && tab !== 'devis' ? chips : ''}${body}${new Raw(infoBox({ lang: getLang() }))}`;
-  },
-
-dashboard() {
+  dashboard() {
     const now = new Date();
     const y = now.getFullYear();
     const m = now.getMonth() + 1;
@@ -4718,12 +4410,12 @@ dashboard() {
     const p = pct(received, expected);
     const alertBtn = (cls, ic, action, id, content) => html`<button class="alert ${cls}" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer" data-action="${action}" data-id="${id}">${icon(ic)}<div>${content}</div></button>`;
 
-    if (TENANT && !imms.length && !locs.length) {
-      return html`${cguBox()}${packBox()}${domierCentral()}${pushNudge()}${centralinoHtml()}${TENANT ? html`${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
-        ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}` : ''}`;
+    if (!imms.length && !locs.length) {
+      return html`${cguBox()}${packBox()}${domierCentral()}${pushNudge()}${centralinoHtml()}${html`${pageHead('Bienvenue', 'Commencez par ajouter un immeuble, puis ses logements et locataires.')}
+        ${empty('building', 'Aucun immeuble pour le moment.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`}`;
     }
 
-    const nudge = TENANT && !vault.get('reglages', 'recSplit') ? html`<div class="alert bad" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>🧩 Activez la récupération de votre clé.</b> Sans elle, une clé d'accès oubliée = toutes vos données perdues. 1 minute, et LA CENTRAL ne peut pas lire vos données.</div><button class="btn sm primary" data-action="make-recovery">Activer</button></div>` : vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
+    const nudge = !vault.get('reglages', 'recSplit') ? html`<div class="alert bad" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>🧩 Activez la récupération de votre clé.</b> Sans elle, une clé d'accès oubliée = toutes vos données perdues. 1 minute, et LA CENTRAL ne peut pas lire vos données.</div><button class="btn sm primary" data-action="make-recovery">Activer</button></div>` : vault.hasRecovery === false ? html`<div class="alert warn" style="margin-bottom:14px;align-items:center">${icon('shield')}<div style="flex:1"><b>Pas encore de clé de secours.</b> Sans elle, une clé d'accès oubliée rend les données irrécupérables.</div><button class="btn sm" data-action="make-recovery">Créer</button></div>` : '';
     const sig = newSignals();
     const sigBox = sig.length ? html`<div class="card mk mk-int mk-on" style="margin-bottom:14px">
         <div class="card-title" style="margin-bottom:8px"><h3>📩 <span>${sig.length > 1 ? sig.length + " nouveaux messages" : "1 nouveau message"}${sig.every((t) => !t.byInterv) ? (sig.length > 1 ? ' de locataires' : ' de locataire') : ''}</span></h3></div>
@@ -4734,11 +4426,11 @@ dashboard() {
     const edlBox = edlNew.length ? html`<div class="stack" style="margin-bottom:14px">${edlNew.map((id) => { const ph = edlOutNew().filter((d) => d.logId === id), w = vault.get('locataires', ph[0].locId); return alertBtn('info', 'camera', 'open-edl-out', id, html`📷 <b>${plural(ph.length, 'photo')} de sortie</b> à contrôler — ${logName(id)}${w ? ' · ' + fullName(w) : ''}<div class="tiny">touchez pour comparer avec vos photos d’entrée</div>`); })}</div>` : '';
     const virBox = virs.length ? html`<div class="stack" style="margin-bottom:14px">${virs.map((l) => alertBtn('info', 'wallet', 'open-vir', l.id, html`💳 <b>${fullName(l)}</b> dit avoir payé${l.virSignal.montant ? html` <b>${money(l.virSignal.montant)}</b>` : ''} par ${PAY_VIA[l.virSignal.via || 'vir']} — ${l.virSignal.ref}<div class="tiny">${fmtDateTime(l.virSignal.t)} · vérifiez la réception, puis cochez le mois payé</div>`))}</div>` : '';
     const eqNew = sum(vault.list('intervenants'), (i) => i.feedNew || 0);
-    const nClaims = TENANT ? [] : netFacts().filter((f) => f.claim && !f.paid);
+    const nClaims = [];
     const nClaimBox = nClaims.length ? html`<div class="stack" style="margin-bottom:14px">${nClaims.map((f) => alertBtn('info', 'wallet', 'net-open', f.tid, html`💳 <b>${f.nom}</b> dit avoir payé la facture <b>${f.no}</b> (${eur(f.ttc)})<div class="tiny">vérifiez sur le compte, puis « ✅ Reçu » dans sa fiche</div>`))}</div>` : '';
     // ⏳ clients du réseau dont l'accès (abonnement ou 6 mois offerts) se termine dans 30 jours : c'est le moment d'appeler
-    const netSoon = TENANT ? [] : ((ui.net && ui.net.list) || []).filter((t) => t.until && t.until >= today() && t.until <= addDays(today(), 30) && t.st !== 'suspended');
-    const netStopBox = TENANT ? '' : (() => { const l = vault.list('taches').filter((t) => t.net && t.net.stopAsk && !t.fin); return l.length ? html`<div class="stack" style="margin-bottom:14px">${l.map((t) => alertBtn('warn', 'calendar', 'edit-tache', t.id, html`⏹️ <b>${t.net.nom}</b> demande l’arrêt du service : ${t.titre}<div class="tiny">mettez la date de fin dans la tâche</div>`))}</div>` : ''; })();
+    const netSoon = [];
+    const netStopBox = "";
     const bailBox = (() => {
       const al = imms0().map((im) => [im, bailAlert(im)]).filter(([, a]) => a).sort((x, y) => x[1].left - y[1].left);
       const revB = imms0().filter((im) => isBailPrincipal(im) && im.bailRev && daysUntil(im.bailRev) >= -15 && daysUntil(im.bailRev) <= 60);
@@ -4765,29 +4457,7 @@ dashboard() {
     const refs = vault.list('taches').filter((t) => (t.refus || (t.taxi && t.taxi.st === 'none')) && !t.intervenantId && !t.recur && t.statut !== 'fait').sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
     const refBox = refs.length ? html`<div class="section-label" style="margin-top:0;color:var(--bad,#c0392b)">✋ ${refs.length} ${refs.length > 1 ? 'travaux' : 'travail'} refusé${refs.length > 1 ? 's' : ''} par l’ouvrier — à réaffecter</div><div class="list ref-list" style="margin-bottom:14px">${refs.map((t) => html`<div>${tacheRow(t)}<div class="tiny" style="padding:2px 12px 8px">${t.taxi && t.taxi.st === 'none' ? html`🚕 ${taxiLog(t)}` : html`✋ ${intervName(t.refus.by)} · ${fmtDateTime(t.refus.at)}${t.refus.note ? ' — ' + t.refus.note : ''}`}</div></div>`)}</div>` : '';
     const appsVer = (() => { try { return localStorage.getItem('aresAppsVer') || ''; } catch { return 'x'; } })(), verMM = VERSION.split('.').slice(0, 2).join('.');
-    const appsBox = appsVer !== verMM && vault.list('locataires').some((x) => x.espace && x.espace.on) ? html`<div class="alert info" style="margin-bottom:14px;align-items:center">🆕<div style="flex:1"><b>Mise à jour importante (v${verMM})</b> : mettez à jour ${TENANT ? "les apps des locataires" : "toutes les apps (locataires, équipe, clients, partenaires)"} pour qu’elles reçoivent les nouveautés.</div><button class="btn sm primary" data-action="apps-refresh-all">🔄 Tout mettre à jour</button></div>` : '';
-    // 🏛️ CENTRAL DOMIER (sans parc à elle) : l'Accueil = le bureau du centraliste, par secteurs (titre gris + explication)
-    if (!TENANT && !ownPark()) {
-      const sec = (ic, t, sub, items) => { const it = items.filter(Boolean); return html`<div class="dsec"><div class="section-label" style="margin:18px 0 0">${ic} ${t}</div><p class="tiny muted" style="margin:0 0 8px">${sub}</p>${it.length ? it : html`<p class="tiny muted" style="margin:0 0 4px">✓ rien à traiter</p>`}</div>`; };
-      const confier = vault.list('taches').filter((t) => !t.intervenantId && !t.recur && t.statut !== 'fait').sort((a, b) => String(a.sentAt || a.date || '').localeCompare(String(b.sentAt || b.date || '')));
-      const toBill = vault.list('taches').filter((t) => t.statut === 'fait' && !t.facture && (t.ptl || (t.net && netPayMode(t.net.tid) === 'each')));
-      const unpaid = vault.list('taches').filter((t) => t.facture && !t.facture.paid);
-      const claimed = unpaid.filter((t) => t.facture.claim);
-      const late2 = unpaid.filter((t) => t.facture.due && lateDays(t.facture.due) > 0);
-      return html`${centralinoHtml()}
-        ${sec('🔔', 'FLASH', 'À traiter vite, puis ça disparaît', [pushNudge(), appsBox, toolsBox])}
-        
-        ${sec('🛠️', 'À CONFIER', 'Demandes arrivées : choisir l’ouvrier ; puis les travaux du jour', [
-          confier.length ? html`<div class="stack" style="margin-bottom:10px">${confier.slice(0, 12).map((t) => alertBtn('warn', 'tool', 'edit-tache', t.id, html`<b>${t.titre}</b><span class="small" style="display:block">${t.net ? '🌐 ' + t.net.nom + ' · ' : ''}${t.adr ? '📍 ' + t.adr + ' · ' : ''}${fmtDate(t.date)} — à confier</span>`))}${confier.length > 12 ? html`<p class="tiny muted">… et ${confier.length - 12} autres (Maintenance)</p>` : ''}</div>` : '', sigBox, netStopBox, mtCard()])}
-        ${sec('👷', 'INFO OUVRIERS', 'Maladie, accident, retard, imprévu sur chantier, travaux refusés, assurance', [absBox, refBox, eqBox, assurBox, finBox])}
-        ${sec('📝', 'DEVIS', 'Reçus du chef de chantier : vérifier, envoyer, faire signer', [devBanner()])}
-        ${sec('🧾', 'FACTURES OUVERTES', 'À émettre, à encaisser, en retard', [
-          toBill.length ? alertBtn('warn', 'receipt', 'open-facts', '', html`🟡 <b>${plural(toBill.length, 'intervention')} terminée${toBill.length > 1 ? 's' : ''} à facturer</b>`) : '',
-          unpaid.length ? alertBtn(late2.length ? 'bad' : 'info', 'wallet', 'open-facts', '', html`⏳ <b>${plural(unpaid.length, 'facture')} à encaisser</b> · ${eur(sum(unpaid, (t) => t.facture.ttc))}${late2.length ? html` · 🔴 ${late2.length} en retard` : ''}${claimed.length ? html` · 💳 ${claimed.length} « payé » à vérifier` : ''}`) : '',
-          nClaimBox])}
-        ${sec('🌐', 'CLIENTS & LICENCES', 'Abonnements à renouveler, essais qui finissent', [netSoonBox])}
-        `;
-    }
+    const appsBox = appsVer !== verMM && vault.list('locataires').some((x) => x.espace && x.espace.on) ? html`<div class="alert info" style="margin-bottom:14px;align-items:center">🆕<div style="flex:1"><b>Mise à jour importante (v${verMM})</b> : mettez à jour ${"les apps des locataires"} pour qu’elles reçoivent les nouveautés.</div><button class="btn sm primary" data-action="apps-refresh-all">🔄 Tout mettre à jour</button></div>` : '';
     return html`
       ${cguBox()}
       ${packBox()}
@@ -4877,7 +4547,7 @@ dashboard() {
           <div class="progress ${level(pp)}"><i style="width:${Math.min(pp, 100)}%"></i></div>
           <div class="pay-foot"><span>${im.type && im.type !== 'immeuble' ? (IMM_TYPES[im.type] || '') + ' · ' : ''}${plural(ls.length, 'locataire')}</span><span class="num">${money(rec)} / ${money(exp)}</span></div>
         </button>`;
-      })}</div>`, 'margin-top:14px')}${TENANT ? html`<div style="margin-top:14px">${new Raw(newsHtml(API))}</div>` : ''}`;
+      })}</div>`, 'margin-top:14px')}${html`<div style="margin-top:14px">${new Raw(newsHtml(API))}</div>`}`;
   },
 
   immeubles() {
@@ -4918,143 +4588,6 @@ dashboard() {
           </div>
         </div>`;
       })}</div>` : empty('building', 'Aucun immeuble enregistré.', html`<button class="btn primary" data-action="new-imm">${icon('plus')} Immeuble</button>`)}`;
-  },
-
-  // 🛠️ centrale d'un client : ses demandes d'intervention à LA CENTRAL
-  demandes() {
-    const list = vault.list('reglages').filter((r) => r.id.startsWith('tdem-')).sort((a, b) => (b.t || '').localeCompare(a.t || ''));
-    const F = tFacts();
-    const fRows = F.length ? html`<div class="section-label">🧾 Factures des interventions</div><div class="list" style="margin-bottom:16px">${F.map((f) => { const late = !f.paid ? lateDays(f.due) : 0, cl = tClaim(f.no); return html`<button class="row" data-action="tfact-open" data-id="${f.no}"><span class="grow"><span class="title" style="display:block">${f.no} · ${eur(f.ttc)}</span><span class="meta">${f.paid ? '✅ payée' : cl ? '⏳ paiement envoyé — en vérification' : late > 0 ? `🔴 ${late} j de retard` : '💳 à payer avant le ' + fmtDate(f.due)}</span></span>${f.paid ? '' : html`<span class="badge ${late > 0 && !cl ? 'bad' : 'warn'}">${cl ? 'envoyé' : 'à payer'}</span>`}</button>`; })}</div>` : '';
-    // 📩 problèmes signalés par les locataires / clients (DOMIER) : à transmettre à LA CENTRAL avec ↪️
-    const todo = vault.list('taches').filter((t) => t.sentAt && !t.fwd && t.statut !== 'fait').sort((a, b) => String(b.sentAt).localeCompare(String(a.sentAt)));
-    const tRows = todo.length ? html`<div class="section-label">📩 Signalés par vos locataires / clients — à transmettre</div><div class="list" style="margin-bottom:16px">${todo.map((t) => html`<button class="row" data-action="edit-tache" data-id="${t.id}"><span class="grow"><b>${t.titre}</b><span class="meta" style="display:block">${fmtDateTime(t.sentAt)}${t.adr ? ' · 📍 ' + t.adr : ''}</span></span><span class="btn sm primary">↪️</span></button>`)}</div>` : '';
-    return html`${pageHead('🛠️ Demandes d’intervention', 'Envoyées à LA CENTRAL, qui envoie ses intervenants')}${domierCentral()}${tRows}${fRows}
-      <div class="imm-row"><span></span><div class="imm-btns"><button class="btn primary" data-action="tdem-new">${icon('plus')} Demande</button></div></div>
-      ${list.length ? html`<div class="list">${list.map((d) => html`<div class="row" style="display:block"><b>${d.kind === 'reg' ? '🔁 ' : d.kind === 'once' ? '🔧 ' : ''}${TDEM_URG[d.urgence] || ''} · ${d.titre}</b>${tdemStatus(d)}
-        <div class="small" style="white-space:pre-wrap">${d.texte}</div><div class="tiny muted" style="display:flex;align-items:center;gap:8px"><span class="grow">${d.adresse ? '📍 ' + d.adresse + ' · ' : ''}Envoyée le ${fmtDateTime(d.t)}</span><button class="btn icon sm ghost danger" data-action="tdem-del" data-id="${d.id}" aria-label="Supprimer">${icon('trash')}</button></div></div>`)}</div>`
-        : html`<div class="card" style="max-width:560px"><p style="margin-top:0">Une fuite, une panne, des travaux ? ＋ Demande : LA CENTRAL la reçoit tout de suite (chiffrée), la planifie et envoie un intervenant.</p></div>`}`;
-  },
-  licences() {
-    const n = ui.net;
-    if (!n || Date.now() - n.at > 60000) setTimeout(() => netLoad(), 0);
-    const list = (n && n.list) || [], certs = vault.list('reglages').filter((r) => r.id.startsWith('netcert-')).sort((a, b) => (b.at || '').localeCompare(a.at || ''));
-    const facts = licFacts(), log = licLog(), y = String(new Date().getFullYear()), t0 = today();
-    const days = (u) => (u ? Math.round((new Date(u + 'T12:00') - new Date(t0 + 'T12:00')) / 864e5) : null);
-    const tab = ['clients', 'registre'].includes(ui.licTab) ? ui.licTab : 'clients';
-    const tabs = html`<div class="tabs" role="tablist" style="margin-bottom:14px">${[['clients', '🏢 Clients'], ['registre', '📜 Registre']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="lic-tab" data-id="${k}">${l}</button>`)}</div>`;
-    const head = html`${pageHead(html`<span style="display:inline-flex;vertical-align:-3px;margin-right:6px">${icon('qr')}</span>Clients`, `${plural(list.length, 'client')} · gratuits, sans échéance`)}
-      <div class="imm-row"><span></span><div class="imm-btns">${isCompta() ? '' : html`<button class="btn primary" data-action="net-new">${icon('plus')} Client</button>`}<button class="btn" data-action="net-reload">${icon('sync')} Actualiser</button></div></div>
-      ${n && n.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${n.err}</div></div>` : ''}${tabs}`;
-    if (tab === 'factures') {
-      const due = facts.filter((f) => !f.paid);
-      return html`${head}<p class="small" style="margin:0 0 10px">À encaisser : <b>${money(sum(due, (f) => f.ttc))}</b> (${plural(due.length, 'facture')}) · Encaissé ${y} : <b>${money(sum(facts.filter((f) => f.paid && (f.paidAt || f.date).startsWith(y)), (f) => f.ttc))}</b>
-        <button class="btn sm" data-action="lic-csv" style="margin-left:8px">⬇ CSV</button></p>
-        ${facts.length ? html`<div class="list">${facts.map((f) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${f.no} · ${f.nom}</span><span class="meta">${fmtDate(f.date)} · ${f.years} an${f.years > 1 ? 's' : ''}${f.r ? ` (−${f.r} %)` : ''} · ${money(f.ht)} HT · <b>${money(f.ttc)} TTC</b></span></span>
-          <button class="btn sm" data-action="lic-pdf" data-id="${f.id}">⬇ PDF</button><button class="btn sm ${f.paid ? '' : 'primary'}" data-action="lic-paid" data-id="${f.id}" ${isCompta() ? '' : ''}>${f.paid ? '✅ Payée' : '💶 À payer'}</button></div>`)}</div>` : html`<p class="small muted">Aucune facture de licence.</p>`}`;
-    }
-    if (tab === 'stats') {
-      const byFil = Object.keys(NET_FIL).map((k) => [k, list.filter((t) => t.fil === k)]).filter(([, l]) => l.length);
-      const yrs = [...new Set(facts.map((f) => f.date.slice(0, 4)))].sort().reverse();
-      const months = Array.from({ length: 12 }, (_, i) => `${y}-${String(i + 1).padStart(2, '0')}`);
-      const mx = Math.max(1, ...months.map((m) => sum(facts.filter((f) => f.date.startsWith(m)), (f) => f.ht)));
-      const essais = log.filter((e) => e.act === 'Essai accordé').map((e) => e.tid), payes = new Set(facts.map((f) => f.tid));
-      const conv = essais.length ? Math.round((essais.filter((x) => payes.has(x)).length / essais.length) * 100) : 0;
-      const ren = (a, b) => list.filter((t) => t.st === 'active' && days(t.until) != null && days(t.until) >= a && days(t.until) <= b);
-      return html`${head}<div class="metrics" style="margin-bottom:14px">
-          <div class="metric"><div class="lbl">Clients</div><div class="val">${list.length}</div><div class="sub">🎁 ${list.filter((t) => t.st === 'trial').length} essai · ✅ ${list.filter((t) => t.st === 'active' && t.state === 'ok').length} actifs</div></div>
-          <div class="metric"><div class="lbl">Échus / bloqués</div><div class="val">${list.filter((t) => t.state !== 'ok').length}</div><div class="sub">🟠 ${list.filter((t) => t.state === 'ro').length} · 🔴 ${list.filter((t) => t.state === 'blocked').length}</div></div>
-          <div class="metric"><div class="lbl">Chiffre ${y} (HT)</div><div class="val">${money(sum(facts.filter((f) => f.date.startsWith(y)), (f) => f.ht))}</div><div class="sub">${plural(facts.filter((f) => f.date.startsWith(y)).length, 'licence')} vendue(s)</div></div>
-          <div class="metric"><div class="lbl">Essai → abonnement</div><div class="val">${conv} %</div><div class="sub">${essais.filter((x) => payes.has(x)).length} / ${essais.length}</div></div></div>
-        <div class="section-label">Par filière</div><div class="list" style="margin-bottom:14px">${byFil.map(([k, l]) => html`<div class="row"><span class="grow">${NET_FIL[k]}</span><span class="meta">${l.length} · 🎁 ${l.filter((t) => t.st === 'trial').length} · ✅ ${l.filter((t) => t.st === 'active').length} · ${money(sum(facts.filter((f) => f.fil === k), (f) => f.ht))} HT</span></div>`)}</div>
-        <div class="section-label">Ventes ${y} par mois (HT)</div><div class="bars" style="display:flex;gap:4px;align-items:flex-end;height:110px;margin-bottom:6px">${months.map((m) => { const v = sum(facts.filter((f) => f.date.startsWith(m)), (f) => f.ht); return html`<div title="${m} : ${money(v)}" style="flex:1;background:var(--accent);opacity:${v ? 1 : 0.15};height:${Math.max(3, Math.round((v / mx) * 100))}%;border-radius:4px 4px 0 0"></div>`; })}</div>
-        <div class="tiny muted" style="display:flex;justify-content:space-between;margin-bottom:14px"><span>janv.</span><span>déc.</span></div>
-        <div class="section-label">Par forfait</div><div class="list" style="margin-bottom:14px">${[1, 2, 3].map((n2) => html`<div class="row"><span class="grow">🔑 ${n2} an${n2 > 1 ? 's' : ''}</span><span class="meta">${facts.filter((f) => f.years === n2).length} · ${money(sum(facts.filter((f) => f.years === n2), (f) => f.ht))} HT</span></div>`)}</div>
-        ${yrs.length > 1 ? html`<div class="section-label">Par année (HT)</div><div class="list" style="margin-bottom:14px">${yrs.map((yy) => html`<div class="row"><span class="grow">${yy}</span><span class="meta">${money(sum(facts.filter((f) => f.date.startsWith(yy)), (f) => f.ht))}</span></div>`)}</div>` : ''}
-        <div class="section-label">Renouvellements à venir</div><div class="list">${[[0, 30], [31, 60], [61, 90]].map(([a, b]) => html`<div class="row"><span class="grow">${a}–${b} jours</span><span class="meta">${ren(a, b).map((t) => t.nom).join(', ') || '—'}</span></div>`)}</div>`;
-    }
-    if (tab === 'registre') {
-      return html`${head}<p style="margin:0 0 10px"><button class="btn sm" data-action="lic-csv" data-k="log">⬇ CSV</button></p>
-        ${log.length ? html`<div class="list">${log.slice(0, 200).map((e) => html`<div class="row"><span class="grow"><span class="title" style="display:block">${e.act} · ${e.nom}</span><span class="meta">${fmtDateTime(e.at)} · ${e.by}${e.detail ? ' · ' + e.detail : ''}</span></span></div>`)}</div>` : html`<p class="small muted">Rien pour le moment.</p>`}
-        ${certs.length ? html`<div class="section-label" style="margin-top:16px">🧾 Certificats de suppression</div><div class="list">${certs.map((c) => html`<button class="row" data-action="net-cert" data-id="${c.id}"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">${c.tenant.nom}</span><span class="meta">${fmtDateTime(c.at)} · ${plural(c.objects, 'objet')} effacés</span></span><span class="chev">›</span></button>`)}</div>` : ''}`;
-    }
-    return html`${head}${!n || (n.loading && !list.length) ? html`<p class="muted">Chargement…</p>` : ''}
-${netClientsList(list, n, days)}`;
-  },
-  // MASTER : seulement les centrales des gérances (« ＋ Gérance ») ; l’ancien portail (logo 4 éléments) n’est plus montré, ses données restent sur Cloudflare
-  gerances() { return TENANT ? VIEWS.gerancesPortail() : html`${pageHead('Gérances', 'Les centrales de nos clients : chacune a son numéro, ses données chiffrées')}${netClientsBlock()}`; },
-  gerancesPortail() {
-    const c = ptlConf();
-    const portal = html`<a class="btn sm" href="/portail.html" target="_blank" rel="noopener">${icon('eye')} Ouvrir l’app Gérances</a>`;
-    if (!c) {
-      return html`${pageHead('Gérances', 'Le Gérances, piloté d’ici')}
-        <div class="card" style="max-width:560px">
-          <img src="/portail/icons/ptl-banner.webp" alt="" width="1100" height="283" style="display:block;width:100%;max-width:320px;height:auto;margin:0 auto 12px">
-          <p style="margin-top:0">Les <b>gérances</b> sont les sociétés externes qui vous confient leurs réparations. Elles utilisent leur app, l’app <b>Gérances</b> : demandes avec photos, suivi, chat, photos avant / après, satisfaction, statistiques.</p>
-          <p class="small">Ici vous créez les gérances (nom, email, téléphone, RCS) et leur envoyez le lien d’invitation ; elles remplissent elles-mêmes leurs données et leurs résidences. Vous recevez leurs demandes et leur envoyez vos factures.</p>
-          <div class="alert info" style="margin:12px 0">${icon('shield')}<div>Connectez une seule fois cette app à l’app Gérances avec votre <b>compte LA CENTRAL de l’app Gérances</b>. Le mot de passe ne quitte pas l’appareil ; la session est gardée dans vos données chiffrées.</div></div>
-          ${ui.ptl.err ? html`<div class="alert warn" style="margin-bottom:12px">${icon('alert')}<div>${ui.ptl.err}</div></div>` : ''}
-          <form data-form="ptl-login" class="fields">
-            <label class="field full">Email du compte LA CENTRAL<input type="email" name="email" autocomplete="username" required value="${ui.ptl.email || (vault.get('reglages', 'portail') || {}).email || ''}"></label>
-            <label class="field full">Mot de passe de l’app Gérances<input type="password" name="pass" autocomplete="current-password" required></label>
-            <button class="btn primary full" type="submit">${icon('key')} Connecter l’app Gérances</button>
-          </form>
-          <p class="tiny muted" style="margin-bottom:0"><span>Pas encore de compte ? Ouvrez l’app Gérances : la « Première configuration » crée le compte LA CENTRAL.</span> ${portal}</p>
-        </div>`;
-    }
-    const d = ui.ptl.data;
-    if ((!d && !ui.ptl.err) || (d && Date.now() - d.at > 60000)) !ui.ptl.loading && setTimeout(ptlLoad, 0);
-    const head = pageHead('Gérances', d ? `${plural(d.orgs.length, 'gérance')} · Gérances` : 'Gérances', html`<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-action="ger-reload">${icon('sync')} Actualiser</button><button class="btn primary" data-action="ger-new">${icon('plus')} Gérance</button></div>`);
-    const foot = html`<p class="tiny muted" style="margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">Connecté à l’app Gérances : <b>${c.email || ''}</b>
-      <button class="btn sm ghost" data-action="ptl-self-reset">🔑 Nouveau mot de passe de l’app Gérances</button><button class="btn sm ghost danger" data-action="ptl-logout">Déconnecter</button></p>`;
-    if (!d) return html`${head}${ui.ptl.err ? html`<div class="alert warn">${icon('alert')}<div>${ui.ptl.err} <button class="btn sm" data-action="ger-reload">Réessayer</button></div></div>` : html`<p class="muted">Chargement…</p>`}${foot}`;
-    const of = ui.ptl.org || '', oSel = of && ptlOrg(of), kf = ui.ptl.kind || '';
-    const kOf = (o) => (o && ORG_KINDS[o.kind] ? o.kind : 'gerance'), orgs = d.orgs.filter((o) => !kf || kOf(o) === kf);
-    const kinds = Object.keys(ORG_KINDS).filter((k) => d.orgs.some((o) => kOf(o) === k));
-    const tks = d.tickets.filter((t) => (!of || t.org_id === of) && (!kf || kOf(ptlOrg(t.org_id)) === kf));
-    const nRecue = d.tickets.filter((t) => t.status === 'recue').length;
-    const chips = html`${kinds.length > 1 ? html`<div class="tabs" role="tablist" style="margin-bottom:10px">${[['', 'Tous'], ...kinds.map((k) => [k, ORG_KINDS[k]])].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${kf === k}" data-action="ger-kind" data-k="${k}">${l}</button>`)}</div>` : ''}<div class="chips ger-chips" style="margin-bottom:10px">
-      <button class="chip" data-action="ger-filter" data-id="" aria-pressed="${!of}">Toutes</button>
-      ${orgs.map((o) => html`<button class="chip" data-action="ger-filter" data-id="${o.id}" aria-pressed="${of === o.id}">${orgLogo(o.id)} ${o.name}${o.open ? html` <b class="ger-n">${o.open}</b>` : ''}</button>`)}</div>
-      ${oSel ? html`<div class="actions" style="margin:0 0 12px"><button class="btn sm" data-action="ger-open" data-id="${of}">${icon('users')} Accès</button><button class="btn sm" data-action="ger-open" data-id="${of}" data-tab="fact">🧾 Facturation</button><button class="btn sm ghost" data-action="ger-edit" data-id="${of}">${icon('edit')} Modifier</button></div>` : ''}`;
-    const row = (t) => { const u = PTL_URG[t.urgence] || PTL_URG.planifie; return html`<button class="row ger-req ${t.status === 'recue' ? 'is-new' : ''} u-${t.urgence}" data-action="ger-ticket" data-id="${t.id}">
-        <span class="avatar" style="background:var(--${u[2]}-soft, var(--surface-2))">${u[0]}</span>
-        <span class="grow"><span class="title" style="display:block;white-space:normal">#${t.ref} · ${t.categorie || 'Intervention'}${t.lieu ? html` <span class="muted small">— ${t.lieu}</span>` : ''}</span>
-          <span class="meta" style="white-space:normal">${orgLogo(t.org_id)} ${t.org_name} · ${t.residence_name}${t.residence_address ? ' — ' + t.residence_address : ''}</span>
-          <span class="meta" style="display:block;white-space:normal">${t.technicien ? html`👷 ${t.technicien} · ` : ''}${t.planned_at ? html`📅 ${String(t.planned_at).replace('T', ' ')} · ` : ''}${ptlTime(t.created_at)}${t.photos ? html` · 📷 ${t.photos}` : ''}</span></span>
-        <span style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="badge ${t.status === 'recue' ? 'warn' : ''}">${PTL_ST[t.status] || t.status}</span>${!['terminee', 'annulee'].includes(t.status) && !vault.list('taches').some((x) => x.ptl && x.ptl.tid === t.id && x.intervenantId) ? html`<span class="tiny amber">⏸ à affecter</span>` : ''}
-          ${t.msgs ? html`<span class="tiny ${ptlUnread(t) ? 'ger-unread' : 'muted'}">💬 ${t.msgs} message${t.msgs > 1 ? 's' : ''}${ptlUnread(t) ? html` · <b>${ptlUnread(t)} nouveau${ptlUnread(t) > 1 ? 'x' : ''}</b>` : ''}</span>` : ''}</span></button>`; };
-    // demandes « mot de passe oublié » venues de l’app Gérances : un nouveau lien en un toucher
-    const forgot = d.users.filter((u) => u.forgot_at && u.active);
-    const forgotBox = forgot.length ? html`<div class="alert warn" style="margin-bottom:14px">🔑<div><b>Mot de passe oublié</b>${forgot.map((u) => html`<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px"><span class="grow">${u.name} · ${u.email}${ptlOrg(u.org_id) ? ' · 🏢 ' + ptlOrg(u.org_id).name : ''} <span class="tiny muted">(${ptlTime(u.forgot_at)})</span></span><button class="btn sm primary" data-action="ger-inv" data-id="${u.id}" data-org="${u.org_id || ''}">🔗 Envoyer un nouveau lien</button></div>`)}</div></div>` : '';
-    return html`${head}
-      ${forgotBox}
-      ${chips}
-      <div class="section-label">📥 Demandes d’intervention ${nRecue ? html`<span class="badge warn">${nRecue} nouvelle(s)</span>` : ''}</div>
-      <p style="margin:0 0 8px;text-align:right"><button class="btn sm ghost" data-action="ger-done" aria-pressed="${!!ui.ptl.done}">${ui.ptl.done ? 'Voir les demandes en cours' : 'Voir les terminées'}</button></p>
-      ${tks.length ? html`<div class="list" style="margin-bottom:18px">${tks.map(row)}</div>` : html`<p class="muted small" style="margin-bottom:18px">${ui.ptl.done ? 'Aucune demande terminée.' : 'Aucune demande en cours.'}</p>`}
-      ${oSel ? '' : html`<details class="ger-orgs"${orgs.length ? '' : ' open'}><summary class="section-label" style="cursor:pointer">🏢 Fiches des clients (${orgs.length})</summary>
-      ${orgs.length ? html`<div class="grid cols-auto">${orgs.map((o) => {
-        const us = d.users.filter((u) => u.org_id === o.id);
-        const wait = us.filter((u) => u.active && !u.has_password).length;
-        return html`<div class="card">
-          <div class="card-title"><h3>${o.logo ? html`<img class="org-logo big" src="${o.logo}" alt="">` : html`<img src="/portail/icons/ptl-32.png" alt="" width="22" height="22" style="vertical-align:-4px;margin-right:6px;border-radius:5px">`}${o.name}</h3><button class="btn icon ghost sm" data-action="ger-edit" data-id="${o.id}" aria-label="Modifier">${icon('edit')}</button></div>
-          <dl class="kv small">
-            <dt>Type</dt><dd>${ORG_KINDS[kOf(o)]}</dd>
-            ${patSum((vault.get('reglages', 'gerpat-' + o.id) || {}).pat) ? html`<dt>Patrimoine</dt><dd>${patSum(vault.get('reglages', 'gerpat-' + o.id).pat)}</dd>` : ''}
-            <dt>Accès</dt><dd>${us.filter((u) => u.active).length}${wait ? html` · <span class="amber">${wait} invitation(s) en attente</span>` : ''}</dd>
-            <dt>Résidences</dt><dd>${o.residences || 0}</dd>
-            <dt>Demandes en cours</dt><dd class="${o.open ? 'accent' : ''}">${o.open || 0}</dd>
-            ${o.email ? html`<dt>Email</dt><dd>${o.email}</dd>` : ''}
-            ${o.phone ? html`<dt>Téléphone</dt><dd>${o.phone}</dd>` : ''}
-          </dl>
-          <div class="actions" style="margin:14px 0 0">
-            <button class="btn sm primary" data-action="ger-open" data-id="${o.id}">${icon('users')} Accès</button>
-            <button class="btn sm" data-action="ger-open" data-id="${o.id}" data-tab="fact">🧾 Facturation</button>
-          </div>
-        </div>`;
-      })}</div>` : empty('briefcase', 'Aucune gérance pour l’instant.', html`<button class="btn primary" data-action="ger-new">${icon('plus')} Gérance</button>`)}
-      </details>`}
-      ${foot}`;
   },
 
   locataires() {
@@ -5155,7 +4688,7 @@ ${netClientsList(list, n, days)}`;
     const secTabs = html`<div class="tabs" role="tablist" style="max-width:640px;margin-bottom:16px">${[['compta', html`📒 <span class="tab-long">Comptabilité</span><span class="tab-short">Compta</span>`], ['stats', html`📊 <span class="tab-long">Statistiques</span><span class="tab-short">Stats</span>`]].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${sec === k}" data-action="cp-sec" data-id="${k}">${l}</button>`)}</div>`;
     // Abonnements : rubrique à part dans le menu, sans les onglets de la comptabilité
     if (sec === 'abo') { const lf = licFacts(), yy = String(new Date().getFullYear()); return html`${pageHead('💳 Abonnements', 'Abonnements des gérances et annonces publicitaires vendues')}
-      ${TENANT ? '' : html`<button class="card row" data-action="go" data-to="licences" style="width:100%;margin-bottom:14px;text-align:left"><span class="avatar">${icon('qr')}</span><span class="grow"><span class="title" style="display:block">Licences des centrales clients</span><span class="meta">${yy} : ${money(sum(lf.filter((f) => f.date.startsWith(yy)), (f) => f.ht))} HT · à encaisser ${money(sum(lf.filter((f) => !f.paid), (f) => f.ttc))} TTC</span></span><span class="chev">›</span></button>`}${aboSection()}`; }
+  ${aboSection()}`; }
     if (sec === 'stats') return html`${secTabs}${pageHead('📊 Statistiques', 'Loyers, occupation, dépenses, interventions, devis')}${VIEWS.stats()}${devStatsHtml(ui.year)}`;
     const tabs = html`<div class="tabs tabs-wrap" role="tablist" style="max-width:720px">${[['journal', 'Journal'], ['tva', 'TVA'], ['interv', '🔧 Interventions'], ['fact', '🧾 Factures'], ['frais', '💸 Frais fixes'], ['export', 'Export']].map(([k, l]) => html`<button class="tab" role="tab" aria-selected="${tab === k}" data-action="cp-tab" data-id="${k}">${l}</button>`)}</div>`;
     if (tab === 'stats') ui.cpTab = 'journal';
@@ -5329,75 +4862,75 @@ ${netClientsList(list, n, days)}`;
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone;
     return html`
-      ${pageHead('Réglages', 'Sécurité, synchronisation et données')}
-      <div class="section-label">Synchronisation</div>
-      <div class="list settings">
-        <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
-          <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
-        ${TENANT ? '' : html`<button class="row" data-action="go" data-to="licences"><span class="avatar">${icon('qr')}</span><span class="grow"><span class="title" style="display:block">Licences — centrales des clients</span><span class="meta">Essai 15 jours, abonnements 1 · 2 · 3 ans, tarifs et remises, factures, statistiques, registre</span></span><span class="chev">›</span></button>`}
-        ${TENANT ? (() => { const F = tFacts(), due = F.filter((f) => !f.paid).length; return html`<button class="row" data-action="go" data-to="demandes"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Factures des interventions</span><span class="meta">${F.length ? `${plural(F.length, 'facture')} de LA CENTRAL${due ? ` · ${due} à payer` : ' · tout est payé'}` : 'Aucune facture pour le moment'}</span></span>${icon('chevron')}</button>`; })() : html`<button class="row" data-action="fact-set"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Facturation des interventions</span><span class="meta">${factConf().nom} — LA CENTRAL · TVA ${factConf().taux} % · IBAN ${factConf().iban || 'à compléter'}</span></span></button>`}
-        <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
-      </div>
+  ${pageHead('Réglages', 'Sécurité, synchronisation et données')}
+  <div class="section-label">Synchronisation</div>
+  <div class="list settings">
+    <div class="row"><span class="grow"><span class="title" style="display:block">${labels[vault.status]}</span><span class="meta">${vault.lastSync ? 'Dernière synchro : ' + fmtDateTime(vault.lastSync) : 'Pas encore synchronisé'}</span></span>
+      <button class="btn sm" data-action="sync-now">${icon('sync')} Synchroniser</button></div>
+        
+        ${(() => { const F = tFacts(), due = F.filter((f) => !f.paid).length; return html`<button class="row" data-action="go" data-to="demandes"><span class="avatar">🧾</span><span class="grow"><span class="title" style="display:block">Factures des interventions</span><span class="meta">${F.length ? `${plural(F.length, 'facture')} de LA CENTRAL${due ? ` · ${due} à payer` : ' · tout est payé'}` : 'Aucune facture pour le moment'}</span></span>${icon('chevron')}</button>`; })()}
+    <button class="row" data-action="esp-list">${icon('users')}<span class="grow"><span class="title" style="display:block">App des locataires</span><span class="meta">${vault.list('locataires').filter((x) => x.espace && x.espace.on).length} accès actifs — donner ou retirer l'accès</span></span></button>
+  </div>
 
-      <div class="section-label">Gestion</div>
-      <div class="list settings">
-        ${TENANT ? html`<button class="row" data-action="tpay-conf"><span class="avatar">💳</span><span class="grow"><span class="title" style="display:block">Paiements</span><span class="meta">${(vault.get('reglages', 'tpayConf') || {}).payMode === 'month' ? 'Factures des interventions : une par mois' : 'Factures des interventions : à chaque intervention'}</span></span>${icon('chevron')}</button>` : ''}
-        <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
-        ${TENANT ? '' : html`<button class="row" data-action="eq-group"><span class="avatar">💬</span><span class="grow"><span class="title" style="display:block">Groupe de l’équipe (messages spéciaux)</span><span class="meta">${plural(eqGroup().length, 'ouvrier')} dans le groupe · les autres messages restent entre chaque ouvrier et la centrale</span></span>${icon('chevron')}</button>`}
-        ${TENANT ? '' : html`<button class="row" data-action="open-couleurs"><span class="avatar">🎨</span><span class="grow"><span class="title" style="display:block">Couleurs de nos activités</span><span class="meta">Les mêmes couleurs dans toutes les apps · ${legList().length} activités</span></span></button>`}
-        <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">${TENANT ? 'Société & associés' : 'Associés & TVA'}</span><span class="meta">${TENANT && !societe().logo ? html`<b style="color:var(--amber,#b45309)">🖼️ Mettez votre logo : vos locataires le voient dans leur app</b><br>` : ''}${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
-      </div>
+  <div class="section-label">Gestion</div>
+  <div class="list settings">
+    ${html`<button class="row" data-action="tpay-conf"><span class="avatar">💳</span><span class="grow"><span class="title" style="display:block">Paiements</span><span class="meta">${(vault.get('reglages', 'tpayConf') || {}).payMode === 'month' ? 'Factures des interventions : une par mois' : 'Factures des interventions : à chaque intervention'}</span></span>${icon('chevron')}</button>`}
+    <button class="row" data-action="open-tools"><span class="avatar">🧰</span><span class="grow"><span class="title" style="display:block">Don · prêt · location</span><span class="meta">Annonces des locataires sur le site${ui.toolsPending ? ` · ${ui.toolsPending} à approuver` : ''}</span></span></button>
+        
+        
+        <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">${"Société & associés"}</span><span class="meta">${!societe().logo ? html`<b style="color:var(--amber,#b45309)">🖼️ Mettez votre logo : vos locataires le voient dans leur app</b><br>` : ''}${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
+  </div>
 
-      ${!standalone ? html`<div class="section-label">Application</div>
-      <div class="list settings"><div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Installer sur ce téléphone</span>
-        <span class="meta" style="white-space:normal">${isIOS ? 'Safari : bouton Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône LA CENTRAL sur l’écran d’accueil, fonctionne hors ligne.'}</span></span>
-        ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}<button class="btn sm" data-action="install-anim">▶ Voir comment</button></div></div>` : ''}
+  ${!standalone ? html`<div class="section-label">Application</div>
+  <div class="list settings"><div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Installer sur ce téléphone</span>
+    <span class="meta" style="white-space:normal">${isIOS ? 'Safari : bouton Partager → « Sur l’écran d’accueil ».' : 'Ajoute l’icône LA CENTRAL sur l’écran d’accueil, fonctionne hors ligne.'}</span></span>
+    ${installPrompt ? html`<button class="btn sm primary" data-action="install">Installer</button>` : ''}<button class="btn sm" data-action="install-anim">▶ Voir comment</button></div></div>` : ''}
 
-      ${centraleSection()}
-      <div class="section-label">Apps</div>
-      <div class="list settings"><button class="row" data-action="apps-refresh-all"><span class="avatar">🔄</span><span class="grow"><span class="title" style="display:block">Mettre à jour toutes les apps maintenant</span><span class="meta">Locataires, équipe, annonceurs : après une grosse mise à jour ou si une app ne montre pas une nouveauté</span></span></button></div>
-      <div class="section-label">Sécurité</div>
-      <div class="list settings">
-        <div class="row">${icon('lock')}<span class="grow title">Verrouillage automatique</span>
-          <select data-input="lockmin" style="width:auto">${[5, 15, 30, 60].map((n) => html`<option value="${n}" ${lockMinutes() === n ? new Raw('selected') : ''}>${n} min</option>`)}</select></div>
-        <div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Un seul appareil connecté à la fois</span><span class="meta">Cet appareil : ${deviceLabel()}. Une connexion ailleurs déconnecte celui-ci.</span></span></div>
-        <button class="row" data-action="make-recovery">${icon('shield')}<span class="grow"><span class="title" style="display:block">Clé de secours ${vault.hasRecovery ? html`<span class="badge ok">active</span>` : vault.hasRecovery === false ? html`<span class="badge warn">à créer</span>` : ''}</span><span class="meta">Pour retrouver l'accès si la clé d'accès est oubliée</span></span></button>
-        <button class="row" data-action="change-key">${icon('key')}<span class="grow"><span class="title" style="display:block">Changer la clé d'accès</span><span class="meta">Les autres appareils devront utiliser la nouvelle clé</span></span></button>
-        <button class="row" data-action="lock">${icon('lock')}<span class="grow title">Verrouiller maintenant</span></button>
-        ${vault.op ? '' : html`<button class="row" data-action="arch-start">${icon('archive')}<span class="grow"><span class="title" style="display:block">🗄️ Archiver</span><span class="meta">Ranger les interventions, devis et activité terminés ou de test : gardés, plus affichés (vous choisissez quoi et jusqu’à quelle date)</span></span></button>`}
-        ${((vault.get('reglages', 'archives') || {}).list || []).length ? html`<button class="row" data-action="arch-toggle">${icon('eye')}<span class="grow"><span class="title" style="display:block">${showArch ? '🙈 Cacher les archives' : '👁 Voir les archives'}</span><span class="meta">${(() => { const l = vault.get('reglages', 'archives').list, a = l[l.length - 1]; return `${l.length} archivage${l.length > 1 ? 's' : ''} · dernier : ${fmtDateTime(a.at)} · ${a.by || ''}`; })()}${showArch ? ' · affichées en ce moment' : ''}</span></span></button>` : ''}
-        ${vault.op ? '' : html`<button class="row" data-action="test-clean">${icon('trash')}<span class="grow"><span class="title" style="display:block">🧹 Supprimer les données de test</span><span class="meta">Garde tout ce qui est marqué ⭐ « Vrai » (et ce qui en dépend) ; sauvegarde chiffrée automatique avant</span></span></button>`}
-        <button class="row" data-action="wipe-all">${icon('trash')}<span class="grow"><span class="title red" style="display:block">Effacer toutes les données</span><span class="meta">Immeubles, locataires, paiements, documents — sur tous les appareils</span></span></button>
-        <button class="row" data-action="forget">${icon('trash')}<span class="grow"><span class="title red" style="display:block">Oublier cet appareil</span><span class="meta">Efface la copie chiffrée locale (les données restent sur le serveur)</span></span></button>
-      </div>
+  ${centraleSection()}
+  <div class="section-label">Apps</div>
+  <div class="list settings"><button class="row" data-action="apps-refresh-all"><span class="avatar">🔄</span><span class="grow"><span class="title" style="display:block">Mettre à jour toutes les apps maintenant</span><span class="meta">Locataires, équipe, annonceurs : après une grosse mise à jour ou si une app ne montre pas une nouveauté</span></span></button></div>
+  <div class="section-label">Sécurité</div>
+  <div class="list settings">
+    <div class="row">${icon('lock')}<span class="grow title">Verrouillage automatique</span>
+      <select data-input="lockmin" style="width:auto">${[5, 15, 30, 60].map((n) => html`<option value="${n}" ${lockMinutes() === n ? new Raw('selected') : ''}>${n} min</option>`)}</select></div>
+    <div class="row">${icon('phoneApp')}<span class="grow"><span class="title" style="display:block">Un seul appareil connecté à la fois</span><span class="meta">Cet appareil : ${deviceLabel()}. Une connexion ailleurs déconnecte celui-ci.</span></span></div>
+    <button class="row" data-action="make-recovery">${icon('shield')}<span class="grow"><span class="title" style="display:block">Clé de secours ${vault.hasRecovery ? html`<span class="badge ok">active</span>` : vault.hasRecovery === false ? html`<span class="badge warn">à créer</span>` : ''}</span><span class="meta">Pour retrouver l'accès si la clé d'accès est oubliée</span></span></button>
+    <button class="row" data-action="change-key">${icon('key')}<span class="grow"><span class="title" style="display:block">Changer la clé d'accès</span><span class="meta">Les autres appareils devront utiliser la nouvelle clé</span></span></button>
+    <button class="row" data-action="lock">${icon('lock')}<span class="grow title">Verrouiller maintenant</span></button>
+    ${vault.op ? '' : html`<button class="row" data-action="arch-start">${icon('archive')}<span class="grow"><span class="title" style="display:block">🗄️ Archiver</span><span class="meta">Ranger les interventions, devis et activité terminés ou de test : gardés, plus affichés (vous choisissez quoi et jusqu’à quelle date)</span></span></button>`}
+    ${((vault.get('reglages', 'archives') || {}).list || []).length ? html`<button class="row" data-action="arch-toggle">${icon('eye')}<span class="grow"><span class="title" style="display:block">${showArch ? '🙈 Cacher les archives' : '👁 Voir les archives'}</span><span class="meta">${(() => { const l = vault.get('reglages', 'archives').list, a = l[l.length - 1]; return `${l.length} archivage${l.length > 1 ? 's' : ''} · dernier : ${fmtDateTime(a.at)} · ${a.by || ''}`; })()}${showArch ? ' · affichées en ce moment' : ''}</span></span></button>` : ''}
+    ${vault.op ? '' : html`<button class="row" data-action="test-clean">${icon('trash')}<span class="grow"><span class="title" style="display:block">🧹 Supprimer les données de test</span><span class="meta">Garde tout ce qui est marqué ⭐ « Vrai » (et ce qui en dépend) ; sauvegarde chiffrée automatique avant</span></span></button>`}
+    <button class="row" data-action="wipe-all">${icon('trash')}<span class="grow"><span class="title red" style="display:block">Effacer toutes les données</span><span class="meta">Immeubles, locataires, paiements, documents — sur tous les appareils</span></span></button>
+    <button class="row" data-action="forget">${icon('trash')}<span class="grow"><span class="title red" style="display:block">Oublier cet appareil</span><span class="meta">Efface la copie chiffrée locale (les données restent sur le serveur)</span></span></button>
+  </div>
 
-      <div class="section-label">Données</div>
-      <div class="list settings">
-        <button class="row" data-action="export-enc">${icon('shield')}<span class="grow"><span class="title" style="display:block">Sauvegarde chiffrée <span class="pill" style="font-size:11px;background:#E7F4EC;color:#2E7D52;border-radius:999px;padding:1px 7px;vertical-align:middle">(recommandé)</span></span><span class="meta">Fichier .ares, lisible uniquement avec la clé</span></span></button>
-        <button class="row" data-action="export-json">${icon('download')}<span class="grow"><span class="title" style="display:block">Export lisible (JSON)</span><span class="meta">Non chiffré — à conserver en lieu sûr</span></span></button>
-        ${TENANT || vault.op ? '' : html`<button class="row" data-action="xfer-arch">📦<span class="grow"><span class="title" style="display:block">${archOn() ? '🙈 Fermer l’archive des anciens immeubles' : '👁 Ouvrir l’archive des anciens immeubles'}</span><span class="meta">${archOn() ? 'Mes Propriétés est visible (lecture) — refermez quand vous avez fini' : 'Mes Propriétés n’est plus dans le menu : les immeubles et locataires sont chez les clients ; rien n’est effacé'}</span></span></button>`}
-        ${TENANT || vault.op ? '' : html`<label class="row" style="cursor:pointer"><img src="${APP_BRAND.logo}" alt="" width="36" height="36" style="border-radius:8px;object-fit:cover"><span class="grow"><span class="title" style="display:block">🖼️ Icône de la CENTRAL DOMIER</span><span class="meta">Image carrée (au moins 512 × 512) : en-tête, page de la clé, onglet, icône sur l’écran (à remettre sur le téléphone)</span></span><input type="file" accept="image/*" data-input="brand-ico" hidden></label>${(vault.get('reglages', 'brand') || {}).ico ? html`<button class="row" data-action="brand-reset">↩️<span class="grow title">Remettre l’icône d’origine</span></button>` : ''}`}
-        ${TENANT || vault.op ? '' : html`<button class="row" data-action="angar">🏗️<span class="grow"><span class="title" style="display:block">ANGAR — paquets vers les containers (clients)</span><span class="meta">Transférer immeubles, locataires, paiements, documents vers la centrale d’un client, ou en fichier</span></span></button>`}
+  <div class="section-label">Données</div>
+  <div class="list settings">
+    <button class="row" data-action="export-enc">${icon('shield')}<span class="grow"><span class="title" style="display:block">Sauvegarde chiffrée <span class="pill" style="font-size:11px;background:#E7F4EC;color:#2E7D52;border-radius:999px;padding:1px 7px;vertical-align:middle">(recommandé)</span></span><span class="meta">Fichier .ares, lisible uniquement avec la clé</span></span></button>
+    <button class="row" data-action="export-json">${icon('download')}<span class="grow"><span class="title" style="display:block">Export lisible (JSON)</span><span class="meta">Non chiffré — à conserver en lieu sûr</span></span></button>
+        
+        
+        
         <button class="row" data-action="my-data">${icon('download')}<span class="grow"><span class="title" style="display:block">📦 Récupérer toutes mes données <span class="pill" style="font-size:11px;background:#E7F4EC;color:#2E7D52;border-radius:999px;padding:1px 7px;vertical-align:middle">(recommandé)</span></span><span class="meta">Un fichier complet avec les documents (réimportable) + tableaux CSV des locataires et des paiements</span></span></button>
-        <button class="row" data-action="import">${icon('upload')}<span class="grow"><span class="title" style="display:block">Importer</span><span class="meta">Sauvegarde .ares, 📦 transfert reçu ou export JSON (ancienne version incluse)</span></span></button>
-        <button class="row" data-action="print">${icon('file')}<span class="grow title">Imprimer la page Paiements</span></button>
-      </div>
+    <button class="row" data-action="import">${icon('upload')}<span class="grow"><span class="title" style="display:block">Importer</span><span class="meta">Sauvegarde .ares, 📦 transfert reçu ou export JSON (ancienne version incluse)</span></span></button>
+    <button class="row" data-action="print">${icon('file')}<span class="grow title">Imprimer la page Paiements</span></button>
+  </div>
 
-      ${legacy ? html`<div class="section-label">Ancienne version</div>
-      <div class="alert warn" style="margin-bottom:10px">${icon('alert')}<div>Une copie <b>non chiffrée</b> de l'ancienne version est encore présente dans ce navigateur (${legacy.immeubles.length} immeubles, ${legacy.locataires.length} locataires).</div></div>
-      <div class="actions"><button class="btn" data-action="legacy-import">Importer</button><button class="btn danger" data-action="legacy-wipe">Effacer la copie</button></div>` : ''}
+  ${legacy ? html`<div class="section-label">Ancienne version</div>
+  <div class="alert warn" style="margin-bottom:10px">${icon('alert')}<div>Une copie <b>non chiffrée</b> de l'ancienne version est encore présente dans ce navigateur (${legacy.immeubles.length} immeubles, ${legacy.locataires.length} locataires).</div></div>
+  <div class="actions"><button class="btn" data-action="legacy-import">Importer</button><button class="btn danger" data-action="legacy-wipe">Effacer la copie</button></div>` : ''}
 
-      <div class="section-label">Notifications</div>
-      <p class="small muted" style="margin:0 0 8px">Un avis et le numéro sur l’icône quand un locataire ou l’équipe vous écrit (signalement, virement, photos, problème…). Le serveur ne lit rien : il dit seulement « nouveau message ».</p>
-      ${pushSt === 'off' || !pushSt ? html`<button class="btn" data-action="push-on">🔔 Activer les notifications sur ce téléphone</button>` : html`<p class="small" style="margin:0">${PUSH_MSG[pushSt] || ''}</p>`}
+  <div class="section-label">Notifications</div>
+  <p class="small muted" style="margin:0 0 8px">Un avis et le numéro sur l’icône quand un locataire ou l’équipe vous écrit (signalement, virement, photos, problème…). Le serveur ne lit rien : il dit seulement « nouveau message ».</p>
+  ${pushSt === 'off' || !pushSt ? html`<button class="btn" data-action="push-on">🔔 Activer les notifications sur ce téléphone</button>` : html`<p class="small" style="margin:0">${PUSH_MSG[pushSt] || ''}</p>`}
 
-      <div class="section-label">Apparence</div>
-      <div class="chips">${[['auto', 'Automatique'], ['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => html`<button class="chip" data-action="theme" data-id="${k}" aria-pressed="${theme === k}">${l}</button>`)}</div>
-      <div class="section-label">Langue</div>
-      <div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].filter((k) => LANGS[k]).map((k) => html`<button type="button" data-action="set-lang" data-id="${k}" title="${LANGS[k]}" aria-pressed="${LANG === k}">${k.toUpperCase()}</button>`)}</div>
-      <p class="tiny muted" style="margin-top:4px">Les quittances, reçus et relances aux locataires restent en français (documents officiels).</p>
-      <p class="tiny muted" style="margin-top:28px;text-align:center"><span data-notr="1">LA CENTRAL · ${legalLine()}</span> · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
-  },
+  <div class="section-label">Apparence</div>
+  <div class="chips">${[['auto', 'Automatique'], ['light', 'Clair'], ['dark', 'Sombre']].map(([k, l]) => html`<button class="chip" data-action="theme" data-id="${k}" aria-pressed="${theme === k}">${l}</button>`)}</div>
+  <div class="section-label">Langue</div>
+  <div class="lang-mini" data-notr="1" role="group" aria-label="Langue">${['fr', 'de', 'en', 'it', 'pt', 'es'].filter((k) => LANGS[k]).map((k) => html`<button type="button" data-action="set-lang" data-id="${k}" title="${LANGS[k]}" aria-pressed="${LANG === k}">${k.toUpperCase()}</button>`)}</div>
+  <p class="tiny muted" style="margin-top:4px">Les quittances, reçus et relances aux locataires restent en français (documents officiels).</p>
+  <p class="tiny muted" style="margin-top:28px;text-align:center"><span data-notr="1">LA CENTRAL · ${legalLine()}</span> · v${VERSION} · données chiffrées AES-256-GCM de bout en bout</p>`;
+  }
 };
 
 // ───────────────────────── Feuilles (détails & formulaires) ─────────────────────────
@@ -5664,25 +5197,6 @@ function relanceText(l, lang) {
 }
 
 const SHEETS = {
-  // ↪️ centrale d'un client : envoyer le problème signalé par son locataire à LA CENTRAL, tel quel
-  'tfwd-form'({ id }) {
-    const t = vault.get('taches', id);
-    if (!t) return null;
-    const l = vault.get('locataires', t.locId) || {}, im = vault.get('immeubles', t.immId || l.immId) || {}, nPh = vault.list('documents').filter((x) => x.tacheId === t.id).length;
-    return {
-      title: '↪️ Envoyer à LA CENTRAL', narrow: true,
-      body: html`<form id="f" data-form="tfwd" class="stack"><input type="hidden" name="id" value="${id}">
-        <p class="small" style="margin:0"><b>${String(t.titre || '').replace(/^(Signalement|Problème signalé par [^:]+) : /, '')}</b><br><span class="muted">${im.adresse || ''}${logName(t.logId || l.logId) ? ' · ' + logName(t.logId || l.logId) : ''}${nPh ? ` · 📷 ${nPh} photo${nPh > 1 ? 's' : ''} jointe${nPh > 1 ? 's' : ''}` : ''}</span></p>
-        <label class="field">Urgence<select name="urgence">${Object.entries(TDEM_URG).map(([k, v]) => html`<option value="${k}" ${(t.urgent ? 'urgent' : 'normal') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        <label class="row" style="cursor:pointer"><input type="checkbox" name="contact" checked style="width:20px;height:20px;flex:none"><span class="grow">👤 Joindre le nom et le téléphone du locataire<span class="meta" style="display:block">${fullName(l)}${l.tel ? ' · ' + l.tel : ''} — pour fixer le rendez-vous</span></span></label>
-        <label class="field">🚪 Code / accès de l’entrée de l’immeuble<input name="entree" value="${im.codeEntree || ''}" placeholder="ex. porte A, code 1234, sonnette « Gestion »"></label>
-        <label class="row" style="cursor:pointer"><input type="checkbox" name="acces" data-input="tfwd-acc" style="width:20px;height:20px;flex:none"><span class="grow">🔑 J’autorise l’accès au logement en l’absence du locataire (urgence)<span class="meta" style="display:block">Inutile si le locataire est présent. Votre nom et la date figureront sur l’intervention et sur la facture.</span></span></label>
-        <label class="field" id="tfwdAcc" hidden>Code ou instructions d’accès au logement<textarea name="accesTxt" maxlength="600" placeholder="ex. boîte à clés n° 3, code 5678 ; serrure électronique ouverte à distance par la gérance"></textarea></label>
-        <label class="field">Message pour LA CENTRAL (facultatif)<textarea name="plus" maxlength="1000"></textarea></label>
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">↪️ Envoyer</button>`,
-    };
-  },
   'test-clean'() {
     const p = testPlan(), lab = { immeubles: '🏢 Immeubles', logements: '🚪 Logements', locataires: '👤 Locataires', intervenants: '👷 Ouvriers', hotes: '🛎️ Clients hôtel / Airbnb', paiements: '💶 Paiements', documents: '📎 Documents', taches: '🔧 Travaux', collectes: '🗑️ Collectes', depenses: '🧾 Dépenses' };
     const nm = (c, r) => (c === 'locataires' ? fullName(r) : c === 'intervenants' ? intervFull(r) : c === 'immeubles' ? r.adresse : c === 'logements' ? logName(r.id) : c === 'hotes' ? [r.prenom, r.nom].filter(Boolean).join(' ') + (r.chambre ? ' — ' + r.chambre : '') : r.id);
@@ -5697,10 +5211,11 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn danger solid" data-action="test-clean-do" ${p.del.total && p.keep.total ? '' : new Raw('disabled')}>🧹 Sauvegarder puis supprimer</button>`,
     };
   },
+
   'ann-new'({ preset }) {
     const imms = vault.list('immeubles').filter((im) => !immGone(im) && !im.xfer && Object.keys(im.chats || {}).length).sort(byAddr);
     const ws = vault.list('intervenants').filter((w) => w.espace && w.espace.on && !w.archive), grp = eqGroup();
-    const nets = TENANT ? [] : ((ui.net && ui.net.list) || []).filter((t) => t.pub);
+    const nets = [];
     const fils = [...new Set(nets.map((t) => t.fil).filter(Boolean))];
     return {
       title: '📣 Nouvelle annonce', narrow: true,
@@ -5715,9 +5230,11 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">📣 Envoyer</button>`,
     };
   },
+
   'ann-log'() {
     return { title: '🗂️ Annonces envoyées', narrow: true, body: html`<div class="list">${annLog().slice().reverse().map((a) => html`<div class="row" style="align-items:flex-start"><span class="grow"><span class="title" style="display:block;white-space:pre-wrap">${a.x}</span><span class="meta">${fmtDateTime(a.at)} · ${a.to} · 👤 ${a.by || '—'}</span></span></div>`)}</div>` };
   },
+
   // 💼 abonnement d'une gérance : formule, prix, période, payé jusqu'au, paiements reçus
   abo({ id }) {
     const o = ptlOrg(id);
@@ -5740,6 +5257,7 @@ const SHEETS = {
       foot: html`${aboOf(id) ? html`<button class="btn ghost danger" data-action="abo-del" data-id="${id}">${icon('trash')} Supprimer</button>` : ''}<button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
+
   'ger-ticket'({ id }) {
     const d = ui.ptl.cur;
     if (!d || !d.ticket || d.ticket.id !== id) return { title: 'Demande', body: html`<p class="muted">Chargement…</p>` };
@@ -5781,6 +5299,7 @@ const SHEETS = {
       foot: html`<a class="btn" href="/portail.html#/t/${t.id}" target="_blank" rel="noopener">${icon('eye')} Ouvrir dans l’app Gérances</a><button class="btn primary" data-action="close-sheet">Fermer</button>`,
     };
   },
+
   // note « INTERVENTION OCCASIONNELLE » d'un travail terminé (heures réelles × tarif payé)
   'occ-fact'({ id }) {
     const t = vault.get('taches', id), i = t && vault.get('intervenants', t.intervenantId);
@@ -5804,18 +5323,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">🧾 Enregistrer + PDF</button>`,
     };
   },
-  // affectation depuis la fiche d'un ouvrier : les demandes d'intervention en cours
-  'aff-pick'() {
-    const ints = vault.list('intervenants').filter((i) => !i.archive).sort((a, b) => intervFull(a).localeCompare(intervFull(b)));
-    return {
-      title: '📌 Affectation — quel ouvrier ?',
-      narrow: true,
-      body: html`<p class="small muted" style="margin:0 0 10px">Choisissez l’ouvrier, puis la demande d’intervention à lui confier.</p>
-        ${ints.length ? html`<div class="list small">${ints.map((i) => html`<button class="row" data-action="interv-aff" data-id="${i.id}"><span class="avatar met-ic">${avW(i)}</span><span class="grow"><span class="title" style="display:block">${intervFull(i)}</span><span class="meta">${METIERS[i.metier] || ''}</span></span><span class="chev">›</span></button>`)}</div>`
-        : html`<p class="muted">Aucun ouvrier. Ajoutez-en un avec ＋ Nouvel ouvrier.</p>`}`,
-      foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
-    };
-  },
+
   'ger-aff'({ id }) {
     const i = vault.get('intervenants', id);
     if (!i) return null;
@@ -5838,6 +5346,7 @@ const SHEETS = {
       foot,
     };
   },
+
   // 🔄 changer d'ouvrier (ou le retirer) en un tocco, avec le motif (court, obligatoire)
   'eq-swap'({ id }) {
     const t = vault.get('taches', id);
@@ -5853,6 +5362,7 @@ const SHEETS = {
       foot: html`<button class="btn danger" data-action="eq-swap-do" data-id="${id}" data-w="">⏹ Retirer l’ouvrier</button><button class="btn" data-action="close-sheet">Annuler</button>`,
     };
   },
+
   // 🗄️ Archiver : on coche ce qu'on range (gardé, plus affiché), jusqu'à quelle date ; l'historique dit quand et qui
   'arch-form'() {
     const hist = ((vault.get('reglages', 'archives') || {}).list || []).slice().reverse();
@@ -5874,6 +5384,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" data-action="arch-do">🗄️ Archiver</button>`,
     };
   },
+
   'centrale-form'() {
     const c = centraleConf();
     return {
@@ -5887,6 +5398,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
+
   'op-form'() {
     return {
       title: '👤 Nouvel opérateur', narrow: true,
@@ -5900,6 +5412,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Créer l’accès</button>`,
     };
   },
+
   // gérance : LA CENTRAL écrit seulement nom, email, téléphone et RCS ; adresse, TVA, banque, logo et responsable sont remplis par la gérance dans son app Gérances
   'ger-form'({ id }) {
     const o = id ? ptlOrg(id) : { kind: ui.ptl.kind || 'gerance' };
@@ -5920,6 +5433,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="gerForm">${id ? 'Enregistrer' : 'Créer + lien d’invitation'}</button>`,
     };
   },
+
   ger({ id, tab }) {
     const d = ui.ptl.data, o = ptlOrg(id);
     if (!d || !o) return null;
@@ -6001,6 +5515,7 @@ const SHEETS = {
       foot: html`<button class="btn ghost danger" data-action="ger-del" data-id="${id}">${icon('trash')} Supprimer la gérance</button><button class="btn primary" data-action="close-sheet">Fermer</button>`,
     };
   },
+
   'ger-invite'({ id, preset }) {
     const d = ui.ptl.data, u = d && d.users.find((x) => x.id === id), link = ui.ptl.inv[id];
     if (!u || !link) return null;
@@ -6026,6 +5541,7 @@ const SHEETS = {
       foot: html`<button class="btn primary" data-action="ger-open" data-id="${u.org_id}">OK</button>`,
     };
   },
+
   'share-coll'({ id }) {
     const im = vault.get('immeubles', id);
     if (!im) return null;
@@ -6052,6 +5568,7 @@ const SHEETS = {
       foot: html`<button class="btn ghost danger" data-action="share-off" data-id="${id}">Désactiver le lien</button><button class="btn primary" data-action="close-sheet">OK</button>`,
     };
   },
+
   'interv-form'({ id, preset }) {
     const i = id ? vault.get('intervenants', id) : { metier: '', genre: 'interne', cat: 'quotidien', ...(preset && typeof preset === 'object' ? preset : {}) };
     if (id && !i) return null;
@@ -6081,6 +5598,7 @@ const SHEETS = {
         <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
+
   'fact-set'() {
     const c = factConf();
     return {
@@ -6110,6 +5628,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
+
   facture({ id }) {
     const t = vault.get('taches', id);
     if (!t) return null;
@@ -6152,6 +5671,7 @@ const SHEETS = {
       foot: html`<button class="btn" type="submit" form="f">Enregistrer le brouillon</button><button class="btn primary" data-action="fact-emit" data-id="${id}" ${miss.length ? new Raw('disabled') : ''}>🧾 Émettre et envoyer</button>`,
     };
   },
+
   // routine de chaque semaine (salariés : ménage, contrôles), avec la semaine en dates
   'hor-std'({ id }) {
     const i = vault.get('intervenants', id);
@@ -6167,6 +5687,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer la routine</button>`,
     };
   },
+
   'plan-week'({ id, preset }) {
     const i = vault.get('intervenants', id);
     if (!i) return null;
@@ -6181,9 +5702,11 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer la semaine</button>`,
     };
   },
+
   'eq-feed'() {
     return { title: 'Activité de l’équipe', body: html`${eqTodayHtml()}<p class="tiny muted" style="margin:0 0 8px">Arrivées et départs des autres jours, groupés par jour avec les heures : fiche de la personne → Activité.</p>${eqFeedHtml('', 150, true)}`, foot: html`<button class="btn primary" data-action="close-sheet">OK</button>` };
   },
+
   // Travail daté d'une personne (hors horaire habituel) : en retard, aujourd'hui, à venir
   // Fiche d'une personne : infos · horaire et heures du mois · absences (maladie avec certificat, congés…)
   interv({ id, tab }) {
@@ -6278,7 +5801,7 @@ const SHEETS = {
           <button class="btn primary block" data-action="eq-on" data-id="${id}">📱 Créer l’accès à l’app</button>`;
       } else {
         const url = eqUrl(i);
-        const inv = inviteMsg('eq', e.lang, i.prenom || '', eqAppUrl(i), e.code || '—', url, TENANT ? socName() : factConf().nom || 'ARES INVEST S.A.');
+        const inv = inviteMsg('eq', e.lang, i.prenom || '', eqAppUrl(i), e.code || '—', url, socName());
         const msgTxt = encodeURIComponent(inv.txt);
         body = html`<div class="card" style="text-align:center;margin-bottom:12px"><div class="tiny muted">Code personnel</div>
             <div style="font-family:var(--mono);font-size:26px;font-weight:800;letter-spacing:.08em">${e.code || '—'}</div>
@@ -6329,60 +5852,60 @@ const SHEETS = {
     const ints = vault.list('intervenants').filter((i) => !i.archive || i.id === t.intervenantId).sort((a, b) => fits(b) - fits(a) || intervFull(a).localeCompare(intervFull(b)));
     return {
       title: id ? "Modifier l'intervention" : 'Nouvelle intervention',
-      body: html`${!TENANT && t.net && t.net.stopAsk && !t.fin ? html`<div class="alert warn" style="margin-bottom:10px">⏹️<div><b>${t.net.nom}</b> demande l’arrêt de ce service régulier (le ${fmtDate(t.net.stopAsk)}). Mettez la <b>date de fin</b> de la répétition : le client et ses locataires la voient.</div></div>` : ''}${!TENANT && t.net && t.net.reg && !t.recur ? html`<div class="alert info" style="margin-bottom:10px">🔁<div><b>Service régulier demandé</b> : ${TDEM_SVC[t.net.reg.svc] || ''} · ${RECURS[t.net.reg.freq] || ''} · ${(t.net.reg.jours || []).map((j) => JOURS_C[j]).join(', ')}${t.net.reg.de ? ' · ' + t.net.reg.de + (t.net.reg.a ? '–' + t.net.reg.a : '') : ''}. Choisissez la <b>répétition</b>, la date et l’heure confirmées.</div></div>` : ''}${TENANT && id && (t.locId || t.dom) && t.sentAt ? (t.fwd ? html`<div class="alert info" style="margin-bottom:10px">↪️<div><b>Envoyé à LA CENTRAL</b> le ${fmtDateTime(t.fwd.at)}${t.fwd.st ? html` · état : <b>${STATUTS[t.fwd.st] || t.fwd.st}</b>${t.fwd.who ? ' · 👷 ' + t.fwd.who : ''}` : ''}${t.fwd.acces ? html`<div class="tiny">🔑 accès au logement autorisé par ${t.fwd.acces}</div>` : ''}</div></div>` : '') : ''}${id && !t.recur && t.statut !== 'fait' && t.intervenantId ? tripSlot(t.id, today()) : ''}<form id="f" data-form="tache" class="fields">
-        <input type="hidden" name="id" value="${id || ''}">
-        <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${(t.type === 'entretien' ? 'reparation' : t.type) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}
-        ${t.dev ? html`<div class="full ptl-box">📝 <b>Devis ${t.dev.no}</b> — ${t.dev.client}${t.dev.adr ? html`<br>📍 ${t.dev.adr}` : ''}${t.dev.contact ? html`<br>👤 ${t.dev.contact}${t.dev.tel ? ' · ' + t.dev.tel : ''}` : ''}
-            <input type="hidden" name="dev" value="${JSON.stringify(t.dev)}"><input type="hidden" name="immId" value=""></div>`
-          : t.ptl ? html`<div class="full ptl-box">${ptlPlace(t.ptl)}
-            <input type="hidden" name="ptl" value="${JSON.stringify(t.ptl)}"><input type="hidden" name="immId" value=""></div>`
-          : (() => { const hist = (ui.lieuH = lieuxHist()); return html`<div class="full lieu-pick">
-            <input type="hidden" name="immId" value="${t.lieu ? '' : t.immId || ''}"><input type="hidden" name="lieu" value="${t.lieu ? JSON.stringify(t.lieu) : ''}">
-            <div class="section-label" style="margin:0 0 6px">📍 Où ?</div>
-            <div class="search">${icon('search')}<input type="search" data-input="lieu-q" placeholder="Rechercher une rue, un immeuble, une résidence, un client…" autocomplete="off"></div>
-            <p class="small lieu-sel" id="lieuSel">${lieuSelHtml(t)}</p>
-            <div class="list small lieu-list" id="lieuList">
-              ${imms.map((im) => html`<button type="button" class="row" data-action="lieu-set" data-k="i:${im.id}" data-q="${lieuQ(im.adresse, im.nom, im.ville)}" aria-pressed="${!t.lieu && im.id === t.immId}"><span class="avatar">🏠</span><span class="grow"><span class="title" style="display:block">${im.adresse}</span><span class="meta">Nos immeubles</span></span></button>`)}
-              ${hist.map((h, n) => html`<button type="button" class="row" data-action="lieu-set" data-k="h:${n}" data-q="${lieuQ(h.nom, h.adr, h.contact)}" aria-pressed="${!!t.lieu && (t.lieu.adr || t.lieu.nom) === (h.adr || h.nom)}"><span class="avatar">🕘</span><span class="grow"><span class="title" style="display:block">${h.nom || h.adr}</span><span class="meta">${h.nom && h.adr ? h.adr + ' · ' : ''}${h.n} ${h.n > 1 ? 'interventions' : 'intervention'}${h.d ? ' · ' + fmtDate(h.d) : ''}</span></span></button>`)}
-              <p class="small muted lieu-none" hidden>Rien trouvé : ajoutez l’adresse ci-dessous.</p>
-            </div>
-            <button type="button" class="btn sm" data-action="lieu-new" style="margin-top:8px">✏️ Autre adresse (nouveau lieu)</button>
-            <div class="fields" id="lieuNew" hidden style="margin-top:8px">
-              ${field('Nom du lieu / client', 'lieuNom', '', { placeholder: 'ex. Résidence Les Tilleuls, Café du Port' })}
-              ${field('Adresse', 'lieuAdr', '', { placeholder: 'ex. 12 rue de Hollerich, L-1740 Luxembourg' })}
-              ${field('Contact sur place', 'lieuContact', '')}
-              ${field('Téléphone', 'lieuTel', '', { type: 'tel' })}
-            </div>
-          </div>
-        <label class="field" id="tacheLogF" ${t.immId && !t.lieu ? '' : new Raw('hidden')}>Logement / partie<select name="logId" id="tacheLog">${t.immId && !t.lieu ? logOptions(t.immId, t.logId) : ''}</select></label>`; })()}
-        <label class="field full">Qui ?<select name="intervenantId" ${isCompta() ? new Raw('disabled title="Le comptable n’affecte pas les travaux"') : ''}><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}${(t.refusBy || []).includes(i.id) ? ' (✋ a refusé)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
-        ${isCompta() || t.recur ? '' : html`<div class="full taxi-box"><label class="t-urg"><input type="checkbox" name="taxi" value="1" ${t.taxi && t.taxi.st !== 'none' ? new Raw('checked') : ''}> <span>🚕 <b>Mode taxi</b> — la personne appuie sur START (5 min si urgent, 30 min sinon) ; sinon la demande passe au suivant</span></label>
-          <div class="taxi-more fields">${[2, 3].map((n) => { const cur = t.taxi && t.taxi.st === 'wait' ? t.taxi.list[t.taxi.i + n - 1] || '' : ''; return html`<label class="field">${n}e choix<select name="taxi${n}"><option value="">🤖 automatique (même métier, meilleurs points)</option><option value="-">— personne —</option>${ints.filter((i) => !i.archive && i.espace && i.espace.on).map((i) => html`<option value="${i.id}" ${i.id === cur ? new Raw('selected') : ''}>${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}</option>`)}</select></label>`; })}</div>
-          ${t.taxi ? html`<p class="tiny muted" style="margin:4px 0 0">🚕 ${taxiLog(t)}${t.taxi.st === 'wait' ? ` · attend ${intervName(taxiCur(t))} — réponse avant ${new Date(taxiUntil(t)).toTimeString().slice(0, 5)}` : ''}</p>` : ''}</div>`}
-        ${(t.swaps || []).length ? html`<p class="tiny muted full" style="margin:-6px 0 0">${t.swaps.slice(-3).map((x) => html`<span style="display:block">🔄 ${intervName(x.from) || '—'} → ${intervName(x.to) || 'à choisir'} · ${fmtDateTime(x.at)} · « ${x.why} »${x.by ? ' · ' + x.by : ''}</span>`)}</p>` : ''}
-        ${hint.length ? html`<p class="tiny muted full" style="margin:-6px 0 0">⭐ = métier conseillé pour cette demande : ${[...new Set(hint)].map((m) => METIERS[m]).join(', ')}${ints.some(fits) ? '' : ' (personne de ce métier dans l’équipe)'}</p>` : ''}
-        ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
-        ${field('Date', 'date', t.date, { type: 'date' })}
-        <label class="field t-hours">Heure<span class="t-hrow"><span class="tph${t.heure ? ' v' : ''}"><input type="time" name="heure" value="${t.heure || ''}" aria-label="De"><i>--:--</i></span><span class="muted">→</span><span class="tph${t.heureFin ? ' v' : ''}"><input type="time" name="heureFin" value="${t.heureFin || ''}" aria-label="À"><i>--:--</i></span></span></label>
-        <label class="full t-urg"><input type="checkbox" name="urgent" value="1" ${t.urgent ? new Raw('checked') : ''}> <span>🔴 <b>Urgent</b> — clignote en rouge dans l’app de la personne</span></label>
-        <label class="field">Répétition<select name="recur">${Object.entries(RECURS).map(([k, v]) => html`<option value="${k}" ${(t.recur || '') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        ${field("Jusqu'au (si répétition)", 'fin', t.fin, { type: 'date' })}
-        ${field('Coût (€)', 'cout', t.cout, { type: 'number', attrs: money$ })}
-        ${t.fini && t.statut !== 'fait' ? html`<div class="full alert ok" style="margin:0">✅<div><b>${intervFull(vault.get('intervenants', t.fini.by) || {})} a fini le travail</b> le ${fmtDate(t.fini.d)}${t.fini.h ? ' à ' + t.fini.h : ''}${t.fini.note ? html` — « ${t.fini.note} »` : ''}<br><span class="small">Vérifiez (photos après, travail fait), puis choisissez 🟢 <b>Terminée</b> pour clôturer le chantier.</span></div></div>` : ''}
-        ${!t.recur ? html`<fieldset class="full st-radios"><legend>Statut</legend><div class="st-row">${Object.entries(STATUTS).map(([k, v]) => html`<label class="st-opt st-${k}"><input type="radio" name="statut" value="${k}" ${(t.statut || 'afaire') === k ? new Raw('checked') : ''}><span>${ST_DOT[k]} ${v}</span></label>`)}</div>
-          <p class="tiny muted" style="margin:6px 0 0">🔴 <b>À faire</b> : pas encore organisé · 🟡 <b>Planifiée</b> : jour et personne fixés · 🟢 <b>Terminée</b> : chantier clôturé par le bureau</p></fieldset>` : ''}
-        <label class="field full">Notes<textarea name="note" placeholder="Accès, clés, pièces à acheter, ce qui a été fait…">${t.note || ''}</textarea></label>
-        ${(() => { const pb = t.id ? eqPhotos(t.id, 'pb') : [], np = (t.ptlPhotos || []).length; return html`<label class="field full">📷 Photos du problème (envoyées dans l’app de la personne)<input type="file" name="pbphotos" accept="image/*" multiple></label>
-        ${pb.length || np ? html`<div class="full"><p class="tiny muted" style="margin:-4px 0 6px">✓ ${pb.length + np} photo(s) déjà jointe(s)${np ? ' (photos de la gérance)' : ''}</p>
-          <div class="edl-grid sm">${pb.map((x) => html`<figure class="edl"><button type="button" class="edl-img" data-action="open-doc" data-id="${x.id}" aria-label="Agrandir"><img alt="" data-edl="${x.id}"></button></figure>`)}${(t.ptlPhotos || []).map((pid) => html`<figure class="edl"><a class="edl-img" target="_blank" rel="noopener" aria-label="Agrandir"><img alt="Photo de la gérance" data-ptl-photo="${pid}"></a></figure>`)}</div></div>` : ''}
-        ${np ? html`<input type="hidden" name="ptlPhotos" value="${t.ptlPhotos.join(',')}">` : ''}`; })()}
-        ${t.depId ? html`<p class="tiny muted full" style="margin:0">✓ Coût enregistré dans les dépenses de l'immeuble.</p>` : ''}
-        ${(t.journal || []).length ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">👷 Suivi de l’équipe</div><div class="list small">${t.journal.slice().reverse().slice(0, 30).map((x) => html`<div class="row"><span class="grow" style="white-space:normal"><b>${EQ_ST[x.st] || x.st}${x.h ? ' 🕒 ' + x.h : ''}${x.qte ? ` · 🔢 ${x.qte} ${x.qu || ''}` : ''}</b> · ${fmtDate(x.d)}${x.by ? ' · ' + intervName(x.by) : ''}<span class="meta" style="display:block">${fmtDateTime(x.at)}</span>${x.note ? html`<span class="small" style="display:block">📝 ${x.note}</span>` : ''}</span>${(x.ph || []).filter((pid) => vault.get('documents', pid)).map((pid) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${pid}">📷</button>`)}</div>`)}</div></div>` : ''}
-        ${t.locId ? html`<p class="tiny full" style="margin:0">📨 Signalé par <a href="#" data-action="open-loc" data-id="${t.locId}">${fullName(vault.get('locataires', t.locId) || { nom: '?' })}</a> — il voit l'avancement dans son espace.</p>` : ''}
-        ${t.id && (eqPhotos(t.id, 'av').length || eqPhotos(t.id, 'ap').length) ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">📷 Avant / après les travaux</div><div class="edl-pair two">${Object.entries(EQ_PH).map(([ph, lb]) => html`<div><div class="tiny muted" style="margin-bottom:4px"><b>${lb}</b> · ${eqPhotos(t.id, ph).length} / ${EQ_PH_MAX}</div><div class="edl-grid sm">${eqPhotos(t.id, ph).map((x) => html`<figure class="edl"><button type="button" class="edl-img" data-action="open-doc" data-id="${x.id}" aria-label="Agrandir"><img alt="" data-edl="${x.id}"></button><figcaption><span>${fmtDate(x.date)}</span><button type="button" class="btn icon sm ghost danger" data-action="del-edl" data-id="${x.id}" aria-label="Retirer la photo">${icon('trash')}</button></figcaption></figure>`)}</div></div>`)}</div></div>` : ''}
-        ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id && !x.phase).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id && !x.phase).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
-      </form>`,
+      body: html`${id && (t.locId || t.dom) && t.sentAt ? (t.fwd ? html`<div class="alert info" style="margin-bottom:10px">↪️<div><b>Envoyé à LA CENTRAL</b> le ${fmtDateTime(t.fwd.at)}${t.fwd.st ? html` · état : <b>${STATUTS[t.fwd.st] || t.fwd.st}</b>${t.fwd.who ? ' · 👷 ' + t.fwd.who : ''}` : ''}${t.fwd.acces ? html`<div class="tiny">🔑 accès au logement autorisé par ${t.fwd.acces}</div>` : ''}</div></div>` : '') : ''}${id && !t.recur && t.statut !== 'fait' && t.intervenantId ? tripSlot(t.id, today()) : ''}<form id="f" data-form="tache" class="fields">
+  <input type="hidden" name="id" value="${id || ''}">
+  <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${(t.type === 'entretien' ? 'reparation' : t.type) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+  ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}
+  ${t.dev ? html`<div class="full ptl-box">📝 <b>Devis ${t.dev.no}</b> — ${t.dev.client}${t.dev.adr ? html`<br>📍 ${t.dev.adr}` : ''}${t.dev.contact ? html`<br>👤 ${t.dev.contact}${t.dev.tel ? ' · ' + t.dev.tel : ''}` : ''}
+      <input type="hidden" name="dev" value="${JSON.stringify(t.dev)}"><input type="hidden" name="immId" value=""></div>`
+    : t.ptl ? html`<div class="full ptl-box">${ptlPlace(t.ptl)}
+      <input type="hidden" name="ptl" value="${JSON.stringify(t.ptl)}"><input type="hidden" name="immId" value=""></div>`
+    : (() => { const hist = (ui.lieuH = lieuxHist()); return html`<div class="full lieu-pick">
+      <input type="hidden" name="immId" value="${t.lieu ? '' : t.immId || ''}"><input type="hidden" name="lieu" value="${t.lieu ? JSON.stringify(t.lieu) : ''}">
+      <div class="section-label" style="margin:0 0 6px">📍 Où ?</div>
+      <div class="search">${icon('search')}<input type="search" data-input="lieu-q" placeholder="Rechercher une rue, un immeuble, une résidence, un client…" autocomplete="off"></div>
+      <p class="small lieu-sel" id="lieuSel">${lieuSelHtml(t)}</p>
+      <div class="list small lieu-list" id="lieuList">
+        ${imms.map((im) => html`<button type="button" class="row" data-action="lieu-set" data-k="i:${im.id}" data-q="${lieuQ(im.adresse, im.nom, im.ville)}" aria-pressed="${!t.lieu && im.id === t.immId}"><span class="avatar">🏠</span><span class="grow"><span class="title" style="display:block">${im.adresse}</span><span class="meta">Nos immeubles</span></span></button>`)}
+        ${hist.map((h, n) => html`<button type="button" class="row" data-action="lieu-set" data-k="h:${n}" data-q="${lieuQ(h.nom, h.adr, h.contact)}" aria-pressed="${!!t.lieu && (t.lieu.adr || t.lieu.nom) === (h.adr || h.nom)}"><span class="avatar">🕘</span><span class="grow"><span class="title" style="display:block">${h.nom || h.adr}</span><span class="meta">${h.nom && h.adr ? h.adr + ' · ' : ''}${h.n} ${h.n > 1 ? 'interventions' : 'intervention'}${h.d ? ' · ' + fmtDate(h.d) : ''}</span></span></button>`)}
+        <p class="small muted lieu-none" hidden>Rien trouvé : ajoutez l’adresse ci-dessous.</p>
+      </div>
+      <button type="button" class="btn sm" data-action="lieu-new" style="margin-top:8px">✏️ Autre adresse (nouveau lieu)</button>
+      <div class="fields" id="lieuNew" hidden style="margin-top:8px">
+        ${field('Nom du lieu / client', 'lieuNom', '', { placeholder: 'ex. Résidence Les Tilleuls, Café du Port' })}
+        ${field('Adresse', 'lieuAdr', '', { placeholder: 'ex. 12 rue de Hollerich, L-1740 Luxembourg' })}
+        ${field('Contact sur place', 'lieuContact', '')}
+        ${field('Téléphone', 'lieuTel', '', { type: 'tel' })}
+      </div>
+    </div>
+  <label class="field" id="tacheLogF" ${t.immId && !t.lieu ? '' : new Raw('hidden')}>Logement / partie<select name="logId" id="tacheLog">${t.immId && !t.lieu ? logOptions(t.immId, t.logId) : ''}</select></label>`; })()}
+  <label class="field full">Qui ?<select name="intervenantId" ${isCompta() ? new Raw('disabled title="Le comptable n’affecte pas les travaux"') : ''}><option value="">— à choisir —</option>${Object.entries(INT_GENRES).map(([g, gl]) => { const grp = ints.filter((i) => (i.genre || 'interne') === g); return grp.length ? html`<optgroup label="${{ interne: '👷 ', societe: '🏢 ', prive: '🤝 ' }[g]}${gl}">${grp.map((i) => html`<option value="${i.id}" ${i.id === t.intervenantId ? new Raw('selected') : ''}>${fits(i) ? '⭐ ' : ''}${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}${absOn(i, t.date || today()) ? ' (absent)' : ''}${(t.refusBy || []).includes(i.id) ? ' (✋ a refusé)' : ''}</option>`)}</optgroup>` : ''; })}</select></label>
+  ${isCompta() || t.recur ? '' : html`<div class="full taxi-box"><label class="t-urg"><input type="checkbox" name="taxi" value="1" ${t.taxi && t.taxi.st !== 'none' ? new Raw('checked') : ''}> <span>🚕 <b>Mode taxi</b> — la personne appuie sur START (5 min si urgent, 30 min sinon) ; sinon la demande passe au suivant</span></label>
+    <div class="taxi-more fields">${[2, 3].map((n) => { const cur = t.taxi && t.taxi.st === 'wait' ? t.taxi.list[t.taxi.i + n - 1] || '' : ''; return html`<label class="field">${n}e choix<select name="taxi${n}"><option value="">🤖 automatique (même métier, meilleurs points)</option><option value="-">— personne —</option>${ints.filter((i) => !i.archive && i.espace && i.espace.on).map((i) => html`<option value="${i.id}" ${i.id === cur ? new Raw('selected') : ''}>${metIcon(i)} ${intervFull(i)} · ${METIERS[i.metier] || '?'}</option>`)}</select></label>`; })}</div>
+    ${t.taxi ? html`<p class="tiny muted" style="margin:4px 0 0">🚕 ${taxiLog(t)}${t.taxi.st === 'wait' ? ` · attend ${intervName(taxiCur(t))} — réponse avant ${new Date(taxiUntil(t)).toTimeString().slice(0, 5)}` : ''}</p>` : ''}</div>`}
+  ${(t.swaps || []).length ? html`<p class="tiny muted full" style="margin:-6px 0 0">${t.swaps.slice(-3).map((x) => html`<span style="display:block">🔄 ${intervName(x.from) || '—'} → ${intervName(x.to) || 'à choisir'} · ${fmtDateTime(x.at)} · « ${x.why} »${x.by ? ' · ' + x.by : ''}</span>`)}</p>` : ''}
+  ${hint.length ? html`<p class="tiny muted full" style="margin:-6px 0 0">⭐ = métier conseillé pour cette demande : ${[...new Set(hint)].map((m) => METIERS[m]).join(', ')}${ints.some(fits) ? '' : ' (personne de ce métier dans l’équipe)'}</p>` : ''}
+  ${!ints.length ? html`<p class="tiny muted full" style="margin:0">Ajoutez vos intervenants dans Maintenance → Intervenants.</p>` : ''}
+  ${field('Date', 'date', t.date, { type: 'date' })}
+  <label class="field t-hours">Heure<span class="t-hrow"><span class="tph${t.heure ? ' v' : ''}"><input type="time" name="heure" value="${t.heure || ''}" aria-label="De"><i>--:--</i></span><span class="muted">→</span><span class="tph${t.heureFin ? ' v' : ''}"><input type="time" name="heureFin" value="${t.heureFin || ''}" aria-label="À"><i>--:--</i></span></span></label>
+  <label class="full t-urg"><input type="checkbox" name="urgent" value="1" ${t.urgent ? new Raw('checked') : ''}> <span>🔴 <b>Urgent</b> — clignote en rouge dans l’app de la personne</span></label>
+  <label class="field">Répétition<select name="recur">${Object.entries(RECURS).map(([k, v]) => html`<option value="${k}" ${(t.recur || '') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
+  ${field("Jusqu'au (si répétition)", 'fin', t.fin, { type: 'date' })}
+  ${field('Coût (€)', 'cout', t.cout, { type: 'number', attrs: money$ })}
+  ${t.fini && t.statut !== 'fait' ? html`<div class="full alert ok" style="margin:0">✅<div><b>${intervFull(vault.get('intervenants', t.fini.by) || {})} a fini le travail</b> le ${fmtDate(t.fini.d)}${t.fini.h ? ' à ' + t.fini.h : ''}${t.fini.note ? html` — « ${t.fini.note} »` : ''}<br><span class="small">Vérifiez (photos après, travail fait), puis choisissez 🟢 <b>Terminée</b> pour clôturer le chantier.</span></div></div>` : ''}
+  ${!t.recur ? html`<fieldset class="full st-radios"><legend>Statut</legend><div class="st-row">${Object.entries(STATUTS).map(([k, v]) => html`<label class="st-opt st-${k}"><input type="radio" name="statut" value="${k}" ${(t.statut || 'afaire') === k ? new Raw('checked') : ''}><span>${ST_DOT[k]} ${v}</span></label>`)}</div>
+    <p class="tiny muted" style="margin:6px 0 0">🔴 <b>À faire</b> : pas encore organisé · 🟡 <b>Planifiée</b> : jour et personne fixés · 🟢 <b>Terminée</b> : chantier clôturé par le bureau</p></fieldset>` : ''}
+  <label class="field full">Notes<textarea name="note" placeholder="Accès, clés, pièces à acheter, ce qui a été fait…">${t.note || ''}</textarea></label>
+  ${(() => { const pb = t.id ? eqPhotos(t.id, 'pb') : [], np = (t.ptlPhotos || []).length; return html`<label class="field full">📷 Photos du problème (envoyées dans l’app de la personne)<input type="file" name="pbphotos" accept="image/*" multiple></label>
+  ${pb.length || np ? html`<div class="full"><p class="tiny muted" style="margin:-4px 0 6px">✓ ${pb.length + np} photo(s) déjà jointe(s)${np ? ' (photos de la gérance)' : ''}</p>
+    <div class="edl-grid sm">${pb.map((x) => html`<figure class="edl"><button type="button" class="edl-img" data-action="open-doc" data-id="${x.id}" aria-label="Agrandir"><img alt="" data-edl="${x.id}"></button></figure>`)}${(t.ptlPhotos || []).map((pid) => html`<figure class="edl"><a class="edl-img" target="_blank" rel="noopener" aria-label="Agrandir"><img alt="Photo de la gérance" data-ptl-photo="${pid}"></a></figure>`)}</div></div>` : ''}
+  ${np ? html`<input type="hidden" name="ptlPhotos" value="${t.ptlPhotos.join(',')}">` : ''}`; })()}
+  ${t.depId ? html`<p class="tiny muted full" style="margin:0">✓ Coût enregistré dans les dépenses de l'immeuble.</p>` : ''}
+  ${(t.journal || []).length ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">👷 Suivi de l’équipe</div><div class="list small">${t.journal.slice().reverse().slice(0, 30).map((x) => html`<div class="row"><span class="grow" style="white-space:normal"><b>${EQ_ST[x.st] || x.st}${x.h ? ' 🕒 ' + x.h : ''}${x.qte ? ` · 🔢 ${x.qte} ${x.qu || ''}` : ''}</b> · ${fmtDate(x.d)}${x.by ? ' · ' + intervName(x.by) : ''}<span class="meta" style="display:block">${fmtDateTime(x.at)}</span>${x.note ? html`<span class="small" style="display:block">📝 ${x.note}</span>` : ''}</span>${(x.ph || []).filter((pid) => vault.get('documents', pid)).map((pid) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${pid}">📷</button>`)}</div>`)}</div></div>` : ''}
+  ${t.locId ? html`<p class="tiny full" style="margin:0">📨 Signalé par <a href="#" data-action="open-loc" data-id="${t.locId}">${fullName(vault.get('locataires', t.locId) || { nom: '?' })}</a> — il voit l'avancement dans son espace.</p>` : ''}
+  ${t.id && (eqPhotos(t.id, 'av').length || eqPhotos(t.id, 'ap').length) ? html`<div class="full"><div class="section-label" style="margin:4px 0 6px">📷 Avant / après les travaux</div><div class="edl-pair two">${Object.entries(EQ_PH).map(([ph, lb]) => html`<div><div class="tiny muted" style="margin-bottom:4px"><b>${lb}</b> · ${eqPhotos(t.id, ph).length} / ${EQ_PH_MAX}</div><div class="edl-grid sm">${eqPhotos(t.id, ph).map((x) => html`<figure class="edl"><button type="button" class="edl-img" data-action="open-doc" data-id="${x.id}" aria-label="Agrandir"><img alt="" data-edl="${x.id}"></button><figcaption><span>${fmtDate(x.date)}</span><button type="button" class="btn icon sm ghost danger" data-action="del-edl" data-id="${x.id}" aria-label="Retirer la photo">${icon('trash')}</button></figcaption></figure>`)}</div></div>`)}</div></div>` : ''}
+  ${vault.list('documents').filter((x) => x.tacheId === t.id && t.id && !x.phase).length ? html`<div class="full" style="display:flex;gap:6px;flex-wrap:wrap">${vault.list('documents').filter((x) => x.tacheId === t.id && !x.phase).map((x) => html`<button class="btn sm" type="button" data-action="open-doc" data-id="${x.id}">📷 ${x.label.replace('Signalement — ', '')}</button>`)}</div>` : ''}
+</form>`,
       foot: html`${id ? html`<button class="btn ghost danger" data-action="del-tache" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
         ${id && (t.ptl || t.net) && t.statut === 'fait' ? html`<button class="btn" data-action="fact-open" data-id="${id}">🧾 ${t.facture ? 'Facture ' + t.facture.no : 'Facture'}</button>` : ''}
         ${id && t.locId && !t.recur && t.statut !== 'fait' ? html`<button class="btn" style="background:var(--green-soft);color:var(--green)" data-action="tache-done" data-id="${id}">${icon('check')} Réparé</button>` : html`<button class="btn" data-action="close-sheet">Annuler</button>`}
@@ -6443,66 +5966,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Fermer</button><button class="btn primary" data-action="net-cert-pdf" data-id="${id}">⬇ PDF</button>`,
     };
   },
-  'tdem-form'() {
-    const imms = vault.list('immeubles').filter((im) => !immGone(im)).sort(byAddr);
-    const soc = societe();
-    return {
-      title: '🛠️ Demande d’intervention',
-      narrow: true,
-      body: html`<form id="f" data-form="tdem" class="fields">
-        ${field('Objet', 'titre', '', { full: true, required: true, placeholder: 'ex. Fuite d’eau salle de bain, panne de chauffage…' })}
-        ${html`<fieldset class="field full" style="border:0;padding:0;margin:0"><legend style="font-weight:600;margin-bottom:4px">Type</legend>
-          <label class="row" style="cursor:pointer;padding:6px 0"><input type="radio" name="kind" value="once" checked style="width:20px;height:20px;flex:none"><span class="grow">🔧 <b>Une fois</b> — réparation, panne, travaux</span></label>
-          <label class="row" style="cursor:pointer;padding:6px 0"><input type="radio" name="kind" value="reg" style="width:20px;height:20px;flex:none"><span class="grow">🔁 <b>Régulier</b> — ménage, jardin, entretien… (passage à jours fixes)</span></label></fieldset>
-        <div class="reg-set full fields" hidden style="margin:0;padding:10px;border:1px dashed var(--border);border-radius:12px">
-          <label class="field">Service<select name="svc">${Object.entries(TDEM_SVC).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
-          <label class="field">Fréquence<select name="freq">${Object.entries(RECURS).filter(([k]) => k).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
-          <div class="field full">Jours souhaités<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px">${['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'].map((j, i) => html`<label class="chip" style="cursor:pointer"><input type="checkbox" name="jours" value="${i + 1}" style="width:16px;height:16px"> ${j}</label>`)}</div></div>
-          ${field('Heure souhaitée (de)', 'hde', '', { type: 'time' })}${field('à', 'ha', '', { type: 'time' })}
-          ${field('À partir du', 'debut', today(), { type: 'date' })}
-        </div>`}
-        <label class="field full">Urgence<select name="urgence">${Object.entries(TDEM_URG).map(([k, v]) => html`<option value="${k}">${v}</option>`)}</select></label>
-        ${imms.length ? html`<label class="field full">Où (qui verra le passage dans son app)<select name="ou"><option value="">— préciser plus tard —</option>${imms.map((im) => html`<optgroup label="${im.adresse}"><option value="c:${im.id}">🏢 Parties communes — tout l’immeuble</option>${logsOf(im.id).map((g) => { const oc = occupantsNow(g.id).map(fullName).join(', '); return html`<option value="l:${g.id}">🚪 ${logLabel(g)}${oc ? ' — ' + oc : ''}</option>`; })}</optgroup>`)}</select></label>` : ''}
-        ${field('Étage, appartement, accès', 'acces', '', { full: true, placeholder: 'ex. 3e étage, porte droite · code porte 1234 · clé chez le gardien' })}
-        ${field(imms.length ? 'Adresse — seulement si ce n’est pas un de vos immeubles' : 'Adresse', 'adresse', '', { full: true, placeholder: 'rue, n°, code postal, ville' })}
-        <label class="field full">📷 Photos de ce qui est cassé (5 au plus)<input type="file" name="photos" accept="image/*" multiple></label>
-        <label class="field full">Description<textarea name="texte" required style="min-height:100px" placeholder="Que se passe-t-il ? Depuis quand ? Accès (code, clé, gardien)…"></textarea></label>
-        ${field('Contact sur place', 'contact', '', { placeholder: 'ex. locataire M. Dupont' })}${field('Téléphone', 'tel', soc.tel || '', { type: 'tel' })}
-        <p class="tiny muted full" style="margin:0">Chiffrée : seule la centrale LA CENTRAL peut la lire.</p>
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Envoyer</button>`,
-    };
-  },
-  'lic-tarifs'() {
-    const t = licTarifs();
-    return {
-      title: '💶 Tarifs des licences',
-      narrow: true,
-      body: html`<form id="f" data-form="lic-tarifs" class="fields">
-        <p class="tiny muted full" style="margin:0">Prix d’un an (HT) par filière et remise pour 2 et 3 ans payés ensemble. La TVA est celle de la facturation (Réglages → Facturation : ${factConf().taux} %). Essai : ${LIC_ESSAI} jours gratuits.</p>
-        ${Object.entries(NET_FIL).map(([k, v]) => { const x = t[k] || {}; return html`<div class="full section-label" style="margin:8px 0 0">${v}</div>
-          ${field('1 an (€ HT)', 'an1_' + k, x.an1, { attrs: money$ })}${field('Remise 2 ans (%)', 'r2_' + k, x.r2, { attrs: 'inputmode="decimal" min="0" max="90"' })}${field('Remise 3 ans (%)', 'r3_' + k, x.r3, { attrs: 'inputmode="decimal" min="0" max="90"' })}`; })}
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
-    };
-  },
-  'net-new'() {
-    setTimeout(() => { const f = document.getElementById('f'); if (f && f.fil) netFilShow(f); }, 0);
-    return {
-      title: '🏢 Nouvelle gérance',
-      narrow: true,
-      body: html`<form id="f" data-form="net-new" class="fields">
-        <input type="hidden" name="fil" value="gerance">
-        ${field('Nom de la gérance', 'nom', '', { full: true, required: true })}
-        <div class="full fields net-proprio" style="margin:0" hidden>${netBailFields()}</div>
-        ${field('Téléphone (WhatsApp)', 'tel', '', { type: 'tel', placeholder: '+352…' })}${field('Email', 'email', '', { type: 'email' })}
-        ${field('🌍 Pays', 'pays', 'LU', { placeholder: 'LU, FR, IT…' })}${field('Ville', 'ville', '', { placeholder: 'Luxembourg' })}
-        <div class="full fields net-taxi" style="margin:0" ${false ? '' : new Raw('hidden')}>${field('🪪 N° de licence taxi', 'licence', '', {})}<label class="field">Commission par course que nous lui donnons<select name="comT"><option value="eur" ${'eur' !== 'pct' ? new Raw('selected') : ''}>€ par course</option><option value="pct" ${'eur' === 'pct' ? new Raw('selected') : ''}>% du prix</option></select></label>${field('Montant', 'comV', 3, { type: 'number', attrs: 'step="0.01" min="0"' })}</div>
-        <p class="tiny muted full" style="margin:0">Gratuite, sans échéance. Un code d’invitation est créé (valable 30 jours, une seule fois). Le client ouvre sa centrale, choisit sa clé d’accès (vous ne la connaissez pas) et commence son essai.</p>
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">＋ Créer la gérance</button>`,
-    };
-  },
+
   'net-client'({ id }) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === id);
     if (!t) return null;
@@ -6543,19 +6007,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Fermer</button>${isCompta() ? '' : html`<button class="btn primary" type="submit" form="f">Enregistrer</button>`}`,
     };
   },
-  angar() {
-    const N = (ui.net && ui.net.list) || [], P = ui.angar || {}, OK = ['gerance', 'proprio'];
-    return {
-      title: '🏗️ ANGAR', narrow: true,
-      body: html`<p class="small muted" style="margin:0 0 10px">Les <b>containers</b> sont les centrales de vos clients. Préparez un <b>paquet</b> (immeubles, locataires, paiements, documents…) et envoyez-le : directement dans son container, ou en fichier (PC, USB, email). Ici tout reste en archive.</p>
-        <p style="margin:0 0 12px"><button class="btn primary" data-action="net-new">＋ Nouveau container (nouveau client)</button></p>
-        ${ui.net && ui.net.err ? html`<div class="alert warn" style="margin-bottom:10px">⚠️<div>${ui.net.err}</div></div>` : ''}
-        ${N.length ? html`<div class="list">${N.map((t) => { const got = vault.listAll('immeubles').filter((x) => x.xfer && x.xfer.to === t.id).length, pk = P[t.id] || []; return html`<div class="row" style="flex-wrap:wrap"><span class="avatar">${(NET_FIL[t.fil] || '🌐').split(' ')[0]}</span><span class="grow"><b>${t.nom}</b><span class="meta" style="display:block">${NET_FIL[t.fil] || ''}${got ? ` · 📦 ${plural(got, 'immeuble')} envoyé${got > 1 ? 's' : ''}` : ''}${t.configured ? '' : ' · invitation pas encore utilisée'}</span>
-            ${pk.map((x) => html`<span class="meta" style="display:block">${x.opened ? '✅ ouvert le ' + fmtDateTime(x.opened) : '⏳ en attente'} · ${xferTxt(x.counts || {})} · ${fmtDateTime(x.at)}${x.opened ? '' : html` <button class="btn sm ghost danger" data-action="pack-del" data-tid="${t.id}" data-id="${x.id}">Retirer</button>`}</span>`)}</span>
-            ${OK.includes(t.fil) ? html`<button class="btn sm primary" data-action="xfer-open" data-id="${t.id}">📦 Paquet</button>` : ''}<button class="btn sm" data-action="net-open" data-id="${t.id}">Fiche</button></div>`; })}</div>` : html`<p class="muted small">${ui.net && ui.net.loading ? 'Chargement…' : 'Aucun container pour le moment.'}</p>`}`,
-      foot: html`<button class="btn" data-action="close-sheet">Fermer</button>`,
-    };
-  },
+
   'xfer'({ id }) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === id);
     if (!t) return null;
@@ -6584,27 +6036,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" data-action="xfer-do" data-id="${id}" ${t.configured ? '' : new Raw('disabled')}>📦 Transférer</button>`,
     };
   },
-  'tfact'({ id }) {
-    const f = tFacts().find((x) => x.no === id);
-    if (!f) return null;
-    const p = f.pay || {}, cl = tClaim(f.no), late = !f.paid ? lateDays(f.due) : 0;
-    return {
-      title: '🧾 Facture ' + f.no,
-      narrow: true,
-      body: html`<p class="small" style="margin:0 0 8px">${f.from} · ${fmtDate(f.date)} · échéance ${fmtDate(f.due)}${late > 0 && !f.paid ? html` · <b style="color:var(--red,#b91c1c)">${late} j de retard</b>` : ''}</p>
-        <div class="list small" style="margin-bottom:10px">${(f.lignes || []).map((l) => html`<div class="row"><span class="grow">${l.titre}<span class="meta" style="display:block">${fmtDate(l.d)}</span></span><b>${eur(l.ht)}</b></div>`)}</div>
-        <p style="margin:0 0 12px">HT ${eur(f.ht)} · TVA ${eur(f.tva)} · <b>Total ${eur(f.ttc)}</b></p>
-        ${f.paid ? html`<div class="alert info">✅<div><b>Payée</b> — merci !</div></div>` : html`
-        <button class="btn block" disabled title="Paiement en ligne pas encore connecté" style="margin-bottom:4px">💳 Payer par carte / Apple Pay / Google Pay</button>
-        <p class="tiny muted" style="margin:0 0 12px">ℹ️ Paiement en ligne pas encore connecté : payez par virement ci-dessous.</p>
-        <div class="card" style="margin-bottom:10px"><div class="section-label" style="margin-top:0">🏦 Virement</div>
-          ${p.iban ? html`<div class="qr" style="width:150px;margin:0 auto 10px">${qrSvg(epcText(p.nom, p.iban, p.bic, f.ttc, f.no), 4)}</div>` : ''}
-          <div><dl class="kv" style="margin:0">${kvRow('Bénéficiaire', p.nom || '')}${kvRow('IBAN', p.iban || '')}${p.bic ? kvRow('BIC', p.bic) : ''}${kvRow('Montant', eur(f.ttc))}${kvRow('Communication', f.no)}</dl></div>
-          <p class="tiny muted" style="margin:8px 0 0">Scannez le QR code avec l’app de votre banque : tout est déjà rempli.</p></div>
-        ${cl ? html`<div class="alert info">⏳<div><b>Paiement signalé le ${fmtDate(cl)}</b> — ${f.from} confirme dès réception.</div></div>` : html`<button class="btn primary block" data-action="tfact-claim" data-id="${f.no}">✅ J’ai payé</button>`}`}`,
-      foot: html`${f.docId ? html`<button class="btn" data-action="open-doc" data-id="${f.docId}">⬇️ PDF</button>` : f.pdf ? html`<button class="btn" data-action="tfact-pdf" data-id="${f.no}">⬇️ PDF</button>` : ''}<button class="btn" data-action="close-sheet">Fermer</button>`,
-    };
-  },
+
   'tpay-conf'() {
     const c = vault.get('reglages', 'tpayConf') || {};
     return {
@@ -6616,46 +6048,6 @@ const SHEETS = {
         <label class="row full"><input type="radio" name="payMode" value="month" ${c.payMode === 'month' ? new Raw('checked') : ''}><span class="grow">Une facture par mois (récapitulatif)</span></label>
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
-    };
-  },
-  'eq-group'() {
-    const ws = vault.list('intervenants').filter((w) => w.espace && w.espace.on).sort((a, b) => intervFull(a).localeCompare(intervFull(b))), cur = new Set(eqGroup());
-    return {
-      title: '💬 Groupe de l’équipe',
-      narrow: true,
-      body: html`<form id="f" data-form="eq-group"><p class="small" style="margin:0 0 10px">Cochez les ouvriers qui reçoivent les <b>📣 messages spéciaux</b>. Les autres messages restent toujours entre chaque ouvrier et la centrale.</p>
-        ${ws.length ? html`<div class="list">${ws.map((w) => html`<label class="row"><input type="checkbox" name="w" value="${w.id}" ${cur.has(w.id) ? new Raw('checked') : ''}><span class="grow">${intervFull(w)}<span class="meta" style="display:block">${METIERS[w.metier] || ''}</span></span></label>`)}</div>` : html`<p class="small muted">Aucun ouvrier avec l’app active.</p>`}</form>`,
-      foot: html`<button class="btn primary" type="submit" form="f">Enregistrer</button>`,
-    };
-  },
-  'eq-special'() {
-    const ws = vault.list('intervenants').filter((w) => w.espace && w.espace.on).sort((a, b) => intervFull(a).localeCompare(intervFull(b))), grp = new Set(eqGroup());
-    return {
-      title: '📣 Message spécial',
-      narrow: true,
-      body: html`<form id="f" data-form="eq-special" class="fields"><label class="field full">Message<textarea name="x" required maxlength="1500" placeholder="ex. Réunion demain à 8 h au bureau"></textarea></label>
-        <div class="full section-label" style="margin:0">Pour qui ? (le groupe est coché ; modifiez-le dans Réglages → 💬 Groupe de l’équipe)</div>
-        ${ws.length ? html`<div class="list full">${ws.map((w) => html`<label class="row"><input type="checkbox" name="w" value="${w.id}" ${grp.has(w.id) ? new Raw('checked') : ''}><span class="grow">${intervFull(w)}</span></label>`)}</div>` : html`<p class="small muted full">Aucun ouvrier avec l’app active.</p>`}</form>`,
-      foot: html`<button class="btn primary" type="submit" form="f">Envoyer</button>`,
-    };
-  },
-  'avis-form'({ id, preset }) {
-    const a = id ? vault.get('avis', id) : { immId: preset || '', debut: today() };
-    if (id && !a) return null;
-    const imms = vault.list('immeubles').filter((im) => !immGone(im) || im.id === a.immId).sort(byAddr);
-    return {
-      title: id ? "Modifier l'avis" : 'Nouvel avis aux locataires',
-      narrow: true,
-      body: html`<form id="f" data-form="avis" class="fields">
-        <input type="hidden" name="id" value="${id || ''}">
-        <label class="field full">Pour<select name="immId"><option value="">Tous les immeubles</option>${imms.map((im) => html`<option value="${im.id}" ${im.id === a.immId ? new Raw('selected') : ''}>${im.adresse}</option>`)}</select></label>
-        <label class="field full">Message<textarea name="texte" required style="min-height:110px" placeholder="ex. Mardi 6 octobre de 9 h à 12 h : coupure d'eau pour travaux. Merci de votre compréhension.">${a.texte || ''}</textarea></label>
-        ${field('Visible à partir du', 'debut', a.debut, { type: 'date' })}
-        ${field("Jusqu'au (facultatif)", 'fin', a.fin, { type: 'date' })}
-        <p class="tiny muted full" style="margin:0">L'avis apparaît dans l'espace des locataires qui ont un espace actif. Écrivez-le en français ; ajoutez une autre langue dans le même message si besoin.</p>
-      </form>`,
-      foot: html`${id ? html`<button class="btn ghost danger" data-action="del-avis" data-id="${id}" aria-label="Supprimer">${icon('trash')}</button>` : ''}
-        <button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
 
@@ -6969,6 +6361,7 @@ const SHEETS = {
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="fColoc">Créer l’appartement et ses chambres</button>`,
     };
   },
+
   'log-form'({ id, preset }) {
     const g = id ? vault.get('logements', id) : { immId: preset, type: 'appartement' };
     if (id && !g) return null;
@@ -7309,6 +6702,7 @@ const SHEETS = {
       foot: html`<button class="btn primary" data-action="close-sheet">J'ai gardé ma moitié A</button>`,
     };
   },
+
   recovery({ preset: code }) {
     const body = encodeURIComponent(`Clé de secours LA CENTRAL :\n\n${code}\n\nEn cas d'oubli de la clé d'accès : https://luxinterventions.com/locataires.html → « Clé d'accès oubliée ? ».\nNe transférez pas cet email.`);
     return {
@@ -7376,7 +6770,6 @@ const SHEETS = {
   },
 
   'societe-form'() {
-    if (!TENANT) return SHEETS['societe-master']();
     const st = societe();
     const pays = st.pays || 'LU';
     const rows = [...(st.associes || []), {}, {}, {}, {}].slice(0, Math.max(4, (st.associes || []).length + 1));
@@ -7387,11 +6780,11 @@ const SHEETS = {
         <div class="full" style="display:flex;align-items:center;gap:12px">${socLogo() ? html`<img src="${socLogo()}" alt="" style="height:48px;max-width:140px;object-fit:contain;background:#fff;border-radius:8px;padding:4px;border:1px solid var(--border)">` : html`<span style="width:48px;height:48px;border-radius:50%;background:var(--accent,#4f46e5);color:#fff;display:inline-flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;flex:none">${String(societe().nom || DEF_SOC()).trim().charAt(0).toUpperCase()}</span>`}
           <label class="btn sm" style="cursor:pointer">🖼️ ${st.logo ? 'Changer le logo' : 'Mettre votre logo'}<input type="file" accept="image/*" data-input="soc-logo" hidden></label>
           ${st.logo ? html`<button class="btn sm ghost" type="button" data-action="soc-logo-del">Retirer</button>` : ''}
-          ${TENANT ? html`<label class="btn sm ghost" style="cursor:pointer" title="Couleur de vos apps (prise du logo)">🎨 Couleur <input type="color" data-input="soc-color" value="${/^#[0-9a-f]{6}$/i.test(st.color || '') ? st.color : '#4f46e5'}" style="width:28px;height:22px;border:0;padding:0;background:none"></label>` : ''}</div>
+          ${html`<label class="btn sm ghost" style="cursor:pointer" title="Couleur de vos apps (prise du logo)">🎨 Couleur <input type="color" data-input="soc-color" value="${/^#[0-9a-f]{6}$/i.test(st.color || '') ? st.color : '#4f46e5'}" style="width:28px;height:22px;border:0;padding:0;background:none"></label>`}</div>
         <p class="tiny muted full" style="margin:0">Le logo apparaît dans l’app, les apps des locataires et de l’équipe, les quittances et les impressions.</p>
         <div class="section-label full" style="margin:8px 0 0">✍️ Signature + timbre (récapitulatif des loyers des locataires)</div>
         <div class="full" id="signWrap">${signBlock(st)}</div>
-        ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: TENANT ? 'ex. ' + DEF_SOC() : 'ex. NOBIS s.a.r.l.' })}
+        ${field('Nom / société', 'nom', st.nom, { full: true, placeholder: 'ex. ' + DEF_SOC() })}
         ${field('Adresse', 'adresse', st.adresse, { full: true })}
         ${field('Code postal et ville', 'ville', st.ville, { placeholder: 'L-1234 Luxembourg' })}
         ${field('Téléphone', 'tel', st.tel, { type: 'tel' })}
@@ -7425,28 +6818,6 @@ const SHEETS = {
     };
   },
 
-  'societe-master'() {
-    const st = vault.get('reglages', 'main') || {}, fc = factConf();
-    const rows = [...(st.associes || []), {}, {}, {}, {}].slice(0, Math.max(4, (st.associes || []).length + 1));
-    return {
-      title: 'Associés & TVA',
-      body: html`<form id="f" data-form="societe" class="fields">
-        <div class="full" style="display:flex;align-items:center;gap:12px"><img src="${APP_BRAND.logo}" alt="" style="height:48px;max-width:140px;object-fit:contain;background:#fff;border-radius:8px;padding:4px;border:1px solid var(--border)">
-          <span class="grow small"><b>${APP_BRAND.nom}</b> · ${fc.nom}${fc.rcs ? ' · RCS ' + fc.rcs : ''}<br><span class="muted">Nom, adresse, RCS, TVA et banque : dans 🧾 Facturation des interventions.</span></span>
-          <button class="btn sm" type="button" data-action="fact-set">🧾 Facturation</button></div>
-        <div class="section-label full" style="margin:10px 0 0">Comptabilité et TVA</div>
-        <label class="field">Assujetti à la TVA<select name="assujetti"><option value="1" ${st.assujetti !== false ? new Raw('selected') : ''}>Oui</option><option value="0" ${st.assujetti === false ? new Raw('selected') : ''}>Non</option></select></label>
-        <label class="field">Déclaration de TVA<select name="periode">${[['m', 'Mensuelle'], ['t', 'Trimestrielle'], ['a', 'Annuelle']].map(([k, v]) => html`<option value="${k}" ${(st.periode || 't') === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
-        ${field('Taux de TVA (%)', 'taux', st.taux || '', { full: true, placeholder: PAYS.LU[1].join(', ') + ' (taux du pays si vide)' })}
-        <div class="section-label full" style="margin:10px 0 0">Associés — partage du résultat net</div>
-        ${rows.map((a, i) => html`${field('Associé ' + (i + 1), 'an' + i, a.nom)}${field('Part (%)', 'ap' + i, a.part, { type: 'number', attrs: 'inputmode="decimal" min="0" max="100" step="0.01"' })}`)}
-        <p class="tiny muted full">Le total des parts doit faire 100 %. Laissez vide les lignes inutiles.</p>
-        <div class="lock-err full" role="alert"></div>
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
-    };
-  },
-
   couleurs() {
     return {
       title: '🎨 Couleurs de nos activités',
@@ -7455,6 +6826,7 @@ const SHEETS = {
         <p class="small" style="margin:8px 0 0">Points qui clignotent = feu tricolore : 🟢 aujourd’hui / tout va bien · 🟡 bientôt / demain · 🔴 urgent / problème</p>`,
     };
   },
+
   frais() {
     const list = vault.list('frais').sort((a, b) => (a.libelle || '').localeCompare(b.libelle || ''));
     const cats = { salaires: 'Salaires & cotisations', bureau: 'Bureau', provision: 'Provision charges', autre: 'Autre' };
@@ -7533,7 +6905,7 @@ const SHEETS = {
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Changer la clé</button>`,
     };
-  },
+  }
 };
 
 // ───────────────────────── Actions ─────────────────────────
@@ -7749,13 +7121,14 @@ addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installProm
 
 const ACTIONS = {
   'abo-edit': (d) => openSheet('abo', d.id),
-  'open-facts': () => { ui.cpSec = 'compta'; ui.cpTab = 'fact'; go('compta'); }, // 🧾 Accueil → Comptabilité, onglet Factures
+
   async 'abo-offers'() {
     const on = !aboOffersOn();
     await vault.mutate((tx) => tx.put('reglages', { id: 'abos', offers: on }), on ? 'Offres d’abonnement activées' : 'Offres d’abonnement désactivées', 'Gérances');
     toast(on ? '🟢 Offres visibles dans le app Gérances' : '⚪ Offres masquées dans le app Gérances');
     portailPubsSync().catch(() => {});
   },
+
   async 'abo-paid'(d) {
     const a = aboOf(d.id), o = ptlOrg(d.id);
     if (!a) return;
@@ -7767,6 +7140,7 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('reglages', { id: 'abos', list }), 'Abonnement payé', o ? o.name : d.id);
     toast('✅ Paiement enregistré'); ui.sheet.rendered = false; renderSheet();
   },
+
   async 'abo-del'(d) {
     const o = ptlOrg(d.id);
     if (!(await confirmBox(`Supprimer l’abonnement de ${o ? o.name : 'cette gérance'} ?`, { ok: 'Supprimer', danger: true, detail: 'La formule et l’historique des paiements de cet abonnement sont effacés. La gérance et ses demandes ne changent pas.' }))) return;
@@ -7774,15 +7148,14 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('reglages', { id: 'abos', list }), 'Abonnement supprimé', o ? o.name : d.id);
     closeSheet(); toast('Abonnement supprimé');
   },
-  'ger-new': () => openSheet('ger-form'),
-  'ger-kind': (d) => { ui.ptl.kind = d.k || ''; ui.ptl.org = ''; renderView(); },
-  'ger-filter': (d) => { ui.ptl.org = d.id; renderView(); },
-  'ger-done': () => { ui.ptl.done = !ui.ptl.done; ui.ptl.data = null; renderView(); },
+
   'ger-ticket': (d) => ptlTicketOpen(d.id),
+
   async 'ger-st'(d) {
     if (d.st === 'annulee' && !(await confirmBox('Annuler cette demande ?', { ok: 'Annuler la demande', danger: true }))) return;
     try { await ptlStatus(d.id, d.st, d.st === 'terminee' ? { rapport: 'Intervention terminée' } : {}); toast(PTL_ST[d.st] + ' — la gérance est prévenue'); } catch (e) { toast(e.message, { bad: true }); }
   },
+
   async 'ger-to-mt'(a) {
     if (a.id && (!ui.ptl.cur || !ui.ptl.cur.ticket || ui.ptl.cur.ticket.id !== a.id)) { try { ui.ptl.cur = await ptlApi('tickets/' + a.id); } catch (e) { return toast(e.message, { bad: true }); } }
     const d = ui.ptl.cur; if (!d) return;
@@ -7794,15 +7167,12 @@ const ACTIONS = {
     const L = ptlLink(d), w = a.iid ? vault.get('intervenants', a.iid) : null;
     openOver('tache-form', null, null, { ...(w ? { intervenantId: w.id, type: w.metier === 'menage' ? 'nettoyage' : 'reparation' } : {}), metiers: metHints(`${d.ticket.categorie || ''} ${d.ticket.description || ''}`), ptlPhotos: (d.photos || []).map((p) => p.id).slice(0, 6), ptl: L, titre: `#${L.ref} ${d.ticket.categorie || 'Intervention'}`.slice(0, 80), note: d.ticket.description || '' });
   },
+
   'ger-edit': (d) => openSheet('ger-form', d.id),
-  'ger-open': (d) => { if (d.tab === 'fact') ui.ptl.orgT = null; openSheet('ger', d.id, d.tab); ptlLoad(); }, // les données du portail sont rafraîchies à chaque ouverture
-  'ger-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; renderView(); },
-  async 'ptl-logout'() {
-    if (!(await confirmBox('Déconnecter l’app Gérances ?', { ok: 'Déconnecter', detail: 'Les gérances restent dans l’app Gérances ; vous pourrez vous reconnecter.' }))) return;
-    try { await ptlApi('logout', { method: 'POST' }); } catch { /* déjà expirée */ }
-    await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token: '' }), 'Gérances déconnecté', '');
-    ui.ptl.data = null; renderView();
-  },
+
+  // les données du portail sont rafraîchies à chaque ouverture
+  'ger-open': (d) => { if (d.tab === 'fact') ui.ptl.orgT = null; openSheet('ger', d.id, d.tab); ptlLoad(); },
+
   async 'ger-del'(d) {
     const o = ptlOrg(d.id);
     if (!o) return;
@@ -7813,17 +7183,7 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('reglages', { id: 'portail', lastDel: o.name }), 'Gérance supprimée du portail', o.name);
     closeSheet(); toast('Gérance supprimée'); ui.ptl.data = null; renderView();
   },
-  // mot de passe de l’app Gérances oublié : l'app de gestion (encore connectée) crée un lien pour en choisir un nouveau
-  async 'ptl-self-reset'() {
-    if (!(await confirmBox('Choisir un nouveau mot de passe de l’app Gérances ?', { ok: 'Créer le lien', detail: `Compte ${(ptlConf() || {}).email || ''} : l’app Gérances s’ouvre et vous choisissez un nouveau mot de passe (l’ancien reste valable tant que vous ne l’avez pas changé).` }))) return;
-    const win = window.open('', '_blank');
-    try {
-      const me = await ptlApi('me');
-      const r = await ptlApi(`users/${me.user.id}/invite`, { method: 'POST' });
-      const url = ptlInviteUrl(r.invite);
-      if (win) win.location.href = url; else location.href = url;
-    } catch (e) { if (win) win.close(); toast(e.message, { bad: true }); }
-  },
+
   async 'ger-inv'(d) {
     // un nouveau lien annule le précédent : on renvoie le même tant qu'il est valable (gardé chiffré dans le coffre)
     const u = ui.ptl.data && ui.ptl.data.users.find((x) => x.id === d.id);
@@ -7835,7 +7195,9 @@ const ACTIONS = {
     openSheet('ger-invite', d.id);
     ptlLoad(); // la demande « mot de passe oublié » disparaît
   },
+
   'ger-inv-lang': (d) => { ui.sheet = null; openSheet('ger-invite', d.id, null, { lang: d.l }); },
+
   // invitation en HTML (couleurs, gras, bouton orange) : à coller dans le corps de l'email
   async 'ger-inv-html'(d) {
     const dd = ui.ptl.data, u = dd && dd.users.find((x) => x.id === d.id), link = ui.ptl.inv[d.id];
@@ -7847,9 +7209,11 @@ const ACTIONS = {
       toast('Invitation copiée — collez-la dans votre email');
     } catch { toast('Copie impossible', { bad: true }); }
   },
+
   async 'ger-inv-copy'(d) {
     try { await navigator.clipboard.writeText(ui.ptl.inv[d.id]); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); }
   },
+
   async 'ger-user-toggle'(d) {
     const on = d.on === '1';
     // désactiver : seulement à la demande du responsable de la gérance (on le demande avant)
@@ -7862,8 +7226,9 @@ const ACTIONS = {
     try { await ptlApi('users/' + d.id, { method: 'PATCH', body: { active: !on } }); } catch (e) { return toast(e.message, { bad: true }); }
     toast(on ? 'Accès désactivé' : 'Accès réactivé'); await ptlLoad();
   },
-  'mt-tab': (d) => { ui.mtTab = d.id; renderView(); },
+
   'new-interv': () => openOver('interv-form'),
+
   // « + » : ajoute une ligne « Supplément » (dépannage, nettoyage en plus) à ce jour
   'hor-add': (d, el) => {
     const grid = el.closest('.hor-blk').querySelector('.hor-grid'), p = HOR_P[d.p] ? d.p : 'extra';
@@ -7876,10 +7241,12 @@ const ACTIONS = {
     else grid.insertAdjacentHTML('beforeend', row);
     grid.querySelector(`[name="h${d.j}_${k}d"]`).focus();
   },
+
   'edit-interv': (d) => openOver('interv-form', d.id),
   'plan-wk': (d) => { ui.planWk ||= {}; const cur = ui.planWk[d.id] || mondayOf(today()); ui.planWk[d.id] = addDays(cur, +d.d); ui.sheet.rendered = false; renderSheet(); },
   'hor-std': (d) => openOver('hor-std', d.id),
   'pres-wk'(d) { ui.presOff = { ...(ui.presOff || {}), [d.id]: ((ui.presOff || {})[d.id] || 0) + (+d.d || 0) }; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } else renderView(); },
+
   async 'hor-del'(d) {
     const i = vault.get('intervenants', d.id);
     if (!i) return;
@@ -7888,10 +7255,12 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('intervenants', { id: i.id, horaires: (i.horaires || []).filter((x) => x !== h && !(x.j === h.j && x.de === h.de && x.a === h.a && (x.immId || '') === (h.immId || ''))) }), 'Routine : passage retiré', `${intervFull(i)} — ${SEMAINE[h.j]} ${h.de}–${h.a}`, i.id);
     toast('Passage retiré');
   },
+
   'plan-edit': (d) => openOver('plan-week', d.id, null, d.d),
   'fact-set': () => openOver('fact-set'),
   'fact-open': (d) => openOver('facture', d.id),
   'fact-mat-add': () => { const box = $('#factMats'); if (box) box.insertAdjacentHTML('beforeend', String(matRow(box.children.length))); },
+
   async 'fact-emit'(d) {
     const t = vault.get('taches', d.id), fm = sheetEl.querySelector('form[data-form=facture]');
     if (!t || !fm || t.facture) return;
@@ -7926,6 +7295,7 @@ const ACTIONS = {
     toast(`🧾 Facture ${no} envoyée à ${t.ptl.org}`);
     ui.sheet.rendered = false; renderSheet();
   },
+
   // ⚠️ contentieux : facture impayée en litige — rouge clignotant dans la master et dans le app de la gérance
   async 'fact-cont'(d) {
     const t = vault.get('taches', d.id);
@@ -7937,6 +7307,7 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, cont: on ? today() : '' } }), on ? 'Facture en contentieux' : 'Contentieux levé', t.facture.no, t.immId);
     toast(on ? '⚠️ Facture en contentieux' : 'Contentieux levé');
   },
+
   async 'fact-paid'(d) {
     const t = vault.get('taches', d.id);
     if (!t || !t.facture) return;
@@ -7946,6 +7317,7 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('taches', { id: t.id, facture: { ...t.facture, paid, ...(paid ? { cont: '' } : {}) } }), paid ? 'Facture payée' : 'Facture à payer', t.facture.no, t.immId);
     toast(paid ? '✅ Facture payée' : 'Facture remise « à payer »');
   },
+
   async 'plan-reset'(d) {
     const i = vault.get('intervenants', d.id);
     if (!i || !(await confirmBox('Revenir à l’horaire habituel pour cette semaine ?', { ok: 'Revenir à l’habituel', detail: `Semaine du ${dayShort(d.d)} : les changements de cette semaine sont effacés.` }))) return;
@@ -7954,27 +7326,14 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('intervenants', { id: i.id, plan }), 'Planning : retour à l’horaire habituel', `${intervFull(i)} — semaine du ${dayShort(d.d)}`, i.id);
     toast('Semaine remise à l’horaire habituel');
   },
+
   'open-interv': (d) => openSheet('interv', d.id),
-  'open-eq-chat': (d) => openSheet('interv', d.id, 'chat'),
   'cent-tog': (d, el) => { const dt = el.closest('details'); dt.open = !dt.open; ui.centOpen = dt.open; },
-  'tfact-open': (d) => openOver('tfact', d.id),
   'tpay-conf': () => openOver('tpay-conf'),
-  'tfact-pdf': (d) => { const f = tfMem()[d.id]; if (!f || !f.pdf) return; const u = URL.createObjectURL(new Blob([b64d(f.pdf)], { type: 'application/pdf' })); window.open(u, '_blank'); setTimeout(() => URL.revokeObjectURL(u), 60000); },
-  async 'tfact-claim'(d) {
-    const f = tFacts().find((x) => x.no === d.id);
-    if (!f || f.paid) return;
-    if (!(await confirmBox('Vous avez payé cette facture ?', { ok: '✅ J’ai payé', detail: `${f.no} · ${eur(f.ttc)} — ${f.from} vérifie le virement et confirme.` }))) return;
-    try { await tenantSend({ type: 'paid', no: f.no }); } catch (e) { return toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
-    tClaim(f.no, today());
-    toast('Merci : paiement signalé');
-    if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
-    renderView();
-  },
-  'eq-group': () => openOver('eq-group'),
-  'eq-special': () => openOver('eq-special'),
   'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
   'cp-tab': (d) => { ui.cpTab = d.id; ui.cpLim = 10; renderView(); },
   'cp-sec': (d) => { ui.cpSec = d.id; go('compta', true); },
+
   'cp-fact-csv': () => {
     const [from, to] = cpRange(ui.year, ui.cpPer || 'y');
     const q = (v) => `"${csvSafe(v).replace(/"/g, '""')}"`, n2 = (v) => String(r2(v || 0)).replace('.', ',');
@@ -7982,6 +7341,7 @@ const ACTIONS = {
     for (const t of vault.list('taches').filter((t) => t.facture && t.facture.date >= from && t.facture.date <= to).sort((a, b) => a.facture.no.localeCompare(b.facture.no))) rows.push([t.facture.no, t.facture.date, t.ptl ? t.ptl.org : '', t.ptl ? '#' + t.ptl.ref : '', t.titre, n2(t.facture.ht), n2(t.facture.tva), n2(t.facture.ttc), t.facture.paid || ''].map(q).join(';'));
     download(`factures-${from}-${to}.csv`, '\ufeff' + rows.join('\r\n'), 'text/csv;charset=utf-8');
   },
+
   'cp-int-csv': () => {
     const [from, to] = cpRange(ui.year, ui.cpPer || 'y');
     const q = (v) => `"${csvSafe(v).replace(/"/g, '""')}"`;
@@ -7989,10 +7349,12 @@ const ACTIONS = {
     for (const x of intervLedger(from, to)) rows.push([x.d, x.arr, x.dep, x.min ? (x.min / 60).toFixed(2).replace('.', ',') : '', x.lieu, x.t.titre, TACHE_TYPES[x.t.type] || x.t.type, x.who, x.ger, x.avis, x.cout ? String(x.cout).replace('.', ',') : '', x.state === 'fait' ? 'clôturée' : 'à clôturer'].map(q).join(';'));
     download(`interventions-${from}-${to}.csv`, '\ufeff' + rows.join('\r\n'), 'text/csv;charset=utf-8');
   },
+
   'cp-more': () => { ui.cpLim = (ui.cpLim || 10) + 10; renderView(); },
   'cp-clear': () => { ui.cpQ = ''; ui.cpFrom = ''; ui.cpTo = ''; ui.cpLim = 10; renderView(); },
   'soc-sign-del': async () => { if (!(await confirmBox('Supprimer la signature ?', { ok: 'Supprimer', danger: true, detail: 'Elle n’apparaîtra plus sur les quittances et documents. Ensuite, dessinez ou importez la nouvelle signature.' }))) return; await vault.mutate((tx) => tx.put('reglages', { id: 'main', signature: '', signPx: 0 }), 'Signature retirée', socName()); signRefresh(); },
   'soc-logo-del': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'main', logo: '' }), 'Logo retiré', socName()); applyBrand(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
+
   'cp-csv': () => {
     const y = ui.year, per = ui.cpPer || 'y';
     const [from, to] = cpRange(y, per);
@@ -8001,6 +7363,7 @@ const ACTIONS = {
     setTimeout(() => URL.revokeObjectURL(url), 5000);
     toast('Journal téléchargé');
   },
+
   'cp-print': () => {
     const y = ui.year, per = ui.cpPer || 'y';
     const [from, to] = cpRange(y, per);
@@ -8011,6 +7374,7 @@ const ACTIONS = {
       </tbody></table>
       <p><b>Recettes :</b> ${money(sum(R, (r) => r.ttc))} · <b>Dépenses :</b> ${money(sum(D, (r) => r.ttc))} · <b>Résultat :</b> ${money(sum(R, (r) => r.ttc) - sum(D, (r) => r.ttc))} · <b>TVA collectée :</b> ${money(sum(R, (r) => r.tva))} · <b>TVA déductible :</b> ${money(sum(D, (r) => r.tva))}</p>`);
   },
+
   async 'dep-catchup'() {
     const list = depMissing();
     if (!list.length) return;
@@ -8018,11 +7382,13 @@ const ACTIONS = {
     for (const t of list) await syncDepense(t, true);
     toast(`${plural(list.length, 'dépense')} ajoutée${list.length > 1 ? 's' : ''}`);
   },
+
   'eq-feed': async () => {
     openSheet('eq-feed');
     const fresh = vault.list('intervenants').filter((i) => i.feedNew);
     if (fresh.length) await vault.mutate((tx) => fresh.forEach((i) => tx.put('intervenants', { id: i.id, feedNew: 0 })), 'Activité de l’équipe lue', '');
   },
+
   async 'eq-on'(d) {
     const i = vault.get('intervenants', d.id);
     if (!i) return;
@@ -8034,6 +7400,7 @@ const ACTIONS = {
     }
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   async 'eq-off'(d) {
     const i = vault.get('intervenants', d.id);
     if (!i || !i.espace || !(await confirmBox('Désactiver l’app de ' + intervFull(i) + ' ?', { ok: 'Désactiver', danger: true, detail: 'Son code et son lien ne fonctionneront plus. Vous pourrez créer un nouvel accès plus tard.' }))) return;
@@ -8043,16 +7410,19 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('intervenants', { id: i.id, espace: { on: false } }), 'App de l’équipe désactivée', intervFull(i), i.id);
     toast('Accès désactivé');
   },
+
   async 'eq-code'(d) {
     const i = vault.get('intervenants', d.id);
     if (!i || !i.espace || !i.espace.on) return;
     if (i.espace.code && !(await confirmBox('Nouveau code ?', { ok: 'Nouveau code', detail: 'L’ancien code ne fonctionnera plus pour une nouvelle installation.' }))) return;
     try { await eqSetCode(i); toast('Nouveau code créé'); } catch (e) { toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
   },
+
   async 'eq-copy'(d) {
     const i = vault.get('intervenants', d.id);
     try { await navigator.clipboard.writeText(eqUrl(i)); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); }
   },
+
   async 'del-absence'(d) {
     const i = vault.get('intervenants', d.id);
     const a = (i.absences || []).find((x) => x.id === d.aid);
@@ -8060,15 +7430,18 @@ const ACTIONS = {
     await vault.mutate((tx) => { tx.put('intervenants', { id: i.id, absences: (i.absences || []).filter((x) => x.id !== a.id) }); if (a.docId) tx.remove('documents', a.docId); }, 'Absence supprimée', intervFull(i), i.id);
     if (a.docId) vault.deleteFile(a.docId).catch(() => {});
   },
-  'new-tache': (d) => openOver('tache-form', null, null, d.imm || ui.immFilter || ''),
+
   'edit-tache': (d) => openOver('tache-form', d.id),
   async 'eng-pdf'(d) { const i = vault.get('intervenants', d.id); if (!i) return; download(`Fiche engagement ${intervFull(i)}.pdf`, await engPdf(i), 'application/pdf'); },
   'occ-open': (d) => openOver('occ-fact', d.id),
   async 'occ-dl'(d) { const t = vault.get('taches', d.id), i = t && vault.get('intervenants', t.intervenantId); if (!t || !t.occ || !i) return; download(`Intervention occasionnelle ${t.occ.no}.pdf`, await occPdf(t, i, t.occ), 'application/pdf'); },
   'photo-del': (d, el) => { const box = el.closest('.photo-pick'); box.querySelector('[name=photo]').value = ''; setHtml(box.querySelector('.pp-circle'), '👤'); el.remove(); },
+
   // ▶ le même petit dessin animé que dans les autres apps (iPhone / Android / Samsung)
   'install-anim': () => import('/ares/install-anim.js').then((m) => m.showInstallAnim({ name: 'LA CENTRAL', icon: '/ares/icons/lux-192.png', lang: (() => { try { return localStorage.getItem('aresLang') || 'fr'; } catch { return 'fr'; } })() })),
+
   'eq-swap': (d) => openOver('eq-swap', d.id),
+
   async 'eq-swap-do'(d) {
     const t = vault.get('taches', d.id);
     if (!t) return;
@@ -8088,22 +7461,24 @@ const ACTIONS = {
     toast(w ? `🔄 ${t.titre} → ${intervFull(w)}` : `⏹ ${t.titre} : ouvrier retiré`);
     renderView(); scheduleEspaceSync();
   },
+
   'interv-aff': (d) => { ui.ptl.data = null; ui.ptl.err = ''; openOver('ger-aff', d.id); },
   'ger-aff-reload': () => { ui.ptl.data = null; ui.ptl.err = ''; ptlLoad(); },
   'interv-job': (d) => { const i = d.id && vault.get('intervenants', d.id); openOver('tache-form', null, null, i ? { intervenantId: d.id, type: i.metier === 'menage' ? 'nettoyage' : 'reparation' } : { type: 'reparation' }); },
-  // Maintenance › Équipe : « 📌 Affectation » sans ouvrier → on choisit d'abord l'ouvrier
-  'aff-pick': () => openOver('aff-pick'),
   'open-rapports': () => { ui.cpSec = 'stats'; go('rapports'); },
   'rpt-all': (d) => { rptCfg()[d.k] = null; ui.rptOpen = d.k; renderView(); },
   'rpt-none': (d) => { rptCfg()[d.k] = []; ui.rptOpen = d.k; renderView(); },
+
   'rpt-dir': () => { const c = rptCfg(), d = rptChartData(c), tb = rptTable({ ...c, src: 'totaux', cols: {} });
     const f = (k, l) => (c[k] ? `${l} : ${c[k].length}` : ''); const sel = [f('persons', 'personnes'), f('orgs', 'sociétés'), f('lieux', 'lieux')].filter(Boolean).join(' · ');
     printDoc(`Rapport direction ${fmtDate(c.from)} – ${fmtDate(c.to)}`, html`${sel ? html`<p class="tiny">Filtres : ${sel}</p>` : ''}${rptChartsHtml(d)}<h3 style="margin-top:16px">Totaux</h3><table class="pr-tbl"><tbody>${tb.rows.map((r) => html`<tr><td>${r[0]}</td><td style="text-align:right">${r[1]}</td></tr>`)}</tbody></table>`); },
+
   'rpt-back': () => { ui.cpSec = 'stats'; go('compta'); },
   'rpt-src': (d) => { rptCfg().src = d.id; renderView(); },
   'rpt-per': (d) => { const c = rptCfg(); c.from = d.f; c.to = d.t; renderView(); },
   'rpt-xlsx': () => { const c = rptCfg(), tb = rptTable(c); download(`${rptTitle(c).replace(/[^\p{L}\p{N}]+/gu, '-').toLowerCase()}.xlsx`, xlsxBlob(tb.head, tb.rows, RPT_SRC[c.src][0].replace(/^\S+\s/, '')), 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'); },
   'rpt-print': () => { const c = rptCfg(), tb = rptTable(c); printDoc(rptTitle(c), html`<table class="pr-tbl"><thead><tr>${tb.head.map((h) => html`<th>${h}</th>`)}</tr></thead><tbody>${tb.rows.map((r) => html`<tr>${r.map((v) => html`<td>${v}</td>`)}</tr>`)}</tbody></table><p class="tiny">${plural(tb.n, 'ligne')}</p>`); },
+
   async 'rpt-save'() {
     const nom = ($('#rptName')?.value || '').trim();
     if (!nom) return toast('Donnez un nom à la liste', { bad: true });
@@ -8111,15 +7486,19 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('reglages', { id: 'rapports', list: [...list, { id: uid(), nom: nom.slice(0, 60), cfg: JSON.parse(JSON.stringify(rptCfg())) }].slice(-30) }), 'Rapports : liste enregistrée', nom);
     toast('Liste enregistrée'); renderView();
   },
+
   'rpt-load': (d) => { const s = (((vault.get('reglages', 'rapports') || {}).list) || []).find((x) => x.id === d.id); if (s) { ui.rpt = { ...rptDef(), ...JSON.parse(JSON.stringify(s.cfg)) }; if (ui.rpt.person) { ui.rpt.persons = [ui.rpt.person]; delete ui.rpt.person; } renderView(); } },
+
   async 'rpt-del'(d) {
     const r = vault.get('reglages', 'rapports') || {}, s = (r.list || []).find((x) => x.id === d.id);
     if (!s || !(await confirmBox('Supprimer la liste « ' + s.nom + ' » ?', { ok: 'Supprimer', danger: true }))) return;
     await vault.mutate((tx) => tx.put('reglages', { id: 'rapports', list: r.list.filter((x) => x.id !== d.id) }), 'Rapports : liste supprimée', s.nom);
     renderView();
   },
+
   // toucher un point de couleur (téléphone / tablette) : sa bulle reste ouverte ; toucher ailleurs la ferme
   'leg-dot': (d, el) => { const on = !el.classList.contains('on'); document.querySelectorAll('.leg-dot.on').forEach((x) => x.classList.remove('on')); el.classList.toggle('on', on); },
+
   'lieu-set': (d, el) => {
     const f = el.form || $('#f'), [kind, v] = [d.k.slice(0, 1), d.k.slice(2)], lf = $('#tacheLogF');
     el.parentNode.querySelectorAll('[aria-pressed]').forEach((r) => r.setAttribute('aria-pressed', String(r === el)));
@@ -8128,14 +7507,17 @@ const ACTIONS = {
     else { const h = (ui.lieuH || [])[+v]; if (!h) return; const p = { nom: h.nom, adr: h.adr, contact: h.contact, tel: h.tel }; f.immId.value = ''; f.lieu.value = JSON.stringify(p); $('#tacheLog').innerHTML = ''; lf.hidden = true; setHtml($('#lieuSel'), lieuSelHtml({ lieu: p })); }
     sheetDirty = true;
   },
+
   'lieu-new': (d, el) => {
     const f = el.form || $('#f'); f.immId.value = ''; f.lieu.value = ''; $('#tacheLog').innerHTML = ''; $('#tacheLogF').hidden = true;
     $('#lieuList').querySelectorAll('[aria-pressed]').forEach((r) => r.setAttribute('aria-pressed', 'false'));
     setHtml($('#lieuSel'), html`✏️ <span>Nouveau lieu : remplissez le nom ou l’adresse.</span>`);
     $('#lieuNew').hidden = false; f.lieuNom.focus();
   },
+
   'open-signal': (d) => { const t = vault.get('taches', d.id); if (t && !t.vu) vault.mutate((tx) => tx.put('taches', { id: t.id, vu: true }), 'Message du locataire lu', t.titre, t.locId); openOver('tache-form', d.id); },
   'ics-all': (d) => { ui.icsAll = null; openOver('ics-all', d.id); },
+
   async 'ics-analyze'() {
     const st = ui.icsAll;
     const input = sheetEl.querySelector('[name=url]');
@@ -8148,8 +7530,10 @@ const ACTIONS = {
     }
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   'new-collecte': (d) => openOver('collecte-form', null, null, d.imm || ui.immFilter || ''),
   'edit-collecte': (d) => openOver('collecte-form', d.id),
+
   async 'ics-now'(d) {
     toast('Lecture du calendrier de la commune…');
     const n = await refreshIcs(true, d.id);
@@ -8157,6 +7541,7 @@ const ACTIONS = {
     if (c && !c.icsErr) toast(n ? 'Nouvelles dates enregistrées' : 'Déjà à jour');
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   async 'esp-on'(d) {
     const l = vault.get('locataires', d.id);
     if (!l) return;
@@ -8170,7 +7555,9 @@ const ACTIONS = {
     }
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   async 'apps-refresh-all'() { toast('Mise à jour de toutes les apps…'); try { await appsRefreshAll(); } catch (e) { toast('Mise à jour impossible : ' + (e.message || e), { bad: true }); } if (['dashboard', 'reglages'].includes(ui.route)) renderView(); },
+
   async 'esp-refresh'(d) {
     const l = vault.get('locataires', d.id);
     if (!l || !l.espace || !l.espace.on) return;
@@ -8180,6 +7567,7 @@ const ACTIONS = {
       if (await espaceSync(l.id, true)) toast(`App de ${fullName(l)} à jour ✓ · ${(espaceData(l).pubs || []).length} annonce(s)`);
     } catch (e) { toast('Mise à jour impossible : ' + (e.message || e), { bad: true }); }
   },
+
   async 'esp-off'(d) {
     const l = vault.get('locataires', d.id);
     if (!l || !l.espace || !(await confirmBox('Désactiver l’espace locataire ?', { ok: 'Désactiver', danger: true, detail: 'Son lien ne fonctionnera plus. Vous pourrez créer un nouvel espace (nouveau lien) plus tard.' }))) return;
@@ -8189,56 +7577,24 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('locataires', { id: l.id, espace: { on: false, show: l.espace.show } }), 'Espace locataire désactivé', fullName(l), l.id);
     toast('Espace désactivé');
   },
+
   async 'esp-code'(d) {
     const l = vault.get('locataires', d.id);
     if (!l || !l.espace || !l.espace.on) return;
     if (l.espace.code && !(await confirmBox('Nouveau code d’accès ?', { ok: 'Nouveau code', detail: 'L’ancien code ne fonctionnera plus pour une nouvelle installation (les téléphones déjà connectés restent connectés).' }))) return;
     try { await setAccessCode(l); toast('Nouveau code créé'); } catch (e) { toast(e.message || 'Impossible (connexion ?)', { bad: true }); }
   },
-  async 'copy-url'(d) { try { await navigator.clipboard.writeText(d.url); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); } },
+
   async 'code-copy'(d) { try { await navigator.clipboard.writeText(d.code); toast('Code copié : ' + d.code); } catch { toast('Copie impossible', { bad: true }); } },
+
   async 'esp-copy'(d) {
     const l = vault.get('locataires', d.id);
     try { await navigator.clipboard.writeText(espUrl(l)); toast('Lien copié'); } catch { toast('Copie impossible', { bad: true }); }
   },
-  'new-avis': (d) => openOver('avis-form', null, null, d.imm || ui.immFilter || ''),
-  'edit-avis': (d) => openOver('avis-form', d.id),
-  'tdem-new': () => openOver('tdem-form'),
-  'num-step': (d, el) => { const i = el.closest('form').querySelector(`input[name=${d.n}]`); if (i) i.value = Math.max(+d.min || 0, Math.min(20, (+i.value || 0) + +d.d)); },
+
   'bail-letter': (d) => bailLetter(d.id),
   'bail-open': (d) => openSheet('imm', d.id, 'proprio'),
-  async 'tdem-stop'(d) {
-    const r = vault.get('reglages', d.id);
-    if (!r || !(await confirmBox('Arrêter ce service régulier ?', { ok: '⏹️ Arrêter', danger: true, detail: (r.titre || '') + ' — LA CENTRAL confirme la date du dernier passage.' }))) return;
-    try { await tenantSend({ type: 'dem-stop', ref: r.ref || r.id, titre: r.titre || '' }); } catch (e) { return toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
-    await vault.mutate((tx) => tx.put('reglages', { id: r.id, stopAsk: today() }), '⏹️ Arrêt du service demandé', r.titre || '');
-    toast('Demande d’arrêt envoyée');
-  },
-  async 'tdem-del'(d) {
-    const r = vault.get('reglages', d.id);
-    if (!r || !(await confirmBox('Supprimer cette demande de votre liste ?', { ok: 'Supprimer', danger: true, detail: (r.titre || '') + ' — si LA CENTRAL l’a déjà reçue, appelez-nous pour l’annuler.' }))) return;
-    await vault.mutate((tx) => tx.remove('reglages', d.id), '🗑️ Demande supprimée de la liste', r.titre || '');
-  },
-  'net-new': () => openOver('net-new'),
-  'lic-tab': (d) => { ui.licTab = d.id; renderView(); },
-  'lic-tarifs': () => openOver('lic-tarifs'),
-  async 'lic-buy'(d) {
-    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id), y = +d.y;
-    if (!t || ![1, 2, 3].includes(y)) return;
-    const pr = licPrice(t.fil, y);
-    if (!pr.an) return toast('Fixez d’abord le tarif de cette filière (💶 Tarifs)', { bad: true });
-    const du = t.until && t.until > today() ? t.until : today(), au = addYears(du, y);
-    if (!(await confirmBox(`Abonnement ${y} an${y > 1 ? 's' : ''} pour « ${t.nom} » ?`, { ok: `🔑 ${money(pr.ttc)} TTC`, detail: `${y} × ${money(pr.an)} HT${pr.r ? ` − ${pr.r} % = ${money(pr.ht)} HT` : ''} · TVA ${pr.taux} % · du ${fmtDate(du)} au ${fmtDate(au)}. Une facture est créée.` }))) return;
-    try { await netApi('tenants/' + t.id, 'PATCH', { until: au, st: 'active' }); } catch (e) { return toast(e.message, { bad: true }); }
-    const seq = ((vault.get('reglages', 'licSeq') || {}).n || 0) + 1, no = `${today().replace(/-/g, '')}-LIC${String(seq).padStart(4, '0')}`;
-    const f = { id: 'licfac-' + no, no, date: today(), tid: t.id, nom: t.nom, fil: t.fil, years: y, du, au, ...pr, paid: false, by: whoLabel() || '⭐ Directeur' };
-    await vault.mutate((tx) => { tx.put('reglages', { id: 'licSeq', n: seq }); tx.put('reglages', f); }, '🧾 Facture de licence ' + no, `${t.nom} · ${y} an(s) · ${money(pr.ttc)} TTC`);
-    await licLogAdd(t, `Abonnement ${y} an${y > 1 ? 's' : ''}`, `${fmtDate(du)} → ${fmtDate(au)} · ${money(pr.ht)} HT${pr.r ? ` (−${pr.r} %)` : ''} · facture ${no}`);
-    toast('Abonnement activé · facture ' + no);
-    await netLoad(true);
-    const bytes = await licInvoicePdf(f);
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); a.download = `facture-${no}.pdf`; a.click();
-  },
+
   // 🎁 6 mois offerts, accès complet : facture à 0 € pour la trace ; à la fin, lecture seule comme les autres
   // ♾️ client gratuit pour toujours : actif, sans fin (31/12/2099), sans facture ; rien n'est effacé (centrale, locataires, clé)
   async 'lic-free'(d) {
@@ -8250,21 +7606,7 @@ const ACTIONS = {
     toast('♾️ Gratuit, sans échéance');
     await netLoad(true);
   },
-  async 'lic-gift'(d) {
-    const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
-    if (!t) return;
-    const du = t.until && t.until > today() ? t.until : today(), au = addMonths(du, 6);
-    if (!(await confirmBox(`🎁 6 mois offerts à « ${t.nom} » ?`, { ok: '🎁 Offrir', detail: `Accès complet (centrale, app des locataires / clients, envoi des demandes) du ${fmtDate(du)} au ${fmtDate(au)}. Une facture à 0 € « 6 mois offerts » est créée. Un rappel s’affiche 30 jours avant la fin.` }))) return;
-    try { await netApi('tenants/' + t.id, 'PATCH', { until: au, st: 'active' }); } catch (e) { return toast(e.message, { bad: true }); }
-    const seq = ((vault.get('reglages', 'licSeq') || {}).n || 0) + 1, no = `${today().replace(/-/g, '')}-LIC${String(seq).padStart(4, '0')}`;
-    const f = { id: 'licfac-' + no, no, date: today(), tid: t.id, nom: t.nom, fil: t.fil, years: 0, gift: true, du, au, an: 0, base: 0, r: 0, remise: 0, ht: 0, taux: licPrice(t.fil, 1).taux || 0, tva: 0, ttc: 0, paid: true, paidAt: today(), by: whoLabel() || '⭐ Directeur' };
-    await vault.mutate((tx) => { tx.put('reglages', { id: 'licSeq', n: seq }); tx.put('reglages', f); }, '🎁 6 mois offerts ' + no, `${t.nom} · ${fmtDate(du)} → ${fmtDate(au)}`);
-    await licLogAdd(t, '🎁 6 mois offerts', `${fmtDate(du)} → ${fmtDate(au)} · facture ${no} (0 €)`);
-    toast('🎁 6 mois offerts · facture ' + no);
-    await netLoad(true);
-    const bytes = await licInvoicePdf(f);
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })); a.download = `facture-${no}.pdf`; a.click();
-  },
+
   async 'lic-susp'(d) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
     if (!t) return;
@@ -8274,39 +7616,17 @@ const ACTIONS = {
     toast(on ? 'Centrale suspendue' : 'Centrale réactivée');
     netLoad(true);
   },
-  async 'lic-paid'(d) {
-    const f = vault.get('reglages', d.id);
-    if (!f || isCompta() && false) return;
-    await vault.mutate((tx) => tx.put('reglages', { id: f.id, paid: !f.paid, paidAt: f.paid ? '' : today() }), f.paid ? '🧾 Facture de licence : à payer' : '🧾 Facture de licence payée', `${f.no} · ${f.nom}`);
-    renderView();
-  },
-  async 'lic-pdf'(d) {
-    const f = vault.get('reglages', d.id);
-    if (!f) return;
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([await licInvoicePdf(f)], { type: 'application/pdf' })); a.download = `facture-${f.no}.pdf`; a.click();
-  },
-  'lic-csv'(d) {
-    const q = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
-    const rows = d.k === 'log' ? [['Date', 'Action', 'Client', 'Filière', 'Par', 'Détail'], ...licLog().map((e) => [e.at, e.act, e.nom, NET_FIL[e.fil] || e.fil, e.by, e.detail])]
-      : [['N°', 'Date', 'Client', 'Filière', 'Années', 'Du', 'Au', 'Prix 1 an HT', 'Remise %', 'Remise', 'HT', 'TVA %', 'TVA', 'TTC', 'Payée', 'Payée le'], ...licFacts().map((f) => [f.no, f.date, f.nom, NET_FIL[f.fil] || f.fil, f.years, f.du, f.au, f.an, f.r, f.remise, f.ht, f.taux, f.tva, f.ttc, f.paid ? 'oui' : 'non', f.paidAt || ''])];
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.map((r) => r.map(q).join(';')).join('\n')], { type: 'text/csv' })); a.download = d.k === 'log' ? 'licences-registre.csv' : 'licences-factures.csv'; a.click();
-  },
-  'net-reload': () => netLoad(true),
+
   'net-open': (d) => openOver('net-client', d.id),
   'xfer-open': (d) => { ui.xferDone = null; openOver('xfer', d.id); },
-  'xfer-arch': () => { const on = !archOn(); try { localStorage.setItem('aresArch', on ? '1' : '0'); } catch { /* rien */ } renderShell(); renderView(); toast(on ? '📦 Archive ouverte : Mes Propriétés dans le menu' : '📦 Archive fermée'); },
-  'brand-reset': async () => { await vault.mutate((tx) => tx.put('reglages', { id: 'brand', ico: '' }), '🖼️ Icône d’origine', ''); await vault.call('brand', { method: 'DELETE' }).catch(() => {}); APP_BRAND.logo = BRAND_DEF; applyBrand(); location.reload(); },
   'xfer-all': (d) => sheetEl.querySelectorAll('[data-xfer-imm]').forEach((c) => { c.checked = d.on === '1'; }),
-  angar: () => { netLoad(true).then(() => angarPacks()).catch(() => {}); openSheet('angar'); },
+
   async 'pack-open'(d) {
     try { const r = await vault.call('pack/' + d.id); await xferReceive(JSON.parse(await r.text()), d.id); } catch (e) { toast(e.message || 'Paquet illisible', { bad: true }); }
   },
-  async 'pack-del'(d) {
-    if (!(await confirmBox('Retirer ce paquet du container ?', { ok: 'Retirer', danger: true, detail: 'Le client ne pourra plus l’ouvrir. Vos données restent ici.' }))) return;
-    await vault.call('tenants/' + d.tid + '/packs/' + d.id, { method: 'DELETE' }).catch(() => {});
-    await angarPacks();
-  },
+
   'xfer-dl'(d) { const x = ui.xferDone; if (x && x.tid === d.id) download(x.file, x.blob, 'application/octet-stream'); },
+
   async 'xfer-do'(d, btn) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
     const ids = [...sheetEl.querySelectorAll('[data-xfer-imm]:checked')].map((c) => c.value);
@@ -8346,6 +7666,7 @@ const ACTIONS = {
       openOver('xfer', t.id);
     } catch (e) { toast(e.message || 'Transfert impossible', { bad: true }); if (btn) btn.disabled = false; }
   },
+
   async 'nfact-bill'(d) {
     const tasks = netToBill(d.id), t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id) || {};
     if (!tasks.length) return;
@@ -8353,6 +7674,7 @@ const ACTIONS = {
     try { const no = await netFactEmit(d.id, tasks); toast(`🧾 Facture ${no} envoyée`); } catch (e) { return toast(e.message || 'Envoi impossible', { bad: true }); }
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } else renderView();
   },
+
   async 'nfact-paid'(d) {
     const f = vault.get('reglages', 'nfact-' + d.id);
     if (!f || f.paid) return;
@@ -8361,10 +7683,12 @@ const ACTIONS = {
     await netHoldSync((ui.net && ui.net.list) || []);
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } else renderView();
   },
+
   async 'net-code'(d) {
     try { const r = await netApi('tenants/' + d.id, 'PATCH', { newCode: true }); if (r.code) { await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + d.id, ...netInfo(d.id), code: r.code }), '🌐 Nouveau code d’invitation', (r.tenant || {}).nom || ''); await licLogAdd(r.tenant || { id: d.id }, 'Nouveau code d’invitation', 'échéance inchangée'); } toast('Nouveau code créé'); } catch (e) { return toast(e.message, { bad: true }); }
     netLoad(true);
   },
+
   async 'net-recb'(d) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id) || {};
     const keys = vault.get('reglages', 'signal');
@@ -8380,6 +7704,7 @@ const ACTIONS = {
     const tel = String(netInfo(d.id).tel || '').replace(/[^\d+]/g, '');
     await choiceBox(`🧩 Moitié B — ${t.nom || ''}`, `${m.b}\n\nDictez-la au client (vérifiez d'abord que c'est bien lui). Il l'ajoute à sa moitié A dans « Clé d'accès oubliée ? » et choisit une nouvelle clé : il ne perd rien. Seule, cette moitié n'ouvre rien.`, tel ? [{ value: 'wa', label: '📲 Envoyer par WhatsApp', cls: 'primary' }] : []).then((v) => { if (v === 'wa') window.open(`https://wa.me/${tel.replace(/^\+/, '').replace(/^00/, '')}?text=${encodeURIComponent('Moitié B de votre clé de secours : ' + m.b)}`, '_blank'); });
   },
+
   async 'net-reset'(d) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
     if (!t) return;
@@ -8391,6 +7716,7 @@ const ACTIONS = {
     await netLoad(true);
     openOver('net-client', t.id); // le nouveau code d'invitation, tout de suite
   },
+
   async 'net-del'(d) {
     const t = ((ui.net && ui.net.list) || []).find((x) => x.id === d.id);
     if (!t) return;
@@ -8405,8 +7731,10 @@ const ACTIONS = {
     netLoad(true);
     openOver('net-cert', 'netcert-' + t.id);
   },
+
   'net-cert': (d) => openOver('net-cert', d.id),
   async 'cgu-accept'() { await cguAccept(whoLabel() || 'Directeur'); toast('📜 Conditions acceptées'); renderView(); },
+
   async 'net-cert-pdf'(d) {
     const c = vault.get('reglages', d.id);
     if (!c) return;
@@ -8447,20 +7775,18 @@ const ACTIONS = {
     const blob = new Blob([p.bytes()], { type: 'application/pdf' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `certificat-suppression-${c.tenant.id}.pdf`; a.click();
   },
-  async 'del-avis'(d) {
-    const a = vault.get('avis', d.id);
-    if (!a || !(await confirmBox('Supprimer cet avis ?', { ok: 'Supprimer', danger: true, detail: a.texte.slice(0, 120) }))) return;
-    await vault.mutate((tx) => tx.remove('avis', d.id), 'Avis supprimé', a.texte.slice(0, 60), a.immId);
-    goBack();
-  },
+
   'esp-list': () => openOver('esp-list'),
+
   async 'push-on'() {
     try {
       if (await pushEnable({ api: API.replace(/\/$/, ''), swUrl: '/locataires-sw.js', scope: '/locataires', post: pushPost })) { pushSt = 'on'; toast('🔔 Notifications activées'); } else pushSt = await pushStatus('/locataires');
     } catch { toast('Notifications impossibles sur ce téléphone', { bad: true }); }
     renderView();
   },
+
   'door-change': (d) => openOver('door-form', d.id),
+
   // désactiver / réactiver le code sans le changer (il disparaît / revient dans l'app de l'occupant)
   'door-toggle': async (d) => {
     const g = vault.get('logements', d.id);
@@ -8469,10 +7795,12 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('logements', { id: g.id, porte: { ...g.porte, off } }), off ? 'Code de porte désactivé' : 'Code de porte réactivé', `${g.nom} (${immName(g.immId)})`, g.id);
     toast(off ? 'Code désactivé : il n’apparaît plus chez l’occupant' : 'Code réactivé');
   },
+
   'door-show': (d) => { ui.showDoor = ui.showDoor === d.id ? '' : d.id; ui.sheet.rendered = false; renderSheet(); },
   'esp-filter': (d, el) => { sheetEl.querySelectorAll('[data-action=esp-filter]').forEach((b) => b.setAttribute('aria-pressed', b === el)); filterEspList(); },
   'esp-open': (d) => openOver('loc', d.id, 'espace'),
   'share-coll': (d) => openOver('share-coll', d.id),
+
   async 'share-on'(d) {
     const im = vault.get('immeubles', d.id);
     const token = [...crypto.getRandomValues(new Uint8Array(16))].map((b) => b.toString(16).padStart(2, '0')).join('');
@@ -8481,6 +7809,7 @@ const ACTIONS = {
     toast('Lien créé');
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   async 'share-off'(d) {
     const im = vault.get('immeubles', d.id);
     if (!im || !(await confirmBox('Désactiver le lien ?', { ok: 'Désactiver', danger: true, detail: 'La page et le calendrier des locataires ne fonctionneront plus. Vous pourrez créer un nouveau lien (différent) plus tard.' }))) return;
@@ -8489,11 +7818,14 @@ const ACTIONS = {
     toast('Lien désactivé');
     goBack();
   },
+
   async 'share-copy'(d) {
     const im = vault.get('immeubles', d.id);
     try { await navigator.clipboard.writeText(pubUrl(im)); toast('Lien copié'); } catch { toast('Copie impossible : sélectionnez le lien', { bad: true }); }
   },
+
   'print-collectes': (d) => printDoc('Collectes des déchets', reportCollectes(d.id, +d.y || new Date().getFullYear())),
+
   async 'tache-done'(d) {
     const t = vault.get('taches', d.id);
     if (!t) return;
@@ -8504,6 +7836,7 @@ const ACTIONS = {
     if (fromSheet) goBack();
     await offerDepense(saved);
   },
+
   async 'del-interv'(d) {
     const i = vault.get('intervenants', d.id);
     const n = vault.list('taches').filter((t) => t.intervenantId === d.id).length;
@@ -8511,6 +7844,7 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.remove('intervenants', d.id), 'Intervenant supprimé', intervFull(i));
     goBack();
   },
+
   async 'del-tache'(d) {
     const t = vault.get('taches', d.id);
     const photos = t ? vault.list('documents').filter((x) => x.tacheId === t.id) : [];
@@ -8520,6 +7854,7 @@ const ACTIONS = {
     for (const ph of photos) await vault.deleteFile(ph.id).catch(() => {});
     goBack();
   },
+
   async 'del-collecte'(d) {
     const c = vault.get('collectes', d.id);
     if (!c || !(await confirmBox(`Supprimer la collecte « ${DECHETS[c.cat].short} » ?`, { ok: 'Supprimer', danger: true, detail: immName(c.immId) }))) return;
@@ -8527,15 +7862,19 @@ const ACTIONS = {
     publishPub(c.immId);
     goBack();
   },
+
   go: (d) => { closeSheet(); if (d.sec) ui.cpSec = d.sec; go(d.to); },
   lock: async () => { if (await confirmBox('Se déconnecter ?', { ok: '🚪 Se déconnecter', detail: 'La centrale se ferme : il faudra la clé pour rouvrir' })) lockNow(); },
   'sync-now': () => vault.sync().then(() => vault.status === 'synced' && toast('Synchronisé')),
+
   'toggle-pw': (_, el) => {
     const inp = el.parentElement.querySelector('input');
     inp.type = inp.type === 'password' ? 'text' : 'password';
     setHtml(el, icon(inp.type === 'password' ? 'eye' : 'eyeOff'));
   },
+
   'new-imm': () => openSheet('imm-form'),
+
   async 'imm-geo-osm'() {
     const f = document.getElementById('f');
     if (!f) return;
@@ -8546,12 +7885,14 @@ const ACTIONS = {
     if (!g) return toast('Adresse introuvable sur OpenStreetMap : vérifiez-la, ou enregistrez la position sur place', { bad: true });
     geoFill(f, g, 'osm');
   },
+
   'imm-geo-here'() {
     const f = document.getElementById('f');
     if (!f || !navigator.geolocation) return toast('Position non disponible sur cet appareil', { bad: true });
     navigator.geolocation.getCurrentPosition((p) => geoFill(f, [Math.round(p.coords.latitude * 1e6) / 1e6, Math.round(p.coords.longitude * 1e6) / 1e6], 'ici', Math.round(p.coords.accuracy)),
       () => toast('Position refusée ou introuvable : autorisez la localisation pour ce site', { bad: true }), { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
   },
+
   'geo-map'(d) { window.open(`https://www.google.com/maps?q=${encodeURIComponent(d.la + ',' + d.lo)}`, '_blank', 'noopener'); },
   'edit-imm': (d) => openSheet('imm-form', d.id),
   'new-loc': (d) => openSheet('loc-form', null, null, d.log),
@@ -8560,6 +7901,7 @@ const ACTIONS = {
   'open-esp': (d) => openSheet('loc', d.id, 'espace'),
   'rev-letter': (d) => revLetter(d.id),
   'open-loc-docs': (d) => openSheet('loc', d.id, 'docs'),
+
   // ✅ document du locataire rangé dans son dossier (type choisi) ; ❌ refusé avec le motif, le fichier est effacé
   async 'recu-ok'(d) {
     const doc = vault.get('documents', d.id); if (!doc) return;
@@ -8567,6 +7909,7 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('documents', { id: doc.id, kind: '', st: 'ok', dtype, label: DOC_TYPES[dtype].replace(/ \(.*\)$/, '') }), 'Document du locataire accepté', `${DOC_TYPES[dtype]} — ${fullName(vault.get('locataires', doc.locId) || {})}`, doc.locId);
     toast('Rangé dans le dossier du locataire ✓');
   },
+
   async 'recu-ko'(d) {
     const doc = vault.get('documents', d.id); if (!doc) return;
     const inp = sheetEl.querySelector(`[data-recu-why="${d.id}"]`), why = String((inp && inp.value) || '').trim().slice(0, 140);
@@ -8575,16 +7918,19 @@ const ACTIONS = {
     await vault.deleteFile(doc.id).catch(() => {});
     toast('Refusé — le locataire voit le motif');
   },
+
   async 'open-vir'(d) {
     const l = vault.get('locataires', d.id);
     if (l && l.virSignal) await vault.mutate((tx) => tx.put('locataires', { id: l.id, virSignal: { ...l.virSignal, vu: true } }), 'Virement signalé : vu', fullName(l), l.id);
     openSheet('loc', d.id);
   },
+
   'sheet-tab': (d) => { ui.sheet.tab = d.id; ui.sheet.rendered = false; renderSheet(); sheetEl.querySelector('.sheet-body').scrollTop = 0; },
   'open-imm': (d) => openSheet('imm', d.id, d.tab),
   'open-log': (d) => openSheet('log', d.id, d.tab),
   'new-log': (d) => openSheet('log-form', null, null, d.imm),
   'coloc-new': (d) => openOver('coloc-form', null, null, d.imm),
+
   async 'coloc-add'(d) {
     const rooms = logsOf(d.imm).filter((g) => (g.partie || '').trim().toLowerCase() === d.p.trim().toLowerCase());
     if (rooms.length >= 30) return;
@@ -8595,6 +7941,7 @@ const ACTIONS = {
     toast(`Chambre ${n} ajoutée`);
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   'edit-log': (d) => openSheet('log-form', d.id),
   replace: (d) => openSheet('replace-form', d.id),
   'toggle-vers': (d) => toggleVers(d.imm, +d.y, +d.m),
@@ -8603,6 +7950,7 @@ const ACTIONS = {
   'end-imm': (d) => openSheet('endimm-form', d.id),
   'close-sheet': async () => { if (await leaveSheetOk()) { sheetDirty = false; goBack(); } },
   pay: (d) => payFull(d.loc, +d.y, +d.m),
+
   async 'toggle-pay'(d) {
     const l = vault.get('locataires', d.loc);
     const y = +d.y, m = +d.m;
@@ -8618,6 +7966,7 @@ const ACTIONS = {
     }
     payFull(d.loc, y, m);
   },
+
   async 'fix-dates'(d) {
     const l = vault.get('locataires', d.id);
     if (!l) return;
@@ -8635,6 +7984,7 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('locataires', { id: l.id, ...fix }), 'Dates du contrat corrigées', `${fullName(l)} — ${lines.join(', ')}`, l.id);
     toast('Dates corrigées · totaux recalculés');
   },
+
   async 'del-pay'(d) {
     const l = vault.get('locataires', d.loc);
     const k = payKey(d.loc, +d.y, +d.m);
@@ -8643,16 +7993,19 @@ const ACTIONS = {
     toast('Paiement annulé');
     goBack();
   },
+
   quittance: (d) => printQuittance(d.loc, +d.y, +d.m),
   'caution-recu': (d) => printCaution(d.id),
   'open-tools': () => { openSheet('tools'); toolsLoad(true); },
   'tool-new': () => openOver('tool-form'),
+
   async 'tool-ok'(d) {
     const it = (ui.tools || []).find((x) => x.id === d.id);
     try { await vault.toolsUpdate(d.id, { status: 'ok' }); toast('Annonce approuvée · en ligne sur le site'); } catch (e) { return toast(e.message || 'Impossible', { bad: true }); }
     vault.mutate(() => {}, 'Annonce approuvée', it ? it.title : '', '');
     toolsLoad(true);
   },
+
   async 'tool-del'(d) {
     const it = (ui.tools || []).find((x) => x.id === d.id);
     if (!(await confirmBox(`Retirer « ${it ? it.title : 'cette annonce'} » ?`, { ok: 'Retirer', danger: true, detail: 'L’annonce et ses photos disparaissent du site et de l’app du locataire.' }))) return;
@@ -8660,44 +8013,15 @@ const ACTIONS = {
     vault.mutate(() => {}, 'Annonce retirée', it ? it.title : '', '');
     toolsLoad(true);
   },
-  'champ-year': (d) => { ui.champYear = +d.id; renderView(); },
-  'champeq-year': (d) => { ui.champEqYear = +d.id; renderView(); },
-  async 'champeq-prize'(d) {
-    const y = ui.champEqYear || new Date().getFullYear();
-    const cur = vault.get('reglages', 'champions') || {};
-    const eq = { ...(cur.eq || {}) }, yp = { ...(eq[y] || {}) };
-    const w = vault.get('intervenants', d.id) || {};
-    if (yp[d.id]) {
-      if (!(await confirmBox('Annuler « récompense remise » ?', { ok: 'Annuler', detail: intervFull(w) }))) return;
-      delete yp[d.id];
-    } else yp[d.id] = today();
-    eq[y] = yp;
-    await vault.mutate((tx) => tx.put('reglages', { ...cur, id: 'champions', eq }), yp[d.id] ? 'Récompense remise 🎁' : 'Récompense annulée', `${intervFull(w)} — ouvrier de l’année ${y}`, d.id);
-    if (yp[d.id]) toast('🎁 Bravo, ' + (w.prenom || intervFull(w)) + ' !');
-  },
-  'champ-refresh': () => champLoad(true),
-  async 'champ-pizza'(d) {
-    const y = ui.champYear || new Date().getFullYear();
-    const cur = vault.get('reglages', 'champions') || {};
-    const prizes = { ...(cur.prizes || {}) };
-    const yp = { ...(prizes[y] || {}) };
-    const l = vault.get('locataires', d.id) || {};
-    if (yp[d.id]) {
-      if (!(await confirmBox('Annuler « pizza offerte » ?', { ok: 'Annuler la pizza', detail: fullName(l) }))) return;
-      delete yp[d.id];
-    } else yp[d.id] = today();
-    prizes[y] = yp;
-    await vault.mutate((tx) => tx.put('reglages', { ...cur, id: 'champions', prizes }), yp[d.id] ? 'Pizza offerte 🍕' : 'Pizza annulée', `${fullName(l)} — locataire de l’année ${y}`, d.id);
-    if (yp[d.id]) toast('🍕 Bon appétit, ' + (l.prenom || fullName(l)) + ' !');
-  },
+
   'open-chat': (d) => { openSheet('imm', d.id, 'chat'); chatLoad(d.id, true); },
-  'chat-refresh': (d) => chatLoad(d.id, true),
+
   'chat-reply-priv': (d) => {
     ui.chatTo = { ...(ui.chatTo || {}), [d.id]: d.loc };
     const sel = document.querySelector(`select[name="to"][data-gid="${d.id}"]`);
     if (sel) { sel.value = d.loc; const ta = sel.closest('form').querySelector('textarea'); if (ta) ta.focus(); }
   },
-  tfwd: (d) => openOver('tfwd-form', d.id),
+
   async 'vrai-tog'(d, el) {
     const r = vault.get(d.c, d.id);
     if (!r) return;
@@ -8706,7 +8030,9 @@ const ACTIONS = {
     if (el) { el.classList.toggle('on', on); el.textContent = on ? '⭐ Vrai' : '☆ Test ?'; }
     toast(on ? '⭐ Gardé pour toujours : « Supprimer les données de test » n’y touchera pas' : '☆ Plus protégé');
   },
+
   'test-clean': () => openSheet('test-clean'),
+
   async 'test-clean-do'() {
     const plan = testPlan();
     if (!plan.del.total) return toast('Rien à supprimer');
@@ -8724,11 +8050,16 @@ const ACTIONS = {
     toast(`🧹 ${plan.del.total} fiches de test supprimées · ${plan.keep.total} ⭐ gardées`);
     go('dashboard', true);
   },
-  'ann-new': () => { if (!TENANT) netLoad(); openSheet('ann-new'); },
+
+  'ann-new': () => {
+    openSheet('ann-new');
+  },
+
   'ann-log': () => openSheet('ann-log'),
   'ann-fwd': (d) => { const r = vault.get('reglages', d.id); if (!r) return; if (!r.vu) vault.mutate((tx) => tx.put('reglages', { id: r.id, vu: true }), '📣 Annonce lue', ''); openSheet('ann-new', null, null, r.x); },
   'ann-vu': (d) => vault.mutate((tx) => tx.put('reglages', { id: d.id, vu: true }), '📣 Annonce lue', ''),
   'eqc-mn': (d) => { ui.eqcMn = ui.eqcMn === d.id ? '' : d.id; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
+
   async 'eqc-edit'(d) {
     ui.eqcMn = '';
     const i = vault.get('intervenants', d.w), m = i && (i.chat || []).find((x) => x.id === d.id);
@@ -8740,6 +8071,7 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('intervenants', { id: i.id, chat: (vault.get('intervenants', i.id).chat || []).map((z) => (z.id === m.id ? { ...z, x, ed: at, old: [...(z.old || []), { x: z.x, at: z.ed || z.at }].slice(-10) } : z)) }), '💬 Message modifié', intervFull(i), i.id);
     await equipeSync(i.id, true);
   },
+
   async 'eqc-del'(d) {
     ui.eqcMn = '';
     const i = vault.get('intervenants', d.w), m = i && (i.chat || []).find((x) => x.id === d.id);
@@ -8748,7 +8080,9 @@ const ACTIONS = {
     await vault.mutate((tx) => tx.put('intervenants', { id: i.id, chat: (vault.get('intervenants', i.id).chat || []).map((z) => (z.id === m.id ? { ...z, del: new Date().toISOString() } : z)) }), '💬 Message supprimé', intervFull(i), i.id);
     await equipeSync(i.id, true);
   },
+
   'chat-mn': (d) => { ui.chatMn = ui.chatMn === d.id ? '' : d.id; if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); } },
+
   async 'chat-edit'(d) {
     ui.chatMn = '';
     const im = vault.list('immeubles').find((x) => Object.values(x.chats || {}).some((g) => g.id === d.id));
@@ -8769,6 +8103,7 @@ const ACTIONS = {
     toast('Message modifié');
     chatLoad(im.id, true);
   },
+
   async 'chat-del'(d) {
     if (!(await confirmBox('Supprimer ce message ?', { ok: 'Supprimer', danger: true, detail: 'Il disparaît pour tous les habitants.' }))) return;
     const im = vault.list('immeubles').find((x) => Object.values(x.chats || {}).some((g) => g.id === d.id));
@@ -8777,10 +8112,12 @@ const ACTIONS = {
     toast('Message supprimé');
     if (im) chatLoad(im.id, true);
   },
+
   'pay-proof': (d) => openSheet('loc', d.loc, 'docs', `loyer|${d.y}-${d.m}`),
   'doc-type': (d) => { ui.sheet.tab = 'docs'; ui.sheet.preset = d.k; ui.sheet.rendered = false; renderSheet(); },
   relance: (d) => openOver('relance', d.id),
   'rel-lang': (d) => { ui.relLang = d.id; ui.sheet.rendered = false; renderSheet(); },
+
   async 'send-relance'(d) {
     const l = vault.get('locataires', d.id);
     const text = $('#relText').value;
@@ -8791,23 +8128,27 @@ const ACTIONS = {
     if (d.ch === 'wa') open(url, '_blank'); else location.href = url;
     await vault.mutate(() => {}, 'Relance envoyée', `${fullName(l)} (${{ sms: 'SMS', wa: 'WhatsApp', mail: 'email' }[d.ch]})`, l.id);
   },
+
   'copy-relance': async () => {
     try { await navigator.clipboard.writeText($('#relText').value); toast('Texte copié'); } catch { toast('Copie impossible', { bad: true }); }
   },
+
   'open-societe': () => openSheet('societe-form'),
   'open-frais': () => openSheet('frais'),
-  'open-couleurs': () => openSheet('couleurs'),
+
   async 'del-frais'(d) {
     const f = vault.get('frais', d.id);
     if (!(await confirmBox(`Supprimer « ${f.libelle} » ?`, { ok: 'Supprimer', danger: true, detail: 'Pour un frais qui s’arrête, préférez une date de fin en le recréant : les mois passés restent alors comptés.' }))) return;
     await vault.mutate((tx) => tx.remove('frais', d.id), 'Frais fixe supprimé', f.libelle);
   },
+
   index: (d) => openOver('index-form', d.id),
   renew: (d) => openOver('renew-form', d.id),
   'renew-plus': (d) => { sheetEl.querySelector('[name=fin]').value = d.id; },
   'lock-mode': (d) => renderLock(d.id),
   'centrale-edit': () => openSheet('centrale-form'),
   'op-new': () => openSheet('op-form'),
+
   async 'op-del'(d) {
     const o = (ui.ops || []).find((x) => x.id === d.id);
     if (!(await confirmBox(`Retirer l’accès de ${o ? o.name : 'cet opérateur'} ?`, { ok: 'Retirer', danger: true, detail: 'Il ne pourra plus ouvrir la centrale. Vos données ne changent pas.' }))) return;
@@ -8815,13 +8156,14 @@ const ACTIONS = {
     await vault.mutate(() => {}, 'Opérateur retiré', o ? `${o.name} (${OP_ROLES[o.role] || o.role})` : '');
     ui.ops = null; toast('Accès retiré'); renderView();
   },
+
   async 'make-recovery'() {
     if (!navigator.onLine) return toast('Connexion requise', { bad: true });
     const k = await promptKey('Clé de secours', (vault.hasRecovery ? 'Une nouvelle clé de secours remplacera l’ancienne, qui ne fonctionnera plus. ' : '') + 'Saisissez votre clé d’accès actuelle pour continuer.');
     if (!k) return;
     if (!(await vault.verifyPassphrase(k))) return toast("Clé d'accès incorrecte", { bad: true });
     try {
-      if (TENANT) { await recActivate(); if (ui.route === 'reglages' || ui.route === 'dashboard') renderView(); return; }
+      await recActivate();if (ui.route === 'reglages' || ui.route === 'dashboard') renderView();return;
       const code = await vault.createRecovery();
       openSheet('recovery', null, null, code);
       if (ui.route === 'reglages' || ui.route === 'dashboard') renderView();
@@ -8829,17 +8171,21 @@ const ACTIONS = {
       toast(e.message || 'Erreur', { bad: true });
     }
   },
+
   'copy-recovery': async () => {
     try { await navigator.clipboard.writeText($('#rcode').textContent.trim()); toast('Clé copiée'); } catch { toast('Copie impossible : notez-la à la main', { bad: true }); }
   },
+
   'print-recovery': () => printDoc('Clé de secours', html`<h1>Clé de secours</h1><p class="pr-sub">À conserver en lieu sûr. En cas d'oubli de la clé d'accès : luxinterventions.com/locataires.html → « Clé d'accès oubliée ? »</p><div style="font:700 26px/1.4 monospace;letter-spacing:.08em;border:2px solid #000;padding:24px;text-align:center;margin-top:24px">${ui.sheet && ui.sheet.preset}</div>`),
   'print-reckit': (d) => printDoc('Kit de récupération', html`<h1>🧩 Kit de récupération</h1><p class="pr-sub">Centrale ${socName()} — à garder avec les documents de la société.</p><p>Moitié A de votre clé de secours :</p><div style="font-family:monospace;font-size:20pt;font-weight:700;letter-spacing:.06em;border:2px solid #333;border-radius:10px;padding:16px;text-align:center">${d.id}</div><h3>Clé d'accès oubliée ?</h3><ol><li>Ouvrez ${netUrl(TENANT, tenantInfo.fil)} → « Clé d'accès oubliée ? ».</li><li>Écrivez la <b>moitié A</b> (ci-dessus).</li><li>Appelez la centrale : elle vous donne la <b>moitié B</b>.</li><li>Choisissez une nouvelle clé d'accès : vos données sont intactes.</li></ol><p class="pr-sub">Les deux moitiés sont nécessaires : la centrale ne peut pas ouvrir la vôtre avec la moitié B seule.</p>`, true),
   'print-imm': (d) => printDoc('Rapport immeuble', reportImmeuble(d.id, ui.year)),
   'print-log': (d) => printDoc('Rapport logement', reportLogement(d.id)),
+
   async 'print-global'() {
     const c = await choiceBox('Imprimer le rapport ' + ui.year, 'Le résumé tient sur une page. Le rapport complet ajoute le détail de chaque immeuble (loyers mois par mois, dépenses, occupants).', [{ value: 'short', label: 'Résumé' }, { value: 'full', label: 'Complet', cls: 'primary' }]);
     if (c) printDoc('Rapport ' + ui.year, reportGlobal(ui.year, c === 'full'));
   },
+
   'imm-filter': (d) => { ui.immFilter = d.id; renderView(); },
   'more-hist': () => { ui.histShown += 30; renderView(); },
   'set-lang': (d) => { if (d.id === LANG) return; setLang(d.id); location.reload(); },
@@ -8855,6 +8201,7 @@ const ACTIONS = {
     toast('Immeuble réactivé');
     openSheet('imm', im.id);
   },
+
   async 'del-imm'(d) {
     const im = vault.get('immeubles', d.id);
     const ls = vault.list('locataires').filter((l) => l.immId === d.id);
@@ -8873,6 +8220,7 @@ const ACTIONS = {
     closeSheet();
     toast('Immeuble supprimé');
   },
+
   async 'del-loc'(d) {
     const l = vault.get('locataires', d.id);
     if (!(await confirmBox(`Supprimer définitivement ${fullName(l)} ?`, { ok: 'Supprimer', danger: true, detail: isCurrent(l) ? 'Si le locataire part, utilisez plutôt « Départ » : il sera archivé et ses loyers resteront dans les statistiques. La suppression efface aussi ses paiements et documents.' : 'Ses paiements et documents seront effacés et disparaîtront des statistiques.' }))) return;
@@ -8886,6 +8234,7 @@ const ACTIONS = {
     closeSheet();
     toast('Locataire supprimé');
   },
+
   async 'del-log'(d) {
     const g = vault.get('logements', d.id);
     const ls = tenantsOfLog(d.id);
@@ -8896,6 +8245,7 @@ const ACTIONS = {
     for (const ph of photos) await vault.deleteFile(ph.id);
     openSheet('imm', g.immId);
   },
+
   async 'del-dep'(d) {
     const dep = vault.get('depenses', d.id);
     if (!(await confirmBox('Supprimer cette dépense ?', { ok: 'Supprimer', danger: true, detail: `${dep.desc} — ${money(dep.montant)}` }))) return;
@@ -8903,6 +8253,7 @@ const ACTIONS = {
     await vault.mutate((tx) => { tx.remove('depenses', d.id); if (dep.docId) tx.remove('documents', dep.docId); if (t) tx.put('taches', { id: t.id, depId: '', depSkip: true }); }, 'Dépense supprimée', `${dep.desc} ${money(dep.montant)}`, dep.immId);
     if (dep.docId) vault.deleteFile(dep.docId).catch(() => {});
   },
+
   async 'open-doc'(d) {
     const doc = vault.get('documents', d.id);
     try {
@@ -8924,6 +8275,7 @@ const ACTIONS = {
       toast(e.message || 'Document indisponible', { bad: true });
     }
   },
+
   async 'del-edl'(d) {
     const doc = vault.get('documents', d.id);
     if (!doc || !(await confirmBox('Retirer cette photo ?', { ok: 'Retirer', danger: true, detail: `${EDL_ROOM[doc.room] ? EDL_ROOM[doc.room] + ' · ' : ''}photo du ${fmtDate(doc.date)}` }))) return;
@@ -8933,6 +8285,7 @@ const ACTIONS = {
     dropEdlUrl(d.id);
     renderSheet();
   },
+
   async 'edl-out-clear'(d) {
     const outs = edlOf(d.id, 'edl-out'), g = vault.get('logements', d.id);
     if (!outs.length || !(await confirmBox(`Effacer les ${plural(outs.length, 'photo')} de sortie ?`, { ok: 'Effacer', danger: true, detail: 'Après contrôle ou remise à neuf. Vos photos d’entrée restent.' }))) return;
@@ -8940,18 +8293,22 @@ const ACTIONS = {
     for (const ph of outs) { await vault.deleteFile(ph.id).catch(() => {}); dropEdlUrl(ph.id); }
     renderSheet();
   },
+
   async 'open-edl-out'(d) {
     const outs = edlOf(d.id, 'edl-out').filter((x) => !x.seen);
     if (outs.length) await vault.mutate((tx) => { for (const ph of outs) tx.put('documents', { id: ph.id, seen: true }); }, 'Photos de sortie vues', logName(d.id), d.id);
     openSheet('log', d.id, 'edl');
   },
+
   async 'del-doc'(d) {
     const doc = vault.get('documents', d.id);
     if (!(await confirmBox(`Supprimer « ${doc.label} » ?`, { ok: 'Supprimer', danger: true }))) return;
     await vault.mutate((tx) => tx.remove('documents', d.id), 'Document supprimé', doc.label, doc.locId);
     await vault.deleteFile(d.id);
   },
+
   'arch-start': () => openOver('arch-form'),
+
   async 'arch-do'() {
     const f = document.getElementById('archF');
     if (!f) return;
@@ -8976,7 +8333,9 @@ const ACTIONS = {
     toast(`🗄️ Archivé : ${ts.length} interventions, ${dv.length} devis`);
     renderView(); scheduleEspaceSync();
   },
+
   'arch-toggle': () => { showArch = !showArch; toast(showArch ? '👁 Archives affichées' : '🙈 Archives cachées'); renderView(); },
+
   async 'wipe-all'() {
     const k = await promptKey('Effacer toutes les données ?', 'Tout sera supprimé sur tous les appareils : immeubles, logements, locataires, paiements, dépenses et documents. Faites d’abord une sauvegarde chiffrée si besoin. Saisissez votre clé d’accès pour confirmer.');
     if (!k) return;
@@ -8986,21 +8345,26 @@ const ACTIONS = {
     ui.immFilter = '';
     toast('Toutes les données ont été effacées');
   },
+
   async forget() {
     if (!(await confirmBox('Oublier cet appareil ?', { ok: 'Oublier', danger: true, detail: vault.dirty ? 'Attention : des modifications ne sont pas encore synchronisées et seront perdues.' : 'La copie locale chiffrée sera effacée. Vos données restent sur le serveur.' }))) return;
     await vault.forgetDevice();
     location.reload();
   },
+
   async 'export-enc'() {
     const backup = await vault.exportEncrypted();
     download(`ares_sauvegarde_${today()}.ares`, JSON.stringify(backup), 'application/octet-stream');
     toast('Sauvegarde chiffrée téléchargée');
   },
+
   async 'export-json'() {
     if (!(await confirmBox('Exporter en clair ?', { ok: 'Exporter', detail: 'Ce fichier contient toutes les données personnelles des locataires sans chiffrement. Conservez-le en lieu sûr.' }))) return;
     download(`ares_export_${today()}.json`, JSON.stringify(vault.state, null, 2), 'application/json');
   },
+
   import: () => $('#importFile').click(),
+
   // 📦 portabilité : toutes les données du client, lisibles et réimportables (avec les documents)
   async 'my-data'() {
     if (!(await confirmBox('Récupérer toutes vos données ?', { ok: '📦 Télécharger', detail: 'Fichiers NON chiffrés (noms, adresses, paiements, documents) : gardez-les en lieu sûr. Le grand fichier se réimporte dans n’importe quelle centrale (Réglages → Importer).' }))) return;
@@ -9014,61 +8378,21 @@ const ACTIONS = {
     download(`paiements_${at}.csv`, csv([['Locataire', 'Année', 'Mois', 'Montant', 'Date', 'Mode'], ...vault.list('paiements').map((p) => { const l = vault.get('locataires', p.locId) || {}; return [fullName(l), p.y, p.m, p.montant ?? p.amount, p.date, p.mode]; })]), 'text/csv;charset=utf-8');
     toast(`📦 3 fichiers téléchargés · ${Object.keys(files).length} document(s)${miss ? ` · ${miss} illisible(s)` : ''}`);
   },
+
   async 'legacy-import'() {
     const r = await vault.importLegacy(legacyLocal());
     toast(`Import : ${r.immeubles} immeubles, ${r.locataires} locataires, ${r.documents} documents`);
   },
+
   async 'legacy-wipe'() {
     if (!(await confirmBox("Effacer l'ancienne copie non chiffrée ?", { ok: 'Effacer', danger: true, detail: 'Importez-la avant si ce n’est pas déjà fait. Cette action ne touche pas aux données chiffrées.' }))) return;
     localStorage.removeItem('aresLocData');
     localStorage.removeItem('aresLastBackup');
     renderView();
     toast('Ancienne copie effacée');
-  },
+  }
 };
 
-// ↪️ envoyer un signalement à LUXINTERVENTIONS (bouton ↪️ ou automatique) : photos, contact, entrée, accès ; renvoie le nombre de photos
-async function tfwdSend(t, o = {}) {
-  const l = vault.get('locataires', t.locId) || {}, im = vault.get('immeubles', t.immId || l.immId) || {};
-  const acc = String(o.accesTxt || '').trim(), entree = String(o.entree || '').trim();
-  const photos = [];
-  let size = 0;
-  for (const d of vault.list('documents').filter((x) => x.tacheId === t.id && /^image\//.test(x.mime || '')).slice(0, 6)) {
-    const b = await vault.readFile(d.id).catch(() => null);
-    if (!b || size + b.byteLength > 7e6) continue;
-    size += b.byteLength; photos.push({ b: b64u(b) });
-  }
-  const who = o.auto ? '🤖 envoi automatique' : whoLabel() || socName();
-  const d = { type: 'demande', client: socName(), fil: tenantInfo.fil || '', ref: t.id, titre: String(t.titre || '').replace(/^(Signalement|Problème signalé par [^:]+) : /, '').slice(0, 120), urgence: TDEM_URG[o.urgence] || TDEM_URG.normal,
-    adresse: [im.adresse, im.ville, logName(t.logId || l.logId)].filter(Boolean).join(' — ') || t.adr || '', texte: [String(t.note || '').slice(0, 2500), String(o.plus || '')].filter(Boolean).join('\n\n'),
-    ...(o.contact ? { contact: fullName(l), tel: l.tel || '' } : {}), ...(entree ? { entree } : {}),
-    ...(acc ? { acces: { txt: acc, by: `${who} (${socName()})`, at: new Date().toISOString() } } : {}), photos, t: new Date().toISOString() };
-  const k = await (await vault.call('network-key')).json();
-  await vault.call('demande', { method: 'POST', body: await sealForOwner(k.pub, d) });
-  await vault.mutate((tx) => {
-    tx.put('taches', { id: t.id, fwd: { at: d.t, by: who, ...(o.auto ? { auto: 1 } : {}), ...(acc ? { acces: `${who} le ${fmtDate(today())}` } : {}) } });
-    if (entree && im.id && entree !== im.codeEntree) tx.put('immeubles', { id: im.id, codeEntree: entree });
-  }, o.auto ? '↪️ Envoyé automatiquement à LA CENTRAL' : '↪️ Envoyé à LA CENTRAL', d.titre, t.locId || '');
-  return photos.length;
-}
-// 🤖 centrale d'un client (ARES…) : les dégâts signalés par les locataires partent tout seuls à LUXINTERVENTIONS, qui envoie l'ouvrier.
-// Seulement les réparations (pas le dossier / paiements), arrivées depuis l'activation (pas les anciens signalements), une fois chacune.
-let autoFwdBusy = false;
-async function autoFwd() {
-  if (!TENANT || autoFwdBusy || !vault.unlocked || tenantInfo.state === 'ro') return;
-  autoFwdBusy = true;
-  try {
-    let from = (vault.get('reglages', 'autoFwd') || {}).from;
-    if (!from) { from = new Date().toISOString(); await vault.mutate((tx) => tx.put('reglages', { id: 'autoFwd', from }), '🤖 Envoi automatique des dégâts activé', ''); }
-    const todo = vault.list('taches').filter((t) => t.sentAt && t.sentAt >= from && !t.fwd && t.locId && t.type === 'reparation' && t.statut !== 'fait');
-    let n = 0;
-    for (const t of todo) {
-      const im = vault.get('immeubles', t.immId || (vault.get('locataires', t.locId) || {}).immId) || {};
-      try { await tfwdSend(t, { urgence: t.urgent ? 'urgent' : 'normal', contact: true, entree: im.codeEntree || '', auto: true }); n++; } catch { break; /* hors ligne : au prochain tour */ }
-    }
-    if (n) toast(`↪️ ${plural(n, 'signalement')} envoyé${n > 1 ? 's' : ''} automatiquement à LA CENTRAL`);
-  } finally { autoFwdBusy = false; }
-}
 const FORMS = {
   async abo(fd) {
     const id = fd.get('id'), g = (k) => String(fd.get(k) || '').trim(), cur = aboOf(id) || {};
@@ -9077,34 +8401,19 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('reglages', { id: 'abos', list: { ...aboAll(), [id]: rec } }), 'Abonnement', (ptlOrg(id) || {}).name || id);
     closeSheet(); toast('Abonnement enregistré');
   },
+
   async 'ger-msg'(fd, f) {
     const id = fd.get('id'), x = String(fd.get('x') || '').trim(); if (!x) return;
     try { await ptlApi(`tickets/${id}/comments`, { method: 'POST', body: { text: x } }); } catch (e) { return toast(e.message, { bad: true }); }
     f.reset(); toast('Message envoyé à la gérance'); ptlTicketOpen(id);
   },
+
   async radio(fd) {
     let url = String(fd.get('url') || '').trim(); if (url && !/^https?:\/\//i.test(url)) url = 'https://' + url;
     await vault.mutate((tx) => tx.put('reglages', { id: 'radio', nom: String(fd.get('nom') || '').trim().slice(0, 60), url: url.slice(0, 500) }), 'Radio de l’app des locataires', url);
     toast('Radio enregistrée'); scheduleEspaceSync();
   },
-  async 'ptl-login'(fd, f) {
-    const email = String(fd.get('email') || '').trim().toLowerCase(), pass = String(fd.get('pass') || '');
-    const btn = f.querySelector('[type=submit]'); btn.disabled = true;
-    ui.ptl.email = email;
-    try {
-      const pre = await ptlApi('prelogin', { method: 'POST', body: { email }, anon: true });
-      const authKey = await ptlDerive(pass, pre.salt, pre.iter);
-      const { token } = await ptlApi('login', { method: 'POST', body: { email, authKey }, anon: true });
-      const me = await fetch(PTL_API + 'me', { headers: { Authorization: 'Bearer ' + token }, cache: 'no-store' }).then((r) => r.json());
-      if (!me.user || me.user.role !== 'admin') {
-        fetch(PTL_API + 'logout', { method: 'POST', headers: { Authorization: 'Bearer ' + token } }).catch(() => {});
-        throw new PtlError(403, 'Ce compte est celui d’une gérance : connectez le compte LA CENTRAL.');
-      }
-      await vault.mutate((tx) => tx.put('reglages', { id: 'portail', token, email, name: me.user.name || '' }), 'Gérances connecté', email);
-      ui.ptl = { data: null, loading: false, err: '', inv: {} };
-      toast('Connecté au Gérances'); renderView();
-    } catch (e) { ui.ptl.err = e.message; btn.disabled = false; renderView(); }
-  },
+
   async ger(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
     const id = g('id'), b = { kind: ORG_KINDS[g('kind')] ? g('kind') : 'gerance', name: g('name'), email: g('email'), phone: g('phone'), rcs: g('rcs').toUpperCase().replace(/\s+/g, '') };
@@ -9121,6 +8430,7 @@ const FORMS = {
     await ptlLoad();
     openSheet('ger', nid, id ? null : 'acces');
   },
+
   // 🧾 Facturation d'une gérance : avec ou sans TVA (le reste vient de la gérance)
   async 'ger-tva'(fd) {
     const org = String(fd.get('org') || ''), cur = (vault.get('reglages', 'factClients') || {}).list || {}, reg = tvaRead(fd);
@@ -9128,6 +8438,7 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('reglages', { id: 'factClients', list: { ...cur, [org]: { ...(cur[org] || {}), regime: reg.regime, taux: reg.taux, mention: reg.mention } } }), 'TVA de la gérance', `${o.name || ''} : ${tvaOn(reg) ? 'avec TVA' : 'sans TVA'}`);
     toast(tvaOn(reg) ? '✅ Factures avec TVA' : '✅ Factures sans TVA');
   },
+
   async 'ger-user'(fd, f) {
     const nm = String(fd.get('name') || '').trim();
     const org = fd.get('org'), b = { org_id: org, name: nm, email: String(fd.get('email') || '').trim(), phone: String(fd.get('phone') || '').trim(), role: fd.get('role') };
@@ -9139,6 +8450,7 @@ const FORMS = {
     await ptlLoad();
     openSheet('ger-invite', r.id);
   },
+
   async 'fact-set'(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
     { const ib = ibanCheck(g('iban')), bc = bicCheck(g('bic'), ib.ok ? ib.cc : ''); if (!ib.ok) return toast('IBAN : ' + ib.msg, { bad: true }); if (!bc.ok) return toast('BIC : ' + bc.msg, { bad: true }); }
@@ -9146,12 +8458,14 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('reglages', { id: 'facturation', nom: g('nom'), marque: g('marque'), adresse: g('adresse'), ville: g('ville'), rcs: g('rcs'), tva: g('tva'), tel: g('tel'), email: g('email'), autorisation: g('autorisation'), iban, bic: g('bic').toUpperCase(), banque: g('banque'), taux: num(fd.get('taux')), delai: Math.max(0, Math.round(num(fd.get('delai')))) || 30, marge: num(fd.get('marge')), avv: Math.max(0, Math.round(num(fd.get('avv')))), rog: Math.max(1, Math.round(num(fd.get('rog')))) || 30 }), 'Facturation des interventions', g('nom'));
     toast('Facturation enregistrée'); goBack();
   },
+
   async facture(fd, fm) {
     const t = vault.get('taches', fd.get('id'));
     if (!t || t.facture) return;
     await vault.mutate((tx) => tx.put('taches', { id: t.id, factDraft: factRead(fm) }), 'Brouillon de facture', t.titre, t.immId);
     toast('Brouillon enregistré'); goBack();
   },
+
   async 'hor-std'(fd) {
     const i = vault.get('intervenants', fd.get('id'));
     if (!i) return;
@@ -9159,6 +8473,7 @@ const FORMS = {
     await vault.mutate((tx) => tx.put('intervenants', { id: i.id, horaires }), 'Routine de la semaine', `${intervFull(i)} — ${horaires.length} créneau(x)`, i.id);
     toast('Routine enregistrée'); goBack();
   },
+
   async 'plan-week'(fd) {
     const i = vault.get('intervenants', fd.get('id'));
     const mon = String(fd.get('mon') || '');
@@ -9177,6 +8492,7 @@ const FORMS = {
     toast(copy ? `Planning enregistré sur ${copy + 1} semaines` : 'Planning de la semaine enregistré');
     goBack();
   },
+
   async occ(fd) {
     const t = vault.get('taches', fd.get('id')), i = t && vault.get('intervenants', t.intervenantId);
     if (!t || !i) return;
@@ -9191,6 +8507,7 @@ const FORMS = {
     toast(`🧾 ${o.no} — ${eur(o.tot)}`);
     goBack();
   },
+
   async interv(fd) {
     const id = fd.get('id');
     const g = (k) => String(fd.get(k) || '').trim();
@@ -9221,6 +8538,7 @@ const FORMS = {
     toast(id ? 'Intervenant enregistré' : 'Intervenant ajouté');
     goBack();
   },
+
   async tache(fd) {
     const id = fd.get('id');
     const prev = id ? vault.get('taches', id) : null;
@@ -9295,6 +8613,7 @@ const FORMS = {
     }
     goBack();
   },
+
   async door(fd) {
     const g = vault.get('logements', fd.get('id'));
     const code = String(fd.get('code') || '').trim();
@@ -9305,6 +8624,7 @@ const FORMS = {
     toast('Code enregistré');
     goBack();
   },
+
   async 'net-bail-set'(fd) {
     const tid = String(fd.get('tid') || ''), g = (k) => String(fd.get(k) || '').trim(), sous = g('loueur') === 'sous', t = ((ui.net && ui.net.list) || []).find((x) => x.id === tid) || {};
     if (sous && !g('realOwner')) return toast('Indiquez le propriétaire principal / réel (nom et prénom, ou société)', { bad: true });
@@ -9315,6 +8635,7 @@ const FORMS = {
     toast(sous && !(bf && bf.size) && !netInfo(tid).bailDoc ? '⚠️ Enregistré — bail principal manquant' : 'Enregistré', sous && !netInfo(tid).bailDoc ? { bad: true } : undefined);
     ui.sheet.rendered = false; renderSheet();
   },
+
   async tdem(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
     const ou = g('ou'), lg = ou.startsWith('l:') ? vault.get('logements', ou.slice(2)) : null, imO = ou.startsWith('c:') ? vault.get('immeubles', ou.slice(2)) : lg ? vault.get('immeubles', lg.immId) : null;
@@ -9340,31 +8661,7 @@ const FORMS = {
     toast(`Demande envoyée à LA CENTRAL${photos.length ? ` avec ${plural(photos.length, 'photo')}` : ''}`);
     goBack();
   },
-  async 'lic-tarifs'(fd) {
-    const v = (k) => { const x = String(fd.get(k) || '').trim().replace(',', '.'); return x === '' ? '' : Math.max(0, num(x)); };
-    const rec = { id: 'licTarifs' };
-    for (const k of Object.keys(NET_FIL)) rec[k] = { an1: v('an1_' + k), r2: v('r2_' + k) === '' ? '' : Math.min(90, v('r2_' + k)), r3: v('r3_' + k) === '' ? '' : Math.min(90, v('r3_' + k)) };
-    await vault.mutate((tx) => tx.put('reglages', rec), '💶 Tarifs des licences', Object.keys(NET_FIL).filter((k) => rec[k].an1).map((k) => `${NET_FIL[k].split(' ')[0]} ${rec[k].an1} €`).join(' · '));
-    toast('Tarifs enregistrés');
-    goBack();
-  },
-  async 'net-new'(fd) {
-    const g = (k) => String(fd.get(k) || '').trim();
-    if (!g('nom')) return;
-    let r;
-    const sous = g('fil') === 'proprio' && g('loueur') === 'sous';
-    if (sous && !g('realOwner')) return toast('Indiquez le propriétaire principal / réel (nom et prénom, ou société)', { bad: true });
-    try { r = await netCreate(g('fil'), g('nom'), g('tel'), g('email')); } catch (e) { if (g('fil') === 'taxi' && e.status === 400) return toast('🚕 Centrale taxi : le serveur (Worker) doit être republié d’abord', { bad: true }); return toast(e.status === 404 ? 'Le serveur (Worker) n’est pas encore à jour : publiez-le d’abord' : e.message, { bad: true }); }
-    if (g('fil') === 'proprio') await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + r.id, loueur: sous ? 'sous' : 'proprio', realOwner: sous ? g('realOwner') : '' }), '🔑 Client propriétaire / bailleur principal', g('nom'));
-    await vault.mutate((tx) => tx.put('reglages', { id: 'netc-' + r.id, ...netInfo(r.id), pays: g('pays').toUpperCase().slice(0, 2), ville: g('ville').slice(0, 60), ...(g('fil') === 'taxi' ? { licence: g('licence').slice(0, 40), comT: g('comT') === 'pct' ? 'pct' : 'eur', comV: Math.max(0, num(g('comV'))) } : {}) }), '🌍 Pays / ville du client', `${g('nom')} · ${g('ville')}`);
-    const bf = fd.get('bail');
-    if (sous && bf && bf.size) await netBailSave(r.id, bf, g('nom'));
-    if (sous && !(bf && bf.size)) toast('⚠️ Bail principal manquant : vous pourrez l’ajouter sur sa fiche', { bad: true });
-    toast('Essai accordé : envoyez l’invitation');
-    goBack();
-    await netLoad(true);
-    openOver('net-client', r.id);
-  },
+
   async 'net-edit'(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), id = g('id');
     const t0 = ((ui.net && ui.net.list) || []).find((x) => x.id === id) || {};
@@ -9376,6 +8673,7 @@ const FORMS = {
     goBack();
     netLoad(true);
   },
+
   async avis(fd) {
     const id = fd.get('id');
     const rec = { immId: fd.get('immId') || '', texte: fd.get('texte').trim(), debut: fd.get('debut') || '', fin: fd.get('fin') || '' };
@@ -9385,6 +8683,7 @@ const FORMS = {
     toast('Avis enregistré');
     goBack();
   },
+
   async icsall(fd) {
     const st = ui.icsAll;
     if (!st || !st.groups) return;
@@ -9404,6 +8703,7 @@ const FORMS = {
     publishPub(im.id);
     goBack();
   },
+
   async collecte(fd) {
     const id = fd.get('id');
     const mode = fd.get('mode');
@@ -9430,13 +8730,16 @@ const FORMS = {
     publishPub(rec.immId);
     goBack();
   },
+
   unlock: onUnlock,
+
   async 'centrale-resp'(fd) {
     const g = (k) => String(fd.get(k) || '').trim();
     await vault.mutate((tx) => tx.put('reglages', { id: 'centrale', prenom: g('prenom'), nom: g('nom'), tel: g('tel'), email: g('email') }), 'Responsable de la centrale', `${g('prenom')} ${g('nom')}`);
     vault.api.who = whoLabel();
     toast('Responsable enregistré'); closeSheet(); portailPubsSync().catch(() => {});
   },
+
   async 'op-save'(fd, f) {
     const g = (k) => String(fd.get(k) || '').trim(), pass = String(fd.get('pass') || '');
     if (pass.length < 10) return toast('Mot de passe : au moins 10 caractères', { bad: true });
@@ -9450,10 +8753,12 @@ const FORMS = {
     await vault.mutate(() => {}, 'Opérateur ajouté', `${g('name')} (${OP_ROLES[fd.get('role')] || ''}) · ${g('login').toLowerCase()}`);
     ui.ops = null; closeSheet(); toast('✅ Accès créé : donnez-lui son identifiant et son mot de passe'); renderView();
   },
+
   'op-unlock': onOpUnlock,
   setup: onSetup,
   recover: onRecover,
   newkey: onNewKey,
+
   async imm(fd) {
     const id = fd.get('id');
     const rec = {
@@ -9467,6 +8772,7 @@ const FORMS = {
     if (saved.pubToken) publishPub(saved.id);
     openSheet('imm', saved.id);
   },
+
   async coloc(fd) {
     const immId = fd.get('immId'), nom = String(fd.get('nom') || '').trim(), n = Math.max(2, Math.min(10, +fd.get('n') || 2));
     if (!nom) return;
@@ -9482,6 +8788,7 @@ const FORMS = {
     toast(`${nom} : ${n + (mans ? 1 : 0)} chambres créées`);
     goBack();
   },
+
   async log(fd) {
     const id = fd.get('id');
     const rec = {
@@ -9502,6 +8809,7 @@ const FORMS = {
     toast(id ? 'Logement enregistré' : 'Logement ajouté');
     openSheet('log', saved.id);
   },
+
   async loc(fd) {
     const id = fd.get('id');
     const prev = id ? vault.get('locataires', id) : null;
@@ -9538,6 +8846,7 @@ const FORMS = {
     toast(replaced.length ? 'Locataire remplacé, ancien locataire archivé' : id ? 'Locataire enregistré' : 'Locataire ajouté');
     openSheet('loc', saved.id);
   },
+
   async endimm(fd) {
     const im = vault.get('immeubles', fd.get('id'));
     if (!im) return;
@@ -9551,6 +8860,7 @@ const FORMS = {
     toast('Immeuble archivé · historique conservé');
     openSheet('imm', im.id);
   },
+
   async replace(fd) {
     const old = vault.get('locataires', fd.get('id'));
     if (!old) return;
@@ -9566,6 +8876,7 @@ const FORMS = {
     toast(nu ? `${fullName(nu)} enregistré · ${fullName(old)} archivé` : 'Départ enregistré · logement vacant');
     if (old.logId) openSheet('log', old.logId); else openSheet('loc', nu ? nu.id : old.id);
   },
+
   async pay(fd) {
     const locId = fd.get('locId'), y = +fd.get('y'), m = +fd.get('m');
     const l = vault.get('locataires', locId);
@@ -9579,6 +8890,7 @@ const FORMS = {
     toast(montant <= 0 ? 'Paiement annulé' : montant < due ? `Paiement partiel · reste ${money(due - montant)}` : 'Paiement enregistré');
     goBack();
   },
+
   async societe(fd, form) {
     const associes = [];
     for (let i = 0; i < 12; i++) {
@@ -9589,12 +8901,6 @@ const FORMS = {
     const total = sum(associes, (a) => a.part);
     if (associes.length && Math.abs(total - 100) > 0.01) return (form.querySelector('.lock-err').textContent = `Le total des parts fait ${total} % au lieu de 100 %.`);
     const g = (k) => String(fd.get(k) || '').trim();
-    if (!TENANT) {
-      const rm = { id: 'main', associes, assujetti: g('assujetti') !== '0', periode: g('periode') || 't', taux: g('taux') };
-      await vault.mutate((tx) => tx.put('reglages', rm), 'Associés & TVA modifiés', APP_BRAND.nom);
-      toast('Enregistré');
-      return closeSheet();
-    }
     const pay = { paypal: g('paypal').replace(/^(https?:\/\/)?(www\.)?paypal\.(me|com\/paypalme)\//i, '').replace(/\/.*$/, ''), cardLink: g('cardLink'), btc: g('btc'), eth: g('eth'), usdt: g('usdt'), usdtNet: g('usdtNet') || 'erc20', usdc: g('usdc'), usdcNet: g('usdcNet') || 'erc20' };
     const nomS = g('nom');
     const idErr = WRONG_ID.test([nomS, g('rcs'), g('tvaNum')].join(' ')) ? 'Ces apps appartiennent à NOBIS s.a.r.l. (RCS B225665, TVA LU30599412) : Ares Invest S.A. / B225245 ne peut pas être mis ici.'
@@ -9617,6 +8923,7 @@ const FORMS = {
     toast('Enregistré');
     closeSheet();
   },
+
   async frais(fd, form) {
     const rec = { libelle: fd.get('libelle').trim(), montant: num(fd.get('montant')), cat: fd.get('cat'), debut: fd.get('debut'), fin: fd.get('fin') };
     if (!rec.libelle || !rec.montant) return;
@@ -9624,6 +8931,7 @@ const FORMS = {
     form.reset();
     toast('Frais ajouté');
   },
+
   async index(fd) {
     const l = vault.get('locataires', fd.get('id'));
     const loyer = num(fd.get('loyer'));
@@ -9635,6 +8943,7 @@ const FORMS = {
     toast('Loyer révisé');
     goBack();
   },
+
   async renew(fd) {
     const l = vault.get('locataires', fd.get('id'));
     const fin = fd.get('fin');
@@ -9642,11 +8951,13 @@ const FORMS = {
     toast('Contrat prolongé');
     goBack();
   },
+
   async notes(fd) {
     const l = vault.get('locataires', fd.get('id'));
     await vault.mutate((tx) => tx.put('locataires', { id: l.id, notes: fd.get('notes') }), 'Notes modifiées', fullName(l), l.id);
     toast('Notes enregistrées');
   },
+
   async dep(fd, form) {
     const rec = { immId: fd.get('immId'), logId: fd.get('logId') || '', desc: fd.get('desc').trim(), montant: num(fd.get('montant')), date: fd.get('date'), cat: fd.get('cat'),
       tva: parseFloat(fd.get('tva')) || 0, fournisseur: String(fd.get('fournisseur') || '').trim(), numFacture: String(fd.get('numFacture') || '').trim() };
@@ -9657,6 +8968,7 @@ const FORMS = {
     form.reset();
     toast('Dépense ajoutée');
   },
+
   async tool(fd, form) {
     const files = [...form.querySelector('[name=photos]').files].slice(0, 3);
     if (!files.length) return toast('Ajoutez au moins une photo', { bad: true });
@@ -9674,6 +8986,7 @@ const FORMS = {
       toast(e.message || 'Publication impossible', { bad: true });
     }
   },
+
   async chatpost(fd, form) {
     const im = vault.get('immeubles', fd.get('imm'));
     const g = im && (im.chats || {})[fd.get('gk')];
@@ -9698,18 +9011,7 @@ const FORMS = {
       toast(e.message || 'Envoi impossible', { bad: true });
     }
   },
-  async tfwd(fd, form) {
-    const t = vault.get('taches', fd.get('id'));
-    if (!t) return;
-    const g = (k) => String(fd.get(k) || '').trim();
-    if (fd.get('acces') && !g('accesTxt')) return toast('Indiquez le code ou les instructions d’accès au logement (ou décochez 🔑)', { bad: true });
-    setBusy(form, true, 'Envoi…');
-    try {
-      const n = await tfwdSend(t, { urgence: g('urgence'), contact: !!fd.get('contact'), entree: g('entree'), accesTxt: fd.get('acces') ? g('accesTxt') : '', plus: g('plus') });
-      closeSheet();
-      toast(`↪️ Envoyé à LA CENTRAL${n ? ` avec ${plural(n, 'photo')}` : ''}`);
-    } catch (e) { setBusy(form, false); toast(e.status === 423 ? 'Lecture seule : abonnement échu' : e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
-  },
+
   async annsend(fd, form) {
     const x0 = String(fd.get('x') || '').trim().slice(0, 1480), loc = String(fd.get('loc') || ''), eq = String(fd.get('eq') || ''), net = String(fd.get('net') || '');
     if (!x0) return;
@@ -9740,6 +9042,7 @@ const FORMS = {
       for (const im of vault.list('immeubles')) if ((ui.chatAt || {})[im.id]) chatLoad(im.id, true);
     } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
+
   async 'eq-chat'(fd, form) {
     const i = vault.get('intervenants', fd.get('id')), x = String(fd.get('x') || '').trim().slice(0, 1500);
     if (!i || !x) return;
@@ -9749,25 +9052,14 @@ const FORMS = {
     if (ui.drafts) delete ui.drafts['w:' + i.id];
     try { await eqChatSend([i.id], x, false); toast('Message envoyé'); renderSheet(); } catch (e) { form.x.value = draft; setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
+
   async 'tpay-conf'(fd) {
     const g = (k) => String(fd.get(k) || '').trim(), payMode = fd.get('payMode') === 'month' ? 'month' : 'each';
     try { await tenantSend({ type: 'conf', payMode }); } catch (e) { return toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
     await vault.mutate((tx) => tx.put('reglages', { id: 'tpayConf', payMode, iban: g('iban').toUpperCase(), lien: g('lien') }), '💳 Paiements', payMode === 'month' ? 'facture mensuelle' : 'chaque intervention');
     toast('Enregistré'); goBack();
   },
-  async 'eq-group'(fd) {
-    const ids = fd.getAll('w').map(String).filter((wid) => vault.get('intervenants', wid));
-    await vault.mutate((tx) => tx.put('reglages', { id: 'eqGroup', ids }), 'Groupe de l’équipe', plural(ids.length, 'ouvrier'));
-    toast('Groupe enregistré');
-    goBack();
-  },
-  async 'eq-special'(fd, form) {
-    const ids = fd.getAll('w').map(String).filter((wid) => vault.get('intervenants', wid)), x = String(fd.get('x') || '').trim().slice(0, 1500);
-    if (!x) return;
-    if (!ids.length) return toast('Choisissez au moins un ouvrier', { bad: true });
-    setBusy(form, true, 'Envoi…');
-    try { await eqChatSend(ids, x, true); toast(`Message envoyé à ${plural(ids.length, 'ouvrier')}`); goBack(); } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
-  },
+
   async absence(fd, form) {
     const id = fd.get('id');
     const i = vault.get('intervenants', id);
@@ -9791,11 +9083,13 @@ const FORMS = {
       toast(e.message || 'Erreur', { bad: true });
     }
   },
+
   async regles(fd) {
     const id = fd.get('id');
     await vault.mutate((tx) => tx.put('immeubles', { id, regles: String(fd.get('regles') || '').trim().slice(0, 4000) }), 'Règles de l’immeuble modifiées', immName(id), id);
     toast('Règles enregistrées · visibles dans l’app des locataires');
   },
+
   async doc(fd, form) {
     const file = fd.get('file');
     const locId = fd.get('locId');
@@ -9815,6 +9109,7 @@ const FORMS = {
       toast(e.message || 'Erreur', { bad: true });
     }
   },
+
   async rekey(fd, form) {
     const err = form.querySelector('.lock-err');
     const pass = fd.get('pass');
@@ -9832,7 +9127,7 @@ const FORMS = {
       btn.disabled = false;
       err.textContent = e.message || 'Erreur';
     }
-  },
+  }
 };
 
 // 📦 recevoir un paquet (fichier importé ou arrivé dans le container) : code → vérification des chiffres → fusion → apps publiées
@@ -9856,11 +9151,11 @@ async function xferReceive(obj, packId) {
 }
 // 🏗️ paquets en attente dans le container de cette centrale (client du réseau)
 async function packSync() {
-  if (!TENANT || !vault.unlocked) return;
+  if (!vault.unlocked) return;
   try { const r = await vault.call('packs'); ui.packs = ((await r.json()).items || []).filter((x) => !x.opened); } catch { ui.packs = []; }
   if (ui.packs.length && ui.route === 'dashboard') renderView();
 }
-const packBox = () => (TENANT && (ui.packs || []).length ? html`${ui.packs.map((x) => html`<button class="alert info" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer;margin-bottom:14px" data-action="pack-open" data-id="${x.id}">📦<div><b>Un paquet de LA CENTRAL vous attend</b>${x.label ? ' · ' + x.label : ''}<div class="tiny">${xferTxt(x.counts || {})} · envoyé le ${fmtDateTime(x.at)} — touchez pour l’ouvrir (code donné par LA CENTRAL)</div></div></button>`)}` : '');
+const packBox = () => ((ui.packs || []).length ? html`${ui.packs.map((x) => html`<button class="alert info" style="width:100%;border:0;font:inherit;text-align:left;cursor:pointer;margin-bottom:14px" data-action="pack-open" data-id="${x.id}">📦<div><b>Un paquet de LA CENTRAL vous attend</b>${x.label ? ' · ' + x.label : ''}<div class="tiny">${xferTxt(x.counts || {})} · envoyé le ${fmtDateTime(x.at)} — touchez pour l’ouvrir (code donné par LA CENTRAL)</div></div></button>`)}` : '');
 
 async function importFile(file) {
   let obj;
@@ -10044,7 +9339,6 @@ const SAT_FACE = { top: '😃 Très bien', moyen: '🧐 Moyen', mauvais: '😡 P
 const devFrom = (d) => { const w = d.chefBy && vault.get('intervenants', d.chefBy); return d.chefBy ? `📋 Rapport de visite de 🦺 ${w ? intervFull(w) : 'chef de chantier'}${d.created ? ' · reçu le ' + fmtDateTime(d.created) : ''}` : d.creePar ? `✏️ Créé par ${d.creePar}${d.created ? ' · ' + fmtDateTime(d.created) : ''}` : ''; };
 // sections de la liste des devis : repliables (on se souvient de celles fermées)
 const devClosed = () => { try { return new Set(JSON.parse(localStorage.getItem('aresDevClosed') || '[]')); } catch { return new Set(); } };
-const devSec = (k, title, list, extra = '', cls = '') => list.length ? html`<details class="dev-sec ${cls}" data-sec="${k}" ${devClosed().has(k) ? '' : new Raw('open')}><summary class="section-label" style="cursor:pointer">${title} (${list.length})</summary>${extra}<div class="list" style="margin-bottom:14px">${list.map(devRow)}</div></details>` : '';
 document.addEventListener('toggle', (e) => { const d = e.target; if (!d.classList || !d.classList.contains('dev-sec')) return; const c = devClosed(); if (d.open) c.delete(d.dataset.sec); else c.add(d.dataset.sec); try { localStorage.setItem('aresDevClosed', JSON.stringify([...c])); } catch { /* stockage indisponible */ } }, true);
 function devRow(d) {
   const s = devState(d), k = devCalc(d);
@@ -10068,23 +9362,6 @@ function devBanner() {
       <div class="dev-bact">${s.k === 'ok' ? html`<button class="btn sm primary" data-action="dev-tache" data-id="${d.id}">➡️ Créer l’intervention</button>`
         : s.k === 'purple' ? html`<span class="tiny" style="color:#7c3aed">Le client peut encore se rétracter. Ensuite : « ➡️ Créer l’intervention ».</span>`
         : html`<button class="btn sm" data-action="dev-acc" data-id="${d.id}">✅ Accepté</button><button class="btn sm ghost danger" data-action="dev-ref" data-id="${d.id}">❌ Refusé</button>`}</div></div>`; })}</div></div>`;
-}
-// onglet Maintenance → Devis
-function devTab() {
-  devSyncSoon();
-  const every = vault.list('devis').sort((a, b) => (b.created || '').localeCompare(a.created || ''));
-  const all = every.filter((d) => !d.arch), arch = every.filter((d) => d.arch);
-  const open = all.filter((d) => devState(d).open), prep = all.filter((d) => devState(d).k === 'prep'), drafts = all.filter((d) => devState(d).k === 'draft'), done = all.filter((d) => !devState(d).open && !['draft', 'prep'].includes(devState(d).k)).slice(0, ui.cpLim || 10);
-  const c = factConf();
-  return html`<p class="small muted" style="margin:0 0 10px">Sur place : photos, rapport et ouvriers prévus (🦺 chef de chantier, ici ou dans son app). Ensuite les prix (👔 directeur) et « ✅ Devis terminé » ; alors seulement l’envoi (PDF, WhatsApp, email ou app de la gérance) et la signature du client.</p>
-    ${c.autorisation ? '' : html`<div class="alert warn" style="margin-bottom:12px">⚠️<div>Ajoutez le <b>n° d’autorisation d’établissement</b> dans <a href="#" data-action="fact-set">🧾 Facturation</a> : il est imprimé sur chaque devis.</div></div>`}
-    <p style="margin:0 0 6px"><span class="tiny muted">🟢 en attente · 🟡 expire bientôt (3 derniers jours) · 🔴 expiré à minuit · 🟣 particulier : délai de rétractation de 14 jours · ✅ accepté</span></p>
-    ${devSec('open', 'En cours', open)}
-    ${devSec('prep', html`<span class="dev-bulb">💡</span> 📋 Rapports de visite reçus — prix à mettre`, prep, html`<p class="tiny muted" style="margin:0 0 6px">Le chef de chantier peut encore les corriger. Mettez les prix puis touchez « ✅ Devis terminé » : ensuite seulement le devis part au client.</p>`, 'dev-warn')}
-    ${devSec('drafts', '✅ Prêts à envoyer', drafts)}
-    ${devSec('done', 'Terminés', done)}
-    ${devSec('arch', '🗄️ Archivés', arch)}
-    ${!every.length ? empty('file', 'Aucun devis pour l’instant.', html`<button class="btn primary" data-action="dev-new">${icon('plus')} Devis</button>`) : ''}`;
 }
 // formulaire : lignes du chef (métier · nombre d'ouvriers · heures par ouvrier)
 const devChefRow = (n, r = {}) => html`<div class="dev-crow" data-n="${n}"><select name="met${n}" data-input="dev-chef" aria-label="Métier"><option value="">— métier —</option>${Object.entries(METIERS).map(([k, v]) => html`<option value="${k}" ${r.met === k ? new Raw('selected') : ''}>${MET_ICON[k] || '👷'} ${v}</option>`)}</select>
@@ -10396,7 +9673,7 @@ document.addEventListener('pointerdown', (ev) => {
 });
 document.addEventListener('pointermove', (ev) => { if (!devSig) return; const [a, b] = devSig.pt(ev); devSig.x.lineTo(a, b); devSig.x.stroke(); });
 const devSigUp = () => { devSig = null; }; // l'image est lue sur le canevas à l'enregistrement
-document.addEventListener('pointerup', devSigUp); document.addEventListener('pointercancel', devSigUp);
+document.addEventListener('pointerup', devSigUp);document.addEventListener('pointercancel', devSigUp);
 // la signature est-elle vide ? (aucun pixel dessiné)
 const devSigEmpty = (c) => !c || !c.getContext('2d').getImageData(0, 0, c.width, c.height).data.some((v, i) => i % 4 === 3 && v > 0);
 Object.assign(FORMS, {
@@ -10654,7 +9931,6 @@ async function devSync() {
   if (ui.sheet && ui.sheet.kind === 'devis') { ui.sheet.rendered = false; renderSheet(); }
 }
 Object.assign(ACTIONS, {
-  'dev-new': () => openSheet('devis'),
   'dev-csv': (d) => {
     const q = (v) => `"${csvSafe(v).replace(/"/g, '""')}"`, n2 = (v) => (Math.round(v * 100) / 100).toFixed(2).replace('.', ',');
     const L = vault.list('devis').filter((x) => x.st !== 'brouillon' && (x.date || '').startsWith(String(d.y))).sort((a, b) => (a.seq || 0) - (b.seq || 0));
@@ -10662,7 +9938,9 @@ Object.assign(ACTIONS, {
     for (const x of L) { const k = devCalc(x), s0 = devSentAt(x), s1 = devDecAt(x); rows.push([devNo(x), x.date, devClient(x), DEV_TYPES[(x.client || {}).type] || '', x.titre || '', n2(k.ht), n2(k.tva), n2(k.ttc), n2(k.acompte), devState(x).lbl, s0 ? new Date(s0).toLocaleString('fr-FR') : '', s1 ? new Date(s1).toLocaleString('fr-FR') : '', s0 && s1 >= s0 ? durTxt(s1 - s0) : '', x.rev || 0].map(q).join(';')); }
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['\ufeff' + rows.join('\n')], { type: 'text/csv' })); a.download = `devis-${d.y}.csv`; document.body.appendChild(a); a.click(); a.remove();
   },
+
   'dev-open': (d) => openSheet('devis', d.id),
+
   // lien web + QR code pour un client externe : il voit, imprime et signe le devis sur son téléphone
   async 'dev-link'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
@@ -10679,6 +9957,7 @@ Object.assign(ACTIONS, {
     await devSent(v, { pubId: j.id, ...(j.token ? { pubToken: j.token } : {}) });
     openOver('dev-link', v.id);
   },
+
   'dev-link-copy': async (d) => { try { await navigator.clipboard.writeText(d.url); toast('Lien copié'); } catch { toast('Copie impossible : sélectionnez le lien', { bad: true }); } },
   'dev-free-add': () => { const box = $('#devFree'); if (!box) return; const n = 1 + Math.max(-1, ...[...box.querySelectorAll('[name^=pl_f]')].map((x) => +x.name.slice(4))); box.insertAdjacentHTML('beforeend', String(devFreeRow(n))); box.lastElementChild.querySelector('input').focus(); },
   'dev-proto-add': () => { const box = $('#devProto'); if (!box) return; const n = 1 + Math.max(-1, ...[...box.querySelectorAll('[name^=frl]')].map((x) => +x.name.slice(3))); box.insertAdjacentHTML('beforeend', String(devProtoRow(n, { f: { m: 1 } }))); box.lastElementChild.querySelector('input').focus(); },
@@ -10686,6 +9965,7 @@ Object.assign(ACTIONS, {
   'dev-pend-del': (d) => { devPend.files.splice(+d.n, 1); const box = $('#devPend'); if (box) setHtml(box, devPendHtml()); },
   'dev-sig-clear': () => { const c = sheetEl.querySelector('canvas.sig-pad'); if (c) c.getContext('2d').clearRect(0, 0, c.width, c.height); },
   'dev-sign': (d) => { if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true }); openOver('devis-sign', d.id); },
+
   async 'dev-visa-del'(d) {
     const v = vault.get('devis', d.id); if (!v || !v.visa) return;
     if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
@@ -10693,6 +9973,7 @@ Object.assign(ACTIONS, {
     await vault.mutate((tx) => tx.put('devis', { id: v.id, visa: null }), 'Devis : signature « Vu et correct » retirée', `${devNo(v)} — ${devClient(v)}`);
     toast('Signature retirée'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   // le directeur a fini (prix compris) : le devis peut partir au client
   async 'dev-fini'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
@@ -10704,12 +9985,14 @@ Object.assign(ACTIONS, {
     await vault.mutate((tx) => tx.put('devis', { id: v.id, fini: { at: new Date().toISOString() } }), 'Devis terminé (directeur)', `${devNo(v)} — ${devClient(v)}`);
     toast('✅ Devis terminé : vous pouvez l’envoyer au client'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   async 'dev-unfini'(d) {
     const v = vault.get('devis', d.id); if (!v || v.st !== 'brouillon') return;
     if (!(await confirmBox(`Remettre le devis ${devNo(v)} en préparation ?`, { ok: '↩️ En préparation', detail: 'Il n’a pas encore été envoyé. Le chef de chantier pourra de nouveau le corriger dans son app ; ensuite touchez encore « ✅ Devis terminé ».' }))) return;
     await vault.mutate((tx) => tx.put('devis', { id: v.id, fini: null }), 'Devis remis en préparation', `${devNo(v)} — ${devClient(v)}`);
     renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   async 'dev-ph-del'(d) {
     const doc = vault.get('documents', d.id);
     if (!doc || !(await confirmBox('Retirer cette photo du devis ?', { ok: 'Retirer', danger: true }))) return;
@@ -10717,12 +10000,14 @@ Object.assign(ACTIONS, {
     await vault.deleteFile(doc.id).catch(() => {});
     ui.sheet.rendered = false; renderSheet();
   },
+
   async 'dev-pdf'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
     if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
     try { pdfView(await devPdf(v), 'Devis ' + devNo(v)); } catch (e) { return toast('PDF impossible : ' + (e.message || e), { bad: true }); }
     if (v.st === 'brouillon') await devSent(v);
   },
+
   async 'dev-share'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
     if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
@@ -10743,6 +10028,7 @@ Object.assign(ACTIONS, {
     await devSent(v);
     if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   async 'dev-ptl'(d) {
     const v = vault.get('devis', d.id); if (!v || !ptlConf()) return toast('App Gérances non connectée', { bad: true });
     if (sheetDirty) return toast('Enregistrez d’abord le devis (💾)', { bad: true });
@@ -10757,6 +10043,7 @@ Object.assign(ACTIONS, {
     toast(`📤 Devis ${devNo(v)} envoyé dans le portail de ${devClient(v)}`);
     ui.sheet.rendered = false; renderSheet();
   },
+
   async 'dev-acc'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
     const part = v.client && v.client.type === 'part';
@@ -10765,23 +10052,27 @@ Object.assign(ACTIONS, {
     await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'accepte', acc: at, decision: { st: 'accepte', at: Date.now(), by: 'LA CENTRAL', note: '' }, ...devH(v, 'accepte') }), 'Devis accepté', `${devNo(v)} — ${devClient(v)}`);
     toast('✅ Devis accepté'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   async 'dev-ref'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
     if (!(await confirmBox(`Devis ${devNo(v)} refusé ?`, { ok: '❌ Refusé', danger: true, detail: devClient(v) }))) return;
     await vault.mutate((tx) => tx.put('devis', { id: v.id, st: 'refuse', decision: { st: 'refuse', at: Date.now(), by: 'LA CENTRAL', note: '' }, ...devH(v, 'refuse') }), 'Devis refusé', `${devNo(v)} — ${devClient(v)}`);
     toast('Devis refusé'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   async 'dev-rev'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
     if (!(await confirmBox(`Nouvelle version R${(v.rev || 0) + 1} ?`, { ok: '🔄 Nouvelle version', detail: 'Même numéro + R1, R2… Modifiez les travaux ou faites une remise, touchez « ✅ Devis terminé », puis renvoyez-le. La signature éventuelle est retirée.' }))) return;
     await vault.mutate((tx) => tx.put('devis', { id: v.id, rev: (v.rev || 0) + 1, st: 'brouillon', fini: null, date: today(), sign: null, acc: '', ...devH(v, 'R' + ((v.rev || 0) + 1)) }), 'Nouvelle version du devis', `${v.no}-R${(v.rev || 0) + 1}`);
     toast(`Version R${(v.rev || 0) + 1} : modifiez puis renvoyez`); ui.sheet.rendered = false; renderSheet();
   },
+
   async 'dev-arch'(d) {
     const v = vault.get('devis', d.id); if (!v || !devLocked(v)) return;
     await vault.mutate((tx) => tx.put('devis', { id: v.id, arch: v.arch ? '' : today() }), v.arch ? 'Devis sorti des archives' : 'Devis archivé', `${devNo(v)} — ${devClient(v)}`);
     toast(v.arch ? 'Devis sorti des archives' : '🗄️ Devis archivé'); renderView(); if (ui.sheet) { ui.sheet.rendered = false; renderSheet(); }
   },
+
   async 'dev-del'(d) {
     const v = vault.get('devis', d.id); if (!v) return;
     if (devLocked(v)) return toast('Devis signé ou accepté : il ne peut pas être supprimé (à conserver 10 ans). Archivez-le.', { bad: true });
@@ -10793,13 +10084,14 @@ Object.assign(ACTIONS, {
     if (v.pubId && ptlConf()) ptlApi('devis-pub/' + v.pubId, { method: 'DELETE' }).catch(() => {});
     sheetDirty = false; closeSheet(); toast('Devis supprimé'); renderView();
   },
+
   // devis accepté → intervention au planning (chantier, rapport, ouvriers prévus, photos du chantier)
   'dev-tache': (d) => {
     const v = vault.get('devis', d.id); if (!v) return;
     const k = devCalc(v), first = k.lines.find((l) => l.w) || {};
     const note = [`Devis ${devNo(v)} accepté — ${eur(k.ttc)} TTC`, v.interloc ? 'Interlocuteur : ' + v.interloc : '', v.client.tel ? 'Tél. ' + v.client.tel : '', ...k.lines.map((l) => `• ${num(l.nb || 1)} × ${METIERS[l.met] || 'ouvrier'} × ${String(num(l.h)).replace('.', ',')} h${l.w ? ' (' + intervName(l.w) + ')' : ''}`), v.chef && v.chef.jours ? 'Durée prévue : ' + v.chef.jours : '', v.chef && v.chef.rapport ? '\n' + v.chef.rapport : ''].filter(Boolean).join('\n');
     openOver('tache-form', null, null, { titre: v.titre || 'Devis ' + devNo(v), note, intervenantId: first.w || '', metiers: k.lines.map((l) => l.met).filter(Boolean), dev: { id: v.id, no: devNo(v), client: devClient(v), adr: v.chantier || v.client.adresse || '', contact: v.interloc || '', tel: v.client.tel || '' } });
-  },
+  }
 });
 
 document.addEventListener('input', (e) => {
@@ -10871,8 +10163,10 @@ document.addEventListener('change', (e) => {
   if (k === 'year') { ui.year = +e.target.value; ui.cpLim = 10; renderView(); }
   if (k === 'dep-file' && e.target.files[0]) { const dep = vault.get('depenses', e.target.dataset.id); if (dep) attachFacture(dep, e.target.files[0]); }
   if (k === 'soc-color' && /^#[0-9a-f]{6}$/i.test(e.target.value)) { vault.mutate((tx) => tx.put('reglages', { id: 'main', color: e.target.value }), 'Couleur de la société', socName()).then(() => { applyBrand(); toast('Couleur enregistrée'); }); return; }
-  if (k === 'soc-logo' && e.target.files[0]) { setLogo(e.target.files[0]).then(() => { if (TENANT) { renderShell(); go(ui.route, true); } }); e.target.value = ''; }
-  if (k === 'brand-ico' && e.target.files[0] && !TENANT && !vault.op) { brandSet(e.target.files[0]); e.target.value = ''; }
+  if (k === 'soc-logo' && e.target.files[0]) { setLogo(e.target.files[0]).then(() => {
+    renderShell();go(ui.route, true);
+  }); e.target.value = ''; }
+  if (k === 'brand-ico' && e.target.files[0] && false && !vault.op) { brandSet(e.target.files[0]); e.target.value = ''; }
   if (k === 'dev-w') { const o = e.target.selectedOptions[0], t = e.target.form[e.target.name.replace('dw', 'dt')]; if (t && o && num(o.dataset.rate)) t.value = o.dataset.rate; const box = $('#devTot'); if (box) setHtml(box, devTotHtml(devRead(e.target.form))); }
   if (k === 'dev-kind') { const f = e.target.form; f.dataset.kind = e.target.value; const pd = $('#devPDir'); if (pd) setHtml(pd, devPDirHtml(devRead(f))); const tb = $('#devTot'); if (tb) setHtml(tb, devTotHtml(devRead(f))); }
   if (k === 'dev-photos' && e.target.files.length) {
