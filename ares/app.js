@@ -27,7 +27,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.325.0';
+const VERSION = '2.326.0';
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
 // 🌐 centrale d'un client du réseau : …/locataires.html?t=<id> (gardé sur cet appareil) ; ?t=main → centrale principale
@@ -680,10 +680,6 @@ const b64big = (bytes) => { let bin = ''; const u = new Uint8Array(bytes); for (
 function tenantBanner() {
   if (tenantInfo.state === 'ro') return html`<div class="alert warn" style="margin-bottom:12px">${icon('lock')}<div><b>Lecture seule</b> — <span>la centrale ne peut pas enregistrer de modification pour le moment.</span></div></div>`;
   return '';
-}
-async function tenantSend(obj) {
-  const k = await (await vault.call('network-key')).json();
-  await vault.call('demande', { method: 'POST', body: await sealForOwner(k.pub, { client: socName(), fil: tenantInfo.fil || '', t: new Date().toISOString(), ...obj }) });
 }
 async function tenantRefresh() {
   if (!vault.unlocked) return;
@@ -1444,18 +1440,6 @@ function tIco() {
   const k = 'aresTIco:' + TENANT, v = vault.unlocked ? societe().logo || '' : null;
   if (v !== null) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch { /* plein */ } return v; }
   try { return localStorage.getItem(k) || ''; } catch { return ''; }
-}
-async function brandSet(file) {
-  const bmp = await createImageBitmap(file).catch(() => null);
-  if (!bmp) return toast('Image illisible', { bad: true });
-  const S = 512, c = document.createElement('canvas'); c.width = S; c.height = S;
-  const x = c.getContext('2d'), k = Math.max(S / bmp.width, S / bmp.height); // carré rempli (recadré au centre), fond blanc
-  x.fillStyle = '#fff'; x.fillRect(0, 0, S, S); x.drawImage(bmp, (S - bmp.width * k) / 2, (S - bmp.height * k) / 2, bmp.width * k, bmp.height * k);
-  const ico = c.toDataURL('image/png');
-  await vault.mutate((tx) => tx.put('reglages', { id: 'brand', ico }), '🖼️ Icône de la CENTRAL-OGL', '');
-  applyBrand(); renderShell(); renderView(); toast('🖼️ Icône changée');
-  // publiée (c'est seulement un logo) : le bandeau DOMIER de toutes les apps la montre
-  try { const b = Uint8Array.from(atob(ico.split(',')[1]), (ch) => ch.charCodeAt(0)); /* fetch d'une adresse data: est bloqué par la CSP */ await vault.call('brand', { method: 'PUT', headers: { 'Content-Type': 'image/png' }, body: b }); } catch { toast('Logo enregistré ici ; pour les apps, publiez le nouveau Worker', { bad: true }); }
 }
 { const ic = tIco(); if (ic) { APP_BRAND.logo = ic; document.querySelectorAll('link[rel~=icon], link[rel=apple-touch-icon]').forEach((l) => { l.href = ic; }); } } // dès l'ouverture (page de la clé)
 const associes = () => (societe().associes || []).filter((a) => a.nom && a.part > 0);
@@ -2944,9 +2928,6 @@ const VIEWS = {
 
   <div class="section-label">Gestion</div>
   <div class="list settings">
-    ${html`<button class="row" data-action="tpay-conf"><span class="avatar">💳</span><span class="grow"><span class="title" style="display:block">Paiements</span><span class="meta">${(vault.get('reglages', 'tpayConf') || {}).payMode === 'month' ? 'Factures des interventions : une par mois' : 'Factures des interventions : à chaque intervention'}</span></span>${icon('chevron')}</button>`}
-        
-        
         <button class="row" data-action="open-societe">${icon('building')}<span class="grow"><span class="title" style="display:block">${"Société & associés"}</span><span class="meta">${!societe().logo ? html`<b style="color:var(--amber,#b45309)">🖼️ Mettez votre logo : vos locataires le voient dans leur app</b><br>` : ''}${societe().nom || 'Nom de la société pour les quittances'} · ${associes().length ? associes().map((a) => `${a.nom} ${a.part}%`).join(', ') : 'aucun associé'}</span></span></button>
   </div>
 
@@ -3424,20 +3405,6 @@ const SHEETS = {
         ${field('Note (visible seulement par vous)', 'note', '', { full: true })}
       </form>`,
       foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer le code</button>`,
-    };
-  },
-
-  'tpay-conf'() {
-    const c = vault.get('reglages', 'tpayConf') || {};
-    return {
-      title: '💳 Paiements',
-      narrow: true,
-      body: html`<form id="f" data-form="tpay-conf" class="fields">
-        <div class="full section-label" style="margin:0">Factures des interventions</div>
-        <label class="row full"><input type="radio" name="payMode" value="each" ${c.payMode !== 'month' ? new Raw('checked') : ''}><span class="grow">À chaque intervention</span></label>
-        <label class="row full"><input type="radio" name="payMode" value="month" ${c.payMode === 'month' ? new Raw('checked') : ''}><span class="grow">Une facture par mois (récapitulatif)</span></label>
-      </form>`,
-      foot: html`<button class="btn" data-action="close-sheet">Annuler</button><button class="btn primary" type="submit" form="f">Enregistrer</button>`,
     };
   },
 
@@ -4455,7 +4422,6 @@ addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); installProm
 
 const ACTIONS = {
   'cent-tog': (d, el) => { const dt = el.closest('details'); dt.open = !dt.open; ui.centOpen = dt.open; },
-  'tpay-conf': () => openOver('tpay-conf'),
   'imm-map': (d) => { ui.mapImm = d.id || ''; renderView(); if (d.id) scrollTo({ top: 0, behavior: 'smooth' }); },
   'cp-tab': (d) => { ui.cpTab = d.id; ui.cpLim = 10; renderView(); },
   'cp-sec': (d) => { ui.cpSec = d.id; go('compta', true); },
@@ -5507,13 +5473,6 @@ const FORMS = {
     } catch (e) { setBusy(form, false); toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
   },
 
-  async 'tpay-conf'(fd) {
-    const g = (k) => String(fd.get(k) || '').trim(), payMode = fd.get('payMode') === 'month' ? 'month' : 'each';
-    try { await tenantSend({ type: 'conf', payMode }); } catch (e) { return toast(e.message || 'Envoi impossible (connexion ?)', { bad: true }); }
-    await vault.mutate((tx) => tx.put('reglages', { id: 'tpayConf', payMode, iban: g('iban').toUpperCase(), lien: g('lien') }), '💳 Paiements', payMode === 'month' ? 'facture mensuelle' : 'chaque intervention');
-    toast('Enregistré'); goBack();
-  },
-
   async regles(fd) {
     const id = fd.get('id');
     await vault.mutate((tx) => tx.put('immeubles', { id, regles: String(fd.get('regles') || '').trim().slice(0, 4000) }), 'Règles de l’immeuble modifiées', immName(id), id);
@@ -5666,7 +5625,6 @@ document.addEventListener('change', (e) => {
   if (k === 'soc-logo' && e.target.files[0]) { setLogo(e.target.files[0]).then(() => {
     renderShell();go(ui.route, true);
   }); e.target.value = ''; }
-  if (k === 'brand-ico' && e.target.files[0] && false && !vault.op) { brandSet(e.target.files[0]); e.target.value = ''; }
 
   if (k === 'soc-sign' && e.target.files[0]) setLogo(e.target.files[0], 'signature');
   if (k === 'soc-sign-w') vault.mutate((tx) => tx.put('reglages', { id: 'main', signW: [6, 8, 10, 12].includes(+e.target.value) ? +e.target.value : 8 }), 'Taille de la signature', `${e.target.value} cm`).then(signRefresh);

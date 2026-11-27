@@ -1,32 +1,14 @@
 /**
- * LA CENTRAL — Worker Cloudflare (contatore + upload foto rapport d'expert)
+ * Worker Cloudflare du site luxinterventions.com — commun à deux applications :
  *
- * Account dedicato, slegato dal dominio luxinterventions.com — DNS e posta
- * restano su Gandi, invariati. Questo Worker gestisce due funzioni:
- *
- * 1) Contatore aperture pagina (reale, cumulativo)
- *    GET /api/hits  ->  { "count": 1234 }
- *    Incrementa e legge un numero intero in KV (binding "HITS").
- *
- * 2) Upload foto per le richieste "Rapport d'expert"
- *    PUT  /api/upload/<requestId>/<1|2|3>   -> { "url": "https://.../photos/..." }
- *      Riceve il file immagine grezzo nel body della richiesta, lo salva in
- *      R2 (binding "PHOTOS") sotto una cartella identificata da requestId
- *      (generato dal browser, es. crypto.randomUUID()).
- *    GET  /photos/<requestId>/<1|2|3>.<ext>
- *      Restituisce la foto salvata — link incluso nell'email inviata via
- *      mailto, cliccabile dal personale per vedere le foto reali.
- *
- * Nessun dato personale è coinvolto oltre alle foto stesse, caricate
- * volontariamente dal cliente per la sua richiesta.
- *
- * 4) Portail Gérance / Syndic (portail.html) — database D1 (binding "DB"):
- *    account personali, residenze, richieste d'intervento, foto, notifiche push.
- *
- * 3) Archivio cifrato "Ares Invest — Gestion locataires" (locataires.html)
- *    /api/ares/*  — vedi la sezione ARES più sotto. Il Worker conserva solo
- *    dati già cifrati nel browser (AES-256-GCM): senza la chiave di accesso
- *    sono illeggibili, anche per Cloudflare.
+ * 1) Le site : compteur d'ouvertures de page (GET /api/hits, KV « HITS »).
+ * 2) App LuxInterventions : envoi des photos et signatures
+ *      PUT /api/upload/<requestId>/<1|2|3>  -> { "url": "https://.../photos/..." }
+ *      GET /photos/<requestId>/<1|2|3>.<ext> (R2 « PHOTOS »)
+ * 3) CENTRAL-OGL (organisation et gestion des locataires) :
+ *      /api/ares/t/<numéro>/…  coffre chiffré de la centrale (le Worker ne garde que des octets chiffrés, AES-256-GCM)
+ *      /api/esp/…, /api/esp-code, /api/board/…, /api/pub/…  apps des locataires (contenu chiffré de bout en bout),
+ *      /api/tr (traduction des messages), /api/news et /ticker (actualités de l'accueil), notifications (D1 « DB »).
  */
 
 const ALLOWED_ORIGIN = "https://luxinterventions.com";
@@ -72,38 +54,12 @@ async function route(request, env, ctx, headers) {
     if (url.pathname === "/ticker" && request.method === "GET") return tickerPage(url.searchParams.get("m"));
 
     // Statistiques anonymes des annonces (vues / clics) envoyées par les apps : aucun nom, aucune donnée personnelle
-    if (url.pathname === "/api/pubstat" && request.method === "POST") return pubStatPost(request, env, headers);
-    if (url.pathname === "/api/publikes" && request.method === "GET") return pubLikesGet(url, env, headers);
     // 🙋‍♀️🙋🏾 Candidatures « Je cherche du travail » : clé publique de la centrale principale (publique par nature) et dépôt chiffré
     // (locataires, hôtes, taxis — aussi ceux des centrales des clients : la candidature va directement chez nous)
     // 🔧 logo DOMIER (choisi dans la centrale principale) : public, affiché dans le bandeau DOMIER de toutes les apps
-    if (url.pathname === "/api/brand" && request.method === "GET") {
-      const o = await env.PHOTOS.get("ares/brand.png");
-      return o ? new Response(o.body, { headers: { "Content-Type": "image/png", "Cache-Control": "public, max-age=600", ...headers } }) : aresJson({ error: "Pas de logo" }, 404, headers);
-    }
-    if (url.pathname === "/api/netkey" && request.method === "GET") {
-      const o = await env.PHOTOS.get("ares/network-key.json");
-      const j = o ? await o.json().catch(() => null) : null;
-      return aresJson(j && j.pub ? { pub: j.pub } : { error: "Pas encore de clé" }, j && j.pub ? 200 : 404, headers, { "Cache-Control": "public, max-age=600" });
-    }
-    if (url.pathname === "/api/job" && request.method === "POST") {
-      const ip = clientIp(request), kIp = "job-rl:" + ip, nIp = parseInt((await env.HITS.get(kIp)) || "0", 10);
-      if (nIp >= 12) return aresJson({ error: "Trop d'envois, réessayez plus tard" }, 429, headers);
-      const body = await request.arrayBuffer();
-      if (body.byteLength < 100 || body.byteLength > 12 * 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
-      await env.PHOTOS.put("ares/tdem/" + Date.now().toString(36) + "-job-" + randHex(4), body);
-      try { await env.HITS.put(kIp, String(nIp + 1), { expirationTtl: 3600 }); } catch { /* quota KV */ }
-      ctx && ctx.waitUntil(espPushSend(env, "owner", "job"));
-      return aresJson({ ok: true }, 200, headers);
-    }
     // 📰 Titres de L'essentiel (flux RSS publics) pour la barre « News » des apps : titre, lien, heure — gardés 15 min
     if (url.pathname === "/api/news" && request.method === "GET") return newsGet(url, ctx, headers);
     // 📣 Annonces du réseau (lecture publique) : apps des locataires et clients des centrales des clients, apps des annonceurs
-    if (url.pathname === "/api/netpubs" && request.method === "GET") {
-      const obj = await env.PHOTOS.get(ARES_NETPUBS);
-      const day = new Date().toISOString().slice(0, 10), j = obj ? await obj.json() : {};
-      return aresJson({ items: (j.items || []).filter((a) => !a.fin || a.fin >= day) }, 200, headers, { "Cache-Control": "public, max-age=120" });
-    }
 
     // ── Archivio cifrato Ares (gestion locataires) ──
     if (url.pathname.startsWith("/api/ares/")) {
@@ -115,11 +71,7 @@ async function route(request, env, ctx, headers) {
     // Code d'accès saisi dans l'app des locataires (empreinte du code seulement ; essais limités)
     if (url.pathname === "/api/esp-code" && request.method === "POST") return espaceCode(request, env, headers);
 
-    const bm = url.pathname.match(/^\/api\/biens(?:\/([a-z0-9]{6,40})\/(p[0-5]\.jpg))?$/);
-    if (bm && request.method === "GET") return biensPublic(request, env, bm[1], bm[2], headers);
 
-    const tl = url.pathname.match(/^\/api\/tools(?:\/([0-9a-f]{16})(?:\/(p[0-2]\.jpg|contact))?)?$/);
-    if (tl) return toolsPublic(request, env, tl[1], tl[2], headers);
 
     // Clé publique des notifications (badge sur l'icône) des apps locataires / équipe / gestion
     if (url.pathname === "/api/esp-push/key" && request.method === "GET") {
@@ -127,7 +79,7 @@ async function route(request, env, ctx, headers) {
       return aresJson({ key: (await vapidKeys(env)).publicKey }, 200, headers);
     }
 
-    const esp = url.pathname.match(/^\/api\/esp\/([0-9a-f]{32})(?:\/(f\/[a-z0-9]{1,40}|signal|pos|push|tools(?:\/[0-9a-f]{16})?))?$/);
+    const esp = url.pathname.match(/^\/api\/esp\/([0-9a-f]{32})(?:\/(f\/[a-z0-9]{1,40}|signal|push))?$/);
     if (esp) return espacePublic(request, env, esp[1], esp[2] || "", headers);
 
     const board = url.pathname.match(/^\/api\/board\/([0-9a-f]{32})$/);
@@ -140,14 +92,8 @@ async function route(request, env, ctx, headers) {
     if (pub && request.method === "GET") return publicCollectes(env, pub[1], pub[2], url, headers);
 
     // ── 🚗 Trajet de l'ouvrier (« Je pars » → heure d'arrivée) : lu par le locataire, la gérance, la central ──
-    const trip = url.pathname.match(/^\/api\/trip\/([0-9a-f]{32})$/);
-    if (trip) return tripPublic(request, env, trip[1], headers, ctx);
-    if (url.pathname === "/api/trips" && request.method === "POST") return tripsPublic(request, env, headers);
 
     // ── Portail Gérance / Syndic (vedi la sezione PORTAIL più sotto) ──
-    if (url.pathname.startsWith("/api/portail/")) {
-      return handlePortail(request, env, url, headers, ctx);
-    }
 
     // ── Contatore aperture pagina ──
     if (url.pathname === "/api/hits" && request.method === "GET") {
@@ -277,19 +223,9 @@ const ARES_SESSION = "ares/session.json";
 const ARES_PUBLIC = "ares/public/";
 const ARES_ESPACE = "ares/espace/"; // espaces locataires : données chiffrées avec une clé que seul le lien du locataire contient
 const ARES_INBOX = "ares/inbox/";
-const ARES_NETPUBS = "ares/pubs-reseau.json"; // 📣 annonces validées par la centrale principale, pour TOUTES les apps du réseau (publicité, en clair)
-const ARES_PUBS = "ares/pubs-portail.json"; // annonces des partenaires pour le portail gérance (publicité, en clair)
 const ARES_BOARD = "ares/board/"; // mini-chat de chaque logement : messages chiffrés avec une clé que seuls les habitants et le gestionnaire ont
 const BOARD_TTL_MS = 90 * 24 * 3600 * 1000; // messages effacés après 90 jours
 const BOARD_MAX = 150;
-// Annonces « Don · prêt · location » publiées par les locataires (approuvées par le gestionnaire)
-// « 🆕 Nouveau bien » : biens à louer / à vendre publiés par l'app de gestion (annonces publiques, sans données personnelles)
-const BIENS = "ares/biens/";
-const BIEN_MAX = 60, BIEN_PH = 6, BIEN_PH_MAX = 900 * 1024;
-const TOOLS = "tools/items/";
-const TOOL_DAYS = 90;
-const TOOL_KINDS = ["don", "pret", "loc"];
-const TOOL_UNITS = ["h", "j", "we", "s", "u"];
 const ARES_ESPCODE = "ares/espcode/"; // code d'accès court → clé de l'espace enveloppée (illisible sans le code) // signalements des locataires, chiffrés pour le gestionnaire (clé publique)
 const ARES_LEASE_MS = 120 * 1000; // un dispositivo inattivo da 2 minuti non è più considerato connesso
 const ARES_RENEW_MS = 20 * 1000;
@@ -367,29 +303,6 @@ async function espacePublic(request, env, id, sub, headers) {
     const obj = await env.PHOTOS.get(ARES_ESPACE + id + "/" + sub);
     return obj ? bin(obj) : aresJson({ error: "Introuvable" }, 404, headers);
   }
-  if (sub === "tools" || sub.startsWith("tools/")) {
-    const owner = "e:" + id;
-    if (request.method === "GET" && sub === "tools") {
-      const mine = (await toolList(env)).filter((it) => it.owner === owner);
-      return aresJson({ items: mine.map((it) => ({ ...toolPublic(it), status: it.status, clicks: it.clicks || 0, mail: it.mail })) }, 200, headers, { "Cache-Control": "no-store" });
-    }
-    if (request.method === "POST" && sub === "tools") {
-      const mine = (await toolList(env)).filter((it) => it.owner === owner && it.exp > Date.now());
-      if (mine.length >= 10) return aresJson({ error: "10 annonces maximum" }, 429, headers);
-      const len = parseInt(request.headers.get("content-length") || "0", 10);
-      if (len > 3 * 1024 * 1024) return aresJson({ error: "Photos trop lourdes" }, 413, headers);
-      let b;
-      try { b = await request.json(); } catch { b = null; }
-      const it = await toolCreate(env, b, owner, "pending");
-      return it ? aresJson({ ok: true, id: it.id }, 200, headers) : aresJson({ error: "Annonce incomplète" }, 400, headers);
-    }
-    if (request.method === "DELETE" && sub.startsWith("tools/")) {
-      const it = await toolGet(env, sub.slice(6));
-      if (!it || it.owner !== owner) return aresJson({ error: "Introuvable" }, 404, headers);
-      await toolDel(env, it.id);
-      return aresJson({ ok: true }, 200, headers);
-    }
-  }
   if (sub === "push" && (request.method === "POST" || request.method === "DELETE")) {
     if (!(await espPushInit(env))) return aresJson({ error: "Notifications indisponibles" }, 503, headers);
     let b;
@@ -401,15 +314,6 @@ async function espacePublic(request, env, id, sub, headers) {
     return (await espPushSave(env, id, b)) ? aresJson({ ok: true }, 200, headers) : aresJson({ error: "Abonnement invalide" }, 400, headers);
   }
   // 📍 position d'un chauffeur « en service » (chiffrée pour sa centrale, illisible ici) : seulement la dernière, remplacée à chaque envoi
-  if (request.method === "POST" && sub === "pos") {
-    const k = "pos-rl:" + id, last = parseInt((await env.HITS.get(k)) || "0", 10);
-    if (Date.now() - last < 25000) return aresJson({ error: "Trop rapide" }, 429, headers);
-    const body = await request.arrayBuffer();
-    if (body.byteLength < 50 || body.byteLength > 4096) return aresJson({ error: "Taille invalide" }, 413, headers);
-    await env.PHOTOS.put("ares/pos/" + id, body);
-    try { await env.HITS.put(k, String(Date.now()), { expirationTtl: 120 }); } catch { /* compteur indisponible */ }
-    return aresJson({ ok: true }, 200, headers);
-  }
   if (request.method === "POST" && sub === "signal") {
     // Limites : 30 envois / heure par adresse IP, 200 / jour par espace (l'équipe envoie arrivée, départ, photos, messages…)
     const ip = clientIp(request);
@@ -532,91 +436,6 @@ async function boardPublic(request, env, id, headers) {
   return aresJson({ error: "Not found" }, 404, headers);
 }
 
-// ── Annonces : stockage, liste publique, contact (email révélé seulement au clic, essais limités) ──
-const toolPublic = (it) => ({ id: it.id, kind: it.kind, title: it.title, desc: it.desc, price: it.price, unit: it.unit, rules: it.rules, lieu: it.lieu, photos: it.photos, created: it.created, exp: it.exp });
-async function toolGet(env, id) { const o = await env.PHOTOS.get(TOOLS + id + ".json"); return o ? o.json() : null; }
-async function toolPut(env, it) { await env.PHOTOS.put(TOOLS + it.id + ".json", JSON.stringify(it), { httpMetadata: { contentType: "application/json" } }); }
-async function toolDel(env, id) {
-  const l = await env.PHOTOS.list({ prefix: TOOLS + id });
-  await Promise.all(l.objects.map((o) => env.PHOTOS.delete(o.key)));
-}
-async function toolList(env) {
-  const listed = await env.PHOTOS.list({ prefix: TOOLS });
-  const items = [];
-  for (const o of listed.objects) {
-    if (!o.key.endsWith(".json")) continue;
-    const obj = await env.PHOTOS.get(o.key);
-    if (!obj) continue;
-    const it = await obj.json();
-    if (it.exp < Date.now() - 30 * 86400000) { await toolDel(env, it.id); continue; } // expirée depuis 30 jours : effacée
-    items.push(it);
-  }
-  return items.sort((a, b) => b.created - a.created);
-}
-const str = (v, max) => String(v == null ? "" : v).trim().slice(0, max);
-async function toolCreate(env, b, owner, status) {
-  if (!b || !TOOL_KINDS.includes(b.kind)) return null;
-  const title = str(b.title, 80), mail = str(b.mail, 120);
-  if (title.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return null;
-  const photos = Array.isArray(b.photos) ? b.photos.filter((x) => typeof x === "string" && x.length < 900000 && /^[A-Za-z0-9_-]+={0,2}$/.test(x)).slice(0, 3) : [];
-  if (!photos.length) return null;
-  const price = b.kind === "loc" ? Math.max(0, Math.min(100000, Number(b.price) || 0)) : 0;
-  const id = [...crypto.getRandomValues(new Uint8Array(8))].map((x) => x.toString(16).padStart(2, "0")).join("");
-  for (let i = 0; i < photos.length; i++) {
-    const bin = atob(photos[i].replace(/-/g, "+").replace(/_/g, "/"));
-    const u = new Uint8Array(bin.length);
-    for (let j = 0; j < bin.length; j++) u[j] = bin.charCodeAt(j);
-    await env.PHOTOS.put(TOOLS + id + "/p" + i + ".jpg", u, { httpMetadata: { contentType: "image/jpeg" } });
-  }
-  const it = {
-    id, owner, status, kind: b.kind, title, desc: str(b.desc, 800), rules: str(b.rules, 400), lieu: str(b.lieu, 60),
-    price, unit: TOOL_UNITS.includes(b.unit) ? b.unit : "j", mail, name: str(b.name, 40), photos: photos.length,
-    created: Date.now(), exp: Date.now() + TOOL_DAYS * 86400000, clicks: 0,
-  };
-  await toolPut(env, it);
-  return it;
-}
-async function biensPublic(request, env, id, sub, headers) {
-  if (id) {
-    const obj = await env.PHOTOS.get(BIENS + id + "/" + sub);
-    if (!obj) return aresJson({ error: "Introuvable" }, 404, headers);
-    return new Response(obj.body, { headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400", ...headers } });
-  }
-  const obj = await env.PHOTOS.get(BIENS + "list.json");
-  const j = obj ? await obj.json() : { items: [] };
-  return aresJson({ items: j.items || [], at: j.at || 0 }, 200, headers);
-}
-async function toolsPublic(request, env, id, sub, headers) {
-  if (!id && request.method === "GET") {
-    // liste publique : gardée 60 s dans le cache de Cloudflare (sinon chaque visite relit toutes les annonces)
-    const cache = typeof caches !== "undefined" ? caches.default : null, ck = new Request(new URL(request.url).origin + "/api/tools?v=1");
-    const hit = cache && (await cache.match(ck));
-    if (hit) { const r = new Response(hit.body, hit); for (const [k, v] of Object.entries(headers)) r.headers.set(k, v); r.headers.set("Cache-Control", "public, max-age=60"); return r; }
-    const items = (await toolList(env)).filter((it) => it.status === "ok" && it.exp > Date.now()).map(toolPublic);
-    const res = aresJson({ items }, 200, headers, { "Cache-Control": "public, max-age=60" });
-    if (cache) await cache.put(ck, res.clone()).catch(() => {});
-    return res;
-  }
-  if (id && sub && sub.endsWith(".jpg") && request.method === "GET") {
-    const obj = await env.PHOTOS.get(TOOLS + id + "/" + sub);
-    if (!obj) return aresJson({ error: "Introuvable" }, 404, headers);
-    return new Response(obj.body, { headers: { "Content-Type": "image/jpeg", "Cache-Control": "public, max-age=86400", ...headers } });
-  }
-  if (id && sub === "contact" && request.method === "POST") {
-    const ip = clientIp(request);
-    const k = "tool-rl:" + ip;
-    const n = parseInt((await env.HITS.get(k)) || "0", 10);
-    if (n >= 20) return aresJson({ error: "Trop de demandes, réessayez plus tard" }, 429, headers);
-    const it = await toolGet(env, id);
-    if (!it || it.status !== "ok" || it.exp < Date.now()) return aresJson({ error: "Annonce indisponible" }, 404, headers);
-    it.clicks = (it.clicks || 0) + 1;
-    await toolPut(env, it);
-    try { await env.HITS.put(k, String(n + 1), { expirationTtl: 3600 }); } catch { /* quota KV */ }
-    return aresJson({ mail: it.mail, name: it.name }, 200, headers);
-  }
-  return aresJson({ error: "Not found" }, 404, headers);
-}
-
 function aresJson(obj, status, headers, extra = {}) {
   return new Response(JSON.stringify(obj), {
     status: status || 200,
@@ -667,34 +486,15 @@ function validKeyMaterial(b) {
   );
 }
 
-// ── Centrali dei clienti (gérance, agence, propriétaire, hôtel, Airbnb) : casseforti separate ──
-const TENANT_FIL = ["gerance", "agence", "proprio", "hotel", "airbnb", "taxi"];
 const tenantKey = (tid) => "ares/tenants/" + tid + ".json";
-const PACK = (tid) => "ares/t/" + tid + "/pack/", PACKM = (tid) => "ares/t/" + tid + "/packm/";
-async function packList(env, tid) {
-  const l = await env.PHOTOS.list({ prefix: PACKM(tid), limit: 100 }), out = [];
-  for (const o of l.objects) { const r = await env.PHOTOS.get(o.key); if (r) out.push(await r.json()); }
-  return out.sort((a, b) => b.at - a.at);
-}
 async function tenantGet(env, tid) { const o = await env.PHOTOS.get(tenantKey(tid)); return o ? o.json() : null; }
 const tenantPut = (env, reg) => env.PHOTOS.put(tenantKey(reg.id), JSON.stringify(reg), { httpMetadata: { contentType: "application/json" } });
 const dayIso = (t = Date.now()) => new Date(t).toISOString().slice(0, 10);
-// état : ok (prova / abbonamento in corso), ro (scaduto : sola lettura), blocked (sospeso, o oltre i giorni di sola lettura)
-function tenantState(reg) {
-  if (reg.st === "suspended") return "blocked";
-  // facture impayée au-delà du délai choisi par la centrale principale : sola lettura
-  if (reg.hold === "ro" && (!reg.until || reg.until >= dayIso())) return "ro";
-  if (!reg.until || reg.until >= dayIso()) return "ok";
-  if (Number.isInteger(reg.roDays) && reg.roDays >= 0 && (Date.parse(dayIso()) - Date.parse(reg.until)) / 864e5 > reg.roDays) return "blocked";
-  return "ro";
+// état de la centrale : toujours ouverte (CENTRAL-OGL appartient au client : plus d'essai, d'abonnement ni d'échéance)
+function tenantState() {
+  return "ok";
 }
 const tenantPub = (reg) => ({ id: reg.id, fil: reg.fil, nom: reg.nom, st: reg.st, until: reg.until || "", state: tenantState(reg), hold: reg.hold || "", sous: !!reg.sous });
-// 🧾 casella della centrale d'un client : fatture e avvisi della centrale principale, cifrati per la chiave pubblica del client
-const TBOX = (tid) => "ares/tbox/" + tid + "/";
-async function tboxList(env, tid) {
-  const l = await env.PHOTOS.list({ prefix: TBOX(tid), limit: 50 });
-  return Promise.all(l.objects.map(async (o) => { const u = new Uint8Array(await (await env.PHOTOS.get(o.key)).arrayBuffer()); let bin = ""; for (let i = 0; i < u.length; i++) bin += String.fromCharCode(u[i]); return { name: o.key.slice(TBOX(tid).length), d: btoa(bin) }; }));
-}
 function aresVault(tid) {
   if (!tid) return { META: ARES_META, DATA: ARES_DATA, FILES: ARES_FILES, SESSION: ARES_SESSION, INBOX: ARES_INBOX, owner: "owner", me: "main" };
   const pre = "ares/t/" + tid + "/";
@@ -705,39 +505,6 @@ async function espOwner(env, id) {
   const o = await env.PHOTOS.get("ares/own/" + id);
   if (o) return o.text();
   return (await env.PHOTOS.head(ARES_ESPACE + id + ".bin")) ? "main" : "";
-}
-// supprime tout ce qui commence par prefix ; rend [clés, octets]
-async function wipePrefix(env, prefix, keys) {
-  let cursor, bytes = 0;
-  do {
-    const l = await env.PHOTOS.list({ prefix, cursor });
-    for (const o of l.objects) { keys.push(o.key); bytes += o.size || 0; }
-    if (l.objects.length) await env.PHOTOS.delete(l.objects.map((o) => o.key));
-    cursor = l.truncated ? l.cursor : undefined;
-  } while (cursor);
-  return bytes;
-}
-async function tenantWipe(env, tid) {
-  const keys = [];
-  let bytes = 0;
-  // espaces et codes des apps de ce client
-  let cursor;
-  const idx = [];
-  do { const l = await env.PHOTOS.list({ prefix: "ares/tidx/" + tid + "/", cursor }); idx.push(...l.objects.map((o) => o.key)); cursor = l.truncated ? l.cursor : undefined; } while (cursor);
-  for (const k of idx) {
-    const rest = k.slice(("ares/tidx/" + tid + "/").length);
-    if (rest.startsWith("c/")) { const h = rest.slice(2); const o = await env.PHOTOS.head(ARES_ESPCODE + h + ".json"); if (o) { keys.push(ARES_ESPCODE + h + ".json"); bytes += o.size || 0; await env.PHOTOS.delete(ARES_ESPCODE + h + ".json"); } }
-    else if (/^[0-9a-f]{32}$/.test(rest) && (await env.PHOTOS.get("ares/own/" + rest).then((o) => (o ? o.text() : ""))) === tid) {
-      const o = await env.PHOTOS.head(ARES_ESPACE + rest + ".bin");
-      if (o) { keys.push(ARES_ESPACE + rest + ".bin"); bytes += o.size || 0; await env.PHOTOS.delete(ARES_ESPACE + rest + ".bin"); }
-      bytes += await wipePrefix(env, ARES_ESPACE + rest + "/", keys);
-      await env.PHOTOS.delete("ares/own/" + rest);
-    }
-  }
-  bytes += await wipePrefix(env, "ares/tidx/" + tid + "/", keys);
-  bytes += await wipePrefix(env, "ares/t/" + tid + "/", keys);
-  bytes += await wipePrefix(env, TBOX(tid), keys);
-  return { keys, bytes };
 }
 
 async function handleAres(request, env, url, headers) {
@@ -845,197 +612,15 @@ async function handleAres(request, env, url, headers) {
 
   // ── Centrale d'un client : pas de publicité / biens / annonces du réseau / registre ; scaduto = sola lettura ──
   if (tid) {
-    if (/^(pubs|netpubs|biens|pubstats|tools|tenants|demandes|brand)(\/|$)/.test(path) || (path === "network-key" && method !== "GET")) return aresJson({ error: "Réservé à la centrale principale" }, 403, headers);
-    if (path === "tenant-key" && method === "PUT") {
-      let b;
-      try { b = await request.json(); } catch { b = null; }
-      if (!b || !isB64u(b.pub, 200)) return aresJson({ error: "Données invalides" }, 400, headers);
-      if (reg.pub !== b.pub) await tenantPut(env, { ...reg, pub: b.pub });
-      return aresJson({ ok: true }, 200, headers);
-    }
     // 🧩 moitié B de la clé de secours du client, chiffrée pour la centrale principale (le serveur ne peut pas la lire)
-    if (path === "recb" && method === "PUT") {
-      const body = await request.arrayBuffer();
-      if (body.byteLength < 100 || body.byteLength > 8192) return aresJson({ error: "Taille invalide" }, 413, headers);
-      await env.PHOTOS.put("ares/t/" + tid + "/recb", body);
-      return aresJson({ ok: true }, 200, headers);
-    }
-    if (path === "box" && method === "GET") return aresJson({ items: await tboxList(env, tid) }, 200, headers, { "Cache-Control": "no-store" });
     // 🏗️ ANGAR : paquets (chiffrés) envoyés par la centrale principale — liste, lecture, « ouvert »
-    if (path === "packs" && method === "GET") return aresJson({ items: await packList(env, tid) }, 200, headers, { "Cache-Control": "no-store" });
-    const pkm = path.match(/^pack\/([a-z0-9]{6,40})(\/done)?$/);
-    if (pkm && method === "GET" && !pkm[2]) { const o = await env.PHOTOS.get(PACK(tid) + pkm[1]); return o ? new Response(o.body, { headers: { "Content-Type": "application/octet-stream", "Cache-Control": "no-store", ...headers } }) : aresJson({ error: "Introuvable" }, 404, headers); }
-    if (pkm && method === "POST" && pkm[2]) {
-      const m = await env.PHOTOS.get(PACKM(tid) + pkm[1] + ".json");
-      if (!m) return aresJson({ error: "Introuvable" }, 404, headers);
-      await env.PHOTOS.put(PACKM(tid) + pkm[1] + ".json", JSON.stringify({ ...(await m.json()), opened: Date.now() }));
-      await env.PHOTOS.delete(PACK(tid) + pkm[1]); // reçu : le paquet est effacé du serveur (l'historique reste)
-      return aresJson({ ok: true }, 200, headers);
-    }
-    const boxDel = path.match(/^box\/([a-z0-9-]{6,40})$/);
-    if (boxDel && method === "DELETE") { await env.PHOTOS.delete(TBOX(tid) + boxDel[1]); return aresJson({ ok: true }, 200, headers); }
-    if (ro && method !== "GET" && path !== "demande") return aresJson({ error: "readonly", tenant: tenantPub(reg) }, 423, headers);
+    if (ro && method !== "GET") return aresJson({ error: "readonly", tenant: tenantPub(reg) }, 423, headers);
     // demande d'intervention vers la centrale principale (contenu chiffré pour elle)
-    if (path === "demande" && method === "POST") {
-      const kd = "tdem-rl:" + tid, nd = parseInt((await env.HITS.get(kd)) || "0", 10);
-      if (nd >= 60) return aresJson({ error: "Trop d'envois aujourd'hui" }, 429, headers);
-      const body = await request.arrayBuffer();
-      if (body.byteLength < 100 || body.byteLength > 12 * 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
-      await env.PHOTOS.put("ares/tdem/" + Date.now().toString(36) + "-" + tid + "-" + randHex(4), body);
-      try { await env.HITS.put(kd, String(nd + 1), { expirationTtl: 86400 }); } catch { /* quota KV */ }
-      await espPushSend(env, "owner", "inbox");
-      return aresJson({ ok: true }, 200, headers);
-    }
     if (path === "tenant" && method === "GET") return aresJson({ tenant: tenantPub(reg) }, 200, headers);
   }
   // clé publique de la centrale principale : les centrales des clients chiffrent pour elle leurs demandes
-  if (path === "brand" && (method === "PUT" || method === "DELETE")) {
-    if (slot !== "main") return aresJson({ error: "Réservé au directeur" }, 403, headers);
-    if (method === "DELETE") { await env.PHOTOS.delete("ares/brand.png"); return aresJson({ ok: true }, 200, headers); }
-    const body = await request.arrayBuffer();
-    if (body.byteLength < 100 || body.byteLength > 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
-    await env.PHOTOS.put("ares/brand.png", body, { httpMetadata: { contentType: "image/png" } });
-    return aresJson({ ok: true }, 200, headers);
-  }
-  if (path === "network-key" && method === "PUT") {
-    let b;
-    try { b = await request.json(); } catch { b = null; }
-    if (!b || !isB64u(b.pub, 200)) return aresJson({ error: "Données invalides" }, 400, headers);
-    await env.PHOTOS.put("ares/network-key.json", JSON.stringify({ pub: b.pub, at: Date.now() }));
-    return aresJson({ ok: true }, 200, headers);
-  }
-  if (path === "network-key" && method === "GET") {
-    const o = await env.PHOTOS.get("ares/network-key.json");
-    return o ? aresJson(await o.json(), 200, headers) : aresJson({ error: "Pas encore publiée" }, 404, headers);
-  }
   // ── Registre des clients (centrale principale) : créer + essai, prolonger, suspendre, nouvel accès, supprimer avec certificat ──
-  if (path === "tenants" || path.startsWith("tenants/")) {
-    const canWrite = slot === "main" || (slot === "op" && op.role === "centraliste");
-    if (method !== "GET" && !canWrite) return aresJson({ error: "Réservé au directeur ou au centraliste" }, 403, headers);
-    const clean = (v, n) => String(v || "").replace(/[\u0000-\u001f<>]/g, "").trim().slice(0, n);
-    const invite = () => { const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(10)); return [...r].map((x) => a[x % a.length]).join(""); };
-    if (path === "tenants" && method === "GET") {
-      const out = [];
-      let cursor;
-      do {
-        const l = await env.PHOTOS.list({ prefix: "ares/tenants/", cursor });
-        for (const o of l.objects) { const r = await (await env.PHOTOS.get(o.key)).json(); const ss = await env.PHOTOS.get("ares/t/" + r.id + "/session.json"); out.push({ ...r, setupHash: undefined, state: tenantState(r), configured: !!(await env.PHOTOS.head("ares/t/" + r.id + "/meta.json")), lastSeen: ss ? (await ss.json()).lastSeen || 0 : 0 }); }
-        cursor = l.truncated ? l.cursor : undefined;
-      } while (cursor);
-      return aresJson({ tenants: out }, 200, headers);
-    }
-    if (path === "tenants" && method === "POST") {
-      let b;
-      try { b = await request.json(); } catch { b = null; }
-      if (!b || !TENANT_FIL.includes(b.fil) || !clean(b.nom, 120)) return aresJson({ error: "Filière et nom obligatoires" }, 400, headers);
-      const days = Math.max(1, Math.min(3650, parseInt(b.days, 10) || 15)), id = randHex(8), code = invite();
-      const r = { id, fil: b.fil, nom: clean(b.nom, 120), st: "trial", until: dayIso(Date.now() + days * 864e5), roDays: null, createdAt: new Date().toISOString(), setupHash: await sha256Hex(code), setupExp: Date.now() + 30 * 864e5 };
-      await tenantPut(env, r);
-      return aresJson({ ok: true, id, code, tenant: tenantPub(r) }, 200, headers);
-    }
-    const tbm = path.match(/^tenants\/([a-z0-9]{12,24})\/box$/);
-    if (tbm && method === "POST") {
-      if (!(await env.PHOTOS.head(tenantKey(tbm[1])))) return aresJson({ error: "Introuvable" }, 404, headers);
-      const body = await request.arrayBuffer();
-      if (body.byteLength < 100 || body.byteLength > 4 * 1024 * 1024) return aresJson({ error: "Taille invalide" }, 413, headers);
-      const n = (await env.PHOTOS.list({ prefix: TBOX(tbm[1]), limit: 60 })).objects.length;
-      if (n >= 50) return aresJson({ error: "Casella piena : il client deve aprire la sua centrale" }, 429, headers);
-      await env.PHOTOS.put(TBOX(tbm[1]) + Date.now().toString(36) + "-" + randHex(4), body);
-      return aresJson({ ok: true }, 200, headers);
-    }
-    // 🧩 la centrale principale lit la moitié B (chiffrée pour elle) quand un client a oublié sa clé
-    const trb = path.match(/^tenants\/([a-z0-9]{12,24})\/recb$/);
-    if (trb && method === "GET") {
-      const o = await env.PHOTOS.get("ares/t/" + trb[1] + "/recb");
-      if (!o) return aresJson({ error: "Pas de moitié B" }, 404, headers);
-      return new Response(o.body, { status: 200, headers: { "Content-Type": "application/octet-stream", "Cache-Control": "no-store", ...headers } });
-    }
-    // 🏗️ ANGAR : la centrale principale dépose un paquet chiffré dans le « container » du client (et voit s'il a été ouvert)
-    const tpk = path.match(/^tenants\/([a-z0-9]{12,24})\/packs?(?:\/([a-z0-9]{6,40}))?$/);
-    if (tpk && (await env.PHOTOS.head(tenantKey(tpk[1])))) {
-      const T = tpk[1];
-      if (!tpk[2] && method === "GET") return aresJson({ items: await packList(env, T) }, 200, headers, { "Cache-Control": "no-store" });
-      if (!tpk[2] && method === "POST") {
-        const body = await request.arrayBuffer();
-        if (body.byteLength < 100 || body.byteLength > 95 * 1024 * 1024) return aresJson({ error: "Taille invalide (95 Mo maximum)" }, 413, headers);
-        const id = Date.now().toString(36) + randHex(3), info = (() => { try { return JSON.parse(decodeURIComponent(url.searchParams.get("info") || "{}")); } catch { return {}; } })();
-        const counts = {}; for (const [k, v] of Object.entries(info.counts || {})) if (/^[a-z]{2,12}$/.test(k)) counts[k] = Math.max(0, parseInt(v, 10) || 0);
-        await env.PHOTOS.put(PACK(T) + id, body, { httpMetadata: { contentType: "application/octet-stream" } });
-        await env.PHOTOS.put(PACKM(T) + id + ".json", JSON.stringify({ id, at: Date.now(), size: body.byteLength, counts, label: clean(info.label, 120) }));
-        return aresJson({ ok: true, id }, 200, headers);
-      }
-      if (tpk[2] && method === "DELETE") { await env.PHOTOS.delete(PACK(T) + tpk[2]); await env.PHOTOS.delete(PACKM(T) + tpk[2] + ".json"); return aresJson({ ok: true }, 200, headers); }
-    }
-    // 📦 transfert : les apps des locataires (espaces + codes) passent de la centrale principale à la centrale du client
-    const tad = path.match(/^tenants\/([a-z0-9]{12,24})\/adopt$/);
-    if (tad && method === "POST") {
-      if (!(await env.PHOTOS.head(tenantKey(tad[1])))) return aresJson({ error: "Introuvable" }, 404, headers);
-      let b;
-      try { b = await request.json(); } catch { b = {}; }
-      const to = tad[1], out = { moved: 0, codes: 0, skipped: 0 };
-      for (const id of (Array.isArray(b.ids) ? b.ids : []).filter((x) => /^[0-9a-f]{32}$/.test(x)).slice(0, 1000)) {
-        const own = await espOwner(env, id);
-        if (own && own !== "main") { if (own !== to) out.skipped++; continue; }
-        await env.PHOTOS.put("ares/own/" + id, to); await env.PHOTOS.put("ares/tidx/" + to + "/" + id, "1"); out.moved++;
-      }
-      for (const h of (Array.isArray(b.codes) ? b.codes : []).filter((x) => /^[0-9a-f]{64}$/.test(x)).slice(0, 1000)) {
-        const prev = await env.PHOTOS.get(ARES_ESPCODE + h + ".json");
-        if (!prev) continue;
-        const pj = await prev.json();
-        if ((pj.own || "main") !== "main") continue;
-        await env.PHOTOS.put(ARES_ESPCODE + h + ".json", JSON.stringify({ ...pj, own: to }), { httpMetadata: { contentType: "application/json" } });
-        await env.PHOTOS.put("ares/tidx/" + to + "/c/" + h, "1"); out.codes++;
-      }
-      return aresJson({ ok: true, ...out }, 200, headers);
-    }
-    const tmm = path.match(/^tenants\/([a-z0-9]{12,24})(\/reset)?$/);
-    const r = tmm ? await tenantGet(env, tmm[1]) : null;
-    if (!r) return aresJson({ error: "Introuvable" }, 404, headers);
-    if (tmm[2] && method === "POST") {
-      // nouvel accès (clé oubliée, sans clé de secours) : la cassaforte est vidée, nouveau code d'invitation
-      const gone = { keys: [] };
-      await wipePrefix(env, "ares/t/" + r.id + "/", gone.keys);
-      const code = invite();
-      await tenantPut(env, { ...r, setupHash: await sha256Hex(code), setupExp: Date.now() + 30 * 864e5, configuredAt: null, resetAt: new Date().toISOString() });
-      return aresJson({ ok: true, code, wiped: gone.keys.length }, 200, headers);
-    }
-    if (method === "PATCH") {
-      let b;
-      try { b = await request.json(); } catch { b = {}; }
-      const n = { ...r };
-      if (b.nom != null) n.nom = clean(b.nom, 120) || r.nom;
-      if (TENANT_FIL.includes(b.fil)) n.fil = b.fil;
-      if (/^\d{4}-\d{2}-\d{2}$/.test(b.until || "")) n.until = b.until;
-      if (["trial", "active", "suspended"].includes(b.st)) n.st = b.st;
-      if (b.hold === "ro" || b.hold === "") n.hold = b.hold;
-      if (typeof b.sous === "boolean") n.sous = b.sous; // 🔑 propriétaire ou bailleur principal (sous-titre de sa centrale)
-      if (b.roDays === null || b.roDays === "") n.roDays = null; else if (b.roDays != null && Number.isInteger(+b.roDays) && +b.roDays >= 0 && +b.roDays <= 3650) n.roDays = +b.roDays;
-      let code;
-      if (b.newCode && !(await env.PHOTOS.head("ares/t/" + r.id + "/meta.json"))) { code = invite(); n.setupHash = await sha256Hex(code); n.setupExp = Date.now() + 30 * 864e5; }
-      await tenantPut(env, n);
-      return aresJson({ ok: true, tenant: tenantPub(n), ...(code ? { code } : {}) }, 200, headers);
-    }
-    if (method === "DELETE") {
-      if (slot !== "main") return aresJson({ error: "Réservé au directeur" }, 403, headers);
-      const at = new Date().toISOString(), w = await tenantWipe(env, r.id);
-      const cert = { v: 1, kind: "suppression-centrale", tenant: { id: r.id, nom: r.nom, fil: r.fil }, at, by: "directeur", objects: w.keys.length, bytes: w.bytes, digest: await sha256Hex(w.keys.sort().join("\n")) };
-      await env.PHOTOS.put("ares/tenants-deleted/" + r.id + ".json", JSON.stringify(cert), { httpMetadata: { contentType: "application/json" } });
-      await env.PHOTOS.delete(tenantKey(r.id));
-      return aresJson({ ok: true, certificate: cert }, 200, headers);
-    }
-    return aresJson({ error: "Not found" }, 404, headers);
-  }
   // ── Demandes des centrales des clients (chiffrées pour la centrale principale) ──
-  if (path === "demandes" && method === "GET") {
-    const listed = await env.PHOTOS.list({ prefix: "ares/tdem/", limit: 100 });
-    return aresJson({ items: listed.objects.map((o) => ({ name: o.key.slice("ares/tdem/".length), size: o.size })) }, 200, headers);
-  }
-  const demMatch = path.match(/^demandes\/([a-z0-9-]{10,80})$/);
-  if (demMatch && method === "GET") {
-    const obj = await env.PHOTOS.get("ares/tdem/" + demMatch[1]);
-    return obj ? new Response(obj.body, { headers: { "Content-Type": "application/octet-stream", ...headers } }) : aresJson({ error: "Introuvable" }, 404, headers);
-  }
-  if (demMatch && method === "DELETE") { await env.PHOTOS.delete("ares/tdem/" + demMatch[1]); return aresJson({ ok: true }, 200, headers); }
 
   // Crea o sostituisce la chiave di secours (solo con la chiave di accesso principale)
   if (path === "recovery" && method === "POST") {
@@ -1138,15 +723,6 @@ async function handleAres(request, env, url, headers) {
     return aresJson({ ok: true }, 200, headers);
   }
   // 📍 positions des chauffeurs de cette centrale (chiffrées) : ?ids=a,b,c
-  if (path === "pos" && method === "GET") {
-    const out = {};
-    for (const id of String(url.searchParams.get("ids") || "").split(",").filter((x) => /^[0-9a-f]{32}$/.test(x)).slice(0, 60)) {
-      if ((await espOwner(env, id)) !== V.me) continue;
-      const o = await env.PHOTOS.get("ares/pos/" + id);
-      if (o) { const u = new Uint8Array(await o.arrayBuffer()); let bin = ""; for (let i = 0; i < u.length; i += 0x8000) bin += String.fromCharCode(...u.subarray(i, i + 0x8000)); out[id] = btoa(bin); }
-    }
-    return aresJson({ items: out }, 200, headers, { "Cache-Control": "no-store" });
-  }
   const codeMatch = path.match(/^espcode\/([0-9a-f]{64})$/);
   if (codeMatch && method === "PUT") {
     let b;
@@ -1171,20 +747,6 @@ async function handleAres(request, env, url, headers) {
   }
   // Notifications de l'app de gestion (badge sur l'icône) et des apps locataires / équipe
   // 🚗 trajets du jour : la central enregistre qui prévenir (apps des locataires) et la demande de la gérance liée
-  if (path === "trip" && method === "POST") {
-    let b;
-    try { b = await request.json(); } catch { b = null; }
-    const items = Array.isArray(b && b.items) ? b.items.slice(0, 300) : [];
-    for (const it of items) {
-      if (!it || !/^[0-9a-f]{32}$/.test(it.tk || "")) continue;
-      const cur = (await tripGet(env, it.tk)) || {};
-      const to = (Array.isArray(it.to) ? it.to : []).filter((x) => /^[0-9a-f]{32}$/.test(x)).slice(0, 10);
-      const ptl = /^[a-z0-9]{8,40}$/.test(it.ptl || "") ? it.ptl : "";
-      await tripPut(env, it.tk, { ...cur, to, ptl });
-      if (ptl && env.DB) { try { await env.DB.prepare("UPDATE tickets SET trip = ? WHERE id = ?").bind(it.tk, ptl).run(); } catch { /* colonne pas encore créée : le portail l'ajoutera */ } }
-    }
-    return aresJson({ ok: true }, 200, headers);
-  }
   if (path === "push" && (method === "POST" || method === "DELETE")) {
     if (!(await espPushInit(env))) return aresJson({ error: "Notifications indisponibles" }, 503, headers);
     let b;
@@ -1196,100 +758,7 @@ async function handleAres(request, env, url, headers) {
     return (await espPushSave(env, V.owner, b)) ? aresJson({ ok: true }, 200, headers) : aresJson({ error: "Abonnement invalide" }, 400, headers);
   }
   // « 🆕 Nouveau bien » : la liste (texte) puis les photos une à une ; les photos des biens retirés sont effacées
-  if (path === "biens" && method === "PUT") {
-    let b;
-    try { b = await request.json(); } catch { b = null; }
-    const s = (v, n) => String(v || "").slice(0, n), nb = (v) => (Number.isFinite(+v) && +v >= 0 ? Math.round(+v * 100) / 100 : 0);
-    const items = (b && Array.isArray(b.items) ? b.items : []).slice(0, BIEN_MAX).filter((x) => x && /^[a-z0-9]{6,40}$/.test(x.id || "") && x.titre).map((x) => ({
-      id: x.id, titre: s(x.titre, 120), type: s(x.type, 20), surface: nb(x.surface), adresse: s(x.adresse, 200), dispo: /^\d{4}-\d{2}-\d{2}$/.test(x.dispo || "") ? x.dispo : "",
-      louer: !!x.louer, vendre: !!x.vendre, loyer: nb(x.loyer), charges: nb(x.charges), prix: nb(x.prix), description: s(x.description, 2000),
-      pieces: (Array.isArray(x.pieces) ? x.pieces : []).slice(0, 40).map((p) => ({ k: s(p.k, 20), nom: s(p.nom, 80), m2: s(p.m2, 10) })),
-      cree: /^\d{4}-\d{2}-\d{2}$/.test(x.cree || "") ? x.cree : "", nph: Math.max(0, Math.min(BIEN_PH, parseInt(x.nph, 10) || 0)),
-      agence: { nom: s(x.agence && x.agence.nom, 120), tel: s(x.agence && x.agence.tel, 40), email: s(x.agence && x.agence.email, 120) },
-    }));
-    const keep = new Set(items.map((x) => x.id));
-    let cursor;
-    do {
-      const l = await env.PHOTOS.list({ prefix: BIENS, cursor });
-      const gone = l.objects.map((o) => o.key).filter((k) => k !== BIENS + "list.json" && !keep.has(k.slice(BIENS.length).split("/")[0]));
-      if (gone.length) await env.PHOTOS.delete(gone);
-      cursor = l.truncated ? l.cursor : undefined;
-    } while (cursor);
-    await env.PHOTOS.put(BIENS + "list.json", JSON.stringify({ items, at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
-    return aresJson({ ok: true, n: items.length }, 200, headers);
-  }
-  const bph = path.match(/^biens\/([a-z0-9]{6,40})\/(p[0-5]\.jpg)$/);
-  if (bph && method === "PUT") {
-    const buf = await request.arrayBuffer();
-    const u8 = new Uint8Array(buf);
-    if (!buf.byteLength || buf.byteLength > BIEN_PH_MAX || u8[0] !== 0xff || u8[1] !== 0xd8) return aresJson({ error: "Photo invalide (JPEG, 900 Ko max.)" }, 400, headers);
-    await env.PHOTOS.put(BIENS + bph[1] + "/" + bph[2], buf, { httpMetadata: { contentType: "image/jpeg" } });
-    return aresJson({ ok: true }, 200, headers);
-  }
-  if (path === "netpubs" && method === "PUT") {
-    let b;
-    try { b = await request.json(); } catch { b = null; }
-    const s = (v, n) => String(v || "").slice(0, n), d10 = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(v || "") ? v : "");
-    const url = (v) => (/^https?:\/\//.test(String(v || "")) ? s(v, 500) : "");
-    const items = (b && Array.isArray(b.items) ? b.items : []).slice(0, 200).map((a) => ({
-      id: s(a.id, 40), slot: ["haut", "milieu", "bas", "rot"].includes(a.slot) ? a.slot : "milieu", ...(Array.isArray(a.bands) && a.bands.length ? { bands: a.bands.filter((k) => PUB_BANDS.includes(k)).slice(0, 6) } : {}), ...(a.we ? { we: 1 } : {}), cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
-      tel: s(a.tel, 40), web: url(a.web), video: url(a.video), type: s(a.type, 20), debut: d10(a.debut), fin: d10(a.fin), zone: s(a.zone, 200), annId: s(a.annId, 40),
-      logo: /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.logo || "") && String(a.logo).length < 60000 ? a.logo : "",
-      aud: (Array.isArray(a.aud) ? a.aud : []).map((x) => s(x, 8)).slice(0, 8),
-      jours: (Array.isArray(a.jours) ? a.jours : []).map(Number).filter((n) => n >= 0 && n <= 6).slice(0, 7),
-      h1: /^\d\d:\d\d$/.test(a.h1 || "") ? a.h1 : "", h2: /^\d\d:\d\d$/.test(a.h2 || "") ? a.h2 : "",
-    })).filter((a) => a.id && a.nom);
-    await env.PHOTOS.put(ARES_NETPUBS, JSON.stringify({ items, at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
-    return aresJson({ ok: true, n: items.length }, 200, headers);
-  }
-  if (path === "pubs" && method === "PUT") {
-    let b;
-    try { b = await request.json(); } catch { b = null; }
-    const s = (v, n) => String(v || "").slice(0, n);
-    const url = (v) => (/^https?:\/\//.test(String(v || "")) ? s(v, 500) : "");
-    const items = (b && Array.isArray(b.items) ? b.items : []).slice(0, 50).map((a) => ({
-      id: s(a.id, 40), slot: ["haut", "milieu", "bas", "rot"].includes(a.slot) ? a.slot : "milieu", ...(Array.isArray(a.bands) && a.bands.length ? { bands: a.bands.filter((k) => PUB_BANDS.includes(k)).slice(0, 6) } : {}), ...(a.we ? { we: 1 } : {}), cat: s(a.cat, 20), nom: s(a.nom, 120), adresse: s(a.adresse, 200), texte: s(a.texte, 1000),
-      tel: s(a.tel, 40), web: url(a.web), video: url(a.video), fin: /^\d{4}-\d{2}-\d{2}$/.test(a.fin || "") ? a.fin : "",
-      logo: /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(a.logo || "") && String(a.logo).length < 60000 ? a.logo : "",
-      // jours (0 = dimanche) et heures d'affichage (ex. happy hour) : facultatifs
-      jours: (Array.isArray(a.jours) ? a.jours : []).map(Number).filter((n) => n >= 0 && n <= 6).slice(0, 7),
-      h1: /^\d\d:\d\d$/.test(a.h1 || "") ? a.h1 : "", h2: /^\d\d:\d\d$/.test(a.h2 || "") ? a.h2 : "",
-    })).filter((a) => a.nom);
-    // offers : bannière / fenêtre « Nos abonnements » dans le portail des gérances (activée par défaut)
-    // contact : le responsable de la centrale LA CENTRAL, affiché aux gérances dans leur portail
-    const c = b && b.contact ? { nom: s(b.contact.nom, 80), tel: s(b.contact.tel, 40), email: s(b.contact.email, 120) } : null;
-    await env.PHOTOS.put(ARES_PUBS, JSON.stringify({ items, offers: !(b && b.offers === false), contact: c && c.nom ? c : null, at: Date.now() }), { httpMetadata: { contentType: "application/json" } });
-    return aresJson({ ok: true, n: items.length }, 200, headers);
-  }
   // Lien court TikTok (vm.tiktok.com/…, tiktok.com/t/…) → lien complet de la vidéo (pour le mini lecteur des annonces)
-  if (path === "video-link" && method === "GET") {
-    let u;
-    try { u = new URL(url.searchParams.get("u") || ""); } catch { return aresJson({ error: "bad url" }, 400, headers); }
-    const short = u.protocol === "https:" && (/^(vm|vt)\.tiktok\.com$/.test(u.hostname) || (/^(www\.)?tiktok\.com$/.test(u.hostname) && /^\/t\/[\w-]{4,30}\/?$/.test(u.pathname)));
-    if (!short) return aresJson({ error: "not a short link" }, 400, headers);
-    let next = u.href;
-    for (let i = 0; i < 4; i++) {
-      let r;
-      try { r = await fetch(next, { method: "GET", redirect: "manual", headers: { "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148" } }); } catch { break; } // TikTok injoignable : « not found »
-      const loc = r.headers.get("Location");
-      if (!loc) break;
-      next = new URL(loc, next).href;
-      const m = next.match(/^https:\/\/(?:www\.|m\.)?tiktok\.com\/(@[\w.-]{1,40})\/video\/(\d{8,25})/);
-      if (m) return aresJson({ url: `https://www.tiktok.com/${m[1]}/video/${m[2]}` }, 200, headers);
-      if (!/^https:\/\/([\w-]+\.)?tiktok\.com\//.test(next)) break;
-    }
-    return aresJson({ error: "not found" }, 404, headers);
-  }
-  if (path === "pubstats" && method === "GET") {
-    if (!(await pubStatInit(env))) return aresJson({ rows: [] }, 200, headers);
-    const days = Math.min(400, Math.max(1, parseInt(url.searchParams.get("days") || "90", 10) || 90));
-    const from = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
-    await env.DB.prepare("DELETE FROM pub_stats WHERE day < ?").bind(new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10)).run();
-    const r = await env.DB.prepare("SELECT day, ad, app, lang, ev, n FROM pub_stats WHERE day >= ?").bind(from).all();
-    await env.DB.prepare("DELETE FROM pub_band WHERE day < ?").bind(new Date(Date.now() - 400 * 86400000).toISOString().slice(0, 10)).run();
-    const rb = await env.DB.prepare("SELECT day, ad, band, ev, n FROM pub_band WHERE day >= ?").bind(from).all();
-    return aresJson({ rows: r.results || [], bands: rb.results || [] }, 200, headers);
-  }
   const notifMatch = path.match(/^espace\/([0-9a-f]{32})\/notify$/);
   if (notifMatch && method === "POST") {
     if ((await espOwner(env, notifMatch[1])) !== V.me) return aresJson({ error: "Espace d'une autre centrale" }, 403, headers);
@@ -1297,25 +766,6 @@ async function handleAres(request, env, url, headers) {
     return aresJson({ ok: true }, 200, headers);
   }
   // Annonces « Don · prêt · location » (gestionnaire) : tout voir, approuver, publier les siennes, retirer
-  if (path === "tools" && method === "GET") return aresJson({ items: await toolList(env) }, 200, headers);
-  if (path === "tools" && method === "POST") {
-    let b;
-    try { b = await request.json(); } catch { b = null; }
-    const it = await toolCreate(env, b, "mgr", "ok");
-    return it ? aresJson({ ok: true, id: it.id }, 200, headers) : aresJson({ error: "Annonce incomplète" }, 400, headers);
-  }
-  const toolMatch = path.match(/^tools\/([0-9a-f]{16})$/);
-  if (toolMatch && method === "PUT") {
-    const it = await toolGet(env, toolMatch[1]);
-    if (!it) return aresJson({ error: "Introuvable" }, 404, headers);
-    let b;
-    try { b = await request.json(); } catch { b = {}; }
-    if (b.status === "ok") it.status = "ok";
-    if (b.renew) it.exp = Date.now() + TOOL_DAYS * 86400000;
-    await toolPut(env, it);
-    return aresJson({ ok: true }, 200, headers);
-  }
-  if (toolMatch && method === "DELETE") { await toolDel(env, toolMatch[1]); return aresJson({ ok: true }, 200, headers); }
   // Mini-chat d'un logement (gestionnaire) : activer, lire, écrire, modérer, supprimer
   const brdMatch = path.match(/^board\/([0-9a-f]{32})(?:\/([a-z0-9-]{3,40}))?$/);
   if (brdMatch) {
@@ -1412,106 +862,14 @@ async function handleAres(request, env, url, headers) {
   return aresJson({ error: "Not found" }, 404, headers);
 }
 
-/* ════════════════════════════════════════════════════════════════════════
- * PORTAIL GÉRANCE / SYNDIC — portail.html
- *
- * Più utenti, più gérance: ognuno vede solo i dati della propria gérance,
- * lo staff LA CENTRAL (ruolo "admin") vede tutto.
- *
- * Binding: D1 "DB" (database luxinterventions-geranceportail), R2 "PHOTOS"
- *          (foto in portail/photos/…), KV "HITS" (limite tentativi).
- * Secret:  PORTAIL_SETUP_CODE — serve solo per creare il primo amministratore.
- *
- * Password: il browser calcola PBKDF2 (sale personale) e invia solo il
- * risultato; il Worker ne conserva l'hash SHA-256 (nessuna password in chiaro,
- * calcolo leggero per il Worker).
- * Sessioni: token casuale (header Authorization: Bearer), hash in D1, 30 giorni.
- * Notifiche: Web Push (VAPID, chiavi generate e salvate in D1 al primo uso).
- * ════════════════════════════════════════════════════════════════════════ */
-
-const PTL_ITER = 310000;
-const PTL_SESSION_MS = 30 * 24 * 3600 * 1000;
-const PTL_INVITE_MS = 14 * 24 * 3600 * 1000;
-const PTL_MAX_PHOTO = 6 * 1024 * 1024;
-const PTL_MAX_FAILS = 10;
-const PTL_STATUSES = ["recue", "prise", "planifiee", "encours", "terminee", "annulee"];
-const PTL_URGENCES = ["urgent", "24h", "planifie"];
-const PTL_ROLES = ["admin", "gerance_admin", "gerance_user"];
-
-const PTL_SCHEMA = [
-  `CREATE TABLE IF NOT EXISTS orgs (id TEXT PRIMARY KEY, name TEXT NOT NULL, phone TEXT, email TEXT, created_at INTEGER NOT NULL)`,
-  `CREATE TABLE IF NOT EXISTS users (id TEXT PRIMARY KEY, org_id TEXT, role TEXT NOT NULL, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE, phone TEXT,
-     salt TEXT, iter INTEGER, auth_hash TEXT, invite_hash TEXT, invite_expires INTEGER, active INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL, last_login INTEGER)`,
-  `CREATE TABLE IF NOT EXISTS sessions (token_hash TEXT PRIMARY KEY, user_id TEXT NOT NULL, expires INTEGER NOT NULL, created_at INTEGER NOT NULL)`,
-  `CREATE TABLE IF NOT EXISTS residences (id TEXT PRIMARY KEY, org_id TEXT NOT NULL, name TEXT NOT NULL, address TEXT, access TEXT, keys_info TEXT,
-     contact_name TEXT, contact_phone TEXT, notes TEXT, apartments INTEGER, active INTEGER NOT NULL DEFAULT 1, created_at INTEGER NOT NULL)`,
-  `CREATE TABLE IF NOT EXISTS tickets (id TEXT PRIMARY KEY, ref INTEGER NOT NULL, org_id TEXT NOT NULL, residence_id TEXT NOT NULL, lieu TEXT, categorie TEXT,
-     urgence TEXT NOT NULL, description TEXT NOT NULL, contact_name TEXT, contact_phone TEXT, acces TEXT, dispo TEXT, status TEXT NOT NULL,
-     planned_at TEXT, technicien TEXT, rapport TEXT, created_by TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
-     taken_at INTEGER, done_at INTEGER)`,
-  `CREATE INDEX IF NOT EXISTS idx_tickets_org ON tickets(org_id, updated_at)`,
-  `CREATE INDEX IF NOT EXISTS idx_tickets_status ON tickets(status)`,
-  `CREATE TABLE IF NOT EXISTS events (id TEXT PRIMARY KEY, ticket_id TEXT NOT NULL, user_id TEXT, kind TEXT NOT NULL, status TEXT, text TEXT, created_at INTEGER NOT NULL)`,
-  `CREATE INDEX IF NOT EXISTS idx_events_ticket ON events(ticket_id, created_at)`,
-  `CREATE TABLE IF NOT EXISTS photos (id TEXT PRIMARY KEY, ticket_id TEXT NOT NULL, event_id TEXT, r2_key TEXT NOT NULL, mime TEXT, size INTEGER, created_by TEXT, created_at INTEGER NOT NULL)`,
-  `CREATE INDEX IF NOT EXISTS idx_photos_ticket ON photos(ticket_id)`,
-  `CREATE TABLE IF NOT EXISTS push_subs (endpoint TEXT PRIMARY KEY, user_id TEXT NOT NULL, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created_at INTEGER NOT NULL)`,
-  `CREATE TABLE IF NOT EXISTS kv (k TEXT PRIMARY KEY, v TEXT NOT NULL)`,
-  `CREATE TABLE IF NOT EXISTS devis (id TEXT PRIMARY KEY, org_id TEXT NOT NULL, no TEXT NOT NULL, title TEXT, ttc REAL, acompte REAL, pct INTEGER, valid_until TEXT,
-     status TEXT NOT NULL, note TEXT, pdf_key TEXT NOT NULL, created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, decided_at INTEGER, decided_by TEXT, decided_by_name TEXT)`,
-  `CREATE INDEX IF NOT EXISTS idx_devis_org ON devis(org_id, updated_at)`,
-  // comptages par résidence, utilisateurs / abonnements push par gérance ou par personne, sessions à fermer
-  `CREATE INDEX IF NOT EXISTS idx_tickets_res ON tickets(residence_id, status)`,
-  `CREATE INDEX IF NOT EXISTS idx_res_org ON residences(org_id, active)`,
-  `CREATE INDEX IF NOT EXISTS idx_users_org ON users(org_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_push_user ON push_subs(user_id)`,
-  `CREATE TABLE IF NOT EXISTS devis_pub (id TEXT PRIMARY KEY, token_hash TEXT NOT NULL UNIQUE, no TEXT NOT NULL, title TEXT, client TEXT, ttc REAL, acompte REAL, pct INTEGER,
-     valid_until TEXT, part INTEGER, kind TEXT, pdf_key TEXT NOT NULL, status TEXT NOT NULL, sign_name TEXT, sign_png TEXT, sign_early INTEGER, decided_at INTEGER, ip TEXT,
-     created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL)`,
-];
-// Colonnes ajoutées après coup (résidences : codes à 6 chiffres, intérieur, étages) — ignorées si déjà là
-// type de client du portail : gérance, agence immobilière, propriétaire, hôtel, Airbnb
-const orgKind = (k) => (["gerance", "agence", "proprio", "hotel", "airbnb"].includes(k) ? k : "gerance");
-const PTL_ALTER = ["ALTER TABLE tickets ADD COLUMN trip TEXT", "ALTER TABLE residences ADD COLUMN alarm TEXT", "ALTER TABLE residences ADD COLUMN code_other TEXT", "ALTER TABLE residences ADD COLUMN interior TEXT", "ALTER TABLE residences ADD COLUMN floors TEXT", "ALTER TABLE users ADD COLUMN forgot_at INTEGER", "ALTER TABLE tickets ADD COLUMN inv_no TEXT", "ALTER TABLE tickets ADD COLUMN inv_date INTEGER", "ALTER TABLE tickets ADD COLUMN inv_ht REAL", "ALTER TABLE tickets ADD COLUMN inv_tva REAL", "ALTER TABLE tickets ADD COLUMN inv_ttc REAL", "ALTER TABLE tickets ADD COLUMN inv_key TEXT", "ALTER TABLE tickets ADD COLUMN inv_paid INTEGER", "ALTER TABLE residences ADD COLUMN codes TEXT", "ALTER TABLE residences ADD COLUMN apts TEXT", "ALTER TABLE users ADD COLUMN title TEXT", "ALTER TABLE tickets ADD COLUMN inv_cont INTEGER", "ALTER TABLE orgs ADD COLUMN address TEXT", "ALTER TABLE orgs ADD COLUMN rcs TEXT", "ALTER TABLE orgs ADD COLUMN tva TEXT", "ALTER TABLE orgs ADD COLUMN banque TEXT", "ALTER TABLE orgs ADD COLUMN bic TEXT", "ALTER TABLE orgs ADD COLUMN iban TEXT", "ALTER TABLE orgs ADD COLUMN logo TEXT", "ALTER TABLE devis ADD COLUMN revs INTEGER", "ALTER TABLE tickets ADD COLUMN inv_h REAL", "ALTER TABLE tickets ADD COLUMN qte TEXT", "ALTER TABLE orgs ADD COLUMN kind TEXT"];
-let ptlSchemaReady = false;
-
 // ── Utilità ──
 const te = new TextEncoder();
 const b64url = (buf) => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 const fromB64url = (s) => Uint8Array.from(atob(s.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((s.length + 3) % 4)), (c) => c.charCodeAt(0));
-const randHex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, "0")).join("");
-const ptlId = () => Date.now().toString(36) + randHex(6);
-const clean = (v, max = 2000) => (v == null ? "" : String(v).trim().slice(0, max));
 const concatBytes = (...arrs) => { const out = new Uint8Array(arrs.reduce((a, x) => a + x.length, 0)); let o = 0; for (const x of arrs) { out.set(x, o); o += x.length; } return out; };
 
 class PtlError extends Error {
   constructor(status, message) { super(message); this.status = status; }
-}
-const fail = (status, message) => { throw new PtlError(status, message); };
-
-async function ptlFailures(env, key) { return parseInt((await env.HITS.get("ptl-rl:" + key)) || "0", 10); }
-async function ptlRecordFailure(env, key) {
-  try { await env.HITS.put("ptl-rl:" + key, String((await ptlFailures(env, key)) + 1), { expirationTtl: 900 }); } catch { /* quota KV */ }
-}
-
-// Sale fittizio e stabile per le email sconosciute (non rivela quali account esistono)
-async function fakeSalt(env, email) {
-  const k = await crypto.subtle.importKey("raw", te.encode(env.PORTAIL_SETUP_CODE || "ptl"), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const sig = new Uint8Array(await crypto.subtle.sign("HMAC", k, te.encode("salt:" + email)));
-  return btoa(String.fromCharCode(...sig.slice(0, 16)));
-}
-
-// ── Accesso ai dati secondo il ruolo ──
-const isAdmin = (u) => u.role === "admin";
-function orgScope(u, requestedOrg) {
-  if (isAdmin(u)) return requestedOrg || null; // null = tutte le gérance
-  return u.org_id;
-}
-async function loadTicketFor(env, u, id) {
-  const t = await env.DB.prepare("SELECT * FROM tickets WHERE id = ?").bind(id).first();
-  if (!t || (!isAdmin(u) && t.org_id !== u.org_id)) fail(404, "Demande introuvable");
-  return t;
 }
 
 // ── Web Push (RFC 8291 aes128gcm + VAPID RFC 8292) ──
@@ -1567,81 +925,6 @@ function ptlPushHostOk(endpoint) {
     const u = new URL(String(endpoint || ""));
     return u.protocol === "https:" && !u.port && PTL_PUSH_HOSTS.some((re) => re.test(u.hostname));
   } catch { return false; }
-}
-
-// Invia una notifica agli utenti scelti (where: clausola SQL su users "u")
-async function ptlNotify(env, where, binds, message, urgent) {
-  const subs = await env.DB.prepare(
-    `SELECT s.endpoint, s.p256dh, s.auth FROM push_subs s JOIN users u ON u.id = s.user_id WHERE u.active = 1 AND (${where})`
-  ).bind(...binds).all();
-  const payload = JSON.stringify(message);
-  await Promise.all((subs.results || []).map(async (s) => {
-    if (!ptlPushHostOk(s.endpoint)) return;
-    try {
-      const body = await encryptPush(payload, s.p256dh, s.auth);
-      const r = await fetch(s.endpoint, {
-        method: "POST",
-        headers: { Authorization: await vapidAuth(env, s.endpoint), "Content-Encoding": "aes128gcm", "Content-Type": "application/octet-stream", TTL: "86400", Urgency: urgent ? "high" : "normal" },
-        body,
-      });
-      if (r.status === 404 || r.status === 410) await env.DB.prepare("DELETE FROM push_subs WHERE endpoint = ?").bind(s.endpoint).run();
-    } catch { /* un abbonamento difettoso non blocca gli altri */ }
-  }));
-}
-
-// ── Statistiques des annonces : compteurs par jour, annonce, app, langue et type (vue, carte, appel, site, vidéo) ──
-const PUBSTAT_SCHEMA = [
-  `CREATE TABLE IF NOT EXISTS pub_stats (day TEXT NOT NULL, ad TEXT NOT NULL, app TEXT NOT NULL, lang TEXT NOT NULL, ev TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, ad, app, lang, ev))`,
-  `CREATE TABLE IF NOT EXISTS pub_rl (k TEXT PRIMARY KEY, n INTEGER NOT NULL DEFAULT 0)`,
-  // 🕒 mêmes compteurs par fascia horaire (vues : « v » et « vb » = première vue dans une autre fascia du même jour)
-  `CREATE TABLE IF NOT EXISTS pub_band (day TEXT NOT NULL, ad TEXT NOT NULL, band TEXT NOT NULL, ev TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (day, ad, band, ev))`,
-];
-let pubStatReady = false;
-async function pubStatInit(env) {
-  if (!env.DB) return false;
-  if (!pubStatReady) { await env.DB.batch(PUBSTAT_SCHEMA.map((q) => env.DB.prepare(q))); pubStatReady = true; }
-  return true;
-}
-// v = vue ; map / call / web / video = touchers ; like / unl, dis / und = 👍 👎 et leur retrait ; share = 👉 partagé
-const PUBSTAT_EV = ["v", "vb", "map", "call", "web", "video", "like", "unl", "dis", "und", "share"];
-const PUB_BANDS = ["m", "m2", "a", "a2", "s", "n"]; // fasce horaires (ares/pubsched.js)
-async function pubStatPost(request, env, headers) {
-  try {
-    if (!(await pubStatInit(env))) return new Response(null, { status: 204, headers });
-    const len = parseInt(request.headers.get("content-length") || "0", 10);
-    if (len > 4000) return new Response(null, { status: 413, headers });
-    let b;
-    try { b = JSON.parse(await request.text()); } catch { b = null; }
-    const app = ["loc", "eq", "ptl", "cli", "hote", "taxi", "ann"].includes(b && b.app) ? b.app : "";
-    const lang = ["fr", "it", "de", "pt", "en", "es"].includes(b && b.lang) ? b.lang : "fr";
-    const items = (b && Array.isArray(b.items) ? b.items : []).filter((x) => x && /^[a-z0-9]{6,40}$/i.test(x.id || "") && PUBSTAT_EV.includes(x.ev)).slice(0, 10);
-    if (!app || !items.length) return new Response(null, { status: 204, headers });
-    // limite anti-abus : 300 compteurs par heure et par adresse IP
-    const hour = new Date().toISOString().slice(0, 13);
-    const rlKey = hour + ":" + (await sha256Hex("pubrl:" + clientIp(request))).slice(0, 24);
-    const rl = await env.DB.prepare("INSERT INTO pub_rl (k, n) VALUES (?, ?) ON CONFLICT(k) DO UPDATE SET n = n + excluded.n RETURNING n").bind(rlKey, items.length).first();
-    if (rl && rl.n > 300) return new Response(null, { status: 429, headers });
-    const day = new Date().toISOString().slice(0, 10);
-    const q1 = items.filter((x) => x.ev !== "vb").map((x) => env.DB.prepare("INSERT INTO pub_stats (day, ad, app, lang, ev, n) VALUES (?, ?, ?, ?, ?, 1) ON CONFLICT(day, ad, app, lang, ev) DO UPDATE SET n = n + 1").bind(day, x.id, app, lang, x.ev));
-    const q2 = items.filter((x) => PUB_BANDS.includes(x.b)).map((x) => env.DB.prepare("INSERT INTO pub_band (day, ad, band, ev, n) VALUES (?, ?, ?, ?, 1) ON CONFLICT(day, ad, band, ev) DO UPDATE SET n = n + 1").bind(day, x.id, x.b, x.ev === "vb" ? "v" : x.ev));
-    if (q1.length || q2.length) await env.DB.batch([...q1, ...q2]);
-    if (Math.random() < 0.02) await env.DB.prepare("DELETE FROM pub_rl WHERE k < ?").bind(hour).run().catch(() => {}); // heures passées
-    return new Response(null, { status: 204, headers });
-  } catch { return new Response(null, { status: 204, headers }); }
-}
-
-// 👍 de chaque annonce (likes − retraits), pour toutes les apps ; les 👎 ne sont pas publics (centrale seulement)
-async function pubLikesGet(url, env, headers) {
-  const h = { ...headers, "Content-Type": "application/json", "Cache-Control": "public, max-age=30" };
-  try {
-    const ids = String(url.searchParams.get("ids") || "").split(",").filter((x) => /^[a-z0-9]{6,40}$/i.test(x)).slice(0, 30);
-    if (!ids.length || !(await pubStatInit(env))) return new Response("{}", { headers: h });
-    const r = await env.DB.prepare(`SELECT ad, ev, SUM(n) AS n FROM pub_stats WHERE ev IN ('like', 'unl') AND ad IN (${ids.map(() => "?").join(",")}) GROUP BY ad, ev`).bind(...ids).all();
-    const out = {};
-    for (const x of r.results || []) out[x.ad] = (out[x.ad] || 0) + (x.ev === "like" ? 1 : -1) * (x.n || 0);
-    for (const k of Object.keys(out)) out[k] = Math.max(0, out[k]);
-    return new Response(JSON.stringify(out), { headers: h });
-  } catch { return new Response("{}", { headers: h }); }
 }
 
 const TICKER_SYMBOLS = "BITSTAMP:BTCUSD,BITSTAMP:ETHUSD,BINANCE:USDTUSD,BINANCE:BNBUSD,BINANCE:SOLUSD,BITSTAMP:XRPUSD,BINANCE:USDCUSD,BINANCE:ADAUSD,BINANCE:AVAXUSD,BINANCE:DOGEUSD,BINANCE:TRXUSD,BINANCE:DOTUSD,BINANCE:LINKUSD,BINANCE:SUIUSD,BINANCE:NEARUSD,BINANCE:LTCUSD,BINANCE:BCHUSD,BINANCE:PEPEUSD,BINANCE:UNIUSD,BINANCE:APTUSD";
@@ -1739,57 +1022,6 @@ async function espPushSave(env, target, b) {
     .bind(String(b.endpoint), target, boards, app, lang, b.p256dh, b.auth, Date.now()).run();
   return true;
 }
-// target : "owner", un identifiant d'espace, ou "board:<id>" (habitants inscrits à ce fil, sauf l'expéditeur)
-// ── 🚗 Trajet : aucune position n'est envoyée ni gardée — seulement l'heure d'arrivée estimée sur le téléphone de l'ouvrier.
-// Jeton de 32 caractères (inconnaissable) par intervention et par jour, créé par la central ; effacé tout seul après 36 h.
-const TRIP_TTL = 36 * 3600;
-async function tripGet(env, tk) { try { return JSON.parse((await env.HITS.get("trip:" + tk)) || "null"); } catch { return null; } }
-async function tripPut(env, tk, rec) { await env.HITS.put("trip:" + tk, JSON.stringify(rec), { expirationTtl: TRIP_TTL }); }
-const tripOut = (r) => ({ st: (r && r.st) || "", eta: (r && r.eta) || 0, e0: (r && r.e0) || 0, start: (r && r.start) || 0, upd: (r && r.upd) || 0, n: (r && r.n) || "" });
-async function tripPublic(request, env, tk, headers, ctx) {
-  const rec = await tripGet(env, tk);
-  if (request.method === "GET") return aresJson(tripOut(rec), 200, headers, { "Cache-Control": "no-store" });
-  if (request.method !== "POST") return aresJson({ error: "Méthode non autorisée" }, 405, headers);
-  if (!rec) return aresJson({ error: "Trajet inconnu" }, 404, headers);
-  let b;
-  try { b = await request.json(); } catch { b = {}; }
-  const now = Date.now(), st = ["go", "here", "stop"].includes(b.st) ? b.st : "";
-  if (!st) return aresJson({ error: "Données invalides" }, 400, headers);
-  if (rec.upd && now - rec.upd < 5000 && st === rec.st) return aresJson(tripOut(rec), 200, headers); // pas plus d'une mise à jour toutes les 5 s
-  const eta = Number(b.eta);
-  const first = st === "go" && rec.st !== "go";
-  const next = { ...rec, st, upd: now, n: String(b.n || rec.n || "").slice(0, 40),
-    eta: st === "go" && eta > now - 5 * 60000 && eta < now + 6 * 3600000 ? Math.round(eta) : st === "go" ? rec.eta || now + 20 * 60000 : rec.eta || 0,
-    start: first ? now : rec.start || now };
-  next.e0 = first ? next.eta : rec.e0 || next.eta; // heure annoncée au départ : au-delà → « petit retard »
-  await tripPut(env, tk, next);
-  if (first) {
-    const jobs = (rec.to || []).map((espId) => espPushSend(env, espId, "trip"));
-    if (rec.ptl && env.DB) jobs.push((async () => {
-      try {
-        const t = await env.DB.prepare("SELECT id, ref, org_id, status FROM tickets WHERE id = ?").bind(rec.ptl).first();
-        if (!t) return;
-        const at = new Date(next.eta).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Luxembourg" });
-        const txt = `🚗 ${next.n || "L’intervenant"} est en route — arrivée vers ${at}`;
-        const stmts = [env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, NULL, ?, ?, ?, ?)").bind(ptlId(), t.id, ["prise", "planifiee"].includes(t.status) ? "status" : "comment", ["prise", "planifiee"].includes(t.status) ? "encours" : null, txt, now)];
-        if (["prise", "planifiee"].includes(t.status)) stmts.push(env.DB.prepare("UPDATE tickets SET status = 'encours', updated_at = ? WHERE id = ?").bind(now, t.id));
-        await env.DB.batch(stmts);
-        await ptlNotify(env, "u.org_id = ?", [t.org_id], { title: `#${t.ref} · 🚗 En route`, body: txt, url: `/portail.html#/t/${t.id}`, tag: t.id }, false);
-      } catch { /* portail indisponible : le trajet reste visible dans les apps */ }
-    })());
-    ctx && ctx.waitUntil(Promise.all(jobs));
-  }
-  return aresJson(tripOut(next), 200, headers);
-}
-// plusieurs trajets d'un coup (central, portail) — seulement ceux dont on connaît le jeton
-async function tripsPublic(request, env, headers) {
-  let b;
-  try { b = await request.json(); } catch { b = {}; }
-  const tks = (Array.isArray(b.tks) ? b.tks : []).filter((x) => /^[0-9a-f]{32}$/.test(x)).slice(0, 60);
-  const out = {};
-  for (const tk of tks) { const r = await tripGet(env, tk); if (r && r.st) out[tk] = tripOut(r); }
-  return aresJson({ items: out }, 200, headers, { "Cache-Control": "no-store" });
-}
 
 async function espPushSend(env, target, kind, except = "") {
   try {
@@ -1816,720 +1048,4 @@ async function espPushSend(env, target, kind, except = "") {
       } catch { /* un abonnement défectueux ne bloque pas les autres */ }
     }));
   } catch { /* notifications indisponibles : l'envoi principal a réussi quand même */ }
-}
-
-const URG_LABEL = { urgent: "🔴 URGENT", "24h": "🟠 Sous 24 h", planifie: "🟢 Planifié" };
-const STATUS_LABEL = { recue: "Reçue", prise: "Prise en charge", planifiee: "Planifiée", encours: "En cours", terminee: "Terminée", annulee: "Annulée" };
-
-// ── Router ──
-async function handlePortail(request, env, url, headers, ctx) {
-  const json = (obj, status = 200) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json", ...headers } });
-  try {
-    if (!env.DB) fail(503, "Base de données non reliée (binding DB manquant)");
-    if (!ptlSchemaReady) {
-      await env.DB.batch(PTL_SCHEMA.map((q) => env.DB.prepare(q)));
-      for (const q of PTL_ALTER) { try { await env.DB.prepare(q).run(); } catch { /* colonne déjà présente */ } }
-      ptlSchemaReady = true;
-    }
-    const path = url.pathname.slice("/api/portail/".length).replace(/\/$/, "");
-    const method = request.method;
-    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-    const body = async () => { try { return await request.json(); } catch { return {}; } };
-    const now = Date.now();
-
-    // ── Rotte pubbliche ──
-    if (path === "status" && method === "GET") {
-      const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
-      return json({ configured: n.n > 0, iter: PTL_ITER });
-    }
-
-    // Limite des tentatives : seulement sur les routes sans session (connexion, invitation, configuration),
-    // pour ne pas bloquer les collègues déjà connectés derrière la même adresse IP.
-    const guard = async () => { if ((await ptlFailures(env, ip)) >= PTL_MAX_FAILS) fail(429, "Trop de tentatives. Réessayez dans 15 minutes."); };
-
-    if (path === "setup" && method === "POST") {
-      await guard();
-      const b = await body();
-      if (!env.PORTAIL_SETUP_CODE) fail(503, "PORTAIL_SETUP_CODE manquant dans le Worker");
-      if (!safeEqual(await sha256Hex(clean(b.setupCode)), await sha256Hex(env.PORTAIL_SETUP_CODE))) { await ptlRecordFailure(env, ip); fail(403, "Code de configuration incorrect"); }
-      const n = await env.DB.prepare("SELECT COUNT(*) AS n FROM users").first();
-      if (n.n > 0) fail(409, "Déjà configuré");
-      const email = clean(b.email, 200).toLowerCase();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || !clean(b.name) || !/^[0-9a-f]{64}$/.test(b.authHash || "") || !b.salt) fail(400, "Données invalides");
-      await env.DB.prepare("INSERT INTO users (id, org_id, role, name, email, salt, iter, auth_hash, created_at) VALUES (?, NULL, 'admin', ?, ?, ?, ?, ?, ?)")
-        .bind(ptlId(), clean(b.name, 120), email, clean(b.salt, 64), PTL_ITER, b.authHash, now).run();
-      return json({ ok: true });
-    }
-
-    if (path === "prelogin" && method === "POST") {
-      const email = clean((await body()).email, 200).toLowerCase();
-      const u = await env.DB.prepare("SELECT salt, iter FROM users WHERE email = ? AND auth_hash IS NOT NULL").bind(email).first();
-      return json(u ? { salt: u.salt, iter: u.iter } : { salt: await fakeSalt(env, email), iter: PTL_ITER });
-    }
-
-    // Mot de passe oublié : la demande arrive à LA CENTRAL (et au responsable de la gérance), qui envoie un nouveau lien.
-    // Réponse toujours identique : on ne révèle pas quels emails ont un compte.
-    if (path === "forgot" && method === "POST") {
-      await guard();
-      const email = clean((await body()).email, 200).toLowerCase();
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) fail(400, "Email invalide");
-      const kIp = "forgot-ip:" + ip, kMail = "forgot:" + email;
-      if ((await ptlFailures(env, kIp)) >= 10 || (await ptlFailures(env, kMail)) >= 3) return json({ ok: true });
-      await ptlRecordFailure(env, kIp); await ptlRecordFailure(env, kMail);
-      const u = await env.DB.prepare("SELECT id, name, org_id FROM users WHERE email = ? AND active = 1").bind(email).first();
-      if (u) {
-        await env.DB.prepare("UPDATE users SET forgot_at = ? WHERE id = ?").bind(now, u.id).run();
-        const msg = { title: "🔑 Mot de passe oublié", body: `${u.name} (${email}) demande un nouveau lien d'accès`, url: "/portail.html", tag: "pwd-" + u.id };
-        ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin' OR (u.role = 'gerance_admin' AND u.org_id = ? AND u.id != ?)", [u.org_id || "", u.id], msg, false));
-        ctx && ctx.waitUntil(espPushSend(env, "owner", "pwd"));
-      }
-      return json({ ok: true });
-    }
-
-    if (path === "login" && method === "POST") {
-      await guard();
-      const b = await body();
-      const email = clean(b.email, 200).toLowerCase();
-      if ((await ptlFailures(env, "mail:" + email)) >= PTL_MAX_FAILS) fail(429, "Compte temporairement bloqué. Réessayez dans 15 minutes.");
-      const u = await env.DB.prepare("SELECT * FROM users WHERE email = ?").bind(email).first();
-      const ok = u && u.auth_hash && u.active && typeof b.authKey === "string" && safeEqual(await sha256Hex(b.authKey), u.auth_hash);
-      if (!ok) {
-        await ptlRecordFailure(env, ip);
-        await ptlRecordFailure(env, "mail:" + email);
-        fail(401, u && !u.active ? "Compte désactivé" : "Email ou mot de passe incorrect");
-      }
-      const token = randHex(32);
-      await env.DB.batch([
-        env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires, created_at) VALUES (?, ?, ?, ?)").bind(await sha256Hex(token), u.id, now + PTL_SESSION_MS, now),
-        env.DB.prepare("UPDATE users SET last_login = ? WHERE id = ?").bind(now, u.id),
-        env.DB.prepare("DELETE FROM sessions WHERE expires < ?").bind(now),
-      ]);
-      return json({ token });
-    }
-
-    // ── Devis par lien / QR code (client externe) : voir, imprimer, signer « Bon pour accord » sur son téléphone ──
-    const pubMatch = path.match(/^pub\/devis\/([0-9a-f]{48})(?:\/(pdf|sign))?$/);
-    if (pubMatch) {
-      await guard();
-      const dp = await env.DB.prepare("SELECT * FROM devis_pub WHERE token_hash = ?").bind(await sha256Hex(pubMatch[1])).first();
-      if (!dp) { await ptlRecordFailure(env, ip); fail(404, "Lien de devis invalide. Demandez un nouveau lien à LA CENTRAL."); }
-      const expired = dp.valid_until && dp.valid_until < new Date(now).toISOString().slice(0, 10);
-      if (!pubMatch[2] && method === "GET") return json({ no: dp.no, title: dp.title, client: dp.client, ttc: dp.ttc, acompte: dp.acompte, pct: dp.pct, valid_until: dp.valid_until, part: !!dp.part, kind: dp.kind, status: dp.status, expired: !!expired, sign_name: dp.sign_name, decided_at: dp.decided_at });
-      if (pubMatch[2] === "pdf" && method === "GET") {
-        const obj = await env.PHOTOS.get(dp.pdf_key);
-        if (!obj) fail(404, "Devis introuvable");
-        return new Response(obj.body, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="Devis-${dp.no}.pdf"`, "Cache-Control": "private, no-store", ...headers } });
-      }
-      if (pubMatch[2] === "sign" && method === "POST") {
-        if (dp.status !== "envoye") fail(409, "Ce devis a déjà une réponse");
-        if (expired) fail(410, "Ce devis a expiré : demandez une nouvelle offre à LA CENTRAL");
-        const b = await body(), st = b.status === "refuse" ? "refuse" : "accepte", nom = clean(b.nom, 120), png = String(b.png || "");
-        if (st === "accepte") {
-          if (!nom) fail(400, "Indiquez votre nom");
-          if (png.length > 400000 || !/^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(png)) fail(400, "Signature manquante");
-        }
-        await env.DB.prepare("UPDATE devis_pub SET status = ?, sign_name = ?, sign_png = ?, sign_early = ?, decided_at = ?, ip = ?, updated_at = ? WHERE id = ?")
-          .bind(st, nom || null, st === "accepte" ? png : null, b.early ? 1 : 0, now, ip, now, dp.id).run();
-        const msg = { title: `📝 Devis ${dp.no} ${st === "accepte" ? "✅ signé par le client" : "❌ refusé par le client"}`, body: `${nom || dp.client || ""} — par le lien du devis`, url: "/portail.html", tag: "devpub-" + dp.id };
-        ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], msg, st === "accepte"));
-        ctx && ctx.waitUntil(espPushSend(env, "owner", "devis"));
-        return json({ ok: true });
-      }
-      fail(405, "Méthode non autorisée");
-    }
-
-    const inviteMatch = path.match(/^invite\/([0-9a-f]{64})$/);
-    if (inviteMatch) {
-      await guard();
-      const u = await env.DB.prepare("SELECT u.*, o.name AS org_name FROM users u LEFT JOIN orgs o ON o.id = u.org_id WHERE invite_hash = ?").bind(await sha256Hex(inviteMatch[1])).first();
-      if (!u || u.invite_expires < now) { await ptlRecordFailure(env, ip); fail(404, "Lien d'invitation invalide ou expiré. Demandez un nouveau lien."); }
-      if (method === "GET") { const po = await env.PHOTOS.get(ARES_PUBS); const pj = po ? await po.json() : {}; return json({ name: u.name, email: u.email, org: u.org_name || "LA CENTRAL", iter: PTL_ITER, offers: pj.offers !== false, needName: !clean(u.name) }); }
-      if (method === "POST") {
-        const b = await body();
-        if (!/^[0-9a-f]{64}$/.test(b.authHash || "") || !b.salt) fail(400, "Données invalides");
-        // invitation créée par LA CENTRAL avec l'email seulement : la personne écrit son prénom et son nom
-        const nm = clean(u.name) ? u.name : clean(b.name, 120);
-        if (!nm) fail(400, "Écrivez votre prénom et votre nom");
-        const token = randHex(32);
-        await env.DB.batch([
-          env.DB.prepare("UPDATE users SET salt = ?, iter = ?, auth_hash = ?, invite_hash = NULL, invite_expires = NULL, active = 1, last_login = ?, name = ? WHERE id = ?")
-            .bind(clean(b.salt, 64), PTL_ITER, b.authHash, now, nm, u.id),
-          env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(u.id),
-          env.DB.prepare("INSERT INTO sessions (token_hash, user_id, expires, created_at) VALUES (?, ?, ?, ?)").bind(await sha256Hex(token), u.id, now + PTL_SESSION_MS, now),
-        ]);
-        return json({ token });
-      }
-    }
-
-    // ── Da qui serve una sessione ──
-    const auth = request.headers.get("Authorization") || "";
-    const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-    if (!/^[0-9a-f]{64}$/.test(token)) fail(401, "Session expirée");
-    const tokenHash = await sha256Hex(token);
-    const me = await env.DB.prepare(
-      "SELECT u.*, o.name AS org_name FROM sessions s JOIN users u ON u.id = s.user_id LEFT JOIN orgs o ON o.id = u.org_id WHERE s.token_hash = ? AND s.expires > ? AND u.active = 1"
-    ).bind(tokenHash, now).first();
-    if (!me) fail(401, "Session expirée");
-    const publicUser = (u) => ({ id: u.id, org_id: u.org_id, org_name: u.org_name || null, role: u.role, name: u.name, title: u.title || "", email: u.email, phone: u.phone || "" });
-
-    if (path === "logout" && method === "POST") {
-      await env.DB.prepare("DELETE FROM sessions WHERE token_hash = ?").bind(tokenHash).run();
-      return json({ ok: true });
-    }
-
-    if (path === "me" && method === "GET") {
-      return json({ user: publicUser(me), vapidKey: (await vapidKeys(env)).publicKey });
-    }
-
-    // Annonces des partenaires (publiées par l'app de gestion), seulement celles encore en cours
-    if (path === "pubs" && method === "GET") {
-      const obj = await env.PHOTOS.get(ARES_PUBS);
-      const day = new Date().toISOString().slice(0, 10);
-      const j = obj ? await obj.json() : {};
-      const items = (j.items || []).filter((a) => !a.fin || a.fin >= day);
-      return json({ items, offers: j.offers !== false, contact: j.contact || null });
-    }
-
-    // « Je suis intéressé » (offre d'abonnement affichée à la gérance) : prévient LA CENTRAL
-    if (path === "offer" && method === "POST") {
-      const pb = (await body()).plan, plan = ["decouverte", "pro", "agence", "mesure"].includes(pb) ? pb : "pro";
-      const k = "offer:" + me.id;
-      if ((await ptlFailures(env, k)) < 5) {
-        await ptlRecordFailure(env, k);
-        const msg = { title: "💼 Intéressé par un abonnement", body: `${me.name}${me.org_name ? " (" + me.org_name + ")" : ""} — offre ${plan} · ${me.email}`, url: "/portail.html", tag: "offer-" + me.id };
-        ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], msg, false));
-        ctx && ctx.waitUntil(espPushSend(env, "owner", "offer"));
-      }
-      return json({ ok: true });
-    }
-
-    // ── Devis (PDF émis par l'app de gestion) : la gérance accepte, refuse ou demande une révision ──
-    // lien public d'un devis (client externe) : publié par l'app de gestion, réponses relues par elle
-    if (path === "devis-pub" && method === "PUT") {
-      if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
-      if ((request.headers.get("Content-Type") || "") !== "application/pdf") fail(415, "PDF attendu");
-      let meta = {};
-      try { meta = JSON.parse(decodeURIComponent(request.headers.get("X-Devis") || "{}")); } catch { fail(400, "Devis illisible"); }
-      const no = clean(meta.no, 80);
-      if (!/^DEV-[A-Z0-9-]{6,}$/.test(no)) fail(400, "Numéro de devis invalide");
-      const data = await request.arrayBuffer();
-      if (!data.byteLength || data.byteLength > 12 * 1024 * 1024) fail(413, "PDF vide ou trop lourd");
-      const n = (x) => (Number.isFinite(+x) ? Math.round(+x * 100) / 100 : 0);
-      const vu = /^\d{4}-\d{2}-\d{2}$/.test(meta.valid_until || "") ? meta.valid_until : "";
-      const old = /^[a-z0-9]+$/.test(meta.id || "") ? await env.DB.prepare("SELECT id FROM devis_pub WHERE id = ?").bind(meta.id).first() : null;
-      const id = old ? old.id : ptlId(), key = `portail/devis-pub/${id}.pdf`;
-      await env.PHOTOS.put(key, data, { httpMetadata: { contentType: "application/pdf" } });
-      const vals = [no, clean(meta.title, 200), clean(meta.client, 160), n(meta.ttc), n(meta.acompte), Math.round(n(meta.pct)), vu, meta.part ? 1 : 0, meta.kind === "contrat" ? "contrat" : "travaux", key];
-      let tok = null;
-      if (old) await env.DB.prepare("UPDATE devis_pub SET no = ?, title = ?, client = ?, ttc = ?, acompte = ?, pct = ?, valid_until = ?, part = ?, kind = ?, pdf_key = ?, status = 'envoye', sign_name = NULL, sign_png = NULL, sign_early = NULL, decided_at = NULL, updated_at = ? WHERE id = ?").bind(...vals, now, id).run();
-      else { tok = randHex(24); await env.DB.prepare("INSERT INTO devis_pub (id, token_hash, no, title, client, ttc, acompte, pct, valid_until, part, kind, pdf_key, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'envoye', ?, ?)").bind(id, await sha256Hex(tok), ...vals, now, now).run(); }
-      return json({ ok: true, id, token: tok });
-    }
-    if (path === "devis-pub" && method === "GET") {
-      if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
-      const rows = await env.DB.prepare("SELECT id, no, status, sign_name, sign_png, sign_early, decided_at FROM devis_pub WHERE decided_at IS NOT NULL ORDER BY decided_at DESC LIMIT 300").all();
-      return json({ devis: rows.results || [] });
-    }
-    const dpMatch = path.match(/^devis-pub\/([a-z0-9]+)$/);
-    if (dpMatch && method === "DELETE") {
-      if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
-      const dp = await env.DB.prepare("SELECT pdf_key FROM devis_pub WHERE id = ?").bind(dpMatch[1]).first();
-      if (dp) { await env.PHOTOS.delete(dp.pdf_key); await env.DB.prepare("DELETE FROM devis_pub WHERE id = ?").bind(dpMatch[1]).run(); }
-      return json({ ok: true });
-    }
-    if (path === "devis" && method === "PUT") {
-      if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
-      if ((request.headers.get("Content-Type") || "") !== "application/pdf") fail(415, "PDF attendu");
-      let meta = {};
-      try { meta = JSON.parse(decodeURIComponent(request.headers.get("X-Devis") || "{}")); } catch { fail(400, "Devis illisible"); }
-      const no = clean(meta.no, 80), org = clean(meta.org, 40);
-      if (!/^DEV-[A-Z0-9-]{6,}$/.test(no)) fail(400, "Numéro de devis invalide");
-      if (!(await env.DB.prepare("SELECT id FROM orgs WHERE id = ?").bind(org).first())) fail(400, "Gérance inconnue");
-      const data = await request.arrayBuffer();
-      if (!data.byteLength || data.byteLength > 12 * 1024 * 1024) fail(413, "PDF vide ou trop lourd");
-      const n = (x) => (Number.isFinite(+x) ? Math.round(+x * 100) / 100 : 0);
-      const old = /^[a-z0-9]+$/.test(meta.id || "") ? await env.DB.prepare("SELECT * FROM devis WHERE id = ?").bind(meta.id).first() : null;
-      const id = old ? old.id : ptlId(), key = `portail/devis/${id}.pdf`;
-      await env.PHOTOS.put(key, data, { httpMetadata: { contentType: "application/pdf" } });
-      const vu = /^\d{4}-\d{2}-\d{2}$/.test(meta.valid_until || "") ? meta.valid_until : "";
-      if (old) await env.DB.prepare("UPDATE devis SET org_id = ?, no = ?, title = ?, ttc = ?, acompte = ?, pct = ?, valid_until = ?, status = 'envoye', note = NULL, pdf_key = ?, updated_at = ?, revs = COALESCE(revs, 0) + 1, decided_at = NULL, decided_by = NULL, decided_by_name = NULL WHERE id = ?")
-        .bind(org, no, clean(meta.title, 200), n(meta.ttc), n(meta.acompte), Math.round(n(meta.pct)), vu, key, now, id).run();
-      else await env.DB.prepare("INSERT INTO devis (id, org_id, no, title, ttc, acompte, pct, valid_until, status, pdf_key, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'envoye', ?, ?, ?)")
-        .bind(id, org, no, clean(meta.title, 200), n(meta.ttc), n(meta.acompte), Math.round(n(meta.pct)), vu, key, now, now).run();
-      ctx && ctx.waitUntil(ptlNotify(env, "u.org_id = ? AND u.role = 'gerance_admin'", [org], { title: `📝 Devis ${no}`, body: `${n(meta.ttc).toFixed(2).replace(".", ",")} € TTC — à accepter, refuser ou revoir dans le portail`, url: "/portail.html#/home", tag: "devis-" + id }, false));
-      return json({ ok: true, id });
-    }
-    // ?all=1 : tout l'historique (statistiques de la gérance) ; sinon les devis en cours et récents
-    if (path === "devis" && method === "GET") {
-      const all = url.searchParams.get("all") === "1", org = clean(url.searchParams.get("org"), 40);
-      const rows = isAdmin(me)
-        ? await env.DB.prepare(`SELECT d.*, o.name AS org_name FROM devis d JOIN orgs o ON o.id = d.org_id ${org ? "WHERE d.org_id = ?" : ""} ORDER BY d.updated_at DESC LIMIT 1000`).bind(...(org ? [org] : [])).all()
-        : all ? await env.DB.prepare("SELECT * FROM devis WHERE org_id = ? ORDER BY created_at DESC LIMIT 1000").bind(me.org_id).all()
-        : await env.DB.prepare("SELECT * FROM devis WHERE org_id = ? AND (status IN ('envoye', 'revision') OR updated_at > ?) ORDER BY updated_at DESC LIMIT 50").bind(me.org_id, now - 60 * 864e5).all();
-      return json({ devis: (rows.results || []).map(({ pdf_key, ...r }) => r) });
-    }
-    const devMatch = path.match(/^devis\/([a-z0-9]+)(?:\/(pdf|decision))?$/);
-    if (devMatch) {
-      const dv = await env.DB.prepare("SELECT * FROM devis WHERE id = ?").bind(devMatch[1]).first();
-      if (!dv || (!isAdmin(me) && dv.org_id !== me.org_id)) fail(404, "Devis introuvable");
-      if (devMatch[2] === "pdf" && method === "GET") {
-        const obj = await env.PHOTOS.get(dv.pdf_key);
-        if (!obj) fail(404, "Devis introuvable");
-        return new Response(obj.body, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="Devis-${dv.no}.pdf"`, "Cache-Control": "private, no-store", ...headers } });
-      }
-      // réponse de la gérance (le responsable) : acceptée, refusée, ou révision demandée (avec un mot)
-      if (devMatch[2] === "decision" && method === "POST") {
-        if (me.role !== "gerance_admin" && !isAdmin(me)) fail(403, "Réservé au responsable de la gérance");
-        if (!["envoye", "revision"].includes(dv.status)) fail(409, "Ce devis a déjà une réponse");
-        const b = await body(), st = ["accepte", "refuse", "revision"].includes(b.status) ? b.status : "", note = clean(b.note, 1500);
-        if (!st) fail(400, "Réponse invalide");
-        if (st === "revision" && !note) fail(400, "Écrivez ce qu'il faut revoir");
-        await env.DB.prepare("UPDATE devis SET status = ?, note = ?, decided_at = ?, decided_by = ?, decided_by_name = ?, updated_at = ? WHERE id = ?").bind(st, note || null, now, me.id, me.name, now, dv.id).run();
-        const lbl = { accepte: "✅ accepté", refuse: "❌ refusé", revision: "🔄 révision demandée" }[st];
-        ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], { title: `📝 Devis ${dv.no} ${lbl}`, body: `${me.name}${me.org_name ? " (" + me.org_name + ")" : ""}${note ? " — " + note.slice(0, 120) : ""}`, url: "/portail.html", tag: "devis-" + dv.id }, st !== "refuse"));
-        ctx && ctx.waitUntil(espPushSend(env, "owner", "devis"));
-        return json({ ok: true });
-      }
-      if (!devMatch[2] && method === "DELETE") {
-        if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
-        await env.PHOTOS.delete(dv.pdf_key);
-        await env.DB.prepare("DELETE FROM devis WHERE id = ?").bind(dv.id).run();
-        return json({ ok: true });
-      }
-    }
-
-    if (path === "me/password" && method === "POST") {
-      const b = await body();
-      if (!safeEqual(await sha256Hex(clean(b.oldKey, 64)), me.auth_hash || "")) fail(403, "Mot de passe actuel incorrect");
-      if (!/^[0-9a-f]{64}$/.test(b.authHash || "") || !b.salt) fail(400, "Données invalides");
-      await env.DB.batch([
-        env.DB.prepare("UPDATE users SET salt = ?, auth_hash = ? WHERE id = ?").bind(clean(b.salt, 64), b.authHash, me.id),
-        env.DB.prepare("DELETE FROM sessions WHERE user_id = ? AND token_hash != ?").bind(me.id, tokenHash),
-      ]);
-      return json({ ok: true });
-    }
-
-    // ── Notifiche push ──
-    if (path === "push" && method === "POST") {
-      const b = await body();
-      if (!ptlPushHostOk(b.endpoint) || !b.keys || !b.keys.p256dh || !b.keys.auth) fail(400, "Abonnement invalide");
-      await env.DB.prepare("INSERT OR REPLACE INTO push_subs (endpoint, user_id, p256dh, auth, created_at) VALUES (?, ?, ?, ?, ?)")
-        .bind(clean(b.endpoint, 1000), me.id, clean(b.keys.p256dh, 200), clean(b.keys.auth, 100), now).run();
-      return json({ ok: true });
-    }
-    if (path === "push" && method === "DELETE") {
-      const b = await body();
-      await env.DB.prepare("DELETE FROM push_subs WHERE endpoint = ? AND user_id = ?").bind(clean(b.endpoint, 1000), me.id).run();
-      return json({ ok: true });
-    }
-    if (path === "push/test" && method === "POST") {
-      ctx && ctx.waitUntil(ptlNotify(env, "u.id = ?", [me.id], { title: "LA CENTRAL", body: "Les notifications fonctionnent ✓", url: "/portail.html" }, false));
-      return json({ ok: true });
-    }
-
-    // ── Gérance (organizzazioni) ──
-    if (path === "orgs" && method === "GET") {
-      const rows = isAdmin(me)
-        ? await env.DB.prepare(`SELECT o.*, (SELECT COUNT(*) FROM residences r WHERE r.org_id = o.id AND r.active = 1) AS residences,
-            (SELECT COUNT(*) FROM users u WHERE u.org_id = o.id AND u.active = 1) AS users,
-            (SELECT COUNT(*) FROM tickets t WHERE t.org_id = o.id AND t.status IN ('recue','prise','planifiee','encours')) AS open
-            FROM orgs o ORDER BY o.name`).all()
-        : await env.DB.prepare("SELECT * FROM orgs WHERE id = ?").bind(me.org_id).all();
-      return json({ orgs: rows.results || [] });
-    }
-    if (path === "orgs" && method === "POST") {
-      if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
-      const b = await body();
-      if (!clean(b.name)) fail(400, "Nom obligatoire");
-      const id = ptlId();
-      // LA CENTRAL crée la gérance avec le nom, l'email, le téléphone et le RCS : adresse, TVA, banque et logo sont remplis par la gérance
-      await env.DB.prepare("INSERT INTO orgs (id, name, phone, email, created_at, rcs, kind) VALUES (?, ?, ?, ?, ?, ?, ?)")
-        .bind(id, clean(b.name, 120), clean(b.phone, 40), clean(b.email, 200), now, clean(b.rcs, 30), orgKind(b.kind)).run();
-      return json({ id });
-    }
-    const orgMatch = path.match(/^orgs\/([a-z0-9]+)$/);
-    // données de la société : le responsable de la gérance pour la sienne ; LA CENTRAL corrige seulement nom, email, téléphone et RCS
-    if (orgMatch && method === "PATCH") {
-      const own = me.role === "gerance_admin" && me.org_id === orgMatch[1];
-      if (!isAdmin(me) && !own) fail(403, "Réservé à LA CENTRAL ou au responsable de la gérance");
-      const b = await body();
-      const v = (k, n) => (b[k] != null ? clean(b[k], n) : null);
-      // logo de l'agence (uniquement par son responsable, dans le portail) : petite image (data URL PNG/JPEG/WebP, ≤ 256 px, réduite par l'app), "" = retirer
-      if (b.logo != null) {
-        if (!own) fail(403, "Le logo est ajouté par la gérance dans son portail");
-        const lg = String(b.logo);
-        if (lg && (lg.length > 150000 || !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(lg))) fail(400, "Logo trop lourd ou format non reconnu (PNG, JPG)");
-        await env.DB.prepare("UPDATE orgs SET logo = ? WHERE id = ?").bind(lg, orgMatch[1]).run();
-        if (own && lg) ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], { title: `🏢 ${me.org_name || "Gérance"} · nouveau logo`, body: "La gérance a ajouté son logo dans le portail", url: "/portail.html", tag: "org-" + orgMatch[1] }, false));
-        if (Object.keys(b).length === 1) return json({ ok: true });
-      }
-      if (isAdmin(me) && b.kind != null) await env.DB.prepare("UPDATE orgs SET kind = ? WHERE id = ?").bind(orgKind(b.kind), orgMatch[1]).run();
-      await env.DB.prepare("UPDATE orgs SET name = COALESCE(?, name), phone = COALESCE(?, phone), email = COALESCE(?, email), address = COALESCE(?, address), rcs = COALESCE(?, rcs), tva = COALESCE(?, tva), banque = COALESCE(?, banque), bic = COALESCE(?, bic), iban = COALESCE(?, iban) WHERE id = ?")
-        .bind(isAdmin(me) ? v("name", 120) : null, v("phone", 40), v("email", 200), own ? v("address", 300) : null, v("rcs", 30), own ? v("tva", 30) : null, own ? v("banque", 80) : null, own ? v("bic", 14) : null, own ? v("iban", 42) : null, orgMatch[1]).run();
-      if (own) ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin'", [], { title: `🏢 ${me.org_name || "Gérance"} · données mises à jour`, body: "Adresse, RCS, TVA ou banque complétés dans le portail", url: "/portail.html", tag: "org-" + orgMatch[1] }, false));
-      return json({ ok: true });
-    }
-
-    // Supprimer une gérance (réservé à LA CENTRAL) : utilisateurs, résidences, demandes, suivi et photos — irréversible
-    if (orgMatch && method === "DELETE") {
-      if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
-      const o = await env.DB.prepare("SELECT * FROM orgs WHERE id = ?").bind(orgMatch[1]).first();
-      if (!o) fail(404, "Gérance introuvable");
-      const b = await body();
-      if (clean(b.confirm, 120) !== o.name) fail(400, "Tapez exactement le nom de la gérance pour confirmer");
-      const ph = (await env.DB.prepare("SELECT p.r2_key FROM photos p JOIN tickets t ON t.id = p.ticket_id WHERE t.org_id = ?").bind(o.id).all()).results || [];
-      for (let i = 0; i < ph.length; i += 500) await env.PHOTOS.delete(ph.slice(i, i + 500).map((x) => x.r2_key));
-      const inv = ((await env.DB.prepare("SELECT inv_key FROM tickets WHERE org_id = ? AND inv_key IS NOT NULL").bind(o.id).all()).results || []).map((x) => x.inv_key);
-      for (let i = 0; i < inv.length; i += 500) await env.PHOTOS.delete(inv.slice(i, i + 500));
-      await env.DB.batch([
-        env.DB.prepare("DELETE FROM photos WHERE ticket_id IN (SELECT id FROM tickets WHERE org_id = ?)").bind(o.id),
-        env.DB.prepare("DELETE FROM events WHERE ticket_id IN (SELECT id FROM tickets WHERE org_id = ?)").bind(o.id),
-        env.DB.prepare("DELETE FROM tickets WHERE org_id = ?").bind(o.id),
-        env.DB.prepare("DELETE FROM residences WHERE org_id = ?").bind(o.id),
-        env.DB.prepare("DELETE FROM sessions WHERE user_id IN (SELECT id FROM users WHERE org_id = ?)").bind(o.id),
-        env.DB.prepare("DELETE FROM push_subs WHERE user_id IN (SELECT id FROM users WHERE org_id = ?)").bind(o.id),
-        env.DB.prepare("DELETE FROM users WHERE org_id = ?").bind(o.id),
-        env.DB.prepare("DELETE FROM orgs WHERE id = ?").bind(o.id),
-      ]);
-      return json({ ok: true, photos: ph.length });
-    }
-
-    // ── Utenti ──
-    if (path === "users" && method === "GET") {
-      if (me.role === "gerance_user") fail(403, "Réservé aux responsables");
-      const org = orgScope(me, url.searchParams.get("org"));
-      const q = org
-        ? env.DB.prepare("SELECT id, org_id, role, name, title, email, phone, active, last_login, invite_expires, forgot_at, auth_hash IS NOT NULL AS has_password FROM users WHERE org_id = ? ORDER BY name").bind(org)
-        : env.DB.prepare("SELECT id, org_id, role, name, title, email, phone, active, last_login, invite_expires, forgot_at, auth_hash IS NOT NULL AS has_password FROM users ORDER BY role, name");
-      return json({ users: (await q.all()).results || [] });
-    }
-    const inviteFor = async (userId) => {
-      const tok = randHex(32);
-      await env.DB.prepare("UPDATE users SET invite_hash = ?, invite_expires = ?, forgot_at = NULL WHERE id = ?").bind(await sha256Hex(tok), now + PTL_INVITE_MS, userId).run();
-      return tok;
-    };
-    if (path === "users" && method === "POST") {
-      if (me.role === "gerance_user") fail(403, "Réservé aux responsables");
-      const b = await body();
-      const role = PTL_ROLES.includes(b.role) ? b.role : "gerance_user";
-      if (role === "admin" && !isAdmin(me)) fail(403, "Rôle non autorisé");
-      const org = role === "admin" ? null : isAdmin(me) ? clean(b.org_id, 40) : me.org_id;
-      if (role !== "admin" && !(await env.DB.prepare("SELECT id FROM orgs WHERE id = ?").bind(org).first())) fail(400, "Gérance inconnue");
-      const email = clean(b.email, 200).toLowerCase();
-      // LA CENTRAL n'invite que le responsable d'une gérance qui n'en a pas (son nom est écrit par lui à l'ouverture du lien) ; les collaborateurs sont ajoutés par la gérance
-      const byLux = isAdmin(me) && role !== "admin";
-      if (byLux && role !== "gerance_admin") fail(403, "Les collaborateurs sont ajoutés par la gérance dans son portail");
-      if (byLux && (await env.DB.prepare("SELECT id FROM users WHERE org_id = ? AND role = 'gerance_admin' AND active = 1").bind(org).first())) fail(409, "Cette gérance a déjà un responsable");
-      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || (!byLux && !clean(b.name))) fail(400, "Nom et email valides obligatoires");
-      if (await env.DB.prepare("SELECT id FROM users WHERE email = ?").bind(email).first()) fail(409, "Cet email a déjà un compte");
-      const id = ptlId();
-      await env.DB.prepare("INSERT INTO users (id, org_id, role, name, title, email, phone, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-        .bind(id, org, role, clean(b.name, 120), clean(b.title, 40), email, clean(b.phone, 40), now).run();
-      return json({ id, invite: await inviteFor(id) });
-    }
-    const userMatch = path.match(/^users\/([a-z0-9]+)(\/invite)?$/);
-    if (userMatch) {
-      const target = await env.DB.prepare("SELECT * FROM users WHERE id = ?").bind(userMatch[1]).first();
-      if (!target || (!isAdmin(me) && (me.role !== "gerance_admin" || target.org_id !== me.org_id))) fail(404, "Utilisateur introuvable");
-      if (target.role === "admin" && !isAdmin(me)) fail(403, "Non autorisé");
-      if (userMatch[2] && method === "POST") return json({ invite: await inviteFor(target.id) });
-      if (!userMatch[2] && method === "PATCH") {
-        const b = await body();
-        if (target.id === me.id && b.active === false) fail(400, "Vous ne pouvez pas désactiver votre propre compte");
-        // utilisateur d'une gérance : LA CENTRAL peut seulement le désactiver / réactiver
-        if (isAdmin(me) && target.role !== "admin") { b.name = null; b.phone = null; b.role = null; }
-        const role = b.role && PTL_ROLES.includes(b.role) && (isAdmin(me) || b.role !== "admin") ? b.role : target.role;
-        const ops = [env.DB.prepare("UPDATE users SET name = ?, phone = ?, role = ?, active = ? WHERE id = ?")
-          .bind(b.name != null ? clean(b.name, 120) : target.name, b.phone != null ? clean(b.phone, 40) : target.phone, role, b.active === false ? 0 : b.active === true ? 1 : target.active, target.id)];
-        if (b.active === false) ops.push(env.DB.prepare("DELETE FROM sessions WHERE user_id = ?").bind(target.id), env.DB.prepare("DELETE FROM push_subs WHERE user_id = ?").bind(target.id));
-        await env.DB.batch(ops);
-        return json({ ok: true });
-      }
-    }
-
-    // ── Residenze ──
-    if (path === "residences" && method === "GET") {
-      const org = orgScope(me, url.searchParams.get("org"));
-      const sql = `SELECT r.*, o.name AS org_name,
-          (SELECT COUNT(*) FROM tickets t WHERE t.residence_id = r.id) AS tickets,
-          (SELECT COUNT(*) FROM tickets t WHERE t.residence_id = r.id AND t.status IN ('recue','prise','planifiee','encours')) AS open
-        FROM residences r JOIN orgs o ON o.id = r.org_id WHERE r.active = 1 ${org ? "AND r.org_id = ?" : ""} ORDER BY r.name`;
-      const rows = await (org ? env.DB.prepare(sql).bind(org) : env.DB.prepare(sql)).all();
-      return json({ residences: rows.results || [] });
-    }
-    const code6 = (v) => String(v ?? "").replace(/\D/g, "").slice(0, 6);
-    // codes nommés (portail, garage, serrure digitale, panneau de redémarrage…) et appartements (n°, étage, porte, code)
-    const jsonList = (v, max, f) => JSON.stringify((Array.isArray(v) ? v : []).slice(0, max).map(f).filter((x) => Object.values(x).some(Boolean)));
-    const resCodes = (b) => jsonList(b.codes, 30, (x) => ({ l: clean(x && x.l, 60), c: clean(x && x.c, 40) }));
-    const resApts = (b) => jsonList(b.apts, 600, (x) => ({ b: clean(x && x.b, 30), n: clean(x && x.n, 40), e: clean(x && x.e, 20), p: clean(x && x.p, 20), c: clean(x && x.c, 40) }));
-    const resFields = (b) => [clean(b.name, 160), clean(b.address, 300), clean(b.access, 500), clean(b.keys_info, 500), clean(b.contact_name, 120), clean(b.contact_phone, 40), clean(b.notes, 2000), parseInt(b.apartments, 10) || null,
-      code6(b.alarm), code6(b.code_other), clean(b.interior, 120), clean(b.floors, 120), resCodes(b), resApts(b)];
-    const resLux = () => { if (isAdmin(me)) fail(403, "Les résidences sont gérées par la gérance dans son portail"); };
-    if (path === "residences" && method === "POST") {
-      resLux();
-      const b = await body();
-      const org = isAdmin(me) ? clean(b.org_id, 40) : me.org_id;
-      if (!(await env.DB.prepare("SELECT id FROM orgs WHERE id = ?").bind(org).first())) fail(400, "Gérance inconnue");
-      if (!clean(b.name)) fail(400, "Nom de la résidence obligatoire");
-      const id = ptlId();
-      await env.DB.prepare("INSERT INTO residences (id, org_id, name, address, access, keys_info, contact_name, contact_phone, notes, apartments, alarm, code_other, interior, floors, codes, apts, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")
-        .bind(id, org, ...resFields(b), now).run();
-      return json({ id });
-    }
-    const resMatch = path.match(/^residences\/([a-z0-9]+)$/);
-    if (resMatch && method === "PATCH") {
-      resLux();
-      const r = await env.DB.prepare("SELECT * FROM residences WHERE id = ?").bind(resMatch[1]).first();
-      if (!r || (!isAdmin(me) && r.org_id !== me.org_id)) fail(404, "Résidence introuvable");
-      const b = await body();
-      if (b.active === false) {
-        await env.DB.prepare("UPDATE residences SET active = 0 WHERE id = ?").bind(r.id).run();
-      } else {
-        if (!clean(b.name)) fail(400, "Nom de la résidence obligatoire");
-        await env.DB.prepare("UPDATE residences SET name = ?, address = ?, access = ?, keys_info = ?, contact_name = ?, contact_phone = ?, notes = ?, apartments = ?, alarm = ?, code_other = ?, interior = ?, floors = ?, codes = ?, apts = ? WHERE id = ?")
-          .bind(...resFields(b), r.id).run();
-      }
-      return json({ ok: true });
-    }
-
-    // ── Richieste d'intervento ──
-    if (path === "tickets" && method === "GET") {
-      const org = orgScope(me, url.searchParams.get("org"));
-      const scope = url.searchParams.get("scope") || "active";
-      const where = [];
-      const binds = [];
-      if (org) { where.push("t.org_id = ?"); binds.push(org); }
-      if (scope === "active") where.push("t.status IN ('recue','prise','planifiee','encours')");
-      if (scope === "done") where.push("t.status IN ('terminee','annulee')");
-      const res = url.searchParams.get("residence");
-      if (res) { where.push("t.residence_id = ?"); binds.push(res); }
-      const month = url.searchParams.get("month"); // AAAA-MM
-      if (/^\d{4}-\d{2}$/.test(month || "")) {
-        const [y, m] = month.split("-").map(Number);
-        where.push("t.created_at >= ? AND t.created_at < ?");
-        binds.push(Date.UTC(y, m - 1, 1), Date.UTC(y, m, 1));
-      }
-      const year = url.searchParams.get("year"); // AAAA (rapport annuel)
-      if (/^\d{4}$/.test(year || "")) { where.push("t.created_at >= ? AND t.created_at < ?"); binds.push(Date.UTC(+year, 0, 1), Date.UTC(+year + 1, 0, 1)); }
-      const full = url.searchParams.get("full") === "1"; // rapport : rapport d'intervention en plus
-      const sql = `SELECT t.id, t.ref, t.org_id, t.residence_id, t.lieu, t.categorie, t.urgence, t.description, t.status, t.planned_at, t.technicien,
-          t.created_at, t.updated_at, t.taken_at, t.done_at, r.name AS residence_name, r.address AS residence_address, o.name AS org_name, u.name AS created_by_name, u.title AS created_by_title,
-          (SELECT COUNT(*) FROM photos p WHERE p.ticket_id = t.id) AS photos, t.inv_no, t.inv_date, t.inv_ht, t.inv_tva, t.inv_ttc, t.inv_paid, t.inv_cont, t.inv_h, t.qte, t.trip,${full ? " substr(t.rapport, 1, 2000) AS rapport," : ""}
-          (SELECT COUNT(*) FROM events e WHERE e.ticket_id = t.id AND e.kind = 'comment') AS msgs,
-          (SELECT COUNT(*) FROM events e JOIN users ue ON ue.id = e.user_id WHERE e.ticket_id = t.id AND e.kind = 'comment' AND ue.role != 'admin') AS msgs_ger
-        FROM tickets t JOIN residences r ON r.id = t.residence_id JOIN orgs o ON o.id = t.org_id LEFT JOIN users u ON u.id = t.created_by
-        ${where.length ? "WHERE " + where.join(" AND ") : ""}
-        ORDER BY CASE t.status WHEN 'recue' THEN 0 ELSE 1 END, CASE t.urgence WHEN 'urgent' THEN 0 WHEN '24h' THEN 1 ELSE 2 END, t.updated_at DESC
-        LIMIT ${scope === "active" ? 500 : full ? 3000 : 300}`;
-      return json({ tickets: (await env.DB.prepare(sql).bind(...binds).all()).results || [] });
-    }
-
-    if (path === "tickets" && method === "POST") {
-      const b = await body();
-      const r = await env.DB.prepare("SELECT * FROM residences WHERE id = ? AND active = 1").bind(clean(b.residence_id, 40)).first();
-      if (!r || (!isAdmin(me) && r.org_id !== me.org_id)) fail(400, "Résidence inconnue");
-      if (!PTL_URGENCES.includes(b.urgence)) fail(400, "Urgence obligatoire");
-      if (!clean(b.description)) fail(400, "Description obligatoire");
-      const id = ptlId();
-      const refRow = await env.DB.prepare("SELECT COALESCE(MAX(ref), 1000) + 1 AS ref FROM tickets").first();
-      await env.DB.batch([
-        env.DB.prepare(`INSERT INTO tickets (id, ref, org_id, residence_id, lieu, categorie, urgence, description, contact_name, contact_phone, acces, dispo, status, created_by, created_at, updated_at)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'recue', ?, ?, ?)`)
-          .bind(id, refRow.ref, r.org_id, r.id, clean(b.lieu, 200), clean(b.categorie, 60), b.urgence, clean(b.description, 4000), clean(b.contact_name, 120),
-            clean(b.contact_phone, 40), clean(b.acces, 500), clean(b.dispo, 300), me.id, now, now),
-        env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'create', 'recue', NULL, ?)").bind(ptlId(), id, me.id, now),
-      ]);
-      const msg = { title: `${URG_LABEL[b.urgence]} · #${refRow.ref} ${r.name}`, body: `${clean(b.categorie, 60) || "Intervention"}${b.lieu ? " — " + clean(b.lieu, 80) : ""} : ${clean(b.description, 140)}`, url: `/portail.html#/t/${id}`, tag: id };
-      ctx && ctx.waitUntil(ptlNotify(env, "u.role = 'admin' AND u.id != ?", [me.id], msg, b.urgence === "urgent"));
-      // l'app de gestion (LA CENTRAL) : pastille sur l'icône + notification
-      if (!isAdmin(me)) ctx && ctx.waitUntil(espPushSend(env, "owner", "ptl"));
-      return json({ id, ref: refRow.ref });
-    }
-
-    const tMatch = path.match(/^tickets\/([a-z0-9]+)(?:\/(status|comments|photos|invoice|invoice-paid))?$/);
-    if (tMatch) {
-      const t = await loadTicketFor(env, me, tMatch[1]);
-      const sub = tMatch[2];
-      if (!sub && method === "GET") {
-        const [ev, ph, res] = await Promise.all([
-          env.DB.prepare("SELECT e.*, u.name AS user_name, u.role AS user_role FROM events e LEFT JOIN users u ON u.id = e.user_id WHERE e.ticket_id = ? ORDER BY e.created_at").bind(t.id).all(),
-          env.DB.prepare("SELECT id, event_id, mime, size, created_at, created_by FROM photos WHERE ticket_id = ? ORDER BY created_at").bind(t.id).all(),
-          env.DB.prepare("SELECT r.*, o.name AS org_name FROM residences r JOIN orgs o ON o.id = r.org_id WHERE r.id = ?").bind(t.residence_id).first(),
-        ]);
-        return json({ ticket: t, events: ev.results || [], photos: ph.results || [], residence: res });
-      }
-      // Modifier la demande : la gérance tant qu'elle n'est pas prise en charge, LA CENTRAL toujours (sauf terminée / annulée)
-      if (!sub && method === "PATCH") {
-        if (["terminee", "annulee"].includes(t.status)) fail(400, "Demande terminée ou annulée : elle ne peut plus être modifiée");
-        if (!isAdmin(me) && t.status !== "recue") fail(403, "Demande déjà prise en charge : écrivez la correction dans un message");
-        const b = await body();
-        let resId = t.residence_id;
-        if (b.residence_id && b.residence_id !== t.residence_id) {
-          const r = await env.DB.prepare("SELECT * FROM residences WHERE id = ? AND active = 1").bind(clean(b.residence_id, 40)).first();
-          if (!r || r.org_id !== t.org_id) fail(400, "Résidence inconnue");
-          resId = r.id;
-        }
-        if (b.urgence && !PTL_URGENCES.includes(b.urgence)) fail(400, "Urgence invalide");
-        const next = { residence_id: resId, lieu: clean(b.lieu, 200), categorie: clean(b.categorie, 60), urgence: b.urgence || t.urgence, description: clean(b.description, 4000) || t.description,
-          contact_name: clean(b.contact_name, 120), contact_phone: clean(b.contact_phone, 40), acces: clean(b.acces, 500), dispo: clean(b.dispo, 300) };
-        const LBL = { residence_id: "Résidence", lieu: "Lieu", categorie: "Type de travaux", urgence: "Urgence", description: "Description", contact_name: "Contact", contact_phone: "Téléphone", acces: "Accès / codes", dispo: "Disponibilités" };
-        const changed = Object.keys(next).filter((k) => String(next[k] ?? "") !== String(t[k] ?? ""));
-        if (!changed.length) return json({ ok: true, changed: [] });
-        await env.DB.batch([
-          env.DB.prepare("UPDATE tickets SET residence_id = ?, lieu = ?, categorie = ?, urgence = ?, description = ?, contact_name = ?, contact_phone = ?, acces = ?, dispo = ?, updated_at = ? WHERE id = ?")
-            .bind(next.residence_id, next.lieu, next.categorie, next.urgence, next.description, next.contact_name, next.contact_phone, next.acces, next.dispo, now, t.id),
-          env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'edit', NULL, ?, ?)")
-            .bind(ptlId(), t.id, me.id, changed.map((k) => LBL[k]).join(", "), now),
-        ]);
-        const msg = { title: `#${t.ref} · Demande modifiée`, body: changed.map((k) => LBL[k]).join(", "), url: `/portail.html#/t/${t.id}`, tag: t.id };
-        ctx && ctx.waitUntil(isAdmin(me) ? ptlNotify(env, "u.org_id = ?", [t.org_id], msg, false) : ptlNotify(env, "u.role = 'admin'", [], msg, next.urgence === "urgent"));
-        return json({ ok: true, changed });
-      }
-      const notifyOther = (msg, urgent) => {
-        // Messaggio dello staff → la gérance; messaggio della gérance → lo staff
-        if (isAdmin(me)) return ptlNotify(env, "u.org_id = ? AND u.id != ?", [t.org_id, me.id], msg, urgent);
-        return ptlNotify(env, "u.role = 'admin'", [], msg, urgent);
-      };
-      if (sub === "status" && method === "POST") {
-        const b = await body();
-        if (!PTL_STATUSES.includes(b.status)) fail(400, "Statut invalide");
-        if (!isAdmin(me) && !(b.status === "annulee" && t.status === "recue")) fail(403, "Seul LA CENTRAL peut changer le statut (vous pouvez annuler une demande pas encore prise en charge)");
-        const upd = {
-          planned_at: b.planned_at != null ? clean(b.planned_at, 40) : t.planned_at,
-          technicien: b.technicien != null ? clean(b.technicien, 120) : t.technicien,
-          rapport: b.rapport != null ? clean(b.rapport, 4000) : t.rapport,
-          taken_at: t.taken_at || (b.status !== "recue" && b.status !== "annulee" ? now : null),
-          done_at: b.status === "terminee" ? now : b.status === "annulee" ? t.done_at : null,
-        };
-        const evId = ptlId();
-        await env.DB.batch([
-          env.DB.prepare("UPDATE tickets SET status = ?, planned_at = ?, technicien = ?, rapport = ?, taken_at = ?, done_at = ?, qte = COALESCE(?, qte), updated_at = ? WHERE id = ?")
-            .bind(b.status, upd.planned_at, upd.technicien, upd.rapport, upd.taken_at, upd.done_at, b.qte != null ? clean(b.qte, 60) || null : null, now, t.id),
-          env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'status', ?, ?, ?)")
-            .bind(evId, t.id, me.id, b.status, clean(b.text || (b.status === "terminee" ? b.rapport : ""), 4000) || null, now),
-        ]);
-        const extra = b.status === "planifiee" && upd.planned_at ? ` — ${upd.planned_at.replace("T", " ")}` : "";
-        ctx && ctx.waitUntil(notifyOther({ title: `#${t.ref} · ${STATUS_LABEL[b.status]}${extra}`, body: clean(b.text || t.description, 140), url: `/portail.html#/t/${t.id}`, tag: t.id }, false));
-        return json({ ok: true, event_id: evId });
-      }
-      if (sub === "comments" && method === "POST") {
-        const b = await body();
-        const text = clean(b.text, 4000);
-        if (!text && !b.photoOnly) fail(400, "Message vide");
-        const evId = ptlId();
-        await env.DB.batch([
-          env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'comment', NULL, ?, ?)").bind(evId, t.id, me.id, text || null, now),
-          env.DB.prepare("UPDATE tickets SET updated_at = ? WHERE id = ?").bind(now, t.id),
-        ]);
-        if (text) ctx && ctx.waitUntil(notifyOther({ title: `#${t.ref} · Message de ${me.name}`, body: text.slice(0, 140), url: `/portail.html#/t/${t.id}`, tag: t.id }, false));
-        if (!isAdmin(me)) ctx && ctx.waitUntil(espPushSend(env, "owner", "ptlmsg"));
-        return json({ ok: true, event_id: evId });
-      }
-      // Facture (PDF émis par l'app de gestion de LA CENTRAL) : la gérance la télécharge
-      if (sub === "invoice" && method === "PUT") {
-        if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
-        if ((request.headers.get("Content-Type") || "") !== "application/pdf") fail(415, "PDF attendu");
-        let meta = {};
-        try { meta = JSON.parse(decodeURIComponent(request.headers.get("X-Invoice") || "{}")); } catch { fail(400, "Facture illisible"); }
-        const no = clean(meta.no, 40);
-        if (!/^\d{8}-INT\d{4,}$/.test(no)) fail(400, "Numéro de facture invalide");
-        const data = await request.arrayBuffer();
-        if (!data.byteLength || data.byteLength > 3 * 1024 * 1024) fail(413, "PDF vide ou trop lourd");
-        const key = `portail/invoices/${t.id}.pdf`;
-        await env.PHOTOS.put(key, data, { httpMetadata: { contentType: "application/pdf" } });
-        const n = (x) => (Number.isFinite(+x) ? Math.round(+x * 100) / 100 : 0);
-        const ttc = n(meta.ttc);
-        await env.DB.batch([
-          // heures facturées et quantité (« Combien ? ») : pour les statistiques de la gérance
-          env.DB.prepare("UPDATE tickets SET inv_no = ?, inv_date = ?, inv_ht = ?, inv_tva = ?, inv_ttc = ?, inv_key = ?, inv_paid = 0, inv_h = ?, qte = COALESCE(?, qte), updated_at = ? WHERE id = ?").bind(no, now, n(meta.ht), n(meta.tva), ttc, key, n(meta.h) || null, meta.qte ? clean(meta.qte, 60) || null : null, now, t.id),
-          env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'invoice', NULL, ?, ?)").bind(ptlId(), t.id, me.id, `🧾 Facture ${no} · ${ttc.toFixed(2).replace(".", ",")} € TTC`, now),
-        ]);
-        ctx && ctx.waitUntil(notifyOther({ title: `#${t.ref} · 🧾 Facture ${no}`, body: `${ttc.toFixed(2).replace(".", ",")} € TTC — à télécharger dans le portail`, url: `/portail.html#/t/${t.id}`, tag: t.id }, false));
-        return json({ ok: true });
-      }
-      if (sub === "invoice" && method === "GET") {
-        if (!t.inv_key) fail(404, "Pas encore de facture");
-        const obj = await env.PHOTOS.get(t.inv_key);
-        if (!obj) fail(404, "Facture introuvable");
-        return new Response(obj.body, { headers: { "Content-Type": "application/pdf", "Content-Disposition": `attachment; filename="Facture-${t.inv_no}.pdf"`, "Cache-Control": "private, no-store", ...headers } });
-      }
-      if (sub === "invoice-paid" && method === "POST") {
-        if (!isAdmin(me)) fail(403, "Réservé à LA CENTRAL");
-        const b = await body();
-        // payée / à payer ; « contentieux » = facture impayée en litige (une facture payée sort du contentieux)
-        const paid = "paid" in b ? (b.paid ? now : 0) : t.inv_paid || 0;
-        const cont = paid ? 0 : "cont" in b ? (b.cont ? now : 0) : t.inv_cont || 0;
-        await env.DB.prepare("UPDATE tickets SET inv_paid = ?, inv_cont = ?, updated_at = ? WHERE id = ?").bind(paid, cont, now, t.id).run();
-        if ("cont" in b && !!cont !== !!t.inv_cont) {
-          const txt = cont ? `⚠️ Facture ${t.inv_no || ""} en CONTENTIEUX : impayée. Merci de régulariser ou de contacter LA CENTRAL.` : `✅ Facture ${t.inv_no || ""} : contentieux levé.`;
-          await env.DB.prepare("INSERT INTO events (id, ticket_id, user_id, kind, status, text, created_at) VALUES (?, ?, ?, 'comment', NULL, ?, ?)").bind(ptlId(), t.id, me.id, txt, now).run();
-          ctx && ctx.waitUntil(notifyOther({ title: `#${t.ref} · ${cont ? "⚠️ Contentieux" : "Contentieux levé"}`, body: txt.slice(0, 140), url: `/portail.html#/t/${t.id}`, tag: t.id }, !!cont));
-        }
-        return json({ ok: true });
-      }
-      if (sub === "photos" && method === "PUT") {
-        const type = request.headers.get("Content-Type") || "";
-        if (!/^image\/(jpeg|png|webp|heic|heif)$/.test(type)) fail(415, "Format d'image non accepté");
-        const data = await request.arrayBuffer();
-        if (!data.byteLength || data.byteLength > PTL_MAX_PHOTO) fail(413, "Photo vide ou trop lourde (6 Mo max)");
-        const count = await env.DB.prepare("SELECT COUNT(*) AS n FROM photos WHERE ticket_id = ?").bind(t.id).first();
-        if (count.n >= 30) fail(400, "Trop de photos pour cette demande");
-        const id = ptlId();
-        const key = `portail/photos/${t.id}/${id}`;
-        await env.PHOTOS.put(key, data, { httpMetadata: { contentType: type } });
-        const eventId = clean(request.headers.get("X-Event-Id"), 40) || null;
-        await env.DB.prepare("INSERT INTO photos (id, ticket_id, event_id, r2_key, mime, size, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-          .bind(id, t.id, eventId, key, type, data.byteLength, me.id, now).run();
-        return json({ id });
-      }
-    }
-
-    const photoMatch = path.match(/^photos\/([a-z0-9]+)$/);
-    if (photoMatch && method === "GET") {
-      const p = await env.DB.prepare("SELECT p.*, t.org_id FROM photos p JOIN tickets t ON t.id = p.ticket_id WHERE p.id = ?").bind(photoMatch[1]).first();
-      if (!p || (!isAdmin(me) && p.org_id !== me.org_id)) fail(404, "Photo introuvable");
-      const obj = await env.PHOTOS.get(p.r2_key);
-      if (!obj) fail(404, "Photo introuvable");
-      return new Response(obj.body, { headers: { "Content-Type": p.mime || "image/jpeg", "Cache-Control": "private, max-age=86400", ...headers } });
-    }
-
-    // ── Statistiche ──
-    // Évaluations des interventions (12 derniers mois) pour les statistiques de satisfaction
-    if (path === "evals" && method === "GET") {
-      const org = orgScope(me, url.searchParams.get("org"));
-      const rows = await env.DB.prepare(`SELECT e.text, e.created_at, e.ticket_id, t.categorie, t.residence_id FROM events e JOIN tickets t ON t.id = e.ticket_id
-          WHERE e.kind = 'comment' AND e.text LIKE '⭐ %' AND e.created_at >= ? ${org ? "AND t.org_id = ?" : ""} ORDER BY e.created_at DESC LIMIT 1000`)
-        .bind(now - 365 * 24 * 3600 * 1000, ...(org ? [org] : [])).all();
-      return json({ evals: rows.results || [] });
-    }
-    if (path === "stats" && method === "GET") {
-      const org = orgScope(me, url.searchParams.get("org"));
-      const f = org ? "AND org_id = ?" : "";
-      const b = org ? [org] : [];
-      const d = new Date();
-      const monthStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
-      const since = now - 90 * 24 * 3600 * 1000;
-      const [open, urgent, recue, doneMonth, created, delays, residences] = await Promise.all([
-        env.DB.prepare(`SELECT COUNT(*) AS n FROM tickets WHERE status IN ('recue','prise','planifiee','encours') ${f}`).bind(...b).first(),
-        env.DB.prepare(`SELECT COUNT(*) AS n FROM tickets WHERE status IN ('recue','prise','planifiee','encours') AND urgence = 'urgent' ${f}`).bind(...b).first(),
-        env.DB.prepare(`SELECT COUNT(*) AS n FROM tickets WHERE status = 'recue' ${f}`).bind(...b).first(),
-        env.DB.prepare(`SELECT COUNT(*) AS n FROM tickets WHERE status = 'terminee' AND done_at >= ? ${f}`).bind(monthStart, ...b).first(),
-        env.DB.prepare(`SELECT COUNT(*) AS n FROM tickets WHERE created_at >= ? ${f}`).bind(monthStart, ...b).first(),
-        env.DB.prepare(`SELECT AVG(taken_at - created_at) AS take, AVG(CASE WHEN done_at IS NOT NULL AND status = 'terminee' THEN done_at - created_at END) AS done,
-            AVG(CASE WHEN urgence = 'urgent' THEN taken_at - created_at END) AS take_urgent
-          FROM tickets WHERE created_at >= ? AND taken_at IS NOT NULL ${f}`).bind(since, ...b).first(),
-        env.DB.prepare(`SELECT COUNT(*) AS n, COALESCE(SUM(apartments), 0) AS apartments FROM residences WHERE active = 1 ${f}`).bind(...b).first(),
-      ]);
-      return json({
-        open: open.n, urgent: urgent.n, recue: recue.n, doneMonth: doneMonth.n, createdMonth: created.n,
-        avgTakeMs: delays.take, avgDoneMs: delays.done, avgTakeUrgentMs: delays.take_urgent,
-        residences: residences.n, apartments: residences.apartments,
-      });
-    }
-
-    fail(404, "Not found");
-  } catch (e) {
-    const status = e instanceof PtlError ? e.status : 500;
-    return json({ error: e instanceof PtlError ? e.message : "Erreur serveur" }, status);
-  }
 }
