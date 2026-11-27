@@ -33,7 +33,7 @@ scrollHintInit();
 import { xlsxBlob } from './xlsx.js';
 import { newEspaceId, newEspaceKey, sealJson, openJson, sealBytes, newOwnerKeys, openFromTenant, sealForOwner, unb64u, b64u, newAccessCode, codeHash, wrapWithCode } from './espace-crypto.js';
 
-const VERSION = '2.317.0';
+const VERSION = '2.318.0';
 const MAIL = ['info', 'luxinterventions.com'].join('@'); // pas en clair dans le code (robots)
 const API = document.querySelector('meta[name="ares-api"]').content;
 let firstOpen = true;
@@ -49,6 +49,8 @@ const TENANT = (() => {
     return inst ? localStorage.getItem('aresTenant') || '' : '';
   } catch { return /^[a-z0-9]{12,24}$/.test(q) ? q : ''; }
 })();
+// CENTRAL-OGL · Organisation et gestion des locataires (ARES Invest s.a. / Nobis s.a.r.l.)
+const OGL = { nom: 'CENTRAL-OGL', sub: 'ARES Invest s.a. / Nobis s.a.r.l.', info: 'Organisation et gestion des locataires' };
 let tenantInfo = (() => { try { return JSON.parse(localStorage.getItem('aresTenantInfo:' + TENANT) || '{}'); } catch { return {}; } })();
 // 🏛️ la centrale principale a son adresse : …/centraldomier.html (l'ancien …/locataires.html y passe tout seul, mêmes données)
 if (!TENANT && /^\/(locataires|centraldomier)\.html$/.test(location.pathname)) history.replaceState(null, '', '/centralluxinterventions.html' + location.hash);
@@ -57,11 +59,11 @@ if (!TENANT && /^\/(locataires|centraldomier)\.html$/.test(location.pathname)) h
 if (TENANT) {
   document.querySelector('link[rel=manifest]')?.remove();
   // adresse des clients : /centralluxintervention/?<numéro> (les anciens liens /centraldomier/… et locataires.html?t= y passent tout seuls)
-  if (!/^\?[a-z0-9]{12,24}$/.test(location.search) || !location.pathname.startsWith('/centralgerances')) history.replaceState(null, '', '/centralgerances/?' + TENANT + location.hash);
-  const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at && tenantInfo.nom) at.content = tenantInfo.nom;
-  if (tenantInfo.nom) document.title = tenantInfo.nom;
+  if (!/^\?[a-z0-9]{12,24}$/.test(location.search) || !location.pathname.startsWith('/central-ogl')) history.replaceState(null, '', '/central-ogl/?' + TENANT + location.hash); // CENTRAL-OGL : sa propre adresse (les anciens liens y passent tout seuls)
+  const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at) at.content = OGL.nom;
+  document.title = OGL.nom;
 }
-const tenantSave = (t) => { if (!TENANT || !t) return; tenantInfo = t; try { localStorage.setItem('aresTenantInfo:' + TENANT, JSON.stringify(t)); } catch { /* stockage plein */ } if (t.nom) { document.title = t.nom; const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at) at.content = t.nom; } }; // nom sous l'icône de l'écran
+const tenantSave = (t) => { if (!TENANT || !t) return; tenantInfo = t; try { localStorage.setItem('aresTenantInfo:' + TENANT, JSON.stringify(t)); } catch { /* stockage plein */ } if (t.nom) { document.title = OGL.nom; const at = document.querySelector('meta[name=apple-mobile-web-app-title]'); if (at) at.content = t.nom; } }; // nom sous l'icône de l'écran
 // 🧾 qui signe les quittances : bailleur principal (locataire principal, comme la centrale principale aujourd'hui), propriétaire, ou gérance
 const socRole = () => (!TENANT ? 'sous' : tenantInfo.fil === 'proprio' ? (tenantInfo.sous ? 'sous' : 'proprio') : tenantInfo.fil === 'gerance' ? 'gest' : 'proprio');
 const SOC_QUAL = { sous: 'locataire principal et bailleur', proprio: 'propriétaire et bailleur', gest: 'agissant pour le compte du bailleur' };
@@ -70,8 +72,9 @@ const tSub = () => (tenantInfo.fil === 'proprio' ? (tenantInfo.sous ? 'Bailleur 
 const T_FIL_LBL = { gerance: '🏢 Gérance', proprio: '🔑 Propriétaire' };
 // rubriques de chaque filière (la centrale du client ne montre que les siennes)
 const TENANT_ROUTES = {
-  gerance: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'champions', 'reglages'],
-  proprio: ['dashboard', 'demandes', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'champions', 'reglages'],
+  // CENTRAL-OGL : seulement la gestion des locataires (plus de demandes à LA CENTRAL ni de classement des ouvriers)
+  gerance: ['dashboard', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'reglages'],
+  proprio: ['dashboard', 'immeubles', 'locataires', 'paiements', 'compta', 'rapports', 'reglages'],
 };
 const tRoutes = () => TENANT_ROUTES[tenantInfo.fil] || TENANT_ROUTES.gerance;
 // 🏛️ CENTRAL DOMIER : pas de propriétés ni de locataires à elle (tout est chez les clients) ; l'ancien parc reste en archive (Réglages → 📦)
@@ -1395,14 +1398,15 @@ async function licInvoicePdf(f) {
   return p.bytes();
 }
 // adresse « parlante » selon le client (voir LIENS.md) : propriétaire, gestionnaire
-const netUrl = (tid) => `${location.origin}/centralgerances/?${tid}`; // un seul indirizzo per tutte le centrali dei clienti, senza nomi
+const netUrl = (tid) => `${location.origin}/central-ogl/?${tid}`; // un seul indirizzo per tutte le centrali dei clienti, senza nomi
 async function netApi(path, method = 'GET', body) {
   const r = await vault.call(path, { method, ...(body ? { headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) } : {}) });
   return r.json();
 }
 const netInfo = (tid) => vault.get('reglages', 'netc-' + tid) || {};
 // 🔧 DOMIER dans les centrales des clients : appeler LUXINTERVENTION, ou ＋ Demande
-const domierCentral = () => (TENANT ? new Raw('<div class="domier-w">' + domierHtml({ tel: DOM_TEL, lang: getLang(), extra: `<button type="button" class="btn sm primary" data-action="tdem-new" style="margin-top:8px">🔧 ＋ Demande</button>` }).replace('<details ', '<details data-notr="1" ') + '</div>') : ''); // spazio sotto (non attaccato al resto)
+const domierCentral = () => ''; // CENTRAL-OGL : plus de lien vers LUXINTERVENTION
+const domierCentralOld = () => (TENANT ? new Raw('<div class="domier-w">' + domierHtml({ tel: DOM_TEL, lang: getLang(), extra: `<button type="button" class="btn sm primary" data-action="tdem-new" style="margin-top:8px">🔧 ＋ Demande</button>` }).replace('<details ', '<details data-notr="1" ') + '</div>') : ''); // spazio sotto (non attaccato al resto)
 // 🏗️ ANGAR : état des paquets dans chaque container
 async function angarPacks() {
   const A = {};
@@ -2237,7 +2241,6 @@ async function inboxSync() {
   } catch { /* hors ligne : on réessaiera */ }
   inboxBusy = false;
   if (n) toast(`📩 ${plural(n, 'message')} de locataire reçu${n > 1 ? 's' : ''} — voir l'accueil`);
-  if (TENANT) autoFwd().catch(() => {});
 }
 
 // Messages envoyés par les locataires depuis leur app, pas encore ouverts dans Ares
@@ -2285,7 +2288,7 @@ function centralinoHtml() {
   const open = ui.centOpen ?? tot > 0;
   const badge = (n) => (n ? html`<span class="badge bad">${n}</span>` : '');
   const row = (action, id, title, sub, n) => html`<button class="row" data-action="${action}" data-id="${id}"><span class="grow"><span class="title" style="display:block">${title}</span><span class="meta">${sub}</span></span>${badge(n)}</button>`;
-  const recv = TENANT ? vault.list('reglages').filter((r) => r.id.startsWith('tann-')).sort((a, b) => (b.at || '').localeCompare(a.at || '')).slice(0, 10) : [];
+  const recv = false ? vault.list('reglages').filter((r) => r.id.startsWith('tann-')).sort((a, b) => (b.at || '').localeCompare(a.at || '')).slice(0, 10) : [];
   const nRecv = recv.filter((r) => !r.vu).length, tot2 = tot + nRecv;
   // la lumière suit l'horloge : quand l'accueil se redessine, elle continue sans repartir de zéro (pas de sautillement)
   return html`<details class="card centralino${tot2 ? ' cent-new' : ''}" ${open || nRecv ? new Raw('open') : ''} style="margin-bottom:14px;animation-delay:-${Date.now() % (tot2 ? 1600 : 3200)}ms">
@@ -2296,9 +2299,9 @@ function centralinoHtml() {
     ${sig.length ? html`<div class="list">${sig.slice(0, 8).map((t) => { const l = vault.get('locataires', t.locId) || {}, w = t.byInterv ? vault.get('intervenants', t.byInterv) : null; return row('open-signal', t.id, html`${w ? '👷 ' + intervFull(w) : fullName(l)} — ${t.titre.replace(/^Signalement : /, '')}`, `${logName(l.logId) || immName(t.immId)} · ${fmtDateTime(t.sentAt)}`, 0); })}</div>` : html`<p class="small muted">Aucun nouveau signalement.</p>`}</details>
     <details class="cent-sec gfold" data-gk="cent|loc" ${foldIsOpen('cent|loc') ? new Raw('open') : ''}><summary>🏠 Messages des Locataires ${badge(nHouse)}</summary>
     ${imms.length ? html`<div class="list">${imms.map((im) => row('open-chat', im.id, immName(im.id), houseN(im) ? `${houseN(im)} nouveau${houseN(im) > 1 ? 'x messages' : ' message'} — touchez pour lire` : `${plural(Object.keys(im.chats || {}).length, 'fil')} · touchez pour ouvrir`, houseN(im)))}</div>` : html`<p class="small muted">Aucun fil de messages entre habitants.</p>`}</details>
-    <details class="cent-sec gfold" data-gk="cent|eq" ${foldIsOpen('cent|eq') ? new Raw('open') : ''}><summary>👷 Messages des Équipes ${badge(nEq)}</summary>
+    ${TENANT ? '' : html`<details class="cent-sec gfold" data-gk="cent|eq" ${foldIsOpen('cent|eq') ? new Raw('open') : ''}><summary>👷 Messages des Équipes ${badge(nEq)}</summary>
     ${eqs.length ? html`<div class="list">${eqs.map(({ i, last }) => row('open-eq-chat', i.id, intervFull(i), last ? `${last.from === 'mgr' ? '🛡️ ' : '👷 '}${String(last.x || '').slice(0, 60)} · ${fmtDateTime(last.at)}` : 'Pas encore de message', i.chatNew || 0))}</div>` : html`<p class="small muted">Aucun ouvrier avec l’app active.</p>`}</details>
-  </details>`;
+  </details>`}`;
 }
 const newSignals = () => vault.list('taches').filter((t) => t.sentAt && !t.vu).sort((a, b) => (b.sentAt || '').localeCompare(a.sentAt || ''));
 const signalPhotos = (t) => vault.list('documents').filter((x) => x.tacheId === t.id).length;
@@ -2796,6 +2799,7 @@ const PAYS = { LU: ['Luxembourg', [17, 14, 8, 3]], FR: ['France', [20, 10, 5.5, 
 const tvaRates = () => { const s0 = societe(); const own = String(s0.taux || '').split(/[;, ]+/).map((x) => parseFloat(x.replace(',', '.'))).filter((x) => x > 0 && x < 100); return own.length ? own : (PAYS[s0.pays || 'LU'] || PAYS.LU)[1]; };
 // Marque de l'app de gestion (fixe, indépendante de la société cliente)
 const APP_BRAND = { nom: 'LUXINTERVENTIONS', sub: '', legal: 'Ares Invest S.A. · RCS B225245', logo: '/assets/luxinterventions-logo.png' };
+if (TENANT) APP_BRAND.logo = '/ares/icons/ares-192.png'; // CENTRAL-OGL : jamais le logo de LuxInterventions
 const DEF_SOC = () => (TENANT ? tenantInfo.nom || 'Centrale' : 'NOBIS s.a.r.l.');
 const socName = () => societe().nom || DEF_SOC();
 // ligne légale (page de la clé, bas de la centrale) : la société de ⚙️ Réglages → 🧾 Facturation, gardée sur l'appareil pour la page de la clé
@@ -3050,7 +3054,7 @@ function renderLock(mode, error = '') {
   const legacy = legacyLocal();
   const head = html`
     <img class="lock-logo" src="${APP_BRAND.logo}" alt="" width="96" height="96">
-    <div class="lock-head"><h1 data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</h1><p>${TENANT ? tSub() : APP_BRAND.sub}</p><p class="tiny" data-notr="1">${TENANT ? '' : legalLine()}</p></div>`;
+    <div class="lock-head"><h1 data-notr="1">${TENANT ? OGL.nom : APP_BRAND.nom}</h1><p data-notr="1">${TENANT ? OGL.sub : APP_BRAND.sub}</p><p class="tiny">${TENANT ? OGL.info : ''}</p><p class="tiny" data-notr="1">${TENANT ? '' : legalLine()}</p></div>`;
   const foot = html`<div class="lock-foot">${icon('shield')} Chiffrement de bout en bout · AES-256</div>`;
   if (mode === 'blocked') {
     setHtml(lockEl, html`<div class="lock-card">${head}<div class="alert warn">${icon('lock')}<div><b>Centrale bloquée.</b> L’abonnement est échu ou suspendu : contactez LA CENTRAL pour la réactiver. Vos données restent chiffrées et intactes.</div></div>${foot}</div>`);
@@ -3171,7 +3175,7 @@ async function claimOrAsk() {
     const i = e.info || {};
     const ago = i.lastSeen ? Math.max(0, Math.round((Date.now() - i.lastSeen) / 1000)) : null;
     const choice = await choiceBox(
-      'LA CENTRAL est ouvert sur un autre appareil',
+      TENANT ? 'CENTRAL-OGL est ouverte sur un autre appareil' : 'LA CENTRAL est ouvert sur un autre appareil',
       `${i.device || 'Un autre appareil'} est connecté${i.since ? ' depuis ' + fmtDateTime(i.since) : ''}${ago != null ? ` (actif il y a ${ago} s)` : ''}. Un seul appareil peut être connecté à la fois : si vous continuez, l'autre sera déconnecté immédiatement.`,
       [{ value: 'take', label: 'Prendre la main', cls: 'primary' }]
     );
@@ -3444,7 +3448,7 @@ function renderShell() {
   const navBtn = ([id, label, ic]) => html`<button class="navbtn" data-action="go" data-to="${id}">${icon(ic)}<span>${label}</span></button>`;
   setHtml(appEl, html`
     <nav class="sidenav" aria-label="Navigation">
-      <div class="brand">${TENANT || vault.op ? html`<img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36">` : html`<span class="brand-pen" style="position:relative;display:inline-block"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><label title="Changer le logo DOMIER" aria-label="Changer le logo DOMIER" style="position:absolute;left:-6px;top:-6px;background:#fff;border-radius:50%;font-size:13px;line-height:1;padding:3px;box-shadow:0 1px 3px rgba(0,0,0,.25);cursor:pointer">✏️<input type="file" accept="image/*" data-input="brand-ico" hidden></label></span>`}<span data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}<small>${TENANT ? tSub() : APP_BRAND.sub}</small></span></div>
+      <div class="brand">${TENANT || vault.op ? html`<img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36">` : html`<span class="brand-pen" style="position:relative;display:inline-block"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><label title="Changer le logo DOMIER" aria-label="Changer le logo DOMIER" style="position:absolute;left:-6px;top:-6px;background:#fff;border-radius:50%;font-size:13px;line-height:1;padding:3px;box-shadow:0 1px 3px rgba(0,0,0,.25);cursor:pointer">✏️<input type="file" accept="image/*" data-input="brand-ico" hidden></label></span>`}<span data-notr="1">${TENANT ? OGL.nom : APP_BRAND.nom}<small>${TENANT ? OGL.sub : APP_BRAND.sub}</small>${TENANT ? html`<small>${OGL.info}</small>` : ''}</span></div>
       ${sideNavHtml()}
       ${navBtn(['reglages', 'Réglages', 'gear'])}
       ${legDots()}
@@ -3454,7 +3458,7 @@ function renderShell() {
     </nav>
     <div>
       <header class="topbar">
-        <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span data-notr="1">${TENANT ? tenantInfo.nom || 'Centrale' : APP_BRAND.nom}</span></div>
+        <div class="brand"><img class="brand-mark" src="${APP_BRAND.logo}" alt="" width="36" height="36"><span data-notr="1">${TENANT ? OGL.nom : APP_BRAND.nom}</span></div>
         <button class="sync" id="sync" data-action="sync-now" data-s="idle"><i></i><span>…</span></button>
         <button class="btn icon ghost" data-action="lock" aria-label="Verrouiller" title="Verrouiller">${icon('lock')}</button>
       </header>
@@ -4761,7 +4765,7 @@ dashboard() {
     const refs = vault.list('taches').filter((t) => (t.refus || (t.taxi && t.taxi.st === 'none')) && !t.intervenantId && !t.recur && t.statut !== 'fait').sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
     const refBox = refs.length ? html`<div class="section-label" style="margin-top:0;color:var(--bad,#c0392b)">✋ ${refs.length} ${refs.length > 1 ? 'travaux' : 'travail'} refusé${refs.length > 1 ? 's' : ''} par l’ouvrier — à réaffecter</div><div class="list ref-list" style="margin-bottom:14px">${refs.map((t) => html`<div>${tacheRow(t)}<div class="tiny" style="padding:2px 12px 8px">${t.taxi && t.taxi.st === 'none' ? html`🚕 ${taxiLog(t)}` : html`✋ ${intervName(t.refus.by)} · ${fmtDateTime(t.refus.at)}${t.refus.note ? ' — ' + t.refus.note : ''}`}</div></div>`)}</div>` : '';
     const appsVer = (() => { try { return localStorage.getItem('aresAppsVer') || ''; } catch { return 'x'; } })(), verMM = VERSION.split('.').slice(0, 2).join('.');
-    const appsBox = appsVer !== verMM && vault.list('locataires').some((x) => x.espace && x.espace.on) ? html`<div class="alert info" style="margin-bottom:14px;align-items:center">🆕<div style="flex:1"><b>Mise à jour importante (v${verMM})</b> : mettez à jour toutes les apps (locataires, équipe, clients, partenaires) pour qu’elles reçoivent les nouveautés.</div><button class="btn sm primary" data-action="apps-refresh-all">🔄 Tout mettre à jour</button></div>` : '';
+    const appsBox = appsVer !== verMM && vault.list('locataires').some((x) => x.espace && x.espace.on) ? html`<div class="alert info" style="margin-bottom:14px;align-items:center">🆕<div style="flex:1"><b>Mise à jour importante (v${verMM})</b> : mettez à jour ${TENANT ? "les apps des locataires" : "toutes les apps (locataires, équipe, clients, partenaires)"} pour qu’elles reçoivent les nouveautés.</div><button class="btn sm primary" data-action="apps-refresh-all">🔄 Tout mettre à jour</button></div>` : '';
     // 🏛️ CENTRAL DOMIER (sans parc à elle) : l'Accueil = le bureau du centraliste, par secteurs (titre gris + explication)
     if (!TENANT && !ownPark()) {
       const sec = (ic, t, sub, items) => { const it = items.filter(Boolean); return html`<div class="dsec"><div class="section-label" style="margin:18px 0 0">${ic} ${t}</div><p class="tiny muted" style="margin:0 0 8px">${sub}</p>${it.length ? it : html`<p class="tiny muted" style="margin:0 0 4px">✓ rien à traiter</p>`}</div>`; };
@@ -6325,7 +6329,7 @@ const SHEETS = {
     const ints = vault.list('intervenants').filter((i) => !i.archive || i.id === t.intervenantId).sort((a, b) => fits(b) - fits(a) || intervFull(a).localeCompare(intervFull(b)));
     return {
       title: id ? "Modifier l'intervention" : 'Nouvelle intervention',
-      body: html`${!TENANT && t.net && t.net.stopAsk && !t.fin ? html`<div class="alert warn" style="margin-bottom:10px">⏹️<div><b>${t.net.nom}</b> demande l’arrêt de ce service régulier (le ${fmtDate(t.net.stopAsk)}). Mettez la <b>date de fin</b> de la répétition : le client et ses locataires la voient.</div></div>` : ''}${!TENANT && t.net && t.net.reg && !t.recur ? html`<div class="alert info" style="margin-bottom:10px">🔁<div><b>Service régulier demandé</b> : ${TDEM_SVC[t.net.reg.svc] || ''} · ${RECURS[t.net.reg.freq] || ''} · ${(t.net.reg.jours || []).map((j) => JOURS_C[j]).join(', ')}${t.net.reg.de ? ' · ' + t.net.reg.de + (t.net.reg.a ? '–' + t.net.reg.a : '') : ''}. Choisissez la <b>répétition</b>, la date et l’heure confirmées.</div></div>` : ''}${TENANT && id && (t.locId || t.dom) && t.sentAt ? (t.fwd ? html`<div class="alert info" style="margin-bottom:10px">↪️<div><b>Envoyé à LA CENTRAL</b> le ${fmtDateTime(t.fwd.at)}${t.fwd.st ? html` · état : <b>${STATUTS[t.fwd.st] || t.fwd.st}</b>${t.fwd.who ? ' · 👷 ' + t.fwd.who : ''}` : ''}${t.fwd.acces ? html`<div class="tiny">🔑 accès au logement autorisé par ${t.fwd.acces}</div>` : ''}</div></div>` : t.statut !== 'fait' ? html`<button class="btn primary block" style="margin-bottom:10px" data-action="tfwd" data-id="${id}">↪️ Envoyer à LA CENTRAL</button>` : '') : ''}${id && !t.recur && t.statut !== 'fait' && t.intervenantId ? tripSlot(t.id, today()) : ''}<form id="f" data-form="tache" class="fields">
+      body: html`${!TENANT && t.net && t.net.stopAsk && !t.fin ? html`<div class="alert warn" style="margin-bottom:10px">⏹️<div><b>${t.net.nom}</b> demande l’arrêt de ce service régulier (le ${fmtDate(t.net.stopAsk)}). Mettez la <b>date de fin</b> de la répétition : le client et ses locataires la voient.</div></div>` : ''}${!TENANT && t.net && t.net.reg && !t.recur ? html`<div class="alert info" style="margin-bottom:10px">🔁<div><b>Service régulier demandé</b> : ${TDEM_SVC[t.net.reg.svc] || ''} · ${RECURS[t.net.reg.freq] || ''} · ${(t.net.reg.jours || []).map((j) => JOURS_C[j]).join(', ')}${t.net.reg.de ? ' · ' + t.net.reg.de + (t.net.reg.a ? '–' + t.net.reg.a : '') : ''}. Choisissez la <b>répétition</b>, la date et l’heure confirmées.</div></div>` : ''}${TENANT && id && (t.locId || t.dom) && t.sentAt ? (t.fwd ? html`<div class="alert info" style="margin-bottom:10px">↪️<div><b>Envoyé à LA CENTRAL</b> le ${fmtDateTime(t.fwd.at)}${t.fwd.st ? html` · état : <b>${STATUTS[t.fwd.st] || t.fwd.st}</b>${t.fwd.who ? ' · 👷 ' + t.fwd.who : ''}` : ''}${t.fwd.acces ? html`<div class="tiny">🔑 accès au logement autorisé par ${t.fwd.acces}</div>` : ''}</div></div>` : '') : ''}${id && !t.recur && t.statut !== 'fait' && t.intervenantId ? tripSlot(t.id, today()) : ''}<form id="f" data-form="tache" class="fields">
         <input type="hidden" name="id" value="${id || ''}">
         <label class="field">Type<select name="type">${Object.entries(TACHE_TYPES).map(([k, v]) => html`<option value="${k}" ${(t.type === 'entretien' ? 'reparation' : t.type) === k ? new Raw('selected') : ''}>${v}</option>`)}</select></label>
         ${field('Quoi ?', 'titre', t.titre, { required: true, placeholder: 'ex. Fuite robinet cuisine, nettoyage des communs' })}
@@ -10990,6 +10994,6 @@ function applyTheme() {
 
 applyTheme();
 if ('serviceWorker' in navigator && location.protocol === 'https:') {
-  navigator.serviceWorker.register('/locataires-sw.js', { scope: location.pathname.startsWith('/centralgerances') ? '/centralgerances' : location.pathname.startsWith('/centralluxinterventions') ? '/centralluxinterventions' : location.pathname.startsWith('/centralluxintervention') ? '/centralluxintervention' : location.pathname.startsWith('/centraldomier') ? '/centraldomier' : '/locataires' }).catch(() => {}); // CENTRAL-DOMIER : sa propre adresse
+  navigator.serviceWorker.register('/locataires-sw.js', { scope: location.pathname.startsWith('/central-ogl') ? '/central-ogl' : location.pathname.startsWith('/centralgerances') ? '/centralgerances' : location.pathname.startsWith('/centralluxinterventions') ? '/centralluxinterventions' : location.pathname.startsWith('/centralluxintervention') ? '/centralluxintervention' : location.pathname.startsWith('/centraldomier') ? '/centraldomier' : '/locataires' }).catch(() => {}); // CENTRAL-DOMIER : sa propre adresse
 }
 boot();
