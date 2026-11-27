@@ -8,17 +8,11 @@ import { chatResolve, chatOpen, newMsgId, editable } from './chatops.js';
 import { trInit, trButton } from './chattr.js';
 import qrcode from './qrcode.js';
 import { getLang, setLang, startI18n, LANGS, LOCALES } from './i18n.js';
-import { videoEmbed } from './video-embed.js';
-import { PTL_INVITE } from './ptl-invite.js';
 import { newsHtml } from './news.js';
 import { emojiInit } from './emoji.js';
-import { domierHtml, domierInit, DOM_TEL } from './domier.js';
 import { pushStatus, pushEnable, pushRefresh, setBadge } from './push-client.js';
-import { makePdf } from './pdfmini.js';
 import { scrollHintInit } from './scroll-hint.js';
-import { infoBox } from './nbien.js';
 import { pullRefreshInit } from './pull-refresh.js';
-import { tripView, tripFetch } from './trip.js';
 // tirer vers le bas en haut de la page : synchronise et recharge tout ce que l'écran montre
 pullRefreshInit({
   lang: () => getLang(),
