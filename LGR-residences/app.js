@@ -9,7 +9,7 @@ import { xlsxBlob } from '../ares/xlsx.js';
 import { makePdf, textWidth } from '../ares/pdfmini.js';
 import { passphraseStrength } from '../ares/crypto.js';
 
-export const VERSION = '1.0.1';
+export const VERSION = '1.0.2';
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -180,7 +180,7 @@ function side() {
     <div class="brand">LGR<small>Lux Gestion Résidences</small></div>
     ${n('docs')}🗂️ ${esc(t('Documents'))}</a>${n('syndics')}🏢 ${esc(t('Syndics & gérances'))}</a>${n('residences')}🏠 ${esc(t('Résidences'))}</a>${n('dossiers')}🔗 ${esc(t('Dossiers d’intervention'))}</a>${n('recap')}📊 ${esc(t('Récapitulatifs'))}</a>
     <div class="sec">${esc(t('Mes syndics'))}</div><div class="synlist">${syns.map((x) => `<a class="nav sm${F.syn === x.id && r === 'docs' ? ' on' : ''}" href="#/docs" data-a="fsyn" data-id="${x.id}">${esc(x.nom)} <span class="mut">· ${cnt[x.id] || 0}</span></a>`).join('') || `<div class="mut small pad">${esc(t('Aucun pour l’instant'))}</div>`}</div>
-    <div class="grow"></div>${syncBadge()}${n('reglages')}⚙️ ${esc(t('Réglages'))}</a>`;
+    <div class="grow"></div>${syncBadge()}${n('reglages')}⚙️ ${esc(t('Réglages'))}</a><button class="nav out" data-a="lock">🚪 ${esc(t('Se déconnecter'))}</button><div class="ver">LGR v${VERSION}</div><button class="mout" data-a="lock" aria-label="${esc(t('Se déconnecter'))}">🚪</button>`;
 }
 function syncBadge() {
   const m = S.meta || {};
