@@ -9,7 +9,7 @@ import { xlsxBlob } from '../ares/xlsx.js';
 import { makePdf, textWidth } from '../ares/pdfmini.js';
 import { passphraseStrength } from '../ares/crypto.js';
 
-export const VERSION = '1.0.0';
+export const VERSION = '1.0.1';
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
