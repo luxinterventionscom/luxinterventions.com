@@ -101,6 +101,17 @@ Vale per tutte le app degli utenti (inquilini, operai…), sempre in quest'ordin
 - **Worker pulito (27/11/2026, ~1 050 righe)**: solo sito (contatore), app LuxInterventions (foto) e CENTRAL-OGL (coffre, app locatari, chat, collectes, traduzione, news/ticker, notifiche). Tolti MASTER, rete/licenze, portale, annunci, biens, tools, trajets, candidature. La centrale del cliente **non scade più** (tenantState sempre «ok»). I dati su Cloudflare non sono stati toccati (pulizia dei dati: a parte, quando lo dice il titolare, con sauvegarde prima).
 - Manuale CENTRAL-OGL: FR · EN. Sito luxinterventions.com: **non toccare** finché non dà il VAI (clip della sezione gérance e pagina Nobis proposti, in attesa).
 
+## ✅ LGR · Lux Gestion Résidences (28/11/2026, v1.0.0) — terzo software per ARES (prezzo dentro i 10 000 €)
+- Indirizzo `/LGR-residences/` (PWA: iMac Safari «Ajouter au Dock», iPad, iPhone). File: `LGR-residences/` (`app.js` interfaccia, `core.js` coffre + sync, `viewer.js` anteprima, `i18n.js` FR·EN·DE·IT, `sw.js`, `vendor/` pdf.js 4.10 Apache-2.0).
+- Scelta **A** del titolare: un solo coffre (ARES), un logo. Un giorno potrà diventare **B** (un coffre per ogni società che la scarica) — solo quando lo dice lui.
+- Stile scelto: **Bleu nuit & Verre per difetto**; Noir & Or · Ivoire & Encre con un clic dalla ✏️ (che apre anche logo + dati della società, in testa ai riepiloghi).
+- Contenuto: syndic/gérance/agence → résidences (nome, via, numero, CP, città, paese Luxembourg) → documenti Fac./Dev./Rap. (n°, data, montant senza HT/TVA, stato payée/à payer, accepté/refusé/en attente, file PDF/JPG/PNG/HEIC/Word/Excel ≤ 30 Mo), dossier Dev.→Rap.→Fac., ricerca unica (anche nel testo dei PDF) + filtri, riepilogo Excel/PDF/stampa/📤 Partager (mail, WhatsApp, SMS), corbeille (niente si cancella), sauvegarde .lgr.
+- Suggerimenti ✨ letti dal PDF (n°, data, montant, residenza): sono proposte, li conferma l'utente.
+- Worker: `/api/lgr/…` (meta, setup, key, rekey, recovery, data con ETag, f/<id> mai sovrascritti). Prima attivazione della sync: segreto Cloudflare **`LGR_SETUP_CODE`** (lo sceglie e lo mette il titolare). Col Worker vecchio l'app funziona solo sull'apparecchio.
+- iPhone/iPad: un'app web non compare nel menu «Condividi» (limite Apple): «Salva in File» → «＋ Document». Email automatica: fase 2.
+- Prove: `guides/manuel/lgr-test.mjs` (iMac + iPhone + 3° apparecchio, sync, chiave di secours, lingue) e `lgr-oldworker-test.mjs`.
+- Da fare se lo chiede: manuale LGR, segretaria (secondo accesso), email in entrata (fase 2), contratto/deposito.
+
 ## ⏸️ In attesa (standby, novembre 2026)
 - **App LuxInterventions FATTA (app v1.0.0, 25/11/2026)**: `app.html` + `app/app.js`, `app/app.css`, `app/mail.js`, `app-sw.js`, `app.webmanifest`;
   bottone «📲 Installer l’app LuxInterventions» nel sito (hero). Una sola app per tutti, senza centrale: 12 mattonelle + Autre →
