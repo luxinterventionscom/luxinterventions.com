@@ -10,6 +10,7 @@ Toutes les adresses commencent par **central…** (une seule famille, sous LUXIN
 | /centrallocataires.html | l'app des **locataires** (même app que espace.html) |
 | /centralouvriers.html | l'app des **ouvriers** (même app que equipe.html) |
 | /gerance.html · /portail.html | ancien portail des gérances : retiré (message « Cette app n’existe plus ») |
+| /LGR-residences/ | **LGR · Lux Gestion Résidences** (ARES) : devis, rapports et factures des syndics et résidences — coffre chiffré à part (/api/lgr/ du Worker) |
 
 ## Anciennes adresses (elles marchent toujours : apps déjà installées, anciens liens)
 

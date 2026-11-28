@@ -9,6 +9,8 @@
  *      /api/ares/t/<numéro>/…  coffre chiffré de la centrale (le Worker ne garde que des octets chiffrés, AES-256-GCM)
  *      /api/esp/…, /api/esp-code, /api/board/…, /api/pub/…  apps des locataires (contenu chiffré de bout en bout),
  *      /api/tr (traduction des messages), /api/news et /ticker (actualités de l'accueil), notifications (D1 « DB »).
+ * 4) LGR · Lux Gestion Résidences (/LGR-residences/) : /api/lgr/…  coffre chiffré séparé (documents des syndics),
+ *      secret « LGR_SETUP_CODE » pour la première configuration.
  */
 
 const ALLOWED_ORIGIN = "https://luxinterventions.com";
@@ -64,6 +66,11 @@ async function route(request, env, ctx, headers) {
     // ── Archivio cifrato Ares (gestion locataires) ──
     if (url.pathname.startsWith("/api/ares/")) {
       return handleAres(request, env, url, headers);
+    }
+
+    // ── LGR · Lux Gestion Résidences : coffre chiffré à part (documents des syndics et résidences) ──
+    if (url.pathname.startsWith("/api/lgr/")) {
+      return handleLgr(request, env, url, headers);
     }
 
     // ── Calendrier public des collectes (locataires) : /api/pub/<token>.json | .ics ──
@@ -859,6 +866,87 @@ async function handleAres(request, env, url, headers) {
     }
   }
 
+  return aresJson({ error: "Not found" }, 404, headers);
+}
+
+// ── LGR · Lux Gestion Résidences ──
+// Le Worker ne garde que des octets chiffrés dans le navigateur (AES-256-GCM) : lgr/meta.json (clé de données enveloppée),
+// lgr/data.bin (fiches : syndics, résidences, documents), lgr/f/<id> (fichiers). Rien n'est effacé ici : la corbeille est dans l'app.
+// Première configuration : secret Cloudflare « LGR_SETUP_CODE » (choisi par le titulaire).
+const LGR = { META: "lgr/meta.json", DATA: "lgr/data.bin", FILES: "lgr/f/" };
+async function handleLgr(request, env, url, headers) {
+  if (!env.PHOTOS || !env.HITS) return aresJson({ error: "Worker non configuré (bindings PHOTOS / HITS)" }, 503, headers);
+  const path = url.pathname.slice("/api/lgr/".length), method = request.method, ip = clientIp(request);
+  const metaObj = await env.PHOTOS.get(LGR.META);
+  const meta = metaObj ? await metaObj.json() : null;
+  if (path === "meta" && method === "GET") {
+    if (!meta) return aresJson({ lgr: 1, configured: false }, 200, headers);
+    return aresJson({ lgr: 1, configured: true, salt: meta.salt, iter: meta.iter, recovery: meta.recovery ? { salt: meta.recovery.salt, iter: meta.recovery.iter } : null }, 200, headers);
+  }
+  if ((await aresFails(env, ip)) >= ARES_MAX_FAILS) return aresJson({ error: "Trop de tentatives. Réessayez dans 15 minutes." }, 429, headers);
+  if (path === "setup" && method === "POST") {
+    if (!env.LGR_SETUP_CODE) return aresJson({ error: "LGR_SETUP_CODE manquant dans le Worker" }, 503, headers);
+    let b;
+    try { b = await request.json(); } catch { b = null; }
+    if (!b || !safeEqual(await sha256Hex(String(b.setupCode || "")), await sha256Hex(env.LGR_SETUP_CODE))) {
+      await aresRecordFail(env, ip);
+      return aresJson({ error: "Code de configuration incorrect" }, 403, headers);
+    }
+    if (!validKeyMaterial(b) || (b.recovery && !validKeyMaterial(b.recovery))) return aresJson({ error: "Données invalides" }, 400, headers);
+    const now = new Date().toISOString();
+    const m = { v: 1, salt: b.salt, iter: b.iter, wrappedKey: b.wrappedKey, authHash: b.authHash, createdAt: now };
+    if (b.recovery) m.recovery = { salt: b.recovery.salt, iter: b.recovery.iter, wrappedKey: b.recovery.wrappedKey, authHash: b.recovery.authHash, createdAt: now };
+    const res = await env.PHOTOS.put(LGR.META, JSON.stringify(m), { onlyIf: { etagDoesNotMatch: "*" } });
+    if (!res) return aresJson({ error: "Déjà configuré" }, 409, headers);
+    return aresJson({ ok: true }, 200, headers);
+  }
+  if (!meta) return aresJson({ error: "Non configuré" }, 404, headers);
+  const auth = request.headers.get("Authorization") || "";
+  const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
+  const th = isHex64(token) ? await sha256Hex(token) : "";
+  const slot = safeEqual(th, meta.authHash) ? "main" : meta.recovery && safeEqual(th, meta.recovery.authHash) ? "recovery" : null;
+  if (!slot) { await aresRecordFail(env, ip); return aresJson({ error: "Clé d'accès incorrecte" }, 401, headers); }
+  if (path === "key" && method === "GET") return aresJson({ slot, wrappedKey: slot === "main" ? meta.wrappedKey : meta.recovery.wrappedKey }, 200, headers);
+  // nouvelle clé d'accès (avec l'ancienne ou la clé de secours) ou nouvelle clé de secours (avec la clé d'accès)
+  if ((path === "rekey" || path === "recovery") && method === "POST") {
+    let b;
+    try { b = await request.json(); } catch { b = null; }
+    if (!validKeyMaterial(b)) return aresJson({ error: "Données invalides" }, 400, headers);
+    const k = { salt: b.salt, iter: b.iter, wrappedKey: b.wrappedKey, authHash: b.authHash };
+    if (path === "recovery" && slot !== "main") return aresJson({ error: "Clé d'accès principale requise" }, 403, headers);
+    const next = path === "rekey" ? { ...meta, ...k, rekeyedAt: new Date().toISOString() } : { ...meta, recovery: { ...k, createdAt: new Date().toISOString() } };
+    await env.PHOTOS.put(LGR.META, JSON.stringify(next));
+    return aresJson({ ok: true }, 200, headers);
+  }
+  if (path === "data" && method === "GET") {
+    const obj = await env.PHOTOS.get(LGR.DATA, { onlyIf: request.headers });
+    if (!obj) return aresJson({ empty: true }, 404, headers);
+    if (!("body" in obj)) return new Response(null, { status: 304, headers: { ETag: obj.httpEtag, ...headers } });
+    return new Response(obj.body, { headers: { "Content-Type": "application/octet-stream", ETag: obj.httpEtag, ...headers } });
+  }
+  if (path === "data" && method === "PUT") {
+    const ifMatch = request.headers.get("If-Match"), ifNone = request.headers.get("If-None-Match");
+    if (!ifMatch && ifNone !== "*") return aresJson({ error: "If-Match requis" }, 428, headers);
+    const body = await request.arrayBuffer();
+    if (!body.byteLength || body.byteLength > ARES_MAX_DATA) return aresJson({ error: "Taille invalide" }, 413, headers);
+    const onlyIf = ifMatch ? { etagMatches: ifMatch.replace(/^W\//, "").replace(/"/g, "") } : { etagDoesNotMatch: "*" };
+    const res = await env.PHOTOS.put(LGR.DATA, body, { onlyIf, httpMetadata: { contentType: "application/octet-stream" } });
+    if (!res) return aresJson({ error: "Conflit de version" }, 412, headers);
+    return aresJson({ ok: true }, 200, headers, { ETag: res.httpEtag });
+  }
+  const fm = path.match(/^f\/([a-z0-9]{8,40})$/);
+  if (fm && method === "GET") {
+    const obj = await env.PHOTOS.get(LGR.FILES + fm[1]);
+    if (!obj) return aresJson({ error: "Introuvable" }, 404, headers);
+    return new Response(obj.body, { headers: { "Content-Type": "application/octet-stream", ...headers } });
+  }
+  if (fm && method === "PUT") {
+    const body = await request.arrayBuffer();
+    if (!body.byteLength || body.byteLength > 30 * 1024 * 1024) return aresJson({ error: "Fichier vide ou trop volumineux (30 Mo max.)" }, 413, headers);
+    // un fichier ne se remplace jamais (identifiant aléatoire) : un nouvel envoi du même fichier est simplement « déjà là »
+    const res = await env.PHOTOS.put(LGR.FILES + fm[1], body, { onlyIf: { etagDoesNotMatch: "*" }, httpMetadata: { contentType: "application/octet-stream" } });
+    return aresJson({ ok: true, existed: !res }, 200, headers);
+  }
   return aresJson({ error: "Not found" }, 404, headers);
 }
 
