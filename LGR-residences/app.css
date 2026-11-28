@@ -67,6 +67,7 @@ body:not([data-view=docs]) #app { grid-template-columns: 236px 1fr; } body:not([
 .nav { display: block; padding: 8px 10px; border-radius: 9px; font-size: 13px; color: var(--m); } .nav:hover { background: var(--c); color: var(--t); } .nav.on { background: var(--c); color: var(--t); font-weight: 700; } .nav.sm { font-size: 12.5px; padding: 6px 10px; }
 .sec { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--m); margin: 14px 0 2px 10px; }
 .synlist { max-height: 34vh; overflow: auto; }
+.nav.out { background: none; border: 0; text-align: left; width: 100%; font: inherit; font-size: 13px; } .ver { font-size: 10.5px; color: var(--m); padding: 2px 10px 0; } .mout { display: none; }
 .syncb { display: block; font-size: 11px; padding: 6px 10px; border-radius: 9px; border: 1px solid var(--l); margin: 6px 0; }
 .main { padding: 22px 24px 90px; min-width: 0; }
 .mhead { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; } .mhead h2 { flex: 0 1 auto; } .mhead .btn:last-child:not(:first-child) { margin-left: auto; }
@@ -152,7 +153,7 @@ dl.info { display: grid; grid-template-columns: 92px 1fr; gap: 6px 10px; font-si
   #app { display: block; }
   .side { position: static; height: auto; flex-direction: row; flex-wrap: wrap; align-items: center; border-right: 0; border-bottom: 1px solid var(--l); padding: max(10px, env(safe-area-inset-top)) 12px 8px; }
   .side .nav, .side .sec, .side .synlist, .side .grow { display: none; } .side .brand { margin: 0 0 0 auto; font-size: 20px; order: 2; } .side .brand small { display: none; }
-  .soc { width: auto; flex: 1; margin: 0; border-style: solid; } .syncb { order: 3; width: 100%; margin: 6px 0 0; text-align: center; }
+  .soc { width: auto; flex: 1; margin: 0; border-style: solid; } .side .ver { display: none; } .mout { display: block; order: 2; background: var(--c); border: 1px solid var(--l); border-radius: 10px; padding: 6px 9px; font-size: 16px; margin-left: 6px; } .syncb { order: 3; width: 100%; margin: 6px 0 0; text-align: center; }
   .main { padding: 14px 12px 150px; } h2 { font-size: 23px; }
   .tabs { display: flex; position: fixed; left: 10px; right: 10px; bottom: max(10px, env(safe-area-inset-bottom)); z-index: 40; justify-content: space-around; background: var(--sheet); backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur); border: 1px solid var(--l); border-radius: 20px; padding: 7px 4px; }
   .tabs a { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--m); gap: 1px; } .tabs a span { font-size: 18px; } .tabs a.on { color: var(--a); font-weight: 700; }
